@@ -2,7 +2,7 @@
 ; Hot Angles Config ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ; Compile with FASM
-; Version 0.1: Sep 18, 2018
+; Version 0.2: Sep 19, 2018
 
 ; Copyright (c) 2018, Efremenkov Sergey aka TheOnlyMirage
 ; All rights reserved.
@@ -40,6 +40,7 @@ dd STACKTOP
 dd 0, 0
 
 ; Ќачало области кода
+include 'lang.inc'       ;поддержка €зыков при компил€ции
 include '../../macros.inc'
 include 'editbox.inc'
 use_edit_box
@@ -551,11 +552,11 @@ draw_window:
         mov esi, 0x00AABBCC       ;цвет кнопки
         mcall 8
         ;рисуем текст кнопки
-        mov     ebx, (WindowsWidth-80-Otstup+25) * 65536 + 166    ;координаты текста (x, y)
+        mov     ebx, (WindowsWidth-80-Otstup+25-buttonTextXoffset) * 65536 + 166    ;координаты текста (x, y)
         mov     ecx, 0xFFFFFF     ;белый цвет текста
         mov     edx, buttonText
-        mov     esi, 5            ;размер текста в символах
-                mcall 4
+        mov     esi, buttonTextSize ;5            ;размер текста в символах
+        mcall 4
 
         call draw_super_text
 
@@ -580,12 +581,7 @@ draw_window:
         ret
 
 
-text    db  "This is a Hot Angles Configurator.                            "
-        db  "Set the parameters bellow for yourself or disable this option."
-        db  "                                                              ", 0
- hed:
-title   db  "Hot Angles Configurator", 0
-buttonText db "Apply", 0
+
 
 align 4
 ;>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
@@ -597,15 +593,53 @@ check_boxes:
    ch1 check_box1 30,160,ch_text.1,ch_text.e1-ch_text.1,ch_flag_en
 check_boxes_end:
 
+
+if lang eq ru  ;если €зык сборки русский
+
+text    db  "КЃ≠д®£га†вЃа Hot Angles ЃвҐ•з†•в І† ≠†бваЃ©™г †™в®Ґ≠ле г£ЂЃҐ. "
+        db  "Н†бваЃ©в• ѓ†а†ђ•вал ѓЃ§ б•°п ®Ђ® Ѓв™Ђоз®в• нвг Ѓѓж®о.         "
+        db  "                                                              ", 0
+ hed:
+title   db  "КЃ≠д®£га†вЃа гв®Ђ®вл Hot Angles", 0
+buttonText db "Па®ђ•≠®вм", 0
+buttonTextSize = 9
+buttonTextXoffset = 12
+
+ch_text:        ;сопровождающий текст дл€ чек боксов
+.1 db 'В™Ђоз®вм/†™в®Ґ®аЃҐ†вм "Hot Angles"'
+.e1:
+
+superText:
+  .lu db 'КЃђ†≠§† Ђ•ҐЃ£Ѓ Ґ•ае≠•£Ѓ г£Ђ†: ', 0
+  .ld db 'КЃђ†≠§† Ђ•ҐЃ£Ѓ ≠®¶≠•£Ѓ г£Ђ†:  ', 0
+  .ru db 'КЃђ†≠§† ѓа†ҐЃ£Ѓ Ґ•ае≠•£Ѓ г£Ђ†:', 0
+  .rd db 'КЃђ†≠§† ѓа†ҐЃ£Ѓ ≠®¶≠•£Ѓ г£Ђ†: ', 0
+superTextSize = 30
+
+else  ;иначе английский текст
+
+text    db  "This is a Hot Angles Configurator.                            "
+        db  "Set the parameters bellow for yourself or disable this option."
+        db  "                                                              ", 0
+ hed:
+title   db  "Hot Angles Configurator", 0
+buttonText db "Apply", 0
+buttonTextSize = 5
+buttonTextXoffset = 0
+
 ch_text:        ;сопровождающий текст дл€ чек боксов
 .1 db 'Activate "Hot Angles"'
 .e1:
 
 superText:
-  .lu db 'Left up angle command:', 0
-  .ld db 'Left down angle command:', 0
-  .ru db "Right up angle command:", 0
+  .lu db 'Left up angle command:   ', 0
+  .ld db 'Left down angle command: ', 0
+  .ru db 'Right up angle command:  ', 0
   .rd db 'Right down angle command:', 0
+superTextSize = 25
+
+end if
+
 
 draw_super_text:
    push eax ebx ecx edx edi esi
@@ -613,22 +647,22 @@ draw_super_text:
    mov     ecx, 0x224466
    mov eax, superText.lu
    mov     edx, eax
-   mov     esi, 22
+   mov     esi, superTextSize ;22
    mcall 4
 
    mov     ebx, Otstup * 65536 + 109
    mov     edx, superText.ld
-   mov     esi, 24
+   mov     esi, superTextSize ;24
    mcall 4
 
    mov     ebx, 240 * 65536 + 74
    mov     edx, superText.ru
-   mov     esi, 23
+   mov     esi, superTextSize ;23
    mcall 4
 
    mov     ebx, 240 * 65536 + 109
    mov     edx, superText.rd
-   mov     esi, 25
+   mov     esi, superTextSize ;25
    mcall 4
 
    pop esi edi edx ecx ebx eax
