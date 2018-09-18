@@ -371,6 +371,11 @@ void main()
 					case 50...60: //Actions
 							FnProcess(id-50);
 							break;
+					case 61: // Set path as default
+							ini.path = GetIni(#eolite_ini_path, "EOLITE.INI");
+							ini.section = "Config";
+							ini.SetString("DefaultPath", #path, strlen(#path));
+							break;
 					case 100...120:
 						SystemDiscs.Click(id-100);
 						break;
@@ -599,7 +604,7 @@ void main()
 void DrawFavButton(int x)
 {
 	_PutImage(x,10,20,22,#fav);
-	DefineButton(x,11,20-2,22-2,61+BT_HIDE+BT_NOFRAME,0);
+	DefineButton(x+1,11,20-2,22-3,61+BT_HIDE,NULL);
 }
 
 void draw_window()
