@@ -74,6 +74,7 @@ img_files = {
  {"SETTINGS/TASKBAR.INI", "common/settings/taskbar.ini"},
  {"SETTINGS/SYSPANEL.INI", "common/settings/syspanel.ini"},
  {"SETTINGS/SYSTEM.INI", "common/settings/system.ini"},
+ {"SETTINGS/HOTANGLES.CFG", PROGS .. "/other/HotAngles/HAconfig/SETTINGS/HOTANGLES.CFG"},
 }
 
 -- For russian build, add russian-only files.
@@ -328,6 +329,8 @@ tup.append_table(img_files, {
  {"@TASKBAR", PROGS .. "/system/taskbar/trunk/TASKBAR"},
  {"@SS", PROGS .. "/system/ss/trunk/@ss"},
  {"@VOLUME", PROGS .. "/media/volume/volume"},
+ {"@HOTANGLES", PROGS .. "/other/HotAngles/HA/@HOTANGLES"},
+ {"HACONFIG", PROGS .. "/other/HotAngles/HAconfig/HACONFIG"},
  {"ASCIIVJU", PROGS .. "/develop/asciivju/trunk/asciivju"},
  {"CALC", PROGS .. "/other/calc/trunk/calc"},
  {"CALENDAR", PROGS .. "/system/calendar/trunk/calendar"},
