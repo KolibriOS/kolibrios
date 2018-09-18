@@ -322,7 +322,7 @@ if tup.getconfig('NO_FASM') ~= 'full' then
 tup.append_table(img_files, {
  {"KERNEL.MNT", "../kernel/trunk/kernel.mnt"},
  {"@DOCKY", PROGS .. "/system/docky/trunk/docky"},
- {"@HOTANGLES", PROGS .. "/other/HotAngles/HA/HOTANGLES"},
+ -- {"@HOTANGLES", PROGS .. "/other/HotAngles/HA/HOTANGLES"},
  {"@ICON", PROGS .. "/system/icon_new/icon"},
  {"@MENU", PROGS .. "/system/menu/trunk/menu"},
  {"@NOTIFY", PROGS .. "/system/notify3/notify"},
