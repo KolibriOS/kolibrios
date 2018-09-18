@@ -1,0 +1,75 @@
+Hot Angles
+
+Version 0.1: Sep 18, 2018
+RU
+
+Комплект утилит (аналог Hot Corners в других ОС) для расширения возможностей рабочего стола пользователя. Название выбрано путём голосования. В комплект входят две утилиты:
+@HOTANGLES - основная утилита, позволяющая запускать приложения путём наведения курсора в угол экрана (угол рабочей области);
+HACONFIG - утилита конфигуратор, позволяющая настроить действия на каждый угол и активировать/деактивировать эту опцию.
+Файл конфигурации: RD/1/SETTINGS/HOTANGLES.CFG (где RD/1/ это тот же SYS - путь к системной директории). Файл состоит из пяти строк:
+1) состояние активности опции: y - опция активна, n или любой другой символ - опция отключена; 
+2) команда (полное имя приложения) для верхнего левого угла экрана;
+3) команда (полное имя приложения) для левого нижнего угла экрана;
+4) команда (полное имя приложения) для правого верхнего угла экрана;
+5) команда (полное имя приложения) для правого нижнего угла экрана.
+Если необходимо настроить только часть углов, а остальные оставить без действия, то в конфигураторе или на нужной строке конфигурационного файла укажите знак минус (символ '-').
+
+Обе утилиты содержат защиту от повторного запуска.
+Утилита @HOTANGLES добавлена в автозагрузку ОС.
+@HOTANGLES не запустится, если конфигурационный файл отсутствует или был переименован.
+HACONFIG при отсутствии конфигурационного файла выставляет все поля по умолчанию, но не создаёт файл конфигурации самостоятельно (для этого необходимо нажать кнопку "Применить", тогда отсутствующий файл конфигурации будет создан, а существующий перезаписан).
+При первом старте утилиты все углы рабочей области настроены на запуск конфигуратора, где вы можете настроить утилиту под себя или отключить её.
+
+Прочие рекомендации:
+Некоторым пользователям может быть удобно настроить открытие меню при попадании в угол его расположения. Например, если у вас кнопка "Меню" рассположена в левом нижнем углу, то задайте для этого угла команду:
+/rd/1/@MENU
+
+Влияние на производительность:
+Если вы используете систему в задачах реального времени или в задачах с высокой нагрузкой на CPU отключите эту опцию. Так же, если вы желаете добиться максимальной скорости работы ОС, то использование этой опции не рекомендуется.
+Приложение может увеличивать нагрузку на систему в два раза при обычном использовании мыши (перемещение курсора, клики в определённых областях экрана). 
+При выполнении основной функции (запуск любого приложения при наведении курсора в угол экрана) нагрузка на систему возрастает естественным образом.
+
+Известные недоработки, которые будут исправлены в следующих версиях:
+[-] отсутствие русского языка;
+[-] используется маленький шрифт текста;
+[-] нет возможности запуска приложения с параметрами;
+[-] знак минус не влияет на попытку запуска в конкретном углу;
+[-] пустое поле в конфигураторе и пустая строка в конфигурационном файле неверно обрабатываются; 
+[-] присутствует неисправленный баг в компоненте EditBox;
+[-] приложение конфигуратора не добавлено в системную панель.
+
+Поддержать разработчика, ссылка для доната:
+https://money.yandex.ru/to/410011935289152
+
+По найденным ошибкам, вопросам технической помощи и поддержки обращайтесь на
+E-Mail: theonlymirage@gmail.com
+
+Процесс создания Hot Angles частично запечатлён на видео:
+https://youtu.be/l6mZflqOTJo
+https://youtu.be/ssYuJSoBGrk
+https://youtu.be/4slBjIoYJis
+https://youtu.be/N69_Cky1vB0
+
+
+Утилиты полностью написаны на FASM. Автор: Сергей Ефременков.
+Лицензионное соглашение:
+
+ Copyright (c) 2018, Efremenkov Sergey aka TheOnlyMirage
+ All rights reserved.
+ Redistribution and use in source and binary forms, with or without modification,
+ are permitted provided that the following conditions are met:
+    * Redistributions of source code must retain the above copyright notice, this
+    list of conditions and the following disclaimer.
+    * Redistributions in binary form must reproduce the above copyright  notice,
+    this list of conditions and the following disclaimer in the documentation and/or
+    other materials provided with the distribution.
+    * Neither the name of the <organization> nor the names of its contributors may
+    be used to endorse or promote products derived from this software without
+    specific prior written permission.
+
+ THE SOFTWARE IS PROVIDED “AS IS”, WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED,
+ INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A
+ PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT
+ HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION
+ OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
+ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE. 
