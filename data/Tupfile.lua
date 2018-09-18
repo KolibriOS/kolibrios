@@ -322,6 +322,7 @@ if tup.getconfig('NO_FASM') ~= 'full' then
 tup.append_table(img_files, {
  {"KERNEL.MNT", "../kernel/trunk/kernel.mnt"},
  {"@DOCKY", PROGS .. "/system/docky/trunk/docky"},
+ {"@HOTANGLES", PROGS .. "/other/HotAngles/HA/HOTANGLES"},
  {"@ICON", PROGS .. "/system/icon_new/icon"},
  {"@MENU", PROGS .. "/system/menu/trunk/menu"},
  {"@NOTIFY", PROGS .. "/system/notify3/notify"},
@@ -329,7 +330,6 @@ tup.append_table(img_files, {
  {"@TASKBAR", PROGS .. "/system/taskbar/trunk/TASKBAR"},
  {"@SS", PROGS .. "/system/ss/trunk/@ss"},
  {"@VOLUME", PROGS .. "/media/volume/volume"},
- {"@HOTANGLES", PROGS .. "/other/HotAngles/HA/HOTANGLES"},
  -- {"HACONFIG", PROGS .. "/other/HotAngles/HAconfig/HACONFIG"},
  {"ASCIIVJU", PROGS .. "/develop/asciivju/trunk/asciivju"},
  {"CALC", PROGS .. "/other/calc/trunk/calc"},
