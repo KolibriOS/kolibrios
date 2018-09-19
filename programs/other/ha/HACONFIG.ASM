@@ -67,13 +67,6 @@ START:
     call  loadConfig     ;загружаем конфигурацию из файла, если нет - то выставляем параметры по умолчанию
     call  draw_window    ;отрисовать окно приложения
 
-    ;временный fix бага: снять фокус с полей ввода и перерисовать окно
-    mov dword[editLU.flags], 0 ;если это сделать при создании, то edit'ы не будут принимать буквы
-    mov dword[editLD.flags], 0 ;или не будут работать вовсе (требуется доп. изучение проблемы)
-    mov dword[editRU.flags], 0
-    mov dword[editRD.flags], 0 ;ed_focus
-    call draw_window
-
 ; Обработка цикла событий
 event_wait:
     mov     eax, 10      ; function 10 : wait until event
@@ -681,9 +674,9 @@ edMax = 0 ;max, size, pos
 
 editboxes:
 editLU edit_box 180,Otstup,85,0xffffff,0x6a9480,0,0xAABBCC,0,edMaxSize,dataBuffer.1,ed_focus,edMax,edMax
-editLD edit_box 180,Otstup,120,0xffffff,0x6a9480,0,0xAABBCC,0,edMaxSize,dataBuffer.2,ed_focus,edMax,edMax
-editRU edit_box 180,240,85,0xffffff,0x6a9480,0,0xAABBCC,0,edMaxSize,dataBuffer.3,ed_focus,edMax,edMax
-editRD edit_box 180,240,120,0xffffff,0x6a9480,0,0xAABBCC,0,edMaxSize,dataBuffer.4,ed_focus,edMax,edMax
+editLD edit_box 180,Otstup,120,0xffffff,0x6a9480,0,0xAABBCC,0,edMaxSize,dataBuffer.2,0,edMax,edMax
+editRU edit_box 180,240,85,0xffffff,0x6a9480,0,0xAABBCC,0,edMaxSize,dataBuffer.3,0,edMax,edMax
+editRD edit_box 180,240,120,0xffffff,0x6a9480,0,0xAABBCC,0,edMaxSize,dataBuffer.4,0,edMax,edMax
 editboxes_end:
 
 data_of_code dd 0
