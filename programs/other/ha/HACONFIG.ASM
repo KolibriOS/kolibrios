@@ -67,6 +67,13 @@ START:
     call  loadConfig     ;загружаем конфигурацию из файла, если нет - то выставляем параметры по умолчанию
     call  draw_window    ;отрисовать окно приложения
 
+    ;временный fix бага: снять фокус с полей ввода и перерисовать окно
+    mov dword[editLU.flags], 0 ;если это сделать при создании, то edit'ы не будут принимать буквы
+    mov dword[editLD.flags], 0 ;или не будут работать вовсе (требуется доп. изучение проблемы)
+    mov dword[editRU.flags], 0
+    mov dword[editRD.flags], 0 ;ed_focus
+    call draw_window
+
 ; Обработка цикла событий
 event_wait:
     mov     eax, 10      ; function 10 : wait until event
