@@ -333,7 +333,18 @@ void main()
 				break;  
 	//Button pressed-----------------------------------------------------------------------------
 			case evButton:
-				id=GetButtonID();				
+				id=GetButtonID();
+
+				if (new_element_active) || (del_active) {
+					if(POPUP_BTN1==id) || (POPUP_BTN2==id) {
+						if (del_active) Del_File(id-POPUP_BTN2);
+						if (new_element_active) NewElement(id-POPUP_BTN2);
+						DeleteButton(POPUP_BTN1);
+						DeleteButton(POPUP_BTN2);
+					}
+					break;					
+				}
+
 				switch(id) 
 				{
 					case CLOSE_BTN:
@@ -379,12 +390,6 @@ void main()
 					case 100...120:
 						SystemDiscs.Click(id-100);
 						break;
-					case POPUP_BTN1...POPUP_BTN2:
-						if (del_active) Del_File(id-POPUP_BTN2);
-						if (new_element_active) NewElement(id-POPUP_BTN2);
-						DeleteButton(POPUP_BTN1);
-						DeleteButton(POPUP_BTN2);
-						break;
 					case BREADCRUMB_ID...360:
 						ClickOnBreadCrumb(id-BREADCRUMB_ID);
 						break;
@@ -396,20 +401,24 @@ void main()
 				GetKeys();
 
 				if (Form.status_window>2) break;
-				if (del_active)
+
+				if (new_element_active) || (del_active)
 				{
-					if (key_scancode == SCAN_CODE_ENTER) Del_File(true);
-					if (key_scancode == SCAN_CODE_ESC) Del_File(false);
+					if (del_active)
+					{
+						if (key_scancode == SCAN_CODE_ENTER) Del_File(true);
+						if (key_scancode == SCAN_CODE_ESC) Del_File(false);
+					}
+					if (new_element_active)
+					{
+						if (key_scancode == SCAN_CODE_ENTER) NewElement(true);
+						if (key_scancode == SCAN_CODE_ESC) NewElement(false);
+						EAX = key_editbox;
+						edit_box_key stdcall (#new_file_ed);
+					}
 					break;
 				}
-				if (new_element_active)
-				{
-					if (key_scancode == SCAN_CODE_ENTER) NewElement(true);
-					if (key_scancode == SCAN_CODE_ESC) NewElement(false);
-					EAX = key_editbox;
-					edit_box_key stdcall (#new_file_ed);
-					break;
-				}
+
 				if (files.ProcessKey(key_scancode))
 				{
 					List_ReDraw();
@@ -632,8 +641,6 @@ void draw_window()
 	DrawStatusBar();
 	if (selected_count==0) Open_Dir(#path,ONLY_OPEN); //if there are no selected files -> refresh folder [L001] 
 	DrawFilePanels();
-	if (del_active) Del_Form();
-	if (new_element_active) NewElement_Form(new_element_active, #new_element_name);
 }
 
 void DrawList() 
@@ -744,6 +751,9 @@ void List_ReDraw()
 	DrawBar(files.x+files.w-141,all_lines_h + files.y,1,files.h - all_lines_h,col_list_line);
 	DrawBar(files.x+files.w-68,all_lines_h + files.y,1,files.h - all_lines_h,col_list_line);
 	Scroll();
+
+	if (del_active) Del_Form();
+	if (new_element_active) NewElement_Form(new_element_active, #new_element_name);
 }
 
 
