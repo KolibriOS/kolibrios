@@ -298,7 +298,8 @@ edit_box_key.draw_all:
         mov     ed_size,ebx
         mov     ebp,ed_color
         call    edit_box.clear_cursor
-        call    edit_box.check_offset
+        call    edit_box.check_offset         
+        and     word ed_flags,ed_shift_cl
         jmp     edit_box.draw_bg
 
 @@:     dec     dword ed_size
