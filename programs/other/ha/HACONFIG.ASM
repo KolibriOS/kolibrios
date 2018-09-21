@@ -2,7 +2,7 @@
 ; Hot Angles Config ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ; Compile with FASM
-; Version 0.2: Sep 19, 2018
+; Version 0.3: Sep 22, 2018
 
 ; Copyright (c) 2018, Efremenkov Sergey aka TheOnlyMirage
 ; All rights reserved.
@@ -42,11 +42,14 @@ dd 0, 0
 ; Ќачало области кода
 include 'lang.inc'       ;поддержка €зыков при компил€ции
 include '../../macros.inc'
-include 'editbox.inc'
-use_edit_box
-include 'check.inc'      ;включить файл check.inc
-version_ch1              ;необходимый макрос дл€ включени€ new версии check_box1
-use_check_box            ;использу€ макросы, внести процедуры дл€ рисовани€ чек бокса
+include '../../proc32.inc'
+include '../../dll.inc'
+include '../../develop/libraries/box_lib/trunk/box_lib.mac'
+;;include 'editbox.inc'
+;;use_edit_box
+;;include 'check.inc'      ;включить файл check.inc
+;;version_ch1              ;необходимый макрос дл€ включени€ new версии check_box1
+;;use_check_box            ;использу€ макросы, внести процедуры дл€ рисовани€ чек бокса
 
 Otstup = 30
 
@@ -59,6 +62,13 @@ START:
     mov  ecx, sc
     mov  edx, sizeof.system_colors
     mcall
+
+
+    stdcall dll.Load, @IMPORT
+    or      eax, eax
+    jnz     exit
+
+    invoke  init_checkbox, ch1
 
     mov  eax,40          ;установить маску дл€ ожидаемых событий
     mov  ebx,0x27        ;система будет реагировать только на сообщение о перерисовке, нажата кнопка, определЄнна€ ранее, событие от мыши (что-то случилось - нажатие на кнопку мыши или перемещение; сбрасываетс€ при прочтении)
@@ -84,8 +94,14 @@ event_wait:
     je      button       ; Expl.: User has pressed one of the
                          ; applications buttons.
 
-    mouse_edit_boxes editboxes,editboxes_end
-    mouse_check_boxes check_boxes,check_boxes_end  ;проверка чек бокса
+    ;mouse_edit_boxes editboxes,editboxes_end
+    ;mouse_check_boxes check_boxes,check_boxes_end  ;проверка чек бокса
+    invoke  edit_box_mouse, editLU
+    invoke  edit_box_mouse, editLD
+    invoke  edit_box_mouse, editRU
+    invoke  edit_box_mouse, editRD
+    invoke  check_box_mouse, ch1  ;проверка чек бокса
+
     jmp     event_wait
 
 
@@ -96,7 +112,11 @@ red:                     ;обработка событи€ перерисовки окна
 key:                                    ; Keypress event handler
         mov     eax, 2                  ; The key is returned in ah. The key must be
         mcall                           ; read and cleared from the system queue.
-        key_edit_boxes editboxes,editboxes_end
+        ;key_edit_boxes editboxes,editboxes_end
+        invoke  edit_box_key, editLU
+        invoke  edit_box_key, editLD
+        invoke  edit_box_key, editRU
+        invoke  edit_box_key, editRD
         jmp     event_wait              ; Just read the key, ignore it and jump to event_wait.
 
 button:                                 ; Buttonpress event handler
@@ -105,6 +125,7 @@ button:                                 ; Buttonpress event handler
 
     cmp     ah,1                    ; button id=1 ?
     jne     noclose
+exit:
     mov     eax,-1                  ; Function -1 : close this program
     mcall
 noclose:
@@ -176,7 +197,7 @@ applyButton:
 
         ;заполним буфер содержимого:
         mov byte[eax], 110; 'n' ;по умолчанию флаг сн€т
-        cmp word[ch1.flags], ch_flag_en   ;выставлен checkBox или нет?
+        cmp word[ch1.flags], 110b ;ch_flag_en and ch_flag_middle ;110b ;ch_flag_en   ;выставлен checkBox или нет?
         jne applyButton.no
         mov byte[eax], 121 ;иначе кладЄм 'y'
 .no:
@@ -332,10 +353,10 @@ loadConfig:
    cmp byte[eax], 121 ;'y'  ;выставл€ем checkBox - параметр активности приложени€
    jne loadConfig.no
 .yes:
-   mov word[ch1.flags], ch_flag_en
+   mov word[ch1.flags], 110b ;ch_flag_en and ch_flag_middle ;110b ;ch_flag_en
    jmp loadConfig.chEnd
 .no:
-   mov word[ch1.flags], 0
+   mov word[ch1.flags], 100b ;0 and ch_flag_middle ;100b
 .chEnd:
    ;jmp loadConfig.end   ;команда дл€ удобства отладки и поиска ошибок
 
@@ -542,8 +563,14 @@ draw_window:
         mov     edi, title
         mcall
 
-        draw_check_boxes check_boxes,check_boxes_end ;рисование чекбоксов
-        draw_edit_boxes editboxes,editboxes_end      ;рисование edit box'ов
+        ;draw_check_boxes check_boxes,check_boxes_end ;рисование чекбоксов
+        ;draw_edit_boxes editboxes,editboxes_end      ;рисование edit box'ов
+        invoke  edit_box_draw, editLU  ;рисование edit box'ов
+        invoke  edit_box_draw, editLD
+        invoke  edit_box_draw, editRU
+        invoke  edit_box_draw, editRD
+ 
+        invoke  check_box_draw, ch1    ;рисование чекбоксов
 
         ;рисуем кнопку
         mov ebx, (WindowsWidth-80-Otstup)*65536 + 80 ;координата X, ширина кнопки
@@ -583,15 +610,34 @@ draw_window:
 
 
 
-align 4
+align 16
+@IMPORT:
+ 
+library box_lib, 'box_lib.obj'
+ 
+import  box_lib,\
+        edit_box_draw,          'edit_box',\
+        edit_box_key,           'edit_box_key',\
+        edit_box_mouse,         'edit_box_mouse',\
+        init_checkbox,          'init_checkbox2',\
+        check_box_draw,         'check_box_draw2',\
+        check_box_mouse,        'check_box_mouse2',\
+        option_box_draw,        'option_box_draw',\
+        option_box_mouse,       'option_box_mouse'
+
+
+
 ;>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 ;DATA данные  дл€ check_box1 - использует системные цвета
 ;‘ормат данных чек бокса:
 ;   координата х, координата у, указатель на начало строки, длина строки
 ;состо€ние работы утилиты: активна/нет
-check_boxes:
-   ch1 check_box1 30,160,ch_text.1,ch_text.e1-ch_text.1,ch_flag_en
-check_boxes_end:
+;check_boxes:
+;   ch1 check_box1 30,160,ch_text.1,ch_text.e1-ch_text.1,ch_flag_en
+;check_boxes_end:
+
+;координаты (x,y) = (30, 160) размер чекбокса 12, цвет текста 0x224466
+ch1     check_box2 30 shl 16 + 12, 160 shl 16 + 12, 6, 0xFFFFFFFF, 0xAABBCC, 0x224466, ch_text, 110b ; ch_flag_en and ch_flag_middle
 
 
 if lang eq ru  ;если €зык сборки русский
@@ -605,9 +651,10 @@ buttonText db "Па®ђ•≠®вм", 0
 buttonTextSize = 9
 buttonTextXoffset = 12
 
-ch_text:        ;сопровождающий текст дл€ чек боксов
-.1 db 'В™Ђоз®вм/†™в®Ґ®аЃҐ†вм "Hot Angles"'
-.e1:
+ch_text db 'В™Ђоз®вм/†™в®Ґ®аЃҐ†вм "Hot Angles"', 0
+;ch_text:        ;сопровождающий текст дл€ чек боксов
+;.1 db 'В™Ђоз®вм/†™в®Ґ®аЃҐ†вм "Hot Angles"'
+;.e1:
 
 superText:
   .lu db 'КЃђ†≠§† Ђ•ҐЃ£Ѓ Ґ•ае≠•£Ѓ г£Ђ†: ', 0
@@ -627,9 +674,9 @@ buttonText db "Apply", 0
 buttonTextSize = 5
 buttonTextXoffset = 0
 
-ch_text:        ;сопровождающий текст дл€ чек боксов
-.1 db 'Activate "Hot Angles"'
-.e1:
+ch_text db 'Activate "Hot Angles"',0       ;сопровождающий текст дл€ чек бокса
+;.1 db 'Activate "Hot Angles"',0
+;.e1:
 
 superText:
   .lu db 'Left up angle command:   ', 0
@@ -669,18 +716,24 @@ draw_super_text:
    ret
 
 
-edMaxSize = 510
+edMaxSize = 510 ;теперь с новым компонентом можно и 511 указать
 edMax = 0 ;max, size, pos
 
-editboxes:
-editLU edit_box 180,Otstup,85,0xffffff,0x6a9480,0,0xAABBCC,0,edMaxSize,dataBuffer.1,ed_focus,edMax,edMax
-editLD edit_box 180,Otstup,120,0xffffff,0x6a9480,0,0xAABBCC,0,edMaxSize,dataBuffer.2,0,edMax,edMax
-editRU edit_box 180,240,85,0xffffff,0x6a9480,0,0xAABBCC,0,edMaxSize,dataBuffer.3,0,edMax,edMax
-editRD edit_box 180,240,120,0xffffff,0x6a9480,0,0xAABBCC,0,edMaxSize,dataBuffer.4,0,edMax,edMax
-editboxes_end:
+align 4
+editLU   edit_box 180,Otstup,85, 0xffffff, 0x6a9480, 0, 0xAABBCC, 0, edMaxSize, dataBuffer.1, mouse_dd, 0, edMax, edMax  ;ed_focus
+editLD   edit_box 180,Otstup,120, 0xffffff, 0x6a9480, 0, 0xAABBCC, 0, edMaxSize, dataBuffer.2, mouse_dd, 0, edMax, edMax
+editRU   edit_box 180,240,85, 0xffffff, 0x6a9480, 0, 0xAABBCC, 0, edMaxSize, dataBuffer.3, mouse_dd, 0, edMax, edMax
+editRD   edit_box 180,240,120, 0xffffff, 0x6a9480, 0, 0xAABBCC, 0, edMaxSize, dataBuffer.4, mouse_dd, 0, edMax, edMax
 
-data_of_code dd 0
-mouse_flag dd 0x0
+;editboxes:
+;editLU edit_box 180,Otstup,85,0xffffff,0x6a9480,0,0xAABBCC,0,edMaxSize,dataBuffer.1,ed_focus,edMax,edMax
+;editLD edit_box 180,Otstup,120,0xffffff,0x6a9480,0,0xAABBCC,0,edMaxSize,dataBuffer.2,0,edMax,edMax
+;editRU edit_box 180,240,85,0xffffff,0x6a9480,0,0xAABBCC,0,edMaxSize,dataBuffer.3,0,edMax,edMax
+;editRD edit_box 180,240,120,0xffffff,0x6a9480,0,0xAABBCC,0,edMaxSize,dataBuffer.4,0,edMax,edMax
+;editboxes_end:
+
+;data_of_code dd 0
+;mouse_flag dd 0x0
 
 dataBuffer:
 .1: rb 512
@@ -695,6 +748,7 @@ dataBuffer:
 ;два запасных байта необходимы дл€ того что бы не пепереписать следующией байты, в конце буфера 0
 dataBufferEnd:
 
+mouse_dd  dd ?
 sc  system_colors
 
 I_END:
