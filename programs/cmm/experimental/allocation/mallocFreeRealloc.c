@@ -36,26 +36,25 @@ char program_path[4096] = {0};
 	return  EAX;
 }
 
-:dword offsetAllocData = 0;
+:dword __offsetAllocData = 0;
+:dword __limitAllocSize = 0;
+:dword __sizeFullAllocMemory = 0;
 :dword malloc(dword size)
 {
-	dword array = 0;
 	dword orderSize = 1;
 	dword order = 0;
 	dword stackAlloc = 0;
 	dword stackKey = 0;
 	dword result = 0;
+	IF(!__offsetAllocData) __offsetAllocData = mallocSystem(4*40);
 	size+=4;
-	IF(!offsetAllocData) offsetAllocData = mallocSystem(4*32);
-	
+	order = __offsetAllocData;
 	WHILE(orderSize<size)
 	{
 		orderSize<<=1;
-		order++;
+		order+=4;
 	}
-	order<<=2;
-	order += offsetAllocData;
-	
+	__sizeFullAllocMemory += orderSize;
 	IF(!DSDWORD[order]) 
 	{
 		stackAlloc = mallocSystem(4*50);
@@ -79,25 +78,6 @@ char program_path[4096] = {0};
 	}
 }
 
-/*:dword freeSystem(dword mptr)
-{
-	$push    eax
-	$push    ebx
-	$push    ecx
-	
-	$mov     eax, 68
-	$mov     ebx, 13
-	$mov     ecx, mptr
-	$test    ecx, ecx
-	$jz      end0
-	$int     0x40
-   @end0:
-	$pop     ecx
-	$pop     ebx
-	$pop     eax
-	return 0;
-}*/
-
 :dword free(dword ptr)
 {
 	dword array = 0;
@@ -107,39 +87,30 @@ char program_path[4096] = {0};
 	dword stackKey = 0;
 	dword result = 0;
 	dword size = 0;
+	IF(!__offsetAllocData) return 0;
 	size = DSDWORD[ptr-4];
-	IF(!offsetAllocData) return 0;
-	
+	order = __offsetAllocData;
 	WHILE(orderSize!=size)
 	{
 		orderSize<<=1;
-		order++;
+		order+=4;
 	}
-	order<<=2;
-	order += offsetAllocData;
 	stackAlloc = DSDWORD[order];
 	DSDWORD[stackAlloc] += 4;
 	stackKey = DSDWORD[stackAlloc];
-	order = ptr;
-	orderSize -= 4;
-	WHILE(orderSize)
-	{
-		DSBYTE[order] = 0;
-		order++;
-		orderSize--;
-	}
 	DSDWORD[stackKey] = ptr-4;
 }
 
-:dword realloc(dword ptr,size)
+:dword realloc(dword oldMem,size)
 {
 	dword newMem = 0;
 	dword oldSize = 0;
 	dword ptr1 = 0;
 	dword ptr2 = 0;
+	IF(!oldMem) RETURN malloc(size);
 	newMem = malloc(size);
-	oldSize = DSDWORD[ptr-4] - 4;
-	ptr1 = ptr;
+	oldSize = DSDWORD[oldMem-4] - 4;
+	ptr1 = oldMem;
 	ptr2 = newMem;
 	WHILE(oldSize)
 	{
@@ -148,7 +119,7 @@ char program_path[4096] = {0};
 		ptr2++;
 		oldSize--;
 	}
-	free(ptr);
+	free(oldMem);
 	RETURN newMem;
 }
 
