@@ -1,0 +1,218 @@
+// version 0.01
+// Author: Pavel Iakovlev
+
+
+#pragma option OST
+#pragma option ON
+#pragma option cri-
+#pragma option -CPA
+#initallvar 0
+#jumptomain FALSE
+
+#startaddress 0x10000
+
+#code32 TRUE
+
+char   os_name[8]   = {'M','E','N','U','E','T','0','1'};
+dword  os_version   = 0x00000001;
+dword  start_addr   = #main;
+dword  final_addr   = #______STOP______+32;
+dword  alloc_mem    = 20000;
+dword  x86esp_reg   = 20000;
+dword  I_Param      = #param;
+dword  I_Path       = #program_path;
+char param[4096] ={0};
+char program_path[4096] = {0};
+
+dword test_bytecode = "\x05\x10\x82\xe2\x07\x30\x82\xe2\x03\x20\x81\xe0"; // test opcode arm
+
+struct _reg // registers arm
+{
+	dword r0;
+	dword r1;
+	dword r2;
+	dword r3;
+	dword r4;
+	dword r5;
+	dword r6;
+	dword r7;
+	dword r8;
+	dword r9;
+	dword r10;
+	dword r11;
+	dword r12; // (Intra-Procedure-call scratch register)
+	dword r13; // (Stack Pointer)
+	dword r14; // (Link Register)
+	dword r15; // PC (Program Counter)
+};
+
+_reg reg = {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0}; // clear and init registers
+dword REG = #reg;
+
+struct _flags
+{
+	byte negative;
+	byte zero;
+	byte carry;
+	byte overflow;
+};
+
+_flags flags = {0,0,0,0}; // clear and init flags
+
+struct _mode
+{
+	byte User;
+	byte FastInterrupt;
+	byte Interrupt;
+	byte Supervisor;
+};
+
+_mode mode = {0,0,0,0}; // processor mode 
+
+struct _mask 
+{
+	byte IRQ;
+	byte FIRQ;
+};
+
+_mask mask = {0,0}; // processor mask
+
+void main()
+{
+
+	callOpcode(#test_bytecode,3);
+	
+	EAX = -1;
+	$int 0x40;
+}
+
+dword callOpcode(dword binary, lengthInstruction)
+{
+	dword command = 0;
+	dword PC = 0;
+	byte flag = 0;
+	byte pMask = 0;
+	byte pMode = 0;
+	while(lengthInstruction)
+	{
+		PC    = reg.r15 >> 2 & 0xFFFFFF;
+		flag  = reg.r15 >> 28;
+		pMask = reg.r15 >> 26;
+		
+		flags.negative = flag & 0x8;
+		flags.zero     = flag & 0x4;
+		flags.carry    = flag & 0x2;
+		flags.overflow = flag & 0x1;
+		
+		mask.IRQ  = pMask & 0x2;
+		mask.FIRQ = pMask & 0x1;
+		
+		switch(reg.r15 & 3)
+		{
+			case 0:
+				DSDWORD[#mode] = 0x000000FF;
+			break;
+			case 1:
+				DSDWORD[#mode] = 0x0000FF00;
+			break;
+			case 2:
+				DSDWORD[#mode] = 0x00FF0000;
+			break;
+			case 3:
+				DSDWORD[#mode] = 0xFF000000;
+			break;
+		}
+		
+		command = DSDWORD[binary + PC]; // generation PC instruction
+		//EAX = DSDWORD[command >> 28 << 2 + #opcodeExec]; // get opcodeExecition call instruction
+		//EAX(command); // call opcodeExecition
+		//IF (command & 0xC000000 == 0) opcodeExec0(command);
+		IF (command & 0x0FFFFFF0 == 0x12FFF10) BranchExchange(command);
+		ELSE IF (command & 0x0FF00FF0 == 0x1000090) SingleDataSwap(command);
+		ELSE IF (command & 0x0FC000F0 == 0x0000090) Multiply(command);
+		ELSE IF (command & 0x0FC000F0 == 0x0800090) MultiplyLong(command);
+		ELSE IF (command & 0x0C000000 == 0x0000000) DataProcessing(command);
+		
+		PC += 4; // addition 4 for reg15 or PC instruction
+		PC <<= 2;
+		
+		flag = 0;
+		IF (flags.negative) flag |= 0x8;
+		IF (flags.zero)     flag |= 0x4;
+		IF (flags.carry)    flag |= 0x2;
+		IF (flags.overflow) flag |= 0x1;
+		
+		pMask = 0;
+		IF (mask.IRQ)  pMask |= 0x2;
+		IF (mask.FIRQ) pMask |= 0x1;
+		
+		IF (mode.User)               pMode = 0;
+		ELSE IF (mode.FastInterrupt) pMode = 1;
+		ELSE IF (mode.Interrupt)     pMode = 2;
+		ELSE IF (mode.Supervisor)    pMode = 3;
+		
+		reg.r15 = flag << 28 | PC | pMode;
+		lengthInstruction--;
+	}
+}
+
+dword Multiply(dword command)
+{
+	
+}
+
+dword MultiplyLong(dword command)
+{
+	
+}
+
+dword SingleDataSwap(dword command)
+{
+	
+}
+
+dword BranchExchange(dword command)
+{
+	
+}
+
+dword DataProcessing(dword command) // Data Processing / PSR Transfer
+{
+	dword opcode = 0;
+	dword Rd = #reg;
+	dword Rn = #reg;
+	dword operand = 0;
+	opcode = command >> 21 & 0xF;
+	Rd += command >> 12 & 0xF << 2;
+	Rn += command >> 16 & 0xF << 2;
+	operand = command & 0xFFF;
+
+	IF (command & 0x2000000 == 0) 
+	{
+		operand = DSDWORD[operand << 2 + #reg];
+	}
+	
+	switch (opcode)
+	{
+		case 0: // and
+			DSDWORD[Rd] = DSDWORD[Rn] & operand;
+		break;
+		case 1: // eor
+			DSDWORD[Rd] = DSDWORD[Rn] | operand;
+		break;
+		case 2: // sub
+			DSDWORD[Rd] = DSDWORD[Rn] - operand;
+		break;
+		case 3: // rsb
+			DSDWORD[Rd] = operand - DSDWORD[Rn];
+		break;
+		case 4: // add
+			DSDWORD[Rd] = DSDWORD[Rn] + operand;
+		break;
+	}
+	IF(reg.r2 == 12) while(1);
+}
+
+
+
+______STOP______:
