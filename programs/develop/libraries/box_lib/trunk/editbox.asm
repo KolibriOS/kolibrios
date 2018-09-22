@@ -364,30 +364,20 @@ edit_box_key.end:
 ;----------------------------------------
 StrInsert:
 ; SizeOf(TmpBuf) >= StrLen(Src) + StrLen(Dst) + 1              
-Dst    equ [esp + 20] ; - destination buffer
-Src    equ [esp + 16] ; - source to insert from
-Pos    equ [esp + 12] ; - position for insert
-DstMax equ [esp + 8]  ; - maximum Dst length(exclude terminating null)
-TmpBuf equ [esp + 4]  ; - temporary buffer              
-        xor    edx, edx
-        mov    esi, Dst
-        mov    edi, TmpBuf
-        mov    ecx, Pos
-        add    edx, ecx
-        rep movsb 
+Dst    equ [esp + 16] ; - destination buffer
+Src    equ [esp + 12] ; - source to insert from
+Pos    equ [esp + 8] ; - position for insert
+DstMax equ [esp + 4]  ; - maximum Dst length(exclude terminating null)
+SrcCount equ [esp - 4]
+DstCount equ [esp - 8]
+TmpBuf   equ [esp - 12]  ; - temporary buffer 
         mov    edi, Src
         mov    ecx, -1
         xor    eax, eax
         repne scasb 
         mov    eax, -2
         sub    eax, ecx
-        add    edx, eax
-        mov    esi, Src
-        mov    edi, TmpBuf
-        add    edi, Pos
-        mov    ecx, eax
-        rep movsb 
-        mov    ebx, edi
+        mov    SrcCount, eax                
         mov    edi, Dst
         add    edi, Pos
         mov    ecx, -1
@@ -396,12 +386,28 @@ TmpBuf equ [esp + 4]  ; - temporary buffer
         mov    eax, -2
         sub    eax, ecx
         inc    eax
-        add    edx, eax
-        mov    edi, ebx
+        mov    DstCount, eax                
+        mov    ecx, eax
+        add    ecx, SrcCount
+        add    ecx, Pos
+        mcall   SF_SYS_MISC,SSF_MEM_ALLOC
+        mov    TmpBuf, eax          
+        mov    esi, Dst
+        mov    edi, TmpBuf
+        mov    ecx, Pos
+        mov    edx, ecx
+        rep movsb         
+        mov    esi, Src
+        mov    edi, TmpBuf
+        add    edi, Pos
+        mov    ecx, SrcCount
+        add    edx, ecx
+        rep movsb         
         mov    esi, Pos
         add    esi, Dst
-        mov    ecx, eax
-        rep movsb 
+        mov    ecx, DstCount
+        add    edx, ecx
+        rep movsb         
         mov    esi, TmpBuf
         mov    edi, Dst
 ; ecx = MIN(edx, DstSize)        
@@ -412,13 +418,17 @@ TmpBuf equ [esp + 4]  ; - temporary buffer
         and    ecx, DstMax
         add    ecx, edx                                   
         mov    eax, ecx ; return total length
-        rep movsb
-        ret    20
+        rep movsb        
+        mov    ecx, TmpBuf
+        mcall   SF_SYS_MISC,SSF_MEM_FREE                                
+        ret    16
 restore Dst    
 restore Src      
 restore Pos    
 restore DstSize
 restore TmpBuf 
+restore SrcCount
+restore DstCount
 ;----------------------------------------         
 edit_box_key.ctrl_x:
         test   word ed_flags,ed_shift_on
@@ -529,22 +539,13 @@ edit_box_key.ctrl_v:
         add     esi,3*4
         push    eax edi
 ;---------------------------------------;         
-        mov     ed_size,ecx
-        inc     ecx        
-        mcall   SF_SYS_MISC,SSF_MEM_ALLOC
-        push    eax ; save mem pointer
-                
-        mov     edx, ed_max
+        mov     ed_size,ecx        
         
         push   dword ed_text ; Dst   
         push   esi           ; Src   
         push   dword ed_pos  ; Pos in Dst
-        push   edx           ; DstMax
-        push   eax           ; TmpBuf
-        call   StrInsert  
-        
-        pop    eax ; restore mem pointer
-        mcall   SF_SYS_MISC,SSF_MEM_FREE
+        push   dword ed_max  ; DstMax
+        call   StrInsert          
 ;---------------------------------------;        
 ;        mov     edi,ed_text
 ;        cld
