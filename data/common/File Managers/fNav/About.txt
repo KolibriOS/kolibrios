@@ -12,6 +12,7 @@ Mouse control:
     Middle button + Move up     go to parent directory
     Middle Button + Move left   go to previous directory
     Middle button + Move right  go to next directory
+    Right button                activate popup menu
 
 Keyboard control:
 -----------------------
@@ -38,6 +39,7 @@ Keyboard control:
     RightShift + <character> go to the previous item in the list that begins with this character
 
     F5                    refresh the list of files
+    MENU                  activate popup menu
 
 Multiple selection of list items:
 -----------------------------------------
