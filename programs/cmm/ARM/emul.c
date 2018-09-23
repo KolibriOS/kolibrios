@@ -1,4 +1,4 @@
-// version 0.02
+// version 0.03
 // Author: Pavel Iakovlev
 // http://shell-storm.org/online/Online-Assembler-and-Disassembler/?inst=&arch=arm#assembly - online compiler (Little endian:)
 
@@ -27,7 +27,7 @@ char program_path[4096] = {0};
 
 // test opcode arm, compiler (http://shell-storm.org/online/Online-Assembler-and-Disassembler/?inst=mov+r0%2C1%0D%0Amov+r5%2C2%0D%0Amov+r2%2C+r0%2C+lsl+r5&arch=arm#assembly) (Little endian:)
 
-dword test_bytecode = "\x01\x00\xa0\xe3\x02\x50\xa0\xe3\x10\x25\xa0\xe1"; 
+dword test_bytecode = "\x04\x10\x5f\xe5\x7b\x00\x00\x00"; 
 
 // --------------------
 
@@ -85,7 +85,7 @@ _mask mask = {0,0}; // processor mask
 void main()
 {
 
-	callOpcode(#test_bytecode,3);
+	callOpcode(#test_bytecode,1);
 	
 	EAX = -1;
 	$int 0x40;
@@ -132,11 +132,13 @@ dword callOpcode(dword binary, lengthInstruction)
 		//EAX = DSDWORD[command >> 28 << 2 + #opcodeExec]; // get opcodeExecition call instruction
 		//EAX(command); // call opcodeExecition
 		//IF (command & 0xC000000 == 0) opcodeExec0(command);
-		IF (command & 0x0FFFFFF0 == 0x12FFF10) BranchExchange(command);
-		ELSE IF (command & 0x0FF00FF0 == 0x1000090) SingleDataSwap(command);
-		ELSE IF (command & 0x0FC000F0 == 0x0000090) Multiply(command);
-		ELSE IF (command & 0x0FC000F0 == 0x0800090) MultiplyLong(command);
-		ELSE IF (command & 0x0C000000 == 0x0000000) DataProcessing(command);
+		if (command & 0x0FFFFFF0 == 0x12FFF10) BranchExchange(command);
+		else if (command & 0x0FF00FF0 == 0x1000090) SingleDataSwap(command);
+		else if (command & 0x0FC000F0 == 0x0000090) Multiply(command);
+		else if (command & 0x0FC000F0 == 0x0800090) MultiplyLong(command);
+		else if (command & 0x0C000000 == 0x0000000) DataProcessing(command);
+		else if (command & 0xE000010 == 0x6000010) ;// undefined
+		else if (command & 0xC000000 == 0x4000000) SingleDataTransfer(command, binary);
 		
 		PC += 4; // addition 4 for reg15 or PC instruction
 		//PC <<= 2;
@@ -151,10 +153,10 @@ dword callOpcode(dword binary, lengthInstruction)
 		IF (mask.IRQ)  pMask |= 0x2;
 		IF (mask.FIRQ) pMask |= 0x1;
 		
-		IF (mode.User)               pMode = 0;
-		ELSE IF (mode.FastInterrupt) pMode = 1;
-		ELSE IF (mode.Interrupt)     pMode = 2;
-		ELSE IF (mode.Supervisor)    pMode = 3;
+		if (mode.User)               pMode = 0;
+		else IF (mode.FastInterrupt) pMode = 1;
+		else IF (mode.Interrupt)     pMode = 2;
+		else IF (mode.Supervisor)    pMode = 3;
 		
 		//reg.r15 = flag << 28 | PC | pMode;
 		lengthInstruction--;
@@ -179,6 +181,43 @@ dword SingleDataSwap(dword command)
 dword BranchExchange(dword command)
 {
 	
+}
+
+dword SingleDataTransfer(dword command, binary) 
+{
+	dword Rd = #reg;
+	dword Rn = #reg;
+	dword offset = 0;
+
+	Rd += command >> 12 & 0xF << 2;
+	Rn += command >> 16 & 0xF << 2;
+	offset = command & 0xFFF;
+	IF (command >> 16 & 0xF != 15) IF (command & 0x800000 == 0) $neg offset;
+	
+	IF (command & 0x400000) // byte
+	{
+		IF (command >> 16 & 0xF == 15) 
+		{
+			IF (command & 0x100000) DSDWORD[Rd] = DSBYTE[binary + offset];
+			ELSE DSBYTE[binary + offset] = DSDWORD[Rd];
+			
+		}
+		ELSE 
+		{
+			Rn = DSDWORD[Rn];
+			IF (command & 0x2000000 == 0) Rn += offset;
+			IF (command & 0x100000) DSDWORD[Rd] = DSDWORD[binary + Rn];
+			ELSE DSDWORD[binary + Rn] = DSDWORD[Rd];
+		}
+	}
+	ELSE // dword
+	{
+		Rn = DSDWORD[Rn];
+		IF (command & 0x2000000 == 0) Rn += offset;
+		IF (command & 0x100000) DSDWORD[Rd] = DSDWORD[binary + Rn];
+		ELSE DSDWORD[binary + Rn] = DSDWORD[Rd];
+	}
+
 }
 
 dword DataProcessing(dword command) // Data Processing / PSR Transfer
@@ -206,7 +245,6 @@ dword DataProcessing(dword command) // Data Processing / PSR Transfer
 	{
 		case 0: // logic left
 			operand <<= sdvig;
-			if(sdvig == 2) while(1);
 		break;
 		case 1: // logic right
 			operand >>= sdvig;
@@ -271,7 +309,7 @@ dword DataProcessing(dword command) // Data Processing / PSR Transfer
 			DSDWORD[Rd] = DSDWORD[Rn] + operand;
 		break;
 	}
-	IF(reg.r2 == 4) while(1);
+	
 }
 
 
