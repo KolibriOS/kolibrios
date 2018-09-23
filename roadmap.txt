@@ -27,6 +27,9 @@ Notations:
 [-] drive format utility (only for fully supported FS);
 [-] development and discussion of architecture Kolibri Machine Controller(KMC), semblance of LinuxCNC, based on MachineKit;
 [+] Apps: CNC Editor, Hot Angles, SysMon;
+[-] modify&improve apps: IconEdit, uPDF; 
+[-] new app "Notes";
+[-] port / adapt one of the existing text editors with code highlighting;
 [-] QR-code in boot log and QR-code utility;
 [-] fixing a branch/tags in SVN.
 
@@ -58,6 +61,9 @@ Notations:
 [-] утилита форматирования дисков (только для полностью поддерживаемых ФС);
 [-] проработка архитектуры Kolibri Machine Controller(KMC), аналога LinuxCNC, на основе MachineKit;
 [+] приложения: CNC Editor, Hot Angles, SysMon;
+[-] доработать/улучшить приложения: IconEdit, uPDF; 
+[-] разработать новое приложение "Notes";
+[-] портировать один из существующих текстовых редакторов с подсветкой кода;
 [-] QR-код в логе загрузки и утилита работы с QR-кодами;
 [-] фиксация ветви/тега в SVN (скорее tags, т.к. до этого ветви использовались для сборок под конкретные архитектуры, а теги как раз для фиксации версий).
 
