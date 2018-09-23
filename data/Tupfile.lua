@@ -86,11 +86,9 @@ if build_type == "rus" then tup.append_table(img_files, {
  {"EXAMPLE.ASM", PROGS .. "/develop/examples/example/trunk/rus/example.asm"},
  {"PIPETKA", build_type .. "/pipetka"},
  {"File Managers/KFAR.INI", build_type .. "/File Managers/kfar.ini"},
- {"GAMES/APPDATA.DAT", build_type .. "/games/appdata.dat"},
  {"GAMES/ATAKA", build_type .. "/games/ataka"},
  {"GAMES/BASEKURS.KLA", build_type .. "/games/basekurs.kla"},
- {"GAMES/PADENIE", build_type .. "/games/padenie"},
- {"GAMES/WHOWTBAM", build_type .. "/games/whowtbam"},
+ {"GAMES/PADENIE", build_type .. "/games/padenie"}, 
 }) elseif build_type == "eng" then tup.append_table(img_files, {
  {"File Managers/KFM_KEYS.TXT", PROGS .. "/fs/kfm/trunk/docs/english/kfm_keys.txt"},
  {"SETTINGS/GAME_CENTER.INI", "common/settings/game_center.ini"},
@@ -276,6 +274,8 @@ if build_type == "rus" then tup.append_table(extra_files, {
  {"kolibrios/games/Dungeons/Resources/Textures/HUD/", PROGS .. "/games/Dungeons/Resources/Textures/HUD/*"},
  {"kolibrios/games/Dungeons/Resources/Textures/", PROGS .. "/games/Dungeons/Resources/Textures/Licenses.txt"},
  {"kolibrios/games/Dungeons/", PROGS .. "/games/Dungeons/readme_ru.txt"},
+ {"kolibrios/games/WHOWTBAM/", build_type .. "/games/whowtbam"},
+ {"kolibrios/games/WHOWTBAM/", build_type .. "/games/appdata.dat"},
 }) else tup.append_table(extra_files, {
  {"Docs/config.txt", build_type .. "/docs/CONFIG.TXT"},
  {"Docs/copying.txt", build_type .. "/docs/COPYING.TXT"},
