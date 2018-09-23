@@ -2,7 +2,7 @@
 ; Hot Angles Config ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ; Compile with FASM
-; Version 0.3: Sep 22, 2018
+; Version 0.3.1: Sep 23, 2018
 
 ; Copyright (c) 2018, Efremenkov Sergey aka TheOnlyMirage
 ; All rights reserved.
@@ -25,7 +25,7 @@
 ; SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 ; --------------------------------------------------------------------------------------
 
-;P.S. Код сырой, требуется оптимизация и доработка (см. тему форума)
+;P.S. Коду требуется оптимизация и доработка (см. тему форума)
 format binary as ""     ; Binary file format without extension
 use32                   ; Tell compiler to use 32 bit instructions
 org 0                   ; the base address of code, always 0x0
@@ -44,12 +44,7 @@ include 'lang.inc'       ;поддержка языков при компиляции
 include '../../macros.inc'
 include '../../proc32.inc'
 include '../../dll.inc'
-include '../../develop/libraries/box_lib/trunk/box_lib.mac'
-;;include 'editbox.inc'
-;;use_edit_box
-;;include 'check.inc'      ;включить файл check.inc
-;;version_ch1              ;необходимый макрос для включения new версии check_box1
-;;use_check_box            ;используя макросы, внести процедуры для рисования чек бокса
+include '../../develop/libraries/box_lib/trunk/box_lib.mac' ;компоненты checkBox и editBox
 
 Otstup = 30
 
@@ -94,13 +89,11 @@ event_wait:
     je      button       ; Expl.: User has pressed one of the
                          ; applications buttons.
 
-    ;mouse_edit_boxes editboxes,editboxes_end
-    ;mouse_check_boxes check_boxes,check_boxes_end  ;проверка чек бокса
-    invoke  edit_box_mouse, editLU
+    invoke  edit_box_mouse, editLU   ;проверка событий мыши для editBox'ов
     invoke  edit_box_mouse, editLD
     invoke  edit_box_mouse, editRU
     invoke  edit_box_mouse, editRD
-    invoke  check_box_mouse, ch1  ;проверка чек бокса
+    invoke  check_box_mouse, ch1     ;проверка чек бокса
 
     jmp     event_wait
 
@@ -112,7 +105,7 @@ red:                     ;обработка события перерисовки окна
 key:                                    ; Keypress event handler
         mov     eax, 2                  ; The key is returned in ah. The key must be
         mcall                           ; read and cleared from the system queue.
-        ;key_edit_boxes editboxes,editboxes_end
+
         invoke  edit_box_key, editLU
         invoke  edit_box_key, editLD
         invoke  edit_box_key, editRU
@@ -186,9 +179,9 @@ applyButton:
 
         ;вычислим размер файла конфигурации в байтах
         mov ecx, 5*2+1 ;1 байт на состояние активности и 5 пар переносов строк (символы 13, 10)
-        add ecx, dword[editLU.size] ;dataBuffer.size1]      ;плюс размер каждой строки в байтах
-        add ecx, dword[editLD.size] ;dataBuffer.size2]
-        add ecx, dword[editRU.size] ;dataBuffer.size3]
+        add ecx, dword[editLU.size] ;плюс размер каждой строки в байтах
+        add ecx, dword[editLD.size]
+        add ecx, dword[editRU.size]
         add ecx, dword[editRD.size] ;dataBuffer.size4]
         ;теперь размер файла конфигурации в ecx
         mov dword[createFile.size], ecx ;положим размер байт в структуру создания/перезаписи файла
@@ -197,7 +190,7 @@ applyButton:
 
         ;заполним буфер содержимого:
         mov byte[eax], 110; 'n' ;по умолчанию флаг снят
-        cmp word[ch1.flags], 110b ;ch_flag_en and ch_flag_middle ;110b ;ch_flag_en   ;выставлен checkBox или нет?
+        cmp word[ch1.flags], 110b ;ch_flag_en and ch_flag_middle ;выставлен checkBox или нет?
         jne applyButton.no
         mov byte[eax], 121 ;иначе кладём 'y'
 .no:
@@ -207,13 +200,13 @@ applyButton:
         push esi ebx
         call UpdateEditsSizes ;обновить размеры текста в edit'ах
 
-        mov esi, dataBuffer.1 ;editLU.text
+        mov esi, dataBuffer.1     ;editLU.text
         mov ebx, dataBuffer.size1 ;editLU.size
         call copyParam
         call addPerenos     ;добавляем перенос строки
 
-        mov esi, dataBuffer.2 ;editLD.text
-        mov ebx, dataBuffer.size2 ;editLD.size
+        mov esi, dataBuffer.2
+        mov ebx, dataBuffer.size2
         call copyParam
         call addPerenos     ;добавляем перенос строки
 
@@ -267,7 +260,7 @@ compareBytes2:
    ret
 
 
-restartHotAnglesApp:   ;!!!
+restartHotAnglesApp:
    ;находим все копии приложения по имени и завершаем их
    push eax ebx ecx esi edi
    ;указатели, которые никогда не меняются:
@@ -353,27 +346,26 @@ loadConfig:
    cmp byte[eax], 121 ;'y'  ;выставляем checkBox - параметр активности приложения
    jne loadConfig.no
 .yes:
-   mov word[ch1.flags], 110b ;ch_flag_en and ch_flag_middle ;110b ;ch_flag_en
+   mov word[ch1.flags], 110b ;ch_flag_en and ch_flag_middle
    jmp loadConfig.chEnd
 .no:
-   mov word[ch1.flags], 100b ;0 and ch_flag_middle ;100b
+   mov word[ch1.flags], 100b ;ch_flag_middle
 .chEnd:
    ;jmp loadConfig.end   ;команда для удобства отладки и поиска ошибок
 
    ;копируем содержимое строк в буфер
    push edi esi ecx ebx eax
    ;инициализируем указатели на адреса буфера строки и её размера
-   mov edi, dataBuffer.1     ;dword[dataBuffer.1]
-   mov esi, dataBuffer.size1 ;dword[dataBuffer.size1]
+   mov edi, dataBuffer.1
+   mov esi, dataBuffer.size1
    ;ecx - счётчик байт в строке
-;   mov ecx, 0 ;xor ecx, ecx
 .block:
    xor ecx, ecx ;обнуляем счётчик
    inc eax
    cmp byte[eax], 10         ;если очередной код символа 10 или 13, то пропускаем символы
-   je loadConfig.block ;propusk     ;до первого отличного от них
+   je loadConfig.block       ;до первого отличного от них
    cmp byte[eax], 13
-   je loadConfig.block ;propusk
+   je loadConfig.block
 
    ; символ отличен от переноса строки и возврата каретки - начинаем копировать отсюда в буфер
    mov bl, byte[eax]
@@ -407,7 +399,7 @@ loadConfig:
    add esi, 4            ;переходим на размер следующего буфера
    sub edi, ecx          ;переходим на следующий буфер
    add edi, 512
-;   mov ecx, 0 ;xor ecx, ecx ;обнуляем размер строки
+   ;xor ecx, ecx          ;обнуляем размер строки
 
    cmp edi, dataBuffer.size1 ;если это был последний буфер (и мы вышли за адреса размеров буферов), то выходим
    jb loadConfig.block
@@ -452,13 +444,13 @@ updateParams: ;max, size, pos
 
 
 
-selfName db 'HACONFIG', 0 ;'@HOTANGLES',0
-selfNameSize = 8;9 ;до 11 byte
+selfName db 'HACONFIG', 0
+selfNameSize = 8 ;до 11 byte
 ;
 compareBytes:
    push edi esi ecx ebx
    mov eax, 0 ;xor eax, eax
-   mov ecx, selfNameSize ;11    ;max размер строк 11
+   mov ecx, selfNameSize    ;max размер строк 11
 @@:
    mov bl, byte[edi]
    cmp bl, byte[esi]
@@ -546,13 +538,13 @@ draw_window:
         sub word[coord.y], WindowsHeight/2
 
         mov     eax, 0                  ; function 0 : define and draw window
-        mov     ebx, 0 ;* 65536 + WindowsWidth   ; [x start] *65536 + [x size]
+        mov     ebx, 0                  ; [x start] *65536 + [x size]
         mov bx, word[coord.x]
         shl  ebx, 16
         mov bx, WindowsWidth
 
         mov ecx, 0
-        mov     cx, word[coord.y] ;* 65536 + WindowsHeight  ; [y start] *65536 + [y size]
+        mov     cx, word[coord.y]       ; [y start] *65536 + [y size]
         shl ecx, 16
         mov cx, WindowsHeight
 
@@ -563,8 +555,6 @@ draw_window:
         mov     edi, title
         mcall
 
-        ;draw_check_boxes check_boxes,check_boxes_end ;рисование чекбоксов
-        ;draw_edit_boxes editboxes,editboxes_end      ;рисование edit box'ов
         invoke  edit_box_draw, editLU  ;рисование edit box'ов
         invoke  edit_box_draw, editLD
         invoke  edit_box_draw, editRU
@@ -587,7 +577,7 @@ draw_window:
 
         call draw_super_text
 
-        LineLength = 62 ;42
+        LineLength = 62
         mov     ebx, 40 * 65536 + 36    ; draw info text with function 4 (x, y)
         mov     ecx, 0x224466
         mov     edx, text
@@ -626,15 +616,7 @@ import  box_lib,\
         option_box_mouse,       'option_box_mouse'
 
 
-
-;>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
-;DATA данные  для check_box1 - использует системные цвета
-;Формат данных чек бокса:
-;   координата х, координата у, указатель на начало строки, длина строки
-;состояние работы утилиты: активна/нет
-;check_boxes:
-;   ch1 check_box1 30,160,ch_text.1,ch_text.e1-ch_text.1,ch_flag_en
-;check_boxes_end:
+;DATA данные check_box использует системные цвета
 
 ;координаты (x,y) = (30, 160) размер чекбокса 12, цвет текста 0x224466
 ch1     check_box2 30 shl 16 + 12, 160 shl 16 + 12, 6, 0xFFFFFFFF, 0xAABBCC, 0x224466, ch_text, 110b ; ch_flag_en and ch_flag_middle
@@ -652,9 +634,6 @@ buttonTextSize = 9
 buttonTextXoffset = 12
 
 ch_text db '‚Є«озЁвм/ ЄвЁўЁа®ў вм "Hot Angles"', 0
-;ch_text:        ;сопровождающий текст для чек боксов
-;.1 db '‚Є«озЁвм/ ЄвЁўЁа®ў вм "Hot Angles"'
-;.e1:
 
 superText:
   .lu db 'Љ®¬ ­¤  «Ґў®Ј® ўҐае­ҐЈ® гЈ« : ', 0
@@ -675,8 +654,6 @@ buttonTextSize = 5
 buttonTextXoffset = 0
 
 ch_text db 'Activate "Hot Angles"',0       ;сопровождающий текст для чек бокса
-;.1 db 'Activate "Hot Angles"',0
-;.e1:
 
 superText:
   .lu db 'Left up angle command:   ', 0
@@ -694,22 +671,22 @@ draw_super_text:
    mov     ecx, 0x224466
    mov eax, superText.lu
    mov     edx, eax
-   mov     esi, superTextSize ;22
+   mov     esi, superTextSize
    mcall 4
 
    mov     ebx, Otstup * 65536 + 109
    mov     edx, superText.ld
-   mov     esi, superTextSize ;24
+   mov     esi, superTextSize
    mcall 4
 
    mov     ebx, 240 * 65536 + 74
    mov     edx, superText.ru
-   mov     esi, superTextSize ;23
+   mov     esi, superTextSize
    mcall 4
 
    mov     ebx, 240 * 65536 + 109
    mov     edx, superText.rd
-   mov     esi, superTextSize ;25
+   mov     esi, superTextSize
    mcall 4
 
    pop esi edi edx ecx ebx eax
@@ -724,16 +701,6 @@ editLU   edit_box 180,Otstup,85, 0xffffff, 0x6a9480, 0, 0xAABBCC, 0, edMaxSize, 
 editLD   edit_box 180,Otstup,120, 0xffffff, 0x6a9480, 0, 0xAABBCC, 0, edMaxSize, dataBuffer.2, mouse_dd, 0, edMax, edMax
 editRU   edit_box 180,240,85, 0xffffff, 0x6a9480, 0, 0xAABBCC, 0, edMaxSize, dataBuffer.3, mouse_dd, 0, edMax, edMax
 editRD   edit_box 180,240,120, 0xffffff, 0x6a9480, 0, 0xAABBCC, 0, edMaxSize, dataBuffer.4, mouse_dd, 0, edMax, edMax
-
-;editboxes:
-;editLU edit_box 180,Otstup,85,0xffffff,0x6a9480,0,0xAABBCC,0,edMaxSize,dataBuffer.1,ed_focus,edMax,edMax
-;editLD edit_box 180,Otstup,120,0xffffff,0x6a9480,0,0xAABBCC,0,edMaxSize,dataBuffer.2,0,edMax,edMax
-;editRU edit_box 180,240,85,0xffffff,0x6a9480,0,0xAABBCC,0,edMaxSize,dataBuffer.3,0,edMax,edMax
-;editRD edit_box 180,240,120,0xffffff,0x6a9480,0,0xAABBCC,0,edMaxSize,dataBuffer.4,0,edMax,edMax
-;editboxes_end:
-
-;data_of_code dd 0
-;mouse_flag dd 0x0
 
 dataBuffer:
 .1: rb 512
