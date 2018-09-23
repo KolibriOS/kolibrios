@@ -1,5 +1,6 @@
-// version 0.01
+// version 0.02
 // Author: Pavel Iakovlev
+// http://shell-storm.org/online/Online-Assembler-and-Disassembler/?inst=&arch=arm#assembly - online compiler (Little endian:)
 
 
 #pragma option OST
@@ -24,7 +25,11 @@ dword  I_Path       = #program_path;
 char param[4096] ={0};
 char program_path[4096] = {0};
 
-dword test_bytecode = "\x05\x10\x82\xe2\x07\x30\x82\xe2\x03\x20\x81\xe0"; // test opcode arm
+// test opcode arm, compiler (http://shell-storm.org/online/Online-Assembler-and-Disassembler/?inst=mov+r0%2C1%0D%0Amov+r5%2C2%0D%0Amov+r2%2C+r0%2C+lsl+r5&arch=arm#assembly) (Little endian:)
+
+dword test_bytecode = "\x01\x00\xa0\xe3\x02\x50\xa0\xe3\x10\x25\xa0\xe1"; 
+
+// --------------------
 
 struct _reg // registers arm
 {
@@ -95,7 +100,7 @@ dword callOpcode(dword binary, lengthInstruction)
 	byte pMode = 0;
 	while(lengthInstruction)
 	{
-		PC    = reg.r15 >> 2 & 0xFFFFFF;
+		//PC    = reg.r15 >> 2 & 0xFFFFFF;
 		flag  = reg.r15 >> 28;
 		pMask = reg.r15 >> 26;
 		
@@ -134,7 +139,7 @@ dword callOpcode(dword binary, lengthInstruction)
 		ELSE IF (command & 0x0C000000 == 0x0000000) DataProcessing(command);
 		
 		PC += 4; // addition 4 for reg15 or PC instruction
-		PC <<= 2;
+		//PC <<= 2;
 		
 		flag = 0;
 		IF (flags.negative) flag |= 0x8;
@@ -151,7 +156,7 @@ dword callOpcode(dword binary, lengthInstruction)
 		ELSE IF (mode.Interrupt)     pMode = 2;
 		ELSE IF (mode.Supervisor)    pMode = 3;
 		
-		reg.r15 = flag << 28 | PC | pMode;
+		//reg.r15 = flag << 28 | PC | pMode;
 		lengthInstruction--;
 	}
 }
@@ -182,14 +187,36 @@ dword DataProcessing(dword command) // Data Processing / PSR Transfer
 	dword Rd = #reg;
 	dword Rn = #reg;
 	dword operand = 0;
+	word sdvig = 0;
+	word context = 0;
+	byte typeSdvig = 0;
 	opcode = command >> 21 & 0xF;
 	Rd += command >> 12 & 0xF << 2;
 	Rn += command >> 16 & 0xF << 2;
-	operand = command & 0xFFF;
+	context = command & 0xFFF;
 
-	IF (command & 0x2000000 == 0) 
+	IF (command & 0x2000000) operand = context;
+	ELSE operand = DSDWORD[context & 1111b << 2 + #reg];
+	
+	typeSdvig = context >> 5 & 11b;
+	IF (context & 10000b) sdvig = DSBYTE[context >> 8 & 1111b << 2 + #reg];
+	ELSE sdvig = context >> 7 & 11111b;
+
+	switch (typeSdvig) // type sdvig
 	{
-		operand = DSDWORD[operand << 2 + #reg];
+		case 0: // logic left
+			operand <<= sdvig;
+			if(sdvig == 2) while(1);
+		break;
+		case 1: // logic right
+			operand >>= sdvig;
+		break;
+		case 2: // arifmetic left
+			
+		break;
+		case 3: // arifmetic right
+			
+		break;
 	}
 	
 	switch (opcode)
@@ -209,8 +236,42 @@ dword DataProcessing(dword command) // Data Processing / PSR Transfer
 		case 4: // add
 			DSDWORD[Rd] = DSDWORD[Rn] + operand;
 		break;
+		case 5: // adc
+			DSDWORD[Rd] = DSDWORD[Rn] + operand;
+		break;
+		case 6: // sbc
+			
+		break;
+		case 7: // rsc
+			
+		break;
+		case 8: // tst
+			
+		break;
+		case 9: // teq
+			
+		break;
+		case 10: // cmp 
+			
+		break;
+		case 11: // cmn 
+			
+		break;
+		case 12: // orr
+			DSDWORD[Rd] = DSDWORD[Rn] | operand;
+		break;
+		case 13: // mov
+			DSDWORD[Rd] = operand;
+		break;
+		case 14: // bic
+			$not operand;
+			DSDWORD[Rd] = DSDWORD[Rn] & operand;
+		break;
+		case 15: // mvn 
+			DSDWORD[Rd] = DSDWORD[Rn] + operand;
+		break;
 	}
-	IF(reg.r2 == 12) while(1);
+	IF(reg.r2 == 4) while(1);
 }
 
 
