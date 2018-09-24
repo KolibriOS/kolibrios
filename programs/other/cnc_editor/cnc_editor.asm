@@ -14,7 +14,7 @@ include 'cnc_editor.inc'
 include '../../develop/info3ds/info_fun_float.inc'
 
 @use_library_mem mem.Alloc,mem.Free,mem.ReAlloc,dll.Load
-caption db 'CNC editor 14.09.18',0 ;подпись окна
+caption db 'CNC editor 24.09.18',0 ;подпись окна
 
 run_file_70 FileInfoBlock
 
@@ -380,7 +380,6 @@ pushad
 	add ebx,25 shl 16
 	mov edx,7
 	int 0x40 ;figure move up
-
 	add ebx,25 shl 16
 	mov edx,8
 	int 0x40 ;figure move down
@@ -392,33 +391,44 @@ pushad
 	add ebx,25 shl 16
 	mov edx,10
 	int 0x40 ;sel points move up
-
 	add ebx,25 shl 16
 	mov edx,11
 	int 0x40 ;sel points move down
 
 	add ebx,25 shl 16
 	mov edx,12
-	int 0x40 ;copy to clipboard
-
+	int 0x40 ;align sel points left
 	add ebx,25 shl 16
 	mov edx,13
+	int 0x40 ;align sel points right
+	add ebx,25 shl 16
+	mov edx,14
+	int 0x40 ;align sel points top
+	add ebx,25 shl 16
+	mov edx,15
+	int 0x40 ;align sel points bottom
+
+	add ebx,25 shl 16
+	mov edx,16
+	int 0x40 ;copy to clipboard
+	add ebx,25 shl 16
+	mov edx,17
 	int 0x40 ;paste from clipboard
 
 	add ebx,25 shl 16
-	mov edx,14
+	mov edx,18
 	int 0x40 ;sel points del
 
 	add ebx,30 shl 16
-	mov edx,15
+	mov edx,19
 	int 0x40 ;restore zoom
 
 	add ebx,30 shl 16
-	mov edx,16
+	mov edx,20
 	int 0x40 ;.png
 
 	add ebx,25 shl 16
-	mov edx,17
+	mov edx,21
 	int 0x40 ;options scale
 
 	; *** рисование иконок на кнопках ***
@@ -448,6 +458,18 @@ pushad
 	int 0x40
 	add ebx,IMAGE_TOOLBAR_ICON_SIZE
 	add edx,(25 shl 16) ;sel points move down
+	int 0x40
+	add ebx,IMAGE_TOOLBAR_ICON_SIZE
+	add edx,(25 shl 16) ;aling sel points left
+	int 0x40
+	add ebx,IMAGE_TOOLBAR_ICON_SIZE
+	add edx,(25 shl 16) ;aling sel points right
+	int 0x40
+	add ebx,IMAGE_TOOLBAR_ICON_SIZE
+	add edx,(25 shl 16) ;aling sel points top
+	int 0x40
+	add ebx,IMAGE_TOOLBAR_ICON_SIZE
+	add edx,(25 shl 16) ;aling sel points bottom
 	int 0x40
 	add ebx,IMAGE_TOOLBAR_ICON_SIZE
 	add edx,(25 shl 16) ;copy to clipboard
@@ -589,36 +611,55 @@ button:
 	@@:
 	cmp ah,12
 	jne @f
-		call but_clipboard_copy_points
+		call but_sel_points_align_coord_xmin
 		jmp still
 	@@:
 	cmp ah,13
 	jne @f
-		call but_clipboard_paste_points
+		call but_sel_points_align_coord_xmax
 		jmp still
 	@@:
 	cmp ah,14
 	jne @f
-		call but_sel_points_del
+		call but_sel_points_align_coord_ymax
 		jmp still
 	@@:
 	cmp ah,15
 	jne @f
+		call but_sel_points_align_coord_ymin
+	@@:
+	cmp ah,16
+	jne @f
+		call but_clipboard_copy_points
+		jmp still
+	@@:
+	cmp ah,17
+	jne @f
+		call but_clipboard_paste_points
+		jmp still
+	@@:
+	cmp ah,18
+	jne @f
+		call but_sel_points_del
+		jmp still
+	@@:
+	cmp ah,19
+	jne @f
 		call but_restore_zoom
 		jmp still
 	@@:
-	cmp ah,16
+	cmp ah,20
 	jne @f
 		call but_save_png
 		jmp still
 	@@:
-	cmp ah,17
+	cmp ah,21
 	jne @f
 		call but_dlg_opt_scale
 		jmp still
 	@@:
 
-	;cmp ah,18
+	;cmp ah,22
 	;jne @f
 		;call but_...
 		;jmp still
@@ -664,11 +705,6 @@ but_open_file:
 	mov byte[run_file_70+20], 0
 	mov dword[run_file_70.FileName], openfile_path
 	mcall SF_FILE,run_file_70
-
-	;mov eax,dword[open_b+32]
-	;mov edi,txt_buf
-	;stdcall convert_int_to_str,20
-	;notify_window_run txt_buf
 
 	mov ecx,dword[open_b+32] ;+32 qword: размер файла в байтах
 	inc ecx ;for text files
@@ -1456,18 +1492,309 @@ proc but_sel_points_all uses eax ecx
 	cmp [eax+Figure.OType],'Fig'
 	jne .no_point
 
-	;проверяем выделенные точки
 	mov ecx,[eax+Figure.PoiCount]
 	or ecx,ecx
 	jz .no_point
 	mov eax,[eax+Figure.PoiData]
-	.cycle0: ;1-я выделенная точка
+	.cycle0: ;цикл для выделенния точек
 		bts dword[eax+Point.Prop],PROP_BIT_SELECT
 		add eax,sizeof.Point
 		loop .cycle0
 	;для обновления по таймеру
 	mov dword[offs_last_timer],0
 	.no_point:
+	ret
+endp
+
+align 4
+proc but_sel_points_align_coord_xmin
+pushad
+	stdcall [tl_node_get_data],tree1
+	or eax,eax
+	jz .no_point
+	cmp [eax+Figure.OType],'Fig'
+	jne .no_point
+
+	mov ebx,eax
+	stdcall sel_points_get_count,eax
+	cmp eax,1
+	jle .no_point
+	mov ecx,[ebx+Figure.PoiCount]
+	or ecx,ecx
+	jz .no_point
+	cmp eax,ecx
+	je .no_point ;если выделенны все точки, что-бы не портить контур
+
+	mov edx,ecx
+	imul edx,sizeof.Point
+	mov ebx,[ebx+Figure.PoiData]
+	add edx,ebx
+align 4
+	.cycle0: ;1-я выделенная точка
+		cmp ebx,edx
+		jge .no_point
+		bt dword[ebx+Point.Prop],PROP_BIT_SELECT
+		jc .cycle0end
+		add ebx,sizeof.Point
+		jmp .cycle0
+	.cycle0end:
+	lea esi,[ebx+Point.CoordX]
+	mov edi,Data_Double
+	movsd
+	movsd
+	finit
+	fld qword[Data_Double]
+align 4
+	.cycle1: ;цикл для нахождения min(Point.CoordX)
+		bt dword[ebx+Point.Prop],PROP_BIT_SELECT
+		jnc .no_sel
+			fcom qword[ebx+Point.CoordX]
+			fstsw ax
+			sahf
+			jbe .no_sel
+				;if (st0>Point.CoordX)
+				ffree st0
+				fincstp
+				fld qword[ebx+Point.CoordX]
+		.no_sel:
+		add ebx,sizeof.Point
+		cmp ebx,edx
+		jl .cycle1
+	fstp qword[Data_Double]
+align 4
+	.cycle2: ;цикл для присваивания всем Point.CoordX = min(Point.CoordX)
+		sub edx,sizeof.Point
+		bt dword[edx+Point.Prop],PROP_BIT_SELECT
+		jnc @f
+			mov esi,Data_Double
+			lea edi,[edx+Point.CoordX]
+			movsd
+			movsd
+		@@:
+		loop .cycle2
+	;для обновления по таймеру
+	mov dword[offs_last_timer],0
+	.no_point:
+popad
+	ret
+endp
+
+align 4
+proc but_sel_points_align_coord_ymin
+pushad
+	stdcall [tl_node_get_data],tree1
+	or eax,eax
+	jz .no_point
+	cmp [eax+Figure.OType],'Fig'
+	jne .no_point
+
+	mov ebx,eax
+	stdcall sel_points_get_count,eax
+	cmp eax,1
+	jle .no_point
+	mov ecx,[ebx+Figure.PoiCount]
+	or ecx,ecx
+	jz .no_point
+	cmp eax,ecx
+	je .no_point ;если выделенны все точки, что-бы не портить контур
+
+	mov edx,ecx
+	imul edx,sizeof.Point
+	mov ebx,[ebx+Figure.PoiData]
+	add edx,ebx
+align 4
+	.cycle0: ;1-я выделенная точка
+		cmp ebx,edx
+		jge .no_point
+		bt dword[ebx+Point.Prop],PROP_BIT_SELECT
+		jc .cycle0end
+		add ebx,sizeof.Point
+		jmp .cycle0
+	.cycle0end:
+	lea esi,[ebx+Point.CoordY]
+	mov edi,Data_Double
+	movsd
+	movsd
+	finit
+	fld qword[Data_Double]
+align 4
+	.cycle1: ;цикл для нахождения min(Point.CoordY)
+		bt dword[ebx+Point.Prop],PROP_BIT_SELECT
+		jnc .no_sel
+			fcom qword[ebx+Point.CoordY]
+			fstsw ax
+			sahf
+			jbe .no_sel
+				;if (st0>Point.CoordY)
+				ffree st0
+				fincstp
+				fld qword[ebx+Point.CoordY]
+		.no_sel:
+		add ebx,sizeof.Point
+		cmp ebx,edx
+		jl .cycle1
+	fstp qword[Data_Double]
+align 4
+	.cycle2: ;цикл для присваивания всем Point.CoordY = min(Point.CoordY)
+		sub edx,sizeof.Point
+		bt dword[edx+Point.Prop],PROP_BIT_SELECT
+		jnc @f
+			mov esi,Data_Double
+			lea edi,[edx+Point.CoordY]
+			movsd
+			movsd
+		@@:
+		loop .cycle2
+	;для обновления по таймеру
+	mov dword[offs_last_timer],0
+	.no_point:
+popad
+	ret
+endp
+
+align 4
+proc but_sel_points_align_coord_xmax
+pushad
+	stdcall [tl_node_get_data],tree1
+	or eax,eax
+	jz .no_point
+	cmp [eax+Figure.OType],'Fig'
+	jne .no_point
+
+	mov ebx,eax
+	stdcall sel_points_get_count,eax
+	cmp eax,1
+	jle .no_point
+	mov ecx,[ebx+Figure.PoiCount]
+	or ecx,ecx
+	jz .no_point
+	cmp eax,ecx
+	je .no_point ;если выделенны все точки, что-бы не портить контур
+
+	mov edx,ecx
+	imul edx,sizeof.Point
+	mov ebx,[ebx+Figure.PoiData]
+	add edx,ebx
+align 4
+	.cycle0: ;1-я выделенная точка
+		cmp ebx,edx
+		jge .no_point
+		bt dword[ebx+Point.Prop],PROP_BIT_SELECT
+		jc .cycle0end
+		add ebx,sizeof.Point
+		jmp .cycle0
+	.cycle0end:
+	lea esi,[ebx+Point.CoordX]
+	mov edi,Data_Double
+	movsd
+	movsd
+	finit
+	fld qword[Data_Double]
+align 4
+	.cycle1: ;цикл для нахождения max(Point.CoordX)
+		bt dword[ebx+Point.Prop],PROP_BIT_SELECT
+		jnc .no_sel
+			fcom qword[ebx+Point.CoordX]
+			fstsw ax
+			sahf
+			jae .no_sel
+				;if (st0<Point.CoordX)
+				ffree st0
+				fincstp
+				fld qword[ebx+Point.CoordX]
+		.no_sel:
+		add ebx,sizeof.Point
+		cmp ebx,edx
+		jl .cycle1
+	fstp qword[Data_Double]
+align 4
+	.cycle2: ;цикл для присваивания всем Point.CoordX = max(Point.CoordX)
+		sub edx,sizeof.Point
+		bt dword[edx+Point.Prop],PROP_BIT_SELECT
+		jnc @f
+			mov esi,Data_Double
+			lea edi,[edx+Point.CoordX]
+			movsd
+			movsd
+		@@:
+		loop .cycle2
+	;для обновления по таймеру
+	mov dword[offs_last_timer],0
+	.no_point:
+popad
+	ret
+endp
+
+align 4
+proc but_sel_points_align_coord_ymax
+pushad
+	stdcall [tl_node_get_data],tree1
+	or eax,eax
+	jz .no_point
+	cmp [eax+Figure.OType],'Fig'
+	jne .no_point
+
+	mov ebx,eax
+	stdcall sel_points_get_count,eax
+	cmp eax,1
+	jle .no_point
+	mov ecx,[ebx+Figure.PoiCount]
+	or ecx,ecx
+	jz .no_point
+	cmp eax,ecx
+	je .no_point ;если выделенны все точки, что-бы не портить контур
+
+	mov edx,ecx
+	imul edx,sizeof.Point
+	mov ebx,[ebx+Figure.PoiData]
+	add edx,ebx
+align 4
+	.cycle0: ;1-я выделенная точка
+		cmp ebx,edx
+		jge .no_point
+		bt dword[ebx+Point.Prop],PROP_BIT_SELECT
+		jc .cycle0end
+		add ebx,sizeof.Point
+		jmp .cycle0
+	.cycle0end:
+	lea esi,[ebx+Point.CoordY]
+	mov edi,Data_Double
+	movsd
+	movsd
+	finit
+	fld qword[Data_Double]
+align 4
+	.cycle1: ;цикл для нахождения max(Point.CoordY)
+		bt dword[ebx+Point.Prop],PROP_BIT_SELECT
+		jnc .no_sel
+			fcom qword[ebx+Point.CoordY]
+			fstsw ax
+			sahf
+			jae .no_sel
+				;if (st0<Point.CoordY)
+				ffree st0
+				fincstp
+				fld qword[ebx+Point.CoordY]
+		.no_sel:
+		add ebx,sizeof.Point
+		cmp ebx,edx
+		jl .cycle1
+	fstp qword[Data_Double]
+align 4
+	.cycle2: ;цикл для присваивания всем Point.CoordY = max(Point.CoordY)
+		sub edx,sizeof.Point
+		bt dword[edx+Point.Prop],PROP_BIT_SELECT
+		jnc @f
+			mov esi,Data_Double
+			lea edi,[edx+Point.CoordY]
+			movsd
+			movsd
+		@@:
+		loop .cycle2
+	;для обновления по таймеру
+	mov dword[offs_last_timer],0
+	.no_point:
+popad
 	ret
 endp
 

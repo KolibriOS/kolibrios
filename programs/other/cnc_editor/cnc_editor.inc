@@ -294,16 +294,16 @@ proc ObjCalculateScale uses eax ebx ecx edi, pobj:dword
 	mov ecx,[ebx+Object.FigCount]
 	jecxz .cycle2end
 	mov edi,[ebx+Object.FigData]
+	@@:
+		mov eax,[edi]
+		dec ecx
+		jecxz .cycle2end
+		add edi,4
+		or eax,eax
+		jz @b
+		cmp [eax+Figure.PoiCount],0
+		je @b
 	push edi esi ;copy first min X
-		@@:
-			mov eax,[edi]
-			dec ecx
-			jecxz .cycle2end
-			add edi,4
-			or eax,eax
-			jz @b
-			cmp [eax+Figure.PoiCount],0
-			je @b
 		lea esi,[eax+Figure.MinX]
 		lea edi,[ebx+Object.MinX]
 		movsd
@@ -320,7 +320,7 @@ align 4
 		fcomp qword[ebx+Object.MinX]
 		fstsw ax
 		sahf
-		ja @f
+		jae @f
 			push edi esi
 			mov eax,[edi]
 			lea esi,[eax+Figure.MinX]
@@ -337,16 +337,16 @@ align 4
 	mov ecx,[ebx+Object.FigCount]
 	jecxz .cycle3end
 	mov edi,[ebx+Object.FigData]
+	@@:
+		mov eax,[edi]
+		dec ecx
+		jecxz .cycle3end
+		add edi,4
+		or eax,eax
+		jz @b
+		cmp [eax+Figure.PoiCount],0
+		je @b
 	push edi esi ;copy first min Y
-		@@:
-			mov eax,[edi]
-			dec ecx
-			jecxz .cycle3end
-			add edi,4
-			or eax,eax
-			jz @b
-			cmp [eax+Figure.PoiCount],0
-			je @b
 		lea esi,[eax+Figure.MinY]
 		lea edi,[ebx+Object.MinY]
 		movsd
@@ -363,7 +363,7 @@ align 4
 		fcomp qword[ebx+Object.MinY]
 		fstsw ax
 		sahf
-		ja @f
+		jae @f
 			push edi esi
 			mov eax,[edi]
 			lea esi,[eax+Figure.MinY]
