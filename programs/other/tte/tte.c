@@ -29,23 +29,25 @@
 
 #include <ctype.h>
 #include <errno.h>
-#include <fcntl.h>
-#include <signal.h>
+///#include <fcntl.h>
+///#include <signal.h>
 #include <stdio.h>
 #include <stdarg.h>
 #include <stdlib.h>
 #include <string.h>
-#include <sys/ioctl.h>
-#include <sys/types.h>
-#include <termios.h>
+///#include <sys/ioctl.h>
+///#include <sys/types.h>
+///#include <termios.h>
 #include <time.h>
-#include <unistd.h>
-
+///#include <unistd.h>
+#include <conio.h>
 /*** Define section ***/
 
 // This mimics the Ctrl + whatever behavior, setting the
 // 3 upper bits of the character pressed to 0.
-#define CTRL_KEY(k) ((k) & 0x1f)
+///#define CTRL_KEY(k) ((k) & 0x1f)
+// Siemargl - set top 4 bits
+#define CTRL_KEY(k) ((k) | 0xf000)
 // Empty buffer
 #define ABUF_INIT {NULL, 0}
 // Version code
@@ -59,6 +61,11 @@
 #define HL_HIGHLIGHT_STRINGS (1 << 1)
 
 /*** Data section ***/
+
+// Kolibri defaults
+int con_def_wnd_width   =    80;
+int	con_def_wnd_height  =    25;
+
 
 typedef struct editor_row {
     int idx; // Row own index within the file.
@@ -109,7 +116,7 @@ struct editor_config {
     time_t status_msg_time;
     char* copied_char_buffer;
     struct editor_syntax* syntax;
-    struct termios orig_termios;
+///    struct termios orig_termios;
 } ec;
 
 // Having a dynamic buffer will allow us to write only one
@@ -121,7 +128,8 @@ struct a_buf {
 };
 
 enum editor_key {
-    BACKSPACE = 0x7f, // 127
+///    BACKSPACE = 0x7f, // 127
+    BACKSPACE = 0x3e7, // fixed russian letter
     ARROW_LEFT = 0x3e8, // 1000, large value out of the range of a char.
     ARROW_RIGHT,
     ARROW_UP,
@@ -395,17 +403,18 @@ void die(const char* s) {
 }
 
 void disableRawMode() {
-    if (tcsetattr(STDIN_FILENO, TCSAFLUSH, &ec.orig_termios) == -1)
-        die("Failed to disable raw mode");
+///    if (tcsetattr(STDIN_FILENO, TCSAFLUSH, &ec.orig_termios) == -1)
+///        die("Failed to disable raw mode");
 }
 
 void enableRawMode() {
     // Save original terminal state into orig_termios.
-    if (tcgetattr(STDIN_FILENO, &ec.orig_termios) == -1)
-        die("Failed to get current terminal state");
+///    if (tcgetattr(STDIN_FILENO, &ec.orig_termios) == -1)
+///        die("Failed to get current terminal state");
     // At exit, restore the original state.
-    atexit(disableRawMode);
-
+///    atexit(disableRawMode);
+///
+/*
     // Modify the original state to enter in raw mode.
     struct termios raw = ec.orig_termios;
     // This disables Ctrl-M, Ctrl-S and Ctrl-Q commands.
@@ -432,13 +441,15 @@ void enableRawMode() {
     // Forcing read() function to return every 1/10 of a
     // second if there is nothing to read.
     raw.c_cc[VTIME] = 1;
-
+*/
     consoleBufferOpen();
 
-    if (tcsetattr(STDIN_FILENO, TCSAFLUSH, &raw) == -1)
-        die("Failed to set raw mode");
+///    if (tcsetattr(STDIN_FILENO, TCSAFLUSH, &raw) == -1)
+///        die("Failed to set raw mode");
 }
 
+
+/*
 int editorReadKey() {
     int nread;
     char c;
@@ -507,12 +518,110 @@ int editorReadKey() {
         return c;
     }
 }
+*/
+/// by Siemargl rewritten, still Ctrl+ combination works only in english locale, so need analyze scancode
+int editorReadKey() {
+    int nread;
+    int key = con_getch2();
+    if (key == 0)
+		die("Window closed by X-button");
+
+	if (0 != (key & 0xff)) {
+		key &= 0xff;
+		switch (key) {
+			case 27: // ESC
+				return '\x1b';
+
+			case 13: // ENTER
+				return '\r';
+
+			case 8: // BACKSPACE
+				return BACKSPACE;
+
+			case 9: // TAB
+				return	key;
+				
+			case 22: // Ctrl+V
+				return CTRL_KEY('v');
+				
+			case 3: // Ctrl+C
+				return CTRL_KEY('c');
+				
+			case 12: // Ctrl+L
+				return CTRL_KEY('l');
+
+			case 17: // Ctrl+Q
+				return CTRL_KEY('q');
+
+			case 19: // Ctrl+S
+				return CTRL_KEY('s');
+
+			case 5: // Ctrl+E
+				return CTRL_KEY('e');
+
+			case 4: // Ctrl+D
+				return CTRL_KEY('d');
+
+			case 6: // Ctrl+F
+				return CTRL_KEY('f');
+
+			case 8: // Ctrl+H
+				return CTRL_KEY('h');
+
+			case 24: // Ctrl+X
+				return CTRL_KEY('x');
+				
+			default:
+				return	key;
+
+		}
+	} else {
+		key = (key >> 8) & 0xff;
+		switch (key) {
+			case 83: // Del
+				return DEL_KEY;
+
+			case 75: // Left
+				return ARROW_LEFT;
+				
+			case 77: // Right
+				return ARROW_RIGHT;
+
+			case 72: // Up
+				return ARROW_UP;
+
+			case 80: // Down
+				return ARROW_DOWN;
+
+			case 81: // PgDn
+				return PAGE_DOWN;
+				
+			case 73: // PgUp
+				return PAGE_UP;
+				
+			case 71: // Home
+				return HOME_KEY;
+				
+			case 79: // End
+				return END_KEY;
+				
+			default:
+				return	0;
+		}
+	}
+	return	0;
+}
+
+
+
+
 
 int getWindowSize(int* screen_rows, int* screen_cols) {
-    struct winsize ws;
+///    struct winsize ws;
 
     // Getting window size thanks to ioctl into the given
     // winsize struct.
+    /*
     if (ioctl(STDOUT_FILENO, TIOCGWINSZ, &ws) == -1 || ws.ws_col == 0) {
         return -1;
     } else {
@@ -520,6 +629,9 @@ int getWindowSize(int* screen_rows, int* screen_cols) {
         *screen_rows = ws.ws_row;
         return 0;
     }
+    */
+    *screen_cols = con_def_wnd_width;
+    *screen_rows = con_def_wnd_height;
 }
 
 void editorUpdateWindowSize() {
@@ -547,15 +659,15 @@ void editorHandleSigcont() {
 void consoleBufferOpen() {
     // Switch to another terminal buffer in order to be able to restore state at exit
     // by calling consoleBufferClose().
-    if (write(STDOUT_FILENO, "\x1b[?47h", 6) == -1)
-        die("Error changing terminal buffer");
+///    if (write(STDOUT_FILENO, "\x1b[?47h", 6) == -1)
+///        die("Error changing terminal buffer");
 }
 
 void consoleBufferClose() {
     // Restore console to the state tte opened.
-    if (write(STDOUT_FILENO, "\x1b[?9l", 5) == -1 ||
-        write(STDOUT_FILENO, "\x1b[?47l", 6) == -1)
-        die("Error restoring buffer state");
+///    if (write(STDOUT_FILENO, "\x1b[?9l", 5) == -1 ||
+///        write(STDOUT_FILENO, "\x1b[?47l", 6) == -1)
+///        die("Error restoring buffer state");
 
     /*struct a_buf ab = {.buf = NULL, .len = 0};
     char* buf = NULL;
@@ -1061,6 +1173,8 @@ char* editorRowsToString(int* buf_len) {
     return buf;
 }
 
+extern int getline(char **buf, size_t *bufsiz, FILE *fp);
+
 void editorOpen(char* file_name) {
     free(ec.file_name);
     ec.file_name = strdup(file_name);
@@ -1075,7 +1189,7 @@ void editorOpen(char* file_name) {
     // Unsigned int of at least 16 bit.
     size_t line_cap = 0;
     // Bigger than int
-    ssize_t line_len;
+    int line_len;  ///was ssize_t
     while ((line_len = getline(&line, &line_cap, file)) != -1) {
         // We already know each row represents one line of text, there's no need
         // to keep carriage return and newline characters.
@@ -1100,7 +1214,8 @@ void editorSave() {
 
     int len;
     char* buf = editorRowsToString(&len);
-
+///
+/*
     // We want to create if it doesn't already exist (O_CREAT flag), giving
     // 0644 permissions (the standard ones). O_RDWR stands for reading and
     // writing.
@@ -1119,6 +1234,18 @@ void editorSave() {
         }
         close(fd);
     }
+*/
+	FILE *fd = fopen(ec.file_name,"w+b");
+	if (fd) {
+		if (fwrite(buf, 1, len, fd) == len) {
+			fclose(fd);
+			free(buf);
+			ec.dirty = 0;
+			editorSetStatusMessage("%d bytes written to disk", len);
+			return;
+		}
+        fclose(fd);
+	}
 
     free(buf);
     editorSetStatusMessage("Cant's save file. Error occurred: %s", strerror(errno));
@@ -1434,7 +1561,8 @@ void editorRefreshScreen() {
     abufAppend(&ab, "\x1b[?25h", 6);
 
     // Writing all content at once
-    write(STDOUT_FILENO, ab.buf, ab.len);
+///    write(STDOUT_FILENO, ab.buf, ab.len);
+	con_write_string(ab.buf, ab.len);
     abufFree(&ab);
 }
 
@@ -1444,12 +1572,15 @@ void editorClearScreen() {
     // - (3 bytes) [2J : Clears the entire screen, see
     // http://vt100.net/docs/vt100-ug/chapter3.html#ED
     // for more info.
-    write(STDOUT_FILENO, "\x1b[2J", 4);
+///    write(STDOUT_FILENO, "\x1b[2J", 4);
+	con_write_string("\x1b[2J", 4);
+
     // Writing 3 bytes to reposition the cursor back at
     // the top-left corner, see
     // http://vt100.net/docs/vt100-ug/chapter3.html#CUP
     // for more info.
-    write(STDOUT_FILENO, "\x1b[H", 3);
+///    write(STDOUT_FILENO, "\x1b[H", 3);
+	con_write_string("\x1b[H", 3);
 }
 
 /*** Input section ***/
@@ -1576,9 +1707,9 @@ void editorProcessKeypress() {
         case CTRL_KEY('v'):
             editorPaste();
             break;
-        case CTRL_KEY('p'):
-            consoleBufferClose();
-            kill(0, SIGTSTP);
+///        case CTRL_KEY('p'):
+///            consoleBufferClose();
+///            kill(0, SIGTSTP);
         case ARROW_UP:
         case ARROW_DOWN:
         case ARROW_LEFT:
@@ -1646,11 +1777,11 @@ void initEditor() {
     editorUpdateWindowSize();
     // The SIGWINCH signal is sent to a process when its controlling
     // terminal changes its size (a window change).
-    signal(SIGWINCH, editorHandleSigwinch);
+///    signal(SIGWINCH, editorHandleSigwinch);
     // The SIGCONT signal instructs the operating system to continue
     // (restart) a process previously paused by the SIGSTOP or SIGTSTP
     // signal.
-    signal(SIGCONT, editorHandleSigcont);
+///    signal(SIGCONT, editorHandleSigcont);
 }
 
 void printHelp() {
@@ -1665,7 +1796,7 @@ void printHelp() {
     printf("Ctrl-C    \t\tCopy line\n");
     printf("Ctrl-X    \t\tCut line\n");
     printf("Ctrl-V    \t\tPaste line\n");
-    printf("Ctrl-P    \t\tPause tte (type \"fg\" to resume)\n");
+ ///   printf("Ctrl-P    \t\tPause tte (type \"fg\" to resume)\n");
 
     printf("\n\nOPTIONS\n-------\n\n");
     printf("Option        \t\tAction\n\n");
@@ -1694,6 +1825,8 @@ int handleArgs(int argc, char* argv[]) {
 }
 
 int main(int argc, char* argv[]) {
+	if (con_init_console_dll()) return 1; // init fail
+
     initEditor();
     int arg_response = handleArgs(argc, argv);
     if (arg_response == 1)
@@ -1709,5 +1842,6 @@ int main(int argc, char* argv[]) {
         editorProcessKeypress();
     }
 
+	con_exit(0);
     return 0;
 }
