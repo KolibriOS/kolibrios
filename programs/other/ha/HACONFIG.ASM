@@ -2,7 +2,7 @@
 ; Hot Angles Config ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ; Compile with FASM
-; Version 0.3.1: Sep 23, 2018
+; Version 0.3.2: Sep 24, 2018
 
 ; Copyright (c) 2018, Efremenkov Sergey aka TheOnlyMirage
 ; All rights reserved.
@@ -150,6 +150,15 @@ defaultDataSize = 48+19
 copyParam:  ;копирует параметр(команду запуска) в буфер (см. дальше)
    push esi ebx ecx
    mov ecx, dword[ebx] ;читаем размер строки
+
+   cmp ecx, 0          ;пуста ли строка?
+   jne copyParam.copy  ;если нет, то переходим к копированию содержимого строки (к  циклу)
+
+   mov byte[eax], '-'  ;если же пусто, то заменяем символом минус '-'
+   inc eax
+   ;jmp copyParam.copyEnd ;и выходим
+   ;далее в начале цикла произойдёт сравнение и выход
+
 .copy:  ;копируем символы
    cmp ecx, 0
    je copyParam.copyEnd
@@ -183,6 +192,25 @@ applyButton:
         add ecx, dword[editLD.size]
         add ecx, dword[editRU.size]
         add ecx, dword[editRD.size] ;dataBuffer.size4]
+
+        ;если заданы пустые строки, то мы автоматически добавляем знак минус, значит размер +1 байт
+        cmp dword[editLU.size], 0
+        jne @f
+        inc ecx
+@@:
+        cmp dword[editLD.size], 0
+        jne @f
+        inc ecx
+@@:
+        cmp dword[editRU.size], 0
+        jne @f
+        inc ecx
+@@:
+        cmp dword[editRD.size], 0
+        jne @f
+        inc ecx
+@@:
+
         ;теперь размер файла конфигурации в ecx
         mov dword[createFile.size], ecx ;положим размер байт в структуру создания/перезаписи файла
         mcall 68, 12, ecx ;выделяем блок памяти под буфер содержимого
@@ -230,7 +258,10 @@ applyButton:
         ;иначе здесь нужно вывести окно с ошибкой !!!
 .end:
         mcall 68, 13, dword[createFile.data_adr]  ;освобождаем память под буфер
-        call restartHotAnglesApp ;перезапускаем @HOTANGLES
+        call finishHotAnglesApp ;завершаем работу всех копий сервиса @HOTANGLES
+        call loadConfig         ;перезагружаем файл конфига
+        call draw_window        ;перерисовываем окно
+        call startHotAnglesApp  ;перезапускаем @HOTANGLES
         pop ecx ebx eax
     ret
 
@@ -260,7 +291,7 @@ compareBytes2:
    ret
 
 
-restartHotAnglesApp:
+finishHotAnglesApp:
    ;находим все копии приложения по имени и завершаем их
    push eax ebx ecx esi edi
    ;указатели, которые никогда не меняются:
@@ -275,7 +306,7 @@ restartHotAnglesApp:
 
    call compareBytes2 ;сравниваем имя
    cmp eax, 0
-   jne restartHotAnglesApp.next   ;если не совпало, то переходим на следующий слот
+   jne finishHotAnglesApp.next   ;если не совпало, то переходим на следующий слот
 
    ;push eax ebx ecx
    mcall 18, 2, ecx               ;иначе завершаем слот
@@ -288,7 +319,9 @@ restartHotAnglesApp:
    jmp @b
 @@:
    pop edi esi ecx ebx eax
+   ret
 
+startHotAnglesApp:
    ;запускаем приложение заново
    push eax ebx
    mcall 70, startAppData
