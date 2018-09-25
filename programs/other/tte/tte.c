@@ -14,6 +14,9 @@
 *   You should have received a copy of the GNU General Public License
 *   along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
+/* Kolibri port by Siemargl 2018 
+ * my fixes mostly commented with triple comment ///
+ * */
 
 /*** Include section ***/
 
@@ -41,6 +44,9 @@
 #include <time.h>
 ///#include <unistd.h>
 #include <conio.h>
+
+
+
 /*** Define section ***/
 
 // This mimics the Ctrl + whatever behavior, setting the
@@ -65,7 +71,8 @@
 // Kolibri defaults
 int con_def_wnd_width   =    80;
 int	con_def_wnd_height  =    25;
-
+/// winFile support
+int	fileIsOd0a; 
 
 typedef struct editor_row {
     int idx; // Row own index within the file.
@@ -399,6 +406,7 @@ void die(const char* s) {
     // a descriptive error mesage for it.
     perror(s);
     printf("\r\n");
+    con_exit(0); /// KOS console
     exit(1);
 }
 
@@ -449,82 +457,12 @@ void enableRawMode() {
 }
 
 
-/*
-int editorReadKey() {
-    int nread;
-    char c;
-    while ((nread = read(STDIN_FILENO, &c, 1)) != 1) {
-        // Ignoring EAGAIN to make it work on Cygwin.
-        if (nread == -1 && errno != EAGAIN)
-            die("Error reading input");
-    }
 
-    // Check escape sequences, if first byte
-    // is an escape character then...
-    if (c == '\x1b') {
-        char seq[3];
-
-        if (read(STDIN_FILENO, &seq[0], 1) != 1 ||
-            read(STDIN_FILENO, &seq[1], 1) != 1)
-            return '\x1b';
-
-        if (seq[0] == '[') {
-            if (seq[1] >= '0' && seq[1] <= '9') {
-                if (read(STDIN_FILENO, &seq[2], 1) != 1)
-                    return '\x1b';
-                if (seq[2] == '~') {
-                    switch (seq[1]) {
-                        // Home and End keys may be sent in many ways depending on the OS
-                        // \x1b[1~, \x1b[7~, \x1b[4~, \x1b[8~
-                        case '1':
-                        case '7':
-                            return HOME_KEY;
-                        case '4':
-                        case '8':
-                            return END_KEY;
-                        // Del key is sent as \x1b[3~
-                        case '3':
-                            return DEL_KEY;
-                        // Page Up and Page Down send '\x1b', '[', '5' or '6' and '~'.
-                        case '5': return PAGE_UP;
-                        case '6': return PAGE_DOWN;
-                    }
-                }
-            } else {
-                switch (seq[1]) {
-                    // Arrow keys send multiple bytes starting with '\x1b', '[''
-                    // and followed by an 'A', 'B', 'C' or 'D' depending on which
-                    // arrow is pressed.
-                    case 'A': return ARROW_UP;
-                    case 'B': return ARROW_DOWN;
-                    case 'C': return ARROW_RIGHT;
-                    case 'D': return ARROW_LEFT;
-                    // Home key can also be sent as \x1b[H
-                    case 'H': return HOME_KEY;
-                    // End key can also be sent as \x1b[F
-                    case 'F': return END_KEY;
-                }
-            }
-        } else if (seq[0] == 'O') {
-            switch (seq[1]) {
-                // Yes, Home key can ALSO be sent as \x1bOH
-                case 'H': return HOME_KEY;
-                // And... End key as \x1bOF
-                case 'F': return END_KEY;
-            }
-        }
-        return '\x1b';
-    } else {
-        return c;
-    }
-}
-*/
 /// by Siemargl rewritten, still Ctrl+ combination works only in english locale, so need analyze scancode
 int editorReadKey() {
-    int nread;
     int key = con_getch2();
     if (key == 0)
-		die("Window closed by X-button");
+		die("Window closed by moused X-button");
 
 	if (0 != (key & 0xff)) {
 		key &= 0xff;
@@ -551,6 +489,7 @@ int editorReadKey() {
 				return CTRL_KEY('l');
 
 			case 17: // Ctrl+Q
+			case 26: // Ctrl+Z
 				return CTRL_KEY('q');
 
 			case 19: // Ctrl+S
@@ -1154,7 +1093,8 @@ char* editorRowsToString(int* buf_len) {
     // to each one for the newline character we'll add to
     // the end of each line.
     for (j = 0; j < ec.num_rows; j++) {
-        total_len += ec.row[j].size + 1;
+        total_len += ec.row[j].size + 1 
+							+ (fileIsOd0a ? 1:0); /// winFile suppor
     }
     *buf_len = total_len;
 
@@ -1166,6 +1106,8 @@ char* editorRowsToString(int* buf_len) {
     for (j = 0; j < ec.num_rows; j++) {
         memcpy(p, ec.row[j].chars, ec.row[j].size);
         p += ec.row[j].size;
+        /// winFile support
+        if (fileIsOd0a) *p++ = '\r';
         *p = '\n';
         p++;
     }
@@ -1190,12 +1132,20 @@ void editorOpen(char* file_name) {
     size_t line_cap = 0;
     // Bigger than int
     int line_len;  ///was ssize_t
+    fileIsOd0a = 0; /// winFile support
+
     while ((line_len = getline(&line, &line_cap, file)) != -1) {
         // We already know each row represents one line of text, there's no need
         // to keep carriage return and newline characters.
         if (line_len > 0 && (line[line_len - 1] == '\n' || line[line_len - 1] == '\r'))
             line_len--;
-        editorInsertRow(ec.num_rows, line, line_len);
+/// Siemargl fix 0d0a windows file, save format flag
+         if (line_len > 0 && line[line_len - 1] == '\r')
+         {
+            line_len--;
+            fileIsOd0a = 1;
+		 }
+       editorInsertRow(ec.num_rows, line, line_len);
     }
     free(line);
     fclose(file);
@@ -1214,30 +1164,12 @@ void editorSave() {
 
     int len;
     char* buf = editorRowsToString(&len);
-///
-/*
-    // We want to create if it doesn't already exist (O_CREAT flag), giving
-    // 0644 permissions (the standard ones). O_RDWR stands for reading and
-    // writing.
-    int fd = open(ec.file_name, O_RDWR | O_CREAT, 0644);
-    if (fd != -1) {
-        // ftruncate sets the file's size to the specified length.
-        if (ftruncate(fd, len) != -1) {
-            // Writing the file.
-            if (write(fd, buf, len) == len) {
-                close(fd);
-                free(buf);
-                ec.dirty = 0;
-                editorSetStatusMessage("%d bytes written to disk", len);
-                return;
-            }
-        }
-        close(fd);
-    }
-*/
+
+/// siemargl rewrite using standard FILE stream
 	FILE *fd = fopen(ec.file_name,"w+b");
+	int rc = -1;
 	if (fd) {
-		if (fwrite(buf, 1, len, fd) == len) {
+		if ((rc = fwrite(buf, 1, len, fd)) == len) {
 			fclose(fd);
 			free(buf);
 			ec.dirty = 0;
@@ -1422,7 +1354,7 @@ void editorDrawStatusBar(struct a_buf* ab) {
 
 void editorDrawMessageBar(struct a_buf *ab) {
     // Clearing the message bar.
-    abufAppend(ab, "\x1b[K", 3);
+///    abufAppend(ab, "\x1b[K", 3);	/// not work in Kolibri
     int msg_len = strlen(ec.status_msg);
     if (msg_len > ec.screen_cols)
         msg_len = ec.screen_cols;
@@ -1509,7 +1441,7 @@ void editorDrawRows(struct a_buf* ab) {
                     }
                 } else if (highlight[j] == HL_NORMAL) {
                     if (current_color != -1) {
-                        abufAppend(ab, "\x1b[39m", 5);
+                        abufAppend(ab, "\x1b[m", 3);  /// was [39, 5
                         current_color = -1;
                     }
                     abufAppend(ab, &c[j], 1);
@@ -1527,11 +1459,11 @@ void editorDrawRows(struct a_buf* ab) {
                     abufAppend(ab, &c[j], 1);
                 }
             }
-            abufAppend(ab, "\x1b[39m", 5);
+            abufAppend(ab, "\x1b[m", 3);  /// was [39, 5
         }
 
         // Redrawing each line instead of the whole screen.
-        abufAppend(ab, "\x1b[K", 3);
+///        abufAppend(ab, "\x1b[K", 3);  /// not work in Kolibri
         // Addind a new line
         abufAppend(ab, "\r\n", 2);
     }
@@ -1545,8 +1477,11 @@ void editorRefreshScreen() {
     // Hiding the cursor while the screen is refreshing.
     // See http://vt100.net/docs/vt100-ug/chapter3.html#S3.3.4
     // for more info.
-    abufAppend(&ab, "\x1b[?25l", 6);
+///    abufAppend(&ab, "\x1b[?25l", 6);
     abufAppend(&ab, "\x1b[H", 3);
+
+/// full clear because "\x1b[K" not work in Kolibri
+    abufAppend(&ab, "\x1b[2J", 4);
 
     editorDrawRows(&ab);
     editorDrawStatusBar(&ab);
@@ -1554,11 +1489,13 @@ void editorRefreshScreen() {
 
     // Moving the cursor where it should be.
     char buf[32];
-    snprintf(buf, sizeof(buf), "\x1b[%d;%dH", (ec.cursor_y - ec.row_offset) + 1, (ec.render_x - ec.col_offset) + 1);
-    abufAppend(&ab, buf, strlen(buf));
+///    snprintf(buf, sizeof(buf), "\x1b[%d;%dH", (ec.cursor_y - ec.row_offset) + 1, (ec.render_x - ec.col_offset) + 1);
+/// a bit different in Kolibri
+    snprintf(buf, sizeof(buf), "\x1b[%d;%dH", (ec.render_x - ec.col_offset), (ec.cursor_y - ec.row_offset));
+       abufAppend(&ab, buf, strlen(buf));
 
     // Showing again the cursor.
-    abufAppend(&ab, "\x1b[?25h", 6);
+///    abufAppend(&ab, "\x1b[?25h", 6);
 
     // Writing all content at once
 ///    write(STDOUT_FILENO, ab.buf, ab.len);
@@ -1677,12 +1614,13 @@ void editorProcessKeypress() {
             break;
         case CTRL_KEY('q'):
             if (ec.dirty && quit_times > 0) {
-                editorSetStatusMessage("Warning! File has unsaved changes. Press Ctrl-Q %d more time%s to quit", quit_times, quit_times > 1 ? "s" : "");
+                editorSetStatusMessage("Warning! File has unsaved changes. Press Ctrl-Q or ^Z %d more time%s to quit", quit_times, quit_times > 1 ? "s" : "");
                 quit_times--;
                 return;
             }
             editorClearScreen();
             consoleBufferClose();
+            con_exit(1); /// KOS console
             exit(0);
             break;
         case CTRL_KEY('s'):
@@ -1788,7 +1726,7 @@ void printHelp() {
     printf("Usage: tte [OPTIONS] [FILE]\n\n");
     printf("\nKEYBINDINGS\n-----------\n\n");
     printf("Keybinding\t\tAction\n\n");
-    printf("Ctrl-Q    \t\tExit\n");
+    printf("Ctrl-Q,^Z \t\tExit\n");
     printf("Ctrl-S    \t\tSave\n");
     printf("Ctrl-F    \t\tSearch. Esc, enter and arrows to interact once searching\n");
     printf("Ctrl-E    \t\tFlip line upwards\n");
@@ -1835,13 +1773,13 @@ int main(int argc, char* argv[]) {
         return 0;
     enableRawMode();
 
-    editorSetStatusMessage(" Ctrl-Q to quit | Ctrl-S to save | (tte -h | --help for more info)");
+    editorSetStatusMessage(" Ctrl-Q, ^Z to quit | Ctrl-S to save | (tte -h | --help for more info)");
 
     while (1) {
         editorRefreshScreen();
         editorProcessKeypress();
     }
 
-	con_exit(0);
+	con_exit(1);
     return 0;
 }
