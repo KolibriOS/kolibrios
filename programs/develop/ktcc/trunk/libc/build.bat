@@ -28,12 +28,14 @@ pause
 goto :eof
 
 :Compile_C
+echo compile .c %1
    %CC% %CFLAGS% %1 -o "%~dpn1.o"
    if not %errorlevel%==0 goto Error_Failed
    set objs=%objs% "%~dpn1.o"
 goto :eof
 
 :Compile_Asm
+echo compile .asm %1
    %ASM% %1 "%~dpn1.o"
    if not %errorlevel%==0 goto Error_Failed
    set objs=%objs% "%~dpn1.o"
@@ -50,6 +52,7 @@ goto :Exit_OK
       for %%f in ("%%a\*.asm") do call :Compile_Asm "%%f"
       for %%f in ("%%a\*.c") do call :Compile_C "%%f"
    )
+   echo calling AR
    %AR% -ru %LIBNAME% %objs%
    if not %errorlevel%==0 goto Error_Failed
 goto Exit_OK

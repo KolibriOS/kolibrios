@@ -31,8 +31,9 @@ proc  _ksys_cofflib_getproc stdcall, export:dword,name:dword
 
         xor eax,eax
         mov al,[ecx]
-        test al,al
-        jz exit_check_simbol
+;	siemargl moved to post-check
+;        test al,al
+;        jz exit_check_simbol
 
                 xor edx,edx
                 mov dl,[esi]
@@ -41,6 +42,8 @@ proc  _ksys_cofflib_getproc stdcall, export:dword,name:dword
                         add edi,1
                         jmp exit_check_simbol
                 simbols_equvalent:
+        test al,al
+        jz exit_check_simbol
 
 		  ;pushad
 

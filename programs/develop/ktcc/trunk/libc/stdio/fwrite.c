@@ -1,6 +1,8 @@
 #include <stdio.h>
 #include <kolibrisys.h>
 
+// dont support return partial writing when fail
+// only 32-bit filesize
 int fwrite(void *buffer,int size,int count,FILE* file)
 {
 	dword res;
@@ -56,8 +58,7 @@ int fwrite(void *buffer,int size,int count,FILE* file)
 			if (res==0)
 			{
 				file->filepos+=fullsize;
-				fullsize=fullsize/count;
-				return(fullsize);
+				return(count);
 			} else
             {
                 errno = -res;
@@ -70,8 +71,7 @@ int fwrite(void *buffer,int size,int count,FILE* file)
 			if (res==0)
 			{
 				file->filepos+=fullsize;
-				fullsize=fullsize/count;
-				return(fullsize);
+				return(count);
 			} else
             {
                 errno = -res;
