@@ -2,7 +2,7 @@
 ; Hot Angles ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ; Compile with FASM
-; Version 0.1: Sep 18, 2018
+; Version 0.3.3: Sep 25, 2018
 
 ; Copyright (c) 2018, Efremenkov Sergey aka TheOnlyMirage
 ; All rights reserved.
@@ -184,15 +184,17 @@ run_command:
    ;параметры
    ;mov dword[struct.adr],
 
-;этот код заменить - если адрес 0, то ничего не делать
+;если адрес 0, то ничего не делать
    cmp dword[struct70.path_adr], 0
    jne .next
-   mov eax, testData.ld    ;
-   mov dword[struct70.path_adr], eax
+   ;mov eax, testData.ld
+   ;mov dword[struct70.path_adr], eax
+   jmp @f
 .next:
 ;конец кода для замены
 
    mcall 70, struct70
+@@:
    mov byte[state], LOCKd
 
    pop ecx
@@ -207,16 +209,17 @@ struct70: ;Формат информационной структуры
   .param_adr  dd 0 ; указатель на ASCIIZ-строку с параметрами
   .other      dd 0, 0
   .path       db 0 ; "/rd/1/TINYPAD",0 ; путь
-  .path_adr   dd 0 ;testData.lu ;0
+  .path_adr   dd 0 ;testData.lu
 
 
 state: db 0 ; 0=unlock, 1=lock
+mode: db 0  ;режим работы (для будущего расширения функционала)
 
-testData:
-  .lu db '/rd/1/SHELL', 0
-  .ld db '/rd/1/RUN', 0
-  .ru db "/rd/1/TINYPAD", 0
-  .rd db '/rd/1/File Managers/EOLITE', 0
+;testData:
+;  .lu db '/rd/1/SHELL', 0
+;  .ld db '/rd/1/RUN', 0
+;  .ru db "/rd/1/TINYPAD", 0
+;  .rd db '/rd/1/File Managers/EOLITE', 0
 
 newData:  ;табличка адресов командных строк
   .lu dd 0
@@ -226,13 +229,10 @@ newData:  ;табличка адресов командных строк
 newDataEnd:
 
 ;имя конфигурационного файла
-fileName: db 'SETTINGS/HOTANGLES.CFG', 0  ;'ha.cfg', 0
+fileName: db 'SETTINGS/HOTANGLES.CFG', 0
 
 loadConfig:
-   push eax
-   push ebx
-   push ecx
-   push edx
+   push eax ebx ecx edx
    mcall 68, 27, fileName   ;загружаем конфигурационный файл в ОЗУ
    cmp eax, 0
    je loadConfig.exit       ;если файла конфигурации нет, то завершаем работу приложения
@@ -258,7 +258,7 @@ loadConfig:
    cmp byte[esi], 13
    je loadConfig.propusk
 
-   ; символ отличен от переноса строки и возврата каретки - запоминаем его
+   ; символ отличен от переноса строки и возврата каретки - если это на знак минус, то запоминаем его
    mov dword[edi], esi
    add edi, 4
 
@@ -276,6 +276,18 @@ loadConfig:
 .ura:
    mov byte[esi], 0
 
+   ;cmp byte[esi-1], '-'
+   ;jne @f
+   push esi  ;если это был знак минус, то меняем адрес на ноль
+   mov esi, dword[edi-4]
+   cmp byte[esi], '-'
+   jne @f
+   cmp byte[esi+1], 0
+   jne @f
+   mov dword[edi-4], 0
+@@:
+   pop esi
+
    cmp edi, newDataEnd ;newData.end      ;если вся таблица адресов заполнена, то выходим из цикла
    jb loadConfig.block
 .fileend:
@@ -289,16 +301,10 @@ loadConfig:
    mov byte[esi], 0
    jmp loadConfig.block
 .exit:
-   pop edx
-   pop ecx
-   pop ebx
-   pop eax
+   pop edx ecx ebx eax
    mcall -1 ;закрыть эту программу
 .end:
-   pop edx
-   pop ecx
-   pop ebx
-   pop eax
+   pop edx ecx ebx eax
    ret
 
 
