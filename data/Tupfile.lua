@@ -16,6 +16,7 @@ img_files = {
  {"CONFIG.INC", PROGS .. "/config.inc"},
  {"STRUCT.INC", PROGS .. "/struct.inc"},
  {"FB2READ", "common/fb2read"},
+ {"game_center", "common/game_center"},
  {"ICONS32.PNG", "common/icons32.png"},
  {"ICONS16.PNG", "common/icons16.png"},
  {"INDEX.HTM", "common/index_htm"},
@@ -576,7 +577,6 @@ if tup.getconfig('NO_CMM') ~= 'full' then
 tup.append_table(img_files, {
  {"APP_PLUS", PROGS .. "/cmm/app_plus/app_plus.com"},
  {"EASYSHOT", PROGS .. "/cmm/easyshot/easyshot.com"},
- {"GAME_CENTER", PROGS .. "/cmm/software_widget/software_widget.com"},
  {"MOUSECFG", PROGS .. "/cmm/mousecfg/mousecfg.com"},
  {"PANELS_CFG", PROGS .. "/cmm/panels_cfg/panels_cfg.com"},
  {"SYSPANEL", PROGS .. "/cmm/software_widget/software_widget.com"},

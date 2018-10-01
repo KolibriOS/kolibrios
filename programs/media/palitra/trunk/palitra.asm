@@ -452,57 +452,7 @@ set_background:
     ; Подфункция 3 - перерисовать фон.
     mcall   SF_BACKGROUND_SET,SSF_REDRAW_BG
 
-	;save to file eskin.ini
-	xor     al,al
-	mov     ecx,1024
-	mov     edi,sys_path+2
-	repne   scasb
-	sub     edi,sys_path+3
-	invoke  ini_set_str, inifileeskin, amain, aprogram, sys_path+2, edi
-	;add param 'H '
-	mov     word[params],'H '
-	mov     eax,[color]
-	or      eax,0xf ;для избежания вечного цикла если eax=0
-	mov     edi,params+2
-	@@:
-	rol     eax,8
-	or      al,al
-	jnz     @f
-	mov     word[edi],'00' ;нули перед числом
-	add     edi,2
-	jmp     @b
-	@@:
-	and     al,0xf0
-	jnz     @f
-	mov     byte[edi],'0'
-	inc     edi
-	@@:
-	mov     eax,[color]
-	mov     ebx,16
-	call    int2ascii
-	mov     byte[params+10],' '
-	;add color2
-	mov     eax,[color2]
-	or      eax,0xf ;для избежания вечного цикла если eax=0
-	mov     edi,params+11
-	@@:
-	rol     eax,8
-	or      al,al
-	jnz     @f
-	mov     word[edi],'00' ;нули перед числом
-	add     edi,2
-	jmp     @b
-	@@:
-	and     al,0xf0
-	jnz     @f
-	mov     byte[edi],'0'
-	inc     edi
-	@@:
-	mov     eax,[color2]
-	mov     ebx,16
-	call    int2ascii
-
-	invoke  ini_set_str, inifileeskin, amain, aparam, params, 19
+    stdcall save_eskin_ini, 'H '
 
     ret
 ;end_set_background
@@ -1225,7 +1175,65 @@ set_background2:
     mcall   SF_BACKGROUND_SET, SSF_REDRAW_BG
 
     mcall   SF_SYS_MISC, SSF_MEM_FREE, [image]
+    stdcall save_eskin_ini, 'B '
 ret
+
+align 4
+proc save_eskin_ini, opt_HB:dword
+	;save to file eskin.ini
+	xor     al,al
+	mov     ecx,1024
+	mov     edi,sys_path+2
+	repne   scasb
+	sub     edi,sys_path+3
+	invoke  ini_set_str, inifileeskin, amain, aprogram, sys_path+2, edi
+	;add param 'H '
+	mov     eax,[opt_HB]
+	mov     word[params],ax
+	mov     eax,[color]
+	or      eax,0xf ;для избежания вечного цикла если eax=0
+	mov     edi,params+2
+	@@:
+	rol     eax,8
+	or      al,al
+	jnz     @f
+	mov     word[edi],'00' ;нули перед числом
+	add     edi,2
+	jmp     @b
+	@@:
+	and     al,0xf0
+	jnz     @f
+	mov     byte[edi],'0'
+	inc     edi
+	@@:
+	mov     eax,[color]
+	mov     ebx,16
+	call    int2ascii
+	mov     byte[params+10],' '
+	;add color2
+	mov     eax,[color2]
+	or      eax,0xf ;для избежания вечного цикла если eax=0
+	mov     edi,params+11
+	@@:
+	rol     eax,8
+	or      al,al
+	jnz     @f
+	mov     word[edi],'00' ;нули перед числом
+	add     edi,2
+	jmp     @b
+	@@:
+	and     al,0xf0
+	jnz     @f
+	mov     byte[edi],'0'
+	inc     edi
+	@@:
+	mov     eax,[color2]
+	mov     ebx,16
+	call    int2ascii
+
+	invoke  ini_set_str, inifileeskin, amain, aparam, params, 19
+	ret
+endp
 
 ;#___________________________________________________________________________________________________
 ;****************************************************************************************************|

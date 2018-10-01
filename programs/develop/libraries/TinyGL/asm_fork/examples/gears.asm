@@ -70,7 +70,7 @@ align 16
 still:
 	call draw_3d
 
-	stdcall Fps, 330,4
+	stdcall Fps, 365,4
 	mov dword[esp-4],eax
 	fild dword[esp-4]
 	fmul dword[a2]
@@ -130,11 +130,11 @@ draw_window:
 	pushad
 	mcall SF_REDRAW,SSF_BEGIN_DRAW
 
-	mcall SF_CREATE_WINDOW,(50 shl 16)+410,(30 shl 16)+425,0x33404040,,title1
+	mcall SF_CREATE_WINDOW,(50 shl 16)+409,(30 shl 16)+425,0x33404040,,title1
 	stdcall [kosglSwapBuffers]
 
 	;Title
-	mcall SF_DRAW_TEXT,(300 shl 16)+4,0xc0c0c0,fps,   fps.end-fps
+	mcall SF_DRAW_TEXT,(338 shl 16)+4,0xc0c0c0,fps,   fps.end-fps
 	mcall SF_DRAW_TEXT,(8 shl 16)+4,0xc0c0c0,title3,title3.end-title3
 	;mcall SF_DRAW_TEXT,(180 shl 16)+4,0xc0c0c0,title2,title2.end-title2
 
