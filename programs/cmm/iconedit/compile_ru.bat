@@ -9,10 +9,10 @@ cls
 @del lang.h--
 
 if exist iconedit (
-    "C:\Program Files\WinImage\winimage.exe" "D:\Soft\Kolibri\QEMU\kolibri.img" /H /Q /I iconedit
+    "C:\Program Files (x86)\WinImage\winimage.exe" "C:\Users\Leency\Desktop\kolibri.img" /H /Q /I iconedit
     d:
-    cd "D:\Soft\Kolibri\QEMU"
-    call "D:\Soft\Kolibri\QEMU\qemu-kos-img.bat"
+    cd "D:\Kolibri\Infrastructure\QEMU"
+    call "z_kos.bat"
 ) else (
     @pause
 )

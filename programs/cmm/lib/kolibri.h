@@ -287,14 +287,6 @@ inline fastcall ExitProcess()
 
 //------------------------------------------------------------------------------
 
-inline fastcall void SetCurDir( ECX)
-{
-  EAX=30;
-  EBX=1;
-  $int 0x40
-}
-
-
 //eax = ÿçûê ñèñòåìû (1=eng, 2=fi, 3=ger, 4=rus)
 #define SYS_LANG_ENG 1
 #define SYS_LANG_FIN 2
@@ -592,18 +584,20 @@ inline fastcall void PutPixel( EBX,ECX,EDX)
 
 :void EventDragWindow()
 {
+	proc_info Form1;
 	dword tmp_x,tmp_y;
 	dword z1,z2;
 	tmp_x = mouse.x;
 	tmp_y = mouse.y;
 	do {
+		GetProcessInfo(#Form1, SelfInfo);
 		mouse.get();
 		if (tmp_x!=mouse.x) || (tmp_y!=mouse.y) 
 		{
-			z1 = Form.left + mouse.x - tmp_x;
-			z2 = Form.top + mouse.y - tmp_y;
-			if(z1<=10) || (z1>20000) z1=0; else if(z1>screen.width-Form.width-10)z1=screen.width-Form.width;
-			if(z2<=10) || (z2>20000) z2=0; else if(z2>screen.height-Form.height-10)z2=screen.height-Form.height;
+			z1 = Form1.left + mouse.x - tmp_x;
+			z2 = Form1.top + mouse.y - tmp_y;
+			if(z1<=10) || (z1>20000) z1=0; else if(z1>screen.width-Form1.width-10)z1=screen.width-Form1.width;
+			if(z2<=10) || (z2>20000) z2=0; else if(z2>screen.height-Form1.height-10)z2=screen.height-Form1.height;
 			MoveSize(z1 , z2, OLD, OLD);
 			draw_window();
 		}

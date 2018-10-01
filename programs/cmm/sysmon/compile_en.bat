@@ -1,5 +1,5 @@
-@del sysmon.kex
+@del sysmon
 @c-- sysmon.c
-@rename *.com *.kex
+@rename sysmon.com sysmon
 @del warning.txt
 @pause

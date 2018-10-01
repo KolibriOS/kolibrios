@@ -1,6 +1,7 @@
 
 void Sort_by_Size(int a, b)   // для первого вызова: a = 0, b = <элементов в массиве> - 1
 {                                        
+	int j;
 	int iss = a;
 	if (a >= b) return;
 	for (j = a; j <= b; j++)
@@ -12,6 +13,7 @@ void Sort_by_Size(int a, b)   // для первого вызова: a = 0, b = <элементов в мас
 
 void Sort_by_Name(int a, b)   // для первого вызова: a = 0, b = <элементов в массиве> - 1
 {                                        
+	int j;
 	int isn = a;
 	if (a >= b) return;
 	for (j = a; j <= b; j++)
@@ -22,7 +24,8 @@ void Sort_by_Name(int a, b)   // для первого вызова: a = 0, b = <элементов в мас
 
 	
 void Sort_by_Type(int a, b)   // для первого вызова: a = 0, b = <элементов в массиве> - 1
-{               
+{         
+	int j;      
 	dword filename1, filename2, ext1, ext2;
 	int n, isn = a;
 	if (a >= b) return;

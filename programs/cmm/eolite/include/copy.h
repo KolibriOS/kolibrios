@@ -28,6 +28,7 @@ void Copy(dword pcth, char cut)
 	dword path_len = 0;
 	dword size_buf = 0;
 	dword copy_buf_offset = 0;
+	dword i;
 
 	if (files.count<=0) return; //no files
 

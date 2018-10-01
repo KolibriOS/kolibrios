@@ -8,6 +8,7 @@
 	?define SHOW_BREADCRUMBS "Использовать 'хлебные крошки'"
 	?define BIG_ICONS "Использовать большие иконки"
 	?define USE_TWO_PANELS "Две панели"
+	?define COLORED_LINES "Подсвечивать четные линии в списке"
 	?define FONT_SIZE_LABEL "Размер шрифта"
 	?define LIST_LINE_HEIGHT "Высота строки в списке"
 	?define SAVE_PATH_AS_DEFAULT "Текущий путь"
@@ -23,6 +24,7 @@
 	?define SHOW_BREADCRUMBS "Show breadcrumbs"
 	?define BIG_ICONS "Big icons in list"
 	?define USE_TWO_PANELS "Two panels"
+	?define COLORED_LINES "Highlight even lines in list"
 	?define FONT_SIZE_LABEL "Font size"
 	?define LIST_LINE_HEIGHT "List line height"
 	?define SAVE_PATH_AS_DEFAULT "Current path"
@@ -44,6 +46,7 @@ checkbox info_after_copy  = { NOTIFY_COPY_END };
 checkbox show_breadcrumb  = { SHOW_BREADCRUMBS };
 checkbox big_icons        = { BIG_ICONS };
 checkbox two_panels       = { USE_TWO_PANELS };
+checkbox colored_lines    = { COLORED_LINES };
 
 
 void settings_dialog()
@@ -88,6 +91,7 @@ void settings_dialog()
 				two_panels.click(id);
 				show_breadcrumb.click(id);
 				show_status_bar.click(id);
+				colored_lines.click(id);
 				if (font_size.click(id)) { 
 					kfont.size.pt = font_size.value; 
 					kfont.changeSIZE(); 
@@ -108,7 +112,7 @@ void settings_dialog()
 				
 			case evReDraw:
 				DefineAndDrawWindow(Form.cwidth-300/2+Form.left, Form.cheight-292/2+Form.top, 400, 
-					410+skin_height,0x34,system.color.work,TITLE_SETT,0);
+					435+skin_height,0x34,system.color.work,TITLE_SETT,0);
 				GetProcessInfo(#Settings, SelfInfo);
 				DrawSettingsCheckBoxes();
 		}
@@ -135,6 +139,7 @@ void DrawSettingsCheckBoxes()
 	show_breadcrumb.draw(x, y.inc(25));
 	big_icons.draw(x, y.inc(25));
 	two_panels.draw(x, y.inc(25));
+	colored_lines.draw(x, y.inc(25));
 	font_size.draw(x, y.inc(31));
 	line_height.draw(x, y.inc(31));
 	
@@ -161,6 +166,7 @@ void LoadIniSettings()
 	info_after_copy.checked = ini.GetInt("InfoAfterCopy", false); 
 	big_icons.checked       = ini.GetInt("BigIcons", false); BigIconsSwitch();
 	two_panels.checked      = ini.GetInt("TwoPanels", false); 
+	colored_lines.checked   = ini.GetInt("ColoredLines", false); 
 	kfont.size.pt   = ini.GetInt("FontSize", 13); 
 	files.item_h    = ini.GetInt("LineHeight", 19);
 	Form.left   = ini.GetInt("WinX", 200); 
@@ -184,9 +190,10 @@ void SaveIniSettings()
 	ini.SetInt("ShowStatusBar", show_status_bar.checked);
 	ini.SetInt("RealFileNamesCase", show_real_names.checked);
 	ini.SetInt("InfoAfterCopy", info_after_copy.checked);
-	ini.SetInt("FontSize", kfont.size.pt);
 	ini.SetInt("BigIcons", big_icons.checked);
 	ini.SetInt("TwoPanels", two_panels.checked);
+	ini.SetInt("ColoredLines", colored_lines.checked);
+	ini.SetInt("FontSize", kfont.size.pt);
 	ini.SetInt("LineHeight", files.item_h);
 	ini.SetInt("WinX", Form.left);
 	ini.SetInt("WinY", Form.top);

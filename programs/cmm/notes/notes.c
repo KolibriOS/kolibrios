@@ -1,4 +1,4 @@
-// Notes v0.7 ALPHA 
+// Notes v0.8 ALPHA 
 
 #define MEMSIZE 0xDAE80
 #include "..\lib\kolibri.h" 
@@ -22,11 +22,9 @@
 	#include "lang.h--"
 #endif
 
-#define LANG_RUS
-
 #ifdef LANG_RUS
 	?define WINDOW_CAPTION "Заметки"
-	?define DELETE_TEXT "Udoli";
+	?define DELETE_TEXT "Удалить";
 #else
 	?define WINDOW_CAPTION "Notes and reminders"
 	?define DELETE_TEXT "Delete";
@@ -38,35 +36,29 @@ unsigned char edge[sizeof(file "edge.raw")]= FROM "edge.raw"; //292x6
 #define EDGE_H 6
 #define TITLE_H 24
 #define HEADER_HEIGHT TITLE_H+EDGE_H
+#define LINES_COUNT 13
+
+#define WIN_W 270
+#define WIN_H RED_LINE_X*LINES_COUNT+HEADER_HEIGHT+4
 
 #define DELETE_BTN 4;
+#define DELETE_W sizeof(DELETE_TEXT)+2*6
 
 #include "engine.h"
 
-dword editbox_text;
-proc_info Form;
-edit_box edit_box= {0,999,0,COL_BG_ACTIVE,0x94AECE,COL_BG_ACTIVE,0xffffff,0,MAX_LINE_CHARS-1,#editbox_text,#mouse,100000000000010b};
+dword ed_mouse;
+edit_box notebox = {0,999,0,COL_BG_ACTIVE,0x94AECE,COL_BG_ACTIVE,0xffffff,0,
+	MAX_LINE_CHARS-1,NULL,#ed_mouse,ed_always_focus+ed_focus};
 dword lists[] = { 0xEAEAEA, 0xCDCDCD, 0xF0F0F0, 0xD8D8D8, 0 };
+
+bool delete_active = false;
+block delBtn;
 
 //===================================================//
 //                                                   //
 //                       CODE                        //
 //                                                   //
 //===================================================//
-
-struct KDelete {
-	char width;
-	char active;
-	void Draw();
-} DeleteBtn;
-
-void KDelete::Draw(dword x, y, h)
-{
-	width = strlen(DELETE_TEXT)+2*6;
-	x -= width+1;
-	DefineButton(x, y, width, h-1, DELETE_BTN, 0xFF0000);
-	WriteText(x+6+1, h/2-4+y, 0x80, 0xFFFfff, DELETE_TEXT);
-}
 
 void main()
 {   
@@ -75,57 +67,78 @@ void main()
 	load_dll(boxlib, #box_lib_init,0);
 	
 	if (param) notes.OpenTxt(#param); else notes.OpenTxt(abspath("notes.txt"));
-	notes.list.cur_y = -1;
+	notes.cur_y = -1;
 
-	SetEventMask(EVM_REDRAW + EVM_KEY + EVM_BUTTON + EVM_MOUSE + EVM_MOUSE_FILTER);
+	SetEventMask(0x27);
 
 	loop() switch(WaitEvent())
 	{
 		case evMouse:
+			edit_box_mouse stdcall (#notebox);
+
 			mouse.get();
 
-			if (notes.list.MouseOver(mouse.x, mouse.y)) {
-    			notes.list.ProcessMouse(mouse.x, mouse.y);
-				if (mouse.lkm) EventSelectItem();
-				if (mouse.pkm) EventDrawDeleteButton();
+			if (delete_active) && (delBtn.hovered()) break;
+
+			if (mouse.lkm) && (mouse.y<TITLE_H) && (mouse.x<WIN_W-39) EventDragWindow();
+
+			if (mouse.pkm) 
+			&& (notes.MouseOver(mouse.x, mouse.y)) {
+				if (notes.ProcessMouse(mouse.x, mouse.y)) EventListRedraw();
+				EventDrawDeleteButton();
+			} 
+
+			if (mouse.key&MOUSE_LEFT)&&(mouse.up) 
+			&& (notes.ProcessMouse(mouse.x, mouse.y)) {
+				EventListRedraw();
+				EventActivateLine(notes.cur_y);
 			}
 
-			if (mouse.lkm) && (mouse.y<TITLE_H) && (mouse.x<Form.width-30) EventDragWindow();
-
-			if (notes.list.cur_y>=0) edit_box_mouse stdcall (#edit_box);
 			break;
 
 		 case evButton:
-			btn = GetButtonID();               
-			if (CLOSE_BTN == btn) EventExitApp();
-			if (DELETE_BTN == btn)
+			btn = GetButtonID();
+			switch(btn)
 			{
-				notes.DeleteCurrentNode();
-				notes.DrawList();
-				DeleteBtn.active = 0;
-				break;
-			}
-			if (btn>=CHECKBOX_ID) //checkboxes
-			{
-				notes.lines[btn-CHECKBOX_ID].state ^= 1;
-				notes.DrawList();
-				break;
-			}
+				case CLOSE_BTN:
+					EventExitApp();
+					break;
+				case DELETE_BTN:
+					EventDeleteCurrentNode();
+					break;
+				default: 
+					notes.lines[btn-CHECKBOX_ID].state ^= 1;
+					EventListRedraw();
+					break;
+			}  
 			break;
 	 
 		case evKey:
 			GetKeys();
-			if (SCAN_CODE_ESC  == key_scancode) EventExitApp();
-			if (SCAN_CODE_DOWN == key_scancode) { EventActivateLine(notes.list.cur_y+1); break; }
-			if (SCAN_CODE_UP   == key_scancode) { EventActivateLine(notes.list.cur_y-1); break; }
-			if (notes.list.cur_y>=0) edit_box_key stdcall (#edit_box);
+			switch(key_scancode)
+			{
+				case SCAN_CODE_ESC:
+					EventExitApp();
+					break;
+				case SCAN_CODE_DOWN:
+					EventActivateLine(notes.cur_y+1);
+					break;
+				case SCAN_CODE_UP:
+					EventActivateLine(notes.cur_y-1);
+					break;
+				default:
+					if (notes.cur_y>=0) {
+						EAX = key_editbox;
+						edit_box_key stdcall (#notebox);
+					}
+				
+			}
 			break;
 		 
 		 case evReDraw:
 		 	draw_window();
    }
 }
-
 
 void DrawCloseButton(dword x,y,w,h)
 {
@@ -139,33 +152,31 @@ void DrawCloseButton(dword x,y,w,h)
 void draw_window()
 {
 	int i;
-	notes.list.SetSizes(1, HEADER_HEIGHT, 270, RED_LINE_X*LINES_COUNT, RED_LINE_X);
-	DefineAndDrawWindow(100,100,notes.list.w+1,notes.list.h+HEADER_HEIGHT+4,0x01,0,0,0x01fffFFF);
-	//DefineDragableWindow(100, 100, notes.list.w+1, notes.list.h+HEADER_HEIGHT+4);
-	GetProcessInfo(#Form, SelfInfo);
-	DrawRectangle3D(0,0,Form.width,TITLE_H-1,0xBB6535, 0xCD6F3B);
-	DrawRectangle3D(1,1,Form.width-2,TITLE_H-3,0xEFBFA4, 0xDD8452);
-	DrawBar(2,2,Form.width-3,TITLE_H-4,0xE08C5E);
+	DefineUnDragableWindow(100,100,WIN_W, WIN_H);
+	notes.SetSizes(RED_LINE_X+1, HEADER_HEIGHT, WIN_W-1, RED_LINE_X*LINES_COUNT, RED_LINE_X);
+	DrawRectangle3D(0,0,WIN_W,TITLE_H-1,0xBB6535, 0xCD6F3B);
+	DrawRectangle3D(1,1,WIN_W-2,TITLE_H-3,0xEFBFA4, 0xDD8452);
+	DrawBar(2,2,WIN_W-3,TITLE_H-4,0xE08C5E);
 	WriteText(9,TITLE_H/2-6,0x90,0xA9613A,WINDOW_CAPTION);
 	WriteTextB(7,TITLE_H/2-7,0x90,0xFFFfff,WINDOW_CAPTION);
 	_PutImage(1, TITLE_H, 292,EDGE_H, #edge);
-	PutPixel(notes.list.x+RED_LINE_X, notes.list.y-1, COL_RED_LINE);
+	PutPixel(notes.x+RED_LINE_X, notes.y-1, COL_RED_LINE);
 	ECX-=1;	$int 0x40;
-	DrawCloseButton(Form.width-23,4,16,16);
-	DrawRectangle(0,TITLE_H,Form.width,Form.height-HEADER_HEIGHT+EDGE_H,0xBBBBBB);
-	for (i=0; lists[i]!=0; i++) DrawBar(1,Form.height-i-1, Form.width-1, 1, lists[i]);
-	edit_box.width = notes.list.w-RED_LINE_X-8;
-	edit_box.left = notes.list.x+RED_LINE_X+4;
-
-	notes.DrawList();
+	DrawCloseButton(WIN_W-23,4,16,16);
+	DrawRectangle(0,TITLE_H,WIN_W,WIN_H-HEADER_HEIGHT+EDGE_H,0xBBBBBB);
+	for (i=0; lists[i]!=0; i++) DrawBar(1,WIN_H-i-1, WIN_W-1, 1, lists[i]);
+	EventListRedraw();
 }
 
-void DrawEditBox_Notes()
+void DrawEditBoxN()
 {
-	edit_box.pos = edit_box.offset = edit_box.shift = 0;
-	edit_box.size = strlen(edit_box.text);
-	edit_box.top = notes.list.cur_y*notes.list.item_h+4+notes.list.y;
-	edit_box_draw stdcall(#edit_box);	
+	notebox.width = notes.w-notes.x-8;
+	notebox.left = notes.x+5;
+	notebox.pos = notebox.offset = notebox.shift = notebox.shift_old = 0;
+	notebox.cl_curs_x = notebox.cl_curs_y = 0;
+	notebox.size = strlen(notebox.text);
+	notebox.top = notes.cur_y*notes.item_h+4+notes.y;
+	edit_box_draw stdcall(#notebox);	
 }
 
 //===================================================//
@@ -176,16 +187,12 @@ void DrawEditBox_Notes()
 
 void EventActivateLine(int line_n)
 {
-	int old;
-	if (line_n<0) || (line_n>notes.list.count) return;
-	DeleteBtn.active = 0;
-	//redraw lines
-	notes.list.cur_y = line_n;
-	edit_box.text = notes.DrawLine(notes.list.cur_y, notes.list.item_h);
-	notes.DrawList();
-	DrawEditBox_Notes();
+	if (line_n<0) || (line_n>notes.count) return;
+	notes.cur_y = line_n;
+	notebox.text = notes.DrawLine(notes.cur_y, notes.item_h);
+	EventListRedraw();
+	DrawEditBoxN();
 }
-
 
 void EventExitApp()
 {
@@ -195,19 +202,25 @@ void EventExitApp()
 
 void EventDrawDeleteButton()
 {
-	notes.DrawLine(notes.list.cur_y, notes.list.item_h);
-	DeleteBtn.Draw(notes.list.x+notes.list.w, notes.list.cur_y*notes.list.item_h+notes.list.y, notes.list.item_h);
-	edit_box.top=-20;
-	DeleteBtn.active = 1;
+	notes.DrawLine(notes.cur_y, notes.item_h);
+	delBtn.set_size(WIN_W-DELETE_W-1, notes.cur_y*notes.item_h+notes.y, DELETE_W, notes.item_h-1);
+	DefineButton(delBtn.x, delBtn.y, delBtn.w, delBtn.h, DELETE_BTN, 0xFF0000);
+	WriteText(delBtn.x+10, delBtn.h/2-3 + delBtn.y, 0x80, 0xFFFfff, DELETE_TEXT);
+	notebox.top=-20;
+	delete_active = true;
 }
 
-void EventSelectItem()
+void EventDeleteCurrentNode()
 {
-	int id;
-	id = mouse.y-notes.list.y/notes.list.item_h;
-	if (DeleteBtn.active) && (mouse.x>notes.list.x+notes.list.w-DeleteBtn.width) return;
-	if (id!=notes.list.cur_y) && (id<notes.list.count) EventActivateLine(id);
-	else { notes.list.cur_y=-1; notes.DrawList(); }
+	notes.lines[notes.cur_y].Delete();
+	EventListRedraw();
+}
+
+void EventListRedraw()
+{
+	delete_active = false;
+	DeleteButton(DELETE_BTN);
+	notes.DrawList();
 }
 
 stop:

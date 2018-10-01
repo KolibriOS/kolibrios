@@ -1,6 +1,6 @@
 /*
  * System Monitor
- * version 0.86
+ * version 0.87
  * Author: Leency
 */
 
@@ -21,9 +21,10 @@
 //===================================================//
 
 #define MIN_PB_BLOCK_W 19
-#define LOAD_BG 0xFFFfff
-#define LOAD_ACTIVE 0x6C81DC
-#define LOAD_BG_TEXT 0x696969
+#define LOAD_CPU 0x2460C8
+#define PROGRESS_ACTIVE 0x489FE4
+#define PROGRESS_BG 0xFFFfff
+#define PROGRESS_BG_TEXT 0x696969
 
 struct sensor {
 	int x,y,w,h;
@@ -52,13 +53,18 @@ void sensor::draw_progress(dword progress_w, active_value, bg_value, mesure)
 	if (progress_w < MIN_PB_BLOCK_W) progress_w = MIN_PB_BLOCK_W;
 	if (progress_w > w-MIN_PB_BLOCK_W) progress_w = w-MIN_PB_BLOCK_W;
 
-	DrawBar(x, y, w-progress_w, h, LOAD_ACTIVE);
-	sprintf(#param, "%i%s", active_value, mesure);
-	WriteText(w-progress_w- calc(strlen(#param)*8) /2 + x, h/2-7+y, 0x90, LOAD_BG, #param);
+	
+	DrawBar(x, y,     w-progress_w, 1,   MixColors(PROGRESS_ACTIVE, PROGRESS_BG, 200));
+	DrawBar(x, y+1,   w-progress_w, h-2, PROGRESS_ACTIVE);
+	DrawBar(x, y+h-1, w-progress_w, 1,   MixColors(PROGRESS_ACTIVE, system.color.work_graph, 200));
 
-	DrawBar(x+w-progress_w, y, progress_w, h, LOAD_BG);
+
+	sprintf(#param, "%i%s", active_value, mesure);
+	WriteText(w-progress_w- calc(strlen(#param)*8) /2 + x, h/2-7+y, 0x90, PROGRESS_BG, #param);
+
+	DrawBar(x+w-progress_w, y, progress_w, h, PROGRESS_BG);
 	sprintf(#param, "%i%s", bg_value, mesure);
-	WriteText(-progress_w - calc(strlen(#param)*8)/2 + w+x, h/2-7+y, 0x90, LOAD_BG_TEXT, #param);
+	WriteText(-progress_w - calc(strlen(#param)*8)/2 + w+x, h/2-7+y, 0x90, PROGRESS_BG_TEXT, #param);
 }
 
 //===================================================//
@@ -232,10 +238,10 @@ void MonitorCpu()
 	WriteText(cpu.x+cpu.w-calc(strlen(#param)*8), cpu.y-25, 0x90, system.color.work_text, #param);
 
 	for (i=0; i<CPU_STACK; i+=2) {
-		DrawBar(i+cpu.x, cpu.y, 1, cpu.h-cpu_stack[i], LOAD_BG);
-		DrawBar(i+cpu.x, cpu.h-cpu_stack[i]+cpu.y, 1, cpu_stack[i], LOAD_ACTIVE);
+		DrawBar(i+cpu.x, cpu.y, 1, cpu.h-cpu_stack[i], PROGRESS_BG);
+		DrawBar(i+cpu.x, cpu.h-cpu_stack[i]+cpu.y, 1, cpu_stack[i], LOAD_CPU);
 
-		DrawBar(i+1+cpu.x, cpu.y, 1, cpu.h, LOAD_BG);
+		DrawBar(i+1+cpu.x, cpu.y, 1, cpu.h, PROGRESS_BG);
 	}
 
 	pos++;

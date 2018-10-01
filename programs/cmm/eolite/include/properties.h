@@ -89,6 +89,7 @@ void SetPropertiesDir(dword way)
 void SetProperties(byte prop)
 {
 	dword cur_file;
+	dword i;
 
 	if (prop==1) || (prop==2)
 	{
@@ -146,6 +147,7 @@ void ShowConfirmQuestionPopin()
 void GetSizeMoreFiles(dword way)
 {
 	char cur_file[4096];
+	dword i;
 	
 	for (i=0; i<files.count; i++) 
 	{

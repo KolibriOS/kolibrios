@@ -32,10 +32,14 @@
 	return _r + _g + _b;
 }
 
-:dword MixColors(dword _base, _overlying, byte a) 
+:dword MixColors(dword _base, _overlying, dword a) 
 {
 	_rgb rgb1, rgb2, rgb_final;
-	byte n_a;
+	dword n_a;
+	if (a<0) || (a>255) {
+		debug("Wrong alpha param in MixColors()!"); 
+		debugval("alpha", a);
+	}
 
 	rgb1.DwordToRgb(_base);
 	rgb2.DwordToRgb(_overlying);

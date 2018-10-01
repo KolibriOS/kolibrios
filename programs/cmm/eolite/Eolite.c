@@ -32,6 +32,7 @@
 
 //Button IDs
 enum {
+	PATH_BTN = 10,
 	POPUP_BTN1 = 201,
 	POPUP_BTN2 = 202,
 	BREADCRUMB_ID = 300
@@ -51,7 +52,7 @@ enum {
 	ONLY_OPEN
 };
 
-dword col_padding, col_selec, col_lpanel, col_work, col_graph, col_list_line=0xDDD7CF;
+dword col_padding=0, col_selec, col_lpanel, col_work, col_graph, col_list_line=0xDDD7CF;
 
 int toolbar_buttons_x[7]={9,46,85,134,167,203};
 
@@ -94,7 +95,6 @@ dword menu_stak,about_stak,properties_stak,settings_stak,copy_stak,delete_stak;
 
 proc_info Form;
 int sc_slider_h;
-int j, i;
 int action_buf;
 int rand_n;
 
@@ -133,21 +133,12 @@ byte cmd_free=0;
 
 void main() 
 {
-	bool update_files_list = false;
-	dword files_count = 0;
-	dword countPathFile = 0;
-	dword countPathFile2 = 0;
-	dword files_y = 0;
-	dword countDisk = 0;
 	dword id;
-	dword devbuf;
 	byte count_sl = 0;
 	signed x_old, y_old, dif_x, dif_y, adif_x, adif_y;
 	char stats;
 	rand_n = random(40);
 
-	devbuf = malloc(10000);
-	
 	load_dll(boxlib, #box_lib_init,0);
 	load_dll(libini, #lib_init,1);
 	load_dll(libio,  #libio_init,1);
@@ -170,6 +161,8 @@ void main()
 		properties_dialog();
 		ExitProcess();	
 	}
+
+	ESBYTE[0] = NULL;
 
 	if (param)
 	{
@@ -201,7 +194,7 @@ void main()
 				}				
 				
 				mouse.get();
-				
+
 				if (!mouse.mkm) && (stats>0) stats = 0;
 				if (mouse.mkm) && (!stats)
 				{
@@ -304,7 +297,7 @@ void main()
 				{
 					if (sc_slider_h/2+files.y>mouse.y) || (mouse.y<0) || (mouse.y>4000) mouse.y=sc_slider_h/2+files.y; //anee eo?ni? iaa ieiii
 					id = files.first;
-					files.first = -sc_slider_h / 2 + mouse.y -j -files.y * files.count;
+					files.first = -sc_slider_h / 2 + mouse.y -files.y * files.count;
 					files.first /= files.h - 18;
 					if (files.visible+files.first>files.count) files.first=files.count-files.visible;
 					if (files.first<0) files.first=0;
@@ -351,6 +344,10 @@ void main()
 							KillProcess(about_window);
 							SaveIniSettings();
 							ExitProcess();
+					case PATH_BTN:
+							notify(COPY_PATH_STR);
+							Clipboard__CopyText(#path);
+							break;
 					case 21: //Back
 							GoBack();
 							break;
@@ -467,15 +464,11 @@ void main()
 								else Open(1);
 								break;
 						case 030: //Ctrl+A - select all files
-								for (i=0; i<files.count; i++) setElementSelectedFlag(i, true);
-								List_ReDraw();
-								DrawStatusBar();
+								EventSelectAllFiles(true);
 								break;
 						case 022: //Ctrl+U - unselect all files
-								for (i=0; i<files.count; i++) setElementSelectedFlag(i, false);
 								selected_count = 0;
-								List_ReDraw();
-								DrawStatusBar();
+								EventSelectAllFiles(false);
 								break;
 					}
 					break;
@@ -494,7 +487,7 @@ void main()
 								if (!two_panels.checked) break;
 								if (active_panel==1) active_panel=2; else active_panel=1;
 								ChangeActivePanel();
-								DrawStatusBar();
+								DrawFilePanels();
 								break;
 						case 093: //menu
 								menu_call_mouse=0;
@@ -515,17 +508,7 @@ void main()
 								FnProcess(key_scancode-58);
 								break; 
 						default:
-								for (i=files.cur_y+1; i<files.count; i++)
-								{
-									strcpy(#temp, file_mas[i]*304+buf+72);
-									if (temp[0]==key_ascii) || (temp[0]==key_ascii-32)
-									{
-										files.cur_y = i - 1;
-										files.KeyDown();
-										List_ReDraw();
-										break;
-									}
-								}
+								EventSelectFileByKeyPress();
 				}                         
 			break;
 			case evIPC:
@@ -553,49 +536,9 @@ void main()
 				}
 			break;
 			default:
-				
-				ReadDir(19, devbuf, "/"); // get disk
-				if(countDisk != EBX) // if different then
-				{
-					countDisk = EBX;
-					FnProcess(5);
-				}
-				else // get current files
-				{
-					if(two_panels.checked)
-					{
-						// this add code update list files
-						update_files_list = false;
-						//strcpy(#inactive_path,#path);
-						ReadDir(19, devbuf, #inactive_path);
-						if(countPathFile != EBX) // if different then
-						{
-							countPathFile = EBX;
-							update_files_list = true;
-						}
-						
-						//strcpy(#active_path,#path);
-						ReadDir(19, devbuf, #active_path);
-						if(countPathFile2 != EBX) // if different then
-						{
-							countPathFile2 = EBX;
-							update_files_list = true;
-						}
-						if(update_files_list) DrawFilePanels();
-					}
-					else
-					{
-						ReadDir(19, devbuf, #path);
-						if(countPathFile != EBX) // if different then
-						{
-							countPathFile = EBX;
-							Open_Dir(#path,WITH_REDRAW);
-						}
-					}
-				}
+				if (Form.status_window>2) break;
+				EventRefreshDisksAndFolders();
 		}
-		
-		
 		
 		if(cmd_free)
 		{
@@ -613,11 +556,12 @@ void main()
 void DrawFavButton(int x)
 {
 	_PutImage(x,10,20,22,#fav);
-	DefineButton(x+1,11,20-2,22-3,61+BT_HIDE,NULL);
+	DefineHiddenButton(x+1,11,20-2,22-3,61);
 }
 
 void draw_window()
 {
+	int i;
 	if (show_status_bar.checked) status_bar_h = STATUS_BAR_H; else status_bar_h = 0;
 	DefineAndDrawWindow(Form.left+rand_n,Form.top+rand_n,Form.width,Form.height,0x73,NULL,TITLE,0);
 	GetProcessInfo(#Form, SelfInfo);
@@ -627,11 +571,11 @@ void draw_window()
 	GetProcessInfo(#Form, SelfInfo); //if win_size changed
 	_PutImage(0,0,246,34,#toolbar);
 	DrawBar(127, 8, 1, 25, col_graph);
-	for (j=0; j<3; j++) DefineButton(toolbar_buttons_x[j]+2,5+2,31-5,29-5,21+j+BT_HIDE,NULL);
-	for (j=3; j<6; j++) DefineButton(toolbar_buttons_x[j],5,31,29,21+j+BT_HIDE,NULL);
+	for (i=0; i<3; i++) DefineHiddenButton(toolbar_buttons_x[i]+2,7,31-5,29-5,21+i);
+	for (i=3; i<6; i++) DefineHiddenButton(toolbar_buttons_x[i],  5,31,  29,  21+i);
 	DrawBar(246,0, Form.cwidth - 246, 34, col_work);
 	_PutImage(Form.cwidth-17,11,6,18,#dots);
-	DefineButton(Form.cwidth-24,7,20,25,51+BT_HIDE+BT_NOFRAME,0); //dots
+	DefineHiddenButton(Form.cwidth-24,7,20,25,51+BT_NOFRAME); //dots
 	//main rectangles
 	DrawRectangle(1,40,Form.cwidth-3,Form.cheight - 42-status_bar_h,col_graph);
 	DrawRectangle(0,39,Form.cwidth-1,Form.cheight - 40,col_palette[4]); //bg
@@ -723,6 +667,7 @@ void DrawFilePanels()
 void List_ReDraw()
 {
 	int all_lines_h;
+	dword j;
 	static int old_cur_y, old_first;
 
 	files.CheckDoesValuesOkey(); //prevent some shit
@@ -769,9 +714,10 @@ void Line_ReDraw(dword bgcol, filenum){
 	char label_file_name[4096];
 	if (filenum==-1) return;
 	DrawBar(files.x,y,4,files.item_h,bgcol);
-	DrawBar(files.x+20,y,files.w-20,files.item_h,bgcol);
 	DrawBar(files.x+4,y,icon_size,icon_y-y,bgcol);
 	if (files.item_h>icon_size) DrawBar(files.x+4,icon_y+icon_size-1,icon_size,y+files.item_h-icon_y-icon_size+1,bgcol);
+	if (colored_lines.checked) && (bgcol!=col_selec) && (filenum%2) bgcol=0xF1F1F1;
+	DrawBar(files.x+icon_size+4,y,files.w-icon_size-4,files.item_h,bgcol);
 
 	file_offet = file_mas[filenum+files.first]*304 + buf+32;
 	attr = ESDWORD[file_offet];
@@ -804,7 +750,7 @@ void Line_ReDraw(dword bgcol, filenum){
 	DrawIconByExtension(#temp_path, ext1, files.x+4, icon_y, bgcol);
 
 	if (TestBit(attr, 1)) || (TestBit(attr, 2)) text_col=0xA6A6B7; //system or hiden?
-	if (bgcol!=0xFFFfff)
+	if (bgcol==col_selec)
 	{
 		itdir = TestBit(attr, 4);
 		strcpy(#file_name, file_name_off);
@@ -883,7 +829,9 @@ void Open_Dir(dword dir_path, redraw){
 inline Sorting()
 {
 	dword k=0, l=1;
+	int j=0;
 	dword file_off;
+
 	if (!strcmp(#path,"/")) //do not sort root folder
 	{
 		for(k=1;k<files.count;k++;) file_mas[k]=k;
@@ -908,8 +856,8 @@ inline Sorting()
 	//sorting: files first, then folders
 	Sort_by_Name(0,k-1);
 	if (sort_num==1) Sort_by_Name(k,files.count-1);
-	if (sort_num==2) Sort_by_Type(k,files.count-1);
-	if (sort_num==3) Sort_by_Size(k,files.count-1);
+	else if (sort_num==2) Sort_by_Type(k,files.count-1);
+	else if (sort_num==3) Sort_by_Size(k,files.count-1);
 	//make ".." first item in list
 	if (k>0) && (strncmp(file_mas[0]*304+buf+72,"..",2)!=0)
 		for(k--; k>0; k--;) if (!strncmp(file_mas[k]*304+buf+72,"..",2)) {file_mas[k]><file_mas[0]; break;}
@@ -965,13 +913,13 @@ void SelectFileByName(dword that_file)
 
 void Dir_Up()
 {
+	int iii;
 	char old_folder_name[4096];
-	i=strlen(#path)-1;
-	if (i==0) return;
-	//path[i]=0x00;
-	i = strrchr(#path, '/');
-	strcpy(#old_folder_name, #path+i);
-	if (i>1) path[i-1]=NULL; else path[i]=NULL;
+	iii=strlen(#path)-1;
+	if (iii==0) return;
+	iii = strrchr(#path, '/');
+	strcpy(#old_folder_name, #path+iii);
+	if (iii>1) path[iii-1]=NULL; else path[iii]=NULL;
 	SelectFileByName(#old_folder_name);
 }
 
@@ -1188,5 +1136,59 @@ void ChangeActivePanel()
 	DrawFilePanels();
 }
 
+void EventSelectAllFiles(dword state)
+{
+	int i;
+	for (i=0; i<files.count; i++) setElementSelectedFlag(i, state);
+	List_ReDraw();
+	DrawStatusBar();
+}
+
+void EventSelectFileByKeyPress()
+{
+	int i;
+	for (i=files.cur_y+1; i<files.count; i++)
+	{
+		strcpy(#temp, file_mas[i]*304+buf+72);
+		if (temp[0]==key_ascii) || (temp[0]==key_ascii-32)
+		{
+			files.cur_y = i - 1;
+			files.KeyDown();
+			List_ReDraw();
+			return;
+		}
+	}
+}
+
+int GetRealFileCountInFolder(dword folder_path)
+{
+	int fcount;
+	dword countbuf;
+
+	GetDir(#countbuf, #fcount, folder_path, DIRS_NOROOT);
+	if (countbuf) free(countbuf);
+
+	return fcount;
+}
+
+void EventRefreshDisksAndFolders()
+{
+	if(GetRealFileCountInFolder("/")+dir_exists("/kolibrios") != SystemDiscs.dev_num) {
+		FnProcess(5);
+	}
+	if(two_panels.checked)
+	{
+		if(GetRealFileCountInFolder(#inactive_path) != files_inactive.count) {
+			ChangeActivePanel();
+			Open_Dir(#path,WITH_REDRAW);
+			ChangeActivePanel();
+		}
+		if(GetRealFileCountInFolder(#path) != files.count) Open_Dir(#path,WITH_REDRAW);
+	}
+	else
+	{
+		if(GetRealFileCountInFolder(#path) != files.count) Open_Dir(#path,WITH_REDRAW);
+	}
+}
 
 stop:

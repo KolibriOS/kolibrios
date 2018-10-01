@@ -193,7 +193,7 @@
 	PutShadow(x+1,y+h+3,w+1,1,skinned,1);
 }
 
-:void GrayScaleImage(dword color_image, w, h)
+:dword GrayScaleImage(dword color_image, w, h)
 {
 	dword i,gray,to,rr,gg,bb;
 	to = w*h*3 + color_image;
@@ -208,6 +208,7 @@
 		gray = sqrt(gray) / 3;
 		DSBYTE[i] = DSBYTE[i+1] = DSBYTE[i+2] = gray;
 	}
+	return gray;
 }
 
 :void ShadowImage(dword color_image, w, h, strength)

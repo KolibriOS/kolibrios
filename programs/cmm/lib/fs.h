@@ -177,6 +177,13 @@
 	$int 0x40
 }
 
+inline fastcall void SetCurDir( ECX)
+{
+	EAX=30;
+	EBX=1;
+	$int 0x40
+}
+
 //===================================================//
 //                                                   //
 //                        Misc                       //

@@ -40,7 +40,8 @@
 struct _SystemDiscs
 {
 	collection list;
-	byte Get();
+	int dev_num;
+	void Get();
 	void Draw();
 	void Click();
 } SystemDiscs;
@@ -88,26 +89,19 @@ void GetDiskIconAndName(char disk_first_letter, dword dev_icon, disc_name)
 			strcpy(disc_name, T_UNC);				
 	}
 }
-dword __countSysDiscs = 0;
-byte _SystemDiscs::Get()
+
+void _SystemDiscs::Get()
 {
 	byte ret = 0;
 	char dev_name[10], sys_discs[10];
-	int i1, j1, dev_num, dev_disc_num;
-	dword temp_file_count, tempbuf;
+	int i1, j1, dev_num_i, dev_disc_num;
 	dword devbuf;
 
 	list.drop();
 	devbuf = malloc(10000);
 	ReadDir(19, devbuf, "/");
-	dev_num = EBX;
-	IF (dev_num != __countSysDiscs)
-	{
-		__countSysDiscs = dev_num;
-		ret = 0xFF;
-	}
-	ELSE ret = 0;
-	for (i1=0; i1<dev_num; i1++)
+	dev_num = dev_num_i = EBX;
+	for (i1=0; i1<dev_num_i; i1++)
 	{
 		sprintf(#dev_name,"/%s",i1*304+ devbuf+72);
 		Open_Dir(#dev_name, ONLY_OPEN);
@@ -119,13 +113,13 @@ byte _SystemDiscs::Get()
 		}
 		if (!strcmp(#sys_discs, "/rd/1")) 
 		{
-			GetDir(#tempbuf, #temp_file_count, "/kolibrios", DIRS_ONLYREAL);
-			if (temp_file_count) list.add("/kolibrios");
-			free(tempbuf);
+			if (dir_exists("/kolibrios")) {
+				list.add("/kolibrios");
+				dev_num++;
+			}
 		}
 	}
 	free(devbuf);
-	return ret;
 }
 
 void _SystemDiscs::Draw()
@@ -214,6 +208,7 @@ void Tip(int y, dword caption, id, arrow)
 
 void ActionsDraw()
 {
+	int i;
 	int actions_y= SystemDiscs.list.count*16+108, lineh=16;
 	Tip(actions_y-18, T_ACTIONS, 77, ""); //заголовок
 	for (i=0; actions[i*3]!=0; i++, actions_y+=lineh)

@@ -6,26 +6,30 @@
 #include "..\lib\obj\box_lib.h"
 
 #ifdef LANG_RUS
-	?define T_ADD_DISK " Добавить диск [Ins]"	
-	?define T_DELETE_DISK " Удалить диск [Del]"
-	?define INTRO_TEXT_1 "Здесь будет отображаться список"
-	?define INTRO_TEXT_2 "виртуальных дисков в системе."
-	?define INTRO_TEXT_3 "Попробуйте добавить один..."
-	?define SIZE_TEXT "Размер:"
-	?define NOTIFY_TEXT_NO_DISK    "'Для начала добавьте хотя бы один диск' -W"
-	?define NOTIFY_TEXT_DISK_LIMIT "'Достигнут предел количества виртуальных дисков' -W"
-	?define FREE_RAM_TEXT "Размер свободной оперативной памяти: "
+?define T_ADD_DISK " Добавить диск [Ins]"	
+?define T_DELETE_DISK " Удалить диск [Del]"
+?define INTRO_TEXT_1 "Здесь будет отображаться список"
+?define INTRO_TEXT_2 "виртуальных дисков в системе."
+?define INTRO_TEXT_3 "Попробуйте добавить один..."
+?define SIZE_TEXT "Размер:"
+?define NOTIFY_TEXT_NO_DISK    "'Для начала добавьте хотя бы один диск' -W"
+?define NOTIFY_SYSTEM_DISK0    "'Диск с номером 0 является системным и удалять его не рекомендуется. 
+В случае, если вы точно знаете, что делаете, удалить его можно с зажатой клавишей SHIFT.' -W"
+?define NOTIFY_TEXT_DISK_LIMIT "'Достигнут предел количества виртуальных дисков' -W"
+?define FREE_RAM_TEXT "Размер свободной оперативной памяти: "
 	
 #else
-	?define T_ADD_DISK " Add disk [Ins]"
-	?define T_DELETE_DISK " Delete disk [Del]"
-	?define INTRO_TEXT_1 " There will be list of mounted"
-	?define INTRO_TEXT_2 " virtual disks."
-	?define INTRO_TEXT_3 " Try to add one..."
-	?define SIZE_TEXT "Size:"
-	?define NOTIFY_TEXT_NO_DISK    "'You need to have at least one disk' -W"
-	?define NOTIFY_TEXT_DISK_LIMIT "'Reached the limit of the number of virtual disks' -W"
-	?define FREE_RAM_TEXT "Free RAM size: "
+?define T_ADD_DISK " Add disk [Ins]"
+?define T_DELETE_DISK " Delete disk [Del]"
+?define INTRO_TEXT_1 " There will be list of mounted"
+?define INTRO_TEXT_2 " virtual disks."
+?define INTRO_TEXT_3 " Try to add one..."
+?define SIZE_TEXT "Size:"
+?define NOTIFY_TEXT_NO_DISK    "'You need to have at least one disk' -W"
+?define NOTIFY_SYSTEM_DISK0    "'Disc number 0 is a system disk. It is not recommended to delete it.
+In case when you know what you are doing you can delete it with the SHIFT key pressed.' -W"
+?define NOTIFY_TEXT_DISK_LIMIT "'Reached the limit of the number of virtual disks' -W"
+?define FREE_RAM_TEXT "Free RAM size: "
 #endif
 
 struct path_string { unsigned char Item[10]; };
@@ -67,7 +71,10 @@ void Main_Window()
 			id=GetButtonID();               
 			if (id==1) return;
 			if (id==10) AddDisk();
-			if (id==11) DelDisk();
+			if (id==11) {
+				GetKeys();
+				DelDisk();
+			}
 			if (id>=20)
 			{
 				if (selected==id-20) OpenTmpDisk();
@@ -109,7 +116,7 @@ void Main_Window()
 					AddDisk();
 					break;
 				case SCAN_CODE_DEL:
-					if (disk_num<>0) DelDisk();
+					DelDisk();
 					break;
 				case SCAN_CODE_ENTER:
 					OpenTmpDisk();
@@ -135,7 +142,7 @@ void Main_Window()
 			break;
          case evReDraw:			
 			system.color.get();
-			DefineAndDrawWindow(170,150,405,290,0x74,system.color.work,"Virtual Disk Manager 0.67",0);
+			DefineAndDrawWindow(170,150,405,290,0x74,system.color.work,"Virtual Disk Manager 0.67a",0);
 			GetProcessInfo(#Form, SelfInfo);
 			if (Form.status_window>2) break;
 
@@ -282,6 +289,11 @@ void DelDisk()
 	if (disk_num==0)
 	{
 		notify(NOTIFY_TEXT_NO_DISK);
+		return;
+	}
+	if (disk_list[selected].Item[3]=='0') && (! key_modifier & KEY_LSHIFT) && (! key_modifier & KEY_RSHIFT)
+	{
+		notify(NOTIFY_SYSTEM_DISK0);
 		return;
 	}
 	param[0]='d';

@@ -31,9 +31,9 @@
 
 #ifdef LANG_RUS
 #define T_NOTIFY_OPEN "'IconEdit
-‚ ¤ ­­ë© ¬®¬¥­â IconEdit ¬®¦¥â ®âªàë¢ âì â®«ìª® ¨ª®­ª¨, á®§¤ ­­ë¥ ¢ á ¬®¬ à¥¤ ªâ®à¥.
-…á«¨ ­ã¦­® ®âªàëâì ¤àã£®¥ ¨§®¡à ¦¥­¨¥, ¢®á¯®«ì§ã©â¥áì ¨­áâàã¬¥­â®¬ <”®â® ¯¯ à â>
-¤«ï § å¢ â  ª àâ¨­ª¨ á íªà ­ .' -Wt"
+â€š Â¤Â Â­Â­Ã«Â© Â¬Â®Â¬Â¥Â­Ã¢ IconEdit Â¬Â®Â¦Â¥Ã¢ Â®Ã¢ÂªÃ Ã«Â¢Â Ã¢Ã¬ Ã¢Â®Â«Ã¬ÂªÂ® Â¨ÂªÂ®Â­ÂªÂ¨, Ã¡Â®Â§Â¤Â Â­Â­Ã«Â¥ Â¢ Ã¡Â Â¬Â®Â¬ Ã Â¥Â¤Â ÂªÃ¢Â®Ã Â¥.
+â€¦Ã¡Â«Â¨ Â­Ã£Â¦Â­Â® Â®Ã¢ÂªÃ Ã«Ã¢Ã¬ Â¤Ã Ã£Â£Â®Â¥ Â¨Â§Â®Â¡Ã Â Â¦Â¥Â­Â¨Â¥, Â¢Â®Ã¡Â¯Â®Â«Ã¬Â§Ã£Â©Ã¢Â¥Ã¡Ã¬ Â¨Â­Ã¡Ã¢Ã Ã£Â¬Â¥Â­Ã¢Â®Â¬ <â€Â®Ã¢Â®Â Â¯Â¯Â Ã Â Ã¢>
+Â¤Â«Ã¯ Â§Â Ã¥Â¢Â Ã¢Â  ÂªÂ Ã Ã¢Â¨Â­ÂªÂ¨ Ã¡ Ã­ÂªÃ Â Â­Â .' -Wt"
 #else
 #define T_NOTIFY_OPEN "'IconEdit
 You can open only files created in IconEdit for now!
@@ -41,7 +41,7 @@ In other case please use <Photo> tool to get an image from screen.' -Wt"
 #endif
 
 
-#define T_TITLE "Icon Editor 0.56 Alpha"
+#define T_TITLE "Icon Editor 0.57b Alpha"
 
 #define TOPBAR_H    24+8
 #define LEFTBAR_W 16+5+5+3+3
@@ -58,10 +58,13 @@ block canvas = { NULL, NULL, NULL, NULL };
 block wrapper = { LEFTBAR_W, TOPBAR_H, NULL, NULL };
 block right_bar = { NULL, 10+TOPBAR_H, RIGHT_BAR_W+10, NULL };
 
-block b_color_gradient = {NULL, 40+TOPBAR_H, RIGHT_BAR_W, 30};
-block b_last_colors = {NULL, 80+TOPBAR_H, RIGHT_BAR_W, COLSIZE*2};
-block b_default_palette = {NULL, COLSIZE*2+10+80+TOPBAR_H, RIGHT_BAR_W, COLSIZE*9};
+dword linear_gradient[RIGHT_BAR_W];
+block b_color_gradient = {NULL, 40+TOPBAR_H, RIGHT_BAR_W, 25};
+//block b_opacity_gradient = {NULL, 75+TOPBAR_H, RIGHT_BAR_W, 15};
+block b_last_colors = {NULL, 75+TOPBAR_H, RIGHT_BAR_W, COLSIZE};
+block b_default_palette = {NULL, COLSIZE+10+75+TOPBAR_H, RIGHT_BAR_W, COLSIZE*9};
 
+dword transparent = 0xBFCAD2;
 dword color1 = 0x000000;
 dword color2 = 0xBFCAD2;
 dword tool_color;
@@ -103,6 +106,7 @@ enum {
 
 proc_info Form;
 dword semi_white;
+bool bg_dark=false;
 
 more_less_box zoom = { 11, 1, 40, "Zoom" };
 
@@ -120,10 +124,11 @@ dword default_palette[] = {
 0xCC99FF,0xFF99FF,0xFF99CC,0xE0E0E0,0xFFCCCC,0xFFE5CC,0xFFFFCC,0xE5FFCC,0xCCFFCC,0xCCFFE5,
 0xCCFFFF,0xCCE5FF,0xCCCCFF,0xE5CCFF,0xFFCCFF,0xFFCCE5,0xFFFFFF	
 };
-dword last_used_colors[13*2] = {
+
+#define LAST_USED_MAX 13
+dword last_used_colors[LAST_USED_MAX] = {
 0xFFFFFF,0xFFFFFF,0xFFFFFF,0xFFFFFF,0xFFFFFF,0xFFFFFF,0xFFFFFF,0xFFFFFF,0xFFFFFF,0xFFFFFF,
-0xFFFFFF,0xFFFFFF,0xFFFFFF,0xFFFFFF,0xFFFFFF,0xFFFFFF,0xFFFFFF,0xFFFFFF,0xFFFFFF,0xFFFFFF,
-0xFFFFFF,0xFFFFFF,0xFFFFFF,0xFFFFFF,0xFFFFFF,0xFFFFFF
+0xFFFFFF,0xFFFFFF,0xFFFFFF
 };
 
 CustomCursor Cursor;
@@ -157,6 +162,7 @@ void main()
 {
 	word btn;
 	libimg_image open_image;
+	dword tmp_bg_col;
 
 	load_dll(libio,  #libio_init,  1);
 	load_dll(libimg, #libimg_init, 1);
@@ -166,12 +172,19 @@ void main()
 	Libimg_LoadImage(#left_icons, "/sys/icons16.png");
 
 	system.color.get();
+
 	semi_white = MixColors(system.color.work, 0xFFFfff, 96);
 	Libimg_ReplaceColor(top_icons.image, top_icons.w, top_icons.h, 0xffFFFfff, semi_white);
 	Libimg_ReplaceColor(top_icons.image, top_icons.w, top_icons.h, 0xffCACBD6, MixColors(semi_white, 0, 220));
 
 	Libimg_ReplaceColor(left_icons.image, left_icons.w, left_icons.h, 0xffFFFfff, system.color.work);
 	Libimg_ReplaceColor(left_icons.image, left_icons.w, left_icons.h, 0xffCACBD6, MixColors(system.color.work, 0, 200));
+
+	//fix line and rectandle color for dark skins
+	if (GrayScaleImage(#system.color.work,1,1)<65) bg_dark=true; else bg_dark=false;
+	if (bg_dark) Libimg_ReplaceColor(left_icons.image, left_icons.w, left_icons.h, 0xff545454, 0xffD3D3D4);
+
+	EventSetActiveColor(1, color1);
 
 	if (!param[0]) {
 		image.create(32, 32);
@@ -185,7 +198,7 @@ void main()
 			ExitProcess();
 		}
 		else {
-			image.create(open_image.w, open_image.h);
+			image.create(open_image.h, open_image.w);
 			image.set_image(open_image.imgsrc);
 		}
 	}
@@ -257,8 +270,7 @@ void main()
 					EventCreateNewIcon();
 					break;
 				case BTN_OPEN:
-					notify(T_NOTIFY_OPEN);
-					RunProgram("/sys/lod", sprintf(#param, "*png* %s",#program_path));
+					EventOpenIcon();
 					break;
 				case BTN_SAVE:
 					EventSaveIconToFile();
@@ -323,10 +335,25 @@ void main()
 		case evKey:
 			GetKeys();
 
+			if (key_modifier&KEY_LCTRL) || (key_modifier&KEY_RCTRL)
+			{
+				switch(key_scancode)
+				{
+					case SCAN_CODE_KEY_S:
+						EventSaveIconToFile();
+						break;
+					case SCAN_CODE_KEY_O:
+						EventOpenIcon();
+						break;
+				}
+			}
+
+			if (key_modifier&KEY_LSHIFT) || (key_modifier&KEY_RSHIFT) {
+				if (key_scancode == SCAN_CODE_DEL) EventCleanCanvas();
+			}
+
 			if (currentTool != TOOL_NONE) && (tools[currentTool].onKeyEvent != 0)
 				tools[currentTool].onKeyEvent(key_scancode);
-
-			if (key_scancode == SCAN_CODE_DEL) EventCleanCanvas();
 
 			if (key_scancode == SCAN_CODE_KEY_P) setCurrentTool(TOOL_PENCIL);
 			if (key_scancode == SCAN_CODE_KEY_I) setCurrentTool(TOOL_PIPETTE);
@@ -470,6 +497,7 @@ void DrawEditArea()
 	canvas.h = image.rows * zoom.value;
 	if (canvas.w+2 > wrapper.w) || (canvas.h+2 > wrapper.h) { 
 		zoom.value--;
+		if (zoom.x) zoom.redraw();
 		DrawEditArea();
 		return;
 	}
@@ -507,37 +535,59 @@ void DrawActiveColor(dword iny)
 	if (iny != NULL) outy = iny;
 	DrawFrame(right_bar.x, outy, CELL, CELL, NULL);
 	DrawBar(right_bar.x+2, outy+2, CELL-4, CELL-4, color1);
-	sprintf(#param, "%A", color1);
-	WriteTextWithBg(right_bar.x+30, outy+3, 0xD0, system.color.work_text, #param+4, system.color.work);
 
-	DrawFrame(right_bar.x+110, outy, CELL, CELL, NULL);
-	DrawBar(right_bar.x+110+2, outy+2, CELL-4, CELL-4, color2);
-	sprintf(#param, "%A", color2);
-	WriteTextWithBg(right_bar.x+30+110, outy+3, 0xD0, system.color.work_text, #param+4, system.color.work);	
-	DrawCurrentColorGradientByLightness();
+	DrawFrame(right_bar.x+CELL+5, outy, CELL, CELL, NULL);
+	DrawBar(right_bar.x+CELL+5+2, outy+2, CELL-4, CELL-4, color2);
+
+	//sprintf(#param, "%A", color1);
+	//WriteTextWithBg(right_bar.x+30, outy+3, 0xD0, system.color.work_text, #param+4, system.color.work);
+	DrawCurrentColorGradient();
 }
 
-void DrawCurrentColorGradientByLightness()
+int lmax;
+void GenerateCurrentColorGradient()
+{
+	int i, avg, rmax;
+
+	rgb.DwordToRgb(color1);
+	avg = 255 - calc(rgb.r + rgb.g + rgb.b / 3);
+
+	lmax = b_color_gradient.w *avg/255 | 1;
+	rmax = b_color_gradient.w - lmax | 1;
+	if (lmax == 0) lmax=1;
+	if (rmax == 0) rmax=1;
+	
+	for (i=0; i<lmax; i++) {
+		linear_gradient[i] = MixColors(color1,0xFFFfff,255*i/lmax);
+	}
+
+	for (i=0 ; i<=rmax; i++) {
+		linear_gradient[lmax+rmax - i] = MixColors(color1,0x000000,255*i/rmax);
+	}
+}
+
+void DrawCurrentColorGradient()
 {
 	int i;
-	int w = right_bar.w-10/2;
-	for (i=0; i<w; i++)
-		DrawBar(b_color_gradient.x+i, b_color_gradient.y, 
-			1, b_color_gradient.h, MixColors(color1,0xFFFfff,255*i/w));
+	dword hitch_color=system.color.work;
+	int hitch_x = b_color_gradient.x+lmax-1;
+	if (lmax>b_color_gradient.w-2) hitch_x=b_color_gradient.x+b_color_gradient.w-3;
 
+	for (i=0 ; i<b_color_gradient.w; i++) {
+		DrawBar(b_color_gradient.x+i, b_color_gradient.y, 1, b_color_gradient.h, linear_gradient[i]);		
+	}
 	//current color marker	
-	DrawBar(b_color_gradient.x+i-1, b_color_gradient.y-2, 3,2, 0x000000);
-
-	for (i=0 ; i<=w; i++)
-		DrawBar(b_color_gradient.x+w+w-i, b_color_gradient.y, 
-			1, b_color_gradient.h, MixColors(color1,0x000000,255*i/w));
+	DrawBar( b_color_gradient.x-1, b_color_gradient.y-2, b_color_gradient.w+4, 2, system.color.work);
+	
+	if (bg_dark) hitch_color=0xFFFfff; else hitch_color=0;
+	DrawBar(hitch_x, b_color_gradient.y-2, 3,2, hitch_color);
 }
 
 void DrawColorPallets()
 {
 	int r, c, i=0;
 	//Last used colors
-	for (r = 0; r < 2; r++)
+	for (r = 0; r < LAST_USED_MAX/PAL_ITEMS_X_COUNT; r++)
 	{
 		for (c = 0; c < PAL_ITEMS_X_COUNT; c++, i++)
 		{
@@ -611,6 +661,10 @@ void DrawImageWithBg(dword _x, _y, _col_to)
 
 void ShowWindow_TestIcon()
 {
+	if (image.rows>=preview_size) || (image.columns>=preview_size) {
+		notify("'IconEdit\nImage is too big for preview!' -tE");
+		return;
+	}
 	loop() switch(WaitEvent())
 	{
 		case evButton:
@@ -645,6 +699,12 @@ void EventCreateNewIcon()
 	Window_CanvasReSize.create();
 }
 
+void EventOpenIcon()
+{
+	//notify(T_NOTIFY_OPEN);
+	RunProgram("/sys/lod", sprintf(#param, "*png* %s",#program_path));
+}
+
 void EventSaveIconToFile()
 {
 	int i=0;
@@ -674,7 +734,8 @@ void EventExitIconEdit()
 void EventSetActiveColor(int _number, _color)
 {
 	int i;
-	for (i=13*2-1; i>0; i--) {
+	if (last_used_colors[0] == _color) return;
+	for (i=LAST_USED_MAX-1; i>0; i--) {
 		last_used_colors[i] = last_used_colors[i-1];
 	}
 	last_used_colors[0] = _color;
@@ -682,6 +743,12 @@ void EventSetActiveColor(int _number, _color)
 	if (_number == 1) color1 = _color;
 	if (_number == 2) color2 = _color;
 
+	if (b_color_gradient.hovered()) {
+		lmax = mouse.x - b_color_gradient.x;
+	}
+	else {
+		GenerateCurrentColorGradient();
+	}
 	DrawActiveColor(NULL);
 	DrawColorPallets();
 }

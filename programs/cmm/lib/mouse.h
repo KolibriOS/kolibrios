@@ -27,7 +27,8 @@
 
 :struct MOUSE
 {
-	signed x,y,xx,yy,lkm,mkm,pkm,key,tmp,tmp_time,hor,vert,down,up,move,click,dblclick,drag,left,top;
+	signed x,y,xx,yy,lkm,mkm,pkm,key,tmp,tmp_time,hor,vert,left,top;
+	bool down,up,move,click,dblclick,drag;
 	dword handle,_;
 	byte cmd;
 	void get();
@@ -186,8 +187,6 @@
 	//hor = EAX;
 	vert = EBX;
 }
-
-
 
 :void MOUSE::slider()
 {

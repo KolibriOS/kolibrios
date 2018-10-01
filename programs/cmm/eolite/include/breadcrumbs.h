@@ -5,6 +5,7 @@ void DrawPathBar()
 	PathShow.area_size_x = Form.cwidth-300;
 	DrawBar(PathShow.start_x-3, PathShow.start_y-6, PathShow.area_size_x+3, 19, 0xFFFfff);
 	DrawRectangle(PathShow.start_x-4,PathShow.start_y-7,PathShow.area_size_x+4,20,col_graph);
+	DefineHiddenButton(PathShow.start_x-4+1,PathShow.start_y-7+1,PathShow.area_size_x+4-2,20-2,PATH_BTN);
 	DrawBar(PathShow.start_x-4, PathShow.start_y+14, PathShow.area_size_x+4, 1, MixColors(col_work,0xFFFfff,120));
 	DrawFavButton(PathShow.start_x+PathShow.area_size_x);
 	PathShow_prepare stdcall(#PathShow);
@@ -65,7 +66,7 @@ void DrawBreadcrumbButton(dword x,y,w,h,id,text)
 	int i;
 	DrawRectangle(x,y,w,h,col_graph);
 	for (i=0; i<h-1; i++) DrawBar(x+1, y+i+1, w-1, 1, col_palette_br[i]);
-	DefineButton(x+1,y+1,w-2,h-2,id+BT_HIDE,0xEFEBEF);
+	DefineHiddenButton(x+1,y+1,w-2,h-2,id);
 	WriteText(-strlen(text)*8+w/2+x,h/2+y-7,0x90,0x444444,text);
 	DrawBar(x, y+h+1, w+1, 1, MixColors(col_work,0xFFFfff,120));
 }

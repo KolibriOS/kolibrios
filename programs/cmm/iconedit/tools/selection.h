@@ -209,6 +209,7 @@ void SelectTool_onKeyEvent(dword keycode) {
 	dword r, c;
 
 	if (SCAN_CODE_DEL == keycode) {
+		DrawBarIcon(selection.start_x, selection.start_y, selection.end_x, selection.end_y, color2, TOIMAGE);
 		selection.reset();
 		DrawCanvas();
 	}

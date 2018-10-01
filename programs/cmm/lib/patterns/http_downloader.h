@@ -164,7 +164,7 @@ int check_is_the_adress_local(dword _in)
 	if(!strncmp(_in,"sys/",4)) return true;
 	if(!strncmp(_in,"tmp/",4)) return true;
 	if(!strncmp(_in,"usbhd",5)) return true;
-	if(!strncmp(_in,"kolibrios",10)) return true;
+	if(!strncmp(_in,"kolibrios",9)) return true;
 	return false;
 }
 

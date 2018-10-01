@@ -1,11 +1,10 @@
-#define LINES_COUNT 13
 #define MAX_LINE_CHARS 256
 
 #define CHBOX 12
 #define CHECKBOX_ID 50
 unsigned char checkbox[sizeof(file "checkbox.raw")]= FROM "checkbox.raw";
 
-#define COL_BG_ACTIVE 0xFFE56B
+#define COL_BG_ACTIVE 0xFFF0A9
 #define COL_BG_INACTIVE 0xFFFFFF
 
 //===================================================//
@@ -18,7 +17,15 @@ struct NOTE_LINE
 {
 	bool state;
 	char data[MAX_LINE_CHARS];
+	void Delete();
 };
+
+void NOTE_LINE::Delete()
+{
+	state=false;
+	data[0]=' ';
+	data[1]=NULL;
+}
 
 //===================================================//
 //                                                   //
@@ -26,8 +33,7 @@ struct NOTE_LINE
 //                                                   //
 //===================================================//
 
-struct NOTES {
-	llist list;
+struct NOTES : llist {
 	char txt_path[4096];
 	char txt_data[MAX_LINE_CHARS*LINES_COUNT];
 
@@ -36,7 +42,7 @@ struct NOTES {
 	char edit_active;
 	int OpenTxt();
 	int SaveTxt();
-	void DeleteCurrentNode();
+	void DeleteNode();
 	void DrawList();
 	dword DrawLine(int line_n, draw_h);
 } notes;
@@ -71,7 +77,12 @@ int NOTES::OpenTxt(dword file_path)
 			linepos++;				
 			i++;
 		}
-		list.count = item_n;
+		while (item_n < LINES_COUNT)
+		{
+			//lines[item_n].Delete();
+			item_n++;
+		}
+		count = LINES_COUNT;
 		return 1;
 	}
 }
@@ -81,7 +92,7 @@ int NOTES::SaveTxt()
 	int i;
 	dword tm;
 	strcpy(#txt_data, "notes");
-	for (i=0; i<=list.count; i++)
+	for (i=0; i<=count; i++)
 	{
 		if (lines[i].state==false) strcat(#txt_data, "\n- "); else strcat(#txt_data, "\n+ ");
 		tm = #lines[i].data;
@@ -90,15 +101,10 @@ int NOTES::SaveTxt()
 	WriteFile(0, strlen(#txt_data), #txt_data, #txt_path);
 }
 
-void NOTES::DeleteCurrentNode()
-{
-	return;
-}
-
 void NOTES::DrawList()
 {
 	int i;
-	for (i=0; i<list.visible; i++) DrawLine(i, list.item_h);
+	for (i=0; i<visible; i++) DrawLine(i, item_h);
 }
 
 
@@ -109,24 +115,26 @@ dword NOTES::DrawLine(int line_n, draw_h) {
 		cur_text;
 	char line_text[4096];
 	if (line_n<0) return;
-	if (line_n==list.cur_y) COL_BG = COL_BG_ACTIVE; else COL_BG = COL_BG_INACTIVE;
-	DrawBar(list.x, line_n*list.item_h+list.y, RED_LINE_X, draw_h-1, COL_BG_INACTIVE);
-	DrawBar(list.x+RED_LINE_X+1, line_n*list.item_h+list.y, list.w-RED_LINE_X-1, draw_h-1, COL_BG);
+	x = 1;
+	if (line_n==cur_y) COL_BG = COL_BG_ACTIVE; else COL_BG = COL_BG_INACTIVE;
+	DrawBar(x, line_n*item_h+y, RED_LINE_X, draw_h-1, COL_BG_INACTIVE);
+	DrawBar(x+RED_LINE_X+1, line_n*item_h+y, w-RED_LINE_X-1, draw_h-1, COL_BG);
 
 	cur_text = #lines[line_n].data;
 
-	if (draw_h!=list.item_h) 
+	if (draw_h!=item_h) 
 	{
 		COL_BOTTOM_LINE=COL_BG;
 	}
 	else
 	{
-		DefineButton(RED_LINE_X-CHBOX/2+list.x, list.item_h*line_n+5+list.y, CHBOX-1,CHBOX-1, CHECKBOX_ID+line_n+BT_HIDE, 0); //checkbox
-		_PutImage(RED_LINE_X-CHBOX/2+list.x, list.item_h*line_n+5+list.y, CHBOX,CHBOX, lines[line_n].state*CHBOX*CHBOX*3+#checkbox);
-		if (cur_text) WriteText(list.x+RED_LINE_X+6, list.item_h*line_n+7+list.y, 0x80, lines[line_n].state*0x777777, cur_text);
-		if (lines[line_n].state == true) DrawBar(list.x+RED_LINE_X+6, list.item_h*line_n+11+list.y, strlen(cur_text)*6, 1, 0x444444); //strike
+		DefineButton(RED_LINE_X-CHBOX/2+x, item_h*line_n+5+y, CHBOX-1,CHBOX-1, CHECKBOX_ID+line_n+BT_HIDE, 0); //checkbox
+		_PutImage(RED_LINE_X-CHBOX/2+x, item_h*line_n+5+y, CHBOX,CHBOX, lines[line_n].state*CHBOX*CHBOX*3+#checkbox);
+		if (cur_text) WriteText(x+RED_LINE_X+6, item_h*line_n+7+y, 0x80, lines[line_n].state*0x777777, cur_text);
+		if (lines[line_n].state == true) DrawBar(x+RED_LINE_X+6, item_h*line_n+11+y, strlen(cur_text)*6, 1, 0x444444); //strike
 	}
-	DrawBar(list.x, line_n*list.item_h+draw_h-1+list.y, list.w, 1, COL_BOTTOM_LINE);
-	DrawBar(list.x+RED_LINE_X, line_n*list.item_h+list.y, 1, draw_h, COL_RED_LINE);
+	DrawBar(x, line_n*item_h+draw_h-1+y, w, 1, COL_BOTTOM_LINE);
+	DrawBar(x+RED_LINE_X, line_n*item_h+y, 1, draw_h, COL_RED_LINE);
+	x = RED_LINE_X;
 	return cur_text;
 }

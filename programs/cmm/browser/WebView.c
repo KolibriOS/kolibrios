@@ -1,5 +1,5 @@
 //HTML Viewer in C--
-//Copyright 2007-2017 by Veliant & Leency
+//Copyright 2007-2018 by Veliant & Leency
 //Asper, lev, Lrz, Barsuk, Nable, hidnplayr...
 
 #ifndef AUTOBUILD
@@ -32,7 +32,7 @@ _http http = {0, 0, 0, 0, 0, 0, 0};
 char homepage[] = FROM "html\\homepage.htm""\0";
 
 #ifdef LANG_RUS
-char version[]="Текстовый браузер 1.8";
+char version[]="Текстовый браузер 1.8b";
 ?define IMAGES_CACHE_CLEARED "Кэш картинок очищен"
 ?define T_LAST_SLIDE "Это последний слайд"
 char loading[] = "Загрузка страницы...<br>";
@@ -117,6 +117,7 @@ edit_box address_box = {250,60,30,0xffffff,0x94AECE,0xffffff,0xffffff,0x10000000
 
 void main()
 {
+	int i;
 	load_dll(boxlib, #box_lib_init,0);
 	load_dll(libio, #libio_init,1);
 	load_dll(libimg, #libimg_init,1);
@@ -164,6 +165,9 @@ void main()
 			}
 			else 
 			{
+				#define KEY_SCROLL_N 11
+				if (SCAN_CODE_UP   == key_scancode) for (i=0;i<KEY_SCROLL_N;i++) WB1.list.KeyUp();
+				if (SCAN_CODE_DOWN == key_scancode) for (i=0;i<KEY_SCROLL_N;i++) WB1.list.KeyDown();
 				if (WB1.list.ProcessKey(key_scancode)) WB1.DrawPage();
 				else ProcessEvent(key_scancode);
 			}
@@ -542,7 +546,13 @@ void ClickLink()
 	{
 		if (UrlExtIs(".htm")!=true) && (UrlExtIs(".html")!=true)
 		{	
-			RunProgram("/sys/@open", #URL);
+			if (strchr(#URL, '|')) {
+				ESBYTE[strchr(#URL, '|')] = NULL;
+				RunProgram(#URL, strlen(#URL)+1+#URL);
+			}
+			else {
+				RunProgram("/sys/@open", #URL);
+			}
 			strcpy(#editURL, history.current());
 			strcpy(#URL, history.current());
 			return;
