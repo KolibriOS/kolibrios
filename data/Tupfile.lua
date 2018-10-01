@@ -41,8 +41,6 @@ img_files = {
  {"FONTS/LITT.CHR", PROGS .. "/demos/bgitest/trunk/FONTS/LITT.CHR"},
  {"FONTS/TAHOMA.KF", "common/fonts/tahoma.kf"},
  {"GAMES/SNAKE.INI", PROGS .. "/games/snake/trunk/snake.ini"},
- {"LIB/ARRAY.OBJ", "common/lib/array.obj"},
- {"LIB/LIBRARY.OBJ", "common/lib/library.obj"},
  {"LIB/ICONV.OBJ", "common/lib/iconv.obj"},
  {"LIB/KMENU.OBJ", "common/lib/kmenu.obj"},
  {"LIB/NETCODE.OBJ", "common/lib/netcode.obj"},

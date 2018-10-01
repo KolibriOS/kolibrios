@@ -1,5 +1,5 @@
 /*
-SOFTWARE CENTER v2.8
+SOFTWARE CENTER v2.81
 */
 
 #define MEMSIZE 4096 * 15
@@ -118,7 +118,8 @@ byte draw_icons_from_section(dword key_value, key_name, sec_name, f_name)
 		icon_char_pos;
 
 	//do not show items located in /kolibrios/ if this directory not mounted
-	if (!strncmp(key_value, "/kolibrios/", 11)) && (!kolibrios_mounted) return true;
+	if (!strncmp(key_value, "/kolibrios/", 11)) || (!strncmp(key_value, "/k/", 3))
+		if (!kolibrios_mounted) return true;
 
 	if (col==list.column_max) {
 		row++;
@@ -178,17 +179,32 @@ void draw_top_bar()
 
 void EventRunApp(dword appid)
 {
+	char run_app_path[4096]=0;
 	dword app_path = app_path_collection.get(appid);
-	
 	dword param_pos = strchr(app_path, '|');
 	if (param_pos) {
 		ESBYTE[param_pos] = NULL;
 		param_pos++;
 	}
 
-	if (file_exists(app_path))
+	// the next block is created to save some space in ramdisk{
+	//
+	// convert relative path to absolute      "calc"    => "/sys/calc"
+	// convert short kolibrios path to full   "/k/calc" => "/kolibrios/calc"
+	// other copy => as is
+	if (ESBYTE[app_path]!='/') {
+		strcpy(#run_app_path, "/sys/");
+	}
+	else if (!strncmp(app_path, "/k/",3)) {
+		strcpy(#run_app_path, "/kolibrios/");
+		app_path+=3;
+	}
+	strcat(#run_app_path, app_path);
+	// }end
+
+	if (file_exists(#run_app_path))
 	{
-		io.run(app_path, param_pos); //0 or offset
+		io.run(#run_app_path, param_pos); //0 or offset
 		if (param_pos) ESBYTE[param_pos - 1] = '|';
 	}
 	else

@@ -1,7 +1,5 @@
 @C-- software_widget.c
-@del game_center
-@copy software_widget.com game_center
-@copy software_widget.com syspanel
-@del software_widget.com
+@del syspanel
+@ren software_widget.com syspanel
 @pause
 @del warning.txt
