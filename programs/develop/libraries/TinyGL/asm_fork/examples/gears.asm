@@ -149,7 +149,14 @@ key:
 	cmp ah,27 ;Esc
 	je button.exit
 
-	cmp ah,61 ;+
+	cmp ah,43 ;+
+	jne @f
+		fld dword[scale]
+		fdiv dword[delt_sc]
+		fstp dword[scale]
+		call draw_3d
+	@@:
+	cmp ah,61 ;=
 	jne @f
 		fld dword[scale]
 		fdiv dword[delt_sc]
@@ -208,7 +215,7 @@ title1: db 'TinyGL in KolibriOS'
 .end: db 0
 title2: db 'F full screen'
 .end: db 0
-title3: db 'ESC - exit'
+title3: db 'ESC - exit   Arrow keys - rotate   +/- zoom'
 .end: db 0
 fps:	db 'FPS:'
 .end: db 0
@@ -222,7 +229,7 @@ draw_3d:
 	stdcall [glClear], GL_COLOR_BUFFER_BIT + GL_DEPTH_BUFFER_BIT
 
 	stdcall [glPushMatrix]
-	;stdcall [glScalef], [scale], [scale], [scale]
+	stdcall [glScalef],  [scale], [scale], [scale]
 	stdcall [glRotatef], [view_rotx], 1.0, 0.0, 0.0
 	stdcall [glRotatef], [view_roty], 0.0, 1.0, 0.0
 	stdcall [glRotatef], [view_rotz], 0.0, 0.0, 1.0
@@ -283,7 +290,7 @@ draw_3d:
 align 4
 an_9 dd 9.0
 an_25 dd 25.0
-scale dd 0.14 ;???
+scale dd 1.0 ;???
 delt_sc dd 0.85 ;???
 delt_size dd 5.0
 

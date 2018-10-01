@@ -534,8 +534,8 @@ local	IconData:DWORD
 	repne	scasb
 	repne	scasb
 	mov	al,[edi]
-	cmp	al,'9'
-	ja	PathToIcon
+	;cmp	al,'9'
+	;ja	PathToIcon
 	cmp	al,'/'
 	jne	GetIconInd
 

@@ -410,16 +410,17 @@ DRAW_WINDOW:
 event_button:
     mcall   17
 
-    cmp     ah, 1
-    je	    .button_close
+	;; it must not be possible to close dock
+    ;cmp     ah, 1
+    ;je	    .button_close
 
     cmp     ah, 2
     je	    .button_dock
 
     jmp     @f
 
- .button_close:
-    jmp     exit
+ ;.button_close:
+ ;   jmp     exit
 
  .button_dock:
     mov     edi, [win.button_index]

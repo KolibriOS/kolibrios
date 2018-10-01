@@ -4,7 +4,7 @@ use32
 org 0x0
 
 db 'MENUET01'
-dd 0x01, START, I_END, F_END, stacktop, @PARAMS, 0x0
+dd 0x01, START, I_END, F_END, stacktop, @PARAMS, sys_path
 
 ;-----------------------------------------------------------------------------
 
@@ -503,6 +503,32 @@ set_as_bgr:
 
 @@:
     mcall   SF_BACKGROUND_SET, SSF_REDRAW_BG
+
+	;save to file eskin.ini
+	xor al,al
+	mov ecx,1024
+	mov edi,sys_path+2
+	repne scasb
+	sub edi,sys_path+3
+	invoke  ini_set_str, inifileeskin, amain, aprogram, sys_path+2, edi
+	;add param '\S__'
+	cmp word[@PARAMS],'\S'
+	je @f
+	mov esi, @PARAMS+4096-8
+    mov edi, @PARAMS+4096-4
+    mov ecx, 4096/4-1
+	std
+    rep movsd
+	cld
+	mov dword[@PARAMS],'\S__'
+	@@:
+	;
+	xor al,al
+	mov ecx,4096
+	mov edi,@PARAMS
+	repne scasb
+	sub edi,@PARAMS+1
+	invoke  ini_set_str, inifileeskin, amain, aparam, @PARAMS, edi
     ret
 
 slide_show:
@@ -1217,7 +1243,8 @@ import  libimg             , \
     img.draw    , 'img_draw'
 
 import  libini, \
-    ini_get_shortcut, 'ini_get_shortcut'
+    ini_get_shortcut, 'ini_get_shortcut',\
+	ini_set_str, 'ini_set_str'
 
 import  sort, sort.START, 'START', SortDir, 'SortDir', strcmpi, 'strcmpi'
 
@@ -1278,6 +1305,11 @@ aNext       db  'Next',0
 aPrev       db  'Prev',0
 aSlide      db  'SlideShow',0
 aTglbar     db  'ToggleBar',0
+
+inifileeskin db '/sys/settings/eskin.ini',0
+amain       db 'main',0
+aprogram    db 'program',0
+aparam      db 'param',0
 
 align 4
 check_modifier_table:
@@ -1385,10 +1417,12 @@ tglbar_key  dd  ?
 toolbar_height_old   rd 1
 
 procinfo    process_information
+align 16
 path:       rb  4096  ;1024+16
 real_header rb  256
 @PARAMS rb 4096  ;512
 ;---------------------------------------------------------------------
+sys_path rb 1024
 temp_dir_pach:
         rb 4096
 ;---------------------------------------------------------------------

@@ -65,18 +65,14 @@
 ; ЗАГОЛОВОК ИСПОЛНЯЕМОГО ФАЙЛА ПРИЛОЖЕНИЯ ДЛЯ КОЛИБРИ ОС                                             |
 ;----------------------------------------------------------------------------------------------------/
   use32
-  org	 0x0
+  org	 0
   db	 'MENUET01'
-  dd	 0x01
-  dd	 START
-  dd	 I_END
-  dd	 I_MEM
-  dd	 I_MEM
-  dd	 params
-  dd	 0x0
+  dd	 1,START,I_END,I_MEM,stacktop,params,sys_path
 
   include '../../../macros.inc'
   include '../../../proc32.inc'
+  include '../../../KOSfuncs.inc'
+  include '../../../dll.inc'
 
   WIN_W  equ 295	    ; ширина окна
   WIN_H  equ 195	    ; высота окна
@@ -87,8 +83,11 @@ panel:
   file "panel.raw"
 
 START:
-    mcall   68,11			  ; инициализация кучи
-    mcall   40,0x27			  ; устанавливаем маску событий
+    mcall   SF_SYS_MISC,SSF_HEAP_INIT ; инициализация кучи
+    stdcall dll.Load, @IMPORT
+    or      eax,eax
+    jnz     bexit
+    mcall   SF_SET_EVENTS_MASK,0x27   ; устанавливаем маску событий
     include 'params_init.inc'		  ; обработка параметров командной строки
 
 ;#___________________________________________________________________________________________________
@@ -98,7 +97,7 @@ START:
 red:
     call draw_main			  ; вызываем перерисовку окна приложения
 still:
-    mcall   10				  ; функция 10 - ждать события
+    mcall   SF_WAIT_EVENT	  ; функция 10 - ждать события
     cmp     eax,1			  ; перерисовать окно ?
     je	    red 			  ; если да - на метку red
     cmp     eax,2			  ; нажата клавиша ?
@@ -111,7 +110,7 @@ still:
 ;end_still
 
 key:					  ; нажата клавиша на клавиатуре
-    mcall   2				  ; функция 2 - считать код символа (в ah) (тут в принципе не нужна)
+    mcall   SF_GET_KEY	  ; функция 2 - считать код символа (в ah) (тут в принципе не нужна)
     jmp     still			  ; вернуться к началу цикла
 ;end_key
 
@@ -121,7 +120,7 @@ mouse:
     call    cyrcle_draw
     jmp     center
   left:
-    mcall   37,2
+    mcall   SF_MOUSE_GET,SSF_BUTTON
     cmp     al,1b
     jne     right
     mov     [mouse_f],1
@@ -132,7 +131,7 @@ mouse:
     mov     [mouse_f],2
     jmp     still
   center:
-    mcall   37,2
+    mcall   SF_MOUSE_GET,SSF_BUTTON
     cmp     al,100b
     jne     still
     mov     [mouse_f],3
@@ -142,7 +141,7 @@ mouse:
 ;end_mouse
 
 button:
-    mcall   17				  ; 17 - получить идентификатор нажатой кнопки
+    mcall   SF_GET_BUTTON	  ; 17 - получить идентификатор нажатой кнопки
     cmp     ah, 1			  ; если нажата кнопка с номером 1,
     jz	    bexit			  ; выходим
   ;обработка кнопки Next
@@ -222,7 +221,7 @@ button:
     call    set_spectr
     jmp     still			  ; Уходим на ожидание другого события
   bexit:
-    mcall -1				  ; иначе конец программы
+    mcall SF_TERMINATE_PROCESS ; иначе конец программы
 ;end_button
 
 ;#___________________________________________________________________________________________________
@@ -230,19 +229,14 @@ button:
 ; ГЛАВНЫЙ МОДУЛЬ ОТРИСОВКИ ОКНА И ЭЛЕМЕНТОВ ПРИЛОЖЕНИЯ                                               |
 ;----------------------------------------------------------------------------------------------------/
 draw_main:
-    mov     eax,12			  ; функция 12: означает, что будет рисоваться окно
-    mov     ebx,1			  ; 1,начало рисования
-    int     0x40			  ; Прерывание
+    ; функция 12: означает, что будет рисоваться окно
+    mcall   SF_REDRAW,SSF_BEGIN_DRAW 
 
-    mov     eax,48			  ; Функция 48 - стили отображения окон
-    mov     ebx,3			  ; Подфункция 3 - получить стандартные цвета окон.
-    mov     ecx,sc			  ; Указатель на буфер размером edx байт, под структуру
-    mov     edx,sizeof.system_colors	  ; Размер таблицы цветов (должен быть 40 байт)
-    int     0x40			  ; Прерывание
+    ; Функция 48 - стили отображения окон
+    mcall   SF_STYLE_SETTINGS,SSF_GET_COLORS,sc,sizeof.system_colors
 
-    mov     eax,48			  ; Функция 48 - стили отображения окон.
-    mov     ebx,4			  ; Подфункция 4 - возвращает eax = высота скина.
-    int     0x40			  ; Прерывание
+    ; Функция 48 - стили отображения окон
+    mcall   SF_STYLE_SETTINGS,SSF_GET_SKIN_HEIGHT
     mov     ecx,eax			  ; Запоминаем высоту скина
 
     mov     edi,[runmode]
@@ -271,16 +265,11 @@ draw_main:
     call    draw_palitra		  ; РИСУЕМ ПАЛИТРУ
     call    draw_result 		  ; РИСУЕМ РЕЗУЛЬТАТ
 
-    mov     eax,8			  ; Функция 8 - определить/удалить кнопку
-    mov     ebx,110 shl 16+147		  ; Начальные координаты по х [к-та x]*65536 + [размер]
-    mov     ecx,9 shl 16+147		  ; Начальные координаты по y [к-та y]*65536 + [размер]
-    mov     edx,0x60000007		  ; Начальное ID кнопок - 0xXYnnnnnn
-    int     0x40
+    ; Функция 8 - определить/удалить кнопку
+    mcall   SF_DEFINE_BUTTON, (110 shl 16)+147, (9 shl 16)+147, 0x60000007
 
-    mov     ebx,13 shl 16+12		  ; Начальные координаты по х [к-та x]*65536 + [размер]
-    mov     edx,0x60000008		  ; ID = 8
-    mov     ecx,51 shl 16+85		  ; Начальные координаты по y [к-та y]*65536 + [размер]
-    int     0x40			  ; Рисуем невидимую кнопку под слайдером red
+    inc     edx
+    mcall   , (13 shl 16)+12, (51 shl 16)+85 ; Рисуем невидимую кнопку под слайдером red
     add     ebx,23 shl 16		  ; Добавляем
     inc     edx 			  ; ID = 9
     int     0x40			  ; Рисуем невидимую кнопку под слайдером green
@@ -291,18 +280,14 @@ draw_main:
     inc     edx 			  ; ID = 11
     int     0x40			  ; Рисуем невидимую кнопку под слайдером alpha
 
-    mov     eax,8			  ; Функция 8 - определить/удалить кнопку (СМЕНА ЦВЕТА)
-    mov     ebx,11 shl 16+20		  ; Начальные координаты по х [к-та x]*65536 + [размер]
-    mov     ecx,12 shl 16+20		  ; Начальные координаты по y [к-та y]*65536 + [размер]
-    mov     edx,0x6000000D		  ; ID = 13
-    int     0x40
+    ; Функция 8 - определить/удалить кнопку (СМЕНА ЦВЕТА)
+    mcall   , (11 shl 16)+20, (12 shl 16)+20, 0x6000000D
 
     call    draw_bottom_panel
     call    draw_left_panel
 
-    mov     eax,12			  ; функция 12: означает, что будет рисоваться окно
-    mov     ebx,2			  ; 2 - конец рисования
-    int     0x40			  ; Прерывание
+    ; функция 12: означает, что будет рисоваться окно
+    mcall SF_REDRAW,SSF_END_DRAW 
     ret
 
 ;#___________________________________________________________________________________________________
@@ -314,22 +299,14 @@ draw_main:
     ;------------------------------------------------------------------------------------------------+
     draw_left_panel:			  ; Отрисовка боковой панели
     ;.................................................................................................
-    mov     eax,8			  ; button_next_colorsheme
-    mov     ebx,266 shl 16+16		  ; [x] + [size]
-    mov     ecx,9 shl 16+16		  ; [y] + [size]
-    mov     edx,0x6000000C		  ; ID = 12
-    mov     esi,[sc.work_button]	  ; RGB
-    int     0x40			  ; call
+    ; button_next_colorsheme
+    mcall   SF_DEFINE_BUTTON, (266 shl 16)+16, (9 shl 16)+16, 0x6000000C, [sc.work_button]
     ; circle diagram
     add     ecx,19 shl 16		  ; move rect
     mov     edx,0x6000000F		  ; ID = 15
     int     0x40			  ; call
 
-    mov     eax,7			  ; 7 - номер функции
-    mov     ebx,panel			  ; указатель на изображение в формате BBGGRRBBGGRR...
-    mov     ecx, 16 shl 16 + 149	  ; [размер по оси x]*65536 + [размер по оси y]
-    mov     edx,266 shl 16 +   9	    ; [координата по оси x]*65536 + [координата по оси y]
-    int     0x40
+    mcall   SF_PUT_IMAGE, panel, (16 shl 16)+149, (266 shl 16)+9
 
     ;mov     eax,13                        ; draw rect
     ;mov     ebx,266 shl 16+16             ; [x] + [size]
@@ -373,23 +350,16 @@ draw_main:
     ;------------------------------------------------------------------------------------------------+
     draw_bottom_panel:			  ; Отрисовка нижней панели
     ;.................................................................................................
-    mov     eax,8			  ; draw button
-    mov     ebx,(92) shl 16+90	      ; [x] + [size]
-    mov     ecx,169 shl 16+16		  ; [y] + [size]
-    mov     edx,14			  ; ID = 14
-    mov     esi,[sc.work_button]	  ; RGB
-    int     0x40			  ; call
+    mcall   SF_DEFINE_BUTTON, (92 shl 16)+90, (169 shl 16)+16, 14, [sc.work_button]
 
     add     ebx, 100 shl 16
     add     edx, 2
     int     0x40
 
-    mov     eax,4			  ; Write string
-    mov     ebx,(113 - 104) shl 16+174	  ; [x] + [y]
+    ; Write string
     mov     ecx,[sc.work_text]		  ; RGB
     or	    ecx, 1 shl 31
-    mov     edx,bground 		  ; string pointer
-    int     0x40			  ; call
+    mcall   SF_DRAW_TEXT, (113 - 104) shl 16+174, ,bground
 
     mov     ecx, [sc.work_button_text]
     or	    ecx, 1 shl 31
@@ -402,11 +372,7 @@ draw_main:
     mov     edx, bground2
     int     0x40
 
-    mov     eax,38			  ; draw line
-    mov     ebx,4 shl 16+282		  ; [start x] + [end x]
-    mov     ecx,163 shl 16+163		  ; [start y] + [end y]
-    mov     edx,0x00666666		  ; RGB
-    int     0x40			  ; call
+    mcall SF_DRAW_LINE, 4 shl 16+282, 163 shl 16+163, 0x00666666
     ret 				  ; return
     ;.................................................................................................
 
@@ -414,9 +380,8 @@ mouse_global:
     ;.................................................................................................
     ; Получаем координаты мыши
     ;.................................................................................................
-    mov     eax,37			  ; Функция 37 - работа с мышью
-    mov     ebx,0			  ; нам нужны глобальные координаты
-    int     0x40			  ; eax = x*65536 + y, (x,y)=координаты курсора мыши
+    mcall   SF_MOUSE_GET,SSF_SCREEN_POSITION
+    ; eax = x*65536 + y, (x,y)=координаты курсора мыши
     mov     ecx,eax			  ;
     shr     ecx,16			  ; ecx = x+1
     movzx   edx,ax			  ; edx = y+1
@@ -431,9 +396,8 @@ mouse_local:
     ;.................................................................................................
     ; Получаем координаты мыши относительно окна
     ;.................................................................................................
-    mov     eax,37			  ; Функция 37 - работа с мышью
-    mov     ebx,1			  ; нам нужны глобальные координаты
-    int     0x40			  ; eax = x*65536 + y, (x,y)=координаты курсора мыши
+    mcall   SF_MOUSE_GET,SSF_WINDOW_POSITION
+	; eax = x*65536 + y, (x,y)=координаты курсора мыши
     mov     ecx,eax			  ;
     shr     ecx,16			  ; ecx = x+1
     movzx   edx,ax			  ; edx = y+1
@@ -448,16 +412,14 @@ set_background:
     ;.................................................................................................
     ; Устанавливает фон рабочего стола
     ;.................................................................................................
-    mov     eax,15			  ; Функция 15 - работа с фоновой графикой
-    mov     ebx,4			  ; Подфункция 4 - установить режим отрисовки фона.
-    mov     ecx,2			  ; Режим отрисовки - замостить (1)
-    int     0x40			  ; Вызываем
+    ; Функция 15 - работа с фоновой графикой
+    ; Подфункция 4 - установить режим отрисовки фона.
+    ; Режим отрисовки - замостить (1), растянуть (2)
+    mcall   SF_BACKGROUND_SET,SSF_MODE_BG,2
 
-    mov     eax,15			  ; Функция 15 - работа с фоновой графикой
-    mov     ebx,1			  ; Подфункция 1 - установить размер фонового изображения.
-    mov     ecx,2			  ; Ширина изображения
-    mov     edx,2			  ; Высота изображения
-    int     0x40			  ; Вызываем
+    ; Функция 15 - работа с фоновой графикой
+    ; Подфункция 1 - установить размер фонового изображения.
+    mcall   SF_BACKGROUND_SET,SSF_SIZE_BG,2,2
 
     mov     eax,[color]
     mov     [cm+0],al
@@ -479,16 +441,68 @@ set_background:
     mov     [cm+5],al
     mov     [cm+8],al
 
-    mov     eax,15			  ; Функция 15 - работа с фоновой графикой
-    mov     ebx,5			  ; Подфункция 5 - поместить блок пикселей на фон.
-    mov     ecx,cm			; Указатель на данные в формате BBGGRRBBGGRR
-    mov     edx,0			  ; Cмещение в данных фонового изображения
-    mov     esi,3*4			 ; Размер данных в байтах = 3 * число пикселей
-    int     0x40			  ; Вызываем
+    ; Функция 15 - работа с фоновой графикой
+    ; Подфункция 5 - поместить блок пикселей на фон.
+    ; - Указатель на данные в формате BBGGRRBBGGRR
+    ; - Cмещение в данных фонового изображения
+    ; - Размер данных в байтах = 3 * число пикселей
+    mcall   SF_BACKGROUND_SET,SSF_IMAGE_BG,cm,0,3*4
 
-    mov     eax,15			  ; Функция 15 - работа с фоновой графикой
-    mov     ebx,3			  ; Подфункция 3 - перерисовать фон.
-    int     0x40			  ; Вызываем
+    ; Функция 15 - работа с фоновой графикой
+    ; Подфункция 3 - перерисовать фон.
+    mcall   SF_BACKGROUND_SET,SSF_REDRAW_BG
+
+	;save to file eskin.ini
+	xor     al,al
+	mov     ecx,1024
+	mov     edi,sys_path+2
+	repne   scasb
+	sub     edi,sys_path+3
+	invoke  ini_set_str, inifileeskin, amain, aprogram, sys_path+2, edi
+	;add param 'H '
+	mov     word[params],'H '
+	mov     eax,[color]
+	or      eax,0xf ;для избежания вечного цикла если eax=0
+	mov     edi,params+2
+	@@:
+	rol     eax,8
+	or      al,al
+	jnz     @f
+	mov     word[edi],'00' ;нули перед числом
+	add     edi,2
+	jmp     @b
+	@@:
+	and     al,0xf0
+	jnz     @f
+	mov     byte[edi],'0'
+	inc     edi
+	@@:
+	mov     eax,[color]
+	mov     ebx,16
+	call    int2ascii
+	mov     byte[params+10],' '
+	;add color2
+	mov     eax,[color2]
+	or      eax,0xf ;для избежания вечного цикла если eax=0
+	mov     edi,params+11
+	@@:
+	rol     eax,8
+	or      al,al
+	jnz     @f
+	mov     word[edi],'00' ;нули перед числом
+	add     edi,2
+	jmp     @b
+	@@:
+	and     al,0xf0
+	jnz     @f
+	mov     byte[edi],'0'
+	inc     edi
+	@@:
+	mov     eax,[color2]
+	mov     ebx,16
+	call    int2ascii
+
+	invoke  ini_set_str, inifileeskin, amain, aparam, params, 19
 
     ret
 ;end_set_background
@@ -497,8 +511,8 @@ desktop_get:
     ;.................................................................................................
     ; Определяем ширину экрана
     ;.................................................................................................
-    mov     eax,14			  ; Определяем ширину экрана (eax = [xsize]*65536 + [ysize])
-    int     0x40			  ; xsize = размер по горизонтали - 1
+    ; Определяем ширину экрана (eax = [xsize]*65536 + [ysize])
+    mcall   SF_GET_SCREEN_SIZE ; xsize = размер по горизонтали - 1
     mov     ebx,eax			  ;
     shr     ebx,16			  ; ebx = xsize-1
     movzx   edx,ax			  ; edx = ysize-1 (лишний код)
@@ -521,9 +535,8 @@ mouse_get:
       ;.................................................................................................
       ; Берем цвет с палитры в переменную
       ;.................................................................................................
-      mov     eax,35			  ; Функция взятия цвета
-      ;mov     ebx,ecx                    ;; ebx = y*xsize+x (лишний код)
-      int     0x40			  ; Получаем цвет в eax
+       ;mov     ebx,ecx                    ;; ebx = y*xsize+x (лишний код)
+      mcall   SF_GET_PIXEL    ; Получаем цвет в eax
       cmp     eax,[sc.work]		  ; Сравниваем с фоном приложения
       je      mouse_err 		  ; Если это он - то ничего не делаем
       cmp     eax,0x222222		  ; Сравниваем с цветом сетки
@@ -552,11 +565,8 @@ mouse_get:
 ;end_mouse_get----------------------------------------------------------------------------------------
 
 draw_palitra:
-    mov     eax,13			  ; Функция 13 - нарисовать прямоугольник
-    mov     ebx,110 shl 16+148		  ; Начальные координаты по x [к-та x]*65536 + [размер]
-    mov     ecx,9 shl 16+148		  ; Начальные координаты по y [к-та y]*65536 + [размер]
-    mov     edx,[sc.work]		  ; цвет
-    int     0x40
+    ; Функция 13 - нарисовать прямоугольник
+    mcall   SF_DRAW_RECT, 110 shl 16+148, 9 shl 16+148, [sc.work]
 
     cmp     [renmode],2
     je	    cyrcle_draw
@@ -604,7 +614,7 @@ draw_palitra:
     jle     end_cyrcle_draw
 
     cyrcle_draw_2:
-	mcall	5,10
+	mcall	SF_SLEEP,10
     call    desktop_get
     call    mouse_global
 
@@ -614,9 +624,8 @@ draw_palitra:
       mov     ecx, 10*65536+11
       mov     edi,0
       circle_loop2:
-	mov	eax,13
 	call	circle_pixel_read
-	mcall
+	mcall   SF_DRAW_RECT
 	add	ecx,11 shl 16
 	inc	edi
 	cmp	edi,13
@@ -627,12 +636,7 @@ draw_palitra:
       cmp     esi,13
       jne     circle_loop
 
-
-    mov     eax,13
-    mov     edx,0x0
-    mov     ebx,177*65536+13
-    mov     ecx, 76*65536+13
-    mcall
+    mcall   SF_DRAW_RECT, 177*65536+13, 76*65536+13, 0
     mov     ecx, [mouse_x]
     mov     edx, [mouse_y]
     inc     ecx
@@ -640,26 +644,16 @@ draw_palitra:
     mov     ebx, edx
     imul    ebx, [desctop_w]
     add     ebx, ecx
-    mov     eax, 35
-    mcall
+    mcall   SF_GET_PIXEL
     mov     edx,eax
-    mov     eax,13
-    mov     ebx,178*65536+11
-    mov     ecx, 77*65536+11
-    mcall
+    mcall   SF_DRAW_RECT, 178*65536+11, 77*65536+11
     ret
     end_cyrcle_draw:
-    mov     eax,13
-    mov     edx,0x666666
-    mov     ebx,111*65536+145
-    mov     ecx,  9*65536+145
-    mcall
+    mcall   SF_DRAW_RECT, 111*65536+145, 9*65536+145, 0x666666
     ret
 
     circle_pixel_read:
-    push    ecx
-    push    ebx
-    push    eax
+    push    ecx ebx
     mov     ecx, [mouse_x]
     mov     edx, [mouse_y]
     inc     ecx
@@ -676,19 +670,14 @@ draw_palitra:
     mov     ebx, edx
     imul    ebx, [desctop_w]
     add     ebx, ecx
-    mov     eax, 35
-    mcall
+    mcall   SF_GET_PIXEL
     mov     edx,eax
-    pop     eax
-    pop     ebx
-    pop     ecx
+    pop     ebx ecx
     ret
 
     _cpr_exit:
-    mov     edx,0x00000000
-    pop     eax
-    pop     ebx
-    pop     ecx
+    xor     edx,edx
+    pop     ebx ecx
     ret
 
     ;picker_draw:
@@ -698,7 +687,7 @@ draw_palitra:
     ; Отрисовка фона под кнопки
     ;.................................................................................................
     sheme_draw:
-    mov     eax,13			  ; Функция 13 - нарисовать прямоугольник
+    mov     eax,SF_DRAW_RECT  ; Функция 13 - нарисовать прямоугольник
     mov     edx,0x222222		  ; цвет
     mov     ecx,9 shl 16+73		  ; Начальные координаты по y [к-та y]*65536 + [размер]
     mov     esi,2			  ; Счетчик линий подложек
@@ -719,7 +708,7 @@ draw_palitra:
     ;.................................................................................................
     ; Отрисовка кнопок по циклу
     ;.................................................................................................
-    mov     eax,13			  ; Функция 13 - нарисовать прямоугольник
+    mov     eax,SF_DRAW_RECT  ; Функция 13 - нарисовать прямоугольник
     mov     edx,0x0FFFFFFF		  ; цвет
     mov     esi,4			  ; Счетчик количества абзацев (#4,8)
     mov     ebx,99 shl 16+8		  ; Начальные координаты по x [к-та x]*65536 + [размер]
@@ -849,64 +838,33 @@ draw_result:
     ;.................................................................................................
     ; Большая рамка вывода результата
     ;.................................................................................................
-    mov     eax,13			  ; Функция 13 - нарисовать прямоугольник
-    mov     edx,0x00666666		  ; цвет-обводки
-    mov     ebx,4 shl 16+98		  ; Начальные координаты по x [к-та x]*65536 + [размер]
-    mov     ecx,9 shl 16+148		  ; Начальные координаты по y [к-та y]*65536 + [размер]
-    int     0x40
-    mov     edx,0x00F3F3F3		  ; цвет-фона
-    mov     ebx,5 shl 16+96		  ; Начальные координаты по x [к-та x]*65536 + [размер]
-    mov     ecx,10 shl 16+146		  ; Начальные координаты по y [к-та y]*65536 + [размер]
-    int     0x40
+    mcall   SF_DRAW_RECT, 4 shl 16+98, 9 shl 16+148, 0x00666666
+    mcall   , 5 shl 16+96, 10 shl 16+146, 0x00F3F3F3
 
     ;.................................................................................................
     ; Отрисовка результата цвета в hex color2
     ;.................................................................................................
-    mov     eax,13			  ; Функция 13 - нарисовать прямоугольник
-    ; color 2 - draw fringle
-    mov     edx,0x222222		  ; цвет-обводки
-    mov     ebx,16 shl 16+15		  ; Начальные координаты по x [к-та x]*65536 + [размер]
-    mov     ecx,16 shl 16+15		  ; Начальные координаты по y [к-та y]*65536 + [размер]
-    int     0x40			  ; Прерывание (ос рисует прямоугольник)
+    mcall   , 16 shl 16+15, 16 shl 16+15, 0x222222
     ; color 2 - draw color
-    mov     edx,[color2]		  ; цвет
-    mov     ebx,17 shl 16+13		  ; Начальные координаты по x [к-та x]*65536 + [размер]
-    mov     ecx,17 shl 16+13		  ; Начальные координаты по y [к-та y]*65536 + [размер]
-    int     0x40			  ; Прерывание (ос рисует прямоугольник)
+    mcall   , 17 shl 16+13, 17 shl 16+13, [color2]
     ; color 1 - draw fringle
-    mov     edx,0x222222		  ; цвет-обводки
-    mov     ebx,11 shl 16+15		  ; Начальные координаты по x [к-та x]*65536 + [размер]
-    mov     ecx,12 shl 16+15		  ; Начальные координаты по y [к-та y]*65536 + [размер]
-    int     0x40			  ; Прерывание (ос рисует прямоугольник)
+    mcall   , 11 shl 16+15, 12 shl 16+15, 0x222222
     ; value - draw fringle
-    mov     ebx,34 shl 16+62		  ; Начальные координаты по x [к-та x]*65536 + [размер]
-    mov     ecx,16 shl 16+15		  ; Начальные координаты по y [к-та y]*65536 + [размер]
-    int     0x40			  ; Прерывание (ос рисует прямоугольник)
+    mcall   , 34 shl 16+62, 16 shl 16+15
 
     ; color 2 - draw color
-    mov     edx,[color] 		  ; цвет
-    mov     ebx,12 shl 16+13		  ; Начальные координаты по x [к-та x]*65536 + [размер]
-    mov     ecx,13 shl 16+13		  ; Начальные координаты по y [к-та y]*65536 + [размер]
-    int     0x40			  ; Прерывание (ос рисует прямоугольник)
+    mcall   , 12 shl 16+13, 13 shl 16+13, [color]
     ; value - draw background
-    mov     edx,0xFFFFFF		  ; цвет-фона
-    mov     ebx,35 shl 16+60		  ; Начальные координаты по x [к-та x]*65536 + [размер]
-    mov     ecx,17 shl 16+13		  ; Начальные координаты по y [к-та y]*65536 + [размер]
-    int     0x40			  ; Прерывание (ос рисует прямоугольник)
+    mcall   , 35 shl 16+60, 17 shl 16+13, 0xFFFFFF
 
-    mov     eax,47			  ; Функция 47 - вывод числа в окно
-    mov     ecx,[color] 		  ; число (при bl=0) или указатель (при bl=1)
-    mov     esi,0x0			  ; 0xX0RRGGBB
-    mov     ebx,256+8 shl 16		  ; параметры преобразования числа в текст (HEX)
-    mov     edx,45 shl 16+20		  ; [координата по оси x]*65536 + [координата по оси y]
-    int     0x40			  ; Прерывание - выводим результат в окно (HEX)
+    ; Функция 47 - вывод числа в окно
+    ;ebx - параметры преобразования числа в текст (HEX)
+    mcall   SF_DRAW_NUMBER, 256+8 shl 16, [color], (45 shl 16)+20,, 0
 
-    mov     eax,4			  ; функция 4: написать текст в окне
-    mov     ebx,38*65536+20		  ; [x начальный] *65536 + [y начальный]
-    mov     ecx,0x0			  ; цвет текста RRGGBB
-    mov     edx,hex			  ; рисуем '#'
-    mov     esi,1			  ; длина текста в байтах
-    int     0x40
+    ; функция 4: написать текст в окне
+    ; edx - рисуем '#'
+    ; esi - длина текста в байтах
+    mcall   SF_DRAW_TEXT,38*65536+20,0,hex,1
 
     ;.................................................................................................
     ; Отрисовка r g b значений
@@ -932,7 +890,7 @@ draw_result:
     ;.................................................................................................
     ; Выводим буквы r g b a
     ;.................................................................................................
-    mov     eax,4			  ; 4 - вывести строку текста в окно
+    mov     eax,SF_DRAW_TEXT  ; 4 - вывести строку текста в окно
     mov     ebx,16 shl 16+40		  ; [координата по оси x]*65536 + [координата по оси y]
     mov     ecx,0x0			  ; 0xX0RRGGBB (RR, GG, BB задают цвет текста)
     mov     edx,cname			  ; указатель на начало строки
@@ -940,18 +898,15 @@ draw_result:
     newline:				  ; цикл
       int     0x40			  ; Прерывание
       add     ebx,23 shl 16		  ; Добавляем
-      add     edx,1			  ; Добавляем
+      inc     edx			  ; Добавляем
       cmp     [edx],byte 'x'		  ; Сравнение с байтом х
     jne    newline			  ; Если не нуль или не равно
 
     ;.................................................................................................
     ; Отрисовка слайдеров
     ;.................................................................................................
-    mov     eax,13			  ; Функция 13 - нарисовать прямоугольник
-    mov     edx,0x222222		  ; цвет-обводки
-    mov     ebx,16 shl 16+4		  ; Начальные координаты по x [к-та x]*65536 + [размер]
-    mov     ecx,51 shl 16+86		  ; Начальные координаты по y [к-та y]*65536 + [размер]
-    int     0x40
+    ; Функция 13 - нарисовать прямоугольник
+    mcall   SF_DRAW_RECT, 16 shl 16+4, 51 shl 16+86, 0x222222
     add     ebx,23 shl 16		  ; Начальные координаты по x [к-та y]*65536 + [размер]
     int     0x40
     add     ebx,23 shl 16		  ; Начальные координаты по x [к-та y]*65536 + [размер]
@@ -959,10 +914,7 @@ draw_result:
     add     ebx,23 shl 16		  ; Начальные координаты по x [к-та y]*65536 + [размер]
     int     0x40
 
-    mov     edx,0xFA0919		  ; цвет-обводки
-    mov     ebx,17 shl 16+2		  ; Начальные координаты по x [к-та x]*65536 + [размер]
-    mov     ecx,52 shl 16+84		  ; Начальные координаты по y [к-та y]*65536 + [размер]
-    int     0x40
+    mcall   , 17 shl 16+2, 52 shl 16+84, 0xFA0919
     mov     edx,0x08CE19		  ; цвет-обводки
     add     ebx,23 shl 16		  ; Начальные координаты по x [к-та y]*65536 + [размер]
     int     0x40
@@ -1000,10 +952,9 @@ draw_slider:
     mov     cl,136			  ; нижняя точка ползунка
     sub     cl,al			  ; cl=cl-al
     shl     ecx,16
-    add     ecx,1			  ; задаем начальное положение
-    mov     eax,13			  ; Функция 13 - нарисовать прямоугольник
-    int     0x40
-    push    ebx 			  ; сохраняем для следующего ползунка x+w
+    inc     ecx				  ; задаем начальное положение
+    mcall   SF_DRAW_RECT      ; Функция 13 - нарисовать прямоугольник
+    push    ebx				  ; сохраняем для следующего ползунка x+w
     sub     ebx,8			  ; так как ширина линии 11 то отнимаем 8 чтобы кубик стал шириной 3
     add     ebx,8 shl 16		  ; Координаты по x для квадрата на ползунке смещаем на 8 в право
     inc     ecx 			  ; быдлокодим высоту ползунка до 3-х (1+1=2)
@@ -1020,9 +971,9 @@ draw_value:
     ;.................................................................................................
     push    ebx 			  ; сохраняем присланные координаты
     mov     ebx,10			  ; устанавливаем основание системы счисления
-    mov     edi,buff			  ; указатель на строку буфера
-    call    int2ascii			  ; конвертируем число и ложим как строку в буфер + esi длина
-    mov     eax,4			  ; функция 4: написать текст в окне
+    mov     edi,buff		  ; указатель на строку буфера
+	call    int2ascii   	  ; конвертируем число и ложим как строку в буфер + esi длина
+    mov     eax,SF_DRAW_TEXT  ; функция 4: написать текст в окне
     pop     ebx 			  ; достаем из стека присланные координаты
     cmp     esi,2			  ; ЦЕНТРИРОВАНИЕ ТЕКСТА
     jne     draw_value_1
@@ -1041,58 +992,22 @@ draw_value:
 
   _read_params:
 
-      mov al,[params+2]
-      mov [params_c+0],al
+      mov eax,dword[params+2]
+      mov dword[params_c+0],eax
 
-      mov al,[params+3]
-      mov [params_c+1],al
-
-      mov al,[params+4]
-      mov [params_c+2],al
-
-      mov al,[params+5]
-      mov [params_c+3],al
-
-      mov al,[params+6]
-      mov [params_c+4],al
-
-      mov al,[params+7]
-      mov [params_c+5],al
-
-      mov al,[params+8]
-      mov [params_c+6],al
-
-      mov al,[params+9]
-      mov [params_c+7],al
+      mov eax,dword[params+6]
+      mov dword[params_c+4],eax
 
       mov   esi,params_c
       mov   ecx,16
       call  ascii2int
       mov   [color],eax
 
-      mov al,[params+11]
-      mov [params_c+0],al
+      mov eax,dword[params+11]
+      mov dword[params_c+0],eax
 
-      mov al,[params+12]
-      mov [params_c+1],al
-
-      mov al,[params+13]
-      mov [params_c+2],al
-
-      mov al,[params+14]
-      mov [params_c+3],al
-
-      mov al,[params+15]
-      mov [params_c+4],al
-
-      mov al,[params+16]
-      mov [params_c+5],al
-
-      mov al,[params+17]
-      mov [params_c+6],al
-
-      mov al,[params+18]
-      mov [params_c+7],al
+      mov eax,dword[params+15]
+      mov dword[params_c+4],eax
 
       mov   esi,params_c
       mov   ecx,16
@@ -1122,7 +1037,7 @@ int2ascii:
     ; ebx - основание системы счисления
     ; edi - указатель на строку буфера
     ; Возвращает заполненный буфер и esi - длина строки
-    ;pushad
+    push    edi
     xor     esi,esi			  ; зануляем счетчик символов
     convert_loop:
     xor     edx,edx			  ; зануляем регистр под остаток
@@ -1140,9 +1055,8 @@ int2ascii:
     test    esi,esi			  ; если есть что доставать из стека
     jnz     write_loop			  ; то достаём
     mov     byte [edi],0		  ; иначе дописыываем нулевой байт
-    ;popad                                 ; восстанавливаем значения регистров
+    pop     edi
     ; код ниже не имеет ничего общего к функции, просто возвращает еще длинну полученной строки
-    mov     edi,buff			  ; указатель на начало текста
     call    str_len
     mov     esi,eax
     ret 				  ; и возвращаем управление
@@ -1227,9 +1141,7 @@ str_len:
     ;.................................................................................................
     ; определяет длину строки (вход->EDI ZS offset ; выход->EAX ZS length)
     ;.................................................................................................
-	push ecx
-	push esi
-	push edi
+	push ecx esi edi
 
 	cld
 	xor   al, al
@@ -1240,9 +1152,7 @@ str_len:
 	mov eax, edi
 	dec eax
 
-	pop edi
-	pop esi
-	pop ecx
+	pop edi esi ecx
 
 	ret
 ;end_str_len
@@ -1287,8 +1197,8 @@ str_len:
  endp
 
 set_background2:
-    mcall   68, 11
-    mcall   68, 12, 256 * 256 * 3
+    mcall   SF_SYS_MISC, SSF_HEAP_INIT
+    mcall   SF_SYS_MISC, SSF_MEM_ALLOC, 256 * 256 * 3
     mov     [image], eax
 
     mov     edx, eax
@@ -1309,12 +1219,12 @@ set_background2:
     add     edx, 3
     loop    @b
 
-    mcall   15, 1, 256, 256
-    mcall   15, 4, 1
-    mcall   15, 5, [image], 0, 256 * 256 * 3
-    mcall   15, 3
+    mcall   SF_BACKGROUND_SET, SSF_SIZE_BG, 256, 256
+    mcall   SF_BACKGROUND_SET, SSF_MODE_BG, 1
+    mcall   SF_BACKGROUND_SET, SSF_IMAGE_BG, [image], 0, 256 * 256 * 3
+    mcall   SF_BACKGROUND_SET, SSF_REDRAW_BG
 
-    mcall   68, 13, [image]
+    mcall   SF_SYS_MISC, SSF_MEM_FREE, [image]
 ret
 
 ;#___________________________________________________________________________________________________
@@ -1322,7 +1232,7 @@ ret
 ; БЛОК ПЕРЕМЕННЫХ И КОНСТАНТ                                                                         |
 ;----------------------------------------------------------------------------------------------------/
 circle:
-    title	db 'Palitra v0.76',0	   ; хранит имя программы
+    title	db 'Palitra v0.77',0	   ; хранит имя программы
     hidden	db 'Hidden',0
     hex 	db '#',0		  ; для вывода решётки как текста
     cname	db 'RGBAx'		  ; хранит разряды цветов (red,green,blue) x-метка конца
@@ -1334,7 +1244,19 @@ circle:
     runmode	dd 1			  ; режим запуска (1-normal, 2-hidden, 3-colordialog)
     color2	dd 00FFFFFFh		  ; хранит значение второго выбранного цвета
 
+    inifileeskin db '/sys/settings/eskin.ini',0
+    amain       db 'main',0
+    aprogram    db 'program',0
+    aparam      db 'param',0
 
+align 16
+@IMPORT:
+
+library \
+    libini , 'libini.obj'
+
+import  libini, \
+	ini_set_str, 'ini_set_str'
 
 I_END:
     cm		rb 12
@@ -1353,9 +1275,9 @@ I_END:
     renmode	rd 1			  ; режим отрисовки (1-цветовая схема,2-пипетка,3-круговая)
     params	rb 20			  ; приём параметров
     params_c	rb 9			  ; приёмник для цвета
+    image	    rd 1
 
- image	    rd 1
-
-
-		rd 1024
+	rd 1024
+stacktop:
+	sys_path rb 1024
 I_MEM:
