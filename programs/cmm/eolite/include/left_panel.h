@@ -92,7 +92,7 @@ void GetDiskIconAndName(char disk_first_letter, dword dev_icon, disc_name)
 
 void _SystemDiscs::Get()
 {
-	byte ret = 0;
+	bool kolibrios_exists=false;
 	char dev_name[10], sys_discs[10];
 	int i1, j1, dev_num_i, dev_disc_num;
 	dword devbuf;
@@ -113,7 +113,8 @@ void _SystemDiscs::Get()
 		}
 		if (!strcmp(#sys_discs, "/rd/1")) 
 		{
-			if (dir_exists("/kolibrios")) {
+			if (dir_exists("/kolibrios")) && (!kolibrios_exists) {
+				kolibrios_exists=true;
 				list.add("/kolibrios");
 				dev_num++;
 			}

@@ -32,7 +32,7 @@ _http http = {0, 0, 0, 0, 0, 0, 0};
 char homepage[] = FROM "html\\homepage.htm""\0";
 
 #ifdef LANG_RUS
-char version[]="Текстовый браузер 1.8b";
+char version[]="Текстовый браузер 1.8c";
 ?define IMAGES_CACHE_CLEARED "Кэш картинок очищен"
 ?define T_LAST_SLIDE "Это последний слайд"
 char loading[] = "Загрузка страницы...<br>";
@@ -47,7 +47,7 @@ char link_menu[] =
 "Копировать ссылку
 Скачать содержимое ссылки";
 #else
-char version[]="Text-based Browser 1.8";
+char version[]="Text-based Browser 1.8c";
 ?define IMAGES_CACHE_CLEARED "Images cache cleared"
 ?define T_LAST_SLIDE "This slide is the last"
 char loading[] = "Loading...<br>";
@@ -115,6 +115,7 @@ char editURL[sizeof(URL)];
 int	mouse_twb;
 edit_box address_box = {250,60,30,0xffffff,0x94AECE,0xffffff,0xffffff,0x10000000,sizeof(URL),#editURL,#mouse_twb,2,19,19};
 
+#define SKIN_Y 24
 
 void main()
 {
@@ -124,7 +125,7 @@ void main()
 	load_dll(libimg, #libimg_init,1);
 	load_dll(libHTTP, #http_lib_init,1);
 	load_dll(iconv_lib, #iconv_open,0);
-	Libimg_LoadImage(#skin, abspath("wv_skin.png"));
+	Libimg_LoadImage(#skin, "/sys/toolbar.png");
 	wv_progress_bar.progress_color = 0x72B7EB;
 	CreateDir("/tmp0/1/downloads");
 	if (param) strcpy(#URL, #param); else strcpy(#URL, URL_SERVICE_HOME);
@@ -253,10 +254,10 @@ void Draw_Window()
 	DrawRectangle(address_box.left-3, address_box.top-3, address_box.width+5, 25,border_color);
 	DefineButton(address_box.left-52, address_box.top-2, 24, skin.h-2, BACK_BUTTON+BT_HIDE, 0);
 	DefineButton(address_box.left-27, address_box.top-2, 24, skin.h-2, FORWARD_BUTTON+BT_HIDE, 0);
-	img_draw stdcall(skin.image, address_box.left-53, address_box.top-3, 51, skin.h, 3, 0);
+	img_draw stdcall(skin.image, address_box.left-53, address_box.top-3, 51, skin.h, 0, SKIN_Y);
 	DefineButton(address_box.left+address_box.width+1, address_box.top-3, 16, skin.h-1, REFRESH_BUTTON+BT_HIDE+BT_NOFRAME, 0);
 	DefineButton(Form.cwidth-27, address_box.top-3, 23, skin.h-1, SANDWICH_BUTTON+BT_HIDE, 0);
-	img_draw stdcall(skin.image, Form.cwidth-24, address_box.top-3, 17, skin.h, 105, 0);
+	img_draw stdcall(skin.image, Form.cwidth-24, address_box.top-3, 17, skin.h, 102, SKIN_Y);
 	DrawBar(0,Form.cheight - STATUSBAR_H, Form.cwidth,STATUSBAR_H, col_bg);
 	DrawBar(0,Form.cheight - STATUSBAR_H, Form.cwidth,1, border_color);
 	if (!header) 
@@ -414,7 +415,7 @@ void OpenPage()
 	}
 	if (!strncmp(#URL,"http:",5)) || (!strncmp(#URL,"https://",8)) 
 	{
-		img_draw stdcall(skin.image, address_box.left+address_box.width+1, address_box.top-3, 17, skin.h, 131, 0);
+		img_draw stdcall(skin.image, address_box.left+address_box.width+1, address_box.top-3, 17, skin.h, 68, SKIN_Y);
 
 		if (!strncmp(#URL,"http:",5)) {
 			http.get(#URL);
@@ -450,13 +451,14 @@ void OpenPage()
 
 DrawEditBoxWebView()
 {
+	int skin_x_offset;
 	DrawBar(address_box.left-2, address_box.top-2, address_box.width+3, 2, address_box.color);
 	DrawBar(address_box.left-2, address_box.top, 2, 22, address_box.color);
 	address_box.size = address_box.pos = address_box.shift = address_box.shift_old = strlen(#editURL);
 	address_box.offset = 0;
 	edit_box_draw stdcall(#address_box);
-	if (http.transfer > 0) EAX = 131; else EAX = 54;
-	img_draw stdcall(skin.image, address_box.left+address_box.width+1, address_box.top-3, 17, skin.h, EAX, 0);
+	if (http.transfer > 0) skin_x_offset = 68; else skin_x_offset = 51;
+	img_draw stdcall(skin.image, address_box.left+address_box.width+1, address_box.top-3, 17, skin.h, skin_x_offset, SKIN_Y);
 }
 
 

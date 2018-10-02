@@ -52,7 +52,6 @@ img_files = {
  {"MEDIA/KIV.INI", PROGS .. "/media/kiv/trunk/kiv.ini"},
  {"MEDIA/PIXIE/PIXIE.INI", PROGS .. "/cmm/pixie2/pixie.ini"},
  {"MEDIA/PIXIE/SKIN.PNG", PROGS .. "/cmm/pixie2/skin.png"},
- {"NETWORK/WV_SKIN.PNG", PROGS .. "/cmm/browser/wv_skin.png"},
  {"NETWORK/FTPC.INI", PROGS .. "/network/ftpc/ftpc.ini"},
  {"NETWORK/FTPD.INI", "common/network/ftpd.ini"},
  {"NETWORK/USERS.INI", "common/network/users.ini"},
