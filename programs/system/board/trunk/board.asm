@@ -184,7 +184,13 @@ key:
         mcall   2
         cmp     ah, ' '
         je      button.noclose
+        cmp     ah, 51 ; F2
+        je      open_boardlog
         jmp     still
+open_boardlog:
+		mcall 70, open_log_in_tinypad
+        jmp     red
+		
 ;------------------------------------------------------------------------------
 button:
         mcall   17                        ; get id
@@ -442,6 +448,14 @@ InfoStructure:
         dd      ?       ; pointer to the buffer to write data
         db      ?
         dd      ?       ; pointer to the filename
+
+open_log_in_tinypad:
+        dd      7
+        dd      0
+        dd      filename
+        dd      0
+        dd      0
+        db      '/sys/tinypad',0
 
 buffer_length   rb  3
 process_count   dd  ?

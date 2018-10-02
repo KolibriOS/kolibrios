@@ -1,5 +1,5 @@
 ﻿#0    **** MAIN ****
-Centro gioco              /sys/game_center
+Centro gioco              /sys/allgames
 Demo               >      /@1
 Grafica            >      /@3
 Multimedia         >      /@4

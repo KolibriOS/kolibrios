@@ -337,5 +337,5 @@ void PropertiesDrawIcon(dword file_path, extension)
 {
 	#define ICON_PADDING 11
 	DrawBar(20-ICON_PADDING, 30-ICON_PADDING-1, ICON_PADDING*2+16, ICON_PADDING*2+16, 0xFFFfff);
-	DrawIconByExtension(file_path, extension, 20, 30, system.color.work_light);
+	DrawIconByExtension(file_path, extension, -icon_size/2+28, -icon_size/2+38, 0xFFFfff);
 }

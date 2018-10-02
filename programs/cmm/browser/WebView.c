@@ -79,9 +79,10 @@ int action_buf;
 
 dword TOOLBAR_H = 40;
 dword STATUSBAR_H = 15;
-dword col_bg;
-dword panel_color;
-dword border_color;
+
+dword col_bg = 0xE3E2E2;
+dword panel_color  = 0xE3E2E2;
+dword border_color = 0x8C8C8C;
 
 bool debug_mode = false;
 bool old_tag_parser_mode = false;
@@ -124,7 +125,7 @@ void main()
 	load_dll(libHTTP, #http_lib_init,1);
 	load_dll(iconv_lib, #iconv_open,0);
 	Libimg_LoadImage(#skin, abspath("wv_skin.png"));
-	SetSkinColors();
+	wv_progress_bar.progress_color = 0x72B7EB;
 	CreateDir("/tmp0/1/downloads");
 	if (param) strcpy(#URL, #param); else strcpy(#URL, URL_SERVICE_HOME);
 	WB1.list.SetFont(8, 14, 10011000b);
@@ -255,7 +256,7 @@ void Draw_Window()
 	img_draw stdcall(skin.image, address_box.left-53, address_box.top-3, 51, skin.h, 3, 0);
 	DefineButton(address_box.left+address_box.width+1, address_box.top-3, 16, skin.h-1, REFRESH_BUTTON+BT_HIDE+BT_NOFRAME, 0);
 	DefineButton(Form.cwidth-27, address_box.top-3, 23, skin.h-1, SANDWICH_BUTTON+BT_HIDE, 0);
-	img_draw stdcall(skin.image, Form.cwidth-24, address_box.top-3, 17, skin.h, 87, 0);
+	img_draw stdcall(skin.image, Form.cwidth-24, address_box.top-3, 17, skin.h, 105, 0);
 	DrawBar(0,Form.cheight - STATUSBAR_H, Form.cwidth,STATUSBAR_H, col_bg);
 	DrawBar(0,Form.cheight - STATUSBAR_H, Form.cwidth,1, border_color);
 	if (!header) 
@@ -477,20 +478,6 @@ byte UrlExtIs(dword ext)
 {
 	if (!strcmpi(#URL + strlen(#URL) - strlen(ext), ext)) return true;
 	return false;
-}
-
-int SetSkinColors()
-{
-	dword image_data;
-	image_data = DSDWORD[skin.image+24];
-	col_bg = DSDWORD[image_data];
-	panel_color  = DSDWORD[skin.w*4*4 + image_data];
-	border_color = DSDWORD[skin.w*4*7 + image_data];
-	wv_progress_bar.progress_color = DSDWORD[skin.w*4*10 + image_data];
-	$and col_bg, 0x00ffffff
-	$and panel_color, 0x00ffffff
-	$and border_color, 0x00ffffff
-	$and wv_progress_bar.progress_color, 0x00ffffff
 }
 
 void DrawProgress()
