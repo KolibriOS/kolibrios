@@ -181,6 +181,7 @@ void main()
 			if (key_scancode==SCAN_CODE_KEY_M) RunProgram("/sys/@VOLUME", "m");
 			if (key_scancode==SCAN_CODE_KEY_R) EventRepeatClick();
 			if (key_scancode==SCAN_CODE_KEY_S) EventShuffleClick();
+			if (key_scancode==SCAN_CODE_KEY_I) EventShowTagInfo();
 			if (key_scancode==SCAN_CODE_RIGHT) RunProgram("/sys/@VOLUME", "+");
 			if (key_scancode==SCAN_CODE_LEFT)  RunProgram("/sys/@VOLUME", "-");
 			if (key_scancode==SCAN_CODE_ENTER) EventStartPlayingSelectedItem();
@@ -565,6 +566,36 @@ void ShowAboutThread()
 			DrawIcon32(10, 48, theme.color_top_panel_bg, 65);
 
 	}
+}
+
+/*
+struct {
+	char tag[4];
+	char title[60];
+	char artist[60];
+	char album[60];
+	char speed;
+	char genre[30];
+	char start_time[6];
+	char end_time[6];
+} tag11;
+
+struct {
+	char tag[3];
+	char title[30];
+	char artist[30];
+	char album[30];
+	char year[4];
+	char comment[30];
+	unsigned char genre; //https://www.w3.org/People/Bos/MP3tag/mp3tag.c
+} tag10;
+*/
+
+void EventShowTagInfo()
+{
+	char item_path[4096];
+	sprintf(#item_path,"%s/%s",#work_folder,GetSelectedItemName());
+	RunProgram("/sys/media/mp3info", #item_path);
 }
 
 

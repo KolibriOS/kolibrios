@@ -156,8 +156,8 @@ void DrawSettingsCheckBoxes()
 
 void LoadIniSettings()
 {
-	ini.path = GetIni(#eolite_ini_path, "EOLITE.INI");
-	ini.section = "Config";
+	ini.path = GetIni(#eolite_ini_path, "app.ini");
+	ini.section = "Eolite";
 
 	files.SetFont(6, 9, 10000000b);
 	show_real_names.checked = ini.GetInt("RealFileNamesCase", true); 

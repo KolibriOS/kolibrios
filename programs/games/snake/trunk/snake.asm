@@ -109,7 +109,7 @@ align 4
       invoke  ini.get_color, cur_dir_path, aTheme_name, aBackground_color, 0x000000
     or   [background_color],    eax
     or   [window_style_windowed],   eax
-      invoke  ini.get_color, cur_dir_path, aTheme_name, aDecorations_color, 0xAAAA00
+      invoke  ini.get_color, cur_dir_path, aTheme_name, aDecorations_color, 0x232300
     or   [decorations_color],  eax
       invoke  ini.get_color, cur_dir_path, aTheme_name, aSnake_color, 0x1111ff
     or   [snake_color], eax
