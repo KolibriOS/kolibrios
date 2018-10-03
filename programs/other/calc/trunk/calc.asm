@@ -35,6 +35,12 @@ include '../../../macros.inc'
 include '../../../gui_patterns.inc'
 include '../../../KOSfuncs.inc'
 
+hotkeys_count equ 26
+asci:   db 49, 50, 51, 52, 53, 54, 55, 56, 57, 48, 43, 61, 13, 45, 42, 47, 44, 46, 27, 182, \
+           97, 98, 99,100,101,102
+butid:  db 12, 13, 14, 19, 20, 21, 26, 27, 28, 34, 15, 39, 39, 22, 36, 29, 35, 35, 1,  2  , \
+           6,  7,  8,  9,  10, 11
+
 START:
 red:
         call    draw_window
@@ -53,9 +59,10 @@ button:
 
 key:
         mcall   2       ; get ASCII key code
+		and     eax, 0xffff ; supress scancodes
         shr     eax, 8
         mov     edi, asci       ; convert ASCII into button id
-        mov     ecx, 18
+        mov     ecx, hotkeys_count
         cld
         repne   scasb
         jne     still
@@ -261,6 +268,7 @@ no_sqrt:
         call    calculate
         call    new_entry
         mov     [calc], '+'
+		call    print_display
         jmp     still
 
 no_add:
@@ -269,6 +277,7 @@ no_add:
         call    calculate
         call    new_entry
         mov     [calc], '-'
+		call    print_display
         jmp     still
   
 no_sub:
@@ -277,6 +286,7 @@ no_sub:
         call    calculate
         call    new_entry
         mov     [calc], '/'
+		call    print_display
         jmp     still
 
 no_div:
@@ -285,6 +295,7 @@ no_div:
         call    calculate
         mov     [calc], '*'
         call    new_entry
+		call    print_display
         jmp     still
 
 no_mul:
@@ -704,6 +715,11 @@ next_button:
         cmp     [edx], byte 'x'
         jne     next_line
 
+		DrawRectangle3D DISPLAY_X-1,DISPLAY_Y-1,DISPLAY_W+2,DISPLAY_H+2, [sc.work_3d_dark], [sc.work_3d_light]
+		DrawRectangle DISPLAY_X,DISPLAY_Y,DISPLAY_W,DISPLAY_H, [sc.work_graph]
+        mcall   38, < DISPLAY_X+1, DISPLAY_W+DISPLAY_X-1>, <DISPLAY_Y+1, DISPLAY_Y+1>, 0xE0E0E0 ; internal shadow
+		mcall     , < DISPLAY_X+1,  DISPLAY_X+1>, <DISPLAY_Y+2, DISPLAY_Y+DISPLAY_H-1>,          ; internal shadow
+		
         call    print_display
 
         mcall   12, 2
@@ -711,10 +727,6 @@ next_button:
 
 print_display:
         pusha
-		DrawRectangle3D DISPLAY_X-1,DISPLAY_Y-1,DISPLAY_W+2,DISPLAY_H+2, [sc.work_3d_dark], [sc.work_3d_light]
-		DrawRectangle DISPLAY_X,DISPLAY_Y,DISPLAY_W,DISPLAY_H, [sc.work_graph]
-        mcall   38, < DISPLAY_X+1, DISPLAY_W+DISPLAY_X-1>, <DISPLAY_Y+1, DISPLAY_Y+1>, 0xE0E0E0 ; internal shadow
-		mcall     , < DISPLAY_X+1,  DISPLAY_X+1>, <DISPLAY_Y+2, DISPLAY_Y+DISPLAY_H-1>,          ; internal shadow
 		mcall   13, < DISPLAY_X+2, DISPLAY_W-2>, <DISPLAY_Y+2, DISPLAY_H-2>, 0xFFFfff ; background
 		mcall   8, <236,53>, <DISPLAY_Y,DISPLAY_H>, 3, [sc.work]        ; 'dec-bin-hex'
 		
@@ -839,9 +851,6 @@ text:
         db 1,'7',   1,'8', 1,'9', 1,'/', 3,'x^2', 3,'Tan', 4,'Atan', 0
         db 3,'+/-', 1,'0', 1,'.', 1,'*', 3,'Sqr', 2,'Pi',  1,'=', 0
         db 'x'
-
-asci:   db 49, 50, 51, 52, 53, 54, 55, 56, 57, 48, 43, 61, 45, 42, 47, 44, 46, 27
-butid:  db 12, 13, 14, 19, 20, 21, 26, 27, 28, 34, 15, 39, 22, 36, 29, 35, 35, 1
 
 I_END:
 

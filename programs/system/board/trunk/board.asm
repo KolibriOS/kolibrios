@@ -428,7 +428,7 @@ else
  title	db 'General debug & message board',0
 end if
 
-default_filename db '/sys/boardlog.txt',0
+default_filename db '/tmp0/1/boardlog.txt',0
 krnl_msg        db  'K : '
 duk             db  'KernUser'
 my_name         db  'board',0
