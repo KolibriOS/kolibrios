@@ -7,18 +7,26 @@
 {
 	dword memory;
 	dword offsetMemory;
+	dword lenInitSize;
 	dword recursiveIndex(dword i, address);
 	byte set(dword key, data);
 	dword get(dword key);
+	void reallocMemory(dword newSize);
 	//dword del(dword key);
 	byte init(dword size);
 };
 
+:void Array::reallocMemory(dword newSize)
+{
+	memory = realloc(memory, newSize);
+	lenInitSize = newSize;
+}
+
 :dword Array::recursiveIndex(dword key, address)
 {
 	dword flags = 0;
-	flags = DSBYTE[address + 4];
 	IF (DSDWORD[address] == key) RETURN address;
+	flags = DSBYTE[address + 4];
 	//IF (flags & 100b) RETURN address; // if delete
 	IF (flags & 010b) && (DSDWORD[address] < key) RETURN recursiveIndex(key, DSDWORD[address + 5]); // left tree
 	IF (flags & 001b) && (DSDWORD[address] > key) RETURN recursiveIndex(key, DSDWORD[address + 9]); // right tree
@@ -29,7 +37,8 @@
 	IF(!size) RETURN 0;
 	IF(!memory)
 	{
-		memory = malloc(size * 17);
+		lenInitSize = size * 17;
+		memory = malloc(lenInitSize);
 		EBX = memory;
 		DSDWORD[EBX] = 0;
 		DSBYTE[EBX + 4] = 0;
@@ -39,13 +48,18 @@
 		offsetMemory = 17;
 		RETURN 0xFF;
 	}
-	memory = realloc(size * 17);
-	RETURN 0xFF;
+	IF(size > lenInitSize)
+	{
+		reallocMemory(size * 17);
+		RETURN 0xFF;
+	}
+	RETURN 0;
 }
 :byte Array::set(dword key, data)
 {
 	dword address = 0;
 	dword newOffset = 0;
+	IF(offsetMemory > lenInitSize) reallocMemory(offsetMemory << 1);
 	address = recursiveIndex(key, memory);
 	/*IF(DSBYTE[address + 4] & 100b)
 	{
@@ -68,12 +82,12 @@
 	newOffset = memory + offsetMemory;
 	IF(DSDWORD[address] < key)
 	{
-		DSBYTE[address + 4] |= 10b;
+		DSBYTE[address + 4] |= 010b; // set flag left address
 		DSDWORD[address + 5] = newOffset;
 	}
 	ELSE IF(DSDWORD[address] > key)
 	{
-		DSBYTE[address + 4] |= 01b;
+		DSBYTE[address + 4] |= 001b; // set flag right address
 		DSDWORD[address + 9] = newOffset;
 	}
 	ELSE
@@ -114,20 +128,24 @@
 	byte init(dword size);
 };
 
-:dword Dictionary::hash(dword text)
+:dword Dictionary::hash(dword text) // max 255 bytes as strings => 4 byte or duble word hash
 {
-	dword s1 = 1;
-	dword s2 = 0;
+	dword checkSum1 = 1;
+	dword checkSum2 = 0;
+	dword beginAddress = 0;
 	
+	beginAddress = text;
 	WHILE(DSBYTE[text])
 	{
-		s1 += DSBYTE[text];
-		s2 += s1;
+		checkSum1 += DSBYTE[text];
+		checkSum2 += checkSum1;
 		text++;
 	}
-	IF(s1>0x3FFF) RETURN 0;
-	IF(s2>0x3FFFF) RETURN 0;
-	RETURN s2<<14|s1;
+	//IF(h1 > 0x03FFF) RETURN h1 << 8 ^ h2;
+	//IF(h2 > 0x3FFFF) RETURN h1 << 8 ^ h2;
+	EAX = text - beginAddress;
+	EAX <<= 23;
+	RETURN EAX | checkSum2;
 }
 
 :byte Dictionary::set(dword key, value)
