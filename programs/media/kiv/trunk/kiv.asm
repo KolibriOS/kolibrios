@@ -1299,8 +1299,8 @@ store dword b at $ - numimages*20*20 + numimages*20*y + (%-1)*4
 end repeat
 end repeat
 
-inifilename db  '/sys/media/kiv.ini',0
-aShortcuts  db  'Shortcuts',0
+inifilename db  '/sys/settings/app.ini',0
+aShortcuts  db  'Kiv',0
 aNext       db  'Next',0
 aPrev       db  'Prev',0
 aSlide      db  'SlideShow',0

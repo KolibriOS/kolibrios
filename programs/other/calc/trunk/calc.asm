@@ -813,7 +813,7 @@ clear_all:
 
 ;data
 
-title   db 'Calc 1.41', 0
+title   db 'Calc 1.45', 0
 
 display_type            dd  0    ; 0 = decimal, 1 = hexadecimal, 2= binary
 entry_multiplier        dd  10
