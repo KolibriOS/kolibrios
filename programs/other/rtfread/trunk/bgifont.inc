@@ -154,20 +154,20 @@ _BGIfont_Prepare:
     mov  dword[.font],edx ; filename
     mov  esi,edi     ; esi->FontName
     mov  [.dest],edi ; ptr to load font
-        mov     eax, 70
-        mov     ebx, .fontattr
-        mcall
-        test    eax, eax
-        ;jnz     .fail
-        dps2    '1'
-        mov     eax, [.fileattr+32]
-    mov  [.fsize], litt_end-litt_file
-    mov  ebx,.fontinfo
-    mov  eax,70
-    mcall	     ; ebx - file size
-    ;mov ebx, litt_end-litt_file
-    ;mov edi, litt_file
-	;mov  [.dest],litt_file ; ptr to load font
+    ;    mov     eax, 70
+    ;    mov     ebx, .fontattr
+    ;    mcall
+    ;    test    eax, eax
+    ;    ;jnz     .fail
+    ;    dps2    '1'
+    ;    mov     eax, [.fileattr+32]
+    ;mov  [.fsize], litt_end-litt_file
+    ;mov  ebx,.fontinfo
+    ;mov  eax,70
+    ;mcall	     ; ebx - file size
+    mov ebx, litt_end-litt_file
+    mov edi, litt_file
+	mov  [.dest],litt_file ; ptr to load font
 
     cmp  dword[edi],0x08084b50 ; 'PK',8,8
     jne  .fail

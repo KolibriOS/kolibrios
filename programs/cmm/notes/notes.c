@@ -1,4 +1,4 @@
-// Notes v0.8 ALPHA 
+// Notes v0.9 Beta
 
 #define MEMSIZE 0xDAE80
 #include "..\lib\kolibri.h" 
@@ -32,7 +32,7 @@
 
 #define RED_LINE_X 22
 #define COL_RED_LINE 0xF3C9C9
-unsigned char edge[sizeof(file "edge.raw")]= FROM "edge.raw"; //292x6
+unsigned char edge[sizeof(file "img/edge.raw")]= FROM "img/edge.raw"; //292x6
 #define EDGE_H 6
 #define TITLE_H 24
 #define HEADER_HEIGHT TITLE_H+EDGE_H
@@ -47,7 +47,7 @@ unsigned char edge[sizeof(file "edge.raw")]= FROM "edge.raw"; //292x6
 #include "engine.h"
 
 dword ed_mouse;
-edit_box notebox = {0,999,0,COL_BG_ACTIVE,0x94AECE,COL_BG_ACTIVE,0xffffff,0,
+edit_box notebox = {NULL,NULL,NULL,COL_BG_ACTIVE,0x94AECE,COL_BG_ACTIVE,0xffffff,0,
 	MAX_LINE_CHARS-1,NULL,#ed_mouse,ed_always_focus+ed_focus};
 dword lists[] = { 0xEAEAEA, 0xCDCDCD, 0xF0F0F0, 0xD8D8D8, 0 };
 
@@ -63,13 +63,14 @@ block delBtn;
 void main()
 {   
 	int btn;
+	bool first_redraw=true;
 	dword cur_line_offset;
 	load_dll(boxlib, #box_lib_init,0);
 	
 	if (param) notes.OpenTxt(#param); else notes.OpenTxt(abspath("notes.txt"));
-	notes.cur_y = -1;
+	//notes.cur_y = 0;
 
-	SetEventMask(0x27);
+	SetEventMask(EVM_REDRAW + EVM_KEY + EVM_BUTTON + EVM_MOUSE + EVM_MOUSE_FILTER);
 
 	loop() switch(WaitEvent())
 	{
@@ -90,6 +91,7 @@ void main()
 
 			if (mouse.key&MOUSE_LEFT)&&(mouse.up) 
 			&& (notes.ProcessMouse(mouse.x, mouse.y)) {
+				notebox.pos = mouse.x - notebox.left / 6;
 				EventListRedraw();
 				EventActivateLine(notes.cur_y);
 			}
@@ -107,14 +109,21 @@ void main()
 					EventDeleteCurrentNode();
 					break;
 				default: 
-					notes.lines[btn-CHECKBOX_ID].state ^= 1;
-					EventListRedraw();
+					EventCheckBoxClick(btn-CHECKBOX_ID);
 					break;
 			}  
 			break;
 	 
 		case evKey:
 			GetKeys();
+			if (key_modifier&KEY_LCTRL) || (key_modifier&KEY_RCTRL)
+			{
+				if (key_scancode == SCAN_CODE_SPACE)
+				{
+					EventCheckBoxClick(notes.cur_y);
+				}
+				break;
+			}
 			switch(key_scancode)
 			{
 				case SCAN_CODE_ESC:
@@ -137,6 +146,10 @@ void main()
 		 
 		 case evReDraw:
 		 	draw_window();
+		 	if (first_redraw) {
+		 		first_redraw = false;
+		 		EventActivateLine(0);
+		 	}
    }
 }
 
@@ -172,9 +185,10 @@ void DrawEditBoxN()
 {
 	notebox.width = notes.w-notes.x-8;
 	notebox.left = notes.x+5;
-	notebox.pos = notebox.offset = notebox.shift = notebox.shift_old = 0;
+	notebox.offset = notebox.shift = notebox.shift_old = 0;
 	notebox.cl_curs_x = notebox.cl_curs_y = 0;
 	notebox.size = strlen(notebox.text);
+	if (notebox.pos > notebox.size) notebox.pos = notebox.size;
 	notebox.top = notes.cur_y*notes.item_h+4+notes.y;
 	edit_box_draw stdcall(#notebox);	
 }
@@ -212,7 +226,8 @@ void EventDrawDeleteButton()
 
 void EventDeleteCurrentNode()
 {
-	notes.lines[notes.cur_y].Delete();
+	int t = notes.cur_y;
+	notes.lines[t].Delete();
 	EventListRedraw();
 }
 
@@ -221,6 +236,12 @@ void EventListRedraw()
 	delete_active = false;
 	DeleteButton(DELETE_BTN);
 	notes.DrawList();
+}
+
+void EventCheckBoxClick(int id)
+{
+	notes.lines[id].state ^= 1;
+	EventListRedraw();
 }
 
 stop:

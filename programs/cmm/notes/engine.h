@@ -2,7 +2,7 @@
 
 #define CHBOX 12
 #define CHECKBOX_ID 50
-unsigned char checkbox[sizeof(file "checkbox.raw")]= FROM "checkbox.raw";
+unsigned char checkbox[sizeof(file "img/checkbox.raw")]= FROM "img/checkbox.raw";
 
 #define COL_BG_ACTIVE 0xFFF0A9
 #define COL_BG_INACTIVE 0xFFFFFF
@@ -36,13 +36,13 @@ void NOTE_LINE::Delete()
 struct NOTES : llist {
 	char txt_path[4096];
 	char txt_data[MAX_LINE_CHARS*LINES_COUNT];
+	bool txt_file_exists;
 
 	NOTE_LINE lines[LINES_COUNT]; 
 
 	char edit_active;
 	int OpenTxt();
 	int SaveTxt();
-	void DeleteNode();
 	void DrawList();
 	dword DrawLine(int line_n, draw_h);
 } notes;
@@ -57,11 +57,13 @@ int NOTES::OpenTxt(dword file_path)
 	ReadFile(0, 4096, #txt_data, #txt_path);
 	if (!txt_data) || (strncmp(#txt_data, "notes", 5)!=0)
 	{
+		txt_file_exists = false;
 		notify("'Notes\nData file does not exists or is not valid' -tE");
 		return 0;
 	}
 	else
 	{
+		txt_file_exists = true;
 		i+=5; //skip "notes" indefinier
 		while (txt_data[i]) 
 		{
@@ -98,6 +100,7 @@ int NOTES::SaveTxt()
 		tm = #lines[i].data;
 		strcat(#txt_data, #lines[i].data);
 	}
+	if (!txt_file_exists) CreateFile(0, 0, #txt_path);
 	WriteFile(0, strlen(#txt_data), #txt_data, #txt_path);
 }
 

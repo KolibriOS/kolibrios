@@ -1,10 +1,11 @@
-// Mouse Configuration Utility ver 1.51
+// Mouse Configuration Utility ver 1.6
 
 #ifndef AUTOBUILD
 #include "lang.h--"
 #endif
 
-#define MEMSIZE 0x23E80
+#define MEMSIZE 4096*11
+
 #include "..\lib\strings.h" 
 #include "..\lib\mem.h" 
 #include "..\lib\fs.h"
@@ -34,25 +35,18 @@
 	?define MOUSE_EMULATION "Enable mouse emulation using keyboard NumPad"
 	?define MADMOUSE "Through screen sides for pointer"
 #endif
-proc_info Form;
 
-block mouse_frame = { 18, 18, NULL, 130 };
-more_less_box pointer_speed      = { NULL, 0, 64, POINTER_SPEED };
-more_less_box acceleration       = { NULL, 0, 64, ACCELERATION_TEXT };
-more_less_box double_click_delay = { NULL, 0, 999, DOUBLE_CLICK_TEXT, 8 };
-checkbox emulation = { MOUSE_EMULATION, NULL };
-checkbox madmouse = { MADMOUSE, NULL };
-
-unsigned char panels_img_data[] = FROM "mouse_image.raw";
-raw_image panels_img = { 59, 101, #panels_img_data };
+:block mouse_frame = { 18, 18, NULL, 130 };
+:more_less_box pointer_speed      = { NULL, 0, 64, POINTER_SPEED };
+:more_less_box acceleration       = { NULL, 0, 64, ACCELERATION_TEXT };
+:more_less_box double_click_delay = { NULL, 0, 999, DOUBLE_CLICK_TEXT, 8 };
+:checkbox emulation = { MOUSE_EMULATION, NULL };
+:checkbox madmouse = { MADMOUSE, NULL };
 
 _ini ini = { "/sys/settings/system.ini", "mouse" };
 
-dword click_status;
-
-
-
 void main() {
+	proc_info Form;
 	int id;
 	
 	load_dll(libini, #lib_init,1);
@@ -66,44 +60,36 @@ void main() {
 	{
 		case evMouse:
 				mouse.get();
-				if (mouse.down) && (click_status==0) && (mouse_frame.hovered()) {
-					if (mouse.key&MOUSE_LEFT) click_status = 1;
-					if (mouse.key&MOUSE_RIGHT) click_status = 2;
-					if (mouse.key&MOUSE_CENTER) click_status = 3;
-					DrawMouseImage();
-				}
-				if (mouse.up) {
-					click_status=0;
-					DrawMouseImage();
-				}
+				IF (mouse_frame.hovered()) DrawMouseImage(mouse.lkm,mouse.pkm,mouse.mkm, mouse.vert);
+				IF (mouse.up) DrawMouseImage(0,0,0,0);
 				break;
 
-		case evButton: 
+		CASE evButton: 
 				id = GetButtonID();
-				if (1 == id) ExitApp();
-				else if (pointer_speed.click(id)) ApplyCfg();
-				else if (acceleration.click(id)) ApplyCfg();
-				else if (double_click_delay.click(id)) ApplyCfg();
-				else if (emulation.click(id)) {
-					if (emulation.checked == true) RunProgram("/sys/mousemul", 0);
-					else KillProcessByName("/sys/mousemul", SINGLE);
+				IF (1 == id) ExitApp();
+				else IF (pointer_speed.click(id)) ApplyCfg();
+				else IF (acceleration.click(id)) ApplyCfg();
+				else IF (double_click_delay.click(id)) ApplyCfg();
+				ELSE IF (emulation.click(id)) {
+					IF (emulation.checked == true) RunProgram("/sys/mousemul", 0);
+					ELSE KillProcessByName("/sys/mousemul", SINGLE);
 					break;
 				}
-				else if (madmouse.click(id)) {						
-					if (madmouse.checked == true) RunProgram("/sys/madmouse", 0);
-					else KillProcessByName("/sys/madmouse", SINGLE);
+				ELSE IF (madmouse.click(id)) {						
+					IF (madmouse.checked == true) RunProgram("/sys/madmouse", 0);
+					ELSE KillProcessByName("/sys/madmouse", SINGLE);
 					break;
 				}
 				break;
 
 		case evKey:
 				GetKeys();
-				if (key_scancode == SCAN_CODE_ESC) ExitApp();
+				IF (key_scancode == SCAN_CODE_ESC) ExitApp();
 				break;
 			
 		case evReDraw:
 				system.color.get();
-				DefineAndDrawWindow(430, 150, 424, 310+skin_height,0x34,system.color.work,WINDOW_TITLE,0);
+				DefineAndDrawWindow(430, 150, 424, 313+skin_height,0x34,system.color.work,WINDOW_TITLE,0);
 				GetProcessInfo(#Form, SelfInfo);
 				if (Form.status_window>2) break;
 				mouse_frame.w = - mouse_frame.x * 2 + Form.cwidth;
@@ -111,15 +97,37 @@ void main() {
 					mouse_frame.h, 99+BT_NOFRAME, 0xF0F2F3); //needed to handle mouse_up and refresh mouse image
 				WriteText(mouse_frame.x + 110, mouse_frame.y + 25, 0x90, 0x2C343C, CHECK_MOUSE_1);
 				WriteText(mouse_frame.x + 110, mouse_frame.y + 45, 0x90, 0x2C343C, CHECK_MOUSE_2);
-				DrawMouseImage();
+				DrawMouseImage(0,0,0,0);
 				DrawControls();
 	}
 }
 
+:byte panels_img_data[] = FROM "mouse_image.raw";
 
-void DrawMouseImage() {
-	_PutImage(mouse_frame.x+30, mouse_frame.y + 15,  panels_img.w, panels_img.h, 
-		click_status * panels_img.w * panels_img.h * 3 + panels_img.data);
+#define red    0xff0000
+#define yellow 0xfff600
+#define white  0xffffff
+#define dgrey  0x2d353d
+
+:struct IMG_PAL{ dword back,    shad1, mbody, left,  right, middle, white; }
+         pal = {    0xF0F2F3,0xABB0B2, dgrey, white, white, dgrey,  white  };
+
+void DrawMouseImage(dword l,r,m,v) {
+	#define IMG_W 59
+	#define IMG_H 101
+
+	IF (l) pal.left = red;
+	IF (m) pal.middle = red;
+	IF (r) pal.right = red;
+	IF (v) pal.middle = yellow;
+
+	PutPaletteImage(#panels_img_data,IMG_W,IMG_H,18+30,18+15,8,#pal);
+	pal.left = pal.right = white;
+	pal.middle = dgrey;
+	if (v) {
+		pause(10);
+		DrawMouseImage(0,0,0,0);
+	}
 }
 
 void DrawControls() {

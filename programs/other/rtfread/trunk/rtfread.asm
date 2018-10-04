@@ -163,8 +163,8 @@ key:                  ; нажата клавиша на клавиатуре
 	mov dh,ah
 	jmp key
 
-.next: 	;]Leency
-    cmp  ah,104         ; HELP
+.next:
+    cmp  ah,'h'         ; H - help
     jne  .nohelp
   .help:
     mov  [is_scroll_bar_needed],    0
@@ -192,15 +192,15 @@ key:                  ; нажата клавиша на клавиатуре
 ;    je   still
 ;    jmp  prep_load
   .nohelp2:
-    cmp  ah,114         ; R - redraw
+    cmp  ah,'r'         ; R - redraw
     je   red
-    cmp  ah,99          ; C - color
+    cmp  ah,'c'          ; C - color
     jne  .nocolor
   .color:
     xor  [mode],RTF_COLORLESS
     jmp  red
   .nocolor:
-    cmp  ah,97          ; A - alignment
+    cmp  ah,'a'          ; A - alignment
     jne  .noalign
   .alignment:
     xor  [mode],RTF_ALIGNLESS
@@ -212,12 +212,30 @@ key:                  ; нажата клавиша на клавиатуре
     dec  [pitch]
     jmp  red
   .nopd:
-    cmp  ah,46          ; < - pitch inc
+    cmp  ah,46          ; > - pitch inc
     jne  .nopi
   .incp:
     inc  [pitch]
     jmp  red
   .nopi:
+    cmp  ah,43 ;zoom+
+    je  .zplus
+    cmp  ah,61 ;zoom=
+    jne  .noplus
+  .zplus:
+    fld  [FreeFontscale]
+    fmul [Zoomscale]
+  .zoom:
+    fstp [FreeFontscale]
+    jmp  red
+  .noplus:
+    cmp  ah,45 ;zoom-
+    jne  .home
+  .zminus:
+    fld  [FreeFontscale]
+    fdiv [Zoomscale]
+    jmp  .zoom
+  .home:
     cmp  ah,180         ; Home
     je   top_red
     
@@ -307,21 +325,7 @@ key:                  ; нажата клавиша на клавиатуре
 ;    je   still
     jmp  red
   .noarup:
-    cmp  ah,56 ;zoom+
-    jne  .noplus
-  .zplus:
-    fld  [FreeFontscale]
-    fmul [Zoomscale]
-  .zoom:
-    fstp [FreeFontscale]
-    jmp  red
-  .noplus:
-    cmp  ah,54 ;zoom-
-    jne  .nominus
-  .zminus:
-    fld  [FreeFontscale]
-    fdiv [Zoomscale]
-    jmp  .zoom
+
   .nominus:
     cmp  ah,0xB5        ; end
     jne  .pre_file_open
@@ -336,7 +340,7 @@ key:                  ; нажата клавиша на клавиатуре
     call Set_position
     jmp  red
   .pre_file_open:
-    cmp  ah,108         ; L - load
+    cmp  ah,'l'         ; L - load
     jne  still
   .file_open:
 ;---------------------------------------------------------------------
@@ -351,16 +355,6 @@ key:                  ; нажата клавиша на клавиатуре
         cmp     [OpenDialog_data.status],1
         je      prep_load
         jmp     still
-;---------------------------------------------------------------------  
-;.sysxtree:
-;    or   [mode],RTF_OPENING
-;    opendialog draw_window, prep_load, st_1, fname_buf
-;  st_1:
-;    and  [mode],not RTF_OPENING
-;    jmp  still;red
-;  stilld:
-;    jmp  still
-;---------------------------------------------------------------------
 
   button:
     mcall 17            ; 17 - получить идентификатор нажатой кнопки
@@ -744,7 +738,7 @@ end if
 ; интерфейс программы многоязычный
 ;  Вы можете задать язык в MACROS.INC (lang fix язык)
 
-window_title:           db      'RtfRead v1.4',0
+window_title:           db      'RtfRead v1.5',0
 is_scroll_bar_needed    dd      0x0
 window_width            dd      0x0
 window_height           dd      0x0
