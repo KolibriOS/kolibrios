@@ -15,8 +15,6 @@ WINW  equ 600
 WINH  equ 450
 WIN_COLOR equ 0x73f0f0f0
 DEFCOLOR equ 0x303030
-;RENDER equ PIX
-;RENDER equ BGI
 RENDER equ FREE
 
 BGIFONT_PATH equ '/sys/fonts/'
@@ -56,34 +54,24 @@ AR_OFFSET               equ     10
   dd     I_END0      ; размер программы
   dd     esp_end     ; количество памяти
   dd     sys_mem     ; адрес вершины стэка
-  dd     fname_buf   ; адрес буфера для параметров (не используется)
-  dd     cur_dir_path         ; зарезервировано
+  dd     fname_buf   ; адрес буфера для параметров
+  dd     cur_dir_path ; путь к программе
 
-include '../../../config.inc'		;for nightbuild
+include '../../../config.inc' ;for nightbuild
 include '../../../macros.inc' ; макросы облегчают жизнь ассемблерщиков!
 include '../../../develop/libraries/box_lib/trunk/box_lib.mac'
 include '../../../develop/libraries/box_lib/load_lib.mac'
 
-;include 'MACROS.INC'
-;include 'load_lib.mac'
-
 @use_library
 
-;include '../../../debug.inc'
+; include '../../../debug.inc'
 
-if ~ RENDER eq PIX
-  TOP=TOP+4
-  include 'bgifont.inc'
-end if
+TOP=TOP+4
+include 'bgifont.inc'
 include 'rtf_lite.inc'
-;include 'ascl.inc'
 ;---------------------------------------------------------------------
 ;---  НАЧАЛО ПРОГРАММЫ  ----------------------------------------------
 ;---------------------------------------------------------------------
-help_file:
-    file  'reader.rtf'
-help_end:
-
 START:
         mcall 68, 11
         mcall 40, 0x80000027
@@ -95,11 +83,9 @@ load_libraries l_libs_start,end_l_libs
         call    [OpenDialog_Init]
 
     mov  [pitch],2
-  if ~ RENDER eq PIX
     mov  edx,FONT_NAME
     mov  edi,save_limit
     BGIfont_Prepare
-  end if
  start2:
     cmp  byte[fname_buf],0
     je   load_file;top_red
@@ -321,7 +307,6 @@ key:                  ; нажата клавиша на клавиатуре
 ;    je   still
     jmp  red
   .noarup:
-  if  RENDER eq FREE
     cmp  ah,56 ;zoom+
     jne  .noplus
   .zplus:
@@ -338,7 +323,6 @@ key:                  ; нажата клавиша на клавиатуре
     fdiv [Zoomscale]
     jmp  .zoom
   .nominus:
-  end if
     cmp  ah,0xB5        ; end
     jne  .pre_file_open
   .end:
@@ -672,14 +656,7 @@ end if
     mov  ecx,16
   .l1:
     push ecx
-  if RENDER eq BGI
-    mov  edx,char
-    mov  ecx,0x48000000
-    mov  esi,1
-    BGIfont_Outtext
-  else
     mcall 4,,0x10000000,char,1
-  end if
     pop  ecx
     inc  [char]
     add  ebx,(CHARW+3) shl 16
@@ -1072,18 +1049,13 @@ scroll_bar_data_vertical:
 
 ;---------------------------------------------------------------------
 ;blind db ?
-if RENDER eq PIX
-;  rd 2
-  Free rd 9
-else
-if RENDER eq BGI
-  FreeFontscale dd 0.07
-else
+
   Zoomscale dd 1.15
   FreeFontscale dd 0.04
-end if
+
   Free BGIfree FONT_NAME,0,0,1.0,1.0,char,1,0x44000000,0
-end if
+
+  
 I_END0:
 fname_buf:
         rb      1024+16
@@ -1140,6 +1112,14 @@ listptr dd ?
 szKeyword rb 31
 szParameter rb 21
 block_end dd ?
+
+help_file:
+    file  'reader.rtf'
+help_end:
+
+litt_file:
+	file 'litt.chr'
+litt_end:  
 
 ;---------------------------------------------------------------------
 I_END:                             ; метка конца программы

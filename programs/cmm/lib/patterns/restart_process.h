@@ -12,7 +12,7 @@ enum {
 
 #define MAX_PROCESS_COUNT 256
 
-:int CheckProcessExists(dword proc_name) {
+:bool CheckProcessExists(dword proc_name) {
 	int i;
 	proc_info Process;
 	for (i=0; i<MAX_PROCESS_COUNT; i++;)

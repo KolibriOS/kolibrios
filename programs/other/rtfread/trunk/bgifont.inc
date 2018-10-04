@@ -37,21 +37,6 @@ struc BGIfree FontName,XY,Angle,ScaleX,ScaleY,StrPtr,StrLen,Color,Align
     dd Align	;32
 }
 
-; font options structure
-struc BGIrec FontName,CharsCount,FirstChar,UpperMargin,LowerMargin,\
-    Widths,FirstData,EOF,font_data
-{
- .FontName     dd ?  ; 0
- .CharsCount   db ?  ; 4
- .FirstChar    db ?  ; 5
- .UpperMargin  db ?  ; 6
- .LowerMargin  db ?  ; 7
- .Widths       dd ?  ; 8
- .FirstData    dd ?  ; 12
- .EOF	       dd ?    ; 16
- .font_data    dd ?  ; 20 follows (Offsets)
-}
-
 macro BGIfont_GetID
 {
     call _BGIfont_GetID
@@ -80,54 +65,6 @@ if BGI_LEVEL eq KERNEL
 end if
 }
 
-BGIfont_names:
-_FI 'LCOM',11485   ;7
-_FI 'EURO',8117    ;5
-_FI 'GOTH',13816   ;6
-_FI 'LITT',3596    ;8
-_FI 'TRIP',11932   ;14
-_FI 'SCRI',8490    ;11
-_FI 'SMAL',4162    ;13
-_FI 'TSCR',12134   ;15
-_FI 'SANS',8453    ;10
-_FI 'SIMP',9522    ;12
-BGIfont_names_end:
-
-macro BGIfont_Init
-{
-; in:  ecx - number of fonts to load;
-;      esi-> _FI structure
-;      edi-> where to load
-    push edi
-if  BGI_LEVEL eq KERNEL
-    mov  edi,0x40000
-end if
-  .nfont:
-    mov  edx,[esi]
-if  BGI_LEVEL eq KERNEL
-    movzx ebx,word[esi+4]
-    mov  [BGIfont_Prepare.okflag],'N'
-end if
-    call _BGIfont_Prepare
-if ~ BGI_LEVEL eq KERNEL
-    add  esi,4
-else
-    push esi
-    test eax,eax
-    jz	 .fail
-    mov  [BGIfont_Prepare.okflag],'*'
-  .fail:
-    mov  esi,BGIfont_Prepare.font
-    call boot_log
-    pop  esi
-    add  esi,6
-end if
-    loop .nfont
-    dph2 _BGI_BOLD,300,550
-;    movzx edi,byte[0x40000]
-    pop  edi
-}
-
 BGIfont_get2head:
     shr  ecx,28 ; font #
     sub  ecx,4
@@ -146,30 +83,11 @@ BGIfont_get2head:
   .ex:
     ret
 
-BGIfont_GetName:
-; in: ecx-fontID;
-; out: edx-font name.
-    call BGIfont_get2head
-    xor  edx,edx
-    test edi,edi
-    jz   .ex
-    mov  edx,[edi]
-  .ex:
-    ret
-
 macro dps2 _str
 {
-if ~ BGI_LEVEL eq KERNEL
-  if LOAD_MSG eq 1
-    dps _str
-  end if
-else
-    pusha
-    mov  esi,BGIfont_Prepare.okflag
-    mov  byte[esi], _str
-    call boot_log
-    popa
-end if
+	if LOAD_MSG eq 1
+	dps _str
+	end if
 }
 
 macro dph2 num,x,y
@@ -236,32 +154,21 @@ _BGIfont_Prepare:
     mov  dword[.font],edx ; filename
     mov  esi,edi     ; esi->FontName
     mov  [.dest],edi ; ptr to load font
-if ~ BGI_LEVEL eq KERNEL
         mov     eax, 70
         mov     ebx, .fontattr
         mcall
         test    eax, eax
-        jnz     .fail
+        ;jnz     .fail
         dps2    '1'
         mov     eax, [.fileattr+32]
-        mov     [.fsize], eax
+    mov  [.fsize], litt_end-litt_file
     mov  ebx,.fontinfo
     mov  eax,70
     mcall	     ; ebx - file size
-else
-    push edi esi edx
-    mov  eax,.font
-    xor  ebx,ebx
-    mov  esi,12
-    mov  ecx,ebx
-    mov  edx,edi
-    call fileread
-    pop  edx esi edi
-    mov  ebp,edi
-    add  ebp,ebx
-    cmp  ebp,0x50000
-    ja	 .fail
-end if
+    ;mov ebx, litt_end-litt_file
+    ;mov edi, litt_file
+	;mov  [.dest],litt_file ; ptr to load font
+
     cmp  dword[edi],0x08084b50 ; 'PK',8,8
     jne  .fail
     dps2 '2'
@@ -334,7 +241,6 @@ end if
     popa
     ret
 
-if ~ BGI_LEVEL eq KERNEL
 .fontinfo:
 	dd 0
 	dd 0
@@ -343,7 +249,7 @@ if ~ BGI_LEVEL eq KERNEL
 .dest	dd 0
 .fontfullname:
 	db BGIFONT_PATH
-.font	db 'FONT.CHR',0
+.font	db 'LITT.CHR',0
 
 .fontattr:
         dd      5
@@ -354,11 +260,7 @@ if ~ BGI_LEVEL eq KERNEL
         db      0
         dd      .fontfullname
 .fileattr rd 40/4
-else
-  .dest   dd 0
-  .font   db 'FONT    CHR'
-  .okflag db ' ',0
-end if
+
 
 BGIfont_Coo:
 ; y->word[txt.y1], x->word[txt.x1]
