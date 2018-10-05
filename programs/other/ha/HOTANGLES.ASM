@@ -2,7 +2,7 @@
 ; Hot Angles ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ; Compile with FASM
-; Version 0.3.3: Sep 25, 2018
+; Version 0.3.5: Oct 5, 2018
 
 ; Copyright (c) 2018, Efremenkov Sergey aka TheOnlyMirage
 ; All rights reserved.
@@ -30,12 +30,12 @@ use32
 org 0x0    ; базовый адрес размещения кода, всегда 0x0
 
 UNLOCKd = 0
-LOCKd = 1
+LOCKd   = 1
 
 ; заголовок
 db 'MENUET01'     ;магический идентификатор
 dd 0x01           ;версия
-dd START_DEBUG          ;адрес точки старта программы
+dd START_DEBUG    ;адрес точки старта программы
 dd I_END          ;адрес конца, по факту размер файла программы
 dd 0x100000       ;требуемое кол-во памяти для загрузки программы
 dd 0x7fff0        ;начальное значение регистра esp - адрес конца области стэка так как стэк растет в сторону меньших адресов 
@@ -48,21 +48,104 @@ START_DEBUG:
    call copyKill         ;простейшая защита от повторного запуска
    mcall  68, 11         ;инициализация кучи
    call loadConfig       ;загружаем конфигурацию приложения
-   mov ebx, 00000100000000000000000000100000b ;подписываемся на интересные нам события
-   mcall 40
 
-START:
+   cmp byte[mode], 0     ;функция отключена - выход
+   jne @f
+   mcall -1
+@@:
+   ;режим активации горячей клавишей?
+   cmp byte[mode], 2 ;подписываемся на интересные нам события в зависимости от режима работы
+   jne @f
+   mov ebx, 00000100000000000000000000100010b    ;если да, то подписываемся на клавиши
+   mcall 40
+   jmp init02
+@@:
+   ; во всех остальных случаях - классический режим работы
+   ;mode=1 классический режим работы - реакция при наведении в угол
+   mov byte[mode], 1
+   mov ebx, 00000100000000000000000000100000b
+   mcall 40
+   jmp init01
+
+
+
+init02:
+   mov dword[backAdr], mode02
+   call setHotKey
+mode02:
+   mcall 10
+   cmp eax, 2     ;обработка нажатия клавиши
+   je hotkey
+
+   cmp byte[keyState], 0
+   je mode02
+   cmp   eax, 6   ;обработка перемещений и нажатия мыши
+   je    mouse
+
+   jmp mode02
+
+
+setHotKey:    ;установить горячую клавишу
+   push eax ebx ecx edx
+   xor ecx, ecx
+   mov cl, byte[keyActivate]  ;нажатие горячей клавиши
+   mov edx, 0x000
+   mcall 66, 4, ecx, edx
+
+   ;mov cl, byte[keyActivate]
+   add cl, 128              ;отпускание горячей клавиши
+   ;mov edx, 0x000
+   mcall 66, 4, ecx, edx
+   pop edx ecx ebx eax
+   ret
+
+
+hotkey:
+   mcall 2
+   cmp eax, 1     ;буфер клавиш пуст?
+   je hotkey.end
+
+   cmp al, 2      ;нас интересует только скан код горячей клавиши, иначе выходим
+   jne hotkey.end
+
+   cmp ah, byte[keyActivate]   ;если нажата наша горячая клавиша
+   jne @f
+   mov byte[keyState], 1
+   mov byte[state], UNLOCKd
+   jmp hotkey.end
+@@:
+   push edx
+   xor edx, edx
+   mov dl, byte[keyActivate]
+   add dl, 128
+   cmp ah, dl   ;если отпущена наша горячая клавиша
+   jne @f       ;hotkey.end
+   ;mov ecx, 0  ;строки для отладки и теста
+   ;call run_command
+   mov byte[keyState], 0
+   mov byte[state], LOCKd
+@@:
+   pop edx
+.end:
+   jmp mode02
+
+
+init01:
+   mov dword[backAdr], mode01
+mode01:
   mov     eax, 10                 ; function 10 : wait until event
   mcall                           ; event type is returned in eax
 
   cmp   eax, 6           ;обработка перемещений и нажатия мыши
   je    mouse
 
-  jmp START
+  jmp mode01
+
 
 mouse:
-  ;основной цикл программы
-  call get_mouse_pos ;получаем текущие координаты мыши
+   push ebx
+   mcall 37, 0   ;получаем текущие координаты мыши
+   pop ebx
 
   cmp eax, 0 ;левый верхний угол
   jne @f
@@ -72,7 +155,7 @@ mouse:
   call run_command
   pop ecx
 
-  jmp START ;finish
+  jmp dword[backAdr] ;finish
 @@:
   call get_screen_size ;иначе обновляем размеры экрана
 
@@ -91,7 +174,7 @@ mouse:
   call run_command
   pop ecx
 
-  jmp START
+  jmp dword[backAdr]
 Ytrue:
   ;если Y равны, то нас интересует X=0 (левый нижний угол) или X=ScreenWidth (правый нижний)
   shr eax, 16
@@ -102,7 +185,7 @@ Ytrue:
   mov ecx, 1
   call run_command
   pop ecx
-  jmp START
+  jmp dword[backAdr]
 @@:
   cmp ax, word[screen.width]
   jne unlockend
@@ -112,17 +195,14 @@ Ytrue:
   call run_command
   pop ecx
 
-  jmp START
+  jmp dword[backAdr]
 
 unlockend:
   mov byte[state], UNLOCKd
-  jmp START
+  jmp dword[backAdr]
 
 
-;структурка данных для хранения параметров экрана
-screen:
-   .width  dw 0
-   .height dw 0
+
 ;получить размер экрана
 get_screen_size:
    push eax
@@ -136,14 +216,7 @@ get_screen_size:
    ret
 
 
-;получить позицию мыши
-get_mouse_pos:
-   ;push eax
-   push ebx
-   mcall 37, 0
-   pop ebx
-   ;pop eax
-   ret
+
 
 
 ;запуск приложения: ecx - активный угол: lu=0, ld=1, ru=2, rd=3
@@ -151,14 +224,14 @@ run_command:
    cmp byte[state], UNLOCKd
    jne run_command.end
 
-   push eax
-   push ebx
-   push ecx
+;   cmp byte[mode], 2     ;если режим второй
+;   jne @f
 
+   push eax ebx ecx
 
    cmp ecx, 0
    jne @f
-   mov eax, dword[newData.lu] ;testData.lu
+   mov eax, dword[newData.lu]
    mov dword[struct70.path_adr], eax
    jmp .end_set_path
 @@:
@@ -196,10 +269,9 @@ run_command:
    mcall 70, struct70
 @@:
    mov byte[state], LOCKd
+   ;mov byte[keyState], 0
 
-   pop ecx
-   pop ebx
-   pop eax
+   pop ecx ebx eax
 .end:
    ret
 
@@ -210,23 +282,6 @@ struct70: ;Формат информационной структуры
   .other      dd 0, 0
   .path       db 0 ; "/rd/1/TINYPAD",0 ; путь
   .path_adr   dd 0 ;testData.lu
-
-
-state: db 0 ; 0=unlock, 1=lock
-mode: db 0  ;режим работы (для будущего расширения функционала)
-
-;testData:
-;  .lu db '/rd/1/SHELL', 0
-;  .ld db '/rd/1/RUN', 0
-;  .ru db "/rd/1/TINYPAD", 0
-;  .rd db '/rd/1/File Managers/EOLITE', 0
-
-newData:  ;табличка адресов командных строк
-  .lu dd 0
-  .ld dd 0
-  .ru dd 0
-  .rd dd 0
-newDataEnd:
 
 ;имя конфигурационного файла
 fileName: db 'SETTINGS/HOTANGLES.CFG', 0
@@ -242,8 +297,25 @@ loadConfig:
 
    add edx, eax             ;иначе кладём в edx - адрес конца файла
 
-   cmp byte[eax], 121 ;'y'  ;если параметр активности приложения имеет статус: не активно
-   jne loadConfig.exit      ;то завершаем работу приложения
+   mov byte[mode], 0
+   cmp byte[eax], '0' ;121 ;'y'  ;если параметр активности приложения имеет статус: не активно
+   je loadConfig.exit      ;то завершаем работу приложения
+   cmp byte[eax], 110 ;'n'
+   je loadConfig.exit
+
+   ;иначе выставляем режим
+   cmp byte[eax], '2'       ;режим активации по горячей клавише
+   jne @f
+   mov byte[mode], 2
+   jmp loadConfig.modeEnd
+@@:
+   cmp byte[eax], '3'       ;режим жеста при зажатой клавише
+   jne @f
+   mov byte[mode], 3
+   jmp loadConfig.modeEnd
+@@:
+   mov byte[mode], 1        ;во всех остальных случаях - классический режим
+.modeEnd:
 
    push edi
    push esi
@@ -316,7 +388,7 @@ selfNameSize = 10 ;до 11 byte
 ;
 compareBytes:
    push edi esi ecx ebx
-   mov eax, 0 ;xor eax, eax
+   xor eax, eax
    mov ecx, selfNameSize    ;max размер строк 11
 @@:
    mov bl, byte[edi]
@@ -334,9 +406,6 @@ compareBytes:
    pop ebx ecx esi edi
    ret
 ;
-slotMax dd 0
-selfPID dd 0
-buf db 1024 dup(0)
 copyKill:
    push eax ebx ecx esi edi
 
@@ -380,5 +449,31 @@ copyKill:
    ret
 
 
+keyActivate db 41 ;16 ;'Q' ;клавиша активации
+keyState db 0 ;0-клавиша не активна, 1 - клавиша активна
+
+backAdr rd 1 ;dd 0 ; адрес для возврата из проверки мыши
+
+;slotMax dd 0
+;selfPID dd 0
+;buf db 1024 dup(0)
+slotMax rd 1
+selfPID rd 1
+buf rb 1024
+
+;структурка данных для хранения параметров экрана
+screen:
+  .width  rw 1 ;dw 0
+  .height rw 1 ;dw 0
+
+state: rb 1  ;состояние: 0=unlock, 1=lock
+mode:  rb 1  ;режим работы приложения: 0=не работает, 1=классический, 2=по горячей клавише
+
+newData:  ;табличка адресов командных строк
+  .lu rd 1
+  .ld rd 1
+  .ru rd 1
+  .rd rd 1
+newDataEnd:
 
 I_END:

@@ -2,7 +2,7 @@
 ; Hot Angles Config ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ; Compile with FASM
-; Version 0.3.2: Sep 24, 2018
+; Version 0.3.5: Oct 5, 2018
 
 ; Copyright (c) 2018, Efremenkov Sergey aka TheOnlyMirage
 ; All rights reserved.
@@ -45,19 +45,23 @@ include '../../macros.inc'
 include '../../proc32.inc'
 include '../../dll.inc'
 include '../../develop/libraries/box_lib/trunk/box_lib.mac' ;компоненты checkBox и editBox
-
+;![
+include '../../develop/libraries/box_lib/load_lib.mac' ;макрос для загрузки библиотек
+@use_library
+;@use_library_mem mem.Alloc,mem.Free,mem.ReAlloc,dll.Load
+;!]
 Otstup = 30
 
 START:
     call copyKill        ;простейшая защита от запуска второй копии приложения
     mcall  68, 11        ;инициализация кучи
 
+    ;mcall 48,3,sc,sizeof.system_colors ;получить системные цвета
     mov  eax,48          ;получить системные цвета
     mov  ebx,3
     mov  ecx, sc
     mov  edx, sizeof.system_colors
     mcall
-
 
     stdcall dll.Load, @IMPORT
     or      eax, eax
@@ -68,6 +72,10 @@ START:
     mov  eax,40          ;установить маску для ожидаемых событий
     mov  ebx,0x27        ;система будет реагировать только на сообщение о перерисовке, нажата кнопка, определённая ранее, событие от мыши (что-то случилось - нажатие на кнопку мыши или перемещение; сбрасывается при прочтении)
     mcall
+
+    load_libraries l_libs_start,load_lib_end ;загрузка библиотек(и)
+    ;mcall 48,3,sc,sizeof.system_colors ;получить системные цвета
+    stdcall [OpenDialog_Init],OpenDialog_data ;подготовка диалога
 
     call  loadConfig     ;загружаем конфигурацию из файла, если нет - то выставляем параметры по умолчанию
     call  draw_window    ;отрисовать окно приложения
@@ -123,8 +131,34 @@ exit:
     mcall
 noclose:
     cmp  ah, 2         ;кнопка "Применить"
-    jne  butend
+    jne  @f ;butend
     call applyButton   ;вызов нашего обработчика нажатия кнопки
+    jmp event_wait
+@@:
+    cmp ah, 4
+    jne @f
+    mov byte[editID], 4
+    call but_open_dlg
+    jmp  event_wait
+@@:
+    cmp ah, 5
+    jne @f
+    mov byte[editID], 5
+    call but_open_dlg
+    jmp  event_wait
+@@:
+    cmp ah, 6
+    jne @f
+    mov byte[editID], 6
+    call but_open_dlg
+    jmp  event_wait
+@@:
+    cmp ah, 7
+    jne @f
+    mov byte[editID], 7
+    call but_open_dlg
+    jmp  event_wait
+@@:
 butend:
     jmp  event_wait    ;this is for ignored events, useful at development
 
@@ -217,10 +251,14 @@ applyButton:
         mov dword[createFile.data_adr], eax ;сохраняем адрес буфера в структуру
 
         ;заполним буфер содержимого:
-        mov byte[eax], 110; 'n' ;по умолчанию флаг снят
+        ;cmp byte[mode], 0
+        ;jne @f
+        ;@@:
+        ;
+        mov byte[eax], 48;'0' ;110; 'n' ;по умолчанию флаг снят
         cmp word[ch1.flags], 110b ;ch_flag_en and ch_flag_middle ;выставлен checkBox или нет?
         jne applyButton.no
-        mov byte[eax], 121 ;иначе кладём 'y'
+        mov byte[eax], 49;'1' ;121 ;иначе кладём 'y'
 .no:
         inc eax
         call addPerenos
@@ -376,11 +414,14 @@ loadConfig:
    add edx, eax             ;кладём в edx - адрес конца конфиг.данных
 
 .chStart:
-   cmp byte[eax], 121 ;'y'  ;выставляем checkBox - параметр активности приложения
-   jne loadConfig.no
+   cmp byte[eax], 49;'1' ;121 ;'y'  ;выставляем checkBox - параметр активности приложения
+   jne @f ;loadConfig.no
 .yes:
    mov word[ch1.flags], 110b ;ch_flag_en and ch_flag_middle
    jmp loadConfig.chEnd
+@@:
+   cmp byte[eax], 50;'2' ;второй режим активирован
+   je loadConfig.yes
 .no:
    mov word[ch1.flags], 100b ;ch_flag_middle
 .chEnd:
@@ -556,6 +597,16 @@ draw_window:
         mov edx, 0x80000002
         mcall 8
 
+        ;удаляем ещё 4 кнопки если они есть
+        mov edx, 0x80000004
+        mcall 8
+        mov edx, 0x80000005
+        mcall 8
+        mov edx, 0x80000006
+        mcall 8
+        mov edx, 0x80000007
+        mcall 8
+
         mov     eax, 12                 ; function 12: tell os about windowdraw
         mov     ebx, 1                  ; 1, start of draw
         mcall
@@ -608,6 +659,52 @@ draw_window:
         mov     esi, buttonTextSize ;5            ;размер текста в символах
         mcall 4
 
+        ;рисуем ещё 4 кнопки для диалогового окна выбора файла
+        ;номера 4,5,6 и 7
+        buttonH = 14 ;20
+        buttonW = 30
+        ;левый верхний угол
+        mov ebx, Otstup*65536 + buttonW ;координата X, ширина кнопки
+        mov ecx, 85*65536 + buttonH   ;координата Y, высота кнопки
+        mov edx, 0x00000004       ;номер кнопки
+        mov esi, 0x00AABBCC       ;цвет кнопки
+        mcall 8
+        ;левый нижний угол
+        mov ebx, Otstup*65536 + buttonW ;координата X, ширина кнопки
+        mov ecx, 120*65536 + buttonH   ;координата Y, высота кнопки
+        mov edx, 0x00000005       ;номер кнопки
+        mov esi, 0x00AABBCC       ;цвет кнопки
+        mcall 8
+        ;правый верхний угол
+        mov ebx, (WindowsWidth-Otstup-buttonW)*65536 + buttonW ;координата X, ширина кнопки
+        mov ecx, 85*65536 + buttonH   ;координата Y, высота кнопки
+        mov edx, 0x00000006       ;номер кнопки
+        mov esi, 0x00AABBCC       ;цвет кнопки
+        mcall 8
+        ;правый нижний угол
+        mov ebx, (WindowsWidth-Otstup-buttonW)*65536 + buttonW ;координата X, ширина кнопки
+        mov ecx, 120*65536 + buttonH   ;координата Y, высота кнопки
+        mov edx, 0x00000007       ;номер кнопки
+        mov esi, 0x00AABBCC       ;цвет кнопки
+        mcall 8
+
+        ;рисуем тексты для этих 4 кнопок
+        mov     ecx, 0xFFFFFF              ;белый цвет текста
+        mov     edx, commonButtonText      ;строка текста
+        mov     esi, commonButtonTextSize  ;размер текста в символах
+        ;координаты текста (x, y)
+        deltaCommonTextX = 7
+        deltaCommonTextY = 2
+        mov     ebx, (Otstup+deltaCommonTextX) * 65536 + (85 + deltaCommonTextY)
+        mcall 4
+        mov     ebx, (Otstup+deltaCommonTextX) * 65536 + (120 + deltaCommonTextY)
+        mcall 4
+        mov     ebx, (WindowsWidth-Otstup-buttonW+deltaCommonTextX) * 65536 + (85 + deltaCommonTextY)
+        mcall 4
+        mov     ebx, (WindowsWidth-Otstup-buttonW+deltaCommonTextX) * 65536 + (120 + deltaCommonTextY)
+        mcall 4
+
+
         call draw_super_text
 
         LineLength = 62
@@ -654,6 +751,8 @@ import  box_lib,\
 ;координаты (x,y) = (30, 160) размер чекбокса 12, цвет текста 0x224466
 ch1     check_box2 30 shl 16 + 12, 160 shl 16 + 12, 6, 0xFFFFFFFF, 0xAABBCC, 0x224466, ch_text, 110b ; ch_flag_en and ch_flag_middle
 
+commonButtonText db '...', 0  ;текст для кнопок вызова OpenDial
+commonButtonTextSize = 3
 
 if lang eq ru  ;если язык сборки русский
 
@@ -725,15 +824,182 @@ draw_super_text:
    pop esi edi edx ecx ebx eax
    ret
 
+;![
+editID db 0
+initEBX:
+   cmp byte[editID], 4
+   jne @f
+   mov ebx, dataBuffer.1
+   ret
+@@:
+   cmp byte[editID], 5
+   jne @f
+   mov ebx, dataBuffer.2
+   ret
+@@:
+   cmp byte[editID], 6
+   jne @f
+   mov ebx, dataBuffer.3
+   ret
+@@:
+   cmp byte[editID], 7
+   jne @f
+   mov ebx, dataBuffer.4
+   ret
+@@:
+   ret
+setRESULT:
+   cmp byte[editID], 4
+   jne @f
+   mov dword[dataBuffer.size1], ecx
+   mov dword[editLU.size], ecx
+   mov dword[editLU.pos], ecx
+   ret
+@@:
+   cmp byte[editID], 5
+   jne @f
+   mov dword[dataBuffer.size2], ecx
+   mov dword[editLD.size], ecx
+   mov dword[editLD.pos], ecx
+   ret
+@@:
+   cmp byte[editID], 6
+   jne @f
+   mov dword[dataBuffer.size3], ecx
+   mov dword[editRU.size], ecx
+   mov dword[editRU.pos], ecx
+   ret
+@@:
+   cmp byte[editID], 7
+   jne @f
+   mov dword[dataBuffer.size4], ecx
+   mov dword[editRD.size], ecx
+   mov dword[editRD.pos], ecx
+   ret
+@@:
+   ret
+copyPath:
+   push eax ebx ecx edx ;copy file name path
+        mov eax, openfile_path ;dword[OpenDialog_data.openfile_path]
+        call initEBX ;mov ebx, dataBuffer.1 ;.data
+        mov ecx, 0
+      @@:
+        mov dl, byte[eax]
+        cmp dl, 0 ;byte[eax], 0
+        je @f
+        mov byte[ebx], dl
+        inc eax
+        inc ebx
+        inc ecx
+        jmp @b
+      @@:
+        mov byte[ebx], 0
+        call setRESULT
+   pop edx ecx ebx eax
+   ret
+
+
+align 4
+but_open_dlg:
+        pushad
+        copy_path open_dialog_name,communication_area_default_path,file_name,0
+        mov [OpenDialog_data.type],0
+        stdcall[OpenDialog_Start], OpenDialog_data
+        cmp [OpenDialog_data.status],2
+        je @f
+        cmp [OpenDialog_data.status],0 ;пользователь нажал Cancel?
+        je .end_open
+                ;код при удачном открытии диалога
+                call copyPath
+                jmp .end_open
+        @@:
+                ;код при не удачном открытии диалога
+                ;...
+        .end_open:
+        popad
+        ret
+ 
+;дынные для диалога открытия файлов
+align 4
+OpenDialog_data:
+.type                   dd 0 ;0 - открыть, 1 - сохранить, 2 - выбрать директорию
+.procinfo               dd procinfo
+.com_area_name          dd communication_area_name ;+8
+.com_area               dd 0 ;+12
+.opendir_path           dd plugin_path ;+16
+.dir_default_path       dd default_dir ;+20
+.start_path             dd file_name ;+24 путь к диалогу открытия файлов
+.draw_window            dd draw_window ;+28
+.status                 dd 0 ;+32
+.openfile_path          dd openfile_path ;+36 путь к открываемому файлу
+.filename_area          dd filename_area ;+40
+.filter_area            dd Filter
+.x:
+.x_size                 dw 420 ;+48 ; Window X size
+.x_start                dw 10 ;+50 ; Window X position
+.y:
+.y_size                 dw 320 ;+52 ; Window y size
+.y_start                dw 10 ;+54 ; Window Y position
+ 
+default_dir db '/rd/1',0 ;директория по умолчанию
+communication_area_name: db 'FFFFFFFF_open_dialog',0
+open_dialog_name:  db 'opendial',0
+communication_area_default_path: db '/rd/1/File managers/',0
+ 
+Filter:
+dd Filter.end - Filter.1
+.1:
+;db 'ASM',0
+;db 'KEX',0
+;db 'TXT',0
+.end:
+db 0
+ 
+align 4
+proclib_import: ;описание экспортируемых функций
+        OpenDialog_Init dd aOpenDialog_Init
+        OpenDialog_Start dd aOpenDialog_Start
+dd 0,0
+        aOpenDialog_Init db 'OpenDialog_init',0
+        aOpenDialog_Start db 'OpenDialog_start',0
+ 
+head_f_i:
+        head_f_l  db 'Системная ошибка',0
+        err_message_found_lib0 db 'Не найдена библиотека ',39,'proc_lib.obj',39,0
+        err_message_import0 db 'Ошибка при импорте библиотеки ',39,'proc_lib.obj',39,0
+ 
+system_dir0 db '/sys/lib/'
+lib0_name db 'proc_lib.obj',0
+ 
+;library structures
+l_libs_start:
+        lib0 l_libs lib0_name, sys_path, file_name, system_dir0, err_message_found_lib0, head_f_l, proclib_import,err_message_import0, head_f_i
+load_lib_end:
+
+;txt_open db 'Открыть',0
+
+sys_path:      rb 4096
+file_name:     rb 4096
+plugin_path:   rb 4096
+openfile_path: rb 4096
+filename_area: rb 256
+rb 1024
+procinfo process_information
+;!]
+
+
 
 edMaxSize = 510 ;теперь с новым компонентом можно и 511 указать
 edMax = 0 ;max, size, pos
 
 align 4
-editLU   edit_box 180,Otstup,85, 0xffffff, 0x6a9480, 0, 0xAABBCC, 0, edMaxSize, dataBuffer.1, mouse_dd, 0, edMax, edMax  ;ed_focus
-editLD   edit_box 180,Otstup,120, 0xffffff, 0x6a9480, 0, 0xAABBCC, 0, edMaxSize, dataBuffer.2, mouse_dd, 0, edMax, edMax
-editRU   edit_box 180,240,85, 0xffffff, 0x6a9480, 0, 0xAABBCC, 0, edMaxSize, dataBuffer.3, mouse_dd, 0, edMax, edMax
-editRD   edit_box 180,240,120, 0xffffff, 0x6a9480, 0, 0xAABBCC, 0, edMaxSize, dataBuffer.4, mouse_dd, 0, edMax, edMax
+editLU   edit_box 180-buttonW,Otstup+buttonW,85, 0xffffff, 0x6a9480, 0, 0xAABBCC, 0, edMaxSize, dataBuffer.1, mouse_dd, 0, edMax, edMax  ;ed_focus
+editLD   edit_box 180-buttonW,Otstup+buttonW,120, 0xffffff, 0x6a9480, 0, 0xAABBCC, 0, edMaxSize, dataBuffer.2, mouse_dd, 0, edMax, edMax
+editRU   edit_box 180-buttonW,240,85, 0xffffff, 0x6a9480, 0, 0xAABBCC, 0, edMaxSize, dataBuffer.3, mouse_dd, 0, edMax, edMax
+editRD   edit_box 180-buttonW,240,120, 0xffffff, 0x6a9480, 0, 0xAABBCC, 0, edMaxSize, dataBuffer.4, mouse_dd, 0, edMax, edMax
+
+mouse_dd  dd ?
+sc  system_colors
 
 dataBuffer:
 .1: rb 512
@@ -748,8 +1014,6 @@ dataBuffer:
 ;два запасных байта необходимы для того что бы не пепереписать следующией байты, в конце буфера 0
 dataBufferEnd:
 
-mouse_dd  dd ?
-sc  system_colors
 
 I_END:
         rb 4096
