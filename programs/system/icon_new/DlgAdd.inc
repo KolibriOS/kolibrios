@@ -92,7 +92,7 @@ DlgProp:
 
 	mov	ecx,256
 	mov	edi,DAreaIcon
-	
+
 	mov	[DAreaIcon],'0'
 	mov	dword[edtIcon.size],1
 	mov	dword[edtIcon.pos],1
@@ -196,7 +196,7 @@ DReDraw:
 
 	;edit_boxes_set_sys_color edtIcon,endEdits,sc
 	edit_boxes_set_sys_color edtName,endEdits,sc
-	
+
 	m2m	[edtIcon.color],[sc.work]
 	m2m	[edtIcon.blur_border_color],[sc.work]
 
@@ -348,27 +348,10 @@ DMouse:
 	cmp	eax,[icon_count]
 	jae	DMessages
 
-	mov	bl,10
-	div	bl
+;       stdcall byteToHex,al,DAreaIcon  ;2
+	stdcall intToStr,eax,DAreaIcon
+	mov	dword[edtIcon.size],edx
 
-	add	ah,30h
-	test	al,al
-	jz	@f
-
-	add	al,30h
-	mov	byte[DAreaIcon],al
-	mov	byte[DAreaIcon+1],ah
-	mov	byte[DAreaIcon+2],0
-	mov	dword[edtIcon.size],2
-	jmp	.RedrawNum
-
-      @@:
-	mov	byte[DAreaIcon],ah
-	mov	byte[DAreaIcon+1],0
-	mov	dword[edtIcon.size],1
-	jmp	.RedrawNum
-    .RedrawNum:
-	
     ; stdcall [edit_box_draw],edtIcon
 
 	call DrawSelIcon
@@ -465,14 +448,14 @@ proc DRedrawWin
 
 	stdcall [scrollbar_h_draw],sbIcons
 	mcall 38,<ICONSX+1,END_ICONS_AREAW-2>,<END_ICONS_AREAH+3,END_ICONS_AREAH+3>,[sc.work_graph]
-	mcall   ,<ICONSX+1,END_ICONS_AREAW-2>,<END_ICONS_AREAH+3+15,END_ICONS_AREAH+3+15>,[sc.work_graph]
+	mcall	,<ICONSX+1,END_ICONS_AREAW-2>,<END_ICONS_AREAH+3+15,END_ICONS_AREAH+3+15>,[sc.work_graph]
 
-	mcall   ,<ICONSX,ICONSX>,<END_ICONS_AREAH+3+1,END_ICONS_AREAH+3+15-1>,[sc.work_graph]
-	mcall   ,<END_ICONS_AREAW-1,END_ICONS_AREAW-1>,<END_ICONS_AREAH+3+1,END_ICONS_AREAH+3+15-1>,		[sc.work_graph]
+	mcall	,<ICONSX,ICONSX>,<END_ICONS_AREAH+3+1,END_ICONS_AREAH+3+15-1>,[sc.work_graph]
+	mcall	,<END_ICONS_AREAW-1,END_ICONS_AREAW-1>,<END_ICONS_AREAH+3+1,END_ICONS_AREAH+3+15-1>,[sc.work_graph]
 
 	;BUTTONS
 	mcall	8,<265,75>,<30+END_ICONS_AREAH,24>,idbCreate,[sc.work_button]
-	mcall	 ,<360,77>,	                      ,idbCancel
+	mcall	 ,<360,77>,			  ,idbCancel
 	mcall	 ,<END_ICONS_AREAW-30,30>,<30,20> ,idbChange
 
 	;CAPTIONS
@@ -647,11 +630,9 @@ local IcoX:DWORD,\
 endp
 
 proc DrawSelIcon
-
-	
 	mov	edx,[sc.work]
 	mcall 13,<ICONSX+18,3*8>,<59,12>
-	
+
 	mov	ecx,[sc.work_text]
 	or	ecx,90000000h
 	mcall 4,<ICONSX+18,59>,,DAreaIcon
@@ -662,25 +643,8 @@ proc DrawSelIcon
 	ret
       @@:
 
-	mov	al,[edi]
-	cmp	al,'9'
-	ja	.PathToIcon
-	cmp	al,'/'
-	jne	.GetIconInd
-   .PathToIcon:
-	mov	al,30h		 ;заглушка!!!!!!!!!!!!!
-	mov	byte[edi+1],0
-   .GetIconInd:
-;int3
-	sub	al,30h
-	cmp	byte[edi+1],0
-	je	@f
-	shl	eax,1
-	lea	eax,[eax*4+eax]
-	xor	edx,edx
-	mov	dl,[edi+1]
-	sub	dl,30h
-	add	eax,edx
+	;stdcall hexToInt, edi
+	stdcall strToInt, edi
      @@:	     ;eax=num icon
 	cmp	eax,[icon_count]
 	jb	@f
@@ -725,3 +689,154 @@ proc DrawSelIcon
 
 	ret
 endp
+
+;NOT USED
+proc hexToInt strz:DWORD
+	push	ebx
+	mov	ebx,[strz]
+	mov	al,[ebx]
+	xor	edx,edx
+.loop:
+	xor	ecx,ecx
+	inc	ebx
+	shl	edx,4
+	cmp	al,'0'
+	jb	.err
+	cmp	al,'9'
+	jbe	.conv
+	mov	ecx,10
+	sub	al,11h
+	cmp	al,'0'
+	jb	.err
+	cmp	al,'6'
+	ja	.err
+.conv:
+	sub	al,30h
+	add	dl,al
+	mov	al,[ebx]
+	add	dl,cl
+	test	al,al
+	jnz	.loop
+	mov	eax,edx
+	pop	ebx
+	ret
+.err:
+	xor	eax,eax
+	pop	ebx
+	ret
+endp
+
+
+;NOT USED
+proc byteToHex byti:BYTE,target:DWORD
+	push	ebx
+	mov	ebx,[target]
+	mov	dl,[byti]
+	rol	dl,4
+	mov	ecx,2
+.loop:
+	mov	al,dl
+	and	al,0xF
+	cmp	al,10
+	jae	@f
+	add	al,0x30
+	jmp	.n
+@@:
+	add	al,0x41-10
+.n:
+	mov	[ebx],al
+	inc	ebx
+	rol	dl,4
+	loop	.loop
+
+	mov	byte[ebx],0
+@@:	pop	ebx
+	ret
+	jmp	@b
+endp
+
+
+proc strToInt strz:DWORD
+	push	ebx edi esi
+	stdcall strLen, [strz]
+	xor	edx,edx
+	xor	ebx,ebx
+	xor	edi,edi
+	std
+	inc	ebx
+	mov	esi,[strz]
+	lea	esi,[esi+eax-2]
+.loop:
+	xor	eax,eax
+	lodsb
+	cmp	al,'0'
+	jb	.err
+	cmp	al,'9'
+	ja	.err
+
+	sub	al,0x30
+	mul	ebx
+	lea	ebx,[ebx*4+ebx] 	;ebx = ebx*10
+	shl	ebx,1
+	add	edi,eax
+	cmp	esi,[strz]
+	jae	.loop
+	cld
+	mov	eax,edi
+	pop	esi edi ebx
+	ret
+.err:
+	cld
+	or	eax,-1
+	pop	esi edi ebx
+	ret
+endp
+
+
+;ret: target - string, edx - length string
+proc intToStr inti:DWORD, target:DWORD
+locals
+   resl rb 16
+endl
+	lea	edi,[resl]
+	mov	eax,[inti]
+	xor	ecx,ecx
+	mov	ebx,10
+	jmp	.stlp
+.loop:
+	xor	edx,edx
+	div	ebx
+	mov	[edi],dl
+	inc	edi
+	inc	ecx
+.stlp:	cmp	eax,10
+	jae	.loop
+	mov	[edi],al
+	inc	ecx
+	mov	edx,ecx
+	mov	ebx,[target]
+.conv:
+	mov	al,[edi]
+	add	al,0x30
+	mov	[ebx],al
+	inc	ebx
+	dec	edi
+	loop	.conv
+	mov	byte[ebx],0
+	ret
+endp
+
+;for 'ab',0  strLen = 3
+proc strLen stringZ:DWORD
+	push	edi
+	xor	al,al
+	mov	edi,[stringZ]
+	or	ecx,-1
+	repne	scasb
+	sub	edi,[stringZ]
+	mov	eax,edi
+	pop	edi
+	ret
+endp
+
+

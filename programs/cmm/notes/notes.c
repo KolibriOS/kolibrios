@@ -1,15 +1,10 @@
-// Notes v0.9 Beta
+// Notes v1.0
 
 #define MEMSIZE 0xDAE80
 #include "..\lib\kolibri.h" 
-#include "..\lib\mem.h" 
-#include "..\lib\strings.h" 
-#include "..\lib\fs.h"
-#include "..\lib\dll.h"
 
 #include "..\lib\obj\box_lib.h"
 #include "..\lib\gui.h"
-#include "..\lib\encoding.h"
 #include "..\lib\list_box.h"
 
 //===================================================//
@@ -68,7 +63,6 @@ void main()
 	load_dll(boxlib, #box_lib_init,0);
 	
 	if (param) notes.OpenTxt(#param); else notes.OpenTxt(abspath("notes.txt"));
-	//notes.cur_y = 0;
 
 	SetEventMask(EVM_REDRAW + EVM_KEY + EVM_BUTTON + EVM_MOUSE + EVM_MOUSE_FILTER);
 
@@ -173,7 +167,7 @@ void draw_window()
 	WriteText(9,TITLE_H/2-6,0x90,0xA9613A,WINDOW_CAPTION);
 	WriteTextB(7,TITLE_H/2-7,0x90,0xFFFfff,WINDOW_CAPTION);
 	_PutImage(1, TITLE_H, 292,EDGE_H, #edge);
-	PutPixel(notes.x+RED_LINE_X, notes.y-1, COL_RED_LINE);
+	PutPixel(notes.x, notes.y-1, COL_RED_LINE);
 	ECX-=1;	$int 0x40;
 	DrawCloseButton(WIN_W-23,4,16,16);
 	DrawRectangle(0,TITLE_H,WIN_W,WIN_H-HEADER_HEIGHT+EDGE_H,0xBBBBBB);
@@ -188,6 +182,7 @@ void DrawEditBoxN()
 	notebox.offset = notebox.shift = notebox.shift_old = 0;
 	notebox.cl_curs_x = notebox.cl_curs_y = 0;
 	notebox.size = strlen(notebox.text);
+	notebox.flags = ed_always_focus+ed_focus;
 	if (notebox.pos > notebox.size) notebox.pos = notebox.size;
 	notebox.top = notes.cur_y*notes.item_h+4+notes.y;
 	edit_box_draw stdcall(#notebox);	

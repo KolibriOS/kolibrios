@@ -39,9 +39,18 @@ include '../../macros.inc'
 include '../../proc32.inc'
 include '../../develop/libraries/box_lib/trunk/box_lib.mac'
 include '../../dll.inc'
-;include '../../debug.inc'
+include '../../debug.inc'
+
+
+; include '../include/lang.inc'
+; include '../include/macros.inc'
+; include '../include/proc32.inc'
+; include '../include/box_lib.mac'
+; include '../include/dll.inc'
+
 ;------------------------------------------------------------------------------
 START:		; start of execution
+
 	mcall	68,11
 	stdcall dll.Load,IMPORTS
 	test	eax,eax
@@ -119,7 +128,7 @@ START:		; start of execution
 	rep stosd
 	mov	[nLoadIcon],0
 	stdcall [ini_enum_sections],IconIni,LoadIconsData
-;int3
+
 	mov	eax,dword[PIcoDB]
 	sub	eax,[BegData]
 	mov	dword[SizeData],eax
@@ -274,7 +283,7 @@ LButtonPress:
 	mov	dword[fiRunProg+8],edi
 	mov	dword[fiRunProg+21],ebx
 	mcall	70,fiRunProg
-	
+
 	test	eax,80000000h
 	jz	@f
 
@@ -533,28 +542,9 @@ local	IconData:DWORD
 	repne	scasb
 	repne	scasb
 	repne	scasb
-	mov	al,[edi]
-	;cmp	al,'9'
-	;ja	PathToIcon
-	cmp	al,'/'
-	jne	GetIconInd
 
-   PathToIcon:
-	mov	al,30h		 ;заглушка!!!!!!!!!!!!!
-	mov	byte[edi+1],0
-
-	jmp	CopyToMem
-   GetIconInd:
-
-	sub	al,30h
-	cmp	byte[edi+1],0
-	je	@f
-	shl	eax,1
-	lea	eax,[eax*4+eax]
-	xor	edx,edx
-	mov	dl,[edi+1]
-	sub	dl,30h
-	add	eax,edx
+	;stdcall hexToInt,edi
+	stdcall strToInt,edi
      @@:	     ;eax=num icon
 	cmp	eax,[icon_count]
 	jb	@f
@@ -913,7 +903,7 @@ endp
 ;формат IPC-сообщения
 ;dd X
 ;dd Y
-;asciiz Icon
+;asciiz Icon - in decimal
 ;asciiz Name
 ;asciiz Path
 ;asciiz Params
@@ -926,7 +916,6 @@ endl
 
 	mov	eax,IPCbuffer+8
 	mov	dword[IPCbuffer],1
-	;mov     edx,dword[IPCbuffer+4]
 	lea	edx,[eax+8]
 
 	m2m	dword[ix],dword[edx]
@@ -1285,10 +1274,10 @@ DlgBufImg	rb IMG_SIZE*IMG_SIZE*3
 
 align 4
 bufStdIco	rb 40
-IconsOffs	rd 100		;таблица с указателями на конкретные иконки(для ускорения)
-PIcoDB		rd 1
+IconsOffs	rd 100h 	;таблица с указателями на конкретные иконки(для ускорения)
+PIcoDB		rd 1		;указатель на буффер с инфой обо всех иконках
 nLoadIcon	rd 1		;номер читаемой из ini иконки
-IconsID 	rd 100		;ID иконок - 2 байтa + байт 0 + выравнивающий байт - строка с 2мя шеснадцетиричными цифрами
+IconsID 	rd 100h 	;ID иконок - 2 байтa + байт 0 + выравнивающий байт - строка с 2мя шеснадцетиричными цифрами
 
 nameSection	rb 4
 
@@ -1335,4 +1324,8 @@ stack_bredraw:
 		rb 512
 stack_main:
 ;------------------------------------------------------------------------------
+
+
+
+
 ENDMEM:

@@ -17,7 +17,7 @@
 #include "..\lib\random.h"
 #include "..\lib\clipboard.h"
 
-//*.obj libraries
+// *.obj libraries
 #include "..\lib\obj\box_lib.h"
 #include "..\lib\obj\libio.h"
 #include "..\lib\obj\libimg.h"
@@ -126,6 +126,7 @@ void main()
 	load_dll(libHTTP, #http_lib_init,1);
 	load_dll(iconv_lib, #iconv_open,0);
 	Libimg_LoadImage(#skin, "/sys/toolbar.png");
+	skin.h = 26;
 	wv_progress_bar.progress_color = 0x72B7EB;
 	CreateDir("/tmp0/1/downloads");
 	if (param) strcpy(#URL, #param); else strcpy(#URL, URL_SERVICE_HOME);

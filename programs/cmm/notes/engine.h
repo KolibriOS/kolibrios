@@ -53,12 +53,13 @@ int NOTES::OpenTxt(dword file_path)
 	int i=0, linepos=0;
 	int item_n=-1;
 
+	count = LINES_COUNT;
+
 	strcpy(#txt_path, file_path);
 	ReadFile(0, 4096, #txt_data, #txt_path);
 	if (!txt_data) || (strncmp(#txt_data, "notes", 5)!=0)
 	{
 		txt_file_exists = false;
-		notify("'Notes\nData file does not exists or is not valid' -tE");
 		return 0;
 	}
 	else
@@ -84,7 +85,6 @@ int NOTES::OpenTxt(dword file_path)
 			//lines[item_n].Delete();
 			item_n++;
 		}
-		count = LINES_COUNT;
 		return 1;
 	}
 }

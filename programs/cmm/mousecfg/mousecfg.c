@@ -1,4 +1,4 @@
-// Mouse Configuration Utility ver 1.6
+// Mouse Configuration Utility ver 1.61
 
 #ifndef AUTOBUILD
 #include "lang.h--"
@@ -60,8 +60,8 @@ void main() {
 	{
 		case evMouse:
 				mouse.get();
-				IF (mouse_frame.hovered()) DrawMouseImage(mouse.lkm,mouse.pkm,mouse.mkm, mouse.vert);
-				IF (mouse.up) DrawMouseImage(0,0,0,0);
+				IF (mouse_frame.hovered()) DrawMouseImage(mouse.lkm,mouse.pkm,mouse.mkm,mouse.vert);
+				IF (mouse.click) DrawMouseImage(0,0,0,0);
 				break;
 
 		CASE evButton: 
@@ -109,8 +109,8 @@ void main() {
 #define white  0xffffff
 #define dgrey  0x2d353d
 
-:struct IMG_PAL{ dword back,    shad1, mbody, left,  right, middle, white; }
-         pal = {    0xF0F2F3,0xABB0B2, dgrey, white, white, dgrey,  white  };
+:struct IMG_PAL{ dword back, shad1, contour, left,  right, middle, mwhite; }
+         pal = { 0xF0F2F3,0xABB0B2, dgrey,   white, white, dgrey,  white  };
 
 void DrawMouseImage(dword l,r,m,v) {
 	#define IMG_W 59
@@ -124,9 +124,9 @@ void DrawMouseImage(dword l,r,m,v) {
 	PutPaletteImage(#panels_img_data,IMG_W,IMG_H,18+30,18+15,8,#pal);
 	pal.left = pal.right = white;
 	pal.middle = dgrey;
-	if (v) {
+	IF (v) {
 		pause(10);
-		DrawMouseImage(0,0,0,0);
+		DrawMouseImage(l,r,m,0);
 	}
 }
 
