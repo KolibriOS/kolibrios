@@ -65,21 +65,7 @@ start:
         ;call but_new_file
         option_boxes_set_sys_color sc,opt_grlist1
 
-        ;mov    eax, 68               ;progress bar trash
-        ;mov    ebx, 19
-        ;mov    ecx, sz_pb_lib
-        ;int    64
-        ;mov    [pb_lib], eax
-
-        ;push   dword[pb_lib]
-        ;push   sz_progressbar_draw
-        ;call   getprocaddress
-        ;mov    [progressbar_draw], eax
-
-        ;push   dword[pb_lib]
-        ;push   sz_progressbar_progress
-        ;call   getprocaddress
-        ;mov    [progressbar_progress], eax
+        ;progress bar trash
         mov    [pb.left],           dword  50
         mov    [pb.top],            dword  30
         mov    [pb.width],          dword  350
@@ -90,8 +76,6 @@ start:
         mov    [pb.back_color],     dword 00C8D0D4h
         mov    [pb.progress_color], dword 8072B7EBh
         mov    [pb.frame_color],    dword 00406175h
-        ;mov    ecx, [pb.max]
-        ;sub    ecx, [pb.min]
 
 align 4
 red_win:
@@ -460,8 +444,8 @@ but_open_file:
         je .end_open_file
         ;код при удачном открытии диалога
 
-        push eax ebx ecx edx ;copy file name path
-        mov eax, openfile_path ;dword[OpenDialog_data.openfile_path]
+        push eax ebx ecx edx    ;copy file name path from OpenDialog
+        mov eax, openfile_path
         mov ebx, fileNameBuffer ;.data
         mov ecx, 0
       @@:
@@ -962,10 +946,6 @@ opt_gr1 dd opt1
 align 4
 opt_grlist1 dd opt1,opt2,0 ;end option group
 
-;progressbar_progress dd 0
-;progressbar_draw     dd 0
-;pb_lib               dd 0
-;sz_pb_lib  db "/sys/lib/box_lib.obj",0
 pb:
 .value          dd 0
 .left           dd 0
@@ -978,34 +958,6 @@ pb:
 .back_color     dd 0
 .progress_color dd 0
 .frame_color    dd 0
-
-test_path db '/rd/1/test.txt', 0
-;getprocaddress:
-;        mov  edx, [esp + 8] ; hlib
-;        xor  eax, eax
-;        test edx, edx       ; If hlib = 0 then goto .end
-;        jz  .end
-;.next:
-;        cmp  [edx], dword 0 ; If end of export table then goto .end
-;        jz  .end
-
-;        xor  eax, eax
-;        mov  esi, [edx]
-;        mov  edi, [esp + 4] ; name
-;.next_:
-;        lodsb
-;        scasb
-;        jne  .fail
-;        or   al, al
-;        jnz  .next_
-;        jmp  .ok
-;.fail:
-;        add  edx, 8
-;        jmp  .next
-;.ok:                        ; return address
-;        mov  eax, [edx + 4]
-;.end:
-;        ret 8
 
 fileNameBuffer:
 .data: rb 512
@@ -1028,10 +980,9 @@ thread_n_file:
         rb 2048
 stacktop:
         sys_path rb 1024
-        file_name:
-                rb 1024 ;4096 
+        file_name:   rb 1024 ;4096
         library_path rb 1024
-        plugin_path rb 4096
+        plugin_path  rb 4096
         openfile_path rb 4096
         filename_area rb 256
 mem:
