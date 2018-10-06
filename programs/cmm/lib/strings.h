@@ -830,100 +830,87 @@ inline signed csshexdec(dword text)
 	return ret;
 }
 
-:dword stdcall sprintf(dword buf, format,...)
+inline cdecl int sprintf(dword buf, format,...)
 {
+	#define END_ARGS 0xFF00FF //ARGS FUNCTION
 	byte s;
+	char X[10];
 	dword ret, tmp, l;
 	dword arg = #format;
 	ret = buf;
 	s = DSBYTE[format];
-	while(s)
-	{
-		if(s == '%')
-		{
-			arg += 4;
+	while(s){
+		if(s=='%'){
+			arg+=4;
 			tmp = DSDWORD[arg];
-			format++;
+			if(tmp==END_ARGS)goto END_FUNC_SPRINTF;
+			$inc format
 			s = DSBYTE[format];
-			IF (!s)
-			{
-				DSBYTE[buf] = 0;
-				return ret;
-			}
+			if(!s)goto END_FUNC_SPRINTF;
 			switch(s)
 			{
 				case 's':
 					l = tmp;
-					WHILE(DSBYTE[tmp])
+					s = DSBYTE[tmp];
+					while(s)
 					{
-						DSBYTE[buf] = DSBYTE[tmp];
-						tmp++;
-						buf++;
+						DSBYTE[buf] = s;
+						$inc tmp
+						$inc buf
+						s = DSBYTE[tmp];
 					}
 				break;
 				case 'c':
 					DSBYTE[buf] = tmp;
-					buf++;
+					$inc buf
 				break;
 				case 'u': //if(tmp<0)return ret;
 				case 'd':
 				case 'i':
 					tmp = itoa(tmp);
-					IF (!DSBYTE[tmp])
-					{
-						DSBYTE[buf] = 0;
-						return ret;
-					}
+					if(!DSBYTE[tmp])goto END_FUNC_SPRINTF;
 					l = strlen(tmp);
 					strlcpy(buf,tmp,l);
 					buf += l;
 				break;
 				case 'a':
 				case 'A':
-					strlcpy(buf, "0x00000000", 10);
-					buf += 10;
-					l = buf;
-					WHILE(tmp)
+					strlcpy(buf,"0x00000000",10);
+					buf+=10;
+					l=buf;
+					while(tmp)
 					{
-						buf--;
-						s = tmp & 0xF;
-						IF (s > 9) DSBYTE[buf] = 'A' - 10 + s;
-						ELSE DSBYTE[buf] = '0' + s;
-						tmp >>= 4;
+						$dec buf
+						s=tmp&0xF;
+						if(s>9)DSBYTE[buf]='A'+s-10;
+						else DSBYTE[buf]='0'+s;
+						tmp>>=4;
 					}
-					buf = l;
+					buf=l;
 				break;
 				case 'p':
 					tmp = itoa(#tmp);
-					IF (!DSBYTE[tmp])
-					{
-						DSBYTE[buf] = 0;
-						return ret;
-					}
+					if(!DSBYTE[tmp])goto END_FUNC_SPRINTF;
 					l = strlen(tmp);
 					strlcpy(buf,tmp,l);
 					buf += l;
 				break;
 				case '%':
 					DSBYTE[buf] = '%';
-					buf++;
+					$inc buf
 				break;
 				default:
-				{
-					DSBYTE[buf] = 0;
-					return ret;
-				}
+				goto END_FUNC_SPRINTF;
 			}
 		}
-		else 
-		{
+		else {
 			DSBYTE[buf] = s;
-			buf++;
+			$inc buf
 		}
-		format++;
+		$inc format
 		s = DSBYTE[format];
 	}
-	
+	END_FUNC_SPRINTF:
 	DSBYTE[buf] = 0;
 	return ret;
 }
