@@ -2,6 +2,7 @@
 ;Igor Afanasyev (aka IgorA) and Sergey Efremenkov (aka theonlymirage), 2018
 
 ;02.10.18 - Only prototype UI
+;08.10.18 - Add ComboBox (Button + KMenu), small text
 
 format binary as ""
 use32
@@ -19,8 +20,12 @@ include 'lang.inc'
 include 'cnc_control.inc'
 include '../../develop/info3ds/info_fun_float.inc'
 
+KMENUITEM_NORMAL equ 0
+KMENUITEM_SUBMENU equ 1
+KMENUITEM_SEPARATOR equ 2
+
 @use_library_mem mem.Alloc,mem.Free,mem.ReAlloc,dll.Load
-caption db 'CNC Control 02.10.18',0 ;подпись окна
+caption db 'CNC Control 08.10.18',0 ;подпись окна
 
 run_file_70 FileInfoBlock
 
@@ -65,7 +70,7 @@ start:
         ;call but_new_file
         option_boxes_set_sys_color sc,opt_grlist1
 
-        ;progress bar trash
+        ;progress bar
         mov    [pb.left],           dword  50
         mov    [pb.top],            dword  30
         mov    [pb.width],          dword  350
@@ -76,6 +81,24 @@ start:
         mov    [pb.back_color],     dword 00C8D0D4h
         mov    [pb.progress_color], dword 8072B7EBh
         mov    [pb.frame_color],    dword 00406175h
+
+        ;port menu
+        stdcall [kmenu_init], sc    ;kmenu initialisation
+        ;stdcall [ksubmenu_new]
+        ;mov [main_menu], eax
+
+        stdcall [ksubmenu_new]
+        mov [port_menu], eax
+        stdcall [kmenuitem_new], KMENUITEM_NORMAL, sz_COMport, 110
+        stdcall [ksubmenu_add], [port_menu], eax
+        stdcall [kmenuitem_new], KMENUITEM_NORMAL, sz_USBport, 111
+        stdcall [ksubmenu_add], [port_menu], eax
+        ;stdcall [kmenuitem_new], KMENUITEM_SEPARATOR, 0, 0
+        ;stdcall [ksubmenu_add], [port_menu], eax
+        ;stdcall [kmenuitem_new], KMENUITEM_NORMAL, sz_OTHERport, 112
+        ;stdcall [ksubmenu_add], [port_menu], eax
+        stdcall [kmenuitem_new], KMENUITEM_SUBMENU, sz_PortMenu, [port_menu]
+        ;stdcall [ksubmenu_add], [main_menu], eax
 
 align 4
 red_win:
@@ -118,6 +141,7 @@ mouse:
         stdcall [option_box_mouse], opt_grlist1
         stdcall [edit_box_mouse], editFileName
         stdcall [edit_box_mouse], editCommand
+        stdcall [kmainmenu_dispatch_cursorevent], [port_menu] ;[main_menu]
 
         push eax ebx ecx
         mcall SF_MOUSE_GET,SSF_BUTTON_EXT
@@ -289,6 +313,9 @@ proc timer_funct
         ret
 endp
 
+WINDOW_WIDTH  = 775
+WINDOW_HEIGHT = 445
+
 align 4
 draw_window:
 pushad
@@ -298,7 +325,7 @@ pushad
         mov edx,[sc.work]
         or  edx,0x33000000
         mov edi,caption
-        mcall SF_CREATE_WINDOW,(20 shl 16)+775,(20 shl 16)+445
+        mcall SF_CREATE_WINDOW,(20 shl 16)+WINDOW_WIDTH,(20 shl 16)+WINDOW_HEIGHT
 
         ;;mcall SF_THREAD_INFO,procinfo,-1
         ;;mov eax,dword[procinfo.box.height]
@@ -351,9 +378,10 @@ pushad
 
         ; ***
         mov ecx,[sc.work_text]
-        or ecx,0x81000000
-        mcall SF_DRAW_TEXT,(15 shl 16)+5,,txt_preview
-        mcall ,(424 shl 16)+5,,txt_port
+        or ecx,0x80000000 ;0x81000000
+        textYcoord = 13;5
+        mcall SF_DRAW_TEXT,(15 shl 16)+textYcoord,,txt_preview
+        mcall ,(424 shl 16)+textYcoord,,txt_port
         mov ecx,[sc.work_button_text]
         or ecx,0x81000000
         mcall ,(440 shl 16)+381,,txt_but_cancel
@@ -374,6 +402,29 @@ pushad
         mcall ,,,((638+97) shl 16)+380 ;run
 
         stdcall [buf2d_draw], buf_0
+
+        ;delete port button, if it exist
+        mov edx, 0x80000008
+        mcall 8
+        ;draw button PORT
+        buttonPortX = 433
+        buttonPortY = 27 ;50
+        buttonPortTextXoffset = 5
+        mov ebx, buttonPortX*65536 + 95   ;X + Width
+        mov ecx, buttonPortY*65536 + 20   ;Y + Height
+        mov edx, 0x00000008       ;button id
+        mov esi, 0x00AABBCC       ;color button
+        mcall 8
+        ;draw text for button PORT
+        mov     ebx, (buttonPortX+buttonPortTextXoffset) * 65536 + (buttonPortY+6)    ;(x, y)
+        mov     ecx, 0xFFFFFF
+        mov     edx, sz_PortMenu
+        mov     esi, 11
+        mcall 4
+        ;stdcall [kmainmenu_draw], [main_menu]
+        ;mov word[coord.x], 0
+        ;mov word[coord.y], 0
+        ;stdcall [ksubmenu_draw], [port_menu], coord
 
         mcall SF_REDRAW,SSF_END_DRAW
 popad
@@ -404,6 +455,7 @@ key:
 align 4
 button:
         mcall SF_GET_BUTTON
+
         cmp ah,3
         jne @f
                 call but_open_file
@@ -414,7 +466,22 @@ button:
                 call but_restore_zoom
                 jmp still
         @@:
+        cmp ah, 8
+        jne @f
+                push eax ebx ecx
+                mcall 9, pi, -1 ;get window coord
 
+                mov eax, dword[pi+34]
+                add eax, buttonPortX + 5
+                mov word[coord.x], ax
+
+                mov eax, dword[pi+38]
+                add eax, buttonPortY + 42
+                mov word[coord.y], ax
+
+                stdcall [ksubmenu_draw], [port_menu], coord
+                pop ecx ebx eax
+        @@:
         ;cmp ah,5
         ;jne @f
                 ;call but_...
@@ -666,6 +733,20 @@ db 'PNG',0
 db 0
 
 
+;[
+;for test
+main_menu dd 0
+port_menu dd 0
+
+sz_PortMenu  db 'COM 12     ',0
+sz_COMport   db 'COM port 12',0
+sz_USBport   db 'USB port   ',0
+sz_OTHERport db 'Other port ',0
+
+coord:
+  .x dw 100
+  .y dw 200
+;]
 
 head_f_i:
 head_f_l db 'Системная ошибка',0
@@ -690,6 +771,11 @@ lib_name_3 db 'box_lib.obj',0
 err_msg_found_lib_3 db 'Не найдена библиотека ',39,'box_lib.obj',39,0
 err_msg_import_3 db 'Ошибка при импорте библиотеки ',39,'box_lib',39,0
 
+system_dir_4 db '/sys/lib/'
+lib_name_4 db 'kmenu.obj',0
+err_msg_found_lib_4 db 'Не найдена библиотека ',39,'kmenu.obj',39,0
+err_msg_import_4 db 'Ошибка при импорте библиотеки ',39,'kmenu',39,0
+
 l_libs_start:
         lib_0 l_libs lib_name_0, sys_path, file_name, system_dir_0,\
                 err_message_found_lib_0, head_f_l, proclib_import,err_message_import_0, head_f_i
@@ -699,6 +785,8 @@ l_libs_start:
                 err_msg_found_lib_2,head_f_l,import_buf2d,err_msg_import_2,head_f_i
         lib_3 l_libs lib_name_3, sys_path, file_name,  system_dir_3,\
                 err_msg_found_lib_3, head_f_l, import_box_lib,err_msg_import_3,head_f_i
+        lib_4 l_libs lib_name_4, sys_path, file_name, system_dir_4,\
+                err_msg_found_lib_4, head_f_l, import_libkmenu,err_msg_import_4,head_f_i
 l_libs_end:
 
 align 4
@@ -862,6 +950,32 @@ import_box_lib:
         sz_progressbar_progress db 'progressbar_progress', 0
 
 align 4
+import_libkmenu:
+        kmenu_init      dd akmenu_init
+        kmainmenu_draw  dd akmainmenu_draw
+        kmainmenu_dispatch_cursorevent dd akmainmenu_dispatch_cursorevent
+        ksubmenu_new    dd aksubmenu_new
+        ksubmenu_delete dd aksubmenu_delete
+        ksubmenu_draw   dd aksubmenu_draw
+        ksubmenu_add    dd aksubmenu_add
+        kmenuitem_new   dd akmenuitem_new
+        kmenuitem_delete dd akmenuitem_delete
+        kmenuitem_draw  dd akmenuitem_draw
+dd 0,0
+        akmenu_init     db 'kmenu_init',0
+        akmainmenu_draw db 'kmainmenu_draw',0
+        akmainmenu_dispatch_cursorevent db 'kmainmenu_dispatch_cursorevent',0
+        aksubmenu_new   db 'ksubmenu_new',0
+        aksubmenu_delete db 'ksubmenu_delete',0
+        aksubmenu_draw  db 'ksubmenu_draw',0
+        aksubmenu_add   db 'ksubmenu_add',0
+        akmenuitem_new  db 'kmenuitem_new',0
+        akmenuitem_delete db 'kmenuitem_delete',0
+        akmenuitem_draw  db 'kmenuitem_draw',0
+
+button_press  dd 0     ;for kmenu
+
+align 4
 mouse_dd dd 0
 last_time dd 0
 
@@ -985,5 +1099,6 @@ stacktop:
         plugin_path  rb 4096
         openfile_path rb 4096
         filename_area rb 256
+        pi rb 1024
 mem:
 
