@@ -18,9 +18,3 @@ file 'via.gif'		  ;include gif file
 
 vortex:
 file 'vortex.gif'	     ;include gif file
-
-knopka:
-file 'knopka.gif'	     ;include gif file
-
-knopka2:
-file 'knopka2.gif'		;gif button Save in file
