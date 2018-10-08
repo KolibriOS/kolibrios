@@ -77,7 +77,7 @@ start:
         mov    [pb.height],         dword  17
         mov    [pb.max],            dword  100;599
         mov    [pb.min],            dword  0 ;-397
-        mov    [pb.value],          dword  50;-397
+        mov    [pb.value],          dword  0 ;-397
         mov    [pb.back_color],     dword 00C8D0D4h
         mov    [pb.progress_color], dword 8072B7EBh
         mov    [pb.frame_color],    dword 00406175h
@@ -151,30 +151,13 @@ mouse:
                 call mouse_left_d
                 jmp .end_l
         @@:
-        ;bt eax,0
-        ;jnc @f
-                ;mouse l. but. move
-                ;call mouse_left_m
-                ;jmp .end_l
-        ;@@:
         bt eax,16
         jnc .end_l
                 ;mouse l. but. up
                 call mouse_left_u
                 ;jmp .end_l
         .end_l:
-        ;bt eax,9
-        ;jnc @f
-                ;mouse r. but. press
-                ;jmp .end_r
-        ;@@:
-        ;bt eax,1
-        ;jnc @f
-                ;mouse r. but. move
-                ;call mouse_right_m
-                ;jmp .end_r
-        ;@@:
-        ;.end_r:
+
 
         call buf_get_mouse_coord
         cmp eax,-1
@@ -298,8 +281,7 @@ proc buf_get_mouse_coord
 endp
 
 align 4
-proc timer_funct
-        pushad
+proc timer_funct uses eax ebx
         mcall SF_SYSTEM_GET,SSF_TIME_COUNT
         mov [last_time],eax
 
@@ -309,7 +291,6 @@ proc timer_funct
                 stdcall draw_obj2d,ObjData
                 stdcall [buf2d_draw], buf_0
         @@:
-        popad
         ret
 endp
 
@@ -559,11 +540,9 @@ but_open_file:
         jnz .end_open_file
         cmp ebx,0xffffffff
         je .end_open_file
-
                 mov [open_file_size],ebx
                 mcall SF_SET_CAPTION,1,openfile_path
 
-                ;---
                 stdcall FileInit,[open_file_data],[open_file_size]
                 stdcall [buf2d_clear], buf_0, [buf_0.color] ;чистим буфер
                 stdcall [buf2d_draw], buf_0 ;обновляем буфер на экране
@@ -609,8 +588,6 @@ proc but_restore_zoom
         mov dword[offs_last_timer],0
         ret
 endp
-
-
 
 ;input:
 ; buf - указатель на строку, число должно быть в 10 или 16 ричном виде
@@ -1094,7 +1071,8 @@ thread_n_file:
         rb 2048
 stacktop:
         sys_path rb 1024
-        file_name:   rb 1024 ;4096
+	file_name:
+		rb 1024
         library_path rb 1024
         plugin_path  rb 4096
         openfile_path rb 4096

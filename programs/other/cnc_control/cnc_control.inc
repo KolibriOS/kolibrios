@@ -4,7 +4,7 @@
 ;add_object_in_list, (врем. стр.), (Object.FigData)
 ;       mov [Object.FigData], (tl_node_add(врем. стр.),tl_node_get_data)
 
-;draw_fig2d_litl, ___, pobj, (Object.FigData), ___, ___, ___
+;draw_fig2d_litl, ___, pobj, (Object.FigData), fign, ___, ___, ___
 
 struct Object
         OType dd ?
@@ -107,8 +107,8 @@ graf_margin_left   dd 3 ;margin in pixels
 graf_margin_right  dd 3+6 ;margin in pixels
 graf_margin_top    dd 3+9 ;margin in pixels
 graf_margin_bot    dd 3+9 ;margin in pixels
-png_data dd ?
-png_size dd ?
+data_printed dd ? ;число выполненных команд
+data_all     dd ? ;число всех команд
 
 ;global variables:
 ObjData Object
@@ -220,6 +220,8 @@ proc ObjectInit uses eax ebx ecx edi, pobj:dword, etxt:dword
                 push ecx
                         mov edi,eax
                         xor eax,eax
+                        mov [data_all],eax ;хитрое начальное обнуление счетчика
+                        mov [data_printed],eax
                         rep stosd ;clear memory
                 pop ecx
 
@@ -227,12 +229,19 @@ proc ObjectInit uses eax ebx ecx edi, pobj:dword, etxt:dword
 align 4
                 .cycle0:
                         stdcall FigureInit,edi
+                        mov eax,[edi]
+                        mov eax,[eax+Figure.PoiCount]
+                        or eax,eax
+                        jnz @f
+                        	inc eax ;минимум 1-на команда
+                        @@:
+                        add [data_all],eax
                         cmp esi,[etxt]
                         jge .cycle0end
                         add edi,4
                 loop .cycle0
                 .cycle0end:
-                inc dword[ebx+Object.FigCount] ;???
+                inc dword[ebx+Object.FigCount]
                 or ecx,ecx
                 jz @f
                         ;уменьшаем объем памяти выделенный для команд
@@ -242,6 +251,12 @@ align 4
                         stdcall mem.ReAlloc,[ebx+Object.FigData],eax
                         mov [ebx+Object.FigData],eax
                 @@:
+                ;установка счетчика и прогресбара на 25 %
+                mov eax,[data_all]
+                mov [pb.max],eax
+                shr eax,2
+                mov [data_printed],eax
+                mov [pb.value],eax
 
                 stdcall ObjCalculateScale,ebx
 
@@ -896,6 +911,7 @@ endp
 align 4
 proc draw_obj2d, pobj:dword
 locals
+        data_draw dd ?
         CentrX dd ?
         CentrY dd ?
 endl
@@ -934,9 +950,17 @@ pushad
                 add edx,[graf_margin_left]
                 add edx,[ebx+Object.MCentrX]
                 mov [CentrX],edx
+                mov dword[data_draw],0
 align 4
                 .cycle0:
-                        stdcall draw_fig2d_litl, buf_0,ebx,[edi],0,edx,eax
+                        stdcall draw_fig2d_litl, buf_0,ebx,[edi],[data_draw],0,edx,eax
+                        mov esi,[edi]
+                        mov esi,[esi+Figure.PoiCount]
+                        or esi,esi
+                        jnz @f
+                        inc esi
+                        @@:
+                        add [data_draw],esi
                         add edi,4
                         loop .cycle0
                 stdcall [buf2d_flip_v], buf_0
@@ -981,12 +1005,17 @@ endp
 
 ;input:
 ; pbuf - pointer to buffer 2d
+; pobj - указатель на объект
+; pfig - указатель на фигуру
+; fign - номер фигуры
 ;description:
 ; функция для рисования объекта по частям
 align 4
-proc draw_fig2d_litl, pbuf:dword, pobj:dword, pfig:dword, Scale:dword, CentrX:dword, CentrY:dword
+proc draw_fig2d_litl, pbuf:dword, pobj:dword, pfig:dword, fign:dword,\
+	Scale:dword, CentrX:dword, CentrY:dword
 locals
-        PervX dd 0 ;pervios point coord X
+        line_col dd ? ;figure color
+		PervX dd 0 ;pervios point coord X
         PervY dd 0 ;pervios point coord Y
         GrafX dd ? ;active point coord X
         GrafY dd ? ;active point coord Y
@@ -1011,6 +1040,7 @@ pushad
                 lea eax,[edx+Object.WScale]
         @@:
         fmul qword[eax]
+        mov esi,[fign]
 align 4
         .cycle0:
                 fld qword[edi+Point.CoordX]
@@ -1025,17 +1055,24 @@ align 4
                 fistp dword[ebp-4]
                 stdcall [buf2d_set_pixel], [pbuf], [GrafX],[GrafY], 0xff0000
                 cmp ecx,[ebx+Figure.PoiCount]
-                je @f
-                        stdcall [buf2d_line_sm], [pbuf], [PervX],[PervY], [GrafX],[GrafY], 0x80
-                        ;sub esp,24
-                        ;call [buf2d_line]
-                        stdcall [buf2d_line], [pbuf], [PervX],[PervY], [GrafX],[GrafY], 0x80
-                @@:
+                je .end0
+                        ;определение цвета
+                        cmp esi,[data_printed]
+                        jl @f
+                        mov [line_col],0x80 ;if not printed
+                        jmp .end1
+                        @@:
+                        mov [line_col],0xff0000 ;if was printed
+                        .end1:
+                        stdcall [buf2d_line_sm], [pbuf], [PervX],[PervY], [GrafX],[GrafY], [line_col]
+                        stdcall [buf2d_line], [pbuf], [PervX],[PervY], [GrafX],[GrafY], [line_col]
+                .end0:
                 mov eax,[GrafX]
                 mov [PervX],eax
                 mov eax,[GrafY]
                 mov [PervY],eax
                 add edi,sizeof.Point
+                inc esi
         ;;loop .cycle0
                 dec ecx
         jnz .cycle0

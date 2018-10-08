@@ -14,7 +14,7 @@ include 'cnc_editor.inc'
 include '../../develop/info3ds/info_fun_float.inc'
 
 @use_library_mem mem.Alloc,mem.Free,mem.ReAlloc,dll.Load
-caption db 'CNC editor 24.09.18',0 ;подпись окна
+caption db 'CNC editor 08.10.18',0 ;подпись окна
 
 run_file_70 FileInfoBlock
 
@@ -321,7 +321,7 @@ pushad
 
 	; *** рисование главного окна (выполняется 1 раз при запуске) ***
 	mov edx,[sc.work]
-	or  edx,(3 shl 24)+0x10000000+0x20000000
+	or  edx,0x33000000
 	mov edi,caption
 	mcall SF_CREATE_WINDOW,(20 shl 16)+599,(20 shl 16)+415
 
@@ -363,73 +363,54 @@ pushad
 	.end0:
 
 	; *** создание кнопок на панель ***
-	mcall SF_DEFINE_BUTTON,(5 shl 16)+20,(5 shl 16)+20,3,, [sc.work_button]
-
-	mov ebx,(30 shl 16)+20
-	mov edx,4 ;0x4000000?
-	int 0x40 ;open
+	mcall SF_DEFINE_BUTTON,(5 shl 16)+20,(5 shl 16)+20,3, [sc.work_button]
 
 	add ebx,25 shl 16
-	mov edx,5
-	int 0x40 ;save
+	mcall ,,,4 ;open
+	add ebx,25 shl 16
+	mcall ,,,5 ;save
 
 	add ebx,30 shl 16
-	mov edx,6
-	int 0x40 ;captions on off
+	mcall ,,,6 ;captions on off
 
 	add ebx,25 shl 16
-	mov edx,7
-	int 0x40 ;figure move up
+	mcall ,,,7 ;figure move up
 	add ebx,25 shl 16
-	mov edx,8
-	int 0x40 ;figure move down
+	mcall ,,,8 ;figure move down
 
 	add ebx,25 shl 16
-	mov edx,9
-	int 0x40 ;sel points dlg
+	mcall ,,,9 ;sel points dlg
 
 	add ebx,25 shl 16
-	mov edx,10
-	int 0x40 ;sel points move up
+	mcall ,,,10 ;sel points move up
 	add ebx,25 shl 16
-	mov edx,11
-	int 0x40 ;sel points move down
+	mcall ,,,11 ;sel points move down
 
 	add ebx,25 shl 16
-	mov edx,12
-	int 0x40 ;align sel points left
+	mcall ,,,12 ;align sel points left
 	add ebx,25 shl 16
-	mov edx,13
-	int 0x40 ;align sel points right
+	mcall ,,,13 ;align sel points right
 	add ebx,25 shl 16
-	mov edx,14
-	int 0x40 ;align sel points top
+	mcall ,,,14 ;align sel points top
 	add ebx,25 shl 16
-	mov edx,15
-	int 0x40 ;align sel points bottom
+	mcall ,,,15 ;align sel points bottom
 
 	add ebx,25 shl 16
-	mov edx,16
-	int 0x40 ;copy to clipboard
+	mcall ,,,16 ;copy to clipboard
 	add ebx,25 shl 16
-	mov edx,17
-	int 0x40 ;paste from clipboard
+	mcall ,,,17 ;paste from clipboard
 
 	add ebx,25 shl 16
-	mov edx,18
-	int 0x40 ;sel points del
+	mcall ,,,18 ;sel points del
 
 	add ebx,30 shl 16
-	mov edx,19
-	int 0x40 ;restore zoom
+	mcall ,,,19 ;restore zoom
 
 	add ebx,30 shl 16
-	mov edx,20
-	int 0x40 ;.png
+	mcall ,,,20 ;.png
 
 	add ebx,25 shl 16
-	mov edx,21
-	int 0x40 ;options scale
+	mcall ,,,21 ;options scale
 
 	; *** рисование иконок на кнопках ***
 	mcall SF_PUT_IMAGE,[image_data_toolbar],(16 shl 16)+16,(7 shl 16)+7 ;icon new
