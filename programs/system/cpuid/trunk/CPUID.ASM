@@ -1176,7 +1176,7 @@ NEWintel:
         jz I26
         cmp [em],$1C   ;Pineview/Silverthorne
         jz I1C
-        jnz no_known
+        mov [cname], no_known
 
 Inewunknown:
         jmp MMXtest
@@ -3827,7 +3827,7 @@ db 'Pineview',0
 P1Clen:
 
 no_known:
-db 'SORRY, CODENAME IS NOT SUPPORTED YET '
+db 'SORRY, CODENAME IS NOT SUPPORTED YET ', 0
 
 ;---------AMD
 
