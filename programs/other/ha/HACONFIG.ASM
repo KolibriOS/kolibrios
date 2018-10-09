@@ -2,7 +2,7 @@
 ; Hot Angles Config ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ; Compile with FASM
-; Version 0.3.5: Oct 5, 2018
+; Version 0.3.6: Oct 9, 2018
 
 ; Copyright (c) 2018, Efremenkov Sergey aka TheOnlyMirage
 ; All rights reserved.
@@ -45,11 +45,13 @@ include '../../macros.inc'
 include '../../proc32.inc'
 include '../../dll.inc'
 include '../../develop/libraries/box_lib/trunk/box_lib.mac' ;компоненты checkBox и editBox
-;![
-include '../../develop/libraries/box_lib/load_lib.mac' ;макрос для загрузки библиотек
+include '../../develop/libraries/box_lib/load_lib.mac'      ;макрос для загрузки библиотек
 @use_library
-;@use_library_mem mem.Alloc,mem.Free,mem.ReAlloc,dll.Load
-;!]
+
+KMENUITEM_NORMAL    equ 0
+KMENUITEM_SUBMENU   equ 1
+KMENUITEM_SEPARATOR equ 2
+
 Otstup = 30
 
 START:
@@ -67,7 +69,7 @@ START:
     or      eax, eax
     jnz     exit
 
-    invoke  init_checkbox, ch1
+    ;invoke  init_checkbox, ch1
 
     mov  eax,40          ;установить маску для ожидаемых событий
     mov  ebx,0x27        ;система будет реагировать только на сообщение о перерисовке, нажата кнопка, определённая ранее, событие от мыши (что-то случилось - нажатие на кнопку мыши или перемещение; сбрасывается при прочтении)
@@ -76,6 +78,20 @@ START:
     load_libraries l_libs_start,load_lib_end ;загрузка библиотек(и)
     ;mcall 48,3,sc,sizeof.system_colors ;получить системные цвета
     stdcall [OpenDialog_Init],OpenDialog_data ;подготовка диалога
+
+    ;mode menu
+    stdcall [kmenu_init], sc    ;kmenu initialisation
+    stdcall [ksubmenu_new]
+    mov [modeMenu], eax
+    stdcall [kmenuitem_new], KMENUITEM_NORMAL, valueModeMenu0, 110
+    stdcall [ksubmenu_add], [modeMenu], eax
+    stdcall [kmenuitem_new], KMENUITEM_NORMAL, valueModeMenu1, 111
+    stdcall [ksubmenu_add], [modeMenu], eax
+    stdcall [kmenuitem_new], KMENUITEM_NORMAL, valueModeMenu2, 112
+    stdcall [ksubmenu_add], [modeMenu], eax
+    stdcall [kmenuitem_new], KMENUITEM_NORMAL, valueModeMenu3, 113
+    stdcall [ksubmenu_add], [modeMenu], eax
+        stdcall [kmenuitem_new], KMENUITEM_SUBMENU, valueModeMenu1, [modeMenu]
 
     call  loadConfig     ;загружаем конфигурацию из файла, если нет - то выставляем параметры по умолчанию
     call  draw_window    ;отрисовать окно приложения
@@ -101,7 +117,8 @@ event_wait:
     invoke  edit_box_mouse, editLD
     invoke  edit_box_mouse, editRU
     invoke  edit_box_mouse, editRD
-    invoke  check_box_mouse, ch1     ;проверка чек бокса
+    ;invoke  check_box_mouse, ch1     ;проверка чек бокса
+    ;stdcall [kmainmenu_dispatch_cursorevent], [modeMenu] ;проверка мыши для комбобокса
 
     jmp     event_wait
 
@@ -157,6 +174,43 @@ noclose:
     jne @f
     mov byte[editID], 7
     call but_open_dlg
+    jmp  event_wait
+@@:
+    cmp ah, 8
+    jne @f
+    push eax ebx ecx
+    mcall 9, pi, -1 ;get window coord
+
+                mov eax, dword[pi+34]
+                add eax, buttonModeX ;+ 5
+                mov word[coordModeMenu.x], ax
+
+                mov eax, dword[pi+38]
+                add eax, buttonModeY + 17 ;20 ;42
+                mov word[coordModeMenu.y], ax
+
+                stdcall [ksubmenu_draw], [modeMenu], coordModeMenu
+    pop ecx ebx eax
+    jmp  event_wait
+@@:
+    cmp ah, 110
+    jne @f
+    mov byte[mode], 48 ;'0'
+    jmp  event_wait
+@@:
+    cmp ah, 111
+    jne @f
+    mov byte[mode], 49 ;'1'
+    jmp  event_wait
+@@:
+    cmp ah, 112
+    jne @f
+    mov byte[mode], 50 ;'2'
+    jmp  event_wait
+@@:
+    cmp ah, 113
+    jne @f
+    mov byte[mode], 51 ;'3'
     jmp  event_wait
 @@:
 butend:
@@ -255,11 +309,17 @@ applyButton:
         ;jne @f
         ;@@:
         ;
-        mov byte[eax], 48;'0' ;110; 'n' ;по умолчанию флаг снят
-        cmp word[ch1.flags], 110b ;ch_flag_en and ch_flag_middle ;выставлен checkBox или нет?
-        jne applyButton.no
-        mov byte[eax], 49;'1' ;121 ;иначе кладём 'y'
-.no:
+
+        push ebx    ;сохраняем выбранный режим
+        mov bl, byte[mode]
+        mov byte[eax], bl
+        pop ebx
+
+;;        mov byte[eax], 48;'0' ;110; 'n' ;по умолчанию флаг снят
+;;        cmp word[ch1.flags], 110b ;ch_flag_en and ch_flag_middle ;выставлен checkBox или нет?
+;;        jne applyButton.no
+;;        mov byte[eax], 49;'1' ;121 ;иначе кладём 'y'
+;;.no:
         inc eax
         call addPerenos
 
@@ -414,17 +474,37 @@ loadConfig:
    add edx, eax             ;кладём в edx - адрес конца конфиг.данных
 
 .chStart:
-   cmp byte[eax], 49;'1' ;121 ;'y'  ;выставляем checkBox - параметр активности приложения
-   jne @f ;loadConfig.no
-.yes:
-   mov word[ch1.flags], 110b ;ch_flag_en and ch_flag_middle
-   jmp loadConfig.chEnd
+
+   push ebx
+   mov bl, byte[eax]
+   cmp bl, 48          ; если значение выходит за допустимые пределы, то проверяем на 'n' (для совместимости)
+   jb loadConfig.checkN
+   cmp bl, 51
+   ja loadConfig.checkN
+
+   mov byte[mode], bl  ;иначе устанавливаем этот режим как есть
+   jmp loadConfig.modeEnd   ;и идём дальше
+.checkN:
+   cmp bl, 'n'             ;если n - то режим "отключено"
+   jne @f
+   mov byte[mode], 48 ;'0'
+   jmp loadConfig.modeEnd
 @@:
-   cmp byte[eax], 50;'2' ;второй режим активирован
-   je loadConfig.yes
-.no:
-   mov word[ch1.flags], 100b ;ch_flag_middle
-.chEnd:
+   mov byte[mode], 49 ;'1' иначе по умолчанию включён классический режим работы
+.modeEnd:
+   pop ebx
+
+;;   cmp byte[eax], 49;'1' ;121 ;'y'  ;выставляем checkBox - параметр активности приложения
+;;   jne @f ;loadConfig.no
+;;.yes:
+;;   mov word[ch1.flags], 110b ;ch_flag_en and ch_flag_middle
+;;   jmp loadConfig.chEnd
+;;@@:
+;;   cmp byte[eax], 50;'2' ;второй режим активирован
+;;   je loadConfig.yes
+;;.no:
+;;   mov word[ch1.flags], 100b ;ch_flag_middle
+;;.chEnd:
    ;jmp loadConfig.end   ;команда для удобства отладки и поиска ошибок
 
    ;копируем содержимое строк в буфер
@@ -644,7 +724,7 @@ draw_window:
         invoke  edit_box_draw, editRU
         invoke  edit_box_draw, editRD
  
-        invoke  check_box_draw, ch1    ;рисование чекбоксов
+        ;invoke  check_box_draw, ch1    ;рисование чекбоксов
 
         ;рисуем кнопку
         mov ebx, (WindowsWidth-80-Otstup)*65536 + 80 ;координата X, ширина кнопки
@@ -705,6 +785,28 @@ draw_window:
         mcall 4
 
 
+        ;delete mode button, if it exist
+        mov edx, 0x80000008
+        mcall 8
+        ;draw button Mode
+        buttonModeX = 30 ;433
+        buttonModeY = 160 ;50
+        buttonModeWidth = 221
+        buttonModeHeight = 20
+        buttonModeTextXoffset = 5
+        mov ebx, buttonModeX*65536 + buttonModeWidth  ;X + Width
+        mov ecx, buttonModeY*65536 + buttonModeHeight   ;Y + Height
+        mov edx, 0x00000008       ;button id
+        mov esi, 0x00AABBCC       ;color button
+        mcall 8
+        ;draw text for button Mode
+        mov     ebx, (buttonModeX+buttonModeTextXoffset) * 65536 + (buttonModeY+6)    ;(x, y)
+        mov     ecx, 0xFFFFFF
+        call setTextModeMenu
+        mov     esi, valueModeMenuSize
+        mcall 4
+
+
         call draw_super_text
 
         LineLength = 62
@@ -728,6 +830,29 @@ draw_window:
         ret
 
 
+setTextModeMenu:
+   cmp byte[mode], 48
+   jne @f
+        mov edx, valueModeMenu0
+        ret
+@@:
+   cmp byte[mode], 49
+   jne @f
+        mov edx, valueModeMenu1
+        ret
+@@:
+   cmp byte[mode], 50
+   jne @f
+        mov edx, valueModeMenu2
+        ret
+@@:
+   cmp byte[mode], 51
+   jne @f
+        mov edx, valueModeMenu3
+        ret
+@@:
+   mov edx, valueModeMenu1
+   ret
 
 
 align 16
@@ -749,7 +874,7 @@ import  box_lib,\
 ;DATA данные check_box использует системные цвета
 
 ;координаты (x,y) = (30, 160) размер чекбокса 12, цвет текста 0x224466
-ch1     check_box2 30 shl 16 + 12, 160 shl 16 + 12, 6, 0xFFFFFFFF, 0xAABBCC, 0x224466, ch_text, 110b ; ch_flag_en and ch_flag_middle
+;ch1     check_box2 30 shl 16 + 12, 160 shl 16 + 12, 6, 0xFFFFFFFF, 0xAABBCC, 0x224466, ch_text, 110b ; ch_flag_en and ch_flag_middle
 
 commonButtonText db '...', 0  ;текст для кнопок вызова OpenDial
 commonButtonTextSize = 3
@@ -774,6 +899,13 @@ superText:
   .rd db 'Љ®¬ ­¤  Їа ў®Ј® ­Ё¦­ҐЈ® гЈ« : ', 0
 superTextSize = 30
 
+valueModeMenuSize = 32
+ModeMenu  db 'ђҐ¦Ё¬ а Ў®вл:',0
+valueModeMenu0  db '®вЄ«озҐ­®                       ',0
+valueModeMenu1  db 'Є« ббЁзҐбЄЁ© аҐ¦Ё¬              ',0
+valueModeMenu2  db 'аҐ¦Ё¬ Ј®апзҐ© Є« ўЁиЁ           ',0
+valueModeMenu3  db 'аҐ¦Ё¬ ¦Ґбв  Ї® Є« ўЁиҐ  ЄвЁў жЁЁ',0
+
 else  ;иначе английский текст
 
 text    db  "This is a Hot Angles Configurator.                            "
@@ -793,6 +925,13 @@ superText:
   .ru db 'Right up angle command:  ', 0
   .rd db 'Right down angle command:', 0
 superTextSize = 25
+
+valueModeMenuSize = 32
+ModeMenu  db 'Mode:',0
+valueModeMenu0  db 'disabled                        ',0
+valueModeMenu1  db 'classic mode                    ',0
+valueModeMenu2  db 'hot key mode                    ',0
+valueModeMenu3  db 'activation key gesture mode     ',0
 
 end if
 
@@ -819,6 +958,12 @@ draw_super_text:
    mov     ebx, 240 * 65536 + 109
    mov     edx, superText.rd
    mov     esi, superTextSize
+   mcall 4
+
+   mov     ebx, Otstup * 65536 + (buttonModeY-11)
+   or ecx, 0x80000000
+   mov     edx, ModeMenu
+   mov     esi, 3
    mcall 4
 
    pop esi edi edx ecx ebx eax
@@ -925,21 +1070,21 @@ OpenDialog_data:
 .type                   dd 0 ;0 - открыть, 1 - сохранить, 2 - выбрать директорию
 .procinfo               dd procinfo
 .com_area_name          dd communication_area_name ;+8
-.com_area               dd 0 ;+12
+.com_area               dd 0           ;+12
 .opendir_path           dd plugin_path ;+16
 .dir_default_path       dd default_dir ;+20
-.start_path             dd file_name ;+24 путь к диалогу открытия файлов
+.start_path             dd file_name   ;+24 путь к диалогу открытия файлов
 .draw_window            dd draw_window ;+28
-.status                 dd 0 ;+32
+.status                 dd 0           ;+32
 .openfile_path          dd openfile_path ;+36 путь к открываемому файлу
 .filename_area          dd filename_area ;+40
 .filter_area            dd Filter
 .x:
 .x_size                 dw 420 ;+48 ; Window X size
-.x_start                dw 10 ;+50 ; Window X position
+.x_start                dw 10  ;+50 ; Window X position
 .y:
 .y_size                 dw 320 ;+52 ; Window y size
-.y_start                dw 10 ;+54 ; Window Y position
+.y_start                dw 10  ;+54 ; Window Y position
  
 default_dir db '/rd/1',0 ;директория по умолчанию
 communication_area_name: db 'FFFFFFFF_open_dialog',0
@@ -949,12 +1094,17 @@ communication_area_default_path: db '/rd/1/File managers/',0
 Filter:
 dd Filter.end - Filter.1
 .1:
-;db 'ASM',0
 ;db 'KEX',0
-;db 'TXT',0
 .end:
 db 0
- 
+
+mode db 49 ;'1'
+modeMenu dd 0
+coordModeMenu:
+  .x dw 100
+  .y dw 200
+
+
 align 4
 proclib_import: ;описание экспортируемых функций
         OpenDialog_Init dd aOpenDialog_Init
@@ -967,27 +1117,19 @@ head_f_i:
         head_f_l  db 'Системная ошибка',0
         err_message_found_lib0 db 'Не найдена библиотека ',39,'proc_lib.obj',39,0
         err_message_import0 db 'Ошибка при импорте библиотеки ',39,'proc_lib.obj',39,0
+        err_message_found_lib1 db 'Не найдена библиотека ',39,'kmenu.obj',39,0    ;'ЌҐ ­ ©¤Ґ­  ЎЁЎ«Ё®вҐЄ  '
+        err_message_import1 db 'Ошибка при импорте библиотеки ',39,'kmenu',39,0   ;'ЋиЁЎЄ  ЇаЁ Ё¬Ї®авҐ ЎЁЎ«Ё®вҐЄЁ '
  
 system_dir0 db '/sys/lib/'
 lib0_name db 'proc_lib.obj',0
- 
+lib1_name db 'kmenu.obj',0
+
 ;library structures
 l_libs_start:
-        lib0 l_libs lib0_name, sys_path, file_name, system_dir0, err_message_found_lib0, head_f_l, proclib_import,err_message_import0, head_f_i
+    lib0 l_libs lib0_name, sys_path, file_name, system_dir0, err_message_found_lib0, head_f_l, proclib_import,err_message_import0, head_f_i
+    lib1 l_libs lib1_name, sys_path, file_name, system_dir0, err_message_found_lib1, head_f_l, import_libkmenu,err_message_import1,head_f_i
 load_lib_end:
-
-;txt_open db 'Открыть',0
-
-sys_path:      rb 4096
-file_name:     rb 4096
-plugin_path:   rb 4096
-openfile_path: rb 4096
-filename_area: rb 256
-rb 1024
-procinfo process_information
 ;!]
-
-
 
 edMaxSize = 510 ;теперь с новым компонентом можно и 511 указать
 edMax = 0 ;max, size, pos
@@ -998,8 +1140,44 @@ editLD   edit_box 180-buttonW,Otstup+buttonW,120, 0xffffff, 0x6a9480, 0, 0xAABBC
 editRU   edit_box 180-buttonW,240,85, 0xffffff, 0x6a9480, 0, 0xAABBCC, 0, edMaxSize, dataBuffer.3, mouse_dd, 0, edMax, edMax
 editRD   edit_box 180-buttonW,240,120, 0xffffff, 0x6a9480, 0, 0xAABBCC, 0, edMaxSize, dataBuffer.4, mouse_dd, 0, edMax, edMax
 
+align 4
+import_libkmenu:
+        kmenu_init      dd akmenu_init
+        kmainmenu_draw  dd akmainmenu_draw
+        kmainmenu_dispatch_cursorevent dd akmainmenu_dispatch_cursorevent
+        ksubmenu_new    dd aksubmenu_new
+        ksubmenu_delete dd aksubmenu_delete
+        ksubmenu_draw   dd aksubmenu_draw
+        ksubmenu_add    dd aksubmenu_add
+        kmenuitem_new   dd akmenuitem_new
+        kmenuitem_delete dd akmenuitem_delete
+        kmenuitem_draw  dd akmenuitem_draw
+dd 0,0
+        akmenu_init     db 'kmenu_init',0
+        akmainmenu_draw db 'kmainmenu_draw',0
+        akmainmenu_dispatch_cursorevent db 'kmainmenu_dispatch_cursorevent',0
+        aksubmenu_new   db 'ksubmenu_new',0
+        aksubmenu_delete db 'ksubmenu_delete',0
+        aksubmenu_draw  db 'ksubmenu_draw',0
+        aksubmenu_add   db 'ksubmenu_add',0
+        akmenuitem_new  db 'kmenuitem_new',0
+        akmenuitem_delete db 'kmenuitem_delete',0
+        akmenuitem_draw  db 'kmenuitem_draw',0
+
 mouse_dd  dd ?
 sc  system_colors
+
+button_press  rd 0     ;for kmenu
+
+sys_path:      rb 4096
+file_name:     rb 4096
+plugin_path:   rb 4096
+openfile_path: rb 4096
+filename_area: rb 256
+rb 1024
+procinfo process_information
+pi rb 1024
+
 
 dataBuffer:
 .1: rb 512

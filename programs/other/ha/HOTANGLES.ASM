@@ -2,7 +2,7 @@
 ; Hot Angles ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ; Compile with FASM
-; Version 0.3.5: Oct 5, 2018
+; Version 0.3.6: Oct 9, 2018
 
 ; Copyright (c) 2018, Efremenkov Sergey aka TheOnlyMirage
 ; All rights reserved.
@@ -52,6 +52,13 @@ START_DEBUG:
    cmp byte[mode], 0     ;функция отключена - выход
    jne @f
    mcall -1
+@@:
+   ;режим жеста по горячей клавише?
+   cmp byte[mode], 3 ;подписываемся на интересные нам события в зависимости от режима работы
+   jne @f
+   mov ebx, 00000100000000000000000000100010b    ;если да, то подписываемся на клавиши
+   mcall 40
+   jmp init03
 @@:
    ;режим активации горячей клавишей?
    cmp byte[mode], 2 ;подписываемся на интересные нам события в зависимости от режима работы
@@ -110,8 +117,24 @@ hotkey:
 
    cmp ah, byte[keyActivate]   ;если нажата наша горячая клавиша
    jne @f
+
+;for mode 3 [
+   cmp byte[keyState], 1
+   je hotkey.e
+
+   push eax ebx
+   mcall 37, 0 ;запоминаем текущие(начальные) координаты мыши
+   ;mov dword[o.x], eax
+   mov word[o.y], ax
+   shr eax, 16
+   mov word[o.x], ax
+   pop ebx eax
+
    mov byte[keyState], 1
    mov byte[state], UNLOCKd
+.e:
+;]
+   ;mov byte[state], UNLOCKd
    jmp hotkey.end
 @@:
    push edx
@@ -127,7 +150,7 @@ hotkey:
 @@:
    pop edx
 .end:
-   jmp mode02
+   jmp dword[backAdr]
 
 
 init01:
@@ -449,10 +472,165 @@ copyKill:
    ret
 
 
-keyActivate db 41 ;16 ;'Q' ;клавиша активации
-keyState db 0 ;0-клавиша не активна, 1 - клавиша активна
+;MODE 3
+init03:
+   mov dword[radius2], 100; 10*10
+   mov dword[backAdr], mode03
+   call setHotKey
+mode03:
+   mcall 10
+   cmp eax, 2     ;обработка нажатия клавиши
+   je hotkey
 
-backAdr rd 1 ;dd 0 ; адрес для возврата из проверки мыши
+   ;cmp byte[keyState], 0
+   ;je mode03
+   cmp   eax, 6   ;обработка перемещений и нажатия мыши
+   je    mouse03
+
+   jmp mode03
+
+mouse03:
+   cmp byte[keyState], 0     ;если клавиша не зажата, то обновим начальные координаты
+   je mouse03.updateCoord
+
+   cmp byte[state], LOCKd    ;если угол заблокирован, то обновим начальные координаты
+   je mouse03.updateCoord
+
+   call checkPointInCircle   ;иначе если преодолели радиус активации, то вызываем действие нужного угла
+   jmp @f
+.updateCoord:
+   push eax ebx
+   mcall 37, 0 ;запоминаем текущие(начальные) координаты мыши
+   ;mov dword[o.x], eax
+   mov word[o.y], ax
+   shr eax, 16
+   mov word[o.x], ax
+   pop ebx eax
+@@:
+   jmp dword[backAdr]
+
+
+radius2 dd 0  ;квадрат радиуса для mode 3
+o:            ;координаты начальной и текущей точки
+ .x:   dw 0
+ .y:   dw 0
+ .cx:  dw 0
+ .cy:  dw 0
+
+;проверка выхода за пределы круга
+; sqrt( (x2-x1)^2 + (y2-y1)^2 ) <= radius
+; (x2-x1)^2 + (y2-y1)^2 <= radius^2
+checkPointInCircle:
+   push eax ebx ecx edx
+   mcall 37, 0 ;получаем текущие координаты мыши
+   ;mov dword[o.cx], eax
+   mov word[o.cy], ax
+   shr eax, 16
+   mov word[o.cx], ax
+
+   xor eax, eax
+   xor edx, edx
+   mov ax, word[o.x]
+   mov dx, word[o.cx]
+   cmp dx, ax
+   jae @f
+   sub ax, dx
+   mov dx, ax
+   jmp .xend
+@@:
+   sub dx, ax
+.xend:
+   mov eax, edx
+   mul dx
+
+   mov ebx, eax
+
+   xor eax, eax
+   xor edx, edx
+   mov ax, word[o.y]
+   mov dx, word[o.cy]
+   cmp dx, ax
+   jae @f
+   sub ax, dx
+   mov dx, ax
+   jmp .yend
+@@:
+   sub dx, ax
+.yend:
+   mov eax, edx
+   mul dx
+
+   add ebx, eax
+
+   cmp ebx, dword[radius2]
+   jbe @f
+   call activateCorner ;иначе активируем нужный угол
+ @@:
+   pop edx ecx ebx eax
+   ret
+
+;выяснить в сторону какого угла ушли и активировать его
+activateCorner:
+   push eax ecx
+   xor eax, eax
+
+   mov ax, word[o.cx]
+   cmp ax, word[o.x]
+   je activateCorner.end       ;если координата равна, то выходим (такого быть не должно)
+   ja activateCorner.right
+
+   ;иначе левая сторона
+   mov ax, word[o.cy]
+   cmp ax, word[o.y]
+   je activateCorner.end       ;если координата равна, то выходим (такого быть не должно)
+   jb activateCorner.leftup
+
+   ;иначе левый нижний угол
+   mov ecx, 1
+   call run_command
+   mov byte[keyState], 0
+   mov byte[state], LOCKd
+   jmp activateCorner.end
+
+.leftup:
+   ;левый верхний угол
+   mov ecx, 0
+   call run_command
+   mov byte[keyState], 0
+   mov byte[state], LOCKd
+   jmp activateCorner.end
+
+.right: ;правая сторона экрана
+   mov ax, word[o.cy]
+   cmp ax, word[o.y]
+   je activateCorner.end       ;если координата равна, то выходим (такого быть не должно)
+   jb activateCorner.rightup
+
+   ;иначе правый нижний угол
+   mov ecx, 3
+   call run_command
+   mov byte[keyState], 0
+   mov byte[state], LOCKd
+   jmp activateCorner.end
+
+.rightup:
+   ;правый верхний угол
+   mov ecx, 2
+   call run_command
+   mov byte[keyState], 0
+   mov byte[state], LOCKd
+   jmp activateCorner.end
+
+.end:
+   pop ecx eax
+   ret
+
+
+
+keyActivate db 41 ;16 ;'Q' ;клавиша активации
+keyState    db 0  ;0-клавиша не активна, 1 - клавиша активна
+
+backAdr rd 1      ;адрес для возврата из проверки мыши
 
 ;slotMax dd 0
 ;selfPID dd 0
@@ -463,8 +641,8 @@ buf rb 1024
 
 ;структурка данных для хранения параметров экрана
 screen:
-  .width  rw 1 ;dw 0
-  .height rw 1 ;dw 0
+  .width  rw 1
+  .height rw 1
 
 state: rb 1  ;состояние: 0=unlock, 1=lock
 mode:  rb 1  ;режим работы приложения: 0=не работает, 1=классический, 2=по горячей клавише
