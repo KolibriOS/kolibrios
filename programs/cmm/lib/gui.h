@@ -254,8 +254,8 @@ struct block {
 };
 
 :bool block::hovered() {
-	if ((mouse.x>x) && (mouse.y>y) 
-	&& (mouse.y<y+h) && (mouse.x<x+w)) 
+	if ((mouse.x>=x) && (mouse.y>=y) 
+	&& (mouse.y<=y+h) && (mouse.x<=x+w)) 
 		return true;
 	return false;
 }

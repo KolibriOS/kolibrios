@@ -1,4 +1,4 @@
-// Notes v1.0
+// Notes v1.1
 
 #define MEMSIZE 0xDAE80
 #include "..\lib\kolibri.h" 
@@ -47,6 +47,7 @@ edit_box notebox = {NULL,NULL,NULL,COL_BG_ACTIVE,0x94AECE,COL_BG_ACTIVE,0xffffff
 dword lists[] = { 0xEAEAEA, 0xCDCDCD, 0xF0F0F0, 0xD8D8D8, 0 };
 
 bool delete_active = false;
+bool window_dragable = true;
 block delBtn;
 
 //===================================================//
@@ -61,6 +62,8 @@ void main()
 	bool first_redraw=true;
 	dword cur_line_offset;
 	load_dll(boxlib, #box_lib_init,0);
+
+	if (GetCpuFrequency()/1000000>=1000) window_dragable=true; else window_dragable=false;
 	
 	if (param) notes.OpenTxt(#param); else notes.OpenTxt(abspath("notes.txt"));
 
@@ -75,7 +78,8 @@ void main()
 
 			if (delete_active) && (delBtn.hovered()) break;
 
-			if (mouse.lkm) && (mouse.y<TITLE_H) && (mouse.x<WIN_W-39) EventDragWindow();
+			if (mouse.lkm) && (mouse.y<TITLE_H) && (mouse.x<WIN_W-39) 
+				&& (window_dragable) EventDragWindow();
 
 			if (mouse.pkm) 
 			&& (notes.MouseOver(mouse.x, mouse.y)) {
@@ -159,7 +163,10 @@ void DrawCloseButton(dword x,y,w,h)
 void draw_window()
 {
 	int i;
-	DefineUnDragableWindow(100,100,WIN_W, WIN_H);
+	if (window_dragable) 
+		DefineUnDragableWindow(100,100,WIN_W, WIN_H);
+	else 
+		DefineDragableWindow(100,100,WIN_W, WIN_H);
 	notes.SetSizes(RED_LINE_X+1, HEADER_HEIGHT, WIN_W-1, RED_LINE_X*LINES_COUNT, RED_LINE_X);
 	DrawRectangle3D(0,0,WIN_W,TITLE_H-1,0xBB6535, 0xCD6F3B);
 	DrawRectangle3D(1,1,WIN_W-2,TITLE_H-3,0xEFBFA4, 0xDD8452);
@@ -196,7 +203,7 @@ void DrawEditBoxN()
 
 void EventActivateLine(int line_n)
 {
-	if (line_n<0) || (line_n>notes.count) return;
+	if (line_n<0) || (line_n>=notes.count) return;
 	notes.cur_y = line_n;
 	notebox.text = notes.DrawLine(notes.cur_y, notes.item_h);
 	EventListRedraw();

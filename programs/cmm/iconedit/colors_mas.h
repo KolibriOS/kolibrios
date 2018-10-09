@@ -53,6 +53,7 @@ struct _image
 {
 	unsigned rows, columns;
 	dword mas[MAX_CELL_SIZE*MAX_CELL_SIZE];
+	dword mas_copy[MAX_CELL_SIZE*MAX_CELL_SIZE];
 	dword img;
 	_pixel_state pixel_state;
 	void create();
@@ -221,7 +222,8 @@ enum {
 	MOVE_DOWN,
 	FLIP_VER,
 	FLIP_HOR,
-	ROTE
+	ROTATE_LEFT,
+	ROTATE_RIGHT
 };
 void _image::move(int _direction)
 {
@@ -277,10 +279,45 @@ void _image::move(int _direction)
 						set_pixel(r, c, get_pixel(rows-r-1, c));
 						set_pixel(rows-r-1, c, first_element_data);
 					}
+				break;
+		case ROTATE_LEFT:
+				//slow but the code is simple
+				//need to rewrite in case of big images support
+				move(ROTATE_RIGHT);
+				move(ROTATE_RIGHT);
+				move(ROTATE_RIGHT);
 				break;	
+		case ROTATE_RIGHT:
+				if (columns!=rows) {
+					notify("Sorry, rotate is implemented for square canvaces only!");
+					break;
+				}
+
+				for (r=0; r<MAX_CELL_SIZE*MAX_CELL_SIZE; r++)  {
+					mas_copy[r] = mas[r];
+				}
+
+				for (c = 0; c < columns; c++)
+					for (r = 0; r < rows; r++) {
+						set_pixel(c, rows-r-1, mas_copy[columns*r + c]);
+					}
+
+				columns >< rows;
+				break;
 	}
 }
 
+/*
+1234
+5678
+90AB
+
+951
+0
+A
+B
+
+*/
 
 
 

@@ -200,9 +200,18 @@ void SelectTool_onMouseEvent(int mouseX, int mouseY, int lkm, int pkm) {
 		}
 		
 		if (mouse.up) {
-			selection.copy_to_buf();
+				selection.copy_to_buf();
 		}
 	}
+/*
+	//forbid to select a single pixel
+	if (mouse.up) {
+		if (! selection.end_x-selection.start_x) 
+		&& (! selection.end_y-selection.start_y) {
+			selection.reset();
+		}
+	}
+*/
 }
 
 void SelectTool_onKeyEvent(dword keycode) {

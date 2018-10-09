@@ -85,6 +85,7 @@ void initTools()
 	tools[TOOL_SCREEN_COPY].cursor = NULL;
 	tools[TOOL_SCREEN_COPY].activate = #ScreenCopy_activate;
 	tools[TOOL_SCREEN_COPY].onMouseEvent = #ScreenCopy_onMouseEvent;
+	tools[TOOL_SCREEN_COPY].onKeyEvent = #ScreenCopy_onKeyEvent;	
 }
 
 

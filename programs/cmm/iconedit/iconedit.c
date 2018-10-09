@@ -41,7 +41,7 @@ In other case please use <Photo> tool to get an image from screen.' -Wt"
 #endif
 
 
-#define T_TITLE "Icon Editor 0.57b Alpha"
+#define T_TITLE "Icon Editor 0.58 Alpha"
 
 #define TOPBAR_H    24+8
 #define LEFTBAR_W 16+5+5+3+3
@@ -162,7 +162,7 @@ void main()
 {
 	word btn;
 	libimg_image open_image;
-	dword tmp_bg_col;
+	dword bg_col;
 
 	load_dll(libio,  #libio_init,  1);
 	load_dll(libimg, #libimg_init, 1);
@@ -172,8 +172,10 @@ void main()
 	Libimg_LoadImage(#left_icons, "/sys/icons16.png");
 
 	system.color.get();
+	bg_col = system.color.work;
+	if (GrayScaleImage(#bg_col,1,1)<65) bg_dark=true; else bg_dark=false;
 
-	semi_white = MixColors(system.color.work, 0xFFFfff, 96);
+	semi_white = MixColors(system.color.work, 0xFFFfff, bg_dark*90 + 96);
 	Libimg_ReplaceColor(top_icons.image, top_icons.w, top_icons.h, 0xffFFFfff, semi_white);
 	Libimg_ReplaceColor(top_icons.image, top_icons.w, top_icons.h, 0xffCACBD6, MixColors(semi_white, 0, 220));
 
@@ -181,7 +183,6 @@ void main()
 	Libimg_ReplaceColor(left_icons.image, left_icons.w, left_icons.h, 0xffCACBD6, MixColors(system.color.work, 0, 200));
 
 	//fix line and rectandle color for dark skins
-	if (GrayScaleImage(#system.color.work,1,1)<65) bg_dark=true; else bg_dark=false;
 	if (bg_dark) Libimg_ReplaceColor(left_icons.image, left_icons.w, left_icons.h, 0xff545454, 0xffD3D3D4);
 
 	EventSetActiveColor(1, color1);
@@ -293,6 +294,12 @@ void main()
 				case BTN_FLIP_HOR:
 					EventMove(FLIP_HOR);
 					break;
+				case BTN_ROTATE_LEFT:
+					EventMove(ROTATE_LEFT);
+					break;
+				case BTN_ROTATE_RIGHT:
+					EventMove(ROTATE_RIGHT);
+					break;
 				case BTN_TEST_ICON:
 					EventTestIcon();
 					break;
@@ -344,6 +351,24 @@ void main()
 						break;
 					case SCAN_CODE_KEY_O:
 						EventOpenIcon();
+						break;
+					case SCAN_CODE_LEFT:
+						EventMove(MOVE_LEFT);
+						break;
+					case SCAN_CODE_RIGHT:
+						EventMove(MOVE_RIGHT);
+						break;
+					case SCAN_CODE_UP:
+						EventMove(MOVE_UP);
+						break;
+					case SCAN_CODE_DOWN:
+						EventMove(MOVE_DOWN);
+						break;
+					case SCAN_CODE_KEY_R:
+						EventMove(BTN_ROTATE_RIGHT);
+						break;
+					case SCAN_CODE_KEY_L:
+						EventMove(BTN_ROTATE_LEFT);
 						break;
 				}
 			}
@@ -434,7 +459,7 @@ void DrawWindow()
 	DrawBar(0, TOPBAR_H-1, Form.cwidth, 1, system.color.work_graph);
 
 	tx.n = 5-GAP;
-	DrawTopPanelButton(BTN_NEW,    tx.inc(GAP), 2); //not implemented
+	DrawTopPanelButton(BTN_NEW,    tx.inc(GAP), 2);
 	DrawTopPanelButton(BTN_OPEN,   tx.inc(GAP), 0); //not implemented
 	DrawTopPanelButton(BTN_SAVE,   tx.inc(GAP), 5);
 	DrawTopPanelButton(BTN_MOVE_LEFT,  tx.inc(GAP+BLOCK_SPACE), 30);
@@ -444,12 +469,12 @@ void DrawWindow()
 	
 	DrawTopPanelButton(BTN_FLIP_HOR,   tx.inc(GAP+BLOCK_SPACE), 34);
 	DrawTopPanelButton(BTN_FLIP_VER,   tx.inc(GAP),   35);
+	DrawTopPanelButton(BTN_ROTATE_LEFT,   tx.inc(GAP), 37);
+	DrawTopPanelButton(BTN_ROTATE_RIGHT,  tx.inc(GAP), 36);
 
 	DrawTopPanelButton(BTN_TEST_ICON,  tx.inc(GAP+BLOCK_SPACE), 12);
 
 	DrawTopPanelButton(BTN_CROP,  tx.inc(GAP+BLOCK_SPACE), 46);
-	// DrawTopPanelButton(BTN_ROTATE_LEFT,   tx.inc(GAP), 36); //not implemented
-	// DrawTopPanelButton(BTN_ROTATE_RIGHT,  tx.inc(GAP), 37); //not implemented
 	
 	DrawEditArea();
 
@@ -566,21 +591,24 @@ void GenerateCurrentColorGradient()
 	}
 }
 
+int DrawGradientMarker(dword marker_x, marker_color)
+{
+	if (marker_x > b_color_gradient.w - 1) marker_x = b_color_gradient.w - 1;
+	DrawBar(b_color_gradient.x + marker_x-2, b_color_gradient.y-3, 5, 1, marker_color);
+	DrawBar(b_color_gradient.x + marker_x-1, b_color_gradient.y-2, 3, 1, marker_color);
+	PutPixel(b_color_gradient.x + marker_x, b_color_gradient.y-1, marker_color);
+	return marker_x;
+}
+
+int old_marker_pos;
 void DrawCurrentColorGradient()
 {
 	int i;
-	dword hitch_color=system.color.work;
-	int hitch_x = b_color_gradient.x+lmax-1;
-	if (lmax>b_color_gradient.w-2) hitch_x=b_color_gradient.x+b_color_gradient.w-3;
-
 	for (i=0 ; i<b_color_gradient.w; i++) {
 		DrawBar(b_color_gradient.x+i, b_color_gradient.y, 1, b_color_gradient.h, linear_gradient[i]);		
 	}
-	//current color marker	
-	DrawBar( b_color_gradient.x-1, b_color_gradient.y-2, b_color_gradient.w+4, 2, system.color.work);
-	
-	if (bg_dark) hitch_color=0xFFFfff; else hitch_color=0;
-	DrawBar(hitch_x, b_color_gradient.y-2, 3,2, hitch_color);
+	DrawGradientMarker(old_marker_pos, system.color.work);
+	old_marker_pos = DrawGradientMarker(lmax, 0xFFFfff * bg_dark);
 }
 
 void DrawColorPallets()
@@ -639,9 +667,16 @@ void DrawCanvas()
 void DrawPreview()
 {
 	int x = right_bar.x;
-	int y = wrapper.y + wrapper.h - image.rows-2;
-	DrawRectangle(x, y, image.columns+1, image.rows+1, system.color.work_graph);
-	_PutImage(x+1,y+1, image.columns, image.rows, image.get_image());
+	int y = b_default_palette.y + b_default_palette.h + 6;
+	int preview_h = Form.cheight - y;
+
+	if (image.columns > right_bar.w) return;
+	if (image.rows > preview_h) return;
+
+	_PutImage(right_bar.w - image.columns / 2 + x - 3,
+		preview_h - image.rows / 2 + y, 
+		image.columns, image.rows, image.get_image()
+		);
 }
 
 dword GetPixelUnderMouse()

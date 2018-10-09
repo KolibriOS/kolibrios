@@ -116,6 +116,7 @@ dword NOTES::DrawLine(int line_n, draw_h) {
 		COL_BOTTOM_LINE=0xE8EFF4,
 		COL_BG,
 		cur_text;
+	int drawy;
 	char line_text[4096];
 	if (line_n<0) return;
 	x = 1;
@@ -131,10 +132,12 @@ dword NOTES::DrawLine(int line_n, draw_h) {
 	}
 	else
 	{
-		DefineButton(RED_LINE_X-CHBOX/2+x, item_h*line_n+5+y, CHBOX-1,CHBOX-1, CHECKBOX_ID+line_n+BT_HIDE, 0); //checkbox
-		_PutImage(RED_LINE_X-CHBOX/2+x, item_h*line_n+5+y, CHBOX,CHBOX, lines[line_n].state*CHBOX*CHBOX*3+#checkbox);
-		if (cur_text) WriteText(x+RED_LINE_X+6, item_h*line_n+7+y, 0x80, lines[line_n].state*0x777777, cur_text);
-		if (lines[line_n].state == true) DrawBar(x+RED_LINE_X+6, item_h*line_n+11+y, strlen(cur_text)*6, 1, 0x444444); //strike
+		drawy = item_h*line_n+5+y;
+		DefineButton(RED_LINE_X-CHBOX/2+x, drawy, CHBOX-1,CHBOX-1, CHECKBOX_ID+line_n+BT_HIDE, 0); //checkbox
+		_PutImage(RED_LINE_X-CHBOX/2+x,drawy, CHBOX,CHBOX, lines[line_n].state*CHBOX*CHBOX*3+#checkbox);
+		if (cur_text) WriteText(x+RED_LINE_X+6, drawy+2, 0x80, lines[line_n].state*0x777777, cur_text);
+		if (lines[line_n].state == true) DrawBar(x+RED_LINE_X+6, drawy+6, strlen(cur_text)*6, 1, 0x444444); //strike
+		DrawBar(WIN_W,drawy,1,item_h,0xBBBBBB); //fast fix; proper fix is to restrict WriteText() char length
 	}
 	DrawBar(x, line_n*item_h+draw_h-1+y, w, 1, COL_BOTTOM_LINE);
 	DrawBar(x+RED_LINE_X, line_n*item_h+y, 1, draw_h, COL_RED_LINE);

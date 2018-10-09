@@ -27,10 +27,20 @@ void ScreenCopy_onMouseEvent(int mouseX, int mouseY, int lkm, int pkm) {
 	DrawCanvas();
 	
 	if (mouse.down) {
+		ScreenCopy_onKeyEvent(SCAN_CODE_ENTER);
+	}
+}
+
+void ScreenCopy_onKeyEvent(dword keycode) {
+	if (SCAN_CODE_ENTER == keycode) {
+		actionsHistory.saveCurrentState();
 		screen_copy = free(screen_copy);
 		SetEventMask(EVM_REDRAW+EVM_KEY+EVM_BUTTON+EVM_MOUSE+EVM_MOUSE_FILTER);
-		actionsHistory.saveCurrentState();
 		setCurrentTool(previousTool);
 		if (!CheckActiveProcess(Form.ID)) ActivateWindow(GetProcessSlot(Form.ID));
+	}
+	if (SCAN_CODE_ESC == keycode) {
+		ScreenCopy_onKeyEvent(SCAN_CODE_ENTER);
+		actionsHistory.undoLastAction();
 	}
 }

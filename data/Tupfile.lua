@@ -571,6 +571,7 @@ tup.append_table(img_files, {
  {"APP_PLUS", PROGS .. "/cmm/app_plus/app_plus.com"},
  {"EASYSHOT", PROGS .. "/cmm/easyshot/easyshot.com"},
  {"MOUSECFG", PROGS .. "/cmm/mousecfg/mousecfg.com"},
+ {"NOTES", PROGS .. "/cmm/notes/notes.com"},
  {"PANELS_CFG", PROGS .. "/cmm/panels_cfg/panels_cfg.com"},
  {"SYSPANEL", PROGS .. "/cmm/software_widget/software_widget.com"},
  {"SYSMON", PROGS .. "/cmm/sysmon/sysmon.com"},
