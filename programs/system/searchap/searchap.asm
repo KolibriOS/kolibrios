@@ -34,8 +34,10 @@
 	dd IM_END
 	dd I_END
 	dd stacktop
+params dd PARAMS
 	dd 0x0
-	dd 0x0
+;---------------------------------------------------------------------
+delay dd 0;500 
 ;---------------------------------------------------------------------
 fileinfo:
 .subfunction	dd 5
@@ -83,7 +85,28 @@ define __DEBUG_LEVEL__ 2	; 1 = verbose, 2 = main only
 include "../../debug-fdo.inc"
 ;-------------------------------------------------------------------------------
 START:
-	mcall	5,500
+; process cmdline params
+	mov	esi, [params]
+	test	[esi], byte 0xFF
+	jz	.params_done
+	cmp	word[esi], '-d' ; delay
+	jne	.params_done
+	add	esi, 2
+; str2uint(delay)
+	xor	eax, eax
+	xor	ecx, ecx
+.convert:
+	lodsb
+	test	al, al
+	jz	.converted
+	lea	ecx, [ecx + ecx * 4]
+	lea	ecx, [eax + ecx * 2 - '0']
+	jmp	.convert
+.converted:
+	mov	[delay], ecx
+.params_done:
+;--------------------------------------
+	mcall	5,[delay]
 	mov	ebx,start_dir
 	mov	ax,[ebx]
 	mov	ebx,read_folder_name
@@ -400,6 +423,8 @@ include_debug_strings
 ;-------------------------------------------------------------------------------
 IM_END:
 ;-------------------------------------------------------------------------------
+align 4
+PARAMS: rb 256
 align 4
 left_folder_block	rd 1
 right_folder_block	rd 1
