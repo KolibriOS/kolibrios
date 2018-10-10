@@ -69,14 +69,11 @@ START:
     or      eax, eax
     jnz     exit
 
-    ;invoke  init_checkbox, ch1
-
     mov  eax,40          ;установить маску для ожидаемых событий
     mov  ebx,0x27        ;система будет реагировать только на сообщение о перерисовке, нажата кнопка, определённая ранее, событие от мыши (что-то случилось - нажатие на кнопку мыши или перемещение; сбрасывается при прочтении)
     mcall
 
     load_libraries l_libs_start,load_lib_end ;загрузка библиотек(и)
-    ;mcall 48,3,sc,sizeof.system_colors ;получить системные цвета
     stdcall [OpenDialog_Init],OpenDialog_data ;подготовка диалога
 
     ;mode menu
@@ -117,7 +114,6 @@ event_wait:
     invoke  edit_box_mouse, editLD
     invoke  edit_box_mouse, editRU
     invoke  edit_box_mouse, editRD
-    ;invoke  check_box_mouse, ch1     ;проверка чек бокса
     ;stdcall [kmainmenu_dispatch_cursorevent], [modeMenu] ;проверка мыши для комбобокса
 
     jmp     event_wait
@@ -315,11 +311,6 @@ applyButton:
         mov byte[eax], bl
         pop ebx
 
-;;        mov byte[eax], 48;'0' ;110; 'n' ;по умолчанию флаг снят
-;;        cmp word[ch1.flags], 110b ;ch_flag_en and ch_flag_middle ;выставлен checkBox или нет?
-;;        jne applyButton.no
-;;        mov byte[eax], 49;'1' ;121 ;иначе кладём 'y'
-;;.no:
         inc eax
         call addPerenos
 
@@ -406,10 +397,7 @@ finishHotAnglesApp:
    cmp eax, 0
    jne finishHotAnglesApp.next   ;если не совпало, то переходим на следующий слот
 
-   ;push eax ebx ecx
    mcall 18, 2, ecx               ;иначе завершаем слот
-   ;pop ecx ebx eax
-
 .next:
    inc  ecx
    cmp ecx, dword[slotMax]
@@ -437,10 +425,6 @@ startAppData:
     .rezerv      dd   0, 0
     .full_name   db   '/rd/1/'
     .file_name   db   '@HOTANGLES', 0
-    ;db 0
-    ;.name: dd HotAnglesAppName
-;HotAnglesAppName db '@HOTANGLES', 0
-
 
 UpdateEditsSizes:
    push eax
@@ -493,18 +477,6 @@ loadConfig:
    mov byte[mode], 49 ;'1' иначе по умолчанию включён классический режим работы
 .modeEnd:
    pop ebx
-
-;;   cmp byte[eax], 49;'1' ;121 ;'y'  ;выставляем checkBox - параметр активности приложения
-;;   jne @f ;loadConfig.no
-;;.yes:
-;;   mov word[ch1.flags], 110b ;ch_flag_en and ch_flag_middle
-;;   jmp loadConfig.chEnd
-;;@@:
-;;   cmp byte[eax], 50;'2' ;второй режим активирован
-;;   je loadConfig.yes
-;;.no:
-;;   mov word[ch1.flags], 100b ;ch_flag_middle
-;;.chEnd:
    ;jmp loadConfig.end   ;команда для удобства отладки и поиска ошибок
 
    ;копируем содержимое строк в буфер
@@ -723,8 +695,6 @@ draw_window:
         invoke  edit_box_draw, editLD
         invoke  edit_box_draw, editRU
         invoke  edit_box_draw, editRD
- 
-        ;invoke  check_box_draw, ch1    ;рисование чекбоксов
 
         ;рисуем кнопку
         mov ebx, (WindowsWidth-80-Otstup)*65536 + 80 ;координата X, ширина кнопки
@@ -736,12 +706,12 @@ draw_window:
         mov     ebx, (WindowsWidth-80-Otstup+25-buttonTextXoffset) * 65536 + 166    ;координаты текста (x, y)
         mov     ecx, 0xFFFFFF     ;белый цвет текста
         mov     edx, buttonText
-        mov     esi, buttonTextSize ;5            ;размер текста в символах
+        mov     esi, buttonTextSize  ;размер текста в символах
         mcall 4
 
         ;рисуем ещё 4 кнопки для диалогового окна выбора файла
         ;номера 4,5,6 и 7
-        buttonH = 14 ;20
+        buttonH = 14
         buttonW = 30
         ;левый верхний угол
         mov ebx, Otstup*65536 + buttonW ;координата X, ширина кнопки
@@ -784,7 +754,6 @@ draw_window:
         mov     ebx, (WindowsWidth-Otstup-buttonW+deltaCommonTextX) * 65536 + (120 + deltaCommonTextY)
         mcall 4
 
-
         ;delete mode button, if it exist
         mov edx, 0x80000008
         mcall 8
@@ -795,17 +764,24 @@ draw_window:
         buttonModeHeight = 20
         buttonModeTextXoffset = 5
         mov ebx, buttonModeX*65536 + buttonModeWidth  ;X + Width
-        mov ecx, buttonModeY*65536 + buttonModeHeight   ;Y + Height
-        mov edx, 0x00000008       ;button id
-        mov esi, 0x00AABBCC       ;color button
+        mov ecx, buttonModeY*65536 + buttonModeHeight ;Y + Height
+        mov edx, 0x00000008    ;button id
+        mov esi, 0x00FFFFFF    ;color button
         mcall 8
+        mov ebx, (buttonModeX+2+buttonModeWidth-20)*65536 + (20-2)  ;X + Width
+        mov ecx, (buttonModeY+1)*65536 + buttonModeHeight-2   ;Y + Height
+        mov edx, 0xAABBCC
+        mcall 13
         ;draw text for button Mode
         mov     ebx, (buttonModeX+buttonModeTextXoffset) * 65536 + (buttonModeY+6)    ;(x, y)
-        mov     ecx, 0xFFFFFF
+        mov     ecx, 0x000000
         call setTextModeMenu
         mov     esi, valueModeMenuSize
         mcall 4
-
+        mov     ebx, (buttonModeX+buttonModeWidth-12) * 65536 + (buttonModeY+6)
+        mov     ecx, 0x80FFFFFF
+        mov     edx, symbolDownArrow
+        mcall 4
 
         call draw_super_text
 
@@ -870,12 +846,6 @@ import  box_lib,\
         option_box_draw,        'option_box_draw',\
         option_box_mouse,       'option_box_mouse'
 
-
-;DATA данные check_box использует системные цвета
-
-;координаты (x,y) = (30, 160) размер чекбокса 12, цвет текста 0x224466
-;ch1     check_box2 30 shl 16 + 12, 160 shl 16 + 12, 6, 0xFFFFFFFF, 0xAABBCC, 0x224466, ch_text, 110b ; ch_flag_en and ch_flag_middle
-
 commonButtonText db '...', 0  ;текст для кнопок вызова OpenDial
 commonButtonTextSize = 3
 
@@ -906,6 +876,13 @@ valueModeMenu1  db 'Є« ббЁзҐбЄЁ© аҐ¦Ё¬              ',0
 valueModeMenu2  db 'аҐ¦Ё¬ Ј®апзҐ© Є« ўЁиЁ           ',0
 valueModeMenu3  db 'аҐ¦Ё¬ ¦Ґбв  Ї® Є« ўЁиҐ  ЄвЁў жЁЁ',0
 
+head_f_i:
+        head_f_l  db '‘ЁбвҐ¬­ п ®иЁЎЄ ',0
+        err_message_found_lib0 db 'ЌҐ ­ ©¤Ґ­  ЎЁЎ«Ё®вҐЄ  ',39,'proc_lib.obj',39,0
+        err_message_import0 db 'ЋиЁЎЄ  ЇаЁ Ё¬Ї®авҐ ЎЁЎ«Ё®вҐЄЁ ',39,'proc_lib.obj',39,0
+        err_message_found_lib1 db 'ЌҐ ­ ©¤Ґ­  ЎЁЎ«Ё®вҐЄ  ',39,'kmenu.obj',39,0
+        err_message_import1 db 'ЋиЁЎЄ  ЇаЁ Ё¬Ї®авҐ ЎЁЎ«Ё®вҐЄЁ ',39,'kmenu',39,0
+
 else  ;иначе английский текст
 
 text    db  "This is a Hot Angles Configurator.                            "
@@ -932,6 +909,13 @@ valueModeMenu0  db 'disabled                        ',0
 valueModeMenu1  db 'classic mode                    ',0
 valueModeMenu2  db 'hot key mode                    ',0
 valueModeMenu3  db 'activation key gesture mode     ',0
+
+head_f_i:
+        head_f_l  db 'System error',0
+        err_message_found_lib0 db 'Could not find library ',39,'proc_lib.obj',39,0
+        err_message_import0 db 'Error importing library ',39,'proc_lib.obj',39,0
+        err_message_found_lib1 db 'Could not find library ',39,'kmenu.obj',39,0
+        err_message_import1 db 'Error importing library ',39,'kmenu',39,0
 
 end if
 
@@ -969,7 +953,6 @@ draw_super_text:
    pop esi edi edx ecx ebx eax
    ret
 
-;![
 editID db 0
 initEBX:
    cmp byte[editID], 4
@@ -1064,7 +1047,7 @@ but_open_dlg:
         popad
         ret
  
-;дынные для диалога открытия файлов
+;данные для диалога открытия файлов
 align 4
 OpenDialog_data:
 .type                   dd 0 ;0 - открыть, 1 - сохранить, 2 - выбрать директорию
@@ -1113,23 +1096,18 @@ dd 0,0
         aOpenDialog_Init db 'OpenDialog_init',0
         aOpenDialog_Start db 'OpenDialog_start',0
  
-head_f_i:
-        head_f_l  db 'Системная ошибка',0
-        err_message_found_lib0 db 'Не найдена библиотека ',39,'proc_lib.obj',39,0
-        err_message_import0 db 'Ошибка при импорте библиотеки ',39,'proc_lib.obj',39,0
-        err_message_found_lib1 db 'Не найдена библиотека ',39,'kmenu.obj',39,0    ;'ЌҐ ­ ©¤Ґ­  ЎЁЎ«Ё®вҐЄ  '
-        err_message_import1 db 'Ошибка при импорте библиотеки ',39,'kmenu',39,0   ;'ЋиЁЎЄ  ЇаЁ Ё¬Ї®авҐ ЎЁЎ«Ё®вҐЄЁ '
- 
 system_dir0 db '/sys/lib/'
 lib0_name db 'proc_lib.obj',0
 lib1_name db 'kmenu.obj',0
+
+symbolDownArrow db 25,0
 
 ;library structures
 l_libs_start:
     lib0 l_libs lib0_name, sys_path, file_name, system_dir0, err_message_found_lib0, head_f_l, proclib_import,err_message_import0, head_f_i
     lib1 l_libs lib1_name, sys_path, file_name, system_dir0, err_message_found_lib1, head_f_l, import_libkmenu,err_message_import1,head_f_i
 load_lib_end:
-;!]
+
 
 edMaxSize = 510 ;теперь с новым компонентом можно и 511 указать
 edMax = 0 ;max, size, pos
@@ -1188,7 +1166,7 @@ dataBuffer:
 .size2: rd 1
 .size3: rd 1
 .size4: rd 1
-;255+255+2
+;255+255+2 = 512
 ;два запасных байта необходимы для того что бы не пепереписать следующией байты, в конце буфера 0
 dataBufferEnd:
 
