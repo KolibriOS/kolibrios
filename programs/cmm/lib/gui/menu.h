@@ -1,15 +1,21 @@
-dword menu_process_id;
+#ifndef INCLUDE_MENU_H
+#define INCLUDE_MENU_H
 
-struct _menu
+#include "../lib/list_box.h"
+
+:dword menu_process_id;
+
+:struct _menu
 {
 	dword appear_x, appear_y, text, identifier, selected;	
 	llist list;
 	void show();
 	char stak[4096];
-}menu;
+} menu;
 
 void _menu::show(dword _appear_x, _appear_y, _menu_width, _text, _identifier)
 {
+	#define ITEM_H 21
 	appear_x = _appear_x;
 	appear_y = _appear_y;
 	text = _text;
@@ -18,12 +24,12 @@ void _menu::show(dword _appear_x, _appear_y, _menu_width, _text, _identifier)
 	list.cur_y = -1;
 	list.ClearList();
 	list.count = chrnum(text, '\n')+1;
-	list.SetSizes(2,2,_menu_width,list.count*24,24);
+	list.SetSizes(2,2,_menu_width,list.count*ITEM_H,ITEM_H);
 
 	menu_process_id = CreateThread(#_menu_thread,#stak+4092);
 }
 
-void _menu_thread()
+:void _menu_thread()
 {
 	proc_info MenuForm;
 	SetEventMask(100111b);
@@ -49,7 +55,7 @@ void _menu_thread()
 	}
 }
 
-void _menu_draw_list()
+:void _menu_draw_list()
 {
 	int N, bgcol;
 	for (N=0; N<menu.list.count; N++;)
@@ -57,18 +63,20 @@ void _menu_draw_list()
 		if (N==menu.list.cur_y) bgcol=0xFFFfff; else bgcol=0xE4DFE1;
 		DrawBar(menu.list.x, N*menu.list.item_h+menu.list.y, menu.list.w-3, menu.list.item_h, bgcol);
 	}
-	WriteTextLines(13, menu.list.item_h-12/2+menu.list.y, 0x90, 0, menu.text, menu.list.item_h);
-	if (menu.selected) WriteText(5, menu.selected-1*menu.list.item_h+11, 0x80, 0xEE0000, "\x10");
+	WriteTextLines(13, menu.list.item_h-8/2+menu.list.y, 0x80, 0, menu.text, menu.list.item_h);
+	if (menu.selected) WriteText(5, menu.selected-1*menu.list.item_h+8, 0x80, 0xEE0000, "\x10");
 }
 
-void _menu_item_click()
+:void _menu_item_click()
 {
 	menu.list.cur_y = menu.identifier + menu.list.cur_y;
 	KillProcess(menu_process_id);
 }
 
-void _menu_no_item_click()
+:void _menu_no_item_click()
 {
 	menu.list.cur_y = 0;
 	KillProcess(menu_process_id);
 }
+
+#endif

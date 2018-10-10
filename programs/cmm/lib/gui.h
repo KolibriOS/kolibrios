@@ -22,6 +22,7 @@
 #include "../lib/gui/checkbox.h"
 #include "../lib/gui/child_window.h"
 #include "../lib/gui/text_view_area.h"
+#include "../lib/gui/menu.h"
 
 :int last_free_button_id = 1000;
 :int GetFreeButtonId()

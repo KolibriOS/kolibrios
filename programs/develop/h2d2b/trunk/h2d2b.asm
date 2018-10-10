@@ -282,7 +282,7 @@ else
 end if
 
 mouse_dd dd 0
-edit1 edit_box (WIN_W-67-82), 67, 146, 0xffffff, 0xff, 0x80ff, 0, 0x90000000, (string1_end-string1), string1 , mouse_dd, ed_focus+ed_always_focus
+edit1 edit_box (WIN_W-67-82), 67, 146, 0xffffff, 0xff, 0x80ff, 0, 0x90000000, (string1_end-string1), string1 , mouse_dd, ed_focus+ed_always_focus+ed_figure_only
 
 editboxes_end:
 

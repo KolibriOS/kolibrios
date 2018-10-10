@@ -3,7 +3,6 @@
 #include "../lib/io.h"
 #include "../lib/gui.h"
 #include "../lib/list_box.h"
-#include "../lib/menu.h"
 #include "../lib/kfont.h"
 
 #include "../lib/obj/box_lib.h"

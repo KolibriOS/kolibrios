@@ -10,7 +10,6 @@
 #include "..\lib\strings.h"
 #include "..\lib\io.h"
 #include "..\lib\list_box.h"
-#include "..\lib\menu.h"
 #include "..\lib\gui.h"
 
 #include "..\lib\obj\box_lib.h"
@@ -30,11 +29,13 @@
 	?define T_SKINS       "Стиль окон"
 	?define T_WALLPAPERS  "Обои"
 	?define T_SELECT_FOLDER "Выбрать папку"
+	?define MENU_LIST "Открыть файл   Enter\nУдалить файл     Del"
 #else
 	?define WINDOW_HEADER "Appearance"
 	?define T_SKINS       "Skins"
 	?define T_WALLPAPERS  "Wallpapers"
 	?define T_SELECT_FOLDER "Select wallpapers"
+	?define MENU_LIST "Open file      Enter\nDelete file      Del"
 #endif
 
 #define PANEL_H 40
@@ -68,8 +69,6 @@ edit_box edit_cmm = {180,NULL,NULL,0xffffff,0x94AECE,0xFFFfff,0xffffff,
 char st_str[16];
 edit_box edit_st = {180,NULL,NULL,0xffffff,0x94AECE,0xFFFfff,0xffffff,
 	0x10000000,sizeof(st_str),#st_str,0, 0b};
-
-#define MENU_LIST "Open file     Enter\nDelete          Del"
 
 char default_dir[] = "/rd/1";
 od_filter filter2 = { 8, "TXT\0\0" };
@@ -107,7 +106,7 @@ void main()
 	  			select_list.ProcessMouse(mouse.x, mouse.y);
 				SelectList_Draw();
 				EventSetNewCurrent();
-	  			menu.show(Form.left+mouse.x, Form.top+mouse.y+skin_height, 185, MENU_LIST, 10); 
+	  			menu.show(Form.left+mouse.x, Form.top+mouse.y+skin_height, 146, MENU_LIST, 10); 
 	  		}
 	  		break;
 

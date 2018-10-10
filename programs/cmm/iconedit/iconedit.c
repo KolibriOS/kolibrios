@@ -10,6 +10,7 @@
 #include "../lib/random.h"
 #include "../lib/mem.h"
 #include "../lib/cursor.h"
+#include "../lib/list_box.h"
 
 #include "../lib/obj/libimg.h"
 #include "../lib/obj/box_lib.h"
@@ -30,18 +31,22 @@
 //===================================================//
 
 #ifdef LANG_RUS
-#define T_NOTIFY_OPEN "'IconEdit
-‚ ¤ ­­ë© ¬®¬¥­â IconEdit ¬®¦¥â ®âªàë¢ âì â®«ìª® ¨ª®­ª¨, á®§¤ ­­ë¥ ¢ á ¬®¬ à¥¤ ªâ®à¥.
-…á«¨ ­ã¦­® ®âªàëâì ¤àã£®¥ ¨§®¡à ¦¥­¨¥, ¢®á¯®«ì§ã©â¥áì ¨­áâàã¬¥­â®¬ <”®â® ¯¯ à â>
-¤«ï § å¢ â  ª àâ¨­ª¨ á íªà ­ .' -Wt"
+char image_menu_items[] = 
+"������⢮ �ᯮ�짮������ 梥⮢
+�������� �� 梥� 1 �� 2";
+?define T_MENU_IMAGE "������"
+?define T_TEST_ICON "�஢���� ������"
+?define T_TITLE "Icon Editor 0.59 Alpha"
 #else
-#define T_NOTIFY_OPEN "'IconEdit
-You can open only files created in IconEdit for now!
-In other case please use <Photo> tool to get an image from screen.' -Wt"
+char image_menu_items[] = 
+"Count colors used
+Replace all colors equal to 1 by 2";
+?define T_MENU_IMAGE "Icon"
+?define T_TEST_ICON "Test Icon"
+?define T_TITLE "������� ������ 0.59 Alpha"
 #endif
 
 
-#define T_TITLE "Icon Editor 0.58 Alpha"
 
 #define TOPBAR_H    24+8
 #define LEFTBAR_W 16+5+5+3+3
@@ -57,6 +62,7 @@ In other case please use <Photo> tool to get an image from screen.' -Wt"
 block canvas = { NULL, NULL, NULL, NULL };
 block wrapper = { LEFTBAR_W, TOPBAR_H, NULL, NULL };
 block right_bar = { NULL, 10+TOPBAR_H, RIGHT_BAR_W+10, NULL };
+block image_menu_btn = { NULL, 4, NULL, 22 };
 
 dword linear_gradient[RIGHT_BAR_W];
 block b_color_gradient = {NULL, 40+TOPBAR_H, RIGHT_BAR_W, 25};
@@ -100,6 +106,7 @@ enum {
 	BTN_ZOOM_OUT,
 	BTN_CANVAS_RESIZE,
 	BTN_CROP,
+	BTN_IMAGE_MENU,
 	BTNS_PALETTE_COLOR_MAS = 100,
 	BTNS_LAST_USED_COLORS = 400
 };
@@ -333,6 +340,9 @@ void main()
 				case BTN_CROP:
 					EventCrop();
 					break;
+				case BTN_IMAGE_MENU:
+					EventShowImageMenu();
+					break;
 				case CLOSE_BTN:
 					EventExitIconEdit();
 					break;
@@ -400,6 +410,7 @@ void main()
 		 
 		case evReDraw:
 			Window_CanvasReSize.thread_exists();
+			EventCheckMenuItemSelected();
 			DrawWindow();
 			break;
 	}
@@ -414,6 +425,20 @@ void DrawTopPanelButton(dword _id, _x, _icon_n)
 	PutPixel(_x+21,4+21,system.color.work);
 	DefineHiddenButton(_x, 4, 21, 21, _id);
 	img_draw stdcall(top_icons.image, _x+3, 7, 16, 16, 0, _icon_n*16);
+}
+
+int DrawFlatPanelButton(dword _id, _x, _y, _text)
+{
+	#define P 10
+	int w = strlen(_text)*6 + P + P;
+	DrawBar(_x, _y, w, 22, semi_white);
+	PutPixel(_x,_y,system.color.work);
+	PutPixel(_x,_y+21,system.color.work);
+	PutPixel(_x+w-1,_y,system.color.work);
+	PutPixel(_x+w-1,_y+21,system.color.work);
+	DefineHiddenButton(_x, _y, w, 21, _id);
+	WriteText(_x+P, _y+7, 0x80, system.color.work_text, _text);
+	return w;
 }
 
 void DrawLeftPanelButton(dword _id, _y, _icon_n)
@@ -475,6 +500,10 @@ void DrawWindow()
 	DrawTopPanelButton(BTN_TEST_ICON,  tx.inc(GAP+BLOCK_SPACE), 12);
 
 	DrawTopPanelButton(BTN_CROP,  tx.inc(GAP+BLOCK_SPACE), 46);
+
+	image_menu_btn.x = tx.n;
+	image_menu_btn.w = DrawFlatPanelButton(BTN_IMAGE_MENU, image_menu_btn.x, image_menu_btn.y, T_MENU_IMAGE);
+	//tx.inc(image_menu_btn.w + BLOCK_SPACE);
 	
 	DrawEditArea();
 
@@ -713,7 +742,7 @@ void ShowWindow_TestIcon()
 		 
 		case evReDraw:
 			DefineAndDrawWindow(Form.left+100, Form.top+100, preview_size*2+9,
-				preview_size*2+skin_height+4, 0x74, NULL, "Test Icon", 0);
+				preview_size*2+skin_height+4, 0x74, NULL, T_TEST_ICON, 0);
 			DrawImageWithBg(0, 0, 0x000000);
 			DrawImageWithBg(1, 0, 0xFFFfff);
 			DrawImageWithBg(0, 1, GetPixelColorFromScreen(0, 0));
@@ -736,7 +765,6 @@ void EventCreateNewIcon()
 
 void EventOpenIcon()
 {
-	//notify(T_NOTIFY_OPEN);
 	RunProgram("/sys/lod", sprintf(#param, "*png* %s",#program_path));
 }
 
@@ -818,7 +846,52 @@ void EventCrop()
 		DrawWindow();
 	}
 	else {
-		notify("'You need to select something before usnig crop tool.' -W");
+		notify("'You need to select something before using crop tool.' -W");
+	}
+}
+
+void EventShowImageMenu()
+{
+	menu.selected = 0;
+	menu.show(Form.left+5 + image_menu_btn.x, 
+		Form.top+skin_height + image_menu_btn.y + image_menu_btn.h,
+		240, 
+		#image_menu_items, 
+		20);
+}
+
+void EventCheckMenuItemSelected()
+{
+	if (menu.list.cur_y) {
+		if (20 == menu.list.cur_y) EventCountColorsUsed();
+		if (21 == menu.list.cur_y) EventReplaceImageColors(color1, color2);
+		menu.list.cur_y = 0;
+	}
+}
+
+void EventCountColorsUsed()
+{
+	char res_str[64];
+	int cur, prev;
+	int max = image.rows*image.columns;
+	int resi=0;
+	bool unic;
+	for (cur=0; cur<max; cur++) {
+		unic = true;
+		for (prev=0; prev<cur; prev++) {
+			if (image.mas[prev] == image.mas[cur]) {unic=false; break;}
+		}
+		if (unic) resi++;
+	}
+	notify( sprintf(#res_str, "'Image has %i unique colors.' -I", resi) );
+}
+
+void EventReplaceImageColors(dword c1, c2)
+{
+	int max = image.rows*image.columns;
+	int cur;
+	for (cur=0; cur<max; cur++) {
+		if (image.mas[cur] == color1) image.mas[cur] = color2;
 	}
 }
 

@@ -1,4 +1,3 @@
-//list_box
 #ifndef INCLUDE_LIST_BOX_H
 #define INCLUDE_LIST_BOX_H
 

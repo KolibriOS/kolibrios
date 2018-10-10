@@ -18,7 +18,6 @@
 #include "../lib/random.h"
 #include "../lib/kfont.h"
 #include "../lib/collection.h"
-#include "../lib/menu.h"
 #include "../lib/copyf.h"
 
 #include "../lib/obj/libini.h"

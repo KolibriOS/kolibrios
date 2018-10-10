@@ -93,7 +93,7 @@ PathShow_draw stdcall(#PathShow);
 #define ed_mouse_on            100000000b
 #define ed_mous_adn_b          100011000b
 #define ed_always_focus  100000000000000b
-#define ed_figure_only  1000000000000000b   //symbols only
+#define ed_figure_only  1000000000000000b   //numbers only
 #define ed_shift_cl     1111111111100011b
 #define ed_shift_mcl    1111111111111011b
 #define ed_shift_off    1111111111111011b

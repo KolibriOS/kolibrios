@@ -3,7 +3,6 @@
 #include "../lib/io.h"
 #include "../lib/list_box.h"
 #include "../lib/gui.h"
-#include "../lib/menu.h"
 
 struct _object
 {
