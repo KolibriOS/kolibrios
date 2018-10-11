@@ -37,7 +37,8 @@
 params dd PARAMS
 	dd 0x0
 ;---------------------------------------------------------------------
-delay dd 0;500 
+delay dd 500 
+mount_attempt dd 0
 ;---------------------------------------------------------------------
 fileinfo:
 .subfunction	dd 5
@@ -106,7 +107,7 @@ START:
 	mov	[delay], ecx
 .params_done:
 ;--------------------------------------
-	mcall	5,[delay]
+	;mcall	5,[delay]	;first mount attempt without delay
 	mov	ebx,start_dir
 	mov	ax,[ebx]
 	mov	ebx,read_folder_name
@@ -131,6 +132,14 @@ exit:
 ;--------------------------------------
 	DEBUGF	1, "Searchap: just exit\n"
 ;--------------------------------------
+	cmp [mount_dir],1
+	je @f
+	cmp [mount_attempt], 1
+	je @f
+	mov [mount_attempt], 1 ;second mount attempt with delay
+	mcall	5,[delay]
+	jmp START.params_done
+terminate:
 	mcall	-1
 ;---------------------------------------------------------------------
 device_detect_f70:
