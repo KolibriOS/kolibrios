@@ -139,7 +139,7 @@ exit:
 	mov [mount_attempt], 1 ;second mount attempt with delay
 	mcall	5,[delay]
 	jmp START.params_done
-terminate:
+@@:
 	mcall	-1
 ;---------------------------------------------------------------------
 device_detect_f70:
