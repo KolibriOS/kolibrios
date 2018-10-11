@@ -196,7 +196,7 @@ void main()
 			break;
 		 
 		 case evReDraw:
-			if (menu.list.cur_y)
+			if (menu.cur_y)
 			{
 				EventMenuClick();
 			}
@@ -396,7 +396,7 @@ void DrawVerticalScroll()
 
 void EventMenuClick()
 {
-	switch(menu.list.cur_y)
+	switch(menu.cur_y)
 	{
 		//File
 		case FILE_SUBMENU_ID_OPEN:
@@ -413,7 +413,7 @@ void EventMenuClick()
 			break;
 		//Encoding
 		case MENU_ID_ENCODING...MENU_ID_ENCODING+9:
-			EventChangeEncoding(menu.list.cur_y-MENU_ID_ENCODING);
+			EventChangeEncoding(menu.cur_y-MENU_ID_ENCODING);
 			break;
 		//Reopen
 		case FILE_SUBMENU_ID_TINYPAD:
@@ -435,7 +435,7 @@ void EventMenuClick()
 			EventOpenFileInAnotherProgram("/sys/develop/heed");
 			break;
 	}
-	menu.list.cur_y = 0;
+	menu.cur_y = 0;
 }
 
 void EventShowMenu(dword _menu_item_x, _menu_list, _id, _selected)

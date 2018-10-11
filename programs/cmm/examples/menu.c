@@ -55,8 +55,8 @@ void main()
 		break;
 	 
 	 case evReDraw:
-		if (menu.list.cur_y) {
-			if (menu.list.cur_y > butv.id) && (menu.list.cur_y < buta.id) category = menu.list.cur_y - butv.id;
+		if (menu.cur_y) {
+			if (menu.cur_y > butv.id) && (menu.cur_y < buta.id) category = menu.cur_y - butv.id;
 		}
 		DefineAndDrawWindow(215,100,350,300,0x34,0xFFFFFF,"Window header",0);
 		GetProcessInfo(#Form, SelfInfo);

@@ -97,11 +97,11 @@ void main()
 				HandleButtonEvent();
 				break;
 			case evReDraw:
-				if (menu.list.cur_y) {
-					encoding = menu.list.cur_y - 10;
+				if (menu.cur_y) {
+					encoding = menu.cur_y - 10;
 					OpenFile(#param); 
 					PreparePage();
-					menu.list.cur_y = NULL;
+					menu.cur_y = NULL;
 				};
 				draw_window();
 		}

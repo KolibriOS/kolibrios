@@ -25,21 +25,22 @@
 
 :dword _rgb::RgbToDword()
 {
+	/*
 	dword _r, _g, _b;
 	_r = r << 16;
 	_g = g << 8;
 	_b = b;
 	return _r + _g + _b;
+	*/
+	EAX = r << 16;
+	EAX += g << 8;
+	EAX += b;
 }
 
 :dword MixColors(dword _base, _overlying, dword a) 
 {
 	_rgb rgb1, rgb2, rgb_final;
 	dword n_a;
-	if (a<0) || (a>255) {
-		debug("Wrong alpha param in MixColors()!"); 
-		debugval("alpha", a);
-	}
 
 	rgb1.DwordToRgb(_base);
 	rgb2.DwordToRgb(_overlying);

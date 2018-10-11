@@ -152,10 +152,10 @@ void main()
 		 
 		 case evReDraw:		
 			draw_window();
-	 		if (menu.list.cur_y) {
-				if (menu.list.cur_y == 10) EventOpenFile();
-				if (menu.list.cur_y == 11) EventDeleteFile();
-				menu.list.cur_y = 0;
+	 		if (menu.cur_y) {
+				if (menu.cur_y == 10) EventOpenFile();
+				if (menu.cur_y == 11) EventDeleteFile();
+				menu.cur_y = 0;
 			};
    }
 }

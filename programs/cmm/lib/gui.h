@@ -1,4 +1,4 @@
-	#ifndef INCLUDE_GUI_H
+#ifndef INCLUDE_GUI_H
 #define INCLUDE_GUI_H
 
 #ifndef INCLUDE_KOLIBRI_H
@@ -19,10 +19,17 @@
 
 #include "../lib/gui/tabs.h"
 #include "../lib/gui/more_less_box.h"
+
+#ifndef INCLUDE_CHECKBOX
 #include "../lib/gui/checkbox.h"
+#endif
+
 #include "../lib/gui/child_window.h"
 #include "../lib/gui/text_view_area.h"
+
+#ifndef INCLUDE_MENU_H
 #include "../lib/gui/menu.h"
+#endif
 
 :int last_free_button_id = 1000;
 :int GetFreeButtonId()

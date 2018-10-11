@@ -176,9 +176,9 @@ void main()
 			break;
 
 		case evReDraw:
-			if (menu.list.cur_y) {
-				ProcessEvent(menu.list.cur_y);
-				menu.list.cur_y = 0;
+			if (menu.cur_y) {
+				ProcessEvent(menu.cur_y);
+				menu.cur_y = 0;
 			}
 			DefineAndDrawWindow(GetScreenWidth()-800/2-random(80),GetScreenHeight()-600/2-random(80),800,600,0x73,col_bg,0,0);
 			GetProcessInfo(#Form, SelfInfo);

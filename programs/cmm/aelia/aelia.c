@@ -1,9 +1,9 @@
 #define MEMSIZE 4096*100
 
+#include "../lib/gui.h"
 #include "../lib/kfont.h"
 #include "../lib/io.h"
-#include "../lib/gui.h"
-#include "../lib/list_box.h"
+#include "../lib/cursor.h"
 
 #include "../lib/obj/box_lib.h"
 #include "../lib/obj/libini.h"
@@ -11,7 +11,6 @@
 #include "../lib/obj/libimg.h"
 #include "../lib/obj/proc_lib.h"
 #include "../lib/obj/http.h"
-#include "../lib/cursor.h"
 
 #include "../lib/patterns/simple_open_dialog.h"
 #include "../lib/patterns/history.h"
@@ -111,19 +110,19 @@ void main()
 				break;
 			case evReDraw:
 				draw_window();
-				if (menu.list.cur_y>=10) && (menu.list.cur_y<20) {
-					encoding = menu.list.cur_y - 10;
+				if (menu.cur_y>=10) && (menu.cur_y<20) {
+					encoding = menu.cur_y - 10;
 					EventPageRefresh();
-					menu.list.cur_y = 0;
+					menu.cur_y = 0;
 				}
-				if (menu.list.cur_y>=20) {
-					menu.list.cur_y-=20;
-					if (menu.list.cur_y==0) EventPageRefresh();
-					if (menu.list.cur_y==1) EventRunEdit();
-					if (menu.list.cur_y==2) EventShowHistory();
-					if (menu.list.cur_y==3) EventShowDownloader();
-					if (menu.list.cur_y==4) EventShowInfo();
-					menu.list.cur_y = 0;
+				if (menu.cur_y>=20) {
+					menu.cur_y-=20;
+					if (menu.cur_y==0) EventPageRefresh();
+					if (menu.cur_y==1) EventRunEdit();
+					if (menu.cur_y==2) EventShowHistory();
+					if (menu.cur_y==3) EventShowDownloader();
+					if (menu.cur_y==4) EventShowInfo();
+					menu.cur_y = 0;
 				} 
 		}
 	}

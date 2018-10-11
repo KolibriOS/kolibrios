@@ -862,10 +862,10 @@ void EventShowImageMenu()
 
 void EventCheckMenuItemSelected()
 {
-	if (menu.list.cur_y) {
-		if (20 == menu.list.cur_y) EventCountColorsUsed();
-		if (21 == menu.list.cur_y) EventReplaceImageColors(color1, color2);
-		menu.list.cur_y = 0;
+	if (menu.cur_y) {
+		if (20 == menu.cur_y) EventCountColorsUsed();
+		if (21 == menu.cur_y) EventReplaceImageColors(color1, color2);
+		menu.cur_y = 0;
 	}
 }
 
