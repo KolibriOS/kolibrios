@@ -432,7 +432,7 @@ tup.append_table(img_files, {
  {"LIB/LIBINI.OBJ", PROGS .. "/develop/libraries/libs-dev/libini/libini.obj"},
  {"LIB/LIBIO.OBJ", PROGS .. "/develop/libraries/libs-dev/libio/libio.obj"},
  {"LIB/MSGBOX.OBJ", PROGS .. "/develop/libraries/msgbox/msgbox.obj"},
- {"INPUTBOX.OBJ", PROGS .. "/develop/libraries/InputBox/INPUTBOX.OBJ"},
+ {"LIB/INPUTBOX.OBJ", PROGS .. "/develop/libraries/InputBox/INPUTBOX.OBJ"},
  {"LIB/NETWORK.OBJ", PROGS .. "/develop/libraries/network/network.obj"},
  {"LIB/PROC_LIB.OBJ", PROGS .. "/develop/libraries/proc_lib/trunk/proc_lib.obj"},
  {"LIB/RASTERWORKS.OBJ", PROGS .. "/develop/libraries/fontRasterWorks(unicode)/RasterWorks.obj"},
