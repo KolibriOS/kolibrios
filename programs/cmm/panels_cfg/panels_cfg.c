@@ -61,7 +61,8 @@ _ini taskbar_vars_ini = { #taskbar_ini_path, "Variables" };
 _ini docky_ini = { "/sys/settings/docky.ini", "@" };
 
 unsigned char panels_img_data[] = FROM "panels_image.raw";
-raw_image panels_img = { 37, 27, #panels_img_data };
+#define PIMG_W 37
+#define PIMG_H 27 //27*5
 
 proc_info Form;
 
@@ -147,6 +148,11 @@ void main()
 	}
 }
 
+void DrawPanelsImage(dword y, n)
+{
+	_PutImage(22, y, PIMG_W, PIMG_H, n * PIMG_W * PIMG_H * 3 + #panels_img_data);
+}
+
 void DrawWindowContent()
 {
 	#define PD 10
@@ -156,8 +162,8 @@ void DrawWindowContent()
 
 	frame_y = 15;
 	y.n = frame_y;
-	DefineButton(22, y.inc(18), panels_img.w-1, 27-1, 100 + BT_HIDE, 0);
-	_PutImage(22, y.n, 37, 27, tbAttachment * 37 * 27 * 3 + panels_img.data);
+	DefineButton(22, y.inc(18), PIMG_W-1, PIMG_H-1, 100 + BT_HIDE, 0);
+	DrawPanelsImage(y.n, tbAttachment);
 	WriteText(68, y.inc(7), 0x90, system.color.work_text, CHANGE_POS);
 	tbSoftenUp.draw(22, y.inc(35));
 	tbClock.draw(win_center_x, y.n);
@@ -173,8 +179,8 @@ void DrawWindowContent()
 	DrawFrame(PD, frame_y, Form.cwidth-PD-PD, y.inc(32)-frame_y, TASK_FRAME_T);
 	//DOCKY
 	frame_y = calc(y.inc(20));
-	DefineButton(22, y.inc(18), panels_img.w-1, 27-1, 200 + BT_HIDE, 0);
-	_PutImage(22, y.n,  37, 27, dkLocation + 1 * 37 * 27 * 3 + panels_img.data);
+	DefineButton(22, y.inc(18), PIMG_W-1, PIMG_H-1, 200 + BT_HIDE, 0);
+	DrawPanelsImage(y.n, dkLocation);
 	WriteText(68, y.inc(7), 0x90, system.color.work_text, CHANGE_POS);
 	dkFsize.draw(22, y.inc(35)); 
 	dkAshow.draw(win_center_x, y.n);

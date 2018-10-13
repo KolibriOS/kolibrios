@@ -142,14 +142,8 @@ still:
 ;   *********************************************
 
 show_screen:  ; flips the virtual screen to the window
-    push_abc
-
-    mov  eax,7
-    mov  ebx,screen
-    mov  ecx,X_SIZE*65536+Y_SIZE
-    mov  edx,4*65536+20
-    mcall
-
+    push_abc	
+    mcall 7, screen, <X_SIZE, Y_SIZE>, 0
     pop_abc
 ret
 
@@ -395,6 +389,7 @@ grad_fill_screen: ; eax - screen color ( 0x00RRGGBB ), ebx - mack
        .no_ch:
        pop ecx
     loop .lab1
+	
     pop_abc
 ret
 
@@ -414,15 +409,12 @@ intro:  ; INTRO    ;
     jne  @f
     ret
   @@:
-    label 146,200,'ARCANOID II  v0.30',0x100000FF
-    label 120,220,'by jj (jacek jerzy malinowski)',0x050505
-    if lang eq it
-        label 100,240,'Premi spazio per iniziare una nuova partita',0x10FF0800
-    else
-        label 100,240,'press SPACE to start a new game',0x10FF0800
-    end if
-    label 15,240,'F1 + delay',0xFFA8FF
-    label 15,260,'F2 + delay',0xFFA8FF
+  
+    mcall 4,<115,150>,0x82050505,VERSION
+    mcall  ,<125,180>,0x80050505,AUTHOR
+    mcall  ,<90,210>,0x81EE0800,PRESS_SPACE
+    mcall  ,<50,235>,0x81FFA8FF,CHANGE_SPEED
+
     delay 10
 ret
 
@@ -432,19 +424,9 @@ level_info:
     jne  @f
     ret
   @@:
-    if lang eq it
-        label 170,230,'L I V E L LO',0x100000FF
-    else
-        label 170,230,'L E V E L',0x100000FF
-    end if
-
-
-    outcount [level],195,250,0x100000FF,2*65536
-    if lang eq it
-        label 100,270,'Premi spazio per iniziare il livello',0x10FF0800
-    else
-        label 100,270,'press SPACE to start the level',0x10FF0800
-    end if
+    mcall 4,<179,210>,0x810000FF,LEVEL
+    mcall  ,<100,250>,0x81DD0800,PRESS_SPACE
+    outcount [level],195,230,0x10000FF,2*65536
     delay 10
 ret
 
@@ -455,13 +437,9 @@ game_over:  ; GAME OVER  ;
     .g_ok:
     call grad_fill_screen
     call show_screen  ; flips the screen
-    label 120,150,'G  A  M  E    O  V  E  R',0x10050505
-    if lang eq it
-        label 140,200,'Grazie per aver giocato',0x0FFF800
-    else
-        label 140,200,'Thanks for playing',0x0FFF800
-    end if
-    delay 20
+    mcall 4,<100,110>,0x90050505,GAMEOVER
+    mcall  ,<140,160>,0x80FFF800,THANKS_FOR_PLAYING
+	delay 20
 ret
 
 
@@ -490,7 +468,13 @@ fast_gfx:
     mov  ebx,0xFFFF
     .g_ok:
     call grad_fill_screen
+	
+    ;black_bg
+    ;mov  eax,0
+    ;mov  ebx,0
+    ;call fill_screen
 
+	
     mov  eax,37  ; get mouse position
     mov  ebx,1
     mcall
@@ -818,15 +802,16 @@ ret
 draw_window:
 
     mcall 12,1
-    mcall 0,<100,X_SIZE+8>,<100,Y_SIZE+21>,0x14ffffff, , VERSION
-
-    if lang eq it
-        label 200,8,'VITE:',0x10ffffff
-    else
-        label 200,8,'LIVES:',0x10ffffff
-    end if
-
-    outcount dword [lives],250,8,0x10ffffff,65536
+    mcall 48,4
+	lea	ecx, [100*65536+Y_SIZE+4+eax]; [y start] *65536 + [y size] + [skin_height]
+    mcall 0,<100,X_SIZE+9>,,0x74ffffff,,0
+	
+	mov eax, [lives]
+	add eax, '0'
+	mov esi, HEADER
+	add esi, 28
+	mov [esi], eax
+    mcall 71,1,HEADER
 
     cmp [is_rolled_up], 1
     je  @f
@@ -841,11 +826,25 @@ draw_window:
 ; DATA AREA ;####################
 ;-----------;####################
 
-VERSION db 'ARCANOID II', 0
+GAMEOVER db 'G  A  M  E    O  V  E  R', 0
+HEADER  db 'ARCANOID II          LIVES: ?    ', 0
+VERSION db 'ARCANOID II',0
+AUTHOR db 'by jj (jacek jerzy malinowski)',0
+CHANGE_SPEED db 'F2 dec speed   F3 inc speed',0
+
+if lang eq it
+THANKS_FOR_PLAYING db 'Grazie per aver giocato', 0
+PRESS_SPACE db 'Premi spazio per iniziare',0
+LEVEL db 'LIVELLO',0
+else
+THANKS_FOR_PLAYING db 'Thanks for playing', 0
+PRESS_SPACE db 'press SPACE to start',0
+LEVEL db 'LEVEL',0
+end if
 
 is_rolled_up dd 0
 
- lives dd 5
+ lives dd 0
  mode dd 0
  l_end dd 0 ; if 1 the level is over
 ; PAD x:

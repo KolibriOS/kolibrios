@@ -67,20 +67,19 @@ struct checkbox
 	DefineButton(x-1, y-1, strlen(text)*8 + SIZE + 17, SIZE+2, id+BT_HIDE+BT_NOFRAME, 0);
 	WriteTextWithBg(x+SIZE+8, SIZE / 2 + y -7, 0xD0, system.color.work_text, text, system.color.work);
 	DrawRectangle(x, y, SIZE, SIZE, system.color.work_graph);
-	if (checked == 0)
+	if (disabled)
+	{
+		DrawRectangle(x+1, y+1, SIZE-2, SIZE-2, 0xffffff);
+		DrawBar(x+2, y+2, SIZE-3, SIZE-3, 0xCCCccc);
+	}
+	else if (checked == 0)
 	{
 		DrawRectangle3D(x+1, y+1, SIZE-2, SIZE-2, 0xDDDddd, 0xffffff);
 		DrawBar(x+2, y+2, SIZE-3, SIZE-3, 0xffffff);
 	} 
 	else if (checked == 1)
 	{
-		DrawWideRectangle(x+1, y+1, SIZE-1, SIZE-1, 2, 0xffffff);
 		_PutImage(x+1, y+1, 13, 13, #checkbox_flag);
-	}
-	else if (checked == 2) //not active
-	{
-		DrawWideRectangle(x+1, y+1, SIZE-1, SIZE-1, 2, 0xffffff);
-		DrawBar(x+3, y+3, SIZE-5, SIZE-5, 0x888888);
 	}
 	DrawRectangle3D(x-1,y-1,SIZE+2,SIZE+2,system.color.work_dark,system.color.work_light);
 }
