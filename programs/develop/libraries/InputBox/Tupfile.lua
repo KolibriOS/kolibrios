@@ -12,4 +12,4 @@ else
   tup.definerule{command = "echo LANG_EN = 1 > lang.inc", outputs = {"lang.inc"}}
 end
 
-tup.rule("InputBox.asm", extra_inputs = {"lang.inc"}, "jwasm -zt0 -coff -Fi lang.inc -Fo %o %f " .. tup.getconfig("KPACK_CMD"), "INPUTBOX.OBJ")
+tup.rule({"InputBox.asm", extra_inputs = {"lang.inc"}}, "jwasm -zt0 -coff -Fi lang.inc -Fo %o %f " .. tup.getconfig("KPACK_CMD"), "INPUTBOX.OBJ")
