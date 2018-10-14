@@ -100,6 +100,11 @@ void MenuListRedraw()
 {
 	int start_y=0;
 	int index;
+
+	dword m_col_bg;
+	dword m_col_text;
+	dword m_col_sh_text;
+
 	for (index=0; file_captions[index*3]!=0; index++)
 	{
 		if ((itdir) && (file_captions[index*3+2]>=200)) continue;
@@ -108,14 +113,19 @@ void MenuListRedraw()
 		if (start_y/rbmenu.item_h==rbmenu.cur_y)
 		{
 			cur_action_buf = file_captions[index*3+2];
-			DrawBar(2,start_y+2,rbmenu.w-1,rbmenu.item_h,0xFFFfff);
+			m_col_bg = 0xFFFfff;
+			m_col_sh_text = 0xFAFAFA;
+			m_col_text = 0;
 		}
 		else
 		{
-			DrawBar(2,start_y+2,rbmenu.w-1,rbmenu.item_h,col_work);
-			WriteText(8,start_y+rbmenu.text_y+4,rbmenu.font_type,0xf2f2f2,file_captions[index*3]);
+			m_col_bg = col_work;
+			m_col_text = system.color.work_text;
+			m_col_sh_text = system.color.work_light;
 		}
-		WriteText(7, start_y + rbmenu.text_y + 3, rbmenu.font_type, 0, file_captions[index*3]);
+		DrawBar(2, start_y+2, rbmenu.w-1, rbmenu.item_h, m_col_bg);
+		WriteText(8, start_y + rbmenu.text_y + 4, rbmenu.font_type, m_col_sh_text, file_captions[index*3]);
+		WriteText(7, start_y + rbmenu.text_y + 3, rbmenu.font_type, m_col_text, file_captions[index*3]);
 		WriteText(-strlen(file_captions[index*3+1])-1*rbmenu.font_w + rbmenu.w, start_y + rbmenu.text_y + 3, rbmenu.font_type, 0x888888, file_captions[index*3+1]);
 		start_y+=rbmenu.item_h;
 	}	

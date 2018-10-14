@@ -20,7 +20,7 @@
 #define DEFAULT_EDITOR "/sys/tinypad"
 
 #define INTRO_TEXT "This is a plain Text Reader.\nTry to open some text file."
-#define VERSION "Text Reader v1.21a"
+#define VERSION "Text Reader v1.22"
 #define ABOUT "Idea: Leency, punk_joker
 Code: Leency, Veliant, KolibriOS Team
 
@@ -30,7 +30,7 @@ Ctrl+I - show file properties
 Ctrl+Up - bigger font
 Ctrl+Down - smaller font
 Ctrl+Tab - select charset
-Ctrl+E - edit current document
+Ctrl+E - reopen current file in another app
  
 Press any key..."
 
@@ -45,6 +45,7 @@ char title[4196];
 
 bool help_opened = false;
 int charsets_menu_left = 0;
+int reopenin_menu_left = 0;
 
 enum {
 	OPEN_FILE,
@@ -58,9 +59,11 @@ enum {
 
 int encoding;
 
+dword bg_color = 0xF0F0F0;
+dword text_color = 0;
+
 #include "ini.h"
 #include "prepare_page.h"
-
 
 void InitDlls()
 {
@@ -97,12 +100,7 @@ void main()
 				HandleButtonEvent();
 				break;
 			case evReDraw:
-				if (menu.cur_y) {
-					encoding = menu.cur_y - 10;
-					OpenFile(#param); 
-					PreparePage();
-					menu.cur_y = NULL;
-				};
+				EventMenuClick();
 				draw_window();
 		}
 	}
@@ -133,10 +131,10 @@ void HandleButtonEvent()
 			EventMagnifyMinus();
 			break;
 		case CHANGE_ENCODING:
-			EventChangeEncoding();
+			EventShowEncodingList();
 			break;
 		case RUN_EDIT:
-			EventRunEdit();
+			EventShowEdit();
 			break;
 		case SHOW_INFO:
 			EventShowInfo();
@@ -173,7 +171,7 @@ void HandleKeyEvent()
 				EventMagnifyMinus();
 				break;
 			case SCAN_CODE_KEY_E:
-				EventRunEdit();
+				EventShowEdit();
 				break;
 			case SCAN_CODE_TAB:
 				EventChangeEncoding();
@@ -218,7 +216,7 @@ void EventShowFileProperties()
 	char ss_param[4096];
 	if (!param) return;
 	sprintf(#ss_param, "-p %s", #param);
-	io.run("/sys/File managers/Eolite", #ss_param);
+	RunProgram("/sys/File managers/Eolite", #ss_param);
 }
 
 void EventMagnifyPlus()
@@ -239,12 +237,14 @@ void EventMagnifyMinus()
 		PreparePage();
 }
 
-void EventRunEdit()
+void EventShowEdit()
 {
-	io.run(DEFAULT_EDITOR, #param);
+	menu.selected = 0;
+	menu.show(Form.left+5 + reopenin_menu_left, Form.top+29+skin_height, 130,
+		"Tinypad\nTextEdit\nWebView\nFB2Read\nHexView", 20);
 }
 
-void EventChangeEncoding()
+void EventShowEncodingList()
 {
 	menu.selected = encoding + 1;
 	menu.show(Form.left+5 + charsets_menu_left, Form.top+29+skin_height, 130,
@@ -256,6 +256,47 @@ void EventShowInfo() {
 	DrawBar(list.x, list.y, list.w, list.h, 0xFFFfff);
 	WriteText(list.x + 10, list.y + 10, 10000001b, 0x555555, VERSION);
 	WriteTextLines(list.x + 10, list.y+40, 10110000b, 0, ABOUT, 20);
+}
+
+void EventChangeEncoding(dword id)
+{
+	encoding = id;
+	OpenFile(#openfile_path);
+	PreparePage();
+	draw_window();
+}
+
+void EventOpenFileInAnotherProgram(dword _app)
+{
+	RunProgram(_app, #param);
+}
+
+void EventMenuClick()
+{
+	switch(menu.cur_y)
+	{
+		//Encoding
+		case 10...15:
+			EventChangeEncoding(menu.cur_y-10);
+			break;
+		//Reopen
+		case 20:
+			EventOpenFileInAnotherProgram("/sys/tinypad");
+			break;
+		case 21:
+			EventOpenFileInAnotherProgram("/sys/develop/t_edit");
+			break;
+		case 22:
+			EventOpenFileInAnotherProgram("/sys/network/webview");
+			break;
+		case 23:
+			EventOpenFileInAnotherProgram("/sys/fb2read");
+			break;
+		case 24:
+			EventOpenFileInAnotherProgram("/sys/develop/heed");
+			break;
+	}
+	menu.cur_y = 0;
 }
 
 /* ------------------------------------------- */
@@ -302,7 +343,8 @@ void draw_window()
 	DrawToolbarButton(MAGNIFY_PLUS,    x.inc(TOOLBAR_BUTTON_WIDTH - 1));
 	DrawToolbarButton(CHANGE_ENCODING, x.inc(TOOLBAR_BUTTON_WIDTH + PADDING + PADDING));
 		charsets_menu_left = x.n;
-	DrawToolbarButton(RUN_EDIT,        x.inc(TOOLBAR_BUTTON_WIDTH + PADDING));
+	DrawToolbarButton(RUN_EDIT,        x.inc(TOOLBAR_BUTTON_WIDTH + PADDING + PADDING));
+		reopenin_menu_left = x.n;
 	DrawToolbarButton(SHOW_INFO,       Form.cwidth - 34);
 	
 	

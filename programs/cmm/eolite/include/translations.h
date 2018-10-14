@@ -1,5 +1,5 @@
-#define TITLE "Eolite File Manager v3.96d"
-#define ABOUT_TITLE "EOLITE 3.96d"
+#define TITLE "Eolite File Manager 4.0"
+#define ABOUT_TITLE "EOLITE 4.0"
 
 #ifdef LANG_RUS
 ?define T_FILE "Файл"
@@ -31,6 +31,7 @@
 ?define DEL_MORE_FILES_2 " шт.)?"
 ?define STATUS_STR "Элементов: %d  Папок: %d  Файлов: %d  Выделенно: %d"
 ?define COPY_PATH_STR "'Путь папки скопирован в буфер обмена' -I"
+?define T_ABOUT "О программе"
 #else
 ?define T_FILE "File"
 ?define T_TYPE "Type"
@@ -62,4 +63,5 @@
 ?define DEL_MORE_FILES_2 " pcs.)?"
 ?define STATUS_STR "Elements: %d  Dirs: %d  Files: %d  Selected: %d"
 ?define COPY_PATH_STR "'Directory path copied to clipboard' -I"
+?define T_ABOUT "About"
 #endif

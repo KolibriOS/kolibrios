@@ -82,7 +82,7 @@ void settings_dialog()
 				}
 				else if (id==7)
 				{
-					ini.SetString("DefaultPath", #path_start,strlen(#path_start));
+					SetDefaultPath(#path_start);
 					break;
 				}
 				show_dev_name.click(id);
@@ -216,17 +216,20 @@ void Write_Error(int error_number)
 
 void SetAppColors()
 {
+	int i;
 	system.color.get();
-	//system.color.work = 0xE4DFE1;
-	//system.color.work_text = 0;
-	//system.color.work_graph  = 0x7E87A3; //A0A0B8;
-	//system.color.work_button = 0x7E87A3;
-	//system.color.work_button_text = 0x000000
+
+	for (i=0; i<=14; i++) col_work_gradient[14-i]= MixColors(0, system.color.work, i);
+	col_work = system.color.work;
+	col_graph = system.color.work_graph;
+	system.color.work_dark = MixColors(0, system.color.work, 35);
+
+	/*
 	col_work    = 0xE4DFE1;
-	col_padding = 0xC8C9C9;
-	col_selec   = 0x94AECE;
-	col_lpanel  = 0x00699C;
 	col_graph   = 0x7E87A3;
+	*/
+	col_lpanel  = 0x00699C;
+	col_selec   = 0x94AECE;
 }
 
 
@@ -260,4 +263,10 @@ void BigIconsSwitch()
 		icon_size=16; 
 	}
 	BigFontsChange();
+}
+
+void SetDefaultPath(dword p)
+{
+	ini.SetString("DefaultPath", p, strlen(p));
+	notify("'Default path has been set' -O");
 }

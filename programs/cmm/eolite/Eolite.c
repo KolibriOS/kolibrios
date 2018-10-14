@@ -26,8 +26,7 @@
 
 #include "../lib/patterns/history.h"
 
-//images
-#include "imgs/left_p.txt"
+#include "imgs/images.h"
 
 //Button IDs
 enum {
@@ -51,7 +50,7 @@ enum {
 	ONLY_OPEN
 };
 
-dword col_padding=0, col_selec, col_lpanel, col_work, col_graph, col_list_line=0xDDD7CF;
+dword col_selec, col_lpanel, col_work, col_graph, col_list_line=0xDDD7CF;
 
 int toolbar_buttons_x[7]={9,46,85,134,167,203};
 
@@ -117,10 +116,10 @@ PathShow_data FileShow = {0, 56,215, 8, 100, 1, 0, 0x0, 0xFFFfff, #file_name, #t
 byte cmd_free=0;
 #include "include\translations.h"
 
+#include "include\gui.h"
 #include "include\settings.h"
 #include "include\progress_dialog.h"
 #include "include\copy.h"
-#include "include\gui.h"
 #include "include\sorting.h"
 #include "include\icons.h"
 #include "include\left_panel.h"
@@ -264,33 +263,33 @@ void main()
 
 				if (mouse.x>=files.x+files.w) && (mouse.x<=files.x+files.w+16) && (mouse.y>files.y-17) && (mouse.y<files.y)
 				{
-					if (mouse.lkm==1) DrawRectangle3D(files.x+files.w+1,files.y-16,14,14,0xC7C7C7,0xFFFFFF);
-					WHILE (mouse.lkm==1) && (files.first>0)
+					if (mouse.lkm) DrawRectangle3D(files.x+files.w+1,files.y-16,14,14,system.color.work_dark,system.color.work_light);
+					WHILE (mouse.lkm) && (files.first>0)
 					{
 						pause(8);
 						files.first--;
 						List_ReDraw();
 						mouse.get();
 					}
-					DrawRectangle3D(files.x+files.w+1,files.y-16,14,14,0xFFFFFF,0xC7C7C7);
+					DrawRectangle3D(files.x+files.w+1,files.y-16,14,14,system.color.work_light,system.color.work_dark);
 				}
 
 				if (mouse.x>=files.x+files.w) && (mouse.x<=files.x+files.w+16) && (mouse.y>files.y+files.h-16) && (mouse.y<files.y+files.h)
 				{
-					if (mouse.lkm==1) DrawRectangle3D(files.x+files.w+1,files.y+files.h-15,14,14,0xC7C7C7,0xFFFFFF);
-					while (mouse.lkm==1) && (files.first<files.count-files.visible)
+					if (mouse.lkm) DrawRectangle3D(files.x+files.w+1,files.y+files.h-15,14,14,system.color.work_dark,system.color.work_light);
+					while (mouse.lkm) && (files.first<files.count-files.visible)
 					{
 						pause(8);
 						files.first++;
 						List_ReDraw();
 						mouse.get();
 					}
-					DrawRectangle3D(files.x+files.w+1,files.y+files.h-15,14,14,0xFFFFFF,0xC7C7C7);
+					DrawRectangle3D(files.x+files.w+1,files.y+files.h-15,14,14,system.color.work_light,system.color.work_dark);
 				}
 
 				//Scrooll
-				if (!mouse.lkm) && (scroll_used) { scroll_used=false; Scroll(); }
 				if (mouse.x>=files.x+files.w) && (mouse.x<=files.x+files.w+18) && (mouse.y>files.y) && (mouse.y<files.y+files.h-18) && (mouse.lkm) && (!scroll_used) {scroll_used=true; Scroll();}
+				if (scroll_used) && (mouse.up) { scroll_used=false; Scroll(); }
 				
 				if (scroll_used)
 				{
@@ -379,9 +378,7 @@ void main()
 							FnProcess(id-50);
 							break;
 					case 61: // Set path as default
-							ini.path = GetIni(#eolite_ini_path, "EOLITE.INI");
-							ini.section = "Config";
-							ini.SetString("DefaultPath", #path, strlen(#path));
+							SetDefaultPath(#path);
 							break;
 					case 100...120:
 						SystemDiscs.Click(id-100);
@@ -552,12 +549,6 @@ void main()
 	}
 }
 
-void DrawFavButton(int x)
-{
-	_PutImage(x,10,20,22,#fav);
-	DefineHiddenButton(x+1,11,20-2,22-3,61);
-}
-
 void draw_window()
 {
 	int i;
@@ -568,17 +559,21 @@ void draw_window()
 	if (Form.height < 350) { MoveSize(OLD,OLD,OLD,350); return; }
 	if (Form.width  < 480) { MoveSize(OLD,OLD,480,OLD); return; }
 	GetProcessInfo(#Form, SelfInfo); //if win_size changed
-	_PutImage(0,0,246,34,#toolbar);
+	ESDWORD[#toolbar_pal] = col_work;
+	ESDWORD[#toolbar_pal+4] = MixColors(0, col_work, 35);
+	PutPaletteImage(#toolbar, 246, 34, 0, 0, 8, #toolbar_pal);
 	DrawBar(127, 8, 1, 25, col_graph);
 	for (i=0; i<3; i++) DefineHiddenButton(toolbar_buttons_x[i]+2,7,31-5,29-5,21+i);
 	for (i=3; i<6; i++) DefineHiddenButton(toolbar_buttons_x[i],  5,31,  29,  21+i);
 	DrawBar(246,0, Form.cwidth - 246, 34, col_work);
-	_PutImage(Form.cwidth-17,11,6,18,#dots);
+	DrawDot(Form.cwidth-17,12);
+	DrawDot(Form.cwidth-17,12+6);
+	DrawDot(Form.cwidth-17,12+12);
 	DefineHiddenButton(Form.cwidth-24,7,20,25,51+BT_NOFRAME); //dots
 	//main rectangles
 	DrawRectangle(1,40,Form.cwidth-3,Form.cheight - 42-status_bar_h,col_graph);
-	DrawRectangle(0,39,Form.cwidth-1,Form.cheight - 40,col_palette[4]); //bg
-	for (i=0; i<5; i++) DrawBar(0, 34+i, Form.cwidth, 1, col_palette[8-i]);
+	DrawRectangle(0,39,Form.cwidth-1,-show_status_bar.checked*status_bar_h + Form.cheight - 40,col_work_gradient[4]); //bg
+	for (i=0; i<5; i++) DrawBar(0, 34+i, Form.cwidth, 1, col_work_gradient[11-i]);
 	llist_copy(#files_active, #files);
 	strcpy(#active_path, #path);
 	DrawStatusBar();
@@ -597,7 +592,7 @@ void DrawList()
 	if (sort_num==1) sorting_arrow_x = files.w - 141 / 2 + files.x + 18;
 	if (sort_num==2) sorting_arrow_x = files.x + files.w - 90;
 	if (sort_num==3) sorting_arrow_x = strlen(T_SIZE)*3-30+files.x+files.w;
-	WriteText(sorting_arrow_x,files.y-12,0x80,col_graph,"\x19");
+	WriteText(sorting_arrow_x,files.y-12,0x80, system.color.work_text,"\x19");
 	DrawBar(files.x+files.w,files.y,1,files.h,col_graph);
 	if (two_panels.checked) && (files.x<5) DrawBar(files.x+files.w+16,files.y,1,files.h,col_graph);	
 }
@@ -608,7 +603,7 @@ void DrawStatusBar()
 	int go_up_folder_exists=0;
 	if (!show_status_bar.checked) return;
 	if (files.count>0) && (strcmp(file_mas[0]*304+buf+72,"..")==0) go_up_folder_exists=1;
-	DrawBar(1, Form.cheight - status_bar_h-1, Form.cwidth-2,  status_bar_h, system.color.work);
+	DrawBar(0, Form.cheight - status_bar_h, Form.cwidth,  status_bar_h, system.color.work);
 	sprintf(#status_bar_str, STATUS_STR, files.count-go_up_folder_exists, count_dir-go_up_folder_exists, files.count-count_dir, selected_count);
 	WriteText(6,Form.cheight - 13,0x80,system.color.work_text,#status_bar_str);
 }

@@ -6,8 +6,10 @@ void DrawPathBar()
 	DrawBar(PathShow.start_x-3, PathShow.start_y-6, PathShow.area_size_x+3, 19, 0xFFFfff);
 	DrawRectangle(PathShow.start_x-4,PathShow.start_y-7,PathShow.area_size_x+4,20,col_graph);
 	DefineHiddenButton(PathShow.start_x-4+1,PathShow.start_y-7+1,PathShow.area_size_x+4-2,20-2,PATH_BTN);
-	DrawBar(PathShow.start_x-4, PathShow.start_y+14, PathShow.area_size_x+4, 1, MixColors(col_work,0xFFFfff,120));
-	DrawFavButton(PathShow.start_x+PathShow.area_size_x);
+	DrawBar(PathShow.start_x-4, PathShow.start_y+14, PathShow.area_size_x+5+18, 1, system.color.work_light);
+
+	DrawFlatButtonSmall(PathShow.start_x+PathShow.area_size_x,PathShow.start_y-7,18,20, 61, "\26");
+
 	PathShow_prepare stdcall(#PathShow);
 	PathShow_draw stdcall(#PathShow);
 }

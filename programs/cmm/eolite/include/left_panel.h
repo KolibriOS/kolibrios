@@ -197,14 +197,24 @@ void DrawDeviceAndActionsLeftPanel()
 	DrawLeftPanelBg();
 }
 
+dword col_palette_inner[14] = {0xD2D3D3,0xD4D4D4,0xD6D5D6,0xD8D7D8,0xDAD8D9,0xDCDADB,
+	0xDFDCDD,0xE1DDDE,0xE2DEE0,0xE4DFE1,0xE3DFE1,0xE3DFE1,0xE3DFE1,0xE3DFE1,0xE3DFE1};
+void DrawFilledBarInner(dword x, y, w, h)
+{
+	int i, fill_h;
+	if (h <= 14) fill_h = h; else fill_h = 14;
+	for (i=0; i<fill_h; i++) DrawBar(x, y+i, w, 1, col_palette_inner[14-i]);
+	DrawBar(x, y+i, w, h-fill_h, col_palette_inner[14-i]);
+}
+
 void Tip(int y, dword caption, id, arrow)
 {
 	DrawBar(17,y,160,1,0xEFEDEE);
-	DrawFilledBar(17, y+1, 160, 16);
+	DrawFilledBarInner(17, y+1, 160, 16);
 	WriteText(25,y+5,0x80,0x000000,caption);
 	if (id) DefineButton(159,y+1,16,16,id+BT_HIDE+BT_NOFRAME,0); //arrow button
 	WriteText(165,y+5,0x80,0x000000,arrow); //arrow
-	DrawBar(17,y+17,160,1,col_graph);
+	DrawBar(17,y+17,160,1,0x7E87A3);
 }
 
 void ActionsDraw()
