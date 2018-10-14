@@ -749,8 +749,8 @@ exit2:
 
 
 ; data
-str_title       db 'FTP client',0
-str_welcome     db 'FTP client for KolibriOS v0.12',10
+str_title       db 'FTP client for KolibriOS',0
+str_welcome     db 'FTP client for KolibriOS v0.12a',10
                 db 10,0
 str_srv_addr    db 'Please enter ftp server address.',10,0
 

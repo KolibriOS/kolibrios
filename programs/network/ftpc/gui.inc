@@ -149,7 +149,7 @@ gui: ;//////////////////////////////////////////////////////////////////////////
     .draw:
         mcall   12, 1
         ; main window
-        mcall   0, <35,830>, <20,555>, 0x34000000+SYS_COL, 0x805080DD, hed
+        mcall   0, <35,830>, <20,555>, 0x34000000+SYS_COL, 0x805080DD, str_title
 
         ;-------------------------
         ; textedit components
@@ -867,7 +867,7 @@ search: ;///////////////////////////////////////////////////////////////////////
 
 ;>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 
-hed             db 'FTP Client - KolibriOS',0
+;hed             db 'FTP Client for KolibriOS',0
 str_change      db 'Change',0
 str_disconnect  db 'Disconnect',0
 str_copy        db 'Copy',0

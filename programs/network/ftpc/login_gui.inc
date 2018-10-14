@@ -2,6 +2,13 @@ SYS_COL  = 0xe6e6e6
 BT_COL   = 0xcccccc
 STR_COL  = 0x595959 ;0x000000
 
+WIN_X = 320
+WIN_Y = 300
+WIN_W = 390
+WIN_H = 230
+
+pad = 28 ; padding between editboxes
+
 ;;================================================================================================;;
 login_gui: ;//////////////////////////////////////////////////////////////////////////////////////;;
 ;;------------------------------------------------------------------------------------------------;;
@@ -20,7 +27,7 @@ login_gui: ;////////////////////////////////////////////////////////////////////
   .get_username:
         ; in case of error when either login_gui.server_addr or 
         ; login_gui.get_username is called, should resize window
-        mcall   67, 320, 300, 390, 200 ; resize to login gui window size
+        mcall   67, WIN_X, WIN_Y, WIN_W, WIN_H ; resize to login gui window size
 
   .redraw:
         call    .draw
@@ -30,7 +37,7 @@ login_gui: ;////////////////////////////////////////////////////////////////////
   align 4
   .draw:
         mcall   12, 1
-        mcall   0, <320,390>, <300,200>, 0x34000000+SYS_COL, 0x805080DD, hed
+        mcall   0, <WIN_X,WIN_W>, <WIN_Y,WIN_H>, 0x34000000+SYS_COL, 0x805080DD, str_title
 
         stdcall [edit_box_draw], edit_usr
         stdcall [edit_box_draw], edit_pass
@@ -39,16 +46,16 @@ login_gui: ;////////////////////////////////////////////////////////////////////
         stdcall [edit_box_draw], edit_path
 
         ; draw "connect" button
-        mcall   8, <162,65>, <140,25>, 2, BT_COL
+        mcall   8, <162,65>, <150,25>, 2, BT_COL
 
         ; draw strings
-        mcall   4, <3,5>, 0xb0000000, gui_str_usr
-        mcall   4, <3,25>, 0xb0000000, gui_str_pass
-        mcall   4, <3,45>, 0xb0000000, gui_str_server
-        mcall   4, <3,65>, 0xb0000000, gui_str_port
-        mcall   4, <3,85>, 0xb0000000, gui_str_path
-        mcall   4, <167,145>, 0xb0000000+STR_COL, gui_str_connect
-        mcall   4, <3,115>, 0xb0ff0000, [str_error_addr]
+        mcall   4, <3,      8>, 0xb0000000, gui_str_usr
+        mcall    , <3,pad*1+8>,           , gui_str_pass
+        mcall    , <3,pad*2+8>,           , gui_str_server
+        mcall    , <3,pad*3+8>,           , gui_str_port
+        mcall    , <3,pad*4+8>,           , gui_str_path
+        mcall    , <167,155>, 0xb0000000+STR_COL, gui_str_connect
+        mcall    , <3,115>, 0xb0ff0000, [str_error_addr]
         mov     [str_error_addr], gui_str_null ; reset error string address
 
         mcall   12, 2
@@ -86,6 +93,12 @@ login_gui: ;////////////////////////////////////////////////////////////////////
   .key:
         mcall   2
 
+        cmp     ah,13
+        je      gui.main
+
+        cmp     ah,9
+        je      .tab
+
         stdcall [edit_box_key], edit_usr
         stdcall [edit_box_key], edit_pass
         stdcall [edit_box_key], edit_server
@@ -101,6 +114,10 @@ login_gui: ;////////////////////////////////////////////////////////////////////
   .exit:
         jmp     gui.exit
 
+  .tab:
+        ;TODO
+        jmp     .still
+
 
 gui_str_connect db 'Connect',0
 gui_str_usr     db 'Username:',0
@@ -114,10 +131,10 @@ gui_str_null    db ' ',0
 str_error_addr  dd gui_str_null
 
 ; login window components
-edit_usr edit_box 300,75,5, 0xffffff,0x6f9480,0,0xAABBCC,0,99,param_user,mouse_dd,ed_focus
-edit_pass edit_box 300,75,25,0xffffff,0x6a9480,0,0xAABBCC,0,99,param_password,mouse_dd,ed_pass
-edit_server edit_box 300,75,45,0xffffff,0x6a9480,0,0xAABBCC,0,99,param_server_addr,mouse_dd,0
-edit_port edit_box 50,75,65,0xffffff,0x6a9480,0,0xAABBCC,0,99,param_port,mouse_dd,ed_figure_only
-edit_path edit_box 300,75,85,0xffffff,0x6a9480,0,0xAABBCC,0,99,param_path,mouse_dd,0
+edit_usr    edit_box 300,75,5,      0xffffff,0x94AECE,0,0xAABBCC,0x10000000,99,param_user,mouse_dd,ed_focus
+edit_pass   edit_box 300,75,pad+5,  0xffffff,0x94AECE,0,0xAABBCC,0x10000000,99,param_password,mouse_dd,ed_pass
+edit_server edit_box 300,75,pad*2+5,0xffffff,0x94AECE,0,0xAABBCC,0x10000000,99,param_server_addr,mouse_dd,0
+edit_port   edit_box 50, 75,pad*3+5,0xffffff,0x94AECE,0,0xAABBCC,0x10000000,99,param_port,mouse_dd,ed_figure_only
+edit_path   edit_box 300,75,pad*4+5,0xffffff,0x94AECE,0,0xAABBCC,0x10000000,99,param_path,mouse_dd,0
 
 mouse_dd rd 1
