@@ -1,5 +1,11 @@
 #define MEMSIZE 4096*25
 
+//===================================================//
+//                                                   //
+//                       LIB                         //
+//                                                   //
+//===================================================//
+
 #include "../lib/io.h"
 #include "../lib/gui.h"
 #include "../lib/list_box.h"
@@ -13,6 +19,12 @@
 
 #include "../lib/patterns/simple_open_dialog.h"
 
+//===================================================//
+//                                                   //
+//                       DATA                        //
+//                                                   //
+//===================================================//
+
 #define TOOLBAR_H 34
 #define TOOLBAR_ICON_WIDTH  26
 #define TOOLBAR_ICON_HEIGHT 24
@@ -20,7 +32,7 @@
 #define DEFAULT_EDITOR "/sys/tinypad"
 
 #define INTRO_TEXT "This is a plain Text Reader.\nTry to open some text file."
-#define VERSION "Text Reader v1.22"
+#define VERSION "Text Reader v1.3"
 #define ABOUT "Idea: Leency, punk_joker
 Code: Leency, Veliant, KolibriOS Team
 
@@ -34,6 +46,27 @@ Ctrl+E - reopen current file in another app
  
 Press any key..."
 
+dword color_schemes[] = {
+0xFFFfff, 0,
+0xF0F0F0, 0,
+0xE9E5DA, 0,
+0xF0F0C7, 0,
+0xFCF0DA, 0x574531,
+0xFDF6E3, 0x303A41,
+0x282C34, 0xABB2BF,
+0x282923, 0xD8D8D2
+};
+
+char color_scheme_names[] =
+"White & Black
+Grey & Black      RtfRead
+Khaki & Black     QNX
+Lemon & Black     Fb2Read
+Antique & Black   Pocket
+Linen & Black     Horst
+DarkGrey & Grey   Godot
+DarkGrey & Grey   Monokai";
+
 char default_dir[] = "/rd/1";
 od_filter filter2 = { 8, "TXT\0\0" };
 
@@ -44,8 +77,11 @@ proc_info Form;
 char title[4196];
 
 bool help_opened = false;
-int charsets_menu_left = 0;
-int reopenin_menu_left = 0;
+int charsets_mx;
+int reopenin_mx;
+int colscheme_mx;
+
+int curcol_scheme;
 
 enum {
 	OPEN_FILE,
@@ -54,16 +90,29 @@ enum {
 	CHANGE_ENCODING,
 	RUN_EDIT,
 	SHOW_INFO,
-	SHOW_FILE_PROPERTIES
+	SHOW_FILE_PROPERTIES,
+	COLOR_SCHEME
 };
 
 int encoding;
 
-dword bg_color = 0xF0F0F0;
-dword text_color = 0;
+dword bg_color;
+dword text_color;
+
+//===================================================//
+//                                                   //
+//                 INTERNAL INCLUDES                 //
+//                                                   //
+//===================================================//
 
 #include "ini.h"
 #include "prepare_page.h"
+
+//===================================================//
+//                                                   //
+//                       CODE                        //
+//                                                   //
+//===================================================//
 
 void InitDlls()
 {
@@ -75,12 +124,12 @@ void InitDlls()
 	load_dll(Proc_lib,  #OpenDialog_init,0);
 }
 
-
 void main()
 {   	
 	InitDlls();	
 	OpenDialog_init stdcall (#o_dialog);
 	LoadIniSettings();
+	EventSetColorScheme(curcol_scheme);
 	kfont.init(DEFAULT_FONT);
 	Libimg_LoadImage(#skin, abspath("toolbar.png"));
 	OpenFile(#param);
@@ -106,6 +155,11 @@ void main()
 	}
 }
 
+//===================================================//
+//                                                   //
+//                      EVENTS                       //
+//                                                   //
+//===================================================//
 
 void HandleButtonEvent()
 {
@@ -134,7 +188,10 @@ void HandleButtonEvent()
 			EventShowEncodingList();
 			break;
 		case RUN_EDIT:
-			EventShowEdit();
+			EventShowReopenMenu();
+			break;
+		case COLOR_SCHEME:
+			EventShowColorSchemesList();
 			break;
 		case SHOW_INFO:
 			EventShowInfo();
@@ -171,7 +228,7 @@ void HandleKeyEvent()
 				EventMagnifyMinus();
 				break;
 			case SCAN_CODE_KEY_E:
-				EventShowEdit();
+				EventShowReopenMenu();
 				break;
 			case SCAN_CODE_TAB:
 				EventChangeEncoding();
@@ -198,7 +255,6 @@ void HandleMouseEvent()
 		DrawPage(); 
 	}
 }
-
 
 /* ----------------------------------------------------- */
 
@@ -237,18 +293,31 @@ void EventMagnifyMinus()
 		PreparePage();
 }
 
-void EventShowEdit()
-{
-	menu.selected = 0;
-	menu.show(Form.left+5 + reopenin_menu_left, Form.top+29+skin_height, 130,
-		"Tinypad\nTextEdit\nWebView\nFB2Read\nHexView", 20);
-}
-
 void EventShowEncodingList()
 {
 	menu.selected = encoding + 1;
-	menu.show(Form.left+5 + charsets_menu_left, Form.top+29+skin_height, 130,
+	menu.show(Form.left+5 + charsets_mx, Form.top+29+skin_height, 130,
 		"UTF-8\nKOI8-RU\nCP1251\nCP1252\nISO8859-5\nCP866", 10);
+}
+
+void EventShowReopenMenu()
+{
+	menu.selected = 0;
+	menu.show(Form.left+5 + reopenin_mx, Form.top+29+skin_height, 130,
+		"Tinypad\nTextEdit\nWebView\nFB2Read\nHexView\nOther", 20);
+}
+
+void EventShowColorSchemesList()
+{
+	menu.selected = curcol_scheme + 1;
+	menu.show(Form.left+5 + colscheme_mx, Form.top+29+skin_height, 175, #color_scheme_names, 30);
+}
+
+void EventSetColorScheme(dword _setn)
+{
+	curcol_scheme = _setn;
+	bg_color   = color_schemes[curcol_scheme*2];
+	text_color = color_schemes[curcol_scheme*2+1];
 }
 
 void EventShowInfo() {
@@ -273,6 +342,7 @@ void EventOpenFileInAnotherProgram(dword _app)
 
 void EventMenuClick()
 {
+	byte open_param[4096];
 	switch(menu.cur_y)
 	{
 		//Encoding
@@ -295,12 +365,24 @@ void EventMenuClick()
 		case 24:
 			EventOpenFileInAnotherProgram("/sys/develop/heed");
 			break;
+		case 25:
+			sprintf(#open_param,"~%s",#param);
+			RunProgram("/sys/@open", #open_param);
+			break;
+		//ColorSchemes
+		case 30...38:
+			EventSetColorScheme(menu.cur_y-30);
+			PreparePage();
+			break;
 	}
 	menu.cur_y = 0;
 }
 
-/* ------------------------------------------- */
-
+//===================================================//
+//                                                   //
+//               DRAWS AND OTHER FUNCS               //
+//                                                   //
+//===================================================//
 
 void OpenFile(dword f_path) 
 {
@@ -323,7 +405,8 @@ void OpenFile(dword f_path)
 
 void draw_window()
 {
-	#define PADDING 6
+	#define BUTTONS_GAP 6
+	#define BLOCKS_GAP 15
 	#define TOOLBAR_BUTTON_WIDTH 26
 	incn x;
 	DefineAndDrawWindow(Form.left,Form.top,Form.width,Form.height,0x73,0,#title,0);
@@ -338,15 +421,15 @@ void draw_window()
 	
 	x.n = 0;
 	DrawToolbarButton(OPEN_FILE,       x.inc(8));
-	DrawToolbarButton(SHOW_FILE_PROPERTIES, x.inc(TOOLBAR_BUTTON_WIDTH + PADDING));
-	DrawToolbarButton(MAGNIFY_MINUS,   x.inc(TOOLBAR_BUTTON_WIDTH + PADDING + PADDING));
+	DrawToolbarButton(SHOW_FILE_PROPERTIES, x.inc(TOOLBAR_BUTTON_WIDTH + BUTTONS_GAP));
+
+	DrawToolbarButton(MAGNIFY_MINUS,   x.inc(TOOLBAR_BUTTON_WIDTH + BLOCKS_GAP));
 	DrawToolbarButton(MAGNIFY_PLUS,    x.inc(TOOLBAR_BUTTON_WIDTH - 1));
-	DrawToolbarButton(CHANGE_ENCODING, x.inc(TOOLBAR_BUTTON_WIDTH + PADDING + PADDING));
-		charsets_menu_left = x.n;
-	DrawToolbarButton(RUN_EDIT,        x.inc(TOOLBAR_BUTTON_WIDTH + PADDING + PADDING));
-		reopenin_menu_left = x.n;
+	DrawToolbarButton(COLOR_SCHEME,    x.inc(TOOLBAR_BUTTON_WIDTH + BUTTONS_GAP)); colscheme_mx = x.n;
+
+	DrawToolbarButton(CHANGE_ENCODING, x.inc(TOOLBAR_BUTTON_WIDTH + BLOCKS_GAP)); charsets_mx = x.n;
+	DrawToolbarButton(RUN_EDIT,        x.inc(TOOLBAR_BUTTON_WIDTH + BLOCKS_GAP)); reopenin_mx = x.n;
 	DrawToolbarButton(SHOW_INFO,       Form.cwidth - 34);
-	
 	
 	if ((Form.cwidth-scroll.size_x-1 == list.w) && 
 		(Form.cheight-TOOLBAR_H == list.h) && 
@@ -356,7 +439,8 @@ void draw_window()
 		DrawPage(); 
 	} else {
 		PreparePage();
-	}
+	}		
+	
 	DrawRectangle(scroll.start_x, scroll.start_y, scroll.size_x, scroll.size_y-1, scroll.bckg_col);
 }
 

@@ -1,11 +1,11 @@
-    DEBUG equ 0
+    DEBUG = 0
 
-    LIST_WIDTH equ 256
-    WIN_WIDTH equ (LIST_WIDTH + 16 + 12)
-    LIST_SIZE equ 12
-    LINE_SIZE equ 40
-    LIST_HEIGHT equ (LIST_SIZE * LINE_SIZE / 2)
-    WIN_HEIGHT equ (LIST_HEIGHT + 80)
+    LIST_WIDTH  = 256
+    WIN_WIDTH   = (LIST_WIDTH + 16 + 12)
+    LIST_SIZE   = 12
+    LINE_SIZE   = 40
+    LIST_HEIGHT = (LIST_SIZE * LINE_SIZE / 2)
+    WIN_HEIGHT  = (LIST_HEIGHT + 80)
 
     use32
     org     0
@@ -299,6 +299,7 @@ end if
     mov     ebx, [skin.work_text]
     mov     [ps_addres.txt], eax
     mov     [ps_addres], ebx
+	m2m     [ps_addres.color], [skin.work_text]
     invoke  pathshow.init, ps_addres
 
  ;; get checkbox
@@ -582,7 +583,10 @@ end if
     stdcall string.concatenate, [param_a], buffer
   @@:
 
-    invoke  libini.set_str, assoc_ini, assoc_ini.sec, [param_e], buffer, 33
+    stdcall string.length, buffer
+	mov     edi, eax
+	
+    invoke  libini.set_str, assoc_ini, assoc_ini.sec, [param_e], buffer, edi
     jmp     exit
 
  ;----------------------
