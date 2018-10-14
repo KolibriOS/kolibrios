@@ -63,10 +63,6 @@ purge mov,add,sub
 include '../../proc32.inc'
 include '../../network.inc'
 include '../../KOSfuncs.inc'
-include '../../load_img.inc'
-include '../../develop/libraries/libs-dev/libimg/libimg.inc'
-include '../../develop/libraries/box_lib/trunk/box_lib.mac'
-include '../../develop/libraries/box_lib/load_lib.mac'
 
 include 'console.inc'
 include 'gui.inc'

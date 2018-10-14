@@ -1,3 +1,8 @@
+include '../../load_img.inc'
+include '../../develop/libraries/libs-dev/libimg/libimg.inc'
+include '../../develop/libraries/box_lib/trunk/box_lib.mac'
+include '../../develop/libraries/box_lib/load_lib.mac'
+
 @use_library_mem mem.Alloc, mem.Free, mem.ReAlloc, dll.Load
  
 icon_tl_sys dd 0
@@ -295,9 +300,6 @@ gui: ;//////////////////////////////////////////////////////////////////////////
 
         cmp     ah, 9
         je      remove_dir
-
-        cmp     ah, 10
-        je      cmd_abor
 
         cmp     ah, 11
         jne     @f
