@@ -32,6 +32,14 @@ login_gui: ;////////////////////////////////////////////////////////////////////
   .redraw:
         call    .draw
         jmp     .still
+		
+  .draw_editboxes:
+        stdcall [edit_box_draw], edit_usr
+        stdcall [edit_box_draw], edit_pass
+        stdcall [edit_box_draw], edit_server
+        stdcall [edit_box_draw], edit_port
+        stdcall [edit_box_draw], edit_path
+		ret
 
 
   align 4
@@ -39,11 +47,7 @@ login_gui: ;////////////////////////////////////////////////////////////////////
         mcall   12, 1
         mcall   0, <WIN_X,WIN_W>, <WIN_Y,WIN_H>, 0x34000000+SYS_COL, 0x805080DD, str_title
 
-        stdcall [edit_box_draw], edit_usr
-        stdcall [edit_box_draw], edit_pass
-        stdcall [edit_box_draw], edit_server
-        stdcall [edit_box_draw], edit_port
-        stdcall [edit_box_draw], edit_path
+		call    .draw_editboxes
 
         ; draw "connect" button
         mcall   8, <162,65>, <150,25>, 2, BT_COL
@@ -115,10 +119,44 @@ login_gui: ;////////////////////////////////////////////////////////////////////
         jmp     gui.exit
 
   .tab:
-        ;TODO
+        test word [edit_usr.flags],ed_focus
+		je @f
+		sub     word [edit_usr.flags],ed_focus
+		add     word [edit_pass.flags],ed_focus
+		jmp     .tab_end
+  @@:
+        test word [edit_pass.flags],ed_focus
+		je @f
+		sub     word [edit_pass.flags],ed_focus
+		add     word [edit_server.flags],ed_focus
+		jmp     .tab_end       
+  @@:
+        test word [edit_server.flags],ed_focus
+		je @f
+		sub     word [edit_server.flags],ed_focus
+		add     word [edit_port.flags],ed_focus
+		jmp     .tab_end   		
+  @@:
+        test word [edit_port.flags],ed_focus
+		je @f
+		sub     word [edit_port.flags],ed_focus
+		add     word [edit_path.flags],ed_focus
+		jmp     .tab_end
+  @@:
+        test word [edit_path.flags],ed_focus
+		je @f
+		sub     word [edit_path.flags],ed_focus
+		add     word [edit_usr.flags],ed_focus
+		;jmp     .tab_end		
+		
+	.tab_end:	
+	    call    .draw_editboxes
         jmp     .still
 
-
+;=========================================================
+;DATA AREA
+;=========================================================
+		
 gui_str_connect db 'Connect',0
 gui_str_usr     db 'Username:',0
 gui_str_pass    db 'Password:',0
