@@ -2,7 +2,7 @@
 ; Hot Angles ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ; Compile with FASM
-; Version 0.3.6: Oct 9, 2018
+; Version 0.3.7: Oct 14, 2018
 
 ; Copyright (c) 2018, Efremenkov Sergey aka TheOnlyMirage
 ; All rights reserved.
@@ -31,6 +31,7 @@ org 0x0    ; базовый адрес размещения кода, всегда 0x0
 
 UNLOCKd = 0
 LOCKd   = 1
+SUPERLOCKd = 2
 
 ; заголовок
 db 'MENUET01'     ;магический идентификатор
@@ -118,9 +119,11 @@ hotkey:
    cmp ah, byte[keyActivate]   ;если нажата наша горячая клавиша
    jne @f
 
-;for mode 3 [
+   ;проверки для mode 3
+   cmp byte[state], SUPERLOCKd
+   je hotkey.end
    cmp byte[keyState], 1
-   je hotkey.e
+   je hotkey.end
 
    push eax ebx
    mcall 37, 0 ;запоминаем текущие(начальные) координаты мыши
@@ -132,9 +135,6 @@ hotkey:
 
    mov byte[keyState], 1
    mov byte[state], UNLOCKd
-.e:
-;]
-   ;mov byte[state], UNLOCKd
    jmp hotkey.end
 @@:
    push edx
@@ -143,8 +143,7 @@ hotkey:
    add dl, 128
    cmp ah, dl   ;если отпущена наша горячая клавиша
    jne @f       ;hotkey.end
-   ;mov ecx, 0  ;строки для отладки и теста
-   ;call run_command
+
    mov byte[keyState], 0
    mov byte[state], LOCKd
 @@:
@@ -247,53 +246,56 @@ run_command:
    cmp byte[state], UNLOCKd
    jne run_command.end
 
-;   cmp byte[mode], 2     ;если режим второй
-;   jne @f
-
    push eax ebx ecx
 
    cmp ecx, 0
    jne @f
-   mov eax, dword[newData.lu]
+   mov eax, apps.path1 ;dword[newData.lu]
+   cmp byte[eax], 0 ;если по адресу пусто (или лежал символ '-'), то адрес 0
+   je .set0
    mov dword[struct70.path_adr], eax
+   mov eax, apps.param1
+   mov dword[struct70.param_adr], eax
    jmp .end_set_path
 @@:
    cmp ecx, 1
    jne @f
-   mov eax, dword[newData.ld]
+   mov eax, apps.path2 ;dword[newData.ld]
+   cmp byte[eax], 0 ;если по адресу пусто (или лежал символ '-'), то адрес 0
+   je .set0
    mov dword[struct70.path_adr], eax
+   mov eax, apps.param2
+   mov dword[struct70.param_adr], eax
    jmp .end_set_path
 @@:
    cmp ecx, 2
    jne @f
-   mov eax, dword[newData.ru]
+   mov eax, apps.path3 ;dword[newData.ru]
+   cmp byte[eax], 0 ;если по адресу пусто (или лежал символ '-'), то адрес 0
+   je .set0
    mov dword[struct70.path_adr], eax
+   mov eax, apps.param3
+   mov dword[struct70.param_adr], eax
    jmp .end_set_path
 @@:
    cmp ecx, 3
-   jne .end_set_path
-   mov eax, dword[newData.rd]
+   jne .set0 ;.end_set_path
+   mov eax, apps.path4 ;dword[newData.rd]
+   cmp byte[eax], 0 ;если по адресу пусто (или лежал символ '-'), то адрес 0
+   je .set0
    mov dword[struct70.path_adr], eax
+   mov eax, apps.param4
+   mov dword[struct70.param_adr], eax
    jmp .end_set_path
-.end_set_path:
-
-   ;параметры
-   ;mov dword[struct.adr],
-
-;если адрес 0, то ничего не делать
-   cmp dword[struct70.path_adr], 0
-   jne .next
-   ;mov eax, testData.ld
-   ;mov dword[struct70.path_adr], eax
+.set0:
+   ;mov dword[struct70.path_adr], 0
+   ;mov dword[struct70.param_adr], 0
    jmp @f
-.next:
-;конец кода для замены
-
+.end_set_path:
    mcall 70, struct70
 @@:
    mov byte[state], LOCKd
    ;mov byte[keyState], 0
-
    pop ecx ebx eax
 .end:
    ret
@@ -303,15 +305,106 @@ struct70: ;Формат информационной структуры
   .mask       dd 0
   .param_adr  dd 0 ; указатель на ASCIIZ-строку с параметрами
   .other      dd 0, 0
-  .path       db 0 ; "/rd/1/TINYPAD",0 ; путь
-  .path_adr   dd 0 ;testData.lu
+  .path       db 0
+  .path_adr   dd 0 ; указатель на строку с путём
 
 ;имя конфигурационного файла
 fileName: db 'SETTINGS/HOTANGLES.CFG', 0
 
+
+;проходим до конца текущей строки
+gotoEndString:
+   cmp eax, edx  ;если файл закончился, то
+   ja @f         ;выходим
+   cmp byte[eax], 10
+   je @f
+   cmp byte[eax], 0
+   je @f
+   cmp byte[eax], 13
+   je @f
+   ;иначе переходим на следующий символ
+   inc eax
+   jmp gotoEndString
+@@:
+   ret
+
+;пропускаем переносы в начале строки до первого адекватного символа
+gotoStartString:
+   cmp eax, edx  ;если файл закончился, то
+   ja @f         ;выходим
+   cmp byte[eax], 10
+   je .next
+   cmp byte[eax], 0
+   je .next
+   cmp byte[eax], 13
+   je .next
+   jmp @f ;если это другой символ, то выходим
+.next:   ;переходим на следующий символ
+   inc eax
+   jmp gotoStartString
+@@:
+   ret
+
+
+sep: db '|' ;символ разделитель строки пути + параметры запуска
+readPath:
+   push ebx esi edi
+   mov bh, 0 ; 0 -  знак того, что параметры ещё не встречались
+   mov byte[esi], 0   ;проинициализируем буферы-строки пустотой (на всякий случай)
+   mov byte[edi], 0
+@@:
+   cmp eax, edx  ;если файл закончился, то
+   ja @f         ;выходим
+   mov bl, byte[eax]
+   ;если очередной символ не конец строки
+   cmp bl, 10
+   je @f  ;иначе выход
+   cmp bl, 0
+   je @f
+   cmp bl, 13
+   je @f
+   ;и не начало параметров
+   cmp bl, byte[sep]
+   jne .read
+   ;если sep уже встречали ранее, то
+   cmp bh, 0
+   jne .read ;просто продолжаем считывать параметры дальше  (в них может быть что угодно)
+   ;иначе кладём завершающий 0 и переходим к буферу с параметрами
+   mov byte[esi], 0
+   call trim ;ещё не забудем убрать лишние табуляции и пробелы на конце нашей строки
+   mov esi, edi
+   mov bh, 1
+   inc eax
+   jmp @b
+.read: ;то записываем символ в наш буфер и переходим на следующий символ
+   mov byte[esi], bl
+   inc esi
+   inc eax
+   jmp @b
+@@:
+   mov byte[esi], 0 ;кладём завершающий ноль
+   pop edi esi ebx
+   ret
+
+trim:  ;esi - последний нулевой символ строки
+   ;push esi
+   mov byte[esi], 0
+   dec esi
+   cmp byte[esi], 8
+   je trim
+   cmp byte[esi], 32
+   je trim
+   inc esi
+   ;pop esi
+   ret
+
+
+cfgFileAdr: dd 0     ;адрес конфигурационного файла в памяти
+
 loadConfig:
    push eax ebx ecx edx
    mcall 68, 27, fileName   ;загружаем конфигурационный файл в ОЗУ
+   mov dword[cfgFileAdr], eax
    cmp eax, 0
    je loadConfig.exit       ;если файла конфигурации нет, то завершаем работу приложения
    ;иначе данные загружены в ОЗУ, размер в edx
@@ -321,12 +414,22 @@ loadConfig:
    add edx, eax             ;иначе кладём в edx - адрес конца файла
 
    mov byte[mode], 0
-   cmp byte[eax], '0' ;121 ;'y'  ;если параметр активности приложения имеет статус: не активно
-   je loadConfig.exit      ;то завершаем работу приложения
+   cmp byte[eax], '0'       ;если параметр активности приложения имеет статус: не активно
+   je loadConfig.exit       ;то завершаем работу приложения
    cmp byte[eax], 110 ;'n'
    je loadConfig.exit
 
    ;иначе выставляем режим
+   cmp byte[eax], 121 ;'y'  ;классический режим
+   jne @f
+   mov byte[mode], 1
+   jmp loadConfig.modeEnd
+@@:
+   cmp byte[eax], '1'       ;классический режим
+   jne @f
+   mov byte[mode], 1
+   jmp loadConfig.modeEnd
+@@:
    cmp byte[eax], '2'       ;режим активации по горячей клавише
    jne @f
    mov byte[mode], 2
@@ -337,72 +440,290 @@ loadConfig:
    mov byte[mode], 3
    jmp loadConfig.modeEnd
 @@:
-   mov byte[mode], 1        ;во всех остальных случаях - классический режим
+   mov byte[mode], 0        ;во всех остальных случаях - отключено
+   jmp loadConfig.exit
 .modeEnd:
 
-   push edi
-   push esi
-   ; сохраняем в edi указатель на начало таблицы адресов наших команд
-   mov edi, newData
-   ; сохраняем адреса строк и добавляем 0 в конце
-   mov esi, eax
-.block:
-   inc esi
-   cmp byte[esi], 10         ;если очередной код символа 10 или 13, то пропускаем символы
-   je loadConfig.propusk     ;до первого отличного от них
-   cmp byte[esi], 13
-   je loadConfig.propusk
+   ;идём до конца этой строки
+   call gotoEndString
+   ;находим начало следующей строки
+   call gotoStartString
 
-   ; символ отличен от переноса строки и возврата каретки - если это на знак минус, то запоминаем его
-   mov dword[edi], esi
-   add edi, 4
+   push esi edi
 
-   ;идём до конца этой строки: пока не встретим очередной 10, 13, 0 или file end
-.while:
-   inc esi
-   cmp esi, edx           ;тут будет проблема - тк файл закончился, а нуля не было !!! исправить
-   jae loadConfig.fileend
-   cmp byte[esi], 10
-   je loadConfig.ura
-   cmp byte[esi], 0
-   je loadConfig.ura
-   cmp byte[esi], 13
-   jne loadConfig.while
-.ura:
-   mov byte[esi], 0
+   ;считываем путь для левого верхнего угла
+   mov esi, apps.path1
+   mov edi, apps.param1
+   call readPath
+   call gotoStartString  ;находим начало следующей строки
 
-   ;cmp byte[esi-1], '-'
-   ;jne @f
-   push esi  ;если это был знак минус, то меняем адрес на ноль
-   mov esi, dword[edi-4]
-   cmp byte[esi], '-'
-   jne @f
-   cmp byte[esi+1], 0
-   jne @f
-   mov dword[edi-4], 0
-@@:
-   pop esi
+   ;считываем путь для левого нижнего угла
+   mov esi, apps.path2
+   mov edi, apps.param2
+   call readPath
+   call gotoStartString
 
-   cmp edi, newDataEnd ;newData.end      ;если вся таблица адресов заполнена, то выходим из цикла
-   jb loadConfig.block
-.fileend:
+   ;считываем путь для правого верхнего угла
+   mov esi, apps.path3
+   mov edi, apps.param3
+   call readPath
+   call gotoStartString
 
-   pop esi
-   pop edi
+   ;считываем путь для правого нижнего угла
+   mov esi, apps.path4
+   mov edi, apps.param4
+   call readPath
+   call gotoStartString
 
-   jmp loadConfig.end
+   ;call checkAdr ;проверим строки на '-' и пустоту и выставим битовую маску
+   call checkPathAdr
 
-.propusk:
-   mov byte[esi], 0
-   jmp loadConfig.block
+   pop edi esi
+
+   ;пропускаем строку с именем клавиши
+   call gotoEndString
+   call gotoStartString
+
+   ;считываем сканкод активационной клавиши
+   ;call readKey
+   ;call gotoEndString
+   push esi edi ecx
+   mov esi, keystr
+   mov edi, keystr
+   call readPath
+   ;преобразуем строку в число
+   mov esi, keystr
+   call strToInteger
+   mov byte[keyActivate], cl
+   pop ecx edi esi
+   call gotoStartString
+
+   ;считываем радиус
+   push esi edi ecx
+   mov esi, radstr
+   mov edi, radstr
+   call readPath
+   ;преобразуем строку в число
+   mov esi, radstr
+   call strToInteger
+   ;теперь ecx - значение радиуса
+   ;!!! добавить проверку, чтобы число не было больше области экрана
+   ;нас интересует квадрат числа
+   push eax edx
+   mov eax, ecx ;dword[radius2]
+   mul ecx
+   mov dword[radius2], eax
+   pop edx eax
+
+   pop ecx edi esi
+
+   ;считывать размер элементов интерфейса нам не нужно (пока что этот параметр только для конфига)
+   jmp .end
 .exit:
    pop edx ecx ebx eax
    mcall -1 ;закрыть эту программу
 .end:
+   mov ecx, dword[cfgFileAdr]    ;если файл был загружен, то
+   cmp ecx, 0
+   je @f
+   mcall 68, 13, ecx  ;выгружаем файл из памяти
+@@:
    pop edx ecx ebx eax
    ret
 
 
+;readKey:
+   ;читаем клавишу и выходим
+;   cmp dword[eax], 'Ctrl'
+;   jne .notCtrl
+;   mov byte[keyActivate], 3
+;   jmp .end
+;.notCtrl:
+;   cmp dword[eax], 'Shif'
+;   jne .notShift
+;   mov byte[keyActivate], 2
+;   jmp .end
+;.notShift:
+;   cmp dword[eax], 'Spac'
+;   jne .notSpace
+;   mov byte[keyActivate], 32
+;   jmp .end
+;.notSpace:
+;   cmp word[eax], 'Al'
+;   jne .notAlt
+;   mov byte[keyActivate], 1
+;   jmp .end
+;.notAlt:
+   ;убедимся, что там 1 символ, а не строка
+;   cmp byte[eax+1], 10
+;   je .oneSymb
+;   cmp byte[eax+1], 0
+;   je .oneSymb
+;   cmp byte[eax+1], 13
+;   je .oneSymb
+;   jmp .default    ;в любом другом случае ошибка конфига - выход
+;.oneSymb:
+   ;проверяем, что символ разрешённый  !!!  доделать
+
+   ;добавляем символ как есть
+;   push ebx
+;   ;xor ebx, ebx
+;   mov bl, byte[eax]
+;   mov byte[keyActivate], bl
+;   pop ebx
+
+;   jmp .end
+;.default:
+;   mcall -1
+;   ;mov byte[keyActivate], 2
+;.end:
+;   ret
+
+
+checkPathAdr:
+   push eax ebx
+   xor eax, eax
+
+   mov ebx, apps.path1
+   cmp byte[ebx], '-'
+   jne @f
+   ;cmp byte[ebx+1], 0
+   ;jne @f
+   mov byte[ebx], 0
+@@:
+   mov ebx, apps.path2
+   cmp byte[ebx], '-'
+   jne @f
+   ;cmp byte[ebx+1], 0
+   ;jne @f
+   mov byte[ebx], 0
+@@:
+   mov ebx, apps.path3
+   cmp byte[ebx], '-'
+   jne @f
+   ;cmp byte[ebx+1], 0
+   ;jne @f
+   mov byte[ebx], 0
+@@:
+   mov ebx, apps.path4
+   cmp byte[ebx], '-'
+   jne @f
+   ;cmp byte[ebx+1], 0
+   ;jne @f
+   mov byte[ebx], 0
+@@:
+   pop ebx eax
+   ret
+
+
+checkAdr:
+   push eax ebx
+   xor eax, eax
+
+   mov ebx, apps.path1
+   cmp byte[ebx], '-'
+   jne @f
+   inc eax
+@@:
+   mov ebx, apps.path2
+   cmp byte[ebx], '-'
+   jne @f
+   add eax, 2
+@@:
+   mov ebx, apps.path3
+   cmp byte[ebx], '-'
+   jne @f
+   add eax, 4
+@@:
+   mov ebx, apps.path4
+   cmp byte[ebx], '-'
+   jne @f
+   add eax, 8
+@@:
+
+   mov ebx, apps.param1
+   cmp byte[ebx], '-'
+   jne @f
+   add eax, 16
+@@:
+   mov ebx, apps.param2
+   cmp byte[ebx], '-'
+   jne @f
+   add eax, 32
+@@:
+   mov ebx, apps.param3
+   cmp byte[ebx], '-'
+   jne @f
+   add eax, 64
+@@:
+   mov ebx, apps.param4
+   cmp byte[ebx], '-'
+   jne @f
+   add eax, 128
+@@:
+
+   mov byte[apps.bits], al
+   pop ebx eax
+   ret
+
+
+
+;преобразование строки в целое число
+strToInteger: ;вход: esi - указатель на строку с десятичной записью числа, выход: eсx - число
+   push eax ebx edx edi
+   xor eax, eax  ;обнуляем eax
+   xor ecx, ecx
+   mov edi, esi
+.get_last_symbol:
+   ;читаем очередной символ
+   mov al, byte[edi]
+
+   ;если это ноль, то строка закончилась
+   cmp al, 0
+   je @f
+
+   ;иначе переходим на следующий символ
+   inc edi
+   jmp .get_last_symbol
+@@:   ;дошли до последнего символа и кладём адрес на него в edi
+   dec edi
+
+   cmp edi, esi    ;адрес последнего символа должен быть дальше адреса первого символа
+   jae @f
+   jmp .error  ;иначе ошибка
+@@:
+   ;теперь в edi последний символ, а esi указывает на начало строки (на первй символ строки)
+   mov cl, byte[edi]
+   sub cl, 48 ;0x30 ;'0'
+   dec edi         ;переходим на след символ от конца
+   mov ebx, 10     ;множитель степени
+.tranform_cicle:
+   cmp edi, esi        ;если больше нет символов строке, то число преобразовали - выходим
+   jb .end
+
+   mov eax, 0
+   mov al, byte[edi]
+   sub al, 48 ;'0'
+   cmp al, 9 ;0x39           ;если число больше 9, то видимо в строке было что-то не так
+   ja .error
+   cmp al, 0 ;0x30           ;если число меньше 0, то видимо в строке было что-то не так
+   jb .error
+   mov edx, 0
+   mul ebx
+
+   add ecx, eax
+
+   dec edi
+   mov edx, 0
+   mov eax, 10
+   mul ebx
+   mov ebx, eax
+   jmp .tranform_cicle
+.error:
+   mov ecx, 0
+.end:
+   pop edi edx ebx eax
+   ret
 
 
 ;Вынести код ниже в отдельный общий модуль
@@ -474,7 +795,7 @@ copyKill:
 
 ;MODE 3
 init03:
-   mov dword[radius2], 100; 10*10
+   ;mov dword[radius2], 100; 10*10
    mov dword[backAdr], mode03
    call setHotKey
 mode03:
@@ -495,6 +816,9 @@ mouse03:
 
    cmp byte[state], LOCKd    ;если угол заблокирован, то обновим начальные координаты
    je mouse03.updateCoord
+
+   cmp byte[state], SUPERLOCKd  ;если действие было выполнено и получили блокировку, то ждём отпускания клавиши активации
+   je @f
 
    call checkPointInCircle   ;иначе если преодолели радиус активации, то вызываем действие нужного угла
    jmp @f
@@ -589,7 +913,7 @@ activateCorner:
    mov ecx, 1
    call run_command
    mov byte[keyState], 0
-   mov byte[state], LOCKd
+   mov byte[state], SUPERLOCKd
    jmp activateCorner.end
 
 .leftup:
@@ -597,7 +921,7 @@ activateCorner:
    mov ecx, 0
    call run_command
    mov byte[keyState], 0
-   mov byte[state], LOCKd
+   mov byte[state], SUPERLOCKd
    jmp activateCorner.end
 
 .right: ;правая сторона экрана
@@ -610,7 +934,7 @@ activateCorner:
    mov ecx, 3
    call run_command
    mov byte[keyState], 0
-   mov byte[state], LOCKd
+   mov byte[state], SUPERLOCKd
    jmp activateCorner.end
 
 .rightup:
@@ -618,7 +942,7 @@ activateCorner:
    mov ecx, 2
    call run_command
    mov byte[keyState], 0
-   mov byte[state], LOCKd
+   mov byte[state], SUPERLOCKd
    jmp activateCorner.end
 
 .end:
@@ -631,10 +955,6 @@ keyActivate db 41 ;16 ;'Q' ;клавиша активации
 keyState    db 0  ;0-клавиша не активна, 1 - клавиша активна
 
 backAdr rd 1      ;адрес для возврата из проверки мыши
-
-;slotMax dd 0
-;selfPID dd 0
-;buf db 1024 dup(0)
 slotMax rd 1
 selfPID rd 1
 buf rb 1024
@@ -644,14 +964,23 @@ screen:
   .width  rw 1
   .height rw 1
 
-state: rb 1  ;состояние: 0=unlock, 1=lock
+state: rb 1  ;состояние: 0=unlock, 1=lock, 2=superlock for mode 3
 mode:  rb 1  ;режим работы приложения: 0=не работает, 1=классический, 2=по горячей клавише
 
-newData:  ;табличка адресов командных строк
-  .lu rd 1
-  .ld rd 1
-  .ru rd 1
-  .rd rd 1
-newDataEnd:
+
+keystr: rb 4 ;строка со значением сканкода активационной клавиши
+radstr: rb 5 ;строка со значением радиуса
+apps:
+ .bits: rb 1
+ .path1: rb 512
+ .path2: rb 512
+ .path3: rb 512
+ .path4: rb 512
+ .param1: rb 512
+ .param2: rb 512
+ .param3: rb 512
+ .param4: rb 512
+appsEnd:
+
 
 I_END:
