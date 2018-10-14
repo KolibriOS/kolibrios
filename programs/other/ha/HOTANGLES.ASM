@@ -250,7 +250,7 @@ run_command:
 
    cmp ecx, 0
    jne @f
-   mov eax, apps.path1 ;dword[newData.lu]
+   mov eax, apps.path1
    cmp byte[eax], 0 ;если по адресу пусто (или лежал символ '-'), то адрес 0
    je .set0
    mov dword[struct70.path_adr], eax
@@ -260,7 +260,7 @@ run_command:
 @@:
    cmp ecx, 1
    jne @f
-   mov eax, apps.path2 ;dword[newData.ld]
+   mov eax, apps.path2
    cmp byte[eax], 0 ;если по адресу пусто (или лежал символ '-'), то адрес 0
    je .set0
    mov dword[struct70.path_adr], eax
@@ -270,7 +270,7 @@ run_command:
 @@:
    cmp ecx, 2
    jne @f
-   mov eax, apps.path3 ;dword[newData.ru]
+   mov eax, apps.path3
    cmp byte[eax], 0 ;если по адресу пусто (или лежал символ '-'), то адрес 0
    je .set0
    mov dword[struct70.path_adr], eax
@@ -280,7 +280,7 @@ run_command:
 @@:
    cmp ecx, 3
    jne .set0 ;.end_set_path
-   mov eax, apps.path4 ;dword[newData.rd]
+   mov eax, apps.path4
    cmp byte[eax], 0 ;если по адресу пусто (или лежал символ '-'), то адрес 0
    je .set0
    mov dword[struct70.path_adr], eax
@@ -475,7 +475,7 @@ loadConfig:
    call readPath
    call gotoStartString
 
-   ;call checkAdr ;проверим строки на '-' и пустоту и выставим битовую маску
+   ;проверим строки на '-'
    call checkPathAdr
 
    pop edi esi
@@ -485,8 +485,6 @@ loadConfig:
    call gotoStartString
 
    ;считываем сканкод активационной клавиши
-   ;call readKey
-   ;call gotoEndString
    push esi edi ecx
    mov esi, keystr
    mov edi, keystr
@@ -532,54 +530,6 @@ loadConfig:
    ret
 
 
-;readKey:
-   ;читаем клавишу и выходим
-;   cmp dword[eax], 'Ctrl'
-;   jne .notCtrl
-;   mov byte[keyActivate], 3
-;   jmp .end
-;.notCtrl:
-;   cmp dword[eax], 'Shif'
-;   jne .notShift
-;   mov byte[keyActivate], 2
-;   jmp .end
-;.notShift:
-;   cmp dword[eax], 'Spac'
-;   jne .notSpace
-;   mov byte[keyActivate], 32
-;   jmp .end
-;.notSpace:
-;   cmp word[eax], 'Al'
-;   jne .notAlt
-;   mov byte[keyActivate], 1
-;   jmp .end
-;.notAlt:
-   ;убедимся, что там 1 символ, а не строка
-;   cmp byte[eax+1], 10
-;   je .oneSymb
-;   cmp byte[eax+1], 0
-;   je .oneSymb
-;   cmp byte[eax+1], 13
-;   je .oneSymb
-;   jmp .default    ;в любом другом случае ошибка конфига - выход
-;.oneSymb:
-   ;проверяем, что символ разрешённый  !!!  доделать
-
-   ;добавляем символ как есть
-;   push ebx
-;   ;xor ebx, ebx
-;   mov bl, byte[eax]
-;   mov byte[keyActivate], bl
-;   pop ebx
-
-;   jmp .end
-;.default:
-;   mcall -1
-;   ;mov byte[keyActivate], 2
-;.end:
-;   ret
-
-
 checkPathAdr:
    push eax ebx
    xor eax, eax
@@ -614,59 +564,6 @@ checkPathAdr:
 @@:
    pop ebx eax
    ret
-
-
-checkAdr:
-   push eax ebx
-   xor eax, eax
-
-   mov ebx, apps.path1
-   cmp byte[ebx], '-'
-   jne @f
-   inc eax
-@@:
-   mov ebx, apps.path2
-   cmp byte[ebx], '-'
-   jne @f
-   add eax, 2
-@@:
-   mov ebx, apps.path3
-   cmp byte[ebx], '-'
-   jne @f
-   add eax, 4
-@@:
-   mov ebx, apps.path4
-   cmp byte[ebx], '-'
-   jne @f
-   add eax, 8
-@@:
-
-   mov ebx, apps.param1
-   cmp byte[ebx], '-'
-   jne @f
-   add eax, 16
-@@:
-   mov ebx, apps.param2
-   cmp byte[ebx], '-'
-   jne @f
-   add eax, 32
-@@:
-   mov ebx, apps.param3
-   cmp byte[ebx], '-'
-   jne @f
-   add eax, 64
-@@:
-   mov ebx, apps.param4
-   cmp byte[ebx], '-'
-   jne @f
-   add eax, 128
-@@:
-
-   mov byte[apps.bits], al
-   pop ebx eax
-   ret
-
-
 
 ;преобразование строки в целое число
 strToInteger: ;вход: esi - указатель на строку с десятичной записью числа, выход: eсx - число
@@ -971,7 +868,6 @@ mode:  rb 1  ;режим работы приложения: 0=не работает, 1=классический, 2=по горяч
 keystr: rb 4 ;строка со значением сканкода активационной клавиши
 radstr: rb 5 ;строка со значением радиуса
 apps:
- .bits: rb 1
  .path1: rb 512
  .path2: rb 512
  .path3: rb 512

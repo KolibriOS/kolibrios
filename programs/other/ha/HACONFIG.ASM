@@ -128,18 +128,16 @@ key:                                    ; Keypress event handler
         mov     eax, 2                  ; The key is returned in ah. The key must be
         mcall                           ; read and cleared from the system queue.
 
-        ;push eax
         invoke  edit_box_key, editLU
         invoke  edit_box_key, editLD
         invoke  edit_box_key, editRU
         invoke  edit_box_key, editRD
         invoke  edit_box_key, editRadius
-        ;pop eax
 
         cmp eax, 1
-        je event_wait ;.end ;@f
+        je event_wait
         cmp word[hkSymbol], 0
-        jne event_wait ;.end ;@f
+        jne event_wait
         cmp al, 0
         jne .next
         mov byte[hkSymbol], ah
@@ -167,13 +165,7 @@ key:                                    ; Keypress event handler
         ;и сохраняем его
         mov dword[keystr.size], ecx
 
-;        cmp ecx, 3
-;        jbe @f
-;        mcall -1
-;      @@:
-
         pop esi ecx eax
-
         jmp red
 .next:
         ;cmp al, 2
@@ -187,7 +179,6 @@ key:                                    ; Keypress event handler
         ;mov byte[hkSymbol], 2
         ;jmp red
 @@:
-;.end:
         jmp     event_wait              ; Just read the key, ignore it and jump to event_wait.
 
 button:                                 ; Buttonpress event handler
@@ -342,12 +333,11 @@ applyButton:
         add ecx, dword[hkSize] ;размер имени активационной кнопки
         add ecx, dword[keystr.size] ;размер сканкода активационной кнопки
         inc ecx ; ещё 1 байт для хранения размера элементов
-        ;mov ecx, 85
 
-        cmp dword[keystr.size], 3
-        jbe @f
+        ;cmp dword[keystr.size], 3
+        ;jbe @f
         ;mcall -1
-      @@:
+      ;@@:
 
         ;если заданы пустые строки, то мы автоматически добавляем знак минус, значит размер +1 байт
         cmp dword[editLU.size], 0
@@ -373,10 +363,6 @@ applyButton:
         mov dword[createFile.data_adr], eax ;сохраняем адрес буфера в структуру
 
         ;заполним буфер содержимого:
-        ;cmp byte[mode], 0
-        ;jne @f
-        ;@@:
-
         push ebx    ;сохраняем выбранный режим
         mov bl, byte[mode]
         mov byte[eax], bl
@@ -1859,7 +1845,6 @@ dd 0,0
         akmenuitem_delete db 'kmenuitem_delete',0
         akmenuitem_draw  db 'kmenuitem_draw',0
 
-;mouse_dd  dd ?
 sc  system_colors
 mouse_dd  rd 1
 
