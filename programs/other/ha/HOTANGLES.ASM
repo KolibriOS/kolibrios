@@ -390,9 +390,9 @@ trim:  ;esi - последний нулевой символ строки
    ;push esi
    mov byte[esi], 0
    dec esi
-   cmp byte[esi], 8
+   cmp byte[esi], 9   ;tab
    je trim
-   cmp byte[esi], 32
+   cmp byte[esi], 32  ;space
    je trim
    inc esi
    ;pop esi
