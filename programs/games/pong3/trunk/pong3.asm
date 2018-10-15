@@ -15,7 +15,7 @@ format binary as ""
     dd     IM_END                  ; size of image
     dd     0x300000                ; memory for app
     dd     0x300000                ; esp
-    dd     temp_area, 0x0          ; I_Param , I_Path
+    dd     0x0, 0x0                ; I_Param , I_Path
 
 ;******************************************************************************
 
@@ -24,35 +24,38 @@ include 'ascl.inc'
 include 'ascgl.inc'
 include 'ascgml.inc'
 
+AREA_W = 640
+AREA_H = 480
+
 
 START:                          ; start of execution
-        call    draw_window
-
         convbmp pongfile, tsoi
         bmptoimg pongfile, tsoi,pong
-        getimg pong, 0, 0, 80, 4, img
-        getimg pong, 0, 4, 80, 4, img2
+        getimg pong, 0, 0,  80, 4, img
+        getimg pong, 0, 4,  80, 4, img2
         getimg pong, 5, 38, 15, 15, img3
-        getimg pong, 0, 8, 80, 20, img5
-        fullimg img4, 80 ,20 ,0x00000000   ;black for rocket
-        fullimg img6, 15 ,15 ,0x00000000   ;black for ball
+        getimg pong, 0, 10, 80, 20, img5
+        fullimg imgbr, 80, 4,  0x00000000  ;black for rocket
+        fullimg imgbg, 80, 20, 0x00000000  ;black for grav
+        fullimg imgbb, 12, 12, 0x00000000  ;black for ball
 
 still:
         scevent red,key,button
 
-        ;mcall 48, 4 ;get skin width
+        ;mcall 48, 4 ;get skin height
         ;sub [skin_h], 16
         ;div eax, 2
         ;mov [skin_h], eax
-        
-        outcount [scoreb], 300, 4, 0x10000000 + cl_Blue, 5 shl 16
-        outcount [scorea], 350, 4, 0x10000000 + cl_Red, 5 shl 16
 
-del_images:
-        setimg [ply1x], [ply1y], img4
-        setimg [ply2x], [ply2y], img4
-        setimg [ballx], [bally], img6
-        setimg [gravx], [gravy], img4
+remember_old_coordinates:
+        m2m [ply1x_old], [ply1x]
+        m2m [ply1y_old], [ply1y]
+        m2m [ply2x_old], [ply2x]
+        m2m [ply2y_old], [ply2y]
+        m2m [gravx_old], [gravx]
+        m2m [gravy_old], [gravy]
+        m2m [ballx_old], [ballx]
+        m2m [bally_old], [bally]
 
 move_ply1:
         correct [ply1x], [ply1rx], 4
@@ -84,7 +87,7 @@ balln:
 by_n:
 
 ;ball collusion of screen
-        cmp     [ballx], 640-32
+        cmp     [ballx], AREA_W-12
         jna     xa_ok
         neg     [ballxv]
 xa_ok:
@@ -95,20 +98,20 @@ xb_ok:
 
 ;if ball far out of screen come back
 ; is not work already
-        cmp     [bally], 466
+        cmp     [bally], AREA_H-30 ;check RED fails
         jng     yax_ok
-        call    draw_window
         inc     [scoreb]
+        call    draw_score
         mov     [bally], 240
         mov     [ballx], 310
         mov     [ballyv], 2
         random 5, [ballxv]
         sub     [ballxv], 2
 yax_ok:
-        cmp     [bally], 30
+        cmp     [bally], 0  ;check BLUE fails
         jnl     yax_ok2
-        call    draw_window
         inc     [scorea]
+        call    draw_score
         mov     [bally], 240
         mov     [ballx], 310
         mov     [ballyv], 2
@@ -240,10 +243,45 @@ nograv:
         mov     [gravy], 1000
 endgrav:
 
+;next code checks were coordinates of player1 and player2
+;changed or not
+;    if yes => fill old
+;    if no  => do not fill old
 redraw_images:
+		;player1
+		;if (ply1x!=ply1x_old) || (ply1y!=ply1y_old) fill1
+		mov    eax, [ply1x]
+		cmp    [ply1x_old], eax
+		jne    fill1
+		mov    eax, [ply1y]
+		cmp    [ply1y_old],eax
+		jne    fill1
+		jmp    no_fill1
+	fill1:
+        setimg [ply1x_old], [ply1y_old], imgbr
+	no_fill1:
         setimg [ply1x], [ply1y], img
+		
+		;player2
+		;if (ply2x!=ply2x_old) || (ply2y!=ply2y_old) fill2
+		mov    eax, [ply2x]
+		cmp    [ply2x_old], eax
+		jne    fill2
+		mov    eax, [ply2y]
+		cmp    [ply2y_old],eax
+		jne    fill2
+		jmp    no_fill2
+	fill2:
+        setimg [ply2x_old], [ply2y_old], imgbr
+	no_fill2:
         setimg [ply2x], [ply2y], img2
+		
+		;ball
+        setimg [ballx_old], [bally_old], imgbb
         setimg [ballx], [bally], img3
+		
+		;grav
+        setimg [gravx_old], [gravy_old], imgbg
         setimg [gravx], [gravy], img5
 
         delay 1             ;don't generate delay for fast speed programm
@@ -268,10 +306,16 @@ no_r:
         cmp     ah, key_Up
         jne     no_u
         sub     [ply1ry], 16
+		cmp     [ply1ry], 0
+		jb      no_u
+		mov     [ply1ry], 0
 no_u:
         cmp     ah, key_Down
         jne     no_d
         add     [ply1ry], 16
+		cmp     [ply1ry], AREA_H-50
+		jl      no_d
+		mov     [ply1ry], AREA_H-50
 no_d:
         cmp     ah, key_Space
         jne     no_sp
@@ -280,27 +324,38 @@ no_sp:
 
         jmp     still
 
-  button:                       ; button
-        mov     eax, 17                 ; get id
-        mcall
-        cmp     ah, 1                   ; button id=1 ?
+  button:
+        mcall   17         ; get id
+        cmp     ah, 1      ; button id=1 ?
         jne     noclose
-        mov     eax, -1                 ; close this program
-        mcall
+        mcall   -1         ; close this program
   noclose:
         jmp     still
 
 
 draw_window:
         mcall 12,1 ;start window redraw
-        mcall 0, <10, 640+8>, <10, 480+24>, 0x14000000,, wtitle 
+        mcall 0, <10, AREA_W+5+9>, <10, 480+35>, 0x34000000,, wtitle 
         mcall 12,2 ;end window redraw
-        ret
 
+draw_score:
+		mcall 13, <10, 100>, <AREA_H-17, 16>, 0
+		outcount [scoreb], 10, AREA_H-17, 0x01000000 + cl_Blue, 3 shl 16
+        outcount [scorea], 50, AREA_H-17, 0x01000000 + cl_Red, 3 shl 16
+		ret
 
 ; DATA AREA
-wtitle db 'PONG: USE ARROW KEYS           SCORE:',0
+wtitle db 'PONG: use Arrow Keys and Space',0
 ;skin_h dd 25
+
+ply1x_old dd ? 
+ply1y_old dd ?
+ply2x_old dd ?
+ply2y_old dd ?
+gravx_old dd ?
+gravy_old dd ?
+ballx_old dd ?
+bally_old dd ?
 
 xt              dd 100
 yt              dd 100
@@ -310,10 +365,10 @@ gravx           dd 1000
 gravy           dd 1000
 
 ply1rx          dd 200
-ply1ry          dd 50
+ply1ry          dd 40
 
 ply1x           dd 200
-ply1y           dd 50
+ply1y           dd 40
 
 ply2x           dd 200
 ply2y           dd 400
@@ -336,14 +391,16 @@ IM_END:
 
 temp            rb 20000
 
+;real images
 pong            rb 80*60*3+8
 img             rb 32*32*3+8
 img2            rb 32*32*3+8
 img3            rb 32*32*3+8
-img4            rb 80*20*3+8
 img5            rb 32*32*3+8
-img6            rb 15*15*3+8
 
-temp_area       rb 0x15000
+;black to clean old images
+imgbr           rb 80*4 *3+8
+imgbg           rb 80*20*3+8
+imgbb           rb 12*12*3+8
 
 I_END:
