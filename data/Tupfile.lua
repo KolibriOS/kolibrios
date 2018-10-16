@@ -582,7 +582,7 @@ tup.append_table(img_files, {
  {"TMPDISK", PROGS .. "/cmm/tmpdisk/tmpdisk.com"},
  {"DEVELOP/CLIPVIEW", PROGS .. "/cmm/clipview/clipview.com"},
  {"File Managers/EOLITE", PROGS .. "/cmm/eolite/Eolite.com"},
- {"FONT_VIEWER", PROGS .. "/cmm/kf_font_viewer/font_viewer.com"},
+ {"KF_VIEW", PROGS .. "/cmm/kf_font_viewer/font_viewer.com"},
  {"GAMES/CLICKS", PROGS .. "/games/clicks/trunk/clicks.com"},
  {"GAMES/MBLOCKS", PROGS .. "/cmm/mblocks/mblocks.com"},
  {"DEVELOP/DIFF", PROGS .. "/cmm/diff/diff.com"},
