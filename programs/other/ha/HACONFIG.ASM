@@ -2,7 +2,7 @@
 ; Hot Angles Config ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ; Compile with FASM
-; Version 0.3.7: Oct 14, 2018
+; Version 0.3.8: Oct 14, 2018
 
 ; Copyright (c) 2018, Efremenkov Sergey aka TheOnlyMirage
 ; All rights reserved.
@@ -91,6 +91,8 @@ START:
         stdcall [kmenuitem_new], KMENUITEM_SUBMENU, valueModeMenu1, [modeMenu]
 
     call  loadConfig     ;загружаем конфигурацию из файла, если нет - то выставл€ем параметры по умолчанию
+    call  defaultElems   ;устанавливаем размеры элементов в зависимости от настроек
+    call  resizeElems
     call  draw_window    ;отрисовать окно приложени€
 
 ; ќбработка цикла событий
@@ -114,7 +116,6 @@ event_wait:
     invoke  edit_box_mouse, editLD
     invoke  edit_box_mouse, editRU
     invoke  edit_box_mouse, editRD
-    ;stdcall [kmainmenu_dispatch_cursorevent], [modeMenu] ;проверка мыши дл€ комбобокса
     invoke  edit_box_mouse, editRadius
 
     jmp     event_wait
@@ -226,11 +227,13 @@ noclose:
     mcall 9, pi, -1 ;get window coord
 
     mov eax, dword[pi+34]
-    add eax, buttonModeX ;+ 5
+    add eax, Otstup ;buttonModeX ;+ 5
     mov word[coordModeMenu.x], ax
 
     mov eax, dword[pi+38]
-    add eax, buttonModeY + 13 ;17
+    add ax, word[elem.butModeY]
+    add ax, word[elem.butDialHeight]
+    dec ax ;add eax, buttonModeY + 13 ;17
     mov word[coordModeMenu.y], ax
 
     stdcall [ksubmenu_draw], [modeMenu], coordModeMenu
@@ -334,11 +337,6 @@ applyButton:
         add ecx, dword[keystr.size] ;размер сканкода активационной кнопки
         inc ecx ; ещЄ 1 байт дл€ хранени€ размера элементов
 
-        ;cmp dword[keystr.size], 3
-        ;jbe @f
-        ;mcall -1
-      ;@@:
-
         ;если заданы пустые строки, то мы автоматически добавл€ем знак минус, значит размер +1 байт
         cmp dword[editLU.size], 0
         jne @f
@@ -374,8 +372,8 @@ applyButton:
         push esi ebx
         call UpdateEditsSizes ;обновить размеры текста в edit'ах
 
-        mov esi, dataBuffer.1     ;editLU.text
-        mov ebx, dataBuffer.size1 ;editLU.size
+        mov esi, dataBuffer.1
+        mov ebx, dataBuffer.size1
         call copyParam
         call addPerenos     ;добавл€ем перенос строки
 
@@ -676,31 +674,29 @@ setMySize:
 @@:
    cmp byte[sizeStyle], 'a'
    je .auto
-   ;cmp byte[sizeStyle], 's'
-   ;je .system
+   cmp byte[sizeStyle], 'x'
+   je .x
 .system:     ;иначе значение по умолчанию: s - системна€
-;   push ebx ecx
-   ;!!!
-;   mov eax, 9
-;   mcall 48, 11   ;получаем системный размер шрифта
-   ;eax - высота шрифта в пиксел€х
-;   mov ecx, eax
-;   push eax
-;   mcall 48, 12, ecx  ;примен€ем размер шрифта
-;   pop eax
-;   pop ecx ebx
-   ;temp fix -  делим на текущий размер шрифта and -1
-;   push ebx edx
-;   mov ebx, 9
-   ;div ebx
-;   pop edx ebx
-   ;cmp eax, 0
-   ;je .end
-   ;dec eax
-   mov eax, 0 ;xor eax, eax ;test temp
+   push ebx ecx edx
+   mcall 48, 11   ;получаем системный размер шрифта
+   ;теперь eax - высота шрифта в пиксел€х
+   mov ebx, 9     ;temp fix -  делим на текущий размер шрифта and -1
+   mov edx, 0
+   div ebx
+   pop edx ecx ebx
+
+   cmp eax, 0
+   je .end
+   cmp eax, 7
+   jae .size7
+   dec eax
+   ;mov eax, 0   ;test
+   jmp .end
+.x:
+   mov byte[sizeStyle], 'x'
+   mov eax, 0
    jmp .end
 .auto:       ;a - выставл€ем в зависимости от разрешени€ экрана
-   ;!!!
    mcall 14
    push ebx
    xor ebx, ebx
@@ -711,16 +707,24 @@ setMySize:
    mov ax, bx
 .a:
    pop ebx
-   cmp ax, 1919     ;размеры полученные выше от 0 и на 1 меньше
+   cmp ax, 1300 ;1919     ;размеры полученные выше от 0 и на 1 меньше
    jb .size0
+   cmp ax, 1899 ;919
+   jb .x
    cmp ax, 2047
    jb .size1
    cmp ax, 4095
    jb .size2
    cmp ax, 8191
    jb .size3
+   cmp ax, 16383
+   jb .size4
+   cmp ax, 32767
+   jb .size5
+   cmp ax, 65535
+   jb .size6
 
-   jmp .size4
+   jmp .size7
 
 .size0:
    mov eax, 0
@@ -947,6 +951,8 @@ readOptSize:
    je .setValue
    cmp byte[eax], 's'
    je .setValue
+   cmp byte[eax], 'x'
+   je .setValue
    cmp byte[eax], '0'
    je .setValue
    cmp byte[eax], '1'
@@ -1078,31 +1084,137 @@ copyKill:
    pop edi esi ecx ebx eax
    ret
 
+
+
+
+reg: dw 0
+shlRegForSizeElems:
+   push eax edx
+   xor eax, eax
+   xor edx, edx
+   mov ax, word[reg]
+   mov dl, byte[mysize]
+@@:
+   cmp dl, 0
+   je @f
+   shl ax, 1
+   dec dl
+   jmp @b
+@@:
+   mov word[reg], ax
+   pop edx eax
+   ret
+
  WindowsWidth  = 450
  WindowsHeight = 195 + 35 - 5
 coord:      ;координаты окна приложени€
  .y dw 0
  .x dw 0
 
+
+
+
+
+BaseY = 36  ;смещение до первого, самого верхнего, элемента внутри окна
+
+elem:
+ .winWidth:  dw 450
+ .winHeight: dw 225
+ .butAppleWidth:  dw 80
+ .butAppleHeight: dw 20
+ .textDelta: dw 3 ;отступ между строками многострочного текста
+ .butDialWidth:  dw 30      ;высота и ширина дл€ 4 кнопок диалогового окна
+ .butDialHeight: dw 14
+ .textHeight:    dw 9 ;размер высота шрифта
+ ;.editHeight:    dw
+ .editCommandWidth: dw 150 ;180-butDialWidth
+ .butModeWidth: dw 221
+ ;.textCommandUpY: dw 74
+ .butModeY: dw 160
+ ;.editRadiusWidth: dw 40
+elemEnd:
+
+
+;выставл€ем все значени€ по умолчанию
+defaultElems:
+   mov word[elem.winWidth], 450
+   mov word[elem.winHeight], 225
+   mov word[elem.butAppleWidth], 80
+   mov word[elem.butAppleHeight], 20
+   mov word[elem.textDelta], 3
+   mov word[elem.butDialWidth], 30
+   mov word[elem.butDialHeight], 14
+   mov word[elem.textHeight], 9
+   mov word[elem.editCommandWidth], 150
+   mov word[elem.butModeWidth], 221
+   mov word[elem.butModeY], 160
+   ;mov word[elem.editRadiusWidth], 40
+   ret
+
+;проходим по всем элементам и перевычисл€ем параметры (функци€ выполн€етс€ 1 раз при загрузке конфигурации)
+resizeElems:
+   push ebx esi
+   xor ebx, ebx
+   mov esi, elem
+@@:
+   cmp esi, elemEnd
+   jae @f
+
+   mov bx, word[esi]
+   mov word[reg], bx
+   call shlRegForSizeElems
+   mov bx, word[reg]
+   mov word[esi], bx
+   add esi, 2
+   jmp @b
+@@:
+   pop esi ebx
+   ret
+
+
+
+
+
+
+
+
 draw_window:
-        ;удал€ем кнопку, если есть
-        mov edx, 0x80000002
-        mcall 8
+   ;удал€ем кнопку, если есть
+   mov edx, 0x80000002
+   mcall 8
 
-        ;удал€ем ещЄ 4 кнопки если они есть
-        mov edx, 0x80000004
-        mcall 8
-        mov edx, 0x80000005
-        mcall 8
-        mov edx, 0x80000006
-        mcall 8
-        mov edx, 0x80000007
-        mcall 8
+   ;удал€ем ещЄ 4 кнопки если они есть
+   mov edx, 0x80000004
+   mcall 8
+   mov edx, 0x80000005
+   mcall 8
+   mov edx, 0x80000006
+   mcall 8
+   mov edx, 0x80000007
+   mcall 8
 
-        mov     eax, 12                 ; function 12: tell os about windowdraw
-        mov     ebx, 1                  ; 1, start of draw
-        mcall
+   mov     eax, 12                 ; function 12: tell os about windowdraw
+   mov     ebx, 1                  ; 1, start of draw
+   mcall
 
+   cmp byte[sizeStyle], 'x'
+   je draw_window_x
+   jmp draw_window_old
+
+draw_window_x:
+    mov word[elem.winWidth], 450+150
+    mov word[elem.winHeight], 225+220/2
+    mov word[elem.butAppleWidth], 80+80/3
+    mov word[elem.butAppleHeight], 20+20/3
+    mov word[elem.textDelta], 3
+    mov word[elem.butDialWidth], 30+10
+    mov word[elem.butDialHeight], 14+7
+    mov word[elem.textHeight], 9*2
+    mov word[elem.editCommandWidth], 150+50
+    mov word[elem.butModeWidth], 221
+    mov word[elem.butModeY], 160+90
+
+draw_window_old:
         ;отобразим окно по центру экрана дл€ этого:
         mcall 14 ;получим размеры экрана
         mov dword[coord], eax       ;положим размеры экрана в координаты
@@ -1110,19 +1222,24 @@ draw_window:
         shr word[coord.y], 1
 
         ;вычисл€ем координаты окна, чтобы окно было по середине экрана
-        sub word[coord.x], WindowsWidth/2
-        sub word[coord.y], WindowsHeight/2
+        mov bx, word[elem.winWidth] ;отнимаем от середины экрана половину размера окна
+        shr bx, 1
+        sub word[coord.x], bx
+
+        mov bx, word[elem.winHeight]
+        shr bx, 1
+        sub word[coord.y], bx
 
         mov     eax, 0                  ; function 0 : define and draw window
         mov     ebx, 0                  ; [x start] *65536 + [x size]
         mov bx, word[coord.x]
         shl  ebx, 16
-        mov bx, WindowsWidth
+        mov bx, word[elem.winWidth]
 
         mov ecx, 0
         mov     cx, word[coord.y]       ; [y start] *65536 + [y size]
         shl ecx, 16
-        mov cx, WindowsHeight
+        mov cx, word[elem.winHeight]
 
         mov     edx, 0x14ffffff         ; color of work area RRGGBB
                                         ; 0x02000000 = window type 4 (fixed size, skinned window)
@@ -1131,21 +1248,110 @@ draw_window:
         mov     edi, title
         mcall
 
+
+        ;размеры и координаты
+        ;push eax
+        xor eax, eax ;mov eax, 0
+        mov ax, word[elem.editCommandWidth]
+        mov dword[editLU.width], eax
+        mov dword[editLD.width], eax
+        mov dword[editRU.width], eax
+        mov dword[editRD.width], eax
+
+        ;mov ax, word[elem.editRadiusWidth]
+        mov ax, word[elem.winWidth]
+        sub ax, word[elem.butModeWidth]
+        sub ax, Otstup
+        sub ax, word[elem.butAppleHeight] ;Otstup
+        shr ax, 1
+        sub ax, Otstup
+        mov dword[editRadius.width], eax
+
+        ;mov ax, word[elem.butDialHeight]
+        xor ecx, ecx
+        call setNewSizeForText
+        mov dword[editLU.text_color], ecx ;0x90000000 ;eax
+        mov dword[editLD.text_color], ecx
+        mov dword[editRU.text_color], ecx
+        mov dword[editRD.text_color], ecx
+        mov dword[editRadius.text_color], ecx
+
+        ;mov ecx, dword[editRadius.height]
+        ;mov word[elem.butDialHeight], cx
+
+        ;mov eax, 0
+        mov ax, word[elem.winWidth]
+        sub ax, Otstup
+        sub ax, word[elem.butDialWidth]
+        sub ax, word[elem.editCommandWidth]
+        mov dword[editRU.left], eax
+        mov dword[editRD.left], eax
+
+        mov ax, Otstup
+        add ax, word[elem.butDialWidth]
+        mov dword[editLU.left], eax
+        mov dword[editLD.left], eax
+
+        mov ax, word[elem.textHeight]
+        add ax, word[elem.textDelta]
+        shl ax, 2
+        add ax, BaseY+2
+        mov dword[editLU.top], eax
+        mov dword[editRU.top], eax
+
+        add ax, 4
+        ;mov ax, word[elem.textHeight]
+        ;add ax, word[elem.textDelta]
+        ;shl ax, 2
+        sub ax, word[elem.textHeight]
+        ;add ax, BaseY
+        add ax, word[elem.textHeight]
+        ;add ax, 6
+        add ax, word[elem.butDialHeight]
+        add ax, word[elem.textHeight]
+        add ax, word[elem.textHeight]
+        mov dword[editLD.top], eax
+        mov dword[editRD.top], eax
+
+        ;pop eax
+        ;mcall   48,3,sc,40
+        ;edit_boxes_set_sys_color editRadius, sc  ;editLU, editLD, editRU, editRD, editRadius, sc
+
         invoke  edit_box_draw, editLU  ;рисование edit box'ов
         invoke  edit_box_draw, editLD
         invoke  edit_box_draw, editRU
         invoke  edit_box_draw, editRD
 
         ;рисуем кнопку
-        buttonAppleY = WindowsHeight-35 ;160
-        mov ebx, (WindowsWidth-80-Otstup)*65536 + 80 ;координата X, ширина кнопки
-        mov ecx, buttonAppleY*65536 + 20   ;координата Y, высота кнопки
-        mov edx, 0x00000002 ;2    ;номер кнопки
+        mov bx, word[elem.winWidth]       ;координата X кнопки
+        sub bx, word[elem.butAppleWidth]
+        sub bx, Otstup
+        shl ebx, 16
+        add bx, word[elem.butAppleWidth]  ;ширина кнопки
+
+        mov cx, word[elem.winHeight]      ;координата Y
+        sub cx, word[elem.butAppleHeight]
+        sub cx, 15
+        shl ecx, 16
+        add cx, word[elem.butAppleHeight] ;высота кнопки
+
+        mov edx, 0x00000002       ;номер кнопки
         mov esi, 0x00AABBCC       ;цвет кнопки
         mcall 8
         ;рисуем текст кнопки
-        mov     ebx, (WindowsWidth-80-Otstup+25-buttonTextXoffset) * 65536 + (buttonAppleY+6)    ;координаты текста (x, y)
+        mov bx, word[elem.winWidth]       ;координата X текста
+        sub bx, word[elem.butAppleWidth]
+        sub bx, Otstup
+        add bx, 25
+        sub bx, buttonTextXoffset     ;!!!use size
+        shl ebx, 16
+        add bx, word[elem.winHeight]  ;координата Y текста
+        sub bx, word[elem.butAppleHeight]
+        sub bx, 15
+        add bx, 6                     ;!!!use size
+
         mov     ecx, 0xFFFFFF     ;белый цвет текста
+        call setNewSizeForText
         mov     edx, buttonText
         mov     esi, buttonTextSize  ;размер текста в символах
         mcall 4
@@ -1154,79 +1360,241 @@ draw_window:
         ;номера 4,5,6 и 7
         buttonH = 14
         buttonW = 30
+
+
         ;левый верхний угол
-        mov ebx, Otstup*65536 + buttonW ;координата X, ширина кнопки
-        mov ecx, 85*65536 + buttonH   ;координата Y, высота кнопки
+        mov ebx, Otstup ;координата X
+        shl ebx, 16
+        add bx, word[elem.butDialWidth] ;ширина кнопки
+
+        ;mov ecx, 85     ;координата Y      36+3*9+2*3+ 5 +9+2
+        ;BaseY+4*(word[elem.textHeight]+word[elem.textDelta])+2
+        mov cx, word[elem.textHeight]
+        add cx, word[elem.textDelta]
+        shl cx, 2
+        add cx, BaseY+2
+        shl ecx, 16
+        add cx, word[elem.butDialHeight] ;высота кнопки
+
         mov edx, 0x00000004       ;номер кнопки
         mov esi, 0x00AABBCC       ;цвет кнопки
         mcall 8
+
         ;левый нижний угол
-        mov ebx, Otstup*65536 + buttonW ;координата X, ширина кнопки
-        mov ecx, 120*65536 + buttonH   ;координата Y, высота кнопки
+        mov ebx, Otstup ;координата X
+        shl ebx, 16
+        add bx, word[elem.butDialWidth] ;ширина кнопки
+        ;mov ecx, 120    ;координата Y
+        mov cx, word[elem.textHeight]
+        add cx, word[elem.textDelta]
+        shl cx, 2
+        sub cx, word[elem.textHeight]
+        add cx, BaseY
+        add cx, word[elem.textHeight]
+        add cx, 6
+        add cx, word[elem.butDialHeight]
+        add cx, word[elem.textHeight]
+        add cx, word[elem.textHeight]
+
+        shl ecx, 16
+        add cx, word[elem.butDialHeight] ;высота кнопки
+
         mov edx, 0x00000005       ;номер кнопки
         mov esi, 0x00AABBCC       ;цвет кнопки
         mcall 8
+
         ;правый верхний угол
-        mov ebx, (WindowsWidth-Otstup-buttonW)*65536 + buttonW ;координата X, ширина кнопки
-        mov ecx, 85*65536 + buttonH   ;координата Y, высота кнопки
+        ;mov ebx, (WindowsWidth-Otstup-buttonW)*65536 + buttonW ;координата X, ширина кнопки
+        mov bx,  word[elem.winWidth] ;координата X
+        sub bx, Otstup
+        sub bx, word[elem.butDialWidth]
+
+        shl ebx, 16
+        add bx, word[elem.butDialWidth] ;ширина кнопки
+
+        ;mov ecx, 85     ;координата Y      36+3*9+2*3+ 5 +9+2
+        ;BaseY+4*(word[elem.textHeight]+word[elem.textDelta])+2
+        mov cx, word[elem.textHeight]
+        add cx, word[elem.textDelta]
+        shl cx, 2
+        add cx, BaseY+2
+        shl ecx, 16
+        add cx, word[elem.butDialHeight] ;высота кнопки
+
         mov edx, 0x00000006       ;номер кнопки
         mov esi, 0x00AABBCC       ;цвет кнопки
         mcall 8
+
+
+
+
         ;правый нижний угол
-        mov ebx, (WindowsWidth-Otstup-buttonW)*65536 + buttonW ;координата X, ширина кнопки
-        mov ecx, 120*65536 + buttonH   ;координата Y, высота кнопки
+        mov bx,  word[elem.winWidth]    ;координата X
+        sub bx, Otstup
+        sub bx, word[elem.butDialWidth]
+        shl ebx, 16
+        add bx, word[elem.butDialWidth] ;ширина кнопки
+
+        mov cx, word[elem.textHeight]   ;координата Y
+        add cx, word[elem.textDelta]
+        shl cx, 2
+        sub cx, word[elem.textHeight]
+        add cx, BaseY
+        add cx, word[elem.textHeight]
+        add cx, 6
+        add cx, word[elem.butDialHeight]
+        add cx, word[elem.textHeight]
+        add cx, word[elem.textHeight]
+        shl ecx, 16
+        add cx, word[elem.butDialHeight] ;высота кнопки
+
         mov edx, 0x00000007       ;номер кнопки
         mov esi, 0x00AABBCC       ;цвет кнопки
         mcall 8
 
         ;рисуем тексты дл€ этих 4 кнопок
         mov     ecx, 0xFFFFFF              ;белый цвет текста
+        call setNewSizeForText
         mov     edx, commonButtonText      ;строка текста
         mov     esi, commonButtonTextSize  ;размер текста в символах
         ;координаты текста (x, y)
         deltaCommonTextX = 7
         deltaCommonTextY = 2
-        mov     ebx, (Otstup+deltaCommonTextX) * 65536 + (85 + deltaCommonTextY)
+        ;mov     ebx, (Otstup+deltaCommonTextX) * 65536 + (85 + deltaCommonTextY)
+        mov ebx, Otstup+deltaCommonTextX
+        shl ebx, 16
+        mov bx, word[elem.textHeight]
+        add bx, word[elem.textDelta]
+        shl bx, 2
+        add bx, BaseY+2
+        add bx, deltaCommonTextY
+
         mcall 4
-        mov     ebx, (Otstup+deltaCommonTextX) * 65536 + (120 + deltaCommonTextY)
+
+;
+        ;mov     ebx, (Otstup+deltaCommonTextX) * 65536 + (120 + deltaCommonTextY)
+        mov ebx, Otstup+deltaCommonTextX
+        shl ebx, 16
+        mov bx, word[elem.textHeight]   ;координата Y
+        add bx, word[elem.textDelta]
+        shl bx, 2
+        sub bx, word[elem.textHeight]
+        add bx, BaseY
+        add bx, word[elem.textHeight]
+        add bx, 6
+        add bx, word[elem.butDialHeight]
+        add bx, word[elem.textHeight]
+        add bx, word[elem.textHeight]
+        add bx, deltaCommonTextY
+
         mcall 4
-        mov     ebx, (WindowsWidth-Otstup-buttonW+deltaCommonTextX) * 65536 + (85 + deltaCommonTextY)
+
+
+        ;mov     ebx, (WindowsWidth-Otstup-buttonW+deltaCommonTextX) * 65536 + (85 + deltaCommonTextY)
+        mov bx,  word[elem.winWidth]    ;координата X
+        sub bx, Otstup
+        sub bx, word[elem.butDialWidth]
+        add bx, deltaCommonTextX
+        shl ebx, 16
+        mov bx, word[elem.textHeight]
+        add bx, word[elem.textDelta]
+        shl bx, 2
+        add bx, BaseY+2
+        add bx, deltaCommonTextY
+
         mcall 4
-        mov     ebx, (WindowsWidth-Otstup-buttonW+deltaCommonTextX) * 65536 + (120 + deltaCommonTextY)
+
+        ;mov     ebx, (WindowsWidth-Otstup-buttonW+deltaCommonTextX) * 65536 + (120 + deltaCommonTextY)
+        mov bx,  word[elem.winWidth]    ;координата X
+        sub bx, Otstup
+        sub bx, word[elem.butDialWidth]
+        add bx, deltaCommonTextX
+        shl ebx, 16
+        mov bx, word[elem.textHeight]   ;координата Y
+        add bx, word[elem.textDelta]
+        shl bx, 2
+        sub bx, word[elem.textHeight]
+        add bx, BaseY
+        add bx, word[elem.textHeight]
+        add bx, 6
+        add bx, word[elem.butDialHeight]
+        add bx, word[elem.textHeight]
+        add bx, word[elem.textHeight]
+        add bx, deltaCommonTextY
+
         mcall 4
 
         ;delete mode button, if it exist
         mov edx, 0x80000008
         mcall 8
         ;draw button Mode
-        buttonModeX = 30 ;433
-        buttonModeY = 160 ;50
+        buttonModeX = 30
+        buttonModeY = 160
         buttonModeWidth = 221
-        buttonModeHeight = 14 ;20
-        buttonModeTextYoffset = 3;6
+        buttonModeHeight = 14
+        buttonModeTextYoffset = 3
         buttonModeTextXoffset = 5
-        mov ebx, buttonModeX*65536 + buttonModeWidth  ;X + Width
-        mov ecx, buttonModeY*65536 + buttonModeHeight ;Y + Height
+        ;mov ebx, buttonModeX*65536 + buttonModeWidth  ;X + Width
+        mov ebx, Otstup
+        shl ebx, 16
+        add bx, word[elem.butModeWidth]
+
+        mov cx, word[elem.butModeY] ;buttonModeY;*65536 + buttonModeHeight ;Y + Height
+        shl ecx, 16
+        mov cx, word[elem.butDialHeight]
+
         mov edx, 0x00000008    ;button id
         mov esi, 0x00FFFFFF    ;color button
         mcall 8
-        mov ebx, (buttonModeX+2+buttonModeWidth-20)*65536 + (20-2)  ;X + Width
-        mov ecx, (buttonModeY+1)*65536 + buttonModeHeight-2   ;Y + Height
+
+        ;mov ebx, (buttonModeX+2+buttonModeWidth-20)*65536 + (20-2)  ;X + Width
+        mov ebx, Otstup+2
+        add bx, word[elem.butModeWidth]
+        sub bx, 20
+        shl ebx, 16
+        add bx, 20-2
+
+       ; mov ecx, (buttonModeY+1)*65536 + buttonModeHeight-2   ;Y + Height
+        mov cx, word[elem.butModeY]
+        inc ecx
+        shl ecx, 16
+        mov cx, word[elem.butDialHeight]
+        sub cx, 2
+
         mov edx, 0xAABBCC
         mcall 13
         ;draw text for button Mode
-        mov     ebx, (buttonModeX+buttonModeTextXoffset) * 65536 + (buttonModeY+buttonModeTextYoffset)    ;(x, y)
+        mov     ebx, (Otstup+buttonModeTextXoffset) * 65536     ;(x, y)
+        mov bx, word[elem.butModeY]
+        add bx, buttonModeTextYoffset
         mov     ecx, 0x000000
+        call setNewSizeForText
+        and ecx, 0x7FFFFFFF
         call setTextModeMenu
-        mov     esi, valueModeMenuSize
+mov     esi, valueModeMenuSize
+cmp byte[sizeStyle], 'x'
+jne @f
+        mov     esi, 25 ;valueModeMenuSize -3     ;режим жеста по клавише ак
+@@:
         mcall 4
-        mov     ebx, (buttonModeX+buttonModeWidth-12) * 65536 + (buttonModeY+buttonModeTextYoffset)
-        mov     ecx, 0x80FFFFFF
+
+        mov     ebx, (Otstup-12)
+        add bx, word[elem.butModeWidth]
+        shl ebx, 16
+        mov bx, word[elem.butModeY]
+        add bx, buttonModeTextYoffset
+
+        mov     ecx, 0x80FFFFFF   ;80
+        call setNewSizeForText
+        and ecx, 0x7FFFFFFF
+        ;or ecx, 0x80000000
+
         mov     edx, symbolDownArrow
+        mov esi, 1
         mcall 4
 
         ;кнопка выбора гор€чей клавиши
-        buttonHotKeyX = 280-10
+        buttonHotKeyX = 270
         buttonHotKeyWidth = 90
         mov edx, 0x80000009    ;удал€ем
         mcall 8
@@ -1234,22 +1602,68 @@ draw_window:
     jbe @f
         ;рисуем новую
         push eax ebx ecx edx esi
-        mov ebx, buttonHotKeyX*65536 + buttonHotKeyWidth  ;X + Width
-        mov ecx, buttonModeY*65536 + buttonModeHeight ;Y + Height
+       ; mov ebx, buttonHotKeyX*65536 + buttonHotKeyWidth  ;X + Width
+        mov ebx, Otstup
+        add bx, word[elem.butModeWidth]
+        add bx, word[elem.butAppleHeight]
+        shl ebx, 16
+        mov bx, word[elem.winWidth] ;buttonHotKeyWidth
+        sub bx, word[elem.butModeWidth]
+        sub bx, Otstup
+        sub bx, word[elem.butAppleHeight] ;Otstup
+        shr bx, 1
+        sub bx, Otstup
+       ; mov ecx, buttonModeY*65536 + buttonModeHeight ;Y + Height
+        mov cx, word[elem.butModeY]
+        shl ecx, 16
+        mov cx, word[elem.butDialHeight]
+
         mov edx, 0x00000009    ;button id
         mov esi, 0x00FFFFFF    ;color button
         mcall 8
         pop esi edx ecx ebx eax
         ;текст подсказки дл€ гор€чей клавиши
-        mov     ebx, (buttonHotKeyX+buttonModeTextXoffset) * 65536 + (buttonModeY+buttonModeTextYoffset)    ;(x, y)
-        mov     ecx, 0x80224466
+        ;mov     ebx, (buttonHotKeyX+buttonModeTextXoffset) * 65536 + (buttonModeY+buttonModeTextYoffset)    ;(x, y)
+        mov ebx, Otstup
+        add bx, word[elem.butModeWidth]
+        add bx, word[elem.butAppleHeight]
+        add bx, buttonModeTextYoffset
+        shl ebx, 16
+        mov bx, word[elem.butModeY]
+        add bx, buttonModeTextYoffset
+
+;        xor ecx, ecx
+;        mov ch, byte[mysize]
+;        shl ecx, 16
+;        add ecx, 0x80224466
+        mov ecx, 0x224466
+        call setNewSizeForText
+        ;and ecx, 0x7FFFFFFF
+        or ecx, 0x80000000
+
         call setTextForHotKey
         mov     esi, valueModeMenuSize
         mcall 4
         ;заголовок
         push eax ebx ecx edx edi esi
-        mov     ebx, buttonHotKeyX * 65536 + (buttonModeY-11)
-        mov ecx, 0x80224466
+        ;mov     ebx, buttonHotKeyX * 65536 + (buttonModeY-11)
+        mov ebx, Otstup ;buttonHotKeyX ;Otstup
+        add bx, word[elem.butModeWidth]
+        add bx, word[elem.butAppleHeight]
+        shl ebx, 16
+        add bx, word[elem.butModeY]
+        sub bx, 2
+        sub bx, word[elem.textHeight]
+
+;        xor ecx, ecx
+;        mov ch, byte[mysize]
+;        shl ecx, 16
+;        add ecx, 0x80224466
+        mov ecx, 0x224466
+        call setNewSizeForText
+        ;and ecx, 0x7FFFFFFF
+        or ecx, 0x80000000
+
         mov     edx, hkCaption
         mov     esi, 3
         mcall 4
@@ -1261,26 +1675,51 @@ draw_window:
     jne @f
         ;заголовок
         push eax ebx ecx edx edi esi
-        mov     ebx, (buttonHotKeyX + buttonHotKeyWidth + 20) * 65536 + (buttonModeY-11)
-        mov ecx, 0x80224466
+        xor ebx, ebx
+        mov bx, word[elem.winWidth]
+        sub bx, Otstup
+        sub ebx, dword[editRadius.width]
+        shl ebx, 16
+        add bx, word[elem.butModeY]
+        sub bx, 2
+        sub bx, word[elem.textHeight]
+
+;        mov ecx, 0
+;        mov ch, byte[mysize]
+;        shl ecx, 16
+;        add ecx, 0x80224466
+
+        mov ecx, 0x224466
+        call setNewSizeForText
+        ;and ecx, 0x7FFFFFFF
+        or ecx, 0x80000000
+
+        ;mov ecx, 0x80224466
         mov     edx, radiusCaption
         mov     esi, 3
         mcall 4
         pop esi edi edx ecx ebx eax
+
+
+        xor eax, eax
+        mov ax, word[elem.winWidth]
+        sub ax, Otstup
+        sub eax, dword[editRadius.width]
+        mov dword[editRadius.left], eax
+        mov ax, word[elem.butModeY]
+        mov dword[editRadius.top], eax
+
         invoke  edit_box_draw, editRadius
     @@:
 
         call draw_super_text
 
         LineLength = 62
-        mov     ebx, 40 * 65536 + 36    ; draw info text with function 4 (x, y)
+        mov     ebx, 40 * 65536 + BaseY    ; draw info text with function 4 (x, y)
 
-        ;xor ecx, ecx
-        ;mov cl, 1 ;byte[mysize]
-        ;shl ecx, 24
-        ;add ecx, 0x224466
-        ;or ecx, 0x00224466  ;80224466
-        mov     ecx, 0x224466
+        mov ecx, 0x224466
+        call setNewSizeForText
+        and ecx, 0x7FFFFFFF
 
         mov     edx, text
         mov     esi, LineLength
@@ -1288,7 +1727,9 @@ draw_window:
 
   .newline:                             ; text from the DATA AREA
         mcall
-        add     ebx, 12
+        add bx, word[elem.textHeight] ;9*n+3 ;12
+        add bx, word[elem.textDelta]
+
         add     edx, LineLength
         cmp     byte[edx], 0
         jne     .newline
@@ -1298,6 +1739,24 @@ draw_window:
         mcall
 
         ret
+
+
+setNewSizeForText:
+   push ebx
+   mov ebx, ecx
+   cmp byte[sizeStyle], 'x'
+   je .x
+   mov ecx, 0
+   mov ch, byte[mysize]
+   shl ecx, 16
+   jmp @f
+.x:
+   mov ecx,[sc.work_text]
+   or  ecx,0x90000000
+@@:
+   add ecx, ebx
+   pop ebx
+   ret
 
 hkSymbol: db 0, 0
 
@@ -1462,8 +1921,8 @@ commonButtonTextSize = 3
 if lang eq ru  ;если €зык сборки русский
 
 text    db  "КЃ≠д®£га†вЃа Hot Angles ЃвҐ•з†•в І† ≠†бваЃ©™г †™в®Ґ≠ле г£ЂЃҐ. "
-        db  "Н†бваЃ©в• ѓ†а†ђ•вал ѓЃ§ б•°п ®Ђ® Ѓв™Ђоз®в• нвг Ѓѓж®о.         "
-        db  "                                                              ", 0
+        db  "Н†бваЃ©в• ѓ†а†ђ•вал ѓЃ§ б•°п ®Ђ® Ѓв™Ђоз®в• нвг Ѓѓж®о.         ", 0
+;        db  "                                                              ", 0
  hed:
 title   db  "КЃ≠д®£га†вЃа гв®Ђ®вл Hot Angles", 0
 buttonText db "Па®ђ•≠®вм", 0
@@ -1494,14 +1953,13 @@ head_f_i:
         err_message_import1 db 'Ои®°™† ѓа® ®ђѓЃав• °®°Ђ®Ѓв•™® ',39,'kmenu',39,0
 
 hkCaption: db 'КЂ†Ґ®и†:',0
-;hkHint: db 'Н†¶ђ®в• Ђо°го ™Ђ†Ґ®иг',0
 radiusCaption: db 'Р†§®гб:',0
 
 else  ;иначе английский текст
 
 text    db  "This is a Hot Angles Configurator.                            "
-        db  "Set the parameters bellow for yourself or disable this option."
-        db  "                                                              ", 0
+        db  "Set the parameters bellow for yourself or disable this option.", 0
+;        db  "                                                              ", 0
  hed:
 title   db  "Hot Angles Configurator", 0
 buttonText db "Apply", 0
@@ -1532,7 +1990,6 @@ head_f_i:
         err_message_import1 db 'Error importing library ',39,'kmenu',39,0
 
 hkCaption: db 'Key:',0
-;hkHint: db 'press any key',0
 radiusCaption: db 'Radius:',0
 
 end if
@@ -1547,44 +2004,77 @@ hkSize: rd 1 ;размер строки с именем клавиши
 draw_super_text:
    push eax ebx ecx edx edi esi
 
-   mov ecx, 0
-   mov ch, byte[mysize]
-   shl ecx, 16
-   add ecx, 0x224466
+;   mov ecx, 0
+;   mov ch, byte[mysize]
+;   shl ecx, 16
+;   add ecx, 0x224466
+   mov ecx, 0x224466
+   call setNewSizeForText
+   ;and ecx, 0x7FFFFFFF
+   or ecx, 0x80000000
 
-   mov     ebx, Otstup * 65536 + 74    ; draw info text with function 4 (x, y)
+   ;mov     ebx, Otstup * 65536 + 74    ; draw info text with function 4 (x, y)
+   mov bx, Otstup
+   shl ebx, 16
+   mov bx, word[elem.textHeight]
+   add bx, word[elem.textDelta]
+   shl bx, 2
+   sub bx, word[elem.textHeight]
+   add bx, BaseY
+
    ;mov     ecx, 0x224466
    mov eax, superText.lu
    mov     edx, eax
    mov     esi, superTextSize
    mcall 4
 
-   mov     ebx, Otstup * 65536 + 109
+   ;mov     ebx, Otstup * 65536 + 109      ;9+2+14+(9+1)
+   add bx, word[elem.textHeight]
+   add bx, 4;3
+   add bx, word[elem.butDialHeight]
+   add bx, word[elem.textHeight]
+
    mov     edx, superText.ld
    mov     esi, superTextSize
    mcall 4
 
-   mov     ebx, 240 * 65536 + 74
+   ;mov     ebx, 240 * 65536 + 74
+   mov bx, word[elem.winWidth]
+   sub bx, word[elem.butDialWidth]
+   sub bx, word[elem.editCommandWidth]
+   sub bx, Otstup
+   shl ebx, 16
+   mov bx, word[elem.textHeight]
+   add bx, word[elem.textDelta]
+   shl bx, 2
+   sub bx, word[elem.textHeight]
+   add bx, BaseY
+
    mov     edx, superText.ru
    mov     esi, superTextSize
    mcall 4
 
-   mov     ebx, 240 * 65536 + 109
+   ;mov     ebx, 240 * 65536 + 109
+   add bx, word[elem.textHeight]
+   add bx, 4;3;2
+   add bx, word[elem.butDialHeight]
+   add bx, word[elem.textHeight]
+
    mov     edx, superText.rd
    mov     esi, superTextSize
    mcall 4
 
-   mov     ebx, Otstup * 65536 + (buttonModeY-11)
+   ;mov     ebx, Otstup * 65536 + (buttonModeY-11)
+   mov ebx, Otstup
+   shl ebx, 16
+   add bx, word[elem.butModeY]
+   sub bx, 2
+   sub bx, word[elem.textHeight]
+
    or ecx, 0x80000000
    mov     edx, ModeMenu
    mov     esi, 3
    mcall 4
-
-;   mov     ebx, buttonHotKeyX * 65536 + (buttonModeY-11)
-;   or ecx, 0x80000000
-;   mov     edx, hkCaption
-;   mov     esi, 3
-;   mcall 4
 
    pop esi edi edx ecx ebx eax
    ret
@@ -1886,8 +2376,8 @@ dataBufferEnd:
 
 
 I_END:
-        rb 4096
-align 16
+        rb 256 ;1024 ;4096
+align 4 ;16
 STACKTOP:
 
 MEM:
