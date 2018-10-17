@@ -457,12 +457,12 @@ align 4
 ;--------------------------------------
 align 4
 .skip_1:
+        mov     edi, [esp+.extra_var1]
         inc     ecx
         dec     edx
         jnz     .inner24
 
         add     esi, [esp+BLITTER.stride]
-        mov     edi, [esp+.extra_var1]
         add     edi, [_display.lfb_pitch]
         add     ebp, [_display.width]
 
@@ -519,12 +519,12 @@ align 4
         pop     eax
 ;--------------------------------------
   .skip_2:
+        mov     edi, [esp+.extra_var1]
         inc     ecx
         dec     edx
         jnz     .inner16
 
         add     esi, [esp+BLITTER.stride]
-        mov     edi, [esp+.extra_var1]
         add     edi, [_display.lfb_pitch]
         add     ebp, [_display.width]
 
