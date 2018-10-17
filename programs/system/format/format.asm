@@ -2,7 +2,7 @@
 ; Formatting Disk Utility ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ; Compile with FASM
-; FORMAT ver. Oct 16, 2018
+; FORMAT ver. Oct 17, 2018
 
 ; Copyright (c) 2018, Efremenkov Sergey aka TheOnlyMirage
 ; All rights reserved.
@@ -37,6 +37,10 @@ dd MEM
 dd STACKTOP
 dd 0, 0
 
+KMENUITEM_NORMAL equ 0
+KMENUITEM_SUBMENU equ 1
+KMENUITEM_SEPARATOR equ 2
+
 include 'lang.inc'
 include '../../macros.inc'
 include '../../proc32.inc'
@@ -64,13 +68,33 @@ START:
    or  ecx,0x90000000
    ;mov ecx, 0x90000000
    mov dword[editLU.text_color], ecx
-   mov dword[editLD.text_color], ecx
+   ;mov dword[editLD.text_color], ecx
    mov dword[editRU.text_color], ecx
    mov dword[editRD.text_color], ecx
    mov dword[editMBR.text_color], ecx
 
    invoke init_checkbox, ch1
    invoke init_checkbox, ch2
+
+   stdcall [kmenu_init], sc    ;kmenu initialisation
+
+        stdcall [ksubmenu_new]
+        mov [kmFS], eax
+
+        stdcall [kmenuitem_new], KMENUITEM_NORMAL, kmFat16, 111
+        stdcall [ksubmenu_add], [kmFS], eax
+        stdcall [kmenuitem_new], KMENUITEM_NORMAL, kmFat32, 112
+        stdcall [ksubmenu_add], [kmFS], eax
+        stdcall [kmenuitem_new], KMENUITEM_NORMAL, kmNTFS, 113
+        stdcall [ksubmenu_add], [kmFS], eax
+        stdcall [kmenuitem_new], KMENUITEM_NORMAL, kmExt2, 114
+        stdcall [ksubmenu_add], [kmFS], eax
+        ;stdcall [kmenuitem_new], KMENUITEM_SEPARATOR, 0, 0
+        ;stdcall [ksubmenu_add], [kmFS], eax
+        stdcall [kmenuitem_new], KMENUITEM_NORMAL, kmNone, 110
+        stdcall [ksubmenu_add], [kmFS], eax
+
+        stdcall [kmenuitem_new], KMENUITEM_SUBMENU, kmFat16, [kmFS]    ;заголовок
 
    call    draw_window             ; draw the window
 
@@ -95,10 +119,12 @@ event_wait:
         invoke check_box_mouse, ch2
 
         invoke  edit_box_mouse, editLU   ;проверка событий мыши дл€ editBox'ов
-    invoke  edit_box_mouse, editLD
+    ;invoke  edit_box_mouse, editLD
     invoke  edit_box_mouse, editRU
     invoke  edit_box_mouse, editRD
     invoke  edit_box_mouse, editMBR
+
+ stdcall [kmainmenu_dispatch_cursorevent], [kmFS]
 
         jmp     event_wait
 
@@ -110,43 +136,88 @@ red:                                    ; Redraw event handler
 key:
         mcall 2
         invoke  edit_box_key, editLU
-        invoke  edit_box_key, editLD
+        ;invoke  edit_box_key, editLD
         invoke  edit_box_key, editRU
         invoke  edit_box_key, editRD
         invoke  edit_box_key, editMBR
         jmp     event_wait              ; Just read the key, ignore it and jump to event_wait.
 
 button:
-        mcall 17
+    mcall 17
 
-        cmp     ah,1                    ; button id=1 ?
-        jne     noclose
+    cmp     ah,1                    ; button id=1 ?
+    jne     noclose
 exit:
-        mcall -1  ;close this program
-
+    mcall -1
 noclose:
-
-   cmp ah, 2
+   cmp ah, 2          ;Format button
    jne no_format
-   call format_action
-   jmp     event_wait
+   call butFormat
+   jmp event_wait
 no_format:
-    cmp ah, 3
-   jne no_browser
-   call brouse_action
-   jmp     event_wait
-no_browser:
-        jmp     event_wait              ; This is for ignored events, useful at development
+   cmp ah, 3          ;Brouse button
+   jne @f
+   call butBrouse
+   jmp event_wait
+@@:
+   cmp ah, 4          ;Select FS button
+   jne @f
+   call butSelectFS
+   jmp event_wait
+@@:
+   cmp ah, 110        ;kmenu list FS
+   jb @f
+   cmp ah, 114
+   ja @f
+   sub ah, 110
+   mov byte[kmID], ah
+   jmp red ;event_wait
+@@:
+   jmp event_wait
 
-brouse_action:
+
+butBrouse:
    call but_open_dlg
    ret
-format_action:
+
+butFormat:
    ret
+
+butSelectFS:
+   push eax ebx ecx
+   mcall 9, pi, -1 ;get window coord
+
+   mov eax, dword[pi+34]
+   add eax, Otstup
+   mov word[coord.x], ax
+
+   mov eax, dword[pi+38]
+   add eax, 129
+   mov word[coord.y], ax
+
+   stdcall [ksubmenu_draw], [kmFS], coord
+   pop ecx ebx eax
+   ret
+
 
 
 delta = 50
-dy = 15
+dy = 15 + 40
+warning_title: db 'Warning!',0
+draw_warningWindow:
+   mcall 12, 1
+
+        mov     ebx, 100 * 65536 + (200)  ; [x start] *65536 + [x size]
+        mov     ecx, 100 * 65536 + (90)  ; [y start] *65536 + [y size]
+        mov     edx, 0x14ffffff         ; color of work area RRGGBB
+                                        ; 0x02000000 = window type 4 (fixed size, skinned window)
+        mov     esi, 0x808899ff         ; color of grab bar  RRGGBB
+                                        ; 0x80000000 = color glide
+        mov     edi, warning_title
+        mcall 0
+
+   mcall 12, 2
+   ret
 
 draw_window:
    mcall  12, 1
@@ -155,6 +226,8 @@ draw_window:
    mov edx, 0x80000002
    mcall 8
    mov edx, 0x80000003
+   mcall 8
+   mov edx, 0x80000004
    mcall 8
 
         mov     eax, 0                  ; function 0 : define and draw window
@@ -180,12 +253,19 @@ draw_window:
         mov esi, 0xAABBCC ;D7D7D7 ;4466AA
         mcall 8
 
+        ;button select FS
+        mov ebx, Otstup*65536+120
+        mov ecx, (110)*65536+(21)
+        mov edx, 0x00000004
+        mov esi, 0xFFFFFF ;AABBCC
+        mcall 8
+
        invoke check_box_draw, ch1  ;рисование чекбоксов
        invoke check_box_draw, ch2
 
        invoke  edit_box_draw, editMBR     ;рисование edit box'ов
        invoke  edit_box_draw, editLU
-       invoke  edit_box_draw, editLD
+       ;invoke  edit_box_draw, editLD
        invoke  edit_box_draw, editRU
        invoke  edit_box_draw, editRD
 
@@ -202,6 +282,9 @@ Otstup = 30
 ch1 check_box2 Otstup shl 16 + 12, (170+dy) shl 16 + 12, 6, 0xFFFFFFFF, 0xAABBCC, 0, ch_text.1, 100b ; 110b = ch_flag_en and ch_flag_middl
 ch2 check_box2 Otstup shl 16 + 12, (190+dy) shl 16 + 12, 6, 0xFFFFFFFF, 0xAABBCC, 0, ch_text.2, 100b
 
+
+browse db '...', 0
+
 if lang eq ru  ;если €зык сборки русский
 
 title   db  "Formatting Disk Utility", 0
@@ -217,7 +300,7 @@ text:
   .unit   db 'Р†Іђ•а ™Ђ†бв•а†:', 0
   .option db 'П†а†ђ•вал:', 0
   .format db 'ФЃађ†в®аЃҐ†вм', 0
-  .browse db 'О°ІЃа', 0
+;  .browse db 'О°ІЃа', 0
 
 head_f_i:
         head_f_l  db 'С®бв•ђ≠†п Ѓи®°™†',0
@@ -241,7 +324,7 @@ text:
   .unit   db 'Allocation unit size:', 0
   .option db 'Options:', 0
   .format db 'Format', 0
-  .browse db 'Browse', 0
+;  .browse db 'Browse', 0
 
 head_f_i:
   head_f_l  db 'System error',0
@@ -282,17 +365,50 @@ draw_super_text:
    mov     esi, 8
    mcall 4
 
+   mov     ebx, (Otstup+5) * 65536 + (110+3)
+   mov dl, byte[kmID]
+   cmp dl, 0
+   jne @f
+   mov     edx, kmNone
+   jmp .printFS
+@@:
+   cmp dl, 1
+   jne @f
+   mov     edx, kmFat16
+   jmp .printFS
+@@:
+   cmp dl, 2
+   jne @f
+   mov     edx, kmFat32
+   jmp .printFS
+@@:
+   cmp dl, 3
+   jne @f
+   mov     edx, kmNTFS
+   jmp .printFS
+@@:
+   cmp dl, 4
+   jne @f
+   mov     edx, kmExt2
+   jmp .printFS
+@@:
+   mov byte[kmID], 0
+   mov     edx, kmNone
+.printFS:
+   ;mov     esi, 8
+   mcall 4
+
    ;buttons text
    mov     ebx, (290+delta-Otstup-130+10+2) * 65536 + (277-3+dy)
-   mov     ecx, 0x90FFFFFF;0xFFFFFF
+   mov     ecx, 0x90FFFFFF
    mov eax, text.format
    mov     edx, eax
    mov     esi, 6
    mcall 4
 
-   mov     ebx, (290+delta-Otstup-52+6) * 65536 + (213+dy)  ;-3
+   mov     ebx, (290+delta-Otstup-52+6+8) * 65536 + (213+dy)
    ;mov     ecx, 0xFFFFFF
-   mov eax, text.browse
+   mov eax, browse ;text.browse
    mov     edx, eax
    mov     esi, 6
    mcall 4
@@ -442,6 +558,17 @@ lib1_name db 'kmenu.obj',0
 
 ;symbolDownArrow db 25,0
 
+kmNone: db 'None', 0  ;only MBR or ZeroDestroy
+;kmFat12: db 'FAT12', 0
+kmFat16: db 'FAT16', 0
+kmFat32: db 'FAT32', 0
+;kmExtFat: db 'EXTFAT', 0
+kmNTFS: db 'NTFS', 0
+kmExt2: db 'EXT2', 0
+;kmExt3: db 'EXT3', 0
+;kmExt4: db 'EXT4', 0
+;kmXFS: db 'XFS', 0
+
 l_libs_start:
     lib0 l_libs lib0_name, sys_path, file_name, system_dir0, err_message_found_lib0, head_f_l, proclib_import,err_message_import0, head_f_i
     lib1 l_libs lib1_name, sys_path, file_name, system_dir0, err_message_found_lib1, head_f_l, import_libkmenu,err_message_import1,head_f_i
@@ -449,7 +576,7 @@ load_lib_end:
 
 ;размеры: 80 и 120
 editLU edit_box 120,Otstup,60,0xffffff,0x6a9480,0,0xAABBCC,0,8,Buf.1, mouse_dd, 0,8,8
-editLD edit_box 120,Otstup,110,0xffffff,0x6a9480,0,0xAABBCC,0,3,Buf.2, mouse_dd, 0,3,3
+;editLD edit_box 120,Otstup,110,0xffffff,0x6a9480,0,0xAABBCC,0,3,Buf.2, mouse_dd, 0,3,3
 editRU edit_box 120,Otstup+80+30+delta,60,0xffffff,0x6a9480,0,0xAABBCC,0,16,Buf.3, mouse_dd, 0,16,16
 editRD edit_box 120,Otstup+80+30+delta,110,0xffffff,0x6a9480,0,0xAABBCC,0,4,Buf.4, mouse_dd, 0,4,4
 editMBR edit_box 290+delta-Otstup-52-Otstup-20,Otstup+20,210+dy,0xffffff,0x6a9480,0,0xAABBCC,0,255,Buf.5, mouse_dd, 0,25,25
@@ -459,6 +586,14 @@ data_of_code dd 0
 sc  system_colors
 mouse_dd  rd 1
 
+coord:
+  .x: rw 1
+  .y: rw 1
+
+kmID: rb 1 ;номер выбранного пункта
+kmFS: rd 1
+mbr: rb 512
+
 sys_path:      rb 4096
 file_name:     rb 4096
 plugin_path:   rb 4096
@@ -466,6 +601,7 @@ openfile_path: rb 4096
 filename_area: rb 256
 rb 1024
 procinfo process_information
+pi rb 1024
 
 I_END:
         rb 256 ;4096
