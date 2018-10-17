@@ -7,7 +7,7 @@ GEN := generated
 
 default: all
 LDFLAGS = -Tinclude/scripts/menuetos_app_v01.ld -nostdlib -L include/lib
-CFLAGS += -Ifitz -Ipdf -Ixps -Iscripts  -fno-stack-protector -nostdinc -fno-builtin -m32 -I include -fno-pic
+CFLAGS += -Ifitz -Ipdf -Ixps -Iscripts  -fno-stack-protector -nostdinc -fno-builtin -m32 -I include -fno-pic -w
 LIBS += -lfreetype2 -lpng -ljbig2dec -ljpeg -lopenjpeg -lz -lm -lc
 
 #include Makerules
