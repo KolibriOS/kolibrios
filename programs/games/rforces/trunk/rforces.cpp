@@ -72,6 +72,7 @@ void kos_Main()
 			OnMouseMove();
 			break;
 		}
+		if (kos_GetButtonID()==1) OnExit();
 		DrawBombs();
 		DrawRocketsAndCrosses();
 		DrawExplodes();
@@ -92,6 +93,9 @@ void DrawWindow()
 	kos_WindowRedrawStatus(1);
 	kos_DefineAndDrawWindow(10, 40, WINDOW_WIDTH + 8, WINDOW_HEIGHT + 25, 0x33, BG_COLOR, 0, 0, (Dword)header);
 	kos_WindowRedrawStatus(2);
+
+	kos_WriteTextToWindow(8, 10, 0, TEXT_COLOR, "Population:    %", 16);
+	kos_WriteTextToWindow(8, 22, 0, TEXT_COLOR, "Score:", 6);
 
 	OnMouseMove();
 
@@ -220,10 +224,7 @@ void OnMouseMove()
 		ms.lbclick = 0;
 	}
 
-
-	kos_WriteTextToWindow(8, 10, 0, TEXT_COLOR, "Population:    %", 16);
 	kos_DisplayNumberToWindowBg(health, 3, 79, 10, TEXT_COLOR, BG_COLOR, nbDecimal, false);
-	kos_WriteTextToWindow(8, 22, 0, TEXT_COLOR, "Score:", 6);
 	kos_DisplayNumberToWindowBg(score, 4, 49, 22, TEXT_COLOR, BG_COLOR, nbDecimal, false);
 
 	if (ms.x >= 0 && ms.x < WINDOW_WIDTH &&  ms.y >= 0 && ms.y < WINDOW_HEIGHT)
