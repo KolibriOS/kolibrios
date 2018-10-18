@@ -205,6 +205,8 @@ void kos_DisplayNumberToWindowBg(
    eNumberBase nBase = nbDecimal,
    bool valueIsPointer = false
    );
+// 48.4 get windows title bar height
+Dword kos_GetSkinHeight();
 // функция 58 доступ к файловой системе
 Dword kos_FileSystemAccess( kosFileInfo *fileInfo );
 // функция 63
