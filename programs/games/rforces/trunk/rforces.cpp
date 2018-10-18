@@ -73,7 +73,7 @@ void kos_Main()
 			OnMouseMove();
 			break;
 		}
-		if (kos_GetButtonID(btn_id)==1) OnExit();
+		if (kos_GetButtonID(btn_id)) OnExit();
 		DrawBombs();
 		DrawRocketsAndCrosses();
 		DrawExplodes();
@@ -92,7 +92,7 @@ void kos_Main()
 void DrawWindow()
 {
 	kos_WindowRedrawStatus(1);
-	kos_DefineAndDrawWindow(10, 40, WINDOW_WIDTH + 8, WINDOW_HEIGHT + 25, 0x33, BG_COLOR, 0, 0, (Dword)header);
+	kos_DefineAndDrawWindow(10, 40, WINDOW_WIDTH + 8, WINDOW_HEIGHT + kos_GetSkinHeight(), 0x34, BG_COLOR, 0, 0, (Dword)header);
 	kos_WindowRedrawStatus(2);
 
 	kos_WriteTextToWindow(8, 10, 0, TEXT_COLOR, "Population:    %", 16);

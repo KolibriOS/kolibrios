@@ -772,6 +772,16 @@ void kos_DeleteMouseCursor( Dword * handle )
 	}
 }
 
+// 48.4 get windows title bar height
+Dword kos_GetSkinHeight( Dword * handle )
+{
+	__asm{
+		mov		eax, 48
+		mov		ebx, 4
+		int		0x40
+	}
+}
+
 // функция 38 нарисовать полосу
 void kos_DrawLine( Word x1, Word y1, Word x2, Word y2, Dword colour )
 {
