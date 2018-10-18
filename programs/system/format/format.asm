@@ -2,7 +2,7 @@
 ; Formatting Disk Utility ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ; Compile with FASM
-; FORMAT ver. Oct 18, 2018
+; FORMAT ver. Oct 19, 2018
 
 ; Copyright (c) 2018, Efremenkov Sergey aka TheOnlyMirage
 ; All rights reserved.
@@ -69,8 +69,7 @@ START:
 
    call initBuf
 
-   mov dword[editLU.text_color], ecx
-   mov dword[editRU.text_color], ecx
+   mov dword[editLabel.text_color], ecx
    mov dword[editMBR.text_color], ecx
 
    invoke init_checkbox, ch1
@@ -116,6 +115,8 @@ START:
    mov byte[kmUnitID], 0
    stdcall [kmenuitem_new], KMENUITEM_SUBMENU, unittext.0, [kmUnit]
 
+   call getDeviceList
+
    call  draw_window
 
 event_wait:
@@ -142,8 +143,7 @@ redraw:
 
 key:
    mcall 2
-   invoke  edit_box_key, editLU
-   invoke  edit_box_key, editRU
+   invoke  edit_box_key, editLabel
    invoke  edit_box_key, editMBR
    jmp     event_wait
 
@@ -175,6 +175,11 @@ exit:
    call butUnit
    jmp event_wait
 @@:
+   cmp ah, 6          ;Select Device button
+   jne @f
+   call butDevice
+   jmp event_wait
+@@:
    cmp ah, 110        ;kmenu list FS
    jb @f
    cmp ah, 114
@@ -191,14 +196,21 @@ exit:
    mov byte[kmUnitID], ah
    jmp redraw
 @@:
+   cmp ah, 130        ;kmenu Device
+   jb @f
+   cmp ah, 250
+   ja @f
+   sub ah, 130
+   mov byte[kmDeviceID], ah
+   jmp redraw
+@@:
    jmp event_wait
 
 mouse:
    invoke check_box_mouse, ch1  ;проверка чек бокса
    invoke check_box_mouse, ch2
 
-   invoke  edit_box_mouse, editLU   ;проверка событий мыши дл€ editBox'ов
-   invoke  edit_box_mouse, editRU
+   invoke  edit_box_mouse, editLabel   ;проверка событий мыши дл€ editBox'ов
    invoke  edit_box_mouse, editMBR
 
    stdcall [kmainmenu_dispatch_cursorevent], [kmFS]
@@ -243,6 +255,23 @@ butUnit:
    pop ecx ebx eax
    ret
 
+butDevice:
+   push eax ebx ecx
+   mcall 9, pi, -1
+
+   mov eax, dword[pi+34]
+   add eax, Otstup+80+30+delta
+   mov word[coordDevice.x], ax
+
+   mov eax, dword[pi+38]
+   add eax, 79
+   mov word[coordDevice.y], ax
+
+   stdcall [ksubmenu_draw], [kmDevice], coordDevice
+   pop ecx ebx eax
+   ret
+
+
 delta = 50
 dy = 15 + 40
 warning_title: db 'Warning!',0
@@ -264,7 +293,7 @@ draw_window:
         mcall
 
 
-        mov ebx, (290+delta-Otstup-130)*65536+130
+        mov ebx, (290+delta-Otstup-130+10)*65536+130
         mov ecx, (270+dy)*65536+(20+3)
         mov edx, 0x00000002
         mov esi, 0xAABBCC
@@ -290,14 +319,20 @@ draw_window:
         mov esi, 0xFFFFFF
         mcall 8
 
+        ;button select device
+        mov ebx, (Otstup+80+30+delta)*65536+120
+        mov ecx, (60)*65536+(21)
+        mov edx, 0x00000006
+        mov esi, 0xFFFFFF
+        mcall 8
+
        invoke check_box_draw, ch1  ;рисование чекбоксов
        invoke check_box_draw, ch2
 
        invoke  edit_box_draw, editMBR     ;рисование edit box'ов
-       invoke  edit_box_draw, editLU
-       invoke  edit_box_draw, editRU
+       invoke  edit_box_draw, editLabel
 
-        call draw_super_text
+       call draw_super_text
 
 
         mov     ecx,[sc.work]
@@ -340,6 +375,16 @@ text:
   .option db 'П†а†ђ•вал:', 0
   .format db 'ФЃађ†в®аЃҐ†вм', 0
 
+unittext:
+  .0 db '512 °†©в', 0
+  .1 db '1024 °†©в', 0
+  .2 db '2048 °†©в', 0
+  .3 db '4096 °†©в', 0
+  .4 db '8192 °†©в', 0
+  .5 db '16 К°', 0
+  .6 db '32 К°', 0
+  .7 db '64 К°', 0
+
 head_f_i:
   head_f_l  db 'С®бв•ђ≠†п Ѓи®°™†',0
   err_message_found_lib0 db 'Н• ≠†©§•≠† °®°Ђ®Ѓв•™† ',39,'proc_lib.obj',39,0
@@ -363,6 +408,16 @@ text:
   .option db 'Options:', 0
   .format db 'Format', 0
 
+unittext:
+  .0 db '512 bytes', 0
+  .1 db '1024 bytes', 0
+  .2 db '2048 bytes', 0
+  .3 db '4096 bytes', 0
+  .4 db '8192 bytes', 0
+  .5 db '16 Kb', 0
+  .6 db '32 Kb', 0
+  .7 db '64 Kb', 0
+
 head_f_i:
   head_f_l  db 'System error',0
   err_message_found_lib0 db 'Could not find library ',39,'proc_lib.obj',39,0
@@ -371,6 +426,71 @@ head_f_i:
   err_message_import1 db 'Error importing library ',39,'kmenu',39,0
 
 end if
+
+
+
+root_path: db "/", 0
+
+align 4
+maxDeviceCount = 250-130
+read_folder_struct:
+   .subfunction dd  1
+   .start       dd  0 ;start block
+   .encoding    dd  3 ;1-cp866, 2-UTF-16LE, 3-utf8
+   .count       dd  maxDeviceCount ;count blocks
+   .return      dd  0 ;адрес пам€ти дл€ получаемого блока Ѕƒ¬  с заголовком
+   .name        db  0
+   .path_adr    dd  root_path
+noneDevice: db '-', 0
+;adrDevice: dd 0
+
+getDeviceList:
+   push eax ebx ecx esi
+   stdcall [ksubmenu_new]
+   mov [kmDevice], eax
+   sizeBDVK = 560   ;304 ;
+
+   mcall 68, 11
+
+   mcall 68, 12, sizeBDVK*maxDeviceCount+32
+   mov dword[read_folder_struct.return], eax
+   mcall 70, read_folder_struct
+   cmp eax, 0
+   je .next
+   cmp eax, 6
+   je .next
+   jmp .none
+.next:
+   mov eax, dword[read_folder_struct.return]
+   mov esi, deviceAdrStr
+   add eax, 32
+   mov ecx, 130
+@@:
+   cmp ebx, 0
+   je @f
+   push eax ebx ecx
+   add eax, 40
+   ;mov [adrDevice], eax
+   mov dword[esi], eax
+   stdcall [kmenuitem_new], KMENUITEM_NORMAL, [esi], ecx ; [adrDevice], ecx
+   stdcall [ksubmenu_add], [kmDevice], eax
+   pop ecx ebx eax
+   add esi, 4
+   inc ecx
+   dec ebx
+   add eax, sizeBDVK
+   cmp ecx, 250
+   ja @f
+   jmp @b
+.none:
+   stdcall [kmenuitem_new], KMENUITEM_NORMAL, noneDevice, 130
+   mov dword[esi], noneDevice
+   stdcall [ksubmenu_add], [kmDevice], eax
+@@:
+   mov byte[kmDeviceID], 0
+   stdcall [kmenuitem_new], KMENUITEM_SUBMENU, unittext.0, [kmDevice]
+   pop esi ecx ebx eax
+   ret
 
 
 draw_super_text:
@@ -482,8 +602,17 @@ draw_super_text:
    ;mov     esi, 8
    mcall 4
 
+   ;button device
+   mov     ebx, (Otstup+80+30+delta +5) * 65536 + (60+3)
+   mov edx, dword[kmDeviceID]
+   shl edx, 2
+   add edx, deviceAdrStr
+   mov edx, dword[edx]
+   ;call setCurrentDeviceInEDX
+   mcall 4
+
    ;buttons text
-   mov     ebx, (290+delta-Otstup-130+10+2) * 65536 + (277-3+dy)
+   mov     ebx, (290+delta-Otstup-130+10+2+10) * 65536 + (277-3+dy)
    mov     ecx, 0x90FFFFFF
    mov eax, text.format
    mov     edx, eax
@@ -500,21 +629,11 @@ draw_super_text:
    pop esi edi edx ecx ebx eax
    ret
 
-unittext:
-  .0 db '512 bytes', 0
-  .1 db '1024 bytes', 0
-  .2 db '2048 bytes', 0
-  .3 db '4096 bytes', 0
-  .4 db '8192 bytes', 0
-  .5 db '16 Kb', 0
-  .6 db '32 Kb', 0
-  .7 db '64 Kb', 0
+
 
 Buf:
   .1 db 'NONAME18',0,0
-  ;.2 db 'FAT',0,0 ;100 dup(0)
-  .3 db 'hd0 [FAT32: 4Gb]',0,0 ;100 dup(0)
-  ;.4 db '4096',0,0 ;100 dup(0)
+  ;.3 db 'hd0 [4Gb]',0,0 ;100 dup(0)
   .5 rb 512 ;db '/rd/1/format/fat32mbr.bin', 0, 0
 
 initBuf:
@@ -725,8 +844,8 @@ l_libs_start:
 load_lib_end:
 
 ;размеры: 80 и 120
-editLU edit_box 120,Otstup,60,0xffffff,0x6a9480,0,0xAABBCC,0,8,Buf.1, mouse_dd, 0,8,8
-editRU edit_box 120,Otstup+80+30+delta,60,0xffffff,0x6a9480,0,0xAABBCC,0,16,Buf.3, mouse_dd, 0,16,16
+editLabel edit_box 120,Otstup,60,0xffffff,0x6a9480,0,0xAABBCC,0,8,Buf.1, mouse_dd, 0,8,8
+;editRU edit_box 120,Otstup+80+30+delta,60,0xffffff,0x6a9480,0,0xAABBCC,0,16,Buf.3, mouse_dd, 0,16,16
 editMBR edit_box 290+delta-Otstup-52-Otstup-20,Otstup+20,210+dy,0xffffff,0x6a9480,0,0xAABBCC,0,255,Buf.5, mouse_dd, 0,0,0 ;25,25
 
 data_of_code dd 0
@@ -741,6 +860,13 @@ coord:
 coordUnit:
   .x: rw 1
   .y: rw 1
+
+coordDevice:
+  .x: rw 1
+  .y: rw 1
+
+kmDeviceID: rd 1
+kmDevice: rd 1
 
 kmUnitID: rd 1
 kmUnit: rd 1
@@ -757,6 +883,8 @@ filename_area: rb 256
 rb 1024
 procinfo process_information
 pi rb 1024
+
+deviceAdrStr: rd maxDeviceCount
 
 I_END:
         rb 256
