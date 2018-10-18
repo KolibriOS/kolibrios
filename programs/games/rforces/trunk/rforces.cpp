@@ -35,6 +35,7 @@ struct MouseState
 
 void kos_Main()
 {
+	Dword btn_id;
 	Dword frame_start, frame_end;
 	OnStart();
 	Menu();
@@ -72,7 +73,7 @@ void kos_Main()
 			OnMouseMove();
 			break;
 		}
-		if (kos_GetButtonID()==1) OnExit();
+		if (kos_GetButtonID(btn_id)==1) OnExit();
 		DrawBombs();
 		DrawRocketsAndCrosses();
 		DrawExplodes();
