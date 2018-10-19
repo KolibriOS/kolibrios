@@ -228,6 +228,14 @@ data_loop:
   .done:
         icall   eax, interface_addr, interface.print, str_close
         mcall   close, [datasocket]
+
+        ; refresh local directory list if in gui
+        cmp     [operation], OPERATION_RETR
+        jne     @f
+        cmp     [interface_addr], gui
+        jne     @f
+        call    populate_local_tree_list
+      @@:
         mov     [operation], OPERATION_NONE
         jmp     wait_for_servercommand
 

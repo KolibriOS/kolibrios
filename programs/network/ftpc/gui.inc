@@ -1038,7 +1038,7 @@ tedit0:
     .fun_save_err       dd 0 ;+238
     .increase_size dd 1000 ;+242
     .ptr_free_symb dd ? ;+246
-    .font_size     dd 16 shl 24 ; +250
+    .font_size     dd 16 shl 16 ; +250
 
 align 4
 scrol_w1:
