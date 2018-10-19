@@ -1,5 +1,5 @@
 //Leency, Veliant, Punk_Joker, PavelYakov & KolibriOS Team 2008-2018
-//GNU GPL licence.
+//GNU GPL license.
 
 // 70.5 - get volume info and label
 
@@ -96,7 +96,8 @@ int sc_slider_h;
 int action_buf;
 int rand_n;
 
-char sort_num=2;
+char sort_type=2;
+bool sort_desc=false;
 int active_panel=1;
 
 libimg_image icons16_default;
@@ -131,6 +132,7 @@ byte cmd_free=0;
 
 void main() 
 {
+	char selected_filename[256];
 	dword id;
 	byte count_sl = 0;
 	signed x_old, y_old, dif_x, dif_y, adif_x, adif_y;
@@ -370,9 +372,13 @@ void main()
 							Paste();
 							break;
 					case 31...33: //sorting
-							sort_num = id - 30;
+							id -= 30;
+							if (sort_type == id) sort_desc ^= 1;
+							else sort_type = id;
+							strcpy(#selected_filename, #file_name);
 							DrawList();
 							Open_Dir(#path,WITH_REDRAW);
+							SelectFileByName(#selected_filename);
 							break;
 					case 50...60: //Actions
 							FnProcess(id-50);
@@ -434,35 +440,35 @@ void main()
 									SystemDiscs.Click(key_scancode);
 								}
 								break;
-						case 45:  //Ctrl+X
+						case SCAN_CODE_KEY_X:
 								Copy(#file_path, CUT);
 								break;						
-						case 46:  //Ctrl+C
+						case SCAN_CODE_KEY_C:
 								Copy(#file_path, NOCUT);
 								break;
-						case 47:  //Ctrl+V
+						case SCAN_CODE_KEY_V:
 								Paste();
 								break;
-						case 032: //Ctrl+D - set as bg
+						case SCAN_CODE_KEY_D: //set image as bg
 								strlcpy(#temp, "\\S__",4);
 								strcat(#temp, #file_path);
 								RunProgram("/sys/media/kiv", #temp);
 								break;
-						case 049: //Ctrl+N - create new window
+						case SCAN_CODE_KEY_N: //create new window
 								if (Form.left==98) MoveSize(Form.left-20,Form.top-20,OLD,OLD);
 								RunProgram(I_Path, #path);
 								break; 
-						case 050: //Ctrl+M
+						case SCAN_CODE_KEY_M:
 								Open_Dir(#inactive_path,WITH_REDRAW);
 								break; 
-						case SCAN_CODE_ENTER: //Ctrl+Enter
+						case SCAN_CODE_ENTER:
 								if (!itdir) ShowOpenWithDialog();
 								else Open(1);
 								break;
-						case 030: //Ctrl+A - select all files
+						case SCAN_CODE_KEY_A:
 								EventSelectAllFiles(true);
 								break;
-						case 022: //Ctrl+U - unselect all files
+						case SCAN_CODE_KEY_U: //unselect all files
 								selected_count = 0;
 								EventSelectAllFiles(false);
 								break;
@@ -485,7 +491,7 @@ void main()
 								ChangeActivePanel();
 								DrawFilePanels();
 								break;
-						case 093: //menu
+						case SCAN_CODE_MENU:
 								menu_call_mouse=0;
 								menu_stak = malloc(4096);
 								CreateThread(#FileMenu,menu_stak+4092);
@@ -500,7 +506,7 @@ void main()
 								List_ReDraw();
 								DrawStatusBar();
 								break;
-						case 059...068: //F1-F10
+						case SCAN_CODE_F1...SCAN_CODE_F10:
 								FnProcess(key_scancode-58);
 								break; 
 						default:
@@ -558,7 +564,7 @@ void draw_window()
 	if (Form.status_window>2) return;
 	if (Form.height < 350) { MoveSize(OLD,OLD,OLD,350); return; }
 	if (Form.width  < 480) { MoveSize(OLD,OLD,480,OLD); return; }
-	GetProcessInfo(#Form, SelfInfo); //if win_size changed
+	GetProcessInfo(#Form, SelfInfo);
 	ESDWORD[#toolbar_pal] = col_work;
 	ESDWORD[#toolbar_pal+4] = MixColors(0, col_work, 35);
 	PutPaletteImage(#toolbar, 246, 34, 0, 0, 8, #toolbar_pal);
@@ -584,15 +590,17 @@ void draw_window()
 void DrawList() 
 {
 	word sorting_arrow_x;
+	dword sorting_arrow_t = "\x19";
+	if (sort_desc) sorting_arrow_t = "\x18";
 	DrawFlatButtonSmall(files.x, files.y-17,     files.w - 141,16,31,T_FILE);
 	DrawFlatButtonSmall(files.x + files.w - 141, files.y-17,73,16,32,T_TYPE);
 	DrawFlatButtonSmall(files.x + files.w -  68, files.y-17,68,16,33,T_SIZE);
 	DrawFlatButtonSmall(files.x + files.w,       files.y-17,16,16, 0,"\x18");
 	DrawFlatButtonSmall(files.x + files.w,files.y+files.h-16,16,16,0,"\x19");
-	if (sort_num==1) sorting_arrow_x = files.w - 141 / 2 + files.x + 18;
-	if (sort_num==2) sorting_arrow_x = files.x + files.w - 90;
-	if (sort_num==3) sorting_arrow_x = strlen(T_SIZE)*3-30+files.x+files.w;
-	WriteText(sorting_arrow_x,files.y-12,0x80, system.color.work_text,"\x19");
+	if (sort_type==1) sorting_arrow_x = files.w - 141 / 2 + files.x + 18;
+	if (sort_type==2) sorting_arrow_x = files.x + files.w - 90;
+	if (sort_type==3) sorting_arrow_x = strlen(T_SIZE)*3-30+files.x+files.w;
+	WriteText(sorting_arrow_x,files.y-12,0x80, system.color.work_text, sorting_arrow_t);
 	DrawBar(files.x+files.w,files.y,1,files.h,col_graph);
 	if (two_panels.checked) && (files.x<5) DrawBar(files.x+files.w+16,files.y,1,files.h,col_graph);	
 }
@@ -822,14 +830,14 @@ void Open_Dir(dword dir_path, redraw){
 
 inline Sorting()
 {
-	dword k=0, l=1;
+	dword d=0, f=1;
 	int j=0;
 	dword file_off;
 
 	if (!strcmp(#path,"/")) //do not sort root folder
 	{
-		for(k=1;k<files.count;k++;) file_mas[k]=k;
-		count_dir = k;
+		for(d=1;d<files.count;d++;) file_mas[d]=d;
+		count_dir = d;
 		return;
 	}
 	for (j=files.count-1, file_off=files.count-1*304+buf+32; j>=0; j--, file_off-=304;)  //files | folders
@@ -837,24 +845,29 @@ inline Sorting()
 		if (!show_real_names.checked) strttl(file_off+40);
 		if (TestBit(ESDWORD[file_off],4)) //directory?
 		{
-			file_mas[k]=j;
-			k++;
+			file_mas[d]=j;
+			d++;
 		}
 		else
 		{
-			file_mas[files.count-l]=j;
-			l++;
+			file_mas[files.count-f]=j;
+			f++;
 		}
 	}
-	count_dir = k;
+	count_dir = d;
 	//sorting: files first, then folders
-	Sort_by_Name(0,k-1);
-	if (sort_num==1) Sort_by_Name(k,files.count-1);
-	else if (sort_num==2) Sort_by_Type(k,files.count-1);
-	else if (sort_num==3) Sort_by_Size(k,files.count-1);
+	Sort_by_Name(0,d-1);
+	if (sort_type==1) Sort_by_Name(d,files.count-1);
+	else if (sort_type==2) Sort_by_Type(d,files.count-1);
+	else if (sort_type==3) Sort_by_Size(d,files.count-1);
+	//reversed sorting
+	if (sort_desc) {
+		for (j=0; j<f/2; j++) file_mas[files.count-j-1]><file_mas[d+j];
+		//if (sort_type==1) for (j=0; j<d/2; j++) file_mas[d-j]><file_mas[j];
+	}
 	//make ".." first item in list
-	if (k>0) && (strncmp(file_mas[0]*304+buf+72,"..",2)!=0)
-		for(k--; k>0; k--;) if (!strncmp(file_mas[k]*304+buf+72,"..",2)) {file_mas[k]><file_mas[0]; break;}
+	if (d>0) && (strncmp(file_mas[0]*304+buf+72,"..",2)!=0)
+		for(d--; d>0; d--;) if (!strncmp(file_mas[d]*304+buf+72,"..",2)) {file_mas[d]><file_mas[0]; break;}
 }
 
 

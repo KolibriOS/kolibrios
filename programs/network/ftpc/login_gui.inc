@@ -183,7 +183,7 @@ gui_str_server  db 'Server:',0
 gui_str_port    db 'Port:',0
 gui_str_path    db 'Path:',0
 gui_str_error   db 'Error! Check log file for details',0
-gui_str_no_srvr db 'Error! Please set server adress',0
+gui_str_no_srvr db 'Error! Please set server address',0
 gui_str_null    db ' ',0
 
 str_error_addr  dd gui_str_null

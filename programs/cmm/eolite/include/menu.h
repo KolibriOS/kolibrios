@@ -11,7 +11,7 @@ char *file_captions[] = {
 	"Переименовать",         "F2",207,
 	"Удалить",               "Del",108,
 	"Обновить папку",        "F5",109,
-	"Свойства",              "",110,
+	"Свойства",             "F8",110,
 	0, 0, 0};
 #elif LANG_EST
 char *file_captions[] = {
@@ -25,7 +25,7 @@ char *file_captions[] = {
 	"Nimeta №mber",   "F2",207,
 	"Kustuta",        "Del",108,
 	"Vфrskenda",      "F5",109,
-	"Properties",       "",110,
+	"Properties",     "F8",110,
 	0, 0, 0};
 #else
 char *file_captions[] = {
@@ -39,7 +39,7 @@ char *file_captions[] = {
 	"Rename",        "F2",207,
 	"Delete",        "Del",108,
 	"Refresh",       "F5",109,
-	"Properties",       "",110,
+	"Properties",    "F8",110,
 	0, 0, 0};
 #endif
 
