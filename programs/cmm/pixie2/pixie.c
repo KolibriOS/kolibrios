@@ -43,6 +43,7 @@ Hot keys:
  Change sound volume: Left/Right key
  Remove from the list: Delete
  Permanently delete file: Shift + Delete
+ Show file info: I
  Repeat: R
  Shuffle: S
  Mute: M

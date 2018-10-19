@@ -441,6 +441,7 @@ tup.append_table(img_files, {
  {"MEDIA/KIV", PROGS .. "/media/kiv/trunk/kiv"},
  {"MEDIA/LISTPLAY", PROGS .. "/media/listplay/trunk/listplay"},
  {"MEDIA/MIDAMP", PROGS .. "/media/midamp/trunk/midamp"},
+ {"MEDIA/MP3INFO", PROGS .. "/media/mp3info/mp3info"},
  {"MEDIA/PALITRA", PROGS .. "/media/palitra/trunk/palitra"},
  {"MEDIA/STARTMUS", PROGS .. "/media/startmus/trunk/STARTMUS"},
  {"NETWORK/PING", PROGS .. "/network/ping/ping"},

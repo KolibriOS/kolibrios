@@ -10,14 +10,16 @@ typedef unsigned __int8 Byte;
 #define FO_READ					0
 #define FO_WRITE				2
 
+//Process Events
 #define EM_WINDOW_REDRAW		1
 #define EM_KEY_PRESS			2
-#define EM_BUTTON_CLICK			4
-#define EM_APP_CLOSE			8
-#define EM_DRAW_BACKGROUND		16
-#define EM_MOUSE_EVENT			32
-#define EM_IPC					64
-#define EM_NETWORK				256
+#define EM_BUTTON_CLICK			3
+#define EM_APP_CLOSE			4
+#define EM_DRAW_BACKGROUND		5
+#define EM_MOUSE_EVENT			6
+#define EM_IPC					7
+#define EM_NETWORK				8
+#define EM_DEBUG				9
 
 #define KM_CHARS				0
 #define KM_SCANS				1
@@ -26,6 +28,25 @@ typedef unsigned __int8 Byte;
 #define WRS_END					2
 
 #define PROCESS_ID_SELF			-1
+
+//Event mask bits for function 40
+#define EVM_REDRAW                1b
+#define EVM_KEY                  10b
+#define EVM_BUTTON              100b
+#define EVM_EXIT               1000b
+#define EVM_BACKGROUND        10000b
+#define EVM_MOUSE            100000b
+#define EVM_IPC             1000000b
+#define EVM_STACK          10000000b
+#define EVM_DEBUG         100000000b
+#define EVM_STACK2       1000000000b
+#define EVM_MOUSE_FILTER  0x80000000
+#define EVM_CURSOR_FILTER 0x40000000
+
+//Button options
+#define BT_DEL      0x80000000
+#define BT_HIDE     0x40000000
+#define BT_NOFRAME  0x20000000
 
 #define abs(a) (a<0?0-a:a)
 

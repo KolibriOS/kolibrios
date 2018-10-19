@@ -39,15 +39,16 @@ void kos_Main()
 	Dword frame_start, frame_end;
 	OnStart();
 	Menu();
+	kos_SetMaskForEvents(EVM_REDRAW + EVM_KEY + EVM_BUTTON + EVM_MOUSE + EVM_MOUSE_FILTER);
 	for (;;)
 	{
 		frame_start = kos_GetTime();
 		switch (kos_CheckForEvent())
 		{
-		case 1:
+		case EM_WINDOW_REDRAW:
 			DrawWindow();
 			break;
-		case 2:	// key pressed, read it and ignore
+		case EM_KEY_PRESS:
 			Byte keyCode;
 			kos_GetKey(keyCode);
 			if (keyCode == 27)
@@ -59,18 +60,15 @@ void kos_Main()
 				OnStart();
 			}
 			break;
-		case 3: // button pressed; we have only one button, close
+		case EM_BUTTON_CLICK: // button pressed; we have only one button, close
 			OnExit();
 			break;
-		case 6: // событие от мыши (нажатие на кнопку мыши или перемещение; сбрасывается при прочтении) 
+		case EM_MOUSE_EVENT: // событие от мыши (нажатие на кнопку мыши или перемещение; сбрасывается при прочтении) 
 			OnMouseMove();
 			if (ms.lbclick == 1)
 			{
 				OnLMBClick();
 			}
-			break;
-		default:
-			OnMouseMove();
 			break;
 		}
 		if (kos_GetButtonID(btn_id)) OnExit();
@@ -92,7 +90,7 @@ void kos_Main()
 void DrawWindow()
 {
 	kos_WindowRedrawStatus(1);
-	kos_DefineAndDrawWindow(10, 40, WINDOW_WIDTH + 8, WINDOW_HEIGHT + kos_GetSkinHeight(), 0x34, BG_COLOR, 0, 0, (Dword)header);
+	kos_DefineAndDrawWindow(10, 40, WINDOW_WIDTH + 8, WINDOW_HEIGHT + kos_GetSkinHeight() + 12, 0x34, BG_COLOR, 0, 0, (Dword)header);
 	kos_WindowRedrawStatus(2);
 
 	kos_WriteTextToWindow(8, 10, 0, TEXT_COLOR, "Population:    %", 16);
@@ -368,7 +366,6 @@ void OnStart()
 	rtlSrand(kos_GetTime());
 
 	DrawWindow();
-	kos_SetMaskForEvents(39);
 }
 
 void OnExit()

@@ -56,9 +56,12 @@ void FileMenu()
 	rbmenu.SetSizes(0,0,10,0,18);
 	for (index=0; file_captions[index]!=0; index+=3)
 	{
-		if (itdir) && (file_captions[index+2]>=200) continue;
-		if (selected_count > 0) && (file_captions[index+2]>=200) continue;
-		if (selected_count > 0) && (file_captions[index+2]==100) continue; //do not show "open" for several files
+		if (selected_count > 0) {
+			//if there are files selected then show only specific menu items
+			if (file_captions[index+2]>=200) continue;
+			if (file_captions[index+2]==100) continue;
+		}
+		else if (itdir) && (file_captions[index+2]>=200) continue;
 		if (strlen(file_captions[index])>rbmenu.w) rbmenu.w = strlen(file_captions[index]);
 		rbmenu.count++;
 		rbmenu.visible++;
@@ -108,9 +111,11 @@ void MenuListRedraw()
 
 	for (index=0; file_captions[index*3]!=0; index++)
 	{
-		if ((itdir) && (file_captions[index*3+2]>=200)) continue;
-		if (selected_count > 0) && (file_captions[index*3+2]==100) continue;
-		if (selected_count > 0) && (file_captions[index*3+2]>=200) continue;
+		if (selected_count > 0) {
+			if (file_captions[index*3+2]==100) continue;
+			if (file_captions[index*3+2]>=200) continue;
+		}
+		else if ((itdir) && (file_captions[index*3+2]>=200)) continue;
 		DrawBar(1,start_y+2,1,rbmenu.item_h,0xFFFfff);
 		if (start_y/rbmenu.item_h==rbmenu.cur_y)
 		{
