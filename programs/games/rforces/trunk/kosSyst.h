@@ -30,18 +30,18 @@ typedef unsigned __int8 Byte;
 #define PROCESS_ID_SELF			-1
 
 //Event mask bits for function 40
-#define EVM_REDRAW                1b
-#define EVM_KEY                  10b
-#define EVM_BUTTON              100b
-#define EVM_EXIT               1000b
-#define EVM_BACKGROUND        10000b
-#define EVM_MOUSE            100000b
-#define EVM_IPC             1000000b
-#define EVM_STACK          10000000b
-#define EVM_DEBUG         100000000b
-#define EVM_STACK2       1000000000b
-#define EVM_MOUSE_FILTER  0x80000000
-#define EVM_CURSOR_FILTER 0x40000000
+#define EVM_REDRAW                0b1
+#define EVM_KEY                  0b10
+#define EVM_BUTTON              0b100
+#define EVM_EXIT               0b1000
+#define EVM_BACKGROUND        0b10000
+#define EVM_MOUSE            0b100000
+#define EVM_IPC             0b1000000
+#define EVM_STACK          0b10000000
+#define EVM_DEBUG         0b100000000
+#define EVM_STACK2       0b1000000000
+#define EVM_MOUSE_FILTER   0x80000000
+#define EVM_CURSOR_FILTER  0x40000000
 
 //Button options
 #define BT_DEL      0x80000000
