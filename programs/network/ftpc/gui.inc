@@ -68,9 +68,6 @@ gui: ;//////////////////////////////////////////////////////////////////////////
 ;;================================================================================================;;
 
         stdcall [ted_init], tedit0
-        mov     dword[tedit0.rec.width], 9
-        mov     dword[tedit0.rec.height], 16
-
         stdcall dword[edit_box_set_text], edit_volume, root_dir
 
         ; initialize tree list elements
@@ -164,7 +161,7 @@ gui: ;//////////////////////////////////////////////////////////////////////////
         stdcall [ted_draw], tedit0
 
         ; draw "disconnect" button
-        mcall   8, <50,85>, <25,25>, 3, BT_COL
+        mcall   8, <50,95>, <25,25>, 3, BT_COL
         ; string "disconnect"
         mcall   4, <50+5,25+5>, 0xb0000000+STR_COL, str_disconnect
         ; draw "Copy" button
@@ -981,7 +978,7 @@ wScr2:
 align 4
 tedit0:
     .wnd BOX 50,355,325,240 ;+ 0 195,5+40,325,240
-    .rec BOX 30,13,7,10   ;+16
+    .rec BOX 30,13,6,10   ;+16
     .drag_m db 0 ;+32
     .drag_k db 0 ;+33
     .sel rb 16 ;+34
@@ -998,7 +995,7 @@ tedit0:
     .color_wnd_capt    dd BT_COL   ;+102
     .color_wnd_work    dd 0xffffff ;+106
     .color_wnd_bord    dd 0x737373 ;+110
-    .color_select      dd 0x0000ff ;+114
+    .color_select      dd 0xA4C4E4 ;+114
     .color_cur_text    dd 0xffff00 ;+118
     .color_wnd_text    dd 0x000000 ;+122
     .syntax_file       dd 0 ;+126

@@ -45,21 +45,33 @@ login_gui: ;////////////////////////////////////////////////////////////////////
   align 4
   .draw:
         mcall   12, 1
-        mcall   0, <WIN_X,WIN_W>, <WIN_Y,WIN_H>, 0x34000000+SYS_COL, 0x805080DD, str_title
+        mcall   48, 3, sc, 40
+        edit_boxes_set_sys_color edit_usr,editboxes_end,sc
+        mov     edx, 0x34000000
+        or      edx, [sc.work]
+        mcall   0, <WIN_X,WIN_W>, <WIN_Y,WIN_H>, , 0x805080DD, str_title
 
 		call    .draw_editboxes
 
         ; draw "connect" button
-        mcall   8, <162,65>, <150,25>, 2, BT_COL
+        mcall   8, <162,65>, <150,25>, 2, [sc.work_button]
 
         ; draw strings
-        mcall   4, <3,      8>, 0xb0000000, gui_str_usr
-        mcall    , <3,pad*1+8>,           , gui_str_pass
-        mcall    , <3,pad*2+8>,           , gui_str_server
-        mcall    , <3,pad*3+8>,           , gui_str_port
-        mcall    , <3,pad*4+8>,           , gui_str_path
-        mcall    , <167,155>, 0xb0000000+STR_COL, gui_str_connect
-        mcall    , <3,115>, 0xb0ff0000, [str_error_addr]
+        mov     ecx, 0x90000000
+        or      ecx, [sc.work_text]
+        mcall   4, <3,      8>, , gui_str_usr
+        mcall    , <3,pad*1+8>, , gui_str_pass
+        mcall    , <3,pad*2+8>, , gui_str_server
+        mcall    , <3,pad*3+8>, , gui_str_port
+        mcall    , <3,pad*4+8>, , gui_str_path
+		
+		mov     ecx, 0x90000000
+        or      ecx, [sc.work_button_text]
+        mcall    , <167,155>, , gui_str_connect
+        
+		mcall    , <3,185>, 0xb0ff0000, [str_error_addr]
+		add     ebx, 1*65536
+		mcall
         mov     [str_error_addr], gui_str_null ; reset error string address
 
         mcall   12, 2
@@ -90,7 +102,7 @@ login_gui: ;////////////////////////////////////////////////////////////////////
         jz      .exit
 
         dec     ah   ; 'Connect' button clicked
-        jz      gui.main
+        jz      .connect
 
         jmp     .still
 
@@ -98,7 +110,7 @@ login_gui: ;////////////////////////////////////////////////////////////////////
         mcall   2
 
         cmp     ah,13
-        je      gui.main
+        je      .connect
 
         cmp     ah,9
         je      .tab
@@ -110,7 +122,14 @@ login_gui: ;////////////////////////////////////////////////////////////////////
         stdcall [edit_box_key], edit_path
 
         jmp     .still
-
+	
+  .connect:
+        cmp     [param_server_addr], 0
+		jne     gui.main
+		
+        mov     [str_error_addr], gui_str_no_srvr
+        jmp     .redraw
+ 
   .error:
         mov     [str_error_addr], gui_str_error
         jmp     .server_addr
@@ -163,7 +182,8 @@ gui_str_pass    db 'Password:',0
 gui_str_server  db 'Server:',0
 gui_str_port    db 'Port:',0
 gui_str_path    db 'Path:',0
-gui_str_error   db 'ERROR! Check log file for details',0
+gui_str_error   db 'Error! Check log file for details',0
+gui_str_no_srvr db 'Error! Please set server adress',0
 gui_str_null    db ' ',0
 
 str_error_addr  dd gui_str_null
@@ -174,5 +194,6 @@ edit_pass   edit_box 300,75,pad+5,  0xffffff,0x94AECE,0,0xAABBCC,0x10000000,99,p
 edit_server edit_box 300,75,pad*2+5,0xffffff,0x94AECE,0,0xAABBCC,0x10000000,99,param_server_addr,mouse_dd,0
 edit_port   edit_box 50, 75,pad*3+5,0xffffff,0x94AECE,0,0xAABBCC,0x10000000,99,param_port,mouse_dd,ed_figure_only
 edit_path   edit_box 300,75,pad*4+5,0xffffff,0x94AECE,0,0xAABBCC,0x10000000,99,param_path,mouse_dd,0
+editboxes_end:
 
 mouse_dd rd 1
