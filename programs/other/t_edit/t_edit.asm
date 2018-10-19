@@ -66,7 +66,7 @@ mov	ebp,lib0
 
 ;---------------------------------------------------------------------
 	stdcall [ted_init], tedit0
-	stdcall dword[tl_data_init], tree1
+	stdcall [tl_data_init], tree1
 
 ; OpenDialog initialisation
 	stdcall [OpenDialog_Init],OpenDialog_data
@@ -171,54 +171,95 @@ mov	ebp,lib0
 			cmp byte[eax],'.' ;фильтруем файлы с именами '.' и '..'
 			je .filter
 			;0x10000 ;1*2^16 - где 1 номер иконки с книгой
-			stdcall dword[tl_node_add], tree1,0x10000,eax 
-			stdcall dword[tl_cur_next], tree1
+			stdcall [tl_node_add], tree1,0x10000,eax 
+			stdcall [tl_cur_next], tree1
 			.filter:
 			add eax,304
 			loop @b
-		stdcall dword[tl_cur_beg],tree1 ;ставим курсор на начало списка
+		stdcall [tl_cur_beg],tree1 ;ставим курсор на начало списка
 	.end_dir_init:
 
 ;--- load ini file ---
 	copy_path ini_name,sys_path,file_name,0
 	;window startup pozition
-	stdcall dword[ini_get_int],file_name,ini_sec_window,key_window_l,ini_def_window_l
+	stdcall [ini_get_int],file_name,ini_sec_window,key_window_l,ini_def_window_l
 	mov word[wnd_s_pos+2],ax
-	stdcall dword[ini_get_int],file_name,ini_sec_window,key_window_w,ini_def_window_w
+	stdcall [ini_get_int],file_name,ini_sec_window,key_window_w,ini_def_window_w
 	mov word[wnd_s_pos],ax
-	stdcall dword[ini_get_int],file_name,ini_sec_window,key_window_t,ini_def_window_t
+	stdcall [ini_get_int],file_name,ini_sec_window,key_window_t,ini_def_window_t
 	mov word[wnd_s_pos+6],ax
-	stdcall dword[ini_get_int],file_name,ini_sec_window,key_window_h,ini_def_window_h
+	stdcall [ini_get_int],file_name,ini_sec_window,key_window_h,ini_def_window_h
 	mov word[wnd_s_pos+4],ax
 	;scrool type
-	stdcall dword[ini_get_int],file_name,ini_sec_window,key_scroll_type,ini_def_scroll_type
+	stdcall [ini_get_int],file_name,ini_sec_window,key_scroll_type,ini_def_scroll_type
 	mov [wScr.type],eax
 	mov [hScr.type],eax
 	mov [ws_dir_lbox.type],eax
     mov [w_scr_t3.type],eax
 	;symbol size
-	stdcall dword[ini_get_int],file_name,ini_sec_window,key_symbol_w,ini_def_symbol_w
+	stdcall [ini_get_int],file_name,ini_sec_window,key_symbol_w,ini_def_symbol_w
 	mov dword[tedit0.rec.width],eax
-	stdcall dword[ini_get_int],file_name,ini_sec_window,key_symbol_h,ini_def_symbol_h
+	stdcall [ini_get_int],file_name,ini_sec_window,key_symbol_h,ini_def_symbol_h
 	mov dword[tedit0.rec.height],eax
 	;lea eax,[eax+eax*2]
 	;mov dword[tedit0.rec.top],eax
 	;font size
-	stdcall dword[ini_get_int],file_name,ini_sec_window,key_font_s,ini_def_font_s
+	stdcall [ini_get_int],file_name,ini_sec_window,key_font_s,ini_def_font_s
 	shl eax,24
 	mov dword[tedit0.font_size],eax
+	;кнопки на панели
+	stdcall [ini_get_int],file_name,ini_sec_window,key_but_new,1
+	mov byte[panel_but],al
+	stdcall [ini_get_int],file_name,ini_sec_window,key_but_open,1
+	mov byte[panel_but+1],al
+	stdcall [ini_get_int],file_name,ini_sec_window,key_but_save,1
+	mov byte[panel_but+2],al
+	stdcall [ini_get_int],file_name,ini_sec_window,key_but_select,1
+	mov byte[panel_but+3],al
+	stdcall [ini_get_int],file_name,ini_sec_window,key_but_cut,1
+	mov byte[panel_but+4],al
+	stdcall [ini_get_int],file_name,ini_sec_window,key_but_copy,1
+	mov byte[panel_but+5],al
+	stdcall [ini_get_int],file_name,ini_sec_window,key_but_paste,1
+	mov byte[panel_but+6],al
+	stdcall [ini_get_int],file_name,ini_sec_window,key_but_find,1
+	mov byte[panel_but+7],al
+	stdcall [ini_get_int],file_name,ini_sec_window,key_but_replace,1
+	mov byte[panel_but+8],al
+	stdcall [ini_get_int],file_name,ini_sec_window,key_but_key_words,1
+	mov byte[panel_but+9],al
+	stdcall [ini_get_int],file_name,ini_sec_window,key_but_upper,1
+	mov byte[panel_but+10],al
+	stdcall [ini_get_int],file_name,ini_sec_window,key_but_lower,1
+	mov byte[panel_but+11],al
+	stdcall [ini_get_int],file_name,ini_sec_window,key_but_reverse,1
+	mov byte[panel_but+12],al
+	stdcall [ini_get_int],file_name,ini_sec_window,key_but_undo,1
+	mov byte[panel_but+13],al
+	stdcall [ini_get_int],file_name,ini_sec_window,key_but_redo,1
+	mov byte[panel_but+14],al
+	stdcall [ini_get_int],file_name,ini_sec_window,key_but_invisible,1
+	mov byte[panel_but+15],al
+	stdcall [ini_get_int],file_name,ini_sec_window,key_but_syntax_list,1
+	mov byte[panel_but+16],al
+	stdcall [ini_get_int],file_name,ini_sec_window,key_but_syntax_mode,1
+	mov byte[panel_but+17],al
+	stdcall [ini_get_int],file_name,ini_sec_window,key_but_convert_1251_866,1
+	mov byte[panel_but+18],al
+	stdcall [ini_get_int],file_name,ini_sec_window,key_but_convert_866_1251,1
+	mov byte[panel_but+19],al
 	;файловые расширения
 	xor edx,edx
 	mov ebx,synt_auto_open
 	@@:
 		;берем имя файла
-		stdcall dword[ini_get_str],file_name,ini_sec_options,key_synt_file,ebx,32,ini_def_synt_f
+		stdcall [ini_get_str],file_name,ini_sec_options,key_synt_file,ebx,32,ini_def_synt_f
 		cmp byte[ebx],0
 		je @f
 		inc byte[key_synt_file.numb]
 		add ebx,32
 		;берем расширения
-		stdcall dword[ini_get_str],file_name,ini_sec_options,key_synt_ext,ebx,32,ini_def_synt_f
+		stdcall [ini_get_str],file_name,ini_sec_options,key_synt_ext,ebx,32,ini_def_synt_f
 		inc byte[key_synt_ext.numb]
 		add ebx,32
 		inc edx

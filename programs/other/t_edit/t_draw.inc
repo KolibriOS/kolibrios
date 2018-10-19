@@ -4,12 +4,18 @@ draw_but_toolbar: ;функция для рисования панели инструментов
 	mov edi,tedit0
 
 	mov ecx,0x40000000
-	mov edx,5*65536+25
-	call draw_but_icon
+	mov edx,(5 shl 16)+25
+	bt word[panel_but],0
+	jnc @f
+		call draw_but_icon ;New
+	@@:
 
 	inc cx
-	mov edx,30*65536+25
-	call draw_but_icon
+	bt word[panel_but+1],0
+	jnc @f
+		add edx,25 shl 16
+		call draw_but_icon ;Open
+	@@:
 
 	stdcall [ted_can_save],edi
 	cmp al,1
@@ -17,69 +23,111 @@ draw_but_toolbar: ;функция для рисования панели инструментов
 		and ecx,0xffff
 	@@:
 	inc cx
-	mov edx,55*65536+25
-	call draw_but_icon
+	bt word[panel_but+2],0
+	jnc @f
+		add edx,25 shl 16
+		call draw_but_icon ;Save
+	@@:
 	or ecx,0x40000000
 
-	inc cx
-	mov edx,85*65536+25
-	call draw_but_icon
+	inc cx 
+	bt word[panel_but+3],0
+	jnc @f
+		add edx,30 shl 16
+		call draw_but_icon ;Select word
+	@@:
 
 	call [ted_is_select]
-	cmp al,0
-	jne @f
+	or al,al
+	jnz @f
 		and ecx,0xffff
 	@@:
-	inc cx ; Cut
-	mov edx,110*65536+25
-	call draw_but_icon
+	inc cx
+	bt word[panel_but+4],0
+	jnc @f
+		add edx,25 shl 16
+		call draw_but_icon ;Cut
+	@@:
 
-	inc cx ; Copy
-	mov edx,135*65536+25
-	call draw_but_icon
-
-	mov cx,10 ; Upper
-	mov edx,265*65536+25
-	call draw_but_icon
-
-	inc cx ; Lower
-	mov edx,290*65536+25
-	call draw_but_icon
-
-	inc cx ; reverse
-	mov edx,315*65536+25
-	call draw_but_icon
+	inc cx
+	bt word[panel_but+5],0
+	jnc @f
+		add edx,25 shl 16
+		call draw_but_icon ;Copy
+	@@:
 	or ecx,0x40000000
 
 	cmp dword[buf],0
 	jne @f
 		and ecx,0xffff
 	@@:
-	mov cx,6 ; Paste
-	mov edx,160*65536+25
-	call draw_but_icon
+	inc cx
+	bt word[panel_but+6],0
+	jnc @f
+		add edx,25 shl 16
+		call draw_but_icon ;Paste
+	@@:
 	or ecx,0x40000000
 
 	inc cx
-	mov edx,185*65536+25
-	call draw_but_icon
+	bt word[panel_but+7],0
+	jnc @f
+		add edx,25 shl 16
+		call draw_but_icon ;Found
+	@@:
 
 	inc cx
-	mov edx,210*65536+25
-	call draw_but_icon
+	bt word[panel_but+8],0
+	jnc @f
+		add edx,25 shl 16
+		call draw_but_icon ;Replace
+	@@:
 
 	inc cx
-	mov edx,235*65536+25
-	call draw_but_icon
+	bt word[panel_but+9],0
+	jnc @f
+		add edx,25 shl 16
+		call draw_but_icon ;Key words
+	@@:
+
+	call [ted_is_select]
+	or al,al
+	jnz @f
+		and ecx,0xffff
+	@@:
+	inc cx
+	bt word[panel_but+10],0
+	jnc @f
+		add edx,30 shl 16
+		call draw_but_icon ;Upper
+	@@:
+
+	inc cx
+	bt word[panel_but+11],0
+	jnc @f
+		add edx,25 shl 16
+		call draw_but_icon ;Lower
+	@@:
+
+	inc cx
+	bt word[panel_but+12],0
+	jnc @f
+		add edx,25 shl 16
+		call draw_but_icon ;Reverse
+	@@:
+	or ecx,0x40000000
 
 	mov ebx,ted_tim_undo
 	cmp ted_tim_ch,ebx
 	jg @f
 		and ecx,0xffff
 	@@:
-	mov cx,13
-	mov edx,345*65536+25
-	call draw_but_icon
+	inc cx
+	bt word[panel_but+13],0
+	jnc @f
+		add edx,30 shl 16
+		call draw_but_icon ;Undo
+	@@:
 	or ecx,0x40000000
 
 	cmp ted_tim_undo,1
@@ -87,29 +135,47 @@ draw_but_toolbar: ;функция для рисования панели инструментов
 		and ecx,0xffff
 	@@:
 	inc cx
-	mov edx,370*65536+25
-	call draw_but_icon
+	bt word[panel_but+14],0
+	jnc @f
+		add edx,25 shl 16
+		call draw_but_icon ;Redo
+	@@:
 	or ecx,0x40000000
 
 	inc cx
-	mov edx,400*65536+25
-	call draw_but_icon
+	bt word[panel_but+15],0
+	jnc @f
+		add edx,30 shl 16
+		call draw_but_icon ;Invisible on|off
+	@@:
 
 	inc cx
-	mov edx,425*65536+25
-	call draw_but_icon
+	bt word[panel_but+16],0
+	jnc @f
+		add edx,25 shl 16
+		call draw_but_icon
+	@@:
 
-	mov cx,17 ;выбор файла подсветки
-	mov edx,450*65536+25
-	call draw_but_icon
+	inc cx
+	bt word[panel_but+17],0
+	jnc @f
+		add edx,25 shl 16
+		call draw_but_icon ;Выбор файла подсветки
+	@@:
 
-	mov cx,18 ;cp 1251 -> 866
-	mov edx,480*65536+25
-	call draw_but_icon
+	inc cx
+	bt word[panel_but+18],0
+	jnc @f
+		add edx,30 shl 16
+		call draw_but_icon ;cp 1251 -> 866
+	@@:
 
-	mov cx,19 ;cp 866 -> 1251
-	mov edx,505*65536+25
-	call draw_but_icon
+	inc cx
+	bt word[panel_but+19],0
+	jnc @f
+		add edx,25 shl 16
+		call draw_but_icon ;cp 866 -> 1251
+	@@:
 
 	popad
 	ret
@@ -309,9 +375,7 @@ draw_but_icon:
 		and ecx,0xffff
 		imul ecx,1200
 		add ebx,ecx
-		mov ecx,20
-		shl ecx,16
-		add ecx,20
+		mov ecx,(20 shl 16)+20
 		int 0x40 ;ставим рисунок на кнопку
 		pop ecx
 	@@:
