@@ -33,6 +33,8 @@ char window_title[128],
 
 #define LIST_BACKGROUND_COLOR 0xF3F3F3
 
+block ipos[128];
+
 void load_config()
 {
 	ini_get_str stdcall (#settings_ini_path, "Config", "window_title", #window_title, sizeof(window_title), "Software widget");
@@ -78,10 +80,13 @@ void main()
 
 	loop() switch(WaitEvent())
 	{
-		// case evKey:
-		// 	GetKeys();
-		// 	if (list.ProcessKey(key_scancode)) DrawList();
-		// 	break;
+		case evKey:
+			GetKeys();
+			if (SCAN_CODE_LEFT == key_scancode) key_scancode = SCAN_CODE_UP;
+			if (SCAN_CODE_RIGHT == key_scancode) key_scancode = SCAN_CODE_DOWN;
+			if (list.ProcessKey(key_scancode)) DrawSelection();
+			if (SCAN_CODE_ENTER == key_scancode) EventRunApp(list.cur_y);
+			break;
 
 		case evButton:
 			id=GetButtonID();               
@@ -96,7 +101,9 @@ void main()
 			if (Form.status_window>2) { DrawTitle(#window_title); break; } else DrawTitle("");
 			draw_top_bar();
 			DrawList();
-			DrawBar(0, row + 1 * list.item_h + list_pos, Form.cwidth, -row - 1 * list.item_h - list_pos + Form.cheight, LIST_BACKGROUND_COLOR);
+			DrawBar(0, row +1 * list.item_h + list_pos, Form.cwidth, -row - 1 * list.item_h - list_pos + Form.cheight, LIST_BACKGROUND_COLOR);
+			//if (list.cur_y == list.count) 
+				DrawSelection();
 			break;
 	}
 }
@@ -116,6 +123,7 @@ byte draw_icons_from_section(dword key_value, key_name, sec_name, f_name)
 	int tmp,
 		icon_id,
 		icon_char_pos;
+	int text_w;
 
 	//do not show items located in /kolibrios/ if this directory not mounted
 	if (!strncmp(key_value, "/kolibrios/", 11)) || (!strncmp(key_value, "/k/", 3))
@@ -136,8 +144,10 @@ byte draw_icons_from_section(dword key_value, key_name, sec_name, f_name)
 	if (icon_char_pos) ESBYTE[icon_char_pos] = '\0'; //delete icon from string
 	app_path_collection.add(key_value);
 	//kfont.WriteIntoWindowCenter(col*list.item_w+7,row*list.item_h+47 + list_pos, list.item_w,0, LIST_BACKGROUND_COLOR, 0xDCDCDC, 12, key_name);
-	kfont.WriteIntoWindowCenter(col*list.item_w+5,row*list.item_h+46 + list_pos, list.item_w,0, LIST_BACKGROUND_COLOR, 0x000000, 12, key_name);
-	if (list.cur_y == list.count) DrawWideRectangle(col*list.item_w+6, row*list.item_h + list_pos,list.item_w,list.item_h-5, 2, 0x0080FF);
+	text_w = kfont.WriteIntoWindowCenter(col*list.item_w+5,row*list.item_h+46 + list_pos, list.item_w,0, LIST_BACKGROUND_COLOR, 0x000000, 12, key_name);
+	ipos[list.count].x = list.item_w-text_w/2+calc(col*list.item_w)+5;
+	ipos[list.count].y = row*list.item_h+46 + list_pos + 16;
+	ipos[list.count].w = text_w;
 	list.count++;
 	col++;
 	return true;
@@ -211,9 +221,17 @@ void EventRunApp(dword appid)
 	{
 		notify("'Application not found' -E");
 	}
-
 }
 
+void DrawSelection()
+{
+	int i;
+	dword col;
+	for (i=0; i<list.count; i++) {
+		if (i==list.cur_y) col=0x0080FF; else col=LIST_BACKGROUND_COLOR;
+		DrawBar(ipos[i].x, ipos[i].y, ipos[i].w+2, 3, col);
+	}
+}
 
 
 stop:

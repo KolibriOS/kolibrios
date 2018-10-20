@@ -19,12 +19,12 @@
 //                                                   //
 //===================================================//
 
-?define WINDOW_HEADER "Clipboard Viewer v1.02"
+?define WINDOW_HEADER "Clipboard Viewer v1.03"
 ?define T_DELETE_LAST_SLOT "Delete last slot"
 ?define T_DELETE_ALL_SLOTS "Delete all slots"
 ?define T_RESET_BUFFER_LOCK "Reset the lock buffer"
 ?define T_COLUMNS_TITLE "# | Data size | Data type | Contents"
-?define T_COLUMN_VIEW "View"
+?define T_COLUMN_VIEW "| View"
 ?define T_VIEW_OPTIONS "TEXT  HEX"
 ?define DEFAULT_SAVE_PATH "/tmp0/1/clipview.tmp"
 char *data_type[] = { "Text", "Image", "RAW", "Unknown" };
@@ -110,7 +110,7 @@ void DrawWindowContent()
 	button_x += DrawStandartCaptButton(button_x, select_list.y + select_list.h + 8, BT_DELETE_ALL_SLOTS, T_DELETE_ALL_SLOTS);
 	button_x += DrawStandartCaptButton(button_x, select_list.y + select_list.h + 8, BT_UNLOCK, T_RESET_BUFFER_LOCK);
 	WriteText(select_list.x+12, select_list.y - 23, select_list.font_type, system.color.work_text, T_COLUMNS_TITLE);
-	WriteText(select_list.x+select_list.w-68, select_list.y - 23, select_list.font_type, system.color.work_text, T_COLUMN_VIEW);
+	WriteText(select_list.x+select_list.w - 88-14, select_list.y - 23, select_list.font_type, system.color.work_text, T_COLUMN_VIEW);
  	ClipViewSelectListDraw();
  	SelectList_DrawBorder();
 }
@@ -131,6 +131,8 @@ void SelectList_DrawLine(dword i)
 	dword line_text[2048];
 	dword size_kb;
 	dword text_color = 0;
+	dword bgcol = 0xFFFfff;
+	if (i%2) bgcol = 0xF1F1F1;
 
 	slot_data = Clipboard__GetSlotData(select_list.first + i);
 	cdata.size = ESDWORD[slot_data];
@@ -142,6 +144,7 @@ void SelectList_DrawLine(dword i)
 	cdata.content = slot_data + cdata.content_offset; 
 
 	yyy = i*select_list.item_h+select_list.y;
+	DrawBar(select_list.x+1, yyy, select_list.w-1, select_list.item_h, bgcol);
 	WriteText(select_list.x+12, yyy+select_list.text_y, select_list.font_type, text_color, itoa(select_list.first + i));
 	size_kb = ConvertSizeToKb(cdata.size);
 	WriteText(select_list.x+44, yyy+select_list.text_y, select_list.font_type, text_color, size_kb);

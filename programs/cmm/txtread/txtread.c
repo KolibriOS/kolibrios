@@ -49,10 +49,9 @@ Press any key..."
 dword color_schemes[] = {
 0xFFFfff, 0,
 0xF0F0F0, 0,
-0xE9E5DA, 0,
-0xF0F0C7, 0,
-0xFCF0DA, 0x171501,
 0xFDF6E3, 0x101A21,
+0xFCF0DA, 0x171501,
+0xF0F0C7, 0,
 0x282C34, 0xABB2BF,
 0x282923, 0xD8D8D2
 };
@@ -60,10 +59,9 @@ dword color_schemes[] = {
 char color_scheme_names[] =
 "White & Black
 Grey & Black      RtfRead
-Khaki & Black     QNX
-Lemon & Black     Fb2Read
-Antique & Black   Pocket
 Linen & Black     Horst
+Antique & Black   Pocket
+Lemon & Black     Fb2Read
 DarkGrey & Grey   Godot
 DarkGrey & Grey   Monokai";
 

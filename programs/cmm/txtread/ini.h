@@ -4,7 +4,7 @@ void LoadIniSettings()
 {
 	kfont.size.pt = ini.GetInt("FontSize", 14); 
 	encoding      = ini.GetInt("Encoding", CH_CP866);
-	curcol_scheme = ini.GetInt("ColorScheme", 1);
+	curcol_scheme = ini.GetInt("ColorScheme", 2);
 	Form.left     = ini.GetInt("WinX", 150); 
 	Form.top      = ini.GetInt("WinY", 50); 
 	Form.width    = ini.GetInt("WinW", 640); 

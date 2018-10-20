@@ -61,7 +61,9 @@ void kos_Main()
 			}
 			break;
 		case EM_BUTTON_CLICK: // button pressed; we have only one button, close
-			OnExit();
+			if (kos_GetButtonID(btn_id)) {
+				if (btn_id == 1) OnExit();
+			}
 			break;
 		case EM_MOUSE_EVENT: // событие от мыши (нажатие на кнопку мыши или перемещение; сбрасывается при прочтении) 
 			OnMouseMove();
@@ -70,19 +72,19 @@ void kos_Main()
 				OnLMBClick();
 			}
 			break;
-		}
-		if (kos_GetButtonID(btn_id)) OnExit();
-		DrawBombs();
-		DrawRocketsAndCrosses();
-		DrawExplodes();
-		frame_end = kos_GetTime();
-		if (frame_end - frame_start < FRAME_TIME)
-		{
-			kos_Pause(FRAME_TIME - (frame_end - frame_start));
-		}
-		if (health <= 0)
-		{
-			OnExit();
+		default:
+			DrawBombs();
+			DrawRocketsAndCrosses();
+			DrawExplodes();
+			frame_end = kos_GetTime();
+			if (frame_end - frame_start < FRAME_TIME)
+			{
+				kos_Pause(FRAME_TIME - (frame_end - frame_start));
+			}
+			if (health <= 0)
+			{
+				OnExit();
+			}
 		}
 	}
 }
@@ -373,7 +375,7 @@ void OnExit()
 {
 	kos_WriteTextToWindow(WINDOW_WIDTH / 2 - 35, WINDOW_HEIGHT / 2 - 10, 0, TEXT_COLOR, "Game Over", 9);
 
-	kos_Pause(200);
+	kos_Pause(150);
 
 	kos_ExitApp();
 }
