@@ -18,6 +18,7 @@
 #endif
 
 #include "../lib/gui/tabs.h"
+#include "../lib/gui/sensor.h"
 #include "../lib/gui/more_less_box.h"
 
 #ifndef INCLUDE_CHECKBOX

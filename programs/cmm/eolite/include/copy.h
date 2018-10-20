@@ -123,6 +123,7 @@ void PasteThread()
 		if (copy_rezult = copyf(#copy_from,#copy_to))
 		{
 			Write_Error(copy_rezult);
+			if (copy_rezult==8) DialogExit(); //not enough space
 		}
 		else if (cut_active)
 		{

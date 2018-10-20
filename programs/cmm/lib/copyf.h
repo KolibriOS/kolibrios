@@ -104,7 +104,7 @@
 }
 
 #ifdef LANG_RUS
-	unsigned char *ERROR_TEXT[]={
+	:unsigned char *ERROR_TEXT[]={
 	"Код #0: успешно",
 	"Ошибка #1: не определена база и/или раздел жёсткого диска",
 	"Ошибка #2: функция не поддерживается для этой файловой системы",
@@ -123,7 +123,7 @@
 	"Ошибка #31: файл не является исполняемым",
 	"Ошибка #32: слишком много процессов", 0};
 #else
-	unsigned char *ERROR_TEXT[]={
+	:unsigned char *ERROR_TEXT[]={
 	"Code #0 - No error, compleated successfully",
 	"Error #1 - Base or partition of a hard disk is not defined",
 	"Error #2 - Function isn't supported for this file system",

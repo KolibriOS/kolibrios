@@ -206,9 +206,6 @@ void SaveIniSettings()
 void Write_Error(int error_number)
 {
 	char error_message[500];
-	dword ii;
-	if (files.cur_y>=0) Line_ReDraw(0xFF0000, files.cur_y);
-	pause(5);
 	sprintf(#error_message,"\"%s\n%s\" -%s","Eolite",get_error(error_number),"tE");
 	notify(#error_message);	
 }

@@ -844,7 +844,7 @@ end if
 
 is_rolled_up dd 0
 
- lives dd 0
+ lives dd 5
  mode dd 0
  l_end dd 0 ; if 1 the level is over
 ; PAD x:

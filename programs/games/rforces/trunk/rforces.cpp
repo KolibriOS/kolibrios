@@ -93,9 +93,6 @@ void DrawWindow()
 	kos_DefineAndDrawWindow(10, 40, WINDOW_WIDTH + 8, WINDOW_HEIGHT + kos_GetSkinHeight() + 12, 0x34, BG_COLOR, 0, 0, (Dword)header);
 	kos_WindowRedrawStatus(2);
 
-	kos_WriteTextToWindow(8, 10, 0, TEXT_COLOR, "Population:    %", 16);
-	kos_WriteTextToWindow(8, 22, 0, TEXT_COLOR, "Score:", 6);
-
 	OnMouseMove();
 
 	// Draw buildings
@@ -222,6 +219,10 @@ void OnMouseMove()
 	{
 		ms.lbclick = 0;
 	}
+
+	kos_DrawBar(8, 10, 6*11, 22, 0);
+	kos_WriteTextToWindow(8, 10, 0, TEXT_COLOR, "Population:    %", 16);
+	kos_WriteTextToWindow(8, 22, 0, TEXT_COLOR, "Score:", 6);
 
 	kos_DisplayNumberToWindowBg(health, 3, 79, 10, TEXT_COLOR, BG_COLOR, nbDecimal, false);
 	kos_DisplayNumberToWindowBg(score, 4, 49, 22, TEXT_COLOR, BG_COLOR, nbDecimal, false);
