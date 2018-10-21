@@ -1,6 +1,6 @@
 ; макрос для системной библиотеки box_lib.obj
 ; элемент TextEditor для Kolibri OS
-; файл последний раз изменялся 20.02.2016 IgorA
+; файл последний раз изменялся 21.10.2018 IgorA
 ; на код применена GPL2 лицензия
 
 ;input:
@@ -274,6 +274,10 @@ proc ted_key, edit:dword, table:dword, control:dword
 		cmp ah,44 ;Ctrl+Z
 		jne @f
 			stdcall ted_but_undo,edi
+		@@:
+		cmp ah,45 ;Ctrl+X
+		jne @f
+			stdcall ted_but_cut,edi
 		@@:
 		cmp ah,46 ;Ctrl+C
 		jne @f
@@ -609,13 +613,13 @@ align 16
 proc ted_sel_start uses eax ecx
 	mov eax,ted_scr_h
 	mov ecx,ted_cur_x
-	add ecx,dword[eax+sb_offs_position]
+	add ecx,[eax+sb_offs_position]
 	mov ted_sel_x0,ecx
 	mov ted_sel_x1,ecx
 
 	mov eax,ted_scr_w
 	mov ecx,ted_cur_y
-	add ecx,dword[eax+sb_offs_position]
+	add ecx,[eax+sb_offs_position]
 	mov ted_sel_y0,ecx
 	mov ted_sel_y1,ecx
 	ret
@@ -630,12 +634,12 @@ proc ted_sel_move
 	push eax ecx
 		mov ecx,ted_cur_x
 		mov eax,ted_scr_h
-		add ecx,dword[eax+sb_offs_position]
+		add ecx,[eax+sb_offs_position]
 		mov ted_sel_x1,ecx
 
 		mov eax,ted_scr_w
 		mov ecx,ted_cur_y
-		add ecx,dword[eax+sb_offs_position]
+		add ecx,[eax+sb_offs_position]
 		mov ted_sel_y1,ecx
 	pop ecx eax
 	cmp ted_fun_draw_panel_buttons,0 ;redraw toolbar (need to button Copy)
@@ -900,7 +904,7 @@ ted_iterat_perv:
 	je .else
 	push ebx
 	@@:
-		mov edx,dword[edx+2]
+		mov edx,[edx+2]
 		cmp edx,0
 		je @f
 		imul edx,sizeof.symbol
@@ -917,7 +921,7 @@ ted_iterat_perv:
 	pop ebx
 	ret
 	.else:
-		mov edx,dword[edx+2]
+		mov edx,[edx+2]
 		cmp edx,0
 		je @f
 		imul edx,sizeof.symbol
@@ -943,7 +947,7 @@ ted_iterat_next:
 	je .else
 	push ebx
 	@@:
-		mov edx,dword[edx+6]
+		mov edx,[edx+6]
 		cmp edx,1
 		jle @f
 		imul edx,sizeof.symbol
@@ -961,7 +965,7 @@ ted_iterat_next:
 	pop ebx
 	ret
 	.else:
-		mov edx,dword[edx+6]
+		mov edx,[edx+6]
 		cmp edx,1
 		jle @f
 		imul edx,sizeof.symbol
@@ -1088,7 +1092,7 @@ proc ted_text_add, edit:dword, text:dword, t_len:dword, add_opt:dword
 	jl .no_add ;когда длинна <1 прыгаем на конец функции, во избежание глюков
 
 	mov edi,[edit]
-	mov esi,dword[text]
+	mov esi,[text]
 
 	call ted_get_pos_by_cursor
 	call ted_get_text_perv_pos
@@ -1099,35 +1103,35 @@ proc ted_text_add, edit:dword, text:dword, t_len:dword, add_opt:dword
 	je @f
 		push eax ;c_sp=cur[cn].x+Scroller->XPos-StrLen(cur[cn].y+Scroller->YPos);
 			mov eax,ted_scr_h
-			mov eax,dword[eax+sb_offs_position]
+			mov eax,[eax+sb_offs_position]
 			add eax,ted_cur_x ;eax - номер символа
-			mov dword[new_spc],eax
+			mov [new_spc],eax
 
 			mov eax,ted_scr_w
-			mov eax,dword[eax+sb_offs_position]
+			mov eax,[eax+sb_offs_position]
 			add eax,ted_cur_y ;eax - номер строки
 			call ted_strlen ;ebx = line len
-			sub dword[new_spc],ebx ;от позиции курсора отнимаем длинну строки, узнаем колличество добавляемых пробелов
+			sub [new_spc],ebx ;от позиции курсора отнимаем длинну строки, узнаем колличество добавляемых пробелов
 		pop eax
 	@@:
 
-	mov ebx,dword[t_len]
+	mov ebx,[t_len]
 
 	mov dword[new_lin],0
 	cmp ted_gp_opt,0
 	jne @f
 		push eax
 			mov eax,ted_scr_w
-			mov eax,dword[eax+sb_offs_position]
+			mov eax,[eax+sb_offs_position]
 			add eax,ted_cur_y
 			inc eax
-			mov dword[new_lin],eax
+			mov [new_lin],eax
 
 			call ted_get_num_lines
-			sub dword[new_lin],eax
+			sub [new_lin],eax
 			;увеличиваем линии в скроллинге на число добавленных дополнительных строк
 			mov ecx,ted_scr_w
-			add dword[ecx+sb_offs_max_area],eax ;увеличиваем размер вертикального скроллинга
+			add [ecx+sb_offs_max_area],eax ;увеличиваем размер вертикального скроллинга
 		pop eax
 	@@:
 
@@ -1302,11 +1306,11 @@ align 4
 align 16
 proc ted_but_convert_by_table uses eax edx edi esi, edit:dword, table:dword
 	mov edi,[edit]
-	mov esi,dword[table]
+	mov esi,[table]
 	mov edx,ted_tex
 	.cycle:
 		;переходим на следующий символ
-		mov edx,dword[edx+6]
+		mov edx,[edx+6]
 		cmp edx,1
 		jle .end_text
 		imul edx,sizeof.symbol
@@ -1402,7 +1406,7 @@ endp
 align 16
 proc ted_text_del uses ecx edx edi, edit:dword, del_opt:dword
 	mov edi,[edit]
-	mov ebx,dword[del_opt]
+	mov ebx,[del_opt]
 
 	xor cl,cl
 	test ebx,ted_opt_ed_move_cursor
@@ -1578,8 +1582,8 @@ align 16
 ted_cur_move_down:
   push eax ebx
   mov ebx,ted_scr_w
-  mov dl,0
-  mov eax,dword[ebx+sb_offs_cur_area]
+  xor dl,dl
+  mov eax,[ebx+sb_offs_cur_area]
   dec eax
   cmp ted_cur_y,eax
   jge @f
@@ -1588,9 +1592,9 @@ ted_cur_move_down:
     jmp .ret_f
   @@:
   mov eax,ted_cur_y
-  add eax,dword[ebx+sb_offs_position]
+  add eax,[ebx+sb_offs_position]
   inc eax
-  cmp dword[ebx+sb_offs_max_area],eax
+  cmp [ebx+sb_offs_max_area],eax
   jle @f
     inc dword[ebx+sb_offs_position]
     mov dl,8
@@ -1607,24 +1611,24 @@ ted_cur_move_down:
 ; dl = 1 if move up
 align 16
 ted_cur_move_page_up:
-  push eax ebx
-  mov ebx,ted_scr_w
-  mov eax,dword[ebx+sb_offs_cur_area]
-  xor dl,dl
-  cmp eax,dword[ebx+sb_offs_position]
-  jg @f
-    sub dword[ebx+sb_offs_position],eax
-    mov dl,1
-  @@:
-  cmp dword[ebx+sb_offs_position],0
-  je @f
-  cmp dl,1
-  je @f
-    mov dword[ebx+sb_offs_position],0
-    mov dl,1
-  @@:
-  pop ebx eax
-  ret
+	push eax ebx
+	mov ebx,ted_scr_w
+	mov eax,[ebx+sb_offs_cur_area]
+	xor dl,dl
+	cmp eax,[ebx+sb_offs_position]
+	jg @f
+		sub [ebx+sb_offs_position],eax
+		mov dl,1
+	@@:
+	cmp dword[ebx+sb_offs_position],0
+	je @f
+	cmp dl,1
+	je @f
+		mov dword[ebx+sb_offs_position],0
+		mov dl,1
+	@@:
+	pop ebx eax
+	ret
 
 ;input:
 ; edi = pointer to tedit struct
@@ -1634,17 +1638,17 @@ ted_cur_move_page_down:
 	mov ecx,ted_scr_w
 
 	xor dl,dl
-	mov eax,dword[ecx+sb_offs_max_area]
-	sub eax,dword[ecx+sb_offs_cur_area]
-	cmp dword[ecx+sb_offs_position],eax
+	mov eax,[ecx+sb_offs_max_area]
+	sub eax,[ecx+sb_offs_cur_area]
+	cmp [ecx+sb_offs_position],eax
 	jge @f
-		mov ebx,dword[ecx+sb_offs_cur_area]
-		add dword[ecx+sb_offs_position],ebx
+		mov ebx,[ecx+sb_offs_cur_area]
+		add [ecx+sb_offs_position],ebx
 		mov dl,1
 		mov dword[ecx+sb_offs_redraw],1
-		cmp dword[ecx+sb_offs_position],eax
+		cmp [ecx+sb_offs_position],eax
 		jle @f
-			mov dword[ecx+sb_offs_position],eax
+			mov [ecx+sb_offs_position],eax
 	@@:
 	pop ecx ebx eax
 	ret
@@ -1705,7 +1709,7 @@ ted_cur_move_right:
 	push eax ebx
 	mov eax,ted_scr_h
 	xor dl,dl
-	mov ebx,dword[eax+sb_offs_cur_area]
+	mov ebx,[eax+sb_offs_cur_area]
 	cmp ted_cur_x,ebx
 	jge @f
 		inc ted_cur_x
@@ -1728,23 +1732,23 @@ ted_cur_move_x_last_char:
   push eax ebx ecx
   mov eax,ted_cur_y
   mov ecx,ted_scr_w
-  add eax,dword[ecx+sb_offs_position]
+  add eax,[ecx+sb_offs_position]
   call ted_strlen
   xor dl,dl
 
   mov ecx,ted_scr_h
-  cmp ebx,dword[ecx+sb_offs_position]
+  cmp ebx,[ecx+sb_offs_position]
   jge @f
     mov dl,8
-    mov dword[ecx+sb_offs_position],ebx
+    mov [ecx+sb_offs_position],ebx
   @@:
-  sub ebx,dword[ecx+sb_offs_position]
+  sub ebx,[ecx+sb_offs_position]
 
-  cmp ebx,dword[ecx+sb_offs_cur_area]
+  cmp ebx,[ecx+sb_offs_cur_area]
   jle @f ; b---[---]---e
-    add dword[ecx+sb_offs_position],ebx
-    mov ebx,dword[ecx+sb_offs_cur_area]
-    sub dword[ecx+sb_offs_position],ebx
+    add [ecx+sb_offs_position],ebx
+    mov ebx,[ecx+sb_offs_cur_area]
+    sub [ecx+sb_offs_position],ebx
     mov dl,8
   @@:
   mov ted_cur_x,ebx
@@ -1798,7 +1802,7 @@ ted_get_text_arr_index:
 ; edx = pointer to 'perv' struct
 align 16
 ted_get_text_perv_pos:
-	mov edx,dword[edx+2]
+	mov edx,[edx+2]
 	imul edx,sizeof.symbol
 	add edx,ted_tex
 	ret
@@ -1809,7 +1813,7 @@ ted_get_text_perv_pos:
 ; edx = pointer to 'next' symbol struct
 align 16
 ted_get_text_next_pos:
-	mov edx,dword[edx+6]
+	mov edx,[edx+6]
 	imul edx,sizeof.symbol
 	add edx,ted_tex
 	ret
@@ -1826,10 +1830,10 @@ ted_get_pos_by_cursor:
 	push eax ecx esi
 		mov esi,ted_cur_x
 		mov eax,ted_scr_h
-		add esi,dword[eax+sb_offs_position]
+		add esi,[eax+sb_offs_position]
 		mov ecx,ted_cur_y
 		mov eax,ted_scr_w
-		add ecx,dword[eax+sb_offs_position]
+		add ecx,[eax+sb_offs_position]
 		call ted_get_pos_by_coords
 	pop esi ecx eax
 	ret
@@ -2053,15 +2057,15 @@ ted_go_to_pos:
 	push eax
 	mov eax,ted_scr_w
 	mov ted_cur_x,ecx
-	sub edx,dword[eax+sb_offs_position]
+	sub edx,[eax+sb_offs_position]
 
-	cmp edx,dword[eax+sb_offs_cur_area] ;ted_cur_y > [.cur_area]
+	cmp edx,[eax+sb_offs_cur_area] ;ted_cur_y > [.cur_area]
 	jl @f
 		push ebx
 		mov ebx,edx
-		sub ebx,dword[eax+sb_offs_cur_area]
+		sub ebx,[eax+sb_offs_cur_area]
 		inc ebx
-		add dword[eax+sb_offs_position],ebx
+		add [eax+sb_offs_position],ebx
 		sub edx,ebx
 		pop ebx
 		; ??? redrav
@@ -2132,7 +2136,7 @@ endl
 		mov al,byte[edx]
 		shl ax,2 ;eax*=4
 		add eax,ted_arr_key_pos
-		mov eax,dword[eax]
+		mov eax,[eax]
 		cmp eax,0
 		jl @b ;if( (word_n=ted_arr_key_pos[(unsigned char)tex[i].c])>-1 ){
 
@@ -2150,7 +2154,7 @@ endl
 			jmp .wh_1b
 		.wh_1e:
 
-		mov dword[begPos],edx ;bP=i;
+		mov [begPos],edx ;bP=i;
 		mov esi,1
 align 4
 		.wh_2b: ;while(1){
@@ -2174,18 +2178,18 @@ align 4
 		ColToIndexOffset eax,ebx
 		cmp byte[ebx+esi],0
 		jne .if_0 ;if(Col[word_n].Text[pos]==0){
-		mov dword[endPos],edx ;eP=i;
+		mov [endPos],edx ;eP=i;
 		ColToIndexOffset eax,ebx
-		mov bl,byte[ebx+MAX_COLOR_WORD_LEN+7]
-		mov byte[f_color],bl ;f_color=Col[word_n].color;
+		mov bl,[ebx+MAX_COLOR_WORD_LEN+7]
+		mov [f_color],bl ;f_color=Col[word_n].color;
 
 		mov byte[find],1
 		ColToIndexOffset eax,ebx ;... ebx = Col[word_n]
-		mov bl,byte[ebx+MAX_COLOR_WORD_LEN+4]
+		mov bl,[ebx+MAX_COLOR_WORD_LEN+4]
 		cmp bl,0 ;if(Col[word_n].wwo)
 		je .if_2n
 			push edx
-			mov edx,dword[begPos]
+			mov edx,[begPos]
 			call ted_iterat_perv
 
 			btr bx,0 ;1-1
@@ -2205,7 +2209,7 @@ align 4
 					mov byte[find],0
 			.if_4e:
 
-			mov edx,dword[endPos]
+			mov edx,[endPos]
 			;call ted_iterat_next
 
 			btr bx,1 ;2-1
@@ -2271,20 +2275,20 @@ align 4
 
 		cmp byte[find],1 ;if(fnd)break;
 		je @f
-			mov edx,dword[begPos];i=bP;
+			mov edx,[begPos];i=bP;
 		jmp @b
 	@@:
 
 	cmp byte[find],1
 	jne .if_1e ;if(fnd){ // выделение найденого текста
 		;if(!mode_sf1 || (mode_sf1 && strlen(Col[word_n].f1->c_str())>0)){
-		mov eax,dword[begPos]
-		mov bl,byte[f_color]
-		mov byte[eax+1],bl ;tex[bP].col=f_color;
-		mov eax,dword[endPos]
+		mov eax,[begPos]
+		mov bl,[f_color]
+		mov [eax+1],bl ;tex[bP].col=f_color;
+		mov eax,[endPos]
 		mov byte[eax+1],0xff ;tex[eP].col=255;
 		;return ItPoPerv(eP); // возвращаем позицию конца вхождения
-		mov edx,dword[endPos]
+		mov edx,[endPos]
 		call ted_get_text_perv_pos
 		jmp @f
 	.if_1e:
@@ -2366,23 +2370,23 @@ proc ted_find_help_id, end_pos:dword
 
   push ebx ecx
     xor ebx,ebx
-    mov bl,byte[edx]
+    mov bl,[edx]
     shl bx,2 ;ebx*=4
     add ebx,ted_arr_key_pos
-    mov ecx,dword[ebx]
+    mov ecx,[ebx]
     cmp ecx,0
     jl .if_0e ;if( (word_n=ted_arr_key_pos[(unsigned char)tf[0]])>-1 ){
       push esi eax
       mov ebx,ecx ;l_pos=word_n;
       ColToIndexOffset ecx,esi
       push cx
-      mov cl,byte[esi]
+      mov cl,[esi]
       @@:
 	cmp ebx,ted_key_words_count ;while(l_pos<ted_key_words_count)
 	jge @f
 	;ColToIndexOffset ecx,esi
 	ColToIndexOffset ebx,eax
-	cmp cl,byte[eax] ;&& Col[l_pos].Text[0]==Col[word_n].Text[0])
+	cmp cl,[eax] ;&& Col[l_pos].Text[0]==Col[word_n].Text[0])
 	jne @f
 	  inc ebx ;l_pos++;
 	  jmp @b
@@ -2420,7 +2424,7 @@ proc ted_find_help_id, end_pos:dword
 	cmp ecx,ebx ;if(word_n==l_pos) break;
 	je @f
 	call ted_iterat_next ;pos++;
-	cmp edx,dword[end_pos] ;for(...;i<strlen;...)
+	cmp edx,[end_pos] ;for(...;i<strlen;...)
 	je @f ;jge
 	inc esi
 	jmp @b
@@ -2544,6 +2548,8 @@ proc ted_but_select_word, edit:dword
 	ret
 endp
 
+;output:
+; al = 1 if delete
 align 16
 proc ted_but_cut uses edi, edit:dword
 	mov edi,[edit]
@@ -2562,8 +2568,6 @@ proc ted_but_cut uses edi, edit:dword
 	ret
 endp
 
-;output:
-; al = 1 if copy text
 align 16
 proc ted_but_copy, edit:dword
 	pushad
@@ -2644,7 +2648,7 @@ proc ted_but_paste, edit:dword
 	je .no_buf_r
 	cmp eax,-1
 	je .no_buf_r
-		mov ecx,dword[eax]
+		mov ecx,[eax]
 		cmp ecx,1 ;size
 		jl .no_buf_r
 		cmp dword[eax+4],0 ;text
@@ -2863,12 +2867,12 @@ ted_key_ctrl_end:
 	push eax ebx
 		call ted_get_num_lines
 		mov ebx,ted_scr_w
-		mov dword[ebx+sb_offs_position],eax ;ставим ползунок на последнюю строку документа
-		cmp eax,dword[ebx+sb_offs_cur_area]
+		mov [ebx+sb_offs_position],eax ;ставим ползунок на последнюю строку документа
+		cmp eax,[ebx+sb_offs_cur_area]
 		jle @f
-			mov eax,dword[ebx+sb_offs_cur_area] ;получаем число строк влазящих в окно
+			mov eax,[ebx+sb_offs_cur_area] ;получаем число строк влазящих в окно
 		@@:
-		sub dword[ebx+sb_offs_position],eax ;отнимаем от ползунка число строк влазящих в окно (но не больше тех, что есть в документе)
+		sub [ebx+sb_offs_position],eax ;отнимаем от ползунка число строк влазящих в окно (но не больше тех, что есть в документе)
 		dec eax
 		mov ted_cur_y,eax ;ставим курсор на последнюю строку документа
 	pop ebx eax
@@ -3080,7 +3084,7 @@ ted_get_symb_color:
 		shl ax,2 ;умножаем индекс цвета на 4 байта
 		mov ecx,ted_text_colors ;прибавляем смещение 1-го цвета
 		add ecx,eax
-		mov ecx,dword[ecx] ;устанавливаем текущий цвет текста по смещению
+		mov ecx,[ecx] ;устанавливаем текущий цвет текста по смещению
 	.exit:
 	or ecx,ted_font_size
 	pop edx eax
@@ -3141,7 +3145,7 @@ proc ted_draw, edit:dword
 
 	mov eax,SF_DRAW_TEXT
 	mov ecx,ted_text_colors
-	mov ecx,dword[ecx]
+	mov ecx,[ecx]
 
 	mov ebx,ted_wnd_l
 	add ebx,ted_rec_l
@@ -3772,7 +3776,7 @@ proc ted_clear_line_before_draw, edit:dword, coords:dword, clear_o:dword, numb_l
 			mov bx,dx
 			jmp .no_wnd
 		.in_wnd:
-		mov bx,0
+		xor bx,bx
 		.no_wnd:
 		mov edx,ted_color_wnd_work
 		int 0x40
