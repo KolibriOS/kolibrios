@@ -235,13 +235,16 @@ void format( char *Str, int len, char* Format, ... )
 	Str[j] = 0;
 }
 
-void *memcpy(void *dst, const void *src, unsigned size)
+void *memcpy2(void *dst, const void *src, unsigned size)
 {
 	while (size--)
 		*((char*)dst+size) = *((char*)src+size);
 	return dst;
 }
 */
+
+
+
 int strcmp(const char *s1, const char *s2)
 {
 	int i;

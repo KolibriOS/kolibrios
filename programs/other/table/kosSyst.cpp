@@ -94,7 +94,7 @@ Dword rtlRand( void )
  return RandomSeed;
 }
 
-#ifdef AUTOBUILD
+//#ifdef AUTOBUILD
 // Well, not really related to auto-build, but some compilation issue
 void memcpy( void *dst, const void *src, size_t bytesCount )
 {
@@ -118,7 +118,7 @@ void memset( Byte *dst, Byte filler, Dword count )
 		rep stosb
 	}
 }
-#endif
+//#endif
 
 
 //

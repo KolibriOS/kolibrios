@@ -697,7 +697,7 @@ void draw_window()
 
 	if (window_drawall==true){
 		kos_WindowRedrawStatus(1);
-		kos_DefineAndDrawWindow(10,40,WND_W,WND_H,0x33,0x40FFFFFF,0,0,(Dword)"Table v" TABLE_VERSION);
+		kos_DefineAndDrawWindow(10,40,WND_W,WND_H,0x73,0x40FFFFFF,0,0,(Dword)"Table v" TABLE_VERSION);
 		kos_WindowRedrawStatus(2); 
 
 		if (info.rawData[70]&0x04) return; //ничего не делать если окно схлопнуто в заголовок
@@ -726,15 +726,15 @@ void draw_window()
 	file_box.left = 64;
 	file_box.top = y - 1;
 	file_box.width = 98;
-		//editbox_h = 18;
+	//editbox_h = 18;
 
 	// сохранить
 	kos_DefineButton(20 + 160, y - 5, 60, 20, SAVE_BUTTON, 0xd0d0d0);
-	kos_WriteTextToWindow(22 + 160 + (60 - strlen(sSave) * 6) / 2, y + 2, 0, 0x000000, (char*)sSave, strlen(sSave));
+	kos_WriteTextToWindow(22 + 160 + (60 - strlen(sSave) * 6) / 2, y + 2, 0x80, 0x000000, (char*)sSave, 0);
 
 	// загрузить
 	kos_DefineButton(90 + 160, y - 5, 60, 20, LOAD_BUTTON, 0xd0d0d0);
-	kos_WriteTextToWindow(92 + 160 + (60 - strlen(sLoad) * 6) / 2, y + 2, 0, 0x000000, (char*)sLoad, strlen(sLoad));
+	kos_WriteTextToWindow(92 + 160 + (60 - strlen(sLoad) * 6) / 2, y + 2, 0x80, 0x000000, (char*)sLoad, 0);
 
 	// создать. только эту кнопу воткнуть некуда о_О
 	/*

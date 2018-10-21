@@ -318,6 +318,7 @@ double func_rand(double max)
 	return q - max * func_floor(q / max);	 // для модуля
 }
 
+/*
 double func_case(double_list *p)
 {
 	if (!p || !p->next)
@@ -368,6 +369,7 @@ double func_case(double_list *p)
 		code = cur->code;
 	return cur->val;
 }
+*/
 
 #define INF_ARGS -1
 #define STR_ARG -2
@@ -389,7 +391,7 @@ typedef struct
 } func;
 
 // the list of functions
-const int max_func = 29;
+const int max_func = 28;
 func functions[max_func] = 
 {
 	"", 1, NULL,								// не помню, с какой целью
@@ -418,7 +420,7 @@ func functions[max_func] =
 	"or",2,&logic_or,
 	"xor",2,&logic_xor,
 	"rand",1,&func_rand,
-	"case",INF_ARGS,&func_case,
+	//"case",INF_ARGS,&func_case,
 	"pi",0,&func_pi,
 	"eps",0,&func_eps
 };
