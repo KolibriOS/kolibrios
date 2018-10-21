@@ -367,7 +367,7 @@ void sprintf( char *Str, char* Format, ... )
 }
 
 
-// функция -1 завершения процесса
+// function -1 termanate process
 void kos_ExitApp()
 {
 	int i;
@@ -386,7 +386,7 @@ void kos_ExitApp()
 }
 
 
-// функция 0
+// function 0
 void kos_DefineAndDrawWindow(
 	Word x, Word y,
 	Word sizeX, Word sizeY,
@@ -417,7 +417,7 @@ void kos_DefineAndDrawWindow(
 }
 
 
-// функция 1 поставить точку
+// function 1
 void kos_PutPixel( Dword x, Dword y, Dword colour )
 {
 	//
@@ -431,7 +431,7 @@ void kos_PutPixel( Dword x, Dword y, Dword colour )
 }
 
 
-// функция 2 получить код нажатой клавиши
+// function 2 get key code
 bool kos_GetKey( Byte &keyCode )
 {
 	Dword result;
@@ -449,7 +449,7 @@ bool kos_GetKey( Byte &keyCode )
 }
 
 
-// функция 3 получить время
+// function 3 get system clock
 Dword kos_GetSystemClock()
 {
 //	Dword result;
@@ -465,7 +465,7 @@ Dword kos_GetSystemClock()
 }
 
 
-// функция 4
+// function 4
 void kos_WriteTextToWindow(
 	Word x,
 	Word y,
@@ -491,8 +491,31 @@ void kos_WriteTextToWindow(
 	}
 }
 
+// function 4
+void kos_WriteTextWithBg(
+	Word x,
+	Word y,
+	Byte fontType,
+	Dword textColour,
+	Dword bgcolour,
+	char *textPtr,
+	Dword textLen
+	)
+{
+	Dword arg1, arg2;
 
-// функция 5 пауза, в сотых долях секунды
+	//
+	arg1 = ( x << 16 ) | y;
+	arg2 = ( fontType << 24 ) | textColour;
+	//
+	__asm{
+		mov edi, bgcolour
+	}
+	kos_WriteTextToWindow(x,y,fontType,textColour,textPtr,textLen);
+}
+
+
+// function 5 pause, in value is 1/100 of second
 void kos_Pause( Dword value )
 {
 	//
@@ -504,7 +527,7 @@ void kos_Pause( Dword value )
 }
 
 
-// функция 7 нарисовать изображение
+// function 7
 void kos_PutImage( RGB * imagePtr, Word sizeX, Word sizeY, Word x, Word y )
 {
 	Dword arg1, arg2;
@@ -524,7 +547,7 @@ void kos_PutImage( RGB * imagePtr, Word sizeX, Word sizeY, Word x, Word y )
 
 
 
-// функция 8 определить кнопку
+// function 8
 void kos_DefineButton( Word x, Word y, Word sizeX, Word sizeY, Dword buttonID, Dword colour )
 {
 	Dword arg1, arg2;
@@ -544,7 +567,7 @@ void kos_DefineButton( Word x, Word y, Word sizeX, Word sizeY, Dword buttonID, D
 }
 
 
-// функция 9 - информация о процессе
+// function 9 get process info
 Dword kos_ProcessInfo( sProcessInfo *targetPtr, Dword processID )
 {
 //	Dword result;
@@ -562,7 +585,7 @@ Dword kos_ProcessInfo( sProcessInfo *targetPtr, Dword processID )
 }
 
 
-// функция 10
+// function 10
 Dword kos_WaitForEvent()
 {
 //	Dword result;
@@ -577,7 +600,7 @@ Dword kos_WaitForEvent()
 }
 
 
-// функция 11
+// function 11
 Dword kos_CheckForEvent()
 {
 //	Dword result;
@@ -592,7 +615,7 @@ Dword kos_CheckForEvent()
 }
 
 
-// функция 12
+// function 12
 void kos_WindowRedrawStatus( Dword status )
 {
 	__asm{
@@ -603,7 +626,7 @@ void kos_WindowRedrawStatus( Dword status )
 }
 
 
-// функция 13 нарисовать полосу
+// function 13 draw filled area
 void kos_DrawBar( Word x, Word y, Word sizeX, Word sizeY, Dword colour )
 {
 	Dword arg1, arg2;
@@ -622,7 +645,7 @@ void kos_DrawBar( Word x, Word y, Word sizeX, Word sizeY, Dword colour )
 }
 
 
-// функция 17
+// function 17
 bool kos_GetButtonID( Dword &buttonID )
 {
 	Dword result;
@@ -640,7 +663,7 @@ bool kos_GetButtonID( Dword &buttonID )
 }
 
 
-// функция 23
+// function 23
 Dword kos_WaitForEvent( Dword timeOut )
 {
 //	Dword result;
@@ -655,7 +678,7 @@ Dword kos_WaitForEvent( Dword timeOut )
 //	return result;
 }
 
-// функция 26.9 получить значение счётчика времени
+// function 26.9 получить значение счётчика времени
 Dword kos_GetTime()
 {
 	__asm{
@@ -665,7 +688,7 @@ Dword kos_GetTime()
 	}
 }
 
-// функция 37 получение информации о состоянии "мыши"
+// function 37 получение информации о состоянии "мыши"
 void kos_GetMouseState( Dword & buttons, int & cursorX, int & cursorY )
 {
 	Dword mB;
@@ -694,7 +717,7 @@ void kos_GetMouseState( Dword & buttons, int & cursorX, int & cursorY )
 	cursorY = curY - sPI.processInfo.y_start;
 }
 
-// функция 37.1 получение координат "мыши" относительно окна
+// function 37.1 получение координат "мыши" относительно окна
 void kos_GetMouseWindowXY( int & cursorX, int & cursorY )
 {
 	Word curX;
@@ -717,7 +740,7 @@ void kos_GetMouseWindowXY( int & cursorX, int & cursorY )
 	cursorY = curY;
 }
 
-// функция 37.2 получение информации о нажатых кнопки "мыши"
+// function 37.2 получение информации о нажатых кнопки "мыши"
 void kos_GetMouseButtonsState( Dword & buttons )
 {
 	Dword mB;
@@ -732,7 +755,7 @@ void kos_GetMouseButtonsState( Dword & buttons )
 	buttons = mB;
 }
 
-// функция 37.4 загрузка курсора "мыши"
+// function 37.4 загрузка курсора "мыши"
 Dword * kos_LoadMouseCursor( Dword * cursor, Dword loadstate )
 {
 	//Dword handle;
@@ -747,7 +770,7 @@ Dword * kos_LoadMouseCursor( Dword * cursor, Dword loadstate )
 	//return handle;
 }
 
-// функция 37.5 установка курсора "мыши"
+// function 37.5 установка курсора "мыши"
 Dword * kos_SetMouseCursor( Dword * handle )
 {
 	//Dword handle;
@@ -761,7 +784,7 @@ Dword * kos_SetMouseCursor( Dword * handle )
 	//return handle;
 }
 
-// функция 37.6 удаление курсора "мыши"
+// function 37.6 удаление курсора "мыши"
 void kos_DeleteMouseCursor( Dword * handle )
 {
 	__asm{
@@ -772,7 +795,7 @@ void kos_DeleteMouseCursor( Dword * handle )
 	}
 }
 
-// функция 38 нарисовать полосу
+// function 38
 void kos_DrawLine( Word x1, Word y1, Word x2, Word y2, Dword colour )
 {
 	Dword arg1, arg2;
@@ -791,7 +814,7 @@ void kos_DrawLine( Word x1, Word y1, Word x2, Word y2, Dword colour )
 }
 
 
-// функция 40 установить маску событий
+// function 40
 void kos_SetMaskForEvents( Dword mask )
 {
 	//
@@ -803,7 +826,7 @@ void kos_SetMaskForEvents( Dword mask )
 }
 
 
-// функция 47 вывести в окно приложения число
+// function 47 вывести в окно приложения число
 void kos_DisplayNumberToWindow(
    Dword value,
    Dword digitsNum,
@@ -832,7 +855,7 @@ void kos_DisplayNumberToWindow(
 	}
 }
 
-// функция 47 вывести в окно приложения число c фоном
+// function 47 вывести в окно приложения число c фоном
 void kos_DisplayNumberToWindowBg(
    Dword value,
    Dword digitsNum,
@@ -874,7 +897,7 @@ Dword kos_GetSkinHeight()
 	}
 }
 
-// функция 70 доступ к файловой системе
+// function 70 доступ к файловой системе
 Dword kos_FileSystemAccess( kosFileInfo *fileInfo )
 {
 //	Dword result;
@@ -891,7 +914,7 @@ Dword kos_FileSystemAccess( kosFileInfo *fileInfo )
 }
 
 
-// функция 63 вывод символя в окно отладки
+// function 63 вывод символя в окно отладки
 void kos_DebugOutChar( char ccc )
 {
 	//
@@ -904,7 +927,7 @@ void kos_DebugOutChar( char ccc )
 }
 
 
-// функция 66 режим получения данных от клавиатуры
+// function 66 режим получения данных от клавиатуры
 void kos_SetKeyboardDataMode( Dword mode )
 {
 	//
@@ -930,8 +953,21 @@ void rtlDebugOutString( char *str )
 	kos_DebugOutChar( 10 );
 }
 
+void kos_DebugNumber(signed int n)
+{
+	if (n<0) {
+		kos_DebugOutChar('-');
+		n = -n;
+	}
+	while (n>10) {
+		kos_DebugOutChar(n%10 + '0');
+		n /= 10;
+	}
+	kos_DebugOutChar(n + '0');
+	kos_DebugOutChar('\n');
+}
 
-// функция 64 изменение количества памяти, выделенной для программы
+// function 64 изменение количества памяти, выделенной для программы
 bool kos_ApplicationMemoryResize( Dword targetSize )
 {
 	Dword result;
@@ -949,7 +985,8 @@ bool kos_ApplicationMemoryResize( Dword targetSize )
 }
 
 
-// функция 67 изменить параметры окна, параметр == -1 не меняется
+// function 67 change window size and position, 
+// if  param == -1 then value does not change
 void kos_ChangeWindow( Dword x, Dword y, Dword sizeX, Dword sizeY )
 {
 	//

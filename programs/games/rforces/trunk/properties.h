@@ -16,7 +16,7 @@
 #define WHITE			0x00FFFFFF
 
 // Visual properties
-#define GAME_NAME		"Rocket Forces v1.12    (F2 - new game, Esc - exit) "
+#define GAME_NAME		"Rocket Forces"
 #define BG_COLOR		BLACK
 #define TEXT_COLOR      WHITE
 #define CUR_COLOR       GREEN

@@ -136,9 +136,9 @@ void memset( Byte *dst, Byte filler, Dword count );
 void sprintf( char *Str, char* Format, ... );
 //
 Dword rtlInterlockedExchange( Dword *target, Dword value );
-// функция -1 завершения процесса
+// function -1 завершения процесса
 void kos_ExitApp();
-// функция 0
+// function 0
 void kos_DefineAndDrawWindow(
 	Word x, Word y,
 	Word sizeX, Word sizeY,
@@ -146,13 +146,13 @@ void kos_DefineAndDrawWindow(
 	Byte headerType, Dword headerColour,
 	Dword borderColour
 	);
-// функция 1 поставить точку
+// function 1 поставить точку
 void kos_PutPixel( Dword x, Dword y, Dword colour );
-// функция 2 получить код нажатой клавиши
+// function 2 получить код нажатой клавиши
 bool kos_GetKey( Byte &keyCode );
-// функция 3 получить время
+// function 3 получить время
 Dword kos_GetSystemClock();
-// функция 4
+// function 4
 void kos_WriteTextToWindow(
 	Word x, Word y,
 	Byte fontType,
@@ -160,27 +160,36 @@ void kos_WriteTextToWindow(
 	char *textPtr,
 	Dword textLen
 	);
-// функция 7 нарисовать изображение
+//
+void kos_WriteTextWithBg(
+	Word x, Word y,
+	Byte fontType,
+	Dword textColour,
+	Dword bgcolour,
+	char *textPtr,
+	Dword textLen
+	);
+// function 7 нарисовать изображение
 void kos_PutImage( RGB * imagePtr, Word sizeX, Word sizeY, Word x, Word y );
-// функция 8 определить кнопку
+// function 8 определить кнопку
 void kos_DefineButton( Word x, Word y, Word sizeX, Word sizeY, Dword buttonID, Dword colour );
-// функция 5 пауза, в сотых долях секунды
+// function 5 пауза, в сотых долях секунды
 void kos_Pause( Dword value );
-// функция 9 информация о процессе
+// function 9 информация о процессе
 Dword kos_ProcessInfo( sProcessInfo *targetPtr, Dword processID = PROCESS_ID_SELF );
-// функция 10
+// function 10
 Dword kos_WaitForEvent();
-// функция 11
+// function 11
 Dword kos_CheckForEvent();
-// функция 12
+// function 12
 void kos_WindowRedrawStatus( Dword status );
-// функция 13 нарисовать прямоугольник
+// function 13 нарисовать прямоугольник
 void kos_DrawBar( Word x, Word y, Word sizeX, Word sizeY, Dword colour );
-// функция 17
+// function 17
 bool kos_GetButtonID( Dword &buttonID );
-// функция 23
+// function 23
 Dword kos_WaitForEvent( Dword timeOut );
-// функция 26.9 получить значение счётчика времени
+// function 26.9 получить значение счётчика времени
 Dword kos_GetTime();
 //
 enum eNumberBase
@@ -189,23 +198,23 @@ enum eNumberBase
 	nbHex,
 	nbBin
 };
-// функция 37 получение информации о состоянии "мыши"
+// function 37 получение информации о состоянии "мыши"
 void kos_GetMouseState( Dword & buttons, int & cursorX, int & cursorY );
-// функция 37.1 получение координат "мыши" относительно окна
+// function 37.1 получение координат "мыши" относительно окна
 void kos_GetMouseWindowXY( int & cursorX, int & cursorY );
-// функция 37.2 получение информации о нажатых кнопки "мыши"
+// function 37.2 получение информации о нажатых кнопки "мыши"
 void kos_GetMouseButtonsState( Dword & buttons );
-// функция 37.4 загрузка курсора "мыши"
+// function 37.4 загрузка курсора "мыши"
 Dword * kos_LoadMouseCursor( Dword * cursor, Dword loadstate );
-// функция 37.5 установка курсора "мыши"
+// function 37.5 установка курсора "мыши"
 Dword * kos_SetMouseCursor( Dword * handle );
-// функция 37.6 удаление курсора "мыши"
+// function 37.6 удаление курсора "мыши"
 void kos_DeleteMouseCursor( Dword * handle );
-// функция 38 нарисовать полосу
+// function 38 нарисовать полосу
 void kos_DrawLine( Word x1, Word y1, Word x2, Word y2, Dword colour );
-// функция 40 установить маску событий
+// function 40 установить маску событий
 void kos_SetMaskForEvents( Dword mask );
-// функция 47 вывести в окно приложения число
+// function 47 вывести в окно приложения число
 void kos_DisplayNumberToWindow(
    Dword value,
    Dword digitsNum,
@@ -215,7 +224,7 @@ void kos_DisplayNumberToWindow(
    eNumberBase nBase = nbDecimal,
    bool valueIsPointer = false
    );
-// функция 47 вывести в окно приложения число c фоном
+// function 47 вывести в окно приложения число c фоном
 void kos_DisplayNumberToWindowBg(
    Dword value,
    Dword digitsNum,
@@ -226,19 +235,22 @@ void kos_DisplayNumberToWindowBg(
    eNumberBase nBase = nbDecimal,
    bool valueIsPointer = false
    );
-// 48.4 get windows title bar height
+// function 48.4 get windows title bar height
 Dword kos_GetSkinHeight();
-// функция 58 доступ к файловой системе
+// function 58 доступ к файловой системе
 Dword kos_FileSystemAccess( kosFileInfo *fileInfo );
-// функция 63
+// function 63
 void kos_DebugOutChar( char ccc );
 //
 void rtlDebugOutString( char *str );
-// функция 64 изменить параметры окна, параметр == -1 не меняется
+//
+void kos_DebugNumber(signed int n);
+//
+// function 64 изменить параметры окна, параметр == -1 не меняется
 void kos_ChangeWindow( Dword x, Dword y, Dword sizeX, Dword sizeY );
-// функция 67 изменение количества памяти, выделенной для программы
+// function 67 изменение количества памяти, выделенной для программы
 bool kos_ApplicationMemoryResize( Dword targetSize );
-// функция 66 режим получения данных от клавиатуры
+// function 66 режим получения данных от клавиатуры
 void kos_SetKeyboardDataMode( Dword mode );
 
 //

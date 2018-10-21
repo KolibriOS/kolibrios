@@ -1,7 +1,11 @@
 /* Rocket Forces
  * Filename: rforces.cpp
- * Version 0.1.1
+ * Version 0.1
  * Copyright (c) Serial 2007
+ */
+
+/* Version 0.2
+ * Copyright (c) Leency 2018
  */
 
 
@@ -26,6 +30,8 @@ cBuilding *house = new cBuilding();
 Dword *cur_handle;
 int score, health;
 
+bool game_over;
+
 struct MouseState
 {
 	int x, y, lbclick;	
@@ -35,7 +41,6 @@ struct MouseState
 
 void kos_Main()
 {
-	Dword btn_id;
 	Dword frame_start, frame_end;
 	OnStart();
 	Menu();
@@ -45,46 +50,45 @@ void kos_Main()
 		frame_start = kos_GetTime();
 		switch (kos_CheckForEvent())
 		{
-		case EM_WINDOW_REDRAW:
-			DrawWindow();
-			break;
 		case EM_KEY_PRESS:
 			Byte keyCode;
 			kos_GetKey(keyCode);
 			if (keyCode == 27)
 			{
-				OnExit();
+				kos_ExitApp();
 			}
 			if (keyCode == 51)
 			{
 				OnStart();
 			}
 			break;
-		case EM_BUTTON_CLICK: // button pressed; we have only one button, close
+		case EM_BUTTON_CLICK:
+			Dword btn_id;
 			if (kos_GetButtonID(btn_id)) {
-				if (btn_id == 1) OnExit();
+				if (btn_id == 1) kos_ExitApp();
 			}
 			break;
-		case EM_MOUSE_EVENT: // событие от мыши (нажатие на кнопку мыши или перемещение; сбрасывается при прочтении) 
+		case EM_MOUSE_EVENT:
 			OnMouseMove();
 			if (ms.lbclick == 1)
 			{
 				OnLMBClick();
 			}
 			break;
+		case EM_WINDOW_REDRAW:
+			DrawWindow();
+			break;
 		default:
+			if (game_over) break;
 			DrawBombs();
 			DrawRocketsAndCrosses();
 			DrawExplodes();
+			DrawStats();
 			frame_end = kos_GetTime();
-			if (frame_end - frame_start < FRAME_TIME)
-			{
+			if (frame_end - frame_start < FRAME_TIME) {
 				kos_Pause(FRAME_TIME - (frame_end - frame_start));
 			}
-			if (health <= 0)
-			{
-				OnExit();
-			}
+			if (health <= 0) GameOver();
 		}
 	}
 }
@@ -92,10 +96,13 @@ void kos_Main()
 void DrawWindow()
 {
 	kos_WindowRedrawStatus(1);
-	kos_DefineAndDrawWindow(10, 40, WINDOW_WIDTH + 8, WINDOW_HEIGHT + kos_GetSkinHeight() + 12, 0x34, BG_COLOR, 0, 0, (Dword)header);
+	kos_DefineAndDrawWindow(10, 40, WINDOW_WIDTH + 12, 
+		WINDOW_HEIGHT + kos_GetSkinHeight() + 12, 0x34, 
+		BG_COLOR, 0, 0, (Dword)header);
 	kos_WindowRedrawStatus(2);
 
-	OnMouseMove();
+	DrawStats();
+	if (health <= 0) GameOver();
 
 	// Draw buildings
 	for (int i = 20; i < 5 * 50; i += 50)
@@ -213,6 +220,12 @@ void OnMouseMove()
 	Dword old_buttons = ms.buttons;
 	kos_GetMouseWindowXY(ms.x, ms.y);
 	kos_GetMouseButtonsState(ms.buttons);
+
+	if (health <= 0) return;
+
+	//restore mouse cursor when it over Window Header
+	if (ms.y > 5000) RestoreSystemCursor(); else SetGameCursor();
+
 	if ((old_buttons & 0x00000001) == 0 && (ms.buttons & 0x00000001) == 1)
 	{
 		ms.lbclick = 1;
@@ -221,13 +234,6 @@ void OnMouseMove()
 	{
 		ms.lbclick = 0;
 	}
-
-	kos_DrawBar(8, 10, 6*11, 22, 0);
-	kos_WriteTextToWindow(8, 10, 0, TEXT_COLOR, "Population:    %", 16);
-	kos_WriteTextToWindow(8, 22, 0, TEXT_COLOR, "Score:", 6);
-
-	kos_DisplayNumberToWindowBg(health, 3, 79, 10, TEXT_COLOR, BG_COLOR, nbDecimal, false);
-	kos_DisplayNumberToWindowBg(score, 4, 49, 22, TEXT_COLOR, BG_COLOR, nbDecimal, false);
 
 	if (ms.x >= 0 && ms.x < WINDOW_WIDTH &&  ms.y >= 0 && ms.y < WINDOW_HEIGHT)
 	{
@@ -245,7 +251,15 @@ void OnMouseMove()
 		kos_DisplayNumberToWindowBg(ms.y, 3, WINDOW_WIDTH - 30, 22, TEXT_COLOR, BG_COLOR, nbDecimal, false);
 		kos_DisplayNumberToWindowBg(ms.buttons, 1, WINDOW_WIDTH - 30, 34, TEXT_COLOR, BG_COLOR, nbDecimal, false);
 	}*/
+}
 
+void DrawStats()
+{
+	kos_WriteTextWithBg(8, 10, 0xC0, TEXT_COLOR, 0, "Population:", 11);
+	kos_WriteTextWithBg(8+15*6, 9, 0xC0, TEXT_COLOR, 0, "%", 1);
+	kos_WriteTextWithBg(8, 22, 0xC0, TEXT_COLOR, 0, "Score:", 6);
+	kos_DisplayNumberToWindowBg(health, 3, 79, 10, TEXT_COLOR, BG_COLOR, nbDecimal, false);
+	kos_DisplayNumberToWindowBg(score, 4, 49, 22, TEXT_COLOR, BG_COLOR, nbDecimal, false);
 }
 
 void OnLMBClick()
@@ -284,11 +298,7 @@ void OnLMBClick()
 	}
 }
 
-void OnRMBClick()
-{
-}
-
-void ChangeCursor()
+void SetGameCursor()
 {
 	Dword *cur = new Dword[1024];
 	for (int i = 0; i < 1024; i++)
@@ -329,6 +339,12 @@ void ChangeCursor()
 	kos_SetMouseCursor(cur_handle);
 }
 
+void RestoreSystemCursor()
+{
+	if (cur_handle) kos_SetMouseCursor(0); 
+	cur_handle=0;
+}
+
 void Menu()
 {
 	NewGame();
@@ -345,7 +361,7 @@ void OnStart()
 	{
 		cursor = new cCursor();
 	}
-	ChangeCursor();
+	SetGameCursor();
 
 	gun->Enable((WINDOW_WIDTH / 2) - 10, WINDOW_HEIGHT - 30, 10, 20, (WINDOW_WIDTH / 2) - 5, WINDOW_HEIGHT - 20); 
 
@@ -366,16 +382,21 @@ void OnStart()
 	health = 100;
 	score = 0;
 
+	game_over = false;
+
 	rtlSrand(kos_GetTime());
 
 	DrawWindow();
 }
 
-void OnExit()
+void GameOver()
 {
-	kos_WriteTextToWindow(WINDOW_WIDTH / 2 - 35, WINDOW_HEIGHT / 2 - 10, 0, TEXT_COLOR, "Game Over", 9);
-
-	kos_Pause(150);
-
-	kos_ExitApp();
+	int xcenter = WINDOW_WIDTH / 2;
+	int y = WINDOW_HEIGHT/ 2 - 40;
+	kos_WriteTextToWindow(xcenter-50, y, 0x81, TEXT_COLOR, "Game Over", 9);
+	kos_WriteTextToWindow(xcenter-43, y+36, 0x80, TEXT_COLOR, "[F2] - New game", 0);
+	kos_WriteTextToWindow(xcenter-43, y+53, 0x80, TEXT_COLOR, "[Ecs] - Exit", 0);
+	//
+	RestoreSystemCursor();
+	game_over = true;
 }
