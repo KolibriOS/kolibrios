@@ -1,15 +1,15 @@
-//не идёт дальше 98 строки 
-//если выделить область ячеек и сдвинуть курсор ввода с помощью клавиш, "следы" остануться
-//нельзя перемещаться по буквам в редактируемой строке
+//РЅРµ РёРґС‘С‚ РґР°Р»СЊС€Рµ 98 СЃС‚СЂРѕРєРё 
+//РµСЃР»Рё РІС‹РґРµР»РёС‚СЊ РѕР±Р»Р°СЃС‚СЊ СЏС‡РµРµРє Рё СЃРґРІРёРЅСѓС‚СЊ РєСѓСЂСЃРѕСЂ РІРІРѕРґР° СЃ РїРѕРјРѕС‰СЊСЋ РєР»Р°РІРёС€, "СЃР»РµРґС‹" РѕСЃС‚Р°РЅСѓС‚СЊСЃСЏ
+//РЅРµР»СЊР·СЏ РїРµСЂРµРјРµС‰Р°С‚СЊСЃСЏ РїРѕ Р±СѓРєРІР°Рј РІ СЂРµРґР°РєС‚РёСЂСѓРµРјРѕР№ СЃС‚СЂРѕРєРµ
 
 #include "func.h"
 #include "parser.h"
 #include "calc.h"
 #include "use_library.h"
 
-#define TABLE_VERSION "0.98"
+#define TABLE_VERSION "0.98.1"
 
-// строки, которые выводит программа
+// СЃС‚СЂРѕРєРё, РєРѕС‚РѕСЂС‹Рµ РІС‹РІРѕРґРёС‚ РїСЂРѕРіСЂР°РјРјР°
 const char *sFileSign = "KolibriTable File\n";
 const char sFilename[] = "Filename:";
 const char sSave[] = "Save";
@@ -26,8 +26,6 @@ const char msg_new[] = "Memory cleared. ";
 #define WND_W 640
 #define WND_H 480
 // new window size and coordinates
-int wi;
-int he;
 int cWidth;
 int cHeight;
 
@@ -67,58 +65,63 @@ edit_box cell_box = {0,9*8-5,WND_H - 16-32,0xffffff,0x6a9480,0,0x808080,0,255,(d
 scroll_bar scroll_v = { SCROLL_SIZE,200,398, NULL, SCROLL_SIZE,0,115,15,0,0xeeeeee,0xD2CED0,0x555555,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1};
 scroll_bar scroll_h = { 200,NULL,SCROLL_SIZE, NULL, SCROLL_SIZE,0,115,15,0,0xeeeeee,0xD2CED0,0x555555,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1};
 
-// ячейки - их параметры и текст
+// СЏС‡РµР№РєРё - РёС… РїР°СЂР°РјРµС‚СЂС‹ Рё С‚РµРєСЃС‚
 DWORD def_col_width = 80, def_row_height = 16;
 DWORD col_count = 200, row_count = 100;
 DWORD *col_width, *row_height;
 char ***cells;
-char ***values;	// значения формул, если есть
 
-bool display_formulas = 0;	// отображать ли формулы вместо значений
+struct GRID
+{
+	int x,y,w,h;
+} grid;
 
-// координаты отображаемых столбцов и строк
+char ***values;	// Р·РЅР°С‡РµРЅРёСЏ С„РѕСЂРјСѓР», РµСЃР»Рё РµСЃС‚СЊ
+
+bool display_formulas = 0;	// РѕС‚РѕР±СЂР°Р¶Р°С‚СЊ Р»Рё С„РѕСЂРјСѓР»С‹ РІРјРµСЃС‚Рѕ Р·РЅР°С‡РµРЅРёР№
+
+// РєРѕРѕСЂРґРёРЅР°С‚С‹ РѕС‚РѕР±СЂР°Р¶Р°РµРјС‹С… СЃС‚РѕР»Р±С†РѕРІ Рё СЃС‚СЂРѕРє
 DWORD *col_left, *row_top;
 
-// буфер обмена
+// Р±СѓС„РµСЂ РѕР±РјРµРЅР°
 char ***buffer = NULL;
 DWORD buf_col, buf_row;
 DWORD buf_old_x, buf_old_y;
 
-// это координаты ячейки, отображаемой в ЛВ угле
+// СЌС‚Рѕ РєРѕРѕСЂРґРёРЅР°С‚С‹ СЏС‡РµР№РєРё, РѕС‚РѕР±СЂР°Р¶Р°РµРјРѕР№ РІ Р›Р’ СѓРіР»Рµ
 DWORD scroll_x = 1, scroll_y = 1;
-// это выделенная ячейка
+// СЌС‚Рѕ РІС‹РґРµР»РµРЅРЅР°СЏ СЏС‡РµР№РєР°
 DWORD sel_x = 1, sel_y = 1;
-DWORD prev_x = 0, prev_y = 0;	// предыдущая выделенная
+DWORD prev_x = 0, prev_y = 0;	// РїСЂРµРґС‹РґСѓС‰Р°СЏ РІС‹РґРµР»РµРЅРЅР°СЏ
 int was_single_selection = 0;
 
-// конец выделения если выделено несколько ячеек
+// РєРѕРЅРµС† РІС‹РґРµР»РµРЅРёСЏ РµСЃР»Рё РІС‹РґРµР»РµРЅРѕ РЅРµСЃРєРѕР»СЊРєРѕ СЏС‡РµРµРє
 DWORD sel_end_x = sel_x, sel_end_y = sel_y;
 
-// флаг
+// С„Р»Р°Рі
 bool sel_moved = 0;
 bool sel_end_move = 0;
-bool window_drawall = false;
-// сколько ячеек помещается в окне по х и у
+// СЃРєРѕР»СЊРєРѕ СЏС‡РµРµРє РїРѕРјРµС‰Р°РµС‚СЃСЏ РІ РѕРєРЅРµ РїРѕ С… Рё Сѓ
 DWORD nx = 0, ny = 0;
 
-// флаг реадктирования ячейки
+// С„Р»Р°Рі СЂРµР°РґРєС‚РёСЂРѕРІР°РЅРёСЏ СЏС‡РµР№РєРё
 //bool is_edit = 0;
 #define ed_focus 2
 #define is_edit (cell_box.flags & ed_focus)
 
-// редактирование имени файла
+// СЂРµРґР°РєС‚РёСЂРѕРІР°РЅРёРµ РёРјРµРЅРё С„Р°Р№Р»Р°
 bool fn_edit = 0;
 char fname[256];
 edit_box file_box = {98,9*8-5,WND_H - 16-32,0xffffff,0x6a9480,0,0x808080,0,255,(dword)&fname,(dword)&mouse_dd,0};
 
-// изменение размеров
-#define SIZE_X 1 // состояние
+// РёР·РјРµРЅРµРЅРёРµ СЂР°Р·РјРµСЂРѕРІ
+#define SIZE_X 1 // СЃРѕСЃС‚РѕСЏРЅРёРµ
 #define SIZE_Y 2
 #define SIZE_SELECT 3
 #define SIZE_DRAG 4
 int size_mouse_x, size_mouse_y, size_id, size_state = 0;
 
-// растаскивание ячейки при ее тащении за правый нижний угол, с заполнением ячеек
+// СЂР°СЃС‚Р°СЃРєРёРІР°РЅРёРµ СЏС‡РµР№РєРё РїСЂРё РµРµ С‚Р°С‰РµРЅРёРё Р·Р° РїСЂР°РІС‹Р№ РЅРёР¶РЅРёР№ СѓРіРѕР», СЃ Р·Р°РїРѕР»РЅРµРЅРёРµРј СЏС‡РµРµРє
 int drag_x, drag_y;
 int old_end_x, old_end_y;
 
@@ -143,8 +146,8 @@ void DrawScrolls()
 {
 	// HOR
 	scroll_h.x = 0;
-	scroll_h.y = he - SCROLL_SIZE;
-	scroll_h.w = cWidth - SCROLL_SIZE;
+	scroll_h.y = grid.y + grid.h;
+	scroll_h.w = grid.w;
 	scroll_h.all_redraw = true;
 	scroll_h.max_area = col_count;
 	scroll_h.cur_area = nx-scroll_x-1;
@@ -152,9 +155,9 @@ void DrawScrolls()
 	scrollbar_h_draw((DWORD)&scroll_h);
 
 	// VER
-	scroll_v.x = cWidth - SCROLL_SIZE - 1;
+	scroll_v.x = grid.x + grid.w;
 	scroll_v.y = 0;
-	scroll_v.h = he - SCROLL_SIZE;
+	scroll_v.h = grid.h;
 	scroll_v.all_redraw = true;
 	scroll_v.max_area = row_count;
 	scroll_v.cur_area = ny-scroll_y-1;
@@ -262,7 +265,7 @@ void check_sel()
 		scroll_y = sel_y;
 
 	if (sx0 != scroll_x || sy0 != scroll_y)
-		sel_moved = 0;			// надо перерисовать все
+		sel_moved = 0;			// РЅР°РґРѕ РїРµСЂРµСЂРёСЃРѕРІР°С‚СЊ РІСЃРµ
 
 }
 
@@ -288,28 +291,7 @@ void move_selection(DWORD new_x, DWORD new_y)
 	draw_window();
 }
 
-void draw_custom_button(int x0, int y0, int sx, int sy, int blue_border)
-{
-	int x1 = x0 + sx;
-	int y1 = y0 + sy;
-
-	if (blue_border) kos_DrawRegion(x0-1, y0-1, sx+3, sy+3, 0x94aece, 0);
-
-	// серый прямоугольник
-
-	kos_DrawBar(x0 + 1, y0 + 1, sx - 1, sy - 1, PANEL_BG_COLOR);
-	
-	// две белые линии: сверху и слева
-
-	kos_DrawLine(x0, y0, x1, y0, 0xffffff, 0);
-	kos_DrawLine(x0, y0, x0, y1, 0xffffff, 0);
-
-	// две серые линии: снизу и справа
-	kos_DrawLine(x0, y1, x1, y1, 0xc7c7c7, 0);
-	kos_DrawLine(x1, y0, x1, y1, 0xc7c7c7, 0);
-}
-
-// x - между low и high ? - необязательно low<high
+// x - РјРµР¶РґСѓ low Рё high ? - РЅРµРѕР±СЏР·Р°С‚РµР»СЊРЅРѕ low<high
 bool is_between(Dword x, Dword low, Dword high)
 {
 	return ((low<high)?(x >= low && x <= high):(x >= high && x <= low));
@@ -335,11 +317,9 @@ void clear_cell_slow(int px, int py)
 	kos_DrawBar(x0 + 1, y0 + 1, x1 - x0 - 1, y1 - y0 - 1, 0xffffff);
 }
 
-//debug
-const int debugcolor[10]={0xff0000,0x00ff00,0x0000ff,0xffff00,0x00ffff,0xff00ff,0x800000,0x008000,0x000080,0x800080};
-int debugc=0;
 
-// рисование ячеек
+
+// СЂРёСЃРѕРІР°РЅРёРµ СЏС‡РµРµРє
 #define is_x_changed(v) ((v) == sel_x || (v) == prev_x)
 #define is_y_changed(v) ((v) == sel_y || (v) == prev_y)
 
@@ -349,14 +329,10 @@ void draw_grid()
 	long x0 = 0, y0 = 0, x = 0, y = 0, dx;
 	DWORD text_color;
 	DWORD bg_color;
-	//int lx, ly;
-
-//	sprintf(debuf, "%U,%U", scroll_x, scroll_y);
-//	rtlDebugOutString(debuf);
 
 	nx=ny=0;
 
-	// очистить область около выделенной ячейки
+	// РѕС‡РёСЃС‚РёС‚СЊ РѕР±Р»Р°СЃС‚СЊ РѕРєРѕР»Рѕ РІС‹РґРµР»РµРЅРЅРѕР№ СЏС‡РµР№РєРё
 	if (sel_moved)
 	{
 		clear_cell_slow(sel_x, sel_y);
@@ -364,12 +340,12 @@ void draw_grid()
 	}
 	else
 	{
-		// очистить всю область ячеек
-		//kos_DrawBar(col_width[0]+1, row_height[0]+1, wi - SCROLL_SIZE-col_width[0]-1, he - SCROLL_SIZE-row_height[0]-1, 0xffffff);
+		// РѕС‡РёСЃС‚РёС‚СЊ РІСЃСЋ РѕР±Р»Р°СЃС‚СЊ СЏС‡РµРµРє
+		//kos_DrawBar(col_width[0]+1, row_height[0]+1, grid.w - SCROLL_SIZE-col_width[0]-1, he - SCROLL_SIZE-row_height[0]-1, 0xffffff);
 	}
 
 	col_left[0] = 0;
-	// ячейки - заголовки столбцов + вертикальные линии
+	// СЏС‡РµР№РєРё - Р·Р°РіРѕР»РѕРІРєРё СЃС‚РѕР»Р±С†РѕРІ + РІРµСЂС‚РёРєР°Р»СЊРЅС‹Рµ Р»РёРЅРёРё
 	x = col_width[0]; 
 	nx = 1;
 	for (i = 1; i < col_count; i++)
@@ -381,13 +357,13 @@ void draw_grid()
 				if (!sel_moved || is_x_changed(i)) {
 					kos_DrawLine(x-x0, 0, x-x0, row_height[0], GRID_COLOR, 0);
 				}
-				// и заголовок ячейки по х
+				// Рё Р·Р°РіРѕР»РѕРІРѕРє СЏС‡РµР№РєРё РїРѕ С…
 				text_color = TEXT_COLOR;
 				dx = (col_width[i]-6)/2;
 				int dy = (row_height[0] - 8) / 2 + 1;
 				int cur_width = col_width[i] - 1;
-				if (cur_width + x - x0 > wi - SCROLL_SIZE)
-					cur_width = wi - SCROLL_SIZE - x + x0 -1;
+				if (cur_width + x - x0 > grid.w)
+					cur_width = grid.w - x + x0 -1;
 				if (!sel_moved || (is_x_changed(i))) {
 					if (is_between(i,sel_x,sel_end_x))	
 					{
@@ -402,8 +378,8 @@ void draw_grid()
 					kos_DrawBar(x - x0 + 1,0,cur_width,row_height[0],bg_color);
 					kos_WriteTextToWindow(x-x0+2+dx,dy,0,text_color,cells[i][0],strlen(cells[i][0]));	
 				}
-				// есть кнопка стоблца и еще кнопка изменения ширины 
-				if (x - x0 + col_width[i] <= wi - col_width[0])
+				// РµСЃС‚СЊ РєРЅРѕРїРєР° СЃС‚РѕР±Р»С†Р° Рё РµС‰Рµ РєРЅРѕРїРєР° РёР·РјРµРЅРµРЅРёСЏ С€РёСЂРёРЅС‹ 
+				if (x - x0 + col_width[i] <= grid.w - col_width[0])
 				{
 					kos_DeleteButton(COL_HEAD_BUTTON+i);
 					kos_DefineButton(x-x0+5,0,cur_width - 10,row_height[0]-1,BT_NODRAW+COL_HEAD_BUTTON+i,0);
@@ -411,7 +387,7 @@ void draw_grid()
 				//kos_DefineButton(x-x0+col_width[i]-10,0,15,row_height[0]-1,BT_NODRAW+COL_SIZE_BUTTON+i,0);
 				col_left[i] = x - x0;
 			}
-			if (x - x0 > wi - col_width[0])
+			if (x - x0 > grid.w - col_width[0])
 			{
 				x += col_width[i];
 				nx++;
@@ -429,22 +405,22 @@ void draw_grid()
 	//kos_DefineButton(0,0,0,0,0x80000000+COL_HEAD_BUTTON+i,0);
 
 	for (j = i + 1; j < col_count; j++) 
-		col_left[j] = wi;
-	//if (!sel_moved || (is_x_changed(nx))) kos_DrawLine(x - x0, 0, x - x0, he, GRID_COLOR, 0);
+		col_left[j] = grid.w;
+	//if (!sel_moved || (is_x_changed(nx))) kos_DrawLine(x - x0, 0, x - x0, grid.h, GRID_COLOR, 0);
 
-	// ячейки - заголовки строк + горизонт. линии
+	// СЏС‡РµР№РєРё - Р·Р°РіРѕР»РѕРІРєРё СЃС‚СЂРѕРє + РіРѕСЂРёР·РѕРЅС‚. Р»РёРЅРёРё
 	y = row_height[0];
 	ny = 1;
 	row_top[0] = 0;
-	for (i = 1; i < row_count && y - y0 < he - SCROLL_SIZE; i++)
+	for (i = 1; i < row_count && y - y0 < grid.h; i++)
 	{
 		row_top[i] = -1;
 		if (i >= scroll_y)
 		{
 			{
 				if (!sel_moved || (is_y_changed(i))) 
-					kos_DrawLine(0, y - y0, wi - SCROLL_SIZE - 1, y - y0, GRID_COLOR, 0);
-				// и заголовок ячейки по y
+					kos_DrawLine(0, y - y0, grid.w - 1, y - y0, GRID_COLOR, 0);
+				// Рё Р·Р°РіРѕР»РѕРІРѕРє СЏС‡РµР№РєРё РїРѕ y
 				text_color = TEXT_COLOR;
 				dx = (col_width[0]-6 * strlen(cells[0][i]))/2;	// optimize this, change strlen
 				int dy = (row_height[i] - 8) / 2 + 1;
@@ -480,48 +456,48 @@ void draw_grid()
 	kos_DefineButton(0,0,0,0,0x80000000+ROW_HEAD_BUTTON+ny-1,0);
 
 	for (j = i + 1; j < row_count; j++)
-		row_top[j] = he;
+		row_top[j] = grid.h;
 	if (!sel_moved || (is_y_changed(ny))) 
-		kos_DrawLine(0, y - y0, wi - SCROLL_SIZE, y - y0, GRID_COLOR, 0);
+		kos_DrawLine(0, y - y0, grid.w, y - y0, GRID_COLOR, 0);
 
 	if (!sel_moved || (is_x_changed(0) && is_y_changed(0)))
 		kos_DrawBar(0,0,col_width[0],row_height[0],FIXED_CELL_COLOR); 
-	// ЛВ ячейка
+	// Р›Р’ СЏС‡РµР№РєР°
 
 	//sprintf(debuf, "%U, %U; %U, %U", x0, y0, nx, ny);
 	//rtlDebugOutString(debuf);
 
-	// сами ячейки
+	// cells itself
 
 	y = row_height[0];
 	for (i = scroll_y; i < ny; i++)
 	{
 		x = col_width[0];
 		if (!sel_moved)
-			kos_DrawBar(col_width[0]+1, y+1, wi - SCROLL_SIZE-col_width[0]-1, row_height[i]-1, 0xffffff);
+			kos_DrawBar(col_width[0]+1, y+1, grid.w -col_width[0]-1, row_height[i]-1, 0xffffff);
 		for (j = scroll_x; j < nx-1; j++)
 		{
 			if (!sel_moved || is_x_changed(j) || is_y_changed(i)) 
 				kos_DrawLine(col_left[j], row_top[i], col_left[j], row_height[i], GRID_COLOR, 0);
 
-			// заголовки уже нарисованы - пропускаем их
+			// Р·Р°РіРѕР»РѕРІРєРё СѓР¶Рµ РЅР°СЂРёСЃРѕРІР°РЅС‹ - РїСЂРѕРїСѓСЃРєР°РµРј РёС…
 			if (i && j)	
 			{
 				//kos_DrawBar(x+1, y+1, col_width[i]-1, row_height[i]-1, 0xffffff);
 
 				//rtlDebugOutString(cap);
 				//if (j >= sel_x && j <= sel_end_x && i >= sel_y && i <= sel_end_y)
-				if (is_between(j,sel_x,sel_end_x) && is_between(i, sel_y, sel_end_y)	// (j,i) - выделена
-				&& ((!sel_moved) || (is_x_changed(j) && is_y_changed(i))))			// и ее нужно нарисовать
+				if (is_between(j,sel_x,sel_end_x) && is_between(i, sel_y, sel_end_y)	// (j,i) - ГўГ»Г¤ГҐГ«ГҐГ­Г 
+				&& ((!sel_moved) || (is_x_changed(j) && is_y_changed(i))))			// ГЁ ГҐГҐ Г­ГіГ¦Г­Г® Г­Г Г°ГЁГ±Г®ГўГ ГІГј
 				{
-					if (i == sel_y && j == sel_x) // рамка
+					if (i == sel_y && j == sel_x) // frame
 					{
 						DrawSelectedFrame(x+1,y, col_width[j]-1, row_height[j], TEXT_COLOR);
 						drag_x = x + col_width[j] - 4;
 						drag_y = y + row_height[i] - 4;
 					}
 					else
-						kos_DrawBar(x + 1,y + 1,col_width[j] - 2,row_height[i] - 2,SEL_CELL_COLOR);	//	выделена но не основная(серая)
+						kos_DrawBar(x + 1,y + 1,col_width[j] - 2,row_height[i] - 2,SEL_CELL_COLOR);	//	ГўГ»Г¤ГҐГ«ГҐГ­Г  Г­Г® Г­ГҐ Г®Г±Г­Г®ГўГ­Г Гї(Г±ГҐГ°Г Гї)
 
 				}
 				//kos_DefineButton(x,y,col_width[j]-1,row_height[i]-1,BT_NODRAW+CELL_BUTTON+((i << 8) + j),0);
@@ -554,7 +530,7 @@ void draw_grid()
 	DrawScrolls();
 }
 
-// очень быстрое рисование сетки, в процессе изменения размеров ячеек
+// РѕС‡РµРЅСЊ Р±С‹СЃС‚СЂРѕРµ СЂРёСЃРѕРІР°РЅРёРµ СЃРµС‚РєРё, РІ РїСЂРѕС†РµСЃСЃРµ РёР·РјРµРЅРµРЅРёСЏ СЂР°Р·РјРµСЂРѕРІ СЏС‡РµРµРє
 void draw_size_grid()
 {
 	//rtlDebugOutString("draw size grid");
@@ -565,18 +541,18 @@ void draw_size_grid()
 
 		x = col_width[0]; 
 		x0 = 0;
-		for (i = 1; i < col_count && x - x0 + col_width[i] < wi - 10; i++)
+		for (i = 1; i < col_count && x - x0 + col_width[i] < grid.w - 10; i++)
 		{
 			if (i >= scroll_x)
 			{
 				if (i >= size_id)
-					kos_DrawLine(x - x0, 0, x - x0, he, 0, 1);
+					kos_DrawLine(x - x0, 0, x - x0, grid.h, 0, 1);
 			}
 			else
 				x0 += col_width[i];
 			x += col_width[i];
 		}
-		kos_DrawLine(x - x0, 0, x - x0, he, 0, 1);
+		kos_DrawLine(x - x0, 0, x - x0, grid.h, 0, 1);
 	}
 	else
 	{
@@ -584,30 +560,30 @@ void draw_size_grid()
 
 		y = row_height[0]; 
 		y0 = 0;
-		for (i = 1; i < col_count && y - y0 + row_height[i] < he - 10; i++)
+		for (i = 1; i < col_count && y - y0 + row_height[i] < grid.h - 10; i++)
 		{
 			if (i >= scroll_y)
 			{
 				if (i >= size_id)
-					kos_DrawLine(0, y - y0, wi, y - y0, 0, 1);
+					kos_DrawLine(0, y - y0, grid.w, y - y0, 0, 1);
 			}
 			else
 				y0 += row_height[i];
 			y += row_height[i];
 		}
-		kos_DrawLine(0, y - y0, wi, y - y0, 0, 1);
+		kos_DrawLine(0, y - y0, grid.w, y - y0, 0, 1);
 	}
 
 }
 
 
-// быстрое рисование выделенной области при выделении мышью
+// Р±С‹СЃС‚СЂРѕРµ СЂРёСЃРѕРІР°РЅРёРµ РІС‹РґРµР»РµРЅРЅРѕР№ РѕР±Р»Р°СЃС‚Рё РїСЂРё РІС‹РґРµР»РµРЅРёРё РјС‹С€СЊСЋ
 #define DCOLOR 0
 //0xff0000
 #define DINVERT 1
 void draw_drag()
 {
-	// собственно, 4 инверсные линии
+	// inverted lines
 
 	int k0 = min(sel_x, sel_end_x);
 	int k1 = max(sel_x, sel_end_x);
@@ -618,10 +594,10 @@ void draw_drag()
 	DWORD x1 = col_left[k1] + col_width[k1] + 1;
 	DWORD y0 = row_top[n0] - 1;	
 	DWORD y1 = row_top[n1] + row_height[n1] + 1;
-	if (x0 > wi - 1) x0 = wi - 1;
-	if (x1 > wi - 1) x1 = wi - 1;
-	if (y0 > he - 1) y0 = he - 1;
-	if (y1 > he - 1) y1 = he - 1;
+	if (x0 > grid.w - 1) x0 = grid.w - 1;
+	if (x1 > grid.w - 1) x1 = grid.w - 1;
+	if (y0 > grid.h - 1) y0 = grid.h - 1;
+	if (y1 > grid.h - 1) y1 = grid.h - 1;
 
 	//sprintf(debuf,"drag %U %U %U %U",k0,k1,n0,n1);
 	//rtlDebugOutString(debuf);
@@ -632,31 +608,35 @@ void draw_drag()
 	kos_DrawLine(x0, y1, x1, y1, DCOLOR, DINVERT);
 }
 
+bool draw_and_define_window()
+{
+	kos_WindowRedrawStatus(1);
+	kos_DefineAndDrawWindow(110,40,WND_W,WND_H,0x73,0x40FFFFFF,0,0,(Dword)"Table v" TABLE_VERSION);
+	kos_WindowRedrawStatus(2); 
+
+	sProcessInfo info;
+	kos_ProcessInfo(&info, 0xFFFFFFFF);
+	cWidth = info.processInfo.width - 9;
+	cHeight = info.processInfo.height - kos_GetSkinHeight() - 4;
+
+	grid.x = 0;
+	grid.y = 0;
+	grid.w = cWidth - SCROLL_SIZE;
+	grid.h = cHeight - MENU_PANEL_HEIGHT - SCROLL_SIZE;
+
+	if (info.processInfo.status_window&0x04) return false; //draw nothing if window is rolled-up
+
+	if (grid.h < 100) { kos_ChangeWindow( -1, -1, -1, 180 ); return false; }
+	if (grid.w < 340) { kos_ChangeWindow( -1, -1, 350, -1 ); return false; }
+
+	return true;
+}
+
 void draw_window()
 {
 
 	if (sel_end_move)
 		sel_moved = 0;
-
-	if (window_drawall==true){
-		kos_WindowRedrawStatus(1);
-		kos_DefineAndDrawWindow(110,40,WND_W,WND_H,0x73,0x40FFFFFF,0,0,(Dword)"Table v" TABLE_VERSION);
-		kos_WindowRedrawStatus(2); 
-
-		sProcessInfo info;
-		kos_ProcessInfo(&info, 0xFFFFFFFF);
-		wi = info.processInfo.width - 9 - 1;
-		he = info.processInfo.height - kos_GetSkinHeight() - MENU_PANEL_HEIGHT;
-
-		cWidth = info.processInfo.width - 9;
-		cHeight = info.processInfo.height - kos_GetSkinHeight() - 4;
-
-		if (info.processInfo.status_window&0x04) return; //draw nothing if window rolled-up
-
-		if (he < 100) kos_ChangeWindow( -1, -1, -1, 180 );
-		if (wi < 340) kos_ChangeWindow( -1, -1, 350, -1 );
-
-	}
 
 	panel_y = cHeight - MENU_PANEL_HEIGHT;
 
@@ -669,15 +649,15 @@ void draw_window()
 
 	file_box.top = panel_y + 12;
 
-	// сохранить
+	//save
 	kos_DefineButton(20 + 160, panel_y + 9, 60, 20, SAVE_BUTTON, 0xd0d0d0);
 	kos_WriteTextToWindow(22 + 160 + (60 - strlen(sSave) * 6) / 2, panel_y + 16, 0x80, 0x000000, (char*)sSave, 0);
 
-	// загрузить
+	//load
 	kos_DefineButton(90 + 160, panel_y + 9, 60, 20, LOAD_BUTTON, 0xd0d0d0);
 	kos_WriteTextToWindow(92 + 160 + (60 - strlen(sLoad) * 6) / 2, panel_y + 16, 0x80, 0x000000, (char*)sLoad, 0);
 
-	// создать. только эту кнопу воткнуть некуда о_О
+	//new (clean)
 	/*
 	kos_DefineButton(90 + 160 + 70, panel_y + 9, 60, 20, NEW_BUTTON, 0xd0d0d0);
 	kos_WriteTextToWindow(92 + 160 + 10 + 70, panel_y + 16, 0, 0x000000, (char*)sNew, strlen(sNew));
@@ -691,7 +671,6 @@ void draw_window()
 	}
 
 	draw_grid();
-	window_drawall=false;
 	sel_moved = 0;
 }
 
@@ -699,7 +678,7 @@ void process_mouse()
 {
 	Dword mouse_btn, ckeys, shift, ctrl;
 	int mouse_x, mouse_y, i, dx = 0, dy = 0;
-	int redraw = 0;
+	bool window_is_dragged=false;
 	
 	edit_box_mouse((dword)&cell_box);
 	edit_box_mouse((dword)&file_box);
@@ -720,18 +699,21 @@ void process_mouse()
 		return;
 	}
 
-	scrollbar_v_mouse((DWORD)&scroll_v);
-	if (scroll_v.position != scroll_y-1)
+	if (!sel_moved && !size_state) //do not handle scrollbars when user selects cells
 	{
-		scroll_y = scroll_v.position + 1;
-		draw_grid();
-	}
+		scrollbar_v_mouse((DWORD)&scroll_v);
+		if (scroll_v.position != scroll_y-1)
+		{
+			scroll_y = scroll_v.position + 1;
+			draw_grid();
+		}
 
-	scrollbar_h_mouse((DWORD)&scroll_h);
-	if (scroll_h.position != scroll_x-1)
-	{
-		scroll_x = scroll_h.position + 1;
-		draw_grid();
+		scrollbar_h_mouse((DWORD)&scroll_h);
+		if (scroll_h.position != scroll_x-1)
+		{
+			scroll_x = scroll_h.position + 1;
+			draw_grid();
+		}		
 	}
 
 	kos_GetMouseState(mouse_btn, mouse_x, mouse_y);
@@ -739,6 +721,12 @@ void process_mouse()
 	mouse_y -= kos_GetSkinHeight();
 
 	mouse_btn &= 0x0001;
+
+	if (mouse_btn)
+	{
+		if (mouse_y < 0) return; // do nothing if mouse over header
+		if (mouse_y > grid.y + grid.h) return;
+	}
 
 	ckeys = kos_GetSpecialKeyState();
 	shift = ckeys & 0x3;
@@ -788,7 +776,7 @@ void process_mouse()
 				size_state = SIZE_Y;
 			}
 		}
-		else		// кликнута ячейка
+		else		// click on cell
 		if (mouse_x <= col_left[nx - 1] &&  mouse_y <= row_top[ny - 1])
 		{
 			was_single_selection = sel_x == sel_end_x && sel_y == sel_end_y;
@@ -830,7 +818,7 @@ void process_mouse()
 	}
 	else if (!mouse_btn && size_state)
 	{
-		sel_moved = 0;		// чтобы была тру перерисовка
+		sel_moved = 0;		// for a good redraw
 		//rtlDebugOutString("resize end");
 
 		if (size_state == SIZE_DRAG)
@@ -840,7 +828,7 @@ void process_mouse()
 
 		//sel_moved = (size_state == SIZE_SELECT && sel_x == sel_end_x && sel_y == sel_end_y && was_single_selection);
 		size_state = 0;
-		draw_window();		// все сдвинулось - надо обновиться
+		draw_window();		// РІСЃРµ СЃРґРІРёРЅСѓР»РѕСЃСЊ - РЅР°РґРѕ РѕР±РЅРѕРІРёС‚СЊСЃСЏ
 		return;
 	}
 	if (size_state == SIZE_X && mouse_x != size_mouse_x)
@@ -849,8 +837,8 @@ void process_mouse()
 		col_width[size_id] += mouse_x - size_mouse_x;
 		if (col_width[size_id] < 15)
 			col_width[size_id] = 15;
-		else if (col_width[size_id] > wi / 2)
-			col_width[size_id] = wi / 2;
+		else if (col_width[size_id] > grid.w / 2)
+			col_width[size_id] = grid.w / 2;
 		draw_size_grid();
 	}
 	if (size_state == SIZE_Y && mouse_y != size_mouse_y)
@@ -859,8 +847,8 @@ void process_mouse()
 		row_height[size_id] += mouse_y - size_mouse_y;
 		if (row_height[size_id] < 15)
 			row_height[size_id] = 15;
-		else if (row_height[size_id] > he / 2)
-			row_height[size_id] = he / 2;
+		else if (row_height[size_id] > grid.h / 2)
+			row_height[size_id] = grid.h / 2;
 		draw_size_grid();
 	}
 	if ((size_state == SIZE_SELECT || size_state == SIZE_DRAG) && (mouse_x != size_mouse_x || mouse_y != size_mouse_y))
@@ -928,7 +916,7 @@ void process_key()
 
 	switch (keyCode)
 	{
-		case 178:			// стрелки
+		case 178:
 			//dx = 0;
 			dy = -1;
 			break;
@@ -944,24 +932,26 @@ void process_key()
 			//dx = 0;
 			dy = 1;
 			break;
-		/*
 		case 183:
+		/*
 			if (sel_y < row_count-(ny - scroll_y))	// page down
 				dy = ny - scroll_y;
 			else
 				dy = row_count-(ny - scroll_y) - sel_y;
 			dx = 0;
 			redraw = 1;
+		*/
 			break;
 		case 184:
+		/*
 			if (sel_y > ny - scroll_y)		// page up
 				dy= - (ny - scroll_y);
 			else
 				dy = - (ny - scroll_y) + sel_y;
 			dx = 0;
 			redraw = 1;
-			break;
 		*/
+			break;
 		case 180: //home
 			dx = -sel_x + 1;
 			dy = 0;
@@ -1163,7 +1153,7 @@ void process_key()
 	{
 		if (!shift)
 		{
-			if ((sel_end_x + dx) >= (col_count-1)) {dx=0;} //заглушка
+			if ((sel_end_x + dx) >= (col_count-1)) {dx=0;} //stub
 			else if ((sel_end_y + dy) >= (row_count-1)) {dy=0;}
 			else {
 			move_selection(sel_x + dx, sel_y + dy);
@@ -1279,8 +1269,7 @@ void kos_Main()
 			break;
 		
 		case EM_WINDOW_REDRAW:
-			window_drawall=true;
-			draw_window();
+			if (draw_and_define_window()) draw_window();
 			break;
 		}
 	}

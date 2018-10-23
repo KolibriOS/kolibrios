@@ -61,7 +61,7 @@ void main() {
 		case evMouse:
 				mouse.get();
 				IF (mouse_frame.hovered()) DrawMouseImage(mouse.lkm,mouse.pkm,mouse.mkm,mouse.vert);
-				IF (mouse.click) DrawMouseImage(0,0,0,0);
+				IF (mouse.click) || (mouse.up) DrawMouseImage(0,0,0,0);
 				break;
 
 		CASE evButton: 

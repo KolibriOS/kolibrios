@@ -117,6 +117,7 @@ void init()
 	{
 		col_width[i] = def_col_width;
 	}
+	col_width[0] = 30;
 
 	for (i = 0; i < row_count; i++)
 	{
@@ -140,7 +141,6 @@ void init()
 			{
 				cells[i][j] = make_col_cap(i);
 			}
-
 		}
 	}
 }

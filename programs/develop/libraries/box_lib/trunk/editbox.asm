@@ -1,13 +1,18 @@
-macro use_key_no_process  up,down,esc,enter,tab,numl,capsl,scrolll
+macro use_key_no_process  up,down,super,esc,enter,tab,numl,capsl,scrolll
 {
 if up eq
 else
-        cmp     ah,177
+        cmp     ah,178
         jz      edit_box.editbox_exit
 end if
 if down eq
 else
-        cmp     ah,178
+        cmp     ah,177
+        jz      edit_box.editbox_exit
+end if
+if super eq
+else
+        cmp     ah,148  ;Super (Win logo)
         jz      edit_box.editbox_exit
 end if
 if esc eq
@@ -149,7 +154,7 @@ edit_box_key:
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;Заглушка на обработку клавиш вверх и вниз т.е. при обнаружении этих кодов происходит выход из обработчика
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-use_key_no_process   up,down,esc,enter,tab,numl,capsl,scrolll
+use_key_no_process   up,down,super,esc,enter,tab,numl,capsl,scrolll
 ;--- нажата другая клавиша ---
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;Проверка установлен ли флаг при котором нужно выводить только цифры в нужном боксе, если такой необходимости нет, нужно закоментировать макрос

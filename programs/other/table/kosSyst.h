@@ -151,23 +151,11 @@ Dword rtlRand( void );
 char * __cdecl strcpy( char *target, const char *source );
 int __cdecl strlen( const char *line );
 char * __cdecl strrchr( const char * string, int c );
-
-/*
-#if _MSC_VER < 1400
-extern "C" void * __cdecl memcpy( void *dst, const void *src, size_t bytesCount );
-extern "C" void memset( Byte *dst, Byte filler, Dword count );
-//#pragma intrinsic(memcpy,memset)
-#elif defined AUTOBUILD
-*/
+//
+// if you have trouble here look at old SVN revisions for alternatives
 void memcpy( void *dst, const void *src, size_t bytesCount );
 void memset( Byte *dst, Byte filler, Dword count );
-/*
-#else
-void * __cdecl memcpy( void *dst, const void *src, size_t bytesCount );
-void memset( Byte *dst, Byte filler, Dword count );
-#endif
-*/
-
+//
 void sprintf( char *Str, char* Format, ... );
 //
 Dword rtlInterlockedExchange( Dword *target, Dword value );
