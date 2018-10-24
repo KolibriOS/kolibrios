@@ -1,4 +1,4 @@
-macro use_key_no_process  up,down,super,esc,enter,tab,numl,capsl,scrolll
+macro use_key_no_process  up,down,esc,enter,tab,numl,capsl,scrolll
 {
 if up eq
 else
@@ -8,11 +8,6 @@ end if
 if down eq
 else
         cmp     ah,177
-        jz      edit_box.editbox_exit
-end if
-if super eq
-else
-        cmp     ah,148  ;Super (Win logo)
         jz      edit_box.editbox_exit
 end if
 if esc eq
@@ -47,6 +42,8 @@ else
 end if
 }
 
+SCAN_LWIN_RELEASE = 0xDB
+SCAN_RWIN_RELEASE = 0xDC
 
 align 16
 edit_box:
@@ -138,23 +135,29 @@ edit_box_key:
         jz      edit_box_key.end
         cmp     ah,185  ;insert
         jz      edit_box_key.insert
-; комбинации Ctrl + клавиша
+
+; get scancode in ah
+        ror     eax,8
+; check for ctrl+ combinations
         test    word ed_flags,ed_ctrl_on
         jz      @f
-; проверка сканкода
-        ror     eax,8
         cmp     ah,45 ; Ctrl + X
         je      edit_box_key.ctrl_x        
         cmp     ah,46 ; Ctrl + C
         je      edit_box_key.ctrl_c
         cmp     ah,47 ; Ctrl + V
         je      edit_box_key.ctrl_v
-        rol     eax,8
 @@:
+        cmp     ah,SCAN_LWIN_RELEASE
+        jz      edit_box.editbox_exit
+        cmp     ah,SCAN_RWIN_RELEASE
+        jz      edit_box.editbox_exit
+; restore ascii code
+        rol     eax,8
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;Заглушка на обработку клавиш вверх и вниз т.е. при обнаружении этих кодов происходит выход из обработчика
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-use_key_no_process   up,down,super,esc,enter,tab,numl,capsl,scrolll
+use_key_no_process   up,down,esc,enter,tab,numl,capsl,scrolll
 ;--- нажата другая клавиша ---
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;Проверка установлен ли флаг при котором нужно выводить только цифры в нужном боксе, если такой необходимости нет, нужно закоментировать макрос
