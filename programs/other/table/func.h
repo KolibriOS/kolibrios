@@ -51,8 +51,8 @@ Dword kos_GetActiveSlot();
 Dword kos_GetSkinHeight();
 Dword kos_GetSpecialKeyState();
 void kos_GetMouseStateWnd( Dword & buttons, int & cursorX, int & cursorY );
-void kos_DrawLine( Word x1, Word y1, Word x2, Word y2, Dword colour, Dword invert);
-void DrawRegion(Dword x,Dword y,Dword width,Dword height,Dword color1);
+void kos_DrawRegion(Word x, Word y,Word width, Word height, Dword color1, Word invert);
+void kos_DrawCutTextSmall(Word x, Word y, int areaWidth, Dword textColour, char *textPtr);
 int atoi(const char* string);
 void kos_GetScrollInfo(int &vert, int &hor);
 

@@ -1,4 +1,3 @@
-//не идёт дальше 98 строки 
 //если выделить область ячеек и сдвинуть курсор ввода с помощью клавиш, "следы" остануться
 //нельзя перемещаться по буквам в редактируемой строке
 
@@ -7,7 +6,7 @@
 #include "calc.h"
 #include "use_library.h"
 
-#define TABLE_VERSION "0.98.1"
+#define TABLE_VERSION "0.98.7"
 
 // строки, которые выводит программа
 const char *sFileSign = "KolibriTable File\n";
@@ -34,9 +33,8 @@ int cHeight;
 #define TEXT_COLOR 0x000000
 #define CELL_COLOR 0xffffff
 #define SEL_CELL_COLOR 0xe0e0ff
-#define FIXED_CELL_COLOR 0xe0e0ff
-#define SEL_FIXED_CELL_COLOR 0x758FC1
-#define TEXT_SEL_FIXED_COLOR 0xffffff
+#define HEADER_CELL_COLOR 0xE9E7E3
+#define SEL_HEADER_CELL_COLOR 0xC4C5BA //0xBBBBFF
 #define PANEL_BG_COLOR 0xe4dfe1
 
 #define SCROLL_SIZE 16
@@ -57,18 +55,16 @@ int cHeight;
 // bottom panel
 #define MENU_PANEL_HEIGHT 40
 Dword panel_y = 0;
-Dword mouse_dd;
 
 // editbox data
 char edit_text[256] = "";
-edit_box cell_box = {0,9*8-5,WND_H - 16-32,0xffffff,0x6a9480,0,0x808080,0,255,(dword)&edit_text,(dword)&mouse_dd,0};
+edit_box cell_box = {0,9*8-5,WND_H - 16-32,0xffffff,0x6a9480,0,0x808080,0,255,(dword)&edit_text,0,0};
 scroll_bar scroll_v = { SCROLL_SIZE,200,398, NULL, SCROLL_SIZE,0,115,15,0,0xeeeeee,0xD2CED0,0x555555,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1};
 scroll_bar scroll_h = { 200,NULL,SCROLL_SIZE, NULL, SCROLL_SIZE,0,115,15,0,0xeeeeee,0xD2CED0,0x555555,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1};
 
 // ячейки - их параметры и текст
-DWORD def_col_width = 80, def_row_height = 16;
-DWORD col_count = 200, row_count = 100;
-DWORD *col_width, *row_height;
+DWORD col_count = 100, row_count = 100;
+DWORD *cell_w, *cell_h;
 char ***cells;
 
 struct GRID
@@ -78,10 +74,10 @@ struct GRID
 
 char ***values;	// значения формул, если есть
 
-bool display_formulas = 0;	// отображать ли формулы вместо значений
+bool display_formulas = false;	// отображать ли формулы вместо значений
 
 // координаты отображаемых столбцов и строк
-DWORD *col_left, *row_top;
+DWORD *cell_x, *cell_y;
 
 // буфер обмена
 char ***buffer = NULL;
@@ -112,7 +108,7 @@ DWORD nx = 0, ny = 0;
 // редактирование имени файла
 bool fn_edit = 0;
 char fname[256];
-edit_box file_box = {98,9*8-5,WND_H - 16-32,0xffffff,0x6a9480,0,0x808080,0,255,(dword)&fname,(dword)&mouse_dd,0};
+edit_box file_box = {98,9*8-5,WND_H - 16-32,0xffffff,0x6a9480,0,0x808080,0,255,(dword)&fname,0,0};
 
 // изменение размеров
 #define SIZE_X 1 // состояние
@@ -126,44 +122,7 @@ int drag_x, drag_y;
 int old_end_x, old_end_y;
 
 void draw_window();
-
-void kos_DrawRegion(Word x, Word y,Word width, Word height, Dword color1, Word invert)
-{
-	kos_DrawLine(x,y,x+width-2,y,color1,invert);
-	kos_DrawLine(x,y+1,x,y+height-1,color1,invert);
-	kos_DrawLine(x+width-1,y,x+width-1,y+height-2,color1,invert);
-	kos_DrawLine(x+1,y+height-1,x+width-1,y+height-1,color1,invert);
-}
-
-void kos_DebugValue(char *str, int n)
-{
-	char debuf[50];
-	sprintf(debuf, "%S: %U\n", str, n);
-	rtlDebugOutString(debuf);
-}
-
-void DrawScrolls()
-{
-	// HOR
-	scroll_h.x = 0;
-	scroll_h.y = grid.y + grid.h;
-	scroll_h.w = grid.w;
-	scroll_h.all_redraw = true;
-	scroll_h.max_area = col_count;
-	scroll_h.cur_area = nx-scroll_x-1;
-	scroll_h.position = scroll_x-1;
-	scrollbar_h_draw((DWORD)&scroll_h);
-
-	// VER
-	scroll_v.x = grid.x + grid.w;
-	scroll_v.y = 0;
-	scroll_v.h = grid.h;
-	scroll_v.all_redraw = true;
-	scroll_v.max_area = row_count;
-	scroll_v.cur_area = ny-scroll_y-1;
-	scroll_v.position = scroll_y-1;
-	scrollbar_v_draw((DWORD)&scroll_v);
-}
+void draw_grid();
 
 void DrawSelectedFrame(int x, int y, int w, int h, DWORD col)
 {
@@ -174,10 +133,29 @@ void DrawSelectedFrame(int x, int y, int w, int h, DWORD col)
 	kos_DrawBar(x+w-4,y+h-4,4,4,col);
 }
 
-void kos_DeleteButton(int id)
+void DrawScrolls()
 {
-	kos_DefineButton(NULL, NULL, NULL, NULL, id+BT_DEL, NULL);
+	// HOR
+	scroll_h.x = 0;
+	scroll_h.y = grid.y + grid.h;
+	scroll_h.w = grid.w + SCROLL_SIZE + 1;
+	scroll_h.all_redraw = true;
+	scroll_h.max_area = col_count - 2;
+	scroll_h.cur_area = nx-scroll_x-1;
+	scroll_h.position = scroll_x-1;
+	scrollbar_h_draw((DWORD)&scroll_h);
+
+	// VER
+	scroll_v.x = grid.x + grid.w;
+	scroll_v.y = 0;
+	scroll_v.h = grid.h + 1;
+	scroll_v.all_redraw = true;
+	scroll_v.max_area = row_count - 2;
+	scroll_v.cur_area = ny-scroll_y-1;
+	scroll_v.position = scroll_y-1;
+	scrollbar_v_draw((DWORD)&scroll_v);
 }
+
 
 void start_edit(int x, int y)
 {
@@ -201,10 +179,10 @@ void start_edit(int x, int y)
 	file_box.flags &= ~ed_focus;
 
 	cell_box.flags |= ed_focus;
-	cell_box.left = col_left[x] + 1;
-	cell_box.top = row_top[y] + 1;
-	cell_box.width = col_width[x] - 2;
-	//cell_box.height= row_height[y];
+	cell_box.left = cell_x[x] + 2;
+	cell_box.top = cell_y[y] + 2;
+	cell_box.width = cell_w[x] - 4;
+	//cell_box.height= cell_h[y];
 	memset((Byte*)edit_text, 0, sizeof(edit_text));
 	if (cells[x][y])
 	{
@@ -288,7 +266,7 @@ void move_selection(DWORD new_x, DWORD new_y)
 		sel_y = row_count - 1;
 	sel_end_y = sel_y;
 	check_sel();
-	draw_window();
+	draw_grid();
 }
 
 // x - между low и high ? - необязательно low<high
@@ -300,20 +278,20 @@ bool is_between(Dword x, Dword low, Dword high)
 void clear_cell_slow(int px, int py)
 {
 	int i;
-	int x0 = col_width[0];
+	int x0 = cell_w[0];
 	for (i = scroll_x; i < px; i++)
 	{
-		x0 += col_width[i];
+		x0 += cell_w[i];
 	}
 	int x1 = x0;
-	x1 += col_width[px];
-	int y0 = row_height[0];
+	x1 += cell_w[px];
+	int y0 = cell_h[0];
 	for (i = scroll_y; i < py; i++)
 	{
-		y0 += row_height[i];
+		y0 += cell_h[i];
 	}
 	int y1 = y0;
-	y1 += row_height[py];
+	y1 += cell_h[py];
 	kos_DrawBar(x0 + 1, y0 + 1, x1 - x0 - 1, y1 - y0 - 1, 0xffffff);
 }
 
@@ -323,12 +301,32 @@ void clear_cell_slow(int px, int py)
 #define is_x_changed(v) ((v) == sel_x || (v) == prev_x)
 #define is_y_changed(v) ((v) == sel_y || (v) == prev_y)
 
+void DrawCell(int x, int y, Dword w, Dword h, Dword id, Dword bg_color, char* text, bool header)
+{
+	bool small = false;
+	if (x>grid.x+grid.w || w>grid.w || w<=0) return;
+	if (x+w > grid.x + grid.w) {
+		w = grid.x + grid.w - x;
+		small = true;
+	}
+	if (y+h > grid.y + grid.h) {
+		h = grid.y + grid.h - y;
+		small = true;
+	}
+	kos_DrawBar(x, y, w, h, bg_color);
+	if (!small) {
+		if (id) kos_DefineButton(x+5, y, w-10, h-1, id+BT_NODRAW,0);
+		if (header) kos_WriteTextToWindow( x + w/2 -strlen(text)*3, h/2-4+y, 0x80,TEXT_COLOR,text,0); //WriteTextCenter
+		else kos_DrawCutTextSmall(x+2, h/2-4+y, w-7, TEXT_COLOR, text);
+	}
+}
+
 void draw_grid()
 {
 	int i,j;
-	long x0 = 0, y0 = 0, x = 0, y = 0, dx;
-	DWORD text_color;
+	long x0 = 0, y0 = 0, x = 0, y = 0;
 	DWORD bg_color;
+	kos_DrawBar(0,0,cell_w[0],cell_h[0],HEADER_CELL_COLOR); // left top cell
 
 	nx=ny=0;
 
@@ -340,193 +338,107 @@ void draw_grid()
 	}
 	else
 	{
-		// очистить всю область ячеек
-		//kos_DrawBar(col_width[0]+1, row_height[0]+1, grid.w - SCROLL_SIZE-col_width[0]-1, he - SCROLL_SIZE-row_height[0]-1, 0xffffff);
+		// clean all cells
+		//kos_DrawBar(cell_w[0]+1, cell_h[0]+1, grid.w - SCROLL_SIZE-cell_w[0]-1, he - SCROLL_SIZE-cell_h[0]-1, 0xffffff);
 	}
 
-	col_left[0] = 0;
-	// ячейки - заголовки столбцов + вертикальные линии
-	x = col_width[0]; 
+	// column headers + vertical lines
+	cell_x[0] = 0;
+	x = cell_w[0]; 
 	nx = 1;
-	for (i = 1; i < col_count; i++)
+	for (i = 1; i < col_count && x-x0 < grid.w; i++)
 	{
-		col_left[i] = -1;
+		cell_x[i] = -1;
 		if (i >= scroll_x)
 		{
 			{				
-				if (!sel_moved || is_x_changed(i)) {
-					kos_DrawLine(x-x0, 0, x-x0, row_height[0], GRID_COLOR, 0);
-				}
-				// и заголовок ячейки по х
-				text_color = TEXT_COLOR;
-				dx = (col_width[i]-6)/2;
-				int dy = (row_height[0] - 8) / 2 + 1;
-				int cur_width = col_width[i] - 1;
-				if (cur_width + x - x0 > grid.w)
-					cur_width = grid.w - x + x0 -1;
 				if (!sel_moved || (is_x_changed(i))) {
-					if (is_between(i,sel_x,sel_end_x))	
-					{
-						bg_color = SEL_FIXED_CELL_COLOR; 
-						text_color = TEXT_SEL_FIXED_COLOR;
-					}
-					else
-					{
-						bg_color = FIXED_CELL_COLOR;
-						text_color = TEXT_COLOR;
-					}
-					kos_DrawBar(x - x0 + 1,0,cur_width,row_height[0],bg_color);
-					kos_WriteTextToWindow(x-x0+2+dx,dy,0,text_color,cells[i][0],strlen(cells[i][0]));	
+					if (is_between(i,sel_x,sel_end_x)) bg_color = SEL_HEADER_CELL_COLOR; else bg_color = HEADER_CELL_COLOR;
+					kos_DrawBar(x-x0, 0, 1, grid.h, GRID_COLOR);
+					DrawCell(x-x0+1, 0, cell_w[i]-1, cell_h[0], i+COL_HEAD_BUTTON, bg_color, cells[i][0], true);
 				}
-				// есть кнопка стоблца и еще кнопка изменения ширины 
-				if (x - x0 + col_width[i] <= grid.w - col_width[0])
-				{
-					kos_DeleteButton(COL_HEAD_BUTTON+i);
-					kos_DefineButton(x-x0+5,0,cur_width - 10,row_height[0]-1,BT_NODRAW+COL_HEAD_BUTTON+i,0);
-				}
-				//kos_DefineButton(x-x0+col_width[i]-10,0,15,row_height[0]-1,BT_NODRAW+COL_SIZE_BUTTON+i,0);
-				col_left[i] = x - x0;
-			}
-			if (x - x0 > grid.w - col_width[0])
-			{
-				x += col_width[i];
-				nx++;
-				break;
+				cell_x[i] = x - x0;
 			}
 		}
 		else
 		{
-			x0 += col_width[i];
+			x0 += cell_w[i];
 		}
-		x += col_width[i];
+		x += cell_w[i];
 		nx++;
 	}
 
-	//kos_DefineButton(0,0,0,0,0x80000000+COL_HEAD_BUTTON+i,0);
-
-	for (j = i + 1; j < col_count; j++) 
-		col_left[j] = grid.w;
-	//if (!sel_moved || (is_x_changed(nx))) kos_DrawLine(x - x0, 0, x - x0, grid.h, GRID_COLOR, 0);
-
-	// ячейки - заголовки строк + горизонт. линии
-	y = row_height[0];
+	// row headers + horizontal lines
+	y = cell_h[0];
 	ny = 1;
-	row_top[0] = 0;
-	for (i = 1; i < row_count && y - y0 < grid.h; i++)
+	cell_y[0] = 0;
+	for (i = 1; i < row_count && y-y0 < grid.h; i++)
 	{
-		row_top[i] = -1;
+		cell_y[i] = -1;
 		if (i >= scroll_y)
 		{
 			{
-				if (!sel_moved || (is_y_changed(i))) 
-					kos_DrawLine(0, y - y0, grid.w - 1, y - y0, GRID_COLOR, 0);
-				// и заголовок ячейки по y
-				text_color = TEXT_COLOR;
-				dx = (col_width[0]-6 * strlen(cells[0][i]))/2;	// optimize this, change strlen
-				int dy = (row_height[i] - 8) / 2 + 1;
-				if (!sel_moved || (is_y_changed(i)))
-					if (is_between(i,sel_y,sel_end_y))
-					{
-						kos_DrawBar(0,y-y0+1,col_width[0],row_height[i] - 1,SEL_FIXED_CELL_COLOR);
-						text_color = TEXT_SEL_FIXED_COLOR;
-					}
-					else
-					{
-						kos_DrawBar(0,y-y0+1,col_width[0],row_height[i] - 1,FIXED_CELL_COLOR);
-						text_color = TEXT_COLOR;
-					}
-
-				if (!sel_moved || (is_y_changed(i)))
-					kos_WriteTextToWindow(2+dx,y-y0+dy,0,text_color,cells[0][i],strlen(cells[0][i]));
-
-				kos_DeleteButton(ROW_HEAD_BUTTON+i);
-				kos_DefineButton(0,y-y0+5,col_width[0]-1,row_height[i]-6,BT_NODRAW+ROW_HEAD_BUTTON+i,0);
-				//kos_DefineButton(0,y-y0+row_height[i]-5,col_width[0]-1,10,BT_NODRAW+ROW_SIZE_BUTTON+i,0);
-				row_top[i] = y - y0;
+				if (!sel_moved || (is_y_changed(i))) {
+					if (is_between(i,sel_y,sel_end_y)) bg_color = SEL_HEADER_CELL_COLOR; else bg_color = HEADER_CELL_COLOR;
+					kos_DrawBar(0, y-y0, grid.w, 1, GRID_COLOR);
+					DrawCell(0, y-y0+1, cell_w[0], cell_h[i]-1, i+ROW_HEAD_BUTTON, bg_color, cells[0][i], true);
+				}
+				cell_y[i] = y - y0;
 			}
 		}
 		else
 		{
-			y0 += row_height[i];
+			y0 += cell_h[i];
 		}
-		y += row_height[i];
+		y += cell_h[i];
 		ny++;
 	}
 	
-	kos_DefineButton(0,0,0,0,0x80000000+ROW_HEAD_BUTTON+ny-1,0);
-
-	for (j = i + 1; j < row_count; j++)
-		row_top[j] = grid.h;
-	if (!sel_moved || (is_y_changed(ny))) 
-		kos_DrawLine(0, y - y0, grid.w, y - y0, GRID_COLOR, 0);
-
-	if (!sel_moved || (is_x_changed(0) && is_y_changed(0)))
-		kos_DrawBar(0,0,col_width[0],row_height[0],FIXED_CELL_COLOR); 
-	// ЛВ ячейка
-
-	//sprintf(debuf, "%U, %U; %U, %U", x0, y0, nx, ny);
-	//rtlDebugOutString(debuf);
-
 	// cells itself
-
-	y = row_height[0];
+	y = cell_h[0];
 	for (i = scroll_y; i < ny; i++)
 	{
-		x = col_width[0];
-		if (!sel_moved)
-			kos_DrawBar(col_width[0]+1, y+1, grid.w -col_width[0]-1, row_height[i]-1, 0xffffff);
-		for (j = scroll_x; j < nx-1; j++)
+		x = cell_w[0];
+		for (j = scroll_x; j < nx; j++)
 		{
-			if (!sel_moved || is_x_changed(j) || is_y_changed(i)) 
-				kos_DrawLine(col_left[j], row_top[i], col_left[j], row_height[i], GRID_COLOR, 0);
-
-			// заголовки уже нарисованы - пропускаем их
-			if (i && j)	
+			if (i && j)	//no need to draw headers one more
 			{
-				//kos_DrawBar(x+1, y+1, col_width[i]-1, row_height[i]-1, 0xffffff);
+				bool draw_frame_selection = false;
+				bool error = false;
+				bg_color = CELL_COLOR;
 
-				//rtlDebugOutString(cap);
-				//if (j >= sel_x && j <= sel_end_x && i >= sel_y && i <= sel_end_y)
-				if (is_between(j,sel_x,sel_end_x) && is_between(i, sel_y, sel_end_y)	// (j,i) - âûäåëåíà
-				&& ((!sel_moved) || (is_x_changed(j) && is_y_changed(i))))			// è åå íóæíî íàðèñîâàòü
+				if (is_between(j,sel_x,sel_end_x) && is_between(i, sel_y, sel_end_y)	// (j,i) - selected
+				&& ((!sel_moved) || (is_x_changed(j) && is_y_changed(i))))			// and we must draw it
 				{
-					if (i == sel_y && j == sel_x) // frame
+					if (i == sel_y && j == sel_x)
 					{
-						DrawSelectedFrame(x+1,y, col_width[j]-1, row_height[j], TEXT_COLOR);
-						drag_x = x + col_width[j] - 4;
-						drag_y = y + row_height[i] - 4;
+						draw_frame_selection = true;
+						drag_x = x + cell_w[j] - 4;
+						drag_y = y + cell_h[i] - 4;
 					}
-					else
-						kos_DrawBar(x + 1,y + 1,col_width[j] - 2,row_height[i] - 2,SEL_CELL_COLOR);	//	âûäåëåíà íî íå îñíîâíàÿ(ñåðàÿ)
-
+					else {
+						bg_color = SEL_CELL_COLOR; // selected but not main
+					}
 				}
-				//kos_DefineButton(x,y,col_width[j]-1,row_height[i]-1,BT_NODRAW+CELL_BUTTON+((i << 8) + j),0);
 
 				char *text;
 				if (values[j][i] && values[j][i][0] == '#')
 				{
 					text = cells[j][i];
-					kos_DrawRegion(x+1, y+1, col_width[j]-1, row_height[i]-1, 0xff0000, 0);
+					error = true;
 				}
-				else
+				else {
 					text = (values[j][i] && !display_formulas ? values[j][i] : cells[j][i]);
+				}
 
-				int dy = (row_height[i] - 8) / 2 + 1;
-
-				if (text)
-					if (strlen(text) < col_width[j]/6)
-						kos_WriteTextToWindow(x+2,y+dy,0,text_color,text,strlen(text));
-					else
-						kos_WriteTextToWindow(x+2,y+dy,0,text_color,text,col_width[j]/6);
-
+				DrawCell(x+1, y+1, cell_w[j]-1, cell_h[i]-1, 0, bg_color, text, false);
+				if (draw_frame_selection) DrawSelectedFrame(x+1,y, cell_w[j]-1, cell_h[i], TEXT_COLOR);
+				else if (error) kos_DrawRegion(x+1, y+1, cell_w[j]-1, cell_h[i]-1, 0xff0000, 0);
 			}
-			if (!sel_moved || is_x_changed(j) || is_y_changed(i))  
-				kos_DrawLine(col_left[j]+col_width[j], row_top[i], col_left[j]+col_width[j], row_height[i], GRID_COLOR, 0);
-			x += col_width[j];
+			x += cell_w[j];
 		} 
-		y += row_height[i];
+		y += cell_h[i];
 	}
-
 	DrawScrolls();
 }
 
@@ -539,9 +451,9 @@ void draw_size_grid()
 	{
 		int x, x0, i;
 
-		x = col_width[0]; 
+		x = cell_w[0]; 
 		x0 = 0;
-		for (i = 1; i < col_count && x - x0 + col_width[i] < grid.w - 10; i++)
+		for (i = 1; i < col_count && x - x0 + cell_w[i] < grid.w - 10; i++)
 		{
 			if (i >= scroll_x)
 			{
@@ -549,8 +461,8 @@ void draw_size_grid()
 					kos_DrawLine(x - x0, 0, x - x0, grid.h, 0, 1);
 			}
 			else
-				x0 += col_width[i];
-			x += col_width[i];
+				x0 += cell_w[i];
+			x += cell_w[i];
 		}
 		kos_DrawLine(x - x0, 0, x - x0, grid.h, 0, 1);
 	}
@@ -558,9 +470,9 @@ void draw_size_grid()
 	{
 		int y, y0, i;
 
-		y = row_height[0]; 
+		y = cell_h[0]; 
 		y0 = 0;
-		for (i = 1; i < col_count && y - y0 + row_height[i] < grid.h - 10; i++)
+		for (i = 1; i < col_count && y - y0 + cell_h[i] < grid.h - 10; i++)
 		{
 			if (i >= scroll_y)
 			{
@@ -568,8 +480,8 @@ void draw_size_grid()
 					kos_DrawLine(0, y - y0, grid.w, y - y0, 0, 1);
 			}
 			else
-				y0 += row_height[i];
-			y += row_height[i];
+				y0 += cell_h[i];
+			y += cell_h[i];
 		}
 		kos_DrawLine(0, y - y0, grid.w, y - y0, 0, 1);
 	}
@@ -584,16 +496,15 @@ void draw_size_grid()
 void draw_drag()
 {
 	// inverted lines
-
 	int k0 = min(sel_x, sel_end_x);
 	int k1 = max(sel_x, sel_end_x);
 	int n0 = min(sel_y, sel_end_y);
 	int n1 = max(sel_y, sel_end_y);
 
-	DWORD x0 = col_left[k0] - 1;
-	DWORD x1 = col_left[k1] + col_width[k1] + 1;
-	DWORD y0 = row_top[n0] - 1;	
-	DWORD y1 = row_top[n1] + row_height[n1] + 1;
+	DWORD x0 = cell_x[k0] - 1;
+	DWORD x1 = cell_x[k1] + cell_w[k1] + 1;
+	DWORD y0 = cell_y[n0] - 1;	
+	DWORD y1 = cell_y[n1] + cell_h[n1] + 1;
 	if (x0 > grid.w - 1) x0 = grid.w - 1;
 	if (x1 > grid.w - 1) x1 = grid.w - 1;
 	if (y0 > grid.h - 1) y0 = grid.h - 1;
@@ -621,7 +532,7 @@ bool draw_and_define_window()
 
 	grid.x = 0;
 	grid.y = 0;
-	grid.w = cWidth - SCROLL_SIZE;
+	grid.w = cWidth - SCROLL_SIZE - 1;
 	grid.h = cHeight - MENU_PANEL_HEIGHT - SCROLL_SIZE;
 
 	if (info.processInfo.status_window&0x04) return false; //draw nothing if window is rolled-up
@@ -629,23 +540,20 @@ bool draw_and_define_window()
 	if (grid.h < 100) { kos_ChangeWindow( -1, -1, -1, 180 ); return false; }
 	if (grid.w < 340) { kos_ChangeWindow( -1, -1, 350, -1 ); return false; }
 
+	sel_moved = 0;
+
 	return true;
 }
 
 void draw_window()
 {
 
-	if (sel_end_move)
-		sel_moved = 0;
+	if (sel_end_move) sel_moved = 0;
 
-	panel_y = cHeight - MENU_PANEL_HEIGHT;
+	panel_y = cHeight - MENU_PANEL_HEIGHT + 1;
 
-	if (!sel_moved)
-	{
-		kos_DrawBar(cWidth-SCROLL_SIZE, panel_y - SCROLL_SIZE, SCROLL_SIZE, SCROLL_SIZE, PANEL_BG_COLOR);
-		kos_DrawBar(0, panel_y, cWidth, MENU_PANEL_HEIGHT, PANEL_BG_COLOR);
-		kos_WriteTextToWindow(3 + 1, panel_y + 16, 0x80, 0x000000, (char*)sFilename, 0);	
-	}
+	kos_DrawBar(0, panel_y, cWidth, MENU_PANEL_HEIGHT-1, PANEL_BG_COLOR);
+	kos_WriteTextToWindow(3 + 1, panel_y + 16, 0x80, 0x000000, (char*)sFilename, 0);	
 
 	file_box.top = panel_y + 12;
 
@@ -685,9 +593,6 @@ void process_mouse()
 
 	int vert, hor;
 	kos_GetScrollInfo(vert, hor);
-
-	//sprintf(debuf, "scroll %U %U", vert, hor);
-	//rtlDebugOutString(debuf);
 		
 	if (vert != 0)
 	{
@@ -743,13 +648,13 @@ void process_mouse()
 			old_end_x = sel_end_x;
 			old_end_y = sel_end_y;
 		}
-		else if (mouse_y <= row_height[0])
+		else if (mouse_y <= cell_h[0])
 		{
-			//rtlDebugOutString("can resize cols");
+			//rtlDebugOutString("can resize col_count");
 			int kx = -1, i;
 			for (i = 0; i < col_count - 1; i++)
-			if (mouse_x >= col_left[i] + col_width[i] - 5 &&
-				mouse_x <= col_left[i + 1] + 5)
+			if (mouse_x >= cell_x[i] + cell_w[i] - 5 &&
+				mouse_x <= cell_x[i + 1] + 5)
 			{
 				kx = i; break;
 			}
@@ -761,12 +666,12 @@ void process_mouse()
 				size_state = SIZE_X;
 			}
 		}
-		else if (mouse_x <= col_width[0])
+		else if (mouse_x <= cell_w[0])
 		{
 			int ky = -1;
 			for (i = 0; i < row_count - 1; i++)
-			if (mouse_y >= row_top[i] + row_height[i] - 5 &&
-				mouse_y <= row_top[i + 1] + 5)
+			if (mouse_y >= cell_y[i] + cell_h[i] - 5 &&
+				mouse_y <= cell_y[i + 1] + 5)
 			{
 				ky = i; break;
 			}
@@ -777,20 +682,20 @@ void process_mouse()
 			}
 		}
 		else		// click on cell
-		if (mouse_x <= col_left[nx - 1] &&  mouse_y <= row_top[ny - 1])
+		if (mouse_x <= cell_x[nx - 1] &&  mouse_y <= cell_y[ny - 1])
 		{
 			was_single_selection = sel_x == sel_end_x && sel_y == sel_end_y;
 			int kx = -1, i;
 			for (i = 0; i < col_count - 1; i++)
-			if (mouse_x >= col_left[i] &&
-				mouse_x <= col_left[i] + col_width[i])
+			if (mouse_x >= cell_x[i] &&
+				mouse_x <= cell_x[i] + cell_w[i])
 			{
 				kx = i; break;
 			}
 			int ky = -1;
 			for (i = 0; i < row_count - 1; i++)
-			if (mouse_y >= row_top[i] &&
-				mouse_y <= row_top[i] + row_height[i])
+			if (mouse_y >= cell_y[i] &&
+				mouse_y <= cell_y[i] + cell_h[i])
 			{
 				ky = i; break;
 			}
@@ -834,21 +739,21 @@ void process_mouse()
 	if (size_state == SIZE_X && mouse_x != size_mouse_x)
 	{
 		draw_size_grid();
-		col_width[size_id] += mouse_x - size_mouse_x;
-		if (col_width[size_id] < 15)
-			col_width[size_id] = 15;
-		else if (col_width[size_id] > grid.w / 2)
-			col_width[size_id] = grid.w / 2;
+		cell_w[size_id] += mouse_x - size_mouse_x;
+		if (cell_w[size_id] < 15)
+			cell_w[size_id] = 15;
+		else if (cell_w[size_id] > grid.w / 2)
+			cell_w[size_id] = grid.w / 2;
 		draw_size_grid();
 	}
 	if (size_state == SIZE_Y && mouse_y != size_mouse_y)
 	{
 		draw_size_grid();
-		row_height[size_id] += mouse_y - size_mouse_y;
-		if (row_height[size_id] < 15)
-			row_height[size_id] = 15;
-		else if (row_height[size_id] > grid.h / 2)
-			row_height[size_id] = grid.h / 2;
+		cell_h[size_id] += mouse_y - size_mouse_y;
+		if (cell_h[size_id] < 15)
+			cell_h[size_id] = 15;
+		else if (cell_h[size_id] > grid.h / 2)
+			cell_h[size_id] = grid.h / 2;
 		draw_size_grid();
 	}
 	if ((size_state == SIZE_SELECT || size_state == SIZE_DRAG) && (mouse_x != size_mouse_x || mouse_y != size_mouse_y))
@@ -856,22 +761,22 @@ void process_mouse()
 		draw_drag();
 		int kx = -1, i;
 		for (i = 0; i < col_count - 1; i++)
-			if (mouse_x >= col_left[i] &&
-				mouse_x <= col_left[i + 1])
+			if (mouse_x >= cell_x[i] &&
+				mouse_x <= cell_x[i + 1])
 			{
-				//sprintf(debuf, "yyy %U",col_left[i+1]);
+				//sprintf(debuf, "yyy %U",cell_x[i+1]);
 				//rtlDebugOutString(debuf);
 				kx = i; break;
 			}
 		int ky = -1;
 		for (i = 0; i < row_count - 1; i++)
-			if (mouse_y >= row_top[i] &&
-				mouse_y <= row_top[i + 1])
+			if (mouse_y >= cell_y[i] &&
+				mouse_y <= cell_y[i + 1])
 			{
 				ky = i; break;
 			}
 		if (kx != -1) sel_end_x = kx;
-		if (kx != -1) sel_end_y = ky;
+		if (ky != -1) sel_end_y = ky;
 		if (size_state == SIZE_DRAG)
 		{
 			if (abs(sel_end_x - sel_x) > 0)
@@ -899,9 +804,6 @@ void process_key()
 	ckeys = kos_GetSpecialKeyState();
 	shift = ckeys & 0x3;
 	ctrl = ckeys & 0x0c;
-	//if (ctrl)
-	//	rtlDebugOutString("control pressed!");
-	dx = 0, dy = 0;
 	sel_moved = 0;
 	sel_end_move = 0;
 	kos_GetKey(keyCode);
@@ -917,40 +819,22 @@ void process_key()
 	switch (keyCode)
 	{
 		case 178:
-			//dx = 0;
 			dy = -1;
 			break;
 		case 176:
 			dx = -1;
-			//dy = 0;
 			break;
 		case 179:
 			dx = 1;
-			//dy = 0;
 			break;
 		case 177:
-			//dx = 0;
 			dy = 1;
 			break;
 		case 183:
-		/*
-			if (sel_y < row_count-(ny - scroll_y))	// page down
-				dy = ny - scroll_y;
-			else
-				dy = row_count-(ny - scroll_y) - sel_y;
-			dx = 0;
-			redraw = 1;
-		*/
+			dy = ny - scroll_y-1;
 			break;
 		case 184:
-		/*
-			if (sel_y > ny - scroll_y)		// page up
-				dy= - (ny - scroll_y);
-			else
-				dy = - (ny - scroll_y) + sel_y;
-			dx = 0;
-			redraw = 1;
-		*/
+			dy = - (ny - scroll_y);
 			break;
 		case 180: //home
 			dx = -sel_x + 1;
@@ -1173,7 +1057,6 @@ void process_button()
 {
 	Dword mouse_btn, ckeys, shift, ctrl;
 	int mouse_x, mouse_y, i, p, dx = 0, dy = 0;
-	int redraw = 0;
 
 	Dword button;
 	if (!kos_GetButtonID(button)) return;

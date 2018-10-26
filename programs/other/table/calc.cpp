@@ -6,13 +6,15 @@
 #include "kosSyst.h"
 //#include "KosFile.h"
 
-extern DWORD def_col_width, def_row_height;
+#define DEFAULT_CELL_W 80
+#define DEFAULT_CELL_H 19
+
 extern DWORD col_count, row_count;
 extern char ***cells;
-extern DWORD *col_width, *row_height;
+extern DWORD *cell_w, *cell_h;
 extern char ***values;
 
-extern DWORD *col_left, *row_top;
+extern DWORD *cell_x, *cell_y;
 
 // буфер обмена
 extern char ***buffer;
@@ -20,6 +22,11 @@ extern DWORD buf_col, buf_row;
 extern DWORD buf_old_x, buf_old_y;
 
 extern bool sel_moved;
+
+extern struct GRID
+{
+	int x,y,w,h;
+} grid;
 
 int cf_x0, cf_x1, cf_y0, cf_y1;
 
@@ -45,7 +52,7 @@ int get_x(int x)
 	if (x > col_count) 
 		x = col_count;
 	for (i = 0; i < x; i++)
-		r+=col_width[i];
+		r+=cell_w[i];
 	return r;
 }
 
@@ -56,7 +63,7 @@ int get_y(int y)
 	if (y > row_count) 
 		y = row_count;
 	for (i = 0; i < y; i++)
-		r+=row_height[i];
+		r+=cell_h[i];
 	return r;
 }
 
@@ -106,22 +113,19 @@ void init()
 {
 	int i, j;
 
-	//col_count = WND_W / def_col_width;
-	//row_count = WND_H / def_row_height;
-
-	col_width = (DWORD*)allocmem(col_count * sizeof(DWORD));
-	row_height = (DWORD*)allocmem(row_count * sizeof(DWORD));
-	col_left = (DWORD*)allocmem(col_count * sizeof(DWORD));
-	row_top = (DWORD*)allocmem(row_count * sizeof(DWORD));
+	cell_w = (DWORD*)allocmem(col_count * sizeof(DWORD));
+	cell_h = (DWORD*)allocmem(row_count * sizeof(DWORD));
+	cell_x = (DWORD*)allocmem(col_count * sizeof(DWORD));
+	cell_y = (DWORD*)allocmem(row_count * sizeof(DWORD));
 	for (i = 0; i < col_count; i++)
 	{
-		col_width[i] = def_col_width;
+		cell_w[i] = DEFAULT_CELL_W;
 	}
-	col_width[0] = 30;
+	cell_w[0] = 30; //make row headers smaller
 
 	for (i = 0; i < row_count; i++)
 	{
-		row_height[i] = def_row_height;
+		cell_h[i] = DEFAULT_CELL_H;
 	}
 
 	cells = (char***)allocmem(col_count * sizeof(char**));
@@ -151,12 +155,12 @@ void reinit()
 
 	for (i = 0; i < col_count; i++)
 	{
-		col_width[i] = def_col_width;
+		cell_w[i] = DEFAULT_CELL_W;
 	}
 
 	for (i = 0; i < row_count; i++)
 	{
-		row_height[i] = def_row_height;
+		cell_h[i] = DEFAULT_CELL_H;
 	}
 
 	for (i = 1; i < col_count; i++)
@@ -486,7 +490,7 @@ int SaveFile(char *fname)
 	{
 		char smalbuf[32];
 		memset((Byte*)smalbuf,0,32);
-		sprintf(smalbuf, "%U,", col_width[i]);
+		sprintf(smalbuf, "%U,", cell_w[i]);
 		strcpy(buffer+strlen(buffer),smalbuf);
 	}
 	buffer[strlen(buffer)-1] = '\n';	// заменили последнюю запятую на перевод строки
@@ -508,7 +512,7 @@ int SaveFile(char *fname)
 	{
 		char smalbuf[32];
 		memset((Byte*)smalbuf,0,32);
-		sprintf(smalbuf, "%U,", row_height[i]);
+		sprintf(smalbuf, "%U,", cell_h[i]);
 		strcpy(buffer+strlen(buffer),smalbuf);
 	}
 	buffer[strlen(buffer)-1] = '\n';	// заменили последнюю запятую на перевод строки
@@ -769,13 +773,13 @@ int LoadFile(char *fname)
 			}
 			*d = '\0';
 			i = atoi(buffer);
-			col_width[items++] = i;
+			cell_w[items++] = i;
 			if (items == col_count)
 			{
 				step++;
 				items = 1;	//	теперь высоты строк читать мы будем смело
 							//  чтоб их восстановить и было как всегда
-				//sprintf(debuf, "cols read done last buf %S file pos %U",buffer,fileInfo.OffsetLow);
+				//sprintf(debuf, "col_count read done last buf %S file pos %U",buffer,fileInfo.OffsetLow);
 				//rtlDebugOutString(debuf);
 			}
 			d+=2;
@@ -793,7 +797,7 @@ int LoadFile(char *fname)
 			}
 			*d = '\0';
 			i = atoi(buffer);
-			row_height[items++] = i;
+			cell_h[items++] = i;
 			/*if (items > 5)
 			{
 				sprintf(debuf, "set row from %S hei %U %U",buffer,items-1,i);

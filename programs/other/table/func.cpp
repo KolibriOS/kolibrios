@@ -7,34 +7,22 @@ int SysColor = 0;
 char debuf[50] = "";
 
 
-// почему-то не было в стандартной библиотеке
-void kos_DrawLine( Word x1, Word y1, Word x2, Word y2, Dword colour, Dword invert )
+void kos_DrawRegion(Word x, Word y,Word width, Word height, Dword color1, Word invert)
 {
-	Dword arg1, arg2, arg3;
+	kos_DrawLine(x,y,x+width-2,y,color1,invert);
+	kos_DrawLine(x,y+1,x,y+height-1,color1,invert);
+	kos_DrawLine(x+width-1,y,x+width-1,y+height-2,color1,invert);
+	kos_DrawLine(x+1,y+height-1,x+width-1,y+height-1,color1,invert);
+}
 
-	//
-	arg1 = ( x1 << 16 ) | x2;
-	arg2 = ( y1 << 16 ) | y2;
-	arg3 = (invert)?0x01000000:colour;
-	//
-	__asm{
-		mov eax, 38
-		mov ebx, arg1
-		mov ecx, arg2
-		mov edx, arg3
-		int 0x40
+void kos_DrawCutTextSmall(Word x, Word y, int areaWidth, Dword textColour, char *textPtr)
+{
+	if (textPtr) {
+		int textLen = strlen(textPtr);
+		if (textLen*6 > areaWidth) textLen = areaWidth / 6;
+		kos_WriteTextToWindow(x,y,0,textColour,textPtr,textLen);	
 	}
 }
-
-// похищено из библиотеки к C--
-void DrawRegion(Dword x,Dword y,Dword width,Dword height,Dword color1)
-{
-	kos_DrawBar(x,y,width,1,color1); //полоса гор сверху
-	kos_DrawBar(x,y+height,width,1,color1); //полоса гор снизу
-	kos_DrawBar(x,y,1,height,color1); //полоса верт слева
-	kos_DrawBar(x+width,y,1,height+1,color1); //полоса верт справа
-}
-
 
 // да, это баян
 int atoi(const char* string)
