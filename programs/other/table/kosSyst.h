@@ -68,10 +68,24 @@ struct kosFileInfo
 {
 	Dword rwMode;
 	Dword OffsetLow;
-	Dword OffsetHigh;
+	char* OffsetHigh;
 	Dword dataCount;
 	Byte *bufferPtr;
 	char fileURL[MAX_PATH];
+};
+
+
+struct kosSysColors {
+	Dword nonset1;
+	Dword nonset2;
+	Dword work_dark;
+	Dword work_light;
+	Dword window_title;
+	Dword work;
+	Dword work_button;
+	Dword work_button_text;
+	Dword work_text;
+	Dword work_graph;
 };
 
 
@@ -228,8 +242,8 @@ void kos_DisplayNumberToWindow(
    eNumberBase nBase = nbDecimal,
    bool valueIsPointer = false
    );
-// function 58 доступ к файловой системе
-Dword kos_FileSystemAccess( kosFileInfo *fileInfo );
+// 48.3: get system colors
+bool kos_GetSystemColors( kosSysColors *sc );
 // function 63
 void kos_DebugOutChar( char ccc );
 //
@@ -242,8 +256,11 @@ void kos_ChangeWindow( Dword x, Dword y, Dword sizeX, Dword sizeY );
 bool kos_ApplicationMemoryResize( Dword targetSize );
 // function 66 режим получения данных от клавиатуры
 void kos_SetKeyboardDataMode( Dword mode );
-
+// 68.11: init heap
 void kos_InitHeap();
-
+// function 70 доступ к файловой системе
+Dword kos_FileSystemAccess( kosFileInfo *fileInfo );
+// 70.7: run Kolibri application with param
+int kos_AppRun(char* app_path, char* param);
 //
 void kos_Main();

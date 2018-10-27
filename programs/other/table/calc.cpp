@@ -6,8 +6,8 @@
 #include "kosSyst.h"
 //#include "KosFile.h"
 
-#define DEFAULT_CELL_W 80
-#define DEFAULT_CELL_H 19
+#define DEFAULT_CELL_W 82
+#define DEFAULT_CELL_H 21
 
 extern DWORD col_count, row_count;
 extern char ***cells;
@@ -157,6 +157,7 @@ void reinit()
 	{
 		cell_w[i] = DEFAULT_CELL_W;
 	}
+	cell_w[0] = 30; //make row headers smaller
 
 	for (i = 0; i < row_count; i++)
 	{

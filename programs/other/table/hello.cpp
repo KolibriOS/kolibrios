@@ -6,41 +6,40 @@
 #include "calc.h"
 #include "use_library.h"
 
-#define TABLE_VERSION "0.98.7"
+#define TABLE_VERSION "0.98.9"
 
-// строки, которые выводит программа
+// strings
 const char *sFileSign = "KolibriTable File\n";
 const char sFilename[] = "Filename:";
 const char sSave[] = "Save";
 const char sLoad[] = "Load";
 const char sNew[] = "New";
 
-const char er_file_not_found[] = "Cannot open file. ";
-const char er_format[] = "Error: bad format. ";
-const char msg_save[] = "File saved. ";
-const char msg_load[] = "File loaded. ";
-const char msg_new[] = "Memory cleared. ";
+const char er_file_not_found[] = "'Cannot open file' -E";
+const char er_format[] = "'Error: bad format' -E";
+const char msg_save[] = "'File saved' -O";
+const char msg_load[] = "'File loaded' -O";
+const char msg_new[] = "'Memory cleared' -I";
 
 // initial window sizes
-#define WND_W 640
-#define WND_H 480
+#define WND_W 718
+#define WND_H 514
 // new window size and coordinates
 int cWidth;
 int cHeight;
+kosSysColors sc;
+// bottom panel
+#define MENU_PANEL_HEIGHT 40
 
 // interface colors
 #define GRID_COLOR 0xa0a0a0
 #define TEXT_COLOR 0x000000
 #define CELL_COLOR 0xffffff
-#define SEL_CELL_COLOR 0xe0e0ff
+#define CELL_COLOR_ACTIVE 0xe0e0ff
 #define HEADER_CELL_COLOR 0xE9E7E3
-#define SEL_HEADER_CELL_COLOR 0xC4C5BA //0xBBBBFF
-#define PANEL_BG_COLOR 0xe4dfe1
-
-#define SCROLL_SIZE 16
+#define HEADER_CELL_COLOR_ACTIVE 0xC4C5BA //0xBBBBFF
 
 // button IDs
-#define FILENAME_BUTTON 0x10
 #define SAVE_BUTTON 0x11
 #define LOAD_BUTTON 0x12
 #define NEW_BUTTON 0x13
@@ -52,25 +51,28 @@ int cHeight;
 #define ROW_HEAD_BUTTON (COL_HEAD_BUTTON + 0x100)
 #define CELL_BUTTON (ROW_HEAD_BUTTON + 0x100)
 
-// bottom panel
-#define MENU_PANEL_HEIGHT 40
-Dword panel_y = 0;
-
 // editbox data
-char edit_text[256] = "";
-edit_box cell_box = {0,9*8-5,WND_H - 16-32,0xffffff,0x6a9480,0,0x808080,0,255,(dword)&edit_text,0,0};
+char edit_text[256];
+edit_box cell_box = {0,9*8-6,WND_H - 16-32,0xffffff,0x94AECE,0,0x808080,0x10000000,255,(dword)&edit_text,0,0};
+
+// scrolls
+#define SCROLL_SIZE 16
 scroll_bar scroll_v = { SCROLL_SIZE,200,398, NULL, SCROLL_SIZE,0,115,15,0,0xeeeeee,0xD2CED0,0x555555,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1};
 scroll_bar scroll_h = { 200,NULL,SCROLL_SIZE, NULL, SCROLL_SIZE,0,115,15,0,0xeeeeee,0xD2CED0,0x555555,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1};
 
 // ячейки - их параметры и текст
-DWORD col_count = 100, row_count = 100;
+DWORD col_count = 101, row_count = 101;
 DWORD *cell_w, *cell_h;
 char ***cells;
 
 struct GRID
 {
 	int x,y,w,h;
-} grid;
+	int firstx, firsty; // cell x:y in the top left corner
+} grid = {
+	0,0,NULL,NULL,
+	1,1
+};
 
 char ***values;	// значения формул, если есть
 
@@ -84,8 +86,6 @@ char ***buffer = NULL;
 DWORD buf_col, buf_row;
 DWORD buf_old_x, buf_old_y;
 
-// это координаты ячейки, отображаемой в ЛВ угле
-DWORD scroll_x = 1, scroll_y = 1;
 // это выделенная ячейка
 DWORD sel_x = 1, sel_y = 1;
 DWORD prev_x = 0, prev_y = 0;	// предыдущая выделенная
@@ -108,7 +108,7 @@ DWORD nx = 0, ny = 0;
 // редактирование имени файла
 bool fn_edit = 0;
 char fname[256];
-edit_box file_box = {98,9*8-5,WND_H - 16-32,0xffffff,0x6a9480,0,0x808080,0,255,(dword)&fname,0,0};
+edit_box file_box = {160,9*8+12,WND_H - 16-32,0xffffff,0x94AECE,0,0x808080,0x10000000,255,(dword)&fname,0,0};
 
 // изменение размеров
 #define SIZE_X 1 // состояние
@@ -141,8 +141,8 @@ void DrawScrolls()
 	scroll_h.w = grid.w + SCROLL_SIZE + 1;
 	scroll_h.all_redraw = true;
 	scroll_h.max_area = col_count - 2;
-	scroll_h.cur_area = nx-scroll_x-1;
-	scroll_h.position = scroll_x-1;
+	scroll_h.cur_area = nx-grid.firstx-1;
+	scroll_h.position = grid.firstx-1;
 	scrollbar_h_draw((DWORD)&scroll_h);
 
 	// VER
@@ -151,8 +151,8 @@ void DrawScrolls()
 	scroll_v.h = grid.h + 1;
 	scroll_v.all_redraw = true;
 	scroll_v.max_area = row_count - 2;
-	scroll_v.cur_area = ny-scroll_y-1;
-	scroll_v.position = scroll_y-1;
+	scroll_v.cur_area = ny-grid.firsty-1;
+	scroll_v.position = grid.firsty-1;
 	scrollbar_v_draw((DWORD)&scroll_v);
 }
 
@@ -160,14 +160,14 @@ void DrawScrolls()
 void start_edit(int x, int y)
 {
 	int ch = 0;
-	if (x < scroll_x || x > nx - 1)
+	if (x < grid.firstx || x > nx - 1)
 	{
-		scroll_x = x;
+		grid.firstx = x;
 		ch = 1;
 	}
-	if (y < scroll_y || y > ny - 1)
+	if (y < grid.firsty || y > ny - 1)
 	{
-		scroll_y = y;
+		grid.firsty = y;
 		ch = 1;
 	}
 	if (ch)
@@ -179,17 +179,17 @@ void start_edit(int x, int y)
 	file_box.flags &= ~ed_focus;
 
 	cell_box.flags |= ed_focus;
-	cell_box.left = cell_x[x] + 2;
-	cell_box.top = cell_y[y] + 2;
-	cell_box.width = cell_w[x] - 4;
-	//cell_box.height= cell_h[y];
+	cell_box.left = cell_x[x] + 1;
+	cell_box.top = cell_y[y];
+	cell_box.width = cell_w[x] - 2;
 	memset((Byte*)edit_text, 0, sizeof(edit_text));
 	if (cells[x][y])
 	{
 		strcpy(edit_text, cells[x][y]);
 		edit_text[strlen(cells[x][y]) - 1] = '\0';
 	}
-	cell_box.pos = cell_box.offset = 0;
+	cell_box.pos = cell_box.size = strlen(edit_text);
+	cell_box.offset = 0;
 
 	draw_window();
 }
@@ -224,25 +224,25 @@ void cancel_edit()
 
 void check_sel()
 {
-	DWORD sx0=scroll_x, sy0=scroll_y;
+	DWORD sx0=grid.firstx, sy0=grid.firsty;
 
-	if (sel_x >= nx - 1  /*&& sel_x < col_count - nx + scroll_x + 1*/)
+	if (sel_x >= nx - 1  /*&& sel_x < col_count - nx + grid.firstx + 1*/)
 		//if (sel_x == nx)
-			scroll_x++;
+			grid.firstx++;
 		//else
-		//	scroll_x = sel_x;
-	if (sel_y >= ny - 1 /*&& sel_y < row_count - ny + scroll_y */)
+		//	grid.firstx = sel_x;
+	if (sel_y >= ny - 1 /*&& sel_y < row_count - ny + grid.firsty */)
 		//if (sel_y == ny)
-			scroll_y++;
+			grid.firsty++;
 		//else
-		//	scroll_y = sel_y;
+		//	grid.firsty = sel_y;
 
-	if (sel_x < scroll_x)
-		scroll_x = sel_x;
-	if (sel_y < scroll_y)
-		scroll_y = sel_y;
+	if (sel_x < grid.firstx)
+		grid.firstx = sel_x;
+	if (sel_y < grid.firsty)
+		grid.firsty = sel_y;
 
-	if (sx0 != scroll_x || sy0 != scroll_y)
+	if (sx0 != grid.firstx || sy0 != grid.firsty)
 		sel_moved = 0;			// надо перерисовать все
 
 }
@@ -279,14 +279,14 @@ void clear_cell_slow(int px, int py)
 {
 	int i;
 	int x0 = cell_w[0];
-	for (i = scroll_x; i < px; i++)
+	for (i = grid.firstx; i < px; i++)
 	{
 		x0 += cell_w[i];
 	}
 	int x1 = x0;
 	x1 += cell_w[px];
 	int y0 = cell_h[0];
-	for (i = scroll_y; i < py; i++)
+	for (i = grid.firsty; i < py; i++)
 	{
 		y0 += cell_h[i];
 	}
@@ -316,8 +316,8 @@ void DrawCell(int x, int y, Dword w, Dword h, Dword id, Dword bg_color, char* te
 	kos_DrawBar(x, y, w, h, bg_color);
 	if (!small) {
 		if (id) kos_DefineButton(x+5, y, w-10, h-1, id+BT_NODRAW,0);
-		if (header) kos_WriteTextToWindow( x + w/2 -strlen(text)*3, h/2-4+y, 0x80,TEXT_COLOR,text,0); //WriteTextCenter
-		else kos_DrawCutTextSmall(x+2, h/2-4+y, w-7, TEXT_COLOR, text);
+		if (header) kos_WriteTextToWindow( x + w/2 -strlen(text)*4, h/2-7+y, 0x90,TEXT_COLOR,text,0); //WriteTextCenter
+		else kos_DrawCutTextSmall(x+3, h/2-7+y, w-7, TEXT_COLOR, text);
 	}
 }
 
@@ -327,6 +327,8 @@ void draw_grid()
 	long x0 = 0, y0 = 0, x = 0, y = 0;
 	DWORD bg_color;
 	kos_DrawBar(0,0,cell_w[0],cell_h[0],HEADER_CELL_COLOR); // left top cell
+
+	//kos_DebugValue("sel_moved", sel_moved);
 
 	nx=ny=0;
 
@@ -349,14 +351,14 @@ void draw_grid()
 	for (i = 1; i < col_count && x-x0 < grid.w; i++)
 	{
 		cell_x[i] = -1;
-		if (i >= scroll_x)
+		if (i >= grid.firstx)
 		{
 			{				
-				if (!sel_moved || (is_x_changed(i))) {
-					if (is_between(i,sel_x,sel_end_x)) bg_color = SEL_HEADER_CELL_COLOR; else bg_color = HEADER_CELL_COLOR;
+				//if (!sel_moved || (is_x_changed(i))) {
+					if (is_between(i,sel_x,sel_end_x)) bg_color = HEADER_CELL_COLOR_ACTIVE; else bg_color = HEADER_CELL_COLOR;
 					kos_DrawBar(x-x0, 0, 1, grid.h, GRID_COLOR);
 					DrawCell(x-x0+1, 0, cell_w[i]-1, cell_h[0], i+COL_HEAD_BUTTON, bg_color, cells[i][0], true);
-				}
+				//}
 				cell_x[i] = x - x0;
 			}
 		}
@@ -375,14 +377,14 @@ void draw_grid()
 	for (i = 1; i < row_count && y-y0 < grid.h; i++)
 	{
 		cell_y[i] = -1;
-		if (i >= scroll_y)
+		if (i >= grid.firsty)
 		{
 			{
-				if (!sel_moved || (is_y_changed(i))) {
-					if (is_between(i,sel_y,sel_end_y)) bg_color = SEL_HEADER_CELL_COLOR; else bg_color = HEADER_CELL_COLOR;
+				//if (!sel_moved || (is_y_changed(i))) {
+					if (is_between(i,sel_y,sel_end_y)) bg_color = HEADER_CELL_COLOR_ACTIVE; else bg_color = HEADER_CELL_COLOR;
 					kos_DrawBar(0, y-y0, grid.w, 1, GRID_COLOR);
 					DrawCell(0, y-y0+1, cell_w[0], cell_h[i]-1, i+ROW_HEAD_BUTTON, bg_color, cells[0][i], true);
-				}
+				//}
 				cell_y[i] = y - y0;
 			}
 		}
@@ -396,10 +398,10 @@ void draw_grid()
 	
 	// cells itself
 	y = cell_h[0];
-	for (i = scroll_y; i < ny; i++)
+	for (i = grid.firsty; i < ny; i++)
 	{
 		x = cell_w[0];
-		for (j = scroll_x; j < nx; j++)
+		for (j = grid.firstx; j < nx; j++)
 		{
 			if (i && j)	//no need to draw headers one more
 			{
@@ -417,7 +419,7 @@ void draw_grid()
 						drag_y = y + cell_h[i] - 4;
 					}
 					else {
-						bg_color = SEL_CELL_COLOR; // selected but not main
+						bg_color = CELL_COLOR_ACTIVE; // selected but not main
 					}
 				}
 
@@ -432,7 +434,9 @@ void draw_grid()
 				}
 
 				DrawCell(x+1, y+1, cell_w[j]-1, cell_h[i]-1, 0, bg_color, text, false);
-				if (draw_frame_selection) DrawSelectedFrame(x+1,y, cell_w[j]-1, cell_h[i], TEXT_COLOR);
+				if (draw_frame_selection) {
+					DrawSelectedFrame(x+1,y, cell_w[j]-1, cell_h[i], TEXT_COLOR);
+				}
 				else if (error) kos_DrawRegion(x+1, y+1, cell_w[j]-1, cell_h[i]-1, 0xff0000, 0);
 			}
 			x += cell_w[j];
@@ -455,7 +459,7 @@ void draw_size_grid()
 		x0 = 0;
 		for (i = 1; i < col_count && x - x0 + cell_w[i] < grid.w - 10; i++)
 		{
-			if (i >= scroll_x)
+			if (i >= grid.firstx)
 			{
 				if (i >= size_id)
 					kos_DrawLine(x - x0, 0, x - x0, grid.h, 0, 1);
@@ -474,7 +478,7 @@ void draw_size_grid()
 		y0 = 0;
 		for (i = 1; i < col_count && y - y0 + cell_h[i] < grid.h - 10; i++)
 		{
-			if (i >= scroll_y)
+			if (i >= grid.firsty)
 			{
 				if (i >= size_id)
 					kos_DrawLine(0, y - y0, grid.w, y - y0, 0, 1);
@@ -525,6 +529,8 @@ bool draw_and_define_window()
 	kos_DefineAndDrawWindow(110,40,WND_W,WND_H,0x73,0x40FFFFFF,0,0,(Dword)"Table v" TABLE_VERSION);
 	kos_WindowRedrawStatus(2); 
 
+	kos_GetSystemColors(&sc);
+
 	sProcessInfo info;
 	kos_ProcessInfo(&info, 0xFFFFFFFF);
 	cWidth = info.processInfo.width - 9;
@@ -537,8 +543,8 @@ bool draw_and_define_window()
 
 	if (info.processInfo.status_window&0x04) return false; //draw nothing if window is rolled-up
 
-	if (grid.h < 100) { kos_ChangeWindow( -1, -1, -1, 180 ); return false; }
-	if (grid.w < 340) { kos_ChangeWindow( -1, -1, 350, -1 ); return false; }
+	if (cWidth < 430) { kos_ChangeWindow( -1, -1, 450, -1 ); return false; }
+	if (cHeight < 250) { kos_ChangeWindow( -1, -1, -1, 300 ); return false; }
 
 	sel_moved = 0;
 
@@ -547,28 +553,27 @@ bool draw_and_define_window()
 
 void draw_window()
 {
+	int panel_y = cHeight - MENU_PANEL_HEIGHT + 1;
 
-	if (sel_end_move) sel_moved = 0;
+	kos_DrawBar(0, panel_y, cWidth, MENU_PANEL_HEIGHT-1, sc.work);
+	kos_WriteTextToWindow(3 + 1, panel_y + 14, 0x90, sc.work_text, (char*)sFilename, 0);	
 
-	panel_y = cHeight - MENU_PANEL_HEIGHT + 1;
+	file_box.top = panel_y + 10;
 
-	kos_DrawBar(0, panel_y, cWidth, MENU_PANEL_HEIGHT-1, PANEL_BG_COLOR);
-	kos_WriteTextToWindow(3 + 1, panel_y + 16, 0x80, 0x000000, (char*)sFilename, 0);	
-
-	file_box.top = panel_y + 12;
-
+	#define BTX 230
+	#define BTW 70
 	//save
-	kos_DefineButton(20 + 160, panel_y + 9, 60, 20, SAVE_BUTTON, 0xd0d0d0);
-	kos_WriteTextToWindow(22 + 160 + (60 - strlen(sSave) * 6) / 2, panel_y + 16, 0x80, 0x000000, (char*)sSave, 0);
+	kos_DefineButton(BTX + 25, file_box.top, BTW, 21, SAVE_BUTTON, sc.work);
+	kos_WriteTextToWindow(BTX + 25 + (BTW - strlen(sSave) * 8) / 2, panel_y + 14, 0x90, sc.work_text, (char*)sSave, 0);
 
 	//load
-	kos_DefineButton(90 + 160, panel_y + 9, 60, 20, LOAD_BUTTON, 0xd0d0d0);
-	kos_WriteTextToWindow(92 + 160 + (60 - strlen(sLoad) * 6) / 2, panel_y + 16, 0x80, 0x000000, (char*)sLoad, 0);
+	kos_DefineButton(BTX + 25+BTW+5, file_box.top, BTW, 21, LOAD_BUTTON, sc.work);
+	kos_WriteTextToWindow(BTX + 25+BTW+5 + (BTW - strlen(sLoad) * 8) / 2, panel_y + 14, 0x90, sc.work_text, (char*)sLoad, 0);
 
 	//new (clean)
 	/*
-	kos_DefineButton(90 + 160 + 70, panel_y + 9, 60, 20, NEW_BUTTON, 0xd0d0d0);
-	kos_WriteTextToWindow(92 + 160 + 10 + 70, panel_y + 16, 0, 0x000000, (char*)sNew, strlen(sNew));
+	kos_DefineButton(90 + 160 + 70, panel_y + 9, 60, 20, NEW_BUTTON, sc.work);
+	kos_WriteTextToWindow(92 + 160 + 10 + 70, panel_y + 16, 0, sc.work_text, (char*)sNew, strlen(sNew));
 	*/
 
 	if ((void*)edit_box_draw != NULL)
@@ -578,6 +583,7 @@ void draw_window()
 		edit_box_draw((DWORD)&file_box);
 	}
 
+	if (sel_end_move) sel_moved = 0;
 	draw_grid();
 	sel_moved = 0;
 }
@@ -585,42 +591,41 @@ void draw_window()
 void process_mouse()
 {
 	Dword mouse_btn, ckeys, shift, ctrl;
-	int mouse_x, mouse_y, i, dx = 0, dy = 0;
-	bool window_is_dragged=false;
-	
-	edit_box_mouse((dword)&cell_box);
-	edit_box_mouse((dword)&file_box);
 
 	int vert, hor;
-	kos_GetScrollInfo(vert, hor);
-		
+	kos_GetScrollInfo(vert, hor);	
 	if (vert != 0)
 	{
 		stop_edit();
-		scroll_y += vert;
-		if (scroll_y<1) scroll_y=1;
-		if (scroll_y>row_count-25) scroll_y=row_count-25;
+		grid.firsty += vert;
+		if (grid.firsty<1) grid.firsty=1;
+		if (grid.firsty>row_count-25) grid.firsty=row_count-25;
 		draw_grid();
 		return;
 	}
 
 	if (!sel_moved && !size_state) //do not handle scrollbars when user selects cells
 	{
-		scrollbar_v_mouse((DWORD)&scroll_v);
-		if (scroll_v.position != scroll_y-1)
+		if (!scroll_h.delta2) scrollbar_v_mouse((DWORD)&scroll_v);
+		if (scroll_v.position != grid.firsty-1)
 		{
-			scroll_y = scroll_v.position + 1;
+			grid.firsty = scroll_v.position + 1;
 			draw_grid();
 		}
 
-		scrollbar_h_mouse((DWORD)&scroll_h);
-		if (scroll_h.position != scroll_x-1)
+		if (!scroll_v.delta2) scrollbar_h_mouse((DWORD)&scroll_h);
+		if (scroll_h.position != grid.firstx-1)
 		{
-			scroll_x = scroll_h.position + 1;
+			grid.firstx = scroll_h.position + 1;
 			draw_grid();
-		}		
+		}
 	}
+	if (scroll_v.delta2 || scroll_h.delta2) return;
 
+	edit_box_mouse((dword)&cell_box);
+	edit_box_mouse((dword)&file_box);
+
+	int mouse_x, mouse_y, i;
 	kos_GetMouseState(mouse_btn, mouse_x, mouse_y);
 	mouse_x -= 5;
 	mouse_y -= kos_GetSkinHeight();
@@ -681,7 +686,7 @@ void process_mouse()
 				size_state = SIZE_Y;
 			}
 		}
-		else		// click on cell
+		else   // click on cell
 		if (mouse_x <= cell_x[nx - 1] &&  mouse_y <= cell_y[ny - 1])
 		{
 			was_single_selection = sel_x == sel_end_x && sel_y == sel_end_y;
@@ -733,7 +738,7 @@ void process_mouse()
 
 		//sel_moved = (size_state == SIZE_SELECT && sel_x == sel_end_x && sel_y == sel_end_y && was_single_selection);
 		size_state = 0;
-		draw_window();		// все сдвинулось - надо обновиться
+		draw_grid();		// все сдвинулось - надо обновиться
 		return;
 	}
 	if (size_state == SIZE_X && mouse_x != size_mouse_x)
@@ -831,10 +836,10 @@ void process_key()
 			dy = 1;
 			break;
 		case 183:
-			dy = ny - scroll_y-1;
+			dy = ny - grid.firsty-1;
 			break;
 		case 184:
-			dy = - (ny - scroll_y);
+			dy = - (ny - grid.firsty);
 			break;
 		case 180: //home
 			dx = -sel_x + 1;
@@ -842,14 +847,14 @@ void process_key()
 			draw_grid();
 			break;
 		case 181: //end
-			dx = col_count - (nx - scroll_x) - 1 - sel_x;
+			dx = col_count - (nx - grid.firstx) - 1 - sel_x;
 			dy = 0;
 			draw_grid();
 			break;
 		case 27:		// escape
 			cancel_edit();
 			break;
-		case 182:			// delete
+		case 182:		// delete
 			{
 				int i,j,n0,n1,k0,k1;
 				n0 = min(sel_x, sel_end_x);
@@ -870,11 +875,11 @@ void process_key()
 				draw_grid();
 				break;
 			}
-		case 0x0D:			// enter
+		case 0x0D:		// enter
 			if (is_edit)
 			{
 				stop_edit();
-				draw_window();
+				draw_grid();
 			}
 			break;
 		case 22:	// contol-v
@@ -1052,18 +1057,10 @@ void process_key()
 	}
 }
 
-
 void process_button()
 {
-	Dword mouse_btn, ckeys, shift, ctrl;
-	int mouse_x, mouse_y, i, p, dx = 0, dy = 0;
-
 	Dword button;
 	if (!kos_GetButtonID(button)) return;
-
-	// sprintf(debuf, "button %U", button);
-	// rtlDebugOutString(debuf);
-
 	switch (button)
 	{
 	case 1:
@@ -1071,43 +1068,30 @@ void process_button()
 
 	case NEW_BUTTON:	// clear the table
 		reinit();
-		draw_window();
-		break;
-
-	case FILENAME_BUTTON:
-		sel_moved = 1;
-		stop_edit();
-		fn_edit = 1;
-		strcpy(edit_text, fname);
-		draw_window();
+		draw_grid();
 		break;
 
 	case SAVE_BUTTON:
 		stop_edit();
-		if (SaveFile(fname)) {
-			kos_DrawBar(320, panel_y + 16, cWidth - 320, 12, PANEL_BG_COLOR);
-			kos_WriteTextToWindow(320, panel_y + 16, 0x80, 0x000000, (char*)msg_save, 0);			
-		}
+		if (SaveFile(fname)) kos_AppRun("/sys/@notify", (char*)msg_save);
 		break;
 
 	case LOAD_BUTTON:
 		stop_edit();
 		int r = LoadFile(fname);
-		kos_DrawBar(320, panel_y + 16, cWidth - 320, 12, PANEL_BG_COLOR);
 		char *result;
-		if (r > 0)
-		{
+		if (r > 0) {
 			calculate_values();
 			sel_moved = 0;
-			draw_window();
+			draw_grid();
 			result = (char*)msg_load;
 		}
 		else if (r == -1) result = (char*)er_file_not_found;
 		else if (r == -2) result = (char*)er_format;
-		kos_WriteTextToWindow(320, panel_y + 16, 0x80, 0x000000, result, 0);
+		kos_AppRun("/sys/@notify", result);
 		break;
 	}
-	if (button >= COL_HEAD_BUTTON && button < ROW_HEAD_BUTTON)
+	if (button >= COL_HEAD_BUTTON    &&    button < ROW_HEAD_BUTTON)
 	{
 		sel_end_x = sel_x = button - COL_HEAD_BUTTON;
 		sel_y = 1;
@@ -1116,7 +1100,7 @@ void process_button()
 		draw_grid();
 		return;
 	}
-	else if (button >= ROW_HEAD_BUTTON && button < CELL_BUTTON)
+	else if (button >= ROW_HEAD_BUTTON    &&    button < CELL_BUTTON)
 	{
 		sel_end_y = sel_y = button - ROW_HEAD_BUTTON;
 		sel_x = 1;
@@ -1125,7 +1109,6 @@ void process_button()
 		draw_grid();
 		return;
 	}
-
 }
 
 void kos_Main()
@@ -1133,8 +1116,7 @@ void kos_Main()
 	kos_InitHeap();
 	load_edit_box();
 	init();
-	kos_SetMaskForEvents(EVM_REDRAW + EVM_KEY + EVM_BUTTON + EVM_MOUSE + EVM_MOUSE_FILTER);
-	
+	kos_SetMaskForEvents(EVM_REDRAW + EVM_KEY + EVM_BUTTON + EVM_MOUSE + EVM_MOUSE_FILTER);	
 	for (;;)
 	{
 		switch (kos_WaitForEvent())

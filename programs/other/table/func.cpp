@@ -19,8 +19,8 @@ void kos_DrawCutTextSmall(Word x, Word y, int areaWidth, Dword textColour, char 
 {
 	if (textPtr) {
 		int textLen = strlen(textPtr);
-		if (textLen*6 > areaWidth) textLen = areaWidth / 6;
-		kos_WriteTextToWindow(x,y,0,textColour,textPtr,textLen);	
+		if (textLen*8 > areaWidth) textLen = areaWidth / 8;
+		kos_WriteTextToWindow(x,y,0x10,textColour,textPtr,textLen);	
 	}
 }
 

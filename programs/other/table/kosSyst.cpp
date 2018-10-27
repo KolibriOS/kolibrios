@@ -806,28 +806,22 @@ void kos_DisplayNumberToWindow(
 	}
 }
 
-
-// function 70 доступ к файловой системе
-Dword kos_FileSystemAccess( kosFileInfo *fileInfo )
+// 48.3: get system colors
+bool kos_GetSystemColors( kosSysColors *sc )
 {
-//	Dword result;
-
-	//
 	__asm{
-		mov eax, 70
-		mov ebx, fileInfo
+		mov eax, 48
+		mov ebx, 3
+		mov ecx, sc
+		mov edx, 40
 		int 0x40
-//		mov result, eax
 	}
-	//
-//	return result;
 }
 
 
 // function 63 вывод символя в окно отладки
 void kos_DebugOutChar( char ccc )
 {
-	//
 	__asm{
 		mov eax, 63
 		mov ebx, 1
@@ -903,6 +897,7 @@ void kos_ChangeWindow( Dword x, Dword y, Dword sizeX, Dword sizeY )
 	}
 }
 
+// 68.11: init heap
 void kos_InitHeap()
 {
 	__asm{
@@ -912,6 +907,28 @@ void kos_InitHeap()
 	}
 }
 
+// function 70 доступ к файловой системе
+Dword kos_FileSystemAccess( kosFileInfo *fileInfo )
+{
+	__asm{
+		mov eax, 70
+		mov ebx, fileInfo
+		int 0x40
+	}
+}
+
+// 70.7: run Kolibri application with param
+int kos_AppRun(char* app_path, char* param)
+{
+	kosFileInfo fileInfo;
+	fileInfo.rwMode = 7;
+	fileInfo.OffsetLow = 0;
+	fileInfo.OffsetHigh = param;
+	fileInfo.dataCount = 0;
+	fileInfo.bufferPtr = 0;
+	strcpy(fileInfo.fileURL, app_path);
+	return kos_FileSystemAccess(&fileInfo);
+}
 
 
 // вызов абстрактного метода
