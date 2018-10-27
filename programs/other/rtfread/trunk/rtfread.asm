@@ -104,14 +104,17 @@ load_libraries l_libs_start,end_l_libs
     mov  esi,fname_buf
     rep  movsd
  load_file:
+        xor     ebx, ebx
+        cmp     dword [fileinfo.name], N_A
+        jz      .sizok
         mov     eax, 70
-        and     [fileattr+32], 0
         mov     ebx, attrinfo
         mcall
         mov     ebx, [fileattr+32]
         test    eax, eax
         jz      .sizok
         mov     dword [fileinfo.name], N_A
+        xor     ebx, ebx
 .sizok:
     and  [wSave],0
 ;    mov  [HClick],-100
@@ -834,7 +837,7 @@ fileinfo:
   dd I_END
 .name:
 
-;  db '/HD/1/RTF/texts/index_ru.RTF',0
+   dd  N_A
 
    rb  256-($-.name)
 ;---------------------------------------------------------------------
@@ -1049,6 +1052,13 @@ scroll_bar_data_vertical:
 
   Free BGIfree FONT_NAME,0,0,1.0,1.0,char,1,0x44000000,0
 
+litt_file:
+	file 'litt.chr'
+litt_end:
+
+help_file:
+    file  'reader.rtf'
+help_end:
   
 I_END0:
 fname_buf:
@@ -1106,14 +1116,6 @@ listptr dd ?
 szKeyword rb 31
 szParameter rb 21
 block_end dd ?
-
-help_file:
-    file  'reader.rtf'
-help_end:
-
-litt_file:
-	file 'litt.chr'
-litt_end:  
 
 ;---------------------------------------------------------------------
 I_END:                             ; метка конца программы
