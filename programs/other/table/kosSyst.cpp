@@ -484,24 +484,19 @@ void kos_PutPixel( Dword x, Dword y, Dword colour )
 	}
 }
 
-
-// function 2 получить код нажатой клавиши
-bool kos_GetKey( Byte &keyCode )
+bool kos_GetKeys( Dword &key_editbox, Byte &key_ascii, Byte &key_scancode )
 {
 	Dword result;
-
-	//
 	__asm{
 		mov eax, 2
 		int 0x40
 		mov result, eax
 	}
-	//
-	keyCode = result >> 8;
-	//
-	return ( result & 0xFF ) == 0;
+	key_editbox = result;
+	key_ascii = result >> 8;
+	key_scancode = result >> 16;
+	return ( key_ascii ) == 0;
 }
-
 
 // function 3 получить время
 Dword kos_GetSystemClock()

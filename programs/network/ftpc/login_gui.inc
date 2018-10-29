@@ -166,7 +166,9 @@ login_gui: ;////////////////////////////////////////////////////////////////////
 		je @f
 		sub     word [edit_path.flags],ed_focus
 		add     word [edit_usr.flags],ed_focus
-		;jmp     .tab_end		
+		jmp     .tab_end
+  @@:
+		add     word [edit_usr.flags],ed_focus
 		
 	.tab_end:	
 	    call    .draw_editboxes

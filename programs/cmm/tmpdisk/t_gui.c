@@ -85,10 +85,10 @@ void Main_Window()
         case evKey:
 			GetKeys();
 			// PROCESS KEYS WHEN EDIT BOX INACTIVE
-			if ( !asm test edit_disk_size.flags, 2)	switch(key_scancode) 
+			if ( ! edit_disk_size.flags&ed_focus)	switch(key_scancode) 
 			{
 				case SCAN_CODE_TAB:
-					edit_disk_size.flags=1000000000000010b;
+					edit_disk_size.flags = ed_figure_only + ed_focus;
 					edit_box_draw stdcall (#edit_disk_size);
 					DrawTmpDisks();
 					break;
@@ -126,7 +126,7 @@ void Main_Window()
 			else switch(key_scancode) 
 			{
 				case SCAN_CODE_TAB:
-					edit_disk_size.flags=1000000000000000b;
+					edit_disk_size.flags = ed_figure_only;
 					edit_box_draw stdcall (#edit_disk_size);
 					DrawTmpDisks();
 					break;

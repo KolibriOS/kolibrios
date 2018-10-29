@@ -41,6 +41,30 @@ char lib_path[] = "/sys/lib/box_lib.obj";
 dword lib_path_addr = (dword)lib_path;
 dword dummy = 0;
 
+//editbox flags
+#define ed_pass             1
+#define ed_focus            2   //focused
+#define ed_shift            4   //flag is set when Shift is pressed
+#define ed_shift_on         8
+#define ed_shift_bac       16   //bit for Shift reset, if set the smth is selected
+#define ed_left_fl         32
+#define ed_offset_fl       64
+#define ed_insert         128
+#define ed_mouse_on       256
+#define ed_mouse_adn_b    280
+#define ed_disabled      2048
+#define ed_always_focus 16384
+#define ed_figure_only  32768   //numbers only
+#define ed_shift_cl     65507
+#define ed_shift_mcl    65531
+#define ed_shift_off    65531
+#define ed_shift_on_off 65527
+#define ed_shift_bac_cl 65519
+#define ed_right_fl     65503
+#define ed_offset_cl    65471
+#define ed_insert_cl    65407
+#define ed_mouse_on_off 65279
+
 struct edit_box{
 dword width, 
 	left,
@@ -61,7 +85,7 @@ dword width,
 	cl_curs_y,
 	shift,
 	shift_old,
-	ed_height,
+	height,
 	ed_char_width;
 };
 

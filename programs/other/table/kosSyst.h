@@ -187,6 +187,7 @@ void kos_DefineAndDrawWindow(
 void kos_PutPixel( Dword x, Dword y, Dword colour );
 // function 2 получить код нажатой клавиши
 bool kos_GetKey( Byte &keyCode );
+bool kos_GetKeys( Dword &key_editbox, Byte &key_ascii, Byte &key_scancode );
 // function 3 получить время
 Dword kos_GetSystemClock();
 // function 4
@@ -264,3 +265,60 @@ Dword kos_FileSystemAccess( kosFileInfo *fileInfo );
 int kos_AppRun(char* app_path, char* param);
 //
 void kos_Main();
+
+//SCAN CODE KEYS
+#define SCAN_CODE_BS    14
+#define SCAN_CODE_TAB   15
+#define SCAN_CODE_ENTER 28
+#define SCAN_CODE_ESC    1
+#define SCAN_CODE_DEL   83
+#define SCAN_CODE_INS   82
+#define SCAN_CODE_SPACE 57
+#define SCAN_CODE_MENU  93
+
+#define SCAN_CODE_LEFT  75
+#define SCAN_CODE_RIGHT 77
+#define SCAN_CODE_DOWN  80
+#define SCAN_CODE_UP    72
+#define SCAN_CODE_HOME  71
+#define SCAN_CODE_END   79
+#define SCAN_CODE_PGDN  81
+#define SCAN_CODE_PGUP  73
+
+#define SCAN_CODE_MINUS 12
+#define SCAN_CODE_PLUS  13
+
+#define SCAN_CODE_F1    59
+#define SCAN_CODE_F2    60
+#define SCAN_CODE_F3    61
+#define SCAN_CODE_F4    62
+#define SCAN_CODE_F5    63
+#define SCAN_CODE_F6    64
+#define SCAN_CODE_F7    65
+#define SCAN_CODE_F8    66
+#define SCAN_CODE_F9    67
+#define SCAN_CODE_F10   68
+#define SCAN_CODE_F11   87
+#define SCAN_CODE_F12   88
+
+#define SCAN_CODE_KEY_A 30
+#define SCAN_CODE_KEY_B 48
+#define SCAN_CODE_KEY_C 46
+#define SCAN_CODE_KEY_D 32
+#define SCAN_CODE_KEY_E 18
+#define SCAN_CODE_KEY_F 33
+#define SCAN_CODE_KEY_H 35
+#define SCAN_CODE_KEY_I 23
+#define SCAN_CODE_KEY_L 38
+#define SCAN_CODE_KEY_M 50
+#define SCAN_CODE_KEY_N 49
+#define SCAN_CODE_KEY_O 24
+#define SCAN_CODE_KEY_P 25
+#define SCAN_CODE_KEY_R 19
+#define SCAN_CODE_KEY_S 31
+#define SCAN_CODE_KEY_T 20
+#define SCAN_CODE_KEY_U 22
+#define SCAN_CODE_KEY_V 47
+#define SCAN_CODE_KEY_X 45 
+#define SCAN_CODE_KEY_Y 21 
+#define SCAN_CODE_KEY_Z 44 

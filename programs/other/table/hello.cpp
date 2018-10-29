@@ -6,7 +6,7 @@
 #include "calc.h"
 #include "use_library.h"
 
-#define TABLE_VERSION "0.98.9"
+#define TABLE_VERSION "0.99"
 
 // strings
 const char *sFileSign = "KolibriTable File\n";
@@ -61,7 +61,7 @@ scroll_bar scroll_v = { SCROLL_SIZE,200,398, NULL, SCROLL_SIZE,0,115,15,0,0xeeee
 scroll_bar scroll_h = { 200,NULL,SCROLL_SIZE, NULL, SCROLL_SIZE,0,115,15,0,0xeeeeee,0xD2CED0,0x555555,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1};
 
 // ячейки - их параметры и текст
-DWORD col_count = 101, row_count = 101;
+DWORD col_count = 100, row_count = 100;
 DWORD *cell_w, *cell_h;
 char ***cells;
 
@@ -101,8 +101,6 @@ bool sel_end_move = 0;
 DWORD nx = 0, ny = 0;
 
 // флаг реадктирования ячейки
-//bool is_edit = 0;
-#define ed_focus 2
 #define is_edit (cell_box.flags & ed_focus)
 
 // редактирование имени файла
@@ -121,7 +119,6 @@ int size_mouse_x, size_mouse_y, size_id, size_state = 0;
 int drag_x, drag_y;
 int old_end_x, old_end_y;
 
-void draw_window();
 void draw_grid();
 
 void DrawSelectedFrame(int x, int y, int w, int h, DWORD col)
@@ -173,12 +170,12 @@ void start_edit(int x, int y)
 	if (ch)
 	{
 		sel_moved = 1;
-		draw_window();
+		draw_grid();
 	}
 
 	file_box.flags &= ~ed_focus;
 
-	cell_box.flags |= ed_focus;
+	cell_box.flags = ed_focus;
 	cell_box.left = cell_x[x] + 1;
 	cell_box.top = cell_y[y];
 	cell_box.width = cell_w[x] - 2;
@@ -186,12 +183,12 @@ void start_edit(int x, int y)
 	if (cells[x][y])
 	{
 		strcpy(edit_text, cells[x][y]);
-		edit_text[strlen(cells[x][y]) - 1] = '\0';
 	}
+	cell_box.offset = cell_box.shift = cell_box.shift_old = 0;
 	cell_box.pos = cell_box.size = strlen(edit_text);
-	cell_box.offset = 0;
 
-	draw_window();
+	edit_box_draw((DWORD)&cell_box);
+	edit_box_draw((DWORD)&file_box);
 }
 
 void stop_edit()
@@ -219,7 +216,7 @@ void cancel_edit()
 		return;
 	cell_box.flags &= ~ed_focus;
 	memset((Byte*)edit_text,0, 256);
-	draw_window();
+	draw_grid();
 }
 
 void check_sel()
@@ -434,8 +431,8 @@ void draw_grid()
 				}
 
 				DrawCell(x+1, y+1, cell_w[j]-1, cell_h[i]-1, 0, bg_color, text, false);
-				if (draw_frame_selection) {
-					DrawSelectedFrame(x+1,y, cell_w[j]-1, cell_h[i], TEXT_COLOR);
+				if (draw_frame_selection && j<nx-1 && i<ny-1) {
+					DrawSelectedFrame(x+1,y, cell_w[j]-1, cell_h[i]+1, TEXT_COLOR);
 				}
 				else if (error) kos_DrawRegion(x+1, y+1, cell_w[j]-1, cell_h[i]-1, 0xff0000, 0);
 			}
@@ -523,7 +520,7 @@ void draw_drag()
 	kos_DrawLine(x0, y1, x1, y1, DCOLOR, DINVERT);
 }
 
-bool draw_and_define_window()
+void draw_window()
 {
 	kos_WindowRedrawStatus(1);
 	kos_DefineAndDrawWindow(110,40,WND_W,WND_H,0x73,0x40FFFFFF,0,0,(Dword)"Table v" TABLE_VERSION);
@@ -541,51 +538,36 @@ bool draw_and_define_window()
 	grid.w = cWidth - SCROLL_SIZE - 1;
 	grid.h = cHeight - MENU_PANEL_HEIGHT - SCROLL_SIZE;
 
-	if (info.processInfo.status_window&0x04) return false; //draw nothing if window is rolled-up
+	if (info.processInfo.status_window&0x04) return; //draw nothing if window is rolled-up
 
-	if (cWidth < 430) { kos_ChangeWindow( -1, -1, 450, -1 ); return false; }
-	if (cHeight < 250) { kos_ChangeWindow( -1, -1, -1, 300 ); return false; }
+	if (cWidth  < 430) { kos_ChangeWindow( -1, -1, 450, -1 ); return; }
+	if (cHeight < 250) { kos_ChangeWindow( -1, -1, -1, 300 ); return; }
 
 	sel_moved = 0;
+	if (is_edit) stop_edit();
 
-	return true;
-}
-
-void draw_window()
-{
 	int panel_y = cHeight - MENU_PANEL_HEIGHT + 1;
-
 	kos_DrawBar(0, panel_y, cWidth, MENU_PANEL_HEIGHT-1, sc.work);
 	kos_WriteTextToWindow(3 + 1, panel_y + 14, 0x90, sc.work_text, (char*)sFilename, 0);	
-
 	file_box.top = panel_y + 10;
-
 	#define BTX 230
 	#define BTW 70
 	//save
 	kos_DefineButton(BTX + 25, file_box.top, BTW, 21, SAVE_BUTTON, sc.work);
 	kos_WriteTextToWindow(BTX + 25 + (BTW - strlen(sSave) * 8) / 2, panel_y + 14, 0x90, sc.work_text, (char*)sSave, 0);
-
 	//load
 	kos_DefineButton(BTX + 25+BTW+5, file_box.top, BTW, 21, LOAD_BUTTON, sc.work);
 	kos_WriteTextToWindow(BTX + 25+BTW+5 + (BTW - strlen(sLoad) * 8) / 2, panel_y + 14, 0x90, sc.work_text, (char*)sLoad, 0);
-
-	//new (clean)
-	/*
-	kos_DefineButton(90 + 160 + 70, panel_y + 9, 60, 20, NEW_BUTTON, sc.work);
-	kos_WriteTextToWindow(92 + 160 + 10 + 70, panel_y + 16, 0, sc.work_text, (char*)sNew, strlen(sNew));
-	*/
-
-	if ((void*)edit_box_draw != NULL)
-	{
-		if (is_edit)
-			edit_box_draw((DWORD)&cell_box);
-		edit_box_draw((DWORD)&file_box);
-	}
+	// // new (clean)
+	// kos_DefineButton(90 + 160 + 70, panel_y + 9, 60, 20, NEW_BUTTON, sc.work);
+	// kos_WriteTextToWindow(92 + 160 + 10 + 70, panel_y + 16, 0, sc.work_text, (char*)sNew, strlen(sNew));
 
 	if (sel_end_move) sel_moved = 0;
 	draw_grid();
 	sel_moved = 0;
+
+	if (is_edit) edit_box_draw((DWORD)&cell_box);
+	edit_box_draw((DWORD)&file_box);
 }
 
 void process_mouse()
@@ -609,6 +591,7 @@ void process_mouse()
 		if (!scroll_h.delta2) scrollbar_v_mouse((DWORD)&scroll_v);
 		if (scroll_v.position != grid.firsty-1)
 		{
+			stop_edit();
 			grid.firsty = scroll_v.position + 1;
 			draw_grid();
 		}
@@ -616,19 +599,23 @@ void process_mouse()
 		if (!scroll_v.delta2) scrollbar_h_mouse((DWORD)&scroll_h);
 		if (scroll_h.position != grid.firstx-1)
 		{
+			stop_edit();
 			grid.firstx = scroll_h.position + 1;
 			draw_grid();
 		}
 	}
 	if (scroll_v.delta2 || scroll_h.delta2) return;
 
-	edit_box_mouse((dword)&cell_box);
+	if (is_edit) edit_box_mouse((dword)&cell_box);
 	edit_box_mouse((dword)&file_box);
 
 	int mouse_x, mouse_y, i;
 	kos_GetMouseState(mouse_btn, mouse_x, mouse_y);
 	mouse_x -= 5;
 	mouse_y -= kos_GetSkinHeight();
+
+	if (is_edit && mouse_x>=cell_box.left && mouse_x<=cell_box.left+cell_box.width 
+		&& mouse_y>=cell_box.top && mouse_y<=cell_box.top+22) return;
 
 	mouse_btn &= 0x0001;
 
@@ -799,200 +786,9 @@ void process_mouse()
 	size_mouse_y = mouse_y; 
 }
 
-void process_key()
+
+void shift_selection(int dx, int dy, Dword shift) 
 {
-	Dword mouse_btn, ckeys, shift, ctrl;
-	int mouse_x, mouse_y, dx = 0, dy = 0;
-
-	// key pressed, read it 
-	Byte keyCode;
-	ckeys = kos_GetSpecialKeyState();
-	shift = ckeys & 0x3;
-	ctrl = ckeys & 0x0c;
-	sel_moved = 0;
-	sel_end_move = 0;
-	kos_GetKey(keyCode);
-
-	__asm
-	{
-		mov ah, keyCode
-	}
-	edit_box_key((dword)&cell_box);
-	edit_box_key((dword)&file_box);
-
-
-	switch (keyCode)
-	{
-		case 178:
-			dy = -1;
-			break;
-		case 176:
-			dx = -1;
-			break;
-		case 179:
-			dx = 1;
-			break;
-		case 177:
-			dy = 1;
-			break;
-		case 183:
-			dy = ny - grid.firsty-1;
-			break;
-		case 184:
-			dy = - (ny - grid.firsty);
-			break;
-		case 180: //home
-			dx = -sel_x + 1;
-			dy = 0;
-			draw_grid();
-			break;
-		case 181: //end
-			dx = col_count - (nx - grid.firstx) - 1 - sel_x;
-			dy = 0;
-			draw_grid();
-			break;
-		case 27:		// escape
-			cancel_edit();
-			break;
-		case 182:		// delete
-			{
-				int i,j,n0,n1,k0,k1;
-				n0 = min(sel_x, sel_end_x);
-				n1 = max(sel_x, sel_end_x);
-				k0 = min(sel_y, sel_end_y);
-				k1 = max(sel_y, sel_end_y);
-
-				for (i = n0; i <= n1; i++)
-					for (j = k0; j <= k1; j++)
-					{
-						if (cells[i][j])
-						{
-							freemem(cells[i][j]);
-							cells[i][j] = NULL;
-						}
-					}
-				calculate_values();
-				draw_grid();
-				break;
-			}
-		case 0x0D:		// enter
-			if (is_edit)
-			{
-				stop_edit();
-				draw_grid();
-			}
-			break;
-		case 22:	// contol-v
-			{
-				if (ctrl)
-				{
-					int i, j, x0, y0;
-					x0 = min(sel_x, sel_end_x);
-					y0 = min(sel_y, sel_end_y);
-					int delta_x = x0 - buf_old_x;
-					int delta_y = y0 - buf_old_y;
-
-					for (i = 0; i < buf_col; i++)
-						for (j = 0; j < buf_row; j++)
-						{
-							if (i + x0 >= col_count || j + y0 >= row_count)
-								continue;
-							if (cells[i + x0][j + y0])
-								freemem(cells[i + x0][j + y0]);
-							if (buffer[i][j])
-							{
-								cf_x0 = buf_old_x; cf_y0 = buf_old_y;
-								cf_x1 = buf_old_x + buf_col;
-								cf_y1 = buf_old_y + buf_row;
-								cells[i + x0][j + y0] = change_formula(buffer[i][j], delta_x, delta_y);
-								//cells[i + x0][j + y0] = (char*)allocmem(strlen(buffer[i][j]));
-								//strcpy(cells[i + x0][j + y0], buffer[i][j]);
-							}
-							else
-								cells[i + x0][j + y0] = NULL;
-						}
-
-					calculate_values();
-					draw_grid();
-					break;
-				}
-			}
-			case 24:	// control-x
-			case 03:	// control-c
-			{
-				if (ctrl)
-				{
-					//rtlDebugOutString("control-c!");
-					int i, j, x0, y0;
-
-					freeBuffer();
-
-					buf_col = abs(sel_end_x - sel_x) + 1;
-					buf_row = abs(sel_end_y - sel_y) + 1;
-					x0 = min(sel_x, sel_end_x);
-					y0 = min(sel_y, sel_end_y);
-					buf_old_x = x0;
-					buf_old_y = y0;
-
-					//sprintf(debuf, "%U %U %U %U", buf_col, buf_row, x0, y0);
-					//rtlDebugOutString(debuf);
-				
-					buffer = (char***)allocmem(buf_col * sizeof(char**));
-					for (i = 0; i < buf_col; i++)
-					{
-						buffer[i] = (char**)allocmem(buf_row * sizeof(char*));
-						for (j = 0; j < buf_row; j++)
-						{
-							if (cells[i + x0][j + y0])
-							{
-								if (keyCode == 03)	// ctrl-c
-								{
-									buffer[i][j] = (char*)allocmem(strlen(cells[i + x0][j + y0]));
-									strcpy(buffer[i][j], cells[i + x0][j + y0]);
-								}
-								else
-								{
-									buffer[i][j] = cells[i + x0][j + y0];
-									cells[i + x0][j + y0] = NULL;
-								}
-							}
-							else
-								buffer[i][j] = NULL;
-						}
-					}
-					if (keyCode == 24) 
-						calculate_values();
-					draw_grid();
-					break;
-				}
-			}
-		case 06:		// control-f
-			{
-				display_formulas = !display_formulas;
-				draw_grid();
-				break;
-			}
-		default:		
-			if (!is_edit && !(file_box.flags & ed_focus))
-			{
-				start_edit(sel_x, sel_y);
-				if (keyCode == 8)
-				{
-					cell_box.pos = strlen(edit_text);
-				}
-				else
-				{
-					__asm
-					{
-						mov ah, keyCode
-					}
-					edit_box_key((dword)&cell_box);
-				}
-			}
-			if (is_edit)
-				edit_box_draw((dword)&cell_box);
-			break;
-	}
 	if (dx != 0)
 	{
 		if (shift)
@@ -1054,6 +850,196 @@ void process_key()
 			stop_edit();
 			draw_grid();
 		}
+	}
+}
+
+
+void process_key()
+{
+	Dword ckeys, shift, ctrl;
+	dword key_editbox;
+	Byte key_ascii, key_scancode;
+
+	// key pressed, read it 
+	ckeys = kos_GetSpecialKeyState();
+	shift = ckeys & 0x3;
+	ctrl = ckeys & 0x0c;
+	sel_moved = 0;
+	sel_end_move = 0;
+	
+	kos_GetKeys(key_editbox, key_ascii, key_scancode);
+
+	if (cell_box.flags & ed_focus) {
+		if (SCAN_CODE_ENTER == key_scancode) {
+			stop_edit();
+			draw_grid();
+		}
+		else if (SCAN_CODE_ESC == key_scancode) {
+			cancel_edit();
+		}
+		else {
+			__asm
+			{
+				mov eax, key_editbox
+			}
+			edit_box_key((dword)&cell_box);			
+		}
+	}
+	else if (file_box.flags & ed_focus) {
+		__asm
+		{
+			mov eax, key_editbox
+		}
+		edit_box_key((dword)&file_box);
+		return;
+	}
+	else if (ctrl) {
+		switch (key_scancode)
+		{
+			case SCAN_CODE_KEY_V:
+				{
+					int i, j, x0, y0;
+					x0 = min(sel_x, sel_end_x);
+					y0 = min(sel_y, sel_end_y);
+					int delta_x = x0 - buf_old_x;
+					int delta_y = y0 - buf_old_y;
+
+					for (i = 0; i < buf_col; i++)
+						for (j = 0; j < buf_row; j++)
+						{
+							if (i + x0 >= col_count || j + y0 >= row_count)
+								continue;
+							if (cells[i + x0][j + y0])
+								freemem(cells[i + x0][j + y0]);
+							if (buffer[i][j])
+							{
+								cf_x0 = buf_old_x; cf_y0 = buf_old_y;
+								cf_x1 = buf_old_x + buf_col;
+								cf_y1 = buf_old_y + buf_row;
+								cells[i + x0][j + y0] = change_formula(buffer[i][j], delta_x, delta_y);
+								//cells[i + x0][j + y0] = (char*)allocmem(strlen(buffer[i][j]));
+								//strcpy(cells[i + x0][j + y0], buffer[i][j]);
+							}
+							else
+								cells[i + x0][j + y0] = NULL;
+						}
+
+					calculate_values();
+					draw_grid();
+					break;
+				}
+				case SCAN_CODE_KEY_X:
+				case SCAN_CODE_KEY_C:
+				{
+					int i, j, x0, y0;
+
+					freeBuffer();
+
+					buf_col = abs(sel_end_x - sel_x) + 1;
+					buf_row = abs(sel_end_y - sel_y) + 1;
+					x0 = min(sel_x, sel_end_x);
+					y0 = min(sel_y, sel_end_y);
+					buf_old_x = x0;
+					buf_old_y = y0;
+
+					//sprintf(debuf, "%U %U %U %U", buf_col, buf_row, x0, y0);
+					//rtlDebugOutString(debuf);
+				
+					buffer = (char***)allocmem(buf_col * sizeof(char**));
+					for (i = 0; i < buf_col; i++)
+					{
+						buffer[i] = (char**)allocmem(buf_row * sizeof(char*));
+						for (j = 0; j < buf_row; j++)
+						{
+							if (cells[i + x0][j + y0])
+							{
+								if (SCAN_CODE_KEY_C == key_scancode)
+								{
+									buffer[i][j] = (char*)allocmem(strlen(cells[i + x0][j + y0]));
+									strcpy(buffer[i][j], cells[i + x0][j + y0]);
+								}
+								else
+								{
+									buffer[i][j] = cells[i + x0][j + y0];
+									cells[i + x0][j + y0] = NULL;
+								}
+							}
+							else
+								buffer[i][j] = NULL;
+						}
+					}
+					if (key_ascii == 24)     ///////WTF???? 
+						calculate_values();
+					draw_grid();
+					break;
+				}
+			case SCAN_CODE_KEY_F:
+				display_formulas = !display_formulas;
+				draw_grid();
+				break;
+		}
+	}
+	else switch (key_scancode)
+	{
+		case SCAN_CODE_UP:
+			shift_selection(0, -1, shift);
+			break;
+		case SCAN_CODE_LEFT:
+			shift_selection(-1, 0, shift);
+			break;
+		case SCAN_CODE_RIGHT:
+			shift_selection(1, 0, shift);
+			break;
+		case SCAN_CODE_DOWN:
+			shift_selection(0, 1, shift);
+			break;
+		case SCAN_CODE_PGDN:
+			shift_selection(0, ny-grid.firsty-1, shift);
+			break;
+		case SCAN_CODE_PGUP:
+			shift_selection(0, -(ny-grid.firsty), shift);
+			break;
+		case SCAN_CODE_HOME:
+			shift_selection(-sel_x + 1, 0, shift);
+			break;
+		case SCAN_CODE_END:
+			shift_selection(col_count - (nx - grid.firstx) - 1 - sel_x, 0, shift);
+			break;
+		case SCAN_CODE_DEL:
+			{
+				int n0 = min(sel_x, sel_end_x);
+				int n1 = max(sel_x, sel_end_x);
+				int k0 = min(sel_y, sel_end_y);
+				int k1 = max(sel_y, sel_end_y);
+
+				for (int i = n0; i <= n1; i++)
+					for (int j = k0; j <= k1; j++)
+					{
+						if (cells[i][j])
+						{
+							freemem(cells[i][j]);
+							cells[i][j] = NULL;
+						}
+					}
+				calculate_values();
+				draw_grid();
+				break;
+			}
+			break;
+		case SCAN_CODE_F2:
+			start_edit(sel_x, sel_y);
+			break;
+		case SCAN_CODE_F5:
+			draw_grid();
+			break;
+		default:
+			start_edit(sel_x, sel_y);
+			__asm
+			{
+				mov eax, key_editbox
+			}
+			edit_box_key((dword)&cell_box);
+			break;
 	}
 }
 
@@ -1134,7 +1120,7 @@ void kos_Main()
 			break;
 		
 		case EM_WINDOW_REDRAW:
-			if (draw_and_define_window()) draw_window();
+			draw_window();
 			break;
 		}
 	}

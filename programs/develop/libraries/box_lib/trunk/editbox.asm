@@ -1,4 +1,4 @@
-macro use_key_no_process  up,down,esc,enter,tab,numl,capsl,scrolll
+macro use_key_no_process  up,down,esc,enter,tab,numl,capsl,scrolll,pgup,pgdown
 {
 if up eq
 else
@@ -38,6 +38,16 @@ end if
 if scrolll eq
 else
         cmp     ah,1   ;Scroll Lock - клавиша ))
+        jz      edit_box.editbox_exit
+end if
+if pgup eq
+else
+        cmp     ah,184 ;Page Up - клавиша ))
+        jz      edit_box.editbox_exit
+end if
+if pgdown eq
+else
+        cmp     ah,183 ;Page Dwon - клавиша ))
         jz      edit_box.editbox_exit
 end if
 }
@@ -157,10 +167,10 @@ edit_box_key:
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;Заглушка на обработку клавиш вверх и вниз т.е. при обнаружении этих кодов происходит выход из обработчика
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-use_key_no_process   up,down,esc,enter,tab,numl,capsl,scrolll
+use_key_no_process   up,down,esc,enter,tab,numl,capsl,scrolll,pgup,pgdown
 ;--- нажата другая клавиша ---
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;Проверка установлен ли флаг при котором нужно выводить только цифры в нужном боксе, если такой необходимости нет, нужно закоментировать макрос
+;Проверка установлен ли флаг при котором нужно выводить только цифры в нужном боксе
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;
         test    word ed_flags,ed_figure_only  ; только цифры?
         jz      @f
@@ -241,7 +251,7 @@ edit_box_key.In_k:
         jmp     edit_box_key.shift
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;Обработка клавиш insert,delete.backspace,home,end,left,right
+;Обработка клавиш insert,delete,backspace,home,end,left,right
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 edit_box_key.insert:
         test    word ed_flags,ed_insert
