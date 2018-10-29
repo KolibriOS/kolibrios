@@ -7,13 +7,13 @@ child_window Window_CanvasReSize = {#CanvasReSize_Thread};
 //                                                   //
 //===================================================//
 
-char text_columns[4];
-char text_rows[4];
+char text_columns[5];
+char text_rows[5];
 
-edit_box edit_columns = {60,NULL,NULL,0xffffff,0x94AECE,0xFFFfff,0xffffff,
-	0x10000000,sizeof(text_columns)-1,#text_columns,0, 1000000000000010b};
-edit_box edit_rows = {60,NULL,NULL,0xffffff,0x94AECE,0xFFFfff,0xffffff,
-	0x10000000,sizeof(text_rows)-1,#text_rows,0, 1000000000000000b};
+edit_box edit_columns = {60,NULL,NULL,0xffffff,0x94AECE,0xffc90E,0xffffff,
+	0x10000000,sizeof(text_columns)-2,#text_columns,0, ed_figure_only+ed_focus};
+edit_box edit_rows = {60,NULL,NULL,0xffffff,0x94AECE,0xffc90E,0xffffff,
+	0x10000000,sizeof(text_rows)-2,#text_rows,0, ed_figure_only};
 
 #define BTN_APPLY 10
 
@@ -23,8 +23,8 @@ void CanvasReSize_Thread()
 
 	sprintf(#text_columns, "%i", image.columns);
 	sprintf(#text_rows, "%i", image.rows);
-	edit_columns.size = edit_columns.pos = edit_columns.shift = edit_columns.shift_old = strlen(#text_columns);
-	edit_rows.size = edit_rows.pos = edit_rows.shift = edit_rows.shift_old = strlen(#text_rows);
+	EditBox_UpdateText(#edit_columns, ed_figure_only+ed_focus);
+	EditBox_UpdateText(#edit_rows, ed_figure_only);
 
 	SetEventMask(EVM_REDRAW+EVM_KEY+EVM_BUTTON+EVM_MOUSE+EVM_MOUSE_FILTER);
 	loop() switch(WaitEvent())
@@ -94,7 +94,12 @@ void EventApplyClick()
 
 void EventTabClick()
 {
-	if (edit_columns.flags & 0b10) { edit_columns.flags -= 0b10; edit_rows.flags += 0b10; }
-	else { edit_columns.flags += 0b10; edit_rows.flags -= 0b10; }
+	if ( edit_columns.flags & ed_focus ) {
+		EditBox_UpdateText(#edit_columns, ed_figure_only);
+		EditBox_UpdateText(#edit_rows, ed_focus+ed_figure_only);
+	} else {
+		EditBox_UpdateText(#edit_columns, ed_focus+ed_figure_only);
+		EditBox_UpdateText(#edit_rows, ed_figure_only);
+	}
 	DrawEditBoxes();
 }

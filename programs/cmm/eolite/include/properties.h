@@ -38,8 +38,8 @@
 
 char path_to_file[4096];
 char file_name2[4096];
-edit_box file_name_ed = {230,59,32,0xffffff,0x94AECE,0xFFFfff,0xffffff,0x10000000,sizeof(file_name2),#file_name2,NULL, 1000000000000000b,2,2};
-edit_box path_to_file_ed = {160,120,79,0xffffff,0x94AECE,0xFFFfff,0xffffff,2,sizeof(path_to_file),#path_to_file,NULL, 1000000000000000b,2,2};
+edit_box file_name_ed = {230,59,32,0xffffff,0x94AECE,0xFFFfff,0xffffff,0x10000000,sizeof(file_name2)-2,#file_name2,NULL, 0b,2,2};
+edit_box path_to_file_ed = {160,120,79,0xffffff,0x94AECE,0xFFFfff,0xffffff,2,sizeof(path_to_file)-2,#path_to_file,NULL, 0b,2,2};
 
 BDVK file_info_general;
 BDVK file_info_dirsize;
@@ -185,7 +185,7 @@ void properties_dialog()
 	{
 		GetFileInfo(#file_path, #file_info_general);
 		strcpy(#file_name2, #file_name);
-		file_name_ed.size = strlen(#file_name2);   
+		EditBox_UpdateText(#file_name_ed, 0);
 		if(itdir) dir_size.get(#file_path);
 		ch_read_only.checked = file_info_general.readonly;
 		ch_hidden.checked = file_info_general.hidden;

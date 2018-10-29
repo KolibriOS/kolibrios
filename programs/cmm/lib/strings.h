@@ -127,10 +127,10 @@ inline signed int strncmp(dword text1,text2,len)
 */
 inline fastcall unsigned int strlen( EDI)
 {
-    $xor eax, eax
-    $mov ecx, -1
-    $REPNE $SCASB
-    EAX-=2+ECX;
+	$xor eax, eax
+	$mov ecx, -1
+	$REPNE $SCASB
+	EAX-=2+ECX;
 }
 
 inline strnlen(dword str, dword maxlen)

@@ -22,7 +22,7 @@ char save_to[4096] = "/tmp0/1/Downloads";
 proc_info DL_Form;
 char downloader_edit[10000];
 char filepath[4096];
-edit_box ed = {NULL,57,20,0xffffff,0x94AECE,0xffffff,0xffffff,0x10000000,sizeof(downloader_edit),#downloader_edit,0,2,19,19};
+edit_box ed = {NULL,57,20,0xffffff,0x94AECE,0xffffff,0xffffff,0x10000000,sizeof(downloader_edit)-2,#downloader_edit,0,2,19,19};
 progress_bar pb = {0, 20, 58, 350, 17, 0, 0, 100, 0xFFFfff, 0x74DA00, 0x9F9F9F};
 //progress_bar pb = {0, 180, 55, 225, 12, 0, 0, 100, 0xFFFfff, 0x74DA00, 0x9F9F9F};
 //progress_bar: value, left, top, width, height, style, min, max, back_color, progress_color, frame_color;

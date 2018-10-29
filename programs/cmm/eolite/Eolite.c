@@ -1060,7 +1060,7 @@ void NewElement_Form(byte crt, dword strng)
 	{
 		new_element_active = crt;
 		strcpy(#new_element_name, strng);
-		new_file_ed.size = new_file_ed.pos = strlen(strng);
+		EditBox_UpdateText(#new_file_ed, ed_focus+ed_always_focus);
 	}
 	if (new_element_active==3) DrawEolitePopup(T_RENAME, T_CANCEL);
 	else DrawEolitePopup(T_CREATE, T_CANCEL);

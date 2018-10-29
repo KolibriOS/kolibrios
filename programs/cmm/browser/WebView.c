@@ -111,8 +111,7 @@ enum {
 #include "download_manager.h"
 
 char editURL[sizeof(URL)];
-int	mouse_twb;
-edit_box address_box = {250,60,30,0xffffff,0x94AECE,0xffffff,0xffffff,0x10000000,sizeof(URL),#editURL,#mouse_twb,2,19,19};
+edit_box address_box = {250,60,30,0xffffff,0x94AECE,0xffffff,0xffffff,0x10000000,sizeof(URL)-2,#editURL,0,2,19,19};
 
 #define SKIN_Y 24
 
@@ -158,7 +157,7 @@ void main()
 
 		case evKey:
 			GetKeys();
-			if (address_box.flags & 0b10)  
+			if (address_box.flags & ed_focus)  
 			{
 				if (key_ascii == ASCII_KEY_ENTER) ProcessEvent(key_scancode); else {
 					EAX = key_editbox; 
@@ -308,8 +307,6 @@ void ProcessEvent(dword id__)
 			}
 			OpenPage();
 			return;
-		case SCAN_CODE_F5:
-			IF(address_box.flags & 0b10) return;
 		case REFRESH_BUTTON:
 			if (http.transfer > 0) 
 			{
@@ -454,8 +451,9 @@ DrawEditBoxWebView()
 	int skin_x_offset;
 	DrawBar(address_box.left-2, address_box.top-2, address_box.width+3, 2, address_box.color);
 	DrawBar(address_box.left-2, address_box.top, 2, 22, address_box.color);
-	address_box.size = address_box.pos = address_box.shift = address_box.shift_old = strlen(#editURL);
-	address_box.offset = 0;
+	//address_box.size = address_box.pos = address_box.shift = address_box.shift_old = strlen(#editURL);
+	//address_box.offset = 0;
+	EditBox_UpdateText(#address_box, address_box.flags);
 	edit_box_draw stdcall(#address_box);
 	if (http.transfer > 0) skin_x_offset = 68; else skin_x_offset = 51;
 	img_draw stdcall(skin.image, address_box.left+address_box.width+1, address_box.top-3, 17, skin.h, skin_x_offset, SKIN_Y);

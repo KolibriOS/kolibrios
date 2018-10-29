@@ -86,12 +86,13 @@ PathShow_draw stdcall(#PathShow);
 #define ed_focus                      10b   //focused
 #define ed_shift                     100b   //flag is set when Shift is pressed
 #define ed_shift_on                 1000b
-#define ed_shift_bac               10000b   //bif for Shift reset, if set the smth is selected
+#define ed_shift_bac               10000b   //bit for Shift reset, if set the smth is selected
 #define ed_left_fl                100000b
 #define ed_offset_fl             1000000b
 #define ed_insert               10000000b
 #define ed_mouse_on            100000000b
-#define ed_mous_adn_b          100011000b
+#define ed_mouse_adn_b         100011000b
+#define ed_disabled         100000000000b
 #define ed_always_focus  100000000000000b
 #define ed_figure_only  1000000000000000b   //numbers only
 #define ed_shift_cl     1111111111100011b
@@ -124,9 +125,19 @@ dword width,
 	cl_curs_y,
 	shift,
 	shift_old,
-	ed_height,
-	ed_char_width;
+	height,
+	char_width;
 };
+
+:void EditBox_UpdateText(dword ed, _flags)
+{
+	dword ed_text;
+	ESI = ed;
+	ESI.edit_box.offset = ESI.edit_box.shift = ESI.edit_box.shift_old = 0;
+	ESI.edit_box.flags = _flags;
+	ed_text = ESI.edit_box.text;
+	ESI.edit_box.pos = ESI.edit_box.size = strlen(ed_text);
+}
 
 struct scroll_bar
 {

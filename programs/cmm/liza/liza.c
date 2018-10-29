@@ -21,7 +21,7 @@
 #include "../lib/obj/libimg.h"
 #include "../lib/obj/netcode.h"
 #include "../lib/obj/iconv.h"
-//patternts
+//patterns
 #include "../lib/patterns/history.h"
 #include "../lib/patterns/http_downloader.h"
 //images
@@ -119,7 +119,7 @@ void main() {
 	load_dll(libimg, #libimg_init,1);
 	load_dll(iconv_lib, #iconv_open,0);
 	OpenMailDat();
-	SetEventMask(0x27);
+	SetEventMask(EVM_REDRAW + EVM_KEY + EVM_BUTTON + EVM_MOUSE + EVM_MOUSE_FILTER + EVM_STACK);
 	LoginBoxLoop();
 }
 

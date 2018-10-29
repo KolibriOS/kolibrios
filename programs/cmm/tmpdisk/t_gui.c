@@ -45,9 +45,9 @@ unsigned char icons[] = FROM "icons.raw";
 #define TOPPANELH 68
 #define BOTPANELH 26
 
-char new_disk_size[5];
+char new_disk_size[7];
 edit_box edit_disk_size= {50,0,7,0xffffff,0x94AECE,0xFFFfff,0xffffff,0x10000000,
-	4,#new_disk_size,0, 1000000000000010b};
+	sizeof(new_disk_size)-2,#new_disk_size,0, ed_focus+ed_figure_only};
 
 void Main_Window()
 {
@@ -169,7 +169,7 @@ void GetSizeDisk()
 	fr = GetFreeRAM() / 5 * 2;
 	fr = itoa(fr / 2048);
 	strcpy(#new_disk_size, fr);
-	edit_disk_size.size = edit_disk_size.pos = strlen(#new_disk_size);
+	EditBox_UpdateText(#edit_disk_size, edit_disk_size.flags);
 	edit_box_draw stdcall (#edit_disk_size);
 }
 
@@ -243,7 +243,7 @@ void DrawTmpDisks()
 		WriteText(disk_pos_x[i]+27,disk_pos_y[i]+24, 0x80, 0x555555, ConvertSize(disk_sizes[real_id]));
 		_PutImage(disk_pos_x[i]+6,disk_pos_y[i]+6, 14,14, 2*14*14*3+#icons);
 		if (selected==i) {
-			if ( !asm test edit_disk_size.flags, 2) selection_color = selection_active; else selection_color = selection_inactive;
+			if ( edit_disk_size.flags & ed_focus) selection_color = selection_inactive; else selection_color = selection_active;
 			DrawWideRectangle(disk_pos_x[i], disk_pos_y[i], 80, 40, 2, selection_color);
 			PutPixel(disk_pos_x[i], disk_pos_y[i], 0xFFFfff);
 		}

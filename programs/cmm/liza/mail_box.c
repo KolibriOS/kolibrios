@@ -159,7 +159,6 @@ void MailBoxLoop() {
 		switch(EAX & 0xFF)
 		{
 			case evMouse:
-				IF (!CheckActiveProcess(Form.ID)) break;
 				mouse.get();
 				
 				if (!mouse.lkm) panels_drag=0;

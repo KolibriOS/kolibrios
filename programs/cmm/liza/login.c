@@ -120,7 +120,6 @@ void LoginBoxLoop()
 		switch(EAX & 0xFF)
 		{
 			case evMouse:
-				if (!CheckActiveProcess(Form.ID)) break;
 				edit_box_mouse stdcall (#login_box);
 				edit_box_mouse stdcall (#pass_box);
 				break;

@@ -3,87 +3,85 @@
 char *text1[] = {"POP server adress:", "POP server port:", "SMTP server adress:", "SMTP server port:", '\0'};
 
 unsigned char POP_server1[128]="pop.server.com";
-unsigned char POP_server_port1[5]="110";
+unsigned char POP_server_port1[7]="110";
 unsigned char SMTP_server1[128]="smtp.server.com";
-unsigned char SMTP_server_port1[5]="25";
-edit_box POP_server_box        = {210,230,125 ,0xffffff,0x94AECE,0xffc90E,0xCACACA,0x10000000,sizeof(POP_server1),#POP_server1,0,100000000000b};
-edit_box POP_server_port_box   = {210,230,160,0xffffff,0x94AECE,0xffc90E,0xCACACA,0x10000000,5,#POP_server_port1,0,100000000000b};
-edit_box SMTP_server_box       = {210,230,195,0xffffff,0x94AECE,0xffc90E,0xCACACA,0x10000000,sizeof(SMTP_server1),#SMTP_server1,0,100000000000b};
-edit_box SMTP_server_port_box  = {210,230,230,0xffffff,0x94AECE,0xffc90E,0xCACACA,0x10000000,5,#SMTP_server_port1,0,100000000000b};
+unsigned char SMTP_server_port1[7]="25";
+edit_box POP_server_box        = {210,230,125,0xffffff,0x94AECE,0xffc90E,0xCACACA,0x10000000,sizeof(POP_server1)-2,#POP_server1,0,0};
+edit_box POP_server_port_box   = {210,230,160,0xffffff,0x94AECE,0xffc90E,0xCACACA,0x10000000,sizeof(POP_server_port1)-2,#POP_server_port1,0,0};
+edit_box SMTP_server_box       = {210,230,195,0xffffff,0x94AECE,0xffc90E,0xCACACA,0x10000000,sizeof(SMTP_server1)-2,#SMTP_server1,0,0};
+edit_box SMTP_server_port_box  = {210,230,230,0xffffff,0x94AECE,0xffc90E,0xCACACA,0x10000000,sizeof(SMTP_server_port1)-2,#SMTP_server_port1,0,0};
 
 checkbox automatic = { "Automatic configuration", true };
 
+void UpdateEditboxFlags(dword additional_flag)
+{
+	EditBox_UpdateText(#POP_server_box, additional_flag + 0);
+	EditBox_UpdateText(#POP_server_port_box, additional_flag + ed_figure_only + 0);
+	EditBox_UpdateText(#SMTP_server_box, additional_flag + 0);
+	EditBox_UpdateText(#SMTP_server_port_box, additional_flag + ed_figure_only + 0);
+}
+
 void SettingsDialog()
 {
-	int key, id;
-
-	POP_server_box.size = strlen(#POP_server1);
-	POP_server_port_box.size = strlen(#POP_server_port1);
-	SMTP_server_box.size = strlen(#SMTP_server1);
-	SMTP_server_port_box.size = strlen(#SMTP_server_port1);
-
+	int id;
+	UpdateEditboxFlags(ed_disabled);
 	goto _OPT_WIN;
-
-	loop()	
+	loop() switch(WaitEvent())
 	{
-		switch(WaitEvent())
-		{
-			case evMouse:
-				IF (GetProcessSlot(Form.ID)-GetActiveProcess()!=0) break;
-				edit_box_mouse stdcall(#POP_server_box);
-				edit_box_mouse stdcall(#POP_server_port_box);
-				edit_box_mouse stdcall(#SMTP_server_box);
-				edit_box_mouse stdcall(#SMTP_server_port_box);
-				break;
-				
-			case evButton:
-				id = GetButtonID(); 
-				if (id==1) SaveAndExit();
-				if (id==19) LoginBoxLoop();
-				if (automatic.click(id))
-				{
-					if (automatic.checked) {
-						POP_server_box.flags = POP_server_box.flags = POP_server_port_box.flags = SMTP_server_box.flags = SMTP_server_port_box.flags = 100000000000b;
-						POP_server_box.blur_border_color = POP_server_box.blur_border_color = POP_server_port_box.blur_border_color =
-						 SMTP_server_box.blur_border_color = SMTP_server_port_box.blur_border_color = 0xCACACA;
-					}
-					else {
-						POP_server_box.flags = 0b10;
-						POP_server_port_box.flags = SMTP_server_box.flags = SMTP_server_port_box.flags = 0b;
-						POP_server_box.blur_border_color = POP_server_box.blur_border_color = POP_server_port_box.blur_border_color =
-						 SMTP_server_box.blur_border_color = SMTP_server_port_box.blur_border_color = 0xFFFfff;
-					}
-					DrawOptionsWindow();
+		case evMouse:
+			edit_box_mouse stdcall(#POP_server_box);
+			edit_box_mouse stdcall(#POP_server_port_box);
+			edit_box_mouse stdcall(#SMTP_server_box);
+			edit_box_mouse stdcall(#SMTP_server_port_box);
+			break;
+			
+		case evButton:
+			id = GetButtonID(); 
+			if (id==1) SaveAndExit();
+			if (id==19) LoginBoxLoop();
+			if (automatic.click(id))
+			{
+				if (automatic.checked) {
+					UpdateEditboxFlags(ed_disabled);
+					POP_server_box.blur_border_color = POP_server_port_box.blur_border_color =
+					 SMTP_server_box.blur_border_color = SMTP_server_port_box.blur_border_color = 0xCACACA;
 				}
-				break;
-				
-			case evKey:
-				GetKeys();;
-
-				if (automatic.checked==true) break;
-				if (key_scancode==SCAN_CODE_TAB)
-				{
-					if (POP_server_box.flags & 0b10)       { POP_server_box.flags -= 0b10;         POP_server_port_box.flags += 0b10;  } else
-					if (POP_server_port_box.flags & 0b10)  { POP_server_port_box.flags -= 0b10;    SMTP_server_box.flags += 0b10;      } else
-					if (SMTP_server_box.flags & 0b10)      { SMTP_server_box.flags -= 0b10;        SMTP_server_port_box.flags += 0b10; } else
-					if (SMTP_server_port_box.flags & 0b10) { SMTP_server_port_box.flags -= 0b10;   POP_server_box.flags += 0b10;       } else
-					                                         POP_server_box.flags = 0b10;
-					DrawOptionsWindow();
+				else {
+					UpdateEditboxFlags(0);
+					POP_server_box.flags = 0b10;
+					POP_server_box.blur_border_color = POP_server_port_box.blur_border_color =
+					 SMTP_server_box.blur_border_color = SMTP_server_port_box.blur_border_color = 0xFFFfff;
 				}
-				
-				EAX=key_ascii<<8;
-				edit_box_key stdcall(#POP_server_box);
-				edit_box_key stdcall(#POP_server_port_box);
-				edit_box_key stdcall(#SMTP_server_box);
-				edit_box_key stdcall(#SMTP_server_port_box);
-				break;
-
-			case evReDraw: _OPT_WIN:
-				if !(DefineWindow(OPTIONS_HEADER)) break;
-				DrawBar(0,0, Form.cwidth, Form.cheight, system.color.work);
 				DrawOptionsWindow();
-				break;
-		}
+			}
+			break;
+			
+		case evKey:
+			GetKeys();;
+
+			if (automatic.checked==true) break;
+			if (key_scancode==SCAN_CODE_TAB)
+			{
+				if (POP_server_box.flags & ed_focus)       { UpdateEditboxFlags(0); POP_server_port_box.flags += ed_focus;  } else
+				if (POP_server_port_box.flags & ed_focus)  { UpdateEditboxFlags(0); SMTP_server_box.flags += ed_focus;      } else
+				if (SMTP_server_box.flags & ed_focus)      { UpdateEditboxFlags(0); SMTP_server_port_box.flags += ed_focus; } else
+				if (SMTP_server_port_box.flags & ed_focus) { UpdateEditboxFlags(0); POP_server_box.flags += ed_focus;       } else
+				{ UpdateEditboxFlags(0); POP_server_box.flags = 0b10; }                            
+				DrawOptionsWindow();
+			}
+			
+			EAX=key_ascii<<8;
+			edit_box_key stdcall(#POP_server_box);
+			edit_box_key stdcall(#POP_server_port_box);
+			edit_box_key stdcall(#SMTP_server_box);
+			edit_box_key stdcall(#SMTP_server_port_box);
+			break;
+
+		case evReDraw: _OPT_WIN:
+			if !(DefineWindow(OPTIONS_HEADER)) break;
+			DrawBar(0,0, Form.cwidth, Form.cheight, system.color.work);
+			DrawOptionsWindow();
+			break;
 	}
 }
 

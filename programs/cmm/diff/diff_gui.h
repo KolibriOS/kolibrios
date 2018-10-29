@@ -8,8 +8,8 @@ od_filter filter2 = {0,0};
 
 char src_box_text[4096];
 char dst_box_text[4096];
-edit_box src_box = {340,20,35,0xffffff,0x94AECE,0xFFFfff,0xffffff,0x10000000,sizeof(src_box_text),#src_box_text,0, 10b};
-edit_box dst_box = {340,20,95,0xffffff,0x94AECE,0xFFFfff,0xffffff,0x10000000,sizeof(dst_box_text),#dst_box_text,0, 0b};
+edit_box src_box = {340,20,35,0xffffff,0x94AECE,0xFFFfff,0xffffff,0x10000000,sizeof(src_box_text)-2,#src_box_text,0, ed_focus};
+edit_box dst_box = {340,20,95,0xffffff,0x94AECE,0xFFFfff,0xffffff,0x10000000,sizeof(dst_box_text)-2,#dst_box_text,0, 0b};
 
 #define BID_EXIT_PRC 01
 #define BID_SRC_OPEN 10
@@ -44,16 +44,14 @@ void gui()
 				OpenDialog_start stdcall (#o_dialog);
 				if (o_dialog.status) {
 					strcpy(#src_box_text, #openfile_path);
-					src_box.size = src_box.pos 
-					= src_box.shift = src_box.shift_old = strlen(#src_box_text);
+					EditBox_UpdateText(#src_box, #src_box.flags);
 				}
 				break;
 			case BID_DST_OPEN:
 				OpenDialog_start stdcall (#o_dialog);
 				if (o_dialog.status) {
 					strcpy(#dst_box_text, #openfile_path);
-					dst_box.size = dst_box.pos 
-					= dst_box.shift = dst_box.shift_old = strlen(#dst_box_text);
+					EditBox_UpdateText(#dst_box, #dst_box.flags);
 				}
 				break;
 			case BID_COMPARE:
@@ -67,12 +65,12 @@ void gui()
 			GetKeys();
 			if (key_scancode == SCAN_CODE_ESC) ExitProcess();
 			if (key_scancode == SCAN_CODE_TAB) {
-				if ( src_box.flags & 10b ) {
-					src_box.flags -= 10b;
-					dst_box.flags += 10b;
+				if ( src_box.flags & ed_focus ) {
+					src_box.flags -= ed_focus;
+					dst_box.flags += ed_focus;
 				} else {
-					src_box.flags += 10b;
-					dst_box.flags -= 10b;					
+					src_box.flags += ed_focus;
+					dst_box.flags -= ed_focus;					
 				} 		
 				edit_box_draw stdcall (#src_box);
 				edit_box_draw stdcall (#dst_box);

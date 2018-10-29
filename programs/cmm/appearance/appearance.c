@@ -64,11 +64,11 @@ _tabs tabs = { LP, LP, NULL, NULL, SKINS };
 checkbox checkbox1 = { "Checkbox", true };
 more_less_box spinbox1 = { 23, 0, 999, "SpinBox" };
 edit_box edit_cmm = {180,NULL,NULL,0xffffff,0x94AECE,0xFFFfff,0xffffff,
-	0x10000000,sizeof(param),#param,0, 0b};
+	0x10000000,sizeof(param)-2,#param,0, 0b};
 
 char st_str[16];
 edit_box edit_st = {180,NULL,NULL,0xffffff,0x94AECE,0xFFFfff,0xffffff,
-	0x10000000,sizeof(st_str),#st_str,0, 0b};
+	0x10000000,sizeof(st_str)-2,#st_str,0, 0b};
 
 char default_dir[] = "/rd/1";
 od_filter filter2 = { 8, "TXT\0\0" };
@@ -130,7 +130,7 @@ void main()
 			}
 			if (key_scancode==SCAN_CODE_DEL) EventDeleteFile();
 
-			if (! edit_cmm.flags & 0b10) && (! edit_st.flags & 0b10)
+			if (! edit_cmm.flags & ed_focus) && (! edit_st.flags & ed_focus)
 			for (id=select_list.cur_y+1; id<select_list.count; id++)
 			{
 				strcpy(#temp_filename, io.dir.position(files_mas[id]));

@@ -204,12 +204,12 @@ void HandleKeyEvent()
 			EventOpenAddress(#address);
 			return;
 		case SCAN_CODE_BS:
-			if (! address_box.flags & 0b10) {
+			if (! address_box.flags & ed_focus) {
 				EventGoBack();
 				return;
 			}
 	}
-	if (list.ProcessKey(key_scancode)) && (! address_box.flags & 0b10) {
+	if (list.ProcessKey(key_scancode)) && (! address_box.flags & ed_focus) {
 		DrawPage();
 		return;
 	}

@@ -22,7 +22,7 @@ void ScreenCopy_onMouseEvent(int mouseX, int mouseY, int lkm, int pkm) {
 
 	for (i = 0; i < image.columns*image.rows; i++;) 
 	{
-		image.mas[i] = ESDWORD[i*3+screen_copy] & 0xFFFFFF;
+		image.mas[i] = ESDWORD[i*3+screen_copy]; // & 0xFFFFFF;
 	}
 	DrawCanvas();
 	
