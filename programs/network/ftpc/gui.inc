@@ -73,7 +73,10 @@ gui: ;//////////////////////////////////////////////////////////////////////////
         ; initialize tree list elements
         stdcall dword[tl_data_init], tree1
         stdcall dword[tl_data_init], tree2
-
+		
+		or dword[tree1.style], 8 ;tl_cursor_pos_limited - restrict cursor move to existing nodes
+		or dword[tree2.style], 8 ;tl_cursor_pos_limited
+		
         ; read icons
         load_image_file 'tl_sys_16.png', icon_tl_sys
 
