@@ -1,6 +1,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;                                                              ;;
-;; Copyright (C) KolibriOS team 2004-2015. All rights reserved. ;;
+;; Copyright (C) KolibriOS team 2004-2018. All rights reserved. ;;
 ;; Distributed under terms of the GNU General Public License    ;;
 ;;                                                              ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1001,13 +1001,24 @@ check_mouse_area_for_getpixel_new:
         cmp     byte [_display.bits_per_pixel], 24
         je      @f
         sub     eax, ebx
+        add     eax, cur_saved_data
+        mov     ecx, [eax]
+        shl     ecx, 3
+        ror     ecx, 8
+        shl     cx, 2
+        ror     ecx, 8
+        shl     cl, 3
+        rol     ecx, 16
+        or      ecx, 0xff000000
+        pop     ebx eax
+        ret
+
 ;--------------------------------------
 align 4
 @@:
         add     eax, cur_saved_data
         mov     ecx, [eax]
-        and     ecx, 0xffffff
-        add     ecx, 0xff000000
+        or      ecx, 0xff000000
         pop     ebx eax
         ret
 ;--------------------------------------
