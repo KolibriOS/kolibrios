@@ -1,6 +1,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;                                                                 ;;
-;; Copyright (C) KolibriOS team 2004-2017. All rights reserved.    ;;
+;; Copyright (C) KolibriOS team 2004-2018. All rights reserved.    ;;
 ;; Distributed under terms of the GNU General Public License       ;;
 ;;                                                                 ;;
 ;;  HTTP library for KolibriOS                                     ;;
@@ -19,7 +19,7 @@
 
 
         URLMAXLEN       = 65535
-        BUFFERSIZE      = 8192
+        BUFFERSIZE      = 512*1024
         TIMEOUT         = 500  ; in 1/100 s
 
         __DEBUG__       = 1
@@ -64,7 +64,10 @@ macro HTTP_init_buffer buffer, socketnum, flags {
         pop     [eax + http_msg.flags]
         or      [eax + http_msg.flags], FLAG_CONNECTED
         mov     [eax + http_msg.write_ptr], esi
-        mov     [eax + http_msg.buffer_length], BUFFERSIZE -  http_msg.http_header
+
+        mov     ebx, [buffersize]
+        sub     ebx, http_msg.http_header
+        mov     [eax + http_msg.buffer_length], ebx
         mov     [eax + http_msg.chunk_ptr], 0
 
         mov     [eax + http_msg.status], 0
@@ -121,6 +124,33 @@ lib_init: ;//////////////////////////////////////////////////////////////////;;
         xor     eax, eax
         inc     eax
         ret
+
+
+;;================================================================================================;;
+proc HTTP_buffersize_get ;////////////////////////////////////////////////////////////////////////;;
+;;------------------------------------------------------------------------------------------------;;
+;? Get HTTP buffer size                                                                           ;;
+;;------------------------------------------------------------------------------------------------;;
+;< eax = buffer size in bytes                                                                     ;;
+;;================================================================================================;;
+
+        mov     eax, [BUFFERSIZE]
+        ret
+
+endp
+
+;;================================================================================================;;
+proc HTTP_buffersize_set ;////////////////////////////////////////////////////////////////////////;;
+;;------------------------------------------------------------------------------------------------;;
+;? Set HTTP buffer size                                                                           ;;
+;;------------------------------------------------------------------------------------------------;;
+;> eax = buffer size in bytes                                                                     ;;
+;;================================================================================================;;
+
+        mov     [BUFFERSIZE], eax
+        ret
+
+endp
 
 
 ;;================================================================================================;;
@@ -230,7 +260,7 @@ endl
 
 ; Create the HTTP request.
   .send_request:
-        invoke  mem.alloc, BUFFERSIZE
+        invoke  mem.alloc, [buffersize]
         test    eax, eax
         jz      .error
         mov     [buffer], eax
@@ -369,7 +399,7 @@ endl
 
 ; Create the HTTP request.
   .send_request:
-        invoke  mem.alloc, BUFFERSIZE
+        invoke  mem.alloc, [buffersize]
         test    eax, eax
         jz      .error
         mov     [buffer], eax
@@ -512,7 +542,7 @@ endl
 
 ; Create the HTTP request.
   .send_request:
-        invoke  mem.alloc, BUFFERSIZE
+        invoke  mem.alloc, [buffersize]
         test    eax, eax
         jz      .error
         mov     [buffer], eax
@@ -646,16 +676,18 @@ proc HTTP_receive identifier ;//////////////////////////////////////////////////
 
         mov     eax, [ebp + http_msg.content_ptr]
         mov     [ebp + http_msg.write_ptr], eax
-        mov     [ebp + http_msg.buffer_length], BUFFERSIZE
+        push    [buffersize]
+        pop     [ebp + http_msg.buffer_length]
         jmp     .receive
 
   .new_buffer:
-        invoke  mem.alloc, BUFFERSIZE
+        invoke  mem.alloc, [buffersize]
         test    eax, eax
         jz      .err_no_ram
         mov     [ebp + http_msg.content_ptr], eax
         mov     [ebp + http_msg.write_ptr], eax
-        mov     [ebp + http_msg.buffer_length], BUFFERSIZE
+        push    [buffersize]
+        pop     [ebp + http_msg.buffer_length]
         DEBUGF  1, "New buffer: 0x%x\n", eax
 
 ; Receive some data
@@ -851,7 +883,7 @@ proc HTTP_receive identifier ;//////////////////////////////////////////////////
         jnz     .ct_hdr_found
 
   .not_chunked:
-        mov     edx, BUFFERSIZE
+        mov     edx, [buffersize]
         call    alloc_contentbuff
         test    eax, eax
         jz      .err_no_ram
@@ -872,7 +904,7 @@ proc HTTP_receive identifier ;//////////////////////////////////////////////////
         or      [ebp + http_msg.flags], FLAG_CHUNKED
         DEBUGF  1, "Transfer type is: chunked\n"
 
-        mov     edx, BUFFERSIZE
+        mov     edx, [buffersize]
         call    alloc_contentbuff
         test    eax, eax
         jz      .err_no_ram
@@ -956,7 +988,8 @@ proc HTTP_receive identifier ;//////////////////////////////////////////////////
         test    [ebp + http_msg.flags], FLAG_STREAM
         jnz     .dont_resize
 ; Realloc buffer, make it 'chunksize' bigger.
-        lea     edx, [ebx + BUFFERSIZE]
+        mov     edx, ebx
+        add     edx, [buffersize]
         mov     [ebp + http_msg.buffer_length], edx     ; remaining space in new buffer
         add     edx, [ebp + http_msg.write_ptr]
         sub     edx, [ebp + http_msg.content_ptr]
@@ -1006,13 +1039,14 @@ proc HTTP_receive identifier ;//////////////////////////////////////////////////
         test    [ebp + http_msg.flags], FLAG_STREAM
         jnz     .multibuff
         mov     eax, [ebp + http_msg.write_ptr]
-        add     eax, BUFFERSIZE
+        add     eax, [buffersize]
         sub     eax, [ebp + http_msg.content_ptr]
         invoke  mem.realloc, [ebp + http_msg.content_ptr], eax
         or      eax, eax
         jz      .err_no_ram
         call    recalculate_pointers
-        mov     [ebp + http_msg.buffer_length], BUFFERSIZE
+        push    [buffersize]
+        pop     [ebp + http_msg.buffer_length]
         ; Need more data
         popa
         xor     eax, eax
@@ -1124,7 +1158,7 @@ alloc_contentbuff:
 
         test    [ebp + http_msg.flags], FLAG_STREAM
         jz      @f
-        mov     edx, BUFFERSIZE
+        mov     edx, [buffersize]
   @@:
 
 ; Allocate content buffer
@@ -1880,6 +1914,8 @@ align 4
 export  \
         lib_init                , 'lib_init'            , \
         0x00010001              , 'version'             , \
+        HTTP_buffersize_get     , 'buffersize_get'      , \
+        HTTP_buffersize_set     , 'buffersize_set'      , \
         HTTP_get                , 'get'                 , \
         HTTP_head               , 'head'                , \
         HTTP_post               , 'post'                , \
@@ -1947,6 +1983,8 @@ dd      0xffffffff
 
 str_hex:
 db '0123456789ABCDEF'
+
+buffersize      dd BUFFERSIZE
 
 include_debug_strings
 
