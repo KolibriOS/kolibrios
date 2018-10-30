@@ -1,6 +1,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;                                                                 ;;
-;; Copyright (C) KolibriOS team 2010-2017. All rights reserved.    ;;
+;; Copyright (C) KolibriOS team 2010-2018. All rights reserved.    ;;
 ;; Distributed under terms of the GNU General Public License       ;;
 ;;                                                                 ;;
 ;;  netstat.asm - Network Status Tool for KolibriOS                ;;
@@ -312,12 +312,14 @@ draw_stats:
 
         push    [time]
         pop     [delta_time]
-        mcall   26, 9
+        mcall   26, 9           ; TODO: use 26, 10 instead
         mov     [time], eax
         sub     eax, [delta_time]
         jnz     @f
         inc     eax             ; Zero time units? Lets make it at least one.
   @@:
+        lea     eax, [eax + 4*eax]
+        shl     eax, 1
         mov     [delta_time], eax
 
         mov     eax, [esp+4]    ; bytes received
