@@ -14,7 +14,7 @@ include 'cnc_editor.inc'
 include '../../develop/info3ds/info_fun_float.inc'
 
 @use_library_mem mem.Alloc,mem.Free,mem.ReAlloc,dll.Load
-caption db 'CNC editor 08.10.18',0 ;подпись окна
+caption db 'CNC editor 30.10.18',0 ;подпись окна
 
 run_file_70 FileInfoBlock
 
@@ -711,7 +711,9 @@ but_open_file:
 		mcall SF_SET_CAPTION,1,openfile_path
 
 		;---
+		and dword[tree1.style],not tl_cursor_pos_limited
 		stdcall FileInit,[open_file_data],[open_file_size]
+		or dword[tree1.style], tl_cursor_pos_limited
 		stdcall [buf2d_clear], buf_0, [buf_0.color] ;чистим буфер
 		stdcall [buf2d_draw], buf_0 ;обновляем буфер на экране
 	.end_open_file:

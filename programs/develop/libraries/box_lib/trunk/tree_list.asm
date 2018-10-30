@@ -266,6 +266,12 @@ pop ebx eax
 
 		mov ecx,eax
 		call tl_get_node_count ;eax = node count
+		bt tl_style,3 ;tl_cursor_pos_limited
+		jnc @f
+		or eax,eax
+		jz @f
+			dec eax ;если курсор стает на существующие узлы
+		@@:
 		cmp eax,ecx
 		jl @f
 			mov eax,ecx ;если курсор не вышел за пределы узлов, восстанавливаем старое значение eax
@@ -1549,6 +1555,12 @@ align 4
 proc tl_cur_next uses eax ebx edi esi, tlist:dword
 	mov edi,[tlist]
 	call tl_get_node_count ;eax = node count
+	bt tl_style,3 ;tl_cursor_pos_limited
+	jnc @f
+	or eax,eax
+	jz @f
+		dec eax ;если курсор стает на существующие узлы
+	@@:
 	cmp tl_cur_pos,eax
 	jge .no_redraw
 		mov esi,tl_box_top
@@ -1700,6 +1712,12 @@ proc tl_cur_page_down uses eax ebx ecx edi esi, tlist:dword
 	je .no_redraw
 		mov esi,tl_p_scroll
 		call tl_get_node_count ;eax = node count
+		bt tl_style,3 ;tl_cursor_pos_limited
+		jnc @f
+		or eax,eax
+		jz @f
+			dec eax ;если курсор стает на существующие узлы
+		@@:
 		mov ebx,eax
 		call tl_get_rows_count ;eax = rows count
 

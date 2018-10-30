@@ -177,6 +177,7 @@ mov	ebp,lib0
 			add eax,304
 			loop @b
 		stdcall [tl_cur_beg],tree1 ;ставим курсор на начало списка
+		or dword[tree1.style], tl_cursor_pos_limited ;ограничиваем движение курсора в пределах списка
 	.end_dir_init:
 
 ;--- load ini file ---
