@@ -229,6 +229,7 @@ dd  0x107c8086          ; 82541PI
 dd  0x10b58086          ; 82546GB (Copper)
 dd  0x11078086          ; 82544EI
 dd  0x11128086          ; 82544GC
+dd  0x15A18086          ; I218-V
 dd  0x0
 
 db  'RHINE', 0          ; VIA Rhine
