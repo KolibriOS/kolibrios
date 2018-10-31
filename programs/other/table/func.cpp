@@ -40,6 +40,29 @@ int atoi(const char* string)
 	return res;
 }
 
+int toupper(int c)
+{
+	if ( (c >= 97) && (c <= 122) )	return c-32 ;
+	if ( (c >= 160) && (c <= 175) )	return c-32 ;
+	if ( (c >= 224) && (c <= 239) )	return c-80 ;
+	if ( (c == 241) || (c == 243) || (c == 245) || (c == 247) )	return c-1;
+	return c;
+}
+
+int strnicmp(const char* string1, const char* string2, unsigned count)
+{
+int pc = 0;
+while (1)
+	{
+		if (toupper(*string1)<toupper(*string2)) return -1;
+		if (toupper(*string1)>toupper(*string2)) return 1;
+		if (*string1=='\0' || pc == count) return 0;
+		string1++;
+		string2++;
+		pc++;
+	}
+}
+
 /*int abs(int n)
 {
 	return (n<0)?-n:n;

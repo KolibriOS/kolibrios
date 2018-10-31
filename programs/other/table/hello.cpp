@@ -11,7 +11,7 @@ extern char params[1024];
 #endif
 char params[1024];
 
-#define TABLE_VERSION "0.99.1"
+#define TABLE_VERSION "0.99.1a"
 
 // strings
 const char *sFileSign = "KolibriTable File\n";

@@ -353,28 +353,6 @@ void fill_cells(int sel_x, int sel_y, int sel_end_x, int sel_end_y, int old_end_
 	calculate_values();
 }
 
-const char *csv_name = ".csv";
-
-int str_is_csv(char *str)
-{
-	int i, j = 0;
-
-	for (i = 0; i < strlen(str); i++)
-	{
-		if (str[i] == csv_name[j])
-		{
-			j++;
-			if (j == strlen(csv_name))
-				return 1;
-		}
-		else
-		{
-			j = 0;
-		}
-	}
-	return 0; 
-}
-
 int Kos_FileWrite(kosFileInfo &fileInfo, char *line, int mode = 3) // если mode = 2 - перезаписать файл
 {
 	int res = 0;
@@ -441,7 +419,7 @@ int SaveCSV(char *fname)
 				}
 				buffer[buf_len++] = '\"';
 			}
-			buffer[buf_len++] = ';';
+			buffer[buf_len++] = ',';
 		}
 		rtlDebugOutString(buffer);
 		// очередная строка теперь в буфере
@@ -450,7 +428,15 @@ int SaveCSV(char *fname)
 			return 0;
 	}
 	return 1;
+}
 
+int str_is_csv(char *str)
+{
+	int str_len = strlen(str);
+	if (str_len >= 5) {
+		if ( strnicmp(str + str_len - 4, ".CSV", 4) == 0) return 1; 
+	}
+	return 0;
 }
 
 #define BUF_FOR_ALL 5000

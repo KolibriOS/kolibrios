@@ -54,6 +54,8 @@ void kos_GetMouseStateWnd( Dword & buttons, int & cursorX, int & cursorY );
 void kos_DrawRegion(Word x, Word y,Word width, Word height, Dword color1, Word invert);
 void kos_DrawCutTextSmall(Word x, Word y, int areaWidth, Dword textColour, char *textPtr);
 int atoi(const char* string);
+int toupper(int c);
+int strnicmp(const char* string1, const char* string2, unsigned count);
 void kos_GetScrollInfo(int &vert, int &hor);
 
 
