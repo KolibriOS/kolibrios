@@ -709,6 +709,7 @@ void Line_ReDraw(dword bgcol, filenum){
 		  ext1, attr,
 		  file_offet,
 		  file_name_off,
+		  file_size=0,
 		  y=filenum*files.item_h+files.y,
 		  icon_y = files.item_h-icon_size/2+1+y;
 		  BDVK file;
@@ -727,18 +728,13 @@ void Line_ReDraw(dword bgcol, filenum){
 	file.sizelo   = ESDWORD[file_offet+32];
 	file.sizehi   = ESDWORD[file_offet+36];
 	file_name_off = file_offet+40;
+	sprintf(#temp_path,"%s/%s",#path,file_name_off);
 
 	if (! TestBit(attr, 4) ) //file or folder?
 	{	
 		ext1 = strrchr(file_name_off,'.') + file_name_off;
-		if (ext1==file_name_off) ext1 = NULL; //if no extension then show nothing 
-		WriteText(
-			7-strlen(ConvertSize64(file.sizelo, file.sizehi))*6+files.x+files.w - 58, 
-			files.text_y+y+1, 
-			files.font_type, 
-			0, 
-			ConvertSize64(file.sizelo, file.sizehi)
-		);
+		if (ext1==file_name_off) ext1 = NULL; //if no extension then show nothing
+		file_size = ConvertSize64(file.sizelo, file.sizehi);
 		if (ext1) && (strlen(ext1)<9) WriteTextCenter(files.x+files.w-140, files.text_y+y+1, 72, 0, ext1);
 	}
 	else
@@ -747,8 +743,10 @@ void Line_ReDraw(dword bgcol, filenum){
 			ext1="<DIR>";
 			WriteTextCenter(files.x+files.w-140, files.text_y+y+1, 72, 0, ext1);
 		}
+		if (chrnum(#path, '/')==1) file_size = GetDeviceSizeLabel(#temp_path);
 	}
-	sprintf(#temp_path,"%s/%s",#path,file_name_off);
+	if (file_size) WriteText(7-strlen(file_size)*6+files.x+files.w-58, 
+			files.text_y+y+1, files.font_type, 0, file_size);
 	DrawIconByExtension(#temp_path, ext1, files.x+4, icon_y, bgcol);
 
 	if (TestBit(attr, 1)) || (TestBit(attr, 2)) text_col=0xA6A6B7; //system or hiden?
@@ -1165,6 +1163,22 @@ void EventSelectFileByKeyPress()
 			return;
 		}
 	}
+}
+
+dword GetDeviceSizeLabel(dword path)
+{
+	BDVK bdvk;
+	char cdname[8];
+	if (ESBYTE[path+1] == '/') path++;
+	if (ESBYTE[path+1] == 'c') && (ESBYTE[path+2] == 'd')
+		&& (ESBYTE[path+4] == 0) {
+		//hack for http://board.kolibrios.org/viewtopic.php?p=72293#p72279
+		strcpy(#cdname, path);
+		strcat(#cdname, "/1");
+		path = #cdname;
+	}
+	GetFileInfo(path, #bdvk);
+	return ConvertSize64(bdvk.sizelo, bdvk.sizehi);
 }
 
 int GetRealFileCountInFolder(dword folder_path)

@@ -55,9 +55,9 @@ void Main_Window()
 	int x;
 
 	load_dll(boxlib, #box_lib_init,0);
-	GetSizeDisk();
+	GetNewSizeDisk();
 	edit_disk_size.left = strlen(SIZE_TEXT)*9 + 10;
-	SetEventMask(0x27);
+	SetEventMask(EVM_REDRAW + EVM_KEY + EVM_BUTTON + EVM_MOUSE + EVM_MOUSE_FILTER);
 	loop()
 	{
 		switch(WaitEvent()) 
@@ -142,7 +142,7 @@ void Main_Window()
 			break;
          case evReDraw:			
 			system.color.get();
-			DefineAndDrawWindow(170,150,405,290,0x74,system.color.work,"Virtual Disk Manager 0.67a",0);
+			DefineAndDrawWindow(170,150,405,290,0x74,system.color.work,"Virtual Disk Manager 0.68",0);
 			GetProcessInfo(#Form, SelfInfo);
 			if (Form.status_window>2) break;
 
@@ -151,7 +151,6 @@ void Main_Window()
 			WriteText(6, 9, 0x90, system.color.work_text, SIZE_TEXT);
 			WriteText(edit_disk_size.left + edit_disk_size.width + 12, 9, 0x90, system.color.work_text, "MB.");
 			DrawEditBox(#edit_disk_size);
-			x = 6;
 			x = 6 + DrawStandartCaptButton(6, 36, 10, T_ADD_DISK);
 			DrawStandartCaptButton(x, 36, 11, T_DELETE_DISK);
 			_PutImage(6+6, 42,  14,14,   #icons);
@@ -163,7 +162,7 @@ void Main_Window()
 }
 
 
-void GetSizeDisk()
+void GetNewSizeDisk()
 {
 	int fr;
 	fr = GetFreeRAM() / 5 * 2;
@@ -209,14 +208,24 @@ void GetDisks()
 }
 
 
+dword GetDiskSize(dword disk_n)
+{
+	BDVK bdvk;
+	char tmp_path[8];
+	strcpy(#tmp_path, "/tmp0/1");
+	tmp_path[4] = disk_n + '0';
+	GetFileInfo(#tmp_path, #bdvk);		
+	return bdvk.sizelo;
+}
+
 unsigned int disk_pos_x[]={13,13,13,102,102,102,191,191,191,279,279,279};
 unsigned int disk_pos_y[]={79,127,175, 79,127,175, 79,127,175, 79,127,175};
 
 void DrawTmpDisks()
 {
+	#define SELECTION_ACTIVE 0x0080FF;
+	#define SELECTION_INACTIVE 0x757489;
 	dword selection_color;
-	dword selection_active = 0x0080FF;
-	dword selection_inactive = 0x757489;
 	char free_ram_text[60];
 	byte i, real_id;
 	int FreeRAM=GetFreeRAM()/1024;
@@ -240,10 +249,13 @@ void DrawTmpDisks()
 		DefineButton(disk_pos_x[i], disk_pos_y[i], 80, 40, 20+i, 0xFFFfff);
 		WriteText(disk_pos_x[i]+26,disk_pos_y[i]+6,  10110000b, 0x222222, #disk_list[i].Item);
 		real_id = disk_list[i].Item[3] - '0';
-		WriteText(disk_pos_x[i]+27,disk_pos_y[i]+24, 0x80, 0x555555, ConvertSize(disk_sizes[real_id]));
+		WriteText(disk_pos_x[i]+27,disk_pos_y[i]+24, 0x80, 0x555555, ConvertSize(GetDiskSize(real_id)));
 		_PutImage(disk_pos_x[i]+6,disk_pos_y[i]+6, 14,14, 2*14*14*3+#icons);
 		if (selected==i) {
-			if ( edit_disk_size.flags & ed_focus) selection_color = selection_inactive; else selection_color = selection_active;
+			if ( edit_disk_size.flags & ed_focus) 
+				selection_color = SELECTION_INACTIVE; 
+			else 
+				selection_color = SELECTION_ACTIVE;
 			DrawWideRectangle(disk_pos_x[i], disk_pos_y[i], 80, 40, 2, selection_color);
 			PutPixel(disk_pos_x[i], disk_pos_y[i], 0xFFFfff);
 		}
@@ -279,7 +291,7 @@ void AddDisk()
 	pause(5);
 	GetDisks();
 	DrawTmpDisks();
-	GetSizeDisk();
+	GetNewSizeDisk();
 }
 
 

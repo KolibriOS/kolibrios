@@ -4,10 +4,6 @@
 #include "..\lib\strings.h"
 #include "..\lib\fs.h"
 
-#include "..\lib\dll.h"
-#include "..\lib\obj\libio.h"
-#include "..\lib\obj\libini.h"
-
 #ifndef AUTOBUILD
 #include "lang.h--"
 #endif
@@ -47,10 +43,6 @@ del_disk_struc del_disk;
 
 int driver_handle;
 
-dword disk_sizes[10];
-
-_ini ini = { "/sys/settings/system.ini", "DiskSizes" };
-
 /////////////////////////////////////////////////////////////////////////////////////////
 /////////////////////////                    Code                    ////////////////////
 /////////////////////////////////////////////////////////////////////////////////////////
@@ -67,40 +59,12 @@ void main()
 		ExitProcess();
 	}
 
-	GetDiskSizesFromIni();
-	
 	if (param)
 		Console_Work();
 	else
 		Main_Window();
 		
-	SaveDiskSizesToIni();
 	ExitProcess();
 }
-
-
-void GetDiskSizesFromIni()
-{
-	char i, key[2];
-	load_dll(libini, #lib_init, 1);
-	key[1]=0;
-	for (i=0; i<=9; i++)
-	{
-		key[0]=i+'0';
-		disk_sizes[i] = ini.GetInt(#key, 0);
-	}
-}
-
-void SaveDiskSizesToIni()
-{
-	char i, key[2];
-	key[1]=0;
-	for (i=0; i<=9; i++)
-	{
-		key[0]=i+'0';
-		if (disk_sizes[i]) ini.SetInt(#key, disk_sizes[i]);
-	}
-}
-
 
 stop:

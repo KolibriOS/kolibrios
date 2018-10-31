@@ -3,12 +3,10 @@
 /////////////////////////////////////////////////////////////////////////////////////////
 
 #ifdef LANG_RUS
-	?define ADD_DISK_TEXT "пробую добавить виртуальный диск"
-	?define DELETE_DISK_TEXT "пробую удалить виртуальный диск"
-	?define DONT_KNOW_DISK_SIZE_TEXT "его размер не указан, 20% свободной ОЗУ будет использовано"
-	?define NEW_DISK_TEXT "размер диска будет: "
+	?define DELETE_DISK_TEXT "Пробую удалить /tmp%i"
+	?define NEW_DISK_TEXT "Пробую добавить виртуальный диск /tmp%i размером %i MB"
 	char *rezult_text[]={
-	"операция успешно завершена",
+	"TmpDisk операция успешно завершена",
 	"неизвестный IOCTL, неверный размер предоставляемых данных...",
 	"номер диска должен быть от 0 до 9",
 	"размер создаваемого диска слишком велик",
@@ -17,12 +15,10 @@
 	"неизвестная ошибка O_o",
 	0};
 #else
-	?define ADD_DISK_TEXT "trying to add disk"
-	?define DELETE_DISK_TEXT "trying to delete virtual disk"
-	?define DONT_KNOW_DISK_SIZE_TEXT "its size is not specified, 20% from free RAM will be used"
-	?define NEW_DISK_TEXT "new DiskSize: "
+	?define DELETE_DISK_TEXT "Trying to delete /tmp%i"
+	?define NEW_DISK_TEXT "Trying to add virtual disk /tmp%i, the size of %i MB"
 	char *rezult_text[]={
-	"operation completed successfully",
+	"TmpDisk operation completed successfully",
 	"unknown IOCTL code, wrong input/output size...",
 	"DiskId must be from 0 to 9",
 	"DiskSize is too large",
@@ -48,8 +44,7 @@ char Console_Work()
 			debugln("d[number] - delete RAM disk");
 			ExitProcess();
 			break;
-		case 'd':
-			debugln(DELETE_DISK_TEXT);
+		case 'd': //Delete disk
 			del_disk.DiskId = param[1]-'0';
 			ioctl.handle   = driver_handle;
 			ioctl.io_code  = DEV_DEL_DISK;
@@ -57,24 +52,19 @@ char Console_Work()
 			ioctl.inp_size = sizeof(del_disk);
 			ioctl.output   = 0;
 			ioctl.out_size = 0;
-			disk_sizes[del_disk.DiskId] = 0;
+			sprintf(#size_t, DELETE_DISK_TEXT, add_disk.DiskId);
+			debugln(#size_t);
 			break;
-		case 'a':
-			debugln(ADD_DISK_TEXT);
+		case 'a': //Add disk
 			disk_size= strchr(#param, 's');
 			if (!disk_size)
 			{
 				add_disk.DiskSize = GetFreeRAM() / 5 * 2;
-				debugln(DONT_KNOW_DISK_SIZE_TEXT);
 			}				
 			else
 			{
 				add_disk.DiskSize = atoi(disk_size+1)*2048;
 			}
-			strcpy(#size_t, NEW_DISK_TEXT);
-			strcat(#size_t, itoa(add_disk.DiskSize/2048));
-			strcat(#size_t, " MB");
-			debugln(#size_t);
 			add_disk.DiskId = param[1]-'0';
 			ioctl.handle   = driver_handle;
 			ioctl.io_code  = DEV_ADD_DISK;
@@ -82,7 +72,8 @@ char Console_Work()
 			ioctl.inp_size = sizeof(add_disk);
 			ioctl.output   = 0;
 			ioctl.out_size = 0;
-			disk_sizes[add_disk.DiskId] = add_disk.DiskSize * 512;
+			sprintf(#size_t, NEW_DISK_TEXT, add_disk.DiskId, add_disk.DiskSize/2048);
+			debugln(#size_t);
 			break;
 		default:
 			debugln("unknown command line parameters");
