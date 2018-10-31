@@ -126,6 +126,7 @@ void main()
 {   	
 	InitDlls();	
 	OpenDialog_init stdcall (#o_dialog);
+	if (param) strcpy(#openfile_path, #param);
 	LoadIniSettings();
 	EventSetColorScheme(curcol_scheme);
 	kfont.init(DEFAULT_FONT);

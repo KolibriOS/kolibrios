@@ -57,6 +57,8 @@ int look_up(char *s);
 bool strcmp(char *s1, char *s2);
 bool strncmp(char *s1, char *s2, int n);
 
+unsigned int chrnum(char* text, char symbol);
+
 extern double epsilon;
 
 

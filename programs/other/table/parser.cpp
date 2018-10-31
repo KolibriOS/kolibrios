@@ -928,3 +928,15 @@ int look_up(char *s)
 	return 0;	// search command/function name
 }
 
+unsigned int chrnum(char* text, char symbol)
+{
+	int num = 0;
+	int i = 0;
+	while(text[i])
+	{ 
+		if (text[i] == symbol) num++;
+		i++;
+	}
+	return num;
+}
+

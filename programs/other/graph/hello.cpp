@@ -1,6 +1,5 @@
 #include "func.h"
 #include "parser.h"
-#include "kolibri.h"
 #include "use_library.h"
 
 const char header[] = "Graph";

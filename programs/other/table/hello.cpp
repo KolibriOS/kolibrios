@@ -6,7 +6,12 @@
 #include "calc.h"
 #include "use_library.h"
 
-#define TABLE_VERSION "0.99"
+#ifdef AUTOBUILD
+extern char params[1024];
+#endif
+char params[1024];
+
+#define TABLE_VERSION "0.99.1"
 
 // strings
 const char *sFileSign = "KolibriTable File\n";
@@ -1043,6 +1048,22 @@ void process_key()
 	}
 }
 
+void EventLoadFile()
+{
+	stop_edit();
+	int r = LoadFile(fname);
+	char *result;
+	if (r > 0) {
+		calculate_values();
+		sel_moved = 0;
+		draw_grid();
+		result = (char*)msg_load;
+	}
+	else if (r == -1) result = (char*)er_file_not_found;
+	else if (r == -2) result = (char*)er_format;
+	kos_AppRun("/sys/@notify", result);
+}
+
 void process_button()
 {
 	Dword button;
@@ -1063,18 +1084,7 @@ void process_button()
 		break;
 
 	case LOAD_BUTTON:
-		stop_edit();
-		int r = LoadFile(fname);
-		char *result;
-		if (r > 0) {
-			calculate_values();
-			sel_moved = 0;
-			draw_grid();
-			result = (char*)msg_load;
-		}
-		else if (r == -1) result = (char*)er_file_not_found;
-		else if (r == -2) result = (char*)er_format;
-		kos_AppRun("/sys/@notify", result);
+		EventLoadFile();
 		break;
 	}
 	if (button >= COL_HEAD_BUTTON    &&    button < ROW_HEAD_BUTTON)
@@ -1102,6 +1112,11 @@ void kos_Main()
 	kos_InitHeap();
 	load_edit_box();
 	init();
+	if (params[0]) {
+		strcpy(fname, params);
+		file_box.size = file_box.pos = strlen(fname);
+		EventLoadFile();
+	}
 	kos_SetMaskForEvents(EVM_REDRAW + EVM_KEY + EVM_BUTTON + EVM_MOUSE + EVM_MOUSE_FILTER);	
 	for (;;)
 	{

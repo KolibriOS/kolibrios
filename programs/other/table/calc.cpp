@@ -588,6 +588,31 @@ char *Kos_FileRead(kosFileInfo &fileInfo, int &code)
 	return r;
 }
 
+char GetCsvSeparator(char *fname)
+{
+	char buffer[512];
+	kosFileInfo fileInfo;
+
+	rtlDebugOutString("hi");
+	rtlDebugOutString(fname);
+
+	strcpy(fileInfo.fileURL, fname);
+	fileInfo.OffsetLow = 0;
+	fileInfo.OffsetHigh = 0;
+	fileInfo.dataCount = 512;
+	fileInfo.rwMode = 0;
+	fileInfo.bufferPtr = (Byte *)buffer;
+	
+	if (kos_FileSystemAccess(&fileInfo) == 0) {
+		int separ_coma = chrnum(buffer, ',');
+		int separ_semicolon = chrnum(buffer, ';');
+		//kos_DebugValue(",", separ_coma);
+		//kos_DebugValue(";", separ_semicolon);
+		if (separ_semicolon>separ_coma) return ';';
+	}
+	return ',';
+}
+
 int LoadCSV(char *fname)
 {
 	// clear the table
@@ -597,6 +622,8 @@ int LoadCSV(char *fname)
 	strcpy(fileInfo.fileURL,fname);
 	fileInfo.OffsetLow = 0;
 	fileInfo.OffsetHigh = 0;
+
+	char separator = GetCsvSeparator(fileInfo.fileURL);
 
 	char *line;
 
@@ -626,7 +653,7 @@ int LoadCSV(char *fname)
 			{
 				char c = line[i];
 				if (!c)
-					c = ';'; 
+					c = separator; 
 				int yes_semicolon = 0;
 
 				switch (inPar)
@@ -638,7 +665,7 @@ int LoadCSV(char *fname)
 						}
 						else
 						{
-							if (c == ';')
+							if (c == separator)
 								yes_semicolon = 1;
 						}
 						break;
@@ -652,7 +679,7 @@ int LoadCSV(char *fname)
 						}
 						/*else
 						{
-							if (c == ';')
+							if (c == separator)
 								yes_semicolon = 1;
 
 						}*/
@@ -660,7 +687,7 @@ int LoadCSV(char *fname)
 				}
 				if (yes_semicolon)
 				{
-					// итак, line[i] = ';'
+					// итак, line[i] = separator
 					int tmp = line[start] == '"' ? 1 : 0;
 					int sz = i - start - tmp * 2;
 					if (sz > 0)

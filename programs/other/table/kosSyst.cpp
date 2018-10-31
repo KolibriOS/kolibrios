@@ -9,6 +9,7 @@
 #ifdef AUTOBUILD
 char kosExePath[1024];
 char exeStack[16384];
+extern char params[1024];
 // must be alphabetically first in the image
 #pragma data_seg(".1seg")
 extern "C" struct
@@ -28,7 +29,7 @@ extern "C" struct
 	0,	// filled by doexe2.asm
 	0,	// filled by doexe2.asm
 	exeStack + sizeof(exeStack),
-	NULL,
+	params,
 	kosExePath
 };
 #pragma data_seg()

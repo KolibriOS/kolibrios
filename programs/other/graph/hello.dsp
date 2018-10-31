@@ -76,10 +76,6 @@ SOURCE=.\hello.cpp
 # End Source File
 # Begin Source File
 
-SOURCE=.\kolibri.cpp
-# End Source File
-# Begin Source File
-
 SOURCE=.\KosFile.cpp
 # End Source File
 # Begin Source File
@@ -109,10 +105,6 @@ SOURCE=.\string.c
 # Begin Source File
 
 SOURCE=.\func.h
-# End Source File
-# Begin Source File
-
-SOURCE=.\kolibri.h
 # End Source File
 # Begin Source File
 
