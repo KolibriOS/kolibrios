@@ -54,6 +54,7 @@ img_files = {
  {"NETWORK/TL_SYS_16.PNG", PROGS .. "/network/ftpc/tl_sys_16.png"},
  {"NETWORK/TL_NOD_16.PNG", PROGS .. "/network/ftpc/tl_nod_16.png"},
  {"SETTINGS/APP.INI", "common/settings/app.ini"},
+ {"SETTINGS/APP_PLUS.INI", "common/settings/app_plus.ini"},
  {"SETTINGS/ASSOC.INI", "common/settings/assoc.ini"},
  {"SETTINGS/AUTORUN.DAT", "common/settings/AUTORUN.DAT"},
  {"SETTINGS/DOCKY.INI", "common/settings/docky.ini"},
@@ -239,7 +240,6 @@ extra_files = {
  {"kolibrios/media/zsea/zsea.ini", PROGS .. "/media/zsea/zSea.ini"},
  {"kolibrios/media/zsea/buttons/buttons.png", PROGS .. "/media/zsea/buttons.png"},
  {"kolibrios/res/skins/", "../skins/authors.txt"},
- {"kolibrios/settings/app_plus.ini", "common/settings/app_plus.ini"},
  {"kolibrios/res/wallpapers/in_the_wind.png", "common/wallpapers/in_the_wind.png"},
  {"kolibrios/res/wallpapers/deink.png", "common/wallpapers/deink.png"},
  }

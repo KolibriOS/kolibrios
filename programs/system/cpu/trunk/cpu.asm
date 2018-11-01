@@ -59,7 +59,7 @@ err_message_found_lib, head_f_l, myimport, err_message_import, head_f_i
         init_checkboxes2 check1,check1_end
         mcall   48,3,sc,40
         edit_boxes_set_sys_color edit1,edit1_end,sc             ;set color
-        check_boxes_set_sys_color2 check1,check1_end,sc ;set color
+        ;check_boxes_set_sys_color2 check1,check1_end,sc ;set color
 ;------------------------------------------------------------------------------
 align 4
 ;main loop when process name isn't edited.
@@ -620,7 +620,7 @@ aCheck_box_mouse        db 'check_box_mouse2',0
 ;aVersion_op            db 'version_op',0
 ;------------------------------------------------------------------------------
 align 4
-check1 check_box2 (10 shl 16)+11,(383 shl 16)+11,6, 0x80AABBCC,0,0,check_text, ch_flag_bottom ;ch_flag_en
+check1 check_box2 (10 shl 16)+12,(383 shl 16)+12,6, 0x80D6DEE7,0x4C5258,0,check_text, ch_flag_middle ;ch_flag_en
 check1_end:
 edit1 edit_box 350,95,381,0xffffff,0x6f9480,0,0xAABBCC,0,start_application_c,\
    start_application,mouse_dd,ed_focus,start_application_e,start_application_e
