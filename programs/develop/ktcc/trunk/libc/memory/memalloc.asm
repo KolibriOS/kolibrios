@@ -2,12 +2,12 @@ format ELF
 
 ;include "proc32.inc"
 section '.text' executable
-public malloc
-public free
-public realloc
+public sysmalloc
+public sysfree
+public sysrealloc
 
 align 4
-malloc:
+sysmalloc:
     push ebx
         mov eax,68
         mov ebx,12
@@ -17,7 +17,7 @@ malloc:
         ret 4
 
 align 4
-free:
+sysfree:
     push ebx
         mov eax,68
         mov ebx,13
@@ -27,7 +27,7 @@ free:
         ret 4
 
 align 4
-realloc:
+sysrealloc:
     push ebx
         mov ebx,20
         mov eax,68

@@ -15,7 +15,7 @@ Adapted for tcc by Siemargl, 2016
 /*
 console.obj exports the following functions
 */
-typedef unsigned long dword; /* 32-bit unsigned integer */
+typedef unsigned int dword; /* 32-bit unsigned integer */
 typedef unsigned short word; /* 16-bit unsigned integer */
 
 extern void stdcall (*con_init)(dword wnd_width, dword wnd_height,
@@ -193,5 +193,11 @@ extern int con_init_console_dll(void);
 /*	load library and link function symbols. returns 1 if error
 called automatic in printf, otherwise, see __console_initdll_status
 */
+
+extern int con_init_console_dll_param(dword wnd_width, dword wnd_height,
+	dword scr_width, dword scr_height, const char* title);
+/*	work as con_init_console_dll, but call con_init with params
+*/
+
 
 #endif

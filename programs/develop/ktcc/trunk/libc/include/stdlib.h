@@ -19,9 +19,32 @@ extern int atoi(char *s);
 extern char *itoab(unsigned int n,char* s,int  b);
 extern char *__itoa(int n,char* s);
 
-extern void* stdcall malloc(dword size);
-extern void  stdcall free(void *pointer);
-extern void* stdcall realloc(void* pointer,dword size);
+// function using KOS syscalls
+extern void* stdcall sysmalloc(dword size);
+extern void  stdcall sysfree(void *pointer);
+extern void* stdcall sysrealloc(void* pointer,dword size);
+extern void* syscalloc (size_t num, size_t size);
+
+// suballocator functions
+extern void* wtmalloc(size_t size);
+extern void  wtfree(void *pointer);
+extern void* wtrealloc(void* pointer, size_t size);
+extern void* wtcalloc (size_t num, size_t size);
+extern int   wtmalloc_freelist_check();
+extern int wtmalloc_poiner_check(void *ptr);
+
+#ifdef USESYSALLOC
+#define malloc(x) sysmalloc(x)
+#define free(x)   sysfree(x)
+#define realloc(x,y) sysrealloc(x,y)
+#define calloc(x,y) syscalloc(x,y)
+#else
+#define malloc(x) wtmalloc(x)
+#define free(x)   wtfree(x)
+#define realloc(x,y) wtrealloc(x,y)
+#define calloc(x,y) wtcalloc(x,y)
+#endif
+
 
 extern int rand (void);
 extern void srand (unsigned int seed);
@@ -32,7 +55,6 @@ float strtof (const char* str, char** endptr);
 long int strtol (const char* str, char** endptr, int base);
 #define strtoul(s, ep, b) ((unsigned long int)strtol(s, ep, b))
 
-void* calloc (size_t num, size_t size);
 
 void exit (int status); /* close console if was initialized, also stay window [finished] when status is error < 0 */ 
 #define abort() exit(-1)

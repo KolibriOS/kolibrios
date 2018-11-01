@@ -38,6 +38,9 @@ start:
     test eax, eax
     jz	 .without_path
     mov  eax, path
+    cmp	 word ptr eax, 32fh  ; '/#3'  UTF8 
+    jne  .without_path
+    mov  word ptr eax, 12fh  ; '/#1'  fix to CP866
 .without_path:
     mov  esi, eax
     call push_param

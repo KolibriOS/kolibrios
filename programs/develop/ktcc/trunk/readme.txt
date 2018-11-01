@@ -10,7 +10,6 @@ building Kolibri version
 read .\source\readme_kos32.txt
 
 ------ TODO -------
--minimal memory allocator
 -more libc stardard functions. see report below 
 -more Kolibly SysFn wrappers. see \libc\KOSfuncs_inc_status.txt
 -add stdin, stderr, stdout emulation не хватает stdin, stdout - можно сделать как stderr!, но надо возиться заодно с ferror & feof
@@ -19,8 +18,6 @@ read .\source\readme_kos32.txt
 
 
 ------ errors ------
--not working: default search path are ./include ./lib from executable (under KOS need to use -Bpath_to_ktcc)
---start.o not found using -B (kos) - put near your.c file
 -если проект многофайловый - .dbg генерит дублирующиеся метки данных, типа L.78 может указывать на другой сегмент (
 -.dbg sometimes generated improperly for source code labels
 
@@ -29,6 +26,8 @@ read .\source\readme_kos32.txt
 (^ default stack size set at compile time tccmeos:177 is below 4k)
 FIX - use -stack=1280000 option
 -con_set_title is NULL. fixed 180128 
+-not working: default search path are ./include ./lib from executable (under KOS need to use -Bpath_to_ktcc)
+--start.o not found using -B (kos) - put near your.c file  fixed 181027
 
 
 

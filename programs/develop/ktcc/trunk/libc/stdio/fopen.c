@@ -2,21 +2,28 @@
 #include <string.h>
 #include <stdlib.h>
 
+int errno = 0;
+
+/*
+// removed by Seiemargl 26-oct-2018
+// use get_current_folder() from kos32sys.h instead
+  
+
 extern char __argv;
 extern char __path;
 
-int errno = 0;
-
+// convert relative to program path ./file.txt to absolute
 const char* getfullpath(const char *path){
+	
 
         int  relpath_pos, localpath_size;
         char *programpath;
         char *newpath;
         char *prgname;
 
-        if (path[0] == '/') /* root */
+        if (path[0] == '/') //
         {
-            return(strdup(path)); /* dup need as free in fclose() */
+            return(strdup(path)); // dup need as free in fclose() 
         }
 
         relpath_pos = 0;
@@ -49,7 +56,7 @@ const char* getfullpath(const char *path){
 
         return(newpath);
 }
-
+*/
 
 
 FILE* fopen(const char* filename, const char *mode)
@@ -92,7 +99,8 @@ FILE* fopen(const char* filename, const char *mode)
         if (*mode!=0)
                 return NULL;
 		
-		fullname = (char*)getfullpath(filename);
+//		fullname = (char*)getfullpath(filename);
+		fullname = strdup(filename);
 		if ((imode & 3) == FILE_OPEN_READ && fullname)	/* check existense */
 		{
 			sz = _ksys_get_filesize(fullname);

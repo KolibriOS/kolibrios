@@ -86,6 +86,8 @@ ST_FUNC void asm_global_instr(void)
 }
 #endif
 
+
+
 /********************************************************/
 #ifdef _WIN32
 static char *normalize_slashes(char *path)
@@ -135,6 +137,20 @@ BOOL WINAPI DllMain (HINSTANCE hDll, DWORD dwReason, LPVOID lpReserved)
     if (DLL_PROCESS_ATTACH == dwReason)
         tcc_module = hDll;
     return TRUE;
+}
+#endif
+#else // _WIN32
+#ifdef TCC_TARGET_MEOS
+/* on Kolibri host, we suppose the lib and includes are at the location of 'tcc' /lib, /include */
+static void tcc_set_lib_path_kos(TCCState *s)
+{
+	char** argv0 = (char**)0x20; // path in kolibri header
+    char path[1024], *p;
+	strncpy(path, *argv0, sizeof path);
+	p = tcc_basename(path);
+    if (p > path) p--;
+    *p = 0;
+    tcc_set_lib_path(s, path);
 }
 #endif
 #endif
@@ -1076,7 +1092,11 @@ LIBTCCAPI TCCState *tcc_new(void)
 #ifdef _WIN32
     tcc_set_lib_path_w32(s);
 #else
+#ifdef TCC_TARGET_MEOS
+    tcc_set_lib_path_kos(s);
+#else
     tcc_set_lib_path(s, CONFIG_TCCDIR);
+#endif
 #endif
     s->output_type = 0;
     preprocess_new();
@@ -1453,7 +1473,7 @@ static int tcc_add_library_internal(TCCState *s, const char *fmt,
 
     for(i = 0; i < nb_paths; i++) {
         snprintf(buf, sizeof(buf), fmt, paths[i], filename);
-//printf("added lib [%s]\n", buf);
+//printf("tcc_add_library_internal::added lib [%s]\n", buf);
         if (tcc_add_file_internal(s, buf, flags, TCC_FILETYPE_BINARY) == 0)
             return 0;
     }

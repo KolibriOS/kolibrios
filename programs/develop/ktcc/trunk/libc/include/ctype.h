@@ -18,7 +18,7 @@
 #define __UPPER   512
 #define __XDIGIT 1024
 
-extern unsigned short __is[128];
+extern unsigned short __is[129];
 
 #define isalnum(c)(__is[c+1] & __ALNUM ) /* 'a'-'z', 'A'-'Z', '0'-'9' */
 #define isalpha(c)(__is[c+1] & __ALPHA ) /* 'a'-'z', 'A'-'Z' */

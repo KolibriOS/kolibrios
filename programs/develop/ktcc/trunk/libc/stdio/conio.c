@@ -74,20 +74,29 @@ void con_lib_link(struct import *exp, char** imports){
 
 int con_init_console_dll(void)
 {
+    return con_init_console_dll_param(-1, -1, -1, -1, con_caption); 
+}
+
+
+int con_init_console_dll_param(dword wnd_width, dword wnd_height,
+	dword scr_width, dword scr_height, const char* title)
+/*	work as con_init_console_dll, but call con_init with params
+*/
+{
 	struct import * hDll;
 
   	if (__console_initdll_status == 1) return 0;
     
-    if((hDll = (struct import *)_ksys_cofflib_load(con_dllname)) == 0){
+	if((hDll = (struct import *)_ksys_cofflib_load(con_dllname)) == 0){
                 debug_out_str("can't load lib\n");
                 return 1;
-    }
-    con_lib_link(hDll, con_imports);
+    	}
+    	con_lib_link(hDll, con_imports);
 
-    con_init(-1, -1, -1, -1, con_caption); //__argv[0] && __path dont work
+    	con_init(wnd_width, wnd_height, scr_width, scr_height, title); 
 
-    __console_initdll_status = 1;
+    	__console_initdll_status = 1;
 
-    return(0);
+    	return 0;
 }
 
