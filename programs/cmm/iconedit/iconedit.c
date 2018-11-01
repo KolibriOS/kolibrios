@@ -4,13 +4,14 @@
  * Licence: GPL v2
 */
 
-#define MEMSIZE 4096*500
+#define MEMSIZE 1024*2000
 
 #include "../lib/gui.h"
 #include "../lib/random.h"
 #include "../lib/mem.h"
 #include "../lib/cursor.h"
 #include "../lib/list_box.h"
+#include "../lib/events.h"
 
 #include "../lib/obj/libimg.h"
 #include "../lib/obj/box_lib.h"
@@ -36,14 +37,14 @@ char image_menu_items[] =
 Заменить все цвета 1 на 2";
 ?define T_MENU_IMAGE "Иконка"
 ?define T_TEST_ICON "Проверить иконку"
-?define T_TITLE "Icon Editor 0.59 Alpha"
+?define T_TITLE "Icon Editor 0.60 Alpha"
 #else
 char image_menu_items[] = 
 "Count colors used
 Replace all colors equal to 1 by 2";
 ?define T_MENU_IMAGE "Icon"
 ?define T_TEST_ICON "Test Icon"
-?define T_TITLE "Редактор иконок 0.59 Alpha"
+?define T_TITLE "Редактор иконок 0.60 Alpha"
 #endif
 
 
@@ -81,32 +82,10 @@ signed priorHoverX;
 signed priorHoverY;
 bool canvasMouseMoved = false;
 
+EVENTS button;
+EVENTS key;
+
 enum {
-	BTN_NEW = 40,
-	BTN_OPEN,
-	BTN_SAVE,
-	BTN_MOVE_LEFT,
-	BTN_MOVE_RIGHT,
-	BTN_MOVE_UP,
-	BTN_MOVE_DOWN,
-	BTN_FLIP_HOR,
-	BTN_FLIP_VER,
-	BTN_ROTATE_LEFT,
-	BTN_ROTATE_RIGHT,
-	BTN_TEST_ICON,
-	BTN_PENCIL,
-	BTN_PICK,
-	BTN_FILL,
-	BTN_LINE,
-	BTN_RECT,
-	BTN_BAR,
-	BTN_SELECT,
-	BTN_SCREEN_COPY,
-	BTN_ZOOM_IN,
-	BTN_ZOOM_OUT,
-	BTN_CANVAS_RESIZE,
-	BTN_CROP,
-	BTN_IMAGE_MENU,
 	BTNS_PALETTE_COLOR_MAS = 100,
 	BTNS_LAST_USED_COLORS = 400
 };
@@ -272,116 +251,12 @@ void main()
 
 			if (zoom.click(btn)) DrawEditArea();
 
-			switch(btn)
-			{
-				case BTN_NEW:
-					EventCreateNewIcon();
-					break;
-				case BTN_OPEN:
-					EventOpenIcon();
-					break;
-				case BTN_SAVE:
-					EventSaveIconToFile();
-					break;
-				case BTN_MOVE_LEFT:
-					EventMove(MOVE_LEFT);
-					break;
-				case BTN_MOVE_RIGHT:
-					EventMove(MOVE_RIGHT);
-					break;
-				case BTN_MOVE_UP:
-					EventMove(MOVE_UP);
-					break;
-				case BTN_MOVE_DOWN:
-					EventMove(MOVE_DOWN);
-					break;
-				case BTN_FLIP_VER:
-					EventMove(FLIP_VER);
-					break;
-				case BTN_FLIP_HOR:
-					EventMove(FLIP_HOR);
-					break;
-				case BTN_ROTATE_LEFT:
-					EventMove(ROTATE_LEFT);
-					break;
-				case BTN_ROTATE_RIGHT:
-					EventMove(ROTATE_RIGHT);
-					break;
-				case BTN_TEST_ICON:
-					EventTestIcon();
-					break;
-				case BTN_PENCIL:
-					setCurrentTool(TOOL_PENCIL);
-					break;
-				case BTN_PICK:
-					setCurrentTool(TOOL_PIPETTE);
-					break;
-				case BTN_FILL:
-					setCurrentTool(TOOL_FILL);
-					break;
-				case BTN_LINE:
-					setCurrentTool(TOOL_LINE);
-					break;
-				case BTN_RECT:
-					setCurrentTool(TOOL_RECT);
-					break;
-				case BTN_BAR:
-					setCurrentTool(TOOL_BAR);
-					break;
-				case BTN_SELECT:
-					setCurrentTool(TOOL_SELECT);
-					break;
-				case BTN_SCREEN_COPY:
-					setCurrentTool(TOOL_SCREEN_COPY);
-					break;
-				case BTN_CANVAS_RESIZE:
-					notify("Sorry, not implemented yet.");
-					break;
-				case BTN_CROP:
-					EventCrop();
-					break;
-				case BTN_IMAGE_MENU:
-					EventShowImageMenu();
-					break;
-				case CLOSE_BTN:
-					EventExitIconEdit();
-					break;
-			}
-			break;
+			button.press(btn);
 	  
 		case evKey:
 			GetKeys();
 
-			if (key_modifier&KEY_LCTRL) || (key_modifier&KEY_RCTRL)
-			{
-				switch(key_scancode)
-				{
-					case SCAN_CODE_KEY_S:
-						EventSaveIconToFile();
-						break;
-					case SCAN_CODE_KEY_O:
-						EventOpenIcon();
-						break;
-					case SCAN_CODE_LEFT:
-						EventMove(MOVE_LEFT);
-						break;
-					case SCAN_CODE_RIGHT:
-						EventMove(MOVE_RIGHT);
-						break;
-					case SCAN_CODE_UP:
-						EventMove(MOVE_UP);
-						break;
-					case SCAN_CODE_DOWN:
-						EventMove(MOVE_DOWN);
-						break;
-					case SCAN_CODE_KEY_R:
-						EventMove(BTN_ROTATE_RIGHT);
-						break;
-					case SCAN_CODE_KEY_L:
-						EventMove(BTN_ROTATE_LEFT);
-						break;
-				}
-			}
+			if (key_modifier&KEY_LCTRL) || (key_modifier&KEY_RCTRL) key.press(ECTRL + key_scancode);
 
 			if (key_modifier&KEY_LSHIFT) || (key_modifier&KEY_RSHIFT) {
 				if (key_scancode == SCAN_CODE_DEL) EventCleanCanvas();
@@ -390,15 +265,7 @@ void main()
 			if (currentTool != TOOL_NONE) && (tools[currentTool].onKeyEvent != 0)
 				tools[currentTool].onKeyEvent(key_scancode);
 
-			if (key_scancode == SCAN_CODE_KEY_P) setCurrentTool(TOOL_PENCIL);
-			if (key_scancode == SCAN_CODE_KEY_I) setCurrentTool(TOOL_PIPETTE);
-			if (key_scancode == SCAN_CODE_KEY_F) setCurrentTool(TOOL_FILL);
-			if (key_scancode == SCAN_CODE_KEY_L) setCurrentTool(TOOL_LINE);
-			if (key_scancode == SCAN_CODE_KEY_R) setCurrentTool(TOOL_RECT);
-			if (key_scancode == SCAN_CODE_KEY_B) setCurrentTool(TOOL_BAR);
-			if (key_scancode == SCAN_CODE_KEY_S) setCurrentTool(TOOL_SELECT);
-
-			if (key_scancode == SCAN_CODE_KEY_T) EventTestIcon();
+			key.press(key_scancode);
 
 			if (key_scancode == SCAN_CODE_KEY_Z) actionsHistory.undoLastAction();
 			if (key_scancode == SCAN_CODE_KEY_Y) actionsHistory.redoLastAction();
@@ -416,16 +283,18 @@ void main()
 	}
 }
 
-void DrawTopPanelButton(dword _id, _x, _icon_n)
+void DrawTopPanelButton(dword _event, _hotkey, _x, _icon_n)
 {
 	DrawWideRectangle(_x, 4, 22, 22, 3, semi_white);
 	PutPixel(_x,4,system.color.work);
 	PutPixel(_x,4+21,system.color.work);
 	PutPixel(_x+21,4,system.color.work);
 	PutPixel(_x+21,4+21,system.color.work);
-	DefineHiddenButton(_x, 4, 21, 21, _id);
+	DefineHiddenButton(_x, 4, 21, 21, button.add(_event));
 	img_draw stdcall(top_icons.image, _x+3, 7, 16, 16, 0, _icon_n*16);
+	if (_hotkey) key.add_n(_hotkey, _event);
 }
+
 
 int DrawFlatPanelButton(dword _id, _x, _y, _text)
 {
@@ -441,14 +310,14 @@ int DrawFlatPanelButton(dword _id, _x, _y, _text)
 	return w;
 }
 
-void DrawLeftPanelButton(dword _id, _y, _icon_n)
+void DrawLeftPanelButton(dword _event, _hotkey, _y, _icon_n)
 {
 	int x = 5;
 	DrawRectangle(x, _y, 22-1, 22-1, system.color.work);
-	DefineHiddenButton(x, _y, 21, 21, _id);
+	DefineHiddenButton(x, _y, 21, 21, button.add(_event));
 	img_draw stdcall(left_icons.image, x+3, _y+3, 16, 16, 0, _icon_n*16);
+	key.add_n(_hotkey, _event);
 }
-
 void DrawStatusBar()
 {
 	zoom.draw(wrapper.x, wrapper.y + wrapper.h + 6);
@@ -459,56 +328,71 @@ void DrawStatusBar()
 		zoom.y,
 		calc(strlen(#param)*8)+6,
 		18,
-		BTN_CANVAS_RESIZE,
+		button.add(#EventCanvasResize),
 		system.color.work_button,
 		system.color.work_button_text,
 		#param
 		);
 }
 
+
 void DrawWindow()
 {
-	#define GAP 27
+	#define GAPH 27
+	#define GAPV 28
 	#define BLOCK_SPACE 10
 	incn tx;
+	incn ty;
 	system.color.get();
 	DefineAndDrawWindow(115+random(100), 50+random(100), 700, 540, 0x73, NULL, T_TITLE, 0);
 	GetProcessInfo(#Form, SelfInfo);
 	if (Form.status_window>2) return;
 	if (Form.width  < 560) { MoveSize(OLD,OLD,560,OLD); return; }
 	if (Form.height < 430) { MoveSize(OLD,OLD,OLD,430); return; }
+	button.init(40);
+	key.init(40);
 
 	right_bar.x = Form.cwidth - right_bar.w;
 	b_color_gradient.x = b_last_colors.x = b_default_palette.x = right_bar.x;
 	DrawBar(0, 0, Form.cwidth, TOPBAR_H-1, system.color.work);
 	DrawBar(0, TOPBAR_H-1, Form.cwidth, 1, system.color.work_graph);
 
-	tx.n = 5-GAP;
-	DrawTopPanelButton(BTN_NEW,    tx.inc(GAP), 2);
-	DrawTopPanelButton(BTN_OPEN,   tx.inc(GAP), 0); //not implemented
-	DrawTopPanelButton(BTN_SAVE,   tx.inc(GAP), 5);
-	DrawTopPanelButton(BTN_MOVE_LEFT,  tx.inc(GAP+BLOCK_SPACE), 30);
-	DrawTopPanelButton(BTN_MOVE_RIGHT, tx.inc(GAP),   31);
-	DrawTopPanelButton(BTN_MOVE_UP,    tx.inc(GAP),   32);
-	DrawTopPanelButton(BTN_MOVE_DOWN,  tx.inc(GAP),   33);
-	
-	DrawTopPanelButton(BTN_FLIP_HOR,   tx.inc(GAP+BLOCK_SPACE), 34);
-	DrawTopPanelButton(BTN_FLIP_VER,   tx.inc(GAP),   35);
-	DrawTopPanelButton(BTN_ROTATE_LEFT,   tx.inc(GAP), 37);
-	DrawTopPanelButton(BTN_ROTATE_RIGHT,  tx.inc(GAP), 36);
-
-	DrawTopPanelButton(BTN_TEST_ICON,  tx.inc(GAP+BLOCK_SPACE), 12);
-
-	DrawTopPanelButton(BTN_CROP,  tx.inc(GAP+BLOCK_SPACE), 46);
+	tx.n = 5-GAPH;
+	DrawTopPanelButton(#EventCreateNewIcon,  ECTRL + SCAN_CODE_KEY_N, tx.inc(GAPH), 2);
+	DrawTopPanelButton(#EventOpenIcon,       ECTRL + SCAN_CODE_KEY_O, tx.inc(GAPH), 0);
+	DrawTopPanelButton(#EventSaveIconToFile, ECTRL + SCAN_CODE_KEY_S, tx.inc(GAPH), 5);
+	DrawTopPanelButton(#EventMoveLeft,       ECTRL + SCAN_CODE_LEFT, tx.inc(GAPH+BLOCK_SPACE), 30);
+	DrawTopPanelButton(#EventMoveRight,      ECTRL + SCAN_CODE_RIGHT, tx.inc(GAPH), 31);
+	DrawTopPanelButton(#EventMoveUp,         ECTRL + SCAN_CODE_UP, tx.inc(GAPH), 32);
+	DrawTopPanelButton(#EventMoveDown,       ECTRL + SCAN_CODE_DOWN, tx.inc(GAPH), 33);
+	DrawTopPanelButton(#EventFlipHor,        0, tx.inc(GAPH+BLOCK_SPACE), 34);
+	DrawTopPanelButton(#EventFlipVer,        0, tx.inc(GAPH), 35);
+	DrawTopPanelButton(#EventRotateLeft,     ECTRL + SCAN_CODE_KEY_L, tx.inc(GAPH), 37);
+	DrawTopPanelButton(#EventRotateRight,    ECTRL + SCAN_CODE_KEY_R, tx.inc(GAPH), 36);
+	DrawTopPanelButton(#EventTestIcon,       ECTRL + SCAN_CODE_KEY_T, tx.inc(GAPH+BLOCK_SPACE), 12);
+	DrawTopPanelButton(#EventCrop,           0, tx.inc(GAPH+BLOCK_SPACE), 46);
 
 	image_menu_btn.x = tx.n;
-	image_menu_btn.w = DrawFlatPanelButton(BTN_IMAGE_MENU, image_menu_btn.x, image_menu_btn.y, T_MENU_IMAGE);
+	image_menu_btn.w = DrawFlatPanelButton(button.add(#EventShowImageMenu), image_menu_btn.x, image_menu_btn.y, T_MENU_IMAGE);
 	//tx.inc(image_menu_btn.w + BLOCK_SPACE);
 	
 	DrawEditArea();
 
 	DrawBar(0, TOPBAR_H, LEFTBAR_W-1, Form.cheight - TOPBAR_H, system.color.work);
-	DrawLeftPanel();
+
+	ty.n = right_bar.y - GAPV - 2;
+
+	DrawLeftPanelButton(#EventSelectToolPencil, SCAN_CODE_KEY_P, ty.inc(GAPV), 38);
+	DrawLeftPanelButton(#EventSelectToolPick,   SCAN_CODE_KEY_I, ty.inc(GAPV), 39);
+	DrawLeftPanelButton(#EventSelectToolFill,   SCAN_CODE_KEY_F, ty.inc(GAPV), 40);
+	DrawLeftPanelButton(#EventSelectToolLine,   SCAN_CODE_KEY_L, ty.inc(GAPV), 41);
+	DrawLeftPanelButton(#EventSelectToolRect,   SCAN_CODE_KEY_R, ty.inc(GAPV), 42);
+	DrawLeftPanelButton(#EventSelectToolBar,    SCAN_CODE_KEY_B, ty.inc(GAPV), 43);
+	DrawLeftPanelButton(#EventSelectToolSelect, SCAN_CODE_KEY_S, ty.inc(GAPV), 44);
+	DrawLeftPanelButton(#EventSelectToolScrCopy,SCAN_CODE_KEY_Q, ty.inc(GAPV), 45);
+	DrawLeftPanelSelection();
+
+	button.add_n(1, #EventExitIconEdit);
 
 	DrawBar(wrapper.x+wrapper.w, TOPBAR_H, Form.cwidth-wrapper.x-wrapper.w,
 		Form.cheight - TOPBAR_H, system.color.work);
@@ -521,20 +405,10 @@ void DrawWindow()
 	DrawStatusBar();
 }
 
-void DrawLeftPanel()
+void DrawLeftPanelSelection()
 {
-	#define GAP 28
-	incn ty;
-	ty.n = right_bar.y - GAP - 2;
-	DrawLeftPanelButton(BTN_PENCIL, ty.inc(GAP), 38);
-	DrawLeftPanelButton(BTN_PICK,   ty.inc(GAP), 39);
-	DrawLeftPanelButton(BTN_FILL,   ty.inc(GAP), 40);
-	DrawLeftPanelButton(BTN_LINE,   ty.inc(GAP), 41);
-	DrawLeftPanelButton(BTN_RECT,   ty.inc(GAP), 42);
-	DrawLeftPanelButton(BTN_BAR,    ty.inc(GAP), 43);
-	DrawLeftPanelButton(BTN_SELECT, ty.inc(GAP), 44);
-	DrawLeftPanelButton(BTN_SCREEN_COPY, ty.inc(GAP), 45);
-	DrawRectangle3D(5, currentTool*GAP+right_bar.y-2, 16+3+2, 16+3+2, 0x333333, 0x777777);
+	DrawRectangle3D(5, previousTool*GAPV+right_bar.y-2, 16+3+2, 16+3+2, system.color.work, system.color.work);
+	DrawRectangle3D(5, currentTool*GAPV+right_bar.y-2, 16+3+2, 16+3+2, 0x333333, 0x777777);
 }
 
 void DrawEditArea()
@@ -894,6 +768,31 @@ void EventReplaceImageColors(dword c1, c2)
 		if (image.mas[cur] == color1) image.mas[cur] = color2;
 	}
 }
+
+void EventCanvasResize()
+{
+	notify("Sorry, not implemented yet.");
+}
+
+void EventMoveLeft() { EventMove(MOVE_LEFT); }
+void EventMoveRight() { EventMove(MOVE_RIGHT); }
+void EventMoveUp() { EventMove(MOVE_UP); }
+void EventMoveDown() { EventMove(MOVE_DOWN); }
+void EventFlipHor() { EventMove(FLIP_HOR); }
+void EventFlipVer() { EventMove(FLIP_VER); }
+void EventRotateLeft() { EventMove(ROTATE_LEFT); }
+void EventRotateRight() { EventMove(ROTATE_RIGHT); }
+
+void EventSelectToolPencil() { setCurrentTool(TOOL_PENCIL); DrawLeftPanelSelection(); }
+void EventSelectToolPick() { setCurrentTool(TOOL_PIPETTE); DrawLeftPanelSelection(); }
+void EventSelectToolFill() { setCurrentTool(TOOL_FILL); DrawLeftPanelSelection(); }
+void EventSelectToolLine() { setCurrentTool(TOOL_LINE); DrawLeftPanelSelection(); }
+void EventSelectToolRect() { setCurrentTool(TOOL_RECT); DrawLeftPanelSelection(); }
+void EventSelectToolBar() { setCurrentTool(TOOL_BAR); DrawLeftPanelSelection(); }
+void EventSelectToolSelect() { setCurrentTool(TOOL_SELECT); DrawLeftPanelSelection(); }
+void EventSelectToolScrCopy() { setCurrentTool(TOOL_SCREEN_COPY); DrawLeftPanelSelection(); }
+
+char test_icon_stak22[4096];
 
 stop:
 

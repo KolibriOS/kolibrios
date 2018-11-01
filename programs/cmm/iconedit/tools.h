@@ -107,7 +107,6 @@ void setCurrentTool(int index) {
 
 	Cursor.Restore();
 	if (wrapper.hovered()) SetCursor();
-	DrawLeftPanel();
 	DrawCanvas();
 }
 

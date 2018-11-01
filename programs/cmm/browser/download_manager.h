@@ -19,13 +19,16 @@ DOWNLOADER downloader;
 #endif
 char save_to[4096] = "/tmp0/1/Downloads";
  
+#define CONX 15
+
 proc_info DL_Form;
 char downloader_edit[10000];
 char filepath[4096];
 edit_box ed = {NULL,57,20,0xffffff,0x94AECE,0xffffff,0xffffff,0x10000000,sizeof(downloader_edit)-2,#downloader_edit,0,2,19,19};
-progress_bar pb = {0, 20, 58, 350, 17, 0, 0, 100, 0xFFFfff, 0x74DA00, 0x9F9F9F};
+progress_bar pb = {0, CONX, 58, 350, 17, 0, 0, 100, 0xFFFfff, 0x74DA00, 0x9F9F9F};
 //progress_bar pb = {0, 180, 55, 225, 12, 0, 0, 100, 0xFFFfff, 0x74DA00, 0x9F9F9F};
 //progress_bar: value, left, top, width, height, style, min, max, back_color, progress_color, frame_color;
+
 	
  
 bool downloader_opened;
@@ -106,7 +109,6 @@ void Key_Scan(int id)
  
 void DL_Draw_Window()
 {  
-	int cleft = 15;
 	int but_x = 0;
 	int but_y = 58;
 	DrawBar(0,0, DL_Form.cwidth, DL_Form.cheight, system.color.work);
@@ -116,7 +118,7 @@ void DL_Draw_Window()
 	DeleteButton(306);
 	if (downloader.state == STATE_NOT_STARTED) || (downloader.state == STATE_COMPLETED)
 	{
-		but_x = cleft + DrawStandartCaptButton(cleft, but_y, 301, START_DOWNLOADING);   
+		but_x = CONX + DrawStandartCaptButton(CONX, but_y, 301, START_DOWNLOADING);   
 		if (filepath[0])
 		{
 			but_x += DrawStandartCaptButton(but_x, but_y, 305, SHOW_IN_FOLDER);
@@ -128,8 +130,8 @@ void DL_Draw_Window()
 		DrawStandartCaptButton(DL_Form.width - 190, but_y, 302, STOP_DOWNLOADING);
 		DrawDownloading();
 	}
-	WriteText(cleft, ed.top + 4, 0x90, system.color.work_text, "URL:");
-    ed.width = DL_Form.cwidth - ed.left - cleft - 3;
+	WriteText(CONX, ed.top + 4, 0x90, system.color.work_text, "URL:");
+    ed.width = DL_Form.cwidth - ed.left - CONX - 3;
 	ed.offset=0;
 	DrawEditBox(#ed);
 }
@@ -151,13 +153,41 @@ void StartDownloading()
 	pb.value = 0;
 	DL_Draw_Window();
 }
+
+struct TIME
+{
+	dword old;
+	dword cur;
+	dword gone;
+} time = {0,0,0};
+
+dword netdata_received;
+dword speed;
+
+void CalculateSpeed()
+{
+	time.cur = GetStartTime();
+
+	if (time.old) {
+		time.gone = time.cur - time.old;
+		if (time.gone > 200) {
+			speed = downloader.httpd.content_received - netdata_received / time.gone * 100;
+			debugval("speed", speed);
+			debugln(ConvertSizeToKb(speed) );
+			time.old = time.cur;
+			netdata_received = downloader.httpd.content_received;
+		}
+	}
+	else time.old = time.cur;
+}
  
 void DrawDownloading()
 {
 	char bytes_received[70];
 	sprintf(#bytes_received, KB_RECEIVED, ConvertSizeToKb(downloader.httpd.content_received) );
-	DrawBar(15, pb.top + 22, strlen(#bytes_received+4)*12, 16, system.color.work);
-	WriteText(15, pb.top + 22, 0x90, system.color.work_text, #bytes_received);
+	DrawBar(CONX, pb.top + 22, pb.width, 16, system.color.work);
+	WriteText(CONX, pb.top + 22, 0x90, system.color.work_text, #bytes_received);
+	//CalculateSpeed();
 	progressbar_draw stdcall(#pb);
 }
  

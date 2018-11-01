@@ -127,7 +127,12 @@ void main()
 	skin.h = 26;
 	wv_progress_bar.progress_color = 0x72B7EB;
 	CreateDir("/tmp0/1/downloads");
-	if (param) strcpy(#URL, #param); else strcpy(#URL, URL_SERVICE_HOME);
+	if (param) && (param[0]=='-') && (param[1]=='d') {
+		strcpy(#downloader_edit, #param+3);
+		CreateThread(#Downloader,#downloader_stak+4092);
+		ExitProcess();
+	}
+	else if (param) strcpy(#URL, #param); else strcpy(#URL, URL_SERVICE_HOME);
 	WB1.list.SetFont(8, 14, 10011000b);
 	WB1.list.no_selection = true;
 	SetEventMask(EVM_REDRAW + EVM_KEY + EVM_BUTTON + EVM_MOUSE + EVM_MOUSE_FILTER + EVM_STACK);

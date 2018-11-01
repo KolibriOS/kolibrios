@@ -1,5 +1,7 @@
 // Author: Pavel Iakovlev by. pavelyakov
 
+#ifndef INCLUDE_ARRAY_H
+#define INCLUDE_ARRAY_H
 
 // Array memory: [dword key][byte flags][dword left][dword right][dword value] -> 17 bytes = 1 position
 // If key don't exists then value == 0
@@ -162,3 +164,5 @@
 {
 	RETURN array.init(size);
 }
+
+#endif
