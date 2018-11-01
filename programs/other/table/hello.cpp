@@ -11,7 +11,7 @@ extern char params[1024];
 #endif
 char params[1024];
 
-#define TABLE_VERSION "0.99.1a"
+#define TABLE_VERSION "0.99.2"
 
 // strings
 const char *sFileSign = "KolibriTable File\n";
@@ -45,10 +45,10 @@ kosSysColors sc;
 #define HEADER_CELL_COLOR_ACTIVE 0xC4C5BA //0xBBBBFF
 
 // button IDs
-#define SAVE_BUTTON 0x11
-#define LOAD_BUTTON 0x12
-#define NEW_BUTTON 0x13
-#define DRAG_BUTTON 0x20
+#define SAVE_BUTTON 100
+#define LOAD_BUTTON 101
+#define NEW_BUTTON  102
+#define SELECT_ALL_BUTTON 103
 
 #define COL_BUTTON 0x100
 #define ROW_BUTTON (COL_BUTTON + 0x100)
@@ -125,6 +125,7 @@ int drag_x, drag_y;
 int old_end_x, old_end_y;
 
 void draw_grid();
+void EventGridSelectAll();
 
 void DrawSelectedFrame(int x, int y, int w, int h, DWORD col)
 {
@@ -329,6 +330,7 @@ void draw_grid()
 	long x0 = 0, y0 = 0, x = 0, y = 0;
 	DWORD bg_color;
 	kos_DrawBar(0,0,cell_w[0],cell_h[0],HEADER_CELL_COLOR); // left top cell
+	kos_DefineButton(0,0,cell_w[0]-4,cell_h[0]-4, SELECT_ALL_BUTTON + BT_NODRAW, 0);
 
 	//kos_DebugValue("sel_moved", sel_moved);
 
@@ -901,6 +903,9 @@ void process_key()
 	else if (ctrl) {
 		switch (key_scancode)
 		{
+			case SCAN_CODE_KEY_A:
+				EventGridSelectAll();
+				break;
 			case SCAN_CODE_KEY_V:
 				{
 					int i, j, x0, y0;
@@ -1064,6 +1069,16 @@ void EventLoadFile()
 	kos_AppRun("/sys/@notify", result);
 }
 
+void EventGridSelectAll()
+{
+	sel_y = 1;
+	sel_x = 1;
+	sel_end_x = col_count - 1;
+	sel_end_y = row_count - 1;
+	stop_edit();
+	draw_grid();
+}
+
 void process_button()
 {
 	Dword button;
@@ -1085,6 +1100,10 @@ void process_button()
 
 	case LOAD_BUTTON:
 		EventLoadFile();
+		break;
+
+	case SELECT_ALL_BUTTON:
+		EventGridSelectAll();
 		break;
 	}
 	if (button >= COL_HEAD_BUTTON    &&    button < ROW_HEAD_BUTTON)

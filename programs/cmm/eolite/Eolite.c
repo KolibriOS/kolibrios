@@ -1171,12 +1171,7 @@ dword GetDeviceSizeLabel(dword path)
 	char cdname[8];
 	if (ESBYTE[path+1] == '/') path++;
 	if (ESBYTE[path+1] == 'c') && (ESBYTE[path+2] == 'd')
-		&& (ESBYTE[path+4] == 0) {
-		//hack for http://board.kolibrios.org/viewtopic.php?p=72293#p72279
-		strcpy(#cdname, path);
-		strcat(#cdname, "/1");
-		path = #cdname;
-	}
+		&& (ESBYTE[path+4] == 0) return 0;
 	GetFileInfo(path, #bdvk);
 	return ConvertSize64(bdvk.sizelo, bdvk.sizehi);
 }
