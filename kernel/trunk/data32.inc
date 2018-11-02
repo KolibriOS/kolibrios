@@ -341,8 +341,8 @@ fpu_data:
 fpu_data_size = $ - fpu_data
 draw_data:
         rb  32*256
-BPSLine_calc_area   rd  1440
-d_width_calc_area   rd  1140
+BPSLine_calc_area   rd  MAX_SCREEN_HEIGHT
+d_width_calc_area   rd  MAX_SCREEN_HEIGHT
 mouseunder          rd  16*24
 
 mem_block_list      rd  64*2

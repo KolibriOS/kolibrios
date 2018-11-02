@@ -45,6 +45,8 @@ init_video:
         mov     [_display.vrefresh], 60
 
         movzx   eax, word [BOOT.x_res]; X max
+        cmp     eax, MAX_SCREEN_WIDTH
+        ja      $
         mov     [_display.width], eax
         mov     [ebp+FRB.width], eax
         mov     [display_width_standard], eax
@@ -52,6 +54,8 @@ init_video:
         mov     [screen_workarea.right], eax
 
         movzx   eax, word [BOOT.y_res]; Y max
+        cmp     eax, MAX_SCREEN_HEIGHT
+        ja      $
         mov     [_display.height], eax
         mov     [ebp+FRB.height], eax
         mov     [display_height_standard], eax

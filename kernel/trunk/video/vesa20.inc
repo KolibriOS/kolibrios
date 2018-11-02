@@ -21,8 +21,8 @@ $Revision$
 
 uglobal
 align 4
-        bgr_cur_line    rd 1920         ; maximum width of screen
-        bgr_next_line   rd 1920
+        bgr_cur_line    rd MAX_SCREEN_WIDTH
+        bgr_next_line   rd MAX_SCREEN_WIDTH
 endg
 
 iglobal

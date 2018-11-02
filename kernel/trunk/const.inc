@@ -733,6 +733,9 @@ virtual at OS_BASE + BOOT_VARS
         BOOT boot_data
 end virtual
 
+MAX_SCREEN_WIDTH  = 3840
+MAX_SCREEN_HEIGHT = 2160
+
 struct  display_t
         x               dd ?
         y               dd ?
