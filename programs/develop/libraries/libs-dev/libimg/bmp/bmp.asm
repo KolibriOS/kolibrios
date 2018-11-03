@@ -967,6 +967,8 @@ locals
   unshift bmp.RgbByteQuad
   mask	  bmp.RgbQuad
   delta   dd ?
+  dataoff dd ?	; offset of encoded data
+		; row data are aligned on dword from data start, not file start
 endl
 
 	mov	[delta], 4
@@ -1018,6 +1020,7 @@ endl
 
 	mov	edi, [edx + Image.Data]
 	pop	esi
+	mov	[dataoff], esi
 
 ;;------------------------------------------------------------------------------------------------;;
 
@@ -1068,6 +1071,10 @@ endl
 	dec	ecx
 	jnz	.next_pixel
 
+	sub	esi, [dataoff]
+	add	esi, 3
+	and	esi, not 3
+	add	esi, [dataoff]
 	pop	ecx
 	dec	ecx
 	jnz	.next_line
