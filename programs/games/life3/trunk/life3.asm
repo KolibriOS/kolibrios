@@ -10,7 +10,7 @@ include '../../../load_img.inc'
 include '../../../develop/libraries/box_lib/load_lib.mac'
 
 @use_library_mem mem.Alloc,mem.Free,mem.ReAlloc,dll.Load
-hed db 'Life 31.10.18',0 ;подпись окна
+hed db 'Life 03.11.18',0 ;подпись окна
 
 run_file_70 FileInfoBlock
 image_data dd 0 ;указатель на временную память. для нужен преобразования изображения
@@ -150,22 +150,23 @@ proc pole_clear uses eax ecx edi
 		loop @b
 	ret
 endp
+
 align 4
 proc pole_cell_creat, x:dword, y:dword, li:dword
 	pushad ;eax ebx ecx edx edi
 
 	; *** если клетка уже была создана
 	stdcall pole_cell_find, [x],[y]
-	cmp eax,0
-	je @f ;if(i){
+	or eax,eax
+	jz @f ;if(i){
 		get_cell_offset ebx,eax
 		cmp dword[li],0
 		jne .else_if ;if(!li)
 			; если создается пустая клетка
-			inc byte[ebx+13] ;+13 = .so
+			inc byte[ebx+Cell.so]
 			jmp .fun_e
 		.else_if: ;else if(!(cell[i].liv&1) ){
-		bt word[ebx+12],0 ;+12 = .liv
+		bt word[ebx+Cell.liv],0
 			; если создается живая клетка
 			; и раньше клетка была создана но оказалась пустой
 			jae .creat_border_cells
@@ -193,21 +194,21 @@ proc pole_cell_creat, x:dword, y:dword, li:dword
 	mov ecx,[x]
 	mov dword[ebx],ecx ;+0 = .x
 	mov edx,[y]
-	mov dword[ebx+4],edx ;+4 = .y
+	mov dword[ebx+Cell.y],edx
 	mov eax,[tim]
-	mov dword[ebx+8],eax ;+8 = .tc
-	mov byte[ebx+12],0 ;+12 = .liv
+	mov dword[ebx+Cell.tc],eax
+	mov byte[ebx+Cell.liv],0
 
 	cmp dword[li],0
 	jne @f
-		mov byte[ebx+13],1 ;+13 = .so
+		mov byte[ebx+Cell.so],1
 		jmp .fun_e
 	@@:
-	mov byte[ebx+13],0 ;+13 = .so
+	mov byte[ebx+Cell.so],0
 
 	.creat_border_cells:
 		inc dword[osob]
-		or byte[ebx+12],1 ;+12 = .liv
+		or byte[ebx+Cell.liv],1
 		mov ecx,[x]
 		dec ecx
 		mov edx,[y]
@@ -264,8 +265,7 @@ proc pole_cell_find, x:dword, y:dword
 		;edi -> cell[memCell[i]]
 		mov ecx,[memCell]
 		mov ebx,[b_sort]
-		mov edx,ebx
-		shl edx,2
+		lea edx,[ebx*4]
 		add edx,ecx
 		mov ecx,[ecx]
 		.cycle_b: ;for(i=b_sort+1;i<=fristC;i++)
@@ -278,7 +278,7 @@ proc pole_cell_find, x:dword, y:dword
 			cmp dword[edi],esi ;+0 = .x
 			jne .if_e
 			mov esi,[y]
-			cmp dword[edi+4],esi ;+4 = .y
+			cmp dword[edi+Cell.y],esi
 			jne .if_e
 				;if(cell[memCell[i]].x==x && cell[memCell[i]].y==y){
 				mov eax,[edx] ;fnd=memCell[i];
@@ -316,8 +316,7 @@ proc pole_bin_find, mas:dword, fx:dword, fy:dword, k:dword
 	.cycle_b: ;do{
 		shr ebx,1 ;por>>=1;
 
-		mov edi,ecx
-		shl edi,2
+		lea edi,[ecx*4]
 		add edi,[mas]
 		;if(compare_cells_mb(mas[i],fx,fy)){
 		stdcall pole_compare_cells_mb_coords, dword[edi],[fx],[fy]
@@ -352,6 +351,8 @@ proc pole_bin_find, mas:dword, fx:dword, fy:dword, k:dword
 	ret
 endp
 
+;description:
+; вспомогательная функция для сортировки ячееки по координатам
 ;output:
 ; dl
 align 4
@@ -366,7 +367,7 @@ proc pole_compare_cells_bm_coords, i0:dword, fx:dword, fy:dword
 		jmp .fun_e
 	@@:
 	mov ecx,[fy]
-	cmp dword[eax+4],ecx
+	cmp dword[eax+Cell.y],ecx
 	jle @f
 	cmp dword[eax],ebx
 	jne @f
@@ -379,6 +380,8 @@ proc pole_compare_cells_bm_coords, i0:dword, fx:dword, fy:dword
 	ret
 endp
 
+;description:
+; вспомогательная функция для сортировки ячееки по координатам
 ;output:
 ; dl
 align 4
@@ -393,7 +396,7 @@ proc pole_compare_cells_mb_coords, i0:dword, fx:dword, fy:dword
 		jmp .fun_e
 	@@:
 	mov ecx,[fy]
-	cmp dword[eax+4],ecx
+	cmp dword[eax+Cell.y],ecx
 	jge @f
 	cmp dword[eax],ebx
 	jne @f
@@ -420,8 +423,8 @@ proc pole_compare_cells_bm, i0:dword, i1:dword
 		jmp .fun_e
 	@@:
 	jne @f ;x0==x1
-	mov ecx,[ebx+4] ;+4 = .y
-	cmp dword[eax+4],ecx
+	mov ecx,[ebx+Cell.y]
+	cmp dword[eax+Cell.y],ecx
 	jle @f ;y0>y1
 		mov dl,1
 		jmp .fun_e
@@ -452,8 +455,7 @@ pole_paint:
 	@@: ;while(i<b_sort && Cor_x+cell[memCell[i]].x<0)
 		cmp ebx,[b_sort]
 		jge @f ;переходим на начало нижнего цикла
-		mov ecx,ebx
-		shl ecx,2
+		lea ecx,[ebx*4]
 		add ecx,[memCell]
 		get_cell_offset ecx,[ecx]
 		mov edx,[ecx] ;+0 = .x
@@ -467,16 +469,15 @@ pole_paint:
 	cmp byte[zoom],2
 	jge .zoom2
 	@@: ;for(;i<=fristC;i++){
-		mov ecx,ebx
-		shl ecx,2
+		lea ecx,[ebx*4]
 		add ecx,[memCell]
 		get_cell_offset ecx,[ecx]
 ;...
 		mov edi,[Cor_x]
 		add edi,[ecx] ;+0 = .x
 		mov esi,[Cor_y]
-		add esi,[ecx+4] ;+4 = .y
-		bt word[ecx+12],0 ;+12 = .liv
+		add esi,[ecx+Cell.y]
+		bt word[ecx+Cell.liv],0
 		jc .cell_1
 			;не живая ячейка
 			mov edx,[CellColors]
@@ -486,7 +487,7 @@ pole_paint:
 			;живая ячейка
 			mov edx,[tim]
 			inc edx
-			sub edx,[ecx+8] ;+8 = .tc
+			sub edx,[ecx+Cell.tc]
 			cmp edx,COL_MEM
 			jle .in_color
 				mov edx,COL_MEM
@@ -505,8 +506,7 @@ pole_paint:
 	.zoom2:
 
 	@@: ;for(;i<=fristC;i++){
-		mov ecx,ebx
-		shl ecx,2
+		lea ecx,[ebx*4]
 		add ecx,[memCell]
 		get_cell_offset ecx,[ecx]
 
@@ -515,10 +515,10 @@ pole_paint:
 		mov edi,[ecx] ;+0 = .x
 		add edi,[Cor_x]
 		imul edi,edx
-		mov esi,[ecx+4] ;+4 = .y
+		mov esi,[ecx+Cell.y]
 		add esi,[Cor_y]
 		imul esi,edx
-		bt word[ecx+12],0 ;+12 = .liv
+		bt word[ecx+Cell.liv],0
 		jc .z2_cell_1
 			;не живая ячейка
 			mov edx,[CellColors]
@@ -528,7 +528,7 @@ pole_paint:
 			;живая ячейка
 			mov edx,[tim]
 			inc edx
-			sub edx,[ecx+8] ;+8 = .tc
+			sub edx,[ecx+Cell.tc]
 			cmp edx,COL_MEM
 			jle .z2_in_color
 				mov edx,COL_MEM
@@ -567,31 +567,30 @@ pole_next_gen:
 	@@: ;for(i=1;i<=firstC;i++)
 		add ecx,4
 		get_cell_offset edx,[ecx]
-		bt word[edx+12],0 ;+12 = .liv
+		bt word[edx+Cell.liv],0
 		jae .if_0_e
 			; сохранение ячейки (соседей 2 или 3)
-			cmp byte[edx+13],2 ;+13 = .so
+			cmp byte[edx+Cell.so],2
 			je .if_2_e
-			cmp byte[edx+13],3 ;+13 = .so
+			cmp byte[edx+Cell.so],3
 			je .if_2_e
 			jmp .change
 		.if_0_e:
 			; создание ячейки (соседей 3)
-			cmp byte[edx+13],3 ;+13 = .so
+			cmp byte[edx+Cell.so],3
 			jne .if_1_e
 			.change:
-				or byte[edx+12],2 ;+12 = .liv
+				or byte[edx+Cell.liv],2
 				jmp .if_2_e
 		.if_1_e:
 			; удаление пустой ячейки для освобождения памяти
-			cmp byte[edx+13],0 ;+13 = .so
+			cmp byte[edx+Cell.so],0
 			jne .if_2_e
-			mov edi,[edx+8] ;+8 = .tc
+			mov edi,[edx+Cell.tc]
 			add edi,5 ; 5 - время сохранения пустой ячейки, до её удаления
 			cmp edi,[tim]
 			jge .if_2_e
-				mov edi,eax
-				shl edi,2
+				lea edi,[eax*4]
 				add edi,[memCell] ;edi -> &memCell[fristC]
 				mov esi,[edi] ;swp=memCell[fristC];
 				mov edx,[ecx] ;edx - уже не используем, потому можем портить
@@ -616,58 +615,58 @@ pole_next_gen:
 	@@: ;for(i=1;i<=firstC;i++)
 		add ecx,4
 		get_cell_offset edx,[ecx]
-		bt word[edx+12],1 ;+12 = .liv
+		bt word[edx+Cell.liv],1
 		jae .no_change
-			xor byte[edx+12],3 ;+12 = .liv
+			xor byte[edx+Cell.liv],3
 			mov edi,[tim]
-			mov dword[edx+8],edi ;+8 = .tc
-			bt word[edx+12],0 ;+12 = .liv
+			mov dword[edx+Cell.tc],edi
+			bt word[edx+Cell.liv],0
 			jc .new_cell
 				push eax
 				mov edi,[edx]
 				dec edi
-				mov esi,[edx+4]
+				mov esi,[edx+Cell.y]
 				dec esi
 				dec dword[osob]
 				;дальше значение edx портится
 				stdcall pole_cell_find,edi,esi
 				get_cell_offset edx,eax
-				dec byte[edx+13] ;+13 = .so
+				dec byte[edx+Cell.so]
 				inc esi
 				stdcall pole_cell_find,edi,esi
 				get_cell_offset edx,eax
-				dec byte[edx+13] ;+13 = .so
+				dec byte[edx+Cell.so]
 				inc esi
 				stdcall pole_cell_find,edi,esi
 				get_cell_offset edx,eax
-				dec byte[edx+13] ;+13 = .so
+				dec byte[edx+Cell.so]
 				inc edi
 				stdcall pole_cell_find,edi,esi
 				get_cell_offset edx,eax
-				dec byte[edx+13] ;+13 = .so
+				dec byte[edx+Cell.so]
 				sub esi,2
 				stdcall pole_cell_find,edi,esi
 				get_cell_offset edx,eax
-				dec byte[edx+13] ;+13 = .so
+				dec byte[edx+Cell.so]
 				inc edi
 				stdcall pole_cell_find,edi,esi
 				get_cell_offset edx,eax
-				dec byte[edx+13] ;+13 = .so
+				dec byte[edx+Cell.so]
 				inc esi
 				stdcall pole_cell_find,edi,esi
 				get_cell_offset edx,eax
-				dec byte[edx+13] ;+13 = .so
+				dec byte[edx+Cell.so]
 				inc esi
 				stdcall pole_cell_find,edi,esi
 				get_cell_offset edx,eax
-				dec byte[edx+13] ;+13 = .so
+				dec byte[edx+Cell.so]
 				pop eax
 				jmp .no_change
 			.new_cell: ; появилась новая ячейка
 				inc dword[osob]
 				mov edi,[edx]
 				dec edi
-				mov esi,[edx+4]
+				mov esi,[edx+Cell.y]
 				dec esi
 				stdcall pole_cell_creat,edi,esi,0
 				inc esi
@@ -710,8 +709,7 @@ proc pole_fl_sort, a:dword, n:dword
 	@@: ;for(i=n; i>=2; i--){
 		stdcall pole_fl_surface, ecx,1,eax ;(a,1,i)
 		;Поместить найденный максимальный элемент в конец списка
-		mov edi,eax
-		shl edi,2
+		lea edi,[eax*4]
 		add edi,ecx ;edi -> &a[i]
 		mov esi,[edi] ;w=a[i];
 		mov edx,[ecx+4]
@@ -739,8 +737,7 @@ endl
 	mov ebx,[i]
 	mov ecx,[k]
 
-	mov edx,ebx
-	shl edx,2
+	lea edx,[ebx*4]
 	add edx,eax
 	mov edx,[edx]
 	mov dword[copy],edx ;copy=a[i];
@@ -753,8 +750,7 @@ endl
 			mov esi,edi
 			jmp .else_e
 		@@: ;else if (pole_compare_cells_bm(a[m],a[m+1])) j=m;
-		mov edx,edi
-		shl edx,2
+		lea edx,[edi*4]
 		add edx,eax
 		stdcall pole_compare_cells_bm, dword[edx],dword[edx+4]
 		cmp dl,0
@@ -767,19 +763,16 @@ endl
 		.else_e:
 
 		;if (pole_compare_cells_bm(a[j],copy)) {
-		mov edx,esi
-		shl edx,2
+		lea edx,[esi*4]
 		add edx,eax
 		stdcall pole_compare_cells_bm, dword[edx],dword[copy]
 		cmp dl,0
 		je .cycle_e ;} else break; //выход из цикла
 
-		mov edx,esi
-		shl edx,2
+		lea edx,[esi*4]
 		add edx,eax
 		push dword[edx] ;push a[j];
-		mov edx,ebx
-		shl edx,2
+		lea edx,[ebx*4]
 		add edx,eax
 		pop dword[edx] ;a[i]=a[j];
 		mov ebx,esi ;i=j;
@@ -805,7 +798,7 @@ align 4
 start:
 	load_libraries l_libs_start,l_libs_end
 	;проверка на сколько удачно загузилась наша либа
-	mov	ebp,lib_7
+	mov	ebp,lib2
 	cmp	dword [ebp+ll_struc_size-4],0
 	jz	@f
 		mcall SF_TERMINATE_PROCESS ;exit not correct
@@ -828,11 +821,6 @@ start:
 	stdcall pole_init_colors, 0xffffd0,0xff0000,0x0000ff
 	call pole_clear
 	call pole_paint ;рисование поля в буфере (не на экране)
-
-	;xor eax,eax
-	;mov edi,txt_zoom.zi
-	;mov al,byte[zoom]
-	;call tl_convert_to_str
 
 	mcall SF_SYSTEM_GET,SSF_TIME_COUNT
 	mov [last_time],eax
@@ -861,8 +849,91 @@ still:
 	jz key
 	cmp al,3
 	jz button
-
+	cmp al,6
+	jne @f
+		mcall SF_THREAD_INFO,procinfo,-1
+		cmp ax,word[procinfo.window_stack_position]
+		jne @f ;окно не активно
+		call mouse
+	@@:
 	jmp still
+
+align 4
+mouse:
+	push eax ebx ecx
+	mcall SF_MOUSE_GET,SSF_BUTTON_EXT
+	bt eax,8
+	jnc @f
+		;mouse l. but. press
+		;call mouse_left_d
+		;jmp .end_l
+	@@:
+	bt eax,16
+	jnc .end_l
+		;mouse l. but. up
+		;call mouse_left_u
+		;jmp .end_l
+	.end_l:
+
+	call buf_get_mouse_coord
+	cmp eax,-1
+	je .end0
+		shl eax,1
+		sub eax,[buf_0.w]
+		sar eax,1
+		;mov [mouse_prop_x],eax
+		shl ebx,1
+		sub ebx,[buf_0.h]
+		sar ebx,1
+		;mov [mouse_prop_y],ebx
+
+		mcall SF_MOUSE_GET,SSF_SCROLL_DATA
+		test ax,ax
+		jz .end0
+
+		test ax,0x8000
+		jnz .decr
+			;увеличение масштаба
+			call but_zoom_p
+			jmp .end0
+		.decr:
+			;уменьшение масштаба
+			call but_zoom_m
+	.end0:
+
+	pop ecx ebx eax
+	ret
+
+;output:
+; eax - buffer coord X (если курсор за буфером -1)
+; ebx - buffer coord Y (если курсор за буфером -1)
+align 4
+proc buf_get_mouse_coord
+	mcall SF_MOUSE_GET,SSF_WINDOW_POSITION
+	cmp ax,word[buf_0.t]
+	jl .no_buf ;не попали в окно буфера по оси y
+	mov ebx,eax
+	shr ebx,16
+	cmp bx,word[buf_0.l]
+	jl .no_buf ;не попали в окно буфера по оси x
+
+	and eax,0xffff ;оставляем координату y
+	sub ax,word[buf_0.t]
+	cmp eax,[buf_0.h]
+	jg .no_buf
+	sub bx,word[buf_0.l]
+	cmp ebx,[buf_0.w]
+	jg .no_buf
+	xchg eax,ebx
+	jmp .end_f
+	.no_buf:
+		xor eax,eax
+		not eax
+		xor ebx,ebx
+		not ebx
+	.end_f:
+	ret
+endp
 
 align 4
 timer_funct:
@@ -899,6 +970,30 @@ pushad
 	or  edx,0x33000000
 	mov edi,hed
 	mcall SF_CREATE_WINDOW,(20 shl 16)+485,(20 shl 16)+415
+
+	mcall SF_THREAD_INFO,procinfo,-1
+	mov eax,[procinfo.box.height]
+	cmp eax,120
+	jge @f
+		mov eax,120 ;min size
+	@@:
+	sub eax,63
+	mov ebx,[procinfo.box.width]
+	cmp ebx,270
+	jge @f
+		mov ebx,270
+	@@:
+	sub ebx,9
+	cmp eax,[buf_0.h] ;смотрим размер буфера
+	jne @f
+	cmp ebx,[buf_0.w]
+	jne @f
+		jmp .end0
+	@@:
+		stdcall [buf2d_resize], buf_0, ebx,eax,1
+		stdcall [buf2d_clear], buf_0, [buf_0.color]
+		call pole_paint
+	.end0:
 
 	mcall SF_DEFINE_BUTTON,(5 shl 16)+20,(5 shl 16)+20,3, [sc.work_button]
 
@@ -1004,8 +1099,7 @@ draw_pok:
 	int 0x40
 
 	mov eax,SF_DRAW_NUMBER
-	xor ecx,ecx
-	mov cl,byte[zoom]
+	movzx ecx,byte[zoom]
 	mov ebx,(2 shl 16)
 	mov edx,(325+6*9)*65536+5
 	mov esi,[sc.work_button_text]
@@ -1181,7 +1275,7 @@ but_open_file:
 	xor ebx,ebx
 	xor ecx,ecx
 	mov eax,ebx
-	mov edx,[open_file_lif]
+	mov edx,edi
 	add edx,[open_file_size]
 	@@:
 		cmp byte[edi],'*'
@@ -1303,10 +1397,6 @@ but_zoom_p:
 		sub dword[Cor_y],ebx ;сдвигаем поле зрения по оси y
 
 		inc byte[zoom]
-		;xor eax,eax
-		;mov edi,txt_zoom.zi
-		;mov al,byte[zoom]
-		;call tl_convert_to_str
 		call draw_pok
 		popad
 
@@ -1355,10 +1445,6 @@ but_zoom_m:
 		sub dword[Cor_y],ebx ;сдвигаем поле зрения по оси y
 
 		dec byte[zoom]
-		;xor eax,eax
-		;mov edi,txt_zoom.zi
-		;mov al,byte[zoom]
-		;call tl_convert_to_str
 		call draw_pok
 		popad
 
@@ -1580,18 +1666,18 @@ lib_name_1 db 'libimg.obj',0
 err_message_found_lib_1 db 'Не найдена библиотека ',39,'libimg.obj',39,0
 err_message_import_1 db 'Ошибка при импорте библиотеки ',39,'libimg.obj',39,0
 
-system_dir_7 db '/sys/lib/'
-lib_name_7 db 'buf2d.obj',0
-err_msg_found_lib_7 db 'Не найдена библиотека ',39,'buf2d.obj',39,0
-err_msg_import_7 db 'Ошибка при импорте библиотеки ',39,'buf2d',39,0
+system_dir_2 db '/sys/lib/'
+lib_name_2 db 'buf2d.obj',0
+err_msg_found_lib_2 db 'Не найдена библиотека ',39,'buf2d.obj',39,0
+err_msg_import_2 db 'Ошибка при импорте библиотеки ',39,'buf2d',39,0
 
 l_libs_start:
 	lib0 l_libs lib_name_0, sys_path, file_name, system_dir_0,\
 		err_message_found_lib_0, head_f_l, proclib_import,err_message_import_0, head_f_i
 	lib1 l_libs lib_name_1, sys_path, file_name, system_dir_1,\
 		err_message_found_lib_1, head_f_l, import_libimg, err_message_import_1, head_f_i
-	lib_7 l_libs lib_name_7, sys_path, library_path, system_dir_7,\
-		err_msg_found_lib_7,head_f_l,import_buf2d,err_msg_import_7,head_f_i
+	lib2 l_libs lib_name_2, sys_path, library_path, system_dir_2,\
+		err_msg_found_lib_2,head_f_l,import_buf2d,err_msg_import_2,head_f_i
 l_libs_end:
 
 align 4
@@ -1653,55 +1739,23 @@ align 4
 import_buf2d:
 	init dd sz_init
 	buf2d_create dd sz_buf2d_create
-	buf2d_create_f_img dd sz_buf2d_create_f_img
 	buf2d_clear dd sz_buf2d_clear
 	buf2d_draw dd sz_buf2d_draw
 	buf2d_delete dd sz_buf2d_delete
-	buf2d_line dd sz_buf2d_line
-	buf2d_rect_by_size dd sz_buf2d_rect_by_size
+	buf2d_resize dd sz_buf2d_resize
 	buf2d_filled_rect_by_size dd sz_buf2d_filled_rect_by_size
-	buf2d_circle dd sz_buf2d_circle
-	buf2d_img_hdiv2 dd sz_buf2d_img_hdiv2
-	buf2d_img_wdiv2 dd sz_buf2d_img_wdiv2
-	buf2d_conv_24_to_8 dd sz_buf2d_conv_24_to_8
-	buf2d_conv_24_to_32 dd sz_buf2d_conv_24_to_32
-	buf2d_bit_blt dd sz_buf2d_bit_blt
-	buf2d_bit_blt_transp dd sz_buf2d_bit_blt_transp
-	buf2d_bit_blt_alpha dd sz_buf2d_bit_blt_alpha
-	buf2d_curve_bezier dd sz_buf2d_curve_bezier
-	buf2d_convert_text_matrix dd sz_buf2d_convert_text_matrix
-	buf2d_draw_text dd sz_buf2d_draw_text
-	buf2d_crop_color dd sz_buf2d_crop_color
-	buf2d_offset_h dd sz_buf2d_offset_h
-	buf2d_flood_fill dd sz_buf2d_flood_fill
 	buf2d_set_pixel dd sz_buf2d_set_pixel
 	dd 0,0
 	sz_init db 'lib_init',0
 	sz_buf2d_create db 'buf2d_create',0
-	sz_buf2d_create_f_img db 'buf2d_create_f_img',0
 	sz_buf2d_clear db 'buf2d_clear',0
 	sz_buf2d_draw db 'buf2d_draw',0
 	sz_buf2d_delete db 'buf2d_delete',0
-	sz_buf2d_line db 'buf2d_line',0
-	sz_buf2d_rect_by_size db 'buf2d_rect_by_size',0
+	sz_buf2d_resize db 'buf2d_resize',0
 	sz_buf2d_filled_rect_by_size db 'buf2d_filled_rect_by_size',0
-	sz_buf2d_circle db 'buf2d_circle',0
-	sz_buf2d_img_hdiv2 db 'buf2d_img_hdiv2',0
-	sz_buf2d_img_wdiv2 db 'buf2d_img_wdiv2',0
-	sz_buf2d_conv_24_to_8 db 'buf2d_conv_24_to_8',0
-	sz_buf2d_conv_24_to_32 db 'buf2d_conv_24_to_32',0
-	sz_buf2d_bit_blt db 'buf2d_bit_blt',0
-	sz_buf2d_bit_blt_transp db 'buf2d_bit_blt_transp',0
-	sz_buf2d_bit_blt_alpha db 'buf2d_bit_blt_alpha',0
-	sz_buf2d_curve_bezier db 'buf2d_curve_bezier',0
-	sz_buf2d_convert_text_matrix db 'buf2d_convert_text_matrix',0
-	sz_buf2d_draw_text db 'buf2d_draw_text',0
-	sz_buf2d_crop_color db 'buf2d_crop_color',0
-	sz_buf2d_offset_h db 'buf2d_offset_h',0
-	sz_buf2d_flood_fill db 'buf2d_flood_fill',0
 	sz_buf2d_set_pixel db 'buf2d_set_pixel',0
 
-mouse_dd dd 0x0
+mouse_dd dd 0
 sc system_colors 
 last_time dd 0
 
@@ -1709,43 +1763,13 @@ align 16
 procinfo process_information 
 
 align 4
-buf_0: dd 0 ;a?азаa?лi на ?aa?a ?зо?aаж?н?i
-	dw 5 ;+4 left
-	dw 35 ;+6 top
-.w: dd 460 ;+8 w
-.h: dd 340 ;+12 h
+buf_0: dd 0
+.l: dw 0 ;+4 left
+.t: dw 35 ;+6 top
+.w: dd 476 ;+8 w
+.h: dd 352 ;+12 h
 .color: dd 0xffffd0 ;+16 color
 	db 24 ;+20 bit in pixel
-
-;этот код не мой, он преобразует число в строку
-;input:
-; eax = value
-; edi = string buffer
-;output:
-align 4
-tl_convert_to_str:
-	pushad
-		mov dword[edi+1],0
-		call .str
-	popad
-	ret
-
-align 4
-.str:
-	mov ecx,0x0a ;задается система счисления изменяются регистры ebx,eax,ecx,edx входные параметры eax - число
-    ;преревод числа в ASCII строку взодные данные ecx=система счисленя edi адрес куда записывать, будем строку, причем конец переменной 
-	cmp eax,ecx  ;сравнить если в eax меньше чем в ecx то перейти на @@-1 т.е. на pop eax
-	jb @f
-		xor edx,edx  ;очистить edx
-		div ecx      ;разделить - остаток в edx
-		push edx     ;положить в стек
-		;dec edi             ;смещение необходимое для записи с конца строки
-		call .str ;перейти на саму себя т.е. вызвать саму себя и так до того момента пока в eax не станет меньше чем в ecx
-		pop eax
-	@@: ;cmp al,10 ;проверить не меньше ли значение в al чем 10 (для системы счисленя 10 данная команда - лишная))
-	or al,0x30  ;данная команда короче  чем две выше
-	stosb	    ;записать элемент из регистра al в ячеку памяти es:edi
-	ret	      ;вернуться чень интересный ход т.к. пока в стеке храниться кол-во вызовов то столько раз мы и будем вызываться
 
 i_end:
 	rb 1024
