@@ -9,7 +9,7 @@ include '../../../KOSfuncs.inc'
 include '../../../load_img.inc'
 include '../../../develop/libraries/box_lib/load_lib.mac'
 
-include 'lang.inc'
+;include 'lang.inc'
 
 @use_library_mem mem.Alloc,mem.Free,mem.ReAlloc,dll.Load
 hed db 'Life 04.11.18',0 ;подпись окна
