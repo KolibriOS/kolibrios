@@ -632,15 +632,15 @@ tup.append_table(extra_files, {
  {"kolibrios/emul/e80/e80", PROGS .. "/emulator/e80/trunk/e80"},
  {"kolibrios/games/2048game", PROGS .. "/games/2048/2048"},
  {"kolibrios/games/donkey", PROGS .. "/games/donkey/donkey"},
- {"kolibrios/games/heliothryx", PROGS .. "/games/heliothryx/heliothryx"},
- {"kolibrios/games/marblematch3", PROGS .. "/games/marblematch3/marblematch3"},
- {"kolibrios/games/nsider", PROGS .. "/games/nsider/nsider"},
+ {"kolibrios/games/heliothryx1", PROGS .. "/games/heliothryx/heliothryx"},
+ {"kolibrios/games/marblematch31", PROGS .. "/games/marblematch3/marblematch3"},
+ {"kolibrios/games/nsider1", PROGS .. "/games/nsider/nsider"},
  {"kolibrios/games/quake/", "common/games/quake/*"}, -- not really gcc, but no sense without sdlquake
  {"kolibrios/games/quake/", "../contrib/other/sdlquake-1.0.9/sdlquake"},
 })
 -- For russian build, add russian-only programs.
 if build_type == "rus" then tup.append_table(extra_files, {
- {"kolibrios/games/", PROGS .. "/games/21days/21days"},
+ {"kolibrios/games/21days1", PROGS .. "/games/21days/21days"},
 }) end
 end -- tup.getconfig('NO_GCC') ~= 'full'
 
