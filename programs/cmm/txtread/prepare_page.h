@@ -3,13 +3,15 @@ enum {
 	DRAW_BUF
 };
 
+#define DRAW_PADDING 12
+
 void Parcer(byte mode)
 {
 dword bufoff, buflen;
 byte ch;
 char line[4096]=0;
 int srch_pos;
-dword stroka_y=5;
+dword stroka_y=DRAW_PADDING-3;
 dword line_length=30;
 dword line_start=io.buffer_data;
 
@@ -34,7 +36,7 @@ dword line_start=io.buffer_data;
 			if (mode==DRAW_BUF) {
 				EBX = bufoff-line_start;
 				strlcpy(#line, line_start, EBX);
-				kfont.WriteIntoBuffer(8,stroka_y,list.w,kfont.size.height, bg_color, text_color, kfont.size.pt, #line);
+				kfont.WriteIntoBuffer(DRAW_PADDING,stroka_y,list.w,kfont.size.height, bg_color, text_color, kfont.size.pt, #line);
 				stroka_y += list.item_h;
 				line_start = bufoff;
 				line_length = 30;
@@ -42,7 +44,7 @@ dword line_start=io.buffer_data;
 		}
 	}
 	if (mode==COUNT_BUF_HEIGHT) list.count+=2;
-	if (mode==DRAW_BUF) kfont.WriteIntoBuffer(8,stroka_y,list.w,kfont.size.height, bg_color, text_color, kfont.size.pt, line_start);
+	if (mode==DRAW_BUF) kfont.WriteIntoBuffer(DRAW_PADDING,stroka_y,list.w,kfont.size.height, bg_color, text_color, kfont.size.pt, line_start);
 }
 
 void PreparePage() 
@@ -52,7 +54,7 @@ void PreparePage()
 	Parcer(COUNT_BUF_HEIGHT);
 	
 	//draw text in buffer
-	list.SetSizes(0, TOOLBAR_H, list.w, Form.cheight-TOOLBAR_H, kfont.size.pt+4);
+	list.SetSizes(0, TOOLBAR_H, list.w, Form.cheight-TOOLBAR_H, kfont.size.pt+6);
 	if (list.count < list.visible) list.count = list.visible;
 	kfont.size.height = list.count+1*list.item_h;
 	kfont.raw_size = 0;

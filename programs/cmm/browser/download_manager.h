@@ -78,10 +78,11 @@ void Downloader()
 		   
 		default:
 			if (!downloader.MonitorProgress()) break;
-			pb.max = downloader.httpd.content_length;
-			if (pb.value != downloader.httpd.content_received)
+			pb.max = downloader.httpd.content_length / 100;
+			EDI = downloader.httpd.content_received/100;
+			if (pb.value != EDI)
 			{
-				pb.value = downloader.httpd.content_received;
+				pb.value = EDI;
 				progressbar_draw stdcall(#pb);
 				DrawDownloading();
 			}
@@ -154,6 +155,7 @@ void StartDownloading()
 	DL_Draw_Window();
 }
 
+/*
 struct TIME
 {
 	dword old;
@@ -180,6 +182,7 @@ void CalculateSpeed()
 	}
 	else time.old = time.cur;
 }
+*/
  
 void DrawDownloading()
 {

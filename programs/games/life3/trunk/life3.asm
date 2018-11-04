@@ -9,13 +9,18 @@ include '../../../KOSfuncs.inc'
 include '../../../load_img.inc'
 include '../../../develop/libraries/box_lib/load_lib.mac'
 
+include 'lang.inc'
+
 @use_library_mem mem.Alloc,mem.Free,mem.ReAlloc,dll.Load
-hed db 'Life 03.11.18',0 ;подпись окна
+hed db 'Life 04.11.18',0 ;подпись окна
 
 run_file_70 FileInfoBlock
 image_data dd 0 ;указатель на временную память. для нужен преобразования изображения
 
-IMAGE_TOOLBAR_ICON_SIZE equ 16*16*3
+ICONSIZE = 21
+TBTNSIZE = ICONSIZE-2
+
+IMAGE_TOOLBAR_ICON_SIZE equ ICONSIZE*ICONSIZE*3
 image_data_toolbar dd 0
 
 
@@ -51,9 +56,16 @@ tim dd 0 ;время (поколение)
 b_sort dd 0 ;граница для сортированных ячеек
 osob dd 0 ;число особей
 zoom db 3 ;масштаб поля
-txt_zoom db 'Масштаб:',0
-txt_gen db 'Поколение:',0
-txt_osob db 'Особей:',0
+
+if lang eq ru
+txt_zoom db '   Масштаб:',0
+txt_gen db '  Поколение:',0
+txt_osob db '    Особей:',0
+else
+txt_zoom db '      Zoom:',0
+txt_gen db  'Generation:',0
+txt_osob db 'Population:',0
+end if
 
 ;настройка массива с цветами
 ; col_pole - цвет поля
@@ -815,7 +827,7 @@ start:
 	mov [memCell],eax
 	stdcall mem.Alloc,(COL_MEM+1)*4
 	mov [CellColors],eax
-	include_image_file 'toolbar.png', image_data_toolbar
+	include_image_file 'life3tb.png', image_data_toolbar
 
 	;настройка цветов ячеек
 	stdcall pole_init_colors, 0xffffd0,0xff0000,0x0000ff
@@ -966,10 +978,7 @@ align 4
 draw_window:
 pushad
 	mcall SF_REDRAW,SSF_BEGIN_DRAW
-	mov edx,[sc.work]
-	or  edx,0x33000000
-	mov edi,hed
-	mcall SF_CREATE_WINDOW,(20 shl 16)+485,(20 shl 16)+415
+	mcall SF_CREATE_WINDOW,(50 shl 16)+485,(50 shl 16)+415,0x73000000,0,hed
 
 	mcall SF_THREAD_INFO,procinfo,-1
 	mov eax,[procinfo.box.height]
@@ -994,98 +1003,91 @@ pushad
 		stdcall [buf2d_clear], buf_0, [buf_0.color]
 		call pole_paint
 	.end0:
+	
+	mov edx,[sc.work]
+	mov ebx, 0 shl 16
+	add ebx, [buf_0.w]
+	mcall SF_DRAW_RECT,,<0,35>
 
-	mcall SF_DEFINE_BUTTON,(5 shl 16)+20,(5 shl 16)+20,3, [sc.work_button]
+	mcall SF_DEFINE_BUTTON,(6 shl 16)+TBTNSIZE,(6 shl 16)+TBTNSIZE,4+0x40000000, [sc.work_button]
 
-	mov ebx,(30 shl 16)+20
-	mov edx,4
+	mov ebx,(36 shl 16)+TBTNSIZE
+	mov edx,6+0x40000000
 	int 0x40
 
-	mov ebx,(55 shl 16)+20
-	mov edx,5
+	mov ebx,(61 shl 16)+TBTNSIZE
+	mov edx,7+0x40000000
 	int 0x40
 
-	mov ebx,(85 shl 16)+20
-	mov edx,6
+	mov ebx,(86 shl 16)+TBTNSIZE
+	mov edx,8+0x40000000
 	int 0x40
 
-	mov ebx,(110 shl 16)+20
-	mov edx,7
+	mov ebx,(116 shl 16)+TBTNSIZE
+	mov edx,9+0x40000000
 	int 0x40
 
-	mov ebx,(135 shl 16)+20
-	mov edx,8
+	mov ebx,(141 shl 16)+TBTNSIZE
+	mov edx,10+0x40000000
 	int 0x40
 
-	mov ebx,(165 shl 16)+20
-	mov edx,9
+	mov ebx,(171 shl 16)+TBTNSIZE
+	mov edx,11+0x40000000
 	int 0x40
 
-	mov ebx,(190 shl 16)+20
-	mov edx,10
+	mov ebx,(196 shl 16)+TBTNSIZE
+	mov edx,12+0x40000000
 	int 0x40
 
-	mov ebx,(220 shl 16)+20
-	mov edx,11
+	mov ebx,(221 shl 16)+TBTNSIZE
+	mov edx,13+0x40000000
 	int 0x40
 
-	mov ebx,(245 shl 16)+20
-	mov edx,12
+	mov ebx,(246 shl 16)+TBTNSIZE
+	mov edx,14+0x40000000
 	int 0x40
 
-	mov ebx,(270 shl 16)+20
-	mov edx,13
-	int 0x40
-
-	mov ebx,(295 shl 16)+20
-	mov edx,14
-	int 0x40
-
-	mcall SF_PUT_IMAGE,[image_data_toolbar],(16 shl 16)+16,(32 shl 16)+7
+	mcall SF_PUT_IMAGE,[image_data_toolbar],(ICONSIZE shl 16)+ICONSIZE,(5 shl 16)+5
 
 	add ebx,IMAGE_TOOLBAR_ICON_SIZE
-	mov edx,(87 shl 16)+7 ;run once
-	int 0x40
-
-	add ebx,IMAGE_TOOLBAR_ICON_SIZE
-	mov edx,(112 shl 16)+7 ;run auto
+	mov edx,(35 shl 16)+5 ;run once
 	int 0x40
 	add ebx,IMAGE_TOOLBAR_ICON_SIZE
-	mov edx,(137 shl 16)+7 ;stop
+	mov edx,(60 shl 16)+5 ;run auto
+	int 0x40	
+	add ebx,IMAGE_TOOLBAR_ICON_SIZE
+	mov edx,(85 shl 16)+5 ;stop
 	int 0x40
 
 	add ebx,IMAGE_TOOLBAR_ICON_SIZE
-	mov edx,(167 shl 16)+7 ;-
+	mov edx,(115 shl 16)+5 ;-
 	int 0x40
 	add ebx,IMAGE_TOOLBAR_ICON_SIZE
-	mov edx,(192 shl 16)+7 ;+
+	mov edx,(140 shl 16)+5 ;+
 	int 0x40
 
 	add ebx,IMAGE_TOOLBAR_ICON_SIZE
-	mov edx,(222 shl 16)+7 ;move up
+	mov edx,(170 shl 16)+5 ;move up
 	int 0x40
 	add ebx,IMAGE_TOOLBAR_ICON_SIZE
-	mov edx,(247 shl 16)+7 ;move doun
+	mov edx,(195 shl 16)+5 ;move doun
 	int 0x40
 	add ebx,IMAGE_TOOLBAR_ICON_SIZE
-	mov edx,(272 shl 16)+7 ;move left
+	mov edx,(220 shl 16)+5 ;move left
 	int 0x40
 	add ebx,IMAGE_TOOLBAR_ICON_SIZE
-	mov edx,(297 shl 16)+7 ;move up
+	mov edx,(245 shl 16)+5 ;move right
 	int 0x40
+	
+	; add ebx,IMAGE_TOOLBAR_ICON_SIZE
+	; mov edx,(270 shl 16)+5
+	; int 0x40
+	; add ebx,IMAGE_TOOLBAR_ICON_SIZE
+	; mov edx,(295 shl 16)+5
+	; int 0x40
 
-	call draw_pok
-
-	stdcall [buf2d_draw], buf_0
-
-	mcall SF_REDRAW,SSF_END_DRAW
-popad
-	ret
-
-align 4
-draw_pok:
 	mov eax,SF_DRAW_TEXT
-	mov ebx,325*65536+5
+	mov ebx,295*65536+5
 	mov ecx,[sc.work_text]
 	or  ecx,0x80000000 ;or (1 shl 30)
 	mov edx,txt_zoom
@@ -1097,22 +1099,32 @@ draw_pok:
 	add bx,9
 	mov edx,txt_osob
 	int 0x40
+	
+	call draw_pok
 
+	stdcall [buf2d_draw], buf_0
+
+	mcall SF_REDRAW,SSF_END_DRAW
+popad
+	ret
+
+align 4
+draw_pok:
 	mov eax,SF_DRAW_NUMBER
 	movzx ecx,byte[zoom]
 	mov ebx,(2 shl 16)
-	mov edx,(325+6*9)*65536+5
-	mov esi,[sc.work_button_text]
+	mov edx,(295+8*9)*65536+5
+	mov esi,[sc.work_text]
 	or  esi,(1 shl 30)
-	mov edi,[sc.work_button]
+	mov edi,[sc.work]
 	int 0x40 ;масштаб
 	mov ebx,(5 shl 16)
 	mov ecx,[tim]
-	add edx,(6*2)*65536+9
+	add edx,9
 	int 0x40 ;время
 	mov ebx,(5 shl 16)
 	mov ecx,[osob]
-	add edx,(6*0)*65536+9
+	add edx,9
 	int 0x40 ;популяция
 	ret
 
