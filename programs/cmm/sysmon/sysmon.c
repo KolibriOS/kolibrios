@@ -48,7 +48,7 @@ void main()
 	load_dll(libimg, #libimg_init,1);
 	load_dll(libini, #lib_init,1);
 
-	GetTmpDiskSizesFromIni();
+	GetTmpDiskSizes();
 	
 	loop()
 	{
@@ -153,15 +153,21 @@ dword GetCpuLoad(dword max_h)
 	return max_h - idle;
 }
 
-_ini ini = { "/sys/settings/system.ini", "DiskSizes" };
-void GetTmpDiskSizesFromIni()
+dword GetDiskSize(dword disk_n)
 {
-	char i, key[2];
-	key[1]=0;
+	BDVK bdvk;
+	char tmp_path[8];
+	strcpy(#tmp_path, "/tmp0/1");
+	tmp_path[4] = disk_n + '0';
+	GetFileInfo(#tmp_path, #bdvk);		
+	return bdvk.sizelo;
+}
+void GetTmpDiskSizes()
+{
+	char i;
 	for (i=0; i<=9; i++)
 	{
-		key[0]=i+'0';
-		tmp_size[i] = ini.GetInt(#key, 0) / 1024 / 1024;
+		tmp_size[i] = GetDiskSize(i) / 1024 / 1024;
 	}
 }
 

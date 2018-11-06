@@ -39,7 +39,10 @@ unsigned char edge[sizeof(file "img/edge.raw")]= FROM "img/edge.raw"; //292x6
 #define DELETE_BTN 4;
 #define DELETE_W sizeof(DELETE_TEXT)+2*6
 
+proc_info Form;
+
 #include "engine.h"
+#include "ini.h"
 
 dword ed_mouse;
 edit_box notebox = {NULL,NULL,NULL,COL_BG_ACTIVE,0x94AECE,COL_BG_ACTIVE,0xffffff,0,
@@ -68,6 +71,7 @@ void main()
 	if (param) notes.OpenTxt(#param); else notes.OpenTxt(abspath("notes.txt"));
 
 	SetEventMask(EVM_REDRAW + EVM_KEY + EVM_BUTTON + EVM_MOUSE + EVM_MOUSE_FILTER);
+	LoadIniSettings();
 
 	loop() switch(WaitEvent())
 	{
@@ -164,9 +168,10 @@ void draw_window()
 {
 	int i;
 	if (window_dragable) 
-		DefineUnDragableWindow(100,100,WIN_W, WIN_H);
+		DefineUnDragableWindow(Form.left,Form.top,WIN_W, WIN_H);
 	else 
-		DefineDragableWindow(100,100,WIN_W, WIN_H);
+		DefineDragableWindow(Form.left,Form.top,WIN_W, WIN_H);
+	GetProcessInfo(#Form, SelfInfo);
 	notes.SetSizes(RED_LINE_X+1, HEADER_HEIGHT, WIN_W-1, RED_LINE_X*LINES_COUNT, RED_LINE_X);
 	DrawRectangle3D(0,0,WIN_W,TITLE_H-1,0xBB6535, 0xCD6F3B);
 	DrawRectangle3D(1,1,WIN_W-2,TITLE_H-3,0xEFBFA4, 0xDD8452);
@@ -213,6 +218,7 @@ void EventActivateLine(int line_n)
 void EventExitApp()
 {
 	notes.SaveTxt();
+	SaveIniSettings();
 	ExitProcess();
 }
 

@@ -180,7 +180,7 @@ void DrawWindowContent()
 	//DOCKY
 	frame_y = calc(y.inc(20));
 	DefineButton(22, y.inc(18), PIMG_W-1, PIMG_H-1, 200 + BT_HIDE, 0);
-	DrawPanelsImage(y.n, dkLocation);
+	DrawPanelsImage(y.n, dkLocation+1);
 	WriteText(68, y.inc(7), 0x90, system.color.work_text, CHANGE_POS);
 	dkFsize.draw(22, y.inc(35)); 
 	dkAshow.draw(win_center_x, y.n);
