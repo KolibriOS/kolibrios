@@ -177,10 +177,20 @@
 	$int 0x40
 }
 
+//ECX - buf pointer
 inline fastcall void SetCurDir( ECX)
 {
 	EAX=30;
 	EBX=1;
+	$int 0x40
+}
+
+//ECX - buf pointer
+//EDX - buf size
+inline fastcall void GetCurDir( ECX, EDX)
+{
+	EAX=30;
+	EBX=2;
 	$int 0x40
 }
 

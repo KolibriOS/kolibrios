@@ -67,6 +67,11 @@ void blit(int dstx, int dsty, int w, int h, int srcx, int srcy,int srcw, int src
 	asm ("int $0x40"::"a"(73),"b"(0),"c"(&image));
 }
 
+void run_app()
+{
+	return;
+}
+
 
 int __menuet__get_mouse_wheels(void)
 {
@@ -145,6 +150,7 @@ char *winpassword(pdfapp_t *app, char *filename)
 {
 	char *r = "";
 	return r;
+	random();
 }
 
 
@@ -165,6 +171,11 @@ void winclose(pdfapp_t *app)
 {
 	pdfapp_close(&gapp);
 	__menuet__sys_exit();
+}
+
+void RunOpenApp()
+{
+	RunApp("/sys/lod", "*pdf* /kolibrios/media/updf");
 }
 
 
@@ -258,6 +269,13 @@ int main (void)
 {
 	char ii, mouse_wheels_state;
 	char* original_command_line = *(char**)0x1C;
+	
+	if (*original_command_line == 0) {
+		kol_board_puts("Running uPDF without any param");
+		RunOpenApp();
+		__menuet__sys_exit();
+	}
+
 	kol_board_puts(original_command_line);
 	kol_board_puts("\n");
 	
@@ -325,7 +343,7 @@ int main (void)
 		case evButton:
 			butt = __menuet__get_button_id();
 			if(butt==1) __menuet__sys_exit();
-			if(butt==10) RunApp("/sys/lod", "*pdf* /kolibrios/media/updf");
+			if(butt==10) RunOpenApp();
 			if(butt==11) PageZoomOut(); //magnify -
 			if(butt==12) PageZoomIn(); //magnify +
 			if(butt==13) //show help

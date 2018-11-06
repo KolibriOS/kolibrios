@@ -1,5 +1,5 @@
 //11.03.12 - start!
-//ver 2.1
+//ver 2.2
 
 #ifndef AUTOBUILD
 	?include "lang.h--"
@@ -17,6 +17,8 @@
 
 #include "..\lib\patterns\select_list.h"
 #include "..\lib\patterns\simple_open_dialog.h"
+
+#include "ini.h"
 
 //===================================================//
 //                                                   //
@@ -84,6 +86,7 @@ void main()
 	int id, mouse_clicked;
 
 	load_dll(boxlib, #box_lib_init,0);
+	load_dll(libini, #lib_init,1);
 	load_dll(Proc_lib, #OpenDialog_init,0);
 	o_dialog.type = 2; //select folder
 	OpenDialog_init stdcall (#o_dialog);
@@ -223,7 +226,8 @@ void DrawWindowContent()
 	}
 	if (tabs.active_tab == WALLPAPERS)
 	{
-		DrawStandartCaptButton(skp.x, select_list.y, BTN_SELECT_WALLP_FOLDER, T_SELECT_FOLDER);
+		DrawStandartCaptButton(select_list.x + select_list.w + scroll1.size_x + 17, 
+			select_list.y, BTN_SELECT_WALLP_FOLDER, T_SELECT_FOLDER);
 	}
 }
 
@@ -354,6 +358,7 @@ void EventApply()
 	{
 		cur = select_list.cur_y;
 		SetSystemSkin(#cur_file_path);
+		SaveSkinSettings(#cur_file_path);
 	} 
 	if (tabs.active_tab==WALLPAPERS)
 	{
