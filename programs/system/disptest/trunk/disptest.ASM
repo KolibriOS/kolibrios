@@ -202,7 +202,7 @@ exit_draw:
 	mov	edx, [test_info + edx*4]
 	mcall	4
 
-	add	ebx, 8
+	add	ebx, 12
 	mcall	,,,press_space
 
 	add	ebx, 8
@@ -218,7 +218,9 @@ no_info:
 ; <---- procedures for various tests of display ----->
 ; in: ebx = screen_width, ecx = screen_height
 ;------------------------------------------------------------------------------
-lsz i_image_size, ru, "Image Size and Placement"
+lsz i_image_size,\
+  ru, "Размер изображения и размещение",\
+  en, "Image Size and Placement"
 db	0
 ;------------------------------------------------------------------------------
 t_image_size:
@@ -258,7 +260,9 @@ t_image_size:
 	mcall
 	ret
 ;------------------------------------------------------------------------------
-lsz i_grid, ru, "Grid"
+lsz i_grid,\
+  ru, "Сетка",\
+  en, "Grid"
 db	0
 ;------------------------------------------------------------------------------
 t_grid:
@@ -296,7 +300,9 @@ grid_next_x:
 	mcall
 	ret
 ;------------------------------------------------------------------------------
-lsz i_horstr, ru, "Horizontal Straightness"
+lsz i_horstr,\
+  ru, "Горизонтальные прямые линии",\
+  en, "Horizontal Straightness"
 db	0
 ;------------------------------------------------------------------------------
 t_horstr:
@@ -323,7 +329,9 @@ hor_next_y:
 	jnae	hor_next_y
 	ret
 ;------------------------------------------------------------------------------
-lsz i_vertstr, ru, "Vertical Straightness",0
+lsz i_vertstr,\
+  ru, "Вертикальные прямые линии",\
+  en, "Vertical Straightness"
 db	0
 ;------------------------------------------------------------------------------
 t_vertstr:
@@ -348,7 +356,9 @@ vert_next_x:
 	jnae	vert_next_x
 	ret
 ;------------------------------------------------------------------------------
-lsz i_distort, ru, "Distortion",0
+lsz i_distort,\
+  ru, "Проверка на искажения",\
+  en, "Distortion",
 db	0
 ;------------------------------------------------------------------------------
 t_distort:
@@ -395,7 +405,9 @@ dist_next:
 	jnz	dist_next
 	ret
 ;------------------------------------------------------------------------------
-lsz i_horres, ru, "Horizontal Resolution",0
+lsz i_horres,\
+  ru, "Разрешение по горизонтали",\
+  en, "Horizontal Resolution",
 db	0
 ;------------------------------------------------------------------------------
 t_horres:
@@ -428,7 +440,9 @@ horres_next:
 	jna	horres_next
 	ret
 ;------------------------------------------------------------------------------
-lsz i_vertres, ru, "Vertical Resolution",0
+lsz i_vertres,\
+  ru, "Разрешение по вертикали",\
+  en, "Vertical Resolution",
 db	0
 ;------------------------------------------------------------------------------
 t_vertres:
@@ -462,7 +476,9 @@ vertres_next:
 	jna	vertres_next
 	ret
 ;------------------------------------------------------------------------------
-lsz i_moire, ru, "Moire Patterns",0
+lsz i_moire,\
+  ru, "Шаблоны Муара",\
+  en, "Moire Patterns",
 db	0
 ;------------------------------------------------------------------------------
 t_moire:
@@ -481,7 +497,9 @@ moire_next:
 	jna	moire_next
 	ret
 ;------------------------------------------------------------------------------
-lsz i_revsharp, ru, "Reverse Video Sharpness",0
+lsz i_revsharp,\
+  ru, "Реверсивная резкость видео",\
+  en, "Reverse Video Sharpness",
 db	0
 ;------------------------------------------------------------------------------
 t_revsharp:
@@ -515,20 +533,26 @@ revsharp_next:
 	jna	revsharp_next
 	ret
 ;------------------------------------------------------------------------------
-lsz i_flicker, ru, "Flicker Severity",0
+lsz i_flicker,\
+	ru, "Уровень мерцания",\
+	en, "Flicker Severity",
 db	0
 ;------------------------------------------------------------------------------
 t_flicker:
 	mcall	13,,,0xffffff
 	ret
 ;------------------------------------------------------------------------------
-lsz i_glare, ru, "Glare Severity",0
+lsz i_glare,\
+	ru, "Уровень бликов подсветки",\
+	en, "Glare Severity",
 db	0
 ;------------------------------------------------------------------------------
 t_glare:		; оптимизировать нечего
 	ret
 ;------------------------------------------------------------------------------
-lsz i_interlace, ru, "Interlacing Detection",0
+lsz i_interlace,\
+	ru, "Обнаружение интерлейсинга",\
+	en, "Interlacing Detection",
 db	0
 ;------------------------------------------------------------------------------
 t_interlace:
@@ -545,7 +569,9 @@ interlace_next:
 	jna	interlace_next
 	ret
 ;------------------------------------------------------------------------------
-lsz i_scrreg, ru, "Screen Regulation",0
+lsz i_scrreg,\
+	ru, "Регулировка экрана",\
+	en, "Screen Regulation",
 db	0
 ;------------------------------------------------------------------------------
 t_scrreg:
@@ -555,7 +581,9 @@ t_scrreg:
 	mcall	13,,,0xffffff
 	ret
 ;------------------------------------------------------------------------------
-lsz i_pricol, ru, "Primary Color Purity"
+lsz i_pricol,\
+	ru, "Чистота основных цветов",\
+	en, "Primary Color Purity",
 db	0
 ;------------------------------------------------------------------------------
 t_pricol:
@@ -586,7 +614,9 @@ t_pricol:
 	mcall
 	ret
 ;------------------------------------------------------------------------------
-lsz i_colint, ru, "Color Intensity Gradient"
+lsz i_colint,\
+	ru, "Градиент интенсивности цвета",\
+	en, "Color Intensity Gradient",
 db	0
 ;------------------------------------------------------------------------------
 t_colint:
@@ -676,7 +706,9 @@ colint_next_line:
 	jb	colint_next
 	ret
 ;------------------------------------------------------------------------------
-lsz i_colalign, ru, "Color Alignment Grid"
+lsz i_colalign,\
+	ru, "Цветовое выравнивание",\
+	en, "Color Alignment Grid",
 db	0
 ;------------------------------------------------------------------------------
 t_colalign:
@@ -809,7 +841,9 @@ ggrid_last_xy:
 	;jnae    ggrid_last_xy
 	ret
 ;------------------------------------------------------------------------------
-lsz i_colsyn, ru, "Color Synchronization"
+lsz i_colsyn,\
+	ru, "Синхронизация цвета",\
+	en, "Color Synchronization",
 db	0
 ;------------------------------------------------------------------------------
 t_colsyn:
@@ -858,14 +892,30 @@ DATA
 		i_flicker, i_glare, i_interlace, i_scrreg, i_pricol, \
 		i_colint, i_colalign, i_colsyn, 0
 
-	lsz press_space, ru, "Нажмите пробел для продолжения,"
+	lsz press_space,\
+		ru, "Нажмите пробел для продолжения,",\
+		en, "Press 'Space' key to continue",
 	db	0
-	lsz press_i, ru, "I для переключения сведений,"
+
+	lsz press_i,\
+		ru, "I для переключения сведений,",\
+		en, "I to turn details on and off ",
 	db	0
-	lsz press_c, ru, "и C для переключения курсора"
+
+	lsz press_c,\
+		ru, "и C для переключения курсора",\
+		en, "and C to show and hide cursor",
 	db	0
-	lsz header, ru, "Тест монитора"
-	lsz test_finish, ru, "Конец теста. Нажмите ESC."
+
+	lsz header,\
+		ru, "Тест монитора",\
+		en, "Display test",
+	db	0
+
+	lsz test_finish,\
+		ru, "Конец теста. Нажмите ESC.",\
+		en, "Test has been finished. Press ESC.",
+	db	0
 
 	cursor  dd 32*32 dup(0x00000000)	; все равно сожмется
 
