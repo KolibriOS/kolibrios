@@ -214,7 +214,8 @@ icmp_input:
         mov     [esi + ICMP_header.Type], ICMP_ECHOREPLY
 
         mov     eax, [esp]
-        lea     esi, [eax + NET_BUFF.data]
+        mov     esi, [eax + NET_BUFF.offset]
+        add     esi, eax
 
 ; Check frame type
         cmp     [eax + NET_BUFF.type], NET_BUFF_ETH

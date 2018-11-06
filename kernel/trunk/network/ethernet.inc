@@ -94,6 +94,9 @@ eth_input:
 
         popf
 
+; Mark it as being an Ethernet Frame
+        mov     [eax + NET_BUFF.type], NET_BUFF_ETH
+
 ; Now queue an event to process it
         xor     edx, edx
         mov     eax, [ETH_input_event]
