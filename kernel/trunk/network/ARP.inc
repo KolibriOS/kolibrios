@@ -272,6 +272,7 @@ arp_input:
 ; Now, Fill in ETHERNET header
 
         mov     edi, [esp]
+        add     edi, [edi + NET_BUFF.offset]
         lea     esi, [edx + ARP_header.TargetMAC]
         movsd
         movsw
