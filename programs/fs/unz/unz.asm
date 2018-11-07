@@ -43,14 +43,22 @@ include '../../macros.inc'
 include '../../proc32.inc'
 include '../../develop/libraries/box_lib/trunk/box_lib.mac'
 include '../../dll.inc'
+;include '../../debug.inc'
+
+
+;include 'include/macros.inc'
+;include 'include/proc32.inc'
+;include 'include/box_lib.mac'
+;include 'include/dll.inc'
 include 'debug.inc'
 
-version equ '0.65'
-version_dword equ 0*10000h + 65
+version equ '0.70'
+version_dword equ 0*10000h + 70
 
 WIN_W = 400
-
 SIZE_COPY_BUF = 1024*1024*2
+MM_MAX_BLOCKS equ 1024
+
 
 virtual at 0
 kfar_info_struc:
@@ -82,15 +90,19 @@ end virtual
 
 
 
-
+;--  CODE  -------------------------------------------------------------------
 
 include 'parse.inc'
 include 'fs.inc'
-
-;--  CODE  -------------------------------------------------------------------
+include 'file_tree.inc'
+include 'memory_manager.inc'
+include 'dialogs.inc'
 
 
 start:
+;dnl
+;dpsP params
+;dnl
 	mcall	68, 11
 	mcall	40, 100111b + 0C0000000h
 	stdcall dll.Load, IMPORTS
@@ -98,8 +110,6 @@ start:
 	jnz	exit
 	mov	[pathOut],0
 
-;stdcall SayErr,strErrorExc
-;mcall -1
 ;----------------------------
 	;1. find input file, clear
 	;2. find -o, copy data, clear
@@ -115,7 +125,7 @@ start:
 
 .arbeit:
 ;2.
-	call	getParam2
+	call	getParamOutPath
 	cmp	eax, 2
 	je	errorParsing
 
@@ -145,9 +155,10 @@ start:
 	je	@f
 	jmp	@b
 .check:
-	call	startUnpack
-	mcall	-1
+	call  startUnpack
+	mcall -1
 @@:
+
 	stdcall [OpenDialog_Init],OpenDialog_data
 
 ;init edit fields  --------------
@@ -170,6 +181,9 @@ start:
 	sub	eax, ecx
 	mov	dword[edtUnpPath.size], eax
 	mov	dword[edtUnpPath.pos], eax
+
+;--------
+;       call    file_tree_Init
 
 
 ;main loop --------------------
@@ -218,9 +232,9 @@ wm_button:
 
 	cmp	ah, 2
 	jne	@f
-	;mcall   51,1,startUnpack,stackUnpack
-	;mov     [bWinChild],1
-	call   startUnpack
+	mcall	51,1,startUnpack,stackUnpack
+	mov	[bWinChild],1
+	;call   startUnpack
 	jmp	wm_redraw
     @@:
 
@@ -233,14 +247,16 @@ wm_mouse:
 	jne	still
 	stdcall [edit_box_mouse],edtPack
 	stdcall [edit_box_mouse],edtUnpPath
-
+;       stdcall file_tree_Mouse
 	jmp	still
 
 exit:
 	mcall	-1
 
 errorParsing:
-	dps 'errorParsing'
+dph edx
+
+	dps ' errorParsing'
 	mcall	-1
 
 ;--- functions ------------------------------------------------------------------
@@ -259,7 +275,7 @@ proc winRedraw
 	stdcall [edit_box_draw],edtPack
 	stdcall [edit_box_draw],edtUnpPath
 
-	; plain window labels
+
 	cmp	[redInput],0
 	jne	@f
 	mov	ecx,[sc.work_text]
@@ -272,8 +288,6 @@ proc winRedraw
 	mov	ecx,[sc.work_text]
 	or	ecx,90000000h
 	mcall 4, <15,37>, , strPath
-	
-	; text on buttons
 	mov	ecx,[sc.work_button_text]
 	or	ecx,90000000h
 if lang eq ru
@@ -283,6 +297,8 @@ else
 end if
 	mcall 4, <(WIN_W-47),12>, , strDots
 	mcall 4, <(WIN_W-47),37>, , strDots	
+
+;       call file_tree_Draw
 
 	mcall 12, 2
 	ret
@@ -388,39 +404,26 @@ endl
 	jnz	@f
 	cmp	ebx,0		;;/ КОСТЫЛЬ!!!!
 	je	 .errNotFound	;;значение ebx получено опытным путём.
-	cmp	ebx,400h	;;как оно будет работать с другими версиями
-	je	 .errNotSupp	;;библиотеки - не ясно!
+	cmp	ebx,400h
+	je	 .errNotSupp
       @@:
 	mov	[hPlugin],eax
 
 ;get num of all files
-;        stdcall calcSizeArch,[hPlugin]
-;        push    ebp
-;        stdcall [aReadFolder], [hPlugin]
-;        pop     ebp
-
-
-
-;        push    ebp
-;        stdcall [aOpen], [hPlugin], .str1, O_READ
-;        pop     ebp
-;
-;        push    ebp
-;        stdcall [aSetpos],[hPlugin],0,POSEND
-;        pop     ebp
-;        add     [numbytes],eax
-
-
-
+       ; stdcall calcSizeArch,[hPlugin]
+	push	ebp
+	stdcall [aSetFolder],[hPlugin], .strRoot,0
+	pop	ebp
 ;unpack
 ;       void __stdcall GetFiles(HANDLE hPlugin, int NumItems, void* items[], void* addfile, void* adddir);
 	push	ebp
 	stdcall [aGetFiles], [hPlugin], -1, 0, myAddFile, myAddDir
 	pop	ebp
 
-;jmp @f
-;   .str1 db '/LICENSE.txt',0
-;@@:
+jmp @f
+   .str1 db '/LICENSE.txt',0
+   .strRoot db '.svn',0
+@@:
 
 ;HANDLE __stdcall open(HANDLE hPlugin, const char* filename, int mode);
 ;Открыть файл filename. Параметр mode зарезервирован и в текущей версии kfar всегда равен 1.
@@ -491,13 +494,83 @@ proc debugInt3
 endp
 
 
+allnumbytes dd 0
+strBackFold db '../',0
+
 proc calcSizeArch hPlugin:dword
+locals
+  bdwk rb 560
+  num	rd 1
+endl
+;int __stdcall ReadFolder(HANDLE hPlugin, unsigned dirinfo_start,
+;        unsigned dirinfo_size, void* dirdata);
+	mov	[num],0
+    ;    int3
+.mainloop:
+	push	ebp
+	lea	eax, [bdwk]
+	stdcall [aReadFolder], [hPlugin],[num],1,eax
+	pop	ebp
+
+	cmp	eax,6
+	je	.lastFile
+;??????????????????????????????????????????????????????????????????????????????????????????????????
+	lea	ebx,[bdwk+0x20]      ;почему либа пишет в смещение +0x20 - неизестно
+	test	[ebx],dword 10h
+	jz	@f
+;bool __stdcall SetFolder(HANDLE hPlugin, const char* relative_path,
+;                         const char* absolute_path);
+
+	push	ebp
+	lea	eax,[ebx+40]
+dps 'Folder: '
+dpsP eax
+dnl
+	stdcall [aSetFolder],[hPlugin], eax,0
+
+	pop	ebp
+	stdcall calcSizeArch, [hPlugin]
+	inc	[num]
+	jmp	.mainloop
+   @@:
+
+	lea	ebx,[bdwk+0x20]
+lea	eax,[ebx+40]
+dps 'File: '
+dpsP eax
+dnl
+	mov	eax,[ebx+32]
+	add	[allnumbytes],eax
+	inc	[num]
+	jmp	.mainloop
+
+.lastFile:
+;        lea     ebx,[bdwk+0x20]
+;        test    [ebx],dword 10h
+;        jz      @f
+;
+;        push    ebp
+;        lea     eax,[ebx+40]
+;        stdcall [aSetFolder],[hPlugin], eax,0
+;        pop     ebp
+;        stdcall calcSizeArch, [hPlugin]
+;    @@:
+
+
+	push	ebp
+	stdcall [aSetFolder],[hPlugin], strBackFold,0
+	pop	ebp
+	ret
+endp
+
+
+proc rec_calcSize hPlugin:dword
 locals
   bdwk rb 560
 endl
 ;int __stdcall ReadFolder(HANDLE hPlugin, unsigned dirinfo_start,
 ;        unsigned dirinfo_size, void* dirdata);
-int3
+;bool __stdcall SetFolder(HANDLE hPlugin, const char* relative_path, const char* absolute_path);
 	push	ebp
 	lea	eax,[bdwk]
 	stdcall [aReadFolder], [hPlugin],1,560,eax
@@ -509,164 +582,36 @@ endp
 ;-------------------------------------------------------------------------------
 ;-------------------------------------------------------------------------------
 
-;SayErr  int num_strings, const char* strings[],
-;                      int num_buttons, const char* buttons[]);
+hTrPlugin dd 0
 
-proc SayErr num_strings:dword, strings:dword,num_buttons:dword, buttons:dword
-	pushad
-	cmp	[num_strings],1
-	je	@f
-	m2m	[errmess0], strErrorExc
-	jmp	.l1
-       @@:
-	mov	ebx,[strings]
-	m2m	[errmess0], dword [ebx]
-       .l1:
+;eax - file struct for sys70
 
-	m2m	[fsRunNotifyOK.param],[errmess0]
-	mcall	70,fsRunNotifyOK
+proc rdFoldforTree
+locals
+  fi rd 0
+endl
+	cmp	[hTrPlugin],0
+	je	.exit
+	push	ebx edi esi
 
-	popad
-	mov	eax,1
-	ret
-endp
+	mov	[fi],eax
+	push	ebp
+	stdcall [aSetFolder],[hTrPlugin], [eax+20],0
+	mov	ebp,[esp]
+			  ;hPlug,startBlock,numBlocks,buffer
+	stdcall [aReadFolder], [hTrPlugin],dword[eax+4],\
+			dword[eax+12],dword[eax+16]
+	pop	ebp
 
-;-------------------------------------------------------------------------------
-;-------------------------------------------------------------------------------
-;-------------------------------------------------------------------------------
-    ; "enter password" dialog for KFar
-;password_dlg:
-;        dd      1       ; use standard dialog colors
-;        dd      -1      ; center window by x
-;        dd      -1      ; center window by y
-;.width  dd      ?       ; width (will be filled according to current console width)
-;        dd      2       ; height
-;        dd      4, 2    ; border size
-;        dd      aEnterPasswordTitle     ; title
-;        dd      ?       ; colors (will be set by KFar)
-;        dd      0       ; used internally by dialog manager, ignored
-;        dd      0, 0    ; reserved for DlgProc
-;        dd      2       ; 2 controls
-;; the string "enter password"
-;        dd      1       ; type: static
-;        dd      1,0     ; upper-left position
-;.width1 dd      ?,0     ; bottom-right position
-;        dd      aEnterPassword  ; data
-;        dd      0       ; flags
-;; editbox for password
-;        dd      3       ; type: edit
-;        dd      1,1     ; upper-left position
-;.width2 dd      ?,0     ; bottom-right position
-;        dd      password_data   ; data
-;        dd      2Ch     ; flags
+	;cmp     eax,6
+	;je      .lastFile
 
+	;lea     ebx,[bdwk+0x20]      ;почему либа пишет в смещение +0x20 - неизестно
 
-
-proc DialogBox dlgInfo:dword
-	pushad
-	mov	ebx,[dlgInfo]
-	mov	eax,[ebx+19*4]
-	mov	[forpassword],eax
-	mov	byte[eax], 0
-	mov	[stateDlg], 0
-	mcall	51,1,threadDialogBox,stackDlg
-
-	;wait thread...
-    @@: cmp	[stateDlg],0
-	jne	@f
-	mcall	5,1
-	jmp	@b
-     @@:
-	popad
-	cmp	[stateDlg], 1
-	jne	@f
-	xor	eax, eax
-	ret
-    @@:
-	or	eax, -1
-	ret
-endp
-
-proc threadDialogBox
-
-	mcall	40, 100111b+0C000000h
-	mov	eax,[forpassword]
-	mov	[edtPassword+4*9],eax
-	xor	eax,eax
-	mov	dword[edtPassword.size], eax
-	mov	dword[edtPassword.pos], eax
-
-.wm_redraw:
-	mcall	12, 1
-	mcall	48, 3, sc, sizeof.system_colors
-	mov	edx, [sc.work]
-	or	edx, 0x33000000
-	mcall	0, <200,320>, <200,140>, , , title
-
-	edit_boxes_set_sys_color edtPack,endEdits,sc
-	stdcall [edit_box_draw],edtPassword
-
-
-	mov	ecx,[sc.work_text]
-	or	ecx,90000000h
-	mcall 4, <56,12>, , strGetPass
-
-	mcall 8, <70,80>,<74,22>,2,[sc.work_button]
-	mov	ecx,[sc.work_button_text]
-	or	ecx,90000000h
-	mcall 4, <103,79>, , strOk
-
-	mcall 8, <165,80>,<74,22>,1,[sc.work_button]
-	mov	ecx,[sc.work_button_text]
-	or	ecx,90000000h
-	mcall 4, <182,79>, , strCancel
-
-
-	mcall 12, 2
-
-.still:
-	mcall	10
-	cmp	eax, 1
-	je	.wm_redraw
-	cmp	eax, 2
-	je	.wm_key
-	cmp	eax, 3
-	je	.wm_button
-	cmp	eax, 6
-	je	.wm_mouse
-
-	jmp	.still
-
-.wm_key:
-	mcall	2
-	stdcall [edit_box_key],edtPassword
-	jmp	.still
-
-
-.wm_button:
-	mcall	17
-
-	cmp	ah, 2		;OK
-	jne	@f
-	mov	[stateDlg],1
-	jmp	.exit
-    @@:
-
-	cmp	ah, 1		;Close window or Cancel
-	jne	 .still
-	mov	[stateDlg],2
-	jmp	.exit
-
-.wm_mouse:
-	stdcall [edit_box_mouse],edtPassword
-
-
-	jmp	.still
-
+	pop	esi edi ebx
 .exit:
-	mcall	-1
+	ret
 endp
-
 
 ;--  DATA  -------------------------------------------------------------------
 
@@ -679,7 +624,7 @@ bWinChild db 0	;1 - дочернее окно есть, главное окно не должно реагировать
 redInput  db 0	;1 - подсветить красным надпись
 
 if lang eq ru
- title db 'uNZ v0.12 - Распаковщик Zip и 7z',0
+ title db 'uNZ v0.2 - Распаковщик Zip и 7z',0
  strGo db 'Распаковать',0
  strInp db  '    Архив',0
  strPath db 'Извлечь в',0
@@ -693,7 +638,7 @@ if lang eq ru
  strNotSupport db "'Неподдерживаемый формат архива' -E",0
  strNotFound db "'Файл не найден' -E",0
 else if lang eq es
- title db 'uNZ v0.12 - Desarchivador para Zip y 7z',0
+ title db 'uNZ v0.2 - Desarchivador para Zip y 7z',0
  strGo db 'Desarchivar',0
  strInp db 'Archivar',0
  strPath db 'Extraer en',0
@@ -707,7 +652,7 @@ else if lang eq es
  strNotSupport db "'El formato del archivo no es soportado' -E",0
  strNotFound db "'Archivo no encontrado' -E",0
 else
- title db 'uNZ v0.12 - Unarchiver of Zip and 7z',0
+ title db 'uNZ v0.2 - Unarchiver of Zip and 7z',0
  strGo db   'Unpack',0
  strInp db  'Archive',0
  strPath db 'Extract to',0
@@ -722,8 +667,9 @@ else
  strNotFound db "'File not found' -E",0
 end if
 
-strNull db 0
-strDots db '...',0
+
+
+strDots db '...', 0
 
 ;--------
 ; int __stdcall SayErr(int num_strings, const char* strings[],
@@ -764,7 +710,7 @@ kfar_info:
 ;--------
 
 
-iFiles dd 0	;количество выгружаемых файлов
+iFiles dd 0	;количество распаковываемых файлов
 endPointer dd buffer
 
 
@@ -828,12 +774,14 @@ fsRunNotifyOK:
 
 
 edtPack     edit_box (WIN_W-100-60),100,10,0FFFFFFh,0xff,0x80ff,0h,0x90000000,\
-            255, fInp, mouse_dd,0,0,0
+            255, fInp, 0,0,0,0
 edtUnpPath  edit_box (WIN_W-100-60),100,35,0FFFFFFh,0xff,0x80ff,0h,0x90000000,\
-            255, pathOut, mouse_dd,0,0,0
+            255, pathOut, 0,0,0,0
 edtPassword edit_box 200,56,70,0FFFFFFh,0xff,0x80ff,0h,0x90000000,255,\
-		password, mouse_dd,0,0,0
+		password, 0,0,0,0
 endEdits:
+
+
 
 ;-------------------------------------------------------------------------------
 OpenDialog_data:
@@ -914,25 +862,24 @@ import	box_lib,\
 
 IncludeIGlobals
 
+params1 db '-o "/hd0/1/unz/pig" -h "/hd0/1/unz/abc1"',0
 ;--  UDATA  -----------------------------------------------------------------------------
 init_end:
 align 16
 IncludeUGlobals
 
+path rb 512
 
 ;params db 'unz -o "fil epar1" -f "arch1.txt" -f "ar ch2.txt" file1',0
 ;params db 'unz -o "fil epar1" -f arch1.txt -f "ar ch2.txt" file1',0
-;params db '/hd0/1/unz/xboot-1-0-build-14-en-win.zip',0
-;rb 4096
 
 fInp	rb 1024
-pathOut rb 1024
+pathOut rb 1024 	;путь, куда распакуется всё
 files	rd 256
 password	rb 256
 
 fZipInfo	 rb 40
 
-mouse_dd	rd 1
 RBProcInfo	rb 1024
 temp_dir_pach	rb 1024
 ODAreaPath	rb 1024
@@ -954,9 +901,17 @@ CopyDestEditBuf 	rb	12+512+1
 
 bdvkPack rb 560
 
+
+
+;------------ memory_manager.inc
+align 4
+MM_NBlocks	rd 1  ;количество выделенных блоков памяти
+MM_BlocksInfo	rd 2*MM_MAX_BLOCKS  ;begin,size
+
+
 ;--------
 
-buffer	rb 4096 ;for string of file name or extract
+buffer	rb 4096 ;for string of file name for extract
 params rb 4096
 
 	rb 1024

@@ -653,10 +653,10 @@ endp
 
 
 proc myAddDir name:dword, bdfe_info:dword
-	dps 'log adddir'
+;	dps 'log adddir'
 	mov	eax,[name]
-	dpsP eax
-	dnl
+;	dpsP eax
+;	dnl
 
 	pusha
 	mov	eax,[name]

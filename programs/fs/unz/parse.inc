@@ -4,7 +4,7 @@
 ; 2 - error parsing
 
 proc getLastParam	;последний параметр пишет в fInp
-xor	al, al		;to end sring
+	xor	al, al		;to end string
 	mov	edi, params
 	mov	ecx, 4096
 	repne	scasb
@@ -100,26 +100,30 @@ xor	al, al		;to end sring
 	xor	eax, eax
 endp
 
-
-proc getParam2
+;заполняе pathOut
+proc getParamOutPath
 locals
 retrn rd 0
 endl
 	mov	[retrn], 0
 	mov	ebx, params
+
   .find_o:
 	cmp	[ebx], word '-o'
 	jne	.find_o2
+
 	mov	edx, ebx
 	lea	esi, [ebx+3]
+
    @@:				;skiping spaces
-	cmp	esi, pathOut+1024
+	cmp	esi, params+4096
 	jae	.errorParsing
 	cmp	byte[esi], ' '
 	jne	@f
 	inc	esi
 	jmp	@b
-   @@:				;copying        ; -o "file"
+   @@:
+				;copying        ; -o "file"
 	mov	ecx, 3
 	cmp	byte[esi], '"'
 	jne	._notspace
@@ -132,7 +136,7 @@ endl
 	je	.clear
 	stosb
 	inc	ecx
-	cmp	esi, pathOut+1024
+	cmp	esi, params+1024
 	jae	errorParsing
 	jmp	@b
 
@@ -143,7 +147,7 @@ endl
 	inc	ecx
 	cmp	al, ' '
 	je	.clear
-	cmp	esi, pathOut+1024
+	cmp	esi, params+1024
 	jae	errorParsing
 	jmp	@b
 
@@ -159,7 +163,7 @@ endl
 
   .find_o2:
 	inc	ebx
-	cmp	ebx, pathOut+1024
+	cmp	ebx, params+1024
 	jae	@f
 	cmp	byte[ebx], 0
 	je	@f
@@ -200,7 +204,7 @@ endl
 	jmp	@b
    @@:
 
-				;copying        ; -f "file"
+				;variant1: copying   ; -f "file"
 	mov	ecx, 3
 	cmp	byte[esi], '"'
 	jne	._notspace
@@ -217,7 +221,7 @@ endl
 	jae	errorParsing
 	jmp	@b
 
-     ._notspace:		;copying        ; -f file
+     ._notspace:		;variant2: copying    ; -f file
 	mov	edi, [endPointer]
     @@: lodsb
 	stosb
