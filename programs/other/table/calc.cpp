@@ -579,7 +579,6 @@ char GetCsvSeparator(char *fname)
 	char buffer[512];
 	kosFileInfo fileInfo;
 
-	rtlDebugOutString("hi");
 	rtlDebugOutString(fname);
 
 	strcpy(fileInfo.fileURL, fname);
@@ -720,12 +719,6 @@ int LoadFile(char *fname)
 	char *d, *s, *k;
 	int step = 0, items;
 
-	if (str_is_csv(fname))
-		return LoadCSV(fname);
-
-
-	//rtlDebugOutString(fname);
-
 	strcpy(fileInfo.fileURL,fname);
 	fileInfo.OffsetLow = 0;
 	fileInfo.OffsetHigh = 0;
@@ -740,10 +733,12 @@ int LoadFile(char *fname)
 		return -1;
 	}
 
+	if (str_is_csv(fname))
+		return LoadCSV(fname);
+
+
 	// clear the table
 	reinit();
-
-	//rtlDebugOutString("clear done");
 
 	filesize = bdvk.size_low;
 

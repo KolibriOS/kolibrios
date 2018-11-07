@@ -243,8 +243,8 @@ extra_files = {
  {"kolibrios/media/zsea/zsea.ini", PROGS .. "/media/zsea/zSea.ini"},
  {"kolibrios/media/zsea/buttons/buttons.png", PROGS .. "/media/zsea/buttons.png"},
  {"kolibrios/res/skins/", "../skins/authors.txt"},
- {"kolibrios/res/wallpapers/in_the_wind.png", "common/wallpapers/in_the_wind.png"},
- {"kolibrios/res/wallpapers/deink.png", "common/wallpapers/deink.png"},
+ {"kolibrios/res/wallpapers/", "common/wallpapers/*"},
+ {"kolibrios/res/templates/", "common/templates/*"},
  }
 if build_type == "rus" then tup.append_table(extra_files, {
  {"Docs/cp866/config.txt", build_type .. "/docs/CONFIG.TXT"},

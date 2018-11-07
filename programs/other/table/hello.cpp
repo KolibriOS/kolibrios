@@ -11,7 +11,7 @@ extern char params[1024];
 #endif
 char params[1024];
 
-#define TABLE_VERSION "0.99.2"
+#define TABLE_VERSION "0.99.3"
 
 // strings
 const char *sFileSign = "KolibriTable File\n";
@@ -24,6 +24,7 @@ const char er_file_not_found[] = "'Cannot open file' -E";
 const char er_format[] = "'Error: bad format' -E";
 const char msg_save[] = "'File saved' -O";
 const char msg_load[] = "'File loaded' -O";
+const char msg_save_error[] = "'Error saving file' -E";
 const char msg_new[] = "'Memory cleared' -I";
 
 // initial window sizes
@@ -593,7 +594,7 @@ void process_mouse()
 		return;
 	}
 
-	if (!sel_moved && !size_state) //do not handle scrollbars when user selects cells
+	if (!size_state) //do not handle scrollbars when user selects cells
 	{
 		if (!scroll_h.delta2) scrollbar_v_mouse((DWORD)&scroll_v);
 		if (scroll_v.position != grid.firsty-1)
@@ -1095,7 +1096,12 @@ void process_button()
 
 	case SAVE_BUTTON:
 		stop_edit();
-		if (SaveFile(fname)) kos_AppRun("/sys/@notify", (char*)msg_save);
+		if (SaveFile(fname)) {
+			kos_AppRun("/sys/@notify", (char*)msg_save);
+		}
+		else {
+			kos_AppRun("/sys/@notify", (char*)msg_save_error);
+		}
 		break;
 
 	case LOAD_BUTTON:

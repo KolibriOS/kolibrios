@@ -1,218 +1,217 @@
-<HTML>
-<HEAD><TITLE>Документация на C--</TITLE></HEAD>
-<meta http-equiv="Content-Type" content="text/html; charset=windows-1251">
-<table border="0" cellpadding="0" cellspacing="0" width="100%">
-  <tr>
-    <td width="1"></td>
-    <td width="1"></td>
-    <td width="100%">
-      <div align="center">
-        <center>
-          <table border="0" cellpadding="0" cellspacing="0" width="100%">
-            <tr><td bgcolor="#000000"><img src="images/-.gif" width="1" height="1"></td></tr>
-            <tr><td><img src="images/-.gif" width="1" height="1"></td></tr>
-            <tr><td bgcolor="#000000"><img src="images/-.gif" width="1" height="1"></td></tr>
-            <tr><td align="middle" bgcolor="#008080">
-              <font color="#FFFFFF" face="Times New Roman" size=3>
-              <strong><em>Документация на C--.</em></strong></font>
-            </td></tr>
-            <tr><td bgcolor="#000000"><img src="images/-.gif" width="1" height="1"></td></tr>
-            <tr><td><img src="images/-.gif" width="1" height="1"></td></tr>
-            <tr><td bgcolor="#000000"><img src="images/-.gif" width="1" height="1"></td></tr>
-            <td width="100%">
-<BODY LINK="#0000ff" VLINK="#800080" background="images/sphinx6.jpg" bgproperties="fixed">
-
-<A name=contents>
-<p align="center"><font color="#F000F0" face="Times New Roman" size=5><strong>
-Содержание.
-</strong></font></p></a>
-                <pre>
-
-<B><FONT FACE="Courier" COLOR="#ff0000">
-<A href="#intro" style="TEXT-DECORATION: none">1      Введение.
+<html>
+<head>
+	<title>Документация на C--</title>
+	<meta http-equiv="Content-Type" content="text/html; charset=windows-1251">
+	<style>
+	body, a, pre {
+		font-family: 'Courier New', Courier, 'Lucida Sans Typewriter', 'Lucida Typewriter', monospace !important;
+	}
+	a {
+		color: #0000ff;
+	}
+	#contents a {
+		font-weight: bold;
+		text-decoration: none;
+	}
+	h1 {
+		color: #F000F0;
+		font-size: 200%;
+	}
+	h2 {
+		color: #f00;
+		font-size: 100%;
+		margin-bottom: 0;
+	}
+	</style>
+</head>
+<body LINK="#0000ff" VLINK="#800080">
+<h1>Содержание</h1>
+<pre>
+<div id="contents">
+<a href="#intro">1      Введение.
 1.1    История создания и развития.</A>
-<A href="#1.2" style="TEXT-DECORATION: none">1.2    Что такое C--?</a>
-<A href="#1.3" style="TEXT-DECORATION: none">1.3    Как установить C--.</a>
+<a href="#1.2">1.2    Что такое C--?</a>
+<a href="#1.3">1.3    Как установить C--.</a>
 <A name=contents2>
-<A href="#2.1" style="TEXT-DECORATION: none">2.     Управление компиляцией.
+<a href="#2.1">2.     Управление компиляцией.
 2.1    Параметры командной строки компилятора C--.</a>
-<A href="#2.1.1" style="TEXT-DECORATION: none">2.1.1  /ON - Оптимизация числовых выражений.</a>
-<A href="#2.1.2" style="TEXT-DECORATION: none">2.1.2  /DE - Временное расширение разрядности переменной.</a>
-<A href="#2.1.3" style="TEXT-DECORATION: none">2.1.3  /ARGC - Альтернативный обработчик командной строки.</a>
-<A href="#2.1.4" style="TEXT-DECORATION: none">2.1.4  /OST - слияние одинаковых строковых констант.</a>
-<A href="#2.1.5" style="TEXT-DECORATION: none">2.1.5  /D - установка идентификатора в TRUE из командной строки.</a>
-<A href="#2.1.6" style="TEXT-DECORATION: none">2.1.6  /IA - упрощенный ввод ассемблерных инструкций.</a>
-<A href="#2.1.7" style="TEXT-DECORATION: none">2.1.7  /CRI - пропуск повторно включаемого файла.</a>
-<A href="#2.1.8" style="TEXT-DECORATION: none">2.1.8  /IND - импорт имен процедур из DLL.</a>
-<A href="#2.1.9" style="TEXT-DECORATION: none">2.1.9  /WS - задать имя stub файла для программ под windows.</a>
-<A href="#2.1.10" style="TEXT-DECORATION: none">2.1.10 /WBSS - разместить не инициализированные данные в отдельной секции.</a>
-<A href="#2.1.11" style="TEXT-DECORATION: none">2.1.11 /DBG - создание отладочной информации.</a>
-<A href="#2.1.12" style="TEXT-DECORATION: none">2.1.12 /J0 /J1 /J2.</a>
-<A href="#2.1.13" style="TEXT-DECORATION: none">2.1.13 /LST - Создание ассемблерного листинга.</a>
-<A href="#2.1.14" style="TEXT-DECORATION: none">2.1.14 /ENV - Сохранение адреса переменных окружения.</a>
-<A href="#2.1.15" style="TEXT-DECORATION: none">2.1.15 /CPA - Очистка post-области данных.</a>
-<A href="#2.1.16" style="TEXT-DECORATION: none">2.1.16 /W - вывод предупреждений.</a>
-<A href="#2.1.17" style="TEXT-DECORATION: none">2.1.17 /NW - Выборочное отключение типов предупреждений.</a>
-<A href="#2.1.18" style="TEXT-DECORATION: none">2.1.18 /WSI - короткая таблица импорта.</a>
-<A href="#2.2" style="TEXT-DECORATION: none">2.2    Директивы транслятора.</a>
-<A href="#2.2.1" style="TEXT-DECORATION: none">2.2.1  ?ifdef/?ifndef</a>
-<A href="#2.2.2" style="TEXT-DECORATION: none">2.2.2  ?initallvar</a>
-<A href="#2.2.3" style="TEXT-DECORATION: none">2.2.3  ?usestartup</a>
-<A href="#2.2.4" style="TEXT-DECORATION: none">2.2.4  ?startusevar</a>
-<A href="#2.2.5" style="TEXT-DECORATION: none">2.2.5  ?atexit</a>
-<A href="#2.2.6" style="TEXT-DECORATION: none">2.2.6  ?startuptomain</a>
-<A href="#2.2.7" style="TEXT-DECORATION: none">2.2.7  ?undef</a>
-<A href="#2.2.8" style="TEXT-DECORATION: none">2.2.8  ?align и ?aligncode</a>
-<A href="#2.2.9" style="TEXT-DECORATION: none">2.2.9  ?pragma</a>
+<a href="#2.1.1">2.1.1  /ON - Оптимизация числовых выражений.</a>
+<a href="#2.1.2">2.1.2  /DE - Временное расширение разрядности переменной.</a>
+<a href="#2.1.3">2.1.3  /ARGC - Альтернативный обработчик командной строки.</a>
+<a href="#2.1.4">2.1.4  /OST - слияние одинаковых строковых констант.</a>
+<a href="#2.1.5">2.1.5  /D - установка идентификатора в TRUE из командной строки.</a>
+<a href="#2.1.6">2.1.6  /IA - упрощенный ввод ассемблерных инструкций.</a>
+<a href="#2.1.7">2.1.7  /CRI - пропуск повторно включаемого файла.</a>
+<a href="#2.1.8">2.1.8  /IND - импорт имен процедур из DLL.</a>
+<a href="#2.1.9">2.1.9  /WS - задать имя stub файла для программ под windows.</a>
+<a href="#2.1.10">2.1.10 /WBSS - разместить не инициализированные данные в отдельной секции.</a>
+<a href="#2.1.11">2.1.11 /DBG - создание отладочной информации.</a>
+<a href="#2.1.12">2.1.12 /J0 /J1 /J2.</a>
+<a href="#2.1.13">2.1.13 /LST - Создание ассемблерного листинга.</a>
+<a href="#2.1.14">2.1.14 /ENV - Сохранение адреса переменных окружения.</a>
+<a href="#2.1.15">2.1.15 /CPA - Очистка post-области данных.</a>
+<a href="#2.1.16">2.1.16 /W - вывод предупреждений.</a>
+<a href="#2.1.17">2.1.17 /NW - Выборочное отключение типов предупреждений.</a>
+<a href="#2.1.18">2.1.18 /WSI - короткая таблица импорта.</a>
+<a href="#2.2">2.2    Директивы транслятора.</a>
+<a href="#2.2.1">2.2.1  ?ifdef/?ifndef</a>
+<a href="#2.2.2">2.2.2  ?initallvar</a>
+<a href="#2.2.3">2.2.3  ?usestartup</a>
+<a href="#2.2.4">2.2.4  ?startusevar</a>
+<a href="#2.2.5">2.2.5  ?atexit</a>
+<a href="#2.2.6">2.2.6  ?startuptomain</a>
+<a href="#2.2.7">2.2.7  ?undef</a>
+<a href="#2.2.8">2.2.8  ?align и ?aligncode</a>
+<a href="#2.2.9">2.2.9  ?pragma</a>
 <A name=contents3>
-<A href="#3.1" style="TEXT-DECORATION: none">3.     Константы.
+<a href="#3.1">3.     Константы.
 3.1    Числовые константы.</a>
-<A href="#3.2" style="TEXT-DECORATION: none">3.2    Символьные константы.</a>
-<A href="#3.3" style="TEXT-DECORATION: none">3.3    Строковые константы.</a>
-<A href="#3.4" style="TEXT-DECORATION: none">3.4    Постоянные выражения.</a>
+<a href="#3.2">3.2    Символьные константы.</a>
+<a href="#3.3">3.3    Строковые константы.</a>
+<a href="#3.4">3.4    Постоянные выражения.</a>
 <A name=contents4>
-<A href="#4.1" style="TEXT-DECORATION: none">4.     Выражения.
+<a href="#4.1">4.     Выражения.
 4.1    Типы выражений.</a>
-<A href="#4.2" style="TEXT-DECORATION: none">4.2    Выражения типа EAX/AX/AL.</a>
-<A href="#4.3" style="TEXT-DECORATION: none">4.3    Выражения использующие получатель при вычислении выражения.</a>
-<A href="#4.4" style="TEXT-DECORATION: none">4.4    Не - EAX/AX/AL выражения.</a>
-<A href="#4.5" style="TEXT-DECORATION: none">4.5    Условные выражения.</a>
-<A href="#4.5.1" style="TEXT-DECORATION: none">4.5.1  Простые условные выражения.</a>
-<A href="#4.5.2" style="TEXT-DECORATION: none">4.5.2  Сложные условные выражения.</a>
-<A href="#4.6" style="TEXT-DECORATION: none">4.6    Изменение типа выражения при присваивании.</a>
-<A href="#4.7" style="TEXT-DECORATION: none">4.7    Вычисление в регистры EAX/AX/AL со знаком.</a>
+<a href="#4.2">4.2    Выражения типа EAX/AX/AL.</a>
+<a href="#4.3">4.3    Выражения использующие получатель при вычислении выражения.</a>
+<a href="#4.4">4.4    Не - EAX/AX/AL выражения.</a>
+<a href="#4.5">4.5    Условные выражения.</a>
+<a href="#4.5.1">4.5.1  Простые условные выражения.</a>
+<a href="#4.5.2">4.5.2  Сложные условные выражения.</a>
+<a href="#4.6">4.6    Изменение типа выражения при присваивании.</a>
+<a href="#4.7">4.7    Вычисление в регистры EAX/AX/AL со знаком.</a>
 <A name=contents5>
-<A href="#5.1" style="TEXT-DECORATION: none">5.     Идентификаторы.
+<a href="#5.1">5.     Идентификаторы.
 5.1    Формат идентификатора.</a>
-<A href="#5.2" style="TEXT-DECORATION: none">5.2    Зарезервированные идентификаторы.</a>
-<A href="#5.3" style="TEXT-DECORATION: none">5.3    Универсальные регистры для 16 и 32-битного режима.</a>
-<A href="#5.4" style="TEXT-DECORATION: none">5.4    Предопределенные идентификаторы.</a>
+<a href="#5.2">5.2    Зарезервированные идентификаторы.</a>
+<a href="#5.3">5.3    Универсальные регистры для 16 и 32-битного режима.</a>
+<a href="#5.4">5.4    Предопределенные идентификаторы.</a>
 <A name=contents6>
-<A href="#6.1" style="TEXT-DECORATION: none">6.     Переменные.
+<a href="#6.1">6.     Переменные.
 6.1    Типы переменных.</a>
-<A href="#6.2" style="TEXT-DECORATION: none">6.2    Объявление переменных.</a>
-<A href="#6.3" style="TEXT-DECORATION: none">6.3    Глобальные переменные.</a>
-<A href="#6.4" style="TEXT-DECORATION: none">6.4    Локальные переменные.</a>
-<A href="#6.5" style="TEXT-DECORATION: none">6.5    Динамические переменные и структуры.</a>
-<A href="#6.6" style="TEXT-DECORATION: none">6.6    Присваивание одного значения нескольким переменным.</a>
-<A href="#6.7.1" style="TEXT-DECORATION: none">6.7    Переменные типа float.
+<a href="#6.2">6.2    Объявление переменных.</a>
+<a href="#6.3">6.3    Глобальные переменные.</a>
+<a href="#6.4">6.4    Локальные переменные.</a>
+<a href="#6.5">6.5    Динамические переменные и структуры.</a>
+<a href="#6.6">6.6    Присваивание одного значения нескольким переменным.</a>
+<a href="#6.7.1">6.7    Переменные типа float.
 6.7.1  Формат переменных типа float.</a>
-<A href="#6.7.2" style="TEXT-DECORATION: none">6.7.2  Константы с плавающей точкой.</a>
-<A href="#6.7.3" style="TEXT-DECORATION: none">6.7.3  Диапазон допустимых значений.</a>
-<A href="#6.7.4" style="TEXT-DECORATION: none">6.7.4  Математические операции.</a>
-<A href="#6.7.5" style="TEXT-DECORATION: none">6.7.5  Преобразования типов.</a>
-<A href="#6.7.6" style="TEXT-DECORATION: none">6.7.6  Операции сравнения.</a>
-<A href="#6.7.7" style="TEXT-DECORATION: none">6.7.7  Сравнение переменных типа float с 32-битным регистром.</a>
-<A href="#6.8" style="TEXT-DECORATION: none">6.8    Указатели.</a>
+<a href="#6.7.2">6.7.2  Константы с плавающей точкой.</a>
+<a href="#6.7.3">6.7.3  Диапазон допустимых значений.</a>
+<a href="#6.7.4">6.7.4  Математические операции.</a>
+<a href="#6.7.5">6.7.5  Преобразования типов.</a>
+<a href="#6.7.6">6.7.6  Операции сравнения.</a>
+<a href="#6.7.7">6.7.7  Сравнение переменных типа float с 32-битным регистром.</a>
+<a href="#6.8">6.8    Указатели.</a>
 <A name=contents7>
-<A href="#7.1" style="TEXT-DECORATION: none">7.     Адресация.
+<a href="#7.1">7.     Адресация.
 7.1    Относительная адресация.</a>
-<A href="#7.2" style="TEXT-DECORATION: none">7.2    Абсолютная адресация.</a>
+<a href="#7.2">7.2    Абсолютная адресация.</a>
 <A name=contents8>
-<A href="#8.1.1" style="TEXT-DECORATION: none">8.     Работа с блоками данных.
+<a href="#8.1.1">8.     Работа с блоками данных.
 8.1    Структуры.
 8.1.1  Что такое структуры.</a>
-<A href="#8.1.2" style="TEXT-DECORATION: none">8.1.2  Синтаксис.</a>
-<A href="#8.1.3" style="TEXT-DECORATION: none">8.1.3  Инициализация структур при объявлении.</a>
-<A href="#8.1.4" style="TEXT-DECORATION: none">8.1.4  Инициализация структуры при выполнении программы.</a>
-<A href="#8.1.5" style="TEXT-DECORATION: none">8.1.5  Операции с элементами структур.</a>
-<A href="#8.1.6" style="TEXT-DECORATION: none">8.1.6  Вложенные структуры.</a>
-<A href="#8.1.7" style="TEXT-DECORATION: none">8.1.7  Отображение тега структуры на блок памяти.</a>
-<A href="#8.1.8" style="TEXT-DECORATION: none">8.1.8  Битовые поля структур.</a>
-<A href="#8.2" style="TEXT-DECORATION: none">8.2    Объединения.</a>
-<A href="#8.3" style="TEXT-DECORATION: none">8.3    Команды FROM и EXTRACT.</a>
+<a href="#8.1.2">8.1.2  Синтаксис.</a>
+<a href="#8.1.3">8.1.3  Инициализация структур при объявлении.</a>
+<a href="#8.1.4">8.1.4  Инициализация структуры при выполнении программы.</a>
+<a href="#8.1.5">8.1.5  Операции с элементами структур.</a>
+<a href="#8.1.6">8.1.6  Вложенные структуры.</a>
+<a href="#8.1.7">8.1.7  Отображение тега структуры на блок памяти.</a>
+<a href="#8.1.8">8.1.8  Битовые поля структур.</a>
+<a href="#8.2">8.2    Объединения.</a>
+<a href="#8.3">8.3    Команды FROM и EXTRACT.</a>
 <A name=contents9>
-<A href="#9.1" style="TEXT-DECORATION: none">9.     Операторы.
+<a href="#9.1">9.     Операторы.
 9.1    Условные инструкции.</a>
-<A href="#9.2" style="TEXT-DECORATION: none">9.2    Циклы do{} while.</a>
-<A href="#9.3" style="TEXT-DECORATION: none">9.3    Циклы loop, LOOPNZ, loopnz.</a>
-<A href="#9.4" style="TEXT-DECORATION: none">9.4    Цикл while, WHILE.</a>
-<A href="#9.5" style="TEXT-DECORATION: none">9.5    Цикл for, FOR.</a>
-<A href="#9.6" style="TEXT-DECORATION: none">9.6    Оператор переключатель switch.</a>
-<A href="#9.7" style="TEXT-DECORATION: none">9.7    Оператор перехода goto, GOTO.</a>
-<A href="#9.8" style="TEXT-DECORATION: none">9.8    Оператор разрыва break, BREAK.</a>
-<A href="#9.9" style="TEXT-DECORATION: none">9.9    Оператор продолжения continue, CONTINUE.</a>
-<A href="#9.10" style="TEXT-DECORATION: none">9.10   Логическое объединение условий.</a>
-<A href="#9.11" style="TEXT-DECORATION: none">9.11   Переход через циклы.</a>
-<A href="#9.12" style="TEXT-DECORATION: none">9.12   Инвертирование флага проверки условий.</a>
-<A href="#9.13" style="TEXT-DECORATION: none">9.13   Вычисление выражения, а затем проверка условия.</a>
-<A href="#9.14" style="TEXT-DECORATION: none">9.14   Проверка битов при операции сравнения.</a>
-<A href="#9.15" style="TEXT-DECORATION: none">9.15   Оператор перестановки.</a>
-<A href="#9.16" style="TEXT-DECORATION: none">9.16   Оператор отрицания.</a>
-<A href="#9.17" style="TEXT-DECORATION: none">9.17   Оператор инверсии.</a>
-<A href="#9.18" style="TEXT-DECORATION: none">9.18   Специальные условные выражения.</a>
-<A href="#9.19" style="TEXT-DECORATION: none">9.19   Символ $ - вставляет текущий адрес программы.</a>
-<A href="#9.20" style="TEXT-DECORATION: none">9.20   Ключевое слово static и оператор ::.</a>
-<A href="#9.21" style="TEXT-DECORATION: none">9.21   Оператор sizeof.</a>
-<A href="#9.22" style="TEXT-DECORATION: none">9.22   Метки перехода.</a>
+<a href="#9.2">9.2    Циклы do{} while.</a>
+<a href="#9.3">9.3    Циклы loop, LOOPNZ, loopnz.</a>
+<a href="#9.4">9.4    Цикл while, WHILE.</a>
+<a href="#9.5">9.5    Цикл for, FOR.</a>
+<a href="#9.6">9.6    Оператор переключатель switch.</a>
+<a href="#9.7">9.7    Оператор перехода goto, GOTO.</a>
+<a href="#9.8">9.8    Оператор разрыва break, BREAK.</a>
+<a href="#9.9">9.9    Оператор продолжения continue, CONTINUE.</a>
+<a href="#9.10">9.10   Логическое объединение условий.</a>
+<a href="#9.11">9.11   Переход через циклы.</a>
+<a href="#9.12">9.12   Инвертирование флага проверки условий.</a>
+<a href="#9.13">9.13   Вычисление выражения, а затем проверка условия.</a>
+<a href="#9.14">9.14   Проверка битов при операции сравнения.</a>
+<a href="#9.15">9.15   Оператор перестановки.</a>
+<a href="#9.16">9.16   Оператор отрицания.</a>
+<a href="#9.17">9.17   Оператор инверсии.</a>
+<a href="#9.18">9.18   Специальные условные выражения.</a>
+<a href="#9.19">9.19   Символ $ - вставляет текущий адрес программы.</a>
+<a href="#9.20">9.20   Ключевое слово static и оператор ::.</a>
+<a href="#9.21">9.21   Оператор sizeof.</a>
+<a href="#9.22">9.22   Метки перехода.</a>
 <A name=contents10>
-<A href="#10.1" style="TEXT-DECORATION: none">10.    Ассемблер.
+<a href="#10.1">10.    Ассемблер.
 10.1   Поддержка команд ассемблера.</a>
-<A href="#10.2" style="TEXT-DECORATION: none">10.2   Ключевое слово asm.</a>
-<A href="#10.3" style="TEXT-DECORATION: none">10.3   Префикс dup - повторение инструкций DB/DW/DD.</a>
-<A href="#10.4" style="TEXT-DECORATION: none">10.4   Инструкции процессора Pentium III.</a>
+<a href="#10.2">10.2   Ключевое слово asm.</a>
+<a href="#10.3">10.3   Префикс dup - повторение инструкций DB/DW/DD.</a>
+<a href="#10.4">10.4   Инструкции процессора Pentium III.</a>
 <A name=contents11>
-<A href="#11.1" style="TEXT-DECORATION: none">11.    Процедуры.
+<a href="#11.1">11.    Процедуры.
 11.1   Типы процедур, функций и макрокоманд.</a>
-<A href="#11.2" style="TEXT-DECORATION: none">11.2   Стековые процедуры.</a>
-<A href="#11.3" style="TEXT-DECORATION: none">11.3   Регистровые процедуры.</a>
-<A href="#11.4" style="TEXT-DECORATION: none">11.4   Динамические процедуры.</a>
-<A href="#11.4.1" style="TEXT-DECORATION: none">11.4.1 Установка динамической процедуры в определенное место программы.</a>
-<A href="#11.5" style="TEXT-DECORATION: none">11.5   inline-процедуры.</a>
-<A href="#11.5.1" style="TEXT-DECORATION: none">11.5.1 Другое применение inline.</a>
-<A href="#11.6" style="TEXT-DECORATION: none">11.6   Процедуры обработки прерываний.</a>
-<A href="#11.7" style="TEXT-DECORATION: none">11.7   Замена return на goto.</a>
-<A href="#11.8" style="TEXT-DECORATION: none">11.8   Возвращаемые значения.</a>
-<A href="#11.9" style="TEXT-DECORATION: none">11.9   Объявление параметров в регистровых процедурах.</a>
-<A href="#11.10" style="TEXT-DECORATION: none">11.10  Объявление параметров в стековых процедурах.</a>
-<A href="#11.11" style="TEXT-DECORATION: none">11.11  Использование макрокоманд.</a>
-<A href="#11.12" style="TEXT-DECORATION: none">11.12  Передача параметров в стековые процедуры через регистры.</a>
-<A href="#11.13" style="TEXT-DECORATION: none">11.13  Вызов процедур с адресом в регистре.</a>
-<A href="#11.14" style="TEXT-DECORATION: none">11.14  Встоенные в компилятор процедуры.</a>
-<A href="#11.14.1" style="TEXT-DECORATION: none">11.14.1 Процедуры ABORT, ATEXIT и EXIT.</a>
-<A href="#11.14.2" style="TEXT-DECORATION: none">11.14.2 Процедуры inp/inportb, inport, inportd, outp/outportb, outport и
+<a href="#11.2">11.2   Стековые процедуры.</a>
+<a href="#11.3">11.3   Регистровые процедуры.</a>
+<a href="#11.4">11.4   Динамические процедуры.</a>
+<a href="#11.4.1">11.4.1 Установка динамической процедуры в определенное место программы.</a>
+<a href="#11.5">11.5   inline-процедуры.</a>
+<a href="#11.5.1">11.5.1 Другое применение inline.</a>
+<a href="#11.6">11.6   Процедуры обработки прерываний.</a>
+<a href="#11.7">11.7   Замена return на goto.</a>
+<a href="#11.8">11.8   Возвращаемые значения.</a>
+<a href="#11.9">11.9   Объявление параметров в регистровых процедурах.</a>
+<a href="#11.10">11.10  Объявление параметров в стековых процедурах.</a>
+<a href="#11.11">11.11  Использование макрокоманд.</a>
+<a href="#11.12">11.12  Передача параметров в стековые процедуры через регистры.</a>
+<a href="#11.13">11.13  Вызов процедур с адресом в регистре.</a>
+<a href="#11.14">11.14  Встоенные в компилятор процедуры.</a>
+<a href="#11.14.1">11.14.1 Процедуры ABORT, ATEXIT и EXIT.</a>
+<a href="#11.14.2">11.14.2 Процедуры inp/inportb, inport, inportd, outp/outportb, outport и
         outportd.</a>
-<A href="#11.14.3" style="TEXT-DECORATION: none">11.14.3 Процедуры для работы с вещественными числами.</a>
-<A href="#11.15.1" style="TEXT-DECORATION: none">11.15  Классы.
+<a href="#11.14.3">11.14.3 Процедуры для работы с вещественными числами.</a>
+<a href="#11.15.1">11.15  Классы.
 11.15.1 Объявление процедур в структурах.</a>
-<A href="#11.15.2" style="TEXT-DECORATION: none">11.15.2 Наследование.</a>
-<A href="#11.15.3" style="TEXT-DECORATION: none">11.15.3 Наследование процедур.</a>
+<a href="#11.15.2">11.15.2 Наследование.</a>
+<a href="#11.15.3">11.15.3 Наследование процедур.</a>
 <A name=contents12>
-<A href="#12.1" style="TEXT-DECORATION: none">12.    Типы выходных файлов.
+<a href="#12.1">12.    Типы выходных файлов.
 12.1   Выходные файлы типа COM.</a>
-<A href="#12.2" style="TEXT-DECORATION: none">12.2   Выходные файлы типа EXE.</a>
-<A href="#12.3" style="TEXT-DECORATION: none">12.3   Выходной файл *.EXE с моделью памяти tiny.</a>
-<A href="#12.4" style="TEXT-DECORATION: none">12.4   Объектный выходной файл OBJ.</a>
-<A href="#12.5.1" style="TEXT-DECORATION: none">12.5   COM файл symbiosis.
+<a href="#12.2">12.2   Выходные файлы типа EXE.</a>
+<a href="#12.3">12.3   Выходной файл *.EXE с моделью памяти tiny.</a>
+<a href="#12.4">12.4   Объектный выходной файл OBJ.</a>
+<a href="#12.5.1">12.5   COM файл symbiosis.
 12.5.1 СИМБИОЗ - что это такое?</a>
-<A href="#12.5.2" style="TEXT-DECORATION: none">12.5.2 Как это делать.</a>
-<A href="#12.5.3" style="TEXT-DECORATION: none">12.5.3 Использование.</a>
-<A href="#12.5.4" style="TEXT-DECORATION: none">12.5.4 Злоупотребления.</a>
-<A href="#12.6" style="TEXT-DECORATION: none">12.6   SYS - драйверы устройств.</a>
-<A href="#12.7" style="TEXT-DECORATION: none">12.7   Компиляция кода расширителей ROM-BIOS.</a>
-<A href="#12.8.1" style="TEXT-DECORATION: none">12.8   32-битные файлы.
+<a href="#12.5.2">12.5.2 Как это делать.</a>
+<a href="#12.5.3">12.5.3 Использование.</a>
+<a href="#12.5.4">12.5.4 Злоупотребления.</a>
+<a href="#12.6">12.6   SYS - драйверы устройств.</a>
+<a href="#12.7">12.7   Компиляция кода расширителей ROM-BIOS.</a>
+<a href="#12.8.1">12.8   32-битные файлы.
 12.8.1 32-битный код под DOS.</a>
-<A href="#12.8.2" style="TEXT-DECORATION: none">12.8.2 32-битный код под Windows.</a>
-<A href="#12.8.3" style="TEXT-DECORATION: none">12.8.3 Вызов API процедур по ординалам.</a>
-<A href="#12.8.4" style="TEXT-DECORATION: none">12.8.4 Создание DLL под Windows.</a>
-<A href="#12.8.5" style="TEXT-DECORATION: none">12.8.5 Инициализация DLL при загрузке.</a>
-<A href="#12.8.6" style="TEXT-DECORATION: none">12.8.6 Компиляция ресурсов.</a>
-<A href="#12.9" style="TEXT-DECORATION: none">12.9   Выходные файлы для MeOS.</a>
+<a href="#12.8.2">12.8.2 32-битный код под Windows.</a>
+<a href="#12.8.3">12.8.3 Вызов API процедур по ординалам.</a>
+<a href="#12.8.4">12.8.4 Создание DLL под Windows.</a>
+<a href="#12.8.5">12.8.5 Инициализация DLL при загрузке.</a>
+<a href="#12.8.6">12.8.6 Компиляция ресурсов.</a>
+<a href="#12.9">12.9   Выходные файлы для MeOS.</a>
 <A name=contents13>
-<A href="#13.1" style="TEXT-DECORATION: none">13.    Приложения.
+<a href="#13.1">13.    Приложения.
 13.1   Поиск включаемых файлов.</a>
-<A href="#13.2" style="TEXT-DECORATION: none">13.2   Регистры, которые должны быть сохранены.</a>
-<A href="#13.3" style="TEXT-DECORATION: none">13.3   C--.ini файл.</a>
-<A href="#13.4" style="TEXT-DECORATION: none">13.4   startup.h-- файл.</a>
-<A href="#13.5" style="TEXT-DECORATION: none">13.5   mainlib.ldp файл.</a>
-<A href="#13.6" style="TEXT-DECORATION: none">13.6   C-- символы.</a>
-</FONT></B>
+<a href="#13.2">13.2   Регистры, которые должны быть сохранены.</a>
+<a href="#13.3">13.3   C--.ini файл.</a>
+<a href="#13.4">13.4   startup.h-- файл.</a>
+<a href="#13.5">13.5   mainlib.ldp файл.</a>
+<a href="#13.6">13.6   C-- символы.</a>
+</div>
 
 
-<B><FONT FACE="Courier" COLOR="#ff0000"><A name=intro>1. Вступление.
+<h2 id=intro>1. Вступление.
 
   1.1 История создания и развития.
-</A></B></FONT><FONT FACE="Courier">
+</h2>
 
       Автором языка SPHINX C-- является Peter Cellik (CANADA). Последняя
   авторская версия SPHINX C-- v0.203 от 28.Oct.96. К сожалению автор
@@ -251,12 +250,12 @@
   предложение будет ценным (на мой взгляд, так что Вам придется свое
   предложение хорошо аргументировать) и его будет возможным реализовать, оно
   без сомнения найдет место в компиляторе.
-<A href="#contents" style="TEXT-DECORATION: none"><FONT size=-1 FACE="Courier" COLOR="#ff0000">Return to contents.</FONT></A>
+<a href="#contents"><FONT size=-1 COLOR="#ff0000">Return to contents.</FONT></A>
 
 
-<B><FONT FACE="Courier" COLOR="#ff0000"><A name=1.2>
+<h2 id=1.2>
   1.2 Что такое C--?
-</A></B></FONT><FONT FACE="Courier">
+</h2>
 
       C-- был разработан, для того чтобы строить маленькие и быстрые
   программы. Это наиболее подходит для создания резидентных программ (TSR),
@@ -280,12 +279,12 @@
       C-- разработан только для использования на компьютерах с процессорами
   совместимыми с семейством 80x86. Компилятор может работать только с
   операционными системами DOS и семейством Windows.
-<A href="#contents" style="TEXT-DECORATION: none"><FONT size=-1 FACE="Courier" COLOR="#ff0000">Return to contents.</FONT></A>
+<a href="#contents"><FONT size=-1 COLOR="#ff0000">Return to contents.</FONT></A>
 
 
-<B><FONT FACE="Courier" COLOR="#ff0000"><A name=1.3>
+<h2 id=1.3>
   1.3 Как установить C--.
-</A></B></FONT><FONT FACE="Courier">
+</h2>
 
       Компилятору C-- для работы нужны совсем незначительные ресурсы:
   процессор 386 или лучше, чуть более 1 Мб дискового пространства и 4Мб
@@ -320,14 +319,14 @@
   компилятора нет. Существует несколько других способов, указать компилятору
   место расположения библиотек. Поэтому определять или не определять
   переменную окружения дело вашего вкуса и привычек.
-<A href="#contents" style="TEXT-DECORATION: none"><FONT size=-1 FACE="Courier" COLOR="#ff0000">Return to contents.</FONT></A>
+<a href="#contents"><FONT size=-1 COLOR="#ff0000">Return to contents.</FONT></A>
 
 
-<B><FONT FACE="Courier" COLOR="#ff0000"><A name=2.1>
+<h2 id=2.1>
 2. Управление компиляцией.
 
   2.1 Параметры командной строки компилятора C--.
-</A></B></FONT><FONT FACE="Courier">
+</h2>
 
       Формат командной строки вызова компилятора C--:
 
@@ -498,12 +497,12 @@
 
        Параметры командной строки можно писать как большими, так и
   маленькими буквами.
-<A href="#contents2" style="TEXT-DECORATION: none"><FONT size=-1 FACE="Courier" COLOR="#ff0000">Return to contents.</FONT></A>
+<a href="#contents2"><FONT size=-1 COLOR="#ff0000">Return to contents.</FONT></A>
 
 
-<B><FONT FACE="Courier" COLOR="#ff0000"><A name=2.1.1>
+<h2 id=2.1.1>
     2.1.1 /ON - Оптимизация числовых выражений.
-</A></B></FONT><FONT FACE="Courier">
+</h2>
 
         При включении в командную строку опции <b>/ON</b> или в файл C--.INI строчки
     <b>ON</b>, компилятор будет анализировать операции над числами и где это
@@ -543,12 +542,12 @@
     AX = AX / 16;
     AX = AX * 16;
     var = AX;
-<A href="#contents2" style="TEXT-DECORATION: none"><FONT size=-1 FACE="Courier" COLOR="#ff0000">Return to contents.</FONT></A>
+<a href="#contents2"><FONT size=-1 COLOR="#ff0000">Return to contents.</FONT></A>
 
 
-<B><FONT FACE="Courier" COLOR="#ff0000"><A name=2.1.2>
+<h2 id=2.1.2>
     2.1.2 /DE - Временное расширение разрядности переменной.
-</A></B></FONT><FONT FACE="Courier">
+</h2>
 
         Как известно, после умножения может произойти переполнение, т.е
     разрядность результата может превысить разрядность исходных операндов и
@@ -572,12 +571,12 @@
     если значения переменных b = 0xC000, c = 0x1000, d=0x10, после запуска
     такая программа зависнет с сообщением о том, что произошло переполнение
     при делении.
-<A href="#contents2" style="TEXT-DECORATION: none"><FONT size=-1 FACE="Courier" COLOR="#ff0000">Return to contents.</FONT></A>
+<a href="#contents2"><FONT size=-1 COLOR="#ff0000">Return to contents.</FONT></A>
 
 
-<B><FONT FACE="Courier" COLOR="#ff0000"><A name=2.1.3>
+<h2 id=2.1.3>
     2.1.3 /ARGC - Альтернативный обработчик командной строки.
-</A></B></FONT><FONT FACE="Courier">
+</h2>
 
         Отличие этого обработчика командной строки от <b>parsecommandline</b>
     заключается в том, что при вызове <b>PARAMSTR(0)</b>; Вы получите адрес строки в
@@ -589,12 +588,12 @@
         Альтернативный обработчик командной строки включается директивой
     <b>?argc TRUE</b> или из командной строки компилятора ключом <b>/argc</b> или
     строчкой <b>argc</b> в файле C--.INI.
-<A href="#contents2" style="TEXT-DECORATION: none"><FONT size=-1 FACE="Courier" COLOR="#ff0000">Return to contents.</FONT></A>
+<a href="#contents2"><FONT size=-1 COLOR="#ff0000">Return to contents.</FONT></A>
 
 
-<B><FONT FACE="Courier" COLOR="#ff0000"><A name=2.1.4>
+<h2 id=2.1.4>
     2.1.4 /OST - слияние одинаковых строковых констант.
-</A></B></FONT><FONT FACE="Courier">
+</h2>
 
         Если этот режим оптимизации будет активизирован, то компилятор будет
     запоминать все строковые константы и при обнаружении одинаковых в код
@@ -609,7 +608,7 @@
                         //оптимизации.
 
       void proc(){
-        WRITESTR("test");	// эта строка будет участвовать в оптимизации.
+        WRITESTR("test");       // эта строка будет участвовать в оптимизации.
         AX="test";          // переменной AX будет присвоен адрес строки,
                             // которая была вставлена в код программы в
                             // предыдущей строке.
@@ -621,12 +620,12 @@
         Включается этот режим оптимизации либо с командной строки <b>/ost</b>, либо
     директивой <b>#pragma option ost</b>, либо строкой в файле c--.ini - <b>ost</b>.
     Отключить, включенный ранее, этот режим можно директивой <b>#pragma option ost-</b>.
-<A href="#contents2" style="TEXT-DECORATION: none"><FONT size=-1 FACE="Courier" COLOR="#ff0000">Return to contents.</FONT></A>
+<a href="#contents2"><FONT size=-1 COLOR="#ff0000">Return to contents.</FONT></A>
 
 
-<B><FONT FACE="Courier" COLOR="#ff0000"><A name=2.1.5>
+<h2 id=2.1.5>
     2.1.5 /D - установка идентификатора в TRUE из командной строки.
-</A></B></FONT><FONT FACE="Courier">
+</h2>
 
         Если Вы написали программу, которая может компилироваться по разному,
     в зависимости от состояния некоторых идентификаторов (используется режим
@@ -636,12 +635,12 @@
     программы.
 
         Идентификатор вводится с командной строки ключом <b>/d=idname</b>.
-<A href="#contents2" style="TEXT-DECORATION: none"><FONT size=-1 FACE="Courier" COLOR="#ff0000">Return to contents.</FONT></A>
+<a href="#contents2"><FONT size=-1 COLOR="#ff0000">Return to contents.</FONT></A>
 
 
-<B><FONT FACE="Courier" COLOR="#ff0000"><A name=2.1.6>
+<h2 id=2.1.6>
     2.1.6 /IA - упрощенный ввод ассемблерных инструкций.
-</A></B></FONT><FONT FACE="Courier">
+</h2>
 
         Стало возможным использовать ассемблерные инструкции без префикса <b>$</b>
     и вне блока <b>asm</b>. Этот режим включается: с командной строки опцией <b>/ia</b>;
@@ -652,12 +651,12 @@
     качестве имен переменных или процедур. Ассемблерные инструкции компилятор
     распознает независимо от того, написаны они маленькими или большими
     буквами.
-<A href="#contents2" style="TEXT-DECORATION: none"><FONT size=-1 FACE="Courier" COLOR="#ff0000">Return to contents.</FONT></A>
+<a href="#contents2"><FONT size=-1 COLOR="#ff0000">Return to contents.</FONT></A>
 
 
-<B><FONT FACE="Courier" COLOR="#ff0000"><A name=2.1.7>
+<h2 id=2.1.7>
     2.1.7 /CRI - пропуск повторно включаемого файла.
-</A></B></FONT><FONT FACE="Courier">
+</h2>
 
         Чаще всего, повторно включать файл в компилируемый проект, нет
     необходимости, но это иногда происходит из-за того, что некоторые
@@ -671,12 +670,12 @@
     <b>/cri-</b>, которая запрещает компилятору делать проверку на повторное
     включение. Соответственно, для c--.ini файла, это можно сделать строкой
     <b>cri-</b> или директивой в компилируемом файле - <b>#pragma option cri-</b>.
-<A href="#contents2" style="TEXT-DECORATION: none"><FONT size=-1 FACE="Courier" COLOR="#ff0000">Return to contents.</FONT></A>
+<a href="#contents2"><FONT size=-1 COLOR="#ff0000">Return to contents.</FONT></A>
 
 
-<B><FONT FACE="Courier" COLOR="#ff0000"><A name=2.1.8>
+<h2 id=2.1.8>
     2.1.8 /IND - импорт имен процедур из DLL.
-</A></B></FONT><FONT FACE="Courier">
+</h2>
 
         Если Вы хотите в своей программе использовать DLL, для которой нет
     заголовочного файла с описанием процедур, то компилятор может
@@ -692,12 +691,12 @@
     контролировать число параметров передаваемых процедуре. И, к сожалению,
     компилятор умеет импортировать имена из библиотек имеющих только формат
     PE-файла.
-<A href="#contents2" style="TEXT-DECORATION: none"><FONT size=-1 FACE="Courier" COLOR="#ff0000">Return to contents.</FONT></A>
+<a href="#contents2"><FONT size=-1 COLOR="#ff0000">Return to contents.</FONT></A>
 
 
-<B><FONT FACE="Courier" COLOR="#ff0000"><A name=2.1.9>
+<h2 id=2.1.9>
     2.1.9 /WS - задать имя stub файла для программ под windows.
-</A></B></FONT><FONT FACE="Courier">
+</h2>
 
         Как известно, в программах под windows есть DOS заглушка, называемая
     stub, которой передается управление при запуске такой программы в чистом
@@ -711,12 +710,12 @@
 
         Таким образом, у Вас появилась возможность создавать программы,
     работающие и под DOS и под windows.
-<A href="#contents2" style="TEXT-DECORATION: none"><FONT size=-1 FACE="Courier" COLOR="#ff0000">Return to contents.</FONT></A>
+<a href="#contents2"><FONT size=-1 COLOR="#ff0000">Return to contents.</FONT></A>
 
 
-<B><FONT FACE="Courier" COLOR="#ff0000"><A name=2.1.10>
+<h2 id=2.1.10>
     2.1.10 /WBSS - разместить не инициализированные данные в отдельной секции.
-</A></B></FONT><FONT FACE="Courier">
+</h2>
 
         Секция <b>.bss</b> создается автоматически при компиляции программ с ключом
     <b>/w32</b>. Если Вы хотите иметь эту секцию и при компиляции программ с
@@ -728,12 +727,12 @@
     файла. Теоретически, для процессоров, у которых есть отдельный кэш для
     данных, использование секции <b>.bss</b>, должно повышать скорость работы
     программы.
-<A href="#contents2" style="TEXT-DECORATION: none"><FONT size=-1 FACE="Courier" COLOR="#ff0000">Return to contents.</FONT></A>
+<a href="#contents2"><FONT size=-1 COLOR="#ff0000">Return to contents.</FONT></A>
 
 
-<B><FONT FACE="Courier" COLOR="#ff0000"><A name=2.1.11>
+<h2 id=2.1.11>
     2.1.11 /DBG - создание отладочной информации.
-</A></B></FONT><FONT FACE="Courier">
+</h2>
 
         Если при компиляции программы в командную строку добавить ключ <b>/dbg</b>,
     или в файл конфигурации c--.ini добавить строку <b>dbg</b>, то компилятор после
@@ -757,12 +756,12 @@
     делать. Если Вы знаете, как создавать 32-битные программы с
     DOS-расширителем компиляторами фирмы Borland с включением в них отладочной
     информации, то расскажите мне. А я попробую применить это для C--.
-<A href="#contents2" style="TEXT-DECORATION: none"><FONT size=-1 FACE="Courier" COLOR="#ff0000">Return to contents.</FONT></A>
+<a href="#contents2"><FONT size=-1 COLOR="#ff0000">Return to contents.</FONT></A>
 
 
-<B><FONT FACE="Courier" COLOR="#ff0000"><A name=2.1.12>
+<h2 id=2.1.12>
     2.1.12 /J0 /J1 /J2
-</A></B></FONT><FONT FACE="Courier">
+</h2>
 
         Синонимом ключей <b>/J0 /J1 /J2</b> является директива <b>#jumptomain</b> с
     параметрами <b>NONE, SHORT и NEAR</b> соответственно.
@@ -811,12 +810,12 @@
     {
       ...
     }
-<A href="#contents2" style="TEXT-DECORATION: none"><FONT size=-1 FACE="Courier" COLOR="#ff0000">Return to contents.</FONT></A>
+<a href="#contents2"><FONT size=-1 COLOR="#ff0000">Return to contents.</FONT></A>
 
 
-<B><FONT FACE="Courier" COLOR="#ff0000"><A name=2.1.13>
+<h2 id=2.1.13>
     2.1.13 /LST - Создание ассемблерного листинга.
-</A></B></FONT><FONT FACE="Courier">
+</h2>
 
         С помощью дополнительной опции командной строки <b>-lst</b> Вы можете
     получить вместе с исполнительным файлом и его ассемблерный листинг.
@@ -825,12 +824,12 @@
 
         Ассемблерный листинг создается независимой от компилятора частью кода
     с использованием информации накапливаемой при компиляции программы.
-<A href="#contents2" style="TEXT-DECORATION: none"><FONT size=-1 FACE="Courier" COLOR="#ff0000">Return to contents.</FONT></A>
+<a href="#contents2"><FONT size=-1 COLOR="#ff0000">Return to contents.</FONT></A>
 
 
-<B><FONT FACE="Courier" COLOR="#ff0000"><A name=2.1.14>
+<h2 id=2.1.14>
     2.1.14 /ENV - Сохранение адреса переменных окружения.
-</A></B></FONT><FONT FACE="Courier">
+</h2>
 
         Если при компиляции программы Вы в командную строку добавите опцию
     <b>-ENV</b> или в файл c--.ini строка <b>ENV</b>, то компилятор добавит в вашу
@@ -838,12 +837,12 @@
     адрес переменных окружения запускаемой программы. Для программ под
     Windows это будет полный адрес, а для остальных в этой переменной будет
     сохраняться только адрес сегмента.
-<A href="#contents2" style="TEXT-DECORATION: none"><FONT size=-1 FACE="Courier" COLOR="#ff0000">Return to contents.</FONT></A>
+<a href="#contents2"><FONT size=-1 COLOR="#ff0000">Return to contents.</FONT></A>
 
 
-<B><FONT FACE="Courier" COLOR="#ff0000"><A name=2.1.15>
+<h2 id=2.1.15>
     2.1.15 /CPA - Очистка post-области данных.
-</A></B></FONT><FONT FACE="Courier">
+</h2>
 
         Переменные, которым в теле программы не было присвоено никакое
     значение, не включаются в тело скомпилированной программы. Для них
@@ -853,12 +852,12 @@
         Если Вам необходимо, чтобы неинициализированные переменные при
     загрузке программы всегда содержали одно и тоже значение (ноль) -
     включите в командную строку опцию <b>-CPA</b>.
-<A href="#contents2" style="TEXT-DECORATION: none"><FONT size=-1 FACE="Courier" COLOR="#ff0000">Return to contents.</FONT></A>
+<a href="#contents2"><FONT size=-1 COLOR="#ff0000">Return to contents.</FONT></A>
 
 
-<B><FONT FACE="Courier" COLOR="#ff0000"><A name=2.1.16>
+<h2 id=2.1.16>
     2.1.16 /W - вывод предупреждений.
-</A></B></FONT><FONT FACE="Courier">
+</h2>
 
         По умолчанию компилятор не выводит предупреждения и многие даже не
     подозревают о существовании такой полезной опции. В C-- предупреждения
@@ -879,12 +878,12 @@
     wf=warning
 
         Вы будете получать в файле <b>warning</b> предупреждения.
-<A href="#contents2" style="TEXT-DECORATION: none"><FONT size=-1 FACE="Courier" COLOR="#ff0000">Return to contents.</FONT></A>
+<a href="#contents2"><FONT size=-1 COLOR="#ff0000">Return to contents.</FONT></A>
 
 
-<B><FONT FACE="Courier" COLOR="#ff0000"><A name=2.1.17>
+<h2 id=2.1.17>
     2.1.17 /NW - Выборочное отключение типов предупреждений.
-</A></B></FONT><FONT FACE="Courier">
+</h2>
 
         Сейчас компилятор может выдавать 12 типов предупреждений и, иногда их
     бывает так много, что становится трудно в них ориентироваться. Теперь
@@ -905,12 +904,12 @@
      10 - Return flag was destroyed
      11 - Code may not be executable
      12 - Don't use local/parametric values in inline procedures
-<A href="#contents2" style="TEXT-DECORATION: none"><FONT size=-1 FACE="Courier" COLOR="#ff0000">Return to contents.</FONT></A>
+<a href="#contents2"><FONT size=-1 COLOR="#ff0000">Return to contents.</FONT></A>
 
 
-<B><FONT FACE="Courier" COLOR="#ff0000"><A name=2.1.18>
+<h2 id=2.1.18>
     2.1.18 /WSI - короткая таблица импорта.
-</A></B></FONT><FONT FACE="Courier">
+</h2>
 
         Таблица импорта обычно состоит в свою очередь из четырех таблиц. Две
     таблицы <b>LookUp Table</b> и <b>Import Address Table</b> абсолютно одинаковы.
@@ -920,12 +919,12 @@
     только <b>Import Address Table</b>). Тем самым у Вас получится более компактная
     таблица импорта, что приведет, в некоторых случаях, к созданию более
     компактного выходного файла.
-<A href="#contents2" style="TEXT-DECORATION: none"><FONT size=-1 FACE="Courier" COLOR="#ff0000">Return to contents.</FONT></A>
+<a href="#contents2"><FONT size=-1 COLOR="#ff0000">Return to contents.</FONT></A>
 
 
-<B><FONT FACE="Courier" COLOR="#ff0000"><A name=2.2>
+<h2 id=2.2>
   2.2 Директивы транслятора.
-</A></B></FONT><FONT FACE="Courier">
+</h2>
 
       C-- не содержит препроцессор. Тем не менее, есть несколько функций
   очень похожих на функции C препроцессора.
@@ -939,7 +938,7 @@
 
   <b>? aligncode</b> [val]              Выровнять код программы на четный по
                                  умолчанию или на адрес кратный величине <b>val</b>.
-			         Заполнение производится кодом 0x90.
+                                 Заполнение производится кодом 0x90.
 
   <b>? aligner</b> (aligner value)      определить значение байта вставки.
 
@@ -1129,12 +1128,12 @@
   <b>? usestartup</b>                   разрешает компилятору использовать ячейки
                                  памяти, занимаемые кодом начальной
                                  инициализации программы.
-<A href="#contents2" style="TEXT-DECORATION: none"><FONT size=-1 FACE="Courier" COLOR="#ff0000">Return to contents.</FONT></A>
+<a href="#contents2"><FONT size=-1 COLOR="#ff0000">Return to contents.</FONT></A>
 
 
-<B><FONT FACE="Courier" COLOR="#ff0000"><A name=2.2.1>
+<h2 id=2.2.1>
     2.2.1 ?ifdef/?ifndef
-</A></B></FONT><FONT FACE="Courier">
+</h2>
 
          Ранее директива <b>?ifdef</b> срабатывала на наличие константы независимо
     от значения ее величины, а директива <b>?ifndef</b> срабатывала на отсутствие
@@ -1150,7 +1149,7 @@
         Есть возможность проверки типа CPU для которого ведется компиляция.
     Допустимые варианты синтаксиса:
 
-    ?ifdef cpu > 1	 //если программа компилируется для CPU выше 80186
+    ?ifdef cpu > 1       //если программа компилируется для CPU выше 80186
     ?ifndef cpu >= 2 // -------//------------- не больше или равно 80286
     ?ifdef cpu == 3  // -------//------------- равно 80386
     ?ifdef cpu != 0  // -------//------------- не равен 8086
@@ -1159,12 +1158,12 @@
 
         Эта директива позволит Вам писать одну процедуру для различных типов
     CPU.
-<A href="#contents2" style="TEXT-DECORATION: none"><FONT size=-1 FACE="Courier" COLOR="#ff0000">Return to contents.</FONT></A>
+<a href="#contents2"><FONT size=-1 COLOR="#ff0000">Return to contents.</FONT></A>
 
 
-<B><FONT FACE="Courier" COLOR="#ff0000"><A name=2.2.2>
+<h2 id=2.2.2>
     2.2.2 ?initallvar
-</A></B></FONT><FONT FACE="Courier">
+</h2>
 
         Директивой <b>?initallvar TRUE</b> включается режим при котором всем
     неинициализированным переменным будет присвоено нулевое значение и они
@@ -1174,12 +1173,12 @@
 
         Параметр FALSE этой директивы отключает этот режим.
         По умолчанию эта директива установлена в FALSE.
-<A href="#contents2" style="TEXT-DECORATION: none"><FONT size=-1 FACE="Courier" COLOR="#ff0000">Return to contents.</FONT></A>
+<a href="#contents2"><FONT size=-1 COLOR="#ff0000">Return to contents.</FONT></A>
 
 
-<B><FONT FACE="Courier" COLOR="#ff0000"><A name=2.2.3>
+<h2 id=2.2.3>
     2.2.3 ?usestartup
-</A></B></FONT><FONT FACE="Courier">
+</h2>
 
         Директива <b>?usestartup</b> разрешает компилятору использовать ячейки кода
     начальной инициализации программы (startup) для последующего размещения в
@@ -1188,12 +1187,12 @@
     резидентных.
 
         Эту директиву применяют только для генерации *.COM файлов.
-<A href="#contents2" style="TEXT-DECORATION: none"><FONT size=-1 FACE="Courier" COLOR="#ff0000">Return to contents.</FONT></A>
+<a href="#contents2"><FONT size=-1 COLOR="#ff0000">Return to contents.</FONT></A>
 
 
-<B><FONT FACE="Courier" COLOR="#ff0000"><A name=2.2.4>
+<h2 id=2.2.4>
     2.2.4 ?startusevar
-</A></B></FONT><FONT FACE="Courier">
+</h2>
 
         Директивой <b>?startusevar</b> можно указать начальный адрес с которого
     компилятор будет распределять память для неинициализированных переменных.
@@ -1203,12 +1202,12 @@
     резидентных, так и для обычных программ.
 
         Эту директиву применяют только для генерации *.COM файлов.
-<A href="#contents2" style="TEXT-DECORATION: none"><FONT size=-1 FACE="Courier" COLOR="#ff0000">Return to contents.</FONT></A>
+<a href="#contents2"><FONT size=-1 COLOR="#ff0000">Return to contents.</FONT></A>
 
 
-<B><FONT FACE="Courier" COLOR="#ff0000"><A name=2.2.5>
+<h2 id=2.2.5>
     2.2.5 ?atexit
-</A></B></FONT><FONT FACE="Courier">
+</h2>
 
         Директива <b>?atexit</b> добавляет в startup программы код поддержки
     процедуры <b>ATEXIT</b>, резервирует место для хранения 16 адресов процедур и
@@ -1221,12 +1220,12 @@
 
         Всего можно зарегистрировать до 16 процедур. Процедуры вызываются в
     порядке обратном порядку их регистрации.
-<A href="#contents2" style="TEXT-DECORATION: none"><FONT size=-1 FACE="Courier" COLOR="#ff0000">Return to contents.</FONT></A>
+<a href="#contents2"><FONT size=-1 COLOR="#ff0000">Return to contents.</FONT></A>
 
 
-<B><FONT FACE="Courier" COLOR="#ff0000"><A name=2.2.6>
+<h2 id=2.2.6>
     2.2.6 ?startuptomain
-</A></B></FONT><FONT FACE="Courier">
+</h2>
 
         По этой директиве компилятор в начале файла делает <b>jmp</b> на начало
     процедуры main(). Перед началом компиляции этой процедуры компилятор
@@ -1236,22 +1235,22 @@
     компиляции резидентных программ (TSR).
 
         Директива ?startuptomain работает только при компиляции com-файлов.
-<A href="#contents2" style="TEXT-DECORATION: none"><FONT size=-1 FACE="Courier" COLOR="#ff0000">Return to contents.</FONT></A>
+<a href="#contents2"><FONT size=-1 COLOR="#ff0000">Return to contents.</FONT></A>
 
 
-<B><FONT FACE="Courier" COLOR="#ff0000"><A name=2.2.7>
+<h2 id=2.2.7>
     2.2.7 ?undef
-</A></B></FONT><FONT FACE="Courier">
+</h2>
 
         Эта директива уничтожает константы объявленные директивой <b>?define</b>. Ее
     можно применять для изменения в процессе компиляции значения какой-нибудь
     константы.
-<A href="#contents2" style="TEXT-DECORATION: none"><FONT size=-1 FACE="Courier" COLOR="#ff0000">Return to contents.</FONT></A>
+<a href="#contents2"><FONT size=-1 COLOR="#ff0000">Return to contents.</FONT></A>
 
 
-<B><FONT FACE="Courier" COLOR="#ff0000"><A name=2.2.8>
+<h2 id=2.2.8>
     2.2.8 ?align и ?aligncode
-</A></B></FONT><FONT FACE="Courier">
+</h2>
 
         В C-- существует директива <b>?align</b>, которая делает однократное
     выравнивание данных на четный адрес. Но если к этой директиве добавить
@@ -1270,12 +1269,12 @@
     директиву можно применять и внутри исполняемого кода. Например, если Вы
     хотите получить быстрый код на 486 процессоре, то рекомендуется делать
     выравнивание начала процедур и циклов на адрес кратный 16.
-<A href="#contents2" style="TEXT-DECORATION: none"><FONT size=-1 FACE="Courier" COLOR="#ff0000">Return to contents.</FONT></A>
+<a href="#contents2"><FONT size=-1 COLOR="#ff0000">Return to contents.</FONT></A>
 
 
-<B><FONT FACE="Courier" COLOR="#ff0000"><A name=2.2.9>
+<h2 id=2.2.9>
     2.2.9 ?pragma
-</A></B></FONT><FONT FACE="Courier">
+</h2>
 
         Директива <b>#pragma</b> это многофункциональнальная директива, которая в
     свою очередь имеет свои директивы:
@@ -1330,14 +1329,14 @@
     END
 
     #pragma resource end
-<A href="#contents2" style="TEXT-DECORATION: none"><FONT size=-1 FACE="Courier" COLOR="#ff0000">Return to contents.</FONT></A>
+<a href="#contents2"><FONT size=-1 COLOR="#ff0000">Return to contents.</FONT></A>
 
 
-<B><FONT FACE="Courier" COLOR="#ff0000"><A name=3.1>
+<h2 id=3.1>
 3. Константы.
 
   3.1 Числовые константы.
-</A></B></FONT><FONT FACE="Courier">
+</h2>
 
       Представление числовых констант в виде десятичных чисел (чисел с
   основанием 10) и шестнадцатеричных чисел (основание счисления 16) полностью
@@ -1382,12 +1381,12 @@
 
       Эти суффиксы не зависят от регистра, т.е. их можно писать как
   маленькими, так и большими буквами.
-<A href="#contents3" style="TEXT-DECORATION: none"><FONT size=-1 FACE="Courier" COLOR="#ff0000">Return to contents.</FONT></A>
+<a href="#contents3"><FONT size=-1 COLOR="#ff0000">Return to contents.</FONT></A>
 
 
-<B><FONT FACE="Courier" COLOR="#ff0000"><A name=3.2>
+<h2 id=3.2>
   3.2 Символьные константы.
-</A></B></FONT><FONT FACE="Courier">
+</h2>
 
       Одиночные символьные константы, как и в <b>C</b>, должны заключаться в
   одиночные кавычки <b>'</b>.
@@ -1434,12 +1433,12 @@
   символов. Для многобуквенных символьных констант первый символ
   соответствует старшим разрядам, таким образом, значение для <b>ab</b> будет
   закодировано как <b>a*256+b</b>.
-<A href="#contents3" style="TEXT-DECORATION: none"><FONT size=-1 FACE="Courier" COLOR="#ff0000">Return to contents.</FONT></A>
+<a href="#contents3"><FONT size=-1 COLOR="#ff0000">Return to contents.</FONT></A>
 
 
-<B><FONT FACE="Courier" COLOR="#ff0000"><A name=3.3>
+<h2 id=3.3>
   3.3 Строковые константы.
-</A></B></FONT><FONT FACE="Courier">
+</h2>
 
       Строковые константы, как и в C, заключаются в двойные кавычки (").
   Специальные символы внутри строк обозначаются так же, как и в символьных
@@ -1451,12 +1450,12 @@
       В настоящее время наибольшая длина строковой константы - 2048 символов,
   включая символ-ограничитель 0, таким образом, максимум 2047 значащих
   символов.
-<A href="#contents3" style="TEXT-DECORATION: none"><FONT size=-1 FACE="Courier" COLOR="#ff0000">Return to contents.</FONT></A>
+<a href="#contents3"><FONT size=-1 COLOR="#ff0000">Return to contents.</FONT></A>
 
 
-<B><FONT FACE="Courier" COLOR="#ff0000"><A name=3.4>
+<h2 id=3.4>
   3.4 Постоянные выражения.
-</A></B></FONT><FONT FACE="Courier">
+</h2>
 
       Постоянное выражение - одиночная числовая константа или несколько
   числовых констант, связанных между собой операторами. Числовое значение
@@ -1474,25 +1473,25 @@
   1 * 2 * 3 / 2 + 4 // равняется 7
       Примеры с применением вещественных чисел:
   3.23*1.53+2.0E2 // равняется 204.9419
-<A href="#contents3" style="TEXT-DECORATION: none"><FONT size=-1 FACE="Courier" COLOR="#ff0000">Return to contents.</FONT></A>
+<a href="#contents3"><FONT size=-1 COLOR="#ff0000">Return to contents.</FONT></A>
 
 
-<B><FONT FACE="Courier" COLOR="#ff0000"><A name=4.1>
+<h2 id=4.1>
 4. Выражения.
 
   4.1 Типы выражений.
-</A></B></FONT><FONT FACE="Courier">
+</h2>
 
       Имеются три типа выражений в C--, не считая постоянных выражений. Это
   выражения типа <b>EAX/AX/AL</b>, выражения типа <b>неEAX/AX/AL</b> и условные выражения.
   Все C-- выражения вычисляются слева направо, независимо от старшинства
   входящих в выражение математических операций.
-<A href="#contents4" style="TEXT-DECORATION: none"><FONT size=-1 FACE="Courier" COLOR="#ff0000">Return to contents.</FONT></A>
+<a href="#contents4"><FONT size=-1 COLOR="#ff0000">Return to contents.</FONT></A>
 
 
-<B><FONT FACE="Courier" COLOR="#ff0000"><A name=4.2>
+<h2 id=4.2>
   4.2 Выражения типа EAX/AX/AL.
-</A></B></FONT><FONT FACE="Courier">
+</h2>
 
       Этот тип выражений применяется в случае, когда его результат может быть
   сохранен в переменной в памяти или в регистре <b>EAX</b> или <b>AX</b> или <b>AL</b>.
@@ -1505,12 +1504,12 @@
 
       Если результат может быть сохранен в переменных типа <b>dword, long</b> или
   <b>float</b>, используется нотация <b>EAX</b>.
-<A href="#contents4" style="TEXT-DECORATION: none"><FONT size=-1 FACE="Courier" COLOR="#ff0000">Return to contents.</FONT></A>
+<a href="#contents4"><FONT size=-1 COLOR="#ff0000">Return to contents.</FONT></A>
 
 
-<B><FONT FACE="Courier" COLOR="#ff0000"><A name=4.3>
+<h2 id=4.3>
   4.3 Выражения использующие получатель при вычислении выражения.
-</A></B></FONT><FONT FACE="Courier">
+</h2>
 
       Если в правой части выражения используется переменная являющаяся
   одновременно и приемником, то такие выражения дают различные результаты в
@@ -1524,12 +1523,12 @@
     var = BX = 2;
     var = 3 + var; // результатом будет 5
     BX = 3 + BX;   // результатом будет 6
-<A href="#contents4" style="TEXT-DECORATION: none"><FONT size=-1 FACE="Courier" COLOR="#ff0000">Return to contents.</FONT></A>
+<a href="#contents4"><FONT size=-1 COLOR="#ff0000">Return to contents.</FONT></A>
 
 
-<B><FONT FACE="Courier" COLOR="#ff0000"><A name=4.4>
+<h2 id=4.4>
   4.4 Не - EAX/AX/AL выражения.
-</A></B></FONT><FONT FACE="Courier">
+</h2>
 
       Этот тип выражений применяется в случае, когда его результат должен
   быть сохранен в любом другом регистре, отличном от аккумулятора <b>EAX, AX</b>
@@ -1561,12 +1560,12 @@
   числа: 0, 1, 2, 4, 8, 16, 32, 64 и 128. Все эти ограничения связаны со
   стремлением не разрушать другие регистры при использовании <b>не-EAX/AX/AL</b>
   выражений.
-<A href="#contents4" style="TEXT-DECORATION: none"><FONT size=-1 FACE="Courier" COLOR="#ff0000">Return to contents.</FONT></A>
+<a href="#contents4"><FONT size=-1 COLOR="#ff0000">Return to contents.</FONT></A>
 
 
-<B><FONT FACE="Courier" COLOR="#ff0000"><A name=4.5>
+<h2 id=4.5>
   4.5 Условные выражения.
-</A></B></FONT><FONT FACE="Courier">
+</h2>
 
       Условные выражения - выражения, результатом вычисления которых является
   логическое значение да или нет, используемое в операторе <b>if</b> и циклах <b>do {}</b>
@@ -1575,22 +1574,22 @@
       Имеются два типа условных выражений, простые и сложные.
 
       Возможно логическое объединение условий.
-<A href="#contents4" style="TEXT-DECORATION: none"><FONT size=-1 FACE="Courier" COLOR="#ff0000">Return to contents.</FONT></A>
+<a href="#contents4"><FONT size=-1 COLOR="#ff0000">Return to contents.</FONT></A>
 
 
-<B><FONT FACE="Courier" COLOR="#ff0000"><A name=4.5.1>
+<h2 id=4.5.1>
     4.5.1 Простые условные выражения.
-</A></B></FONT><FONT FACE="Courier">
+</h2>
 
         Простые условные выражения - одиночная лексема или выражение, которое
     примет значение да, если расчетное значение отлично от нуля, или значение
     нет, если расчетное значение равно нулю.
-<A href="#contents4" style="TEXT-DECORATION: none"><FONT size=-1 FACE="Courier" COLOR="#ff0000">Return to contents.</FONT></A>
+<a href="#contents4"><FONT size=-1 COLOR="#ff0000">Return to contents.</FONT></A>
 
 
-<B><FONT FACE="Courier" COLOR="#ff0000"><A name=4.5.2>
+<h2 id=4.5.2>
     4.5.2 Сложные условные выражения.
-</A></B></FONT><FONT FACE="Courier">
+</h2>
 
     Сложные условные выражения имеют следующую форму:
 
@@ -1622,12 +1621,12 @@
          (x+y >= x-y) // правая часть не является одиночной лексемой или
                          постоянным выражением.
          (Z = y) // вместо == ошибочно поставлен =
-<A href="#contents4" style="TEXT-DECORATION: none"><FONT size=-1 FACE="Courier" COLOR="#ff0000">Return to contents.</FONT></A>
+<a href="#contents4"><FONT size=-1 COLOR="#ff0000">Return to contents.</FONT></A>
 
 
-<B><FONT FACE="Courier" COLOR="#ff0000"><A name=4.6>
+<h2 id=4.6>
   4.6 Изменение типа выражения при присваивании.
-</A></B></FONT><FONT FACE="Courier">
+</h2>
 
       Если после знака равенства написать тип отличный от типа вычисляемой
   переменной, то все переменные участвующие в процессе вычисления, будут
@@ -1649,12 +1648,12 @@
       то  переменные  a,  b,  и  c  в  этом  примере  перед  вычислением будут
   преобразованы к типу  <b>long</b>, а конечный  результат будет преобразован  к типу
   переменной i - <b>int</b>.
-<A href="#contents4" style="TEXT-DECORATION: none"><FONT size=-1 FACE="Courier" COLOR="#ff0000">Return to contents.</FONT></A>
+<a href="#contents4"><FONT size=-1 COLOR="#ff0000">Return to contents.</FONT></A>
 
 
-<B><FONT FACE="Courier" COLOR="#ff0000"><A name=4.7>
+<h2 id=4.7>
   4.7 Вычисление в регистры EAX/AX/AL со знаком.
-</A></B></FONT><FONT FACE="Courier">
+</h2>
 
       По умолчанию все вычисления в регистры производятся как с без знаковыми
   величинами.
@@ -1674,14 +1673,14 @@
        Обращаю ваше внимание, что для регистра <b>AL</b> можно использовать только
   модификатор <b>char</b>, для <b>AX</b> соответственно только <b>int</b>, а для <b>EAX - long</b>. Для
   остальных регистров подобное делать нельзя.
-<A href="#contents4" style="TEXT-DECORATION: none"><FONT size=-1 FACE="Courier" COLOR="#ff0000">Return to contents.</FONT></A>
+<a href="#contents4"><FONT size=-1 COLOR="#ff0000">Return to contents.</FONT></A>
 
 
-<B><FONT FACE="Courier" COLOR="#ff0000"><A name=5.1>
+<h2 id=5.1>
 5. Идентификаторы.
 
   5.1 Формат идентификатора.
-</A></B></FONT><FONT FACE="Courier">
+</h2>
 
       Идентификаторы в C-- должны начинаться или с символа подчеркивания <b>_</b>
   или заглавных или строчных букв. Следующие символы могут быть любой
@@ -1704,12 +1703,12 @@
    /*длина идентификатора превышает 64 */
   Y_es sir                                /* пробелы недопустимы */
   The-end                                 /* дефисы недопустимы */
-<A href="#contents5" style="TEXT-DECORATION: none"><FONT size=-1 FACE="Courier" COLOR="#ff0000">Return to contents.</FONT></A>
+<a href="#contents5"><FONT size=-1 COLOR="#ff0000">Return to contents.</FONT></A>
 
 
-<B><FONT FACE="Courier" COLOR="#ff0000"><A name=5.2>
+<h2 id=5.2>
   5.2 Зарезервированные идентификаторы.
-</A></B></FONT><FONT FACE="Courier">
+</h2>
 
       Список зарезервированных в C-- идентификаторов, которые не могут
   использоваться как общие идентификаторы, поскольку они уже были определены
@@ -1778,12 +1777,12 @@
   tr0   tr1   tr2   tr3   tr4   tr5   tr6   tr7
   mm0   mm1   mm2   mm3   mm4   mm5   mm6   mm7
   xmm0  xmm1  xmm2  xmm3  xmm4  xmm5  xmm6  xmm7
-</b><A href="#contents5" style="TEXT-DECORATION: none"><FONT size=-1 FACE="Courier" COLOR="#ff0000">Return to contents.</FONT></A>
+</b><a href="#contents5"><FONT size=-1 COLOR="#ff0000">Return to contents.</FONT></A>
 
 
-<B><FONT FACE="Courier" COLOR="#ff0000"><A name=5.3>
+<h2 id=5.3>
   5.3 Универсальные регистры для 16 и 32-битного режима.
-</A></B></FONT><FONT FACE="Courier">
+</h2>
 
       При создании библиотечных процедур очень часто приходится писать
   варианты процедуры для работы в 16-битном и 32-битном режимах, которые
@@ -1799,12 +1798,12 @@
 
       Использование автоматических регистров позволит упростить библиотечные
   файлы и сделать их более понятными.
-<A href="#contents5" style="TEXT-DECORATION: none"><FONT size=-1 FACE="Courier" COLOR="#ff0000">Return to contents.</FONT></A>
+<a href="#contents5"><FONT size=-1 COLOR="#ff0000">Return to contents.</FONT></A>
 
 
-<B><FONT FACE="Courier" COLOR="#ff0000"><A name=5.4>
+<h2 id=5.4>
   5.4 Предопределенные идентификаторы.
-</A></B></FONT><FONT FACE="Courier">
+</h2>
 
       Идентификаторы, определяемые компилятором в зависимости от режима
   компиляции:
@@ -1828,28 +1827,28 @@
   <b>codesize</b>    компиляция ведется с оптимизацией на размер кода
   <b>speed</b>       компиляция ведется с оптимизацией на быстродействие кода
   <b>cpu</b>         определяет тип процессора для которого ведется компиляция:
-  	    0 - 8086
-  	    1 - 80186
-  	    2 - 80286
-  	    3 - 80386
-  	    4 - 80486
-  	    5 - Pentium
-  	    6 - Pentium MMX
-  	    7 - Pentium II
+            0 - 8086
+            1 - 80186
+            2 - 80286
+            3 - 80386
+            4 - 80486
+            5 - Pentium
+            6 - Pentium MMX
+            7 - Pentium II
 
       Эти идентификаторы могут быть проверены директивами <b>#ifdef</b> или <b>#ifndef</b>.
   Идентификатор <b>cpu</b> может быть использован лишь с операторами проверки
   условий:
 
   #ifdef cpu > 3  //если тип процессора больше 80386
-<A href="#contents5" style="TEXT-DECORATION: none"><FONT size=-1 FACE="Courier" COLOR="#ff0000">Return to contents.</FONT></A>
+<a href="#contents5"><FONT size=-1 COLOR="#ff0000">Return to contents.</FONT></A>
 
 
-<B><FONT FACE="Courier" COLOR="#ff0000"><A name=6.1>
+<h2 id=6.1>
 6. Переменные.
 
   6.1 Типы переменных.
-</A></B></FONT><FONT FACE="Courier">
+</h2>
 
       В C-- имеется семь типов переменных (именованных областей памяти), это:
   <b>byte, word, dword, char, int, long, float.</b>
@@ -1898,12 +1897,12 @@
   такие свойства типа <b>int</b> вносят некоторую путаницу, но это дает большой
   выигрыш при использовании этого типа в библиотечных файлах, которые могут
   быть использованы при компиляции 16-битных и 32-битных программ.
-<A href="#contents6" style="TEXT-DECORATION: none"><FONT size=-1 FACE="Courier" COLOR="#ff0000">Return to contents.</FONT></A>
+<a href="#contents6"><FONT size=-1 COLOR="#ff0000">Return to contents.</FONT></A>
 
 
-<B><FONT FACE="Courier" COLOR="#ff0000"><A name=6.2>
+<h2 id=6.2>
   6.2 Объявление переменных.
-</A></B></FONT><FONT FACE="Courier">
+</h2>
 
       Синтаксис для объявления переменных следующий:
 
@@ -1940,12 +1939,12 @@
                   и массив с именем x, состоящий из 27 элементов типа int */
   long size=0; /* объявлена переменная типа long с именем size и ей присвоено
                   значение 0. */
-<A href="#contents6" style="TEXT-DECORATION: none"><FONT size=-1 FACE="Courier" COLOR="#ff0000">Return to contents.</FONT></A>
+<a href="#contents6"><FONT size=-1 COLOR="#ff0000">Return to contents.</FONT></A>
 
 
-<B><FONT FACE="Courier" COLOR="#ff0000"><A name=6.3>
+<h2 id=6.3>
   6.3 Глобальные переменные.
-</A></B></FONT><FONT FACE="Courier">
+</h2>
 
       Глобальные переменные - это переменные, область действия которых
   распространяется на всю программу. В C-- использовать глобальные переменные
@@ -1979,12 +1978,12 @@
   значение), то переменная будет включена в код компилируемого файла. Если
   переменная не инициализируется, то место для переменной будет
   зарезервировано сразу же за последним байтом скомпилированной программы.
-<A href="#contents6" style="TEXT-DECORATION: none"><FONT size=-1 FACE="Courier" COLOR="#ff0000">Return to contents.</FONT></A>
+<a href="#contents6"><FONT size=-1 COLOR="#ff0000">Return to contents.</FONT></A>
 
 
-<B><FONT FACE="Courier" COLOR="#ff0000"><A name=6.4>
+<h2 id=6.4>
   6.4 Локальные переменные.
-</A></B></FONT><FONT FACE="Courier">
+</h2>
 
       Локальные переменные - это переменные область действия которых
   распространяется лишь в пределах одной процедуры. Объявлять локальные
@@ -2021,12 +2020,12 @@
   int locproc;  // а на это объявление переменной компилятор выдаст сообщение
                 // об ошибке, т.к. уже началось тело процедуры
   }
-<A href="#contents6" style="TEXT-DECORATION: none"><FONT size=-1 FACE="Courier" COLOR="#ff0000">Return to contents.</FONT></A>
+<a href="#contents6"><FONT size=-1 COLOR="#ff0000">Return to contents.</FONT></A>
 
 
-<B><FONT FACE="Courier" COLOR="#ff0000"><A name=6.5>
+<h2 id=6.5>
   6.5 Динамические переменные и структуры.
-</A></B></FONT><FONT FACE="Courier">
+</h2>
 
       Наряду с уже известными Вам динамическими процедурами в C-- есть
   возможность использовать динамически и переменные и структуры. Динамические
@@ -2047,12 +2046,12 @@
   расположены в его самом конце, после динамических процедур. Эту их
   особенность можно использовать, если Вам будет необходимо, чтобы данные не
   были разбросаны среди кода, а были сгруппированы в одном месте.
-<A href="#contents6" style="TEXT-DECORATION: none"><FONT size=-1 FACE="Courier" COLOR="#ff0000">Return to contents.</FONT></A>
+<a href="#contents6"><FONT size=-1 COLOR="#ff0000">Return to contents.</FONT></A>
 
 
-<B><FONT FACE="Courier" COLOR="#ff0000"><A name=6.6>
+<h2 id=6.6>
   6.6 Присваивание одного значения нескольким переменным.
-</A></B></FONT><FONT FACE="Courier">
+</h2>
 
       Если Вам необходимо присвоить нескольким переменным одинаковые значения:
 
@@ -2066,14 +2065,14 @@
 
       При использовании такой записи генерируется более компактный и более
   быстрый код.
-<A href="#contents6" style="TEXT-DECORATION: none"><FONT size=-1 FACE="Courier" COLOR="#ff0000">Return to contents.</FONT></A>
+<a href="#contents6"><FONT size=-1 COLOR="#ff0000">Return to contents.</FONT></A>
 
 
-<B><FONT FACE="Courier" COLOR="#ff0000"><A name=6.7.1>
+<h2 id=6.7.1>
   6.7 Переменные типа float.
 
     6.7.1 Формат переменных типа float.
-</A></B></FONT><FONT FACE="Courier">
+</h2>
 
         Для представления значений с плавающей точкой в язык C-- введен тип
     float. Этому типу соответствует действительное число одинарной точности
@@ -2089,12 +2088,12 @@
     |  |      |  -------------- - поле мантиссы
     |  ------------------------ - поле порядка
     --------------------------- - бит знака
-<A href="#contents6" style="TEXT-DECORATION: none"><FONT size=-1 FACE="Courier" COLOR="#ff0000">Return to contents.</FONT></A>
+<a href="#contents6"><FONT size=-1 COLOR="#ff0000">Return to contents.</FONT></A>
 
 
-<B><FONT FACE="Courier" COLOR="#ff0000"><A name=6.7.2>
+<h2 id=6.7.2>
     6.7.2 Константы с плавающей точкой.
-</A></B></FONT><FONT FACE="Courier">
+</h2>
 
         Компилятор отличает вещественное число от целого по наличию в нем
     точки. Начинаться вещественное число должно либо цифрой от <b>0</b> до <b>9</b>, либо
@@ -2106,24 +2105,24 @@
      -15.75
      3.14e2
      1.234567E-20
-<A href="#contents6" style="TEXT-DECORATION: none"><FONT size=-1 FACE="Courier" COLOR="#ff0000">Return to contents.</FONT></A>
+<a href="#contents6"><FONT size=-1 COLOR="#ff0000">Return to contents.</FONT></A>
 
 
-<B><FONT FACE="Courier" COLOR="#ff0000"><A name=6.7.3>
+<h2 id=6.7.3>
     6.7.3 Диапазон допустимых значений.
-</A></B></FONT><FONT FACE="Courier">
+</h2>
 
         Вещественное число типа float может находиться в диапазоне от 3.37E38
     до -3.37E38. Минимально близкое к нулю значение равняется 1.17E-38 и
     -1.17E-38. Записывать вещественное число одинарной точности более чем 8
     цифрами не имеет смысла. Показатель степени может принимать значения от
     +38 до -38.
-<A href="#contents6" style="TEXT-DECORATION: none"><FONT size=-1 FACE="Courier" COLOR="#ff0000">Return to contents.</FONT></A>
+<a href="#contents6"><FONT size=-1 COLOR="#ff0000">Return to contents.</FONT></A>
 
 
-<B><FONT FACE="Courier" COLOR="#ff0000"><A name=6.7.4>
+<h2 id=6.7.4>
     6.7.4 Математические операции.
-</A></B></FONT><FONT FACE="Courier">
+</h2>
 
         Компилятор поддерживает 4 основных действия над переменными типа
     float: сложение, вычитание, умножение и деление. Поддерживается также
@@ -2136,12 +2135,12 @@
 
         <font color="Red"><b>ВНИМАНИЕ! Составные математические  операции выполняются в том
     порядке, в котором они записаны, невзирая на правила арифметики</b></font>.
-<A href="#contents6" style="TEXT-DECORATION: none"><FONT size=-1 FACE="Courier" COLOR="#ff0000">Return to contents.</FONT></A>
+<a href="#contents6"><FONT size=-1 COLOR="#ff0000">Return to contents.</FONT></A>
 
 
-<B><FONT FACE="Courier" COLOR="#ff0000"><A name=6.7.5>
+<h2 id=6.7.5>
     6.7.5 Преобразования типов.
-</A></B></FONT><FONT FACE="Courier">
+</h2>
 
         При математических операциях конечным итогом которых является
     переменная типа <b>float</b>, все операнды других типов перед вычислением будут
@@ -2153,12 +2152,12 @@
     участие в вычислениях. При присваивании целочисленной переменной значения
     переменной типа <b>float</b>, из нее также будет выделена целая часть, которая и
     будет присвоена целочисленной переменной.
-<A href="#contents6" style="TEXT-DECORATION: none"><FONT size=-1 FACE="Courier" COLOR="#ff0000">Return to contents.</FONT></A>
+<a href="#contents6"><FONT size=-1 COLOR="#ff0000">Return to contents.</FONT></A>
 
 
-<B><FONT FACE="Courier" COLOR="#ff0000"><A name=6.7.6>
+<h2 id=6.7.6>
     6.7.6 Операции сравнения.
-</A></B></FONT><FONT FACE="Courier">
+</h2>
 
         Если при операции сравнения левым операндом является переменная или
     выражение типа <b>float</b>, а правым является целочисленное значение, то
@@ -2166,12 +2165,12 @@
     левым операндом является целочисленное выражение или переменная, а правым
     операндом значение типа <b>float</b>, то из правого операнда будет выделена целая
     часть, которая и примет участие в сравнении.
-<A href="#contents6" style="TEXT-DECORATION: none"><FONT size=-1 FACE="Courier" COLOR="#ff0000">Return to contents.</FONT></A>
+<a href="#contents6"><FONT size=-1 COLOR="#ff0000">Return to contents.</FONT></A>
 
 
-<B><FONT FACE="Courier" COLOR="#ff0000"><A name=6.7.7>
+<h2 id=6.7.7>
     6.7.7 Сравнение переменных типа float с 32-битным регистром.
-</A></B></FONT><FONT FACE="Courier">
+</h2>
 
         В регистрах могут содержаться знаковые, без знаковые и вещественные
     данные. По умолчанию считается, что в регистре находится без знаковое целое
@@ -2183,19 +2182,19 @@
 
     void PROC()
     {
-      IF( f < signed ECX)	//в регистре ECX находится знаковое число
+      IF( f < signed ECX)       //в регистре ECX находится знаковое число
       IF( unsigned EBX > f) //в регистре EBX находится без знаковое число
       IF( f == float EAX )  //в EAX находится число формата float
     }
 
         <font color="Red"><b>ВНИМАНИЕ!  При операции сравнения с участием переменой типа float,
     содержимое регистра AX будет разрушено.</b></font>
-<A href="#contents6" style="TEXT-DECORATION: none"><FONT size=-1 FACE="Courier" COLOR="#ff0000">Return to contents.</FONT></A>
+<a href="#contents6"><FONT size=-1 COLOR="#ff0000">Return to contents.</FONT></A>
 
 
-<B><FONT FACE="Courier" COLOR="#ff0000"><A name=6.8>
+<h2 id=6.8>
   6.8 Указатели.
-</A></B></FONT><FONT FACE="Courier">
+</h2>
 
       В C-- сейчас указатели реализованы не в полном объеме. Поэтому многие
   вещи, которые возможны в обычных языках <b>C</b>, здесь будут недоступны.
@@ -2209,13 +2208,13 @@
   int i;
   char *tstr;
   {
-	FOR(i=0; string[i]!=0; i++){
-		WRITESTR(string[i]);
-		WRITELN();
-	}
-	FOR(tstr=str;byte *tstr!=0; tstr++){
-		WRITE(byte *tstr);
-	}
+        FOR(i=0; string[i]!=0; i++){
+                WRITESTR(string[i]);
+                WRITELN();
+        }
+        FOR(tstr=str;byte *tstr!=0; tstr++){
+                WRITE(byte *tstr);
+        }
   }
 
       Указатели можно использовать при передаче параметров процедурам, а в
@@ -2235,14 +2234,14 @@
   инициализируется указатель. Т.е. Вы можете указателю на <b>char</b> присвоить
   указатель на <b>int</b> или указателю на процедуру присвоить адрес переменной.
   Это может вызвать ошибку в работе программы.
-<A href="#contents6" style="TEXT-DECORATION: none"><FONT size=-1 FACE="Courier" COLOR="#ff0000">Return to contents.</FONT></A>
+<a href="#contents6"><FONT size=-1 COLOR="#ff0000">Return to contents.</FONT></A>
 
 
-<B><FONT FACE="Courier" COLOR="#ff0000"><A name=7.1>
+<h2 id=7.1>
 7. Адресация.
 
   7.1 Относительная адресация.
-</A></B></FONT><FONT FACE="Courier">
+</h2>
 
       Изначально индексный доступ к элементам в массивах любого типа в
   компиляторе осуществлялся побайтно, независимо от объявленного типа данных.
@@ -2349,12 +2348,12 @@
   числовую константу или регистры <b>BX,DI,SI,BP</b> компилятор использует эти
   значения без изменения.  Во всех других случаях будет коррекция значения в
   зависимости от типа массива.
-<A href="#contents7" style="TEXT-DECORATION: none"><FONT size=-1 FACE="Courier" COLOR="#ff0000">Return to contents.</FONT></A>
+<a href="#contents7"><FONT size=-1 COLOR="#ff0000">Return to contents.</FONT></A>
 
 
-<B><FONT FACE="Courier" COLOR="#ff0000"><A name=7.2>
+<h2 id=7.2>
   7.2 Абсолютная адресация.
-</A></B></FONT><FONT FACE="Courier">
+</h2>
 
       Абсолютная адресация также возможна.  Действуют те же самые ограничения
   на индексы, что и при относительной адресации.
@@ -2441,25 +2440,25 @@
 
      Сохранить BX в сегменте стека по смещению 42:
                  SSWORD [42] = BX;
-<A href="#contents7" style="TEXT-DECORATION: none"><FONT size=-1 FACE="Courier" COLOR="#ff0000">Return to contents.</FONT></A>
+<a href="#contents7"><FONT size=-1 COLOR="#ff0000">Return to contents.</FONT></A>
 
 
-<B><FONT FACE="Courier" COLOR="#ff0000"><A name=8.1.1>
+<h2 id=8.1.1>
 8. Работа с блоками данных.
 
   8.1 Структуры.
 
     8.1.1 Что такое структуры.
-</A></B></FONT><FONT FACE="Courier">
+</h2>
 
         Структура позволяет объединить в одном объекте совокупность значений,
     которые могут иметь различные типы.
-<A href="#contents8" style="TEXT-DECORATION: none"><FONT size=-1 FACE="Courier" COLOR="#ff0000">Return to contents.</FONT></A>
+<a href="#contents8"><FONT size=-1 COLOR="#ff0000">Return to contents.</FONT></A>
 
 
-<B><FONT FACE="Courier" COLOR="#ff0000"><A name=8.1.2>
+<h2 id=8.1.2>
     8.1.2 Синтаксис.
-</A></B></FONT><FONT FACE="Courier">
+</h2>
 
     struct [<тег>] { <список-объявлений-элементов> }
       <описатель>[,<описатель>...];
@@ -2510,12 +2509,12 @@
    <b>struct</b> можно не писать. Т.е можно написать вот так:
 
       test dd;
-<A href="#contents8" style="TEXT-DECORATION: none"><FONT size=-1 FACE="Courier" COLOR="#ff0000">Return to contents.</FONT></A>
+<a href="#contents8"><FONT size=-1 COLOR="#ff0000">Return to contents.</FONT></A>
 
 
-<B><FONT FACE="Courier" COLOR="#ff0000"><A name=8.1.3>
+<h2 id=8.1.3>
     8.1.3 Инициализация структур при объявлении.
-</A></B></FONT><FONT FACE="Courier">
+</h2>
 
         После объявления структуры ее элементы могут принимать произвольные
     значения. Что бы этого не было надо структуры проинициализировать.
@@ -2553,12 +2552,12 @@
     В этом примере на место где расположена структура dd при компиляции будет
     загружен фрагмент из файла <b>file.dat</b> длиной 10 байт со смещения 24.
     Недостающие байты будут заполнены нулями.
-<A href="#contents8" style="TEXT-DECORATION: none"><FONT size=-1 FACE="Courier" COLOR="#ff0000">Return to contents.</FONT></A>
+<a href="#contents8"><FONT size=-1 COLOR="#ff0000">Return to contents.</FONT></A>
 
 
-<B><FONT FACE="Courier" COLOR="#ff0000"><A name=8.1.4>
+<h2 id=8.1.4>
     8.1.4 Инициализация структуры при выполнении программы.
-</A></B></FONT><FONT FACE="Courier">
+</h2>
 
         При выполнении программы, кроме присвоения каждому элементу структуры
     значения, можно проинициализировать всю структуру присвоением ей числа или
@@ -2591,12 +2590,12 @@
 
     Будет скопировано содержимое третьей структуры массива структур aa в
     структуру rr.
-<A href="#contents8" style="TEXT-DECORATION: none"><FONT size=-1 FACE="Courier" COLOR="#ff0000">Return to contents.</FONT></A>
+<a href="#contents8"><FONT size=-1 COLOR="#ff0000">Return to contents.</FONT></A>
 
 
-<B><FONT FACE="Courier" COLOR="#ff0000"><A name=8.1.5>
+<h2 id=8.1.5>
     8.1.5 Операции с элементами структур.
-</A></B></FONT><FONT FACE="Courier">
+</h2>
 
         С элементами структур можно выполнять все те операции, которые
     доступны для переменных соответствующего типа. Например:  Объявлена
@@ -2628,25 +2627,25 @@
       long c;       // третий элемент структуры
     };
 
-    struct BB	//тег второй структуры
+    struct BB   //тег второй структуры
     {
-      word aa;	// первый элемент
-      AA bb;	// второй элемент - вложенная структура
-    }ss;		// объявляем структуру с тегом <b>BB</b>
+      word aa;  // первый элемент
+      AA bb;    // второй элемент - вложенная структура
+    }ss;                // объявляем структуру с тегом <b>BB</b>
 
     void proc()
     {
       AX=#ss.bb.b; // получить адрес элемента <b>b</b> структуры <b>bb</b> в структуре <b>ss</b>
       AX=#BB.bb.b; // получить смещение этого же элемента в теге <b>BB</b>
-      AX=sizeof(ss.bb);	// получить размер элемента <b>bb</b> в структуре <b>ss</b>
-      AX=sizeof(BB.bb);	// получить размер элемента <b>bb</b> в теге <b>BB</b>
+      AX=sizeof(ss.bb); // получить размер элемента <b>bb</b> в структуре <b>ss</b>
+      AX=sizeof(BB.bb); // получить размер элемента <b>bb</b> в теге <b>BB</b>
     }
-<A href="#contents8" style="TEXT-DECORATION: none"><FONT size=-1 FACE="Courier" COLOR="#ff0000">Return to contents.</FONT></A>
+<a href="#contents8"><FONT size=-1 COLOR="#ff0000">Return to contents.</FONT></A>
 
 
-<B><FONT FACE="Courier" COLOR="#ff0000"><A name=8.1.6>
+<h2 id=8.1.6>
     8.1.6 Вложенные структуры.
-</A></B></FONT><FONT FACE="Courier">
+</h2>
 
         При объявлении тегов структур можно использовать теги других,
     объявленных ранее структур. Пример вложенных структур:
@@ -2696,12 +2695,12 @@
       AX=second[2].first[j].a; //а этот синтаксис допустим.
       AX=second[i].first[3].a;
     }
-<A href="#contents8" style="TEXT-DECORATION: none"><FONT size=-1 FACE="Courier" COLOR="#ff0000">Return to contents.</FONT></A>
+<a href="#contents8"><FONT size=-1 COLOR="#ff0000">Return to contents.</FONT></A>
 
 
-<B><FONT FACE="Courier" COLOR="#ff0000"><A name=8.1.7>
+<h2 id=8.1.7>
     8.1.7 Отображение тега структуры на блок памяти.
-</A></B></FONT><FONT FACE="Courier">
+</h2>
 
         Отображение тега структуры на блок памяти является альтернативой
     указателям на структуры.
@@ -2750,12 +2749,12 @@
     локальными и параметрическими переменными. В 32-битном режиме можно
     использовать любой кроме <b>ESP и EBP</b> регистр, а регистры <b>EDI и ESI</b> надо
     использовать осторожно.
-<A href="#contents8" style="TEXT-DECORATION: none"><FONT size=-1 FACE="Courier" COLOR="#ff0000">Return to contents.</FONT></A>
+<a href="#contents8"><FONT size=-1 COLOR="#ff0000">Return to contents.</FONT></A>
 
 
-<B><FONT FACE="Courier" COLOR="#ff0000"><A name=8.1.8>
+<h2 id=8.1.8>
     8.1.8 Битовые поля структур.
-</A></B></FONT><FONT FACE="Courier">
+</h2>
 
         Битовые поля структур используются для экономии памяти, поскольку
     позволяют плотно упаковать значения, и для организации удобного доступа к
@@ -2794,12 +2793,12 @@
     примененный к битовому полю вернет размер этого поля в битах. При
     использовании битового поля, его содержимое будет расширятся в регистр
     как без знаковое целое число.
-<A href="#contents8" style="TEXT-DECORATION: none"><FONT size=-1 FACE="Courier" COLOR="#ff0000">Return to contents.</FONT></A>
+<a href="#contents8"><FONT size=-1 COLOR="#ff0000">Return to contents.</FONT></A>
 
 
-<B><FONT FACE="Courier" COLOR="#ff0000"><A name=8.2>
+<h2 id=8.2>
   8.2 Объединения.
-</A></B></FONT><FONT FACE="Courier">
+</h2>
 
       Объединения позволяют в разные моменты времени хранить в одном объекте
   значения различного типа.
@@ -2824,8 +2823,8 @@
 
   void test()
   {
-  	regEAX = 0x2C;
-  	BL = regAL;	//в регистре BL окажется значение 0x2C
+        regEAX = 0x2C;
+        BL = regAL;     //в регистре BL окажется значение 0x2C
   }
 
       Объединять можно переменные различных типов, массивы, строковые
@@ -2837,12 +2836,12 @@
   элемент объединения. Если же первый элемент объединения не инициализирован,
   а следующие элементы инициализированы, то это вызовет сообщение компилятора
   об ошибке.
-<A href="#contents8" style="TEXT-DECORATION: none"><FONT size=-1 FACE="Courier" COLOR="#ff0000">Return to contents.</FONT></A>
+<a href="#contents8"><FONT size=-1 COLOR="#ff0000">Return to contents.</FONT></A>
 
 
-<B><FONT FACE="Courier" COLOR="#ff0000"><A name=8.3>
+<h2 id=8.3>
   8.3 Команды 'FROM' и 'EXTRACT'.
-</A></B></FONT><FONT FACE="Courier">
+</h2>
 
       В C-- есть очень оригинальные команды, которых нет в других языках. Это
   <b>FROM и EXTRACT</b>.
@@ -2869,14 +2868,14 @@
 
   byte LIT128 = EXTRACT "8X16.FNT", 16*128, 16;
   byte LIT130 = EXTRACT "8X16.FNT", 16*130, 16;
-<A href="#contents8" style="TEXT-DECORATION: none"><FONT size=-1 FACE="Courier" COLOR="#ff0000">Return to contents.</FONT></A>
+<a href="#contents8"><FONT size=-1 COLOR="#ff0000">Return to contents.</FONT></A>
 
 
-<B><FONT FACE="Courier" COLOR="#ff0000"><A name=9.1>
+<h2 id=9.1>
 9. Операторы.
 
   9.1 Условные инструкции.
-</A></B></FONT><FONT FACE="Courier">
+</h2>
 
       Условные инструкции, при помощи которых осуществляется ветвление, такие
   же как в C.
@@ -2920,12 +2919,12 @@
 
       Это можно просто исправить, заменив в этом месте инструкцию <b>ELSE</b> на
   <b>else</b>.
-<A href="#contents9" style="TEXT-DECORATION: none"><FONT size=-1 FACE="Courier" COLOR="#ff0000">Return to contents.</FONT></A>
+<a href="#contents9"><FONT size=-1 COLOR="#ff0000">Return to contents.</FONT></A>
 
 
-<B><FONT FACE="Courier" COLOR="#ff0000"><A name=9.2>
+<h2 id=9.2>
   9.2 Циклы do{} while.
-</A></B></FONT><FONT FACE="Courier">
+</h2>
 
       В таком цикле блок кода, составляющий тело цикла, будет повторяться,
   пока условное выражение имеет значение <b>истинно</b>.
@@ -2944,12 +2943,12 @@
 
   Условное выражение в <b>do {} while</b> инструкции должно соответствовать тем же
   правилам, что и в инструкциях <b>IF и if</b>.
-<A href="#contents9" style="TEXT-DECORATION: none"><FONT size=-1 FACE="Courier" COLOR="#ff0000">Return to contents.</FONT></A>
+<a href="#contents9"><FONT size=-1 COLOR="#ff0000">Return to contents.</FONT></A>
 
 
-<B><FONT FACE="Courier" COLOR="#ff0000"><A name=9.3>
+<h2 id=9.3>
   9.3 Циклы loop, LOOPNZ, loopnz.
-</A></B></FONT><FONT FACE="Courier">
+</h2>
 
       Циклы <b>loop</b> повторяют блок кода, пока определенная переменная или
   регистр, выполняющие роль счетчика цикла, содержат значение, отличное от
@@ -3022,12 +3021,12 @@
   максимально эффективным при оптимизации на размер кода, если в качестве
   параметра-счетчика используется регистр <b>CX/ECX</b>. При этом компилятор
   использует ассемблерные инструкции <b>JCXZ/JECXZ и LOOP</b>.
-<A href="#contents9" style="TEXT-DECORATION: none"><FONT size=-1 FACE="Courier" COLOR="#ff0000">Return to contents.</FONT></A>
+<a href="#contents9"><FONT size=-1 COLOR="#ff0000">Return to contents.</FONT></A>
 
 
-<B><FONT FACE="Courier" COLOR="#ff0000"><A name=9.4>
+<h2 id=9.4>
   9.4 Цикл while, WHILE.
-</A></B></FONT><FONT FACE="Courier">
+</h2>
 
        Синтаксис:
     while(<выражение>)
@@ -3043,19 +3042,19 @@
   меньше 127 байт.
 
     Примеры:
-  	while ( i < 20 ){
-  		WRITEWORD(i);
-  		i++;
-  	}
+        while ( i < 20 ){
+                WRITEWORD(i);
+                i++;
+        }
 
-  	WHILE (i < 20 ) @WRITEWORD(i);	//цикл либо будет бесконечным либо не
+        WHILE (i < 20 ) @WRITEWORD(i);  //цикл либо будет бесконечным либо не
                                           //выполнится ни разу
-<A href="#contents9" style="TEXT-DECORATION: none"><FONT size=-1 FACE="Courier" COLOR="#ff0000">Return to contents.</FONT></A>
+<a href="#contents9"><FONT size=-1 COLOR="#ff0000">Return to contents.</FONT></A>
 
 
-<B><FONT FACE="Courier" COLOR="#ff0000"><A name=9.5>
+<h2 id=9.5>
   9.5 Цикл for, FOR.
-</A></B></FONT><FONT FACE="Courier">
+</h2>
 
        Синтаксис:
     for ([<начальное выражение>]; [<условие>]; [<приращение>])
@@ -3087,11 +3086,11 @@
   127 байт.
 
     Примеры:
-  	for(i=0;i<5;i++){
-  		WRITESTR("СТРОКА ");
-  		WRITEWORD(i);
-  		WRITELN();
-  	}
+        for(i=0;i<5;i++){
+                WRITESTR("СТРОКА ");
+                WRITEWORD(i);
+                WRITELN();
+        }
 
       Число <b>начальных выражений</b> и число <b>приращений</b> не ограничено. Каждый
   оператор в <b>начальных выражениях</b> и <b>приращениях</b> должен разделяться
@@ -3104,21 +3103,21 @@
   скобки. Пример:
 
         for ( a=0 ; (a>=0) && (a<10) ; a++ ){...
-<A href="#contents9" style="TEXT-DECORATION: none"><FONT size=-1 FACE="Courier" COLOR="#ff0000">Return to contents.</FONT></A>
+<a href="#contents9"><FONT size=-1 COLOR="#ff0000">Return to contents.</FONT></A>
 
 
-<B><FONT FACE="Courier" COLOR="#ff0000"><A name=9.6>
+<h2 id=9.6>
   9.6 Оператор переключатель switch.
-</A></B></FONT><FONT FACE="Courier">
+</h2>
 
       Синтаксис:
     switch(<выражение>){
       case <константа>:
         <оператор>
-  	...
+        ...
       case <константа>:
         <оператор>
-  	...
+        ...
       ...
       default:
         <оператор>
@@ -3222,29 +3221,29 @@
 
       Кроме того, что новый формат записи более компактен и более читабелен,
   но еще при этом компилятор создает более компактный и быстрый код.
-<A href="#contents9" style="TEXT-DECORATION: none"><FONT size=-1 FACE="Courier" COLOR="#ff0000">Return to contents.</FONT></A>
+<a href="#contents9"><FONT size=-1 COLOR="#ff0000">Return to contents.</FONT></A>
 
 
-<B><FONT FACE="Courier" COLOR="#ff0000"><A name=9.7>
+<h2 id=9.7>
   9.7 Оператор перехода goto, GOTO.
-</A></B></FONT><FONT FACE="Courier">
+</h2>
 
        Синтаксис:
        goto <метка>;
-  	.
-  	.
-  	.
+        .
+        .
+        .
   <метка>:
 
       Оператор перехода <b>goto</b> передает управление на <b>оператор</b> помеченный
   <b>меткой</b>. Аналогом в ассемблере оператору goto является команда <b>jmp near</b>.
   Аналогом в ассемблере оператору <b>GOTO</b> является команда <b>jmp short</b>.
-<A href="#contents9" style="TEXT-DECORATION: none"><FONT size=-1 FACE="Courier" COLOR="#ff0000">Return to contents.</FONT></A>
+<a href="#contents9"><FONT size=-1 COLOR="#ff0000">Return to contents.</FONT></A>
 
 
-<B><FONT FACE="Courier" COLOR="#ff0000"><A name=9.8>
+<h2 id=9.8>
   9.8 Оператор разрыва break, BREAK.
-</A></B></FONT><FONT FACE="Courier">
+</h2>
 
       Оператор разрыва <b>break</b> прерывает выполнение операторов <b>do-while,
   for, switch, while, loop, loopnz, LOOPNZ</b>. Он может содержаться
@@ -3256,18 +3255,18 @@
   до конца цикла должен быть меньше 127 байт.
 
     Примеры:
-  	FOR (i=0; ; i++){
-  		FOR(j=0; j < WIDTH; j++){
-  			IF(i==5)BREAK;
-  		}
-  		IF(i==10)BREAK;
-  	}
-<A href="#contents9" style="TEXT-DECORATION: none"><FONT size=-1 FACE="Courier" COLOR="#ff0000">Return to contents.</FONT></A>
+        FOR (i=0; ; i++){
+                FOR(j=0; j < WIDTH; j++){
+                        IF(i==5)BREAK;
+                }
+                IF(i==10)BREAK;
+        }
+<a href="#contents9"><FONT size=-1 COLOR="#ff0000">Return to contents.</FONT></A>
 
 
-<B><FONT FACE="Courier" COLOR="#ff0000"><A name=9.9>
+<h2 id=9.9>
   9.9 Оператор продолжения continue, CONTINUE.
-</A></B></FONT><FONT FACE="Courier">
+</h2>
 
       Оператор продолжения <b>continue</b> передает управление на следующую
   итерацию в циклах <b>do-while, for, while, loop, loopnz</b>. В циклах
@@ -3279,12 +3278,12 @@
     Оператор <b>CONTINUE</b> аналогичен <b>continue</b>, но при этом генерируется код на
   1 байт короче. Размер сгенерированного кода от места где применяется
   <b>CONTINUE</b> до начала итерации должен быть меньше 127 байт.
-<A href="#contents9" style="TEXT-DECORATION: none"><FONT size=-1 FACE="Courier" COLOR="#ff0000">Return to contents.</FONT></A>
+<a href="#contents9"><FONT size=-1 COLOR="#ff0000">Return to contents.</FONT></A>
 
 
-<B><FONT FACE="Courier" COLOR="#ff0000"><A name=9.10>
+<h2 id=9.10>
   9.10 Логическое объединение условий.
-</A></B></FONT><FONT FACE="Courier">
+</h2>
 
       Существует возможность логического объединения сравнений в условиях
   <b>IF и if</b>, циклах <b>do{}while, while{}, WHILE{}, for{} и FOR{}</b>.
@@ -3298,16 +3297,16 @@
 
       Пример:
 
-  	   if ( (a>3) && (b>4) || (c<8) ){
+           if ( (a>3) && (b>4) || (c<8) ){
 
   Т.е. если произвести расшифровку этого условия, то получится следующее:
   условие выполнится если a>3 и b>4 или a>3 и c<8.
-<A href="#contents9" style="TEXT-DECORATION: none"><FONT size=-1 FACE="Courier" COLOR="#ff0000">Return to contents.</FONT></A>
+<a href="#contents9"><FONT size=-1 COLOR="#ff0000">Return to contents.</FONT></A>
 
 
-<B><FONT FACE="Courier" COLOR="#ff0000"><A name=9.11>
+<h2 id=9.11>
   9.11 Переход через циклы.
-</A></B></FONT><FONT FACE="Courier">
+</h2>
 
      Для операторов <b>BREAK, break, CONTINUE, continue</b> введена
   поддержка числового параметра, определяющего, сколько циклов надо
@@ -3317,10 +3316,10 @@
   do{
      loop(CX){
         for(BX=0;BX<10;BX++){
-  	 break;	  //стандартный оператор
-  	 break 0; //break с параметром - пропустить 0 циклов
-  	 break 1; //break с параметром - пропустить 1 цикл
-  	 break 2; //break с параметром - пропустить 2 цикла
+         break;   //стандартный оператор
+         break 0; //break с параметром - пропустить 0 циклов
+         break 1; //break с параметром - пропустить 1 цикл
+         break 2; //break с параметром - пропустить 2 цикла
         }
   LABL0:
      }
@@ -3342,12 +3341,12 @@
   Ну и я надеюсь, Вам понятно, что значение параметра не может превышать
   числа циклов находящихся перед текущим. Так для одиночного цикла этот
   параметр может принимать максимальное и единственное значение - 0.
-<A href="#contents9" style="TEXT-DECORATION: none"><FONT size=-1 FACE="Courier" COLOR="#ff0000">Return to contents.</FONT></A>
+<a href="#contents9"><FONT size=-1 COLOR="#ff0000">Return to contents.</FONT></A>
 
 
-<B><FONT FACE="Courier" COLOR="#ff0000"><A name=9.12>
+<h2 id=9.12>
   9.12 Инвертирование флага проверки условий.
-</A></B></FONT><FONT FACE="Courier">
+</h2>
 
       Инвертирование флага проверки условий в операциях сравнения <b>if/IF
   for/FOR while/WHILE</b> происходит с помощью символа <b>! - not</b>.
@@ -3358,12 +3357,12 @@
     IF ( proc() == 0 )...    и IF ( ! proc() ) ...
 
   являются синонимами.
-<A href="#contents9" style="TEXT-DECORATION: none"><FONT size=-1 FACE="Courier" COLOR="#ff0000">Return to contents.</FONT></A>
+<a href="#contents9"><FONT size=-1 COLOR="#ff0000">Return to contents.</FONT></A>
 
 
-<B><FONT FACE="Courier" COLOR="#ff0000"><A name=9.13>
+<h2 id=9.13>
   9.13 Вычисление выражения, а затем проверка условия.
-</A></B></FONT><FONT FACE="Courier">
+</h2>
 
       В операциях сравнения в левом операнде теперь допустимо использовать
   вычисления выражения с присваиванием и операции инкремента, декремента.
@@ -3377,12 +3376,12 @@
       Во всех этих примерах сначала произойдет вычисление выражения в левой
   части операции сравнения, а потом будет произведено сравнение результата с
   правой частью выражения сравнения.
-<A href="#contents9" style="TEXT-DECORATION: none"><FONT size=-1 FACE="Courier" COLOR="#ff0000">Return to contents.</FONT></A>
+<a href="#contents9"><FONT size=-1 COLOR="#ff0000">Return to contents.</FONT></A>
 
 
-<B><FONT FACE="Courier" COLOR="#ff0000"><A name=9.14>
+<h2 id=9.14>
   9.14 Проверка битов при операции сравнения.
-</A></B></FONT><FONT FACE="Courier">
+</h2>
 
       Если в левой части выражения сравнения написано: BX & 5, то при
   вычислении выражения содержимое регистра BX будет изменено инструкцией
@@ -3400,12 +3399,12 @@
   IF ( ! $test AX,5)
   IF ( asm test AX,5)
   IF ( ! asm { test AX,5 } )
-<A href="#contents9" style="TEXT-DECORATION: none"><FONT size=-1 FACE="Courier" COLOR="#ff0000">Return to contents.</FONT></A>
+<a href="#contents9"><FONT size=-1 COLOR="#ff0000">Return to contents.</FONT></A>
 
 
-<B><FONT FACE="Courier" COLOR="#ff0000"><A name=9.15>
+<h2 id=9.15>
   9.15 Оператор перестановки.
-</A></B></FONT><FONT FACE="Courier">
+</h2>
 
       В C-- есть оператор, который не встречается в других языках, это
   оператор перестановки. Оператор перестановки меняет местами содержимое двух
@@ -3428,12 +3427,12 @@
   памяти, будет разрушено содержимое EAX. В любом другом случае, например,
   между переменной в памяти и регистром, значения всех регистров будут
   сохранены.
-<A href="#contents9" style="TEXT-DECORATION: none"><FONT size=-1 FACE="Courier" COLOR="#ff0000">Return to contents.</FONT></A>
+<a href="#contents9"><FONT size=-1 COLOR="#ff0000">Return to contents.</FONT></A>
 
 
-<B><FONT FACE="Courier" COLOR="#ff0000"><A name=9.16>
+<h2 id=9.16>
   9.16 Оператор отрицания.
-</A></B></FONT><FONT FACE="Courier">
+</h2>
 
       C-- поддерживает быстрый синтаксис смены знака переменной - оператор
   отрицания. Поставив <b>-</b> (знак минус) перед идентификатором переменной памяти
@@ -3445,12 +3444,12 @@
            -AX; // результат тот же, что и при 'AX = -AX;' ,но быстрее.
            -tree; // то же самое, что 'tree = -tree;' ,но быстрее.
            -BH; // меняет знак BH.
-<A href="#contents9" style="TEXT-DECORATION: none"><FONT size=-1 FACE="Courier" COLOR="#ff0000">Return to contents.</FONT></A>
+<a href="#contents9"><FONT size=-1 COLOR="#ff0000">Return to contents.</FONT></A>
 
 
-<B><FONT FACE="Courier" COLOR="#ff0000"><A name=9.17>
+<h2 id=9.17>
   9.17 Оператор инверсии.
-</A></B></FONT><FONT FACE="Courier">
+</h2>
 
       C-- поддерживает быстрый синтаксис выполнения логической инверсии
   значения переменной - оператор инверсии. Поставив <b>!</b> (восклицательный знак)
@@ -3462,12 +3461,12 @@
           !AX; // то же самое, что ' AX ^ = 0xFFFF; ' но быстрее.
           !node; // заменяет значение 'node' его логической инверсией.
           !CL; // то же самое, что ' CL ^ = 0xFF ' но быстрее.
-<A href="#contents9" style="TEXT-DECORATION: none"><FONT size=-1 FACE="Courier" COLOR="#ff0000">Return to contents.</FONT></A>
+<a href="#contents9"><FONT size=-1 COLOR="#ff0000">Return to contents.</FONT></A>
 
 
-<B><FONT FACE="Courier" COLOR="#ff0000"><A name=9.18>
+<h2 id=9.18>
   9.18 Специальные условные выражения.
-</A></B></FONT><FONT FACE="Courier">
+</h2>
 
       C-- поддерживает восемь специальных условных выражений:
 
@@ -3496,12 +3495,12 @@
           do {
               // здесь вы опять чего-то делаете
               } while( NOTOVERFLOW );
-<A href="#contents9" style="TEXT-DECORATION: none"><FONT size=-1 FACE="Courier" COLOR="#ff0000">Return to contents.</FONT></A>
+<a href="#contents9"><FONT size=-1 COLOR="#ff0000">Return to contents.</FONT></A>
 
 
-<B><FONT FACE="Courier" COLOR="#ff0000"><A name=9.19>
+<h2 id=9.19>
   9.19 Символ $ - вставляет текущий адрес программы.
-</A></B></FONT><FONT FACE="Courier">
+</h2>
 
       Символ <b>$</b>, кроме того, что является признаком последующей ассемблерной
   инструкции, в языке C--, как и в языке Assembler может указывать текущий
@@ -3515,14 +3514,14 @@
 
   Примеры применения:
 
-  DW #main-$	//записать расстояние от процедуры main до текущего места
-  GOTO $+2;	//перейти по адресу на 2 больше, чем текущий адрес
-<A href="#contents9" style="TEXT-DECORATION: none"><FONT size=-1 FACE="Courier" COLOR="#ff0000">Return to contents.</FONT></A>
+  DW #main-$    //записать расстояние от процедуры main до текущего места
+  GOTO $+2;     //перейти по адресу на 2 больше, чем текущий адрес
+<a href="#contents9"><FONT size=-1 COLOR="#ff0000">Return to contents.</FONT></A>
 
 
-<B><FONT FACE="Courier" COLOR="#ff0000"><A name=9.20>
+<h2 id=9.20>
   9.20 Ключевое слово static и оператор ::.
-</A></B></FONT><FONT FACE="Courier">
+</h2>
 
       Если перед объявлением глобальной переменной, структуры или процедуры
   указать слово <b>static</b>, то эти переменная, структура или процедура будут
@@ -3555,15 +3554,15 @@
   int var;  //объявляем локальную переменную с именем уже существующей
             //глобальной переменной
   {
-    (E)AX=var;	//имеем доступ только к локальной переменной
+    (E)AX=var;  //имеем доступ только к локальной переменной
     (E)AX=::var;  //а так можно получить доступ к глобальной переменной
   }
-<A href="#contents9" style="TEXT-DECORATION: none"><FONT size=-1 FACE="Courier" COLOR="#ff0000">Return to contents.</FONT></A>
+<a href="#contents9"><FONT size=-1 COLOR="#ff0000">Return to contents.</FONT></A>
 
 
-<B><FONT FACE="Courier" COLOR="#ff0000"><A name=9.21>
+<h2 id=9.21>
   9.21 Оператор sizeof.
-</A></B></FONT><FONT FACE="Courier">
+</h2>
 
       Операция <b>sizeof</b> определяет размер памяти, который соответствует объекту
   или типу. Операция sizeof имеет следующий вид:
@@ -3608,12 +3607,12 @@
    sizeof ( file "filename.dat" )
 
   Результатом этой операции будет размер файла "filename.dat".
-<A href="#contents9" style="TEXT-DECORATION: none"><FONT size=-1 FACE="Courier" COLOR="#ff0000">Return to contents.</FONT></A>
+<a href="#contents9"><FONT size=-1 COLOR="#ff0000">Return to contents.</FONT></A>
 
 
-<B><FONT FACE="Courier" COLOR="#ff0000"><A name=9.22>
+<h2 id=9.22>
   9.22 Метки перехода.
-</A></B></FONT><FONT FACE="Courier">
+</h2>
 
       Метки перехода применяются для указания начальных точек участков кода,
   используемых командами перехода встроенного ассемблера и операторами
@@ -3642,14 +3641,14 @@
   качестве имен для меток вне процедур могут быть использованы уникальные
   идентификаторы, в которых можно использовать большие, маленькие и смесь
   больших и маленьких букв.
-<A href="#contents9" style="TEXT-DECORATION: none"><FONT size=-1 FACE="Courier" COLOR="#ff0000">Return to contents.</FONT></A>
+<a href="#contents9"><FONT size=-1 COLOR="#ff0000">Return to contents.</FONT></A>
 
 
-<B><FONT FACE="Courier" COLOR="#ff0000"><A name=10.1>
+<h2 id=10.1>
 10. Ассемблер.
 
   10.1 Поддержка команд ассемблера.
-</A></B></FONT><FONT FACE="Courier">
+</h2>
 
       Встроенный в C-- ассемблер поддерживает все инструкции 8088/8086,
   80286, 80386, 80486, Pentium, Pentium II и Pentium III процессоров.
@@ -3658,36 +3657,36 @@
   доллара <b>$</b>. Поддерживается также ключевое слово <b>asm</b>, которое являясь
   синонимом к символу доллара, еще и поддерживает объединение ассемблерных
   инструкций в блоки.
-<A href="#contents10" style="TEXT-DECORATION: none"><FONT size=-1 FACE="Courier" COLOR="#ff0000">Return to contents.</FONT></A>
+<a href="#contents10"><FONT size=-1 COLOR="#ff0000">Return to contents.</FONT></A>
 
 
-<B><FONT FACE="Courier" COLOR="#ff0000"><A name=10.2>
+<h2 id=10.2>
   10.2 Ключевое слово asm.
-</A></B></FONT><FONT FACE="Courier">
+</h2>
 
       Ключевое слово <b>asm</b> является синонимом к <b>$</b> - префикс ассемблерной
   команды. После слова asm можно писать блок ассемблерных команд.  Пример:
 
-  	asm {
-  		.
-  		.
-  		push AX
+        asm {
+                .
+                .
+                push AX
   labl:
-  		push BX
-  		mov AX,0x1234
-  		jmp short labl
-  		.
-  		.
-  		.
-  	}
+                push BX
+                mov AX,0x1234
+                jmp short labl
+                .
+                .
+                .
+        }
 
     Метки внутри блока ассемблерных команд допустимы.
-<A href="#contents10" style="TEXT-DECORATION: none"><FONT size=-1 FACE="Courier" COLOR="#ff0000">Return to contents.</FONT></A>
+<a href="#contents10"><FONT size=-1 COLOR="#ff0000">Return to contents.</FONT></A>
 
 
-<B><FONT FACE="Courier" COLOR="#ff0000"><A name=10.3>
+<h2 id=10.3>
   10.3 Префикс dup - повторение инструкций DB/DW/DD.
-</A></B></FONT><FONT FACE="Courier">
+</h2>
 
       Для ассемблерных инструкции <b>DB, DW, DD</b> введена возможность использовать
   префикс повторений <b>dup</b>. Применение этого префикса имеет следующий
@@ -3700,12 +3699,12 @@
 
       В отличие от аналога этого префикса из ассемблера повторяемую величину
   заключать в скобки нельзя.
-<A href="#contents10" style="TEXT-DECORATION: none"><FONT size=-1 FACE="Courier" COLOR="#ff0000">Return to contents.</FONT></A>
+<a href="#contents10"><FONT size=-1 COLOR="#ff0000">Return to contents.</FONT></A>
 
 
-<B><FONT FACE="Courier" COLOR="#ff0000"><A name=10.4>
+<h2 id=10.4>
   10.4 Инструкции процессора Pentium III.
-</A></B></FONT><FONT FACE="Courier">
+</h2>
 
       В компилятор добавлена поддержка 19 новых инструкций MMX расширения
 
@@ -3798,18 +3797,18 @@
   {
   asm{
     movaps var8_128,xmm0 //в массив из 16 байт будет записано содержимое XMM0
-    movaps xmm1,var16_128	//в XMM1 будет записано содержимое 8 слов
+    movaps xmm1,var16_128       //в XMM1 будет записано содержимое 8 слов
     movaps var32_128,xmm1 //в массив из 4 двойных слов будет записано XMM1
   }
   }
-<A href="#contents10" style="TEXT-DECORATION: none"><FONT size=-1 FACE="Courier" COLOR="#ff0000">Return to contents.</FONT></A>
+<a href="#contents10"><FONT size=-1 COLOR="#ff0000">Return to contents.</FONT></A>
 
 
-<B><FONT FACE="Courier" COLOR="#ff0000"><A name=11.1>
+<h2 id=11.1>
 11. Процедуры.
 
   11.1 Типы процедур, функций и макрокоманд.
-</A></B></FONT><FONT FACE="Courier">
+</h2>
 
       Сейчас C-- поддерживает 4 типа вызова процедур: <b>cdecl, pascal, stdcall
   и fastcall</b>. Вот краткие характеристики этих типов вызовов процедур:
@@ -3853,12 +3852,12 @@
 
       Объявление процедур введено для того, чтобы сообщать компилятору о
   типе возврата из процедур, способе передачи параметров процедуре и их числе.
-<A href="#contents11" style="TEXT-DECORATION: none"><FONT size=-1 FACE="Courier" COLOR="#ff0000">Return to contents.</FONT></A>
+<a href="#contents11"><FONT size=-1 COLOR="#ff0000">Return to contents.</FONT></A>
 
 
-<B><FONT FACE="Courier" COLOR="#ff0000"><A name=11.2>
+<h2 id=11.2>
   11.2 Стековые процедуры.
-</A></B></FONT><FONT FACE="Courier">
+</h2>
 
       Стековые процедуры по умолчанию объявляются при помощи идентификатора,
   который содержит, по крайней мере, один символ строчных букв (букв нижнего
@@ -3882,10 +3881,10 @@
       В следующем примере стековая процедура возвращает сумму всех своих
   параметров (имеющих различные типы) как величину типа word:
 
-  	word add_them_all (int a,b,c; byte d,e; word x,y)
-  	{
-  	return( a+b+c+d+e+x+y );
-  	}
+        word add_them_all (int a,b,c; byte d,e; word x,y)
+        {
+        return( a+b+c+d+e+x+y );
+        }
 
       Ранее C-- делал вызовы стековых процедур лишь в стиле <b>pascal</b>.
   Преимуществом этого способа вызова процедур является компактность и более
@@ -3949,12 +3948,12 @@
   необязательно (тогда компилятор не будет контролировать число и тип
   передаваемых параметров), но если Вы их вставите, то включится механизм
   контроля за числом и типом параметров.
-<A href="#contents11" style="TEXT-DECORATION: none"><FONT size=-1 FACE="Courier" COLOR="#ff0000">Return to contents.</FONT></A>
+<a href="#contents11"><FONT size=-1 COLOR="#ff0000">Return to contents.</FONT></A>
 
 
-<B><FONT FACE="Courier" COLOR="#ff0000"><A name=11.3>
+<h2 id=11.3>
   11.3 Регистровые процедуры.
-</A></B></FONT><FONT FACE="Courier">
+</h2>
 
       Регистровые процедуры определяются, по умолчанию, при помощи
   идентификатора, который не содержит символов строчных букв. Или же явным
@@ -4000,12 +3999,12 @@
       Для того, чтобы использовать регистровую процедуру как макрокоманду,
   она должна быть объявлена как динамическая процедура. Динамические
   процедуры описаны в следующем подразделе.
-<A href="#contents11" style="TEXT-DECORATION: none"><FONT size=-1 FACE="Courier" COLOR="#ff0000">Return to contents.</FONT></A>
+<a href="#contents11"><FONT size=-1 COLOR="#ff0000">Return to contents.</FONT></A>
 
 
-<B><FONT FACE="Courier" COLOR="#ff0000"><A name=11.4>
+<h2 id=11.4>
   11.4 Динамические процедуры.
-</A></B></FONT><FONT FACE="Courier">
+</h2>
 
       Динамические процедуры - процедуры, которые определены, но вставляются
   в код программы, только если есть вызов. Динамические процедуры могут
@@ -4029,12 +4028,12 @@
           IF (int AX < 0)
                -AX;
           }
-<A href="#contents11" style="TEXT-DECORATION: none"><FONT size=-1 FACE="Courier" COLOR="#ff0000">Return to contents.</FONT></A>
+<a href="#contents11"><FONT size=-1 COLOR="#ff0000">Return to contents.</FONT></A>
 
 
-<B><FONT FACE="Courier" COLOR="#ff0000"><A name=11.4.1>
+<h2 id=11.4.1>
     11.4.1 Установка динамической процедуры в определенное место программы.
-</A></B></FONT><FONT FACE="Courier">
+</h2>
 
         Динамические процедуры, если они не используются как макросы и если
     они были востребованы в программе, вставляются в код программы в самом
@@ -4054,12 +4053,12 @@
 
     @ void proc ();
 
-	В итоге динамическая процедура будет вставлена в код программы не в
+        В итоге динамическая процедура будет вставлена в код программы не в
     конце ее, как обычно, а в месте, где будет расположена эта строка. Если
     динамическая процедура имеет параметры, то прописывать эти параметры
     необязательно.
 
-	В компиляторе есть еще более мощное средство, позволяющее все
+        В компиляторе есть еще более мощное средство, позволяющее все
     динамические объекты ( процедуры, переменные, структуры ) расположить в
     указанном месте, а не в конце программы, как обычно. Это директива
     <b>#setdinproc</b>. Встретив эту директиву, компилятор немедленно расположит все
@@ -4068,14 +4067,14 @@
     обычно, в конце программы, если конечно, не будет повторно применена
     директива <b>#setdinproc</b>.
 
-	Это может быть применено и быть полезным при создании резидентных
+        Это может быть применено и быть полезным при создании резидентных
     программ (TSR) и драйверов устройств.
-<A href="#contents11" style="TEXT-DECORATION: none"><FONT size=-1 FACE="Courier" COLOR="#ff0000">Return to contents.</FONT></A>
+<a href="#contents11"><FONT size=-1 COLOR="#ff0000">Return to contents.</FONT></A>
 
 
-<B><FONT FACE="Courier" COLOR="#ff0000"><A name=11.5>
+<h2 id=11.5>
   11.5 inline-процедуры.
-</A></B></FONT><FONT FACE="Courier">
+</h2>
 
       inline-процедурами могут быть динамические процедуры, которые можно
   использовать как макросы. Но в отличие от макросов, inline-процедуры, при
@@ -4106,14 +4105,14 @@
   {
       IF ( int AX < 0 ) -AX ;
   }
-<A href="#contents11" style="TEXT-DECORATION: none"><FONT size=-1 FACE="Courier" COLOR="#ff0000">Return to contents.</FONT></A>
+<a href="#contents11"><FONT size=-1 COLOR="#ff0000">Return to contents.</FONT></A>
 
 
-<B><FONT FACE="Courier" COLOR="#ff0000"><A name=11.5.1>
+<h2 id=11.5.1>
     11.5.1 Другое применение inline.
-</A></B></FONT><FONT FACE="Courier">
+</h2>
 
-	Ключевое слово <b>inline</b> имеет в процедурах и другое применение. Если
+        Ключевое слово <b>inline</b> имеет в процедурах и другое применение. Если
     это слово расположено перед началом блока процедуры, то для такой
     процедуры не создается кадр стека и не генерируется завершающий процедуру
     <b>ret</b>. Пример:
@@ -4124,7 +4123,7 @@
       ...
     }
 
-	Такие процедуры не должны содержать локальных переменных. Если
+        Такие процедуры не должны содержать локальных переменных. Если
     процедура является регистровой (тип <b>fastcall</b>), то с передачей ей
     параметров нет проблем. Если же процедура является стековой, то передать
     в такую процедуру параметры Вы можете, но воспользоваться этими
@@ -4135,20 +4134,20 @@
     inline
     {
       AX=par1; /* компилятор обратится с параметру 'par1' через регистр BP.
-		  Но так как кадр стека не был создан, при выполнении этого
+                  Но так как кадр стека не был создан, при выполнении этого
                   кода программа будет работать не правильно. */
        ...
     }
 
-	Встретив такое определение процедуры, компилятор выдаст предупреждение
+        Встретив такое определение процедуры, компилятор выдаст предупреждение
     о том, что в таких процедурах использовать локальные и параметрические
     переменные нельзя.
-<A href="#contents11" style="TEXT-DECORATION: none"><FONT size=-1 FACE="Courier" COLOR="#ff0000">Return to contents.</FONT></A>
+<a href="#contents11"><FONT size=-1 COLOR="#ff0000">Return to contents.</FONT></A>
 
 
-<B><FONT FACE="Courier" COLOR="#ff0000"><A name=11.6>
+<h2 id=11.6>
   11.6 Процедуры обработки прерываний.
-</A></B></FONT><FONT FACE="Courier">
+</h2>
 
       Процедуры обработки прерываний определяются следующим способом:
 
@@ -4183,12 +4182,12 @@
 
       При завершении процедуры прерывания будет автоматически сгенерирована
   инструкция выхода из обработчика прерывания - IRET.
-<A href="#contents11" style="TEXT-DECORATION: none"><FONT size=-1 FACE="Courier" COLOR="#ff0000">Return to contents.</FONT></A>
+<a href="#contents11"><FONT size=-1 COLOR="#ff0000">Return to contents.</FONT></A>
 
 
-<B><FONT FACE="Courier" COLOR="#ff0000"><A name=11.7>
+<h2 id=11.7>
   11.7 Замена return на goto.
-</A></B></FONT><FONT FACE="Courier">
+</h2>
 
       В некоторых ситуациях, при компиляции программы, оператор <b>return</b>
   будет заменяться на <b>goto</b>. Это происходит при разрешенной оптимизации по
@@ -4212,12 +4211,12 @@
   компилятор выдаст сообщение об ошибке. При использовании <b>return</b> на
   расстоянии меньше 128 байт до конца кода, компилятор выдаст вам
   предупреждение о возможном использовании <b>RETURN</b>.
-<A href="#contents11" style="TEXT-DECORATION: none"><FONT size=-1 FACE="Courier" COLOR="#ff0000">Return to contents.</FONT></A>
+<a href="#contents11"><FONT size=-1 COLOR="#ff0000">Return to contents.</FONT></A>
 
 
-<B><FONT FACE="Courier" COLOR="#ff0000"><A name=11.8>
+<h2 id=11.8>
   11.8 Возвращаемые значения.
-</A></B></FONT><FONT FACE="Courier">
+</h2>
 
       Возвращаемые из функций значения располагаются в регистрах. В таблице
   показано, какой регистр используется для каждого из возвращаемых типов:
@@ -4263,7 +4262,7 @@
   carry флага, а не сравнение регистра AX. Пример использования возврата
   флагов из процедур:
 
-  int CARRYFLAG FOPEN();	// объявление процедуры
+  int CARRYFLAG FOPEN();        // объявление процедуры
 
   void proc()
   {
@@ -4283,16 +4282,16 @@
       А вот варианты, в которых, несмотря на то, что для процедуры объявлен
   возврат флага, будет производиться сравнение регистра AX:
 
-  IF ( FOPEN() == 5 )...	// производится сравнение
+  IF ( FOPEN() == 5 )...        // производится сравнение
   IF ( FOPEN() + 2 )...   // результат процедуры подвергается дальнейшему
                           // вычислению, в результате которого флаги будут
-  			// изменены.
-<A href="#contents11" style="TEXT-DECORATION: none"><FONT size=-1 FACE="Courier" COLOR="#ff0000">Return to contents.</FONT></A>
+                        // изменены.
+<a href="#contents11"><FONT size=-1 COLOR="#ff0000">Return to contents.</FONT></A>
 
 
-<B><FONT FACE="Courier" COLOR="#ff0000"><A name=11.9>
+<h2 id=11.9>
   11.9 Объявление параметров в регистровых процедурах.
-</A></B></FONT><FONT FACE="Courier">
+</h2>
 
       Ранее каждому параметру регистровой процедуры соответствовал строго
   определенный регистр. Например, для переменных типа int или word первый
@@ -4313,11 +4312,11 @@
   параметр процедуре, его размерностью и числом передаваемых параметров. Вот
   как будет выглядеть объявление и использование процедуры STRCPY:
 
-  void STRCPY ( DI, SI ) ;	//это объявление процедуры
+  void STRCPY ( DI, SI ) ;      //это объявление процедуры
 
   void main ()
   {
-    STRCPY ( #dest, #sourc ) ;	//а это вызов процедуры
+    STRCPY ( #dest, #sourc ) ;  //а это вызов процедуры
   }
 
       Можно не делать объявления процедуры, а указать расположение регистров
@@ -4357,7 +4356,7 @@
    |    |---------------------------------------- Модификатор, указывающий, что
    |                                              эта проц. явл. регистровой.
    |--------------------------------------------- Процедура возвращает перемен.
-  						                          типа int.
+                                                                          типа int.
 
       Если Вы сделали объявление регистров процедуры, то компилятор будет
   строго следить за количеством указанных параметров при вызове этой
@@ -4376,12 +4375,12 @@
   ни в заголовке самой процедуры, то компилятор будет считать, что параметры
   в эту процедуру передаются старым способом. Таким образом, достигается
   полная совместимость с предыдущими версиями компилятора.
-<A href="#contents11" style="TEXT-DECORATION: none"><FONT size=-1 FACE="Courier" COLOR="#ff0000">Return to contents.</FONT></A>
+<a href="#contents11"><FONT size=-1 COLOR="#ff0000">Return to contents.</FONT></A>
 
 
-<B><FONT FACE="Courier" COLOR="#ff0000"><A name=11.10>
+<h2 id=11.10>
   11.10 Объявление параметров в стековых процедурах.
-</A></B></FONT><FONT FACE="Courier">
+</h2>
 
       Как известно, ранее в C-- контроль за числом и типом передаваемых
   процедуре параметров возлагался на программиста. Поэтому возникла непростая
@@ -4423,12 +4422,12 @@
   Вот как будет выглядеть объявление процедуры printf:
 
   void cdecl printf ( word, ... );
-<A href="#contents11" style="TEXT-DECORATION: none"><FONT size=-1 FACE="Courier" COLOR="#ff0000">Return to contents.</FONT></A>
+<a href="#contents11"><FONT size=-1 COLOR="#ff0000">Return to contents.</FONT></A>
 
 
-<B><FONT FACE="Courier" COLOR="#ff0000"><A name=11.11>
+<h2 id=11.11>
   11.11 Использование макрокоманд.
-</A></B></FONT><FONT FACE="Courier">
+</h2>
 
       Теперь любая динамическая процедура может быть использована как макрос.
   Если перед вызовом динамической процедуры поставить символ <b>@</b>, то код этой
@@ -4439,12 +4438,12 @@
   инструкцией <b>ADD SP,SIZE_PARAMETRS</b> сразу после окончания кода вставленного
   макроса. Поэтому, если эта процедура использовала флаги в качестве
   возврата, то они будут разрушены.
-<A href="#contents11" style="TEXT-DECORATION: none"><FONT size=-1 FACE="Courier" COLOR="#ff0000">Return to contents.</FONT></A>
+<a href="#contents11"><FONT size=-1 COLOR="#ff0000">Return to contents.</FONT></A>
 
 
-<B><FONT FACE="Courier" COLOR="#ff0000"><A name=11.12>
+<h2 id=11.12>
   11.12 Передача параметров в стековые процедуры через регистры.
-</A></B></FONT><FONT FACE="Courier">
+</h2>
 
       При передаче параметров через регистры, чаще всего получается более
   компактный и быстрый код. Но содержимое регистров может быть легко
@@ -4479,12 +4478,12 @@
   процедур типа <b>pascal</b> регистровые параметры лучше располагать после
   стековых параметров. Для процедур типа <b>cdecl и stdcall</b> сначала лучше
   располагать регистровые параметры.
-<A href="#contents11" style="TEXT-DECORATION: none"><FONT size=-1 FACE="Courier" COLOR="#ff0000">Return to contents.</FONT></A>
+<a href="#contents11"><FONT size=-1 COLOR="#ff0000">Return to contents.</FONT></A>
 
 
-<B><FONT FACE="Courier" COLOR="#ff0000"><A name=11.13>
+<h2 id=11.13>
   11.13 Вызов процедур с адресом в регистре.
-</A></B></FONT><FONT FACE="Courier">
+</h2>
 
       В C-- допустимо делать вызов процедуры, адрес которой находится в
   регистре. Параметры для такого вызова передаются только через стек. Тип
@@ -4512,12 +4511,12 @@
   0111 85C0                     test    ax,ax
   0113 7503                     jne     118h
   0115 B80200                   mov     ax,2
-<A href="#contents11" style="TEXT-DECORATION: none"><FONT size=-1 FACE="Courier" COLOR="#ff0000">Return to contents.</FONT></A>
+<a href="#contents11"><FONT size=-1 COLOR="#ff0000">Return to contents.</FONT></A>
 
 
-<B><FONT FACE="Courier" COLOR="#ff0000"><A name=11.14>
+<h2 id=11.14>
   11.14 Встроенные в компилятор процедуры.
-</A></B></FONT><FONT FACE="Courier">
+</h2>
 
       Для некоторых процедур Вы не найдете их исходные тексты в библиотеках
   компилятора. Код этих процедур генерирует компилятор. Вот список этих
@@ -4553,12 +4552,12 @@
   библиотечные процедуры. Встретив определение такой процедуры, компилятор не
   будет выдавать никаких сообщение, он просто будет применять Ваш вариант
   процедуры.
-<A href="#contents11" style="TEXT-DECORATION: none"><FONT size=-1 FACE="Courier" COLOR="#ff0000">Return to contents.</FONT></A>
+<a href="#contents11"><FONT size=-1 COLOR="#ff0000">Return to contents.</FONT></A>
 
 
-<B><FONT FACE="Courier" COLOR="#ff0000"><A name=11.14.1>
+<h2 id=11.14.1>
     11.14.1 Процедуры ABORT, ATEXIT и EXIT.
-</A></B></FONT><FONT FACE="Courier">
+</h2>
 
         Процедуры <b>ABORT и EXIT</b> связаны с работой директивы <b>#atexit</b> и
     процедурой <b>ATEXIT</b>. Наиболее оптимальную их реализацию и взаимную
@@ -4584,13 +4583,13 @@
     работу программы с кодом возврата 0. Процедуре <b>EXIT</b> передается в
     качестве параметра код возврата, с которым она и завершает работу
     программы.
-<A href="#contents11" style="TEXT-DECORATION: none"><FONT size=-1 FACE="Courier" COLOR="#ff0000">Return to contents.</FONT></A>
+<a href="#contents11"><FONT size=-1 COLOR="#ff0000">Return to contents.</FONT></A>
 
 
-<B><FONT FACE="Courier" COLOR="#ff0000"><A name=11.14.2>
+<h2 id=11.14.2>
     11.14.2 Процедуры inp/inportb, inport, inportd, outp/outportb, outport и
                                                                     outportd
-</A></B></FONT><FONT FACE="Courier">
+</h2>
 
         Эти процедуры всегда вставляются в код как макросы, т.е. для этих
     процедур никогда не генерируется вызов процедуры. В зависимости от
@@ -4611,12 +4610,12 @@
 
         Имена процедур inp и inportb, также как и имена outp и outportb
     являются синонимами.
-<A href="#contents11" style="TEXT-DECORATION: none"><FONT size=-1 FACE="Courier" COLOR="#ff0000">Return to contents.</FONT></A>
+<a href="#contents11"><FONT size=-1 COLOR="#ff0000">Return to contents.</FONT></A>
 
 
-<B><FONT FACE="Courier" COLOR="#ff0000"><A name=11.14.3>
+<h2 id=11.14.3>
     11.14.3 Процедуры для работы с вещественными числами.
-</A></B></FONT><FONT FACE="Courier">
+</h2>
 
         Эти процедуры реализуются компилятором и всегда вставляются в код как
     макросы, т.е. для них никогда не генерируется вызов процедуры. Кроме
@@ -4644,14 +4643,14 @@
     float sin ( float val );
     float sqrt ( float val );
     float tan ( float val );
-<A href="#contents11" style="TEXT-DECORATION: none"><FONT size=-1 FACE="Courier" COLOR="#ff0000">Return to contents.</FONT></A>
+<a href="#contents11"><FONT size=-1 COLOR="#ff0000">Return to contents.</FONT></A>
 
 
-<B><FONT FACE="Courier" COLOR="#ff0000"><A name=11.15.1>
+<h2 id=11.15.1>
   11.15 Классы.
 
     11.15.1 Объявление процедур в структурах.
-</A></B></FONT><FONT FACE="Courier">
+</h2>
 
         С введение поддержки объявления процедур в структурах, структура
     становится подобной классу в C++. Т.е. такая процедура становится методом
@@ -4659,15 +4658,15 @@
 
     struct Point  // объявление класса
     {
-    	int x; // элементы данных
-    	int y; // класса типа Point
-    	void SetX(int);  // объявление методов
-    	void SetY(int);  // класса Point
+        int x; // элементы данных
+        int y; // класса типа Point
+        void SetX(int);  // объявление методов
+        void SetY(int);  // класса Point
     };
 
     void Point::SetX(int _x)  //определение процедуры класса Point
     {
-    	IF((_x>=0)&&(_x<=MAX_X)) x=_x;
+        IF((_x>=0)&&(_x<=MAX_X)) x=_x;
     // переменные x, y являются членами этого класса и поэтому доступ к ним из
     // процедур этого же класса осуществляется напрямую.
      }
@@ -4690,12 +4689,12 @@
     при ее определении, в самом ее начале, надо написать символ двоеточия <b>:</b>
     (также как и для обычных динамических процедур). Но такая динамическая
     процедура не может быть использована как макрос.
-<A href="#contents11" style="TEXT-DECORATION: none"><FONT size=-1 FACE="Courier" COLOR="#ff0000">Return to contents.</FONT></A>
+<a href="#contents11"><FONT size=-1 COLOR="#ff0000">Return to contents.</FONT></A>
 
 
-<B><FONT FACE="Courier" COLOR="#ff0000"><A name=11.15.2>
+<h2 id=11.15.2>
     11.15.2 Наследование.
-</A></B></FONT><FONT FACE="Courier">
+</h2>
 
         В C-- поддерживаются простые и множественные наследования. Объявление
     структуры с наследованием имеет следующий синтаксис:
@@ -4753,29 +4752,29 @@
       d.C::x0=0;
 
          являются равнозначными.
-<A href="#contents11" style="TEXT-DECORATION: none"><FONT size=-1 FACE="Courier" COLOR="#ff0000">Return to contents.</FONT></A>
+<a href="#contents11"><FONT size=-1 COLOR="#ff0000">Return to contents.</FONT></A>
 
 
-<B><FONT FACE="Courier" COLOR="#ff0000"><A name=11.15.3>
+<h2 id=11.15.3>
     11.15.3 Наследование процедур.
-</A></B></FONT><FONT FACE="Courier">
+</h2>
 
-	Если в базовом классе есть процедура, а в производном классе Вы эту
+        Если в базовом классе есть процедура, а в производном классе Вы эту
     процедуру переопределили, то эта процедура будет переопределена и в
     базовом классе. Таким образом процедура определенная в базовом классе
     будет потеряна. Пример:
 
     struct Point  // базовый класс
     {
-    	int x; // элементы данных
-    	int y; // класса типа Point
-    	void SetX(int);  // объявление методов
-    	void SetY(int);  // класса Point
+        int x; // элементы данных
+        int y; // класса типа Point
+        void SetX(int);  // объявление методов
+        void SetY(int);  // класса Point
     };
 
     void Point::SetX(int _x)  // определение процедуры класса Point
     {
-    	IF((_x>=0)&&(_x<=MAX_X)) x=_x;
+        IF((_x>=0)&&(_x<=MAX_X)) x=_x;
     }
 
     struct Point2 : Point  // производный класс
@@ -4790,10 +4789,10 @@
 
     void Point3::SetX(int _x)  // в этом производном классе переопределяем
     {                          // процедуру SetX
-    	IF((_x>=80)&&(_x<=MAX_X)) x=_x;
+        IF((_x>=80)&&(_x<=MAX_X)) x=_x;
     }
 
-	Процедура SetX, определенная в базовом классе Point, теперь будет
+        Процедура SetX, определенная в базовом классе Point, теперь будет
     недоступна. Вместо кода определенного в этом классе, будет вызываться код
     процедуры, определенный в наследуемом классе Point3. При вызове процедуры
     SetX из другого производного класса Point2 будет также вызываться код
@@ -4801,21 +4800,21 @@
     процедуру таким образом, Вы замените код этой процедуры в базовом классе и
     во всех его наследуемых классах.
 
-	Если Вам необходимо, чтобы код новой процедуры был доступен
+        Если Вам необходимо, чтобы код новой процедуры был доступен
     одновременно с кодом старой процедуры, то в производном классе Вам
     необходимо сделать еще одно объявление этой процедуры. Пример:
 
     struct Point  // базовый класс
     {
-    	int x; // элементы данных
-    	int y; // класса типа Point
-    	void SetX(int);  // объявление методов
-    	void SetY(int);  // класса Point
+        int x; // элементы данных
+        int y; // класса типа Point
+        void SetX(int);  // объявление методов
+        void SetY(int);  // класса Point
     };
 
     void Point::SetX(int _x)  // определение процедуры класса Point
     {
-    	IF((_x>=0)&&(_x<=MAX_X)) x=_x;
+        IF((_x>=0)&&(_x<=MAX_X)) x=_x;
     }
 
     struct Point2 : Point  // производный класс
@@ -4832,24 +4831,24 @@
 
     void Point3::SetX(int _x)  // в этом производном классе переопределяем
     {                          // процедуру SetX
-    	IF((_x>=80)&&(_x<=MAX_X)) x=_x;
-	EDI=this;
-	EDI.Point.SetX(_x);  // делаем вызов одноименной процедуры из
-			     // базового класса
+        IF((_x>=80)&&(_x<=MAX_X)) x=_x;
+        EDI=this;
+        EDI.Point.SetX(_x);  // делаем вызов одноименной процедуры из
+                             // базового класса
     }
 
-	Теперь из производного класса Point3 Вам доступны две различные
+        Теперь из производного класса Point3 Вам доступны две различные
     процедуры с одним именем SetX. А из базового класса Point и из другого
     производного класса Point2 будет по прежнему доступен только базовый
     вариант процедуры SetX.
-<A href="#contents11" style="TEXT-DECORATION: none"><FONT size=-1 FACE="Courier" COLOR="#ff0000">Return to contents.</FONT></A>
+<a href="#contents11"><FONT size=-1 COLOR="#ff0000">Return to contents.</FONT></A>
 
 
-<B><FONT FACE="Courier" COLOR="#ff0000"><A name=12.1>
+<h2 id=12.1>
 12. Типы выходных файлов.
 
   12.1 Выходные файлы типа COM.
-</A></B></FONT><FONT FACE="Courier">
+</h2>
 
       Этот тип выходного файла получается автоматически по умолчанию.
 
@@ -4858,24 +4857,24 @@
   и small для 16-битного кода, а также 32-битные для DOS и Windows. Также
   есть возможность получения выходного файла в формате OBJ, что позволяет
   связывать программы на C-- с программами на других языках.
-<A href="#contents12" style="TEXT-DECORATION: none"><FONT size=-1 FACE="Courier" COLOR="#ff0000">Return to contents.</FONT></A>
+<a href="#contents12"><FONT size=-1 COLOR="#ff0000">Return to contents.</FONT></A>
 
 
-<B><FONT FACE="Courier" COLOR="#ff0000"><A name=12.2>
+<h2 id=12.2>
   12.2 Выходные файлы типа EXE.
-</A></B></FONT><FONT FACE="Courier">
+</h2>
 
       Этот формат файла можно получить, если компилировать с ключом командной
   строки <b>/exe</b> или <b>/e</b>.
 
       Возможно также поддержка EXE-формата через выходной файл формата OBJ,
   который можно затем обработать линковщиком, не входящим в пакет C--.
-<A href="#contents12" style="TEXT-DECORATION: none"><FONT size=-1 FACE="Courier" COLOR="#ff0000">Return to contents.</FONT></A>
+<a href="#contents12"><FONT size=-1 COLOR="#ff0000">Return to contents.</FONT></A>
 
 
-<B><FONT FACE="Courier" COLOR="#ff0000"><A name=12.3>
+<h2 id=12.3>
   12.3 Выходной файл *.EXE с моделью памяти tiny.
-</A></B></FONT><FONT FACE="Courier">
+</h2>
 
       Фактически код файла *.exe модели <b>tiny</b> ничем не отличается от кода
   *.com. В сущности, это тот же com-файл, к которому добавлен 32-байтный
@@ -4887,12 +4886,12 @@
 
       Чтобы получить exe-файл с моделью памяти <b>tiny</b>, надо запустить
   компилятор с ключом в командной строке <b>/TEXE</b>.
-<A href="#contents12" style="TEXT-DECORATION: none"><FONT size=-1 FACE="Courier" COLOR="#ff0000">Return to contents.</FONT></A>
+<a href="#contents12"><FONT size=-1 COLOR="#ff0000">Return to contents.</FONT></A>
 
 
-<B><FONT FACE="Courier" COLOR="#ff0000"><A name=12.4>
+<h2 id=12.4>
   12.4 Объектный выходной файл OBJ.
-</A></B></FONT><FONT FACE="Courier">
+</h2>
 
       В настоящее время C-- может только создавать OBJ-файлы, но не может их
   компоновать.
@@ -4914,8 +4913,8 @@
                                // тип cdecl  и тип возврата void
   extern int buts,cubs;        // объявление двух внешних переменных типа int
   extern struct IPXL ipxl;     // объявление внешней структуры ipxl имеющей тег
-  			     // IPXL,  причем тег этой структуры должен быть
-  			     // описан ранее.
+                             // IPXL,  причем тег этой структуры должен быть
+                             // описан ранее.
 
       Появление возможности объявлять внешние объекты позволяет подключать к
   obj-модулю на C-- модули написанные на других языках или подключать к
@@ -4941,14 +4940,14 @@
   удалось лишь с помощью wlink и расширителя zrdx.exe.
 
       Создание obj-файлов под windows не предусмотрено.
-<A href="#contents12" style="TEXT-DECORATION: none"><FONT size=-1 FACE="Courier" COLOR="#ff0000">Return to contents.</FONT></A>
+<a href="#contents12"><FONT size=-1 COLOR="#ff0000">Return to contents.</FONT></A>
 
 
-<B><FONT FACE="Courier" COLOR="#ff0000"><A name=12.5.1>
+<h2 id=12.5.1>
   12.5 COM файл symbiosis.
 
     12.5.1 СИМБИОЗ - что это такое?
-</A></B></FONT><FONT FACE="Courier">
+</h2>
 
         Транслятор C-- имеет ключ, позволяющий добавлять компилируемую
     программу к концу уже имеющегося COM файла. Это называют COM-файл
@@ -4960,12 +4959,12 @@
     прекратится, и первоначальный код COM-файла не будет выполнен. Это
     позволяет программе, добавленной к COM файлу, определять, будет ли
     управление передано на первоначальный код.
-<A href="#contents12" style="TEXT-DECORATION: none"><FONT size=-1 FACE="Courier" COLOR="#ff0000">Return to contents.</FONT></A>
+<a href="#contents12"><FONT size=-1 COLOR="#ff0000">Return to contents.</FONT></A>
 
 
-<B><FONT FACE="Courier" COLOR="#ff0000"><A name=12.5.2>
+<h2 id=12.5.2>
     12.5.2 Как это делать.
-</A></B></FONT><FONT FACE="Courier">
+</h2>
 
         Чтобы сделать это, Вы должны использовать ключ <b>/SYM</b> в командной
     строке компилятора, в которой указывается полное имя COM-файла, к
@@ -4976,37 +4975,37 @@
              C-- /SYM C:\COMMAND.COM HELLO.C--
 
     Будет создан выходной файл HELLO.COM .
-<A href="#contents12" style="TEXT-DECORATION: none"><FONT size=-1 FACE="Courier" COLOR="#ff0000">Return to contents.</FONT></A>
+<a href="#contents12"><FONT size=-1 COLOR="#ff0000">Return to contents.</FONT></A>
 
 
-<B><FONT FACE="Courier" COLOR="#ff0000"><A name=12.5.3>
+<h2 id=12.5.3>
     12.5.3 Использование.
-</A></B></FONT><FONT FACE="Courier">
+</h2>
 
         Вы можете, вероятно, придумать большое количество путей использования
     этой функции, типа:
 
              - Добавление защиты с использованием пароля к некоторым
-	       специальным COM файлам.
+               специальным COM файлам.
              - Уменьшение памяти, доступной COM файлу при запуске.
              - Инициализация режима видео для COM файла.
-<A href="#contents12" style="TEXT-DECORATION: none"><FONT size=-1 FACE="Courier" COLOR="#ff0000">Return to contents.</FONT></A>
+<a href="#contents12"><FONT size=-1 COLOR="#ff0000">Return to contents.</FONT></A>
 
 
-<B><FONT FACE="Courier" COLOR="#ff0000"><A name=12.5.4>
+<h2 id=12.5.4>
     12.5.4 Злоупотребления.
-</A></B></FONT><FONT FACE="Courier">
+</h2>
 
         Любой злоумышленник может придумать и вредные применения для этой
     функции. Наиболее очевидное из них - создание троянских коней. Я хотел бы
     указать, что это неконструктивное использование C--, и любое
     разрушительное использование симбиозов COM-файлов запрещено.
-<A href="#contents12" style="TEXT-DECORATION: none"><FONT size=-1 FACE="Courier" COLOR="#ff0000">Return to contents.</FONT></A>
+<a href="#contents12"><FONT size=-1 COLOR="#ff0000">Return to contents.</FONT></A>
 
 
-<B><FONT FACE="Courier" COLOR="#ff0000"><A name=12.6>
+<h2 id=12.6>
   12.6 SYS - драйверы устройств.
-</A></B></FONT><FONT FACE="Courier">
+</h2>
 
       Компилятор значительно облегчит Ваш труд при написании драйверов.
   Компилятор сам создаст заголовок драйвера и процедуры <b>СТРАТЕГИЯ</b> и
@@ -5049,12 +5048,12 @@
   других процедурах обработки команд используете динамические процедуры,
   обязательно должна быть директива <b>?setdinproc</b>. Глобальные переменные должны
   быть обязательно проинициализированы.
-<A href="#contents12" style="TEXT-DECORATION: none"><FONT size=-1 FACE="Courier" COLOR="#ff0000">Return to contents.</FONT></A>
+<a href="#contents12"><FONT size=-1 COLOR="#ff0000">Return to contents.</FONT></A>
 
 
-<B><FONT FACE="Courier" COLOR="#ff0000"><A name=12.7>
+<h2 id=12.7>
   12.7 Компиляция кода расширителей ROM-BIOS.
-</A></B></FONT><FONT FACE="Courier">
+</h2>
 
       Расширители ROM-BIOS (BIOS видеоконтроллеров, сетевых карт...) имеют
   определенную структуру и требования. C-- теперь может облегчить Вам процесс
@@ -5106,14 +5105,14 @@
     3. Если директива <b>?movedatarom</b> установлена в <b>FALSE</b>, то будьте внимательны
   при работе с инициализированными переменными. Они в этом режиме доступны
   только для чтения, и адресуются через регистр CS.
-<A href="#contents12" style="TEXT-DECORATION: none"><FONT size=-1 FACE="Courier" COLOR="#ff0000">Return to contents.</FONT></A>
+<a href="#contents12"><FONT size=-1 COLOR="#ff0000">Return to contents.</FONT></A>
 
 
-<B><FONT FACE="Courier" COLOR="#ff0000"><A name=12.8.1>
+<h2 id=12.8.1>
   12.8 32-битные файлы.
 
     12.8.1 32-битный код под DOS.
-</A></B></FONT><FONT FACE="Courier">
+</h2>
 
         Для того чтобы откомпилировать 32-битную программу под DOS надо
     запустить компилятор с ключом командной строки <b>/d32</b>. Но работа 32-битной
@@ -5154,12 +5153,12 @@
     обычная DOS программа, и лишь в процессе работы переходит в 32-битный
     режим работы, размер программы ограничен размером свободной DOS памяти.
     Ну а преимуществом его является компактный размер исполняемого файла.
-<A href="#contents12" style="TEXT-DECORATION: none"><FONT size=-1 FACE="Courier" COLOR="#ff0000">Return to contents.</FONT></A>
+<a href="#contents12"><FONT size=-1 COLOR="#ff0000">Return to contents.</FONT></A>
 
 
-<B><FONT FACE="Courier" COLOR="#ff0000"><A name=12.8.2>
+<h2 id=12.8.2>
     12.8.2 32-битный код под Windows.
-</A></B></FONT><FONT FACE="Courier">
+</h2>
 
         Для того чтобы откомпилировать программу, написанную под Windows надо
     запустить компилятор с ключом командной строки <b>/w32</b>.
@@ -5188,37 +5187,37 @@
 
         С помощю ключа <b>/W32C</b> компилятор создает консольный файл под Windows.
 
-	Если при компиляции указывали опцию командной строки <b>/j0</b> или
+        Если при компиляции указывали опцию командной строки <b>/j0</b> или
     директиву <b>#jumptomain NONE</b>, то Ваша программа будет компилироваться без
     использования кода начальной инициализации, описание которого находится в
     файле startup.h--.
 
-	Код начальной инициализации для программ под Windows имеет следующий
+        Код начальной инициализации для программ под Windows имеет следующий
     вид:
 
-	hThisInst=GetModuleHandleA(0);
+        hThisInst=GetModuleHandleA(0);
       #ifdef __CONSOLE__
-	hStdOut=GetStdHandle(-11);
+        hStdOut=GetStdHandle(-11);
       #endif
         lpszArgs=GetCommandLineA();
       #ifdef __environ;
-	environ=GetEnvironmentStringsA();
+        environ=GetEnvironmentStringsA();
       #endif
-	main();
-	ExitProcess(EAX);
+        main();
+        ExitProcess(EAX);
 
-	Таким образом, в глобальных переменных <b>hThisInst</b> будет находится
+        Таким образом, в глобальных переменных <b>hThisInst</b> будет находится
     handl запущенного файла, а в <b>lpszArgs</b> адрес командной строки Вашего
     файла. Если Вы в командной строке указали опции <b>/p</b> или <b>/argc</b> или в
     начале вашего файла есть директивы <b>#parsecommandline TRUE</b> или <b>argc TRUE</b>,
-	то компилятор создаст дополнительный код сделающий разборку этой
+        то компилятор создаст дополнительный код сделающий разборку этой
     командной строки на части. Если Вы компилируете консольную программу, то
     в вашей программе будет еще одна глобальная переменная - <b>hStdOut</b>. В этой
     переменной хранится handl стандартного вывода (экрана). Если Вы при
     компиляции программы указали опцию <b>/env</b>, то в глобальной переменной
     <b>environ</b> хранится адрес переменной окружения программы.
 
-	После завершения работы процедуры <b>main</b> выполнятся процедура
+        После завершения работы процедуры <b>main</b> выполнятся процедура
     <b>ExitProcess</b>, которой в качестве параметра передается регистр EAX. Т.о.
     Вам для завершения работы программы будет достаточно сделать выход из
     процедуры <b>main</b>, предварительно загрузив в регистр EAX нужный Вам код
@@ -5241,12 +5240,12 @@
 
     т.е. без круглых скобок. В программе, при обращении к такой процедуре, ее
     имя надо писать без суффикса @8, т.е. вот так - ProcName(param1,param2);
-<A href="#contents12" style="TEXT-DECORATION: none"><FONT size=-1 FACE="Courier" COLOR="#ff0000">Return to contents.</FONT></A>
+<a href="#contents12"><FONT size=-1 COLOR="#ff0000">Return to contents.</FONT></A>
 
 
-<B><FONT FACE="Courier" COLOR="#ff0000"><A name=12.8.3>
+<h2 id=12.8.3>
     12.8.3 Вызов API процедур по ординалам.
-</A></B></FONT><FONT FACE="Courier">
+</h2>
 
         В динамически подключаемых библиотеках (DLL) каждой процедуре, кроме
     ее имени, соответствует уникальное число, которое называется ординалом. И
@@ -5268,14 +5267,14 @@
     можно двумя способами:
 
         a). Автоматически, с помощью опции командной строки <b>IND=name.dll</b>,
-	по которой компилятор просканирует эту библиотеку и импортирует из
-	нее все имена и ординалы процедур. (Импорт возможет только из
-	библиотек имеющих формат PE).
+        по которой компилятор просканирует эту библиотеку и импортирует из
+        нее все имена и ординалы процедур. (Импорт возможет только из
+        библиотек имеющих формат PE).
 
         b). В ручную указать в объявлении API-процедур и ее ординал. Делается
-	это так: после имени процедуры ставится точка, а за ней указывается
-	номер ординала. Вот пример объявления API-процедуры с указанием ее
-	ординала:
+        это так: после имени процедуры ставится точка, а за ней указывается
+        номер ординала. Вот пример объявления API-процедуры с указанием ее
+        ординала:
 
     extern WINAPI "user32.dll"
     {
@@ -5297,12 +5296,12 @@
         К сожалению, нет никаких гарантий того, что номер ординала для данной
     процедуры не изменится при смене версии динамической библиотеки. Поэтому
     использовать ординалы надо осторожно.
-<A href="#contents12" style="TEXT-DECORATION: none"><FONT size=-1 FACE="Courier" COLOR="#ff0000">Return to contents.</FONT></A>
+<a href="#contents12"><FONT size=-1 COLOR="#ff0000">Return to contents.</FONT></A>
 
 
-<B><FONT FACE="Courier" COLOR="#ff0000"><A name=12.8.4>
+<h2 id=12.8.4>
     12.8.4 Создание DLL под Windows.
-</A></B></FONT><FONT FACE="Courier">
+</h2>
 
         Динамически подключаемые библиотеки позволят получать более
     компактные программы и ускорить процесс компиляции. К минусам
@@ -5324,12 +5323,12 @@
     как <b>_export</b> необязательно. Затем этот файл нужно откомпилировать с ключом
     /dll.  В результате Вы получите готовую динамически подключаемую
     библиотеку.
-<A href="#contents12" style="TEXT-DECORATION: none"><FONT size=-1 FACE="Courier" COLOR="#ff0000">Return to contents.</FONT></A>
+<a href="#contents12"><FONT size=-1 COLOR="#ff0000">Return to contents.</FONT></A>
 
 
-<B><FONT FACE="Courier" COLOR="#ff0000"><A name=12.8.5>
+<h2 id=12.8.5>
     12.8.5 Инициализация DLL при загрузке.
-</A></B></FONT><FONT FACE="Courier">
+</h2>
 
         Иногда, для работы процедур из динамических библиотек (DLL), бывает
     необходимым инициализировать некоторые переменные значениями, зависящими
@@ -5350,12 +5349,12 @@
     {
       ...
     }
-<A href="#contents12" style="TEXT-DECORATION: none"><FONT size=-1 FACE="Courier" COLOR="#ff0000">Return to contents.</FONT></A>
+<a href="#contents12"><FONT size=-1 COLOR="#ff0000">Return to contents.</FONT></A>
 
 
-<B><FONT FACE="Courier" COLOR="#ff0000"><A name=12.8.6>
+<h2 id=12.8.6>
     12.8.6 Компиляция ресурсов.
-</A></B></FONT><FONT FACE="Courier">
+</h2>
 
         Встроенный в C-- компилятор ресурсов по своим возможностям уступает
     специализированным компиляторам ресурсов, но этих возможностей, как мне
@@ -5391,12 +5390,12 @@
         Ничто не мешает Вам использовать компиляторы ресурсов от других
     языков.  Главное, чтобы синтаксис файла ресурсов соответствовал выбранному
     компилятору.
-<A href="#contents12" style="TEXT-DECORATION: none"><FONT size=-1 FACE="Courier" COLOR="#ff0000">Return to contents.</FONT></A>
+<a href="#contents12"><FONT size=-1 COLOR="#ff0000">Return to contents.</FONT></A>
 
 
-<B><FONT FACE="Courier" COLOR="#ff0000"><A name=12.9>
+<h2 id=12.9>
   12.9 Выходные файлы для MeOS.
-</A></B></FONT><FONT FACE="Courier">
+</h2>
 
       Исполняемые файлы для операционной системы MenuetOS поддерживаются
   компилятором совсем недавно. Для того, чтобы откомпилировать файл для
@@ -5409,14 +5408,14 @@
   файл начальной инициализации <b>startup.h--</b>, в котором для операционной
   системы MenuetOS создан блок инициализации и завершения программы.
   Завершать выполнение таких программ можно просто выйдя из процедуры <b>main</b>.
-<A href="#contents12" style="TEXT-DECORATION: none"><FONT size=-1 FACE="Courier" COLOR="#ff0000">Return to contents.</FONT></A>
+<a href="#contents12"><FONT size=-1 COLOR="#ff0000">Return to contents.</FONT></A>
 
 
-<B><FONT FACE="Courier" COLOR="#ff0000"><A name=13.1>
+<h2 id=13.1>
 13. Приложения.
 
   13.1 Поиск включаемых файлов.
-</A></B></FONT><FONT FACE="Courier">
+</h2>
 
       Поиск включаемого в вашу программу файла, имя которого объявляется
   директивой <b>include</b> и заключено в двойные кавычки "", производится
@@ -5441,12 +5440,12 @@
 
       Для консольной версии компилятора имена главного модуля и включаемых
   файлов могут иметь длину более 8 символов.
-<A href="#contents13" style="TEXT-DECORATION: none"><FONT size=-1 FACE="Courier" COLOR="#ff0000">Return to contents.</FONT></A>
+<a href="#contents13"><FONT size=-1 COLOR="#ff0000">Return to contents.</FONT></A>
 
 
-<B><FONT FACE="Courier" COLOR="#ff0000"><A name=13.2>
+<h2 id=13.2>
   13.2 Регистры, которые должны быть сохранены.
-</A></B></FONT><FONT FACE="Courier">
+</h2>
 
       Регистры, которые должны сохраняться - BP, DI, SI, DS, SS, SP, CS и IP.
 
@@ -5475,12 +5474,12 @@
   использованием CS и IP, следовательно их значения должны сохраняться. IP,
   как известно, указатель адреса команды, и CS и IP непосредственно не могут
   изменяться в процессорах 8086, 8088, 80286, 80386, 80486,...
-<A href="#contents13" style="TEXT-DECORATION: none"><FONT size=-1 FACE="Courier" COLOR="#ff0000">Return to contents.</FONT></A>
+<a href="#contents13"><FONT size=-1 COLOR="#ff0000">Return to contents.</FONT></A>
 
 
-<B><FONT FACE="Courier" COLOR="#ff0000"><A name=13.3>
+<h2 id=13.3>
   13.3 C--.ini файл.
-</A></B></FONT><FONT FACE="Courier">
+</h2>
 
       C--.ini файл предназначен для предустановки по умолчанию параметров
   компилятора.
@@ -5531,12 +5530,12 @@
   решать Вам, но как говорят, и я с этим согласен, лучше пользоваться золотой
   серединой - Часть параметров прописать в c--.ini файле, а другую
   непосредственно в компилируемом файле.
-<A href="#contents13" style="TEXT-DECORATION: none"><FONT size=-1 FACE="Courier" COLOR="#ff0000">Return to contents.</FONT></A>
+<a href="#contents13"><FONT size=-1 COLOR="#ff0000">Return to contents.</FONT></A>
 
 
-<B><FONT FACE="Courier" COLOR="#ff0000"><A name=13.4>
+<h2 id=13.4>
   13.4 startup.h-- файл.
-</A></B></FONT><FONT FACE="Courier">
+</h2>
 
       В этом файле находятся исходные тексты, которые компилируются
   компилятором в код начальной инициализации файла, для всех поддерживаемых
@@ -5581,12 +5580,12 @@
 
       либо в c--.ini файле или в командной строке компилятора укажете опцию
   <b>d=_USELONGNAME</b>.
-<A href="#contents13" style="TEXT-DECORATION: none"><FONT size=-1 FACE="Courier" COLOR="#ff0000">Return to contents.</FONT></A>
+<a href="#contents13"><FONT size=-1 COLOR="#ff0000">Return to contents.</FONT></A>
 
 
-<B><FONT FACE="Courier" COLOR="#ff0000"><A name=13.5>
+<h2 id=13.5>
   13.5 mainlib.ldp файл.
-</A></B></FONT><FONT FACE="Courier">
+</h2>
 
       В этом файле находится большое число процедур из основной библиотеки
   компилятора в уже откомпилированном виде. Все процедуры откомпилированы в
@@ -5615,12 +5614,12 @@
   cmmlib.rar. Извлеките программу cmmlib.exe из этого архива и расположите ее
   в одной с компилятором директории. Затем запустите эту программу с ключом
   /L и Вы получите список процедур находящихся в этой библиотеке.
-<A href="#contents13" style="TEXT-DECORATION: none"><FONT size=-1 FACE="Courier" COLOR="#ff0000">Return to contents.</FONT></A>
+<a href="#contents13"><FONT size=-1 COLOR="#ff0000">Return to contents.</FONT></A>
 
 
-<B><FONT FACE="Courier" COLOR="#ff0000"><A name=13.6>
+<h2 id=13.6>
   13.6 C-- символы.
-</A></B></FONT><FONT FACE="Courier">
+</h2>
 
   SYMBOL|FUNCTION                  |EXAMPLE
   --------------------------------------------------------------------
@@ -5669,29 +5668,9 @@
         |флага операции сравнения. |
    ...  |любое число параметров в  | void proc(...);
    ::   |разрешение видимости      | ::var=0;
-<A href="#contents13" style="TEXT-DECORATION: none"><FONT size=-1 FACE="Courier" COLOR="#ff0000">Return to contents.</FONT></A>
-</font>
-                </PRE>
-<P>
-</font><SCRIPT LANGUAGE="JavaScript">document.writeln(document.lastModified)</SCRIPT>
-</font></p>
-	      </body>
-            </td>
-          </table>
+<a href="#contents13"><FONT size=-1 COLOR="#ff0000">Return to contents.</FONT></A>
+
+</PRE>
 </body>
-        </center>
-      </div>
-    </td>
-  </tr>
-</table>
+<br><br>
 </HTML>
-</textarea></form>
-</title></comment></a>
-</div></span></ilayer></layer></iframe></noframes></style></noscript></table></script></applet></font>
-<style>
-#bn {display:block;}
-#bt {display:block;}
-</style>
-<div style="background:url(http://www.tns-counter.ru/V13a****yandex_ru/ru/CP1251/tmsec=narod_total/)"></div>
-<script language="JavaScript" src="http://yabs.yandex.ru/show/163"></script>
-<!-- mailto:spm111@yandex.ru -->
