@@ -598,10 +598,12 @@ tup.append_table(img_files, {
  {"NETWORK/WEBVIEW", PROGS .. "/cmm/browser/WebView.com"},
 })
 tup.append_table(extra_files, {
- {"kolibrios/drivers/DRVINST.KEX", PROGS .. "/cmm/drvinst/drvinst.com"},
+ {"kolibrios/drivers/drvinst.kex", PROGS .. "/cmm/drvinst/drvinst.com"},
+ {"kolibrios/games/pig/pigex", PROGS .. "/cmm/examples/pig.com"},
  {"kolibrios/games/the_bus/the_bus", PROGS .. "/cmm/the_bus/the_bus.com"},
- {"kolibrios/utils/DICTY.KEX", PROGS .. "/cmm/dicty/dicty.com"},
+ {"kolibrios/utils/dicty.kex", PROGS .. "/cmm/dicty/dicty.com"},
  {"kolibrios/utils/appearance", PROGS .. "/cmm/appearance/appearance.com"},
+ {"kolibrios/utils/netcheck", PROGS .. "/cmm/examples/netcheck.com"},
 })
 end -- tup.getconfig('NO_CMM') ~= 'full'
 
