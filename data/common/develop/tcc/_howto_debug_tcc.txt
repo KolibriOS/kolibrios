@@ -1,0 +1,27 @@
+1. create asm listing:
+compile .o only, then use objdump
+kos32-tcc.exe -c -g clipview.c -o clipviewtcc.o
+kos32-objdump -d -M intel -S -l clipviewtcc.o > clipviewtcc.asm
+
+2. see offset in resulting kolibri executable compared to listing (i have 0xD0)
+
+3. in kolibri debugger mtdbg set breakpoint to funtion address 
+>bp 140
+where 0x140 is 0x70 in assemly + offset 0xD0
+
+
+Warning !!Error. sometimes tcc dont warn about unsuccesful linking 
+(not found function body code). Hopefully, i fix this.
+
+Usually, at runtime you have crash with "Illegal cpu instruction"
+In assembler code this is easy to recognize as 
+myaddr:E8 FC FF FF FF  call myaddr+1  
+
+4.how to see defines
+kos32-tcc.exe -E -dD null
+
+5.if you use GNU LD as a linker, add option -Map=hellocpp.map to ld.
+Mtdbg can use resulting .map file 
+
+6.now you can use -g option to generate .dbg file. This enables 
+source code level debugging with Mtdbg
