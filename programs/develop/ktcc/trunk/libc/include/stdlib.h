@@ -31,7 +31,8 @@ extern void  wtfree(void *pointer);
 extern void* wtrealloc(void* pointer, size_t size);
 extern void* wtcalloc (size_t num, size_t size);
 extern int   wtmalloc_freelist_check();
-extern int wtmalloc_poiner_check(void *ptr);
+extern int   wtmalloc_poiner_check(void *ptr);
+extern void  wtmalloc_freelist_print();
 
 #ifdef USESYSALLOC
 #define malloc(x) sysmalloc(x)

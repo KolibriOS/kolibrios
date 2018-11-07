@@ -10,6 +10,7 @@ extern void* wtrealloc(void* pointer, size_t size);
 extern void* wtcalloc (size_t num, size_t size);
 extern int   wtmalloc_freelist_check();
 extern int wtmalloc_poiner_check(void *ptr);
+extern void wtdump_alloc_stats();
 
 #ifdef __GNUC__
 void* sysmalloc(size_t sz)
@@ -20,7 +21,7 @@ void* sysmalloc(size_t sz)
 
 
 
-#define NUMPTR 30000
+#define NUMPTR 10000
 
 char *pointers[NUMPTR];
 char values[NUMPTR];
@@ -59,7 +60,7 @@ int main()
 	// test allocation
 	for (i = 0; i < NUMPTR; i++)
 	{
-		sz = rand() % 1024;
+		sz = rand() % 4200;
 		pointers[i] = wtmalloc(sz);
 		sizes[i] = sz;
 		values[i] = sz % 256;
@@ -89,7 +90,7 @@ int main()
 	{
 		if (pointers[i]) continue;
 		
-		sz = rand() % 1024;
+		sz = rand() % 4200;
 		pointers[i] = wtmalloc(sz);
 		sizes[i] = sz;
 		values[i] = sz % 256;
@@ -102,8 +103,9 @@ int main()
 	// test realloc
 	for (i = 0; i < NUMPTR; i++)
 	{
-		sz = rand() % 1024;
+		sz = rand() % 4200;
 		pointers[i] = wtrealloc(pointers[i], sz);
+		
 		sizes[i] = sz;
 		memset(pointers[i], values[i], sz);
 	}
@@ -119,8 +121,10 @@ int main()
 		pointers[i] = NULL;
 	}
 	assert(wtmalloc_freelist_check());
+	
+	wtdump_alloc_stats();
 
-	printf("tests all OK\n");
+	printf("\ntests all OK\n");
 	
 	return 0;
 
