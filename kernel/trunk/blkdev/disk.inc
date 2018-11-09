@@ -1012,8 +1012,6 @@ endp
 is_protective_mbr:
         push    ecx edi
         xor     eax, eax
-;        cmp     [ecx-6], eax
-;        jnz     .exit
         cmp     [ecx-2], ax
         jnz     .exit
 ; Partition record 0 has specific fields
@@ -1023,15 +1021,13 @@ is_protective_mbr:
         jnz     .exit
         cmp     dword[ecx+8], 1
         jnz     .exit
-        cmp     dword[esi+DISK.MediaInfo.Capacity+4], eax
-        mov     edi, 0xFFFFFFFF
-        jnz     @f
-        mov     edi, dword[esi+DISK.MediaInfo.Capacity+0]
-        dec     edi
-@@:
-        cmp     dword[ecx+12], edi
+        mov     edi, -1
+        cmp     [ecx+12], edi
+        jz      @f
+        add     edi, dword[esi+DISK.MediaInfo.Capacity+0]
+        cmp     [ecx+12], edi
         jnz     .exit
-
+@@:
 ; Check that partition records 1-3 are filled with zero
         lea     edi, [ecx+16]
         mov     ecx, 16*3/2     ; 3 partitions
