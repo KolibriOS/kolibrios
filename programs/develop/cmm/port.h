@@ -92,17 +92,16 @@ int MultiByteToWideChar(unsigned int,unsigned int,char*,int,wchar_t *,int);
 
 #endif
 
+char* strupr(char* s);
+char* strlwr(char* s);
+int stricmp(const char*, const char*);
+int strnicmp(const char*, const char*, int);
+
 #ifdef _PORT_CPP_
 
 long lseek (int, long, int);
 char tolower(char c);
 char toupper(char c);
-
-
-char* strupr(char* s);
-char* strlwr(char* s);
-int stricmp(const char*, const char*);
-int strnicmp(const char*, const char*, int);
 
 char * getcwd (char *buffer, int size);
 int 	stat (const char*, struct _stat*);

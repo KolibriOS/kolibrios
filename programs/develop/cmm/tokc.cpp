@@ -178,6 +178,9 @@ int hold;
 
 	for(int i=0;i<=numfindpath;i++){
 		sprintf((char *)string2,"%s%s",findpath[(firstflag==0?i:numfindpath-i)],filename);
+#ifndef _WIN32_
+		for(char* p=(char *)string2; *p; ++p) if(*p=='\\') *p='/';
+#endif
 		if((hold=loadinputfile((char *)string2))!=-2)break;
 		if(firstflag==2||(firstflag==0&&(i+1)==numfindpath))break;
 	}
@@ -8600,6 +8603,9 @@ long filesize;
 		stringexpected();
 		return(0);
 	}
+#ifndef _WIN32_
+	for(char* p=(char *)string3; *p; ++p) if(*p=='\\') *p='/';
+#endif
 	filehandle=open((char *)string3,O_BINARY|O_RDONLY);
 	if(filehandle==-1){
 		unableopenfile((char *)string3);

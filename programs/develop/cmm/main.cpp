@@ -223,45 +223,6 @@ int MakeObj();
 void CheckUndefClassProc();
 
 /*
-
-PAVEL YAKOV
-
-char* strupr(char* s)
-{
-  char* p = s;
-  while (*p = toupper(*p)) p++;
-  return s;
-}
-char* strlwr(char* s)
-{
-  char* p = s;
-  while (*p = tolower(*p)) p++;
-  return s;
-}
-int strnicmp(const char* s1, const char* s2, int len)
-{
-  unsigned char c1,c2;
-
-  if(!len)
-	return 0;
-
-  do{
-    c1 = *s1++;
-    c2 = *s2++;
-    if (!c1||!c2)
-      break;
-    if (c1 == c2)
-      continue;
-    c1 = tolower(c1);
-    c2 = tolower(c2);
-    if (c1!=c2)
-      break;
-  } while (--len);
-  return (int)c1 - (int)c2;
-}
-*/
-
-/*
 void PrintTegList(structteg *tteg)
 {
 	if(tteg){
@@ -1175,6 +1136,9 @@ void * MALLOC (unsigned long size)
 void *mem;
 	mem=malloc(size);
 	if(mem==NULL)OutMemory();
+#ifdef _UNIX_
+	else memset(mem,0,size);
+#endif
 
 //	if(((unsigned long)mem+size)>maxusedmem)maxusedmem=(unsigned long)mem+size;
 

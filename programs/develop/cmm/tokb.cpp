@@ -9081,7 +9081,7 @@ COM_MOD *bmod;
 				if(itok.type==tp_opperand)operand=tok;
 				else{
 					i++;
-					if(bufrm)free(bufrm);
+					if(bufrm){						free(bufrm);						bufrm=NULL;					}
 					if(strinf.bufstr)free(strinf.bufstr);
 					switch(operand){
 						case tk_div:
@@ -9136,7 +9136,7 @@ COM_MOD *bmod;
 			cha2=ocha;
 			endoffile=0;
 //			printf("input=%08X inptr=%08X %s\n",input,inptr2,input+inptr2);
-//			if(bufrm)free(bufrm);
+//			if(bufrm) { free(bufrm); bufrm=NULL; }
 //			if(strinf.bufstr)free(strinf.bufstr);
 			bufrm=obuf;
 			strinf=ostr;
@@ -9746,7 +9746,7 @@ newloop:
 		else{
 			if(tok!=tk_number&&tok!=tk_postnumber&&tok!=tk_undefofs){
 				if(j>1)j=0;
-				if(bufrm)free(bufrm);
+				if(bufrm){					free(bufrm);					bufrm=NULL;				}
 				if(strinf.bufstr)free(strinf.bufstr);
 			}
 			else if(j>1)j--;
