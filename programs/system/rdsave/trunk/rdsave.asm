@@ -356,8 +356,11 @@ draw_window:
 	mcall	 ,<215,75>, ,cancel
 	mcall	 ,<315,36>, ,select
 
-	mov	ecx,[sc.work]
-	mov	dword [frame_data.font_backgr_color],ecx
+	m2m	dword [frame_data.font_backgr_color],[sc.work]
+	m2m dword [frame_data.font_color],[sc.work_text]
+	m2m dword [frame_data.ext_fr_col],[sc.work_graph]
+	m2m dword [frame_data.int_fr_col],[sc.work_3d_light]
+	
 	push	dword frame_data
 	call	[Frame_draw]
 

@@ -29,13 +29,14 @@ UnvWater                  /sys/demos/unvwater
 #2  **** 3D demos ****
 ScreenSaver               /sys/3d/crownscr
 3D-labyrinth              /sys/3d/free3d04
-Heart*                    /kolibrios/3d/3dsheart
+3D-cube                   /sys/3d/3dcube2
+Ray tracing               /sys/3d/ray
 View3DS                   /sys/3d/view3ds
 Gears                     /sys/3d/gears
 3D-waved area             /sys/3d/3dwav
 #3  **** GRAPHICS ****
 Kolibri Image Viewer      /sys/media/kiv
-zSea* Image Viewer      /kolibrios/media/zsea/zsea
+zSea* Image Viewer        /kolibrios/media/zsea/zsea
 Animage                   /sys/media/animage
 Image Filtering           /sys/media/imgf/imgf
 Palitra                   /sys/media/palitra
@@ -44,7 +45,7 @@ Pixie (MP3 player)        /sys/media/pixie/pixie
 AC97SND Audioplayer       /sys/media/ac97snd
 Fplay* Video player       /kolibrios/media/fplay
 MidAMP                    /sys/media/midamp
-#5 **** PROGRAMMING ****
+#5 **** DEVELOPMENT ****
 Examples           >      /@6
 KPack Archiver            /sys/kpack
 Flat Assembler            /sys/develop/fasm
@@ -52,6 +53,7 @@ Diff Tool                 /sys/develop/diff
 Debug Board               /sys/develop/board
 Debugger                  /sys/develop/mtdbg
 Base Converter            /sys/develop/h2d2b
+Character table           /sys/ASCIIVju
 Key ASCII-codes           /sys/develop/keyascii
 Key SCAN-codes            /sys/develop/scancode
 #6  **** EXAMPLES ****
@@ -131,7 +133,6 @@ File system benchmark     /sys/fspeed
 #17 **** ACCESSIBILITY ****
 Screen magnifier          /sys/magnify
 Screen keyboard           /sys/zkey
-Character table           /sys/ASCIIVju
 #18 **** EMULATORS ****
 DOSBox* (DOS PC)          /kolibrios/emul/DosBox/dosbox
 e80* (ZX Spectrum)        /kolibrios/emul/e80/e80

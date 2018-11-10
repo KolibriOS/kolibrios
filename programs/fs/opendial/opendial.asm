@@ -1772,7 +1772,9 @@ draw_file_name:
 	mov	bx,[file_browser_data_1.start_y]
 	add	bx,[file_browser_data_1.size_y]
 	add	bx,9
-	mcall	4,,0x80000000,message_file_name
+	mov	ecx,[w_work_text]
+	add	ecx,0x80000000
+	mcall	4,,,message_file_name
 	ret
 ;---------------------------------------------------------------------
 draw_dir_path:

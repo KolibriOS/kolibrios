@@ -722,8 +722,7 @@ align 4
 .1:
 	shl	ecx,16
 	add	ecx,eax	    ; ecx = [ Y_START | Y_SIZE ]
-	dec	ecx
-	
+
 	movzx	ebx,[edi + x_start]
 	shl	ebx,16
 	mov	bx,140	    ; ebx = [ X_START | X_SIZE ]

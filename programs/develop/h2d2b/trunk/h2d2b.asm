@@ -212,7 +212,8 @@ mouse:
 @@:
     mcall   , 10*65536,   ,(WIN_W-92)*65536+46,    ; 10-ная
 	mcall   , 8*65536+256,,(WIN_W-76)*65536+78,    ; 16-ная
-    mcall  4, (WIN_W-102)*65536+58, 0x90000000, minus, 1
+	mov   ecx,esi
+    mcall  4, (WIN_W-102)*65536+61, , minus, 1
     mcall 38, 15*65536+WIN_W-15, 137*65536+137, [sys_colors.work_graph]
 	stdcall [edit_box_draw], edit1
     mcall 12, 2 		   ; функция 12: сообщить ОС об отрисовке окна

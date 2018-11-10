@@ -29,7 +29,8 @@ UnvWater                  /sys/demos/unvwater
 #2  **** 3D ****
 ScreenSaver               /sys/3d/crownscr
 3D-labyrinth              /sys/3d/free3d04
-Heart                     /sys/3d/3dsheart
+3D-cube                   /sys/3d/3dcube2
+Ray tracing               /sys/3d/ray
 View3DS                   /sys/3d/view3ds
 Gears                     /sys/3d/gears
 3D-waved area             /sys/3d/3dwav
@@ -52,6 +53,7 @@ Diff Tool                 /sys/develop/diff
 Debug Board               /sys/develop/board
 Debugger                  /sys/develop/mtdbg
 Hex2Dec2Bin               /sys/develop/h2d2b
+Tabla de caracteres       /sys/ASCIIVju
 C¢digos ASCII             /sys/develop/keyascii
 C¢digos SCAN              /sys/develop/scancode
 #6    **** EJEMPLOS ****
@@ -130,7 +132,6 @@ FSPEED speed of FS        /sys/fspeed
 #17    **** ACCESIBILIDAD ****
 Ampliaci¢n de pantalla    /sys/magnify
 Teclado en pantalla       /sys/zkey
-Tabla de caracteres       /sys/ASCIIVju
 #18    **** EMULATORS ****
 DOSBox DOS Emulator       /kolibrios/emul/DosBox/dosbox
 e80 (ZX Spectrum)         /kolibrios/emul/e80/e80

@@ -105,54 +105,58 @@ draw_window:
         or      edx, 0x34000000
         xor     esi, esi
         mov     edi, str_title
-        mcall   0, 50 shl 16 + 400, 30 shl 16 + 180
+        mcall   0, 50 shl 16 + 415, 30 shl 16 + 195
 
-        mov     ebx, 5 shl 16 + 15
-        mov     ecx, 0x80000000
+        mov     ebx, 5 shl 16 + 12
+        mov     ecx, 0x90000000
         or      ecx, [sc.work_text]
         mov     edx, str_port
         mcall   4
-        mov     ebx, 5 shl 16 + 35
+        add     ebx, 25
         mov     edx, str_speed
         mcall
-        mov     ebx, 5 shl 16 + 55
+        add     ebx, 25
         mov     edx, str_data
         mcall
-        mov     ebx, 5 shl 16 + 75
+        add     ebx, 25
         mov     edx, str_stop
         mcall
 
-        mov     ebx, 180 shl 16 + 10
+        mov     ebx, 195 shl 16 + 12
         mov     edx, str_parity
         mcall
-        mov     ebx, 270 shl 16 + 10
+        mov     ebx, 280 shl 16 + 12
         mov     edx, str_flow
         mcall
 
+		edit_boxes_set_sys_color edit1,editboxes_end,sc
         invoke  edit_box_draw, edit1
         invoke  edit_box_draw, edit2
         invoke  edit_box_draw, edit3
         invoke  edit_box_draw, edit4
 
+		option_boxes_set_sys_color sc, Option_boxs1
+		option_boxes_set_sys_color sc, Option_boxs2
         invoke  option_box_draw, Option_boxs1
         invoke  option_box_draw, Option_boxs2
 
+		check_boxes_set_sys_color2 ch1,ch1_end,sc ;set color
         invoke  check_box_draw, ch1
 
         mov     esi, [sc.work_button]
-        mcall   8, 270 shl 16 + 100, 105 shl 16 + 16, 0x10
+        mcall   8, 280 shl 16 + 100, 115 shl 16 + 22, 0x10
 
-        mov     ecx, 0x80000000
+        mov     ecx, 0x90000000
         or      ecx, [sc.work_button_text]
-        mcall   4, 300 shl 16 + 110, , str_open
+        mcall   4, 315 shl 16 + 119, , str_open
 
 
         mov     edx, [sc.work_graph]
-        mcall   38, 0 shl 16 + 390, 135 shl 16 + 135
+        mcall   38, 0 shl 16 + 405, 145 shl 16 + 145
 
-        mov     ecx, 0x80000000
+        mov     ecx, 0x90000000
         or      ecx, [sc.work_text]
-        mcall   4, 5 shl 16 + 142, , [errormsg]
+        mcall   4, 5 shl 16 + 150, , [errormsg]
 
         mcall   12, 2
         ret
@@ -424,10 +428,11 @@ import  console,\
         con_get_flags,          'con_get_flags',\
         con_kbhit,              'con_kbhit'
 
-edit1   edit_box 60, 90, 10, 0xffffff, 0x6f9480, 0, 0, 0, 8, ed_port, mouse_dd, ed_focus, 4, 4
-edit2   edit_box 60, 90, 30, 0xffffff, 0x6a9480, 0, 0, 0, 7, ed_speed, mouse_dd, ed_figure_only, 4, 4
-edit3   edit_box 60, 90, 50, 0xffffff, 0x6a9480, 0, 0, 0, 1, ed_data, mouse_dd, ed_figure_only, 1, 1
-edit4   edit_box 60, 90, 70, 0xffffff, 0x6a9480, 0, 0, 0, 1, ed_stop, mouse_dd, ed_figure_only, 1, 1
+edit1   edit_box 60, 112, 10, 0xffffff, 0x6f9480, 0, 0, 0x10000000, 8, ed_port, mouse_dd, ed_focus, 4, 4
+edit2   edit_box 60, 112, 35, 0xffffff, 0x6a9480, 0, 0, 0x10000000, 7, ed_speed, mouse_dd, ed_figure_only, 4, 4
+edit3   edit_box 60, 112, 60, 0xffffff, 0x6a9480, 0, 0, 0x10000000, 1, ed_data, mouse_dd, ed_figure_only, 1, 1
+edit4   edit_box 60, 112, 85, 0xffffff, 0x6a9480, 0, 0, 0x10000000, 1, ed_stop, mouse_dd, ed_figure_only, 1, 1
+editboxes_end:
 
 ed_port         db "COM1",0,0,0,0,0,0
 ed_speed        db "9600",0,0,0
@@ -435,19 +440,20 @@ ed_data         db "8",0
 ed_stop         db "1",0
 
 option_group1   dd op1
-op1     option_box option_group1, 180, 27, 6, 12, 0xffffff, 0, 0, str_none, 4
-op2     option_box option_group1, 180, 44, 6, 12, 0xffffff, 0, 0, str_odd, 3
-op3     option_box option_group1, 180, 61, 6, 12, 0xffffff, 0, 0, str_even, 4
-op4     option_box option_group1, 180, 78, 6, 12, 0xffffff, 0, 0, str_mark, 4
-op5     option_box option_group1, 180, 95, 6, 12, 0xffffff, 0, 0, str_space, 5
+op1     option_box option_group1, 195, 30, 6, 12, 0xffffff, 0, 0, str_none, 4
+op2     option_box option_group1, 195, 47, 6, 12, 0xffffff, 0, 0, str_odd, 3
+op3     option_box option_group1, 195, 64, 6, 12, 0xffffff, 0, 0, str_even, 4
+op4     option_box option_group1, 195, 81, 6, 12, 0xffffff, 0, 0, str_mark, 4
+op5     option_box option_group1, 195, 98, 6, 12, 0xffffff, 0, 0, str_space, 5
 
 option_group2   dd op6
-op6     option_box option_group2, 270, 27, 6, 12, 0xffffff, 0, 0, str_none, 4
+op6     option_box option_group2, 280, 30, 6, 12, 0xffffff, 0, 0, str_none, 4
 ;op7     option_box option_group2, 270, 44, 6, 12, 0xffffff, 0, 0, str_xon, 8, 10b
 ;op8     option_box option_group2, 270, 61, 6, 12, 0xffffff, 0, 0, str_rts, 7, 1b
 ;op9     option_box option_group2, 270, 78, 6, 12, 0xffffff, 0, 0, str_dsr, 7
 
-ch1     check_box2 5 shl 16 + 12, 105 shl 16 + 12, 5, 0xffffff, 0x000000, 0x000000, str_echo, ch_flag_middle
+ch1     check_box2 5 shl 16 + 12, 119 shl 16 + 12, 5, 0xffffff, 0x000000, 0, str_echo, ch_flag_middle
+ch1_end:
 
 Option_boxs1    dd op1, op2, op3, op4, op5, 0
 Option_boxs2    dd op6, 0 ;op7, op8, op9, 0

@@ -29,7 +29,8 @@ UnvWater                  /sys/demos/unvwater
 #2  **** 3D demos ****
 ScreenSaver               /sys/3d/crownscr
 Labirinto 3D              /sys/3d/free3d04
-Cuore 3D                  /sys/3d/3dsheart
+3D-cube                   /sys/3d/3dcube2
+Ray tracing               /sys/3d/ray
 View3DS                   /sys/3d/view3ds
 Gears                     /sys/3d/gears
 3D-waved area             /sys/3d/3dwav
@@ -51,6 +52,7 @@ Diff Tool                 /sys/develop/diff
 Debug Board               /sys/develop/board
 Debugger                  /sys/develop/mtdbg
 Hex2Dec2Bin               /sys/develop/h2d2b
+Tavola caratteri          /sys/ASCIIVju
 Codici ASCII              /sys/develop/keyascii
 SCAN-codes                /sys/develop/scancode
 #6    **** EXAMPLES ****
@@ -129,7 +131,6 @@ FSPEED speed of FS        /sys/fspeed
 #17    **** SYSTEM SPECIAL ****
 Lente di ingrandimento    /sys/magnify
 Tastiera da schermo       /sys/zkey
-Tavola caratteri          /sys/ASCIIVju
 #18    **** EMULATORS ****
 DOSBox DOS Emulator       /KolibriOS/emul/DosBox/dosbox
 e80 (ZX Spectrum)         /KolibriOS/emul/e80/e80

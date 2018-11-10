@@ -29,7 +29,8 @@ UnvWater                  /sys/demos/unvwater
 #2    **** Демки -> 3D ****
 Скринсейвер               /sys/3d/crownscr
 3D-Лабиринт               /sys/3d/free3d04
-Сердце                    /sys/3d/3dsheart
+3D-Куб                    /sys/3d/3dcube2
+Ray tracing               /sys/3d/ray
 Просмотрщик 3DS           /sys/3d/view3ds
 Шестерёнки                /sys/3d/gears
 FlatWave                  /sys/3d/flatwav
@@ -54,6 +55,7 @@ Diff tool                 /sys/develop/diff
 Отладчик                  /sys/develop/mtdbg
 Пипетка                   /sys/pipetka
 Hex2Dec2Bin               /sys/develop/h2d2b
+Таблица символов          /sys/ASCIIVju
 ASCII-коды                /sys/develop/keyascii
 SCAN-коды                 /sys/develop/scancode
 #6    **** Разработка -> Примеры ****
@@ -101,7 +103,6 @@ FSPEED скорость ФС        /sys/fspeed
 #12   **** Система -> Спец.возможности ****
 Экранная лупа             /sys/magnify
 Экранная клавиатура       /sys/zkey
-Таблица символов          /sys/ASCIIVju
 #13    **** Обработка данных ****
 Калькулятор               /sys/calc
 Редактор Tinypad          /sys/tinypad

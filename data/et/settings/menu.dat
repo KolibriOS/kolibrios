@@ -29,7 +29,8 @@ UnvWater                  /sys/demos/unvwater
 #2  **** 3D demos ****
 ScreenSaver               /sys/3d/crownscr
 3D-labyrinth              /sys/3d/free3d04
-Heart                     /sys/3d/3dsheart
+3D-cube                   /sys/3d/3dcube2
+Ray tracing               /sys/3d/ray
 View3DS                   /sys/3d/view3ds
 Gears                     /sys/3d/gears
 3D-waved area             /sys/3d/3dwav
