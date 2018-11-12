@@ -1,5 +1,5 @@
 /*
- * Template C-- program.
+ * Template C-- program
 */
 
 #define MEMSIZE 4096*10
