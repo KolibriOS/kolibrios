@@ -13,6 +13,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 format PE DLL native 0.05
+entry START
 
 DEBUG = 1
 
@@ -477,8 +478,8 @@ endl
         DEBUGF 2,'K : FTDI Reseting PID: %d Dev handler 0x0x%x\n', [edi],\
                                                                         [edi+4]
         mov     dword[ConfPacket], (FTDI_DEVICE_OUT_REQTYPE) \
-                                 + (SIO_RESET_REQUEST shl 8) \+
-                                   (SIO_RESET_SIO shl 16)
+                                 + (SIO_RESET_REQUEST shl 8) \
+                                 + (SIO_RESET_SIO shl 16)
         jmp     .ftdi_out_control_transfer_noinp  
         
   .ftdi_purge_rx_buf:
@@ -549,7 +550,7 @@ endl
         DEBUGF 2, 'K : FTDI Read pins PID: %d Dev handler 0x0x%x\n', [edi],\
                                                                      [edi+4]
         mov     ebx, [edi+4] 
-        mov     dword[ConfPacket], (FTDI_DEVICE_IN_REQTYPE) /
+        mov     dword[ConfPacket], (FTDI_DEVICE_IN_REQTYPE) \
                                  + (SIO_READ_PINS_REQUEST shl 8) + (0 shl 16)
         mov     ecx, [ebx + ftdi_context.index]
         mov     word[ConfPacket+4], cx
@@ -559,7 +560,7 @@ endl
         mov     ecx, esi
         add     ecx, 8
         mov     word[ConfPacket+8], 0
-        invoke  USBControlTransferAsync, [ebx + ftdi_context.nullP],  esi, ecx, /
+        invoke  USBControlTransferAsync, [ebx + ftdi_context.nullP],  esi, ecx, \
                                             1, control_callback, edi, 0
         mov     eax, [EventData]
         mov     ebx, [EventData+4]
@@ -764,7 +765,7 @@ endl
         jmp     .endswitch
                 
   .ftdi_get_list:
-        DEBUGF 2, 'K : FTDI devices\' list request\n'  
+        DEBUGF 2, 'K : FTDI devices list request\n'  
         mov     edi, [edi+output]
         xor     ecx, ecx
         call    linkedlist_gethead
