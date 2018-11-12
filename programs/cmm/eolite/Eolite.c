@@ -563,7 +563,8 @@ void draw_window()
 	GetProcessInfo(#Form, SelfInfo);
 	if (Form.status_window>2) return;
 	if (Form.height < 350) { MoveSize(OLD,OLD,OLD,350); return; }
-	if (Form.width  < 480) { MoveSize(OLD,OLD,480,OLD); return; }
+	if (!two_panels.checked) && (Form.width < 480) { MoveSize(OLD,OLD,480,OLD); return; }
+	if ( two_panels.checked) && (Form.width < 573) { MoveSize(OLD,OLD,573,OLD); return; }
 	GetProcessInfo(#Form, SelfInfo);
 	ESDWORD[#toolbar_pal] = col_work;
 	ESDWORD[#toolbar_pal+4] = MixColors(0, col_work, 35);
@@ -639,7 +640,7 @@ void DrawFilePanels()
 		{
 			llist_copy(#files, #files_inactive);
 			strcpy(#path, #inactive_path);
-			col_selec = 0xCCCccc;
+			col_selec = 0xCCCccc; //this is a bad code: need to use some var to set inactive panel for DrawList();
 			files.SetSizes(Form.cwidth/2, files_y, Form.cwidth/2 -17, Form.cheight-files_y-2 - status_bar_h, files.item_h);
 			DrawList();
 			Open_Dir(#path,WITH_REDRAW);
@@ -700,7 +701,7 @@ void List_ReDraw()
 	Scroll();
 
 	if (del_active) Del_Form();
-	if (new_element_active) NewElement_Form(new_element_active, #new_element_name);
+	if (new_element_active) && (col_selec != 0xCCCccc) NewElement_Form(new_element_active, #new_element_name);
 }
 
 

@@ -1,5 +1,5 @@
 //11.03.12 - start!
-//ver 2.2
+//ver 2.21
 
 #ifndef AUTOBUILD
 	?include "lang.h--"
@@ -53,6 +53,7 @@ enum {
 
 char folder_path[4096];
 char cur_file_path[4096];
+char cur_skin_path[4096];
 char temp_filename[4096];
 int files_mas[400];
 
@@ -93,7 +94,7 @@ void main()
 
 	EventTabClick(SKINS);
 
-	SetEventMask(0x27);
+	SetEventMask(EVM_REDRAW + EVM_KEY + EVM_BUTTON + EVM_MOUSE + EVM_MOUSE_FILTER);
 	loop() switch(WaitEvent()) 
 	{
 	  	case evMouse:
@@ -115,7 +116,7 @@ void main()
 
 		case evButton:
 			id=GetButtonID();
-			if (id==1) ExitProcess();
+			if (id==1) EventExit();
 			if (id==SKINS) EventTabClick(SKINS);
 			if (id==WALLPAPERS) EventTabClick(WALLPAPERS);
 			if (id==BTN_SELECT_WALLP_FOLDER) EventSelectWallpFolder();
@@ -356,16 +357,17 @@ void EventApply()
 	EventSetNewCurrent();
 	if (tabs.active_tab==SKINS)
 	{
+		draw_window();
 		cur = select_list.cur_y;
 		SetSystemSkin(#cur_file_path);
-		SaveSkinSettings(#cur_file_path);
+		strcpy(#cur_skin_path, #cur_file_path);
 	} 
 	if (tabs.active_tab==WALLPAPERS)
 	{
+		SelectList_Draw();
 		strcpy(#kivpath, "\\S__");
 		strcat(#kivpath, #cur_file_path);
 		RunProgram("/sys/media/kiv", #kivpath);
-		SelectList_Draw();
 	}
 }
 
@@ -373,6 +375,12 @@ void EventOpenFile()
 {
 	if (tabs.active_tab==SKINS) RunProgram("/sys/skincfg", #cur_file_path);
 	if (tabs.active_tab==WALLPAPERS) RunProgram("/sys/media/kiv", #cur_file_path);
+}
+
+void EventExit()
+{
+	ExitProcess();
+	SaveSkinSettings(#cur_skin_path);
 }
 
 stop:
