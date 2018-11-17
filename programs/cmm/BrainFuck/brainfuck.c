@@ -1,5 +1,5 @@
 /*
- * Console example in C--
+ * Brainfuck Author Pavel Iakovlev
 */
 
 #define MEMSIZE 4096*10
