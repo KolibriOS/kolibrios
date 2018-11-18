@@ -1,9 +1,10 @@
 /*
- * Brainfuck Author Pavel Iakovlev
+ * Console example in C--
 */
 
 #define MEMSIZE 4096*10
 
+#include "../lib/io.h"
 #include "../lib/obj/console.h"
 
 #define bufferSize 10000;
@@ -83,6 +84,7 @@ void evalBrainFuckCode(dword code)
 	}
 }
 
+
 void main()
 {
 	dword brainFuckCode = 0;
@@ -94,9 +96,14 @@ void main()
 	load_dll(libConsole, #con_init, 0);
 	con_init stdcall (-1, -1, -1, -1, "BrainF*ck interpreter");
 	//con_set_flags stdcall (0x1F);
-	con_printf stdcall ("BrainF*ck interpreter v1.0\r\n");
-	loop()
+	
+	IF(DSBYTE[I_Param])
 	{
+		if(io.read(I_Param)) evalBrainFuckCode(EAX);
+	}
+	ELSE loop()
+	{
+		con_printf stdcall ("BrainF*ck interpreter v1.0\r\n");
 		con_printf stdcall ("\r\nEnter BrainF*ck code:\r\n");
 		//con_write_string stdcall ("\r\n", 2);
 		con_gets stdcall(buffer, bufferSize);
