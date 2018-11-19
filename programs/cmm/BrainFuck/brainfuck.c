@@ -16,11 +16,13 @@ dword buffer = 0;
 word bufferSymbol = 0;
 dword memory = 0;
 byte initConsole = 0;
+dword stack = 0;
 
 void consoleInit()
 {
 	IF(!initConsole) 
 	{
+		load_dll(libConsole, #con_init, 0);
 		con_init stdcall (-1, -1, -1, -1, "BrainF*ck interpreter");
 		initConsole = 0xFF;
 	}
@@ -44,6 +46,7 @@ void evalBrainFuckCode(dword code)
 	//--------
 	
 	offsetMemory = memory + countOffset;
+	countStack = stack;
 	
 	WHILE(1)
 	{
@@ -56,11 +59,12 @@ void evalBrainFuckCode(dword code)
 				DSBYTE[offsetMemory]--;
 			break;
 			case '[':
-				$push code;
+				DSDWORD[countStack] = code;
+				countStack += 4;
 			break;
 			case ']':
-				IF (DSBYTE[offsetMemory]) code = DSDWORD[ESP];
-				ELSE $pop EAX;
+				IF (DSBYTE[offsetMemory]) code = DSDWORD[countStack - 4];
+				ELSE countStack -= 4;
 			break;
 			case ',':
 				consoleInit();
@@ -93,8 +97,7 @@ void main()
 	
 	buffer = malloc(bufferSize);
 	memory = malloc(memoryBrainfuck);
-	
-	load_dll(libConsole, #con_init, 0);
+	stack = malloc(stackBrainFuck);
 	
 	IF(DSBYTE[I_Param])
 	{
@@ -103,17 +106,16 @@ void main()
 	ELSE 
 	{
 		consoleInit();
-		con_printf stdcall ("BrainF*ck interpreter v1.1\r\n");
+		con_printf stdcall ("BrainF*ck interpreter v1.01\r\n");
 		loop()
 		{
 			con_printf stdcall ("\r\nEnter BrainF*ck code:\r\n");
-			con_printf stdcall ("Output BrainF*ck:\r\n");
 			con_gets stdcall(buffer, bufferSize);
 			evalBrainFuckCode(EAX);
-			con_printf stdcall ("\r\n");
+			con_printf stdcall ("\r\nOutput BrainF*ck:\r\n");
 		}
 	}
-	IF(initConsole) con_exit stdcall (0);
 	ExitProcess();
+	IF(initConsole) con_exit stdcall (0);
 }
 
