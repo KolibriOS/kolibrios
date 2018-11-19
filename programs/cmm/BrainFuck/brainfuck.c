@@ -1,5 +1,5 @@
 /*
- * Console example in C--
+ * Author Pavel Iakovlev
 */
 
 #define MEMSIZE 4096*10
@@ -15,17 +15,23 @@
 dword buffer = 0;
 word bufferSymbol = 0;
 dword memory = 0;
-dword stack = 0;
+byte initConsole = 0;
+
+void consoleInit()
+{
+	IF(!initConsole) 
+	{
+		con_init stdcall (-1, -1, -1, -1, "BrainF*ck interpreter");
+		initConsole = 0xFF;
+	}
+}
 
 void evalBrainFuckCode(dword code)
 {
-	byte cmd = 0;
 	dword offsetMemory = 0;
 	dword countStack = 0;
 	dword countOffset = memoryBrainfuck / 2 / memoryByteBF;
 	offsetMemory = memory;
-	countStack = stack;
-	
 	// clear memory
 	EBX = memoryBrainfuck;
 	offsetMemory = memory;
@@ -39,12 +45,9 @@ void evalBrainFuckCode(dword code)
 	
 	offsetMemory = memory + countOffset;
 	
-	con_printf stdcall ("Output BrainF*ck:\r\n");
-	
-	while(1)
+	WHILE(1)
 	{
-		cmd = DSBYTE[code];
-		switch(cmd)
+		switch(DSBYTE[code])
 		{
 			case '+':
 				DSBYTE[offsetMemory]++;
@@ -53,18 +56,19 @@ void evalBrainFuckCode(dword code)
 				DSBYTE[offsetMemory]--;
 			break;
 			case '[':
-				DSDWORD[countStack] = code;
-				countStack += 4;
+				$push code;
 			break;
 			case ']':
-				IF (DSBYTE[offsetMemory]) code = DSDWORD[countStack - 4];
-				ELSE countStack -= 4;
+				IF (DSBYTE[offsetMemory]) code = DSDWORD[ESP];
+				ELSE $pop EAX;
 			break;
 			case ',':
+				consoleInit();
 				con_getch stdcall();
 				DSBYTE[offsetMemory] = AL;
 			break;
 			case '.':
+				consoleInit();
 				DSBYTE[#bufferSymbol] = DSBYTE[offsetMemory];
 				con_printf stdcall (#bufferSymbol);
 			break;
@@ -74,9 +78,7 @@ void evalBrainFuckCode(dword code)
 			case '<':
 				offsetMemory--;
 			break;
-			default:
-				con_printf stdcall ("\r\n");
-				//ExitProcess();
+			case 0:
 				return;
 			break;
 		}
@@ -91,26 +93,27 @@ void main()
 	
 	buffer = malloc(bufferSize);
 	memory = malloc(memoryBrainfuck);
-	stack = malloc(stackBrainFuck);
 	
 	load_dll(libConsole, #con_init, 0);
-	con_init stdcall (-1, -1, -1, -1, "BrainF*ck interpreter");
-	//con_set_flags stdcall (0x1F);
 	
 	IF(DSBYTE[I_Param])
 	{
-		if(io.read(I_Param)) evalBrainFuckCode(EAX);
+		IF(io.read(I_Param)) evalBrainFuckCode(EAX);
 	}
-	ELSE loop()
+	ELSE 
 	{
-		con_printf stdcall ("BrainF*ck interpreter v1.0\r\n");
-		con_printf stdcall ("\r\nEnter BrainF*ck code:\r\n");
-		//con_write_string stdcall ("\r\n", 2);
-		con_gets stdcall(buffer, bufferSize);
-		//con_printf stdcall (EAX);
-		evalBrainFuckCode(EAX);
+		consoleInit();
+		con_printf stdcall ("BrainF*ck interpreter v1.1\r\n");
+		loop()
+		{
+			con_printf stdcall ("\r\nEnter BrainF*ck code:\r\n");
+			con_printf stdcall ("Output BrainF*ck:\r\n");
+			con_gets stdcall(buffer, bufferSize);
+			evalBrainFuckCode(EAX);
+			con_printf stdcall ("\r\n");
+		}
 	}
-	con_exit stdcall (0);
+	IF(initConsole) con_exit stdcall (0);
 	ExitProcess();
 }
 
