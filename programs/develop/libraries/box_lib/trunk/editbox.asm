@@ -152,11 +152,13 @@ edit_box_key:
         test    word ed_flags,ed_ctrl_on
         jz      @f
         cmp     ah,45 ; Ctrl + X
-        je      edit_box_key.ctrl_x        
+        je      edit_box_key.ctrl_x
         cmp     ah,46 ; Ctrl + C
         je      edit_box_key.ctrl_c
         cmp     ah,47 ; Ctrl + V
         je      edit_box_key.ctrl_v
+        cmp     ah,30 ; Ctrl + A
+        je      edit_box_key.ctrl_a
 @@:
         cmp     ah,SCAN_LWIN_RELEASE
         jz      edit_box.editbox_exit
@@ -316,7 +318,7 @@ edit_box_key.draw_all:
         mov     ed_size,ebx
         mov     ebp,ed_color
         call    edit_box.clear_cursor
-        call    edit_box.check_offset         
+        call    edit_box.check_offset
         and     word ed_flags,ed_shift_cl
         jmp     edit_box.draw_bg
 
@@ -381,84 +383,84 @@ edit_box_key.end:
         jmp     edit_box.draw_cursor_text
 ;----------------------------------------
 StrInsert:
-; SizeOf(TmpBuf) >= StrLen(Src) + StrLen(Dst) + 1              
+; SizeOf(TmpBuf) >= StrLen(Src) + StrLen(Dst) + 1
 Dst    equ [esp + 16] ; - destination buffer
 Src    equ [esp + 12] ; - source to insert from
 Pos    equ [esp + 8] ; - position for insert
 DstMax equ [esp + 4]  ; - maximum Dst length(exclude terminating null)
 SrcCount equ [esp - 4]
 DstCount equ [esp - 8]
-TmpBuf   equ [esp - 12]  ; - temporary buffer 
+TmpBuf   equ [esp - 12]  ; - temporary buffer
         mov    edi, Src
         mov    ecx, -1
         xor    eax, eax
-        repne scasb 
+        repne scasb
         mov    eax, -2
         sub    eax, ecx
-        mov    SrcCount, eax                
+        mov    SrcCount, eax
         mov    edi, Dst
         add    edi, Pos
         mov    ecx, -1
         xor    eax, eax
-        repne scasb 
+        repne scasb
         mov    eax, -2
         sub    eax, ecx
         inc    eax
-        mov    DstCount, eax                
+        mov    DstCount, eax
         mov    ecx, eax
         add    ecx, SrcCount
         add    ecx, Pos
         mcall   SF_SYS_MISC,SSF_MEM_ALLOC
-        mov    TmpBuf, eax          
+        mov    TmpBuf, eax
         mov    esi, Dst
         mov    edi, TmpBuf
         mov    ecx, Pos
         mov    edx, ecx
-        rep movsb         
+        rep movsb
         mov    esi, Src
         mov    edi, TmpBuf
         add    edi, Pos
         mov    ecx, SrcCount
         add    edx, ecx
-        rep movsb         
+        rep movsb
         mov    esi, Pos
         add    esi, Dst
         mov    ecx, DstCount
         add    edx, ecx
-        rep movsb         
+        rep movsb
         mov    esi, TmpBuf
         mov    edi, Dst
-; ecx = MIN(edx, DstSize)        
+; ecx = MIN(edx, DstSize)
         cmp    edx, DstMax
-        sbb    ecx, ecx                                   
+        sbb    ecx, ecx
         and    edx, ecx
         not    ecx
         and    ecx, DstMax
-        add    ecx, edx                                   
+        add    ecx, edx
         mov    eax, ecx ; return total length
-        rep movsb        
+        rep movsb
         mov    ecx, TmpBuf
-        mcall   SF_SYS_MISC,SSF_MEM_FREE                                
+        mcall   SF_SYS_MISC,SSF_MEM_FREE
         ret    16
-restore Dst    
-restore Src      
-restore Pos    
+restore Dst
+restore Src
+restore Pos
 restore DstSize
-restore TmpBuf 
+restore TmpBuf
 restore SrcCount
 restore DstCount
-;----------------------------------------         
+;----------------------------------------
 edit_box_key.ctrl_x:
         test   word ed_flags,ed_shift_on
-        jz     edit_box.editbox_exit        
+        jz     edit_box.editbox_exit
         push    dword 'X'  ; this value need below to determine which action is used
         jmp     edit_box_key.ctrl_c.pushed
-        
+
 edit_box_key.ctrl_c:
         test   word ed_flags,ed_shift_on
         jz     edit_box.editbox_exit
         push    dword 'C'  ; this value need below to determine which action is used
-.pushed:        
+.pushed:
 ; add memory area
         mov     ecx,ed_size
         add     ecx,3*4
@@ -468,7 +470,7 @@ edit_box_key.ctrl_c:
         mov     [eax+4],ecx ; type 'text'
         inc     ecx
         mov     [eax+8],ecx ; cp866 text encoding
-        mov     ecx,ed_pos       
+        mov     ecx,ed_pos
         movzx   ebx,word ed_shift_pos
         sub     ecx,ebx
 .abs: ; make ecx = abs(ecx)
@@ -476,13 +478,13 @@ edit_box_key.ctrl_c:
 	       jl	     .abs
         add     ecx,3*4
         mov     [eax],ecx
-        sub     ecx,3*4        
+        sub     ecx,3*4
         mov     edx,ed_pos
         movzx   ebx,word ed_shift_pos
         cmp     edx,ebx
         jle     @f
         mov     edx,ebx
-@@:        
+@@:
 ; copy data
         mov     esi,ed_text
         add     esi,edx
@@ -536,17 +538,17 @@ edit_box_key.ctrl_v:
 ; check for cp866
         cmp     bl,1
         jnz     .no_valid_text
-; if something selected then need to delete it        
+; if something selected then need to delete it
         test   word ed_flags,ed_shift_on
-        jz     .selected_done 
+        jz     .selected_done
         push   eax; dummy parameter ; need to
         push   dword .selected_done ; correctly return
         pushad                      ; from edit_box_key.delete
         jmp    edit_box_key.delete
-.selected_done:        
+.selected_done:
         mov     ecx,[eax]
         sub     ecx,3*4
-; in ecx size of string to insert   
+; in ecx size of string to insert
         add     ecx,ed_size
         mov     edx,ed_max
         cmp     ecx,edx
@@ -556,15 +558,15 @@ edit_box_key.ctrl_v:
         mov     esi,eax
         add     esi,3*4
         push    eax edi
-;---------------------------------------;         
-        mov     ed_size,ecx        
-        
-        push   dword ed_text ; Dst   
-        push   esi           ; Src   
+;---------------------------------------;
+        mov     ed_size,ecx
+
+        push   dword ed_text ; Dst
+        push   esi           ; Src
         push   dword ed_pos  ; Pos in Dst
         push   dword ed_max  ; DstMax
-        call   StrInsert          
-;---------------------------------------;        
+        call   StrInsert
+;---------------------------------------;
 ;        mov     edi,ed_text
 ;        cld
 ;@@:
@@ -585,6 +587,14 @@ edit_box_key.ctrl_v:
         mov     ecx,eax
         mcall   SF_SYS_MISC,SSF_MEM_FREE
 .exit:
+        jmp     edit_box.draw_bg_cursor_text
+
+edit_box_key.ctrl_a:
+        mov     eax,ed_size
+        mov     ed_pos,eax
+        xor     eax,eax
+        mov     ed_shift_pos,eax
+        or      word ed_flags,ed_shift_bac+ed_shift_on
         jmp     edit_box.draw_bg_cursor_text
 
 ;==========================================================
