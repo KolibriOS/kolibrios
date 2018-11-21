@@ -1,6 +1,6 @@
-;           Fast Hartley Transform routine
-;           Copyright (C) 1999, 2004, 2010
-;          Artem Jerdev  artem@jerdev.co.uk
+;	    Fast Hartley Transform routine
+;	 Copyright (C) 1999, 2004, 2010, 2018
+;	   Artem Jerdev  artem@jerdev.co.uk
 ;
 ; free KolibriOS version - not to be ported to other OSes
 ; ==========================================================
@@ -186,7 +186,7 @@ step1:
 ret
 
 ;=================================================================
-; SSE3 version:	Step1
+; SSE3 version: Step1
 ;
 ;==========================
 
@@ -198,33 +198,33 @@ step1_sse:
 	add	esi, ebx
 
 .loop:
-	movddup     xmm0, [ebx]     ;   xmm0: f0 ; f0
-	movddup     xmm1, [ebx+8]   ;   xmm1: f1 ; f1
-	addsubpd    xmm0, xmm1      ;   xmm0: t1 ; t2   ( + - )
-    movddup     xmm1, [ebx+16]  ;   xmm1: f2 ; f2
-    movddup     xmm2, [ebx+24]  ;   xmm2: f3 ; f3
-	addsubpd    xmm1, xmm2      ;   xmm1: t3 ; t4   ( + - )
+	movddup     xmm0, [ebx]     ;	xmm0: f0 ; f0
+	movddup     xmm1, [ebx+8]   ;	xmm1: f1 ; f1
+	addsubpd    xmm0, xmm1	    ;	xmm0: t1 ; t2	( + - )
+    movddup	xmm1, [ebx+16]	;   xmm1: f2 ; f2
+    movddup	xmm2, [ebx+24]	;   xmm2: f3 ; f3
+	addsubpd    xmm1, xmm2	    ;	xmm1: t3 ; t4	( + - )
 
-    movddup     xmm2, xmm0      ;   xmm2: t2 ; t2
-    movddup     xmm3, xmm1      ;   xmm3: t4 ; t4
-	addsubpd    xmm2, xmm3      ;   xmm2: 2+4; 2-4  
-    shufpd      xmm2, xmm2, 1   ;   xmm2: 2-4; 2+4
-    movapd      [ebx+16], xmm2
+    movddup	xmm2, xmm0	;   xmm2: t2 ; t2
+    movddup	xmm3, xmm1	;   xmm3: t4 ; t4
+	addsubpd    xmm2, xmm3	    ;	xmm2: 2+4; 2-4	
+    shufpd	xmm2, xmm2, 1	;   xmm2: 2-4; 2+4
+    movapd	[ebx+16], xmm2
 
-    shufpd      xmm0, xmm0, 1   ;   xmm0: t2 ; t1
-    shufpd      xmm1, xmm1, 1   ;   xmm1: t4 ; t3
-    movddup     xmm2, xmm0      ;   xmm2: t1 ; t1
-    movddup     xmm3, xmm1      ;   xmm3: t3 ; t3
-	addsubpd    xmm2, xmm3      ;   xmm2: 1+3; 1-3  
-    shufpd      xmm2, xmm2, 1   ;   xmm2: 1-3; 1+3
-    movapd      [ebx], xmm2
+    shufpd	xmm0, xmm0, 1	;   xmm0: t2 ; t1
+    shufpd	xmm1, xmm1, 1	;   xmm1: t4 ; t3
+    movddup	xmm2, xmm0	;   xmm2: t1 ; t1
+    movddup	xmm3, xmm1	;   xmm3: t3 ; t3
+	addsubpd    xmm2, xmm3	    ;	xmm2: 1+3; 1-3	
+    shufpd	xmm2, xmm2, 1	;   xmm2: 1-3; 1+3
+    movapd	[ebx], xmm2
 
 	add	ebx, 32
 	cmp	ebx, esi
 	jnz	.loop
 ret
 
-;       local stack definitions
+;	local stack definitions
 ;===========================================================================
 _t0	equ	dword [esp]
 _t1	equ	dword[esp+4]
@@ -262,7 +262,7 @@ _step		equ	word [esp+116]
 ;=================================================================
 ; cdecl parameters:
 ; -- [ebp+8]   = N
-; -- [ebp+12]  = 4k-aligned data array  address
+; -- [ebp+12]  = 4k-aligned data array	address
 ; returns:
 ; -- nothing
 ; destroys:
@@ -417,9 +417,9 @@ step2:
 
 	fld	_t6
 	fld	qword[ebx+8]
-	fld	st1
-        fld     st1
-	faddp	st3, st0	
+	fld	st1		; st : t6, f[l1], t6
+	fld	st1		; st : f[l1], t6, f[l1], t6
+	faddp	st3, st0	; st : t6, f[l1], t1
 	fsubp	st1, st0	; st : t2, t1
 
 	fld	_t8
@@ -431,7 +431,7 @@ step2:
 	fsub	st0, st1
 	fstp	qword[ebx+8*9]	; f[l3] = t1-t4
 	fadd	st0, st3
-	fstp	qword[ebx+8]      ; f[l1] = t1+t4
+	fstp	qword[ebx+8]	  ; f[l1] = t1+t4
 	fld	st1		; st : t2, t3, t2, t1
 	fsub	st0, st1	; f[l4] = t2-t3
 	fstp	qword[ebx+8*13] ; st : t3, t2, t1
@@ -454,7 +454,7 @@ ret
 ; cdecl parameters:
 ; -- [ebp+8]   = N
 ; -- [ebp+12]  = p
-; -- [ebp+16]  = 4k-aligned data array  address
+; -- [ebp+16]  = 4k-aligned data array	address
 ; -- [ebp+20]  = 4k-aligned SinCosTable address
 ; returns:
 ; -- nothing
@@ -508,7 +508,7 @@ step3:
 	shl	edx, 3
 	mov	_d6, edx	; d6 = d5*8 to simplify index operations
 
-; 339  :         j5 = N / d5;   ; moved out of internal loop
+; 339  :	 j5 = N / d5;	; moved out of internal loop
 	mov	cl, [ebp+12]
 	sub	cl, ch
 	add	cl, cl
@@ -561,7 +561,7 @@ step3:
 	fstp	qword[ebx+edi*8]	; st : t4, t3
 
 ; f[j+d2] = t1 - t3;
-; f[j]    = t1 + t3;
+; f[j]	  = t1 + t3;
 	fld	_t1
 	fst	st1
 	fsub	st0, st2		; st : f2, t1, t3
@@ -570,7 +570,7 @@ step3:
 	fstp	qword[ebx]		; st : t3
 	fstp	st0
 
-; jj = j + d1;     / ??
+; jj = j + d1;	   / ??
 	mov	edi, _d1
 	shl	edi, 3		; = d1*8
 	mov	edx, edi
@@ -609,7 +609,7 @@ step3:
 	fstp	qword [edx+eax]
 
 ; f[jj+d3] = t1 - t2 + t3;
-	fstp	st0		; st : t2, t3,  t1
+	fstp	st0		; st : t2, t3,	t1
 	fsubp	st1, st0	; st : (t3-t2), t1
 	faddp	st1, st0	; st : f3
 	fstp	qword [edx]
@@ -651,7 +651,7 @@ step3:
 	mov	_l8, edx
 
 
-; 340  :         j5 *= k;       // add-substituted multiplication
+; 340  :	 j5 *= k;	// add-substituted multiplication
 	mov	eax, _jj
 	add	eax, _j5
 	mov	_jj, eax
@@ -677,11 +677,11 @@ step3:
 	fld	qword[ebx+edx*8]	; st : f[l2], f[l6]*c, f[l6]*s, s, c
 	fmul	st4, st0
 	fmulp	st3, st0		; st : f[l6]*c, f[l6]*s, f[l2]*s, f[l2]*c
-	fsub	st0, st2		; st :   t8,    f[l6]*s, f[l2]*s, f[l2]*c
+	fsub	st0, st2		; st :	 t8,	f[l6]*s, f[l2]*s, f[l2]*c
 	fstp	_t8
-	faddp	st2, st0		; st :  f[l2]*s, t5
-	fstp	st0			; st :  t5
-	fstp	_t5			; st :  <empty>
+	faddp	st2, st0		; st :	f[l2]*s, t5
+	fstp	st0			; st :	t5
+	fstp	_t5			; st :	<empty>
 
 ; c2 = C[2*jj];
 ; s2 = S[2*jj];
@@ -701,11 +701,11 @@ step3:
 	fld	qword[ebx+edx*8]	; st : f[l3], f[l7]*c, f[l7]*s, s, c
 	fmul	st4, st0
 	fmulp	st3, st0		; st : f[l7]*c, f[l7]*s, f[l3]*s, f[l3]*c
-	fsub	st0, st2		; st :   t9,    f[l7]*s, f[l3]*s, f[l3]*c
+	fsub	st0, st2		; st :	 t9,	f[l7]*s, f[l3]*s, f[l3]*c
 	fstp	_t9
-	faddp	st2, st0		; st :  f[l2]*s, t6
-	fstp	st0			; st :  t6
-	fstp	_t6			; st :  <empty>
+	faddp	st2, st0		; st :	f[l2]*s, t6
+	fstp	st0			; st :	t6
+	fstp	_t6			; st :	<empty>
 
 ; c3 = C[3*jj];
 ; s3 = S[3*jj];
@@ -725,11 +725,11 @@ step3:
 	fld	qword[ebx+edx*8]	; st : f[l4], f[l8]*c, f[l8]*s, s, c
 	fmul	st4, st0
 	fmulp	st3, st0		; st : f[l8]*c, f[l8]*s, f[l4]*s, f[l4]*c
-	fsub	st0, st2		; st :   t9,    f[l8]*s, f[l4]*s, f[l4]*c
+	fsub	st0, st2		; st :	 t9,	f[l8]*s, f[l4]*s, f[l4]*c
 	fstp	_t0
 	faddp	st2, st0		; st : f[l2]*s, t7
-	fstp	st0			; st :  t7
-	fstp	_t7			; st :  <empty>
+	fstp	st0			; st :	t7
+	fstp	_t7			; st :	<empty>
 
 ; t1 = f[l5] - t9;
 ; t2 = f[l5] + t9;
@@ -747,7 +747,7 @@ step3:
 	fadd	_t0
 	fchs
 	fstp	_t3
-; t4 =   t5  - t7;
+; t4 =	 t5  - t7;
 	fld	_t5
 	fsub	_t7
 	fstp	_t4
@@ -786,11 +786,11 @@ step3:
 	fsubp	st1, st0
 	fstp	_t2
 
-; t3 =    t8 - t0;
+; t3 =	  t8 - t0;
 	fld	_t8
 	fsub	_t0
 	fstp	_t3
-; t4 =    t5 + t7;
+; t4 =	  t5 + t7;
 	fld	_t5
 	fadd	_t7
 	fstp	_t4
@@ -847,7 +847,7 @@ step3:
 ; parameters:
 ; -- [ebp+8]   = N
 ; -- [ebp+12]  = p
-; -- [ebp+16]  = 4k-aligned data array  address
+; -- [ebp+16]  = 4k-aligned data array	address
 ; -- [ebp+20]  = 4k-aligned SinCosTable address
 ; returns:
 ; -- nothing
