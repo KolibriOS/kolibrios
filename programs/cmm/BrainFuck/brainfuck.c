@@ -94,6 +94,7 @@ void evalBrainFuckCode(dword code)
 void main()
 {
 	dword brainFuckCode = 0;
+	word maxLoop = 1000;
 	
 	buffer = malloc(bufferSize);
 	memory = malloc(memoryBrainfuck);
@@ -106,16 +107,19 @@ void main()
 	ELSE 
 	{
 		consoleInit();
-		con_printf stdcall ("BrainF*ck interpreter v1.01\r\n");
-		loop()
+		con_printf stdcall ("BrainF*ck interpreter v1.05");
+		WHILE(maxLoop)
 		{
-			con_printf stdcall ("\r\nEnter BrainF*ck code:\r\n");
+			con_printf stdcall ("\r\n\r\nEnter code: ");
 			con_gets stdcall(buffer, bufferSize);
-			evalBrainFuckCode(EAX);
-			con_printf stdcall ("\r\nOutput BrainF*ck:\r\n");
+			brainFuckCode = EAX;
+			con_printf stdcall ("Output: ");
+			evalBrainFuckCode(brainFuckCode);
+			maxLoop--;
 		}
 	}
-	ExitProcess();
+	
 	IF(initConsole) con_exit stdcall (0);
+	ExitProcess();
 }
 
