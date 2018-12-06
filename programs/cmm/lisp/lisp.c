@@ -6,8 +6,11 @@
 
 #include "../lib/io.h"
 #include "../lib/obj/console.h"
+#include "../lib/array.h"
 
 byte initConsole = 0;
+Dictionary functions = {0};
+Dictionary variables = {0};
 
 #include "stdcall.h"
 
@@ -63,9 +66,9 @@ dword evalLisp()
 		}
 		if (!args) 
 		{
-			if(s>='A') && (s<='z') // name function
+			if(s!=' ') && (s!=')') // name function
 			{
-				while (s>='A') && (s<='z')
+				while (s!=' ') && (s!=')')
 				{
 					DSBYTE[pos] = s;
 					code++;
@@ -101,22 +104,24 @@ dword evalLisp()
 		code++;
 		args++;
 	}
-	args -= 2;
+	args--;
 	ret = StdCall(args, name, dataArgs);
 	free(name);
 	free(dataArgs);
 	return ret;
 }
 
-
 void main()
 {
 	dword brainFuckCode = 0;
 	word maxLoop = 1000;
+	dword txt = "(print (str 1) (str 2))";
 	
 	buffer = malloc(bufferSize);
 	memory = malloc(memoryBrainfuck);
 	stack = malloc(stackBrainFuck);
+	
+	Init();
 	
 	IF(DSBYTE[I_Param])
 	{
@@ -125,6 +130,7 @@ void main()
 			code = EAX;
 			loop()
 			{
+				while(DSBYTE[code] == ' ') code++;
 				if(DSBYTE[code]!='(') break;
 				else code++;
 				evalLisp();
@@ -133,17 +139,19 @@ void main()
 			}
 		}
 	}
-	ELSE 
+	else 
 	{
 		consoleInit();
-		con_printf stdcall ("Lisp interpreter v1.0");
+		con_printf stdcall ("Lisp interpreter v1.2");
 		WHILE(maxLoop)
 		{
 			con_printf stdcall ("\r\n\r\nEnter code: ");
 			con_gets stdcall(buffer, bufferSize);
 			code = EAX;
+			code = txt;
 			con_printf stdcall ("Output: ");
 			nextLispLine:
+			while(DSBYTE[code] == ' ') code++;
 			if(DSBYTE[code]!='(') continue;
 			else code++;
 			evalLisp();
