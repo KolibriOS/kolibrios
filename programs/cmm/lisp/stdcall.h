@@ -1,12 +1,35 @@
-:dword std_print(dword count, args)
+
+
+dword std_print(dword count, args)
 {
 	consoleInit();
+	count = 1;
 	WHILE(count)
 	{
 		con_printf stdcall (DSDWORD[args]);
 		args+=4;
 		count--;
 	}
+}
+
+:dword std_set(dword count, args)
+{
+	dword name = 0;
+	dword value = 0;
+	WHILE(count>0)
+	{
+		name = DSDWORD[args];
+		args += 4;
+		value = DSDWORD[args];
+		args += 4;
+		variables.set(name, value);
+		count-=2;
+	}
+}
+
+:dword std_get(dword count, args)
+{
+	RETURN variables.get(DSDWORD[args]);
 }
 
 :dword std_str(dword count, args)
@@ -52,7 +75,7 @@ void Init()
 	functions.init(100);
 	
 	/* Console functions */
-	functions.set("print", #std_print);
+	
 	
 	/* String functions */
 	functions.set("str", #std_str);
@@ -64,13 +87,30 @@ void Init()
 	functions.set("+", #std_add);
 	functions.set("-", #std_sub);
 	
+	/* Lisp functions */
+	functions.set("set", #std_set);
+	functions.set("get", #std_get);
+	
 	variables.init(100);
 }
 
 dword StdCall(dword count, name, args)
 {
 	dword tmp = 0;
+	
 	functions.get(name);
-	IF(EAX)RETURN EAX(count, args);
+	IF(EAX) RETURN EAX(count, args);
+	IF(!strcmp(name, "print"))
+	{
+		consoleInit();
+		count = 1;
+		WHILE(count)
+		{
+			con_printf stdcall (DSDWORD[args]);
+			args += 4;
+			count--;
+		}
+	}
 	RETURN 0;
 }
+
