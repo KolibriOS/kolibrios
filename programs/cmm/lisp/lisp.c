@@ -50,8 +50,7 @@ dword evalLisp()
 	dword p = 0;
 	dataArgs = malloc(16*4);
 	posArgs = dataArgs;
-	name = malloc(100);
-	pos = name;
+
 	loop()
 	{
 		s = DSBYTE[code];
@@ -61,35 +60,45 @@ dword evalLisp()
 			code++;
 			s = DSBYTE[code];
 		}
-		
-		if (!s) || (s==')') 
+		if (!s) return 0;
+		if (s==')') 
 		{
 			code++;
-			break;
+			args--;
+			ret = StdCall(args, name, dataArgs);
+			free(name);
+			//free(dataArgs);
+			return ret;
 		}
-		
-		if (!args) 
+		if(s == '(') 
+		{
+			code++;
+			DSDWORD[posArgs] = evalLisp();
+			args++;
+			posArgs += 4;
+			continue;
+		}
+		else if (!args) 
 		{
 			if (s != ')') // name function
 			{
-				while (s != ' ') && (s != ')')
+				name = malloc(100);
+				pos = name;
+				while (s) && (s != ' ') && (s != ')')
 				{
 					DSBYTE[pos] = s;
 					pos++;
 					code++;
 					s = DSBYTE[code];
-				}
-				code--;
+				}	
+				DSBYTE[pos] = 0;
+				args++;
+				continue;
 			}
 		}
 		else
 		{
-			if(s == '(') 
-			{
-				code++;
-				tmp = evalLisp();
-			}
-			else if (s >= '0') && (s <= '9')
+			if (s >= '0') && (s <= '9')
 			{
 				tmp = 0;
 				while (s >= '0') && (s <= '9')
@@ -99,7 +108,10 @@ dword evalLisp()
 					code++;
 					s = DSBYTE[code];
 				}
-				code--;
+				args++;
+				DSDWORD[posArgs] = tmp;
+				posArgs += 4;
+				continue;
 			}
 			else if (s == '"')
 			{
@@ -130,6 +142,10 @@ dword evalLisp()
 					s = DSBYTE[code];
 				}
 				DSBYTE[p] = 0;
+				args++;
+				DSDWORD[posArgs] = tmp;
+				posArgs += 4;
+				continue;
 			}
 			
 			DSDWORD[posArgs] = tmp;
@@ -141,7 +157,7 @@ dword evalLisp()
 	args--;
 	ret = StdCall(args, name, dataArgs);
 	free(name);
-	free(dataArgs);
+	//free(dataArgs);
 	return ret;
 }
 
@@ -149,7 +165,7 @@ void main()
 {
 	dword brainFuckCode = 0;
 	word maxLoop = 1000;
-	dword txt = "  (print 1)(print 2)";
+	dword txt = "(print (input \"test:\"))";
 	
 	buffer = malloc(bufferSize);
 	memory = malloc(memoryBrainfuck);
@@ -177,7 +193,7 @@ void main()
 	else 
 	{
 		consoleInit();
-		con_printf stdcall ("Lisp interpreter v1.2");
+		con_printf stdcall ("Lisp interpreter v1.3");
 		while(maxLoop)
 		{
 			con_printf stdcall ("\r\n\r\nEnter code: ");
@@ -185,17 +201,7 @@ void main()
 			code = EAX;
 			//code = txt;
 			con_printf stdcall ("Output: ");
-			nextLispLine:
-			while(DSBYTE[code] == ' ') code++;
-			if(DSBYTE[code] == '(') code++;
-			else goto endNext;
 			evalLisp();
-			code--;
-			if(DSBYTE[code]==')') code++;
-			else goto endNext;
-			IF(!DSBYTE[code]) goto endNext;
-			goto nextLispLine;
-			endNext:
 			maxLoop--;
 		}
 	}
