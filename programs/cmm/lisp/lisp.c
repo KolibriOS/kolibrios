@@ -165,7 +165,7 @@ void main()
 {
 	dword brainFuckCode = 0;
 	word maxLoop = 1000;
-	dword txt = "(print (input \"test:\"))";
+	dword txt = "(set name (input \"Enter you name: \"))(print \"You name \" (get name))";
 	
 	buffer = malloc(bufferSize);
 	memory = malloc(memoryBrainfuck);
@@ -178,16 +178,7 @@ void main()
 		IF(io.read(I_Param))
 		{
 			code = EAX;
-			loop()
-			{
-				WHILE(DSBYTE[code] == ' ') code++;
-				IF(DSBYTE[code]!='(') BREAK;
-				ELSE code++;
-				evalLisp();
-				code--;
-				IF(DSBYTE[code]!=')') BREAK;
-				ELSE code++;
-			}
+			evalLisp();
 		}
 	}
 	else 
@@ -199,7 +190,7 @@ void main()
 			con_printf stdcall ("\r\n\r\nEnter code: ");
 			con_gets stdcall(buffer, bufferSize);
 			code = EAX;
-			//code = txt;
+			code = txt;
 			con_printf stdcall ("Output: ");
 			evalLisp();
 			maxLoop--;

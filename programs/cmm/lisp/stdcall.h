@@ -65,9 +65,11 @@
 :dword std_print(dword count, args)
 {
 	dword ret = 0;
+	consoleInit();
 	WHILE(count)
 	{
-		con_printf stdcall (DSDWORD[args]);
+		IF(!DSDWORD[args]) con_printf stdcall ("nil");
+		ELSE con_printf stdcall (DSDWORD[args]);
 		args+=4;
 		count--;
 	}
@@ -77,6 +79,7 @@
 :dword std_input(dword count, args)
 {
 	dword buf = 0;
+	consoleInit();
 	buf = malloc(100);
 	WHILE(count)
 	{
