@@ -55,7 +55,7 @@ dword evalLisp()
 	{
 		s = DSBYTE[code];
 		
-		while(s == ' ')
+		while (s == ' ') || (s == 9)
 		{
 			code++;
 			s = DSBYTE[code];
@@ -184,13 +184,13 @@ void main()
 	else 
 	{
 		consoleInit();
-		con_printf stdcall ("Lisp interpreter v1.3");
+		con_printf stdcall ("Lisp interpreter v1.4\r\n");
 		while(maxLoop)
 		{
-			con_printf stdcall ("\r\n\r\nEnter code: ");
+			con_printf stdcall ("\r\n$ ");
 			con_gets stdcall(buffer, bufferSize);
 			code = EAX;
-			code = txt;
+			//code = txt;
 			con_printf stdcall ("Output: ");
 			evalLisp();
 			maxLoop--;

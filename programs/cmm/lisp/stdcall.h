@@ -1,5 +1,11 @@
 
 /* Lisp functions */
+:dword std_exit()
+{
+	con_exit stdcall (1);
+	ExitProcess();
+}
+
 :dword std_set(dword count, args)
 {
 	dword name = 0;
@@ -103,7 +109,7 @@ void Init()
 	functions.set("str", #std_str);
 	
 	/* System functions */
-	functions.set("exit", #ExitProcess);
+	functions.set("exit", #std_exit);
 	
 	/* Math functions */
 	functions.set("+", #std_add);
