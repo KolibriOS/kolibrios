@@ -48,7 +48,7 @@ char program_path[4096];
 #define EVM_KEY                  10b
 #define EVM_BUTTON              100b
 #define EVM_EXIT               1000b
-#define EVM_BACKGROUND        10000b
+#define EVM_DESKTOPBG         10000b
 #define EVM_MOUSE            100000b
 #define EVM_IPC             1000000b
 #define EVM_STACK          10000000b

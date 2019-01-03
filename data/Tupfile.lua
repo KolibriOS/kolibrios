@@ -243,8 +243,8 @@ extra_files = {
  {"kolibrios/media/zsea/zsea.ini", PROGS .. "/media/zsea/zSea.ini"},
  {"kolibrios/media/zsea/buttons/buttons.png", PROGS .. "/media/zsea/buttons.png"},
  {"kolibrios/res/skins/", "../skins/authors.txt"},
- {"kolibrios/res/wallpapers/", "common/wallpapers/*"},
  {"kolibrios/res/templates/", "common/templates/*"},
+ {"kolibrios/res/wallpapers/", "common/wallpapers/*"},
  }
 if build_type == "rus" then tup.append_table(extra_files, {
  {"Docs/cp866/config.txt", build_type .. "/docs/CONFIG.TXT"},
@@ -265,7 +265,6 @@ if build_type == "rus" then tup.append_table(extra_files, {
  {"HD_Load/9x2klbr/", PROGS .. "/hd_load/9x2klbr/readme_win.txt"},
  {"HD_Load/mtldr/", PROGS .. "/hd_load/mtldr/install.txt"},
  {"HD_Load/USB_Boot/", PROGS .. "/hd_load/usb_boot/readme.txt"},
- {"kolibrios/media/zsea/zsea_keys.txt", PROGS .. "/media/zsea/Docs/zSea_keys_rus.txt"},
  {"kolibrios/games/Dungeons/Resources/Textures/Environment/", PROGS .. "/games/Dungeons/Resources/Textures/Environment/*"},
  {"kolibrios/games/Dungeons/Resources/Textures/Objects/", PROGS .. "/games/Dungeons/Resources/Textures/Objects/*"},
  {"kolibrios/games/Dungeons/Resources/Textures/HUD/", PROGS .. "/games/Dungeons/Resources/Textures/HUD/*"},
@@ -273,6 +272,8 @@ if build_type == "rus" then tup.append_table(extra_files, {
  {"kolibrios/games/Dungeons/", PROGS .. "/games/Dungeons/readme_ru.txt"},
  {"kolibrios/games/WHOWTBAM/", build_type .. "/games/whowtbam"},
  {"kolibrios/games/WHOWTBAM/", build_type .. "/games/appdata.dat"},
+ {"kolibrios/media/zsea/zsea_keys.txt", PROGS .. "/media/zsea/Docs/zSea_keys_rus.txt"},
+ {"kolibrios/res/guide/", build_type .. "/docs/guide/*"}, 
 }) else tup.append_table(extra_files, {
  {"Docs/config.txt", build_type .. "/docs/CONFIG.TXT"},
  {"Docs/copying.txt", build_type .. "/docs/COPYING.TXT"},
