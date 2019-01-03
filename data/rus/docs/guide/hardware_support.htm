@@ -1,0 +1,96 @@
+﻿<html>
+<head>
+     <title>Поддержка оборудования</title>
+     <meta charset="utf-8">
+     <style>
+     body {font-size:120%;}
+     strong {font-size:150%;}
+     hr {max-width: 300px;}
+     pre {white-space: pre-wrap;}
+     h2 {margin-bottom:0;}
+     blockquote {
+          margin-bottom:0; 
+          border-left: 5px solid #EFE8D5; 
+          padding-left: 10px;}
+     </style>
+</head>
+<body bgcolor="#FDF6E3" text="#152630" link="#5551FF" vlink="#5551FF"><pre><h1>Поддержка оборудования</h1>
+<a href="guide.htm" param="d">&lt; Назад</a>
+
+KolibriOS частично обеспечивает поддержку оборудования персонального компьютера. Часть оборудования поддерживается ядром ОС, часть динамически загружаемыми драйверами.
+
+<h2>Графика</h2>
+<b>Стандарт          Поддержка в KolibriOS</b>
+VESA             Поддерживается ядром ОС
+VGA              Поддерживается ядром ОС     
+
+<b>Производитель    Наличие специального драйвера</b>
+AMD              Да, драйвер ATIKMS
+Intel            Да, два драйвера: i915 и VIDINTEL
+NVidia           Нет
+VIA              Нет
+
+VIDINTEL запускается автоматически, его функция одна - установка "родного" разрешения экрана для ноутбуков.
+
+Драйверы ATIKMS и i915 портированы из Линукса. Они дают поддержку аппаратного курсора мыши, смену видеорежимов через утилиту <a href="vmode">VMODE</a> и акселерацию двумерной графики.
+Без использования данных драйверов выбор разрешения экрана возможен лишь на этапе загрузке, но не в процессе работы системы.
+
+<h2>Аудио</h2>
+Поддерживаются большинство аудиокарт стандарта AC97, HDAudio и SB16. 
+Список конкретных поддерживаемых карт есть на вики.
+Также поддерживается вывод звука на наушники.
+
+<h2>Устройства хранения информации</h2>
+<b>IDE (ATA)</b>
+FDD, CD/DVD, HDD/SSD - Поддерживается ядром ОС.
+
+<b>SATA</b>
+CD/DVD - Поддерживается ядром чтение в режиме IDE (ATAPI в PIO режиме).
+HDD - Поддерживается ядром чтение и запись в режиме IDE. Поддерживается драйвером чтение в режиме AHCI (SYSPANEL &gt; <a href="/kolibrios/drivers/DRVINST.KEX">DriverInstall</a>).
+
+В ряде случаев система может работать с SATA- и USB-дисками через BIOS Fn13h в виртуальном V86-режиме (скорость чтения/записи при этом оставляет желать лучшего).
+
+<h2>USB</h2>
+Поддерживаются USB 1.1 и 2.0 (UHCI, OHCI and EHCI). Также есть поддержка хабов.
+USB 3.0 (XHCI) не поддерживается.
+
+<h2>Сеть</h2>
+<b>Wi-Fi</b> не поддерживается.
+
+<b>Ethernet</b> cетевые контроллеры поддерживаются драйверами в составе ядра ОС, но ведётся активная работа по выносу кода в динамически подгружаемые драйвера. В таблице ниже перечислены поддерживаемые системой в настоящее время.
+
+<b>Драйвер     Поддерживаемые сетевые карты</b>
+3c59x       3Com Fast EtherLink (3c59x/450/555/556/575/900/905/980)
+dec21x4x*   Accton en1207B-TX, DEC 21140,.., VirtualPC
+forcedeth*  nVidia nForce chipset integrated ethernet
+i8255x      Intel eepro/100 (i8255x, i82562, i82801,..), QEMU
+i8254x      Intel PRO/1000 (i8254x), Virtualbox, BOCHS, QEMU
+mtd80x      Myson MTD803
+pcnet32     AMD PCnet (79c970, 79c978, 79c973,..), Virtualbox, QEMU
+r6040       RDC Semiconductors R6040
+rhine       VIA Rhine II and III
+rtl8029     Realtek 8029/8019, ne2000 PCI, BOCHS, QEMU
+rtl8139     Realtek 8139 и клоны, QEMU
+rtl8169     Realtek 8110/8111/8167/8168/8169
+sis900      SiS900, 7016
+* - в разработке
+
+<h2>Устройства ввода и вывода</h2>
+<b>COM-мышь</b> поддерживается драйвером, см. SYSPANEL &gt; <a href="/sys/tinypad|/sys/settings/autorun.dat">AUTORUN</a>.
+<b>Встроенный динамик</b> поддерживается ядром ОС, по-умолчанию выключен. Включается в программе SYSPANEL &gt; <a href="/sys/setup">SETUP</a>.
+<b>HDMI</b> ограниченная поддержка, смотрите документацию к видео-драйверам ATIKMS и i915.
+<b>Тачпад</b> поддерживается ядром ОС в режиме эмуляции мыши (PS/2).
+<b>Микрофон</b> не поддерживается.
+<b>Цифровой фотоаппарат</b> не поддерживается.
+<b>Принтер и сканер</b> не поддерживаются.
+<b>Джойстик, руль и геймпад</b> не поддерживаются.
+
+<h2>Ссылки</h2>
+Более полная информация на вики проекта:
+<a href="http://wiki.kolibrios.org/wiki/Hardware_Support">http://wiki.kolibrios.org/wiki/Hardware_Support</a>
+<a href="http://wiki.kolibrios.org/index.php?title=Hardware_Support&setlang=ru">http://wiki.kolibrios.org/index.php?title=Hardware_Support&setlang=ru</a>
+ 
+  
+
+</body>
+</html>
