@@ -276,7 +276,6 @@ mov	ebp,lib0
 	je @f ;if file names exist
 		mov esi,openfile_path
 		stdcall auto_open_syntax,esi
-		call strlen ;eax=strlen
 		call but_no_msg_OpenFile
 	@@:
 

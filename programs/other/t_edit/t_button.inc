@@ -42,6 +42,7 @@ On_NewFile:
 	stdcall [ted_clear], tedit0,1
 	call draw_but_toolbar
 	stdcall [ted_draw], tedit0
+	mov dword[openfile_path],0
 	ret
 
 align 4
@@ -91,12 +92,32 @@ On_Exit:
 ;description:
 ; функция открытия файла без окна сообщения
 align 4
-but_no_msg_OpenFile:
-	push eax ebx
+proc but_no_msg_OpenFile uses eax ebx esi
 	stdcall [ted_open_file], tedit0,run_file_70,openfile_path
 	call ted_messages_after_open_file
-	pop ebx eax
+
+	mov esi,openfile_path
+	call strlen
+	add esi,eax
+	@@: ;цикл для поиска начала имени файла
+		dec esi
+		cmp byte[esi],'/'
+		je @f
+		cmp byte[esi],0x5c ;'\'
+		je @f
+		cmp esi,openfile_path
+		jg @b
+	@@:
+	inc esi
+	call strlen
+	cmp eax,255
+	jle @f
+		mov eax,255
+	@@:
+	inc eax ;для 0 в конце строки
+	stdcall mem_cpy, filename_area,esi,eax ;копируем имя файла в диалог сохранения
 	ret
+endp
 
 ;description:
 ; функция открытия файла с возможным окном сообщения (о возможности отменить открытие)
@@ -126,7 +147,7 @@ ted_but_open_file:
 		jle .no_crop
 			mov eax,100
 		.no_crop:
-		stdcall mem_copy, esi,msgbox_9.fdp,eax
+		stdcall mem_cpy, msgbox_9.fdp,esi,eax
 		stdcall [mb_create],msgbox_9,thread ;message: error run 'open file dialog'
 		jmp .ret_f
 	@@:
@@ -174,24 +195,30 @@ popad
 endp
 
 ;description:
-; функция сохранения файла с вызовом окна диалога
+; функция сохранения файла
 align 4
 proc ted_but_save_file
 	;*** вызов диалогового окна для сохранения файла
+	.init_dlg:
 	copy_path open_dialog_name,communication_area_default_path,file_name,0
 	mov [OpenDialog_data.type],1
 	stdcall [OpenDialog_Start],OpenDialog_data
 	cmp [OpenDialog_data.status],1 ;if status==1 then save
-	jne .end_save_file
+	jne .end_save
+	jmp @f
+	.no_dlg: ; сохраняем без вызова диалогового окна
+		cmp byte[openfile_path],0
+		je .init_dlg ; но если путь пустой то все-же вызываем
+	@@:
 		stdcall [ted_save_file],tedit0,run_file_70,openfile_path
-	.end_save_file:
+	.end_save:
 	ret
 endp
 
 ;description:
 ; копирование памяти
 align 4
-proc mem_copy uses ecx esi edi, source:dword, destination:dword, len:dword
+proc mem_cpy uses ecx esi edi, destination:dword, source:dword, len:dword
 	cld
 	mov esi, dword[source]
 	mov edi, dword[destination]
