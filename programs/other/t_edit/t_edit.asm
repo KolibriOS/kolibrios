@@ -215,40 +215,42 @@ mov	ebp,lib0
 	mov byte[panel_but+1],al
 	stdcall [ini_get_int],file_name,ini_sec_window,key_but_save,1
 	mov byte[panel_but+2],al
-	stdcall [ini_get_int],file_name,ini_sec_window,key_but_select,1
+	stdcall [ini_get_int],file_name,ini_sec_window,key_but_save_as,1
 	mov byte[panel_but+3],al
-	stdcall [ini_get_int],file_name,ini_sec_window,key_but_cut,1
+	stdcall [ini_get_int],file_name,ini_sec_window,key_but_select,1
 	mov byte[panel_but+4],al
-	stdcall [ini_get_int],file_name,ini_sec_window,key_but_copy,1
+	stdcall [ini_get_int],file_name,ini_sec_window,key_but_cut,1
 	mov byte[panel_but+5],al
-	stdcall [ini_get_int],file_name,ini_sec_window,key_but_paste,1
+	stdcall [ini_get_int],file_name,ini_sec_window,key_but_copy,1
 	mov byte[panel_but+6],al
-	stdcall [ini_get_int],file_name,ini_sec_window,key_but_find,1
+	stdcall [ini_get_int],file_name,ini_sec_window,key_but_paste,1
 	mov byte[panel_but+7],al
-	stdcall [ini_get_int],file_name,ini_sec_window,key_but_replace,1
+	stdcall [ini_get_int],file_name,ini_sec_window,key_but_find,1
 	mov byte[panel_but+8],al
-	stdcall [ini_get_int],file_name,ini_sec_window,key_but_key_words,1
+	stdcall [ini_get_int],file_name,ini_sec_window,key_but_replace,1
 	mov byte[panel_but+9],al
-	stdcall [ini_get_int],file_name,ini_sec_window,key_but_upper,1
+	stdcall [ini_get_int],file_name,ini_sec_window,key_but_key_words,1
 	mov byte[panel_but+10],al
-	stdcall [ini_get_int],file_name,ini_sec_window,key_but_lower,1
+	stdcall [ini_get_int],file_name,ini_sec_window,key_but_upper,1
 	mov byte[panel_but+11],al
-	stdcall [ini_get_int],file_name,ini_sec_window,key_but_reverse,1
+	stdcall [ini_get_int],file_name,ini_sec_window,key_but_lower,1
 	mov byte[panel_but+12],al
-	stdcall [ini_get_int],file_name,ini_sec_window,key_but_undo,1
+	stdcall [ini_get_int],file_name,ini_sec_window,key_but_reverse,1
 	mov byte[panel_but+13],al
-	stdcall [ini_get_int],file_name,ini_sec_window,key_but_redo,1
+	stdcall [ini_get_int],file_name,ini_sec_window,key_but_undo,1
 	mov byte[panel_but+14],al
-	stdcall [ini_get_int],file_name,ini_sec_window,key_but_invisible,1
+	stdcall [ini_get_int],file_name,ini_sec_window,key_but_redo,1
 	mov byte[panel_but+15],al
-	stdcall [ini_get_int],file_name,ini_sec_window,key_but_syntax_list,1
+	stdcall [ini_get_int],file_name,ini_sec_window,key_but_invisible,1
 	mov byte[panel_but+16],al
-	stdcall [ini_get_int],file_name,ini_sec_window,key_but_syntax_mode,1
+	stdcall [ini_get_int],file_name,ini_sec_window,key_but_syntax_list,1
 	mov byte[panel_but+17],al
-	stdcall [ini_get_int],file_name,ini_sec_window,key_but_convert_1251_866,1
+	stdcall [ini_get_int],file_name,ini_sec_window,key_but_syntax_mode,1
 	mov byte[panel_but+18],al
-	stdcall [ini_get_int],file_name,ini_sec_window,key_but_convert_866_1251,1
+	stdcall [ini_get_int],file_name,ini_sec_window,key_but_convert_1251_866,1
 	mov byte[panel_but+19],al
+	stdcall [ini_get_int],file_name,ini_sec_window,key_but_convert_866_1251,1
+	mov byte[panel_but+20],al
 	;файловые расширения
 	xor edx,edx
 	mov ebx,synt_auto_open
@@ -410,8 +412,8 @@ key:
 		cmp ah,69 ;[Pause Break]
 		je still
 
-		stdcall KeyConvertToASCII, dword conv_tabl
-		stdcall [edit_box_key], dword edit2
+		stdcall KeyConvertToASCII, conv_tabl
+		stdcall [edit_box_key], edit2
 		jmp still
 	@@:
 
@@ -433,90 +435,98 @@ button:
 	@@:
 	cmp ah,5
 	jne @f
-		call ted_but_save_file
+		xor eax,eax
+		call ted_but_save_file ;сохранение без диалога
 		jmp still
 	@@:
 	cmp ah,6
 	jne @f
-		stdcall [ted_but_select_word], tedit0
+		xor eax,eax
+		inc eax
+		call ted_but_save_file ;сохранение с диалогом
 		jmp still
 	@@:
 	cmp ah,7
 	jne @f
-		stdcall [ted_but_cut], tedit0
+		stdcall [ted_but_select_word], tedit0
 		jmp still
 	@@:
 	cmp ah,8
 	jne @f
-		stdcall [ted_but_copy], tedit0
+		stdcall [ted_but_cut], tedit0
 		jmp still
 	@@:
 	cmp ah,9
 	jne @f
-		stdcall [ted_but_paste], tedit0
+		stdcall [ted_but_copy], tedit0
 		jmp still
 	@@:
 	cmp ah,10
 	jne @f
-		call ted_but_find
+		stdcall [ted_but_paste], tedit0
 		jmp still
 	@@:
 	cmp ah,11
 	jne @f
-		call but_replace
+		call ted_but_find
 		jmp still
 	@@:
 	cmp ah,12
 	jne @f
-		call but_find_key_w
+		call but_replace
 		jmp still
 	@@:
 	cmp ah,13
 	jne @f
-		stdcall [ted_but_sumb_upper], tedit0
+		call but_find_key_w
 		jmp still
 	@@:
 	cmp ah,14
 	jne @f
-		stdcall [ted_but_sumb_lover], tedit0
+		stdcall [ted_but_sumb_upper], tedit0
 		jmp still
 	@@:
 	cmp ah,15
 	jne @f
-		stdcall [ted_but_reverse], tedit0
+		stdcall [ted_but_sumb_lover], tedit0
 		jmp still
 	@@:
 	cmp ah,16
 	jne @f
-		stdcall [ted_but_undo], tedit0
+		stdcall [ted_but_reverse], tedit0
 		jmp still
 	@@:
 	cmp ah,17
 	jne @f
-		stdcall [ted_but_redo], tedit0
+		stdcall [ted_but_undo], tedit0
 		jmp still
 	@@:
 	cmp ah,18
 	jne @f
-		stdcall but_sumb_invis, tedit0
+		stdcall [ted_but_redo], tedit0
 		jmp still
 	@@:
 	cmp ah,19
 	jne @f
-		stdcall but_k_words_show, tedit0
+		stdcall but_sumb_invis, tedit0
 		jmp still
 	@@:
 	cmp ah,20
 	jne @f
-		stdcall but_synt_show, tedit0
+		stdcall but_k_words_show, tedit0
 		jmp still
 	@@:
 	cmp ah,21
 	jne @f
-		stdcall [ted_but_convert_by_table],tedit0,tbl_1251_866
+		stdcall but_synt_show, tedit0
 		jmp still
 	@@:
 	cmp ah,22
+	jne @f
+		stdcall [ted_but_convert_by_table],tedit0,tbl_1251_866
+		jmp still
+	@@:
+	cmp ah,23
 	jne @f
 		stdcall [ted_but_convert_by_table],tedit0,tbl_866_1251
 		jmp still

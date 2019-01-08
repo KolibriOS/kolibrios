@@ -5,6 +5,7 @@ sz_main_menu_File db 'Файл', 0
 sz_main_menu_File_New  db 'Новый', 0
 sz_main_menu_File_Open db 'Открыть', 0
 sz_main_menu_File_Save db 'Сохранить', 0
+sz_main_menu_File_Save_As db 'Сохранить как', 0
 sz_main_menu_File_Exit db 'Выход', 0
 
 sz_main_menu_Changes db 'Изменения', 0
@@ -35,6 +36,7 @@ sz_main_menu_File db 'File', 0
 sz_main_menu_File_New db 'New', 0
 sz_main_menu_File_Open db 'Open', 0
 sz_main_menu_File_Save db 'Save', 0
+sz_main_menu_File_Save_As db 'Save as', 0
 sz_main_menu_File_Exit db 'Exit', 0
 
 sz_main_menu_Changes db 'Changes', 0

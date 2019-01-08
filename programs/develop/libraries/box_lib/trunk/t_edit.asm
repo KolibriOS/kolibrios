@@ -243,27 +243,33 @@ proc ted_key, edit:dword, table:dword, control:dword
 		cmp ah,24 ;Ctrl+O
 		jne @f
 			cmp ted_fun_on_key_ctrl_o,0
-			je @f
+			je .end_key_fun
 				call ted_fun_on_key_ctrl_o
 		@@:
 		cmp ah,31 ;Ctrl+S
-		jne @f
+		jne .end_ctrl_s
 			cmp ted_fun_on_key_ctrl_s,0
-			je @f
+			je .end_key_fun
+				xor eax,eax
+				test esi,KM_SHIFT
+				jz @f
+					inc eax
+				@@:				
 				call ted_fun_on_key_ctrl_s
-		@@:
+				jmp .end_key_fun
+		.end_ctrl_s:
 		cmp ah,33 ;Ctrl+F
 		jne @f
 		cmp ted_panel_id,TED_PANEL_FIND
 		je @f
 			cmp ted_fun_on_key_ctrl_f,0
-			je @f
+			je .end_key_fun
 				call ted_fun_on_key_ctrl_f
 		@@:
 		cmp ah,49 ;Ctrl+N
 		jne @f
 			cmp ted_fun_on_key_ctrl_n,0
-			je @f
+			je .end_key_fun
 				call ted_fun_on_key_ctrl_n
 		@@:
 		; *** вызов внутренних функций

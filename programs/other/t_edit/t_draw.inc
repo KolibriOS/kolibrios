@@ -30,8 +30,15 @@ draw_but_toolbar: ;функция для рисования панели инструментов
 	@@:
 	or ecx,0x40000000
 
-	inc cx 
+	inc cx
 	bt word[panel_but+3],0
+	jnc @f
+		add edx,25 shl 16
+		call draw_but_icon ;Save as
+	@@:
+
+	inc cx
+	bt word[panel_but+4],0
 	jnc @f
 		add edx,30 shl 16
 		call draw_but_icon ;Select word
@@ -43,14 +50,14 @@ draw_but_toolbar: ;функция для рисования панели инструментов
 		and ecx,0xffff
 	@@:
 	inc cx
-	bt word[panel_but+4],0
+	bt word[panel_but+5],0
 	jnc @f
 		add edx,25 shl 16
 		call draw_but_icon ;Cut
 	@@:
 
 	inc cx
-	bt word[panel_but+5],0
+	bt word[panel_but+6],0
 	jnc @f
 		add edx,25 shl 16
 		call draw_but_icon ;Copy
@@ -62,7 +69,7 @@ draw_but_toolbar: ;функция для рисования панели инструментов
 		and ecx,0xffff
 	@@:
 	inc cx
-	bt word[panel_but+6],0
+	bt word[panel_but+7],0
 	jnc @f
 		add edx,25 shl 16
 		call draw_but_icon ;Paste
@@ -70,21 +77,21 @@ draw_but_toolbar: ;функция для рисования панели инструментов
 	or ecx,0x40000000
 
 	inc cx
-	bt word[panel_but+7],0
+	bt word[panel_but+8],0
 	jnc @f
 		add edx,25 shl 16
 		call draw_but_icon ;Found
 	@@:
 
 	inc cx
-	bt word[panel_but+8],0
+	bt word[panel_but+9],0
 	jnc @f
 		add edx,25 shl 16
 		call draw_but_icon ;Replace
 	@@:
 
 	inc cx
-	bt word[panel_but+9],0
+	bt word[panel_but+10],0
 	jnc @f
 		add edx,25 shl 16
 		call draw_but_icon ;Key words
@@ -96,21 +103,21 @@ draw_but_toolbar: ;функция для рисования панели инструментов
 		and ecx,0xffff
 	@@:
 	inc cx
-	bt word[panel_but+10],0
+	bt word[panel_but+11],0
 	jnc @f
 		add edx,30 shl 16
 		call draw_but_icon ;Upper
 	@@:
 
 	inc cx
-	bt word[panel_but+11],0
+	bt word[panel_but+12],0
 	jnc @f
 		add edx,25 shl 16
 		call draw_but_icon ;Lower
 	@@:
 
 	inc cx
-	bt word[panel_but+12],0
+	bt word[panel_but+13],0
 	jnc @f
 		add edx,25 shl 16
 		call draw_but_icon ;Reverse
@@ -123,7 +130,7 @@ draw_but_toolbar: ;функция для рисования панели инструментов
 		and ecx,0xffff
 	@@:
 	inc cx
-	bt word[panel_but+13],0
+	bt word[panel_but+14],0
 	jnc @f
 		add edx,30 shl 16
 		call draw_but_icon ;Undo
@@ -135,7 +142,7 @@ draw_but_toolbar: ;функция для рисования панели инструментов
 		and ecx,0xffff
 	@@:
 	inc cx
-	bt word[panel_but+14],0
+	bt word[panel_but+15],0
 	jnc @f
 		add edx,25 shl 16
 		call draw_but_icon ;Redo
@@ -143,17 +150,10 @@ draw_but_toolbar: ;функция для рисования панели инструментов
 	or ecx,0x40000000
 
 	inc cx
-	bt word[panel_but+15],0
+	bt word[panel_but+16],0
 	jnc @f
 		add edx,30 shl 16
 		call draw_but_icon ;Invisible on|off
-	@@:
-
-	inc cx
-	bt word[panel_but+16],0
-	jnc @f
-		add edx,25 shl 16
-		call draw_but_icon
 	@@:
 
 	inc cx
@@ -166,12 +166,19 @@ draw_but_toolbar: ;функция для рисования панели инструментов
 	inc cx
 	bt word[panel_but+18],0
 	jnc @f
+		add edx,25 shl 16
+		call draw_but_icon ;Подсветка вкл|выкл
+	@@:
+
+	inc cx
+	bt word[panel_but+19],0
+	jnc @f
 		add edx,30 shl 16
 		call draw_but_icon ;cp 1251 -> 866
 	@@:
 
 	inc cx
-	bt word[panel_but+19],0
+	bt word[panel_but+20],0
 	jnc @f
 		add edx,25 shl 16
 		call draw_but_icon ;cp 866 -> 1251

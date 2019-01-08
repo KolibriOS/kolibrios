@@ -194,21 +194,24 @@ popad
 	ret
 endp
 
+;input:
+; eax если равен: 0 - сохранение без диалога, 1 - сохранение с диалогом
 ;description:
 ; функция сохранения файла
 align 4
 proc ted_but_save_file
-	;*** вызов диалогового окна для сохранения файла
-	.init_dlg:
-	copy_path open_dialog_name,communication_area_default_path,file_name,0
-	mov [OpenDialog_data.type],1
-	stdcall [OpenDialog_Start],OpenDialog_data
-	cmp [OpenDialog_data.status],1 ;if status==1 then save
-	jne .end_save
-	jmp @f
-	.no_dlg: ; сохраняем без вызова диалогового окна
+	or eax,eax
+	jnz .init_dlg
+		; сохраняем без вызова диалогового окна
 		cmp byte[openfile_path],0
-		je .init_dlg ; но если путь пустой то все-же вызываем
+		jne @f
+	.init_dlg:
+		; вызов диалогового окна для сохранения файла
+		copy_path open_dialog_name,communication_area_default_path,file_name,0
+		mov [OpenDialog_data.type],1
+		stdcall [OpenDialog_Start],OpenDialog_data
+		cmp [OpenDialog_data.status],1 ;if status==1 then save
+		jne .end_save
 	@@:
 		stdcall [ted_save_file],tedit0,run_file_70,openfile_path
 	.end_save:
@@ -220,9 +223,9 @@ endp
 align 4
 proc mem_cpy uses ecx esi edi, destination:dword, source:dword, len:dword
 	cld
-	mov esi, dword[source]
-	mov edi, dword[destination]
-	mov ecx, dword[len]
+	mov esi,[source]
+	mov edi,[destination]
+	mov ecx,[len]
 	rep movsb
 	ret
 endp
@@ -233,8 +236,8 @@ align 4
 proc mem_spac uses eax ecx edi, mem:dword, len:dword
 	cld
 	mov al,' '
-	mov edi, dword[mem]
-	mov ecx, dword[len]
+	mov edi,[mem]
+	mov ecx,[len]
 	repne stosb
 	ret
 endp
