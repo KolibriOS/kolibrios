@@ -85,6 +85,8 @@ mov	ebp,lib0
 	stdcall [ksubmenu_add], [main_menu_file], eax
 	stdcall [kmenuitem_new], KMENUITEM_NORMAL, sz_main_menu_File_Save, 5
 	stdcall [ksubmenu_add], [main_menu_file], eax
+	stdcall [kmenuitem_new], KMENUITEM_NORMAL, sz_main_menu_File_Save_As, 6
+	stdcall [ksubmenu_add], [main_menu_file], eax
 	stdcall [kmenuitem_new], KMENUITEM_SEPARATOR, 0, 0
 	stdcall [ksubmenu_add], [main_menu_file], eax
 	stdcall [kmenuitem_new], KMENUITEM_NORMAL, sz_main_menu_File_Exit, 199
