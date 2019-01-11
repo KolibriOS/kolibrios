@@ -7,8 +7,195 @@ struct symbol
 	td dd ?   ;+14 врем. удаления
 ends
 
+ID_BUT_0 equ 3 ;минимальный ID кнопки на панели
+
+ID_BUT_NEW equ 3
+ID_BUT_OPEN equ 4
+ID_BUT_SAVE equ 5
+ID_BUT_SAVE_AS equ 6
+ID_BUT_SELECT equ 7
+ID_BUT_CUT equ 8
+ID_BUT_COPY equ 9
+ID_BUT_PASTE equ 10
+ID_BUT_FIND equ 11
+ID_BUT_REPLACE equ 12
+ID_BUT_KEY_WORDS equ 13
+ID_BUT_UPPER equ 14
+ID_BUT_LOWER equ 15
+ID_BUT_REVERSE equ 16
+ID_BUT_UNDO equ 17
+ID_BUT_REDO equ 18
+ID_BUT_INVISIBLE equ 19
+ID_BUT_SYNTAX_LIST equ 20
+ID_BUT_SYNTAX_MODE equ 21
+ID_BUT_CONVERT_1251_866 equ 22
+ID_BUT_CONVERT_866_1251 equ 23
+
+macro ini_panel b_key,b_id
+{
+	stdcall [ini_get_int],file_name,ini_sec_window,b_key,1
+	mov byte[panel_but+b_id-ID_BUT_0],al
+}
+
 bmp_icon dd 0
 
+align 16
+button:
+	mcall SF_GET_BUTTON
+	cmp ah,ID_BUT_NEW
+	jne @f
+		call ted_but_new_file
+		jmp still
+	@@:
+	cmp ah,ID_BUT_OPEN
+	jne @f
+		call ted_but_open_file
+		jmp still
+	@@:
+	cmp ah,ID_BUT_SAVE
+	jne @f
+		xor eax,eax
+		call ted_but_save_file ;сохранение без диалога
+		jmp still
+	@@:
+	cmp ah,ID_BUT_SAVE_AS
+	jne @f
+		xor eax,eax
+		inc eax
+		call ted_but_save_file ;сохранение с диалогом
+		jmp still
+	@@:
+	cmp ah,ID_BUT_SELECT
+	jne @f
+		stdcall [ted_but_select_word], tedit0
+		jmp still
+	@@:
+	cmp ah,ID_BUT_CUT
+	jne @f
+		stdcall [ted_but_cut], tedit0
+		jmp still
+	@@:
+	cmp ah,ID_BUT_COPY
+	jne @f
+		stdcall [ted_but_copy], tedit0
+		jmp still
+	@@:
+	cmp ah,ID_BUT_PASTE
+	jne @f
+		stdcall [ted_but_paste], tedit0
+		jmp still
+	@@:
+	cmp ah,ID_BUT_FIND
+	jne @f
+		call ted_but_find
+		jmp still
+	@@:
+	cmp ah,ID_BUT_REPLACE
+	jne @f
+		call but_replace
+		jmp still
+	@@:
+	cmp ah,ID_BUT_KEY_WORDS
+	jne @f
+		call but_find_key_w
+		jmp still
+	@@:
+	cmp ah,ID_BUT_UPPER
+	jne @f
+		stdcall [ted_but_sumb_upper], tedit0
+		jmp still
+	@@:
+	cmp ah,ID_BUT_LOWER
+	jne @f
+		stdcall [ted_but_sumb_lover], tedit0
+		jmp still
+	@@:
+	cmp ah,ID_BUT_REVERSE
+	jne @f
+		stdcall [ted_but_reverse], tedit0
+		jmp still
+	@@:
+	cmp ah,ID_BUT_UNDO
+	jne @f
+		stdcall [ted_but_undo], tedit0
+		jmp still
+	@@:
+	cmp ah,ID_BUT_REDO
+	jne @f
+		stdcall [ted_but_redo], tedit0
+		jmp still
+	@@:
+	cmp ah,ID_BUT_INVISIBLE
+	jne @f
+		stdcall but_sumb_invis, tedit0
+		jmp still
+	@@:
+	cmp ah,ID_BUT_SYNTAX_LIST
+	jne @f
+		stdcall but_use_syntax, tedit0
+		jmp still
+	@@:
+	cmp ah,ID_BUT_SYNTAX_MODE
+	jne @f
+		stdcall but_choose_syntax, tedit0
+		jmp still
+	@@:
+	cmp ah,ID_BUT_CONVERT_1251_866
+	jne @f
+		stdcall [ted_but_convert_by_table],tedit0,tbl_1251_866
+		jmp still
+	@@:
+	cmp ah,ID_BUT_CONVERT_866_1251
+	jne @f
+		stdcall [ted_but_convert_by_table],tedit0,tbl_866_1251
+		jmp still
+	@@:
+
+	cmp ah,200
+	jne @f
+		stdcall ted_but_open_syntax, tedit0
+		jmp still
+	@@:
+	cmp ah,201
+	jne @f
+		stdcall [ted_but_find_next], tedit0
+		jmp still
+	@@:
+
+	cmp ah,1
+	je .exit
+
+	cmp ah,199
+	je .exit
+  
+	jmp still
+.exit:
+	cmp dword[wnd_k_words_run],0
+	je @f
+		push ebx ecx
+		mcall SF_SYSTEM, SSF_TERMINATE_THREAD_ID,[wnd_k_words_run]
+		pop ecx ebx
+		test eax,eax
+		jnz still
+	@@:
+	cmp dword[exit_code],1
+	je @f
+	stdcall [ted_can_save], tedit0
+	cmp al,1
+	jne @f
+		stdcall [mb_create],msgbox_2,thread ;message: save buf in file?
+		stdcall [mb_setfunctions],msgbox_2E_funct
+		jmp still
+	@@:
+	stdcall mem.Free,[bmp_icon]
+	cmp dword[unpac_mem],0
+	je @f
+		stdcall mem.Free,[unpac_mem]
+	@@:
+ 
+	stdcall [ted_delete], tedit0
+	stdcall [tl_data_clear], tree1
+	mcall SF_TERMINATE_PROCESS ;выход из программы
 
 ;input:
 ; al = код ошибки
@@ -18,7 +205,6 @@ ted_on_init_synt_err:
 	add byte[msgbox_3.err],al
 	stdcall [mb_create],msgbox_3,thread ;message: Can-t open color options file!
 	ret
-
 
 align 4
 ted_but_new_file:
@@ -250,8 +436,6 @@ ted_messages_after_open_file:
 	push ecx edi
 	cmp eax,0
 	je @f
-	cmp eax,6
-	je @f
 		cmp ax,10
 		jl .zifra_0_9
 			mov al,'?'
@@ -445,7 +629,7 @@ endp
 ;description:
 ; выделение/скрытие ключевых слов
 align 4
-proc but_k_words_show uses edi, edit:dword
+proc but_use_syntax uses edi, edit:dword
 	mov edi,dword[edit]
 
 	xor ted_mode_color,1
@@ -461,7 +645,7 @@ endp
 ;description:
 ; вызов/скрытие панели с файлами синтаксиса
 align 4
-proc but_synt_show uses edi, edit:dword
+proc but_choose_syntax uses edi, edit:dword
 	mov edi,[edit]
 
 	cmp ted_panel_id,TED_PANEL_NULL

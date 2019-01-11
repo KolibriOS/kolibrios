@@ -1,16 +1,40 @@
+
+
+align 16
+draw_window:
+	mcall SF_REDRAW,SSF_BEGIN_DRAW
+
+	mov edx,[sc.work]
+	or  edx,0x73000000
+	mcall SF_CREATE_WINDOW,dword[wnd_s_pos],dword[wnd_s_pos+4],,,hed
+
+	mcall SF_THREAD_INFO,procinfo,-1
+	mov edi,tedit0 ;значение edi нужно для EvSize и ted_wnd_t
+	call EvSize
+
+	movzx ebx,word[procinfo.client_box.width]
+	inc bx
+	mcall SF_DRAW_RECT,,ted_wnd_t ;верхний прямоугольник, для очистки верхней панели
+	call draw_but_toolbar
+	stdcall [kmainmenu_draw], [main_menu]
+	stdcall [ted_draw], tedit0
+
+	mcall SF_REDRAW,SSF_END_DRAW
+	ret
+
 align 4
 draw_but_toolbar: ;функция для рисования панели инструментов
 	pushad
 	mov edi,tedit0
 
-	mov ecx,0x40000000
+	mov ecx,0x40000000+ID_BUT_NEW
 	mov edx,(5 shl 16)+25
 	bt word[panel_but],0
 	jnc @f
 		call draw_but_icon ;New
 	@@:
 
-	inc cx
+	mov cx,ID_BUT_OPEN
 	bt word[panel_but+1],0
 	jnc @f
 		add edx,25 shl 16
@@ -22,7 +46,7 @@ draw_but_toolbar: ;функция для рисования панели инструментов
 	je @f
 		and ecx,0xffff
 	@@:
-	inc cx
+	mov cx,ID_BUT_SAVE
 	bt word[panel_but+2],0
 	jnc @f
 		add edx,25 shl 16
@@ -30,14 +54,14 @@ draw_but_toolbar: ;функция для рисования панели инструментов
 	@@:
 	or ecx,0x40000000
 
-	inc cx
+	mov cx,ID_BUT_SAVE_AS
 	bt word[panel_but+3],0
 	jnc @f
 		add edx,25 shl 16
 		call draw_but_icon ;Save as
 	@@:
 
-	inc cx
+	mov cx,ID_BUT_SELECT
 	bt word[panel_but+4],0
 	jnc @f
 		add edx,30 shl 16
@@ -49,14 +73,14 @@ draw_but_toolbar: ;функция для рисования панели инструментов
 	jnz @f
 		and ecx,0xffff
 	@@:
-	inc cx
+	mov cx,ID_BUT_CUT
 	bt word[panel_but+5],0
 	jnc @f
 		add edx,25 shl 16
 		call draw_but_icon ;Cut
 	@@:
 
-	inc cx
+	mov cx,ID_BUT_COPY
 	bt word[panel_but+6],0
 	jnc @f
 		add edx,25 shl 16
@@ -68,7 +92,7 @@ draw_but_toolbar: ;функция для рисования панели инструментов
 	jne @f
 		and ecx,0xffff
 	@@:
-	inc cx
+	mov cx,ID_BUT_PASTE
 	bt word[panel_but+7],0
 	jnc @f
 		add edx,25 shl 16
@@ -76,21 +100,21 @@ draw_but_toolbar: ;функция для рисования панели инструментов
 	@@:
 	or ecx,0x40000000
 
-	inc cx
+	mov cx,ID_BUT_FIND
 	bt word[panel_but+8],0
 	jnc @f
 		add edx,25 shl 16
 		call draw_but_icon ;Found
 	@@:
 
-	inc cx
+	mov cx,ID_BUT_REPLACE
 	bt word[panel_but+9],0
 	jnc @f
 		add edx,25 shl 16
 		call draw_but_icon ;Replace
 	@@:
 
-	inc cx
+	mov cx,ID_BUT_KEY_WORDS
 	bt word[panel_but+10],0
 	jnc @f
 		add edx,25 shl 16
@@ -102,21 +126,21 @@ draw_but_toolbar: ;функция для рисования панели инструментов
 	jnz @f
 		and ecx,0xffff
 	@@:
-	inc cx
+	mov cx,ID_BUT_UPPER
 	bt word[panel_but+11],0
 	jnc @f
 		add edx,30 shl 16
 		call draw_but_icon ;Upper
 	@@:
 
-	inc cx
+	mov cx,ID_BUT_LOWER
 	bt word[panel_but+12],0
 	jnc @f
 		add edx,25 shl 16
 		call draw_but_icon ;Lower
 	@@:
 
-	inc cx
+	mov cx,ID_BUT_REVERSE
 	bt word[panel_but+13],0
 	jnc @f
 		add edx,25 shl 16
@@ -129,7 +153,7 @@ draw_but_toolbar: ;функция для рисования панели инструментов
 	jg @f
 		and ecx,0xffff
 	@@:
-	inc cx
+	mov cx,ID_BUT_UNDO
 	bt word[panel_but+14],0
 	jnc @f
 		add edx,30 shl 16
@@ -141,7 +165,7 @@ draw_but_toolbar: ;функция для рисования панели инструментов
 	jge @f
 		and ecx,0xffff
 	@@:
-	inc cx
+	mov cx,ID_BUT_REDO
 	bt word[panel_but+15],0
 	jnc @f
 		add edx,25 shl 16
@@ -149,35 +173,35 @@ draw_but_toolbar: ;функция для рисования панели инструментов
 	@@:
 	or ecx,0x40000000
 
-	inc cx
+	mov cx,ID_BUT_INVISIBLE
 	bt word[panel_but+16],0
 	jnc @f
 		add edx,30 shl 16
 		call draw_but_icon ;Invisible on|off
 	@@:
 
-	inc cx
+	mov cx,ID_BUT_SYNTAX_LIST
 	bt word[panel_but+17],0
 	jnc @f
 		add edx,25 shl 16
 		call draw_but_icon ;Выбор файла подсветки
 	@@:
 
-	inc cx
+	mov cx,ID_BUT_SYNTAX_MODE
 	bt word[panel_but+18],0
 	jnc @f
 		add edx,25 shl 16
 		call draw_but_icon ;Подсветка вкл|выкл
 	@@:
 
-	inc cx
+	mov cx,ID_BUT_CONVERT_1251_866
 	bt word[panel_but+19],0
 	jnc @f
 		add edx,30 shl 16
 		call draw_but_icon ;cp 1251 -> 866
 	@@:
 
-	inc cx
+	mov cx,ID_BUT_CONVERT_866_1251
 	bt word[panel_but+20],0
 	jnc @f
 		add edx,25 shl 16
@@ -204,7 +228,7 @@ proc draw_panel_find
 		mov cx,20
 		mcall SF_DRAW_RECT,TED_PANEL_WIDTH,,[sc.work]
 
-		mov ebx,30*65536+25
+		mov ebx,(30 shl 16)+25
 		add ebx,ted_wnd_t
 		mov ecx,[sc.work_text]
 		or ecx,0x80000000
@@ -225,9 +249,9 @@ proc draw_panel_find
 		add cx,20+15+5
 		shl ecx,16
 		mov cx,20
-		mcall SF_DEFINE_BUTTON,5*65536+85,,201,[sc.work_button] ;201 - button id
+		mcall SF_DEFINE_BUTTON,(5 shl 16)+85,,201,[sc.work_button] ;201 - button id
 
-		mov ebx,15*65536+(20+15+10)
+		mov ebx,(15 shl 16)+(20+15+10)
 		add ebx,ted_wnd_t
 		mov ecx,[sc.work_text]
 		or ecx,0x80000000
@@ -345,7 +369,7 @@ EvSize:
 
 ;input:
 ;  ecx = 0x4000____
-;   cx = icon index
+;   cx = ID button
 ;  edx = x*2^16+y
 align 4
 draw_but_icon:
@@ -355,7 +379,6 @@ draw_but_icon:
 	push ecx edx esi
 		mov ebx,edx
 		mov edx,ecx
-		add edx,3
 		mov cx,bx
 		shl ecx,16
 		mov cx,19 ;=20-1
@@ -379,6 +402,7 @@ draw_but_icon:
 			add ebx,TOOLBAR_ICONS_SIZE ;перемещаемся на серые кнопки
 		.gray:
 		push ecx
+		sub ecx,ID_BUT_0
 		and ecx,0xffff
 		imul ecx,1200
 		add ebx,ecx

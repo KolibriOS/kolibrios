@@ -9,7 +9,7 @@ MAX_COLOR_WORD_LEN equ 40
 maxChars equ 100002 ;(колличество символов в новом документе + 2)
 BUF_SIZE equ 4096 ;buffer for copy|paste
 maxSyntaxFileSize equ 410000
-TOOLBAR_ICONS_SIZE equ 1200*20
+TOOLBAR_ICONS_SIZE equ 1200*21
 
 include '../../proc32.inc'
 include '../../macros.inc'
@@ -21,10 +21,10 @@ include '../../system/skincfg/trunk/unpacker.inc'
 include 'lang.inc'
 
 include 't_data.inc'
+include 't_button.inc'
 include 't_menu.inc'
 include 'strlen.inc'
 include 't_draw.inc' ;draw main window functions
-include 't_button.inc' ;text work functions
 include 'wnd_k_words.inc'
 
 @use_library_mem mem.Alloc,mem.Free,mem.ReAlloc,dll.Load
@@ -71,80 +71,9 @@ mov	ebp,lib0
 ; OpenDialog initialisation
 	stdcall [OpenDialog_Init],OpenDialog_data
 
-; kmenu initialisation	
-	stdcall [kmenu_init], sc
-	
-	stdcall [ksubmenu_new]
-	mov [main_menu], eax
-	
-	stdcall [ksubmenu_new]
-	mov [main_menu_file], eax
-	stdcall [kmenuitem_new], KMENUITEM_NORMAL, sz_main_menu_File_New, 3
-	stdcall [ksubmenu_add], [main_menu_file], eax
-	stdcall [kmenuitem_new], KMENUITEM_NORMAL, sz_main_menu_File_Open, 4
-	stdcall [ksubmenu_add], [main_menu_file], eax
-	stdcall [kmenuitem_new], KMENUITEM_NORMAL, sz_main_menu_File_Save, 5
-	stdcall [ksubmenu_add], [main_menu_file], eax
-	stdcall [kmenuitem_new], KMENUITEM_NORMAL, sz_main_menu_File_Save_As, 6
-	stdcall [ksubmenu_add], [main_menu_file], eax
-	stdcall [kmenuitem_new], KMENUITEM_SEPARATOR, 0, 0
-	stdcall [ksubmenu_add], [main_menu_file], eax
-	stdcall [kmenuitem_new], KMENUITEM_NORMAL, sz_main_menu_File_Exit, 199
-	stdcall [ksubmenu_add], [main_menu_file], eax	
-	stdcall [kmenuitem_new], KMENUITEM_SUBMENU, sz_main_menu_File, [main_menu_file]
-	stdcall [ksubmenu_add], [main_menu], eax
+; kmenu initialisation
+	call tedit_menu_init
 
-	stdcall [ksubmenu_new]
-	mov [main_menu_changes], eax
-	stdcall [kmenuitem_new], KMENUITEM_NORMAL, sz_main_menu_Changes_Undo, 16
-	stdcall [ksubmenu_add], [main_menu_changes], eax
-	stdcall [kmenuitem_new], KMENUITEM_NORMAL, sz_main_menu_Changes_Redo, 17
-	stdcall [ksubmenu_add], [main_menu_changes], eax
-	stdcall [kmenuitem_new], KMENUITEM_SUBMENU, sz_main_menu_Changes, [main_menu_changes]
-	stdcall [ksubmenu_add], [main_menu], eax
-	
-	stdcall [ksubmenu_new]
-	mov [main_menu_buf], eax
-	stdcall [kmenuitem_new], KMENUITEM_NORMAL, sz_main_menu_Buf_Cut, 7
-	stdcall [ksubmenu_add], [main_menu_buf], eax
-	stdcall [kmenuitem_new], KMENUITEM_NORMAL, sz_main_menu_Buf_Copy, 8
-	stdcall [ksubmenu_add], [main_menu_buf], eax
-	stdcall [kmenuitem_new], KMENUITEM_NORMAL, sz_main_menu_Buf_Paste, 9
-	stdcall [ksubmenu_add], [main_menu_buf], eax	
-	stdcall [kmenuitem_new], KMENUITEM_SUBMENU, sz_main_menu_Buf, [main_menu_buf]
-	stdcall [ksubmenu_add], [main_menu], eax
-
-	stdcall [ksubmenu_new]
-	mov [main_menu_search], eax
-	stdcall [kmenuitem_new], KMENUITEM_NORMAL, sz_main_menu_Search_Text, 10
-	stdcall [ksubmenu_add], [main_menu_search], eax
-	stdcall [kmenuitem_new], KMENUITEM_NORMAL, sz_main_menu_Search_Keywords, 12
-	stdcall [ksubmenu_add], [main_menu_search], eax
-	stdcall [kmenuitem_new], KMENUITEM_SUBMENU, sz_main_menu_Search, [main_menu_search]
-	stdcall [ksubmenu_add], [main_menu], eax
-
-	stdcall [ksubmenu_new]
-	mov [main_menu_view], eax
-	stdcall [kmenuitem_new], KMENUITEM_NORMAL, sz_main_menu_Veiw_UseSyntax, 19
-	stdcall [ksubmenu_add], [main_menu_view], eax
-	stdcall [kmenuitem_new], KMENUITEM_NORMAL, sz_main_menu_Veiw_ChooseSyntax, 20
-	stdcall [ksubmenu_add], [main_menu_view], eax
-	stdcall [kmenuitem_new], KMENUITEM_SEPARATOR, 0, 0
-	stdcall [ksubmenu_add], [main_menu_view], eax
-	stdcall [kmenuitem_new], KMENUITEM_NORMAL, sz_main_menu_Veiw_LineBreak, 18
-	stdcall [ksubmenu_add], [main_menu_view], eax	
-	stdcall [kmenuitem_new], KMENUITEM_SUBMENU, sz_main_menu_View, [main_menu_view]
-	stdcall [ksubmenu_add], [main_menu], eax
-
-	stdcall [ksubmenu_new]
-	mov [main_menu_encoding], eax
-	stdcall [kmenuitem_new], KMENUITEM_NORMAL, sz_main_menu_Encoding_1251to866, 21
-	stdcall [ksubmenu_add], [main_menu_encoding], eax
-	stdcall [kmenuitem_new], KMENUITEM_NORMAL, sz_main_menu_Encoding_866to1251, 22
-	stdcall [ksubmenu_add], [main_menu_encoding], eax	
-	stdcall [kmenuitem_new], KMENUITEM_SUBMENU, sz_main_menu_Encoding, [main_menu_encoding]
-	stdcall [ksubmenu_add], [main_menu], eax
-	
 ; init toolbar file
 	include_image_file 'te_icon.png', bmp_icon,,,6 ;6 для серых кнопок
 	mov eax,[bmp_icon]
@@ -155,7 +84,6 @@ mov	ebp,lib0
 	include_image_file '..\..\media\log_el\trunk\tl_sys_16.png', icon_tl_sys
 	mov eax,dword[icon_tl_sys]
 	mov dword[tree1.data_img_sys],eax
-;---------------------------------------------------------------------
 ; внедряем файл с иконками узлов
 	include_image_file 'tl_nod_16.png', icon_tl_sys
 	mov eax,dword[icon_tl_sys]
@@ -211,48 +139,27 @@ mov	ebp,lib0
 	shl eax,24
 	mov dword[tedit0.font_size],eax
 	;кнопки на панели
-	stdcall [ini_get_int],file_name,ini_sec_window,key_but_new,1
-	mov byte[panel_but],al
-	stdcall [ini_get_int],file_name,ini_sec_window,key_but_open,1
-	mov byte[panel_but+1],al
-	stdcall [ini_get_int],file_name,ini_sec_window,key_but_save,1
-	mov byte[panel_but+2],al
-	stdcall [ini_get_int],file_name,ini_sec_window,key_but_save_as,1
-	mov byte[panel_but+3],al
-	stdcall [ini_get_int],file_name,ini_sec_window,key_but_select,1
-	mov byte[panel_but+4],al
-	stdcall [ini_get_int],file_name,ini_sec_window,key_but_cut,1
-	mov byte[panel_but+5],al
-	stdcall [ini_get_int],file_name,ini_sec_window,key_but_copy,1
-	mov byte[panel_but+6],al
-	stdcall [ini_get_int],file_name,ini_sec_window,key_but_paste,1
-	mov byte[panel_but+7],al
-	stdcall [ini_get_int],file_name,ini_sec_window,key_but_find,1
-	mov byte[panel_but+8],al
-	stdcall [ini_get_int],file_name,ini_sec_window,key_but_replace,1
-	mov byte[panel_but+9],al
-	stdcall [ini_get_int],file_name,ini_sec_window,key_but_key_words,1
-	mov byte[panel_but+10],al
-	stdcall [ini_get_int],file_name,ini_sec_window,key_but_upper,1
-	mov byte[panel_but+11],al
-	stdcall [ini_get_int],file_name,ini_sec_window,key_but_lower,1
-	mov byte[panel_but+12],al
-	stdcall [ini_get_int],file_name,ini_sec_window,key_but_reverse,1
-	mov byte[panel_but+13],al
-	stdcall [ini_get_int],file_name,ini_sec_window,key_but_undo,1
-	mov byte[panel_but+14],al
-	stdcall [ini_get_int],file_name,ini_sec_window,key_but_redo,1
-	mov byte[panel_but+15],al
-	stdcall [ini_get_int],file_name,ini_sec_window,key_but_invisible,1
-	mov byte[panel_but+16],al
-	stdcall [ini_get_int],file_name,ini_sec_window,key_but_syntax_list,1
-	mov byte[panel_but+17],al
-	stdcall [ini_get_int],file_name,ini_sec_window,key_but_syntax_mode,1
-	mov byte[panel_but+18],al
-	stdcall [ini_get_int],file_name,ini_sec_window,key_but_convert_1251_866,1
-	mov byte[panel_but+19],al
-	stdcall [ini_get_int],file_name,ini_sec_window,key_but_convert_866_1251,1
-	mov byte[panel_but+20],al
+	ini_panel key_but_new,    ID_BUT_NEW
+	ini_panel key_but_open,   ID_BUT_OPEN
+	ini_panel key_but_save,   ID_BUT_SAVE
+	ini_panel key_but_save_as,ID_BUT_SAVE_AS
+	ini_panel key_but_select, ID_BUT_SELECT
+	ini_panel key_but_cut,    ID_BUT_CUT
+	ini_panel key_but_copy,   ID_BUT_COPY
+	ini_panel key_but_paste,  ID_BUT_PASTE
+	ini_panel key_but_find,   ID_BUT_FIND
+	ini_panel key_but_replace,ID_BUT_REPLACE
+	ini_panel key_but_key_words,ID_BUT_KEY_WORDS
+	ini_panel key_but_upper,  ID_BUT_UPPER
+	ini_panel key_but_lower,  ID_BUT_LOWER
+	ini_panel key_but_reverse,ID_BUT_REVERSE
+	ini_panel key_but_undo,   ID_BUT_UNDO
+	ini_panel key_but_redo,   ID_BUT_REDO
+	ini_panel key_but_invisible,ID_BUT_INVISIBLE
+	ini_panel key_but_syntax_list,ID_BUT_SYNTAX_LIST
+	ini_panel key_but_syntax_mode,ID_BUT_SYNTAX_MODE
+	ini_panel key_but_convert_1251_866,ID_BUT_CONVERT_1251_866
+	ini_panel key_but_convert_866_1251,ID_BUT_CONVERT_866_1251
 	;файловые расширения
 	xor edx,edx
 	mov ebx,synt_auto_open
@@ -306,28 +213,6 @@ still:
 		jmp mouse
 	@@:
 	jmp still
-
-align 16
-draw_window:
-	mcall SF_REDRAW,SSF_BEGIN_DRAW
-
-	mov edx,[sc.work]
-	or  edx,0x73000000
-	mcall SF_CREATE_WINDOW,dword[wnd_s_pos],dword[wnd_s_pos+4],,,hed
-
-	mcall SF_THREAD_INFO,procinfo,-1
-	mov edi,tedit0 ;значение edi нужно для EvSize и ted_wnd_t
-	call EvSize
-
-	movzx ebx,word[procinfo.client_box.width]
-	inc bx
-	mcall SF_DRAW_RECT,,ted_wnd_t ;верхний прямоугольник, для очистки верхней панели
-	call draw_but_toolbar
-	stdcall [kmainmenu_draw], [main_menu]
-	stdcall [ted_draw], tedit0
-
-	mcall SF_REDRAW,SSF_END_DRAW
-	ret
 
 align 16
 mouse:
@@ -422,164 +307,7 @@ key:
 	stdcall [ted_key], tedit0, conv_tabl,esi
 	jmp still
 
-align 16
-button:
-	mcall SF_GET_BUTTON
-	cmp ah,3
-	jne @f
-		call ted_but_new_file
-		jmp still
-	@@:
-	cmp ah,4
-	jne @f
-		call ted_but_open_file
-		jmp still
-	@@:
-	cmp ah,5
-	jne @f
-		xor eax,eax
-		call ted_but_save_file ;сохранение без диалога
-		jmp still
-	@@:
-	cmp ah,6
-	jne @f
-		xor eax,eax
-		inc eax
-		call ted_but_save_file ;сохранение с диалогом
-		jmp still
-	@@:
-	cmp ah,7
-	jne @f
-		stdcall [ted_but_select_word], tedit0
-		jmp still
-	@@:
-	cmp ah,8
-	jne @f
-		stdcall [ted_but_cut], tedit0
-		jmp still
-	@@:
-	cmp ah,9
-	jne @f
-		stdcall [ted_but_copy], tedit0
-		jmp still
-	@@:
-	cmp ah,10
-	jne @f
-		stdcall [ted_but_paste], tedit0
-		jmp still
-	@@:
-	cmp ah,11
-	jne @f
-		call ted_but_find
-		jmp still
-	@@:
-	cmp ah,12
-	jne @f
-		call but_replace
-		jmp still
-	@@:
-	cmp ah,13
-	jne @f
-		call but_find_key_w
-		jmp still
-	@@:
-	cmp ah,14
-	jne @f
-		stdcall [ted_but_sumb_upper], tedit0
-		jmp still
-	@@:
-	cmp ah,15
-	jne @f
-		stdcall [ted_but_sumb_lover], tedit0
-		jmp still
-	@@:
-	cmp ah,16
-	jne @f
-		stdcall [ted_but_reverse], tedit0
-		jmp still
-	@@:
-	cmp ah,17
-	jne @f
-		stdcall [ted_but_undo], tedit0
-		jmp still
-	@@:
-	cmp ah,18
-	jne @f
-		stdcall [ted_but_redo], tedit0
-		jmp still
-	@@:
-	cmp ah,19
-	jne @f
-		stdcall but_sumb_invis, tedit0
-		jmp still
-	@@:
-	cmp ah,20
-	jne @f
-		stdcall but_k_words_show, tedit0
-		jmp still
-	@@:
-	cmp ah,21
-	jne @f
-		stdcall but_synt_show, tedit0
-		jmp still
-	@@:
-	cmp ah,22
-	jne @f
-		stdcall [ted_but_convert_by_table],tedit0,tbl_1251_866
-		jmp still
-	@@:
-	cmp ah,23
-	jne @f
-		stdcall [ted_but_convert_by_table],tedit0,tbl_866_1251
-		jmp still
-	@@:
-
-	cmp ah,200
-	jne @f
-		stdcall ted_but_open_syntax, tedit0
-		jmp still
-	@@:
-	cmp ah,201
-	jne @f
-		stdcall [ted_but_find_next], tedit0
-		jmp still
-	@@:
-
-	cmp ah,1
-	je .exit
-
-	cmp ah,199
-	je .exit
-  
-	jmp still
-.exit:
-	cmp dword[wnd_k_words_run],0
-	je @f
-		push ebx ecx
-		mcall SF_SYSTEM, SSF_TERMINATE_THREAD_ID,[wnd_k_words_run]
-		pop ecx ebx
-		test eax,eax
-		jnz still
-	@@:
-	cmp dword[exit_code],1
-	je @f
-	stdcall [ted_can_save], tedit0
-	cmp al,1
-	jne @f
-		stdcall [mb_create],msgbox_2,thread ;message: save buf in file?
-		stdcall [mb_setfunctions],msgbox_2E_funct
-		jmp still
-	@@:
-	stdcall mem.Free,[bmp_icon]
-	cmp dword[unpac_mem],0
-	je @f
-		stdcall mem.Free,[unpac_mem]
-	@@:
- 
-	stdcall [ted_delete], tedit0
-	stdcall [tl_data_clear], tree1
-	mcall SF_TERMINATE_PROCESS ;выход из программы
-
+align 4
 edit2 edit_box TED_PANEL_WIDTH-1, 0, 20, 0xffffff, 0xff80, 0xff0000, 0xff, 0x4080, 300, buf_find, mouse_dd, 0
 
 unpac_mem dd 0
