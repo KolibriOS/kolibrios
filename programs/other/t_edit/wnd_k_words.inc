@@ -27,7 +27,7 @@ pushad
 	mov edi,tedit0
 	mov edx,ted_key_words_count
 	add dword[tree3.info_max_count],edx ;ставим число узлов, равное колличеству ключевых слов в файле подсветки (+2 на начало и конец списка)
-	stdcall dword[tl_data_init], tree3
+	stdcall [tl_data_init], tree3
 	mov eax,dword[icon_tl_sys]
 	mov dword[tree3.data_img],eax
 	mov eax,dword[tree1.data_img_sys]
@@ -56,12 +56,26 @@ pushad
 	mcall ,,,4
 
 	mov ebx,[bmp_icon]
-	add ebx,7*IMAGE_TOOLBAR_ICON_SIZE
+	add ebx,(ID_BUT_FIND-ID_BUT_0)*IMAGE_TOOLBAR_ICON_SIZE
 	mcall SF_PUT_IMAGE,,(20 shl 16)+20,(5 shl 16)+5 ;найти
 
 	sub ebx,2*IMAGE_TOOLBAR_ICON_SIZE
 	mov edx,(30 shl 16)+5 ;копировать
 	int 0x40
+
+	mcall SF_THREAD_INFO,procinfo,-1
+	mov eax,[procinfo.box.height]
+	cmp eax,90
+	jge @f
+		mov eax,90 ;min size
+	@@:
+	sub eax,58
+	cmp [tree3.box_height],eax
+	je @f
+		mov [tree3.box_height],eax
+		mov word[w_scr_t3.y_size],ax
+		;need call tb_scrol_resize
+	@@:
 
 	mov dword[w_scr_t3.all_redraw],1
 	stdcall [scrollbar_ver_draw], w_scr_t3
@@ -93,7 +107,7 @@ prop_still:
 .exit:
 	mov dword[tree3.data_img],0 ;чистим указатели на иконки что-бы их не удалил деструктор
 	mov dword[tree3.data_img_sys],0 ;т. к. они еще используються в других элементах
-	stdcall dword[tl_data_clear], tree3
+	stdcall [tl_data_clear], tree3
 	mov dword[wnd_k_words_run],0 ;обнуляем ID окна
 	mcall SF_TERMINATE_PROCESS
 
@@ -128,7 +142,8 @@ prop_button:
 		mov edi,tedit0
 		cmp ted_syntax_file,0
 		je @f
-		stdcall dword[tl_info_clear], tree3
+		stdcall [tl_info_clear], tree3
+		and dword[tree3.style], not tl_cursor_pos_limited
 
 		mov ebx,ted_key_words_data
 		mov ecx,ted_key_words_count
@@ -138,21 +153,22 @@ prop_button:
 		test al,al
 		jnz .end_add
 			;ключевое слово
-			stdcall dword[tl_node_add], tree3, (1 shl 16), ebx
-			stdcall dword[tl_cur_next], tree3
+			stdcall [tl_node_add], tree3, (1 shl 16), ebx
+			stdcall [tl_cur_next], tree3
 			mov edx,[ebx+MAX_COLOR_WORD_LEN]
 			or edx,edx
 			jz .end_add
 				;справка по ключевому слову
 				add edx,ted_help_text_f1
-				stdcall dword[tl_node_add], tree3, 1, edx
-				stdcall dword[tl_cur_next], tree3
+				stdcall [tl_node_add], tree3, 1, edx
+				stdcall [tl_cur_next], tree3
 		.end_add:
 		add ebx,MAX_COLOR_WORD_LEN+8 ;sizeof.TexColViv
 		loop .cycle_0
 
-		stdcall dword[tl_cur_beg], tree3
-		stdcall dword[tl_draw], tree3
+		stdcall [tl_cur_beg], tree3
+		or dword[tree3.style], tl_cursor_pos_limited ;ограничиваем движение курсора в пределах списка
+		stdcall [tl_draw], tree3
 		jmp .no_select_0
 	@@:
 	cmp ah,4

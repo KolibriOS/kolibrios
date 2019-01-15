@@ -1,12 +1,3 @@
-struct FileInfoBlock
-	Function dd ?
-	Position dd ?
-	Flags	 dd ?
-	Count	 dd ?
-	Buffer	 dd ?
-		db ?
-	FileName dd ?
-ends
 
 struct TexColViv
 	Text  rb MAX_COLOR_WORD_LEN ; слово дл€ подсветки
@@ -28,7 +19,8 @@ color_cur_text dd ?
 color_wnd_text dd ?
 
 options_file dd 0
-options_file_end dd 0
+open_file_size dd 0
+unpac_mem dd 0
 tex_colors dd 0
 tex_help_f1 dd 0
 
@@ -46,67 +38,91 @@ align 4
 InitColText:
 	pushad
 
-	mov  ebx,dword[fn_col_option]
+	mov ebx,[fn_col_option]
 	copy_path ebx,fn_syntax_dir,file_name_rez,0
 	copy_path file_name_rez,sys_path,file_name,0
 
-	mov eax,70
-	mov [run_file_70.Function], 0
+	;[fn_col_option] = '*.syn'
+	;fn_syntax_dir = 'info/'
+	;file_name_rez = 'info/*.syn'
+
+	mov [run_file_70.Function], SSF_GET_INFO
 	mov [run_file_70.Position], 0
 	mov [run_file_70.Flags], 0
-	mov ebx,[options_file_end]
-	sub ebx,[options_file]
-	mov [run_file_70.Count], ebx
-	m2m [run_file_70.Buffer], [options_file]
+	mov dword[run_file_70.Count], 0
+	mov dword[run_file_70.Buffer], open_b
 	mov byte[run_file_70+20], 0
-	mov [run_file_70.FileName], file_name
-	mov ebx,run_file_70
-	int 0x40
+	mov dword[run_file_70.FileName], file_name
+	mcall SF_FILE,run_file_70
 
+	mov ecx,dword[open_b+32] ;+32 qword: размер файла в байтах
+	stdcall mem.ReAlloc,[options_file],ecx
+	mov [options_file],eax
+	mov [open_file_size],ecx
+	
+	mov [run_file_70.Function], SSF_READ_FILE
+	mov [run_file_70.Position], 0
+	mov [run_file_70.Flags], 0
+	mov [run_file_70.Count], ecx
+	m2m dword[run_file_70.Buffer], dword[options_file]
+	mov byte[run_file_70+20], 0
+	mov dword[run_file_70.FileName], file_name
+	mcall SF_FILE,run_file_70 ;загружаем файл изображения
+	test eax,eax
+	jnz .no_colors
+	cmp ebx,0xffffffff
+	je .no_colors
+
+	mcall SF_SET_CAPTION,1,file_name
 
 	;init: count_colors_text, ColWords, ...
 	mov dword[count_colors_text],1
 	mov dword[ColWords],0
 	mov dword[tex_help_f1],0
 
-	cmp eax,6
-	je @f
-	cmp eax,0
-	je @f
-		cmp ax,10
-		jl .zifra_0_9
-			mov al,'?'
-			sub ax,48
-		.zifra_0_9:
-		add ax,48
-		jmp .no_colors
-	@@:
+	mov edi,[options_file]
+	cmp dword[edi],'KPCK'
+	jne .end_unpack
+		;notify_window_run ...
+		mov ecx,[edi+4]
+		cmp [open_file_size],ecx
+		jge @f
+			;если для распакованого файла не хватает выделенной памяти
+			stdcall mem.ReAlloc,edi,ecx
+			mov [options_file],eax
+			mov [open_file_size],ecx
+		@@:
+		;выделение памяти для распаковки файла
+		stdcall mem.ReAlloc,[unpac_mem],ecx
+		mov [unpac_mem],eax
 
+		stdcall unpack,[options_file],eax
+		mov edi,[options_file]
+		mov esi,[unpac_mem]
+		mov ecx,[edi+4]
+		cld
+		rep movsb
+	.end_unpack:
 	mov esi,[options_file]
-	cmp dword[esi],'KPCK'
-	jne @f
-		notify_window_run txt_no_kpack ; создаем окно @notify
-		jmp .no_colors
-	@@:
 	mov edi,count_colors_text
-	mov ecx,9*4
-	rep movsb
+	mov ecx,9
+	rep movsd
 
 	mov eax,[options_file]
 	add eax,32
-	mov dword[tex_colors],eax
+	mov [tex_colors],eax
 
-	mov eax,dword[count_colors_text] ;init: Col (offset to key words)
+	mov eax,[count_colors_text] ;init: Col (offset to key words)
 	add eax,8
 	shl eax,2
 	add eax,[options_file]
-	mov dword[Col],eax
+	mov [Col],eax
 
 	;init: tex_help_f1
-	mov ecx,dword[ColWords]
+	mov ecx,[ColWords]
 	imul ecx,sizeof.TexColViv
-	add ecx,dword[Col]
-	mov dword[tex_help_f1],ecx
+	add ecx,[Col]
+	mov [tex_help_f1],ecx
 
 	;формирование текста в окне текстового редактора
 	stdcall [ted_clear], tedit0,1
@@ -136,28 +152,27 @@ InitColText:
 	loop @b
 
 	stdcall print_capt,capt_lbl_wo
-	mov ecx,dword[ColWords]
+	mov ecx,[ColWords]
 	mov eax,[Col]
 	xor ebx,ebx
-	@@:
+	@@: ;цикл по подсвечиваемым словам
 		inc ebx
 		stdcall print_word,eax,ebx
 		add eax,sizeof.TexColViv
 	loop @b
 
 	stdcall print_capt,capt_lbl_f1
-	mov ecx,dword[ColWords]
+	mov ecx,[ColWords]
 	mov eax,[Col]
 	xor ebx,ebx
-	@@:
+	@@: ;цикл по справкам к подсв. словам
 		inc ebx
 		stdcall print_word_f1,eax,ebx
 		add eax,sizeof.TexColViv
 	loop @b
 	
-	; подготовка дл€  PathShow
-	push dword PathShow_data_1
-	call [PathShow_prepare]
+	; подготовка для PathShow
+	stdcall [PathShow_prepare], PathShow_data_1
 	call draw_window
 
 	.no_colors:
@@ -209,7 +224,7 @@ endp
 align 4
 proc print_capt, capt:dword
 	pushad
-	mov esi,dword[capt]
+	mov esi,[capt]
 	stdcall str_len,esi
 	stdcall [ted_text_add], tedit0,esi,eax,ted_opt_ed_change_time+ted_opt_ed_move_cursor
 	popad
@@ -219,63 +234,53 @@ endp
 align 4
 proc print_word, text:dword, index:dword
 	pushad
-	mov esi,text_buffer
-	mov byte[esi],0
-	stdcall str_cat,esi,capt_beg_word
-	stdcall str_len,esi
-	add esi,eax
+	mov edi,text_buffer
+	mov byte[edi],0
+	stdcall str_cat,edi,capt_beg_word
+	stdcall str_len,edi
+	add edi,eax
 
-	mov edi,dword[text]	
-	stdcall code_string,edi,esi ;кодируем строку с ключевым словом
-	stdcall str_cat,esi,capt_end_word
+	mov ecx,[text]	
+	stdcall code_string,ecx,edi ;кодируем строку с ключевым словом
+	stdcall str_cat,edi,capt_end_word
 
-	cmp dword[edi+MAX_COLOR_WORD_LEN],0 ;f1
+	cmp dword[ecx+TexColViv.f1],0
 	je @f
-		stdcall str_cat,esi,capt_calc_f1
-		stdcall str_cat_value,esi,[index]
-		stdcall str_cat,esi,capt_lbl_f1_use
+		stdcall str_cat,edi,capt_calc_f1
+		stdcall str_cat_value,edi,[index]
+		stdcall str_cat,edi,capt_lbl_f1_use
 	@@:
 
-	mov esi,text_buffer
-	stdcall str_len,esi ;узнаем длинну всей строки
-	stdcall [ted_text_add], tedit0,esi,eax,ted_opt_ed_change_time+ted_opt_ed_move_cursor
-
-mov ecx,edi
-mov edi,text_buffer
-mov byte[edi],','
-inc edi
-mov byte[edi],0
-	xor eax,eax
-	mov al,byte[ecx+MAX_COLOR_WORD_LEN+4] ;wwo
+	stdcall str_len,edi
+	add edi,eax
+	mov word[edi],','
+	inc edi
+	movzx eax,byte[ecx+TexColViv.flags]
 	stdcall str_cat_value,edi,eax
 	stdcall str_len,edi
 	add edi,eax
-	mov byte[edi],','
+	mov word[edi],','
 	inc edi
 
-	xor eax,eax
-	mov ax,word[ecx+MAX_COLOR_WORD_LEN+4+1] ;(escc shl 8)+endc
-	cmp ax,0 ;провер€ем есть ли завершающий и экранинующий символ
-	je @f
+	movzx eax,word[ecx+TexColViv.endc] ;(escc shl 8)+endc
+	or eax,eax ;проверяем есть ли завершающий и экранинующий символ
+	jz @f
 		stdcall str_cat_value,edi,eax
 		stdcall str_len,edi
 		add edi,eax
 	@@:
-	mov byte[edi],','
+	mov word[edi],','
 	inc edi
 
-	xor eax,eax
-	mov al,byte[ecx+MAX_COLOR_WORD_LEN+4+3] ;color
+	movzx eax,byte[ecx+TexColViv.color]
 	stdcall str_cat_value,edi,eax
 	stdcall str_len,edi
 	add edi,eax
-	mov byte[edi],13
-	inc edi
-	mov byte[edi],0
+	mov word[edi],13
 
 	mov esi,text_buffer
 	stdcall str_len,esi
-	stdcall [ted_text_add], tedit0,esi,eax,ted_opt_ed_move_cursor
+	stdcall [ted_text_add], tedit0,esi,eax,ted_opt_ed_change_time+ted_opt_ed_move_cursor
 
 	popad
 	ret
@@ -284,8 +289,8 @@ endp
 align 4
 proc print_word_f1, text:dword, index:dword
 	pushad
-	mov edi,dword[text]
-	mov esi,dword[edi+MAX_COLOR_WORD_LEN] ;f1
+	mov edi,[text]
+	mov esi,[edi+TexColViv.f1]
 	cmp esi,0
 	je @f
 		mov ebx,text_buffer
@@ -296,7 +301,7 @@ proc print_word_f1, text:dword, index:dword
 		stdcall str_len,ebx
 		add ebx,eax
 		
-		add esi,dword[tex_help_f1]
+		add esi,[tex_help_f1]
 		stdcall code_string,esi,ebx ;кодируем строку
 		stdcall str_cat,ebx,capt_end_word_f1
 
@@ -308,13 +313,15 @@ proc print_word_f1, text:dword, index:dword
 	ret
 endp
 
+;description:
+; кодировка строки, замена непечатаемых символов на числовые коды
 align 4
 proc code_string, text:dword, out_text:dword
 	pushad
-	mov esi,dword[text]
+	mov esi,[text]
 	stdcall str_len,esi
 	mov ecx,eax
-	mov edi,dword[out_text]
+	mov edi,[out_text]
 
 	.copy:
 		mov al,byte[esi]
@@ -335,7 +342,7 @@ proc code_string, text:dword, out_text:dword
 			add edi,2
 			and eax,0xff
 			mov dword[edi],0
-			call tl_convert_to_str
+			stdcall convert_int_to_str,4
 			stdcall str_len,edi
 			add edi,eax
 			mov byte[edi],','
@@ -383,7 +390,7 @@ proc str_cat_value, str1:dword, value:dword
 	stdcall str_len,edi
 	add edi,eax
 	mov eax,[value]
-	call tl_convert_to_str
+	stdcall convert_int_to_str,12
 	popad
 	ret
 endp
@@ -404,29 +411,35 @@ proc str_len, str1:dword
 endp
 
 ;input:
-; eax = value
-; edi = string buffer
+; eax - число
+; edi - буфер для строки
+; len - длинна буфера
+;output:
 align 4
-tl_convert_to_str:
-	pushad
-	stdcall mem_clear,edi,12
+proc convert_int_to_str uses eax ecx edx edi esi, len:dword
+	mov esi,[len]
+	add esi,edi
+	dec esi
 	call .str
-	popad
 	ret
+endp
 
 align 4
 .str:
-	mov ecx,0x0a ;задаетс€ система счислени€ измен€ютс€ регистры ebx,eax,ecx,edx входные параметры eax - число
-		;преревод числа в ASCII строку входные данные ecx=система счислен€ edi адрес куда записывать, будем строку, причем конец переменной 
-	cmp eax,ecx  ;сравнить если в eax меньше чем в ecx то перейти на @@-1 т.е. на pop eax
+	mov ecx,10
+	cmp eax,ecx
 	jb @f
-		xor edx,edx ;очистить edx
-		div ecx     ;разделить - остаток в edx
-		push edx    ;положить в стек
-		;dec edi    ;смещение необходимое дл€ записи с конца строки
-		call .str   ;перейти на саму себ€ т.е. вызвать саму себ€ и так до того момента пока в eax не станет меньше чем в ecx
+		xor edx,edx
+		div ecx
+		push edx
+		;dec edi  ;смещение необходимое для записи с конца строки
+		call .str
 		pop eax
-	@@: ;cmp al,10 ;проверить не меньше ли значение в al чем 10 (дл€ системы счислен€ 10 данна€ команда - лишна€))
-	or al,0x30  ;данна€ команда короче  чем две выше 
-	stosb	    ;записать элемент из регистра al в €чеку пам€ти es:edi
+	@@:
+	cmp edi,esi
+	jge @f
+		or al,0x30
+		stosb
+		mov byte[edi],0 ;в конец строки ставим 0, что-бы не вылазил мусор
+	@@:
 	ret

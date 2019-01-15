@@ -163,20 +163,25 @@ button:
 	@@:
 
 	cmp ah,1
-	je .exit
+	jne @f
+		call ted_Exit
+		jmp still
+	@@:
 
 	cmp ah,199
-	je .exit
-  
+	jne still
+		call ted_Exit
 	jmp still
-.exit:
+
+align 4
+ted_Exit:
 	cmp dword[wnd_k_words_run],0
 	je @f
 		push ebx ecx
 		mcall SF_SYSTEM, SSF_TERMINATE_THREAD_ID,[wnd_k_words_run]
 		pop ecx ebx
-		test eax,eax
-		jnz still
+		mov dword[wnd_k_words_run],0
+		;test eax,eax
 	@@:
 	cmp dword[exit_code],1
 	je @f
@@ -185,17 +190,17 @@ button:
 	jne @f
 		stdcall [mb_create],msgbox_2,thread ;message: save buf in file?
 		stdcall [mb_setfunctions],msgbox_2E_funct
-		jmp still
+		ret
 	@@:
 	stdcall mem.Free,[bmp_icon]
 	cmp dword[unpac_mem],0
 	je @f
 		stdcall mem.Free,[unpac_mem]
 	@@:
- 
 	stdcall [ted_delete], tedit0
 	stdcall [tl_data_clear], tree1
 	mcall SF_TERMINATE_PROCESS ;выход из программы
+	;ret
 
 ;input:
 ; al = код ошибки

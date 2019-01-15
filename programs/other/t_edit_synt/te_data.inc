@@ -255,52 +255,13 @@ tedit0: ;структура текстового редактора
 	.fun_save_err		dd 0 ;+238 указатель на функцию вызываемую если сохранение файла закончилось неудачно
 	.increase_size dd 1000 ;+242 число символов на которые будет увечиваться память при нехватке
 	.ptr_free_symb dd ? ;+246 указатель на свободную память, в которую можно добавлять символ (используется внутри элемента для ускорения вставки текста)
+	.font_size dd 0   ;+250 множитель для размера шрифта
 ;------------------------------------------------------------------------------
 align 4
-scrol_w1:
-.x:
-.size_x   dw 16 ;+0
-.start_x  dw 85 ;+2
-.y:
-.size_y   dw 100 ; +4
-.start_y  dw  15 ; +6
-.btn_high dd  15 ; +8
-.type	  dd   1 ;+12
-.max_area dd 100 ;+16
-rb 4+4
-.bckg_col dd 0xeeeeee ;+28
-.frnt_col dd 0xbbddff ;+32
-.line_col dd 0x808080 ;+36
-.redraw   dd   0 ;+40
-.delta	  dw   0 ;+44
-.delta2   dw   0 ;+46
-.run_x:
-rb 2*4+4*6
-.all_redraw dd 0 ;+80
-.ar_offset  dd 1 ;+84
-;---------------------------------------------------------------------
+scrol_w1 scrollbar 16,85, 100,15, 15, 100,0,0, 0xeeeeee,0xbbddff,0x808080, 1
+
 align 4
-scrol_h1:
-.x:
-.size_x     dw 85 ;+0
-.start_x    dw 30 ;+2
-.y:
-.size_y     dw 16 ;+4
-.start_y    dw 100 ;+6
-.btn_high   dd 15 ;+8
-.type	    dd 1  ;+12
-.max_area   dd 100 ;+16
-rb 4+4
-.bckg_col   dd 0xeeeeee ;+28
-.frnt_col   dd 0xbbddff ;+32
-.line_col   dd 0x808080 ;+36
-.redraw     dd 0  ;+40
-.delta	    dw 0  ;+44
-.delta2     dw 0  ;+46
-.run_x:
-rb 2*4+4*6
-.all_redraw dd 0 ;+80
-.ar_offset  dd 1 ;+84
+scrol_h1 scrollbar 85,30,  16,100, 15, 100,0,0, 0xeeeeee,0xbbddff,0x808080, 1
 ;---------------------------------------------------------------------
 PathShow_data_1:
 .type			dd 0 ;+0

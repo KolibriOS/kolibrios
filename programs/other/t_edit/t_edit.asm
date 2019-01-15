@@ -39,7 +39,9 @@ start:
 
 	mcall SF_SYS_MISC,SSF_HEAP_INIT
 	or eax,eax
-	jz button.exit
+	jnz @f
+		call ted_Exit
+	@@:
 
 	mcall SF_KEYBOARD,SSF_SET_INPUT_MODE,1 ;scan code
 	mcall SF_SET_EVENTS_MASK,0xC0000027
@@ -200,7 +202,10 @@ align 16
 still:
 	mcall SF_WAIT_EVENT
 	cmp dword[exit_code],1
-	je button.exit
+	jne @f
+		call ted_Exit
+		jmp still
+	@@:
 
 	cmp al,1 ;изменилось положение окна
 	jz red_win
@@ -210,7 +215,7 @@ still:
 	jz button
 	cmp al,6 ;мышь
 	jne @f
-		jmp mouse
+		call mouse
 	@@:
 	jmp still
 
@@ -228,7 +233,7 @@ mouse:
 	bt eax,24 ;двойной щелчёк левой кнопкой
 	jnc @f
 		stdcall [ted_but_select_word], tedit0
-		jmp still
+		ret
 	@@:
 		stdcall [ted_mouse], tedit0
 	.no_edit:
@@ -241,7 +246,7 @@ mouse:
 	jne @f
 		stdcall [tl_mouse], tree1
 	@@:
-	jmp still
+	ret
 ;---------------------------------------------------------------------
 
 ;output:
