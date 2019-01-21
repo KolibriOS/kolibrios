@@ -69,6 +69,7 @@ mov	ebp,lib0
 ;---------------------------------------------------------------------
 	stdcall [ted_init], tedit0
 	stdcall [tl_data_init], tree1
+	option_boxes_set_sys_color sc,opt_grlist1
 
 ; OpenDialog initialisation
 	stdcall [OpenDialog_Init],OpenDialog_data
@@ -238,11 +239,19 @@ mouse:
 		stdcall [ted_mouse], tedit0
 	.no_edit:
 
-	cmp byte[tedit0.panel_id],TED_PANEL_FIND ;if not panel
+	;проверка боковых панелей
+	cmp byte[tedit0.panel_id],TED_PANEL_FIND
 	jne @f
 		stdcall [edit_box_mouse], edit2
+		stdcall [option_box_mouse], opt_grlist1
 	@@:
-	cmp byte[tedit0.panel_id],TED_PANEL_SYNTAX ;if not panel
+	cmp byte[tedit0.panel_id],TED_PANEL_REPLACE
+	jne @f
+		stdcall [edit_box_mouse], edit2
+		stdcall [edit_box_mouse], edit1
+		stdcall [option_box_mouse], opt_grlist1
+	@@:
+	cmp byte[tedit0.panel_id],TED_PANEL_SYNTAX
 	jne @f
 		stdcall [tl_mouse], tree1
 	@@:
@@ -289,7 +298,26 @@ key:
 	mcall SF_GET_KEY
 	stdcall [tl_key], tree1
 
-	test word [edit2.flags],10b;ed_focus ; если не в фокусе, выходим
+	test word [edit1.flags],10b ;ed_focus ;если не в фокусе, выходим
+	je @f
+		cmp ah,0x80 ;if key up
+		ja still
+		cmp ah,42 ;[Shift] (left)
+		je still
+		cmp ah,54 ;[Shift] (right)
+		je still
+		cmp ah,56 ;[Alt]
+		je still
+		cmp ah,29 ;[Ctrl]
+		je still
+		cmp ah,69 ;[Pause Break]
+		je still
+
+		stdcall KeyConvertToASCII, conv_tabl
+		stdcall [edit_box_key], edit1
+		jmp still
+	@@:
+	test word [edit2.flags],10b ;ed_focus ;если не в фокусе, выходим
 	je @f
 		cmp ah,0x80 ;if key up
 		ja still
@@ -313,6 +341,7 @@ key:
 	jmp still
 
 align 4
+edit1 edit_box TED_PANEL_WIDTH-1, 0, 20, 0xffffff, 0xff80, 0xff0000, 0xff, 0x4080, 300, buf_replace, mouse_dd, 0
 edit2 edit_box TED_PANEL_WIDTH-1, 0, 20, 0xffffff, 0xff80, 0xff0000, 0xff, 0x4080, 300, buf_find, mouse_dd, 0
 
 unpac_mem dd 0
@@ -376,6 +405,7 @@ i_end:
 	last_open_synt_file rb 32 ;имя последнего подключенного файла синтаксиса
 	buf rb BUF_SIZE ;буфер для копирования и вставки
 	buf_find rb 302 ;буфер для поиска текста
+	buf_replace rb 302 ;буфер для замены текста
 	sc system_colors
 IncludeUGlobals
 	align 16

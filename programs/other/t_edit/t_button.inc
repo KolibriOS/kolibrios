@@ -87,12 +87,12 @@ button:
 	@@:
 	cmp ah,ID_BUT_FIND
 	jne @f
-		call ted_but_find
+		call but_panel_find
 		jmp still
 	@@:
 	cmp ah,ID_BUT_REPLACE
 	jne @f
-		call but_replace
+		call but_panel_replace
 		jmp still
 	@@:
 	cmp ah,ID_BUT_KEY_WORDS
@@ -137,7 +137,7 @@ button:
 	@@:
 	cmp ah,ID_BUT_SYNTAX_MODE
 	jne @f
-		stdcall but_choose_syntax, tedit0
+		stdcall but_panel_choose_syntax, tedit0
 		jmp still
 	@@:
 	cmp ah,ID_BUT_CONVERT_1251_866
@@ -156,11 +156,26 @@ button:
 		stdcall ted_but_open_syntax, tedit0
 		jmp still
 	@@:
-	cmp ah,201
-	jne @f
-		stdcall [ted_but_find_next], tedit0
+	cmp ah,201 ;заменить
+	jne .no_find
+		call get_find_options
+		stdcall [ted_but_find], tedit0, eax
 		jmp still
-	@@:
+	.no_find:
+	cmp ah,202 ;заменить все
+	jne .no_change
+		call get_find_options
+		stdcall [ted_but_replace], tedit0, buf_replace, eax, 1
+		or eax,eax
+		jz still
+		stdcall [ted_draw], tedit0
+		jmp still
+	.no_change:
+	cmp ah,203
+	jne .no_change_a
+		call but_replace_all
+		jmp still
+	.no_change_a:
 
 	cmp ah,1
 	jne @f
@@ -201,6 +216,40 @@ ted_Exit:
 	stdcall [tl_data_clear], tree1
 	mcall SF_TERMINATE_PROCESS ;выход из программы
 	;ret
+
+align 4
+get_find_options:
+	xor eax,eax
+	cmp [opt_gr1],opt1
+	je @f
+		inc eax
+	cmp [opt_gr1],opt2
+	je @f
+		inc eax
+	@@:
+	ret
+
+align 4
+proc but_replace_all uses ebx ecx edx
+	call get_find_options
+	mov ebx,eax
+	stdcall [ted_but_replace], tedit0, buf_replace, ebx, 1
+	xor edx,edx
+	or eax,eax
+	jz @f
+	inc edx
+	mov ecx,0x1000
+	.cycle0:
+		stdcall [ted_but_replace], tedit0, buf_replace, ebx, 0
+		or eax,eax
+		jz @f
+		inc edx
+		loop .cycle0
+	@@:
+	stdcall [ted_draw], tedit0
+	mov eax,edx
+	ret
+endp
 
 ;input:
 ; al = код ошибки
@@ -553,7 +602,7 @@ endp
 ;description:
 ; вызов/скрытие панели поиска
 align 4
-proc ted_but_find uses edi
+proc but_panel_find uses edi
 	mov edi,tedit0
 
 	cmp ted_panel_id,TED_PANEL_NULL
@@ -563,6 +612,46 @@ proc ted_but_find uses edi
 		jmp .e_if
 	@@:
 		mov ted_panel_id,TED_PANEL_FIND
+		mov ted_wnd_l,TED_PANEL_WIDTH
+	.e_if:
+	call EvSize
+	stdcall [ted_draw],edi
+	ret
+endp
+
+;description:
+; вызов/скрытие панели замены
+align 4
+proc but_panel_replace uses edi
+	mov edi,tedit0
+
+	cmp ted_panel_id,TED_PANEL_NULL
+	je @f
+		mov ted_panel_id,TED_PANEL_NULL
+		mov ted_wnd_l,0
+		jmp .e_if
+	@@:
+		mov ted_panel_id,TED_PANEL_REPLACE
+		mov ted_wnd_l,TED_PANEL_WIDTH
+	.e_if:
+	call EvSize
+	stdcall [ted_draw],edi
+	ret
+endp
+
+;description:
+; вызов/скрытие панели с файлами синтаксиса
+align 4
+proc but_panel_choose_syntax uses edi, edit:dword
+	mov edi,[edit]
+
+	cmp ted_panel_id,TED_PANEL_NULL
+	je @f
+		mov ted_panel_id,TED_PANEL_NULL
+		mov ted_wnd_l,0
+		jmp .e_if
+	@@:
+		mov ted_panel_id,TED_PANEL_SYNTAX
 		mov ted_wnd_l,TED_PANEL_WIDTH
 	.e_if:
 	call EvSize
@@ -597,13 +686,6 @@ db 168,184,0,0,0,0,0,0,0,0,0,0,0,0,0,0 ;240
 align 4
 ted_on_find_err:
 	stdcall [mb_create],msgbox_7,thread ;message: Can not find text
-	ret
-
-;description:
-; кнопка [Заменить] на панели
-align 4
-but_replace:
-	; пока не сделано
 	ret
 
 ;description:
@@ -647,22 +729,3 @@ proc but_use_syntax uses edi, edit:dword
 	ret
 endp
 
-;description:
-; вызов/скрытие панели с файлами синтаксиса
-align 4
-proc but_choose_syntax uses edi, edit:dword
-	mov edi,[edit]
-
-	cmp ted_panel_id,TED_PANEL_NULL
-	je @f
-		mov ted_panel_id,TED_PANEL_NULL
-		mov ted_wnd_l,0
-		jmp .e_if
-	@@:
-		mov ted_panel_id,TED_PANEL_SYNTAX
-		mov ted_wnd_l,TED_PANEL_WIDTH
-	.e_if:
-	call EvSize
-	stdcall [ted_draw],edi
-	ret
-endp

@@ -23,6 +23,7 @@ macro ColToIndexOffset ind_reg,out_reg {
 TED_PANEL_NULL	 equ 0 ;нет открытой панели
 TED_PANEL_FIND	 equ 1 ;панель поиска
 TED_PANEL_SYNTAX equ 2 ;панель выбора файлов подсветки
+TED_PANEL_REPLACE equ 3 ;панель замены
 TED_PANEL_WIDTH  equ 150 ;ширина панели
 
 TED_LINES_IN_NEW_FILE equ 30 ;число строк в новом файле
@@ -557,7 +558,7 @@ proc ted_is_select uses ebx
 	xor al,al
 	cmp ted_drag_m,1
 	je @f
-		mov al,1
+		inc al
 		mov ebx,ted_sel_x0
 		cmp ebx,ted_sel_x1
 		jne @f
@@ -577,8 +578,8 @@ proc ted_sel_normalize uses ecx esi
 		mov esi,edi
 		add esi,ted_offs_sel
 		add edi,ted_offs_seln
-		mov ecx,sizeof.TexSelect
-		rep movsb
+		mov ecx,sizeof.TexSelect/4
+		rep movsd
 	pop edi
 
 	jmp @f
@@ -750,8 +751,8 @@ proc ted_init_syntax_file, edit:dword
 	mov eax,edi ;сохраняем значение edi
 	mov esi,ted_syntax_file
 	add edi,ted_offs_count_colors
-	mov ecx,9*4
-	rep movsb
+	mov ecx,9
+	rep movsd
 	mov edi,eax ;востанавливаем значение edi
 
 	mov eax,ted_syntax_file
@@ -759,8 +760,7 @@ proc ted_init_syntax_file, edit:dword
 	mov ted_text_colors,eax
 
 	mov eax,ted_colors_text_count ;init: count_colors_text (offset to key words)
-	add eax,8
-	shl eax,2
+	lea eax,[4*eax+32]
 	add eax,ted_syntax_file
 	mov ted_key_words_data,eax
 
@@ -768,14 +768,12 @@ proc ted_init_syntax_file, edit:dword
 	xor eax,eax
 	@@:
 		ColToIndexOffset eax,edx
-		xor ebx,ebx
-		mov bl,byte[edx]
-		shl bx,2
+		movzx ebx,byte[edx]
 		mov esi,ted_arr_key_pos
-		add esi,ebx
+		lea esi,[esi+4*ebx]
 		cmp dword[esi],-1
 		jne .no_ch_key
-			mov dword[esi],eax
+			mov [esi],eax
 		.no_ch_key:
 		inc eax
 	loop @b
@@ -911,8 +909,8 @@ ted_iterat_perv:
 	push ebx
 	@@:
 		mov edx,[edx+2]
-		cmp edx,0
-		je @f
+		or edx,edx
+		jz @f
 		imul edx,sizeof.symbol
 		add edx,ted_tex
 		call ted_symbol_not_vis
@@ -928,8 +926,8 @@ ted_iterat_perv:
 	ret
 	.else:
 		mov edx,[edx+2]
-		cmp edx,0
-		je @f
+		or edx,edx
+		jz @f
 		imul edx,sizeof.symbol
 		add edx,ted_tex
 		cmp dword [edx+14],0
@@ -1080,8 +1078,8 @@ ted_symbol_not_vis:
 	ret
 
 ;input:
-; text:dword - pointer to text string
-; add_opt:dword - options
+; text - pointer to text string
+; add_opt - options
 align 16
 proc ted_text_add, edit:dword, text:dword, t_len:dword, add_opt:dword
 	locals
@@ -1346,64 +1344,62 @@ endp
 ; Функция используется для смены регистра выбранных символов
 align 16
 proc ted_convert_sel_text, conv_fun:dword
-  locals
-    conv_cou dd ?
-  endl
-  mov dword[conv_cou],0
-  pushad
+	locals
+		conv_cou dd ?
+	endl
+	mov dword[conv_cou],0
+	pushad
 
-  call ted_is_select
-  cmp al,0
-  je .end_f
-    call ted_set_undo
-    call ted_sel_normalize
+	call ted_is_select
+	or al,al
+	jz .end_f
+		call ted_set_undo
+		call ted_sel_normalize
 
-    mov esi,ted_seln_x0
-    mov ecx,ted_seln_y0
-    call ted_get_pos_by_coords
-    mov eax,edx
-    mov esi,ted_seln_x1
-    mov ecx,ted_seln_y1
-    call ted_get_pos_by_coords
-    ;call ted_get_text_perv_pos
-    mov ebx,edx
+		mov esi,ted_seln_x0
+		mov ecx,ted_seln_y0
+		call ted_get_pos_by_coords
+		mov eax,edx
+		mov esi,ted_seln_x1
+		mov ecx,ted_seln_y1
+		call ted_get_pos_by_coords
+		;call ted_get_text_perv_pos
+		mov ebx,edx
 
-    cmp eax,ebx
-    je .end_f
+		cmp eax,ebx
+		je .end_f
 
-    inc ted_tim_ch
-    mov edx,eax ;i=p0;
-    mov ecx,ted_ptr_free_symb
-    @@:
-      push eax
-      mov al,byte[edx]
-      call dword[conv_fun] ;преобразование символа
-      mov esi,eax
-      cmp byte[edx],al
-      pop eax
-      je .no_change
-	m2m dword [edx+14],ted_tim_ch
-	call ted_char_add ;b_pos=ted_char_add(tex[i].c^32,i,false,b_pos);
-	call ted_get_text_next_pos ;go to added symbol
-	inc dword[conv_cou]
-      .no_change:
+		inc ted_tim_ch
+		mov edx,eax ;i=p0;
+		mov ecx,ted_ptr_free_symb
+		@@:
+		push eax
+		mov al,byte[edx]
+		call dword[conv_fun] ;преобразование символа
+		mov esi,eax
+		cmp byte[edx],al
+		pop eax
+		je .no_change
+			m2m dword [edx+14],ted_tim_ch
+			call ted_char_add ;b_pos=ted_char_add(tex[i].c^32,i,false,b_pos);
+			call ted_get_text_next_pos ;go to added symbol
+			inc dword[conv_cou]
+		.no_change:
 
-      call ted_iterat_next
-      cmp edx,ted_tex
-      je @f 
-      cmp edx,ebx
-      je @f
-
-      jmp @b
-    @@:
-    cmp dword[conv_cou],0
-    jne @f
-      dec ted_tim_ch
-    @@:
-  .end_f:
-  popad
-  mov esi,dword[conv_cou]
-  ret
+		call ted_iterat_next
+		cmp edx,ted_tex
+		je @f 
+		cmp edx,ebx
+		jne @b
+		@@:
+		cmp dword[conv_cou],0
+		jne @f
+			dec ted_tim_ch
+		@@:
+	.end_f:
+	popad
+	mov esi,dword[conv_cou]
+	ret
 endp
 
 ;output:
@@ -1444,8 +1440,8 @@ endp
 align 16
 proc ted_sel_text_del uses ebx ecx edx esi, del_opt:dword
 	call ted_is_select
-	cmp al,0
-	je .end_f
+	or al,al
+	jz .end_f
 		call ted_sel_normalize
 
 		mov esi,ted_seln_x1
@@ -2058,26 +2054,60 @@ endp
 ; ecx = Col
 ; edx = Row
 ; edi = pointer to tedit struct
+;output:
+; ecx = cursor x
+; edx = cursor y
 align 16
 ted_go_to_pos:
-	push eax
-	mov eax,ted_scr_w
+	push eax ebx
+	mov eax,ted_scr_h
+	sub ecx,[eax+sb_offs_position]
+	cmp ecx,0 ;ted_cur_y < 0
+	jge @f
+		add [eax+sb_offs_position],ecx ;прокрутка скроллинга влево
+		xor ecx,ecx
+	@@:
+	mov ebx,5 ;5 - желаемый отступ слева
+	cmp ecx,ebx
+	jge .end0
+		sub ebx,ecx ;ebx - на сколько символов нужно сдвинуть курсор
+		cmp [eax+sb_offs_position],ebx
+		jge @f 
+			add ecx,[eax+sb_offs_position]
+			mov dword[eax+sb_offs_position],0
+			jmp .end0
+		@@:
+			sub [eax+sb_offs_position],ebx
+			add ecx,ebx
+	.end0:
+	cmp ecx,[eax+sb_offs_cur_area] ;ted_cur_x > [.cur_area]
+	jl .end1
+		mov ebx,ecx
+		sub ebx,[eax+sb_offs_cur_area]
+		inc ebx
+		add [eax+sb_offs_position],ebx ;прокрутка скроллинга вправо
+		sub ecx,ebx
+	.end1:
 	mov ted_cur_x,ecx
-	sub edx,[eax+sb_offs_position]
 
+	mov eax,ted_scr_w
+	sub edx,[eax+sb_offs_position]
+	cmp edx,0 ;ted_cur_y < 0
+	jge @f
+		add [eax+sb_offs_position],edx ;прокрутка скроллинга вверх
+		xor edx,edx
+		jmp .end2
+	@@:
 	cmp edx,[eax+sb_offs_cur_area] ;ted_cur_y > [.cur_area]
-	jl @f
-		push ebx
+	jl .end2
 		mov ebx,edx
 		sub ebx,[eax+sb_offs_cur_area]
 		inc ebx
-		add [eax+sb_offs_position],ebx
+		add [eax+sb_offs_position],ebx ;прокрутка скроллинга вниз
 		sub edx,ebx
-		pop ebx
-		; ??? redrav
-	@@:
+	.end2:
 	mov ted_cur_y,edx
-	pop eax
+	pop ebx eax
 	ret
 
 ;input:
@@ -2805,6 +2835,107 @@ proc ted_but_redo uses edi, edit:dword
 	ret
 endp
 
+;description:
+; функция находит текст на который указывает ted_buffer_find
+;input:
+; f_opt = параметры поиска:
+;   (0 - искать выше курсора, 1 - искать ниже курсора, 2 - искать от начала файла)
+align 16
+proc ted_but_find, edit:dword, f_opt:dword
+	push [edit]
+	cmp dword[f_opt],2
+	jne @f
+		call ted_but_find_first
+		jmp .end_f
+	@@:
+	cmp dword[f_opt],0
+	jne @f
+		call ted_but_find_next
+		jmp .end_f
+	@@:
+	cmp dword[f_opt],1
+	jne .end_f
+		call ted_but_find_perv
+	.end_f:
+	ret
+endp
+
+;description:
+; функция находит текст на который указывает ted_buffer_find
+; ищет от начала файла, или от конца текущего выделения
+align 16
+proc ted_but_find_first, edit:dword
+	pushad
+	mov edi,[edit]
+
+	call ted_is_select
+	or al,al
+	jz @f
+		call ted_sel_normalize
+		mov edx,ted_sel_y1
+		mov ecx,ted_sel_x1
+		call ted_go_to_pos ;переход на конец выделения
+		call ted_get_pos_by_cursor
+		jmp .end0
+	@@:
+		mov edx,ted_tex
+		call ted_iterat_next
+	.end0:
+	mov eax,ted_buffer_find
+	mov bl,byte[eax]
+	@@:
+		call ted_get_find_rezult
+		cmp bh,1
+		je @f ; find
+			call ted_iterat_next
+			cmp edx,ted_tex_1
+			jle @f
+			jmp @b
+	@@:
+	call but_find
+	popad
+	ret
+endp
+
+;description:
+; функция находит текст на который указывает ted_buffer_find
+; ищет выше курсора
+align 16
+proc ted_but_find_perv, edit:dword
+	pushad
+	mov edi,[edit]
+	call ted_is_select
+	or al,al
+	jz @f
+		call ted_sel_normalize
+		mov edx,ted_sel_y0
+		mov ecx,ted_sel_x0
+		call ted_go_to_pos ;переход на начало выделения
+		call ted_get_pos_by_cursor
+		call ted_iterat_perv ;переход на 1-й символ перед выделением
+		jmp .end0
+	@@:
+	call ted_get_pos_by_cursor
+	.end0:
+	mov eax,ted_buffer_find
+	mov bl,byte[eax]
+	@@:
+		call ted_get_find_rezult
+		cmp bh,1
+		je @f ; find
+			call ted_iterat_perv
+			cmp edx,ted_tex_1
+			jle @f
+			jmp @b
+	@@:
+	call but_find
+	popad
+	ret
+endp
+
+;description:
+; функция находит текст на который указывает ted_buffer_find
+; ищет ниже курсора
 align 16
 proc ted_but_find_next, edit:dword
 	pushad
@@ -2822,8 +2953,18 @@ proc ted_but_find_next, edit:dword
 			jle @f
 			jmp @b
 	@@:
-	cmp bh,0
-	je @f
+	call but_find
+	popad
+	ret
+endp
+
+;input:
+; bh = был ли найден искомый текст (0 - нет, 1 - да)
+; esi = first symbol pointer
+align 16
+but_find:
+	or bh,bh
+	jz @f
 		call ted_get_text_coords
 		inc ebx ;move cursor right
 		mov ted_sel_x1,ebx
@@ -2831,7 +2972,7 @@ proc ted_but_find_next, edit:dword
 		mov edx,eax
 		mov ecx,ebx
 		call ted_go_to_pos
-		mov edx,esi ;esi было установлео в ted_get_find_rezult
+		mov edx,esi
 		call ted_get_text_coords
 		mov ted_sel_x0,ebx
 		mov ted_sel_y0,eax
@@ -2843,7 +2984,36 @@ proc ted_but_find_next, edit:dword
 		je .end_find
 			call ted_fun_find_err ;пользовательская функция
 	.end_find:
-	popad
+	ret
+
+;input:
+; rpl_text = текст для замены
+; r_opt = параметры поиска:
+;   (0 - искать выше курсора, 1 - искать ниже курсора, 2 - искать от начала файла)
+; n_tim = фиксировать замену в изменениях (0 - нет, 1 - да)
+;output:
+; eax = 0 - не удачно, 1 - удачно
+align 16
+proc ted_but_replace uses edx edi esi, edit:dword, rpl_text:dword, r_opt:dword, n_tim:dword
+	mov edi,[edit]
+	stdcall ted_but_find, edi,[r_opt]
+
+	xor edx,edx
+	cmp dword[n_tim],0
+	je @f
+		mov edx,ted_opt_ed_change_time
+	@@:
+	stdcall ted_sel_text_del, edx
+	or eax,0xff
+	jz @f
+		mov esi,[rpl_text]
+		stdcall tl_strlen
+		or eax,eax
+		jz @f
+		stdcall ted_text_add, edi,esi,eax,ted_opt_ed_move_cursor
+		xor eax,eax
+		inc eax
+	@@:
 	ret
 endp
 
@@ -3752,8 +3922,8 @@ proc ted_clear_line_before_draw, edit:dword, coords:dword, clear_o:dword, numb_l
 	@@:
 
 	call ted_is_select
-	cmp al,0
-	je .no_select
+	or al,al
+	jz .no_select
 	cmp ted_seln_y0,esi
 	jg .no_select
 	cmp ted_seln_y1,esi

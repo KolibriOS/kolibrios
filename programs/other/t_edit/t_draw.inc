@@ -220,21 +220,32 @@ draw_but_toolbar: ;функция для рисования панели инструментов
 ; edi = pointer to tedit struct
 align 4
 proc draw_panel_find
-	cmp ted_panel_id,TED_PANEL_FIND ;if not panel
+	cmp ted_panel_id,TED_PANEL_FIND
 	jne @f
+		call p_find
+		jmp .end_f
+	@@:
+	cmp ted_panel_id,TED_PANEL_REPLACE
+	jne @f
+		call p_replace
+		jmp .end_f
+	@@:
+	push eax edx
+		mcall SF_DEFINE_BUTTON,,,0x80000000+201
+		mcall ,,,0x80000000+202
+		mcall ,,,0x80000000+203
+	pop edx eax
+	.end_f:
+	ret
+endp
+
+align 4
+p_find:
 	push eax ebx ecx edx
 		mov ecx,ted_wnd_t
 		shl ecx,16
 		mov cx,20
 		mcall SF_DRAW_RECT,TED_PANEL_WIDTH,,[sc.work]
-
-		mov ebx,(30 shl 16)+25
-		add ebx,ted_wnd_t
-		mov ecx,[sc.work_text]
-		or ecx,0x80000000
-		mcall SF_DRAW_TEXT,,,txtFindCapt
-
-		stdcall [edit_box_draw], edit2
 
 		mov ecx,ted_wnd_t
 		add cx,20+15 ; 15 - height text box
@@ -243,30 +254,78 @@ proc draw_panel_find
 		mov edx,ted_scr_h
 		add cx,word[edx+sb_offs_size_y]
 		sub cx,20+15-1 ; 15 - height text box
-		mcall SF_DRAW_RECT,TED_PANEL_WIDTH,,[sc.work]
+		mcall ,,,[sc.work]
+
+		stdcall [edit_box_draw], edit2
 
 		mov ecx,ted_wnd_t
-		add cx,20+15+5
 		shl ecx,16
-		mov cx,20
+		add ecx,(93 shl 16)+20
 		mcall SF_DEFINE_BUTTON,(5 shl 16)+85,,201,[sc.work_button] ;201 - button id
 
-		mov ebx,(15 shl 16)+(20+15+10)
+		mov ebx,(23 shl 16)+7
 		add ebx,ted_wnd_t
 		mov ecx,[sc.work_text]
 		or ecx,0x80000000
-		mcall SF_DRAW_TEXT,,,txtFindNext
+		mcall SF_DRAW_TEXT,,,txtFindCapt
+
+		mov ecx,[sc.work_button_text]
+		or ecx,0x80000000
+		mov ebx,(15 shl 16)+100
+		add ebx,ted_wnd_t
+		mcall ,,,txtFindNext
+
+		stdcall [option_box_draw], opt_grlist1
 	pop edx ecx ebx eax
-	jmp .end_f
-	@@:
-	push eax edx
-		mov edx,201
-		or edx,0x80000000
-		mcall SF_DEFINE_BUTTON
-	pop edx eax
-	.end_f:
 	ret
-endp
+
+align 4
+p_replace:
+	push eax ebx ecx edx
+		mov ecx,ted_wnd_t
+		shl ecx,16
+		mov cx,20
+		mcall SF_DRAW_RECT,TED_PANEL_WIDTH,,[sc.work]
+
+		mov ecx,ted_wnd_t
+		add cx,20+15 ; 15 - height text box
+		shl ecx,16
+		add ecx,ted_wnd_h
+		mov edx,ted_scr_h
+		add cx,word[edx+sb_offs_size_y]
+		sub cx,20+15-1 ; 15 - height text box
+		mcall ,,,[sc.work]
+
+		stdcall [edit_box_draw], edit1
+		stdcall [edit_box_draw], edit2
+
+		mov ecx,ted_wnd_t
+		shl ecx,16
+		add ecx,(133 shl 16)+20
+		mcall SF_DEFINE_BUTTON,(5 shl 16)+95,,202,[sc.work_button] ;replace next
+
+		add ecx,(26 shl 16)
+		mcall ,,,203 ;replace all
+
+		mov ebx,ted_wnd_t
+		add ebx,(23 shl 16)+7
+		mov ecx,[sc.work_text]
+		or ecx,0x80000000
+		mcall SF_DRAW_TEXT,,,txtFindCapt
+		add ebx,93
+		mcall SF_DRAW_TEXT,,,txtRerlaceCapt
+
+		mov ecx,[sc.work_button_text]
+		or ecx,0x80000000
+		mov ebx,ted_wnd_t
+		add ebx,(15 shl 16)+140
+		mcall ,,,txtRerlace
+		add ebx,26
+		mcall ,,,txtRerlaceAll
+
+		stdcall [option_box_draw], opt_grlist1
+	pop edx ecx ebx eax
+	ret
 
 ;input:
 ; edi = pointer to tedit struct
@@ -357,13 +416,14 @@ EvSize:
 	stdcall [ted_init_scroll_bars], tedit0,2
 
 	mov eax,ted_wnd_t
-	mov edi,dword tree1
+	mov edi,tree1
 	mov tl_box_top,eax ;=ted_wnd_t
 	add tl_box_top,20
 
 	mov [edit2.top],eax ;=ted_wnd_t
 	add dword[edit2.top],20
-
+	mov [edit1.top],eax ;=ted_wnd_t
+	add dword[edit1.top],113
 	popad
 	ret
 

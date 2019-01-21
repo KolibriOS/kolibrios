@@ -318,8 +318,10 @@ dd	sz_ted_but_paste,		ted_but_paste
 dd	sz_ted_but_undo,		ted_but_undo
 dd	sz_ted_but_redo,		ted_but_redo
 dd	sz_ted_but_reverse,		ted_but_reverse
-dd	sz_ted_but_find_next,		ted_but_find_next
-dd	sz_ted_text_colored,		ted_text_colored
+dd	sz_ted_but_find,		ted_but_find
+dd	sz_ted_but_find_next,	ted_but_find_next
+dd	sz_ted_but_replace,		ted_but_replace
+dd	sz_ted_text_colored,	ted_text_colored
 dd	sz_ted_version, 		0x00000005
 
 dd	sz_Frame_draw,			frame.draw
@@ -430,7 +432,9 @@ sz_ted_but_paste		db 'ted_but_paste',0
 sz_ted_but_undo 		db 'ted_but_undo',0
 sz_ted_but_redo 		db 'ted_but_redo',0
 sz_ted_but_reverse		db 'ted_but_reverse',0
+sz_ted_but_find			db 'ted_but_find',0
 sz_ted_but_find_next		db 'ted_but_find_next',0
+sz_ted_but_replace		db 'ted_but_replace',0
 sz_ted_text_colored		db 'ted_text_colored',0
 sz_ted_version			db 'version_text_edit',0
 
