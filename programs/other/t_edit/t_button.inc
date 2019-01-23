@@ -156,13 +156,13 @@ button:
 		stdcall ted_but_open_syntax, tedit0
 		jmp still
 	@@:
-	cmp ah,201 ;заменить
+	cmp ah,201 ;найти далее
 	jne .no_find
 		call get_find_options
 		stdcall [ted_but_find], tedit0, eax
 		jmp still
 	.no_find:
-	cmp ah,202 ;заменить все
+	cmp ah,202 ;заменить
 	jne .no_change
 		call get_find_options
 		stdcall [ted_but_replace], tedit0, buf_replace, eax, 1
@@ -171,7 +171,7 @@ button:
 		stdcall [ted_draw], tedit0
 		jmp still
 	.no_change:
-	cmp ah,203
+	cmp ah,203 ;заменить все
 	jne .no_change_a
 		call but_replace_all
 		jmp still
@@ -246,8 +246,15 @@ proc but_replace_all uses ebx ecx edx
 		inc edx
 		loop .cycle0
 	@@:
-	stdcall [ted_draw], tedit0
+	or edx,edx
+	jz @f
+		stdcall [ted_draw], tedit0
+	@@:
 	mov eax,edx
+	mov edi,msgbox_1.z
+	stdcall convert_int_to_str, 8
+	stdcall str_cat, edi,txt_Info
+	notify_window_run msgbox_1
 	ret
 endp
 
@@ -337,7 +344,7 @@ proc but_no_msg_OpenFile uses eax ebx esi
 	call ted_messages_after_open_file
 
 	mov esi,openfile_path
-	call strlen
+	stdcall str_len,esi
 	add esi,eax
 	@@: ;цикл для поиска начала имени файла
 		dec esi
@@ -349,7 +356,7 @@ proc but_no_msg_OpenFile uses eax ebx esi
 		jg @b
 	@@:
 	inc esi
-	call strlen
+	stdcall str_len,esi
 	cmp eax,255
 	jle @f
 		mov eax,255
@@ -381,8 +388,7 @@ ted_but_open_file:
 	cmp [OpenDialog_data.status],2
 	jne @f
 		stdcall mem_spac, msgbox_9.fdp,100
-		mov esi,file_name
-		call strlen
+		stdcall str_len,file_name
 		cmp eax,100
 		jle .no_crop
 			mov eax,100
@@ -403,8 +409,7 @@ ted_but_open_file:
 proc auto_open_syntax, of_path:dword
 pushad
 	;ищем есть ли файл подсветки для открываемого текстового файла
-	mov esi,[of_path]
-	call strlen
+	stdcall str_len,[of_path]
 	mov edx,[of_path]
 	add edx,eax
 	.f_beg:
@@ -488,8 +493,8 @@ endp
 align 4
 ted_messages_after_open_file:
 	push ecx edi
-	cmp eax,0
-	je @f
+	or eax,eax
+	jz @f
 		cmp ax,10
 		jl .zifra_0_9
 			mov al,'?'
@@ -499,18 +504,7 @@ ted_messages_after_open_file:
 
 		mov byte[msgbox_4.err],al
 		stdcall [mb_create],msgbox_4,thread ;message: Can-t open text file!
-		jmp .ret_f
 	@@:
-	cmp ebx,-1
-	je .ret_f
-		;if open file
-		mov edi,tedit0
-		mov ecx,ted_max_chars
-		sub ecx,2 ;ecx = максимальное число байт, для которых была выделена память
-		cmp ebx,ecx
-		jl .ret_f
-			stdcall [mb_create],msgbox_1,thread
-	.ret_f:
 	pop edi ecx
 	ret
 
@@ -524,10 +518,10 @@ ted_save_err_msg:
 ; функция нажатия на кнопку [Применить] в панели синтаксиса
 align 4
 proc ted_but_open_syntax uses eax ebx ecx edi, edit:dword
-	mov edi,dword[edit]
+	mov edi,[edit]
 	cmp ted_panel_id,TED_PANEL_SYNTAX
 	jne @f
-		stdcall dword[tl_node_get_data], tree1
+		stdcall [tl_node_get_data], tree1
 		mov [fn_col_option],eax
 		stdcall open_unpac_synt_file,eax
 		cmp ebx,-1
@@ -548,6 +542,8 @@ endp
 align 4
 proc open_unpac_synt_file uses eax edi esi, f_name:dword
 	mov ebx,[f_name]
+	cmp byte[ebx],0
+	je @f
 	mov edi,last_open_synt_file
 	stdcall strcmp,ebx,edi ;сравниваем имя подключенного файла с подключенным ранее файлом
 	test eax,eax
@@ -685,7 +681,7 @@ db 168,184,0,0,0,0,0,0,0,0,0,0,0,0,0,0 ;240
 
 align 4
 ted_on_find_err:
-	stdcall [mb_create],msgbox_7,thread ;message: Can not find text
+	notify_window_run msgbox_7 ;message: Can not find text
 	ret
 
 ;description:

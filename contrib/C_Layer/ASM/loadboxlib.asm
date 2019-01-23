@@ -116,7 +116,8 @@ import lib_boxlib, \
 	ted_but_undo, 'ted_but_undo' , \
 	ted_but_redo, 'ted_but_redo' , \
 	ted_but_reverse, 'ted_but_reverse' , \
-	ted_but_find_next, 'ted_but_find_next' , \
+	ted_but_find, 'ted_but_find' , \
+	ted_but_replace, 'ted_but_replace' , \
 	ted_text_colored, 'ted_text_colored' , \
 	frame_draw, 'frame_draw' , \
 	progressbar_draw,'progressbar_draw' , \
@@ -182,7 +183,8 @@ public ted_but_paste as '_ted_but_paste'
 public ted_but_undo as '_ted_but_undo'
 public ted_but_redo as '_ted_but_redo'
 public ted_but_reverse as '_ted_but_reverse'
-public ted_but_find_next as '_ted_but_find_next'
+public ted_but_find as '_ted_but_find'
+public ted_but_replace as '_ted_but_replace'
 public ted_text_colored as 'ted_text_colored_asm'
 
 public tl_data_init as '_tl_data_init'

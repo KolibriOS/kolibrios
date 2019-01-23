@@ -340,12 +340,12 @@ proc draw_panel_syntax
 	mov cx,20
 	mcall SF_DRAW_RECT,TED_PANEL_WIDTH,,[sc.work] ;рисование верхнего фонового прямоугольника
 
-	stdcall dword[tl_draw], tree1
+	stdcall [tl_draw], tree1
 	mov [ws_dir_lbox.all_redraw],1 ;для полной перерисовки дочернего скроллинга
-	stdcall dword[scrollbar_ver_draw], dword ws_dir_lbox
+	stdcall [scrollbar_ver_draw], ws_dir_lbox
 
 	ror ecx,16
-	add ecx,dword[tree1.box_height]
+	add ecx,[tree1.box_height]
 	add ecx,20
 	and ecx,0xffff
 	ror ecx,16
@@ -353,13 +353,13 @@ proc draw_panel_syntax
 	mov esi,ted_scr_h
 	add cx,word[esi+sb_offs_size_y]
 	sub cx,20
-	sub ecx,dword[tree1.box_height]
+	sub ecx,[tree1.box_height]
 	inc cx
 	int 0x40 ;рисование нижнего фонового прямоугольника
 
 	mov ecx,ted_wnd_t
 	add ecx,25
-	add ecx,dword[tree1.box_height]
+	add ecx,[tree1.box_height]
 	shl ecx,16
 	mov cx,20
 	mcall SF_DEFINE_BUTTON,(5 shl 16)+65,,200,[sc.work_button] ;200 - button id
@@ -371,16 +371,17 @@ proc draw_panel_syntax
 	mcall SF_DRAW_TEXT,,,txtFormatCapt
 
 	mov ebx,(10 shl 16)+31
-	add ebx,dword[tree1.box_height]
+	add ebx,[tree1.box_height]
 	add ebx,ted_wnd_t
+	mov ecx,[sc.work_button_text]
+	or ecx,0x80000000
 	mcall ,,,txtFormatApply
 
 	popad
 	jmp .end_f
 	@@:
 		push eax edx
-		mov edx,200
-		or edx,0x80000000
+		mov edx,0x80000000+200
 		mcall SF_DEFINE_BUTTON ;если нет панели то удаляем кнопку
 		pop edx eax
 	.end_f:

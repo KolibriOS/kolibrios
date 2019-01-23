@@ -66,7 +66,7 @@ ted_but_paste dd sz_ted_but_paste
 ted_but_undo dd sz_ted_but_undo
 ted_but_redo dd sz_ted_but_redo
 ted_but_reverse dd sz_ted_but_reverse
-ted_but_find_next dd sz_ted_but_find_next
+ted_but_find dd sz_ted_but_find
 ted_text_colored dd sz_ted_text_colored
 
 PathShow_prepare dd sz_PathShow_prepare
@@ -128,7 +128,7 @@ sz_ted_but_paste		db 'ted_but_paste',0
 sz_ted_but_undo 		db 'ted_but_undo',0
 sz_ted_but_redo 		db 'ted_but_redo',0
 sz_ted_but_reverse		db 'ted_but_reverse',0
-sz_ted_but_find_next	db 'ted_but_find_next',0
+sz_ted_but_find	db 'ted_but_find',0
 sz_ted_text_colored		db 'ted_text_colored',0
 
 sz_PathShow_prepare db 'PathShow_prepare',0
@@ -145,29 +145,10 @@ dd 0,0
         aimg_to_rgb2 db 'img_to_rgb2',0
         aimg_decode  db 'img_decode',0 ;автоматически определяет формат графических данных
         aimg_destroy db 'img_destroy',0
- ;---------------------------------------------------------------------
+;---------------------------------------------------------------------
+;дочерний скроллинг для элемента ListBox
 align 4
-ws_dir_lbox: ;дочерний скроллинг для элемента ListBox
-.x:
-.size_x     dw 16 ;+0
-.start_x    dw 0 ;+2
-.y:
-.size_y     dw 30 ;+4
-.start_y    dw 70 ;+6
-.btn_high   dd 15 ;+8
-.type	    dd 1  ;+12
-.max_area   dd 100  ;+16
-rb 4+4
-.bckg_col   dd 0xeeeeee ;+28
-.frnt_col   dd 0xbbddff ;+32
-.line_col   dd 0  ;+36
-.redraw     dd 0  ;+40
-.delta	    dw 0  ;+44
-.delta2     dw 0  ;+46
-.run_x:
-rb 2*4+4*6
-.all_redraw dd 0 ;+80
-.ar_offset  dd 1 ;+84
+ws_dir_lbox scrollbar 16,0, 30,70, 15, 100,30,0, 0,0,0, 1
 ;---------------------------------------------------------------------
 
 count_of_dir_list_files equ 15

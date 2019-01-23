@@ -1158,7 +1158,8 @@ import  box_lib, \
         ted_but_undo,       'ted_but_undo', \
         ted_but_redo,       'ted_but_redo', \
         ted_but_reverse,    'ted_but_reverse', \
-        ted_but_find_next,  'ted_but_find_next', \
+        ted_but_find,       'ted_but_find', \
+        ted_but_replace,    'ted_but_replace', \
         ted_text_colored,   'ted_text_colored', \
         progressbar_draw,   'progressbar_draw'
 

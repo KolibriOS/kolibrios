@@ -56,10 +56,9 @@ start:
 	copy_path fn_syntax_dir,sys_path,file_name,0 ;берем путь к папке с файлами синтаксиса
 	mcall SF_FILE,tree_file_struct
 
-	cmp ebx,-1
-	je .end_dir_init
-		mov eax,dir_mem
-		add eax,32+4+1+3+4*6+8
+	cmp ebx,0
+	jle .end_dir_init
+		mov eax,dir_mem+32+40
 		mov ecx,ebx
 		@@:
 			cmp byte[eax],'.' ;фильтруем файлы с именами '.' и '..'
@@ -72,6 +71,12 @@ start:
 		stdcall [tl_cur_beg],tree1 ;ставим курсор на начало списка
 		or dword[tree1.style], tl_cursor_pos_limited ;ограничиваем движение курсора в пределах списка
 	.end_dir_init:
+
+	xor eax,eax
+	inc eax
+	mov [scrol_w1.type],eax
+	mov [scrol_h1.type],eax
+	mov [ws_dir_lbox.type],eax
 
 ;--- load color option file ---
 stdcall [ted_init], tedit0
@@ -136,15 +141,14 @@ draw_window:
 	mov edx,txt_out_file
 	int 0x40
 
-	push dword PathShow_data_1
-	call [PathShow_draw]
+	stdcall [PathShow_draw], PathShow_data_1
 	
-	stdcall [edit_box_draw],dword edit1
-	stdcall [tl_draw],dword tree1
+	stdcall [edit_box_draw], edit1
+	stdcall [tl_draw], tree1
 
 	;scroll 1
 	mov [ws_dir_lbox.all_redraw],1
-	stdcall [scrollbar_ver_draw],dword ws_dir_lbox
+	stdcall [scrollbar_ver_draw],ws_dir_lbox
 	stdcall [ted_draw], tedit0
 
 	mcall SF_REDRAW,SSF_END_DRAW
@@ -328,7 +332,7 @@ get_wnd_in_focus:
 	;@@:
 	ret
 
-hed db 'TextEditor syntax file converter 15.01.19',0 ;подпись окна
+hed db 'TextEditor syntax file converter 23.01.19',0 ;подпись окна
 conv_tabl rb 128 ; таблица для конвертирования scan-кода в ascii-код
 
 txt_load_f db 'Загр. файл',0
@@ -337,11 +341,11 @@ txt_inp_file db 'Исх. файл:',0
 txt_out_file db 'Вых. файл:',0
 
 head_f_i:
-head_f_l db 'System error',0
-err_message_found_lib_0 db 'Sorry I cannot found library ',39,'box_lib.obj',39,0
-err_message_import_0 db 'Error on load import library ',39,'box_lib.obj',39,0
-err_message_found_lib_1 db 'Sorry I cannot found library ',39,'libimg.obj',39,0
-err_message_import_1 db 'Error on load import library ',39,'libimg.obj',39,0
+head_f_l db '"System error',0
+err_message_found_lib_0 db 'Sorry I cannot found library ',39,'box_lib.obj',39,'" -tE',0
+err_message_import_0 db 'Error on load import library ',39,'box_lib.obj',39,'" -tW',0
+err_message_found_lib_1 db 'Sorry I cannot found library ',39,'libimg.obj',39,'" -tE',0
+err_message_import_1 db 'Error on load import library ',39,'libimg.obj',39,'" -tW',0
 
 ;library structures
 l_libs_start:

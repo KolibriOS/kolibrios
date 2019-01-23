@@ -234,7 +234,7 @@ proc ted_key, edit:dword, table:dword, control:dword
 	@@:
 	cmp ah,KEY_F3 ;[F3]
 	jne @f
-		stdcall ted_but_find_next,edi
+		stdcall ted_but_find,edi,0
 		jmp .end_key_fun
 	@@:
 
@@ -1851,12 +1851,9 @@ ted_get_pos_by_cursor:
 ; edx = tex[1] if error
 ; ted_gp_opt = 0 if text no found
 align 16
-ted_get_pos_by_coords:
-  push eax ;Row
-  push ebx ;Col
-
-  xor eax,eax
-  xor ebx,ebx
+proc ted_get_pos_by_coords uses eax ebx 
+	xor eax,eax ;Row
+	xor ebx,ebx ;Col
   mov ted_gp_opt,0
   mov edx,ted_tex
   @@:
@@ -1888,9 +1885,8 @@ ted_get_pos_by_coords:
     mov edx,ted_tex_1
     ;call ted_get_text_perv_pos
   @@:
-  pop ebx eax
   ret
-
+endp
 
 ;input:
 ; eax = Row
@@ -2062,7 +2058,7 @@ ted_go_to_pos:
 	push eax ebx
 	mov eax,ted_scr_h
 	sub ecx,[eax+sb_offs_position]
-	cmp ecx,0 ;ted_cur_y < 0
+	cmp ecx,0 ;ted_cur_x < 0
 	jge @f
 		add [eax+sb_offs_position],ecx ;прокрутка скроллинга влево
 		xor ecx,ecx
@@ -2839,33 +2835,51 @@ endp
 ; функция находит текст на который указывает ted_buffer_find
 ;input:
 ; f_opt = параметры поиска:
-;   (0 - искать выше курсора, 1 - искать ниже курсора, 2 - искать от начала файла)
+;   (0 - искать ниже курсора, 1 - искать выше курсора, 2 - искать от начала файла)
+;   если установлен 31-й бит, то не обновляется окно
+;output:
+; eax = был ли найден искомый текст (0 - нет, 1 - да)
 align 16
-proc ted_but_find, edit:dword, f_opt:dword
+proc ted_but_find uses ebx ecx edx edi esi, edit:dword, f_opt:dword
 	push [edit]
-	cmp dword[f_opt],2
+	cmp word[f_opt],2
 	jne @f
-		call ted_but_find_first
-		jmp .end_f
+		call _but_find_first
+		jmp .end0
 	@@:
-	cmp dword[f_opt],0
+	cmp word[f_opt],0
 	jne @f
-		call ted_but_find_next
-		jmp .end_f
+		call _but_find_next
+		jmp .end0
 	@@:
-	cmp dword[f_opt],1
-	jne .end_f
-		call ted_but_find_perv
-	.end_f:
+	cmp word[f_opt],1
+	jne .end0
+		call _but_find_perv
+	.end0:
+
+	bt dword[f_opt],31
+	jc .end1
+	or eax,eax
+	jz @f
+		;текст найден, обновляем окно
+		stdcall ted_draw,edi
+		jmp .end1
+	@@:
+		;текст не найден, пробуем вызвать сообщение
+		cmp ted_fun_find_err,0
+		je .end1
+			call ted_fun_find_err ;пользовательская функция
+	.end1:
 	ret
 endp
 
 ;description:
-; функция находит текст на который указывает ted_buffer_find
-; ищет от начала файла, или от конца текущего выделения
+; функция находит текст от начала файла, или от конца текущего выделения
+;output:
+; eax = был ли найден искомый текст (0 - нет, 1 - да)
+; ebx, ecx, edx, edi, edi - портятся
 align 16
-proc ted_but_find_first, edit:dword
-	pushad
+proc _but_find_first, edit:dword
 	mov edi,[edit]
 
 	call ted_is_select
@@ -2892,17 +2906,17 @@ proc ted_but_find_first, edit:dword
 			jle @f
 			jmp @b
 	@@:
-	call but_find
-	popad
+	call _but_find_select
 	ret
 endp
 
 ;description:
-; функция находит текст на который указывает ted_buffer_find
-; ищет выше курсора
+; функция находит текст выше курсора
+;output:
+; eax = был ли найден искомый текст (0 - нет, 1 - да)
+; ebx, ecx, edx, edi, edi - портятся
 align 16
-proc ted_but_find_perv, edit:dword
-	pushad
+proc _but_find_perv, edit:dword
 	mov edi,[edit]
 	call ted_is_select
 	or al,al
@@ -2928,17 +2942,17 @@ proc ted_but_find_perv, edit:dword
 			jle @f
 			jmp @b
 	@@:
-	call but_find
-	popad
+	call _but_find_select
 	ret
 endp
 
 ;description:
-; функция находит текст на который указывает ted_buffer_find
-; ищет ниже курсора
+; функция находит текст ниже курсора
+;output:
+; eax = был ли найден искомый текст (0 - нет, 1 - да)
+; ebx, edx, edi, esi - портятся
 align 16
-proc ted_but_find_next, edit:dword
-	pushad
+proc _but_find_next, edit:dword
 	mov edi,[edit]
 
 	call ted_get_pos_by_cursor
@@ -2953,16 +2967,17 @@ proc ted_but_find_next, edit:dword
 			jle @f
 			jmp @b
 	@@:
-	call but_find
-	popad
+	call _but_find_select
 	ret
 endp
 
+;description:
+; вспомогательная функция, выделяет найденный текст
 ;input:
 ; bh = был ли найден искомый текст (0 - нет, 1 - да)
 ; esi = first symbol pointer
 align 16
-but_find:
+_but_find_select:
 	or bh,bh
 	jz @f
 		call ted_get_text_coords
@@ -2976,46 +2991,89 @@ but_find:
 		call ted_get_text_coords
 		mov ted_sel_x0,ebx
 		mov ted_sel_y0,eax
-		stdcall ted_draw,edi
-		jmp .end_find
+		xor eax,eax
+		inc eax
+		jmp .end0
 	@@:
-		;попадаем сюда если текст не найден
-		cmp ted_fun_find_err,0
-		je .end_find
-			call ted_fun_find_err ;пользовательская функция
-	.end_find:
+		xor eax,eax ;текст не найден
+	.end0:
 	ret
 
 ;input:
 ; rpl_text = текст для замены
 ; r_opt = параметры поиска:
-;   (0 - искать выше курсора, 1 - искать ниже курсора, 2 - искать от начала файла)
+;   (0 - искать ниже курсора, 1 - искать выше курсора, 2 - искать от начала файла)
 ; n_tim = фиксировать замену в изменениях (0 - нет, 1 - да)
 ;output:
 ; eax = 0 - не удачно, 1 - удачно
 align 16
 proc ted_but_replace uses edx edi esi, edit:dword, rpl_text:dword, r_opt:dword, n_tim:dword
 	mov edi,[edit]
-	stdcall ted_but_find, edi,[r_opt]
+	mov eax,[r_opt]
+	bts eax,31
+	stdcall ted_but_find, edi,eax
+	or eax,eax
+	jz .end0
 
 	xor edx,edx
 	cmp dword[n_tim],0
 	je @f
+		call ted_set_undo
 		mov edx,ted_opt_ed_change_time
 	@@:
 	stdcall ted_sel_text_del, edx
 	or eax,0xff
-	jz @f
+	jz .end0
 		mov esi,[rpl_text]
 		stdcall tl_strlen
 		or eax,eax
-		jz @f
+		jz .end0
 		stdcall ted_text_add, edi,esi,eax,ted_opt_ed_move_cursor
 		xor eax,eax
 		inc eax
-	@@:
+	.end0:
 	ret
 endp
+
+;input:
+; eax - text need find
+; bl - first symbol to find
+; edx - first symbol pointer
+; edi - pointer to tedit struct
+;output:
+; bh - rezult
+; edx - last text position (if find sucess)
+; esi - first symbol pointer
+;description:
+; Функция проверяет совпадает ли текст в буфере eax
+; с текстом редактора по указателю edx.
+; Стандартные функции (напр. strcmp) тут не подойдут, потому что
+; в памяти редактора текст содержится не в виде ascii строк.
+align 16
+ted_get_find_rezult:
+push eax
+	mov bh,1
+	mov esi,edx ;copy edx
+	@@:
+		cmp byte[edx],bl
+		jne .no_text
+
+		inc eax ;*** get next symbol (in find text) ***
+		mov bl,byte[eax]
+		or bl,bl
+		jz @f ;end of find text
+
+		call ted_iterat_next ;*** get next symbol (in editor text) ***
+		cmp edx,ted_tex_1
+		jg @b
+align 4
+		.no_text:
+	xor bh,bh
+	mov edx,esi ;restore edx
+	@@:
+pop eax
+	mov bl,byte[eax] ;restore bl
+	ret
 
 ;input:
 ; edi = pointer to tedit struct
@@ -3833,48 +3891,6 @@ align 4
 popad
 	ret
 endp
-
-;input:
-; eax - text need find
-; bl - first symbol to find
-; edx - first symbol pointer
-; edi - pointer to tedit struct
-;output:
-; bh - rezult
-; edx - last text position (if find sucess)
-; esi - first symbol pointer
-;description:
-; Функция проверяет совпадает ли текст в буфере eax
-; с текстом редактора по указателю edx.
-; Стандартные функции (напр. strcmp) тут не подойдут, потому что
-; в памяти редактора текст содержится не в виде ascii строк.
-align 16
-ted_get_find_rezult:
-push eax
-	mov bh,1
-	mov esi,edx ;copy edx
-	@@:
-		cmp byte[edx],bl
-		jne .no_text
-
-		inc eax ;*** get next symbol (in find text) ***
-		mov bl,byte[eax]
-		or bl,bl
-		jz @f ;end of find text
-
-		call ted_iterat_next ;*** get next symbol (in editor text) ***
-		cmp edx,ted_tex_1
-		jle @f ;end of editor text
-
-		jmp @b
-align 4
-		.no_text:
-	xor bh,bh
-	mov edx,esi ;restore edx
-	@@:
-pop eax
-	mov bl,byte[eax] ;restore bl
-	ret
 
 ;input:
 ;  clear_o - если =1 очистить одну строку, =0 очистить все строки окна до низу

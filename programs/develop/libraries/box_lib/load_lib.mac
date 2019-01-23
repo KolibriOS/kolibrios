@@ -480,17 +480,17 @@ pushad
 	mcall 68,11
 	mcall 68,12,4096
 	push eax
-	pop dword [arrea_xx]
+	pop dword[arrea_xx]
 
 	mov edi,eax
-	mov esi,dword head
+	mov esi,head
 	cld
 align 4
 lp0:
 	movsb
 	cmp byte[esi],0
 	jne lp0
-	mov word[edi],'. '
+	mov word[edi],0xa0d
 	add edi,2
 	mov esi,dword err_message
 align 4
@@ -508,7 +508,7 @@ macro notify_window_run message
 {
 push eax ebx
 	mov eax,message ;параметры для командной строки
-	mov [run_notify_struct.Flags], eax
+	mov [run_notify_struct.Flags],eax
 	mov eax,70 ;run @notify
 	mov ebx,run_notify_struct
 	int 0x40

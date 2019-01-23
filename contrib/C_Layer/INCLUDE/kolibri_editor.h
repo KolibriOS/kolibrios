@@ -156,7 +156,8 @@ extern void (*ted_but_select_word)(editor *) __attribute__((__stdcall__));
 extern void (*ted_but_copy)(editor *) __attribute__((__stdcall__));
 extern void (*ted_but_paste)(editor *) __attribute__((__stdcall__));
 
-extern void (*ted_but_find_next)(editor *) __attribute__((__stdcall__));
+extern void (*ted_but_find)(editor *) __attribute__((__stdcall__));
+extern void (*ted_but_replace)(editor *) __attribute__((__stdcall__));
 ///move cursor to <ed_buffer_find>, calls ted_fun_find_err() if exist
 
 

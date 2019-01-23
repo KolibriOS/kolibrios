@@ -1,68 +1,35 @@
-; strlen function
 ;
-; Copyright (c) 2003 Thomas Mathys
-; killer@vantage.ch
+; Строковые функции
 ;
-; This program is free software; you can redistribute it and/or modify
-; it under the terms of the GNU General Public License as published by
-; the Free Software Foundation; either version 2 of the License, or
-; (at your option) any later version.
-;
-; This program is distributed in the hope that it will be useful,
-; but WITHOUT ANY WARRANTY; without even the implied warranty of
-; MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-; GNU General Public License for more details.
-;
-; You should have received a copy of the GNU General Public License
-; along with this program; if not, write to the Free Software
-; Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
-;
-;%ifndef _STRLEN_INC
-;%define _STRLEN_INC
 
-
-;********************************************************************
-;       returns the length of an asciiz string
-;       input           :       esi = pointer to string
-;       output          :       eax = string length
-;       destroys        :       nothing
-;********************************************************************
-strlen:
-	push	ecx edi
-	pushfd
-	cld				; !
-	mov	ecx,-1
-	mov	edi,esi 		; find terminating zero
-	xor	al,al
-	repne	scasb
-	mov	eax,edi 		; calculate string length
-	sub	eax,esi
-	dec	eax
-	popfd
-	pop	edi ecx
+;output:
+; eax = strlen
+align 4
+proc str_len, str1:dword
+	mov eax,[str1]
+	@@:
+		cmp byte[eax],0
+		je @f
+		inc eax
+		jmp @b
+	@@:
+	sub eax,[str1]
 	ret
+endp
 
-
-
-; linlen function
-;
-; Copyright (c) 2009 Igor Afanasiev
-
-linlen:
-	push	ecx edi
-	pushfd
-	cld
-	mov	ecx,eax
+align 4
+proc str_cat uses eax ecx edi esi, str1:dword, str2:dword
+	mov esi,[str2]
+	stdcall str_len,esi
+	mov ecx,eax
 	inc ecx
-	mov	edi,esi 		; find terminating zero
-	mov	al,13
-	repne	scasb
-	mov	eax,edi 		; calculate string length
-	sub	eax,esi
-	dec	eax
-	popfd
-	pop	edi ecx
+	mov edi,[str1]
+	stdcall str_len,edi
+	add edi,eax
+	cld
+	repne movsb
 	ret
+endp
 
 ;description:
 ; проверяет содержится ли строка str1 в строке str0
@@ -79,10 +46,9 @@ proc str_instr uses edi esi, str0:dword, str1:dword
 	mov esi,[str1]
 	cld
 	@@:
-		mov al,[esi]
-		cmp al,0
-		je .e1
-		inc esi
+		lodsb
+		or al,al
+		jz .e1
 		scasb ;сравниваем символы
 	jz @b ;если совпали, то переходим к сравнению следующих
 	;сюда попадаем если строки не совпали
@@ -91,3 +57,36 @@ proc str_instr uses edi esi, str0:dword, str1:dword
 	ret
 endp
 
+;input:
+; eax - число
+; edi - буфер для строки
+; len - длинна буфера
+;output:
+align 4
+proc convert_int_to_str uses eax ecx edx edi esi, len:dword
+	mov esi,[len]
+	add esi,edi
+	dec esi
+	call .str
+	ret
+endp
+
+align 4
+.str:
+	mov ecx,10
+	cmp eax,ecx
+	jb @f
+		xor edx,edx
+		div ecx
+		push edx
+		;dec edi  ;смещение необходимое для записи с конца строки
+		call .str
+		pop eax
+	@@:
+	cmp edi,esi
+	jge @f
+		or al,0x30
+		stosb
+		mov byte[edi],0 ;в конец строки ставим 0, что-бы не вылазил мусор
+	@@:
+	ret

@@ -47,7 +47,7 @@ start:
 	mcall SF_SET_EVENTS_MASK,0xC0000027
 
 	mov esi,file_name
-	call strlen
+	stdcall str_len,esi
 	mov ecx,eax
 	mov edi,openfile_path
 	cld
@@ -95,10 +95,9 @@ mov	ebp,lib0
 	copy_path fn_syntax_dir,sys_path,file_name,0 ;берем путь к папке с файлами синтаксиса
 	mcall SF_FILE,tree_file_struct
 
-	cmp ebx,-1
-	je .end_dir_init
-		mov eax,dir_mem
-		add eax,32+4+1+3+4*6+8
+	cmp ebx,0
+	jle .end_dir_init
+		mov eax,dir_mem+32+40
 		mov ecx,ebx
 		@@:
 			cmp byte[eax],'.' ;фильтруем файлы с именами '.' и '..'
@@ -348,34 +347,34 @@ unpac_mem dd 0
 
 if lang eq ru
   head_f_i:
-  head_f_l db 'Системная ошибка',0
-  err_message_found_lib0 db 'Не найдена библиотека ',39,'box_lib.obj',39,0
-  err_message_import0 db 'Ошибка при импорте библиотеки ',39,'box_lib.obj',39,0
-  err_message_found_lib1 db 'Не найдена библиотека ',39,'msgbox.obj',39,0
-  err_message_import1 db 'Ошибка при импорте библиотеки ',39,'msgbox.obj',39,0
-  err_message_found_lib2 db 'Не найдена библиотека ',39,'proc_lib.obj',39,0
-  err_message_import2 db 'Ошибка при импорте библиотеки ',39,'proc_lib.obj',39,0
-  err_message_found_lib_3 db 'Не найдена библиотека ',39,'libimg.obj',39,0
-  err_message_import_3 db 'Ошибка при импорте библиотеки ',39,'libimg.obj',39,0
-  err_message_found_lib_4 db 'Не найдена библиотека ',39,'libini.obj',39,0
-  err_message_import_4 db 'Ошибка при импорте библиотеки ',39,'libini.obj',39,0
-  err_message_found_lib_5 db 'Не найдена библиотека ',39,'libkmenu.obj',39,0
-  err_message_import_5 db 'Ошибка при импорте библиотеки ',39,'libkmenu.obj',39,0
+  head_f_l db '"Системная ошибка',0
+  err_message_found_lib0 db 'Не найдена библиотека ',39,'box_lib.obj',39,'" -tE',0
+  err_message_import0 db 'Ошибка при импорте библиотеки ',39,'box_lib.obj',39,'" -tW',0
+  err_message_found_lib1 db 'Не найдена библиотека ',39,'msgbox.obj',39,'" -tE',0
+  err_message_import1 db 'Ошибка при импорте библиотеки ',39,'msgbox.obj',39,'" -tW',0
+  err_message_found_lib2 db 'Не найдена библиотека ',39,'proc_lib.obj',39,'" -tE',0
+  err_message_import2 db 'Ошибка при импорте библиотеки ',39,'proc_lib.obj',39,'" -tW',0
+  err_message_found_lib_3 db 'Не найдена библиотека ',39,'libimg.obj',39,'" -tE',0
+  err_message_import_3 db 'Ошибка при импорте библиотеки ',39,'libimg.obj',39,'" -tW',0
+  err_message_found_lib_4 db 'Не найдена библиотека ',39,'libini.obj',39,'" -tE',0
+  err_message_import_4 db 'Ошибка при импорте библиотеки ',39,'libini.obj',39,'" -tW',0
+  err_message_found_lib_5 db 'Не найдена библиотека ',39,'libkmenu.obj',39,'" -tE',0
+  err_message_import_5 db 'Ошибка при импорте библиотеки ',39,'libkmenu.obj',39,'" -tW',0
 else
   head_f_i:
-  head_f_l db 'System error',0
-  err_message_found_lib0 db 'Sorry I cannot found library ',39,'box_lib.obj',39,0
-  err_message_import0 db 'Error on load import library ',39,'box_lib.obj',39,0
-  err_message_found_lib1 db 'Sorry I cannot found library ',39,'msgbox.obj',39,0
-  err_message_import1 db 'Error on load import library ',39,'msgbox.obj',39,0
-  err_message_found_lib2 db 'Sorry I cannot found library ',39,'proc_lib.obj',39,0
-  err_message_import2 db 'Error on load import library ',39,'proc_lib.obj',39,0
-  err_message_found_lib_3 db 'Sorry I cannot found library ',39,'libimg.obj',39,0
-  err_message_import_3 db 'Error on load import library ',39,'libimg.obj',39,0
-  err_message_found_lib_4 db 'Sorry I cannot found library ',39,'libini.obj',39,0
-  err_message_import_4 db 'Error on load import library ',39,'libini.obj',39,0
-  err_message_found_lib_5 db 'Sorry I cannot found library ',39,'libkmenu.obj',39,0
-  err_message_import_5 db 'Error on load import library ',39,'libkmenu.obj',39,0
+  head_f_l db '"System error',0
+  err_message_found_lib0 db 'Sorry I cannot found library ',39,'box_lib.obj',39,'" -tE',0
+  err_message_import0 db 'Error on load import library ',39,'box_lib.obj',39,'" -tW',0
+  err_message_found_lib1 db 'Sorry I cannot found library ',39,'msgbox.obj',39,'" -tE',0
+  err_message_import1 db 'Error on load import library ',39,'msgbox.obj',39,'" -tW',0
+  err_message_found_lib2 db 'Sorry I cannot found library ',39,'proc_lib.obj',39,'" -tE',0
+  err_message_import2 db 'Error on load import library ',39,'proc_lib.obj',39,'" -tW',0
+  err_message_found_lib_3 db 'Sorry I cannot found library ',39,'libimg.obj',39,'" -tE',0
+  err_message_import_3 db 'Error on load import library ',39,'libimg.obj',39,'" -tW',0
+  err_message_found_lib_4 db 'Sorry I cannot found library ',39,'libini.obj',39,'" -tE',0
+  err_message_import_4 db 'Error on load import library ',39,'libini.obj',39,'" -tW',0
+  err_message_found_lib_5 db 'Sorry I cannot found library ',39,'libkmenu.obj',39,'" -tE',0
+  err_message_import_5 db 'Error on load import library ',39,'libkmenu.obj',39,'" -tW',0
 end if
 
 ;library structures
