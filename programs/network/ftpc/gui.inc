@@ -68,11 +68,11 @@ gui: ;//////////////////////////////////////////////////////////////////////////
 ;;================================================================================================;;
 
         stdcall [ted_init], tedit0
-        stdcall dword[edit_box_set_text], edit_volume, root_dir
+        stdcall [edit_box_set_text], edit_volume, root_dir
 
         ; initialize tree list elements
-        stdcall dword[tl_data_init], tree1
-        stdcall dword[tl_data_init], tree2
+        stdcall [tl_data_init], tree1
+        stdcall [tl_data_init], tree2
 		
 		or dword[tree1.style], 8 ;tl_cursor_pos_limited - restrict cursor move to existing nodes
 		or dword[tree2.style], 8 ;tl_cursor_pos_limited
@@ -140,8 +140,8 @@ gui: ;//////////////////////////////////////////////////////////////////////////
 
     .exit:
     ;   stdcall mem.Free,[bmp_icon]
-        stdcall dword[tl_data_clear], tree1
-        stdcall dword[tl_data_clear], tree2
+        stdcall [tl_data_clear], tree1
+        stdcall [tl_data_clear], tree2
         stdcall [ted_delete], tedit0
         jmp     exit
 
@@ -210,8 +210,8 @@ gui: ;//////////////////////////////////////////////////////////////////////////
         ;--------------------------
         ; tree list components
         ;--------------------------
-        stdcall dword[tl_draw], tree1
-        stdcall dword[tl_draw], tree2
+        stdcall [tl_draw], tree1
+        stdcall [tl_draw], tree2
      
         mov     dword[wScr.all_redraw], 1
         stdcall [scrollbar_ver_draw], wScr
@@ -430,11 +430,11 @@ gui: ;//////////////////////////////////////////////////////////////////////////
         ; add node to tree list
         cmp     word[node_entry2], 'fi'
         jne     @f
-        stdcall dword[tl_node_add], tree2, 0, node_entry2
+        stdcall [tl_node_add], tree2, 0, node_entry2
         jmp     .added_remote_node
 
       @@:
-        stdcall dword[tl_node_add], tree2, 0x10000, node_entry2
+        stdcall [tl_node_add], tree2, 0x10000, node_entry2
 
       .added_remote_node:
         ; check whether we are parsing remote_list_buf
@@ -481,9 +481,9 @@ gui: ;//////////////////////////////////////////////////////////////////////////
 
         ; clear tree list and add ".." node before executing "LIST"
       .clear_remote_tree:
-        stdcall dword[tl_info_clear], tree2
+        stdcall [tl_info_clear], tree2
         mov     dword[node_entry2+4], 0x2E2E
-        stdcall dword[tl_node_add], tree2, 0x10000, node_entry2
+        stdcall [tl_node_add], tree2, 0x10000, node_entry2
         ret
 
 
@@ -522,7 +522,7 @@ gui: ;//////////////////////////////////////////////////////////////////////////
 
 remove_dir:
 
-    stdcall dword[tl_node_get_data], tree2
+    stdcall [tl_node_get_data], tree2
     cmp     word[eax], 'fo'
     jne     gui.still
     lea     esi, [eax+4]
@@ -537,7 +537,7 @@ remove_dir:
 
 delete_file:
 
-    stdcall dword[tl_node_get_data], tree2
+    stdcall [tl_node_get_data], tree2
     cmp     word[eax], 'fi'
     jne     gui.still
     lea     esi, [eax+4]
@@ -566,12 +566,12 @@ create_remote_dir:
 align 4
 fun_on_enter:
 
-    stdcall dword[tl_node_get_data], tree1
+    stdcall [tl_node_get_data], tree1
     cmp     word[eax], 'fi'
     je      @f
     lea     ecx, [eax+4] ; discard first 4 bytes
     call    populate_local_tree_list.read_new_dir
-    ;stdcall dword[tl_draw], tree1
+    ;stdcall [tl_draw], tree1
     ret
 
   @@:
@@ -590,7 +590,7 @@ fun_on_enter:
 align 4
 fun_on_enter2:
 
-    stdcall dword[tl_node_get_data], tree2
+    stdcall [tl_node_get_data], tree2
     lea     esi, [eax+4]
     cmp     dword[esi], 0x2E2E
     jne     @f
@@ -617,7 +617,7 @@ fun_on_enter2:
     jmp     cmd_retr
 
   @@:
-    stdcall dword[tl_info_clear], tree2
+    stdcall [tl_info_clear], tree2
     mov     [auto_list], 1
     jmp     cmd_cwd
 
@@ -659,7 +659,7 @@ populate_local_tree_list: ;/////////////////////////////////////////////////////
     mcall   30, 1, ; set cwd
     mcall   30, 2, filestruct.name, 1024 ; get absolute path for cwd
     ; clear all nodes in tree list
-    stdcall dword[tl_info_clear], tree1
+    stdcall [tl_info_clear], tree1
     mov     [filestruct.offset], 0
 
   ; read 32 blocks
@@ -698,18 +698,18 @@ populate_local_tree_list: ;/////////////////////////////////////////////////////
     jz      @f
     ; add a folder to tree
     mov     word[node_entry], 'fo'
-    stdcall dword[tl_node_add], tree1, 0x10000, node_entry
+    stdcall [tl_node_add], tree1, 0x10000, node_entry
     jmp     .added
 
   @@:
     ; add a file to tree
     mov     word[node_entry], 'fi'
-    stdcall dword[tl_node_add], tree1, 0, node_entry
+    stdcall [tl_node_add], tree1, 0, node_entry
 
   .added:
     add     edx, 304 ; 304 = length of BDFE. jump to next file's name
     loop    .inner
-    stdcall dword[tl_draw], tree1
+    stdcall [tl_draw], tree1
     cmp     ebx, 32
     je      .outer ; more BDFEs to come
 
@@ -759,14 +759,14 @@ filter_remote_list: ;///////////////////////////////////////////////////////////
 ;;------------------------------------------------------------------------------------------------;;
 ;< none                                                                                           ;;
 ;;================================================================================================;;
-        stdcall dword[tl_cur_beg], tree2
+        stdcall [tl_cur_beg], tree2
 
     .next_node:
-        stdcall dword[tl_node_get_data], tree2
+        stdcall [tl_node_get_data], tree2
         ; check whether any nodes left
         test    eax, eax
         jnz     @f
-        stdcall dword[tl_draw], tree2
+        stdcall [tl_draw], tree2
         stdcall dword[edit_box_set_text], edit_search, str_null
         je      gui.still
 
@@ -800,11 +800,11 @@ filter_remote_list: ;///////////////////////////////////////////////////////////
         test    al, al
 
         jnz     .get_next
-        stdcall dword[tl_node_delete], tree2
+        stdcall [tl_node_delete], tree2
         jmp     @f
 
     .get_next:
-        stdcall dword[tl_cur_next], tree2
+        stdcall [tl_cur_next], tree2
 
     @@:
         jmp     .next_node
@@ -1031,7 +1031,7 @@ tedit0:
     .fun_find_err      dd 0 ;+218
     .fun_init_synt_err dd 0 ;+222
     .fun_draw_panel_buttons dd 0 ;+226
-    .fun_draw_panel_find    dd 0 ;+230
+    .fun_draw_panels    dd 0 ;+230
     dd 0 ;+234 reserved
     .fun_save_err       dd 0 ;+238
     .increase_size dd 1000 ;+242
@@ -1159,20 +1159,19 @@ import  box_lib, \
         ted_but_find,       'ted_but_find', \
         ted_but_replace,    'ted_but_replace', \
         ted_text_colored,   'ted_text_colored', \
-        ted_text_colored,   'ted_text_colored', \
         ted_go_to_position, 'ted_go_to_position', \
         progressbar_draw,   'progressbar_draw'
 
 import  libimg, \
         lib_init1         , 'lib_init', \
-        img_is_img        , 'img_is_img', \;определяет по данным, может ли библиотека сделать из них изображени \
+        img_is_img        , 'img_is_img', \;определяет по данным, может ли библиотека сделать из них изображение \
         img_info          , 'img_info', \
         img_from_file     , 'img_from_file', \
         img_to_file       , 'img_to_file', \
         img_from_rgb      , 'img_from_rgb', \
-        img_to_rgb        , 'img_to_rgb', \;преобразование изображения в данные RG \
+        img_to_rgb        , 'img_to_rgb', \;преобразование изображения в данные RGB \
         img_to_rgb2       , 'img_to_rgb2', \
-        img_decode        , 'img_decode', \ ;автоматически определяет формат графических данны \
+        img_decode        , 'img_decode', \ ;автоматически определяет формат графических данных \
         img_encode        , 'img_encode', \
         img_create        , 'img_create', \
         img_destroy       , 'img_destroy', \
