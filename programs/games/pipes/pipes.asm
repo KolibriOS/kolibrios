@@ -1,9 +1,9 @@
 ;
 ;   pipes kolibri
-;   v1.4
+;   v1.41
 ;   2006 by Mario Birkner
 ;
-;   l.mod. 20.02.16
+;   l.mod. 29.01.19
 ;
 ;   Compile with FASM
 ;
@@ -467,16 +467,14 @@ pusha
     mov   eax,4
     mov   ebx,170 shl 16 +196
     mov   edx,lbl_gameover
-    mov   ecx,btcolor
-    or    ecx,0xB0000000
+    mov   ecx,btcolor OR 0xB0000000
     mcall
     add   ebx,8 shl 16 +17
     mov   edx,lbl_yscore
-    mov   ecx,btcolor
     mcall
     mov   esi,ecx       ;color
     mov   edx,ebx       ;pos
-    add   edx,80 shl 16
+    add   edx,90 shl 16
     mov   ebx,0x50000    ;type
     mov   ecx,[score]    ;inp
     mov   eax,47
@@ -484,14 +482,13 @@ pusha
     jmp   .nomessage
    .winmessage:
     mov   eax,4
-    mov   ebx,152 shl 16 +200
+    mov   ebx,124 shl 16 +194
     mov   edx,lbl_win
     mov   ecx,btcolor
     or    ecx,0xB0000000
     mcall
-    mov   ebx,152 shl 16 +217
-    add   edx,esi
-    mov   ecx,btcolor
+    add   ebx,17
+    add   edx,lbl_win2-lbl_win
     mcall
    .nomessage:
 popa
@@ -583,21 +580,21 @@ if lang eq et
 lbl_title    db 'Torud',0
 lbl_gameover db 'M ä n g   L ä b i !',0
 lbl_new_game db 'Alusta enne uut mängu',0
-lbl_win:     db '          T u b l i !           '
-             db '          Lähme edasi!          ',0
+lbl_win      db '          T u b l i !           ',0
+lbl_win2     db '          Lähme edasi!          ',0
 lbl_yscore   db 'Sinu tulemus:',0
 lbl_toolbar  db 'Uus mäng:  Lihtne    Keskmine   Raske',0
-lbl_copy     db 'v1.21 2006,Mario Birkner',0
+lbl_copy     db 'v1.41 2006,Mario Birkner',0
 lbl_score    db ' Aeg:   Tulemus:       Tase:',0
 else
 lbl_title    db 'Pipes',0
 lbl_gameover db 'G a m e   O v e r !',0
 lbl_new_game db 'Start a new game first',0
-lbl_win:     db '          G r e a t !           '
-             db "       Let's keep going!        ",0
+lbl_win      db '          G r e a t !           ',0
+lbl_win2     db "       Let's keep going!        ",0
 lbl_yscore   db 'Your Score:',0
 lbl_toolbar  db 'New Game:    Easy     Normal    Hard',0
-lbl_copy     db 'v1.21 2006,Mario Birkner',0
+lbl_copy     db 'v1.41 2006,Mario Birkner',0
 lbl_score    db 'Time:    Score:       Level:',0
 end if
 
@@ -630,7 +627,3 @@ map:       ;14*10 blocks + position
 images:
 file 'pipes.raw'
 I_END:
-
-
-
-
