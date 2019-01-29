@@ -241,18 +241,22 @@ mouse:
 	;проверка боковых панелей
 	cmp byte[tedit0.panel_id],TED_PANEL_FIND
 	jne @f
-		stdcall [edit_box_mouse], edit2
+		stdcall [edit_box_mouse], edit_find
 		stdcall [option_box_mouse], opt_grlist1
 	@@:
 	cmp byte[tedit0.panel_id],TED_PANEL_REPLACE
 	jne @f
-		stdcall [edit_box_mouse], edit2
-		stdcall [edit_box_mouse], edit1
+		stdcall [edit_box_mouse], edit_find
+		stdcall [edit_box_mouse], edit_replace
 		stdcall [option_box_mouse], opt_grlist1
 	@@:
 	cmp byte[tedit0.panel_id],TED_PANEL_SYNTAX
 	jne @f
 		stdcall [tl_mouse], tree1
+	@@:
+	cmp byte[tedit0.panel_id],TED_PANEL_GOTO
+	jne @f
+		stdcall [edit_box_mouse], edit_goto
 	@@:
 	ret
 ;---------------------------------------------------------------------
@@ -262,8 +266,7 @@ mouse:
 align 16
 proc KeyConvertToASCII uses ebx, table:dword
 	mov ebx,dword[table] ;convert scan to ascii
-	ror ax,8
-	xor ah,ah
+	shr ax,8
 	add bx,ax
 	mov ah,byte[ebx]
 	ret
@@ -274,7 +277,7 @@ key:
 	mcall SF_KEYBOARD,SSF_GET_CONTROL_KEYS ;66.3 получить состояние управляющих клавиш
 	xor esi,esi
 	mov ecx,1
-	test al,0x03 ;[Shift]
+	test al,3 ;[Shift]
 	jz @f
 		mov cl,2
 		or esi,KM_SHIFT
@@ -297,7 +300,7 @@ key:
 	mcall SF_GET_KEY
 	stdcall [tl_key], tree1
 
-	test word [edit1.flags],10b ;ed_focus ;если не в фокусе, выходим
+	test word[edit_replace.flags],ed_focus ;если не в фокусе, выходим
 	je @f
 		cmp ah,0x80 ;if key up
 		ja still
@@ -313,10 +316,10 @@ key:
 		je still
 
 		stdcall KeyConvertToASCII, conv_tabl
-		stdcall [edit_box_key], edit1
+		stdcall [edit_box_key], edit_replace
 		jmp still
 	@@:
-	test word [edit2.flags],10b ;ed_focus ;если не в фокусе, выходим
+	test word[edit_find.flags],ed_focus ;если не в фокусе, выходим
 	je @f
 		cmp ah,0x80 ;if key up
 		ja still
@@ -332,7 +335,26 @@ key:
 		je still
 
 		stdcall KeyConvertToASCII, conv_tabl
-		stdcall [edit_box_key], edit2
+		stdcall [edit_box_key], edit_find
+		jmp still
+	@@:
+	test word[edit_goto.flags],ed_focus ;если не в фокусе, выходим
+	je @f
+		cmp ah,0x80 ;if key up
+		ja still
+		cmp ah,42 ;[Shift] (left)
+		je still
+		cmp ah,54 ;[Shift] (right)
+		je still
+		cmp ah,56 ;[Alt]
+		je still
+		cmp ah,29 ;[Ctrl]
+		je still
+		cmp ah,69 ;[Pause Break]
+		je still
+
+		stdcall KeyConvertToASCII, conv_tabl
+		stdcall [edit_box_key], edit_goto
 		jmp still
 	@@:
 
@@ -340,8 +362,9 @@ key:
 	jmp still
 
 align 4
-edit1 edit_box TED_PANEL_WIDTH-1, 0, 20, 0xffffff, 0xff80, 0xff0000, 0xff, 0x4080, 300, buf_replace, mouse_dd, 0
-edit2 edit_box TED_PANEL_WIDTH-1, 0, 20, 0xffffff, 0xff80, 0xff0000, 0xff, 0x4080, 300, buf_find, mouse_dd, 0
+edit_replace edit_box TED_PANEL_WIDTH-1, 0, 20, 0xffffff, 0xff80, 0xff0000, 0xff, 0x4080, 300, buf_replace, mouse_dd, 0
+edit_find edit_box TED_PANEL_WIDTH-1, 0, 20, 0xffffff, 0xff80, 0xff0000, 0xff, 0x4080, 300, buf_find, mouse_dd, 0
+edit_goto edit_box TED_PANEL_WIDTH-1, 0, 20, 0xffffff, 0xff80, 0xff0000, 0xff, 0x4080, 10, buf_goto, mouse_dd, 0
 
 unpac_mem dd 0
 
@@ -405,6 +428,7 @@ i_end:
 	buf rb BUF_SIZE ;буфер для копирования и вставки
 	buf_find rb 302 ;буфер для поиска текста
 	buf_replace rb 302 ;буфер для замены текста
+	buf_goto rb 12 ;буфер для перхода на строку
 	sc system_colors
 IncludeUGlobals
 	align 16

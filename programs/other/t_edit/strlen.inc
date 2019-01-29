@@ -90,3 +90,76 @@ align 4
 		mov byte[edi],0 ;в конец строки ставим 0, что-бы не вылазил мусор
 	@@:
 	ret
+
+;input:
+; buf - указатель на строку, число должно быть в 10 или 16 ричном виде
+;output:
+; eax - число
+align 4
+proc conv_str_to_int, buf:dword
+	xor eax,eax
+	push ebx ecx esi
+	xor ebx,ebx
+	mov esi,[buf]
+	;определение отрицательных чисел
+	xor ecx,ecx
+	inc ecx
+	cmp byte[esi],'-'
+	jne @f
+		dec ecx
+		inc esi
+	@@:
+
+	cmp word[esi],'0x'
+	je .load_digit_16
+
+	.load_digit_10: ;считывание 10-тичных цифр
+		mov bl,byte[esi]
+		cmp bl,'0'
+		jl @f
+		cmp bl,'9'
+		jg @f
+			sub bl,'0'
+			imul eax,10
+			add eax,ebx
+			inc esi
+			jmp .load_digit_10
+	jmp @f
+
+	.load_digit_16: ;считывание 16-ричных цифр
+		add esi,2
+	.cycle_16:
+		mov bl,byte[esi]
+		cmp bl,'0'
+		jl @f
+		cmp bl,'f'
+		jg @f
+		cmp bl,'9'
+		jle .us1
+			cmp bl,'A'
+			jl @f ;отсеиваем символы >'9' и <'A'
+		.us1: ;составное условие
+		cmp bl,'F'
+		jle .us2
+			cmp bl,'a'
+			jl @f ;отсеиваем символы >'F' и <'a'
+			sub bl,32 ;переводим символы в верхний регистр, для упрощения их последущей обработки
+		.us2: ;составное условие
+			sub bl,'0'
+			cmp bl,9
+			jle .cor1
+				sub bl,7 ;convert 'A' to '10'
+			.cor1:
+			shl eax,4
+			add eax,ebx
+			inc esi
+			jmp .cycle_16
+	@@:
+	cmp ecx,0 ;если число отрицательное
+	jne @f
+		sub ecx,eax
+		mov eax,ecx
+	@@:
+	pop esi ecx ebx
+	ret
+endp

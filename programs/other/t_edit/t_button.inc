@@ -137,7 +137,7 @@ button:
 	@@:
 	cmp ah,ID_BUT_SYNTAX_MODE
 	jne @f
-		stdcall but_panel_choose_syntax, tedit0
+		call but_panel_choose_syntax
 		jmp still
 	@@:
 	cmp ah,ID_BUT_CONVERT_1251_866
@@ -172,10 +172,15 @@ button:
 		jmp still
 	.no_change:
 	cmp ah,203 ;заменить все
-	jne .no_change_a
+	jne @f
 		call but_replace_all
 		jmp still
-	.no_change_a:
+	@@:
+	cmp ah,204 ;перейти на строку
+	jne @f
+		call but_goto_line
+		jmp still
+	@@:
 
 	cmp ah,1
 	jne @f
@@ -255,6 +260,13 @@ proc but_replace_all uses ebx ecx edx
 	stdcall convert_int_to_str, 8
 	stdcall str_cat, edi,txt_Info
 	notify_window_run msgbox_1
+	ret
+endp
+
+align 4
+proc but_goto_line uses eax
+	stdcall conv_str_to_int, buf_goto
+	stdcall [ted_go_to_position], tedit0,eax,1
 	ret
 endp
 
@@ -363,6 +375,44 @@ proc but_no_msg_OpenFile uses eax ebx esi
 	@@:
 	inc eax ;для 0 в конце строки
 	stdcall mem_cpy, filename_area,esi,eax ;копируем имя файла в диалог сохранения
+	ret
+endp
+
+;description:
+; функция вызываемую при нажатии Ctrl+N,O,F,S,H,G
+align 4
+proc ted_but_ctrl_all uses eax, opt_key:dword
+	mov eax,[opt_key]
+	cmp al,'N' ;Ctrl+N
+	jne @f
+		call ted_but_new_file
+		jmp .end0
+	@@:
+	cmp al,'O' ;Ctrl+O
+	jne @f
+		call ted_but_open_file
+		jmp .end0
+	@@:
+	cmp al,'S' ;Ctrl+S
+	jne @f
+		shr eax,8
+		call ted_but_save_file
+		jmp .end0
+	@@:
+	cmp al,'F' ;Ctrl+F
+	jne @f
+		call but_panel_find
+		jmp .end0
+	@@:
+	cmp al,'G' ;Ctrl+G
+	jne @f
+		call but_panel_goto
+		jmp .end0
+	@@:
+	cmp al,'H' ;Ctrl+H
+	jne .end0
+		call but_panel_replace
+	.end0:
 	ret
 endp
 
@@ -598,60 +648,64 @@ endp
 ;description:
 ; вызов/скрытие панели поиска
 align 4
-proc but_panel_find uses edi
-	mov edi,tedit0
+proc but_panel_find
+	stdcall on_panel_change, tedit0,TED_PANEL_FIND
+	;or word[edit_find.flags],ed_focus
+	ret
+endp
 
-	cmp ted_panel_id,TED_PANEL_NULL
-	je @f
-		mov ted_panel_id,TED_PANEL_NULL
-		mov ted_wnd_l,0
-		jmp .e_if
-	@@:
-		mov ted_panel_id,TED_PANEL_FIND
-		mov ted_wnd_l,TED_PANEL_WIDTH
-	.e_if:
-	call EvSize
-	stdcall [ted_draw],edi
+;description:
+; вызов/скрытие панели перехода
+align 4
+proc but_panel_goto
+	stdcall on_panel_change, tedit0,TED_PANEL_GOTO
+	;or word[edit_goto.flags],ed_focus
 	ret
 endp
 
 ;description:
 ; вызов/скрытие панели замены
 align 4
-proc but_panel_replace uses edi
-	mov edi,tedit0
-
-	cmp ted_panel_id,TED_PANEL_NULL
-	je @f
-		mov ted_panel_id,TED_PANEL_NULL
-		mov ted_wnd_l,0
-		jmp .e_if
-	@@:
-		mov ted_panel_id,TED_PANEL_REPLACE
-		mov ted_wnd_l,TED_PANEL_WIDTH
-	.e_if:
-	call EvSize
-	stdcall [ted_draw],edi
+proc but_panel_replace
+	stdcall on_panel_change, tedit0,TED_PANEL_REPLACE
+	;or word[edit_find.flags],ed_focus
 	ret
 endp
 
 ;description:
 ; вызов/скрытие панели с файлами синтаксиса
 align 4
-proc but_panel_choose_syntax uses edi, edit:dword
-	mov edi,[edit]
+proc but_panel_choose_syntax
+	stdcall on_panel_change, tedit0,TED_PANEL_SYNTAX
+	ret
+endp
 
-	cmp ted_panel_id,TED_PANEL_NULL
-	je @f
+align 4
+proc on_panel_change uses eax edi, edit:dword, new_id:dword
+	mov edi,[edit]
+	mov eax,[new_id]
+
+	;if(panel_id==new_id) panel_id=0, draw all
+	cmp ted_panel_id,al
+	jne @f
 		mov ted_panel_id,TED_PANEL_NULL
 		mov ted_wnd_l,0
 		jmp .e_if
 	@@:
-		mov ted_panel_id,TED_PANEL_SYNTAX
+	;elseif(panel_id==0) panel_id=new_id, draw all
+	cmp ted_panel_id,TED_PANEL_NULL
+	jne @f
+		mov ted_panel_id,al
 		mov ted_wnd_l,TED_PANEL_WIDTH
 	.e_if:
 	call EvSize
 	stdcall [ted_draw],edi
+	jmp .end0
+	;else panel_id=new_id, draw panel
+	@@:
+		mov ted_panel_id,al
+		stdcall draw_panels,edi
+	.end0:
 	ret
 endp
 
@@ -692,7 +746,7 @@ but_find_key_w:
 	jne @f
 		pushad
 		mcall SF_CREATE_THREAD,1,prop_start,thread_coords
-		mov dword[wnd_k_words_run],eax
+		mov [wnd_k_words_run],eax
 		popad
 	@@:
 	ret
@@ -701,7 +755,7 @@ but_find_key_w:
 ; выделение/скрытие непечатаемых символов
 align 4
 proc but_sumb_invis uses edi, edit:dword
-	mov edi,dword[edit]
+	mov edi,[edit]
 
 	xor ted_mode_invis,1
 	call draw_but_toolbar
@@ -713,7 +767,7 @@ endp
 ; выделение/скрытие ключевых слов
 align 4
 proc but_use_syntax uses edi, edit:dword
-	mov edi,dword[edit]
+	mov edi,[edit]
 
 	xor ted_mode_color,1
 	cmp ted_mode_color,0

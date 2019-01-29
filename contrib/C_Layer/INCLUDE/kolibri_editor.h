@@ -77,16 +77,16 @@ typedef struct __attribute__ ((__packed__)) {
 	uint8_t     mode_color; // 1 режим выделения слов цветом (0-выкл. 1-вкл.)
 	uint8_t     mode_invis; // 0 режим показа непечатаемых символов
 	uint8_t     gp_opt;     // 0 опции возвращаемые функцией ted_get_pos_by_cursor
-	editor_callback fun_on_key_ctrl_o;  // указатель на функцию вызываемую при нажатии Ctrl+O (открытие файла), can be NULL
-	editor_callback fun_on_key_ctrl_f;  // ... Ctrl+F (вызова/скрытия панели поиска)
-	editor_callback fun_on_key_ctrl_n;  // ... Ctrl+N (создание нового документа)
-	editor_callback fun_on_key_ctrl_s;  // ... Ctrl+S
+	editor_callback fun_on_key_ctrl_all;  // указатель на функцию вызываемую при нажатии Ctrl+N,O,S,F,G,H, can be NULL
+	uint32_t    reserved_1;  // ...
+	uint32_t    reserved_2;  // ...
+	uint32_t    reserved_3;  // ...
 	uint32_t    buffer_size;// BUF_SIZE размер буфера копирования/вставки
 	editor_callback fun_find_err;       // указатель на функцию вызываемую если поиск закончился неудачно
 	editor_callback fun_init_synt_err;  // unused указатель на функцию вызываемую при ошибочном открытии файла синтаксиса
 	editor_callback fun_draw_panel_buttons; // указатель на функцию рисования панели с кнопками
-	editor_callback fun_draw_panel_find;    // указатель на функцию рисования панели поиска
-	editor_callback fun_draw_panel_syntax;  // указатель на функцию рисования панели синтаксиса
+	editor_callback fun_draw_panels;    // указатель на функцию рисования панели поиска|замены|перехода|синтаксиса
+	uint32_t    reserved_4;  // ...
 	editor_callback fun_save_err;   // указатель на функцию вызываемую если сохранение файла закончилось неудачно
 	uint32_t    increase_size;  //200 число символов на которые будет увечиваться память при нехватке
 	void       *ptr_free_symb;  // используется внутри элемента для ускорения вставки текста

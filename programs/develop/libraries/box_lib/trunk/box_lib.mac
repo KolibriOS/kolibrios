@@ -408,16 +408,13 @@ ted_cur_ins         equ  byte[edi+194] ;режим работы курсора (обычный или замена
 ted_mode_color      equ  byte[edi+195] ;режим выделения слов цветом (0-выкл. 1-вкл.)
 ted_mode_invis      equ  byte[edi+196] ;режим показа непечатаемых символов
 ted_gp_opt          equ  byte[edi+197] ;опции возвращаемые функцией ted_get_pos_by_cursor
-ted_fun_on_key_ctrl_o equ dword[edi+198] ;указатель на функцию вызываемую при нажатии Ctrl+O (открытие файла)
-ted_fun_on_key_ctrl_f equ dword[edi+202] ;... Ctrl+F (вызова/скрытия панели поиска)
-ted_fun_on_key_ctrl_n equ dword[edi+206] ;... Ctrl+N (создание нового документа)
-ted_fun_on_key_ctrl_s equ dword[edi+210] ;... Ctrl+S
+ted_fun_on_key_ctrl_all equ dword[edi+198] ;указатель на функцию вызываемую при нажатии Ctrl+N,O,F,S,H,G
+;+202,+206,+210 зарезервировано
 ted_buffer_size       equ dword[edi+214] ;размер буфера копирования/вставки
 ted_fun_find_err      equ dword[edi+218] ;указатель на функцию вызываемую если поиск закончился неудачно
 ;ted_fun_init_synt_err equ dword[edi+222] ;указатель на функцию вызываемую при ошибочном открытии файла синтаксиса
 ted_fun_draw_panel_buttons equ dword[edi+226] ;указатель на функцию рисования панели с кнопками
-ted_fun_draw_panel_find    equ dword[edi+230] ;указатель на функцию рисования панели поиска
-ted_fun_draw_panel_syntax  equ dword[edi+234] ;указатель на функцию рисования панели синтаксиса
+ted_fun_draw_panels    equ dword[edi+230] ;указатель на функцию рисования панели поиска|...|синтаксиса
 ted_fun_save_err      equ dword[edi+238] ;указатель на функцию вызываемую если сохранение файла закончилось неудачно
 ted_increase_size     equ dword[edi+242] ;число символов на которые будет увечиваться память при нехватке
 ted_ptr_free_symb     equ dword[edi+246] ;указатель на свободную память, в которую можно добавлять символ (используется внутри элемента для ускорения вставки текста)

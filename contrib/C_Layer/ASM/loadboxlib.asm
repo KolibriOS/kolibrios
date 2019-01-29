@@ -119,6 +119,7 @@ import lib_boxlib, \
 	ted_but_find, 'ted_but_find' , \
 	ted_but_replace, 'ted_but_replace' , \
 	ted_text_colored, 'ted_text_colored' , \
+	ted_go_to_position, 'ted_go_to_position' , \
 	frame_draw, 'frame_draw' , \
 	progressbar_draw,'progressbar_draw' , \
 	progressbar_progress, 'progressbar_progress'
@@ -186,6 +187,7 @@ public ted_but_reverse as '_ted_but_reverse'
 public ted_but_find as '_ted_but_find'
 public ted_but_replace as '_ted_but_replace'
 public ted_text_colored as 'ted_text_colored_asm'
+public ted_go_to_position as '_ted_go_to_position'
 
 public tl_data_init as '_tl_data_init'
 public tl_data_clear as '_tl_data_clear'

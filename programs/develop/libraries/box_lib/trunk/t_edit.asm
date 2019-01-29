@@ -1,6 +1,6 @@
 ; макрос для системной библиотеки box_lib.obj
 ; элемент TextEditor для Kolibri OS
-; файл последний раз изменялся 21.10.2018 IgorA
+; файл последний раз изменялся 29.01.2019 IgorA
 ; на код применена GPL2 лицензия
 
 ;input:
@@ -19,12 +19,6 @@ macro ColToIndexOffset ind_reg,out_reg {
 	imul out_reg,sizeof.TexColViv
 	add out_reg,ted_key_words_data
 }
-
-TED_PANEL_NULL	 equ 0 ;нет открытой панели
-TED_PANEL_FIND	 equ 1 ;панель поиска
-TED_PANEL_SYNTAX equ 2 ;панель выбора файлов подсветки
-TED_PANEL_REPLACE equ 3 ;панель замены
-TED_PANEL_WIDTH  equ 150 ;ширина панели
 
 TED_LINES_IN_NEW_FILE equ 30 ;число строк в новом файле
 MAX_COLOR_WORD_LEN equ 40
@@ -241,38 +235,44 @@ proc ted_key, edit:dword, table:dword, control:dword
 	test esi,KM_CTRL ;Ctrl+...
 	jz .key_Ctrl
 		; *** вызов внешних функций которые требуют окна открытия/сохранения/поиска/...
+		cmp ted_fun_on_key_ctrl_all,0
+		je .end0
+		xor al,al
 		cmp ah,24 ;Ctrl+O
 		jne @f
-			cmp ted_fun_on_key_ctrl_o,0
-			je .end_key_fun
-				call ted_fun_on_key_ctrl_o
+			mov al,'O'
 		@@:
 		cmp ah,31 ;Ctrl+S
-		jne .end_ctrl_s
-			cmp ted_fun_on_key_ctrl_s,0
-			je .end_key_fun
-				xor eax,eax
-				test esi,KM_SHIFT
-				jz @f
-					inc eax
-				@@:				
-				call ted_fun_on_key_ctrl_s
-				jmp .end_key_fun
-		.end_ctrl_s:
+		jne @f
+			mov al,'S'
+		@@:
 		cmp ah,33 ;Ctrl+F
 		jne @f
-		cmp ted_panel_id,TED_PANEL_FIND
-		je @f
-			cmp ted_fun_on_key_ctrl_f,0
-			je .end_key_fun
-				call ted_fun_on_key_ctrl_f
+			mov al,'F'
+		@@:
+		cmp ah,34 ;Ctrl+G
+		jne @f
+			mov al,'G'
+		@@:
+		cmp ah,35 ;Ctrl+H
+		jne @f
+			mov al,'H'
 		@@:
 		cmp ah,49 ;Ctrl+N
 		jne @f
-			cmp ted_fun_on_key_ctrl_n,0
-			je .end_key_fun
-				call ted_fun_on_key_ctrl_n
+			mov al,'N'
 		@@:
+		or al,al
+		jz .end0
+			and eax,0xff
+			test esi,KM_SHIFT
+			jz @f
+				or eax,0x100
+			@@:
+			stdcall ted_fun_on_key_ctrl_all, eax
+			jmp .end_key_fun
+		.end0:
+
 		; *** вызов внутренних функций
 		cmp ah,30 ;Ctrl+A
 		jne @f
@@ -441,7 +441,7 @@ proc ted_key, edit:dword, table:dword, control:dword
 
 	cmp dword[table],0
 	je @f
-		stdcall KeyConvertToASCII, dword[table]
+		stdcall KeyConvertToASCII, [table]
 	@@:
 
 	;mov ted_drag_k,0 ;заканчиваем выделение от клавиатуры
@@ -1157,7 +1157,7 @@ proc ted_text_add, edit:dword, text:dword, t_len:dword, add_opt:dword
 			jg .no_cur_mov
 				inc ted_cur_x ;move cursor
 				;call ted_go_to_pos
-				cmp byte [esi],13
+				cmp byte[esi],13
 				jne .no_cur_mov
 					mov ted_cur_x,0
 					inc ted_cur_y
@@ -1169,18 +1169,18 @@ proc ted_text_add, edit:dword, text:dword, t_len:dword, add_opt:dword
 			; *** вставка текущего символа из строки ***
 			mov ecx,ted_opt_ed_change_time
 			not ecx
-			and dword[add_opt],ecx ;n_tim=false;
+			and [add_opt],ecx ;n_tim=false;
 
-			mov cl,byte [esi] ;tex[i].c=ta[ns];
-			mov byte [edx],cl
-			m2m dword [edx+10],ted_tim_ch ;tex[i].tc=ted_tim_ch;
+			mov cl,byte[esi] ;tex[i].c=ta[ns];
+			mov byte[edx],cl
+			m2m dword[edx+10],ted_tim_ch ;tex[i].tc=ted_tim_ch;
 			mov [edx+2],eax ;tex[i].perv=po_t;
 
 			mov ecx,eax
 			imul ecx,sizeof.symbol
 			add ecx,ted_tex ; *** ecx = tex[po_t] ***
 			add ecx,6   ; *** ecx = tex[po_t].next ***
-			m2m dword [edx+6],dword [ecx] ;tex[i].next=tex[po_t].next;
+			m2m dword[edx+6],dword[ecx] ;tex[i].next=tex[po_t].next;
 
 			call ted_get_text_arr_index ;*** eax = i ***
 			mov [ecx],eax ;tex[po_t].next=i; // ссылки перенаправляем
@@ -1968,7 +1968,7 @@ ted_get_num_lines:
 		call ted_iterat_next
 		cmp edx,ted_tex_1
 		jle @f
-		cmp byte [edx],13
+		cmp byte[edx],13
 		jne @b
 		inc eax
 		jmp @b
@@ -2043,6 +2043,38 @@ proc ted_set_undo
 	@@:
 	pop edx ebx eax
 	.no_work:
+	ret
+endp
+
+;description:
+; переход на указанную позицию
+;input:
+; row = номер строки
+; col = символ
+align 16
+proc ted_go_to_position uses ecx edx edi, edit:dword, row:dword, col:dword
+	mov edi,[edit]
+	; подготовка строки
+	mov edx,[row]
+	call ted_get_num_lines
+	cmp edx,eax
+	jle @f
+		mov edx,eax ;ограничение по строке max
+	@@:
+	dec edx
+	cmp edx,0
+	jge @f
+		xor edx,edx ;ограничение по строке min
+	@@:
+	; подготовка символа
+	mov ecx,[col]
+	dec ecx
+	cmp ecx,0
+	jge @f
+		xor ecx,ecx
+	@@:
+	call ted_go_to_pos
+	stdcall ted_draw,edi
 	ret
 endp
 
@@ -3498,13 +3530,9 @@ align 4
 	inc bx
 	int 0x40
 
-	cmp ted_fun_draw_panel_find,0
+	cmp ted_fun_draw_panels,0
 	je @f
-		call ted_fun_draw_panel_find
-	@@:
-	cmp ted_fun_draw_panel_syntax,0
-	je @f
-		call ted_fun_draw_panel_syntax
+		stdcall ted_fun_draw_panels, edi
 	@@:
 	popad
 	ret
@@ -3515,7 +3543,6 @@ endp
 align 16
 proc ted_draw_main_cursor
 pushad
-
 	mov eax,SF_DRAW_RECT ;draw cursor
 	mov ecx,ted_wnd_t ;calc rect -> y0,y1
 	add ecx,ted_rec_t
@@ -3811,8 +3838,7 @@ endp
 align 16
 proc KeyConvertToASCII uses ebx, table:dword
 	mov ebx,[table] ;convert scan to ascii
-	ror ax,8
-	xor ah,ah
+	shr ax,8
 	add bx,ax ;? ebx,eax
 	mov ah,byte[ebx]
 	ret

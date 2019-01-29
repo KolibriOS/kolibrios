@@ -1025,16 +1025,14 @@ tedit0:
     .mode_color  db 1 ;+195
     .mode_invis  db 0 ;+196
     .gp_opt      db 0 ;+197
-    dd 0;.fun_on_key_ctrl_o dd but_ctrl_o ;+198 
-    .fun_on_key_ctrl_f dd 0 ;+202 ... Ctrl+F
-    dd 0;.fun_on_key_ctrl_n dd but_ctrl_n ;+206 ... Ctrl+N
-    .fun_on_key_ctrl_s dd 0 ;+210 ... Ctrl+S
+    dd 0 ;.fun_on_key_ctrl_all dd but_ctrl_all ;+198 
+    dd 0,0,0 ;reserved
     .buffer_size       dd 4096 ;+214
     .fun_find_err      dd 0 ;+218
     .fun_init_synt_err dd 0 ;+222
     .fun_draw_panel_buttons dd 0 ;+226
     .fun_draw_panel_find    dd 0 ;+230
-    .fun_draw_panel_syntax  dd 0 ;+234
+    dd 0 ;+234 reserved
     .fun_save_err       dd 0 ;+238
     .increase_size dd 1000 ;+242
     .ptr_free_symb dd ? ;+246
@@ -1161,6 +1159,8 @@ import  box_lib, \
         ted_but_find,       'ted_but_find', \
         ted_but_replace,    'ted_but_replace', \
         ted_text_colored,   'ted_text_colored', \
+        ted_text_colored,   'ted_text_colored', \
+        ted_go_to_position, 'ted_go_to_position', \
         progressbar_draw,   'progressbar_draw'
 
 import  libimg, \

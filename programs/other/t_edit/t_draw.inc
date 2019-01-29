@@ -216,10 +216,9 @@ draw_but_toolbar: ;функция для рисования панели инструментов
 ;txtBRi db 26
 ;txtBLe db 27
 
-;input:
-; edi = pointer to tedit struct
 align 4
-proc draw_panel_find
+proc draw_panels uses edi, edit:dword
+	mov edi,[edit]
 	cmp ted_panel_id,TED_PANEL_FIND
 	jne @f
 		call p_find
@@ -230,10 +229,22 @@ proc draw_panel_find
 		call p_replace
 		jmp .end_f
 	@@:
+	cmp ted_panel_id,TED_PANEL_GOTO
+	jne @f
+		call p_goto
+		jmp .end_f
+	@@:
+	cmp ted_panel_id,TED_PANEL_SYNTAX
+	jne @f
+		call p_syntax
+		jmp .end_f
+	@@:
 	push eax edx
-		mcall SF_DEFINE_BUTTON,,,0x80000000+201
+		mcall SF_DEFINE_BUTTON,,,0x80000000+200
+		mcall ,,,0x80000000+201
 		mcall ,,,0x80000000+202
 		mcall ,,,0x80000000+203
+		mcall ,,,0x80000000+204
 	pop edx eax
 	.end_f:
 	ret
@@ -256,7 +267,7 @@ p_find:
 		sub cx,20+15-1 ; 15 - height text box
 		mcall ,,,[sc.work]
 
-		stdcall [edit_box_draw], edit2
+		stdcall [edit_box_draw], edit_find
 
 		mov ecx,ted_wnd_t
 		shl ecx,16
@@ -296,8 +307,8 @@ p_replace:
 		sub cx,20+15-1 ; 15 - height text box
 		mcall ,,,[sc.work]
 
-		stdcall [edit_box_draw], edit1
-		stdcall [edit_box_draw], edit2
+		stdcall [edit_box_draw], edit_replace
+		stdcall [edit_box_draw], edit_find
 
 		mov ecx,ted_wnd_t
 		shl ecx,16
@@ -327,12 +338,48 @@ p_replace:
 	pop edx ecx ebx eax
 	ret
 
+align 4
+p_goto:
+	push eax ebx ecx edx
+		mov ecx,ted_wnd_t
+		shl ecx,16
+		mov cx,20
+		mcall SF_DRAW_RECT,TED_PANEL_WIDTH,,[sc.work]
+
+		mov ecx,ted_wnd_t
+		add cx,20+15 ; 15 - height text box
+		shl ecx,16
+		add ecx,ted_wnd_h
+		mov edx,ted_scr_h
+		add cx,word[edx+sb_offs_size_y]
+		sub cx,20+15-1 ; 15 - height text box
+		mcall ,,,[sc.work]
+
+		stdcall [edit_box_draw], edit_goto
+
+		mov ecx,ted_wnd_t
+		shl ecx,16
+		add ecx,(40 shl 16)+20
+		mcall SF_DEFINE_BUTTON,(5 shl 16)+85,,204,[sc.work_button]
+
+		mov ebx,(23 shl 16)+7
+		add ebx,ted_wnd_t
+		mov ecx,[sc.work_text]
+		or ecx,0x80000000
+		mcall SF_DRAW_TEXT,,,txtGotoCapt
+
+		mov ecx,[sc.work_button_text]
+		or ecx,0x80000000
+		mov ebx,(15 shl 16)+47
+		add ebx,ted_wnd_t
+		mcall ,,,txtGoto
+	pop edx ecx ebx eax
+	ret
+
 ;input:
 ; edi = pointer to tedit struct
 align 4
-proc draw_panel_syntax
-	cmp ted_panel_id,TED_PANEL_SYNTAX ;if not panel
-	jne @f
+p_syntax:
 	pushad
 
 	mov ecx,ted_wnd_t
@@ -378,15 +425,7 @@ proc draw_panel_syntax
 	mcall ,,,txtFormatApply
 
 	popad
-	jmp .end_f
-	@@:
-		push eax edx
-		mov edx,0x80000000+200
-		mcall SF_DEFINE_BUTTON ;если нет панели то удаляем кнопку
-		pop edx eax
-	.end_f:
 	ret
-endp
 
 MIN_M_WND_H equ 100 ;минимальная высота главного окна
 ;input:
@@ -421,10 +460,12 @@ EvSize:
 	mov tl_box_top,eax ;=ted_wnd_t
 	add tl_box_top,20
 
-	mov [edit2.top],eax ;=ted_wnd_t
-	add dword[edit2.top],20
-	mov [edit1.top],eax ;=ted_wnd_t
-	add dword[edit1.top],113
+	mov [edit_find.top],eax ;=ted_wnd_t
+	add dword[edit_find.top],20
+	mov [edit_replace.top],eax
+	add dword[edit_replace.top],113
+	mov [edit_goto.top],eax
+	add dword[edit_goto.top],20
 	popad
 	ret
 

@@ -198,8 +198,7 @@ align 4
 proc KeyConvertToASCII, table:dword
 	push ebx
 	mov ebx,dword[table] ;convert scan to ascii
-	ror ax,8
-	xor ah,ah
+	shr ax,8
 	add bx,ax
 	mov ah,byte[ebx]
 	pop ebx
@@ -294,6 +293,28 @@ but_SaveSyntax:
 	stdcall [ted_save_file], tedit0,run_file_70,[edit1.text]
 	ret
 
+;description:
+; функция вызываемую при нажатии Ctrl+N,O,F,S,H,G
+align 4
+proc ted_but_ctrl_all uses eax, opt_key:dword
+	mov eax,[opt_key]
+	cmp al,'N' ;Ctrl+N
+	jne @f
+		call but_ctrl_n
+		jmp .end0
+	@@:
+	cmp al,'O' ;Ctrl+O
+	jne @f
+		call but_ctrl_o
+	@@:
+	;cmp al,'S' ;Ctrl+S
+	;cmp al,'F' ;Ctrl+F
+	;cmp al,'G' ;Ctrl+G
+	;cmp al,'H' ;Ctrl+H
+	.end0:
+	ret
+endp
+
 align 4
 but_ctrl_o:
 	push eax
@@ -332,7 +353,7 @@ get_wnd_in_focus:
 	;@@:
 	ret
 
-hed db 'TextEditor syntax file converter 23.01.19',0 ;подпись окна
+hed db 'TextEditor syntax file converter 29.01.19',0 ;подпись окна
 conv_tabl rb 128 ; таблица для конвертирования scan-кода в ascii-код
 
 txt_load_f db 'Загр. файл',0

@@ -130,6 +130,7 @@ sz_ted_but_redo 		db 'ted_but_redo',0
 sz_ted_but_reverse		db 'ted_but_reverse',0
 sz_ted_but_find	db 'ted_but_find',0
 sz_ted_text_colored		db 'ted_text_colored',0
+sz_ted_go_to_position	db 'ted_go_to_position',0
 
 sz_PathShow_prepare db 'PathShow_prepare',0
 sz_PathShow_draw db 'PathShow_draw',0
@@ -223,16 +224,14 @@ tedit0: ;структура текстового редактора
 	.mode_color  db 1 ;+195 режим выделения слов цветом (0-выкл. 1-вкл.)
 	.mode_invis  db 0 ;+196 режим показа непечатаемых символов
 	.gp_opt      db 0 ;+197 опции возвращаемые функцией ted_get_pos_by_cursor
-	.fun_on_key_ctrl_o dd but_ctrl_o ;+198 указатель на функцию вызываемую при нажатии Ctrl+O (открытие файла)
-	.fun_on_key_ctrl_f dd 0 ;+202 ... Ctrl+F (вызова/скрытия панели поиска)
-	.fun_on_key_ctrl_n dd but_ctrl_n ;+206 ... Ctrl+N (создание нового документа)
-	.fun_on_key_ctrl_s dd 0 ;+210 ... Ctrl+S
+	.fun_on_key_ctrl_all dd ted_but_ctrl_all ;+198 указатель на функцию вызываемую при нажатии Ctrl+N,O,S,F,G,H
+	dd 0,0,0
 	.buffer_size	   dd BUF_SIZE ;+214 размер буфера копирования/вставки
 	.fun_find_err	   dd 0 ;+218 указатель на функцию вызываемую если поиск закончился неудачно
 	.fun_init_synt_err dd 0 ;+222 указатель на функцию вызываемую при ошибочном открытии файла синтаксиса
 	.fun_draw_panel_buttons dd 0 ;+226 указатель на функцию рисования панели с кнопками
-	.fun_draw_panel_find	dd 0 ;+230 указатель на функцию рисования панели поиска
-	.fun_draw_panel_syntax	dd 0 ;+234 указатель на функцию рисования панели синтаксиса
+	.fun_draw_panels	dd 0 ;+230 указатель на функцию рисования панели поиска|...|синтаксиса
+	dd 0
 	.fun_save_err		dd 0 ;+238 указатель на функцию вызываемую если сохранение файла закончилось неудачно
 	.increase_size dd 1000 ;+242 число символов на которые будет увечиваться память при нехватке
 	.ptr_free_symb dd ? ;+246 указатель на свободную память, в которую можно добавлять символ (используется внутри элемента для ускорения вставки текста)
