@@ -70,6 +70,8 @@ mov	ebp,lib0
 	stdcall [ted_init], tedit0
 	stdcall [tl_data_init], tree1
 	option_boxes_set_sys_color sc,opt_grlist1
+	init_checkboxes2 check_boxes,check_boxes_end
+	check_boxes_set_sys_color2 check_boxes,check_boxes_end,sc
 
 ; OpenDialog initialisation
 	stdcall [OpenDialog_Init],OpenDialog_data
@@ -243,6 +245,7 @@ mouse:
 	jne @f
 		stdcall [edit_box_mouse], edit_find
 		stdcall [option_box_mouse], opt_grlist1
+		stdcall [check_box_mouse], ch1
 	@@:
 	cmp byte[tedit0.panel_id],TED_PANEL_REPLACE
 	jne @f

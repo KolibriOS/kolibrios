@@ -722,7 +722,7 @@ proc ted_clear uses ecx edi, edit:dword, cl_al_mem:dword
 		inc edx
 	loop @b
 	mov edx,ted_tex
-	mov dword [edx+6],1
+	mov dword [edx+symbol.next],1
 	pop edx
 
 	.exit:
@@ -833,14 +833,14 @@ proc ted_on_open_file
 	push ebx
 	@@:
 		mov ebx,[edx]
-		mov byte [eax],bl
-		mov dword [eax+2],ecx
-		inc dword [eax+2]
-		mov dword [eax+6],ecx
-		add dword [eax+6],3
+		mov byte[eax],bl
+		mov dword[eax+symbol.perv],ecx
+		inc dword[eax+symbol.perv]
+		mov dword[eax+symbol.next],ecx
+		add dword[eax+symbol.next],3
 		;mov byte[eax+1],0 ;col=0
-		mov dword [eax+10],-1 ;tc=-1
-		mov dword [eax+14],0 ;td=0
+		mov dword[eax+symbol.tc],-1
+		mov dword[eax+symbol.td],0
 
 		cmp ecx,0
 		je @f
@@ -850,32 +850,31 @@ proc ted_on_open_file
 		jmp @b
 	@@:
 	pop ebx
-	add eax,2
-	mov dword [eax],0 ; first sumbol 'perv=0'
+	mov dword[eax+symbol.perv],0 ; first sumbol 'perv=0'
 
 	mov edx,ted_tex ; настройки начального служебного символа
 	; begining sumbol 'perv=0' 'next=2'
-	mov dword [edx+2],0
-	mov dword [edx+6],2
+	mov dword[edx+symbol.perv],0
+	mov dword[edx+symbol.next],2
 
 	add edx,sizeof.symbol ; настройки конечного служебного символа
-	mov dword [edx+6],0 ; last sumbol 'next=0'
-	mov dword [edx+2],ebx ; last sumbol 'perv=last'
-	inc dword [edx+2]
-	mov dword [edx+10],0 ; ставим время создания равное 0, что бы символ правильно обрабатывался при открытии файлов больших 28 байт
+	mov dword[edx+symbol.next],0 ; last sumbol 'next=0'
+	mov dword[edx+symbol.perv],ebx ; last sumbol 'perv=last'
+	inc dword[edx+symbol.perv]
+	mov dword[edx+symbol.tc],0 ; ставим время создания равное 0, что бы символ правильно обрабатывался при открытии файлов больших 28 байт
 
 	mov edx,ebx
 	inc edx ;2 = rezerv sumbols
 	imul edx,sizeof.symbol
 	add edx,ted_tex
-	mov dword [edx+6],1 ; last sumbol 'next=1'
+	mov dword[edx+symbol.next],1 ; last sumbol 'next=1'
 
 	@@: ;clear memory, need if before was open big file
 		add edx,sizeof.symbol
 		cmp edx,ted_tex_end
 		jge @f
-			mov dword[edx+10],0
-			mov dword[edx+14],0
+			mov dword[edx+symbol.tc],0
+			mov dword[edx+symbol.td],0
 		jmp @b
 	@@:
 
@@ -908,7 +907,7 @@ ted_iterat_perv:
 	je .else
 	push ebx
 	@@:
-		mov edx,[edx+2]
+		mov edx,[edx+symbol.perv]
 		or edx,edx
 		jz @f
 		imul edx,sizeof.symbol
@@ -925,12 +924,12 @@ ted_iterat_perv:
 	pop ebx
 	ret
 	.else:
-		mov edx,[edx+2]
+		mov edx,[edx+symbol.perv]
 		or edx,edx
 		jz @f
 		imul edx,sizeof.symbol
 		add edx,ted_tex
-		cmp dword [edx+14],0
+		cmp dword[edx+symbol.td],0
 		jne .else
 		cmp byte[edx],10 ;пропуск символа с кодом 10
 		je .else
@@ -951,7 +950,7 @@ ted_iterat_next:
 	je .else
 	push ebx
 	@@:
-		mov edx,[edx+6]
+		mov edx,[edx+symbol.next]
 		cmp edx,1
 		jle @f
 		imul edx,sizeof.symbol
@@ -969,13 +968,13 @@ ted_iterat_next:
 	pop ebx
 	ret
 	.else:
-		mov edx,[edx+6]
+		mov edx,[edx+symbol.next]
 		cmp edx,1
 		jle @f
 		imul edx,sizeof.symbol
 		add edx,ted_tex
 
-		cmp dword [edx+14],0
+		cmp dword[edx+symbol.td],0
 		jne .else
 		cmp byte[edx],10 ;пропуск символа с кодом 10
 		je .else
@@ -1055,10 +1054,9 @@ ted_symbol_not_vis:
 	push eax
 
 	xor bl,bl
-
-	cmp dword [edx+14],0
+	cmp dword[edx+symbol.td],0
 	je @f
-	mov eax,[edx+14] ;eax=tex[i].td
+	mov eax,[edx+symbol.td] ;eax=tex[i].td
 	add eax,ted_tim_undo
 	cmp eax,ted_tim_ch
 	jg @f
@@ -1069,7 +1067,7 @@ ted_symbol_not_vis:
 
 	mov eax,ted_tim_ch
 	sub eax,ted_tim_undo
-	cmp [edx+10],eax
+	cmp [edx+symbol.tc],eax
 	jle @f
 		or bl,1
 	@@:
@@ -1141,9 +1139,9 @@ proc ted_text_add, edit:dword, text:dword, t_len:dword, add_opt:dword
 
 	mov edx,ted_ptr_free_symb
 	.beg_cycle: ;for(i=...;i<ted_max_chars;i++)
-		cmp dword [edx+10],0 ;if(!tex[i].tc && !tex[i].td)
+		cmp dword[edx+symbol.tc],0 ;if(!tex[i].tc && !tex[i].td)
 		jne .u1f
-		cmp dword [edx+14],0
+		cmp dword[edx+symbol.td],0
 		jne .u1f
 			test dword[add_opt],ted_opt_ed_change_time ;if(n_tim) ted_tim_ch++;
 			jz .no_tim
@@ -1173,21 +1171,21 @@ proc ted_text_add, edit:dword, text:dword, t_len:dword, add_opt:dword
 
 			mov cl,byte[esi] ;tex[i].c=ta[ns];
 			mov byte[edx],cl
-			m2m dword[edx+10],ted_tim_ch ;tex[i].tc=ted_tim_ch;
-			mov [edx+2],eax ;tex[i].perv=po_t;
+			m2m dword[edx+symbol.tc],ted_tim_ch ;tex[i].tc=ted_tim_ch;
+			mov [edx+symbol.perv],eax ;tex[i].perv=po_t;
 
 			mov ecx,eax
 			imul ecx,sizeof.symbol
 			add ecx,ted_tex ; *** ecx = tex[po_t] ***
-			add ecx,6   ; *** ecx = tex[po_t].next ***
-			m2m dword[edx+6],dword[ecx] ;tex[i].next=tex[po_t].next;
+			add ecx,symbol.next ; *** ecx = tex[po_t].next ***
+			m2m dword[edx+symbol.next],dword[ecx] ;tex[i].next=tex[po_t].next;
 
 			call ted_get_text_arr_index ;*** eax = i ***
 			mov [ecx],eax ;tex[po_t].next=i; // ссылки перенаправляем
-			mov ecx,[edx+6] ; *** ecx = tex[i].next ***
+			mov ecx,[edx+symbol.next] ; *** ecx = tex[i].next ***
 			imul ecx,sizeof.symbol
 			add ecx,ted_tex ; *** ecx = tex[tex[i].next] ***
-			mov [ecx+2],eax ;tex[tex[i].next].perv=i;
+			mov [ecx+symbol.perv],eax ;tex[tex[i].next].perv=i;
 
 			; *** вставка дополнительных строк и пробелов
 			; если курсор во время вставки находился за текстом ***
@@ -1268,9 +1266,9 @@ ted_char_add:
 	.loop_b:
 		cmp ecx,ted_tex_end
 		jge .end_f
-		cmp dword[ecx+10],0
+		cmp dword[ecx+symbol.tc],0
 		jne @f
-			cmp dword[ecx+14],0
+			cmp dword[ecx+symbol.td],0
 			je .loop_e
 		@@:
 		add ecx,sizeof.symbol
@@ -1280,23 +1278,23 @@ align 4
 
 	push eax ebx
 	mov eax,ted_tim_ch
-	mov dword[ecx+10],eax
+	mov [ecx+symbol.tc],eax
 	mov ax,si
 	mov byte[ecx],al
 
 	call ted_get_text_arr_index ; *** eax=pos ***
-	mov [ecx+2],eax ;tex[i].perv=pos;
-	m2m dword[ecx+6],dword[edx+6] ;tex[i].next=tex[pos].next;
+	mov [ecx+symbol.perv],eax ;tex[i].perv=pos;
+	m2m dword[ecx+symbol.next],dword[edx+symbol.next] ;tex[i].next=tex[pos].next;
 
 	push edx
 		mov edx,ecx
 		call ted_get_text_arr_index ; *** eax=i ***
 	pop edx
 
-	mov [edx+6],eax ;tex[pos].next=i; // ссылки перенаправляем
-	mov ebx,[ecx+6]
+	mov [edx+symbol.next],eax ;tex[pos].next=i; // ссылки перенаправляем
+	mov ebx,[ecx+symbol.next]
 	ConvertIndexToPointer ebx
-	mov [ebx+2],eax ;tex[tex[i].next].perv=i; // ...
+	mov [ebx+symbol.perv],eax ;tex[tex[i].next].perv=i; // ...
 	pop ebx eax
 
 	.end_f:
@@ -1314,7 +1312,7 @@ proc ted_but_convert_by_table uses eax edx edi esi, edit:dword, table:dword
 	mov edx,ted_tex
 	.cycle:
 		;переходим на следующий символ
-		mov edx,[edx+6]
+		mov edx,[edx+symbol.next]
 		cmp edx,1
 		jle .end_text
 		imul edx,sizeof.symbol
@@ -1380,7 +1378,7 @@ proc ted_convert_sel_text, conv_fun:dword
 		cmp byte[edx],al
 		pop eax
 		je .no_change
-			m2m dword [edx+14],ted_tim_ch
+			m2m dword[edx+symbol.td],ted_tim_ch
 			call ted_char_add ;b_pos=ted_char_add(tex[i].c^32,i,false,b_pos);
 			call ted_get_text_next_pos ;go to added symbol
 			inc dword[conv_cou]
@@ -1424,7 +1422,7 @@ proc ted_text_del uses ecx edx edi, edit:dword, del_opt:dword
 		jz @f
 			inc ted_tim_ch
 		@@:
-		m2m dword[edx+14], ted_tim_ch
+		m2m dword[edx+symbol.td], ted_tim_ch
 		mov cl,1
 	.no_del:
 	mov bl,cl
@@ -1461,7 +1459,7 @@ proc ted_sel_text_del uses ebx ecx edx esi, del_opt:dword
 		je @f
 		cmp edx,ebx ;if(i==te)break;
 		je @f
-			m2m dword[edx+14],ted_tim_ch
+			m2m dword[edx+symbol.td],ted_tim_ch
 			mov esi,ted_opt_ed_change_time
 			not esi
 			and dword[del_opt],esi ;n_tim=false;
@@ -1510,35 +1508,35 @@ ted_revers:
 	@@:
 
 	push esi
-		mov edx,[eax+2] ; *** edx = tex[p0].perv ***
+		mov edx,[eax+symbol.perv] ; *** edx = tex[p0].perv ***
 		ConvertIndexToPointer edx
-		add edx,6
-		mov ecx,[edx] ;tmp = tex[tex[p0].perv].next;
+		add edx,symbol.next
+		mov ecx,[edx] ;ecx = tex[tex[p0].perv].next
 
-		mov esi,[ebx+6] ; *** esi = tex[p1].next ***
+		mov esi,[ebx+symbol.next] ; *** esi = tex[p1].next ***
 		ConvertIndexToPointer esi
-		add esi,2
-		m2m dword[edx],dword[esi] ;tex[tex[p0].perv].next = tex[tex[p1].next].perv;
+		add esi,symbol.perv
+		m2m dword[edx],dword[esi] ;tex[tex[p0].perv].next = tex[tex[p1].next].perv
 
-		mov [esi],ecx ;tex[tex[p1].next].perv = tmp;
+		mov [esi],ecx ;tex[tex[p1].next].perv = ecx
 	pop esi
 
-	mov ecx,[eax+2] ;tmp = tex[p0].perv;
-	m2m dword[eax+2],dword[ebx+6] ;tex[p0].perv = tex[p1].next;
-	mov [ebx+6],ecx ;tex[p1].next = tmp;
+	mov ecx,[eax+symbol.perv] ;ecx = tex[p0].perv
+	m2m dword[eax+symbol.perv],dword[ebx+symbol.next] ;tex[p0].perv = tex[p1].next
+	mov [ebx+symbol.next],ecx ;tex[p1].next = ecx
 
 	mov edx,eax ;i=p0;
 	@@:
-		mov ecx,[edx+6] ;tmp = tex[i].next;
-		m2m dword[edx+6],dword[edx+2] ;tex[i].next = tex[i].perv;
-		mov [edx+2],ecx ;tex[i].perv = tmp;
+		mov ecx,[edx+symbol.next] ;ecx = tex[i].next
+		m2m dword[edx+symbol.next],dword[edx+symbol.perv] ;tex[i].next = tex[i].perv
+		mov [edx+symbol.perv],ecx ;tex[i].perv = ecx
 		cmp edx,ebx ;if(i==p1)break;
 		je @f
 ; ---
 ;cmp edx,ted_tex
 ;je @f
 ; ---
-		mov edx,ecx ;i = tmp;
+		mov edx,ecx ;i = ecx
 		ConvertIndexToPointer edx
 		jmp @b
 	@@:
@@ -1804,7 +1802,7 @@ ted_get_text_arr_index:
 ; edx = pointer to 'perv' struct
 align 16
 ted_get_text_perv_pos:
-	mov edx,[edx+2]
+	mov edx,[edx+symbol.perv]
 	imul edx,sizeof.symbol
 	add edx,ted_tex
 	ret
@@ -1815,7 +1813,7 @@ ted_get_text_perv_pos:
 ; edx = pointer to 'next' symbol struct
 align 16
 ted_get_text_next_pos:
-	mov edx,[edx+6]
+	mov edx,[edx+symbol.next]
 	imul edx,sizeof.symbol
 	add edx,ted_tex
 	ret
@@ -2005,8 +2003,8 @@ proc ted_set_undo
 		;if(tex[i].tc>ted_tim_ch){ // если создание символа было отменено
 		cmp [edx+symbol.tc],eax
 		jle .no_u1
-			mov dword [edx+symbol.tc],0
-			mov dword [edx+symbol.td],0
+			mov dword[edx+symbol.tc],0
+			mov dword[edx+symbol.td],0
 
 			mov ebx,[edx+symbol.perv]
 			imul ebx,sizeof.symbol
@@ -2029,7 +2027,7 @@ proc ted_set_undo
 		;else if(tex[i].td>ted_tim_ch) tex[i].td=0; // если удаление символа было отменено
 		cmp [edx+symbol.td],eax
 		jle .no_u2
-			mov dword [edx+symbol.td],0
+			mov dword[edx+symbol.td],0
 		.no_u2:
 
 		call ted_get_text_next_pos
@@ -2869,24 +2867,30 @@ endp
 ; f_opt = параметры поиска:
 ;   (0 - искать ниже курсора, 1 - искать выше курсора, 2 - искать от начала файла)
 ;   если установлен 31-й бит, то не обновляется окно
+;   если установлен 30-й бит, то поиск идет без учета регистра символов
 ;output:
 ; eax = был ли найден искомый текст (0 - нет, 1 - да)
 align 16
 proc ted_but_find uses ebx ecx edx edi esi, edit:dword, f_opt:dword
+	mov eax,[f_opt]
+	push eax
 	push [edit]
-	cmp word[f_opt],2
+	cmp al,2
 	jne @f
 		call _but_find_first
 		jmp .end0
 	@@:
-	cmp word[f_opt],0
+	cmp al,0
 	jne @f
 		call _but_find_next
 		jmp .end0
 	@@:
-	cmp word[f_opt],1
-	jne .end0
+	cmp al,1
+	jne @f
 		call _but_find_perv
+		jmp .end0
+	@@:
+	add esp,8
 	.end0:
 
 	bt dword[f_opt],31
@@ -2907,11 +2911,13 @@ endp
 
 ;description:
 ; функция находит текст от начала файла, или от конца текущего выделения
+;input:
+; f_opt = опции для поиска
 ;output:
 ; eax = был ли найден искомый текст (0 - нет, 1 - да)
 ; ebx, ecx, edx, edi, edi - портятся
 align 16
-proc _but_find_first, edit:dword
+proc _but_find_first, edit:dword, f_opt:dword
 	mov edi,[edit]
 
 	call ted_is_select
@@ -2927,11 +2933,11 @@ proc _but_find_first, edit:dword
 		mov edx,ted_tex
 		call ted_iterat_next
 	.end0:
-	mov eax,ted_buffer_find
-	mov bl,byte[eax]
+	mov ebx,ted_buffer_find
 	@@:
+		mov eax,[f_opt]
 		call ted_get_find_rezult
-		cmp bh,1
+		cmp ah,1
 		je @f ; find
 			call ted_iterat_next
 			cmp edx,ted_tex_1
@@ -2944,12 +2950,15 @@ endp
 
 ;description:
 ; функция находит текст выше курсора
+;input:
+; f_opt = опции для поиска
 ;output:
 ; eax = был ли найден искомый текст (0 - нет, 1 - да)
 ; ebx, ecx, edx, edi, edi - портятся
 align 16
-proc _but_find_perv, edit:dword
+proc _but_find_perv, edit:dword, f_opt:dword
 	mov edi,[edit]
+
 	call ted_is_select
 	or al,al
 	jz @f
@@ -2963,11 +2972,11 @@ proc _but_find_perv, edit:dword
 	@@:
 	call ted_get_pos_by_cursor
 	.end0:
-	mov eax,ted_buffer_find
-	mov bl,byte[eax]
+	mov ebx,ted_buffer_find
 	@@:
+		mov eax,[f_opt]
 		call ted_get_find_rezult
-		cmp bh,1
+		cmp ah,1
 		je @f ; find
 			call ted_iterat_perv
 			cmp edx,ted_tex_1
@@ -2980,19 +2989,21 @@ endp
 
 ;description:
 ; функция находит текст ниже курсора
+;input:
+; f_opt = опции для поиска
 ;output:
 ; eax = был ли найден искомый текст (0 - нет, 1 - да)
-; ebx, edx, edi, esi - портятся
+; ebx, ecx, edx, edi, esi - портятся
 align 16
-proc _but_find_next, edit:dword
+proc _but_find_next, edit:dword, f_opt:dword
 	mov edi,[edit]
 
 	call ted_get_pos_by_cursor
-	mov eax,ted_buffer_find
-	mov bl,byte[eax]
+	mov ebx,ted_buffer_find
 	@@:
+		mov eax,[f_opt]
 		call ted_get_find_rezult
-		cmp bh,1
+		cmp ah,1
 		je @f ; find
 			call ted_iterat_next
 			cmp edx,ted_tex_1
@@ -3006,11 +3017,11 @@ endp
 ;description:
 ; вспомогательная функция, выделяет найденный текст
 ;input:
-; bh = был ли найден искомый текст (0 - нет, 1 - да)
+; ah = был ли найден искомый текст (0 - нет, 1 - да)
 ; esi = first symbol pointer
 align 16
 _but_find_select:
-	or bh,bh
+	or ah,ah
 	jz @f
 		call ted_get_text_coords
 		inc ebx ;move cursor right
@@ -3067,45 +3078,58 @@ proc ted_but_replace uses edx edi esi, edit:dword, rpl_text:dword, r_opt:dword, 
 	ret
 endp
 
-;input:
-; eax - text need find
-; bl - first symbol to find
-; edx - first symbol pointer
-; edi - pointer to tedit struct
-;output:
-; bh - rezult
-; edx - last text position (if find sucess)
-; esi - first symbol pointer
 ;description:
-; Функция проверяет совпадает ли текст в буфере eax
+; Функция проверяет совпадает ли текст в буфере ebx
 ; с текстом редактора по указателю edx.
 ; Стандартные функции (напр. strcmp) тут не подойдут, потому что
 ; в памяти редактора текст содержится не в виде ascii строк.
+;input:
+; eax - options to find
+; ebx - text need find
+; edx - first symbol pointer
+; edi - pointer to tedit struct
+;output:
+; ah - rezult
+; edx - last text position (if find sucess)
+; esi - first symbol pointer
 align 16
-ted_get_find_rezult:
-push eax
-	mov bh,1
-	mov esi,edx ;copy edx
+proc ted_get_find_rezult uses ebx
+	mov al,byte[ebx]
+	bt eax,30
+	jnc @f
+		call fb_char_toupper
 	@@:
-		cmp byte[edx],bl
+	mov ah,1
+	mov esi,edx ;copy edx
+	.cycle0:
+		mov cl,al
+		mov al,byte[edx]
+		bt eax,30
+		jnc @f
+			call fb_char_toupper
+		@@:
+		cmp al,cl
 		jne .no_text
 
-		inc eax ;*** get next symbol (in find text) ***
-		mov bl,byte[eax]
-		or bl,bl
-		jz @f ;end of find text
+		inc ebx ;*** get next symbol (in find text) ***
+		mov al,byte[ebx]
+		or al,al
+		jz .end_f ;end of find text
+		bt eax,30
+		jnc @f
+			call fb_char_toupper
+		@@:
 
 		call ted_iterat_next ;*** get next symbol (in editor text) ***
 		cmp edx,ted_tex_1
-		jg @b
+		jg .cycle0
 align 4
 		.no_text:
-	xor bh,bh
+	xor ah,ah
 	mov edx,esi ;restore edx
-	@@:
-pop eax
-	mov bl,byte[eax] ;restore bl
+	.end_f:
 	ret
+endp
 
 ;input:
 ; edi = pointer to tedit struct
@@ -4134,8 +4158,7 @@ endp
 ;description:
 ; функция нужна для оптимизации вывода текста
 align 16
-proc ted_opt_draw_line_right
-	push eax
+proc ted_opt_draw_line_right uses eax
 	mov eax,edx
 	@@:
 		cmp edx,ted_tex_1
@@ -4148,8 +4171,6 @@ proc ted_opt_draw_line_right
 	@@:
 	mov edx,eax ;perv sumbol
 	call ted_get_symb_color
-
-	pop eax
 	ret
 endp
 
@@ -4375,8 +4396,6 @@ align 4
 
 		or eax,eax
 		jz .no_msg
-		;cmp eax,6
-		;je @f
 		cmp ax,10
 		jl .zifra_0_9
 			mov al,'?'

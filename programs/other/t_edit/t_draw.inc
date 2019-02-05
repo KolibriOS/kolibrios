@@ -217,35 +217,43 @@ draw_but_toolbar: ;функция для рисования панели инструментов
 ;txtBLe db 27
 
 align 4
-proc draw_panels uses edi, edit:dword
+proc draw_panels uses eax edx edi, edit:dword
 	mov edi,[edit]
 	cmp ted_panel_id,TED_PANEL_FIND
 	jne @f
+		mcall SF_DEFINE_BUTTON,,,0x80000000+200
+		mcall ,,,0x80000000+202
+		mcall ,,,0x80000000+203
+		mcall ,,,0x80000000+204
 		call p_find
 		jmp .end_f
 	@@:
 	cmp ted_panel_id,TED_PANEL_REPLACE
 	jne @f
+		mcall SF_DEFINE_BUTTON,,,0x80000000+200
+		mcall ,,,0x80000000+201
+		mcall ,,,0x80000000+204
 		call p_replace
 		jmp .end_f
 	@@:
 	cmp ted_panel_id,TED_PANEL_GOTO
 	jne @f
+		mcall SF_DEFINE_BUTTON,,,0x80000000+200
+		mcall ,,,0x80000000+201
+		mcall ,,,0x80000000+202
+		mcall ,,,0x80000000+203
 		call p_goto
 		jmp .end_f
 	@@:
 	cmp ted_panel_id,TED_PANEL_SYNTAX
 	jne @f
-		call p_syntax
-		jmp .end_f
-	@@:
-	push eax edx
-		mcall SF_DEFINE_BUTTON,,,0x80000000+200
-		mcall ,,,0x80000000+201
+		mcall SF_DEFINE_BUTTON,,,0x80000000+201
 		mcall ,,,0x80000000+202
 		mcall ,,,0x80000000+203
 		mcall ,,,0x80000000+204
-	pop edx eax
+		call p_syntax
+		;jmp .end_f
+	@@:
 	.end_f:
 	ret
 endp
@@ -271,7 +279,7 @@ p_find:
 
 		mov ecx,ted_wnd_t
 		shl ecx,16
-		add ecx,(93 shl 16)+20
+		add ecx,(111 shl 16)+20
 		mcall SF_DEFINE_BUTTON,(5 shl 16)+85,,201,[sc.work_button] ;201 - button id
 
 		mov ebx,(23 shl 16)+7
@@ -282,11 +290,12 @@ p_find:
 
 		mov ecx,[sc.work_button_text]
 		or ecx,0x80000000
-		mov ebx,(15 shl 16)+100
+		mov ebx,(15 shl 16)+118
 		add ebx,ted_wnd_t
 		mcall ,,,txtFindNext
 
 		stdcall [option_box_draw], opt_grlist1
+		stdcall [check_box_draw], ch1
 	pop edx ecx ebx eax
 	ret
 

@@ -232,6 +232,10 @@ get_find_options:
 	je @f
 		inc eax
 	@@:
+	bt dword[ch1.flags],1
+	jc @f
+		bts eax,30
+	@@:
 	ret
 
 align 4
