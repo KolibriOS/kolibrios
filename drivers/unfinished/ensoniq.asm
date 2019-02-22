@@ -17,10 +17,9 @@ include 'imports.inc'
 
 REMAP_IRQ   equ 0
 
-;irq 0,1,2,8,12,13 недоступны
+;irq 0,13 unavailable
 ;               FEDCBA9876543210
-VALID_IRQ   equ 1100111011111000b
-ATTCH_IRQ   equ 0000111010101000b
+VALID_IRQ   equ 1101111111111110b
 
 IRQ_LINE    equ 0
 
@@ -322,10 +321,6 @@ proc START stdcall, state:dword
         mov     eax, VALID_IRQ
         mov     ebx, [ctrl.int_line]
         mov     esi, msgInvIRQ
-        bt      eax, ebx
-        jnc     .fail
-        mov     eax, ATTCH_IRQ
-        mov     esi, msgAttchIRQ
         bt      eax, ebx
         jnc     .fail
 
@@ -1140,7 +1135,6 @@ sz_sound_srv db 'SOUND',0
 
 msgDetect    db 'detect hardware...',13,10,0
 msgFail      db 'device not found',13,10,0
-msgAttchIRQ  db 'IRQ line not supported', 13,10, 0
 msgInvIRQ    db 'IRQ line not assigned or invalid', 13,10, 0
 msgPlay      db 'start play', 13,10,0
 msgStop      db 'stop play',  13,10,0
