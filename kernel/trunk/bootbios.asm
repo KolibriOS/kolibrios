@@ -11,6 +11,7 @@ include 'encoding.inc'
 include 'const.inc'
 
 os_code = code_l - tmp_gdt
+PREBOOT_TIMEOUT = 5   ; seconds
 
 use16
                   org   0x0

@@ -830,7 +830,8 @@ end if
 if defined extended_primary_loader
         sub     ax, [preboot_timeout]
 else
-        sub     ax, 18*5
+        ; bios 0x1A timer runs at ~18 ticks per second
+        sub     ax, 18*PREBOOT_TIMEOUT
 end if
         jae     .timergo
         neg     ax
