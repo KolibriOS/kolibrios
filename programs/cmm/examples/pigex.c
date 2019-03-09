@@ -12,9 +12,10 @@
 void main()
 {
 	int i;
+	CreateDir("/tmp0/1/pig");
 
 	if (! file_exists("/tmp0/1/pig/pig")) {
-		RunProgram("/sys/UNZ", "-o \"/tmp0/1\" -h \"/kolibrios/games/pig/pig.zip\"");
+		RunProgram("/sys/UNZ", "-o \"/tmp0/1/pig\" -h \"/kolibrios/games/pig/pig.zip\"");
 		for (i = 0; i < 200; i++)
 		{
 			if (CheckProcessExists("UNZ")==false) break;
