@@ -1,2 +1,2 @@
 if tup.getconfig("NO_FASM") ~= "" then return end
-tup.rule("default.asm", 'fasm "%f" "%o" ' .. tup.getconfig("KPACK_CMD"), "StyleXP_panther.skn")
+tup.rule("default.asm", 'fasm "%f" "%o" ' .. tup.getconfig("KPACK_CMD"), "panther.skn")
