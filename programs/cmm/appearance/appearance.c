@@ -1,5 +1,5 @@
 //11.03.12 - start!
-//ver 2.21
+//ver 2.3
 
 #ifndef AUTOBUILD
 	?include "lang.h--"
@@ -14,11 +14,10 @@
 
 #include "..\lib\obj\box_lib.h"
 #include "..\lib\obj\proc_lib.h"
+#include "..\lib\obj\libini.h"
 
 #include "..\lib\patterns\select_list.h"
 #include "..\lib\patterns\simple_open_dialog.h"
-
-#include "ini.h"
 
 //===================================================//
 //                                                   //
@@ -42,8 +41,8 @@
 
 #define PANEL_H 40
 #define LP 10 //LIST_PADDING
-char skins_folder_path[4096] = "/kolibrios/res/skins";
-char wallp_folder_path[4096] = "/kolibrios/res/wallpapers";
+char skins_folder_path[4096];
+char wallp_folder_path[4096];
 
 signed int active_skin=-1, active_wallpaper=-1;
 enum { 
@@ -82,9 +81,20 @@ od_filter filter2 = { 8, "TXT\0\0" };
 //                                                   //
 //===================================================//
 
+void GetRealFolderPathes()
+{
+	char real_skin_path[4096];
+	SetCurDir("/kolibrios");
+	GetCurDir(#real_skin_path, sizeof(real_skin_path));
+	sprintf(#skins_folder_path, "%s/res/skins", #real_skin_path);
+	sprintf(#wallp_folder_path, "%s/res/wallpapers", #real_skin_path);
+}
+
 void main()
 {   
 	int id, mouse_clicked;
+
+	GetRealFolderPathes();
 
 	load_dll(boxlib, #box_lib_init,0);
 	load_dll(libini, #lib_init,1);
@@ -377,10 +387,11 @@ void EventOpenFile()
 	if (tabs.active_tab==WALLPAPERS) RunProgram("/sys/media/kiv", #cur_file_path);
 }
 
+_ini ini = { "/sys/settings/eskin.ini", "main" };
 void EventExit()
 {
+	ini.SetString("skin", #cur_skin_path, strlen(#cur_skin_path));
 	ExitProcess();
-	SaveSkinSettings(#cur_skin_path);
 }
 
 stop:
