@@ -34,6 +34,7 @@ proc_info Form;
 	#define T_ASSEPT_RISK "Я принимаю риск"
 	#define T_README "Readme"
 	#define T_INSTALL "Установить"
+	char description_name[] = "description_ru";
 #else
 	#define WINDOW_TITLE "Driver Installer"
 	#define T_CAUTION_TITLE "CAUTION"
@@ -41,6 +42,7 @@ proc_info Form;
 	#define T_ASSEPT_RISK "I accept the risk"
 	#define T_README "Readme"
 	#define T_INSTALL "Install"
+	char description_name[] = "description_en";
 #endif
 
 #define BUTTON_ID_ASSEPT_RISK 10
@@ -180,10 +182,8 @@ void SelectList_LineChanged()
 void GetCurrentSectionData()
 {
 	dword section_name = ini_sections.get(select_list.cur_y);
-	dword description_name;
-	if (GetSystemLanguage() == SYS_LANG_RUS) description_name = "description_ru"; else description_name = "description_en";
 	ini_get_str stdcall (#drvinf_path, section_name, "ver", #cur_version, sizeof(cur_version), 0);
-	ini_get_str stdcall (#drvinf_path, section_name, description_name, #cur_description, sizeof(cur_description), 0);
+	ini_get_str stdcall (#drvinf_path, section_name, #description_name, #cur_description, sizeof(cur_description), 0);
 	ini_get_str stdcall (#drvinf_path, section_name, "readme", #cur_readme_path, sizeof(cur_readme_path), 0);
 	ini_get_str stdcall (#drvinf_path, section_name, "install", #cur_install_path, sizeof(cur_install_path), 0);
 }

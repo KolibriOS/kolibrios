@@ -288,6 +288,7 @@ inline fastcall ExitProcess()
 //------------------------------------------------------------------------------
 
 //eax = ÿçûê ñèñòåìû (1=eng, 2=fi, 3=ger, 4=rus)
+///SYSFUNC DOESN'T WORK!!!  =>  https://bit.ly/2XNdiTD
 #define SYS_LANG_ENG 1
 #define SYS_LANG_FIN 2
 #define SYS_LANG_GER 3
