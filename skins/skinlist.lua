@@ -3,7 +3,9 @@
 skinlist = {
 "Leency/AreaSq/AreaSq.skn",
 "Leency/Blueberries/Blueberries.skn",
+"Leency/HydrogenOS/HydrogenOS.skn",
 "Leency/Latte/Latte.skn",
+"Leency/ObsidianOS/ObsidianOS.skn",
 "Leency/Octo_flat/Octo_flat.skn",
 "Leency/Shkvorka/Shkvorka.skn",
 "Leency/Yeah/Yeah.skn",
