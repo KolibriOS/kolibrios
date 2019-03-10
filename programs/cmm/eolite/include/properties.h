@@ -1,7 +1,7 @@
 #ifdef LANG_RUS
 	?define WINDOW_TITLE_PROPERTIES "Свойства"
-	?define BTN_CLOSE "Закрыть"
-	?define BTN_APPLY "Применить"
+	?define T_CLOSE "Закрыть"
+	?define T_APPLY "Применить"
 	?define QUEST_1 "Применить ко всем вложенным"
 	?define QUEST_2 "файлам и папкам?"
 	?define PR_T_NAME "Имя:"
@@ -18,8 +18,8 @@
 	?define SET_BYTE_LANG "байт"
 #else // Apply to all subfolders
 	?define WINDOW_TITLE_PROPERTIES "Properties"
-	?define BTN_CLOSE "Close"
-	?define BTN_APPLY "Apply"
+	?define T_CLOSE "Close"
+	?define T_APPLY "Apply"
 	?define QUEST_1 "Apply to all subfolders"
 	?define QUEST_2 "files and Folders?"
 	?define PR_T_NAME "Name:"
@@ -36,6 +36,11 @@
 	?define SET_BYTE_LANG "byte"
 #endif
 
+#define B_SETINGS_APPLY_SUBFOLDER 301
+#define B_SETINGS_APPLY_NO_SUBFOLDER 302
+#define B_APPLY 11
+#define B_CLOSE 12
+
 char path_to_file[4096];
 char file_name2[4096];
 edit_box file_name_ed = {230,59,32,0xffffff,0x94AECE,0xFFFfff,0xffffff,0x10000000,sizeof(file_name2)-2,#file_name2,NULL, 0b,2,2};
@@ -44,7 +49,7 @@ edit_box path_to_file_ed = {160,120,79,0xffffff,0x94AECE,0xFFFfff,0xffffff,2,siz
 BDVK file_info_general;
 BDVK file_info_dirsize;
 
-bool quest_active;
+bool apply_question_active;
 
 _dir_size more_files_count;
 
@@ -86,46 +91,44 @@ void SetPropertiesDir(dword way)
 	}
 }
 
-void SetProperties(byte prop)
+#define SET_PROPERTIES_SINGLE_FILE 0
+#define SET_PROPERTIES_NO_SUBFOLDER 1
+#define SET_PROPERTIES_ALL_SUBFOLDER 2
+void SetProperties(int mode)
 {
-	dword cur_file;
+	char pcur_file[4096];
 	dword i;
 
-	if (prop==1) || (prop==2)
+	apply_question_active=false;
+
+	if (SET_PROPERTIES_SINGLE_FILE == mode) {
+		SetPropertiesFile(#file_path, #file_info_general);
+	}
+
+	if (SET_PROPERTIES_ALL_SUBFOLDER == mode)
+	|| (SET_PROPERTIES_NO_SUBFOLDER == mode)
 	{
 		if (selected_count)
 		{
-			cur_file = malloc(4096);
 			for (i=0; i<files.count; i++) 
 			{
 				if (getElementSelectedFlag(i) == true) 
 				{
-					strcpy(cur_file, #path);
-					strcat(cur_file, file_mas[i]*304+buf+72);
-					SetPropertiesDir(cur_file);
-					if (prop==2)
-					{
-						if (dir_exists(cur_file))
-						{
-							SetPropertiesDir(cur_file);
-						}
+					sprintf(#pcur_file,"%s/%s",#path,file_mas[i]*304+buf+72);
+					SetPropertiesFile(#pcur_file, #file_info_general);
+					if (SET_PROPERTIES_ALL_SUBFOLDER == mode) {
+						if (dir_exists(#pcur_file)) SetPropertiesDir(#pcur_file);
 					}
 				}
 			}
-			free(cur_file);
 		}
 		else
 		{
 			SetPropertiesFile(#file_path, #file_info_general);
-			if (prop==2) SetPropertiesDir(#file_path);
+			if (SET_PROPERTIES_ALL_SUBFOLDER == mode) SetPropertiesDir(#file_path);
 		}
-		quest_active = 0;
-		DrawPropertiesWindow();
 	}
-	else
-	{
-		SetPropertiesFile(#file_path, #file_info_general);
-	}
+
 	cmd_free=3;
 	_not_draw = true;
 	Open_Dir(#path,WITH_REDRAW);
@@ -136,12 +139,12 @@ void SetProperties(byte prop)
 
 void ShowConfirmQuestionPopin()
 {
-	quest_active = 1;
+	apply_question_active = 1;
 	DrawPopup(15,80,250,90,1,system.color.work, system.color.work_graph);
 	WriteText(35, 102, 0x90, 0x000000, QUEST_1);
 	WriteText(65, 117, 0x90, 0x000000, QUEST_2);
-	DrawStandartCaptButton(62,138,301,T_YES);
-	DrawStandartCaptButton(155,138,302,T_NO);
+	DrawStandartCaptButton(62,138,B_SETINGS_APPLY_SUBFOLDER,T_YES);
+	DrawStandartCaptButton(155,138,B_SETINGS_APPLY_NO_SUBFOLDER,T_NO);
 }
 
 void GetSizeMoreFiles(dword way)
@@ -202,30 +205,20 @@ void properties_dialog()
 				ch_read_only.click(id);
 				ch_hidden.click(id);
 				ch_system.click(id);
-				if (quest_active)
+				if (apply_question_active)
 				{
-					IF (id==301) SetProperties(2);
-					IF (id==302) SetProperties(1);
-					quest_active=false;
+					IF (id==B_SETINGS_APPLY_SUBFOLDER) 
+						SetProperties(SET_PROPERTIES_ALL_SUBFOLDER);
+					IF (id==B_SETINGS_APPLY_NO_SUBFOLDER) 
+						SetProperties(SET_PROPERTIES_NO_SUBFOLDER);
 					break;
 				}
-				if (id==1) || (id==10)
+				if (id==1) || (id==B_CLOSE)
 				{
 					cmd_free=3;
 					ExitProcess();
 				}
-				IF (id==11) 
-				{
-					if (selected_count) || (itdir)
-					{
-						ShowConfirmQuestionPopin();
-					}
-					else 
-					{
-						SetProperties(0);
-					}
-					break;
-				}
+				if (id==B_APPLY) EventApplyProperties();
 				break;
 				
 		case evMouse:
@@ -235,33 +228,31 @@ void properties_dialog()
 			
 		case evKey:
 				GetKeys();
-				
-				if (quest_active)
+
+				if (apply_question_active)
 				{
-					IF (key_scancode==SCAN_CODE_ENTER) SetProperties(2);
-					IF (key_scancode==SCAN_CODE_ESC) SetProperties(1);
-					quest_active=false;
+					IF (key_scancode==SCAN_CODE_ENTER) 
+						SetProperties(SET_PROPERTIES_ALL_SUBFOLDER);
+					IF (key_scancode==SCAN_CODE_ESC) 
+						SetProperties(SET_PROPERTIES_NO_SUBFOLDER);
 					break;
 				}
-				if (key_scancode==SCAN_CODE_ESC)
+
+				switch(key_scancode)
 				{
-					cmd_free=3;
-					ExitProcess();
+					case SCAN_CODE_ESC:
+						cmd_free=3;
+						ExitProcess();
+						break;
+
+					case SCAN_CODE_ENTER:
+						EventApplyProperties();
+						break;
+
+					default:
+						edit_box_key stdcall(#file_name_ed);
+						edit_box_key stdcall(#path_to_file_ed);
 				}
-				if (key_scancode==SCAN_CODE_ENTER)
-				{
-					if (selected_count) || (itdir)
-					{
-						ShowConfirmQuestionPopin();
-					}
-					else 
-					{
-						SetProperties(0);
-					}
-					break;
-				}
-				edit_box_key stdcall(#file_name_ed);
-				edit_box_key stdcall(#path_to_file_ed);
 				break;
 				
 		case evReDraw:
@@ -271,7 +262,7 @@ void properties_dialog()
 
 void DrawPropertiesWindow()
 {
-	proc_info settings_form;
+	proc_info pform;
 	char element_size_label[32];
 	char folder_info[200];
 	dword ext1;
@@ -279,10 +270,10 @@ void DrawPropertiesWindow()
 	incn y;
 	char temp_path[sizeof(file_path)];
 	DefineAndDrawWindow(Form.left + 150,150,315,360+skin_height,0x34,system.color.work,WINDOW_TITLE_PROPERTIES,0);
-	GetProcessInfo(#settings_form, SelfInfo);
+	GetProcessInfo(#pform, SelfInfo);
 
-	DrawStandartCaptButton(settings_form.cwidth - 96, settings_form.cheight-34, 10, BTN_CLOSE);
-	DrawStandartCaptButton(settings_form.cwidth -208, settings_form.cheight-34, 11, BTN_APPLY);
+	DrawStandartCaptButton(pform.cwidth - 96, pform.cheight-34, B_CLOSE, T_CLOSE);
+	DrawStandartCaptButton(pform.cwidth -208, pform.cheight-34, B_APPLY, T_APPLY);
 	
 	WriteText(10, 78, 0x90, system.color.work_text, PR_T_DEST);
 	edit_box_draw stdcall (#path_to_file_ed);
@@ -326,11 +317,12 @@ void DrawPropertiesWindow()
 		sprintf(#element_size_label,"%s (%d %s)",ConvertSize64(element_size, NULL),element_size,SET_BYTE_LANG);
 		WriteText(120, 99, 0x90, system.color.work_text, #element_size_label);
 	}
-	DrawFrame(10, 212, -10*2 + settings_form.cwidth - 2, 92, FLAGS);
+	DrawFrame(10, 212, -10*2 + pform.cwidth - 2, 92, FLAGS);
 	y.n = 212; //212 => attributes_frame.y
 	ch_read_only.draw(24, y.inc(18));
 	ch_hidden.draw(24, y.inc(24));
 	ch_system.draw(24, y.inc(24));
+	if (apply_question_active) ShowConfirmQuestionPopin();
 }
 
 void PropertiesDrawIcon(dword file_path, extension)
@@ -338,4 +330,13 @@ void PropertiesDrawIcon(dword file_path, extension)
 	#define ICON_PADDING 11
 	DrawBar(20-ICON_PADDING, 30-ICON_PADDING-1, ICON_PADDING*2+16, ICON_PADDING*2+16, 0xFFFfff);
 	DrawIconByExtension(file_path, extension, -icon_size/2+28, -icon_size/2+38, 0xFFFfff);
+}
+
+void EventApplyProperties()
+{
+	if (selected_count) || (itdir) {
+		ShowConfirmQuestionPopin();
+	} else {
+		SetProperties(SET_PROPERTIES_SINGLE_FILE);
+	}
 }
