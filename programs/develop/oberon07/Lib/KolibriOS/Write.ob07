@@ -1,5 +1,5 @@
-(*
-    Copyright 2016 Anton Krotov
+﻿(*
+    Copyright 2016, 2018 Anton Krotov
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU Lesser General Public License as published by
@@ -30,10 +30,6 @@ END Int;
 PROCEDURE Real*(F: File.FS; x: REAL): BOOLEAN;
   RETURN File.Write(F, sys.ADR(x), sys.SIZE(REAL)) = sys.SIZE(REAL)
 END Real;
-
-PROCEDURE LongReal*(F: File.FS; x: LONGREAL): BOOLEAN;
-  RETURN File.Write(F, sys.ADR(x), sys.SIZE(LONGREAL)) = sys.SIZE(LONGREAL)
-END LongReal;
 
 PROCEDURE Boolean*(F: File.FS; x: BOOLEAN): BOOLEAN;
   RETURN File.Write(F, sys.ADR(x), sys.SIZE(BOOLEAN)) = sys.SIZE(BOOLEAN)

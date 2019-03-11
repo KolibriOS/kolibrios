@@ -1,0 +1,111 @@
+﻿(*
+    BSD 2-Clause License
+
+    Copyright (c) 2018, Anton Krotov
+    All rights reserved.
+*)
+
+MODULE WRITER;
+
+IMPORT FILES, ERRORS, MACHINE;
+
+
+TYPE
+
+    FILE* = FILES.FILE;
+
+
+VAR
+
+    counter*: INTEGER;
+
+
+PROCEDURE align (n, _align: INTEGER): INTEGER;
+BEGIN
+    IF n MOD _align # 0 THEN
+        n := n + _align - (n MOD _align)
+    END
+
+    RETURN n
+END align;
+
+
+PROCEDURE WriteByte* (file: FILE; n: BYTE);
+BEGIN
+    IF FILES.WriteByte(file, n) THEN
+        INC(counter)
+    ELSE
+        ERRORS.error1("writing file error")
+    END
+END WriteByte;
+
+
+PROCEDURE Write* (file: FILE; chunk: ARRAY OF BYTE; bytes: INTEGER);
+VAR
+    n: INTEGER;
+
+BEGIN
+    n := FILES.write(file, chunk, bytes);
+    IF n # bytes THEN
+        ERRORS.error1("writing file error")
+    END;
+    INC(counter, n)
+END Write;
+
+
+PROCEDURE Write64LE* (file: FILE; n: INTEGER);
+VAR
+    i: INTEGER;
+
+BEGIN
+    FOR i := 0 TO 7 DO
+        WriteByte(file, MACHINE.Byte(n, i))
+    END
+END Write64LE;
+
+
+PROCEDURE Write32LE* (file: FILE; n: INTEGER);
+VAR
+    i: INTEGER;
+
+BEGIN
+    FOR i := 0 TO 3 DO
+        WriteByte(file, MACHINE.Byte(n, i))
+    END
+END Write32LE;
+
+
+PROCEDURE Write16LE* (file: FILE; n: INTEGER);
+BEGIN
+    WriteByte(file, MACHINE.Byte(n, 0));
+    WriteByte(file, MACHINE.Byte(n, 1))
+END Write16LE;
+
+
+PROCEDURE Padding* (file: FILE; FileAlignment: INTEGER);
+VAR
+    i: INTEGER;
+
+BEGIN
+    i := align(counter, FileAlignment) - counter;
+    WHILE i > 0 DO
+        WriteByte(file, 0);
+        DEC(i)
+    END
+END Padding;
+
+
+PROCEDURE Create* (FileName: ARRAY OF CHAR): FILE;
+BEGIN
+    counter := 0
+    RETURN FILES.create(FileName)
+END Create;
+
+
+PROCEDURE Close* (VAR file: FILE);
+BEGIN
+    FILES.close(file)
+END Close;
+
+
+END WRITER.

@@ -1,5 +1,5 @@
-(*
-    Copyright 2016 KolibriOS team
+﻿(*
+    Copyright 2016, 2018 KolibriOS team
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU Lesser General Public License as published by
@@ -24,21 +24,21 @@ CONST
 
 (* flags *)
 
-  bold		  *=   1;
-  italic	  *=   2;
-  underline	  *=   4;
+  bold            *=   1;
+  italic          *=   2;
+  underline       *=   4;
   strike_through  *=   8;
-  align_right	  *=  16;
-  align_center	  *=  32;
+  align_right     *=  16;
+  align_center    *=  32;
 
-  bpp32 	  *= 128;
+  bpp32           *= 128;
 
 
 (* encoding *)
 
-  cp866 	  *=   1;
-  utf16le	  *=   2;
-  utf8		  *=   3;
+  cp866           *=   1;
+  utf16le         *=   2;
+  utf8            *=   3;
 
 
 VAR
@@ -48,19 +48,19 @@ VAR
   drawText *: PROCEDURE (canvas, x, y, string, charQuantity, fontColor, params: INTEGER): INTEGER;
 (*
   [canvas]:
-    xSize	 dd  ?
-    ySize	 dd  ?
-    picture	 rb  xSize * ySize * bpp
+    xSize        dd  ?
+    ySize        dd  ?
+    picture      rb  xSize * ySize * bpp
 
-   fontColor	 dd  AARRGGBB
-    AA = alpha channel	 ; 0 = transparent, FF = non transparent
+   fontColor     dd  AARRGGBB
+    AA = alpha channel   ; 0 = transparent, FF = non transparent
 
-   params	 dd  ffeewwhh
+   params        dd  ffeewwhh
     hh = char height
-    ww = char width	 ; 0 = auto (proportional)
-    ee = encoding	 ; 1 = cp866, 2 = UTF-16LE, 3 = UTF-8
-    ff = flags		 ; 0001 = bold, 0010 = italic
-			 ; 0100 = underline, 1000 = strike-through
+    ww = char width      ; 0 = auto (proportional)
+    ee = encoding        ; 1 = cp866, 2 = UTF-16LE, 3 = UTF-8
+    ff = flags           ; 0001 = bold, 0010 = italic
+                         ; 0100 = underline, 1000 = strike-through
    00010000 = align right, 00100000 = align center
    01000000 = set text area between higher and lower halfs of 'x'
    10000000 = 32bpp canvas insted of 24bpp
@@ -85,10 +85,10 @@ VAR
 PROCEDURE params* (charHeight, charWidth, encoding, flags: INTEGER): INTEGER;
 (*
     hh = char height
-    ww = char width	 ; 0 = auto (proportional)
-    ee = encoding	 ; 1 = cp866, 2 = UTF-16LE, 3 = UTF-8
-    ff = flags		 ; 0001 = bold, 0010 = italic
-			; 0100 = underline, 1000 = strike-through
+    ww = char width      ; 0 = auto (proportional)
+    ee = encoding        ; 1 = cp866, 2 = UTF-16LE, 3 = UTF-8
+    ff = flags           ; 0001 = bold, 0010 = italic
+                        ; 0100 = underline, 1000 = strike-through
    00010000 = align right, 00100000 = align center
    01000000 = set text area between higher and lower halfs of 'x'
    10000000 = 32bpp canvas insted of 24bpp
@@ -101,7 +101,7 @@ END params;
 PROCEDURE main;
 VAR Lib: INTEGER;
 
-  PROCEDURE GetProc(v: INTEGER; name: ARRAY OF CHAR);
+  PROCEDURE GetProc(Lib, v: INTEGER; name: ARRAY OF CHAR);
   VAR a: INTEGER;
   BEGIN
     a := KOSAPI.GetProcAdr(name, Lib);
@@ -112,10 +112,10 @@ VAR Lib: INTEGER;
 BEGIN
   Lib := KOSAPI.LoadLib("/rd/1/lib/RasterWorks.obj");
   ASSERT(Lib # 0);
-  GetProc(sys.ADR(drawText), "drawText");
-  GetProc(sys.ADR(cntUTF_8), "cntUTF-8");
-  GetProc(sys.ADR(charsFit), "charsFit");
-  GetProc(sys.ADR(strWidth), "strWidth");
+  GetProc(Lib, sys.ADR(drawText), "drawText");
+  GetProc(Lib, sys.ADR(cntUTF_8), "cntUTF-8");
+  GetProc(Lib, sys.ADR(charsFit), "charsFit");
+  GetProc(Lib, sys.ADR(strWidth), "strWidth");
 END main;
 
 

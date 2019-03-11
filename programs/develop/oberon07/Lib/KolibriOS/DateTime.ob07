@@ -1,5 +1,5 @@
-(*
-    Copyright 2016 Anton Krotov
+﻿(*
+    Copyright 2016, 2018 Anton Krotov
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU Lesser General Public License as published by
@@ -19,10 +19,10 @@ MODULE DateTime;
 
 IMPORT KOSAPI;
 
-CONST ERR* = -7.0D5;
+CONST ERR* = -7.0E5;
 
-PROCEDURE Encode*(Year, Month, Day, Hour, Min, Sec: INTEGER): LONGREAL;
-VAR d, i: INTEGER; M: ARRAY 13 OF CHAR; Res: LONGREAL;
+PROCEDURE Encode*(Year, Month, Day, Hour, Min, Sec: INTEGER): REAL;
+VAR d, i: INTEGER; M: ARRAY 14 OF CHAR; Res: REAL;
 BEGIN
   Res := ERR;
   IF (Year >= 1) & (Year <= 9999) & (Month >= 1) & (Month <= 12) &
@@ -36,18 +36,18 @@ BEGIN
       DEC(Year);
       d := Year * 365 + (Year DIV 4) - (Year DIV 100) + (Year DIV 400) + Day - 693594;
       FOR i := 1 TO Month - 1 DO
-	d := d + ORD(M[i]) - ORD("0") + 28
+        d := d + ORD(M[i]) - ORD("0") + 28
       END;
-      Res := LONG(FLT(d)) + LONG(FLT(Hour * 3600000 + Min * 60000 + Sec * 1000)) / 86400000.0D0
+      Res := FLT(d) + FLT(Hour * 3600000 + Min * 60000 + Sec * 1000) / 86400000.0
     END
   END
   RETURN Res
 END Encode;
 
-PROCEDURE Decode*(Date: LONGREAL; VAR Year, Month, Day, Hour, Min, Sec: INTEGER): BOOLEAN;
-VAR Res, flag: BOOLEAN; d, t, i: INTEGER; M: ARRAY 13 OF CHAR;
+PROCEDURE Decode*(Date: REAL; VAR Year, Month, Day, Hour, Min, Sec: INTEGER): BOOLEAN;
+VAR Res, flag: BOOLEAN; d, t, i: INTEGER; M: ARRAY 14 OF CHAR;
 
-  PROCEDURE MonthDay(n: INTEGER): BOOLEAN;
+  PROCEDURE MonthDay(n: INTEGER; VAR d, Month: INTEGER; M: ARRAY OF CHAR): BOOLEAN;
   VAR Res: BOOLEAN;
   BEGIN
     Res := FALSE;
@@ -60,9 +60,9 @@ VAR Res, flag: BOOLEAN; d, t, i: INTEGER; M: ARRAY 13 OF CHAR;
   END MonthDay;
 
 BEGIN
-  IF (Date >= -693593.0D0) & (Date < 2958466.0D0) THEN
+  IF (Date >= -693593.0) & (Date < 2958466.0) THEN
     d := FLOOR(Date);
-    t := FLOOR((Date - LONG(FLT(d))) * 86400000.0D0);
+    t := FLOOR((Date - FLT(d)) * 86400000.0);
     d := d + 693593;
     Year := 1;
     Month := 1;
@@ -82,7 +82,7 @@ BEGIN
     i := 1;
     flag := TRUE;
     WHILE flag & (i <= 12) DO
-      flag := MonthDay(i);
+      flag := MonthDay(i, d, Month, M);
       INC(i)
     END;
     Day := d;
@@ -98,43 +98,44 @@ BEGIN
   RETURN Res
 END Decode;
 
-PROCEDURE Now*(VAR Year, Month, Day, Hour, Min, Sec: INTEGER);
+PROCEDURE Now*(VAR Year, Month, Day, Hour, Min, Sec, Msec: INTEGER);
 VAR date, time: INTEGER;
 BEGIN
-  date	:= KOSAPI.sysfunc1(29);
-  time	:= KOSAPI.sysfunc1(3);
+  date  := KOSAPI.sysfunc1(29);
+  time  := KOSAPI.sysfunc1(3);
 
-  Year	:= date MOD 16;
-  date	:= date DIV 16;
-  Year	:= (date MOD 16) * 10 + Year;
-  date	:= date DIV 16;
+  Year  := date MOD 16;
+  date  := date DIV 16;
+  Year  := (date MOD 16) * 10 + Year;
+  date  := date DIV 16;
 
   Month := date MOD 16;
-  date	:= date DIV 16;
+  date  := date DIV 16;
   Month := (date MOD 16) * 10 + Month;
-  date	:= date DIV 16;
+  date  := date DIV 16;
 
   Day := date MOD 16;
-  date	:= date DIV 16;
+  date  := date DIV 16;
   Day := (date MOD 16) * 10 + Day;
-  date	:= date DIV 16;
+  date  := date DIV 16;
 
-  Hour	:= time MOD 16;
-  time	:= time DIV 16;
-  Hour	:= (time MOD 16) * 10 + Hour;
-  time	:= time DIV 16;
+  Hour  := time MOD 16;
+  time  := time DIV 16;
+  Hour  := (time MOD 16) * 10 + Hour;
+  time  := time DIV 16;
 
   Min := time MOD 16;
-  time	:= time DIV 16;
+  time  := time DIV 16;
   Min := (time MOD 16) * 10 + Min;
-  time	:= time DIV 16;
+  time  := time DIV 16;
 
   Sec := time MOD 16;
-  time	:= time DIV 16;
+  time  := time DIV 16;
   Sec := (time MOD 16) * 10 + Sec;
-  time	:= time DIV 16;
+  time  := time DIV 16;
 
-  Year	:= Year + 2000
+  Year := Year + 2000;
+  Msec := 0
 END Now;
 
 END DateTime.

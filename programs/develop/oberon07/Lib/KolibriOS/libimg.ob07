@@ -1,5 +1,5 @@
-(*
-    Copyright 2016 KolibriOS team
+﻿(*
+    Copyright 2016, 2018 KolibriOS team
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU Lesser General Public License as published by
@@ -26,51 +26,51 @@ CONST
   FLIP_HORIZONTAL *= 2;
 
 
-  ROTATE_90_CW	  *= 1;
-  ROTATE_180	  *= 2;
+  ROTATE_90_CW    *= 1;
+  ROTATE_180      *= 2;
   ROTATE_270_CW   *= 3;
   ROTATE_90_CCW   *= ROTATE_270_CW;
   ROTATE_270_CCW  *= ROTATE_90_CW;
 
 
-  // scale type 		      corresponding img_scale params
-  LIBIMG_SCALE_INTEGER	   *= 1;  //    scale factor ; reserved 0
-  LIBIMG_SCALE_TILE	   *= 2;  //    new width    ; new height
-  LIBIMG_SCALE_STRETCH	   *= 3;  //    new width    ; new height
+  // scale type                       corresponding img_scale params
+  LIBIMG_SCALE_INTEGER     *= 1;  //    scale factor ; reserved 0
+  LIBIMG_SCALE_TILE        *= 2;  //    new width    ; new height
+  LIBIMG_SCALE_STRETCH     *= 3;  //    new width    ; new height
   LIBIMG_SCALE_FIT_RECT    *= 4;  //    new width    ; new height
   LIBIMG_SCALE_FIT_WIDTH   *= 5;  //    new width    ; new height
   LIBIMG_SCALE_FIT_HEIGHT  *= 6;  //    new width    ; new height
-  LIBIMG_SCALE_FIT_MAX	   *= 7;  //    new width    ; new height
+  LIBIMG_SCALE_FIT_MAX     *= 7;  //    new width    ; new height
 
 
   // interpolation algorithm
-  LIBIMG_INTER_NONE	   *= 0;  //    use it with LIBIMG_SCALE_INTEGER, LIBIMG_SCALE_TILE, etc
+  LIBIMG_INTER_NONE        *= 0;  //    use it with LIBIMG_SCALE_INTEGER, LIBIMG_SCALE_TILE, etc
   LIBIMG_INTER_BILINEAR    *= 1;
-  LIBIMG_INTER_DEFAULT	   *= LIBIMG_INTER_BILINEAR;
+  LIBIMG_INTER_DEFAULT     *= LIBIMG_INTER_BILINEAR;
 
 
   // list of format id's
-  LIBIMG_FORMAT_BMP	   *=  1;
-  LIBIMG_FORMAT_ICO	   *=  2;
-  LIBIMG_FORMAT_CUR	   *=  3;
-  LIBIMG_FORMAT_GIF	   *=  4;
-  LIBIMG_FORMAT_PNG	   *=  5;
-  LIBIMG_FORMAT_JPEG	   *=  6;
-  LIBIMG_FORMAT_TGA	   *=  7;
-  LIBIMG_FORMAT_PCX	   *=  8;
-  LIBIMG_FORMAT_XCF	   *=  9;
-  LIBIMG_FORMAT_TIFF	   *= 10;
-  LIBIMG_FORMAT_PNM	   *= 11;
-  LIBIMG_FORMAT_WBMP	   *= 12;
-  LIBIMG_FORMAT_XBM	   *= 13;
-  LIBIMG_FORMAT_Z80	   *= 14;
+  LIBIMG_FORMAT_BMP        *=  1;
+  LIBIMG_FORMAT_ICO        *=  2;
+  LIBIMG_FORMAT_CUR        *=  3;
+  LIBIMG_FORMAT_GIF        *=  4;
+  LIBIMG_FORMAT_PNG        *=  5;
+  LIBIMG_FORMAT_JPEG       *=  6;
+  LIBIMG_FORMAT_TGA        *=  7;
+  LIBIMG_FORMAT_PCX        *=  8;
+  LIBIMG_FORMAT_XCF        *=  9;
+  LIBIMG_FORMAT_TIFF       *= 10;
+  LIBIMG_FORMAT_PNM        *= 11;
+  LIBIMG_FORMAT_WBMP       *= 12;
+  LIBIMG_FORMAT_XBM        *= 13;
+  LIBIMG_FORMAT_Z80        *= 14;
 
 
   // encode flags (byte 0x02 of common option)
   LIBIMG_ENCODE_STRICT_SPECIFIC   *= 01H;
   LIBIMG_ENCODE_STRICT_BIT_DEPTH  *= 02H;
-  LIBIMG_ENCODE_DELETE_ALPHA	  *= 08H;
-  LIBIMG_ENCODE_FLUSH_ALPHA	  *= 10H;
+  LIBIMG_ENCODE_DELETE_ALPHA      *= 08H;
+  LIBIMG_ENCODE_FLUSH_ALPHA       *= 10H;
 
 
   // values for Image.Type
@@ -80,7 +80,7 @@ CONST
   bpp32  *=   3;
   bpp15  *=   4;
   bpp16  *=   5;
-  bpp1	 *=   6;
+  bpp1   *=   6;
   bpp8g  *=   7;  // grayscale
   bpp2i  *=   8;
   bpp4i  *=   9;
@@ -112,7 +112,7 @@ TYPE
 
   ImageDecodeOptions* = RECORD
 
-    UsedSize	     *: INTEGER; // if >=8, the field BackgroundColor is valid, and so on
+    UsedSize         *: INTEGER; // if >=8, the field BackgroundColor is valid, and so on
     BackgroundColor  *: INTEGER  // used for transparent images as background
 
   END;
@@ -120,10 +120,10 @@ TYPE
 
   FormatsTableEntry* = RECORD
 
-    Format_id	  *: INTEGER;
-    Is		  *: INTEGER;
-    Decode	  *: INTEGER;
-    Encode	  *: INTEGER;
+    Format_id     *: INTEGER;
+    Is            *: INTEGER;
+    Decode        *: INTEGER;
+    Encode        *: INTEGER;
     Capabilities  *: INTEGER
 
   END;
@@ -131,7 +131,7 @@ TYPE
 
 VAR
 
-    img_is_img	       *: PROCEDURE (data, length: INTEGER): INTEGER;
+    img_is_img         *: PROCEDURE (data, length: INTEGER): INTEGER;
 
 
 
@@ -147,7 +147,7 @@ VAR
 
 
 
-    img_to_rgb	       *: PROCEDURE (img: INTEGER): INTEGER;
+    img_to_rgb         *: PROCEDURE (img: INTEGER): INTEGER;
 (*
 ;;------------------------------------------------------------------------------------------------;;
 ;? decodes image data into RGB triplets and returns pointer to memory area containing them        ;;
@@ -160,7 +160,7 @@ VAR
 
 
 
-    img_decode	       *: PROCEDURE (data, length, options: INTEGER): INTEGER;
+    img_decode         *: PROCEDURE (data, length, options: INTEGER): INTEGER;
 (*
 ;;------------------------------------------------------------------------------------------------;;
 ;? decodes loaded into memory graphic file                                                        ;;
@@ -175,7 +175,7 @@ VAR
 
 
 
-    img_encode	       *: PROCEDURE (img: INTEGER; common, specific: INTEGER): INTEGER;
+    img_encode         *: PROCEDURE (img: INTEGER; common, specific: INTEGER): INTEGER;
 (*
 ;;------------------------------------------------------------------------------------------------;;
 ;? encode image to some format                                                                    ;;
@@ -203,7 +203,7 @@ VAR
 
 
 
-    img_create	       *: PROCEDURE (width, height, type: INTEGER): INTEGER;
+    img_create         *: PROCEDURE (width, height, type: INTEGER): INTEGER;
 (*
 ;;------------------------------------------------------------------------------------------------;;
 ;? creates an Image structure and initializes some its fields                                     ;;
@@ -246,7 +246,7 @@ VAR
 
 
 
-    img_count	       *: PROCEDURE (img: INTEGER): INTEGER;
+    img_count          *: PROCEDURE (img: INTEGER): INTEGER;
 (*
 ;;------------------------------------------------------------------------------------------------;;
 ;? Get number of images in the list (e.g. in animated GIF file)                                   ;;
@@ -259,7 +259,7 @@ VAR
 
 
 
-    img_flip	       *: PROCEDURE (img: INTEGER; flip_kind: INTEGER): BOOLEAN;
+    img_flip           *: PROCEDURE (img: INTEGER; flip_kind: INTEGER): BOOLEAN;
 (*
 ;;------------------------------------------------------------------------------------------------;;
 ;? Flip all layers of image                                                                       ;;
@@ -287,7 +287,7 @@ VAR
 
 
 
-    img_rotate	       *: PROCEDURE (img: INTEGER; rotate_kind: INTEGER): BOOLEAN;
+    img_rotate         *: PROCEDURE (img: INTEGER; rotate_kind: INTEGER): BOOLEAN;
 (*
 ;;------------------------------------------------------------------------------------------------;;
 ;? Rotate all layers of image                                                                     ;;
@@ -315,7 +315,7 @@ VAR
 
 
 
-    img_draw	       *: PROCEDURE (img: INTEGER; x, y, width, height, xpos, ypos: INTEGER);
+    img_draw           *: PROCEDURE (img: INTEGER; x, y, width, height, xpos, ypos: INTEGER);
 (*
 ;;------------------------------------------------------------------------------------------------;;
 ;? Draw image in the window                                                                       ;;
@@ -332,7 +332,7 @@ VAR
 
 
 
-    img_scale	       *: PROCEDURE (src: INTEGER; crop_x, crop_y, crop_width, crop_height: INTEGER; dst: INTEGER; scale, inter, param1, param2: INTEGER ): INTEGER;
+    img_scale          *: PROCEDURE (src: INTEGER; crop_x, crop_y, crop_width, crop_height: INTEGER; dst: INTEGER; scale, inter, param1, param2: INTEGER ): INTEGER;
 (*
 ;;------------------------------------------------------------------------------------------------;;
 ;? scale _image                                                                                   ;;
@@ -398,7 +398,7 @@ END GetFormatsTable;
 PROCEDURE main;
 VAR Lib, formats_table_ptr: INTEGER;
 
-  PROCEDURE GetProc(v: INTEGER; name: ARRAY OF CHAR);
+  PROCEDURE GetProc(Lib, v: INTEGER; name: ARRAY OF CHAR);
   VAR a: INTEGER;
   BEGIN
     a := KOSAPI.GetProcAdr(name, Lib);
@@ -409,23 +409,23 @@ VAR Lib, formats_table_ptr: INTEGER;
 BEGIN
   Lib := KOSAPI.LoadLib("/rd/1/lib/libimg.obj");
   ASSERT(Lib # 0);
-  GetProc(sys.ADR(img_is_img)	     , "img_is_img");
-  GetProc(sys.ADR(img_to_rgb)	     , "img_to_rgb");
-  GetProc(sys.ADR(img_to_rgb2)	     , "img_to_rgb2");
-  GetProc(sys.ADR(img_decode)	     , "img_decode");
-  GetProc(sys.ADR(img_encode)	     , "img_encode");
-  GetProc(sys.ADR(img_create)	     , "img_create");
-  GetProc(sys.ADR(img_destroy)	     , "img_destroy");
-  GetProc(sys.ADR(img_destroy_layer) , "img_destroy_layer");
-  GetProc(sys.ADR(img_count)	     , "img_count");
-  GetProc(sys.ADR(img_flip)	     , "img_flip");
-  GetProc(sys.ADR(img_flip_layer)    , "img_flip_layer");
-  GetProc(sys.ADR(img_rotate)	     , "img_rotate");
-  GetProc(sys.ADR(img_rotate_layer)  , "img_rotate_layer");
-  GetProc(sys.ADR(img_draw)	     , "img_draw");
-  GetProc(sys.ADR(img_scale)	     , "img_scale");
-  GetProc(sys.ADR(img_convert)	     , "img_convert");
-  GetProc(sys.ADR(formats_table_ptr) , "img_formats_table");
+  GetProc(Lib, sys.ADR(img_is_img)        , "img_is_img");
+  GetProc(Lib, sys.ADR(img_to_rgb)        , "img_to_rgb");
+  GetProc(Lib, sys.ADR(img_to_rgb2)       , "img_to_rgb2");
+  GetProc(Lib, sys.ADR(img_decode)        , "img_decode");
+  GetProc(Lib, sys.ADR(img_encode)        , "img_encode");
+  GetProc(Lib, sys.ADR(img_create)        , "img_create");
+  GetProc(Lib, sys.ADR(img_destroy)       , "img_destroy");
+  GetProc(Lib, sys.ADR(img_destroy_layer) , "img_destroy_layer");
+  GetProc(Lib, sys.ADR(img_count)         , "img_count");
+  GetProc(Lib, sys.ADR(img_flip)          , "img_flip");
+  GetProc(Lib, sys.ADR(img_flip_layer)    , "img_flip_layer");
+  GetProc(Lib, sys.ADR(img_rotate)        , "img_rotate");
+  GetProc(Lib, sys.ADR(img_rotate_layer)  , "img_rotate_layer");
+  GetProc(Lib, sys.ADR(img_draw)          , "img_draw");
+  GetProc(Lib, sys.ADR(img_scale)         , "img_scale");
+  GetProc(Lib, sys.ADR(img_convert)       , "img_convert");
+  GetProc(Lib, sys.ADR(formats_table_ptr) , "img_formats_table");
   GetFormatsTable(formats_table_ptr)
 END main;
 

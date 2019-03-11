@@ -1,23 +1,13 @@
-(*
-    Copyright 2016, 2017, 2018 Anton Krotov
+﻿(*
+    BSD 2-Clause License
 
-    This program is free software: you can redistribute it and/or modify
-    it under the terms of the GNU Lesser General Public License as published by
-    the Free Software Foundation, either version 3 of the License, or
-    (at your option) any later version.
-
-    This program is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU Lesser General Public License for more details.
-
-    You should have received a copy of the GNU Lesser General Public License
-    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+    Copyright (c) 2018, Anton Krotov
+    All rights reserved.
 *)
 
 MODULE API;
 
-IMPORT sys := SYSTEM;
+IMPORT SYSTEM, K := KOSAPI;
 
 
 CONST
@@ -41,10 +31,23 @@ VAR
 
     CriticalSection: CRITICAL_SECTION;
 
+    import*, multi: BOOLEAN;
 
-PROCEDURE [stdcall] zeromem* (size, adr: INTEGER);
+    eol*:  ARRAY 3 OF CHAR;
+    base*: INTEGER;
+
+
+PROCEDURE [stdcall] zeromem* (dwords: INTEGER; adr: INTEGER);
 BEGIN
-    sys.CODE("578B7D0C8B4D0833C09CFCF3AB9D5F")
+    SYSTEM.CODE(
+    0FCH,               (*  cld                            *)
+    031H, 0C0H,         (*  xor     eax, eax               *)
+    057H,               (*  push    edi                    *)
+    08BH, 07DH, 00CH,   (*  mov     edi, dword [ebp + 12]  *)
+    08BH, 04DH, 008H,   (*  mov     ecx, dword [ebp +  8]  *)
+    0F3H, 0ABH,         (*  rep     stosd                  *)
+    05FH                (*  pop     edi                    *)
+    )
 END zeromem;
 
 
@@ -53,128 +56,31 @@ VAR
     tmp: INTEGER;
 BEGIN
     FOR tmp := adr TO adr + size - 1 BY 4096 DO
-        sys.PUT(tmp, 0)
+        SYSTEM.PUT(tmp, 0)
     END
 END mem_commit;
 
 
-PROCEDURE strncmp* (a, b, n: INTEGER): INTEGER;
-VAR
-    A, B: CHAR;
-    Res: INTEGER;
-BEGIN
-    Res := 0;
-    WHILE n > 0 DO
-        sys.GET(a, A); INC(a);
-        sys.GET(b, B); INC(b);
-        DEC(n);
-        IF A # B THEN
-            Res := ORD(A) - ORD(B);
-            n := 0
-        ELSIF A = 0X THEN
-            n := 0
-        END
-    END
-    RETURN Res
-END strncmp;
-
-
-PROCEDURE [stdcall] sysfunc1* (arg1: INTEGER): INTEGER;
-BEGIN
-    sys.CODE("8B4508");           (* mov     eax, [ebp + 08h] *)
-    sys.CODE("CD40");             (* int     40h              *)
-    sys.CODE("C9");               (* leave                    *)
-    sys.CODE("C20400");           (* ret     04h              *)
-    RETURN 0
-END sysfunc1;
-
-
-PROCEDURE [stdcall] sysfunc2* (arg1, arg2: INTEGER): INTEGER;
-BEGIN
-    sys.CODE("53");               (* push    ebx              *)
-    sys.CODE("8B4508");           (* mov     eax, [ebp + 08h] *)
-    sys.CODE("8B5D0C");           (* mov     ebx, [ebp + 0Ch] *)
-    sys.CODE("CD40");             (* int     40h              *)
-    sys.CODE("5B");               (* pop     ebx              *)
-    sys.CODE("C9");               (* leave                    *)
-    sys.CODE("C20800");           (* ret     08h              *)
-    RETURN 0
-END sysfunc2;
-
-
-PROCEDURE [stdcall] sysfunc3* (arg1, arg2, arg3: INTEGER): INTEGER;
-BEGIN
-    sys.CODE("53");               (* push    ebx              *)
-    sys.CODE("8B4508");           (* mov     eax, [ebp + 08h] *)
-    sys.CODE("8B5D0C");           (* mov     ebx, [ebp + 0Ch] *)
-    sys.CODE("8B4D10");           (* mov     ecx, [ebp + 10h] *)
-    sys.CODE("CD40");             (* int     40h              *)
-    sys.CODE("5B");               (* pop     ebx              *)
-    sys.CODE("C9");               (* leave                    *)
-    sys.CODE("C20C00");           (* ret     0Ch              *)
-    RETURN 0
-END sysfunc3;
-
-
-PROCEDURE [stdcall] sysfunc4* (arg1, arg2, arg3, arg4: INTEGER): INTEGER;
-BEGIN
-    sys.CODE("53");               (* push    ebx              *)
-    sys.CODE("8B4508");           (* mov     eax, [ebp + 08h] *)
-    sys.CODE("8B5D0C");           (* mov     ebx, [ebp + 0Ch] *)
-    sys.CODE("8B4D10");           (* mov     ecx, [ebp + 10h] *)
-    sys.CODE("8B5514");           (* mov     edx, [ebp + 14h] *)
-    sys.CODE("CD40");             (* int     40h              *)
-    sys.CODE("5B");               (* pop     ebx              *)
-    sys.CODE("C9");               (* leave                    *)
-    sys.CODE("C21000");           (* ret     10h              *)
-    RETURN 0
-END sysfunc4;
-
-
-PROCEDURE [stdcall] sysfunc5* (arg1, arg2, arg3, arg4, arg5: INTEGER): INTEGER;
-BEGIN
-    sys.CODE("53");               (* push    ebx              *)
-    sys.CODE("56");               (* push    esi              *)
-    sys.CODE("8B4508");           (* mov     eax, [ebp + 08h] *)
-    sys.CODE("8B5D0C");           (* mov     ebx, [ebp + 0Ch] *)
-    sys.CODE("8B4D10");           (* mov     ecx, [ebp + 10h] *)
-    sys.CODE("8B5514");           (* mov     edx, [ebp + 14h] *)
-    sys.CODE("8B7518");           (* mov     esi, [ebp + 18h] *)
-    sys.CODE("CD40");             (* int     40h              *)
-    sys.CODE("5E");               (* pop     esi              *)
-    sys.CODE("5B");               (* pop     ebx              *)
-    sys.CODE("C9");               (* leave                    *)
-    sys.CODE("C21400");           (* ret     14h              *)
-    RETURN 0
-END sysfunc5;
-
-
 PROCEDURE switch_task;
-VAR
-    res: INTEGER;
 BEGIN
-    res := sysfunc2(68, 1)
+    K.sysfunc2(68, 1)
 END switch_task;
 
 
 PROCEDURE futex_create (ptr: INTEGER): INTEGER;
-    RETURN sysfunc3(77, 0, ptr)
+    RETURN K.sysfunc3(77, 0, ptr)
 END futex_create;
 
 
 PROCEDURE futex_wait (futex, value, timeout: INTEGER);
-VAR
-    res: INTEGER;
 BEGIN
-    res := sysfunc5(77, 2, futex, value, timeout)
+    K.sysfunc5(77, 2, futex, value, timeout)
 END futex_wait;
 
 
 PROCEDURE futex_wake (futex, number: INTEGER);
-VAR
-    res: INTEGER;
 BEGIN
-    res := sysfunc4(77, 3, futex, number)
+    K.sysfunc4(77, 3, futex, number)
 END futex_wake;
 
 
@@ -195,7 +101,7 @@ END LeaveCriticalSection;
 
 PROCEDURE InitializeCriticalSection* (VAR CriticalSection: CRITICAL_SECTION);
 BEGIN
-    CriticalSection[0] := futex_create(sys.ADR(CriticalSection[1]));
+    CriticalSection[0] := futex_create(SYSTEM.ADR(CriticalSection[1]));
     CriticalSection[1] := 0
 END InitializeCriticalSection;
 
@@ -208,14 +114,14 @@ BEGIN
         idx := ASR(size, 5);
         res := pockets[idx];
         IF res # 0 THEN
-            sys.GET(res, pockets[idx]);
-            sys.PUT(res, size);
+            SYSTEM.GET(res, pockets[idx]);
+            SYSTEM.PUT(res, size);
             INC(res, 4)
         ELSE
             temp := 0;
             IF heap + size >= endheap THEN
-                IF sysfunc2(18, 16) > ASR(HEAP_SIZE, 10) THEN
-                    temp := sysfunc3(68, 12, HEAP_SIZE)
+                IF K.sysfunc2(18, 16) > ASR(HEAP_SIZE, 10) THEN
+                    temp := K.sysfunc3(68, 12, HEAP_SIZE)
                 ELSE
                     temp := 0
                 END;
@@ -228,7 +134,7 @@ BEGIN
                 END
             END;
             IF (heap # 0) & (temp # -1) THEN
-                sys.PUT(heap, size);
+                SYSTEM.PUT(heap, size);
                 res := heap + 4;
                 heap := heap + size
             ELSE
@@ -236,11 +142,11 @@ BEGIN
             END
         END
     ELSE
-        IF sysfunc2(18, 16) > ASR(size, 10) THEN
-            res := sysfunc3(68, 12, size);
+        IF K.sysfunc2(18, 16) > ASR(size, 10) THEN
+            res := K.sysfunc3(68, 12, size);
             IF res # 0 THEN
                 mem_commit(res, size);
-                sys.PUT(res, size);
+                SYSTEM.PUT(res, size);
                 INC(res, 4)
             END
         ELSE
@@ -259,13 +165,13 @@ VAR
     size, idx: INTEGER;
 BEGIN
     DEC(ptr, 4);
-    sys.GET(ptr, size);
+    SYSTEM.GET(ptr, size);
     IF size <= MAX_SIZE THEN
         idx := ASR(size, 5);
-        sys.PUT(ptr, pockets[idx]);
+        SYSTEM.PUT(ptr, pockets[idx]);
         pockets[idx] := ptr
     ELSE
-        size := sysfunc3(68, 13, ptr)
+        size := K.sysfunc3(68, 13, ptr)
     END
     RETURN 0
 END __DISPOSE;
@@ -274,8 +180,11 @@ END __DISPOSE;
 PROCEDURE NEW_DISPOSE (func, arg: INTEGER): INTEGER;
 VAR
     res: INTEGER;
+
 BEGIN
-    EnterCriticalSection(CriticalSection);
+    IF multi THEN
+        EnterCriticalSection(CriticalSection)
+    END;
 
     IF func = _new THEN
         res := __NEW(arg)
@@ -283,7 +192,10 @@ BEGIN
         res := __DISPOSE(arg)
     END;
 
-    LeaveCriticalSection(CriticalSection)
+    IF multi THEN
+        LeaveCriticalSection(CriticalSection)
+    END
+
     RETURN res
 END NEW_DISPOSE;
 
@@ -298,63 +210,110 @@ PROCEDURE _DISPOSE* (ptr: INTEGER): INTEGER;
 END _DISPOSE;
 
 
-PROCEDURE ExitProcess* (p1: INTEGER);
+PROCEDURE exit* (p1: INTEGER);
 BEGIN
-    p1 := sysfunc1(-1)
-END ExitProcess;
+    K.sysfunc1(-1)
+END exit;
 
 
-PROCEDURE ExitThread* (p1: INTEGER);
+PROCEDURE exit_thread* (p1: INTEGER);
 BEGIN
-    p1 := sysfunc1(-1)
-END ExitThread;
+    K.sysfunc1(-1)
+END exit_thread;
 
 
 PROCEDURE OutChar (c: CHAR);
-VAR
-    res: INTEGER;
 BEGIN
-    res := sysfunc3(63, 1, ORD(c))
+    K.sysfunc3(63, 1, ORD(c))
 END OutChar;
 
 
-PROCEDURE DebugMsg* (lpText, lpCaption: INTEGER);
+PROCEDURE OutLn;
+BEGIN
+    OutChar(0DX);
+    OutChar(0AX)
+END OutLn;
+
+
+PROCEDURE OutStr (pchar: INTEGER);
 VAR
     c: CHAR;
 BEGIN
-    IF lpCaption # 0 THEN
-        OutChar(0DX);
-        OutChar(0AX);
+    IF pchar # 0 THEN
         REPEAT
-            sys.GET(lpCaption, c);
+            SYSTEM.GET(pchar, c);
             IF c # 0X THEN
                 OutChar(c)
             END;
-            INC(lpCaption)
-        UNTIL c = 0X;
-        OutChar(":");
-        OutChar(0DX);
-        OutChar(0AX)
-    END;
-    REPEAT
-        sys.GET(lpText, c);
-        IF c # 0X THEN
-            OutChar(c)
-        END;
-        INC(lpText)
-    UNTIL c = 0X;
+            INC(pchar)
+        UNTIL c = 0X
+    END
+END OutStr;
+
+
+PROCEDURE DebugMsg* (lpText, lpCaption: INTEGER);
+BEGIN
     IF lpCaption # 0 THEN
-        OutChar(0DX);
-        OutChar(0AX)
+        OutLn;
+        OutStr(lpCaption);
+        OutChar(":");
+        OutLn
+    END;
+    OutStr(lpText);
+    IF lpCaption # 0 THEN
+        OutLn
     END
 END DebugMsg;
 
 
-PROCEDURE init* (p1: INTEGER);
+PROCEDURE OutString (s: ARRAY OF CHAR);
+VAR
+    i: INTEGER;
 BEGIN
-    p1 := sysfunc2(68, 11);
-    InitializeCriticalSection(CriticalSection)
+    i := 0;
+    WHILE (i < LEN(s)) & (s[i] # 0X) DO
+        OutChar(s[i]);
+        INC(i)
+    END
+END OutString;
+
+
+PROCEDURE imp_error;
+BEGIN
+    OutString("import error: ");
+    IF K.imp_error.error = 1 THEN
+        OutString("can't load "); OutString(K.imp_error.lib)
+    ELSIF K.imp_error.error = 2 THEN
+        OutString("not found "); OutString(K.imp_error.proc); OutString(" in "); OutString(K.imp_error.lib)
+    END;
+    OutLn
+END imp_error;
+
+
+PROCEDURE init* (_import, code: INTEGER);
+BEGIN
+    multi := FALSE;
+    eol[0] := 0DX; eol[1] := 0AX; eol[2] := 0X;
+    base := code - 36;
+    K.sysfunc2(68, 11);
+    InitializeCriticalSection(CriticalSection);
+    K._init;
+    import := (K.dll_Load(_import) = 0) & (K.imp_error.error = 0);
+    IF ~import THEN
+        imp_error
+    END
 END init;
+
+
+PROCEDURE SetMultiThr* (value: BOOLEAN);
+BEGIN
+    multi := value
+END SetMultiThr;
+
+
+PROCEDURE GetTickCount* (): INTEGER;
+    RETURN K.sysfunc2(26, 9) * 10
+END GetTickCount;
 
 
 END API.

@@ -1,246 +1,471 @@
-(*
-    Copyright 2016, 2017 Anton Krotov
+﻿(*
+    BSD 2-Clause License
 
-    This program is free software: you can redistribute it and/or modify
-    it under the terms of the GNU Lesser General Public License as published by
-    the Free Software Foundation, either version 3 of the License, or
-    (at your option) any later version.
-
-    This program is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU Lesser General Public License for more details.
-
-    You should have received a copy of the GNU Lesser General Public License
-    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+    Copyright (c) 2018, 2019, Anton Krotov
+    All rights reserved.
 *)
 
 MODULE HOST;
 
-IMPORT sys := SYSTEM, API;
+IMPORT SYSTEM, K := KOSAPI, API, RTL;
+
 
 CONST
 
-  OS* = "KOS";
-  Slash* = "/";
+    slash* = "/";
+    OS* = "KOS";
+
+    bit_depth* = RTL.bit_depth;
+    maxint* = RTL.maxint;
+    minint* = RTL.minint;
+
+    MAX_PARAM = 1024;
+
 
 TYPE
 
-  FILENAME = ARRAY 2048 OF CHAR;
+    FNAME = ARRAY 520 OF CHAR;
 
-  OFSTRUCT = RECORD
-    subfunc, pos, hpos, bytes, buf: INTEGER;
-    name: FILENAME
-  END;
+    FS = POINTER TO rFS;
+
+    rFS = RECORD
+        subfunc, pos, hpos, bytes, buffer: INTEGER;
+        name: FNAME
+    END;
+
+    FD = POINTER TO rFD;
+
+    rFD = RECORD
+        attr: INTEGER;
+        ntyp: CHAR;
+        reserved: ARRAY 3 OF CHAR;
+        time_create, date_create,
+        time_access, date_access,
+        time_modif,  date_modif,
+        size, hsize: INTEGER;
+        name: FNAME
+    END;
+
 
 VAR
 
-  con_init		 : PROCEDURE [stdcall] (wnd_width, wnd_height, scr_width, scr_height, title: INTEGER);
-  con_exit		 : PROCEDURE [stdcall] (bCloseWindow: BOOLEAN);
-  con_write_asciiz	 : PROCEDURE [stdcall] (string: INTEGER);
 
-  fsize, sec*, dsec*: INTEGER;
+    Console: BOOLEAN;
 
-PROCEDURE [stdcall] sysfunc22(arg1, arg2: INTEGER; VAR res2: INTEGER): INTEGER;
+    Params: ARRAY MAX_PARAM, 2 OF INTEGER;
+    argc*: INTEGER;
+
+    eol*: ARRAY 3 OF CHAR;
+
+
+PROCEDURE [stdcall, "Console.obj", "con_init"] con_init (wnd_width, wnd_height, scr_width, scr_height, title: INTEGER);
+
+PROCEDURE [stdcall, "Console.obj", "con_exit"] con_exit (bCloseWindow: BOOLEAN);
+
+PROCEDURE [stdcall, "Console.obj", "con_write_string"] con_write_string (string, length: INTEGER);
+
+
+PROCEDURE ExitProcess* (p1: INTEGER);
 BEGIN
-  sys.CODE("53");               (* push    ebx              *)
-  sys.CODE("8B4508");           (* mov     eax, [ebp + 08h] *)
-  sys.CODE("8B5D0C");           (* mov     ebx, [ebp + 0Ch] *)
-  sys.CODE("CD40");             (* int     40h              *)
-  sys.CODE("8B4D10");           (* mov     ecx, [ebp + 10h] *)
-  sys.CODE("8919");             (* mov     [ecx], ebx       *)
-  sys.CODE("5B");               (* pop     ebx              *)
-  sys.CODE("C9");               (* leave                    *)
-  sys.CODE("C20C00");           (* ret     0Ch              *)
-  RETURN 0
-END sysfunc22;
-
-PROCEDURE GetProcAdr(name: ARRAY OF CHAR; lib: INTEGER): INTEGER;
-VAR cur, procname, adr: INTEGER;
-
-  PROCEDURE streq(str1, str2: INTEGER): BOOLEAN;
-  VAR c1, c2: CHAR;
-  BEGIN
-    REPEAT
-      sys.GET(str1, c1);
-      sys.GET(str2, c2);
-      INC(str1);
-      INC(str2)
-    UNTIL (c1 # c2) OR (c1 = 0X)
-    RETURN c1 = c2
-  END streq;
-
-BEGIN
-  adr := 0;
-  IF (lib # 0) & (name # "") THEN
-    cur := lib;
-    REPEAT
-      sys.GET(cur, procname);
-      INC(cur, 8)
-    UNTIL (procname = 0) OR streq(procname, sys.ADR(name[0]));
-    IF procname # 0 THEN
-      sys.GET(cur - 4, adr)
-    END
-  END
-  RETURN adr
-END GetProcAdr;
-
-PROCEDURE Time*(VAR sec, dsec: INTEGER);
-VAR t: INTEGER;
-BEGIN
-  t := API.sysfunc2(26, 9);
-  sec := t DIV 100;
-  dsec := t MOD 100
-END Time;
-
-PROCEDURE init*;
-VAR Lib: INTEGER;
-
-  PROCEDURE GetProc(v: INTEGER; name: ARRAY OF CHAR);
-  VAR a: INTEGER;
-  BEGIN
-    a := GetProcAdr(name, Lib);
-    sys.PUT(v, a)
-  END GetProc;
-
-BEGIN
-  Time(sec, dsec);
-  Lib := API.sysfunc3(68, 19, sys.ADR("/rd/1/lib/console.obj"));
-  IF Lib # 0 THEN
-    GetProc(sys.ADR(con_init),	       "con_init");
-    GetProc(sys.ADR(con_exit),	       "con_exit");
-    GetProc(sys.ADR(con_write_asciiz), "con_write_asciiz");
-    IF con_init # NIL THEN
-      con_init(-1, -1, -1, -1, sys.ADR("Oberon-07/11 for KolibriOS"))
-    END
-  END
-END init;
-
-PROCEDURE ExitProcess* (n: INTEGER);
-BEGIN
-  IF con_exit # NIL THEN
-    con_exit(FALSE)
-  END;
-  API.ExitProcess(0)
+    IF Console THEN
+        con_exit(FALSE)
+    END;
+    K.sysfunc1(-1)
 END ExitProcess;
 
-PROCEDURE AppAdr(): INTEGER;
+
+PROCEDURE OutChar* (c: CHAR);
+BEGIN
+    IF Console THEN
+        con_write_string(SYSTEM.ADR(c), 1)
+    ELSE
+        K.sysfunc3(63, 1, ORD(c))
+    END
+END OutChar;
+
+
+PROCEDURE GetFileInfo (FName: ARRAY OF CHAR; VAR Info: rFD): BOOLEAN;
+VAR
+    res2: INTEGER;
+    fs:   rFS;
+
+BEGIN
+    fs.subfunc := 5;
+    fs.pos := 0;
+    fs.hpos := 0;
+    fs.bytes := 0;
+    fs.buffer := SYSTEM.ADR(Info);
+    COPY(FName, fs.name)
+    RETURN K.sysfunc22(70, SYSTEM.ADR(fs), res2) = 0
+END GetFileInfo;
+
+
+PROCEDURE Exists (FName: ARRAY OF CHAR): BOOLEAN;
+VAR
+    fd: rFD;
+
+BEGIN
+    RETURN GetFileInfo(FName, fd) & ~(4 IN BITS(fd.attr))
+END Exists;
+
+
+PROCEDURE Close (VAR F: FS);
+BEGIN
+    IF F # NIL THEN
+        DISPOSE(F)
+    END
+END Close;
+
+
+PROCEDURE Open (FName: ARRAY OF CHAR): FS;
+VAR
+    F: FS;
+
+BEGIN
+    IF Exists(FName) THEN
+        NEW(F);
+        IF F # NIL THEN
+            F.subfunc := 0;
+            F.pos := 0;
+            F.hpos := 0;
+            F.bytes := 0;
+            F.buffer := 0;
+            COPY(FName, F.name)
+        END
+    ELSE
+        F := NIL
+    END
+
+    RETURN F
+END Open;
+
+
+PROCEDURE Read (F: FS; Buffer, Count: INTEGER): INTEGER;
+VAR
+    res, res2: INTEGER;
+
+BEGIN
+    IF F # NIL THEN
+        F.subfunc := 0;
+        F.bytes := Count;
+        F.buffer := Buffer;
+        res := K.sysfunc22(70, SYSTEM.ADR(F^), res2);
+        IF res2 > 0 THEN
+            F.pos := F.pos + res2
+        END
+    ELSE
+        res2 := 0
+    END
+
+    RETURN res2
+END Read;
+
+
+PROCEDURE Write (F: FS; Buffer, Count: INTEGER): INTEGER;
+VAR
+    res, res2: INTEGER;
+
+BEGIN
+    IF F # NIL THEN
+        F.subfunc := 3;
+        F.bytes := Count;
+        F.buffer := Buffer;
+        res := K.sysfunc22(70, SYSTEM.ADR(F^), res2);
+        IF res2 > 0 THEN
+            F.pos := F.pos + res2
+        END
+    ELSE
+        res2 := 0
+    END
+
+    RETURN res2
+END Write;
+
+
+PROCEDURE Create (FName: ARRAY OF CHAR): FS;
+VAR
+    F:    FS;
+    res2: INTEGER;
+
+BEGIN
+    NEW(F);
+    IF F # NIL THEN
+        F.subfunc := 2;
+        F.pos := 0;
+        F.hpos := 0;
+        F.bytes := 0;
+        F.buffer := 0;
+        COPY(FName, F.name);
+        IF K.sysfunc22(70, SYSTEM.ADR(F^), res2) # 0 THEN
+            DISPOSE(F)
+        END
+    END
+
+    RETURN F
+END Create;
+
+
+PROCEDURE FileRead* (F: INTEGER; VAR Buffer: ARRAY OF BYTE; bytes: INTEGER): INTEGER;
+VAR
+    n: INTEGER;
+    fs: FS;
+
+BEGIN
+    SYSTEM.GET(SYSTEM.ADR(F), fs);
+    n := Read(fs, SYSTEM.ADR(Buffer[0]), bytes);
+    IF n = 0 THEN
+        n := -1
+    END
+
+    RETURN n
+END FileRead;
+
+
+PROCEDURE FileWrite* (F: INTEGER; Buffer: ARRAY OF BYTE; bytes: INTEGER): INTEGER;
+VAR
+    n: INTEGER;
+    fs: FS;
+
+BEGIN
+    SYSTEM.GET(SYSTEM.ADR(F), fs);
+    n := Write(fs, SYSTEM.ADR(Buffer[0]), bytes);
+    IF n = 0 THEN
+        n := -1
+    END
+
+    RETURN n
+END FileWrite;
+
+
+PROCEDURE FileCreate* (FName: ARRAY OF CHAR): INTEGER;
+VAR
+    fs: FS;
+    res: INTEGER;
+
+BEGIN
+    fs := Create(FName);
+    SYSTEM.GET(SYSTEM.ADR(fs), res)
+    RETURN res
+END FileCreate;
+
+
+PROCEDURE FileClose* (F: INTEGER);
+VAR
+    fs: FS;
+
+BEGIN
+    SYSTEM.GET(SYSTEM.ADR(F), fs);
+    Close(fs)
+END FileClose;
+
+
+PROCEDURE FileOpen* (FName: ARRAY OF CHAR): INTEGER;
+VAR
+    fs: FS;
+    res: INTEGER;
+
+BEGIN
+    fs := Open(FName);
+    SYSTEM.GET(SYSTEM.ADR(fs), res)
+    RETURN res
+END FileOpen;
+
+
+PROCEDURE GetTickCount* (): INTEGER;
+    RETURN K.sysfunc2(26, 9)
+END GetTickCount;
+
+
+PROCEDURE AppAdr (): INTEGER;
 VAR
     buf: ARRAY 1024 OF CHAR;
     a: INTEGER;
+
 BEGIN
-    a := API.sysfunc3(9, sys.ADR(buf), -1);
-    sys.GET(sys.ADR(buf) + 22, a)
+    a := K.sysfunc3(9, SYSTEM.ADR(buf), -1);
+    SYSTEM.GET(SYSTEM.ADR(buf) + 22, a)
     RETURN a
 END AppAdr;
 
-PROCEDURE GetCommandLine*(): INTEGER;
-VAR param: INTEGER;
+
+PROCEDURE GetCommandLine (): INTEGER;
+VAR
+    param: INTEGER;
+
 BEGIN
-  sys.GET(28 + AppAdr(), param)
-  RETURN param
+    SYSTEM.GET(28 + AppAdr(), param)
+    RETURN param
 END GetCommandLine;
 
-PROCEDURE GetName*(): INTEGER;
-VAR name: INTEGER;
+
+PROCEDURE GetName (): INTEGER;
+VAR
+    name: INTEGER;
+
 BEGIN
-  sys.GET(32 + AppAdr(), name)
-  RETURN name
+    SYSTEM.GET(32 + AppAdr(), name)
+    RETURN name
 END GetName;
 
-PROCEDURE malloc*(size: INTEGER): INTEGER;
-  RETURN API.sysfunc3(68, 12, size)
-END malloc;
 
-PROCEDURE CloseFile*(hObject: INTEGER);
-VAR pFS: POINTER TO OFSTRUCT;
+PROCEDURE GetChar (adr: INTEGER): CHAR;
+VAR
+    res: CHAR;
+
 BEGIN
-  sys.PUT(sys.ADR(pFS), hObject);
-  DISPOSE(pFS)
-END CloseFile;
+    SYSTEM.GET(adr, res)
+    RETURN res
+END GetChar;
 
-PROCEDURE _OCFile(FileName: ARRAY OF CHAR; VAR FS: OFSTRUCT; mode: INTEGER; VAR fsize: INTEGER): INTEGER;
-VAR buf: ARRAY 40 OF CHAR; res: INTEGER;
+
+PROCEDURE ParamParse;
+VAR
+    p, count, name, cond: INTEGER;
+    c: CHAR;
+
+
+    PROCEDURE ChangeCond (A, B, C: INTEGER; c: CHAR; VAR cond: INTEGER);
+    BEGIN
+        IF (c <= 20X) & (c # 0X) THEN
+            cond := A
+        ELSIF c = 22X THEN
+            cond := B
+        ELSIF c = 0X THEN
+            cond := 6
+        ELSE
+            cond := C
+        END
+    END ChangeCond;
+
+
 BEGIN
-  FS.subfunc := mode;
-  FS.pos := 0;
-  FS.hpos := 0;
-  FS.bytes := 0;
-  FS.buf := sys.ADR(buf);
-  COPY(FileName, FS.name);
-  IF sysfunc22(70, sys.ADR(FS), res) = 0 THEN
-    res := sys.ADR(FS);
-    sys.GET(sys.ADR(buf) + 32, fsize)
-  ELSE
-    res := 0
-  END
-  RETURN res
-END _OCFile;
+    p := GetCommandLine();
+    name := GetName();
+    Params[0, 0] := name;
+    WHILE GetChar(name) # 0X DO
+        INC(name)
+    END;
+    Params[0, 1] := name - 1;
+    cond := 0;
+    count := 1;
+    WHILE (argc < MAX_PARAM) & (cond # 6) DO
+        c := GetChar(p);
+        CASE cond OF
+        |0: ChangeCond(0, 4, 1, c, cond); IF cond = 1 THEN Params[count, 0] := p END
+        |1: ChangeCond(0, 3, 1, c, cond); IF cond IN {0, 6} THEN Params[count, 1] := p - 1; INC(count) END
+        |3: ChangeCond(3, 1, 3, c, cond); IF cond = 6 THEN Params[count, 1] := p - 1; INC(count) END
+        |4: ChangeCond(5, 0, 5, c, cond); IF cond = 5 THEN Params[count, 0] := p END
+        |5: ChangeCond(5, 1, 5, c, cond); IF cond = 6 THEN Params[count, 1] := p - 1; INC(count) END
+        |6:
+        END;
+        INC(p)
+    END;
+    argc := count
+END ParamParse;
 
-PROCEDURE IOFile(VAR FS: OFSTRUCT; Buffer, bytes, io: INTEGER): INTEGER;
-VAR res1, res: INTEGER;
+
+PROCEDURE GetArg* (n: INTEGER; VAR s: ARRAY OF CHAR);
+VAR
+    i, j, len: INTEGER;
+    c: CHAR;
+
 BEGIN
-  FS.subfunc := io;
-  FS.bytes := bytes;
-  FS.buf := Buffer;
-  res1 := sysfunc22(70, sys.ADR(FS), res);
-  IF res = -1 THEN
-    res := 0
-  END;
-  FS.pos := FS.pos + res
-  RETURN res
-END IOFile;
+    j := 0;
+    IF n < argc THEN
+        len := LEN(s) - 1;
+        i := Params[n, 0];
+        WHILE (j < len) & (i <= Params[n, 1]) DO
+            c := GetChar(i);
+            IF c # 22X THEN
+                s[j] := c;
+                INC(j)
+            END;
+            INC(i);
+        END;
+    END;
+    s[j] := 0X
+END GetArg;
 
-PROCEDURE OCFile(FName: ARRAY OF CHAR; mode: INTEGER): INTEGER;
-VAR FS: OFSTRUCT; pFS: POINTER TO OFSTRUCT; res: INTEGER;
+
+PROCEDURE GetCurrentDirectory* (VAR path: ARRAY OF CHAR);
+VAR
+    n: INTEGER;
+
 BEGIN
-  IF _OCFile(FName, FS, mode, fsize) # 0 THEN
-    NEW(pFS);
-    IF pFS = NIL THEN
-      res := 0
-    ELSE
-      sys.GET(sys.ADR(pFS), res);
-      pFS^ := FS
-    END
-  ELSE
-    res := 0
-  END
-  RETURN res
-END OCFile;
+    GetArg(0, path);
+    n := LENGTH(path) - 1;
+    WHILE path[n] # slash DO
+        DEC(n)
+    END;
+    path[n + 1] := 0X
+END GetCurrentDirectory;
 
-PROCEDURE CreateFile* (FName: ARRAY OF CHAR): INTEGER;
-  RETURN OCFile(FName, 2)
-END CreateFile;
 
-PROCEDURE OpenFile* (FName: ARRAY OF CHAR): INTEGER;
-  RETURN OCFile(FName, 5)
-END OpenFile;
+PROCEDURE isRelative* (path: ARRAY OF CHAR): BOOLEAN;
+    RETURN path[0] # slash
+END isRelative;
 
-PROCEDURE FileSize* (F: INTEGER): INTEGER;
-  RETURN fsize
-END FileSize;
 
-PROCEDURE FileRW* (hFile, Buffer, nNumberOfBytes: INTEGER; write: BOOLEAN): INTEGER;
-VAR pFS: POINTER TO OFSTRUCT; res: INTEGER;
+PROCEDURE now* (VAR year, month, day, hour, min, sec: INTEGER);
+VAR
+    date, time: INTEGER;
+
 BEGIN
-  IF hFile # 0 THEN
-    sys.PUT(sys.ADR(pFS), hFile);
-    res := IOFile(pFS^, Buffer, nNumberOfBytes, 3 * ORD(write))
-  ELSE
-    res := 0
-  END
-  RETURN res
-END FileRW;
+    date  := K.sysfunc1(29);
+    time  := K.sysfunc1(3);
 
-PROCEDURE OutString* (str: ARRAY OF CHAR);
-VAR n: INTEGER;
+    year  := date MOD 16;
+    date  := date DIV 16;
+    year  := (date MOD 16) * 10 + year;
+    date  := date DIV 16;
+
+    month := date MOD 16;
+    date  := date DIV 16;
+    month := (date MOD 16) * 10 + month;
+    date  := date DIV 16;
+
+    day   := date MOD 16;
+    date  := date DIV 16;
+    day   := (date MOD 16) * 10 + day;
+    date  := date DIV 16;
+
+    hour  := time MOD 16;
+    time  := time DIV 16;
+    hour  := (time MOD 16) * 10 + hour;
+    time  := time DIV 16;
+
+    min   := time MOD 16;
+    time  := time DIV 16;
+    min   := (time MOD 16) * 10 + min;
+    time  := time DIV 16;
+
+    sec   := time MOD 16;
+    time  := time DIV 16;
+    sec   := (time MOD 16) * 10 + sec;
+    time  := time DIV 16;
+
+    year := year + 2000
+END now;
+
+
+PROCEDURE UnixTime* (): INTEGER;
+    RETURN 0
+END UnixTime;
+
+
+PROCEDURE splitf* (x: REAL; VAR a, b: INTEGER): INTEGER;
 BEGIN
-  n := ORD(str[0] = 3X);
-  IF con_write_asciiz # NIL THEN
-    con_write_asciiz(sys.ADR(str[n]))
-  ELSE
-    API.DebugMsg(sys.ADR(str[n]), 0)
-  END
-END OutString;
+    SYSTEM.GET(SYSTEM.ADR(x),     a);
+    SYSTEM.GET(SYSTEM.ADR(x) + 4, b)
+    RETURN a
+END splitf;
 
+
+BEGIN
+    eol[0] := 0DX; eol[1] := 0AX; eol[2] := 0X;
+    Console := API.import;
+    IF Console THEN
+        con_init(-1, -1, -1, -1, SYSTEM.SADR("Oberon-07 for KolibriOS"))
+    END;
+    ParamParse
 END HOST.

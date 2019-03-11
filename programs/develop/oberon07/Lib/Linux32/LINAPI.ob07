@@ -1,0 +1,141 @@
+﻿(*
+    BSD 2-Clause License
+
+    Copyright (c) 2019, Anton Krotov
+    All rights reserved.
+*)
+
+MODULE LINAPI;
+
+IMPORT SYSTEM, API;
+
+
+TYPE
+
+    TP* = API.TP;
+
+
+VAR
+
+    argc*, envc*: INTEGER;
+
+    libc*, librt*: INTEGER;
+
+    stdout*,
+    stdin*,
+    stderr*        : INTEGER;
+
+    malloc*        : PROCEDURE [linux] (size: INTEGER): INTEGER;
+    free*          : PROCEDURE [linux] (ptr: INTEGER);
+    exit*          : PROCEDURE [linux] (code: INTEGER);
+    puts*          : PROCEDURE [linux] (pStr: INTEGER);
+    fwrite*,
+    fread*         : PROCEDURE [linux] (buffer, bytes, blocks, file: INTEGER): INTEGER;
+    fopen*         : PROCEDURE [linux] (fname, fmode: INTEGER): INTEGER;
+    fclose*        : PROCEDURE [linux] (file: INTEGER): INTEGER;
+    time*          : PROCEDURE [linux] (ptr: INTEGER): INTEGER;
+
+    clock_gettime* : PROCEDURE [linux] (clock_id: INTEGER; VAR tp: TP): INTEGER;
+
+
+PROCEDURE dlopen* (filename: ARRAY OF CHAR): INTEGER;
+    RETURN API.dlopen(SYSTEM.ADR(filename[0]), 1)
+END dlopen;
+
+
+PROCEDURE dlsym* (handle: INTEGER; symbol: ARRAY OF CHAR): INTEGER;
+    RETURN API.dlsym(handle, SYSTEM.ADR(symbol[0]))
+END dlsym;
+
+
+PROCEDURE GetArg* (n: INTEGER; VAR s: ARRAY OF CHAR);
+VAR
+    i, len, ptr: INTEGER;
+    c: CHAR;
+
+BEGIN
+    i := 0;
+    len := LEN(s) - 1;
+    IF (0 <= n) & (n <= argc + envc) & (n # argc) & (len > 0) THEN
+        SYSTEM.GET(API.MainParam + (n + 1) * SYSTEM.SIZE(INTEGER), ptr);
+        REPEAT
+            SYSTEM.GET(ptr, c);
+            s[i] := c;
+            INC(i);
+            INC(ptr)
+        UNTIL (c = 0X) OR (i = len)
+    END;
+    s[i] := 0X
+END GetArg;
+
+
+PROCEDURE GetEnv* (n: INTEGER; VAR s: ARRAY OF CHAR);
+BEGIN
+    IF (0 <= n) & (n < envc) THEN
+        GetArg(n + argc + 1, s)
+    ELSE
+        s[0] := 0X
+    END
+END GetEnv;
+
+
+PROCEDURE init;
+VAR
+    ptr: INTEGER;
+
+BEGIN
+    envc := -1;
+    SYSTEM.GET(API.MainParam, argc);
+    REPEAT
+        SYSTEM.GET(API.MainParam + (envc + argc + 3) * SYSTEM.SIZE(INTEGER), ptr);
+        INC(envc)
+    UNTIL ptr = 0;
+
+    libc := API.libc;
+
+    stdout := API.stdout;
+    stdin  := API.stdin;
+    stderr := API.stderr;
+
+    malloc := API.malloc;
+    free   := API.free;
+    exit   := API._exit;
+    puts   := API.puts;
+    fwrite := API.fwrite;
+    fread  := API.fread;
+    fopen  := API.fopen;
+    fclose := API.fclose;
+    time   := API.time;
+
+    librt := API.librt;
+
+    clock_gettime := API.clock_gettime
+END init;
+
+
+PROCEDURE [stdcall-] syscall* (eax, ebx, ecx, edx, esi, edi: INTEGER): INTEGER;
+BEGIN
+    SYSTEM.CODE(
+    053H,               (*  push    ebx                    *)
+    056H,               (*  push    esi                    *)
+    057H,               (*  push    edi                    *)
+    08BH, 045H, 008H,   (*  mov     eax, dword [ebp +  8]  *)
+    08BH, 05DH, 00CH,   (*  mov     ebx, dword [ebp + 12]  *)
+    08BH, 04DH, 010H,   (*  mov     ecx, dword [ebp + 16]  *)
+    08BH, 055H, 014H,   (*  mov     edx, dword [ebp + 20]  *)
+    08BH, 075H, 018H,   (*  mov     esi, dword [ebp + 24]  *)
+    08BH, 07DH, 01CH,   (*  mov     edi, dword [ebp + 28]  *)
+    0CDH, 080H,         (*  int     128                    *)
+    05FH,               (*  pop     edi                    *)
+    05EH,               (*  pop     esi                    *)
+    05BH,               (*  pop     ebx                    *)
+    0C9H,               (*  leave                          *)
+    0C2H, 018H, 000H    (*  ret     24                     *)
+    )
+    RETURN 0
+END syscall;
+
+
+BEGIN
+    init
+END LINAPI.

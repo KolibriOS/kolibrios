@@ -1,5 +1,5 @@
-(*
-    Copyright 2016 Anton Krotov
+﻿(*
+    Copyright 2016, 2018 Anton Krotov
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU Lesser General Public License as published by
@@ -38,7 +38,7 @@ END GetChar;
 PROCEDURE ParamParse;
 VAR p, count, name: INTEGER; c: CHAR; cond: INTEGER;
 
-  PROCEDURE ChangeCond(A, B, C: INTEGER);
+  PROCEDURE ChangeCond(A, B, C: INTEGER; c: CHAR; VAR cond: INTEGER);
   BEGIN
     IF (c <= 20X) & (c # 0X) THEN
       cond := A
@@ -64,11 +64,11 @@ BEGIN
   WHILE (argc < MAX_PARAM) & (cond # 6) DO
     c := GetChar(p);
     CASE cond OF
-    |0: ChangeCond(0, 4, 1); IF cond = 1 THEN Params[count, 0] := p END
-    |1: ChangeCond(0, 3, 1); IF cond IN {0, 6} THEN Params[count, 1] := p - 1; INC(count) END
-    |3: ChangeCond(3, 1, 3); IF cond = 6 THEN Params[count, 1] := p - 1; INC(count) END
-    |4: ChangeCond(5, 0, 5); IF cond = 5 THEN Params[count, 0] := p END
-    |5: ChangeCond(5, 1, 5); IF cond = 6 THEN Params[count, 1] := p - 1; INC(count) END
+    |0: ChangeCond(0, 4, 1, c, cond); IF cond = 1 THEN Params[count, 0] := p END
+    |1: ChangeCond(0, 3, 1, c, cond); IF cond IN {0, 6} THEN Params[count, 1] := p - 1; INC(count) END
+    |3: ChangeCond(3, 1, 3, c, cond); IF cond = 6 THEN Params[count, 1] := p - 1; INC(count) END
+    |4: ChangeCond(5, 0, 5, c, cond); IF cond = 5 THEN Params[count, 0] := p END
+    |5: ChangeCond(5, 1, 5, c, cond); IF cond = 6 THEN Params[count, 1] := p - 1; INC(count) END
     ELSE
     END;
     INC(p)
@@ -86,8 +86,8 @@ BEGIN
     WHILE (j < len) & (i <= Params[n, 1]) DO
       c := GetChar(i);
       IF c # 22X THEN
-	s[j] := c;
-	INC(j)
+        s[j] := c;
+        INC(j)
       END;
       INC(i);
     END;

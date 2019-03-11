@@ -1,0 +1,316 @@
+﻿(*
+    BSD 2-Clause License
+
+    Copyright (c) 2018, Anton Krotov
+    All rights reserved.
+*)
+
+MODULE MSCOFF;
+
+IMPORT BIN, PE32, KOS, WR := WRITER, UTILS, ERRORS, LISTS, CHL := CHUNKLISTS;
+
+
+CONST
+
+    SIZE_OF_DWORD = 4;
+
+    (* SectionHeader.Characteristics *)
+
+    SHC_flat  = 040500020H;
+    SHC_data  = 0C0500040H;
+    SHC_bss   = 0C03000C0H;
+
+
+TYPE
+
+    FH = PE32.IMAGE_FILE_HEADER;
+
+    SH = PE32.IMAGE_SECTION_HEADER;
+
+
+PROCEDURE WriteReloc (File: WR.FILE; VirtualAddress, SymbolTableIndex, Type: INTEGER);
+BEGIN
+    WR.Write32LE(File, VirtualAddress);
+    WR.Write32LE(File, SymbolTableIndex);
+    WR.Write16LE(File, Type)
+END WriteReloc;
+
+
+PROCEDURE Reloc (program: BIN.PROGRAM; File: WR.FILE);
+VAR
+    reloc: BIN.RELOC;
+
+BEGIN
+    reloc := program.rel_list.first(BIN.RELOC);
+    WHILE reloc # NIL DO
+
+        CASE reloc.opcode OF
+
+        |BIN.RIMP, BIN.IMPTAB:
+              WriteReloc(File, reloc.offset, 4, 6)
+
+        |BIN.RBSS:
+              WriteReloc(File, reloc.offset, 5, 6)
+
+        |BIN.RDATA:
+              WriteReloc(File, reloc.offset, 2, 6)
+
+        |BIN.RCODE:
+              WriteReloc(File, reloc.offset, 1, 6)
+
+        END;
+
+        reloc := reloc.next(BIN.RELOC)
+    END;
+END Reloc;
+
+
+PROCEDURE RelocCount (program: BIN.PROGRAM): INTEGER;
+VAR
+    reloc:   BIN.RELOC;
+    iproc:   BIN.IMPRT;
+    res, L:  INTEGER;
+
+BEGIN
+    res := 0;
+    reloc := program.rel_list.first(BIN.RELOC);
+    WHILE reloc # NIL DO
+
+        INC(res);
+
+        IF reloc.opcode = BIN.RIMP THEN
+            L := BIN.get32le(program.code, reloc.offset);
+            iproc := BIN.GetIProc(program, L);
+            BIN.put32le(program.code, reloc.offset, iproc.label)
+        END;
+
+        IF reloc.opcode = BIN.RCODE THEN
+            L := BIN.get32le(program.code, reloc.offset);
+            BIN.put32le(program.code, reloc.offset, BIN.GetLabel(program, L))
+        END;
+
+        reloc := reloc.next(BIN.RELOC)
+    END
+
+    RETURN res
+END RelocCount;
+
+
+PROCEDURE write* (program: BIN.PROGRAM; FileName: ARRAY OF CHAR; ver: INTEGER);
+VAR
+    File:  WR.FILE;
+    exp:   BIN.EXPRT;
+    n, i:  INTEGER;
+
+    szversion: PE32.NAME;
+
+    ImportTable: CHL.INTLIST;
+    ILen, LibCount, isize:  INTEGER;
+
+    ExpCount: INTEGER;
+
+    icount, ecount, dcount, ccount: INTEGER;
+
+    FileHeader: FH;
+
+    flat, data, edata, idata, bss: SH;
+
+
+    PROCEDURE ICount (ImportTable: CHL.INTLIST; ILen: INTEGER): INTEGER;
+    VAR
+        i, res: INTEGER;
+
+    BEGIN
+        res := 0;
+
+        FOR i := 0 TO ILen - 1 DO
+            IF CHL.GetInt(ImportTable, i) # 0 THEN
+                INC(res)
+            END
+        END
+
+        RETURN res
+    END ICount;
+
+
+    PROCEDURE SetNumberOfRelocations (VAR section: SH; NumberOfRelocations: INTEGER);
+    BEGIN
+        IF NumberOfRelocations >= 65536 THEN
+            ERRORS.error1("too many relocations")
+        END;
+        section.NumberOfRelocations := WCHR(NumberOfRelocations)
+    END SetNumberOfRelocations;
+
+
+BEGIN
+
+    szversion := "version";
+
+    ASSERT(LENGTH(szversion) = 7);
+
+    KOS.Import(program, 0, ImportTable, ILen, LibCount, isize);
+    ExpCount := LISTS.count(program.exp_list);
+
+    icount := CHL.Length(program.import);
+    dcount := CHL.Length(program.data);
+    ccount := CHL.Length(program.code);
+    ecount := CHL.Length(program.export);
+
+    FileHeader.Machine               :=  014CX;
+    FileHeader.NumberOfSections      :=  5X;
+    FileHeader.TimeDateStamp         :=  UTILS.UnixTime();
+    //FileHeader.PointerToSymbolTable  :=  0;
+    FileHeader.NumberOfSymbols       :=  6;
+    FileHeader.SizeOfOptionalHeader  :=  0X;
+    FileHeader.Characteristics       :=  0184X;
+
+    flat.Name := ".flat";
+    flat.VirtualSize := 0;
+    flat.VirtualAddress := 0;
+    flat.SizeOfRawData := ccount;
+    flat.PointerToRawData := ORD(FileHeader.NumberOfSections) * PE32.SIZE_OF_IMAGE_SECTION_HEADER + PE32.SIZE_OF_IMAGE_FILE_HEADER;
+    //flat.PointerToRelocations := 0;
+    flat.PointerToLinenumbers := 0;
+    SetNumberOfRelocations(flat, RelocCount(program));
+    flat.NumberOfLinenumbers := 0X;
+    flat.Characteristics := SHC_flat;
+
+    data.Name := ".data";
+    data.VirtualSize := 0;
+    data.VirtualAddress := 0;
+    data.SizeOfRawData := dcount;
+    data.PointerToRawData := flat.PointerToRawData + flat.SizeOfRawData;
+    data.PointerToRelocations := 0;
+    data.PointerToLinenumbers := 0;
+    data.NumberOfRelocations := 0X;
+    data.NumberOfLinenumbers := 0X;
+    data.Characteristics := SHC_data;
+
+    edata.Name := ".edata";
+    edata.VirtualSize := 0;
+    edata.VirtualAddress := 0;
+    edata.SizeOfRawData := ((ExpCount + 1) * 2 + 1) * SIZE_OF_DWORD + LENGTH(szversion) + 1 + ecount;
+    edata.PointerToRawData := data.PointerToRawData + data.SizeOfRawData;
+    //edata.PointerToRelocations := 0;
+    edata.PointerToLinenumbers := 0;
+    SetNumberOfRelocations(edata, ExpCount * 2 + 1);
+    edata.NumberOfLinenumbers := 0X;
+    edata.Characteristics := SHC_data;
+
+    idata.Name := ".idata";
+    idata.VirtualSize := 0;
+    idata.VirtualAddress := 0;
+    idata.SizeOfRawData := isize;
+    idata.PointerToRawData := edata.PointerToRawData + edata.SizeOfRawData;
+    //idata.PointerToRelocations := 0;
+    idata.PointerToLinenumbers := 0;
+    SetNumberOfRelocations(idata, ICount(ImportTable, ILen));
+    idata.NumberOfLinenumbers := 0X;
+    idata.Characteristics := SHC_data;
+
+    bss.Name := ".bss";
+    bss.VirtualSize := 0;
+    bss.VirtualAddress := 0;
+    bss.SizeOfRawData := program.bss;
+    bss.PointerToRawData := 0;
+    bss.PointerToRelocations := 0;
+    bss.PointerToLinenumbers := 0;
+    bss.NumberOfRelocations := 0X;
+    bss.NumberOfLinenumbers := 0X;
+    bss.Characteristics := SHC_bss;
+
+    flat.PointerToRelocations := idata.PointerToRawData + idata.SizeOfRawData;
+    edata.PointerToRelocations := flat.PointerToRelocations + ORD(flat.NumberOfRelocations) * 10;
+    idata.PointerToRelocations := edata.PointerToRelocations + ORD(edata.NumberOfRelocations) * 10;
+
+    FileHeader.PointerToSymbolTable := idata.PointerToRelocations + ORD(idata.NumberOfRelocations) * 10;
+
+    File := WR.Create(FileName);
+
+    PE32.WriteFileHeader(File, FileHeader);
+
+    PE32.WriteSectionHeader(File, flat);
+    PE32.WriteSectionHeader(File, data);
+    PE32.WriteSectionHeader(File, edata);
+    PE32.WriteSectionHeader(File, idata);
+    PE32.WriteSectionHeader(File, bss);
+
+    CHL.WriteToFile(File, program.code);
+    CHL.WriteToFile(File, program.data);
+
+    exp := program.exp_list.first(BIN.EXPRT);
+    WHILE exp # NIL DO
+        WR.Write32LE(File, exp.nameoffs + edata.SizeOfRawData - ecount);
+        WR.Write32LE(File, exp.label);
+        exp := exp.next(BIN.EXPRT)
+    END;
+
+    WR.Write32LE(File, ((ExpCount + 1) * 2 + 1) * SIZE_OF_DWORD);
+    WR.Write32LE(File, ver);
+
+    WR.Write32LE(File, 0);
+
+    PE32.WriteName(File, szversion);
+    CHL.WriteToFile(File, program.export);
+
+    FOR i := 0 TO ILen - 1 DO
+        WR.Write32LE(File, CHL.GetInt(ImportTable, i))
+    END;
+
+    CHL.WriteToFile(File, program.import);
+
+    Reloc(program, File);
+
+    n := 0;
+    exp := program.exp_list.first(BIN.EXPRT);
+    WHILE exp # NIL DO
+        WriteReloc(File, n, 3, 6);
+        INC(n, 4);
+
+        WriteReloc(File, n, 1, 6);
+        INC(n, 4);
+
+        exp := exp.next(BIN.EXPRT)
+    END;
+
+    WriteReloc(File, n, 3, 6);
+
+    i := 0;
+    WHILE i < LibCount * 2 DO
+        WriteReloc(File, i * SIZE_OF_DWORD, 4, 6);
+        INC(i);
+        WriteReloc(File, i * SIZE_OF_DWORD, 4, 6);
+        INC(i)
+    END;
+
+    FOR i := LibCount * 2 TO ILen - 1 DO
+        IF CHL.GetInt(ImportTable, i) # 0 THEN
+            WriteReloc(File, i * SIZE_OF_DWORD, 4, 6)
+        END
+    END;
+
+    PE32.WriteName(File, "EXPORTS");
+    WriteReloc(File, 0, 3, 2);
+
+    PE32.WriteName(File, ".flat");
+    WriteReloc(File, 0, 1, 3);
+
+    PE32.WriteName(File, ".data");
+    WriteReloc(File, 0, 2, 3);
+
+    PE32.WriteName(File, ".edata");
+    WriteReloc(File, 0, 3, 3);
+
+    PE32.WriteName(File, ".idata");
+    WriteReloc(File, 0, 4, 3);
+
+    PE32.WriteName(File, ".bss");
+    WriteReloc(File, 0, 5, 3);
+
+    WR.Write32LE(File, 4);
+
+    WR.Close(File)
+END write;
+
+
+END MSCOFF.

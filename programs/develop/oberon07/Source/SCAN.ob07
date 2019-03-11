@@ -1,699 +1,723 @@
-(*
-    Copyright 2016 Anton Krotov
+﻿(*
+    BSD 2-Clause License
 
-    This file is part of Compiler.
-
-    Compiler is free software: you can redistribute it and/or modify
-    it under the terms of the GNU General Public License as published by
-    the Free Software Foundation, either version 3 of the License, or
-    (at your option) any later version.
-
-    Compiler is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU General Public License for more details.
-
-    You should have received a copy of the GNU General Public License
-    along with Compiler. If not, see <http://www.gnu.org/licenses/>.
+    Copyright (c) 2018, Anton Krotov
+    All rights reserved.
 *)
 
 MODULE SCAN;
 
-IMPORT UTILS, sys := SYSTEM;
+IMPORT TEXTDRV, AVL := AVLTREES, ARITH, S := STRINGS, C := COLLECTIONS;
+
 
 CONST
 
-  Tab = 8;
-  maxINT* = 7FFFFFFFH;
-  minINT* = 80000000H;
-  maxREAL* = 3.39E38;
-  maxDBL* = 1.69D308;
-  minREAL* = 1.41E-45;
-  IDLENGTH = 255;
-  STRLENGTH* = 256;
+    LEXLEN = 1024;
 
-  lxEOF = 0; lxINT = -1; lxREAL = -2; lxSTRING = -3; lxIDENT = -4; lxHEX = -5; lxCHX = -6; lxLONGREAL = -7;
-  lxARRAY = 1; lxBEGIN = 2; lxBY = 3; lxCASE = 4; lxCONST = 5; lxDIV = 6; lxDO = 7; lxELSE = 8;
-  lxELSIF = 9; lxEND = 10; lxFALSE = 11; lxFOR = 12; lxIF = 13; lxIMPORT = 14; lxIN = 15; lxIS = 16;
-  lxMOD = 17; lxMODULE = 18; lxNIL = 19; lxOF = 20; lxOR = 21; lxPOINTER = 22; lxPROCEDURE = 23;
-  lxRECORD = 24; lxREPEAT = 25; lxRETURN = 26; lxTHEN = 27; lxTO = 28; lxTRUE = 29; lxTYPE = 30;
-  lxUNTIL = 31; lxVAR = 32; lxWHILE = 33;
+    lxUNDEF*   =   0;  lxIDENT*   =   1;  lxINTEGER*   =   2;  lxHEX*     =   3;
+    lxCHAR*    =   4;  lxFLOAT*   =   5;  lxSTRING*    =   6;  lxCOMMENT* =   7;
+    lxEOF*     =   8;
 
-  lxPlus = 51; lxMinus = 52; lxMult = 53; lxSlash = 54; lxNot = 55; lxAnd = 56; lxComma = 57; lxSemi = 58;
-  lxStick = 59; lxLRound = 60; lxLSquare = 61; lxLCurly = 62; lxCaret = 63; lxRRound = 64; lxRSquare = 65;
-  lxRCurly = 66; lxDot = 67; lxDbl = 68; lxAssign = 69; lxColon = 70;
-  lxEQ = 71; lxNE = 72; lxLT = 73; lxGT = 74; lxLE = 75; lxGE = 76;
+    lxKW       = 101;
 
-  lxERR0 = 100; lxERR1 = 101; lxERR2 = 102; lxERR3 = 103; lxERR4 = 104; lxERR5 = 105; lxERR6 = 106;
-  lxERR7 = 107; lxERR8 = 108; lxERR9 = 109; lxERR10 = 110; lxERR11 = 111; lxERR20 = 120;
+    lxARRAY*   = 101;  lxBEGIN*   = 102;  lxBY*        = 103;  lxCASE*    = 104;
+    lxCONST*   = 105;  lxDIV*     = 106;  lxDO*        = 107;  lxELSE*    = 108;
+    lxELSIF*   = 109;  lxEND*     = 110;  lxFALSE*     = 111;  lxFOR*     = 112;
+    lxIF*      = 113;  lxIMPORT*  = 114;  lxIN*        = 115;  lxIS*      = 116;
+    lxMOD*     = 117;  lxMODULE*  = 118;  lxNIL*       = 119;  lxOF*      = 120;
+    lxOR*      = 121;  lxPOINTER* = 122;  lxPROCEDURE* = 123;  lxRECORD*  = 124;
+    lxREPEAT*  = 125;  lxRETURN*  = 126;  lxTHEN*      = 127;  lxTO*      = 128;
+    lxTRUE*    = 129;  lxTYPE*    = 130;  lxUNTIL*     = 131;  lxVAR*     = 132;
+    lxWHILE*   = 133;
+
+    lxPLUS*    = 201;  lxMINUS*   = 202;  lxMUL*       = 203;  lxSLASH*   = 204;
+    lxNOT*     = 205;  lxAND*     = 206;  lxPOINT*     = 207;  lxCOMMA*   = 208;
+    lxSEMI*    = 209;  lxBAR*     = 210;  lxLROUND*    = 211;  lxLSQUARE* = 212;
+    lxLCURLY*  = 213;  lxCARET*   = 214;  lxEQ*        = 215;  lxNE*      = 216;
+    lxLT*      = 217;  lxGT*      = 218;  lxCOLON*     = 219;  lxRROUND*  = 220;
+    lxRSQUARE* = 221;  lxRCURLY*  = 222;  lxLE*        = 223;  lxGE*      = 224;
+    lxASSIGN*  = 225;  lxRANGE*   = 226;
+
+    lxERROR01 =  -1;  lxERROR02 =  -2;  lxERROR03   =  -3;  lxERROR04 =  -4;
+    lxERROR05 =  -5;  lxERROR06 =  -6;  lxERROR07   =  -7;  lxERROR08 =  -8;
+    lxERROR09 =  -9;  lxERROR10 = -10;  lxERROR11   = -11;  lxERROR12 = -12;
+
 
 TYPE
 
-  TCoord* = RECORD line*, col*: INTEGER END;
+    LEXSTR* = ARRAY LEXLEN OF CHAR;
 
-  NODE* = POINTER TO RECORD
-    Left, Right: NODE;
-    tLex: INTEGER;
-    Name*: UTILS.STRING
-  END;
+    IDENT* = POINTER TO RECORD (AVL.DATA)
 
-  SCANNER* = POINTER TO RECORD
-    File, ccol, cline, count, tLex, vINT: INTEGER;
-    coord: TCoord;
-    ch, vCHX: CHAR;
-    Lex: UTILS.STRING;
-    vFLT: LONGREAL;
-    id: NODE;
-    buf, bufpos: INTEGER;
-    CR, UTF8: BOOLEAN
-  END;
+        s*: LEXSTR;
+        offset*, offsetW*: INTEGER
+
+    END;
+
+    POSITION* = RECORD
+
+        line*, col*: INTEGER
+
+    END;
+
+    LEX* = RECORD
+
+        s*:              LEXSTR;
+        length*:         INTEGER;
+        sym*:            INTEGER;
+        pos*:            POSITION;
+        ident*:          IDENT;
+        string*:         IDENT;
+        value*:          ARITH.VALUE;
+        error*:          INTEGER;
+
+        over:            BOOLEAN
+
+    END;
+
+    SCANNER* = POINTER TO RECORD (C.ITEM)
+
+        text:            TEXTDRV.TEXT;
+        range:           BOOLEAN
+
+    END;
+
+    KEYWORD = ARRAY 10 OF CHAR;
+
 
 VAR
 
-  Lex*: UTILS.STRING; File, ccol, cline, count*, tLex*, vINT*: INTEGER;
-  coord*: TCoord;
-  vFLT*: LONGREAL; id*: NODE; ch, vCHX*: CHAR;
-  buf, bufpos: INTEGER; CR, UTF8: BOOLEAN;
-  Nodes: ARRAY 256 OF NODE;
-  _START*, _version*: NODE;
+    vocabulary: RECORD
 
-PROCEDURE AddNode*(Name: UTILS.STRING): NODE;
-VAR cur, res: NODE;
+        KW:          ARRAY 33 OF KEYWORD;
 
-  PROCEDURE NewNode(Right: BOOLEAN);
-  BEGIN
-    NEW(res);
-    UTILS.MemErr(res = NIL);
-    res.Name := Name;
-    res.tLex := lxIDENT;
-    res.Left := NIL;
-    res.Right := NIL;
-    IF Right THEN
-      cur.Right := res
-    ELSE
-      cur.Left := res
+        delimiters:  ARRAY 256 OF BOOLEAN;
+
+        idents:      AVL.NODE;
+        ident:       IDENT
+
+    END;
+
+    scanners: C.COLLECTION;
+
+
+PROCEDURE nodecmp (a, b: AVL.DATA): INTEGER;
+    RETURN ORD(a(IDENT).s > b(IDENT).s) - ORD(a(IDENT).s < b(IDENT).s)
+END nodecmp;
+
+
+PROCEDURE key (VAR lex: LEX);
+VAR
+    L, R, M: INTEGER;
+
+BEGIN
+    L := 0;
+    R := LEN(vocabulary.KW) - 1;
+    M := (L + R) DIV 2;
+
+    WHILE L # M DO
+        IF lex.s > vocabulary.KW[M] THEN
+            L := M;
+            M := (L + R) DIV 2
+        ELSIF lex.s < vocabulary.KW[M] THEN
+            R := M;
+            M := (L + R) DIV 2
+        ELSE
+            lex.sym := lxKW + M;
+            L := M;
+            R := M
+        END
+    END;
+
+    IF L # R THEN
+        IF lex.s = vocabulary.KW[L] THEN
+            lex.sym := lxKW + L
+        END;
+
+        IF lex.s = vocabulary.KW[R] THEN
+            lex.sym := lxKW + R
+        END
     END
-  END NewNode;
+
+END key;
+
+
+PROCEDURE enterid* (s: LEXSTR): IDENT;
+VAR
+    newnode: BOOLEAN;
+    node:    AVL.NODE;
 
 BEGIN
-  res := NIL;
-  cur := Nodes[ORD(Name[0])];
-  REPEAT
-    IF Name > cur.Name THEN
-      IF cur.Right # NIL THEN
-        cur := cur.Right
-      ELSE
-        NewNode(TRUE)
-      END
-    ELSIF Name < cur.Name THEN
-      IF cur.Left # NIL THEN
-        cur := cur.Left
-      ELSE
-        NewNode(FALSE)
-      END
-    ELSE
-      res := cur
+    vocabulary.ident.s := s;
+    vocabulary.idents := AVL.insert(vocabulary.idents, vocabulary.ident, nodecmp, newnode, node);
+
+    IF newnode THEN
+        NEW(vocabulary.ident);
+        vocabulary.ident.offset  := -1;
+        vocabulary.ident.offsetW := -1
     END
-  UNTIL res # NIL
-  RETURN res
-END AddNode;
 
-PROCEDURE Backup*(scanner: SCANNER);
-BEGIN
-  scanner.File := File;
-  scanner.ccol := ccol;
-  scanner.cline := cline;
-  scanner.ch := ch;
-  scanner.Lex := Lex;
-  scanner.count := count;
-  scanner.coord := coord;
-  scanner.tLex := tLex;
-  scanner.vINT := vINT;
-  scanner.vFLT := vFLT;
-  scanner.vCHX := vCHX;
-  scanner.buf := buf;
-  scanner.bufpos := bufpos;
-  scanner.CR := CR;
-  scanner.UTF8 := UTF8
-END Backup;
+    RETURN node.data(IDENT)
+END enterid;
 
-PROCEDURE Recover*(scanner: SCANNER);
-BEGIN
-  File := scanner.File;
-  ccol := scanner.ccol;
-  cline := scanner.cline;
-  ch := scanner.ch;
-  Lex := scanner.Lex;
-  count := scanner.count;
-  coord := scanner.coord;
-  tLex := scanner.tLex;
-  vINT := scanner.vINT;
-  vFLT := scanner.vFLT;
-  vCHX := scanner.vCHX;
-  buf := scanner.buf;
-  bufpos := scanner.bufpos;
-  CR := scanner.CR;
-  UTF8 := scanner.UTF8
-END Recover;
 
-PROCEDURE Next;
-VAR cr: BOOLEAN;
+PROCEDURE putchar (VAR lex: LEX; c: CHAR);
 BEGIN
-  cr := FALSE;
-  sys.GET(bufpos, ch);
-  INC(ccol);
-  CASE ch OF
-  |0AX: IF ~CR THEN INC(cline) END; ccol := 0
-  |0DX: INC(cline); ccol := 0; cr := TRUE
-  |09X: DEC(ccol); ccol := (ccol DIV Tab) * Tab + Tab
-  |80X..0BFX: IF UTF8 THEN DEC(ccol) END
-  ELSE
-  END;
-  CR := cr;
-  INC(bufpos)
+    IF lex.length < LEXLEN - 1 THEN
+        lex.s[lex.length] := c;
+        INC(lex.length);
+        lex.s[lex.length] := 0X
+    ELSE
+        lex.over := TRUE
+    END
+END putchar;
+
+
+PROCEDURE ident (text: TEXTDRV.TEXT; VAR lex: LEX);
+VAR
+    c: CHAR;
+
+BEGIN
+    c := text.peak(text);
+    ASSERT(S.letter(c));
+
+    WHILE S.letter(c) OR S.digit(c) DO
+        putchar(lex, c);
+        text.nextc(text);
+        c := text.peak(text)
+    END;
+
+    IF lex.over THEN
+        lex.sym := lxERROR06
+    ELSE
+        lex.sym := lxIDENT;
+        key(lex)
+    END;
+
+    IF lex.sym = lxIDENT THEN
+        lex.ident := enterid(lex.s)
+    END
+
+END ident;
+
+
+PROCEDURE number (text: TEXTDRV.TEXT; VAR lex: LEX; VAR range: BOOLEAN);
+VAR
+    c: CHAR;
+    hex: BOOLEAN;
+    error: INTEGER;
+
+BEGIN
+    c := text.peak(text);
+    ASSERT(S.digit(c));
+
+    error := 0;
+
+    range := FALSE;
+
+    lex.sym := lxINTEGER;
+    hex := FALSE;
+
+    WHILE S.digit(c) DO
+        putchar(lex, c);
+        text.nextc(text);
+        c := text.peak(text)
+    END;
+
+    WHILE S.hexdigit(c) DO
+        putchar(lex, c);
+        text.nextc(text);
+        c := text.peak(text);
+        hex := TRUE
+    END;
+
+    IF c = "H" THEN
+        putchar(lex, c);
+        text.nextc(text);
+        lex.sym := lxHEX
+
+    ELSIF c = "X" THEN
+        putchar(lex, c);
+        text.nextc(text);
+        lex.sym := lxCHAR
+
+    ELSIF c = "." THEN
+
+        IF hex THEN
+            lex.sym := lxERROR01
+        ELSE
+
+            text.nextc(text);
+            c := text.peak(text);
+
+            IF c # "." THEN
+                putchar(lex, ".");
+                lex.sym := lxFLOAT
+            ELSE
+                lex.sym := lxINTEGER;
+                range := TRUE
+            END;
+
+            WHILE S.digit(c) DO
+                putchar(lex, c);
+                text.nextc(text);
+                c := text.peak(text)
+            END;
+
+            IF c = "E" THEN
+
+                putchar(lex, c);
+                text.nextc(text);
+                c := text.peak(text);
+                IF (c = "+") OR (c = "-") THEN
+                    putchar(lex, c);
+                    text.nextc(text);
+                    c := text.peak(text)
+                END;
+
+                IF S.digit(c) THEN
+                    WHILE S.digit(c) DO
+                        putchar(lex, c);
+                        text.nextc(text);
+                        c := text.peak(text)
+                    END
+                ELSE
+                    lex.sym := lxERROR02
+                END
+
+            END
+
+        END
+
+    ELSE
+
+        IF hex THEN
+            lex.sym := lxERROR01
+        END
+
+    END;
+
+    IF lex.over & (lex.sym >= 0) THEN
+        lex.sym := lxERROR07
+    END;
+
+    IF lex.sym = lxINTEGER THEN
+        ARITH.iconv(lex.s, lex.value, error)
+    ELSIF (lex.sym = lxHEX) OR (lex.sym = lxCHAR) THEN
+        ARITH.hconv(lex.s, lex.value, error)
+    ELSIF lex.sym = lxFLOAT THEN
+        ARITH.fconv(lex.s, lex.value, error)
+    END;
+
+    CASE error OF
+    |0:
+    |1: lex.sym := lxERROR08
+    |2: lex.sym := lxERROR09
+    |3: lex.sym := lxERROR10
+    |4: lex.sym := lxERROR11
+    |5: lex.sym := lxERROR12
+    END
+
+END number;
+
+
+PROCEDURE string (text: TEXTDRV.TEXT; VAR lex: LEX);
+VAR
+    c, c1: CHAR;
+    n:     INTEGER;
+    quot:  CHAR;
+
+BEGIN
+    quot := text.peak(text);
+
+    ASSERT((quot = '"') OR (quot = "'"));
+
+    text.nextc(text);
+    c := text.peak(text);
+    c1 := c;
+    n := 0;
+
+    WHILE (c # quot) & (c # 0X) & ~text.eol & ~text.eof DO
+        putchar(lex, c);
+        text.nextc(text);
+        c := text.peak(text);
+        INC(n)
+    END;
+
+    IF c = quot THEN
+        text.nextc(text);
+        IF lex.over THEN
+            lex.sym := lxERROR05
+        ELSE
+            IF n # 1 THEN
+                lex.sym := lxSTRING
+            ELSE
+                lex.sym := lxCHAR;
+                ARITH.setChar(lex.value, ORD(c1))
+            END
+        END
+    ELSE
+        lex.sym := lxERROR03
+    END;
+
+    IF lex.sym = lxSTRING THEN
+        lex.string := enterid(lex.s);
+        lex.value.typ := ARITH.tSTRING;
+        lex.value.string := lex.string
+    END
+
+END string;
+
+
+PROCEDURE comment (text: TEXTDRV.TEXT);
+VAR
+    c: CHAR;
+    cond, depth: INTEGER;
+
+BEGIN
+    cond := 0;
+    depth := 1;
+
+    REPEAT
+
+        c := text.peak(text);
+        text.nextc(text);
+
+        IF c = "*" THEN
+            IF cond = 1 THEN
+                cond := 0;
+                INC(depth)
+            ELSE
+               cond := 2
+            END
+        ELSIF c = ")" THEN
+            IF cond = 2 THEN
+                DEC(depth)
+            END;
+            cond := 0
+        ELSIF c = "(" THEN
+            cond := 1
+        ELSE
+            cond := 0
+        END
+
+    UNTIL (depth = 0) OR text.eof
+
+END comment;
+
+
+PROCEDURE delimiter (text: TEXTDRV.TEXT; VAR lex: LEX; VAR range: BOOLEAN);
+VAR
+    c: CHAR;
+
+BEGIN
+    c := text.peak(text);
+
+    IF range THEN
+        ASSERT(c = ".")
+    END;
+
+    putchar(lex, c);
+    text.nextc(text);
+
+    CASE c OF
+    |"+":
+        lex.sym := lxPLUS
+
+    |"-":
+        lex.sym := lxMINUS
+
+    |"*":
+        lex.sym := lxMUL
+
+    |"/":
+        lex.sym := lxSLASH;
+
+        IF text.peak(text) = "/" THEN
+            lex.sym := lxCOMMENT;
+            REPEAT
+                text.nextc(text)
+            UNTIL text.eol OR text.eof
+        END
+
+    |"~":
+        lex.sym := lxNOT
+
+    |"&":
+        lex.sym := lxAND
+
+    |".":
+        IF range THEN
+
+            putchar(lex, ".");
+            lex.sym := lxRANGE;
+            range := FALSE;
+            DEC(lex.pos.col)
+
+        ELSE
+
+            lex.sym := lxPOINT;
+            c := text.peak(text);
+
+            IF c = "." THEN
+                lex.sym := lxRANGE;
+                putchar(lex, c);
+                text.nextc(text)
+            END
+
+        END
+
+    |",":
+        lex.sym := lxCOMMA
+
+    |";":
+        lex.sym := lxSEMI
+
+    |"|":
+        lex.sym := lxBAR
+
+    |"(":
+        lex.sym := lxLROUND;
+        c := text.peak(text);
+
+        IF c = "*" THEN
+            lex.sym := lxCOMMENT;
+            putchar(lex, c);
+            text.nextc(text);
+            comment(text)
+        END
+
+    |"[":
+        lex.sym := lxLSQUARE
+
+    |"{":
+        lex.sym := lxLCURLY
+
+    |"^":
+        lex.sym := lxCARET
+
+    |"=":
+        lex.sym := lxEQ
+
+    |"#":
+        lex.sym := lxNE
+
+    |"<":
+        lex.sym := lxLT;
+        c := text.peak(text);
+
+        IF c = "=" THEN
+            lex.sym := lxLE;
+            putchar(lex, c);
+            text.nextc(text)
+        END
+
+    |">":
+        lex.sym := lxGT;
+        c := text.peak(text);
+
+        IF c = "=" THEN
+            lex.sym := lxGE;
+            putchar(lex, c);
+            text.nextc(text)
+        END
+
+    |":":
+        lex.sym := lxCOLON;
+        c := text.peak(text);
+
+        IF c = "=" THEN
+            lex.sym := lxASSIGN;
+            putchar(lex, c);
+            text.nextc(text)
+        END
+
+    |")":
+        lex.sym := lxRROUND
+
+    |"]":
+        lex.sym := lxRSQUARE
+
+    |"}":
+        lex.sym := lxRCURLY
+
+    END
+
+END delimiter;
+
+
+PROCEDURE Next* (scanner: SCANNER; VAR lex: LEX);
+VAR
+    c: CHAR;
+    text: TEXTDRV.TEXT;
+
+BEGIN
+    text := scanner.text;
+
+    REPEAT
+
+        c := text.peak(text);
+
+        WHILE S.space(c) DO
+            text.nextc(text);
+            c := text.peak(text)
+        END;
+
+        lex.s[0]     := 0X;
+        lex.length   := 0;
+        lex.sym      := lxUNDEF;
+        lex.pos.line := text.line;
+        lex.pos.col  := text.col;
+        lex.ident    := NIL;
+        lex.over     := FALSE;
+
+        IF S.letter(c) THEN
+            ident(text, lex)
+        ELSIF S.digit(c) THEN
+            number(text, lex, scanner.range)
+        ELSIF (c = '"') OR (c = "'") THEN
+            string(text, lex)
+        ELSIF vocabulary.delimiters[ORD(c)] THEN
+            delimiter(text, lex, scanner.range)
+        ELSIF c = 0X THEN
+            lex.sym := lxEOF;
+            IF text.eof THEN
+                INC(lex.pos.col)
+            END
+        ELSE
+            putchar(lex, c);
+            text.nextc(text);
+            lex.sym := lxERROR04
+        END;
+
+        IF lex.sym < 0 THEN
+            lex.error := -lex.sym
+        ELSE
+            lex.error := 0
+        END
+
+    UNTIL lex.sym # lxCOMMENT
+
 END Next;
 
-PROCEDURE Open*(FName: ARRAY OF CHAR; VAR FHandle: INTEGER): BOOLEAN;
-VAR n, size: INTEGER; c: CHAR;
+
+PROCEDURE NewScanner (): SCANNER;
+VAR
+    scan:  SCANNER;
+    citem: C.ITEM;
+
 BEGIN
-  File := UTILS.OpenF(FName);
-  FHandle := File;
-  IF File # 0 THEN
-    CR := FALSE;
-    UTF8 := FALSE;
-    ccol := 0;
-    cline := 1;
-    ch := 0X;
-    size := UTILS.FileSize(File);
-    buf := UTILS.GetMem(size + 1024);
-    UTILS.MemErr(buf = 0);
-    sys.PUT(buf + size, 0X);
-    n := UTILS.Read(File, buf, size);
-    UTILS.CloseF(File);
-    bufpos := buf;
-    sys.GET(buf, c);
-    IF c = 0EFX THEN
-      sys.GET(buf + 1, c);
-      IF c = 0BBX THEN
-        sys.GET(buf + 2, c);
-        IF c = 0BFX THEN
-          INC(bufpos, 3);
-          UTF8 := TRUE
-        END
-      END
-    END;
-    Next
-  END
-  RETURN (File # 0) & (n = size)
-END Open;
-
-PROCEDURE Space(ch: CHAR): BOOLEAN;
-  RETURN (ch <= 20X) & (ch > 0X)
-END Space;
-
-PROCEDURE Letter(ch: CHAR): BOOLEAN;
-  RETURN (ch >= "A") & (ch <= "Z") OR (ch >= "a") & (ch <= "z") OR (ch = "_")
-END Letter;
-
-PROCEDURE Digit*(ch: CHAR): BOOLEAN;
-  RETURN (ch >= "0") & (ch <= "9")
-END Digit;
-
-PROCEDURE HexDigit*(ch: CHAR): BOOLEAN;
-  RETURN (ch >= "A") & (ch <= "F") OR (ch >= "0") & (ch <= "9")
-END HexDigit;
-
-PROCEDURE PutChar(ch: CHAR);
-BEGIN
-  Lex[count] := ch;
-  IF ch # 0X THEN
-    INC(count)
-  END
-END PutChar;
-
-PROCEDURE PutNext(ch: CHAR);
-BEGIN
-  PutChar(ch);
-  Next
-END PutNext;
-
-PROCEDURE Ident;
-BEGIN
-  tLex := lxIDENT;
-  WHILE Letter(ch) OR Digit(ch) DO
-    PutNext(ch)
-  END;
-  PutChar(0X);
-  IF count > IDLENGTH THEN
-    tLex := lxERR10
-  END
-END Ident;
-
-PROCEDURE hex*(ch: CHAR): INTEGER;
-VAR Res: INTEGER;
-BEGIN
-  Res := ORD(ch);
-  CASE ch OF
-  |"0".."9": DEC(Res, ORD("0"))
-  |"A".."F": DEC(Res, ORD("A") - 10)
-  ELSE
-  END
-  RETURN Res
-END hex;
-
-PROCEDURE StrToInt16(str: UTILS.STRING): INTEGER;
-VAR i, res, n: INTEGER; flag: BOOLEAN;
-BEGIN
-  res := 0;
-  i := 0;
-  n := 0;
-  WHILE str[i] = "0" DO
-    INC(i)
-  END;
-  flag := TRUE;
-  WHILE flag & (str[i] # "X") & (str[i] # "H") DO
-    INC(n);
-    IF n > 8 THEN
-      tLex := lxERR5;
-      flag := FALSE
+    citem := C.pop(scanners);
+    IF citem = NIL THEN
+        NEW(scan)
     ELSE
-      res := LSL(res, 4) + hex(str[i]);
-      INC(i)
+        scan := citem(SCANNER)
     END
-  END
-  RETURN res
-END StrToInt16;
 
-PROCEDURE StrToChx(str: UTILS.STRING): CHAR;
-VAR res: INTEGER;
-BEGIN
-  res := StrToInt16(str);
-  IF (res < 0) OR (res > 0FFH) THEN
-    tLex := lxERR6;
-    res := 0
-  END
-  RETURN CHR(res)
-END StrToChx;
+    RETURN scan
+END NewScanner;
 
-PROCEDURE StrToInt*(str: UTILS.STRING): INTEGER;
-VAR i, res: INTEGER; flag: BOOLEAN;
+
+PROCEDURE open* (name: ARRAY OF CHAR): SCANNER;
+VAR
+    scanner: SCANNER;
+    text:    TEXTDRV.TEXT;
+
 BEGIN
-  res := 0;
-  i := 0;
-  flag := TRUE;
-  WHILE flag & (str[i] # 0X) DO
-    IF res > maxINT DIV 10 THEN
-      tLex := lxERR5;
-      flag := FALSE;
-      res := 0
+    text := TEXTDRV.create();
+    IF text.open(text, name) THEN
+        scanner := NewScanner();
+        scanner.text   := text;
+        scanner.range  := FALSE
     ELSE
-      res := res * 10;
-      IF res > maxINT - (ORD(str[i]) - ORD("0")) THEN
-        tLex := lxERR5;
-        flag := FALSE;
-        res := 0
-      ELSE
-        res := res + (ORD(str[i]) - ORD("0"));
-        INC(i)
-      END
+        scanner := NIL;
+        TEXTDRV.destroy(text)
     END
-  END
-  RETURN res
-END StrToInt;
 
-PROCEDURE StrToFloat(str: UTILS.STRING): LONGREAL;
-VAR i, scale: INTEGER; res, m, d: LONGREAL; minus, nez: BOOLEAN;
+    RETURN scanner
+END open;
 
-  PROCEDURE Error(e: INTEGER; VAR cont: BOOLEAN);
-  BEGIN
-    tLex := e;
-    res := 0.0D0;
-    cont := FALSE
-  END Error;
 
-  PROCEDURE Inf(VAR cont: BOOLEAN; VAR i: INTEGER);
-  BEGIN
-    IF UTILS.IsInf(res) THEN
-      Error(lxERR7, cont)
-    END;
-    INC(i)
-  END Inf;
-
-  PROCEDURE part1(): BOOLEAN;
-  VAR cont: BOOLEAN;
-  BEGIN
-    res := 0.0D0;
-    i := 0;
-    d := 1.0D0;
-    nez := FALSE;
-    cont := TRUE;
-    WHILE cont & Digit(str[i]) DO
-      nez := nez OR (str[i] # "0");
-      res := res * 10.0D0 + LONG(FLT(ORD(str[i]) - ORD("0")));
-      Inf(cont, i)
-    END
-    RETURN cont
-  END part1;
-
-  PROCEDURE part2(): BOOLEAN;
-  VAR cont: BOOLEAN;
-  BEGIN
-    INC(i);
-    cont := TRUE;
-    WHILE cont & Digit(str[i]) DO
-      nez := nez OR (str[i] # "0");
-      d := d / 10.0D0;
-      res := res + LONG(FLT(ORD(str[i]) - ORD("0"))) * d;
-      Inf(cont, i)
-    END
-    RETURN cont
-  END part2;
-
-  PROCEDURE part3(): BOOLEAN;
-  VAR cont: BOOLEAN;
-  BEGIN
-    cont := TRUE;
-    IF str[i] = 0X THEN
-      IF res > LONG(maxREAL) THEN
-        Error(lxERR7, cont)
-      ELSIF nez & ((res = 0.0D0) OR (res < LONG(minREAL)) & (tLex = lxREAL)) THEN
-        Error(lxERR9, cont)
-      END
-    END
-    RETURN cont
-  END part3;
-
-  PROCEDURE part4(): BOOLEAN;
-  VAR cont: BOOLEAN;
-  BEGIN
-    IF str[i] = "D" THEN
-      tLex := lxLONGREAL
-    END;
-    INC(i);
-    m := 10.0D0;
-    minus := FALSE;
-    IF str[i] = "+" THEN
-      INC(i)
-    ELSIF str[i] = "-" THEN
-      minus := TRUE;
-      INC(i);
-      m := 0.1D0
-    END;
-    scale := 0;
-    cont := TRUE;
-    WHILE cont & Digit(str[i]) DO
-      IF scale > maxINT DIV 10 THEN
-        Error(lxERR8, cont)
-      ELSE
-        scale := scale * 10;
-        IF scale > maxINT - (ORD(str[i]) - ORD("0")) THEN
-          Error(lxERR8, cont)
-        ELSE
-          scale := scale + (ORD(str[i]) - ORD("0"));
-          INC(i)
-        END
-      END
-    END
-    RETURN cont
-  END part4;
-
-  PROCEDURE part5(): BOOLEAN;
-  VAR cont: BOOLEAN; i: INTEGER;
-  BEGIN
-    cont := TRUE;
-    IF scale = maxINT THEN
-      Error(lxERR8, cont)
-    END;
-    i := 1;
-    WHILE cont & (i <= scale) DO
-      res := res * m;
-      Inf(cont, i)
-    END;
-    IF cont & (nez & (res = 0.0D0) OR (res > 0.0D0) & (res < LONG(minREAL)) & (tLex = lxREAL)) THEN
-      Error(lxERR9, cont)
-    ELSIF cont & (tLex = lxREAL) & (res > LONG(maxREAL)) THEN
-      Error(lxERR7, cont)
-    END
-    RETURN cont
-  END part5;
-
+PROCEDURE close* (VAR scanner: SCANNER);
 BEGIN
-  IF part1() & part2() & part3() & part4() & part5() THEN END
-  RETURN res
-END StrToFloat;
-
-PROCEDURE Number;
-VAR nextchr: CHAR;
-BEGIN
-  tLex := lxINT;
-  WHILE Digit(ch) DO
-    PutNext(ch)
-  END;
-  IF ch = "H" THEN
-    tLex := lxHEX
-  ELSIF ch = "X" THEN
-    tLex := lxCHX
-  END;
-  IF tLex # lxINT THEN
-    PutNext(ch)
-  ELSE
-    WHILE HexDigit(ch) DO
-      tLex := lxHEX;
-      PutNext(ch)
-    END;
-    IF tLex = lxHEX THEN
-      IF ch = "H" THEN
-        PutNext(ch)
-      ELSIF ch = "X" THEN
-        tLex := lxCHX;
-        PutNext(ch)
-      ELSE
-        tLex := lxERR1
-      END
-    ELSIF ch = "." THEN
-      sys.GET(bufpos, nextchr);
-      IF nextchr # "." THEN
-        tLex := lxREAL;
-        PutNext(ch);
-        WHILE Digit(ch) DO
-          PutNext(ch)
+    IF scanner # NIL THEN
+        IF scanner.text # NIL THEN
+            TEXTDRV.destroy(scanner.text)
         END;
-        IF (ch = "E") OR (ch = "D") THEN
-          PutNext(ch);
-          IF (ch = "+") OR (ch = "-") THEN
-            PutNext(ch)
-          END;
-          IF ~Digit(ch) THEN
-            tLex := lxERR2
-          ELSE
-            WHILE Digit(ch) DO
-              PutNext(ch)
-            END
-          END
-        END
-      END
+
+        C.push(scanners, scanner);
+        scanner := NIL
     END
-  END;
-  PutChar(0X)
-END Number;
+END close;
 
-PROCEDURE Delim(ch: CHAR): INTEGER;
-VAR Res: INTEGER;
-BEGIN
-  CASE ch OF
-  |"+": Res := lxPlus
-  |"-": Res := lxMinus
-  |"*": Res := lxMult
-  |"/": Res := lxSlash
-  |"~": Res := lxNot
-  |"&": Res := lxAnd
-  |",": Res := lxComma
-  |";": Res := lxSemi
-  |"|": Res := lxStick
-  |"[": Res := lxLSquare
-  |"{": Res := lxLCurly
-  |"^": Res := lxCaret
-  |"=": Res := lxEQ
-  |"#": Res := lxNE
-  |")": Res := lxRRound
-  |"]": Res := lxRSquare
-  |"}": Res := lxRCurly
-  |">": Res := lxGT
-  |"<": Res := lxLT
-  |":": Res := lxColon
-  ELSE
-  END
-  RETURN Res
-END Delim;
 
-PROCEDURE Comment;
-VAR c, level: INTEGER; cont: BOOLEAN;
-BEGIN
-  c := 1;
-  level := 1;
-  cont := TRUE;
-  WHILE cont & (level > 0) DO
-    Next;
-    CASE ch OF
-    |"(": c := 2
-    |")": IF c = 3 THEN DEC(level) END; c := 1
-    |"*": IF c = 2 THEN INC(level); c := 1 ELSE c := 3 END
-    |0X : cont := FALSE
-    ELSE
-          c := 1
-    END;
-  END;
-  IF cont THEN
-    Next
-  END
-END Comment;
+PROCEDURE init;
+VAR
+    i: INTEGER;
+    delim: ARRAY 23 OF CHAR;
 
-PROCEDURE GetLex*;
-BEGIN
-  WHILE Space(ch) DO
-    Next
-  END;
-  coord.col := ccol;
-  coord.line := cline;
-  count := 0;
-  CASE ch OF
-  |"A".."Z", "a".."z", "_":
-    Ident;
-    id := AddNode(Lex);
-    tLex := id.tLex;
-  |"0".."9":
-    Number;
-    CASE tLex OF
-    |lxINT:  vINT := StrToInt(Lex)
-    |lxHEX:  vINT := StrToInt16(Lex)
-    |lxCHX:  vCHX := StrToChx(Lex)
-    |lxREAL: vFLT := StrToFloat(Lex)
-    ELSE
-    END
-  |22X:
-    tLex := lxSTRING;
-    Next;
-    WHILE (ch # 22X) & (ch >= 20X) DO
-      PutNext(ch)
-    END;
-    IF ch = 22X THEN
-      Next
-    ELSE
-      tLex := lxERR3
-    END;
-    PutChar(0X);
-    INC(count);
-    IF count > STRLENGTH THEN
-      tLex := lxERR11
-    END
-  |"/":
-    tLex := Delim(ch);
-    PutNext(ch);
-    IF ch = "/" THEN
-      WHILE (ch >= 20X) OR (ch = 9X) DO
-        PutNext(ch)
-      END;
-      GetLex
-    END;
-    PutChar(0X)
-  |">", "<", ":":
-    tLex := Delim(ch);
-    PutNext(ch);
-    IF ch = "=" THEN
-      CASE tLex OF
-      |lxLT:    tLex := lxLE
-      |lxGT:    tLex := lxGE
-      |lxColon: tLex := lxAssign
-      ELSE
-      END;
-      PutNext(ch)
-    END;
-    PutChar(0X)
-  |".":
-    tLex := lxDot;
-    PutNext(ch);
-    IF ch = "." THEN
-      tLex := lxDbl;
-      PutNext(ch)
-    END;
-    PutChar(0X)
-  |"(":
-    tLex := lxLRound;
-    PutNext(ch);
-    IF ch = "*" THEN
-      Comment;
-      GetLex
-    END;
-    PutChar(0X)
-  |"+", "-", "*", "~", "&", ",", ";", "|",
-   "[", "{", "^", "=", "#", ")", "]", "}":
-    tLex := Delim(ch);
-    PutChar(ch);
-    PutNext(0X)
-  |0X:
-    tLex := lxEOF;
-    PutChar(0X)
-  ELSE
-    tLex := lxERR4
-  END
-END GetLex;
-
-PROCEDURE AddNodeKey(Name: UTILS.STRING; key: INTEGER);
-VAR node: NODE;
-BEGIN
-  node := AddNode(Name);
-  node.tLex := key
-END AddNodeKey;
-
-PROCEDURE Init;
-VAR i: INTEGER; node: NODE;
-BEGIN
-  FOR i := 0 TO LEN(Nodes) - 1 DO
-    NEW(node);
-    UTILS.MemErr(node = NIL);
-    sys.PUT(sys.ADR(node.Name), i);
-    node.Left := NIL;
-    node.Right := NIL;
-    node.tLex := lxIDENT;
-    Nodes[i] := node
-  END;
-  _START := AddNode("lib_init");
-  _version := AddNode("version");
-  AddNodeKey("MOD", lxMOD);
-  AddNodeKey("ELSE", lxELSE);
-  AddNodeKey("RETURN", lxRETURN);
-  AddNodeKey("CASE", lxCASE);
-  AddNodeKey("IF", lxIF);
-  AddNodeKey("POINTER", lxPOINTER);
-  AddNodeKey("TYPE", lxTYPE);
-  AddNodeKey("BEGIN", lxBEGIN);
-  AddNodeKey("DIV", lxDIV);
-  AddNodeKey("FALSE", lxFALSE);
-  AddNodeKey("IN", lxIN);
-  AddNodeKey("NIL", lxNIL);
-  AddNodeKey("RECORD", lxRECORD);
-  AddNodeKey("TO", lxTO);
-  AddNodeKey("VAR", lxVAR);
-  AddNodeKey("ARRAY", lxARRAY);
-  AddNodeKey("DO", lxDO);
-  AddNodeKey("END", lxEND);
-  AddNodeKey("IS", lxIS);
-  AddNodeKey("OF", lxOF);
-  AddNodeKey("PROCEDURE", lxPROCEDURE);
-  AddNodeKey("THEN", lxTHEN);
-  AddNodeKey("WHILE", lxWHILE);
-  AddNodeKey("BY", lxBY);
-  AddNodeKey("CONST", lxCONST);
-  AddNodeKey("ELSIF", lxELSIF);
-  AddNodeKey("IMPORT", lxIMPORT);
-  AddNodeKey("MODULE", lxMODULE);
-  AddNodeKey("OR", lxOR);
-  AddNodeKey("REPEAT", lxREPEAT);
-  AddNodeKey("TRUE", lxTRUE);
-  AddNodeKey("UNTIL", lxUNTIL);
-  AddNodeKey("FOR", lxFOR)
-END Init;
+    PROCEDURE enterkw (VAR i: INTEGER; kw: KEYWORD);
+    BEGIN
+        vocabulary.KW[i] := kw;
+        INC(i)
+    END enterkw;
 
 BEGIN
-  Init
+    scanners := C.create();
+
+    FOR i := 0 TO 255 DO
+        vocabulary.delimiters[i] := FALSE
+    END;
+
+    delim := "+-*/~&.,;|([{^=#<>:)]}";
+
+    FOR i := 0 TO LEN(delim) - 2 DO
+        vocabulary.delimiters[ORD(delim[i])] := TRUE
+    END;
+
+    i := 0;
+    enterkw(i, "ARRAY");
+    enterkw(i, "BEGIN");
+    enterkw(i, "BY");
+    enterkw(i, "CASE");
+    enterkw(i, "CONST");
+    enterkw(i, "DIV");
+    enterkw(i, "DO");
+    enterkw(i, "ELSE");
+    enterkw(i, "ELSIF");
+    enterkw(i, "END");
+    enterkw(i, "FALSE");
+    enterkw(i, "FOR");
+    enterkw(i, "IF");
+    enterkw(i, "IMPORT");
+    enterkw(i, "IN");
+    enterkw(i, "IS");
+    enterkw(i, "MOD");
+    enterkw(i, "MODULE");
+    enterkw(i, "NIL");
+    enterkw(i, "OF");
+    enterkw(i, "OR");
+    enterkw(i, "POINTER");
+    enterkw(i, "PROCEDURE");
+    enterkw(i, "RECORD");
+    enterkw(i, "REPEAT");
+    enterkw(i, "RETURN");
+    enterkw(i, "THEN");
+    enterkw(i, "TO");
+    enterkw(i, "TRUE");
+    enterkw(i, "TYPE");
+    enterkw(i, "UNTIL");
+    enterkw(i, "VAR");
+    enterkw(i, "WHILE");
+
+    NEW(vocabulary.ident);
+    vocabulary.ident.s       := "";
+    vocabulary.ident.offset  := -1;
+    vocabulary.ident.offsetW := -1;
+    vocabulary.idents  := NIL
+END init;
+
+
+BEGIN
+    init
 END SCAN.

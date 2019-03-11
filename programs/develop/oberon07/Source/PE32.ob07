@@ -1,0 +1,733 @@
+﻿(*
+    BSD 2-Clause License
+
+    Copyright (c) 2018, 2019, Anton Krotov
+    All rights reserved.
+*)
+
+MODULE PE32;
+
+IMPORT BIN, LISTS, UTILS, WR := WRITER, mConst := CONSTANTS, CHL := CHUNKLISTS;
+
+
+CONST
+
+    SIZE_OF_DWORD = 4;
+    SIZE_OF_WORD  = 2;
+
+    SIZE_OF_IMAGE_EXPORT_DIRECTORY = 40;
+
+    IMAGE_NUMBEROF_DIRECTORY_ENTRIES = 16;
+
+    IMAGE_SIZEOF_SHORT_NAME = 8;
+
+    SIZE_OF_IMAGE_FILE_HEADER* = 20;
+
+    SIZE_OF_IMAGE_SECTION_HEADER* = 40;
+
+    (* SectionHeader.Characteristics *)
+
+    SHC_text  = 060000020H;
+    SHC_data  = 0C0000040H;
+    SHC_bss   = 0C00000C0H;
+
+    SectionAlignment = 1000H;
+    FileAlignment    =  200H;
+
+
+TYPE
+
+    WORD  = WCHAR;
+    DWORD = INTEGER;
+
+    NAME* = ARRAY IMAGE_SIZEOF_SHORT_NAME OF CHAR;
+
+
+    IMAGE_DATA_DIRECTORY = RECORD
+
+        VirtualAddress:  DWORD;
+        Size:            DWORD
+
+    END;
+
+
+    IMAGE_OPTIONAL_HEADER = RECORD
+
+        Magic:                        WORD;
+        MajorLinkerVersion:           BYTE;
+        MinorLinkerVersion:           BYTE;
+        SizeOfCode:                   DWORD;
+        SizeOfInitializedData:        DWORD;
+        SizeOfUninitializedData:      DWORD;
+        AddressOfEntryPoint:          DWORD;
+        BaseOfCode:                   DWORD;
+        BaseOfData:                   DWORD;
+        ImageBase:                    DWORD;
+        SectionAlignment:             DWORD;
+        FileAlignment:                DWORD;
+        MajorOperatingSystemVersion:  WORD;
+        MinorOperatingSystemVersion:  WORD;
+        MajorImageVersion:            WORD;
+        MinorImageVersion:            WORD;
+        MajorSubsystemVersion:        WORD;
+        MinorSubsystemVersion:        WORD;
+        Win32VersionValue:            DWORD;
+        SizeOfImage:                  DWORD;
+        SizeOfHeaders:                DWORD;
+        CheckSum:                     DWORD;
+        Subsystem:                    WORD;
+        DllCharacteristics:           WORD;
+        SizeOfStackReserve:           DWORD;
+        SizeOfStackCommit:            DWORD;
+        SizeOfHeapReserve:            DWORD;
+        SizeOfHeapCommit:             DWORD;
+        LoaderFlags:                  DWORD;
+        NumberOfRvaAndSizes:          DWORD;
+
+        DataDirectory: ARRAY IMAGE_NUMBEROF_DIRECTORY_ENTRIES OF IMAGE_DATA_DIRECTORY
+
+    END;
+
+
+    IMAGE_FILE_HEADER* = RECORD
+
+        Machine*:               WORD;
+        NumberOfSections*:      WORD;
+        TimeDateStamp*:         DWORD;
+        PointerToSymbolTable*:  DWORD;
+        NumberOfSymbols*:       DWORD;
+        SizeOfOptionalHeader*:  WORD;
+        Characteristics*:       WORD
+
+    END;
+
+
+    IMAGE_NT_HEADERS = RECORD
+
+        Signature:       ARRAY 4 OF BYTE;
+        FileHeader:      IMAGE_FILE_HEADER;
+        OptionalHeader:  IMAGE_OPTIONAL_HEADER
+
+    END;
+
+
+    IMAGE_SECTION_HEADER* = RECORD
+
+        Name*: NAME;
+
+        VirtualSize*,
+        VirtualAddress*,
+        SizeOfRawData*,
+        PointerToRawData*,
+        PointerToRelocations*,
+        PointerToLinenumbers*:   DWORD;
+
+        NumberOfRelocations*,
+        NumberOfLinenumbers*:    WORD;
+
+        Characteristics*:        DWORD
+
+    END;
+
+
+    IMAGE_EXPORT_DIRECTORY = RECORD
+
+        Characteristics:       DWORD;
+        TimeDateStamp:         DWORD;
+        MajorVersion:          WORD;
+        MinorVersion:          WORD;
+        Name,
+        Base,
+        NumberOfFunctions,
+        NumberOfNames,
+        AddressOfFunctions,
+        AddressOfNames,
+        AddressOfNameOrdinals: DWORD
+
+    END;
+
+
+    VIRTUAL_ADDR = RECORD
+
+        Code, Data, Bss, Import: INTEGER
+
+    END;
+
+
+    FILE = WR.FILE;
+
+
+VAR
+
+    msdos:           ARRAY 128 OF BYTE;
+    PEHeader:        IMAGE_NT_HEADERS;
+    SectionHeaders:  ARRAY 16 OF IMAGE_SECTION_HEADER;
+    Relocations:     LISTS.LIST;
+    bit64:           BOOLEAN;
+    libcnt:          INTEGER;
+
+
+PROCEDURE SIZE (): INTEGER;
+    RETURN SIZE_OF_DWORD * (ORD(bit64) + 1)
+END SIZE;
+
+
+PROCEDURE Export (program: BIN.PROGRAM; DataRVA: INTEGER; VAR ExportDir: IMAGE_EXPORT_DIRECTORY): INTEGER;
+BEGIN
+
+    ExportDir.Characteristics        :=  0;
+    ExportDir.TimeDateStamp          :=  PEHeader.FileHeader.TimeDateStamp;
+    ExportDir.MajorVersion           :=  0X;
+    ExportDir.MinorVersion           :=  0X;
+    ExportDir.Name                   :=  program.modname + DataRVA;
+    ExportDir.Base                   :=  0;
+    ExportDir.NumberOfFunctions      :=  LISTS.count(program.exp_list);
+    ExportDir.NumberOfNames          :=  ExportDir.NumberOfFunctions;
+    ExportDir.AddressOfFunctions     :=  SIZE_OF_IMAGE_EXPORT_DIRECTORY;
+    ExportDir.AddressOfNames         :=  ExportDir.AddressOfFunctions + ExportDir.NumberOfFunctions * SIZE_OF_DWORD;
+    ExportDir.AddressOfNameOrdinals  :=  ExportDir.AddressOfNames     + ExportDir.NumberOfFunctions * SIZE_OF_DWORD
+
+    RETURN SIZE_OF_IMAGE_EXPORT_DIRECTORY + ExportDir.NumberOfFunctions * (2 * SIZE_OF_DWORD + SIZE_OF_WORD)
+END Export;
+
+
+PROCEDURE align (n, _align: INTEGER): INTEGER;
+BEGIN
+    IF n MOD _align # 0 THEN
+        n := n + _align - (n MOD _align)
+    END
+
+    RETURN n
+END align;
+
+
+PROCEDURE GetProcCount (lib: BIN.IMPRT): INTEGER;
+VAR
+    import: BIN.IMPRT;
+    res:    INTEGER;
+
+BEGIN
+    res := 0;
+    import := lib.next(BIN.IMPRT);
+    WHILE (import # NIL) & (import.label # 0) DO
+        INC(res);
+        import := import.next(BIN.IMPRT)
+    END
+
+    RETURN res
+END GetProcCount;
+
+
+PROCEDURE GetImportSize (imp_list: LISTS.LIST): INTEGER;
+VAR
+    import: BIN.IMPRT;
+    proccnt: INTEGER;
+    procoffs: INTEGER;
+    OriginalCurrentThunk,
+    CurrentThunk: INTEGER;
+
+BEGIN
+    libcnt  := 0;
+    proccnt := 0;
+    import  := imp_list.first(BIN.IMPRT);
+    WHILE import # NIL DO
+        IF import.label = 0 THEN
+            INC(libcnt)
+        ELSE
+            INC(proccnt)
+        END;
+        import := import.next(BIN.IMPRT)
+    END;
+
+    procoffs := 0;
+
+    import  := imp_list.first(BIN.IMPRT);
+    WHILE import # NIL DO
+        IF import.label = 0 THEN
+            import.OriginalFirstThunk := procoffs;
+            import.FirstThunk := procoffs + (GetProcCount(import) + 1);
+            OriginalCurrentThunk := import.OriginalFirstThunk;
+            CurrentThunk := import.FirstThunk;
+            procoffs := procoffs + (GetProcCount(import) + 1) * 2
+        ELSE
+            import.OriginalFirstThunk := OriginalCurrentThunk;
+            import.FirstThunk := CurrentThunk;
+            INC(OriginalCurrentThunk);
+            INC(CurrentThunk)
+        END;
+        import := import.next(BIN.IMPRT)
+    END
+
+    RETURN (libcnt + 1) * 5 * SIZE_OF_DWORD + (proccnt + libcnt) * 2 * SIZE()
+END GetImportSize;
+
+
+PROCEDURE fixup (program: BIN.PROGRAM; Address: VIRTUAL_ADDR);
+VAR
+    reloc:   BIN.RELOC;
+    iproc:   BIN.IMPRT;
+    L:       INTEGER;
+    delta:   INTEGER;
+    AdrImp:  INTEGER;
+
+BEGIN
+    AdrImp := Address.Import + (libcnt + 1) * 5 * SIZE_OF_DWORD;
+
+    reloc := program.rel_list.first(BIN.RELOC);
+    WHILE reloc # NIL DO
+
+        L := BIN.get32le(program.code, reloc.offset);
+        delta := 3 - reloc.offset - Address.Code - 7 * ORD(bit64);
+
+        CASE reloc.opcode OF
+
+        |BIN.PICDATA:
+              BIN.put32le(program.code, reloc.offset, L + Address.Data + delta)
+
+        |BIN.PICCODE:
+              BIN.put32le(program.code, reloc.offset, BIN.GetLabel(program, L) + Address.Code + delta)
+
+        |BIN.PICBSS:
+              BIN.put32le(program.code, reloc.offset, L + Address.Bss + delta)
+
+        |BIN.PICIMP:
+              iproc := BIN.GetIProc(program, L);
+              BIN.put32le(program.code, reloc.offset, iproc.FirstThunk * SIZE() + AdrImp + delta)
+
+        END;
+
+        reloc := reloc.next(BIN.RELOC)
+    END
+END fixup;
+
+
+PROCEDURE WriteWord (file: FILE; w: WORD);
+BEGIN
+    WR.Write16LE(file, ORD(w))
+END WriteWord;
+
+
+PROCEDURE WriteName* (File: FILE; name: NAME);
+VAR
+    i, nameLen: INTEGER;
+
+BEGIN
+    nameLen := LENGTH(name);
+
+    FOR i := 0 TO nameLen - 1 DO
+        WR.WriteByte(File, ORD(name[i]))
+    END;
+
+    i := LEN(name) - nameLen;
+    WHILE i > 0 DO
+        WR.WriteByte(File, 0);
+        DEC(i)
+    END
+
+END WriteName;
+
+
+PROCEDURE WriteSectionHeader* (file: FILE; h: IMAGE_SECTION_HEADER);
+VAR
+    i, nameLen: INTEGER;
+
+BEGIN
+    nameLen := LENGTH(h.Name);
+
+    FOR i := 0 TO nameLen - 1 DO
+        WR.WriteByte(file, ORD(h.Name[i]))
+    END;
+
+    i := LEN(h.Name) - nameLen;
+    WHILE i > 0 DO
+        WR.WriteByte(file, 0);
+        DEC(i)
+    END;
+
+    WR.Write32LE(file, h.VirtualSize);
+    WR.Write32LE(file, h.VirtualAddress);
+    WR.Write32LE(file, h.SizeOfRawData);
+    WR.Write32LE(file, h.PointerToRawData);
+    WR.Write32LE(file, h.PointerToRelocations);
+    WR.Write32LE(file, h.PointerToLinenumbers);
+
+    WriteWord(file, h.NumberOfRelocations);
+    WriteWord(file, h.NumberOfLinenumbers);
+
+    WR.Write32LE(file, h.Characteristics)
+END WriteSectionHeader;
+
+
+PROCEDURE WriteFileHeader* (file: FILE; h: IMAGE_FILE_HEADER);
+BEGIN
+    WriteWord(file, h.Machine);
+    WriteWord(file, h.NumberOfSections);
+
+    WR.Write32LE(file, h.TimeDateStamp);
+    WR.Write32LE(file, h.PointerToSymbolTable);
+    WR.Write32LE(file, h.NumberOfSymbols);
+
+    WriteWord(file, h.SizeOfOptionalHeader);
+    WriteWord(file, h.Characteristics)
+END WriteFileHeader;
+
+
+PROCEDURE write* (program: BIN.PROGRAM; FileName: ARRAY OF CHAR; BaseAddress: INTEGER; console, dll, amd64: BOOLEAN);
+VAR
+    i, n: INTEGER;
+
+    Size: RECORD
+
+        Code, Data, Bss, Stack, Import, Reloc, Export: INTEGER
+
+    END;
+
+    Address: VIRTUAL_ADDR;
+
+    File: FILE;
+
+    import:       BIN.IMPRT;
+    ImportTable:  CHL.INTLIST;
+
+    ExportDir:  IMAGE_EXPORT_DIRECTORY;
+    export:     BIN.EXPRT;
+
+
+    PROCEDURE WriteExportDir (file: FILE; e: IMAGE_EXPORT_DIRECTORY);
+    BEGIN
+        WR.Write32LE(file, e.Characteristics);
+        WR.Write32LE(file, e.TimeDateStamp);
+
+        WriteWord(file, e.MajorVersion);
+        WriteWord(file, e.MinorVersion);
+
+        WR.Write32LE(file, e.Name);
+        WR.Write32LE(file, e.Base);
+        WR.Write32LE(file, e.NumberOfFunctions);
+        WR.Write32LE(file, e.NumberOfNames);
+        WR.Write32LE(file, e.AddressOfFunctions);
+        WR.Write32LE(file, e.AddressOfNames);
+        WR.Write32LE(file, e.AddressOfNameOrdinals)
+    END WriteExportDir;
+
+
+    PROCEDURE WriteOptHeader (file: FILE; h: IMAGE_OPTIONAL_HEADER);
+    VAR
+        i: INTEGER;
+
+    BEGIN
+
+        WriteWord(file, h.Magic);
+
+        WR.WriteByte(file, h.MajorLinkerVersion);
+        WR.WriteByte(file, h.MinorLinkerVersion);
+
+        WR.Write32LE(file, h.SizeOfCode);
+        WR.Write32LE(file, h.SizeOfInitializedData);
+        WR.Write32LE(file, h.SizeOfUninitializedData);
+        WR.Write32LE(file, h.AddressOfEntryPoint);
+        WR.Write32LE(file, h.BaseOfCode);
+
+        IF bit64 THEN
+            WR.Write64LE(file, h.ImageBase)
+        ELSE
+            WR.Write32LE(file, h.BaseOfData);
+            WR.Write32LE(file, h.ImageBase)
+        END;
+
+        WR.Write32LE(file, h.SectionAlignment);
+        WR.Write32LE(file, h.FileAlignment);
+
+        WriteWord(file, h.MajorOperatingSystemVersion);
+        WriteWord(file, h.MinorOperatingSystemVersion);
+        WriteWord(file, h.MajorImageVersion);
+        WriteWord(file, h.MinorImageVersion);
+        WriteWord(file, h.MajorSubsystemVersion);
+        WriteWord(file, h.MinorSubsystemVersion);
+
+        WR.Write32LE(file, h.Win32VersionValue);
+        WR.Write32LE(file, h.SizeOfImage);
+        WR.Write32LE(file, h.SizeOfHeaders);
+        WR.Write32LE(file, h.CheckSum);
+
+        WriteWord(file, h.Subsystem);
+        WriteWord(file, h.DllCharacteristics);
+
+        IF bit64 THEN
+            WR.Write64LE(file, h.SizeOfStackReserve);
+            WR.Write64LE(file, h.SizeOfStackCommit);
+            WR.Write64LE(file, h.SizeOfHeapReserve);
+            WR.Write64LE(file, h.SizeOfHeapCommit)
+        ELSE
+            WR.Write32LE(file, h.SizeOfStackReserve);
+            WR.Write32LE(file, h.SizeOfStackCommit);
+            WR.Write32LE(file, h.SizeOfHeapReserve);
+            WR.Write32LE(file, h.SizeOfHeapCommit)
+        END;
+
+        WR.Write32LE(file, h.LoaderFlags);
+        WR.Write32LE(file, h.NumberOfRvaAndSizes);
+
+        FOR i := 0 TO LEN(h.DataDirectory) - 1 DO
+            WR.Write32LE(file, h.DataDirectory[i].VirtualAddress);
+            WR.Write32LE(file, h.DataDirectory[i].Size)
+        END
+
+    END WriteOptHeader;
+
+
+    PROCEDURE WritePEHeader (file: FILE; h: IMAGE_NT_HEADERS);
+    BEGIN
+        WR.Write(file, h.Signature, LEN(h.Signature));
+        WriteFileHeader(file, h.FileHeader);
+        WriteOptHeader(file, h.OptionalHeader)
+    END WritePEHeader;
+
+
+    PROCEDURE InitSection (VAR section: IMAGE_SECTION_HEADER; Name: NAME; Characteristics: DWORD);
+    BEGIN
+        section.Name                  :=  Name;
+        section.PointerToRelocations  :=  0;
+        section.PointerToLinenumbers  :=  0;
+        section.NumberOfRelocations   :=  0X;
+        section.NumberOfLinenumbers   :=  0X;
+        section.Characteristics       :=  Characteristics
+    END InitSection;
+
+
+BEGIN
+    bit64 := amd64;
+    Relocations := LISTS.create(NIL);
+
+    Size.Code  := CHL.Length(program.code);
+    Size.Data  := CHL.Length(program.data);
+    Size.Bss   := program.bss;
+    Size.Stack := program.stack;
+
+    PEHeader.Signature[0] := 50H;
+    PEHeader.Signature[1] := 45H;
+    PEHeader.Signature[2] := 0;
+    PEHeader.Signature[3] := 0;
+
+    IF amd64 THEN
+        PEHeader.FileHeader.Machine := 08664X
+    ELSE
+        PEHeader.FileHeader.Machine := 014CX
+    END;
+
+    PEHeader.FileHeader.NumberOfSections := WCHR(4 + ORD(dll));
+
+    PEHeader.FileHeader.TimeDateStamp         :=  UTILS.UnixTime();
+    PEHeader.FileHeader.PointerToSymbolTable  :=  0H;
+    PEHeader.FileHeader.NumberOfSymbols       :=  0H;
+    PEHeader.FileHeader.SizeOfOptionalHeader  :=  WCHR(0E0H + 10H * ORD(amd64));
+    PEHeader.FileHeader.Characteristics       :=  WCHR(010EH + (20H - 100H) * ORD(amd64) + 2000H * ORD(dll));
+
+    PEHeader.OptionalHeader.Magic                        :=  WCHR(010BH + 100H * ORD(amd64));
+    PEHeader.OptionalHeader.MajorLinkerVersion           :=  mConst.vMajor;
+    PEHeader.OptionalHeader.MinorLinkerVersion           :=  mConst.vMinor;
+    PEHeader.OptionalHeader.SizeOfCode                   :=  align(Size.Code, FileAlignment);
+    PEHeader.OptionalHeader.SizeOfInitializedData        :=  0;
+    PEHeader.OptionalHeader.SizeOfUninitializedData      :=  0;
+    PEHeader.OptionalHeader.AddressOfEntryPoint          :=  SectionAlignment;
+    PEHeader.OptionalHeader.BaseOfCode                   :=  SectionAlignment;
+    PEHeader.OptionalHeader.BaseOfData                   :=  PEHeader.OptionalHeader.BaseOfCode + align(Size.Code, SectionAlignment);
+    PEHeader.OptionalHeader.ImageBase                    :=  BaseAddress;
+    PEHeader.OptionalHeader.SectionAlignment             :=  SectionAlignment;
+    PEHeader.OptionalHeader.FileAlignment                :=  FileAlignment;
+    PEHeader.OptionalHeader.MajorOperatingSystemVersion  :=  1X;
+    PEHeader.OptionalHeader.MinorOperatingSystemVersion  :=  0X;
+    PEHeader.OptionalHeader.MajorImageVersion            :=  0X;
+    PEHeader.OptionalHeader.MinorImageVersion            :=  0X;
+    PEHeader.OptionalHeader.MajorSubsystemVersion        :=  4X;
+    PEHeader.OptionalHeader.MinorSubsystemVersion        :=  0X;
+    PEHeader.OptionalHeader.Win32VersionValue            :=  0H;
+    PEHeader.OptionalHeader.SizeOfImage                  :=  SectionAlignment;
+    PEHeader.OptionalHeader.SizeOfHeaders                :=  400H;
+    PEHeader.OptionalHeader.CheckSum                     :=  0;
+    PEHeader.OptionalHeader.Subsystem                    :=  WCHR((2 + ORD(console)) * ORD(~dll));
+    PEHeader.OptionalHeader.DllCharacteristics           :=  0040X;
+    PEHeader.OptionalHeader.SizeOfStackReserve           :=  Size.Stack;
+    PEHeader.OptionalHeader.SizeOfStackCommit            :=  Size.Stack DIV 16;
+    PEHeader.OptionalHeader.SizeOfHeapReserve            :=  100000H;
+    PEHeader.OptionalHeader.SizeOfHeapCommit             :=  10000H;
+    PEHeader.OptionalHeader.LoaderFlags                  :=  0;
+    PEHeader.OptionalHeader.NumberOfRvaAndSizes          :=  IMAGE_NUMBEROF_DIRECTORY_ENTRIES;
+
+    InitSection(SectionHeaders[0], ".text", SHC_text);
+    SectionHeaders[0].VirtualSize           :=  Size.Code;
+    SectionHeaders[0].VirtualAddress        :=  1000H;
+    SectionHeaders[0].SizeOfRawData         :=  align(Size.Code, FileAlignment);
+    SectionHeaders[0].PointerToRawData      :=  PEHeader.OptionalHeader.SizeOfHeaders;
+
+    InitSection(SectionHeaders[1], ".data", SHC_data);
+    SectionHeaders[1].VirtualSize           :=  Size.Data;
+    SectionHeaders[1].VirtualAddress        :=  align(SectionHeaders[0].VirtualAddress + SectionHeaders[0].VirtualSize, SectionAlignment);
+    SectionHeaders[1].SizeOfRawData         :=  align(Size.Data, FileAlignment);
+    SectionHeaders[1].PointerToRawData      :=  SectionHeaders[0].PointerToRawData + SectionHeaders[0].SizeOfRawData;
+
+    InitSection(SectionHeaders[2], ".bss", SHC_bss);
+    SectionHeaders[2].VirtualSize           :=  Size.Bss;
+    SectionHeaders[2].VirtualAddress        :=  align(SectionHeaders[1].VirtualAddress + SectionHeaders[1].VirtualSize, SectionAlignment);
+    SectionHeaders[2].SizeOfRawData         :=  0;
+    SectionHeaders[2].PointerToRawData      :=  SectionHeaders[1].PointerToRawData + SectionHeaders[1].SizeOfRawData;
+
+    Size.Import := GetImportSize(program.imp_list);
+
+    InitSection(SectionHeaders[3], ".idata", SHC_data);
+    SectionHeaders[3].VirtualSize           :=  Size.Import + CHL.Length(program.import);
+    SectionHeaders[3].VirtualAddress        :=  align(SectionHeaders[2].VirtualAddress + SectionHeaders[2].VirtualSize, SectionAlignment);
+    SectionHeaders[3].SizeOfRawData         :=  align(SectionHeaders[3].VirtualSize, FileAlignment);
+    SectionHeaders[3].PointerToRawData      :=  SectionHeaders[2].PointerToRawData + SectionHeaders[2].SizeOfRawData;
+
+    Address.Code   := SectionHeaders[0].VirtualAddress + PEHeader.OptionalHeader.ImageBase;
+    Address.Data   := SectionHeaders[1].VirtualAddress + PEHeader.OptionalHeader.ImageBase;
+    Address.Bss    := SectionHeaders[2].VirtualAddress + PEHeader.OptionalHeader.ImageBase;
+    Address.Import := SectionHeaders[3].VirtualAddress + PEHeader.OptionalHeader.ImageBase;
+
+    fixup(program, Address);
+
+    IF dll THEN
+        Size.Export := Export(program, SectionHeaders[1].VirtualAddress, ExportDir);
+
+        InitSection(SectionHeaders[4], ".edata", SHC_data);
+        SectionHeaders[4].VirtualSize           :=  Size.Export + CHL.Length(program.export);
+        SectionHeaders[4].VirtualAddress        :=  align(SectionHeaders[3].VirtualAddress + SectionHeaders[3].VirtualSize, SectionAlignment);
+        SectionHeaders[4].SizeOfRawData         :=  align(SectionHeaders[4].VirtualSize, FileAlignment);
+        SectionHeaders[4].PointerToRawData      :=  SectionHeaders[3].PointerToRawData + SectionHeaders[3].SizeOfRawData;
+    END;
+
+    FOR i := 0 TO IMAGE_NUMBEROF_DIRECTORY_ENTRIES - 1 DO
+        PEHeader.OptionalHeader.DataDirectory[i].VirtualAddress := 0;
+        PEHeader.OptionalHeader.DataDirectory[i].Size := 0
+    END;
+
+    IF dll THEN
+        PEHeader.OptionalHeader.DataDirectory[0].VirtualAddress := SectionHeaders[4].VirtualAddress;
+        PEHeader.OptionalHeader.DataDirectory[0].Size := SectionHeaders[4].VirtualSize
+    END;
+
+    PEHeader.OptionalHeader.DataDirectory[1].VirtualAddress := SectionHeaders[3].VirtualAddress;
+    PEHeader.OptionalHeader.DataDirectory[1].Size := SectionHeaders[3].VirtualSize;
+
+    FOR i := 0 TO ORD(PEHeader.FileHeader.NumberOfSections) - 1 DO
+        INC(PEHeader.OptionalHeader.SizeOfInitializedData, SectionHeaders[i].SizeOfRawData)
+    END;
+
+    DEC(PEHeader.OptionalHeader.SizeOfInitializedData, SectionHeaders[0].SizeOfRawData);
+    DEC(PEHeader.OptionalHeader.SizeOfInitializedData, SectionHeaders[2].SizeOfRawData);
+
+    PEHeader.OptionalHeader.SizeOfUninitializedData := align(SectionHeaders[2].VirtualSize, FileAlignment);
+
+    FOR i := 0 TO ORD(PEHeader.FileHeader.NumberOfSections) - 1 DO
+        INC(PEHeader.OptionalHeader.SizeOfImage, align(SectionHeaders[i].VirtualSize, SectionAlignment))
+    END;
+
+    n := 0;
+    BIN.InitArray(msdos, n, "4D5A80000100000004001000FFFF000040010000000000004000000000000000");
+    BIN.InitArray(msdos, n, "0000000000000000000000000000000000000000000000000000000080000000");
+    BIN.InitArray(msdos, n, "0E1FBA0E00B409CD21B8014CCD21546869732070726F6772616D2063616E6E6F");
+    BIN.InitArray(msdos, n, "742062652072756E20696E20444F53206D6F64652E0D0A240000000000000000");
+
+    File := WR.Create(FileName);
+
+    WR.Write(File, msdos, LEN(msdos));
+
+    WritePEHeader(File, PEHeader);
+
+    FOR i := 0 TO ORD(PEHeader.FileHeader.NumberOfSections) - 1 DO
+        WriteSectionHeader(File, SectionHeaders[i])
+    END;
+
+    WR.Padding(File, FileAlignment);
+
+    CHL.WriteToFile(File, program.code);
+    WR.Padding(File, FileAlignment);
+
+    CHL.WriteToFile(File, program.data);
+    WR.Padding(File, FileAlignment);
+
+    n := (libcnt + 1) * 5;
+    ImportTable := CHL.CreateIntList();
+
+    FOR i := 0 TO (Size.Import - n * SIZE_OF_DWORD) DIV SIZE() + n - 1 DO
+        CHL.PushInt(ImportTable, 0)
+    END;
+
+    i := 0;
+    import := program.imp_list.first(BIN.IMPRT);
+    WHILE import # NIL DO
+        IF import.label = 0 THEN
+            CHL.SetInt(ImportTable, i + 0, import.OriginalFirstThunk * SIZE() + SectionHeaders[3].VirtualAddress + n * SIZE_OF_DWORD);
+            CHL.SetInt(ImportTable, i + 1, 0);
+            CHL.SetInt(ImportTable, i + 2, 0);
+            CHL.SetInt(ImportTable, i + 3, import.nameoffs + Size.Import + SectionHeaders[3].VirtualAddress);
+            CHL.SetInt(ImportTable, i + 4, import.FirstThunk * SIZE() + SectionHeaders[3].VirtualAddress + n * SIZE_OF_DWORD);
+            i := i + 5
+        END;
+        import := import.next(BIN.IMPRT)
+    END;
+
+    CHL.SetInt(ImportTable, i + 0, 0);
+    CHL.SetInt(ImportTable, i + 1, 0);
+    CHL.SetInt(ImportTable, i + 2, 0);
+    CHL.SetInt(ImportTable, i + 3, 0);
+    CHL.SetInt(ImportTable, i + 4, 0);
+
+    import := program.imp_list.first(BIN.IMPRT);
+    WHILE import # NIL DO
+        IF import.label # 0 THEN
+            CHL.SetInt(ImportTable, import.OriginalFirstThunk + n, import.nameoffs + Size.Import + SectionHeaders[3].VirtualAddress - 2);
+            CHL.SetInt(ImportTable, import.FirstThunk + n,         import.nameoffs + Size.Import + SectionHeaders[3].VirtualAddress - 2)
+        END;
+        import := import.next(BIN.IMPRT)
+    END;
+
+    FOR i := 0 TO n - 1 DO
+        WR.Write32LE(File, CHL.GetInt(ImportTable, i))
+    END;
+
+    FOR i := n TO CHL.Length(ImportTable) - 1 DO
+        IF amd64 THEN
+            WR.Write64LE(File, CHL.GetInt(ImportTable, i))
+        ELSE
+            WR.Write32LE(File, CHL.GetInt(ImportTable, i))
+        END
+    END;
+
+    CHL.WriteToFile(File, program.import);
+    WR.Padding(File, FileAlignment);
+
+    IF dll THEN
+
+        INC(ExportDir.AddressOfFunctions,    SectionHeaders[4].VirtualAddress);
+        INC(ExportDir.AddressOfNames,        SectionHeaders[4].VirtualAddress);
+        INC(ExportDir.AddressOfNameOrdinals, SectionHeaders[4].VirtualAddress);
+
+        WriteExportDir(File, ExportDir);
+
+        export := program.exp_list.first(BIN.EXPRT);
+        WHILE export # NIL DO
+            WR.Write32LE(File, export.label + SectionHeaders[0].VirtualAddress);
+            export := export.next(BIN.EXPRT)
+        END;
+
+        export := program.exp_list.first(BIN.EXPRT);
+        WHILE export # NIL DO
+            WR.Write32LE(File, export.nameoffs + Size.Export + SectionHeaders[4].VirtualAddress);
+            export := export.next(BIN.EXPRT)
+        END;
+
+        FOR i := 0 TO ExportDir.NumberOfFunctions - 1 DO
+            WriteWord(File, WCHR(i))
+        END;
+
+        CHL.WriteToFile(File, program.export);
+        WR.Padding(File, FileAlignment)
+    END;
+
+    WR.Close(File)
+END write;
+
+
+END PE32.

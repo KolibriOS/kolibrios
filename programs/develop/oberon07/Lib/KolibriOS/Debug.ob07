@@ -1,5 +1,5 @@
-(*
-    Copyright 2016 Anton Krotov
+﻿(*
+    Copyright 2016, 2018 Anton Krotov
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU Lesser General Public License as published by
@@ -21,11 +21,11 @@ IMPORT KOSAPI, sys := SYSTEM;
 
 CONST
 
-  d = 1.0D0 - 5.0D-12;
+  d = 1.0 - 5.0E-12;
 
 VAR
 
-  Realp: PROCEDURE (x: LONGREAL; width: INTEGER);
+  Realp: PROCEDURE (x: REAL; width: INTEGER);
 
 PROCEDURE Char*(c: CHAR);
 VAR res: INTEGER;
@@ -72,7 +72,7 @@ BEGIN
   UNTIL i = 0
 END WriteInt;
 
-PROCEDURE IsNan(AValue: LONGREAL): BOOLEAN;
+PROCEDURE IsNan(AValue: REAL): BOOLEAN;
 VAR h, l: SET;
 BEGIN
   sys.GET(sys.ADR(AValue), l);
@@ -80,8 +80,8 @@ BEGIN
   RETURN (h * {20..30} = {20..30}) & ((h * {0..19} # {}) OR (l * {0..31} # {}))
 END IsNan;
 
-PROCEDURE IsInf(x: LONGREAL): BOOLEAN;
-  RETURN ABS(x) = sys.INF(LONGREAL)
+PROCEDURE IsInf(x: REAL): BOOLEAN;
+  RETURN ABS(x) = sys.INF()
 END IsInf;
 
 PROCEDURE Int*(x, width: INTEGER);
@@ -97,15 +97,15 @@ BEGIN
   END
 END Int;
 
-PROCEDURE OutInf(x: LONGREAL; width: INTEGER);
-VAR s: ARRAY 4 OF CHAR; i: INTEGER;
+PROCEDURE OutInf(x: REAL; width: INTEGER);
+VAR s: ARRAY 5 OF CHAR; i: INTEGER;
 BEGIN
   IF IsNan(x) THEN
     s := "Nan";
     INC(width)
-  ELSIF IsInf(x) & (x > 0.0D0) THEN
+  ELSIF IsInf(x) & (x > 0.0) THEN
     s := "+Inf"
-  ELSIF IsInf(x) & (x < 0.0D0) THEN
+  ELSIF IsInf(x) & (x < 0.0) THEN
     s := "-Inf"
   END;
   FOR i := 1 TO width - 4 DO
@@ -120,8 +120,8 @@ BEGIN
   Char(0AX)
 END Ln;
 
-PROCEDURE _FixReal(x: LONGREAL; width, p: INTEGER);
-VAR e, len, i: INTEGER; y: LONGREAL; minus: BOOLEAN;
+PROCEDURE _FixReal(x: REAL; width, p: INTEGER);
+VAR e, len, i: INTEGER; y: REAL; minus: BOOLEAN;
 BEGIN
   IF IsNan(x) OR IsInf(x) THEN
     OutInf(x, width)
@@ -130,23 +130,23 @@ BEGIN
   ELSE
     len := 0;
     minus := FALSE;
-    IF x < 0.0D0 THEN
+    IF x < 0.0 THEN
       minus := TRUE;
       INC(len);
       x := ABS(x)
     END;
     e := 0;
-    WHILE x >= 10.0D0 DO
-      x := x / 10.0D0;
+    WHILE x >= 10.0 DO
+      x := x / 10.0;
       INC(e)
     END;
     IF e >= 0 THEN
       len := len + e + p + 1;
-      IF x > 9.0D0 + d THEN
-	INC(len)
+      IF x > 9.0 + d THEN
+        INC(len)
       END;
       IF p > 0 THEN
-	INC(len)
+        INC(len)
       END
     ELSE
       len := len + p + 2
@@ -158,51 +158,51 @@ BEGIN
       Char("-")
     END;
     y := x;
-    WHILE (y < 1.0D0) & (y # 0.0D0) DO
-      y := y * 10.0D0;
+    WHILE (y < 1.0) & (y # 0.0) DO
+      y := y * 10.0;
       DEC(e)
     END;
     IF e < 0 THEN
-      IF x - LONG(FLT(FLOOR(x))) > d THEN
-	Char("1");
-	x := 0.0D0
+      IF x - FLT(FLOOR(x)) > d THEN
+        Char("1");
+        x := 0.0
       ELSE
-	Char("0");
-	x := x * 10.0D0
+        Char("0");
+        x := x * 10.0
       END
     ELSE
       WHILE e >= 0 DO
-	IF x - LONG(FLT(FLOOR(x))) > d THEN
-	  IF x > 9.0D0 THEN
-	    String("10")
-	  ELSE
-	    Char(CHR(FLOOR(x) + ORD("0") + 1))
-	  END;
-	  x := 0.0D0
-	ELSE
-	  Char(CHR(FLOOR(x) + ORD("0")));
-	  x := (x - LONG(FLT(FLOOR(x)))) * 10.0D0
-	END;
-	DEC(e)
+        IF x - FLT(FLOOR(x)) > d THEN
+          IF x > 9.0 THEN
+            String("10")
+          ELSE
+            Char(CHR(FLOOR(x) + ORD("0") + 1))
+          END;
+          x := 0.0
+        ELSE
+          Char(CHR(FLOOR(x) + ORD("0")));
+          x := (x - FLT(FLOOR(x))) * 10.0
+        END;
+        DEC(e)
       END
     END;
     IF p > 0 THEN
       Char(".")
     END;
     WHILE p > 0 DO
-      IF x - LONG(FLT(FLOOR(x))) > d THEN
-	Char(CHR(FLOOR(x) + ORD("0") + 1));
-	x := 0.0D0
+      IF x - FLT(FLOOR(x)) > d THEN
+        Char(CHR(FLOOR(x) + ORD("0") + 1));
+        x := 0.0
       ELSE
-	Char(CHR(FLOOR(x) + ORD("0")));
-	x := (x - LONG(FLT(FLOOR(x)))) * 10.0D0
+        Char(CHR(FLOOR(x) + ORD("0")));
+        x := (x - FLT(FLOOR(x))) * 10.0
       END;
       DEC(p)
     END
   END
 END _FixReal;
 
-PROCEDURE Real*(x: LONGREAL; width: INTEGER);
+PROCEDURE Real*(x: REAL; width: INTEGER);
 VAR e, n, i: INTEGER; minus: BOOLEAN;
 BEGIN
   IF IsNan(x) OR IsInf(x) THEN
@@ -217,22 +217,22 @@ BEGIN
       width := 9
     END;
     width := width - 5;
-    IF x < 0.0D0 THEN
+    IF x < 0.0 THEN
       x := -x;
       minus := TRUE
     ELSE
       minus := FALSE
     END;
-    WHILE x >= 10.0D0 DO
-      x := x / 10.0D0;
+    WHILE x >= 10.0 DO
+      x := x / 10.0;
       INC(e)
     END;
-    WHILE (x < 1.0D0) & (x # 0.0D0) DO
-      x := x * 10.0D0;
+    WHILE (x < 1.0) & (x # 0.0) DO
+      x := x * 10.0;
       DEC(e)
     END;
-    IF x > 9.0D0 + d THEN
-      x := 1.0D0;
+    IF x > 9.0 + d THEN
+      x := 1.0;
       INC(e)
     END;
     FOR i := 1 TO n DO
@@ -260,7 +260,7 @@ BEGIN
   END
 END Real;
 
-PROCEDURE FixReal*(x: LONGREAL; width, p: INTEGER);
+PROCEDURE FixReal*(x: REAL; width, p: INTEGER);
 BEGIN
   Realp := Real;
   _FixReal(x, width, p)
@@ -282,7 +282,7 @@ VAR info: info_struct; res: INTEGER;
 BEGIN
   info.subfunc := 7;
   info.flags := 0;
-  info.param := sys.ADR(" ");
+  info.param := sys.SADR(" ");
   info.rsrvd1 := 0;
   info.rsrvd2 := 0;
   info.fname := "/rd/1/develop/board";

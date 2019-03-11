@@ -5,15 +5,13 @@ IMPORT KOSAPI, sys := SYSTEM, OpenDlg, ColorDlg;
 VAR header: ARRAY 1024 OF CHAR; back_color: INTEGER;
 
 PROCEDURE WindowRedrawStatus(p: INTEGER);
-VAR aux: INTEGER;
 BEGIN
-  aux := KOSAPI.sysfunc2(12, p)
+  KOSAPI.sysfunc2(12, p)
 END WindowRedrawStatus;
 
 PROCEDURE DefineAndDrawWindow(x, y, w, h, color, style, hcolor, hstyle, htext: INTEGER);
-VAR aux: INTEGER;
 BEGIN
-  aux := KOSAPI.sysfunc6(0, x * 65536 + w, y * 65536 + h, color + LSL(style, 24), hcolor + LSL(hstyle, 24), htext)
+  KOSAPI.sysfunc6(0, x * 65536 + w, y * 65536 + h, color + LSL(style, 24), hcolor + LSL(hstyle, 24), htext)
 END DefineAndDrawWindow;
 
 PROCEDURE WaitForEvent(): INTEGER;
@@ -21,15 +19,13 @@ PROCEDURE WaitForEvent(): INTEGER;
 END WaitForEvent;
 
 PROCEDURE ExitApp;
-VAR aux: INTEGER;
 BEGIN
-  aux := KOSAPI.sysfunc1(-1)
+  KOSAPI.sysfunc1(-1)
 END ExitApp;
 
 PROCEDURE pause(t: INTEGER);
-VAR aux: INTEGER;
 BEGIN
-  aux := KOSAPI.sysfunc2(5, t)
+  KOSAPI.sysfunc2(5, t)
 END pause;
 
 PROCEDURE Buttons;

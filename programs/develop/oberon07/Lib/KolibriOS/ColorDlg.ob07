@@ -1,5 +1,5 @@
-(*
-    Copyright 2016 Anton Krotov
+﻿(*
+    Copyright 2016, 2018 Anton Krotov
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU Lesser General Public License as published by
@@ -65,7 +65,7 @@ BEGIN
     res.color_type := 0;
     res.procinfo := sys.ADR(res.procinf[0]);
     res.com_area_name := sys.ADR(res.s_com_area_name[0]);
-    res.start_path := sys.ADR("/rd/1/colrdial");
+    res.start_path := sys.SADR("/rd/1/colrdial");
     res.draw_window := draw_window;
     res.status := 0;
     res.X := 0;
@@ -86,7 +86,7 @@ END Destroy;
 PROCEDURE Load;
 VAR Lib: INTEGER;
 
-  PROCEDURE GetProc(v: INTEGER; name: ARRAY OF CHAR);
+  PROCEDURE GetProc(Lib, v: INTEGER; name: ARRAY OF CHAR);
   VAR a: INTEGER;
   BEGIN
     a := KOSAPI.GetProcAdr(name, Lib);
@@ -96,8 +96,8 @@ VAR Lib: INTEGER;
 
 BEGIN
   Lib := KOSAPI.LoadLib("/rd/1/Lib/Proc_lib.obj");
-  GetProc(sys.ADR(Dialog_init), "ColorDialog_init");
-  GetProc(sys.ADR(Dialog_start), "ColorDialog_start");
+  GetProc(Lib, sys.ADR(Dialog_init), "ColorDialog_init");
+  GetProc(Lib, sys.ADR(Dialog_start), "ColorDialog_start");
 END Load;
 
 BEGIN
