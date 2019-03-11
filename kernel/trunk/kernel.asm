@@ -700,7 +700,9 @@ endg
         cmp     byte [BOOT.dev+0x10000], 1
         je      @f
 
-        call    register_ramdisk
+        mov     esi, boot_initramdisk
+        call    boot_log
+        call    ramdisk_init
 ;--------------------------------------
 @@:
         mov     esi, boot_initapic
