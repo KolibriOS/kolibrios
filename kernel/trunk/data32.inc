@@ -217,7 +217,27 @@ dll_cur_addr   dd MIN_DEFAULT_DLL_ADDR
 
 align 4
 keyboard   dd 1
-syslang    dd 1
+
+if lang eq en
+  SYSLANG = 1
+else if lang eq fi
+  SYSLANG = 2
+else if lang eq de
+  SYSLANG = 3
+else if lang eq ru
+  SYSLANG = 4
+else if lang eq fr
+  SYSLANG = 5
+else if lang eq et
+  SYSLANG = 6
+else if lang eq sp
+  SYSLANG = 7
+else if lang eq it
+  SYSLANG = 8
+else
+  display 'unsupported language specified',13,10
+end if
+syslang    dd SYSLANG
 
 boot_y     dd 10
 
