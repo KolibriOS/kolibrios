@@ -234,6 +234,8 @@ else if lang eq sp
   SYSLANG = 7
 else if lang eq it
   SYSLANG = 8
+else if lang eq ca
+  SYSLANG = 9
 else
   display 'unsupported language specified',13,10
 end if
