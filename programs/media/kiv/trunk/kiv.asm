@@ -288,6 +288,7 @@ button:
     cmp eax, 'bgr'
     jne @f
 
+	mcall   SF_BACKGROUND_SET, SSF_MODE_BG, 2 ;stretch by default
     call    set_as_bgr
     jmp still
 
@@ -512,6 +513,8 @@ set_as_bgr:
 	sub edi,sys_path+3
 	invoke  ini_set_str, inifileeskin, amain, aprogram, sys_path+2, edi
 	;add param '\S__'
+    cmp word[@PARAMS],'\T'
+    je @f
 	cmp word[@PARAMS],'\S'
 	je @f
 	mov esi, @PARAMS+4096-8
