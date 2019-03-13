@@ -250,8 +250,11 @@ void properties_dialog()
 						break;
 
 					default:
-						edit_box_key stdcall(#file_name_ed);
-						edit_box_key stdcall(#path_to_file_ed);
+						if (key_modifier & KEY_LCTRL) || (key_modifier & KEY_RCTRL) {
+							EAX = key_editbox; 
+							edit_box_key stdcall(#file_name_ed);
+							edit_box_key stdcall(#path_to_file_ed);
+						}
 				}
 				break;
 				

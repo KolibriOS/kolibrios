@@ -1,5 +1,5 @@
 /*
-SOFTWARE CENTER v2.81
+SOFTWARE CENTER v2.85
 */
 
 #define MEMSIZE 4096 * 15
@@ -30,6 +30,8 @@ int list_pos,
 
 char window_title[128],
 	 settings_ini_path[256] = "/sys/settings/";
+
+bool small_screen = false;
 
 #define LIST_BACKGROUND_COLOR 0xF3F3F3
 
@@ -77,6 +79,12 @@ void main()
 
 	DrawList();
 	window_height = row+1*list.item_h + list_pos + skin_height + 15;
+	if (window_height>screen.height) {
+		window_width = screen.width;
+		list.item_h -= 5;
+		window_height = row+1*list.item_h + list_pos + skin_height + 15;
+		small_screen = true;
+	}
 
 	loop() switch(WaitEvent())
 	{
@@ -98,13 +106,20 @@ void main()
 			system.color.get();
 			DefineAndDrawWindow(screen.width-window_width/2,screen.height-window_height/2,window_width,window_height,0x74,system.color.work,"",0);
 			GetProcessInfo(#Form, SelfInfo);
-			if (Form.status_window>2) { DrawTitle(#window_title); break; } else DrawTitle("");
-			draw_top_bar();
+			if (Form.status_window>2) { 
+				DrawTitle(#window_title);
+				break;
+			}
+			if (small_screen) {
+				DrawTitle(#window_title);
+				list.y = 0;	
+			} else {
+				DrawTitle(NULL); 
+				draw_top_bar();
+			}
 			DrawList();
 			DrawBar(0, row +1 * list.item_h + list_pos, Form.cwidth, -row - 1 * list.item_h - list_pos + Form.cheight, LIST_BACKGROUND_COLOR);
-			//if (list.cur_y == list.count) 
-				DrawSelection();
-			break;
+			DrawSelection();
 	}
 }
 
@@ -170,11 +185,14 @@ byte process_sections(dword sec_name, f_name)
 	}
 	col = 0;
 	old_row = row;
-	DrawBar(0, row * list.item_h + list_pos, Form.cwidth , 29, LIST_BACKGROUND_COLOR);
-	text_len = kfont.WriteIntoWindow(10, row * list.item_h + 10 + list_pos, LIST_BACKGROUND_COLOR, 0, 15, sec_name);
-	DrawBar(text_len+20, row * list.item_h + list_pos + 20, Form.cwidth-text_len-20, 1, 0xDCDCDC);
-	DrawBar(text_len+20, row * list.item_h + list_pos + 21, Form.cwidth-text_len-20, 1, 0xFCFCFC);
-	list_pos += 29;
+
+	if (!small_screen) {
+		DrawBar(0, row * list.item_h + list_pos, Form.cwidth , 29, LIST_BACKGROUND_COLOR);
+		text_len = kfont.WriteIntoWindow(10, row * list.item_h + 10 + list_pos, LIST_BACKGROUND_COLOR, 0, 15, sec_name);
+		DrawBar(text_len+20, row * list.item_h + list_pos + 20, Form.cwidth-text_len-20, 1, 0xDCDCDC);
+		DrawBar(text_len+20, row * list.item_h + list_pos + 21, Form.cwidth-text_len-20, 1, 0xFCFCFC);
+		list_pos += 29;		
+	}
 	ini_enum_keys stdcall (f_name, sec_name, #draw_icons_from_section);
 	return true;
 }
