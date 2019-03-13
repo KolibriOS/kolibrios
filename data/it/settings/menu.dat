@@ -135,7 +135,7 @@ Tastiera da schermo       /sys/zkey
 #18    **** EMULATORS ****
 DOSBox DOS Emulator       /KolibriOS/emul/DosBox/dosbox
 e80 (ZX Spectrum)         /KolibriOS/emul/e80/e80
-FCE Ultra - NES           /KolibriOS/emul/fceu/fce
+FCE Ultra - NES           /KolibriOS/emul/fceu/fceu
 Gameboy Color             /KolibriOS/emul/gameboy
 ScummVM (adventure)       /KolibriOS/emul/scummvm
 ZSNES Super Nintendo      /KolibriOS/emul/zsnes

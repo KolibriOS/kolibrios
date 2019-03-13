@@ -136,7 +136,7 @@ Teclado en pantalla       /sys/zkey
 #18    **** EMULATORS ****
 DOSBox DOS Emulator       /kolibrios/emul/DosBox/dosbox
 e80 (ZX Spectrum)         /kolibrios/emul/e80/e80
-FCE Ultra - NES           /kolibrios/emul/fceu/fce
+FCE Ultra - NES           /kolibrios/emul/fceu/fceu
 Gameboy Color             /kolibrios/emul/gameboy
 ScummVM (adventure)       /kolibrios/emul/scummvm
 ZSNES Super Nintendo      /kolibrios/emul/zsnes
