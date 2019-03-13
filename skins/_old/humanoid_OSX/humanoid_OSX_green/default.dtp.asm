@@ -1,11 +1,11 @@
 ;SYSTEM COLORS (.DTP) - COMPILE WITH FASM
-frame            	dd 0x131313
-grab             	dd 0x3E3E3E
-grab_button      	dd 0x5e8833
-grab_button_text 	dd 0x1f3111
-grab_text        	dd 0x70a039
-work             	dd 0xc8c8c8
-work_button      	dd 0xc8c8c8
-work_button_text 	dd 0x000000
-work_text        	dd 0x000000
-work_graph       	dd 0x868686
+unused1          dd 0x586786
+unused2          dd 0xFEFEFE
+work_3d_dark     dd 0xB9B9B9
+work_3d_light    dd 0xE3E3E3
+title_text       dd 0x70a039
+work             dd 0xc8c8c8
+work_button      dd 0xD8D8D8
+work_button_text dd 0x000000
+work_text        dd 0x000000
+work_graph       dd 0x7A7A7A

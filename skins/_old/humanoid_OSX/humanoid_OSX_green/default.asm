@@ -1,6 +1,6 @@
 ;SKIN (.SKN) - COMPILE WITH FASM
 
-include 'skin.inc'
+include '../skin.inc'
 
 SKIN_PARAMS \
   height          = bmp_base.height,\     ; skin height
@@ -14,8 +14,8 @@ SKIN_PARAMS \
   dtp             = 'default.dtp'          ; dtp colors
 
 SKIN_BUTTONS \
-  close    = [-20:3][16:16],\             ; buttons coordinates
-  minimize = [-40:3][16:16]               ; [left:top][width:height]
+  close    = [-20:4][16:16],\             ; buttons coordinates
+  minimize = [-40:4][16:16]               ; [left:top][width:height]
 
 SKIN_BITMAPS \
   left active   = bmp_left,\              ; skin bitmaps pointers
@@ -28,6 +28,6 @@ SKIN_BITMAPS \
 BITMAP bmp_left ,'left.bmp'               ; skin bitmaps
 BITMAP bmp_oper ,'oper.bmp'
 BITMAP bmp_base ,'base.bmp'
-BITMAP bmp_left1,'left_1.bmp'
+BITMAP bmp_left1,'left.bmp'               ;the same
 BITMAP bmp_oper1,'oper_1.bmp'
 BITMAP bmp_base1,'base_1.bmp'
