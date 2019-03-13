@@ -382,6 +382,7 @@ tup.append_table(img_files, {
  {"DEMOS/FIREWORK", PROGS .. "/demos/firework/trunk/firework"},
  {"DEMOS/MOVBACK", PROGS .. "/demos/movback/trunk/movback"},
  {"DEMOS/PLASMA", PROGS .. "/demos/plasma/trunk/plasma"},
+ {"DEMOS/SPIRAL", PROGS .. "/demos/spiral/spiral"},
  {"DEMOS/TINYFRAC", PROGS .. "/demos/tinyfrac/trunk/tinyfrac"},
  {"DEMOS/TRANTEST", PROGS .. "/demos/trantest/trunk/trantest"},
  {"DEMOS/TUBE", PROGS .. "/demos/tube/trunk/tube"},

@@ -1,5 +1,5 @@
 //HTML Viewer in C--
-//Copyright 2007-2018 by Veliant & Leency
+//Copyright 2007-2019 by Veliant & Leency
 //Asper, lev, Lrz, Barsuk, Nable, hidnplayr...
 
 #ifndef AUTOBUILD

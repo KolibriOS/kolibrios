@@ -1,4 +1,4 @@
-//Leency, Veliant, Punk_Joker, PavelYakov & KolibriOS Team 2008-2018
+//Leency, Veliant, Punk_Joker, PavelYakov & KolibriOS Team 2008-2019
 //GNU GPL license.
 
 // 70.5 - get volume info and label

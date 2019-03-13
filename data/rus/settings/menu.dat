@@ -20,6 +20,7 @@
 Глаза                     /sys/demos/eyes
 Труба                     /sys/demos/tube
 Plasma                    /sys/demos/plasma
+Спираль                   /sys/demos/spiral
 Moveback                  /sys/demos/movback
 Life                      /sys/demos/life2
 TranTest                  /sys/demos/trantest

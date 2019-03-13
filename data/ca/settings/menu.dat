@@ -20,6 +20,7 @@ Color demo                /sys/demos/colorref
 Ulls                      /sys/demos/eyes
 Tub                       /sys/demos/tube
 Plasma                    /sys/demos/plasma
+Spiral                    /sys/demos/spiral
 Retrocedir                /sys/demos/movback
 Vida                      /sys/demos/life2
 TranTest                  /sys/demos/trantest

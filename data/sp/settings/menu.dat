@@ -20,6 +20,7 @@ Color demo                /sys/demos/colorref
 Ojos                      /sys/demos/eyes
 Tube                      /sys/demos/tube
 Plasma                    /sys/demos/plasma
+Spiral                    /sys/demos/spiral
 Moveback                  /sys/demos/movback
 Life                      /sys/demos/life2
 TranTest                  /sys/demos/trantest
