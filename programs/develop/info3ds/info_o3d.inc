@@ -348,7 +348,7 @@ pushad
 		je .end
 		finit
 		imul eax,12
-		stdcall mem.Alloc, eax
+		stdcall mem.Alloc,eax
 		mov [ecx+obj_3d.normals_tri_data],eax
 
 		mov edx,[ecx+obj_3d.tri_data]
@@ -638,6 +638,8 @@ proc obj_init, o_data:dword
 			;поиск материалов граней
 			shl edx,3
 			add esi,edx
+			cmp esi,ecx
+			jge .end_points ;если нет блока с материалом
 			cmp word[esi],CHUNK_FACEMAT
 			jne .end_points
 				mov [edi+obj_3d.mat1_data],esi
@@ -825,20 +827,26 @@ if version_edit eq 0
 	bt dword[draw_mode],bit_faces_mat
 	jnc @f
 		mov eax,[edi+obj_3d.mat1_data]
+		or eax,eax
+		jnz .b_found
+			stdcall [buf2d_draw_text], buf_ogl, buf_1,txt_mat_null,5,3,[color_select]
+			jmp .mat_null ;если нет материала, рисуем все грани одним цветом
 		.b_found:
-		cmp eax,0
-		je .end_points
 			mov ebx,eax
 			stdcall get_mat_color, eax
 			stdcall draw_3d_faces_color, edi,ebx,eax
 			stdcall found_mat_faces, ebx
-		jmp .b_found
+			or eax,eax
+			jnz .b_found
+		jmp .end_points
+		
 	@@:
 end if
 
 	;рисование граней без цветов материалов
 	bt dword[draw_mode],bit_faces
 	jnc .end_triangles
+	.mat_null:
 	cmp dword[edi+obj_3d.tri_count],0
 	je .end_triangles
 	cmp dword[edi+obj_3d.poi_count],0
@@ -935,6 +943,8 @@ align 4
 		@@:
 			bt dword[draw_mode],bit_light
 			jnc .norm0
+			or edx,edx
+			jz .norm0 ;если нормалей нет
 				stdcall [glNormal3fv], edx
 				add edx,12
 			.norm0:
@@ -977,7 +987,7 @@ if version_edit eq 1
 	je .end_select
 		mov ecx,dword[obj_poi_sel_c]
 		stdcall [glColor3ub],[color_select+2],[color_select+1],[color_select]
-		stdcall dword[tl_node_poi_get_info], tree3,0
+		stdcall [tl_node_poi_get_info], tree3,0
 align 4
 		@@:
 			cmp eax,0
@@ -994,7 +1004,7 @@ align 4
 			dec ecx
 			jz .end_select
 			.next_sel:
-			stdcall dword[tl_node_poi_get_next_info], tree3,ebx
+			stdcall [tl_node_poi_get_next_info], tree3,ebx
 			jmp @b
     .end_select:
 end if
@@ -1170,6 +1180,8 @@ pop ebx eax
 align 4
 proc found_mat_faces uses ebx, p_mat:dword
 	mov eax,[p_mat]
+	or eax,eax
+	jz @f
 	add eax,[eax+2]
 	cmp word[eax],CHUNK_FACEMAT
 	je @f

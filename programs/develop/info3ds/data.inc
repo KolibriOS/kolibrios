@@ -291,7 +291,9 @@ end if
 
 if lang eq ru
 txt_open_3ds db 'Открыт файл:',0
-txt_no_3ds db 'Открытый файл не в формате *.3ds',0
+txt_no_3ds: db 'Открытый файл не в формате *.3ds ',39
+	.zag: rb 8
+	db 39,0
 txt_3ds_err_sizes db 'Возможно файл поврежден',0
 txt_count db 'Количество',0
 txt_3ds_offs:
@@ -300,10 +302,13 @@ txt_3ds_offs:
 	db '  Размер: '
 	.siz: rb 8
 	db 0
+txt_mat_null db 'Материалы не найдены',0
 else
 txt_open_3ds db 'Open file:',0
-txt_no_3ds db 'Открытый файл не в формате *.3ds',0
-txt_3ds_err_sizes db 'Возможно файл поврежден',0
+txt_no_3ds: db 'Open file not in format *.3ds ',39
+	.zag: rb 8
+	db 39,0
+txt_3ds_err_sizes db 'File may be corrupted',0
 txt_count db 'Count',0
 txt_3ds_offs:
 	db 'Offset: '
@@ -311,4 +316,5 @@ txt_3ds_offs:
 	db '  Size: '
 	.siz: rb 8
 	db 0
+txt_mat_null db 'No materials found',0
 end if

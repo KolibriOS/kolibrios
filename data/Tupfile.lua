@@ -147,7 +147,6 @@ extra_files = {
  {"HD_Load/USB_boot_old/", PROGS .. "/hd_load/usb_boot_old/usb_boot_1251.txt"},
  {"kolibrios/3D/info3ds/INFO3DS.INI", PROGS .. "/develop/info3ds/info3ds.ini"},
  {"kolibrios/3D/info3ds/OBJECTS.PNG", PROGS .. "/develop/info3ds/objects.png"},
- {"kolibrios/3D/info3ds/TL_SYS_16.PNG", PROGS .. "/develop/info3ds/tl_sys_16.png"},
  {"kolibrios/3D/info3ds/TOOLBAR.PNG", PROGS .. "/develop/info3ds/toolbar.png"},
  {"kolibrios/3D/info3ds/FONT8X9.BMP", PROGS .. "/fs/kfar/trunk/font8x9.bmp"},
  {"kolibrios/3D/md2view/", "common/3d/md2view/*"},
