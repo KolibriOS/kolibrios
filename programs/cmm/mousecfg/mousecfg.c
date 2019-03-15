@@ -72,12 +72,12 @@ void main() {
 				else IF (double_click_delay.click(id)) ApplyCfg();
 				ELSE IF (emulation.click(id)) {
 					IF (emulation.checked == true) RunProgram("/sys/mousemul", 0);
-					ELSE KillProcessByName("/sys/mousemul", SINGLE);
+					ELSE KillProcessByName("mousemul", SINGLE);
 					break;
 				}
 				ELSE IF (madmouse.click(id)) {						
 					IF (madmouse.checked == true) RunProgram("/sys/madmouse", 0);
-					ELSE KillProcessByName("/sys/madmouse", SINGLE);
+					ELSE KillProcessByName("madmouse", SINGLE);
 					break;
 				}
 				break;

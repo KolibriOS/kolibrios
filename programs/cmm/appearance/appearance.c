@@ -34,6 +34,7 @@
 	?define T_PICTURE_MODE " Положение картинки "
 	?define T_CHECKBOX_STRETCH "Растянуть"
 	?define T_CHECKBOX_TILED "Замостить"
+	?define T_UPDATE_DOCK "Обновлять Dock-панель"
 #else
 	?define WINDOW_HEADER "Appearance"
 	?define T_SKINS       "Skins"
@@ -43,6 +44,7 @@
 	?define T_PICTURE_MODE " Picture Mode "
 	?define T_CHECKBOX_STRETCH "Stretch"
 	?define T_CHECKBOX_TILED "Tiled"
+	?define T_UPDATE_DOCK "Update Dock"
 #endif
 
 #define PANEL_H 40
@@ -69,6 +71,7 @@ block skp;
 
 _tabs tabs = { LP, LP, NULL, NULL, SKINS };
 
+checkbox update_docky = { T_UPDATE_DOCK, false };
 checkbox checkbox1 = { "Checkbox", true };
 more_less_box spinbox1 = { 23, 0, 999, "SpinBox" };
 edit_box edit_cmm = {180,NULL,NULL,0xffffff,0x94AECE,0xFFFfff,0xffffff,
@@ -141,6 +144,7 @@ void main()
 			if (id==BTN_SELECT_WALLP_FOLDER) EventSelectWallpFolder();
 			checkbox1.click(id);
 			spinbox1.click(id);
+			if (update_docky.click(id)) EventUpdateDocky();
 			if (!optionbox_stretch.checked) && (optionbox_stretch.click(id)) EventSetWallpMode_Stretch();
 			if (!optionbox_tiled.checked) && (optionbox_tiled.click(id)) EventSetWallpMode_Tiled();
 			break;
@@ -187,8 +191,7 @@ void main()
 
 void draw_window()
 {
-	system.color.get();	
-	DefineAndDrawWindow(screen.width-600/2,80,630,404+skin_height,0x74,0xE4DFE1,WINDOW_HEADER,0);
+	DefineAndDrawWindow(screen.width-600/2,80,630,504+skin_height,0x74,NULL,WINDOW_HEADER,0);
 	GetProcessInfo(#Form, SelfInfo);
 	IF (Form.status_window>=2) return;
 	DrawWindowContent();
@@ -199,6 +202,8 @@ void DrawWindowContent()
 	int id;
 	incn y;
 	int list_w;
+
+	system.color.get();	
 
 	if (tabs.active_tab == SKINS) list_w=250; else list_w=350;
 
@@ -223,9 +228,9 @@ void DrawWindowContent()
 
 	skp.set_size(
 		select_list.x + select_list.w + TAB_PADDING + scroll1.size_x + 20,
-		select_list.y + 30,
+		select_list.y + 30 + 50,
 		list_w,
-		select_list.h - 50
+		230 //select_list.h - 50 - 50
 	);
 
 	SelectList_Draw();
@@ -235,9 +240,9 @@ void DrawWindowContent()
 	{
 		DrawBar(skp.x-20, select_list.y, skp.w+40, select_list.h, system.color.work);
 		DrawRectangle(skp.x-20, select_list.y, skp.w+40, select_list.h, system.color.work_graph);
+		update_docky.draw(skp.x, select_list.y+15);
 		y.n = skp.y;
 		DrawFrame(skp.x, skp.y, skp.w, skp.h, " Components Preview ");
-		checkbox1.draw(skp.x+20, y.inc(30));
 		spinbox1.draw(skp.x+20, y.inc(30));
 		WriteText(skp.x+20, y.inc(30), 0x90, system.color.work_text, "C-- Edit");
 		DrawEditBoxPos(skp.x+20, y.inc(20), #edit_cmm);
@@ -390,16 +395,18 @@ void EventSetWallpMode_Tiled()
 	EventApply();
 }
 
+#include "..\lib\patterns\restart_process.h"
 void EventApply()
 {
 	char kivpath[4096+10];
 	EventSetNewCurrent();
 	if (tabs.active_tab==SKINS)
 	{
-		draw_window();
 		cur = select_list.cur_y;
 		SetSystemSkin(#cur_file_path);
+		SelectList_Draw();
 		strcpy(#cur_skin_path, #cur_file_path);
+		EventUpdateDocky();
 	} 
 	if (tabs.active_tab==WALLPAPERS)
 	{
@@ -409,6 +416,15 @@ void EventApply()
 		strcat(#kivpath, #cur_file_path);
 		RunProgram("/sys/media/kiv", #kivpath);
 	}
+}
+
+void EventUpdateDocky()
+{
+	if (!update_docky.checked) return;
+	KillProcessByName("@docky", MULTIPLE);
+	RunProgram("/sys/@docky",NULL);
+	pause(50);
+	ActivateWindow(GetProcessSlot(Form.ID));
 }
 
 void EventOpenFile()
