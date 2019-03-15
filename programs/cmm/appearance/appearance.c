@@ -31,12 +31,18 @@
 	?define T_WALLPAPERS  "Обои"
 	?define T_SELECT_FOLDER "Выбрать папку"
 	?define MENU_LIST "Открыть файл   Enter\nУдалить файл     Del"
+	?define T_PICTURE_MODE " Положение картинки "
+	?define T_CHECKBOX_STRETCH "Растянуть"
+	?define T_CHECKBOX_TILED "Замостить"
 #else
 	?define WINDOW_HEADER "Appearance"
 	?define T_SKINS       "Skins"
 	?define T_WALLPAPERS  "Wallpapers"
-	?define T_SELECT_FOLDER "Select wallpapers"
+	?define T_SELECT_FOLDER "Select folder"
 	?define MENU_LIST "Open file      Enter\nDelete file      Del"
+	?define T_PICTURE_MODE " Picture Mode "
+	?define T_CHECKBOX_STRETCH "Stretch"
+	?define T_CHECKBOX_TILED "Tiled"
 #endif
 
 #define PANEL_H 40
@@ -74,6 +80,9 @@ edit_box edit_st = {180,NULL,NULL,0xffffff,0x94AECE,0xFFFfff,0xffffff,
 
 char default_dir[] = "/rd/1";
 od_filter filter2 = { 8, "TXT\0\0" };
+
+checkbox optionbox_stretch = { T_CHECKBOX_STRETCH, true };
+checkbox optionbox_tiled = { T_CHECKBOX_TILED, false };
 
 //===================================================//
 //                                                   //
@@ -132,6 +141,8 @@ void main()
 			if (id==BTN_SELECT_WALLP_FOLDER) EventSelectWallpFolder();
 			checkbox1.click(id);
 			spinbox1.click(id);
+			if (!optionbox_stretch.checked) && (optionbox_stretch.click(id)) EventSetWallpMode_Stretch();
+			if (!optionbox_tiled.checked) && (optionbox_tiled.click(id)) EventSetWallpMode_Tiled();
 			break;
 	  
 		case evKey:
@@ -189,7 +200,7 @@ void DrawWindowContent()
 	incn y;
 	int list_w;
 
-	if (tabs.active_tab == SKINS) list_w=250; else list_w=370;
+	if (tabs.active_tab == SKINS) list_w=250; else list_w=350;
 
 	DrawWideRectangle(0, 0, Form.cwidth, Form.cheight, LP, system.color.work);
 
@@ -237,8 +248,12 @@ void DrawWindowContent()
 	}
 	if (tabs.active_tab == WALLPAPERS)
 	{
-		DrawStandartCaptButton(select_list.x + select_list.w + scroll1.size_x + 17, 
-			select_list.y, BTN_SELECT_WALLP_FOLDER, T_SELECT_FOLDER);
+		skp.x -= TAB_PADDING + 3;
+		DrawStandartCaptButton(skp.x, select_list.y, BTN_SELECT_WALLP_FOLDER, T_SELECT_FOLDER);
+		DrawBar(skp.x, select_list.y+50, 180, 80, system.color.work);
+		DrawFrame(skp.x, select_list.y+50, 180, 80, T_PICTURE_MODE);
+		optionbox_stretch.draw(skp.x+14, select_list.y+70);
+		optionbox_tiled.draw(skp.x+14, select_list.y+97);
 	}
 }
 
@@ -361,6 +376,20 @@ void EventSelectWallpFolder()
 	}
 }
 
+void EventSetWallpMode_Stretch()
+{
+	optionbox_tiled.checked = false;
+	optionbox_tiled.redraw();
+	EventApply();
+}
+
+void EventSetWallpMode_Tiled()
+{
+	optionbox_stretch.checked = false;
+	optionbox_stretch.redraw();
+	EventApply();
+}
+
 void EventApply()
 {
 	char kivpath[4096+10];
@@ -375,7 +404,8 @@ void EventApply()
 	if (tabs.active_tab==WALLPAPERS)
 	{
 		SelectList_Draw();
-		strcpy(#kivpath, "\\S__");
+		if (optionbox_stretch.checked) strcpy(#kivpath, "\\S__");
+		if (optionbox_tiled.checked) strcpy(#kivpath, "\\T__");
 		strcat(#kivpath, #cur_file_path);
 		RunProgram("/sys/media/kiv", #kivpath);
 	}

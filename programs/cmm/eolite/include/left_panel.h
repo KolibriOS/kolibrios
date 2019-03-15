@@ -146,7 +146,7 @@ void _SystemDiscs::Draw()
 			_PutImage(draw_x + 5, draw_y+2, 18,17, is_active*6+dev_icon*17*18*3+#devices);
 			WriteText(draw_x + 24, draw_y+3, 10110000b, 0, #dev_name+1);
 			draw_x += name_len + 31;
-			if (draw_x>=Form.width-35) && (Form.width) {
+			if (draw_x>=Form.cwidth-100) && (Form.cwidth) {
 				DrawBar(draw_x, draw_y, Form.cwidth - draw_x - 2, draw_h, 0xFFFFFF);
 				draw_x = 2;
 				draw_y += draw_h;
