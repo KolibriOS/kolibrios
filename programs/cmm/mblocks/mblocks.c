@@ -1,7 +1,7 @@
 /*
-   Memory Blocks for KolibriOS v1.1
+   Memory Blocks for KolibriOS v1.11
         Leency&Veliant Edition
-              2008-2017
+              2008-2019
 */
 
 #define MEMSIZE 4096 * 15
@@ -35,7 +35,7 @@ proc_info Form;
 int bitstat[60], bitpict[60];
 dword butonsx[60], butonsy[60];
 dword firstbit, secondbit;
-int i, count, lang;
+int count;
 
 
 void main()
@@ -57,51 +57,52 @@ void main()
 		 	break;
 
 		case evButton:
-				id = GetButtonID();
-				if (id==1) ExitProcess();
-				else if (id==5) NewGame();
-				else {
-						if (bitstat[id-100] == 0)
+			id = GetButtonID();
+			if (id==1) ExitProcess();
+			else if (id==5) NewGame();
+			else {
+					if (bitstat[id-100] == 0)
+					{
+						if (firstbit <> 0x0BAD)
 						{
-							if (firstbit <> 0x0BAD)
+							if (secondbit <> 0x0BAD)
 							{
-								if (secondbit <> 0x0BAD)
-								{
-									if (bitpict[firstbit-100] == bitpict[secondbit-100])
-										bitstat[firstbit-100] = bitstat[secondbit-100] = 2;
-									else
-										bitstat[firstbit-100] = bitstat[secondbit-100] = 0;
-									ReDraw_Game_Button(firstbit - 100);
-									ReDraw_Game_Button(secondbit - 100);
-									secondbit = 0x0BAD;
-									firstbit = id;
-									bitstat[id-100] = 1;
-									ReDraw_Game_Button(id - 100);
-									count++;
-								}
-								else if (firstbit<>id)
-								{
-									secondbit = id;
-									bitstat[id-100] = 1;
-									ReDraw_Game_Button(id - 100);
-									count++;
-								}
-							}
-							else
-							{
+								if (bitpict[firstbit-100] == bitpict[secondbit-100])
+									bitstat[firstbit-100] = bitstat[secondbit-100] = 2;
+								else
+									bitstat[firstbit-100] = bitstat[secondbit-100] = 0;
+								ReDraw_Game_Button(firstbit - 100);
+								ReDraw_Game_Button(secondbit - 100);
+								secondbit = 0x0BAD;
 								firstbit = id;
 								bitstat[id-100] = 1;
 								ReDraw_Game_Button(id - 100);
 								count++;
 							}
+							else if (firstbit<>id)
+							{
+								secondbit = id;
+								bitstat[id-100] = 1;
+								ReDraw_Game_Button(id - 100);
+								count++;
+							}
 						}
-						Draw_Count();
-				}
-				break;
+						else
+						{
+							firstbit = id;
+							bitstat[id-100] = 1;
+							ReDraw_Game_Button(id - 100);
+							count++;
+						}
+					}
+					Draw_Count();
+			}
+			break;
 
 		case evReDraw:
 			system.color.get();
-			DefineAndDrawWindow(215,100,CELL_SIZE+4*10 + 4 + 9,PANEL_Y + 4 + PANEL_H +skin_height,0x34,0xC0C0C0,"Memory Blocks",0);
+			DefineAndDrawWindow(215,100,CELL_SIZE+4*10 + 4 + 9,PANEL_Y+4+PANEL_H+skin_height,
+				0x34,0xC0C0C0,"Memory Blocks",0);
 			GetProcessInfo(#Form, SelfInfo);
 			Draw_Panel();
 			Draw_Game_Pole();
@@ -112,10 +113,11 @@ void main()
 void NewGame()
 {
 	int off;
+	int i;
 
 	FOR (i = 0; i < 60; i++)
 	{
-		bitpict[i] = 0;
+		bitstat[i] = 0;
 		bitpict[i] = 0;
 	}
 
@@ -128,6 +130,8 @@ void NewGame()
 		do off = random(60); while (bitpict[off] != 0);
 		bitpict[off] = i;
 	}
+	Draw_Game_Pole();
+	Draw_Panel();
 }
 
 void ReDraw_Game_Button(int id)
@@ -151,11 +155,12 @@ void ReDraw_Game_Button(int id)
 
 void Draw_Game_Pole()
 {
+	int i;
 	byte j;
 	for (j = 0; j < stolbcov; j++)	for (i = 0; i < strok; i++)
 	{
-			butonsx[j*strok+i] = CELL_SIZE+4 * j + 4; //save coordinates to avoid their recalculation after
-			butonsy[j*strok+i] = CELL_SIZE+4 * i + 4;
+			butonsx[j*strok+i] = CELL_SIZE+4 * j + 4; //save coordinates to avoid 
+			butonsy[j*strok+i] = CELL_SIZE+4 * i + 4; //their recalculation after
 			ReDraw_Game_Button(j*strok + i);
 	}
 }

@@ -436,7 +436,7 @@ void EventOpenFile()
 _ini ini = { "/sys/settings/eskin.ini", "main" };
 void EventExit()
 {
-	ini.SetString("skin", #cur_skin_path, strlen(#cur_skin_path));
+	if (cur_skin_path) ini.SetString("skin", #cur_skin_path, strlen(#cur_skin_path));
 	ExitProcess();
 }
 

@@ -30,7 +30,7 @@
 char default_dir[] = "/rd/1";
 od_filter filter2 = { 15, "MP3\0WAV\0XM\0\0" };
 
-#define ABOUT_MESSAGE "Pixie Player v2.92 Final
+#define ABOUT_MESSAGE "Pixie Player v2.93 Final
 
      A tiny music folder player.
      Supports MP3, WAV, XM audio file formats.
@@ -331,10 +331,13 @@ void DrawScroller()
 	if (list.count > list.visible) scrollbar_v_draw(#scroll1);
 }
 
-void DrawPixieTitle(dword _title)
+void DrawPixieTitle(dword _t)
 {
+	char title[35];
+	strlcpy(#title, _t, sizeof(title));
+	if (strlen(#title)>30) strcpy(#title+30, "...");
 	kfont.WriteIntoWindow(8, 5, theme.color_top_panel_bg, 
-		theme.color_top_panel_folder_name, list.font_type, _title);
+	theme.color_top_panel_folder_name, list.font_type, #title);
 }
 
 //===================================================//

@@ -24,7 +24,7 @@ main:
     mcall   18, 7
     mov     [win.psid], eax
 
-    mcall   40, 100101b
+    mcall   40, EVM_REDRAW+EVM_BUTTON+EVM_MOUSE ;+EVM_DEKSTOP to update colors on skin change
 
 ; ==== Load libs ====
     load_libraries load_lib_start, load_lib_end
