@@ -19,6 +19,8 @@
 #include "..\lib\patterns\select_list.h"
 #include "..\lib\patterns\simple_open_dialog.h"
 
+#include "ui_elements_preview.h"
+
 //===================================================//
 //                                                   //
 //                       DATA                        //
@@ -69,17 +71,9 @@ int cur;
 proc_info Form;
 block skp;
 
-_tabs tabs = { LP, LP, NULL, NULL, SKINS };
+_tabs tabs = { SKINS, LP, LP, NULL, NULL };
 
 checkbox update_docky = { T_UPDATE_DOCK, false };
-checkbox checkbox1 = { "Checkbox", true };
-more_less_box spinbox1 = { 23, 0, 999, "SpinBox" };
-edit_box edit_cmm = {180,NULL,NULL,0xffffff,0x94AECE,0xFFFfff,0xffffff,
-	0x10000000,sizeof(param)-2,#param,0, 0b};
-
-char st_str[16];
-edit_box edit_st = {180,NULL,NULL,0xffffff,0x94AECE,0xFFFfff,0xffffff,
-	0x10000000,sizeof(st_str)-2,#st_str,0, 0b};
 
 char default_dir[] = "/rd/1";
 od_filter filter2 = { 8, "TXT\0\0" };
@@ -191,7 +185,8 @@ void main()
 
 void draw_window()
 {
-	DefineAndDrawWindow(screen.width-600/2,80,630,504+skin_height,0x74,NULL,WINDOW_HEADER,0);
+	system.color.get();	
+	DefineAndDrawWindow(screen.width-600/2,80,630,504+skin_height,0x34,system.color.work,WINDOW_HEADER,0);
 	GetProcessInfo(#Form, SelfInfo);
 	IF (Form.status_window>=2) return;
 	DrawWindowContent();
@@ -200,19 +195,15 @@ void draw_window()
 void DrawWindowContent()
 {
 	int id;
-	incn y;
 	int list_w;
 
 	system.color.get();	
 
 	if (tabs.active_tab == SKINS) list_w=250; else list_w=350;
 
-	DrawWideRectangle(0, 0, Form.cwidth, Form.cheight, LP, system.color.work);
-
 	tabs.w = Form.cwidth-LP-LP;
 	tabs.h = Form.cheight-LP-LP;
 	tabs.draw_wrapper();
-	
 	tabs.draw_button(tabs.x+TAB_PADDING, SKINS, T_SKINS);	
 	tabs.draw_button(strlen(T_SKINS)*8+tabs.x+TAB_PADDING+TAB_PADDING, WALLPAPERS, T_WALLPAPERS);
 
@@ -235,45 +226,23 @@ void DrawWindowContent()
 
 	SelectList_Draw();
 	SelectList_DrawBorder();
+	//DrawWideRectangle(0, 0, Form.cwidth, Form.cheight, LP, system.color.work);
 
 	if (tabs.active_tab == SKINS)
 	{
-		DrawBar(skp.x-20, select_list.y, skp.w+40, select_list.h, system.color.work);
-		DrawRectangle(skp.x-20, select_list.y, skp.w+40, select_list.h, system.color.work_graph);
 		update_docky.draw(skp.x, select_list.y+15);
-		y.n = skp.y;
 		DrawFrame(skp.x, skp.y, skp.w, skp.h, " Components Preview ");
-		spinbox1.draw(skp.x+20, y.inc(30));
-		WriteText(skp.x+20, y.inc(30), 0x90, system.color.work_text, "C-- Edit");
-		DrawEditBoxPos(skp.x+20, y.inc(20), #edit_cmm);
-		WriteText(skp.x+20, y.inc(35), 0x90, system.color.work_text, "Strandard Edit");
-		DrawStEditBoxPos(skp.x+20, y.inc(20), #edit_st);
-		DrawStandartCaptButton(skp.x+20, skp.y+skp.h-40, GetFreeButtonId(), "Button1");
-		DrawStandartCaptButton(skp.x+120, skp.y+skp.h-40, GetFreeButtonId(), "Button2");
+		DrawUiElementsPreview(skp.x+20, skp.y, skp.h);
 	}
 	if (tabs.active_tab == WALLPAPERS)
 	{
 		skp.x -= TAB_PADDING + 3;
 		DrawStandartCaptButton(skp.x, select_list.y, BTN_SELECT_WALLP_FOLDER, T_SELECT_FOLDER);
-		DrawBar(skp.x, select_list.y+50, 180, 80, system.color.work);
 		DrawFrame(skp.x, select_list.y+50, 180, 80, T_PICTURE_MODE);
 		optionbox_stretch.draw(skp.x+14, select_list.y+70);
 		optionbox_tiled.draw(skp.x+14, select_list.y+97);
 	}
 }
-
-:void DrawStEditBoxPos(dword x,y, edit_box_pointer)
-{
-	dword c_inactive = MixColors(system.color.work_graph, system.color.work, 128);
-	dword c_active = MixColors(system.color.work_graph, 0, 128);
-	ESI = edit_box_pointer;
-	ESI.edit_box.left = x;
-	ESI.edit_box.top = y;
-	ESI.edit_box.blur_border_color = c_inactive;
-	ESI.edit_box.focus_border_color = c_active;
-	edit_box_draw  stdcall (edit_box_pointer);
-}
-
 
 
 void Open_Dir()
@@ -356,7 +325,7 @@ void EventTabClick(int N)
 		select_list.cur_y = active_wallpaper;
 	}
 	if (select_list.cur_y>select_list.visible) select_list.first=select_list.cur_y; select_list.CheckDoesValuesOkey();
-	if (select_list.w) DrawWindowContent();
+	if (select_list.w) draw_window();
 }
 
 void EventDeleteFile()

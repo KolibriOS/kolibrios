@@ -153,7 +153,9 @@ void EventManualSearch()
 
 void EventOpenApp()
 {
-	RunProgram("syspanel", APP_PLUS_INI_PATH);
+	if (RunProgram("/sys/syspanel", APP_PLUS_INI_PATH) < 0) {
+		notify("'App+ can not be started because\n/sys/syspanel does not exists' -E");
+	}
 }
 
 void EventButton(dword id)

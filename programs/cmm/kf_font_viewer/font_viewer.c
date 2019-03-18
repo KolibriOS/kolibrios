@@ -12,7 +12,7 @@ enum {
 	PHRASE_TAB=20, CHARS_TAB
 };
 
-_tabs tabs = { 0,0, WIN_W, WIN_H, PHRASE_TAB};
+_tabs tabs = { PHRASE_TAB };
 
 block preview = { 0, PANELH, WIN_W, WIN_H - PANELH };
 checkbox bold = { "Bold", false };

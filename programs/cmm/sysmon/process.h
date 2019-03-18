@@ -1,18 +1,3 @@
-#define MEMSIZE 4096*20
-
-//===================================================//
-//                                                   //
-//                       LIB                         //
-//                                                   //
-//===================================================//
-
-#include "../lib/gui.h"
-#include "../lib/list_box.h"
-#include "../lib/obj/box_lib.h"
-#include "../lib/io.h"
-#include "../lib/patterns/select_list.h"
-#include "../lib/patterns/restart_process.h"
-
 //===================================================//
 //                                                   //
 //                       DATA                        //
@@ -24,13 +9,10 @@
 #define T_DETAILS "Details"
 #define T_END_PROCESS "End process"
 
-
-#define BOTPANEL_H 34
-proc_info Form;
-proc_info Process;
+#define BOTPANEL_H 36
 
 enum {
-	BTN_ID_SHOW_SYSTEM_PROCESSES=20,
+	BTN_ID_SHOW_SYSTEM_PROCESSES=200,
 	BTN_ID_KILL_PROCESS,
 	BTN_ID_SHOW_PROCESS_INFO
 };
@@ -47,19 +29,18 @@ checkbox show_system = { T_SHOW_SYSTEM_PROCESSES, false };
 //                                                   //
 //===================================================//
 
-void main()
+void Processes__Main()
 {
 	int btn;
-	load_dll(boxlib, #box_lib_init,0);
 	SetEventMask(EVM_REDRAW + EVM_KEY + EVM_BUTTON + EVM_MOUSE + EVM_MOUSE_FILTER);
 	maxcpu = GetCpuFrequency();
+	goto _PROCESS_REDRAW;
 	loop()
 	{
 	  WaitEventTimeout(50);
 	  switch(EAX & 0xFF)
 	  {
 	   	case evMouse:
-			if (!CheckActiveProcess(Form.ID)) break;
 			SelectList_ProcessMouse();
 			break;
 		case evKey:
@@ -68,10 +49,8 @@ void main()
 			break;
 		case evButton:
 			btn = GetButtonID();
-			if (1 == btn) 
-			{
-				ExitProcess();
-			}
+			Sysmon__ButtonEvent(btn);
+
 			if (show_system.click(btn))  
 			{
 				SelectList_LineChanged();
@@ -87,22 +66,22 @@ void main()
 				io.run("/sys/tinfo", itoa(GetProcessSlot(current_process_id))); 
 			}
 			break;
-		case evReDraw:
-			system.color.get();
-			DefineAndDrawWindow(screen.width-400/2,screen.height-450/2,400,454,0x73,0,T_WINDOW_TITLE,0);
-			GetProcessInfo(#Form, SelfInfo);
-			if (Form.status_window>2) break;
-			if (Form.width  < 300) { MoveSize(OLD,OLD,300,OLD); break; }
-			if (Form.height < 200) { MoveSize(OLD,OLD,OLD,200); break; }
-			SelectList_Init(6, 6, Form.cwidth-12 - scroll1.size_x, Form.cheight-12-BOTPANEL_H, false);
+		case evReDraw: 
+			_PROCESS_REDRAW:
+			if (!Sysmon__DefineAndDrawWindow()) break;
+
+			SelectList_Init(WIN_PAD, WIN_CONTENT_Y, 
+				WIN_CONTENT_W-scroll1.size_x, 
+				WIN_CONTENT_H-BOTPANEL_H-TAB_HEIGHT, false);
 			SelectList_DrawBorder();
-			DrawWideRectangle(0, 0, Form.cwidth, Form.cheight, 4, system.color.work);
+
+			//DrawWideRectangle(0, 0, Form.cwidth, Form.cheight, 4, system.color.work);
 			DrawBar(select_list.x-2, select_list.y+select_list.h+2, 
 				select_list.w+scroll1.size_x+4, BOTPANEL_H, system.color.work);
-			DrawCaptButton(Form.cwidth-116,
+			DrawCaptButton(Form.cwidth-110-WIN_PAD,
 				select_list.y+select_list.h+5,
 				110,25,BTN_ID_KILL_PROCESS,0xF38181, 0xFFFfff, T_END_PROCESS);
-			DrawCaptButton(Form.cwidth-236,
+			DrawCaptButton(Form.cwidth-230-WIN_PAD,
 				select_list.y+select_list.h+5,
 				110,25,BTN_ID_SHOW_PROCESS_INFO,
 				system.color.work_button, system.color.work_button_text, T_DETAILS);
@@ -113,16 +92,11 @@ void main()
 	}
 }
 
-void SelectList_LineChanged() 
-{
-	GetProcessList();
-	SelectList_Draw();
-}
-
-
-void GetProcessList()
+void Processes__GetProcessList()
 {
 	int i, j;
+	proc_info Process;
+
 	select_list.count=0;
 	for (i=0; i<MAX_PROCESS_COUNT; i++)
 	{
@@ -149,6 +123,8 @@ void SelectList_DrawLine(dword i)
 	int posy;
 	char cpu_use[16];
 	dword bg_color;
+	proc_info Process;
+
 	GetProcessInfo(#Process, proc_list[i+select_list.first]);
 	
 	posy = i *select_list.item_h + select_list.y;
@@ -165,9 +141,8 @@ void SelectList_DrawLine(dword i)
 		posy+select_list.text_y, select_list.font_type, 0x444444, #cpu_use);
 }
 
-
-
-
-
-
-stop:
+void SelectList_LineChanged() 
+{
+	Processes__GetProcessList();
+	SelectList_Draw();
+}

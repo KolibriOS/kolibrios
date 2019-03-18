@@ -217,7 +217,7 @@ void MailBoxLoop() {
 					if (!mailstart) break;
 					CreateFile(strlen(mailstart), mailstart, "mail.txt");
 					pause(10);
-					RunProgram("tinypad", "mail.txt");
+					RunProgram("/sys/tinypad", "mail.txt");
 				}
 				if (id==STOP_LOADING) 
 				{
