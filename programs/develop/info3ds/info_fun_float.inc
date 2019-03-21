@@ -39,9 +39,10 @@ Data_BCD      DT ?
 Data_Flag     DB ?
 ; Знак результата (если не 0 - отрицательное число)
 Data_Sign     DB ?
+; Знак результата - 0 для ..e+.. и 1 для ..e-..
+Data_Sign_Exp DB ?
 
-
-db 0 ;указатель на сдвиг в памяти
+align 4
 ; Строка для хранения числа в коде ASCII
 Data_String   DB 32 DUP (?)
 
@@ -75,8 +76,7 @@ DoubleFloat_to_String:
 	je	.NoShifts     ;нет цифр после запятой
 	jl	.Error	      ;ошибка
 	dec	BX
-	shl	BX, 3		;умножаем на 8
-	add	EBX, MConst
+	lea ebx,[MConst+8*ebx]
 	fmul	qword [EBX] ;умножить на константу
 .NoShifts:
 	; Извлечь число в коде BCD
@@ -197,36 +197,37 @@ String_to_DoubleFloat:
 	mov  word [Data_BCD+8],0
 	; Очищаем байт знака
 	mov	[Data_Sign],0
-	; Заносим в SI указатель на строку
-	mov	ESI, Data_String
+	; Заносим в esi указатель на строку
+	mov	esi, Data_String
 	; Пропускаем пробелы перед числом
 	mov	ecx,64 ;защита от зацикливания
 .ShiftIgnore:
 	lodsb
-	cmp	AL,' '
-	jne	.ShiftIgnoreEnd
-	loop	.ShiftIgnore
-	jmp	.Error
+	cmp	al,' '
+	jne .ShiftIgnoreEnd
+	loop .ShiftIgnore
+	jmp .Error
 align 4
 .ShiftIgnoreEnd:
 	; Проверяем знак числа
-	cmp	AL,'-'
+	cmp	al,'-'
 	jne	.Positive
 	mov	[Data_Sign],80h
 	lodsb
 .Positive:
 	mov	[Data_Flag],0 ;признак наличия точки
-	mov	DX,0	      ;позиция точки
+	xor	edx,edx	      ;позиция точки
 	mov	ecx,18	      ;макс. число разрядов
+align 4
 .ASCIItoBCDConversion:
-	cmp	AL,'.'	      ;точка?
+	cmp	al,'.'	      ;точка?
 	jne	.NotDot
 	cmp	[Data_Flag],0 ;точка не встречалась?
-	jne	.Error
+	jne	.Error        ;если точка уже была
 	mov	[Data_Flag],1
 	lodsb
-	cmp	AL,0	      ;конец строки?
-	jne	.NotDot
+	or al,al	      ;конец строки?
+	jnz	.NotDot
 	jmp	.ASCIItoBCDConversionEnd
 align 4
 .NotDot:
@@ -234,70 +235,145 @@ align 4
 	; если она еще не встречалась
 	cmp	[Data_Flag],0
 	jnz	.Figures
-	inc	DX
+	inc	edx
 .Figures:
+	cmp al,'e'
+	je .exp_form
+	cmp al,'E'
+	jne @f
+	.exp_form:
+		call string_ExpForm ;если число в формате ..e..
+		or al,al
+		jnz .Error
+		jmp	.ASCIItoBCDConversionEnd
+	@@:
 	; Символы числа должны быть цифрами
-	cmp	AL,'0'
+	cmp	al,'0'
 	jb	.Error
-	cmp	AL,'9'
+	cmp	al,'9'
 	ja	.Error
 	; Пишем очередную цифру в младшую тетраду BCD
-	and	AL,0Fh
-	or	byte [Data_BCD],AL
+	and	al,15 ;символы 0-9 переводим в число
+	or	byte [Data_BCD],al
 	; Проверка на конец строки
-	cmp	byte [ESI],0
+	cmp	byte [esi],0
 	je	.ASCIItoBCDConversionEnd
 	; Сдвигаем BCD на 4 разряда влево
 	; (сдвигаем старшие 2 байта)
-	mov	AX,word [Data_BCD+6]
-	shld	word [Data_BCD+8],AX,4
+	mov	ax,word [Data_BCD+6]
+	shld	word [Data_BCD+8],ax,4
 	; (сдвигаем средние 4 байта)
-	mov	EAX, dword [Data_BCD]
-	shld	dword [Data_BCD+4],EAX,4
+	mov	eax,dword [Data_BCD]
+	shld	dword [Data_BCD+4],eax,4
 	; (сдвигаем младшие 4 байта)
 	shl	dword [Data_BCD],4
 	; Загружаем следующий символ в AL
 	lodsb
-	loop	.ASCIItoBCDConversion
+	loop .ASCIItoBCDConversion ;если не компил. то поставить dec ecx, jnz ...
 	; Если 19-й символ не 0 и не точка,
 	; то ошибка переполнения
-	cmp	AL,'.'
+	cmp	al,'.'
 	jne	.NotDot2
-	inc	ecx
+	inc	ecx ;пропуск точки в конце очень большого числа
 	lodsb
 .NotDot2:
-	cmp	AL,0
-	jne	.Error ;переполнение разрядной сетки
+	or al,al	;переполнение разрядной сетки?
+	jz	.ASCIItoBCDConversionEnd
+align 4
+.Error: ; При любой ошибке обнулить результат
+	fldz	;занести ноль с стек сопроцессора
+	fstp	[Data_Double]
+	jmp	.End
 
 ; ПРЕОБРАЗОВАТЬ ЧИСЛО ИЗ КОДА BCD В ВЕЩЕСТВЕННОЕ ЧИСЛО
 .ASCIItoBCDConversionEnd:
 	; Вписать знак в старший байт
-	mov	AL,[Data_Sign]
-	mov	byte [Data_BCD+9],AL
+	mov	al,[Data_Sign]
+	mov	byte [Data_BCD+9],al
 	; Сбросить регистры сопроцессора
 	fninit
 	; Загрузить в сопроцессор число в BCD-формате
 	fbld	[Data_BCD]
-	; Вычислить номер делителя
-	mov	EBX,18+1
-	sub	BX,CX
-	sub	BX,DX
-	cmp	EBX,0
-	je	.NoDiv
-	dec	EBX
-	shl	EBX,3		;умножаем на 8
-	add	EBX, MConst
-	fdiv	qword [EBX] ;разделить на константу
-.NoDiv:; Выгрузить число в двоичном формате
-	fstp	[Data_Double]
-	jmp	.End
-align 4
-.Error:; При любой ошибке обнулить результат
-	fldz	;занести ноль с стек сопроцессора
-	fstp	[Data_Double]
+	; Вычислить номер делителя или множителя
+	lea ebx,[ecx+edx-18]
+	cmp ebx,0
+	jle .NoMul ;если число e-..
+	dec ebx
+	jz .NoDiv ;если число e+0
+	dec ebx
+	lea ebx,[MConst+8*ebx]
+	fmul qword [ebx] ;умножить на константу (для чисел с приставкой e+..)
+	jmp .NoDiv
+.NoMul:
+	neg ebx
+	lea ebx,[MConst+8*ebx]
+	fdiv qword [ebx] ;разделить на константу
+.NoDiv: ;Выгрузить число в двоичном формате
+	fstp [Data_Double]
 .End:
 	popad
 	ret
+
+;output:
+; eax - 1 if error
+; edx += size
+align 4
+proc string_ExpForm uses ebx
+	mov [Data_Sign_Exp],0
+	xor eax,eax
+	lodsb
+	cmp al,'+'
+	jne @f
+		lodsb
+	@@:
+	cmp al,'-'
+	jne @f
+		inc [Data_Sign_Exp]
+		lodsb
+	@@:
+	
+	xor ebx,ebx
+	.cycle0:
+		cmp al,0
+		je .cycle0end
+		cmp al,9
+		je .cycle0end
+		cmp al,10
+		je .cycle0end
+		cmp al,13
+		je .cycle0end
+		cmp al,' '
+		je .cycle0end
+		cmp	al,'0'
+		jb .Error
+		cmp	al,'9'
+		ja .Error
+	
+		imul ebx,10
+		and	eax,15 ;символы 0-9 переводим в число
+		add ebx,eax
+		lodsb
+		jmp .cycle0
+	.cycle0end:
+	
+	cmp [Data_Sign_Exp],0
+	je @f
+		neg ebx
+	@@:
+	cmp	[Data_Flag],0 ;точка не встречалась?
+	jne @f
+		dec edx
+	@@:
+	add edx,ebx
+
+	xor eax,eax
+	jmp @f
+	.Error:
+		xor eax,eax
+		inc eax
+	@@:
+	ret
+endp
 
 align 4
 proc str_cat uses eax ecx edi esi, str1:dword, str2:dword
