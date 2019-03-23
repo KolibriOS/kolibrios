@@ -5,7 +5,7 @@
 ; Количество знаков числа после запятой (1-17)
 NumberSymbolsAD DW 5
 ; Константы (10 в степени N)
-MConst DQ 1.0E1,1.0E2,1.0E3,1.0E4,1.0E5
+MConst: DQ 1.0E1,1.0E2,1.0E3,1.0E4,1.0E5
        DQ 1.0E6,1.0E7,1.0E8,1.0E9,1.0E10
        DQ 1.0E11,1.0E12,1.0E13,1.0E14,1.0E15
        DQ 1.0E16,1.0E17,1.0E18,1.0E19,1.0E20
@@ -31,6 +31,7 @@ MConst DQ 1.0E1,1.0E2,1.0E3,1.0E4,1.0E5
        DQ 1.0E116,1.0E117,1.0E118,1.0E119,1.0E120
        DQ 1.0E121,1.0E122,1.0E123,1.0E124,1.0E125
        DQ 1.0E126,1.0E127,1.0E128
+.end:
 ; Число с плавающей запятой двойной точности
 Data_Double   DQ ?
 ; Число в BCD-формате 
@@ -302,11 +303,23 @@ align 4
 	jz .NoDiv ;если число e+0
 	dec ebx
 	lea ebx,[MConst+8*ebx]
+	cmp ebx,MConst.end
+	jl @f
+		ffree st0
+		fincstp
+		jmp .Error ;если очень большое число e+**
+	@@:
 	fmul qword [ebx] ;умножить на константу (для чисел с приставкой e+..)
 	jmp .NoDiv
 .NoMul:
 	neg ebx
 	lea ebx,[MConst+8*ebx]
+	cmp ebx,MConst.end
+	jl @f
+		ffree st0
+		fincstp
+		jmp .Error ;если очень маленькое число e-**
+	@@:
 	fdiv qword [ebx] ;разделить на константу
 .NoDiv: ;Выгрузить число в двоичном формате
 	fstp [Data_Double]
@@ -356,6 +369,8 @@ proc string_ExpForm uses ebx
 		jmp .cycle0
 	.cycle0end:
 	
+	cmp ebx,328 ;308 - макс. размер степени для double + 20 - число разрядов в BCD
+	ja .Error
 	cmp [Data_Sign_Exp],0
 	je @f
 		neg ebx

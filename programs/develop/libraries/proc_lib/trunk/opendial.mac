@@ -396,5 +396,56 @@ OpenDialog_exit
 	cld
 	ret
 ;----------------------------------------------
+align 4
+.set_file_name:
+	push ebp
+	mov ebp,esp
+	push eax ecx edi esi
+	mov edi,[ebp+8] ;open dlg struct 
+	mov edi,[edi+40] ;+40 - filename_area
+	mov esi,[ebp+12] ;file name
+	mov ecx,256
+	;copy file name in dialog
+	@@:
+		lodsb
+		stosb
+		test eax,eax
+		loop @b
+	pop esi edi ecx eax
+	pop ebp
+	ret 8
+;----------------------------------------------
+align 4
+.set_file_ext:
+	push ebp
+	mov ebp,esp
+	push eax ecx edi esi
+	mov esi,[ebp+8] ;open dlg struct 
+
+	xor eax,eax
+	mov ecx,256
+	mov edi,[esi+40] ;+40 - filename_area
+	repne scasb
+	@@: ;found position of '.'
+		dec edi
+		cmp byte[edi],'.'
+		je @f
+		cmp edi,[esi+40]
+		ja @b
+		jmp .no_dot
+	@@:
+	inc edi
+	mov esi,[ebp+12] ;file ext
+	;copy file ext in dialog
+	@@:
+		lodsb
+		stosb
+		test eax,eax
+		jnz @b
+	
+	.no_dot:
+	pop esi edi ecx eax
+	pop ebp
+	ret 8
 }
 ;*****************************************************************************

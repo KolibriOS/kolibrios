@@ -520,10 +520,24 @@ but_open_file:
 	cmp [OpenDialog_data.status],2
 	je .end_open_file
 	;код при удачном открытии диалога
-	jmp @f
+	jmp .end0
 .no_dlg: ;если минуем диалог открытия файла
 		pushad
-	@@:
+		mov esi,openfile_path
+		stdcall str_len,esi
+		add esi,eax
+		@@: ;цикл для поиска начала имени файла
+			dec esi
+			cmp byte[esi],'/'
+			je @f
+			cmp byte[esi],0x5c ;'\'
+			je @f
+			cmp esi,openfile_path
+			jg @b
+		@@:
+		inc esi
+		stdcall [OpenDialog_Set_file_name],OpenDialog_data,esi ;копируем имя файла в диалог сохранения
+	.end0:
     mov [run_file_70.Function], SSF_GET_INFO
     mov [run_file_70.Position], 0
     mov [run_file_70.Flags], 0
@@ -915,6 +929,7 @@ but_save_file:
 	pushad
 	copy_path open_dialog_name,communication_area_default_path,file_name,0
 	mov [OpenDialog_data.type],1
+	stdcall [OpenDialog_Set_file_ext],OpenDialog_data,Filter.1 ;.3ds
 	stdcall [OpenDialog_Start],OpenDialog_data
 	cmp [OpenDialog_data.status],2
 	je .end_save_file
@@ -1037,6 +1052,7 @@ dd Filter.end - Filter.1
 .1:
 db '3DS',0
 db 'STL',0
+.3:
 db 'PNG',0
 .end:
 db 0
@@ -1160,12 +1176,16 @@ import_libimg:
 	aimg_draw    db 'img_draw',0
 
 align 4
-proclib_import: ;описание экспортируемых функций
+proclib_import:
 	OpenDialog_Init dd aOpenDialog_Init
 	OpenDialog_Start dd aOpenDialog_Start
+	OpenDialog_Set_file_name dd aOpenDialog_Set_file_name
+	OpenDialog_Set_file_ext dd aOpenDialog_Set_file_ext
 dd 0,0
 	aOpenDialog_Init db 'OpenDialog_init',0
 	aOpenDialog_Start db 'OpenDialog_start',0
+	aOpenDialog_Set_file_name db 'OpenDialog_set_file_name',0
+	aOpenDialog_Set_file_ext db 'OpenDialog_set_file_ext',0
 
 align 4
 import_buf2d:
@@ -1387,9 +1407,9 @@ white_light dd 0.8, 0.8, 0.8, 1.0 ; Цвет и интенсивность освещения, генерируемог
 lmodel_ambient dd 0.3, 0.3, 0.3, 1.0 ; Параметры фонового освещения
 
 if lang eq ru
-capt db 'info 3ds версия 14.03.19',0 ;подпись окна
+capt db 'info 3ds версия 23.03.19',0 ;подпись окна
 else
-capt db 'info 3ds version 14.03.19',0 ;window caption
+capt db 'info 3ds version 23.03.19',0 ;window caption
 end if
 
 align 16

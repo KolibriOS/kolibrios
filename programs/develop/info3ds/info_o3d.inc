@@ -60,9 +60,9 @@ key_select db 'col_select',0
 
 txt_err_save_img_file:
 if lang eq ru
-	db 'Не могу сохранить файл.',0
+	db '"Не могу сохранить файл." -W',0
 else
-	db 'Can',39,'t save file.',0
+	db '"Can',39,'t save file." -W',0
 end if
 
 align 4
@@ -1090,9 +1090,10 @@ mnu_make_scrshot:
 	pushad
 	copy_path open_dialog_name,communication_area_default_path,file_name,0
 	mov [OpenDialog_data.type],1
+	stdcall [OpenDialog_Set_file_ext],OpenDialog_data,Filter.3 ;.png
 	stdcall [OpenDialog_Start],OpenDialog_data
-	cmp [OpenDialog_data.status],2
-	je .end_save_file
+	cmp [OpenDialog_data.status],1
+	jne .end_save_file
 		;код при удачном открытии диалога
 		mov dword[png_data],0
 
