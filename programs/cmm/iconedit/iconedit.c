@@ -407,7 +407,7 @@ void DrawWindow()
 
 void DrawLeftPanelSelection()
 {
-	DrawRectangle3D(5, previousTool*GAPV+right_bar.y-2, 16+3+2, 16+3+2, system.color.work, system.color.work);
+	if (previousTool!=-1) DrawRectangle3D(5, previousTool*GAPV+right_bar.y-2, 16+3+2, 16+3+2, system.color.work, system.color.work);
 	DrawRectangle3D(5, currentTool*GAPV+right_bar.y-2, 16+3+2, 16+3+2, 0x333333, 0x777777);
 }
 
