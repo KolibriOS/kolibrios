@@ -619,7 +619,7 @@ FT_BEGIN_HEADER
 #else  /* current sources say */
 #define TT_MS_LANGID_CROATIAN_BOSNIA_HERZEGOVINA       0x101a
 #define TT_MS_LANGID_BOSNIAN_BOSNIA_HERZEGOVINA        0x141a
-       /* and XPsp2 Platform SDK added (2004-07-26) */
+       /* and XP_sp2 Platform SDK added (2004-07-26) */
        /* Names are shortened to be significant within 40 chars. */
 #define TT_MS_LANGID_SERBIAN_BOSNIA_HERZ_LATIN         0x181a
 #define TT_MS_LANGID_SERBIAN_BOSNIA_HERZ_CYRILLIC      0x181a
@@ -661,7 +661,7 @@ FT_BEGIN_HEADER
 #define TT_MS_LANGID_FAEROESE_FAEROE_ISLANDS           0x0438
 #define TT_MS_LANGID_HINDI_INDIA                       0x0439
 #define TT_MS_LANGID_MALTESE_MALTA                     0x043a
-  /* Added by XPsp2 Platform SDK (2004-07-26) */
+  /* Added by XP_sp2 Platform SDK (2004-07-26) */
 #define TT_MS_LANGID_SAMI_NORTHERN_NORWAY              0x043b
 #define TT_MS_LANGID_SAMI_NORTHERN_SWEDEN              0x083b
 #define TT_MS_LANGID_SAMI_NORTHERN_FINLAND             0x0C3b
@@ -751,7 +751,7 @@ FT_BEGIN_HEADER
 #define TT_MS_LANGID_TAMAZIGHT_MOROCCO_LATIN           0x085f
   /* Missing a LCID for Tifinagh script */
 #define TT_MS_LANGID_KASHMIRI_PAKISTAN /* Arabic */    0x0460
-  /* Spelled this way by XPsp2 Platform SDK (2004-07-26) */
+  /* Spelled this way by XP_sp2 Platform SDK (2004-07-26) */
   /* script is yet unclear... might be Arabic, Nagari or Sharada */
 #define TT_MS_LANGID_KASHMIRI_SASIA                    0x0860
   /* ... and aliased (by MS) for compatibility reasons. */
@@ -773,7 +773,7 @@ FT_BEGIN_HEADER
 #define TT_MS_LANGID_QUECHUA_ECUADOR                   0x086b
 #define TT_MS_LANGID_QUECHUA_PERU                      0x0c6b
 #define TT_MS_LANGID_SEPEDI_SOUTH_AFRICA               0x046c
-  /* Also spelled by XPsp2 Platform SDK (2004-07-26) */
+  /* Also spelled by XP_sp2 Platform SDK (2004-07-26) */
 #define TT_MS_LANGID_SOTHO_SOUTHERN_SOUTH_AFRICA \
           TT_MS_LANGID_SEPEDI_SOUTH_AFRICA
   /* language codes 0x046d, 0x046e and 0x046f are (still) unknown. */

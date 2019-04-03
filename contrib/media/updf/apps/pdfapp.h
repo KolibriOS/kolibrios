@@ -32,7 +32,6 @@ struct pdfapp_s
 	char *doctitle;
 	pdf_xref *xref;
 	pdf_outline *outline;
-	xps_context *xps;
 
 	int pagecount;
 	fz_glyph_cache *cache;
