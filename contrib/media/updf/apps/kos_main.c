@@ -6,78 +6,10 @@
 #include "icons/allbtns.h"
 #include "kolibri.c"
 
-// need to be a part of menuet/os.h
-#define BT_DEL      0x80000000
-#define BT_HIDE     0x40000000
-#define BT_NOFRAME  0x20000000
-
-#define evReDraw  1
-#define evKey     2
-#define evButton  3
-#define evMouse   6
-#define evNetwork 8
-
-#define ASCII_KEY_LEFT  176
-#define ASCII_KEY_RIGHT 179
-#define ASCII_KEY_DOWN  177
-#define ASCII_KEY_UP    178
-#define ASCII_KEY_HOME  180
-#define ASCII_KEY_END   181
-#define ASCII_KEY_PGDN  183
-#define ASCII_KEY_PGUP  184
-
-#define ASCII_KEY_BS    8
-#define ASCII_KEY_TAB   9
-#define ASCII_KEY_ENTER 13
-#define ASCII_KEY_ESC   27
-#define ASCII_KEY_DEL   182
-#define ASCII_KEY_INS   185
-#define ASCII_KEY_SPACE 032
-
-struct blit_call
-{
-   int dstx;       
-   int dsty;
-   int w;
-   int h;
-
-   int srcx;
-   int srcy;
-   int srcw;
-   int srch;
-
-   unsigned char *d;
-   int   stride;
-};
-
-void blit(int dstx, int dsty, int w, int h, int srcx, int srcy,int srcw, int srch, int stride, char *d) //Вызов сисфункции Blitter
-{
-	struct blit_call image;
-	image.dstx=dstx;
-	image.dsty=dsty;
-	image.w=w;
-	image.h=h;
-	image.srcx=srcx;
-	image.srcy=srcy;
-	image.srcw=srcw;
-	image.srch=srch;
-	image.stride=stride;
-	image.d=d;
-	asm ("int $0x40"::"a"(73),"b"(0),"c"(&image));
-}
-
 void run_app()
 {
 	return;
 }
-
-
-int __menuet__get_mouse_wheels(void)
-{
-    int val;
-    asm ("int $0x40":"=a"(val):"a"(37),"b"(7));
-    return val;
-};
 
 /*==== DATA ====*/
 
@@ -195,7 +127,7 @@ void winblit(pdfapp_t *app)
 
 	gapp.panx = 0;
 	if (gapp.image->n == 4) {
-		 	blit(window_center + Form.client_left, 
+		 	kos_blit(window_center + Form.client_left, 
 		 		Form.client_top + TOOLBAR_HEIGHT, 
 		 		Form.client_width, 
 		 		Form.client_height - TOOLBAR_HEIGHT, 
@@ -221,7 +153,7 @@ void winblit(pdfapp_t *app)
 				d[3] = *s++;
 				d += 4;
 			}
-			blit(window_center + Form.client_left, 
+			kos_blit(window_center + Form.client_left, 
 				Form.client_top + TOOLBAR_HEIGHT, 
 				Form.client_width, 
 				Form.client_height - TOOLBAR_HEIGHT, 
@@ -239,30 +171,187 @@ void winblit(pdfapp_t *app)
 
 
 void DrawPageSides(void)
-{
-	if (Form.client_width > gapp.image->w) window_center = (Form.client_width - gapp.image->w) / 2; else window_center = 0;
-	if (gapp.image->h < Form.client_height - TOOLBAR_HEIGHT) draw_h = gapp.image->h - gapp.pany; else draw_h = Form.client_height - TOOLBAR_HEIGHT;
-	if (gapp.image->w < Form.client_width)
-	{
+{	
+	if (gapp.image->h < Form.client_height - TOOLBAR_HEIGHT) {
+		draw_h = gapp.image->h - gapp.pany; 
+	} else {
+		draw_h = Form.client_height - TOOLBAR_HEIGHT;
+	}
+	
+	if (gapp.image->w < Form.client_width) {
+		window_center = (Form.client_width - gapp.image->w) / 2;
+		draw_w = gapp.image->w + 2;
 		kol_paint_bar(0, TOOLBAR_HEIGHT, window_center-1, Form.client_height - TOOLBAR_HEIGHT, DOCUMENT_BG);
 		kol_paint_bar(window_center-1, TOOLBAR_HEIGHT, 1, draw_h, DOCUMENT_BORDER);
 		kol_paint_bar(window_center + gapp.image->w, TOOLBAR_HEIGHT, 1, draw_h, DOCUMENT_BORDER);
 		kol_paint_bar(window_center + gapp.image->w+1, TOOLBAR_HEIGHT, Form.client_width - window_center - gapp.image->w - 1, Form.client_height - TOOLBAR_HEIGHT, DOCUMENT_BG);
-	}
-	if (gapp.image->w < Form.client_width) 
-	{
-		draw_w = gapp.image->w + 2;
-	}
-	else
-	{
+	} else {
 		window_center = 1;
 		draw_w = Form.client_width;
 	}
+	
 	kol_paint_bar(window_center - 1, gapp.image->h - gapp.pany + TOOLBAR_HEIGHT, draw_w, 1, DOCUMENT_BORDER);
-	kol_paint_bar(window_center - 1, gapp.image->h - gapp.pany + TOOLBAR_HEIGHT + 1, draw_w, Form.client_height - gapp.image->h - TOOLBAR_HEIGHT + gapp.pany - 1, DOCUMENT_BG);
+	kol_paint_bar(window_center - 1, gapp.image->h - gapp.pany + TOOLBAR_HEIGHT + 1, 
+		draw_w, Form.client_height - gapp.image->h - TOOLBAR_HEIGHT + gapp.pany - 1, DOCUMENT_BG);
 }
 
 
+void GetNewPageNumber(void)
+{
+	new_page_number = gapp.pageno;
+	key_mode_enter_page_number = 1;
+	HandleNewPageNumber(0);
+}
+
+void HandleNewPageNumber(unsigned char key)
+{
+	char label_new_page[8];
+
+	if ((key >= '0') && (key <= '9')) 
+	{
+		new_page_number = new_page_number * 10 + key - '0';
+	}
+	if (key == ASCII_KEY_BS)
+	{
+		new_page_number /= 10;
+	}
+	if (key == ASCII_KEY_ENTER)
+	{
+		ApplyNewPageNumber();
+		return;
+	}
+	if (key==ASCII_KEY_ESC) 
+	{
+		key_mode_enter_page_number = 0;
+		DrawWindow();
+		return;
+	}
+
+	itoa(new_page_number, label_new_page, 10);
+	strcat(label_new_page, "_");
+	kol_paint_bar(show_area_x,  6, show_area_w, 22, 0xFDF88E);
+	__menuet__write_text(show_area_x + show_area_w/2 - strlen(label_new_page)*6/2, 14, 0x000000, label_new_page, strlen(label_new_page));
+
+	if (new_page_number > gapp.pagecount) ApplyNewPageNumber();
+}
+
+void ApplyNewPageNumber(void)
+{
+	key_mode_enter_page_number = 0;
+	gapp.pageno = new_page_number -1;
+	pdfapp_onkey(&gapp, ']');
+}
+
+void DrawPagination(void)
+{
+	char pages_display[12];
+	kol_paint_bar(show_area_x,  6, show_area_w, 22, 0xF4F4F4);
+	sprintf (pages_display, "%d/%d", gapp.pageno, gapp.pagecount);
+	__menuet__write_text(show_area_x + show_area_w/2 - strlen(pages_display)*6/2, 14, 0x000000, pages_display, strlen(pages_display));
+}
+
+void DrawToolbarButton(int x, char image_id)
+{
+	__menuet__make_button(x, 5, 26-1, 24-1, 10 + image_id + BT_HIDE, 0);
+	__menuet__putimage(x, 5, 26, 24, image_id * 24 * 26 * 3 + toolbar_image);
+}
+
+void DrawWindow(void)
+{
+	kol_paint_bar(0, 0, Form.client_width, TOOLBAR_HEIGHT - 1, 0xe1e1e1); // bar on the top (buttons holder)
+	kol_paint_bar(0, TOOLBAR_HEIGHT - 1, Form.client_width, 1, 0x7F7F7F);
+	DrawToolbarButton(8,0); //open_folder
+	DrawToolbarButton(42,1); //magnify -
+	DrawToolbarButton(67,2);  //magnify +
+	DrawToolbarButton(101,6); //rotate left
+	DrawToolbarButton(126,7); //rotate right
+	DrawToolbarButton(Form.client_width - 160,3); //show help
+	show_area_x = Form.client_width - show_area_w - 34;
+	DrawToolbarButton(show_area_x - 26,4); //prev page
+	DrawToolbarButton(show_area_x + show_area_w,5); //nex page
+	__menuet__make_button(show_area_x-1,  5, show_area_w+1, 23, 20 + BT_HIDE, 0xA4A4A4);
+	kol_paint_bar(show_area_x,  5, show_area_w, 1, 0xA4A4A4);
+	kol_paint_bar(show_area_x, 28, show_area_w, 1, 0xA4A4A4);
+	winblit(&gapp);
+	DrawPageSides();
+}
+
+
+/* Actions */
+
+void PageScrollDown(void)
+{
+	//pdfapp_onkey(&gapp, 'k'); //move down
+	if (gapp.image->h - gapp.pany - SCROLL_H < Form.client_height - TOOLBAR_HEIGHT)
+	{
+		pdfapp_onkey(&gapp, '.');
+	}
+	else {
+		gapp.pany += SCROLL_H; 
+		winblit(&gapp); 					
+	}
+}
+
+
+void PageScrollUp(void)
+{
+	//pdfapp_onkey(&gapp, 'j'); //move up
+	if (gapp.pany >= SCROLL_H) {
+		gapp.pany -= SCROLL_H;
+		winblit(&gapp);					
+	}
+	else {
+		//not very nice way of using do_not_blit, but it simple
+		if (gapp.pageno == 1) return;
+		do_not_blit = 1;
+		pdfapp_onkey(&gapp, ',');
+		do_not_blit = 0;
+		gapp.pany = gapp.image->h - SCROLL_H - Form.client_height + TOOLBAR_HEIGHT;
+		if (gapp.pany < 0) gapp.pany = 0;
+		//sprintf (debugstr, "gapp.pany: %d \n", gapp.pany);
+		//kol_board_puts(debugstr);
+		winblit(&gapp);
+	}
+}
+
+void RunApp(char app[], char param[])
+{
+	kol_struct70 r;
+	r.p00 = 7;
+	r.p04 = 0;
+	r.p08 = param;
+	r.p12 = 0;
+	r.p16 = 0;
+	r.p20 = 0;
+	r.p21 = app;
+	kol_file_70(&r);
+}
+
+
+void PageZoomIn(void)
+{
+	pdfapp_onkey(&gapp, '+');
+	DrawPageSides();
+}
+
+
+void PageZoomOut(void)
+{
+	pdfapp_onkey(&gapp, '-'); 
+	DrawPageSides();
+}
+
+void PageRotateLeft(void)
+{
+	pdfapp_onkey(&gapp, 'L');
+	DrawPageSides();
+}
+
+void PageRotateRight(void)
+{
+	pdfapp_onkey(&gapp, 'R');
+	DrawPageSides();
+}
 
 int main (void)
 {
@@ -270,7 +359,7 @@ int main (void)
 	char* original_command_line = *(char**)0x1C;
 	
 	if (*original_command_line == 0) {
-		kol_board_puts("Running uPDF without any param");
+		kol_board_puts("uPDF: no param set, showing OpenDialog");
 		RunOpenApp();
 		__menuet__sys_exit();
 	}
@@ -362,7 +451,7 @@ int main (void)
 			break;
 
 		case evMouse:
-			if (mouse_wheels_state = __menuet__get_mouse_wheels())
+			if (mouse_wheels_state = kos_get_mouse_wheels())
 			{
 				if (mouse_wheels_state==1) { PageScrollDown(); PageScrollDown(); }
 				if (mouse_wheels_state==-1) { PageScrollUp();  PageScrollUp();   }
@@ -374,165 +463,3 @@ int main (void)
 	}
   }
 }
-
-
-void GetNewPageNumber(void)
-{
-	new_page_number = gapp.pageno;
-	key_mode_enter_page_number = 1;
-	HandleNewPageNumber(0);
-}
-
-void HandleNewPageNumber(unsigned char key)
-{
-	char label_new_page[8];
-
-	if ((key >= '0') && (key <= '9')) 
-	{
-		new_page_number = new_page_number * 10 + key - '0';
-	}
-	if (key == ASCII_KEY_BS)
-	{
-		new_page_number /= 10;
-	}
-	if (key == ASCII_KEY_ENTER)
-	{
-		ApplyNewPageNumber();
-		return;
-	}
-	if (key==ASCII_KEY_ESC) 
-	{
-		key_mode_enter_page_number = 0;
-		DrawWindow();
-		return;
-	}
-
-	itoa(new_page_number, label_new_page, 10);
-	strcat(label_new_page, "_");
-	kol_paint_bar(show_area_x,  6, show_area_w, 22, 0xFDF88E);
-	__menuet__write_text(show_area_x + show_area_w/2 - strlen(label_new_page)*6/2, 14, 0x000000, label_new_page, strlen(label_new_page));
-
-	if (new_page_number > gapp.pagecount) ApplyNewPageNumber();
-}
-
-void ApplyNewPageNumber(void)
-{
-	key_mode_enter_page_number = 0;
-	gapp.pageno = new_page_number -1;
-	pdfapp_onkey(&gapp, ']');
-}
-
-void DrawPagination(void)
-{
-	char pages_display[12];
-	kol_paint_bar(show_area_x,  6, show_area_w, 22, 0xF4F4F4);
-	sprintf (pages_display, "%d/%d", gapp.pageno, gapp.pagecount);
-	__menuet__write_text(show_area_x + show_area_w/2 - strlen(pages_display)*6/2, 14, 0x000000, pages_display, strlen(pages_display));
-}
-
-
-
-
-void DrawWindow(void)
-{
-	kol_paint_bar(0, 0, Form.client_width, TOOLBAR_HEIGHT - 1, 0xe1e1e1); // bar on the top (buttons holder)
-	kol_paint_bar(0, TOOLBAR_HEIGHT - 1, Form.client_width, 1, 0x7F7F7F);
-	DrawToolbarButton(8,0); //open_folder
-	DrawToolbarButton(42,1); //magnify -
-	DrawToolbarButton(67,2);  //magnify +
-	DrawToolbarButton(101,6); //rotate left
-	DrawToolbarButton(126,7); //rotate right
-	DrawToolbarButton(Form.client_width - 160,3); //show help
-	show_area_x = Form.client_width - show_area_w - 34;
-	DrawToolbarButton(show_area_x - 26,4); //prev page
-	DrawToolbarButton(show_area_x + show_area_w,5); //nex page
-	__menuet__make_button(show_area_x-1,  5, show_area_w+1, 23, 20 + BT_HIDE, 0xA4A4A4);
-	kol_paint_bar(show_area_x,  5, show_area_w, 1, 0xA4A4A4);
-	kol_paint_bar(show_area_x, 28, show_area_w, 1, 0xA4A4A4);
-	winblit(&gapp);
-	DrawPageSides();
-}
-
-void DrawToolbarButton(int x, char image_id)
-{
-	__menuet__make_button(x, 5, 26-1, 24-1, 10 + image_id + BT_HIDE, 0);
-	__menuet__putimage(x, 5, 26, 24, image_id * 24 * 26 * 3 + toolbar_image);
-}
-
-
-/* Actions */
-
-void PageScrollDown(void)
-{
-	//pdfapp_onkey(&gapp, 'k'); //move down
-	if (gapp.image->h - gapp.pany - SCROLL_H < Form.client_height - TOOLBAR_HEIGHT)
-	{
-		pdfapp_onkey(&gapp, '.');
-	}
-	else {
-		gapp.pany += SCROLL_H; 
-		winblit(&gapp); 					
-	}
-}
-
-
-void PageScrollUp(void)
-{
-	//pdfapp_onkey(&gapp, 'j'); //move up
-	if (gapp.pany >= SCROLL_H) {
-		gapp.pany -= SCROLL_H;
-		winblit(&gapp);					
-	}
-	else {
-		//not very nice way of using do_not_blit, but it simple
-		if (gapp.pageno == 1) return;
-		do_not_blit = 1;
-		pdfapp_onkey(&gapp, ',');
-		do_not_blit = 0;
-		gapp.pany = gapp.image->h - SCROLL_H - Form.client_height + TOOLBAR_HEIGHT;
-		if (gapp.pany < 0) gapp.pany = 0;
-		//sprintf (debugstr, "gapp.pany: %d \n", gapp.pany);
-		//kol_board_puts(debugstr);
-		winblit(&gapp);
-	}
-}
-
-void RunApp(char app[], char param[])
-{
-	kol_struct70 r;
-	r.p00 = 7;
-	r.p04 = 0;
-	r.p08 = param;
-	r.p12 = 0;
-	r.p16 = 0;
-	r.p20 = 0;
-	r.p21 = app;
-	kol_file_70(&r);
-}
-
-
-void PageZoomIn(void)
-{
-	pdfapp_onkey(&gapp, '+');
-	DrawPageSides();
-}
-
-
-void PageZoomOut(void)
-{
-	pdfapp_onkey(&gapp, '-'); 
-	DrawPageSides();
-}
-
-void PageRotateLeft(void)
-{
-	pdfapp_onkey(&gapp, 'L');
-	DrawPageSides();
-}
-
-void PageRotateRight(void)
-{
-	pdfapp_onkey(&gapp, 'R');
-	DrawPageSides();
-}
-

@@ -436,10 +436,50 @@ int kol_clip_set(int n, char buffer[])
 asm volatile ("int $0x40"::"a"(54), "b"(2), "c"(n), "d"(buffer));
 }
 
-
 int kos_random(int num) 
 {
 	srand(kol_time_tick());
 	return rand() % num;
+}
+
+int kos_get_mouse_wheels(void)
+{
+    int val;
+    asm ("int $0x40":"=a"(val):"a"(37),"b"(7));
+    return val;
+};
+
+
+struct blit_call
+{
+   int dstx;       
+   int dsty;
+   int w;
+   int h;
+
+   int srcx;
+   int srcy;
+   int srcw;
+   int srch;
+
+   unsigned char *d;
+   int   stride;
+};
+
+void kos_blit(int dstx, int dsty, int w, int h, int srcx, 
+	int srcy,int srcw, int srch, int stride, char *d)
+{
+	struct blit_call image;
+	image.dstx=dstx;
+	image.dsty=dsty;
+	image.w=w;
+	image.h=h;
+	image.srcx=srcx;
+	image.srcy=srcy;
+	image.srcw=srcw;
+	image.srch=srch;
+	image.stride=stride;
+	image.d=d;
+	asm ("int $0x40"::"a"(73),"b"(0),"c"(&image));
 }
 

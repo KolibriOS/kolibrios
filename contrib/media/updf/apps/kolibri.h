@@ -14,6 +14,33 @@
 
 #define FILENAME_MAX	1024
 
+#define BT_DEL      0x80000000
+#define BT_HIDE     0x40000000
+#define BT_NOFRAME  0x20000000
+
+#define evReDraw  1
+#define evKey     2
+#define evButton  3
+#define evMouse   6
+#define evNetwork 8
+
+#define ASCII_KEY_LEFT  176
+#define ASCII_KEY_RIGHT 179
+#define ASCII_KEY_DOWN  177
+#define ASCII_KEY_UP    178
+#define ASCII_KEY_HOME  180
+#define ASCII_KEY_END   181
+#define ASCII_KEY_PGDN  183
+#define ASCII_KEY_PGUP  184
+
+#define ASCII_KEY_BS    8
+#define ASCII_KEY_TAB   9
+#define ASCII_KEY_ENTER 13
+#define ASCII_KEY_ESC   27
+#define ASCII_KEY_DEL   182
+#define ASCII_KEY_INS   185
+#define ASCII_KEY_SPACE 032
+
 #pragma pack(push,1)
 typedef struct 
 {

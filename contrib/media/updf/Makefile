@@ -10,14 +10,7 @@ LDFLAGS = -Tinclude/scripts/menuetos_app_v01.ld -nostdlib -L include/lib
 CFLAGS += -Ifitz -Ipdf -Iscripts  -fno-stack-protector -nostdinc -fno-builtin -m32 -I include -fno-pic -w
 LIBS += -lfreetype2 -lpng -ljbig2dec -ljpeg -lopenjpeg -lz -lm -lc
 
-#include Makerules
-#include Makethird
-
-THIRD_LIBS := $(FREETYPE_LIB)
-THIRD_LIBS += $(JBIG2DEC_LIB)
-THIRD_LIBS += $(JPEG_LIB)
-THIRD_LIBS += $(OPENJPEG_LIB)
-THIRD_LIBS += $(ZLIB_LIB)
+THIRD_LIBS := $(FREETYPE_LIB) $(JBIG2DEC_LIB) $(JPEG_LIB) $(OPENJPEG_LIB) $(ZLIB_LIB)
 
 ifeq "$(verbose)" ""
 QUIET_AR = @ echo ' ' ' ' AR $@ ;
@@ -54,8 +47,6 @@ $(OUT)/%.o : apps/%.c fitz/fitz.h pdf/mupdf.h | $(OUT)
 $(OUT)/%.o : scripts/%.c | $(OUT)
 	$(CC_CMD)
 
-.PRECIOUS : $(OUT)/%.o # Keep intermediates from chained rules
-
 # --- Fitz and MuPDF libraries ---
 
 FITZ_LIB := $(OUT)/libfitz.a
@@ -68,12 +59,10 @@ $(FITZ_LIB) : $(addprefix $(OUT)/, $(FITZ_SRC:%.c=%.o))
 $(MUPDF_LIB) : $(addprefix $(OUT)/, $(MUPDF_SRC:%.c=%.o))
 
 libs: $(MUPDF_LIB) $(FITZ_LIB) $(THIRD_LIBS)
-	@ echo MuPDF and underlying libraries built
 
 # --- Generated CMAP and FONT files ---
 
 CMAPDUMP := scripts/cmapdump
-# FONTDUMP := scripts/fontdump 
 
 CMAP_CNS_SRC := $(wildcard cmaps/cns/*)
 CMAP_GB_SRC := $(wildcard cmaps/gb/*)
@@ -114,10 +103,6 @@ $(OUT)/pdf_fontfile.o : $(FONT_HDR)
 $(OUT)/cmapdump.o : pdf/pdf_cmap.c pdf/pdf_cmap_parse.c
 
 # --- Tools and Apps ---
-
-PDF_APPS := $(addprefix $(OUT)/, pdfdraw pdfclean pdfextract pdfinfo pdfshow)
-
-$(PDF_APPS) : $(MUPDF_LIB) $(FITZ_LIB) $(THIRD_LIBS)
 
 MUPDF := $(OUT)/mupdf
 $(MUPDF) : $(MUPDF_LIB) $(FITZ_LIB) $(THIRD_LIBS)
