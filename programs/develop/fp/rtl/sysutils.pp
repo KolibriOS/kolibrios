@@ -162,7 +162,7 @@ begin
   ReleaseFileRecord(Handle);
 end;
 
-function FileTruncate(Handle: THandle; Size: Longint): Boolean;
+function FileTruncate(Handle: THandle; Size: Int64): Boolean;
 begin
   Result := False;
 end;

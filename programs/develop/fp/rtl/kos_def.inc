@@ -113,3 +113,10 @@ const
   VK_F10 = 121;
   VK_F11 = 122;
   VK_F12 = 123;
+
+/// siemargl add
+const 
+ ExtensionSeparator = '.';
+ AllowDirectorySeparators : set of char = ['/'];
+ AllowDriveSeparators : set of char = [];
+

@@ -19,6 +19,10 @@ const
   MaxExitCode = 65535;
   MaxPathLen = 512;
 
+  InitialStkLen = 20480; /// siemargl
+
+
+
   UnusedHandle   : THandle = -1;
   StdInputHandle : THandle = 0;
   StdOutputHandle: THandle = 0;
