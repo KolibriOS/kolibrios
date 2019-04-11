@@ -8183,7 +8183,7 @@ COM_MOD *ocur_mod;
 							sprintf(itok.name,"%e",itok.dnumber);
 							break;
 						case tk_qword:
-							sprintf(itok.name,"0x%X%08X",itok.lnumber>>16,itok.number);
+							sprintf(itok.name,"0x%X%08X",itok.lnumber>>16,itok.number); 
 							break;
 						default:
 							sprintf(itok.name,"0x%X",itok.number);
@@ -9976,7 +9976,7 @@ void unpackteg(structteg *tteg)
 int i;
 elementteg *bazael;
 structteg *newteg;
-int ssize,count;
+int ssize=4,count;   // fix by cppcheck
 idrec *newrec,*ptr;
 	if(alignword){	//выровнять на четный адрес
 		if(am32==0){

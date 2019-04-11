@@ -33,7 +33,7 @@ int usebracket=FALSE;
 	if(usebracket){
 		while(tok==tk_mult){
 			nexttok();
-			*pointr++;
+			(*pointr)++;  // fix by cppcheck
 		}
 		if(tok!=tk_closebracket)expected(')');
 		else getoperand(reg);

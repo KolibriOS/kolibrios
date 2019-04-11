@@ -915,7 +915,7 @@ nexpardll:
 					AlignCycle=(unsigned char)1^neg;
 					if(ptr!=NULL){
 						aligncycle=getnumber((unsigned char *)ptr);
-						if(aligncycle<1&&aligncycle>4096)aligncycle=8;
+						if(aligncycle<1 || aligncycle>4096)aligncycle=8;  // fix by cppcheck
 					}
 					break;
 				case c_ws:	//dos-stub for windows programs
@@ -1664,6 +1664,7 @@ unsigned char typev;
 			if(am32==FALSE&&((itok.flag&f_far)==0))ssize=2;
 			else ssize=4;
 		}
+		else printf("unexpected condition\n");  // fix by cppcheck
 		datasize+=initglobalvar(type,ptr->recsize/ssize,ssize,typev);
 	}
 	free(input);

@@ -147,7 +147,7 @@ unsigned short numobj=1;
 char *importblock=NULL;
 char *relocblock=NULL;
 char *exportblock=NULL;
-unsigned long psize,vsize=0,sizereloc=0,sizeReloc=0,sizeImport=0,sizeExport=0,
+unsigned long psize = 0,vsize=0,sizereloc=0,sizeReloc=0,sizeImport=0,sizeExport=0,
               sizebss=0,sizeRes=0;
 unsigned long startsec=0,startsecr=0,startsece=0,startsecres=0;
 unsigned int posrel=0,sizeimport=0,startimportname=0,sizeexport=0,sizeres=0,

@@ -1152,7 +1152,7 @@ void addr_to_hex(long addr, unsigned char splitup)
 
 {
 
-static char buffer[11];
+static char buffer[12]; // fix by cppcheck
 
 WORD32 adr;
 

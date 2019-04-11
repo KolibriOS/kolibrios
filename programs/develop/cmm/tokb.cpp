@@ -691,7 +691,7 @@ ITOK posttok;
 	if(val==0&&rflag==0&&posttok.post==0)next|=8;
 	switch(next){
 		case 5:		// idx=-1  zoom=-1         Rb+N
-			if(reg==EAX&&(val>127||val<0xffffff80))goto retfalse;
+			if(reg==EAX&&(val>127||val<0xffffff80)) {  //cppcheck - condition val>127||val<0xffffff80 always true, add diagnostic				printf("suspicious instruction compilation\n");				goto retfalse;   			}
 			if(val<3||val>0xfffffffd)goto retfalse;
 			if(base==ESP)goto retfalse;
 			break;
@@ -4154,8 +4154,8 @@ beg1:
 			break;
 		case tk_seg:
 	 		op66(r16);
-			op(0x8C); op(0xC0+gstok->number*8); break;
-			ClearReg(AL);
+			op(0x8C); op(0xC0+gstok->number*8);
+			ClearReg(AL);  break;   // fix by cppcheck
 		default: bytevalexpected(0); break;
 	}
 }

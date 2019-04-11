@@ -675,7 +675,7 @@ void CheckReg(int idx,int base,int *reg1,int *reg2,int razr)
 		}
 		if(lreg[*reg1]==0)lreg[*reg1]=1;
 		else{
-			for(i=8;i!=0;i--){
+			for(i=7;i>=0;i--){    // fix by cppcheck, side effect - enable EAX 
 				if(lreg[i]==0){
 					lreg[i]=1;
 					*reg1=i;
@@ -685,7 +685,7 @@ void CheckReg(int idx,int base,int *reg1,int *reg2,int razr)
 		}
 //		printf("\nreg1=%d",*reg1);
 		if(lreg[*reg2]!=0){
-			for(i=8;i!=0;i--){
+			for(i=7;i>=0;i--){    // fix by cppcheck, side effect - enable EAX
 				if(lreg[i]==0){
 					*reg2=i;
 					break;
