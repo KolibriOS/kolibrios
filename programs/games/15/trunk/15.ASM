@@ -27,7 +27,7 @@ BtnColor2 equ 0x0228c314
 
 NumColor equ 0x10000000
 ; Number shifting for nice look
-NumShift equ 24 shl 16+27
+NumShift equ 23 shl 16+23
 NumShift2 equ 4 shl 16
 ; Shuffle button
 XXSh equ 202 shl 16+60
