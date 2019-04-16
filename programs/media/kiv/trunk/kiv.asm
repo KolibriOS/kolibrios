@@ -1002,15 +1002,15 @@ draw_window:
     imul    ebx, 10001h
     mcall
 
-    mcall   SF_DEFINE_BUTTON, <5 + 25 * 0, 20>, <5, 20>, 'opn'+40000000h
-    mcall   , <10 + 25 * 1, 20>, , 'bck'+40000000h
-    mcall   , <10 + 25 * 2, 20>, , 'fwd'+40000000h
-    mcall   , <15 + 25 * 3, 20>, , 'bgr'+40000000h
-    mcall   , <15 + 25 * 4, 20>, , 'sld'+40000000h
+    mcall   SF_DEFINE_BUTTON, <4 + 25 * 0, 21>, <4, 21>, 'opn'+40000000h
+    mcall   , <9 + 25 * 1, 21>, , 'bck'+40000000h
+    mcall   , <9 + 25 * 2, 21>, , 'fwd'+40000000h
+    mcall   , <14 + 25 * 3, 21>, , 'bgr'+40000000h
+    mcall   , <14 + 25 * 4, 21>, , 'sld'+40000000h
     pop ebx
     add ebx, 5
     shl ebx, 16
-    mov bl, 20
+    mov bl, 21
     mcall   , , , 'flh'+40000000h
     add ebx, 25 * 65536
     mcall   , , , 'flv'+40000000h

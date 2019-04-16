@@ -30,23 +30,23 @@
 char default_dir[] = "/rd/1";
 od_filter filter2 = { 15, "MP3\0WAV\0XM\0\0" };
 
-#define ABOUT_MESSAGE "Pixie Player v2.93 Final
+#define ABOUT_MESSAGE "                   v2.94 Final
 
-     A tiny music folder player.
-     Supports MP3, WAV, XM audio file formats.
+          A tiny music folder player.
+    Supports MP3, WAV, XM audio file formats.
 
 Hot keys:
- Open file: O key
- Play/Stop: Space or P key
- Start playing selected file: Enter
- Goto next/previous track: Ctrl + Left/Right
- Change sound volume: Left/Right key
- Remove from the list: Delete
- Permanently delete file: Shift + Delete
- Show file info: I
- Repeat: R
- Shuffle: S
- Mute: M
+  Open file: O key
+  Play/Stop: Space or P key
+  Start playing selected file: Enter
+  Goto next/previous track: Ctrl + Left/Right
+  Change sound volume: Left/Right key
+  Remove from the list: Delete
+  Permanently delete file: Shift + Delete
+  Show file info: I
+  Repeat: R
+  Shuffle: S
+  Mute: M
 
 kolibri-n.org & aspero.pro"
 
@@ -133,7 +133,6 @@ void main()
 	  WaitEventTimeout(10);
 	  switch(EAX & 0xFF) {
 	  	case evMouse:
-			if (!CheckActiveProcess(Form.ID)) break;
 			mouse.get();
 			scrollbar_v_mouse (#scroll1);
 			if (list.first != scroll1.position)
@@ -148,10 +147,10 @@ void main()
 				if (mouse.dblclick) EventStartPlayingSelectedItem();
 				if (mouse.down) && (mouse.key&MOUSE_LEFT) 
 					&& (list.ProcessMouse(mouse.x, mouse.y)) DrawPlayList();
-				if (mouse.down) && (mouse.key&MOUSE_RIGHT) EventShowAbout();
 			}
 			if(mouse.key&MOUSE_LEFT) && (mouse.x<14) 
 				&& (window_mode == WINDOW_MODE_SMALL) EventDragWindow();
+			if (mouse.down) && (mouse.y>skin_height) && (mouse.key&MOUSE_RIGHT) EventShowAbout();
 			break;
 		case evButton:
 			switch(GetButtonID()) {
@@ -555,19 +554,23 @@ void ShowAboutThread()
 			if (key_scancode == SCAN_CODE_ESC) ExitProcess();
 			break;
 		case evReDraw:
-			DefineDragableWindow(150, 200, 400, 368);
+			DefineDragableWindow(150, 200, 400, 400);
 			GetProcessInfo(#pop_up, SelfInfo);
 
 			DrawBar(0, 0, pop_up.width, pop_up.height, theme.color_top_panel_bg);
 			DrawRectangle(0, 0, pop_up.width, pop_up.height, theme.color_list_border);
 
 			DefineHiddenButton(pop_up.width - 27, 1, 26, 15, BUTTON_WINDOW_CLOSE);
-			img_draw stdcall(skin.image, pop_up.width-28, 0, 28, 18, skin.w - 29, 0);
+			//img_draw stdcall(skin.image, pop_up.width-28, 0, 28, 18, skin.w - 29, 0);
 			DrawCaptButton(pop_up.width-10-80, pop_up.height - 34, 80, 24, 2, 
-			  theme.color_list_active_bg, theme.color_top_panel_song_name, "Cool");
+			  0x171717, 0xF5EFB3, "Cool");
 			
-			WriteTextLines(10, 10, 0x90, theme.color_top_panel_song_name, ABOUT_MESSAGE, 19);
-			DrawIcon32(10, 48, theme.color_top_panel_bg, 65);
+			WriteText(131,16, 0x81, 0x8E7C61, "Pixie Player");
+			WriteText(130,15, 0x81, 0xF5EFB3, "Pixie Player");
+
+			WriteTextLines(10, 40, 0x90, theme.color_top_panel_song_name, ABOUT_MESSAGE, 19);
+			DrawIcon32(45, 15, theme.color_top_panel_bg, 65);
+			DrawIcon32(pop_up.width-32-45, 15, theme.color_top_panel_bg, 65);
 
 	}
 }

@@ -2,7 +2,6 @@
 #ifdef LANG_RUS
 	?define TITLE_SETT "Настройки"
 	?define SHOW_DEVICE_CLASS "Выводить названия класса устройств"
-	?define SHOW_REAL_NAMES "Показывать имена файлов не меняя регистр"
 	?define SHOW_STATUS_BAR "Показывать статус бар"
 	?define NOTIFY_COPY_END "Уведомлять о завершении копирования"
 	?define SHOW_BREADCRUMBS "Использовать 'хлебные крошки'"
@@ -18,7 +17,6 @@
 #else
 	?define TITLE_SETT "Settings"
 	?define SHOW_DEVICE_CLASS "Show device class name"
-	?define SHOW_REAL_NAMES "Show file names in original case"
 	?define SHOW_STATUS_BAR "Show status bar"
 	?define NOTIFY_COPY_END "Notify when copying finished"
 	?define SHOW_BREADCRUMBS "Show breadcrumbs"
@@ -40,7 +38,6 @@ edit_box path_start_ed = {290,50,57,0xffffff,0x94AECE,0xffffff,0xffffff,0x100000
 more_less_box font_size   = { NULL, 9, 22, FONT_SIZE_LABEL };
 more_less_box line_height = { NULL, 16, 64, LIST_LINE_HEIGHT };
 checkbox show_dev_name    = { SHOW_DEVICE_CLASS };
-checkbox show_real_names  = { SHOW_REAL_NAMES };
 checkbox show_status_bar  = { SHOW_STATUS_BAR };
 checkbox info_after_copy  = { NOTIFY_COPY_END };
 checkbox show_breadcrumb  = { SHOW_BREADCRUMBS };
@@ -86,7 +83,6 @@ void settings_dialog()
 					break;
 				}
 				show_dev_name.click(id);
-				if (show_real_names.click(id)) action_buf=109;
 				info_after_copy.click(id);
 				two_panels.click(id);
 				show_breadcrumb.click(id);
@@ -133,7 +129,6 @@ void DrawSettingsCheckBoxes()
 	int x=11, frx=26, but_x;
 	y.n = 0;
 	show_dev_name.draw(x, y.inc(14));
-	show_real_names.draw(x, y.inc(25));
 	show_status_bar.draw(x, y.inc(25));
 	info_after_copy.draw(x, y.inc(25));
 	show_breadcrumb.draw(x, y.inc(25));
@@ -160,7 +155,6 @@ void LoadIniSettings()
 	ini.section = "Eolite";
 
 	files.SetFont(6, 9, 10000000b);
-	show_real_names.checked = ini.GetInt("RealFileNamesCase", true); 
 	show_dev_name.checked   = ini.GetInt("ShowDeviceName", true); 
 	show_status_bar.checked = ini.GetInt("ShowStatusBar", true); 
 	info_after_copy.checked = ini.GetInt("InfoAfterCopy", false); 
@@ -188,7 +182,6 @@ void SaveIniSettings()
 {
 	ini.SetInt("ShowDeviceName", show_dev_name.checked);
 	ini.SetInt("ShowStatusBar", show_status_bar.checked);
-	ini.SetInt("RealFileNamesCase", show_real_names.checked);
 	ini.SetInt("InfoAfterCopy", info_after_copy.checked);
 	ini.SetInt("BigIcons", big_icons.checked);
 	ini.SetInt("TwoPanels", two_panels.checked);

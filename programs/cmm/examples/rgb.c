@@ -41,7 +41,7 @@ int id;
 		if (id==SETBG_BTN) EventSetBackground(#image,256,256);
 		break;
 	case evKey:
-		if (GetKey()==27) ExitProcess();
+		if (GetKeys()==27) ExitProcess();
 		break;
 	case evReDraw:
 		system.color.get();

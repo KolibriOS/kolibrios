@@ -114,7 +114,6 @@ void main()
 	loop() switch(WaitEvent()) 
 	{
 	  	case evMouse:
-			if (!CheckActiveProcess(Form.ID)) break;
 			SelectList_ProcessMouse();
 
 			if (tabs.active_tab == SKINS) {

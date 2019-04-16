@@ -1,10 +1,16 @@
 ;=============================================================================
-; Kolibri Graphics Benchmark 0.82
+; Kolibri Graphics Benchmark 0.9
 ;--------------------------------------
 ; MGB - Menuet Graphics Benchmark 0.3
 ; Compile with FASM
 ;
 ;=============================================================================
+; version:	0.9
+; last update:  15/04/2019
+; written by:   Kiril Lipatov aka Leency
+; changes:      use big fonts, editing two comments, improve UI, show delta %
+;               Russian translation by Daniel Ovchinnikov
+;---------------------------------------------------------------------
 ; version:	0.82
 ; last update:  03/11/2014
 ; written by:   Marat Zakiyanov aka Mario79, aka Mario
@@ -75,9 +81,9 @@ use32
 	dd cur_dir_path
 
 include '../../../config.inc'		;for nightbuild
-include '..\..\..\macros.inc'
-include '..\..\..\proc32.inc'
-;include '..\..\..\debug.inc'
+include '../../../macros.inc'
+include '../../../proc32.inc'
+;include '../../../debug.inc'
 include '../../../develop/libraries/box_lib/trunk/box_lib.mac'
 include '../../../develop/libraries/box_lib/load_lib.mac'
 include 'lang.inc'	;language support
@@ -152,8 +158,8 @@ key:
 	jz	ActionTest
 	cmp	ah,'c'
 	jz	ActionComment
-	cmp	ah,'p'
-	jz	ActionPattern
+	cmp	ah,'m'
+	jz	ActionPatternMove
 	cmp	ah,'o'
 	jz	ActionOpen
 	cmp	ah,'s'
@@ -185,9 +191,9 @@ ActionComment:
 	jmp	still
 ;---------------------------------------------------------------------
 NotComment:
-	cmp	ah,4
-	jnz	NotPattern
-ActionPattern:
+	cmp	ah,6
+	jnz	NotPatternCopy
+ActionPatternMove:
 	test	dword [wFlags],1
 	jnz	still
 	mov	esi,results_table
@@ -204,8 +210,8 @@ ActionPattern:
 	call	DrawBars
 	jmp	still
 ;---------------------------------------------------------------------
-NotPattern:
-	cmp	ah,5
+NotPatternCopy:
+	cmp	ah,4
 	jnz	NotOpen
 ActionOpen:
 	test	dword [wFlags],1
@@ -226,7 +232,7 @@ OpenDialog_Start_1:
 	ret
 ;---------------------------------------------------------------------
 NotOpen:
-	cmp	ah,6
+	cmp	ah,5
 	jnz	still
 ActionSave:
 	test	dword [wFlags],1
@@ -280,36 +286,36 @@ align 4
 draw_window:
 	mcall	12,1
 	mcall	48,4
-	mov	ebx,100*65536+72*5+14
-	mov	ecx,80*65536+TESTS_NUM*LINE_HEIGHT+15+20+35
+	mov	ebx,460*65536+(LINE_DESCRIPTION_CHARS+5)*8+16
+	mov	ecx,80*65536+TESTS_NUM*(LINE_HEIGHT+2)+15+38
 	add	cx,ax
 	xor	eax,eax
 	xor	esi,esi
 	mcall	,,,34000000h,,aCaption
 
 	mov	eax,8
-	mov	ebx,050036h+12
-	mov	ecx,5*65536+20
+	mov	ebx,20*65536+84
+	mov	ecx,4*65536+24
 	mov	edx,2
 	mov	esi,0x00007F7F
 @@:
 	mcall
-	add	ebx,72*65536
+	add	ebx,96*65536
 	inc	edx
 	cmp	edx,7
 	jb	@r
 
-	mov	ecx,31
+	mov	ecx,33
 	mov	edx,0x00007F7F
-	mov	esi,(72*5)/2
+	mov	esi,(LINE_DESCRIPTION_CHARS*8)/2+20
 	call	drawSeparator
 
-	mcall	4,<27,12>,0x80DDEEFF,aButtonsText
+	mcall	4,<46,9>,0x90DDEEFF,aButtonsText
 	call	DrawBars
 
-	mov	ecx,TESTS_NUM*LINE_HEIGHT+15+21
+	mov	ecx,TESTS_NUM*LINE_HEIGHT+15+23
 	mov	edx,0x00007F7F
-	mov	esi,(72*5)/2
+	mov	esi,(LINE_DESCRIPTION_CHARS*8)/2+20
 	call	drawSeparator
 	mcall	12,2
 	ret
@@ -584,7 +590,7 @@ DrawBars:
 	add	ecx,-2
 	shl	ecx,16
 	mov	cx,LINE_HEIGHT
-	mov	ebx,0*65536+72*5+5
+	mov	ebx,0*65536+LINE_DESCRIPTION_CHARS*8+5
 	xor	edx,edx
 	mcall	13
 	pop	ebx
@@ -592,7 +598,7 @@ DrawBars:
 	and	ebx,0x0000FFFF
 	or	ebx,5*65536
 	mov	edx,[edi+TEST_REC_SIZE-4]
-	mcall	4,,0x8000CCCC
+	mcall	4,,0x9000CCCC
 
 	push	'=' 0x00FFFF00 0x00FFFF7F 0x00FFFF7F
 	mov	eax,[edi+0]
@@ -612,42 +618,90 @@ DrawBars:
 @@:
 	pop	ecx
 	call	int2str
-	add	ebx,(72*5-6*8*2-6-10-5)*65536 ; 196
+	add	ebx,(LINE_DESCRIPTION_CHARS*8-8*8*2-20)*65536 ; 196
+	add ecx,0x10000000 ;big font
 	mcall	4,,,textarea,8
 
 	pop	ecx
 	mov	eax,[edi+4]
 	call	int2str
-	add	ebx,(6*8+6+10)*65536
+	add	ebx,(6*8+26)*65536
+	add ecx,0x10000000 ;big font
 	mcall	4
 
-	pop	ecx
-	add	ebx,(-6-5)*65536
-	mov	edx,esp
+	;pop	ecx
+	;add	ebx,(-15)*65536
+	;mov	edx,esp
+	;mov	esi,1
+	;add ecx,0x10000000 ;big font
+	;mcall
+	
+	
+	; draw difference
+	pop ecx
+	add ecx,0x10000000 ;big font
+	
+	pusha
+	mov esi,ecx
+	mov eax,[edi+0]
+	mov ecx,[edi+4]
+	cmp ecx,0
+	je .difference_end ; no div by zero
+	imul eax,100
+	xor edx,edx
+	div ecx
+	mov ecx, eax
+	sub ecx,100
+	mov	[sign],'+'
+	cmp ecx,0 
+	jge @f             ; no need to invert positive rumber 
+	neg ecx
+	mov	[sign],'-'
+	@@:	
+	cmp ecx,1          ; do not show <=1% results
+	jle .difference_end
+	cmp ecx,100        ; do not show >=100% results
+	je .difference_end
+	
+	push ecx esi
+	add	ebx,(10*8)*65536
+	mov ecx,esi
+	mov edx,sign
 	mov	esi,1
-	mcall
+	mcall	4
+	pop esi ecx
+	
+	add	ebx,(1*8)*65536
+	mov edx,ebx
+	mcall	47, 10000000000001000000000000000000b
+		
+  .difference_end:
+	popa
+	
 	add	esp,4
 
 	add	edi,TEST_REC_SIZE
 	add	bx,LINE_HEIGHT
 	jmp	.next_result
 .exit:
-	mov	ebx, 0*65536+72*5+5
-	mov	ecx, (TESTS_NUM*LINE_HEIGHT+15+25)*65536+26
+
+
+	mov	ebx, 0*65536+LINE_DESCRIPTION_CHARS*8+5
+	mov	ecx, (TESTS_NUM*LINE_HEIGHT+15+27)*65536+LINE_HEIGHT*2
 	xor	edx, edx
 	mcall	13
 
 	mov	ebx, 5*65536+(TESTS_NUM*LINE_HEIGHT+15+27)
-	mcall	4,,0x8000CCCC,aLeft
+	mcall	4,,0x9000CCCC,aLeft
 
-	add	ebx, (6*10)*65536
-	mcall	,,0x80FFFF00,comment_string_1
+	add	ebx, (8*10)*65536
+	mcall	,,0x90FFFF00,comment_string_1
 
-	mov	ebx, 5*65536+(TESTS_NUM*LINE_HEIGHT+15+27+12)
-	mcall	,,0x8000CCCC,aRight
+	mov	ebx, 5*65536+(TESTS_NUM*LINE_HEIGHT+15+27+LINE_HEIGHT)
+	mcall	,,0x9000CCCC,aRight
 
-	add	ebx, (6*10)*65536
-	mcall	,,0x80FFFF00,comment_string_2
+	add	ebx, (8*10)*65536
+	mcall	,,0x90FFFF00,comment_string_2
 	ret
 ;---------------------------------------------------------------------
 int2str:
@@ -682,7 +736,21 @@ thread_comment:
 	mov	edi, edit1
 	mov	[edi+48], eax	;ed_size
 	mov	[edi+52], eax	;ed_pos
-;---------------------------------------------------------------------
+	
+	mov	esi,comment_string_2
+	cld
+@@:
+	lodsb
+	test	al,al
+	jne	@r
+	sub	esi,comment_string_2
+	mov	eax,esi
+	dec	eax
+	mov	edi, edit2
+	mov	[edi+48], eax	;ed_size
+	mov	[edi+52], eax	;ed_pos
+
+	;---------------------------------------------------------------------
 .red:
 	call .draw_window
 .still:
@@ -694,7 +762,9 @@ thread_comment:
 	cmp	eax,3	; button in buffer ?
 	je	.button
 
-	push	dword name_editboxes
+	push	dword edit1
+	call	[edit_box_mouse]
+	push	dword edit2
 	call	[edit_box_mouse]
 	jmp	.still
 ;---------------------------------------------------------------------
@@ -705,7 +775,9 @@ thread_comment:
 	cmp	ah,27
 	je	.close
 
-	push	dword name_editboxes
+	push	dword edit1
+	call	[edit_box_key]
+	push	dword edit2
 	call	[edit_box_key]
 	jmp	.still
 ;---------------------------------------------------------------------
@@ -721,8 +793,10 @@ thread_comment:
 	mcall	12,1
 	xor	eax,eax
 	xor	esi,esi
-	mcall	,<100,300>,<100,80>,0x34780078,,aComment
-	push	dword name_editboxes
+	mcall	,<110,300>,<120,120>,0x34C0C0C0,,aCommentT ; 0x34780078
+	push	dword edit1
+	call	[edit_box_draw]
+	push	dword edit2
 	call	[edit_box_draw]
 	mcall	12,2
 	ret
@@ -749,7 +823,7 @@ locLoadFile:
 locSaveFile:
 	mov	[stFileInfoBlock], 2
 	or	dword [wFlags],1
-	mov	esi,results_table+4
+	mov	esi,results_table ;+4 to save Right Bar
 	mov	edi,mgb_data
 	cld
 @@:
@@ -793,8 +867,9 @@ results_table dd \
 	?,?,testDrawPixel,aDrawingPixel,\
 	0,0,0,0
 ;---------------------------------------------------------------------
-LINE_HEIGHT   = 13
+LINE_HEIGHT   = 17
 TEST_REC_SIZE = 16
+LINE_DESCRIPTION_CHARS = 58
 TESTS_NUM     = ($ - results_table) / TEST_REC_SIZE - 1
 ;---------------------------------------------------------------------
 if lang eq it
@@ -814,16 +889,43 @@ if lang eq it
 	aDrawingNumber	db 'Decimal Number, 8 digits',0
 	aDrawingPixel	db 'Singolo pixel',0
 
-	aTestText	db 'This is a 34-charachters test text'
-	aButtonsText	db 'Test      Commenti    Pattern+     Apri        Salva',0
-	aCaption	db 'Kolibri Graphical Benchmark 0.82',0
+	aTestText    db 'This is a 34-charachters test text'
+	aButtonsText db 'Test      Commenti      Apri        Salva      Move >',0
+	aCaption     db 'Kolibri Graphical Benchmark 0.9',0
 
 	aLeft	db 'Sinistra:',0
 	aRight	db 'Destra  :',0
 
-	aComment1	db 'Attuale ',0
-	aComment2	db 'no pattern',0
-	aComment	db 'Commento',0
+	aComment1	db 'Attuale test',0
+	aComment2	db 'previous test',0
+	aCommentT	db 'Commenti',0
+else if lang eq ru
+	aDrawingWindow  db 'Системное окно со скином, 325x400 px',0
+	aDrawingBar     db 'Закрашенный прямоугольник, 100x250 px',0
+	aDrawingPicture db 'Картинка, 90x123, px',0
+	aDrawingPictF73 db 'Картинка для блиттера, 90x123, px',0
+	aGetScreenF36   db 'Чтение экрана из видеопамяти, 90x123, px',0
+	aGetScreen_GS   db 'Чтение экрана из видеокарты, 90x123, px',0
+	aDrawingVLine   db 'Больший катет, 350 px',0
+	aDrawingHLine   db 'Меньший катет, 270 px',0
+	aDrawingFLine   db 'Гипотенуза, 350 px',0
+	aDrawingText1   db 'Системный текст маленький, 34 знака',0
+	aDrawingText1m  db 'Системный текст маленький (буф), 34 знака',0
+	aDrawingText2   db 'Системный текст большой, 34 знака',0
+	aDrawingText2m  db 'Системный текст большой (буф), 34 знака',0
+	aDrawingNumber  db 'Десятичное число, 8 цифр',0
+	aDrawingPixel   db 'Одиночный пиксель',0
+
+	aTestText    db 'This is a 34-charachters test text'
+	aButtonsText db 'Тест      Названия    Из файла     В файл     Вправо >',0
+	aCaption     db 'Графический бенчмарк для Колибри v0.9',0
+
+	aLeft	db 'Слева:',0
+	aRight	db 'Справа:',0
+
+	aComment1	db 'этот тест',0
+	aComment2	db 'предыдущий тест',0
+	aCommentT	db 'Редактировать комментарии',0
 else
 	aDrawingWindow	db 'Window Of Type #3, 325x400 px',0
 	aDrawingBar	db 'Filled Rectangle, 100x250 px',0
@@ -835,22 +937,22 @@ else
 	aDrawingHLine	db 'Horizontal Line, 270 px',0
 	aDrawingFLine	db 'Free-angled Line, 350 px',0
 	aDrawingText1	db 'Fixed-width Text, 34 chars',0
-	aDrawingText1m	db 'Fixed-width Text(m), 34 chars',0
+	aDrawingText1m	db 'Fixed-width Text(mem), 34 chars',0
 	aDrawingText2	db 'Proportional Text, 34 chars',0
-	aDrawingText2m	db 'Proportional Text(m), 34 chars',0
+	aDrawingText2m	db 'Proportional Text(mem), 34 chars',0
 	aDrawingNumber	db 'Decimal Number, 8 digits',0
 	aDrawingPixel	db 'Single Pixel',0
 
-	aTestText	db 'This is a 34-charachters test text'
-	aButtonsText	db 'Test      Comment+    Pattern+      Open        Save',0
-	aCaption	db 'Kolibri Graphical Benchmark 0.82',0
+	aTestText    db 'This is a 34-charachters test text'
+	aButtonsText db 'Test      Comments      Open        Save       Move >',0
+	aCaption     db 'Kolibri Graphical Benchmark 0.9',0
 
 	aLeft	db 'Left    :',0
 	aRight	db 'Right   :',0
 
-	aComment1	db 'current',0
-	aComment2	db 'no pattern',0
-	aComment	db 'Comment',0
+	aComment1	db 'current test',0
+	aComment2	db 'previous test',0
+	aCommentT	db 'Edit comments',0
 end if
 ;---------------------------------------------------------------------
 system_dir_Boxlib	db '/sys/lib/box_lib.obj',0
@@ -919,9 +1021,11 @@ db	'MGB',0
 .end:
 db	0
 
-start_temp_file_name:	db 'pattern.mgb',0
+sign db ?,0
 
-path4	db '/rd/1/pattern.mgb',0
+start_temp_file_name:	db 'results.mgb',0
+
+path4	db '/rd/1/results.mgb',0
 ;---------------------------------------------------------------------
 align 4
 params_f73:
@@ -1037,14 +1141,16 @@ aEdit_box_mouse		db 'edit_box_mouse',0
 ;---------------------------------------------------------------------
 ; for EDITBOX
 align 4
-name_editboxes:
-edit1 edit_box 200,10,30,0xffffff,0xbbddff,0,0,0,255,comment_string_1,mouse_dd,ed_focus+ed_always_focus,0
-name_editboxes_end:
+editboxes:
+edit1 edit_box 260,12,15,0xffffff,0xbbddff,0xFF00FF,0x7F7F7F,\
+	0x90000000,43,comment_string_1,0,ed_focus,0
+edit2 edit_box 260,12,50,0xffffff,0xbbddff,0xFF00FF,0x7F7F7F,\
+	0x90000000,43,comment_string_2,0,0,0
+editboxes_end:
 ;---------------------------------------------------------------------
 
 IM_END:
 align 4
-mouse_dd	rd 1
 area_for_f36	rd 1
 dwTestEndTime	rd 1
 dwMainPID	rd 1

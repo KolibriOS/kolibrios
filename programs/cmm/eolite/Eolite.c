@@ -54,13 +54,15 @@ dword col_selec, col_lpanel, col_work, col_graph, col_list_line=0xDDD7CF;
 
 int toolbar_buttons_x[7]={9,46,85,134,167,203};
 
-byte active_about=0;
-word about_window;
+bool active_about = false;
+bool active_settings = false;
+bool _not_draw = false;
+bool menu_call_mouse = false;
+bool exif_load = false;
+bool dir_at_fat16 = NULL;
+
+word about_thread_id;
 word settings_window;
-byte active_settings=0;
-dword _not_draw = false;
-byte menu_call_mouse=0;
-byte exif_load=0;
 
 byte del_active=0;
 byte new_element_active=0;
@@ -74,13 +76,12 @@ dword file_mas[6898];
 int selected_count;
 int count_dir;
 
-byte
-	path[4096],
-	file_path[4096],
-	file_name[256],
-	new_element_name[256],
-	temp[4096],
-	itdir;
+byte path[4096];
+byte file_path[4096];
+byte file_name[256];
+byte new_element_name[256];
+byte temp[4096];
+bool itdir;
 
 char active_path[4096], inactive_path[4096];
 
@@ -132,7 +133,6 @@ byte cmd_free=0;
 
 void main() 
 {
-	char selected_filename[256];
 	dword id;
 	byte count_sl = 0;
 	signed x_old, y_old, dif_x, dif_y, adif_x, adif_y;
@@ -341,7 +341,7 @@ void main()
 				switch(id) 
 				{
 					case CLOSE_BTN:
-							KillProcess(about_window);
+							KillProcess(about_thread_id);
 							SaveIniSettings();
 							ExitProcess();
 					case PATH_BTN:
@@ -371,14 +371,8 @@ void main()
 					case 26:
 							Paste();
 							break;
-					case 31...33: //sorting
-							id -= 30;
-							if (sort_type == id) sort_desc ^= 1;
-							else sort_type = id;
-							strcpy(#selected_filename, #file_name);
-							DrawList();
-							Open_Dir(#path,WITH_REDRAW);
-							SelectFileByName(#selected_filename);
+					case 31...33:
+							EventSort(id-30);
 							break;
 					case 50...60: //Actions
 							FnProcess(id-50);
@@ -428,17 +422,18 @@ void main()
 				{
 					switch(key_scancode)
 					{
-						case 059...068:
-								key_scancode -= 59;
-								if (key_scancode < SystemDiscs.list.count)
+						case SCAN_CODE_F1...SCAN_CODE_F3:
+								EventSort(key_scancode - 58);
+								break;
+						case SCAN_CODE_1...SCAN_CODE_10:
+								key_scancode-=2;
+								if (key_scancode >= SystemDiscs.list.count) break;
+								if (!two_panels.checked)
 								{
-									if (!two_panels.checked)
-									{
-										DrawRectangle(17,key_scancode*16+74,159,16, 0); //display click
-										pause(7);										
-									}
-									SystemDiscs.Click(key_scancode);
+									DrawRectangle(17,key_scancode*16+74,159,16, 0); //display click
+									pause(7);										
 								}
+								SystemDiscs.Click(key_scancode);
 								break;
 						case SCAN_CODE_KEY_X:
 								Copy(#file_path, CUT);
@@ -704,6 +699,22 @@ void List_ReDraw()
 	if (new_element_active) && (col_selec != 0xCCCccc) NewElement_Form(new_element_active, #new_element_name);
 }
 
+bool file_name_is_8_3(dword name)
+{
+	int name_len = strlen(name);
+	int dot_pos = strrchr(name, '.');
+	if (name_len<=12) 
+	{
+		if (dot_pos) {
+			if (name_len - dot_pos > 3) return false;
+		}
+		else {
+			if (name_len>8) return false; 
+		}
+		return true;
+	}
+	return false;
+}
 
 void Line_ReDraw(dword bgcol, filenum){
 	dword text_col=0,
@@ -753,6 +764,7 @@ void Line_ReDraw(dword bgcol, filenum){
 	if (TestBit(attr, 1)) || (TestBit(attr, 2)) text_col=0xA6A6B7; //system or hiden?
 	if (bgcol==col_selec)
 	{
+		file_name_is_8_3(file_name_off);
 		itdir = TestBit(attr, 4);
 		strcpy(#file_name, file_name_off);
 		if (!strcmp(#path,"/")) sprintf(#file_path,"%s%s",#path,file_name_off);
@@ -815,6 +827,8 @@ void Open_Dir(dword dir_path, redraw){
 		SystemDiscs.Draw();
 		files.visible = files.h / files.item_h;
 		if (files.count < files.visible) files.visible = files.count;
+		if (!strncmp(dir_path, "/rd/1/",5)) 
+			dir_at_fat16 = true; else dir_at_fat16 = false; 
 		if (redraw!=ONLY_SHOW) Sorting();
 		list_full_redraw = true;
 		if (redraw!=ONLY_OPEN)&&(!_not_draw) {DrawStatusBar(); List_ReDraw();}
@@ -841,7 +855,7 @@ inline Sorting()
 	}
 	for (j=files.count-1, file_off=files.count-1*304+buf+32; j>=0; j--, file_off-=304;)  //files | folders
 	{
-		if (!show_real_names.checked) strttl(file_off+40);
+		if (dir_at_fat16) && (file_name_is_8_3(file_off+40)) strttl(file_off+40);
 		if (TestBit(ESDWORD[file_off],4)) //directory?
 		{
 			file_mas[d]=j;
@@ -908,7 +922,7 @@ void SelectFileByName(dword that_file)
 	int ind;
 	files.KeyHome();
 	Open_Dir(#path,ONLY_OPEN);
-	if (!show_real_names.checked) strttl(that_file);
+	if (dir_at_fat16) && (file_name_is_8_3(that_file)) strttl(that_file);
 	for (ind=files.count-1; ind>=0; ind--;) { if (!strcmp(file_mas[ind]*304+buf+72,that_file)) break; }
 	files.cur_y = ind - 1;
 	files.KeyDown();
@@ -1075,12 +1089,12 @@ void FnProcess(byte N)
 			if (!active_about) 
 			{
 				about_stak = malloc(4096);
-				about_window = CreateThread(#about_dialog,about_stak+4092);
+				about_thread_id = CreateThread(#about_dialog,about_stak+4092);
 				break;
 			}
 			else
 			{
-				ActivateWindow(GetProcessSlot(about_window));
+				ActivateWindow(GetProcessSlot(about_thread_id));
 			}
 			break;
 		case 2:
@@ -1206,6 +1220,17 @@ void EventRefreshDisksAndFolders()
 	{
 		if(GetRealFileCountInFolder(#path) != files.count) Open_Dir(#path,WITH_REDRAW);
 	}
+}
+
+void EventSort(dword id)
+{
+	char selected_filename[256];
+	if (sort_type == id) sort_desc ^= 1;
+	else sort_type = id;
+	strcpy(#selected_filename, #file_name);
+	DrawList();
+	Open_Dir(#path,WITH_REDRAW);
+	SelectFileByName(#selected_filename);
 }
 
 stop:

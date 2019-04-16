@@ -135,8 +135,8 @@ void main()
 				break;
 				
 		case evKey:
-				key = GetKey();
-				if (key==27) ExitProcess();
+				GetKeys();
+				if (key_scancode == SCAN_CODE_ESC) ExitProcess();
 				break;
 			
 		case evReDraw:

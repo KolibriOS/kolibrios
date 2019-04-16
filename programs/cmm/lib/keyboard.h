@@ -58,6 +58,17 @@
 #define SCAN_CODE_F11   087
 #define SCAN_CODE_F12   088
 
+#define SCAN_CODE_1     002
+#define SCAN_CODE_2     003
+#define SCAN_CODE_3     004
+#define SCAN_CODE_4     005
+#define SCAN_CODE_5     006
+#define SCAN_CODE_6     007
+#define SCAN_CODE_7     008
+#define SCAN_CODE_8     009
+#define SCAN_CODE_9     010
+#define SCAN_CODE_10    011
+
 #define SCAN_CODE_KEY_A 030
 #define SCAN_CODE_KEY_B 048
 #define SCAN_CODE_KEY_C 046
@@ -93,24 +104,6 @@
 #define KEY_SCROLLLOCK 00100000000b
 #define KEY_LWIN       01000000000b
 #define KEY_RWIN       10000000000b
-
-inline fastcall word GetKey()  //+Gluk fix
-{
-		$push edx
-GETKEY:
-		$mov  eax,2
-		$int  0x40
-		$cmp eax,1
-		$jne GETKEYI
-		$mov ah,dh
-		$jmp GETKEYII //jz?
-GETKEYI:
-		$mov dh,ah
-		$jmp GETKEY
-GETKEYII:
-		$pop edx
-		$shr eax,8
-}
 
 :unsigned char key_ascii;
 :dword key_scancode, key_modifier, key_editbox;
