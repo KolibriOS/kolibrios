@@ -234,7 +234,8 @@ void EventDrawDeleteButton()
 
 void EventDeleteCurrentNode()
 {
-	int t = notes.cur_y;
+	dword t;
+	t = notes.cur_y;
 	notes.lines[t].Delete();
 	EventListRedraw();
 }
