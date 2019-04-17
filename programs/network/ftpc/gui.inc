@@ -78,7 +78,7 @@ gui: ;//////////////////////////////////////////////////////////////////////////
 		or dword[tree2.style], 8 ;tl_cursor_pos_limited
 		
         ; read icons
-        load_image_file 'tl_sys_16.png', icon_tl_sys
+        load_image_file 'ftpc_sys.png', icon_tl_sys
 
         mov     [filestruct.ptr], eax
         mov     [filestruct.subfn], 0
@@ -92,7 +92,7 @@ gui: ;//////////////////////////////////////////////////////////////////////////
 
       @@:
         ; read nodes icon file
-        load_image_file 'tl_nod_16.png', icon_tl_nod
+        load_image_file 'ftpc_nod.png', icon_tl_nod
 
         mov     [filestruct.ptr], eax
         ;mov    [filestruct.subfn], 0
