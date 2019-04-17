@@ -27,7 +27,7 @@ void LoadIniConfig()
 	win_y_small   = ini.GetInt("win_y_small", -1);
 	ini.GetString("last_folder", #work_folder, sizeof(work_folder), NULL);
 
-	Libimg_LoadImage(#skin, abspath("skin.png"));
+	Libimg_LoadImage(#skin, abspath("pixieskn.png"));
 	skin.w = 322;
 	theme.color_top_panel_bg = 0x242424;
 	theme.color_top_panel_folder_name = 0xEEEeee;

@@ -41,7 +41,7 @@ Image viewer zSea         /KolibriOS/media/zsea/zsea
 Animage                   /sys/media/animage
 Palitra                   /sys/media/palitra
 #4   **** MULTIMEDIA ****
-Pixie MP3 Player          /sys/media/pixie/pixie
+Pixie Audioplayer         /sys/media/pixie
 AC97SND Audioplayer       /sys/media/ac97snd
 Fplay - video             /KolibriOS/media/fplay
 MidAMP                    /sys/media/midamp

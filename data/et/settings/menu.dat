@@ -42,7 +42,7 @@ Animage                   /sys/media/animage
 Image Filtering           /sys/media/imgf/imgf
 Palitra                   /sys/media/palitra
 #4   **** MULTIMEDIA ****
-Pixie MP3 Player          /sys/media/pixie/pixie
+Pixie Audioplayer         /sys/media/pixie
 AC97SND Audioplayer       /sys/media/ac97snd
 Fplay - video             /kolibrios/media/fplay
 MidAMP                    /sys/media/midamp

@@ -43,7 +43,7 @@ FlatWave                  /sys/3d/flatwav
 Наложение фильтров        /sys/media/imgf/imgf
 Палитра                   /sys/media/palitra
 #4    **** Мультимедиа ****
-Аудиоплеер Pixie          /sys/media/pixie/pixie
+Аудиоплеер Pixie          /sys/media/pixie
 Аудиоплеер AC97SND        /sys/media/ac97snd
 Видеоплеер Fplay          /kolibrios/media/fplay
 Midi-плеер                /sys/media/midamp

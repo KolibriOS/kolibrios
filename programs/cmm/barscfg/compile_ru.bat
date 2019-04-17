@@ -1,10 +1,10 @@
 @del lang.h--
 @echo #define LANG_RUS 1 >lang.h--
 
-@del panels_cfg
+@del barscfg
 cls
-@c-- panels_cfg.c
+@c-- barscfg.c
 @pause
-@rename panels_cfg.com panels_cfg
+@rename barscfg.com barscfg
 @del warning.txt
 @del lang.h--

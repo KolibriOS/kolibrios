@@ -42,7 +42,7 @@ Animage                   /sys/media/animage
 Efectes d'imatges         /sys/media/imgf/imgf
 Palitra                   /sys/media/palitra
 #4   **** MULTIMÈDIA ****
-Reproductor MP3 Pixie     /sys/media/pixie/pixie
+Pixie - audio             /sys/media/pixie
 Fplay - video             /KolibriOS/media/fplay
 MidAMP                    /sys/media/midamp
 #5    **** DESARROLLO ****
