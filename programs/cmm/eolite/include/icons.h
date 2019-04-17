@@ -35,7 +35,7 @@ void DrawIconByExtension(dword file_path, extension, xx, yy, fairing_color)
 			IF(DSDWORD[#BYTE_HEAD_FILE]=='KCPK')||(DSDWORD[#BYTE_HEAD_FILE]=='UNEM') 
 				icon_n = icons_ini.GetInt("kex", 2);
 	}
-	if (fairing_color==col_selec)
+	if (fairing_color==col.selec)
 	{
 		img_draw stdcall(selected_image, xx, yy, icon_size, icon_size, 0, icon_n*icon_size);
 	}

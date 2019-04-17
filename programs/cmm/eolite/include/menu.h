@@ -93,7 +93,7 @@ void FileMenu()
 				else 
 					DefineAndDrawWindow(Form.left+files.x+15, files.item_h*files.cur_y+files.y+Form.top+30,rbmenu.w+3,rbmenu.h+6,0x01, 0, 0, 0x01fffFFF);
 				GetProcessInfo(#MenuForm, SelfInfo);
-				DrawRectangle(0,0,rbmenu.w+1,rbmenu.h+2,col_graph);
+				DrawRectangle(0,0,rbmenu.w+1,rbmenu.h+2,col.graph);
 				DrawBar(1,1,rbmenu.w,1,0xFFFfff);
 				DrawPopupShadow(1,1,rbmenu.w,rbmenu.h,0);
 				MenuListRedraw();
@@ -126,7 +126,7 @@ void MenuListRedraw()
 		}
 		else
 		{
-			m_col_bg = col_work;
+			m_col_bg = col.work;
 			m_col_text = system.color.work_text;
 			m_col_sh_text = system.color.work_light;
 		}

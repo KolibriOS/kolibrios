@@ -50,7 +50,24 @@ enum {
 	ONLY_OPEN
 };
 
-dword col_selec, col_lpanel, col_work, col_graph, col_list_line=0xDDD7CF;
+struct Eolite_colors
+{
+	dword lpanel;
+	dword list_vert_line; //vertical line between columns in list
+	dword selec;
+	dword selec_active;
+	dword selec_inactive;
+	dword selec_text;
+	dword work;
+	dword graph;
+	dword list_bg;
+	dword list_gb_text;
+	dword list_text_hidden;
+	dword work_gradient[24];
+	dword slider_bg_big;
+	dword slider_bg_left;
+	dword odd_line;
+} col;
 
 int toolbar_buttons_x[7]={9,46,85,134,167,203};
 
@@ -150,8 +167,12 @@ void main()
 
 	Libimg_LoadImage(#icons16_default, "/sys/icons16.png");
 	Libimg_LoadImage(#icons16_selected, "/sys/icons16.png");
-	Libimg_ReplaceColor(icons16_selected.image, icons16_selected.w, icons16_selected.h, 0xffFFFfff, col_selec);
-	Libimg_ReplaceColor(icons16_selected.image, icons16_selected.w, icons16_selected.h, 0xffCACBD6, MixColors(col_selec, 0, 200));
+	Libimg_ReplaceColor(icons16_selected.image, icons16_selected.w, icons16_selected.h, 0xffFFFfff, col.selec);
+	Libimg_ReplaceColor(icons16_selected.image, icons16_selected.w, icons16_selected.h, 0xffCACBD6, MixColors(col.selec, 0, 200));
+	if (col.list_bg!=0xFFFfff) {
+		Libimg_ReplaceColor(icons16_default.image, icons16_selected.w, icons16_selected.h, 0xffFFFfff, col.list_bg);
+		Libimg_ReplaceColor(icons16_default.image, icons16_selected.w, icons16_selected.h, 0xffCACBD6, MixColors(col.list_bg, 0, 200));		
+	}
 
 	//-p just show file/folder properties dialog
 	if (param) && (param[0]=='-') && (param[1]=='p')
@@ -552,7 +573,7 @@ void main()
 
 void draw_window()
 {
-	int i;
+	dword i;
 	if (show_status_bar.checked) status_bar_h = STATUS_BAR_H; else status_bar_h = 0;
 	DefineAndDrawWindow(Form.left+rand_n,Form.top+rand_n,Form.width,Form.height,0x73,NULL,TITLE,0);
 	GetProcessInfo(#Form, SelfInfo);
@@ -561,21 +582,21 @@ void draw_window()
 	if (!two_panels.checked) && (Form.width < 480) { MoveSize(OLD,OLD,480,OLD); return; }
 	if ( two_panels.checked) && (Form.width < 573) { MoveSize(OLD,OLD,573,OLD); return; }
 	GetProcessInfo(#Form, SelfInfo);
-	ESDWORD[#toolbar_pal] = col_work;
-	ESDWORD[#toolbar_pal+4] = MixColors(0, col_work, 35);
+	ESDWORD[#toolbar_pal] = col.work;
+	ESDWORD[#toolbar_pal+4] = MixColors(0, col.work, 35);
 	PutPaletteImage(#toolbar, 246, 34, 0, 0, 8, #toolbar_pal);
-	DrawBar(127, 8, 1, 25, col_graph);
+	DrawBar(127, 8, 1, 25, col.graph);
 	for (i=0; i<3; i++) DefineHiddenButton(toolbar_buttons_x[i]+2,7,31-5,29-5,21+i);
 	for (i=3; i<6; i++) DefineHiddenButton(toolbar_buttons_x[i],  5,31,  29,  21+i);
-	DrawBar(246,0, Form.cwidth - 246, 34, col_work);
+	DrawBar(246,0, Form.cwidth - 246, 34, col.work);
 	DrawDot(Form.cwidth-17,12);
 	DrawDot(Form.cwidth-17,12+6);
 	DrawDot(Form.cwidth-17,12+12);
 	DefineHiddenButton(Form.cwidth-24,7,20,25,51+BT_NOFRAME); //dots
 	//main rectangles
-	DrawRectangle(1,40,Form.cwidth-3,Form.cheight - 42-status_bar_h,col_graph);
-	DrawRectangle(0,39,Form.cwidth-1,-show_status_bar.checked*status_bar_h + Form.cheight - 40,col_work_gradient[4]); //bg
-	for (i=0; i<5; i++) DrawBar(0, 34+i, Form.cwidth, 1, col_work_gradient[11-i]);
+	DrawRectangle(1,40,Form.cwidth-3,Form.cheight - 42-status_bar_h,col.graph);
+	DrawRectangle(0,39,Form.cwidth-1,-show_status_bar.checked*status_bar_h + Form.cheight - 40,col.work_gradient[4]); //bg
+	for (i=0; i<5; i++) DrawBar(0, 34+i, Form.cwidth, 1, col.work_gradient[11-i]);
 	llist_copy(#files_active, #files);
 	strcpy(#active_path, #path);
 	DrawStatusBar();
@@ -597,8 +618,8 @@ void DrawList()
 	if (sort_type==2) sorting_arrow_x = files.x + files.w - 90;
 	if (sort_type==3) sorting_arrow_x = strlen(T_SIZE)*3-30+files.x+files.w;
 	WriteText(sorting_arrow_x,files.y-12,0x80, system.color.work_text, sorting_arrow_t);
-	DrawBar(files.x+files.w,files.y,1,files.h,col_graph);
-	if (two_panels.checked) && (files.x<5) DrawBar(files.x+files.w+16,files.y,1,files.h,col_graph);	
+	DrawBar(files.x+files.w,files.y,1,files.h,col.graph);
+	if (two_panels.checked) && (files.x<5) DrawBar(files.x+files.w+16,files.y,1,files.h,col.graph);	
 }
 
 void DrawStatusBar()
@@ -627,7 +648,7 @@ void DrawFilePanels()
 		SystemDiscs.Get();
 		llist_copy(#files, #files_inactive);
 		strcpy(#path, #inactive_path);
-		col_selec = 0xCCCccc;
+		col.selec = col.selec_inactive;
 		SystemDiscs.Draw();
 		files_y = files.y;
 
@@ -635,13 +656,13 @@ void DrawFilePanels()
 		{
 			llist_copy(#files, #files_inactive);
 			strcpy(#path, #inactive_path);
-			col_selec = 0xCCCccc; //this is a bad code: need to use some var to set inactive panel for DrawList();
+			col.selec = col.selec_inactive; //this is a bad code: need to use some var to set inactive panel for DrawList();
 			files.SetSizes(Form.cwidth/2, files_y, Form.cwidth/2 -17, Form.cheight-files_y-2 - status_bar_h, files.item_h);
 			DrawList();
 			Open_Dir(#path,WITH_REDRAW);
 			llist_copy(#files, #files_active);
 			strcpy(#path, #active_path);
-			col_selec = 0x94AECE;
+			col.selec = col.selec_active;
 			files.SetSizes(2, files_y, Form.cwidth/2-2-17, Form.cheight-files_y-2 - status_bar_h, files.item_h);
 			DrawList();
 			Open_Dir(#path,WITH_REDRAW);
@@ -653,7 +674,7 @@ void DrawFilePanels()
 			Open_Dir(#path,WITH_REDRAW);
 			llist_copy(#files, #files_active);
 			strcpy(#path, #active_path);
-			col_selec = 0x94AECE;
+			col.selec = col.selec_active;
 			files.SetSizes(Form.cwidth/2, files_y, Form.cwidth/2 -17, Form.cheight-files_y-2 - status_bar_h, files.item_h);
 			DrawList();
 			Open_Dir(#path,WITH_REDRAW);
@@ -679,24 +700,27 @@ void List_ReDraw()
 	}
 	if (old_cur_y != files.cur_y)
 	{
-		if (old_cur_y-files.first<files.visible) Line_ReDraw(0xFFFFFF, old_cur_y-files.first);
-		Line_ReDraw(col_selec, files.cur_y-files.first);
+		if (old_cur_y-files.first<files.visible) Line_ReDraw(col.list_bg, old_cur_y-files.first);
+		Line_ReDraw(col.selec, files.cur_y-files.first);
 		old_cur_y = files.cur_y;
 		return;
 	}
 
 	_ALL_LIST_REDRAW:
 
-	for (j=0; j<files.visible; j++) if (files.cur_y-files.first!=j) Line_ReDraw(0xFFFFFF, j); else Line_ReDraw(col_selec, files.cur_y-files.first);
+	for (j=0; j<files.visible; j++) {
+		if (files.cur_y-files.first!=j) Line_ReDraw(col.list_bg, j); 
+		else Line_ReDraw(col.selec, files.cur_y-files.first);		
+	}
 	//in the bottom
 	all_lines_h = j * files.item_h;
-	DrawBar(files.x,all_lines_h + files.y,files.w,files.h - all_lines_h,0xFFFFFF);
-	DrawBar(files.x+files.w-141,all_lines_h + files.y,1,files.h - all_lines_h,col_list_line);
-	DrawBar(files.x+files.w-68,all_lines_h + files.y,1,files.h - all_lines_h,col_list_line);
+	DrawBar(files.x,all_lines_h + files.y,files.w,files.h - all_lines_h, col.list_bg);
+	DrawBar(files.x+files.w-141,all_lines_h + files.y,1,files.h - all_lines_h,col.list_vert_line);
+	DrawBar(files.x+files.w-68,all_lines_h + files.y,1,files.h - all_lines_h,col.list_vert_line);
 	Scroll();
 
 	if (del_active) Del_Form();
-	if (new_element_active) && (col_selec != 0xCCCccc) NewElement_Form(new_element_active, #new_element_name);
+	if (new_element_active) && (col.selec != 0xCCCccc) NewElement_Form(new_element_active, #new_element_name);
 }
 
 bool file_name_is_8_3(dword name)
@@ -717,7 +741,7 @@ bool file_name_is_8_3(dword name)
 }
 
 void Line_ReDraw(dword bgcol, filenum){
-	dword text_col=0,
+	dword text_col=col.list_gb_text,
 		  ext1, attr,
 		  file_offet,
 		  file_name_off,
@@ -731,7 +755,7 @@ void Line_ReDraw(dword bgcol, filenum){
 	DrawBar(files.x,y,4,files.item_h,bgcol);
 	DrawBar(files.x+4,y,icon_size,icon_y-y,bgcol);
 	if (files.item_h>icon_size) DrawBar(files.x+4,icon_y+icon_size-1,icon_size,y+files.item_h-icon_y-icon_size+1,bgcol);
-	if (colored_lines.checked) && (bgcol!=col_selec) && (filenum%2) bgcol=0xF1F1F1;
+	if (colored_lines.checked) && (bgcol!=col.selec) && (filenum%2) bgcol=col.odd_line;
 	DrawBar(files.x+icon_size+4,y,files.w-icon_size-4,files.item_h,bgcol);
 
 	file_offet = file_mas[filenum+files.first]*304 + buf+32;
@@ -747,29 +771,31 @@ void Line_ReDraw(dword bgcol, filenum){
 		ext1 = strrchr(file_name_off,'.') + file_name_off;
 		if (ext1==file_name_off) ext1 = NULL; //if no extension then show nothing
 		file_size = ConvertSize64(file.sizelo, file.sizehi);
-		if (ext1) && (strlen(ext1)<9) WriteTextCenter(files.x+files.w-140, files.text_y+y+1, 72, 0, ext1);
+		if (ext1) && (strlen(ext1)<9) WriteTextCenter(files.x+files.w-140, files.text_y+y+1, 72, col.list_gb_text, ext1);
 	}
 	else
 	{
 		if (!strcmp(file_name_off,"..")) ext1="<up>"; else {
 			ext1="<DIR>";
-			WriteTextCenter(files.x+files.w-140, files.text_y+y+1, 72, 0, ext1);
+			WriteTextCenter(files.x+files.w-140, files.text_y+y+1, 72, col.list_gb_text, ext1);
 		}
 		if (chrnum(#path, '/')==1) file_size = GetDeviceSizeLabel(#temp_path);
 	}
 	if (file_size) WriteText(7-strlen(file_size)*6+files.x+files.w-58, 
-			files.text_y+y+1, files.font_type, 0, file_size);
+			files.text_y+y+1, files.font_type, col.list_gb_text, file_size);
 	DrawIconByExtension(#temp_path, ext1, files.x+4, icon_y, bgcol);
 
-	if (TestBit(attr, 1)) || (TestBit(attr, 2)) text_col=0xA6A6B7; //system or hiden?
-	if (bgcol==col_selec)
+	if (TestBit(attr, 1)) || (TestBit(attr, 2)) text_col=col.list_text_hidden; //system or hiden?
+	if (bgcol==col.selec)
 	{
 		file_name_is_8_3(file_name_off);
 		itdir = TestBit(attr, 4);
 		strcpy(#file_name, file_name_off);
 		if (!strcmp(#path,"/")) sprintf(#file_path,"%s%s",#path,file_name_off);
 			else sprintf(#file_path,"%s/%s",#path,file_name_off);
-		if (text_col==0xA6A6B7) text_col=0xFFFFFF;
+		if (text_col==col.list_text_hidden) {
+			text_col=MixColors(col.selec_text, col.list_text_hidden, 65); 
+		} else text_col=col.selec_text;
 	}
 	if (file.selected) text_col=0xFF0000;
 	if (kfont.size.pt==9) || (!kfont.font)
@@ -795,10 +821,11 @@ void Line_ReDraw(dword bgcol, filenum){
 			}
 			strcpy(#label_file_name+strlen(#label_file_name)-2, "...");			
 		}
-		kfont.WriteIntoWindow(files.x + icon_size+7, files.item_h - kfont.height / 2 + y, bgcol, text_col, kfont.size.pt, #label_file_name);
+		kfont.WriteIntoWindow(files.x + icon_size+7, files.item_h - kfont.height / 2 + y, 
+			bgcol, text_col, kfont.size.pt, #label_file_name);
 	}
-	DrawBar(files.x+files.w-141,y,1,files.item_h,col_list_line); //gray line 1
-	DrawBar(files.x+files.w-68,y,1,files.item_h,col_list_line); //gray line 2
+	DrawBar(files.x+files.w-141,y,1,files.item_h,col.list_vert_line); //gray line 1
+	DrawBar(files.x+files.w-68,y,1,files.item_h,col.list_vert_line); //gray line 2
 }
 
 

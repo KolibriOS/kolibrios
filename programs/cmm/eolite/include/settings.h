@@ -207,19 +207,45 @@ void Write_Error(int error_number)
 void SetAppColors()
 {
 	int i;
+	dword bg_col;
 	system.color.get();
-
-	for (i=0; i<=14; i++) col_work_gradient[14-i]= MixColors(0, system.color.work, i);
-	col_work = system.color.work;
-	col_graph = system.color.work_graph;
-	system.color.work_dark = MixColors(0, system.color.work, 35);
-
-	/*
-	col_work    = 0xE4DFE1;
-	col_graph   = 0x7E87A3;
-	*/
-	col_lpanel  = 0x00699C;
-	col_selec   = 0x94AECE;
+	bg_col = system.color.work;
+	if (GrayScaleImage(#bg_col,1,1)>=65) 
+	{
+		//use light colors
+		col.list_bg = 0xFFFfff;
+		col.list_gb_text = 0x000000;
+		col.list_text_hidden = 0xA6A6B7;
+		col.list_vert_line = 0xDDD7CF;
+		col.work = system.color.work;
+		col.graph = system.color.work_graph;
+		col.lpanel  = 0x00699C;
+		col.selec = col.selec_active = 0x94AECE;
+		col.selec_text = 0x000000;
+		system.color.work_dark = MixColors(0, system.color.work, 35);
+		col.slider_bg_big = 0xCDCFCF;
+		col.odd_line = 0xF1F1F1;
+	}
+	else 
+	{
+		//use dark colors
+		col.list_bg = system.color.work;
+		col.list_gb_text = system.color.work_text;
+		col.list_text_hidden = 0xA6A6B7;
+		col.list_vert_line = system.color.work_graph;
+		col.work = system.color.work;
+		col.graph = system.color.work_graph;
+		col.lpanel  = MixColors(system.color.work_graph, system.color.work, 65);
+		col.selec = col.selec_active = system.color.work_button;
+		col.selec_text = system.color.work_button_text;
+		system.color.work_dark = MixColors(0, system.color.work, 35);
+		if (col.list_bg==col.selec) col.selec = system.color.work_graph; //for fucking skins
+		col.slider_bg_big = MixColors(0xCED0D0, system.color.work, 35);
+		col.odd_line = MixColors(0xFFFfff, system.color.work, 15);
+	}
+	col.selec_inactive = MixColors(0xBBBbbb, col.list_bg, 65);
+	col.slider_bg_left = MixColors(col.graph, col.slider_bg_big, 10);
+	for (i=0; i<=20; i++) col.work_gradient[20-i] = MixColors(0, system.color.work, i);
 }
 
 
@@ -244,9 +270,9 @@ void BigIconsSwitch()
 			Libimg_LoadImage(#icons32_default, "/sys/icons32.png");
 			Libimg_LoadImage(#icons32_selected, "/sys/icons32.png");
 			Libimg_ReplaceColor(icons32_default.image, icons32_selected.w, 
-				icons32_selected.h, 0x00000000, 0xffFFFfff);
+				icons32_selected.h, 0x00000000, col.list_bg);
 			Libimg_ReplaceColor(icons32_selected.image, icons32_selected.w, 
-				icons32_selected.h, 0x00000000, col_selec);								
+				icons32_selected.h, 0x00000000, col.selec);								
 		}
 	}
 	else {
