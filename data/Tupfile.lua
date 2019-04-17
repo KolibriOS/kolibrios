@@ -47,7 +47,7 @@ img_files = {
  {"MEDIA/IMGF/CEDG.OBJ", "common/media/ImgF/cEdg.obj"},
  {"MEDIA/IMGF/DITHER.OBJ", "common/media/ImgF/dither.obj"},
  {"MEDIA/IMGF/INVSOL.OBJ", "common/media/ImgF/invSol.obj"},
- {"MEDIA/PIXIE/PIXIESKN.PNG", PROGS .. "/cmm/pixie2/pixieskn.png"},
+ {"MEDIA/PIXIESKN.PNG", PROGS .. "/cmm/pixie2/pixieskn.png"},
  {"NETWORK/FTPC.INI", PROGS .. "/network/ftpc/ftpc.ini"},
  {"NETWORK/FTPD.INI", "common/network/ftpd.ini"},
  {"NETWORK/USERS.INI", "common/network/users.ini"},
