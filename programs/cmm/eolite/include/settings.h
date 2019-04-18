@@ -204,11 +204,31 @@ void Write_Error(int error_number)
 }
 
 
+void LoadIcons()
+{
+	//ICONS16.PNG
+	Libimg_LoadImage(#icons16_default, "/sys/icons16.png");
+	Libimg_LoadImage(#icons16_selected, "/sys/icons16.png");
+	Libimg_ReplaceColor(icons16_selected.image, icons16_selected.w, icons16_selected.h, 0xffFFFfff, col.selec);
+	Libimg_ReplaceColor(icons16_selected.image, icons16_selected.w, icons16_selected.h, 0xffCACBD6, MixColors(col.selec, 0, 200));
+	if (col.list_bg!=0xFFFfff) {
+		Libimg_ReplaceColor(icons16_default.image, icons16_selected.w, icons16_selected.h, 0xffFFFfff, col.list_bg);
+		Libimg_ReplaceColor(icons16_default.image, icons16_selected.w, icons16_selected.h, 0xffCACBD6, MixColors(col.list_bg, 0, 200));		
+	}
+	//ICONS32.PNG
+	Libimg_LoadImage(#icons32_default, "/sys/icons32.png");
+	Libimg_LoadImage(#icons32_selected, "/sys/icons32.png");
+	Libimg_ReplaceColor(icons32_default.image, icons32_selected.w, icons32_selected.h, 0x00000000, col.list_bg);
+	Libimg_ReplaceColor(icons32_selected.image, icons32_selected.w, icons32_selected.h, 0x00000000, col.selec);	
+}
+
 void SetAppColors()
 {
 	int i;
-	dword bg_col;
+	dword bg_col, old_list_bg_color;
 	system.color.get();
+	if (col.work == system.color.work) return;
+	old_list_bg_color = col.list_bg;
 	bg_col = system.color.work;
 	if (GrayScaleImage(#bg_col,1,1)>=65) 
 	{
@@ -246,6 +266,7 @@ void SetAppColors()
 	col.selec_inactive = MixColors(0xBBBbbb, col.list_bg, 65);
 	col.slider_bg_left = MixColors(col.graph, col.slider_bg_big, 10);
 	for (i=0; i<=20; i++) col.work_gradient[20-i] = MixColors(0, system.color.work, i);
+	if (old_list_bg_color!=col.list_bg) LoadIcons();
 }
 
 
@@ -262,22 +283,7 @@ void BigFontsChange()
 
 void BigIconsSwitch()
 {
-	if (big_icons.checked) 
-	{
-		icon_size=32;
-		if (!icons32_default.image)
-		{
-			Libimg_LoadImage(#icons32_default, "/sys/icons32.png");
-			Libimg_LoadImage(#icons32_selected, "/sys/icons32.png");
-			Libimg_ReplaceColor(icons32_default.image, icons32_selected.w, 
-				icons32_selected.h, 0x00000000, col.list_bg);
-			Libimg_ReplaceColor(icons32_selected.image, icons32_selected.w, 
-				icons32_selected.h, 0x00000000, col.selec);								
-		}
-	}
-	else {
-		icon_size=16; 
-	}
+	if (big_icons.checked) icon_size=32; else icon_size=16; 
 	BigFontsChange();
 }
 

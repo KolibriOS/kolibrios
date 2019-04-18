@@ -1,5 +1,5 @@
 /*
-SOFTWARE CENTER v2.85
+SOFTWARE CENTER v2.86
 */
 
 #define MEMSIZE 4096 * 15
@@ -33,7 +33,14 @@ char window_title[128],
 
 bool small_screen = false;
 
-#define LIST_BACKGROUND_COLOR 0xF3F3F3
+struct SW_COLORS 
+ {
+ 	dword list_bg;
+ 	dword text;
+ 	dword graph;
+ 	dword dark;
+ 	dword light;
+ } swc;
 
 block ipos[128];
 
@@ -59,8 +66,6 @@ void main()
 	load_dll(libimg, #libimg_init,1);
 	load_dll(libini, #lib_init,1);
 
-	Libimg_LoadImage(#skin, "/sys/icons32.png");
-	Libimg_FillTransparent(skin.image, skin.w, skin.h, LIST_BACKGROUND_COLOR);
 	kolibrios_mounted = dir_exists("/kolibrios");
 
 	if (param)
@@ -103,7 +108,7 @@ void main()
 			break;
 
 		case evReDraw:
-			system.color.get();
+			SetAppColors();
 			DefineAndDrawWindow(screen.width-window_width/2,screen.height-window_height/2,window_width,window_height,0x74,system.color.work,"",0);
 			GetProcessInfo(#Form, SelfInfo);
 			if (Form.status_window>2) { 
@@ -118,10 +123,39 @@ void main()
 				draw_top_bar();
 			}
 			DrawList();
-			DrawBar(0, row +1 * list.item_h + list_pos, Form.cwidth, -row - 1 * list.item_h - list_pos + Form.cheight, LIST_BACKGROUND_COLOR);
+			DrawBar(0, row +1 * list.item_h + list_pos, Form.cwidth, -row - 1 * list.item_h - list_pos + Form.cheight, swc.list_bg);
 			DrawSelection();
 	}
 }
+
+void SetAppColors()
+{
+	dword bg_col, old_list_bg_color;
+	system.color.get();
+	old_list_bg_color = swc.list_bg;
+	bg_col = system.color.work;
+	if (GrayScaleImage(#bg_col,1,1)>=65) 
+	{
+		//light colors
+		swc.list_bg = 0xF3F3F3;
+	 	swc.text = 0x000000;
+	 	swc.dark = 0xDCDCDC;
+	 	swc.light = 0xFCFCFC;
+	} else {
+		//dark colors
+		swc.list_bg = system.color.work;
+	 	swc.text = system.color.work_text;
+	 	swc.dark = system.color.work_dark;
+	 	swc.light = system.color.work_light;
+	}
+
+	if (swc.list_bg != old_list_bg_color)
+	{	
+		Libimg_LoadImage(#skin, "/sys/icons32.png");
+		Libimg_FillTransparent(skin.image, skin.w, skin.h, swc.list_bg);
+	}
+}
+
 
 void DrawList() {
 	list.count = 0;
@@ -149,7 +183,7 @@ byte draw_icons_from_section(dword key_value, key_name, sec_name, f_name)
 		col=0;
 	}
 
-	if (col==0) DrawBar(0, row * list.item_h + list_pos, Form.cwidth, list.item_h, LIST_BACKGROUND_COLOR);
+	if (col==0) DrawBar(0, row * list.item_h + list_pos, Form.cwidth, list.item_h, swc.list_bg);
 	DefineButton(col*list.item_w+6, row*list.item_h + list_pos,list.item_w,list.item_h-5,list.count + 100 + BT_HIDE,0);
 	tmp = list.item_w/2;
 
@@ -158,8 +192,8 @@ byte draw_icons_from_section(dword key_value, key_name, sec_name, f_name)
 	img_draw stdcall(skin.image, col*list.item_w+tmp-10, row*list.item_h+5 + list_pos, 32, 32, 0, icon_id*32);
 	if (icon_char_pos) ESBYTE[icon_char_pos] = '\0'; //delete icon from string
 	app_path_collection.add(key_value);
-	//kfont.WriteIntoWindowCenter(col*list.item_w+7,row*list.item_h+47 + list_pos, list.item_w,0, LIST_BACKGROUND_COLOR, 0xDCDCDC, 12, key_name);
-	text_w = kfont.WriteIntoWindowCenter(col*list.item_w+5,row*list.item_h+46 + list_pos, list.item_w,0, LIST_BACKGROUND_COLOR, 0x000000, 12, key_name);
+	//kfont.WriteIntoWindowCenter(col*list.item_w+7,row*list.item_h+47 + list_pos, list.item_w,0, swc.list_bg, swc.dark, 12, key_name);
+	text_w = kfont.WriteIntoWindowCenter(col*list.item_w+5,row*list.item_h+46 + list_pos, list.item_w,0, swc.list_bg, swc.text, 12, key_name);
 	ipos[list.count].x = list.item_w-text_w/2+calc(col*list.item_w)+5;
 	ipos[list.count].y = row*list.item_h+46 + list_pos + 16;
 	ipos[list.count].w = text_w;
@@ -187,10 +221,10 @@ byte process_sections(dword sec_name, f_name)
 	old_row = row;
 
 	if (!small_screen) {
-		DrawBar(0, row * list.item_h + list_pos, Form.cwidth , 29, LIST_BACKGROUND_COLOR);
-		text_len = kfont.WriteIntoWindow(10, row * list.item_h + 10 + list_pos, LIST_BACKGROUND_COLOR, 0, 15, sec_name);
-		DrawBar(text_len+20, row * list.item_h + list_pos + 20, Form.cwidth-text_len-20, 1, 0xDCDCDC);
-		DrawBar(text_len+20, row * list.item_h + list_pos + 21, Form.cwidth-text_len-20, 1, 0xFCFCFC);
+		DrawBar(0, row * list.item_h + list_pos, Form.cwidth , 29, swc.list_bg);
+		text_len = kfont.WriteIntoWindow(10, row * list.item_h + 10 + list_pos, swc.list_bg, swc.text, 15, sec_name);
+		DrawBar(text_len+20, row * list.item_h + list_pos + 20, Form.cwidth-text_len-20, 1, swc.dark);
+		DrawBar(text_len+20, row * list.item_h + list_pos + 21, Form.cwidth-text_len-20, 1, swc.light);
 		list_pos += 29;		
 	}
 	ini_enum_keys stdcall (f_name, sec_name, #draw_icons_from_section);
@@ -246,7 +280,7 @@ void DrawSelection()
 	int i;
 	dword col;
 	for (i=0; i<list.count; i++) {
-		if (i==list.cur_y) col=0x0080FF; else col=LIST_BACKGROUND_COLOR;
+		if (i==list.cur_y) col=0x0080FF; else col=swc.list_bg;
 		DrawBar(ipos[i].x, ipos[i].y, ipos[i].w+2, 3, col);
 	}
 }

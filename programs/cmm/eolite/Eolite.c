@@ -165,15 +165,6 @@ void main()
 	LoadIniSettings();
 	SystemDiscs.Get();
 
-	Libimg_LoadImage(#icons16_default, "/sys/icons16.png");
-	Libimg_LoadImage(#icons16_selected, "/sys/icons16.png");
-	Libimg_ReplaceColor(icons16_selected.image, icons16_selected.w, icons16_selected.h, 0xffFFFfff, col.selec);
-	Libimg_ReplaceColor(icons16_selected.image, icons16_selected.w, icons16_selected.h, 0xffCACBD6, MixColors(col.selec, 0, 200));
-	if (col.list_bg!=0xFFFfff) {
-		Libimg_ReplaceColor(icons16_default.image, icons16_selected.w, icons16_selected.h, 0xffFFFfff, col.list_bg);
-		Libimg_ReplaceColor(icons16_default.image, icons16_selected.w, icons16_selected.h, 0xffCACBD6, MixColors(col.list_bg, 0, 200));		
-	}
-
 	//-p just show file/folder properties dialog
 	if (param) && (param[0]=='-') && (param[1]=='p')
 	{
@@ -582,6 +573,7 @@ void draw_window()
 	if (!two_panels.checked) && (Form.width < 480) { MoveSize(OLD,OLD,480,OLD); return; }
 	if ( two_panels.checked) && (Form.width < 573) { MoveSize(OLD,OLD,573,OLD); return; }
 	GetProcessInfo(#Form, SelfInfo);
+	SetAppColors();
 	ESDWORD[#toolbar_pal] = col.work;
 	ESDWORD[#toolbar_pal+4] = MixColors(0, col.work, 35);
 	PutPaletteImage(#toolbar, 246, 34, 0, 0, 8, #toolbar_pal);
