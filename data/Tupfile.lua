@@ -172,6 +172,7 @@ extra_files = {
  {"kolibrios/utils/cnc_editor/kolibri.NC", PROGS .. "/other/cnc_editor/kolibri.NC"},
  {"kolibrios/emul/dosbox/", "common/emul/DosBox/*"},
  {"kolibrios/emul/e80/readme.txt", PROGS .. "/emulator/e80/trunk/readme.txt"},
+ {"kolibrios/emul/e80/keyboard.png", PROGS .. "/emulator/e80/trunk/keyboard.png"},
  {"kolibrios/emul/fceu/fceu", PROGS .. "/emulator/fceu/fceu"},
  {"kolibrios/emul/fceu/FCEU ReadMe.txt", PROGS .. "/emulator/fceu/FCEU ReadMe.txt"},
  {"kolibrios/emul/", "common/emul/gameboy"},

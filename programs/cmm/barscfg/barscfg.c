@@ -18,8 +18,8 @@
 
 #ifdef LANG_RUS
 	?define WINDOW_TITLE "Настройки панели задач и Дока"
-    ?define TASK_FRAME_T " Панель задач "
-	?define DOCK_FRAME_T " Док "
+    ?define TASK_FRAME_T "   Панель задач "
+	?define DOCK_FRAME_T "   Док "
 	?define MIN_LEFT_BUTTON "Кнопка скрытия слева"
 	?define MIN_RIGHT_BUTTON "Кнопка скрытия справа"
 	?define SOFTEN_UP   "Сглаживание сверху"
@@ -36,8 +36,8 @@
 	?define CHANGE_POS "Нажмите на изображение для смены позиции"
 #else
 	?define WINDOW_TITLE "Taskbar and Docky configuration"
-    ?define TASK_FRAME_T " Taskbar "
-	?define DOCK_FRAME_T " Docky "
+    ?define TASK_FRAME_T "   Taskbar "
+	?define DOCK_FRAME_T "   Docky "
 	?define MIN_LEFT_BUTTON "Min Left Button"
 	?define MIN_RIGHT_BUTTON "Min Right Button"
 	?define SOFTEN_UP   "Soften Up"
@@ -73,6 +73,9 @@ more_less_box tbPanelHeight  = { NULL, 6, 99, PANEL_HEIGHT };
 more_less_box tbSoftenHeight = { NULL, 0, 99, SOFTEN_HEIGHT };
 more_less_box tbButtonOffset = { NULL, 0, 99, BUTTON_OFFSET };
 
+checkbox taskbar_on = 0;
+checkbox docky_on = 0;
+
 int tbAttachment;
 checkbox tbSoftenUp = { SOFTEN_UP };
 checkbox tbClock = { CLOCK };
@@ -104,34 +107,37 @@ void main()
 		case evButton: 
 				id=GetButtonID();
 				if (1==id) ExitProcess();
-				//taskbar buttons
-				if (BTN_TB_ATTACHEMENT == id) {
-					tbAttachment ^= 1;
-					DrawWindowContent(); 
-					SaveSettingsAndRestartProcess(TASKBAR);
-				}
 
-				if (tbSoftenUp.click(id))      || (tbSoftenDown.click(id))
-				|| (tbMinLeftButton.click(id)) || (tbMinRightButton.click(id))
-				|| (tbRunApplButton.click(id)) || (tbClnDeskButton.click(id)) {
-					SaveSettingsAndRestartProcess(TASKBAR); 
-				}
+				if (taskbar_on.checked) EventTaskbarProcessButton(id);
+				if (docky_on.checked) EventDockyProcessButton(id);
 
-				if (tbClock.click(id))       || (tbCpuUsage.click(id))
-				|| (tbChangeLang.click(id))  || (tbMenuButton.click(id))
-				|| (tbPanelHeight.click(id)) || (tbSoftenHeight.click(id)) 
-				|| (tbButtonOffset.click(id)) {
-					SaveSettingsAndRestartProcess(TASKBAR);
+				if (taskbar_on.click(id)) {
+					IF (taskbar_on.checked == true) RunProgram("/sys/@taskbar", 0);
+					ELSE KillProcessByName("@TASKBAR", SINGLE);
+					EAX = taskbar_on.checked ^ 1;
+					tbSoftenUp.disabled = EAX;
+					tbSoftenDown.disabled = EAX;
+					tbMinLeftButton.disabled = EAX;
+					tbMinRightButton.disabled = EAX;
+					tbRunApplButton.disabled = EAX;
+					tbClnDeskButton.disabled = EAX;
+					tbClock.disabled = EAX;
+					tbCpuUsage.disabled = EAX;
+					tbChangeLang.disabled = EAX;
+					tbMenuButton.disabled = EAX;
+					tbPanelHeight.disabled = EAX;
+					tbSoftenHeight.disabled = EAX;
+					tbButtonOffset.disabled = EAX;
+					tbButtonOffset.disabled = EAX;
+					DrawWindowContent();
 				}
-				//docky buttons
-				if (id==200) {
-					dkLocation++; 
-					if (dkLocation>3) dkLocation=1; 
-					DrawWindowContent(); 
-					SaveSettingsAndRestartProcess(DOCKY);
+				if (docky_on.click(id)) {
+					IF (docky_on.checked == true) RunProgram("/sys/@docky", 0);
+					ELSE KillProcessByName("@DOCKY", SINGLE);
+					dkFsize.disabled = docky_on.checked ^ 1;
+					dkAshow.disabled = docky_on.checked ^ 1;
+					DrawWindowContent();
 				}
-				if (dkFsize.click(id)) SaveSettingsAndRestartProcess(DOCKY);
-				if (dkAshow.click(id)) SaveSettingsAndRestartProcess(DOCKY);
 				break;
 				
 		case evKey:
@@ -164,7 +170,7 @@ void DrawWindowContent()
 	y.n = frame_y;
 	DefineButton(22, y.inc(18), PIMG_W-1, PIMG_H-1, 100 + BT_HIDE, 0);
 	DrawPanelsImage(y.n, tbAttachment);
-	WriteText(68, y.inc(7), 0x90, system.color.work_text, CHANGE_POS);
+	WriteTextWithBg(68, y.inc(7), 0xD0, system.color.work_text, CHANGE_POS, system.color.work);
 	tbSoftenUp.draw(22, y.inc(35));
 	tbClock.draw(win_center_x, y.n);
 	tbSoftenDown.draw(22, y.inc(24));
@@ -177,14 +183,16 @@ void DrawWindowContent()
 	tbSoftenHeight.draw(22, y.inc(32));
 	tbButtonOffset.draw(22, y.inc(32));
 	DrawFrame(PD, frame_y, Form.cwidth-PD-PD, y.inc(32)-frame_y, TASK_FRAME_T);
+	taskbar_on.draw(22, frame_y-7);
 	//DOCKY
 	frame_y = calc(y.inc(20));
 	DefineButton(22, y.inc(18), PIMG_W-1, PIMG_H-1, 200 + BT_HIDE, 0);
 	DrawPanelsImage(y.n, dkLocation+1);
-	WriteText(68, y.inc(7), 0x90, system.color.work_text, CHANGE_POS);
+	WriteTextWithBg(68, y.inc(7), 0xD0, system.color.work_text, CHANGE_POS, system.color.work);
 	dkFsize.draw(22, y.inc(35)); 
 	dkAshow.draw(win_center_x, y.n);
 	DrawFrame(PD, frame_y, Form.cwidth-PD-PD, Form.cheight-frame_y-PD, DOCK_FRAME_T);
+	docky_on.draw(22, frame_y-7);
 }
 
 void LoadCfg()
@@ -205,7 +213,10 @@ void LoadCfg()
 
 	dkLocation = docky_ini.GetInt("location", 0);
 	dkFsize.checked = docky_ini.GetInt("fsize", 0);   
-	dkAshow.checked = docky_ini.GetInt("ashow", 0);   
+	dkAshow.checked = docky_ini.GetInt("ashow", 0);
+
+	taskbar_on.checked = CheckProcessExists("@TASKBAR");
+	docky_on.checked = CheckProcessExists("@DOCKY");
 }
 
 void SaveSettingsAndRestartProcess(byte panel_type)
@@ -252,6 +263,38 @@ void RestartProcess(byte panel_type)
 	ActivateWindow(GetProcessSlot(Form.ID));
 }
 
+void EventTaskbarProcessButton(dword id)
+{
+	if (BTN_TB_ATTACHEMENT == id) {
+		tbAttachment ^= 1;
+		DrawWindowContent(); 
+		SaveSettingsAndRestartProcess(TASKBAR);
+	}
+	if (tbSoftenUp.click(id))      || (tbSoftenDown.click(id))
+	|| (tbMinLeftButton.click(id)) || (tbMinRightButton.click(id))
+	|| (tbRunApplButton.click(id)) || (tbClnDeskButton.click(id)) {
+		SaveSettingsAndRestartProcess(TASKBAR); 
+	}
+	if (tbClock.click(id))       || (tbCpuUsage.click(id))
+	|| (tbChangeLang.click(id))  || (tbMenuButton.click(id))
+	|| (tbPanelHeight.click(id)) || (tbSoftenHeight.click(id)) 
+	|| (tbButtonOffset.click(id)) {
+		SaveSettingsAndRestartProcess(TASKBAR);
+	}
+}
+
+void EventDockyProcessButton(dword id)
+{
+	if (BTN_DOCKY_ATTACHEMENT == id) {
+		dkLocation++; 
+		if (dkLocation>3) dkLocation=1; 
+		DrawWindowContent(); 
+		SaveSettingsAndRestartProcess(DOCKY);
+	}
+	if (dkFsize.click(id)) || (dkAshow.click(id)) {
+		SaveSettingsAndRestartProcess(DOCKY);
+	}
+}
 
 
 stop:

@@ -61,26 +61,28 @@ struct checkbox
 :void checkbox::draw(dword _x,_y)
 {
 	#define SIZE 14
+	dword text_col = system.color.work_text;
 	if (!id) id = GetFreeButtonId();
 	x=_x; y=_y;
 
 	DefineButton(x-1, y-1, strlen(text)*8 + SIZE + 17, SIZE+2, id+BT_HIDE+BT_NOFRAME, 0);
-	WriteTextWithBg(x+SIZE+8, SIZE / 2 + y -7, 0xD0, system.color.work_text, text, system.color.work);
 	DrawRectangle(x, y, SIZE, SIZE, system.color.work_graph);
 	if (disabled)
 	{
 		DrawRectangle(x+1, y+1, SIZE-2, SIZE-2, 0xffffff);
 		DrawBar(x+2, y+2, SIZE-3, SIZE-3, 0xCCCccc);
+		text_col = MixColors(system.color.work, system.color.work_text, 128);
 	}
-	else if (checked == 0)
+	else if (checked == false)
 	{
 		DrawRectangle3D(x+1, y+1, SIZE-2, SIZE-2, 0xDDDddd, 0xffffff);
 		DrawBar(x+2, y+2, SIZE-3, SIZE-3, 0xffffff);
 	} 
-	else if (checked == 1)
+	else if (checked == true)
 	{
 		_PutImage(x+1, y+1, 13, 13, #checkbox_flag);
 	}
+	if (text) WriteTextWithBg(x+SIZE+8, SIZE / 2 + y -7, 0xD0, text_col, text, system.color.work);
 	DrawRectangle3D(x-1,y-1,SIZE+2,SIZE+2,system.color.work_dark,system.color.work_light);
 }
 
