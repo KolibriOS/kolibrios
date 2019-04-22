@@ -53,9 +53,9 @@ count                   dd  0
 pb:
 .value                  dd 0
 .left                   dd 8
-.top                    dd 25
+.top                    dd 38
 .width                  dd 269
-.height                 dd 10
+.height                 dd 15
 .style                  dd 0
 .min                    dd 0
 .max                    dd 0
@@ -68,10 +68,10 @@ edit1:
 .left                   dd 48
 .top                    dd 8
 .color                  dd 0X00FFFFFF
-.shift_color            dd 0
+.shift_color            dd 0x94AECE
 .focus_border_color     dd 0
 .blur_border_color      dd 0
-.text_color             dd 0
+.text_color             dd 0x10000000
 .max                    dd EDIT1_MAX_LENGTH
 .text                   dd text_buffer1
 .mouse_variable         dd 0
@@ -89,10 +89,10 @@ edit2:
 .left                   dd 216
 .top                    dd 8
 .color                  dd 0X00FFFFFF
-.shift_color            dd 0
+.shift_color            dd 0x94AECE
 .focus_border_color     dd 0
 .blur_border_color      dd 0
-.text_color             dd 0
+.text_color             dd 0x10000000
 .max                    dd EDIT2_MAX_LENGTH
 .text                   dd text_buffer2
 .mouse_variable         dd 0
@@ -282,8 +282,8 @@ DoAction:
 ; ------------------------------------- ;
 DrawStatus:
         mov    eax, 4
-        mov    ecx, 0xC0000000
-        mov    ebx, (168 << 16) | 38
+        mov    ecx, 0xD0000000
+        mov    ebx, (297 << 16) | 38
         mov    edx, [status_string]
         mov    edi, 0x00FFFFFF
         int    64
@@ -301,8 +301,8 @@ On_Redraw:
         int    64
 ; DrawWindow
         xor    eax, eax
-        mov    ebx, 360
-        mov    ecx, 74
+        mov    ebx, (50 << 16) | 360
+        mov    ecx, (50 << 16) | 88
         mov    edx, 0x34FFFFFF
         mov    edi, sz_caption
         xor    esi, esi
@@ -325,23 +325,21 @@ On_Redraw:
         int    64
 ; DrawTexts
         mov    eax, 4
-        mov    ecx, 0x80000000
+        mov    ecx, 0x90000000
 ;   Path:
         mov    ebx, (8   << 16) | 11
         mov    edx, sz_path
         int    64
 ;   Count:
-        mov    ebx, (176 << 16) | 11
+        mov    ebx, (168 << 16) | 11
         mov    edx, sz_count
         int    64
 ;   Start:
-        mov    ebx, (302 << 16) | 18
+        mov    ebx, (297 << 16) | 15
         mov    edx, sz_start
         int    64
 ; draw status
-        mov    ebx, (168 << 16) | 38
-        mov    edx, [status_string]
-        int    64
+        call   DrawStatus
 ; RedrawFinish
         mov    eax, 12
         mov    ebx, 2

@@ -8,6 +8,7 @@ skinlist = {
 "Leency/ObsidianOS/ObsidianOS.skn",
 "Leency/Octo_flat/Octo_flat.skn",
 "Leency/Shkvorka/Shkvorka.skn",
+"Leency/Workbench/Workbench.skn",
 "Leency/Yeah/Yeah.skn",
 "loggy/loggy.skn",
 "night/night.skn",

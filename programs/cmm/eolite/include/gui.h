@@ -2,10 +2,11 @@
 void Scroll() {
 	dword i;
 
-	word sc_x = files.x + files.w;
-	word sc_y = files.y;
-	word sc_h = files.h - 16;
-	word sc_slider_y;
+	dword sc_x = files.x + files.w;
+	dword sc_y = files.y;
+	dword sc_h = files.h - 16;
+	dword sc_slider_y;
+	dword sc_center;
 
 	if (files.count<=0)
 	{
@@ -24,6 +25,18 @@ void Scroll() {
 	DrawRectangle3D(sc_x+1,sc_slider_y+1,14,sc_slider_h-2, system.color.work_light , system.color.work_dark);
 	if (!scroll_used) for (i=0; i<13; i++) DrawBar(sc_x + 2 + i, sc_slider_y+2, 1, sc_slider_h-3, col.work_gradient[13-i]);
 	if (scroll_used)  for (i=0; i<13; i++) DrawBar(sc_x + 2 + i, sc_slider_y+2, 1, sc_slider_h-3, col.work_gradient[i]);
+
+	sc_center = sc_slider_h / 2 + sc_slider_y;
+
+	DrawBar(sc_x+4,   sc_center-3, 8,  1, col.graph);
+	DrawBar(sc_x+4+1, sc_center-2, 8,  1, system.color.work_light);
+
+	DrawBar(sc_x+3,   sc_center,   10, 1, col.graph);
+	DrawBar(sc_x+3+1, sc_center+1, 10, 1, system.color.work_light);
+
+	DrawBar(sc_x+4,   sc_center+3, 8,  1, col.graph);
+	DrawBar(sc_x+4+1, sc_center+4, 8,  1, system.color.work_light);
+
 	//area before slider
 	if (sc_slider_y > sc_y + 1) 
 	{
