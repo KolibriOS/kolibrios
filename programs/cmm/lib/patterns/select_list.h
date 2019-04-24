@@ -1,6 +1,5 @@
 llist select_list;
 scroll_bar scroll1 = { 18,200,398, 44,18,0,115,15,0,0xeeeeee,0xD2CED0,0x555555,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1};
-dword select_list_count_offset;
 
 ?define T_SELECT_LIST_NO_DATA "No data to show"
 

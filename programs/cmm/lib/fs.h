@@ -337,7 +337,6 @@ enum
 :unsigned char size[25];
 :dword ConvertSizeToKb(unsigned int bytes)
 {
-	unsigned int kb;
 	dword kb_line;
 
 	if (bytes >= 1024)

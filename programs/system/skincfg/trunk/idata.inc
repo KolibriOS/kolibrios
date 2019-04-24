@@ -108,6 +108,17 @@ else
   title db 'Windows settings',0
 end if
 ;---------------------------------------------------------------------
+LibIniImportTable:
+library                                                 \          
+        libini, 'libini.obj'          
+          
+import  libini, \        
+        ini_set_int  ,'ini_set_int' 
+
+aIni          db  '/sys/settings/eskin.ini',0 
+aSectionSkn   db  'skin',0
+aButtonStyle  db  '3d',0
+;---------------------------------------------------------------------
 l_libs_start:
 
 library01  l_libs system_dir_Boxlib+9, cur_dir_path, library_path, system_dir_Boxlib, \
@@ -132,6 +143,7 @@ err_message_import2	db 'proc_lib.obj - Wrong import!',0
 
 ;---------------------------------------------------------------------
 align 4
+
 ProcLib_import:
 OpenDialog_Init		dd aOpenDialog_Init
 OpenDialog_Start	dd aOpenDialog_Start

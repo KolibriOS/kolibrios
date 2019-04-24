@@ -27,8 +27,10 @@
 	dd cur_dir_path	; path to file
  
 include 'lang.inc'
+include '../../../proc32.inc'
 include '../../../config.inc'		;for nightbuild
 include '../../../macros.inc'
+include '../../../dll.inc'
 include 'kglobals.inc'
 include 'unpacker.inc'
 include '../../../develop/libraries/box_lib/load_lib.mac'
@@ -94,6 +96,7 @@ START:		; start of execution
 	test	eax,eax
 	jz	close	
 
+stdcall dll.Load,LibIniImportTable 
 load_libraries l_libs_start,end_l_libs
 
 ;if return code =-1 then exit, else nornary work
@@ -200,12 +203,14 @@ no_save:
  	jne	no_3d
 
 	mcall	48,1,1
+	invoke  ini_set_int, aIni, aSectionSkn, aButtonStyle, 1
  	jmp	doapply
 ;--------------------------------------
 no_3d:
  	cmp	ah,15	; set flat buttons
  	jne	no_flat
 
+	invoke  ini_set_int, aIni, aSectionSkn, aButtonStyle, 0
 	mcall	48, 1, 0
 ;--------------------------------------
 doapply:
