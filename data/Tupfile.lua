@@ -245,6 +245,7 @@ extra_files = {
  {"kolibrios/media/zsea/buttons/buttons.png", PROGS .. "/media/zsea/buttons.png"},
  {"kolibrios/res/skins/", "../skins/authors.txt"},
  {"kolibrios/res/templates/", "common/templates/*"},
+ {"kolibrios/res/templates/", PROGS .. "/emulator/e80/trunk/games/*"},
  {"kolibrios/res/wallpapers/", "common/wallpapers/*"},
  }
 if build_type == "rus" then tup.append_table(extra_files, {
@@ -456,6 +457,7 @@ tup.append_table(img_files, {
  {"NETWORK/NSLOOKUP", PROGS .. "/network/nslookup/nslookup"},
  {"NETWORK/PASTA", PROGS .. "/network/pasta/pasta"},
  {"NETWORK/SYNERGYC", PROGS .. "/network/synergyc/synergyc"},
+ {"NETWORK/SNTP", PROGS .. "/network/sntp/sntp"},
  {"NETWORK/TELNET", PROGS .. "/network/telnet/telnet"},
  {"NETWORK/@ZEROCONF", PROGS .. "/network/zeroconf/zeroconf"},
  {"NETWORK/FTPC", PROGS .. "/network/ftpc/ftpc"},
@@ -582,7 +584,6 @@ tup.append_table(img_files, {
  {"APP_PLUS", PROGS .. "/cmm/app_plus/app_plus.com"},
  {"EASYSHOT", PROGS .. "/cmm/easyshot/easyshot.com"},
  {"MOUSECFG", PROGS .. "/cmm/mousecfg/mousecfg.com"},
- {"NOTES", PROGS .. "/cmm/notes/notes.com"},
  {"BARSCFG", PROGS .. "/cmm/barscfg/barscfg.com"},
  {"SYSPANEL", PROGS .. "/cmm/software_widget/software_widget.com"},
  {"SYSMON", PROGS .. "/cmm/sysmon/sysmon.com"},
@@ -609,6 +610,7 @@ tup.append_table(extra_files, {
  {"kolibrios/utils/codeview", PROGS .. "/cmm/codeview/codeview.com"},
  {"kolibrios/utils/dicty.kex", PROGS .. "/cmm/dicty/dicty.com"},
  {"kolibrios/utils/netcheck", PROGS .. "/cmm/examples/netcheck.com"},
+ {"kolibrios/utils/notes", PROGS .. "/cmm/notes/notes.com"},
 })
 end -- tup.getconfig('NO_CMM') ~= 'full'
 

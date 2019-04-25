@@ -68,7 +68,7 @@ void main()
 
 	if (GetCpuFrequency()/1000000>=1000) window_dragable=true; else window_dragable=false;
 	
-	if (param) notes.OpenTxt(#param); else notes.OpenTxt(abspath("notes.txt"));
+	if (param) notes.OpenTxt(#param); else notes.OpenTxt("/sys/notes.txt");
 
 	SetEventMask(EVM_REDRAW + EVM_KEY + EVM_BUTTON + EVM_MOUSE + EVM_MOUSE_FILTER);
 	LoadIniSettings();

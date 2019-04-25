@@ -279,6 +279,7 @@ draw_left_menu:
     mov  cx,ax
     imul cx,10
     mov  edx,0xffffcc
+	dec  ebx
     mov  eax,13
 	mcall
     call draw_menu_Selection
