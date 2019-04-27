@@ -246,7 +246,7 @@ extra_files = {
  {"kolibrios/res/skins/", "../skins/authors.txt"},
  {"kolibrios/res/templates/", "common/templates/*"},
  {"kolibrios/res/templates/", PROGS .. "/emulator/e80/trunk/games/*"},
- {"kolibrios/res/templates/NES", "common/templates/NES/*"},
+ {"kolibrios/res/templates/NES/", "common/templates/NES/*"},
  {"kolibrios/res/wallpapers/", "common/wallpapers/*"},
  }
 if build_type == "rus" then tup.append_table(extra_files, {
