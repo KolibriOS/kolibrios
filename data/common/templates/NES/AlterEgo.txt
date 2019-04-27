@@ -1,0 +1,61 @@
+                         ____ _    ___ ____ ____ 
+                         |__| |     |  |___ |__/ 
+                         |  | |___  |  |___ |  \ 
+                              ____ ____ ____          
+                              |___ | __ |  |
+                              |___ |__] |__|
+                    
+
+               Freeware 2011 by Shiru, Kulor, Denis Grachev
+
+
+How to play:    You control a hero who has a phantom twin, his alter ego.
+                When the hero moves, the alter ego moves too in a mirrored 
+                fashion. In some levels the movements are mirrored 
+                horizontally, in other ones they are mirrored vertically. 
+                You can switch between the hero and his alter ego limited 
+                number of times in a level.
+                To complete a level, you need to collect all the jumping 
+                pixels. Usually you can take them only with the hero, but 
+                on some levels there are pixels of another color, these 
+                can only be collected by the alter ego.
+                There are evil skulls around, don't touch them and do not
+                fall into the water or outside of the level, or you'll lose
+                an attempt. At the start you have 5 attempts, and one extra
+                attempt is added after beating every 5 levels. You also can
+                restart a level using pause menu, it also takes an attempt.
+                There are 25 levels total in the game.
+
+Об игре:        Игрок управляет героем, у которого есть призрачный двойник, 
+                его второе "я". Двойник зеркально повторяет движения героя. 
+                На некоторых уровнях движение двойника отражено по 
+                горизонтали, на других - по вертикали.
+                Игрок может переключаться между героем и двойником 
+                ограниченное число раз за один уровень.
+                Для прохождения уровня игрок должен собрать все 
+                подпрыгивающие точки. Обычно их может брать только герой, 
+                но на некоторых уровнях встречаются точки другого цвета, 
+                которые может брать только двойник.
+                На уровнях присутствуют противники, злые черепа. Если 
+                докоснуться до черепа, упасть в воду или за пределы уровня,
+                отнимается одна попытка.
+                В начале игры даётся пять попыток, каждые пять пройденных 
+                уровней добавляется ещё одна. Любой уровень можно начать 
+                заново через меню паузы, но это отнимает попытку.
+                Всего в игре 25 уровней.
+                
+Credits:        Original ZX Spectrum game, levels, design: Denis Grachev          
+                NES code, graphics, sounds, redesign: Shiru
+                NES original music: Richard "Kulor" Armijo
+                Testing: Alone Coder, Pinball Wizzard, James Lothridge
+
+Website:        www.shiru.untergrund.net
+
+The game is not licensed or endorsed by Nintendo company in any way. It is free
+of charge, released into Public Domain, and provided "as is", without warranty 
+or responsibility of any kind.
+
+If you like it and think you would pay for it, please consider to visit Donate 
+link at http://shiru.untergrund.net and make a donation. Donations will be 
+redirected to a charity, providing a little bit of help for those in need, and 
+encourangement for the author to further work on projects like this.

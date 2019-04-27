@@ -1,0 +1,54 @@
+                                  _______ __   _                          
+                           |      |_____| | \  |                          
+                           |_____ |     | |  \_|                          
+                _______ _______ _______ _______ _______  ______
+                |  |  | |_____| |______    |    |______ |_____/
+                |  |  | |     | ______|    |    |______ |    \_
+                                                   
+                    
+                               PD 2011 Shiru
+                
+How to play:    On every level you have a set of computers and fragments
+                of wires. Your goal is to connect together all the computers
+                on a level. To do this, you should rotate wire fragments or 
+                the computers themselves using A, B or Select buttons. Time
+                is limited. If you haven't made it in time, the game is over, 
+                and you have to use pass code to try again.
+                Final levels of the game has more complex networks, more wire
+                types, unused wire segments, and the network starts to 
+                degradate over the time. There are 50 levels in the game.
+                After completing a level, you receive a pass code, also 
+                displayed in the pause menu. You can enter it in the main menu
+                using Code item to resume play later. It is also entered 
+                automatically every new level, so you can easily continue
+                game when the game is over or interrupted.
+
+Об игре:           На каждом уровне игры присутствует несколько компьютеров и 
+                отрезков провода. Задачей игрока является соединение всех 
+                компьютеров. Это делается путём отрезков провода и самих 
+                компьютеров кнопками A, B и Select. На прохождение уровня 
+                отводится ограниченное время. Когда оно кончается, игра 
+                заканчивается проигрышем. Для повторной попытки может быть 
+                использован ранее полученный код уровня.
+                   На дальнейших уровнях игры сеть проводов усложняется, 
+                появляются новые типы проводов и их неиспользуемые фрагменты,
+                а сеть начинает постепенно ломаться. В игре 50 уровней.
+                   После прохождения уровня выдаётся код, также отображаемый в 
+                меню паузы. Этот код может быть введён в главном меню для 
+                продолжения игры с нужного уровня. Он также автоматически 
+                вводится после достижения каждого нового уровня, что позволяет
+                легко продолжить игру после проигрыша или выхода в главное меню.
+                
+Credits:        Everything made by Shiru
+                Tested by Alone Coder, B00daW, Pinball Wizzard, MrFTBN
+
+Website:        www.shiru.untergrund.net
+
+The game is not licensed or endorsed by Nintendo company in any way. It is free
+of charge, released into Public Domain, and provided "as is", without warranty 
+or responsibility of any kind.
+
+If you like it and think you would pay for it, please consider to visit Donate 
+link at http://shiru.untergrund.net and make a donation. Donations will be 
+redirected to a charity, providing a little bit of help for those in need, and 
+encourangement for the author to further work on projects like this.

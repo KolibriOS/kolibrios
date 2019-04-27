@@ -61,10 +61,9 @@ START:
   ; fatal error(console error)
 	;jnz	exit
 
-  
   ; setup params
   call parse_params
-  
+  ;clear eax
   call tz_validate
   ; is TZ correct?
   cmp ebx,0
@@ -189,6 +188,9 @@ START:
   jne @f
   cmp [tz_m],0
   jne @f
+  mov eax, str_tz
+  add eax, 9  
+  cinvoke con_printf, eax ; \n\0 
   jmp .no_bias
   
 @@:
@@ -212,24 +214,23 @@ START:
   cinvoke con_printf, str_tz, eax, ebx
   
 .no_bias:
-  
   cmp [sync],0
   je  exit
   cmp [sync], SYNC_S
   jne @f
   mov eax, str_s
   jmp .sync_ok
-  @@:
+@@:
   cmp [sync], SYNC_ST
   jne @f
   mov eax, str_st
   jmp .sync_ok
   @@:
-  cmp [sync], SYNC_ST
-  jne .sync_ok
+  cmp [sync], SYNC_SS
+  jne exit ; Fixed (24.04.2019): incorrect display with -ss
   mov eax, str_ss
   
-  .sync_ok:
+.sync_ok:
   cinvoke	con_printf, str_sync, eax
   
   jmp exit
@@ -315,7 +316,8 @@ SYNC_ST   = 3
 
 parse_params:
   mov	  esi, params
-  mov   ebx, esi 
+  mov   ebx, esi
+  clear ecx ; 26.04.2018 Fixed 
 .f00:
 	lodsb
   cmp	 al, 0
@@ -329,6 +331,8 @@ parse_params:
   ret
     
 .exit:
+  cmp ecx,0 ; 26.04.2018 Fixed
+  je @f 
   ; mark end of TZ
   mov	  byte [ecx+1],  0
   ; now esi = start of TZ
@@ -393,6 +397,7 @@ parse_params:
 ; jz	  .invalid
 ; mov	  [port], bx
 ;	jmp .param_loop
+jmp .invalid
   
 .tz:  
   ; tz setup
@@ -443,6 +448,7 @@ parse_params:
 .invalid:
 	mov eax, 10
 	ret
+  
 
 ; Helper to convert char to number
 ; Input:
@@ -498,7 +504,7 @@ c2n:
  
 ; Sync worker
 ; Input:
-; eax  - in_addr (IPv4)
+; setuped sockaddr1
 ; Output:
 ; eax - error_code
 ; ebx - error_string
@@ -510,8 +516,22 @@ c2n:
   ;mov	   edx, eax  
 sntp_query_time:
 
-;  jmp .test 
-
+  ; if -ss & 59:59 => waiting for new hour
+  cmp [sync], SYNC_SS
+  jne @f
+.new_hour?:  
+  ; Query system time
+  mcall   3
+  cmp ah, 59h ; 59 min. ?
+  jne @f
+  shr eax, 16
+  cmp al, 59h ; 59 sec. ?
+  jne @f
+  ;DEBUGF  1, "SNTP: Waiting for new hour.\n"
+  ; Wait 100 msec.
+  mcall 5,10
+  jmp .new_hour? 
+@@:  
   ; Create socket
   mcall   socket, AF_INET4, SOCK_DGRAM, IPPROTO_IP
   cmp	  eax, -1
@@ -533,11 +553,7 @@ sntp_query_time:
   jmp .error ; Connection error (2)
   ;DEBUGF  1, "Socket connected.\n"
   
-@@:
-  ; Query system time
-  ;mcall   3
-  ;mov [SystemTime], eax  
-   
+@@:   
   mcall   send, ebp, sntp_packet, SIZEOF_SNTP_PACKET, 0
   cmp	  eax, -1
   jne   @f
@@ -636,9 +652,9 @@ sntp_query_time:
 @@:
 .tz_h:  
   ; correct hour    
-  cmp [sync], SYNC_SS
+;  cmp [sync], SYNC_SS
   ; if -ss ignore timezone for hour
-  je .tz_done
+;  je .tz_done
   clear eax
   mov al, [tz_h]
   add al, cl   
@@ -681,7 +697,6 @@ sntp_query_time:
   ; FIXED:  do sync before display!!!
   ;         It's need to do sync fast ASAP 
   ;         Take out any printf from sntp_query_time! 
-  
   ; sync > 0 ?
   cmp [sync], 0
   je .nosync
@@ -691,6 +706,8 @@ sntp_query_time:
   ; FIXME: Go it from sntp_query_time!
   ;}}
   
+  
+  
 	; Convert time to BCD   
   clear eax, edx 
   mov al, [esi + DateTime.sec]
@@ -698,10 +715,19 @@ sntp_query_time:
   mov ecx, eax
   shl ecx, 16
   mov al, [esi + DateTime.min]
-  b2bcd
-  mov ch, al 
+  b2bcd  
+  mov ch, al
+  
+  cmp [sync], SYNC_SS
+  jne @f
+  ; if -ss ignore timezone for hour
+  ; Query system time
+  mcall   3  
+  jmp .ss_done
+@@:   
   mov al, [esi + DateTime.hour]
   b2bcd
+.ss_done:
   mov cl, al  
   
   ; Display BCD time 
@@ -815,7 +841,7 @@ str_port  db ' :%i',10,0
 str_dt	  db 'Date & time: %i.%02i.%02i %i:%02i:%02i GMT',0 ; ' UTC %%i:%02i'
 str_tz	  db ' +%i:%02i',10,0  ;Time zone: GMT +%i:%02i
 ;str_d	  db 'BCD date - 0x%08X',10,0
-;str_t	  db 'BCD time - 0x%08X',10,0
+;str_t	  db 'BCD time - 0x%08X',10,0 
 str_err  db 'Error: #%i, %s => %s',0
 str_err10  db  'Bad command line, type ',39,'sntp',39,' for help.',10,0
 str_err11 db  'Incorrect time zone! Visit https://www.timeanddate.com/time/map for details.',10,0
@@ -851,7 +877,7 @@ sockaddr1:
 	rb 10
 
 SIZEOF_SNTP_PACKET  = 48 	
-sntp_packet	        db 0x23 ; Li = 0 Vn = 4 Mode = 3 (client) FIX: Why	0x0b?       
+sntp_packet	        db 0x23 ; Li = 0 Vn = 4 Mode = 3 (client)       
   .Stratum	        db 0
 	.Pool		          db 0
 	.Precision	      db 0 
@@ -868,7 +894,6 @@ align 4
 @IMPORT:
 
 library network, 'network.obj', console, 'console.obj'
-;library network, 'network.obj', console, 'console.obj'
 import network, \
   inet_addr, 'inet_addr',  \
   getaddrinfo,	'getaddrinfo',	\

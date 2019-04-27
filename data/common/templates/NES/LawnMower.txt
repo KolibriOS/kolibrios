@@ -1,0 +1,44 @@
+                      _      ___      ___  _    
+                     | |    /_\ \    / / \| |   
+                     | |__ / _ \ \/\/ /| .` |   
+                     |____/_/ \_\_/\_/_|_|\_|_
+                    |  \/  |/ _ \ \ / / __| _ \
+                    | |\/| | (_) \ V /| _||   /
+                    |_|  |_|\___/ \_/ |___|_|_\
+                    
+                          PD 2011 Shiru
+ 
+Description:    An arcade game, you control a lawn mower and cut lawns
+                A sort of remake of classic lawn mower game (from 1980s)
+                
+How to play:    You control a lawn mower. The goal of the game is to cut
+                ten lawns. The lawn mower always moves with low speed, you
+                can increase the speed by holding A or B button.
+                Amount of fuel is limited. When the fuel runs out, the game 
+                is over, and you have to play the level again.
+                Sometimes a can appears on the cut lawn. If you touch it, 
+                it refills fuel. Further in the game there are flowers and
+                stones on lawns, moving through them reduces amount of fuel.
+
+Об игре:        Игрок управляет газонокосилкой и должен постричь десять 
+                газонов. Косилка постоянно движется с небольшой скоростью и
+                может двигаться быстрее при удержании кнопок A или B.
+                Косилка имеет ограниченный запас топлива. Когда оно 
+                израсходовано, игра заканчивается и уровень нужно проходить
+                заново. Иногда на постриженном газоне появляется канистра, 
+                пополняющая запас топлива при касании. Далее в игре появляются 
+                цветы и камни, движение по ним отнимает много топлива.
+                
+Credits:        Everything made by Shiru
+                Tested by Alone Coder, B00daW, Pinball Wizzard, MrFTBN
+
+Website:        www.shiru.untergrund.net
+
+The game is not licensed or endorsed by Nintendo company in any way. It is free
+of charge, released into Public Domain, and provided "as is", without warranty 
+or responsibility of any kind.
+
+If you like it and think you would pay for it, please consider to visit Donate 
+link at http://shiru.untergrund.net and make a donation. Donations will be 
+redirected to a charity, providing a little bit of help for those in need, and 
+encourangement for the author to further work on projects like this.
