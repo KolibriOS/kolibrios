@@ -121,7 +121,9 @@ debug_outhex:
     and   cl,  0x0f
     mov   cl,  [__hexdigits + ecx]
     pushad
-    mcall 63, 1
+    mov eax, 63
+	mov ebx, 1
+	int 0x40
     popad
     dec   edx
     jnz   .new_char

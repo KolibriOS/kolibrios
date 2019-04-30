@@ -14,18 +14,31 @@ use32
         dd      i_end
         dd      mem
         dd      mem
-        dd      path, 0
+        dd      driver_name, 0  ; NAME W/O EXT, NOT PATH. SEE f68.16
 
+include '../../debug.inc'
+		
 start:
         mov     eax, 68
         mov     ebx, 16
-        mov     ecx, path
+        mov     ecx, driver_name
         int     0x40
 
+        cmp     eax, 0
+        jne     ok
+nok:
+        print   'LoadDrv: Error loading driver'
+		print   'Driver must be in /sys/drivers/ folder.'
+		print   'Its name must be w/o extension and it is case-sensitive'
         mov     eax, -1
         int     0x40
+ok:
+        print   'LoadDrv: Driver loaded well'
+        mov     eax, -1
+        int     0x40
+
 i_end:
 
-        path    rb 1024
+        driver_name  rb 1024
 
 mem:

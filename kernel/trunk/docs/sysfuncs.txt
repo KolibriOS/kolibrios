@@ -3348,7 +3348,7 @@ Remarks:
   * Driver name is case-sensitive.
     Maximum length of the name is 16 characters, including
     terminating null character, the rest is ignored.
-  * Driver ABC is loaded from file /rd/1/drivers/ABC.obj.
+  * Driver ABC is loaded from file /rd/1/drivers/ABC.sys.
 
 ---------------------- Constants for registers: ----------------------
   eax - SF_SYS_MISC (68)
