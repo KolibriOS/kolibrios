@@ -93,7 +93,7 @@ void DrawDot(dword x,y) {
 	PutPixel(x+3,y+3,col_pxl);
 }
 
-:void DrawCaptButtonSmallText(dword x,y,w,h,id,color_b, color_t,text)
+void DrawCaptButtonSmallText(dword x,y,w,h,id,color_b, color_t,text)
 {
 	dword tx = -strlen(text)*6+w/2+x;
 	dword ty = h/2-3+y;
