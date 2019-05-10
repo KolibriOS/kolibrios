@@ -233,6 +233,7 @@ void SetAppColors()
 	if (GrayScaleImage(#bg_col,1,1)>=65) 
 	{
 		//use light colors
+		col.def = true;
 		col.list_bg = 0xFFFfff;
 		col.list_gb_text = 0x000000;
 		col.list_text_hidden = 0xA6A6B7;
@@ -249,6 +250,7 @@ void SetAppColors()
 	else 
 	{
 		//use dark colors
+		col.def = false;
 		col.list_bg = system.color.work;
 		col.list_gb_text = system.color.work_text;
 		col.list_text_hidden = 0xA6A6B7;

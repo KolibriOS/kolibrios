@@ -46,8 +46,8 @@ block ipos[128];
 
 void load_config()
 {
-	ini_get_str stdcall (#settings_ini_path, "Config", "window_title", #window_title, sizeof(window_title), "Software widget");
-	ini_get_int stdcall (#settings_ini_path, "Config", "window_width", 690);
+	ini_get_str stdcall (#settings_ini_path, "Config", "title", #window_title, sizeof(window_title), "Software widget");
+	ini_get_int stdcall (#settings_ini_path, "Config", "win_width", 690);
 	window_width = EAX;
 	ini_get_int stdcall (#settings_ini_path, "Config", "cell_w", 73);
 	list.item_w = EAX;

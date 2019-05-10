@@ -67,7 +67,7 @@ void DrawFilledBar(dword x, y, w, h)
 {
 	int i, fill_h;
 	if (h < 12) {
-		for (i=0; i<h; i++) DrawBar(x, y+i, w, 1, col.work_gradient[12-i]);
+		for (i=0; i<h; i++) DrawBar(x, y+i, w, 1, col.work_gradient[-i*3+15]);
 	} else {
 		DrawBar(x, y, w, h, col.work_gradient[12]);
 	}

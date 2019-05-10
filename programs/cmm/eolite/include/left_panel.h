@@ -209,12 +209,18 @@ void DrawFilledBarInner(dword x, y, w, h)
 
 void Tip(int y, dword caption, id, arrow)
 {
-	DrawBar(17,y,160,1,0xEFEDEE);
-	DrawFilledBarInner(17, y+1, 160, 16);
-	WriteText(25,y+5,0x80,0x000000,caption);
+	if (col.def) {
+		DrawBar(17,y,160,1,0xEFEDEE);
+		DrawFilledBarInner(17, y+1, 160, 16);
+		DrawBar(17,y+17,160,1,0x7E87A3);
+	} else {
+		DrawBar(17,y,160,1,col.graph);
+		DrawBar(17,y+1,160,16,col.list_bg);
+		DrawBar(17,y+17,160,1,col.graph);
+	}
+	WriteText(25,y+5,0x80,col.list_gb_text,caption);
 	if (id) DefineButton(159,y+1,16,16,id+BT_HIDE+BT_NOFRAME,0); //arrow button
-	WriteText(165,y+5,0x80,0x000000,arrow); //arrow
-	DrawBar(17,y+17,160,1,0x7E87A3);
+	WriteText(165,y+5,0x80,col.list_gb_text,arrow); //arrow
 }
 
 void ActionsDraw()
@@ -244,7 +250,7 @@ void DrawLeftPanelBg()
 	DrawBar(2,56,15,actions_y+103,col.lpanel);	          //синий прямоугольник - слева       
 	DrawBar(177,56,15,actions_y+103,col.lpanel);            //синий прямоугольник - справа
 	area_h = Form.cheight-start_y-2 - status_bar_h;
-	if (col.lpanel == 0x00699C) 
+	if (col.def) 
 	{
 		if (area_h < 268){
 			PutPaletteImage(#blue_hl, 190, area_h, 2, start_y, 8, #blue_hl_pal);

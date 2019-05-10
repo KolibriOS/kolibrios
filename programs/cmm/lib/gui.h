@@ -69,7 +69,7 @@
 	dword ty = h/2-7+y;
 
 	if (id>0) DefineButton(x,y,w,h,id,color_b);
-	WriteText(tx+1,ty+1,0x90,MixColors(color_b,0,230),text);
+	WriteText(tx+1,ty+1,0x90,LightenDarkenColor(color_b, -40),text);
 	WriteText(tx,ty,0x90,color_t,text);
 }
 
@@ -84,19 +84,27 @@
 	int ty = y + padding_v+1;
 	int tw = strlen(text)*8;
 	int w = tw + padding_h + padding_h;
+	unsigned darker_color = LightenDarkenColor(system.color.work_button, -40);
 
 
 	if (id>0) DefineButton(x,y,w,h,id,system.color.work_button);
 
-	WriteText(tx+1,ty+1,0x90,MixColors(system.color.work_button,0,230),text);
+	WriteText(tx+1,ty+1,0x90,darker_color,text);
 	WriteText(tx,ty,0x90,system.color.work_button_text,text);
 
 	if (active_button_id==id) {
-		DrawBar(tx,ty+15,tw,1, MixColors(system.color.work_button,0,230));
+		DrawBar(tx,ty+15,tw,1, darker_color);
 		DrawBar(tx,ty+14,tw,1, system.color.work_button_text);
 	}
 
 	return w + right_margin;
+}
+
+:unsigned LightenDarkenColor(dword color, amt) {
+	dword r = color >> 16 + amt << 16;
+	dword b = color >> 8 & 0x00FF + amt << 8;
+	dword g = color & 0x0000FF + amt;
+	return g | b | r ;
 }
 
 :void ActiveButtonSwitch(int min, max)

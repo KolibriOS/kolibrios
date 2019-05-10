@@ -43,27 +43,27 @@ redraw:
         mcall   49,0x0000,0x0001,0x5308
   @@:
         mcall   12,1
-        mcall   0,100*65536+235,100*65536+90,0x34ffffff,0x000000,title
+        mcall   0,100*65536+320,120*65536+120,0x34ffffff,0x000000,title
         mcall   49,0x0000,,0x5300
         jnc     @f
-        mcall   4,10*65536+3,0x80000000,text.4
+        mcall   4,10*65536+12,0x90CE362B,ver.4
         bts     [flags], 1
         jmp     .end
     @@:
         cmp     al, 0
         jne     @f
-        mov     edx, text.1
+        mov     edx, ver.1
         jmp     .0
     @@:
         cmp     al, 1
         jne     @f
-        mov     edx, text.2
+        mov     edx, ver.2
         jmp     .0
     @@:
-        mov     edx, text.3
+        mov     edx, ver.3
     .0:
         push    edx
-        mcall   4,169*65536+3,0x80dddddd,text.0
+        mcall   4,237*65536+3,0x80AAAaaa,ver.0
         pop     edx
         add     ebx, 47*65536
         mcall
@@ -119,49 +119,49 @@ redraw:
         mov     edx, text.04
    .2:
         push    edx
-        mcall   4,10*65536+20,0x80000000,text.10
+        mcall   4,10*65536+22,0x80000000,text.10
         pop     edx
-        mcall   ,100*65536+20,
+        mcall   ,100*65536+22,
 
                                 ;battery life, percentage and minutes/seconds
-        mcall   ,10*65536+30,,text.20
+        mcall   ,10*65536+34,,text.20
         pop     cx
         cmp     cl, 0xff
         jne     @f
-        mcall   ,100*65536+30,0x80000000,text.04
+        mcall   ,100*65536+34,0x80000000,text.04
         pop     eax
         jmp     .end
     @@:
         shl     ecx, 24
         shr     ecx, 24
-        mcall   47,0x80030000,,100*65536+30,0x347636
+        mcall   47,0x80030000,,100*65536+34,0x347636
     .3:
-        mcall   4,115*65536+30,0x80000000,text.15
+        mcall   4,115*65536+34,0x80000000,text.15
         mov     dx, [esp]
         shl     edx, 17
         shr     edx, 17
         mov     ecx, edx
-        mcall   47,0x80030000,,140*65536+30
+        mcall   47,0x80030000,,140*65536+34
         pop     cx
         mov     edx, text.21
         bt      cx, 15
         jc      @f
         mov     edx, text.22
     @@:
-        mcall   4,160*65536+30,0x80000000
+        mcall   4,160*65536+34,0x80000000
         pop     si
   .error:
   .end:
         ;buttons
-        mcall   8,148*65536+16,45*65536+15,3,0x00677ab0
-        mcall   ,166*65536+16,,4,
-        mcall   ,184*65536+16,,5,
-        mcall   ,202*65536+16,,6,
+        mcall   8,195*65536+21,56*65536+20,3,0x00BBD5E6
+        mcall   ,219*65536+21,,4,
+        mcall   ,243*65536+21,,5,
+        mcall   ,267*65536+21,,6,
         bt      [flags], 1
         jc      @f
-        mcall   ,65*65536+45,,2,
+        mcall   ,86*65536+56,,2,
   @@:
-        mcall   4,10*65536+50,0x80564242,text.30
+        mcall   4,10*65536+60,0x90564242,text.30
         mcall   12,2
 
 still:
@@ -297,54 +297,35 @@ free_ports:
         ret
 
 
-; ДАННЫЕ ПРОГРАММЫ
-title db '',0
+; DATA SECTION
+title db 'Advanced Power Management',0
 flags dw 0
 
+ver:
+.0: db 'APM v.1.',0
+.1: db '0',0
+.2: db '1',0
+.3: db '2',0
+.4: db 'APM is not supported',0
+
 text:
-.0:
-    db 'APM v.1.',0
-.1:
-    db '0',0
-.2:
-    db '1',0
-.3:
-    db '2',0
-.4:
-    db 'APM not supported',0
+.00: db 'power status:',0
+.01: db 'off-line',0
+.02: db 'on-line',0
+.03: db 'on backup power',0
+.04: db 'unknown',0
 
-.00:
-     db 'power status:',0
-.01:
-     db 'off-line',0
-.02:
-     db 'on-line',0
-.03:
-     db 'on backup power',0
-.04:
-     db 'unknown',0
+.10: db 'battery flag:',0
+.11: db 'high',0
+.12: db 'low',0
+.13: db 'critical',0
+.14: db 'charging',0
+.15: db ' % ,',0
 
-.10:
-     db 'battery flag:',0
-.11:
-     db 'high',0
-.12:
-     db 'low',0
-.13:
-     db 'critical',0
-.14:
-     db 'charging',0
-.15:
-     db ' % ,',0
+.20: db 'battery life:',0
+.21: db 'min',0
+.22: db 'sec',0
 
-.20:
-     db 'battery life:',0
-.21:
-     db 'min',0
-.22:
-     db 'sec',0
-
-.30:
-     db 'STAND-BY: SYSTEM  HDD:  0  1  2  3',0
+.30: db 'STAND-BY: SYSTEM  HDD:  0  1  2  3',0
 
 I_END:

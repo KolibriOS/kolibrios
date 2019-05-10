@@ -333,6 +333,7 @@ tup.append_table(img_files, {
  {"@SS", PROGS .. "/system/ss/trunk/@ss"},
  {"@VOLUME", PROGS .. "/media/volume/volume"},
  {"HACONFIG", PROGS .. "/other/ha/HACONFIG"},
+ {"APM", PROGS .. "/system/apm/apm"},
  {"ASCIIVJU", PROGS .. "/develop/asciivju/trunk/asciivju"},
  {"CALC", PROGS .. "/other/calc/trunk/calc"},
  {"CALENDAR", PROGS .. "/system/calendar/trunk/calendar"},

@@ -77,21 +77,16 @@ inline fastcall dword calc(EAX) { return EAX; }
 };
 
 //------------------------------------------------------------------------------
-:dword wait_event_code;
 inline fastcall dword WaitEvent()
 {
 	$mov eax,10
 	$int 0x40
-	wait_event_code = EAX;
-	//if(wait_event_code==evMouse) MOUSE.get();
-	//return wait_event_code;
 }
 
 inline fastcall dword CheckEvent()
 {
 	$mov eax,11
 	$int 0x40
-	wait_event_code = EAX;
 }
 
 :dword WaitEventTimeout(dword time)
@@ -99,7 +94,6 @@ inline fastcall dword CheckEvent()
 	EAX = 23;
 	EBX = time;
 	$int 0x40
-	wait_event_code = EAX;
 } 
  
 inline fastcall dword SetEventMask(EBX)

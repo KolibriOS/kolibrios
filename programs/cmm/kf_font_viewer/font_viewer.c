@@ -17,6 +17,7 @@ _tabs tabs = { PHRASE_TAB };
 block preview = { 0, PANELH, WIN_W, WIN_H - PANELH };
 checkbox bold = { "Bold", false };
 checkbox smooth = { "Smooth", true };
+checkbox colored = { "Colored", true };
 
 void main()
 {   
@@ -31,8 +32,9 @@ void main()
 		case evButton:
 			btn = GetButtonID();
 			if (btn==1) ExitProcess();
-			if (bold.click(btn)) kfont.bold = bold.checked;
-			if (smooth.click(btn)) kfont.smooth = smooth.checked;
+			bold.click(btn); 
+			smooth.click(btn);
+			colored.click(btn);
 			if (btn==PHRASE_TAB) || (btn==CHARS_TAB) tabs.click(btn);
 			goto _DRAW_WINDOW_CONTENT;
 		case evReDraw:
@@ -42,10 +44,14 @@ void main()
 			if (Form.status_window>2) break;
 			_DRAW_WINDOW_CONTENT:
 
+			kfont.bold = bold.checked;
+			kfont.smooth = smooth.checked;
+
 			DrawBar(0, 0, Form.cwidth, PANELH-1, system.color.work);
 			DrawBar(0, PANELH-1,Form.cwidth,1,system.color.work_graph);
 			bold.draw(10, 8);
 			smooth.draw(83,8);
+			colored.draw(170,8);
 
 			tabs.draw_button(Form.cwidth-130, PHRASE_TAB, "Phrase");
 			tabs.draw_button(Form.cwidth-60, CHARS_TAB, "Chars");
@@ -61,15 +67,21 @@ void main()
 	}
 }
 
+dword pal[] = { 0x4E4153, 0x57417C, 0x89633B, 0x819156, 0x00CCCC, 0x2AD266, 
+	0xE000CC, 0x0498F9, 0xC3A9F5, 0xFFC200, 0xFF5836, 0xA086BA, 
+	0,0,0,0,0 };
+
 void DrawPreviewPhrase()
 {
 	dword i, y;
+	dword c;
 	char line[256];
 	kfont.raw_size = free(kfont.raw);
-	for (i=10, y=5; i<22; i++, y+=kfont.height;) //not flexible, need to calculate font count and max line length
+	for (i=10, y=12; i<22; i++, y+=kfont.height+3;) //not flexible, need to calculate font count and max line length
 	{
+		if (colored.checked) c = pal[i-10]; else c=0;
 		sprintf(#line,"Размер шрифта/size font %d пикселей.",i);
-		kfont.WriteIntoBuffer(10,y,Form.cwidth,Form.cheight-PANELH, 0xFFFFFF, 0, i, #line);
+		kfont.WriteIntoBuffer(14,y,Form.cwidth,Form.cheight-PANELH, 0xFFFFFF, c, i, #line);
 	}
 	if (kfont.smooth) kfont.ApplySmooth();
 	kfont.ShowBuffer(preview.x, preview.y);

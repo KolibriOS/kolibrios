@@ -52,6 +52,7 @@ enum {
 
 struct Eolite_colors
 {
+	bool  def;
 	dword lpanel;
 	dword list_vert_line; //vertical line between columns in list
 	dword selec;
@@ -588,7 +589,7 @@ void draw_window()
 	//main rectangles
 	DrawRectangle(1,40,Form.cwidth-3,Form.cheight - 42-status_bar_h,col.graph);
 	DrawRectangle(0,39,Form.cwidth-1,-show_status_bar.checked*status_bar_h + Form.cheight - 40,col.work_gradient[4]); //bg
-	for (i=0; i<5; i++) DrawBar(0, 34+i, Form.cwidth, 1, col.work_gradient[11-i]);
+	for (i=0; i<5; i++) DrawBar(0, 34+i, Form.cwidth, 1, col.work_gradient[-i*3+15]);
 	llist_copy(#files_active, #files);
 	strcpy(#active_path, #path);
 	DrawStatusBar();
