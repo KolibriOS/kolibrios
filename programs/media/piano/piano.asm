@@ -816,6 +816,10 @@ still:
 ;---  ОПРЕДЕЛЕНИЕ И ОТРИСОВКА ОКНА  ----------------------------------
 ;---------------------------------------------------------------------
 
+WHITE_W=48   ; While key width
+BLACK_W=30   ; Black key width
+BLACK_X=34   ; Black key X offset
+
 draw_window:
 
     mcall 12, 1       ; функция 12: сообщить ОС о начале отрисовки
@@ -835,61 +839,61 @@ draw_window:
 
     mov   edx, [sc.work]	 ; цвет фона
     or	  edx, 0x33000000	 ; и тип окна 3
-    mcall 0, <0,760>, <200,250>, , ,title
+    mcall 0, <20,WHITE_W*15+9>, <200,250>, , ,title
+	
+    mcall 8,  <WHITE_W*0,WHITE_W>, <0,100>, 0x21, 0xff7a74
+    mcall 8,  <WHITE_W*1,WHITE_W>, <0,100>, 0x23, 0x907040
+    mcall 8,  <WHITE_W*2,WHITE_W>, <0,100>, 0x25, 0xa08050
+    mcall 8,  <WHITE_W*3,WHITE_W>, <0,100>, 0x26, 0xb09060
+    mcall 8,  <WHITE_W*4,WHITE_W>, <00,100>, 0x28, 0xc0a070
+    mcall 8,  <WHITE_W*5,WHITE_W>, <00,100>, 0x2a, 0xd0b080
+    mcall 8,  <WHITE_W*6,WHITE_W>, <0,100>, 0x2c, 0xe0c090
+    mcall 8,  <WHITE_W*7,WHITE_W>, <0,100>, 0x31, 0xffa97c
+    mcall 8,  <WHITE_W*8,WHITE_W>, <0,100>, 0x33, 0xaf8d8d
+    mcall 8,  <WHITE_W*9,WHITE_W>, <0,100>, 0x35, 0xbf9d9d
+    mcall 8,  <WHITE_W*10,WHITE_W>, <0,100>, 0x36, 0xcfadad
+    mcall 8,  <WHITE_W*11,WHITE_W>, <00,100>, 0x38, 0xdfbdbd
+    mcall 8,  <WHITE_W*12,WHITE_W>, <00,100>, 0x3a, 0xefcdcd
+    mcall 8,  <WHITE_W*13,WHITE_W>, <0,100>, 0x3c, 0xffdddd
+    mcall 8,  <WHITE_W*14,WHITE_W>, <0,100>, 0x41, 0xffe558
 
-    mcall 8,  <0,50>, <0,100>, 0x21, 0xff7a74
-    mcall 8,  <50,50>, <0,100>, 0x23, 0x907040
-    mcall 8,  <100,50>, <0,100>, 0x25, 0xa08050
-    mcall 8,  <150,50>, <0,100>, 0x26, 0xb09060
-    mcall 8,  <200,50>, <00,100>, 0x28, 0xc0a070
-    mcall 8,  <250,50>, <00,100>, 0x2a, 0xd0b080
-    mcall 8,  <300,50>, <0,100>, 0x2c, 0xe0c090
-    mcall 8,  <350,50>, <0,100>, 0x31, 0xffa97c
-    mcall 8,  <400,50>, <0,100>, 0x33, 0xaf8d8d
-    mcall 8,  <450,50>, <0,100>, 0x35, 0xbf9d9d
-    mcall 8,  <500,50>, <0,100>, 0x36, 0xcfadad
-    mcall 8,  <550,50>, <00,100>, 0x38, 0xdfbdbd
-    mcall 8,  <600,50>, <00,100>, 0x3a, 0xefcdcd
-    mcall 8,  <650,50>, <0,100>, 0x3c, 0xffdddd
-    mcall 8,  <700,50>, <0,100>, 0x41, 0xffe558
+    mcall 8,  <WHITE_W*0+BLACK_X,BLACK_W>, <0,50>, 0x22, 0x221100
+    mcall 8,  <WHITE_W*1+BLACK_X,BLACK_W>, <0,50>, 0x24, 0x221100
+    mcall 8,  <WHITE_W*3+BLACK_X,BLACK_W>, <0,50>, 0x27, 0x221100
+    mcall 8,  <WHITE_W*4+BLACK_X,BLACK_W>, <0,50>, 0x29, 0x221100
+    mcall 8,  <WHITE_W*5+BLACK_X,BLACK_W>, <0,50>, 0x2b, 0x221100
+    mcall 8,  <WHITE_W*7+BLACK_X,BLACK_W>, <0,50>, 0x32, 0x221100
+    mcall 8,  <WHITE_W*8+BLACK_X,BLACK_W>, <0,50>, 0x34, 0x221100
+    mcall 8,  <WHITE_W*10+BLACK_X,BLACK_W>, <0,50>, 0x37, 0x221100
+    mcall 8,  <WHITE_W*11+BLACK_X,BLACK_W>, <0,50>, 0x39, 0x221100
+    mcall 8,  <WHITE_W*12+BLACK_X,BLACK_W>, <0,50>, 0x3b, 0x221100
 
-    mcall 8,  <35,30>, <0,50>, 0x22, 0x221100
-    mcall 8,  <85,30>, <0,50>, 0x24, 0x221100
-    mcall 8,  <185,30>, <0,50>, 0x27, 0x221100
-    mcall 8,  <235,30>, <0,50>, 0x29, 0x221100
-    mcall 8,  <285,30>, <0,50>, 0x2b, 0x221100
-    mcall 8,  <385,30>, <0,50>, 0x32, 0x221100
-    mcall 8,  <435,30>, <0,50>, 0x34, 0x221100
-    mcall 8,  <535,30>, <0,50>, 0x37, 0x221100
-    mcall 8,  <585,30>, <0,50>, 0x39, 0x221100
-    mcall 8,  <635,30>, <0,50>, 0x3b, 0x221100
+    mcall 8,  <WHITE_W*0,WHITE_W>, <100,100>, 0xa1, 0x702050
+    mcall 8,  <WHITE_W*1,WHITE_W>, <100,100>, 0x03, 0x683638
+    mcall 8,  <WHITE_W*2,WHITE_W>, <100,100>, 0x05, 0x784648
+    mcall 8,  <WHITE_W*3,WHITE_W>, <100,100>, 0x06, 0x885658
+    mcall 8,  <WHITE_W*4,WHITE_W>, <100,100>, 0x08, 0x986668
+    mcall 8,  <WHITE_W*5,WHITE_W>, <100,100>, 0x0a, 0xa87678
+    mcall 8,  <WHITE_W*6,WHITE_W>, <100,100>, 0x0c, 0xb88688
+    mcall 8,  <WHITE_W*7,WHITE_W>, <100,100>, 0x11, 0x880040
+    mcall 8,  <WHITE_W*8,WHITE_W>, <100,100>, 0x13, 0x90622b
+    mcall 8,  <WHITE_W*9,WHITE_W>, <100,100>, 0x15, 0xa0723b
+    mcall 8,  <WHITE_W*10,WHITE_W>, <100,100>, 0x16, 0xb0824b
+    mcall 8,  <WHITE_W*11,WHITE_W>, <100,100>, 0x18, 0xc0925b
+    mcall 8,  <WHITE_W*12,WHITE_W>, <100,100>, 0x1a, 0xd0a26b
+    mcall 8,  <WHITE_W*13,WHITE_W>, <100,100>, 0x1c, 0xe0b27b
+    mcall 8,  <WHITE_W*14,WHITE_W>, <100,100>, 0x21, 0xff7a74
 
-    mcall 8,  <0,50>, <100,100>, 0xa1, 0x702050
-    mcall 8,  <50,50>, <100,100>, 0x03, 0x683638
-    mcall 8,  <100,50>, <100,100>, 0x05, 0x784648
-    mcall 8,  <150,50>, <100,100>, 0x06, 0x885658
-    mcall 8,  <200,50>, <100,100>, 0x08, 0x986668
-    mcall 8,  <250,50>, <100,100>, 0x0a, 0xa87678
-    mcall 8,  <300,50>, <100,100>, 0x0c, 0xb88688
-    mcall 8,  <350,50>, <100,100>, 0x11, 0x880040
-    mcall 8,  <400,50>, <100,100>, 0x13, 0x90622b
-    mcall 8,  <450,50>, <100,100>, 0x15, 0xa0723b
-    mcall 8,  <500,50>, <100,100>, 0x16, 0xb0824b
-    mcall 8,  <550,50>, <100,100>, 0x18, 0xc0925b
-    mcall 8,  <600,50>, <100,100>, 0x1a, 0xd0a26b
-    mcall 8,  <650,50>, <100,100>, 0x1c, 0xe0b27b
-    mcall 8,  <700,50>, <100,100>, 0x21, 0xff7a74
-
-    mcall 8,  <35,30>, <100,50>, 0x02, 0x221100
-    mcall 8,  <85,30>, <100,50>, 0x04, 0x221100
-    mcall 8,  <185,30>, <100,50>, 0x07, 0x221100
-    mcall 8,  <235,30>, <100,50>, 0x09, 0x221100
-    mcall 8,  <285,30>, <100,50>, 0x0b, 0x221100
-    mcall 8,  <385,30>, <100,50>, 0x12, 0x221100
-    mcall 8,  <435,30>, <100,50>, 0x14, 0x221100
-    mcall 8,  <535,30>, <100,50>, 0x17, 0x221100
-    mcall 8,  <585,30>, <100,50>, 0x19, 0x221100
-    mcall 8,  <635,30>, <100,50>, 0x1b, 0x221100
+    mcall 8,  <WHITE_W*0+BLACK_X,BLACK_W>, <100,50>, 0x02, 0x221100
+    mcall 8,  <WHITE_W*1+BLACK_X,BLACK_W>, <100,50>, 0x04, 0x221100
+    mcall 8,  <WHITE_W*3+BLACK_X,BLACK_W>, <100,50>, 0x07, 0x221100
+    mcall 8,  <WHITE_W*4+BLACK_X,BLACK_W>, <100,50>, 0x09, 0x221100
+    mcall 8,  <WHITE_W*5+BLACK_X,BLACK_W>, <100,50>, 0x0b, 0x221100
+    mcall 8,  <WHITE_W*7+BLACK_X,BLACK_W>, <100,50>, 0x12, 0x221100
+    mcall 8,  <WHITE_W*8+BLACK_X,BLACK_W>, <100,50>, 0x14, 0x221100
+    mcall 8,  <WHITE_W*10+BLACK_X,BLACK_W>, <100,50>, 0x17, 0x221100
+    mcall 8,  <WHITE_W*11+BLACK_X,BLACK_W>, <100,50>, 0x19, 0x221100
+    mcall 8,  <WHITE_W*12+BLACK_X,BLACK_W>, <100,50>, 0x1b, 0x221100
 
 
     ; вывод текстовой строки
@@ -900,14 +904,7 @@ draw_window:
     mcall 4, <10, 260>, , message2
     mcall 4, <10, 285>, , message3
     mcall 4, <10, 310>, , message4
-    mcall 4, <15, 185>, , message5
-    mcall 4, <65, 185>, , message6
-    mcall 4, <115, 185>, , message7
-    mcall 4, <165, 185>, , message8
-    mcall 4, <210, 185>, , message9
-    mcall 4, <265, 185>, , message10
-    mcall 4, <315, 185>, , message11
-    mcall 4, <365, 185>, , message5
+    mcall 4, <16, 185>, , t_notes
 
     mcall 12, 2 		 ; функция 12.2, закончили рисовать
 
@@ -929,16 +926,10 @@ sc system_colors
 
 message db 'Справка: щёлкните 2 раза на заголовке.',0
 message1 db 'Нажмите любую клавишу в английской раскладке - ',0
-message2  db 'должен звучать динамик компьютера.',0
+message2  db 'должен звучать встроенный динамик компьютера (не колонки!)',0
 message3  db 'Нота "До" - клавиши V,Tab,U,Enter, при включении',0
 message4  db 'Caps Lock - клавиши V,Q,I.',0
-message5  db 'ДО',0
-message6  db 'РЕ',0
-message7  db 'МИ',0
-message8  db 'ФА',0
-message9  db 'СОЛЬ',0
-message10  db 'ЛЯ',0
-message11  db 'СИ',0
+t_notes  db 'ДО    РЕ    МИ    ФА   СОЛЬ   ЛЯ    СИ    ДО',0
 title db 'Детское пианино',0
 
 ;---------------------------------------------------------------------

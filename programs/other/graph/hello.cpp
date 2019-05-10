@@ -43,10 +43,9 @@ Dword point_count = 0;
 double x1,y1,x2,y2;
 char *funct = NULL;
 
-char edit_path[1024];
-//Dword editbox_y = WND_H - 16, editbox_w = WND_W - 70;
-edit_box mybox = {0,9*8-5,WND_H - 16-32,0xffffff,0x94AECE,0,0x808080,0,sizeof(edit_path),0,(dword)&edit_path, 0, 0}; //100000000000010b}; 
-
+char edit_path[256];
+edit_box mybox = {0,92,WND_H-16-32,0xffffff,0x94AECE,0,0x808080,0x10000000,
+	sizeof(edit_path)-1,0,(dword)&edit_path, 0, 0};
 
 char *full_head;
 
@@ -380,10 +379,7 @@ int load_points3()
 	double d;
 	Dword filesize, num_number;
 
-	double *p2;
-
-	if (edit_path[0] == '\0')
-		return 0;
+	double *p2=0;
 
 	// get file size
 	strcpy(fileInfo.fileURL,edit_path);
@@ -397,7 +393,7 @@ int load_points3()
 	rtlDebugOutString(debuf);
 	if (rr != 0)
 	{
-		kos_WriteTextToWindow(10,10,0,0x00,(char*)er_file_not_found,strlen(er_file_not_found));
+		kos_WriteTextToWindow(10,10,0x90,0xFF0000,(char*)er_file_not_found,strlen(er_file_not_found));
 		return 0;
 	}
 
@@ -552,51 +548,39 @@ double fu(double x)
 void draw_window(void)
 {
 	double xx0=0.0, yy0=0.0;
-	sProcessInfo info;
-	Dword wi, he;
-	void *p;
-
-	for (int i = 0; i < 1024; i++)
-		info.rawData[i] = 0;
-	kos_ProcessInfo(&info, 0xFFFFFFFF);
-
-	p = info.rawData + 42;			// magic
-	wi = *(Dword *)(p);
-	he = *(Dword *)((Byte *)p + 4);
-
-	if (wi == 0) 
-		wi = WND_W;
-	if (he == 0)
-		he = WND_H;
-
-	mybox.top = he - 50;
-	mybox.width = wi - mybox.left - 80;
 
 	kos_WindowRedrawStatus(1);
-	kos_DefineAndDrawWindow(10,40,WND_W,WND_H, 0x33,0xFFFFFF,0,0,(Dword)full_head);
+	kos_DefineAndDrawWindow(100,80,WND_W,WND_H, 0x33,0xFFFFFF,0,0,(Dword)full_head);
 	kos_WindowRedrawStatus(2);
 
-	if (info.rawData[70]&0x04) return; //ничего не делать если окно схлопнуто в заголовок
+	sProcessInfo info;
+	kos_ProcessInfo(&info, 0xFFFFFFFF);
+	int cWidth = info.processInfo.width - 9;
+	int cHeight = info.processInfo.height - kos_GetSkinHeight() - 4;
+
+	mybox.top = cHeight - 50;
+	mybox.width = cWidth - mybox.left - 80;
+
+	if (info.processInfo.status_window&0x04) return; //draw nothing if window is rolled-up
 
 	if (point_count == 0 && funct == NULL)
 	{
-		kos_WriteTextToWindow((wi - 6 * strlen(empty_text))/2,he/2,0,0x000000,(char *)empty_text,strlen(empty_text));
+		kos_WriteTextToWindow((cWidth - 8 * strlen(empty_text))/2,cHeight/2-25,0x90,
+			0x000000,(char *)empty_text,strlen(empty_text));
 	}
 	else
 	{
-		drawFunction(&fu, coord(10, 20), coord(id(wi - 20), id(he - 70)),
+		drawFunction(&fu, coord(10, 20), coord(id(cWidth - 20), id(cHeight - 70)),
 							coord(x1,y1), coord(x2,y2), 0x00ff0000);
 
 	}
 
-	kos_WriteTextToWindow(4, mybox.top + 4, 0, 0, (char*)str_filename, strlen(str_filename));
+	kos_WriteTextToWindow(15, mybox.top + 4, 0x90, 0x000000, (char*)str_filename, strlen(str_filename));
 
-	if ((void*)edit_box_draw != NULL)
-		edit_box_draw((DWORD)&mybox);
+	edit_box_draw((DWORD)&mybox);
 
-	kos_DefineButton(wi - 70, mybox.top, 50, 12, 5, 0xc0c0c0);
-	kos_WriteTextToWindow(wi - 58, mybox.top + 4, 0, 0, (char*)str_editfile, strlen(str_editfile));
-
+	kos_DefineButton(cWidth - 70, mybox.top, 50, 21, 5, 0xc0c0c0);
+	kos_WriteTextToWindow(cWidth - 60, mybox.top + 4, 0x90, 0x000000, (char*)str_editfile,0);
 }
 
 void kos_Main()

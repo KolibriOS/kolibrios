@@ -5,12 +5,8 @@
 ;
 ; Position of "eyes" is fixed. To close "eyes" just click on them.
 ;
-; NOTE: quite big timeout is used to disable blinking when redrawing.
-; If "eyes" blink on your system, enlarge the TIMEOUT. If not, you can
-; decrease it due to more realistic movement.
-;
 
-TIMEOUT equ 5
+TIMEOUT equ 3
 
 ; EXECUTABLE HEADER
 
@@ -39,9 +35,7 @@ still:
 
 call draw_eyes                   ; draw those funny "eyes"
 
-mov eax,23                       ; wait for event with timeout
-mov ebx,TIMEOUT
-mcall
+mcall 23,TIMEOUT                 ; wait for event with timeout
 
 cmp eax,1                        ; redraw ?
 jnz  no_draw
@@ -59,13 +53,11 @@ jmp still                        ; loop
 ; EVENTS
 
 key:
-mov eax,2        ; just read and ignore
-mcall
+mcall 2          ; just read and ignore
 jmp still
 
 button:          ; analyze button
-mov eax,-1       ; this is button 1 - we have only one button :-)
-mcall
+mcall -1         ; exit
 jmp still
 
 ; -====- declarations -====-
@@ -100,29 +92,20 @@ mov [mouse],eax
 
 redraw_overlap:              ; label for redraw event (without checkmouse)
 
-mov eax,12
-mov ebx,1
-mcall
+mcall 12,1
 
 xor eax,eax                  ; define window
 mov ebx,[win_ebx]
 mov ecx,[win_ecx]
-xor edx,edx
+mov edx,0x11000000           ; do not draw window, just define its area
 xor esi,esi
 xor edi,edi
 mcall
 
-mov eax,8                    ; define closebutton
-mov ebx,60
-mov ecx,45
-mov edx,1
-mcall
+mcall 8,60,45,1+0x40000000 ; define closebutton
 
-mov eax,7
 mov ebx,skindata
-mov ecx,60*65536+30
-mov edx,15
-mcall
+mcall 7,,60*65536+30,15
 
 mov eax,15
 mov ebx,30
@@ -130,9 +113,7 @@ call draw_eye_point
 add eax,30
 call draw_eye_point
 
-mov eax,12
-mov ebx,2
-mcall
+mcall 12,2
 
 ret
 

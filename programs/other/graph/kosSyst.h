@@ -80,6 +80,7 @@ struct RGB
 };
 
 
+#pragma pack(push, 1)
 union sProcessInfo
 {
 	Byte rawData[1024];
@@ -87,7 +88,7 @@ union sProcessInfo
 	{
 		Dword cpu_usage;
 		Word window_stack_position;
-		Word window_stack_value;
+		Word window_slot; //slot
 		Word reserved1;
 		char process_name[12];
 		Dword memory_start;
@@ -95,11 +96,20 @@ union sProcessInfo
 		Dword PID;
 		Dword x_start;
 		Dword y_start;
-		Dword x_size;
-		Dword y_size;
+		Dword width;
+		Dword height;
 		Word slot_state;
+		Word reserved3;
+		Dword work_left;
+		Dword work_top;
+		Dword work_width;
+		Dword work_height;
+		char status_window;
+		Dword cwidth;
+		Dword cheight;
 	} processInfo;
 };
+#pragma pack(pop)
 
 #ifndef AUTOBUILD
 //

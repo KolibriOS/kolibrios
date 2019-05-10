@@ -388,4 +388,12 @@ void rectangle( int x1, int y1, int x2, int y2)
 }
 
 
+Dword kos_GetSkinHeight()
+{
+	__asm{
+		mov		eax, 48
+		mov		ebx, 4
+		int		0x40
+	}
+}
 

@@ -27,6 +27,7 @@ typedef struct
 } TCoord;
 
 
+Dword kos_GetSkinHeight();
 void kos_DrawLine( Word x1, Word y1, Word x2, Word y2, Dword colour, Dword invert);
 void DrawRegion(Dword x,Dword y,Dword width,Dword height,Dword color1);
 int atoi(const char* string);

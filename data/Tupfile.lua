@@ -550,6 +550,7 @@ tup.append_table(extra_files, {
 if build_type == "rus" then tup.append_table(img_files, {
  {"PERIOD", PROGS .. "/other/period/trunk/period"},
  {"DEVELOP/TESTCON2", PROGS .. "/develop/libraries/console_coff/examples/testcon2_rus"},
+ {"MEDIA/PIANO", PROGS .. "/media/piano/piano"},
 }) else tup.append_table(img_files, {
  {"DEVELOP/TESTCON2", PROGS .. "/develop/libraries/console_coff/examples/testcon2_eng"},
 }) end
