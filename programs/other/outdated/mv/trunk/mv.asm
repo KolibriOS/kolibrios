@@ -35,8 +35,8 @@
     dd	   temp_area , 0x0	   ; I_Param , I_Icon
 
 include    'lang.inc'
-include    '..\..\..\macros.inc'
-include    '..\..\..\develop\examples\editbox\trunk\editbox.inc'
+include    '..\..\..\..\macros.inc'
+include    '..\..\..\..\develop\examples\editbox\trunk\editbox.inc'
 ;include    'macros.inc'
 ;include    'EDITBOX.INC'
 use_edit_box

@@ -26,7 +26,6 @@ org 0
 ; +0004C300:FFFB3CFF - dinamically allocated for copy, view, edit etc.
 ;
 
-include 'lang.inc'
 include 'macros.inc'
 include 'menuet.inc'
 include 'mfar.inc'
@@ -290,14 +289,14 @@ still:
 ;///// DRAW WINDOW ////////////////////////////////////////////////////////////
 ;------------------------------------------------------------------------------
 
-__func draw_window
+func draw_window
         mcall   MF_WINPROPS,WP_GETSYSCLRS,sc,sizeof.system_colors
 
         mcall   MF_WNDDRAW,WD_BEGINDRAW
         mov     edx,[fc.background]
-        or      edx,WS_SKINNED
+        or      edx,$14000000
+		mov     edi,caption
         mcall2  MF_DEFWINDOW,90,oX+tW*80+4,45,oY+tH*25+4
-        mcall1  MF_DRAWTEXT,8,8,[sc.grab_text],caption,caption.size
 
         mmov    esi,oX+2,oX+tW*39+2
         mmov    edi,oY+3,oY+tH*22+3
@@ -340,7 +339,7 @@ endf
 ;//////////////////////////////////////////////////////////////////////////////
 ;------------------------------------------------------------------------------
 
-__func draw_window_full
+func draw_window_full
         call    draw_window
         mov     edx,1
         call    get_files_data
@@ -360,7 +359,7 @@ endf
 align 4
 len dd ?
 
-__func get_normal_path
+func get_normal_path
         pusha
         mov     ecx,5
         rep     movsb
@@ -394,7 +393,7 @@ endf
 ; EAX = length needed
 ; ECX = current length
 ; EDI = path string
-__func get_path_ellipses
+func get_path_ellipses
         cmp     ecx,eax
         jbe     @f
         pushad
@@ -416,7 +415,7 @@ endf
 ;//////////////////////////////////////////////////////////////////////////////
 ;------------------------------------------------------------------------------
 
-__func draw_path
+func draw_path
         pushad
         cmp     [active_panel],0
         jne    ._00
@@ -444,7 +443,7 @@ endf
 ;------------------------------------------------------------------------------
 
 ; AL = panel
-__func draw_files
+func draw_files
         push    eax
         mmov    ecx,oY+tH*2-1,tH*FPC
         mov     edx,[fc.background]
@@ -519,7 +518,7 @@ endf
 ;//////////////////////////////////////////////////////////////////////////////
 ;------------------------------------------------------------------------------
 
-__func draw_bottom_keys
+func draw_bottom_keys
         pushad
         mcall2  MF_FILLRECT,oX-1,tW*80+1,oY+tH*24-1,tH+1,[fc.pathbg]
         dec     ecx
@@ -551,7 +550,7 @@ endf
 ; ESI = X1*65536+X2
 ; EDI = Y1*65536+Y2
 ; EDX = color
-__func draw_frame
+func draw_frame
         mov     ecx,edi
         mov     ebx,edi
         shr     ebx,16
@@ -578,7 +577,7 @@ endf
 ;------------------------------------------------------------------------------
 
 ; EDX = pointer to file data
-__func get_file_color
+func get_file_color
         push    esi
         mov     cl,[edx+11]
         test    cl,(FA_HIDDEN or FA_SYSTEM)
@@ -632,7 +631,7 @@ endf
 ;------------------------------------------------------------------------------
 
 ; EDI = color
-__func draw_sel
+func draw_sel
         pushad
         cmp     [active_panel],0
         jne    ._00
@@ -715,7 +714,7 @@ endf
 ;------------------------------------------------------------------------------
 
 ; AL = panel
-__func draw_file_info
+func draw_file_info
         push    eax
         mmov    ecx,oY+tH*21,tH
         mov     edx,[fc.background]
@@ -790,7 +789,7 @@ endf
 ;//////////////////////////////////////////////////////////////////////////////
 ;------------------------------------------------------------------------------
 
-__func get_file_name
+func get_file_name
         pushad
         mov     eax,[esi+0]
         mov     [f_name+0],eax
@@ -810,7 +809,7 @@ endf
 ;------------------------------------------------------------------------------
 
 ; ESI = pointer to file data
-__func get_file_info
+func get_file_info
         pushad
         mov     eax,[esi+12]
         mov     dword[f_info],FS_READ
@@ -888,7 +887,7 @@ endf
 ;------------------------------------------------------------------------------
 
 ; DL = panel
-__func get_files_data
+func get_files_data
         pushad
         mov     [d_tcnt],0
         mov     [d_ttsz],0
@@ -985,7 +984,7 @@ endf
 ;//////////////////////////////////////////////////////////////////////////////
 ;------------------------------------------------------------------------------
 
-__func execute_current_file
+func execute_current_file
         pushad
         cmp     [active_panel],0
         jne    ._00
@@ -1080,7 +1079,7 @@ endf
 ;//////////////////////////////////////////////////////////////////////////////
 ;------------------------------------------------------------------------------
 
-__func delete_current_file
+func delete_current_file
         pushad
         popad
         ret
@@ -1124,12 +1123,12 @@ f_info:
  dd read_area
  dd MEM_FOR_OS
 .path:
- rb 200
+ rb 255
 
 f_plen0 dd 5
 f_plen1 dd 5
 
-sz caption,'MFAR : PRE-ALPHA-8.1'
+sz caption,'MFAR : PRE-ALPHA-8.1',0
 sz fcfile,'MFAR    DAT'
 sz p_hd,'/HD/1',0
 sz p_rd,'/RD/1',0

@@ -27,7 +27,7 @@
     dd      0x0 , 0x0      ; I_Param , I_Icon
 
 include 'lang.inc'
-include '..\..\..\macros.inc'       ; very useful stuff for MeOS
+include '..\..\..\..\macros.inc'       ; very useful stuff for MeOS
 STRLEN = 48                ; maximal length of filename
 
 

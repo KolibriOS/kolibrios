@@ -11,12 +11,12 @@ use32                ; транслятор, использующий 32 разрядных команды
     dd 0x0              ; указатель на строку с параметрами.
     dd 0;pathprog       ;путь и имя проги
 
-include "../../macros.inc"
-include "../../proc32.inc"
+include "../../../macros.inc"
+include "../../../proc32.inc"
 include "API.INC"
-include "../../dll.inc"
-include '../../develop/libraries/box_lib/trunk/box_lib.mac'
-include '../../develop/libraries/box_lib/load_lib.mac'
+include "../../../dll.inc"
+include '../../../develop/libraries/box_lib/trunk/box_lib.mac'
+include '../../../develop/libraries/box_lib/load_lib.mac'
 
 start:
         mcall 68,11      ;инициализируем кучу
