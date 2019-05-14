@@ -17,6 +17,7 @@ img_files = {
  {"STRUCT.INC", PROGS .. "/struct.inc"},
  {"FB2READ", "common/fb2read"},
  {"ALLGAMES", "common/allgames"},
+ {"HOME.PNG", "common/wallpapers/home.png"},
  {"ICONS32.PNG", "common/icons32.png"},
  {"ICONS16.PNG", "common/icons16.png"},
  {"INDEX.HTM", "common/index_htm"},
