@@ -1,2 +1,3 @@
 if tup.getconfig("NO_FASM") ~= "" then return end
-tup.rule("piano.asm", "fasm %f %o " .. tup.getconfig("KPACK_CMD"), "piano")
+tup.rule("echo lang fix " .. ((tup.getconfig("LANG") == "") and "en" or tup.getconfig("LANG")) .. " > lang.inc", {"lang.inc"})
+tup.rule({"piano.asm", extra_inputs = {"lang.inc"}}, "fasm %f %o " .. tup.getconfig("KPACK_CMD"), "piano")
