@@ -200,7 +200,6 @@ extra_files = {
  {"kolibrios/games/mun/mun", "common/games/mun/mun"}, 
  {"kolibrios/games/pig/", "common/games/pig/*"},
  {"kolibrios/games/soko/", "common/games/soko/*"},
- {"kolibrios/games/sstartrek/", "common/games/sstartrek/*"},
  {"kolibrios/games/the_bus/menu.png", PROGS .. "/cmm/the_bus/menu.png"},
  {"kolibrios/games/the_bus/objects.png", PROGS .. "/cmm/the_bus/objects.png"},
  {"kolibrios/games/the_bus/road.png", PROGS .. "/cmm/the_bus/road.png"},
@@ -269,11 +268,13 @@ if build_type == "rus" then tup.append_table(extra_files, {
  {"HD_Load/9x2klbr/", PROGS .. "/hd_load/9x2klbr/readme_win.txt"},
  {"HD_Load/mtldr/", PROGS .. "/hd_load/mtldr/install.txt"},
  {"HD_Load/USB_Boot/", PROGS .. "/hd_load/usb_boot/readme.txt"},
+ {"kolibrios/games/ataka", "common/games/ataka/ataka_ru"},
  {"kolibrios/games/Dungeons/Resources/Textures/Environment/", PROGS .. "/games/Dungeons/Resources/Textures/Environment/*"},
  {"kolibrios/games/Dungeons/Resources/Textures/Objects/", PROGS .. "/games/Dungeons/Resources/Textures/Objects/*"},
  {"kolibrios/games/Dungeons/Resources/Textures/HUD/", PROGS .. "/games/Dungeons/Resources/Textures/HUD/*"},
  {"kolibrios/games/Dungeons/Resources/Textures/", PROGS .. "/games/Dungeons/Resources/Textures/Licenses.txt"},
  {"kolibrios/games/Dungeons/", PROGS .. "/games/Dungeons/readme_ru.txt"},
+ {"kolibrios/games/sstartrek/", "common/games/sstartrek/SStarTrek_ru"},
  {"kolibrios/games/WHOWTBAM/", build_type .. "/games/whowtbam"},
  {"kolibrios/games/WHOWTBAM/", build_type .. "/games/appdata.dat"},
  {"kolibrios/media/zsea/zsea_keys.txt", PROGS .. "/media/zsea/Docs/zSea_keys_rus.txt"},
@@ -288,6 +289,8 @@ if build_type == "rus" then tup.append_table(extra_files, {
  {"HD_Load/9x2klbr/", PROGS .. "/hd_load/9x2klbr/readme.txt"},
  {"HD_Load/mtldr/install.txt", PROGS .. "/hd_load/mtldr/install_eng.txt"},
  {"HD_Load/USB_Boot/readme.txt", PROGS .. "/hd_load/usb_boot/readme_eng.txt"},
+ {"kolibrios/games/ataka", "common/games/ataka/ataka_en"},
+ {"kolibrios/games/sstartrek/", "common/games/sstartrek/SStarTrek_en"},
  {"kolibrios/media/zsea/zsea_keys.txt", PROGS .. "/media/zsea/Docs/zSea_keys_eng.txt"},
 }) end
 --[[
@@ -452,6 +455,7 @@ tup.append_table(img_files, {
  {"MEDIA/MIDAMP", PROGS .. "/media/midamp/trunk/midamp"},
  {"MEDIA/MP3INFO", PROGS .. "/media/mp3info/mp3info"},
  {"MEDIA/PALITRA", PROGS .. "/media/palitra/trunk/palitra"},
+ {"MEDIA/PIANO", PROGS .. "/media/piano/piano"},
  {"MEDIA/STARTMUS", PROGS .. "/media/startmus/trunk/STARTMUS"},
  {"NETWORK/PING", PROGS .. "/network/ping/ping"},
  {"NETWORK/NETCFG", PROGS .. "/network/netcfg/netcfg"},
@@ -550,7 +554,6 @@ tup.append_table(extra_files, {
 if build_type == "rus" then tup.append_table(img_files, {
  {"PERIOD", PROGS .. "/other/period/trunk/period"},
  {"DEVELOP/TESTCON2", PROGS .. "/develop/libraries/console_coff/examples/testcon2_rus"},
- {"MEDIA/PIANO", PROGS .. "/media/piano/piano"},
 }) else tup.append_table(img_files, {
  {"DEVELOP/TESTCON2", PROGS .. "/develop/libraries/console_coff/examples/testcon2_eng"},
 }) end

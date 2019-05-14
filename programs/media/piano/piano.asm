@@ -37,6 +37,7 @@
   dd	 0	     ; адрес буфера для параметров
   dd	 0	     ; зарезервировано
 
+include "lang.inc"
 include "../../macros.inc" ; макросы облегчают жизнь ассемблерщиков!
 
 ;---------------------------------------------------------------------
@@ -839,7 +840,7 @@ draw_window:
 
     mov   edx, [sc.work]	 ; цвет фона
     or	  edx, 0x33000000	 ; и тип окна 3
-    mcall 0, <20,WHITE_W*15+9>, <200,250>, , ,title
+    mcall 0, <20,WHITE_W*15+9>, <200,250>, , ,caption
 	
     mcall 8,  <WHITE_W*0,WHITE_W>, <0,100>, 0x21, 0xff7a74
     mcall 8,  <WHITE_W*1,WHITE_W>, <0,100>, 0x23, 0x907040
@@ -924,13 +925,23 @@ M:
 
 sc system_colors
 
-message db 'Справка: щёлкните 2 раза на заголовке.',0
-message1 db 'Нажмите любую клавишу в английской раскладке - ',0
-message2  db 'должен звучать встроенный динамик компьютера (не колонки!)',0
-message3  db 'Нота "До" - клавиши V,Tab,U,Enter, при включении',0
-message4  db 'Caps Lock - клавиши V,Q,I.',0
-t_notes  db 'ДО    РЕ    МИ    ФА   СОЛЬ   ЛЯ    СИ    ДО',0
-title db 'Детское пианино',0
+if lang eq ru
+  message  db 'Справка: щёлкните 2 раза на заголовке.',0
+  message1 db 'Нажмите любую клавишу в английской раскладке - ',0
+  message2 db 'должен звучать встроенный динамик компьютера (не колонки!)',0
+  message3 db 'Нота "До" - клавиши V,Tab,U,Enter',0
+  message4 db 'при включении Caps Lock - клавиши V,Q,I.',0
+  t_notes  db 'ДО    РЕ    МИ    ФА   СОЛЬ   ЛЯ    СИ    ДО',0
+  caption  db 'Детское пианино',0
+else
+  message  db 'To see help click twice on the window header',0
+  message1 db 'Press any key in English keyboard layout - ',0
+  message2 db 'so you will hear the sound from the PC-speaker (Beeper)',0
+  message3 db 'Note "C" is the key V,Tab,U,Enter',0
+  message4 db 'and when Caps Lock is on then the keys V,Q,I.',0
+  t_notes  db 'C     D     E     F     G     A     B     C ',0
+  caption  db 'Baby piano',0
+end if
 
 ;---------------------------------------------------------------------
 
