@@ -81,7 +81,6 @@ if build_type == "rus" then tup.append_table(img_files, {
  {"EXAMPLE.ASM", PROGS .. "/develop/examples/example/trunk/rus/example.asm"},
  {"PIPETKA", build_type .. "/pipetka"},
  {"File Managers/KFAR.INI", build_type .. "/File Managers/kfar.ini"},
- {"GAMES/ATAKA", build_type .. "/games/ataka"},
  {"GAMES/BASEKURS.KLA", build_type .. "/games/basekurs.kla"},
  {"GAMES/PADENIE", build_type .. "/games/padenie"}, 
 }) elseif build_type == "eng" then tup.append_table(img_files, {
