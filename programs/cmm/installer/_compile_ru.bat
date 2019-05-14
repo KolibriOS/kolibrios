@@ -1,10 +1,9 @@
 @del lang.h--
 @echo #define LANG_RUS 1 >lang.h--
 
-C-- installer.c
-@del installer.kex
-@rename installer.com installer.kex
+C-- install.c
+@del install.kex
+@rename install.com install.kex
 @pause
 @del lang.h--
 @del warning.txt
-kpack installer.kex

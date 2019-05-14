@@ -38,7 +38,7 @@ enum {
 }
 
 :void RestartProcessByName(dword proc_name, byte multiple) {
-	KillProcessByName(proc_name, multiple);
+	KillProcessByName(proc_name + strrchr(proc_name, '/'), multiple);
 	RunProgram(proc_name, "");	
 }
 

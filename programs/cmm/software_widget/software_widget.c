@@ -53,7 +53,7 @@ void load_config()
 	list.item_w = EAX;
 	ini_get_int stdcall (#settings_ini_path, "Config", "cell_h", 71);
 	list.item_h = EAX;
-	ini_get_int stdcall (#settings_ini_path, "Config", "default_icon", 0);
+	ini_get_int stdcall (#settings_ini_path, "Config", "default_icon", 2);
 	default_icon = EAX;
 }
 

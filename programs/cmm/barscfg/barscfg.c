@@ -251,12 +251,12 @@ void RestartProcess(byte panel_type)
 	dword proc_name1;
 	if (panel_type == TASKBAR)
 	{
-		RestartProcessByName("@taskbar", SINGLE);
+		RestartProcessByName("/sys/@taskbar", SINGLE);
 		pause(50);
 	}
 	else
 	{
-		RestartProcessByName("@docky", SINGLE);
+		RestartProcessByName("/sys/@docky", SINGLE);
 		pause(120);
 	}
 	GetProcessInfo(#Form, SelfInfo);
