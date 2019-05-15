@@ -4,1271 +4,2352 @@ use32
 org 0x0
 
 db 'MENUET01'
-dd 0x01, START, I_END, F_END, stacktop, @PARAMS, sys_path
+dd 0x01, START, I_END, E_END, stacktop, __params, sys_path
 
 ;-----------------------------------------------------------------------------
 
-include '../../../config.inc'
-include '../../../proc32.inc'
-include '../../../macros.inc'
-include '../../../dll.inc'
-include '../../../KOSfuncs.inc'
-;include '../../../debug.inc'
+__DEBUG__        = 0
+__DEBUG_LEVEL__  = 1
 
-include '../../../develop/libraries/libs-dev/libio/libio.inc'
-include '../../../develop/libraries/libs-dev/libimg/libimg.inc'
+LG_TRACE equ 1
 
-;include '../../../develop/libraries/box_lib/asm/trunk/opendial.mac'
-;use_OpenDialog
+include 'config.inc'
+include 'proc32.inc'
+include 'macros.inc'
+include 'KOSfuncs.inc'
+include 'dll.inc'
+include 'debug-fdo.inc'
+include 'libimg.inc'
+
+
+KEY_MOVE_PIXELS   = 50
+SCROLL_WIDTH_SIZE = 15
+AR_OFFSET         = 10
+
+MIN_WINDOW_WIDTH  = 50 + 25*numimages
+MIN_WINDOW_HEIGHT = 100
+TOOLBAR_HEIGHT    = 31
+CANVAS_PADDING    = 5
 ;-----------------------------------------------------------------------------
 
 START:
-    mcall   SF_SYS_MISC, SSF_HEAP_INIT
+        mcall   SF_SYSTEM, SSF_MOUSE_SETTINGS, SSSF_SET_SPEED, 5
+        mcall   SF_SYSTEM, SSF_MOUSE_SETTINGS, SSSF_SET_SPEEDUP, 5
+        mcall   SF_SYS_MISC, SSF_HEAP_INIT
+        mcall   SF_KEYBOARD, SSF_SET_INPUT_MODE, 1  ; set kbd mode to scancodes
+        mcall   SF_SET_EVENTS_MASK, EVM_REDRAW or EVM_KEY or EVM_BUTTON or EVM_MOUSE or EVM_MOUSE_FILTER
 
-    stdcall dll.Load, @IMPORT
-    or  eax, eax
-    jnz exit
+        stdcall dll.Load, @IMPORT
+        or      eax, eax
+        jnz     exit
 
-    invoke  sort.START, 1
+        invoke  sort.START, 1
 
-    mov ecx, 1  ; for 15.4: 1 = tile
-    cmp word [@PARAMS], '\T'
-    jz  set_bgr
-    inc ecx ; for 15.4: 2 = stretch
-    cmp word [@PARAMS], '\S'
-    jz  set_bgr
+        mov     ecx, 1  ; for 15.4: 1 = tile
+        cmp     word[__params], '\T'
+        jz      set_bgr
+        inc     ecx     ; for 15.4: 2 = stretch
+        cmp     word[__params], '\S'
+        jz      set_bgr
 
-    cmp byte [@PARAMS], 0
-    jz @f
-    mov esi, @PARAMS
-    mov edi, path
-    mov ecx, 4096/4
-    rep movsd
-    mov byte [edi-1], 0
-@@:
+        cmp     byte[__params], 0
+        jz      @f
+        mov     esi, __params
+        mov     edi, path
+        mov     ecx, 4096/4
+        rep     movsd
+        mov     byte[edi-1], 0
+    @@:
 ; OpenDialog initialisation
-    push    dword OpenDialog_data
-    call    [OpenDialog_Init]
+        push    dword OpenDialog_data
+        call    [OpenDialog_Init]
 
 ; initialize keyboard handling
-    invoke  ini_get_shortcut, inifilename, aShortcuts, aNext, -1, next_mod
-    mov [next_key], eax
-    invoke  ini_get_shortcut, inifilename, aShortcuts, aPrev, -1, prev_mod
-    mov [prev_key], eax
-    invoke  ini_get_shortcut, inifilename, aShortcuts, aSlide, -1, slide_mod
-    mov [slide_key], eax
-    invoke  ini_get_shortcut, inifilename, aShortcuts, aTglbar, -1, tglbar_mod
-    mov [tglbar_key], eax
-    mcall   SF_KEYBOARD, SSF_SET_INPUT_MODE, 1    ; set kbd mode to scancodes
+        invoke  ini_get_shortcut, inifilename, aShortcuts, aNext, -1, next_mod
+        mov     [next_key], eax
+        invoke  ini_get_shortcut, inifilename, aShortcuts, aPrev, -1, prev_mod
+        mov     [prev_key], eax
+        invoke  ini_get_shortcut, inifilename, aShortcuts, aSlide, -1, slide_mod
+        mov     [slide_key], eax
+        invoke  ini_get_shortcut, inifilename, aShortcuts, aTglbar, -1, tglbar_mod
+        mov     [tglbar_key], eax
 
-    cmp byte [@PARAMS], 0
-    jnz params_given
+        cmp     byte[__params], 0
+        jnz     params_given
 
-    mov [OpenDialog_data.draw_window],draw_window_fake
-    
+        mov     [OpenDialog_data.draw_window], draw_window_fake
+
 ; OpenDialog Open
-    push    dword OpenDialog_data
-    call    [OpenDialog_Start]
+        push    dword OpenDialog_data
+        call    [OpenDialog_Start]
 
-    cmp [OpenDialog_data.status],1
-    jne exit
+        cmp     [OpenDialog_data.status], 1
+        jnz     exit
 
-    mov [OpenDialog_data.draw_window],draw_window
+        mov     [OpenDialog_data.draw_window], draw_window
 
-    mov esi, path
-    mov edi, @PARAMS
-    mov ecx, 4096/4
-    rep movsd
-    mov byte [edi-1], 0
-    jmp params_given
+        mov     esi, path
+        mov     edi, __params
+        mov     ecx, 4096/4
+        rep     movsd
+        mov     byte[edi-1], 0
+        jmp     params_given
 
 set_bgr:
-    mcall   SF_BACKGROUND_SET, SSF_MODE_BG
-    mov eax, @PARAMS + 4
-    call    load_image
-    jc  exit
-
-    call    set_as_bgr
-    jmp exit
+        mcall   SF_BACKGROUND_SET, SSF_MODE_BG
+        stdcall load_image, __params + 4
+        jc      exit
+        call    set_as_bgr
+        jmp     exit
 
 params_given:
+        mov     esi, __params
+        push    esi
+        call    find_last_name_component
+        call    load_directory
 
-    mov esi, @PARAMS
-    push    esi
-    call    find_last_name_component
-
-    pop eax
-    call    load_image
-    jc  exit
-    call    generate_header
+        pop     eax
+        stdcall load_image, eax
+        jc      exit
 
 ;-----------------------------------------------------------------------------
 
-red:
-    call    draw_window
+redraw_all:
+        call    draw_window
 
 still:
-    mov eax, [image]
-    test    byte [eax + Image.Flags], Image.IsAnimated
-    push    SF_WAIT_EVENT
-    pop eax
-    jz  @f
-    mcall   SF_SYSTEM_GET, SSF_TIME_COUNT
-    mov edx, [cur_frame]
-    mov ebx, [cur_frame_time]
-    add ebx, [edx + Image.Delay]
-    sub ebx, eax
-    cmp ebx, [edx + Image.Delay]
-    ja  red_update_frame
-    test    ebx, ebx
-    jz  red_update_frame
-    push    SF_WAIT_EVENT_TIMEOUT
-    pop eax
-  @@:
-    mcall
-    dec eax
-    js  red_update_frame
-    jz  red
-    dec eax
-    jnz button
+        mov     eax, [orig_image]
+        test    [eax + Image.Flags], Image.IsAnimated
+        movi    eax, SF_WAIT_EVENT
+        jz      .wait_event
+        mcall   SF_SYSTEM_GET, SSF_TIME_COUNT
+        mov     edx, [cur_frame]
+        mov     ebx, [cur_frame_time]
+        add     ebx, [edx + Image.Delay]
+        sub     ebx, eax
+        cmp     ebx, [edx + Image.Delay]
+        jna     @f
+        call    red_update_frame
+        jmp     still
+    @@:
+        test    ebx, ebx
+        jnz     @f
+        call    red_update_frame
+        jmp     still
+    @@:
+        movi    eax, SF_WAIT_EVENT_TIMEOUT
+  .wait_event:
+        mcall   
+        dec     eax
+        jns     @f
+        call    red_update_frame
+        jmp     still
+    @@:
+        jz      redraw_all
+        dec     eax
+        jz      key
+        dec     eax
+        jz      button
+
+mouse:
+        mov     [pict_moved], 0
+
+        
+        invoke  scrollbar_vert_mouse, scroll_bar_data_vertical
+        invoke  scrollbar_hort_mouse, scroll_bar_data_horizontal
+        xor     ecx, ecx
+        mov     eax, [scroll_bar_data_vertical.position]
+        cmp     [pict.top], eax
+        mov     [pict.top], eax
+        setnz   cl
+        mov     eax, [scroll_bar_data_horizontal.position]
+        cmp     [pict.left], eax
+        mov     [pict.left], eax
+        setnz   ch
+        test    ecx, ecx
+        jz      @f
+        call    draw_view
+        call    draw_onimage_decorations
+    @@:
+
+        ; check for scroll
+        mcall   SF_MOUSE_GET, SSF_SCROLL_DATA
+        test    eax, eax
+        jz      .no_scroll
+        movsx   ecx, ax
+        shl     ecx, 4
+        sar     eax, 16
+        shl     eax, 4
+        stdcall move_pictport, eax, ecx
+        mov     [pict_moved], eax
+        jmp     .mouse_done
+  .no_scroll:
+
+        ; get cursor coordinates in window
+        mcall   SF_MOUSE_GET, SSF_WINDOW_POSITION
+        movsx   ebx, ax
+        cmp     ebx, 0
+        jge     @f
+        add     eax, 0x10000
+    @@:
+        mov     ecx, [mouse_pos]
+        cmp     eax, ecx
+        jz      .no_mouse_move
+        mov     [mouse_pos], eax
+
+        cmp     [pict_drag], 1
+        jnz     .no_mouse_move
+        sar     eax, 16
+        movsx   edx, cx
+        sar     ecx, 16
+        sub     eax, ecx
+        sub     ebx, edx
+        neg     eax
+        neg     ebx
+        stdcall move_pictport, eax, ebx
+        mov     [pict_moved], eax
+        jmp     .no_mouse_move
+  .no_mouse_move:
+
+        ; check buttons
+        mcall   SF_MOUSE_GET, SSF_BUTTON
+        mov     ecx, eax
+        xor     ecx, [mouse_buttons]
+        mov     [mouse_buttons], eax
+        test    ecx, 0x01
+        jz      .left_button_handled
+        test    eax, 0x01
+        jnz     .left_button_down
+  .left_button_up:
+        mov     [pict_drag], 0
+        jmp     .left_button_handled
+  .left_button_down:
+        mov     ecx, [mouse_pos]
+        movzx   edx, cx
+        sar     ecx, 16
+        mov     ebx, [canvas_abs_top]
+        add     ebx, [view.top]
+        cmp     ebx, edx
+        jg      .left_click_pict_done
+        add     ebx, [view.height]
+        cmp     ebx, edx
+        jl      .left_click_pict_done
+        mov     ebx, [canvas_abs_left]
+        add     ebx, [view.left]
+        cmp     ebx, ecx
+        jg      .left_click_pict_done
+        add     ebx, [view.width]
+        cmp     ebx, ecx
+        jl      .left_click_pict_done
+        mov     [pict_drag], 1
+        jmp     .left_button_handled
+  .left_click_pict_done:
+
+  .left_button_handled:
+  .mouse_done:
+        mov     eax, [pict_moved]
+        test    eax, eax
+        jz      .done
+        stdcall update_scrollbars, eax
+        call    draw_view
+        call    draw_onimage_decorations
+  .done:
+        jmp     still
 
 key:
-    xor esi, esi
+        xor     esi, esi
 keyloop:
-    mcall   SF_GET_KEY
-    test    al, al
-    jnz keyloopdone
-    shr eax, 8
-    mov ecx, eax
-    mcall   SF_KEYBOARD, SSF_GET_CONTROL_KEYS
-    mov edx, next_mod
-    call    check_shortcut
-    jz  .next
-    add edx, prev_mod - next_mod
-    call    check_shortcut
-    jz  .prev
-    add edx, slide_mod - prev_mod
-    call    check_shortcut
-    jz  .slide
-    add edx, tglbar_mod - slide_mod
-    call    check_shortcut
-    jz  .tglbar
-    cmp cl, 1 ; Esc
-    jz  .esc
-    jmp keyloop
-.esc:
-    test byte [bSlideShow], 1
-    jnz .slide
-    jmp keyloop
-.tglbar:
-    mov byte [bTglbar], 1
-    test byte[bSlideShow], 1
-    jnz @f
-    xor [toolbar_height], 31
-@@:
-    jmp keyloop
-.slide:
-    call slide_show
-    jmp keyloop
-.prev:
-    dec esi
-    jmp keyloop
-.next:
-    inc esi
-    jmp keyloop
+        mcall   SF_GET_KEY
+        test    al, al
+        jnz     keyloopdone
+        shr     eax, 8
+        mov     ecx, eax
+        mcall   SF_KEYBOARD, SSF_GET_CONTROL_KEYS
+        mov     edx, next_mod
+        call    check_shortcut
+        jz      .next
+        add     edx, prev_mod - next_mod
+        call    check_shortcut
+        jz      .prev
+        add     edx, slide_mod - prev_mod
+        call    check_shortcut
+        jz      .slide
+        add     edx, tglbar_mod - slide_mod
+        call    check_shortcut
+        jz      .tglbar
+
+        mov     edx, scale_none_mod
+        call    check_shortcut
+        jz      .set_scale_none
+        add     edx, scale_fit_min_mod - scale_none_mod
+        call    check_shortcut
+        jz      .set_scale_fit_min
+        add     edx, move_pictport_left_1_mod - scale_fit_min_mod
+        call    check_shortcut
+        jz      .move_pictport_left
+        add     edx, move_pictport_left_2_mod - move_pictport_left_1_mod
+        call    check_shortcut
+        jz      .move_pictport_left
+        add     edx, move_pictport_right_1_mod - move_pictport_left_2_mod
+        call    check_shortcut
+        jz      .move_pictport_right
+        add     edx, move_pictport_right_2_mod - move_pictport_right_1_mod
+        call    check_shortcut
+        jz      .move_pictport_right
+        add     edx, move_pictport_up_1_mod - move_pictport_right_2_mod
+        call    check_shortcut
+        jz      .move_pictport_up
+        add     edx, move_pictport_up_2_mod - move_pictport_up_1_mod
+        call    check_shortcut
+        jz      .move_pictport_up
+        add     edx, move_pictport_down_1_mod - move_pictport_up_2_mod
+        call    check_shortcut
+        jz      .move_pictport_down
+        add     edx, move_pictport_down_2_mod - move_pictport_down_1_mod
+        call    check_shortcut
+        jz      .move_pictport_down
+
+        cmp     cl, 1 ; Esc
+        jz      .esc
+        jmp     keyloop
+  .esc:
+        test    [bSlideShow], 1
+        jz      keyloop
+        jmp     .slide
+  .tglbar:
+        bt      [window_style], 25
+        jnc     @f
+        mov     [bToggleToolbar], 1
+        xor     [bShowToolbar], 1
+    @@:
+        jmp     keyloop
+  .slide:
+        call    slide_show
+        jmp     keyloop
+  .set_scale_none:
+        stdcall set_scale_mode, LIBIMG_SCALE_NONE
+        mov     eax, [scale_mode]
+        call    recalc_canvas
+;        call    draw_view
+        jmp     keyloop
+  .set_scale_fit_min:
+        stdcall set_scale_mode, LIBIMG_SCALE_FIT_MIN
+        mov     eax, [scale_mode]
+        call    recalc_work
+;        call    draw_view
+        jmp     keyloop
+  .move_pictport_left:
+        stdcall move_pictport, -KEY_MOVE_PIXELS, 0
+        stdcall update_scrollbars, eax
+        call    draw_view
+        call    draw_onimage_decorations
+        jmp     keyloop
+  .move_pictport_right:
+        stdcall move_pictport, KEY_MOVE_PIXELS, 0
+        stdcall update_scrollbars, eax
+        call    draw_view
+        call    draw_onimage_decorations
+        jmp     keyloop
+  .move_pictport_up:
+        stdcall move_pictport, 0, -KEY_MOVE_PIXELS
+        stdcall update_scrollbars, eax
+        call    draw_view
+        call    draw_onimage_decorations
+        jmp     keyloop
+  .move_pictport_down:
+        stdcall move_pictport, 0, KEY_MOVE_PIXELS
+        stdcall update_scrollbars, eax
+        call    draw_view
+        call    draw_onimage_decorations
+        jmp     keyloop
+  .prev:
+        dec     esi
+        jmp     keyloop
+  .next:
+        inc     esi
+        jmp     keyloop
 keyloopdone:
-    test esi, esi
-    jnz next_or_prev_handler
-    test byte [bSlideShow], 2
-    jnz red
-    test byte [bTglbar], 1
-    jnz red
-    jmp still
+        test    esi, esi
+        jnz     next_or_prev_handler
+        test    [bToggleSlideShow], 1
+        jnz     redraw_all
+        test    [bToggleToolbar], 1
+        stdcall recalc_client
+        jnz     redraw_all
+        test    [bScaleModeChanged], 1
+        mov     [bScaleModeChanged], 0
+        jnz     redraw_all
+        test    [bNewImage], 1
+        mov     [bNewImage], 0
+        jnz     redraw_all
+        jmp     still
 next_or_prev_handler:
-    call    next_or_prev_image
-    jmp red
+        call    next_or_prev_image
+        jmp     redraw_all
 
 red_update_frame:
-    mov eax, [cur_frame]
-    mov eax, [eax + Image.Next]
-    test    eax, eax
-    jnz @f
-    mov eax, [image]
-  @@:
-    mov [cur_frame], eax
-    mcall   SF_SYSTEM_GET, SSF_TIME_COUNT
-    mov [cur_frame_time], eax
-    mcall   SF_THREAD_INFO, procinfo, -1
-    call    draw_cur_frame
-    jmp still
+        mov     eax, [cur_frame]
+        mov     eax, [eax + Image.Next]
+        test    eax, eax
+        jnz     @f
+        mov     eax, [cur_image]
+    @@:
+        mov     [cur_frame], eax
+        mcall   SF_SYSTEM_GET, SSF_TIME_COUNT
+        mov     [cur_frame_time], eax
+        call    draw_view
+        ret
 
 button:
-    mcall   SF_GET_BUTTON
-    shr eax, 8
+        mcall   SF_GET_BUTTON
+        shr     eax, 8
 
-    ; flip horizontally
-    cmp eax, 'flh'
-    jne @f
+        ; flip horizontally
+        cmp     eax, 'flh'
+        jnz     .not_flh
 
-    invoke  img.flip, [image], FLIP_HORIZONTAL
-    jmp redraw_image
+        mov     eax, [cur_image]
+        cmp     eax, [orig_image]
+        jz      @f
+        invoke  img.flip, [cur_image], FLIP_HORIZONTAL
+    @@:
+        invoke  img.flip, [orig_image], FLIP_HORIZONTAL
+        jmp     redraw_all
 
-    ; flip vertically
-    @@: cmp eax, 'flv'
-    jne @f
+        ; flip vertically
+  .not_flh:
+        cmp     eax, 'flv'
+        jnz     .not_flv
 
-    invoke  img.flip, [image], FLIP_VERTICAL
-    jmp redraw_image
+        mov     eax, [cur_image]
+        cmp     eax, [orig_image]
+        jz      @f
+        invoke  img.flip, [cur_image], FLIP_VERTICAL
+    @@:
+        invoke  img.flip, [orig_image], FLIP_VERTICAL
+        jmp     redraw_all
 
-    ; flip both horizontally and vertically
-    @@: cmp eax, 'flb'
-    jne @f
+        ; flip both horizontally and vertically
+  .not_flv:
+        cmp     eax, 'flb'
+        jnz     .not_flb
 
-    invoke  img.flip, [image], FLIP_BOTH
-    jmp redraw_image
+        mov     eax, [cur_image]
+        cmp     eax, [orig_image]
+        jz      @f
+        invoke  img.flip, [cur_image], FLIP_BOTH
+    @@:
+        invoke  img.flip, [orig_image], FLIP_BOTH
+        jmp     redraw_all
 
-    ; rotate left
-    @@: cmp eax, 'rtl'
-    jne @f
+        ; rotate left
+  .not_flb:
+        cmp     eax, 'rtl'
+        jnz     .not_rtl
 
-    push    ROTATE_90_CCW
-.rotate_common:
-    invoke  img.rotate, [image]
-    mov eax, [image]
-    test    eax, eax    ; clear ZF flag
-    call    update_image_sizes
-    jmp redraw_image
+        push    ROTATE_90_CCW
+  .rotate_common:
+        mov     eax, [cur_image]
+        cmp     eax, [orig_image]
+        jz      @f
+        invoke  img.destroy, [cur_image]
+        mov     [cur_image], 0
+    @@:
+        invoke  img.rotate, [orig_image]
+        jmp     redraw_all
 
-    ; rotate right
-    @@: cmp eax, 'rtr'
-    jne @f
+        ; rotate right
+  .not_rtl:
+        cmp     eax, 'rtr'
+        jnz     .not_rtr
 
-    push    ROTATE_90_CW
-    jmp .rotate_common
+        push    ROTATE_90_CW
+        jmp     .rotate_common
 
-    ; open new file
-    @@: cmp eax, 'opn'
-    jne @f
-    
+        ; open new file
+  .not_rtr:
+        cmp     eax, 'opn'
+        jnz     @f
+
 ; OpenDialog Open
-    push    dword OpenDialog_data
-    call    [OpenDialog_Start]
-    
-    cmp [OpenDialog_data.status],1
-    jne still
-    
-    mov esi, path
-    mov edi, @PARAMS
-    push    edi
-    mov ecx, 4096/4
-    rep movsd
-    mov byte [edi-1], 0
-    
-    pop esi
-    push    esi
-    call    find_last_name_component
+        push    dword OpenDialog_data
+        call    [OpenDialog_Start]
 
-    pop eax 
-    push    [image]
-    call    load_image
-    jc  .restore_old
-    call    generate_header
-    
-    invoke  img.destroy
-    call    free_directory
-    jmp red
-    
-    .restore_old:
-    pop [image]
-    call    init_frame
-    jmp still
+        cmp     [OpenDialog_data.status], 1
+        jnz     still
 
-    ; set background
+        mov     esi, path
+        mov     edi, __params
+        push    edi
+        mov     ecx, 4096/4
+        rep     movsd
+        mov     byte[edi-1], 0
+
+        pop     esi
+        push    esi
+        call    find_last_name_component
+
+        pop     eax 
+        push    [cur_image]
+        stdcall load_image, eax
+        jc      .restore_old
+        call    free_directory
+        jmp     redraw_all
+
+  .restore_old:
+        pop     eax
+        jmp     still
+
+        ; set background
     @@:
-    cmp eax, 'bgr'
-    jne @f
+        cmp     eax, 'bgr'
+        jnz     @f
 
-	mcall   SF_BACKGROUND_SET, SSF_MODE_BG, 2 ;stretch by default
-    call    set_as_bgr
-    jmp still
+        mcall   SF_BACKGROUND_SET, SSF_MODE_BG, 2 ; stretch by default
+        call    set_as_bgr
+        jmp     still
 
     @@:
-    cmp eax, 'sld'
-    jne @f
+        cmp     eax, 'sld'
+        jnz     @f
 
-    call    slide_show
-    jmp red
+        call    slide_show
+        jmp     redraw_all
 
     @@:
+        or      esi, -1
+        cmp     eax, 'bck'
+        jz      next_or_prev_handler
+        neg     esi
+        cmp     eax, 'fwd'
+        jz      next_or_prev_handler
 
-    or  esi, -1
-    cmp eax, 'bck'
-    jz  next_or_prev_handler
-    neg esi
-    cmp eax, 'fwd'
-    jz  next_or_prev_handler
+        cmp     eax, 1
+        jnz     still
 
-    cmp eax, 1
-    jne still
+exit:
+        mcall   -1
 
-  exit:
-    mcall   SF_TERMINATE_PROCESS
 
-  redraw_image = red
+proc load_image _filename
+        push    ebx esi edi
+        invoke  img.from_file, [_filename]
+        test    eax, eax
+        jz      .error
+        mov     ebx, eax
 
-load_image:
-    and [img_data], 0
-    push    eax
-    invoke  file.open, eax, O_READ
-    or  eax, eax
-    jz  .error_pop
-    mov [fh], eax
-    invoke  file.size
-    mov [img_data_len], ebx
-    stdcall mem.Alloc, ebx
-    test    eax, eax
-    jz  .error_close
-    mov [img_data], eax
-    invoke  file.read, [fh], eax, [img_data_len]
-    cmp eax, -1
-    jz  .error_close
-    cmp eax, [img_data_len]
-    jnz .error_close
-    invoke  file.close, [fh]
-    inc eax
-    jz  .error
+        test    [eax + Image.Flags], Image.IsAnimated
+        jnz     @f
+        cmp     [eax + Image.Next], 0
+        jz      @f
+        stdcall merge_icons_to_single_img, eax
+        test    eax, eax
+        jz      .error_destroy
+    @@:
+        stdcall init_frame, eax
+        clc
+        jmp     .exit
 
-    invoke  img.decode, [img_data], [img_data_len], 0
-    or  eax, eax
-    jz  .error
-    cmp [image], 0
-    pushf
-    mov [image], eax
-    call    img_resize_to_screen
-    call    init_frame
-    popf
-    call    update_image_sizes
-    call    free_img_data
-    clc
-    ret
-
-.error_free:
-    invoke  img.destroy, [image]
-    jmp .error
-
-.error_pop:
-    pop eax
-    jmp .error
-.error_close:
-    invoke  file.close, [fh]
-.error:
-    call    free_img_data
-    stc
-    ret
-
-align 4
-proc img_resize_to_screen uses eax ebx ecx edx
-	mov ebx, [image]
-	cmp	[ebx+Image.Type],Image.bpp24
-	jne .end_f
-	test [ebx+Image.Flags],Image.IsAnimated
-	jnz .end_f
-	mov eax, [ebx+Image.Data]	
-	mov [buf_0],eax
-	mov eax, [ebx+Image.Width]
-	mov [buf_0.w],eax
-	mov eax, [ebx+Image.Height]
-	mov [buf_0.h],eax
-
-	mcall SF_STYLE_SETTINGS, SSF_GET_SKIN_HEIGHT
-	mov edx, [image_padding]
-	shl edx, 1
-	add edx, eax
-	mcall SF_GET_SCREEN_SIZE
-	mov ecx, eax
-	shr ecx, 17
-
-	mov ebx, [image]
-	movzx eax,ax
-	sub eax, edx
-	sub eax, [toolbar_height]
-	sub eax, 5-1 ;5 px = border
-	cmp eax, 1
-	jle .end0
-	cmp eax, [ebx+Image.Height]
-	jl .end1
-	.end0:
-		xor eax,eax
-		jmp .end2
-	.end1:
-		mov [ebx+Image.Height],eax
-	.end2:
-	sub ecx, [image_padding]
-	shl ecx, 1
-	sub ecx, 10-1 ;10 px = 2 borders
-	cmp ecx, 1
-	jle .end3
-	cmp ecx, [ebx+Image.Width]
-	jl .end4
-	.end3:
-		xor ecx,ecx
-		jmp .end5
-	.end4:
-		mov [ebx+Image.Width],ecx
-	.end5:
-	cmp eax,ecx
-	jne @f
-		test eax,eax
-		jz .end_f
-	@@:
-	stdcall [buf2d_resize], buf_0, ecx, eax, 2
-.end_f:
-	ret
+  .error_destroy:
+        invoke  img.destroy, ebx
+        xor     eax, eax
+  .error:
+        stc
+  .exit:
+        pop     edi esi ebx
+        ret
 endp
 
-align 4
-free_img_data:
-    mov eax, [img_data]
-    test    eax, eax
-    jz  @f
-    stdcall mem.Free, eax
-@@:
-    ret
 
-update_image_sizes:
-    pushf
-    mov edx, [eax + Image.Width]
-    test    [eax + Image.Flags], Image.IsAnimated
-    jnz .not_in_row
-    push eax
-@@: cmp [eax + Image.Next], 0
-    jz  @f
-    mov eax, [eax + Image.Next]
-    add edx, [eax + Image.Width]
-    inc edx
-    jmp @b
-@@: pop eax
-.not_in_row:
-    mov [draw_width], edx
-    add edx, 19
-    cmp edx, 50 + 25*numimages
-    jae @f
-    mov edx, 50 + 25*numimages
-@@:
-;    dec edx
-    mov [wnd_width], edx
-    mov esi, [eax + Image.Height]
-    test    [eax + Image.Flags], Image.IsAnimated
-    jnz .max_equals_first
-    push eax
-@@: cmp [eax + Image.Next], 0
-    jz  @f
-    mov eax, [eax + Image.Next]
-    cmp esi, [eax + Image.Height]
-    jae @b
-    mov esi, [eax + Image.Height]
-    jmp @b
-@@: pop eax
-.max_equals_first:
-    mov [draw_height], esi
-    add esi, [toolbar_height]
-    add esi, [image_padding]
-    add esi, [image_padding]
-    add esi, 5  ; window bottom frame height
-    dec esi
-    mov [wnd_height], esi
-    popf
-    jz  .no_resize
-    test [wnd_style], 1 SHL 25
-    jz .no_resize
-    mcall   SF_STYLE_SETTINGS, SSF_GET_SKIN_HEIGHT
-    add esi, eax
-    mcall   SF_CHANGE_WINDOW,-1,-1
-.no_resize:
-    ret
+; in:  eax -- pointer to image
+; out: fill pict structure
+proc calculate_picture_size
+        mov     edx, [eax + Image.Width]
+        test    [eax + Image.Flags], Image.IsAnimated
+        jnz     .not_in_row
+        push    eax
+    @@:
+        cmp     [eax + Image.Next], 0
+        jz      @f
+        mov     eax, [eax + Image.Next]
+        add     edx, [eax + Image.Width]
+        inc     edx
+        jmp     @b
+    @@:
+        pop     eax
+  .not_in_row:
+        mov     [pict.width], edx
+        add     edx, 19
+        cmp     edx, 50 + 25*numimages
+        jae     @f
+        mov     edx, 50 + 25*numimages
+    @@:
+        mov     esi, [eax + Image.Height]
+        test    [eax + Image.Flags], Image.IsAnimated
+        jnz     .max_equals_first
+        push    eax
+    @@:
+        cmp     [eax + Image.Next], 0
+        jz      @f
+        mov     eax, [eax + Image.Next]
+        cmp     esi, [eax + Image.Height]
+        jae     @b
+        mov     esi, [eax + Image.Height]
+        jmp     @b
+    @@:
+        pop     eax
+  .max_equals_first:
+        mov     [pict.height], esi
+        ret
+endp
 
-set_as_bgr:
-    mov esi, [image]
-    mov ecx, [esi + Image.Width]
-    mov edx, [esi + Image.Height]
-    mcall   SF_BACKGROUND_SET, SSF_SIZE_BG
 
-    mcall   SF_BACKGROUND_SET, SSF_MAP_BG
-    test    eax, eax
-    jz  @f
+; in:  [orig_image]
+proc set_as_bgr
+        mov     esi, [orig_image]
+        mov     ecx, [esi + Image.Width]
+        mov     edx, [esi + Image.Height]
+        mcall   SF_BACKGROUND_SET, SSF_SIZE_BG
+        mcall   SF_BACKGROUND_SET, SSF_MAP_BG
+        test    eax, eax
+        jz      @f
 
-    push    eax
-    invoke  img.to_rgb2, esi, eax
-    pop ecx
-    mcall   SF_BACKGROUND_SET, SSF_UNMAP_BG
+        push    eax
+        invoke  img.to_rgb2, esi, eax
+        pop     ecx
+        mcall   SF_BACKGROUND_SET, SSF_UNMAP_BG
 
-@@:
-    mcall   SF_BACKGROUND_SET, SSF_REDRAW_BG
+    @@:
+        mcall   SF_BACKGROUND_SET, SSF_REDRAW_BG
+        ; save to file eskin.ini
+        xor     al, al
+        mov     ecx, 1024
+        mov     edi, sys_path+2
+        repne scasb
+        sub     edi, sys_path+3
+        invoke  ini_set_str, inifileeskin, amain, aprogram, sys_path+2, edi
+        ; add param '\S__'
+        cmp     word[__params], '\T'
+        jz      @f
+        cmp     word[__params], '\S'
+        je      @f
+        mov     esi, __params+4096-8
+        mov     edi, __params+4096-4
+        mov     ecx, 4096/4-1
+        std
+        rep movsd
+        cld
+        mov     dword[__params], '\S__'
+    @@:
+        xor     al, al
+        mov     ecx, 4096
+        mov     edi, __params
+        repne scasb
+        sub     edi, __params+1
+        invoke  ini_set_str, inifileeskin, amain, aparam, __params, edi
+        ret
+endp
 
-	;save to file eskin.ini
-	xor al,al
-	mov ecx,1024
-	mov edi,sys_path+2
-	repne scasb
-	sub edi,sys_path+3
-	invoke  ini_set_str, inifileeskin, amain, aprogram, sys_path+2, edi
-	;add param '\S__'
-    cmp word[@PARAMS],'\T'
-    je @f
-	cmp word[@PARAMS],'\S'
-	je @f
-	mov esi, @PARAMS+4096-8
-    mov edi, @PARAMS+4096-4
-    mov ecx, 4096/4-1
-	std
-    rep movsd
-	cld
-	mov dword[@PARAMS],'\S__'
-	@@:
-	;
-	xor al,al
-	mov ecx,4096
-	mov edi,@PARAMS
-	repne scasb
-	sub edi,@PARAMS+1
-	invoke  ini_set_str, inifileeskin, amain, aparam, @PARAMS, edi
-    ret
+proc slide_show
+        push    ebx esi edi
+        mov     [bToggleSlideShow], 1
+        btc     [window_style], 25
+        xor     [bSlideShow], 1
+        jnz     .to_fullscreen
+        ; back from fullscreen
+        movzx   eax, [bShowToolbarSave]
+        mov     [bShowToolbar], al
+        mov     [canvas_padding], CANVAS_PADDING
+        mov     [bg_color], 0x00ffffff
+        mcall   SF_CHANGE_WINDOW, [window_save.left], [window_save.top], [window_save.width], [window_save.height]
+        jmp     .done
+  .to_fullscreen:
+        stdcall copy_box, window, window_save
+        movzx   eax, [bShowToolbar]
+        mov     [bShowToolbarSave], al
+        mov     [bShowToolbar], 0
+        mov     [canvas_padding], 0
+;        mov     eax, [procinfo.box.width]
+;        mov     [window.width], eax
+;        mov     eax, [procinfo.box.height]
+;        mov     [window.height], eax
+;        mov     eax, [procinfo.box.left]
+;        mov     [window.left], eax
+;        mov     eax, [procinfo.box.top]
+;        mov     [window.top], eax
+        mov     [bg_color], 0x00000000
+        mcall   SF_GET_SCREEN_SIZE
+        mov     edx, eax
+        shr     edx, 16
+        movzx   eax, ax
+        mov     esi, eax
+        mcall   SF_CHANGE_WINDOW, 0, 0, ,
+        stdcall set_scale_mode, LIBIMG_SCALE_FIT_MIN
 
-slide_show:
-    or  byte [bSlideShow], 2
-    xor byte [bSlideShow], 1
-    btc dword [wnd_style], 25
-    jc  @f
-    mov eax, [toolbar_height_old]
-    mov [toolbar_height], eax
-    mov [image_padding], 5
-    jmp .toolbar_height_done
-@@:
-    mov eax, [toolbar_height]
-    mov [toolbar_height_old], eax
-    mov [toolbar_height], 0
-    mov [image_padding], 0
-.toolbar_height_done:
-    ret
+  .done:
+        pop     edi esi ebx
+        ret
+endp
+
 
 ; seek to ESI image files
 ; esi>0 means next file, esi<0 - prev file
-next_or_prev_image:
-    push    esi
-    call    load_directory
-    pop esi
-    mov ebx, [directory_ptr]
-    test    ebx, ebx
-    jz  .ret
-    cmp dword[ebx+4], 0
-    jz  .ret
-    mov eax, [cur_file_idx]
-    cmp eax, -1
-    jnz @f
-    test    esi, esi
-    jns @f
-    mov eax, [ebx+4]
-@@:
-    push    [image]
-    add eax, esi
-@@:
-    test    eax, eax
-    jns @f
-    add eax, [ebx+4]
-    jmp @b
-@@:
-    cmp eax, [ebx+4]
-    jb  @f
-    sub eax, [ebx+4]
-    jmp @b
-@@:
-    push    eax
-.scanloop:
-    push    eax ebx esi
-    imul    esi, eax, 304
-    add esi, [directory_ptr]
-    add esi, 32 + 40
-    mov edi, curdir
-@@:
-    inc edi
-    cmp byte [edi-1], 0
-    jnz @b
-    mov byte [edi-1], '/'
-@@:
-    lodsb
-    stosb
-    test    al, al
-    jnz @b
-    mov eax, curdir
-    call    load_image
-    pushf
-    mov esi, curdir
-    push    esi
-    mov edi, @PARAMS
-    mov ecx, 4096/4
-    rep movsd
-    mov byte [edi-1], 0
-    pop esi
-@@:
-    lodsb
-    test    al, al
-    jnz @b
-@@:
-    dec esi
-    cmp byte [esi], '/'
-    jnz @b
-    mov byte [esi], 0
-    popf
-    pop esi ebx eax
-    jnc .loadedok
-    test    esi, esi
-    js  .try_prev
-.try_next:
-    inc eax
-    cmp eax, [ebx+4]
-    jb  @f
-    xor eax, eax
-@@:
-.try_common:
-    cmp eax, [esp]
-    jz  .notfound
-    jmp .scanloop
-.try_prev:
-    dec eax
-    jns @f
-    mov eax, [ebx+4]
-    dec eax
-@@:
-    jmp .try_common
-.loadedok:
-    mov [cur_file_idx], eax
-    pop eax
-    invoke  img.destroy
-    call    generate_header
-.ret:
-    ret
-.notfound:
-    pop eax
-    pop [image]
-    call    init_frame
-    ret
+proc next_or_prev_image
+locals
+        files_cnt       dd ?
+        file_idx        dd ?
+endl
+        push    ebx esi edi
+        push    esi
+        call    load_directory
+        pop     esi
+        mov     eax, [directory_ptr]
+        mov     eax, [eax+4]
+        mov     [files_cnt], eax
+        cmp     [directory_ptr], 0
+        jz      .ret
+        cmp     [files_cnt], 0 ; number of files
+        jz      .ret
+        mov     eax, [cur_file_idx]
+        cmp     eax, -1
+        jnz     @f
+        test    esi, esi
+        jns     @f
+        mov     eax, [files_cnt]
+    @@:
+        add     eax, esi
+    @@:
+        test    eax, eax
+        jns     @f
+        add     eax, [files_cnt]
+        jmp     @b
+    @@:
+        cmp     eax, [files_cnt]
+        jb      @f
+        sub     eax, [files_cnt]
+        jmp     @b
+    @@:
+        mov     [file_idx], eax
+  .scanloop:
+        push    eax esi
+        imul    esi, eax, 304
+        add     esi, [directory_ptr]
+        add     esi, 32 + 40
+        mov     edi, curdir
+    @@:
+        inc     edi
+        cmp     byte[edi-1], 0
+        jnz     @b
+        mov     byte[edi-1], '/'
+    @@:
+        lodsb
+        stosb
+        test    al, al
+        jnz     @b
+        mov     esi, curdir
+        push    esi
+        mov     edi, __params
+        mov     ecx, 4096/4
+        rep movsd
+        mov     byte[edi-1], 0
+        pop     esi
+        stdcall load_image, curdir
+        pushfd
+    @@:
+        lodsb
+        test    al, al
+        jnz     @b
+    @@:
+        dec     esi
+        cmp     byte[esi], '/'
+        jnz     @b
+        mov     byte[esi], 0
+        popfd
+        pop     esi eax
+        jnc     .loadedok
+        test    esi, esi
+        js      .try_prev
+  .try_next:
+        inc     eax
+        cmp     eax, [files_cnt]
+        jb      @f
+        xor     eax, eax
+    @@:
+  .try_common:
+        cmp     eax, [file_idx]
+        jz      .notfound
+        jmp     .scanloop
+  .try_prev:
+        dec     eax
+        jns     @f
+        mov     eax, [files_cnt]
+        dec     eax
+    @@:
+        jmp     .try_common
+  .loadedok:
+        mov     [cur_file_idx], eax
+  .ret:
+        pop     edi esi ebx
+        ret
+  .notfound:
+        pop     edi esi ebx
+        ret
+endp
+
 
 load_directory:
-    cmp [directory_ptr], 0
-    jnz .ret
-    mov esi, @PARAMS
-    mov edi, curdir
-    mov ecx, [last_name_component]
-    sub ecx, esi
-    dec ecx
-    js  @f
-    rep movsb
-@@:
-    mov byte [edi], 0
-    mcall   SF_SYS_MISC, SSF_MEM_ALLOC, 0x1000
-    test    eax, eax
-    jz  .ret
-    mov ebx, readdir_fileinfo
-    mov dword [ebx+12], (0x1000 - 32) / 304
-    mov dword [ebx+16], eax
-    mcall   SF_FILE
-    cmp eax, 6
-    jz  .dirok
-    test    eax, eax
-    jnz free_directory
-    mov edx, [directory_ptr]
-    mov ecx, [edx+8]
-    mov [readblocks], ecx
-    imul    ecx, 304
-    add ecx, 32
-    mcall   SF_SYS_MISC, SSF_MEM_REALLOC
-    test    eax, eax
-    jz  free_directory
-    mov [directory_ptr], eax
-    mcall   SF_FILE, readdir_fileinfo
-.dirok:
-    cmp ebx, 0
-    jle free_directory
-    mov eax, [directory_ptr]
-    add eax, 32
-    mov edi, eax
-    push    0
-.dirskip:
-    push    eax
-    test    byte [eax], 18h
-    jnz .nocopy
-    lea esi, [eax+40]
-    mov ecx, esi
-@@:
-    lodsb
-    test    al, al
-    jnz @b
-@@:
-    dec esi
-    cmp esi, ecx
-    jb  .noext
-    cmp byte [esi], '.'
-    jnz @b
-    inc esi
-    mov ecx, [esi]
-    cmp byte[esi+3], 0
-    jne .not_3
-    or  ecx, 0x202020
-    cmp ecx, 'jpg'
-    jz  .copy
-    cmp ecx, 'bmp'
-    jz  .copy
-    cmp ecx, 'gif'
-    jz  .copy
-    cmp ecx, 'png'
-    jz  .copy
-    cmp ecx, 'jpe'
-    jz  .copy
-    cmp ecx, 'ico'
-    jz  .copy
-    cmp ecx, 'cur'
-    jz  .copy
-    cmp ecx, 'tga'
-    jz  .copy
-    cmp ecx, 'pcx'
-    jz  .copy
-    cmp ecx, 'xcf'
-    jz  .copy
-    cmp ecx, 'pbm'
-    jz  .copy
-    cmp ecx, 'pgm'
-    jz  .copy
-    cmp ecx, 'pnm'
-    jz  .copy
-    cmp ecx, 'tif'
-    jz  .copy
+        cmp     [directory_ptr], 0
+        jnz     .ret
+        mov     esi, __params
+        mov     edi, curdir
+        mov     ecx, [last_name_component]
+        sub     ecx, esi
+        dec     ecx
+        js      @f
+        rep     movsb
+    @@:
+        mov     byte[edi], 0
+        mcall   68, 12, 0x1000
+        test    eax, eax
+        jz      .ret
+        mov     ebx, readdir_fileinfo
+        mov     dword[ebx+12], (0x1000 - 32) / 304      ; blocks to read
+        mov     dword[ebx+16], eax      ; where to store
+        mcall   70
+        cmp     eax, 6  ; read ok, but there are more files
+        jz      .dirok
+        test    eax, eax
+        jnz     free_directory
+        mov     edx, [directory_ptr]
+        mov     ecx, [edx+8]            ; total number of files
+        mov     [readblocks], ecx
+        imul    ecx, 304        ; try to read entire dir, FIXME
+        add     ecx, 32         ; plus header
+        mcall   68, 20          ; realloc
+        test    eax, eax
+        jz      free_directory
+        mov     [directory_ptr], eax
+        mcall   70, readdir_fileinfo
+  .dirok:
+        cmp     ebx, 0
+        jle     free_directory
+        mov     eax, [directory_ptr]
+        mov     edi, [eax + 8]  ; total number of files
+        mov     [files_num], edi
+        add     eax, 32         ; skip header
+        mov     edi, eax
+        push    0
+  .dirskip:
+        push    eax
+        test    byte[eax], 0x18 ; volume label or folder
+        jnz     .nocopy
+        lea     esi, [eax+40]   ; name
+        mov     ecx, esi
+    @@:
+        lodsb
+        test    al, al
+        jnz     @b
+    @@:
+        dec     esi
+        cmp     esi, ecx
+        jb      .noext
+        cmp     byte[esi], '.'
+        jnz     @b
+        inc     esi
+        mov     ecx, [esi]
+        cmp     byte[esi+3], 0
+        jnz     .not_3
+        or      ecx, 0x202020
+        cmp     ecx, 'jpg'
+        jz      .copy
+        cmp     ecx, 'bmp'
+        jz      .copy
+        cmp     ecx, 'gif'
+        jz      .copy
+        cmp     ecx, 'png'
+        jz      .copy
+        cmp     ecx, 'jpe'
+        jz      .copy
+        cmp     ecx, 'ico'
+        jz      .copy
+        cmp     ecx, 'cur'
+        jz      .copy
+        cmp     ecx, 'tga'
+        jz      .copy
+        cmp     ecx, 'pcx'
+        jz      .copy
+        cmp     ecx, 'xcf'
+        jz      .copy
+        cmp     ecx, 'pbm'
+        jz      .copy
+        cmp     ecx, 'pgm'
+        jz      .copy
+        cmp     ecx, 'pnm'
+        jz      .copy
+        cmp     ecx, 'ppm'
+        jz      .copy
+        cmp     ecx, 'tif'
+        jz      .copy
+        cmp     ecx, 'xbm'
+        jz      .copy
   .not_3:
-    cmp byte[esi+4], 0
-    jne .nocopy
-    or  ecx, 0x20202020
-    cmp ecx, 'tiff'
-    jz  @f
-    cmp ecx, 'wbmp'
-    jz  @f
-    cmp ecx, 'jpeg'
-    jnz .nocopy
-@@:
-    cmp byte [esi+4], 0
-    jnz .nocopy
-.copy:
-    mov esi, [esp]
-    mov ecx, 304 / 4
-    rep movsd
-    inc dword [esp+4]
-.nocopy:
-.noext:
-    pop eax
-    add eax, 304
-    dec ebx
-    jnz .dirskip
-    mov eax, [directory_ptr]
-    pop ebx
-    mov [eax+4], ebx
-    test    ebx, ebx
-    jz  free_directory
-    push    0   ; sort mode
-    push    ebx
-    add eax, 32
-    push    eax
-    call    [SortDir]
-    xor eax, eax
-    mov edi, [directory_ptr]
-    add edi, 32 + 40
-.scan:
-    mov esi, [last_name_component]
-    push    edi
-    invoke  strcmpi
-    pop edi
-    jz  .found
-    inc eax
-    add edi, 304
-    dec ebx
-    jnz .scan
-    or  eax, -1
-.found:
-    mov [cur_file_idx], eax
-.ret:
-    ret
+        cmp     byte[esi+4], 0
+        jnz     .nocopy
+        or      ecx, 0x20202020
+        cmp     ecx, 'tiff'
+        jz      @f
+        cmp     ecx, 'wbmp'
+        jz      @f
+        cmp     ecx, 'webp'
+        jz      @f
+        cmp     ecx, 'jpeg'
+        jnz     .nocopy
+    @@:
+        cmp     byte[esi+4], 0
+        jnz     .nocopy
+  .copy:
+        mov     esi, [esp]
+        mov     ecx, 304 / 4
+        rep     movsd
+        inc     dword[esp+4]
+  .nocopy:
+  .noext:
+        pop     eax
+        add     eax, 304
+        dec     ebx
+        jnz     .dirskip
+        mov     eax, [directory_ptr]
+        pop     ebx
+        mov     [eax+4], ebx
+        test    ebx, ebx
+        jz      free_directory
+        push    0   ; sort mode
+        push    ebx
+        add     eax, 32
+        push    eax
+        call    [SortDir]
+        xor     eax, eax
+        mov     edi, [directory_ptr]
+        add     edi, 32 + 40    ; name
+  .scan:
+        mov     esi, [last_name_component]
+        push    edi
+        invoke  strcmpi
+        pop     edi
+        jz      .found
+        inc     eax
+        add     edi, 304
+        dec     ebx
+        jnz     .scan
+        or      eax, -1
+  .found:
+        mov     [cur_file_idx], eax
+  .ret:
+        ret
 
 free_directory:
-    mcall   SF_SYS_MISC, SSF_MEM_FREE, [directory_ptr]
-    and [directory_ptr], 0
-    ret
+        mcall   68, 13, [directory_ptr]
+        and     [directory_ptr], 0
+        ret
+
 
 ; in: esi->full name (e.g. /path/to/file.png)
 ; out: [last_name_component]->last component (e.g. file.png)
-find_last_name_component:
-    mov ecx, esi
-@@:
-    lodsb
-    test    al, al
-    jnz @b
-@@:
-    dec esi
-    cmp esi, ecx
-    jb  @f
-    cmp byte [esi], '/'
-    jnz @b
-@@:
-    inc esi
-    mov [last_name_component], esi
-    ret
-
-init_frame:
-    push    eax
-    mov eax, [image]
-    mov [cur_frame], eax
-    test    byte [eax + Image.Flags], Image.IsAnimated
-    jz  @f
-    push    ebx
-    mcall   SF_SYSTEM_GET, SSF_TIME_COUNT
-    pop ebx
-    mov [cur_frame_time], eax
-@@:
-    pop eax
-    ret
-
-draw_window:
-    btr  word [bSlideShow], 1  ; mode changed
-    jc .mode_changed
-    test byte [bTglbar], 1
-    jz .mode_not_changed
-.mode_changed:
-    test [wnd_style], 1 SHL 25
-    jz .mode_slide
-    mov [bg_color], 0x00ffffff
-    mov eax, [image]
-    cmp eax, eax
-    call update_image_sizes
-    mcall SF_STYLE_SETTINGS, SSF_GET_SKIN_HEIGHT
-    mov esi, [wnd_height]
-    add esi, eax
-    test byte [bTglbar], 1
-    jz @f
-    mcall SF_CHANGE_WINDOW, -1, -1, [wnd_width], 
-    jmp .mode_not_changed
-@@:
-    mcall SF_CHANGE_WINDOW, [wnd_x], [wnd_y], [wnd_width], 
-    jmp .mode_not_changed
-.mode_slide:
-    mov [bg_color], 0x00000000
-    mov eax, [procinfo.box.left]
-    mov [wnd_x], eax
-    mov eax, [procinfo.box.top]
-    mov [wnd_y], eax
-    mcall SF_GET_SCREEN_SIZE
-    mov edx, eax
-    shr edx, 16
-    movzx eax, ax
-    mov esi, eax
-    mcall SF_CHANGE_WINDOW, 0, 0, ,
-    jmp .posok.slide_show
-
-.mode_not_changed:
-    cmp [bFirstDraw], 0
-    jz  .posok
-    or  ecx, -1
-    mcall   SF_THREAD_INFO, procinfo
-
-    test byte [procinfo.wnd_state], 0x04
-    jnz .posok
-
-    mov edx, ecx
-    mov esi, ecx
-    cmp dword [procinfo.box.width], 50 + 25 * numimages
-    jae @f
-    mov edx, 50 + 25 * numimages
-@@:
-    cmp dword [procinfo.box.height], 70
-    jae @f
-    mov esi, 70
-@@:
-    mov eax, edx
-    and eax, esi
-    cmp eax, -1
-    jz  @f
-    mov ebx, ecx
-    mcall   SF_CHANGE_WINDOW
-@@:
-
-.posok:
-    test [wnd_style], 1 SHL 25
-    jz .posok.slide_show
-    mcall   SF_REDRAW, SSF_BEGIN_DRAW
-    mcall   SF_STYLE_SETTINGS, SSF_GET_SKIN_HEIGHT
-    mov ebp, eax    ; save skin height
-    add eax, [wnd_height]
-    mov ebx, [wnd_x]
-    shl ebx, 16
-    add ebx, [wnd_width]
-    mov ecx, [wnd_y]
-    shl ecx, 16
-    add ecx, eax
-    mcall   SF_CREATE_WINDOW, , , [wnd_style], 0, real_header
-    jmp .posok.common
-.posok.slide_show:
-    mcall   SF_REDRAW, SSF_BEGIN_DRAW
-    mcall SF_GET_SCREEN_SIZE
-    mov ebx, eax
-    shr ebx, 16
-    movzx eax, ax
-    mov ecx, eax
-    mcall   SF_CREATE_WINDOW, , , [wnd_style], 0, real_header
-.posok.common:
-    mcall   SF_THREAD_INFO, procinfo, -1
-    mov eax, [procinfo.client_box.width]
-    sub eax, [image_padding]
-    sub eax, [image_padding]
-    sub eax, [draw_width]
-    sar eax, 1
-    test eax, eax
-    jns @f
-    mov eax, 0
-@@:
-    add eax, [image_padding]
-    mov [draw_x], eax
-    mov eax, [procinfo.client_box.height]
-    sub eax, [toolbar_height]
-    sub eax, [image_padding]
-    sub eax, [image_padding]
-    sub eax, [draw_height]
-    sar eax, 1
-    test eax, eax
-    jns @f
-    mov eax, 0
-@@:
-    add eax, [toolbar_height]
-    add eax, [image_padding]
-    mov [draw_y], eax
-    mov [bFirstDraw], 1
-    cmp dword [procinfo.client_box.height], 0
-    jle .nodraw
-    mov ebx, [procinfo.client_box.width]
-    inc ebx
-    mov ecx, [draw_y]
-    mcall   SF_DRAW_RECT, , , [bg_color]
-    mov ecx, [procinfo.client_box.height]
-    inc ecx
-    mov esi, [cur_frame]
-    mov esi, [esi + Image.Height]
-    add esi, [draw_y]
-    sub ecx, esi
-    jbe @f
-    push    esi
-    shl esi, 16
-    add ecx, esi
-    pop esi
-    mcall
-    xor ecx, ecx
-@@:
-    add ecx, esi
-    mov ebx, [draw_y]
-    sub ecx, ebx
-    shl ebx, 16
-    add ecx, ebx
-    mov ebx, [draw_x]
-    mcall
-    mov esi, [cur_frame]
-    mov esi, [esi + Image.Width]
-    add esi, ebx
-    mov ebx, [procinfo.client_box.width]
-    inc ebx
-    sub ebx, esi
-    jbe @f
-    shl esi, 16
-    add ebx, esi
-    mcall
-@@:
-
-    test [wnd_style], 1 SHL 25
-    jz .slide_show_mode
-    mov byte [bTglbar], 0
-    cmp byte [toolbar_height], 0
-    je .decorations_done
-    mov ebx, [procinfo.client_box.width]
-    push    ebx
-    mcall   SF_DRAW_LINE, , <30, 30>, 0x007F7F7F
-    mcall   , <5 + 25 * 1, 5 + 25 * 1>, <0, 30>
-    mcall   , <10 + 25 * 3, 10 + 25 * 3>
-    mcall   , <15 + 25 * 5, 15 + 25 * 5>
-    pop ebx
-    sub ebx, 25 * 5 + 10 
-    push    ebx
-    imul    ebx, 10001h
-    mcall
-
-    mcall   SF_DEFINE_BUTTON, <4 + 25 * 0, 21>, <4, 21>, 'opn'+40000000h
-    mcall   , <9 + 25 * 1, 21>, , 'bck'+40000000h
-    mcall   , <9 + 25 * 2, 21>, , 'fwd'+40000000h
-    mcall   , <14 + 25 * 3, 21>, , 'bgr'+40000000h
-    mcall   , <14 + 25 * 4, 21>, , 'sld'+40000000h
-    pop ebx
-    add ebx, 5
-    shl ebx, 16
-    mov bl, 21
-    mcall   , , , 'flh'+40000000h
-    add ebx, 25 * 65536
-    mcall   , , , 'flv'+40000000h
-    add ebx, 30 * 65536
-    mcall   , , , 'rtr'+40000000h
-    add ebx, 25 * 65536
-    mcall   , , , 'rtl'+40000000h
-    add ebx, 25 * 65536
-    mcall   , , , 'flb'+40000000h
-
-    mov ebp, (numimages-1)*20
-
-    mcall   SF_PUT_IMAGE_EXT, buttons+openbtn*20, <20, 20>, <5 + 25 * 0, 5>, 8, palette
-    mcall   , buttons+backbtn*20,    , <10 + 25 * 1, 5>
-    mcall   , buttons+forwardbtn*20, , <10 + 25 * 2, 5>
-    mcall   , buttons+bgrbtn*20,     , <15 + 25 * 3, 5>
-    mcall   , buttons+slidebtn*20,   , <15 + 25 * 4, 5>
-    mov edx, [procinfo.client_box.width]
-    sub edx, 25 * 5 + 4
-    shl edx, 16
-    mov dl, 5
-    mcall   , buttons+fliphorzbtn*20
-    add edx, 25 * 65536
-    mcall   , buttons+flipvertbtn*20
-    add edx, 30 * 65536
-    mcall   , buttons+rotcwbtn*20
-    add edx, 25 * 65536
-    mcall   , buttons+rotccwbtn*20
-    add edx, 25 * 65536
-    mcall   , buttons+rot180btn*20
-    jmp .decorations_done
-
-.slide_show_mode:
-
-.decorations_done:
-    call    draw_cur_frame
-
-.nodraw:
-    mcall   SF_REDRAW, SSF_END_DRAW
-
-    ret
-
-draw_cur_frame:
-    push    0   ; ypos
-    push    0   ; xpos
-    mov eax, [procinfo.client_box.height]
-    sub eax, [toolbar_height]
-    sub eax, [image_padding]
-    inc eax
-    push    eax ; max height
-    mov eax, [procinfo.client_box.width]
-    sub eax, [image_padding]
-    inc eax
-    push    eax ; max width
-    push [draw_y]
-    push [draw_x]
-    push    [cur_frame]
-    call    [img.draw]
-    mov eax, [image]
-    test    [eax + Image.Flags], Image.IsAnimated
-    jnz .done
-    cmp [eax + Image.Next], 0
-    jnz .additional_frames
-.done:
-    ret
-.additional_frames:
-    mov ebx, [procinfo.client_box.width]
-    sub ebx, [image_padding]
-    inc ebx
-    jbe .done
-    mov esi, [draw_x]
-.afloop:
-    sub ebx, [eax + Image.Width]
-    jbe .done
-    dec ebx
-    jz  .done
-    add esi, [eax + Image.Width]
-    mov eax, [eax + Image.Next]
-    push    eax
-    inc esi
-    push    0   ; ypos
-    push    0   ; xpos
-    mov ecx, [procinfo.client_box.height]
-    sub ecx, [toolbar_height]
-    sub ecx, [image_padding]
-    inc ecx
-;    inc ebx
-    push    ecx ; max height
-    push    ebx ; max width
-    push    [draw_y]  ; y
-    push    esi ; x
-    push    eax ; image
-    call    [img.draw]
-    pop eax
-    cmp [eax + Image.Next], 0
-    jnz .afloop
-    ret
+proc find_last_name_component
+        mov     ecx, esi
+    @@:
+        lodsb
+        test    al, al
+        jnz     @b
+    @@:
+        dec     esi
+        cmp     esi, ecx
+        jb      @f
+        cmp     byte[esi], '/'
+        jnz     @b
+    @@:
+        inc     esi
+        mov     [last_name_component], esi
+        ret
+endp
 
 
-check_shortcut:
+proc init_frame _img
+        push    ebx edx
+        mov     eax, [orig_image]
+        cmp     eax, [_img]
+        jz      .exit
+        test    eax, eax
+        jz      .freed
+        cmp     eax, [cur_image]
+        jz      @f
+        invoke  img.destroy, [orig_image]
+    @@:
+        invoke  img.destroy, [cur_image]
+  .freed:
+
+        mov     [bNewImage], 1
+        mov     eax, [_img]
+        mov     [orig_image], eax
+        mov     [cur_image], eax
+        mov     [cur_frame], eax
+        test    byte[eax + Image.Flags], Image.IsAnimated
+        jz      @f
+        push    ebx
+        mcall   SF_SYSTEM_GET, SSF_TIME_COUNT
+        pop     ebx
+        mov     [cur_frame_time], eax
+    @@:
+        mov     [pict.top], 0
+        mov     [pict.left], 0
+  .exit:
+        pop     edx ebx
+        ret
+endp
+
+
+proc draw_window
+        test    [bFirstWinDraw], 1
+        jnz     .min_size_ok
+
+        mcall   SF_THREAD_INFO, procinfo, -1
+        xor     eax, eax
+        mov     edx, -1
+        mov     esi, -1
+        cmp     [procinfo.box.width], MIN_WINDOW_WIDTH
+        ja      @f
+        mov     edx, MIN_WINDOW_WIDTH
+        inc     eax
+    @@:
+        cmp     [procinfo.box.height], MIN_WINDOW_HEIGHT
+        ja      @f
+        mov     esi, MIN_WINDOW_HEIGHT
+        inc     eax
+    @@:
+        test    eax, eax
+        jz      @f
+        mcall   SF_CHANGE_WINDOW, -1, -1, , 
+    @@:
+
+  .min_size_ok:
+        test    [bNewImage], 1
+        jz      @f
+        call    generate_window_header
+    @@:
+        mcall   SF_REDRAW, SSF_BEGIN_DRAW
+        mov     ecx, [window.top]
+        shl     ecx, 16
+        mov     cx, word[window.height]
+        mov     ebx, [window.left]
+        shl     ebx, 16
+        mov     bx, word[window.width]
+        mcall   0, , , [window_style], 0, window_header
+
+        mcall   SF_THREAD_INFO, procinfo, -1
+        test    [procinfo.wnd_state], 0x04
+        jnz     .nodraw
+
+        stdcall copy_box, window, window_prev
+        stdcall copy_box, procinfo.box, window
+        test    [bFirstWinDraw], 1
+        jnz     .recalc
+        test    [bToggleSlideShow], 1
+        jnz     .recalc
+        mov     eax, [window.width]
+        cmp     eax, [window_prev.width]
+        jnz     .recalc
+        mov     eax, [window.height]
+        cmp     eax, [window_prev.height]
+        jnz     .recalc
+        test    [bNewImage], 1
+        jnz     .recalc
+        test    [bToggleToolbar], 1
+        jnz     .recalc
+        jmp     .recalc_done
+
+  .recalc:
+        stdcall recalc_window
+  .recalc_done:
+
+        stdcall draw_client
+  .nodraw:
+        mcall   SF_REDRAW, SSF_END_DRAW
+        mov     [bFirstWinDraw], 0
+        mov     [bNewImage], 0
+        mov     [bToggleToolbar], 0
+        mov     [bToggleSlideShow], 0
+
+        ret
+endp
+
+
+proc draw_view
+        push    ebx esi edi
+        cmp     [scale_mode], LIBIMG_SCALE_FIT_MIN
+        jnz     .scale_none
+        mov     ecx, [cur_frame]
+        mov     eax, [ecx + Image.Width]
+        cmp     eax, [view.width]
+        jnz     .scale
+        mov     eax, [ecx + Image.Height]
+        cmp     eax, [view.height]
+        jnz     .scale
+        jmp     .draw
+  .scale:
+        mov     eax, [orig_image]
+        cmp     eax, [cur_image]
+        jz      @f
+        invoke  img.destroy, [cur_image]
+        mov     eax, [orig_image]
+    @@:
+        invoke  img.scale, eax, 0, 0, [eax + Image.Width], [eax + Image.Height], 0, LIBIMG_SCALE_STRETCH, LIBIMG_INTER_DEFAULT, [view.width], [view.height]
+        test    eax, eax
+;FIXME
+        mov     [cur_image], eax
+        mov     [cur_frame], eax        ; FIXME index
+        jmp     .draw
+
+  .scale_none:
+
+  .draw:
+        push    [pict.top]
+        push    [pict.left]
+        push    [view.height]
+        push    [view.width]
+        push    [view_abs_top]  ; ypos
+        push    [view_abs_left] ; xpos
+        invoke  img.draw, [cur_frame]
+  .done:
+        pop     edi esi ebx
+        ret
+endp
+
+
+proc draw_toolbar
+        push    ebx esi edi
+
+        cmp     [toolbar.height], 0
+        jz      .quit
+        mov     ebx, [toolbar_abs_left]
+        shl     ebx, 16
+        add     ebx, [toolbar.width]
+        inc     ebx
+        mov     ecx, [toolbar_abs_top]
+        shl     ecx, 16
+        add     ecx, [toolbar.height]
+        mcall   13, , , [bg_color]
+        mov     ebx, [toolbar_abs_left]
+        shl     ebx, 16
+        add     ebx, [toolbar_abs_left]
+        add     ebx, [toolbar.width]
+        mov     ecx, [toolbar_abs_top]
+        shl     ecx, 16
+        add     ecx, [toolbar_abs_top]
+        add     ecx, (30 SHL 16) + 30
+        mcall   38, , , 0x007F7F7F
+        mov     ebx, [toolbar_abs_left]
+        shl     ebx, 16
+        add     ebx, [toolbar_abs_left]
+        add     ebx, ((5 + 25 * 1) SHL 16) + (5 + 25 * 1)
+        mov     ecx, [toolbar_abs_top]
+        shl     ecx, 16
+        add     ecx, [toolbar_abs_top]
+        add     ecx, [toolbar.height]
+        mcall
+        add     ebx, ((5 + 25 * 2) SHL 16) + (5 + 25 * 2)
+        mcall
+        add     ebx, ((5 + 25 * 2) SHL 16) + (5 + 25 * 2)
+        mcall
+        mov     ebx, [toolbar_abs_left]
+        add     ebx, [toolbar.width]
+        sub     ebx, 25 * 5 + 10 
+        shl     ebx, 16
+        add     ebx, [toolbar_abs_left]
+        add     ebx, [toolbar.width]
+        sub     ebx, 25 * 5 + 10 
+        mcall
+
+        mov     ebx, [toolbar_abs_left]
+        shl     ebx, 16
+        add     ebx, ((4 + 25 * 0) SHL 16) + 21
+        mov     ecx, [toolbar_abs_top]
+        shl     ecx, 16
+        add     ecx, (4 SHL 16) + 21
+        mcall   SF_DEFINE_BUTTON, , , 'opn'+40000000h
+        add     ebx, (5 + 25 * 1) SHL 16
+        mcall    , , , 'bck'+40000000h
+        add     ebx, (0 + 25 * 1) SHL 16
+        mcall    , , , 'fwd'+40000000h
+        add     ebx, (5 + 25 * 1) SHL 16
+        mcall    , , , 'bgr'+40000000h
+        add     ebx, (0 + 25 * 1) SHL 16
+        mcall    , , , 'sld'+40000000h
+        mov     ebx, [toolbar_abs_left]
+        add     ebx, [toolbar.width]
+        sub     ebx, 25 * 5 + 10 
+        add     ebx, 5
+        shl     ebx, 16
+        mov     bl, 21
+        mcall   , , , 'flh'+40000000h
+        add     ebx, 25 SHL 16
+        mcall   , , , 'flv'+40000000h
+        add     ebx, 30 SHL 16
+        mcall   , , , 'rtr'+40000000h
+        add     ebx, 25 SHL 16
+        mcall   , , , 'rtl'+40000000h
+        add     ebx, 25 SHL 16
+        mcall   , , , 'flb'+40000000h
+
+        mov     ebp, (numimages-1)*20
+
+        mov     edx, [toolbar_abs_left]
+        shl     edx, 16
+        add     edx, [toolbar_abs_top]
+        add     edx, ((5 + 25 * 0) SHL 16) + 5
+        mcall   65, buttons + openbtn    * 20, <20, 20>, , 8, palette
+        add     edx, ((5 + 25 * 1) SHL 16) + 0
+        mcall     , buttons + backbtn    * 20
+        add     edx, ((0 + 25 * 1) SHL 16) + 0
+        mcall     , buttons + forwardbtn * 20
+        add     edx, ((5 + 25 * 1) SHL 16) + 0
+        mcall     , buttons + bgrbtn     * 20
+        add     edx, ((0 + 25 * 1) SHL 16) + 0
+        mcall     , buttons + slidebtn   * 20
+        mov     edx, [client_abs_left]
+        add     edx, [client.width]
+        sub     edx, 25 * 5 + 4
+        shl     edx, 16
+        add     edx, [client_abs_top]
+        add     edx, 5
+        mcall   , buttons+fliphorzbtn*20
+        add     edx, 25 * 65536
+        mcall   , buttons+flipvertbtn*20
+        add     edx, 30 * 65536
+        mcall   , buttons+rotcwbtn*20
+        add     edx, 25 * 65536
+        mcall   , buttons+rotccwbtn*20
+        add     edx, 25 * 65536
+        mcall   , buttons+rot180btn*20
+ 
+  .quit:
+        pop     edi esi ebx
+        ret
+endp
+
+
+proc draw_canvas
+        push    ebx esi edi
+
+        mov     ebx, [canvas_abs_left]
+        shl     ebx, 16
+        add     ebx, [canvas.width]
+        mov     ecx, [canvas_abs_top]
+        shl     ecx, 16
+        add     ecx, [view.top]
+;mov edx, 0xff0000
+        mcall   13, , , [bg_color]
+        mcall   13
+        mov     ecx, [view_abs_top]
+        add     ecx, [view.height]
+        shl     ecx, 16
+        add     ecx, [canvas.height]
+        sub     ecx, [view.top]
+        sub     ecx, [view.height]
+;mov edx, 0x00ff00
+        mcall   13, , , [bg_color]
+        mcall   13
+        mov     ebx, [canvas_abs_left]
+        shl     ebx, 16
+        add     ebx, [view.left]
+        mov     ecx, [canvas_abs_top]
+        shl     ecx, 16
+        add     ecx, [canvas.height]
+;mov edx, 0x0000ff
+;bg_color
+        mcall
+        mov     ebx, [view_abs_left]
+        add     ebx, [view.width]
+        shl     ebx, 16
+        mov     eax, [canvas.width]
+        sub     eax, [view.left]
+        sub     ebx, [view.width]
+        add     ebx, eax
+;mov edx, 0xffff00
+;bg_color
+        mcall   13
+    @@:
+
+        call    draw_view
+
+        pop     edi esi ebx
+        ret
+endp
+
+
+proc draw_client
+        push    ebx esi edi
+
+        test    [bShowToolbar], 1
+        jz      .toolbar_done
+        call    draw_toolbar
+  .toolbar_done:
+        call    draw_work
+
+        pop     edi esi ebx
+        ret
+endp
+
+
+proc draw_work
+        push    ebx esi edi
+
+        mov     ebx, [work_abs_left]
+        shl     ebx, 16
+        add     ebx, [work.width]
+        inc     ebx
+        mov     ecx, [work_abs_top]
+        shl     ecx, 16
+        add     ecx, [canvas.top]
+;        mcall   13, , , 0xff0000
+        mcall   13, , , [bg_color]
+        mov     eax, [canvas.height]
+        ror     ecx, 16
+        add     ecx, eax
+        add     ecx, [canvas_padding]
+        ror     ecx, 16
+;        mcall   13, , , 0x00ff00
+        mcall   13, , , [bg_color]
+;        mcall   13
+
+        mov     ebx, [work_abs_left]
+        shl     ebx, 16
+        add     ebx, [canvas.left]
+        mov     ecx, [work_abs_top]
+        add     ecx, [canvas_padding]
+        shl     ecx, 16
+        add     ecx, [canvas.height]
+;        mcall   13, , , 0x0000ff
+        mcall   13, , , [bg_color]
+;        mcall
+        mov     eax, [canvas.width]
+        ror     ebx, 16
+        add     ebx, eax
+        add     ebx, [canvas_padding]
+        ror     ebx, 16
+;        mcall   13, , , 0xffff00
+        mcall   13, , , [bg_color]
+;        mcall   13
+
+        call    draw_canvas
+        call    draw_onimage_decorations
+
+        mov     eax, 13
+        cmp     [need_scrollbar_v], 1
+        jnz     @f
+        cmp     [need_scrollbar_h], 1
+        jnz     @f
+        mov     ebx, [work_abs_left]
+        add     ebx, [work.width]
+        sub     ebx, SCROLL_WIDTH_SIZE
+        shl     ebx, 16
+        add     ebx, SCROLL_WIDTH_SIZE
+        inc     ebx
+        mov     ecx, [work_abs_top]
+        add     ecx, [work.height]
+        sub     ecx, SCROLL_WIDTH_SIZE
+        shl     ecx, 16
+        add     ecx, SCROLL_WIDTH_SIZE
+        inc     ecx
+        mov     edx, [bg_color]
+;        mov     edx, 0x00ffff
+        mcall
+    @@:
+
+        cmp     [need_scrollbar_v], 0
+        jz      .v_scrollbar_done
+        mov     eax, [client.left]
+        add     eax, [client.width]
+        sub     eax, SCROLL_WIDTH_SIZE
+        mov     [scroll_bar_data_vertical.start_x], ax
+        mov     eax, [toolbar.height]
+        add     eax, [client.top]
+        mov     [scroll_bar_data_vertical.start_y], ax
+        mov     eax, [canvas.height]
+        add     eax, [canvas_padding]
+        add     eax, [canvas_padding]
+        mov     [scroll_bar_data_vertical.size_y], ax
+        mov     [scroll_bar_data_vertical.all_redraw], 1
+        invoke  scrollbar_vert_draw, scroll_bar_data_vertical
+  .v_scrollbar_done:
+
+        cmp     [need_scrollbar_h], 0
+        jz      .h_scrollbar_done
+        mov     eax, [client.left]
+        mov     [scroll_bar_data_horizontal.start_x], ax
+        mov     eax, [client.top]
+        add     eax, [client.height]
+        sub     eax, SCROLL_WIDTH_SIZE
+        mov     [scroll_bar_data_horizontal.start_y], ax
+        mov     eax, [canvas.width]
+        add     eax, [canvas_padding]
+        add     eax, [canvas_padding]
+        mov     [scroll_bar_data_horizontal.size_x], ax
+        mov     [scroll_bar_data_horizontal.all_redraw], 1
+        invoke  scrollbar_hort_draw, scroll_bar_data_horizontal
+  .h_scrollbar_done:
+
+        pop     edi esi ebx
+        ret
+endp
+
+
+proc draw_onimage_decorations
+        bt      [window_style], 25
+        jc      @f
+        ; draw fullscreen decorations on image
+        call    draw_filename
+        call    draw_fullscreen_controls
+    @@:
+        ret
+endp
+
+
+proc draw_filename
+        push    esi
+        mcall   4, <100, 65>, 0x40ffffff, window_header, [window_header_len], 0x008800
+        pop     esi
+        ret
+endp
+
+
+proc draw_fullscreen_controls
+        push    esi
+        mov     ebx, [canvas.width]
+        shr     ebx, 1
+        add     ebx, [canvas.left]
+        sub     ebx, 22
+        shl     ebx, 16
+        add     ebx, 20
+        mov     ecx, [canvas.height]
+        shr     ecx, 3
+        neg     ecx
+        add     ecx, [canvas.height]
+        add     ecx, [canvas.top]
+        shl     ecx, 16
+        add     ecx, 20
+        mcall   8, , , 'bck'+40000000h
+        add     ebx, 25 SHL 16
+        mcall   8, , , 'fwd'+40000000h
+        mov     edx, [canvas.width]
+        shr     edx, 1
+        add     edx, [canvas.left]
+        sub     edx, 22
+        shl     edx, 16
+        add     edx, [canvas.height]
+        shr     dx, 3
+        neg     dx
+        add     dx, word[canvas.height]
+        add     edx, [canvas.top]
+        mcall   65, buttons + backbtn * 20, <20, 20>, , 8, palette
+        add     edx, 25 SHL 16
+        mcall   65, buttons + forwardbtn * 20,      , , 8, 
+        pop     esi
+        ret
+endp
+
+
+proc check_shortcut
 ; in:   cl = scancode (from sysfn 2),
 ;   eax = state of modifiers (from sysfn 66.3),
 ;   edx -> shortcut descriptor
 ; out:  ZF set <=> fail
-    cmp cl, [edx+4]
-    jnz .not
-    push    eax
-    mov esi, [edx]
-    and esi, 0xF
-    and al, 3
-    call    dword [check_modifier_table+esi*4]
-    test    al, al
-    pop eax
-    jnz .not
-    push    eax
-    mov esi, [edx]
-    shr esi, 4
-    and esi, 0xF
-    shr al, 2
-    and al, 3
-    call    dword [check_modifier_table+esi*4]
-    test    al, al
-    pop eax
-    jnz .not
-    push    eax
-    mov esi, [edx]
-    shr esi, 8
-    and esi, 0xF
-    shr al, 4
-    and al, 3
-    call    dword [check_modifier_table+esi*4]
-    test    al, al
-    pop eax
-;   jnz .not
-.not:
-    ret
+        cmp     cl, [edx+4]
+        jnz     .not
+        push    eax
+        mov     esi, [edx]
+        and     esi, 0xf
+        and     al, 3
+        call    dword[check_modifier_table+esi*4]
+        test    al, al
+        pop     eax
+        jnz     .not
+        push    eax
+        mov     esi, [edx]
+        shr     esi, 4
+        and     esi, 0xf
+        shr     al, 2
+        and     al, 3
+        call    dword[check_modifier_table+esi*4]
+        test    al, al
+        pop     eax
+        jnz     .not
+        push    eax
+        mov     esi, [edx]
+        shr     esi, 8
+        and     esi, 0xf
+        shr     al, 4
+        and     al, 3
+        call    dword[check_modifier_table+esi*4]
+        test    al, al
+        pop     eax
+;       jnz     .not
+  .not:
+        ret
+endp
+
 
 check_modifier_0:
-    setnz   al
-    ret
+        setnz   al
+        ret
 check_modifier_1:
-    setp    al
-    ret
+        setp    al
+        ret
 check_modifier_2:
-    cmp al, 3
-    setnz   al
-    ret
+        cmp     al, 3
+        setnz   al
+        ret
 check_modifier_3:
-    cmp al, 1
-    setnz   al
-    ret
+        cmp     al, 1
+        setnz   al
+        ret
 check_modifier_4:
-    cmp al, 2
-    setnz   al
-    ret
+        cmp     al, 2
+        setnz   al
+        ret
 
-; fills real_header with window title
-; window title is generated as '<filename> - Kolibri Image Viewer'
-generate_header:
-    push    eax
-    mov esi, [last_name_component]
-    mov edi, real_header
-@@:
-    lodsb
-    test    al, al
-    jz  @f
-    stosb
-    cmp edi, real_header+256
-    jb  @b
-.overflow:
-    mov dword [edi-4], '...'
-.ret:
-    pop eax
-    ret
-@@:
-    mov esi, s_header
-@@:
-    lodsb
-    stosb
-    test    al, al
-    jz  .ret
-    cmp edi, real_header+256
-    jb  @b
-    jmp .overflow
+; >edi = destination string
+; >eax = number
+proc bin2dec
+        push    ebx ecx edx esi
+
+        mov     ebx, 10
+        xor     ecx, ecx
+    @@:
+        xor     edx, edx
+        div     ebx
+        push    edx
+        inc     ecx
+        test    eax, eax
+        jnz     @b
+
+    @@:
+        pop     eax
+        add     eax, '0'
+        stosb
+        inc     [window_header_len]
+        dec     ecx
+        jnz     @b
+
+        pop     esi edx ecx ebx
+        ret
+endp
+
+
+proc is_root_dir _path
+        push    ecx esi
+
+        mov     esi, [_path]
+        xor     ecx, ecx
+    @@:
+        lodsb
+        test    al, al
+        jz      .done
+        cmp     al, '/'
+        jnz     @b
+        inc     ecx
+        jmp     @b
+  .done:
+        xor     eax, eax
+        cmp     ecx, 3
+        jz      @f
+        mov     eax, -2
+    @@:
+        pop     esi ecx
+        ret
+endp
+
+; fills window_header with window title
+; window title is generated as '[k/n] <filename> - Kolibri Image Viewer'
+; n = total files in dir
+; k = current file index
+proc generate_window_header
+        push    eax ebx esi edi
+        mov     esi, [last_name_component]
+        mov     edi, window_header
+        mov     [window_header_len], 4    ; [,/,], 
+
+        mov     byte[edi], '['
+        inc     edi
+        mov     eax, [cur_file_idx]
+        inc     eax
+        call    bin2dec
+        mov     byte[edi], '/'
+        inc     edi
+        stdcall is_root_dir, path
+        add     eax, [files_num]
+        call    bin2dec
+        mov     word[edi], '] '
+        add     edi, 2
+
+        ; add filename
+  .next_symbol:
+        lodsb
+        test    al, al
+        jz      @f
+        stosb
+        inc     [window_header_len]
+        cmp     edi, window_header+256
+        jb      .next_symbol
+  .overflow:
+        mov     dword[edi-4], '...'
+  .ret:
+        pop     edi esi ebx eax
+        ret
+    @@:
+        mov     esi, s_header
+    @@:
+        lodsb
+        stosb
+        test    al, al
+        jz      .ret
+        cmp     edi, window_header+256
+        jb      @b
+        jmp     .overflow
+endp
+
+
+proc scale_none_calc
+        push    ebx
+
+        mov     [scale_mode], LIBIMG_SCALE_NONE
+
+        mov     eax, [orig_image]
+        mov     [cur_image], eax
+        mov     [cur_frame], eax
+        mov     ebx, eax
+
+        mov     [need_scrollbar_v], 0
+        mov     [need_scrollbar_h], 0
+
+        mov     eax, [ebx + Image.Width]
+        cmp     eax, [canvas.width]
+        jbe     @f
+        sub     [canvas.height], SCROLL_WIDTH_SIZE+1
+        mov     [need_scrollbar_h], 1
+    @@:
+        mov     eax, [ebx + Image.Height]
+        cmp     eax, [canvas.height]
+        jbe     @f
+        sub     [canvas.width], SCROLL_WIDTH_SIZE+1
+        mov     [need_scrollbar_v], 1
+    @@:
+        cmp     [need_scrollbar_h], 1
+        jz      @f
+        mov     eax, [ebx + Image.Width]
+        cmp     eax, [canvas.width]
+        jbe     @f
+        sub     [canvas.height], SCROLL_WIDTH_SIZE+1
+        mov     [need_scrollbar_h], 1
+    @@:
+
+
+        mov     eax, [ebx + Image.Width]
+        cmp     eax, [canvas.width]
+        jbe     @f
+        mov     eax, [canvas.width]
+    @@:
+        mov     [view.width], eax
+        mov     [pict.width], eax
+
+        mov     eax, [ebx + Image.Height]
+        cmp     eax, [canvas.height]
+        jbe     @f
+        mov     eax, [canvas.height]
+    @@:
+        mov     [view.height], eax
+        mov     [pict.height], eax
+
+        mov     eax, [canvas.width]
+        sub     eax, [view.width]
+        sar     eax, 1
+        mov     [view.left], eax
+        mov     eax, [canvas.height]
+        sub     eax, [view.height]
+        sar     eax, 1
+        mov     [view.top], eax
+
+        mov     eax, [ebx + Image.Width]
+        sub     eax, [pict.width]
+        sar     eax, 1
+        mov     [pict.left], eax
+        mov     eax, [ebx + Image.Height]
+        sub     eax, [pict.height]
+        sar     eax, 1
+        mov     [pict.top], eax
+
+
+        mov     eax, [ebx + Image.Height]
+        mov     [scroll_bar_data_vertical.max_area], eax
+        mov     eax, [pict.height]
+        mov     [scroll_bar_data_vertical.cur_area], eax
+        mov     eax, [pict.top]
+        mov     [scroll_bar_data_vertical.position], eax
+
+        mov     eax, [ebx + Image.Width]
+        mov     [scroll_bar_data_horizontal.max_area], eax
+        mov     eax, [pict.width]
+        mov     [scroll_bar_data_horizontal.cur_area], eax
+        mov     eax, [pict.left]
+        mov     [scroll_bar_data_horizontal.position], eax
+
+        pop     ebx
+        ret
+endp
+
+
+proc scale_fit_min_calc
+        push    ebx
+
+        mov     [need_scrollbar_v], 0
+        mov     [need_scrollbar_h], 0
+        mov     [scroll_bar_data_vertical.position], 0
+        mov     [scroll_bar_data_horizontal.position], 0
+
+        mov     eax, [orig_image]
+        cmp     [eax + Image.Type], Image.bpp24
+        jz      @f
+        cmp     [eax + Image.Type], Image.bpp32
+        jz      @f
+        cmp     [eax + Image.Type], Image.bpp8g
+        jz      @f
+        invoke  img.convert, eax, 0, Image.bpp24, 0, 0
+        test    eax, eax
+;       jz      .error
+        push    eax
+        invoke  img.destroy, [orig_image]
+        pop     eax
+        mov     [orig_image], eax
+        mov     [cur_image], eax
+        mov     [cur_frame], eax
+    @@:
+
+        mov     eax, [orig_image]
+        mov     ecx, [eax + Image.Height]
+        mov     eax, [eax + Image.Width]
+        cmp     eax, [canvas.width]
+        ja      .get_size
+        cmp     ecx, [canvas.height]
+        ja      .get_size
+        jmp     .got_size
+  .get_size:
+        invoke  img.get_scaled_size, eax, ecx, LIBIMG_SCALE_FIT_MIN, [canvas.width], [canvas.height]
+  .got_size:
+
+        mov     [pict.top], 0
+        mov     [pict.left], 0
+
+        cmp     eax, [canvas.width]
+        jbe     @f
+        mov     eax, [canvas.width]
+    @@:
+        mov     [view.width], eax
+        mov     [pict.width], eax
+        neg     eax
+        add     eax, [canvas.width]
+        shr     eax, 1
+        mov     [view.left], eax
+
+        mov     eax, ecx
+        cmp     eax, [canvas.height]
+        jbe     @f
+        mov     eax, [canvas.height]
+    @@:
+        mov     [view.height], eax
+        mov     [pict.height], eax
+        neg     eax
+        add     eax, [canvas.height]
+        shr     eax, 1
+        mov     [view.top], eax
+
+
+        pop     ebx
+        ret
+endp
+
+
+proc set_scale_mode _mode
+        push    eax ecx
+        xor     ecx, ecx
+        mov     eax, [_mode]
+
+        cmp     [scale_mode], eax
+        jz      @f
+        mov     [bScaleModeChanged], 1
+        mov     [scale_mode], eax
+    @@:
+        pop     ecx eax
+        ret
+endp
+
+proc move_pictport _dx, _dy
+locals
+        new_left dd ?
+        new_top  dd ?
+endl
+        push    ebx ecx
+
+        mov     ebx, [cur_image]
+  .x:
+        mov     eax, [pict.left]
+        add     eax, [_dx]
+        cmp     eax, 0
+        jge     @f
+        mov     [new_left], 0
+        jmp     .xdone
+    @@:
+        mov     ecx, eax
+        add     eax, [pict.width]
+        cmp     eax, [ebx + Image.Width]
+        ja      @f
+        mov     [new_left], ecx
+        jmp     .xdone
+    @@:
+        mov     eax, [ebx + Image.Width]
+        sub     eax, [pict.width]
+        mov     [new_left], eax
+        jmp     .xdone
+  .xdone:
+
+  .y:
+        mov     eax, [pict.top]
+        add     eax, [_dy]
+        cmp     eax, 0
+        jge     @f
+        mov     [new_top], 0
+        jmp     .ydone
+    @@:
+        mov     ecx, eax
+        add     eax, [pict.height]
+        cmp     eax, [ebx + Image.Height]
+        ja      @f
+        mov     [new_top], ecx
+        jmp     .ydone
+    @@:
+        mov     eax, [ebx + Image.Height]
+        sub     eax, [pict.height]
+        mov     [new_top], eax
+        jmp     .ydone
+  .ydone:
+
+        xor     eax, eax
+        mov     ecx, [new_left]
+        mov     edx, [new_top]
+
+        cmp     ecx, [pict.left]
+        setnz   al
+        shl     eax, 8
+
+        cmp     edx, [pict.top]
+        setnz   al
+
+        mov     [pict.left], ecx
+        mov     [pict.top], edx
+
+        pop     ecx ebx
+        ret
+endp
+
+
+proc update_scrollbars _xxhv
+        mov     eax, [_xxhv]
+
+        test    ah, ah
+        jz      .no_h_scroll
+        push    eax
+        mov     [scroll_bar_data_horizontal.all_redraw], 0
+        mov     eax, [pict.left]
+        mov     [scroll_bar_data_horizontal.position], eax
+        invoke  scrollbar_hort_draw, scroll_bar_data_horizontal
+        pop     eax
+  .no_h_scroll:
+        test    al, al
+        jz      .no_v_scroll
+        push    eax
+        mov     [scroll_bar_data_vertical.all_redraw], 0
+        mov     eax, [pict.top]
+        mov     [scroll_bar_data_vertical.position], eax
+        invoke  scrollbar_vert_draw, scroll_bar_data_vertical
+        pop     eax
+  .no_v_scroll:
+
+        ret
+endp
+
+
+proc merge_icons_to_single_img _img
+        push    ebx esi edi
+
+        mov     edx, [_img]
+        mov     eax, [edx + Image.Width]
+        mov     ecx, [edx + Image.Height]
+  .next:
+        cmp     [edx + Image.Next], 0
+        jz      .got_sizes
+        inc     eax
+        mov     edx, [edx + Image.Next]
+        add     eax, [edx + Image.Width]
+        cmp     ecx, [edx + Image.Height]
+        jae     @f
+        mov     ecx, [edx + Image.Height]
+    @@:
+        jmp     .next
+
+  .got_sizes:
+        invoke  img.create, eax, ecx, Image.bpp32
+        test    eax, eax
+        jz      .error
+        mov     ebx, eax
+
+        mov     eax, [bg_color]
+        mov     edi, [ebx + Image.Data]
+        mov     ecx, [ebx + Image.Width]
+        imul    ecx, [ebx + Image.Height]
+        rep     stosd
+
+        mov     eax, [_img]
+        cmp     [eax + Image.Type], Image.bpp32
+        jz      @f
+        invoke  img.convert, eax, 0, Image.bpp32, 0, 0
+        test    eax, eax
+        jz      .error
+        push    eax
+        invoke  img.destroy, [_img]
+        pop     eax
+    @@:
+        mov     esi, eax
+        xor     edi, edi
+  .next_img:
+        stdcall put_img_on_img, ebx, esi, edi, 0
+        add     edi, [esi + Image.Width]
+        inc     edi
+        cmp     [esi + Image.Next], 0
+        jz      @f
+        mov     esi, [esi + Image.Next]
+        jmp     .next_img
+    @@:
+        invoke  img.destroy, esi
+        mov     eax, ebx
+        jmp     .quit
+
+  .error:
+        xor     eax, eax
+  .quit:
+        pop     edi esi ebx
+        ret
+endp
+
+
+proc put_img_on_img _bottom, _top, _x, _y
+locals
+        img_height dd ?
+endl
+        push    ebx esi edi
+
+        mov     ebx, [_bottom]
+        mov     edx, [_top]
+        mov     eax, [edx + Image.Height]
+        mov     [img_height], eax
+        mov     esi, [edx + Image.Data]
+        mov     edi, [ebx + Image.Data]
+        mov     eax, [_y]
+        imul    eax, [ebx + Image.Width]
+        add     eax, [_x]
+        shl     eax, 2
+        add     edi, eax
+  .next_line:
+        mov     ecx, [edx + Image.Width]
+        rep     movsd
+        mov     eax, [ebx + Image.Width]
+        sub     eax, [edx + Image.Width]
+        shl     eax, 2
+        add     edi, eax
+        dec     [img_height]
+        jnz     .next_line
+
+        pop     edi esi ebx
+        ret
+endp
+
+
+proc copy_box _src, _dst
+        pushad
+
+        mov     esi, [_src]
+        mov     edi, [_dst]
+        mov     ecx, 4
+        rep movsd
+
+        popad
+        ret
+endp
+
+
+proc cmp_box _a, _b
+        pushad
+
+        mov     esi, [_a]
+        mov     edi, [_b]
+        mov     ecx, 4
+        rep cmpsd
+
+        popad
+        ret
+endp
+
+
+proc recalc_client
+        stdcall copy_box, toolbar, toolbar_prev
+        mov     [toolbar.left], 0
+        mov     [toolbar.top], 0
+        mov     eax, [client.width]
+        mov     [toolbar.width], eax
+        mov     [toolbar.height], 0
+        cmp     [bShowToolbar], 1
+        jnz     @f
+        mov     [toolbar.height], TOOLBAR_HEIGHT
+    @@:
+
+        mov     eax, [toolbar.top]
+        add     eax, [client_abs_top]
+        mov     [toolbar_abs_top], eax
+        mov     eax, [toolbar.left]
+        add     eax, [client_abs_left]
+        mov     [toolbar_abs_left], eax
+
+        test    [bFirstWinDraw], 1
+        jnz     .recalc_toolbar
+        stdcall cmp_box, toolbar, toolbar_prev
+        jnz     .recalc_toolbar
+        test    [bNewImage], 1
+        jnz     .recalc_toolbar
+        jmp     .recalc_toolbar_done
+  .recalc_toolbar:
+        stdcall recalc_toolbar
+  .recalc_toolbar_done:
+
+        stdcall copy_box, work, work_prev
+        xor     ecx, ecx
+        test     [bShowToolbar], 1
+        jz      @f
+        mov     ecx, [toolbar.height]
+    @@:
+        mov     eax, ecx
+        mov     [work.top], eax
+        mov     eax, [client.height]
+        sub     eax, ecx
+        mov     [work.height], eax
+        mov     [work.left], 0
+        mov     eax, [client.width]
+        mov     [work.width], eax
+
+        mov     eax, [work.top]
+        add     eax, [client_abs_top]
+        mov     [work_abs_top], eax
+        mov     eax, [work.left]
+        add     eax, [client_abs_left]
+        mov     [work_abs_left], eax
+
+        test    [bFirstWinDraw], 1
+        jnz     .recalc_work
+        test    [bNewImage], 1
+        jnz     .recalc_work
+        stdcall cmp_box, work, work_prev
+        jnz     .recalc_work
+        jmp     .recalc_work_done
+  .recalc_work:
+        stdcall recalc_work
+  .recalc_work_done:
+
+        ret
+endp
+
+
+proc recalc_toolbar
+
+        ret
+endp
+
+
+proc recalc_window
+        stdcall copy_box, client, client_prev
+        test    [bSlideShow], 1
+        jz      .no_slide_show
+  .slide_show:
+        mov     [client.left], 0
+        mov     [client.top], 0
+        mov     eax, [procinfo.box.width]
+        mov     [client.width], eax
+        mov     eax, [procinfo.box.height]
+        mov     [client.height], eax
+        jmp     .calc_abs
+  .no_slide_show:
+        mcall   SF_STYLE_SETTINGS, SSF_GET_SKIN_HEIGHT
+        mov     [client.top], eax
+        neg     eax
+        add     eax, [procinfo.box.height]
+        sub     eax, 5
+        mov     [client.height], eax
+        mov     [client.left], 5
+        mov     eax, [procinfo.box.width]
+        sub     eax, 10
+        mov     [client.width], eax
+
+  .calc_abs:
+        mov     eax, [client.top]
+        mov     [client_abs_top], eax
+        mov     eax, [client.left]
+        mov     [client_abs_left], eax
+
+        stdcall cmp_box, client, client_prev
+        jnz     .recalc_client
+        test    [bNewImage], 1
+        jnz     .recalc_client
+        test    [bToggleToolbar], 1
+        jnz     .recalc_client
+        jmp     .recalc_client_done
+  .recalc_client:
+        stdcall recalc_client
+  .recalc_client_done:
+
+        ret
+endp
+
+
+proc recalc_work
+        stdcall copy_box, canvas, canvas_prev
+        mov     eax, [work.left]
+        add     eax, [canvas_padding]
+        mov     [canvas.left], eax
+        mov     eax, [work.width]
+        sub     eax, [canvas_padding]
+        sub     eax, [canvas_padding]
+        inc     eax
+        mov     [canvas.width], eax
+        mov     eax, [canvas_padding]
+        mov     [canvas.top], eax
+        mov     eax, [work.height]
+        sub     eax, [canvas_padding]
+        sub     eax, [canvas_padding]
+        inc     eax
+        mov     [canvas.height], eax
+
+        mov     eax, [canvas.top]
+        add     eax, [work_abs_top]
+        mov     [canvas_abs_top], eax
+        mov     eax, [canvas.left]
+        add     eax, [work_abs_left]
+        mov     [canvas_abs_left], eax
+
+        test    [bFirstWinDraw], 1
+        jnz     .recalc_canvas
+        test    [bNewImage], 1
+        jnz     .recalc_canvas
+        stdcall cmp_box, canvas, canvas_prev
+        jnz     .recalc_canvas
+        jmp     .recalc_canvas_done
+  .recalc_canvas:
+        stdcall recalc_canvas
+  .recalc_canvas_done:
+        ret
+endp
+
+
+proc recalc_canvas
+        stdcall copy_box, view, view_prev
+        mov     eax, [scale_mode]
+        call    [scale_mode_calc + eax*4]
+
+        mov     eax, [view.top]
+        add     eax, [canvas_abs_top]
+        mov     [view_abs_top], eax
+        mov     eax, [view.left]
+        add     eax, [canvas_abs_left]
+        mov     [view_abs_left], eax
+
+        ret
+endp
+
 ;-----------------------------------------------------------------------------
+DATA
 
-s_header db ' - Kolibri Image Viewer', 0
-wnd_style        dd 0x73FFFFFF
-wnd_x            dd 100
-wnd_y            dd 100
-image_padding    dd 5
-toolbar_height   dd 31
-bg_color         dd 0x00ffffff
+s_header        db ' - Kolibri Image Viewer',0
+window_style    dd 0x53FFFFFF
+window          BOX 101, 144, 529, 324  ; left top width height
+window_prev     BOX 0, 0, 0, 0
+window_save     BOX 0, 0, 0, 0  ; restore after slide show
+client          BOX 0, 0, 0, 0
+client_prev     BOX 0, 0, 0, 0
+client_abs_top  dd ?
+client_abs_left dd ?
+toolbar         BOX 0, 0, 0, 0
+toolbar_prev    BOX 0, 0, 0, 0
+toolbar_abs_top dd ?
+toolbar_abs_left dd ?
+work            BOX 0, 0, 0, 0
+work_prev       BOX 0, 0, 0, 0
+work_abs_top    dd ?
+work_abs_left   dd ?
+canvas          BOX 0, 0, 0, 0
+canvas_prev     BOX 0, 0, 0, 0
+canvas_abs_top  dd ?
+canvas_abs_left dd ?
+view            BOX -1, -1, 0, 0
+view_prev       BOX -1, -1, 0, 0
+view_abs_top    dd ?
+view_abs_left   dd ?
+pict            BOX 0, 0, 0, 0
+canvas_padding  dd 5
+bg_color        dd 0x00ffffff
+scale_mode      dd LIBIMG_SCALE_FIT_MIN
+pict_drag       dd 0
+scroll_v_drag   dd 0
+scroll_h_drag   dd 0
+
+mouse_buttons    dd 0
+mouse_pos        dd 0
+need_scrollbar_v dd 0
+need_scrollbar_h dd 0
+
+pict_moved      dd 0
 
 ;-----------------------------------------------------------------------------
+align   4
+scroll_bar_data_vertical:
+.x:
+.size_x         dw SCROLL_WIDTH_SIZE
+.start_x        dw 1
+.y:
+.size_y         dw 100
+.start_y        dw 0
+.btn_high       dd SCROLL_WIDTH_SIZE
+.type           dd 0    ;+12
+.max_area       dd 100  ;+16
+.cur_area       dd 10   ;+20
+.position       dd 0    ;+24
+.bckg_col       dd 0xAAAAAA     ;+28
+.frnt_col       dd 0xCCCCCC     ;+32
+.line_col       dd 0    ;+36
+.redraw         dd 0    ;+40
+.delta          dw 0    ;+44
+.delta2         dw 0    ;+46
+.run_x:
+.r_size_x       dw 0    ;+48
+.r_start_x      dw 0    ;+50
+.run_y:
+.r_size_y       dw 0    ;+52
+.r_start_y      dw 0    ;+54
+.m_pos          dd 0    ;+56
+.m_pos_2        dd 0    ;+60
+.m_keys         dd 0    ;+64
+.run_size       dd 0    ;+68
+.position2      dd 0    ;+72
+.work_size      dd 0    ;+76
+.all_redraw     dd 0    ;+80
+.ar_offset      dd KEY_MOVE_PIXELS   ;+84
 ;-----------------------------------------------------------------------------
-
+align   4
+scroll_bar_data_horizontal:
+.x:
+.size_x         dw 0    ;+0
+.start_x        dw 0    ;+2
+.y:
+.size_y         dw SCROLL_WIDTH_SIZE    ;+4
+.start_y        dw 0    ;+6
+.btn_high       dd SCROLL_WIDTH_SIZE    ;+8
+.type           dd 0    ;+12
+.max_area       dd 50   ;+16
+.cur_area       dd 50   ;+20
+.position       dd 0    ;+24
+.bckg_col       dd 0xAAAAAA     ;+28
+.frnt_col       dd 0xCCCCCC     ;+32
+.line_col       dd 0    ;+36
+.redraw         dd 0    ;+40
+.delta          dw 0    ;+44
+.delta2         dw 0    ;+46
+.run_x:
+.r_size_x       dw 0    ;+48
+.r_start_x      dw 0    ;+50
+.run_y:
+.r_size_y       dw 0    ;+52
+.r_start_y      dw 0    ;+54
+.m_pos          dd 0    ;+56
+.m_pos_2        dd 0    ;+60
+.m_keys         dd 0    ;+64
+.run_size       dd 0    ;+68
+.position2      dd 0    ;+72
+.work_size      dd 0    ;+76
+.all_redraw     dd 0    ;+80
+.ar_offset      dd KEY_MOVE_PIXELS      ;+84
+;-----------------------------------------------------------------------------
 align 4
 @IMPORT:
 
-library             \
-    libio  , 'libio.obj'  , \
-    libgfx , 'libgfx.obj' , \
-    libimg , 'libimg.obj' , \
-    libini , 'libini.obj' , \
-    sort   , 'sort.obj'   , \
-    proc_lib ,'proc_lib.obj',\
-	libbuf2d, 'buf2d.obj'
+library                           \
+        libgfx  , 'libgfx.obj'  , \
+        libimg  , 'libimg.obj'  , \
+        libini  , 'libini.obj'  , \
+        sort    , 'sort.obj'    , \
+        proc_lib, 'proc_lib.obj', \
+        box_lib , 'box_lib.obj'
 
 
-import  libio             , \
-    libio.init , 'lib_init'   , \
-    file.size  , 'file_size'  , \
-    file.open  , 'file_open'  , \
-    file.read  , 'file_read'  , \
-    file.close , 'file_close'
+import libgfx                         , \
+        libgfx.init  , 'lib_init'     , \
+        gfx.open     , 'gfx_open'     , \
+        gfx.close    , 'gfx_close'    , \
+        gfx.pen.color, 'gfx_pen_color', \
+        gfx.line     , 'gfx_line'
 
-import  libgfx              , \
-    libgfx.init   , 'lib_init'  , \
-    gfx.open      , 'gfx_open'  , \
-    gfx.close     , 'gfx_close' , \
-    gfx.pen.color , 'gfx_pen_color' , \
-    gfx.line      , 'gfx_line'
+import libimg                                     , \
+        libimg.init        , 'lib_init'           , \
+        img.from_file      , 'img_from_file'      , \
+        img.to_rgb2        , 'img_to_rgb2'        , \
+        img.create         , 'img_create'         , \
+        img.flip           , 'img_flip'           , \
+        img.rotate         , 'img_rotate'         , \
+        img.destroy        , 'img_destroy'        , \
+        img.scale          , 'img_scale'          , \
+        img.get_scaled_size, 'img_get_scaled_size', \
+        img.convert        , 'img_convert'        , \
+        img.draw           , 'img_draw'
 
-import  libimg             , \
-    libimg.init , 'lib_init'   , \
-    img.is_img  , 'img_is_img' , \
-    img.to_rgb2 , 'img_to_rgb2', \
-    img.decode  , 'img_decode' , \
-    img.flip    , 'img_flip'   , \
-    img.rotate  , 'img_rotate' , \
-    img.destroy , 'img_destroy', \
-    img.draw    , 'img_draw'
+import libini                               , \
+        ini_get_shortcut, 'ini_get_shortcut', \
+        ini_set_str,      'ini_set_str'
 
-import  libini, \
-    ini_get_shortcut, 'ini_get_shortcut',\
-	ini_set_str, 'ini_set_str'
+import sort                  ,\
+        sort.START, 'START'  ,\
+        SortDir   , 'SortDir',\
+        strcmpi   , 'strcmpi'
 
-import  sort, sort.START, 'START', SortDir, 'SortDir', strcmpi, 'strcmpi'
+import proc_lib                             ,\
+        OpenDialog_Init , 'OpenDialog_init' ,\
+        OpenDialog_Start, 'OpenDialog_start'
 
-import  proc_lib, \
-    OpenDialog_Init, 'OpenDialog_init', \
-    OpenDialog_Start,'OpenDialog_start'
+import box_lib                                   ,\
+        scrollbar_vert_draw , 'scrollbar_v_draw' ,\
+        scrollbar_vert_mouse, 'scrollbar_v_mouse',\
+        scrollbar_hort_draw , 'scrollbar_h_draw' ,\
+        scrollbar_hort_mouse, 'scrollbar_h_mouse'
 
-import  libbuf2d, \
-	buf2d_init, 'lib_init', \
-	buf2d_resize, 'buf2d_resize'
-
-align 4
-buf_0: dd 0
-	dw 0,0
-.w: dd 0
-.h: dd 0,0
-	db 24 ;+20 bit in pixel
-
-bFirstDraw  db  0
-bSlideShow  db  0
-bTglbar     db  0
+bFirstWinDraw     db 1
+bSlideShow        db 0
+bToggleSlideShow  db 0
+bShowToolbar      db 1
+bShowToolbarSave  db 0  ; to restore state when return from slide show
+bToggleToolbar    db 0
+bScaleModeChanged db 0
+bNewImage         db 0
 ;-----------------------------------------------------------------------------
 
 virtual at 0
@@ -1297,8 +2378,8 @@ z = 20 - %
 repeat numimages*5
 load a dword from $ - numimages*20*20 + numimages*20*y + (%-1)*4
 load b dword from $ - numimages*20*20 + numimages*20*z + (%-1)*4
-store dword a at $ - numimages*20*20 + numimages*20*z + (%-1)*4
-store dword b at $ - numimages*20*20 + numimages*20*y + (%-1)*4
+store  dword a at $ - numimages*20*20 + numimages*20*z + (%-1)*4
+store  dword b at $ - numimages*20*20 + numimages*20*y + (%-1)*4
 end repeat
 end repeat
 
@@ -1325,24 +2406,24 @@ check_modifier_table:
 ;---------------------------------------------------------------------
 align 4
 OpenDialog_data:
-.type           dd 0
-.procinfo       dd procinfo ;+4
-.com_area_name      dd communication_area_name ;+8
-.com_area       dd 0 ;+12
-.opendir_pach       dd temp_dir_pach ;+16
-.dir_default_pach   dd communication_area_default_pach ;+20
-.start_path     dd open_dialog_path ;+24
-.draw_window        dd draw_window ;+28
-.status         dd 0 ;+32
-.openfile_pach      dd path  ;openfile_pach ;+36
-.filename_area      dd 0    ;+40
-.filter_area        dd Filter
+.type                   dd 0
+.procinfo               dd procinfo                             ; +4
+.com_area_name          dd communication_area_name              ; +8
+.com_area               dd 0                                    ; +12
+.opendir_path           dd temp_dir_path                        ; +16
+.dir_default_path       dd communication_area_default_path      ; +20
+.start_path             dd open_dialog_path                     ; +24
+.draw_window            dd draw_window                          ; +28
+.status                 dd 0                                    ; +32
+.openfile_path          dd path                                 ; openfile_path ; +36
+.filename_area          dd 0                                    ; +40
+.filter_area            dd Filter
 .x:
-.x_size                 dw 420 ;+48 ; Window X size
-.x_start                dw 10 ;+50 ; Window X position
+.x_size                 dw 420                                  ; +48 ; Window X size
+.x_start                dw 10                                   ; +50 ; Window X position
 .y:
-.y_size                 dw 320 ;+52 ; Window y size
-.y_start                dw 10 ;+54 ; Window Y position
+.y_size                 dw 320                                  ; +52 ; Window y size
+.y_start                dw 10                                   ; +54 ; Window Y position
 
 communication_area_name:
     db 'FFFFFFFF_open_dialog',0
@@ -1353,7 +2434,7 @@ if __nightbuild eq yes
 else
     db '/sys/File Managers/opendial',0
 end if
-communication_area_default_pach:
+communication_area_default_path:
     db '/rd/1',0
 
 Filter:
@@ -1373,63 +2454,94 @@ db 'XCF',0
 db 'PBM',0
 db 'PGM',0
 db 'PNM',0
+db 'PPM',0
 db 'TIF',0
 db 'TIFF',0
 db 'WBMP',0
+db 'WEBP',0
+db 'XBM',0
 .end:
 db 0
 
 draw_window_fake:
     ret
 ;------------------------------------------------------------------------------
+scale_mode_calc dd scale_none_calc, 0, 0, 0, scale_fit_min_calc
+
+scale_none_mod    dd 0
+scale_none_key    dd 13 ; '='
+scale_fit_min_mod dd 0
+scale_fit_min_key dd 17 ; 'w'
+
+move_pictport_left_1_mod dd 0
+move_pictport_left_1_key dd 35 ; 'h'
+move_pictport_left_2_mod dd 0
+move_pictport_left_2_key dd 75 ; arrow left
+
+move_pictport_right_1_mod dd 0
+move_pictport_right_1_key dd 38 ; 'l'
+move_pictport_right_2_mod dd 0
+move_pictport_right_2_key dd 77 ; arrow right
+
+move_pictport_up_1_mod dd 0
+move_pictport_up_1_key dd 37 ; 'k'
+move_pictport_up_2_mod dd 0
+move_pictport_up_2_key dd 72 ; arrow up
+
+move_pictport_down_1_mod dd 0
+move_pictport_down_1_key dd 36 ; 'j'
+move_pictport_down_2_mod dd 0
+move_pictport_down_2_key dd 80 ; arrow down
+
+;shift_left_down_mod
+
+;include_debug_strings
+
 readdir_fileinfo:
     dd  1
     dd  0
     dd  0
 readblocks dd   0
 directory_ptr   dd  0
+curdir          db 1024 dup (?)
 ;------------------------------------------------------------------------------
+
 I_END:
-curdir      rb  1024
-
 align 4
-img_data     dd ?
-img_data_len dd ?
-fh       dd ?
-image        dd ?
-wnd_width   dd  100
-wnd_height  dd  100
-draw_x      dd  ?
-draw_y      dd  ?
-draw_width  dd  ?
-draw_height dd  ?
-last_name_component dd  ?
-cur_file_idx    dd  ?
-cur_frame_time  dd  ?
-cur_frame   dd  ?
+img_data_len    rd 1
+fh              rd 1
+orig_image      rd 1
+cur_image       rd 1
+files_num       rd 1
+cur_file_idx    rd 1
+cur_frame_time  rd 1
+cur_frame       rd 1
 
-next_mod    dd  ?
-next_key    dd  ?
-prev_mod    dd  ?
-prev_key    dd  ?
-slide_mod   dd  ?
-slide_key   dd  ?
-tglbar_mod  dd  ?
-tglbar_key  dd  ?
+next_mod          rd 1
+next_key          rd 1
+prev_mod          rd 1
+prev_key          rd 1
+slide_mod         rd 1
+slide_key         rd 1
+tglbar_mod        rd 1
+tglbar_key        rd 1
 
-toolbar_height_old   rd 1
 
-procinfo    process_information
+last_name_component rd 1
+toolbar.height_old  rd 1
+
+procinfo        process_information
 align 16
-path:       rb  4096  ;1024+16
-real_header rb  256
-@PARAMS rb 4096  ;512
+path            rb 4096
+window_header   rb 256
+window_header_len rd 1
+__params        rb 4096
 ;---------------------------------------------------------------------
 sys_path rb 1024
-temp_dir_pach:
+temp_dir_path:
         rb 4096
 ;---------------------------------------------------------------------
     rb 4096
 stacktop:
 ;---------------------------------------------------------------------
-F_END:
+E_END:
