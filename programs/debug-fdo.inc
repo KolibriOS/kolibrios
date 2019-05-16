@@ -12,6 +12,12 @@
 ;   __DEBUG__ equ 1
 ;   __DEBUG_LEVEL__ equ 5
 
+_esp equ esp
+
+macro put_board {
+        mcall   63
+}
+
 macro debug_func name {
  if used name
   name@of@func equ name
@@ -39,8 +45,8 @@ macro DEBUGS _sign,[_str] {
 
 macro DEBUGS_N _sign,_num,[_str] {
  common
-  pushf
-  pushad
+        pushf
+        pushad
   local ..str,..label,is_str
   is_str = 0
  forward
@@ -49,41 +55,41 @@ macro DEBUGS_N _sign,_num,[_str] {
   end if
  common
   if is_str = 1
-   jmp ..label
+        jmp     ..label
    ..str db _str,0
    ..label:
-   add  esp,4*8+4
-   mov  edx,..str
-   sub  esp,4*8+4
+        mov     edx, ..str
   else
-   mov  edx,_str
+esp equ esp+4*8+4
+        mov     edx, _str
+esp equ _esp
   end if
   if ~_num eq
    if _num eqtype eax
     if _num in <eax,ebx,ecx,edx,edi,ebp,esp>
-     mov esi,_num
+        mov     esi, _num
     else if ~_num eq esi
-     movzx esi,_num
+        movzx   esi, _num
     end if
    else if _num eqtype 0
-    mov esi,_num
+        mov     esi, _num
    else
     local tp
     tp equ 0
     match [_arg],_num \{
-     mov esi,dword[_arg]
+        mov     esi, dword[_arg]
      tp equ 1
     \}
     match =0 =dword[_arg],tp _num \{
-     mov esi,dword[_arg]
+        mov     esi, dword[_arg]
      tp equ 1
     \}
     match =0 =word[_arg],tp _num \{
-     movzx esi,word[_arg]
+        movzx   esi, word[_arg]
      tp equ 1
     \}
     match =0 =byte[_arg],tp _num \{
-     movzx esi,byte[_arg]
+        movzx   esi, byte[_arg]
      tp equ 1
     \}
     match =0,tp \{
@@ -91,11 +97,11 @@ macro DEBUGS_N _sign,_num,[_str] {
     \}
    end if
   else
-   mov esi,0x7FFFFFFF
+        mov     esi, 0x7FFFFFFF
   end if
-  call fdo_debug_outstr
-  popad
-  popf
+        call    fdo_debug_outstr
+        popad
+        popf
 }
 
 macro DEBUGD _sign,_dec {
@@ -111,8 +117,8 @@ macro DEBUGD _sign,_dec {
 }
 
 macro DEBUGD_N _sign,_num,_dec {
- pushf
- pushad
+        pushf
+        pushad
  if (~_num eq)
   if (_dec eqtype eax | _dec eqtype 0)
    'Error: precision allowed only for in-memory variables'
@@ -127,41 +133,43 @@ macro DEBUGD_N _sign,_num,_dec {
  end if
  if _dec eqtype eax
   if _dec in <ebx,ecx,edx,esi,edi,ebp,esp>
-   mov eax,_dec
+        mov     eax, _dec
   else if ~_dec eq eax
    if _sign = 1
-    movsx eax,_dec
+        movsx   eax, _dec
    else
-    movzx eax,_dec
+        movzx   eax, _dec
    end if
   end if
  else if _dec eqtype 0
-  mov eax,_dec
+        mov     eax, _dec
  else
-  add esp,4*8+4
+;  add esp,4*8+4
+esp equ esp+4*8+4
   if _num eq
-   mov eax,dword _dec
+        mov     eax, dword _dec
   else if _num = 1
    if _sign = 1
-    movsx eax,byte _dec
+        movsx   eax, byte _dec
    else
-    movzx eax,byte _dec
+        movzx   eax, byte _dec
    end if
   else if _num = 2
    if _sign = 1
-    movsx eax,word _dec
+        movsx   eax, word _dec
    else
-    movzx eax,word _dec
+        movzx   eax, word _dec
    end if
   else
-   mov eax,dword _dec
+        mov     eax, dword _dec
   end if
-  sub esp,4*8+4
+esp equ _esp
+;  sub esp,4*8+4
  end if
- mov cl,_sign
- call fdo_debug_outdec
- popad
- popf
+        mov     cl, _sign
+        call    fdo_debug_outdec
+        popad
+        popf
 }
 
 macro DEBUGH _sign,_hex {
@@ -177,48 +185,51 @@ macro DEBUGH _sign,_hex {
 }
 
 macro DEBUGH_N _sign,_num,_hex {
- pushf
- pushad
+        pushf
+        pushad
  if (~_num eq) & (~_num in <1,2,3,4,5,6,7,8>)
   'Error: 1..8 are only allowed for precision in %x'
  end if
  if _hex eqtype eax
   if _hex in <eax,ebx,ecx,edx,esi,edi,ebp,esp>
    if ~_hex eq eax
-    mov eax,_hex
+        mov     eax, _hex
    end if
+        mov     edx, 8
   else if _hex in <ax,bx,cx,dx,si,di,bp,sp>
    if ~_hex eq ax
-    movzx eax,_hex
+        movzx   eax, _hex
    end if
-   shl eax,16
    if (_num eq)
-    mov edx,4
+        mov     edx, 4
    end if
   else if _hex in <al,ah,bl,bh,cl,ch,dl,dh>
    if ~_hex eq al
-    movzx eax,_hex
+        movzx   eax, _hex
    end if
-   shl eax,24
    if (_num eq)
-    mov edx,2
+        mov     edx, 2
    end if
   end if
  else if _hex eqtype 0
-  mov eax,_hex
+        mov     eax, _hex
  else
-  add esp,4*8+4
-  mov eax,dword _hex
-  sub esp,4*8+4
+;  add esp,4*8+4
+esp equ esp+4*8+4
+        mov     eax, dword _hex
+esp equ _esp
+;  sub esp,4*8+4
  end if
  if ~_num eq
-  mov edx,_num
+        mov     edx, _num
  else
-  mov edx,8
+  if ~_hex eqtype eax
+        mov     edx, 8
+  end if
  end if
- call fdo_debug_outhex
- popad
- popf
+        call    fdo_debug_outhex
+        popad
+        popf
 }
 
 ;-----------------------------------------------------------------------------
@@ -226,68 +237,72 @@ macro DEBUGH_N _sign,_num,_hex {
 debug_func fdo_debug_outchar
 debug_beginf
         pushad
-        mov     cl,al
-        mov     ebx,1
-        mov     eax,63
-        mcall
+        movzx   ecx, al
+        mov     ebx, 1
+        put_board
         popad
         ret
 debug_endf
 
 debug_func fdo_debug_outstr
 debug_beginf
-        mov     eax,63
-        mov     ebx,1
-  .l1:  dec     esi
+        mov     ebx, 1
+  .l1:
+        dec     esi
         js      .l2
-        mov     cl,[edx]
-        or      cl,cl
+        movzx   ecx, byte[edx]
+        or      cl, cl
         jz      .l2
-        mcall
+        put_board
         inc     edx
         jmp     .l1
-  .l2:  ret
+  .l2:
+        ret
 debug_endf
 
 debug_func fdo_debug_outdec
 debug_beginf
-        or      cl,cl
+        or      cl, cl
         jz      @f
-        or      eax,eax
+        or      eax, eax
         jns     @f
         neg     eax
         push    eax
-        mov     al,'-'
+        mov     al, '-'
         call    fdo_debug_outchar
         pop     eax
-    @@: push    10
-        pop     ecx
+    @@:
+        movi    ecx, 10
         push    -'0'
-  .l1:  xor     edx,edx
+  .l1:
+        xor     edx, edx
         div     ecx
         push    edx
-        test    eax,eax
+        test    eax, eax
         jnz     .l1
-  .l2:  pop     eax
-        add     al,'0'
+  .l2:
+        pop     eax
+        add     al, '0'
         jz      .l3
         call    fdo_debug_outchar
         jmp     .l2
-  .l3:  ret
+  .l3:
+        ret
 debug_endf
 
 debug_func fdo_debug_outhex
   __fdo_hexdigits db '0123456789ABCDEF'
 debug_beginf
-        mov     cl,dl
+        mov     cl, dl
         neg     cl
-        add     cl,8
-        shl     cl,2
-        rol     eax,cl
-  .l1:  rol     eax,4
+        add     cl, 8
+        shl     cl, 2
+        rol     eax, cl
+  .l1:
+        rol     eax, 4
         push    eax
-        and     eax,0x0000000F
-        mov     al,[__fdo_hexdigits+eax]
+        and     eax, 0x0000000F
+        mov     al, [__fdo_hexdigits+eax]
         call    fdo_debug_outchar
         pop     eax
         dec     edx

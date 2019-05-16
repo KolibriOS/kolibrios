@@ -1,12 +1,10 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;                                                              ;;
-;; Copyright (C) KolibriOS team 2004-2015. All rights reserved. ;;
+;; Copyright (C) KolibriOS team 2004-2019. All rights reserved. ;;
 ;; Distributed under terms of the GNU General Public License    ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 $Revision$
-
-_esp equ esp
 
 ;
 ; Formatted Debug Output (FDO)
@@ -21,6 +19,12 @@ _esp equ esp
 ; to be defined:
 ;   __DEBUG__ equ 1
 ;   __DEBUG_LEVEL__ equ 5
+
+_esp equ esp
+
+macro put_board {
+        call    sys_msg_board
+}
 
 macro debug_func name {
  if used name
@@ -243,7 +247,7 @@ debug_beginf
         pushad
         movzx   ecx, al
         mov     ebx, 1
-        call    sys_msg_board
+        put_board
         popad
         ret
 debug_endf
@@ -257,7 +261,7 @@ debug_beginf
         movzx   ecx, byte[edx]
         or      cl, cl
         jz      .l2
-        call    sys_msg_board
+        put_board
         inc     edx
         jmp     .l1
   .l2:
@@ -389,6 +393,17 @@ macro DEBUGF _level,_format,[_arg] {
    __debug_strings equ __debug_strings,_debug_str_,<_format>,..lbl-..f1-1-c2-c3
   end virtual
  end if
+}
+
+macro DEBUGFG _level, _group, _format, [_arg] {
+ common
+  if _group eqtype
+   DEBUGF _level, _format,_arg
+  else
+   if _level >= _group
+    DEBUGF 999, _format,_arg
+   end if
+  end if
 }
 
 macro __include_debug_strings dummy,[_id,_fmt,_len] {
