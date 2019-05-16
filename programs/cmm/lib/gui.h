@@ -145,6 +145,26 @@
 	DrawRectangle3D(x-3, y-3, w+5, h+5, system.color.work_dark, system.color.work_light);
 }
 
+#define DOT_W 37 
+:void DrawFileBox(dword edit_box_pointer, title, btn)
+{
+	dword x,y,w,h,bg,t;
+	ESI = edit_box_pointer;
+	x = ESI.edit_box.left;
+	y = ESI.edit_box.top;
+	w = ESI.edit_box.width+1;
+	h = 22;
+
+	if (ESI.edit_box.flags & 100000000000b) bg = 0xCACACA; else bg = 0xFFFfff;
+	edit_box_draw  stdcall (edit_box_pointer);
+	DrawRectangle3D(x-1, y-1, w+1, h+1, 0xE7E7E7, bg);
+	DrawRectangle(x-2, y-2, w+3, h+3, system.color.work_graph);
+	DrawRectangle3D(x-3, y-3, w+DOT_W+5, h+5, system.color.work_dark, system.color.work_light);
+
+	WriteText(x-2, y-19, 0x90, system.color.work_text, title);
+	DrawCaptButton(x+w+1, y-2, DOT_W, h+3, btn, system.color.work_button, system.color.work_button_text, "...");
+}
+
 :void DrawEditBoxPos(dword x,y, edit_box_pointer)
 {
 	ESI = edit_box_pointer;

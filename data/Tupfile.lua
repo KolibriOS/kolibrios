@@ -334,7 +334,7 @@ tup.append_table(img_files, {
  {"@NOTIFY", PROGS .. "/system/notify3/notify"},
  {"@OPEN", PROGS .. "/system/open/open"},
  {"@TASKBAR", PROGS .. "/system/taskbar/trunk/TASKBAR"},
- {"@SS", PROGS .. "/system/ss/trunk/@ss"},
+ {"@SS", PROGS .. "/system/scrsaver/scrsaver"},
  {"@VOLUME", PROGS .. "/media/volume/volume"},
  {"HACONFIG", PROGS .. "/other/ha/HACONFIG"},
  {"APM", PROGS .. "/system/apm/apm"},
