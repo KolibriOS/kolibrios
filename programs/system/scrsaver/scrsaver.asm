@@ -26,8 +26,8 @@ start:
         mov     [timeout], eax
 
         ; r1647 by Nasarus
-        mcall   66, 4, 57, 0    ; hot key for {Space}
-        mcall   66, 4, 28, 0    ; hot key for {Enter}
+;        mcall   66, 4, 57, 0    ; hot key for {Space}
+;        mcall   66, 4, 28, 0    ; hot key for {Enter}
 
 still:
         mcall   23, [timeout]
@@ -37,10 +37,10 @@ still:
         jnz     still
         mcall
         ; r1647 by Nasarus
-        cmp     al, 2           ; hot key?
-        jnz     still           ; no hotkey, evenets handling go on
-        movzx   edx, ah
-        mcall   72, 1, 2        ; transfer key code to active window after interception
+;        cmp     al, 2           ; hot key?
+;        jnz     still           ; no hotkey, evenets handling go on
+;        movzx   edx, ah
+;        mcall   72, 1, 2        ; transfer key code to active window after interception
         jmp     still
 run_saver:
         invoke  ini.get_str, ini_file, ini_section, ini_key_program, ini_program_buf, ini_program_buf.size, ini_program_default
