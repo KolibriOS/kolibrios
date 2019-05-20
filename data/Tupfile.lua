@@ -421,7 +421,6 @@ tup.append_table(img_files, {
  {"GAMES/15", PROGS .. "/games/15/trunk/15"},
  {"GAMES/FREECELL", PROGS .. "/games/freecell/freecell"},
  {"GAMES/GOMOKU", PROGS .. "/games/gomoku/trunk/gomoku"},
- {"GAMES/KLAVISHA", PROGS .. "/games/klavisha/trunk/klavisha"},
  {"GAMES/LIGHTS", PROGS .. "/games/sq_game/trunk/SQ_GAME"},
  {"GAMES/LINES", PROGS .. "/games/lines/lines"},
  {"GAMES/MSQUARE", PROGS .. "/games/MSquare/trunk/MSquare"},
@@ -554,6 +553,7 @@ tup.append_table(extra_files, {
 -- For russian build, add russian-only programs.
 if build_type == "rus" then tup.append_table(img_files, {
  {"PERIOD", PROGS .. "/other/period/trunk/period"},
+ {"GAMES/KLAVISHA", PROGS .. "/games/klavisha/trunk/klavisha"},
  {"DEVELOP/TESTCON2", PROGS .. "/develop/libraries/console_coff/examples/testcon2_rus"},
 }) else tup.append_table(img_files, {
  {"DEVELOP/TESTCON2", PROGS .. "/develop/libraries/console_coff/examples/testcon2_eng"},

@@ -2391,7 +2391,7 @@ aSlide      db  'SlideShow',0
 aTglbar     db  'ToggleBar',0
 
 inifileeskin db '/sys/settings/eskin.ini',0
-amain       db 'main',0
+amain       db 'bg',0
 aprogram    db 'program',0
 aparam      db 'param',0
 

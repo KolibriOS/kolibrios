@@ -151,14 +151,6 @@ Get_ini:
 @@:
 	mov	[place_attachment],eax
 ;--------------------------------------
-	invoke	ini_get_int,library_path,aFlags,aButtonsStyle,1
-	cmp     eax,2
-	jb      @f
-
-	mov     eax,1
-@@:
-	mov	[button_style],eax
-;--------------------------------------
 	invoke	ini_get_color,library_path,aColors,aMenuButton,0x44aa44
 	mov	[MenuButton_color],eax
 ;--------------------------------------

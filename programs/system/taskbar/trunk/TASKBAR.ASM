@@ -585,8 +585,6 @@ load_libraries l_libs_start,end_l_libs
 
 	call	Get_ini
 
-	mcall	48,1,[button_style]
-
 	mcall	66,4,0,2	; LShift+RShift
 	mcall	66,,,33h	; LCtrl+LShift
 	mcall	66,,88,110h	; Alt+Ctrl+F12

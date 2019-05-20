@@ -93,7 +93,6 @@ clock_enable:		dd 1
 cpu_usage_enable:	dd 1
 chlang_enable:		dd 1
 place_attachment	dd 1
-button_style		dd 1
 ;------------------------------------------------------------------------------
 page_list_enable:	dd 0
 redraw_window_flag	dd 0
@@ -129,7 +128,6 @@ aCpuUsage		db 'CpuUsage',0
 aChangeLang		db 'ChangeLang',0
 aPageList		db 'PageList',0
 aAttachment		db 'Attachment',0
-aButtonsStyle		db 'ButtonsStyle',0
 ;------------------------------------------------------------------------------
 aColors			db 'Colors',0
 aCpuUsageBckgr		db 'CpuUsageBckgr',0
