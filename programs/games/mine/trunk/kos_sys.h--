@@ -14,10 +14,16 @@
 #define RETURN_KEY	13
 #define BACKSPACE_KEY	8
 
+//Button options
+#define BT_DEL      0x80000000
+#define BT_HIDE     0x40000000
+#define BT_NOFRAME  0x20000000
+
 // Color constant
 #define clWhite		0x00ffffff
 #define clGray		0x00808080
 #define clLightGray	0x00c0c0c0
+#define clWhiteGray 0x00E2E2E2
 #define clDarkGray	0x00707070
 #define clBlack		0x00000000
 #define clRed		0x00ff0000

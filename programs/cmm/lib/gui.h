@@ -41,10 +41,13 @@
 
 :void DrawRectangle(dword x,y,w,h,color1)
 {
+	DrawRectangle3D(x,y,w,h,color1,color1);
+	/*
 	DrawBar(x,y,w,1,color1);
 	DrawBar(x,y+h,w,1,color1);
 	DrawBar(x,y,1,h,color1);
 	DrawBar(x+w,y,1,h+1,color1);
+	*/
 }
 
 :void DrawWideRectangle(dword x,y,w,h,boder,color1)

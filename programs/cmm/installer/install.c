@@ -3,8 +3,16 @@
 #include "../lib/io.h"
 #include "../lib/gui.h"
 #include "../lib/copyf.h"
+
 #include "../lib/obj/libini.h"
+#include "../lib/obj/libio.h"
+#include "../lib/obj/libimg.h"
+
 #include "../lib/patterns/restart_process.h"
+
+#ifndef AUTOBUILD
+#include "lang.h--"
+#endif
 
 char logo[] = "
 ████   ████ ██████████ ████   ████ ███████████
@@ -16,14 +24,28 @@ char logo[] = "
 ████   ███  ██████████ ████   ████    █████   
 ";
 
-char intro[] = "Попробуйте новое визуальное оформление Колибри, которое раньше было доступно только в KolibriNext."; 
+#ifdef LANG_RUS
+#define T_INTRO "Попробуйте новое визуальное оформление Колибри, которое раньше было доступно только в KolibriNext."; 
+#define T_INSTALL "Установить"
+#define T_COMPLETE "Установка завершена"
+#define T_EXIT "Выход"
+#else
+#define T_INTRO "Try a new visual design of KolibriOS, which previously was available only in KolibriNext."; 
+#define T_INSTALL "Install"
+#define T_COMPLETE "Install complete"
+#define T_EXIT "Exit"
+#endif
 
 #define B_INSTALL 10
+
+bool install_complete = false;
 
 void main()
 {
 	word btn;
 	load_dll(libini, #lib_init,1);
+	load_dll(libio, #libio_init,1);
+	load_dll(libimg, #libimg_init,1);
 	loop() switch(WaitEventTimeout(300) & 0xFF)
 	{
 		case evButton:
@@ -35,6 +57,10 @@ void main()
 		case evKey:
 			GetKeys();
 			if (key_scancode == SCAN_CODE_ESC) ExitProcess();
+			if (key_scancode == SCAN_CODE_ENTER) {
+				if (install_complete) ExitProcess();
+				else EventInstall();
+			}
 			break;
 		 
 		case evReDraw:
@@ -54,21 +80,31 @@ void draw_window()
 	system.color.get();
 	DefineAndDrawWindow(screen.width-WINW/2,screen.height-WINH/2,
 		WINW+9,WINH+skin_height,0x34,system.color.work,"KolibriN10",0);
-
 	DrawLogo();
+	if (install_complete) DrawInstallComplete(); else DrawIntro();
+}
 
+void DrawIntro()
+{
 	DrawTextViewArea(30, 140, WINW-60, WINH-80, 
-		#intro, -1, system.color.work_text);
-
+		T_INTRO, -1, system.color.work_text);
 	DrawCaptButton(WINW-110/2, WINH-70, 110, 28, B_INSTALL, 
-		0x0092D8, 0xFFFfff, "Установить");
+		0x0092D8, 0xFFFfff, T_INSTALL);
+}
+
+void DrawInstallComplete()
+{
+	DrawIcon32(WINW-32/2, 140, system.color.work, 49);
+	WriteTextCenter(0,185, WINW, system.color.work_text, T_COMPLETE);
+	DrawCaptButton(WINW-110/2, WINH-70, 110, 28, CLOSE_BTN, 
+		0x0092D8, 0xFFFfff, T_EXIT);
 }
 
 void DrawLogo()
 {
 	#define LX -46*6+WINW/2
 	#define LY 25
-	WriteTextLines(LX-1, LY, 0x80, 0x9F87B8, #logo, 9);
+	WriteTextLines(LX-2, LY, 0x80, 0xF497C0, #logo, 9);
 	WriteTextLines(LX+3, LY, 0x80, 0x7ED1E3, #logo, 9);
 
 	pause(1);
@@ -76,9 +112,6 @@ void DrawLogo()
 	WriteTextLines(LX+1, LY, 0x80, 0xEC008C, #logo, 9);
 	WriteTextLines(LX,   LY, 0x80, 0xEC008C, #logo, 9);
 }
-
-
-
 
 void EventInstall()
 {
@@ -92,6 +125,9 @@ void EventInstall()
 	RestartProcessByName("/sys/@docky", SINGLE);
 
 	RunProgram("/sys/media/kiv", "\\S__/kolibrios/res/Wallpapers/Free yourself.jpg");
+
+	install_complete = true;
+	draw_window();
 }
 
 void Operation_Draw_Progress(dword filename) { debug("copying: "); debugln(filename); }

@@ -58,9 +58,10 @@ struct
   byte   nmines;
 } stdmodes[3] = {9,9,10, 16,16,40, 30,16,99}; // {x,y,m}
 
-int XST,             // offset of first pixel X - смещение поля от границы окна
-    YST,
-    ncx,             // number of squares in X  - размер поля
+?define XST 5       // offset of first pixel X - смещение поля от границы окна
+?define YST 28
+
+int ncx,             // number of squares in X  - размер поля
     ncy,
     cmines,          // mines discovered        - количество неоткрытых мин
     initmines,       // number of initial mines - изначальное количество мин
@@ -107,8 +108,6 @@ inline void fastcall mouse_disable()
 void init()
 // Инициализация
 {
-  XST = 10; YST = 52;      // FIELD POSITION IN WINDOW
-
   ECX = mode;
   IF (ECX != 0)
   {
@@ -126,7 +125,7 @@ void init()
   }
 
   xsize = ncx * XPX + XST + XST;
-  ysize = ncy * YPX + YST + XST;
+  ysize = ncy * YPX + YST + XST + sys_get_skin_height() + 4;
 } // init
 
 
@@ -258,7 +257,7 @@ inline void do_mouse(void)
 
     set_mark(x, y, EBX);
 
-    draw_minesi();
+    draw_mines_left();
     draw_square(x, y);
     return;
   }
@@ -287,7 +286,7 @@ inline void do_mouse(void)
           cmines--;
           draw_square(x, y);
         }
-    draw_minesi();
+    draw_mines_left();
   }
 }  // do_mouse
 
@@ -438,31 +437,32 @@ void main()
   {
     switch (sys_wait_event_timeout(100))  // wait for 1 second
     {
-      case evReDraw:
+      CASE evReDraw:
         draw_window();
         continue;
 
-      case evKey:
+      CASE evKey:
         IF (sys_get_key() == 27)
           sys_exit_process();
         continue;
 
-      case evButton:
+      CASE evButton:
         EAX = sys_get_button_id();
         IF (EAX == 911)              // new game
         {
           new_game();
           draw_squares();
           draw_time();
-          draw_minesi();
+          draw_mines_left();
         }
         ELSE IF (EAX == 1001)        // change mode
         {
-          // mode++; mode%=3; mode++;
-          EAX = mode; EAX++; EAX = EAX%3; EAX++; mode = AL;
+          mode++; 
+          if (mode==4) mode=1;
+          //EAX = mode; EAX++; EAX = EAX%3; EAX++; mode = AL;
 
           new_game();
-          window_move_size(OLD,OLD,xsize,ysize);
+          window_move_size(OLD,OLD,xsize+9,ysize);
           CONTINUE;
         }
 //        ELSE IF (EAX == 1002)
