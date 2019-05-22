@@ -1,7 +1,7 @@
 use32
 	org 0
 	db 'MENUET01'
-	dd 1,start,i_end,mem,stacktop,0,sys_path
+	dd 1,start,i_end,mem,stacktop,file_name,sys_path
 
 include '../../macros.inc'
 include '../../proc32.inc'
@@ -14,7 +14,7 @@ include 'cnc_editor.inc'
 include '../../develop/info3ds/info_fun_float.inc'
 
 @use_library_mem mem.Alloc,mem.Free,mem.ReAlloc,dll.Load
-caption db 'CNC editor 30.10.18',0 ;подпись окна
+caption db 'CNC editor 22.05.19',0 ;подпись окна
 
 run_file_70 FileInfoBlock
 
@@ -31,6 +31,18 @@ include 'wnd_new_file.inc'
 
 align 4
 start:
+	;--- copy cmd line ---
+	mov esi,file_name
+	mov edi,openfile_path
+@@:
+	lodsd
+	or eax,eax
+	jz @f ;выход, если 0
+	stosd
+	jmp @b
+@@:
+	stosd
+
 	load_libraries l_libs_start,l_libs_end
 	;проверка на сколько удачно загузилась библиотека
 	mov	ebp,lib_0
@@ -71,7 +83,11 @@ start:
 	mcall SF_SYSTEM_GET,SSF_TIME_COUNT
 	mov [last_time],eax
 
-	;call but_new_file
+	;open file from cmd line
+	cmp dword[openfile_path],0
+	je @f
+		call but_open_file.no_dlg
+	@@:
 
 align 4
 red_win:
@@ -670,13 +686,31 @@ open_file_size dd 0 ;размер открытого файла
 
 align 4
 but_open_file:
-	pushad
 	copy_path open_dialog_name,communication_area_default_path,file_name,0
+	pushad
 	mov [OpenDialog_data.type],0
 	stdcall [OpenDialog_Start],OpenDialog_data
 	cmp [OpenDialog_data.status],2
 	je .end_open_file
 	;код при удачном открытии диалога
+	jmp .end0
+.no_dlg: ;если минуем диалог открытия файла
+		pushad
+		mov esi,openfile_path
+		stdcall str_len,esi
+		add esi,eax
+		@@: ;цикл для поиска начала имени файла
+			dec esi
+			cmp byte[esi],'/'
+			je @f
+			cmp byte[esi],0x5c ;'\'
+			je @f
+			cmp esi,openfile_path
+			jg @b
+		@@:
+		inc esi
+		stdcall [OpenDialog_Set_file_name],OpenDialog_data,esi ;копируем имя файла в диалог сохранения
+	.end0:
 
 	mov [run_file_70.Function], SSF_GET_INFO
 	mov [run_file_70.Position], 0
@@ -729,6 +763,7 @@ endl
 	pushad
 	copy_path open_dialog_name,communication_area_default_path,file_name,0
 	mov [OpenDialog_data.type],1
+	stdcall [OpenDialog_Set_file_ext],OpenDialog_data,Filter.1 ;.nc
 	stdcall [OpenDialog_Start],OpenDialog_data
 	cmp [OpenDialog_data.status],2
 	je .end_save_file
@@ -933,9 +968,10 @@ but_save_png:
 	.beg0:
 	copy_path open_dialog_name,communication_area_default_path,file_name,0
 	mov [OpenDialog_data.type],1
+	stdcall [OpenDialog_Set_file_ext],OpenDialog_data,Filter.2 ;.png
 	stdcall [OpenDialog_Start],OpenDialog_data
-	cmp [OpenDialog_data.status],2
-	je .end_save_file
+	cmp [OpenDialog_data.status],1
+	jne .end_save_file
 		;код при удачном открытии диалога
 		mov dword[png_data],0
 
@@ -2019,37 +2055,46 @@ communication_area_default_path:
 
 Filter:
 dd Filter.end - Filter ;.1
-.1:
-db 'NC',0
-db 'PNG',0
+.1: db 'NC',0
+.2: db 'PNG',0
 .end:
 db 0
 
 
-
-head_f_i:
-head_f_l db 'Системная ошибка',0
-
+align 4
 system_dir_0 db '/sys/lib/'
 lib_name_0 db 'proc_lib.obj',0
-err_message_found_lib_0 db 'Не найдена библиотека ',39,'proc_lib.obj',39,0
-err_message_import_0 db 'Ошибка при импорте библиотеки ',39,'proc_lib.obj',39,0
-
 system_dir_1 db '/sys/lib/'
 lib_name_1 db 'libimg.obj',0
-err_message_found_lib_1 db 'Не найдена библиотека ',39,'libimg.obj',39,0
-err_message_import_1 db 'Ошибка при импорте библиотеки ',39,'libimg.obj',39,0
-
 system_dir_2 db '/sys/lib/'
 lib_name_2 db 'buf2d.obj',0
-err_msg_found_lib_2 db 'Не найдена библиотека ',39,'buf2d.obj',39,0
-err_msg_import_2 db 'Ошибка при импорте библиотеки ',39,'buf2d',39,0
-
 system_dir_3 db '/sys/lib/'
 lib_name_3 db 'box_lib.obj',0
-err_msg_found_lib_3 db 'Не найдена библиотека ',39,'box_lib.obj',39,0
-err_msg_import_3 db 'Ошибка при импорте библиотеки ',39,'box_lib',39,0
 
+head_f_i:
+if lang eq ru
+	head_f_l db '"Системная ошибка',0
+	err_message_found_lib_0 db 'Не найдена библиотека ',39,'proc_lib.obj',39,'" -tE',0
+	err_message_import_0 db 'Ошибка при импорте библиотеки ',39,'proc_lib.obj',39,'" -tW',0
+	err_message_found_lib_1 db 'Не найдена библиотека ',39,'libimg.obj',39,'" -tE',0
+	err_message_import_1 db 'Ошибка при импорте библиотеки ',39,'libimg.obj',39,'" -tW',0
+	err_msg_found_lib_2 db 'Не найдена библиотека ',39,'buf2d.obj',39,'" -tE',0
+	err_msg_import_2 db 'Ошибка при импорте библиотеки ',39,'buf2d',39,'" -tW',0
+	err_msg_found_lib_3 db 'Не найдена библиотека ',39,'box_lib.obj',39,'" -tE',0
+	err_msg_import_3 db 'Ошибка при импорте библиотеки ',39,'box_lib',39,'" -tW',0
+else
+	head_f_l db '"System error',0
+	err_message_found_lib_0 db 'Sorry I cannot found library ',39,'proc_lib.obj',39,'" -tE',0
+	err_message_import_0 db 'Error on load import library ',39,'proc_lib.obj',39,'" -tW',0
+	err_message_found_lib_1 db 'Sorry I cannot found library ',39,'libimg.obj',39,'" -tE',0
+	err_message_import_1 db 'Error on load import library ',39,'libimg.obj',39,'" -tW',0
+	err_msg_found_lib_2 db 'Sorry I cannot found library ',39,'buf2d.obj',39,'" -tE',0
+	err_msg_import_2 db 'Error on load import library ',39,'buf2d',39,'" -tW',0
+	err_msg_found_lib_3 db 'Sorry I cannot found library ',39,'box_lib.obj',39,'" -tE',0
+	err_msg_import_3 db 'Error on load import library ',39,'box_lib',39,'" -tW',0
+end if
+
+align 4
 l_libs_start:
 	lib_0 l_libs lib_name_0, sys_path, file_name, system_dir_0,\
 		err_message_found_lib_0, head_f_l, proclib_import,err_message_import_0, head_f_i
@@ -2057,7 +2102,7 @@ l_libs_start:
 		err_message_found_lib_1, head_f_l, import_libimg, err_message_import_1, head_f_i
 	lib_2 l_libs lib_name_2, sys_path, library_path, system_dir_2,\
 		err_msg_found_lib_2,head_f_l,import_buf2d,err_msg_import_2,head_f_i
-	lib_3 l_libs lib_name_3, sys_path, file_name,  system_dir_3,\
+	lib_3 l_libs lib_name_3, sys_path, file_name, system_dir_3,\
 		err_msg_found_lib_3, head_f_l, import_box_lib,err_msg_import_3,head_f_i
 l_libs_end:
 
@@ -2112,9 +2157,13 @@ align 4
 proclib_import: ;описание экспортируемых функций
 	OpenDialog_Init dd aOpenDialog_Init
 	OpenDialog_Start dd aOpenDialog_Start
+	OpenDialog_Set_file_name dd aOpenDialog_Set_file_name
+	OpenDialog_Set_file_ext dd aOpenDialog_Set_file_ext
 dd 0,0
 	aOpenDialog_Init db 'OpenDialog_init',0
 	aOpenDialog_Start db 'OpenDialog_start',0
+	aOpenDialog_Set_file_name db 'OpenDialog_set_file_name',0
+	aOpenDialog_Set_file_ext db 'OpenDialog_set_file_ext',0
 
 align 4
 import_buf2d:
