@@ -118,6 +118,7 @@ PROP_BIT_SELECT    equ 30 ;точка под выделением
 
 align 4
 zoom_plus dq 1.25992105
+opt_koef dq 0.02 ;коеф. для оптимизации (чем ближе к 0, тем прямее линия)
 mouse_prop_x dd 0 ;курсор мыши относительно центра окна buf_0 (для измен. масштаба)
 mouse_prop_y dd 0
 mouse_down_x dd 0 ;курсор мыши относительно левого верхнего угла окна buf_0 (для сдвига фигуры)
@@ -1525,6 +1526,72 @@ proc sel_points_invert_bit uses eax ebx ecx, pFig:dword, iBit:dword
 	ret
 endp
 
+;description:
+; оптимизация фигуры, выделяет лишние точки (1-я и последняя точки не учитываются)
+align 4
+proc points_optimize uses eax ebx ecx, pFig:dword
+	mov ebx,[pFig]
+	mov ecx,[ebx+Figure.PoiCount]
+	cmp ecx,3
+	jl .no_point
+	sub ecx,2 ;отнимаем точки которые не учитываются
+	stdcall sel_points_clear,ebx
+	mov ebx,[ebx+Figure.PoiData]
+	finit
+	.cycle0:
+		;calc (x0-x1)/(x0-x2)
+		fld qword[ebx+Point.CoordX]
+		add ebx,sizeof.Point
+		fcom qword[ebx+Point.CoordX]
+		fstsw ax
+		sahf
+		jne @f
+			fcomp qword[ebx+sizeof.Point+Point.CoordX]
+			fstsw ax
+			sahf
+			jne .no_sel ;if( (x0==x1) && (x0!=x2) )
+			jmp .sel    ;if( x0==x1==x2 )
+		@@:
+		fld st0
+		fsub qword[ebx+Point.CoordX]
+		fxch st1
+		fsub qword[ebx+sizeof.Point+Point.CoordX]
+		fdivp
+
+		;calc (y0-y1)/(y0-y2)
+		fld qword[ebx-sizeof.Point+Point.CoordY]
+		fcom qword[ebx+Point.CoordY]
+		fstsw ax
+		sahf
+		jne @f
+			fcomp qword[ebx+sizeof.Point+Point.CoordY]
+			fstsw ax
+			ffree st0 ;free (x0-x1)/(x0-x2)
+			fincstp
+			sahf
+			jne .no_sel ;if( (y0==y1) && (y0!=y2) )
+			jmp .sel    ;if( y0==y1==y2 )
+		@@:
+		fld st0
+		fsub qword[ebx+Point.CoordY]
+		fxch st1
+		fsub qword[ebx+sizeof.Point+Point.CoordY]
+		fdivp
+
+		fsubp
+		fabs
+		fcomp qword[opt_koef] ;if( abs((x0-x1)/(x0-x2)-(y0-y1)/(y0-y2)) > 0.02)
+		fstsw ax
+		sahf
+		jae .no_sel
+		.sel:
+			bts dword[ebx+Point.Prop],PROP_BIT_SELECT
+		.no_sel:
+		loop .cycle0
+	.no_point:
+	ret
+endp
+
 ;input:
 ; pPoi - указатель на данные точки
 align 4
@@ -1565,9 +1632,7 @@ proc mouse_left_d uses eax ebx
 	cmp [eax+Figure.OType],'Fig'
 	je @f
 	cmp [eax+Figure.OType],'Obj'
-	je .end0
-		jmp .end_f
-	.end0:
+	jne .end_f
 		mov eax,ObjData
 	@@:
 	call buf_get_mouse_coord
@@ -1588,9 +1653,7 @@ proc mouse_left_u uses eax ebx ecx
 	cmp [eax+Figure.OType],'Fig'
 	je @f
 	cmp [eax+Figure.OType],'Obj'
-	je .end0
-		jmp .end_f
-	.end0:
+	jne .end_f
 		mov eax,ObjData
 	@@:
 	mov ecx,eax

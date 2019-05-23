@@ -14,7 +14,7 @@ include 'cnc_editor.inc'
 include '../../develop/info3ds/info_fun_float.inc'
 
 @use_library_mem mem.Alloc,mem.Free,mem.ReAlloc,dll.Load
-caption db 'CNC editor 22.05.19',0 ;подпись окна
+caption db 'CNC editor 23.05.19',0 ;подпись окна
 
 run_file_70 FileInfoBlock
 
@@ -410,23 +410,25 @@ pushad
 	mcall ,,,14 ;align sel points top
 	add ebx,25 shl 16
 	mcall ,,,15 ;align sel points bottom
-
 	add ebx,25 shl 16
-	mcall ,,,16 ;copy to clipboard
-	add ebx,25 shl 16
-	mcall ,,,17 ;paste from clipboard
-
-	add ebx,25 shl 16
-	mcall ,,,18 ;sel points del
+	mcall ,,,16 ;optimize figure
 
 	add ebx,30 shl 16
-	mcall ,,,19 ;restore zoom
-
-	add ebx,30 shl 16
-	mcall ,,,20 ;.png
+	mcall ,,,17 ;copy to clipboard
+	add ebx,25 shl 16
+	mcall ,,,18 ;paste from clipboard
 
 	add ebx,25 shl 16
-	mcall ,,,21 ;options scale
+	mcall ,,,19 ;sel points del
+
+	add ebx,30 shl 16
+	mcall ,,,20 ;restore zoom
+
+	add ebx,30 shl 16
+	mcall ,,,21 ;.png
+
+	add ebx,25 shl 16
+	mcall ,,,22 ;options scale
 
 	; *** рисование иконок на кнопках ***
 	mcall SF_PUT_IMAGE,[image_data_toolbar],(16 shl 16)+16,(7 shl 16)+7 ;icon new
@@ -469,7 +471,10 @@ pushad
 	add edx,(25 shl 16) ;aling sel points bottom
 	int 0x40
 	add ebx,IMAGE_TOOLBAR_ICON_SIZE
-	add edx,(25 shl 16) ;copy to clipboard
+	add edx,(25 shl 16) ;optimize figure
+	int 0x40
+	add ebx,IMAGE_TOOLBAR_ICON_SIZE
+	add edx,(30 shl 16) ;copy to clipboard
 	int 0x40
 	add ebx,IMAGE_TOOLBAR_ICON_SIZE
 	add edx,(25 shl 16) ;paste from clipboard
@@ -627,36 +632,41 @@ button:
 	@@:
 	cmp ah,16
 	jne @f
-		call but_clipboard_copy_points
+		call but_points_optimize
 		jmp still
 	@@:
 	cmp ah,17
 	jne @f
-		call but_clipboard_paste_points
+		call but_clipboard_copy_points
 		jmp still
 	@@:
 	cmp ah,18
 	jne @f
-		call but_sel_points_del
+		call but_clipboard_paste_points
 		jmp still
 	@@:
 	cmp ah,19
 	jne @f
-		call but_restore_zoom
+		call but_sel_points_del
 		jmp still
 	@@:
 	cmp ah,20
 	jne @f
-		call but_save_png
+		call but_restore_zoom
 		jmp still
 	@@:
 	cmp ah,21
+	jne @f
+		call but_save_png
+		jmp still
+	@@:
+	cmp ah,22
 	jne @f
 		call but_dlg_opt_scale
 		jmp still
 	@@:
 
-	;cmp ah,22
+	;cmp ah,23
 	;jne @f
 		;call but_...
 		;jmp still
@@ -1814,6 +1824,21 @@ align 4
 	mov dword[offs_last_timer],0
 	.no_point:
 popad
+	ret
+endp
+
+;description:
+; оптимизация фигуры
+align 4
+proc but_points_optimize uses eax
+	stdcall [tl_node_get_data],tree1
+	or eax,eax
+	jz .no_point
+	cmp [eax+Figure.OType],'Fig'
+	jne .no_point
+		stdcall points_optimize,eax
+		mov dword[offs_last_timer],0 ;для обновления по таймеру
+	.no_point:
 	ret
 endp
 

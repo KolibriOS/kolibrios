@@ -301,9 +301,11 @@ button_n_file:
 			stdcall clear_object_in_list, eax
 		@@:
 		stdcall [tl_info_clear], tree1 ;очистка списка объектов
+		and dword[tree1.style],not tl_cursor_pos_limited
 		mov dword[offs_last_timer],0
 
 		stdcall ObjectCreate,ObjData
+		or dword[tree1.style], tl_cursor_pos_limited
 		stdcall [tl_cur_beg], tree1
 
 		mov dword[offs_last_timer],0 ;для обновления блока в таймере
