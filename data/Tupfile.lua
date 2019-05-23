@@ -529,7 +529,6 @@ tup.append_table(extra_files, {
  {"kolibrios/demos/buddhabrot", PROGS .. "/demos/buddhabrot/trunk/buddhabrot"},
  {"kolibrios/demos/life3", PROGS .. "/games/life3/trunk/life3"},
  {"kolibrios/demos/qjulia", PROGS .. "/demos/qjulia/trunk/qjulia"},
- {"kolibrios/develop/utils/GenFiles", PROGS .. "/testing/genfiles/GenFiles"},
  {"kolibrios/games/Almaz", PROGS .. "/games/almaz/almaz"},
  {"kolibrios/games/arcanii", PROGS .. "/games/arcanii/trunk/arcanii"},
  {"kolibrios/games/bomber/bomber", PROGS .. "/games/bomber/bomber"},
@@ -575,6 +574,9 @@ tup.append_table(img_files, {
  {"DEVELOP/MSTATE", PROGS .. "/develop/mstate/mstate"},
  {"GAMES/C4", PROGS .. "/games/c4/trunk/c4"},
  {"MEDIA/FILLSCR", PROGS .. "/media/FillScr/fillscr"},
+})
+tup.append_table(extra_files, {
+ {"kolibrios/develop/utils/GenFiles", PROGS .. "/testing/genfiles/GenFiles"},
 })
 end -- tup.getconfig('NO_NASM') ~= 'full'
 
