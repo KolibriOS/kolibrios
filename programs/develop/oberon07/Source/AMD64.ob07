@@ -666,6 +666,7 @@ VAR
     reg:        INTEGER;
     max:        INTEGER;
     loop:       INTEGER;
+    param2:     INTEGER;
 
 BEGIN
     loop := 1;
@@ -730,8 +731,35 @@ BEGIN
 
         |CODE.opCALL, CODE.opCALLP, CODE.opCALLI,
          CODE.opWIN64CALL, CODE.opWIN64CALLP, CODE.opWIN64CALLI,
-         CODE.opSYSVCALL, CODE.opSYSVCALLP, CODE.opSYSVCALLI:
+         CODE.opSYSVCALL, CODE.opSYSVCALLP, CODE.opSYSVCALLI,
+
+         CODE.opSAVES, CODE.opRSET, CODE.opRSETR,
+         CODE.opRSETL, CODE.opRSET1,
+         CODE.opEQS .. CODE.opGES,
+         CODE.opEQS2 .. CODE.opGES2,
+         CODE.opEQSW .. CODE.opGESW,
+         CODE.opEQSW2 .. CODE.opGESW2,
+         CODE.opCOPY, CODE.opMOVE, CODE.opCOPYA,
+         CODE.opCOPYS, CODE.opCOPYS2, CODE.opROT,
+         CODE.opNEW, CODE.opDISP, CODE.opISREC,
+         CODE.opIS, CODE.opTYPEGR, CODE.opTYPEGP,
+         CODE.opCASET, CODE.opDIV,
+         CODE.opDIVL, CODE.opMOD,
+         CODE.opMODL, CODE.opLENGTH, CODE.opLENGTHW:
             leaf := FALSE
+
+        |CODE.opDIVR, CODE.opMODR:
+            param2 := cur.param2;
+            IF param2 >= 1 THEN
+                param2 := X86.log2(param2)
+            ELSIF param2 <= -1 THEN
+                param2 := X86.log2(-param2)
+            ELSE
+                param2 := -1
+            END;
+            IF param2 < 0 THEN
+                leaf := FALSE
+            END
 
         ELSE
 
@@ -1425,6 +1453,14 @@ BEGIN
             ELSE
                 ASSERT(R.top + 1 <= n);
                 PushAll(n)
+            END   
+            
+        |CODE.opACC:
+            IF (R.top # 0) OR (R.stk[0] # rax) THEN
+                PushAll(0);
+                GetRegA;
+                pop(rax);
+                DEC(R.pushed)
             END
 
         |CODE.opJNZ:

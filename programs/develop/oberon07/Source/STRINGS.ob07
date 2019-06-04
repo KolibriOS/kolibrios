@@ -1,7 +1,7 @@
 ﻿(*
     BSD 2-Clause License
 
-    Copyright (c) 2018, Anton Krotov
+    Copyright (c) 2018, 2019, Anton Krotov
     All rights reserved.
 *)
 
@@ -255,19 +255,19 @@ BEGIN
         |0C1X..0DFX:
             u := LSL(ORD(c) - 0C0H, 6);
             IF i + 1 < srclen THEN
-                u := u + ROR(LSL(ORD(src[i + 1]), 26), 26);
-                INC(i)
+                INC(i);
+                INC(u, ORD(BITS(ORD(src[i])) * {0..5}))
             END
 
         |0E1X..0EFX:
             u := LSL(ORD(c) - 0E0H, 12);
-            IF i + 1 < srclen THEN
-                u := u + ROR(LSL(ORD(src[i + 1]), 26), 20);
-                INC(i)
+            IF i + 1 < srclen THEN    
+                INC(i);
+                INC(u, ORD(BITS(ORD(src[i])) * {0..5}) * 64)
             END;
             IF i + 1 < srclen THEN
-                u := u + ROR(LSL(ORD(src[i + 1]), 26), 26);
-                INC(i)
+                INC(i);   
+                INC(u, ORD(BITS(ORD(src[i])) * {0..5}))
             END
 (*
         |0F1X..0F7X:

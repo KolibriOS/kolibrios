@@ -1860,7 +1860,8 @@ VAR
 
                     IF e.obj = eCONST THEN
                         CODE.AddCmd(CODE.opCONST, ORD(ARITH.getBool(e.value)))
-                    END;
+                    END;            
+                    CODE.AddCmd0(CODE.opACC);
                     CODE.AddJmpCmd(CODE.opJZ, label);
                     CODE.drop
                 END
@@ -1983,7 +1984,8 @@ VAR
                     e.obj := eEXPR;
                     IF e1.obj = eCONST THEN
                         CODE.AddCmd(CODE.opCONST, ORD(ARITH.getBool(e1.value)))
-                    END
+                    END;
+                    CODE.AddCmd0(CODE.opACC)
                 END
 
             END
@@ -2055,7 +2057,8 @@ VAR
 
                     IF e.obj = eCONST THEN
                         CODE.AddCmd(CODE.opCONST, ORD(ARITH.getBool(e.value)))
-                    END;
+                    END;         
+                    CODE.AddCmd0(CODE.opACC);
                     CODE.AddJmpCmd(CODE.opJNZ, label);
                     CODE.drop
                 END
@@ -2122,7 +2125,8 @@ VAR
                     e.obj := eEXPR;
                     IF e1.obj = eCONST THEN
                         CODE.AddCmd(CODE.opCONST, ORD(ARITH.getBool(e1.value)))
-                    END
+                    END;
+                    CODE.AddCmd0(CODE.opACC)
                 END
 
             END

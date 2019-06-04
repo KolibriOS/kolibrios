@@ -308,6 +308,12 @@ BEGIN
 END setcc;
 
 
+PROCEDURE xor (reg1, reg2: INTEGER);
+BEGIN
+    OutByte2(31H, 0C0H + reg2 * 8 + reg1) // xor reg1, reg2
+END xor;
+
+
 PROCEDURE drop;
 BEGIN
     REG.Drop(R)
@@ -937,7 +943,7 @@ BEGIN
             ELSIF a = -1 THEN
                 neg(reg1)
             ELSIF a = 0 THEN
-                OutByte2(31H, 0C0H + reg1 * 9) // xor reg1, reg1
+                xor(reg1, reg1)
             ELSE
                 IF n > 0 THEN
                     IF a < 0 THEN
@@ -1080,7 +1086,7 @@ BEGIN
                 reg1 := REG.GetAnyReg(R);
                 setcc(cc + 16, reg1);
                 andrc(reg1, 1)
-            END;
+            END
 
         |CODE.opGT, CODE.opGE, CODE.opLT,
          CODE.opLE, CODE.opEQ, CODE.opNE:
@@ -1128,6 +1134,14 @@ BEGIN
                 setcc(setne, reg1)
             END;
             andrc(reg1, 1)
+            
+        |CODE.opACC:
+            IF (R.top # 0) OR (R.stk[0] # eax) THEN
+                PushAll(0);
+                GetRegA;
+                pop(eax);
+                DEC(R.pushed)
+            END
 
         |CODE.opDROP:
             UnOp(reg1);
@@ -1344,7 +1358,7 @@ BEGIN
 
         |CODE.opDIVS:
             BinOp(reg1, reg2);
-            OutByte2(31H, 0C0H + reg2 * 8 + reg1); // xor reg1, reg2
+            xor(reg1, reg2);
             drop
 
         |CODE.opDIVSC:
@@ -1478,7 +1492,7 @@ BEGIN
             BinOp(reg1, reg2);
             cmprc(reg1, 32);
             OutByte2(72H, 4); // jb L
-            OutByte2(31H, 0C0H + reg1 * 9); // xor reg1, reg1
+            xor(reg1, reg1);
             jmp(label);
             //L:
             OutByte3(0FH, 0A3H, 0C0H + reg2 + 8 * reg1); // bt reg2, reg1
@@ -1493,7 +1507,7 @@ BEGIN
             reg2 := REG.GetAnyReg(R);
             cmprc(reg1, 32);
             OutByte2(72H, 4); // jb L
-            OutByte2(31H, 0C0H + reg1 * 9); // xor reg1, reg1
+            xor(reg1, reg1);
             jmp(label);
             //L:
             movrc(reg2, param2);
@@ -1631,7 +1645,7 @@ BEGIN
 
             IF ABS(a) = 1 THEN
                 UnOp(reg1);
-                OutByte2(31H, 0C0H + reg1 * 9) // xor reg1, reg1
+                xor(reg1, reg1)
             ELSE
                 IF n > 0 THEN
                     UnOp(reg1);
@@ -2226,8 +2240,8 @@ BEGIN
         push(esp)
     ELSE
         pushc(0)
-    END;  
-    
+    END;
+
     IF pic THEN
         reg1 := REG.GetAnyReg(R);
         Pic(reg1, BIN.PICCODE, entry);
