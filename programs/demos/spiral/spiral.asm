@@ -285,16 +285,18 @@ endp
 proc waiting
         fld     [max_frame_rate]
         fld     [instant]
-        fcomip  st1
-        fstp    st0
-        jna     @f
+        fcompp
+        fstsw   ax
+        sahf
+        jc      @f
         inc     [sleep_time]
         jmp     .end
     @@:
         fld     [min_frame_rate]
         fld     [instant]
-        fcomip  st1
-        fstp    st0
+        fcompp
+        fstsw   ax
+        sahf
         jnc     .end
         cmp     [sleep_time], 0
         jz      .end
@@ -372,7 +374,7 @@ start:
         mcall   26, 9
         mov     [frame_start], eax
   .still:
-	mcall	11
+        mcall   11
         dec     eax
         js      .draw_spiral    ; no event
         jnz     .quit
