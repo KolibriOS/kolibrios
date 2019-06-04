@@ -1682,7 +1682,10 @@ FILE *CreateOutPut(char *ext,char *mode)
 {
 char buf[256];
 FILE *diskout;
-	sprintf(buf,"%s.%s",rawfilename,ext);
+	if (comfile == file_meos)
+		sprintf(buf,"%s",rawfilename);
+	else
+		sprintf(buf,"%s.%s",rawfilename,ext);
 	if((diskout=fopen(buf,mode))==NULL){
 		ErrOpenFile(buf);
 		exit(e_notcreateoutput);

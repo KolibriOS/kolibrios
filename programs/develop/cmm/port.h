@@ -90,12 +90,15 @@ bool OemToCharA(char*, char*);
 bool CharToOemA(char*, char*);
 int MultiByteToWideChar(unsigned int,unsigned int,char*,int,wchar_t *,int);
 
+#else
+
+int stricmp(const char*, const char*);
+int strnicmp(const char*, const char*, int);
+
 #endif
 
 char* strupr(char* s);
 char* strlwr(char* s);
-int stricmp(const char*, const char*);
-int strnicmp(const char*, const char*, int);
 
 #ifdef _PORT_CPP_
 

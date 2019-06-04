@@ -19,7 +19,7 @@ Path_Libs		= -Ld:/TEMP/Dev-Cpp/lib/kos -L $(SDK_DIR)/lib
 Add_Libs		=
 
 #Link_Libs		= -lc -lgcc
-Link_Libs = -static -S -nostdlib -T $(SDK_DIR)/lib/app-dynamic.lds \
+Link_Libs = -static -S -nostdlib -T $(SDK_DIR)/sources/newlib/app-dynamic.lds \
           --image-base 0 -lgcc -ldll -lc.dll 
 
 My_Libs	 		= main.o port.o toka.o tokb.o tokc.o toke.o tokr.o errors.o debug.o outobj.o outpe.o disasm.o switch.o outle.o pointer.o new_type.o class.o res.o optreg.o libobj.o
