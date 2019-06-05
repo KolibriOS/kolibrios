@@ -315,6 +315,13 @@ int i;
 	 	printf("Bad input file extension '%s'.",rawext);
 	  exit(e_badinputfilename);
 	}
+	// Add dirname of the input file to include path.
+	char *slash_idx = strrchr((char*)rawfilename, DIV_FOLD);
+	if (slash_idx) {
+		*slash_idx = '\0';
+		IncludePath((char*)rawfilename);
+		*slash_idx = DIV_FOLD;
+	}
 }
 
 void compile()
