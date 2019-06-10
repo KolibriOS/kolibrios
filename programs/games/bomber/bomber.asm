@@ -2242,7 +2242,7 @@ draw_level_num:
 draw_volume_num:
 
     mov  eax, 13
-    mov  ebx, (WINDOW_WIDTH/2+25)*0x00010000 + 30
+    mov  ebx, (WINDOW_WIDTH/2+35)*0x00010000 + 30
     mov  ecx, 370*0x00010000 + 15
     mov  edx, BACK_COLOR
     int  0x40
@@ -2250,7 +2250,7 @@ draw_volume_num:
     mov  eax, 47
     mov  ebx, 0x80020000
     mov  ecx, [_set_volume]
-    mov  edx, (WINDOW_WIDTH/2+25)*65536 + 370
+    mov  edx, (WINDOW_WIDTH/2+35)*65536 + 370
     mov  esi,0x00000000
     int  0x40
 
