@@ -79,10 +79,9 @@ get_progress_width:
         dec    esi
         sub    eax, ecx
         dec    esi
-        imul   eax, esi
         neg    ecx
         add    ecx, edx
-        xor    edx, edx
+        mul    esi
         div    ecx
         ret
 
