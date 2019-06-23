@@ -292,7 +292,7 @@ include 'config.inc'
 ;__CPU_type equ p5
 SYSENTER_VAR    equ 0
 
-macro mcall a,b,c,d,e,f {   ; mike.dld, updated by Ghost for Fast System Calls
+macro mcall a,b,c,d,e,f,g {   ; mike.dld, updated by Ghost for Fast System Calls
  local  ..ret_point
  __mov eax,a
  __mov ebx,b
@@ -300,6 +300,7 @@ macro mcall a,b,c,d,e,f {   ; mike.dld, updated by Ghost for Fast System Calls
  __mov edx,d
  __mov esi,e
  __mov edi,f
+ __mov ebp,g
 
  if __CPU_type eq p5
         int     0x40
