@@ -1,6 +1,6 @@
 ;http://sources.ru/pascal/gamestxt/go-moku.zip
 
-N equ 19		; Size of the board
+N = 19	; Size of the board
 
 use32
 	org	0x0
@@ -8,8 +8,8 @@ use32
 	dd	0x1
 	dd	START
 	dd	I_END
-	dd	(I_END+200+13*N*N) and not 3
-	dd	(I_END+200+13*N*N) and not 3
+	dd	E_END
+	dd	E_END
 	dd	0x0,0x0
 
 include '../../../macros.inc'
@@ -36,8 +36,8 @@ redraw_all:
 	mcall	48,4
 	xchg	eax,ecx
 	add	ecx,100*65536+(16*N+26)
-	mcall	0,100*65536+(16*N+12),,0x34FFFFFF,,title
-	mcall	38,2*65536+(16*N),20*65536+20,0x00a0a0a0;000000
+	mcall	0,<100,16*N+12>,,0x34FFFFFF,,title
+	mcall	38,<2,16*N>,<20,20>,0x00a0a0a0;000000
 	mov	edi,N
   @@:	add	ecx,16*65536+16
 	mcall
@@ -151,26 +151,26 @@ print_board:
 @@:	ret
 
 .one:
-	mov	ecx,0xd04ba010
-	bt	[flags],4
-	jnc	@f
-	mov	ecx,0xd0ff0000
+	mov	[pic_plt+4],0x4ba010
 	btr	[flags],4
-@@:	push	edi
-	mcall	4,,,txt_x,,0xffffff
-	pop	edi
+	jnc	@f
+	mov	[pic_plt+4],0xff0000
+@@:	pushad
+	mov	edx, ebx
+	mcall	65,pic_x,<7,7>,,1,pic_plt, 0
+	popad
 .null:
 	add	ebx,16*65536;+16
 	jmp	.end
 .two:
-	mov	ecx,0xd000459a
-	bt	[flags],4
-	jnc	@f
-	mov	ecx,0xd0ff0000
+	mov	[pic_plt+4],0x00459a
 	btr	[flags],4
-@@:	push	edi
-	mcall	4,,,txt_o,,0xffffff
-	pop	edi
+	jnc	@f
+	mov	[pic_plt+4],0xff0000
+@@:	pushad
+	mov	edx, ebx
+	mcall	65,pic_o,<7,7>,,1,pic_plt, 0
+	popad
 	jmp	.null
 
 
@@ -700,8 +700,23 @@ ret
 
 
 
-txt_x db 'X',0
-txt_o db 'O',0
+pic_x db 10000010b, \
+	 01000100b, \
+	 00101000b, \
+	 00010000b, \
+	 00101000b, \
+	 01000100b, \
+	 10000010b
+
+pic_o db 01111100b, \
+	 10000010b, \
+	 10000010b, \
+	 10000010b, \
+	 10000010b, \
+	 10000010b, \
+	 01111100b
+
+pic_plt dd 0xffffff, 0x000000
 if lang eq ru
 title db 'Гомоку',0
 txt_buttons db 'Новая   Авто',0
@@ -731,11 +746,11 @@ flags rw 1
 ;3: ходы исчерпаны
 ;4: в print_board - выделение красным цветом 5-ти в ряд клеток
 
-proc_info process_information	; it should be after I_END, but i'm afraid of lines 11-12. dunkaist
 I_END:
 align 16
 Board	rb N*N
 Value	rw N*N*2	;первая половина - для компа, вторая - для игрока
 Line	rb 4*N*N*2
-
-
+proc_info process_information
+	rb 0x100	; stack
+E_END:
