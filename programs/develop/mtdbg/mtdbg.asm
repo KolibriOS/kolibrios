@@ -15,10 +15,10 @@ use32
 
 ;-----------------------------------------------------------------------------
 
-REG_MODE_CPU equ 1
-REG_MODE_MMX equ 2
-REG_MODE_SSE equ 3
-REG_MODE_AVX equ 4
+REG_MODE_CPU = 1
+REG_MODE_MMX = 2
+REG_MODE_SSE = 3
+REG_MODE_AVX = 4
 
 ;-----------------------------------------------------------------------------
 
@@ -97,7 +97,7 @@ OnHelp:
 ;-----------------------------------------------------------------------------
 ;                                Quit event
 OnQuit:
-        mcall  -1
+        mcall   -1
 
 ;-----------------------------------------------------------------------------
 ;                        Working with debug context
@@ -113,7 +113,7 @@ get_context:
         ret
 
 set_context:
-        mcall    69, 2, [debuggee_pid], 28h, context
+        mcall   69, 2, [debuggee_pid], 28h, context
         ret
 
 get_dump:
@@ -125,7 +125,7 @@ get_dump:
         push    edi
         rep stosb
         pop     edi
-        mcall    69, 6, [debuggee_pid]
+        mcall   69, 6, [debuggee_pid]
         cmp     eax, -1
         jnz     @f
         mov     esi, read_mem_err
@@ -200,17 +200,10 @@ OnLoadInit:
 
 ; TODO: make it local
 do_reload:
-        ;push    18
-        ;pop     eax
-        ;push    7
-        ;pop     ebx
-        mcall    18, 7
+        mcall   18, 7
         mov     [dbgwnd], eax
         xchg    ecx, eax
-        ;push    70
-        ;pop     eax
-        ;mov     ebx, fn70_load_block
-        mcall    70, fn70_load_block
+        mcall   70, fn70_load_block
         test    eax, eax
         jns     .load_ok
 
@@ -236,9 +229,7 @@ do_reload:
     .load_ok:
         mov     [debuggee_pid], eax
         mov     [bSuspended], 1
-        mov     eax, 5
-        mov     ebx, 20
-        int     0x40
+        mcall   5, 20
 
         push    ecx
         call    get_context
@@ -248,10 +239,7 @@ do_reload:
 
     ; activate debugger window
         pop     ecx
-        ;mov     bl, 3
-        ;push    18
-        ;pop     eax
-        mcall    18, 3
+        mcall   18, 3
         call    redraw_title
         call    draw_registers.redraw
     ; read and draw dump of memory
@@ -387,16 +375,10 @@ do_reload:
         mov     esi, aPacked2
         call    put_message
         call    hide_cursor
-        ;push    40
-        ;pop     eax
-        ;push    7
-        ;pop     ebx
-        mcall    40, 7
+        mcall   40, EVM_REDRAW or EVM_KEY or EVM_BUTTON
 
     .wait:
-        ;push    10
-        ;pop     eax
-        mcall    10
+        mcall   10
         dec     eax
         jz      .redraw
         dec     eax
@@ -410,8 +392,7 @@ do_reload:
         jmp     .wait
 
     .key:
-        mov     al, 2
-        mcall
+        mcall   2
         cmp     ah, 'y'
         jz      .yes
         cmp     ah, 'Y'
@@ -424,19 +405,13 @@ do_reload:
         jnz     .wait
 
     .no:
-        ;push    40
-        ;pop     eax
-        ;mov     ebx, 0x107
-        mcall    40, 0x107
+        mcall   40, EVM_REDRAW or EVM_KEY or EVM_BUTTON or EVM_DEBUG
         call    draw_cursor
         mov     esi, aN_str
         jmp     put_message
 
     .yes:
-        ;push    40
-        ;pop     eax
-        ;mov     ebx, 0x107
-        mcall    40, 0x107
+        mcall   40, EVM_REDRAW or EVM_KEY or EVM_BUTTON or EVM_DEBUG
         call    draw_cursor
         mov     esi, aY_str
         call    put_message
@@ -537,12 +512,7 @@ terminate_reload:
 ;                        Terminate process event
 
 OnTerminate:
-        ;mov     ecx, [debuggee_pid]
-        ;push    8
-        ;pop     ebx
-        ;push    69
-        ;pop     eax
-        mcall    69, 8, [debuggee_pid]
+        mcall   69, 8, [debuggee_pid]
         ret
 ;-----------------------------------------------------------------------------
 ;                         Suspend process event
@@ -558,12 +528,7 @@ AfterSuspend:
         ret
 
 OnSuspend:
-        ;mov     ecx, [debuggee_pid]
-        ;push    4
-        ;pop     ebx
-        ;push    69
-        ;pop     eax
-        mcall    69, 4, [debuggee_pid]
+        mcall   69, 4, [debuggee_pid]
         call    AfterSuspend
         mov     esi, aSuspended
         jmp     put_message
@@ -572,12 +537,7 @@ OnSuspend:
 ;                        Resume process event
 
 DoResume:
-        ;mov     ecx, [debuggee_pid]
-        ;push    5
-        ;pop     ebx
-        ;push    69
-        ;pop     eax
-        mcall    69, 5, [debuggee_pid]
+        mcall   69, 5, [debuggee_pid]
         mov     [bSuspended], 0
         ret
 
@@ -788,9 +748,9 @@ exception:
     .4:
         call    get_dump
         pop     eax
-    ; int3 command generates exception 0D, #GP
+    ; int3 command generates exception 0x0D, #GP
         push    eax
-        cmp     al, 0Dh
+        cmp     al, 0x0D
         jnz     .notdbg
     ; check for 0xCC byte at eip
         push    0
@@ -936,15 +896,6 @@ OnStep:
 
      @@:
         push    0
-        ;push    69
-        ;pop     eax
-        ;push    6
-        ;pop     ebx
-        ;mov     ecx, [debuggee_pid]
-        ;push    3
-        ;pop     edx
-        ;mov     edi, esp
-        ;mov     esi, [_eip]
         mcall    69, 6, [debuggee_pid], 3, [_eip], esp
         cmp     eax, edx
         pop     eax
@@ -969,12 +920,10 @@ OnStep:
     ; return address is [ebp-4]
     .sysenter:
         push    0
-        ;push    69
-        ;pop     eax
         inc     edx     ; read 4 bytes
         mov     esi, [_ebp]
         sub     esi, 4
-        mcall    69
+        mcall   69
         cmp     eax, edx
         pop     eax
         jnz     .syscall
@@ -1143,16 +1092,11 @@ get_byte_nobreak:
         ret
 
     .nobreak:
-        ;push    69
-        ;pop     eax
-        ;push    6
-        ;pop     ebx
-        ;mov     ecx, [debuggee_pid]
         xor     edx, edx
         push    edx
         inc     edx
         mov     edi, esp
-        mcall    69, 6, [debuggee_pid]
+        mcall   69, 6, [debuggee_pid]
         dec     eax
         clc
         jz      @f
@@ -1398,15 +1342,10 @@ DoBpm:
     .l1:
         cmp     [drx_break+ecx*4], 0
         jnz     .l2
-        ;push    69
-        ;pop     eax
         push    ecx
         mov     dl, cl
-        ;mov     ecx, [debuggee_pid]
         mov     esi, ebp
-        ;push    9
-        ;pop     ebx
-        mcall    69, 9, [debuggee_pid]
+        mcall   69, 9, [debuggee_pid]
         test    eax, eax
         jz      .ok
         pop     ecx
@@ -1675,15 +1614,7 @@ disable_breakpoint:
         test    byte [edi-1], 8
         jnz     .dr
         push    esi
-        ;push    7
-        ;pop     ebx
-        ;push    69
-        ;pop     eax
-        ;mov     ecx, [debuggee_pid]
-        ;xor     edx, edx
-        ;inc     edx
-        ;mov     esi, [edi-5]
-        mcall    69, 7, [debuggee_pid], 1, [edi-5]
+        mcall   69, 7, [debuggee_pid], 1, [edi-5]
         pop     esi
 
     .ret:
@@ -1693,12 +1624,7 @@ disable_breakpoint:
         mov     dl, [edi]
         shr     dl, 6
         mov     dh, 80h
-        ;push    69
-        ;pop     eax
-        ;push    9
-        ;pop     ebx
-        ;mov     ecx, [debuggee_pid]
-        mcall    69, 9, [debuggee_pid]
+        mcall   69, 9, [debuggee_pid]
         ret
 
 ;-----------------------------------------------------------------------------
@@ -1717,22 +1643,13 @@ enable_breakpoint:
         and     byte [edi-1], not 2
         test    byte [edi-1], 8
         jnz     .dr
-        ;push    6
-        ;pop     ebx
-        ;push    69
-        ;pop     eax
-        ;mov     esi, [edi-5]
-        ;mov     ecx, [debuggee_pid]
-        ;xor     edx, edx
-        ;inc     edx
-        mcall    69, 6, [debuggee_pid], 1, [edi-5]
+        mcall   69, 6, [debuggee_pid], 1, [edi-5]
         dec     eax
         jnz     .err
-        ;mov     al, 69
         push    0xCC
         mov     edi, esp
         inc     ebx
-        mcall    69
+        mcall   69
         pop     eax
 
     .ret:
@@ -1747,17 +1664,12 @@ enable_breakpoint:
         ret
 
     .dr:
-        ;push    9
-        ;pop     ebx
-        ;push    69
-        ;pop     eax
         mov     esi, [edi-5]
-        ;mov     ecx, [debuggee_pid]
         mov     dl, [edi]
         shr     dl, 6
         mov     dh, [edi]
         and     dh, 0xF
-        mcall    69, 9, [debuggee_pid]
+        mcall   69, 9, [debuggee_pid]
         test    eax, eax
         jnz     .err
         pop     esi
@@ -1851,9 +1763,7 @@ OnUnpack:
         pop     esi
 
     @@:
-        ;push    69
-        ;pop     eax
-        mcall    69
+        mcall   69
         test    eax, eax
         jz      .breakok
         inc     edx
@@ -1865,9 +1775,7 @@ OnUnpack:
 
     ; now wait for event
     .wait:
-        ;push    10
-        ;pop     eax
-        mcall    10
+        mcall   10
         dec     eax
         jz      .redraw
         dec     eax
@@ -1896,12 +1804,7 @@ OnUnpack:
         call    put_message
         pop     esi edx
         or      dh, 80h
-        ;push    69
-        ;pop     eax
-        ;push    9
-        ;pop     ebx
-        ;mov     ecx, [debuggee_pid]
-        mcall    69, 9, [debuggee_pid]
+        mcall   69, 9, [debuggee_pid]
         cmp     esi, aUnpacked
         jnz     OnSuspend
         jmp     AfterSuspend
@@ -1920,12 +1823,7 @@ OnUnpack:
         call    put_message
         pop     edx
         or      dh, 80h
-        ;push    69
-        ;pop     eax
-        ;push    9
-        ;pop     ebx
-        ;mov     ecx, [debuggee_pid]
-        mcall    69, 9, [debuggee_pid]
+        mcall   69, 9, [debuggee_pid]
         jmp     debugmsg
 
     .our:
@@ -1933,15 +1831,7 @@ OnUnpack:
         push    edx
         call    get_context
         push    eax
-        ;mov     al, 69
-        ;mov     bl, 6
-        ;mov     ecx, [debuggee_pid]
-        ;mov     edi, esp
-        ;push    4
-        ;pop     edx
-        ;push    0xC
-        ;pop     esi
-        mcall    69, 6, [debuggee_pid], 4, 0xC, esp
+        mcall   69, 6, [debuggee_pid], 4, 0xC, esp
         pop     eax
         pop     edx
         cmp     eax, [_eip]

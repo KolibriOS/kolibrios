@@ -5,9 +5,9 @@
 ;-----------------------------------------------------------------------------
 ;                             Color scheme
 
-BLACK_ON_WHITE  equ 0
-MOVIEOS         equ 1
-WHITE_ON_BLACK  equ 2
+BLACK_ON_WHITE  = 0
+MOVIEOS         = 1
+WHITE_ON_BLACK  = 2
 
 ;                         format - 0xRRGGBB
 if COLOR_THEME eq MOVIEOS
