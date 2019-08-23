@@ -7,47 +7,47 @@
 ; ИСПОЛЬЗУЙТЕ НА СВОЙ СТРАХ И РИСК!
 ;
 ; Заметки :
-;	Дописать запуск тестов (rtst) (нет реакции на ошибку запуска)
-;	Переделать обновление графика (сделать отдельным процессом)
-;	Добавить реакцию на параметры датчиков
+;       Дописать запуск тестов (rtst) (нет реакции на ошибку запуска)
+;       Переделать обновление графика (сделать отдельным процессом)
+;       Добавить реакцию на параметры датчиков
 ;
 
 ; Внешние файлы :
-;	hwm*.inc	- процедуры работы с датчиками мониторинга
-;	system.inc	- вычисление загрузки процессора, завершение теста, etc...
-;	tests.inc	- тесты ;-)
-;	diag.inc	- поддержка диаграм
-;	tab_*.inc	- процедуры отрисовки соответствуюших вкладок
+;       hwm*.inc        - процедуры работы с датчиками мониторинга
+;       system.inc      - вычисление загрузки процессора, завершение теста, etc...
+;       tests.inc       - тесты ;-)
+;       diag.inc        - поддержка диаграм
+;       tab_*.inc       - процедуры отрисовки соответствуюших вкладок
 
 
 ; Identifier buttons :
-;	01 - Exit
-;	02 - Info tab
-;	03 - Tests tab
-;	04 - Config tab
-;	05 - About tab
-;	06 - P5 test (tab_test.inc)
-;	07 - P6 test (tab_test.inc)
-;	08 - K6 test (tab_test.inc)
-;	09 - K7 test (tab_test.inc)
-;	10 - MMX test	- not used (tab_test.inc)
-;	11 - Update time increment (tab_conf.inc)
-;	12 - Update time decriment (tab_conf.inc)
-;	13..17 - Color Changing buttons CPU_load, Mem_usage, Temp1, Temp2, Temp3
+;       01 - Exit
+;       02 - Info tab
+;       03 - Tests tab
+;       04 - Config tab
+;       05 - About tab
+;       06 - P5 test (tab_test.inc)
+;       07 - P6 test (tab_test.inc)
+;       08 - K6 test (tab_test.inc)
+;       09 - K7 test (tab_test.inc)
+;       10 - MMX test   - not used (tab_test.inc)
+;       11 - Update time increment (tab_conf.inc)
+;       12 - Update time decriment (tab_conf.inc)
+;       13..17 - Color Changing buttons CPU_load, Mem_usage, Temp1, Temp2, Temp3
 
 include 'config.inc'
 include 'macros.inc'
 
-macro clear_prev_no arg1        ; clears previous number printed at arg1
+macro clear_prev_no arg1	; clears previous number printed at arg1
 {
    pusha
-   mov     ebx, 0x00070000
-   mov     ecx, 1000000     ; dummy value
-   mov     edx, arg1
-   mov     esi, 0x40000000 + tcol
-   mov     edi, tcol    ; bg col
-   mov     eax, 47
-   int     0x40
+   mov	   ebx, 0x00070000
+   mov	   ecx, 1000000     ; dummy value
+   mov	   edx, arg1
+   mov	   esi, 0x40000000 + tcol
+   mov	   edi, tcol	; bg col
+   mov	   eax, 47
+   int	   0x40
    popa
 }
 
@@ -80,6 +80,15 @@ CODE
 	and	ax, 0x0F0F
 	mov	[CPU_fam], ah
 	mov	[CPU_mod], al
+	mov	eax, ecx
+	shr	eax, 12
+	and	eax, 0x0FFF0			; Extended Family/Model bits
+	or	[CPU_mod], al
+	mov	al, [CPU_fam]			; will not work on AMD fam.20h -- fix it later!!
+	cmp	al, 0x0F
+	jne	@f
+	add	[CPU_fam], ah
+ @@:
 	shr	edx, 23
 	and	dl, 1
 	mov	[CPU_mmx], dl
@@ -218,9 +227,9 @@ draw_window:
 	int	0x40
 
 	; write parameter names (Cpu load, temper, etc ...)
-	mov	edx, msgs_mon         ; text for indicators
+	mov	edx, msgs_mon	      ; text for indicators
 	mov	ebx, 17 * 65536 + 30
-	call    show_text
+	call	show_text
 
 	mov	edx, msgs_mon2
 	mov	ebx, 166 * 65536 + 30
@@ -244,7 +253,7 @@ del_tabs:
 @@: 
 	int	0x40
 	inc	edx
-	cmp	edx, 0x80000000 + 13 + 5 	; 5 (buttons)
+	cmp	edx, 0x80000000 + 13 + 5	; 5 (buttons)
 	jne	@b
 
 draw_tabs:
@@ -261,7 +270,7 @@ draw_tabs:
 	int	0x40
 	add	ecx, 10 * 65536
 	inc	edx
-	cmp	edx, 13 + 5             ; 5 (buttons)
+	cmp	edx, 13 + 5		; 5 (buttons)
 	jne	@b
 
 	; info, test, config, about buttons
@@ -271,19 +280,19 @@ draw_tabs:
 	mov	eax, 8
 	mov	ebx, 10 * 65536 + 70
 	mov	edx, 2
-n_bt:   
-	push    ecx
+n_bt:	
+	push	ecx
 	mov	ecx, edi
 	mov	esi, tcol
 	cmp	byte [act_tab], dl
 	jne	na1
 	mov	esi, atcol
-na1:    
+na1:	
 	int	0x40
 	inc	edx
 	add	ebx, 73 * 65536
 	pop	ecx
-	loop    n_bt
+	loop	n_bt
 
 	; write name tabs
 	mov	eax, 4
@@ -319,25 +328,25 @@ na1:
 	; draw the selected tab
 	mov	al, [act_tab]
 	cmp	al, 2
-	je 	info_tab
+	je	info_tab
 	cmp	al, 3
-	je 	test_tab
+	je	test_tab
 	cmp	al, 4
-	je 	config_tab
+	je	config_tab
 	jmp	about_tab
 	
 ;--- Drow Info tab ---------------
 info_tab:
-        include "tab_info.inc"
+	include "tab_info.inc"
 ;--- Drow test tab ---------------
 test_tab:
-        include "tab_test.inc"
+	include "tab_test.inc"
 ;--- Drow Config tab -------------
 config_tab:
-        include "tab_conf.inc"
+	include "tab_conf.inc"
 ;--- Drow About tab --------------
 about_tab:
-        include "tab_about.inc"
+	include "tab_about.inc"
 
 redraw:
 
@@ -358,11 +367,11 @@ redraw:
 	jl	@b
 
 	; write CPU usage
-	call    cpu_usage
+	call	cpu_usage
 	;--- добавляем на график ---
 	mov esi, d_cpu_load
-	call    d_add
-	call    d_show
+	call	d_add
+	call	d_show
 	;---------------------------
 	movzx	ecx, al
 	mov	eax, 47
@@ -497,7 +506,7 @@ volt_nxt:
 	fsub	dword [edi]
 	fabs
 
-	; fcomp dword [c_eps]	; bug in MeOsEmul
+	; fcomp dword [c_eps]   ; bug in MeOsEmul
 	; fstsw ax
 	fcom	dword [c_eps]	; 0xBADCODE
 	fstsw	ax
@@ -522,7 +531,7 @@ volt_nxt:
 
 no_monitor:
 	;---------------------------
-	mov	al, [act_tab]   ; check if info tab is active
+	mov	al, [act_tab]	; check if info tab is active
 	cmp	al, 2
 	jne	end_drow_tab
 	jmp	free_mem    ; in tab_info.inc
