@@ -119,7 +119,7 @@ set_context:
 get_dump:
         mov     edi, dumpdata
         mov     esi, [edi-4]
-        mov     edx, dump_height*10h
+        mov     edx, DUMP_HEIGHT*10h
         mov     ecx, edx
         xor     eax, eax
         push    edi
@@ -1130,7 +1130,7 @@ OnDump:
         mov     esi, [curarg]
         cmp     byte [esi], 0
         jnz     .param
-        add     [dumppos], dump_height*10h
+        add     [dumppos], DUMP_HEIGHT*10h
         jmp     .doit
 
     .param:
@@ -2176,7 +2176,11 @@ aMMX128         db      '[MMX128]'
 
 aAVX            db      '[ AVX ]'
 aMSR            db      '[ MSR ]'
+if (FONT eq 0 )
 aPoint          db      0x1C
+else
+aPoint          db      0x1F
+end if
 aMinus          db      '-'
 aColon          db      ':'
 aSpace          db      ' '
@@ -2326,14 +2330,14 @@ bAfterGo        db ?
 
 
 messages_pos    dd ?
-messages        rb messages_height*messages_width
+messages        rb MSG_HEIGHT*MSG_WIDTH
 
-cmdline         rb cmdline_width+1
+cmdline         rb CMD_WIDTH+1
 cmdline_len     dd ?
 cmdline_pos     dd ?
 curarg          dd ?
 
-cmdline_prev    rb cmdline_width+1
+cmdline_prev    rb CMD_WIDTH+1
 
 was_temp_break  db ?
 symbol_section  db ?
@@ -2435,7 +2439,7 @@ step_num dd ?
 proc_num dd ?
 dumpread dd ?
 dumppos  dd ?
-dumpdata rb dump_height*10h
+dumpdata rb DUMP_HEIGHT*10h
 
 ; breakpoint structure:
 ; dword +0: address

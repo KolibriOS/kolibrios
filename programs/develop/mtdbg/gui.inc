@@ -9,6 +9,63 @@ BLACK_ON_WHITE  = 0
 MOVIEOS         = 1
 WHITE_ON_BLACK  = 2
 
+;-----------------------------------------------------------------------------
+;                                Font
+
+FONT            equ 0           ; 0 to 3
+FONT_MULTIPLIER equ 1           ; 1 to 8
+
+;-----------------------------------------------------------------------------
+;                       GUI elements size and position
+
+TEXT_Y_CLEARANCE        = 1                                                     ; in pixels
+
+DATA_WIDTH              = 80                                                    ; in characters
+DATA_X_POS              = 12                                                    ; in pixels
+
+TITLE_X_POS             = 30                                                    ; in pixels
+TITLE_Y_POS             = 8                                                     ; in pixels
+
+DUMP_HEIGHT             = 6                                                     ; in text lines
+MIN_DISASM_HEIGHT       = 18                                                    ; in text lines
+MSG_HEIGHT              = 14                                                    ; in text lines
+
+;-----------------------------------------------------------------------------
+
+if (FONT eq 0)
+        FONT_X_SIZE     = 6*FONT_MULTIPLIER
+else
+        FONT_X_SIZE     = 8*FONT_MULTIPLIER
+end if
+
+if (FONT eq 0)
+        FONT_Y_SIZE     = 9*FONT_MULTIPLIER
+else
+        FONT_Y_SIZE     = 16*FONT_MULTIPLIER
+end if
+
+TITLE_Y_SIZE            = (FONT_Y_SIZE + TEXT_Y_CLEARANCE)
+DUMP_Y_POS              = (TITLE_Y_POS + TITLE_Y_SIZE)
+DUMP_Y_SIZE             = (DUMP_HEIGHT*(FONT_Y_SIZE + TEXT_Y_CLEARANCE))
+DISASM_Y_POS            = (DUMP_Y_POS + DUMP_Y_SIZE + 4)
+
+MSG_WIDTH               = DATA_WIDTH
+MSG_X_POS               = DATA_X_POS
+MSG_X_SIZE              = MSG_WIDTH*FONT_X_SIZE
+MSG_Y_SIZE              = MSG_HEIGHT*(FONT_Y_SIZE + TEXT_Y_CLEARANCE)
+
+CMD_WIDTH               = DATA_WIDTH
+CMD_X_POS               = DATA_X_POS
+CMD_Y_SIZE              = (FONT_Y_SIZE+TEXT_Y_CLEARANCE)
+
+REGISTERS_Y_POS         = DUMP_Y_POS
+REGISTERS_X_SIZE        = (22+2)*(FONT_X_SIZE)                                  ; 22 characters + 2 spacing
+
+wnd_x_size              = (DATA_X_POS + MSG_X_SIZE + DATA_X_POS + REGISTERS_X_SIZE + 3) + 10
+wnd_y_size              = (((DISASM_Y_POS + (MIN_DISASM_HEIGHT*(FONT_Y_SIZE + TEXT_Y_CLEARANCE)) + 4) + MSG_Y_SIZE + 4) + CMD_Y_SIZE + DATA_X_POS)
+
+;-----------------------------------------------------------------------------
+
 ;                         format - 0xRRGGBB
 if COLOR_THEME eq MOVIEOS
 
@@ -68,45 +125,6 @@ struc fpcvt
 
 
 ;-----------------------------------------------------------------------------
-
-data_width              = 80
-data_x_pos              = 12
-data_x_size             = data_width*6
-
-title_x_pos             = 30
-title_y_pos             = 8
-title_y_size            = 10
-
-dump_y_pos              = (title_y_pos + title_y_size)
-dump_height             = 6
-dump_y_size             = (dump_height*10)
-
-disasm_y_pos            = (dump_y_pos + dump_y_size + 4)
-min_disasm_height       = 18
-min_disasm_y_size       = (min_disasm_height*10)
-
-messages_width          = data_width
-messages_height         = 8
-messages_x_pos          = data_x_pos
-min_messages_y_pos      = (disasm_y_pos + min_disasm_y_size + 4)
-messages_x_size         = messages_width*6
-messages_y_size         = messages_height*10
-
-cmdline_width           = data_width
-cmdline_x_pos           = data_x_pos
-min_cmdline_y_pos       = (min_messages_y_pos + messages_y_size + 4)
-cmdline_x_size          = messages_x_size
-cmdline_y_size          = 10
-
-registers_x_pos         = (data_x_pos + messages_x_size + 4)
-registers_y_pos         = (title_y_pos + title_y_size - 3)
-registers_x_size        = 134+2*6
-registers_y_size        = (min_cmdline_y_pos + cmdline_y_size - registers_y_pos+1)
-
-wnd_x_size              = (data_x_pos + messages_x_size + data_x_pos + registers_x_size+3) + 10
-wnd_y_size              = (min_cmdline_y_pos + cmdline_y_size + data_x_pos)
-
-;-----------------------------------------------------------------------------
 ;                          Entry point
 
 ; TODO: split all gui part in independent function, move entry point into mtdbg.asm
@@ -125,7 +143,7 @@ start:
         pop     eax
 
         mov     edi, messages
-        mov     ecx, messages_width*messages_height
+        mov     ecx, MSG_WIDTH*MSG_HEIGHT
         mov     al, ' '
         rep stosb
         xor     eax, eax
@@ -138,7 +156,7 @@ start:
         mov     esi, begin_str
         call    put_message_nodraw
         ; set event mask - default events and debugging events
-        mcall   40, 0x107
+        mcall   40, EVM_REDRAW or EVM_KEY or EVM_BUTTON or EVM_DEBUG
         ; set debug messages buffer
         mov     ecx, dbgbufsize
         mov     dword [ecx], 256
@@ -192,10 +210,10 @@ waitevent:
         pop     edx
         mov     edx, [btn2_tab+edx*4]
         mov     edi, COLOR_BG_NORMAL
-        mov     ecx, (COLOR_TXT_NORMAL or 0x40000000)
+        mov     ecx, ((FONT and 11b) shl 28 or ((FONT_MULTIPLIER - 1) and 111b) shl 24 or COLOR_TXT_NORMAL or 0x40000000)
         mov     esi, 7
         mov     ebx, [registers_x_pos_dd]
-        add     ebx, 4*10000h+registers_y_pos+2
+        add     ebx, 4*10000h+REGISTERS_Y_POS
         mcall   4
         jmp     waitevent
 
@@ -233,7 +251,7 @@ keypressed:
         jz      F7
         cmp     ah, 0x42
         jz      F8
-        cmp     [cmdline_len], cmdline_width
+        cmp     [cmdline_len], CMD_WIDTH
         jae     waitevent
         push    eax
         call    clear_cmdline_end
@@ -423,14 +441,14 @@ clear_cmdline_end:
         mov     ebx, [cmdline_pos]
         mov     ecx, [cmdline_len]
         sub     ecx, ebx
-        imul    ebx, 6
-        imul    ecx, 6
+        imul    ebx, FONT_X_SIZE
+        imul    ecx, FONT_X_SIZE
         inc     ecx
-        add     ebx, cmdline_x_pos
+        add     ebx, CMD_X_POS
         shl     ebx, 16
         or      ebx, ecx
         mov     ecx, [cmdline_y_pos_dd]
-        mov     cx, cmdline_y_size
+        mov     cx, CMD_Y_SIZE
         mov     edx, COLOR_BG_NORMAL
         ; draw container rectangle/box for cmdline
         mcall   13
@@ -448,10 +466,10 @@ draw_cmdline_end:
         mov     esi, [cmdline_len]
         sub     esi, ebx
 
-        mov     ecx, COLOR_TXT_NORMAL
+        mov     ecx, (FONT and 11b) shl 28 or ((FONT_MULTIPLIER - 1) and 111b) shl 24 or COLOR_TXT_NORMAL
         lea     edx, [cmdline+ebx]
-        imul    ebx, 6
-        add     ebx, cmdline_x_pos
+        imul    ebx, FONT_X_SIZE
+        add     ebx, CMD_X_POS
         shl     ebx, 16
         mov     bx, word[cmdline_y_pos_dd+4]
         inc     bx
@@ -487,7 +505,7 @@ put_message_nodraw:
 
     .newline:
         push    edx
-        mov     ecx, messages_width
+        mov     ecx, MSG_WIDTH
         xor     eax, eax
         xchg    eax, edx
         div     ecx
@@ -533,17 +551,17 @@ put_message_nodraw:
         jmp     .l
 
 test_scroll:
-        cmp     edx, messages_width*messages_height
+        cmp     edx, MSG_WIDTH*MSG_HEIGHT
         jnz     .ret
         push    esi
         mov     edi, messages
-        lea     esi, [edi+messages_width]
-        mov     ecx, (messages_height-1)*messages_width/4
+        lea     esi, [edi+MSG_WIDTH]
+        mov     ecx, (MSG_HEIGHT-1)*MSG_WIDTH/4
         rep movsd
         push    eax
         mov     al, ' '
         push    edi
-        push    messages_width
+        push    MSG_WIDTH
         pop     ecx
         sub     edx, ecx
         rep stosb
@@ -561,24 +579,24 @@ put_message:
 
 draw_messages:
         ; draw container rectangle/box
-        mov     ebx, messages_x_pos shl 16
+        mov     ebx, MSG_X_POS shl 16
         add     ebx, [messages_x_size_dd+4]
         mov     ecx, [messages_y_pos_dd]
-        mov     cx, messages_y_size
+        mov     cx, MSG_Y_SIZE
         mcall   13, , , COLOR_BG_NORMAL
         mov     edx, messages
-        push    messages_width
+        push    MSG_WIDTH
         pop     esi
-        mov     ecx, COLOR_TXT_NORMAL
-        mov     ebx, messages_x_pos*10000h
+        mov     ecx, (FONT and 11b) shl 28 or ((FONT_MULTIPLIER - 1) and 111b) shl 24 or COLOR_TXT_NORMAL
+        mov     ebx, MSG_X_POS*10000h
         mov     bx, word[messages_y_pos_dd+4]
 
     @@:
         ; display text string in the window
         mcall   4
         add     edx, esi
-        add     ebx, 10
-        cmp     edx, messages+messages_width*messages_height
+        add     ebx, FONT_Y_SIZE+TEXT_Y_CLEARANCE
+        cmp     edx, messages+MSG_WIDTH*MSG_HEIGHT
         jb      @b
         ret
 
@@ -588,26 +606,26 @@ draw_messages:
 ; TODO: make it cursor.draw and cursor.hide ???
 draw_cursor:
         mov     ecx, [cmdline_y_pos_dd+2]
-        add     cx, cmdline_y_size-1
+        add     cx, CMD_Y_SIZE-1
         mov     ebx, [cmdline_pos]
-        imul    ebx, 6
-        add     ebx, cmdline_x_pos
+        imul    ebx, FONT_X_SIZE
+        add     ebx, CMD_X_POS
         mov     edx, ebx
         shl     ebx, 16
         or      ebx, edx
-        mov     edx, COLOR_TXT_NORMAL
+        mov     edx, (FONT and 11b) shl 28 or ((FONT_MULTIPLIER - 1) and 111b) shl 24 or COLOR_TXT_NORMAL
         ; draw line
         mcall   38
         ret
 
 hide_cursor:
         mov     ebx, [cmdline_pos]
-        imul    ebx, 6
-        add     ebx, cmdline_x_pos
+        imul    ebx, FONT_X_SIZE
+        add     ebx, CMD_X_POS
         shl     ebx, 16
         inc     ebx
         mov     ecx, [cmdline_y_pos_dd]
-        mov     cx, cmdline_y_size
+        mov     cx, CMD_Y_SIZE
         mov     edx, COLOR_BG_NORMAL
         ; draw container rectangle/box
         mcall   13
@@ -615,10 +633,10 @@ hide_cursor:
         cmp     ebx, [cmdline_len]
         jae     .ret
         ; setting up text color scheme and attributes
-        mov     ecx, COLOR_TXT_NORMAL
+        mov     ecx, (FONT and 11b) shl 28 or ((FONT_MULTIPLIER - 1) and 111b) shl 24 or COLOR_TXT_NORMAL
         lea     edx, [cmdline+ebx]
-        imul    ebx, 6
-        add     ebx, cmdline_x_pos
+        imul    ebx, FONT_X_SIZE
+        add     ebx, CMD_X_POS
         shl     ebx, 16
         mov     bx, word[cmdline_y_pos_dd+4]
         inc     bx
@@ -637,11 +655,11 @@ hide_cursor:
 redraw_title:
         ; draw container rectangle/box
         mov     ebx, [data_x_size_dd+4]
-        add     ebx, title_x_pos*10000h+data_x_pos-title_x_pos
-        mcall   13, , title_y_pos*10000h+title_y_size, COLOR_BG_NORMAL
+        add     ebx, TITLE_X_POS*10000h+DATA_X_POS-TITLE_X_POS
+        mcall   13, , TITLE_Y_POS*10000h+TITLE_Y_SIZE, COLOR_BG_NORMAL
 
 draw_title:
-        mcall   38, (data_x_pos-2)*10000h+title_x_pos-5, (title_y_pos+5)*10001h, COLOR_LINE
+        mcall   38, (DATA_X_POS-2)*10000h+TITLE_X_POS-5, (TITLE_Y_POS+(FONT_Y_SIZE/2))*10001h, COLOR_LINE
         push    NoPrgLoaded_len
         pop     esi
         cmp     [debuggee_pid], 0
@@ -649,26 +667,26 @@ draw_title:
         mov     esi, [prgname_len]
 
     @@:
-        imul    ebx, esi, 6
-        add     ebx, title_x_pos+4
+        imul    ebx, esi, FONT_X_SIZE
+        add     ebx, TITLE_X_POS+4
         shl     ebx, 16
-        mov     bx, data_x_pos-10-5-6*7
+        mov     bx, DATA_X_POS-10-5-FONT_X_SIZE*7
         add     bx, word[data_x_size_dd+4]
         cmp     [bSuspended], 0
         jz      @f
-        add     ebx, 6
+        add     ebx, FONT_X_SIZE
 
     @@:
         ; draw line with COLOR_LINE (in edx)
         mcall
         mov     ebx, [data_x_size_dd+2]
-        add     ebx, (data_x_pos-10+4)*0x10000 + data_x_pos+2
+        add     ebx, (DATA_X_POS-10+4)*0x10000 + DATA_X_POS+2
         ; draw line with COLOR_LINE (in edx)
         mcall
         mov     al, 4
-        mov     ebx, title_x_pos*10000h+title_y_pos
+        mov     ebx, TITLE_X_POS*10000h+TITLE_Y_POS
         ; setting up text color scheme and attributes
-        mov     ecx, COLOR_TXT_NORMAL
+        mov     ecx, (FONT and 11b) shl 28 or ((FONT_MULTIPLIER - 1) and 111b) shl 24 or COLOR_TXT_NORMAL
         mov     edx, NoPrgLoaded_str
         cmp     [debuggee_pid], 0
         jz      @f
@@ -680,27 +698,27 @@ draw_title:
         cmp     [debuggee_pid], 0
         jz      .nodebuggee
         mov     ebx, [data_x_size_dd]
-        add     ebx, (data_x_pos-10-6*7)*10000h + title_y_pos
+        add     ebx, (DATA_X_POS-10-FONT_X_SIZE*7)*10000h + TITLE_Y_POS
         mov     edx, aRunning
         push    7
         pop     esi
         cmp     [bSuspended], 0
         jz      @f
-        add     ebx, 6*10000h
+        add     ebx, FONT_X_SIZE*10000h
         mov     edx, aPaused
         dec     esi
 
     @@:
         ; draw line with COLOR_LINE (in edx) in one case
-        ; and draw text string with color COLOR_TXT_NORMAL (in ecx) in another
+        ; and draw text string with color (FONT and 11b) shl 28 or ((FONT_MULTIPLIER - 1) and 111b) shl 24 or COLOR_TXT_NORMAL (in ecx) in another
         mcall
         ret
 
     .nodebuggee:
         mov     al, 38
         mov     ebx, [data_x_size_dd+2]
-        add     ebx, (data_x_pos-10-6*7-5)*0x10000 + data_x_pos+2
-        mov     ecx, (title_y_pos+5)*10001h
+        add     ebx, (DATA_X_POS-10-FONT_X_SIZE*7-5)*0x10000 + DATA_X_POS+2
+        mov     ecx, (TITLE_Y_POS+(FONT_Y_SIZE/2))*10001h
         mov     edx, COLOR_LINE
         jmp     @b
 
@@ -724,16 +742,16 @@ draw_register:
 
         mov     eax, [esi]
 
-        mov     ecx, (COLOR_TXT_INACTIVE or 0x40000000)
+        mov     ecx, ((FONT and 11b) shl 28 or ((FONT_MULTIPLIER - 1) and 111b) shl 24 or COLOR_TXT_INACTIVE or 0x40000000)
         cmp     [debuggee_pid], 0
         jz      .cd
         cmp     [bSuspended], 0
         jz      .cd
 
-        mov     ecx, (COLOR_TXT_NORMAL or 0x40000000)
+        mov     ecx, ((FONT and 11b) shl 28 or ((FONT_MULTIPLIER - 1) and 111b) shl 24 or COLOR_TXT_NORMAL or 0x40000000)
         cmp     eax, dword [esi+oldcontext-context]
         je      .cd
-        mov     ecx, (COLOR_TXT_CHANGED or 0x40000000)
+        mov     ecx, ((FONT and 11b) shl 28 or ((FONT_MULTIPLIER - 1) and 111b) shl 24 or COLOR_TXT_CHANGED or 0x40000000)
 .cd:
         push    eax                       ;store reg value
 
@@ -741,7 +759,7 @@ draw_register:
         ; draw a text string in the window
         mcall   4
 
-        imul    esi, 60000h
+        imul    esi, FONT_X_SIZE*10000h
         lea     edx, [ebx+esi]
         mov     esi, ecx
         pop     ecx
@@ -751,7 +769,7 @@ draw_register:
         mcall   47, 0x00040100
 
         shr     ecx, 16
-        add     edx, (4*6+3) shl 16
+        add     edx, (4*FONT_X_SIZE+3) shl 16
         mcall   47
 
         pop     ebp
@@ -992,28 +1010,28 @@ draw_fpu_register_2:
         mov     ecx, 4
 .skip_lz:
         xor     eax, eax
-        shld    ax,dx,4
+        shld    ax, dx, 4
         shl     dx, 4
         test al, al
         jnz     .w_exp
         loop    .skip_lz
 .w_exp:
-        add al, 0x30
+        add     al, 0x30
         stosb
         xor     eax, eax
-        shld     ax, dx, 4
+        shld    ax, dx, 4
         shl     dx,4
         loop    .w_exp
 
 .display:
 
-        mov     ecx, (COLOR_TXT_INACTIVE or 0x40000000)
+        mov     ecx, ((FONT and 11b) shl 28 or ((FONT_MULTIPLIER - 1) and 111b) shl 24 or COLOR_TXT_INACTIVE or 0x40000000)
         cmp     [debuggee_pid], 0
         jz      .do_label
         cmp     [bSuspended], 0
         jz      .do_label
 
-        mov     ecx, (COLOR_TXT_NORMAL or 0x40000000)
+        mov     ecx, ((FONT and 11b) shl 28 or ((FONT_MULTIPLIER - 1) and 111b) shl 24 or COLOR_TXT_NORMAL or 0x40000000)
 
         mov     eax, dword [_st0+ebp]
         cmp     eax, dword [_st0+(oldcontext-context)+ebp]
@@ -1028,16 +1046,14 @@ draw_fpu_register_2:
         je      .do_label
 
 .scol:
-        mov     ecx, (COLOR_TXT_CHANGED or 0x40000000)
+        mov     ecx, ((FONT and 11b) shl 28 or ((FONT_MULTIPLIER - 1) and 111b) shl 24 or COLOR_TXT_CHANGED or 0x40000000)
 
 .do_label:
         ; draw a text string in the window
-
-        mov     eax, 4
         mov     esi, 23
         mov     edx, .str_buf
         mov     edi, COLOR_BG_NORMAL
-        int     0x40
+        mcall   4
 
         shr     ebp, 4
         add     esp, 32+16+10+10+4+4
@@ -1075,13 +1091,13 @@ draw_mmx_register_2:
         stosb
         call    .hex_2_str
 
-        mov     ecx, (COLOR_TXT_INACTIVE or 0x40000000)
+        mov     ecx, ((FONT and 11b) shl 28 or ((FONT_MULTIPLIER - 1) and 111b) shl 24 or COLOR_TXT_INACTIVE or 0x40000000)
         cmp     [debuggee_pid], 0
         jz      .cd
         cmp     [bSuspended], 0
         jz      .cd
 
-        mov     ecx, (COLOR_TXT_NORMAL or 0x40000000)
+        mov     ecx, ((FONT and 11b) shl 28 or ((FONT_MULTIPLIER - 1) and 111b) shl 24 or COLOR_TXT_NORMAL or 0x40000000)
 
         mov     eax, dword [_mm0+ebp]
         cmp     eax, dword [_mm0+(oldcontext-context)+ebp]
@@ -1092,15 +1108,14 @@ draw_mmx_register_2:
         je     .cd
 
 .scol:
-        mov     ecx, (COLOR_TXT_CHANGED or 0x40000000)
+        mov     ecx, ((FONT and 11b) shl 28 or ((FONT_MULTIPLIER - 1) and 111b) shl 24 or COLOR_TXT_CHANGED or 0x40000000)
 .cd:
         ; draw a text string in the window
 
-        mov     eax, 4
         mov     esi, 23
         mov     edx, esp
         mov     edi, COLOR_BG_NORMAL
-        int     0x40
+        mcall   4
         shr     ebp, 4
         add     esp, 24
         ret
@@ -1125,10 +1140,10 @@ draw_fpu_regs:
         push    8
         xor     ebp, ebp
         mov     ebx, [registers_x_pos_dd]
-        add     ebx, 2*10000h+registers_y_pos+142
+        add     ebx, 2*10000h+REGISTERS_Y_POS+14*(TEXT_Y_CLEARANCE+FONT_Y_SIZE)
 .draw_regs:
         call    draw_fpu_register_2
-        add     ebx, 10
+        add     ebx, FONT_Y_SIZE+TEXT_Y_CLEARANCE
         inc     ebp
         dec     dword [esp]
         jnz     .draw_regs
@@ -1142,10 +1157,10 @@ draw_mmx_regs:
         push    8
         xor     ebp, ebp
         mov     ebx, [registers_x_pos_dd]
-        add     ebx, 2*10000h+registers_y_pos+142
+        add     ebx, 2*10000h+REGISTERS_Y_POS+14*(TEXT_Y_CLEARANCE+FONT_Y_SIZE)
 .draw_regs:
         call    draw_mmx_register_2
-        add     ebx, 10
+        add     ebx, FONT_Y_SIZE+TEXT_Y_CLEARANCE
         inc     ebp
         dec     dword [esp]
         jnz     .draw_regs
@@ -1159,10 +1174,10 @@ draw_sse_regs:
         push    8
         xor     ebp, ebp
         mov     ebx, [registers_x_pos_dd]
-        add     ebx, 2*10000h+registers_y_pos+232
+        add     ebx, 2*10000h+REGISTERS_Y_POS+14*(TEXT_Y_CLEARANCE+FONT_Y_SIZE)
 .draw_regs:
      ;   call    draw_sse_register
-        add     ebx, 10
+        add     ebx, FONT_Y_SIZE+TEXT_Y_CLEARANCE
         inc     ebp
         dec     dword [esp]
         jnz     .draw_regs
@@ -1185,20 +1200,20 @@ draw_flag:
         and     byte [edx], not 20h
 
     .onoff:
-        mov     ecx, (COLOR_TXT_INACTIVE or 0x40000000)
+        mov     ecx, ((FONT and 11b) shl 28 or ((FONT_MULTIPLIER - 1) and 111b) shl 24 or COLOR_TXT_INACTIVE or 0x40000000)
         cmp     [debuggee_pid], 0
         jz      .doit
         cmp     [bSuspended], 0
         jz      .doit
 
-        mov     ecx, (COLOR_TXT_NORMAL or 0x40000000)
+        mov     ecx, ((FONT and 11b) shl 28 or ((FONT_MULTIPLIER - 1) and 111b) shl 24 or COLOR_TXT_NORMAL or 0x40000000)
         bt      [_eflags], edi
         lahf
         bt      dword [_eflags + oldcontext - context], edi
         rcl     ah, 1
         test    ah, 3
         jp      .doit
-        mov     ecx, (COLOR_TXT_CHANGED or 0x40000000)
+        mov     ecx, ((FONT and 11b) shl 28 or ((FONT_MULTIPLIER - 1) and 111b) shl 24 or COLOR_TXT_CHANGED or 0x40000000)
 
     .doit:
         mov     ah, 0
@@ -1215,38 +1230,38 @@ draw_flag:
 ; Also show current register set (common + MMX, SSE or AVX)
 draw_reg_title:
         mov     edi, COLOR_BG_NORMAL
-        mov     ecx, (COLOR_TXT_NORMAL or 0x40000000)
+        mov     ecx, ((FONT and 11b) shl 28 or ((FONT_MULTIPLIER - 1) and 111b) shl 24 or COLOR_TXT_NORMAL or 0x40000000)
         mov     esi, 7
         cmp     [reg_mode], REG_MODE_CPU
         jz      @f
-        mov     ecx, (COLOR_TXT_INACTIVE or 0x40000000)
+        mov     ecx, ((FONT and 11b) shl 28 or ((FONT_MULTIPLIER - 1) and 111b) shl 24 or COLOR_TXT_INACTIVE or 0x40000000)
     @@:
         movzx   edx, [fpu_mode]
         mov     edx, [btn2_tab+edx*4]
 
         ; draw a text string in the window
         mov     ebx, [registers_x_pos_dd]
-        add     ebx, 4*10000h+registers_y_pos+2
+        add     ebx, 4*10000h+REGISTERS_Y_POS
         mcall   4
 
         cmp     [reg_mode], REG_MODE_SSE
         jz      @f
-        mov     ecx, (COLOR_TXT_INACTIVE or 0x40000000)
+        mov     ecx, ((FONT and 11b) shl 28 or ((FONT_MULTIPLIER - 1) and 111b) shl 24 or COLOR_TXT_INACTIVE or 0x40000000)
     @@:
         mov     edx, aSSE
         ; draw a text string in the window
         mov     ebx, [registers_x_pos_dd]
-        add     ebx, 46*10000h+registers_y_pos+2
+        add     ebx, (7*FONT_X_SIZE+4)*10000h+REGISTERS_Y_POS
         mcall   4
 
         cmp     [reg_mode], REG_MODE_AVX
         jz      @f
-        mov     ecx, (COLOR_TXT_INACTIVE or 0x40000000)
+        mov     ecx, ((FONT and 11b) shl 28 or ((FONT_MULTIPLIER - 1) and 111b) shl 24 or COLOR_TXT_INACTIVE or 0x40000000)
     @@:
         mov     edx, aAVX
         ; draw a text string in the window
         mov     ebx, [registers_x_pos_dd]
-        add     ebx, 88*10000h+registers_y_pos+2
+        add     ebx, (14*FONT_X_SIZE+4)*10000h+REGISTERS_Y_POS
         mcall   4
         ret
 
@@ -1261,42 +1276,42 @@ draw_main_registers:
         pop     ecx
         mov     edx, regs_strs
         mov     ebx, [registers_x_pos_dd]
-        add     ebx, 2*10000h+registers_y_pos+22
+        add     ebx, 2*10000h+REGISTERS_Y_POS+2*(FONT_Y_SIZE+TEXT_Y_CLEARANCE)
         call    draw_register
         mov     ebx, [registers_x_pos_dd]
-        add     ebx, 2*10000h+registers_y_pos+32
+        add     ebx, 2*10000h+REGISTERS_Y_POS+3*(FONT_Y_SIZE+TEXT_Y_CLEARANCE)
         add     esi, _ebx-_eax
         call    draw_register
         mov     ebx, [registers_x_pos_dd]
-        add     ebx, 2*10000h+registers_y_pos+42
+        add     ebx, 2*10000h+REGISTERS_Y_POS+4*(FONT_Y_SIZE+TEXT_Y_CLEARANCE)
         add     esi, _ecx-_ebx
         call    draw_register
         mov     ebx, [registers_x_pos_dd]
-        add     ebx, 2*10000h+registers_y_pos+52
+        add     ebx, 2*10000h+REGISTERS_Y_POS+5*(FONT_Y_SIZE+TEXT_Y_CLEARANCE)
         add     esi, _edx-_ecx
         call    draw_register
         mov     ebx, [registers_x_pos_dd]
-        add     ebx, 2*10000h+registers_y_pos+62
+        add     ebx, 2*10000h+REGISTERS_Y_POS+6*(FONT_Y_SIZE+TEXT_Y_CLEARANCE)
         add     esi, _esi-_edx
         call    draw_register
         mov     ebx, [registers_x_pos_dd]
-        add     ebx, 2*10000h+registers_y_pos+72
+        add     ebx, 2*10000h+REGISTERS_Y_POS+7*(FONT_Y_SIZE+TEXT_Y_CLEARANCE)
         add     esi, _edi-_esi
         call    draw_register
         mov     ebx, [registers_x_pos_dd]
-        add     ebx, 2*10000h+registers_y_pos+82
+        add     ebx, 2*10000h+REGISTERS_Y_POS+8*(FONT_Y_SIZE+TEXT_Y_CLEARANCE)
         add     esi, _ebp-_edi
         call    draw_register
         mov     ebx, [registers_x_pos_dd]
-        add     ebx, 2*10000h+registers_y_pos+92
+        add     ebx, 2*10000h+REGISTERS_Y_POS+9*(FONT_Y_SIZE+TEXT_Y_CLEARANCE)
         add     esi, _esp-_ebp
         call    draw_register
         mov     ebx, [registers_x_pos_dd]
-        add     ebx, 2*10000h+registers_y_pos+102
+        add     ebx, 2*10000h+REGISTERS_Y_POS+10*(FONT_Y_SIZE+TEXT_Y_CLEARANCE)
         add     esi, _eip-_esp
         call    draw_register
         mov     ebx, [registers_x_pos_dd]
-        add     ebx, 2*10000h+registers_y_pos+112
+        add     ebx, 2*10000h+REGISTERS_Y_POS+11*(FONT_Y_SIZE+TEXT_Y_CLEARANCE)
 
         mov     cl, 7
         add     esi, _eflags-_eip
@@ -1306,26 +1321,26 @@ draw_main_registers:
         je      .fpu
         call    draw_mmx_regs
         jmp     @f
-.fpu:
+  .fpu:
         call    draw_fpu_regs
-@@:
-        mov     ecx, COLOR_TXT_INACTIVE
+    @@:
+        mov     ecx, (FONT and 11b) shl 28 or ((FONT_MULTIPLIER - 1) and 111b) shl 24 or COLOR_TXT_INACTIVE
         cmp     [debuggee_pid], 0
         jz      @f
         cmp     [bSuspended], 0
         jz      @f
-        mov     ecx, COLOR_TXT_NORMAL
+        mov     ecx, (FONT and 11b) shl 28 or ((FONT_MULTIPLIER - 1) and 111b) shl 24 or COLOR_TXT_NORMAL
     @@:
         mov     edx, aColon
         xor     esi, esi
         inc     esi
         mov     ebx, [registers_x_pos_dd]
-        add     ebx, 10*10000h+registers_y_pos+122
+        add     ebx, 10*10000h+REGISTERS_Y_POS+12*(FONT_Y_SIZE+TEXT_Y_CLEARANCE)
         mcall   4
         mov     edx, flags
 
     @@:
-        add     ebx, 2*6*10000h
+        add     ebx, 2*FONT_X_SIZE*10000h
         call    draw_flag
         inc     edx
         cmp     dl, flags_bits and 0xFF
@@ -1352,9 +1367,9 @@ draw_registers:
 
         ; draw container rectangle/box with COLOR_BG_NORMAL
         mov     ebx, [registers_x_pos_dd]
-        add     ebx, (-1)*10000h+(registers_x_size+2)
+        add     ebx, (-1)*10000h+(REGISTERS_X_SIZE+2)
         mov     ecx, [registers_y_size_dd+4]
-        add     ecx, (registers_y_pos-1)*10000h+2
+        add     ecx, ((TITLE_Y_POS+(FONT_Y_SIZE/2))+1)*10000h+2
         mcall   13, , , COLOR_BG_NORMAL
         call    draw_reg_title
 
@@ -1380,33 +1395,33 @@ draw_registers:
 draw_dump:
         ; draw container rectangle/box in the window
         mov     ebx, [data_x_size_dd+4]
-        add     ebx, data_x_pos*10000h
-        mcall   13, , dump_y_pos*10000h+dump_y_size, COLOR_BG_NORMAL
+        add     ebx, DATA_X_POS*10000h
+        mcall   13, , DUMP_Y_POS*10000h+DUMP_Y_SIZE, COLOR_BG_NORMAL
 
     .redraw:
         ; addresses
         mov     ebx, 80100h
-        mov     edx, data_x_pos*10000h + dump_y_pos
+        mov     edx, DATA_X_POS*10000h + DUMP_Y_POS
         mov     ecx, [dumppos]
         mov     edi, COLOR_BG_NORMAL
-        mov     esi, (COLOR_TXT_INACTIVE or 0x40000000)
+        mov     esi, ((FONT and 11b) shl 28 or ((FONT_MULTIPLIER - 1) and 111b) shl 24 or COLOR_TXT_INACTIVE or 0x40000000)
         cmp     [debuggee_pid], 0
         jz      @f
         cmp     [bSuspended], 0
         jz      @f
-        mov     esi, (COLOR_TXT_NORMAL or 0x40000000)
+        mov     esi, ((FONT and 11b) shl 28 or ((FONT_MULTIPLIER - 1) and 111b) shl 24 or COLOR_TXT_NORMAL or 0x40000000)
     @@:
         ; draw a number in the window
         mcall   47
         add     ecx, 10h
-        add     edx, 10
-        cmp     dl, dump_y_pos + dump_y_size
+        add     edx, FONT_Y_SIZE + TEXT_Y_CLEARANCE
+        cmp     dl, DUMP_Y_POS + DUMP_Y_SIZE
         jb      @b
         ; hex dump of data
         mov     ecx, dumpdata
         push    ecx
         xor     ebx, ebx
-        mov     edx, (data_x_pos+12*6)*10000h + dump_y_pos
+        mov     edx, (DATA_X_POS+12*FONT_X_SIZE)*10000h + DUMP_Y_POS
         cmp     [dumpread], ebx
         jz      .hexdumpdone1
 
@@ -1416,17 +1431,17 @@ draw_dump:
         ; draw a number in the window
         mcall
         pop     ebx
-        add     edx, 3*6*10000h
+        add     edx, 3*FONT_X_SIZE*10000h
         inc     ecx
         inc     ebx
         test    bl, 15
         jz      .16
         test    bl, 7
         jnz     @f
-        add     edx, 2*6*10000h - 10 + 6*(3*10h+2)*10000h
+        add     edx, 2*FONT_X_SIZE*10000h - (FONT_Y_SIZE+TEXT_Y_CLEARANCE) + FONT_X_SIZE*(3*10h+2)*10000h
 
     .16:
-        add     edx, 10 - 6*(3*10h+2)*10000h
+        add     edx, (FONT_Y_SIZE+TEXT_Y_CLEARANCE) - FONT_X_SIZE*(3*10h+2)*10000h
 
     @@:
         cmp     ebx, [dumpread]
@@ -1442,48 +1457,48 @@ draw_dump:
         pop     esi
 
     .hexdumploop2:
-        cmp     edx, dump_height*10h
+        cmp     edx, DUMP_HEIGHT*10h
         jae     .hexdumpdone2
         push    edx
         mov     edx, aQuests
         ; draw text string with color in ecx, copied from esi
         mcall
         pop     edx
-        add     ebx, 3*6*10000h
+        add     ebx, 3*FONT_X_SIZE*10000h
         inc     edx
         test    dl, 15
         jz      .16x
         test    dl, 7
         jnz     .hexdumploop2
-        add     ebx, 2*6*10000h - 10 + 6*(3*10h+2)*10000h
+        add     ebx, 2*FONT_X_SIZE*10000h - (FONT_Y_SIZE+TEXT_Y_CLEARANCE) + FONT_X_SIZE*(3*10h+2)*10000h
 
-    .16x:
-        add     ebx, 10 - 6*(3*10h+2)*10000h
+  .16x:
+        add     ebx, (FONT_Y_SIZE+TEXT_Y_CLEARANCE) - FONT_X_SIZE*(3*10h+2)*10000h
         jmp     .hexdumploop2
 
-    .hexdumpdone2:
+  .hexdumpdone2:
         dec     esi
         ; colon, minus signs
-        mov     ebx, (data_x_pos+8*6)*10000h + dump_y_pos
+        mov     ebx, (DATA_X_POS+8*FONT_X_SIZE)*10000h + DUMP_Y_POS
         mov     edx, aColon
 
     @@:
         mcall
-        add     ebx, 10
-        cmp     bl, dump_y_pos+dump_height*10
+        add     ebx, (FONT_Y_SIZE+TEXT_Y_CLEARANCE)
+        cmp     bl, DUMP_Y_POS+DUMP_HEIGHT*(FONT_Y_SIZE+TEXT_Y_CLEARANCE)
         jb      @b
-        mov     ebx, (data_x_pos+(12+3*8)*6)*10000h + dump_y_pos
+        mov     ebx, (DATA_X_POS+(12+3*8)*FONT_X_SIZE)*10000h + DUMP_Y_POS
         mov     edx, aMinus
 
     @@:
         mcall
-        add     ebx, 10
-        cmp     bl, dump_y_pos+dump_height*10
+        add     ebx, (FONT_Y_SIZE+TEXT_Y_CLEARANCE)
+        cmp     bl, DUMP_Y_POS+DUMP_HEIGHT*(FONT_Y_SIZE+TEXT_Y_CLEARANCE)
         jb      @b
         ; ASCII data
-        mov     ebx, (data_x_pos+(12+3*10h+2+2)*6)*10000h + dump_y_pos
+        mov     ebx, (DATA_X_POS+(12+3*10h+2+2)*FONT_X_SIZE)*10000h + DUMP_Y_POS
         pop     edx
-        push    dump_height*10h
+        push    DUMP_HEIGHT*10h
 
     .asciiloop:
         push    edx
@@ -1496,12 +1511,12 @@ draw_dump:
         mcall
         pop     edx
         inc     edx
-        add     ebx, 6*10000h
+        add     ebx, FONT_X_SIZE*10000h
         dec     dword [esp]
         jz      .asciidone
         test    byte [esp], 15
         jnz     .asciiloop
-        add     ebx, 10 - 6*10h*10000h
+        add     ebx, (FONT_Y_SIZE+TEXT_Y_CLEARANCE) - FONT_X_SIZE*10h*10000h
         jmp     .asciiloop
 
     .asciidone:
@@ -1522,21 +1537,21 @@ draw_disasm:
         call    find_symbol
         jc      .nosymb
         mov     ebx, [disasm_cur_str]
-        imul    ebx, 10
+        imul    ebx, (FONT_Y_SIZE+TEXT_Y_CLEARANCE)
         push    ebx
-        lea     ecx, [ebx+disasm_y_pos-1]
+        lea     ecx, [ebx+DISASM_Y_POS-1]
         shl     ecx, 16
         mov     cl, 11
         ; setting up background color for disassembled text
         mov     edx, COLOR_BG_NORMAL
         ; draw container rectangle/box with color COLOR_BG_NORMAL (was 0xFFFFFF - white)
         mov     ebx, [data_x_size_dd+4]
-        add     ebx, data_x_pos*10000h
+        add     ebx, DATA_X_POS*10000h
         mcall   13
         pop     ebx
         ; copy color value from edx (COLOR_BG_NORMAL)
         mov     edi, edx
-        add     ebx, (data_x_pos+6*2)*10000h+disasm_y_pos
+        add     ebx, (DATA_X_POS+FONT_X_SIZE*2)*10000h+DISASM_Y_POS
         mov     edx, esi
 
     @@:
@@ -1547,7 +1562,7 @@ draw_disasm:
         sub     esi, edx
         ; normal color
         ; was 0x40000000
-        mov     ecx, (COLOR_TXT_LABEL or 0x40000000)
+        mov     ecx, ((FONT and 11b) shl 28 or ((FONT_MULTIPLIER - 1) and 111b) shl 24 or COLOR_TXT_LABEL or 0x40000000)
         mov     al, 4
         ; draw a text string in the window with color COLOR_TXT_NORMAL in ecx
         mcall
@@ -1559,7 +1574,7 @@ draw_disasm:
         shl     ecx, 16
         mov     cl, 10
         imul    ebx, 10001h
-        sub     bx, data_x_pos
+        sub     bx, DATA_X_POS
         sub     bx, word[data_x_size_dd+4]
         neg     bx
         mov     al, 13
@@ -1578,26 +1593,26 @@ draw_disasm:
         pop     ebp
         jc      .loopend
         mov     edx, COLOR_BG_NORMAL
-        mov     esi, COLOR_TXT_NORMAL
-        mov     ebx, data_x_pos*10000h
+        mov     esi, (FONT and 11b) shl 28 or ((FONT_MULTIPLIER - 1) and 111b) shl 24 or COLOR_TXT_NORMAL
+        mov     ebx, DATA_X_POS*10000h
         add     ebx, [data_x_size_dd+4]
         mov     ecx, [disasm_cur_str]
-        imul    ecx, 10*10000h
-        add     ecx, (disasm_y_pos-1)*10000h + 10
+        imul    ecx, (FONT_Y_SIZE+TEXT_Y_CLEARANCE)*10000h
+        add     ecx, (DISASM_Y_POS-1)*10000h + (FONT_Y_SIZE+TEXT_Y_CLEARANCE)
         mov     eax, ebp
         pushad
         call    find_enabled_breakpoint
         popad
         jnz     .nobp
         mov     edx, COLOR_BG_BREAKPOINT
-        mov     esi, COLOR_TXT_BREAKPOINT
+        mov     esi, (FONT and 11b) shl 28 or ((FONT_MULTIPLIER - 1) and 111b) shl 24 or COLOR_TXT_BREAKPOINT
     .nobp:
 
         mov     eax, [_eip]
         cmp     eax, ebp
         jnz     .notcurrent
         mov     edx, COLOR_BG_SELECTED
-        mov     esi, COLOR_TXT_SELECTED
+        mov     esi, (FONT and 11b) shl 28 or ((FONT_MULTIPLIER - 1) and 111b) shl 24 or COLOR_TXT_SELECTED
     .notcurrent:
         push    esi     ; Save color value for disassembled text
 
@@ -1606,12 +1621,12 @@ draw_disasm:
         mcall   13
 
         mov     edx, [disasm_cur_str]
-        imul    edx, 10
-        add     edx, data_x_pos*10000h + disasm_y_pos
+        imul    edx, (FONT_Y_SIZE+TEXT_Y_CLEARANCE)
+        add     edx, DATA_X_POS*10000h + DISASM_Y_POS
         ; draw a number in the window, color in esi
         mcall   47, 80100h, ebp
 
-        lea     ebx, [edx+8*6*10000h]
+        lea     ebx, [edx+8*FONT_X_SIZE*10000h]
         mov     ecx, esi    ; text color
         push    2
         pop     esi
@@ -1620,21 +1635,21 @@ draw_disasm:
         mcall   4
         push    9
         pop     edi
-        lea     edx, [ebx+2*6*10000h]
+        lea     edx, [ebx+2*FONT_X_SIZE*10000h]
         mov     ecx, ebp
         sub     ecx, [disasm_start_pos]
         add     ecx, disasm_buffer
 
-        mov     esi, COLOR_TXT_HEX
+        mov     esi, (FONT and 11b) shl 28 or ((FONT_MULTIPLIER - 1) and 111b) shl 24 or COLOR_TXT_HEX
         mov     eax, [_eip]
         cmp     eax, ebp
         jnz     @f
-        mov     esi, COLOR_TXT_SELECTED
+        mov     esi, (FONT and 11b) shl 28 or ((FONT_MULTIPLIER - 1) and 111b) shl 24 or COLOR_TXT_SELECTED
   @@:
     .drawhex:
         ; draw a number in the window, color in esi
         mcall   47, 20101h
-        add     edx, 6*3*10000h
+        add     edx, FONT_X_SIZE*3*10000h
         inc     ecx
         inc     ebp
         cmp     ebp, [disasm_cur_pos]
@@ -1648,7 +1663,7 @@ draw_disasm:
         pop     esi
         jbe     .drawhex
 
-        lea     ebx, [edx-6*10000h]
+        lea     ebx, [edx-FONT_X_SIZE*10000h]
         ; copy color value from esi
         mov     ecx, esi
         push    3
@@ -1668,8 +1683,8 @@ draw_disasm:
         dec     ecx
         xchg    ecx, esi
         mov     ebx, [disasm_cur_str]
-        imul    ebx, 10
-        add     ebx, (data_x_pos+6*40)*10000h+disasm_y_pos
+        imul    ebx, (FONT_Y_SIZE+TEXT_Y_CLEARANCE)
+        add     ebx, (DATA_X_POS+FONT_X_SIZE*40)*10000h+DISASM_Y_POS
 
         ; draw a text string in the window, color in ecx
         mcall   4
@@ -1682,16 +1697,16 @@ draw_disasm:
         mov     ecx, [disasm_height_dd]
         sub     ecx, [disasm_cur_str]
         jz      @f
-        imul    ecx, 10
+        imul    ecx, (FONT_Y_SIZE+TEXT_Y_CLEARANCE)
         inc     ecx
-        mov     eax, disasm_y_pos
+        mov     eax, DISASM_Y_POS
         add     eax, [disasm_y_size_dd+4]
         sub     eax, ecx
         shl     eax, 16
         add     ecx, eax
         ; Draw filled rectangle
         mov     ebx, [data_x_size_dd+4]
-        add     ebx, data_x_pos*10000h
+        add     ebx, DATA_X_POS*10000h
         mcall   13, , , COLOR_BG_NORMAL
 
     @@:
@@ -1787,75 +1802,75 @@ draw_window:
 
         ; (re)calculate coordinates of GUI elements
         mov     eax, [thread_info.client_box.width]
-        sub     eax, data_x_pos + data_x_pos + registers_x_size+3
+        sub     eax, DATA_X_POS + DATA_X_POS + REGISTERS_X_SIZE+3
         mov     [data_x_size_dd+4], eax
         mov     [messages_x_size_dd+4], eax
         shl     eax, 16
         mov     [data_x_size_dd], eax
         mov     [messages_x_size_dd], eax
         shr     eax, 16
-        add     eax, data_x_pos + 4
+        add     eax, DATA_X_POS + 4
         mov     [registers_x_pos_dd+4], eax
         shl     eax, 16
         mov     [registers_x_pos_dd], eax
 
         mov     eax, [thread_info.client_box.height]
-        sub     eax, cmdline_y_size + data_x_pos
+        sub     eax, CMD_Y_SIZE + DATA_X_POS
         mov     [cmdline_y_pos_dd+4], eax
         shl     eax, 16
         mov     [cmdline_y_pos_dd], eax
         shr     eax, 16
-        sub     eax, messages_y_size + 4
+        sub     eax, MSG_Y_SIZE + 4
         mov     [messages_y_pos_dd+4], eax
         shl     eax, 16
         mov     [messages_y_pos_dd], eax
         shr     eax, 16
-        sub     eax, disasm_y_pos + 4
+        sub     eax, DISASM_Y_POS + 4
         mov     [disasm_y_size_dd+4], eax
         shl     eax, 16
         mov     [disasm_y_size_dd], eax
         shr     eax, 16
-        mov     ecx, 10
+        mov     ecx, (FONT_Y_SIZE+TEXT_Y_CLEARANCE)
         xor     edx, edx
         div     ecx
         mov     [disasm_height_dd], eax
 
         mov     eax, [thread_info.client_box.height]
-        sub     eax, data_x_pos + registers_y_pos-1
+        sub     eax, DATA_X_POS + TITLE_Y_POS+(FONT_Y_SIZE/2)+2
         mov     [registers_y_size_dd+4], eax
         shl     eax, 16
         mov     [registers_y_size_dd], eax
 
         ; messages frame
         mov     ebx, [messages_x_size_dd+4]
-        add     ebx, (messages_x_pos-2)*10000h + (messages_x_pos+2)
+        add     ebx, (MSG_X_POS-2)*10000h + (MSG_X_POS+2)
         push    ebx
         mov     ecx, [messages_y_pos_dd+2]
         add     ecx, -2*10001h
         mov     edx, COLOR_LINE
         mcall   38
-        add     ecx, (messages_y_size+2+2)*10001h
+        add     ecx, (MSG_Y_SIZE+2+2)*10001h
         mcall
-        mov     ebx, (messages_x_pos-2)*10001h
+        mov     ebx, (MSG_X_POS-2)*10001h
         push    ebx
         mov     ecx, [messages_y_pos_dd+2]
-        add     ecx, (-2*10000h) + (messages_y_size+2)
+        add     ecx, (-2*10000h) + (MSG_Y_SIZE+2)
         mcall
         mov     ebx, [messages_x_size_dd+2]
-        add     ebx, (messages_x_pos+2)*10001h
+        add     ebx, (MSG_X_POS+2)*10001h
         push    ebx
         mcall
 
         ; command line frame
         mov     ecx, [cmdline_y_pos_dd+2]
-        add     ecx, (-2*10000h) + (cmdline_y_size+2)
+        add     ecx, (-2*10000h) + (CMD_Y_SIZE+2)
         pop     ebx
         mcall
         pop     ebx
         mcall
         pop     ebx
         mov     ecx, [cmdline_y_pos_dd+2]
-        add     ecx, (cmdline_y_size+2)*10001h
+        add     ecx, (CMD_Y_SIZE+2)*10001h
 
         mcall
         mov     ecx, [cmdline_y_pos_dd+2]
@@ -1864,19 +1879,19 @@ draw_window:
 
         ; registers frame
         mov     ebx, [registers_x_pos_dd]
-        add     ebx, (-2) shl 16 + (registers_x_size+3)
-        mov     ecx, (registers_y_pos-2) shl 16 + 1
+        add     ebx, (-2) shl 16 + (REGISTERS_X_SIZE+3)
+        mov     ecx, (TITLE_Y_POS+(FONT_Y_SIZE/2)) shl 16 + 1
         mov     edx, COLOR_LINE
         mcall   13                      ; top
         mov     ebx, [registers_x_pos_dd]
-        add     ebx, ((-2)+(registers_x_size+3)) shl 16 +1
+        add     ebx, ((-2)+(REGISTERS_X_SIZE+3)) shl 16 + 1
         mov     ecx, [registers_y_size_dd+4]
-        add     ecx, (registers_y_pos-2) shl 16 + (+3+1)
+        add     ecx, (TITLE_Y_POS+(FONT_Y_SIZE/2)) shl 16 + (+3+1)
         mcall                           ; right
         mov     ebx, [registers_x_pos_dd]
-        add     ebx, (-2) shl 16 + (registers_x_size+3)
+        add     ebx, (-2) shl 16 + (REGISTERS_X_SIZE+3+1)
         mov     ecx, [registers_y_size_dd]
-        add     ecx, ((registers_y_pos-2)+(+3)) shl 16 + 1
+        add     ecx, ((TITLE_Y_POS+(FONT_Y_SIZE/2))+4) shl 16 + 1
         mcall                           ; bottom
 
         ; messages
@@ -1887,23 +1902,23 @@ draw_window:
         call    draw_cursor
 
         ; title & registers & dump & disasm
-        mov     ebx, (data_x_pos-2)*10001h
-        mov     ecx, (title_y_pos+5)*10000h + (-2)
+        mov     ebx, (DATA_X_POS-2)*10001h
+        mov     ecx, (TITLE_Y_POS+(FONT_Y_SIZE/2))*10000h + (-2)
         add     ecx, [messages_y_pos_dd+4]
         mov     edx, COLOR_LINE
         mcall   38
         mov     ebx, [data_x_size_dd+2]
-        add     ebx, (data_x_pos+2)*10001h
+        add     ebx, (DATA_X_POS+2)*10001h
         mcall
         mov     ebx, [data_x_size_dd+4]
-        add     ebx, (data_x_pos-2)*10000h + (data_x_pos+2)
-        mov     ecx, (disasm_y_pos-4)*10001h
+        add     ebx, (DATA_X_POS-2)*10000h + (DATA_X_POS+2)
+        mov     ecx, (DISASM_Y_POS-4)*10001h
         mcall
 
         mov     ebx, [registers_x_pos_dd]
-        add     ebx, (4 shl 16) + 42
-        mov     ecx, (registers_y_pos shl 16) + 11
-        mov     edx, (1 shl 30)+2
+        add     ebx, (-1) shl 16 + REGISTERS_X_SIZE + 1
+        mov     ecx, (REGISTERS_Y_POS - 2) shl 16 + FONT_Y_SIZE + TEXT_Y_CLEARANCE
+        mov     edx, (1 shl 30) + 2
         mov     esi, 0x00808080
         mcall   8
 
