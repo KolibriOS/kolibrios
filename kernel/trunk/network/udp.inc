@@ -1,6 +1,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;                                                                 ;;
-;; Copyright (C) KolibriOS team 2004-2017. All rights reserved.    ;;
+;; Copyright (C) KolibriOS team 2004-2019. All rights reserved.    ;;
 ;; Distributed under terms of the GNU General Public License       ;;
 ;;                                                                 ;;
 ;;  UDP.INC                                                        ;;
@@ -30,8 +30,8 @@ ends
 uglobal
 align 4
 
-        UDP_PACKETS_TX          rd  NET_DEVICES_MAX
-        UDP_PACKETS_RX          rd  NET_DEVICES_MAX
+        UDP_packets_tx        rd  NET_DEVICES_MAX
+        UDP_packets_rx         rd  NET_DEVICES_MAX
 
 endg
 
@@ -44,7 +44,7 @@ endg
 macro   udp_init {
 
         xor     eax, eax
-        mov     edi, UDP_PACKETS_TX
+        mov     edi, UDP_packets_tx
         mov     ecx, 2*NET_DEVICES_MAX
         rep stosd
 }
@@ -188,7 +188,7 @@ udp_input:
         popa
 
   .updatesock:
-        inc     [UDP_PACKETS_RX + edi]
+        inc     [UDP_packets_rx + edi]
 
         movzx   ecx, [esi + UDP_header.Length]
         sub     ecx, sizeof.UDP_header
@@ -286,7 +286,7 @@ udp_output:
         test    eax, eax
         jnz     @f
         call    net_ptr_to_num4
-        inc     [UDP_PACKETS_TX + edi]
+        inc     [UDP_packets_tx + edi]
        @@:
 
         ret
@@ -341,7 +341,7 @@ udp_connect:
         test    eax, eax
         jz      .enoroute
         pop     eax
-        mov     ebx, [NET_DRV_LIST + edi]
+        mov     ebx, [net_drv_list + edi]
         mov     [eax + UDP_SOCKET.device], ebx
         mov     [eax + UDP_SOCKET.LocalIP], edx
         popa
@@ -420,9 +420,9 @@ udp_api:
         ret
 
   .packets_tx:
-        mov     eax, [UDP_PACKETS_TX + eax]
+        mov     eax, [UDP_packets_tx + eax]
         ret
 
   .packets_rx:
-        mov     eax, [UDP_PACKETS_RX + eax]
+        mov     eax, [UDP_packets_rx + eax]
         ret

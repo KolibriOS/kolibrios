@@ -285,7 +285,7 @@ eth_api:
         cmp     bh, NET_DEVICES_MAX
         ja      .error
         movzx   eax, bh
-        mov     eax, dword [NET_DRV_LIST + 4*eax]
+        mov     eax, dword [net_drv_list + 4*eax]
         cmp     [eax + NET_DEVICE.device_type], NET_DEVICE_ETH
         jne     .error
 

@@ -1,6 +1,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;                                                                 ;;
-;; Copyright (C) KolibriOS team 2004-2017. All rights reserved.    ;;
+;; Copyright (C) KolibriOS team 2004-2019. All rights reserved.    ;;
 ;; Distributed under terms of the GNU General Public License       ;;
 ;;                                                                 ;;
 ;;  Part of the TCP/IP network stack for KolibriOS                 ;;
@@ -122,7 +122,7 @@ tcp_connect:
         test    eax, eax
         jz      .enoroute
         pop     eax
-        mov     ebx, [NET_DRV_LIST + edi]
+        mov     ebx, [net_drv_list + edi]
         mov     [eax + TCP_SOCKET.device], ebx
         mov     [eax + TCP_SOCKET.LocalIP], edx
         popa

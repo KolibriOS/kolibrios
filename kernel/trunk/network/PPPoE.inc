@@ -1,6 +1,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;                                                              ;;
-;; Copyright (C) KolibriOS team 2012-2015. All rights reserved. ;;
+;; Copyright (C) KolibriOS team 2012-2019. All rights reserved. ;;
 ;; Distributed under terms of the GNU General Public License    ;;
 ;;                                                              ;;
 ;;  PPPoE.INC                                                   ;;
@@ -131,7 +131,7 @@ pppoe_discovery_output:
         cmp     ebx, NET_DEVICES_MAX
         ja      .bad
 
-        mov     ebx, [NET_DRV_LIST + 4*ebx]
+        mov     ebx, [net_drv_list + 4*ebx]
         test    ebx, ebx
         jz      .bad
 

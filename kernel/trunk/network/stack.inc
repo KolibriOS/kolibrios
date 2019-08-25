@@ -1,6 +1,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;                                                                 ;;
-;; Copyright (C) KolibriOS team 2004-2016. All rights reserved.    ;;
+;; Copyright (C) KolibriOS team 2004-2019. All rights reserved.    ;;
 ;; Distributed under terms of the GNU General Public License       ;;
 ;;                                                                 ;;
 ;;  STACK.INC                                                      ;;
@@ -251,10 +251,10 @@ include "socket.inc"
 uglobal
 align 4
 
-        NET_RUNNING     dd ?
-        NET_DRV_LIST    rd NET_DEVICES_MAX
+        net_running     dd ?
+        net_drv_list    rd NET_DEVICES_MAX
 
-        NET_BUFFS_FREE  rd NET_BUFFERS
+        net_buffs_free  rd NET_BUFFERS
         .current        dd ?
 
 endg
@@ -276,7 +276,7 @@ stack_init:
         test    eax, eax
         jz      .fail
 
-        mov     edi, NET_BUFFS_FREE
+        mov     edi, net_buffs_free
         mov     ecx, NET_BUFFERS
         cld
   .loop:
@@ -285,12 +285,12 @@ stack_init:
         dec     ecx
         jnz     .loop
 
-        mov     eax, NET_BUFFS_FREE
+        mov     eax, net_buffs_free
         stosd
 
 ; Init the network drivers list
         xor     eax, eax
-        mov     edi, NET_RUNNING
+        mov     edi, net_running
         mov     ecx, (NET_DEVICES_MAX + 1)
         rep stosd
 
@@ -346,7 +346,7 @@ stack_handler:
         je      .exit
         mov     [net_10ms], eax
 
-        cmp     [NET_RUNNING], 0
+        cmp     [net_running], 0
         je      .exit
 
         test    [net_10ms], 0x0f        ; 160ms
@@ -378,11 +378,11 @@ proc net_buff_alloc stdcall, buffersize
 
         spin_lock_irqsave
 
-        mov     eax, [NET_BUFFS_FREE.current]
-        cmp     eax, NET_BUFFS_FREE+NET_BUFFERS*4
+        mov     eax, [net_buffs_free.current]
+        cmp     eax, net_buffs_free+NET_BUFFERS*4
         jae     .out_of_mem
         mov     eax, [eax]
-        add     [NET_BUFFS_FREE.current], 4
+        add     [net_buffs_free.current], 4
 
         spin_unlock_irqrestore
 
@@ -410,8 +410,8 @@ proc net_buff_free stdcall, buffer
 
         spin_lock_irqsave
 
-        sub     [NET_BUFFS_FREE.current], 4
-        mov     eax, [NET_BUFFS_FREE.current]
+        sub     [net_buffs_free.current], 4
+        mov     eax, [net_buffs_free.current]
         push    [buffer]
         pop     dword[eax]
 
@@ -460,14 +460,14 @@ net_add_device:
 
         DEBUGF  DEBUG_NETWORK_VERBOSE, "net_add_device: %x\n", ebx   ;;; TODO: use mutex to lock net device list
 
-        cmp     [NET_RUNNING], NET_DEVICES_MAX
+        cmp     [net_running], NET_DEVICES_MAX
         jae     .error
 
 ;----------------------------------
 ; Check if device is already listed
         mov     eax, ebx
         mov     ecx, NET_DEVICES_MAX    ; We need to check whole list because a device may be removed without re-organizing list
-        mov     edi, NET_DRV_LIST
+        mov     edi, net_drv_list
 
         repne scasd                     ; See if device is already in the list
         jz      .error
@@ -476,7 +476,7 @@ net_add_device:
 ; Find empty slot in the list
         xor     eax, eax
         mov     ecx, NET_DEVICES_MAX
-        mov     edi, NET_DRV_LIST
+        mov     edi, net_drv_list
 
         repne scasd
         jnz     .error
@@ -488,10 +488,10 @@ net_add_device:
         mov     [edi], ebx              ; add device to list
 
         mov     eax, edi                ; Calculate device number in eax
-        sub     eax, NET_DRV_LIST
+        sub     eax, net_drv_list
         shr     eax, 2
 
-        inc     [NET_RUNNING]           ; Indicate that one more network device is up and running
+        inc     [net_running]           ; Indicate that one more network device is up and running
 
         call    net_send_event
 
@@ -517,7 +517,7 @@ net_add_device:
 align 4
 net_remove_device:
 
-        cmp     [NET_RUNNING], 0
+        cmp     [net_running], 0
         je      .error
 
 ;----------------------------
@@ -525,7 +525,7 @@ net_remove_device:
 
         mov     eax, ebx
         mov     ecx, NET_DEVICES_MAX
-        mov     edi, NET_DRV_LIST
+        mov     edi, net_drv_list
 
         repne scasd
         jnz     .error
@@ -535,7 +535,7 @@ net_remove_device:
 
         xor     eax, eax
         mov     dword [edi-4], eax
-        dec     [NET_RUNNING]
+        dec     [net_running]
 
         call    net_send_event
 
@@ -575,7 +575,7 @@ net_ptr_to_num4:                ; Todo, place number in device structure so we o
 
         push    ecx
         mov     ecx, NET_DEVICES_MAX
-        mov     edi, NET_DRV_LIST
+        mov     edi, net_drv_list
   .loop:
         cmp     ebx, [edi]
         je      .found
@@ -589,7 +589,7 @@ net_ptr_to_num4:                ; Todo, place number in device structure so we o
         ret
 
   .found:
-        sub     edi, NET_DRV_LIST
+        sub     edi, net_drv_list
         pop     ecx
         ret
 
@@ -717,7 +717,7 @@ sys_network:
         cmp     bl, 255
         jne     @f
 
-        mov     eax, [NET_RUNNING]
+        mov     eax, [net_running]
         mov     [esp+32], eax
         ret
 
@@ -729,10 +729,10 @@ sys_network:
         and     esi, 0x0000ff00
         shr     esi, 6
 
-        cmp     dword[esi + NET_DRV_LIST], 0    ; check if driver is running
+        cmp     dword[esi + net_drv_list], 0    ; check if driver is running
         je      .doesnt_exist
 
-        mov     eax, [esi + NET_DRV_LIST]
+        mov     eax, [esi + net_drv_list]
 
         and     ebx, 0x000000ff
         cmp     ebx, .number
@@ -840,7 +840,7 @@ sys_protocols:
         mov     esi, ebx
         and     esi, 0x0000ff00
         shr     esi, 6                          ; now we have the device num * 4 in esi
-        cmp     [esi + NET_DRV_LIST], 0         ; check if driver is running
+        cmp     [esi + net_drv_list], 0         ; check if driver is running
         je      .doesnt_exist
 
         push    .return                         ; return address (we will be using jumps instead of calls)

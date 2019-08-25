@@ -1,6 +1,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;                                                                 ;;
-;; Copyright (C) KolibriOS team 2004-2017. All rights reserved.    ;;
+;; Copyright (C) KolibriOS team 2004-2019. All rights reserved.    ;;
 ;; Distributed under terms of the GNU General Public License       ;;
 ;;                                                                 ;;
 ;;  Part of the TCP/IP network stack for KolibriOS                 ;;
@@ -600,7 +600,7 @@ socket_listen:
 
         cmp     [eax + IP_SOCKET.LocalIP], 0
         jne     @f
-        push    [IP_LIST + 4]           ;;; fixme!!!!
+        push    [IPv4_address + 4]           ;;; fixme!!!!
         pop     [eax + IP_SOCKET.LocalIP]
        @@:
 
@@ -1228,7 +1228,7 @@ socket_set_opt:
         cmp     edx, NET_DEVICES_MAX
         ja      .invalid
 
-        mov     edx, [NET_DRV_LIST + 4*edx]
+        mov     edx, [net_drv_list + 4*edx]
         test    edx, edx
         jz      .already
         mov     [eax + SOCKET.device], edx

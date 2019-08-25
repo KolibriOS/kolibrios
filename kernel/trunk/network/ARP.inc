@@ -1,6 +1,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;                                                                 ;;
-;; Copyright (C) KolibriOS team 2004-2015. All rights reserved.    ;;
+;; Copyright (C) KolibriOS team 2004-2019. All rights reserved.    ;;
 ;; Distributed under terms of the GNU General Public License       ;;
 ;;                                                                 ;;
 ;;  ARP.INC                                                        ;;
@@ -60,10 +60,10 @@ align 4
 
         ARP_table       rb NET_DEVICES_MAX*(ARP_TABLE_SIZE * sizeof.ARP_entry)
 
-        ARP_entries_num rd NET_DEVICES_MAX
-        ARP_PACKETS_TX  rd NET_DEVICES_MAX
-        ARP_PACKETS_RX  rd NET_DEVICES_MAX
-        ARP_CONFLICTS   rd NET_DEVICES_MAX
+        ARP_entries     rd NET_DEVICES_MAX
+        ARP_packets_tx  rd NET_DEVICES_MAX
+        ARP_packets_rx  rd NET_DEVICES_MAX
+        ARP_conflicts   rd NET_DEVICES_MAX
 
 
 endg
@@ -78,7 +78,7 @@ endg
 macro arp_init {
 
         xor     eax, eax
-        mov     edi, ARP_entries_num
+        mov     edi, ARP_entries
         mov     ecx, 4*NET_DEVICES_MAX
         rep stosd
 
@@ -107,7 +107,7 @@ local   .exit
 
         xor     edi, edi
   .loop_outer:
-        mov     ecx, [ARP_entries_num + 4*edi]
+        mov     ecx, [ARP_entries + 4*edi]
         test    ecx, ecx
         jz      .exit
 
@@ -177,7 +177,7 @@ arp_input:
         cmp     edi, -1
         jz      .exit
 
-        inc     [ARP_PACKETS_RX + edi]          ; update stats
+        inc     [ARP_packets_rx + edi]          ; update stats
 
         DEBUGF  DEBUG_NETWORK_VERBOSE, "ARP_input: got packet from %u.%u.%u.%u (device*4=%u)\n",\
         [edx + ARP_header.SenderIP]:1, [edx + ARP_header.SenderIP + 1]:1,\
@@ -187,7 +187,7 @@ arp_input:
 ; First, check for IP collision
 
         mov     eax, [edx + ARP_header.SenderIP]
-        cmp     eax, [IP_LIST + edi]
+        cmp     eax, [IPv4_address + edi]
         je      .collision
 
 ;---------------------
@@ -198,7 +198,7 @@ arp_input:
 
         DEBUGF  DEBUG_NETWORK_VERBOSE, "ARP_input: It's a reply\n"
 
-        mov     ecx, [ARP_entries_num + edi]
+        mov     ecx, [ARP_entries + edi]
         test    ecx, ecx
         jz      .exit
 
@@ -242,7 +242,7 @@ arp_input:
 
         DEBUGF  DEBUG_NETWORK_VERBOSE, "ARP_input: its a request\n"
 
-        mov     eax, [IP_LIST + edi]
+        mov     eax, [IPv4_address + edi]
         cmp     eax, [edx + ARP_header.TargetIP]                ; Is it looking for my IP address?
         jne     .exit
 
@@ -259,7 +259,7 @@ arp_input:
         movsd                                                   ; Move sender IP to Dest IP
 
         pop     esi
-        mov     esi, [NET_DRV_LIST + esi]
+        mov     esi, [net_drv_list + esi]
         lea     esi, [esi + ETH_DEVICE.mac]
         lea     edi, [edx + ARP_header.SenderMAC]
         movsd                                                   ; Copy MAC address from in MAC_LIST
@@ -288,7 +288,7 @@ arp_input:
         ret
 
   .collision:
-        inc     [ARP_CONFLICTS + edi]
+        inc     [ARP_conflicts + edi]
         DEBUGF  DEBUG_NETWORK_VERBOSE, "ARP_input: IP address conflict detected!\n"
 
   .exit:
@@ -333,8 +333,8 @@ arp_output_request:
 
         push    edi
         call    net_ptr_to_num4
-        inc     [ARP_PACKETS_TX + edi]          ; assume we will succeed
-        lea     esi, [IP_LIST + edi]            ; SenderIP
+        inc     [ARP_packets_tx + edi]          ; assume we will succeed
+        lea     esi, [IPv4_address + edi]            ; SenderIP
         pop     edi
         movsd
 
@@ -372,13 +372,13 @@ arp_add_entry:
 
         DEBUGF  DEBUG_NETWORK_VERBOSE, "ARP_add_entry: device=%u\n", edi
 
-        mov     ecx, [ARP_entries_num + edi]
+        mov     ecx, [ARP_entries + edi]
         cmp     ecx, ARP_TABLE_SIZE                                     ; list full ?
         jae     .full
 
 ; From this point on, we can only fail if IP has a static entry, or if table is corrupt.
 
-        inc     [ARP_entries_num + edi]                                 ; assume we will succeed
+        inc     [ARP_entries + edi]                                     ; assume we will succeed
 
         push    edi
         xor     ecx, ecx
@@ -417,7 +417,7 @@ arp_add_entry:
 
   .error:
         pop     edi
-        dec     [ARP_entries_num + edi]
+        dec     [ARP_entries + edi]
         DEBUGF  DEBUG_NETWORK_ERROR, "ARP_add_entry_failed\n"
   .full:
         mov     eax, -1
@@ -460,7 +460,7 @@ arp_del_entry:
         rep stosw
 
         pop     edi
-        dec     [ARP_entries_num + 4*edi]
+        dec     [ARP_entries + 4*edi]
         DEBUGF  DEBUG_NETWORK_VERBOSE, "ARP_del_entry: success\n"
 
         ret
@@ -497,7 +497,7 @@ arp_ip_to_mac:
 ;--------------------------------
 ; Try to find the IP in ARP_table
 
-        mov     ecx, [ARP_entries_num + edi]
+        mov     ecx, [ARP_entries + edi]
         test    ecx, ecx
         jz      .not_in_list
         mov     esi, edi
@@ -539,7 +539,7 @@ arp_ip_to_mac:
         pop     edi eax                 ; IP in eax, device number in ebx, for ARP_output_request
 
         push    esi edi
-        mov     ebx, [NET_DRV_LIST + edi]
+        mov     ebx, [net_drv_list + edi]
         call    arp_output_request
         pop     edi esi
   .found_it:
@@ -620,23 +620,23 @@ arp_api:
         ret
 
   .packets_tx:
-        mov     eax, [ARP_PACKETS_TX + eax]
+        mov     eax, [ARP_packets_tx + eax]
         ret
 
   .packets_rx:
-        mov     eax, [ARP_PACKETS_RX + eax]
+        mov     eax, [ARP_packets_rx + eax]
         ret
 
   .conflicts:
-        mov     eax, [ARP_CONFLICTS + eax]
+        mov     eax, [ARP_conflicts + eax]
         ret
 
   .entries:
-        mov     eax, [ARP_entries_num + eax]
+        mov     eax, [ARP_entries + eax]
         ret
 
   .read:
-        cmp     ecx, [ARP_entries_num + eax]
+        cmp     ecx, [ARP_entries + eax]
         jae     .error
         shr     eax, 2
         imul    eax, sizeof.ARP_entry*ARP_TABLE_SIZE
@@ -659,7 +659,7 @@ arp_api:
 
   .remove:
         ; ecx = # entry
-        cmp     ecx, [ARP_entries_num + eax]
+        cmp     ecx, [ARP_entries + eax]
         jae     .error
         imul    ecx, sizeof.ARP_entry
         lea     esi, [ARP_table + ecx]
@@ -669,8 +669,8 @@ arp_api:
         ret
 
   .send_announce:
-        mov     ebx, [NET_DRV_LIST + eax]
-        mov     eax, [IP_LIST + eax]
+        mov     ebx, [net_drv_list + eax]
+        mov     eax, [IPv4_address + eax]
         call    arp_output_request      ; now send a gratuitous ARP
         ret
 

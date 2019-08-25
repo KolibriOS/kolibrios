@@ -1,6 +1,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;                                                                 ;;
-;; Copyright (C) KolibriOS team 2004-2015. All rights reserved.    ;;
+;; Copyright (C) KolibriOS team 2004-2019. All rights reserved.    ;;
 ;; Distributed under terms of the GNU General Public License       ;;
 ;;                                                                 ;;
 ;;  ICMP.INC                                                       ;;
@@ -99,8 +99,8 @@ ends
 uglobal
 align 4
 
-        ICMP_PACKETS_TX         rd NET_DEVICES_MAX
-        ICMP_PACKETS_RX         rd NET_DEVICES_MAX
+        ICMP_packets_tx         rd NET_DEVICES_MAX
+        ICMP_packets_rx         rd NET_DEVICES_MAX
 
 endg
 
@@ -115,7 +115,7 @@ endg
 macro icmp_init {
 
         xor     eax, eax
-        mov     edi, ICMP_PACKETS_TX
+        mov     edi, ICMP_packets_tx
         mov     ecx, 2*NET_DEVICES_MAX
         rep stosd
 
@@ -143,7 +143,7 @@ icmp_input:
         DEBUGF  DEBUG_NETWORK_VERBOSE, "ICMP_input\n"
 
 ; Dump all multicasts and broadcasts
-        mov     eax, [IP_LIST + edi]
+        mov     eax, [IPv4_address + edi]
         cmp     eax, [edx + IPv4_header.DestinationAddress]
         jne     .dump
 
@@ -162,7 +162,7 @@ icmp_input:
         DEBUGF  DEBUG_NETWORK_VERBOSE, "ICMP_input: Checksum OK\n"
 
 ; Update stats
-        inc     [ICMP_PACKETS_RX + edi]
+        inc     [ICMP_packets_rx + edi]
 
 ; Is this an echo request?
         cmp     [esi + ICMP_header.Type], ICMP_ECHO
@@ -273,7 +273,8 @@ icmp_input:
         jnz     @f
         DEBUGF  DEBUG_NETWORK_VERBOSE, "ICMP transmit failed\n"
         call    net_ptr_to_num4
-        inc     [ICMP_PACKETS_TX + edi]
+        inc     [ICMP_packets_tx + edi]
+        inc     [IPv4_packets_tx + edi]
        @@:
         ret
 
@@ -406,7 +407,7 @@ icmp_output_raw:
         test    eax, eax
         jnz     @f
         call    net_ptr_to_num4
-        inc     [ICMP_PACKETS_TX + edi]
+        inc     [ICMP_packets_tx + edi]
   @@:
         ret
 
@@ -447,9 +448,9 @@ icmp_api:
         ret
 
   .packets_tx:
-        mov     eax, [ICMP_PACKETS_TX + eax]
+        mov     eax, [ICMP_packets_tx + eax]
         ret
 
   .packets_rx:
-        mov     eax, [ICMP_PACKETS_RX + eax]
+        mov     eax, [ICMP_packets_rx + eax]
         ret

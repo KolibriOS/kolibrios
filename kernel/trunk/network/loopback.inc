@@ -1,6 +1,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;                                                                 ;;
-;; Copyright (C) KolibriOS team 2004-2015. All rights reserved.    ;;
+;; Copyright (C) KolibriOS team 2004-2019. All rights reserved.    ;;
 ;; Distributed under terms of the GNU General Public License       ;;
 ;;                                                                 ;;
 ;;  loopback.inc                                                   ;;
@@ -54,9 +54,9 @@ local   .fail
         cmp     eax, -1
         je      .fail
 
-        mov     [IP_LIST], 127 + 1 shl 24
-        mov     [SUBNET_LIST], 255
-        mov     [BROADCAST_LIST], 0xffffff00 + 127
+        mov     [IPv4_address], 127 + 1 shl 24
+        mov     [IPv4_subnet], 255
+        mov     [IPv4_broadcast], 0xffffff00 + 127
 
   .fail:
 }
@@ -67,7 +67,7 @@ local   .fail
 ;                                                                 ;
 ;   IN: [esp+4] = Pointer to buffer                               ;
 ;                                                                 ;
-;  OUT: /                                                         ;
+;  OUT: eax = 0 on success, errorcode otherwise                   ;
 ;                                                                 ;
 ;-----------------------------------------------------------------;
 align 4
@@ -76,17 +76,20 @@ loop_input:
         mov     eax, [esp+4]
 
 ; Update stats
+        inc     [LOOPBACK_DEVICE.packets_tx]
         inc     [LOOPBACK_DEVICE.packets_rx]
 
         mov     ecx, [eax + NET_BUFF.length]
         add     dword[LOOPBACK_DEVICE.bytes_rx], ecx
         adc     dword[LOOPBACK_DEVICE.bytes_rx + 4], 0
+        add     dword[LOOPBACK_DEVICE.bytes_tx], ecx
+        adc     dword[LOOPBACK_DEVICE.bytes_tx + 4], 0
 
         DEBUGF  DEBUG_NETWORK_VERBOSE, "LOOP_input: ptr=%x size=%u\n", eax, ecx
 
 ; Reverse buffptr and returnaddr on stack
         pop     edx edi
-        push    edx edi
+        push    edx .done edi
 
 ; Set registers for protocol handlers
         lea     edx, [eax + NET_BUFF.data]
@@ -102,6 +105,12 @@ loop_input:
   .dump:
         DEBUGF  DEBUG_NETWORK_VERBOSE, "LOOP_input: dumping\n"
         call    net_buff_free
+
+        or      eax, -1
+        ret
+
+  .done:
+        xor     eax, eax
         ret
 
 
@@ -139,10 +148,6 @@ loop_output:
         pop     ecx
         mov     [eax + NET_BUFF.length], ecx
         lea     edi, [eax + NET_BUFF.data]
-
-        inc     [LOOPBACK_DEVICE.packets_tx]
-        add     dword[LOOPBACK_DEVICE.bytes_tx], ecx
-        adc     dword[LOOPBACK_DEVICE.bytes_tx + 4], 0
 
         DEBUGF  DEBUG_NETWORK_VERBOSE, "LOOP_output: ptr=%x size=%u\n", eax, ecx
         ret
