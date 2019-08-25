@@ -259,7 +259,7 @@ arp_input:
         movsd                                                   ; Move sender IP to Dest IP
 
         pop     esi
-        mov     esi, [net_drv_list + esi]
+        mov     esi, [net_device_list + esi]
         lea     esi, [esi + ETH_DEVICE.mac]
         lea     edi, [edx + ARP_header.SenderMAC]
         movsd                                                   ; Copy MAC address from in MAC_LIST
@@ -539,7 +539,7 @@ arp_ip_to_mac:
         pop     edi eax                 ; IP in eax, device number in ebx, for ARP_output_request
 
         push    esi edi
-        mov     ebx, [net_drv_list + edi]
+        mov     ebx, [net_device_list + edi]
         call    arp_output_request
         pop     edi esi
   .found_it:
@@ -669,7 +669,7 @@ arp_api:
         ret
 
   .send_announce:
-        mov     ebx, [net_drv_list + eax]
+        mov     ebx, [net_device_list + eax]
         mov     eax, [IPv4_address + eax]
         call    arp_output_request      ; now send a gratuitous ARP
         ret

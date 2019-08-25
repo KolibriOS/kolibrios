@@ -251,11 +251,11 @@ include "socket.inc"
 uglobal
 align 4
 
-        net_running     dd ?
-        net_drv_list    rd NET_DEVICES_MAX
+        net_device_count        dd ?
+        net_device_list         rd NET_DEVICES_MAX
 
-        net_buffs_free  rd NET_BUFFERS
-        .current        dd ?
+        net_buffs_free          rd NET_BUFFERS
+        .current                dd ?
 
 endg
 
@@ -290,7 +290,7 @@ stack_init:
 
 ; Init the network drivers list
         xor     eax, eax
-        mov     edi, net_running
+        mov     edi, net_device_count
         mov     ecx, (NET_DEVICES_MAX + 1)
         rep stosd
 
@@ -346,7 +346,7 @@ stack_handler:
         je      .exit
         mov     [net_10ms], eax
 
-        cmp     [net_running], 0
+        cmp     [net_device_count], 0
         je      .exit
 
         test    [net_10ms], 0x0f        ; 160ms
@@ -460,14 +460,14 @@ net_add_device:
 
         DEBUGF  DEBUG_NETWORK_VERBOSE, "net_add_device: %x\n", ebx   ;;; TODO: use mutex to lock net device list
 
-        cmp     [net_running], NET_DEVICES_MAX
+        cmp     [net_device_count], NET_DEVICES_MAX
         jae     .error
 
 ;----------------------------------
 ; Check if device is already listed
         mov     eax, ebx
         mov     ecx, NET_DEVICES_MAX    ; We need to check whole list because a device may be removed without re-organizing list
-        mov     edi, net_drv_list
+        mov     edi, net_device_list
 
         repne scasd                     ; See if device is already in the list
         jz      .error
@@ -476,7 +476,7 @@ net_add_device:
 ; Find empty slot in the list
         xor     eax, eax
         mov     ecx, NET_DEVICES_MAX
-        mov     edi, net_drv_list
+        mov     edi, net_device_list
 
         repne scasd
         jnz     .error
@@ -488,10 +488,10 @@ net_add_device:
         mov     [edi], ebx              ; add device to list
 
         mov     eax, edi                ; Calculate device number in eax
-        sub     eax, net_drv_list
+        sub     eax, net_device_list
         shr     eax, 2
 
-        inc     [net_running]           ; Indicate that one more network device is up and running
+        inc     [net_device_count]      ; Indicate that one more network device is up and running
 
         call    net_send_event
 
@@ -517,7 +517,7 @@ net_add_device:
 align 4
 net_remove_device:
 
-        cmp     [net_running], 0
+        cmp     [net_device_count], 0
         je      .error
 
 ;----------------------------
@@ -525,7 +525,7 @@ net_remove_device:
 
         mov     eax, ebx
         mov     ecx, NET_DEVICES_MAX
-        mov     edi, net_drv_list
+        mov     edi, net_device_list
 
         repne scasd
         jnz     .error
@@ -535,7 +535,7 @@ net_remove_device:
 
         xor     eax, eax
         mov     dword [edi-4], eax
-        dec     [net_running]
+        dec     [net_device_count]
 
         call    net_send_event
 
@@ -575,7 +575,7 @@ net_ptr_to_num4:                ; Todo, place number in device structure so we o
 
         push    ecx
         mov     ecx, NET_DEVICES_MAX
-        mov     edi, net_drv_list
+        mov     edi, net_device_list
   .loop:
         cmp     ebx, [edi]
         je      .found
@@ -589,7 +589,7 @@ net_ptr_to_num4:                ; Todo, place number in device structure so we o
         ret
 
   .found:
-        sub     edi, net_drv_list
+        sub     edi, net_device_list
         pop     ecx
         ret
 
@@ -717,22 +717,22 @@ sys_network:
         cmp     bl, 255
         jne     @f
 
-        mov     eax, [net_running]
+        mov     eax, [net_device_count]
         mov     [esp+32], eax
         ret
 
    @@:
-        cmp     bh, NET_DEVICES_MAX             ; Check if device number exists
+        cmp     bh, NET_DEVICES_MAX                     ; Check if device number exists
         jae     .doesnt_exist
 
         mov     esi, ebx
         and     esi, 0x0000ff00
         shr     esi, 6
 
-        cmp     dword[esi + net_drv_list], 0    ; check if driver is running
+        cmp     dword[esi + net_device_list], 0         ; check if device is running
         je      .doesnt_exist
 
-        mov     eax, [esi + net_drv_list]
+        mov     eax, [esi + net_device_list]
 
         and     ebx, 0x000000ff
         cmp     ebx, .number
@@ -840,7 +840,7 @@ sys_protocols:
         mov     esi, ebx
         and     esi, 0x0000ff00
         shr     esi, 6                          ; now we have the device num * 4 in esi
-        cmp     [esi + net_drv_list], 0         ; check if driver is running
+        cmp     [esi + net_device_list], 0      ; check if device is running
         je      .doesnt_exist
 
         push    .return                         ; return address (we will be using jumps instead of calls)

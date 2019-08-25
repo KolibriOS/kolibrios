@@ -131,7 +131,7 @@ pppoe_discovery_output:
         cmp     ebx, NET_DEVICES_MAX
         ja      .bad
 
-        mov     ebx, [net_drv_list + 4*ebx]
+        mov     ebx, [net_device_list + 4*ebx]
         test    ebx, ebx
         jz      .bad
 

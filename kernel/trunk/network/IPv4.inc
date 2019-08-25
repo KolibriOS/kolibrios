@@ -648,7 +648,7 @@ ipv4_output:
         inc     [IPv4_packets_tx + edi] ; update stats
 
         mov     ax, ETHER_PROTO_IPv4
-        mov     ebx, [net_drv_list + edi]
+        mov     ebx, [net_device_list + edi]
         mov     ecx, [esp + 6 + 8 + 2]
         add     ecx, sizeof.IPv4_header
         mov     edx, esp
@@ -747,7 +747,7 @@ ipv4_output_raw:
 
         inc     [IPv4_packets_tx + 4*edi]
         mov     ax, ETHER_PROTO_IPv4
-        mov     ebx, [net_drv_list + 4*edi]
+        mov     ebx, [net_device_list + 4*edi]
         mov     ecx, [esp + 6 + 4]
         add     ecx, sizeof.IPv4_header
         mov     edx, esp
@@ -1114,7 +1114,7 @@ ipv4_api:
         or      ebx, ecx
         mov     [IPv4_broadcast + eax], ebx
 
-        mov     ebx, [net_drv_list + eax]
+        mov     ebx, [net_device_list + eax]
         mov     eax, [IPv4_address + eax]
         call    arp_output_request              ; now send a gratuitous ARP
 

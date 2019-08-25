@@ -1,6 +1,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;                                                                 ;;
-;; Copyright (C) KolibriOS team 2004-2015. All rights reserved.    ;;
+;; Copyright (C) KolibriOS team 2004-2019. All rights reserved.    ;;
 ;; Distributed under terms of the GNU General Public License       ;;
 ;;                                                                 ;;
 ;;  ETHERNET.INC                                                   ;;
@@ -285,7 +285,7 @@ eth_api:
         cmp     bh, NET_DEVICES_MAX
         ja      .error
         movzx   eax, bh
-        mov     eax, dword [net_drv_list + 4*eax]
+        mov     eax, dword [net_device_list + 4*eax]
         cmp     [eax + NET_DEVICE.device_type], NET_DEVICE_ETH
         jne     .error
 

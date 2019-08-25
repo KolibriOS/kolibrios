@@ -1228,7 +1228,7 @@ socket_set_opt:
         cmp     edx, NET_DEVICES_MAX
         ja      .invalid
 
-        mov     edx, [net_drv_list + 4*edx]
+        mov     edx, [net_device_list + 4*edx]
         test    edx, edx
         jz      .already
         mov     [eax + SOCKET.device], edx

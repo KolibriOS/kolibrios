@@ -341,7 +341,7 @@ udp_connect:
         test    eax, eax
         jz      .enoroute
         pop     eax
-        mov     ebx, [net_drv_list + edi]
+        mov     ebx, [net_device_list + edi]
         mov     [eax + UDP_SOCKET.device], ebx
         mov     [eax + UDP_SOCKET.LocalIP], edx
         popa
