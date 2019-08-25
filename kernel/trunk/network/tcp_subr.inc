@@ -89,6 +89,8 @@ macro   tcp_rcvseqinit ptr {
 
 macro   tcp_init_socket socket {
 
+; new tcp control block
+
         mov     [socket + TCP_SOCKET.t_maxseg], TCP_mss_default
         mov     [socket + TCP_SOCKET.t_flags], TF_REQ_SCALE or TF_REQ_TSTMP
 

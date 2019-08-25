@@ -495,9 +495,9 @@ endl
         xor     ebx, ebx
   @@:
 
-        cmp     ebx, TCP_max_win
+        cmp     ebx, TCP_max_win ;;;; shl rcv_scale
         jbe     @f
-        mov     ebx, TCP_max_win
+        mov     ebx, TCP_max_win ;;;; shl rcv_scale
   @@:
 
         mov     ecx, [eax + TCP_SOCKET.RCV_ADV]

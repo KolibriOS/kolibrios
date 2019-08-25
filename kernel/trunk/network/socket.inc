@@ -920,7 +920,7 @@ socket_receive_stream:
 
         DEBUGF  DEBUG_NETWORK_VERBOSE, "SOCKET_receive: STREAM\n"
 
-        cmp     [eax + STREAM_SOCKET.rcv + RING_BUFFER.size], 0
+        cmp     [eax + STREAM_SOCKET.rcv.size], 0
         je      .wouldblock
 
         test    edi, MSG_PEEK
@@ -936,7 +936,7 @@ socket_receive_stream:
         call    socket_ring_free                                ; free read memory
         pop     eax
 
-        cmp     [eax + STREAM_SOCKET.rcv + RING_BUFFER.size], 0
+        cmp     [eax + STREAM_SOCKET.rcv.size], 0
         jne     .more_data
         xor     ebx, ebx                                        ; errorcode = 0 (no error)
         ret
@@ -953,7 +953,7 @@ socket_receive_stream:
         ret
 
   .peek:
-        mov     ecx, [eax + STREAM_SOCKET.rcv + RING_BUFFER.size]
+        mov     ecx, [eax + STREAM_SOCKET.rcv.size]
         xor     ebx, ebx
         ret
 
@@ -1561,7 +1561,7 @@ socket_input:
         jmp     socket_notify
 
   .full:
-        DEBUGF  DEBUG_NETWORK_VERBOSE, "SOCKET_input: socket %x is full!\n", eax
+        DEBUGF  DEBUG_NETWORK_ERROR, "SOCKET_input: socket %x is full!\n", eax
 
         pusha
         lea     ecx, [eax + SOCKET.mutex]
@@ -1657,7 +1657,6 @@ socket_ring_write:
         jb      @f
         sub     edi, SOCKET_BUFFER_SIZE                         ; WRAP
   @@:
-
         mov     [eax + RING_BUFFER.write_ptr], edi
         pop     edi
 
@@ -1753,7 +1752,7 @@ socket_ring_read:
         call    mutex_unlock                                    ; TODO: check what registers this function actually destroys
         popa
 
-        DEBUGF  DEBUG_NETWORK_VERBOSE, "SOCKET_ring_read: no data at all!\n"
+        DEBUGF  DEBUG_NETWORK_ERROR, "SOCKET_ring_read: no data at all!\n"
         xor     ecx, ecx
         ret
 
@@ -1800,7 +1799,7 @@ socket_ring_free:
         ret
 
   .error:       ; we could free all available bytes, but that would be stupid, i guess..
-        DEBUGF  DEBUG_NETWORK_VERBOSE, "SOCKET_ring_free: buffer=%x error!\n", eax
+        DEBUGF  DEBUG_NETWORK_ERROR, "SOCKET_ring_free: buffer=%x error!\n", eax
         add     [eax + RING_BUFFER.size], ecx
 
         push    eax
