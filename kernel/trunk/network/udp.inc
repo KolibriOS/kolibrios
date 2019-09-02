@@ -5,7 +5,7 @@
 ;;                                                                 ;;
 ;;  UDP.INC                                                        ;;
 ;;                                                                 ;;
-;;  Part of the tcp/ip network stack for KolibriOS                 ;;
+;;  Part of the TCP/IP network stack for KolibriOS                 ;;
 ;;                                                                 ;;
 ;;    Written by hidnplayr@kolibrios.org                           ;;
 ;;                                                                 ;;
@@ -30,8 +30,8 @@ ends
 uglobal
 align 4
 
-        UDP_packets_tx        rd  NET_DEVICES_MAX
-        UDP_packets_rx         rd  NET_DEVICES_MAX
+        UDP_packets_tx          rd  NET_DEVICES_MAX
+        UDP_packets_rx          rd  NET_DEVICES_MAX
 
 endg
 
@@ -364,6 +364,12 @@ udp_connect:
 
   .enoroute:
         pop     eax
+
+        push    eax
+        lea     ecx, [eax + SOCKET.mutex]
+        call    mutex_unlock
+        pop     eax
+
         popa
         xor     eax, eax
         dec     eax

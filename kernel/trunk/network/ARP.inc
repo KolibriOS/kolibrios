@@ -439,7 +439,7 @@ arp_del_entry:
 
 ; TODO: use a mutex to lock ARP table
 
-        DEBUGF  DEBUG_NETWORK_VERBOSE, "ARP_del_entry: entry=0x%x entrys=%u\n", esi, [ARP_entries_num + 4*edi]
+        DEBUGF  DEBUG_NETWORK_VERBOSE, "ARP_del_entry: entry=0x%x entrys=%u\n", esi, [ARP_entries + 4*edi]
         DEBUGF  DEBUG_NETWORK_VERBOSE, "ARP_del_entry: IP=%u.%u.%u.%u\n", \
         [esi + ARP_entry.IP]:1, [esi + ARP_entry.IP + 1]:1, [esi + ARP_entry.IP + 2]:1, [esi + ARP_entry.IP + 3]:1
 
