@@ -193,6 +193,7 @@ extra_files = {
  {"kolibrios/games/fara/fara.gfx", "common/games/fara.gfx"},
  {"kolibrios/games/jumpbump/", "common/games/jumpbump/*"},
  {"kolibrios/games/knight", "common/games/knight"},
+ {"kolibrios/games/KosChess/", "common/games/KosChess/*"},
  {"kolibrios/games/LaserTank/", "common/games/LaserTank/*"},
  {"kolibrios/games/lrl/", "common/games/lrl/*"},
  {"kolibrios/games/mun/data/", "common/games/mun/data/*"},
