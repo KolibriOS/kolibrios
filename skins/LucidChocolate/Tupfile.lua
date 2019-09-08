@@ -1,3 +1,3 @@
 if tup.getconfig("NO_FASM") ~= "" then return end
 tup.rule("default.dtp.asm", 'fasm "%f" "%o"', "default.dtp")
-tup.rule("LucidChocolate.asm", 'fasm "%f" "%o" ' .. tup.getconfig("KPACK_CMD"), "LucidChocolate.skn")
+tup.rule({"LucidChocolate.asm", extra_inputs = {"default.dtp"}}, 'fasm "%f" "%o" ' .. tup.getconfig("KPACK_CMD"), "LucidChocolate.skn")
