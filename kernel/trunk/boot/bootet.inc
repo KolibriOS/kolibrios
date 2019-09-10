@@ -94,8 +94,8 @@ loader_block_error latin1 "Alglaaduri andmed vigased, ei saa jätkata. Peatatud.
 end if
 
 _st latin1 '║                   ┌───────────────────────────────┬─┐',13,10,0
-_r1 latin1 '║                   │  320x200  EGA/CGA 256 colors  │ │',13,10,0
-_r2 latin1 '║                   │  640x480  VGA 16 colors       │ │',13,10,0
+_r1 latin1 '║                   │  320x200  EGA/CGA 256 värvi   │ │',13,10,0
+_r2 latin1 '║                   │  640x480  VGA 16 värvi        │ │',13,10,0
 _rs latin1 '║                   │  ????x????@??  SVGA VESA      │ │',13,10,0
 _bt latin1 '║                   └───────────────────────────────┴─┘',13,10,0
 
