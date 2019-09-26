@@ -1,7 +1,7 @@
 ﻿(*
     BSD 2-Clause License
 
-    Copyright (c) 2018, Anton Krotov
+    Copyright (c) 2018, 2019, Anton Krotov
     All rights reserved.
 *)
 
@@ -118,11 +118,46 @@ BEGIN
 END PushByte;
 
 
+PROCEDURE PushStr* (list: BYTELIST; str: ARRAY OF CHAR): INTEGER;
+VAR
+    i, res: INTEGER;
+
+BEGIN
+    res := list.length;
+    i := 0;
+    REPEAT
+        PushByte(list, ORD(str[i]));
+        INC(i)
+    UNTIL str[i - 1] = 0X
+
+    RETURN res
+END PushStr;
+
+
+PROCEDURE GetStr* (list: BYTELIST; pos: INTEGER; VAR str: ARRAY OF CHAR): BOOLEAN;
+VAR
+    i:   INTEGER;
+    res: BOOLEAN;
+
+BEGIN
+    res := FALSE;
+    i := 0;
+    WHILE (pos < list.length) & (i < LEN(str)) & ~res DO
+        str[i] := CHR(GetByte(list, pos));
+        res := str[i] = 0X;
+        INC(pos);
+        INC(i)
+    END
+
+    RETURN res
+END GetStr;
+
+
 PROCEDURE WriteToFile* (file: WR.FILE; list: BYTELIST);
 VAR
     chunk: BYTECHUNK;
 
-BEGIN              
+BEGIN
     chunk := list.first(BYTECHUNK);
     WHILE chunk # NIL DO
         WR.Write(file, chunk.data, chunk.count);

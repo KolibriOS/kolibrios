@@ -1,11 +1,11 @@
 ﻿(*
     BSD 2-Clause License
 
-    Copyright (c) 2018, Anton Krotov
+    Copyright (c) 2018, 2019, Anton Krotov
     All rights reserved.
 *)
 
-MODULE AVLTREES; 
+MODULE AVLTREES;
 
 IMPORT C := COLLECTIONS;
 
@@ -39,7 +39,7 @@ VAR
     node:  NODE;
     citem: C.ITEM;
 
-BEGIN  
+BEGIN
     citem := C.pop(nodes);
     IF citem = NIL THEN
         NEW(node)
@@ -181,8 +181,8 @@ BEGIN
 
         IF destructor # NIL THEN
             destructor(node.data)
-        END; 
-        
+        END;
+
         C.push(nodes, node);
         node := NIL;
 

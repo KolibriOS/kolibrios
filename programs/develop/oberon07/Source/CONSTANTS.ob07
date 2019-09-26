@@ -9,8 +9,8 @@ MODULE CONSTANTS;
 
 CONST
 
-    vMajor* = 0;
-    vMinor* = 98;
+    vMajor* = 1;
+    vMinor* = 0;
 
     FILE_EXT* = ".ob07";
     RTL_NAME* = "RTL";
@@ -26,7 +26,10 @@ CONST
     Target_iGUI64*     =  7;
     Target_iDLL64*     =  8;
     Target_iELF32*     =  9;
-    Target_iELF64*     = 10;
+    Target_iELFSO32*   = 10;
+    Target_iELF64*     = 11;
+    Target_iELFSO64*   = 12;
+    Target_iMSP430*    = 13;
 
     Target_sConsole*   = "console";
     Target_sGUI*       = "gui";
@@ -37,7 +40,10 @@ CONST
     Target_sGUI64*     = "gui64";
     Target_sDLL64*     = "dll64";
     Target_sELF32*     = "elfexe";
+    Target_sELFSO32*   = "elfso";
     Target_sELF64*     = "elfexe64";
+    Target_sELFSO64*   = "elfso64";
+    Target_sMSP430*    = "msp430";
 
 
 END CONSTANTS.

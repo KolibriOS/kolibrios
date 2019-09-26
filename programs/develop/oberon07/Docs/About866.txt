@@ -17,6 +17,7 @@ UTF-8 с BOM-сигнатурой.
       "kos" - KolibriOS
       "obj" - KolibriOS DLL
       "elfexe" - Linux ELF-EXEC
+      "elfso"  - Linux ELF-SO
   4) необязательные параметры-ключи
       -stk <size> размер стэка в мегабайтах (по умолчанию 2 Мб)
       -base <address> адрес загрузки исполняемого файла в килобайтах
@@ -144,10 +145,10 @@ UTF-8 с BOM-сигнатурой.
                 до 32 бит, для записи байтов использовать SYSTEM.PUT8,
                 для WCHAR -- SYSTEM.PUT16
 
-        PROCEDURE PUT8(a: INTEGER; x: INTEGER, BYTE, CHAR, WCHAR)
+        PROCEDURE PUT8(a: INTEGER; x: INTEGER, SET, BYTE, CHAR, WCHAR)
                 Память[a] := младшие 8 бит (x)
 
-        PROCEDURE PUT16(a: INTEGER; x: INTEGER, BYTE, CHAR, WCHAR)
+        PROCEDURE PUT16(a: INTEGER; x: INTEGER, SET, BYTE, CHAR, WCHAR)
                 Память[a] := младшие 16 бит (x)
 
         PROCEDURE MOVE(Source, Dest, n: INTEGER)
@@ -358,8 +359,8 @@ Oberon-реализациях выполнение такой операции приводит к ошибке времени
   Все программы неявно используют модуль RTL. Компилятор транслирует
 некоторые операции (проверка и охрана типа, сравнение строк, сообщения об
 ошибках времени выполнения и др.) как вызовы процедур этого модуля. Не
-следует явно вызывать эти процедуры, за исключением процедуры SetDll,
-если приложение компилируется как Windows DLL:
+следует явно вызывать эти процедуры, за исключением процедур SetDll и SetFini
+если приложение компилируется как Windows DLL или Linux SO, соответственно:
 
         PROCEDURE SetDll
             (process_detach, thread_detach, thread_attach: DLL_ENTRY);
@@ -372,8 +373,15 @@ SetDll назначает процедуры process_detach, thread_detach, thread_attach
 - создании нового потока (thread_attach)
 - уничтожении потока (thread_detach)
 
-Для прочих типов приложений, вызов процедуры SetDll не влияет на
+
+        PROCEDURE SetFini (ProcFini: PROC);
+        где TYPE PROC = PROCEDURE (* без параметров *)
+
+SetFini назначает процедуру ProcFini вызываемой при выгрузке so-библиотеки.
+
+Для прочих типов приложений, вызов процедур SetDll и SetFini не влияет на
 поведение программы.
+
   Сообщения об ошибках времени выполнения выводятся в диалоговых окнах
 (Windows), в терминал (Linux), на доску отладки (KolibriOS).
 
@@ -396,5 +404,3 @@ SetDll назначает процедуры process_detach, thread_detach, thread_attach
 
 Эта процедура должна быть вызвана перед использованием DLL.
 Процедура всегда возвращает 1.
-
-  Для Linux, генерация динамических библиотек не реализована.

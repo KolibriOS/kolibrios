@@ -38,16 +38,6 @@ VAR
     clock_gettime* : PROCEDURE [linux] (clock_id: INTEGER; VAR tp: TP): INTEGER;
 
 
-PROCEDURE dlopen* (filename: ARRAY OF CHAR): INTEGER;
-    RETURN API.dlopen(SYSTEM.ADR(filename[0]), 1)
-END dlopen;
-
-
-PROCEDURE dlsym* (handle: INTEGER; symbol: ARRAY OF CHAR): INTEGER;
-    RETURN API.dlsym(handle, SYSTEM.ADR(symbol[0]))
-END dlsym;
-
-
 PROCEDURE GetArg* (n: INTEGER; VAR s: ARRAY OF CHAR);
 VAR
     i, len, ptr: INTEGER;

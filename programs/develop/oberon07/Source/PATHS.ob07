@@ -1,7 +1,7 @@
 ﻿(*
     BSD 2-Clause License
 
-    Copyright (c) 2018, Anton Krotov
+    Copyright (c) 2018, 2019, Anton Krotov
     All rights reserved.
 *)
 
@@ -12,11 +12,11 @@ IMPORT STRINGS, UTILS;
 
 CONST
 
-    slash = UTILS.slash; 
-    
+    slash = UTILS.slash;
+
     PATHLEN = 2048;
-    
-    
+
+
 TYPE
 
     PATH* = ARRAY PATHLEN OF CHAR;
@@ -92,12 +92,12 @@ BEGIN
         res[i] := 0X
     END
 
-END RelPath;   
+END RelPath;
 
 
 PROCEDURE isRelative* (path: ARRAY OF CHAR): BOOLEAN;
     RETURN UTILS.isRelative(path)
-END isRelative;  
+END isRelative;
 
 
 PROCEDURE GetCurrentDirectory* (VAR path: ARRAY OF CHAR);

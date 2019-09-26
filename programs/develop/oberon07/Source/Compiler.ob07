@@ -7,7 +7,7 @@
 
 MODULE Compiler;
 
-IMPORT ST := STATEMENTS, PARS, UTILS, PATHS, C := CONSOLE, ERRORS, STRINGS, mConst := CONSTANTS, WRITER;
+IMPORT ST := STATEMENTS, PARS, UTILS, PATHS, PROG, C := CONSOLE, ERRORS, STRINGS, mConst := CONSTANTS, WRITER, MSP430;
 
 
 PROCEDURE Target (s: ARRAY OF CHAR): INTEGER;
@@ -33,8 +33,14 @@ BEGIN
         res := mConst.Target_iDLL64
     ELSIF s = mConst.Target_sELF32 THEN
         res := mConst.Target_iELF32
+    ELSIF s = mConst.Target_sELFSO32 THEN
+        res := mConst.Target_iELFSO32
     ELSIF s = mConst.Target_sELF64 THEN
         res := mConst.Target_iELF64
+    ELSIF s = mConst.Target_sELFSO64 THEN
+        res := mConst.Target_iELFSO64
+    ELSIF s = mConst.Target_sMSP430 THEN
+        res := mConst.Target_iMSP430
     ELSE
         res := 0
     END
@@ -43,7 +49,7 @@ BEGIN
 END Target;
 
 
-PROCEDURE keys (VAR StackSize, BaseAddress, Version: INTEGER; VAR pic: BOOLEAN; VAR checking: SET);
+PROCEDURE keys (VAR options: PROG.OPTIONS);
 VAR
     param: PARS.PATH;
     i, j:  INTEGER;
@@ -51,8 +57,10 @@ VAR
     value: INTEGER;
     minor,
     major: INTEGER;
+    checking: SET;
 
 BEGIN
+    checking := options.checking;
     end := FALSE;
     i := 4;
     REPEAT
@@ -62,7 +70,7 @@ BEGIN
             INC(i);
             UTILS.GetArg(i, param);
             IF STRINGS.StrToInt(param, value) & (1 <= value) & (value <= 32) THEN
-                StackSize := value
+                options.stack := value
             END;
             IF param[0] = "-" THEN
                 DEC(i)
@@ -72,7 +80,27 @@ BEGIN
             INC(i);
             UTILS.GetArg(i, param);
             IF STRINGS.StrToInt(param, value) THEN
-                BaseAddress := ((value DIV 64) * 64) * 1024
+                options.base := ((value DIV 64) * 64) * 1024
+            END;
+            IF param[0] = "-" THEN
+                DEC(i)
+            END
+
+        ELSIF param = "-ram" THEN
+            INC(i);
+            UTILS.GetArg(i, param);
+            IF STRINGS.StrToInt(param, value) THEN
+                options.ram := value
+            END;
+            IF param[0] = "-" THEN
+                DEC(i)
+            END
+
+        ELSIF param = "-rom" THEN
+            INC(i);
+            UTILS.GetArg(i, param);
+            IF STRINGS.StrToInt(param, value) THEN
+                options.rom := value
             END;
             IF param[0] = "-" THEN
                 DEC(i)
@@ -109,32 +137,34 @@ BEGIN
                     END;
 
                     INC(j)
-                END
+                END;
+
             END
 
         ELSIF param = "-ver" THEN
             INC(i);
             UTILS.GetArg(i, param);
             IF STRINGS.StrToVer(param, major, minor) THEN
-                Version := major * 65536 + minor
+                options.version := major * 65536 + minor
             END;
             IF param[0] = "-" THEN
                 DEC(i)
             END
 
         ELSIF param = "-pic" THEN
-            pic := TRUE
+            options.pic := TRUE
 
         ELSIF param = "" THEN
             end := TRUE
 
         ELSE
-            ERRORS.error3("bad parameter: ", param, "")
+            ERRORS.BadParam(param)
         END;
 
         INC(i)
-    UNTIL end
+    UNTIL end;
 
+    options.checking := checking
 END keys;
 
 
@@ -149,38 +179,34 @@ VAR
     outname:    PARS.PATH;
     param:      PARS.PATH;
     temp:       PARS.PATH;
-
     target:     INTEGER;
-
+    bit_depth:  INTEGER;
     time:       INTEGER;
-
-    StackSize,
-    Version,
-    BaseAdr:    INTEGER;
-    pic:        BOOLEAN;
-    checking:   SET;
-
-    bits64: BOOLEAN;
+    options:    PROG.OPTIONS;
 
 BEGIN
-    StackSize := 2;
-    Version := 65536;
-    pic := FALSE;
-    checking := ST.chkALL;
+    options.stack := 2;
+    options.version := 65536;
+    options.pic := FALSE;
+    options.checking := ST.chkALL;
 
     PATHS.GetCurrentDirectory(app_path);
     lib_path := app_path;
 
     UTILS.GetArg(1, inname);
 
+    C.Ln;
+    C.String("Akron Oberon Compiler v"); C.Int(mConst.vMajor); C.String("."); C.Int2(mConst.vMinor);
+        C.String(" ("); C.Int(UTILS.bit_depth); C.StringLn("-bit)");
+    C.StringLn("Copyright (c) 2018-2019, Anton Krotov");
+
     IF inname = "" THEN
-        C.String("Akron Oberon-07/16 Compiler v"); C.Int(mConst.vMajor); C.String("."); C.Int2(mConst.vMinor);
-            C.String(" ("); C.Int(UTILS.bit_depth); C.StringLn("-bit)"); C.Ln;
+        C.Ln;
         C.StringLn("Usage: Compiler <main module> <output> <target> [optional settings]"); C.Ln;
         IF UTILS.bit_depth = 64 THEN
-            C.StringLn('target = console | gui | dll | console64 | gui64 | dll64 | kos | obj | elfexe | elfexe64'); C.Ln;
+            C.StringLn('target = console | gui | dll | console64 | gui64 | dll64 | kos | obj | elfexe | elfso | elfexe64 | elfso64 | msp430'); C.Ln;
         ELSIF UTILS.bit_depth = 32 THEN
-            C.StringLn('target = console | gui | dll | kos | obj | elfexe'); C.Ln;
+            C.StringLn('target = console | gui | dll | kos | obj | elfexe | elfso | msp430'); C.Ln;
         END;
         C.StringLn("optional settings:"); C.Ln;
         C.StringLn("  -stk <size>            set size of stack in megabytes"); C.Ln;
@@ -188,14 +214,17 @@ BEGIN
         C.StringLn('  -ver <major.minor>     set version of program'); C.Ln;
         C.StringLn('  -nochk <"ptibcwra">    disable runtime checking (pointers, types, indexes,');
         C.StringLn('                         BYTE, CHR, WCHR)'); C.Ln;
+        C.StringLn("  -ram <size>            set size of RAM in bytes (MSP430)"); C.Ln;
+        C.StringLn("  -rom <size>            set size of ROM in bytes (MSP430)"); C.Ln;
         UTILS.Exit(0)
     END;
 
     PATHS.split(inname, path, modname, ext);
 
     IF ext # mConst.FILE_EXT THEN
-        ERRORS.error3('inputfile name extension must be "', mConst.FILE_EXT, '"')
+        ERRORS.Error(207)
     END;
+
     IF PATHS.isRelative(path) THEN
         PATHS.RelPath(app_path, path, temp);
         path := temp
@@ -203,7 +232,7 @@ BEGIN
 
     UTILS.GetArg(2, outname);
     IF outname = "" THEN
-        ERRORS.error1("not enough parameters")
+        ERRORS.Error(205)
     END;
     IF PATHS.isRelative(outname) THEN
         PATHS.RelPath(app_path, outname, temp);
@@ -212,59 +241,70 @@ BEGIN
 
     UTILS.GetArg(3, param);
     IF param = "" THEN
-        ERRORS.error1("not enough parameters")
+        ERRORS.Error(205)
     END;
 
     target := Target(param);
 
     IF target = 0 THEN
-        ERRORS.error1("bad parameter <target>")
+        ERRORS.Error(206)
     END;
 
-    bits64 := target IN {mConst.Target_iConsole64, mConst.Target_iGUI64, mConst.Target_iDLL64, mConst.Target_iELF64};
-
-    IF bits64 THEN
-        IF UTILS.bit_depth = 32 THEN
-            ERRORS.error1("bad parameter <target>")
-        END;
-        PARS.init(64, target)
-    ELSE
-        PARS.init(32, target)
+    CASE target OF
+    |mConst.Target_iConsole64, mConst.Target_iGUI64, mConst.Target_iDLL64, mConst.Target_iELF64, mConst.Target_iELFSO64:
+        bit_depth := 64
+    |mConst.Target_iConsole, mConst.Target_iGUI, mConst.Target_iDLL,
+     mConst.Target_iKolibri, mConst.Target_iObject, mConst.Target_iELF32, mConst.Target_iELFSO32:
+        bit_depth := 32
+    |mConst.Target_iMSP430:
+        bit_depth := 16;
+        options.ram := MSP430.minRAM;
+        options.rom := MSP430.minROM
     END;
 
-    PARS.program.dll := target IN {mConst.Target_iDLL, mConst.Target_iObject, mConst.Target_iDLL64};
-    PARS.program.obj := target = mConst.Target_iObject;
+    IF UTILS.bit_depth < bit_depth THEN
+        ERRORS.Error(206)
+    END;
 
     STRINGS.append(lib_path, "lib");
     STRINGS.append(lib_path, UTILS.slash);
 
-    IF target IN {mConst.Target_iConsole, mConst.Target_iGUI, mConst.Target_iDLL} THEN
+    CASE target OF
+    |mConst.Target_iConsole, mConst.Target_iGUI, mConst.Target_iDLL:
         IF target = mConst.Target_iDLL THEN
-            BaseAdr := 10000000H
+            options.base := 10000000H
         ELSE
-            BaseAdr := 400000H
+            options.base := 400000H
         END;
         STRINGS.append(lib_path, "Windows32")
 
-    ELSIF target IN {mConst.Target_iKolibri, mConst.Target_iObject} THEN
+    |mConst.Target_iKolibri, mConst.Target_iObject:
         STRINGS.append(lib_path, "KolibriOS")
 
-    ELSIF target = mConst.Target_iELF32 THEN
+    |mConst.Target_iELF32, mConst.Target_iELFSO32:
         STRINGS.append(lib_path, "Linux32")
 
-    ELSIF target = mConst.Target_iELF64 THEN
+    |mConst.Target_iELF64, mConst.Target_iELFSO64:
         STRINGS.append(lib_path, "Linux64")
 
-    ELSIF target IN {mConst.Target_iConsole64, mConst.Target_iGUI64, mConst.Target_iDLL64} THEN
+    |mConst.Target_iConsole64, mConst.Target_iGUI64, mConst.Target_iDLL64:
         STRINGS.append(lib_path, "Windows64")
+
+    |mConst.Target_iMSP430:
+        STRINGS.append(lib_path, "MSP430")
 
     END;
 
     STRINGS.append(lib_path, UTILS.slash);
 
-    keys(StackSize, BaseAdr, Version, pic, checking);
+    keys(options);
 
-    ST.compile(path, lib_path, modname, outname, target, Version, StackSize, BaseAdr, pic, checking);
+    PARS.init(bit_depth, target, options);
+
+    PARS.program.dll := target IN {mConst.Target_iELFSO32, mConst.Target_iELFSO64, mConst.Target_iDLL, mConst.Target_iDLL64, mConst.Target_iObject};
+    PARS.program.obj := target = mConst.Target_iObject;
+
+    ST.compile(path, lib_path, modname, outname, target, options);
 
     time := UTILS.GetTickCount() - UTILS.time;
 

@@ -7,7 +7,7 @@
 
 MODULE AMD64;
 
-IMPORT CODE, BIN, WR := WRITER, CHL := CHUNKLISTS, MACHINE, LISTS, PATHS,
+IMPORT IL, BIN, WR := WRITER, CHL := CHUNKLISTS, LISTS, PATHS, PROG,
        REG, C := CONSOLE, UTILS, mConst := CONSTANTS, S := STRINGS, PE32, ELF, X86;
 
 
@@ -31,7 +31,7 @@ CONST
 
     sete = 94H; setne = 95H; setl = 9CH; setge = 9DH; setle = 9EH; setg = 9FH; setc = 92H; setnc = 93H;
 
-    shl = CODE.opLSL2; shr = CODE.opLSR2; sar = CODE.opASR2; ror = CODE.opROR2;
+    shl = IL.opLSL2; shr = IL.opLSR2; sar = IL.opASR2; ror = IL.opROR2;
 
     sCODE = BIN.PICCODE;
     sDATA = BIN.PICDATA;
@@ -41,7 +41,7 @@ CONST
 
 TYPE
 
-    COMMAND = CODE.COMMAND;
+    COMMAND = IL.COMMAND;
 
     Number = POINTER TO RECORD (LISTS.ITEM) value: INTEGER END;
 
@@ -58,7 +58,9 @@ VAR
 
     prog: BIN.PROGRAM;
 
-    dllret: INTEGER;
+    tcount: INTEGER;
+
+    dllret, sofinit: INTEGER;
 
     Win64RegPar: ARRAY 4 OF INTEGER;
     SystemVRegPar: ARRAY 6 OF INTEGER;
@@ -87,10 +89,10 @@ END OutByte3;
 
 PROCEDURE OutInt (n: INTEGER);
 BEGIN
-    OutByte(MACHINE.Byte(n, 0));
-    OutByte(MACHINE.Byte(n, 1));
-    OutByte(MACHINE.Byte(n, 2));
-    OutByte(MACHINE.Byte(n, 3))
+    OutByte(UTILS.Byte(n, 0));
+    OutByte(UTILS.Byte(n, 1));
+    OutByte(UTILS.Byte(n, 2));
+    OutByte(UTILS.Byte(n, 3))
 END OutInt;
 
 
@@ -112,7 +114,7 @@ END long;
 PROCEDURE OutIntByte (n: INTEGER);
 BEGIN
     IF isByte(n) THEN
-        OutByte(MACHINE.Byte(n, 0))
+        OutByte(UTILS.Byte(n, 0))
     ELSE
         OutInt(n)
     END
@@ -120,7 +122,7 @@ END OutIntByte;
 
 
 PROCEDURE isLong (n: INTEGER): BOOLEAN;
-    RETURN (n > MACHINE.max32) OR (n < MACHINE.min32)
+    RETURN (n > UTILS.max32) OR (n < UTILS.min32)
 END isLong;
 
 
@@ -139,7 +141,7 @@ END NewNumber;
 PROCEDURE NewLabel (): INTEGER;
 BEGIN
     BIN.NewLabel(prog)
-    RETURN CODE.NewLabel()
+    RETURN IL.NewLabel()
 END NewLabel;
 
 
@@ -257,12 +259,22 @@ BEGIN
 END drop;
 
 
+PROCEDURE GetAnyReg (): INTEGER;
+    RETURN REG.GetAnyReg(R)
+END GetAnyReg;
+
+
+PROCEDURE GetVarReg (offs: INTEGER): INTEGER;
+    RETURN REG.GetVarReg(R, offs)
+END GetVarReg;
+
+
 PROCEDURE callimp (label: INTEGER);
 VAR
     reg: INTEGER;
 
 BEGIN
-    reg := REG.GetAnyReg(R);
+    reg := GetAnyReg();
     lea(reg, label, sIMP);
     IF reg >= 8 THEN // call qword[reg]
         OutByte(41H)
@@ -277,7 +289,7 @@ VAR
     reg: INTEGER;
 
 BEGIN
-    reg := REG.GetAnyReg(R);
+    reg := GetAnyReg();
     lea(reg, offs, sDATA);
     push(reg);
     drop
@@ -290,7 +302,7 @@ VAR
 
 BEGIN
     REG.Store(R);
-    label := CODE.codes.rtl[proc];
+    label := IL.codes.rtl[proc];
     IF label < 0 THEN
         callimp(-label)
     ELSE
@@ -315,7 +327,7 @@ END BinOp;
 PROCEDURE PushAll (NumberOfParameters: INTEGER);
 BEGIN
     REG.PushAll(R);
-    R.pushed := R.pushed - NumberOfParameters
+    DEC(R.pushed, NumberOfParameters)
 END PushAll;
 
 
@@ -327,7 +339,7 @@ BEGIN
     Rex(reg, 0);
     OutByte(0B8H + reg MOD 8);  // movabs reg, n
     FOR i := 0 TO 7 DO
-        OutByte(MACHINE.Byte(n, i))
+        OutByte(UTILS.Byte(n, i))
     END
 END movabs;
 
@@ -336,6 +348,8 @@ PROCEDURE movrc (reg, n: INTEGER); // mov reg, n
 BEGIN
     IF isLong(n) THEN
         movabs(reg, n)
+    ELSIF n = 0 THEN
+        xor(reg, reg)
     ELSE
         Rex(reg, 0);
         OutByte2(0C7H, 0C0H + reg MOD 8);
@@ -355,7 +369,7 @@ VAR
     reg2: INTEGER;
 
 BEGIN
-    reg2 := REG.GetAnyReg(R);
+    reg2 := GetAnyReg();
     movabs(reg2, n);
     oprr(reg, reg2);
     drop
@@ -404,7 +418,7 @@ VAR
 
 BEGIN
     IF isLong(n) THEN
-        reg2 := REG.GetAnyReg(R);
+        reg2 := GetAnyReg();
         movabs(reg2, n);
         push(reg2);
         drop
@@ -642,14 +656,14 @@ BEGIN
 END shiftrc;
 
 
-PROCEDURE getVar (variables: LISTS.LIST; offset: INTEGER): CODE.LOCALVAR;
+PROCEDURE getVar (variables: LISTS.LIST; offset: INTEGER): IL.LOCALVAR;
 VAR
-    cur: CODE.LOCALVAR;
+    cur: IL.LOCALVAR;
 
 BEGIN
-    cur := variables.first(CODE.LOCALVAR);
+    cur := variables.first(IL.LOCALVAR);
     WHILE (cur # NIL) & (cur.offset # offset) DO
-        cur := cur.next(CODE.LOCALVAR)
+        cur := cur.next(IL.LOCALVAR)
     END
 
     RETURN cur
@@ -662,7 +676,7 @@ VAR
     leaf:       BOOLEAN;
     cur:        COMMAND;
     variables:  LISTS.LIST;
-    lvar, rvar: CODE.LOCALVAR;
+    lvar, rvar: IL.LOCALVAR;
     reg:        INTEGER;
     max:        INTEGER;
     loop:       INTEGER;
@@ -677,83 +691,76 @@ BEGIN
     cur := cmd.next(COMMAND);
     REPEAT
         CASE cur.opcode OF
-        |CODE.opLLOAD64,
-         CODE.opLLOAD8,
-         CODE.opLLOAD16,
-         CODE.opLLOAD32,
-         CODE.opLLOAD64_PARAM,
-         CODE.opLLOAD32_PARAM,
-         CODE.opLADR_SAVE,
-         CODE.opLADR_INC1,
-         CODE.opLADR_DEC1,
-         CODE.opLADR_INC,
-         CODE.opLADR_DEC,
-         CODE.opLADR_INC1B,
-         CODE.opLADR_DEC1B,
-         CODE.opLADR_INCB,
-         CODE.opLADR_DECB,
-         CODE.opLADR_INCL,
-         CODE.opLADR_EXCL,
-         CODE.opLADR_UNPK:
+        |IL.opLLOAD64,
+         IL.opLLOAD8,
+         IL.opLLOAD16,
+         IL.opLLOAD32,
+         IL.opLLOAD64_PARAM,
+         IL.opLLOAD32_PARAM,
+         IL.opLADR_SAVE,
+         IL.opLADR_INC,
+         IL.opLADR_DEC,
+         IL.opLADR_INCB,
+         IL.opLADR_DECB,
+         IL.opLADR_INCL,
+         IL.opLADR_EXCL,
+         IL.opLADR_UNPK:
             lvar := getVar(variables, cur.param2);
             IF (lvar # NIL) & (lvar.count # -1) THEN
                 INC(lvar.count, loop)
             END
 
-        |CODE.opLADR_SAVEC,
-         CODE.opLADR_INCC,
-         CODE.opLADR_DECC,
-         CODE.opLADR_INCCB,
-         CODE.opLADR_DECCB,
-         CODE.opLADR_INCLC,
-         CODE.opLADR_EXCLC:
+        |IL.opLADR_SAVEC,
+         IL.opLADR_INCC,
+         IL.opLADR_INCCB,
+         IL.opLADR_DECCB,
+         IL.opLADR_INCLC,
+         IL.opLADR_EXCLC:
             lvar := getVar(variables, cur.param1);
             IF (lvar # NIL) & (lvar.count # -1) THEN
                 INC(lvar.count, loop)
             END
 
-        |CODE.opLADR:
+        |IL.opLADR:
             lvar := getVar(variables, cur.param2);
             IF (lvar # NIL) & (lvar.count # -1) THEN
                 lvar.count := -1
             END
 
-        |CODE.opLOOP:
+        |IL.opLOOP:
             INC(loop, 10)
 
-        |CODE.opENDLOOP:
+        |IL.opENDLOOP:
             DEC(loop, 10)
 
-        |CODE.opLEAVE,
-         CODE.opLEAVER,
-         CODE.opLEAVEF:
+        |IL.opLEAVE,
+         IL.opLEAVER,
+         IL.opLEAVEF:
             leave := TRUE
 
-        |CODE.opCALL, CODE.opCALLP, CODE.opCALLI,
-         CODE.opWIN64CALL, CODE.opWIN64CALLP, CODE.opWIN64CALLI,
-         CODE.opSYSVCALL, CODE.opSYSVCALLP, CODE.opSYSVCALLI,
+        |IL.opCALL, IL.opCALLP, IL.opCALLI,
+         IL.opWIN64CALL, IL.opWIN64CALLP, IL.opWIN64CALLI,
+         IL.opSYSVCALL, IL.opSYSVCALLP, IL.opSYSVCALLI,
 
-         CODE.opSAVES, CODE.opRSET, CODE.opRSETR,
-         CODE.opRSETL, CODE.opRSET1,
-         CODE.opEQS .. CODE.opGES,
-         CODE.opEQS2 .. CODE.opGES2,
-         CODE.opEQSW .. CODE.opGESW,
-         CODE.opEQSW2 .. CODE.opGESW2,
-         CODE.opCOPY, CODE.opMOVE, CODE.opCOPYA,
-         CODE.opCOPYS, CODE.opCOPYS2, CODE.opROT,
-         CODE.opNEW, CODE.opDISP, CODE.opISREC,
-         CODE.opIS, CODE.opTYPEGR, CODE.opTYPEGP,
-         CODE.opCASET, CODE.opDIV,
-         CODE.opDIVL, CODE.opMOD,
-         CODE.opMODL, CODE.opLENGTH, CODE.opLENGTHW:
+         IL.opSAVES, IL.opRSET, IL.opRSETR,
+         IL.opRSETL, IL.opRSET1,
+         IL.opEQS .. IL.opGES,
+         IL.opEQSW .. IL.opGESW,
+         IL.opCOPY, IL.opMOVE, IL.opCOPYA,
+         IL.opCOPYS, IL.opROT,
+         IL.opNEW, IL.opDISP, IL.opISREC,
+         IL.opIS, IL.opTYPEGR, IL.opTYPEGP,
+         IL.opCASET, IL.opDIV,
+         IL.opDIVL, IL.opMOD,
+         IL.opMODL, IL.opLENGTH, IL.opLENGTHW:
             leaf := FALSE
 
-        |CODE.opDIVR, CODE.opMODR:
+        |IL.opDIVR, IL.opMODR:
             param2 := cur.param2;
             IF param2 >= 1 THEN
-                param2 := X86.log2(param2)
+                param2 := UTILS.Log2(param2)
             ELSIF param2 <= -1 THEN
-                param2 := X86.log2(-param2)
+                param2 := UTILS.Log2(-param2)
             ELSE
                 param2 := -1
             END;
@@ -772,13 +779,13 @@ BEGIN
             reg := -1;
             max := -1;
             rvar := NIL;
-            lvar := variables.first(CODE.LOCALVAR);
+            lvar := variables.first(IL.LOCALVAR);
             WHILE lvar # NIL DO
                 IF lvar.count > max THEN
                     max := lvar.count;
                     rvar := lvar
                 END;
-                lvar := lvar.next(CODE.LOCALVAR)
+                lvar := lvar.next(IL.LOCALVAR)
             END;
 
             IF rvar # NIL THEN
@@ -878,30 +885,30 @@ VAR
     cc, reg: INTEGER;
 
 BEGIN
-    reg := REG.GetAnyReg(R);
+    reg := GetAnyReg();
     xor(reg, reg);
     CASE op OF
-    |CODE.opEQF, CODE.opEQFI:
+    |IL.opEQF:
         comisd(xmm - 1, xmm);
         cc := sete
 
-    |CODE.opNEF, CODE.opNEFI:
+    |IL.opNEF:
         comisd(xmm - 1, xmm);
         cc := setne
 
-    |CODE.opLTF, CODE.opGTFI:
+    |IL.opLTF:
         comisd(xmm - 1, xmm);
         cc := setc
 
-    |CODE.opGTF, CODE.opLTFI:
+    |IL.opGTF:
         comisd(xmm, xmm - 1);
         cc := setc
 
-    |CODE.opLEF, CODE.opGEFI:
+    |IL.opLEF:
         comisd(xmm, xmm - 1);
         cc := setnc
 
-    |CODE.opGEF, CODE.opLEFI:
+    |IL.opGEF:
         comisd(xmm - 1, xmm);
         cc := setnc
     END;
@@ -915,7 +922,7 @@ PROCEDURE translate (commands: LISTS.LIST; stroffs: INTEGER);
 VAR
     cmd, next: COMMAND;
 
-    param1, param2, param3, a, b, c, n, label, L, i, cc: INTEGER;
+    opcode, param1, param2, param3, a, b, c, n, label, L, i, cc: INTEGER;
 
     reg1, reg2, xmm: INTEGER;
 
@@ -931,22 +938,24 @@ BEGIN
         param1 := cmd.param1;
         param2 := cmd.param2;
 
-        CASE cmd.opcode OF
+        opcode := cmd.opcode;
 
-        |CODE.opJMP:
+        CASE opcode OF
+
+        |IL.opJMP:
             jmp(param1)
 
-        |CODE.opCALL, CODE.opWIN64CALL, CODE.opSYSVCALL:
+        |IL.opCALL, IL.opWIN64CALL, IL.opSYSVCALL:
             REG.Store(R);
-            CASE cmd.opcode OF
-            |CODE.opCALL:
-            |CODE.opWIN64CALL: Win64Passing(param2)
-            |CODE.opSYSVCALL:  SysVPassing(param2)
+            CASE opcode OF
+            |IL.opCALL:
+            |IL.opWIN64CALL: Win64Passing(param2)
+            |IL.opSYSVCALL:  SysVPassing(param2)
             END;
             X86.call(param1);
             REG.Restore(R)
 
-        |CODE.opCALLP, CODE.opWIN64CALLP, CODE.opSYSVCALLP:
+        |IL.opCALLP, IL.opWIN64CALLP, IL.opSYSVCALLP:
             UnOp(reg1);
             IF reg1 # rax THEN
                 GetRegA;
@@ -955,35 +964,35 @@ BEGIN
             END;
             drop;
             REG.Store(R);
-            CASE cmd.opcode OF
-            |CODE.opCALLP:
-            |CODE.opWIN64CALLP: Win64Passing(param2)
-            |CODE.opSYSVCALLP:  SysVPassing(param2)
+            CASE opcode OF
+            |IL.opCALLP:
+            |IL.opWIN64CALLP: Win64Passing(param2)
+            |IL.opSYSVCALLP:  SysVPassing(param2)
             END;
             OutByte2(0FFH, 0D0H); // call rax
             REG.Restore(R);
             ASSERT(R.top = -1)
 
-        |CODE.opCALLI, CODE.opWIN64CALLI, CODE.opSYSVCALLI:
+        |IL.opCALLI, IL.opWIN64CALLI, IL.opSYSVCALLI:
             REG.Store(R);
-            CASE cmd.opcode OF
-            |CODE.opCALLI:
-            |CODE.opWIN64CALLI: Win64Passing(param2)
-            |CODE.opSYSVCALLI:  SysVPassing(param2)
+            CASE opcode OF
+            |IL.opCALLI:
+            |IL.opWIN64CALLI: Win64Passing(param2)
+            |IL.opSYSVCALLI:  SysVPassing(param2)
             END;
             callimp(param1);
             REG.Restore(R)
 
-        |CODE.opLABEL:
-            X86.SetLabel(param2)
+        |IL.opLABEL:
+            X86.SetLabel(param1)
 
-        |CODE.opERR:
-            CallRTL(CODE._error)
+        |IL.opERR:
+            CallRTL(IL._error)
 
-        |CODE.opERRC:
+        |IL.opPUSHC:
             pushc(param2)
 
-        |CODE.opPRECALL:
+        |IL.opPRECALL:
             n := param2;
             IF (param1 # 0) & (n # 0) THEN
                 subrc(rsp, 8)
@@ -997,14 +1006,14 @@ BEGIN
             ASSERT(xmm = -1);
             PushAll(0)
 
-        |CODE.opWIN64ALIGN16:
+        |IL.opWIN64ALIGN16:
             ASSERT(rax IN R.regs);
             mov(rax, rsp);
             andrc(rsp, -16);
             push(rax);
             subrc(rsp, (MAX(param2 - 4, 0) MOD 2 + MAX(4 - param2, 0) + 1) * 8)
 
-        |CODE.opSYSVALIGN16:
+        |IL.opSYSVALIGN16:
             ASSERT(rax IN R.regs);
             mov(rax, rsp);
             andrc(rsp, -16);
@@ -1013,7 +1022,7 @@ BEGIN
                 push(rax)
             END
 
-        |CODE.opRESF:
+        |IL.opRESF:
             ASSERT(xmm = -1);
             INC(xmm);
             n := param2;
@@ -1030,7 +1039,7 @@ BEGIN
                 DEC(n)
             END
 
-        |CODE.opRES:
+        |IL.opRES:
             ASSERT(R.top = -1);
             GetRegA;
             n := param2;
@@ -1041,7 +1050,7 @@ BEGIN
                 DEC(n)
             END
 
-        |CODE.opENTER:
+        |IL.opENTER:
             ASSERT(R.top = -1);
 
             X86.SetLabel(param1);
@@ -1122,8 +1131,8 @@ BEGIN
                 allocReg(cmd)
             END
 
-        |CODE.opLEAVE, CODE.opLEAVER, CODE.opLEAVEF:
-            IF cmd.opcode = CODE.opLEAVER THEN
+        |IL.opLEAVE, IL.opLEAVER, IL.opLEAVEF:
+            IF opcode = IL.opLEAVER THEN
                 UnOp(reg1);
                 IF reg1 # rax THEN
                     GetRegA;
@@ -1135,13 +1144,16 @@ BEGIN
 
             ASSERT(R.top = -1);
 
-            IF cmd.opcode = CODE.opLEAVEF THEN
+            IF opcode = IL.opLEAVEF THEN
                 DEC(xmm)
             END;
 
             ASSERT(xmm = -1);
 
-            mov(rsp, rbp);
+            IF param1 > 0 THEN
+                mov(rsp, rbp)
+            END;
+
             pop(rbp);
             IF param2 > 0 THEN
                 OutByte3(0C2H, (param2 * 8) MOD 256, (param2 * 8) DIV 256)  // ret param2
@@ -1150,59 +1162,55 @@ BEGIN
             END;
             REG.Reset(R)
 
-        |CODE.opSAVES:
-            UnOp(reg1);
-            drop;
-            PushAll(0);
-            push(reg1);
+        |IL.opSAVES:
+            PushAll(1);
             pushDA(stroffs + param2);
             pushc(param1);
-            CallRTL(CODE._move)
+            CallRTL(IL._move)
 
-        |CODE.opSADR:
-            reg1 := REG.GetAnyReg(R);
-            lea(reg1, stroffs + param2, sDATA)
+        |IL.opSADR:
+            lea(GetAnyReg(), stroffs + param2, sDATA)
 
-        |CODE.opLOAD8:
+        |IL.opLOAD8:
             UnOp(reg1);
             movzx(reg1, reg1, 0, FALSE)
 
-        |CODE.opLOAD16:
+        |IL.opLOAD16:
             UnOp(reg1);
             movzx(reg1, reg1, 0, TRUE)
 
-        |CODE.opLOAD32:
+        |IL.opLOAD32:
             UnOp(reg1);
             movrm32(reg1, reg1, 0);
             shiftrc(shl, reg1, 32);
             shiftrc(shr, reg1, 32)
 
-        |CODE.opLOAD64:
+        |IL.opLOAD64:
             UnOp(reg1);
             movrm(reg1, reg1, 0)
 
-        |CODE.opLLOAD64:
-            reg1 := REG.GetAnyReg(R);
-            reg2 := REG.GetVarReg(R, param2);
+        |IL.opLLOAD64:
+            reg1 := GetAnyReg();
+            reg2 := GetVarReg(param2);
             IF reg2 # -1 THEN
                 mov(reg1, reg2)
             ELSE
                 movrm(reg1, rbp, param2 * 8)
             END
 
-        |CODE.opLLOAD8,
-         CODE.opLLOAD16:
-            reg1 := REG.GetAnyReg(R);
-            reg2 := REG.GetVarReg(R, param2);
+        |IL.opLLOAD8,
+         IL.opLLOAD16:
+            reg1 := GetAnyReg();
+            reg2 := GetVarReg(param2);
             IF reg2 # -1 THEN
                 mov(reg1, reg2)
             ELSE
-                movzx(reg1, rbp, param2 * 8, cmd.opcode = CODE.opLLOAD16)
+                movzx(reg1, rbp, param2 * 8, opcode = IL.opLLOAD16)
             END
 
-        |CODE.opLLOAD32:
-            reg1 := REG.GetAnyReg(R);
-            reg2 := REG.GetVarReg(R, param2);
+        |IL.opLLOAD32:
+            reg1 := GetAnyReg();
+            reg2 := GetVarReg(param2);
             IF reg2 # -1 THEN
                 mov(reg1, reg2)
             ELSE
@@ -1211,73 +1219,71 @@ BEGIN
                 movrm32(reg1, rbp, n)
             END
 
-        |CODE.opGLOAD64:
-            reg1 := REG.GetAnyReg(R);
+        |IL.opGLOAD64:
+            reg1 := GetAnyReg();
             lea(reg1, param2, sBSS);
             movrm(reg1, reg1, 0)
 
-        |CODE.opGLOAD8:
-            reg1 := REG.GetAnyReg(R);
+        |IL.opGLOAD8:
+            reg1 := GetAnyReg();
             lea(reg1, param2, sBSS);
             movzx(reg1, reg1, 0, FALSE)
 
-        |CODE.opGLOAD16:
-            reg1 := REG.GetAnyReg(R);
+        |IL.opGLOAD16:
+            reg1 := GetAnyReg();
             lea(reg1, param2, sBSS);
             movzx(reg1, reg1, 0, TRUE)
 
-        |CODE.opGLOAD32:
-            reg1 := REG.GetAnyReg(R);
+        |IL.opGLOAD32:
+            reg1 := GetAnyReg();
             xor(reg1, reg1);
             lea(reg1, param2, sBSS);
             movrm32(reg1, reg1, 0)
 
-        |CODE.opVLOAD64:
-            reg1 := REG.GetAnyReg(R);
+        |IL.opVLOAD64:
+            reg1 := GetAnyReg();
             movrm(reg1, rbp, param2 * 8);
             movrm(reg1, reg1, 0)
 
-        |CODE.opVLOAD8,
-         CODE.opVLOAD16:
-            reg1 := REG.GetAnyReg(R);
+        |IL.opVLOAD8,
+         IL.opVLOAD16:
+            reg1 := GetAnyReg();
             movrm(reg1, rbp, param2 * 8);
-            movzx(reg1, reg1, 0, cmd.opcode = CODE.opVLOAD16)
+            movzx(reg1, reg1, 0, opcode = IL.opVLOAD16)
 
-        |CODE.opVLOAD32:
-            reg1 := REG.GetAnyReg(R);
-            reg2 := REG.GetAnyReg(R);
+        |IL.opVLOAD32:
+            reg1 := GetAnyReg();
+            reg2 := GetAnyReg();
             xor(reg1, reg1);
             movrm(reg2, rbp, param2 * 8);
             movrm32(reg1, reg2, 0);
             drop
 
-        |CODE.opLADR:
+        |IL.opLADR:
             n := param2 * 8;
             next := cmd.next(COMMAND);
-            IF next.opcode = CODE.opSAVEF THEN
+            IF next.opcode = IL.opSAVEF THEN
                 movsdmr(rbp, n, xmm);
                 DEC(xmm);
                 cmd := next
-            ELSIF next.opcode = CODE.opLOADF THEN
+            ELSIF next.opcode = IL.opLOADF THEN
                 INC(xmm);
                 movsdrm(xmm, rbp, n);
                 cmd := next
             ELSE
-                reg1 := REG.GetAnyReg(R);
+                reg1 := GetAnyReg();
                 Rex(0, reg1);
                 OutByte2(8DH, 45H + long(n) + (reg1 MOD 8) * 8);  // lea reg1, qword[rbp+n]
                 OutIntByte(n)
             END
 
-        |CODE.opGADR:
-            reg1 := REG.GetAnyReg(R);
-            lea(reg1, param2, sBSS)
+        |IL.opGADR:
+            lea(GetAnyReg(), param2, sBSS)
 
-        |CODE.opVADR:
-            reg1 := REG.GetAnyReg(R);
-            movrm(reg1, rbp, param2 * 8)
+        |IL.opVADR:
+            movrm(GetAnyReg(), rbp, param2 * 8)
 
-        |CODE.opSAVE8C:
+        |IL.opSAVE8C:
             UnOp(reg1);
             IF reg1 >= 8 THEN
                 OutByte(41H)
@@ -1285,7 +1291,7 @@ BEGIN
             OutByte3(0C6H, reg1 MOD 8, param2); // mov byte[reg1], param2
             drop
 
-        |CODE.opSAVE16C:
+        |IL.opSAVE16C:
             UnOp(reg1);
             OutByte(66H);
             IF reg1 >= 8 THEN
@@ -1295,10 +1301,10 @@ BEGIN
             OutByte2(param2 MOD 256, param2 DIV 256); // mov word[reg1], param2
             drop
 
-        |CODE.opSAVEC:
+        |IL.opSAVEC:
             UnOp(reg1);
             IF isLong(param2) THEN
-                reg2 := REG.GetAnyReg(R);
+                reg2 := GetAnyReg();
                 movrc(reg2, param2);
                 movmr(reg1, 0, reg2);
                 drop
@@ -1309,142 +1315,106 @@ BEGIN
             END;
             drop
 
-        |CODE.opRSET:
+        |IL.opRSET:
             PushAll(2);
-            CallRTL(CODE._set);
+            CallRTL(IL._set);
             GetRegA
 
-        |CODE.opRSETR:
+        |IL.opRSETR:
             PushAll(1);
             pushc(param2);
-            CallRTL(CODE._set);
+            CallRTL(IL._set);
             GetRegA
 
-        |CODE.opRSETL:
+        |IL.opRSETL:
             PushAll(1);
             pushc(param2);
-            CallRTL(CODE._set2);
+            CallRTL(IL._set2);
             GetRegA
 
-        |CODE.opRSET1:
+        |IL.opRSET1:
             UnOp(reg1);
             PushAll(1);
             push(reg1);
-            CallRTL(CODE._set);
+            CallRTL(IL._set);
             GetRegA
 
-        |CODE.opINCL, CODE.opEXCL:
+        |IL.opINCL, IL.opEXCL:
             BinOp(reg1, reg2);
             cmprc(reg1, 64);
             OutByte2(73H, 04H); // jnb L
             Rex(reg2, reg1);
-            OutByte3(0FH, 0ABH + 8 * ORD(cmd.opcode = CODE.opEXCL), 8 * (reg1 MOD 8) + reg2 MOD 8); // bts/btr qword[reg2], reg1
+            OutByte3(0FH, 0ABH + 8 * ORD(opcode = IL.opEXCL), 8 * (reg1 MOD 8) + reg2 MOD 8); // bts/btr qword[reg2], reg1
             // L:
             drop;
             drop
 
-        |CODE.opINCLC, CODE.opEXCLC:
+        |IL.opINCLC, IL.opEXCLC:
             UnOp(reg1);
             Rex(reg1, 0);
             OutByte2(0FH, 0BAH);  // bts/btr qword[reg1], param2
-            OutByte2(28H + 8 * ORD(cmd.opcode = CODE.opEXCLC) + reg1 MOD 8, param2);
+            OutByte2(28H + 8 * ORD(opcode = IL.opEXCLC) + reg1 MOD 8, param2);
             drop
 
-        |CODE.opEQS .. CODE.opGES:
+        |IL.opEQS .. IL.opGES:
             PushAll(4);
-            pushc(cmd.opcode - CODE.opEQS);
-            CallRTL(CODE._strcmp);
+            pushc(opcode - IL.opEQS);
+            CallRTL(IL._strcmp);
             GetRegA
 
-        |CODE.opEQS2 .. CODE.opGES2:
+        |IL.opEQSW .. IL.opGESW:
             PushAll(4);
-            pushc(cmd.opcode - CODE.opEQS2);
-            CallRTL(CODE._strcmp2);
+            pushc(opcode - IL.opEQSW);
+            CallRTL(IL._strcmpw);
             GetRegA
 
-        |CODE.opEQSW .. CODE.opGESW:
-            PushAll(4);
-            pushc(cmd.opcode - CODE.opEQSW);
-            CallRTL(CODE._strcmpw);
-            GetRegA
+        |IL.opCONST:
+            movrc(GetAnyReg(), param2)
 
-        |CODE.opEQSW2 .. CODE.opGESW2:
-            PushAll(4);
-            pushc(cmd.opcode - CODE.opEQSW2);
-            CallRTL(CODE._strcmpw2);
-            GetRegA
+        |IL.opEQ..IL.opGE,
+         IL.opEQC..IL.opGEC:
 
-        |CODE.opINC1, CODE.opDEC1:
-            UnOp(reg1);
-            Rex(reg1, 0);
-            OutByte2(0FFH, reg1 MOD 8 + 8 * ORD(cmd.opcode = CODE.opDEC1));
-            drop
-
-        |CODE.opCONST:
-            reg1 := REG.GetAnyReg(R);
-            movrc(reg1, param2)
-
-        |CODE.opGT, CODE.opGE, CODE.opLT,
-         CODE.opLE, CODE.opEQ, CODE.opNE:
-            BinOp(reg1, reg2);
-            cmprr(reg1, reg2);
-            drop;
-            drop;
-            cc := X86.cond(cmd.opcode);
-
-            IF cmd.next(COMMAND).opcode = CODE.opJE THEN
-                label := cmd.next(COMMAND).param1;
-                jcc(cc, label);
-                cmd := cmd.next(COMMAND)
-
-            ELSIF cmd.next(COMMAND).opcode = CODE.opJNE THEN
-                label := cmd.next(COMMAND).param1;
-                jcc(X86.inv1(cc), label);
-                cmd := cmd.next(COMMAND)
-
+            IF (IL.opEQ <= opcode) & (opcode <= IL.opGE) THEN
+                BinOp(reg1, reg2);
+                cmprr(reg1, reg2);
+                drop
             ELSE
-                reg1 := REG.GetAnyReg(R);
-                setcc(cc + 16, reg1);
-                andrc(reg1, 1)
-            END
-
-        |CODE.opGTR, CODE.opLTL, CODE.opGER, CODE.opLEL,
-         CODE.opLER, CODE.opGEL, CODE.opLTR, CODE.opGTL,
-         CODE.opEQR, CODE.opEQL, CODE.opNER, CODE.opNEL:
-            UnOp(reg1);
-            IF param2 = 0 THEN
-                test(reg1)
-            ELSE
-                cmprc(reg1, param2)
+                UnOp(reg1);
+                IF param2 = 0 THEN
+                    test(reg1)
+                ELSE
+                    cmprc(reg1, param2)
+                END
             END;
-            drop;
-            cc := X86.cond(cmd.opcode);
 
-            IF cmd.next(COMMAND).opcode = CODE.opJE THEN
+            drop;
+            cc := X86.cond(opcode);
+
+            IF cmd.next(COMMAND).opcode = IL.opJE THEN
                 label := cmd.next(COMMAND).param1;
                 jcc(cc, label);
                 cmd := cmd.next(COMMAND)
 
-            ELSIF cmd.next(COMMAND).opcode = CODE.opJNE THEN
+            ELSIF cmd.next(COMMAND).opcode = IL.opJNE THEN
                 label := cmd.next(COMMAND).param1;
-                jcc(X86.inv1(cc), label);
+                jcc(X86.inv0(cc), label);
                 cmd := cmd.next(COMMAND)
 
             ELSE
-                reg1 := REG.GetAnyReg(R);
+                reg1 := GetAnyReg();
                 setcc(cc + 16, reg1);
                 andrc(reg1, 1)
             END
 
-        |CODE.opCODE:
+        |IL.opCODE:
             OutByte(param2)
 
-        |CODE.opPUSHIP:
-            reg1 := REG.GetAnyReg(R);
+        |IL.opPUSHIP:
+            reg1 := GetAnyReg();
             lea(reg1, param2, sIMP);
             movrm(reg1, reg1, 0)
 
-        |CODE.opPARAM:
+        |IL.opPARAM:
             n := param2;
             IF n = 1 THEN
                 UnOp(reg1);
@@ -1453,9 +1423,9 @@ BEGIN
             ELSE
                 ASSERT(R.top + 1 <= n);
                 PushAll(n)
-            END   
-            
-        |CODE.opACC:
+            END
+
+        |IL.opACC:
             IF (R.top # 0) OR (R.stk[0] # rax) THEN
                 PushAll(0);
                 GetRegA;
@@ -1463,29 +1433,29 @@ BEGIN
                 DEC(R.pushed)
             END
 
-        |CODE.opJNZ:
+        |IL.opJNZ:
             UnOp(reg1);
             test(reg1);
             jcc(jne, param1)
 
-        |CODE.opJZ:
+        |IL.opJZ:
             UnOp(reg1);
             test(reg1);
             jcc(je, param1)
 
-        |CODE.opJE:
+        |IL.opJE:
             UnOp(reg1);
             test(reg1);
             jcc(jne, param1);
             drop
 
-        |CODE.opJNE:
+        |IL.opJNE:
             UnOp(reg1);
             test(reg1);
             jcc(je, param1);
             drop
 
-        |CODE.opIN:
+        |IL.opIN:
             label := NewLabel();
             L := NewLabel();
             BinOp(reg1, reg2);
@@ -1501,11 +1471,11 @@ BEGIN
             X86.SetLabel(label);
             drop
 
-        |CODE.opINR:
+        |IL.opINR:
             label := NewLabel();
             L := NewLabel();
             UnOp(reg1);
-            reg2 := REG.GetAnyReg(R);
+            reg2 := GetAnyReg();
             cmprc(reg1, 64);
             jcc(jb, L);
             xor(reg1, reg1);
@@ -1519,7 +1489,7 @@ BEGIN
             X86.SetLabel(label);
             drop
 
-        |CODE.opINL:
+        |IL.opINL:
             UnOp(reg1);
             Rex(reg1, 0);
             OutByte2(0FH, 0BAH);  // bt reg1, param2
@@ -1527,237 +1497,233 @@ BEGIN
             setcc(setc, reg1);
             andrc(reg1, 1)
 
-        |CODE.opNOT:
+        |IL.opNOT:
             UnOp(reg1);
             test(reg1);
             setcc(sete, reg1);
             andrc(reg1, 1)
 
-        |CODE.opORD:
+        |IL.opORD:
             UnOp(reg1);
             test(reg1);
             setcc(setne, reg1);
             andrc(reg1, 1)
 
-        |CODE.opABS:
+        |IL.opABS:
             UnOp(reg1);
             test(reg1);
             OutByte2(7DH, 03H); // jge L
             neg(reg1)
             // L:
 
-        |CODE.opEQB, CODE.opNEB:
+        |IL.opEQB, IL.opNEB:
             BinOp(reg1, reg2);
             drop;
-            drop;
-
             test(reg1);
-            OutByte2(74H, 07H); // je L1
+            label := NewLabel();
+            jcc(je, label);
             movrc(reg1, 1);
-            // L1:
+            X86.SetLabel(label);
             test(reg2);
-            OutByte2(74H, 07H); // je L2
+            label := NewLabel();
+            jcc(je, label);
             movrc(reg2, 1);
-            // L2:
+            X86.SetLabel(label);
             cmprr(reg1, reg2);
-            reg1 := REG.GetAnyReg(R);
-            IF cmd.opcode = CODE.opEQB THEN
+            IF opcode = IL.opEQB THEN
                 setcc(sete, reg1)
             ELSE
                 setcc(setne, reg1)
             END;
             andrc(reg1, 1)
 
-        |CODE.opMULSC:
+        |IL.opMULSC:
             UnOp(reg1);
             andrc(reg1, param2)
 
-        |CODE.opDIVSC, CODE.opADDSL, CODE.opADDSR:
+        |IL.opDIVSC, IL.opADDSL, IL.opADDSR:
             UnOp(reg1);
             Rex(reg1, 0);
-            OutByte2(81H + short(param2), 0C8H + 28H * ORD(cmd.opcode = CODE.opDIVSC) + reg1 MOD 8); // or/xor reg1, param2
+            OutByte2(81H + short(param2), 0C8H + 28H * ORD(opcode = IL.opDIVSC) + reg1 MOD 8); // or/xor reg1, param2
             OutIntByte(param2)
 
-        |CODE.opSUBSL:
+        |IL.opSUBSL:
             UnOp(reg1);
             not(reg1);
             andrc(reg1, param2)
 
-        |CODE.opSUBSR:
+        |IL.opSUBSR:
             UnOp(reg1);
             andrc(reg1, ORD(-BITS(param2)))
 
-        |CODE.opMULS:
+        |IL.opMULS:
             BinOp(reg1, reg2);
             and(reg1, reg2);
             drop
 
-        |CODE.opDIVS:
+        |IL.opDIVS:
             BinOp(reg1, reg2);
             xor(reg1, reg2);
             drop
 
-        |CODE.opUMINS:
+        |IL.opUMINS:
             UnOp(reg1);
             not(reg1)
 
-        |CODE.opCOPY:
+        |IL.opCOPY:
             PushAll(2);
             pushc(param2);
-            CallRTL(CODE._move2)
+            CallRTL(IL._move2)
 
-        |CODE.opMOVE:
+        |IL.opMOVE:
             PushAll(3);
-            CallRTL(CODE._move2)
+            CallRTL(IL._move2)
 
-        |CODE.opCOPYA:
+        |IL.opCOPYA:
             PushAll(4);
             pushc(param2);
-            CallRTL(CODE._arrcpy);
+            CallRTL(IL._arrcpy);
             GetRegA
 
-        |CODE.opCOPYS:
+        |IL.opCOPYS:
             PushAll(4);
             pushc(param2);
-            CallRTL(CODE._strcpy)
+            CallRTL(IL._strcpy)
 
-        |CODE.opCOPYS2:
-            PushAll(4);
-            pushc(param2);
-            CallRTL(CODE._strcpy2)
-
-        |CODE.opROT:
+        |IL.opROT:
             PushAll(0);
             push(rsp);
             pushc(param2);
-            CallRTL(CODE._rot)
+            CallRTL(IL._rot)
 
-        |CODE.opNEW:
+        |IL.opNEW:
             PushAll(1);
             n := param2 + 16;
-            ASSERT(MACHINE.Align(n, 64));
+            ASSERT(UTILS.Align(n, 64));
             pushc(n);
             pushc(param1);
-            CallRTL(CODE._new)
+            CallRTL(IL._new)
 
-        |CODE.opDISP:
+        |IL.opDISP:
             PushAll(1);
-            CallRTL(CODE._dispose)
+            CallRTL(IL._dispose)
 
-        |CODE.opPUSHT:
+        |IL.opPUSHT:
             UnOp(reg1);
-            reg2 := REG.GetAnyReg(R);
+            reg2 := GetAnyReg();
             movrm(reg2, reg1, -8)
 
-        |CODE.opISREC:
+        |IL.opISREC:
             PushAll(2);
-            pushc(param2);
-            CallRTL(CODE._isrec);
+            pushc(param2 * tcount);
+            CallRTL(IL._isrec);
             GetRegA
 
-        |CODE.opIS:
+        |IL.opIS:
             PushAll(1);
-            pushc(param2);
-            CallRTL(CODE._is);
+            pushc(param2 * tcount);
+            CallRTL(IL._is);
             GetRegA
 
-        |CODE.opTYPEGR:
+        |IL.opTYPEGR:
             PushAll(1);
-            pushc(param2);
-            CallRTL(CODE._guardrec);
+            pushc(param2 * tcount);
+            CallRTL(IL._guardrec);
             GetRegA
 
-        |CODE.opTYPEGP:
+        |IL.opTYPEGP:
             UnOp(reg1);
             PushAll(0);
             push(reg1);
-            pushc(param2);
-            CallRTL(CODE._guard);
+            pushc(param2 * tcount);
+            CallRTL(IL._guard);
             GetRegA
 
-        |CODE.opTYPEGD:
+        |IL.opTYPEGD:
             UnOp(reg1);
             PushAll(0);
             pushm(reg1, -8);
-            pushc(param2);
-            CallRTL(CODE._guardrec);
+            pushc(param2 * tcount);
+            CallRTL(IL._guardrec);
             GetRegA
 
-        |CODE.opCASET:
+        |IL.opCASET:
             push(r10);
             push(r10);
-            pushc(param2);
-            CallRTL(CODE._guardrec);
+            pushc(param2 * tcount);
+            CallRTL(IL._guardrec);
             pop(r10);
             test(rax);
             jcc(jne, param1)
 
-        |CODE.opSAVEP:
+        |IL.opSAVEP:
             UnOp(reg1);
-            reg2 := REG.GetAnyReg(R);
+            reg2 := GetAnyReg();
             lea(reg2, param2, sCODE);
             movmr(reg1, 0, reg2);
             drop;
             drop
 
-        |CODE.opPUSHP:
-            reg1 := REG.GetAnyReg(R);
-            lea(reg1, param2, sCODE)
+        |IL.opPUSHP:
+            lea(GetAnyReg(), param2, sCODE)
 
-        |CODE.opINC, CODE.opDEC:
+        |IL.opINC, IL.opDEC:
             BinOp(reg1, reg2);
             // add/sub qword[reg2], reg1
             Rex(reg2, reg1);
-            OutByte2(01H + 28H * ORD(cmd.opcode = CODE.opDEC), reg2 MOD 8 + (reg1 MOD 8) * 8);
+            OutByte2(01H + 28H * ORD(opcode = IL.opDEC), reg2 MOD 8 + (reg1 MOD 8) * 8);
             drop;
             drop
 
-        |CODE.opINCC, CODE.opDECC:
+        |IL.opINCC:
             UnOp(reg1);
             IF isLong(param2) THEN
-                reg2 := REG.GetAnyReg(R);
+                reg2 := GetAnyReg();
                 movrc(reg2, param2);
-                // add/sub qword[reg1], reg2
+                // add qword[reg1], reg2
                 Rex(reg1, reg2);
-                OutByte2(01H + 28H * ORD(cmd.opcode = CODE.opDECC), reg1 MOD 8 + (reg2 MOD 8) * 8);
+                OutByte2(01H, reg1 MOD 8 + (reg2 MOD 8) * 8);
                 drop
-            ELSE
-                // add/sub qword[reg1], param2
+            ELSIF ABS(param2) = 1 THEN
                 Rex(reg1, 0);
-                OutByte2(81H + short(param2), 28H * ORD(cmd.opcode = CODE.opDECC) + reg1 MOD 8);
+                OutByte2(0FFH, reg1 MOD 8 + 8 * ORD(param2 = -1)) // inc/dec qword[reg1]
+            ELSE
+                // add qword[reg1], param2
+                Rex(reg1, 0);
+                OutByte2(81H + short(param2), reg1 MOD 8);
                 OutIntByte(param2)
             END;
             drop
 
-        |CODE.opDROP:
+        |IL.opDROP:
             UnOp(reg1);
             drop
 
-        |CODE.opSAVE, CODE.opSAVE64:
+        |IL.opSAVE, IL.opSAVE64:
             BinOp(reg2, reg1);
             movmr(reg1, 0, reg2);
             drop;
             drop
 
-        |CODE.opSAVE8:
+        |IL.opSAVE8:
             BinOp(reg2, reg1);
             movmr8(reg1, 0, reg2);
             drop;
             drop
 
-        |CODE.opSAVE16:
+        |IL.opSAVE16:
             BinOp(reg2, reg1);
             movmr16(reg1, 0, reg2);
             drop;
             drop
 
-        |CODE.opSAVE32:
+        |IL.opSAVE32:
             BinOp(reg2, reg1);
             movmr32(reg1, 0, reg2);
             drop;
             drop
 
-        |CODE.opMIN:
+        |IL.opMIN:
             BinOp(reg1, reg2);
             cmprr(reg1, reg2);
             OutByte2(7EH, 3); // jle L
@@ -1765,7 +1731,7 @@ BEGIN
             // L:
             drop
 
-        |CODE.opMAX:
+        |IL.opMAX:
             BinOp(reg1, reg2);
             cmprr(reg1, reg2);
             OutByte2(7DH, 3);  // jge L
@@ -1773,7 +1739,7 @@ BEGIN
             // L:
             drop
 
-        |CODE.opMINC:
+        |IL.opMINC:
             UnOp(reg1);
             cmprc(reg1, param2);
             label := NewLabel();
@@ -1781,7 +1747,7 @@ BEGIN
             movrc(reg1, param2);
             X86.SetLabel(label)
 
-        |CODE.opMAXC:
+        |IL.opMAXC:
             UnOp(reg1);
             cmprc(reg1, param2);
             label := NewLabel();
@@ -1789,41 +1755,43 @@ BEGIN
             movrc(reg1, param2);
             X86.SetLabel(label)
 
-        |CODE.opSBOOL:
+        |IL.opSBOOL:
             BinOp(reg2, reg1);
             test(reg2);
-            setcc(setne, reg2);
-            movmr8(reg1, 0, reg2);
+            IF reg1 >= 8 THEN
+                OutByte(41H)
+            END;
+            OutByte3(0FH, 95H, reg1 MOD 8); // setne byte[reg1]
             drop;
             drop
 
-        |CODE.opSBOOLC:
+        |IL.opSBOOLC:
             UnOp(reg1);
             IF reg1 >= 8 THEN
                 OutByte(41H)
             END;
-            OutByte3(0C6H, reg1 MOD 8, ORD(param2 # 0));
+            OutByte3(0C6H, reg1 MOD 8, ORD(param2 # 0)); // mov byte[reg1], 0/1
             drop
 
-        |CODE.opODD:
+        |IL.opODD:
             UnOp(reg1);
             andrc(reg1, 1)
 
-        |CODE.opUMINUS:
+        |IL.opUMINUS:
             UnOp(reg1);
             neg(reg1)
 
-        |CODE.opADD:
+        |IL.opADD:
             BinOp(reg1, reg2);
             add(reg1, reg2);
             drop
 
-        |CODE.opSUB:
+        |IL.opSUB:
             BinOp(reg1, reg2);
             sub(reg1, reg2);
             drop
 
-        |CODE.opSUBR, CODE.opSUBL:
+        |IL.opSUBR, IL.opSUBL:
             UnOp(reg1);
             n := param2;
             IF n = 1 THEN
@@ -1833,11 +1801,11 @@ BEGIN
             ELSIF n # 0 THEN
                 subrc(reg1, n)
             END;
-            IF cmd.opcode = CODE.opSUBL THEN
+            IF opcode = IL.opSUBL THEN
                 neg(reg1)
             END
 
-        |CODE.opADDL, CODE.opADDR:
+        |IL.opADDL, IL.opADDR:
             IF param2 # 0 THEN
                 UnOp(reg1);
                 IF param2 = 1 THEN
@@ -1849,17 +1817,17 @@ BEGIN
                 END
             END
 
-        |CODE.opDIV:
+        |IL.opDIV:
             PushAll(2);
-            CallRTL(CODE._div);
+            CallRTL(IL._div);
             GetRegA
 
-        |CODE.opDIVR:
+        |IL.opDIVR:
             a := param2;
             IF a > 1 THEN
-                n := X86.log2(a)
+                n := UTILS.Log2(a)
             ELSIF a < -1 THEN
-                n := X86.log2(-a)
+                n := UTILS.Log2(-a)
             ELSE
                 n := -1
             END;
@@ -1874,7 +1842,7 @@ BEGIN
                     UnOp(reg1);
 
                     IF a < 0 THEN
-                        reg2 := REG.GetAnyReg(R);
+                        reg2 := GetAnyReg();
                         mov(reg2, reg1);
                         shiftrc(sar, reg1, n);
                         sub(reg1, reg2);
@@ -1886,28 +1854,28 @@ BEGIN
                 ELSE
                     PushAll(1);
                     pushc(param2);
-                    CallRTL(CODE._div);
+                    CallRTL(IL._div);
                     GetRegA
                 END
             END
 
-        |CODE.opDIVL:
+        |IL.opDIVL:
             PushAll(1);
             pushc(param2);
-            CallRTL(CODE._div2);
+            CallRTL(IL._div2);
             GetRegA
 
-        |CODE.opMOD:
+        |IL.opMOD:
             PushAll(2);
-            CallRTL(CODE._mod);
+            CallRTL(IL._mod);
             GetRegA
 
-        |CODE.opMODR:
+        |IL.opMODR:
             a := param2;
             IF a > 1 THEN
-                n := X86.log2(a)
+                n := UTILS.Log2(a)
             ELSIF a < -1 THEN
-                n := X86.log2(-a)
+                n := UTILS.Log2(-a)
             ELSE
                 n := -1
             END;
@@ -1931,30 +1899,30 @@ BEGIN
                 ELSE
                     PushAll(1);
                     pushc(param2);
-                    CallRTL(CODE._mod);
+                    CallRTL(IL._mod);
                     GetRegA
                 END
             END
 
-        |CODE.opMODL:
+        |IL.opMODL:
             PushAll(1);
             pushc(param2);
-            CallRTL(CODE._mod2);
+            CallRTL(IL._mod2);
             GetRegA
 
-        |CODE.opMUL:
+        |IL.opMUL:
             BinOp(reg1, reg2);
             oprr2(0FH, 0AFH, reg2, reg1); // imul reg1, reg2
             drop
 
-        |CODE.opMULC:
+        |IL.opMULC:
             UnOp(reg1);
 
             a := param2;
             IF a > 1 THEN
-                n := X86.log2(a)
+                n := UTILS.Log2(a)
             ELSIF a < -1 THEN
-                n := X86.log2(-a)
+                n := UTILS.Log2(-a)
             ELSE
                 n := -1
             END;
@@ -1979,20 +1947,20 @@ BEGIN
                 END
             END
 
-        |CODE.opADDS:
+        |IL.opADDS:
             BinOp(reg1, reg2);
             or(reg1, reg2);
             drop
 
-        |CODE.opSUBS:
+        |IL.opSUBS:
             BinOp(reg1, reg2);
             not(reg2);
             and(reg1, reg2);
             drop
 
-        |CODE.opNOP:
+        |IL.opNOP:
 
-        |CODE.opSWITCH:
+        |IL.opSWITCH:
             UnOp(reg1);
             IF param2 = 0 THEN
                 reg2 := rax
@@ -2006,65 +1974,71 @@ BEGIN
             END;
             drop
 
-        |CODE.opENDSW:
+        |IL.opENDSW:
 
-        |CODE.opCASEL:
+        |IL.opCASEL:
             cmprc(rax, param1);
             jcc(jl, param2)
 
-        |CODE.opCASER:
+        |IL.opCASER:
             cmprc(rax, param1);
             jcc(jg, param2)
 
-        |CODE.opCASELR:
+        |IL.opCASELR:
             cmprc(rax, param1);
             jcc(jl, param2);
             jcc(jg, cmd.param3)
 
-        |CODE.opASR, CODE.opROR, CODE.opLSL, CODE.opLSR:
+        |IL.opASR, IL.opROR, IL.opLSL, IL.opLSR:
             BinOp(reg1, reg2);
             xchg(reg2, rcx);
             Rex(reg1, 0);
             OutByte(0D3H);
-            X86.shift(cmd.opcode, reg1 MOD 8); // shift reg1, cl
+            X86.shift(opcode, reg1 MOD 8); // shift reg1, cl
             xchg(reg2, rcx);
             drop
 
-        |CODE.opASR1, CODE.opROR1, CODE.opLSL1, CODE.opLSR1:
-            reg1 := REG.GetAnyReg(R);
+        |IL.opASR1, IL.opROR1, IL.opLSL1, IL.opLSR1:
+            reg1 := GetAnyReg();
             movrc(reg1, param2);
             BinOp(reg1, reg2);
             xchg(reg1, rcx);
             Rex(reg2, 0);
             OutByte(0D3H);
-            X86.shift(cmd.opcode, reg2 MOD 8); // shift reg2, cl
+            X86.shift(opcode, reg2 MOD 8); // shift reg2, cl
             xchg(reg1, rcx);
             drop;
             drop;
             ASSERT(REG.GetReg(R, reg2))
 
-        |CODE.opASR2, CODE.opROR2, CODE.opLSL2, CODE.opLSR2:
+        |IL.opASR2, IL.opROR2, IL.opLSL2, IL.opLSR2:
             UnOp(reg1);
-            shiftrc(cmd.opcode, reg1, ORD(BITS(param2) * {0..5}))
+            shiftrc(opcode, reg1, param2 MOD 64)
 
-        |CODE.opGET:
-            BinOp(reg1, reg2);
+        |IL.opGET, IL.opGETC:
+            IF opcode = IL.opGET THEN
+                BinOp(reg1, reg2)
+            ELSIF opcode = IL.opGETC THEN
+                UnOp(reg2);
+                reg1 := GetAnyReg();
+                movrc(reg1, param1)
+            END;
             drop;
             drop;
             _movrm(reg1, reg1, 0, param2 * 8, FALSE);
             _movrm(reg1, reg2, 0, param2 * 8, TRUE)
 
-        |CODE.opCHKBYTE:
+        |IL.opCHKBYTE:
             BinOp(reg1, reg2);
             cmprc(reg1, 256);
             jcc(jb, param1)
 
-        |CODE.opCHKIDX:
+        |IL.opCHKIDX:
             UnOp(reg1);
             cmprc(reg1, param2);
             jcc(jb, param1)
 
-        |CODE.opCHKIDX2:
+        |IL.opCHKIDX2:
             BinOp(reg1, reg2);
             IF param2 # -1 THEN
                 cmprr(reg2, reg1);
@@ -2077,17 +2051,17 @@ BEGIN
                 R.stk[R.top] := reg2
             END
 
-        |CODE.opLENGTH:
+        |IL.opLENGTH:
             PushAll(2);
-            CallRTL(CODE._length);
+            CallRTL(IL._length);
             GetRegA
 
-        |CODE.opLENGTHW:
+        |IL.opLENGTHW:
             PushAll(2);
-            CallRTL(CODE._lengthw);
+            CallRTL(IL._lengthw);
             GetRegA
 
-        |CODE.opLEN:
+        |IL.opLEN:
             n := param2;
             UnOp(reg1);
             drop;
@@ -2102,23 +2076,23 @@ BEGIN
             INCL(R.regs, reg1);
             ASSERT(REG.GetReg(R, reg1))
 
-        |CODE.opCHR:
+        |IL.opCHR:
             UnOp(reg1);
             andrc(reg1, 255)
 
-        |CODE.opWCHR:
+        |IL.opWCHR:
             UnOp(reg1);
             andrc(reg1, 65535)
 
-        |CODE.opEQP, CODE.opNEP, CODE.opEQIP, CODE.opNEIP:
+        |IL.opEQP, IL.opNEP, IL.opEQIP, IL.opNEIP:
             UnOp(reg1);
-            reg2 := REG.GetAnyReg(R);
+            reg2 := GetAnyReg();
 
-            CASE cmd.opcode OF
-            |CODE.opEQP, CODE.opNEP:
+            CASE opcode OF
+            |IL.opEQP, IL.opNEP:
                 lea(reg2, param1, sCODE)
 
-            |CODE.opEQIP, CODE.opNEIP:
+            |IL.opEQIP, IL.opNEIP:
                 lea(reg2, param1, sIMP);
                 movrm(reg2, reg2, 0)
             END;
@@ -2126,43 +2100,35 @@ BEGIN
             cmprr(reg1, reg2);
             drop;
             drop;
-            reg1 := REG.GetAnyReg(R);
+            reg1 := GetAnyReg();
 
-            CASE cmd.opcode OF
-            |CODE.opEQP, CODE.opEQIP: setcc(sete,  reg1)
-            |CODE.opNEP, CODE.opNEIP: setcc(setne, reg1)
+            CASE opcode OF
+            |IL.opEQP, IL.opEQIP: setcc(sete,  reg1)
+            |IL.opNEP, IL.opNEIP: setcc(setne, reg1)
             END;
 
             andrc(reg1, 1)
 
-        |CODE.opINC1B, CODE.opDEC1B:
+        |IL.opINCCB, IL.opDECCB:
             UnOp(reg1);
             IF reg1 >= 8 THEN
                 OutByte(41H)
             END;
-            OutByte2(0FEH, 8 * ORD(cmd.opcode = CODE.opDEC1B) + reg1 MOD 8); // inc/dec byte[reg1]
+            OutByte3(80H, 28H * ORD(opcode = IL.opDECCB) + reg1 MOD 8, param2 MOD 256); // add/sub byte[reg1], param2 MOD 256
             drop
 
-        |CODE.opINCCB, CODE.opDECCB:
-            UnOp(reg1);
-            IF reg1 >= 8 THEN
-                OutByte(41H)
-            END;
-            OutByte3(80H, 28H * ORD(cmd.opcode = CODE.opDECCB) + reg1 MOD 8, param2 MOD 256); // add/sub byte[reg1], param2 MOD 256
-            drop
-
-        |CODE.opINCB, CODE.opDECB:
+        |IL.opINCB, IL.opDECB:
             BinOp(reg1, reg2);
             IF (reg1 >= 8) OR (reg2 >= 8) THEN
                 OutByte(40H + reg2 DIV 8 + 4 * (reg1 DIV 8))
             END;
-            OutByte2(28H * ORD(cmd.opcode = CODE.opDECB), reg2 MOD 8 + 8 * (reg1 MOD 8)); // add/sub byte[reg2], reg1_8
+            OutByte2(28H * ORD(opcode = IL.opDECB), reg2 MOD 8 + 8 * (reg1 MOD 8)); // add/sub byte[reg2], reg1_8
             drop;
             drop
 
-        |CODE.opSAVEIP:
+        |IL.opSAVEIP:
             UnOp(reg1);
-            reg2 := REG.GetAnyReg(R);
+            reg2 := GetAnyReg();
             lea(reg2, param2, sIMP);
             movrm(reg2, reg2, 0);
             push(reg2);
@@ -2173,90 +2139,90 @@ BEGIN
             OutByte2(8FH, reg1 MOD 8); // pop qword[reg1]
             drop
 
-        |CODE.opCLEANUP:
+        |IL.opCLEANUP:
             n := param2 * 8;
             IF n # 0 THEN
                 addrc(rsp, n)
             END
 
-        |CODE.opPOPSP:
+        |IL.opPOPSP:
             pop(rsp)
 
-        |CODE.opLOADF:
+        |IL.opLOADF:
             UnOp(reg1);
             INC(xmm);
             movsdrm(xmm, reg1, 0);
             drop
 
-        |CODE.opPUSHF:
+        |IL.opPUSHF:
             subrc(rsp, 8);
             movsdmr(rsp, 0, xmm);
             DEC(xmm)
 
-        |CODE.opCONSTF:
+        |IL.opCONSTF:
             float := cmd.float;
             INC(xmm);
-            reg1 := REG.GetAnyReg(R);
+            reg1 := GetAnyReg();
             lea(reg1, Numbers_Offs + Numbers_Count * 8, sDATA);
             movsdrm(xmm, reg1, 0);
             drop;
             NewNumber(UTILS.splitf(float, a, b))
 
-        |CODE.opSAVEF:
+        |IL.opSAVEF:
             UnOp(reg1);
             movsdmr(reg1, 0, xmm);
             DEC(xmm);
             drop
 
-        |CODE.opADDF, CODE.opADDFI:
+        |IL.opADDF, IL.opADDFI:
             opxx(58H, xmm - 1, xmm);
             DEC(xmm)
 
-        |CODE.opSUBF:
+        |IL.opSUBF:
             opxx(5CH, xmm - 1, xmm);
             DEC(xmm)
 
-        |CODE.opSUBFI:
+        |IL.opSUBFI:
             opxx(5CH, xmm, xmm - 1);
             opxx(10H, xmm - 1, xmm);
             DEC(xmm)
 
-        |CODE.opMULF:
+        |IL.opMULF:
             opxx(59H, xmm - 1, xmm);
             DEC(xmm)
 
-        |CODE.opDIVF:
+        |IL.opDIVF:
             opxx(5EH, xmm - 1, xmm);
             DEC(xmm)
 
-        |CODE.opDIVFI:
+        |IL.opDIVFI:
             opxx(5EH, xmm, xmm - 1);
             opxx(10H, xmm - 1, xmm);
             DEC(xmm)
 
-        |CODE.opUMINF:
-            reg1 := REG.GetAnyReg(R);
+        |IL.opUMINF:
+            reg1 := GetAnyReg();
             lea(reg1, Numbers_Offs, sDATA);
             OutByte3(66H, 40H + reg1 DIV 8 + (xmm DIV 8) * 4, 0FH); // xorpd xmm, xmmword[reg1]
             OutByte2(57H, reg1 MOD 8 + (xmm MOD 8) * 8);
             drop
 
-        |CODE.opFABS:
-            reg1 := REG.GetAnyReg(R);
+        |IL.opFABS:
+            reg1 := GetAnyReg();
             lea(reg1, Numbers_Offs + 16, sDATA);
             OutByte3(66H, 40H + reg1 DIV 8 + (xmm DIV 8) * 4, 0FH); // andpd xmm, xmmword[reg1]
             OutByte2(54H, reg1 MOD 8 + (xmm MOD 8) * 8);
             drop
 
-        |CODE.opFLT:
+        |IL.opFLT:
             UnOp(reg1);
             INC(xmm);
             OutByte(0F2H); Rex(reg1, xmm); OutByte(0FH); // cvtsi2sd xmm, reg1
             OutByte2(2AH, 0C0H + (xmm MOD 8) * 8 + reg1 MOD 8);
             drop
 
-        |CODE.opFLOOR:
-            reg1 := REG.GetAnyReg(R);
+        |IL.opFLOOR:
+            reg1 := GetAnyReg();
             subrc(rsp, 8);
             OutByte3(00FH, 0AEH, 05CH); OutByte2(024H, 004H); // stmxcsr dword[rsp+4];
             OutByte2(00FH, 0AEH); OutByte2(01CH, 024H);       // stmxcsr dword[rsp];
@@ -2269,23 +2235,23 @@ BEGIN
             addrc(rsp, 8);
             DEC(xmm)
 
-        |CODE.opEQF .. CODE.opGEFI:
-            fcmp(cmd.opcode, xmm);
+        |IL.opEQF .. IL.opGEF:
+            fcmp(opcode, xmm);
             DEC(xmm, 2)
 
-        |CODE.opINF:
+        |IL.opINF:
             INC(xmm);
-            reg1 := REG.GetAnyReg(R);
+            reg1 := GetAnyReg();
             lea(reg1, Numbers_Offs + 32, sDATA);
             movsdrm(xmm, reg1, 0);
             drop
 
-        |CODE.opPACK, CODE.opPACKC:
-            IF cmd.opcode = CODE.opPACK THEN
+        |IL.opPACK, IL.opPACKC:
+            IF opcode = IL.opPACK THEN
                 BinOp(reg1, reg2)
             ELSE
                 UnOp(reg1);
-                reg2 := REG.GetAnyReg(R);
+                reg2 := GetAnyReg();
                 movrc(reg2, param2)
             END;
             push(reg1);
@@ -2310,15 +2276,15 @@ BEGIN
             drop;
             drop
 
-        |CODE.opUNPK, CODE.opLADR_UNPK:
+        |IL.opUNPK, IL.opLADR_UNPK:
 
-            IF cmd.opcode = CODE.opLADR_UNPK THEN
+            IF opcode = IL.opLADR_UNPK THEN
                 n := param2 * 8;
                 UnOp(reg1);
-                reg2 := REG.GetVarReg(R, param2);
+                reg2 := GetVarReg(param2);
                 regVar := reg2 # -1;
                 IF ~regVar THEN
-                    reg2 := REG.GetAnyReg(R);
+                    reg2 := GetAnyReg();
                     Rex(0, reg2);
                     OutByte2(8DH, 45H + long(n) + (reg2 MOD 8) * 8);  // lea reg2, qword[rbp+n]
                     OutIntByte(n)
@@ -2336,7 +2302,7 @@ BEGIN
 
             IF regVar THEN
                 mov(reg2, reg1);
-                reg2 := REG.GetAnyReg(R)
+                reg2 := GetAnyReg()
             ELSE
                 movmr(reg2, 0, reg1)
             END;
@@ -2357,44 +2323,44 @@ BEGIN
             drop;
             drop
 
-        |CODE.opSADR_PARAM:
+        |IL.opSADR_PARAM:
             pushDA(stroffs + param2)
 
-        |CODE.opVADR_PARAM:
+        |IL.opVADR_PARAM:
             pushm(rbp, param2 * 8)
 
-        |CODE.opLOAD64_PARAM:
+        |IL.opLOAD64_PARAM:
             UnOp(reg1);
             pushm(reg1, 0);
             drop
 
-        |CODE.opLLOAD64_PARAM:
-            reg1 := REG.GetVarReg(R, param2);
+        |IL.opLLOAD64_PARAM:
+            reg1 := GetVarReg(param2);
             IF reg1 # -1 THEN
                 push(reg1)
             ELSE
                 pushm(rbp, param2 * 8)
             END
 
-        |CODE.opGLOAD64_PARAM:
-            reg2 := REG.GetAnyReg(R);
+        |IL.opGLOAD64_PARAM:
+            reg2 := GetAnyReg();
             lea(reg2, param2, sBSS);
             movrm(reg2, reg2, 0);
             push(reg2);
             drop
 
-        |CODE.opCONST_PARAM:
+        |IL.opCONST_PARAM:
             pushc(param2)
 
-        |CODE.opGLOAD32_PARAM:
-            reg1 := REG.GetAnyReg(R);
+        |IL.opGLOAD32_PARAM:
+            reg1 := GetAnyReg();
             xor(reg1, reg1);
             lea(reg1, param2, sBSS);
             movrm32(reg1, reg1, 0);
             push(reg1);
             drop
 
-        |CODE.opLOAD32_PARAM:
+        |IL.opLOAD32_PARAM:
             UnOp(reg1);
             movrm32(reg1, reg1, 0);
             shiftrc(shl, reg1, 32);
@@ -2402,10 +2368,10 @@ BEGIN
             push(reg1);
             drop
 
-        |CODE.opLLOAD32_PARAM:
-            reg1 := REG.GetAnyReg(R);
+        |IL.opLLOAD32_PARAM:
+            reg1 := GetAnyReg();
             xor(reg1, reg1);
-            reg2 := REG.GetVarReg(R, param2);
+            reg2 := GetVarReg(param2);
             IF reg2 # -1 THEN
                 mov(reg1, reg2)
             ELSE
@@ -2414,14 +2380,14 @@ BEGIN
             push(reg1);
             drop
 
-        |CODE.opLADR_SAVEC:
+        |IL.opLADR_SAVEC:
             n := param1 * 8;
-            reg1 := REG.GetVarReg(R, param1);
+            reg1 := GetVarReg(param1);
             IF reg1 # -1 THEN
                 movrc(reg1, param2)
             ELSE
                 IF isLong(param2) THEN
-                    reg2 := REG.GetAnyReg(R);
+                    reg2 := GetAnyReg();
                     movrc(reg2, param2);
                     movmr(rbp, n, reg2);
                     drop
@@ -2432,17 +2398,17 @@ BEGIN
                 END
             END
 
-        |CODE.opGADR_SAVEC:
+        |IL.opGADR_SAVEC:
             IF isLong(param2) THEN
-                reg1 := REG.GetAnyReg(R);
+                reg1 := GetAnyReg();
                 movrc(reg1, param2);
-                reg2 := REG.GetAnyReg(R);
+                reg2 := GetAnyReg();
                 lea(reg2, param1, sBSS);
                 movmr(reg2, 0, reg1);
                 drop;
                 drop
             ELSE
-                reg2 := REG.GetAnyReg(R);
+                reg2 := GetAnyReg();
                 lea(reg2, param1, sBSS);
                 Rex(reg2, 0);
                 OutByte2(0C7H, reg2 MOD 8); // mov qword[reg2], param2
@@ -2450,9 +2416,9 @@ BEGIN
                 drop
             END
 
-        |CODE.opLADR_SAVE:
+        |IL.opLADR_SAVE:
             UnOp(reg1);
-            reg2 := REG.GetVarReg(R, param2);
+            reg2 := GetVarReg(param2);
             IF reg2 # -1 THEN
                 mov(reg2, reg1)
             ELSE
@@ -2460,79 +2426,48 @@ BEGIN
             END;
             drop
 
-        |CODE.opLADR_INC1:
-            reg1 := REG.GetVarReg(R, param2);
-            IF reg1 # -1 THEN
-                incr(reg1)
-            ELSE
-                n := param2 * 8;
-                OutByte3(48H, 0FFH, 45H + long(n)); // inc qword[rbp+n]
-                OutIntByte(n)
-            END
-
-        |CODE.opLADR_DEC1:
-            reg1 := REG.GetVarReg(R, param2);
-            IF reg1 # -1 THEN
-                decr(reg1)
-            ELSE
-                n := param2 * 8;
-                OutByte3(48H, 0FFH, 4DH + long(n)); // dec qword[rbp+n]
-                OutIntByte(n)
-            END
-
-        |CODE.opLADR_INCC, CODE.opLADR_DECC:
-            reg1 := REG.GetVarReg(R, param1);
+        |IL.opLADR_INCC:
+            reg1 := GetVarReg(param1);
             IF isLong(param2) THEN
-                reg2 := REG.GetAnyReg(R);
+                reg2 := GetAnyReg();
                 movrc(reg2, param2);
                 IF reg1 # -1 THEN
-                    IF cmd.opcode = CODE.opLADR_DECC THEN
-                        sub(reg1, reg2)
-                    ELSE
-                        add(reg1, reg2)
-                    END
+                    add(reg1, reg2)
                 ELSE
                     n := param1 * 8;
                     Rex(0, reg2);
-                    OutByte2(01H + 28H * ORD(cmd.opcode = CODE.opLADR_DECC), 45H + long(n) + (reg2 MOD 8) * 8);
-                    OutIntByte(n) // add/sub qword[rbp+n],reg2
+                    OutByte2(01H, 45H + long(n) + (reg2 MOD 8) * 8);
+                    OutIntByte(n) // add qword[rbp+n],reg2
                 END;
                 drop
-            ELSE
+            ELSIF ABS(param2) = 1 THEN
                 IF reg1 # -1 THEN
-                    IF cmd.opcode = CODE.opLADR_DECC THEN
-                        subrc(reg1, param2)
+                    IF param2 = 1 THEN
+                        incr(reg1)
                     ELSE
-                        addrc(reg1, param2)
+                        decr(reg1)
                     END
                 ELSE
                     n := param1 * 8;
-                    OutByte3(48H, 81H + short(param2), 45H + long(n) + 28H * ORD(cmd.opcode = CODE.opLADR_DECC));
+                    OutByte3(48H, 0FFH, 45H + 8 * ORD(param2 = -1) + long(n)); // inc/dec qword[rbp+n]
+                    OutIntByte(n)
+                END
+            ELSE
+                IF reg1 # -1 THEN
+                    addrc(reg1, param2)
+                ELSE
+                    n := param1 * 8;
+                    OutByte3(48H, 81H + short(param2), 45H + long(n));
                     OutIntByte(n);
-                    OutIntByte(param2) // add/sub qword[rbp+n],param2
+                    OutIntByte(param2) // add qword[rbp+n],param2
                 END
             END
 
-        |CODE.opLADR_INC1B, CODE.opLADR_DEC1B:
-            reg1 := REG.GetVarReg(R, param2);
-            IF reg1 # -1 THEN
-                IF cmd.opcode = CODE.opLADR_DEC1B THEN
-                    decr(reg1)
-                ELSE
-                    incr(reg1)
-                END;
-                andrc(reg1, 255)
-            ELSE
-                n := param2 * 8;
-                OutByte2(0FEH, 45H + long(n) + 8 * ORD(cmd.opcode = CODE.opLADR_DEC1B));
-                OutIntByte(n)  // inc/dec byte[rbp+n]
-            END
-
-        |CODE.opLADR_INCCB, CODE.opLADR_DECCB:
-            reg1 := REG.GetVarReg(R, param1);
+        |IL.opLADR_INCCB, IL.opLADR_DECCB:
+            reg1 := GetVarReg(param1);
             param2 := param2 MOD 256;
             IF reg1 # -1 THEN
-                IF cmd.opcode = CODE.opLADR_DECCB THEN
+                IF opcode = IL.opLADR_DECCB THEN
                     subrc(reg1, param2)
                 ELSE
                     addrc(reg1, param2)
@@ -2540,16 +2475,16 @@ BEGIN
                 andrc(reg1, 255)
             ELSE
                 n := param1 * 8;
-                OutByte2(80H, 45H + long(n) + 28H * ORD(cmd.opcode = CODE.opLADR_DECCB));
+                OutByte2(80H, 45H + long(n) + 28H * ORD(opcode = IL.opLADR_DECCB));
                 OutIntByte(n);
                 OutByte(param2) // add/sub byte[rbp+n],param2
             END
 
-        |CODE.opLADR_INC, CODE.opLADR_DEC:
+        |IL.opLADR_INC, IL.opLADR_DEC:
             UnOp(reg1);
-            reg2 := REG.GetVarReg(R, param2);
+            reg2 := GetVarReg(param2);
             IF reg2 # -1 THEN
-                IF cmd.opcode = CODE.opLADR_DEC THEN
+                IF opcode = IL.opLADR_DEC THEN
                     sub(reg2, reg1)
                 ELSE
                     add(reg2, reg1)
@@ -2557,16 +2492,16 @@ BEGIN
             ELSE
                 n := param2 * 8;
                 Rex(0, reg1);
-                OutByte2(01H + 28H * ORD(cmd.opcode = CODE.opLADR_DEC), 45H + long(n) + (reg1 MOD 8) * 8);
+                OutByte2(01H + 28H * ORD(opcode = IL.opLADR_DEC), 45H + long(n) + (reg1 MOD 8) * 8);
                 OutIntByte(n) // add/sub qword[rbp+n],reg1
             END;
             drop
 
-        |CODE.opLADR_INCB, CODE.opLADR_DECB:
+        |IL.opLADR_INCB, IL.opLADR_DECB:
             UnOp(reg1);
-            reg2 := REG.GetVarReg(R, param2);
+            reg2 := GetVarReg(param2);
             IF reg2 # -1 THEN
-                IF cmd.opcode = CODE.opLADR_DECB THEN
+                IF opcode = IL.opLADR_DECB THEN
                     sub(reg2, reg1)
                 ELSE
                     add(reg2, reg1)
@@ -2577,43 +2512,43 @@ BEGIN
                 IF reg1 >= 8 THEN
                     OutByte(44H)
                 END;
-                OutByte2(28H * ORD(cmd.opcode = CODE.opLADR_DECB), 45H + long(n) + 8 * (reg1 MOD 8));
+                OutByte2(28H * ORD(opcode = IL.opLADR_DECB), 45H + long(n) + 8 * (reg1 MOD 8));
                 OutIntByte(n) // add/sub byte[rbp+n], reg1_8
             END;
             drop
 
-        |CODE.opLADR_INCL, CODE.opLADR_EXCL:
+        |IL.opLADR_INCL, IL.opLADR_EXCL:
             UnOp(reg1);
             cmprc(reg1, 64);
-            reg2 := REG.GetVarReg(R, param2);
+            reg2 := GetVarReg(param2);
             IF reg2 # -1 THEN
                 OutByte2(73H, 4); // jnb L
-                oprr2(0FH, 0ABH + 8 * ORD(cmd.opcode = CODE.opLADR_EXCL), reg2, reg1) // bts/btr reg2, reg1
+                oprr2(0FH, 0ABH + 8 * ORD(opcode = IL.opLADR_EXCL), reg2, reg1) // bts/btr reg2, reg1
             ELSE
                 n := param2 * 8;
                 OutByte2(73H, 5 + 3 * ORD(~isByte(n))); // jnb L
                 Rex(0, reg1);
-                OutByte3(0FH, 0ABH + 8 * ORD(cmd.opcode = CODE.opLADR_EXCL), 45H + long(n) + 8 * (reg1 MOD 8));
+                OutByte3(0FH, 0ABH + 8 * ORD(opcode = IL.opLADR_EXCL), 45H + long(n) + 8 * (reg1 MOD 8));
                 OutIntByte(n) // bts/btr qword[rbp+n], reg1
             END;
             // L:
             drop
 
-        |CODE.opLADR_INCLC, CODE.opLADR_EXCLC:
-            reg1 := REG.GetVarReg(R, param1);
+        |IL.opLADR_INCLC, IL.opLADR_EXCLC:
+            reg1 := GetVarReg(param1);
             IF reg1 # -1 THEN
                 Rex(reg1, 0);
                 OutByte3(0FH, 0BAH, 0E8H);  // bts/btr reg1, param2
-                OutByte2(reg1 MOD 8 + 8 * ORD(cmd.opcode = CODE.opLADR_EXCLC), param2)
+                OutByte2(reg1 MOD 8 + 8 * ORD(opcode = IL.opLADR_EXCLC), param2)
             ELSE
                 n := param1 * 8;
                 OutByte3(48H, 0FH, 0BAH);  // bts/btr qword[rbp+n], param2
-                OutByte(6DH + long(n) + 8 * ORD(cmd.opcode = CODE.opLADR_EXCLC));
+                OutByte(6DH + long(n) + 8 * ORD(opcode = IL.opLADR_EXCLC));
                 OutIntByte(n);
                 OutByte(param2)
             END
 
-        |CODE.opLOOP, CODE.opENDLOOP:
+        |IL.opLOOP, IL.opENDLOOP:
 
         END;
 
@@ -2626,14 +2561,14 @@ BEGIN
 END translate;
 
 
-PROCEDURE prolog (code: CODE.CODES; modname: ARRAY OF CHAR; target, stack_size: INTEGER);
+PROCEDURE prolog (code: IL.CODES; modname: ARRAY OF CHAR; target, stack_size: INTEGER);
 VAR
-    ModName_Offs, entry: INTEGER;
+    ModName_Offs, entry, L: INTEGER;
 
 BEGIN
-    ModName_Offs := CHL.Length(code.types) * 8 + CHL.Length(code.data);
+    ModName_Offs := tcount * 8 + CHL.Length(code.data);
     Numbers_Offs := ModName_Offs + LENGTH(modname) + 1;
-    ASSERT(MACHINE.Align(Numbers_Offs, 16));
+    ASSERT(UTILS.Align(Numbers_Offs, 16));
 
     entry := NewLabel();
     X86.SetLabel(entry);
@@ -2643,44 +2578,64 @@ BEGIN
         push(r8);
         push(rdx);
         push(rcx);
-        CallRTL(CODE._dllentry);
+        CallRTL(IL._dllentry);
         test(rax);
         jcc(je, dllret)
     END;
 
-    push(rsp);
+    IF target = mConst.Target_iELF64 THEN
+        push(rsp)
+    ELSE
+        pushc(0)
+    END;
+
     lea(rax, entry, sCODE);
     push(rax);
     pushDA(0); //TYPES
-    pushc(CHL.Length(code.types));
+    pushc(tcount);
     pushDA(ModName_Offs); //MODNAME
-    CallRTL(CODE._init)
+    CallRTL(IL._init);
+
+    IF target IN {mConst.Target_iConsole64, mConst.Target_iGUI64} THEN
+        L := NewLabel();
+        pushc(0);
+        push(rsp);
+        pushc(1024 * 1024 * stack_size);
+        pushc(0);
+        CallRTL(IL._new);
+        pop(rax);
+        test(rax);
+        jcc(je, L);
+        addrc(rax, 1024 * 1024 * stack_size - 8);
+        mov(rsp, rax);
+        X86.SetLabel(L)
+    END
 END prolog;
 
 
-PROCEDURE epilog (code: CODE.CODES; modname: ARRAY OF CHAR; target: INTEGER);
+PROCEDURE epilog (code: IL.CODES; modname: ARRAY OF CHAR; target: INTEGER);
 VAR
     i, n: INTEGER;
     number: Number;
-    exp: CODE.EXPORT_PROC;
+    exp: IL.EXPORT_PROC;
 
 
     PROCEDURE import (imp: LISTS.LIST);
     VAR
-        lib:  CODE.IMPORT_LIB;
-        proc: CODE.IMPORT_PROC;
+        lib:  IL.IMPORT_LIB;
+        proc: IL.IMPORT_PROC;
 
     BEGIN
 
-        lib := imp.first(CODE.IMPORT_LIB);
+        lib := imp.first(IL.IMPORT_LIB);
         WHILE lib # NIL DO
             BIN.Import(prog, lib.name, 0);
-            proc := lib.procs.first(CODE.IMPORT_PROC);
+            proc := lib.procs.first(IL.IMPORT_PROC);
             WHILE proc # NIL DO
                 BIN.Import(prog, proc.name, proc.label);
-                proc := proc.next(CODE.IMPORT_PROC)
+                proc := proc.next(IL.IMPORT_PROC)
             END;
-            lib := lib.next(CODE.IMPORT_LIB)
+            lib := lib.next(IL.IMPORT_LIB)
         END
 
     END import;
@@ -2690,15 +2645,21 @@ BEGIN
     IF target = mConst.Target_iDLL64 THEN
         X86.SetLabel(dllret);
         OutByte(0C3H) // ret
+    ELSIF target = mConst.Target_iELFSO64 THEN
+        sofinit := NewLabel();
+        OutByte(0C3H);  // ret
+        X86.SetLabel(sofinit);
+        CallRTL(IL._sofinit);
+        OutByte(0C3H)   // ret
     ELSE
         pushc(0);
-        CallRTL(CODE._exit)
+        CallRTL(IL._exit)
     END;
 
     X86.fixup;
 
     i := 0;
-    WHILE i < CHL.Length(code.types) DO
+    WHILE i < tcount DO
         BIN.PutData64LE(prog, CHL.GetInt(code.types, i));
         INC(i)
     END;
@@ -2712,7 +2673,7 @@ BEGIN
     BIN.PutDataStr(prog, modname);
     BIN.PutData(prog, 0);
     n := CHL.Length(prog.data);
-    ASSERT(MACHINE.Align(n, 16));
+    ASSERT(UTILS.Align(n, 16));
     i := n - CHL.Length(prog.data);
     WHILE i > 0 DO
         BIN.PutData(prog, 0);
@@ -2724,10 +2685,10 @@ BEGIN
         number := number.next(Number)
     END;
 
-    exp := code.export.first(CODE.EXPORT_PROC);
+    exp := code.export.first(IL.EXPORT_PROC);
     WHILE exp # NIL DO
         BIN.Export(prog, exp.name, exp.label);
-        exp := exp.next(CODE.EXPORT_PROC)
+        exp := exp.next(IL.EXPORT_PROC)
     END;
 
     import(code.import)
@@ -2758,12 +2719,13 @@ BEGIN
 END rsave;
 
 
-PROCEDURE CodeGen* (code: CODE.CODES; outname: ARRAY OF CHAR; target, stack, base: INTEGER);
+PROCEDURE CodeGen* (code: IL.CODES; outname: ARRAY OF CHAR; target: INTEGER; options: PROG.OPTIONS);
 VAR
     path, modname, ext: PATHS.PATH;
-    n: INTEGER;
 
 BEGIN
+    tcount := CHL.Length(code.types);
+
     Win64RegPar[0] := rcx;
     Win64RegPar[1] := rdx;
     Win64RegPar[2] := r8;
@@ -2779,13 +2741,9 @@ BEGIN
     PATHS.split(outname, path, modname, ext);
     S.append(modname, ext);
 
-    R := REG.Create(push, pop, mov, xchg, rload, rsave, {rax, r10, r11}, {rcx, rdx, r8, r9});
+    REG.Init(R, push, pop, mov, xchg, rload, rsave, {rax, r10, r11}, {rcx, rdx, r8, r9});
 
-    n := code.dmin - CHL.Length(code.data);
-    IF n > 0 THEN
-        INC(code.bss, n)
-    END;
-    code.bss := MAX(code.bss, 8);
+    code.bss := MAX(code.bss, MAX(code.dmin - CHL.Length(code.data), 8));
 
     Numbers := LISTS.create(NIL);
     Numbers_Count := 0;
@@ -2798,19 +2756,19 @@ BEGIN
     NewNumber(LSR(ASR(ROR(1, 1), 9), 2));  (* {52..61} *)
 
     prog := BIN.create(code.lcount);
-    BIN.SetParams(prog, code.bss, stack, WCHR(1), WCHR(0));
+    BIN.SetParams(prog, code.bss, 1, WCHR(1), WCHR(0));
 
     X86.SetProgram(prog);
 
-    prolog(code, modname, target, stack);
-    translate(code.commands, CHL.Length(code.types) * 8);
+    prolog(code, modname, target, options.stack);
+    translate(code.commands, tcount * 8);
     epilog(code, modname, target);
 
     BIN.fixup(prog);
     IF target IN {mConst.Target_iConsole64, mConst.Target_iGUI64, mConst.Target_iDLL64} THEN
-        PE32.write(prog, outname, base, target = mConst.Target_iConsole64, target = mConst.Target_iDLL64, TRUE)
-    ELSIF target = mConst.Target_iELF64 THEN
-        ELF.write(prog, outname, TRUE)
+        PE32.write(prog, outname, options.base, target = mConst.Target_iConsole64, target = mConst.Target_iDLL64, TRUE)
+    ELSIF target IN {mConst.Target_iELF64, mConst.Target_iELFSO64} THEN
+        ELF.write(prog, outname, sofinit, target = mConst.Target_iELFSO64, TRUE)
     END
 END CodeGen;
 

@@ -10,7 +10,7 @@ MODULE RTL;
 IMPORT SYSTEM, API;
 
 
-CONST 
+CONST
 
     bit_depth* = 32;
     maxint* = 7FFFFFFFH;
@@ -22,11 +22,13 @@ CONST
     DLL_PROCESS_DETACH  = 0;
 
     SIZE_OF_DWORD = 4;
+    MAX_SET = 31;
 
 
 TYPE
 
     DLL_ENTRY* = PROCEDURE (hinstDLL, fdwReason, lpvReserved: INTEGER);
+    PROC       = PROCEDURE;
 
 
 VAR
@@ -39,6 +41,8 @@ VAR
         thread_detach,
         thread_attach: DLL_ENTRY
     END;
+
+    fini: PROC;
 
 
 PROCEDURE [stdcall] _move* (bytes, source, dest: INTEGER);
@@ -107,16 +111,10 @@ BEGIN
 END _arrcpy;
 
 
-PROCEDURE [stdcall] _strcpy* (chr_size, len_dst, dst, len_src, src: INTEGER);
+PROCEDURE [stdcall] _strcpy* (chr_size, len_src, src, len_dst, dst: INTEGER);
 BEGIN
     _move(MIN(len_dst, len_src) * chr_size, src, dst)
 END _strcpy;
-
-
-PROCEDURE [stdcall] _strcpy2* (chr_size, len_src, src, len_dst, dst: INTEGER);
-BEGIN
-    _move(MIN(len_dst, len_src) * chr_size, src, dst)
-END _strcpy2;
 
 
 PROCEDURE [stdcall] _rot* (VAR A: ARRAY OF INTEGER);
@@ -137,30 +135,27 @@ BEGIN
 END _rot;
 
 
-PROCEDURE [stdcall] _set2* (a, b: INTEGER): INTEGER;
-VAR
-    res: INTEGER;
-
+PROCEDURE [stdcall] _set* (b, a: INTEGER): INTEGER;
 BEGIN
-    IF (a <= b) & (a <= 31) & (b >= 0) THEN
-        IF b > 31 THEN
-            b := 31
+    IF (a <= b) & (a <= MAX_SET) & (b >= 0) THEN
+        IF b > MAX_SET THEN
+            b := MAX_SET
         END;
         IF a < 0 THEN
             a := 0
         END;
-        res := LSR(ASR(ROR(1, 1), b - a), 31 - b)
+        a := LSR(ASR(ROR(1, 1), b - a), MAX_SET - b)
     ELSE
-        res := 0
+        a := 0
     END
 
-    RETURN res
-END _set2;
-
-
-PROCEDURE [stdcall] _set* (b, a: INTEGER): INTEGER;
-    RETURN _set2(a, b)
+    RETURN a
 END _set;
+
+
+PROCEDURE [stdcall] _set2* (a, b: INTEGER): INTEGER;
+    RETURN _set(b, a)
+END _set2;
 
 
 PROCEDURE [stdcall] divmod (a, b: INTEGER; VAR mod: INTEGER): INTEGER;
@@ -185,7 +180,7 @@ BEGIN
 END divmod;
 
 
-PROCEDURE div_ (x, y: INTEGER): INTEGER;
+PROCEDURE [stdcall] _div2* (x, y: INTEGER): INTEGER;
 VAR
     div, mod: INTEGER;
 
@@ -196,10 +191,10 @@ BEGIN
     END
 
     RETURN div
-END div_;
+END _div2;
 
 
-PROCEDURE mod_ (x, y: INTEGER): INTEGER;
+PROCEDURE [stdcall] _mod2* (x, y: INTEGER): INTEGER;
 VAR
     div, mod: INTEGER;
 
@@ -210,27 +205,17 @@ BEGIN
     END
 
     RETURN mod
-END mod_;
+END _mod2;
 
 
 PROCEDURE [stdcall] _div* (b, a: INTEGER): INTEGER;
-    RETURN div_(a, b)
+    RETURN _div2(a, b)
 END _div;
 
 
-PROCEDURE [stdcall] _div2* (a, b: INTEGER): INTEGER;
-    RETURN div_(a, b)
-END _div2;
-
-
 PROCEDURE [stdcall] _mod* (b, a: INTEGER): INTEGER;
-    RETURN mod_(a, b)
+    RETURN _mod2(a, b)
 END _mod;
-
-
-PROCEDURE [stdcall] _mod2* (a, b: INTEGER): INTEGER;
-    RETURN mod_(a, b)
-END _mod2;
 
 
 PROCEDURE [stdcall] _new* (t, size: INTEGER; VAR ptr: INTEGER);
@@ -249,50 +234,6 @@ BEGIN
         ptr := API._DISPOSE(ptr - SIZE_OF_DWORD)
     END
 END _dispose;
-
-
-PROCEDURE strncmp (a, b, n: INTEGER): INTEGER;
-VAR
-    A, B: CHAR;
-    res:  INTEGER;
-
-BEGIN
-    res := 0;
-    WHILE n > 0 DO
-        SYSTEM.GET(a, A); INC(a);
-        SYSTEM.GET(b, B); INC(b);
-        DEC(n);
-        IF A # B THEN
-            res := ORD(A) - ORD(B);
-            n := 0
-        ELSIF A = 0X THEN
-            n := 0
-        END
-    END
-    RETURN res
-END strncmp;
-
-
-PROCEDURE strncmpw (a, b, n: INTEGER): INTEGER;
-VAR
-    A, B: WCHAR;
-    res:  INTEGER;
-
-BEGIN
-    res := 0;
-    WHILE n > 0 DO
-        SYSTEM.GET(a, A); INC(a, 2);
-        SYSTEM.GET(b, B); INC(b, 2);
-        DEC(n);
-        IF A # B THEN
-            res := ORD(A) - ORD(B);
-            n := 0
-        ELSIF A = 0X THEN
-            n := 0
-        END
-    END
-    RETURN res
-END strncmpw;
 
 
 PROCEDURE [stdcall] _length* (len, str: INTEGER): INTEGER;
@@ -345,16 +286,71 @@ BEGIN
 END _lengthw;
 
 
+PROCEDURE strncmp (a, b, n: INTEGER): INTEGER;
+VAR
+    A, B: CHAR;
+    res: INTEGER;
+
+BEGIN
+    res := minint;
+    WHILE n > 0 DO
+        SYSTEM.GET(a, A); INC(a);
+        SYSTEM.GET(b, B); INC(b);
+        DEC(n);
+        IF A # B THEN
+            res := ORD(A) - ORD(B);
+            n := 0
+        ELSIF A = 0X THEN
+            res := 0;
+            n := 0
+        END
+    END
+    RETURN res
+END strncmp;
+
+
+PROCEDURE strncmpw (a, b, n: INTEGER): INTEGER;
+VAR
+    A, B: WCHAR;
+    res: INTEGER;
+
+BEGIN
+    res := minint;
+    WHILE n > 0 DO
+        SYSTEM.GET(a, A); INC(a, 2);
+        SYSTEM.GET(b, B); INC(b, 2);
+        DEC(n);
+        IF A # B THEN
+            res := ORD(A) - ORD(B);
+            n := 0
+        ELSIF A = 0X THEN
+            res := 0;
+            n := 0
+        END
+    END
+    RETURN res
+END strncmpw;
+
+
 PROCEDURE [stdcall] _strcmp* (op, len2, str2, len1, str1: INTEGER): BOOLEAN;
 VAR
     res:  INTEGER;
     bRes: BOOLEAN;
+    c:    CHAR;
 
 BEGIN
 
     res := strncmp(str1, str2, MIN(len1, len2));
-    IF res = 0 THEN
-        res := _length(len1, str1) - _length(len2, str2)
+    IF res = minint THEN
+        IF len1 > len2 THEN
+            SYSTEM.GET(str1 + len2, c);
+            res := ORD(c)
+        ELSIF len1 < len2 THEN
+            SYSTEM.GET(str2 + len1, c);
+            res := -ORD(c)
+        ELSE
+            res := 0
+        END
     END;
 
     CASE op OF
@@ -370,21 +366,25 @@ BEGIN
 END _strcmp;
 
 
-PROCEDURE [stdcall] _strcmp2* (op, len1, str1, len2, str2: INTEGER): BOOLEAN;
-    RETURN _strcmp(op, len2, str2, len1, str1)
-END _strcmp2;
-
-
 PROCEDURE [stdcall] _strcmpw* (op, len2, str2, len1, str1: INTEGER): BOOLEAN;
 VAR
     res:  INTEGER;
     bRes: BOOLEAN;
+    c:    WCHAR;
 
 BEGIN
 
     res := strncmpw(str1, str2, MIN(len1, len2));
-    IF res = 0 THEN
-        res := _lengthw(len1, str1) - _lengthw(len2, str2)
+    IF res = minint THEN
+        IF len1 > len2 THEN
+            SYSTEM.GET(str1 + len2 * 2, c);
+            res := ORD(c)
+        ELSIF len1 < len2 THEN
+            SYSTEM.GET(str2 + len1 * 2, c);
+            res := -ORD(c)
+        ELSE
+            res := 0
+        END
     END;
 
     CASE op OF
@@ -398,11 +398,6 @@ BEGIN
 
     RETURN bRes
 END _strcmpw;
-
-
-PROCEDURE [stdcall] _strcmpw2* (op, len1, str1, len2, str2: INTEGER): BOOLEAN;
-    RETURN _strcmpw(op, len2, str2, len1, str1)
-END _strcmpw2;
 
 
 PROCEDURE PCharToStr (pchar: INTEGER; VAR s: ARRAY OF CHAR);
@@ -470,14 +465,14 @@ BEGIN
 END append;
 
 
-PROCEDURE [stdcall] _error* (module, err: INTEGER);
+PROCEDURE [stdcall] _error* (module, err, line: INTEGER);
 VAR
     s, temp: ARRAY 1024 OF CHAR;
 
 BEGIN
 
     s := "";
-    CASE err MOD 16 OF
+    CASE err OF
     | 1: append(s, "assertion failure")
     | 2: append(s, "NIL dereference")
     | 3: append(s, "division by zero")
@@ -493,8 +488,8 @@ BEGIN
 
     append(s, API.eol);
 
-    append(s, "module: ");   PCharToStr(module, temp);     append(s, temp); append(s, API.eol);
-    append(s, "line: ");     IntToStr(LSR(err, 4), temp);  append(s, temp);
+    append(s, "module: "); PCharToStr(module, temp); append(s, temp); append(s, API.eol);
+    append(s, "line: ");   IntToStr(line, temp);     append(s, temp);
 
     API.DebugMsg(SYSTEM.ADR(s[0]), name);
 
@@ -502,69 +497,42 @@ BEGIN
 END _error;
 
 
-PROCEDURE [stdcall] _isrec* (t0, t1, r: INTEGER): BOOLEAN;
+PROCEDURE [stdcall] _isrec* (t0, t1, r: INTEGER): INTEGER;
 BEGIN
-    (* r IS t0 *)
-
-    WHILE (t1 # 0) & (t1 # t0) DO
-        SYSTEM.GET(types + t1 * SIZE_OF_DWORD, t1)
-    END
-
-    RETURN t1 = t0
+    SYSTEM.GET(t0 + t1 + types, t0)
+    RETURN t0 MOD 2
 END _isrec;
 
 
-PROCEDURE [stdcall] _is* (t0, p: INTEGER): BOOLEAN;
-VAR
-    t1: INTEGER;
-
+PROCEDURE [stdcall] _is* (t0, p: INTEGER): INTEGER;
 BEGIN
-    (* p IS t0 *)
-
     IF p # 0 THEN
-        DEC(p, SIZE_OF_DWORD);
-        SYSTEM.GET(p, t1);
-        WHILE (t1 # 0) & (t1 # t0) DO
-            SYSTEM.GET(types + t1 * SIZE_OF_DWORD, t1)
-        END
-    ELSE
-        t1 := -1
+        SYSTEM.GET(p - SIZE_OF_DWORD, p);
+        SYSTEM.GET(t0 + p + types, p)
     END
 
-    RETURN t1 = t0
+    RETURN p MOD 2
 END _is;
 
 
-PROCEDURE [stdcall] _guardrec* (t0, t1: INTEGER): BOOLEAN;
+PROCEDURE [stdcall] _guardrec* (t0, t1: INTEGER): INTEGER;
 BEGIN
-    (* r:t1 IS t0 *)
-
-    WHILE (t1 # 0) & (t1 # t0) DO
-        SYSTEM.GET(types + t1 * SIZE_OF_DWORD, t1)
-    END
-
-    RETURN t1 = t0
+    SYSTEM.GET(t0 + t1 + types, t0)
+    RETURN t0 MOD 2
 END _guardrec;
 
 
-PROCEDURE [stdcall] _guard* (t0, p: INTEGER): BOOLEAN;
-VAR
-    t1:  INTEGER;
-
+PROCEDURE [stdcall] _guard* (t0, p: INTEGER): INTEGER;
 BEGIN
-    (* p IS t0 *)
     SYSTEM.GET(p, p);
     IF p # 0 THEN
-        DEC(p, SIZE_OF_DWORD);
-        SYSTEM.GET(p, t1);
-        WHILE (t1 # t0) & (t1 # 0) DO
-            SYSTEM.GET(types + t1 * SIZE_OF_DWORD, t1)
-        END
+        SYSTEM.GET(p - SIZE_OF_DWORD, p);
+        SYSTEM.GET(t0 + p + types, p)
     ELSE
-        t1 := t0
+        p := 1
     END
 
-    RETURN t1 = t0
+    RETURN p MOD 2
 END _guard;
 
 
@@ -613,18 +581,50 @@ BEGIN
 END _exit;
 
 
-PROCEDURE [stdcall] _init* (modname: INTEGER; typesc, _types: INTEGER; code, param: INTEGER);
+PROCEDURE [stdcall] _init* (modname: INTEGER; tcount, _types: INTEGER; code, param: INTEGER);
+VAR
+    t0, t1, i, j: INTEGER;
+
 BEGIN
     SYSTEM.CODE(09BH, 0DBH, 0E3H); (* finit *)
     API.init(param, code);
 
-    types := _types;
+    types := API._NEW(tcount * tcount + SYSTEM.SIZE(INTEGER));
+    ASSERT(types # 0);
+    FOR i := 0 TO tcount - 1 DO
+        FOR j := 0 TO tcount - 1 DO
+            t0 := i; t1 := j;
+
+            WHILE (t1 # 0) & (t1 # t0) DO
+                SYSTEM.GET(_types + t1 * SIZE_OF_DWORD, t1)
+            END;
+
+            SYSTEM.PUT8(i * tcount + j + types, ORD(t0 = t1))
+        END
+    END;
+
     name  := modname;
 
     dll.process_detach := NIL;
     dll.thread_detach  := NIL;
     dll.thread_attach  := NIL;
+
+    fini := NIL
 END _init;
+
+
+PROCEDURE [stdcall] _sofinit*;
+BEGIN
+    IF fini # NIL THEN
+        fini
+    END
+END _sofinit;
+
+
+PROCEDURE SetFini* (ProcFini: PROC);
+BEGIN
+    fini := ProcFini
+END SetFini;
 
 
 END RTL.

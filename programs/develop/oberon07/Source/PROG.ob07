@@ -7,7 +7,7 @@
 
 MODULE PROG;
 
-IMPORT SCAN, LISTS, ARITH, ERRORS, MACHINE, C := COLLECTIONS, mConst := CONSTANTS, CODE, UTILS;
+IMPORT SCAN, LISTS, ARITH, ERRORS, C := COLLECTIONS, mConst := CONSTANTS, IL, UTILS;
 
 
 CONST
@@ -39,9 +39,10 @@ CONST
     sysMOVE*   = 27;  stLENGTH*  = 28;  stMIN*   = 29;  stMAX*    = 30;
     sysSADR*   = 31;  sysTYPEID* = 32;  sysCOPY* = 33;  sysINF*   = 34;
     sysPUT8*   = 35;  sysPUT16*  = 36;  stCOPY*  = 37;  stWCHR*   = 38;
-    sysWSADR*  = 39;  sysPUT32*  = 40;
+    sysWSADR*  = 39;  sysPUT32*  = 40;  (*sysNOP*  = 41;  sysEINT*  = 42;
+    sysDINT*   = 43;*)
 
-    default*   =  2;
+    default32* =  2;
     stdcall*   =  4;  _stdcall*   = stdcall + 1;
     ccall*     =  6;  _ccall*     = ccall + 1;
     ccall16*   =  8;  _ccall16*   = ccall16 + 1;
@@ -49,18 +50,33 @@ CONST
     stdcall64* = 12;  _stdcall64* = stdcall64 + 1;
     default64* = 14;
     systemv*   = 16;  _systemv*   = systemv + 1;
+    default16* = 18;
+    code*      = 20;  _code*      = code + 1;
 
-    noalign* = 20;
+    noalign* = 22;
 
-    callee_clean_up* = {default, stdcall, _stdcall, default64, stdcall64, _stdcall64};
-    caller_clean_up* = {ccall, ccall16, win64, systemv, _ccall, _ccall16, _win64, _systemv};
-    callconv32* = {default, stdcall, ccall, ccall16, _stdcall, _ccall, _ccall16};
-    callconv64* = {default64, win64, stdcall64, systemv, _win64, _stdcall64, _systemv};
+    callee_clean_up* = {default32, stdcall, _stdcall, default64, stdcall64, _stdcall64};
+
+    sf_stdcall* = 0; sf_stdcall64* = 1; sf_ccall*   = 2; sf_ccall16* = 3;
+    sf_win64*   = 4; sf_systemv*   = 5; sf_windows* = 6; sf_linux*   = 7;
+    sf_code*    = 8;
+    sf_noalign* = 9;
+
+    proc_flags* = {sf_stdcall, sf_stdcall64, sf_ccall, sf_ccall16, sf_win64, sf_systemv, sf_windows, sf_linux, sf_code};
+    rec_flags*  = {sf_noalign};
 
     STACK_FRAME = 2;
 
 
 TYPE
+
+    OPTIONS* = RECORD
+
+        version*, stack*, base*, ram*, rom*: INTEGER;
+        pic*: BOOLEAN;
+        checking*: SET
+
+    END;
 
     IDENT* = POINTER TO rIDENT;
 
@@ -78,13 +94,6 @@ TYPE
 
         pos*:        SCAN.POSITION;
         notRecord*:  BOOLEAN
-
-    END;
-
-    IDENTS = POINTER TO RECORD (LISTS.LIST)
-
-        add*:   PROCEDURE (unit: UNIT; ident: SCAN.IDENT; typ: INTEGER): IDENT;
-        get*:   PROCEDURE (unit: UNIT; ident: SCAN.IDENT; currentScope: BOOLEAN): IDENT
 
     END;
 
@@ -110,31 +119,13 @@ TYPE
 
         program*:    PROGRAM;
         name*:       SCAN.IDENT;
-        idents*:     IDENTS;
+        idents*:     LISTS.LIST;
         frwPointers: LISTS.LIST;
         gscope:      IDENT;
         closed*:     BOOLEAN;
         scopeLvl*:   INTEGER;
         sysimport*:  BOOLEAN;
-
-        scopes*:     ARRAY MAXSCOPE OF PROC;
-
-        scope*:      RECORD
-
-            open*:   PROCEDURE (unit: UNIT; proc: PROC): BOOLEAN;
-            close*:  PROCEDURE (unit: UNIT; variables: LISTS.LIST)
-
-        END;
-
-        close*:      PROCEDURE (unit: UNIT);
-        setvars*:    PROCEDURE (unit: UNIT; type: TYPE_);
-
-        pointers*:   RECORD
-
-            add*:    PROCEDURE (unit: UNIT; type: TYPE_; baseIdent: SCAN.IDENT; pos: SCAN.POSITION);
-            link*:   PROCEDURE (unit: UNIT): FRWPTR
-
-        END
+        scopes*:     ARRAY MAXSCOPE OF PROC
 
     END;
 
@@ -142,34 +133,16 @@ TYPE
 
     PARAM* = POINTER TO rPARAM;
 
-    FIELDS = POINTER TO RECORD (LISTS.LIST)
-
-        add*:        PROCEDURE (rec: TYPE_; name: SCAN.IDENT; export: BOOLEAN): BOOLEAN;
-        get*:        PROCEDURE (rec: TYPE_; name: SCAN.IDENT; unit: UNIT): FIELD;
-        set*:        PROCEDURE (rec: TYPE_; type: TYPE_): BOOLEAN
-
-    END;
-
-    PARAMS = POINTER TO RECORD (LISTS.LIST)
-
-        size*:       INTEGER;
-
-        add*:        PROCEDURE (proc: TYPE_; name: SCAN.IDENT; vPar: BOOLEAN): BOOLEAN;
-        get*:        PROCEDURE (proc: TYPE_; name: SCAN.IDENT): PARAM;
-        set*:        PROCEDURE (proc: TYPE_; type: TYPE_);
-        getfparams*: PROCEDURE (proc: TYPE_; maxparam: INTEGER; VAR int, flt: INTEGER): SET
-
-    END;
-
     rTYPE_ = RECORD (LISTS.ITEM)
 
         typ*:        INTEGER;
         size*:       INTEGER;
+        parSize*:    INTEGER;
         length*:     INTEGER;
         align*:      INTEGER;
         base*:       TYPE_;
-        fields*:     FIELDS;
-        params*:     PARAMS;
+        fields*:     LISTS.LIST;
+        params*:     LISTS.LIST;
         unit*:       UNIT;
         closed*:     BOOLEAN;
         num*:        INTEGER;
@@ -215,19 +188,10 @@ TYPE
 
     END;
 
-    UNITS* = POINTER TO RECORD (LISTS.LIST)
-
-        program:     PROGRAM;
-
-        create*:     PROCEDURE (units: UNITS; name: SCAN.IDENT): UNIT;
-        get*:        PROCEDURE (units: UNITS; name: SCAN.IDENT): UNIT
-
-    END;
-
     rPROGRAM = RECORD
 
         recCount:    INTEGER;
-        units*:      UNITS;
+        units*:      LISTS.LIST;
         types*:      LISTS.LIST;
         sysunit*:    UNIT;
         rtl*:        UNIT;
@@ -238,10 +202,10 @@ TYPE
         dll*:        BOOLEAN;
         obj*:        BOOLEAN;
 
-        stTypes*:     RECORD
+        stTypes*:    RECORD
 
-            tINTEGER*, tBYTE*, tCHAR*, tWCHAR*, tSET*, tBOOLEAN*, tREAL*, tSTRING*, tNIL*,
-            tCARD16*, tCARD32*, tANYREC*: TYPE_
+            tINTEGER*, tBYTE*, tCHAR*, tWCHAR*, tSET*, tBOOLEAN*, tREAL*,
+            tSTRING*, tNIL*, tCARD16*, tCARD32*, tANYREC*: TYPE_
 
         END;
 
@@ -250,12 +214,11 @@ TYPE
             bit_depth*:  INTEGER;
             word*:       INTEGER;
             adr*:        INTEGER;
-            sys*:        INTEGER
+            sys*:        INTEGER;
+            sysflags*:   SET;
+            options*:    OPTIONS
 
-        END;
-
-        enterType*:  PROCEDURE (program: PROGRAM; typ, size, length: INTEGER; unit: UNIT): TYPE_;
-        getType*:    PROCEDURE (program: PROGRAM; typ: INTEGER): TYPE_
+        END
 
     END;
 
@@ -292,7 +255,7 @@ VAR
 BEGIN
     IF varIdent.offset = -1 THEN
         IF varIdent.global THEN
-            IF MACHINE.Align(program.bss, varIdent.type.align) THEN
+            IF UTILS.Align(program.bss, varIdent.type.align) THEN
                 IF UTILS.maxint - program.bss >= varIdent.type.size THEN
                     varIdent.offset := program.bss;
                     INC(program.bss, varIdent.type.size)
@@ -301,7 +264,7 @@ BEGIN
         ELSE
             word := program.target.word;
             size := varIdent.type.size;
-            IF MACHINE.Align(size, word) THEN
+            IF UTILS.Align(size, word) THEN
                 size := size DIV word;
                 IF UTILS.maxint - program.locsize >= size THEN
                     INC(program.locsize, size);
@@ -315,7 +278,7 @@ BEGIN
 END getOffset;
 
 
-PROCEDURE close (unit: UNIT);
+PROCEDURE closeUnit* (unit: UNIT);
 VAR
     ident, prev: IDENT;
     offset: INTEGER;
@@ -324,7 +287,7 @@ BEGIN
     ident := unit.idents.last(IDENT);
     WHILE (ident # NIL) & (ident.typ # idGUARD) DO
         IF (ident.typ = idVAR) & (ident.offset = -1) THEN
-            ERRORS.hintmsg(ident.name.s, ident.pos.line, ident.pos.col, 0);
+            ERRORS.HintMsg(ident.name.s, ident.pos.line, ident.pos.col, 0);
             IF ident.export THEN
                 offset := getOffset(unit.program, ident)
             END
@@ -343,7 +306,7 @@ BEGIN
     END;
 
     unit.closed := TRUE
-END close;
+END closeUnit;
 
 
 PROCEDURE unique (unit: UNIT; ident: SCAN.IDENT): BOOLEAN;
@@ -362,12 +325,12 @@ BEGIN
 END unique;
 
 
-PROCEDURE addIdent (unit: UNIT; ident: SCAN.IDENT; typ: INTEGER): IDENT;
+PROCEDURE addIdent* (unit: UNIT; ident: SCAN.IDENT; typ: INTEGER): IDENT;
 VAR
-    item:   IDENT;
-    res:    BOOLEAN;
-    proc:   PROC;
-    procs:  LISTS.LIST;
+    item:  IDENT;
+    res:   BOOLEAN;
+    proc:  PROC;
+    procs: LISTS.LIST;
 
 BEGIN
     ASSERT(unit # NIL);
@@ -414,9 +377,9 @@ END addIdent;
 
 PROCEDURE UseProc* (unit: UNIT; call_proc: PROC);
 VAR
-    procs:    LISTS.LIST;
-    cur:      LISTS.ITEM;
-    proc:     USED_PROC;
+    procs: LISTS.LIST;
+    cur:   LISTS.ITEM;
+    proc:  USED_PROC;
 
 BEGIN
     IF unit.scopeLvl = 0 THEN
@@ -438,7 +401,7 @@ BEGIN
 END UseProc;
 
 
-PROCEDURE setvars (unit: UNIT; type: TYPE_);
+PROCEDURE setVarsType* (unit: UNIT; type: TYPE_);
 VAR
     item: IDENT;
 
@@ -450,10 +413,10 @@ BEGIN
         item.type := type;
         item := item.prev(IDENT)
     END
-END setvars;
+END setVarsType;
 
 
-PROCEDURE getIdent (unit: UNIT; ident: SCAN.IDENT; currentScope: BOOLEAN): IDENT;
+PROCEDURE getIdent* (unit: UNIT; ident: SCAN.IDENT; currentScope: BOOLEAN): IDENT;
 VAR
     item: IDENT;
 
@@ -462,26 +425,28 @@ BEGIN
 
     item := unit.idents.last(IDENT);
 
-    ASSERT(item # NIL);
+    IF item # NIL THEN
 
-    IF currentScope THEN
-        WHILE (item.name # ident) & (item.typ # idGUARD) DO
-            item := item.prev(IDENT)
-        END;
-        IF item.name # ident THEN
-            item := NIL
+        IF currentScope THEN
+            WHILE (item.name # ident) & (item.typ # idGUARD) DO
+                item := item.prev(IDENT)
+            END;
+            IF item.name # ident THEN
+                item := NIL
+            END
+        ELSE
+            WHILE (item # NIL) & (item.name # ident) DO
+                item := item.prev(IDENT)
+            END
         END
-    ELSE
-        WHILE (item # NIL) & (item.name # ident) DO
-            item := item.prev(IDENT)
-        END
+
     END
 
     RETURN item
 END getIdent;
 
 
-PROCEDURE openScope (unit: UNIT; proc: PROC): BOOLEAN;
+PROCEDURE openScope* (unit: UNIT; proc: PROC): BOOLEAN;
 VAR
     item: IDENT;
     res:  BOOLEAN;
@@ -508,11 +473,11 @@ BEGIN
 END openScope;
 
 
-PROCEDURE closeScope (unit: UNIT; variables: LISTS.LIST);
+PROCEDURE closeScope* (unit: UNIT; variables: LISTS.LIST);
 VAR
     item: IDENT;
     del:  IDENT;
-    lvar: CODE.LOCALVAR;
+    lvar: IL.LOCALVAR;
 
 BEGIN
     item := unit.idents.last(IDENT);
@@ -521,11 +486,11 @@ BEGIN
         del  := item;
         item := item.prev(IDENT);
         IF (del.typ = idVAR) & (del.offset = -1) THEN
-            ERRORS.hintmsg(del.name.s, del.pos.line, del.pos.col, 0)
+            ERRORS.HintMsg(del.name.s, del.pos.line, del.pos.col, 0)
         END;
         IF (variables # NIL) & (del.typ IN {idVAR, idPARAM}) & (del.offset # -1) THEN
             IF del.type.typ IN BASICTYPES - {tREAL} + {tPOINTER, tPROCEDURE} THEN
-                lvar := CODE.NewVar();
+                lvar := IL.NewVar();
                 lvar.offset := del.offset;
                 lvar.size   := del.type.size;
                 IF del.typ = idVAR THEN
@@ -548,7 +513,7 @@ BEGIN
 END closeScope;
 
 
-PROCEDURE frwptr (unit: UNIT; type: TYPE_; baseIdent: SCAN.IDENT; pos: SCAN.POSITION);
+PROCEDURE frwPtr* (unit: UNIT; type: TYPE_; baseIdent: SCAN.IDENT; pos: SCAN.POSITION);
 VAR
     newptr: FRWPTR;
 
@@ -559,17 +524,17 @@ BEGIN
 
     NEW(newptr);
 
-    newptr.type       := type;
-    newptr.baseIdent  := baseIdent;
-    newptr.pos        := pos;
-    newptr.linked     := FALSE;
-    newptr.notRecord  := FALSE;
+    newptr.type      := type;
+    newptr.baseIdent := baseIdent;
+    newptr.pos       := pos;
+    newptr.linked    := FALSE;
+    newptr.notRecord := FALSE;
 
     LISTS.push(unit.frwPointers, newptr)
-END frwptr;
+END frwPtr;
 
 
-PROCEDURE linkptr (unit: UNIT): FRWPTR;
+PROCEDURE linkPtr* (unit: UNIT): FRWPTR;
 VAR
     item:  FRWPTR;
     ident: IDENT;
@@ -580,7 +545,7 @@ BEGIN
     item := unit.frwPointers.last(FRWPTR);
 
     WHILE (item # NIL) & ~item.linked & (res = NIL) DO
-        ident := unit.idents.get(unit, item.baseIdent, TRUE);
+        ident := getIdent(unit, item.baseIdent, TRUE);
 
         IF (ident # NIL) THEN
             IF (ident.typ = idTYPE) & (ident.type.typ = tRECORD) THEN
@@ -599,7 +564,7 @@ BEGIN
     END
 
     RETURN res
-END linkptr;
+END linkPtr;
 
 
 PROCEDURE isTypeEq* (t1, t2: TYPE_): BOOLEAN;
@@ -617,7 +582,7 @@ BEGIN
         param1 := t1.params.first;
         param2 := t2.params.first;
 
-        res := (t1.call = t2.call) & ((param1 # NIL) = (param2 # NIL));
+        res := ((t1.call = t2.call) OR (t1.call IN {code, _code}) OR (t2.call IN {code, _code})) & ((param1 # NIL) = (param2 # NIL));
 
         WHILE res & (param1 # NIL) & (param2 # NIL) DO
             res := (param1(PARAM).vPar = param2(PARAM).vPar) & isTypeEq(param1(PARAM).type, param2(PARAM).type);
@@ -643,18 +608,21 @@ VAR
     res: BOOLEAN;
 
 BEGIN
-    res := ((t0.typ = tPOINTER) & (t1.typ = tPOINTER)) OR ((t0.typ = tRECORD) & (t1.typ = tRECORD));
+    res := (t0.typ = t1.typ) & (t0.typ IN {tPOINTER, tRECORD});
 
-    IF (t0.typ = tPOINTER) & (t1.typ = tPOINTER) THEN
+    IF res & (t0.typ = tPOINTER) THEN
         t0 := t0.base;
         t1 := t1.base
     END;
 
-    WHILE res & (t1 # NIL) & (t1 # t0) DO
-        t1 := t1.base
+    IF res THEN
+        WHILE (t1 # NIL) & (t1 # t0) DO
+            t1 := t1.base
+        END;
+        res := t1 # NIL
     END
 
-    RETURN res & (t1 = t0)
+    RETURN res
 END isBaseOf;
 
 
@@ -663,61 +631,54 @@ PROCEDURE isOpenArray* (t: TYPE_): BOOLEAN;
 END isOpenArray;
 
 
-PROCEDURE getunit (units: UNITS; name: SCAN.IDENT): UNIT;
+PROCEDURE getUnit* (program: PROGRAM; name: SCAN.IDENT): UNIT;
 VAR
     item: UNIT;
 
 BEGIN
     ASSERT(name # NIL);
 
-    item := units.first(UNIT);
+    item := program.units.first(UNIT);
 
     WHILE (item # NIL) & (item.name # name) DO
         item := item.next(UNIT)
     END;
 
     IF (item = NIL) & (name.s = "SYSTEM") THEN
-        item := units.program.sysunit
+        item := program.sysunit
     END
 
     RETURN item
-END getunit;
+END getUnit;
 
 
 PROCEDURE enterStTypes (unit: UNIT; program: PROGRAM);
 VAR
-    ident:   IDENT;
-    stName:  SCAN.IDENT;
+    ident: IDENT;
 
 BEGIN
-
-    stName     := SCAN.enterid("INTEGER");
-    ident      := addIdent(unit, stName, idTYPE);
+    ident      := addIdent(unit, SCAN.enterid("INTEGER"), idTYPE);
     ident.type := program.stTypes.tINTEGER;
 
-    stName     := SCAN.enterid("BYTE");
-    ident      := addIdent(unit, stName, idTYPE);
+    ident      := addIdent(unit, SCAN.enterid("BYTE"), idTYPE);
     ident.type := program.stTypes.tBYTE;
 
-    stName     := SCAN.enterid("CHAR");
-    ident      := addIdent(unit, stName, idTYPE);
+    ident      := addIdent(unit, SCAN.enterid("CHAR"), idTYPE);
     ident.type := program.stTypes.tCHAR;
 
-    stName     := SCAN.enterid("WCHAR");
-    ident      := addIdent(unit, stName, idTYPE);
-    ident.type := program.stTypes.tWCHAR;
-
-    stName     := SCAN.enterid("SET");
-    ident      := addIdent(unit, stName, idTYPE);
+    ident      := addIdent(unit, SCAN.enterid("SET"), idTYPE);
     ident.type := program.stTypes.tSET;
 
-    stName     := SCAN.enterid("BOOLEAN");
-    ident      := addIdent(unit, stName, idTYPE);
+    ident      := addIdent(unit, SCAN.enterid("BOOLEAN"), idTYPE);
     ident.type := program.stTypes.tBOOLEAN;
 
-    stName     := SCAN.enterid("REAL");
-    ident      := addIdent(unit, stName, idTYPE);
-    ident.type := program.stTypes.tREAL;
+    IF program.target.sys # mConst.Target_iMSP430 THEN
+        ident      := addIdent(unit, SCAN.enterid("REAL"), idTYPE);
+        ident.type := program.stTypes.tREAL;
+
+        ident      := addIdent(unit, SCAN.enterid("WCHAR"), idTYPE);
+        ident.type := program.stTypes.tWCHAR
+    END
 
 END enterStTypes;
 
@@ -725,86 +686,86 @@ END enterStTypes;
 PROCEDURE enterStProcs (unit: UNIT);
 
 
-    PROCEDURE EnterProc (unit: UNIT; name: SCAN.LEXSTR; idtyp, proc: INTEGER);
+    PROCEDURE EnterProc (unit: UNIT; name: SCAN.LEXSTR; proc: INTEGER);
     VAR
         ident: IDENT;
     BEGIN
-        ident := addIdent(unit, SCAN.enterid(name), idtyp);
+        ident := addIdent(unit, SCAN.enterid(name), idSTPROC);
         ident.stproc := proc
     END EnterProc;
 
 
-BEGIN
-    EnterProc(unit, "ASSERT",   idSTPROC,  stASSERT);
-    EnterProc(unit, "DEC",      idSTPROC,  stDEC);
-    EnterProc(unit, "EXCL",     idSTPROC,  stEXCL);
-    EnterProc(unit, "INC",      idSTPROC,  stINC);
-    EnterProc(unit, "INCL",     idSTPROC,  stINCL);
-    EnterProc(unit, "NEW",      idSTPROC,  stNEW);
-    EnterProc(unit, "PACK",     idSTPROC,  stPACK);
-    EnterProc(unit, "UNPK",     idSTPROC,  stUNPK);
-    EnterProc(unit, "DISPOSE",  idSTPROC,  stDISPOSE);
-    EnterProc(unit, "COPY",     idSTPROC,  stCOPY);
+    PROCEDURE EnterFunc (unit: UNIT; name: SCAN.LEXSTR; func: INTEGER);
+    VAR
+        ident: IDENT;
+    BEGIN
+        ident := addIdent(unit, SCAN.enterid(name), idSTFUNC);
+        ident.stproc := func
+    END EnterFunc;
 
-    EnterProc(unit, "ABS",      idSTFUNC,  stABS);
-    EnterProc(unit, "ASR",      idSTFUNC,  stASR);
-    EnterProc(unit, "CHR",      idSTFUNC,  stCHR);
-    EnterProc(unit, "WCHR",     idSTFUNC,  stWCHR);
-    EnterProc(unit, "FLOOR",    idSTFUNC,  stFLOOR);
-    EnterProc(unit, "FLT",      idSTFUNC,  stFLT);
-    EnterProc(unit, "LEN",      idSTFUNC,  stLEN);
-    EnterProc(unit, "LSL",      idSTFUNC,  stLSL);
-    EnterProc(unit, "ODD",      idSTFUNC,  stODD);
-    EnterProc(unit, "ORD",      idSTFUNC,  stORD);
-    EnterProc(unit, "ROR",      idSTFUNC,  stROR);
-    EnterProc(unit, "BITS",     idSTFUNC,  stBITS);
-    EnterProc(unit, "LSR",      idSTFUNC,  stLSR);
-    EnterProc(unit, "LENGTH",   idSTFUNC,  stLENGTH);
-    EnterProc(unit, "MIN",      idSTFUNC,  stMIN);
-    EnterProc(unit, "MAX",      idSTFUNC,  stMAX);
+
+BEGIN
+    EnterProc(unit, "ASSERT", stASSERT);
+    EnterProc(unit, "DEC",    stDEC);
+    EnterProc(unit, "EXCL",   stEXCL);
+    EnterProc(unit, "INC",    stINC);
+    EnterProc(unit, "INCL",   stINCL);
+    EnterProc(unit, "NEW",    stNEW);
+    EnterProc(unit, "COPY",   stCOPY);
+
+    EnterFunc(unit, "ABS",    stABS);
+    EnterFunc(unit, "ASR",    stASR);
+    EnterFunc(unit, "CHR",    stCHR);
+    EnterFunc(unit, "LEN",    stLEN);
+    EnterFunc(unit, "LSL",    stLSL);
+    EnterFunc(unit, "ODD",    stODD);
+    EnterFunc(unit, "ORD",    stORD);
+    EnterFunc(unit, "ROR",    stROR);
+    EnterFunc(unit, "BITS",   stBITS);
+    EnterFunc(unit, "LSR",    stLSR);
+    EnterFunc(unit, "LENGTH", stLENGTH);
+    EnterFunc(unit, "MIN",    stMIN);
+    EnterFunc(unit, "MAX",    stMAX);
+
+    IF unit.program.target.sys # mConst.Target_iMSP430 THEN
+        EnterProc(unit, "PACK",    stPACK);
+        EnterProc(unit, "UNPK",    stUNPK);
+        EnterProc(unit, "DISPOSE", stDISPOSE);
+
+        EnterFunc(unit, "WCHR",    stWCHR);
+        EnterFunc(unit, "FLOOR",   stFLOOR);
+        EnterFunc(unit, "FLT",     stFLT)
+    END
+
 END enterStProcs;
 
 
-PROCEDURE newunit (units: UNITS; name: SCAN.IDENT): UNIT;
+PROCEDURE newUnit* (program: PROGRAM; name: SCAN.IDENT): UNIT;
 VAR
-    unit:    UNIT;
-    idents:  IDENTS;
+    unit: UNIT;
 
 BEGIN
-    ASSERT(units # NIL);
+    ASSERT(program # NIL);
     ASSERT(name # NIL);
 
     NEW(unit);
 
-    NEW(idents);
-    ASSERT(LISTS.create(idents) = idents);
-
-    idents.add       := addIdent;
-    idents.get       := getIdent;
-
-    unit.program     := units.program;
+    unit.program     := program;
     unit.name        := name;
     unit.closed      := FALSE;
-    unit.idents      := idents;
+    unit.idents      := LISTS.create(NIL);
     unit.frwPointers := LISTS.create(NIL);
 
-    unit.scope.open    := openScope;
-    unit.scope.close   := closeScope;
-    unit.close         := close;
-    unit.setvars       := setvars;
-    unit.pointers.add  := frwptr;
-    unit.pointers.link := linkptr;
+    ASSERT(openScope(unit, NIL));
 
-    ASSERT(unit.scope.open(unit, NIL));
-
-    enterStTypes(unit, units.program);
+    enterStTypes(unit, program);
     enterStProcs(unit);
 
-    ASSERT(unit.scope.open(unit, NIL));
+    ASSERT(openScope(unit, NIL));
 
     unit.gscope := unit.idents.last(IDENT);
 
-    LISTS.push(units, unit);
+    LISTS.push(program.units, unit);
 
     unit.scopeLvl := 0;
     unit.scopes[0] := NIL;
@@ -812,16 +773,16 @@ BEGIN
     unit.sysimport := FALSE;
 
     IF unit.name.s = mConst.RTL_NAME THEN
-        unit.program.rtl := unit
+        program.rtl := unit
     END
 
     RETURN unit
-END newunit;
+END newUnit;
 
 
-PROCEDURE getField (self: TYPE_; name: SCAN.IDENT; unit: UNIT): FIELD;
+PROCEDURE getField* (self: TYPE_; name: SCAN.IDENT; unit: UNIT): FIELD;
 VAR
-    field:  FIELD;
+    field: FIELD;
 
 BEGIN
     ASSERT(self # NIL);
@@ -851,10 +812,10 @@ BEGIN
 END getField;
 
 
-PROCEDURE addField (self: TYPE_; name: SCAN.IDENT; export: BOOLEAN): BOOLEAN;
+PROCEDURE addField* (self: TYPE_; name: SCAN.IDENT; export: BOOLEAN): BOOLEAN;
 VAR
-    field:  FIELD;
-    res:    BOOLEAN;
+    field: FIELD;
+    res:   BOOLEAN;
 
 BEGIN
     ASSERT(name # NIL);
@@ -876,7 +837,7 @@ BEGIN
 END addField;
 
 
-PROCEDURE setFields (self: TYPE_; type: TYPE_): BOOLEAN;
+PROCEDURE setFields* (self: TYPE_; type: TYPE_): BOOLEAN;
 VAR
     item: FIELD;
     res:  BOOLEAN;
@@ -895,7 +856,7 @@ BEGIN
     WHILE res & (item # NIL) & (item.type = NIL) DO
         item.type := type;
         IF ~self.noalign THEN
-            res := MACHINE.Align(self.size, type.align)
+            res := UTILS.Align(self.size, type.align)
         ELSE
             res := TRUE
         END;
@@ -911,9 +872,9 @@ BEGIN
 END setFields;
 
 
-PROCEDURE getParam (self: TYPE_; name: SCAN.IDENT): PARAM;
+PROCEDURE getParam* (self: TYPE_; name: SCAN.IDENT): PARAM;
 VAR
-    item:   PARAM;
+    item: PARAM;
 
 BEGIN
     ASSERT(name # NIL);
@@ -928,15 +889,15 @@ BEGIN
 END getParam;
 
 
-PROCEDURE addParam (self: TYPE_; name: SCAN.IDENT; vPar: BOOLEAN): BOOLEAN;
+PROCEDURE addParam* (self: TYPE_; name: SCAN.IDENT; vPar: BOOLEAN): BOOLEAN;
 VAR
-    param:  PARAM;
-    res:    BOOLEAN;
+    param: PARAM;
+    res:   BOOLEAN;
 
 BEGIN
     ASSERT(name # NIL);
 
-    res := self.params.get(self, name) = NIL;
+    res := getParam(self, name) = NIL;
 
     IF res THEN
         NEW(param);
@@ -973,7 +934,7 @@ BEGIN
 END OpenBase;
 
 
-PROCEDURE getFloatParamsPos (self: TYPE_; maxoffs: INTEGER; VAR int, flt: INTEGER): SET;
+PROCEDURE getFloatParamsPos* (self: TYPE_; maxoffs: INTEGER; VAR int, flt: INTEGER): SET;
 VAR
     res: SET;
     param: PARAM;
@@ -991,13 +952,13 @@ BEGIN
         param := param.next(PARAM)
     END;
 
-    int := self.params.size - flt
+    int := self.parSize - flt
 
     RETURN res
 END getFloatParamsPos;
 
 
-PROCEDURE setParams (self: TYPE_; type: TYPE_);
+PROCEDURE setParams* (self: TYPE_; type: TYPE_);
 VAR
     item: LISTS.ITEM;
     param: PARAM;
@@ -1006,7 +967,7 @@ VAR
 BEGIN
     ASSERT(type # NIL);
 
-    word := MACHINE.target.bit_depth DIV 8;
+    word := UTILS.target.bit_depth DIV 8;
 
     item := self.params.first;
 
@@ -1025,8 +986,8 @@ BEGIN
             ELSE
                 size := 1
             END;
-            param.offset := self.params.size + ORD(type.typ = tRECORD) + Dim(type) + STACK_FRAME;
-            INC(self.params.size, size)
+            param.offset := self.parSize + ORD(type.typ = tRECORD) + Dim(type) + STACK_FRAME;
+            INC(self.parSize, size)
         ELSE
             IF type.typ IN {tRECORD, tARRAY} THEN
                 IF isOpenArray(type) THEN
@@ -1036,11 +997,11 @@ BEGIN
                 END
             ELSE
                 size := type.size;
-                ASSERT(MACHINE.Align(size, word));
+                ASSERT(UTILS.Align(size, word));
                 size := size DIV word
             END;
-            param.offset := self.params.size + Dim(type) + STACK_FRAME;
-            INC(self.params.size, size)
+            param.offset := self.parSize + Dim(type) + STACK_FRAME;
+            INC(self.parSize, size)
         END;
 
         item := item.next
@@ -1049,47 +1010,32 @@ BEGIN
 END setParams;
 
 
-PROCEDURE enterType (program: PROGRAM; typ, size, length: INTEGER; unit: UNIT): TYPE_;
+PROCEDURE enterType* (program: PROGRAM; typ, size, length: INTEGER; unit: UNIT): TYPE_;
 VAR
-    t:        TYPE_;
-    fields:   FIELDS;
-    params:   PARAMS;
+    t: TYPE_;
 
 BEGIN
     NEW(t);
-
-    NEW(fields);
-    ASSERT(LISTS.create(fields) = fields);
-
-    NEW(params);
-    ASSERT(LISTS.create(params) = params);
 
     t.typ     := typ;
     t.size    := size;
     t.length  := length;
     t.align   := 0;
     t.base    := NIL;
-    t.fields  := fields;
-    t.params  := params;
+    t.fields  := LISTS.create(NIL);
+    t.params  := LISTS.create(NIL);
     t.unit    := unit;
     t.num     := 0;
-    IF program.target.bit_depth = 32 THEN
-        t.call := default
-    ELSIF program.target.bit_depth = 64 THEN
-        t.call := default64
+
+    CASE program.target.bit_depth OF
+    |16: t.call := default16
+    |32: t.call := default32
+    |64: t.call := default64
     END;
+
     t.import  := FALSE;
     t.noalign := FALSE;
-
-    t.fields.add := addField;
-    t.fields.get := getField;
-    t.fields.set := setFields;
-
-    t.params.add := addParam;
-    t.params.get := getParam;
-    t.params.getfparams := getFloatParamsPos;
-    t.params.set := setParams;
-    t.params.size := 0;
+    t.parSize := 0;
 
     IF typ IN {tARRAY, tRECORD} THEN
         t.closed := FALSE;
@@ -1107,7 +1053,7 @@ BEGIN
 END enterType;
 
 
-PROCEDURE getType (program: PROGRAM; typ: INTEGER): TYPE_;
+PROCEDURE getType* (program: PROGRAM; typ: INTEGER): TYPE_;
 VAR
     res: TYPE_;
 
@@ -1154,33 +1100,42 @@ VAR
 
 
 BEGIN
-    unit := program.units.create(program.units, SCAN.enterid("$SYSTEM"));
+    unit := newUnit(program, SCAN.enterid("$SYSTEM"));
 
     EnterProc(unit, "ADR",    idSYSFUNC, sysADR);
     EnterProc(unit, "SIZE",   idSYSFUNC, sysSIZE);
     EnterProc(unit, "SADR",   idSYSFUNC, sysSADR);
-    EnterProc(unit, "WSADR",  idSYSFUNC, sysWSADR);
     EnterProc(unit, "TYPEID", idSYSFUNC, sysTYPEID);
-    EnterProc(unit, "INF",    idSYSFUNC, sysINF);
 
     EnterProc(unit, "GET",    idSYSPROC, sysGET);
-    EnterProc(unit, "PUT",    idSYSPROC, sysPUT);
     EnterProc(unit, "PUT8",   idSYSPROC, sysPUT8);
-    EnterProc(unit, "PUT16",  idSYSPROC, sysPUT16);
-    EnterProc(unit, "PUT32",  idSYSPROC, sysPUT32);
+    EnterProc(unit, "PUT",    idSYSPROC, sysPUT);
     EnterProc(unit, "CODE",   idSYSPROC, sysCODE);
     EnterProc(unit, "MOVE",   idSYSPROC, sysMOVE);
-    EnterProc(unit, "COPY",   idSYSPROC, sysCOPY);
+           (*
+    IF program.target.sys = mConst.Target_iMSP430 THEN
+        EnterProc(unit, "NOP",  idSYSPROC, sysNOP);
+        EnterProc(unit, "EINT", idSYSPROC, sysEINT);
+        EnterProc(unit, "DINT", idSYSPROC, sysDINT)
+    END;
+         *)
+    IF program.target.sys # mConst.Target_iMSP430 THEN
+        EnterProc(unit, "WSADR",  idSYSFUNC, sysWSADR);
+        EnterProc(unit, "INF",    idSYSFUNC, sysINF);
+        EnterProc(unit, "PUT32",  idSYSPROC, sysPUT32);
+        EnterProc(unit, "PUT16",  idSYSPROC, sysPUT16);
+        EnterProc(unit, "COPY",   idSYSPROC, sysCOPY);
 
-    ident := addIdent(unit, SCAN.enterid("CARD16"), idTYPE);
-    ident.type := program.stTypes.tCARD16;
-    ident.export := TRUE;
+        ident := addIdent(unit, SCAN.enterid("CARD16"), idTYPE);
+        ident.type := program.stTypes.tCARD16;
+        ident.export := TRUE;
 
-    ident := addIdent(unit, SCAN.enterid("CARD32"), idTYPE);
-    ident.type := program.stTypes.tCARD32;
-    ident.export := TRUE;
+        ident := addIdent(unit, SCAN.enterid("CARD32"), idTYPE);
+        ident.type := program.stTypes.tCARD32;
+        ident.export := TRUE
+    END;
 
-    unit.close(unit);
+    closeUnit(unit);
 
     program.sysunit := unit
 END createSysUnit;
@@ -1188,8 +1143,8 @@ END createSysUnit;
 
 PROCEDURE DelUnused* (program: PROGRAM; DelImport: DELIMPORT);
 VAR
-    proc:   PROC;
-    flag:   BOOLEAN;
+    proc: PROC;
+    flag: BOOLEAN;
 
 
     PROCEDURE process (proc: PROC);
@@ -1211,7 +1166,6 @@ VAR
 BEGIN
 
     REPEAT
-
         flag := FALSE;
         proc := program.procs.first(PROC);
 
@@ -1230,7 +1184,7 @@ BEGIN
     WHILE proc # NIL DO
         IF ~proc.used THEN
             IF proc.import = NIL THEN
-                CODE.delete2(proc.enter, proc.leave)
+                IL.delete2(proc.enter, proc.leave)
             ELSE
                 DelImport(proc.import)
             END
@@ -1241,63 +1195,81 @@ BEGIN
 END DelUnused;
 
 
-PROCEDURE create* (bit_depth, sys: INTEGER): PROGRAM;
+PROCEDURE create* (bit_depth, target: INTEGER; options: OPTIONS): PROGRAM;
 VAR
     program: PROGRAM;
-    units:   UNITS;
 
 BEGIN
     idents := C.create();
 
-    MACHINE.SetBitDepth(bit_depth);
+    UTILS.SetBitDepth(bit_depth);
     NEW(program);
-    NEW(units);
-    ASSERT(LISTS.create(units) = units);
 
     program.target.bit_depth := bit_depth;
     program.target.word      := bit_depth DIV 8;
     program.target.adr       := bit_depth DIV 8;
-    program.target.sys       := sys;
+    program.target.sys       := target;
+    program.target.options   := options;
+
+    CASE target OF
+    |mConst.Target_iConsole,
+     mConst.Target_iGUI,
+     mConst.Target_iDLL:        program.target.sysflags := {sf_windows, sf_stdcall, sf_ccall, sf_ccall16, sf_noalign}
+
+    |mConst.Target_iELF32,
+     mConst.Target_iELFSO32:    program.target.sysflags := {sf_linux, sf_stdcall, sf_ccall, sf_ccall16, sf_noalign}
+
+    |mConst.Target_iKolibri,
+     mConst.Target_iObject:     program.target.sysflags := {sf_stdcall, sf_ccall, sf_ccall16, sf_noalign}
+
+    |mConst.Target_iConsole64,
+     mConst.Target_iGUI64,
+     mConst.Target_iDLL64:      program.target.sysflags := {sf_windows, sf_stdcall64, sf_win64, sf_systemv, sf_noalign}
+
+    |mConst.Target_iELF64,
+     mConst.Target_iELFSO64:    program.target.sysflags := {sf_linux, sf_stdcall64, sf_win64, sf_systemv, sf_noalign}
+
+    |mConst.Target_iMSP430:     program.target.sysflags := {sf_code}
+    END;
 
     program.recCount := -1;
     program.bss := 0;
 
-    program.units := units;
+    program.units := LISTS.create(NIL);
     program.types := LISTS.create(NIL);
-
     program.procs := LISTS.create(NIL);
-
-    program.enterType := enterType;
-    program.getType   := getType;
 
     program.stTypes.tINTEGER := enterType(program, tINTEGER,  program.target.word, 0, NIL);
     program.stTypes.tBYTE    := enterType(program, tBYTE,                       1, 0, NIL);
     program.stTypes.tCHAR    := enterType(program, tCHAR,                       1, 0, NIL);
-    program.stTypes.tWCHAR   := enterType(program, tWCHAR,                      2, 0, NIL);
     program.stTypes.tSET     := enterType(program, tSET,      program.target.word, 0, NIL);
     program.stTypes.tBOOLEAN := enterType(program, tBOOLEAN,                    1, 0, NIL);
-    program.stTypes.tREAL    := enterType(program, tREAL,                       8, 0, NIL);
-    program.stTypes.tSTRING  := enterType(program, tSTRING,   program.target.word, 0, NIL);
-    program.stTypes.tNIL     := enterType(program, tNIL,      program.target.word, 0, NIL);
-    program.stTypes.tCARD16  := enterType(program, tCARD16,                     2, 0, NIL);
-    program.stTypes.tCARD32  := enterType(program, tCARD32,                     4, 0, NIL);
-    program.stTypes.tANYREC  := enterType(program, tRECORD,                     0, 0, NIL);
+
+    IF target # mConst.Target_iMSP430 THEN
+        program.stTypes.tWCHAR   := enterType(program, tWCHAR,  2, 0, NIL);
+        program.stTypes.tREAL    := enterType(program, tREAL,   8, 0, NIL);
+        program.stTypes.tCARD16  := enterType(program, tCARD16, 2, 0, NIL);
+        program.stTypes.tCARD32  := enterType(program, tCARD32, 4, 0, NIL)
+    END;
+
+    program.stTypes.tSTRING  := enterType(program, tSTRING, program.target.word, 0, NIL);
+    program.stTypes.tNIL     := enterType(program, tNIL,    program.target.word, 0, NIL);
+
+    program.stTypes.tANYREC  := enterType(program, tRECORD, 0, 0, NIL);
     program.stTypes.tANYREC.closed := TRUE;
 
     program.stTypes.tINTEGER.align := program.stTypes.tINTEGER.size;
     program.stTypes.tBYTE.align    := 1;
     program.stTypes.tCHAR.align    := program.stTypes.tCHAR.size;
-    program.stTypes.tWCHAR.align   := program.stTypes.tWCHAR.size;
     program.stTypes.tSET.align     := program.stTypes.tSET.size;
     program.stTypes.tBOOLEAN.align := program.stTypes.tBOOLEAN.size;
-    program.stTypes.tREAL.align    := program.stTypes.tREAL.size;
-    program.stTypes.tCARD16.align   := program.stTypes.tCARD16.size;
-    program.stTypes.tCARD32.align   := program.stTypes.tCARD32.size;
 
-    units.program := program;
-
-    units.create := newunit;
-    units.get    := getunit;
+    IF target # mConst.Target_iMSP430 THEN
+        program.stTypes.tWCHAR.align   := program.stTypes.tWCHAR.size;
+        program.stTypes.tREAL.align    := program.stTypes.tREAL.size;
+        program.stTypes.tCARD16.align  := program.stTypes.tCARD16.size;
+        program.stTypes.tCARD32.align  := program.stTypes.tCARD32.size
+    END;
 
     program.dll := FALSE;
     program.obj := FALSE;

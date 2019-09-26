@@ -1,46 +1,47 @@
 ﻿(*
     BSD 2-Clause License
 
-    Copyright (c) 2018, Anton Krotov
+    Copyright (c) 2018, 2019, Anton Krotov
     All rights reserved.
 *)
 
 MODULE SCAN;
 
-IMPORT TEXTDRV, AVL := AVLTREES, ARITH, S := STRINGS, C := COLLECTIONS;
+IMPORT TXT := TEXTDRV, AVL := AVLTREES, ARITH, S := STRINGS;
 
 
 CONST
 
     LEXLEN = 1024;
 
-    lxUNDEF*   =   0;  lxIDENT*   =   1;  lxINTEGER*   =   2;  lxHEX*     =   3;
-    lxCHAR*    =   4;  lxFLOAT*   =   5;  lxSTRING*    =   6;  lxCOMMENT* =   7;
-    lxEOF*     =   8;
+    lxUNDEF*   =  0;  lxIDENT*   =  1;  lxINTEGER*   =  2;  lxHEX*     =  3;
+    lxCHAR*    =  4;  lxFLOAT*   =  5;  lxSTRING*    =  6;  lxCOMMENT* =  7;
+    lxEOF*     =  8;
 
-    lxKW       = 101;
+    lxPLUS*    = 21;  lxMINUS*   = 22;  lxMUL*       = 23;  lxSLASH*   = 24;
+    lxNOT*     = 25;  lxAND*     = 26;  lxPOINT*     = 27;  lxCOMMA*   = 28;
+    lxSEMI*    = 29;  lxBAR*     = 30;  lxLROUND*    = 31;  lxLSQUARE* = 32;
+    lxLCURLY*  = 33;  lxCARET*   = 34;  lxEQ*        = 35;  lxNE*      = 36;
+    lxLT*      = 37;  lxGT*      = 38;  lxCOLON*     = 39;  lxRROUND*  = 40;
+    lxRSQUARE* = 41;  lxRCURLY*  = 42;  lxLE*        = 43;  lxGE*      = 44;
+    lxASSIGN*  = 45;  lxRANGE*   = 46;
 
-    lxARRAY*   = 101;  lxBEGIN*   = 102;  lxBY*        = 103;  lxCASE*    = 104;
-    lxCONST*   = 105;  lxDIV*     = 106;  lxDO*        = 107;  lxELSE*    = 108;
-    lxELSIF*   = 109;  lxEND*     = 110;  lxFALSE*     = 111;  lxFOR*     = 112;
-    lxIF*      = 113;  lxIMPORT*  = 114;  lxIN*        = 115;  lxIS*      = 116;
-    lxMOD*     = 117;  lxMODULE*  = 118;  lxNIL*       = 119;  lxOF*      = 120;
-    lxOR*      = 121;  lxPOINTER* = 122;  lxPROCEDURE* = 123;  lxRECORD*  = 124;
-    lxREPEAT*  = 125;  lxRETURN*  = 126;  lxTHEN*      = 127;  lxTO*      = 128;
-    lxTRUE*    = 129;  lxTYPE*    = 130;  lxUNTIL*     = 131;  lxVAR*     = 132;
-    lxWHILE*   = 133;
+    lxKW       = 51;
 
-    lxPLUS*    = 201;  lxMINUS*   = 202;  lxMUL*       = 203;  lxSLASH*   = 204;
-    lxNOT*     = 205;  lxAND*     = 206;  lxPOINT*     = 207;  lxCOMMA*   = 208;
-    lxSEMI*    = 209;  lxBAR*     = 210;  lxLROUND*    = 211;  lxLSQUARE* = 212;
-    lxLCURLY*  = 213;  lxCARET*   = 214;  lxEQ*        = 215;  lxNE*      = 216;
-    lxLT*      = 217;  lxGT*      = 218;  lxCOLON*     = 219;  lxRROUND*  = 220;
-    lxRSQUARE* = 221;  lxRCURLY*  = 222;  lxLE*        = 223;  lxGE*      = 224;
-    lxASSIGN*  = 225;  lxRANGE*   = 226;
+    lxARRAY*   = 51;  lxBEGIN*   = 52;  lxBY*        = 53;  lxCASE*    = 54;
+    lxCONST*   = 55;  lxDIV*     = 56;  lxDO*        = 57;  lxELSE*    = 58;
+    lxELSIF*   = 59;  lxEND*     = 60;  lxFALSE*     = 61;  lxFOR*     = 62;
+    lxIF*      = 63;  lxIMPORT*  = 64;  lxIN*        = 65;  lxIS*      = 66;
+    lxMOD*     = 67;  lxMODULE*  = 68;  lxNIL*       = 69;  lxOF*      = 70;
+    lxOR*      = 71;  lxPOINTER* = 72;  lxPROCEDURE* = 73;  lxRECORD*  = 74;
+    lxREPEAT*  = 75;  lxRETURN*  = 76;  lxTHEN*      = 77;  lxTO*      = 78;
+    lxTRUE*    = 79;  lxTYPE*    = 80;  lxUNTIL*     = 81;  lxVAR*     = 82;
+    lxWHILE*   = 83;
 
-    lxERROR01 =  -1;  lxERROR02 =  -2;  lxERROR03   =  -3;  lxERROR04 =  -4;
-    lxERROR05 =  -5;  lxERROR06 =  -6;  lxERROR07   =  -7;  lxERROR08 =  -8;
-    lxERROR09 =  -9;  lxERROR10 = -10;  lxERROR11   = -11;  lxERROR12 = -12;
+    lxERROR01* =  -1;  lxERROR02* =  -2;  lxERROR03* =  -3;  lxERROR04* =  -4;
+    lxERROR05* =  -5;  lxERROR06* =  -6;  lxERROR07* =  -7;  lxERROR08* =  -8;
+    lxERROR09* =  -9;  lxERROR10* = -10;  lxERROR11* = -11;  lxERROR12* = -12;
+    lxERROR13* = -13;
 
 
 TYPE
@@ -62,25 +63,20 @@ TYPE
 
     LEX* = RECORD
 
-        s*:              LEXSTR;
-        length*:         INTEGER;
-        sym*:            INTEGER;
-        pos*:            POSITION;
-        ident*:          IDENT;
-        string*:         IDENT;
-        value*:          ARITH.VALUE;
-        error*:          INTEGER;
+        s*:         LEXSTR;
+        length*:    INTEGER;
+        sym*:       INTEGER;
+        pos*:       POSITION;
+        ident*:     IDENT;
+        string*:    IDENT;
+        value*:     ARITH.VALUE;
+        error*:     INTEGER;
 
-        over:            BOOLEAN
-
-    END;
-
-    SCANNER* = POINTER TO RECORD (C.ITEM)
-
-        text:            TEXTDRV.TEXT;
-        range:           BOOLEAN
+        over:       BOOLEAN
 
     END;
+
+    SCANNER* = TXT.TEXT;
 
     KEYWORD = ARRAY 10 OF CHAR;
 
@@ -89,16 +85,14 @@ VAR
 
     vocabulary: RECORD
 
-        KW:          ARRAY 33 OF KEYWORD;
-
-        delimiters:  ARRAY 256 OF BOOLEAN;
-
-        idents:      AVL.NODE;
-        ident:       IDENT
+        KW:         ARRAY 33 OF KEYWORD;
+        delimiters: ARRAY 256 OF BOOLEAN;
+        idents:     AVL.NODE;
+        ident:      IDENT
 
     END;
 
-    scanners: C.COLLECTION;
+    upto: BOOLEAN;
 
 
 PROCEDURE nodecmp (a, b: AVL.DATA): INTEGER;
@@ -109,36 +103,27 @@ END nodecmp;
 PROCEDURE key (VAR lex: LEX);
 VAR
     L, R, M: INTEGER;
+    found: BOOLEAN;
 
 BEGIN
     L := 0;
     R := LEN(vocabulary.KW) - 1;
-    M := (L + R) DIV 2;
+    found := FALSE;
 
-    WHILE L # M DO
-        IF lex.s > vocabulary.KW[M] THEN
-            L := M;
-            M := (L + R) DIV 2
-        ELSIF lex.s < vocabulary.KW[M] THEN
-            R := M;
-            M := (L + R) DIV 2
+    REPEAT
+        M := (L + R) DIV 2;
+
+        IF lex.s # vocabulary.KW[M] THEN
+            IF lex.s > vocabulary.KW[M] THEN
+                L := M + 1
+            ELSE
+                R := M - 1
+            END
         ELSE
-            lex.sym := lxKW + M;
-            L := M;
-            R := M
+            found := TRUE;
+            lex.sym := lxKW + M
         END
-    END;
-
-    IF L # R THEN
-        IF lex.s = vocabulary.KW[L] THEN
-            lex.sym := lxKW + L
-        END;
-
-        IF lex.s = vocabulary.KW[R] THEN
-            lex.sym := lxKW + R
-        END
-    END
-
+    UNTIL found OR (L > R)
 END key;
 
 
@@ -173,18 +158,24 @@ BEGIN
 END putchar;
 
 
-PROCEDURE ident (text: TEXTDRV.TEXT; VAR lex: LEX);
+PROCEDURE nextc (text: TXT.TEXT): CHAR;
+BEGIN
+    TXT.next(text)
+    RETURN text.peak
+END nextc;
+
+
+PROCEDURE ident (text: TXT.TEXT; VAR lex: LEX);
 VAR
     c: CHAR;
 
 BEGIN
-    c := text.peak(text);
+    c := text.peak;
     ASSERT(S.letter(c));
 
     WHILE S.letter(c) OR S.digit(c) DO
         putchar(lex, c);
-        text.nextc(text);
-        c := text.peak(text)
+        c := nextc(text)
     END;
 
     IF lex.over THEN
@@ -201,44 +192,40 @@ BEGIN
 END ident;
 
 
-PROCEDURE number (text: TEXTDRV.TEXT; VAR lex: LEX; VAR range: BOOLEAN);
+PROCEDURE number (text: TXT.TEXT; VAR lex: LEX);
 VAR
     c: CHAR;
     hex: BOOLEAN;
     error: INTEGER;
 
 BEGIN
-    c := text.peak(text);
+    c := text.peak;
     ASSERT(S.digit(c));
 
     error := 0;
-
-    range := FALSE;
 
     lex.sym := lxINTEGER;
     hex := FALSE;
 
     WHILE S.digit(c) DO
         putchar(lex, c);
-        text.nextc(text);
-        c := text.peak(text)
+        c := nextc(text)
     END;
 
     WHILE S.hexdigit(c) DO
         putchar(lex, c);
-        text.nextc(text);
-        c := text.peak(text);
+        c := nextc(text);
         hex := TRUE
     END;
 
     IF c = "H" THEN
         putchar(lex, c);
-        text.nextc(text);
+        TXT.next(text);
         lex.sym := lxHEX
 
     ELSIF c = "X" THEN
         putchar(lex, c);
-        text.nextc(text);
+        TXT.next(text);
         lex.sym := lxCHAR
 
     ELSIF c = "." THEN
@@ -247,39 +234,35 @@ BEGIN
             lex.sym := lxERROR01
         ELSE
 
-            text.nextc(text);
-            c := text.peak(text);
+            c := nextc(text);
 
             IF c # "." THEN
                 putchar(lex, ".");
                 lex.sym := lxFLOAT
             ELSE
                 lex.sym := lxINTEGER;
-                range := TRUE
+                text.peak := 7FX;
+                upto := TRUE
             END;
 
             WHILE S.digit(c) DO
                 putchar(lex, c);
-                text.nextc(text);
-                c := text.peak(text)
+                c := nextc(text)
             END;
 
             IF c = "E" THEN
 
                 putchar(lex, c);
-                text.nextc(text);
-                c := text.peak(text);
+                c := nextc(text);
                 IF (c = "+") OR (c = "-") THEN
                     putchar(lex, c);
-                    text.nextc(text);
-                    c := text.peak(text)
+                    c := nextc(text)
                 END;
 
                 IF S.digit(c) THEN
                     WHILE S.digit(c) DO
                         putchar(lex, c);
-                        text.nextc(text);
-                        c := text.peak(text)
+                        c := nextc(text)
                     END
                 ELSE
                     lex.sym := lxERROR02
@@ -289,11 +272,8 @@ BEGIN
 
         END
 
-    ELSE
-
-        IF hex THEN
-            lex.sym := lxERROR01
-        END
+    ELSIF hex THEN
+        lex.sym := lxERROR01
 
     END;
 
@@ -321,31 +301,23 @@ BEGIN
 END number;
 
 
-PROCEDURE string (text: TEXTDRV.TEXT; VAR lex: LEX);
+PROCEDURE string (text: TXT.TEXT; VAR lex: LEX; quot: CHAR);
 VAR
-    c, c1: CHAR;
-    n:     INTEGER;
-    quot:  CHAR;
+    c: CHAR;
+    n: INTEGER;
 
 BEGIN
-    quot := text.peak(text);
-
-    ASSERT((quot = '"') OR (quot = "'"));
-
-    text.nextc(text);
-    c := text.peak(text);
-    c1 := c;
-    n := 0;
+    c  := nextc(text);
+    n  := 0;
 
     WHILE (c # quot) & (c # 0X) & ~text.eol & ~text.eof DO
         putchar(lex, c);
-        text.nextc(text);
-        c := text.peak(text);
+        c := nextc(text);
         INC(n)
     END;
 
     IF c = quot THEN
-        text.nextc(text);
+        TXT.next(text);
         IF lex.over THEN
             lex.sym := lxERROR05
         ELSE
@@ -353,7 +325,7 @@ BEGIN
                 lex.sym := lxSTRING
             ELSE
                 lex.sym := lxCHAR;
-                ARITH.setChar(lex.value, ORD(c1))
+                ARITH.setChar(lex.value, ORD(lex.s[0]))
             END
         END
     ELSE
@@ -369,19 +341,19 @@ BEGIN
 END string;
 
 
-PROCEDURE comment (text: TEXTDRV.TEXT);
+PROCEDURE comment (text: TXT.TEXT);
 VAR
     c: CHAR;
     cond, depth: INTEGER;
 
 BEGIN
-    cond := 0;
+    cond  := 0;
     depth := 1;
 
     REPEAT
 
-        c := text.peak(text);
-        text.nextc(text);
+        c := text.peak;
+        TXT.next(text);
 
         IF c = "*" THEN
             IF cond = 1 THEN
@@ -406,21 +378,12 @@ BEGIN
 END comment;
 
 
-PROCEDURE delimiter (text: TEXTDRV.TEXT; VAR lex: LEX; VAR range: BOOLEAN);
-VAR
-    c: CHAR;
-
+PROCEDURE delimiter (text: TXT.TEXT; VAR lex: LEX; c: CHAR);
 BEGIN
-    c := text.peak(text);
-
-    IF range THEN
-        ASSERT(c = ".")
-    END;
-
     putchar(lex, c);
-    text.nextc(text);
+    c := nextc(text);
 
-    CASE c OF
+    CASE lex.s[0] OF
     |"+":
         lex.sym := lxPLUS
 
@@ -433,10 +396,10 @@ BEGIN
     |"/":
         lex.sym := lxSLASH;
 
-        IF text.peak(text) = "/" THEN
+        IF c = "/" THEN
             lex.sym := lxCOMMENT;
             REPEAT
-                text.nextc(text)
+                TXT.next(text)
             UNTIL text.eol OR text.eof
         END
 
@@ -447,24 +410,12 @@ BEGIN
         lex.sym := lxAND
 
     |".":
-        IF range THEN
+        lex.sym := lxPOINT;
 
-            putchar(lex, ".");
+        IF c = "." THEN
             lex.sym := lxRANGE;
-            range := FALSE;
-            DEC(lex.pos.col)
-
-        ELSE
-
-            lex.sym := lxPOINT;
-            c := text.peak(text);
-
-            IF c = "." THEN
-                lex.sym := lxRANGE;
-                putchar(lex, c);
-                text.nextc(text)
-            END
-
+            putchar(lex, c);
+            TXT.next(text)
         END
 
     |",":
@@ -478,12 +429,10 @@ BEGIN
 
     |"(":
         lex.sym := lxLROUND;
-        c := text.peak(text);
 
         IF c = "*" THEN
             lex.sym := lxCOMMENT;
-            putchar(lex, c);
-            text.nextc(text);
+            TXT.next(text);
             comment(text)
         END
 
@@ -504,32 +453,29 @@ BEGIN
 
     |"<":
         lex.sym := lxLT;
-        c := text.peak(text);
 
         IF c = "=" THEN
             lex.sym := lxLE;
             putchar(lex, c);
-            text.nextc(text)
+            TXT.next(text)
         END
 
     |">":
         lex.sym := lxGT;
-        c := text.peak(text);
 
         IF c = "=" THEN
             lex.sym := lxGE;
             putchar(lex, c);
-            text.nextc(text)
+            TXT.next(text)
         END
 
     |":":
         lex.sym := lxCOLON;
-        c := text.peak(text);
 
         IF c = "=" THEN
             lex.sym := lxASSIGN;
             putchar(lex, c);
-            text.nextc(text)
+            TXT.next(text)
         END
 
     |")":
@@ -546,26 +492,21 @@ BEGIN
 END delimiter;
 
 
-PROCEDURE Next* (scanner: SCANNER; VAR lex: LEX);
+PROCEDURE Next* (text: SCANNER; VAR lex: LEX);
 VAR
     c: CHAR;
-    text: TEXTDRV.TEXT;
 
 BEGIN
-    text := scanner.text;
 
     REPEAT
-
-        c := text.peak(text);
+        c := text.peak;
 
         WHILE S.space(c) DO
-            text.nextc(text);
-            c := text.peak(text)
+            c := nextc(text)
         END;
 
         lex.s[0]     := 0X;
         lex.length   := 0;
-        lex.sym      := lxUNDEF;
         lex.pos.line := text.line;
         lex.pos.col  := text.col;
         lex.ident    := NIL;
@@ -574,19 +515,26 @@ BEGIN
         IF S.letter(c) THEN
             ident(text, lex)
         ELSIF S.digit(c) THEN
-            number(text, lex, scanner.range)
+            number(text, lex)
         ELSIF (c = '"') OR (c = "'") THEN
-            string(text, lex)
+            string(text, lex, c)
         ELSIF vocabulary.delimiters[ORD(c)] THEN
-            delimiter(text, lex, scanner.range)
+            delimiter(text, lex, c)
         ELSIF c = 0X THEN
             lex.sym := lxEOF;
             IF text.eof THEN
                 INC(lex.pos.col)
             END
+        ELSIF (c = 7FX) & upto THEN
+            upto := FALSE;
+            lex.sym := lxRANGE;
+            putchar(lex, ".");
+            putchar(lex, ".");
+            DEC(lex.pos.col);
+            TXT.next(text)
         ELSE
             putchar(lex, c);
-            text.nextc(text);
+            TXT.next(text);
             lex.sym := lxERROR04
         END;
 
@@ -601,53 +549,14 @@ BEGIN
 END Next;
 
 
-PROCEDURE NewScanner (): SCANNER;
-VAR
-    scan:  SCANNER;
-    citem: C.ITEM;
-
-BEGIN
-    citem := C.pop(scanners);
-    IF citem = NIL THEN
-        NEW(scan)
-    ELSE
-        scan := citem(SCANNER)
-    END
-
-    RETURN scan
-END NewScanner;
-
-
 PROCEDURE open* (name: ARRAY OF CHAR): SCANNER;
-VAR
-    scanner: SCANNER;
-    text:    TEXTDRV.TEXT;
-
-BEGIN
-    text := TEXTDRV.create();
-    IF text.open(text, name) THEN
-        scanner := NewScanner();
-        scanner.text   := text;
-        scanner.range  := FALSE
-    ELSE
-        scanner := NIL;
-        TEXTDRV.destroy(text)
-    END
-
-    RETURN scanner
+    RETURN TXT.open(name)
 END open;
 
 
 PROCEDURE close* (VAR scanner: SCANNER);
 BEGIN
-    IF scanner # NIL THEN
-        IF scanner.text # NIL THEN
-            TEXTDRV.destroy(scanner.text)
-        END;
-
-        C.push(scanners, scanner);
-        scanner := NIL
-    END
+    TXT.close(scanner)
 END close;
 
 
@@ -656,14 +565,16 @@ VAR
     i: INTEGER;
     delim: ARRAY 23 OF CHAR;
 
+
     PROCEDURE enterkw (VAR i: INTEGER; kw: KEYWORD);
     BEGIN
         vocabulary.KW[i] := kw;
         INC(i)
     END enterkw;
 
+
 BEGIN
-    scanners := C.create();
+    upto := FALSE;
 
     FOR i := 0 TO 255 DO
         vocabulary.delimiters[i] := FALSE
@@ -714,7 +625,7 @@ BEGIN
     vocabulary.ident.s       := "";
     vocabulary.ident.offset  := -1;
     vocabulary.ident.offsetW := -1;
-    vocabulary.idents  := NIL
+    vocabulary.idents := NIL
 END init;
 
 

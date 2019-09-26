@@ -13,14 +13,16 @@ VAR
 
     eol*:  ARRAY 3 OF CHAR;
     base*: INTEGER;
+    heap:  INTEGER;
 
 
-PROCEDURE [windows-, "kernel32.dll", "ExitProcess"]  ExitProcess (code: INTEGER);
-PROCEDURE [windows-, "kernel32.dll", "ExitThread"]   ExitThread (code: INTEGER);
-PROCEDURE [windows-, "kernel32.dll", "GlobalAlloc"]  Alloc (uFlags, dwBytes: INTEGER): INTEGER;
-PROCEDURE [windows-, "kernel32.dll", "GlobalFree"]   Free (hMem: INTEGER): INTEGER;
+PROCEDURE [windows-, "kernel32.dll", "ExitProcess"]    ExitProcess (code: INTEGER);
+PROCEDURE [windows-, "kernel32.dll", "ExitThread"]     ExitThread (code: INTEGER);
+PROCEDURE [windows-, "kernel32.dll", "GetProcessHeap"] GetProcessHeap (): INTEGER;
+PROCEDURE [windows-, "kernel32.dll", "HeapAlloc"]      HeapAlloc (hHeap, dwFlags, dwBytes: INTEGER): INTEGER;
+PROCEDURE [windows-, "kernel32.dll", "HeapFree"]       HeapFree(hHeap, dwFlags, lpMem: INTEGER);
 
-PROCEDURE [windows-, "user32.dll", "MessageBoxA"]    MessageBoxA (hWnd, lpText, lpCaption, uType: INTEGER): INTEGER;
+PROCEDURE [windows-, "user32.dll", "MessageBoxA"]      MessageBoxA (hWnd, lpText, lpCaption, uType: INTEGER): INTEGER;
 
 
 PROCEDURE DebugMsg* (lpText, lpCaption: INTEGER);
@@ -30,19 +32,22 @@ END DebugMsg;
 
 
 PROCEDURE _NEW* (size: INTEGER): INTEGER;
-    RETURN Alloc(64, size)
+    RETURN HeapAlloc(heap, 8, size)
 END _NEW;
 
 
 PROCEDURE _DISPOSE* (p: INTEGER): INTEGER;
-    RETURN Free(p)
+BEGIN
+    HeapFree(heap, 0, p)
+    RETURN 0
 END _DISPOSE;
 
 
 PROCEDURE init* (reserved, code: INTEGER);
 BEGIN
     eol[0] := 0DX; eol[1] := 0AX; eol[2] := 0X;
-    base := code - 4096
+    base := code - 4096;
+    heap := GetProcessHeap()
 END init;
 
 

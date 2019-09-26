@@ -17,7 +17,7 @@
 
 MODULE File;
 
-IMPORT sys := SYSTEM, KOSAPI; 
+IMPORT sys := SYSTEM, KOSAPI;
 
 
 CONST
@@ -47,7 +47,7 @@ TYPE
         time_modif*,  date_modif*,
         size*, hsize*: INTEGER;
         name*: FNAME
-    END; 
+    END;
 
 
 PROCEDURE [stdcall] f_68_27 (file_name: INTEGER; VAR size: INTEGER): INTEGER;
@@ -67,7 +67,7 @@ BEGIN
     0C2H, 008H, 000H    (*  ret     8                      *)
     )
     RETURN 0
-END f_68_27; 
+END f_68_27;
 
 
 PROCEDURE Load* (FName: ARRAY OF CHAR; VAR size: INTEGER): INTEGER;
@@ -77,7 +77,7 @@ END Load;
 
 PROCEDURE GetFileInfo* (FName: ARRAY OF CHAR; VAR Info: rFD): BOOLEAN;
 VAR
-    res2: INTEGER; fs: rFS;  
+    res2: INTEGER; fs: rFS;
 
 BEGIN
     fs.subfunc := 5;
@@ -88,7 +88,7 @@ BEGIN
     COPY(FName, fs.name)
 
     RETURN KOSAPI.sysfunc22(70, sys.ADR(fs), res2) = 0
-END GetFileInfo;  
+END GetFileInfo;
 
 
 PROCEDURE Exists* (FName: ARRAY OF CHAR): BOOLEAN;
@@ -97,7 +97,7 @@ VAR
 BEGIN
     RETURN GetFileInfo(FName, fd) & ~(4 IN BITS(fd.attr))
 END Exists;
-              
+
 
 PROCEDURE Close* (VAR F: FS);
 BEGIN
@@ -109,9 +109,9 @@ END Close;
 
 PROCEDURE Open* (FName: ARRAY OF CHAR): FS;
 VAR
-    F: FS;     
+    F: FS;
 
-BEGIN   
+BEGIN
 
     IF Exists(FName) THEN
         NEW(F);
@@ -128,7 +128,7 @@ BEGIN
     END
 
     RETURN F
-END Open;     
+END Open;
 
 
 PROCEDURE Delete* (FName: ARRAY OF CHAR): BOOLEAN;
@@ -158,7 +158,7 @@ BEGIN
 
     RETURN res = 0
 END Delete;
-  
+
 
 PROCEDURE Seek* (F: FS; Offset, Origin: INTEGER): INTEGER;
 VAR
@@ -202,7 +202,7 @@ BEGIN
     END
 
     RETURN res2
-END Read;    
+END Read;
 
 
 PROCEDURE Write* (F: FS; Buffer, Count: INTEGER): INTEGER;
@@ -225,7 +225,7 @@ BEGIN
 
     RETURN res2
 END Write;
-                   
+
 
 PROCEDURE Create* (FName: ARRAY OF CHAR): FS;
 VAR
@@ -249,14 +249,14 @@ BEGIN
 
     RETURN F
 END Create;
-    
+
 
 PROCEDURE DirExists* (FName: ARRAY OF CHAR): BOOLEAN;
 VAR
     fd: rFD;
 BEGIN
     RETURN GetFileInfo(FName, fd) & (4 IN BITS(fd.attr))
-END DirExists;       
+END DirExists;
 
 
 PROCEDURE CreateDir* (DirName: ARRAY OF CHAR): BOOLEAN;
@@ -282,7 +282,7 @@ BEGIN
 
     RETURN res = 0
 END CreateDir;
-                            
+
 
 PROCEDURE DeleteDir* (DirName: ARRAY OF CHAR): BOOLEAN;
 VAR

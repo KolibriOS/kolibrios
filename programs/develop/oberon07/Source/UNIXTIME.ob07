@@ -1,7 +1,7 @@
 ﻿(*
     BSD 2-Clause License
 
-    Copyright (c) 2018, Anton Krotov
+    Copyright (c) 2018, 2019, Anton Krotov
     All rights reserved.
 *)
 
@@ -55,12 +55,7 @@ END init;
 
 
 PROCEDURE time* (year, month, day, hour, min, sec: INTEGER): INTEGER;
-VAR
-    d, s: INTEGER;
-BEGIN
-    d := (year - 1970) * 365 + days[month - 1, day - 1, ORD(year DIV 4 = 0)] + (year - 1969) DIV 4;
-    s := d * 86400 + hour * 3600 + min * 60 + sec
-    RETURN s
+    RETURN ((year - 1970) * 365 + days[month - 1, day - 1, ORD(year DIV 4 = 0)] + (year - 1969) DIV 4) * 86400 + hour * 3600 + min * 60 + sec
 END time;
 
 

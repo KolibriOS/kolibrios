@@ -7,7 +7,7 @@
 
 MODULE ELF;
 
-IMPORT BIN, WR := WRITER, CHL := CHUNKLISTS;
+IMPORT BIN, WR := WRITER, CHL := CHUNKLISTS, LISTS;
 
 
 CONST
@@ -68,7 +68,33 @@ TYPE
 
     END;
 
+
+    Elf32_Dyn = POINTER TO RECORD (LISTS.ITEM)
+
+        d_tag, d_val: INTEGER
+
+    END;
+
+
+    Elf32_Sym = POINTER TO RECORD (LISTS.ITEM)
+
+        name, value, size: INTEGER;
+        info, other: CHAR;
+        shndx: WCHAR
+
+    END;
+
+
     FILE = WR.FILE;
+
+
+VAR
+
+    dynamic: LISTS.LIST;
+    strtab:  CHL.BYTELIST;
+    symtab:  LISTS.LIST;
+
+    hashtab, bucket, chain: CHL.INTLIST;
 
 
 PROCEDURE align (n, _align: INTEGER): INTEGER;
@@ -136,7 +162,75 @@ BEGIN
 END fixup;
 
 
-PROCEDURE write* (program: BIN.PROGRAM; FileName: ARRAY OF CHAR; amd64: BOOLEAN);
+PROCEDURE NewDyn (tag, val: INTEGER);
+VAR
+    dyn: Elf32_Dyn;
+
+BEGIN
+    NEW(dyn);
+    dyn.d_tag := tag;
+    dyn.d_val := val;
+    LISTS.push(dynamic, dyn)
+END NewDyn;
+
+
+PROCEDURE NewSym (name, value, size: INTEGER; info, other: CHAR; shndx: WCHAR);
+VAR
+    sym: Elf32_Sym;
+
+BEGIN
+    NEW(sym);
+    sym.name := name;
+    sym.value := value;
+    sym.size := size;
+    sym.info := info;
+    sym.other := other;
+    sym.shndx := shndx;
+
+    LISTS.push(symtab, sym)
+END NewSym;
+
+
+PROCEDURE HashStr (name: ARRAY OF CHAR): INTEGER;
+VAR
+    i, h: INTEGER;
+    g: SET;
+
+BEGIN
+    h := 0;
+    i := 0;
+    WHILE name[i] # 0X DO
+        h := h * 16 + ORD(name[i]);
+        g := BITS(h) * {28..31};
+        h := ORD(BITS(h) / BITS(LSR(ORD(g), 24)) - g);
+        INC(i)
+    END
+
+    RETURN h
+END HashStr;
+
+
+PROCEDURE MakeHash (bucket, chain: CHL.INTLIST; symCount: INTEGER);
+VAR
+    symi, hi, k: INTEGER;
+
+BEGIN
+    FOR symi := 0 TO symCount - 1 DO
+        CHL.SetInt(chain, symi, 0);
+        hi := CHL.GetInt(hashtab, symi) MOD symCount;
+        IF CHL.GetInt(bucket, hi) # 0 THEN
+            k := symi;
+            WHILE CHL.GetInt(chain, k) # 0 DO
+                k := CHL.GetInt(chain, k)
+            END;
+            CHL.SetInt(chain, k, CHL.GetInt(bucket, hi))
+        END;
+        CHL.SetInt(bucket, hi, symi)
+    END
+END MakeHash;
+
+
+PROCEDURE write* (program: BIN.PROGRAM; FileName: ARRAY OF CHAR; fini: INTEGER; so, amd64: BOOLEAN);
 CONST
     interp  =  0;
     dyn     =  1;
@@ -145,32 +239,66 @@ CONST
     data    =  4;
     bss     =  5;
 
+    linuxInterpreter64 = "/lib64/ld-linux-x86-64.so.2";
+    linuxInterpreter32 = "/lib/ld-linux.so.2";
+
+    exeBaseAddress32 = 8048000H;
+    exeBaseAddress64 = 400000H;
+    dllBaseAddress = 0;
+
+    DT_NULL = 0;
+    DT_NEEDED = 1;
+    DT_HASH = 4;
+    DT_STRTAB = 5;
+    DT_SYMTAB = 6;
+    DT_RELA = 7;
+    DT_RELASZ = 8;
+    DT_RELAENT = 9;
+    DT_STRSZ = 10;
+    DT_SYMENT = 11;
+    DT_INIT = 12;
+    DT_FINI = 13;
+    DT_SONAME = 14;
+    DT_REL = 17;
+    DT_RELSZ = 18;
+    DT_RELENT = 19;
+
 VAR
     ehdr: Elf32_Ehdr;
     phdr: ARRAY 16 OF Elf32_Phdr;
 
-    i, LoadAdr, offset, pad, VA: INTEGER;
+    i, BaseAdr, offset, pad, VA, symCount: INTEGER;
 
     SizeOf: RECORD header, code, data, bss: INTEGER END;
 
+    Offset: RECORD symtab, reltab, hash, strtab, dyn: INTEGER END;
+
     File: FILE;
 
-    str: ARRAY 40 OF CHAR; lstr: INTEGER;
-    Dyn: ARRAY 350 OF BYTE;
+    Interpreter: ARRAY 40 OF CHAR; lenInterpreter: INTEGER;
+
+    item: LISTS.ITEM;
+
+    Name: ARRAY 2048 OF CHAR;
 
 BEGIN
-    IF amd64 THEN
-        str := "/lib64/ld-linux-x86-64.so.2"
-    ELSE
-        str := "/lib/ld-linux.so.2"
-    END;
-    lstr := LENGTH(str);
+    dynamic := LISTS.create(NIL);
+    symtab  := LISTS.create(NIL);
+    strtab  := CHL.CreateByteList();
 
     IF amd64 THEN
-        LoadAdr := 400000H
+        BaseAdr := exeBaseAddress64;
+        Interpreter := linuxInterpreter64
     ELSE
-        LoadAdr := 08048000H
+        BaseAdr := exeBaseAddress32;
+        Interpreter := linuxInterpreter32
     END;
+
+    IF so THEN
+        BaseAdr := dllBaseAddress
+    END;
+
+    lenInterpreter := LENGTH(Interpreter) + 1;
 
     SizeOf.code := CHL.Length(program.code);
     SizeOf.data := CHL.Length(program.data);
@@ -192,7 +320,12 @@ BEGIN
         ehdr.e_ident[i] := 0
     END;
 
-    ehdr.e_type := WCHR(ET_EXEC);
+    IF so THEN
+        ehdr.e_type := WCHR(ET_DYN)
+    ELSE
+        ehdr.e_type := WCHR(ET_EXEC)
+    END;
+
     ehdr.e_version := 1;
     ehdr.e_shoff := 0;
     ehdr.e_flags := 0;
@@ -218,24 +351,92 @@ BEGIN
 
     phdr[interp].p_type := 3;
     phdr[interp].p_offset := SizeOf.header;
-    phdr[interp].p_vaddr := LoadAdr + phdr[interp].p_offset;
-    phdr[interp].p_paddr := LoadAdr + phdr[interp].p_offset;
-    phdr[interp].p_filesz := lstr + 1;
-    phdr[interp].p_memsz := lstr + 1;
+    phdr[interp].p_vaddr := BaseAdr + phdr[interp].p_offset;
+    phdr[interp].p_paddr := phdr[interp].p_vaddr;
+    phdr[interp].p_filesz := lenInterpreter;
+    phdr[interp].p_memsz := lenInterpreter;
     phdr[interp].p_flags := PF_R;
     phdr[interp].p_align := 1;
 
     phdr[dyn].p_type := 2;
     phdr[dyn].p_offset := phdr[interp].p_offset + phdr[interp].p_filesz;
-    phdr[dyn].p_vaddr := LoadAdr + phdr[dyn].p_offset;
-    phdr[dyn].p_paddr := LoadAdr + phdr[dyn].p_offset;
-    IF amd64 THEN
-        phdr[dyn].p_filesz := 0A0H;
-        phdr[dyn].p_memsz  := 0A0H
-    ELSE
-        phdr[dyn].p_filesz := 50H;
-        phdr[dyn].p_memsz  := 50H
+    phdr[dyn].p_vaddr := BaseAdr + phdr[dyn].p_offset;
+    phdr[dyn].p_paddr := phdr[dyn].p_vaddr;
+
+    hashtab := CHL.CreateIntList();
+
+    CHL.PushInt(hashtab, HashStr(""));
+    NewSym(CHL.PushStr(strtab, ""), 0, 0, 0X, 0X, 0X);
+    CHL.PushInt(hashtab, HashStr("dlopen"));
+    NewSym(CHL.PushStr(strtab, "dlopen"), 0, 0, 12X, 0X, 0X);
+    CHL.PushInt(hashtab, HashStr("dlsym"));
+    NewSym(CHL.PushStr(strtab, "dlsym"), 0, 0, 12X, 0X, 0X);
+
+    IF so THEN
+        item := program.exp_list.first;
+        WHILE item # NIL DO
+            ASSERT(CHL.GetStr(program.export, item(BIN.EXPRT).nameoffs, Name));
+            CHL.PushInt(hashtab, HashStr(Name));
+            NewSym(CHL.PushStr(strtab, Name), item(BIN.EXPRT).label, 0, 12X, 0X, 0X);
+            item := item.next
+        END;
+        ASSERT(CHL.GetStr(program.data, program.modname, Name))
     END;
+
+    symCount := LISTS.count(symtab);
+
+    bucket  := CHL.CreateIntList();
+    chain   := CHL.CreateIntList();
+
+    FOR i := 1 TO symCount DO
+        CHL.PushInt(bucket, 0);
+        CHL.PushInt(chain, 0)
+    END;
+
+    MakeHash(bucket, chain, symCount);
+
+    NewDyn(DT_NEEDED, CHL.PushStr(strtab, "libdl.so.2"));
+    NewDyn(DT_STRTAB, 0);
+    NewDyn(DT_STRSZ, CHL.Length(strtab));
+    NewDyn(DT_SYMTAB, 0);
+
+    IF amd64 THEN
+        NewDyn(DT_SYMENT, 24);
+        NewDyn(DT_RELA, 0);
+        NewDyn(DT_RELASZ, 48);
+        NewDyn(DT_RELAENT, 24)
+    ELSE
+        NewDyn(DT_SYMENT, 16);
+        NewDyn(DT_REL, 0);
+        NewDyn(DT_RELSZ, 16);
+        NewDyn(DT_RELENT, 8)
+    END;
+
+    NewDyn(DT_HASH, 0);
+
+    IF so THEN
+        NewDyn(DT_SONAME, CHL.PushStr(strtab, Name));
+        NewDyn(DT_INIT, 0);
+        NewDyn(DT_FINI, 0)
+    END;
+
+    NewDyn(DT_NULL, 0);
+
+    Offset.symtab := LISTS.count(dynamic) * (8 + 8 * ORD(amd64));
+    Offset.reltab := Offset.symtab + symCount * (16 + 8 * ORD(amd64));
+    Offset.hash   := Offset.reltab + (8 + 16 * ORD(amd64)) * 2;
+    Offset.strtab := Offset.hash + (symCount * 2 + 2) * 4;
+
+    Offset.dyn := phdr[dyn].p_offset;
+
+    item := LISTS.getidx(dynamic, 1); item(Elf32_Dyn).d_val := Offset.strtab + Offset.dyn + BaseAdr;
+    item := LISTS.getidx(dynamic, 3); item(Elf32_Dyn).d_val := Offset.symtab + Offset.dyn + BaseAdr;
+    item := LISTS.getidx(dynamic, 5); item(Elf32_Dyn).d_val := Offset.reltab + Offset.dyn + BaseAdr;
+    item := LISTS.getidx(dynamic, 8); item(Elf32_Dyn).d_val := Offset.hash   + Offset.dyn + BaseAdr;
+
+    phdr[dyn].p_filesz := Offset.strtab + CHL.Length(strtab) + 8 + 8 * ORD(amd64);
+    phdr[dyn].p_memsz  := phdr[dyn].p_filesz;
+
     phdr[dyn].p_flags := PF_R;
     phdr[dyn].p_align := 1;
 
@@ -243,20 +444,15 @@ BEGIN
 
     phdr[header].p_type := 1;
     phdr[header].p_offset := offset;
-    phdr[header].p_vaddr := LoadAdr;
-    phdr[header].p_paddr := LoadAdr;
-    IF amd64 THEN
-        phdr[header].p_filesz := 305H;
-        phdr[header].p_memsz  := 305H
-    ELSE
-        phdr[header].p_filesz := 1D0H;
-        phdr[header].p_memsz  := 1D0H
-    END;
+    phdr[header].p_vaddr := BaseAdr;
+    phdr[header].p_paddr := BaseAdr;
+    phdr[header].p_filesz := 244 + 156 * ORD(amd64) + lenInterpreter + phdr[dyn].p_filesz;
+    phdr[header].p_memsz  := phdr[header].p_filesz;
     phdr[header].p_flags := PF_R + PF_W;
     phdr[header].p_align := 1000H;
-    
+
     offset := offset + phdr[header].p_filesz;
-    VA := LoadAdr + offset + 1000H;           
+    VA := BaseAdr + offset + 1000H;
 
     phdr[text].p_type := 1;
     phdr[text].p_offset := offset;
@@ -268,9 +464,9 @@ BEGIN
     phdr[text].p_align := 1000H;
 
     ehdr.e_entry := phdr[text].p_vaddr;
-    
+
     offset := offset + phdr[text].p_filesz;
-    VA := LoadAdr + offset + 2000H;
+    VA := BaseAdr + offset + 2000H;
     pad := (16 - VA MOD 16) MOD 16;
 
     phdr[data].p_type := 1;
@@ -281,9 +477,9 @@ BEGIN
     phdr[data].p_memsz := SizeOf.data + pad;
     phdr[data].p_flags := PF_R + PF_W;
     phdr[data].p_align := 1000H;
-                    
+
     offset := offset + phdr[data].p_filesz;
-    VA := LoadAdr + offset + 3000H;
+    VA := BaseAdr + offset + 3000H;
 
     phdr[bss].p_type := 1;
     phdr[bss].p_offset := offset;
@@ -294,7 +490,20 @@ BEGIN
     phdr[bss].p_flags := PF_R + PF_W;
     phdr[bss].p_align := 1000H;
 
-    fixup(program, phdr[text].p_vaddr, phdr[data].p_vaddr + pad, align(phdr[bss].p_vaddr, 16), amd64);
+    fixup(program, ehdr.e_entry, phdr[data].p_vaddr + pad, align(phdr[bss].p_vaddr, 16), amd64);
+
+    item := symtab.first;
+    WHILE item # NIL DO
+        IF item(Elf32_Sym).value # 0 THEN
+            INC(item(Elf32_Sym).value, ehdr.e_entry)
+        END;
+        item := item.next
+    END;
+
+    IF so THEN
+        item := LISTS.getidx(dynamic, 10); item(Elf32_Dyn).d_val := ehdr.e_entry;
+        item := LISTS.getidx(dynamic, 11); item(Elf32_Dyn).d_val := BIN.GetLabel(program, fini) + ehdr.e_entry
+    END;
 
     File := WR.Create(FileName);
 
@@ -340,34 +549,94 @@ BEGIN
         WritePH(File, phdr[bss])
     END;
 
-    FOR i := 0 TO lstr DO
-        WR.WriteByte(File, ORD(str[i]))
+    FOR i := 0 TO lenInterpreter - 1 DO
+        WR.WriteByte(File, ORD(Interpreter[i]))
     END;
 
     i := 0;
     IF amd64 THEN
-        BIN.InitArray(Dyn, i, "01000000000000000E000000000000000500000000000000DC02400000000000");
-        BIN.InitArray(Dyn, i, "0A00000000000000190000000000000006000000000000004C02400000000000");
-        BIN.InitArray(Dyn, i, "0B00000000000000180000000000000007000000000000009402400000000000");
-        BIN.InitArray(Dyn, i, "0800000000000000300000000000000009000000000000001800000000000000");
-        BIN.InitArray(Dyn, i, "0400000000000000C40240000000000000000000000000000000000000000000");
-        BIN.InitArray(Dyn, i, "0000000000000000000000000000000000000000000000000100000012000000");
-        BIN.InitArray(Dyn, i, "0000000000000000000000000000000008000000120000000000000000000000");
-        BIN.InitArray(Dyn, i, "0000000000000000F50240000000000001000000010000000000000000000000");
-        BIN.InitArray(Dyn, i, "FD02400000000000010000000200000000000000000000000100000003000000");
-        BIN.InitArray(Dyn, i, "0000000001000000020000000000000000646C6F70656E00646C73796D006C69");
-        BIN.InitArray(Dyn, i, "62646C2E736F2E320000000000000000000000000000000000")
-    ELSE
-        BIN.InitArray(Dyn, i, "010000000E00000005000000AF8104080A000000190000000600000057810408");
-        BIN.InitArray(Dyn, i, "0B00000010000000110000008781040812000000100000001300000008000000");
-        BIN.InitArray(Dyn, i, "0400000097810408000000000000000000000000000000000000000000000000");
-        BIN.InitArray(Dyn, i, "0100000000000000000000001200000008000000000000000000000012000000");
-        BIN.InitArray(Dyn, i, "C881040801010000CC8104080102000001000000030000000000000001000000");
-        BIN.InitArray(Dyn, i, "020000000000000000646C6F70656E00646C73796D006C6962646C2E736F2E32");
-        BIN.InitArray(Dyn, i, "000000000000000000")
-    END;
+        item := dynamic.first;
+        WHILE item # NIL DO
+            WR.Write64LE(File, item(Elf32_Dyn).d_tag);
+            WR.Write64LE(File, item(Elf32_Dyn).d_val);
+            item := item.next
+        END;
 
-    WR.Write(File, Dyn, i);
+        item := symtab.first;
+        WHILE item # NIL DO
+            WR.Write32LE(File, item(Elf32_Sym).name);
+            WR.WriteByte(File, ORD(item(Elf32_Sym).info));
+            WR.WriteByte(File, ORD(item(Elf32_Sym).other));
+            Write16(File, item(Elf32_Sym).shndx);
+            WR.Write64LE(File, item(Elf32_Sym).value);
+            WR.Write64LE(File, item(Elf32_Sym).size);
+            item := item.next
+        END;
+
+        WR.Write64LE(File, phdr[dyn].p_filesz + Offset.dyn + BaseAdr - 16);
+        WR.Write32LE(File, 1);
+        WR.Write32LE(File, 1);
+        WR.Write64LE(File, 0);
+        WR.Write64LE(File, phdr[dyn].p_filesz + Offset.dyn + BaseAdr - 8);
+        WR.Write32LE(File, 1);
+        WR.Write32LE(File, 2);
+        WR.Write64LE(File, 0);
+
+        WR.Write32LE(File, symCount);
+        WR.Write32LE(File, symCount);
+
+        FOR i := 0 TO symCount - 1 DO
+            WR.Write32LE(File, CHL.GetInt(bucket, i))
+        END;
+
+        FOR i := 0 TO symCount - 1 DO
+            WR.Write32LE(File, CHL.GetInt(chain, i))
+        END;
+
+        CHL.WriteToFile(File, strtab);
+        WR.Write64LE(File, 0);
+        WR.Write64LE(File, 0)
+
+    ELSE
+        item := dynamic.first;
+        WHILE item # NIL DO
+            WR.Write32LE(File, item(Elf32_Dyn).d_tag);
+            WR.Write32LE(File, item(Elf32_Dyn).d_val);
+            item := item.next
+        END;
+
+        item := symtab.first;
+        WHILE item # NIL DO
+            WR.Write32LE(File, item(Elf32_Sym).name);
+            WR.Write32LE(File, item(Elf32_Sym).value);
+            WR.Write32LE(File, item(Elf32_Sym).size);
+            WR.WriteByte(File, ORD(item(Elf32_Sym).info));
+            WR.WriteByte(File, ORD(item(Elf32_Sym).other));
+            Write16(File, item(Elf32_Sym).shndx);
+            item := item.next
+        END;
+
+        WR.Write32LE(File, phdr[dyn].p_filesz + Offset.dyn + BaseAdr - 8);
+        WR.Write32LE(File, 00000101H);
+        WR.Write32LE(File, phdr[dyn].p_filesz + Offset.dyn + BaseAdr - 4);
+        WR.Write32LE(File, 00000201H);
+
+        WR.Write32LE(File, symCount);
+        WR.Write32LE(File, symCount);
+
+        FOR i := 0 TO symCount - 1 DO
+            WR.Write32LE(File, CHL.GetInt(bucket, i))
+        END;
+
+        FOR i := 0 TO symCount - 1 DO
+            WR.Write32LE(File, CHL.GetInt(chain, i))
+        END;
+
+        CHL.WriteToFile(File, strtab);
+        WR.Write32LE(File, 0);
+        WR.Write32LE(File, 0)
+
+    END;
 
     CHL.WriteToFile(File, program.code);
     WHILE pad > 0 DO

@@ -1,4 +1,4 @@
-(*
+﻿(*
     Copyright 2017 Anton Krotov
 
     This program is free software: you can redistribute it and/or modify
@@ -24,18 +24,18 @@ CONST
 
   //net devices types
 
-  LOOPBACK*	   = 0;
-  ETH*		   = 1;
-  SLIP* 	   = 2;
+  LOOPBACK*        = 0;
+  ETH*             = 1;
+  SLIP*            = 2;
 
   //Link status
 
-  LINK_DOWN*	   = 0;
+  LINK_DOWN*       = 0;
   LINK_UNKNOWN*    = 1;
-  LINK_FD*	   = 2; //full duplex flag
-  LINK_10M*	   = 4;
-  LINK_100M*	   = 8;
-  LINK_1G*	   = 12;
+  LINK_FD*         = 2; //full duplex flag
+  LINK_10M*        = 4;
+  LINK_100M*       = 8;
+  LINK_1G*         = 12;
 
 
 TYPE

@@ -1,7 +1,7 @@
 ﻿(*
     BSD 2-Clause License
 
-    Copyright (c) 2018, Anton Krotov
+    Copyright (c) 2018, 2019, Anton Krotov
     All rights reserved.
 *)
 
@@ -197,7 +197,7 @@ BEGIN
     WR.Write32LE(File, header.sp);
     WR.Write32LE(File, header.param);
     WR.Write32LE(File, header.path);
-    
+
     CHL.WriteToFile(File, program.code);
     WR.Padding(File, FileAlignment);
 
@@ -206,8 +206,8 @@ BEGIN
 
     FOR i := 0 TO ILen - 1 DO
         WR.Write32LE(File, CHL.GetInt(ImportTable, i))
-    END;      
-    
+    END;
+
     CHL.WriteToFile(File, program.import);
 
     WR.Close(File)

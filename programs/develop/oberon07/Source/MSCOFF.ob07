@@ -1,7 +1,7 @@
 ﻿(*
     BSD 2-Clause License
 
-    Copyright (c) 2018, Anton Krotov
+    Copyright (c) 2018, 2019, Anton Krotov
     All rights reserved.
 *)
 
@@ -136,7 +136,7 @@ VAR
     PROCEDURE SetNumberOfRelocations (VAR section: SH; NumberOfRelocations: INTEGER);
     BEGIN
         IF NumberOfRelocations >= 65536 THEN
-            ERRORS.error1("too many relocations")
+            ERRORS.Error(202)
         END;
         section.NumberOfRelocations := WCHR(NumberOfRelocations)
     END SetNumberOfRelocations;

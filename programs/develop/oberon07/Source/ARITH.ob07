@@ -7,7 +7,7 @@
 
 MODULE ARITH;
 
-IMPORT AVLTREES, STRINGS, MACHINE, UTILS;
+IMPORT AVLTREES, STRINGS, UTILS;
 
 
 CONST
@@ -53,10 +53,7 @@ BEGIN
     ELSIF v.typ = tWCHAR THEN
         res := v.int
     ELSIF v.typ = tSET THEN
-        res := ORD(v.set);
-        IF MACHINE._64to32 THEN
-            res := MACHINE.Int32To64(res)
-        END
+        res := UTILS.Long(ORD(v.set))
     ELSIF v.typ = tBOOLEAN THEN
         res := ORD(v.bool)
     END
@@ -88,13 +85,13 @@ VAR
 BEGIN
     error := FALSE;
 
-    IF (v.typ = tINTEGER) & ((v.int < MACHINE.target.minInt) OR (v.int > MACHINE.target.maxInt)) THEN
+    IF (v.typ = tINTEGER) & ((v.int < UTILS.target.minInt) OR (v.int > UTILS.target.maxInt)) THEN
         error := TRUE
     ELSIF (v.typ = tCHAR) & ((v.int < 0) OR (v.int > 255)) THEN
         error := TRUE
     ELSIF (v.typ = tWCHAR) & ((v.int < 0) OR (v.int > 65535)) THEN
         error := TRUE
-    ELSIF (v.typ = tREAL) & ((v.float < -MACHINE.target.maxReal) OR (v.float > MACHINE.target.maxReal)) THEN
+    ELSIF (v.typ = tREAL) & ((v.float < -UTILS.target.maxReal) OR (v.float > UTILS.target.maxReal)) THEN
         error := TRUE
     END
 
@@ -172,7 +169,7 @@ BEGIN
             n := i
         END;
 
-        IF (n # -1) & (i - n + 1 > MACHINE.target.maxHex) THEN
+        IF (n # -1) & (i - n + 1 > UTILS.target.maxHex) THEN
             error := 2
         ELSE
             value := value * 16 + d;
@@ -181,9 +178,7 @@ BEGIN
 
     END;
 
-    IF MACHINE._64to32 THEN
-        value := MACHINE.Int32To64(value);
-    END;
+    value := UTILS.Long(value);
 
     IF (s[i] = "X") & (n # -1) & (i - n > 4) THEN
         error := 3
@@ -471,58 +466,53 @@ END mulInt;
 
 
 PROCEDURE _ASR (x, n: INTEGER): INTEGER;
-BEGIN
-    IF MACHINE._64to32 THEN
-        x := MACHINE.Int32To64(x)
-    END
-
-    RETURN ASR(x, n)
+    RETURN ASR(UTILS.Long(x), n)
 END _ASR;
 
 
 PROCEDURE _LSR (x, n: INTEGER): INTEGER;
-BEGIN
-    IF MACHINE._64to32 THEN
-        x := MACHINE.Int64To32(x);
-        x := LSR(x, n);
-        x := MACHINE.Int32To64(x)
-    ELSE
-        x := LSR(x, n)
-    END
-
-    RETURN x
+    RETURN UTILS.Long(LSR(UTILS.Short(x), n))
 END _LSR;
 
 
 PROCEDURE _LSL (x, n: INTEGER): INTEGER;
-BEGIN
-    x := LSL(x, n);
-    IF MACHINE._64to32 THEN
-        x := MACHINE.Int32To64(x)
-    END
-
-    RETURN x
+    RETURN UTILS.Long(LSL(x, n))
 END _LSL;
 
 
 PROCEDURE _ROR1_32 (x: INTEGER): INTEGER;
 BEGIN
-    x := MACHINE.Int64To32(x);
+    x := UTILS.Short(x);
     x := ORD(BITS(LSR(x, 1)) + BITS(LSL(x, 31)))
-    RETURN MACHINE.Int32To64(x)
+    RETURN UTILS.Long(x)
 END _ROR1_32;
+
+
+PROCEDURE _ROR1_16 (x: INTEGER): INTEGER;
+BEGIN
+    x := x MOD 65536;
+    x := ORD(BITS(LSR(x, 1)) + BITS(LSL(x, 15)))
+    RETURN UTILS.Long(x)
+END _ROR1_16;
 
 
 PROCEDURE _ROR (x, n: INTEGER): INTEGER;
 BEGIN
-    IF MACHINE._64to32 THEN
+
+    CASE UTILS.bit_diff OF
+    |0: x := ROR(x, n)
+    |16, 48:
+        n := n MOD 16;
+        WHILE n > 0 DO
+            x := _ROR1_16(x);
+            DEC(n)
+        END
+    |32:
         n := n MOD 32;
         WHILE n > 0 DO
             x := _ROR1_32(x);
             DEC(n)
         END
-    ELSE
-        x := ROR(x, n)
     END
 
     RETURN x
@@ -587,11 +577,7 @@ BEGIN
     CASE v.typ OF
     |tCHAR, tWCHAR:
     |tBOOLEAN: v.int := ORD(v.bool)
-    |tSET:
-        v.int := ORD(v.set);
-        IF MACHINE._64to32 THEN
-            v.int := MACHINE.Int32To64(v.int)
-        END
+    |tSET:     v.int := UTILS.Long(ORD(v.set))
     END;
     v.typ := tINTEGER
 END ord;
@@ -616,7 +602,7 @@ VAR
     res: BOOLEAN;
 
 BEGIN
-    res := FALSE;  
+    res := FALSE;
 
     CASE v.typ OF
     |tREAL:
@@ -627,8 +613,8 @@ BEGIN
             v.int := ABS(v.int);
             res := TRUE
         END
-    END 
-    
+    END
+
     RETURN res
 END abs;
 
@@ -787,7 +773,7 @@ BEGIN
 
     |"I":
         IF (v.typ = tINTEGER) & (v2.typ = tSET) THEN
-            IF range(v, 0, MACHINE.target.maxSet) THEN
+            IF range(v, 0, UTILS.target.maxSet) THEN
                 res := v.int IN v2.set
             ELSE
                 error := 2

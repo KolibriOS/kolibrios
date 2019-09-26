@@ -92,6 +92,29 @@ BEGIN
 END IntToStr;
 
 
+PROCEDURE hexdgt (n: BYTE): BYTE;
+BEGIN
+    IF n < 10 THEN
+        n := n + ORD("0")
+    ELSE
+        n := n - 10 + ORD("A")
+    END
+
+    RETURN n
+END hexdgt;
+
+
+PROCEDURE IntToHex* (x: INTEGER; VAR str: ARRAY OF CHAR; n: INTEGER);
+BEGIN
+    str[n] := 0X;
+    WHILE n > 0 DO
+        str[n - 1] := CHR(hexdgt(x MOD 16));
+        x := x DIV 16;
+        DEC(n)
+    END
+END IntToHex;
+
+
 PROCEDURE copy* (src: ARRAY OF CHAR; VAR dst: ARRAY OF CHAR; spos, dpos, count: INTEGER);
 BEGIN
     WHILE count > 0 DO
@@ -261,12 +284,12 @@ BEGIN
 
         |0E1X..0EFX:
             u := LSL(ORD(c) - 0E0H, 12);
-            IF i + 1 < srclen THEN    
+            IF i + 1 < srclen THEN
                 INC(i);
                 INC(u, ORD(BITS(ORD(src[i])) * {0..5}) * 64)
             END;
             IF i + 1 < srclen THEN
-                INC(i);   
+                INC(i);
                 INC(u, ORD(BITS(ORD(src[i])) * {0..5}))
             END
 (*

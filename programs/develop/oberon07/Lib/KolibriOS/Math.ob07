@@ -1,5 +1,5 @@
 ﻿(*
-    Copyright 2013, 2014, 2018 Anton Krotov
+    Copyright 2013, 2014, 2018, 2019 Anton Krotov
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU Lesser General Public License as published by
@@ -167,10 +167,10 @@ END ln;
 
 
 PROCEDURE [stdcall] log* (base, x: REAL): REAL;
-BEGIN             
+BEGIN
     SYSTEM.CODE(
     0D9H, 0E8H,                    (*  fld1                       *)
-    0DDH, 045H, 010H,              (*  fld     qword [ebp + 10h]  *) 
+    0DDH, 045H, 010H,              (*  fld     qword [ebp + 10h]  *)
     0D9H, 0F1H,                    (*  fyl2x                      *)
     0D9H, 0E8H,                    (*  fld1                       *)
     0DDH, 045H, 008H,              (*  fld     qword [ebp + 08h]  *)
@@ -251,58 +251,45 @@ END arctan;
 
 
 PROCEDURE sinh* (x: REAL): REAL;
-VAR
-    res: REAL;
-
 BEGIN
-    IF IsZero(x) THEN
-        res := 0.0
-    ELSE
-        res := (exp(x) - exp(-x)) / 2.0
-    END
-    RETURN res
+    x := exp(x)
+    RETURN (x - 1.0 / x) * 0.5
 END sinh;
 
 
 PROCEDURE cosh* (x: REAL): REAL;
-VAR
-    res: REAL;
-
 BEGIN
-    IF IsZero(x) THEN
-        res := 1.0
-    ELSE
-        res := (exp(x) + exp(-x)) / 2.0
-    END
-    RETURN res
+    x := exp(x)
+    RETURN (x + 1.0 / x) * 0.5
 END cosh;
 
 
 PROCEDURE tanh* (x: REAL): REAL;
-VAR
-    res: REAL;
-
 BEGIN
-    IF IsZero(x) THEN
-        res := 0.0
+    IF x > 15.0 THEN
+        x := 1.0
+    ELSIF x < -15.0 THEN
+        x := -1.0
     ELSE
-        res := sinh(x) / cosh(x)
+        x := exp(2.0 * x);
+        x := (x - 1.0) / (x + 1.0)
     END
-    RETURN res
+
+    RETURN x
 END tanh;
 
 
-PROCEDURE arcsinh* (x: REAL): REAL;
-    RETURN ln(x + sqrt((x * x) + 1.0))
-END arcsinh;
+PROCEDURE arsinh* (x: REAL): REAL;
+    RETURN ln(x + sqrt(x * x + 1.0))
+END arsinh;
 
 
-PROCEDURE arccosh* (x: REAL): REAL;
-    RETURN ln(x + sqrt((x - 1.0) / (x + 1.0)) * (x + 1.0))
-END arccosh;
+PROCEDURE arcosh* (x: REAL): REAL;
+    RETURN ln(x + sqrt(x * x - 1.0))
+END arcosh;
 
 
-PROCEDURE arctanh* (x: REAL): REAL;
+PROCEDURE artanh* (x: REAL): REAL;
 VAR
     res: REAL;
 
@@ -315,7 +302,7 @@ BEGIN
         res := 0.5 * ln((1.0 + x) / (1.0 - x))
     END
     RETURN res
-END arctanh;
+END artanh;
 
 
 PROCEDURE floor* (x: REAL): REAL;
@@ -374,8 +361,24 @@ BEGIN
     ELSE
         res := 0
     END
+
     RETURN res
 END sgn;
-         
+
+
+PROCEDURE fact* (n: INTEGER): REAL;
+VAR
+    res: REAL;
+
+BEGIN
+    res := 1.0;
+    WHILE n > 1 DO
+        res := res * FLT(n);
+        DEC(n)
+    END
+
+    RETURN res
+END fact;
+
 
 END Math.

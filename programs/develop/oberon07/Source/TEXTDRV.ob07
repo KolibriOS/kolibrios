@@ -1,7 +1,7 @@
 ﻿(*
     BSD 2-Clause License
 
-    Copyright (c) 2018, Anton Krotov
+    Copyright (c) 2018, 2019, Anton Krotov
     All rights reserved.
 *)
 
@@ -30,10 +30,7 @@ TYPE
         line*, col*:  INTEGER;
         eof*:         BOOLEAN;
         eol*:         BOOLEAN;
-
-        open*:        PROCEDURE (text: TEXT; name: ARRAY OF CHAR): BOOLEAN;
-        peak*:        PROCEDURE (text: TEXT): CHAR;
-        nextc*:       PROCEDURE (text: TEXT)
+        peak*:        CHAR
 
     END;
 
@@ -41,26 +38,6 @@ TYPE
 VAR
 
     texts: C.COLLECTION;
-
-
-PROCEDURE reset (text: TEXT);
-BEGIN
-    text.chunk[0] := 0;
-    text.pos  := 0;
-    text.size := 0;
-    text.file := NIL;
-    text.utf8 := FALSE;
-    text.CR   := FALSE;
-    text.line := 1;
-    text.col  := 1;
-    text.eof  := FALSE;
-    text.eol  := FALSE
-END reset;
-
-
-PROCEDURE peak (text: TEXT): CHAR;
-    RETURN CHR(text.chunk[text.pos])
-END peak;
 
 
 PROCEDURE load (text: TEXT);
@@ -71,37 +48,40 @@ BEGIN
         IF text.size = 0 THEN
             text.eof := TRUE;
             text.chunk[0] := 0
-        END
+        END;
+        text.peak := CHR(text.chunk[0])
     END
 END load;
 
 
-PROCEDURE next (text: TEXT);
+PROCEDURE next* (text: TEXT);
 VAR
     c: CHAR;
+
 BEGIN
     IF text.pos < text.size - 1 THEN
-        INC(text.pos)
+        INC(text.pos);
+        text.peak := CHR(text.chunk[text.pos])
     ELSE
         load(text)
     END;
 
     IF ~text.eof THEN
 
-        c := peak(text);
+        c := text.peak;
 
         IF c = CR THEN
             INC(text.line);
-            text.col  := 0;
-            text.eol  := TRUE;
-            text.CR   := TRUE
+            text.col := 0;
+            text.eol := TRUE;
+            text.CR  := TRUE
         ELSIF c = LF THEN
             IF ~text.CR THEN
                 INC(text.line);
-                text.col  := 0;
-                text.eol  := TRUE
+                text.col := 0;
+                text.eol := TRUE
             ELSE
-                text.eol  := FALSE
+                text.eol := FALSE
             END;
             text.CR := FALSE
         ELSE
@@ -123,7 +103,6 @@ END next;
 
 PROCEDURE init (text: TEXT);
 BEGIN
-
     IF (text.pos = 0) & (text.size >= 3) THEN
         IF (text.chunk[0] = 0EFH) &
            (text.chunk[1] = 0BBH) &
@@ -140,58 +119,13 @@ BEGIN
     END;
 
     text.line := 1;
-    text.col  := 1
+    text.col  := 1;
 
+    text.peak := CHR(text.chunk[text.pos])
 END init;
 
 
-PROCEDURE open (text: TEXT; name: ARRAY OF CHAR): BOOLEAN;
-BEGIN
-    ASSERT(text # NIL);
-
-    reset(text);
-    text.file := FILES.open(name);
-    IF text.file # NIL THEN
-        load(text);
-        init(text)
-    END
-
-    RETURN text.file # NIL
-END open;
-
-
-PROCEDURE NewText (): TEXT;
-VAR
-    text:  TEXT;
-    citem: C.ITEM;
-
-BEGIN
-    citem := C.pop(texts);
-    IF citem = NIL THEN
-        NEW(text)
-    ELSE
-        text := citem(TEXT)
-    END
-
-    RETURN text
-END NewText;
-
-
-PROCEDURE create* (): TEXT;
-VAR
-    text: TEXT;
-BEGIN
-    text := NewText();
-    reset(text);
-    text.open  := open;
-    text.peak  := peak;
-    text.nextc := next
-
-    RETURN text
-END create;
-
-
-PROCEDURE destroy* (VAR text: TEXT);
+PROCEDURE close* (VAR text: TEXT);
 BEGIN
     IF text # NIL THEN
         IF text.file # NIL THEN
@@ -201,7 +135,44 @@ BEGIN
         C.push(texts, text);
         text := NIL
     END
-END destroy;
+END close;
+
+
+PROCEDURE open* (name: ARRAY OF CHAR): TEXT;
+VAR
+    text: TEXT;
+    citem: C.ITEM;
+
+BEGIN
+    citem := C.pop(texts);
+    IF citem = NIL THEN
+        NEW(text)
+    ELSE
+        text := citem(TEXT)
+    END;
+
+    IF text # NIL THEN
+        text.chunk[0] := 0;
+        text.pos  := 0;
+        text.size := 0;
+        text.utf8 := FALSE;
+        text.CR   := FALSE;
+        text.line := 1;
+        text.col  := 1;
+        text.eof  := FALSE;
+        text.eol  := FALSE;
+        text.peak := 0X;
+        text.file := FILES.open(name);
+        IF text.file # NIL THEN
+            load(text);
+            init(text)
+        ELSE
+            close(text)
+        END
+    END
+
+    RETURN text
+END open;
 
 
 BEGIN

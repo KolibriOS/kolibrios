@@ -7,7 +7,7 @@
 
 MODULE BIN;
 
-IMPORT LISTS, MACHINE, CHL := CHUNKLISTS, ARITH, UTILS;
+IMPORT LISTS, CHL := CHUNKLISTS, ARITH, UTILS;
 
 
 CONST
@@ -138,7 +138,10 @@ BEGIN
     END;
 
     IF UTILS.bit_depth = 64 THEN
-        x := MACHINE.Int32To64(x)
+        x := LSL(x, 16);
+        x := LSL(x, 16);
+        x := ASR(x, 16);
+        x := ASR(x, 16)
     END
 
     RETURN x
@@ -151,7 +154,7 @@ VAR
 
 BEGIN
     FOR i := 0 TO 3 DO
-        CHL.SetByte(array, idx + i, MACHINE.Byte(x, i))
+        CHL.SetByte(array, idx + i, UTILS.Byte(x, i))
     END
 END put32le;
 
@@ -162,7 +165,7 @@ VAR
 
 BEGIN
     FOR i := 0 TO 3 DO
-        CHL.PushByte(program.data, MACHINE.Byte(x, i))
+        CHL.PushByte(program.data, UTILS.Byte(x, i))
     END
 END PutData32LE;
 
@@ -173,7 +176,7 @@ VAR
 
 BEGIN
     FOR i := 0 TO 7 DO
-        CHL.PushByte(program.data, MACHINE.Byte(x, i))
+        CHL.PushByte(program.data, UTILS.Byte(x, i))
     END
 END PutData64LE;
 
@@ -203,7 +206,7 @@ VAR
 
 BEGIN
     FOR i := 0 TO 3 DO
-        CHL.PushByte(program.code, MACHINE.Byte(x, i))
+        CHL.PushByte(program.code, UTILS.Byte(x, i))
     END
 END PutCode32LE;
 
@@ -217,7 +220,6 @@ END SetLabel;
 PROCEDURE Import* (program: PROGRAM; name: ARRAY OF CHAR; label: INTEGER);
 VAR
     imp: IMPRT;
-    i:   INTEGER;
 
 BEGIN
     CHL.PushByte(program.import, 0);
@@ -228,16 +230,9 @@ BEGIN
     END;
 
     NEW(imp);
-    imp.nameoffs := CHL.Length(program.import);
+    imp.nameoffs := CHL.PushStr(program.import, name);
     imp.label := label;
-    LISTS.push(program.imp_list, imp);
-
-    i := 0;
-    WHILE name[i] # 0X DO
-        CHL.PushByte(program.import, ORD(name[i]));
-        INC(i)
-    END;
-    CHL.PushByte(program.import, 0)
+    LISTS.push(program.imp_list, imp)
 END Import;
 
 
@@ -262,19 +257,11 @@ END less;
 PROCEDURE Export* (program: PROGRAM; name: ARRAY OF CHAR; label: INTEGER);
 VAR
     exp, cur: EXPRT;
-    i: INTEGER;
 
 BEGIN
     NEW(exp);
-    exp.nameoffs := CHL.Length(program.export);
     exp.label := CHL.GetInt(program.labels, label);
-
-    i := 0;
-    WHILE name[i] # 0X DO
-        CHL.PushByte(program.export, ORD(name[i]));
-        INC(i)
-    END;
-    CHL.PushByte(program.export, 0);
+    exp.nameoffs := CHL.PushStr(program.export, name);
 
     cur := program.exp_list.first(EXPRT);
     WHILE (cur # NIL) & less(program.export, cur, exp) DO
@@ -389,7 +376,7 @@ BEGIN
         array[i + idx] := hexdgt(hex[2 * i]) * 16 + hexdgt(hex[2 * i + 1])
     END;
 
-    idx := idx + k
+    INC(idx, k)
 END InitArray;
 
 

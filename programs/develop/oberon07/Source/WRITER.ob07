@@ -1,13 +1,13 @@
 ﻿(*
     BSD 2-Clause License
 
-    Copyright (c) 2018, Anton Krotov
+    Copyright (c) 2018, 2019, Anton Krotov
     All rights reserved.
 *)
 
 MODULE WRITER;
 
-IMPORT FILES, ERRORS, MACHINE;
+IMPORT FILES, ERRORS, UTILS;
 
 
 TYPE
@@ -35,7 +35,7 @@ BEGIN
     IF FILES.WriteByte(file, n) THEN
         INC(counter)
     ELSE
-        ERRORS.error1("writing file error")
+        ERRORS.Error(201)
     END
 END WriteByte;
 
@@ -47,7 +47,7 @@ VAR
 BEGIN
     n := FILES.write(file, chunk, bytes);
     IF n # bytes THEN
-        ERRORS.error1("writing file error")
+        ERRORS.Error(201)
     END;
     INC(counter, n)
 END Write;
@@ -59,7 +59,7 @@ VAR
 
 BEGIN
     FOR i := 0 TO 7 DO
-        WriteByte(file, MACHINE.Byte(n, i))
+        WriteByte(file, UTILS.Byte(n, i))
     END
 END Write64LE;
 
@@ -70,15 +70,15 @@ VAR
 
 BEGIN
     FOR i := 0 TO 3 DO
-        WriteByte(file, MACHINE.Byte(n, i))
+        WriteByte(file, UTILS.Byte(n, i))
     END
 END Write32LE;
 
 
 PROCEDURE Write16LE* (file: FILE; n: INTEGER);
 BEGIN
-    WriteByte(file, MACHINE.Byte(n, 0));
-    WriteByte(file, MACHINE.Byte(n, 1))
+    WriteByte(file, UTILS.Byte(n, 0));
+    WriteByte(file, UTILS.Byte(n, 1))
 END Write16LE;
 
 

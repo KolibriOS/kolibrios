@@ -98,8 +98,8 @@ MODULE Math - математические функции
 
 	CONST
 
-		pi = 3.141592653589793D+00
-		e  = 2.718281828459045D+00
+		pi = 3.141592653589793E+00
+		e  = 2.718281828459045E+00
 
 
 	PROCEDURE IsNan(x: REAL): BOOLEAN
@@ -153,13 +153,13 @@ MODULE Math - математические функции
 	PROCEDURE tanh(x: REAL): REAL
 		гиперболический тангенс x
 
-	PROCEDURE arcsinh(x: REAL): REAL
+	PROCEDURE arsinh(x: REAL): REAL
 		обратный гиперболический синус x
 
-	PROCEDURE arccosh(x: REAL): REAL
+	PROCEDURE arcosh(x: REAL): REAL
 		обратный гиперболический косинус x
 
-	PROCEDURE arctanh(x: REAL): REAL
+	PROCEDURE artanh(x: REAL): REAL
 		обратный гиперболический тангенс x
 
 	PROCEDURE round(x: REAL): REAL
@@ -180,6 +180,9 @@ MODULE Math - математические функции
 		если x > 0 возвращает 1
 		если x < 0 возвращает -1
 		если x = 0 возвращает 0
+
+	PROCEDURE fact(n: INTEGER): REAL
+		факториал n
 
 ------------------------------------------------------------------------------
 MODULE Debug - вывод на доску отладки
@@ -337,7 +340,7 @@ MODULE DateTime - дата, время
 	PROCEDURE Encode(Year, Month, Day, Hour, Min, Sec: INTEGER): REAL
 		возвращает дату, полученную из компонентов
 		Year, Month, Day, Hour, Min, Sec;
-		при ошибке возвращает константу ERR = -7.0D5
+		при ошибке возвращает константу ERR = -7.0E5
 
 	PROCEDURE Decode(Date: REAL; VAR Year, Month, Day,
 				Hour, Min, Sec: INTEGER): BOOLEAN
