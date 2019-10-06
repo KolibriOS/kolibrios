@@ -1,7 +1,7 @@
-﻿(*
+(*
     BSD 2-Clause License
 
-    Copyright (c) 2018, 2019, Anton Krotov
+    Copyright (c) 2018-2019, Anton Krotov
     All rights reserved.
 *)
 
@@ -28,8 +28,8 @@ CONST
     (* SectionHeader.Characteristics *)
 
     SHC_text  = 060000020H;
-    SHC_data  = 0C0000040H;
-    SHC_bss   = 0C00000C0H;
+    SHC_data  = 040000040H;
+    SHC_bss   = 0C0000080H;
 
     SectionAlignment = 1000H;
     FileAlignment    =  200H;
@@ -372,7 +372,7 @@ BEGIN
 END WriteFileHeader;
 
 
-PROCEDURE write* (program: BIN.PROGRAM; FileName: ARRAY OF CHAR; BaseAddress: INTEGER; console, dll, amd64: BOOLEAN);
+PROCEDURE write* (program: BIN.PROGRAM; FileName: ARRAY OF CHAR; console, dll, amd64: BOOLEAN);
 VAR
     i, n: INTEGER;
 
@@ -381,6 +381,8 @@ VAR
         Code, Data, Bss, Stack, Import, Reloc, Export: INTEGER
 
     END;
+
+    BaseAddress: INTEGER;
 
     Address: VIRTUAL_ADDR;
 
@@ -504,6 +506,12 @@ BEGIN
     Size.Bss   := program.bss;
     Size.Stack := program.stack;
 
+    IF dll THEN
+        BaseAddress := 10000000H
+    ELSE
+        BaseAddress := 400000H
+    END;
+
     PEHeader.Signature[0] := 50H;
     PEHeader.Signature[1] := 45H;
     PEHeader.Signature[2] := 0;
@@ -556,7 +564,7 @@ BEGIN
 
     InitSection(SectionHeaders[0], ".text", SHC_text);
     SectionHeaders[0].VirtualSize           :=  Size.Code;
-    SectionHeaders[0].VirtualAddress        :=  1000H;
+    SectionHeaders[0].VirtualAddress        :=  SectionAlignment;
     SectionHeaders[0].SizeOfRawData         :=  align(Size.Code, FileAlignment);
     SectionHeaders[0].PointerToRawData      :=  PEHeader.OptionalHeader.SizeOfHeaders;
 

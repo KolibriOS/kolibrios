@@ -1,4 +1,4 @@
-﻿(*
+(*
     BSD 2-Clause License
 
     Copyright (c) 2018, Anton Krotov
@@ -17,6 +17,8 @@ CONST
 
     _new = 1;
     _dispose = 2;
+
+    SizeOfHeader = 36;
 
 
 TYPE
@@ -294,7 +296,7 @@ PROCEDURE init* (_import, code: INTEGER);
 BEGIN
     multi := FALSE;
     eol[0] := 0DX; eol[1] := 0AX; eol[2] := 0X;
-    base := code - 36;
+    base := code - SizeOfHeader;
     K.sysfunc2(68, 11);
     InitializeCriticalSection(CriticalSection);
     K._init;

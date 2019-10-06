@@ -1,7 +1,7 @@
-﻿(*
+(*
     BSD 2-Clause License
 
-    Copyright (c) 2018, 2019, Anton Krotov
+    Copyright (c) 2018-2019, Anton Krotov
     All rights reserved.
 *)
 
@@ -21,7 +21,7 @@ TYPE
 
     TEXT* = POINTER TO RECORD (C.ITEM)
 
-        chunk:        ARRAY CHUNK OF BYTE;
+        chunk:        ARRAY CHUNK OF CHAR;
         pos, size:    INTEGER;
         file:         FILES.FILE;
         utf8:         BOOLEAN;
@@ -47,9 +47,9 @@ BEGIN
         text.pos := 0;
         IF text.size = 0 THEN
             text.eof := TRUE;
-            text.chunk[0] := 0
+            text.chunk[0] := 0X
         END;
-        text.peak := CHR(text.chunk[0])
+        text.peak := text.chunk[0]
     END
 END load;
 
@@ -61,7 +61,7 @@ VAR
 BEGIN
     IF text.pos < text.size - 1 THEN
         INC(text.pos);
-        text.peak := CHR(text.chunk[text.pos])
+        text.peak := text.chunk[text.pos]
     ELSE
         load(text)
     END;
@@ -87,7 +87,7 @@ BEGIN
         ELSE
             text.eol  := FALSE;
             IF text.utf8 THEN
-                IF (c < 80X) OR (c > 0BFX) THEN
+                IF ORD(c) DIV 64 # 2 THEN
                     INC(text.col)
                 END
             ELSE
@@ -104,16 +104,16 @@ END next;
 PROCEDURE init (text: TEXT);
 BEGIN
     IF (text.pos = 0) & (text.size >= 3) THEN
-        IF (text.chunk[0] = 0EFH) &
-           (text.chunk[1] = 0BBH) &
-           (text.chunk[2] = 0BFH) THEN
+        IF (text.chunk[0] = 0EFX) &
+           (text.chunk[1] = 0BBX) &
+           (text.chunk[2] = 0BFX) THEN
             text.pos := 3;
             text.utf8 := TRUE
         END
     END;
 
     IF text.size = 0 THEN
-        text.chunk[0] := 0;
+        text.chunk[0] := 0X;
         text.size := 1;
         text.eof := FALSE
     END;
@@ -121,7 +121,7 @@ BEGIN
     text.line := 1;
     text.col  := 1;
 
-    text.peak := CHR(text.chunk[text.pos])
+    text.peak := text.chunk[text.pos]
 END init;
 
 
@@ -152,7 +152,7 @@ BEGIN
     END;
 
     IF text # NIL THEN
-        text.chunk[0] := 0;
+        text.chunk[0] := 0X;
         text.pos  := 0;
         text.size := 0;
         text.utf8 := FALSE;

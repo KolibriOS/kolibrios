@@ -1,7 +1,7 @@
-﻿(*
+(*
     BSD 2-Clause License
 
-    Copyright (c) 2018, 2019, Anton Krotov
+    Copyright (c) 2018-2019, Anton Krotov
     All rights reserved.
 *)
 
@@ -42,9 +42,9 @@ TYPE
 
         cBytes:         CHAR;
         fFixedDisk:     CHAR;
-        nErrCode:       SYSTEM.CARD16;
-        Reserved1:      SYSTEM.CARD16;
-        Reserved2:      SYSTEM.CARD16;
+        nErrCode:       WCHAR;
+        Reserved1:      WCHAR;
+        Reserved2:      WCHAR;
         szPathName:     ARRAY OFS_MAXPATHNAME OF CHAR
 
     END;
@@ -211,7 +211,7 @@ BEGIN
 END GetArg;
 
 
-PROCEDURE FileRead* (F: INTEGER; VAR Buffer: ARRAY OF BYTE; bytes: INTEGER): INTEGER;
+PROCEDURE FileRead* (F: INTEGER; VAR Buffer: ARRAY OF CHAR; bytes: INTEGER): INTEGER;
 VAR
     res, n: INTEGER;
 

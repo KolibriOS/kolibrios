@@ -1,13 +1,19 @@
-﻿(*
+(*
     BSD 2-Clause License
 
-    Copyright (c) 2018, 2019, Anton Krotov
+    Copyright (c) 2018-2019, Anton Krotov
     All rights reserved.
 *)
 
 MODULE API;
 
 IMPORT SYSTEM;
+
+
+CONST
+
+    SectionAlignment = 1000H;
+
 
 VAR
 
@@ -46,7 +52,7 @@ END _DISPOSE;
 PROCEDURE init* (reserved, code: INTEGER);
 BEGIN
     eol[0] := 0DX; eol[1] := 0AX; eol[2] := 0X;
-    base := code - 4096;
+    base := code - SectionAlignment;
     heap := GetProcessHeap()
 END init;
 

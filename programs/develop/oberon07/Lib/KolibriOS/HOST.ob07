@@ -1,7 +1,7 @@
-﻿(*
+(*
     BSD 2-Clause License
 
-    Copyright (c) 2018, 2019, Anton Krotov
+    Copyright (c) 2018-2019, Anton Krotov
     All rights reserved.
 *)
 
@@ -205,7 +205,7 @@ BEGIN
 END Create;
 
 
-PROCEDURE FileRead* (F: INTEGER; VAR Buffer: ARRAY OF BYTE; bytes: INTEGER): INTEGER;
+PROCEDURE FileRead* (F: INTEGER; VAR Buffer: ARRAY OF CHAR; bytes: INTEGER): INTEGER;
 VAR
     n: INTEGER;
     fs: FS;

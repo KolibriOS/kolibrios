@@ -1,7 +1,7 @@
-﻿(*
+(*
     BSD 2-Clause License
 
-    Copyright (c) 2018, 2019, Anton Krotov
+    Copyright (c) 2018-2019, Anton Krotov
     All rights reserved.
 *)
 
@@ -76,6 +76,8 @@ VAR
     program*: PROG.PROGRAM;
 
     parsers: C.COLLECTION;
+
+    lines*: INTEGER;
 
 
 PROCEDURE destroy* (VAR parser: PARSER);
@@ -1178,9 +1180,9 @@ BEGIN
         ExpectSym(parser, SCAN.lxIDENT);
         check1(parser.lex.s = unit.name.s, parser, 25);
         ExpectSym(parser, SCAN.lxPOINT)
-
     END;
 
+    INC(lines, parser.lex.pos.line);
     PROG.closeUnit(unit)
 END parse;
 
@@ -1248,7 +1250,8 @@ END create;
 PROCEDURE init* (bit_depth, target: INTEGER; options: PROG.OPTIONS);
 BEGIN
     program := PROG.create(bit_depth, target, options);
-    parsers := C.create()
+    parsers := C.create();
+    lines   := 0
 END init;
 
 

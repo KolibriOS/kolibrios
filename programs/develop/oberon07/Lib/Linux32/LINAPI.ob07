@@ -1,4 +1,4 @@
-﻿(*
+(*
     BSD 2-Clause License
 
     Copyright (c) 2019, Anton Krotov
@@ -74,12 +74,18 @@ VAR
     ptr: INTEGER;
 
 BEGIN
-    envc := -1;
-    SYSTEM.GET(API.MainParam, argc);
-    REPEAT
-        SYSTEM.GET(API.MainParam + (envc + argc + 3) * SYSTEM.SIZE(INTEGER), ptr);
-        INC(envc)
-    UNTIL ptr = 0;
+
+    IF API.MainParam # 0 THEN
+        envc := -1;
+        SYSTEM.GET(API.MainParam, argc);
+        REPEAT
+            SYSTEM.GET(API.MainParam + (envc + argc + 3) * SYSTEM.SIZE(INTEGER), ptr);
+            INC(envc)
+        UNTIL ptr = 0
+    ELSE
+        envc := 0;
+        argc := 0
+    END;
 
     libc := API.libc;
 

@@ -1,7 +1,7 @@
-﻿(*
+(*
     BSD 2-Clause License
 
-    Copyright (c) 2018, 2019, Anton Krotov
+    Copyright (c) 2018-2019, Anton Krotov
     All rights reserved.
 *)
 
@@ -206,7 +206,7 @@ BEGIN
     |201: Error1("writing file error")
     |202: Error1("too many relocations")
     |203: Error1("size of program is too large")
-    |204: Error1("size of global variables is too large")
+    |204: Error1("size of variables is too large")
     |205: Error1("not enough parameters")
     |206: Error1("bad parameter <target>")
     |207: Error3('inputfile name extension must be "', mConst.FILE_EXT, '"')

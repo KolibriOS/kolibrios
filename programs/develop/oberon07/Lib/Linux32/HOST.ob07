@@ -1,4 +1,4 @@
-﻿(*
+(*
     BSD 2-Clause License
 
     Copyright (c) 2019, Anton Krotov
@@ -68,22 +68,12 @@ BEGIN
 END GetCurrentDirectory;
 
 
-PROCEDURE ReadFile (F: INTEGER; VAR Buffer: ARRAY OF BYTE; bytes: INTEGER): INTEGER;
-    RETURN API.fread(SYSTEM.ADR(Buffer[0]), 1, bytes, F)
-END ReadFile;
-
-
-PROCEDURE WriteFile (F: INTEGER; Buffer: ARRAY OF BYTE; bytes: INTEGER): INTEGER;
-    RETURN API.fwrite(SYSTEM.ADR(Buffer[0]), 1, bytes, F)
-END WriteFile;
-
-
-PROCEDURE FileRead* (F: INTEGER; VAR Buffer: ARRAY OF BYTE; bytes: INTEGER): INTEGER;
+PROCEDURE FileRead* (F: INTEGER; VAR Buffer: ARRAY OF CHAR; bytes: INTEGER): INTEGER;
 VAR
     res: INTEGER;
 
 BEGIN
-    res := ReadFile(F, Buffer, bytes);
+    res := API.fread(SYSTEM.ADR(Buffer[0]), 1, bytes, F);
     IF res <= 0 THEN
         res := -1
     END
@@ -97,7 +87,7 @@ VAR
     res: INTEGER;
 
 BEGIN
-    res := WriteFile(F, Buffer, bytes);
+    res := API.fwrite(SYSTEM.ADR(Buffer[0]), 1, bytes, F);
     IF res <= 0 THEN
         res := -1
     END

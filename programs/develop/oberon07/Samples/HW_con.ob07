@@ -1,4 +1,4 @@
-﻿MODULE HW_con;
+MODULE HW_con;
 
 IMPORT Out, In, Console, DateTime;
 
@@ -10,14 +10,14 @@ BEGIN
         Out.Char("0")
     END;
     Out.Int(n, 0)
-END OutInt2;        
+END OutInt2;
 
 
 PROCEDURE OutMonth(n: INTEGER);
 VAR
     str: ARRAY 4 OF CHAR;
 
-BEGIN       
+BEGIN
 
     CASE n OF
     | 1: str := "jan"
@@ -32,10 +32,10 @@ BEGIN
     |10: str := "oct"
     |11: str := "nov"
     |12: str := "dec"
-    END;     
+    END;
 
     Out.String(str)
-END OutMonth; 
+END OutMonth;
 
 
 PROCEDURE main;
@@ -52,7 +52,7 @@ BEGIN
     OutInt2(Hour);    Out.Char(":");
     OutInt2(Min);     Out.Char(":");
     OutInt2(Sec)
-END main;         
+END main;
 
 
 BEGIN

@@ -1,4 +1,4 @@
-﻿(*
+(*
     Copyright 2016, 2018 Anton Krotov
 
     This program is free software: you can redistribute it and/or modify
@@ -39,8 +39,8 @@ PROCEDURE Set*(F: File.FS; VAR x: SET): BOOLEAN;
   RETURN File.Read(F, sys.ADR(x), sys.SIZE(SET)) = sys.SIZE(SET)
 END Set;
 
-PROCEDURE Card16*(F: File.FS; VAR x: sys.CARD16): BOOLEAN;
-  RETURN File.Read(F, sys.ADR(x), sys.SIZE(sys.CARD16)) = sys.SIZE(sys.CARD16)
-END Card16;
+PROCEDURE WChar*(F: File.FS; VAR x: WCHAR): BOOLEAN;
+  RETURN File.Read(F, sys.ADR(x), sys.SIZE(WCHAR)) = sys.SIZE(WCHAR)
+END WChar;
 
 END Read.

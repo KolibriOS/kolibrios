@@ -1,7 +1,7 @@
-﻿(*
+(*
     BSD 2-Clause License
 
-    Copyright (c) 2018, 2019, Anton Krotov
+    Copyright (c) 2018-2019, Anton Krotov
     All rights reserved.
 *)
 
@@ -267,17 +267,10 @@ PROCEDURE assigncomp (e: PARS.EXPR; t: PROG.TYPE_): BOOLEAN;
 VAR
     res: BOOLEAN;
 
-
-    PROCEDURE arrcomp (src, dst: PROG.TYPE_): BOOLEAN;
-        RETURN (dst.typ = PROG.tARRAY) & PROG.isOpenArray(src) &
-                ~PROG.isOpenArray(src.base) & ~PROG.isOpenArray(dst.base) &
-                PROG.isTypeEq(src.base, dst.base)
-    END arrcomp;
-
-
 BEGIN
     IF isExpr(e) OR (e.obj IN {ePROC, eIMP}) THEN
-        IF arrcomp(e.type, t) THEN
+
+        IF t = e.type THEN
             res := TRUE
         ELSIF isInt(e) & (t.typ IN {PROG.tBYTE, PROG.tINTEGER}) THEN
             IF (e.obj = eCONST) & (t = tBYTE) THEN
@@ -285,29 +278,16 @@ BEGIN
             ELSE
                 res := TRUE
             END
-        ELSIF isSet(e) & (t = tSET) THEN
-            res := TRUE
-        ELSIF isBoolean(e) & (t = tBOOLEAN) THEN
-            res := TRUE
-        ELSIF isReal(e) & (t = tREAL) THEN
-            res := TRUE
-        ELSIF isChar(e) & (t = tCHAR) THEN
-            res := TRUE
-        ELSIF (e.obj = eCONST) & isChar(e) & (t = tWCHAR) THEN
-            res := TRUE
-        ELSIF isStringW1(e) & (t = tWCHAR) THEN
-            res := TRUE
-        ELSIF isCharW(e) & (t = tWCHAR) THEN
-            res := TRUE
-        ELSIF PROG.isBaseOf(t, e.type) THEN
-            res := TRUE
-        ELSIF ~PROG.isOpenArray(t) & ~PROG.isOpenArray(e.type) & PROG.isTypeEq(t, e.type) THEN
-            res := TRUE
-        ELSIF isNil(e) & (t.typ IN {PROG.tPOINTER, PROG.tPROCEDURE}) THEN
-            res := TRUE
-        ELSIF isString(e) & ((t.typ = PROG.tARRAY) & (t.base = tCHAR) & (t.length > strlen(e))) THEN
-            res := TRUE
-        ELSIF isStringW(e) & ((t.typ = PROG.tARRAY) & (t.base = tWCHAR) & (t.length > utf8strlen(e))) THEN
+        ELSIF
+            (e.obj = eCONST) & isChar(e) & (t = tWCHAR)
+            OR isStringW1(e) & (t = tWCHAR)
+            OR PROG.isBaseOf(t, e.type)
+            OR ~PROG.isOpenArray(t) & ~PROG.isOpenArray(e.type) & PROG.isTypeEq(t, e.type)
+            OR isNil(e) & (t.typ IN {PROG.tPOINTER, PROG.tPROCEDURE})
+            OR PROG.arrcomp(e.type, t)
+            OR isString(e) & (t.typ = PROG.tARRAY) & (t.base = tCHAR) & (t.length > strlen(e))
+            OR isStringW(e) & (t.typ = PROG.tARRAY) & (t.base = tWCHAR) & (t.length > utf8strlen(e))
+        THEN
             res := TRUE
         ELSE
             res := FALSE
@@ -315,6 +295,7 @@ BEGIN
     ELSE
         res := FALSE
     END
+
     RETURN res
 END assigncomp;
 
@@ -384,18 +365,10 @@ VAR
     res:    BOOLEAN;
     label:  INTEGER;
 
-
-    PROCEDURE arrcomp (src, dst: PROG.TYPE_): BOOLEAN;
-        RETURN (dst.typ = PROG.tARRAY) & PROG.isOpenArray(src) &
-                ~PROG.isOpenArray(src.base) & ~PROG.isOpenArray(dst.base) &
-                PROG.isTypeEq(src.base, dst.base)
-    END arrcomp;
-
-
 BEGIN
     IF isExpr(e) OR (e.obj IN {ePROC, eIMP}) THEN
         res := TRUE;
-        IF arrcomp(e.type, VarType) THEN
+        IF PROG.arrcomp(e.type, VarType) THEN
 
             IF ~PROG.isOpenArray(VarType) THEN
                 IL.Const(VarType.length)
@@ -470,8 +443,6 @@ BEGIN
             END
         ELSIF (e.type.typ = PROG.tCARD32) & (VarType.typ = PROG.tCARD32) THEN
             IL.AddCmd0(IL.opSAVE32)
-        ELSIF (e.type.typ = PROG.tCARD16) & (VarType.typ = PROG.tCARD16) THEN
-            IL.AddCmd0(IL.opSAVE16)
         ELSIF ~PROG.isOpenArray(VarType) & ~PROG.isOpenArray(e.type) & PROG.isTypeEq(VarType, e.type) THEN
             IF e.obj = ePROC THEN
                 IL.AssignProc(e.ident.proc.label)
@@ -642,7 +613,7 @@ BEGIN
                         stroffs := StringW(e);
                         IL.StrAdr(stroffs)
                     END;
-                    IL.codes.dmin := stroffs + p.type.size;
+                    IL.set_dmin(stroffs + p.type.size);
                     IL.Param1
                 ELSE
                     LoadConst(e);
@@ -934,7 +905,7 @@ BEGIN
                 END
 
             ELSIF (proc = PROG.sysPUT8) OR (proc = PROG.sysPUT16) OR (proc = PROG.sysPUT32) THEN
-                PARS.check(e2.type.typ IN {PROG.tINTEGER, PROG.tBYTE, PROG.tCHAR, PROG.tSET, PROG.tWCHAR, PROG.tCARD16, PROG.tCARD32}, pos, 66);
+                PARS.check(e2.type.typ IN {PROG.tINTEGER, PROG.tBYTE, PROG.tCHAR, PROG.tSET, PROG.tWCHAR, PROG.tCARD32}, pos, 66);
                 IF e2.obj = eCONST THEN
                     LoadConst(e2)
                 END;
@@ -1142,7 +1113,7 @@ BEGIN
             IF e.obj = eCONST THEN
                 ARITH.odd(e.value)
             ELSE
-                IL.odd
+                IL.AddCmd0(IL.opODD)
             END
 
         |PROG.stORD:
@@ -1156,7 +1127,7 @@ BEGIN
                 END
             ELSE
                 IF isBoolean(e) THEN
-                    IL.ord
+                    IL.AddCmd0(IL.opORD)
                 END
             END;
             e.type := tINTEGER
@@ -3257,10 +3228,10 @@ VAR
         id := PROG.getIdent(rtl, SCAN.enterid(name), FALSE);
 
         IF (id # NIL) & (id.import # NIL) THEN
-            IL.codes.rtl[idx] := -id.import(IL.IMPORT_PROC).label;
+            IL.set_rtl(idx, -id.import(IL.IMPORT_PROC).label);
             id.proc.used := TRUE
         ELSIF (id # NIL) & (id.proc # NIL) THEN
-            IL.codes.rtl[idx] := id.proc.label;
+            IL.set_rtl(idx, id.proc.label);
             id.proc.used := TRUE
         ELSE
             ERRORS.WrongRTL(name)
@@ -3276,7 +3247,6 @@ BEGIN
         getproc(rtl,  "_strcmp",    IL._strcmp);
         getproc(rtl,  "_length",    IL._length);
         getproc(rtl,  "_arrcpy",    IL._arrcpy);
-        getproc(rtl,  "_move",      IL._move);
         getproc(rtl,  "_is",        IL._is);
         getproc(rtl,  "_guard",     IL._guard);
         getproc(rtl,  "_guardrec",  IL._guardrec);
@@ -3284,13 +3254,10 @@ BEGIN
         getproc(rtl,  "_new",       IL._new);
         getproc(rtl,  "_rot",       IL._rot);
         getproc(rtl,  "_strcpy",    IL._strcpy);
-        getproc(rtl,  "_move2",     IL._move2);
-        getproc(rtl,  "_div2",      IL._div2);
-        getproc(rtl,  "_mod2",      IL._mod2);
-        getproc(rtl,  "_div",       IL._div);
-        getproc(rtl,  "_mod",       IL._mod);
+        getproc(rtl,  "_move",      IL._move);
+        getproc(rtl,  "_divmod",    IL._divmod);
         getproc(rtl,  "_set",       IL._set);
-        getproc(rtl,  "_set2",      IL._set2);
+        getproc(rtl,  "_set1",      IL._set1);
         getproc(rtl,  "_isrec",     IL._isrec);
         getproc(rtl,  "_lengthw",   IL._lengthw);
         getproc(rtl,  "_strcmpw",   IL._strcmpw);
@@ -3339,9 +3306,9 @@ BEGIN
     LISTS.push(CaseVariants, NewVariant(0, NIL));
 
     CASE CPU OF
-    |cpuAMD64:   IL.init(6, IL.little_endian)
-    |cpuX86:     IL.init(8, IL.little_endian)
-    |cpuMSP430:  IL.init(0, IL.little_endian)
+    |cpuAMD64:  IL.init(6, IL.little_endian)
+    |cpuX86:    IL.init(8, IL.little_endian)
+    |cpuMSP430: IL.init(0, IL.little_endian)
     END;
 
     IF CPU # cpuMSP430 THEN
@@ -3382,12 +3349,12 @@ BEGIN
 
     PROG.DelUnused(PARS.program, IL.DelImport);
 
-    IL.codes.bss := PARS.program.bss;
+    IL.set_bss(PARS.program.bss);
 
     CASE CPU OF
-    | cpuAMD64:   AMD64.CodeGen(IL.codes, outname, target, options)
-    |   cpuX86:     X86.CodeGen(IL.codes, outname, target, options)
-    |cpuMSP430:  MSP430.CodeGen(IL.codes, outname, target, options)
+    | cpuAMD64:  AMD64.CodeGen(outname, target, options)
+    |   cpuX86:    X86.CodeGen(outname, target, options)
+    |cpuMSP430: MSP430.CodeGen(outname, target, options)
     END
 
 END compile;

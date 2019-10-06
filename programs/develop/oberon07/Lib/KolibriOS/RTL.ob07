@@ -1,7 +1,7 @@
-﻿(*
+(*
     BSD 2-Clause License
 
-    Copyright (c) 2018, 2019, Anton Krotov
+    Copyright (c) 2018-2019, Anton Krotov
     All rights reserved.
 *)
 
@@ -16,13 +16,13 @@ CONST
     maxint* = 7FFFFFFFH;
     minint* = 80000000H;
 
-    DLL_PROCESS_ATTACH  = 1;
-    DLL_THREAD_ATTACH   = 2;
-    DLL_THREAD_DETACH   = 3;
-    DLL_PROCESS_DETACH  = 0;
+    DLL_PROCESS_ATTACH = 1;
+    DLL_THREAD_ATTACH  = 2;
+    DLL_THREAD_DETACH  = 3;
+    DLL_PROCESS_DETACH = 0;
 
-    SIZE_OF_DWORD = 4;
-    MAX_SET = 31;
+    WORD = bit_depth DIV 8;
+    MAX_SET = bit_depth - 1;
 
 
 TYPE
@@ -35,6 +35,7 @@ VAR
 
     name:  INTEGER;
     types: INTEGER;
+    bits:  ARRAY MAX_SET + 1 OF INTEGER;
 
     dll: RECORD
         process_detach,
@@ -45,35 +46,9 @@ VAR
     fini: PROC;
 
 
-PROCEDURE [stdcall] _move* (bytes, source, dest: INTEGER);
+PROCEDURE [stdcall] _move* (bytes, dest, source: INTEGER);
 BEGIN
     SYSTEM.CODE(
-
-    08BH, 045H, 008H,    (*  mov eax, dword [ebp + 8]   *)
-    085H, 0C0H,          (*  test eax, eax              *)
-    07EH, 019H,          (*  jle L                      *)
-    0FCH,                (*  cld                        *)
-    057H,                (*  push edi                   *)
-    056H,                (*  push esi                   *)
-    08BH, 075H, 00CH,    (*  mov esi, dword [ebp + 12]  *)
-    08BH, 07DH, 010H,    (*  mov edi, dword [ebp + 16]  *)
-    089H, 0C1H,          (*  mov ecx, eax               *)
-    0C1H, 0E9H, 002H,    (*  shr ecx, 2                 *)
-    0F3H, 0A5H,          (*  rep movsd                  *)
-    089H, 0C1H,          (*  mov ecx, eax               *)
-    083H, 0E1H, 003H,    (*  and ecx, 3                 *)
-    0F3H, 0A4H,          (*  rep movsb                  *)
-    05EH,                (*  pop esi                    *)
-    05FH                 (*  pop edi                    *)
-                         (*  L:                         *)
-                )
-END _move;
-
-
-PROCEDURE [stdcall] _move2* (bytes, dest, source: INTEGER);
-BEGIN
-    SYSTEM.CODE(
-
     08BH, 045H, 008H,    (*  mov eax, dword [ebp + 8]   *)
     085H, 0C0H,          (*  test eax, eax              *)
     07EH, 019H,          (*  jle L                      *)
@@ -92,7 +67,7 @@ BEGIN
     05FH                 (*  pop edi                    *)
                          (*  L:                         *)
                 )
-END _move2;
+END _move;
 
 
 PROCEDURE [stdcall] _arrcpy* (base_size, len_dst, dst, len_src, src: INTEGER): BOOLEAN;
@@ -103,7 +78,7 @@ BEGIN
     IF len_src > len_dst THEN
         res := FALSE
     ELSE
-        _move(len_src * base_size, src, dst);
+        _move(len_src * base_size, dst, src);
         res := TRUE
     END
 
@@ -113,7 +88,7 @@ END _arrcpy;
 
 PROCEDURE [stdcall] _strcpy* (chr_size, len_src, src, len_dst, dst: INTEGER);
 BEGIN
-    _move(MIN(len_dst, len_src) * chr_size, src, dst)
+    _move(MIN(len_dst, len_src) * chr_size, dst, src)
 END _strcpy;
 
 
@@ -144,7 +119,7 @@ BEGIN
         IF a < 0 THEN
             a := 0
         END;
-        a := LSR(ASR(ROR(1, 1), b - a), MAX_SET - b)
+        a := LSR(ASR(minint, b - a), MAX_SET - b)
     ELSE
         a := 0
     END
@@ -153,69 +128,42 @@ BEGIN
 END _set;
 
 
-PROCEDURE [stdcall] _set2* (a, b: INTEGER): INTEGER;
-    RETURN _set(b, a)
-END _set2;
+PROCEDURE [stdcall] _set1* (a: INTEGER): INTEGER;
+BEGIN
+    IF ASR(a, 5) = 0 THEN
+        SYSTEM.GET(SYSTEM.ADR(bits[0]) + a * WORD, a)
+    ELSE
+        a := 0
+    END
+    RETURN a
+END _set1;
 
 
-PROCEDURE [stdcall] divmod (a, b: INTEGER; VAR mod: INTEGER): INTEGER;
+PROCEDURE [stdcall] _divmod* (y, x: INTEGER); (* (x div y) -> eax; (x mod y) -> edx *)
 BEGIN
     SYSTEM.CODE(
-
-    08BH, 045H, 008H,    (*  mov     eax, dword [ebp +  8]  *)
-    08BH, 04DH, 00CH,    (*  mov     ecx, dword [ebp + 12]  *)
+    053H,                (*  push    ebx                    *)
+    08BH, 045H, 00CH,    (*  mov     eax, dword [ebp + 12]  *)  (* eax <- x *)
     031H, 0D2H,          (*  xor     edx, edx               *)
     085H, 0C0H,          (*  test    eax, eax               *)
-    07DH, 002H,          (*  jge     L1                     *)
+    074H, 018H,          (*  je      L2                     *)
+    07FH, 002H,          (*  jg      L1                     *)
     0F7H, 0D2H,          (*  not     edx                    *)
                          (*  L1:                            *)
+    089H, 0C3H,          (*  mov     ebx, eax               *)
+    08BH, 04DH, 008H,    (*  mov     ecx, dword [ebp + 8]   *)  (* ecx <- y *)
     0F7H, 0F9H,          (*  idiv    ecx                    *)
-    08BH, 04DH, 010H,    (*  mov     ecx, dword [ebp + 16]  *)
-    089H, 011H,          (*  mov     dword [ecx], edx       *)
-    0C9H,                (*  leave                          *)
-    0C2H, 00CH, 000H     (*  ret     12                     *)
+    085H, 0D2H,          (*  test    edx, edx               *)
+    074H, 009H,          (*  je      L2                     *)
+    031H, 0CBH,          (*  xor     ebx, ecx               *)
+    085H, 0DBH,          (*  test    ebx, ebx               *)
+    07DH, 003H,          (*  jge     L2                     *)
+    048H,                (*  dec     eax                    *)
+    001H, 0CAH,          (*  add     edx, ecx               *)
+                         (*  L2:                            *)
+    05BH                 (*  pop     ebx                    *)
                )
-
-    RETURN 0
-END divmod;
-
-
-PROCEDURE [stdcall] _div2* (x, y: INTEGER): INTEGER;
-VAR
-    div, mod: INTEGER;
-
-BEGIN
-    div := divmod(x, y, mod);
-    IF (mod # 0) & ((x < 0) & (y > 0) OR (x > 0) & (y < 0)) THEN
-        DEC(div)
-    END
-
-    RETURN div
-END _div2;
-
-
-PROCEDURE [stdcall] _mod2* (x, y: INTEGER): INTEGER;
-VAR
-    div, mod: INTEGER;
-
-BEGIN
-    div := divmod(x, y, mod);
-    IF (mod # 0) & ((x < 0) & (y > 0) OR (x > 0) & (y < 0)) THEN
-        INC(mod, y)
-    END
-
-    RETURN mod
-END _mod2;
-
-
-PROCEDURE [stdcall] _div* (b, a: INTEGER): INTEGER;
-    RETURN _div2(a, b)
-END _div;
-
-
-PROCEDURE [stdcall] _mod* (b, a: INTEGER): INTEGER;
-    RETURN _mod2(a, b)
-END _mod;
+END _divmod;
 
 
 PROCEDURE [stdcall] _new* (t, size: INTEGER; VAR ptr: INTEGER);
@@ -223,7 +171,7 @@ BEGIN
     ptr := API._NEW(size);
     IF ptr # 0 THEN
         SYSTEM.PUT(ptr, t);
-        INC(ptr, SIZE_OF_DWORD)
+        INC(ptr, WORD)
     END
 END _new;
 
@@ -231,15 +179,14 @@ END _new;
 PROCEDURE [stdcall] _dispose* (VAR ptr: INTEGER);
 BEGIN
     IF ptr # 0 THEN
-        ptr := API._DISPOSE(ptr - SIZE_OF_DWORD)
+        ptr := API._DISPOSE(ptr - WORD)
     END
 END _dispose;
 
 
-PROCEDURE [stdcall] _length* (len, str: INTEGER): INTEGER;
+PROCEDURE [stdcall] _length* (len, str: INTEGER);
 BEGIN
     SYSTEM.CODE(
-
     08BH, 045H, 00CH,    (*  mov     eax, dword [ebp + 0Ch]  *)
     08BH, 04DH, 008H,    (*  mov     ecx, dword [ebp + 08h]  *)
     048H,                (*  dec     eax                     *)
@@ -250,19 +197,14 @@ BEGIN
     0E2H, 0F8H,          (*  loop    L1                      *)
     040H,                (*  inc     eax                     *)
                          (*  L2:                             *)
-    02BH, 045H, 00CH,    (*  sub     eax, dword [ebp + 0Ch]  *)
-    0C9H,                (*  leave                           *)
-    0C2H, 008H, 000H     (*  ret     08h                     *)
+    02BH, 045H, 00CH     (*  sub     eax, dword [ebp + 0Ch]  *)
                )
-
-    RETURN 0
 END _length;
 
 
-PROCEDURE [stdcall] _lengthw* (len, str: INTEGER): INTEGER;
+PROCEDURE [stdcall] _lengthw* (len, str: INTEGER);
 BEGIN
     SYSTEM.CODE(
-
     08BH, 045H, 00CH,         (*  mov     eax, dword [ebp + 0Ch]  *)
     08BH, 04DH, 008H,         (*  mov     ecx, dword [ebp + 08h]  *)
     048H,                     (*  dec     eax                     *)
@@ -277,58 +219,92 @@ BEGIN
     040H,                     (*  inc     eax                     *)
                               (*  L2:                             *)
     02BH, 045H, 00CH,         (*  sub     eax, dword [ebp + 0Ch]  *)
-    0D1H, 0E8H,               (*  shr     eax, 1                  *)
-    0C9H,                     (*  leave                           *)
-    0C2H, 008H, 000H          (*  ret     08h                     *)
+    0D1H, 0E8H                (*  shr     eax, 1                  *)
                )
-
-    RETURN 0
 END _lengthw;
 
 
-PROCEDURE strncmp (a, b, n: INTEGER): INTEGER;
-VAR
-    A, B: CHAR;
-    res: INTEGER;
-
+PROCEDURE [stdcall] strncmp (a, b, n: INTEGER): INTEGER;
 BEGIN
-    res := minint;
-    WHILE n > 0 DO
-        SYSTEM.GET(a, A); INC(a);
-        SYSTEM.GET(b, B); INC(b);
-        DEC(n);
-        IF A # B THEN
-            res := ORD(A) - ORD(B);
-            n := 0
-        ELSIF A = 0X THEN
-            res := 0;
-            n := 0
-        END
-    END
-    RETURN res
+    SYSTEM.CODE(
+    056H,                    (*  push    esi                            *)
+    057H,                    (*  push    edi                            *)
+    053H,                    (*  push    ebx                            *)
+    08BH, 075H, 008H,        (*  mov     esi, dword[ebp +  8]; esi <- a *)
+    08BH, 07DH, 00CH,        (*  mov     edi, dword[ebp + 12]; edi <- b *)
+    08BH, 05DH, 010H,        (*  mov     ebx, dword[ebp + 16]; ebx <- n *)
+    031H, 0C9H,              (*  xor     ecx, ecx                       *)
+    031H, 0D2H,              (*  xor     edx, edx                       *)
+    0B8H,
+    000H, 000H, 000H, 080H,  (*  mov     eax, minint                    *)
+                             (*  L1:                                    *)
+    085H, 0DBH,              (*  test    ebx, ebx                       *)
+    07EH, 017H,              (*  jle     L3                             *)
+    08AH, 00EH,              (*  mov     cl, byte[esi]                  *)
+    08AH, 017H,              (*  mov     dl, byte[edi]                  *)
+    046H,                    (*  inc     esi                            *)
+    047H,                    (*  inc     edi                            *)
+    04BH,                    (*  dec     ebx                            *)
+    039H, 0D1H,              (*  cmp     ecx, edx                       *)
+    074H, 006H,              (*  je      L2                             *)
+    089H, 0C8H,              (*  mov     eax, ecx                       *)
+    029H, 0D0H,              (*  sub     eax, edx                       *)
+    0EBH, 006H,              (*  jmp     L3                             *)
+                             (*  L2:                                    *)
+    085H, 0C9H,              (*  test    ecx, ecx                       *)
+    075H, 0E7H,              (*  jne     L1                             *)
+    031H, 0C0H,              (*  xor     eax, eax                       *)
+                             (*  L3:                                    *)
+    05BH,                    (*  pop     ebx                            *)
+    05FH,                    (*  pop     edi                            *)
+    05EH,                    (*  pop     esi                            *)
+    05DH,                    (*  pop     ebp                            *)
+    0C2H, 00CH, 000H         (*  ret     12                             *)
+    )
+    RETURN 0
 END strncmp;
 
 
-PROCEDURE strncmpw (a, b, n: INTEGER): INTEGER;
-VAR
-    A, B: WCHAR;
-    res: INTEGER;
-
+PROCEDURE [stdcall] strncmpw (a, b, n: INTEGER): INTEGER;
 BEGIN
-    res := minint;
-    WHILE n > 0 DO
-        SYSTEM.GET(a, A); INC(a, 2);
-        SYSTEM.GET(b, B); INC(b, 2);
-        DEC(n);
-        IF A # B THEN
-            res := ORD(A) - ORD(B);
-            n := 0
-        ELSIF A = 0X THEN
-            res := 0;
-            n := 0
-        END
-    END
-    RETURN res
+    SYSTEM.CODE(
+    056H,                    (*  push    esi                            *)
+    057H,                    (*  push    edi                            *)
+    053H,                    (*  push    ebx                            *)
+    08BH, 075H, 008H,        (*  mov     esi, dword[ebp +  8]; esi <- a *)
+    08BH, 07DH, 00CH,        (*  mov     edi, dword[ebp + 12]; edi <- b *)
+    08BH, 05DH, 010H,        (*  mov     ebx, dword[ebp + 16]; ebx <- n *)
+    031H, 0C9H,              (*  xor     ecx, ecx                       *)
+    031H, 0D2H,              (*  xor     edx, edx                       *)
+    0B8H,
+    000H, 000H, 000H, 080H,  (*  mov     eax, minint                    *)
+                             (*  L1:                                    *)
+    085H, 0DBH,              (*  test    ebx, ebx                       *)
+    07EH, 01BH,              (*  jle     L3                             *)
+    066H, 08BH, 00EH,        (*  mov     cx, word[esi]                  *)
+    066H, 08BH, 017H,        (*  mov     dx, word[edi]                  *)
+    046H,                    (*  inc     esi                            *)
+    046H,                    (*  inc     esi                            *)
+    047H,                    (*  inc     edi                            *)
+    047H,                    (*  inc     edi                            *)
+    04BH,                    (*  dec     ebx                            *)
+    039H, 0D1H,              (*  cmp     ecx, edx                       *)
+    074H, 006H,              (*  je      L2                             *)
+    089H, 0C8H,              (*  mov     eax, ecx                       *)
+    029H, 0D0H,              (*  sub     eax, edx                       *)
+    0EBH, 006H,              (*  jmp     L3                             *)
+                             (*  L2:                                    *)
+    085H, 0C9H,              (*  test    ecx, ecx                       *)
+    075H, 0E3H,              (*  jne     L1                             *)
+    031H, 0C0H,              (*  xor     eax, eax                       *)
+                             (*  L3:                                    *)
+    05BH,                    (*  pop     ebx                            *)
+    05FH,                    (*  pop     edi                            *)
+    05EH,                    (*  pop     esi                            *)
+    05DH,                    (*  pop     ebp                            *)
+    0C2H, 00CH, 000H         (*  ret     12                             *)
+    )
+    RETURN 0
 END strncmpw;
 
 
@@ -507,7 +483,7 @@ END _isrec;
 PROCEDURE [stdcall] _is* (t0, p: INTEGER): INTEGER;
 BEGIN
     IF p # 0 THEN
-        SYSTEM.GET(p - SIZE_OF_DWORD, p);
+        SYSTEM.GET(p - WORD, p);
         SYSTEM.GET(t0 + p + types, p)
     END
 
@@ -526,7 +502,7 @@ PROCEDURE [stdcall] _guard* (t0, p: INTEGER): INTEGER;
 BEGIN
     SYSTEM.GET(p, p);
     IF p # 0 THEN
-        SYSTEM.GET(p - SIZE_OF_DWORD, p);
+        SYSTEM.GET(p - WORD, p);
         SYSTEM.GET(t0 + p + types, p)
     ELSE
         p := 1
@@ -567,14 +543,6 @@ BEGIN
 END _dllentry;
 
 
-PROCEDURE SetDll* (process_detach, thread_detach, thread_attach: DLL_ENTRY);
-BEGIN
-    dll.process_detach := process_detach;
-    dll.thread_detach  := thread_detach;
-    dll.thread_attach  := thread_attach
-END SetDll;
-
-
 PROCEDURE [stdcall] _exit* (code: INTEGER);
 BEGIN
     API.exit(code)
@@ -596,14 +564,20 @@ BEGIN
             t0 := i; t1 := j;
 
             WHILE (t1 # 0) & (t1 # t0) DO
-                SYSTEM.GET(_types + t1 * SIZE_OF_DWORD, t1)
+                SYSTEM.GET(_types + t1 * WORD, t1)
             END;
 
             SYSTEM.PUT8(i * tcount + j + types, ORD(t0 = t1))
         END
     END;
 
-    name  := modname;
+    j := 1;
+    FOR i := 0 TO MAX_SET DO
+        bits[i] := j;
+        j := LSL(j, 1)
+    END;
+
+    name := modname;
 
     dll.process_detach := NIL;
     dll.thread_detach  := NIL;
@@ -619,6 +593,14 @@ BEGIN
         fini
     END
 END _sofinit;
+
+
+PROCEDURE SetDll* (process_detach, thread_detach, thread_attach: DLL_ENTRY);
+BEGIN
+    dll.process_detach := process_detach;
+    dll.thread_detach  := thread_detach;
+    dll.thread_attach  := thread_attach
+END SetDll;
 
 
 PROCEDURE SetFini* (ProcFini: PROC);

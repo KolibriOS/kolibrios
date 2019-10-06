@@ -1,7 +1,7 @@
-﻿(*
+(*
     BSD 2-Clause License
 
-    Copyright (c) 2018, 2019, Anton Krotov
+    Copyright (c) 2018-2019, Anton Krotov
     All rights reserved.
 *)
 
@@ -134,7 +134,7 @@ BEGIN
 END close;
 
 
-PROCEDURE read* (file: FILE; VAR chunk: ARRAY OF BYTE; bytes: INTEGER): INTEGER;
+PROCEDURE read* (file: FILE; VAR chunk: ARRAY OF CHAR; bytes: INTEGER): INTEGER;
 VAR
     res: INTEGER;
 

@@ -1,7 +1,7 @@
-﻿(*
+(*
     BSD 2-Clause License
 
-    Copyright (c) 2018, 2019, Anton Krotov
+    Copyright (c) 2018-2019, Anton Krotov
     All rights reserved.
 *)
 
@@ -573,7 +573,7 @@ BEGIN
 END GetRegA;
 
 
-PROCEDURE translate (code: IL.CODES; pic: BOOLEAN; stroffs: INTEGER);
+PROCEDURE translate (pic: BOOLEAN; stroffs: INTEGER);
 VAR
     cmd: COMMAND;
 
@@ -586,7 +586,7 @@ VAR
     float: REAL;
 
 BEGIN
-    cmd := code.commands.first(COMMAND);
+    cmd := IL.codes.commands.first(COMMAND);
 
     WHILE cmd # NIL DO
 
@@ -1186,27 +1186,29 @@ BEGIN
 
             |8:
                 PushAll(0);
-                push(reg2);
                 push(reg1);
+                push(reg2);
                 pushc(8);
                 CallRTL(pic, IL._move)
 
             END
 
         |IL.opSAVES:
-            UnOp(reg1);
-            drop;
-            PushAll(0);
-            push(reg1);
+            UnOp(reg2);
+            REG.PushAll_1(R);
 
             IF pic THEN
+                reg1 := GetAnyReg();
                 Pic(reg1, BIN.PICDATA, stroffs + param2);
-                push(reg1)
+                push(reg1);
+                drop
             ELSE
                 OutByte(068H);  // push _data + stroffs + param2
                 Reloc(BIN.RDATA, stroffs + param2);
             END;
 
+            push(reg2);
+            drop;
             pushc(param1);
             CallRTL(pic, IL._move)
 
@@ -1458,16 +1460,17 @@ BEGIN
             GetRegA
 
         |IL.opRSETL:
-            PushAll(1);
+            UnOp(reg1);
+            REG.PushAll_1(R);
             pushc(param2);
-            CallRTL(pic, IL._set2);
+            push(reg1);
+            drop;
+            CallRTL(pic, IL._set);
             GetRegA
 
         |IL.opRSET1:
-            UnOp(reg1);
             PushAll(1);
-            push(reg1);
-            CallRTL(pic, IL._set);
+            CallRTL(pic, IL._set1);
             GetRegA
 
         |IL.opINCL, IL.opEXCL:
@@ -1497,7 +1500,7 @@ BEGIN
 
         |IL.opDIV:
             PushAll(2);
-            CallRTL(pic, IL._div);
+            CallRTL(pic, IL._divmod);
             GetRegA
 
         |IL.opDIVR:
@@ -1540,20 +1543,24 @@ BEGIN
                 ELSE
                     PushAll(1);
                     pushc(param2);
-                    CallRTL(pic, IL._div);
+                    CallRTL(pic, IL._divmod);
                     GetRegA
                 END
             END
 
         |IL.opDIVL:
-            PushAll(1);
+            UnOp(reg1);
+            REG.PushAll_1(R);
             pushc(param2);
-            CallRTL(pic, IL._div2);
+            push(reg1);
+            drop;
+            CallRTL(pic, IL._divmod);
             GetRegA
 
         |IL.opMOD:
             PushAll(2);
-            CallRTL(pic, IL._mod);
+            CallRTL(pic, IL._divmod);
+            mov(eax, edx);
             GetRegA
 
         |IL.opMODR:
@@ -1589,15 +1596,20 @@ BEGIN
                 ELSE
                     PushAll(1);
                     pushc(param2);
-                    CallRTL(pic, IL._mod);
+                    CallRTL(pic, IL._divmod);
+                    mov(eax, edx);
                     GetRegA
                 END
             END
 
         |IL.opMODL:
-            PushAll(1);
+            UnOp(reg1);
+            REG.PushAll_1(R);
             pushc(param2);
-            CallRTL(pic, IL._mod2);
+            push(reg1);
+            drop;
+            CallRTL(pic, IL._divmod);
+            mov(eax, edx);
             GetRegA
 
         |IL.opERR:
@@ -1613,11 +1625,11 @@ BEGIN
         |IL.opCOPY:
             PushAll(2);
             pushc(param2);
-            CallRTL(pic, IL._move2)
+            CallRTL(pic, IL._move)
 
         |IL.opMOVE:
             PushAll(3);
-            CallRTL(pic, IL._move2)
+            CallRTL(pic, IL._move)
 
         |IL.opCOPYA:
             PushAll(4);
@@ -2075,9 +2087,9 @@ BEGIN
 END translate;
 
 
-PROCEDURE prolog (code: IL.CODES; pic: BOOLEAN; target, stack, dllinit, dllret: INTEGER);
+PROCEDURE prolog (pic: BOOLEAN; target, stack, dllinit, dllret: INTEGER);
 VAR
-    reg1, entry, dcount: INTEGER;
+    reg1, entry, L, dcount: INTEGER;
 
 BEGIN
 
@@ -2131,7 +2143,7 @@ BEGIN
         Reloc(BIN.RDATA, 0)
     END;
 
-    dcount := CHL.Length(code.data);
+    dcount := CHL.Length(IL.codes.data);
 
     pushc(tcount);
 
@@ -2145,11 +2157,26 @@ BEGIN
         Reloc(BIN.RDATA, tcount * 4 + dcount)
     END;
 
-    CallRTL(pic, IL._init)
+    CallRTL(pic, IL._init);
+
+    IF target = mConst.Target_iELF32 THEN
+        L := NewLabel();
+        pushc(0);
+        push(esp);
+        pushc(1024 * 1024 * stack);
+        pushc(0);
+        CallRTL(pic, IL._new);
+        pop(eax);
+        test(eax);
+        jcc(je, L);
+        addrc(eax, 1024 * 1024 * stack - 4);
+        mov(esp, eax);
+        SetLabel(L)
+    END
 END prolog;
 
 
-PROCEDURE epilog (code: IL.CODES; pic: BOOLEAN; modname: ARRAY OF CHAR; target, stack, ver, dllinit, dllret, sofinit: INTEGER);
+PROCEDURE epilog (pic: BOOLEAN; modname: ARRAY OF CHAR; target, stack, ver, dllinit, dllret, sofinit: INTEGER);
 VAR
     exp:  IL.EXPORT_PROC;
     path, name, ext: PATHS.PATH;
@@ -2200,14 +2227,14 @@ BEGIN
 
     fixup;
 
-    dcount := CHL.Length(code.data);
+    dcount := CHL.Length(IL.codes.data);
 
     FOR i := 0 TO tcount - 1 DO
-        BIN.PutData32LE(program, CHL.GetInt(code.types, i))
+        BIN.PutData32LE(program, CHL.GetInt(IL.codes.types, i))
     END;
 
     FOR i := 0 TO dcount - 1 DO
-        BIN.PutData(program, CHL.GetByte(code.data, i))
+        BIN.PutData(program, CHL.GetByte(IL.codes.data, i))
     END;
 
     program.modname := CHL.Length(program.data);
@@ -2221,33 +2248,33 @@ BEGIN
         BIN.Export(program, "lib_init", dllinit);
     END;
 
-    exp := code.export.first(IL.EXPORT_PROC);
+    exp := IL.codes.export.first(IL.EXPORT_PROC);
     WHILE exp # NIL DO
         BIN.Export(program, exp.name, exp.label);
         exp := exp.next(IL.EXPORT_PROC)
     END;
 
-    import(code.import);
+    import(IL.codes.import);
 
-    code.bss := MAX(code.bss, MAX(code.dmin - CHL.Length(code.data), 4));
+    IL.set_bss(MAX(IL.codes.bss, MAX(IL.codes.dmin - CHL.Length(IL.codes.data), 4)));
 
-    BIN.SetParams(program, code.bss, stack * (1024 * 1024), WCHR(ver DIV 65536), WCHR(ver MOD 65536));
+    BIN.SetParams(program, IL.codes.bss, stack * (1024 * 1024), WCHR(ver DIV 65536), WCHR(ver MOD 65536));
 
 END epilog;
 
 
-PROCEDURE CodeGen* (code: IL.CODES; outname: ARRAY OF CHAR; target: INTEGER; options: PROG.OPTIONS);
+PROCEDURE CodeGen* (outname: ARRAY OF CHAR; target: INTEGER; options: PROG.OPTIONS);
 VAR
     dllret, dllinit, sofinit: INTEGER;
     opt: PROG.OPTIONS;
 
 BEGIN
-    tcount := CHL.Length(code.types);
+    tcount := CHL.Length(IL.codes.types);
 
     opt := options;
     CodeList := LISTS.create(NIL);
 
-    program := BIN.create(code.lcount);
+    program := BIN.create(IL.codes.lcount);
 
     dllinit := NewLabel();
     dllret  := NewLabel();
@@ -2263,14 +2290,14 @@ BEGIN
 
     REG.Init(R, push, pop, mov, xchg, NIL, NIL, {eax, ecx, edx}, {});
 
-    prolog(code, opt.pic, target, opt.stack, dllinit, dllret);
-    translate(code, opt.pic, tcount * 4);
-    epilog(code, opt.pic, outname, target, opt.stack, opt.version, dllinit, dllret, sofinit);
+    prolog(opt.pic, target, opt.stack, dllinit, dllret);
+    translate(opt.pic, tcount * 4);
+    epilog(opt.pic, outname, target, opt.stack, opt.version, dllinit, dllret, sofinit);
 
     BIN.fixup(program);
 
     IF target IN {mConst.Target_iConsole, mConst.Target_iGUI, mConst.Target_iDLL} THEN
-        PE32.write(program, outname, opt.base, target = mConst.Target_iConsole, target = mConst.Target_iDLL, FALSE)
+        PE32.write(program, outname, target = mConst.Target_iConsole, target = mConst.Target_iDLL, FALSE)
     ELSIF target = mConst.Target_iKolibri THEN
         KOS.write(program, outname)
     ELSIF target = mConst.Target_iObject THEN

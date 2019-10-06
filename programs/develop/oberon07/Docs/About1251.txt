@@ -9,8 +9,7 @@ UTF-8 с BOM-сигнатурой.
   Выход - испоняемый файл формата PE32, ELF или MENUET01/MSCOFF.
   Параметры:
   1) имя главного модуля
-  2) имя результирующего файла
-  3) тип приложения и платформа
+  2) тип приложения
       "console" - Windows console
       "gui" - Windows GUI
       "dll" - Windows DLL
@@ -18,11 +17,14 @@ UTF-8 с BOM-сигнатурой.
       "obj" - KolibriOS DLL
       "elfexe" - Linux ELF-EXEC
       "elfso"  - Linux ELF-SO
-  4) необязательные параметры-ключи
-      -stk <size> размер стэка в мегабайтах (по умолчанию 2 Мб)
-      -base <address> адрес загрузки исполняемого файла в килобайтах
-      -ver <major.minor> версия программы (только для obj)
+  3) необязательные параметры-ключи
+      -out <file_name> имя результирующего файла; по умолчанию,
+      совпадает с именем главного модуля, но с другим расширением
+      (соответствует типу исполняемого файла)
+      -stk <size> размер стэка в мегабайтах (по умолчанию 2 Мб,
+       допустимо от 1 до 32 Мб)
       -nochk <"ptibcwra"> отключить проверки при выполнении (см. ниже)
+      -ver <major.minor> версия программы (только для obj)
 
       параметр -nochk задается в виде строки из символов:
       "p" - указатели
@@ -42,13 +44,13 @@ UTF-8 с BOM-сигнатурой.
 
   Например:
 
-  Compiler.exe "C:\example.ob07" "C:\example.exe" console -stk 1
-  Compiler.exe "C:\example.ob07" "C:\example.dll" dll
-  Compiler.exe "C:\example.ob07" "C:\example.exe" gui -stk 4
-  Compiler.exe "C:\example.ob07" "C:\example.exe" console -nochk pti
-  Compiler.kex "/tmp0/1/example.ob07" "/tmp0/1/example.kex" kos -stk 2
-  Compiler.kex "/tmp0/1/example.ob07" "/tmp0/1/example.obj" obj -ver 2.7
-  Compiler.exe "C:\example.ob07" "C:\example" elfexe
+  Compiler.exe "C:\example.ob07" console -out "C:\example.exe" -stk 1
+  Compiler.exe "C:\example.ob07" dll -out "C:\example.dll"
+  Compiler.exe "C:\example.ob07" gui -out "C:\example.exe" -stk 4
+  Compiler.exe "C:\example.ob07" console -out "C:\example.exe" -nochk pti
+  Compiler.kex "/tmp0/1/example.ob07" kos -out "/tmp0/1/example.kex" -stk 4
+  Compiler.kex "/tmp0/1/example.ob07" obj -out "/tmp0/1/example.obj" -ver 2.7
+  Compiler.exe "C:\example.ob07" elfexe -out "C:\example" -stk 1 -nochk a
 
   В случае успешной компиляции, компилятор передает код завершения 0, иначе 1.
 При работе компилятора в KolibriOS, код завершения не передается.
@@ -166,24 +168,6 @@ UTF-8 с BOM-сигнатурой.
                 например:
                 SYSTEM.CODE(08BH, 045H, 008H) (* mov eax, dword [ebp + 08h] *)
 
-  Также в модуле SYSTEM определен тип CARD16 (2 байта). Для типа CARD16 не
-допускаются никакие явные операции, за исключением присваивания.
-Преобразования CARD16 -> INTEGER и INTEGER -> CARD16 могут быть реализованы
-так:
-
-        PROCEDURE Card16ToInt (w: SYSTEM.CARD16): INTEGER;
-        VAR i: INTEGER;
-        BEGIN
-            SYSTEM.PUT(SYSTEM.ADR(i), w)
-            RETURN i
-        END Card16ToInt;
-
-        PROCEDURE IntToCard16 (i: INTEGER): SYSTEM.CARD16;
-        VAR w: SYSTEM.CARD16;
-        BEGIN
-            SYSTEM.GET(SYSTEM.ADR(i), w)
-            RETURN w
-        END IntToCard16;
 
   Функции псевдомодуля SYSTEM нельзя использовать в константных выражениях.
 

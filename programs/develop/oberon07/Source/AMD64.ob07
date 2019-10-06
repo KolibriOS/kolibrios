@@ -1,7 +1,7 @@
-﻿(*
+(*
     BSD 2-Clause License
 
-    Copyright (c) 2018, 2019, Anton Krotov
+    Copyright (c) 2018-2019, Anton Krotov
     All rights reserved.
 *)
 
@@ -750,7 +750,7 @@ BEGIN
          IL.opCOPYS, IL.opROT,
          IL.opNEW, IL.opDISP, IL.opISREC,
          IL.opIS, IL.opTYPEGR, IL.opTYPEGP,
-         IL.opCASET, IL.opDIV,
+         IL.opTYPEGD, IL.opCASET, IL.opDIV,
          IL.opDIVL, IL.opMOD,
          IL.opMODL, IL.opLENGTH, IL.opLENGTHW:
             leaf := FALSE
@@ -1163,8 +1163,11 @@ BEGIN
             REG.Reset(R)
 
         |IL.opSAVES:
-            PushAll(1);
+            UnOp(reg1);
+            REG.PushAll_1(R);
             pushDA(stroffs + param2);
+            push(reg1);
+            drop;
             pushc(param1);
             CallRTL(IL._move)
 
@@ -1327,16 +1330,17 @@ BEGIN
             GetRegA
 
         |IL.opRSETL:
-            PushAll(1);
+            UnOp(reg1);
+            REG.PushAll_1(R);
             pushc(param2);
-            CallRTL(IL._set2);
+            push(reg1);
+            drop;
+            CallRTL(IL._set);
             GetRegA
 
         |IL.opRSET1:
-            UnOp(reg1);
             PushAll(1);
-            push(reg1);
-            CallRTL(IL._set);
+            CallRTL(IL._set1);
             GetRegA
 
         |IL.opINCL, IL.opEXCL:
@@ -1573,11 +1577,11 @@ BEGIN
         |IL.opCOPY:
             PushAll(2);
             pushc(param2);
-            CallRTL(IL._move2)
+            CallRTL(IL._move)
 
         |IL.opMOVE:
             PushAll(3);
-            CallRTL(IL._move2)
+            CallRTL(IL._move)
 
         |IL.opCOPYA:
             PushAll(4);
@@ -1819,7 +1823,7 @@ BEGIN
 
         |IL.opDIV:
             PushAll(2);
-            CallRTL(IL._div);
+            CallRTL(IL._divmod);
             GetRegA
 
         |IL.opDIVR:
@@ -1854,20 +1858,24 @@ BEGIN
                 ELSE
                     PushAll(1);
                     pushc(param2);
-                    CallRTL(IL._div);
+                    CallRTL(IL._divmod);
                     GetRegA
                 END
             END
 
         |IL.opDIVL:
-            PushAll(1);
+            UnOp(reg1);
+            REG.PushAll_1(R);
             pushc(param2);
-            CallRTL(IL._div2);
+            push(reg1);
+            drop;
+            CallRTL(IL._divmod);
             GetRegA
 
         |IL.opMOD:
             PushAll(2);
-            CallRTL(IL._mod);
+            CallRTL(IL._divmod);
+            mov(rax, rdx);
             GetRegA
 
         |IL.opMODR:
@@ -1899,15 +1907,20 @@ BEGIN
                 ELSE
                     PushAll(1);
                     pushc(param2);
-                    CallRTL(IL._mod);
+                    CallRTL(IL._divmod);
+                    mov(rax, rdx);
                     GetRegA
                 END
             END
 
         |IL.opMODL:
-            PushAll(1);
+            UnOp(reg1);
+            REG.PushAll_1(R);
             pushc(param2);
-            CallRTL(IL._mod2);
+            push(reg1);
+            drop;
+            CallRTL(IL._divmod);
+            mov(rax, rdx);
             GetRegA
 
         |IL.opMUL:
@@ -2561,12 +2574,12 @@ BEGIN
 END translate;
 
 
-PROCEDURE prolog (code: IL.CODES; modname: ARRAY OF CHAR; target, stack_size: INTEGER);
+PROCEDURE prolog (modname: ARRAY OF CHAR; target, stack_size: INTEGER);
 VAR
     ModName_Offs, entry, L: INTEGER;
 
 BEGIN
-    ModName_Offs := tcount * 8 + CHL.Length(code.data);
+    ModName_Offs := tcount * 8 + CHL.Length(IL.codes.data);
     Numbers_Offs := ModName_Offs + LENGTH(modname) + 1;
     ASSERT(UTILS.Align(Numbers_Offs, 16));
 
@@ -2596,7 +2609,7 @@ BEGIN
     pushDA(ModName_Offs); //MODNAME
     CallRTL(IL._init);
 
-    IF target IN {mConst.Target_iConsole64, mConst.Target_iGUI64} THEN
+    IF target IN {mConst.Target_iConsole64, mConst.Target_iGUI64, mConst.Target_iELF64} THEN
         L := NewLabel();
         pushc(0);
         push(rsp);
@@ -2613,7 +2626,7 @@ BEGIN
 END prolog;
 
 
-PROCEDURE epilog (code: IL.CODES; modname: ARRAY OF CHAR; target: INTEGER);
+PROCEDURE epilog (modname: ARRAY OF CHAR; target: INTEGER);
 VAR
     i, n: INTEGER;
     number: Number;
@@ -2660,13 +2673,13 @@ BEGIN
 
     i := 0;
     WHILE i < tcount DO
-        BIN.PutData64LE(prog, CHL.GetInt(code.types, i));
+        BIN.PutData64LE(prog, CHL.GetInt(IL.codes.types, i));
         INC(i)
     END;
 
     i := 0;
-    WHILE i < CHL.Length(code.data) DO
-        BIN.PutData(prog, CHL.GetByte(code.data, i));
+    WHILE i < CHL.Length(IL.codes.data) DO
+        BIN.PutData(prog, CHL.GetByte(IL.codes.data, i));
         INC(i)
     END;
 
@@ -2685,13 +2698,13 @@ BEGIN
         number := number.next(Number)
     END;
 
-    exp := code.export.first(IL.EXPORT_PROC);
+    exp := IL.codes.export.first(IL.EXPORT_PROC);
     WHILE exp # NIL DO
         BIN.Export(prog, exp.name, exp.label);
         exp := exp.next(IL.EXPORT_PROC)
     END;
 
-    import(code.import)
+    import(IL.codes.import)
 END epilog;
 
 
@@ -2719,12 +2732,12 @@ BEGIN
 END rsave;
 
 
-PROCEDURE CodeGen* (code: IL.CODES; outname: ARRAY OF CHAR; target: INTEGER; options: PROG.OPTIONS);
+PROCEDURE CodeGen* (outname: ARRAY OF CHAR; target: INTEGER; options: PROG.OPTIONS);
 VAR
     path, modname, ext: PATHS.PATH;
 
 BEGIN
-    tcount := CHL.Length(code.types);
+    tcount := CHL.Length(IL.codes.types);
 
     Win64RegPar[0] := rcx;
     Win64RegPar[1] := rdx;
@@ -2743,7 +2756,7 @@ BEGIN
 
     REG.Init(R, push, pop, mov, xchg, rload, rsave, {rax, r10, r11}, {rcx, rdx, r8, r9});
 
-    code.bss := MAX(code.bss, MAX(code.dmin - CHL.Length(code.data), 8));
+    IL.set_bss(MAX(IL.codes.bss, MAX(IL.codes.dmin - CHL.Length(IL.codes.data), 8)));
 
     Numbers := LISTS.create(NIL);
     Numbers_Count := 0;
@@ -2755,18 +2768,18 @@ BEGIN
     NewNumber(ORD(-BITS(LSR(ASR(ROR(1, 1), 10), 1))));  (* {0..51, 63} *)
     NewNumber(LSR(ASR(ROR(1, 1), 9), 2));  (* {52..61} *)
 
-    prog := BIN.create(code.lcount);
-    BIN.SetParams(prog, code.bss, 1, WCHR(1), WCHR(0));
+    prog := BIN.create(IL.codes.lcount);
+    BIN.SetParams(prog, IL.codes.bss, 1, WCHR(1), WCHR(0));
 
     X86.SetProgram(prog);
 
-    prolog(code, modname, target, options.stack);
-    translate(code.commands, tcount * 8);
-    epilog(code, modname, target);
+    prolog(modname, target, options.stack);
+    translate(IL.codes.commands, tcount * 8);
+    epilog(modname, target);
 
     BIN.fixup(prog);
     IF target IN {mConst.Target_iConsole64, mConst.Target_iGUI64, mConst.Target_iDLL64} THEN
-        PE32.write(prog, outname, options.base, target = mConst.Target_iConsole64, target = mConst.Target_iDLL64, TRUE)
+        PE32.write(prog, outname, target = mConst.Target_iConsole64, target = mConst.Target_iDLL64, TRUE)
     ELSIF target IN {mConst.Target_iELF64, mConst.Target_iELFSO64} THEN
         ELF.write(prog, outname, sofinit, target = mConst.Target_iELFSO64, TRUE)
     END

@@ -1,4 +1,4 @@
-﻿(*
+(*
     BSD 2-Clause License
 
     Copyright (c) 2019, Anton Krotov
@@ -582,7 +582,7 @@ BEGIN
 END Neg;
 
 
-PROCEDURE translate (code: IL.CODES);
+PROCEDURE translate;
 VAR
     cmd, next: COMMAND;
 
@@ -593,7 +593,7 @@ VAR
     cc: INTEGER;
 
 BEGIN
-    cmd := code.commands.first(COMMAND);
+    cmd := IL.codes.commands.first(COMMAND);
 
     WHILE cmd # NIL DO
 
@@ -1643,7 +1643,7 @@ BEGIN
 END WriteHex;
 
 
-PROCEDURE CodeGen* (code: IL.CODES; outname: ARRAY OF CHAR; target: INTEGER; options: PROG.OPTIONS);
+PROCEDURE CodeGen* (outname: ARRAY OF CHAR; target: INTEGER; options: PROG.OPTIONS);
 VAR
     i, adr, heap, stack, TextSize, TypesSize, bits, n: INTEGER;
 
@@ -1668,12 +1668,12 @@ BEGIN
     ram := MIN(MAX(ram, minRAM), maxRAM);
     rom := MIN(MAX(rom, minROM), maxROM);
 
-    IF code.bss > ram - minStackSize - RTL.VarSize THEN
+    IF IL.codes.bss > ram - minStackSize - RTL.VarSize THEN
         ERRORS.Error(204)
     END;
 
     Labels := CHL.CreateIntList();
-    FOR i := 1 TO code.lcount DO
+    FOR i := 1 TO IL.codes.lcount DO
         CHL.PushInt(Labels, 0)
     END;
 
@@ -1681,28 +1681,28 @@ BEGIN
         mem[i] := 0
     END;
 
-    TypesSize := CHL.Length(code.types) * 2;
+    TypesSize := CHL.Length(IL.codes.types) * 2;
     CodeList := LISTS.create(NIL);
     RelList  := LISTS.create(NIL);
     REG.Init(R, Push, Pop, mov, xchg, NIL, NIL, {R4, R5, R6, R7}, {});
 
     prolog(ram);
-    translate(code);
+    translate;
     epilog;
 
     Code.address := 10000H - rom;
     Code.size := Fixup(Code.address, IntVectorSize + TypesSize);
     Data.address := Code.address + Code.size;
-    Data.size := CHL.Length(code.data);
+    Data.size := CHL.Length(IL.codes.data);
     Data.size := Data.size + ORD(ODD(Data.size));
     TextSize  := Code.size + Data.size;
 
-    IF Code.address + TextSize + MAX(code.dmin - Data.size, IntVectorSize + TypesSize) > 10000H  THEN
+    IF Code.address + TextSize + MAX(IL.codes.dmin - Data.size, IntVectorSize + TypesSize) > 10000H  THEN
         ERRORS.Error(203)
     END;
 
     Bss.address := RTL.ram + RTL.VarSize;
-    Bss.size := code.bss + ORD(ODD(code.bss));
+    Bss.size := IL.codes.bss + ORD(ODD(IL.codes.bss));
     heap := Bss.address + Bss.size;
     stack := RTL.ram + ram;
     ASSERT(stack - heap >= minStackSize);
@@ -1724,15 +1724,15 @@ BEGIN
 
     adr := Data.address;
 
-    FOR i := 0 TO CHL.Length(code.data) - 1 DO
-        mem[adr] := CHL.GetByte(code.data, i);
+    FOR i := 0 TO CHL.Length(IL.codes.data) - 1 DO
+        mem[adr] := CHL.GetByte(IL.codes.data, i);
         INC(adr)
     END;
 
     adr := 10000H - IntVectorSize - TypesSize;
 
     FOR i := TypesSize DIV 2 - 1 TO 0 BY -1 DO
-        PutWord(CHL.GetInt(code.types, i), adr)
+        PutWord(CHL.GetInt(IL.codes.types, i), adr)
     END;
 
     FOR i := 0 TO 15 DO

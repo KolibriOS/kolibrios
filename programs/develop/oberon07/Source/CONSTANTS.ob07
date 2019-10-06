@@ -1,7 +1,7 @@
-﻿(*
+(*
     BSD 2-Clause License
 
-    Copyright (c) 2018, 2019, Anton Krotov
+    Copyright (c) 2018-2019, Anton Krotov
     All rights reserved.
 *)
 
@@ -10,7 +10,7 @@ MODULE CONSTANTS;
 CONST
 
     vMajor* = 1;
-    vMinor* = 0;
+    vMinor* = 13;
 
     FILE_EXT* = ".ob07";
     RTL_NAME* = "RTL";

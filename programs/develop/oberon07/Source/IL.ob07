@@ -1,7 +1,7 @@
-﻿(*
+(*
     BSD 2-Clause License
 
-    Copyright (c) 2018, 2019, Anton Krotov
+    Copyright (c) 2018-2019, Anton Krotov
     All rights reserved.
 *)
 
@@ -96,18 +96,18 @@ CONST
     opLADR_UNPK* = -24;
 
 
-    _move      *=   0;
-    _move2     *=   1;
+    _init      *=   0;
+    _move      *=   1;
     _strcmpw   *=   2;
     _exit      *=   3;
     _set       *=   4;
-    _set2      *=   5;
+    _set1      *=   5;
     _lengthw   *=   6;
     _strcpy    *=   7;
-    _div       *=   8;
-    _mod       *=   9;
-    _div2      *=  10;
-    _mod2      *=  11;
+    _length    *=   8;
+    _divmod    *=   9;
+    _dllentry  *=  10;
+    _sofinit   *=  11;
     _arrcpy    *=  12;
     _rot       *=  13;
     _new       *=  14;
@@ -118,10 +118,6 @@ CONST
     _isrec     *=  19;
     _guard     *=  20;
     _guardrec  *=  21;
-    _length    *=  22;
-    _init      *=  23;
-    _dllentry  *=  24;
-    _sofinit   *=  25;
 
 
 TYPE
@@ -175,7 +171,7 @@ TYPE
     END;
 
 
-    CODES* = POINTER TO RECORD
+    CODES = RECORD
 
         last:       COMMAND;
         begcall:    CMDSTACK;
@@ -188,7 +184,7 @@ TYPE
         dmin*:      INTEGER;
         lcount*:    INTEGER;
         bss*:       INTEGER;
-        rtl*:       ARRAY 26 OF INTEGER;
+        rtl*:       ARRAY 22 OF INTEGER;
         errlabels*: ARRAY 12 OF INTEGER;
 
         charoffs:   ARRAY 256 OF INTEGER;
@@ -206,6 +202,24 @@ VAR
     numRegsFloat: INTEGER;
 
     commands, variables: C.COLLECTION;
+
+
+PROCEDURE set_dmin* (value: INTEGER);
+BEGIN
+    codes.dmin := value
+END set_dmin;
+
+
+PROCEDURE set_bss* (value: INTEGER);
+BEGIN
+    codes.bss := value
+END set_bss;
+
+
+PROCEDURE set_rtl* (idx, label: INTEGER);
+BEGIN
+    codes.rtl[idx] := label
+END set_rtl;
 
 
 PROCEDURE NewCmd (): COMMAND;
@@ -257,7 +271,7 @@ PROCEDURE getlast* (): COMMAND;
 END getlast;
 
 
-PROCEDURE PutByte (codes: CODES; b: BYTE);
+PROCEDURE PutByte (b: BYTE);
 BEGIN
     CHL.PushByte(codes.data, b)
 END PutByte;
@@ -272,11 +286,11 @@ BEGIN
     i := 0;
     n := LENGTH(s);
     WHILE i < n DO
-        PutByte(codes, ORD(s[i]));
+        PutByte(ORD(s[i]));
         INC(i)
     END;
 
-    PutByte(codes, 0)
+    PutByte(0)
 
     RETURN res
 END putstr;
@@ -289,8 +303,8 @@ VAR
 BEGIN
     IF codes.charoffs[c] = -1 THEN
         res := CHL.Length(codes.data);
-        PutByte(codes, c);
-        PutByte(codes, 0);
+        PutByte(c);
+        PutByte(0);
         codes.charoffs[c] := res
     ELSE
         res := codes.charoffs[c]
@@ -308,7 +322,7 @@ BEGIN
     res := CHL.Length(codes.data);
 
     IF ODD(res) THEN
-        PutByte(codes, 0);
+        PutByte(0);
         INC(res)
     END;
 
@@ -317,17 +331,17 @@ BEGIN
     i := 0;
     WHILE i < n DO
         IF endianness = little_endian THEN
-            PutByte(codes, ORD(codes.wstr[i]) MOD 256);
-            PutByte(codes, ORD(codes.wstr[i]) DIV 256)
+            PutByte(ORD(codes.wstr[i]) MOD 256);
+            PutByte(ORD(codes.wstr[i]) DIV 256)
         ELSIF endianness = big_endian THEN
-            PutByte(codes, ORD(codes.wstr[i]) DIV 256);
-            PutByte(codes, ORD(codes.wstr[i]) MOD 256)
+            PutByte(ORD(codes.wstr[i]) DIV 256);
+            PutByte(ORD(codes.wstr[i]) MOD 256)
         END;
         INC(i)
     END;
 
-    PutByte(codes, 0);
-    PutByte(codes, 0)
+    PutByte(0);
+    PutByte(0)
 
     RETURN res
 END putstrW;
@@ -342,20 +356,20 @@ BEGIN
         res := CHL.Length(codes.data);
 
         IF ODD(res) THEN
-            PutByte(codes, 0);
+            PutByte(0);
             INC(res)
         END;
 
         IF endianness = little_endian THEN
-            PutByte(codes, c MOD 256);
-            PutByte(codes, c DIV 256)
+            PutByte(c MOD 256);
+            PutByte(c DIV 256)
         ELSIF endianness = big_endian THEN
-            PutByte(codes, c DIV 256);
-            PutByte(codes, c MOD 256)
+            PutByte(c DIV 256);
+            PutByte(c MOD 256)
         END;
 
-        PutByte(codes, 0);
-        PutByte(codes, 0);
+        PutByte(0);
+        PutByte(0);
 
         codes.wcharoffs[c] := res
     ELSE
@@ -935,18 +949,6 @@ BEGIN
 END flt;
 
 
-PROCEDURE odd*;
-BEGIN
-    AddCmd0(opODD)
-END odd;
-
-
-PROCEDURE ord*;
-BEGIN
-    AddCmd0(opORD)
-END ord;
-
-
 PROCEDURE shift_minmax* (op: CHAR);
 BEGIN
     CASE op OF
@@ -1147,7 +1149,6 @@ BEGIN
     numRegsFloat := pNumRegsFloat;
     endianness := pEndianness;
 
-    NEW(codes);
     NEW(codes.begcall);
     codes.begcall.top := -1;
     NEW(codes.endcall);

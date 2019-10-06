@@ -1,7 +1,7 @@
-﻿(*
+(*
     BSD 2-Clause License
 
-    Copyright (c) 2018, 2019, Anton Krotov
+    Copyright (c) 2018-2019, Anton Krotov
     All rights reserved.
 *)
 
@@ -24,9 +24,9 @@ CONST
     tINTEGER* =  1;  tBYTE*      =  2;  tCHAR*   =  3;  tSET*    =  4;
     tBOOLEAN* =  5;  tREAL*      =  6;  tARRAY*  =  7;  tRECORD* =  8;
     tPOINTER* =  9;  tPROCEDURE* = 10;  tSTRING* = 11;  tNIL*    = 12;
-    tCARD16*  = 13;  tCARD32*    = 14;  tANYREC* = 15;  tWCHAR*  = 16;
+    tCARD32*  = 13;  tANYREC*    = 14;  tWCHAR*  = 15;
 
-    BASICTYPES* = {tINTEGER, tBYTE, tCHAR, tSET, tBOOLEAN, tREAL, tCARD16, tCARD32, tWCHAR};
+    BASICTYPES* = {tINTEGER, tBYTE, tCHAR, tSET, tBOOLEAN, tREAL, tCARD32, tWCHAR};
 
     stABS*  =  1;  stASR*  =  2;  stCHR*    =  3;  stFLOOR* =  4;
     stFLT*  =  5;  stLEN*  =  6;  stLSL*    =  7;  stODD*   =  8;
@@ -72,7 +72,7 @@ TYPE
 
     OPTIONS* = RECORD
 
-        version*, stack*, base*, ram*, rom*: INTEGER;
+        version*, stack*, ram*, rom*: INTEGER;
         pic*: BOOLEAN;
         checking*: SET
 
@@ -205,7 +205,7 @@ TYPE
         stTypes*:    RECORD
 
             tINTEGER*, tBYTE*, tCHAR*, tWCHAR*, tSET*, tBOOLEAN*, tREAL*,
-            tSTRING*, tNIL*, tCARD16*, tCARD32*, tANYREC*: TYPE_
+            tSTRING*, tNIL*, tCARD32*, tANYREC*: TYPE_
 
         END;
 
@@ -254,23 +254,27 @@ VAR
 
 BEGIN
     IF varIdent.offset = -1 THEN
+        size := varIdent.type.size;
         IF varIdent.global THEN
             IF UTILS.Align(program.bss, varIdent.type.align) THEN
-                IF UTILS.maxint - program.bss >= varIdent.type.size THEN
+                IF UTILS.maxint - program.bss >= size THEN
                     varIdent.offset := program.bss;
-                    INC(program.bss, varIdent.type.size)
+                    INC(program.bss, size)
                 END
             END
         ELSE
             word := program.target.word;
-            size := varIdent.type.size;
             IF UTILS.Align(size, word) THEN
                 size := size DIV word;
                 IF UTILS.maxint - program.locsize >= size THEN
                     INC(program.locsize, size);
-                    varIdent.offset := program.locsize;
+                    varIdent.offset := program.locsize
                 END
             END
+        END;
+
+        IF varIdent.offset = -1 THEN
+            ERRORS.Error(204)
         END
     END
 
@@ -509,7 +513,6 @@ BEGIN
     END;
 
     DEC(unit.scopeLvl)
-
 END closeScope;
 
 
@@ -629,6 +632,13 @@ END isBaseOf;
 PROCEDURE isOpenArray* (t: TYPE_): BOOLEAN;
     RETURN (t.typ = tARRAY) & (t.length = 0)
 END isOpenArray;
+
+
+PROCEDURE arrcomp* (src, dst: TYPE_): BOOLEAN;
+    RETURN (dst.typ = tARRAY) & isOpenArray(src) &
+            ~isOpenArray(src.base) & ~isOpenArray(dst.base) &
+            isTypeEq(src.base, dst.base)
+END arrcomp;
 
 
 PROCEDURE getUnit* (program: PROGRAM; name: SCAN.IDENT): UNIT;
@@ -1059,25 +1069,15 @@ VAR
 
 BEGIN
 
-    IF typ = ARITH.tINTEGER THEN
-        res := program.stTypes.tINTEGER
-    ELSIF typ = ARITH.tREAL THEN
-        res := program.stTypes.tREAL
-    ELSIF typ = ARITH.tSET THEN
-        res := program.stTypes.tSET
-    ELSIF typ = ARITH.tBOOLEAN THEN
-        res := program.stTypes.tBOOLEAN
-    ELSIF typ = ARITH.tCHAR THEN
-        res := program.stTypes.tCHAR
-    ELSIF typ = ARITH.tWCHAR THEN
-        res := program.stTypes.tWCHAR
-    ELSIF typ = ARITH.tSTRING THEN
-        res := program.stTypes.tSTRING
-    ELSE
-        res := NIL
-    END;
-
-    ASSERT(res # NIL)
+    CASE typ OF
+    |ARITH.tINTEGER: res := program.stTypes.tINTEGER
+    |ARITH.tREAL:    res := program.stTypes.tREAL
+    |ARITH.tSET:     res := program.stTypes.tSET
+    |ARITH.tBOOLEAN: res := program.stTypes.tBOOLEAN
+    |ARITH.tCHAR:    res := program.stTypes.tCHAR
+    |ARITH.tWCHAR:   res := program.stTypes.tWCHAR
+    |ARITH.tSTRING:  res := program.stTypes.tSTRING
+    END
 
     RETURN res
 END getType;
@@ -1125,10 +1125,6 @@ BEGIN
         EnterProc(unit, "PUT32",  idSYSPROC, sysPUT32);
         EnterProc(unit, "PUT16",  idSYSPROC, sysPUT16);
         EnterProc(unit, "COPY",   idSYSPROC, sysCOPY);
-
-        ident := addIdent(unit, SCAN.enterid("CARD16"), idTYPE);
-        ident.type := program.stTypes.tCARD16;
-        ident.export := TRUE;
 
         ident := addIdent(unit, SCAN.enterid("CARD32"), idTYPE);
         ident.type := program.stTypes.tCARD32;
@@ -1248,7 +1244,6 @@ BEGIN
     IF target # mConst.Target_iMSP430 THEN
         program.stTypes.tWCHAR   := enterType(program, tWCHAR,  2, 0, NIL);
         program.stTypes.tREAL    := enterType(program, tREAL,   8, 0, NIL);
-        program.stTypes.tCARD16  := enterType(program, tCARD16, 2, 0, NIL);
         program.stTypes.tCARD32  := enterType(program, tCARD32, 4, 0, NIL)
     END;
 
@@ -1267,7 +1262,6 @@ BEGIN
     IF target # mConst.Target_iMSP430 THEN
         program.stTypes.tWCHAR.align   := program.stTypes.tWCHAR.size;
         program.stTypes.tREAL.align    := program.stTypes.tREAL.size;
-        program.stTypes.tCARD16.align  := program.stTypes.tCARD16.size;
         program.stTypes.tCARD32.align  := program.stTypes.tCARD32.size
     END;
 

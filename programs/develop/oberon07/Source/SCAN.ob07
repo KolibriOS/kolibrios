@@ -1,7 +1,7 @@
-﻿(*
+(*
     BSD 2-Clause License
 
-    Copyright (c) 2018, 2019, Anton Krotov
+    Copyright (c) 2018-2019, Anton Krotov
     All rights reserved.
 *)
 
@@ -51,7 +51,8 @@ TYPE
     IDENT* = POINTER TO RECORD (AVL.DATA)
 
         s*: LEXSTR;
-        offset*, offsetW*: INTEGER
+        offset*, offsetW*: INTEGER;
+        key: INTEGER
 
     END;
 
@@ -78,19 +79,14 @@ TYPE
 
     SCANNER* = TXT.TEXT;
 
-    KEYWORD = ARRAY 10 OF CHAR;
-
 
 VAR
 
-    vocabulary: RECORD
+    idents: AVL.NODE;
 
-        KW:         ARRAY 33 OF KEYWORD;
-        delimiters: ARRAY 256 OF BOOLEAN;
-        idents:     AVL.NODE;
-        ident:      IDENT
+    delimiters: ARRAY 256 OF BOOLEAN;
 
-    END;
+    NewIdent: IDENT;
 
     upto: BOOLEAN;
 
@@ -100,46 +96,20 @@ PROCEDURE nodecmp (a, b: AVL.DATA): INTEGER;
 END nodecmp;
 
 
-PROCEDURE key (VAR lex: LEX);
-VAR
-    L, R, M: INTEGER;
-    found: BOOLEAN;
-
-BEGIN
-    L := 0;
-    R := LEN(vocabulary.KW) - 1;
-    found := FALSE;
-
-    REPEAT
-        M := (L + R) DIV 2;
-
-        IF lex.s # vocabulary.KW[M] THEN
-            IF lex.s > vocabulary.KW[M] THEN
-                L := M + 1
-            ELSE
-                R := M - 1
-            END
-        ELSE
-            found := TRUE;
-            lex.sym := lxKW + M
-        END
-    UNTIL found OR (L > R)
-END key;
-
-
 PROCEDURE enterid* (s: LEXSTR): IDENT;
 VAR
     newnode: BOOLEAN;
     node:    AVL.NODE;
 
 BEGIN
-    vocabulary.ident.s := s;
-    vocabulary.idents := AVL.insert(vocabulary.idents, vocabulary.ident, nodecmp, newnode, node);
+    NewIdent.s := s;
+    idents := AVL.insert(idents, NewIdent, nodecmp, newnode, node);
 
     IF newnode THEN
-        NEW(vocabulary.ident);
-        vocabulary.ident.offset  := -1;
-        vocabulary.ident.offsetW := -1
+        NEW(NewIdent);
+        NewIdent.offset  := -1;
+        NewIdent.offsetW := -1;
+        NewIdent.key := 0
     END
 
     RETURN node.data(IDENT)
@@ -181,12 +151,12 @@ BEGIN
     IF lex.over THEN
         lex.sym := lxERROR06
     ELSE
-        lex.sym := lxIDENT;
-        key(lex)
-    END;
-
-    IF lex.sym = lxIDENT THEN
-        lex.ident := enterid(lex.s)
+        lex.ident := enterid(lex.s);
+        IF lex.ident.key # 0 THEN
+            lex.sym := lex.ident.key
+        ELSE
+            lex.sym := lxIDENT
+        END
     END
 
 END ident;
@@ -518,7 +488,7 @@ BEGIN
             number(text, lex)
         ELSIF (c = '"') OR (c = "'") THEN
             string(text, lex, c)
-        ELSIF vocabulary.delimiters[ORD(c)] THEN
+        ELSIF delimiters[ORD(c)] THEN
             delimiter(text, lex, c)
         ELSIF c = 0X THEN
             lex.sym := lxEOF;
@@ -566,10 +536,13 @@ VAR
     delim: ARRAY 23 OF CHAR;
 
 
-    PROCEDURE enterkw (VAR i: INTEGER; kw: KEYWORD);
+    PROCEDURE enterkw (key: INTEGER; kw: LEXSTR);
+    VAR
+        id: IDENT;
+
     BEGIN
-        vocabulary.KW[i] := kw;
-        INC(i)
+        id := enterid(kw);
+        id.key := key
     END enterkw;
 
 
@@ -577,55 +550,57 @@ BEGIN
     upto := FALSE;
 
     FOR i := 0 TO 255 DO
-        vocabulary.delimiters[i] := FALSE
+        delimiters[i] := FALSE
     END;
 
     delim := "+-*/~&.,;|([{^=#<>:)]}";
 
     FOR i := 0 TO LEN(delim) - 2 DO
-        vocabulary.delimiters[ORD(delim[i])] := TRUE
+        delimiters[ORD(delim[i])] := TRUE
     END;
 
-    i := 0;
-    enterkw(i, "ARRAY");
-    enterkw(i, "BEGIN");
-    enterkw(i, "BY");
-    enterkw(i, "CASE");
-    enterkw(i, "CONST");
-    enterkw(i, "DIV");
-    enterkw(i, "DO");
-    enterkw(i, "ELSE");
-    enterkw(i, "ELSIF");
-    enterkw(i, "END");
-    enterkw(i, "FALSE");
-    enterkw(i, "FOR");
-    enterkw(i, "IF");
-    enterkw(i, "IMPORT");
-    enterkw(i, "IN");
-    enterkw(i, "IS");
-    enterkw(i, "MOD");
-    enterkw(i, "MODULE");
-    enterkw(i, "NIL");
-    enterkw(i, "OF");
-    enterkw(i, "OR");
-    enterkw(i, "POINTER");
-    enterkw(i, "PROCEDURE");
-    enterkw(i, "RECORD");
-    enterkw(i, "REPEAT");
-    enterkw(i, "RETURN");
-    enterkw(i, "THEN");
-    enterkw(i, "TO");
-    enterkw(i, "TRUE");
-    enterkw(i, "TYPE");
-    enterkw(i, "UNTIL");
-    enterkw(i, "VAR");
-    enterkw(i, "WHILE");
+    NEW(NewIdent);
+    NewIdent.s       := "";
+    NewIdent.offset  := -1;
+    NewIdent.offsetW := -1;
+    NewIdent.key     := 0;
 
-    NEW(vocabulary.ident);
-    vocabulary.ident.s       := "";
-    vocabulary.ident.offset  := -1;
-    vocabulary.ident.offsetW := -1;
-    vocabulary.idents := NIL
+    idents := NIL;
+
+    enterkw(lxARRAY, "ARRAY");
+    enterkw(lxBEGIN, "BEGIN");
+    enterkw(lxBY, "BY");
+    enterkw(lxCASE, "CASE");
+    enterkw(lxCONST, "CONST");
+    enterkw(lxDIV, "DIV");
+    enterkw(lxDO, "DO");
+    enterkw(lxELSE, "ELSE");
+    enterkw(lxELSIF, "ELSIF");
+    enterkw(lxEND, "END");
+    enterkw(lxFALSE, "FALSE");
+    enterkw(lxFOR, "FOR");
+    enterkw(lxIF, "IF");
+    enterkw(lxIMPORT, "IMPORT");
+    enterkw(lxIN, "IN");
+    enterkw(lxIS, "IS");
+    enterkw(lxMOD, "MOD");
+    enterkw(lxMODULE, "MODULE");
+    enterkw(lxNIL, "NIL");
+    enterkw(lxOF, "OF");
+    enterkw(lxOR, "OR");
+    enterkw(lxPOINTER, "POINTER");
+    enterkw(lxPROCEDURE, "PROCEDURE");
+    enterkw(lxRECORD, "RECORD");
+    enterkw(lxREPEAT, "REPEAT");
+    enterkw(lxRETURN, "RETURN");
+    enterkw(lxTHEN, "THEN");
+    enterkw(lxTO, "TO");
+    enterkw(lxTRUE, "TRUE");
+    enterkw(lxTYPE, "TYPE");
+    enterkw(lxUNTIL, "UNTIL");
+    enterkw(lxVAR, "VAR");
+    enterkw(lxWHILE, "WHILE")
+
 END init;
 
 

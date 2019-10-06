@@ -1,7 +1,7 @@
-﻿(*
+(*
     BSD 2-Clause License
 
-    Copyright (c) 2018, 2019, Anton Krotov
+    Copyright (c) 2018-2019, Anton Krotov
     All rights reserved.
 *)
 
@@ -46,15 +46,12 @@ VAR
 
 BEGIN
 
-    IF v.typ = tINTEGER THEN
+    CASE v.typ OF
+    |tINTEGER, tCHAR, tWCHAR:
         res := v.int
-    ELSIF v.typ = tCHAR THEN
-        res := v.int
-    ELSIF v.typ = tWCHAR THEN
-        res := v.int
-    ELSIF v.typ = tSET THEN
+    |tSET:
         res := UTILS.Long(ORD(v.set))
-    ELSIF v.typ = tBOOLEAN THEN
+    |tBOOLEAN:
         res := ORD(v.bool)
     END
 
@@ -80,35 +77,28 @@ END Float;
 
 PROCEDURE check* (v: VALUE): BOOLEAN;
 VAR
-    error: BOOLEAN;
+    res: BOOLEAN;
 
 BEGIN
-    error := FALSE;
-
-    IF (v.typ = tINTEGER) & ((v.int < UTILS.target.minInt) OR (v.int > UTILS.target.maxInt)) THEN
-        error := TRUE
-    ELSIF (v.typ = tCHAR) & ((v.int < 0) OR (v.int > 255)) THEN
-        error := TRUE
-    ELSIF (v.typ = tWCHAR) & ((v.int < 0) OR (v.int > 65535)) THEN
-        error := TRUE
-    ELSIF (v.typ = tREAL) & ((v.float < -UTILS.target.maxReal) OR (v.float > UTILS.target.maxReal)) THEN
-        error := TRUE
+    CASE v.typ OF
+    |tINTEGER: res := (UTILS.target.minInt <= v.int) & (v.int <= UTILS.target.maxInt)
+    |tCHAR:    res := (0 <= v.int) & (v.int <= 255)
+    |tWCHAR:   res := (0 <= v.int) & (v.int <= 65535)
+    |tREAL:    res := (-UTILS.target.maxReal <= v.float) & (v.float <= UTILS.target.maxReal)
     END
 
-    RETURN ~error
+    RETURN res
 END check;
 
 
 PROCEDURE isZero* (v: VALUE): BOOLEAN;
 VAR
     res: BOOLEAN;
-BEGIN
-    ASSERT(v.typ IN {tINTEGER, tREAL});
 
-    IF v.typ = tINTEGER THEN
-        res := v.int = 0
-    ELSIF v.typ = tREAL THEN
-        res := v.float = 0.0
+BEGIN
+    CASE v.typ OF
+    |tINTEGER: res := v.int = 0
+    |tREAL:    res := v.float = 0.0
     END
 
     RETURN res
