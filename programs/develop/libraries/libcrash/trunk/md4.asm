@@ -1,6 +1,6 @@
 ;    libcrash -- cryptographic hash functions
 ;
-;    Copyright (C) 2012-2013,2016 Ivan Baravy (dunkaist)
+;    Copyright (C) 2012-2013,2016,2019 Ivan Baravy (dunkaist)
 ;
 ;    This program is free software: you can redistribute it and/or modify
 ;    it under the terms of the GNU General Public License as published by
@@ -15,6 +15,24 @@
 ;    You should have received a copy of the GNU General Public License
 ;    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
+
+MD4_HASH_SIZE  = 16
+MD4_BLOCK_SIZE = 64
+
+MD4_ALIGN      = 4
+MD4_ALIGN_MASK = MD4_ALIGN - 1
+
+struct ctx_md4
+        hash            rb MD4_HASH_SIZE
+        block           rb MD4_BLOCK_SIZE
+        index           rd 1
+        msglen_0        rd 1
+        msglen_1        rd 1
+ends
+
+if defined sizeof.crash_ctx
+  assert sizeof.crash_ctx >= sizeof.ctx_md4
+end if
 
 macro md4._.f b, c, d
 {
@@ -231,7 +249,15 @@ proc md4.final _ctx
 endp
 
 
+proc md4.oneshot _ctx, _data, _len
+	stdcall	md4.init, [_ctx]
+	stdcall	md4.update, [_ctx], [_data], [_len]
+	stdcall	md4.final, [_ctx]
+	ret
+endp
+
+
+iglobal
 align MD4_ALIGN
-
 md4._.hash_init dd 0x67452301, 0xefcdab89, 0x98badcfe, 0x10325476, 0xc3d2e1f0
-
+endg

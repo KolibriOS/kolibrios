@@ -1,6 +1,6 @@
 ;    libcrash -- cryptographic hash functions
 ;
-;    Copyright (C) 2012-2013,2016 Ivan Baravy (dunkaist)
+;    Copyright (C) 2012-2013,2016,2019 Ivan Baravy (dunkaist)
 ;
 ;    This program is free software: you can redistribute it and/or modify
 ;    it under the terms of the GNU General Public License as published by
@@ -15,6 +15,42 @@
 ;    You should have received a copy of the GNU General Public License
 ;    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
+
+SHA384512_BLOCK_SIZE = 128
+SHA384_BLOCK_SIZE    = SHA384512_BLOCK_SIZE
+SHA512_BLOCK_SIZE    = SHA384512_BLOCK_SIZE
+SHA384_HASH_SIZE     = 48
+SHA512_HASH_SIZE     = 64
+
+SHA384512_INIT_SIZE  = 64
+SHA384512_ALIGN      = 16
+SHA384512_ALIGN_MASK = SHA384512_ALIGN - 1
+
+struct ctx_sha384512
+        hash            rb SHA384512_INIT_SIZE
+        block           rb SHA384512_BLOCK_SIZE
+        index           rd 1
+        msglen_0        rd 1
+        msglen_1        rd 1
+        msglen_2        rd 1
+        msglen_3        rd 1
+                        rd 3    ; align
+        ; tmp vars
+        w               rq 80
+        A               rq 1
+        B               rq 1
+        C               rq 1
+        D               rq 1
+        E               rq 1
+        F               rq 1
+        G               rq 1
+        H               rq 1
+        temp            rq 1
+ends
+
+if defined sizeof.crash_ctx
+  assert sizeof.crash_ctx >= sizeof.ctx_sha384512
+end if
 
 macro sha384512._.chn x, y, z
 {
@@ -318,8 +354,10 @@ end repeat
 restore w,A,B,C,D,E,F,G,H,temp
 endp
 
-sha512.update = sha384.update
-proc sha384.update _ctx, _msg, _size
+
+sha384.update = sha384512.update
+sha512.update = sha384512.update
+proc sha384512.update _ctx, _msg, _size
         mov     ebx, [_ctx]
         mov     ecx, [_size]
         add     [ebx + ctx_sha384512.msglen_0], ecx
@@ -377,8 +415,9 @@ proc sha384.update _ctx, _msg, _size
 endp
 
 
-sha512.final = sha384.final
-proc sha384.final _ctx
+sha384.final = sha384512.final
+sha512.final = sha384512.final
+proc sha384512.final _ctx
         mov     ebx, [_ctx]
         lea     edi, [ebx + ctx_sha384512.block]
         mov     ecx, [ebx + ctx_sha384512.msglen_0]
@@ -456,8 +495,24 @@ proc sha384512._.postprocess _ctx, _hash
 endp
 
 
-align SHA384512_ALIGN
+proc sha384.oneshot _ctx, _data, _len
+	stdcall	sha384.init, [_ctx]
+	stdcall	sha384.update, [_ctx], [_data], [_len]
+	stdcall	sha384.final, [_ctx]
+	ret
+endp
 
+
+proc sha512.oneshot _ctx, _data, _len
+	stdcall	sha512.init, [_ctx]
+	stdcall	sha512.update, [_ctx], [_data], [_len]
+	stdcall	sha512.final, [_ctx]
+	ret
+endp
+
+
+iglobal
+align SHA384512_ALIGN
 sha384._.hash_init      dq 0xcbbb9d5dc1059ed8, 0x629a292a367cd507,\
                            0x9159015a3070dd17, 0x152fecd8f70e5939,\
                            0x67332667ffc00b31, 0x8eb44a8768581511,\
@@ -508,4 +563,4 @@ sha384512._.table       dq 0x428a2f98d728ae22, 0x7137449123ef65cd,\
                            0x3c9ebe0a15c9bebc, 0x431d67c49c100d4c,\
                            0x4cc5d4becb3e42b6, 0x597f299cfc657e2a,\
                            0x5fcb6fab3ad6faec, 0x6c44198c4a475817
-
+endg

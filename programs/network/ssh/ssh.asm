@@ -165,8 +165,8 @@ struct  ssh_connection
         dh_signature            dd ?
                                 rb MAX_BITS/8
 
-        temp_ctx                ctx_sha224256
-        k_h_ctx                 ctx_sha224256
+        temp_ctx                crash_ctx
+        k_h_ctx                 crash_ctx
 
         mpint_tmp               dd ?
                                 rb MAX_BITS/8

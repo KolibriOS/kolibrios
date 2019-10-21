@@ -22,8 +22,8 @@
 
 struct hmac_sha1_context
         hash            rb SHA1_HASH_SIZE
-        ipad_ctx        ctx_sha1
-        opad_ctx        ctx_sha1
+        ipad_ctx        crash_ctx
+        opad_ctx        crash_ctx
 ends
 
 ; We will precompute partial hashes of K XOR ipad and K XOR opad,

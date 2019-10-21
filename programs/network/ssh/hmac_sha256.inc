@@ -22,8 +22,8 @@
 
 struct hmac_sha256_context
         hash            rb SHA256_HASH_SIZE
-        ipad_ctx        ctx_sha224256
-        opad_ctx        ctx_sha224256
+        ipad_ctx        crash_ctx
+        opad_ctx        crash_ctx
 ends
 
 ; We will precompute partial hashes of K XOR ipad and K XOR opad,
@@ -32,21 +32,21 @@ ends
 proc hmac_sha256_setkey ctx, key, key_length
 
 locals
-        k_temp  rb SHA224256_BLOCK_SIZE
+        k_temp  rb SHA256_BLOCK_SIZE
 endl
 
         pusha
 
 ; input esi = key, ecx=key_length
         mov     ecx, [key_length]
-        cmp     ecx, SHA224256_BLOCK_SIZE
+        cmp     ecx, SHA256_BLOCK_SIZE
         ja      .hash_it
 ; Key is smaller then or equal to blocksize,
 ; copy key to ipad
         mov     esi, [key]
         lea     edi, [k_temp]
         rep movsb
-        mov     ecx, SHA224256_BLOCK_SIZE
+        mov     ecx, SHA256_BLOCK_SIZE
         sub     ecx, [key_length]
         jz      .finish
 ; append zeros to the key
@@ -64,13 +64,13 @@ endl
         mov     ecx, SHA256_HASH_SIZE/4
         rep movsd
         xor     eax, eax
-        mov     ecx, (SHA224256_BLOCK_SIZE-SHA256_HASH_SIZE)/4
+        mov     ecx, (SHA256_BLOCK_SIZE-SHA256_HASH_SIZE)/4
         rep stosd
 
   .finish:
 ; xor ipad buffer with 0x36363...
         lea     esi, [k_temp]
-        mov     ecx, SHA224256_BLOCK_SIZE/4
+        mov     ecx, SHA256_BLOCK_SIZE/4
   @@:
         xor     dword[esi], 0x36363636          ; ipad constant
         add     esi, 4
@@ -84,15 +84,15 @@ endl
 
         lea     esi, [k_temp]
         DEBUGF  1, "HASH: "
-        stdcall dump_hex, esi, SHA224256_BLOCK_SIZE/4
+        stdcall dump_hex, esi, SHA256_BLOCK_SIZE/4
 
         mov     ebx, [ctx]
         lea     edi, [ebx+hmac_sha256_context.ipad_ctx]
-        invoke  sha256_update, edi, esi, SHA224256_BLOCK_SIZE
+        invoke  sha256_update, edi, esi, SHA256_BLOCK_SIZE
 
 ; xor opad buffer with 0x5c5c5...
         lea     esi, [k_temp]
-        mov     ecx, SHA224256_BLOCK_SIZE/4
+        mov     ecx, SHA256_BLOCK_SIZE/4
   @@:
         xor     dword[esi], 0x36363636 xor 0x5c5c5c5c   ; opad constant
         add     esi, 4
@@ -106,11 +106,11 @@ endl
 
         lea     esi, [k_temp]
         DEBUGF  1, "HASH: "
-        stdcall dump_hex, esi, SHA224256_BLOCK_SIZE/4
+        stdcall dump_hex, esi, SHA256_BLOCK_SIZE/4
 
         mov     ebx, [ctx]
         lea     edi, [ebx+hmac_sha256_context.opad_ctx]
-        invoke  sha256_update, edi, esi, SHA224256_BLOCK_SIZE
+        invoke  sha256_update, edi, esi, SHA256_BLOCK_SIZE
 
         popa
         ret
@@ -124,8 +124,8 @@ endp
 proc hmac_sha256 ctx, _data, _length
 
 locals
-        inner_ctx        ctx_sha224256
-        outer_ctx        ctx_sha224256
+        inner_ctx        crash_ctx
+        outer_ctx        crash_ctx
 endl
 
         pusha
@@ -138,7 +138,7 @@ endl
         mov     esi, [ctx]
         lea     esi, [esi+hmac_sha256_context.ipad_ctx]
         lea     edi, [inner_ctx]
-repeat (sizeof.ctx_sha224256)/4*2
+repeat (sizeof.crash_ctx)/4*2
         movsd
 end repeat
 

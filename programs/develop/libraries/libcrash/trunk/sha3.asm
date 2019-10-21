@@ -1,6 +1,6 @@
 ;    libcrash -- cryptographic hash functions
 ;
-;    Copyright (C) 2013,2016 Ivan Baravy (dunkaist)
+;    Copyright (C) 2013,2016,2019 Ivan Baravy (dunkaist)
 ;
 ;    This program is free software: you can redistribute it and/or modify
 ;    it under the terms of the GNU General Public License as published by
@@ -15,6 +15,39 @@
 ;    You should have received a copy of the GNU General Public License
 ;    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
+
+SHA3_224_HASH_SIZE       = 28
+SHA3_256_HASH_SIZE       = 32
+SHA3_384_HASH_SIZE       = 48
+SHA3_512_HASH_SIZE       = 64
+
+SHA3_224_BLOCK_SIZE      = 144
+SHA3_256_BLOCK_SIZE      = 136
+SHA3_384_BLOCK_SIZE      = 104
+SHA3_512_BLOCK_SIZE      = 72
+SHA3MAX_BLOCK_SIZE      = SHA3_224_BLOCK_SIZE
+
+SHA3_INIT_SIZE          = 200
+SHA3_ALIGN              = 16
+SHA3_ALIGN_MASK         = SHA3_ALIGN-1
+
+struct ctx_sha3
+        hash            rb SHA3_INIT_SIZE
+                        rb SHA3_ALIGN - (SHA3_INIT_SIZE mod SHA3_ALIGN)
+        block           rb SHA3MAX_BLOCK_SIZE
+                        rb SHA3_ALIGN - (SHA3MAX_BLOCK_SIZE mod SHA3_ALIGN)
+        index           rd 1
+        block_size      rd 1
+        rounds_cnt      rd 1
+                        rd 1    ; align
+        ; tmp vars
+        C               rq 5
+        D               rq 5
+ends
+
+if defined sizeof.crash_ctx
+  assert sizeof.crash_ctx >= sizeof.ctx_sha3
+end if
 
 macro sha3._.rol_xor nd, ncl, ncr
 {
@@ -244,33 +277,33 @@ proc sha3._.init _ctx
 endp
 
 
-proc sha3224.init _ctx
+proc sha3_224.init _ctx
         mov     ebx, [_ctx]
-        mov     eax, SHA3224_BLOCK_SIZE
+        mov     eax, SHA3_224_BLOCK_SIZE
         stdcall sha3._.init
         ret
 endp
 
 
-proc sha3256.init _ctx
+proc sha3_256.init _ctx
         mov     ebx, [_ctx]
-        mov     eax, SHA3256_BLOCK_SIZE
+        mov     eax, SHA3_256_BLOCK_SIZE
         stdcall sha3._.init
         ret
 endp
 
 
-proc sha3384.init _ctx
+proc sha3_384.init _ctx
         mov     ebx, [_ctx]
-        mov     eax, SHA3384_BLOCK_SIZE
+        mov     eax, SHA3_384_BLOCK_SIZE
         stdcall sha3._.init
         ret
 endp
 
 
-proc sha3512.init _ctx
+proc sha3_512.init _ctx
         mov     ebx, [_ctx]
-        mov     eax, SHA3512_BLOCK_SIZE
+        mov     eax, SHA3_512_BLOCK_SIZE
         stdcall sha3._.init
         ret
 endp
@@ -293,10 +326,10 @@ proc sha3._.block _hash
 endp
 
 
-sha3224.update = sha3.update
-sha3256.update = sha3.update
-sha3384.update = sha3.update
-sha3512.update = sha3.update
+sha3_224.update = sha3.update
+sha3_256.update = sha3.update
+sha3_384.update = sha3.update
+sha3_512.update = sha3.update
 proc sha3.update _ctx, _msg, _size
   .next_block:
         mov     ebx, [_ctx]
@@ -355,10 +388,10 @@ proc sha3.update _ctx, _msg, _size
 endp
 
 
-sha3224.final = sha3.final
-sha3256.final = sha3.final
-sha3384.final = sha3.final
-sha3512.final = sha3.final
+sha3_224.final = sha3.final
+sha3_256.final = sha3.final
+sha3_384.final = sha3.final
+sha3_512.final = sha3.final
 proc sha3.final _ctx
         pushad
         mov     ebx, [_ctx]
@@ -404,8 +437,40 @@ proc sha3._.postprocess _ctx, _hash
 endp
 
 
-align SHA3_ALIGN
+proc sha3_224.oneshot _ctx, _data, _len
+	stdcall	sha3_224.init, [_ctx]
+	stdcall	sha3.update, [_ctx], [_data], [_len]
+	stdcall	sha3.final, [_ctx]
+	ret
+endp
 
+
+proc sha3_256.oneshot _ctx, _data, _len
+	stdcall	sha3_256.init, [_ctx]
+	stdcall	sha3.update, [_ctx], [_data], [_len]
+	stdcall	sha3.final, [_ctx]
+	ret
+endp
+
+
+proc sha3_384.oneshot _ctx, _data, _len
+	stdcall	sha3_384.init, [_ctx]
+	stdcall	sha3.update, [_ctx], [_data], [_len]
+	stdcall	sha3.final, [_ctx]
+	ret
+endp
+
+
+proc sha3_512.oneshot _ctx, _data, _len
+	stdcall	sha3_512.init, [_ctx]
+	stdcall	sha3.update, [_ctx], [_data], [_len]
+	stdcall	sha3.final, [_ctx]
+	ret
+endp
+
+
+iglobal
+align SHA3_ALIGN
 sha3._.round    dq 0x0000000000000001, 0x0000000000008082, 0x800000000000808A,\
                    0x8000000080008000, 0x000000000000808B, 0x0000000080000001,\
                    0x8000000080008081, 0x8000000000008009, 0x000000000000008A,\
@@ -414,4 +479,4 @@ sha3._.round    dq 0x0000000000000001, 0x0000000000008082, 0x800000000000808A,\
                    0x8000000000008003, 0x8000000000008002, 0x8000000000000080,\
                    0x000000000000800A, 0x800000008000000A, 0x8000000080008081,\
                    0x8000000000008080, 0x0000000080000001, 0x8000000080008008
-
+endg

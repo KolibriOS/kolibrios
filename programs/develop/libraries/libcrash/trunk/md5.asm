@@ -1,6 +1,6 @@
 ;    libcrash -- cryptographic hash functions
 ;
-;    Copyright (C) 2012-2013,2016 Ivan Baravy (dunkaist)
+;    Copyright (C) 2012-2013,2016,2019 Ivan Baravy (dunkaist)
 ;
 ;    This program is free software: you can redistribute it and/or modify
 ;    it under the terms of the GNU General Public License as published by
@@ -15,6 +15,24 @@
 ;    You should have received a copy of the GNU General Public License
 ;    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
+
+MD5_HASH_SIZE  = 16
+MD5_BLOCK_SIZE = 64
+
+MD5_ALIGN      = 4
+MD5_ALIGN_MASK = MD5_ALIGN - 1
+
+struct ctx_md5
+        hash            rb MD5_HASH_SIZE
+        block           rb MD5_BLOCK_SIZE
+        index           rd 1
+        msglen_0        rd 1
+        msglen_1        rd 1
+ends
+
+if defined sizeof.crash_ctx
+  assert sizeof.crash_ctx >= sizeof.ctx_md5
+end if
 
 macro md5._.f b, c, d
 {
@@ -259,7 +277,15 @@ proc md5.final _ctx
 endp
 
 
+proc md5.oneshot _ctx, _data, _len
+	stdcall	md5.init, [_ctx]
+	stdcall	md5.update, [_ctx], [_data], [_len]
+	stdcall	md5.final, [_ctx]
+	ret
+endp
+
+
+iglobal
 align MD5_ALIGN
-
 md5._.hash_init dd 0x67452301, 0xefcdab89, 0x98badcfe, 0x10325476, 0xc3d2e1f0
-
+endg

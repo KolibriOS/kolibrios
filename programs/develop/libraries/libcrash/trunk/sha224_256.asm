@@ -1,6 +1,6 @@
 ;    libcrash -- cryptographic hash functions
 ;
-;    Copyright (C) 2012-2013,2016 Ivan Baravy (dunkaist)
+;    Copyright (C) 2012-2013,2016,2019 Ivan Baravy (dunkaist)
 ;
 ;    This program is free software: you can redistribute it and/or modify
 ;    it under the terms of the GNU General Public License as published by
@@ -14,6 +14,29 @@
 ;
 ;    You should have received a copy of the GNU General Public License
 ;    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+
+SHA224256_BLOCK_SIZE = 64
+SHA224_BLOCK_SIZE    = SHA224256_BLOCK_SIZE
+SHA256_BLOCK_SIZE    = SHA224256_BLOCK_SIZE
+SHA224_HASH_SIZE     = 28
+SHA256_HASH_SIZE     = 32
+
+SHA224256_INIT_SIZE  = 32
+SHA224256_ALIGN      = 4
+SHA224256_ALIGN_MASK = SHA224256_ALIGN - 1
+
+struct ctx_sha224256
+        hash            rb SHA224256_INIT_SIZE
+        block           rb SHA224256_BLOCK_SIZE
+        index           rd 1
+        msglen_0        rd 1
+        msglen_1        rd 1
+ends
+
+if defined sizeof.crash_ctx
+  assert sizeof.crash_ctx >= sizeof.ctx_sha224256
+end if
 
 
 macro sha224256._.chn x, y, z
@@ -253,8 +276,10 @@ end repeat
         ret
 endp
 
-sha256.update = sha224.update
-proc sha224.update _ctx, _msg, _size
+
+sha224.update = sha224256.update
+sha256.update = sha224256.update
+proc sha224256.update _ctx, _msg, _size
         mov     ebx, [_ctx]
         mov     ecx, [_size]
         add     [ebx + ctx_sha224256.msglen_0], ecx
@@ -310,8 +335,9 @@ proc sha224.update _ctx, _msg, _size
 endp
 
 
-sha256.final = sha224.final
-proc sha224.final _ctx
+sha224.final = sha224256.final
+sha256.final = sha224256.final
+proc sha224256.final _ctx
         mov     ebx, [_ctx]
         lea     edi, [ebx + ctx_sha224256.block]
         mov     ecx, [ebx + ctx_sha224256.msglen_0]
@@ -372,8 +398,24 @@ proc sha224256._.postprocess _ctx, _hash
 endp
 
 
-align SHA224256_ALIGN
+proc sha224.oneshot _ctx, _data, _len
+	stdcall	sha224.init, [_ctx]
+	stdcall	sha224.update, [_ctx], [_data], [_len]
+	stdcall	sha224.final, [_ctx]
+	ret
+endp
 
+
+proc sha256.oneshot _ctx, _data, _len
+	stdcall	sha256.init, [_ctx]
+	stdcall	sha256.update, [_ctx], [_data], [_len]
+	stdcall	sha256.final, [_ctx]
+	ret
+endp
+
+
+iglobal
+align SHA224256_ALIGN
 sha224._.hash_init      dd 0xc1059ed8, 0x367cd507, 0x3070dd17, 0xf70e5939,\
                            0xffc00b31, 0x68581511, 0x64f98fa7, 0xbefa4fa4
 
@@ -396,4 +438,4 @@ sha256_table            dd 0x428a2f98, 0x71374491, 0xb5c0fbcf, 0xe9b5dba5,\
                            0x391c0cb3, 0x4ed8aa4a, 0x5b9cca4f, 0x682e6ff3,\
                            0x748f82ee, 0x78a5636f, 0x84c87814, 0x8cc70208,\
                            0x90befffa, 0xa4506ceb, 0xbef9a3f7, 0xc67178f2
-
+endg

@@ -1,6 +1,6 @@
 ;    libcrash -- cryptographic hash functions
 ;
-;    Copyright (C) 2012-2013,2016 Ivan Baravy (dunkaist)
+;    Copyright (C) 2012-2013,2016,2019 Ivan Baravy (dunkaist)
 ;
 ;    This program is free software: you can redistribute it and/or modify
 ;    it under the terms of the GNU General Public License as published by
@@ -15,6 +15,19 @@
 ;    You should have received a copy of the GNU General Public License
 ;    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
+
+CRC32_HASH_SIZE = 4
+
+CRC32_ALIGN = 4
+CRC32_ALIGN_MASK = CRC32_ALIGN - 1
+
+struct ctx_crc32
+        hash    rd 1
+ends
+
+if defined sizeof.crash_ctx
+  assert sizeof.crash_ctx >= sizeof.ctx_crc32
+end if
 
 proc crc32.init _ctx
         mov     ebx, [_ctx]
@@ -61,8 +74,16 @@ proc crc32.final _ctx
 endp
 
 
-align CRC32_ALIGN
+proc crc32.oneshot _ctx, _data, _len
+	stdcall	crc32.init, [_ctx]
+	stdcall	crc32.update, [_ctx], [_data], [_len]
+	stdcall	crc32.final, [_ctx]
+	ret
+endp
 
+
+iglobal
+align CRC32_ALIGN
 crc32._.hash_init       dd 0xffffffff
 
 crc32._.table           dd \
@@ -109,4 +130,4 @@ crc32._.table           dd \
         0xbdbdf21c, 0xcabac28a, 0x53b39330, 0x24b4a3a6, 0xbad03605, 0xcdd70693,\
         0x54de5729, 0x23d967bf, 0xb3667a2e, 0xc4614ab8, 0x5d681b02, 0x2a6f2b94,\
         0xb40bbe37, 0xc30c8ea1, 0x5a05df1b, 0x2d02ef8d
-
+endg

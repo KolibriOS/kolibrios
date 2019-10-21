@@ -231,7 +231,7 @@ end if
 
         mov     esi, con.k_h_ctx
         mov     edi, con.temp_ctx
-        mov     ecx, sizeof.ctx_sha224256/4
+        mov     ecx, sizeof.crash_ctx
         rep movsd
         mov     [con.session_id_prefix], 'A'
         invoke  sha256_update, con.temp_ctx, con.session_id_prefix, 32+1
@@ -249,7 +249,7 @@ end if
 
         mov     esi, con.k_h_ctx
         mov     edi, con.temp_ctx
-        mov     ecx, sizeof.ctx_sha224256/4
+        mov     ecx, sizeof.crash_ctx/4
         rep     movsd
         inc     [con.session_id_prefix]
         invoke  sha256_update, con.temp_ctx, con.session_id_prefix, 32+1
@@ -267,7 +267,7 @@ end if
 
         mov     esi, con.k_h_ctx
         mov     edi, con.temp_ctx
-        mov     ecx, sizeof.ctx_sha224256/4
+        mov     ecx, sizeof.crash_ctx
         rep     movsd
         inc     [con.session_id_prefix]
         invoke  sha256_update, con.temp_ctx, con.session_id_prefix, 32+1
@@ -285,7 +285,7 @@ end if
 
         mov     esi, con.k_h_ctx
         mov     edi, con.temp_ctx
-        mov     ecx, sizeof.ctx_sha224256/4
+        mov     ecx, sizeof.crash_ctx/4
         rep     movsd
         inc     [con.session_id_prefix]
         invoke  sha256_update, con.temp_ctx, con.session_id_prefix, 32+1
@@ -303,7 +303,7 @@ end if
 
         mov     esi, con.k_h_ctx
         mov     edi, con.temp_ctx
-        mov     ecx, sizeof.ctx_sha224256/4
+        mov     ecx, sizeof.crash_ctx/4
         rep     movsd
         inc     [con.session_id_prefix]
         invoke  sha256_update, con.temp_ctx, con.session_id_prefix, 32+1
@@ -321,7 +321,7 @@ end if
 
         mov     esi, con.k_h_ctx
         mov     edi, con.temp_ctx
-        mov     ecx, sizeof.ctx_sha224256/4
+        mov     ecx, sizeof.crash_ctx/4
         rep     movsd
         inc     [con.session_id_prefix]
         invoke  sha256_update, con.temp_ctx, con.session_id_prefix, 32+1
