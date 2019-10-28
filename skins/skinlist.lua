@@ -12,6 +12,7 @@ skinlist = {
 "Leency/Yeah/Yeah.skn",
 "loggy/loggy.skn",
 "LucidChocolate/LucidChocolate.skn",
+"LucidCream/LucidCream.skn",
 "night/night.skn",
 "Win10/Win10.skn",
 "_old/5imple Alpha/1.5imple Alpha/1.5imple Alpha.skn",
