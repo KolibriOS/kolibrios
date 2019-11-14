@@ -99,7 +99,7 @@ int MultiByteToWideChar(
     int cchWideChar 	// size of buffer 
    )
 {
-	int i = 0;  // fix by cppcheck
+	int i = 0;
 	while ((lpMultiByteStr[i*2]!=0) && (lpMultiByteStr[i*2+1]!=0)) i++;
 	return i/2;
 }
@@ -147,7 +147,7 @@ int stat (const char* path, struct _stat* buf)
  
 char * getcwd (char *buffer, int size)
 {
-	volatile int len=0;   // fix by cppcheck
+	int len=0;
 	if (size==0){
 		if (buffer!=0)
 			return 0;

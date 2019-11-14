@@ -34,9 +34,9 @@ char modelmem=TINY;
 char *stubfile=NULL;
 char *winstub=NULL;
 FILE *hout=NULL;
-char *namestartupfile="startup.h--";
+const char *namestartupfile="startup.h--";
 
-char outext[4]="com";
+char outext[4]="kex";
 short extflag=TRUE;//расширение можно присвоить
 //int scrsize;
 unsigned char gwarning=FALSE;
@@ -78,73 +78,73 @@ unsigned char ESPloc=FALSE;
 int startupfile=-1;
 int alignproc=8,aligncycle=8;
 
-char *usage[]={
+const char *usage[]={
 "USAGE: C-- [options] [FILE_NAME.INI] [SOURCE_FILE_NAME]",
 "",
 "                       C-- COMPILER OPTIONS",
 "",
 "                           OPTIMIZATION",
-"/OC  optimize for code size           /DE  enable temporary expansion variable",
-"/OS  optimize for speed               /OST enable optimization string",
-"/ON  enable optimization number       /AP[=n] align start function",
-"/UST use startup code for variables   /AC[=n] align start cycles",
+"-OC  optimize for code size           -DE  enable temporary expansion variable",
+"-OS  optimize for speed               -OST enable optimization string",
+"-ON  enable optimization number       -AP[=n] align start function",
+"-UST use startup code for variables   -AC[=n] align start cycles",
 #ifdef OPTVARCONST
-"/ORV replace variable on constant     /OIR skip repeated initializing register",
+"-ORV replace variable on constant     -OIR skip repeated initializing register",
 #else
-"                                      /OIR skip repeated initializing register",
+"                                      -OIR skip repeated initializing register",
 #endif
 "",
 "                          CODE GENERATION",
-"/2   80286 code optimizations         /SA=#### start code address",
-"/3   80386 code optimizations         /AL=## set value insert byte",
-"/4   80486 code optimizations         /WFA fast call API functions",
-"/5   pentium code optimizations       /IV  initial all variables",
-"/A   enable address alignment         /SUV=#### start address variables",
-"/AS[=n] def. alignment in structures  /LRS load in registers over stack",
-"/UL  use 'lea' for adding registers   /JS  join stack calling functions",
-"/BA  byte access to array",//             /ASP addressing local variable via ESP",
+"-2   80286 code optimizations         -SA=#### start code address",
+"-3   80386 code optimizations         -AL=## set value insert byte",
+"-4   80486 code optimizations         -WFA fast call API functions",
+"-5   pentium code optimizations       -IV  initial all variables",
+"-A   enable address alignment         -SUV=#### start address variables",
+"-AS[=n] def. alignment in structures  -LRS load in registers over stack",
+"-UL  use 'lea' for adding registers   -JS  join stack calling functions",
+"-BA  byte access to array",//             -ASP addressing local variable via ESP",
 "",
 "                           PREPROCESSOR",
-"/IP=<path>  include file path         /IA   assembly instructions as identifier",
-"/D=<idname> defined identifier        /CRI- not check include file on repeated",
-"/MIF=<file> main input file           /IND=<name> import name from dll",
-"/SF=<file>  other startup file",
+"-IP=<path>  include file path         -IA   assembly instructions as identifier",
+"-D=<idname> defined identifier        -CRI- not check include file on repeated",
+"-MIF=<file> main input file           -IND=<name> import name from dll",
+"-SF=<file>  other startup file",
 "",
 "                              LINKING",
-"/AT    insert ATEXIT support block    /NS    disable stub",
-"/ARGC  insert parse command line      /S=#####  set stack size",
-"/P     insert parse command line      /WIB=##### set image base address",
-"/C     insert CTRL<C> ignoring code   /WFU   add Fix Up table, for Windows",
-"/R     insert resize memory block     /WMB   create Windows mono block",
-"/ENV   insert variable with environ   /WS=<name> set name stub file for win32",
-"/J0    disable initial jump to main() /WBSS  set post data in bss section",
-"/J1    initial jump to main() short   /WO    call API functions on ordinals",
-"/J2    initial jump to main() near    /CPA   clear post area",
-"/STUB= <name> set name stub file      /WSI   short import table, for Windows",
-"/DOS4GW file running with DOS4GW      /WAF=#### align Windows file (def 512)",
-"/STM   startup code in main function",
+"-AT    insert ATEXIT support block    -NS    disable stub",
+"-ARGC  insert parse command line      -S=#####  set stack size",
+"-P     insert parse command line      -WIB=##### set image base address",
+"-C     insert CTRL<C> ignoring code   -WFU   add Fix Up table, for Windows",
+"-R     insert resize memory block     -WMB   create Windows mono block",
+"-ENV   insert variable with environ   -WS=<name> set name stub file for win32",
+"-J0    disable initial jump to main() -WBSS  set post data in bss section",
+"-J1    initial jump to main() short   -WO    call API functions on ordinals",
+"-J2    initial jump to main() near    -CPA   clear post area",
+"-STUB= <name> set name stub file      -WSI   short import table, for Windows",
+"-DOS4GW file running with DOS4GW      -WAF=#### align Windows file (def 512)",
+"-STM   startup code in main function",
 "",
 "                           OUTPUT FILES",
-"/TEXE DOS EXE file (model TINY)       /D32  EXE file (32bit code for DOS)",
-"/EXE  DOS EXE file (model SMALL)      /W32  EXE for Windows32 GUI",
-"/OBJ  OBJ output file                 /W32C EXE for Windows32 console",
-"/SOBJ slave OBJ output file           /DLL  DLL for Windows32",
-"/COFF OBJ COFF output file            /DBG  create debug information",
-"/SYM  COM file symbiosis              /LST  create assembly listing",
-"/SYS  device (SYS) file               /B32  32bit binary files",
-"/MEOS executable file for MeOS        /MAP  create function map file",
-"/EXT= <ext> set file extension",
+"-TEXE DOS EXE file (model TINY)       -D32  EXE file (32bit code for DOS)",
+"-EXE  DOS EXE file (model SMALL)      -W32  EXE for Windows32 GUI",
+"-OBJ  OBJ output file                 -W32C EXE for Windows32 console",
+"-SOBJ slave OBJ output file           -DLL  DLL for Windows32",
+"-COFF OBJ COFF output file            -DBG  create debug information",
+"-SYM  COM file symbiosis              -LST  create assembly listing",
+"-SYS  device (SYS) file               -B32  32bit binary files",
+"-MEOS executable file for MeOS        -MAP  create function map file",
+"-EXT= <ext> set file extension",
 "",
 "                           MISCELLANEOUS",
-"/HELP /H /? help, this info           /WORDS list of C-- reserved words",
-"/W         enable warning             /LAI   list of assembler instructions",
-"/WF=<file> direct warnings to a file  /ME    display my name and my address",
-"/MER=##    set maximum number errors  /X     disable SPHINX C-- header in output",
-"/NW=##     disable selected warnings  /WE=## selected warning will be error",
-//" /SCD        split code and date",
+"-HELP -H -? help, this info           -WORDS list of C-- reserved words",
+"-W         enable warning             -LAI   list of assembler instructions",
+"-WF=<file> direct warnings to a file  -ME    display my name and my address",
+"-MER=##    set maximum number errors  -X     disable SPHINX C-- header in output",
+"-NW=##     disable selected warnings  -WE=## selected warning will be error",
+//" -SCD        split code and date",
 NULL};
 
-char *dir[]={
+const char *dir[]={
 	"ME",    "WORDS",   "SYM",   "LAI",
 
 	"OBJ",   "SOBJ",    "J0",		 "J1",     "J2",    "C",     "R",
@@ -204,7 +204,7 @@ void compile();
 void PrintInfo(char **str);
 void LoadIni(char *name);
 //void CheckNumStr();
-void ListId(int num,unsigned char *list,short *ofs);
+void ListId(int num,unsigned char *list,unsigned short *ofs);
 void printmemsizes();
 void print8item(char *str);
 void doposts(void);
@@ -221,6 +221,27 @@ void CheckPageCode(unsigned int ofs);
 int MakePE();
 int MakeObj();
 void CheckUndefClassProc();
+
+
+void ListId(int numfirstchar,unsigned char *list,unsigned short *ofs)
+{
+char buf[40];
+	for(int i=0;i<numfirstchar;i++){
+		if((short)ofs[i]!=-1){
+			if(i<26)buf[0]=(char)('A'+i);
+			else if(i==26)buf[0]='_';
+			else buf[0]=(char)(i-27+'a');
+			unsigned char *ii=(unsigned char *)(list+ofs[i]);
+			while(*(short *)&*ii!=-1){
+				ii+=2;
+				strcpy(buf+1,(char *)ii);
+				ii+=strlen((char *)ii)+1;
+				puts(buf);
+//				CheckNumStr();
+			}
+		}
+	}
+}
 
 /*
 void PrintTegList(structteg *tteg)
@@ -265,7 +286,7 @@ unsigned char pari=FALSE;
 		if(rawfilename!=NULL)IncludePath(rawfilename);
 		
 		rawfilename=rawext=NULL;
-		LoadIni("c--.ini");	 
+		LoadIni((char *)"c--.ini");	 
 		
 		for(count=1;count<argc;count++){ //обработка командной строки
 			//if(argv[count][0]=='/'||argv[count][0]=='-'){
@@ -293,7 +314,7 @@ unsigned char pari=FALSE;
 		}
 	}
 	if(rawfilename==NULL){
-		PrintInfo(usage);
+		PrintInfo((char **)usage);
 		exit( e_noinputspecified );
 	}
 	time(&systime); //текущее время
@@ -314,13 +335,6 @@ int i;
 	if(i==NUMEXT){
 	 	printf("Bad input file extension '%s'.",rawext);
 	  exit(e_badinputfilename);
-	}
-	// Add dirname of the input file to include path.
-	char *slash_idx = strrchr((char*)rawfilename, DIV_FOLD);
-	if (slash_idx) {
-		*slash_idx = '\0';
-		IncludePath((char*)rawfilename);
-		*slash_idx = DIV_FOLD;
 	}
 }
 
@@ -695,7 +709,7 @@ errlate:
 					int j,jj;
 					puts("LIST OF RESERVED IDENTIFIERS:");
 					numstr=1;
-					ListId(53,id,idofs);
+					ListId(53,(unsigned char *)id,idofs);
 					for(j=0;j<ID2S;j++){
 						puts(id2[j]);
 //						CheckNumStr();
@@ -898,7 +912,7 @@ nexpardll:
 				case c_help:
 				case c_h:
 				case c_hh:
-					PrintInfo(usage);
+					PrintInfo((char **)usage);
 					exit(e_ok);
 				case c_mif:
 					if(ptr==NULL)return c_end;
@@ -922,7 +936,7 @@ nexpardll:
 					AlignCycle=(unsigned char)1^neg;
 					if(ptr!=NULL){
 						aligncycle=getnumber((unsigned char *)ptr);
-						if(aligncycle<1 || aligncycle>4096)aligncycle=8;  // fix by cppcheck
+						if(aligncycle<1&&aligncycle>4096)aligncycle=8;
 					}
 					break;
 				case c_ws:	//dos-stub for windows programs
@@ -1254,25 +1268,7 @@ void GetMemExeDat()
 	if(outputdata==output&&outputdata!=0)outputdata=(unsigned char *)MALLOC((size_t)MAXDATA);
 }
 
-void ListId(int numfirstchar,unsigned char *list,short *ofs)
-{
-char buf[40];
-	for(int i=0;i<numfirstchar;i++){
-		if((short)ofs[i]!=-1){
-			if(i<26)buf[0]=(char)('A'+i);
-			else if(i==26)buf[0]='_';
-			else buf[0]=(char)(i-27+'a');
-			unsigned char *ii=(unsigned char *)(list+ofs[i]);
-			while(*(short *)&*ii!=-1){
-				ii+=2;
-				strcpy(buf+1,(char *)ii);
-				ii+=strlen((char *)ii)+1;
-				puts(buf);
-//				CheckNumStr();
-			}
-		}
-	}
-}
+
 
 int writeoutput()
 {
@@ -1658,8 +1654,8 @@ char *ostartline;
 	tok=ptr->rectok;
 	if(tok==tk_structvar)datasize+=initstructvar((structteg *)ptr->newid,ptr->recrm);
 	else{
-long type,ssize;
-unsigned char typev;
+long type = 0,ssize = 0;
+unsigned char typev = 0;
 		if(tok>=tk_charvar&&tok<=tk_doublevar){
 			type=tok-(tk_charvar-tk_char);
 			typev=variable;
@@ -1671,7 +1667,6 @@ unsigned char typev;
 			if(am32==FALSE&&((itok.flag&f_far)==0))ssize=2;
 			else ssize=4;
 		}
-		else printf("unexpected condition\n");  // fix by cppcheck
 		datasize+=initglobalvar(type,ptr->recsize/ssize,ssize,typev);
 	}
 	free(input);
@@ -1689,10 +1684,7 @@ FILE *CreateOutPut(char *ext,char *mode)
 {
 char buf[256];
 FILE *diskout;
-	if (comfile == file_meos)
-		sprintf(buf,"%s",rawfilename);
-	else
-		sprintf(buf,"%s.%s",rawfilename,ext);
+	sprintf(buf,"%s.%s",rawfilename,ext);
 	if((diskout=fopen(buf,mode))==NULL){
 		ErrOpenFile(buf);
 		exit(e_notcreateoutput);

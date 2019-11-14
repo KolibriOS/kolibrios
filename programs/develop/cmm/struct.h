@@ -278,7 +278,7 @@ typedef struct _PE_HEADER_
 
 typedef struct _OBJECT_ENTRY_
 {
-	char name[8];
+	char name[16];
 	long vsize;
 	long sectionRVA;
 	long psize;
@@ -414,7 +414,7 @@ struct paraminfo
 
 struct MEOSheader
 {
-	unsigned char sign[8];
+	unsigned char sign[25];
 	unsigned long vers;
 	unsigned long start;
 	unsigned long size;

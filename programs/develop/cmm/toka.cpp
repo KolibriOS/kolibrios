@@ -663,7 +663,7 @@ int otok;
 void CheckReg(int idx,int base,int *reg1,int *reg2,int razr)
 {
 	if(razr==r32){
-		unsigned char lreg[8];
+		unsigned char lreg[16];
 		int i;
 		for(i=0;i<8;i++){
 			if(i==ESP||i==EBP)lreg[i]=1;
@@ -675,7 +675,7 @@ void CheckReg(int idx,int base,int *reg1,int *reg2,int razr)
 		}
 		if(lreg[*reg1]==0)lreg[*reg1]=1;
 		else{
-			for(i=7;i>=0;i--){    // fix by cppcheck, side effect - enable EAX 
+			for(i=8;i!=0;i--){
 				if(lreg[i]==0){
 					lreg[i]=1;
 					*reg1=i;
@@ -685,7 +685,7 @@ void CheckReg(int idx,int base,int *reg1,int *reg2,int razr)
 		}
 //		printf("\nreg1=%d",*reg1);
 		if(lreg[*reg2]!=0){
-			for(i=7;i>=0;i--){    // fix by cppcheck, side effect - enable EAX
+			for(i=8;i!=0;i--){
 				if(lreg[i]==0){
 					*reg2=i;
 					break;
@@ -4094,7 +4094,7 @@ int GetDirective(char *str)
 	return i;
 }
 
-int FastSearch(unsigned char *list,short *ofs,int type,char *str)
+int FastSearch(unsigned char *list,short unsigned *ofs,int type,char *str)
 {
 	if((strlen(str)-1)>0){
 short offs=-1;

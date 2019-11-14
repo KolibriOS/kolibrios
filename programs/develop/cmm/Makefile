@@ -1,29 +1,28 @@
-Compiler                = kos32-gcc
-Linker					= kos32-ld
+# sudo apt-get install gcc-multilib g++-multilib
 
-SDK_DIR:= $(abspath ../../../contrib/sdk)
+Compiler                = gcc
 
-Includes = -Id:\TEMP\mprog\kos\includes -I$(SDK_DIR)/sources/newlib/libc/include
+Compiler_Options       = -m32 -c -fno-exceptions -D_UNIX_
+#Compiler_Options       = -c -fno-exceptions -O2 -D_WIN32_
 
-Compatib_Posix = -Dstricmp=strcasecmp -Dstrnicmp=strncasecmp
+#-D: _WIN32_ or _UNIX_
+#-D: for _WIN32_ add -D__CONSOLE__
 
-Compiler_Options = -c -fno-exceptions -D_KOS_ -U_Win32 -U_WIN32 -U__MINGW32__ \
-	-mno-ms-bitfields -Wno-write-strings $(Includes) $(Compatib_Posix)
-
-Exe_file                = cmm.kex
+Exe_file                = cmm
 
 
-Path_Libs		= -Ld:/TEMP/Dev-Cpp/lib/kos -L $(SDK_DIR)/lib
-#-Ld:/TEMP/Dev-Cpp/lib/gcc/mingw32/3.4.2 -Ld:/TEMP/Dev-Cpp/lib/gcc -Ld:/TEMP/Dev-Cpp/lib -Ld:/TEMP/Dev-Cpp/lib
 
-Add_Libs		=
+Path_Libs		= -Ld:/TEMP/Dev-Cpp/lib/gcc/mingw32/3.4.2 -Ld:/TEMP/Dev-Cpp/lib/gcc -Ld:/TEMP/Dev-Cpp/lib -Ld:/TEMP/Dev-Cpp/lib
 
-#Link_Libs		= -lc -lgcc
-Link_Libs = -static -S -nostdlib -T $(SDK_DIR)/sources/newlib/app-dynamic.lds \
-          --image-base 0 -lgcc -ldll -lc.dll 
+Add_Libs		= d:/TEMP/Dev-Cpp/lib/gcc/mingw32/3.4.2/crtbegin.o d:/TEMP/Dev-Cpp/lib/crt2.o d:/TEMP/Dev-Cpp/lib/gcc/mingw32/3.4.2/crtend.o
 
-My_Libs	 		= main.o port.o toka.o tokb.o tokc.o toke.o tokr.o errors.o debug.o outobj.o outpe.o disasm.o switch.o outle.o pointer.o new_type.o class.o res.o optreg.o libobj.o
- 
+Link_Libs		= -lmingw32 -lgcc -lmoldname -lmingwex -lmsvcrt -luser32 -lkernel32 -ladvapi32 -lshell32
+
+My_Libs	 		= main.o toka.o tokb.o tokc.o toke.o tokr.o errors.o debug.o outobj.o outpe.o disasm.o switch.o outle.o pointer.o new_type.o class.o res.o optreg.o libobj.o port.o
+
+
+#Link_Libs		= -lmingw32 -lgcc -lmoldname -lmingwex -lmingw32 -lmoldname -lmingwex -lmsvcrt -lgcc  -lmsvcrt -luser32 -lkernel32 -ladvapi32 -lshell32
+
 ####################
 ## Makefile rules ##
 ####################
@@ -31,11 +30,14 @@ My_Libs	 		= main.o port.o toka.o tokb.o tokc.o toke.o tokr.o errors.o debug.o o
 all        : $(Exe_file)
 
 $(Exe_file) : $(My_Libs)
-	$(Linker) -o cmm.kex --stack 0x100000 $(Path_Libs) $(Add_Libs) $(My_Libs) $(Link_Libs)
-	objcopy cmm.kex -O binary
-	kpack cmm.kex
+#	ld -o cmm.exe $(Path_Libs) $(Add_Libs) $(My_Libs) $(Link_Libs)
+	$(Compiler) -m32 -o $(Exe_file) $(My_Libs)
+#	ld -o cmm.exe -Bdynamic d:/TEMP/Dev-Cpp/bin/../lib/gcc/mingw32/3.4.2/crtend.o d:/TEMP/Dev-Cpp/bin/../lib/gcc/mingw32/3.4.2/../../../crt2.o d:/TEMP/Dev-Cpp/bin/../lib/gcc/mingw32/3.4.2/crtbegin.o -Ld:/TEMP/Dev-Cpp/bin/../lib/gcc/mingw32/3.4.2 -Ld:/TEMP/Dev-Cpp/bin/../lib/gcc -Ld:/TEMP/Dev-Cpp/bin/../lib/gcc/mingw32/3.4.2/../../.. -Ld:/TEMP/Dev-Cpp/bin/../lib/gcc/mingw32/3.4.2/../../.. main.o toka.o tokb.o tokc.o toke.o tokr.o errors.o debug.o outobj.o outpe.o disasm.o switch.o outle.o pointer.o new_type.o class.o res.o optreg.o libobj.o port.o -lmingw32 -lgcc -lmoldname -lmingwex -lmsvcrt -luser32 -lkernel32 -ladvapi32 -lshell32 -lmingw32 -lmoldname -lmingwex -lmsvcrt -lgcc
 
-clean: 	
+
+
+
+clean:
 	rm *.o
 
 
@@ -108,4 +110,3 @@ port.o: port.cpp
 
 .asm.o:
 	fasm $<
-

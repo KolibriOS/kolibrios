@@ -191,14 +191,14 @@ extern int tok,tok2;
 
 #if !defined (_TOKR_)
 extern char useasm;
-extern short ofsmnem[];
+extern unsigned short ofsmnem[];
 extern unsigned char asmMnem[];
 extern char asmparam;
 #endif
 
 #if !defined (_TOKA_)
 extern unsigned char id[];
-extern short idofs[];
+extern unsigned short idofs[];
 extern char id2[ID2S][9];
 extern char regs[2][8][4];
 extern char begs[8][3];
@@ -350,7 +350,7 @@ void InitStruct();	//инициализировать структуру
 unsigned long LocalStruct(int flag,int *localline);	//инициализировать локальную структуру
 struct structteg * FindTeg(int Global,char *name=itok.name);	//найти тег
 void dostruct();
-int FastSearch(unsigned char *list,short *ofs,int type,char *str);
+int FastSearch(unsigned char *list,short unsigned *ofs,int type,char *str);
 void FindDirectiv();
 unsigned long long scannumber(int *rm);
 void FastTok(int mode,int *tok4=&tok,ITOK *itok4=&itok);
@@ -462,7 +462,7 @@ int procdo(int expectedreturn);
 int updatecall(unsigned int which,unsigned int where,unsigned int top);
 void AddBackBuf(int,char);
 void CharToBackBuf(char c);
-void missingpar(char *name="");
+void missingpar(char *name=(char *)"");
 int CheckCodeSize();
 void CheckPosts();
 int doanyundefproc(int jumpsend=FALSE);

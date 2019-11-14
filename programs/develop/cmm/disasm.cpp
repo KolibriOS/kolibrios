@@ -706,7 +706,7 @@ char *second_f20f[]={
 
 
 
-char *second_660f[]={
+const char *second_660f[]={
 
 // 0
 
@@ -1152,7 +1152,7 @@ void addr_to_hex(long addr, unsigned char splitup)
 
 {
 
-static char buffer[12]; // fix by cppcheck
+static char buffer[25];
 
 WORD32 adr;
 
@@ -1848,7 +1848,7 @@ void floating_point(int e1)
 
 int esc = e1*8 + REG(modrm());
 
-  if(MOD(modrm())==3){	//2-‰ €‰’>C0
+  if(MOD(modrm())==3){	//2-\89 \81\80\89\92>C0
 
     if (fspecial[esc]) {
 
@@ -2572,7 +2572,7 @@ int c;
 
 					getbyte();
 
-					ua_str(second_660f[getbyte()]);
+					ua_str((char *)second_660f[getbyte()]);
 
 					goto endp;
 
