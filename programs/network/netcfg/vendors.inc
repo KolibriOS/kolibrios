@@ -32,7 +32,7 @@ macro ClassID a,b,c,d {
 ;--------------------------------------
 VendorsTab:
 VendorID        0x018a, 'LevelOne'                     ; Actually they misprogrammed their boards
-VendorID        0x02ac, 'Efficient Networks, Inc.'
+VendorID        0x02ac, 'Efficient Networks Inc.'
 VendorID        0x021b, 'Compaq'
 VendorID        0x1011, 'Digital Equipment Corp.'
 VendorID        0x1022, 'Advanced Micro Devices'
@@ -43,6 +43,7 @@ VendorID        0x10EC, 'Realtek Semiconductor Corp.'
 VendorID        0x1106, 'VIA Technologies'
 VendorID        0x1113, 'Accton Technology'
 VendorID        0x1186, 'D-link system Inc.'
+VendorID        0x11AB, 'Marvell Semiconductor Inc.'
 VendorID        0x11DB, 'Sega Enterprises Ltd'
 VendorID        0x1259, 'Allied Telesyn International'
 VendorID        0x126C, 'Nortel Networks Corp.'
@@ -57,7 +58,7 @@ VendorID        0x168C, 'Atheros Communications Inc.'
 VendorID        0x16EC, 'U.S. Robotics'
 VendorID        0x1743, 'Peppercon AG'
 VendorID        0x17F3, 'RDC Semiconductor'
-VendorID        0x4033, 'Addtron Technology Co, Inc.'
+VendorID        0x4033, 'Addtron Technology Co Inc.'
 VendorID        0x8086, 'Intel Corp.'
 VendorID        0,      'Unknown'       ; <- terminator
 
