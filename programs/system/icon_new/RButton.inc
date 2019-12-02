@@ -369,7 +369,7 @@ RBDelete:
 
 	stdcall DelIcon,[SelIcon]
 	mov	ebx,[SelIcon]
-	lea	edi,[IconsID+ebx*4-4]
+	lea	edi,[IconsID+ebx*4]
 	lea	esi,[edi+4]
 	mov	ecx,[MaxNumIcon]
 	sub	ecx,[SelIcon]
