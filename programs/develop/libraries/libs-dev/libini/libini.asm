@@ -777,8 +777,9 @@ endl
     .searchEndSect:
 	mov	al,'['
 	repne	scasb
-
+	jnz	@f
 	dec	edi
+      @@:
 	mov	[endDel],edi
 
 	test	ecx,ecx
@@ -798,7 +799,6 @@ endl
 	mov	eax,dword[funcFile+12]
 	sub	eax,[endDel]
 	add	eax,[begDel]
-	dec	eax
 
 	mov	dword[funcFile],2		;write buffer to file
 	mov	dword[funcFile+12],eax
