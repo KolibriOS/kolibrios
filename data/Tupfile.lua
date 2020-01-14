@@ -133,7 +133,7 @@ extra_files = {
  {"/", "common/distr_data/autorun.inf"},
  {"/", "common/distr_data/KolibriOS_icon.ico"},
  {"/", build_type .. "/settings/kolibri.lbl"},
- {"Docs/stack.txt", build_type .. "/docs/STACK.TXT"},
+ {"Docs/stack.txt", "../kernel/trunk/docs/stack.txt"},
  {"HD_Load/9x2klbr/", "common/HD_load/9x2klbr/LDKLBR.VXD"},
  {"HD_Load/MeOSLoad/", PROGS .. "/hd_load/meosload/AUTOEXEC.BAT"},
  {"HD_Load/MeOSLoad/", PROGS .. "/hd_load/meosload/CONFIG.SYS"},
