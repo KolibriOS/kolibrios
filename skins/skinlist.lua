@@ -2,6 +2,9 @@
 -- included by ../data/Tupfile.lua.
 skinlist = {
 "ConLenov/mntech/mntech.skn",
+"ConLenov/LucidChocolate/LucidChocolate.skn",
+"ConLenov/LucidCream/LucidCream.skn",
+"ConLenov/Win10/Win10.skn",
 "Leency/AreaSq/AreaSq.skn",
 "Leency/Blueberries/Blueberries.skn",
 "Leency/HydrogenOS/HydrogenOS.skn",
@@ -12,10 +15,7 @@ skinlist = {
 "Leency/Workbench/Workbench.skn",
 "Leency/Yeah/Yeah.skn",
 "loggy/loggy.skn",
-"LucidChocolate/LucidChocolate.skn",
-"LucidCream/LucidCream.skn",
 "night/night.skn",
-"Win10/Win10.skn",
 "_old/5imple Alpha/1.5imple Alpha/1.5imple Alpha.skn",
 "_old/5imple Alpha/2.5imple Alpha/2.5imple Alpha.skn",
 "_old/5imple Alpha/3.5imple Alpha/3.5imple Alpha.skn",
