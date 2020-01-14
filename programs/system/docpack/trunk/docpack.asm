@@ -205,7 +205,7 @@ if lang eq ru
 else
   embed_local_file 'SYSFUNCS.TXT'      ;f
 end if
-  embed_docdir_file 'STACK.TXT'        ;g
+  embed_local_file 'STACK.TXT'        ;g
   embed_docdir_file 'KFAR_KEYS.TXT'    ;h
   embed_docdir_file 'INI.TXT'          ;i
   embed_docdir_file 'OPENDIAL.TXT'     ;j
