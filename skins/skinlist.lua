@@ -1,6 +1,7 @@
 -- Provides list of skins for distribution kit,
 -- included by ../data/Tupfile.lua.
 skinlist = {
+"ConLenov/mntech/mntech.skn",
 "Leency/AreaSq/AreaSq.skn",
 "Leency/Blueberries/Blueberries.skn",
 "Leency/HydrogenOS/HydrogenOS.skn",
