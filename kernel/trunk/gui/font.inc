@@ -862,15 +862,17 @@ antiAliasing:
         mov     ebp, ebx
         ret
 
+iglobal
 fontSmoothing   db  2   ; = 0, 1 or 2
 fontSize        db  0   ; user mode setting
 font1:
   if lang eq sp
-  file 'char_sp.mt'
+  file 'gui/char_sp.mt'
   else if lang eq et
-  file 'char_et.mt'
+  file 'gui/char_et.mt'
   else
-  file 'char.mt'
+  file 'gui/char.mt'
   end if
 fontUni:
-file 'charUni.mt'
+file 'gui/charUni.mt'
+endg
