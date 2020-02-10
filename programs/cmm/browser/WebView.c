@@ -31,7 +31,7 @@ _http http = {0, 0, 0, 0, 0, 0, 0};
 char homepage[] = FROM "html\\homepage.htm""\0";
 
 #ifdef LANG_RUS
-char version[]="Текстовый браузер 1.8c";
+char version[]="Текстовый браузер 1.8d";
 ?define IMAGES_CACHE_CLEARED "Кэш картинок очищен"
 ?define T_LAST_SLIDE "Это последний слайд"
 char loading[] = "Загрузка страницы...<br>";
@@ -46,7 +46,7 @@ char link_menu[] =
 "Копировать ссылку
 Скачать содержимое ссылки";
 #else
-char version[]="Text-based Browser 1.8c";
+char version[]="Text-based Browser 1.8d";
 ?define IMAGES_CACHE_CLEARED "Images cache cleared"
 ?define T_LAST_SLIDE "This slide is the last"
 char loading[] = "Loading...<br>";
@@ -400,6 +400,20 @@ void SetPageDefaults()
 	if (o_bufpointer) o_bufpointer = free(o_bufpointer);
 }
 
+void ReplaceSpaceInUrl() {
+	int i;
+	strcpy(#editURL, #URL);
+	while (i = strchr(#URL, ' '))
+	{
+		i -= #URL;
+		strlcpy(#URL+i+3, #editURL+i+1, sizeof(URL)-i-4);
+		URL[i] = '%';
+		URL[i+1] = '2';
+		URL[i+2] = '0';
+	}
+	strcpy(#editURL, #URL);
+}
+
 void OpenPage()
 {
 	char getUrl[sizeof(URL)];
@@ -417,6 +431,7 @@ void OpenPage()
 	}
 	if (!strncmp(#URL,"http:",5)) || (!strncmp(#URL,"https://",8)) 
 	{
+		ReplaceSpaceInUrl();
 		img_draw stdcall(skin.image, address_box.left+address_box.width+1, address_box.top-3, 17, skin.h, 68, SKIN_Y);
 
 		if (!strncmp(#URL,"http:",5)) {
@@ -503,6 +518,7 @@ void ClickLink()
 		history.back();
 	}
 	strcpy(#URL, PageLinks.GetURL(PageLinks.active));
+	ReplaceSpaceInUrl();
 	//#1
 	if (URL[0] == '#')
 	{
