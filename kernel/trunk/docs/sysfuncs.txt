@@ -71,7 +71,7 @@ Remarks:
     in ebx,ecx. The coordinates are resulted concerning
     the left upper corner of the window, which, thus, is set as (0,0),
     coordinates of the right lower corner essence (xsize,ysize).
-  * The sizes of the window are understood in sence of coordinates
+  * The sizes of the window are understood in sense of coordinates
     of the right lower corner. This concerns all other functions too.
     It means, that the real sizes are on 1 pixel more.
   * The window of style Y=1 looks as follows:
@@ -1018,7 +1018,7 @@ Returned value:
 Parameters:
   * eax = 18 - function number
   * ebx = 18 - subfunction number
-  * ecx = identifer of process/thread (PID/TID)
+  * ecx = identifier of process/thread (PID/TID)
 Returned value:
   * eax = 0 - success
   * eax = -1 - error (process is not found or is system)
@@ -1131,7 +1131,7 @@ Parameters:
   * ecx = pointer to the buffer for information (36 bytes)
 Returned value:
   * eax = total size of existing RAM in pages
-    or -1 if error has occured
+    or -1 if error has occurred
   * buffer pointed to by ecx contains the following information:
     * +0:  dword: total size of existing RAM in pages
     * +4:  dword: size of free RAM in pages
@@ -1156,7 +1156,7 @@ Returned value:
 Parameters:
   * eax = 18 - function number
   * ebx = 21 - subfunction number
-  * ecx = identifer of process/thread (PID/TID)
+  * ecx = identifier of process/thread (PID/TID)
 Returned value:
   * eax = 0 - error (invalid identifier)
   * otherwise eax = slot number
@@ -1503,7 +1503,7 @@ Remarks:
 ======================================================================
 ======= Function 25 - put image area on the background layer. ========
 ======================================================================
-Paramters:
+Parameters:
   * eax = 25 - function number
   * ebx = pointer to the previously allocated memory area,
         where placed the source images in a format BBGGRRTTBBGGRRTT...
@@ -1859,7 +1859,7 @@ events:
   * bit 17 is set = right button is released
   * bit 18 is set = middle button is released
 
-  * bit 23 is set = horisontal scroll is used
+  * bit 23 is set = horizontal scroll is used
 
   * bit 24 is set = doubleclick by left button
 
@@ -2027,7 +2027,7 @@ Parameters:
 Returned value:
   * eax = previous value of mask
 Remarks:
-  * Default mask (7=111b) enables nofices about redraw,
+  * Default mask (7=111b) enables notices about redraw,
     keys and buttons. This is enough for many applications.
   * Events prohibited in the mask are saved anyway, when come;
     they are simply not informed with event functions.
@@ -2236,8 +2236,8 @@ Remarks:
         ...                             ; somewhere one must call
                                         ; this function with ecx=sc
         mov     ecx, [sc.work_button_text]      ; read text color on
-                                        ; buttin in working area
-  * A program itself desides to use or not to use color table.
+                                        ; button in working area
+  * A program itself decides to use or not to use color table.
     For usage program must simply at calls to drawing functions select
     color taken from the table.
   * At change of the table of standard colors (by subfunction 2 with
@@ -2397,7 +2397,7 @@ Parameters:
 ======================================================================
 Parameters:
   * eax = 48 - function number
-  * ebx = 9 - subfunction number
+  * ebx = 11 - subfunction number
 Returned value:
   * eax = current font height in pixels
 
@@ -2409,7 +2409,7 @@ Returned value:
 ======================================================================
 Parameters:
   * eax = 48 - function number
-  * ebx = 10 - subfunction number
+  * ebx = 12 - subfunction number
   * cl  = new font height in pixels
 
 ---------------------- Constants for registers: ----------------------
@@ -2877,7 +2877,7 @@ Parameters:
     fff = function number of device
   * cl = number of register (must be even for bl=9,
     divisible by 4 for bl=10)
-  * dl/dx/edx (depending on requested size) contatins
+  * dl/dx/edx (depending on requested size) contains
     the data to write
 Returned value:
   * eax = -1 - error (access to PCI is disabled or parameters
@@ -3076,7 +3076,7 @@ Parameters:
     * X - similar for LAlt and RAlt
 Returned value:
   * eax=0 - success
-  * eax=1 - too mant hotkeys (maximum 256 are allowed)
+  * eax=1 - too many hotkeys (maximum 256 are allowed)
 Remarks:
   * Hotkey can work either at pressing or at release. Release
     scancode of a key is more on 128 than pressing scancode
@@ -3471,7 +3471,7 @@ Parameters:
     * SHM_READ        = 0x00 - only read access
     * SHM_WRITE       = 0x01 - read and write access
 Returned value:
-  * eax = pointer to memory area, 0 if error has occured
+  * eax = pointer to memory area, 0 if error has occurred
   * if new area is created (SHM_CREATE or SHM_OPEN_ALWAYS):
     edx = 0 - success, otherwise - error code
   * if existing area is opened (SHM_OPEN or SHM_OPEN_ALWAYS):
@@ -3557,7 +3557,7 @@ Returned value:
   * eax = -1 - invalid signal number
   * otherwise eax = old value of activity for this signal (0/1)
 Remarks:
-  * In current implementation only mask for user excepton handler,
+  * In current implementation only mask for user exception handler,
     which has been previously set by subfunction 24,
     is changed. Signal number corresponds to exception number.
 
@@ -3619,7 +3619,7 @@ Remarks:
 A process can load other process as debugged by set of corresponding
 bit by call to subfunction 7 of function 70.
 A process can have only one debugger; one process can debug some
-others. The system notifies debugger on events occuring with
+others. The system notifies debugger on events occurring with
 debugged process. Messages are written to the buffer defined by
 subfunction 0.
 Format of a message:
@@ -3637,7 +3637,7 @@ Message codes:
     * in addition dword-image of the register DR6 is given:
       * bits 0-3: condition of the corresponding breakpoint (set by
         subfunction 9) is satisfied
-      * bit 14: exception has occured because of the trace mode
+      * bit 14: exception has occurred because of the trace mode
         (flag TF is set TF)
     * process is suspended
 When debugger terminates, all debugged processes are killed.
@@ -4238,7 +4238,7 @@ Format of the information structure:
   * +20 = +0x14: path, general rules of names forming
 Returned value:
   * eax > 0 - program is loaded, eax contains PID
-  * eax < 0 - an error has occured, -eax contains
+  * eax < 0 - an error has occurred, -eax contains
     file system error code
   * ebx destroyed
 Remarks:
@@ -4478,7 +4478,7 @@ Returned value:
 
 ---------------------- Constants for registers: ----------------------
   eax - SF_NETWORK_GET (74)
-   bl - SSF_DEVICE_POINER (4)
+   bl - SSF_DEVICE_POINTER (4)
 ======================================================================
 ========= Function 74, Subfunction 6, Get packet TX counter. =========
 ======================================================================
