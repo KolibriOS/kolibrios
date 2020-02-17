@@ -349,10 +349,10 @@ tls_data_l:
         db drw3
         dw D32
 
-endofcode:
 gdte:
 
 diff16 "end of .data segment",0,$
+endofcode:
 
 align 16
 cur_saved_data:
