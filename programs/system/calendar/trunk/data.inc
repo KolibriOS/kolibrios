@@ -255,8 +255,8 @@ else
      db   'Sun'
      db   'Mon'
      db   'Tue'
-     db   'Wen'
-     db   'Thi'
+     db   'Wed'
+     db   'Thu'
      db   'Fri'
      db   'Sat'
 end if
