@@ -1,7 +1,7 @@
 ; Calendar for KolibriOS
 ;
 ; v1.5 - time redesign by Heavyiron
-; v1.2 - v1.55 - new desighn and functionality by Leency
+; v1.2 - v1.55 - new design and functionality by Leency
 ; v1.1 - add change time support by DedOK 
 ; v1.0 - written in pure assembler by Ivushkin Andrey aka Willow
 ; also - diamond, spraid, fedesco
@@ -156,7 +156,6 @@ get_current_date:
     jnz  .no2000
     add  [curYear],100
   .no2000:
-    call calculate
 ret
 
 check_midnight:
@@ -176,6 +175,7 @@ START:
 	m2m [Year], [curYear]
 	m2m [Month], [curMonth]
 	m2m [day_sel], [curDay]
+    call calculate
 red:
     call define_window
 
