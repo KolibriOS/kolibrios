@@ -154,7 +154,6 @@ still:
 mouse:
         mov     [pict_moved], 0
 
-        
         invoke  scrollbar_vert_mouse, scroll_bar_data_vertical
         invoke  scrollbar_hort_mouse, scroll_bar_data_horizontal
         xor     ecx, ecx
@@ -327,16 +326,18 @@ keyloop:
         call    slide_show
         jmp     keyloop
   .set_scale_none:
-        stdcall set_scale_mode, LIBIMG_SCALE_NONE
-        mov     eax, [scale_mode]
+        mov     eax, LIBIMG_SCALE_NONE
+        call    set_scale_mode
+        jz      @f
         call    recalc_canvas
-;        call    draw_view
+    @@:
         jmp     keyloop
   .set_scale_fit_min:
-        stdcall set_scale_mode, LIBIMG_SCALE_FIT_MIN
-        mov     eax, [scale_mode]
+        mov     eax, LIBIMG_SCALE_FIT_MIN
+        call    set_scale_mode
+        jz      @f
         call    recalc_work
-;        call    draw_view
+    @@:
         jmp     keyloop
   .move_pictport_left:
         stdcall move_pictport, -KEY_MOVE_PIXELS, 0
@@ -669,14 +670,6 @@ proc slide_show
         mov     [bShowToolbarSave], al
         mov     [bShowToolbar], 0
         mov     [canvas_padding], 0
-;        mov     eax, [procinfo.box.width]
-;        mov     [window.width], eax
-;        mov     eax, [procinfo.box.height]
-;        mov     [window.height], eax
-;        mov     eax, [procinfo.box.left]
-;        mov     [window.left], eax
-;        mov     eax, [procinfo.box.top]
-;        mov     [window.top], eax
         mov     [bg_color], 0x00000000
         mcall   SF_GET_SCREEN_SIZE
         mov     edx, eax
@@ -684,7 +677,8 @@ proc slide_show
         movzx   eax, ax
         mov     esi, eax
         mcall   SF_CHANGE_WINDOW, 0, 0, ,
-        stdcall set_scale_mode, LIBIMG_SCALE_FIT_MIN
+        mov     eax, LIBIMG_SCALE_FIT_MIN
+        call    set_scale_mode
 
   .done:
         pop     edi esi ebx
@@ -1777,17 +1771,12 @@ proc scale_fit_min_calc
 endp
 
 
-proc set_scale_mode _mode
-        push    eax ecx
-        xor     ecx, ecx
-        mov     eax, [_mode]
-
-        cmp     [scale_mode], eax
-        jz      @f
-        mov     [bScaleModeChanged], 1
+; eax: new scaling mode
+; z/Z - not/changed
+proc set_scale_mode
+        cmp     eax, [scale_mode]
         mov     [scale_mode], eax
-    @@:
-        pop     ecx eax
+        setnz   [bScaleModeChanged]
         ret
 endp
 
