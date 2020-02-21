@@ -82,7 +82,7 @@ struct  DISKFUNC
         adjust_cache_size       dd ?
 ; The pointer to the function which returns the cache size for this device.
 ; Optional, may be NULL.
-; unsigned int adjust_cache_size(unsigned int suggested_size);
+; unsigned int adjust_cache_size(void* userdata, unsigned int suggested_size);
 ; Return value: 0 = disable cache, otherwise = used cache size in bytes.
 ends
 
