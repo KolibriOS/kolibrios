@@ -124,7 +124,6 @@ void main()
 				{
 					EventCheckBoxClick(notes.cur_y);
 				}
-				break;
 			}
 			switch(key_scancode)
 			{
