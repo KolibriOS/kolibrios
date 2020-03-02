@@ -13,6 +13,27 @@
 
 $Revision$
 
+; ACPI Generic Address Structure
+struct GAS
+        asid        db ? ; address space id
+        bit_width   db ?
+        bit_offset  db ?
+        access_size db ?
+        address     DQ ?
+ends
+
+ASID.SYSTEM_MEMORY = 0
+ASID.SYSTEM_IO     = 1
+ASID.PCI_CONFIG    = 2
+ASID.PCI_EC        = 3
+ASID.PCI_SMBUS     = 4
+
+ACCESS_SIZE.UNDEFINED = 0
+ACCESS_SIZE.BYTE      = 1
+ACCESS_SIZE.WORD      = 2
+ACCESS_SIZE.DWORD     = 3
+ACCESS_SIZE.QWORD     = 4
+
 align 4
 system_shutdown:          ; shut down the system
 
@@ -173,6 +194,30 @@ do_acpi_power_off:
         jmp     $
 
 no_acpi_power_off:
+        cmp     byte[BOOT_LO.shutdown_type], SYSTEM_REBOOT
+        jnz     no_acpi_reboot
+        ; try to reboot via ACPI fixed features
+        mov     ebx, [acpi_fadt_base-OS_BASE]
+        cmp     dword[ebx], 'FACP'
+        jne     no_acpi_power_off
+        test    dword[ebx+0x70], 1 SHL 10    ; RESET_REG_SUP
+        jz      no_acpi_reboot
+        cmp     [ebx+0x74+GAS.asid], ASID.SYSTEM_IO
+        jnz     no_acpi_reboot
+        cmp     [ebx+0x74+GAS.bit_width], 8
+        jnz     no_acpi_reboot
+        cmp     [ebx+0x74+GAS.bit_offset], 0
+        jnz     no_acpi_reboot
+        cmp     [ebx+0x74+GAS.access_size], ACCESS_SIZE.BYTE
+        ja      no_acpi_reboot
+        cmp     [ebx+0x74+GAS.address.hi], 0
+        jnz     no_acpi_reboot
+        mov     edx, [ebx+0x74+GAS.address.lo]
+        movzx   eax, byte[ebx+0x80]
+        out     dx, al
+        jmp     $
+        ; unreachable
+no_acpi_reboot:
         jmp     0x50000
 
 align 4
