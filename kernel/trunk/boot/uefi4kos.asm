@@ -164,9 +164,9 @@ main:
         shl     eax, 2
         mov     word [rdx + BOOT_LO.pitch], ax
 
-        mov     byte [rdx + BOOT_LO.pci_data + 0], 1
-        mov     byte [rdx + BOOT_LO.pci_data + 1], 0
-        mov     byte [rdx + BOOT_LO.pci_data + 2], 0x10
+        mov     byte [rdx + BOOT_LO.pci_data + 0], 1    ; PCI access mechanism
+        mov     byte [rdx + BOOT_LO.pci_data + 1], 8    ; last bus, don't know how to count them
+        mov     byte [rdx + BOOT_LO.pci_data + 2], 0x10 ; PCI version
         mov     byte [rdx + BOOT_LO.pci_data + 3], 0x02
         mov     dword [rdx + BOOT_LO.pci_data + 4], 0xe3
 
