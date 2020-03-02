@@ -1,6 +1,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;                                                              ;;
-;; Copyright (C) KolibriOS team 2004-2015. All rights reserved. ;;
+;; Copyright (C) KolibriOS team 2004-2020. All rights reserved. ;;
 ;; Distributed under terms of the GNU General Public License    ;;
 ;;                                                              ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -8,7 +8,7 @@
 $Revision$
 
 
-IRQ_RESERVED   = 24
+IRQ_RESERVED   = 56
 
 IRQ_POOL_SIZE  = 48
 
@@ -20,10 +20,26 @@ irqh_tab            rd sizeof.LHEAD * IRQ_RESERVED / 4
 irqh_pool           rd sizeof.IRQH * IRQ_POOL_SIZE /4
 next_irqh           rd 1
 
-irq_active_set      rd 1
+irq_active_set      rd (IRQ_RESERVED+31)/32
 irq_failed          rd IRQ_RESERVED
 
 endg
+
+set_irq_active:
+        mov     eax, ebp
+        mov     ecx, ebp
+        shr     ecx, 5
+        and     eax, 31
+        bts     [irq_active_set+ecx*4], eax
+        ret
+
+reset_irq_active:
+        mov     eax, ebp
+        mov     ecx, ebp
+        shr     ecx, 5
+        and     eax, 31
+        btr     [irq_active_set+ecx*4], eax
+        ret
 
 align 4
 init_irqs:
@@ -137,20 +153,15 @@ align 4
 align 16
 irq_serv:
 
-; .irq_1:
-;      push 1
-;      jmp .main
-; etc...
-
-irq_serv_h 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 14, 15
-irq_serv_h 16, 17, 18, 19, 20, 21, 22, 23
+rept 12 irqn:1  {irq_serv_h irqn}       ;  1--12
+rept 18 irqn:14 {irq_serv_h irqn}       ; 14--31 (irq32 is vector 0x40)
+rept 23 irqn:33 {irq_serv_h irqn}       ; 33--55
 
 purge irq_serv_h
 
 align 16
 .main:
         save_ring3_context
-
         mov     ebp, [esp + 32]
         mov     bx, app_data;os_data
         mov     ds, bx
@@ -159,7 +170,7 @@ align 16
         cmp     [v86_irqhooks+ebp*8], 0
         jnz     v86_irq
 
-        bts     [irq_active_set], ebp
+        call    set_irq_active
 
         lea     esi, [irqh_tab+ebp*8]   ; esi= list head
         mov     ebx, esi
@@ -184,11 +195,11 @@ align 16
         jz      .next
 
         inc     [ebx+IRQH.num_ints]
-        btr     [irq_active_set], ebp
+        call    reset_irq_active
         jmp     .next
 
 .done:
-        btr     [irq_active_set], ebp
+        call    reset_irq_active
         jnc     .exit
 
 ; There is at least one configuration with one device which generates IRQ

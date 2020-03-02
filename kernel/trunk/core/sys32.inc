@@ -1,6 +1,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;                                                              ;;
-;; Copyright (C) KolibriOS team 2004-2016. All rights reserved. ;;
+;; Copyright (C) KolibriOS team 2004-2020. All rights reserved. ;;
 ;;  Distributed under terms of the GNU General Public License.  ;;
 ;;                                                              ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -20,6 +20,13 @@ build_interrupt_table:
         loop    @b
         movsd   ;copy low  dword of trap gate for int 0x40
         movsd   ;copy high dword of trap gate for int 0x40
+        mov     ecx, 23
+        mov     eax, (10001110b shl 24) + os_code
+  @@:
+        movsw   ;low word of code-entry
+        stosd   ;interrupt gate type : os_code selector
+        movsw   ;high word of code-entry
+        loop    @b
         lidt    [esi]
         ret
 
@@ -33,29 +40,21 @@ iglobal
         times   12 dd unknown_interrupt ;int_20..int_31
 
     ;interrupt handlers addresses (for interrupt gate construction)
-        ; 0x20 .. 0x2F - IRQ handlers
-        dd      irq0, irq_serv.irq_1, irq_serv.irq_2
-        dd      irq_serv.irq_3, irq_serv.irq_4
-        dd      irq_serv.irq_5,  irq_serv.irq_6,  irq_serv.irq_7
-        dd      irq_serv.irq_8,  irq_serv.irq_9,  irq_serv.irq_10
-        dd      irq_serv.irq_11, irq_serv.irq_12, irqD, irq_serv.irq_14, irq_serv.irq_15
-        dd irq_serv.irq_16
-        dd irq_serv.irq_17
-        dd irq_serv.irq_18
-        dd irq_serv.irq_19
-        dd irq_serv.irq_20
-        dd irq_serv.irq_21
-        dd irq_serv.irq_22
-        dd irq_serv.irq_23
+        ; 0x20+ are IRQ handlers
+        dd irq0
+        rept 12 irqn:1  \{dd irq_serv.irq_\#irqn\}
+        dd irqD
+        rept 18 irqn:14 \{dd irq_serv.irq_\#irqn\}
 
-    times 32 - IRQ_RESERVED dd unknown_interrupt
-    ;int_0x40 gate trap (for directly copied)
-        dw      i40 and 0xFFFF, os_code, 11101111b shl 8, i40 shr 16
+        ; int_0x40 gate trap (for directly copied)
+        dw i40 and 0xFFFF, os_code, 11101111b shl 8, i40 shr 16
+
+        rept 23 irqn:33 \{dd irq_serv.irq_\#irqn\}
 
   idtreg: ; data for LIDT instruction (!!! must be immediately below sys_int data)
         dw      2*($-sys_int-4)-1
         dd      idts ;0x8000B100
-        dw      0    ;просто выравнивание
+        dw      0    ;alignment
 
   msg_fault_sel dd  msg_exc_8,msg_exc_u,msg_exc_a,msg_exc_b
                 dd  msg_exc_c,msg_exc_d,msg_exc_e,msg_exc_u

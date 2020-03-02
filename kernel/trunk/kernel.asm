@@ -715,7 +715,11 @@ endg
 ; Enable timer IRQ (IRQ0) and co-processor IRQ (IRQ13)
 ; they are used: when partitions are scanned, hd_read relies on timer
         call    unmask_timer
+        ; Prevent duplicate timer IRQs in APIC mode
+        cmp     [irq_mode], IRQ_APIC
+        jz      @f
         stdcall enable_irq, 2               ; @#$%! PIC
+@@:
         stdcall enable_irq, 13              ; co-processor
 
 ; Setup serial output console (if enabled)

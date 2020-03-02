@@ -1,20 +1,21 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;                                                              ;;
-;; Copyright (C) KolibriOS team 2004-2015. All rights reserved. ;;
+;; Copyright (C) KolibriOS team 2004-2020. All rights reserved. ;;
 ;; Distributed under terms of the GNU General Public License    ;;
 ;;                                                              ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 $Revision$
 
-
-iglobal
-IRQ_COUNT    dd 24
-endg
+MAX_IOAPICS = 2
 
 uglobal
-irq_mode     rd  1
-IOAPIC_base  rd  1
+IRQ_COUNT    rd  MAX_IOAPICS
+irq_mode     rd  1              ; PIC/(IO)APIC
+IOAPIC_base  rd  MAX_IOAPICS
+ioapic_gsi_base rd MAX_IOAPICS  ; zero-based, i.e. not vector
+ioapic_cnt   dd  ?              ; from MADT aka APIC table
+ioapic_cur   dd  ?
 LAPIC_BASE   rd  1
 endg
 
@@ -45,6 +46,7 @@ IOAPIC_REDTBL   = 0x10
 
 align 4
 APIC_init:
+        push    ebx
         mov     [irq_mode], IRQ_PIC
 
         cmp     [acpi_ioapic_base], 0
@@ -60,39 +62,51 @@ APIC_init:
         mov     [acpi_dev_data], eax
         mov     [acpi_dev_size], ebx
 
-        call    IRQ_mask_all
-
 ; IOAPIC init
-        stdcall map_io_mem, [acpi_ioapic_base], 0x20, PG_GLOBAL+PG_NOCACHE+PG_SWR
-        mov     [IOAPIC_base], eax
+        xor     ebx, ebx
+@@:
+        stdcall map_io_mem, [acpi_ioapic_base+ebx*4], 0x20, PG_GLOBAL+PG_NOCACHE+PG_SWR
+        mov     [IOAPIC_base+ebx*4], eax
+        inc     ebx
+        cmp     ebx, [ioapic_cnt]
+        jnz     @b
 
+        call    IRQ_mask_all
+        mov     [ioapic_cur], 0
+.next_ioapic:
+        mov     edx, [ioapic_cur]
         mov     eax, IOAPIC_VER
         call    IOAPIC_read
         shr     eax, 16
         inc     al
         movzx   eax, al
-        cmp     al, IRQ_RESERVED
+        mov     ecx, [ioapic_gsi_base+edx*4]
+        cmp     ecx, IRQ_RESERVED
+        jae     .lapic_init
+        add     ecx, eax
+        sub     ecx, IRQ_RESERVED
         jbe     @f
-
-        mov     al, IRQ_RESERVED
+        sub     eax, ecx
 @@:
-        mov     [IRQ_COUNT], eax
+        mov     [IRQ_COUNT+edx*4], eax
 
         ; Reroute IOAPIC & mask all interrupts
         xor     ecx, ecx
         mov     eax, IOAPIC_REDTBL
-@@:
+.next_irq:
         mov     ebx, eax
         call    IOAPIC_read
         mov     ah, 0x08; Delivery Mode: Fixed, Destination Mode: Logical
         mov     al, cl
         add     al, 0x20; vector
-        or      eax, 0x10000; Mask Interrupt
+        add     eax, [ioapic_gsi_base+edx*4]
+        or      eax, 0x1a000; Mask Interrupt, level-triggered active-low
+        cmp     [ioapic_cur], 0
+        jnz     @f
         cmp     ecx, 16
-        jb      .set
-
-        or      eax, 0xa000;<<< level-triggered active-low for IRQ16+
-.set:
+        jae     @f
+        and     eax, NOT 0xa000 ; edge-triggered active-high for IRQ0-15
+@@:
         xchg    eax, ebx
         call    IOAPIC_write
         inc     eax
@@ -103,9 +117,15 @@ APIC_init:
         call    IOAPIC_write
         inc     eax
         inc     ecx
-        cmp     ecx, [IRQ_COUNT]
-        jb      @b
+        cmp     ecx, [IRQ_COUNT+edx*4]
+        jb      .next_irq
 
+        inc     [ioapic_cur]
+        inc     edx
+        cmp     edx, [ioapic_cnt]
+        jnz     .next_ioapic
+
+.lapic_init:
         call    LAPIC_init
 
         mov     [irq_mode], IRQ_APIC
@@ -117,7 +137,7 @@ APIC_init:
 
         call    pci_irq_fixup
 .no_apic:
-
+        pop     ebx
         ret
 
 ;===========================================================
@@ -210,7 +230,8 @@ IOAPIC_read:
 ; in : EAX - IOAPIC register
 ; out: EAX - readed value
         push    esi
-        mov     esi, [IOAPIC_base]
+        mov     esi, [ioapic_cur]
+        mov     esi, [IOAPIC_base+esi*4]
         mov     [esi], eax
         mov     eax, [esi + 0x10]
         pop     esi
@@ -222,7 +243,8 @@ IOAPIC_write:
 ;       EBX - value
 ; out:  none
         push    esi
-        mov     esi, [IOAPIC_base]
+        mov     esi, [ioapic_cur]
+        mov     esi, [IOAPIC_base+esi*4]
         mov     [esi], eax
         mov     [esi + 0x10], ebx
         pop     esi
@@ -232,6 +254,7 @@ IOAPIC_write:
 ; IRQ0 to vector 0x20, IRQ1 to vector 0x21....
 align 4
 PIC_init:
+        mov     [IRQ_COUNT], 16
         cli
         mov     al, 0x11        ;  icw4, edge triggered
         out     0x20, al
@@ -252,7 +275,6 @@ PIC_init:
         out     0xA1, al
 
         call    IRQ_mask_all
-        ; mov   dword[irq_type_to_set], IRQ_TYPE_PIC
         ret
 
 ; -----------------------------------------
@@ -309,7 +331,12 @@ IRQ_mask_all:
         mov     ecx, 0x1000
         ret
 .APIC:
-        mov     ecx, [IRQ_COUNT]
+        cmp     [IOAPIC_base], 0
+        jz      .done
+        mov     [ioapic_cur], 0
+.next_ioapic:
+        mov     edx, [ioapic_cur]
+        mov     ecx, [IRQ_COUNT+edx*4]
         mov     eax, 0x10
 @@:
         mov     ebx, eax
@@ -320,6 +347,12 @@ IRQ_mask_all:
         inc     eax
         inc     eax
         loop    @b
+
+        inc     [ioapic_cur]
+        inc     edx
+        cmp     edx, [ioapic_cnt]
+        jnz     .next_ioapic
+.done:
         ret
 
 ; -----------------------------------------
@@ -363,6 +396,20 @@ proc enable_irq stdcall, irq_line:dword
         out     dx, al
         ret
 .APIC:
+        push    [ioapic_cur]
+        xor     eax, eax
+.next_ioapic:
+        mov     ecx, [ioapic_gsi_base+eax*4]
+        add     ecx, [IRQ_COUNT+eax*4]
+        cmp     ebx, ecx
+        jb      .found
+        inc     eax
+        cmp     eax, [ioapic_cnt]
+        jnz     .next_ioapic
+        jmp     .done
+.found:
+        mov     [ioapic_cur], eax
+        sub     ebx, [ioapic_gsi_base+eax*4]
         shl     ebx, 1
         add     ebx, 0x10
         mov     eax, ebx
@@ -370,6 +417,8 @@ proc enable_irq stdcall, irq_line:dword
         and     eax, 0xfffeffff; bit 16
         xchg    eax, ebx
         call    IOAPIC_write
+.done:
+        pop     [ioapic_cur]
         ret
 endp
 
@@ -390,6 +439,20 @@ proc disable_irq stdcall, irq_line:dword
         out     dx, al
         ret
 .APIC:
+        push    [ioapic_cur]
+        xor     eax, eax
+.next_ioapic:
+        mov     ecx, [ioapic_gsi_base+eax*4]
+        add     ecx, [IRQ_COUNT+eax*4]
+        cmp     ebx, ecx
+        jae     .found
+        inc     eax
+        cmp     eax, [ioapic_cnt]
+        jnz     .next_ioapic
+        jmp     .done
+.found:
+        mov     [ioapic_cur], eax
+        sub     ebx, [ioapic_gsi_base+eax*4]
         shl     ebx, 1
         add     ebx, 0x10
         mov     eax, ebx
@@ -397,6 +460,8 @@ proc disable_irq stdcall, irq_line:dword
         or      eax, 0x10000; bit 16
         xchg    eax, ebx
         call    IOAPIC_write
+.done:
+        pop     [ioapic_cur]
         ret
 endp
 

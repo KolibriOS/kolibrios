@@ -1,6 +1,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;                                                              ;;
-;; Copyright (C) KolibriOS team 2004-2015. All rights reserved. ;;
+;; Copyright (C) KolibriOS team 2004-2020. All rights reserved. ;;
 ;; Distributed under terms of the GNU General Public License    ;;
 ;;                                                              ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -429,7 +429,7 @@ acpi_fadt_base    rd 1
 acpi_dsdt_base    rd 1
 acpi_dsdt_size    rd 1
 acpi_madt_base    rd 1
-acpi_ioapic_base  rd 1
+acpi_ioapic_base  rd MAX_IOAPICS
 acpi_hpet_base    rd 1
 hpet_base         rd 1
 hpet_period       rd 1
@@ -581,14 +581,18 @@ check_acpi:
         inc     [cpu_count-OS_BASE]
         add     edi, 4
 
+        mov     [ioapic_cnt-OS_BASE], 0
         lea     edx, [eax+44]
         mov     ecx, [eax+4]
         add     ecx, eax
 .check:
         mov     eax, [edx]
         cmp     al, 0
-        jne     .io_apic
-
+        je      .lapic
+        cmp     al, 1
+        je      .io_apic
+        jmp     .next
+.lapic:
         shr     eax, 24              ; get APIC ID
         cmp     eax, ebx             ; skip self
         je      .next
@@ -611,11 +615,12 @@ check_acpi:
         ret
 
 .io_apic:
-        cmp     al, 1
-        jne     .next
-
-        mov     eax, [edx+4]
-        mov     [acpi_ioapic_base-OS_BASE], eax
+        mov     eax, [ioapic_cnt-OS_BASE]
+        push    dword[edx+4]
+        pop     [acpi_ioapic_base-OS_BASE+eax*4]
+        push    dword[edx+8]
+        pop     [ioapic_gsi_base-OS_BASE+eax*4]
+        inc     [ioapic_cnt-OS_BASE]
         jmp     .next
 
 HPET_PERIOD             = 0x0004
