@@ -78,7 +78,7 @@ locals
 	retvalue		rd 1		; 0 (error) or pointer to image
 endl
 
-	push	ebx edx esi edi
+	push	ebx esi edi
 
 	mov	esi, [_data]
 	lodsw
@@ -89,17 +89,22 @@ endl
 	lodsw_
 	lodsd_
     @@:
+;	push	eax
 	stdcall	tiff._.parse_IFD, [_data], eax, [_endianness]
-	mov	ebx, eax
-	mov	[retvalue], eax
-	lodsd_
-	test	eax, eax
+;	pop	esi
+;	mov	ebx, eax
+;	mov	[retvalue], eax
+;	xor	eax, eax
+;	lodsw_
+;	shl	eax, 2
+;	lea	eax, [eax*3]
+;	add	esi, eax
+;	lodsd_
+;	test	eax, eax
 ;	jnz	@b
-
-
-  .quit:
-	mov	eax, [retvalue]
-	pop	edi esi edx ebx
+;  .quit:
+;	mov	eax, [retvalue]
+	pop	edi esi ebx
 	ret
 endp
 
@@ -362,6 +367,7 @@ endl
 	add	edi, 2
 	dec	ecx
 	jnz	@b
+	jmp	.post.predictor
 
   .post.rgba_bgra:
 	cmp	[ebx + tiff_extra.samples_per_pixel], 4
@@ -379,6 +385,7 @@ endl
 	add	esi, 1
 	dec	ecx
 	jnz	@b
+	jmp	.post.predictor
 
   .post.bpp8a_to_bpp8g:
 	mov	eax, [retvalue]
@@ -840,38 +847,29 @@ endl
 	ret
 endp
 
+struct lzw_ctx
+	bits_left	 dd ?	; in current byte (pointed to by [esi])
+	cur_shift	 dd ?	; 9 -- 12
+	shift_counter	 dd ?	; how many shifts of current length remained
+	table		 dd ?
+	last_table_entry dd ?	; zero based
+	next_table_entry dd ?	; where to place new entry
+	strip_len	 dd ?
+	old_code	 dd ?
+ends
 
-proc tiff._.decompress.lzw _image
-locals
-	cur_shift		rd 1	; 9 -- 12
-	shift_counter		rd 1	; how many shifts of current length remained
-	bits_left		rd 1	; in current byte ( pointed to by [esi] )
-	table			rd 1
-	table_size		rd 1	; the number of entries
-	old_code		rd 1
-	next_table_entry	rd 1	; where to place new entry
-endl
-	push	ebx ecx edx esi
-
-	mov	[table], 0
-	mov	[bits_left], 8
-	mov	[cur_shift], 9
-
-  .begin:
-
- ; .getnextcode:
+proc tiff._.lzw_get_code
+	mov	edx, [ebx+lzw_ctx.cur_shift]
 	xor	eax, eax
-	mov	edx, [cur_shift]
-
 	lodsb
-	mov	ecx, [bits_left]
+	mov	ecx, [ebx+lzw_ctx.bits_left]
 	mov	ch, cl
 	neg	cl
 	add	cl, 8
 	shl	al, cl
 	mov	cl, ch
 	shl	eax, cl
-	sub	edx, [bits_left]
+	sub	edx, [ebx+lzw_ctx.bits_left]
 	; second_byte
 	cmp	edx, 8
 	je	.enough_zero
@@ -879,9 +877,9 @@ endl
 	sub	edx, 8
 	lodsb
 	shl	eax, 8
-	jmp	.third_byte
+	jmp	.enough_nonzero
   .enough_zero:
-	mov	[bits_left], 8
+	mov	[ebx+lzw_ctx.bits_left], 8
 	lodsb
 	jmp	.code_done
   .enough_nonzero:
@@ -889,183 +887,130 @@ endl
 	neg	edx
 	add	edx, 8
 	mov	ecx, edx
-	mov	[bits_left], edx
-	shr	eax, cl
-	jmp	.code_done
-  .third_byte:
-	mov	al, byte[esi]
-	neg	edx
-	add	edx, 8
-	mov	ecx, edx
-	mov	[bits_left], edx
+	mov	[ebx+lzw_ctx.bits_left], edx
 	shr	eax, cl
   .code_done:
+	dec	[ebx+lzw_ctx.shift_counter]
+	jnz	@f
+	mov	ecx, [ebx+lzw_ctx.cur_shift]
+	add	[ebx+lzw_ctx.cur_shift], 1
+	mov	edx, 1
+	shl	edx, cl
+	mov	[ebx+lzw_ctx.shift_counter], edx
+    @@:
+	ret
+endp
 
+proc tiff._.add_string_to_table uses esi
+	mov	esi, [ebx+lzw_ctx.table]
+	lea	esi, [esi + eax*8 + 256]
+	mov	ecx, dword[esi+4]
 
-	mov	ebx, eax
-	cmp	ebx, 0x101	; end of information
-	je	.quit
-	cmp	ebx, 0x100	; clear code
-	jne	.no_clear_code
+	mov	edx, [ebx+lzw_ctx.next_table_entry]
+	mov	[edx], edi
+	lea	eax, [ecx + 1]
+	mov	[edx + 4], eax
+	add	[ebx+lzw_ctx.next_table_entry], 8
+	add	[ebx+lzw_ctx.last_table_entry], 1
 
-	cmp	[table], 0
+	mov	esi, [esi]
+	cmp	ecx, [ebx+lzw_ctx.strip_len]
+	cmovg	ecx, [ebx+lzw_ctx.strip_len]
+	sub	[ebx+lzw_ctx.strip_len], ecx
+	rep	movsb
+	ret
+endp
+
+proc tiff._.init_code_table
+	cmp	[ebx+lzw_ctx.table], 0
 	jne	@f
 	invoke	mem.alloc, 256 + 63488	; 256 + (2^8 + 2^9 + 2^10 + 2^11 + 2^12)*(4+4)
 	test	eax, eax
 	jz	.quit
-	mov	[table], eax
+	mov	[ebx+lzw_ctx.table], eax
     @@:
-	mov	eax, [table]
-	mov	[next_table_entry], eax
-	add	[next_table_entry], 256 + (256*8) + 2*8
-	mov	[cur_shift], 9
-	mov	[shift_counter], 256-3	; clear code, end of information, why -3?
-	mov	[table_size], 257
+	mov	eax, [ebx+lzw_ctx.table]
+	mov	[ebx+lzw_ctx.next_table_entry], eax
+	add	[ebx+lzw_ctx.next_table_entry], 256 + (256*8) + 2*8
+	mov	[ebx+lzw_ctx.cur_shift], 9
+	mov	[ebx+lzw_ctx.shift_counter], 256-2	; clear code, end of information
+	mov	[ebx+lzw_ctx.last_table_entry], 257	; 0--255, clear, eoi
 
 	push	edi
 	mov	ecx, 256
-	mov	edi, [table]
-	mov	ebx, edi
+	mov	edi, [ebx+lzw_ctx.table]
+	mov	edx, edi
 	add	edi, 256
 	mov	eax, 0
     @@:
-	mov	byte[ebx], al
-	mov	[edi], ebx
+	mov	byte[edx], al
+	mov	[edi], edx
 	add	edi, 4
-	add	ebx, 1
+	add	edx, 1
 	add	eax, 1
 	mov	[edi], dword 1
 	add	edi, 4
 	dec	ecx
 	jnz	@b
 	pop	edi
-;  .getnextcode:
-	xor	eax, eax
-	mov	edx, [cur_shift]
+.quit:
+	ret
+endp
 
-	lodsb
-	mov	ecx, [bits_left]
-	mov	ch, cl
-	neg	cl
-	add	cl, 8
-	shl	al, cl
-	mov	cl, ch
-	shl	eax, cl
-	sub	edx, [bits_left]
-	; second_byte
-	cmp	edx, 8
-	je	.enough_zero2
-	jb	.enough_nonzero2
-	sub	edx, 8
-	lodsb
-	shl	eax, 8
-	jmp	.third_byte2
-  .enough_zero2:
-	mov	[bits_left], 8
-	lodsb
-	jmp	.code_done2
-  .enough_nonzero2:
-	mov	al, byte[esi]
-	neg	edx
-	add	edx, 8
-	mov	ecx, edx
-	mov	[bits_left], edx
-	shr	eax, cl
-	jmp	.code_done2
-  .third_byte2:
-	mov	al, byte[esi]
-	neg	edx
-	add	edx, 8
-	mov	ecx, edx
-	mov	[bits_left], edx
-	shr	eax, cl
-  .code_done2:
+proc tiff._.decompress.lzw _image
+locals
+	ctx			lzw_ctx
+endl
+	push	ebx ecx edx esi
+	mov	ecx, [ebx+tiff_extra.rows_per_strip]
+	mov	ebx, [_image]
+	mov	eax, [ebx+Image.Width]
+	call	img._.get_scanline_len
+	imul	eax, ecx
 
+	lea	ebx, [ctx]
+	mov	[ctx.strip_len], eax
+	mov	[ctx.table], 0
+	mov	[ctx.bits_left], 8
+	mov	[ctx.cur_shift], 9
 
-	mov	[old_code], eax
+  .begin:
+	cmp	[ctx.strip_len], 0
+	jle	.quit
+	stdcall	tiff._.lzw_get_code
 	cmp	eax, 0x101	; end of information
 	je	.quit
+	cmp	eax, 0x100	; clear code
+	jne	.no_clear_code
+	call	tiff._.init_code_table
 
-	push	esi
-	mov	esi, [table]
-	lea	esi, [esi + eax*8 + 256]
-	mov	ecx, dword[esi+4]
-
-	mov	edx, [next_table_entry]
-	mov	[edx], edi
-	lea	eax, [ecx + 1]
-	mov	[edx + 4], eax
-	add	[next_table_entry], 8
-
-	mov	esi, [esi]
-	rep	movsb
-	pop	esi
+	; getnextcode
+	call	tiff._.lzw_get_code
+	mov	[ctx.old_code], eax
+	cmp	eax, 0x101	; end of information
+	je	.quit
+	call	tiff._.add_string_to_table
 	jmp	.begin
   .no_clear_code:
-	cmp	eax, [table_size]
+	cmp	eax, [ctx.last_table_entry]
 	ja	.not_in_table
-	mov	[old_code], eax
-	push	esi
-	mov	esi, [table]
-	lea	esi, [esi + eax*8 + 256]
-	mov	ecx, dword[esi + 4]
-
-	mov	edx, [next_table_entry]
-	mov	[edx], edi
-	lea	eax, [ecx + 1]
-	mov	[edx + 4], eax
-	add	[next_table_entry], 8
-	add	[table_size], 1
-
-	mov	esi, [esi]
-	rep	movsb
-	pop	esi
-
-	dec	[shift_counter]
-	jnz	@f
-	mov	ecx, [cur_shift]
-	add	[cur_shift], 1
-	mov	edx, 1
-	shl	edx, cl
-	mov	[shift_counter], edx
-    @@:
+	mov	[ctx.old_code], eax
+	call	tiff._.add_string_to_table
 	jmp	.begin
-
   .not_in_table:
-	xchg	eax, [old_code]
-	push	esi
-	mov	esi, [table]
-	lea	esi, [esi + eax*8 + 256]
-	mov	ecx, dword[esi+4]
-
-	mov	edx, [next_table_entry]
-	mov	[edx], edi
-	lea	eax, [ecx + 2]
-	mov	[edx + 4], eax
-	add	[next_table_entry], 8
-	add	[table_size], 1
-
-	mov	esi, [esi]
-	mov	al, [esi]
-	rep	movsb
+	xchg	eax, [ctx.old_code]
+	call	tiff._.add_string_to_table
+	cmp	[ctx.strip_len], 0
+	jle	@f
+	dec	[ctx.strip_len]
 	mov	byte[edi], al
 	add	edi, 1
-	pop	esi
-
-	dec	[shift_counter]
-	jnz	@f
-	mov	ecx, [cur_shift]
-	add	[cur_shift], 1
-	mov	edx, 1
-	shl	edx, cl
-	mov	[shift_counter], edx
     @@:
 	jmp	.begin
-
   .quit:
-	cmp	[table], 0
+	cmp	[ctx.table], 0
 	je	@f
-	invoke	mem.free, [table]
+	invoke	mem.free, [ctx.table]
     @@:
 	pop	esi edx ecx ebx
 	ret

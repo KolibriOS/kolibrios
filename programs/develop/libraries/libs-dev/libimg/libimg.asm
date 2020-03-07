@@ -139,7 +139,6 @@ locals
         img_data        dd ?    ; raw bytes
         img             dd ?    ; Image pointer
 endl
-DEBUGF 2, 'img.from_file: %s\n', [_filename]
 	push	ebx
         mov     [img], 0
         invoke  file.open, [_filename], O_READ
@@ -2744,7 +2743,7 @@ img._.get_scanline_len: ;///////////////////////////////////////////////////////
 ;;////////////////////////////////////////////////////////////////////////////////////////////////;;
 ;;================================================================================================;;
 
-include_debug_strings
+;include_debug_strings
 
 align 4
 type2bpp    dd  8, 24, 32, 15, 16, 1, 9, 2, 4
