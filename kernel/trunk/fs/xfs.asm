@@ -1,2771 +1,2124 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;                                                              ;;
-;; Copyright (C) KolibriOS team 2013-2016. All rights reserved. ;;
-;;  Distributed under terms of the GNU General Public License.  ;;
+;; Copyright (C) KolibriOS team 2013-2020. All rights reserved. ;;
+;;  Distributed under terms of the GNU General Public License   ;;
 ;;                                                              ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 $Revision$
 
-; XFS external functions
-;   in:
-; ebx -> parameter structure of sysfunc 70
-; ebp -> XFS structure
-; [esi]+[[esp+4]] = name
-;   out:
-; eax, ebx = return values for sysfunc 70
-iglobal
-align 4
-xfs_user_functions:
-        dd      xfs_free
-        dd      (xfs_user_functions_end - xfs_user_functions - 4) / 4
-        dd      xfs_ReadFile
-        dd      xfs_ReadFolder
-        dd      0;xfs_CreateFile
-        dd      0;xfs_WriteFile
-        dd      0;xfs_SetFileEnd
-        dd      xfs_GetFileInfo
-        dd      0;xfs_SetFileInfo
-        dd      0
-        dd      0;xfs_Delete
-        dd      0;xfs_CreateFolder
-xfs_user_functions_end:
-endg
 
 include 'xfs.inc'
 
-; Mount if it's a valid XFS partition.
-xfs_create_partition:
-;   in:
-; ebp -> PARTITION structure
-; ebx -> boot sector
-;   out:
-; eax -> XFS structure, 0 = not XFS
-        push    ebx ecx edx esi edi
-        cmp     dword [esi+DISK.MediaInfo.SectorSize], 512
-        jnz     .error
-        cmp     dword[ebx + xfs_sb.sb_magicnum], XFS_SB_MAGIC   ; signature
-        jne     .error
+macro omit_frame_pointer_prologue procname,flag,parmbytes,localbytes,reglist {
+  local loc
+  loc = (localbytes+3) and (not 3)
+  if localbytes
+        sub     esp, loc
+  end if
+  irps reg, reglist \{ push reg \}
+  counter = 0
+  irps reg, reglist \{counter = counter+1 \}
+  parmbase@proc equ esp+counter*4+loc+4
+  localbase@proc equ esp
+}
 
-        ; TODO: check XFS.versionnum and XFS.features2
-        ;       print superblock params for debugging (waiting for bug reports)
+macro omit_frame_pointer_epilogue procname,flag,parmbytes,localbytes,reglist {
+  local loc
+  loc = (localbytes+3) and (not 3)
+  irps reg, reglist \{ reverse pop reg \}
+  if localbytes
+        lea     esp, [esp+loc]
+  end if
+  if flag and 10000b
+        retn
+  else
+        retn    parmbytes
+  end if
+}
 
+prologue@proc equ omit_frame_pointer_prologue
+epilogue@proc equ omit_frame_pointer_epilogue
+
+macro movbe reg, arg {
+ if CPUID_MOVBE eq Y
+        movbe   reg, arg
+ else
+        mov     reg, arg
+  if reg in <eax,ebx,ecx,edx,esi,edi,ebp,esp>
+        bswap   reg
+  else if ax eq reg
+        xchg    al, ah
+  else if bx eq reg
+        xchg    bl, bh
+  else if cx eq reg
+        xchg    cl, ch
+  else if dx eq reg
+        xchg    dl, dh
+  else
+   err
+  end if
+ end if
+}
+
+;
+; This file contains XFS related code.
+; For more information on XFS check links and source below.
+;
+; 1. https://xfs.wiki.kernel.org/
+;
+; 2. XFS Algorithms & Data Structures:
+;    git://git.kernel.org/pub/scm/fs/xfs/xfs-documentation.git
+;    https://mirrors.edge.kernel.org/pub/linux/utils/fs/xfs/docs/xfs_filesystem_structure.pdf
+;
+; 3. Linux source at https://www.kernel.org/
+;    git://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git
+;    /fs/xfs
+;
+
+iglobal
+align 4
+xfs._.user_functions:
+        dd      xfs._.free
+        dd      (xfs._.user_functions_end-xfs._.user_functions-4)/4
+        dd      xfs_Read
+        dd      xfs_ReadFolder
+        dd      0;xfs_Rewrite
+        dd      0;xfs_Write
+        dd      0;xfs_SetFileEnd
+        dd      xfs_GetFileInfo
+xfs._.user_functions_end:
+endg
+
+; test partition type (valid XFS one?)
+; alloc and fill XFS (see xfs.inc) structure
+; this function is called for each partition
+; return 0 (not XFS or invalid) / pointer to partition structure
+proc xfs_create_partition uses ebx esi edi
+        ; check XFS signature
+        cmp     [ebx+xfs_sb.sb_magicnum], XFS_SB_MAGIC
+        jnz     .error_nofree
+        ; test for supported feature flags and version in sb_versionnum
+        movzx   eax, [ebx+xfs_sb.sb_versionnum]
+        xchg    al, ah
+        ; allow only known and supported features
+        ; return error otherwise
+        test    eax, NOT XFS_SB_VERSION_SUPPORTED
+        jnz     .error_nofree
+        ; version < 4 obsolete, not supported
+        ; version = 4,5 supported
+        ; version > 5 unknown
+        and     al, XFS_SB_VERSION_NUMBITS
+        cmp     al, 4
+        jb      .error_nofree
+        cmp     al, 5
+        ja      .error_nofree
+        ; if MOREBITS bit is set, additional feature flags are in sb_features2
+        test    eax, XFS_SB_VERSION_MOREBITSBIT
+        jz      @f
+        movbe   eax, [ebx+xfs_sb.sb_features2]
+        test    eax, NOT XFS_SB_VERSION2_SUPPORTED
+        jnz     .error_nofree
+@@:
+        movbe   eax, [ebx+xfs_sb.sb_features_incompat]
+        test    eax, NOT XFS_SB_FEAT_INCOMPAT_SUPPORTED
+        jnz     .error_nofree
+        ; all presented features are either supported or don't affect reading
         movi    eax, sizeof.XFS
         call    malloc
+        mov     edi, eax
         test    eax, eax
         jz      .error
 
         ; standard partition initialization, common for all file systems
-
-        mov     edi, eax
-        mov     eax, dword[ebp + PARTITION.FirstSector]
-        mov     dword[edi + XFS.FirstSector], eax
-        mov     eax, dword[ebp + PARTITION.FirstSector + 4]
-        mov     dword[edi + XFS.FirstSector + 4], eax
-        mov     eax, dword[ebp + PARTITION.Length]
-        mov     dword[edi + XFS.Length], eax
-        mov     eax, dword[ebp + PARTITION.Length + 4]
-        mov     dword[edi + XFS.Length + 4], eax
-        mov     eax, [ebp + PARTITION.Disk]
-        mov     [edi + XFS.Disk], eax
-        mov     [edi + XFS.FSUserFunctions], xfs_user_functions
-
-        ; here we initialize only one mutex so far (for the entire partition)
-        ; XFS potentially allows parallel r/w access to several AGs, keep it in mind for SMP times
-
-        lea     ecx, [edi + XFS.Lock]
+        mov     eax, dword[ebp+PARTITION.FirstSector+DQ.lo]
+        mov     dword[edi+XFS.FirstSector+DQ.lo], eax
+        mov     eax, dword[ebp+PARTITION.FirstSector+DQ.hi]
+        mov     dword[edi+XFS.FirstSector+DQ.hi], eax
+        mov     eax, dword[ebp+PARTITION.Length+DQ.lo]
+        mov     dword[edi+XFS.Length+DQ.lo], eax
+        mov     eax, dword[ebp+PARTITION.Length+DQ.hi]
+        mov     dword[edi+XFS.Length+DQ.hi], eax
+        mov     eax, [ebp+PARTITION.Disk]
+        mov     [edi+XFS.Disk], eax
+        mov     [edi+XFS.FSUserFunctions], xfs._.user_functions
+        ; here we initialize only one mutex (for the entire partition)
+        ; XFS potentially allows parallel r/w access to different AGs, keep it in mind
+        lea     ecx, [edi+XFS.Lock]
         call    mutex_init
 
-        ; read superblock and fill just allocated XFS partition structure
+;        movzx   eax, [ebx+xfs_sb.sb_sectsize]
+;        xchg    al, ah
+        mov     eax, [eax+DISK.MediaInfo.SectorSize]
+        mov     [edi+XFS.sectsize], eax
 
-        mov     eax, [ebx + xfs_sb.sb_blocksize]
-        bswap   eax                                     ; XFS is big endian
-        mov     [edi + XFS.blocksize], eax
-        movzx   eax, word[ebx + xfs_sb.sb_sectsize]
-        xchg    al, ah
-        mov     [edi + XFS.sectsize], eax
-        movzx   eax, word[ebx + xfs_sb.sb_versionnum]
-        xchg    al, ah
-        mov     [edi + XFS.versionnum], eax
-        mov     eax, [ebx + xfs_sb.sb_features2]
-        bswap   eax
-        mov     [edi + XFS.features2], eax
-        movzx   eax, word[ebx + xfs_sb.sb_inodesize]
-        xchg    al, ah
-        mov     [edi + XFS.inodesize], eax
-        movzx   eax, word[ebx + xfs_sb.sb_inopblock]    ; inodes per block
-        xchg    al, ah
-        mov     [edi + XFS.inopblock], eax
-        movzx   eax, byte[ebx + xfs_sb.sb_blocklog]     ; log2 of block size, in bytes
-        mov     [edi + XFS.blocklog], eax
-        movzx   eax, byte[ebx + xfs_sb.sb_sectlog]
-        mov     [edi + XFS.sectlog], eax
-        movzx   eax, byte[ebx + xfs_sb.sb_inodelog]
-        mov     [edi + XFS.inodelog], eax
-        movzx   eax, byte[ebx + xfs_sb.sb_inopblog]
-        mov     [edi + XFS.inopblog], eax
-        movzx   eax, byte[ebx + xfs_sb.sb_dirblklog]
-        mov     [edi + XFS.dirblklog], eax
-        mov     eax, dword[ebx + xfs_sb.sb_rootino + 4] ;
-        bswap   eax                                     ; big
-        mov     dword[edi + XFS.rootino + 0], eax       ; endian
-        mov     eax, dword[ebx + xfs_sb.sb_rootino + 0] ; 64bit
-        bswap   eax                                     ; number
-        mov     dword[edi + XFS.rootino + 4], eax       ;
+        movbe   eax, [ebx+xfs_sb.sb_blocksize]
+        mov     [edi+XFS.blocksize], eax
 
-        mov     eax, [edi + XFS.blocksize]
-        mov     ecx, [edi + XFS.dirblklog]
+        movzx   eax, [ebx+xfs_sb.sb_versionnum]
+        xchg    al, ah
+        mov     [edi+XFS.versionnum], eax
+        and     eax, XFS_SB_VERSION_NUMBITS
+        mov     [edi+XFS.version], eax
+
+        movbe   eax, [ebx+xfs_sb.sb_features2]
+        mov     [edi+XFS.features2], eax
+        cmp     [edi+XFS.version], 5
+        jz      .v5
+.v4:
+        mov     [edi+XFS.inode_core_size], sizeof.xfs_dinode_core
+        test    eax, XFS_SB_VERSION2_FTYPE
+        setnz   al
+        movzx   eax, al
+        mov     [edi+XFS.ftype_size], eax
+        mov     [edi+XFS.dir_block_magic], XFS_DIR2_BLOCK_MAGIC
+        mov     [edi+XFS.dir_data_magic], XFS_DIR2_DATA_MAGIC
+        mov     [edi+XFS.dir_leaf1_magic], XFS_DIR2_LEAF1_MAGIC
+        mov     [edi+XFS.dir_leafn_magic], XFS_DIR2_LEAFN_MAGIC
+        mov     [edi+XFS.da_node_magic], XFS_DA_NODE_MAGIC
+        mov     [edi+XFS.bmap_magic], XFS_BMAP_MAGIC
+        mov     [edi+XFS.dir_block_size], sizeof.xfs_dir2_data_hdr
+        mov     [edi+XFS.bmbt_block_size], sizeof.xfs_bmbt_block
+        mov     [edi+XFS.da_blkinfo_size], sizeof.xfs_da_blkinfo
+        jmp     .vcommon
+.v5:
+        mov     [edi+XFS.inode_core_size], sizeof.xfs_dinode3_core
+        movbe   eax, [ebx+xfs_sb.sb_features_incompat]
+        mov     [edi+XFS.features_incompat], eax
+        test    eax, XFS_SB_FEAT_INCOMPAT_FTYPE
+        setnz   al
+        movzx   eax, al
+        mov     [edi+XFS.ftype_size], eax
+        mov     [edi+XFS.dir_block_magic], XFS_DIR3_BLOCK_MAGIC
+        mov     [edi+XFS.dir_data_magic], XFS_DIR3_DATA_MAGIC
+        mov     [edi+XFS.dir_leaf1_magic], XFS_DIR3_LEAF1_MAGIC
+        mov     [edi+XFS.dir_leafn_magic], XFS_DIR3_LEAFN_MAGIC
+        mov     [edi+XFS.da_node_magic], XFS_DA3_NODE_MAGIC
+        mov     [edi+XFS.bmap_magic], XFS_BMAP3_MAGIC
+        mov     [edi+XFS.dir_block_size], sizeof.xfs_dir3_data_hdr
+        mov     [edi+XFS.bmbt_block_size], sizeof.xfs_bmbt3_block
+        mov     [edi+XFS.da_blkinfo_size], sizeof.xfs_da3_blkinfo
+.vcommon:
+
+        movzx   eax, [ebx+xfs_sb.sb_inodesize]
+        xchg    al, ah
+        mov     [edi+XFS.inodesize], eax
+
+        movzx   eax, [ebx+xfs_sb.sb_inopblock]
+        xchg    al, ah
+        mov     [edi+XFS.inopblock], eax
+
+        movzx   eax, [ebx+xfs_sb.sb_blocklog]
+        mov     [edi+XFS.blocklog], eax
+
+;        movzx   eax, [ebx+xfs_sb.sb_sectlog]
+        mov     eax, [edi+XFS.sectsize]
+        bsf     eax, eax
+        mov     [edi+XFS.sectlog], eax
+
+        movzx   eax, [ebx+xfs_sb.sb_inodelog]
+        mov     [edi+XFS.inodelog], eax
+
+        movzx   eax, [ebx+xfs_sb.sb_inopblog]
+        mov     [edi+XFS.inopblog], eax
+
+        movzx   ecx, [ebx+xfs_sb.sb_dirblklog]
+        mov     [edi+XFS.dirblklog], ecx
+        movi    eax, 1
         shl     eax, cl
-        mov     [edi + XFS.dirblocksize], eax           ; blocks for files, dirblocks for directories
+        mov     [edi+XFS.blkpdirblk], eax
+
+        movbe   eax, [ebx+xfs_sb.sb_rootino.hi]
+        mov     [edi+XFS.rootino.lo], eax
+        movbe   eax, [ebx+xfs_sb.sb_rootino.lo]
+        mov     [edi+XFS.rootino.hi], eax
+
+        mov     eax, [edi+XFS.blocksize]
+        mov     ecx, [edi+XFS.dirblklog]
+        shl     eax, cl
+        mov     [edi+XFS.dirblocksize], eax           ; blocks are for files, dirblocks are for directories
 
         ; sector is always smaller than block
         ; so precalculate shift order to allow faster sector_num->block_num conversion
-
-        mov     ecx, [edi + XFS.blocklog]
-        sub     ecx, [edi + XFS.sectlog]
-        mov     [edi + XFS.blockmsectlog], ecx
+        mov     ecx, [edi+XFS.blocklog]
+        sub     ecx, [edi+XFS.sectlog]
+        mov     [edi+XFS.sectpblog], ecx
 
         mov     eax, 1
         shl     eax, cl
-        mov     [edi + XFS.sectpblock], eax
+        mov     [edi+XFS.sectpblock], eax
 
-        ; shift order for inode_num->block_num conversion
+        movbe   eax, [ebx+xfs_sb.sb_agblocks]
+        mov     [edi+XFS.agblocks], eax
 
-        mov     eax, [edi + XFS.blocklog]
-        sub     eax, [edi + XFS.inodelog]
-        mov     [edi + XFS.inodetoblocklog], eax
-
-        mov     eax, [ebx + xfs_sb.sb_agblocks]
-        bswap   eax
-        mov     [edi + XFS.agblocks], eax
-        movzx   ecx, byte[ebx + xfs_sb.sb_agblklog]
-        mov     [edi + XFS.agblklog], ecx
+        movzx   ecx, [ebx+xfs_sb.sb_agblklog]
+        mov     [edi+XFS.agblklog], ecx
 
         ; get the mask for block numbers
         ; block numbers are AG relative!
         ; bitfield length may vary between partitions
-
         mov     eax, 1
+        xor     edx, edx
+        shld    edx, eax, cl
         shl     eax, cl
-        dec     eax
-        mov     dword[edi + XFS.agblockmask + 0], eax
-        mov     eax, 1
-        sub     ecx, 32
-        jc      @f
-        shl     eax, cl
-    @@:
-        dec     eax
-        mov     dword[edi + XFS.agblockmask + 4], eax
+        sub     eax, 1
+        sbb     edx, 0
+        mov     [edi+XFS.agblockmask.lo], eax
+        mov     [edi+XFS.agblockmask.hi], edx
 
         ; calculate magic offsets for directories
-
-        mov     ecx, [edi + XFS.blocklog]
+        mov     ecx, [edi+XFS.blocklog]
         mov     eax, XFS_DIR2_LEAF_OFFSET AND 0xffffffff        ; lo
         mov     edx, XFS_DIR2_LEAF_OFFSET SHR 32                ; hi
         shrd    eax, edx, cl
-        mov     [edi + XFS.dir2_leaf_offset_blocks], eax
+        shr     edx, cl
+        mov     [edi+XFS.dir2_leaf_offset_blocks.lo], eax
+        mov     [edi+XFS.dir2_leaf_offset_blocks.hi], edx
 
-        mov     ecx, [edi + XFS.blocklog]
+        mov     ecx, [edi+XFS.blocklog]
         mov     eax, XFS_DIR2_FREE_OFFSET AND 0xffffffff        ; lo
         mov     edx, XFS_DIR2_FREE_OFFSET SHR 32                ; hi
         shrd    eax, edx, cl
-        mov     [edi + XFS.dir2_free_offset_blocks], eax
+        shr     edx, cl
+        mov     [edi+XFS.dir2_free_offset_blocks.lo], eax
+        mov     [edi+XFS.dir2_free_offset_blocks.hi], edx
 
-;        mov     ecx, [edi + XFS.dirblklog]
-;        mov     eax, [edi + XFS.blocksize]
-;        shl     eax, cl
-;        mov     [edi + XFS.dirblocksize], eax
 
-        mov     eax, [edi + XFS.blocksize]
+        ; allocate memory for temp block, dirblock, inode, etc
+        mov     eax, [edi+XFS.blocksize]
         call    malloc
+        mov     [edi+XFS.cur_block], eax
         test    eax, eax
         jz      .error
-        mov     [edi + XFS.cur_block], eax
+
+        mov     eax, [edi+XFS.blocksize]
+        call    malloc
+        mov     [edi+XFS.cur_block_data], eax
+        test    eax, eax
+        jz      .error
 
         ; we do need XFS.blocksize bytes for single inode
         ; minimal file system structure is block, inodes are packed in blocks
+        ; FIXME
+        mov     eax, [edi+XFS.blocksize]
+        call    malloc
+        mov     [edi+XFS.cur_inode], eax
+        test    eax, eax
+        jz      .error
 
-        mov     eax, [edi + XFS.blocksize]
+        mov     eax, [edi+XFS.blocksize]
         call    malloc
         test    eax, eax
         jz      .error
-        mov     [edi + XFS.cur_inode], eax
-
-        ; temporary inode
-        ; used for browsing directories
-
-        mov     eax, [edi + XFS.blocksize]
-        call    malloc
-        test    eax, eax
-        jz      .error
-        mov     [edi + XFS.tmp_inode], eax
+        mov     [edi+XFS.tmp_inode], eax
 
         ; current sector
-        ; only for sector size structures like AGI
-        ; inodes has usually the same size, but never store them here
-
-        mov     eax, [edi + XFS.sectsize]
+        ; only for sector sized structures like AGF
+        ; inodes usually fit this size, but not always!
+        ; therefore never store inode here
+        mov     eax, [edi+XFS.sectsize]
         call    malloc
+        mov     [edi+XFS.cur_sect], eax
         test    eax, eax
         jz      .error
-        mov     [edi + XFS.cur_sect], eax
 
-        ; current directory block
-
-        mov     eax, [edi + XFS.dirblocksize]
+        mov     eax, [edi+XFS.dirblocksize]
         call    malloc
+        mov     [edi+XFS.cur_dirblock], eax
         test    eax, eax
         jz      .error
-        mov     [edi + XFS.cur_dirblock], eax
 
-  .quit:
-        mov     eax, edi                ; return pointer to allocated XFS partition structure
-        pop     edi esi edx ecx ebx
+.quit:
+        ; return pointer to allocated XFS partition structure
+        mov     eax, edi
         ret
-  .error:
+.error:
+        mov     eax, edi
+        call    xfs._.free
+.error_nofree:
         xor     eax, eax
-        pop     edi esi edx ecx ebx
         ret
+endp
 
 
 ; lock partition access mutex
-proc xfs_lock
-;DEBUGF 1,"xfs_lock\n"
-        lea     ecx, [ebp + XFS.Lock]
+xfs._.lock:
+        lea     ecx, [ebp+XFS.Lock]
         jmp     mutex_lock
-endp
 
 
 ; unlock partition access mutex
-proc xfs_unlock
-;DEBUGF 1,"xfs_unlock\n"
-        lea     ecx, [ebp + XFS.Lock]
+xfs._.unlock:
+        lea     ecx, [ebp+XFS.Lock]
         jmp     mutex_unlock
-endp
 
 
 ; free all the allocated memory
 ; called on partition destroy
-proc xfs_free
-        push    ebp
-        xchg    ebp, eax
-        stdcall kernel_free, [ebp + XFS.cur_block]
-        stdcall kernel_free, [ebp + XFS.cur_inode]
-        stdcall kernel_free, [ebp + XFS.cur_sect]
-        stdcall kernel_free, [ebp + XFS.cur_dirblock]
-        stdcall kernel_free, [ebp + XFS.tmp_inode]
-        xchg    ebp, eax
+; or during failed initialization from xfs_create_partition
+xfs._.free:
+        test    eax, eax
+        jz      .done
+        push    ebx
+        mov     ebx, eax
+
+
+        ; freeing order must correspond the order of
+        ; allocation in xfs_create_partition
+        mov     eax, [ebx+XFS.cur_block]
+        test    eax, eax
+        jz      .done
         call    free
-        pop     ebp
+
+        mov     eax, [ebx+XFS.cur_block_data]
+        test    eax, eax
+        jz      .done
+        call    free
+
+        mov     eax, [ebx+XFS.cur_inode]
+        test    eax, eax
+        jz      .done
+        call    free
+
+        mov     eax, [ebx+XFS.tmp_inode]
+        test    eax, eax
+        jz      .done
+        call    free
+
+        mov     eax, [ebx+XFS.cur_sect]
+        test    eax, eax
+        jz      .done
+        call    free
+
+        mov     eax, [ebx+XFS.cur_dirblock]
+        test    eax, eax
+        jz      .done
+        call    free
+
+
+        mov     eax, ebx
+        call    free
+        pop     ebx
+.done:
+        ret
+
+
+;---------------------------------------------------------------
+; block number
+; eax -- inode_lo
+; edx -- inode_hi
+; ebx -- buffer
+;---------------------------------------------------------------
+proc xfs._.read_block
+        movi    ecx, 1
+        call    xfs._.read_blocks
+        ret
+endp
+
+
+proc xfs._.blkrel2sectabs uses esi
+        push    edx eax
+
+        ; XFS block numbers are AG relative
+        ; they come in bitfield form of concatenated AG and block numbers
+        ; to get absolute block number for fs_read64_sys we should
+        ; 1. get AG number and multiply it by the AG size in blocks
+        ; 2. extract and add AG relative block number
+
+        ; 1.
+        mov     ecx, [ebp+XFS.agblklog]
+        shrd    eax, edx, cl
+        shr     edx, cl
+        mul     [ebp+XFS.agblocks]
+        ; 2.
+        pop     ecx esi
+        and     ecx, [ebp+XFS.agblockmask.lo]
+        and     esi, [ebp+XFS.agblockmask.hi]
+        add     eax, ecx
+        adc     edx, esi
+
+        mov     ecx, [ebp+XFS.sectpblog]
+        shld    edx, eax, cl
+        shl     eax, cl
         ret
 endp
 
 
 ;---------------------------------------------------------------
-; block number (AG relative)
-; eax -- inode_lo
-; edx -- inode_hi
+; start block number
+; edx:eax -- block
 ; ebx -- buffer
+; ecx -- count
 ;---------------------------------------------------------------
-xfs_read_block:
-        push    ebx esi
-
-        push    edx
-        push    eax
-
-        ; XFS block numbers are AG relative
-        ; they come in bitfield form of concatenated AG and block numbers
-        ; to get absolute block number for fs_read32_sys we should
-        ; 1. extract AG number (using precalculated mask)
-        ; 2. multiply it by the AG size in blocks
-        ; 3. add AG relative block number
-
-        ; 1.
-        mov     ecx, [ebp + XFS.agblklog]
-        shrd    eax, edx, cl
-        shr     edx, cl
-        ; 2.
-        mul     dword[ebp + XFS.agblocks]
+proc xfs._.read_blocks
+        push    ecx
+        call    xfs._.blkrel2sectabs
         pop     ecx
-        pop     esi
-        and     ecx, dword[ebp + XFS.agblockmask + 0]
-        and     esi, dword[ebp + XFS.agblockmask + 4]
-        ; 3.
-        add     eax, ecx
-        adc     edx, esi
-
-;DEBUGF 1,"read block: 0x%x%x\n",edx,eax
-        ; there is no way to read file system block at once, therefore we
-        ; 1. calculate the number of sectors first
-        ; 2. and then read them in series
-
-        ; 1.
-        mov     ecx, [ebp + XFS.blockmsectlog]
-        shld    edx, eax, cl
-        shl     eax, cl
-        mov     esi, [ebp + XFS.sectpblock]
-
-        ; 2.
-  .next_sector:
-        push    eax edx
-        call    fs_read32_sys
-        mov     ecx, eax
-        pop     edx eax
-        test    ecx, ecx
-        jnz     .error
-        add     eax, 1                          ; be ready to fs_read64_sys
-        adc     edx, 0
-        add     ebx, [ebp + XFS.sectsize]       ; update buffer offset
-        dec     esi
-        jnz     .next_sector
-
-  .quit:
-        xor     eax, eax
-        pop     esi ebx
+        imul    ecx, [ebp+XFS.sectpblock]
+        call    fs_read64_sys
+        test    eax, eax
         ret
-  .error:
-        mov     eax, ecx
-        pop     esi ebx
+endp
+
+
+proc xfs._.read_dirblock uses ebx, _startblock:qword, _buffer
+        mov     eax, dword[_startblock+DQ.lo]
+        mov     edx, dword[_startblock+DQ.hi]
+        mov     ebx, [_buffer]
+        mov     ecx, [ebp+XFS.blkpdirblk]
+        call    xfs._.read_blocks
         ret
+endp
 
 
 ;---------------------------------------------------------------
-; push buffer
-; push startblock_hi
-; push startblock_lo
-; call xfs_read_dirblock
 ; test eax, eax
 ;---------------------------------------------------------------
-xfs_read_dirblock:
-;mov eax, [esp + 4]
-;mov edx, [esp + 8]
-;DEBUGF 1,"read dirblock at: %d %d\n",edx,eax
-;DEBUGF 1,"dirblklog: %d\n",[ebp + XFS.dirblklog]
-        push    ebx esi
-
-        mov     eax, [esp + 12]         ; startblock_lo
-        mov     edx, [esp + 16]         ; startblock_hi
-        mov     ebx, [esp + 20]         ; buffer
-
-        ; dirblock >= block
-        ; read dirblocks by blocks
-
-        mov     ecx, [ebp + XFS.dirblklog]
-        mov     esi, 1
-        shl     esi, cl
-  .next_block:
-        push    eax edx
-        call    xfs_read_block
-        mov     ecx, eax
-        pop     edx eax
-        test    ecx, ecx
-        jnz     .error
-        add     eax, 1          ; be ready to fs_read64_sys
-        adc     edx, 0
-        add     ebx, [ebp + XFS.blocksize]
-        dec     esi
-        jnz     .next_block
-
-  .quit:
-        xor     eax, eax
-        pop     esi ebx
-        ret     12
-  .error:
-        mov     eax, ecx
-        pop     esi ebx
-        ret     12
-
-
-;---------------------------------------------------------------
-; push buffer
-; push inode_hi
-; push inode_lo
-; call xfs_read_inode
-; test eax, eax
-;---------------------------------------------------------------
-xfs_read_inode:
-;DEBUGF 1,"reading inode: 0x%x%x\n",[esp+8],[esp+4]
-        push    ebx
-        mov     eax, [esp + 8]  ; inode_lo
-        mov     edx, [esp + 12] ; inode_hi
-        mov     ebx, [esp + 16] ; buffer
-
+proc xfs_read_inode uses ebx, _inode_lo, _inode_hi, _buffer
+        mov     eax, [_inode_lo]
+        mov     edx, [_inode_hi]
+        mov     ebx, [_buffer]
         ; inodes are packed into blocks
         ; 1. calculate block number
         ; 2. read the block
         ; 3. add inode offset to block base address
-
         ; 1.
-        mov     ecx, [ebp + XFS.inodetoblocklog]
+        mov     ecx, [ebp+XFS.inopblog]
         shrd    eax, edx, cl
         shr     edx, cl
         ; 2.
-        call    xfs_read_block
-        test    eax, eax
+        call    xfs._.read_block
         jnz     .error
+        ; inode numbers should be first extracted from bitfields by mask
 
-        ; note that inode numbers should be first extracted from bitfields using mask
-
-        mov     eax, [esp + 8]
+        mov     eax, [_inode_lo]
         mov     edx, 1
-        mov     ecx, [ebp + XFS.inopblog]
+        mov     ecx, [ebp+XFS.inopblog]
         shl     edx, cl
         dec     edx             ; get inode number mask
         and     eax, edx        ; apply mask
-        mov     ecx, [ebp + XFS.inodelog]
+        mov     ecx, [ebp+XFS.inodelog]
         shl     eax, cl
         add     ebx, eax
-
-        cmp     word[ebx], XFS_DINODE_MAGIC     ; test signature
-        jne     .error
-  .quit:
         xor     eax, eax
-        mov     edx, ebx
-        pop     ebx
-        ret     12
-  .error:
+
+        cmp     [ebx+xfs_inode.di_core.di_magic], XFS_DINODE_MAGIC
+        jz      .quit
         movi    eax, ERROR_FS_FAIL
+.quit:
         mov     edx, ebx
-        pop     ebx
-        ret     12
+.error:
+        ret
+endp
 
 
-;----------------------------------------------------------------
-; push encoding         ; ASCII / UNICODE
-; push src              ; inode
-; push dst              ; bdfe
-; push entries_to_read
-; push start_number     ; from 0
-;----------------------------------------------------------------
-xfs_dir_get_bdfes:
-DEBUGF 1,"xfs_dir_get_bdfes: %d entries from %d\n",[esp+8],[esp+4]
-        sub     esp, 4     ; local vars
-        push    ecx edx esi edi
+; skip ecx first entries
+proc xfs._.dir_sf_skip _count
+        mov     ecx, [_count]
+.next:
+        dec     ecx
+        js      .quit
+        dec     [ebp+XFS.entries_left_in_dir]
+        js      .quit
+.self:
+        bts     [ebp+XFS.dir_sf_self_done], 0
+        jc      .parent
+        jmp     .next
+.parent:
+        bts     [ebp+XFS.dir_sf_parent_done], 0
+        jc      .common
+        jmp     .next
+.common:
+        movzx   eax, [esi+xfs_dir2_sf_entry.namelen]
+        add     esi, xfs_dir2_sf_entry.name
+        add     esi, eax
+        add     esi, [ebp+XFS.ftype_size]
+        add     esi, [ebp+XFS.shortform_inodelen]
+        jmp     .next
+.quit:
+        ret
+endp
 
-        mov     ebx, [esp + 36]         ; src
-        mov     edx, [esp + 32]         ; dst
-        mov     ecx, [esp + 24]         ; start_number
 
-        ; define directory ondisk format and jump to corresponding label
+proc xfs._.dir_sf_read uses edi, _count
+locals
+        _dst dd ?
+endl
+.next:
+        dec     [_count]
+        js      .quit
+        dec     [ebp+XFS.entries_left_in_dir]
+        js      .quit
+        mov     [_dst], edx
+.self:
+        bts     [ebp+XFS.dir_sf_self_done], 0
+        jc      .parent
+        lea     edi, [edx+bdfe.name]
+        mov     dword[edi], '.'
+        stdcall xfs_get_inode_info, [ebp+XFS.cur_inode], edx
+        jmp     .common
+.parent:
+        bts     [ebp+XFS.dir_sf_parent_done], 0
+        jc      .not_special
+        lea     edi, [edx+bdfe.name]         ; get file name offset
+        mov     dword[edi], '..'        ; terminator included
+        mov     edi, edx
+        lea     edx, [ebx+xfs_dir2_sf.hdr.parent]
+        call    xfs._.get_inode_number_sf
+        stdcall xfs_read_inode, eax, edx, [ebp+XFS.tmp_inode]
+        test    eax, eax
+        jnz     .error
+        stdcall xfs_get_inode_info, edx, edi
+        jmp     .common
+.not_special:
+        movzx   ecx, [esi+xfs_dir2_sf_entry.namelen]
+        add     esi, xfs_dir2_sf_entry.name
+        lea     edi, [edx+bdfe.name]
+        stdcall xfs._.copy_filename
+        add     esi, [ebp+XFS.ftype_size]
+        mov     edi, edx
+        mov     edx, esi
+        call    xfs._.get_inode_number_sf
+        stdcall xfs_read_inode, eax, edx, [ebp+XFS.tmp_inode]
+        test    eax, eax
+        jnz     .error
+        stdcall xfs_get_inode_info, edx, edi
+        add     esi, [ebp+XFS.shortform_inodelen]
+.common:
+        mov     edx, [_dst]
+        mov     eax, [ebp+XFS.bdfe_nameenc]
+        mov     [edx+bdfe.nameenc], eax
+        add     edx, [ebp+XFS.bdfe_len]
+        inc     [ebp+XFS.entries_read]
+        jmp     .next
+.quit:
+        xor     eax, eax
+.error:
+        ret
+endp
 
-        cmp     byte[ebx + xfs_inode.di_core.di_format], XFS_DINODE_FMT_LOCAL
-        jne     .not_shortdir
-        jmp     .shortdir
-  .not_shortdir:
-        cmp     byte[ebx + xfs_inode.di_core.di_format], XFS_DINODE_FMT_EXTENTS
-        jne     .not_blockdir
-        mov     eax, [ebx + xfs_inode.di_core.di_nextents]
-        bswap   eax
-        cmp     eax, 1
-        jne     .not_blockdir
-        jmp     .blockdir
-  .not_blockdir:
-        cmp     byte[ebx + xfs_inode.di_core.di_format], XFS_DINODE_FMT_EXTENTS
-        jne     .not_leafdir
-        mov     eax, [ebx + xfs_inode.di_core.di_nextents]
-        bswap   eax
-        cmp     eax, 4
-        ja      .not_leafdir
-        jmp     .leafdir
-  .not_leafdir:
-        cmp     byte[ebx + xfs_inode.di_core.di_format], XFS_DINODE_FMT_EXTENTS
-        jne     .not_nodedir
-        jmp     .nodedir
-  .not_nodedir:
-        cmp     byte[ebx + xfs_inode.di_core.di_format], XFS_DINODE_FMT_BTREE
-        jne     .not_btreedir
-        jmp     .btreedir
-  .not_btreedir:
-        movi    eax, ERROR_FS_FAIL
-        jmp     .error
 
-        ; short form directory (all the data fits into inode)
-  .shortdir:
-;DEBUGF 1,"shortdir\n",
-        movzx   eax, word[ebx + xfs_inode.di_u + xfs_dir2_sf_hdr.count]
-        test    al, al                  ; is count zero?
-        jnz     @f                      ; if not, use it (i8count must be zero then)
-        shr     eax, 8                  ; use i8count
-    @@:
-        add     eax, 1                  ; '..' and '.' are implicit
-        mov     dword[edx + 0], 1       ; version
-        mov     [edx + 8], eax          ; total entries
-        sub     eax, [esp + 24]         ; start number
-        cmp     eax, [esp + 28]         ; entries to read
-        jbe     @f
-        mov     eax, [esp + 28]
-    @@:
-        mov     [esp + 28], eax
-        mov     [edx + 4], eax          ; number of actually read entries
-        mov     [ebp + XFS.entries_read], eax
-
+proc xfs._.readdir_sf uses esi, _src, _dst
+        mov     ebx, [_src]
+        mov     edx, [_dst]
+        mov     [ebp+XFS.dir_sf_self_done], 0
+        mov     [ebp+XFS.dir_sf_parent_done], 0
+        mov     [ebp+XFS.entries_read], 0
+        movzx   eax, [ebx+xfs_dir2_sf.hdr.count]
+        ; '..' and '.' are implicit
+        add     eax, 2
+        mov     [ebp+XFS.entries_left_in_dir], eax
+        mov     [edx+bdfe_hdr.total_cnt], eax
         ; inode numbers are often saved as 4 bytes (iff they fit)
         ; compute the length of inode numbers
+        ; 8 iff i8count != 0, 4 otherwise
+        cmp     [ebx+xfs_dir2_sf.hdr.i8count], 0
+        setnz   al
+        lea     eax, [eax*4+4]
+        mov     [ebp+XFS.shortform_inodelen], eax
+        add     edx, sizeof.bdfe_hdr
+        lea     esi, [ebx+xfs_dir2_sf.hdr.parent+eax]
+        stdcall xfs._.dir_sf_skip, [ebp+XFS.entries_to_skip]
+        stdcall xfs._.dir_sf_read, [ebp+XFS.requested_cnt]
+        ret
+endp
 
-        mov     eax, 4          ; 4 by default
-        cmp     byte[ebx + xfs_inode.di_u + xfs_dir2_sf_hdr.i8count], 0
-        je      @f
-        add     eax, eax        ; 4+4=8, iff i8count != 0
-    @@:
-        mov     dword[edx + 12], 0      ; reserved
-        mov     dword[edx + 16], 0      ;
-        mov     dword[edx + 20], 0      ;
-        mov     dword[edx + 24], 0      ;
-        mov     dword[edx + 28], 0      ;
-        add     edx, 32
-        lea     esi, [ebx + xfs_inode.di_u + xfs_dir2_sf_hdr.parent + eax]
-        dec     ecx
-        js      .shortdir.fill
 
-        ; skip some entries if the first entry to read is not 0
-
-  .shortdir.skip:
-        test    ecx, ecx
-        jz      .shortdir.skipped
-        movzx   edi, byte[esi + xfs_dir2_sf_entry.namelen]
-        lea     esi, [esi + xfs_dir2_sf_entry.name + edi]
-        add     esi, eax
-        dec     ecx
-        jnz     .shortdir.skip
-        mov     ecx, [esp + 28]         ; entries to read
-        jmp     .shortdir.skipped
-  .shortdir.fill:
-        mov     ecx, [esp + 28]         ; total number
-        test    ecx, ecx
-        jz      .quit
-        push    ecx
-;DEBUGF 1,"ecx: %d\n",ecx
-        lea     edi, [edx + 40]         ; get file name offset
-;DEBUGF 1,"filename: ..\n"
-        mov     dword[edi], '..'
-        mov     edi, edx
-        push    eax ebx edx esi
-        stdcall xfs_get_inode_number_sf, dword[ebx + xfs_inode.di_u + xfs_dir2_sf_hdr.count], dword[ebx + xfs_inode.di_u + xfs_dir2_sf_hdr.parent + 4], dword[ebx + xfs_inode.di_u + xfs_dir2_sf_hdr.parent]
-        stdcall xfs_read_inode, eax, edx, [ebp + XFS.tmp_inode]
-;        test    eax, eax
-;        jnz     .error
-        stdcall xfs_get_inode_info, edx, edi
-        test    eax, eax
-        pop     esi edx ebx eax
+proc xfs._.readdir_block _literal_area, _out_buf
+        mov     ebx, [_literal_area]
+        mov     [ebp+XFS.entries_read], 0
+        mov     eax, ebx
+        mov     ebx, [ebp+XFS.cur_dirblock]
+        stdcall xfs._.extent_unpack, eax
+        stdcall xfs._.read_dirblock, [ebp+XFS.extent.br_startblock.lo], [ebp+XFS.extent.br_startblock.hi], ebx
+        mov     edx, [_out_buf]
         jnz     .error
-        mov     ecx, [esp + 44]         ; file name encding
-        mov     [edx + 4], ecx
-        add     edx, 304                ; ASCII only for now
-        pop     ecx
-        dec     ecx
-        jz      .quit
-
-;        push    ecx
-;        lea     edi, [edx + 40]
-;DEBUGF 1,"filename: .\n"
-;        mov     dword[edi], '.'
-;        mov     edi, edx
-;        push    eax edx
-;        stdcall xfs_get_inode_info, [ebp + XFS.cur_inode], edi
-;        test    eax, eax
-;        pop     edx eax
-;        jnz     .error
-;        mov     ecx, [esp + 44]
-;        mov     [edx + 4], ecx
-;        add     edx, 304                ; ASCII only for now
-;        pop     ecx
-;        dec     ecx
-;        jz      .quit
-
-        ; we skipped some entries
-        ; now we fill min(required, present) number of bdfe's
-
-  .shortdir.skipped:
-;DEBUGF 1,"ecx: %d\n",ecx
-        push    ecx
-        movzx   ecx, byte[esi + xfs_dir2_sf_entry.namelen]
-        add     esi, xfs_dir2_sf_entry.name
-        lea     edi, [edx + 40]         ; bdfe offset of file name
-;DEBUGF 1,"filename: |%s|\n",esi
-        rep movsb
-        mov     word[edi], 0            ; terminator (ASCIIZ)
-
-        push    eax ebx ecx edx esi
-;        push    edx     ; for xfs_get_inode_info
-        mov     edi, edx
-        stdcall xfs_get_inode_number_sf, dword[ebx + xfs_inode.di_u + xfs_dir2_sf_hdr.count], [esi + 4], [esi]
-        stdcall xfs_read_inode, eax, edx, [ebp + XFS.tmp_inode]
-;        test    eax, eax
-;        jnz     .error
-        stdcall xfs_get_inode_info, edx, edi
-        test    eax, eax
-        pop     esi edx ecx ebx eax
-        jnz     .error
-        mov     ecx, [esp + 44]         ; file name encoding
-        mov     [edx + 4], ecx
-
-        add     edx, 304                ; ASCII only for now
-        add     esi, eax
-        pop     ecx
-        dec     ecx
-        jnz     .shortdir.skipped
-        jmp     .quit
-
-  .blockdir:
-;DEBUGF 1,"blockdir\n"
-        push    edx
-        lea     eax, [ebx + xfs_inode.di_u + xfs_bmbt_rec.l0]
-        stdcall xfs_extent_unpack, eax
-;DEBUGF 1,"extent.br_startoff  : 0x%x%x\n",[ebp+XFS.extent.br_startoff+4],[ebp+XFS.extent.br_startoff+0]
-;DEBUGF 1,"extent.br_startblock: 0x%x%x\n",[ebp+XFS.extent.br_startblock+4],[ebp+XFS.extent.br_startblock+0]
-;DEBUGF 1,"extent.br_blockcount: %d\n",[ebp+XFS.extent.br_blockcount]
-;DEBUGF 1,"extent.br_state     : %d\n",[ebp+XFS.extent.br_state]
-        stdcall xfs_read_dirblock, dword[ebp + XFS.extent.br_startblock + 0], dword[ebp + XFS.extent.br_startblock + 4], [ebp + XFS.cur_dirblock]
-        test    eax, eax
-        pop     edx
-        jnz     .error
-;DEBUGF 1,"dirblock signature: %s\n",[ebp+XFS.cur_dirblock]
-        mov     ebx, [ebp + XFS.cur_dirblock]
-        mov     dword[edx + 0], 1       ; version
-        mov     eax, [ebp + XFS.dirblocksize]
-        mov     ecx, [ebx + eax - sizeof.xfs_dir2_block_tail + xfs_dir2_block_tail.stale]
-        mov     eax, [ebx + eax - sizeof.xfs_dir2_block_tail + xfs_dir2_block_tail.count]
-        bswap   ecx
-        bswap   eax
-        sub     eax, ecx                ; actual number of entries = count - stale
-        mov     [edx + 8], eax          ; total entries
-;DEBUGF 1,"total entries: %d\n",eax
-        sub     eax, [esp + 24]         ; start number
-        cmp     eax, [esp + 28]         ; entries to read
-        jbe     @f
-        mov     eax, [esp + 28]
-    @@:
-        mov     [esp + 28], eax
-        mov     [edx + 4], eax          ; number of actually read entries
-        mov     [ebp + XFS.entries_read], eax
-;DEBUGF 1,"actually read entries: %d\n",eax
-        mov     dword[edx + 12], 0      ; reserved
-        mov     dword[edx + 16], 0      ;
-        mov     dword[edx + 20], 0      ;
-        mov     dword[edx + 24], 0      ;
-        mov     dword[edx + 28], 0      ;
-        add     ebx, xfs_dir2_block.u
-
-        mov     ecx, [esp + 24]         ; start entry number
-                                        ; also means how many to skip
-        test    ecx, ecx
-        jz      .blockdir.skipped
-  .blockdir.skip:
-        cmp     word[ebx + xfs_dir2_data_union.unused.freetag], XFS_DIR2_DATA_FREE_TAG
-        jne     @f
-        movzx   eax, word[ebx + xfs_dir2_data_union.unused.length]
-        xchg    al, ah
-        add     ebx, eax
-        jmp     .blockdir.skip
-    @@:
-        movzx   eax, [ebx + xfs_dir2_data_union.xentry.namelen]
-        lea     ebx, [ebx + xfs_dir2_data_union.xentry.name + eax + 2]       ; 2 bytes for 'tag'
-        add     ebx, 7                  ; align on 8 bytes
-        and     ebx, not 7
-        dec     ecx
-        jnz     .blockdir.skip
-  .blockdir.skipped:
-        mov     ecx, [edx + 4]          ; actually read entries
-        test    ecx, ecx
-        jz      .quit
-        add     edx, 32                 ; set edx to the first bdfe
-  .blockdir.next_entry:
-        cmp     word[ebx + xfs_dir2_data_union.unused.freetag], XFS_NULL
-        jne     @f
-        movzx   eax, word[ebx + xfs_dir2_data_union.unused.length]
-        xchg    al, ah
-        add     ebx, eax
-        jmp     .blockdir.next_entry
-    @@:
-        push    ecx
-        push    eax ebx ecx edx esi
-        mov     edi, edx
-        mov     edx, dword[ebx + xfs_dir2_data_union.xentry.inumber + 0]
-        mov     eax, dword[ebx + xfs_dir2_data_union.xentry.inumber + 4]
-        bswap   edx
-        bswap   eax
-        stdcall xfs_read_inode, eax, edx, [ebp + XFS.tmp_inode]
-        stdcall xfs_get_inode_info, edx, edi
-        test    eax, eax
-        pop     esi edx ecx ebx eax
-        jnz     .error
-        mov     ecx, [esp + 44]
-        mov     [edx + 4], ecx
-        lea     edi, [edx + 40]
-        movzx   ecx, byte[ebx + xfs_dir2_data_union.xentry.namelen]
-        lea     esi, [ebx + xfs_dir2_data_union.xentry.name]
-;DEBUGF 1,"filename: |%s|\n",esi
-        rep movsb
-;        call    utf8_to_cp866
-        mov     word[edi], 0            ; terminator
-        lea     ebx, [esi + 2]          ; skip 'tag'
-        add     ebx, 7                  ; xfs_dir2_data_entries are aligned to 8 bytes
-        and     ebx, not 7
-        add     edx, 304
-        pop     ecx
-        dec     ecx
-        jnz     .blockdir.next_entry
-        jmp     .quit
-
-  .leafdir:
-;DEBUGF 1,"readdir: leaf\n"
-        mov     [ebp + XFS.cur_inode_save], ebx
-        push    ebx ecx edx
-        lea     eax, [ebx + xfs_inode.di_u + xfs_bmbt_rec.l0]
-        mov     edx, [ebx + xfs_inode.di_core.di_nextents]
-        bswap   edx
-        stdcall xfs_extent_list_read_dirblock, eax, [ebp + XFS.dir2_leaf_offset_blocks], 0, edx, 0xffffffff, 0xffffffff
-        mov     ecx, eax
-        and     ecx, edx
-        inc     ecx
-        pop     edx ecx ebx
-        jz      .error
-
-        mov     eax, [ebp + XFS.cur_dirblock]
-        movzx   ecx, word[eax + xfs_dir2_leaf.hdr.stale]
-        movzx   eax, word[eax + xfs_dir2_leaf.hdr.count]
-        xchg    cl, ch
-        xchg    al, ah
-        sub     eax, ecx
-;DEBUGF 1,"total count: %d\n",eax
-
-        mov     dword[edx + 0], 1       ; version
-        mov     [edx + 8], eax          ; total entries
-        sub     eax, [esp + 24]         ; start number
-        cmp     eax, [esp + 28]         ; entries to read
-        jbe     @f
-        mov     eax, [esp + 28]
-    @@:
-        mov     [esp + 28], eax
-        mov     [edx + 4], eax          ; number of actually read entries
-
-        mov     dword[edx + 12], 0      ; reserved
-        mov     dword[edx + 16], 0      ;
-        mov     dword[edx + 20], 0      ;
-        mov     dword[edx + 24], 0      ;
-        mov     dword[edx + 28], 0      ;
-
-        mov     eax, [ebp + XFS.cur_dirblock]
-        add     eax, [ebp + XFS.dirblocksize]
-        mov     [ebp + XFS.max_dirblockaddr], eax
-        mov     dword[ebp + XFS.next_block_num + 0], 0
-        mov     dword[ebp + XFS.next_block_num + 4], 0
-
-        mov     ebx, [ebp + XFS.max_dirblockaddr]       ; to read dirblock immediately
-        mov     ecx, [esp + 24]         ; start number
-        test    ecx, ecx
-        jz      .leafdir.skipped
-  .leafdir.skip:
-        cmp     ebx, [ebp + XFS.max_dirblockaddr]
-        jne     @f
-        push    ecx edx
-        mov     ebx, [ebp + XFS.cur_inode_save]
-        lea     eax, [ebx + xfs_inode.di_u + xfs_bmbt_rec.l0]
-        mov     edx, [ebx + xfs_inode.di_core.di_nextents]
-        bswap   edx
-        stdcall xfs_extent_list_read_dirblock, eax, dword[ebp + XFS.next_block_num + 0], dword[ebp + XFS.next_block_num + 4], edx, [ebp + XFS.dir2_leaf_offset_blocks], 0
-        mov     ecx, eax
-        and     ecx, edx
-        inc     ecx
-        jz      .error
-        add     eax, 1
-        adc     edx, 0
-        mov     dword[ebp + XFS.next_block_num + 0], eax
-        mov     dword[ebp + XFS.next_block_num + 4], edx
-        mov     ebx, [ebp + XFS.cur_dirblock]
-        add     ebx, sizeof.xfs_dir2_data_hdr
-        pop     edx ecx
-    @@:
-        cmp     word[ebx + xfs_dir2_data_union.unused.freetag], XFS_DIR2_DATA_FREE_TAG
-        jne     @f
-        movzx   eax, word[ebx + xfs_dir2_data_union.unused.length]
-        xchg    al, ah
-        add     ebx, eax
-        jmp     .leafdir.skip
-    @@:
-        movzx   eax, [ebx + xfs_dir2_data_union.xentry.namelen]
-        lea     ebx, [ebx + xfs_dir2_data_union.xentry.name + eax + 2]       ; 2 for 'tag'
-        add     ebx, 7
-        and     ebx, not 7
-        dec     ecx
-        jnz     .leafdir.skip
-  .leafdir.skipped:
-        mov     [ebp + XFS.entries_read], 0
-        mov     ecx, [edx + 4]          ; actually read entries
-        test    ecx, ecx
-        jz      .quit
-        add     edx, 32                 ; first bdfe entry
-  .leafdir.next_entry:
-;DEBUGF 1,"next_extry\n"
-        cmp     ebx, [ebp + XFS.max_dirblockaddr]
-        jne     .leafdir.process_current_block
-        push    ecx edx
-        mov     ebx, [ebp + XFS.cur_inode_save]
-        lea     eax, [ebx + xfs_inode.di_u + xfs_bmbt_rec.l0]
-        mov     edx, [ebx + xfs_inode.di_core.di_nextents]
-        bswap   edx
-        stdcall xfs_extent_list_read_dirblock, eax, dword[ebp + XFS.next_block_num + 0], dword[ebp + XFS.next_block_num + 4], edx, [ebp + XFS.dir2_leaf_offset_blocks], 0
-;DEBUGF 1,"RETVALUE: %d %d\n",edx,eax
-        mov     ecx, eax
-        and     ecx, edx
-        inc     ecx
-        jnz     @f
-        pop     edx ecx
-        jmp     .quit
-    @@:
-        add     eax, 1
-        adc     edx, 0
-        mov     dword[ebp + XFS.next_block_num + 0], eax
-        mov     dword[ebp + XFS.next_block_num + 4], edx
-        mov     ebx, [ebp + XFS.cur_dirblock]
-        add     ebx, sizeof.xfs_dir2_data_hdr
-        pop     edx ecx
-  .leafdir.process_current_block:
-        cmp     word[ebx + xfs_dir2_data_union.unused.freetag], XFS_DIR2_DATA_FREE_TAG
-        jne     @f
-        movzx   eax, word[ebx + xfs_dir2_data_union.unused.length]
-        xchg    al, ah
-        add     ebx, eax
-        jmp     .leafdir.next_entry
-    @@:
-        push    eax ebx ecx edx esi
-        mov     edi, edx
-        mov     edx, dword[ebx + xfs_dir2_data_union.xentry.inumber + 0]
-        mov     eax, dword[ebx + xfs_dir2_data_union.xentry.inumber + 4]
-        bswap   edx
-        bswap   eax
-        stdcall xfs_read_inode, eax, edx, [ebp + XFS.tmp_inode]
-        stdcall xfs_get_inode_info, edx, edi
-        test    eax, eax
-        pop     esi edx ecx ebx eax
-        jnz     .error
-        push    ecx
-        mov     ecx, [esp + 44]
-        mov     [edx + 4], ecx
-        lea     edi, [edx + 40]
-        movzx   ecx, byte[ebx + xfs_dir2_data_union.xentry.namelen]
-        lea     esi, [ebx + xfs_dir2_data_union.xentry.name]
-;DEBUGF 1,"filename: |%s|\n",esi
-        rep movsb
-        pop     ecx
-        mov     word[edi], 0
-        lea     ebx, [esi + 2]  ; skip 'tag'
-        add     ebx, 7          ; xfs_dir2_data_entries are aligned to 8 bytes
-        and     ebx, not 7
-        add     edx, 304        ; ASCII only for now
-        inc     [ebp + XFS.entries_read]
-        dec     ecx
-        jnz     .leafdir.next_entry
-        jmp     .quit
-
-  .nodedir:
-;DEBUGF 1,"readdir: node\n"
-        push    edx
-        mov     [ebp + XFS.cur_inode_save], ebx
-        mov     [ebp + XFS.entries_read], 0
-        lea     eax, [ebx + xfs_inode.di_u + xfs_bmbt_rec.l0]
-        mov     edx, [ebx + xfs_inode.di_core.di_nextents]
-        bswap   edx
-        stdcall xfs_dir2_node_get_numfiles, eax, edx, [ebp + XFS.dir2_leaf_offset_blocks]
-        pop     edx
-        test    eax, eax
-        jnz     .error
-        mov     eax, [ebp + XFS.entries_read]
-        mov     [ebp + XFS.entries_read], 0
-;DEBUGF 1,"numfiles: %d\n",eax
-        mov     dword[edx + 0], 1       ; version
-        mov     [edx + 8], eax          ; total entries
-        sub     eax, [esp + 24]         ; start number
-        cmp     eax, [esp + 28]         ; entries to read
-        jbe     @f
-        mov     eax, [esp + 28]
-    @@:
-        mov     [esp + 28], eax
-        mov     [edx + 4], eax          ; number of actually read entries
-
-        mov     dword[edx + 12], 0      ; reserved
-        mov     dword[edx + 16], 0      ;
-        mov     dword[edx + 20], 0      ;
-        mov     dword[edx + 24], 0      ;
-        mov     dword[edx + 28], 0      ;
-
-        mov     eax, [ebp + XFS.cur_dirblock]
-        add     eax, [ebp + XFS.dirblocksize]
-        mov     [ebp + XFS.max_dirblockaddr], eax
-        mov     dword[ebp + XFS.next_block_num + 0], 0
-        mov     dword[ebp + XFS.next_block_num + 4], 0
-
-        mov     ebx, [ebp + XFS.max_dirblockaddr]       ; to read dirblock immediately
-        mov     ecx, [esp + 24]         ; start number
-        test    ecx, ecx
-        jz      .leafdir.skipped
-        jmp     .leafdir.skip
-
-  .btreedir:
-;DEBUGF 1,"readdir: btree\n"
-        mov     [ebp + XFS.cur_inode_save], ebx
-        push    ebx edx
-        mov     eax, [ebx + xfs_inode.di_core.di_nextents]
-        bswap   eax
-        mov     [ebp + XFS.ro_nextents], eax
-        mov     eax, [ebp + XFS.inodesize]
-        sub     eax, xfs_inode.di_u
-        sub     eax, sizeof.xfs_bmdr_block
-        shr     eax, 4
-;DEBUGF 1,"maxnumresc: %d\n",eax
-        mov     edx, dword[ebx + xfs_inode.di_u + sizeof.xfs_bmdr_block + sizeof.xfs_bmbt_key*eax + 0]
-        mov     eax, dword[ebx + xfs_inode.di_u + sizeof.xfs_bmdr_block + sizeof.xfs_bmbt_key*eax + 4]
-        bswap   eax
-        bswap   edx
-        mov     ebx, [ebp + XFS.cur_block]
-;DEBUGF 1,"read_block: %x %x ",edx,eax
-        stdcall xfs_read_block
-        pop     edx ebx
-        test    eax, eax
-        jnz     .error
-;DEBUGF 1,"ok\n"
-
-        mov     ebx, [ebp + XFS.cur_block]
-        push    edx
-        mov     [ebp + XFS.entries_read], 0
-        lea     eax, [ebx + sizeof.xfs_bmbt_block]
-        mov     edx, [ebp + XFS.ro_nextents]
-        stdcall xfs_dir2_node_get_numfiles, eax, edx, [ebp + XFS.dir2_leaf_offset_blocks]
-        pop     edx
-        test    eax, eax
-        jnz     .error
-        mov     eax, [ebp + XFS.entries_read]
-        mov     [ebp + XFS.entries_read], 0
-;DEBUGF 1,"numfiles: %d\n",eax
-
-        mov     dword[edx + 0], 1       ; version
-        mov     [edx + 8], eax          ; total entries
-        sub     eax, [esp + 24]         ; start number
-        cmp     eax, [esp + 28]         ; entries to read
-        jbe     @f
-        mov     eax, [esp + 28]
-    @@:
-        mov     [esp + 28], eax
-        mov     [edx + 4], eax          ; number of actually read entries
-
-        mov     dword[edx + 12], 0
-        mov     dword[edx + 16], 0
-        mov     dword[edx + 20], 0
-        mov     dword[edx + 24], 0
-        mov     dword[edx + 28], 0
-
-        mov     eax, [ebp + XFS.cur_dirblock]   ; fsblock?
-        add     eax, [ebp + XFS.dirblocksize]
-        mov     [ebp + XFS.max_dirblockaddr], eax
-        mov     dword[ebp + XFS.next_block_num + 0], 0
-        mov     dword[ebp + XFS.next_block_num + 4], 0
-
-        mov     ebx, [ebp + XFS.max_dirblockaddr]       ; to read dirblock immediately
-        mov     ecx, [esp + 24]         ; start number
-        test    ecx, ecx
-        jz      .btreedir.skipped
-;        jmp     .btreedir.skip
-  .btreedir.skip:
-        cmp     ebx, [ebp + XFS.max_dirblockaddr]
-        jne     @f
-        push    ecx edx
-        mov     ebx, [ebp + XFS.cur_block]
-        lea     eax, [ebx + sizeof.xfs_bmbt_block]
-        mov     edx, [ebp + XFS.ro_nextents]
-        stdcall xfs_extent_list_read_dirblock, eax, dword[ebp + XFS.next_block_num + 0], dword[ebp + XFS.next_block_num + 4], edx, [ebp + XFS.dir2_leaf_offset_blocks], 0
-;DEBUGF 1,"RETVALUE: %d %d\n",edx,eax
-        mov     ecx, eax
-        and     ecx, edx
-        inc     ecx
-        jz      .error
-        add     eax, 1
-        adc     edx, 0
-        mov     dword[ebp + XFS.next_block_num + 0], eax
-        mov     dword[ebp + XFS.next_block_num + 4], edx
-        mov     ebx, [ebp + XFS.cur_dirblock]
-        add     ebx, sizeof.xfs_dir2_data_hdr
-        pop     edx ecx
-    @@:
-        cmp     word[ebx + xfs_dir2_data_union.unused.freetag], XFS_DIR2_DATA_FREE_TAG
-        jne     @f
-        movzx   eax, word[ebx + xfs_dir2_data_union.unused.length]
-        xchg    al, ah
-        add     ebx, eax
-        jmp     .btreedir.skip
-    @@:
-        movzx   eax, [ebx + xfs_dir2_data_union.xentry.namelen]
-        lea     ebx, [ebx + xfs_dir2_data_union.xentry.name + eax + 2]       ; 2 for 'tag'
-        add     ebx, 7
-        and     ebx, not 7
-        dec     ecx
-        jnz     .btreedir.skip
-  .btreedir.skipped:
-        mov     [ebp + XFS.entries_read], 0
-        mov     ecx, [edx + 4]          ; actually read entries
-        test    ecx, ecx
-        jz      .quit
-        add     edx, 32
-  .btreedir.next_entry:
-;mov eax, [ebp + XFS.entries_read]
-;DEBUGF 1,"next_extry: %d\n",eax
-        cmp     ebx, [ebp + XFS.max_dirblockaddr]
-        jne     .btreedir.process_current_block
-        push    ecx edx
-        mov     ebx, [ebp + XFS.cur_block]
-        lea     eax, [ebx + sizeof.xfs_bmbt_block]
-        mov     edx, [ebp + XFS.ro_nextents]
-        stdcall xfs_extent_list_read_dirblock, eax, dword[ebp + XFS.next_block_num + 0], dword[ebp + XFS.next_block_num + 4], edx, [ebp + XFS.dir2_leaf_offset_blocks], 0
-;DEBUGF 1,"RETVALUE: %d %d\n",edx,eax
-        mov     ecx, eax
-        and     ecx, edx
-        inc     ecx
-        jnz     @f
-        pop     edx ecx
-        jmp     .quit
-    @@:
-        add     eax, 1
-        adc     edx, 0
-        mov     dword[ebp + XFS.next_block_num + 0], eax
-        mov     dword[ebp + XFS.next_block_num + 4], edx
-        mov     ebx, [ebp + XFS.cur_dirblock]
-        add     ebx, sizeof.xfs_dir2_data_hdr
-        pop     edx ecx
-  .btreedir.process_current_block:
-        cmp     word[ebx + xfs_dir2_data_union.unused.freetag], XFS_DIR2_DATA_FREE_TAG
-        jne     @f
-        movzx   eax, word[ebx + xfs_dir2_data_union.unused.length]
-        xchg    al, ah
-        add     ebx, eax
-        jmp     .btreedir.next_entry
-    @@:
-        push    eax ebx ecx edx esi
-        mov     edi, edx
-        mov     edx, dword[ebx + xfs_dir2_data_union.xentry.inumber + 0]
-        mov     eax, dword[ebx + xfs_dir2_data_union.xentry.inumber + 4]
-        bswap   edx
-        bswap   eax
-        stdcall xfs_read_inode, eax, edx, [ebp + XFS.tmp_inode]
-        stdcall xfs_get_inode_info, edx, edi
-        test    eax, eax
-        pop     esi edx ecx ebx eax
-        jnz     .error
-        push    ecx
-        mov     ecx, [esp + 44]
-        mov     [edx + 4], ecx
-        lea     edi, [edx + 40]
-        movzx   ecx, byte[ebx + xfs_dir2_data_union.xentry.namelen]
-        lea     esi, [ebx + xfs_dir2_data_union.xentry.name]
-;DEBUGF 1,"filename: |%s|\n",esi
-        rep movsb
-        pop     ecx
-        mov     word[edi], 0
-        lea     ebx, [esi + 2]  ; skip 'tag'
-        add     ebx, 7          ; xfs_dir2_data_entries are aligned to 8 bytes
-        and     ebx, not 7
-        add     edx, 304
-        inc     [ebp + XFS.entries_read]
-        dec     ecx
-        jnz     .btreedir.next_entry
-        jmp     .quit
-
-
-  .quit:
-        pop     edi esi edx ecx
-        add     esp, 4  ; pop vars
-        xor     eax, eax
-;        mov     ebx, [esp + 8]
-        mov     ebx, [ebp + XFS.entries_read]
-DEBUGF 1,"xfs_dir_get_bdfes done: %d\n",ebx
-        ret     20
-  .error:
-        pop     edi esi edx ecx
-        add     esp, 4  ; pop vars
-        mov     eax, ERROR_FS_FAIL
-        movi    ebx, -1
-        ret     20
-
-
-;----------------------------------------------------------------
-; push inode_hi
-; push inode_lo
-; push name
-;----------------------------------------------------------------
-xfs_get_inode_short:
-        ; this function searches for the file in _current_ dir
-        ; it is called recursively for all the subdirs /path/to/my/file
-
-;DEBUGF 1,"xfs_get_inode_short: %s\n",[esp+4]
-        mov     esi, [esp + 4]  ; name
-        movzx   eax, word[esi]
-        cmp     eax, '.'        ; current dir; it is already read, just return
-        je      .quit
-        cmp     eax, './'       ; same thing
-        je      .quit
-
-        ; read inode
-
-        mov     eax, [esp + 8]  ; inode_lo
-        mov     edx, [esp + 12] ; inode_hi
-        stdcall xfs_read_inode, eax, edx, [ebp + XFS.cur_inode]
-        test    eax, eax
+        mov     eax, [ebp+XFS.dir_block_magic]
+        cmp     [ebx+xfs_dir2_block.hdr.magic], eax
         movi    eax, ERROR_FS_FAIL
         jnz     .error
+        mov     eax, [ebp+XFS.dirblocksize]
+        movbe   ecx, [ebx+eax-sizeof.xfs_dir2_block_tail+xfs_dir2_block_tail.stale]
+        movbe   eax, [ebx+eax-sizeof.xfs_dir2_block_tail+xfs_dir2_block_tail.count]
+        sub     eax, ecx        ; actual number of entries = count - stale
+        mov     [ebp+XFS.entries_left_in_dir], eax
+        mov     [edx+bdfe_hdr.total_cnt], eax
 
-        ; find file name in directory
-        ; switch directory ondisk format
+        add     ebx, [ebp+XFS.dir_block_size]
+        add     edx, sizeof.bdfe_hdr
+        mov     [_out_buf], edx
+        lea     edi, [_out_buf]
+.next:
+        movi    eax, ERROR_SUCCESS
+        cmp     [ebp+XFS.requested_cnt], 0
+        jz      .quit
+        cmp     [ebp+XFS.entries_left_in_dir], 0
+        jz      .quit
+        stdcall xfs._.dir_entry_skip_read, edi
+        jz      .next
+.error:
+.quit:
+        ret
+endp
 
-        mov     ebx, edx
-        mov     [ebp + XFS.cur_inode_save], ebx
-        cmp     byte[ebx + xfs_inode.di_core.di_format], XFS_DINODE_FMT_LOCAL
-        jne     .not_shortdir
-;DEBUGF 1,"dir: shortdir\n"
-        jmp     .shortdir
-  .not_shortdir:
-        cmp     byte[ebx + xfs_inode.di_core.di_format], XFS_DINODE_FMT_EXTENTS
-        jne     .not_blockdir
-        mov     eax, [ebx + xfs_inode.di_core.di_nextents]
-        bswap   eax
-        cmp     eax, 1
-        jne     .not_blockdir
-        jmp     .blockdir
-  .not_blockdir:
-        cmp     byte[ebx + xfs_inode.di_core.di_format], XFS_DINODE_FMT_EXTENTS
-        jne     .not_leafdir
-        mov     eax, [ebx + xfs_inode.di_core.di_nextents]
-        bswap   eax
-        cmp     eax, 4
-        ja      .not_leafdir
-        jmp     .leafdir
-  .not_leafdir:
-        cmp     byte[ebx + xfs_inode.di_core.di_format], XFS_DINODE_FMT_EXTENTS
-        jne     .not_nodedir
-        jmp     .nodedir
-  .not_nodedir:
-        cmp     byte[ebx + xfs_inode.di_core.di_format], XFS_DINODE_FMT_BTREE
-        jne     .not_btreedir
-        jmp     .btreedir
-  .not_btreedir:
-DEBUGF 1,"NOT IMPLEMENTED: DIR FORMAT\n"
-        jmp     .error
 
-  .shortdir:
-  .shortdir.check_parent:
-        ; parent inode number in shortform directories is always implicit, check this case
-        mov     eax, [esi]
-        and     eax, 0x00ffffff
-        cmp     eax, '..'
-        je      .shortdir.parent2
-        cmp     eax, '../'
-        je      .shortdir.parent3
-        jmp     .shortdir.common
-  .shortdir.parent3:
-        inc     esi
-  .shortdir.parent2:
-        add     esi, 2
-        add     ebx, xfs_inode.di_u
-        stdcall xfs_get_inode_number_sf, dword[ebx + xfs_dir2_sf_hdr.count], dword[ebx + xfs_dir2_sf_hdr.parent + 4], dword[ebx + xfs_dir2_sf_hdr.parent]
-;DEBUGF 1,"found inode: 0x%x%x\n",edx,eax
-        jmp     .quit
+proc xfs._.readdir_leaf_node uses esi, _inode_data, _out_buf
+        mov     ebx, [_inode_data]
+        mov     edx, [_out_buf]
+        mov     [ebp+XFS.cur_inode_save], ebx
+        mov     [ebp+XFS.entries_read], 0
+        mov     eax, ebx
+        add     eax, [ebp+XFS.inode_core_size]
+        movbe   edx, [ebx+xfs_inode.di_core.di_nextents]
+        mov     ecx, [ebp+XFS.dir2_leaf_offset_blocks.lo]
+        mov     [ebp+XFS.offset_begin.lo], ecx
+        mov     ecx, [ebp+XFS.dir2_leaf_offset_blocks.hi]
+        mov     [ebp+XFS.offset_begin.hi], ecx
+        mov     ecx, [ebp+XFS.dir2_free_offset_blocks.lo]
+        mov     [ebp+XFS.offset_end.lo], ecx
+        mov     ecx, [ebp+XFS.dir2_free_offset_blocks.hi]
+        mov     [ebp+XFS.offset_end.hi], ecx
+        stdcall xfs._.walk_extent_list, edx, eax, xfs._.extent_iterate_dirblocks, xfs._.leafn_calc_entries, 0
+        jnz     .error
+        mov     eax, [ebp+XFS.entries_read]
+        mov     edx, [_out_buf]
+        mov     [edx+bdfe_hdr.total_cnt], eax
+        mov     [ebp+XFS.entries_left_in_dir], eax
+        add     [_out_buf], sizeof.bdfe_hdr
+        mov     [ebp+XFS.entries_read], 0
+        movbe   edx, [ebx+xfs_inode.di_core.di_nextents]
+        mov     eax, ebx
+        add     eax, [ebp+XFS.inode_core_size]
+        lea     ecx, [_out_buf]
+        push    ecx
+        mov     [ebp+XFS.offset_begin.lo], 0
+        mov     [ebp+XFS.offset_begin.hi], 0
+        mov     ecx, [ebp+XFS.dir2_leaf_offset_blocks.lo]
+        mov     [ebp+XFS.offset_end.lo], ecx
+        mov     ecx, [ebp+XFS.dir2_leaf_offset_blocks.hi]
+        mov     [ebp+XFS.offset_end.hi], ecx
+        pop     ecx
+        stdcall xfs._.walk_extent_list, edx, eax, xfs._.extent_iterate_dirblocks, xfs._.dir_btree_skip_read, ecx
+;        jnz     .error
+.error:
+.quit:
+        ret
+endp
 
-        ; not a parent inode?
-        ; search in the list, all the other files are stored uniformly
 
-  .shortdir.common:
-        mov     eax, 4
-        movzx   edx, word[ebx + xfs_inode.di_u + xfs_dir2_sf_hdr.count] ; read count (byte) and i8count (byte) at once
-        test    dl, dl          ; is count zero?
+proc xfs._.dir_entry_skip_read uses esi edi, _arg
+        cmp     [ebx+xfs_dir2_data_union.unused.freetag], XFS_NULL
         jnz     @f
-        shr     edx, 8          ; use i8count
-        add     eax, eax        ; inode_num size
-    @@:
-        lea     edi, [ebx + xfs_inode.di_u + xfs_dir2_sf_hdr.parent + eax]
+        movzx   eax, [ebx+xfs_dir2_data_union.unused.length]
+        xchg    al, ah
+        add     ebx, eax
+        jmp     .quit
+@@:
+        cmp     [ebp+XFS.entries_to_skip], 0
+        jz      .read
+.skip:
+        dec     [ebp+XFS.entries_to_skip]
+        movzx   ecx, [ebx+xfs_dir2_data_union.xentry.namelen]
+        lea     ebx, [ebx+xfs_dir2_data_union.xentry.name+ecx+2]
+        add     ebx, [ebp+XFS.ftype_size]
+        jmp     .common
+.read:
+        dec     [ebp+XFS.requested_cnt]
+        inc     [ebp+XFS.entries_read]
+        mov     edi, [_arg]
+        mov     edi, [edi]
+        movbe   edx, [ebx+xfs_dir2_data_union.xentry.inumber.lo]
+        movbe   eax, [ebx+xfs_dir2_data_union.xentry.inumber.hi]
+        stdcall xfs_read_inode, eax, edx, [ebp+XFS.tmp_inode]
+        stdcall xfs_get_inode_info, edx, edi
+        jnz     .error
+        mov     edx, [_arg]
+        mov     edx, [edx]
+        mov     ecx, [ebp+XFS.bdfe_nameenc]
+        mov     [edx+bdfe.nameenc], ecx
+        lea     edi, [edx+bdfe.name]
+        movzx   ecx, [ebx+xfs_dir2_data_union.xentry.namelen]
+        lea     esi, [ebx+xfs_dir2_data_union.xentry.name]
+        stdcall xfs._.copy_filename
+        lea     ebx, [esi+2]  ; skip 'tag'
+        add     ebx, [ebp+XFS.ftype_size]
+        mov     eax, [_arg]
+        mov     edx, [eax]
+        add     edx, [ebp+XFS.bdfe_len]
+        mov     [eax], edx
+.common:
+        sub     ebx, [ebp+XFS.cur_dirblock]
+        add     ebx, 7          ; xfs_dir2_data_entries are aligned to 8 bytes
+        and     ebx, not 7
+        add     ebx, [ebp+XFS.cur_dirblock]
+        dec     [ebp+XFS.entries_left_in_dir]
+.quit:
+        movi    eax, ERROR_SUCCESS
+        cmp     esp, esp
+.error:
+        ret
+endp
 
-  .next_name:
-        movzx   ecx, byte[edi + xfs_dir2_sf_entry.namelen]
+
+proc xfs._.dir_btree_skip_read uses ebx ecx edx esi edi, _cur_dirblock, _offset_lo, _offset_hi, _arg
+        mov     ebx, [_cur_dirblock]
+        mov     eax, [ebp+XFS.dir_data_magic]
+        cmp     [ebx+xfs_dir2_block.hdr.magic], eax
+        movi    eax, ERROR_FS_FAIL
+        jnz     .error
+        mov     eax, ebx
+        add     eax, [ebp+XFS.dirblocksize]
+        mov     [ebp+XFS.max_dirblockaddr], eax
+;        add     ebx, xfs_dir2_block.u
+        add     ebx, [ebp+XFS.dir_block_size]
+.next:
+        movi    eax, ERROR_SUCCESS
+        cmp     [ebp+XFS.requested_cnt], 0
+        jz      .quit
+        cmp     [ebp+XFS.entries_left_in_dir], 0
+        jz      .quit
+        cmp     ebx, [ebp+XFS.max_dirblockaddr]
+        jz      .quit
+        stdcall xfs._.dir_entry_skip_read, [_arg]
+        jz      .next
+.error:
+.quit:
+        ret
+endp
+
+
+proc xfs._.readdir_btree uses esi, _inode_data, _out_buf
+        mov     [ebp+XFS.cur_inode_save], ebx
+        mov     [ebp+XFS.entries_read], 0
+        mov     eax, [ebp+XFS.inodesize]
+        sub     eax, xfs_inode.di_u
+        movzx   ecx, [ebx+xfs_inode.di_core.di_forkoff]
+        jecxz   @f
+        shl     ecx, 3
+        mov     eax, ecx
+@@:
+        lea     edx, [ebx+xfs_inode.di_u]
+        mov     ecx, [ebp+XFS.dir2_leaf_offset_blocks.lo]
+        mov     [ebp+XFS.offset_begin.lo], ecx
+        mov     ecx, [ebp+XFS.dir2_leaf_offset_blocks.hi]
+        mov     [ebp+XFS.offset_begin.hi], ecx
+        mov     ecx, [ebp+XFS.dir2_free_offset_blocks.lo]
+        mov     [ebp+XFS.offset_end.lo], ecx
+        mov     ecx, [ebp+XFS.dir2_free_offset_blocks.hi]
+        mov     [ebp+XFS.offset_end.hi], ecx
+        stdcall xfs._.walk_btree, edx, eax, xfs._.extent_iterate_dirblocks, xfs._.leafn_calc_entries, 0, 1
+        mov     eax, [ebp+XFS.entries_read]
+        mov     edx, [_out_buf]
+        mov     [edx+bdfe_hdr.total_cnt], eax
+        mov     [ebp+XFS.entries_left_in_dir], eax
+        mov     [ebp+XFS.entries_read], 0
+        add     [_out_buf], sizeof.bdfe_hdr
+        mov     eax, [ebp+XFS.inodesize]
+        sub     eax, xfs_inode.di_u
+        movzx   ecx, [ebx+xfs_inode.di_core.di_forkoff]
+        jecxz   @f
+        shl     ecx, 3
+        mov     eax, ecx
+@@:
+        lea     edx, [ebx+xfs_inode.di_u]
+        mov     [ebp+XFS.offset_begin.lo], 0
+        mov     [ebp+XFS.offset_begin.hi], 0
+        mov     ecx, [ebp+XFS.dir2_leaf_offset_blocks.lo]
+        mov     [ebp+XFS.offset_end.lo], ecx
+        mov     ecx, [ebp+XFS.dir2_leaf_offset_blocks.hi]
+        mov     [ebp+XFS.offset_end.hi], ecx
+        mov     ecx, [_out_buf]
+        push    ecx
+        mov     ecx, esp
+        stdcall xfs._.walk_btree, edx, eax, xfs._.extent_iterate_dirblocks, xfs._.dir_btree_skip_read, ecx, 1
+        pop     ecx
+.error:
+.quit:
+        ret
+endp
+
+
+proc xfs._.copy_filename uses eax
+        mov     eax, [ebp+XFS.bdfe_nameenc]
+        cmp     eax, 3
+        jz      .utf8
+        cmp     eax, 2
+        jz      .utf16
+.cp866:
+        call    unicode.utf8.decode
+        call    unicode.cp866.encode
+        stosb
+        test    ecx, ecx
+        jnz     .cp866
+        mov     byte[edi], 0
+        jmp     .done
+.utf16:
+        call    unicode.utf8.decode
+        call    unicode.utf16.encode
+        stosw
+        shr     eax, 16
+        jz      @f
+        stosw
+@@:
+        test    ecx, ecx
+        jnz     .utf16
+        mov     word[edi], 0
+        jmp     .done
+.utf8:
+        rep movsb
+        mov     byte[edi], 0
+.done:
+        ret
+endp
+
+;----------------------------------------------------------------
+; src              ; inode
+; dst              ; bdfe
+; start_number     ; from 0
+;----------------------------------------------------------------
+proc xfs._.readdir uses ebx esi edi, _start_number, _entries_to_read, _dst, _src, _encoding
+        mov     ecx, [_start_number]
+        mov     [ebp+XFS.entries_to_skip], ecx
+        mov     eax, [_entries_to_read]
+        mov     [ebp+XFS.requested_cnt], eax
+        mov     eax, [_encoding]
+        mov     [ebp+XFS.bdfe_nameenc], eax
+        mov     ecx, 304
+        cmp     eax, 1  ; CP866
+        jbe     @f
+        mov     ecx, 560
+@@:
+        mov     [ebp+XFS.bdfe_len], ecx
+        mov     edx, [_dst]
+        mov     [ebp+XFS.bdfe_buf], edx
+        mov     ebx, [_src]
+        mov     [ebp+XFS.cur_inode_save], ebx
+
+        mov     [edx+bdfe_hdr.version], 1
+        mov     [edx+bdfe_hdr.zeroed+0x00], 0
+        mov     [edx+bdfe_hdr.zeroed+0x04], 0
+        mov     [edx+bdfe_hdr.zeroed+0x08], 0
+        mov     [edx+bdfe_hdr.zeroed+0x0c], 0
+        mov     [edx+bdfe_hdr.zeroed+0x10], 0
+
+        movzx   eax, [ebx+xfs_inode.di_core.di_format]
+        ; switch directory ondisk format and jump to corresponding label
+        cmp     eax, XFS_DINODE_FMT_LOCAL
+        jnz     @f
+        add     ebx, [ebp+XFS.inode_core_size]
+        stdcall xfs._.readdir_sf, ebx, [_dst]
+        test    eax, eax
+        jnz     .error
+        jmp     .quit
+@@:
+        cmp     eax, XFS_DINODE_FMT_BTREE
+        jnz     @f
+        stdcall xfs._.readdir_btree, ebx, [_dst]
+        jmp     .quit
+@@:
+        cmp     eax, XFS_DINODE_FMT_EXTENTS
+        movi    eax, ERROR_FS_FAIL
+        jnz     .error
+        call    xfs._.get_last_dirblock
+        test    eax, eax
+        jnz     @f
+        add     ebx, [ebp+XFS.inode_core_size]
+        stdcall xfs._.readdir_block, ebx, [_dst]
+        jmp     .quit
+@@:
+        stdcall xfs._.readdir_leaf_node, ebx, [_dst]
+        jmp     .quit
+.quit:
+        mov     edx, [_dst]
+        mov     ebx, [ebp+XFS.entries_read]
+        mov     [edx+bdfe_hdr.read_cnt], ebx
+        xor     eax, eax
+.error:
+        ret
+endp
+
+
+; returns edx:eax inode or 0
+proc xfs._.lookup_sf _name, _len
+        add     ebx, [ebp+XFS.inode_core_size]
+        mov     esi, [_name]
+        mov     ecx, [_len]
+        cmp     ecx, 2
+        ja      .common
+        jz      .check_parent
+.check_self:
+        cmp     byte[esi], '.'
+        jnz     .common
+        mov     eax, [ebp+XFS.inode_self.lo]
+        mov     edx, [ebp+XFS.inode_self.hi]
+        jmp     .quit
+.check_parent:
+        cmp     word[esi], '..'
+        jnz     .common
+        lea     edx, [ebx+xfs_dir2_sf.hdr.parent]
+        call    xfs._.get_inode_number_sf
+        jmp     .quit
+.common:
+        movzx   edx, [ebx+xfs_dir2_sf.hdr.count]
+        movi    eax, 0
+        cmp     [ebx+xfs_dir2_sf.hdr.i8count], 0
+        setnz   al
+        lea     eax, [eax*4+4]
+        lea     edi, [ebx+xfs_dir2_sf.hdr.parent+eax]
+.next_name:
+        dec     edx
+        jns     @f
+        movi    eax, ERROR_FILE_NOT_FOUND
+        jmp     .error
+@@:
+        movzx   ecx, [edi+xfs_dir2_sf_entry.namelen]
         add     edi, xfs_dir2_sf_entry.name
-        mov     esi, [esp + 4]
-;DEBUGF 1,"esi: %s\n",esi
-;DEBUGF 1,"edi: %s\n",edi
-        repe cmpsb
-        jne     @f
-        cmp     byte[esi], 0            ; HINT: use adc here?
-        je      .found
-        cmp     byte[esi], '/'
-        je      .found_inc
-    @@:
+        mov     esi, [_name]
+        cmp     ecx, [_len]
+        jnz     @f
+        repz cmpsb
+        jz      .found
+@@:
+        add     edi, [ebp+XFS.ftype_size]
         add     edi, ecx
         add     edi, eax
-        dec     edx
-        jnz     .next_name
-        movi    eax, ERROR_FILE_NOT_FOUND
-        jmp     .error
-  .found_inc:           ; increment esi to skip '/' symbol
-                        ; this means esi always points to valid file name or zero terminator byte
-        inc     esi
-  .found:
-        stdcall xfs_get_inode_number_sf, dword[ebx + xfs_inode.di_u + xfs_dir2_sf_hdr.count], [edi + 4], [edi]
-;DEBUGF 1,"found inode: 0x%x%x\n",edx,eax
-        jmp     .quit
+        jmp     .next_name
+.found:
+        add     edi, [ebp+XFS.ftype_size]
+        mov     edx, edi
+        call    xfs._.get_inode_number_sf
+.quit:
+        cmp     esp, esp
+.error:
+        ret
+endp
 
-  .blockdir:
-        lea     eax, [ebx + xfs_inode.di_u + xfs_bmbt_rec.l0]
-        stdcall xfs_extent_unpack, eax
-        stdcall xfs_read_dirblock, dword[ebp + XFS.extent.br_startblock + 0], dword[ebp + XFS.extent.br_startblock + 4], [ebp + XFS.cur_dirblock]
-        test    eax, eax
+
+proc xfs._.lookup_block uses esi, _name, _len
+        add     ebx, [ebp+XFS.inode_core_size]
+        mov     eax, ebx
+        mov     ebx, [ebp+XFS.cur_dirblock]
+        stdcall xfs._.extent_unpack, eax
+        stdcall xfs._.read_dirblock, [ebp+XFS.extent.br_startblock.lo], [ebp+XFS.extent.br_startblock.hi], ebx
         jnz     .error
-;DEBUGF 1,"dirblock signature: %s\n",[ebp+XFS.cur_dirblock]
-        mov     ebx, [ebp + XFS.cur_dirblock]
-        mov     eax, [ebp + XFS.dirblocksize]
-        mov     eax, [ebx + eax - sizeof.xfs_dir2_block_tail + xfs_dir2_block_tail.count]
-        ; note that we don't subtract xfs_dir2_block_tail.stale here,
-        ; since we need the number of leaf entries rather than file number
-        bswap   eax
-        add     ebx, [ebp + XFS.dirblocksize]
-;        mov     ecx, sizeof.xfs_dir2_leaf_entry
-        imul    ecx, eax, sizeof.xfs_dir2_leaf_entry
-        sub     ebx, sizeof.xfs_dir2_block_tail
-        sub     ebx, ecx
-        shr     ecx, 3
-        push    ecx     ; for xfs_get_inode_by_hash
-        push    ebx     ; for xfs_get_inode_by_hash
-
-        mov     edi, esi
-        xor     eax, eax
-        mov     ecx, 4096       ; MAX_PATH_LEN
-        repne scasb
+        mov     eax, [ebp+XFS.dir_block_magic]
+        cmp     [ebx+xfs_dir2_block.hdr.magic], eax
         movi    eax, ERROR_FS_FAIL
-        jne     .error
-        neg     ecx
-        add     ecx, 4096       ; MAX_PATH_LEN
-        dec     ecx
-        mov     edx, ecx
-;DEBUGF 1,"strlen total  : %d\n",edx
-        mov     edi, esi
-        mov     eax, '/'
-        mov     ecx, edx
-        repne scasb
-        jne     @f
-        inc     ecx
-    @@:
-        neg     ecx
-        add     ecx, edx
-;DEBUGF 1,"strlen current: %d\n",ecx
-        stdcall xfs_hashname, esi, ecx
-        add     esi, ecx
-        cmp     byte[esi], '/'
-        jne     @f
-        inc     esi
-    @@:
-;DEBUGF 1,"hashed: 0x%x\n",eax
-;        bswap   eax
-        stdcall xfs_get_addr_by_hash
-        bswap   eax
-;DEBUGF 1,"got address: 0x%x\n",eax
-        cmp     eax, -1
-        jne     @f
-        movi    eax, ERROR_FILE_NOT_FOUND
-        mov     ebx, -1
-        jmp     .error
-    @@:
-        shl     eax, 3
-        mov     ebx, [ebp + XFS.cur_dirblock]
-        add     ebx, eax
-        mov     edx, [ebx + 0]
-        mov     eax, [ebx + 4]
-        bswap   edx
-        bswap   eax
-;DEBUGF 1,"found inode: 0x%x%x\n",edx,eax
-        jmp     .quit
+        jnz     .error
+        stdcall xfs_hashname, [_name+4], [_len]
+        add     ebx, [ebp+XFS.dirblocksize]
+        movbe   ecx, [ebx-sizeof.xfs_dir2_block_tail+xfs_dir2_block_tail.count]
+        lea     edx, [ecx*sizeof.xfs_dir2_leaf_entry+sizeof.xfs_dir2_block_tail]
+        sub     ebx, edx
+        stdcall xfs._.get_addr_by_hash, ebx, ecx
+        jnz     .error
+        mov     ebx, [ebp+XFS.cur_dirblock]
+        movbe   edx, [ebx+eax*XFS_DIR2_DATA_ALIGN+xfs_dir2_data_entry.inumber.lo]
+        movbe   eax, [ebx+eax*XFS_DIR2_DATA_ALIGN+xfs_dir2_data_entry.inumber.hi]
+.quit:
+.error:
+        ret
+endp
 
-  .leafdir:
-;DEBUGF 1,"dirblock signature: %s\n",[ebp+XFS.cur_dirblock]
-        lea     eax, [ebx + xfs_inode.di_u + xfs_bmbt_rec.l0]
-        mov     edx, [ebx + xfs_inode.di_core.di_nextents]
-        bswap   edx
-        stdcall xfs_extent_list_read_dirblock, eax, [ebp + XFS.dir2_leaf_offset_blocks], 0, edx, -1, -1
-;DEBUGF 1,"RETVALUE: %d %d\n",edx,eax
-        mov     ecx, eax
-        and     ecx, edx
-        inc     ecx
-        jz      .error
 
-        mov     ebx, [ebp + XFS.cur_dirblock]
-        movzx   eax, [ebx + xfs_dir2_leaf.hdr.count]
-        ; note that we don't subtract xfs_dir2_leaf.hdr.stale here,
-        ; since we need the number of leaf entries rather than file number
-        xchg    al, ah
-        add     ebx, xfs_dir2_leaf.ents
-;        imul    ecx, eax, sizeof.xfs_dir2_leaf_entry
-;        shr     ecx, 3
-        push    eax     ; for xfs_get_addr_by_hash: len
-        push    ebx     ; for xfs_get_addr_by_hash: base
-
-        mov     edi, esi
-        xor     eax, eax
-        mov     ecx, 4096       ; MAX_PATH_LEN
-        repne scasb
-        movi    eax, ERROR_FS_FAIL
-        jne     .error
-        neg     ecx
-        add     ecx, 4096
-        dec     ecx
-        mov     edx, ecx
-;DEBUGF 1,"strlen total  : %d\n",edx
-        mov     edi, esi
-        mov     eax, '/'
-        mov     ecx, edx
-        repne scasb
-        jne     @f
-        inc     ecx
-    @@:
-        neg     ecx
-        add     ecx, edx
-;DEBUGF 1,"strlen current: %d\n",ecx
-        stdcall xfs_hashname, esi, ecx
-        add     esi, ecx
-        cmp     byte[esi], '/'
-        jne     @f
-        inc     esi
-    @@:
-;DEBUGF 1,"hashed: 0x%x\n",eax
-        stdcall xfs_get_addr_by_hash
-        bswap   eax
-;DEBUGF 1,"got address: 0x%x\n",eax
-        cmp     eax, -1
-        jne     @f
-        movi    eax, ERROR_FILE_NOT_FOUND
-        mov     ebx, -1
-        jmp     .error
-    @@:
-
-        mov     ebx, [ebp + XFS.cur_inode_save]
-        push    esi edi
-        xor     edi, edi
-        mov     esi, eax
-        shld    edi, esi, 3     ; get offset
-        shl     esi, 3          ; 2^3 = 8 byte align
-        mov     edx, esi
-        mov     ecx, [ebp + XFS.dirblklog]
-        add     ecx, [ebp + XFS.blocklog]
-        mov     eax, 1
+proc xfs._.get_inode_by_addr uses ebx esi edi, _inode_buf
+        xor     edx, edx
+        shld    edx, eax, XFS_DIR2_DATA_ALIGN_LOG
+        shl     eax, XFS_DIR2_DATA_ALIGN_LOG
+        mov     esi, [ebp+XFS.dirblocksize]
+        dec     esi
+        and     esi, eax
+        mov     ecx, [ebp+XFS.blocklog]
+        add     ecx, [ebp+XFS.dirblklog]
+        shrd    eax, edx, cl
+        shr     edx, cl
+        mov     ecx, [ebp+XFS.dirblklog]
+        shld    edx, eax, cl
         shl     eax, cl
-        dec     eax
-        and     edx, eax
-        push    edx
-        shrd    esi, edi, cl
-        shr     edi, cl
-        lea     eax, [ebx + xfs_inode.di_u + xfs_bmbt_rec.l0]
-        mov     edx, [ebx + xfs_inode.di_core.di_nextents]
-        bswap   edx
-        stdcall xfs_extent_list_read_dirblock, eax, esi, edi, edx, [ebp + XFS.dir2_leaf_offset_blocks], 0
-;DEBUGF 1,"RETVALUE: %d %d\n",edx,eax
-        pop     edx
-        pop     edi esi
-        mov     ecx, eax
-        and     ecx, edx
-        inc     ecx
-        jz      .error
-
-        mov     ebx, [ebp + XFS.cur_dirblock]
-        add     ebx, edx
-        mov     edx, [ebx + 0]
-        mov     eax, [ebx + 4]
-        bswap   edx
-        bswap   eax
-;DEBUGF 1,"found inode: 0x%x%x\n",edx,eax
-        jmp     .quit
-
-  .nodedir:
-;DEBUGF 1,"lookupdir: node\n"
-        mov     [ebp + XFS.cur_inode_save], ebx
-
-        mov     edi, esi
-        xor     eax, eax
-        mov     ecx, 4096       ; MAX_PATH_LEN
-        repne scasb
-        movi    eax, ERROR_FS_FAIL
-        jne     .error
-        neg     ecx
-        add     ecx, 4096       ; MAX_PATH_LEN
-        dec     ecx
-        mov     edx, ecx
-;DEBUGF 1,"strlen total  : %d\n",edx
-        mov     edi, esi
-        mov     eax, '/'
-        mov     ecx, edx
-        repne scasb
-        jne     @f
-        inc     ecx
-    @@:
-        neg     ecx
-        add     ecx, edx
-;DEBUGF 1,"strlen current: %d\n",ecx
-        stdcall xfs_hashname, esi, ecx
-        add     esi, ecx
-        cmp     byte[esi], '/'
-        jne     @f
-        inc     esi
-    @@:
-;DEBUGF 1,"hashed: 0x%x\n",eax
-        push    edi edx
-        mov     edi, eax
-        mov     [ebp + XFS.entries_read], 0
-        lea     eax, [ebx + xfs_inode.di_u + xfs_bmbt_rec.l0]
-        mov     edx, [ebx + xfs_inode.di_core.di_nextents]
-        bswap   edx
-        stdcall xfs_dir2_lookupdir_node, eax, edx, [ebp + XFS.dir2_leaf_offset_blocks], edi
-        pop     edx edi
-        test    eax, eax
+        mov     ebx, [_inode_buf]
+        cmp     [ebx+xfs_inode.di_core.di_format], XFS_DINODE_FMT_EXTENTS
+        jz      .extents
+        cmp     [ebx+xfs_inode.di_core.di_format], XFS_DINODE_FMT_BTREE
+        jz      .btree
+        jmp     .error
+.extents:
+        movbe   ecx, [ebx+xfs_inode.di_core.di_nextents]
+        add     ebx, [ebp+XFS.inode_core_size]
+        mov     [ebp+XFS.offset_begin.lo], eax
+        mov     [ebp+XFS.offset_begin.hi], edx
+        stdcall xfs._.extent_list.seek, ecx
+        stdcall xfs._.read_dirblock, [ebp+XFS.extent.br_startblock.lo], [ebp+XFS.extent.br_startblock.hi], [ebp+XFS.cur_dirblock]
         jnz     .error
-        bswap   ecx
-;DEBUGF 1,"got address: 0x%x\n",ecx
-
-        mov     ebx, [ebp + XFS.cur_inode_save]
-        push    esi edi
-        xor     edi, edi
-        mov     esi, ecx
-        shld    edi, esi, 3     ; get offset
-        shl     esi, 3          ; 8 byte align
-        mov     edx, esi
-        mov     ecx, [ebp + XFS.dirblklog]
-        add     ecx, [ebp + XFS.blocklog]
-        mov     eax, 1
-        shl     eax, cl
-        dec     eax
-        and     edx, eax
-        push    edx
-        shrd    esi, edi, cl
-        shr     edi, cl
-        lea     eax, [ebx + xfs_inode.di_u + xfs_bmbt_rec.l0]
-        mov     edx, [ebx + xfs_inode.di_core.di_nextents]
-        bswap   edx
-        stdcall xfs_extent_list_read_dirblock, eax, esi, edi, edx, [ebp + XFS.dir2_leaf_offset_blocks], 0
-;DEBUGF 1,"RETVALUE: %d %d\n",edx,eax
-        pop     edx
-        pop     edi esi
-        mov     ecx, eax
-        and     ecx, edx
-        inc     ecx
-        jz      .error
-
-        mov     ebx, [ebp + XFS.cur_dirblock]
-        add     ebx, edx
-        mov     edx, [ebx + 0]
-        mov     eax, [ebx + 4]
-        bswap   edx
-        bswap   eax
-;DEBUGF 1,"found inode: 0x%x%x\n",edx,eax
-        jmp     .quit
-
-  .btreedir:
-DEBUGF 1,"lookupdir: btree\n"
-        mov     [ebp + XFS.cur_inode_save], ebx
-
-        push    ebx edx
-        mov     eax, [ebx + xfs_inode.di_core.di_nextents]
-        bswap   eax
-        mov     [ebp + XFS.ro_nextents], eax
-        mov     eax, [ebp + XFS.inodesize]
-        sub     eax, xfs_inode.di_u
-        sub     eax, sizeof.xfs_bmdr_block
-        shr     eax, 4  ; FIXME forkoff
-;DEBUGF 1,"maxnumresc: %d\n",eax
-        mov     edx, dword[ebx + xfs_inode.di_u + sizeof.xfs_bmdr_block + sizeof.xfs_bmbt_key*eax + 0]
-        mov     eax, dword[ebx + xfs_inode.di_u + sizeof.xfs_bmdr_block + sizeof.xfs_bmbt_key*eax + 4]
-        bswap   eax
-        bswap   edx
-        mov     ebx, [ebp + XFS.cur_block]
-;DEBUGF 1,"read_block: %x %x ",edx,eax
-        stdcall xfs_read_block
-        pop     edx ebx
-        test    eax, eax
-        jnz     .error
-;DEBUGF 1,"ok\n"
-        mov     ebx, [ebp + XFS.cur_block]
-
-        mov     edi, esi
-        xor     eax, eax
-        mov     ecx, 4096       ; MAX_PATH_LEN
-        repne scasb
-        movi    eax, ERROR_FS_FAIL
-        jne     .error
-        neg     ecx
-        add     ecx, 4096
-        dec     ecx
-        mov     edx, ecx
-DEBUGF 1,"strlen total  : %d\n",edx
-        mov     edi, esi
-        mov     eax, '/'
-        mov     ecx, edx
-        repne scasb
-        jne     @f
-        inc     ecx
-    @@:
-        neg     ecx
-        add     ecx, edx
-DEBUGF 1,"strlen current: %d\n",ecx
-        stdcall xfs_hashname, esi, ecx
-        add     esi, ecx
-        cmp     byte[esi], '/'
-        jne     @f
-        inc     esi
-    @@:
-DEBUGF 1,"hashed: 0x%x\n",eax
-        push    edi edx
-        mov     edi, eax
-        mov     [ebp + XFS.entries_read], 0
-        lea     eax, [ebx + sizeof.xfs_bmbt_block]
-        mov     edx, [ebp + XFS.ro_nextents]
-;push eax
-;mov eax, [ebp + XFS.dir2_leaf_offset_blocks]
-;DEBUGF 1,": 0x%x %d\n",eax,eax
-;pop eax
-        stdcall xfs_dir2_lookupdir_node, eax, edx, [ebp + XFS.dir2_leaf_offset_blocks], edi
-        pop     edx edi
-        test    eax, eax
-        jnz     .error
-        bswap   ecx
-DEBUGF 1,"got address: 0x%x\n",ecx
-
-        mov     ebx, [ebp + XFS.cur_block]
-        push    esi edi
-        xor     edi, edi
-        mov     esi, ecx
-        shld    edi, esi, 3  ; get offset
-        shl     esi, 3
-        mov     edx, esi
-        mov     ecx, [ebp + XFS.dirblklog]
-        add     ecx, [ebp + XFS.blocklog]
-        mov     eax, 1
-        shl     eax, cl
-        dec     eax
-        and     edx, eax
-        push    edx
-        shrd    esi, edi, cl
-        shr     edi, cl
-        lea     eax, [ebx + sizeof.xfs_bmbt_block]
-        mov     edx, [ebp + XFS.ro_nextents]
-        stdcall xfs_extent_list_read_dirblock, eax, esi, edi, edx, [ebp + XFS.dir2_leaf_offset_blocks], 0
-;DEBUGF 1,"RETVALUE: %d %d\n",edx,eax
-        pop     edx
-        pop     edi esi
-        mov     ecx, eax
-        and     ecx, edx
-        inc     ecx
-        jz      .error
-
-        mov     ebx, [ebp + XFS.cur_dirblock]
-        add     ebx, edx
-        mov     edx, [ebx + 0]
-        mov     eax, [ebx + 4]
-        bswap   edx
-        bswap   eax
-DEBUGF 1,"found inode: 0x%x%x\n",edx,eax
-        jmp     .quit
-
-  .quit:
-        ret     12
-  .error:
-        xor     eax, eax
-        mov     edx, eax
-        ret     12
-
-
-;----------------------------------------------------------------
-; push name
-; call xfs_get_inode
-; test eax, eax
-;----------------------------------------------------------------
-xfs_get_inode:
-        ; call xfs_get_inode_short until file is found / error returned
-
-;DEBUGF 1,"getting inode of: %s\n",[esp+4]
-        push    ebx esi edi
-
-        ; start from the root inode
-
-        mov     edx, dword[ebp + XFS.rootino + 4]       ; hi
-        mov     eax, dword[ebp + XFS.rootino + 0]       ; lo
-        mov     esi, [esp + 16] ; name
-
-  .next_dir:
-        cmp     byte[esi], 0
-        je      .found
-
-;DEBUGF 1,"next_level: |%s|\n",esi
-        stdcall xfs_get_inode_short, esi, eax, edx
-        test    edx, edx
+        jmp     .common
+.btree:
+        movzx   ecx, [ebx+xfs_inode.di_core.di_forkoff]
+        shl     ecx, 3
+        test    ecx, ecx
         jnz     @f
+        mov     ecx, [ebp+XFS.inodesize]
+        sub     ecx, [ebp+XFS.inode_core_size]
+@@:
+        add     ebx, [ebp+XFS.inode_core_size]
+        stdcall xfs._.btree_read_block, ebx, ecx, eax, edx, [ebp+XFS.cur_dirblock]
+.common:
+        mov     ebx, [ebp+XFS.cur_dirblock]
+        mov     eax, [ebp+XFS.dir_data_magic]
+        cmp     [ebx+xfs_dir2_block.hdr.magic], eax
+        movi    eax, ERROR_FS_FAIL
+        jnz     .error
+        movbe   edx, [ebx+esi+xfs_dir2_data_entry.inumber.lo]
+        movbe   eax, [ebx+esi+xfs_dir2_data_entry.inumber.hi]
+.error:
+.quit:
+        ret
+endp
+
+
+proc xfs._.lookup_leaf uses ebx esi edi, _name, _len
+        movbe   ecx, [ebx+xfs_inode.di_core.di_nextents]
+        add     ebx, [ebp+XFS.inode_core_size]
+        mov     eax, [ebp+XFS.dir2_leaf_offset_blocks.lo]
+        mov     [ebp+XFS.offset_begin.lo], ecx
+        mov     eax, [ebp+XFS.dir2_leaf_offset_blocks.hi]
+        mov     [ebp+XFS.offset_begin.hi], ecx
+        stdcall xfs._.extent_list.seek, ecx
+        stdcall xfs._.read_dirblock, [ebp+XFS.extent.br_startblock.lo], [ebp+XFS.extent.br_startblock.hi], [ebp+XFS.cur_dirblock]
+        jnz     .error
+        mov     ebx, [ebp+XFS.cur_dirblock]
+        movzx   eax, [ebp+XFS.dir_leaf1_magic]
+        cmp     [ebx+xfs_dir2_leaf.hdr.info.magic], ax
+        movi    eax, ERROR_FS_FAIL
+        jnz     .error
+        stdcall xfs_hashname, [_name+4], [_len]
+        cmp     [ebp+XFS.version], 5
+        jz      .v5
+.v4:
+        movzx   ecx, [ebx+xfs_dir2_leaf.hdr.count]
+        xchg    cl, ch
+        add     ebx, xfs_dir2_leaf.ents
+        jmp     .vcommon
+.v5:
+        movzx   ecx, [ebx+xfs_dir3_leaf.hdr.count]
+        xchg    cl, ch
+        add     ebx, xfs_dir3_leaf.ents
+.vcommon:
+        stdcall xfs._.get_addr_by_hash, ebx, ecx
+        jnz     .error
+        stdcall xfs._.get_inode_by_addr, [ebp+XFS.cur_inode_save]
+.quit:
+.error:
+        ret
+endp
+
+
+proc xfs._.lookup_node uses ebx esi edi, _name, _len
+locals
+        .hash dd ?
+endl
+        mov     [ebp+XFS.cur_inode_save], ebx
+        stdcall xfs_hashname, [_name+4], [_len]
+        mov     [.hash], eax
+        mov     eax, ebx
+        add     eax, [ebp+XFS.inode_core_size]
+        movbe   edx, [ebx+xfs_inode.di_core.di_nextents]
+        mov     esi, [ebp+XFS.dir2_leaf_offset_blocks.lo]
+.begin:
+        mov     ebx, [ebp+XFS.cur_inode_save]
+        mov     eax, ebx
+        add     eax, [ebp+XFS.inode_core_size]
+        movbe   edx, [ebx+xfs_inode.di_core.di_nextents]
+        mov     ebx, eax
+        mov     [ebp+XFS.offset_begin.lo], esi
+        mov     [ebp+XFS.offset_begin.hi], 0
+        stdcall xfs._.extent_list.seek, edx
+        stdcall xfs._.read_dirblock, [ebp+XFS.extent.br_startblock.lo], [ebp+XFS.extent.br_startblock.hi], [ebp+XFS.cur_dirblock]
+        jnz     .error
+        mov     ebx, [ebp+XFS.cur_dirblock]
+        movzx   eax, [ebp+XFS.da_node_magic]
+        cmp     [ebx+xfs_da_intnode.hdr.info.magic], ax
+        jz      .node
+        movzx   eax, [ebp+XFS.dir_leafn_magic]
+        cmp     [ebx+xfs_dir2_leaf.hdr.info.magic], ax
+        jz      .leaf
+        movi    eax, ERROR_FS_FAIL
+        jmp     .error
+.node:
+        cmp     [ebp+XFS.version], 5
+        jz      .node.v5
+.node.v4:
+        lea     eax, [ebx+sizeof.xfs_da_intnode]
+        movzx   edx, [ebx+xfs_da_intnode.hdr.count]
+        jmp     .node.vcommon
+.node.v5:
+        lea     eax, [ebx+sizeof.xfs_da3_intnode]
+        movzx   edx, [ebx+xfs_da3_intnode.hdr.count]
+.node.vcommon:
+        xchg    dl, dh
+        stdcall xfs._.get_before_by_hashval, eax, edx, [.hash]
+        jnz     .error
+        mov     esi, eax
+        jmp     .begin
+.leaf:
+        cmp     [ebp+XFS.version], 5
+        jz      .leaf.v5
+.leaf.v4:
+        movzx   ecx, [ebx+xfs_dir2_leaf.hdr.count]
+        xchg    cl, ch
+        add     ebx, xfs_dir2_leaf.ents
+        jmp     .leaf.vcommon
+.leaf.v5:
+        movzx   ecx, [ebx+xfs_dir3_leaf.hdr.count]
+        xchg    cl, ch
+        add     ebx, xfs_dir3_leaf.ents
+.leaf.vcommon:
+        mov     eax, [.hash]
+        stdcall xfs._.get_addr_by_hash, ebx, ecx
+        jnz     .error
+        stdcall xfs._.get_inode_by_addr, [ebp+XFS.cur_inode_save]
+.quit:
+        cmp     esp, esp
+        ret
+.error:
+        test    esp, esp
+        ret
+endp
+
+
+proc xfs._.lookup_btree uses ebx esi edi, _name, _len
+locals
+        .hash dd ?
+endl
+        mov     [ebp+XFS.cur_inode_save], ebx
+        stdcall xfs_hashname, [_name+4], [_len]
+        mov     [.hash], eax
+        mov     edx, [ebp+XFS.dir2_leaf_offset_blocks.hi]
+        mov     eax, [ebp+XFS.dir2_leaf_offset_blocks.lo]
+        jmp     .next_level.first
+.next_level:
+        lea     eax, [ebx+sizeof.xfs_da_intnode]
+        movzx   edx, [ebx+xfs_da_intnode.hdr.count]
+        xchg    dl, dh
+        stdcall xfs._.get_before_by_hashval, eax, edx, [.hash]
+        jnz     .error
+        xor     edx, edx
+.next_level.first:
+        mov     ebx, [ebp+XFS.cur_inode_save]
+        movzx   ecx, [ebx+xfs_inode.di_core.di_forkoff]
+        shl     ecx, 3
+        test    ecx, ecx
+        jnz     @f
+        mov     ecx, [ebp+XFS.inodesize]
+        sub     ecx, xfs_inode.di_u
+@@:
+        add     ebx, xfs_inode.di_u
+        stdcall xfs._.btree_read_block, ebx, ecx, eax, edx, [ebp+XFS.cur_dirblock]
+        mov     ebx, [ebp+XFS.cur_dirblock]
+        cmp     [ebx+xfs_da_intnode.hdr.info.magic], XFS_DA_NODE_MAGIC
+        jz      .next_level
+        cmp     [ebx+xfs_dir2_leaf.hdr.info.magic], XFS_DIR2_LEAFN_MAGIC
+        jz      .leafn
+        cmp     [ebx+xfs_dir2_leaf.hdr.info.magic], XFS_DIR2_LEAF1_MAGIC
+        jnz     .error
+        mov     eax, [.hash]
+        movzx   ecx, [ebx+xfs_dir2_leaf.hdr.count]
+        xchg    cl, ch
+        add     ebx, xfs_dir2_leaf.ents
+        stdcall xfs._.get_addr_by_hash, ebx, ecx
+        jnz     .error
+        mov     ebx, [ebp+XFS.cur_dirblock]
+        jmp     .got_addr
+.leafn:
+        movzx   ecx, [ebx+xfs_dir2_leaf.hdr.count]
+        xchg    cl, ch
+        add     ebx, xfs_dir2_leaf.ents
+        mov     eax, [.hash]
+        stdcall xfs._.get_addr_by_hash, ebx, ecx
+        jnz     .error
+        mov     ebx, [ebp+XFS.cur_block]
+.got_addr:
+        stdcall xfs._.get_inode_by_addr, [ebp+XFS.cur_inode_save]
+.quit:
+        cmp     esp, esp
+        ret
+.error:
+        test    esp, esp
+        ret
+endp
+
+
+; search for the _name in _inode dir
+; called for each /path/component/to/my/file
+; out:
+; ZF/zf   = ok/fail
+; edx:eax = inode/garbage:error
+proc xfs._.get_inode_short uses esi, _inode:qword, _len, _name
+        mov     esi, [_name]
+        mov     eax, dword[_inode+DQ.lo]
+        mov     edx, dword[_inode+DQ.hi]
+        stdcall xfs_read_inode, eax, edx, [ebp+XFS.cur_inode]
         test    eax, eax
-        jz      .error
-    @@:
-        jmp     .next_dir       ; file name found, go to next directory level
+        movi    eax, ERROR_FS_FAIL
+        jnz     .error
+        ; switch directory ondisk format
+        mov     ebx, edx
+        mov     [ebp+XFS.cur_inode_save], ebx
+        movzx   eax, [ebx+xfs_inode.di_core.di_format]
+        cmp     eax, XFS_DINODE_FMT_LOCAL
+        mov     edi, xfs._.lookup_sf
+        jz      .lookup
+        cmp     eax, XFS_DINODE_FMT_BTREE
+        mov     edi, xfs._.lookup_btree
+        jz      .lookup
+        cmp     eax, XFS_DINODE_FMT_EXTENTS
+        jnz     .error
+        call    xfs._.get_last_dirblock
+        test    eax, eax
+        mov     edi, xfs._.lookup_block
+        jz      .lookup
+        cmp     edx, [ebp+XFS.dir2_free_offset_blocks.hi]
+        mov     edi, xfs._.lookup_node
+        ja      .lookup
+        cmp     eax, [ebp+XFS.dir2_free_offset_blocks.lo]
+        jae     .lookup
+        mov     edi, xfs._.lookup_leaf
+.lookup:
+        stdcall edi, [_name+4], [_len]
+.error:
+        ret
+endp
 
-  .found:
 
-  .quit:
-        pop     edi esi ebx
-        ret     4
-  .error:
-        pop     edi esi ebx
-        xor     eax, eax
-        mov     edx, eax
-        ret     4
+; ZF/zf   = ok/fail
+; edx:eax = inode/garbage:error
+proc xfs_get_inode uses ebx esi edi, _name
+        ; call *._.get_inode_short until file is found / error returned
+        ; start from the root inode
+        mov     eax, [ebp+XFS.rootino.lo]
+        mov     edx, [ebp+XFS.rootino.hi]
+        mov     esi, [_name]
+.next_dir:
+@@:
+        cmp     byte[esi], '/'
+        jnz     @f
+        inc     esi
+        jmp     @b
+@@:
+        cmp     byte[esi], 0
+        jz      .found
+        push    esi
+        inc     esi
+@@:
+        cmp     byte[esi], 0
+        jz      @f
+        cmp     byte[esi], '/'
+        jz      @f
+        inc     esi
+        jmp     @b
+@@:
+        mov     ecx, esi
+        sub     ecx, [esp]
+        mov     [ebp+XFS.inode_self.lo], eax
+        mov     [ebp+XFS.inode_self.hi], edx
+        stdcall xfs._.get_inode_short, eax, edx, ecx      ; esi pushed above
+        jz      .next_dir
+.error:
+.found:
+        ret
+endp
 
 
-;----------------------------------------------------------------
-; xfs_ReadFolder - XFS implementation of reading a folder
 ; in:  ebp = pointer to XFS structure
-; in:  esi+[esp+4] = name
+; in:  esi
 ; in:  ebx = pointer to parameters from sysfunc 70
 ; out: eax, ebx = return values for sysfunc 70
-;----------------------------------------------------------------
-xfs_ReadFolder:
-
-        ; to read folder
-        ; 1. lock partition
-        ; 2. find inode number
-        ; 3. read this inode
-        ; 4. get bdfe's
-        ; 5. unlock partition
-
-        ; 1.
-        call    xfs_lock
-        push    ecx edx esi edi
-
-        ; 2.
-        push    ebx esi edi
-        add     esi, [esp + 32]         ; directory name
-;DEBUGF 1,"xfs_ReadFolder: |%s|\n",esi
+; out: [edx] -- f70.1 out structure
+proc xfs_ReadFolder uses esi edi
+        call    xfs._.lock
         stdcall xfs_get_inode, esi
-        pop     edi esi ebx
-        mov     ecx, edx
-        or      ecx, eax
-        jnz     @f
-        movi    eax, ERROR_FILE_NOT_FOUND
-    @@:
-
-        ; 3.
-        stdcall xfs_read_inode, eax, edx, [ebp + XFS.cur_inode]
-        test    eax, eax
-        movi    eax, ERROR_FS_FAIL
         jnz     .error
-
-        ; 4.
-        mov     eax, [ebx + 8]          ; encoding
-        and     eax, 1
-        stdcall xfs_dir_get_bdfes, [ebx + 4], [ebx + 12], [ebx + 16], edx, eax
+        stdcall xfs_read_inode, eax, edx, [ebp+XFS.cur_inode]
         test    eax, eax
         jnz     .error
+        stdcall xfs._.readdir, [ebx+f70s1arg.start_idx], [ebx+f70s1arg.count], [ebx+f70s1arg.buf], edx, [ebx+f70s1arg.encoding]
+        test    eax, eax
+        jnz     .error
+        mov     edx, [ebx+f70s1arg.buf]
+        mov     ecx, [ebx+f70s1arg.count]
+        cmp     [edx+bdfe_hdr.read_cnt], ecx
+        jz      .quit
+        movi    eax, ERROR_END_OF_FILE
+.quit:
+        mov     ebx, [edx+bdfe_hdr.read_cnt]
 
-  .quit:
-;DEBUGF 1,"\n\n"
-        pop     edi esi edx ecx
-        ; 5.
-        call    xfs_unlock
-        xor     eax, eax
-        ret
-  .error:
-;DEBUGF 1,"\n\n"
-        pop     edi esi edx ecx
+.error:
         push    eax
-        call    xfs_unlock
+        call    xfs._.unlock
         pop     eax
         ret
+endp
 
 
-;----------------------------------------------------------------
-; push inode_num_hi
-; push inode_num_lo
-; push [count]
-; call xfs_get_inode_number_sf
-;----------------------------------------------------------------
-xfs_get_inode_number_sf:
-
-        ; inode numbers in short form directories may be 4 or 8 bytes long
-        ; determine the length in run time and read inode number at given address
-
-        cmp     byte[esp + 4 + xfs_dir2_sf_hdr.i8count], 0      ; i8count == 0 means 4 byte per inode number
-        je      .i4bytes
-  .i8bytes:
-        mov     edx, [esp + 12] ; hi
-        mov     eax, [esp + 8]  ; lo
-        bswap   edx             ; big endian
-        bswap   eax
-        ret     12
-  .i4bytes:
-        xor     edx, edx        ; no hi
-        mov     eax, [esp + 12] ; hi = lo
-        bswap   eax             ; big endian
-        ret     12
+; edx -- pointer to inode number in big endian
+; ZF -- must be set at exit
+proc xfs._.get_inode_number_sf
+        cmp     [ebx+xfs_dir2_sf.hdr.i8count], 0
+        jz      .i4bytes
+.i8bytes:
+        movbe   eax, [edx+DQ.hi]
+        movbe   edx, [edx+DQ.lo]
+        ret
+.i4bytes:
+        movbe   eax, [edx+DQ.lo]
+        xor     edx, edx
+        ret
+endp
 
 
-;----------------------------------------------------------------
-; push dest
-; push src
-; call xfs_get_inode_info
-;----------------------------------------------------------------
-xfs_get_inode_info:
-
+proc xfs_get_inode_info uses ebx, _src, _dst
         ; get access time and other file properties
         ; useful for browsing directories
         ; called for each dir entry
-
-;DEBUGF 1,"get_inode_info\n"
         xor     eax, eax
-        mov     edx, [esp + 4]
-        movzx   ecx, word[edx + xfs_inode.di_core.di_mode]
+        mov     edx, [_src]
+        movzx   ecx, [edx+xfs_inode.di_core.di_mode]
         xchg    cl, ch
-;DEBUGF 1,"di_mode: %x\n",ecx
-        test    ecx, S_IFDIR    ; directory?
+        test    ecx, S_IFDIR
         jz      @f
-        mov     eax, 0x10       ; set directory flag
-    @@:
-
-        mov     edi, [esp + 8]
-        mov     [edi + 0], eax
-        mov     eax, dword[edx + xfs_inode.di_core.di_size + 0] ; hi
-        bswap   eax
-        mov     dword[edi + 36], eax    ; file size hi
-;DEBUGF 1,"file_size hi: %d\n",eax
-        mov     eax, dword[edx + xfs_inode.di_core.di_size + 4] ; lo
-        bswap   eax
-        mov     dword[edi + 32], eax    ; file size lo
-;DEBUGF 1,"file_size lo: %d\n",eax
+        movi    eax, 0x10       ; set directory flag
+@@:
+        mov     edi, [_dst]
+        mov     [edi+bdfe.attr], eax
+        movbe   eax, [edx+xfs_inode.di_core.di_size.lo]
+        mov     [edi+bdfe.size.hi], eax
+        movbe   eax, [edx+xfs_inode.di_core.di_size.hi]
+        mov     [edi+bdfe.size.lo], eax
 
         add     edi, 8
-        mov     eax, [edx + xfs_inode.di_core.di_ctime.t_sec]
-        bswap   eax
+        movbe   eax, [edx+xfs_inode.di_core.di_ctime.t_sec]
         push    edx
         sub     eax, 978307200  ; 01.01.1970-01.01.2001 = (365*31+8)*24*60*60
         call    fsTime2bdfe
         pop     edx
 
-        mov     eax, [edx + xfs_inode.di_core.di_atime.t_sec]
-        bswap   eax
+        movbe   eax, [edx+xfs_inode.di_core.di_atime.t_sec]
         push    edx
-        sub     eax, 978307200
+        sub     eax, 978307200  ; 01.01.1970-01.01.2001 = (365*31+8)*24*60*60
         call    fsTime2bdfe
         pop     edx
 
-        mov     eax, [edx + xfs_inode.di_core.di_mtime.t_sec]
-        bswap   eax
+        movbe   eax, [edx+xfs_inode.di_core.di_mtime.t_sec]
         push    edx
-        sub     eax, 978307200
+        sub     eax, 978307200  ; 01.01.1970-01.01.2001 = (365*31+8)*24*60*60
         call    fsTime2bdfe
         pop     edx
 
-  .quit:
-        xor     eax, eax
-        ret     8
-  .error:
-        movi    eax, ERROR_FS_FAIL
-        ret     8
+        movi    eax, ERROR_SUCCESS
+        cmp     esp, esp
+        ret
+endp
 
 
-;----------------------------------------------------------------
-; push extent_data
-; call xfs_extent_unpack
-;----------------------------------------------------------------
-xfs_extent_unpack:
-
+proc xfs._.extent_unpack uses eax ebx ecx edx, _extent_data
         ; extents come as packet 128bit bitfields
-        ; lets unpack them to access internal fields
+        ; unpack them to access internal fields
         ; write result to the XFS.extent structure
-
-        push    eax ebx ecx edx
-        mov     ebx, [esp + 20]
+        mov     ebx, [_extent_data]
 
         xor     eax, eax
-        mov     edx, [ebx + 0]
-        bswap   edx
+        movbe   edx, [ebx+0]
         test    edx, 0x80000000         ; mask, see documentation
         setnz   al
-        mov     [ebp + XFS.extent.br_state], eax
+        mov     [ebp+XFS.extent.br_state], eax
 
         and     edx, 0x7fffffff         ; mask
-        mov     eax, [ebx + 4]
-        bswap   eax
+        movbe   eax, [ebx+4]
         shrd    eax, edx, 9
         shr     edx, 9
-        mov     dword[ebp + XFS.extent.br_startoff + 0], eax
-        mov     dword[ebp + XFS.extent.br_startoff + 4], edx
+        mov     [ebp+XFS.extent.br_startoff.lo], eax
+        mov     [ebp+XFS.extent.br_startoff.hi], edx
 
-        mov     edx, [ebx + 4]
-        mov     eax, [ebx + 8]
-        mov     ecx, [ebx + 12]
-        bswap   edx
-        bswap   eax
-        bswap   ecx
+        movbe   edx, [ebx+4]
+        movbe   eax, [ebx+8]
+        movbe   ecx, [ebx+12]
         and     edx, 0x000001ff         ; mask
         shrd    ecx, eax, 21
         shrd    eax, edx, 21
-        mov     dword[ebp + XFS.extent.br_startblock + 0], ecx
-        mov     dword[ebp + XFS.extent.br_startblock + 4], eax
+        mov     [ebp+XFS.extent.br_startblock.lo], ecx
+        mov     [ebp+XFS.extent.br_startblock.hi], eax
 
-        mov     eax, [ebx + 12]
-        bswap   eax
+        movbe   eax, [ebx+12]
         and     eax, 0x001fffff         ; mask
-        mov     [ebp + XFS.extent.br_blockcount], eax
-
-        pop     edx ecx ebx eax
-;DEBUGF 1,"extent.br_startoff  : %d %d\n",[ebp+XFS.extent.br_startoff+4],[ebp+XFS.extent.br_startoff+0]
-;DEBUGF 1,"extent.br_startblock: %d %d\n",[ebp+XFS.extent.br_startblock+4],[ebp+XFS.extent.br_startblock+0]
-;DEBUGF 1,"extent.br_blockcount: %d\n",[ebp+XFS.extent.br_blockcount]
-;DEBUGF 1,"extent.br_state     : %d\n",[ebp+XFS.extent.br_state]
-        ret     4
+        mov     [ebp+XFS.extent.br_blockcount], eax
+        ret
+endp
 
 
-;----------------------------------------------------------------
-; push namelen
-; push name
-; call xfs_hashname
-;----------------------------------------------------------------
-xfs_hashname:   ; xfs_da_hashname
-
-        ; simple hash function
-        ; never fails)
-
-        push    ecx esi
+proc xfs_hashname uses ecx esi, _name, _len
         xor     eax, eax
-        mov     esi, [esp + 12] ; name
-        mov     ecx, [esp + 16] ; namelen
-;mov esi, '.'
-;mov ecx, 1
-;DEBUGF 1,"hashname: %d %s\n",ecx,esi
-
-    @@:
+        mov     esi, [_name]
+        mov     ecx, [_len]
+@@:
         rol     eax, 7
         xor     al, [esi]
         add     esi, 1
-        loop    @b
+        dec     ecx
+        jnz     @b
+        ret
+endp
 
-        pop     esi ecx
-        ret     8
 
-
-;----------------------------------------------------------------
-; push  len
-; push  base
 ; eax -- hash value
-; call xfs_get_addr_by_hash
-;----------------------------------------------------------------
-xfs_get_addr_by_hash:
-
+proc xfs._.get_addr_by_hash uses ebx esi, _base, _len
         ; look for the directory entry offset by its file name hash
         ; allows fast file search for block, leaf and node directories
         ; binary (ternary) search
-
-;DEBUGF 1,"get_addr_by_hash\n"
-        push    ebx esi
-        mov     ebx, [esp + 12] ; left
-        mov     edx, [esp + 16] ; len
-  .next:
+        mov     ebx, [_base]
+        mov     edx, [_len]
+.next:
         mov     ecx, edx
 ;        jecxz   .error
         test    ecx, ecx
-        jz      .error
+        jz      .not_found
         shr     ecx, 1
-        mov     esi, [ebx + ecx*8 + xfs_dir2_leaf_entry.hashval]
-        bswap   esi
-;DEBUGF 1,"cmp 0x%x",esi
+        movbe   esi, [ebx+ecx*sizeof.xfs_dir2_leaf_entry+xfs_dir2_leaf_entry.hashval]
         cmp     eax, esi
         jb      .below
         ja      .above
-        mov     eax, [ebx + ecx*8 + xfs_dir2_leaf_entry.address]
-        pop     esi ebx
-        ret     8
-  .below:
-;DEBUGF 1,"b\n"
+        movbe   eax, [ebx+ecx*sizeof.xfs_dir2_leaf_entry+xfs_dir2_leaf_entry.address]
+        ret
+.below:
         mov     edx, ecx
         jmp     .next
-  .above:
-;DEBUGF 1,"a\n"
-        lea     ebx, [ebx + ecx*8 + 8]
+.above:
+        lea     ebx, [ebx+(ecx+1)*sizeof.xfs_dir2_leaf_entry]
         sub     edx, ecx
         dec     edx
         jmp     .next
-  .error:
-        mov     eax, -1
-        pop     esi ebx
-        ret     8
+.not_found:
+        movi    eax, ERROR_FILE_NOT_FOUND
+        test    esp, esp
+        ret
+endp
 
 
 ;----------------------------------------------------------------
-; xfs_GetFileInfo - XFS implementation of getting file info
+; xfs_GetFileInfo: XFS implementation of getting file info
 ; in:  ebp = pointer to XFS structure
-; in:  esi+[esp+4] = name
+; in:  esi = name
 ; in:  ebx = pointer to parameters from sysfunc 70
 ; out: eax, ebx = return values for sysfunc 70
 ;----------------------------------------------------------------
-xfs_GetFileInfo:
-
-        ; lock partition
-        ; get inode number by file name
-        ; read inode
-        ; get info
-        ; unlock partition
-
-        push    ecx edx esi edi
-        call    xfs_lock
-
-        add     esi, [esp + 20]         ; name
-;DEBUGF 1,"xfs_GetFileInfo: |%s|\n",esi
+proc xfs_GetFileInfo uses ecx edx esi edi
+        call    xfs._.lock
         stdcall xfs_get_inode, esi
-        mov     ecx, edx
-        or      ecx, eax
-        jnz     @f
-        movi    eax, ERROR_FILE_NOT_FOUND
-        jmp     .error
-    @@:
-        stdcall xfs_read_inode, eax, edx, [ebp + XFS.cur_inode]
+        jnz     .error
+        stdcall xfs_read_inode, eax, edx, [ebp+XFS.cur_inode]
         test    eax, eax
         movi    eax, ERROR_FS_FAIL
         jnz     .error
-
-        stdcall xfs_get_inode_info, edx, [ebx + 16]
-
-  .quit:
-        call    xfs_unlock
-        pop     edi esi edx ecx
+        stdcall xfs_get_inode_info, edx, [ebx+f70s5arg.buf]
+.quit:
+        call    xfs._.unlock
         xor     eax, eax
-;DEBUGF 1,"quit\n\n"
         ret
-  .error:
-        call    xfs_unlock
-        pop     edi esi edx ecx
-;DEBUGF 1,"error\n\n"
-        ret
-
-
-;----------------------------------------------------------------
-; xfs_ReadFile - XFS implementation of reading a file
-; in:  ebp = pointer to XFS structure
-; in:  esi+[esp+4] = name
-; in:  ebx = pointer to parameters from sysfunc 70
-; out: eax, ebx = return values for sysfunc 70
-;----------------------------------------------------------------
-xfs_ReadFile:
-        push    ebx ecx edx esi edi
-        call    xfs_lock
-        add     esi, [esp + 24]
-        stdcall xfs_get_inode, esi
-        mov     ecx, edx
-        or      ecx, eax
-        jnz     @f
-        movi    eax, ERROR_FILE_NOT_FOUND
-        jmp     .error
-    @@:
-        stdcall xfs_read_inode, eax, edx, [ebp + XFS.cur_inode]
-        test    eax, eax
-        movi    eax, ERROR_FS_FAIL
-        jnz     .error
-        mov     [ebp + XFS.cur_inode_save], edx
-
-        cmp     byte[edx + xfs_inode.di_core.di_format], XFS_DINODE_FMT_EXTENTS
-        jne     .not_extent_list
-        jmp     .extent_list
-  .not_extent_list:
-        cmp     byte[edx + xfs_inode.di_core.di_format], XFS_DINODE_FMT_BTREE
-        jne     .not_btree
-        jmp     .btree
-  .not_btree:
-DEBUGF 1,"XFS: NOT IMPLEMENTED: FILE FORMAT\n"
-        movi    eax, ERROR_FS_FAIL
-        jmp     .error
-  .extent_list:
-        mov     ecx, [ebx + 12]         ; bytes to read
-        mov     edi, [ebx + 16]         ; buffer for data
-        mov     esi, [ebx + 8]          ; offset_hi
-        mov     ebx, [ebx + 4]          ; offset_lo
-
-        mov     eax, dword[edx + xfs_inode.di_core.di_size + 4] ; lo
-        bswap   eax
-        mov     dword[ebp + XFS.bytes_left_in_file + 0], eax    ; lo
-        mov     eax, dword[edx + xfs_inode.di_core.di_size + 0] ; hi
-        bswap   eax
-        mov     dword[ebp + XFS.bytes_left_in_file + 4], eax    ; hi
-
-        mov     eax, [edx + xfs_inode.di_core.di_nextents]
-        bswap   eax
-        mov     [ebp + XFS.left_extents], eax
-
-        mov     dword[ebp + XFS.bytes_read], 0          ; actually read bytes
-
-        xor     eax, eax                ; extent offset in list
-  .extent_list.next_extent:
-;DEBUGF 1,"extent_list.next_extent, eax: 0x%x\n",eax
-;DEBUGF 1,"bytes_to_read: %d\n",ecx
-;DEBUGF 1,"cur file offset: %d %d\n",esi,ebx
-;DEBUGF 1,"esp: 0x%x\n",esp
-        cmp     [ebp + XFS.left_extents], 0
-        jne     @f
-        test    ecx, ecx
-        jz      .quit
-        movi    eax, ERROR_END_OF_FILE
-        jmp     .error
-    @@:
+.error:
         push    eax
-        lea     eax, [edx + xfs_inode.di_u + eax + xfs_bmbt_rec.l0]
-        stdcall xfs_extent_unpack, eax
+        call    xfs._.unlock
         pop     eax
-        dec     [ebp + XFS.left_extents]
-        add     eax, sizeof.xfs_bmbt_rec
-        push    eax ebx ecx edx esi
-        mov     ecx, [ebp + XFS.blocklog]
-        shrd    ebx, esi, cl
-        shr     esi, cl
-        cmp     esi, dword[ebp + XFS.extent.br_startoff + 4]
-        jb      .extent_list.to_hole          ; handle sparse files
-        ja      @f
-        cmp     ebx, dword[ebp + XFS.extent.br_startoff + 0]
-        jb      .extent_list.to_hole          ; handle sparse files
-        je      .extent_list.to_extent        ; read from the start of current extent
-    @@:
-        xor     edx, edx
-        mov     eax, [ebp + XFS.extent.br_blockcount]
-        add     eax, dword[ebp + XFS.extent.br_startoff + 0]
-        adc     edx, dword[ebp + XFS.extent.br_startoff + 4]
-;DEBUGF 1,"br_startoff: %d %d\n",edx,eax
-        cmp     esi, edx
-        ja      .extent_list.skip_extent
-        jb      .extent_list.to_extent
-        cmp     ebx, eax
-        jae     .extent_list.skip_extent
-        jmp     .extent_list.to_extent
-  .extent_list.to_hole:
-;DEBUGF 1,"extent_list.to_hole\n"
-        pop     esi edx ecx ebx eax
-        jmp     .extent_list.read_hole
-  .extent_list.to_extent:
-;DEBUGF 1,"extent_list.to_extent\n"
-        pop     esi edx ecx ebx eax
-        jmp     .extent_list.read_extent
-  .extent_list.skip_extent:
-;DEBUGF 1,"extent_list.skip_extent\n"
-        pop     esi edx ecx ebx eax
-        jmp     .extent_list.next_extent
+        ret
+endp
 
-  .extent_list.read_hole:
-;DEBUGF 1,"hole: offt: 0x%x%x ",esi,ebx
-        push    eax edx
-        mov     eax, dword[ebp + XFS.extent.br_startoff + 0]
-        mov     edx, dword[ebp + XFS.extent.br_startoff + 4]
-        push    esi ebx
-        mov     ebx, ecx
-        sub     eax, ebx        ; get hole_size, it is 64 bit
-        sbb     edx, 0          ; now edx:eax contains the size of hole
-;DEBUGF 1,"size: 0x%x%x\n",edx,eax
-        jnz     @f              ; if hole size >= 2^32, write bytes_to_read zero bytes
-        cmp     eax, ecx        ; if hole size >= bytes_to_read, write bytes_to_read zeros
-        jae     @f
-        mov     ecx, eax        ; if hole is < than bytes_to_read, write hole size zeros
-    @@:
-        sub     ebx, ecx        ; bytes_to_read - hole_size = left_to_read
-        add     dword[esp + 0], ecx     ; update pushed file offset
-        adc     dword[esp + 4], 0
-        xor     eax, eax        ; hole is made of zeros
+
+proc xfs._.file.read_extent uses ebx ecx edx, _callback, _callback_data
+        mov     eax, [ebp+XFS.file_offset.lo]
+        mov     edx, [ebp+XFS.file_offset.hi]
+        mov     esi, [ebp+XFS.extent.br_startoff.lo]
+        mov     edi, [ebp+XFS.extent.br_startoff.hi]
+        mov     ecx, [ebp+XFS.blocklog]
+        shld    edi, esi, cl
+        shl     esi, cl
+        cmp     edx, edi
+        jb      .hole
+        ja      .try_head
+        cmp     eax, esi
+        ja      .try_head
+        jz      .try_match
+.hole:
+        sub     esi, eax
+        sbb     edi, edx
+        movi    ecx, -1
+        test    edi, edi
+        jnz     @f
+        mov     ecx, esi
+@@:
+        cmp     ecx, [ebp+XFS.bytes_to_read]
+        jbe     @f
+        mov     ecx, [ebp+XFS.bytes_to_read]
+@@:
+        mov     edi, [ebp+XFS.file_buffer]
+        xor     eax, eax
+        sub     [ebp+XFS.bytes_to_read], ecx
+        sub     [ebp+XFS.bytes_left_in_file.lo], ecx
+        sbb     [ebp+XFS.bytes_left_in_file.hi], 0
+        add     [ebp+XFS.bytes_read], ecx
+        add     [ebp+XFS.file_buffer], ecx
+        add     [ebp+XFS.file_offset.lo], ecx
+        adc     [ebp+XFS.file_offset.hi], 0
         rep stosb
-        mov     ecx, ebx
-        pop     ebx esi
-
-        test    ecx, ecx        ; all requested bytes are read?
-        pop     edx eax
+        cmp     [ebp+XFS.bytes_to_read], 0
         jz      .quit
-        jmp     .extent_list.read_extent        ; continue from the start of unpacked extent
-
-  .extent_list.read_extent:
-;DEBUGF 1,"extent_list.read_extent\n"
-        push    eax ebx ecx edx esi
-        mov     eax, ebx
-        mov     edx, esi
-        mov     ecx, [ebp + XFS.blocklog]
-        shrd    eax, edx, cl
-        shr     edx, cl
-        sub     eax, dword[ebp + XFS.extent.br_startoff + 0]    ; skip esi:ebx ?
-        sbb     edx, dword[ebp + XFS.extent.br_startoff + 4]
-        sub     [ebp + XFS.extent.br_blockcount], eax
-        add     dword[ebp + XFS.extent.br_startblock + 0], eax
-        adc     dword[ebp + XFS.extent.br_startblock + 4], 0
-  .extent_list.read_extent.next_block:
-;DEBUGF 1,"extent_list.read_extent.next_block\n"
-        cmp     [ebp + XFS.extent.br_blockcount], 0     ; out of blocks in current extent?
-        jne     @f
-        pop     esi edx ecx ebx eax
-        jmp     .extent_list.next_extent                ; go to next extent
-    @@:
-        mov     eax, dword[ebp + XFS.extent.br_startblock + 0]
-        mov     edx, dword[ebp + XFS.extent.br_startblock + 4]
-        push    ebx
-        mov     ebx, [ebp + XFS.cur_block]
-;DEBUGF 1,"read block: 0x%x%x\n",edx,eax
-        stdcall xfs_read_block
-        test    eax, eax
-        pop     ebx
-        jz      @f
-        pop     esi edx ecx ebx eax
-        movi    eax, ERROR_FS_FAIL
-        jmp     .error
-    @@:
-        dec     [ebp + XFS.extent.br_blockcount]
-        add     dword[ebp + XFS.extent.br_startblock + 0], 1
-        adc     dword[ebp + XFS.extent.br_startblock + 4], 0
-        mov     esi, [ebp + XFS.cur_block]
-        mov     ecx, [ebp + XFS.blocklog]
-        mov     eax, 1
-        shl     eax, cl
-        dec     eax             ; get blocklog mask
-        and     eax, ebx        ; offset in current block
+        jmp     .try_match
+.try_head:
+        mov     eax, [ebp+XFS.file_offset.lo]
+        mov     ecx, [ebp+XFS.blocksize]
+        dec     ecx
+        test    eax, ecx
+        jz      .try_match
+.head:
+        mov     eax, [ebp+XFS.extent.br_startblock.lo]
+        mov     edx, [ebp+XFS.extent.br_startblock.hi]
+        mov     ebx, [ebp+XFS.cur_block_data]
+        stdcall xfs._.read_block
+        mov     esi, [ebp+XFS.cur_block_data]
+        mov     edi, [ebp+XFS.file_buffer]
+        mov     eax, [ebp+XFS.file_offset.lo]
+        mov     ecx, [ebp+XFS.blocksize]
+        dec     ecx
+        and     eax, ecx
         add     esi, eax
-        neg     eax
-        add     eax, [ebp + XFS.blocksize]
-        mov     ecx, [esp + 8]  ; pushed ecx, bytes_to_read
-        cmp     ecx, eax        ; is current block enough?
-        jbe     @f              ; if so, read bytes_to_read bytes
-        mov     ecx, eax        ; otherwise read the block up to the end
-    @@:
-        sub     [esp + 8], ecx          ; left_to_read
-        add     [esp + 12], ecx         ; update current file offset, pushed ebx
-        sub     dword[ebp + XFS.bytes_left_in_file + 0], ecx
-        sbb     dword[ebp + XFS.bytes_left_in_file + 4], 0
-        jnc     @f
-        add     dword[ebp + XFS.bytes_left_in_file + 0], ecx
-        mov     ecx, dword[ebp + XFS.bytes_left_in_file + 0]
-        mov     dword[ebp + XFS.bytes_left_in_file + 0], 0
-        mov     dword[ebp + XFS.bytes_left_in_file + 4], 0
-    @@:
-        add     [ebp + XFS.bytes_read], ecx
-        adc     [esp + 0], dword 0      ; pushed esi
-;DEBUGF 1,"read data: %d\n",ecx
+        inc     ecx
+        sub     ecx, eax
+        cmp     ecx, [ebp+XFS.bytes_to_read]
+        jbe     @f
+        mov     ecx, [ebp+XFS.bytes_to_read]
+@@:
+        sub     [ebp+XFS.bytes_to_read], ecx
+        sub     [ebp+XFS.bytes_left_in_file.lo], ecx
+        sbb     [ebp+XFS.bytes_left_in_file.hi], 0
+        add     [ebp+XFS.bytes_read], ecx
+        add     [ebp+XFS.file_buffer], ecx
+        add     [ebp+XFS.file_offset.lo], ecx
+        adc     [ebp+XFS.file_offset.hi], 0
         rep movsb
-        mov     ecx, [esp + 8]
-;DEBUGF 1,"left_to_read: %d\n",ecx
-        xor     ebx, ebx
-        test    ecx, ecx
-        jz      @f
-        cmp     dword[ebp + XFS.bytes_left_in_file + 4], 0
-        jne     .extent_list.read_extent.next_block
-        cmp     dword[ebp + XFS.bytes_left_in_file + 0], 0
-        jne     .extent_list.read_extent.next_block
-    @@:
-        pop     esi edx ecx ebx eax
-        jmp     .quit
-
-  .btree:
-        mov     ecx, [ebx + 12]         ; bytes to read
-        mov     [ebp + XFS.bytes_to_read], ecx
-        mov     edi, [ebx + 16]         ; buffer for data
-        mov     esi, [ebx + 8]          ; offset_hi
-        mov     ebx, [ebx + 4]          ; offset_lo
-        mov     dword[ebp + XFS.file_offset + 0], ebx
-        mov     dword[ebp + XFS.file_offset + 4], esi
-        mov     [ebp + XFS.buffer_pos], edi
-
-        mov     eax, dword[edx + xfs_inode.di_core.di_size + 4] ; lo
-        bswap   eax
-        mov     dword[ebp + XFS.bytes_left_in_file + 0], eax    ; lo
-        mov     eax, dword[edx + xfs_inode.di_core.di_size + 0] ; hi
-        bswap   eax
-        mov     dword[ebp + XFS.bytes_left_in_file + 4], eax    ; hi
-
-        mov     eax, [edx + xfs_inode.di_core.di_nextents]
-        bswap   eax
-        mov     [ebp + XFS.left_extents], eax
-
-        mov     dword[ebp + XFS.bytes_read], 0          ; actually read bytes
-
-        push    ebx ecx edx esi edi
-        mov     [ebp + XFS.eof], 0
-        mov     eax, dword[ebp + XFS.file_offset + 0]
-        mov     edx, dword[ebp + XFS.file_offset + 4]
-        add     eax, [ebp + XFS.bytes_to_read]
-        adc     edx, 0
-        sub     eax, dword[ebp + XFS.bytes_left_in_file + 0]
-        sbb     edx, dword[ebp + XFS.bytes_left_in_file + 4]
-        jc      @f      ; file_offset + bytes_to_read < file_size
-        jz      @f      ; file_offset + bytes_to_read = file_size
-        mov     [ebp + XFS.eof], 1
-        cmp     edx, 0
-        jne     .error.eof
-        sub     dword[ebp + XFS.bytes_to_read], eax
-        jc      .error.eof
-        jz      .error.eof
-    @@:
-        stdcall xfs_btree_read, 0, 0, 1
-        pop     edi esi edx ecx ebx
+        add     [ebp+XFS.extent.br_startoff.lo], 1
+        adc     [ebp+XFS.extent.br_startoff.hi], 0
+        add     [ebp+XFS.extent.br_startblock.lo], 1
+        adc     [ebp+XFS.extent.br_startblock.hi], 0
+        dec     [ebp+XFS.extent.br_blockcount]
+;        cmp     [ebp+XFS.bytes_to_read], 0
+        jz      .quit
+.try_match:
+        mov     eax, [ebp+XFS.bytes_to_read]
         test    eax, eax
-        jnz     .error
-        cmp     [ebp + XFS.eof], 1
-        jne     .quit
-        jmp     .error.eof
-
-
-  .quit:
-        call    xfs_unlock
-        pop     edi esi edx ecx ebx
-        xor     eax, eax
-        mov     ebx, [ebp + XFS.bytes_read]
-;DEBUGF 1,"quit: %d\n\n",ebx
+        jz      .quit
+        cmp     eax, [ebp+XFS.blocksize]
+        jb      .tail
+        mov     ecx, [ebp+XFS.blocklog]
+        shr     eax, cl
+        cmp     eax, [ebp+XFS.extent.br_blockcount]
+        jbe     @f
+        mov     eax, [ebp+XFS.extent.br_blockcount]
+@@:
+        mov     ecx, eax
+        mov     eax, [ebp+XFS.extent.br_startblock.lo]
+        mov     edx, [ebp+XFS.extent.br_startblock.hi]
+        mov     ebx, [ebp+XFS.file_buffer]
+        push    ecx
+        stdcall xfs._.read_blocks
+        pop     eax
+        add     [ebp+XFS.extent.br_startoff.lo], eax
+        adc     [ebp+XFS.extent.br_startoff.hi], 0
+        add     [ebp+XFS.extent.br_startblock.lo], eax
+        adc     [ebp+XFS.extent.br_startblock.hi], 0
+        sub     [ebp+XFS.extent.br_blockcount], eax
+        imul    eax, [ebp+XFS.blocksize]
+        sub     [ebp+XFS.bytes_to_read], eax
+        sub     [ebp+XFS.bytes_left_in_file.lo], eax
+        sbb     [ebp+XFS.bytes_left_in_file.hi], 0
+        add     [ebp+XFS.bytes_read], eax
+        add     [ebp+XFS.file_buffer], eax
+        add     [ebp+XFS.file_offset.lo], eax
+        adc     [ebp+XFS.file_offset.hi], 0
+;        cmp     [ebp+XFS.bytes_to_read], 0
+        cmp     [ebp+XFS.extent.br_blockcount], 0
+        jz      .quit
+.tail:
+        mov     eax, [ebp+XFS.extent.br_startblock.lo]
+        mov     edx, [ebp+XFS.extent.br_startblock.hi]
+        mov     ebx, [ebp+XFS.cur_block_data]
+        stdcall xfs._.read_block
+        mov     ecx, [ebp+XFS.bytes_to_read]
+        cmp     [ebp+XFS.bytes_left_in_file.hi], 0
+        jnz     @f
+        cmp     ecx, [ebp+XFS.bytes_left_in_file.lo]
+        jbe     @f
+        mov     ecx, [ebp+XFS.bytes_left_in_file.lo]
+@@:
+        mov     esi, [ebp+XFS.cur_block_data]
+        mov     edi, [ebp+XFS.file_buffer]
+        mov     eax, ecx
+        rep movsb
+        add     [ebp+XFS.bytes_read], eax
+        sub     [ebp+XFS.bytes_to_read], eax
+        sub     [ebp+XFS.bytes_left_in_file.lo], eax
+        sbb     [ebp+XFS.bytes_left_in_file.hi], 0
+        add     [ebp+XFS.file_buffer], eax
+        add     [ebp+XFS.file_offset.lo], eax
+        adc     [ebp+XFS.file_offset.hi], 0
+        add     [ebp+XFS.extent.br_startoff.lo], 1
+        adc     [ebp+XFS.extent.br_startoff.hi], 0
+        add     [ebp+XFS.extent.br_startblock.lo], 1
+        adc     [ebp+XFS.extent.br_startblock.hi], 0
+        dec     [ebp+XFS.extent.br_blockcount]
+.quit:
+        mov     esi, [ebp+XFS.extent.br_startoff.lo]
+        mov     edi, [ebp+XFS.extent.br_startoff.hi]
+        movi    eax, ERROR_SUCCESS
+        cmp     esp, esp
         ret
-  .error.eof:
+endp
+
+
+;----------------------------------------------------------------
+; in:  ebp = pointer to XFS structure
+; in:  esi = name
+; in:  ebx = pointer to parameters from sysfunc 70
+; out: eax, ebx = return values for sysfunc 70
+;----------------------------------------------------------------
+proc xfs_Read uses ecx edx esi edi
+locals
+        .offset_begin DQ ?
+        .offset_end   DQ ?
+endl
+        call    xfs._.lock
+        mov     [ebp+XFS.bytes_read], 0
+        mov     eax, [ebx+f70s0arg.count]
+        mov     [ebp+XFS.bytes_to_read], eax
+        test    eax, eax
+        jz      .quit
+        mov     eax, [ebx+f70s0arg.buf]
+        mov     [ebp+XFS.file_buffer], eax
+        mov     eax, [ebx+f70s0arg.offset.hi]
+        mov     [ebp+XFS.file_offset.hi], eax
+        mov     eax, [ebx+f70s0arg.offset.lo]
+        mov     [ebp+XFS.file_offset.lo], eax
+
+        stdcall xfs_get_inode, esi
+        jnz     .error
+        stdcall xfs_read_inode, eax, edx, [ebp+XFS.cur_inode]
+        test    eax, eax
+        movi    eax, ERROR_FS_FAIL
+        jnz     .error
+        mov     [ebp+XFS.cur_inode_save], edx
+        mov     ebx, edx
+        ; precompute .offset_begin
+        mov     esi, [ebp+XFS.file_offset.lo]
+        mov     edi, [ebp+XFS.file_offset.hi]
+        mov     ecx, [ebp+XFS.blocklog]
+        shrd    esi, edi, cl
+        shr     edi, cl
+        mov     [.offset_begin.lo], esi
+        mov     [.offset_begin.hi], edi
+        ; precompute .offset_end
+        mov     esi, [ebp+XFS.file_offset.lo]
+        mov     edi, [ebp+XFS.file_offset.hi]
+        add     esi, [ebp+XFS.bytes_to_read]
+        adc     edi, 0
+        mov     ecx, [ebp+XFS.blocksize]
+        dec     ecx
+        add     esi, ecx
+        adc     edi, 0
+        mov     ecx, [ebp+XFS.blocklog]
+        shrd    esi, edi, cl
+        shr     edi, cl
+        mov     [.offset_end.lo], esi
+        mov     [.offset_end.hi], edi
+
+        movbe   ecx, [ebx+xfs_inode.di_core.di_size.hi]
+        movbe   edx, [ebx+xfs_inode.di_core.di_size.lo]
+        mov     [ebp+XFS.bytes_left_in_file.lo], ecx
+        mov     [ebp+XFS.bytes_left_in_file.hi], edx
+
+        sub     ecx, [ebp+XFS.file_offset.lo]
+        sbb     edx, [ebp+XFS.file_offset.hi]
         movi    eax, ERROR_END_OF_FILE
-  .error:
-;DEBUGF 1,"error\n\n"
-        call    xfs_unlock
-        pop     edi esi edx ecx ebx
-        mov     ebx, [ebp + XFS.bytes_read]
+        jb      .error
+        mov     [ebp+XFS.eof], 0
+        test    edx, edx
+        jnz     @f
+        cmp     ecx, [ebp+XFS.bytes_to_read]
+        jae     @f
+        mov     [ebp+XFS.eof], ERROR_END_OF_FILE
+        mov     [ebp+XFS.bytes_to_read], ecx
+@@:
+
+        cmp     [ebx+xfs_inode.di_core.di_format], XFS_DINODE_FMT_BTREE
+        jz      .btree
+.extent_list:
+        mov     eax, ebx
+        add     eax, [ebp+XFS.inode_core_size]
+        movbe   edx, [ebx+xfs_inode.di_core.di_nextents]
+        mov     ecx, [.offset_begin.lo]
+        mov     [ebp+XFS.offset_begin.lo], ecx
+        mov     ecx, [.offset_begin.hi]
+        mov     [ebp+XFS.offset_begin.hi], ecx
+        mov     ecx, [.offset_end.lo]
+        mov     [ebp+XFS.offset_end.lo], ecx
+        mov     ecx, [.offset_end.hi]
+        mov     [ebp+XFS.offset_end.hi], ecx
+        stdcall xfs._.walk_extent_list, edx, eax, xfs._.file.read_extent, 0, 0
+        jnz     .error
+        jmp     .hole_check
+.btree:
+        mov     eax, [ebp+XFS.inodesize]
+        sub     eax, [ebp+XFS.inode_core_size]
+        movzx   ecx, [ebx+xfs_inode.di_core.di_forkoff]
+        jecxz   @f
+        shl     ecx, 3
+        mov     eax, ecx
+@@:
+        mov     edx, ebx
+        add     edx, [ebp+XFS.inode_core_size]
+        mov     ecx, [.offset_begin.lo]
+        mov     [ebp+XFS.offset_begin.lo], ecx
+        mov     ecx, [.offset_begin.hi]
+        mov     [ebp+XFS.offset_begin.hi], ecx
+        mov     ecx, [.offset_end.lo]
+        mov     [ebp+XFS.offset_end.lo], ecx
+        mov     ecx, [.offset_end.hi]
+        mov     [ebp+XFS.offset_end.hi], ecx
+        stdcall xfs._.walk_btree, edx, eax, xfs._.file.read_extent, 0, 0, 1
+.hole_check:
+        cmp     [ebp+XFS.bytes_left_in_file.hi], 0
+        jnz     @f
+        cmp     [ebp+XFS.bytes_left_in_file.lo], 0
+        jz      .hole_done
+@@:
+        cmp     [ebp+XFS.bytes_to_read], 0
+        jz      .hole_done
+        mov     ebx, [ebp+XFS.cur_inode_save]
+        movbe   edx, [ebx+xfs_inode.di_core.di_size.lo]
+        movbe   eax, [ebx+xfs_inode.di_core.di_size.hi]
+        sub     eax, [ebp+XFS.file_offset.lo]
+        sbb     edx, [ebp+XFS.file_offset.hi]
+        jc      .hole_done
+        mov     ecx, [ebp+XFS.bytes_to_read]
+        test    edx, edx
+        jnz     .hole_read
+        cmp     eax, [ebp+XFS.bytes_to_read]
+        jae     .hole_read
+        mov     ecx, eax
+        jmp     .hole_read
+.hole_read:
+        sub     [ebp+XFS.bytes_to_read], ecx
+        add     [ebp+XFS.bytes_read], ecx
+        mov     edi, [ebp+XFS.file_buffer]
+        xor     eax, eax
+        rep stosb
+.hole_done:
+.quit:
+        mov     eax, [ebp+XFS.eof]
+.error:
+        push    eax
+        call    xfs._.unlock
+        pop     eax
+        mov     ebx, [ebp+XFS.bytes_read]
         ret
+endp
 
 
-;----------------------------------------------------------------
-; push  max_offset_hi
-; push  max_offset_lo
-; push  nextents
-; push  block_number_hi
-; push  block_number_lo
-; push  extent_list
-; -1 / read block number
-;----------------------------------------------------------------
-xfs_extent_list_read_dirblock:  ; skips holes
-;DEBUGF 1,"xfs_extent_list_read_dirblock\n"
-        push    ebx esi edi
-;mov eax, [esp+28]
-;DEBUGF 1,"nextents: %d\n",eax
-;mov eax, [esp+20]
-;mov edx, [esp+24]
-;DEBUGF 1,"block_number: 0x%x%x\n",edx,eax
-;mov eax, [esp+32]
-;mov edx, [esp+36]
-;DEBUGF 1,"max_addr    : 0x%x%x\n",edx,eax
-        mov     ebx, [esp + 16]
-        mov     esi, [esp + 20]
-        mov     edi, [esp + 24]
-;        mov     ecx, [esp + 28] ; nextents
-  .next_extent:
-;DEBUGF 1,"next_extent\n"
-        dec     dword[esp + 28]
-        js      .error
-        stdcall xfs_extent_unpack, ebx
-        add     ebx, sizeof.xfs_bmbt_rec        ; next extent
-        mov     edx, dword[ebp + XFS.extent.br_startoff + 4]
-        mov     eax, dword[ebp + XFS.extent.br_startoff + 0]
-        cmp     edx, [esp + 36] ; max_offset_hi
-        ja      .error
-        jb      @f
-        cmp     eax, [esp + 32] ; max_offset_lo
-        jae     .error
-    @@:
-        cmp     edi, edx
-        jb      .hole
-        ja      .check_count
-        cmp     esi, eax
-        jb      .hole
-        ja      .check_count
-        jmp     .read_block
-  .hole:
-;DEBUGF 1,"hole\n"
-        mov     esi, eax
-        mov     edi, edx
-        jmp     .read_block
-  .check_count:
-;DEBUGF 1,"check_count\n"
-        add     eax, [ebp + XFS.extent.br_blockcount]
-        adc     edx, 0
-        cmp     edi, edx
-        ja      .next_extent
-        jb      .read_block
-        cmp     esi, eax
-        jae     .next_extent
-;        jmp     .read_block
-  .read_block:
-;DEBUGF 1,"read_block\n"
-        push    esi edi
-        sub     esi, dword[ebp + XFS.extent.br_startoff + 0]
-        sbb     edi, dword[ebp + XFS.extent.br_startoff + 4]
-        add     esi, dword[ebp + XFS.extent.br_startblock + 0]
-        adc     edi, dword[ebp + XFS.extent.br_startblock + 4]
-        stdcall xfs_read_dirblock, esi, edi, [ebp + XFS.cur_dirblock]
-        pop     edx eax
-  .quit:
-;DEBUGF 1,"xfs_extent_list_read_dirblock: quit\n"
-        pop     edi esi ebx
-        ret     24
-  .error:
-;DEBUGF 1,"xfs_extent_list_read_dirblock: error\n"
-        xor     eax, eax
-        dec     eax
-        mov     edx, eax
-        pop     edi esi ebx
-        ret     24
-
-
-;----------------------------------------------------------------
-; push  dirblock_num
-; push  nextents
-; push  extent_list
-;----------------------------------------------------------------
-xfs_dir2_node_get_numfiles:
-
-        ; unfortunately, we need to set 'total entries' field
-        ; this often requires additional effort, since there is no such a number in most directory ondisk formats
-
-;DEBUGF 1,"xfs_dir2_node_get_numfiles\n"
-        push    ebx ecx edx esi edi
-
-        mov     eax, [esp + 24]
-        mov     edx, [esp + 28]
-        mov     esi, [esp + 32]
-        stdcall xfs_extent_list_read_dirblock, eax, esi, 0, edx, -1, -1
-        mov     ecx, eax
-        and     ecx, edx
-        inc     ecx
-        jnz     @f
-        movi    eax, ERROR_FS_FAIL
-        jmp     .error
-    @@:
-        mov     ebx, [ebp + XFS.cur_dirblock]
-        cmp     word[ebx + xfs_da_intnode.hdr.info.magic], XFS_DA_NODE_MAGIC
-        je      .node
-        cmp     word[ebx + xfs_da_intnode.hdr.info.magic], XFS_DIR2_LEAFN_MAGIC
-        je      .leaf
-        mov     eax, ERROR_FS_FAIL
-        jmp     .error
-
-  .node:
-;DEBUGF 1,".node\n"
-        mov     edi, [ebx + xfs_da_intnode.hdr.info.forw]
-        bswap   edi
-        mov     eax, [esp + 24]
-        mov     edx, [esp + 28]
-        mov     esi, [ebx + xfs_da_intnode.btree.before]
-        bswap   esi
-        stdcall xfs_dir2_node_get_numfiles, eax, edx, esi
-        test    eax, eax
-        jnz     .error
-        jmp     .common
-
-  .leaf:
-;DEBUGF 1,".leaf\n"
-        movzx   ecx, word[ebx + xfs_dir2_leaf.hdr.count]
-        xchg    cl, ch
-        movzx   eax, word[ebx + xfs_dir2_leaf.hdr.stale]
-        xchg    al, ah
-        sub     ecx, eax
-        add     [ebp + XFS.entries_read], ecx
-        mov     edi, [ebx + xfs_dir2_leaf.hdr.info.forw]
-        bswap   edi
-        jmp     .common
-
-  .common:
-        test    edi, edi
+proc xfs._.leafn_calc_entries uses ebx ecx edx esi edi, _cur_dirblock, _offset_lo, _offset_hi, _arg
+        mov     edx, [_cur_dirblock]
+        movzx   eax, [ebp+XFS.da_node_magic]
+        cmp     [edx+xfs_dir2_leaf.hdr.info.magic], ax
         jz      .quit
-        mov     esi, edi
-        mov     eax, [esp + 24]
-        mov     edx, [esp + 28]
-        stdcall xfs_dir2_node_get_numfiles, eax, edx, esi
-        test    eax, eax
-        jnz     .error
-        jmp     .quit
-
-  .quit:
-;DEBUGF 1,".quit\n"
-        pop     edi esi edx ecx ebx
-        xor     eax, eax
-        ret     12
-  .error:
-;DEBUGF 1,".error\n"
-        pop     edi esi edx ecx ebx
-        movi    eax, ERROR_FS_FAIL
-        ret     12
-
-
-;----------------------------------------------------------------
-; push  hash
-; push  dirblock_num
-; push  nextents
-; push  extent_list
-;----------------------------------------------------------------
-xfs_dir2_lookupdir_node:
-DEBUGF 1,"xfs_dir2_lookupdir_node\n"
-        push    ebx edx esi edi
-
-        mov     eax, [esp + 20]
-        mov     edx, [esp + 24]
-        mov     esi, [esp + 28]
-DEBUGF 1,"read dirblock: 0x%x %d\n",esi,esi
-        stdcall xfs_extent_list_read_dirblock, eax, esi, 0, edx, -1, -1
-DEBUGF 1,"dirblock read: 0x%x%x\n",edx,eax
-        mov     ecx, eax
-        and     ecx, edx
-        inc     ecx
+        cmp     [ebp+XFS.version], 5
         jnz     @f
-        movi    eax, ERROR_FS_FAIL
-        jmp     .error
-    @@:
-DEBUGF 1,"checkpoint #1\n"
-        mov     ebx, [ebp + XFS.cur_dirblock]
-        cmp     word[ebx + xfs_da_intnode.hdr.info.magic], XFS_DA_NODE_MAGIC
-        je      .node
-        cmp     word[ebx + xfs_da_intnode.hdr.info.magic], XFS_DIR2_LEAFN_MAGIC
-        je      .leaf
-        mov     eax, ERROR_FS_FAIL
-DEBUGF 1,"checkpoint #2\n"
-        jmp     .error
-
-  .node:
-DEBUGF 1,".node\n"
-        mov     edi, [esp + 32] ; hash
-        movzx   ecx, word[ebx + xfs_da_intnode.hdr.count]
+        add     edx, xfs_dir3_leaf.hdr.count-xfs_dir2_leaf.hdr.count
+@@:
+        movzx   eax, [edx+xfs_dir2_leaf.hdr.count]
+        movzx   ecx, [edx+xfs_dir2_leaf.hdr.stale]
+        xchg    al, ah
         xchg    cl, ch
-        mov     [ebp + XFS.left_leaves], ecx
+        sub     eax, ecx
+        add     [ebp+XFS.entries_read], eax
+.quit:
+        movi    eax, ERROR_SUCCESS
+        cmp     esp, esp
+        ret
+endp
+
+
+proc xfs._.get_before_by_hashval uses ebx edx esi edi, _base, _count, _hash
+        mov     edi, [_hash]
+        mov     edx, [_count]
         xor     ecx, ecx
-  .node.next_leaf:
-        mov     esi, [ebx + xfs_da_intnode.btree + ecx*sizeof.xfs_da_node_entry + xfs_da_node_entry.hashval]
-        bswap   esi
-        cmp     edi, esi
-        jbe     .node.leaf_found
+.node.next:
+        movbe   eax, [ebx+xfs_da_intnode.btree+ecx*sizeof.xfs_da_node_entry+xfs_da_node_entry.hashval]
+        cmp     [ebp+XFS.version], 5
+        jnz     @f
+        movbe   eax, [ebx+xfs_da3_intnode.btree+ecx*sizeof.xfs_da_node_entry+xfs_da_node_entry.hashval]
+@@:
+        cmp     eax, edi
+        ja      .node.leaf_found
         inc     ecx
-        cmp     ecx, [ebp + XFS.left_leaves]
-        jne     .node.next_leaf
-        mov     eax, ERROR_FILE_NOT_FOUND
-        jmp     .error
-    @@:
-  .node.leaf_found:
-        mov     eax, [esp + 20]
-        mov     edx, [esp + 24]
-        mov     esi, [ebx + xfs_da_intnode.btree + ecx*sizeof.xfs_da_node_entry + xfs_da_node_entry.before]
-        bswap   esi
-        stdcall xfs_dir2_lookupdir_node, eax, edx, esi, edi
-        test    eax, eax
-        jz      .quit
+        cmp     ecx, edx
+        jnz     .node.next
         movi    eax, ERROR_FILE_NOT_FOUND
+        test    esp, esp
         jmp     .error
-
-  .leaf:
-DEBUGF 1,".leaf\n"
-        movzx   ecx, [ebx + xfs_dir2_leaf.hdr.count]
-        xchg    cl, ch
-        lea     esi, [ebx + xfs_dir2_leaf.ents]
-        mov     eax, [esp + 32]
-        stdcall xfs_get_addr_by_hash, esi, ecx
-        cmp     eax, -1
-        je      .error
-        mov     ecx, eax
+.node.leaf_found:
+        movbe   eax, [ebx+xfs_da_intnode.btree+ecx*sizeof.xfs_da_node_entry+xfs_da_node_entry.before]
+        cmp     [ebp+XFS.version], 5
+        jnz     @f
+        movbe   eax, [ebx+xfs_da3_intnode.btree+ecx*sizeof.xfs_da_node_entry+xfs_da_node_entry.before]
+@@:
         jmp     .quit
-
-  .quit:
-DEBUGF 1,".quit\n"
-        pop     edi esi edx ebx
-        xor     eax, eax
-        ret     16
-  .error:
-DEBUGF 1,".error\n"
-        pop     edi esi edx ebx
-        ret     16
+.error:
+        test    esp, esp
+        ret
+.quit:
+        cmp     esp, esp
+        ret
+endp
 
 
-;----------------------------------------------------------------
-; push  dirblock_num
-; push  nextents
-; push  extent_list
-;----------------------------------------------------------------
-xfs_dir2_btree_get_numfiles:
-;DEBUGF 1,"xfs_dir2_node_get_numfiles\n"
-        push    ebx ecx edx esi edi
+proc xfs._.long_btree.seek uses ebx esi edi, _ptr, _size
+        mov     ebx, [_ptr]
+        mov     esi, [_size]
+        sub     esi, sizeof.xfs_bmdr_block
+        shr     esi, 4
+        shl     esi, 3
+        movzx   eax, [ebx+xfs_bmdr_block.bb_level]
+        movzx   ecx, [ebx+xfs_bmdr_block.bb_numrecs]
+        xchg    cl, ch
+        add     ebx, sizeof.xfs_bmdr_block
+        jmp     .common
+.not_root:
+        mov     esi, [ebp+XFS.blocksize]
+        sub     esi, sizeof.xfs_bmbt_block
+        shr     esi, 4
+        shl     esi, 3
+        movzx   eax, [ebx+xfs_bmbt_block.bb_level]
+        movzx   ecx, [ebx+xfs_bmbt_block.bb_numrecs]
+        xchg    cl, ch
+        add     ebx, sizeof.xfs_bmbt_block
+.common:
+        test    eax, eax
+        jz      .leaf
+.node:
+.next_rec:
+        dec     ecx
+        js      .error
+        movbe   eax, [ebx+ecx*sizeof.xfs_bmbt_key+xfs_bmbt_key.br_startoff.lo]
+        cmp     [ebp+XFS.offset_begin.hi], eax
+        ja      .node_found
+        jb      .next_rec
+        movbe   eax, [ebx+ecx*sizeof.xfs_bmbt_key+xfs_bmbt_key.br_startoff.hi]
+        cmp     [ebp+XFS.offset_begin.lo], eax
+        jae     .node_found
+        jmp     .next_rec
+.node_found:
+        add     ebx, esi
+        movbe   edx, [ebx+ecx*sizeof.xfs_bmbt_ptr+xfs_bmbt_ptr.lo]
+        movbe   eax, [ebx+ecx*sizeof.xfs_bmbt_ptr+xfs_bmbt_ptr.hi]
+        mov     ebx, [ebp+XFS.cur_block]
+        stdcall xfs._.read_block
+        test    eax, eax
+        jnz     .error
+        mov     ebx, [ebp+XFS.cur_block]
+        jmp     .not_root
+.leaf:
+        jmp     .quit
+.error:
+.quit:
+        ret
+endp
 
-        mov     eax, [esp + 24]
-        mov     edx, [esp + 28]
-        mov     esi, [esp + 32]
-        stdcall xfs_extent_list_read_dirblock, eax, esi, 0, edx, -1, -1
+
+proc xfs._.walk_btree uses ebx esi edi, _ptr, _size, _callback_extent, _callback_block, _callback_data, _is_root
+        stdcall xfs._.long_btree.seek, [_ptr+4], [_size]
+        mov     [_is_root], 0
+.begin:
+        mov     ebx, [ebp+XFS.cur_block]
+        mov     eax, [ebp+XFS.bmap_magic]
+        cmp     [ebx+xfs_bmbt_block.bb_magic], eax
+        movi    eax, ERROR_FS_FAIL
+        jnz     .error
+        movzx   ecx, [ebx+xfs_bmbt_block.bb_numrecs]
+        xchg    cl, ch
+        add     ebx, [ebp+XFS.bmbt_block_size]
+        stdcall xfs._.walk_extent_list, ecx, ebx, [_callback_extent+8], [_callback_block+4], [_callback_data]
+        jnz     .error
+        mov     esi, [ebp+XFS.offset_begin.lo]
+        mov     edi, [ebp+XFS.offset_begin.hi]
+        cmp     edi, [ebp+XFS.offset_end.hi]
+        ja      .quit
+        cmp     esi, [ebp+XFS.offset_end.lo]
+        jae     .quit
+        sub     ebx, [ebp+XFS.bmbt_block_size]
+        movbe   edx, [ebx+xfs_bmbt_block.bb_rightsib.lo]
+        movbe   eax, [ebx+xfs_bmbt_block.bb_rightsib.hi]
         mov     ecx, eax
         and     ecx, edx
         inc     ecx
-        jnz     @f
-        movi    eax, ERROR_FS_FAIL
-        jmp     .error
-    @@:
-        mov     ebx, [ebp + XFS.cur_dirblock]
-        cmp     word[ebx + xfs_da_intnode.hdr.info.magic], XFS_DA_NODE_MAGIC
-        je      .node
-        cmp     word[ebx + xfs_da_intnode.hdr.info.magic], XFS_DIR2_LEAFN_MAGIC
-        je      .leaf
-        mov     eax, ERROR_FS_FAIL
-        jmp     .error
-
-  .node:
-;DEBUGF 1,".node\n"
-        mov     edi, [ebx + xfs_da_intnode.hdr.info.forw]
-        bswap   edi
-        mov     eax, [esp + 24]
-        mov     edx, [esp + 28]
-        mov     esi, [ebx + xfs_da_intnode.btree.before]
-        bswap   esi
-        stdcall xfs_dir2_node_get_numfiles, eax, edx, esi
-        test    eax, eax
-        jnz     .error
-        jmp     .common
-
-  .leaf:
-;DEBUGF 1,".leaf\n"
-        movzx   ecx, word[ebx + xfs_dir2_leaf.hdr.count]
-        xchg    cl, ch
-        movzx   eax, word[ebx + xfs_dir2_leaf.hdr.stale]
-        xchg    al, ah
-        sub     ecx, eax
-        add     [ebp + XFS.entries_read], ecx
-        mov     edi, [ebx + xfs_dir2_leaf.hdr.info.forw]
-        bswap   edi
-        jmp     .common
-
-  .common:
-        test    edi, edi
         jz      .quit
-        mov     esi, edi
-        mov     eax, [esp + 24]
-        mov     edx, [esp + 28]
-        stdcall xfs_dir2_node_get_numfiles, eax, edx, esi
-        test    eax, eax
+        mov     ebx, [ebp+XFS.cur_block]
+        stdcall xfs._.read_block
         jnz     .error
+        jmp     .begin
+.error:
+.quit:
+        ret
+endp
+
+
+proc xfs._.btree_read_block uses ebx esi edi, _tree, _size, _block_lo, _block_hi, _buf
+        mov     eax, [_block_lo]
+        mov     [ebp+XFS.offset_begin.lo], eax
+        mov     eax, [_block_hi]
+        mov     [ebp+XFS.offset_begin.hi], eax
+        stdcall xfs._.long_btree.seek, [_tree+4], [_size]
+        jnz     .error
+        mov     ebx, [ebp+XFS.cur_block]
+        mov     eax, [ebp+XFS.bmap_magic]
+        cmp     [ebx+xfs_bmbt_block.bb_magic], eax
+        jnz     .error
+        movzx   ecx, [ebx+xfs_bmbt_block.bb_numrecs]
+        xchg    cl, ch
+        add     ebx, [ebp+XFS.bmbt_block_size]
+        mov     eax, [_block_lo]
+        mov     [ebp+XFS.offset_begin.lo], eax
+        mov     eax, [_block_hi]
+        mov     [ebp+XFS.offset_begin.hi], eax
+        stdcall xfs._.extent_list.seek, ecx
+        stdcall xfs._.read_dirblock, [ebp+XFS.extent.br_startblock.lo], [ebp+XFS.extent.br_startblock.hi], [_buf]
+.error:
+.quit:
+        ret
+endp
+
+
+proc xfs._.extent_list.seek uses esi, _count
+        sub     ebx, sizeof.xfs_bmbt_rec
+        inc     [_count]
+.find_low:
+        add     ebx, sizeof.xfs_bmbt_rec
+        dec     [_count]
+        jz      .quit
+        stdcall xfs._.extent_unpack, ebx
+        mov     eax, [ebp+XFS.extent.br_startoff.lo]
+        mov     edx, [ebp+XFS.extent.br_startoff.hi]
+        mov     esi, [ebp+XFS.extent.br_blockcount]
+        add     eax, esi
+        adc     edx, 0
+
+        cmp     edx, [ebp+XFS.offset_begin.hi]
+        ja      .low_found
+        jb      .find_low
+        cmp     eax, [ebp+XFS.offset_begin.lo]
+        ja      .low_found
+        jmp     .find_low
+.low_found:
+        add     ebx, sizeof.xfs_bmbt_rec
+
+        mov     eax, [ebp+XFS.offset_begin.lo]
+        mov     edx, [ebp+XFS.offset_begin.hi]
+        mov     esi, eax
+        sub     esi, [ebp+XFS.extent.br_startoff.lo]
+        jbe     .quit
+        ; same br_blockcount for block and dirblock?
+        mov     [ebp+XFS.extent.br_startoff.lo], eax
+        mov     [ebp+XFS.extent.br_startoff.hi], edx
+        sub     [ebp+XFS.extent.br_blockcount], esi
+        add     [ebp+XFS.extent.br_startblock.lo], esi
+        adc     [ebp+XFS.extent.br_startblock.hi], 0
         jmp     .quit
-
-  .quit:
-;DEBUGF 1,".quit\n"
-        pop     edi esi edx ecx ebx
-        xor     eax, eax
-        ret     12
-  .error:
-;DEBUGF 1,".error\n"
-        pop     edi esi edx ecx ebx
-        movi    eax, ERROR_FS_FAIL
-        ret     12
+.quit:
+        mov     eax, [_count]
+        ret
+endp
 
 
-;----------------------------------------------------------------
-; push  is_root
-; push  block_hi
-; push  block_lo
-;----------------------------------------------------------------
-xfs_btree_read:
-        push    ebx ecx edx esi edi
-        cmp     dword[esp + 32], 1      ; is root?
-        je      .root
-        jmp     .not_root
-  .root:
-DEBUGF 1,".root\n"
-        mov     ebx, [ebp + XFS.cur_inode_save]
-        add     ebx, xfs_inode.di_u
-        movzx   edx, [ebx + xfs_bmdr_block.bb_numrecs]
-        xchg    dl, dh
-        dec     edx
-        add     ebx, sizeof.xfs_bmdr_block
-        xor     eax, eax
-        dec     eax
- .root.next_key:
-DEBUGF 1,".root.next_key\n"
-        cmp     [ebp + XFS.bytes_to_read], 0
-        je      .quit
-        inc     eax
-        cmp     eax, edx        ; out of keys?
-        ja      .root.key_found ; there is no length field, so try the last key
-        lea     edi, [ebx + sizeof.xfs_bmbt_key*eax + 0]
-        lea     esi, [ebx + sizeof.xfs_bmbt_key*eax + 4]
-        bswap   edi
-        bswap   esi
-        mov     ecx, [ebp + XFS.blocklog]
-        shld    edi, esi, cl
-        shl     esi, cl
-        cmp     edi, dword[ebp + XFS.file_offset + 4]
-        ja      .root.prev_or_hole
-        jb      .root.next_key
-        cmp     esi, dword[ebp + XFS.file_offset + 0]
-        ja      .root.prev_or_hole
-        jb      .root.next_key
-        jmp     .root.key_found
-  .root.prev_or_hole:
-DEBUGF 1,".root.prev_or_hole\n"
-        test    eax, eax
-        jz      .root.hole
-        dec     eax
-        jmp     .root.key_found
-  .root.hole:
-DEBUGF 1,".root.hole\n"
-        push    eax edx esi edi
-        mov     ecx, [ebp + XFS.blocklog]
-        shld    edi, esi, cl
-        shl     esi, cl
-        sub     esi, dword[ebp + XFS.file_offset + 0]
-        sbb     edi, dword[ebp + XFS.file_offset + 4]
-        mov     ecx, [ebp + XFS.bytes_to_read]
-        cmp     edi, 0  ; hole size >= 2^32
-        jne     @f
-        cmp     ecx, esi
-        jbe     @f
-        mov     ecx, esi
-    @@:
-        add     dword[ebp + XFS.file_offset + 0], ecx
-        adc     dword[ebp + XFS.file_offset + 4], 0
-        sub     [ebp + XFS.bytes_to_read], ecx
-        xor     eax, eax
-        mov     edi, [ebp + XFS.buffer_pos]
-        rep stosb
-        mov     [ebp + XFS.buffer_pos], edi
-        pop     edi esi edx eax
-        jmp     .root.next_key
-  .root.key_found:
-DEBUGF 1,".root.key_found\n"
-        mov     edx, [ebp + XFS.cur_inode_save]
-        mov     eax, [ebp + XFS.inodesize]
-        sub     eax, xfs_inode.di_u
-        cmp     [edx + xfs_inode.di_core.di_forkoff], 0
-        je      @f
-        movzx   eax, [edx + xfs_inode.di_core.di_forkoff]
-        shl     eax, XFS_DIR2_DATA_ALIGN_LOG    ; 3
-    @@:
-        sub     eax, sizeof.xfs_bmdr_block
-        shr     eax, 4  ;log2(sizeof.xfs_bmbt_key + sizeof.xfs_bmdr_ptr)
-        mov     edx, [ebx + sizeof.xfs_bmbt_key*eax + 0]        ; hi
-        mov     eax, [ebx + sizeof.xfs_bmbt_key*eax + 4]        ; hi
-        bswap   edx
-        bswap   eax
-        stdcall xfs_btree_read, eax, edx, 0
+proc xfs._.extent_iterate_dirblocks _callback, _callback_data
+.check_high:
+        cmp     edi, [ebp+XFS.offset_end.hi]
+        ja      .quit
+        jb      .read_dirblock
+        cmp     esi, [ebp+XFS.offset_end.lo]
+        jae     .quit
+.read_dirblock:
+        stdcall xfs._.read_dirblock, [ebp+XFS.extent.br_startblock.lo], [ebp+XFS.extent.br_startblock.hi], [ebp+XFS.cur_dirblock]
+        mov     edx, [ebp+XFS.cur_dirblock]
+        mov     eax, [_callback]
+        stdcall eax, edx, esi, edi, [_callback_data]
         test    eax, eax
         jnz     .error
-        jmp     .root.next_key
+        mov     eax, [ebp+XFS.blkpdirblk]
+        add     esi, eax
+        adc     edi, 0
+        add     [ebp+XFS.extent.br_startblock.lo], eax
+        adc     [ebp+XFS.extent.br_startblock.hi], 0
+        sub     [ebp+XFS.extent.br_blockcount], eax
+        jnz     .check_high
+.error:
+.quit:
+        ret
+endp
 
-  .not_root:
-DEBUGF 1,".root.not_root\n"
-        mov     eax, [esp + 24] ; block_lo
-        mov     edx, [esp + 28] ; block_hi
-        mov     ebx, [ebp + XFS.cur_block]
-        stdcall xfs_read_block
-        test    eax, eax
+
+proc xfs._.walk_extent_list uses ebx esi edi, _count, _ptr, _callback_extent, _callback_block, _callback_data
+        mov     ebx, [_ptr]
+        stdcall xfs._.extent_list.seek, [_count]
+        mov     [_count], eax
+        dec     [_count]
+        js      .quit
+        jmp     .next_extent.decoded
+.next_extent:
+        stdcall xfs._.extent_unpack, ebx
+        add     ebx, sizeof.xfs_bmbt_rec
+.next_extent.decoded:
+        mov     eax, [ebp+XFS.extent.br_blockcount]
+        add     [ebp+XFS.offset_begin.lo], eax
+        adc     [ebp+XFS.offset_begin.hi], 0
+        mov     esi, [ebp+XFS.extent.br_startoff.lo]
+        mov     edi, [ebp+XFS.extent.br_startoff.hi]
+        stdcall [_callback_extent+8], [_callback_block+4], [_callback_data]
         jnz     .error
-        mov     ebx, [ebp + XFS.cur_block]
+        cmp     edi, [ebp+XFS.offset_end.hi]
+        ja      .quit
+        jb      @f
+        cmp     esi, [ebp+XFS.offset_end.lo]
+        jae     .quit
+@@:
+        dec     [_count]
+        js      .quit
+        jmp     .next_extent
+.quit:
+        movi    eax, ERROR_SUCCESS
+.error:
+        test    eax, eax
+        ret
+endp
 
-        cmp     [ebx + xfs_bmbt_block.bb_magic], XFS_BMAP_MAGIC
-        jne     .error
-        cmp     [ebx + xfs_bmbt_block.bb_level], 0      ; leaf?
-        je      .leaf
-        jmp     .node
 
-  .node:
-;        mov     eax, [ebp + XFS.blocksize]
-;        sub     eax, sizeof.xfs_bmbt_block
-;        shr     eax, 4  ; maxnumrecs
-        mov     eax, dword[ebp + XFS.file_offset + 0]   ; lo
-        mov     edx, dword[ebp + XFS.file_offset + 4]   ; hi
-        movzx   edx, [ebx + xfs_bmbt_block.bb_numrecs]
-        xchg    dl, dh
-        dec     edx
-        add     ebx, sizeof.xfs_bmbt_block
-        xor     eax, eax
+proc xfs._.get_last_dirblock uses ecx
+        movbe   eax, [ebx+xfs_inode.di_core.di_nextents]
+assert (sizeof.xfs_bmbt_rec AND (sizeof.xfs_bmbt_rec - 1)) = 0
+        shl     eax, BSF sizeof.xfs_bmbt_rec
+        add     eax, [ebp+XFS.inode_core_size]
+        lea     eax, [ebx+eax-sizeof.xfs_bmbt_rec]
+        stdcall xfs._.extent_unpack, eax
+        xor     edx, edx
+        mov     eax, [ebp+XFS.extent.br_blockcount]
+        mov     ecx, [ebp+XFS.dirblklog]
+        shr     eax, cl
         dec     eax
-  .node.next_key:
-        push    eax ecx edx esi edi
-        mov     eax, [esp + 44] ; block_lo
-        mov     edx, [esp + 48] ; block_hi
-        mov     ebx, [ebp + XFS.cur_block]
-        stdcall xfs_read_block
-        test    eax, eax
-        jnz     .error
-        mov     ebx, [ebp + XFS.cur_block]
-        add     ebx, sizeof.xfs_bmbt_block
-        pop     edi esi edx ecx eax
-        cmp     [ebp + XFS.bytes_to_read], 0
-        je      .quit
-        inc     eax
-        cmp     eax, edx        ; out of keys?
-        ja      .node.key_found ; there is no length field, so try the last key
-        lea     edi, [ebx + sizeof.xfs_bmbt_key*eax + 0]
-        lea     esi, [ebx + sizeof.xfs_bmbt_key*eax + 4]
-        bswap   edi
-        bswap   esi
-        mov     ecx, [ebp + XFS.blocklog]
-        shld    edi, esi, cl
-        shl     esi, cl
-        cmp     edi, dword[ebp + XFS.file_offset + 4]
-        ja      .node.prev_or_hole
-        jb      .node.next_key
-        cmp     esi, dword[ebp + XFS.file_offset + 0]
-        ja      .node.prev_or_hole
-        jb      .node.next_key
-        jmp     .node.key_found
-  .node.prev_or_hole:
-        test    eax, eax
-        jz      .node.hole
-        dec     eax
-        jmp     .node.key_found
-  .node.hole:
-        push    eax edx esi edi
-        mov     ecx, [ebp + XFS.blocklog]
-        shld    edi, esi, cl
-        shl     esi, cl
-        sub     esi, dword[ebp + XFS.file_offset + 0]
-        sbb     edi, dword[ebp + XFS.file_offset + 4]
-        mov     ecx, [ebp + XFS.bytes_to_read]
-        cmp     edi, 0  ; hole size >= 2^32
-        jne     @f
-        cmp     ecx, esi
-        jbe     @f
-        mov     ecx, esi
-    @@:
-        add     dword[ebp + XFS.file_offset + 0], ecx
-        adc     dword[ebp + XFS.file_offset + 4], 0
-        sub     [ebp + XFS.bytes_to_read], ecx
-        xor     eax, eax
-        mov     edi, [ebp + XFS.buffer_pos]
-        rep stosb
-        mov     [ebp + XFS.buffer_pos], edi
-        pop     edi esi edx eax
-        jmp     .node.next_key
-  .node.key_found:
-        mov     edx, [ebp + XFS.cur_inode_save]
-        mov     eax, [ebp + XFS.inodesize]
-        sub     eax, xfs_inode.di_u
-        cmp     [edx + xfs_inode.di_core.di_forkoff], 0
-        je      @f
-        movzx   eax, [edx + xfs_inode.di_core.di_forkoff]
-        shl     eax, XFS_DIR2_DATA_ALIGN_LOG    ; 3
-    @@:
-        sub     eax, sizeof.xfs_bmdr_block
-        shr     eax, 4  ;log2(sizeof.xfs_bmbt_key + sizeof.xfs_bmdr_ptr)
-        mov     edx, [ebx + sizeof.xfs_bmbt_key*eax + 0]        ; hi
-        mov     eax, [ebx + sizeof.xfs_bmbt_key*eax + 4]        ; hi
-        bswap   edx
-        bswap   eax
-        stdcall xfs_btree_read, eax, edx, 0
-        test    eax, eax
-        jnz     .error
-        jmp     .node.next_key
-        jmp     .quit
-
-  .leaf:
-
-        jmp     .quit
-
-  .error:
-        pop     edi esi edx ecx ebx
-        movi    eax, ERROR_FS_FAIL
-        ret     4
-  .quit:
-        pop     edi esi edx ecx ebx
-        xor     eax, eax
-        ret     4
+        add     eax, [ebp+XFS.extent.br_startoff.lo]
+        adc     edx, [ebp+XFS.extent.br_startoff.hi]
+        ret
+endp
 
 
-;----------------------------------------------------------------
-; push  nextents
-; push  extent_list
-; push  file_offset_hi
-; push  file_offset_lo
-;----------------------------------------------------------------
-;xfs_extent_list_read:
-;        push    ebx 0 edx esi edi       ; zero means actually_read_bytes
-;
-;  .quit:
-;        pop     edi esi edx ecx ebx
-;        xor     eax, eax
-;        ret     24
-;  .error:
-;        pop     edi esi edx ecx ebx
-;        ret     24
+restore prologue@proc,epilogue@proc
+restore movbe

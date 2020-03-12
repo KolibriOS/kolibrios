@@ -68,6 +68,7 @@ include "fs/fs_lfn.inc"         ; sysfunction 70
 include "network/stack.inc"
 
 include "crc.inc"               ; checksums
+include "unicode.inc"
 
 ; include "imports.inc"
 ; include "core/ext_lib.inc"

@@ -692,8 +692,4 @@ include "iso9660.inc"   ; read for CD filesystem
 include "fat.inc"
 include "ntfs.inc"
 include "ext.inc"
-; include "xfs.asm"
-
-xfs_create_partition:
-        xor     eax, eax
-        ret
+include "xfs.asm"
