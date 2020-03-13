@@ -137,6 +137,7 @@ CTRL_ATI_RV710		 equ  0xaa40
 CTRL_ATI_RV740		 equ  0xaa48
 ; AMD
 CTRL_AMD_HUDSON 	 equ  0x780d
+CTRL_AMD_RAVEN_RIDGE	 equ  0x15e3
 ; VIA
 CTRL_VIA_VT82XX 	 equ  0x3288
 CTRL_VIA_VT61XX 	 equ  0x9140
@@ -1131,9 +1132,11 @@ align 4
 proc init_controller
 
 	invoke	PciRead32, [ctrl.bus], [ctrl.devfn], dword 4
-	test	eax, 0x4 ; Test Master bit
-	jnz	@f
-	or	eax, 0x4 ; Set Master bit
+	movi	ebx, 0x6
+	and	ebx, eax
+	cmp	ebx, 0x6 ; Test Master and Memory bits
+	jz	@f
+	or	eax, 0x6 ; Set Master and Memory bits
 	invoke	PciWrite32, [ctrl.bus], [ctrl.devfn], dword 4, eax
 	invoke	PciRead32, [ctrl.bus], [ctrl.devfn], dword 4
 @@:
@@ -2816,6 +2819,7 @@ devices:
 	dd (CTRL_ATI_RV770  shl 16)+VID_ATI,msg_ATI_RV770,		   AZX_DRIVER_ATIHDMI
 ; AMD
 	dd (CTRL_AMD_HUDSON shl 16)+VID_AMD,msg_AMD_HUDSON,		   AZX_DRIVER_GENERIC
+	dd (CTRL_AMD_RAVEN_RIDGE shl 16)+VID_AMD,msg_AMD_RAVEN_RIDGE,	   AZX_DRIVER_GENERIC
 ; VIA
 	dd (CTRL_VIA_VT82XX shl 16)+VID_VIA,msg_VIA_VT82XX,		   AZX_DRIVER_VIA
 	dd (CTRL_VIA_VT61XX shl 16)+VID_VIA,msg_VIA_VT61XX,		   AZX_DRIVER_GENERIC
@@ -2912,6 +2916,7 @@ msg_ATI_RV770	     db 'RV770',      13,10,0
 
 msg_AMD 	     db 'AMD ',0
 msg_AMD_HUDSON	     db 'Hudson',     13,10,0
+msg_AMD_RAVEN_RIDGE  db 'RavenRidge', 13,10,0
 
 msg_VIA 	     db 'VIA ',0
 msg_VIA_VT82XX	     db 'VT8251/8237A',     13,10,0
