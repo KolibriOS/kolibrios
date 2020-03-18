@@ -7,7 +7,7 @@
 #endif
 
 //libraries
-#define MEMSIZE 4096 * 200
+#define MEMSIZE 1024 * 800
 #include "..\lib\gui.h"
 #include "..\lib\draw_buf.h"
 #include "..\lib\list_box.h"
@@ -31,7 +31,7 @@ _http http = {0, 0, 0, 0, 0, 0, 0};
 char homepage[] = FROM "html\\homepage.htm""\0";
 
 #ifdef LANG_RUS
-char version[]="Текстовый браузер 1.8d";
+char version[]="Текстовый браузер 1.82";
 ?define IMAGES_CACHE_CLEARED "Кэш картинок очищен"
 ?define T_LAST_SLIDE "Это последний слайд"
 char loading[] = "Загрузка страницы...<br>";
@@ -46,7 +46,7 @@ char link_menu[] =
 "Копировать ссылку
 Скачать содержимое ссылки";
 #else
-char version[]="Text-based Browser 1.8d";
+char version[]="Text-based Browser 1.82";
 ?define IMAGES_CACHE_CLEARED "Images cache cleared"
 ?define T_LAST_SLIDE "This slide is the last"
 char loading[] = "Loading...<br>";
@@ -242,7 +242,7 @@ void SetElementSizes()
 	WB1.list.column_max = WB1.list.w - scroll_wv.size_x / WB1.list.font_w;
 	WB1.list.visible = WB1.list.h;
 	if (WB1.list.w!=WB1.DrawBuf.bufw) {
-		WB1.DrawBuf.Init(WB1.list.x, WB1.list.y, WB1.list.w, 32700);
+		WB1.DrawBuf.Init(WB1.list.x, WB1.list.y, WB1.list.w, 800*20);
 		ProcessEvent(REFRESH_BUTTON);
 	}
 }
@@ -524,13 +524,16 @@ void ClickLink()
 	{
 		if (URL[1] == NULL) {
 			WB1.list.first = 0;
-			strcpy(#URL, history.current());
 		}
 		else {
-			strlcpy(#anchor, #URL+strrchr(#URL, '#'), sizeof(anchor));
-			strcpy(#URL, history.current());
+			if (anchors.get_anchor_pos(#URL+1)!=-1) WB1.list.first = anchors.get_anchor_pos(#URL+1);
 		}
-		ShowPage();			
+		strlcpy(#anchor, #URL, sizeof(anchor));
+		strcpy(#URL, history.current());
+		strcpy(#editURL, #URL);
+		strcat(#editURL, #anchor);
+		DrawEditBoxWebView();
+		WB1.DrawPage();
 		return;
 	}
 	//liner.ru#1

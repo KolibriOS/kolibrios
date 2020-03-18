@@ -50,7 +50,6 @@ dword bg_color;
 int draw_y;
 int stolbec;
 int tab_len;
-int anchor_y;
 
 int body_magrin=5;
 int basic_line_h=22;
@@ -66,6 +65,7 @@ char val[4096];
 
 #include "..\TWB\absolute_url.h"
 #include "..\TWB\links.h"
+#include "..\TWB\anchors.h"
 #include "..\TWB\colors.h"
 #include "..\TWB\unicode_tags.h"
 #include "..\TWB\img_cache.h"
@@ -91,8 +91,8 @@ void TWebBrowser::DrawStyle()
 		stolbec_len = strlen(#line) * zoom;
 		line_length = stolbec_len * list.font_w;
 
-		WriteBufText(start_x, draw_y, list.font_type, text_colors[text_color_index], #line, buf_data);
-		if (style.b) WriteBufText(start_x+1, draw_y, list.font_type, text_colors[text_color_index], #line, buf_data);
+		DrawBuf.WriteText(start_x, draw_y, list.font_type, text_colors[text_color_index], #line);
+		if (style.b) DrawBuf.WriteText(start_x+1, draw_y, list.font_type, text_colors[text_color_index], #line);
 		if (style.s) DrawBuf.DrawBar(start_x, list.item_h / 2 - zoom + draw_y, line_length, zoom, text_colors[text_color_index]);
 		if (style.u) DrawBuf.DrawBar(start_x, list.item_h - zoom - zoom + draw_y, line_length, zoom, text_colors[text_color_index]);
 		if (link) {
@@ -121,7 +121,7 @@ void TWebBrowser::Prepare(){
 	link_color_inactive = 0x0000FF;
 	link_color_active = 0xFF0000;
 	bg_color = 0xFFFFFF;
-	DrawBuf.Fill(bg_color);
+	DrawBuf.Fill(0, bg_color);
 	PageLinks.Clear();
 	strcpy(#header, #version);
 	draw_y = body_magrin;
@@ -275,9 +275,9 @@ void TWebBrowser::SetStyle() {
 		if (!opened) strcat(#line, "\" ");
 		return;
 	}
-	//if (isattr("id=")) || (isattr("name=")) { //very bad: if the tag is not the last it wound work
-		//add anchor
-	//}	
+	if (isattr("id=")) || (isattr("name=")) { // TO FIX: works only if the param is the last
+		anchors.add(#val, draw_y);
+	}	
 	if (istag("body")) {
 		t_body = opened;
 		do{
@@ -287,7 +287,7 @@ void TWebBrowser::SetStyle() {
 			if (isattr("bgcolor="))
 			{
 				bg_color = GetColor(#val);
-				DrawBuf.Fill(bg_color);
+				DrawBuf.Fill(0, bg_color);
 			}
 		} while(GetNextParam());
 		if (opened) && (cur_encoding==CH_NULL) {

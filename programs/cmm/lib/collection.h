@@ -16,7 +16,8 @@ struct collection
 	dword element_offset[4000];
 	int add();
 	int addn();
-	dword get();
+	dword get(); //get_name_by_pos
+	dword get_pos_by_name();
 	void drop();
 	void increase_data_size();
 };
@@ -54,6 +55,14 @@ struct collection
 :dword collection::get(dword pos) {
 	if (pos<0) || (pos>=count) return 0;
 	return data_start + element_offset[pos];
+}
+
+:dword collection::get_pos_by_name(dword name) {
+	dword i;
+	for (i=0; i<count; i++) {
+		if (strcmp(data_start + element_offset[i], name)==0) return i;
+	}
+	return -1;
 }
 
 :void collection::drop() {
