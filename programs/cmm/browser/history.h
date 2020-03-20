@@ -7,16 +7,16 @@ ShowHistory()
 		free(history_pointer);
 		history_pointer = malloc(history.items.data_size+256);
 		strcat(history_pointer, "<html><head><title>History</title></head><body><h1>History</h1>");
-		strcat(history_pointer, "<h2>Visited pages</h2><blockquote><br>");
+		strcat(history_pointer, "<br><b>Visited pages</b><br>");
 		for (i=0; i<history.items.count; i++)
 		{
-			strcat(history_pointer, " <a href='");
+			strcat(history_pointer, "&nbsp; <a href='");
 			strcat(history_pointer, history.items.get(i));
 			strcat(history_pointer, "'>");
 			strcat(history_pointer, history.items.get(i));
 			strcat(history_pointer, "</a><br>");
 		}
-		strcat(history_pointer, "</blockquote><h2>Cached images</h2>");
+		strcat(history_pointer, "<br><b>Cached images</b>");
 		for (i=1; i<ImgCache.pics_count; i++)
 		{
 			strcat(history_pointer, "<img src='");

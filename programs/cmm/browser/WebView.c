@@ -1,5 +1,5 @@
 //HTML Viewer in C--
-//Copyright 2007-2019 by Veliant & Leency
+//Copyright 2007-2020 by Veliant & Leency
 //Asper, lev, Lrz, Barsuk, Nable, hidnplayr...
 
 #ifndef AUTOBUILD
@@ -31,7 +31,7 @@ _http http = {0, 0, 0, 0, 0, 0, 0};
 char homepage[] = FROM "html\\homepage.htm""\0";
 
 #ifdef LANG_RUS
-char version[]="Текстовый браузер 1.82";
+char version[]="Текстовый браузер 1.83";
 ?define IMAGES_CACHE_CLEARED "Кэш картинок очищен"
 ?define T_LAST_SLIDE "Это последний слайд"
 char loading[] = "Загрузка страницы...<br>";
@@ -46,7 +46,7 @@ char link_menu[] =
 "Копировать ссылку
 Скачать содержимое ссылки";
 #else
-char version[]="Text-based Browser 1.82";
+char version[]="Text-based Browser 1.83";
 ?define IMAGES_CACHE_CLEARED "Images cache cleared"
 ?define T_LAST_SLIDE "This slide is the last"
 char loading[] = "Loading...<br>";
@@ -426,6 +426,7 @@ void OpenPage()
 		SetPageDefaults();
 		if (!strcmp(#URL, URL_SERVICE_HOME)) WB1.LoadInternalPage(#homepage, sizeof(homepage));
 		else if (!strcmp(#URL, URL_SERVICE_HISTORY)) ShowHistory();
+		else {bufsize=0; ShowPage();} //page not found
 		DrawEditBoxWebView();
 		return;
 	}
@@ -454,9 +455,9 @@ void OpenPage()
 	else
 	{
 		file_size stdcall (#URL);
-		bufsize = EBX;
-		if (bufsize)
+		if (EBX)
 		{
+			bufsize = EBX;
 			free(bufpointer);
 			bufpointer = malloc(bufsize);
 			SetPageDefaults();
@@ -509,8 +510,9 @@ void DrawProgress()
 }
 
 
-char anchor[256];
 void ClickLink()
+char anchor[256];
+int anchor_pos;
 {
 	if (http.transfer > 0) 
 	{
@@ -537,10 +539,17 @@ void ClickLink()
 		return;
 	}
 	//liner.ru#1
-	if (strrchr(#URL, '#')!=0)
+	else if (strrchr(#URL, '#')!=0)
 	{
-		strlcpy(#anchor, #URL+strrchr(#URL, '#'), sizeof(anchor));
-		URL[strrchr(#URL, '#')-1] = 0x00;
+		anchor_pos = strrchr(#URL, '#')-1;
+		strlcpy(#anchor, #URL+anchor_pos, sizeof(anchor));
+		URL[anchor_pos] = 0x00;
+		OpenPage();
+		strcat(#editURL, #anchor);
+		DrawEditBoxWebView();
+		if (anchors.get_anchor_pos(#anchor+1)!=-1) WB1.list.first = anchors.get_anchor_pos(#anchor+1);
+		WB1.DrawPage();
+		return;
 	}
 
 	if (!strncmp(#URL,"mailto:", 7))

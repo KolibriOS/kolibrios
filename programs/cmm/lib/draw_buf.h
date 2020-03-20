@@ -65,15 +65,31 @@ void DrawBufer::DrawBar(dword x, y, w, h, color)
 	}
 }
 
-void DrawBuf_WriteText(dword x, y, byte fontType, dword color, str_offset)
-{
-	EDI = buf_data;
-	WriteText(x, y, fontType, color, str_offset);
-}
 void DrawBufer::WriteText(dword x, y, byte fontType, dword color, str_offset)
 {
+	#define BUGFIX_32000 32000
+	int ydiv=0;
+	dword reserve_data_1, reserve_data_2;
+	dword new_buf_offset;
 	if (y + 30 >= bufh) IncreaseBufSize();
-	DrawBuf_WriteText(x, y, fontType, color, str_offset);
+	if (y < BUGFIX_32000) {
+		WriteBufText(x, y, fontType, color, str_offset, buf_data);
+	}
+	else {
+		ydiv = y / BUGFIX_32000 * BUGFIX_32000;
+		y -= ydiv;
+		new_buf_offset = ydiv * bufw * 4 + buf_data;
+
+		reserve_data_1 = ESDWORD[new_buf_offset];
+		reserve_data_2 = ESDWORD[new_buf_offset+4];
+
+		ESDWORD[new_buf_offset] = bufw;
+		ESDWORD[new_buf_offset+4] = bufh - y;
+		WriteBufText(x, y, fontType, color, str_offset, new_buf_offset);
+
+		ESDWORD[new_buf_offset] = reserve_data_1;
+		ESDWORD[new_buf_offset+4] = reserve_data_2;
+	}
 }
 
 void DrawBufer::PutPixel(dword x, y, color)
