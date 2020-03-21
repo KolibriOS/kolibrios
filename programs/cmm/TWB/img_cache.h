@@ -67,8 +67,8 @@ void ImageCache::Images(dword left1, top1, width1)
 	if (imgh<=0) return;
 	
 	img_draw stdcall (pics[cur_pic].image, left1-5, top1, imgw, imgh,0,img_lines_first);
-	DrawBar(left1+imgw - 5, top1, WB1.list.w-imgw, imgh, bg_color);
-	DrawBar(WB1.list.x, top1+imgh, WB1.list.w, -imgh % WB1.list.item_h + WB1.list.item_h, bg_color);
+	DrawBar(left1+imgw - 5, top1, WB1.list.w-imgw, imgh, page_bg);
+	DrawBar(WB1.list.x, top1+imgh, WB1.list.w, -imgh % WB1.list.item_h + WB1.list.item_h, page_bg);
 	if (link)
 	{
 		//UnsafeDefineButton(left1 - 5, top1, imgw, imgh-1, PageLinks.count + 400 + BT_HIDE, 0xB5BFC9);

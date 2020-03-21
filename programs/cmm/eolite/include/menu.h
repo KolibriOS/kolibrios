@@ -3,8 +3,6 @@
 char *file_captions[] = {
 	"Открыть",               "Enter",100,
 	"Открыть с помощью...",  "CrlEnt",201,
-	"Открыть как текст",     "F3",202,
-	"Открыть как HEX",       "F4",203,
 	"Копировать",            "Crl+C",104,
 	"Вырезать",              "Crl+X",105,
 	"Вставить",              "Crl+V",106,
@@ -17,8 +15,6 @@ char *file_captions[] = {
 char *file_captions[] = {
 	"Ava",            "Enter",100,
 	"Ava ...",        "CrlEnt",201,
-	"Vaata tekstina", "F3",202,
-	"Vaata HEX",      "F4",203,
 	"Kopeeri",        "Crl+C",104,
 	"Lїika",          "Crl+X",105,
 	"Aseta",          "Crl+V",106,
@@ -31,8 +27,6 @@ char *file_captions[] = {
 char *file_captions[] = {
 	"Open",          "Enter",100,
 	"Open with...",  "CrlEnt",201,
-	"View as text",  "F3",202,
-	"View as HEX",   "F4",203,
 	"Copy",          "Crl+C",104,
 	"Cut",           "Crl+X",105,
 	"Paste",         "Crl+V",106,

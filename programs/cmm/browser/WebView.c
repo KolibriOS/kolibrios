@@ -28,14 +28,15 @@
 
 _http http = {0, 0, 0, 0, 0, 0, 0};
 
-char homepage[] = FROM "html\\homepage.htm""\0";
 
 #ifdef LANG_RUS
-char version[]="Текстовый браузер 1.84";
+char version[]="Текстовый браузер 1.85";
 ?define IMAGES_CACHE_CLEARED "Кэш картинок очищен"
 ?define T_LAST_SLIDE "Это последний слайд"
 char loading[] = "Загрузка страницы...<br>";
 char page_not_found[] = FROM "html\\page_not_found_ru.htm""\0";
+char homepage[] = FROM "html\\homepage_ru.htm""\0";
+char help[] = FROM "html\\help_ru.htm""\0";
 char accept_language[]= "Accept-Language: ru\n";
 char rmb_menu[] = 
 "Посмотреть исходник
@@ -46,11 +47,13 @@ char link_menu[] =
 "Копировать ссылку
 Скачать содержимое ссылки";
 #else
-char version[]="Text-based Browser 1.84";
+char version[]="Text-based Browser 1.85";
 ?define IMAGES_CACHE_CLEARED "Images cache cleared"
 ?define T_LAST_SLIDE "This slide is the last"
 char loading[] = "Loading...<br>";
 char page_not_found[] = FROM "html\\page_not_found_en.htm""\0";
+char homepage[] = FROM "html\\homepage_en.htm""\0";
+char help[] = FROM "html\\help_en.htm""\0";
 char accept_language[]= "Accept-Language: en\n";
 char rmb_menu[] =
 "View source
@@ -64,7 +67,8 @@ Download link contents";
 
 
 #define URL_SERVICE_HISTORY "WebView://history"
-#define URL_SERVICE_HOME "WebView://home"
+#define URL_SERVICE_HOMEPAGE "WebView://home"
+#define URL_SERVICE_HELP "WebView://help"
 #define URL_SERVICE_SOURCE "WebView://source:"
 
 proc_info Form;
@@ -132,7 +136,7 @@ void main()
 		CreateThread(#Downloader,#downloader_stak+4092);
 		ExitProcess();
 	}
-	else if (param) strcpy(#URL, #param); else strcpy(#URL, URL_SERVICE_HOME);
+	else if (param) strcpy(#URL, #param); else strcpy(#URL, URL_SERVICE_HOMEPAGE);
 	WB1.list.SetFont(8, 14, 10011000b);
 	WB1.list.no_selection = true;
 	SetEventMask(EVM_REDRAW + EVM_KEY + EVM_BUTTON + EVM_MOUSE + EVM_MOUSE_FILTER + EVM_STACK);
@@ -169,7 +173,14 @@ void main()
 				|| (key_scancode == SCAN_CODE_KEY_N) RunProgram(#program_path, NULL);
 				if (key_scancode == SCAN_CODE_KEY_W) ExitProcess();
 				if (key_scancode == SCAN_CODE_KEY_J) ProcessEvent(DOWNLOAD_MANAGER);
+				if (key_scancode == SCAN_CODE_KEY_R) ProcessEvent(REFRESH_BUTTON);
+				if (key_scancode == SCAN_CODE_ENTER) EventSeachWeb();
+				if (key_scancode == SCAN_CODE_LEFT)  ProcessEvent(BACK_BUTTON);
+				if (key_scancode == SCAN_CODE_RIGHT) ProcessEvent(FORWARD_BUTTON);
 			}
+			
+			if (key_scancode == SCAN_CODE_F5) ProcessEvent(REFRESH_BUTTON);
+			
 			if (address_box.flags & ed_focus)  
 			{
 				if (key_scancode == SCAN_CODE_ENTER) {
@@ -185,6 +196,7 @@ void main()
 				#define KEY_SCROLL_N 11
 				if (SCAN_CODE_UP   == key_scancode) for (i=0;i<KEY_SCROLL_N;i++) WB1.list.KeyUp();
 				if (SCAN_CODE_DOWN == key_scancode) for (i=0;i<KEY_SCROLL_N;i++) WB1.list.KeyDown();
+				if (key_scancode == SCAN_CODE_F6) {address_box.flags=ed_focus; DrawOmnibox();}
 				if (WB1.list.ProcessKey(key_scancode)) WB1.DrawPage();
 				else ProcessEvent(key_scancode);
 			}
@@ -224,7 +236,7 @@ void main()
 							GetAbsoluteURL(#http.redirect_url);
 							history.back();
 							strcpy(#editURL, #URL);
-							DrawEditBoxWebView();
+							DrawOmnibox();
 							OpenPage();
 							//ProcessLink(history.current());
 						}
@@ -280,7 +292,7 @@ void Draw_Window()
 		OpenPage(); 
 	else { 
 		WB1.DrawPage(); 
-		DrawEditBoxWebView(); 
+		DrawOmnibox(); 
 	}
 	DrawRectangle(scroll_wv.start_x, scroll_wv.start_y, scroll_wv.size_x, scroll_wv.size_y-1, scroll_wv.bckg_col);
 	DrawProgress();
@@ -388,7 +400,7 @@ void StopLoading()
 		bufpointer = free(bufpointer);
 	}
 	wv_progress_bar.value = 0;
-	DrawEditBoxWebView();
+	DrawOmnibox();
 }
 
 void SetPageDefaults()
@@ -423,10 +435,11 @@ void OpenPage()
 	if (!strncmp(#URL,"WebView:",8))
 	{
 		SetPageDefaults();
-		if (!strcmp(#URL, URL_SERVICE_HOME)) WB1.LoadInternalPage(#homepage, sizeof(homepage));
+		if (!strcmp(#URL, URL_SERVICE_HOMEPAGE)) WB1.LoadInternalPage(#homepage, sizeof(homepage));
+		else if (!strcmp(#URL, URL_SERVICE_HELP)) WB1.LoadInternalPage(#help, sizeof(help));
 		else if (!strcmp(#URL, URL_SERVICE_HISTORY)) ShowHistory();
 		else {bufsize=0; ShowPage();} //page not found
-		DrawEditBoxWebView();
+		DrawOmnibox();
 		return;
 	}
 	if (!strncmp(#URL,"http:",5)) || (!strncmp(#URL,"https://",8)) 
@@ -497,7 +510,7 @@ void ProcessAnchor()
 	WB1.DrawPage();
 	strcpy(#editURL, #URL);
 	strcat(#editURL, #anchor);
-	DrawEditBoxWebView();
+	DrawOmnibox();
 }
 
 void EventSubmitOmnibox()
@@ -593,7 +606,7 @@ void ProcessLink()
 	open_in_a_new_window = false;
 }
 
-void DrawEditBoxWebView()
+void DrawOmnibox()
 {
 	int skin_x_offset;
 	DrawBar(address_box.left-2, address_box.top-2, address_box.width+3, 2, address_box.color);
@@ -609,7 +622,7 @@ void DrawEditBoxWebView()
 
 void ShowPage()
 {
-	DrawEditBoxWebView();
+	DrawOmnibox();
 	if (!bufsize)
 	{
 		if (http.transfer) WB1.LoadInternalPage(#loading, sizeof(loading));
@@ -653,6 +666,12 @@ void EventUpdateProgressBar()
 		wv_progress_bar.value = http.content_received;	
 		DrawProgress();
 	}
+}
+
+void EventSeachWeb()
+{
+	sprintf(#URL, "https://www.google.com/search?q=%s", #editURL);
+	ProcessLink();
 }
 
 void DrawStatusBar(dword _status_text)

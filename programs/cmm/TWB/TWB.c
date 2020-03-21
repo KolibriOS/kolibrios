@@ -13,6 +13,8 @@ bool
 	button,
 	image,
 	align;
+dword 
+	bg_color;
 };
 
 struct TWebBrowser {
@@ -47,7 +49,7 @@ dword text_colors[300];
 dword text_color_index;
 dword link_color_inactive;
 dword link_color_active;
-dword bg_color;
+dword page_bg;
 
 int draw_y;
 int stolbec;
@@ -93,8 +95,12 @@ void TWebBrowser::DrawStyle()
 		stolbec_len = strlen(#line) * zoom;
 		line_length = stolbec_len * list.font_w;
 
+		if (style.bg_color!=page_bg) {
+			DrawBuf.DrawBar(start_x, draw_y, line_length, list.item_h-1, style.bg_color);
+		}
+
 		if (style.image) {
-			DrawBuf.DrawBar(start_x, draw_y, line_length, list.item_h, 0xF9DBCB);
+			DrawBuf.DrawBar(start_x, draw_y, line_length, list.item_h-1, 0xF9DBCB);
 		}
 		if (style.button) {
 			DrawBuf.DrawBar(start_x, draw_y, line_length, list.item_h - calc(zoom*2), 0xCCCccc);
@@ -130,8 +136,9 @@ void TWebBrowser::Prepare(){
 	style.align = ALIGN_LEFT;
 	link_color_inactive = 0x0000FF;
 	link_color_active = 0xFF0000;
-	bg_color = 0xFFFFFF;
-	DrawBuf.Fill(0, bg_color);
+	page_bg = 0xFFFFFF;
+	style.bg_color = page_bg;
+	DrawBuf.Fill(0, page_bg);
 	PageLinks.Clear();
 	strcpy(#header, #version);
 	draw_y = body_magrin;
@@ -300,8 +307,8 @@ void TWebBrowser::SetStyle() {
 			if (isattr("text=")) text_colors[0]=GetColor(#val);
 			if (isattr("bgcolor="))
 			{
-				bg_color = GetColor(#val);
-				DrawBuf.Fill(0, bg_color);
+				style.bg_color = page_bg = GetColor(#val);
+				DrawBuf.Fill(0, page_bg);
 			}
 		} while(GetNextParam());
 		if (opened) && (cur_encoding==CH_NULL) {
@@ -340,12 +347,14 @@ void TWebBrowser::SetStyle() {
 		return;
 	}
 	if (istag("font")) {
+		style.bg_color = page_bg;
 		if (opened)
 		{
 			text_color_index++;
 			text_colors[text_color_index] = text_colors[text_color_index-1];
 			do{
 				if (isattr("color=")) text_colors[text_color_index] = GetColor(#val);
+				if (isattr("bg=")) style.bg_color = GetColor(#val);
 			} while(GetNextParam());
 		}
 		else if (text_color_index > 0) text_color_index--;
@@ -426,8 +435,9 @@ void TWebBrowser::SetStyle() {
 		if (opened)
 		{
 			NewLine();
+			stolbec = style.li_tab * 5 - 2;
 			strcpy(#line, "\31 ");
-			stolbec-=2;
+			//stolbec-=2;
 		}
 		return;
 	}

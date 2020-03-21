@@ -176,6 +176,7 @@ int check_is_the_url_absolute(dword _in)
 	if(!strncmp(_in,"mailto:",7)) return true;
 	if(!strncmp(_in,"tel:",4)) return true;
 	if(!strncmp(_in,"#",1)) return true;
+	if(!strncmp(_in,"WebView:",8)) return true;
 	if(check_is_the_adress_local(_in)) return true;
 	return false;
 }

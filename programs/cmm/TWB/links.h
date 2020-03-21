@@ -93,7 +93,7 @@ bool LinksArray::HoverAndProceed(dword mx, my)
 			if (links[active].underline) DrawBar(links[active].x, -WB1.list.first + links[active].y
 				+ links[active].h, links[active].w, links[active].underline_h, link_color_inactive);
 			if (links[i].underline) DrawBar(links[i].x, -WB1.list.first + links[i].y
-				+ links[i].h, links[i].w, links[i].underline_h, bg_color);
+				+ links[i].h, links[i].w, links[i].underline_h, page_bg);
 			active = i;
 			DrawStatusBar(links[active].link);
 			return true;
