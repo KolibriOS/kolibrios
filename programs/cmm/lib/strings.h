@@ -936,9 +936,4 @@ inline signed strcoll(dword text1,text2)
 	ESBYTE[in_str+length]=0;
 }
 
-
-#define strnmov strmovn
-#define stricmp strcmpi
-#define strcmpn strncmp
-
 #endif

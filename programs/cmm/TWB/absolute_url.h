@@ -12,7 +12,7 @@ void GetAbsoluteURL(dword in_URL)
 
 	if (check_is_the_url_absolute(in_URL)) return;
 
-	IF (!strcmpn(in_URL,"//", 2)) 
+	IF (!strncmp(in_URL,"//", 2)) 
 	{
 		//strcpy(#newurl, "http:");
 		//strcat(#newurl, in_URL);
@@ -21,7 +21,7 @@ void GetAbsoluteURL(dword in_URL)
 		return;
 	}
 	
-	IF (!strcmpn(in_URL,"./", 2)) in_URL+=2;
+	IF (!strncmp(in_URL,"./", 2)) in_URL+=2;
 	if (!http.transfer) 
 	{
 		strcpy(#newurl, history.current());

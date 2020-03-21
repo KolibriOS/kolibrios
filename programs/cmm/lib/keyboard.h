@@ -75,6 +75,7 @@
 #define SCAN_CODE_KEY_D 032
 #define SCAN_CODE_KEY_E 018
 #define SCAN_CODE_KEY_F 033
+#define SCAN_CODE_KEY_J 036
 #define SCAN_CODE_KEY_H 035
 #define SCAN_CODE_KEY_I 023
 #define SCAN_CODE_KEY_L 038
@@ -88,6 +89,7 @@
 #define SCAN_CODE_KEY_T 020
 #define SCAN_CODE_KEY_U 022
 #define SCAN_CODE_KEY_V 047
+#define SCAN_CODE_KEY_W 017
 #define SCAN_CODE_KEY_X 045 
 #define SCAN_CODE_KEY_Y 021 
 #define SCAN_CODE_KEY_Z 044 

@@ -76,8 +76,8 @@ enum {
 int player_run_id;
 int notify_run_id;
 
-bool repeat;
-bool shuffle;
+bool repeat=false;
+bool shuffle=false;
 
 int current_playing_file_n=0;
 

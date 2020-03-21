@@ -416,6 +416,6 @@ int GetLetterSize_(int number) {
 }
 
 
-void ClickLink() {
+void EventClickLink() {
 	RunProgram("/sys/network/WebView", PageLinks.GetURL(PageLinks.active));	
 }

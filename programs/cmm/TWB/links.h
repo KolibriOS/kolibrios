@@ -75,12 +75,12 @@ bool LinksArray::HoverAndProceed(dword mx, my)
 			}
 			if (mouse.mkm) && (mouse.up) {
 				open_in_a_new_window = true;
-				ClickLink();
+				EventClickLink();
 				return false;
 			}
 			if (mouse.lkm) && (mouse.up) { 
 				CursorPointer.Restore();
-				ClickLink();
+				EventClickLink();
 				return false;
 			}
 			if (mouse.pkm) && (mouse.up) { 

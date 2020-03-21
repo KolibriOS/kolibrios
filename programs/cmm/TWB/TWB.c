@@ -4,12 +4,14 @@ scroll_bar scroll_wv = { 15,200,398,44,0,2,115,15,0,0xeeeeee,0xBBBbbb,0xeeeeee,0
 enum { ALIGN_LEFT, ALIGN_CENTER, ALIGN_RIGHT};
 
 struct _style {
-byte
+bool
 	b, u, s, h,
 	pre,
 	blq,
 	li,
 	li_tab,
+	button,
+	image,
 	align;
 };
 
@@ -30,7 +32,7 @@ struct TWebBrowser {
 } WB1;
 
 
-byte 	
+bool 	
 	link,
 	ignor_text,
 	cur_encoding,
@@ -90,6 +92,14 @@ void TWebBrowser::DrawStyle()
 		start_x = stolbec * list.font_w + body_magrin + list.x;
 		stolbec_len = strlen(#line) * zoom;
 		line_length = stolbec_len * list.font_w;
+
+		if (style.image) {
+			DrawBuf.DrawBar(start_x, draw_y, line_length, list.item_h, 0xF9DBCB);
+		}
+		if (style.button) {
+			DrawBuf.DrawBar(start_x, draw_y, line_length, list.item_h - calc(zoom*2), 0xCCCccc);
+			DrawBuf.DrawBar(start_x, draw_y + list.item_h - calc(zoom*2), line_length, zoom, 0x999999);
+		}
 
 		DrawBuf.WriteText(start_x, draw_y, list.font_type, text_colors[text_color_index], #line);
 		if (style.b) DrawBuf.WriteText(start_x+1, draw_y, list.font_type, text_colors[text_color_index], #line);
@@ -239,7 +249,10 @@ void TWebBrowser::Perenos()
 	char new_line_text[4096];
 	if (strlen(#line)*zoom + stolbec < list.column_max) return;
 	perenos_num = strrchr(#line, ' ');
-	if (!perenos_num) && (strlen(#line)*zoom>list.column_max) perenos_num=list.column_max/zoom;
+	if (!perenos_num) && (strlen(#line)*zoom>list.column_max) {
+		perenos_num=list.column_max/zoom; 
+		if (!stolbec)&&(style.pre) draw_y-=list.item_h; //hack to fix https://prnt.sc/rk3kyt
+	}
 	strcpy(#new_line_text, #line + perenos_num);
 	line[perenos_num] = 0x00;
 	DrawStyle();
@@ -248,9 +261,10 @@ void TWebBrowser::Perenos()
 }
 //============================================================================================
 void TWebBrowser::SetStyle() {
+	char img_path[4096];
 	int left1 = body_magrin + list.x;
-	byte opened;
-	byte meta_encoding;
+	bool opened;
+	int meta_encoding;
 	if (tag[0] == '/') 
 	{
 		 opened = 0;
@@ -291,8 +305,9 @@ void TWebBrowser::SetStyle() {
 			}
 		} while(GetNextParam());
 		if (opened) && (cur_encoding==CH_NULL) {
-			cur_encoding = CH_UTF8; 
-			debugln("Document has no information about encoding, UTF will be used");
+			cur_encoding = CH_CP866; 
+			//BufEncode(CH_UTF8);
+			debugln("Document has no information about encoding!");
 		}
 		if (opened) {
 			if (strcmp(#header, #version) != 0) {
@@ -349,12 +364,33 @@ void TWebBrowser::SetStyle() {
 	if (istag("br")) { NewLine(); return; }
 	if (istag("tr")) { if (opened) NewLine(); return; }
 	if (istag("b")) || (istag("strong")) || (istag("big")) { style.b = opened; return; }
+	if (istag("button")) { style.button = opened; stolbec++; return; }
 	if (istag("u")) || (istag("ins")) { style.u=opened; return;}
 	if (istag("s")) || (istag("strike")) || (istag("del")) { style.s=opened; return; }
 	if (istag("dd")) { stolbec += 5; return; }
 	if (istag("blockquote")) { style.blq = opened; return; }
 	if (istag("pre")) || (istag("code")) { style.pre = opened; return; }
-	if (istag("img")) { ImgCache.Images( left1, draw_y, WB1.list.w); return; }
+	if (istag("img")) {
+		do{
+			if (isattr("src=")) strcpy(#img_path, #val);
+			if (isattr("alt=")) sprintf(#line, "[%s]", #val);
+		} while(GetNextParam());
+		style.image = true;
+		text_color_index++;
+		text_colors[text_color_index] = 0x9A6F29;
+		if (!line) {
+			if (!strncmp(#img_path, "data:", 5)) img_path=0;
+			sprintf(#line, "[%s]", #img_path+strrchr(#img_path, '/'));
+			line[50]= NULL;
+		}
+		if (strlen(#line) + stolbec > list.column_max) Perenos();
+		DrawStyle();
+		line=0;
+		text_color_index--;
+		style.image = false;
+		//ImgCache.Images( left1, draw_y, WB1.list.w); 
+		return; 
+	}
 	if (istag("h1")) || (istag("h2")) || (istag("h3")) || (istag("caption")) {
 		style.h = opened;
 		if (opened)
@@ -366,9 +402,11 @@ void TWebBrowser::SetStyle() {
 			if (isattr("align=")) && (isval("center")) style.align = ALIGN_CENTER;
 			if (isattr("align=")) && (isval("right")) style.align = ALIGN_RIGHT;
 			list.item_h = basic_line_h * 2;
+			if (istag("h1")) style.b = true;
 		}
 		else
 		{
+			if (istag("h1")) style.b = false;
 			NewLine();
 			WB1.zoom=1;
 			WB1.list.font_type = 10011000b;
@@ -388,7 +426,8 @@ void TWebBrowser::SetStyle() {
 		if (opened)
 		{
 			NewLine();
-			strcpy(#line, "\31 \0");
+			strcpy(#line, "\31 ");
+			stolbec-=2;
 		}
 		return;
 	}
@@ -441,8 +480,8 @@ void TWebBrowser::BufEncode(dword set_new_encoding)
 	{
 		strcpy(bufpointer, o_bufpointer);
 	}
-	debugval("cur_encoding    ", cur_encoding);
-	debugval("set_new_encoding", set_new_encoding);
+	//debugval("cur_encoding    ", cur_encoding);
+	//debugval("set_new_encoding", set_new_encoding);
 	cur_encoding = set_new_encoding;
 	bufpointer = ChangeCharset(charsets[cur_encoding], "CP866", bufpointer);
 }
@@ -462,8 +501,16 @@ void TWebBrowser::DrawScroller()
 void TWebBrowser::NewLine()
 {
 	dword onleft, ontop;
+	static int empty_line=0;
 
 	if (!stolbec) && (draw_y==body_magrin) return;
+	
+	if (!stolbec) { 
+		if (empty_line<1) empty_line++;
+		else return;
+	} else {
+		empty_line=0;
+	}
 
 	onleft = list.x + body_magrin;
 	ontop = draw_y + list.y;

@@ -37,28 +37,13 @@ int ImageCache::GetImage(dword i_path)
 void ImageCache::Images(dword left1, top1, width1)
 {
 	dword image;
-    char img_path[4096], alt[4096]=0;
     dword imgw=0, imgh=0, img_lines_first=0, cur_pic=0;
 	
-	do{
-		if (isattr("src="))
-		{
-			strcpy(#img_path, #val);
-			GetAbsoluteURL(#img_path);
-			cur_pic = GetImage(#img_path);
-		}
-		if (isattr("alt="))
-		{
-			strcpy(#alt, "[");
-			strcat(#alt, #val);
-			strcat(#alt, "]");
-		}
+	//GetAbsoluteURL(#img_path);
+	//cur_pic = GetImage(#img_path);
 
-	} while(GetNextParam());
-	
 	if (!pics[cur_pic].image) 
 	{
-		if (alt) strcat(#line, #alt);
 		//cur_pic = GetImage("/sys/network/noimg.png");
 		return;
 	}
@@ -67,7 +52,7 @@ void ImageCache::Images(dword left1, top1, width1)
 	imgh = DSWORD[pics[cur_pic].image+8];
 	if (imgw > width1) imgw = width1;
 	
-	draw_y += imgh + 5;
+	//draw_y += imgh + 5; TEMPORARY TURN OFF!!!
 	if (top1+imgh<WB1.list.y) || (top1>WB1.list.y+WB1.list.h-10) return; //if all image is out of visible area
 	if (top1<WB1.list.y) //if image partly visible (at the top)
 	{

@@ -10,19 +10,26 @@ ShowHistory()
 		strcat(history_pointer, "<br><b>Visited pages</b><br>");
 		for (i=0; i<history.items.count; i++)
 		{
-			strcat(history_pointer, "&nbsp; <a href='");
+			strcat(history_pointer, "<a href='");
 			strcat(history_pointer, history.items.get(i));
 			strcat(history_pointer, "'>");
 			strcat(history_pointer, history.items.get(i));
 			strcat(history_pointer, "</a><br>");
 		}
-		strcat(history_pointer, "<br><b>Cached images</b>");
+		strcat(history_pointer, "<br><b>Cached images</b><br>");
 		for (i=1; i<ImgCache.pics_count; i++)
 		{
+			strcat(history_pointer, "<a href='");
+			strcat(history_pointer, #pics[i].path);
+			strcat(history_pointer, "'>");
+			strcat(history_pointer, #pics[i].path);
+			strcat(history_pointer, "</a><br>");
+			/*
 			strcat(history_pointer, "<img src='");
 			strcat(history_pointer, #pics[i].path);
 			strcat(history_pointer, "'><br>");
 			strcat(history_pointer, #pics[i].path);
+			*/
 		}
 		strcat(history_pointer, "</body></html>");
 		WB1.LoadInternalPage(history_pointer, strlen(history_pointer));

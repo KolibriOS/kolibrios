@@ -242,7 +242,7 @@ void ShowPage()
 }
 
 void DrawStatusBar() {return;};
-void ClickLink() {return;};
+void EventClickLink() {return;};
 void EventShowLinkMenu() {return;};
 
 char anchor[256];

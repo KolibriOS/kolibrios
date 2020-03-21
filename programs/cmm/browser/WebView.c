@@ -31,7 +31,7 @@ _http http = {0, 0, 0, 0, 0, 0, 0};
 char homepage[] = FROM "html\\homepage.htm""\0";
 
 #ifdef LANG_RUS
-char version[]="Текстовый браузер 1.83";
+char version[]="Текстовый браузер 1.84";
 ?define IMAGES_CACHE_CLEARED "Кэш картинок очищен"
 ?define T_LAST_SLIDE "Это последний слайд"
 char loading[] = "Загрузка страницы...<br>";
@@ -46,7 +46,7 @@ char link_menu[] =
 "Копировать ссылку
 Скачать содержимое ссылки";
 #else
-char version[]="Text-based Browser 1.83";
+char version[]="Text-based Browser 1.84";
 ?define IMAGES_CACHE_CLEARED "Images cache cleared"
 ?define T_LAST_SLIDE "This slide is the last"
 char loading[] = "Loading...<br>";
@@ -162,9 +162,20 @@ void main()
 
 		case evKey:
 			GetKeys();
+			if (key_modifier&KEY_LCTRL) || (key_modifier&KEY_RCTRL) {
+				if (key_scancode == SCAN_CODE_KEY_H) ProcessEvent(VIEW_HISTORY);
+				if (key_scancode == SCAN_CODE_KEY_U) ProcessEvent(VIEW_SOURCE);
+				if (key_scancode == SCAN_CODE_KEY_T) 
+				|| (key_scancode == SCAN_CODE_KEY_N) RunProgram(#program_path, NULL);
+				if (key_scancode == SCAN_CODE_KEY_W) ExitProcess();
+				if (key_scancode == SCAN_CODE_KEY_J) ProcessEvent(DOWNLOAD_MANAGER);
+			}
 			if (address_box.flags & ed_focus)  
 			{
-				if (key_ascii == ASCII_KEY_ENTER) ProcessEvent(key_scancode); else {
+				if (key_scancode == SCAN_CODE_ENTER) {
+					ProcessEvent(key_scancode); 
+				}
+				else {
 					EAX = key_editbox; 
 					edit_box_key stdcall(#address_box);
 				}
@@ -215,6 +226,7 @@ void main()
 							strcpy(#editURL, #URL);
 							DrawEditBoxWebView();
 							OpenPage();
+							//ProcessLink(history.current());
 						}
 						break;
 					} 
@@ -297,20 +309,7 @@ void ProcessEvent(dword id__)
 			return;
 		case GOTOURL_BUTTON:
 		case SCAN_CODE_ENTER:
-			if (!editURL[0]) {
-				strcpy(#URL, URL_SERVICE_HOME);
-			}
-			else if (!strncmp(#editURL,"http:",5)) || (editURL[0]=='/') 
-			|| (!strncmp(#editURL,"https:",6)) || (!strncmp(#editURL,"WebView:",8))
-			{
-				strcpy(#URL, #editURL);
-			}
-			else
-			{
-				strlcpy(#URL,"http://",7);
-				strcat(#URL, #editURL);
-			}
-			OpenPage();
+			EventSubmitOmnibox();
 			return;
 		case REFRESH_BUTTON:
 			if (http.transfer > 0) 
@@ -467,92 +466,77 @@ void OpenPage()
 	}
 }
 
-DrawEditBoxWebView()
+void ProcessAnchor()
 {
-	int skin_x_offset;
-	DrawBar(address_box.left-2, address_box.top-2, address_box.width+3, 2, address_box.color);
-	DrawBar(address_box.left-2, address_box.top, 2, 22, address_box.color);
-	//address_box.size = address_box.pos = address_box.shift = address_box.shift_old = strlen(#editURL);
-	//address_box.offset = 0;
-	EditBox_UpdateText(#address_box, address_box.flags);
-	edit_box_draw stdcall(#address_box);
-	if (http.transfer > 0) skin_x_offset = 68; else skin_x_offset = 51;
-	img_draw stdcall(skin.image, address_box.left+address_box.width+1, address_box.top-3, 17, skin.h, skin_x_offset, SKIN_Y);
+	char anchor[256];
+	int anchor_pos;
+	
+	anchor_pos = strrchr(#URL, '#')-1;
+	strlcpy(#anchor, #URL+anchor_pos, sizeof(anchor));
+	URL[anchor_pos] = 0x00;
+
+	//#1
+	if (URL[0] == NULL)
+	{
+		if (anchor[1] == NULL) {
+			WB1.list.first = 0;
+		}
+		else {
+			if (anchors.get_anchor_pos(#anchor+1)!=-1) WB1.list.first = anchors.get_anchor_pos(#anchor+1);
+		}
+		strcpy(#URL, history.current());
+	}
+	//liner.ru#1
+	else
+	{
+		GetAbsoluteURL(#URL);
+		OpenPage();
+		if (anchors.get_anchor_pos(#anchor+1)!=-1) WB1.list.first = anchors.get_anchor_pos(#anchor+1);
+	}
+
+	WB1.DrawPage();
+	strcpy(#editURL, #URL);
+	strcat(#editURL, #anchor);
+	DrawEditBoxWebView();
 }
 
-
-void ShowPage()
+void EventSubmitOmnibox()
 {
-	DrawEditBoxWebView();
-	if (!bufsize)
+	if (!editURL[0]) return;
+	if (!strncmp(#editURL,"http:",5)) || (editURL[0]=='/') 
+	|| (!strncmp(#editURL,"https:",6)) || (!strncmp(#editURL,"WebView:",8))
 	{
-		if (http.transfer) WB1.LoadInternalPage(#loading, sizeof(loading));
-		else WB1.LoadInternalPage(#page_not_found, sizeof(page_not_found));
+		strcpy(#URL, #editURL);
 	}
 	else
 	{
-		WB1.Prepare();
+		strlcpy(#URL,"http://",7);
+		strcat(#URL, #editURL);
 	}
+	ProcessLink();
 }
 
-byte UrlExtIs(dword ext)
+void EventClickLink()
 {
-	if (!strcmpi(#URL + strlen(#URL) - strlen(ext), ext)) return true;
-	return false;
+	strcpy(#URL, PageLinks.GetURL(PageLinks.active));
+	GetAbsoluteURL(#URL);
+	ProcessLink();
 }
 
-void DrawProgress()
-{
-	dword persent;
-	if (http.transfer == 0) return;
-	if (wv_progress_bar.max) persent = wv_progress_bar.value*100/wv_progress_bar.max; else persent = 10;
-	DrawBar(address_box.left-2, address_box.top+20, persent*address_box.width/100, 2, wv_progress_bar.progress_color);
-}
-
-
-void ClickLink()
-char anchor[256];
-int anchor_pos;
+void ProcessLink()
 {
 	if (http.transfer > 0) 
 	{
 		StopLoading();
 		history.back();
 	}
-	strcpy(#URL, PageLinks.GetURL(PageLinks.active));
-	ReplaceSpaceInUrl();
-	//#1
-	if (URL[0] == '#')
-	{
-		if (URL[1] == NULL) {
-			WB1.list.first = 0;
-		}
-		else {
-			if (anchors.get_anchor_pos(#URL+1)!=-1) WB1.list.first = anchors.get_anchor_pos(#URL+1);
-		}
-		strlcpy(#anchor, #URL, sizeof(anchor));
-		strcpy(#URL, history.current());
-		strcpy(#editURL, #URL);
-		strcat(#editURL, #anchor);
-		DrawEditBoxWebView();
-		WB1.DrawPage();
-		return;
-	}
-	//liner.ru#1
-	else if (strrchr(#URL, '#')!=0)
-	{
-		anchor_pos = strrchr(#URL, '#')-1;
-		strlcpy(#anchor, #URL+anchor_pos, sizeof(anchor));
-		URL[anchor_pos] = 0x00;
-		OpenPage();
-		strcat(#editURL, #anchor);
-		DrawEditBoxWebView();
-		if (anchors.get_anchor_pos(#anchor+1)!=-1) WB1.list.first = anchors.get_anchor_pos(#anchor+1);
-		WB1.DrawPage();
+	
+	if (strrchr(#URL, '#')!=0) {
+		ProcessAnchor();
 		return;
 	}
 
-	if (!strncmp(#URL,"mailto:", 7))
+	if (!strncmp(#URL,"mailto:", 7)) || (!strncmp(#URL,"tel:", 4)) 
 	{
 		notify(#URL);
 		strcpy(#editURL, history.current());
@@ -560,7 +544,10 @@ int anchor_pos;
 		return;
 	}
 
-	GetAbsoluteURL(#URL);
+	if (!strncmp(#URL,"WebView:",8)) {
+		OpenPage();
+		return;
+	}
 
 	if (strncmp(#URL,"http://",7)!=0) && (strncmp(#URL,"https://",8)!=0)
 	{
@@ -606,6 +593,48 @@ int anchor_pos;
 	open_in_a_new_window = false;
 }
 
+void DrawEditBoxWebView()
+{
+	int skin_x_offset;
+	DrawBar(address_box.left-2, address_box.top-2, address_box.width+3, 2, address_box.color);
+	DrawBar(address_box.left-2, address_box.top, 2, 22, address_box.color);
+	//address_box.size = address_box.pos = address_box.shift = address_box.shift_old = strlen(#editURL);
+	//address_box.offset = 0;
+	EditBox_UpdateText(#address_box, address_box.flags);
+	edit_box_draw stdcall(#address_box);
+	if (http.transfer > 0) skin_x_offset = 68; else skin_x_offset = 51;
+	img_draw stdcall(skin.image, address_box.left+address_box.width+1, address_box.top-3, 17, skin.h, skin_x_offset, SKIN_Y);
+}
+
+
+void ShowPage()
+{
+	DrawEditBoxWebView();
+	if (!bufsize)
+	{
+		if (http.transfer) WB1.LoadInternalPage(#loading, sizeof(loading));
+		else WB1.LoadInternalPage(#page_not_found, sizeof(page_not_found));
+	}
+	else
+	{
+		WB1.Prepare();
+	}
+}
+
+byte UrlExtIs(dword ext)
+{
+	if (!strcmpi(#URL + strlen(#URL) - strlen(ext), ext)) return true;
+	return false;
+}
+
+void DrawProgress()
+{
+	dword persent;
+	if (http.transfer == 0) return;
+	if (wv_progress_bar.max) persent = wv_progress_bar.value*100/wv_progress_bar.max; else persent = 10;
+	DrawBar(address_box.left-2, address_box.top+20, persent*address_box.width/100, 2, wv_progress_bar.progress_color);
+}
+
 void EventShowPageMenu(dword _left, _top)
 {
 	menu.show(Form.left+_left-6,Form.top+_top+skin_height+3, 220, #rmb_menu, VIEW_SOURCE);
@@ -626,7 +655,7 @@ void EventUpdateProgressBar()
 	}
 }
 
-DrawStatusBar(dword _status_text)
+void DrawStatusBar(dword _status_text)
 {
 	status_text.start_x = wv_progress_bar.left + wv_progress_bar.width + 10;
 	status_text.start_y = Form.cheight - STATUSBAR_H + 3;
