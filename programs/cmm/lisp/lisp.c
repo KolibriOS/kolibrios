@@ -19,6 +19,13 @@ Dictionary variables = {0};
 #define memoryByteBF 1
 #define stackBrainFuck 4*1024
 
+#define TStr 1
+#define TInt 2
+#define TSym 3
+#define TBol 4
+
+#define TLen 4*5
+
 dword buffer = 0;
 word bufferSymbol = 0;
 dword memory = 0;
@@ -44,18 +51,20 @@ dword evalLisp()
 	dword pos = 0;
 	dword name = 0;
 	dword tmp = 0;
+	dword tmp2 = 0;
 	dword dataArgs = 0;
 	dword posArgs = 0;
 	dword ret = 0;
 	dword p = 0;
+	dword i = 0;
+	dword ii = 0;
 	dataArgs = malloc(16*4);
 	posArgs = dataArgs;
 
 	loop()
 	{
 		s = DSBYTE[code];
-		
-		while (s == ' ') || (s == 9)
+		while (s == ' ') || (s == 9) || (s == 10) || (s == 13)
 		{
 			code++;
 			s = DSBYTE[code];
@@ -109,18 +118,31 @@ dword evalLisp()
 					s = DSBYTE[code];
 				}
 				args++;
-				DSDWORD[posArgs] = tmp;
+				EDX = malloc(TLen);
+				DSDWORD[EDX] = tmp;
+				DSDWORD[EDX+4] = TInt;
+				DSDWORD[posArgs] = EDX;
 				posArgs += 4;
 				continue;
 			}
 			else if (s == '"')
 			{
-				tmp = malloc(100);
+				i = 1;
+				tmp = malloc(1<<i);
 				p = tmp;
 				code++;
 				s = DSBYTE[code];
+				ii = 0;
 				while (s != '"') && (s)
 				{
+					ii++;
+					if (1<<i < ii)
+					{
+						i++;
+						tmp2 = p-tmp;
+						tmp = realloc(tmp, 1<<i);
+						p = tmp+tmp2;
+					}
 					DSBYTE[p] = s;
 					p++;
 					
@@ -128,22 +150,33 @@ dword evalLisp()
 					s = DSBYTE[code];
 				}
 				DSBYTE[p] = 0;
+				EDX = malloc(TLen);
+				DSDWORD[EDX] = tmp;
+				DSDWORD[EDX+4] = TStr;
+				DSDWORD[EDX+8] = p-tmp;
+				DSDWORD[posArgs] = EDX;
+				posArgs += 4;
+				code++;
+				args++;
+				continue;
 			}
-			else if(s >= 'A') && (s <= 'z')
+			else
 			{
-				tmp = malloc(100);
+				tmp = malloc(20);
 				p = tmp;
-				while (s >= 'A') && (s <= 'z') 
+				while (s) && (s != ')') && (s != '(') && (s != ' ') && (s != 10) && (s != 13)
 				{
 					DSBYTE[p] = s;
 					p++;
-					
 					code++;
 					s = DSBYTE[code];
 				}
 				DSBYTE[p] = 0;
 				args++;
-				DSDWORD[posArgs] = tmp;
+				EDX = malloc(TLen);
+				DSDWORD[EDX] = tmp;
+				DSDWORD[EDX+4] = TSym;
+				DSDWORD[posArgs] = EDX;
 				posArgs += 4;
 				continue;
 			}
@@ -184,7 +217,7 @@ void main()
 	else 
 	{
 		consoleInit();
-		con_printf stdcall ("Lisp interpreter v1.4\r\n");
+		con_printf stdcall ("Lisp interpreter v1.5\r\n");
 		while(maxLoop)
 		{
 			con_printf stdcall ("\r\n$ ");
