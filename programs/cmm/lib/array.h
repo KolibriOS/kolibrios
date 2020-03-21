@@ -3,6 +3,8 @@
 #ifndef INCLUDE_ARRAY_H
 #define INCLUDE_ARRAY_H
 
+#include "../lib/crc32.h"
+
 // Array memory: [dword key][byte flags][dword left][dword right][dword value] -> 17 bytes = 1 position
 // If key don't exists then value == 0
 :struct Array
@@ -20,6 +22,7 @@
 
 :void Array::reallocMemory(dword newSize)
 {
+	newSize *= 17;
 	memory = realloc(memory, newSize);
 	lenInitSize = newSize;
 }
@@ -34,25 +37,27 @@
 	IF (flags & 001b) && (DSDWORD[address] > key) RETURN recursiveIndex(key, DSDWORD[address + 9]); // right tree
 	RETURN address;
 }
+
 :byte Array::init(dword size)
 {
-	IF(!size) RETURN 0;
+	dword pointer = 0;
+	if (!size) size = 8;
 	IF(!memory)
 	{
 		lenInitSize = size * 17;
 		memory = malloc(lenInitSize);
-		EBX = memory;
-		DSDWORD[EBX] = 0;
-		DSBYTE[EBX + 4] = 0;
-		DSDWORD[EBX + 5] = 0;
-		DSDWORD[EBX + 9] = 0;
-		DSDWORD[EBX + 13] = 0;
+		pointer = memory;
+		DSDWORD[pointer] = 0; pointer += 4;
+		DSBYTE[pointer] = 0; pointer += 1;
+		DSDWORD[pointer] = 0;pointer += 4;
+		DSDWORD[pointer] = 0;pointer += 4;
+		DSDWORD[pointer] = 0;
 		offsetMemory = 17;
 		RETURN 0xFF;
 	}
 	IF(size > lenInitSize)
 	{
-		reallocMemory(size * 17);
+		reallocMemory(size);
 		RETURN 0xFF;
 	}
 	RETURN 0;
@@ -97,11 +102,11 @@
 		DSDWORD[address + 13] = data;
 		RETURN 0xFF;
 	}
-	DSDWORD[newOffset] = key;
-	DSBYTE[newOffset+4] = 0;
-	DSDWORD[newOffset+5] = 0;
-	DSDWORD[newOffset+9] = 0;
-	DSDWORD[newOffset+13] = data;
+	DSDWORD[newOffset] = key; newOffset+=4;
+	DSBYTE[newOffset] = 0; newOffset+=1;
+	DSDWORD[newOffset] = 0; newOffset+=4;
+	DSDWORD[newOffset] = 0; newOffset+=4;
+	DSDWORD[newOffset] = data;
 	offsetMemory += 17;
 	RETURN 0xFF;
 }
@@ -130,8 +135,10 @@
 	byte init(dword size);
 };
 
-:dword Dictionary::hash(dword text) // max 255 bytes as strings => 4 byte or duble word hash
+:dword Dictionary::hash(dword text)
 {
+	RETURN crc32(text, strlen(text));
+/*
 	dword checkSum1 = 1;
 	dword checkSum2 = 0;
 	dword beginAddress = 0;
@@ -148,6 +155,7 @@
 	EAX = text - beginAddress;
 	EAX <<= 23;
 	RETURN EAX | checkSum2;
+*/
 }
 
 :byte Dictionary::set(dword key, value)
