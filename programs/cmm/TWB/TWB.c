@@ -113,7 +113,7 @@ void TWebBrowser::DrawStyle()
 		if (style.s) DrawBuf.DrawBar(start_x, list.item_h / 2 - zoom + draw_y, line_length, zoom, text_colors[text_color_index]);
 		if (style.u) DrawBuf.DrawBar(start_x, list.item_h - zoom - zoom + draw_y, line_length, zoom, text_colors[text_color_index]);
 		if (link) {
-			if (streq[0]=' ') && (line[1]==NULL) {} else {
+			if (line[0]==' ') && (line[1]==NULL) {} else {
 				DrawBuf.DrawBar(start_x, draw_y + list.item_h - calc(zoom*2), line_length, zoom, text_colors[text_color_index]);
 				PageLinks.AddText(start_x, draw_y + list.y, line_length, list.item_h - calc(zoom*2), UNDERLINE, zoom);				
 			}
