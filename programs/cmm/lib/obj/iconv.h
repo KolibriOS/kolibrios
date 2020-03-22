@@ -37,10 +37,9 @@ dword ChangeCharset(dword from_chs, to_chs, conv_buf)
 	cd = EAX;
 	if (cd!=0)
 	{
-		debugln("iconv: something is wrong with stdcall iconv()");
-		debugi(cd);
-		debug("in_len:"); debugi(in_len);
-		debug("out_len:"); debugi(out_len);
+		debugval("iconv: something is wrong with stdcall iconv()", cd);
+		debugval("in_len", in_len);
+		debugval("out_len", out_len);
 		new_buf = free(new_buf);
 		return 0;
 	}

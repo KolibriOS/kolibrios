@@ -1,10 +1,10 @@
-enum { TAG, OPTION_VALUE, TEXT, COMMENT, INLINE_COMMENT, CODE };
+enum { TAG, OPTION_VALUE, TEXT, COMMENT, SCRIPT};
 
-//you are butifull, you are butifull
 dword ShowSource()
 {
-	dword new_buf, new_buf_start, i;
-	int mode;
+	dword new_buf, new_buf_start, i, j;
+	int opened_font=0;
+	int mode = TEXT;
 
 	if (souce_mode) return;
 	souce_mode = true;
@@ -18,70 +18,81 @@ dword ShowSource()
 		switch (ESBYTE[i])
 		{
 			case '<':
-				if (mode == COMMENT)
-				{
+				if (mode == TEXT) && (!strncmp(i+1,"script", 6)) {
+					mode = SCRIPT;
+					strcpy(new_buf, "<font color=#00f>&lt;script</font><font color=#994500>"); opened_font++;
+					new_buf+=54;
+					i+=6;
+					break;
+				}
+				if (mode == COMMENT) || (mode == SCRIPT) && (!strncmp(i+1,"/script>", 8)) {
+					mode = TEXT;
+					while (opened_font) {
+						strcpy(new_buf, "</font>"); opened_font--;
+						new_buf+=7;						
+					}
+					strcpy(new_buf, "<font color=#00f>&lt;/script&gt;</font>"); 
+					new_buf+=39;
+					i+=8;
+					break;
+				}
+				if (ESBYTE[i+1]=='!') && (ESBYTE[i+2]=='-') && (ESBYTE[i+3]=='-') {
+					mode = COMMENT;
+					strcpy(new_buf, "<font color=#bbb>&lt;"); opened_font++;
+					new_buf+=21;
+					break;
+				}
+				if (mode == TEXT) {
+					mode = TAG;
+					strcpy(new_buf, "<font color=#00f>&lt;"); opened_font++;
+					new_buf+=21;
+					break;
+				}
+				if (mode == COMMENT) || (mode == SCRIPT) {
 					strcpy(new_buf, "&lt;");
 					new_buf+=4;
 					break;
 				}
-				if (ESBYTE[i+1]=='!') && (ESBYTE[i+2]=='-') && (ESBYTE[i+3]=='-')
-				{
-					strcpy(new_buf, "<font color=#bbb>&lt;");
-					new_buf+=21;
-					mode = COMMENT;
-					break;
-				}
-				if (mode != COMMENT)
-				{
-					strcpy(new_buf, "<font color=#00f>&lt;");
-					new_buf+=21;
-					mode = TAG;
-					break;
-				}
 				break;
 			case '>':
-				if (mode == OPTION_VALUE) //fix non-closed quote in TAG
-				{
-					strcpy(new_buf, "&quot;</font>");
-					new_buf+=13;					
-					mode = TAG;
-					break;
-				}
-				if (mode == COMMENT) && (ESBYTE[i-1]=='-') && (ESBYTE[i-2]=='-')
-				{
-					strcpy(new_buf, "&gt;</font>");
-					new_buf+=11;
+				if (mode == OPTION_VALUE) { //fix non-closed quote in TAG
 					mode = TEXT;
+					while (opened_font) {
+						strcpy(new_buf, "&quot;</font>"); opened_font--;
+						new_buf+=13;						
+					}
 					break;
 				}
-				if (mode == COMMENT) 
-				{
+				if (mode == COMMENT) && (ESBYTE[i-1]=='-') && (ESBYTE[i-2]=='-') {
+					mode = TEXT;
+					strcpy(new_buf, "&gt;</font>"); opened_font--;
+					new_buf+=11;
+					break;
+				}
+				if (mode == COMMENT) || (mode == SCRIPT) {
 					strcpy(new_buf, "&gt;");
 					new_buf+=4;
 					break;					
 				}
-				if (mode == TAG)
-				{
-					strcpy(new_buf, "&gt;</font>");
-					new_buf+=11;
+				if (mode == TAG) {
 					mode = TEXT;
+					strcpy(new_buf, "&gt;</font>"); opened_font--;
+					new_buf+=11;
 					break;
 				}
 				break;
 			case '\"':
 			case '\'':
-				if (mode == TAG)
-				{
-					strcpy(new_buf, "<font color=#f0f>&#39;");
-					new_buf+=22;
+				if (mode == TAG) {
 					mode = OPTION_VALUE;
+					strcpy(new_buf, "<font color=#F301F2>&#39;"); opened_font++;
+					new_buf+=25;
 					break;
 				}
-				if (mode == OPTION_VALUE)
-				{
-					strcpy(new_buf, "&#39;</font>");
-					new_buf+=12;
+				if (mode == OPTION_VALUE) {
 					mode = TAG;
+					strcpy(new_buf, "&#39;</font>"); opened_font--;
+					new_buf+=12;
 					break;
 				}
 			default:
@@ -96,6 +107,9 @@ dword ShowSource()
 }
 
 /*
+
+enum { TAG, OPTION_VALUE, TEXT, COMMENT, INLINE_COMMENT, CODE };
+
 char* C_HL_keywords[] = {
     "switch", "if", "while", "for", "break", "continue", "return", "else",
     "union", "typedef", "static", "class", "case", "#include",

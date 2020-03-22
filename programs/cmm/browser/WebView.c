@@ -30,7 +30,7 @@ _http http = {0, 0, 0, 0, 0, 0, 0};
 
 
 #ifdef LANG_RUS
-char version[]="Текстовый браузер 1.85";
+char version[]="Текстовый браузер 1.9";
 ?define IMAGES_CACHE_CLEARED "Кэш картинок очищен"
 ?define T_LAST_SLIDE "Это последний слайд"
 char loading[] = "Загрузка страницы...<br>";
@@ -47,7 +47,7 @@ char link_menu[] =
 "Копировать ссылку
 Скачать содержимое ссылки";
 #else
-char version[]="Text-based Browser 1.85";
+char version[]="Text-based Browser 1.9";
 ?define IMAGES_CACHE_CLEARED "Images cache cleared"
 ?define T_LAST_SLIDE "This slide is the last"
 char loading[] = "Loading...<br>";
@@ -88,7 +88,6 @@ dword panel_color  = 0xE3E2E2;
 dword border_color = 0x8C8C8C;
 
 bool debug_mode = false;
-bool old_tag_parser_mode = false;
 
 progress_bar wv_progress_bar;
 bool souce_mode = false;
@@ -115,7 +114,7 @@ enum {
 #include "download_manager.h"
 
 char editURL[sizeof(URL)];
-edit_box address_box = {250,60,30,0xffffff,0x94AECE,0xffffff,0xffffff,0x10000000,sizeof(URL)-2,#editURL,0,2,19,19};
+edit_box address_box = {250,60,30,0xffffff,0x94AECE,0xffffff,0xffffff,0x10000000,sizeof(URL)-2,#editURL,0,NULL,19,19};
 
 #define SKIN_Y 24
 
@@ -263,7 +262,7 @@ void SetElementSizes()
 	WB1.list.SetSizes(0, TOOLBAR_H, Form.width - 10 - scroll_wv.size_x, 
 		Form.cheight - TOOLBAR_H - STATUSBAR_H, basic_line_h);
 	WB1.list.wheel_size = 7 * basic_line_h;
-	WB1.list.column_max = WB1.list.w - scroll_wv.size_x / WB1.list.font_w;
+	WB1.list.column_max = WB1.list.w - scroll_wv.size_x / WB1.list.font_w + 1;
 	WB1.list.visible = WB1.list.h;
 	if (WB1.list.w!=WB1.DrawBuf.bufw) {
 		WB1.DrawBuf.Init(WB1.list.x, WB1.list.y, WB1.list.w, 800*20);
@@ -377,11 +376,6 @@ void ProcessEvent(dword id__)
 			if (debug_mode) notify("'Debug mode ON'-I");
 			else notify("'Debug mode OFF'-I");
 			return;
-		case SCAN_CODE_F11:
-			old_tag_parser_mode ^= 1;
-			if (old_tag_parser_mode) notify("'Old tag parser ON'-I");
-			else notify("'Old tag parser OFF'-I");
-			return;
 	}
 }
 
@@ -398,6 +392,7 @@ void StopLoading()
 		http.transfer=0;
 		bufsize = 0;
 		bufpointer = free(bufpointer);
+		pause(10);
 	}
 	wv_progress_bar.value = 0;
 	DrawOmnibox();

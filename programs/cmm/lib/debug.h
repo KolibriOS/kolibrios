@@ -42,18 +42,13 @@ inline fastcall void debugln( EDX)
 	debugch(10);
 }
 
-inline void debugi(dword d_int)
-{
-	char tmpch[12];
-	itoa_(#tmpch, d_int);
-	debugln(#tmpch);
-}
-
 :void debugval(dword text,number)
 {
+	char tmpch[12];
 	debug(text);
 	debug(": ");
-	debugi(number);
+	itoa_(#tmpch, number);
+	debugln(#tmpch);
 }
 
 #endif

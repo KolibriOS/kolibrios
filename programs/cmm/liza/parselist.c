@@ -123,20 +123,16 @@ void ProcessBase64()
 	int clean_mailstart;
 
 	b_start = strstr(mailstart, "?B?");
-	debug("b_size");
-	debugi(b_start);
+	debugval("b_size", b_start);
 	if (b_start)
 	{
 		b_end = strstr(b_start, "?=");
-		debug("b_end");
-		debugi(b_end);
+		debugval("b_end", b_end);
 		b_size = b_end - b_start;
-		debug("b_size");
-		debugi(b_size);
+		debugval("b_size", b_size);
 		b_buf = malloc(b_size);
 		strcpyb(mailstart, b_buf, "?B?", "?=");
-		debug("b_buf");
-		debug(b_buf);
+		debugval("b_buf", b_buf);
 
 		base64_decode stdcall (b_buf, b_buf, b_size-3);
 		ConvertToDOS(b_buf, mailstart);	

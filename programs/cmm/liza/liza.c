@@ -29,7 +29,6 @@ byte letter_icons[sizeof(file "img/letter_icons.raw")] = FROM "img/letter_icons.
 #include "img/letter_icons.h"
 
 _http http = {0};
-bool old_tag_parser_mode = false;
 bool debug_mode = false;
 char accept_language[]= "Accept-Language: ru\n";
 

@@ -107,15 +107,15 @@ void MailBoxNetworkProcess() {
 					aim=NULL;
 					break;
 				}
-				debug("mailsize: "); debugi(mailsize);
+				debugval("mailsize", mailsize);
 				aim = GET_ANSWER_RETR;
 				debugln("goto GET_ANSWER_RETR");
 				break;
 			
 		case GET_ANSWER_RETR:
-				debug("mailsize: "); debugi(mailsize);
-				debug("mailstart: "); debugi(mailstart);
-				debug("mailend: "); debugi(mailend);
+				debugval("mailsize", mailsize);
+				debugval("mailstart", mailstart);
+				debugval("mailend", mailend);
 				ticks = Receive(socketnum, mailend, mailsize + mailstart - mailend, MSG_DONTWAIT);
 				if (ticks == 0xffffffff) break;
 				mailend = mailend + ticks;

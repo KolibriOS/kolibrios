@@ -29,10 +29,12 @@ void test2()
 	ci.add(1);
 	ci.add(2);
 	ci.add(3);
-	for (i=0; i<ci.count; i++) debugi(ci.get(i)); //-> 0 1 2 3
+	debugln("-> 0 1 2 3");
+	for (i=0; i<ci.count; i++) debugln(itoa(ci.get(i))); //-> 0 1 2 3
 	ci.count--;
 	ci.count--;
 	ci.add(4);
-	for (i=0; i<ci.count; i++) debugi(ci.get(i)); //-> 0 1 4
+	debugln("-> 0 1 4");
+	for (i=0; i<ci.count; i++) debugln(itoa(ci.get(i))); //-> 0 1 4
 	ci.drop();
 }

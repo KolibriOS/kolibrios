@@ -22,6 +22,8 @@ struct TWebBrowser {
 	_style style;
 	DrawBufer DrawBuf;
 	int zoom;
+	bool opened; //is this a "start tag" or "end tag"
+	void SetPageDefaults();
 	void Prepare();
 	void SetStyle();
 	void DrawStyle();
@@ -36,7 +38,6 @@ struct TWebBrowser {
 
 bool 	
 	link,
-	ignor_text,
 	cur_encoding,
 	t_html,
 	t_body;
@@ -112,8 +113,10 @@ void TWebBrowser::DrawStyle()
 		if (style.s) DrawBuf.DrawBar(start_x, list.item_h / 2 - zoom + draw_y, line_length, zoom, text_colors[text_color_index]);
 		if (style.u) DrawBuf.DrawBar(start_x, list.item_h - zoom - zoom + draw_y, line_length, zoom, text_colors[text_color_index]);
 		if (link) {
-			DrawBuf.DrawBar(start_x, draw_y + list.item_h - calc(zoom*2), line_length, zoom, text_colors[text_color_index]);
-			PageLinks.AddText(start_x, draw_y + list.y, line_length, list.item_h - calc(zoom*2), UNDERLINE, zoom); //TODO: set bigger underline_h for style.h
+			if (streq[0]=' ') && (line[1]==NULL) {} else {
+				DrawBuf.DrawBar(start_x, draw_y + list.item_h - calc(zoom*2), line_length, zoom, text_colors[text_color_index]);
+				PageLinks.AddText(start_x, draw_y + list.y, line_length, list.item_h - calc(zoom*2), UNDERLINE, zoom);				
+			}
 		}
 		stolbec += stolbec_len;
 	}
@@ -125,14 +128,10 @@ void TWebBrowser::LoadInternalPage(dword bufpos, in_filesize){
 	Prepare();
 }
 //============================================================================================
-void TWebBrowser::Prepare(){
-	word bukva[2];
-	dword j;
-	byte ignor_param;
-	dword bufpos;
-	dword line_len;	
-	style.b = style.u = style.s = style.h = style.blq = t_html = t_body =
-	style.li = link = ignor_text = text_color_index = text_colors[0] = style.li_tab = 0;
+void TWebBrowser::SetPageDefaults()
+{
+	style.b = style.u = style.s = style.h = style.blq = t_html = t_body = style.pre =
+	style.li = link = text_color_index = text_colors[0] = style.li_tab = false;
 	style.align = ALIGN_LEFT;
 	link_color_inactive = 0x0000FF;
 	link_color_active = 0xFF0000;
@@ -141,26 +140,23 @@ void TWebBrowser::Prepare(){
 	DrawBuf.Fill(0, page_bg);
 	PageLinks.Clear();
 	strcpy(#header, #version);
+	cur_encoding = CH_NULL;
 	draw_y = body_magrin;
 	stolbec = 0;
 	line = 0;
-	zoom = 1;
-	//for plaint text use CP866 for other UTF
-	if (strstri(bufpointer, "html")!=-1) 
-	{
-		debugln("<html> found");
-		style.pre = false;
-		cur_encoding = CH_NULL;
-	}
-	else
-	{
-		debugln("no <html>");
-		style.pre = true;
-		cur_encoding = CH_NULL;
-	}
+	zoom = 1;	
+}
+//============================================================================================
+void TWebBrowser::Prepare(){
+	word bukva[2];
+	dword j;
+	bool ignor_param;
+	dword bufpos;
+	dword line_len;
+	SetPageDefaults();
+	if (strstri(bufpointer, "<html")==-1) style.pre = true; //show linebreaks for a plaint text
 	for (bufpos=bufpointer ; (bufpos < bufpointer+bufsize) && (ESBYTE[bufpos]!=0) ; bufpos++;)
 	{
-		if (ignor_text) && (ESBYTE[bufpos]!='<') continue;
 		bukva = ESBYTE[bufpos];
 		switch (bukva)
 		{
@@ -201,7 +197,7 @@ void TWebBrowser::Prepare(){
 				{
 					bufpos++;
 				}
-				bufpos+=3;
+				bufpos+=2;
 				break;
 			}
 			tag = attr = tagparam = ignor_param = NULL;
@@ -216,18 +212,39 @@ void TWebBrowser::Prepare(){
 				else
 				{
 					ignor_param = true;
-					if (!ignor_text) && (strlen(#tagparam)+1<sizeof(tagparam)) strcat(#tagparam, #bukva);
+					if (strlen(#tagparam)+1<sizeof(tagparam)) strcat(#tagparam, #bukva);
 				}
 				bufpos++;
 			}
 			strlwr(#tag);
 
+			// ignore text inside the next tags
+			if (istag("script")) || (istag("style")) || (istag("binary")) || (istag("select"))  { 
+				for (j=10; j>0; j--) tag[j]=tag[j-1];
+				tag[0] = '/';
+				j = strstri(bufpos, #tag);
+				if (j!=-1) {
+					bufpos = j;
+				}
+				break;
+			}
+
 			if (tag[strlen(#tag)-1]=='/') tag[strlen(#tag)-1]=NULL; //for br/
 			if (tagparam) GetNextParam();
-			Perenos();
-			DrawStyle();
-			line = NULL;
-			if (tag) SetStyle();
+
+			if (tag[0] == '/') 
+			{
+				 opened = 0;
+				 strcpy(#tag, #tag+1);
+			}
+			else opened = 1;
+
+			if (tag) && (!istag("span")) && (!istag("i")) && (!istag("svg")) {
+				Perenos();
+				DrawStyle();
+				line = NULL;
+				if (tag) SetStyle();				
+			}
 			strlcpy(#oldtag, #tag, sizeof(oldtag));
 			tag = attr = tagparam = ignor_param = NULL;
 			break;
@@ -270,25 +287,15 @@ void TWebBrowser::Perenos()
 void TWebBrowser::SetStyle() {
 	char img_path[4096];
 	int left1 = body_magrin + list.x;
-	bool opened;
 	int meta_encoding;
-	if (tag[0] == '/') 
-	{
-		 opened = 0;
-		 strcpy(#tag, #tag+1);
-	}
-	else opened = 1;
 	if (istag("html")) {
 		t_html = opened;
 		return;
 	}
-	if (istag("script")) || (istag("style")) || (istag("binary")) || (istag("select")) { ignor_text = opened; return; }
-	if (istag("form")) if (!opened) ignor_text = false;
 	if(istag("title")) {
 		if (opened) header=NULL;
 		return;
 	}
-	if (ignor_text) return;
 	
 	IF(istag("q"))
 	{
@@ -360,14 +367,20 @@ void TWebBrowser::SetStyle() {
 		else if (text_color_index > 0) text_color_index--;
 		return;
 	}
-	if (istag("div")) || (istag("header")) || (istag("article")) || (istag("footer")) {
-		IF(oldtag[0] != 'h') NewLine();
+	if (istag("div")) {
+		if (streq(#oldtag,"div")) && (opened) return;
+		NewLine();
+		//IF (oldtag[0] != 'h') 
+		return;
+	}
+	if (istag("header")) || (istag("article")) || (istag("footer")) || (istag("figure")) {
+		NewLine();
 		return;
 	}
 	if (istag("p")) {
-		IF(oldtag[0] == 'h') return;
+		IF (oldtag[0] == 'h') || (streq(#oldtag,"td")) || (streq(#oldtag,"p")) return;
 		NewLine();
-		IF(opened) NewLine();
+		//IF(opened) NewLine();
 		return;
 	}
 	if (istag("br")) { NewLine(); return; }
@@ -383,7 +396,9 @@ void TWebBrowser::SetStyle() {
 		do{
 			if (isattr("src=")) strcpy(#img_path, #val);
 			if (isattr("alt=")) sprintf(#line, "[%s]", #val);
+			if (isattr("title=")) sprintf(#line, "[%s]", #val);
 		} while(GetNextParam());
+		debugln(#val);
 		style.image = true;
 		text_color_index++;
 		text_colors[text_color_index] = 0x9A6F29;
@@ -455,8 +470,10 @@ void TWebBrowser::SetStyle() {
 		$push edi;
 		NewLine();
 		$pop edi;
+		draw_y += 10;
 		DrawBuf.DrawBar(5, draw_y - 1, list.w-10, 1, EDI);
 		NewLine();
+		draw_y += 10;
 		return;
 	}
 	if (istag("meta")) || (istag("?xml")) {
@@ -477,7 +494,7 @@ void TWebBrowser::SetStyle() {
 		return;
 	}
 }
-
+//============================================================================================
 void TWebBrowser::BufEncode(dword set_new_encoding)
 {
 	if (cur_encoding == set_new_encoding) return;

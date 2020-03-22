@@ -41,7 +41,6 @@ dword panel_color  = 0xE3E2E2;
 dword border_color = 0x8C8C8C;
 
 bool debug_mode = false;
-bool old_tag_parser_mode = false;
 
 bool open_in_a_new_window = false;
 

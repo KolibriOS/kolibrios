@@ -64,6 +64,7 @@ PathShow_data status_text = {0, 17,250, 6, 250, 0, 0, 0x0, 0xFFFfff, 0, #temp, 0
 bool LinksArray::HoverAndProceed(dword mx, my)
 {
 	int i;
+	if (!count) return true;
 	for (i=0; i<count; i++)
 	{
 		if (mx>links[i].x) && (my>links[i].y) && (mx<links[i].x+links[i].w) && (my<links[i].y+links[i].h)
