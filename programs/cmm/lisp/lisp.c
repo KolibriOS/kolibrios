@@ -230,7 +230,7 @@ void main()
 		}
 	}
 	
-	IF(initConsole) con_exit stdcall (0);
+	IF(initConsole) con_exit stdcall (1);
 	ExitProcess();
 }
 

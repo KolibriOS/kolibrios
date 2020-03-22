@@ -1,9 +1,30 @@
 
 /* Lisp functions */
-:dword std_exit()
+
+:dword std_sleep(dword count, args)
 {
-	con_exit stdcall (1);
-	ExitProcess();
+	dword ret = 0;
+	dword arg = 0;
+	dword val = 0;
+	WHILE(count)
+	{
+		arg = DSDWORD[args];
+		REPEAT1:
+		IF (DSDWORD[arg+4] == TSym) 
+		{
+			arg = std_get(1, args);
+			goto REPEAT1;
+		}
+		IF (DSDWORD[arg+4] == TInt)
+		{
+			EAX = 5;
+			EBX = DSDWORD[arg];
+			$int 0x40
+		}
+		args+=4;
+		count--;
+	}
+	RETURN ret;
 }
 
 :dword std_set(dword count, args)
@@ -62,6 +83,12 @@
 	RETURN ret;
 }
 
+:dword std_exit(dword count, args)
+{
+	IF(initConsole) con_exit stdcall (1);
+	ExitProcess();
+}
+
 :dword std_sub(dword count, args)
 {
 	dword ret = 0;
@@ -75,6 +102,38 @@
 	{
 		ret -= DSDWORD[args];
 		args += 4;
+		count--;
+	}
+	RETURN ret;
+}
+
+:dword std_type(dword count, args)
+{
+	dword ret = 0;
+	dword arg = 0;
+	dword val = 0;
+	ret = malloc(TLen);
+	DSDWORD[ret] = "nil";
+	DSDWORD[ret+4] = TStr;
+	WHILE(count)
+	{
+		arg = DSDWORD[args];
+		REPEAT1:
+		IF (DSDWORD[arg+4] == TSym) 
+		{
+			arg = std_get(1, args);
+			goto REPEAT1;
+		}
+		switch (DSDWORD[arg+4])
+		{
+			case TStr:
+				DSDWORD[ret] = "string";
+			break;
+			case TInt:
+				DSDWORD[ret] = "integer";
+			break;
+		}
+		args+=4;
 		count--;
 	}
 	RETURN ret;
@@ -218,6 +277,9 @@ void Init()
 	/* Lisp functions */
 	functions.set("set", #std_set);
 	functions.set("get", #std_get);
+	functions.set("type", #std_type);
+	functions.set("sleep", #std_sleep);
+
 	
 	variables.init(100);
 }
