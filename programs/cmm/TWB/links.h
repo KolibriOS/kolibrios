@@ -67,7 +67,9 @@ bool LinksArray::HoverAndProceed(dword mx, my)
 	if (!count) return true;
 	for (i=0; i<count; i++)
 	{
-		if (mx>links[i].x) && (my>links[i].y) && (mx<links[i].x+links[i].w) && (my<links[i].y+links[i].h)
+		if (mx>links[i].x) && (my>links[i].y) 
+		&& (mx<links[i].x+links[i].w) && (my<links[i].y+links[i].h)
+		&& (my>WB1.list.y+WB1.list.first)
 		{
 			if (mouse.lkm) && (mouse.down) {
 				DrawRectangle(links[active].x, -WB1.list.first + links[active].y, 
@@ -91,9 +93,9 @@ bool LinksArray::HoverAndProceed(dword mx, my)
 			if (active==i) return false;
 			CursorPointer.Load(#CursorFile);
 			CursorPointer.Set();
-			if (links[active].underline) DrawBar(links[active].x, -WB1.list.first + links[active].y
+			if (links[active].underline) DrawUnderline(links[active].x, -WB1.list.first + links[active].y
 				+ links[active].h, links[active].w, links[active].underline_h, link_color_inactive);
-			if (links[i].underline) DrawBar(links[i].x, -WB1.list.first + links[i].y
+			if (links[i].underline) DrawUnderline(links[i].x, -WB1.list.first + links[i].y
 				+ links[i].h, links[i].w, links[i].underline_h, page_bg);
 			active = i;
 			DrawStatusBar(links[active].link);
@@ -104,7 +106,7 @@ bool LinksArray::HoverAndProceed(dword mx, my)
 	{
 		CursorPointer.Restore();
 		if (links[active].underline) {
-			DrawBar(links[active].x, -WB1.list.first + links[active].y + links[active].h,links[active].w, 
+			DrawUnderline(links[active].x, -WB1.list.first + links[active].y + links[active].h,links[active].w, 
 				links[active].underline_h, link_color_inactive);
 		}
 		DrawBar(status_text.start_x, status_text.start_y, status_text.area_size_x, 9, col_bg);
@@ -112,4 +114,7 @@ bool LinksArray::HoverAndProceed(dword mx, my)
 	}
 }
 
-
+void DrawUnderline(dword x,y,w,h,color)
+{
+	if (y>WB1.list.y) DrawBar(x,y,w,h,color);
+}

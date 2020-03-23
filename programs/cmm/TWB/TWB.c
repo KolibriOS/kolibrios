@@ -155,6 +155,7 @@ void TWebBrowser::Prepare(){
 	dword line_len;
 	SetPageDefaults();
 	if (strstri(bufpointer, "<html")==-1) style.pre = true; //show linebreaks for a plaint text
+	else if (strstri(bufpointer, "<body")==-1) t_body = true;
 	for (bufpos=bufpointer ; (bufpos < bufpointer+bufsize) && (ESBYTE[bufpos]!=0) ; bufpos++;)
 	{
 		bukva = ESBYTE[bufpos];
@@ -220,12 +221,12 @@ void TWebBrowser::Prepare(){
 
 			// ignore text inside the next tags
 			if (istag("script")) || (istag("style")) || (istag("binary")) || (istag("select"))  { 
-				for (j=10; j>0; j--) tag[j]=tag[j-1];
-				tag[0] = '/';
-				j = strstri(bufpos, #tag);
+				sprintf(#tagparam, "</%s>", #tag);
+				j = strstri(bufpos, #tagparam);
 				if (j!=-1) {
 					bufpos = j;
 				}
+				tag = tagparam = NULL;
 				break;
 			}
 
@@ -243,7 +244,7 @@ void TWebBrowser::Prepare(){
 				Perenos();
 				DrawStyle();
 				line = NULL;
-				if (tag) SetStyle();				
+				if (tag) SetStyle();
 			}
 			strlcpy(#oldtag, #tag, sizeof(oldtag));
 			tag = attr = tagparam = ignor_param = NULL;
@@ -394,11 +395,10 @@ void TWebBrowser::SetStyle() {
 	if (istag("pre")) || (istag("code")) { style.pre = opened; return; }
 	if (istag("img")) {
 		do{
-			if (isattr("src=")) strcpy(#img_path, #val);
-			if (isattr("alt=")) sprintf(#line, "[%s]", #val);
-			if (isattr("title=")) sprintf(#line, "[%s]", #val);
+			if (isattr("src=")) strncpy(#img_path, #val, sizeof(img_path)-1);
+			if (isattr("alt=")) && (strlen(#val)<sizeof(line)-3) sprintf(#line, "[%s]", #val); 
+			if (isattr("title=")) && (strlen(#val)<sizeof(line)-3) sprintf(#line, "[%s]", #val); 
 		} while(GetNextParam());
-		debugln(#val);
 		style.image = true;
 		text_color_index++;
 		text_colors[text_color_index] = 0x9A6F29;

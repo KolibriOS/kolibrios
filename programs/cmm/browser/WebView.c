@@ -22,18 +22,19 @@
 #include "..\lib\obj\libimg.h"
 #include "..\lib\obj\http.h"
 #include "..\lib\obj\iconv.h"
+#include "..\lib\obj\proc_lib.h"
 //useful patterns
 #include "..\lib\patterns\history.h"
 #include "..\lib\patterns\http_downloader.h"
+#include "..\lib\patterns\simple_open_dialog.h"
 
 _http http = {0, 0, 0, 0, 0, 0, 0};
 
 
 #ifdef LANG_RUS
-char version[]="Текстовый браузер 1.9";
-?define IMAGES_CACHE_CLEARED "Кэш картинок очищен"
-?define T_LAST_SLIDE "Это последний слайд"
-char loading[] = "Загрузка страницы...<br>";
+char version[]="Текстовый браузер 1.92";
+#define T_LOADING "Загрузка страницы..."
+#define T_RENDERING "Рендеринг..."
 char page_not_found[] = FROM "html\\page_not_found_ru.htm""\0";
 char homepage[] = FROM "html\\homepage_ru.htm""\0";
 char help[] = FROM "html\\help_ru.htm""\0";
@@ -48,9 +49,8 @@ char link_menu[] =
 Скачать содержимое ссылки";
 #else
 char version[]="Text-based Browser 1.9";
-?define IMAGES_CACHE_CLEARED "Images cache cleared"
-?define T_LAST_SLIDE "This slide is the last"
-char loading[] = "Loading...<br>";
+#define T_LOADING "Loading..."
+#define T_RENDERING "Rendering..."
 char page_not_found[] = FROM "html\\page_not_found_en.htm""\0";
 char homepage[] = FROM "html\\homepage_en.htm""\0";
 char help[] = FROM "html\\help_en.htm""\0";
@@ -73,9 +73,6 @@ Download link contents";
 
 proc_info Form;
 
-//char search_path[]="http://nigma.ru/index.php?s=";
-int redirected = 0;
-
 char stak[4096];
 
 int action_buf;
@@ -90,6 +87,7 @@ dword border_color = 0x8C8C8C;
 bool debug_mode = false;
 
 progress_bar wv_progress_bar;
+
 bool souce_mode = false;
 bool open_in_a_new_window = false;
 
@@ -102,7 +100,6 @@ enum {
 	VIEW_SOURCE=1100,
 	EDIT_SOURCE,
 	VIEW_HISTORY,
-	//FREE_IMG_CACHE,
 	DOWNLOAD_MANAGER,
 	COPY_LINK_URL=1200,
 	DOWNLOAD_LINK_CONTENTS,
@@ -113,29 +110,49 @@ enum {
 #include "show_src.h"
 #include "download_manager.h"
 
+char default_dir[] = "/rd/1";
+od_filter filter2 = { 16, "TXT\0HTM\0HTML\0\0" };
+
 char editURL[sizeof(URL)];
 edit_box address_box = {250,60,30,0xffffff,0x94AECE,0xffffff,0xffffff,0x10000000,sizeof(URL)-2,#editURL,0,NULL,19,19};
 
 #define SKIN_Y 24
 
+void LoadLibraries()
+{
+	load_dll(boxlib,    #box_lib_init,0);
+	load_dll(libio,     #libio_init,1);
+	load_dll(libimg,    #libimg_init,1);
+	load_dll(libHTTP,   #http_lib_init,1);
+	load_dll(iconv_lib, #iconv_open,0);
+	load_dll(Proc_lib,  #OpenDialog_init,0);
+	OpenDialog_init stdcall (#o_dialog);	
+}
+
+void HandleParam()
+{
+	if (param) {
+		if (param[0]=='-') && (param[1]=='d') {
+			strcpy(#downloader_edit, #param+3);
+			CreateThread(#Downloader,#downloader_stak+4092);
+			ExitProcess();
+		} else {
+			strcpy(#URL, #param); 
+		}
+	} else {
+		strcpy(#URL, URL_SERVICE_HOMEPAGE);
+	}
+}
+
 void main()
 {
+	int redirect_count = 0;
 	int i;
-	load_dll(boxlib, #box_lib_init,0);
-	load_dll(libio, #libio_init,1);
-	load_dll(libimg, #libimg_init,1);
-	load_dll(libHTTP, #http_lib_init,1);
-	load_dll(iconv_lib, #iconv_open,0);
-	Libimg_LoadImage(#skin, "/sys/toolbar.png");
-	skin.h = 26;
-	wv_progress_bar.progress_color = 0x72B7EB;
+	LoadLibraries();
 	CreateDir("/tmp0/1/downloads");
-	if (param) && (param[0]=='-') && (param[1]=='d') {
-		strcpy(#downloader_edit, #param+3);
-		CreateThread(#Downloader,#downloader_stak+4092);
-		ExitProcess();
-	}
-	else if (param) strcpy(#URL, #param); else strcpy(#URL, URL_SERVICE_HOMEPAGE);
+	Libimg_LoadImage(#skin, "/sys/toolbar.png");
+	HandleParam();
+	skin.h = 26;
 	WB1.list.SetFont(8, 14, 10011000b);
 	WB1.list.no_selection = true;
 	SetEventMask(EVM_REDRAW + EVM_KEY + EVM_BUTTON + EVM_MOUSE + EVM_MOUSE_FILTER + EVM_STACK);
@@ -166,6 +183,7 @@ void main()
 		case evKey:
 			GetKeys();
 			if (key_modifier&KEY_LCTRL) || (key_modifier&KEY_RCTRL) {
+				if (key_scancode == SCAN_CODE_KEY_O) EventOpenDialog();
 				if (key_scancode == SCAN_CODE_KEY_H) ProcessEvent(VIEW_HISTORY);
 				if (key_scancode == SCAN_CODE_KEY_U) ProcessEvent(VIEW_SOURCE);
 				if (key_scancode == SCAN_CODE_KEY_T) 
@@ -206,24 +224,27 @@ void main()
 				ProcessEvent(menu.cur_y);
 				menu.cur_y = 0;
 			}
-			DefineAndDrawWindow(GetScreenWidth()-800/2-random(80),GetScreenHeight()-600/2-random(80),800,600,0x73,col_bg,0,0);
+			DefineAndDrawWindow(GetScreenWidth()-800/2-random(80),GetScreenHeight()-600/2-random(80),800,600,0x73,0,0,0);
 			GetProcessInfo(#Form, SelfInfo);
+			system.color.get();
+			col_bg = system.color.work;
 			if (Form.status_window>2) { DrawTitle(#header); break; }
 			if (Form.height<120) { MoveSize(OLD,OLD,OLD,120); break; }
 			if (Form.width<280) { MoveSize(OLD,OLD,280,OLD); break; }
-			Draw_Window();
+			draw_window();
 			break;
 			
 		case evNetwork:
 			if (http.transfer > 0) {
 				http.receive();
 				EventUpdateProgressBar();
+				DrawStatusBar(T_LOADING);
 				if (http.receive_result == 0) {
 					// Handle redirects
 					if (http.status_code >= 300) && (http.status_code < 400)
 					{
-						redirected++;
-						if (redirected>5)
+						redirect_count++;
+						if (redirect_count>5)
 						{
 							notify("'Too many redirects.' -E");
 							StopLoading();
@@ -233,7 +254,9 @@ void main()
 							http.handle_redirect();
 							http.free();
 							GetAbsoluteURL(#http.redirect_url);
+							debug("Redirect: "); debugln(#http.redirect_url);
 							history.back();
+							strcpy(#URL, #http.redirect_url);
 							strcpy(#editURL, #URL);
 							DrawOmnibox();
 							OpenPage();
@@ -241,14 +264,16 @@ void main()
 						}
 						break;
 					} 
-					redirected = 0;
+					redirect_count = 0;
 					// Loading the page is complete, free resources
 					history.add(#URL);
 					bufpointer = http.content_pointer;
 					bufsize = http.content_received;
 					http.free();
 					SetPageDefaults();
+					DrawStatusBar(T_RENDERING);
 					ShowPage();
+					DrawStatusBar(NULL);
 				}
 			}
 	}
@@ -272,7 +297,7 @@ void SetElementSizes()
 
 
 
-void Draw_Window()
+void draw_window()
 {
 	DrawBar(0,0, Form.cwidth,TOOLBAR_H-2, panel_color);
 	DrawBar(0,TOOLBAR_H-2, Form.cwidth,1, 0xD7D0D3);
@@ -326,7 +351,7 @@ void ProcessEvent(dword id__)
 			if (http.transfer > 0) 
 			{
 				StopLoading();
-				Draw_Window();
+				draw_window();
 			}
 			else OpenPage();
 			return;
@@ -346,11 +371,6 @@ void ProcessEvent(dword id__)
 			}
 			else RunProgram("/rd/1/tinypad", #URL);
 			return;
-		// case FREE_IMG_CACHE:
-		// 	ImgCache.Free();
-		// 	notify(IMAGES_CACHE_CLEARED);
-		// 	WB1.DrawPage();
-		// 	return;
 		case VIEW_HISTORY:
 			strcpy(#URL, URL_SERVICE_HISTORY);
 			OpenPage();
@@ -620,8 +640,7 @@ void ShowPage()
 	DrawOmnibox();
 	if (!bufsize)
 	{
-		if (http.transfer) WB1.LoadInternalPage(#loading, sizeof(loading));
-		else WB1.LoadInternalPage(#page_not_found, sizeof(page_not_found));
+		WB1.LoadInternalPage(#page_not_found, sizeof(page_not_found));
 	}
 	else
 	{
@@ -640,7 +659,7 @@ void DrawProgress()
 	dword persent;
 	if (http.transfer == 0) return;
 	if (wv_progress_bar.max) persent = wv_progress_bar.value*100/wv_progress_bar.max; else persent = 10;
-	DrawBar(address_box.left-2, address_box.top+20, persent*address_box.width/100, 2, wv_progress_bar.progress_color);
+	DrawBar(address_box.left-2, address_box.top+20, persent*address_box.width/100, 2, 0x72B7EB);
 }
 
 void EventShowPageMenu(dword _left, _top)
@@ -666,12 +685,22 @@ void EventUpdateProgressBar()
 void EventSeachWeb()
 {
 	sprintf(#URL, "https://www.google.com/search?q=%s", #editURL);
+	replace_char(#URL, ' ', '_', sizeof(URL));
 	ProcessLink();
+}
+
+void EventOpenDialog()
+{
+	OpenDialog_start stdcall (#o_dialog);
+	if (o_dialog.status) {
+		strcpy(#URL, #openfile_path);
+		OpenPage();
+	}
 }
 
 void DrawStatusBar(dword _status_text)
 {
-	status_text.start_x = wv_progress_bar.left + wv_progress_bar.width + 10;
+	status_text.start_x = 10;
 	status_text.start_y = Form.cheight - STATUSBAR_H + 3;
 	status_text.area_size_x = Form.cwidth - status_text.start_x -3;
 	DrawBar(status_text.start_x, status_text.start_y, status_text.area_size_x, 9, col_bg);
