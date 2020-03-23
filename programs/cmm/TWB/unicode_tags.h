@@ -67,25 +67,25 @@ char *unicode_tags[]={
 
 byte unicode_chars[] = "€‚ƒ„…†‡ˆ‰Š‹ŒŽ‘’“”•–—˜™š›œžŸ ¡¢£¤¥¦§¨©ª«¬­®¯àáâãäåæçèéêëìíîïðñh£\243i\105\244\0";
 
-unsigned char GetUnicodeSymbol()
+bool GetUnicodeSymbol(dword in_tag)
 {
 	int j;
 	
 	for (j=0; unicode_tags[j]!=0; j+=2;) 
 	{
-		if (!strcmp(#tag, unicode_tags[j]))
+		if (!strcmp(in_tag, unicode_tags[j]))
 		{
 			strcat(#line, unicode_tags[j+1]);
-			return NULL;
+			return true;
 		}
 	}
-	
-	j = atoi(#tag + 1) - 1040;
-	if (tag[1] == '1') && (j>=0) && (j<=72) && (strlen(#tag) == 5)
+
+	j = atoi(in_tag + 1) - 1040;
+	if (tag[1] == '1') && (j>=0) && (j<=72) && (strlen(in_tag) == 5)
 	{
-		return unicode_chars[j];
+		chrcat(#line, unicode_chars[j]);
+		return true;
 	}
-	
-	strcat(#line,#tag); //âûâîäèì íà ýêðàí íåîáðàáîòàííûé òåã, òàê áðàóçåðû çà÷åì-òî äåëàþò
-	return NULL;
+
+	return false;
 }

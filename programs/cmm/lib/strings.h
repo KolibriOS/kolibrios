@@ -14,6 +14,7 @@
 // strcpy( EDI, ESI) --- 0 if ==
 // strlcpy(dword text1,text2,signed length)
 // strcat( EDI, ESI)
+// chrcat(ESI, BL)
 // strncat(dword text1,text2,signed length) --- pasting the text of a certain length
 // strchr( ESI,BL) --- find first BL
 // strrchr( ESI,BL) --- find last BL

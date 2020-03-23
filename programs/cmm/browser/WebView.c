@@ -32,7 +32,7 @@ _http http = {0, 0, 0, 0, 0, 0, 0};
 
 
 #ifdef LANG_RUS
-char version[]="Текстовый браузер 1.92";
+char version[]="Текстовый браузер 1.93";
 #define T_LOADING "Загрузка страницы..."
 #define T_RENDERING "Рендеринг..."
 char page_not_found[] = FROM "html\\page_not_found_ru.htm""\0";
@@ -48,7 +48,7 @@ char link_menu[] =
 "Копировать ссылку
 Скачать содержимое ссылки";
 #else
-char version[]="Text-based Browser 1.9";
+char version[]="Text-based Browser 1.93";
 #define T_LOADING "Loading..."
 #define T_RENDERING "Rendering..."
 char page_not_found[] = FROM "html\\page_not_found_en.htm""\0";

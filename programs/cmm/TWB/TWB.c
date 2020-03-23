@@ -96,6 +96,10 @@ void TWebBrowser::DrawStyle()
 		stolbec_len = strlen(#line) * zoom;
 		line_length = stolbec_len * list.font_w;
 
+		if (debug_mode) {
+			DrawBuf.DrawBar(start_x, draw_y, line_length, list.item_h-1, 0xDDDddd);
+		}
+
 		if (style.bg_color!=page_bg) {
 			DrawBuf.DrawBar(start_x, draw_y, line_length, list.item_h-1, style.bg_color);
 		}
@@ -154,8 +158,10 @@ void TWebBrowser::Prepare(){
 	dword bufpos;
 	dword line_len;
 	SetPageDefaults();
-	if (strstri(bufpointer, "<html")==-1) style.pre = true; //show linebreaks for a plaint text
-	else if (strstri(bufpointer, "<body")==-1) t_body = true;
+	if (strstri(bufpointer, "<body")==-1) {
+		t_body = true;
+		if (strstri(bufpointer, "<html")==-1)  style.pre = true; //show linebreaks for a plaint text
+	} 
 	for (bufpos=bufpointer ; (bufpos < bufpointer+bufsize) && (ESBYTE[bufpos]!=0) ; bufpos++;)
 	{
 		bukva = ESBYTE[bufpos];
@@ -180,14 +186,17 @@ void TWebBrowser::Prepare(){
 			}
 			goto DEFAULT_MARK;
 		case '&': //&nbsp; and so on
-			bufpos++;
-			tag=0;
-			for (j=0; (ESBYTE[bufpos]<>';') && (j<7);   j++, bufpos++;)
+			for (j=1, tag=0; (ESBYTE[bufpos+j]<>';') && (j<8); j++)
 			{
-				bukva = ESBYTE[bufpos];
+				bukva = ESBYTE[bufpos+j];
 				chrcat(#tag, bukva);
 			}
-			if (bukva = GetUnicodeSymbol()) goto DEFAULT_MARK;
+			if (bukva = GetUnicodeSymbol(#tag)) {
+				bufpos += j;
+			} else {
+				bukva = '&';
+			}
+			goto DEFAULT_MARK;
 			break;
 		case '<':
 			bufpos++;
@@ -224,7 +233,7 @@ void TWebBrowser::Prepare(){
 				sprintf(#tagparam, "</%s>", #tag);
 				j = strstri(bufpos, #tagparam);
 				if (j!=-1) {
-					bufpos = j;
+					bufpos = j-1;
 				}
 				tag = tagparam = NULL;
 				break;
@@ -286,7 +295,7 @@ void TWebBrowser::Perenos()
 }
 //============================================================================================
 void TWebBrowser::SetStyle() {
-	char img_path[4096];
+	char img_path[4096]=0;
 	int left1 = body_magrin + list.x;
 	int meta_encoding;
 	if (istag("html")) {
@@ -396,14 +405,16 @@ void TWebBrowser::SetStyle() {
 	if (istag("img")) {
 		do{
 			if (isattr("src=")) strncpy(#img_path, #val, sizeof(img_path)-1);
-			if (isattr("alt=")) && (strlen(#val)<sizeof(line)-3) sprintf(#line, "[%s]", #val); 
-			if (isattr("title=")) && (strlen(#val)<sizeof(line)-3) sprintf(#line, "[%s]", #val); 
+			if (isattr("title=")) && (strlen(#val)<sizeof(line)-3) && (val) sprintf(#line, "[%s]", #val); 
+			if (isattr("alt=")) && (strlen(#val)<sizeof(line)-3) && (val) sprintf(#line, "[%s]", #val); 
 		} while(GetNextParam());
+		if (!img_path) return;
 		style.image = true;
 		text_color_index++;
 		text_colors[text_color_index] = 0x9A6F29;
 		if (!line) {
 			if (!strncmp(#img_path, "data:", 5)) img_path=0;
+			replace_char(#img_path, '?', NULL, strlen(#img_path));
 			sprintf(#line, "[%s]", #img_path+strrchr(#img_path, '/'));
 			line[50]= NULL;
 		}
@@ -532,7 +543,10 @@ void TWebBrowser::NewLine()
 
 	if (!stolbec) && (draw_y==body_magrin) return;
 	
-	if (!stolbec) { 
+	if (style.li) && (stolbec == style.li_tab * 5) { 
+		if (empty_line<1) empty_line++;
+		else return;
+	} else if (!stolbec) { 
 		if (empty_line<1) empty_line++;
 		else return;
 	} else {
