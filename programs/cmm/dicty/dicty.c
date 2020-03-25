@@ -154,7 +154,7 @@ void DrawTranslation()
 {
 	int y_pos=TOPH+1;
 	char draw_buf[4096];
-	strlcpy(#draw_buf, #translate_result, sizeof(draw_buf));
+	strlcpy(#draw_buf, #translate_result, sizeof(draw_buf)-1);
 	
 	DrawBar(0, y_pos, Form.width-9, Form.cheight - y_pos, 0xFFFFFF);
 	strttl(#draw_buf);

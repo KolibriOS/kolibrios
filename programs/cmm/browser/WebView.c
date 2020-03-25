@@ -28,11 +28,8 @@
 #include "..\lib\patterns\http_downloader.h"
 #include "..\lib\patterns\simple_open_dialog.h"
 
-_http http = {0, 0, 0, 0, 0, 0, 0};
-
-
 #ifdef LANG_RUS
-char version[]="Текстовый браузер 1.93";
+char version[]="Текстовый браузер 1.94";
 #define T_LOADING "Загрузка страницы..."
 #define T_RENDERING "Рендеринг..."
 char page_not_found[] = FROM "html\\page_not_found_ru.htm""\0";
@@ -48,7 +45,7 @@ char link_menu[] =
 "Копировать ссылку
 Скачать содержимое ссылки";
 #else
-char version[]="Text-based Browser 1.93";
+char version[]="Text-based Browser 1.94";
 #define T_LOADING "Loading..."
 #define T_RENDERING "Rendering..."
 char page_not_found[] = FROM "html\\page_not_found_en.htm""\0";
@@ -65,31 +62,34 @@ char link_menu[] =
 Download link contents";
 #endif
 
-
-#define URL_SERVICE_HISTORY "WebView://history"
-#define URL_SERVICE_HOMEPAGE "WebView://home"
-#define URL_SERVICE_HELP "WebView://help"
-#define URL_SERVICE_SOURCE "WebView://source:"
-
-proc_info Form;
-
-char stak[4096];
-
-int action_buf;
-
-dword TOOLBAR_H = 40;
-dword STATUSBAR_H = 15;
-
 dword col_bg = 0xE3E2E2;
 dword panel_color  = 0xE3E2E2;
 dword border_color = 0x8C8C8C;
 
 bool debug_mode = false;
+bool open_in_a_new_window = false;
+
+_http http = {0, 0, 0, 0, 0, 0, 0};
+
+#include "..\TWB\TWB.c"
+#include "history.h"
+#include "show_src.h"
+#include "download_manager.h"
+
+#define URL_SERVICE_HISTORY "WebView:history"
+#define URL_SERVICE_HOMEPAGE "WebView:home"
+#define URL_SERVICE_HELP "WebView:help"
+
+dword TOOLBAR_H = 40;
+dword STATUSBAR_H = 15;
+
+int action_buf;
+
+bool source_mode = false;
 
 progress_bar wv_progress_bar;
-
-bool souce_mode = false;
-bool open_in_a_new_window = false;
+char stak[4096];
+proc_info Form;
 
 enum { 
 	BACK_BUTTON=1000, 
@@ -97,18 +97,13 @@ enum {
 	REFRESH_BUTTON, 
 	GOTOURL_BUTTON, 
 	SANDWICH_BUTTON,
-	VIEW_SOURCE=1100,
+	VIEW_SOURCE,
 	EDIT_SOURCE,
 	VIEW_HISTORY,
 	DOWNLOAD_MANAGER,
-	COPY_LINK_URL=1200,
+	COPY_LINK_URL,
 	DOWNLOAD_LINK_CONTENTS,
 };
-
-#include "..\TWB\TWB.c"
-#include "history.h"
-#include "show_src.h"
-#include "download_manager.h"
 
 char default_dir[] = "/rd/1";
 od_filter filter2 = { 16, "TXT\0HTM\0HTML\0\0" };
@@ -132,10 +127,13 @@ void LoadLibraries()
 void HandleParam()
 {
 	if (param) {
-		if (param[0]=='-') && (param[1]=='d') {
+		if (!strncmp(#param, "-d ", 3)) {
 			strcpy(#downloader_edit, #param+3);
 			CreateThread(#Downloader,#downloader_stak+4092);
 			ExitProcess();
+		} else if (!strncmp(#param, "-s ", 3)) {
+			source_mode = true;
+			strcpy(#URL, #param + 3);
 		} else {
 			strcpy(#URL, #param); 
 		}
@@ -185,7 +183,7 @@ void main()
 			if (key_modifier&KEY_LCTRL) || (key_modifier&KEY_RCTRL) {
 				if (key_scancode == SCAN_CODE_KEY_O) EventOpenDialog();
 				if (key_scancode == SCAN_CODE_KEY_H) ProcessEvent(VIEW_HISTORY);
-				if (key_scancode == SCAN_CODE_KEY_U) ProcessEvent(VIEW_SOURCE);
+				if (key_scancode == SCAN_CODE_KEY_U) EventViewSource();
 				if (key_scancode == SCAN_CODE_KEY_T) 
 				|| (key_scancode == SCAN_CODE_KEY_N) RunProgram(#program_path, NULL);
 				if (key_scancode == SCAN_CODE_KEY_W) ExitProcess();
@@ -224,7 +222,7 @@ void main()
 				ProcessEvent(menu.cur_y);
 				menu.cur_y = 0;
 			}
-			DefineAndDrawWindow(GetScreenWidth()-800/2-random(80),GetScreenHeight()-600/2-random(80),800,600,0x73,0,0,0);
+			DefineAndDrawWindow(GetScreenWidth()-800/2-random(80),GetScreenHeight()-700/2-random(80),800,700,0x73,0,0,0);
 			GetProcessInfo(#Form, SelfInfo);
 			system.color.get();
 			col_bg = system.color.work;
@@ -359,17 +357,15 @@ void ProcessEvent(dword id__)
 			EventShowPageMenu(Form.cwidth - 215, TOOLBAR_H-6);
 			return;
 		case VIEW_SOURCE:
-			WB1.list.first = 0;
-			ShowSource();
-			WB1.LoadInternalPage(bufpointer, bufsize);
+			EventViewSource();
 			break;
 		case EDIT_SOURCE:
-			if (!strncmp(#URL,"http",4)) 
-			{
+			if (check_is_the_adress_local(#URL)) {
+				RunProgram("/rd/1/tinypad", #URL);
+			} else {
 				CreateFile(bufsize, bufpointer, "/tmp0/1/WebView_tmp.htm");
 				if (!EAX) RunProgram("/rd/1/tinypad", "/tmp0/1/WebView_tmp.htm");
 			}
-			else RunProgram("/rd/1/tinypad", #URL);
 			return;
 		case VIEW_HISTORY:
 			strcpy(#URL, URL_SERVICE_HISTORY);
@@ -444,14 +440,13 @@ void OpenPage()
 {
 	char getUrl[sizeof(URL)];
 	StopLoading();
-	souce_mode = false;
 	strcpy(#editURL, #URL);
 	history.add(#URL);
 	if (!strncmp(#URL,"WebView:",8))
 	{
 		SetPageDefaults();
-		if (!strcmp(#URL, URL_SERVICE_HOMEPAGE)) WB1.LoadInternalPage(#homepage, sizeof(homepage));
-		else if (!strcmp(#URL, URL_SERVICE_HELP)) WB1.LoadInternalPage(#help, sizeof(help));
+		if (!strcmp(#URL, URL_SERVICE_HOMEPAGE)) LoadInternalPage(#homepage, sizeof(homepage)-1);
+		else if (!strcmp(#URL, URL_SERVICE_HELP)) LoadInternalPage(#help, sizeof(help)-1);
 		else if (!strcmp(#URL, URL_SERVICE_HISTORY)) ShowHistory();
 		else {bufsize=0; ShowPage();} //page not found
 		DrawOmnibox();
@@ -500,7 +495,7 @@ void ProcessAnchor()
 	int anchor_pos;
 	
 	anchor_pos = strrchr(#URL, '#')-1;
-	strlcpy(#anchor, #URL+anchor_pos, sizeof(anchor));
+	strlcpy(#anchor, #URL+anchor_pos, sizeof(anchor)-1);
 	URL[anchor_pos] = 0x00;
 
 	//#1
@@ -626,25 +621,30 @@ void DrawOmnibox()
 	int skin_x_offset;
 	DrawBar(address_box.left-2, address_box.top-2, address_box.width+3, 2, address_box.color);
 	DrawBar(address_box.left-2, address_box.top, 2, 22, address_box.color);
-	//address_box.size = address_box.pos = address_box.shift = address_box.shift_old = strlen(#editURL);
-	//address_box.offset = 0;
+	if (address_box.flags & ed_focus) address_box.flags = ed_focus; else address_box.flags = 0;
 	EditBox_UpdateText(#address_box, address_box.flags);
 	edit_box_draw stdcall(#address_box);
 	if (http.transfer > 0) skin_x_offset = 68; else skin_x_offset = 51;
 	img_draw stdcall(skin.image, address_box.left+address_box.width+1, address_box.top-3, 17, skin.h, skin_x_offset, SKIN_Y);
 }
 
+void LoadInternalPage(dword bufpos, in_filesize){
+	bufsize = in_filesize;
+	bufpointer = bufpos;
+	ShowPage();
+}
 
 void ShowPage()
 {
 	DrawOmnibox();
-	if (!bufsize)
-	{
-		WB1.LoadInternalPage(#page_not_found, sizeof(page_not_found));
+	if (!bufsize) || (!bufpointer) {
+		LoadInternalPage(#page_not_found, sizeof(page_not_found)-1);
 	}
-	else
-	{
-		WB1.Prepare();
+	WB1.Prepare();
+	if (source_mode) {
+		source_mode = false;
+		ShowSource();
+		LoadInternalPage(bufpointer, bufsize);
 	}
 }
 
@@ -696,6 +696,14 @@ void EventOpenDialog()
 		strcpy(#URL, #openfile_path);
 		OpenPage();
 	}
+}
+
+void EventViewSource()
+{
+	char source_view_param[sizeof(URL)+4];
+	strcpy(#source_view_param, "-s ");
+	strcat(#source_view_param, #URL);
+	RunProgram(#program_path, #source_view_param);
 }
 
 void DrawStatusBar(dword _status_text)

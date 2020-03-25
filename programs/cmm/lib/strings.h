@@ -395,37 +395,23 @@ inline fastcall void strcat( EDI, ESI)
     }
 }
 
-:void strncat(dword text1, text2, signed len)
-signed o1,o2;
-char s;
+:void strncat(dword dst, src, dword len)
 {
-	s = DSBYTE[text1];
-	while(s){
-		$inc text1
-		s = DSBYTE[text1];
+	while (ESBYTE[dst]) dst++;
+	while (ESBYTE[src]) && (len) {
+		ESBYTE[dst] = ESBYTE[src];
+		dst++;
+		src++;
+		len--;
 	}
-	o1 = len/4;
-	o2 = len-4*o1;
-	while(o1){
-		DSDWORD[text1] = DSDWORD[text2];
-		text1 += 4;
-		text2 += 4;
-		$dec o1
-	}
-	while(o2){
-		DSBYTE[text1] = DSBYTE[text2];
-		$inc text1 
-		$inc text2 
-		$dec o2
-	}
-	DSBYTE[text1] = 0;
 }
 
-inline fastcall void chrcat(ESI, BL)
+inline fastcall void chrcat(ESI, DI)
 {
-    EDI = strlen(ESI);
-    ESBYTE[ESI+EDI] = BL;
-    ESBYTE[ESI+EDI+1] = 0;
+    while (ESBYTE[ESI]) ESI++;
+    ESBYTE[ESI] = DI;
+    ESI++;
+    ESBYTE[ESI] = 0;
 }
 
 inline dword strchr(dword shb;char s)

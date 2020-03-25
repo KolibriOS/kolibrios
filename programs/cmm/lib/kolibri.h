@@ -28,6 +28,7 @@ char program_path[4096];
 #define bool      int
 
 #define NULL      0
+#define EOS       0
 #define OLD      -1
 #define true      1
 #define false     0

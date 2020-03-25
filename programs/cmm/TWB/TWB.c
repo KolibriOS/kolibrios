@@ -29,9 +29,8 @@ struct TWebBrowser {
 	void DrawStyle();
 	void DrawPage();
 	void DrawScroller();
-	void LoadInternalPage();
 	void NewLine();
-	void Perenos();
+	bool CheckForLineBreak();
 	void BufEncode();
 } WB1;
 
@@ -97,11 +96,11 @@ void TWebBrowser::DrawStyle()
 		line_length = stolbec_len * list.font_w;
 
 		if (debug_mode) {
-			DrawBuf.DrawBar(start_x, draw_y, line_length, list.item_h-1, 0xDDDddd);
+			DrawBuf.DrawBar(start_x, draw_y, line_length, list.item_h, 0xDDDddd);
 		}
 
 		if (style.bg_color!=page_bg) {
-			DrawBuf.DrawBar(start_x, draw_y, line_length, list.item_h-1, style.bg_color);
+			DrawBuf.DrawBar(start_x, draw_y, line_length, list.item_h, style.bg_color);
 		}
 
 		if (style.image) {
@@ -118,18 +117,14 @@ void TWebBrowser::DrawStyle()
 		if (style.u) DrawBuf.DrawBar(start_x, list.item_h - zoom - zoom + draw_y, line_length, zoom, text_colors[text_color_index]);
 		if (link) {
 			if (line[0]==' ') && (line[1]==NULL) {} else {
-				DrawBuf.DrawBar(start_x, draw_y + list.item_h - calc(zoom*2), line_length, zoom, text_colors[text_color_index]);
+				DrawBuf.DrawBar(start_x, draw_y + list.item_h - calc(zoom*2), line_length, zoom, link_color_inactive);
 				PageLinks.AddText(start_x, draw_y + list.y, line_length, list.item_h - calc(zoom*2), UNDERLINE, zoom);				
 			}
 		}
 		stolbec += stolbec_len;
+		if (debug_mode) debug(#line);
+		line = NULL;
 	}
-}
-//============================================================================================
-void TWebBrowser::LoadInternalPage(dword bufpos, in_filesize){
-	bufsize = in_filesize;
-	bufpointer = bufpos;
-	Prepare();
 }
 //============================================================================================
 void TWebBrowser::SetPageDefaults()
@@ -171,7 +166,6 @@ void TWebBrowser::Prepare(){
 			if (style.pre)
 			{
 				DrawStyle();
-				line = NULL;
 				NewLine();
 				break;
 			}
@@ -193,10 +187,11 @@ void TWebBrowser::Prepare(){
 			}
 			if (bukva = GetUnicodeSymbol(#tag)) {
 				bufpos += j;
+				CheckForLineBreak();
 			} else {
 				bukva = '&';
+				goto DEFAULT_MARK;
 			}
-			goto DEFAULT_MARK;
 			break;
 		case '<':
 			bufpos++;
@@ -223,6 +218,7 @@ void TWebBrowser::Prepare(){
 				{
 					ignor_param = true;
 					if (strlen(#tagparam)+1<sizeof(tagparam)) strcat(#tagparam, #bukva);
+					//	chrncat(#tagparam, bukva, sizeof(tagparam)-1);
 				}
 				bufpos++;
 			}
@@ -250,12 +246,11 @@ void TWebBrowser::Prepare(){
 			else opened = 1;
 
 			if (tag) && (!istag("span")) && (!istag("i")) && (!istag("svg")) {
-				Perenos();
+				CheckForLineBreak();
 				DrawStyle();
-				line = NULL;
 				if (tag) SetStyle();
 			}
-			strlcpy(#oldtag, #tag, sizeof(oldtag));
+			strlcpy(#oldtag, #tag, sizeof(oldtag)-1);
 			tag = attr = tagparam = ignor_param = NULL;
 			break;
 		default:
@@ -268,7 +263,7 @@ void TWebBrowser::Prepare(){
 				if (!stolbec) && (!line) break; //no paces at the beginning of the line
 			}
 			if (line_len < sizeof(line)) chrcat(#line, bukva);
-			Perenos();
+			CheckForLineBreak();
 		}
 	}
 	DrawStyle();
@@ -277,21 +272,27 @@ void TWebBrowser::Prepare(){
 	DrawPage();
 }
 //============================================================================================
-void TWebBrowser::Perenos()
+bool TWebBrowser::CheckForLineBreak()
 {
-	int perenos_num;
+	int line_break_pos;
 	char new_line_text[4096];
-	if (strlen(#line)*zoom + stolbec < list.column_max) return;
-	perenos_num = strrchr(#line, ' ');
-	if (!perenos_num) && (strlen(#line)*zoom>list.column_max) {
-		perenos_num=list.column_max/zoom; 
+	if (strlen(#line)*zoom + stolbec < list.column_max) return false;
+	line_break_pos = strrchr(#line, ' ');
+	if (line_break_pos*zoom + stolbec > list.column_max) {
+		line_break_pos = list.column_max/zoom - stolbec;
+		while(line_break_pos) && (line[line_break_pos]!=' ') line_break_pos--;
+	}
+	if (!line_break_pos) && (strlen(#line)*zoom>list.column_max) {
+		line_break_pos=list.column_max/zoom; 
 		if (!stolbec)&&(style.pre) draw_y-=list.item_h; //hack to fix https://prnt.sc/rk3kyt
 	}
-	strcpy(#new_line_text, #line + perenos_num);
-	line[perenos_num] = 0x00;
+	strcpy(#new_line_text, #line + line_break_pos);
+	line[line_break_pos] = 0x00;
 	DrawStyle();
 	strcpy(#line, #new_line_text);
 	NewLine();
+	//if (strlen(#line)*zoom + stolbec > list.column_max)CheckForLineBreak();
+	return true;
 }
 //============================================================================================
 void TWebBrowser::SetStyle() {
@@ -309,7 +310,11 @@ void TWebBrowser::SetStyle() {
 	
 	IF(istag("q"))
 	{
-		if (opened)	strcat(#line, " \"");
+		if (opened)	{
+			meta_encoding = strlen(#line);
+			if (line[meta_encoding-1] != ' ') chrcat(#line, ' ');
+			chrcat(#line, '\"');
+		}
 		if (!opened) strcat(#line, "\" ");
 		return;
 	}
@@ -404,11 +409,11 @@ void TWebBrowser::SetStyle() {
 	if (istag("pre")) || (istag("code")) { style.pre = opened; return; }
 	if (istag("img")) {
 		do{
-			if (isattr("src=")) strncpy(#img_path, #val, sizeof(img_path)-1);
+			if (isattr("src=")) strlcpy(#img_path, #val, sizeof(img_path)-1);
 			if (isattr("title=")) && (strlen(#val)<sizeof(line)-3) && (val) sprintf(#line, "[%s]", #val); 
 			if (isattr("alt=")) && (strlen(#val)<sizeof(line)-3) && (val) sprintf(#line, "[%s]", #val); 
 		} while(GetNextParam());
-		if (!img_path) return;
+		if (!img_path) { line=0; return; }
 		style.image = true;
 		text_color_index++;
 		text_colors[text_color_index] = 0x9A6F29;
@@ -418,9 +423,8 @@ void TWebBrowser::SetStyle() {
 			sprintf(#line, "[%s]", #img_path+strrchr(#img_path, '/'));
 			line[50]= NULL;
 		}
-		if (strlen(#line) + stolbec > list.column_max) Perenos();
+		while (CheckForLineBreak()) {};
 		DrawStyle();
-		line=0;
 		text_color_index--;
 		style.image = false;
 		//ImgCache.Images( left1, draw_y, WB1.list.w); 
@@ -559,6 +563,7 @@ void TWebBrowser::NewLine()
 	draw_y += list.item_h;
 	if (style.blq) stolbec = 6; else stolbec = 0;
 	if (style.li) stolbec = style.li_tab * 5;
+	if (debug_mode) debugln(NULL);
 }
 //============================================================================================
 bool istag(dword text) { if (!strcmp(#tag,text)) return true; else return false; }

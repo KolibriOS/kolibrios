@@ -6,6 +6,7 @@ bool GetNextParam()
 	if (!tagparam) return false;
 
 	if (debug_mode) {
+		debug("tag: "); debugln(#tag);
 		debug("tagparam: "); debugln(#tagparam);
 	}
 	
@@ -23,7 +24,7 @@ bool GetNextParam()
 
 		//find VAL start and copy
 		i = strrchr(#tagparam, quotes);
-		strlcpy(#val, #tagparam + i, sizeof(val));
+		strlcpy(#val, #tagparam + i, sizeof(val)-1);
 		tagparam[i] = '\0'; i--;
 
 		//find ATTR end
@@ -38,8 +39,8 @@ bool GetNextParam()
 		//find VAL start and copy
 		while (i > 0) && (tagparam[i] != '=') i--;
 		i++;
-		strlcpy(#val, #tagparam + i, sizeof(val));
-		tagparam[i] = '\0';
+		strlcpy(#val, #tagparam + i, sizeof(val)-1);
+		// tagparam[i] = '\0';
 
 		//find ATTR end
 		//already have
@@ -47,20 +48,22 @@ bool GetNextParam()
 
 	//find ATTR start and copy
 	while (i>0) && (!__isWhite(tagparam[i])) i--;
-	strlcpy(#attr, #tagparam + i + 1, sizeof(attr));
+	strlcpy(#attr, #tagparam + i + 1, sizeof(attr)-1);
 	tagparam[i] = '\0';
+ 
+	//fix case: src=./images/KolibriOS_logo2.jpg?sid=e8ece8b38b
+	i = strchr(#attr,'=');
+	if (!quotes) && (i) {
+		strlcpy(#val, i+1, sizeof(val)-1);
+		ESBYTE[i+1] = '\0';
+	}
 
 	strlwr(#attr);
 
 	if (debug_mode) {
-		if (quotes) {
-			debug("quote: "); debugch(quotes); debugln(" ");
-		}
-		else {
-			debugln("unquoted text");
-		}
-		sprintf(#param, "val: %s\nattr: %s\n\n", #val, #attr);
-		debug(#param);		
+		debug("val: "); debugln(#val);
+		debug("attr: "); debugln(#attr);
+		debugln(" ");
 	}
 
 	return true;

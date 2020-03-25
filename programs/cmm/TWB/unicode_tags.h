@@ -65,11 +65,11 @@ char *unicode_tags[]={
 0}; 
 
 
-byte unicode_chars[] = "€‚ƒ„…†‡ˆ‰Š‹Œ‘’“”•–—˜™š›œŸ ¡¢£¤¥¦§¨©ª«¬­®¯àáâãäåæçèéêëìíîïğñh£\243i\105\244\0";
+unsigned char unicode_chars[] = "€‚ƒ„…†‡ˆ‰Š‹Œ‘’“”•–—˜™š›œŸ ¡¢£¤¥¦§¨©ª«¬­®¯àáâãäåæçèéêëìíîïğñh£\243i\105\244\0";
 
 bool GetUnicodeSymbol(dword in_tag)
 {
-	int j;
+	int j, specia1040;
 	
 	for (j=0; unicode_tags[j]!=0; j+=2;) 
 	{
@@ -80,10 +80,19 @@ bool GetUnicodeSymbol(dword in_tag)
 		}
 	}
 
-	j = atoi(in_tag + 1) - 1040;
-	if (tag[1] == '1') && (j>=0) && (j<=72) && (strlen(in_tag) == 5)
+	specia1040 = atoi(in_tag + 1) - 1040;
+	
+	if (tag[1] == '1') && (specia1040>=0) 
+	&& (specia1040<=72) && (strlen(in_tag) == 5)
 	{
-		chrcat(#line, unicode_chars[j]);
+		if (strlen(#line)<sizeof(line)-2) {
+			/*
+			j = strlen(#line);
+			line[j] = unicode_chars[specia1040];
+			line[j+1] = EOS;
+			*/
+			chrcat(#line, unicode_chars[specia1040]);
+		}
 		return true;
 	}
 

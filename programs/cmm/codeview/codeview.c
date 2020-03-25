@@ -193,7 +193,7 @@ void OpenPage()
 	if (!strncmp(#URL,"CodeView:",8))
 	{
 		SetPageDefaults();
-		if (!strcmp(#URL, URL_SERVICE_HOME)) WB1.LoadInternalPage(#homepage, sizeof(homepage));
+		if (!strcmp(#URL, URL_SERVICE_HOME)) LoadInternalPage(#homepage, sizeof(homepage));
 		DrawEditBoxWebView();
 		return;
 	}
@@ -208,7 +208,7 @@ void OpenPage()
 			SetPageDefaults();
 			ReadFile(0, bufsize, bufpointer, #URL);
 			ShowCodeSource();
-			WB1.LoadInternalPage(bufpointer, bufsize);	
+			LoadInternalPage(bufpointer, bufsize);	
 		}
 		ShowPage();
 	}
@@ -226,18 +226,17 @@ DrawEditBoxWebView()
 	img_draw stdcall(skin.image, address_box.left+address_box.width+1, address_box.top-3, 17, skin.h, skin_x_offset, SKIN_Y);
 }
 
+void LoadInternalPage(dword bufpos, in_filesize){
+	bufsize = in_filesize;
+	bufpointer = bufpos;
+	ShowPage();
+}
 
 void ShowPage()
 {
 	DrawEditBoxWebView();
-	if (!bufsize)
-	{
-		WB1.LoadInternalPage(#page_not_found, sizeof(page_not_found));
-	}
-	else
-	{
-		WB1.Prepare();
-	}
+	if (!bufsize) LoadInternalPage(#page_not_found, sizeof(page_not_found));
+	WB1.Prepare();
 }
 
 void DrawStatusBar() {return;};

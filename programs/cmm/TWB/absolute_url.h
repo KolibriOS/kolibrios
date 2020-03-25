@@ -14,9 +14,8 @@ void GetAbsoluteURL(dword in_URL)
 
 	IF (!strncmp(in_URL,"//", 2)) 
 	{
-		//strcpy(#newurl, "http:");
-		//strcat(#newurl, in_URL);
-		sprintf(#newurl, "http:%s", in_URL);
+		strcpy(#newurl, "http:");
+		strcat(#newurl, in_URL);
 		strcpy(orig_URL, #newurl);
 		return;
 	}
