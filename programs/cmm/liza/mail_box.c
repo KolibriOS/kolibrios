@@ -358,13 +358,13 @@ void InitTWB() {
 	WB1.list.first = WB1.list.count = 0;
 }
 
+
 void DrawLetter() {
 	bufsize = strlen(mdata);
-	WB1.LoadInternalPage(bufsize, mdata);
-	if (bufsize) WB1.Prepare();
+	bufpointer = mdata;
+	if (bufsize) && (bufpointer) WB1.Prepare();
 	DrawRectangle(scroll_wv.start_x, scroll_wv.start_y, scroll_wv.size_x, scroll_wv.size_y-1, 0xFFFfff);
 }
-
 
 void DrawScroller1() {
 	scroll1.max_area = mail_list.count;
