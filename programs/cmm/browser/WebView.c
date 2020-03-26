@@ -29,7 +29,7 @@
 #include "..\lib\patterns\simple_open_dialog.h"
 
 #ifdef LANG_RUS
-char version[]="Текстовый браузер 1.94";
+char version[]="Текстовый браузер 2.0 beta1";
 #define T_LOADING "Загрузка страницы..."
 #define T_RENDERING "Рендеринг..."
 char page_not_found[] = FROM "html\\page_not_found_ru.htm""\0";
@@ -45,7 +45,7 @@ char link_menu[] =
 "Копировать ссылку
 Скачать содержимое ссылки";
 #else
-char version[]="Text-based Browser 1.94";
+char version[]="Text-based Browser 2.0 beta1";
 #define T_LOADING "Loading..."
 #define T_RENDERING "Rendering..."
 char page_not_found[] = FROM "html\\page_not_found_en.htm""\0";
@@ -61,6 +61,8 @@ char link_menu[] =
 "Copy link
 Download link contents";
 #endif
+
+#define URL_SIZE 4000;
 
 dword col_bg = 0xE3E2E2;
 dword panel_color  = 0xE3E2E2;
@@ -108,8 +110,9 @@ enum {
 char default_dir[] = "/rd/1";
 od_filter filter2 = { 16, "TXT\0HTM\0HTML\0\0" };
 
-char editURL[sizeof(URL)];
-edit_box address_box = {250,60,30,0xffffff,0x94AECE,0xffffff,0xffffff,0x10000000,sizeof(URL)-2,#editURL,0,NULL,19,19};
+char URL[URL_SIZE];
+char editURL[URL_SIZE];
+edit_box address_box = {250,60,30,0xffffff,0x94AECE,0xffffff,0xffffff,0x10000000,URL_SIZE-2,#editURL,0,NULL,19,19};
 
 #define SKIN_Y 24
 
@@ -181,17 +184,17 @@ void main()
 		case evKey:
 			GetKeys();
 			if (key_modifier&KEY_LCTRL) || (key_modifier&KEY_RCTRL) {
-				if (key_scancode == SCAN_CODE_KEY_O) EventOpenDialog();
-				if (key_scancode == SCAN_CODE_KEY_H) ProcessEvent(VIEW_HISTORY);
-				if (key_scancode == SCAN_CODE_KEY_U) EventViewSource();
+				if (key_scancode == SCAN_CODE_KEY_O) {EventOpenDialog();break;}
+				if (key_scancode == SCAN_CODE_KEY_H) {ProcessEvent(VIEW_HISTORY);break;}
+				if (key_scancode == SCAN_CODE_KEY_U) {EventViewSource();break;}
 				if (key_scancode == SCAN_CODE_KEY_T) 
-				|| (key_scancode == SCAN_CODE_KEY_N) RunProgram(#program_path, NULL);
-				if (key_scancode == SCAN_CODE_KEY_W) ExitProcess();
-				if (key_scancode == SCAN_CODE_KEY_J) ProcessEvent(DOWNLOAD_MANAGER);
-				if (key_scancode == SCAN_CODE_KEY_R) ProcessEvent(REFRESH_BUTTON);
-				if (key_scancode == SCAN_CODE_ENTER) EventSeachWeb();
-				if (key_scancode == SCAN_CODE_LEFT)  ProcessEvent(BACK_BUTTON);
-				if (key_scancode == SCAN_CODE_RIGHT) ProcessEvent(FORWARD_BUTTON);
+				|| (key_scancode == SCAN_CODE_KEY_N) {RunProgram(#program_path, NULL);break;}
+				if (key_scancode == SCAN_CODE_KEY_J) {ProcessEvent(DOWNLOAD_MANAGER);break;}
+				if (key_scancode == SCAN_CODE_KEY_R) {ProcessEvent(REFRESH_BUTTON);break;}
+				if (key_scancode == SCAN_CODE_ENTER) {EventSeachWeb();break;}
+				if (key_scancode == SCAN_CODE_LEFT)  {ProcessEvent(BACK_BUTTON);break;}
+				if (key_scancode == SCAN_CODE_RIGHT) {ProcessEvent(FORWARD_BUTTON);break;}
+				if (key_scancode == SCAN_CODE_KEY_W) {ExitProcess();break;}
 			}
 			
 			if (key_scancode == SCAN_CODE_F5) ProcessEvent(REFRESH_BUTTON);
@@ -268,7 +271,6 @@ void main()
 					bufpointer = http.content_pointer;
 					bufsize = http.content_received;
 					http.free();
-					SetPageDefaults();
 					DrawStatusBar(T_RENDERING);
 					ShowPage();
 					DrawStatusBar(NULL);
@@ -310,8 +312,10 @@ void draw_window()
 	img_draw stdcall(skin.image, Form.cwidth-24, address_box.top-3, 17, skin.h, 102, SKIN_Y);
 	DrawBar(0,Form.cheight - STATUSBAR_H, Form.cwidth,STATUSBAR_H, col_bg);
 	DrawBar(0,Form.cheight - STATUSBAR_H, Form.cwidth,1, border_color);
-	if (!header) 
+	if (!header) {
 		OpenPage(); 
+		WB1.DrawScroller();
+	}
 	else { 
 		WB1.DrawPage(); 
 		DrawOmnibox(); 
@@ -414,14 +418,6 @@ void StopLoading()
 	DrawOmnibox();
 }
 
-void SetPageDefaults()
-{
-	strcpy(#header, #version);
-	WB1.list.count = WB1.list.first = 0;
-	cur_encoding = CH_NULL;
-	if (o_bufpointer) o_bufpointer = free(o_bufpointer);
-}
-
 void ReplaceSpaceInUrl() {
 	int i;
 	strcpy(#editURL, #URL);
@@ -444,9 +440,8 @@ void OpenPage()
 	history.add(#URL);
 	if (!strncmp(#URL,"WebView:",8))
 	{
-		SetPageDefaults();
-		if (!strcmp(#URL, URL_SERVICE_HOMEPAGE)) LoadInternalPage(#homepage, sizeof(homepage)-1);
-		else if (!strcmp(#URL, URL_SERVICE_HELP)) LoadInternalPage(#help, sizeof(help)-1);
+		if (!strcmp(#URL, URL_SERVICE_HOMEPAGE)) LoadInternalPage(#homepage, sizeof(homepage));
+		else if (!strcmp(#URL, URL_SERVICE_HELP)) LoadInternalPage(#help, sizeof(help));
 		else if (!strcmp(#URL, URL_SERVICE_HISTORY)) ShowHistory();
 		else {bufsize=0; ShowPage();} //page not found
 		DrawOmnibox();
@@ -459,12 +454,11 @@ void OpenPage()
 
 		if (!strncmp(#URL,"http:",5)) {
 			http.get(#URL);
-		}
-		if (!strncmp(#URL,"https://",8)) {
+		} else if (!strncmp(#URL,"https://",8)) {
 			sprintf(#getUrl, "http://gate.aspero.pro/?site=%s", #URL);
 			http.get(#getUrl);
 		}
-		//http.get(#URL);
+
 		if (!http.transfer)
 		{
 			StopLoading();
@@ -477,13 +471,13 @@ void OpenPage()
 	else
 	{
 		file_size stdcall (#URL);
-		if (EBX)
-		{
+		if (EBX) {
 			bufsize = EBX;
 			free(bufpointer);
 			bufpointer = malloc(bufsize);
-			SetPageDefaults();
 			ReadFile(0, bufsize, bufpointer, #URL);
+		} else {
+			bufsize = bufpointer = 0;
 		}
 		ShowPage();
 	}
@@ -492,29 +486,20 @@ void OpenPage()
 void ProcessAnchor()
 {
 	char anchor[256];
-	int anchor_pos;
+	dword anchor_pos;
 	
 	anchor_pos = strrchr(#URL, '#')-1;
-	strlcpy(#anchor, #URL+anchor_pos, sizeof(anchor)-1);
+	strlcpy(#anchors.current_anchor_name, #URL+anchor_pos, sizeof(anchor)-1);
 	URL[anchor_pos] = 0x00;
 
-	//#1
-	if (URL[0] == NULL)
-	{
-		if (anchor[1] == NULL) {
-			WB1.list.first = 0;
-		}
-		else {
-			if (anchors.get_anchor_pos(#anchor+1)!=-1) WB1.list.first = anchors.get_anchor_pos(#anchor+1);
-		}
+	if (URL[0] == NULL) {
+		//case when URL consists of anchor only
+		if (anchors.get_pos_by_name(#anchor+1)!=-1) WB1.list.first = anchors.get_pos_by_name(#anchor+1);
 		strcpy(#URL, history.current());
-	}
-	//liner.ru#1
-	else
-	{
+	} else {
 		GetAbsoluteURL(#URL);
 		OpenPage();
-		if (anchors.get_anchor_pos(#anchor+1)!=-1) WB1.list.first = anchors.get_anchor_pos(#anchor+1);
+		if (anchors.get_pos_by_name(#anchor+1)!=-1) WB1.list.first = anchors.get_pos_by_name(#anchor+1);
 	}
 
 	WB1.DrawPage();
@@ -536,7 +521,7 @@ void EventSubmitOmnibox()
 		strlcpy(#URL,"http://",7);
 		strcat(#URL, #editURL);
 	}
-	ProcessLink();
+	OpenPage();
 }
 
 void EventClickLink()
@@ -628,19 +613,22 @@ void DrawOmnibox()
 	img_draw stdcall(skin.image, address_box.left+address_box.width+1, address_box.top-3, 17, skin.h, skin_x_offset, SKIN_Y);
 }
 
-void LoadInternalPage(dword bufpos, in_filesize){
-	bufsize = in_filesize;
-	bufpointer = bufpos;
+void LoadInternalPage(dword _bufpos, _in_filesize){
+	bufsize = _in_filesize;
+	if (bufpointer!=_bufpos) free(bufpointer);
+	bufpointer = malloc(bufsize);
+	memmov(bufpointer, _bufpos, bufsize);
 	ShowPage();
 }
 
 void ShowPage()
 {
+	WB1.list.first = 0; //scroll page to the top
 	DrawOmnibox();
 	if (!bufsize) || (!bufpointer) {
-		LoadInternalPage(#page_not_found, sizeof(page_not_found)-1);
+		LoadInternalPage(#page_not_found, sizeof(page_not_found));
 	}
-	WB1.Prepare();
+	WB1.ParseHtml();
 	if (source_mode) {
 		source_mode = false;
 		ShowSource();

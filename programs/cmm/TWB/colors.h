@@ -6,6 +6,9 @@ struct color_spec {
 	int rgb;
 };
 
+dword text_colors[300];
+dword text_color_index;
+
 struct color_spec color_specs[] = {
 	"aliceblue",	 0xF0F8FF,
 	"antiquewhite",  0xFAEBD7,

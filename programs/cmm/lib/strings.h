@@ -397,13 +397,17 @@ inline fastcall void strcat( EDI, ESI)
 
 :void strncat(dword dst, src, dword len)
 {
-	while (ESBYTE[dst]) dst++;
+	while (ESBYTE[dst]) && (len) {
+		dst++;
+		len--;
+	}
 	while (ESBYTE[src]) && (len) {
 		ESBYTE[dst] = ESBYTE[src];
 		dst++;
 		src++;
 		len--;
 	}
+	ESBYTE[dst] = 0;
 }
 
 inline fastcall void chrcat(ESI, DI)

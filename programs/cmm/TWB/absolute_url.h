@@ -3,7 +3,7 @@ void GetAbsoluteURL(dword in_URL)
 {
 	int i;
 	dword orig_URL = in_URL;
-	char newurl[sizeof(URL)];
+	char newurl[URL_SIZE];
 
 	while (i=strstr(in_URL, "&amp;"))
 	{

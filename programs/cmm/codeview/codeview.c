@@ -36,6 +36,7 @@ proc_info Form;
 dword TOOLBAR_H = 40;
 dword STATUSBAR_H = 0;
 
+
 dword col_bg = 0xE3E2E2;
 dword panel_color  = 0xE3E2E2;
 dword border_color = 0x8C8C8C;
@@ -49,12 +50,14 @@ enum {
 	EDIT_SOURCE,
 };
 
+#define URL_SIZE 4000;
 #include "..\TWB\TWB.c"
 #include "show_src.h"
 
-char editURL[sizeof(URL)];
+char URL[URL_SIZE];
+char editURL[URL_SIZE];
 int	mouse_twb;
-edit_box address_box = {250,60,30,0xffffff,0x94AECE,0xffffff,0xffffff,0x10000000,sizeof(URL),#editURL,#mouse_twb,2,19,19};
+edit_box address_box = {250,60,30,0xffffff,0x94AECE,0xffffff,0xffffff,0x10000000,URL_SIZE-2,#editURL,#mouse_twb,2,19,19};
 
 #define SKIN_Y 24
 
@@ -179,15 +182,14 @@ void EventGoToPage()
 
 void SetPageDefaults()
 {
-	strcpy(#header, #version);
+	strncpy(#header, #version, sizeof(header)-1);
 	WB1.list.count = WB1.list.first = 0;
 	cur_encoding = CH_NULL;
-	if (o_bufpointer) o_bufpointer = free(o_bufpointer);
 }
 
 void OpenPage()
 {
-	char getUrl[sizeof(URL)];
+	char getUrl[URL_SIZE];
 	strcpy(#editURL, #URL);
 	history.add(#URL);
 	if (!strncmp(#URL,"CodeView:",8))
@@ -236,7 +238,7 @@ void ShowPage()
 {
 	DrawEditBoxWebView();
 	if (!bufsize) LoadInternalPage(#page_not_found, sizeof(page_not_found));
-	WB1.Prepare();
+	WB1.ParseHtml();
 }
 
 void DrawStatusBar() {return;};

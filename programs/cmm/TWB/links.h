@@ -5,7 +5,7 @@ dword CursorFile = FROM "../TWB/pointer.cur";
 #define NOLINE    0
 #define UNDERLINE 1
 
-#define MAXLINKS 400
+#define MAXLINKS 2000
 
 struct array_link {
 	dword link;
@@ -58,7 +58,7 @@ void LinksArray::Clear()
 	CursorPointer.Restore();
 }
 
-char temp[sizeof(URL)];
+char temp[URL_SIZE];
 PathShow_data status_text = {0, 17,250, 6, 250, 0, 0, 0x0, 0xFFFfff, 0, #temp, 0};
 
 bool LinksArray::HoverAndProceed(dword mx, my)
