@@ -1,6 +1,5 @@
 
 struct _anchors {
-	char current_anchor_name[100];
 	collection anchor_name;
 	collection anchor_position;
 	void add();

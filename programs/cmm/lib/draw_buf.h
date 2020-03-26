@@ -50,8 +50,9 @@ void DrawBufer::Fill(dword start_pointer, i_fill_color)
 {
 	dword i;
 	dword max_i = bufw * bufh * 4 + buf_data + 8;
-	fill_color = i_fill_color;
-	for (i=buf_data+start_pointer+8; i<max_i; i+=4) ESDWORD[i] = fill_color;
+	EDI = fill_color = i_fill_color;
+	for (ESI=buf_data+start_pointer+8; ESI<max_i; ESI+=4) ESDWORD[ESI] = EDI;
+	//for (i=buf_data+start_pointer+8; i<max_i; i+=4) ESDWORD[i] = fill_color;
 }
 
 void DrawBufer::DrawBar(dword x, y, w, h, color)

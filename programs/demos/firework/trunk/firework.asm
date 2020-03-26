@@ -433,7 +433,7 @@ rand:
         ret
 
 ; DATA AREA
-window_title    db 'Firework demo',0
+window_title    db 'Firework',0
 align SIMD_BYTES
 sub_mask        db SIMD_BYTES dup 0x01
 ;                             x, y, x_speed, y_speed, color

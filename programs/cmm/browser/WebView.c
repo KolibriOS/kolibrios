@@ -489,7 +489,7 @@ void ProcessAnchor()
 	dword anchor_pos;
 	
 	anchor_pos = strrchr(#URL, '#')-1;
-	strlcpy(#anchors.current_anchor_name, #URL+anchor_pos, sizeof(anchor)-1);
+	strlcpy(#anchor, #URL+anchor_pos, sizeof(anchor)-1);
 	URL[anchor_pos] = 0x00;
 
 	if (URL[0] == NULL) {
