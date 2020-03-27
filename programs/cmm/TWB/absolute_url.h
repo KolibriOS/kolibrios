@@ -1,23 +1,23 @@
 
-void GetAbsoluteURL(dword in_URL)
+dword GetAbsoluteURL(dword in_URL)
 {
 	int i;
 	dword orig_URL = in_URL;
-	char newurl[URL_SIZE];
+	char newurl[URL_SIZE+1];
 
 	while (i=strstr(in_URL, "&amp;"))
 	{
 		strcpy(i+1, i+5);
 	}
 
-	if (check_is_the_url_absolute(in_URL)) return;
+	if (check_is_the_url_absolute(in_URL)) return orig_URL;
 
 	IF (!strncmp(in_URL,"//", 2)) 
 	{
 		strcpy(#newurl, "http:");
 		strcat(#newurl, in_URL);
 		strcpy(orig_URL, #newurl);
-		return;
+		return orig_URL;
 	}
 	
 	IF (!strncmp(in_URL,"./", 2)) in_URL+=2;
@@ -55,5 +55,6 @@ void GetAbsoluteURL(dword in_URL)
 	
 	strcat(#newurl, in_URL);
 	strcpy(orig_URL, #newurl);
+	return orig_URL;
 }
 

@@ -1,7 +1,9 @@
+enum { TAG=1, VALUE, TEXT, COMMENT, SCRIPT};
 
-dword source_buf_start, source_buf_end;
-int opened_font=0;
+int opened_font_counter=0;
 int mode;
+
+dword source_buf_end;
 
 void SourceBufAdd(dword _mode, src)
 {
@@ -13,37 +15,38 @@ void SourceBufAdd(dword _mode, src)
 	source_buf_end += strlen(source_buf_end);
 
 	if (font_found_pointer = strstr(src, "</font>")) {
-		opened_font--;
+		opened_font_counter--;
 		src = font_found_pointer+2;
 	}
 
 	src = src_orig;
 	if (font_found_pointer = strstr(src, "<font ")) {
-		opened_font++;
+		opened_font_counter++;
 		src = font_found_pointer+2;
 	}
 }
 
 void CloseAllOpenedFonts(dword _mode)
 {
-	while (opened_font) SourceBufAdd(_mode, "</font>");
+	while (opened_font_counter) SourceBufAdd(_mode, "</font>");
 }
 
-enum { TAG=1, VALUE, TEXT, COMMENT, SCRIPT};
-dword ShowSource()
+dword ShowSource(dword _bufdata, _in_bufsize)
 {
 	dword i, j;
 	bool activate_script_mode = false;
+	dword source_buf_start;
 
-	opened_font=0;
-	source_buf_start = source_buf_end = malloc(bufsize*5);
+	opened_font_counter=0;
+	source_buf_end = malloc(_in_bufsize*5);
+	source_buf_start = source_buf_end;
 	header[strrchr(#header, '-')-2]=0;
 
 	SourceBufAdd(TEXT, "<html><head><title>Source: ");
 	SourceBufAdd(TEXT, #header);
 	SourceBufAdd(TEXT, "</title><body><pre>");
 
-	for (i=bufpointer; i<bufpointer+bufsize; i++) switch (ESBYTE[i])
+	for (i=_bufdata; i<_bufdata+_in_bufsize; i++) switch (ESBYTE[i])
 	{
 		case '<':
 			if (!strncmp(i+1,"!--", 3)) SourceBufAdd(COMMENT, "<font color=#bbb>&lt;");
@@ -89,7 +92,6 @@ dword ShowSource()
 			source_buf_end++;
 	}
 	ESBYTE[source_buf_end] = 0;
-	bufsize = source_buf_end - source_buf_start;
-	free(bufpointer);
-	bufpointer = source_buf_start;
+	LoadInternalPage(source_buf_start, _in_bufsize);
+	free(source_buf_start);
 }

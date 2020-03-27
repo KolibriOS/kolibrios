@@ -260,7 +260,8 @@ void TWebBrowser::ParseHtml(){
 	DrawStyle();
 	NewLine();
 	list.count = draw_y;
-	DrawPage();
+	list.CheckDoesValuesOkey();
+	anchors.current = NULL;
 }
 //============================================================================================
 bool TWebBrowser::CheckForLineBreak()
@@ -292,6 +293,14 @@ void TWebBrowser::SetStyle() {
 
 	dword value;
 
+	if (value = tag.get_value_of("name=")) || (value = tag.get_value_of("id=")) {
+		anchors.add(value, draw_y);
+		if (anchors.current) && (streq(value, #anchors.current+1)) {
+			list.first = draw_y;
+			anchors.current = NULL;
+		}
+	}	
+
 	if (tag.is("html")) {
 		t_html = tag.opened;
 		return;
@@ -311,9 +320,6 @@ void TWebBrowser::SetStyle() {
 		if (!tag.opened) strcat(#line, "\" ");
 		return;
 	}
-	if (value = tag.get_value_of("name=")) || (value = tag.get_value_of("id=")) {
-		anchors.add(value, draw_y);
-	}	
 	if (tag.is("body")) {
 		t_body = tag.opened;
 		if (value = tag.get_value_of("link="))  link_color_inactive = GetColor(value);

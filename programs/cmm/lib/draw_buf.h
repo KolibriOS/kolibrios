@@ -39,7 +39,6 @@ bool DrawBufer::Init(dword i_bufx, i_bufy, i_bufw, i_bufh)
 	bufh = i_bufh;
 	buf_data = free(buf_data);
 	IncreaseBufSize();
-	//debugval("buf_data",buf_data);
 	if (!buf_data) return false;
 	ESDWORD[buf_data] = bufw;
 	ESDWORD[buf_data+4] = bufh;

@@ -7,7 +7,7 @@
 #endif
 
 //libraries
-#define MEMSIZE 1024 * 800
+#define MEMSIZE 1024 * 850
 #include "..\lib\gui.h"
 #include "..\lib\draw_buf.h"
 #include "..\lib\list_box.h"
@@ -29,9 +29,7 @@
 #include "..\lib\patterns\simple_open_dialog.h"
 
 #ifdef LANG_RUS
-char version[]="Текстовый браузер 2.0 beta1";
-#define T_LOADING "Загрузка страницы..."
-#define T_RENDERING "Рендеринг..."
+char version[]="Текстовый браузер 2.0 beta2";
 char page_not_found[] = FROM "html\\page_not_found_ru.htm""\0";
 char homepage[] = FROM "html\\homepage_ru.htm""\0";
 char help[] = FROM "html\\help_ru.htm""\0";
@@ -45,9 +43,7 @@ char link_menu[] =
 "Копировать ссылку
 Скачать содержимое ссылки";
 #else
-char version[]="Text-based Browser 2.0 beta1";
-#define T_LOADING "Loading..."
-#define T_RENDERING "Rendering..."
+char version[]="Text-based Browser 2.0 beta2";
 char page_not_found[] = FROM "html\\page_not_found_en.htm""\0";
 char homepage[] = FROM "html\\homepage_en.htm""\0";
 char help[] = FROM "html\\help_en.htm""\0";
@@ -66,10 +62,9 @@ Download link contents";
 
 dword col_bg = 0xE3E2E2;
 dword panel_color  = 0xE3E2E2;
-dword border_color = 0x8C8C8C;
+dword border_color = 0x787878;
 
 bool debug_mode = false;
-bool open_in_a_new_window = false;
 
 _http http = {0, 0, 0, 0, 0, 0, 0};
 
@@ -82,6 +77,7 @@ _http http = {0, 0, 0, 0, 0, 0, 0};
 #define URL_SERVICE_HOMEPAGE "WebView:home"
 #define URL_SERVICE_HELP "WebView:help"
 
+#define TOOLBAR_GAPS 10
 dword TOOLBAR_H = 40;
 dword STATUSBAR_H = 15;
 
@@ -110,9 +106,9 @@ enum {
 char default_dir[] = "/rd/1";
 od_filter filter2 = { 16, "TXT\0HTM\0HTML\0\0" };
 
-char URL[URL_SIZE];
-char editURL[URL_SIZE];
-edit_box address_box = {250,60,30,0xffffff,0x94AECE,0xffffff,0xffffff,0x10000000,URL_SIZE-2,#editURL,0,NULL,19,19};
+char editURL[URL_SIZE+1];
+edit_box address_box = {NULL,TOOLBAR_GAPS+TOOLBAR_GAPS+51,10,0xffffff,0x94AECE,0xffffff,
+	0xffffff,0x10000000,URL_SIZE-2,#editURL,0,NULL,19,19};
 
 #define SKIN_Y 24
 
@@ -136,12 +132,12 @@ void HandleParam()
 			ExitProcess();
 		} else if (!strncmp(#param, "-s ", 3)) {
 			source_mode = true;
-			strcpy(#URL, #param + 3);
+			history.add(#param + 3);
 		} else {
-			strcpy(#URL, #param); 
+			history.add(#param);
 		}
 	} else {
-		strcpy(#URL, URL_SERVICE_HOMEPAGE);
+		history.add(URL_SERVICE_HOMEPAGE);
 	}
 }
 
@@ -163,7 +159,7 @@ void main()
 			edit_box_mouse stdcall (#address_box);
 			mouse.get();
 			if (PageLinks.HoverAndProceed(mouse.x, WB1.list.first + mouse.y))
-			&& (bufsize) && (mouse.pkm) && (mouse.up) {
+			&& (mouse.pkm) && (mouse.up) {
 				if (WB1.list.MouseOver(mouse.x, mouse.y)) EventShowPageMenu(mouse.x, mouse.y);
 				break;
 			}
@@ -225,7 +221,8 @@ void main()
 				ProcessEvent(menu.cur_y);
 				menu.cur_y = 0;
 			}
-			DefineAndDrawWindow(GetScreenWidth()-800/2-random(80),GetScreenHeight()-700/2-random(80),800,700,0x73,0,0,0);
+			DefineAndDrawWindow(GetScreenWidth()-800/2-random(80),
+				GetScreenHeight()-700/2-random(80),800,700,0x73,0,0,0);
 			GetProcessInfo(#Form, SelfInfo);
 			system.color.get();
 			col_bg = system.color.work;
@@ -239,7 +236,6 @@ void main()
 			if (http.transfer > 0) {
 				http.receive();
 				EventUpdateProgressBar();
-				DrawStatusBar(T_LOADING);
 				if (http.receive_result == 0) {
 					// Handle redirects
 					if (http.status_code >= 300) && (http.status_code < 400)
@@ -257,23 +253,14 @@ void main()
 							GetAbsoluteURL(#http.redirect_url);
 							debug("Redirect: "); debugln(#http.redirect_url);
 							history.back();
-							strcpy(#URL, #http.redirect_url);
-							strcpy(#editURL, #URL);
-							DrawOmnibox();
-							OpenPage();
-							//ProcessLink(history.current());
+							OpenPage(#http.redirect_url);
 						}
 						break;
 					} 
 					redirect_count = 0;
 					// Loading the page is complete, free resources
-					history.add(#URL);
-					bufpointer = http.content_pointer;
-					bufsize = http.content_received;
 					http.free();
-					DrawStatusBar(T_RENDERING);
-					ShowPage();
-					DrawStatusBar(NULL);
+					LoadInternalPage(http.content_pointer, http.content_received);
 				}
 			}
 	}
@@ -283,7 +270,7 @@ void SetElementSizes()
 {
 	address_box.top = TOOLBAR_H/2-10;
 	basic_line_h = calc(WB1.list.font_h * 130) / 100;
-	address_box.width = Form.cwidth - address_box.left - 50;
+	address_box.width = Form.cwidth - address_box.left - 55;
 	WB1.list.SetSizes(0, TOOLBAR_H, Form.width - 10 - scroll_wv.size_x, 
 		Form.cheight - TOOLBAR_H - STATUSBAR_H, basic_line_h);
 	WB1.list.wheel_size = 7 * basic_line_h;
@@ -291,7 +278,7 @@ void SetElementSizes()
 	WB1.list.visible = WB1.list.h;
 	if (WB1.list.w!=WB1.DrawBuf.bufw) {
 		WB1.DrawBuf.Init(WB1.list.x, WB1.list.y, WB1.list.w, 800*20);
-		ProcessEvent(REFRESH_BUTTON);
+		OpenPage(history.current());
 	}
 }
 
@@ -303,24 +290,24 @@ void draw_window()
 	DrawBar(0,TOOLBAR_H-2, Form.cwidth,1, 0xD7D0D3);
 	DrawBar(0,TOOLBAR_H-1, Form.cwidth,1, border_color);
 	SetElementSizes();
-	DrawRectangle(address_box.left-3, address_box.top-3, address_box.width+5, 25,border_color);
-	DefineButton(address_box.left-52, address_box.top-2, 24, skin.h-2, BACK_BUTTON+BT_HIDE, 0);
-	DefineButton(address_box.left-27, address_box.top-2, 24, skin.h-2, FORWARD_BUTTON+BT_HIDE, 0);
-	img_draw stdcall(skin.image, address_box.left-53, address_box.top-3, 51, skin.h, 0, SKIN_Y);
-	DefineButton(address_box.left+address_box.width+1, address_box.top-3, 16, skin.h-1, REFRESH_BUTTON+BT_HIDE+BT_NOFRAME, 0);
-	DefineButton(Form.cwidth-27, address_box.top-3, 23, skin.h-1, SANDWICH_BUTTON+BT_HIDE, 0);
-	img_draw stdcall(skin.image, Form.cwidth-24, address_box.top-3, 17, skin.h, 102, SKIN_Y);
+	DefineHiddenButton(TOOLBAR_GAPS, address_box.top-2, 24, skin.h-2, BACK_BUTTON);
+	DefineHiddenButton(TOOLBAR_GAPS+25, address_box.top-2, 24, skin.h-2, FORWARD_BUTTON);
+	img_draw stdcall(skin.image, TOOLBAR_GAPS-1, address_box.top-3, 51, skin.h, 0, SKIN_Y);
+	DefineHiddenButton(address_box.left+address_box.width-4, address_box.top-2, 20, skin.h-3, REFRESH_BUTTON);
+	DefineHiddenButton(Form.cwidth-31, address_box.top-3, 24, skin.h-1, SANDWICH_BUTTON);
+	img_draw stdcall(skin.image, Form.cwidth-27, address_box.top+1, 17, 18, 51, SKIN_Y);
 	DrawBar(0,Form.cheight - STATUSBAR_H, Form.cwidth,STATUSBAR_H, col_bg);
 	DrawBar(0,Form.cheight - STATUSBAR_H, Form.cwidth,1, border_color);
 	if (!header) {
-		OpenPage(); 
+		OpenPage(history.current()); 
 		WB1.DrawScroller();
 	}
 	else { 
 		WB1.DrawPage(); 
 		DrawOmnibox(); 
 	}
-	DrawRectangle(scroll_wv.start_x, scroll_wv.start_y, scroll_wv.size_x, scroll_wv.size_y-1, scroll_wv.bckg_col);
+	DrawRectangle(scroll_wv.start_x, scroll_wv.start_y, scroll_wv.size_x, 
+		scroll_wv.size_y-1, scroll_wv.bckg_col);
 	DrawProgress();
 }
 
@@ -335,14 +322,12 @@ void ProcessEvent(dword id__)
 		case SCAN_CODE_BS:
 		case BACK_BUTTON:
 			if (history.back()) {
-				strcpy(#URL, history.current());
-				OpenPage();
+				OpenPage(history.current());
 			}
 			return;
 		case FORWARD_BUTTON:
 			if (history.forward()) {
-				strcpy(#URL, history.current());
-				OpenPage();
+				OpenPage(history.current());
 			}
 			return;
 		case GOTOURL_BUTTON:
@@ -350,12 +335,12 @@ void ProcessEvent(dword id__)
 			EventSubmitOmnibox();
 			return;
 		case REFRESH_BUTTON:
-			if (http.transfer > 0) 
-			{
+			if (http.transfer > 0) {
 				StopLoading();
 				draw_window();
+			} else {
+				OpenPage(history.current());
 			}
-			else OpenPage();
 			return;
 		case SANDWICH_BUTTON:
 			EventShowPageMenu(Form.cwidth - 215, TOOLBAR_H-6);
@@ -364,16 +349,15 @@ void ProcessEvent(dword id__)
 			EventViewSource();
 			break;
 		case EDIT_SOURCE:
-			if (check_is_the_adress_local(#URL)) {
-				RunProgram("/rd/1/tinypad", #URL);
+			if (check_is_the_adress_local(history.current())) {
+				RunProgram("/rd/1/tinypad", history.current());
 			} else {
 				CreateFile(bufsize, bufpointer, "/tmp0/1/WebView_tmp.htm");
 				if (!EAX) RunProgram("/rd/1/tinypad", "/tmp0/1/WebView_tmp.htm");
 			}
 			return;
 		case VIEW_HISTORY:
-			strcpy(#URL, URL_SERVICE_HISTORY);
-			OpenPage();
+			OpenPage(URL_SERVICE_HISTORY);
 			return;
 		case DOWNLOAD_MANAGER:
 			if (!downloader_opened) {
@@ -410,235 +394,220 @@ void StopLoading()
 		$pop	EAX							
 		free(EAX);						// free data
 		http.transfer=0;
-		bufsize = 0;
-		bufpointer = free(bufpointer);
 		pause(10);
 	}
 	wv_progress_bar.value = 0;
 	DrawOmnibox();
 }
 
+/*
 void ReplaceSpaceInUrl() {
 	int i;
-	strcpy(#editURL, #URL);
-	while (i = strchr(#URL, ' '))
+	char new_url[URL_SIZE];
+	strcpy(#new_url, history.current());
+	while (i = strchr(#new_url, ' '))
 	{
-		i -= #URL;
-		strlcpy(#URL+i+3, #editURL+i+1, sizeof(URL)-i-4);
+		i -= #new_url;
+		strlcpy(#new_url+i+3, #new_url+i+1, URL_SIZE);
 		URL[i] = '%';
 		URL[i+1] = '2';
 		URL[i+2] = '0';
 	}
-	strcpy(#editURL, #URL);
+	strcpy(#editURL, #new_url);
 }
 
-void OpenPage()
+//bool strrpl(dword dst, from, to, dst_len); !!!!!!!!
+
+*/
+
+bool GetLocalFileData(dword _path)
 {
-	char getUrl[sizeof(URL)];
+	dword data, size;
+	file_size stdcall (_path);
+	if (!EBX) {
+		return false;
+	} else {
+		size = EBX;
+		data = malloc(size);
+		ReadFile(0, size, data, _path);
+		LoadInternalPage(data, size);
+		free(data);
+		return true;
+	}
+}
+
+void OpenPage(dword _open_URL)
+{
+	char new_url[URL_SIZE+1];
+
 	StopLoading();
-	strcpy(#editURL, #URL);
-	history.add(#URL);
-	if (!strncmp(#URL,"WebView:",8))
-	{
-		if (!strcmp(#URL, URL_SERVICE_HOMEPAGE)) LoadInternalPage(#homepage, sizeof(homepage));
-		else if (!strcmp(#URL, URL_SERVICE_HELP)) LoadInternalPage(#help, sizeof(help));
-		else if (!strcmp(#URL, URL_SERVICE_HISTORY)) ShowHistory();
-		else {bufsize=0; ShowPage();} //page not found
+
+	strcpy(#editURL, _open_URL);
+	DrawOmnibox();
+
+	strncpy(#new_url, _open_URL, URL_SIZE);
+
+	//Exclude # from the URL to the load page
+	//We will bring it back when we get the buffer
+	if (strrchr(#new_url, '#')) anchors.take_anchor_from(#new_url);
+
+	history.add(#new_url);
+
+	if (!strncmp(#new_url,"WebView:",8)) {
+		//INTERNAL PAGE
+		if (!strcmp(#new_url, URL_SERVICE_HOMEPAGE)) LoadInternalPage(#homepage, sizeof(homepage));
+		else if (!strcmp(#new_url, URL_SERVICE_HELP)) LoadInternalPage(#help, sizeof(help));
+		else if (!strcmp(#new_url, URL_SERVICE_HISTORY)) ShowHistory();
+		else LoadInternalPage(#page_not_found, sizeof(page_not_found));
+	} else if (!strncmp(#new_url,"http:",5)) || (!strncmp(#new_url,"https:",6)) {
+		//WEB PAGE
+		//ReplaceSpaceInUrl(); !!!!!!!!
+		img_draw stdcall(skin.image, address_box.left+address_box.width+1, 
+			address_box.top-3, 17, skin.h, 85, SKIN_Y);
+
+		if (!strncmp(#new_url,"http:",5)) {
+			http.get(#new_url);
+		} else if (!strncmp(#new_url,"https://",8)) {
+			strcpy(#new_url, "http://gate.aspero.pro/?site=");
+			strncat(#new_url, _open_URL, URL_SIZE);
+			http.get(#new_url);
+		}
+		if (!http.transfer) {
+			StopLoading();
+			LoadInternalPage(#page_not_found, sizeof(page_not_found));
+		}
+	} else {
+		//LOCAL PAGE
+		if (!GetLocalFileData(#new_url)) {
+			LoadInternalPage(#page_not_found, sizeof(page_not_found));
+		}
+	}
+}
+
+void EventClickLink(dword _click_URL)
+{
+	char new_url[URL_SIZE];
+
+	if (ESBYTE[_click_URL]=='#') {
+		if (anchors.get_pos_by_name(_click_URL+1)!=-1) {
+			WB1.list.first = anchors.get_pos_by_name(_click_URL+1);
+			WB1.list.CheckDoesValuesOkey();
+		}
+		strcpy(#editURL, history.current());
+		strcat(#editURL, _click_URL);
 		DrawOmnibox();
+		WB1.DrawPage();
 		return;
 	}
-	if (!strncmp(#URL,"http:",5)) || (!strncmp(#URL,"https://",8)) 
-	{
-		ReplaceSpaceInUrl();
-		img_draw stdcall(skin.image, address_box.left+address_box.width+1, address_box.top-3, 17, skin.h, 68, SKIN_Y);
 
-		if (!strncmp(#URL,"http:",5)) {
-			http.get(#URL);
-		} else if (!strncmp(#URL,"https://",8)) {
-			sprintf(#getUrl, "http://gate.aspero.pro/?site=%s", #URL);
-			http.get(#getUrl);
-		}
-
-		if (!http.transfer)
-		{
-			StopLoading();
-			bufsize = 0;
-			bufpointer = free(bufpointer);
-			ShowPage();
-			return;
-		}
-	}
-	else
-	{
-		file_size stdcall (#URL);
-		if (EBX) {
-			bufsize = EBX;
-			free(bufpointer);
-			bufpointer = malloc(bufsize);
-			ReadFile(0, bufsize, bufpointer, #URL);
-		} else {
-			bufsize = bufpointer = 0;
-		}
-		ShowPage();
-	}
-}
-
-void ProcessAnchor()
-{
-	char anchor[256];
-	dword anchor_pos;
-	
-	anchor_pos = strrchr(#URL, '#')-1;
-	strlcpy(#anchor, #URL+anchor_pos, sizeof(anchor)-1);
-	URL[anchor_pos] = 0x00;
-
-	if (URL[0] == NULL) {
-		//case when URL consists of anchor only
-		if (anchors.get_pos_by_name(#anchor+1)!=-1) WB1.list.first = anchors.get_pos_by_name(#anchor+1);
-		strcpy(#URL, history.current());
-	} else {
-		GetAbsoluteURL(#URL);
-		OpenPage();
-		if (anchors.get_pos_by_name(#anchor+1)!=-1) WB1.list.first = anchors.get_pos_by_name(#anchor+1);
+	if (!strncmp(_click_URL,"mailto:", 7)) || (!strncmp(_click_URL,"tel:", 4)) {
+		notify(_click_URL);
+		return;
 	}
 
-	WB1.DrawPage();
-	strcpy(#editURL, #URL);
-	strcat(#editURL, #anchor);
-	DrawOmnibox();
-}
-
-void EventSubmitOmnibox()
-{
-	if (!editURL[0]) return;
-	if (!strncmp(#editURL,"http:",5)) || (editURL[0]=='/') 
-	|| (!strncmp(#editURL,"https:",6)) || (!strncmp(#editURL,"WebView:",8))
-	{
-		strcpy(#URL, #editURL);
-	}
-	else
-	{
-		strlcpy(#URL,"http://",7);
-		strcat(#URL, #editURL);
-	}
-	OpenPage();
-}
-
-void EventClickLink()
-{
-	strcpy(#URL, PageLinks.GetURL(PageLinks.active));
-	GetAbsoluteURL(#URL);
-	ProcessLink();
-}
-
-void ProcessLink()
-{
-	if (http.transfer > 0) 
-	{
+	if (http.transfer > 0) {
 		StopLoading();
 		history.back();
 	}
-	
-	if (strrchr(#URL, '#')!=0) {
-		ProcessAnchor();
+
+	strcpy(#new_url, _click_URL);
+	GetAbsoluteURL(#new_url);
+
+	if (strrchr(#new_url, '#')!=0) {
+		anchors.take_anchor_from(#new_url);
+		OpenPage(#new_url);
 		return;
 	}
 
-	if (!strncmp(#URL,"mailto:", 7)) || (!strncmp(#URL,"tel:", 4)) 
+	if (!strncmp(#new_url,"WebView:",8)) {
+		OpenPage(#new_url);
+		return;
+	}
+
+	if (strncmp(#new_url,"http://",7)!=0) && (strncmp(#new_url,"https://",8)!=0)
 	{
-		notify(#URL);
-		strcpy(#editURL, history.current());
-		strcpy(#URL, history.current());
-		return;
-	}
-
-	if (!strncmp(#URL,"WebView:",8)) {
-		OpenPage();
-		return;
-	}
-
-	if (strncmp(#URL,"http://",7)!=0) && (strncmp(#URL,"https://",8)!=0)
-	{
-		if (UrlExtIs(".htm")!=true) && (UrlExtIs(".html")!=true)
+		if (UrlExtIs(#new_url,".htm")!=true) && (UrlExtIs(#new_url,".html")!=true)
 		{	
-			if (strchr(#URL, '|')) {
-				ESBYTE[strchr(#URL, '|')] = NULL;
-				RunProgram(#URL, strlen(#URL)+1+#URL);
+			if (strchr(#new_url, '|')) {
+				ESBYTE[strchr(#new_url, '|')] = NULL;
+				RunProgram(#new_url, strlen(#new_url)+1+#new_url);
+			} else {
+				RunProgram("/sys/@open", #new_url);
 			}
-			else {
-				RunProgram("/sys/@open", #URL);
-			}
-			strcpy(#editURL, history.current());
-			strcpy(#URL, history.current());
 			return;
 		}
-	}
-	else	
-	{
-		if (UrlExtIs(".png")==true) || (UrlExtIs(".gif")==true) || (UrlExtIs(".jpg")==true) 
-		|| (UrlExtIs(".zip")==true) || (UrlExtIs(".kex")==true) || (UrlExtIs(".pdf")==true)
-		|| (UrlExtIs(".7z")==true) {
+	} else {
+		if (UrlExtIs(#new_url,".png")==true) || (UrlExtIs(#new_url,".jpg")==true) 
+		|| (UrlExtIs(#new_url,".zip")==true) || (UrlExtIs(#new_url,".kex")==true) || (UrlExtIs(#new_url,".pdf")==true)
+		|| (UrlExtIs(#new_url,".7z")==true) {
 			if (!downloader_opened) {
-				strcpy(#downloader_edit, #URL);
+				strcpy(#downloader_edit, #new_url);
 				CreateThread(#Downloader,#downloader_stak+4092);
-				strcpy(#editURL, history.current());
-				strcpy(#URL, history.current());
 			}
 			else notify("'WebView\nPlease, start a new download only when previous ended.'Et");
 			return;
 		}
 	}
-	if (open_in_a_new_window)
-	{
-		RunProgram(#program_path, #URL);
-		strcpy(#editURL, history.current());
-		strcpy(#URL, history.current());
+	OpenPage(#new_url);
+}
+
+void EventSubmitOmnibox()
+{
+	char new_url[URL_SIZE+1];
+	if (!editURL[0]) return;
+	if (!strncmp(#editURL,"http:",5)) || (editURL[0]=='/') 
+	|| (!strncmp(#editURL,"https:",6)) || (!strncmp(#editURL,"WebView:",8)) {
+		OpenPage(#editURL);
+	} else {
+		strcpy(#new_url, "http://");
+		strncat(#new_url, #editURL, sizeof(new_url)-1);
+		OpenPage(#new_url);
 	}
-	else 
-	{
-		OpenPage();
-	}
-	open_in_a_new_window = false;
 }
 
 void DrawOmnibox()
 {
 	int skin_x_offset;
-	DrawBar(address_box.left-2, address_box.top-2, address_box.width+3, 2, address_box.color);
-	DrawBar(address_box.left-2, address_box.top, 2, 22, address_box.color);
+	
+	DrawRectangle(address_box.left-2, address_box.top-3, address_box.width+5, 25,border_color);
+
+	DrawBar(address_box.left-2, address_box.top-2, address_box.width+3, 1,0xD8DCD8);
+	DrawBar(address_box.left-2, address_box.top-1, address_box.width+3, 1, address_box.color);
+	img_draw stdcall(skin.image, address_box.left-2, address_box.top-3, 2, skin.h, 102, SKIN_Y);
 	if (address_box.flags & ed_focus) address_box.flags = ed_focus; else address_box.flags = 0;
 	EditBox_UpdateText(#address_box, address_box.flags);
 	edit_box_draw stdcall(#address_box);
-	if (http.transfer > 0) skin_x_offset = 68; else skin_x_offset = 51;
-	img_draw stdcall(skin.image, address_box.left+address_box.width+1, address_box.top-3, 17, skin.h, skin_x_offset, SKIN_Y);
+	if (http.transfer > 0) skin_x_offset = 85; else skin_x_offset = 68;
+	img_draw stdcall(skin.image, address_box.left+address_box.width+1, 
+		address_box.top-3, 17, skin.h, skin_x_offset, SKIN_Y);
 }
 
-void LoadInternalPage(dword _bufpos, _in_filesize){
-	bufsize = _in_filesize;
-	if (bufpointer!=_bufpos) free(bufpointer);
-	bufpointer = malloc(bufsize);
-	memmov(bufpointer, _bufpos, bufsize);
-	ShowPage();
-}
-
-void ShowPage()
-{
-	WB1.list.first = 0; //scroll page to the top
-	DrawOmnibox();
-	if (!bufsize) || (!bufpointer) {
+void LoadInternalPage(dword _bufdata, _in_bufsize){
+	if (!_bufdata) || (!_in_bufsize) {
 		LoadInternalPage(#page_not_found, sizeof(page_not_found));
-	}
-	WB1.ParseHtml();
-	if (source_mode) {
+	} else if (source_mode) {
 		source_mode = false;
-		ShowSource();
-		LoadInternalPage(bufpointer, bufsize);
+		//WB1.ParseHtml();
+		ShowSource(_bufdata, _in_bufsize);
+	} else {
+		bufsize = _in_bufsize;
+		if (bufpointer!=_bufdata) free(bufpointer);
+		bufpointer = malloc(bufsize);
+		memmov(bufpointer, _bufdata, bufsize);
+		WB1.list.first = 0; //scroll page to the top
+		DrawOmnibox();
+		if(!strrchr(#editURL, '#')) {
+			strcat(#editURL, #anchors.current);
+			DrawOmnibox();
+		}
+		WB1.ParseHtml();
+		WB1.DrawPage();
 	}
 }
 
-byte UrlExtIs(dword ext)
+byte UrlExtIs(dword base, ext)
 {
-	if (!strcmpi(#URL + strlen(#URL) - strlen(ext), ext)) return true;
+	if (!strcmpi(base + strlen(base) - strlen(ext), ext)) return true;
 	return false;
 }
 
@@ -646,8 +615,12 @@ void DrawProgress()
 {
 	dword persent;
 	if (http.transfer == 0) return;
-	if (wv_progress_bar.max) persent = wv_progress_bar.value*100/wv_progress_bar.max; else persent = 10;
-	DrawBar(address_box.left-2, address_box.top+20, persent*address_box.width/100, 2, 0x72B7EB);
+	if (wv_progress_bar.max) {
+		persent = wv_progress_bar.value*100/wv_progress_bar.max;
+	} else {
+		persent = 10;
+	}
+	DrawBar(address_box.left-1, address_box.top+20, persent*address_box.width/100, 2, 0x72B7EB);
 }
 
 void EventShowPageMenu(dword _left, _top)
@@ -672,25 +645,26 @@ void EventUpdateProgressBar()
 
 void EventSeachWeb()
 {
-	sprintf(#URL, "https://www.google.com/search?q=%s", #editURL);
-	replace_char(#URL, ' ', '_', sizeof(URL));
-	ProcessLink();
+	char new_url[URL_SIZE+1];
+	replace_char(#editURL, ' ', '_', URL_SIZE);
+	strcpy(#new_url, "https://www.google.com/search?q=");
+	strncat(#new_url, #editURL, URL_SIZE);
+	OpenPage(#new_url);
 }
 
 void EventOpenDialog()
 {
 	OpenDialog_start stdcall (#o_dialog);
 	if (o_dialog.status) {
-		strcpy(#URL, #openfile_path);
-		OpenPage();
+		OpenPage(#openfile_path);
 	}
 }
 
 void EventViewSource()
 {
-	char source_view_param[sizeof(URL)+4];
+	char source_view_param[URL_SIZE+1];
 	strcpy(#source_view_param, "-s ");
-	strcat(#source_view_param, #URL);
+	strncat(#source_view_param, history.current(), URL_SIZE);
 	RunProgram(#program_path, #source_view_param);
 }
 

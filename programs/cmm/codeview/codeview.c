@@ -189,7 +189,7 @@ void SetPageDefaults()
 
 void OpenPage()
 {
-	char getUrl[URL_SIZE];
+	char getUrl[URL_SIZE+1];
 	strcpy(#editURL, #URL);
 	history.add(#URL);
 	if (!strncmp(#URL,"CodeView:",8))
@@ -239,6 +239,7 @@ void ShowPage()
 	DrawEditBoxWebView();
 	if (!bufsize) LoadInternalPage(#page_not_found, sizeof(page_not_found));
 	WB1.ParseHtml();
+	WB1.DrawPage();
 }
 
 void DrawStatusBar() {return;};

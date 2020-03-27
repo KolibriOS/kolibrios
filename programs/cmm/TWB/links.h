@@ -58,8 +58,7 @@ void LinksArray::Clear()
 	CursorPointer.Restore();
 }
 
-char temp[URL_SIZE];
-PathShow_data status_text = {0, 17,250, 6, 250, 0, 0, 0x0, 0xFFFfff, 0, #temp, 0};
+PathShow_data status_text = {0, 17,250, 6, 250, 0, 0, 0x0, 0xFFFfff, 0, NULL, 0};
 
 bool LinksArray::HoverAndProceed(dword mx, my)
 {
@@ -77,13 +76,12 @@ bool LinksArray::HoverAndProceed(dword mx, my)
 				return false;
 			}
 			if (mouse.mkm) && (mouse.up) {
-				open_in_a_new_window = true;
-				EventClickLink();
+				RunProgram(#program_path, PageLinks.GetURL(PageLinks.active));
 				return false;
 			}
 			if (mouse.lkm) && (mouse.up) { 
 				CursorPointer.Restore();
-				EventClickLink();
+				EventClickLink(PageLinks.GetURL(PageLinks.active));
 				return false;
 			}
 			if (mouse.pkm) && (mouse.up) { 
