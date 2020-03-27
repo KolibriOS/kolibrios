@@ -58,7 +58,7 @@ char link_menu[] =
 Download link contents";
 #endif
 
-#define URL_SIZE 4000;
+#define URL_SIZE 4000
 
 dword col_bg = 0xE3E2E2;
 dword panel_color  = 0xE3E2E2;
@@ -400,25 +400,23 @@ void StopLoading()
 	DrawOmnibox();
 }
 
-/*
-void ReplaceSpaceInUrl() {
-	int i;
-	char new_url[URL_SIZE];
-	strcpy(#new_url, history.current());
-	while (i = strchr(#new_url, ' '))
-	{
-		i -= #new_url;
-		strlcpy(#new_url+i+3, #new_url+i+1, URL_SIZE);
-		URL[i] = '%';
-		URL[i+1] = '2';
-		URL[i+2] = '0';
-	}
-	strcpy(#editURL, #new_url);
-}
-
+//rewrite into 
 //bool strrpl(dword dst, from, to, dst_len); !!!!!!!!
-
-*/
+void ReplaceSpaceInUrl(dword url, size) {
+	unsigned int i, j;
+	for (i=size-3; i>0; i--)
+	{
+		if (ESBYTE[i]!=' ') continue;
+		for (j=size-3; j>i; j--) {
+			ESBYTE[j+2]=ESBYTE[j+1];
+			ESBYTE[j+1]=ESBYTE[j];
+		}
+		ESBYTE[i] = '%';
+		ESBYTE[i+1] = '2';
+		ESBYTE[i+2] = '0';
+	}
+	debugln(url);
+}
 
 bool GetLocalFileData(dword _path)
 {
@@ -461,10 +459,10 @@ void OpenPage(dword _open_URL)
 		else LoadInternalPage(#page_not_found, sizeof(page_not_found));
 	} else if (!strncmp(#new_url,"http:",5)) || (!strncmp(#new_url,"https:",6)) {
 		//WEB PAGE
-		//ReplaceSpaceInUrl(); !!!!!!!!
 		img_draw stdcall(skin.image, address_box.left+address_box.width+1, 
 			address_box.top-3, 17, skin.h, 85, SKIN_Y);
 
+		//ReplaceSpaceInUrl(#new_url, URL_SIZE);
 		if (!strncmp(#new_url,"http:",5)) {
 			http.get(#new_url);
 		} else if (!strncmp(#new_url,"https://",8)) {
@@ -486,7 +484,7 @@ void OpenPage(dword _open_URL)
 
 void EventClickLink(dword _click_URL)
 {
-	char new_url[URL_SIZE];
+	char new_url[URL_SIZE+1];
 
 	if (ESBYTE[_click_URL]=='#') {
 		if (anchors.get_pos_by_name(_click_URL+1)!=-1) {
@@ -585,10 +583,6 @@ void DrawOmnibox()
 void LoadInternalPage(dword _bufdata, _in_bufsize){
 	if (!_bufdata) || (!_in_bufsize) {
 		LoadInternalPage(#page_not_found, sizeof(page_not_found));
-	} else if (source_mode) {
-		source_mode = false;
-		//WB1.ParseHtml();
-		ShowSource(_bufdata, _in_bufsize);
 	} else {
 		bufsize = _in_bufsize;
 		if (bufpointer!=_bufdata) free(bufpointer);
@@ -599,6 +593,12 @@ void LoadInternalPage(dword _bufdata, _in_bufsize){
 		if(!strrchr(#editURL, '#')) {
 			strcat(#editURL, #anchors.current);
 			DrawOmnibox();
+		}
+		if (source_mode) {
+			source_mode = false;
+			WB1.ParseHtml();
+			ShowSource(bufpointer, bufsize);
+			return;
 		}
 		WB1.ParseHtml();
 		WB1.DrawPage();

@@ -105,9 +105,16 @@ START:
 	jmp	.convert
 .converted:
 	mov	[delay], ecx
+;--------------------------------------
+	DEBUGF	1, "Searchap: get basic file\n"
+	call	load_file	; download the master file
+	xor	eax,eax
+	cmp	[fs_error],eax
+	jne	exit
+	mov	eax,[fileinfo.size]
+	mov	[basic_file_size],eax
 .params_done:
 ;--------------------------------------
-	;mcall	5,[delay]	;first mount attempt without delay
 	mov	ebx,start_dir
 	mov	ax,[ebx]
 	mov	ebx,read_folder_name
@@ -117,15 +124,6 @@ START:
 	call	device_detect_f70
 ;--------------------------------------
 	call	print_retrieved_devices_table
-	DEBUGF	1, "Searchap: get basic file\n"
-;--------------------------------------
-	call	load_file	; download the master file
-	xor	eax,eax
-	cmp	[fs_error],eax
-	jne	exit
-	mov	eax,[fileinfo.size]
-	mov	[basic_file_size],eax
-
 	call	search_and_load_pointer_file_label
 ;---------------------------------------------------------------------
 exit:
@@ -137,6 +135,7 @@ exit:
 	cmp [mount_attempt], 1
 	je @f
 	mov [mount_attempt], 1 ;second mount attempt with delay
+	DEBUGF	2, "Searchap: second attempt after 5 seconds!\n"
 	mcall	5,[delay]
 	jmp START.params_done
 @@:
@@ -329,7 +328,8 @@ search_and_load_pointer_file_label:
 ;--------------------------------------
 	ret
 .sucess:
-	call	compare_files_and_mount
+	;call	compare_files_and_mount
+	call	compare_files_and_mount.mount_now ;no need to compare files content
 	cmp	[compare_flag],byte 0
 	jne	@b
 	cmp	[mount_dir],1
@@ -352,8 +352,9 @@ compare_files_and_mount:
 	jne	.not_match
 	dec	ecx
 	jnz	.next_char
-	mov	[compare_flag],byte 0
 	pop	esi ecx
+.mount_now:
+	mov	[compare_flag],byte 0
 ;--------------------------------------
 	DEBUGF	2, "Searchap: compare files - success!\n"
 	DEBUGF	2, "Searchap: mount directory: %s\n",esi

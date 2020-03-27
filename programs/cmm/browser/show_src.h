@@ -40,11 +40,8 @@ dword ShowSource(dword _bufdata, _in_bufsize)
 	opened_font_counter=0;
 	source_buf_end = malloc(_in_bufsize*5);
 	source_buf_start = source_buf_end;
-	header[strrchr(#header, '-')-2]=0;
 
-	SourceBufAdd(TEXT, "<html><head><title>Source: ");
-	SourceBufAdd(TEXT, #header);
-	SourceBufAdd(TEXT, "</title><body><pre>");
+	SourceBufAdd(TEXT, "<html><head><title>View Source</title><body><pre>");
 
 	for (i=_bufdata; i<_bufdata+_in_bufsize; i++) switch (ESBYTE[i])
 	{

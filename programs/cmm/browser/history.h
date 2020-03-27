@@ -30,7 +30,7 @@ ShowHistory()
 	free(history_pointer);
 	history_pointer = malloc(history.items.data_size+256);
 	strcat(history_pointer, HISTORY_HEADER);
-	for (i=0; i<history.items.count; i++)
+	for (i=0; i<history.items.count-1; i++)
 	{
 		strcat(history_pointer, "\t<a href='");
 		strcat(history_pointer, history.items.get(i));

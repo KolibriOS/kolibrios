@@ -39,29 +39,25 @@ struct TWebBrowser {
 	void BufEncode();
 } WB1;
 
+dword page_bg;
+#include "..\TWB\img_cache.h"
+
 dword link_color_inactive;
 dword link_color_active;
-dword page_bg;
 
-bool 	
-	link,
-	cur_encoding,
-	t_html,
-	t_body;
+bool link, cur_encoding, t_html, t_body;
 
-#include "..\TWB\img_cache.h"
 #include "..\TWB\links.h"
 
 dword bufpointer=0;
 dword bufsize=0;
 
+char header[150];
+
 int body_magrin=6;
 int basic_line_h=22;
 
-char header[150];
-char oldtag[100];
-
-scroll_bar scroll_wv = { 15,200,398,44,0,2,115,15,0,0xeeeeee,0xBBBbbb,0xeeeeee,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1};
+scroll_bar scroll_wv = { 15,NULL,NULL,NULL,0,2,NULL,15,0,0xeeeeee,0xBBBbbb,0xeeeeee};
 
 //============================================================================================
 void TWebBrowser::DrawStyle()
@@ -251,7 +247,6 @@ void TWebBrowser::ParseHtml(){
 				DrawStyle();
 				if (tag.name) SetStyle();
 			}
-			strncpy(#oldtag, #tag.name, sizeof(oldtag)-1);
 			break;
 		default:
 			AddCharToTheLine(ESBYTE[bufpos]);
@@ -375,9 +370,8 @@ void TWebBrowser::SetStyle() {
 		return;
 	}
 	if (tag.is("div")) {
-		if (streq(#oldtag,"div")) && (tag.opened) return;
+		if (streq(#tag.prior,"div")) && (tag.opened) return;
 		NewLine();
-		//IF (oldtag[0] != 'h') 
 		return;
 	}
 	if (tag.is("header")) || (tag.is("article")) || (tag.is("footer")) || (tag.is("figure")) {
@@ -385,9 +379,8 @@ void TWebBrowser::SetStyle() {
 		return;
 	}
 	if (tag.is("p")) {
-		IF (oldtag[0] == 'h') || (streq(#oldtag,"td")) || (streq(#oldtag,"p")) return;
+		IF (tag.prior[0] == 'h') || (streq(#tag.prior,"td")) || (streq(#tag.prior,"p")) return;
 		NewLine();
-		//IF(tag.opened) NewLine();
 		return;
 	}
 	if (tag.is("br")) { NewLine(); return; }

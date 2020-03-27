@@ -2,6 +2,7 @@
 struct _tag
 {
 	char name[32];
+	char prior[32];
 	char params[5000];
 	bool opened;
 	collection attributes;
@@ -25,12 +26,11 @@ bool _tag::is(dword _text)
 bool _tag::reset()
 {
 	if (!name) return false;
+	strcpy(#prior, #name);
 	name = NULL;
 	opened = true;
 	attributes.drop();
 	values.drop();
-	attributes.add("ZERO");
-	values.add("NULL");
 	return true;
 }
 

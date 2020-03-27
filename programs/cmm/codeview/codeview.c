@@ -54,8 +54,8 @@ enum {
 #include "..\TWB\TWB.c"
 #include "show_src.h"
 
-char URL[URL_SIZE];
-char editURL[URL_SIZE];
+char URL[URL_SIZE+1];
+char editURL[URL_SIZE+1];
 int	mouse_twb;
 edit_box address_box = {250,60,30,0xffffff,0x94AECE,0xffffff,0xffffff,0x10000000,URL_SIZE-2,#editURL,#mouse_twb,2,19,19};
 
