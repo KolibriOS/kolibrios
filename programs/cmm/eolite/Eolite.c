@@ -50,6 +50,8 @@ enum {
 	ONLY_OPEN
 };
 
+_history history;
+
 struct Eolite_colors
 {
 	bool  def;

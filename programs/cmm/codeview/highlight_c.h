@@ -14,7 +14,7 @@ char* C_HL_keywords[] = {
     ":void ", ":int ", ":bool ", ":dword ", NULL
 };
 
-dword ShowCodeSource()
+dword ShowCodeSource(dword _bufpointer, _bufsize)
 {
 	dword new_buf, new_buf_start, i;
 	int mode = CODE;
@@ -24,11 +24,11 @@ dword ShowCodeSource()
 	dword keyn;
 	dword keycolor;
 
-	new_buf = malloc(bufsize*10);
+	new_buf = malloc(_bufsize*10);
 	new_buf_start = new_buf;
-	sprintf(new_buf,"<html><head><body><pre>",#URL);
+	sprintf(new_buf,"<html><head><title>%s</title><body><pre>",#current_path);
 	new_buf += strlen(new_buf);
-	for (i=bufpointer; i<bufpointer+bufsize; i++)
+	for (i=_bufpointer; i<_bufpointer+_bufsize; i++)
 	{
 		if ('<' == ESBYTE[i]) {
 			strcpy(new_buf, "&lt;");
@@ -116,7 +116,6 @@ dword ShowCodeSource()
 		_CONTINUE:		
 	}
 	ESBYTE[new_buf] = 0;
-	bufsize = new_buf - new_buf_start;
-	free(bufpointer);
-	bufpointer = new_buf_start;
+	LoadInternalPage(new_buf_start, new_buf - new_buf_start);
+	free(new_buf_start);
 }

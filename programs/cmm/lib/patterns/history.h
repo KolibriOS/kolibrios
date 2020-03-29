@@ -7,7 +7,7 @@ struct _history {
 	int back();
 	int forward();
 	dword current();
-} history;
+};
 
 int _history::add(dword in)
 {

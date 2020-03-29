@@ -2,8 +2,12 @@
 #include "..\TWB\anchors.h"
 #include "..\TWB\parce_tag.h"
 #include "..\TWB\absolute_url.h"
-char line[500];
 #include "..\TWB\unicode_tags.h"
+#include "..\TWB\img_cache.h"
+dword page_bg;
+dword link_color_inactive;
+dword link_color_active;
+#include "..\TWB\links.h"
 
 enum { ALIGN_LEFT, ALIGN_CENTER, ALIGN_RIGHT};
 
@@ -39,15 +43,10 @@ struct TWebBrowser {
 	void BufEncode();
 } WB1;
 
-dword page_bg;
-#include "..\TWB\img_cache.h"
-
-dword link_color_inactive;
-dword link_color_active;
+char line[500];
 
 bool link, cur_encoding, t_html, t_body;
 
-#include "..\TWB\links.h"
 
 dword bufpointer=0;
 dword bufsize=0;
@@ -57,7 +56,7 @@ char header[150];
 int body_magrin=6;
 int basic_line_h=22;
 
-scroll_bar scroll_wv = { 15,NULL,NULL,NULL,0,2,NULL,15,0,0xeeeeee,0xBBBbbb,0xeeeeee};
+scroll_bar scroll_wv = { 15,NULL,NULL,NULL,0,2,NULL,0,0,0xeeeeee,0xBBBbbb,0xeeeeee};
 
 //============================================================================================
 void TWebBrowser::DrawStyle()
@@ -128,8 +127,10 @@ void TWebBrowser::SetPageDefaults()
 	stolbec = 0;
 	line = 0;
 	zoom = 1;
-	if (o_bufpointer) free(o_bufpointer);
-	o_bufpointer = 0;
+	//hold original buffer
+	if (o_bufpointer) o_bufpointer=free(o_bufpointer);
+	o_bufpointer = malloc(bufsize);
+	memmov(o_bufpointer, bufpointer, bufsize);
 }
 //============================================================================================
 void TWebBrowser::AddCharToTheLine(unsigned char _char)
@@ -187,7 +188,7 @@ void TWebBrowser::ParseHtml(){
 				bukva = ESBYTE[bufpos+j];
 				chrcat(#unicode_symbol, bukva);
 			}
-			if (bukva = GetUnicodeSymbol(#unicode_symbol)) {
+			if (GetUnicodeSymbol(#line, #unicode_symbol, sizeof(line)-1)) {
 				bufpos += j;
 				CheckForLineBreak();
 			} else {
@@ -242,7 +243,7 @@ void TWebBrowser::ParseHtml(){
 			if (tag.name[strlen(#tag.name)-1]=='/') tag.name[strlen(#tag.name)-1]=NULL; //for br/ !!!!!!!!
 			if (tag.params) tag.parse_params();
 
-			if (tag.name) && (!tag.is("i")) && (!tag.is("svg")) {
+			if (tag.name) {
 				CheckForLineBreak();
 				DrawStyle();
 				if (tag.name) SetStyle();
@@ -300,12 +301,12 @@ void TWebBrowser::SetStyle() {
 		t_html = tag.opened;
 		return;
 	}
-	if(tag.is("title")) {
+	if (tag.is("title")) {
 		if (tag.opened) header=NULL;
 		return;
 	}
 	
-	IF(tag.is("q"))
+	if (tag.is("q"))
 	{
 		if (tag.opened)	{
 			meta_encoding = strlen(#line);
@@ -384,6 +385,7 @@ void TWebBrowser::SetStyle() {
 		return;
 	}
 	if (tag.is("br")) { NewLine(); return; }
+	if (tag.is("td")) { if (tag.opened) AddCharToTheLine(' '); return; }
 	if (tag.is("tr")) { if (tag.opened) NewLine(); return; }
 	if (tag.is("b")) || (tag.is("strong")) || (tag.is("big")) { style.b = tag.opened; return; }
 	if (tag.is("button")) { style.button = tag.opened; stolbec++; return; }
@@ -459,7 +461,7 @@ void TWebBrowser::SetStyle() {
 	if (tag.is("ul")) || (tag.is("ol")) {
 		if (!tag.opened)
 		{
-			style.li = tag.opened;
+			style.li = false;
 			style.li_tab--;
 			NewLine();
 		} 
@@ -495,17 +497,10 @@ void TWebBrowser::SetStyle() {
 //============================================================================================
 void TWebBrowser::BufEncode(dword set_new_encoding)
 {
-	if (cur_encoding == set_new_encoding) return;
-	if (o_bufpointer==0) {
-		o_bufpointer = malloc(bufsize);
-		strcpy(o_bufpointer, bufpointer);
-	} else {
-		strcpy(bufpointer, o_bufpointer);
+	if (cur_encoding != set_new_encoding) {
+		cur_encoding = set_new_encoding;
+		bufpointer = ChangeCharset(charsets[cur_encoding], "CP866", bufpointer);		
 	}
-	//debugval("cur_encoding    ", cur_encoding);
-	//debugval("set_new_encoding", set_new_encoding);
-	cur_encoding = set_new_encoding;
-	bufpointer = ChangeCharset(charsets[cur_encoding], "CP866", bufpointer);
 }
 //============================================================================================
 void TWebBrowser::DrawScroller()

@@ -9,26 +9,30 @@ dword CursorFile = FROM "../TWB/pointer.cur";
 
 struct array_link {
 	dword link;
-	int x,y,w,h;
+	unsigned int x,y,w,h;
+	unsigned int unic_id;
 	int underline, underline_h;
 };
 
 struct LinksArray {
 	array_link links[MAXLINKS];
 	collection page_links;
-	int count;
-	int active;
+	unsigned int count;
+	unsigned int unic_count;
+	unsigned int active;
 	bool HoverAndProceed();
 	void AddLink();
 	void AddText();
 	dword GetURL();
 	void Clear();
+	void DrawUnderline();
 } PageLinks;
 
 void LinksArray::AddLink(dword lpath)
 {
 	if (count>= MAXLINKS) return;
 	page_links.add(lpath);
+	unic_count++;
 }
 
 void LinksArray::AddText(dword _x, _y, _w, _h, _link_underline, _underline_h)
@@ -41,6 +45,7 @@ void LinksArray::AddText(dword _x, _y, _w, _h, _link_underline, _underline_h)
 	links[count].underline = _link_underline;
 	links[count].underline_h = _underline_h;
 	links[count].link = page_links.get(page_links.count-1);
+	links[count].unic_id = unic_count;
 	count++;
 }
 
@@ -55,12 +60,24 @@ void LinksArray::Clear()
 	page_links.realloc_size = 4096 * 32;
 	count = 0;
 	active = -1;
+	unic_count = 0;
 	CursorPointer.Restore();
+}
+
+void LinksArray::DrawUnderline(dword und_id, list_first, list_y, color)
+{
+	int i;
+	for (i=0; i<count; i++) 
+	{
+		if (links[i].unic_id==links[und_id].unic_id) && (links[i].y + links[i].h - list_first > list_y) {
+			DrawBar(links[i].x, links[i].y + links[i].h - list_first, links[i].w, links[i].underline_h, color);
+		}		
+	}
 }
 
 PathShow_data status_text = {0, 17,250, 6, 250, 0, 0, 0x0, 0xFFFfff, 0, NULL, 0};
 
-bool LinksArray::HoverAndProceed(dword mx, my)
+bool LinksArray::HoverAndProceed(dword mx, my, list_y, list_first)
 {
 	int i;
 	if (!count) return true;
@@ -68,10 +85,10 @@ bool LinksArray::HoverAndProceed(dword mx, my)
 	{
 		if (mx>links[i].x) && (my>links[i].y) 
 		&& (mx<links[i].x+links[i].w) && (my<links[i].y+links[i].h)
-		&& (my>WB1.list.y+WB1.list.first)
+		&& (my>list_y+list_first)
 		{
 			if (mouse.lkm) && (mouse.down) {
-				DrawRectangle(links[active].x, -WB1.list.first + links[active].y, 
+				DrawRectangle(links[active].x, -list_first + links[active].y, 
 				links[active].w, links[active].h, 0);
 				return false;
 			}
@@ -91,10 +108,15 @@ bool LinksArray::HoverAndProceed(dword mx, my)
 			if (active==i) return false;
 			CursorPointer.Load(#CursorFile);
 			CursorPointer.Set();
-			if (links[active].underline) DrawUnderline(links[active].x, -WB1.list.first + links[active].y
-				+ links[active].h, links[active].w, links[active].underline_h, link_color_inactive);
-			if (links[i].underline) DrawUnderline(links[i].x, -WB1.list.first + links[i].y
-				+ links[i].h, links[i].w, links[i].underline_h, page_bg);
+
+			if (links[active].underline) {
+				DrawUnderline(active, list_first, list_y, link_color_inactive);			
+			}
+
+			if (links[i].underline) {
+				DrawUnderline(i, list_first, list_y, page_bg);
+			}
+
 			active = i;
 			DrawStatusBar(links[active].link);
 			return true;
@@ -104,15 +126,10 @@ bool LinksArray::HoverAndProceed(dword mx, my)
 	{
 		CursorPointer.Restore();
 		if (links[active].underline) {
-			DrawUnderline(links[active].x, -WB1.list.first + links[active].y + links[active].h,links[active].w, 
-				links[active].underline_h, link_color_inactive);
+			DrawUnderline(active, list_first, list_y, link_color_inactive);
 		}
-		DrawBar(status_text.start_x, status_text.start_y, status_text.area_size_x, 9, col_bg);
+		DrawStatusBar(NULL);
 		active = -1;
 	}
 }
 
-void DrawUnderline(dword x,y,w,h,color)
-{
-	if (y>WB1.list.y) DrawBar(x,y,w,h,color);
-}

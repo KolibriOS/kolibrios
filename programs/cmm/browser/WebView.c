@@ -23,13 +23,26 @@
 #include "..\lib\obj\http.h"
 #include "..\lib\obj\iconv.h"
 #include "..\lib\obj\proc_lib.h"
+
 //useful patterns
 #include "..\lib\patterns\history.h"
 #include "..\lib\patterns\http_downloader.h"
 #include "..\lib\patterns\simple_open_dialog.h"
 
+#include "show_src.h"
+_http http = {0, 0, 0, 0, 0, 0, 0};
+#include "download_manager.h"
+_history history;
+#include "history.h"
+
+bool debug_mode = false;
+dword col_bg = 0xE3E2E2;
+dword panel_color  = 0xE3E2E2;
+dword border_color = 0x787878;
+#include "..\TWB\TWB.c"
+
 #ifdef LANG_RUS
-char version[]="Текстовый браузер 2.0 beta2";
+char version[]="Текстовый браузер 2.0 beta4";
 char page_not_found[] = FROM "html\\page_not_found_ru.htm""\0";
 char homepage[] = FROM "html\\homepage_ru.htm""\0";
 char help[] = FROM "html\\help_ru.htm""\0";
@@ -43,7 +56,7 @@ char link_menu[] =
 "Копировать ссылку
 Скачать содержимое ссылки";
 #else
-char version[]="Text-based Browser 2.0 beta2";
+char version[]="Text-based Browser 2.0 beta4";
 char page_not_found[] = FROM "html\\page_not_found_en.htm""\0";
 char homepage[] = FROM "html\\homepage_en.htm""\0";
 char help[] = FROM "html\\help_en.htm""\0";
@@ -59,19 +72,6 @@ Download link contents";
 #endif
 
 #define URL_SIZE 4000
-
-dword col_bg = 0xE3E2E2;
-dword panel_color  = 0xE3E2E2;
-dword border_color = 0x787878;
-
-bool debug_mode = false;
-
-_http http = {0, 0, 0, 0, 0, 0, 0};
-
-#include "..\TWB\TWB.c"
-#include "history.h"
-#include "show_src.h"
-#include "download_manager.h"
 
 #define URL_SERVICE_HISTORY "WebView:history"
 #define URL_SERVICE_HOMEPAGE "WebView:home"
@@ -158,7 +158,7 @@ void main()
 		case evMouse:
 			edit_box_mouse stdcall (#address_box);
 			mouse.get();
-			if (PageLinks.HoverAndProceed(mouse.x, WB1.list.first + mouse.y))
+			if (PageLinks.HoverAndProceed(mouse.x, WB1.list.first + mouse.y, WB1.list.y, WB1.list.first))
 			&& (mouse.pkm) && (mouse.up) {
 				if (WB1.list.MouseOver(mouse.x, mouse.y)) EventShowPageMenu(mouse.x, mouse.y);
 				break;
@@ -250,7 +250,7 @@ void main()
 						{
 							http.handle_redirect();
 							http.free();
-							GetAbsoluteURL(#http.redirect_url);
+							GetAbsoluteURL(#http.redirect_url, history.current());
 							debug("Redirect: "); debugln(#http.redirect_url);
 							history.back();
 							OpenPage(#http.redirect_url);
@@ -277,7 +277,7 @@ void SetElementSizes()
 	WB1.list.column_max = WB1.list.w - scroll_wv.size_x / WB1.list.font_w + 1;
 	WB1.list.visible = WB1.list.h;
 	if (WB1.list.w!=WB1.DrawBuf.bufw) {
-		WB1.DrawBuf.Init(WB1.list.x, WB1.list.y, WB1.list.w, 800*20);
+		WB1.DrawBuf.Init(WB1.list.x, WB1.list.y, WB1.list.w, 400*20);
 		OpenPage(history.current());
 	}
 }
@@ -301,13 +301,12 @@ void draw_window()
 	if (!header) {
 		OpenPage(history.current()); 
 		WB1.DrawScroller();
-	}
-	else { 
+	} else { 
 		WB1.DrawPage(); 
 		DrawOmnibox(); 
+		DrawRectangle(scroll_wv.start_x, scroll_wv.start_y, scroll_wv.size_x, 
+			scroll_wv.size_y-1, scroll_wv.bckg_col);
 	}
-	DrawRectangle(scroll_wv.start_x, scroll_wv.start_y, scroll_wv.size_x, 
-		scroll_wv.size_y-1, scroll_wv.bckg_col);
 	DrawProgress();
 }
 
@@ -401,21 +400,24 @@ void StopLoading()
 }
 
 //rewrite into 
-//bool strrpl(dword dst, from, to, dst_len); !!!!!!!!
-void ReplaceSpaceInUrl(dword url, size) {
+//bool strrpl(dword dst, from, into, dst_len);
+bool ReplaceSpaceInUrl(dword url, size) {
 	unsigned int i, j;
-	for (i=size-3; i>0; i--)
+	bool was_changed=false;
+	for (i=url+size-3; i>url; i--)
 	{
 		if (ESBYTE[i]!=' ') continue;
-		for (j=size-3; j>i; j--) {
+		for (j=url+size-3; j>=i; j--) {
+			ESBYTE[j+3]=ESBYTE[j+2];
 			ESBYTE[j+2]=ESBYTE[j+1];
 			ESBYTE[j+1]=ESBYTE[j];
 		}
 		ESBYTE[i] = '%';
 		ESBYTE[i+1] = '2';
 		ESBYTE[i+2] = '0';
+		was_changed = true;
 	}
-	debugln(url);
+	return was_changed;
 }
 
 bool GetLocalFileData(dword _path)
@@ -462,7 +464,11 @@ void OpenPage(dword _open_URL)
 		img_draw stdcall(skin.image, address_box.left+address_box.width+1, 
 			address_box.top-3, 17, skin.h, 85, SKIN_Y);
 
-		//ReplaceSpaceInUrl(#new_url, URL_SIZE);
+		if (ReplaceSpaceInUrl(#new_url, URL_SIZE)) {
+			strcpy(#editURL, #new_url);
+			DrawOmnibox();
+		}
+
 		if (!strncmp(#new_url,"http:",5)) {
 			http.get(#new_url);
 		} else if (!strncmp(#new_url,"https://",8)) {
@@ -509,7 +515,7 @@ void EventClickLink(dword _click_URL)
 	}
 
 	strcpy(#new_url, _click_URL);
-	GetAbsoluteURL(#new_url);
+	GetAbsoluteURL(#new_url, history.current());
 
 	if (strrchr(#new_url, '#')!=0) {
 		anchors.take_anchor_from(#new_url);
@@ -594,14 +600,13 @@ void LoadInternalPage(dword _bufdata, _in_bufsize){
 			strcat(#editURL, #anchors.current);
 			DrawOmnibox();
 		}
+		WB1.ParseHtml();
 		if (source_mode) {
 			source_mode = false;
-			WB1.ParseHtml();
 			ShowSource(bufpointer, bufsize);
-			return;
+		} else {
+			WB1.DrawPage();			
 		}
-		WB1.ParseHtml();
-		WB1.DrawPage();
 	}
 }
 

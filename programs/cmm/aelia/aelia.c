@@ -23,6 +23,8 @@ llist list;
 #include "canvas.h"
 #include "favicon.h"
 
+_history history;
+
 char default_dir[] = "/rd/1";
 od_filter filter2 = { 16, "TXT\0HTM\0HTML\0\0" };
 

@@ -269,6 +269,8 @@ struct llist
 
 :void llist_copy(dword dest, src)
 {
+	memmov(dest, src, sizeof(llist));
+	/*
 	EDI = dest;
 	ESI = src;
 	EDI.llist.x = ESI.llist.x;
@@ -286,6 +288,7 @@ struct llist
 	EDI.llist.cur_y = ESI.llist.cur_y;
 	EDI.llist.column_max = ESI.llist.column_max;
 	EDI.llist.active = ESI.llist.active;
+	*/
 }
 
 #endif

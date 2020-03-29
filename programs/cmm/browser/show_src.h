@@ -38,8 +38,8 @@ dword ShowSource(dword _bufdata, _in_bufsize)
 	dword source_buf_start;
 
 	opened_font_counter=0;
-	source_buf_end = malloc(_in_bufsize*5);
-	source_buf_start = source_buf_end;
+	source_buf_start = malloc(_in_bufsize*5);
+	source_buf_end = source_buf_start;
 
 	SourceBufAdd(TEXT, "<html><head><title>View Source</title><body><pre>");
 
@@ -89,6 +89,6 @@ dword ShowSource(dword _bufdata, _in_bufsize)
 			source_buf_end++;
 	}
 	ESBYTE[source_buf_end] = 0;
-	LoadInternalPage(source_buf_start, _in_bufsize);
+	LoadInternalPage(source_buf_start, source_buf_end-source_buf_start);
 	free(source_buf_start);
 }

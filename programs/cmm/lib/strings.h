@@ -115,6 +115,30 @@ L1:
 }
 
 /*
+signed int strncmp(dword s1, s2, signed n)
+unsigned char _s1,_s2;
+{
+	if (n == 0)
+		return 0;
+	do {
+		_s1 = DSBYTE[s1];
+		_s2 = DSBYTE[s2];
+		if (_s1 != _s2)
+		{
+			$dec s2
+			return _s1 - _s2;
+		}
+		$inc s2
+		if (_s1 == 0)
+			break;
+		$inc s1
+		$dec n
+	} while (n);
+	return 0;
+}
+*/
+
+/*
 inline signed int strncmp(dword text1,text2,len)
 {
 	
@@ -134,7 +158,7 @@ inline fastcall unsigned int strlen( EDI)
 	EAX-=2+ECX;
 }
 
-inline strnlen(dword str, dword maxlen)
+inline dword strnlen(dword str, dword maxlen)
 {
 	dword cp;
 	for (cp = str; (maxlen != 0) && (DSBYTE[cp] != '\0'); cp++, maxlen--);
@@ -181,19 +205,6 @@ inline signed int strcmp(dword text1, text2)
 	return 0;
 }
 
-/*
-TODO: rewrite streq() using pure assembliy
-
-inline fastcall void strcpy( EDI, ESI)
-{
-    $cld
-L2:
-    $lodsb
-    $stosb
-    $test al,al
-    $jnz L2
-}
-*/
 
 inline fastcall streq(ESI, EDI)
 {
@@ -211,31 +222,6 @@ inline fastcall streq(ESI, EDI)
 	}
 	return true;
 }
-
-/*
-signed int strncmp(dword s1, s2, signed n)
-unsigned char _s1,_s2;
-{
-	if (n == 0)
-		return 0;
-	do {
-		_s1 = DSBYTE[s1];
-		_s2 = DSBYTE[s2];
-		if (_s1 != _s2)
-		{
-			$dec s2
-			return _s1 - _s2;
-		}
-		$inc s2
-		if (_s1 == 0)
-			break;
-		$inc s1
-		$dec n
-	} while (n);
-	return 0;
-}
-*/
-
 
 inline fastcall void strcpy( EDI, ESI)
 {
@@ -395,19 +381,31 @@ inline fastcall void strcat( EDI, ESI)
     }
 }
 
-:void strncat(dword dst, src, dword len)
+:void strncat(dword dst, src, len)
 {
 	while (ESBYTE[dst]) && (len) {
 		dst++;
 		len--;
 	}
-	while (ESBYTE[src]) && (len) {
+	while (ESBYTE[src]) && (len>1) {
 		ESBYTE[dst] = ESBYTE[src];
 		dst++;
 		src++;
 		len--;
 	}
 	ESBYTE[dst] = 0;
+}
+
+:void chrncat(dword dst, unsigned char s, dword len)
+{
+	while (ESBYTE[dst]) && (len) {
+		dst++;
+		len--;
+	}
+	if (len>1) {
+		ESBYTE[dst] = s;
+		ESBYTE[dst+1] = 0;
+	}
 }
 
 inline fastcall void chrcat(ESI, DI)

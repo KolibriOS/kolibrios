@@ -14,13 +14,11 @@
 #include "..\lib\obj\box_lib.h"
 #include "..\lib\obj\libio.h"
 #include "..\lib\obj\libimg.h"
-#include "..\lib\obj\http.h"
 #include "..\lib\obj\iconv.h"
+#include "..\lib\obj\proc_lib.h"
 
-#include "..\lib\patterns\history.h"
-#include "..\lib\patterns\http_downloader.h"
-
-_http http = {0, 0, 0, 0, 0, 0, 0};
+//useful patterns
+#include "..\lib\patterns\simple_open_dialog.h"
 
 char homepage[] = FROM "html\\homepage.htm""\0";
 char page_not_found[] = FROM "html\\page_not_found_en.htm""\0";
@@ -28,7 +26,7 @@ char page_not_found[] = FROM "html\\page_not_found_en.htm""\0";
 char version[]="C-- Code View";
 char accept_language[]= "Accept-Language: en\n";
 
-#define URL_SERVICE_HOME "CodeView://home"
+#define URL_SERVICE_HOME "CodeView:home"
 
 proc_info Form;
 
@@ -52,24 +50,33 @@ enum {
 
 #define URL_SIZE 4000;
 #include "..\TWB\TWB.c"
-#include "show_src.h"
+#include "highlight_c.h"
 
-char URL[URL_SIZE+1];
-char editURL[URL_SIZE+1];
+char default_dir[] = "/rd/1";
+od_filter filter2 = { 16, "C\0H\0C--\0H--\0CPP\0\0" };
+
+char current_path[URL_SIZE+1];
+char edit_path[URL_SIZE+1];
 int	mouse_twb;
-edit_box address_box = {250,60,30,0xffffff,0x94AECE,0xffffff,0xffffff,0x10000000,URL_SIZE-2,#editURL,#mouse_twb,2,19,19};
+edit_box address_box = {250,60,30,0xffffff,0x94AECE,0xffffff,0xffffff,0x10000000,URL_SIZE-2,#edit_path,#mouse_twb,2,19,19};
 
 #define SKIN_Y 24
 
-void main()
+void LoadLibraries()
 {
-	int i;
-	int id;
 	load_dll(boxlib, #box_lib_init,0);
 	load_dll(libio, #libio_init,1);
 	load_dll(libimg, #libimg_init,1);
 	load_dll(iconv_lib, #iconv_open,0);
-	if (param) strcpy(#URL, #param); else strcpy(#URL, URL_SERVICE_HOME);
+	load_dll(Proc_lib,  #OpenDialog_init,0);
+	OpenDialog_init stdcall (#o_dialog);
+}
+
+void main()
+{
+	int i;
+	LoadLibraries();
+	if (param) strcpy(#current_path, #param); else strcpy(#current_path, URL_SERVICE_HOME);
 	WB1.list.SetFont(8, 14, 10011000b);
 	WB1.list.no_selection = true;
 	SetEventMask(EVM_REDRAW + EVM_KEY + EVM_BUTTON + EVM_MOUSE + EVM_MOUSE_FILTER);
@@ -89,23 +96,28 @@ void main()
 			break;
 
 		case evButton:
-			id=GetButtonID();
-			if (1==id) ExitProcess();
+			if (GetButtonID()==1) ExitProcess();
 			break;
 
 		case evKey:
 			GetKeys();
 
 			if (SCAN_CODE_F5 == key_scancode) {
-				OpenPage();
+				OpenPage(#current_path);
 			}
 			if (SCAN_CODE_F3 == key_scancode) {
-				RunProgram("/rd/1/tinypad", #URL);
+				RunProgram("/rd/1/tinypad", #current_path);
+			}
+
+			if (key_modifier&KEY_LCTRL) || (key_modifier&KEY_RCTRL) {
+				if (key_scancode == SCAN_CODE_KEY_O) {EventOpenDialog();break;} 
 			}
 
 			if (address_box.flags & 0b10)  
 			{
-				if (key_ascii == ASCII_KEY_ENTER) EventGoToPage(); 
+				if (key_ascii == ASCII_KEY_ENTER) {
+					OpenPage(#edit_path);
+				}
 				else {
 					EAX = key_editbox; 
 					edit_box_key stdcall(#address_box);
@@ -126,7 +138,8 @@ void main()
 			if (Form.status_window>2) { DrawTitle(#header); break; }
 			if (Form.height<120) { MoveSize(OLD,OLD,OLD,120); break; }
 			if (Form.width<280) { MoveSize(OLD,OLD,280,OLD); break; }
-			Draw_Window();
+			SetElementSizes();
+			draw_window();
 			break;
 	}
 }
@@ -144,76 +157,48 @@ void SetElementSizes()
 	WB1.list.visible = WB1.list.h;
 	if (WB1.list.w!=WB1.DrawBuf.bufw) {
 		WB1.DrawBuf.Init(WB1.list.x, WB1.list.y, WB1.list.w, 32700);
-		OpenPage();
+		OpenPage(#current_path);
 	}
 }
 
-void Draw_Window()
+void draw_window()
 {
 	DrawBar(0,0, Form.cwidth,TOOLBAR_H-2, panel_color);
 	DrawBar(0,TOOLBAR_H-2, Form.cwidth,1, 0xD7D0D3);
 	DrawBar(0,TOOLBAR_H-1, Form.cwidth,1, border_color);
-	SetElementSizes();
 	DrawRectangle(address_box.left-3, address_box.top-3, address_box.width+4, 25,border_color);
 	DrawBar(0,Form.cheight - STATUSBAR_H, Form.cwidth,STATUSBAR_H, col_bg);
 	DrawBar(0,Form.cheight - STATUSBAR_H, Form.cwidth,1, border_color);
 	DrawEditBoxWebView();
-	if (!header) 
-		OpenPage(); 
-	else { 
+	if (!header) {
+		OpenPage(#current_path);
+	} else { 
 		WB1.DrawPage(); 
 		DrawEditBoxWebView(); 
 	}
 	DrawRectangle(scroll_wv.start_x, scroll_wv.start_y, scroll_wv.size_x, scroll_wv.size_y-1, scroll_wv.bckg_col);
 }
 
-void EventGoToPage()
-{
-	if (!editURL[0]) {
-		strcpy(#URL, URL_SERVICE_HOME);
-	}
-	else
-	{
-		strcpy(#URL, #editURL);
-	}
-	OpenPage();
-}
 
-
-void SetPageDefaults()
+void OpenPage(dword _path)
 {
-	strncpy(#header, #version, sizeof(header)-1);
-	WB1.list.count = WB1.list.first = 0;
-	cur_encoding = CH_NULL;
-}
-
-void OpenPage()
-{
-	char getUrl[URL_SIZE+1];
-	strcpy(#editURL, #URL);
-	history.add(#URL);
-	if (!strncmp(#URL,"CodeView:",8))
-	{
-		SetPageDefaults();
-		if (!strcmp(#URL, URL_SERVICE_HOME)) LoadInternalPage(#homepage, sizeof(homepage));
-		DrawEditBoxWebView();
+	dword buf, size;
+	strcpy(#current_path, _path);
+	if (streq(_path, URL_SERVICE_HOME)) {
+		LoadInternalPage(#homepage, sizeof(homepage)); 
 		return;
 	}
-	else
+	file_size stdcall (_path);
+	if (EBX)
 	{
-		file_size stdcall (#URL);
-		bufsize = EBX;
-		if (bufsize)
-		{
-			free(bufpointer);
-			bufpointer = malloc(bufsize);
-			SetPageDefaults();
-			ReadFile(0, bufsize, bufpointer, #URL);
-			ShowCodeSource();
-			LoadInternalPage(bufpointer, bufsize);	
-		}
-		ShowPage();
+		size = EBX;
+		buf = malloc(size);
+		ReadFile(0, size, buf, _path);
+		ShowCodeSource();
+		free(buf);
+		return;
 	}
+	LoadInternalPage(NULL,NULL);
 }
 
 DrawEditBoxWebView()
@@ -221,26 +206,42 @@ DrawEditBoxWebView()
 	int skin_x_offset;
 	DrawBar(address_box.left-2, address_box.top-2, address_box.width+3, 2, address_box.color);
 	DrawBar(address_box.left-2, address_box.top, 2, 22, address_box.color);
-	address_box.size = address_box.pos = address_box.shift = address_box.shift_old = strlen(#editURL);
+	address_box.size = address_box.pos = address_box.shift = address_box.shift_old = strlen(#edit_path);
 	address_box.offset = 0;
 	edit_box_draw stdcall(#address_box);
 	skin_x_offset = 51;
 	img_draw stdcall(skin.image, address_box.left+address_box.width+1, address_box.top-3, 17, skin.h, skin_x_offset, SKIN_Y);
 }
 
-void LoadInternalPage(dword bufpos, in_filesize){
-	bufsize = in_filesize;
-	bufpointer = bufpos;
-	ShowPage();
-}
-
-void ShowPage()
+void LoadInternalPage(dword _bufpos, _bufsize)
 {
+	if (bufpointer) free(bufpointer);
+
+	if (!_bufpos) || (!_bufsize) {
+		LoadInternalPage(#page_not_found, sizeof(page_not_found));
+		return;
+	}
+	strcpy(#edit_path, #current_path);
 	DrawEditBoxWebView();
-	if (!bufsize) LoadInternalPage(#page_not_found, sizeof(page_not_found));
+
+	bufpointer = _bufpos;
+	bufsize = _bufsize;
+	bufpointer = malloc(bufsize);
+	strcpy(bufpointer, _bufpos);
+
+	WB1.list.first = 0;
 	WB1.ParseHtml();
 	WB1.DrawPage();
 }
+
+void EventOpenDialog()
+{
+	OpenDialog_start stdcall (#o_dialog);
+	if (o_dialog.status) {
+		OpenPage(#openfile_path);
+	}
+}
+
 
 void DrawStatusBar() {return;};
 void EventClickLink() {return;};

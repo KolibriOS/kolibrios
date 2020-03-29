@@ -22,7 +22,6 @@
 #include "../lib/obj/netcode.h"
 #include "../lib/obj/iconv.h"
 //patterns
-#include "../lib/patterns/history.h"
 #include "../lib/patterns/http_downloader.h"
 //images
 byte letter_icons[sizeof(file "img/letter_icons.raw")] = FROM "img/letter_icons.raw";

@@ -1,14 +1,9 @@
 char *unicode_symbols[]={
-"#32", " ",      
-"#34", "\"",     "quot","\"",
-"#38", "&",      "amp", "&",
-"#39", "'",
-"#039","'",
-"#60", "<",      "lt",  "<",
-"#62", ">",      "gt",  ">",
-"#91", "[",
-"#93", "]",
-"#96", "'",
+"quot","\"",
+"amp", "&",
+"lt",  "<",
+"gt",  ">",
+"#183","\31",   "middot", "\31", 
 "#149","-",
 "#151","-",
 "#160"," ",     "nbsp", " ",
@@ -32,11 +27,13 @@ char *unicode_symbols[]={
 
 "#8211", "-",
 "#8217", "'",
+"#8220", "\"",
 "#8222", "\"", "ldquo", "\"",
 "#8221", "\"", "rdquo", "\"",
 "#8470", "N",
 "#8722", "-",
 "#9642", "-", //square in the middle of the line
+"#65122", "+",
 
 "uarr",  "\24",
 "darr",  "\25",
@@ -53,33 +50,31 @@ char *unicode_symbols[]={
 
 unsigned char unicode_chars[] = "€‚ƒ„…†‡ˆ‰Š‹ŒŽ‘’“”•–—˜™š›œžŸ ¡¢£¤¥¦§¨©ª«¬­®¯àáâãäåæçèéêëìíîïðñh£\243i\105\244\0";
 
-bool GetUnicodeSymbol(dword in_tag)
+bool GetUnicodeSymbol(dword _line, in_tag, size)
 {
-	int j, specia1040;
+	int j;
+	int code;
 	
 	for (j=0; unicode_symbols[j]!=0; j+=2;) 
 	{
 		if (!strcmp(in_tag, unicode_symbols[j]))
 		{
-			strcat(#line, unicode_symbols[j+1]);
+			strncat(_line, unicode_symbols[j+1], size);
 			return true;
 		}
 	}
 
-	specia1040 = atoi(in_tag + 1) - 1040;
-	
-	if (ESBYTE[in_tag+1] == '1') && (specia1040>=0) 
-	&& (specia1040<=72) && (strlen(in_tag) == 5)
+	if (ESBYTE[in_tag]=='#') 
 	{
-		if (strlen(#line)<sizeof(line)-2) {
-			/*
-			j = strlen(#line);
-			line[j] = unicode_chars[specia1040];
-			line[j+1] = EOS;
-			*/
-			chrcat(#line, unicode_chars[specia1040]);
+		code = atoi(in_tag + 1);
+		if (code>=0) && (code<=255)	{
+			chrncat(_line, code, size); //NOT ALL ASCII CODES IN KOLIBRI ARE COMPATABLE WITH STANDARDS
+			return true;
 		}
-		return true;
+		if (code>=1040) && (code<=1040+72) {
+			chrncat(_line, unicode_chars[code-1040], size);
+			return true;
+		}
 	}
 
 	return false;
