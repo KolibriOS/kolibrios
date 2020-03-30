@@ -30,45 +30,48 @@
 #include "..\lib\patterns\simple_open_dialog.h"
 
 #include "show_src.h"
-_http http = {0, 0, 0, 0, 0, 0, 0};
 #include "download_manager.h"
 _history history;
 #include "history.h"
-
 bool debug_mode = false;
-dword col_bg = 0xE3E2E2;
-dword panel_color  = 0xE3E2E2;
-dword border_color = 0x787878;
 #include "..\TWB\TWB.c"
 
+char version[]="WebView 2.0 Gold";
+
 #ifdef LANG_RUS
-char version[]="Текстовый браузер 2.0 beta4";
 char page_not_found[] = FROM "html\\page_not_found_ru.htm""\0";
 char homepage[] = FROM "html\\homepage_ru.htm""\0";
 char help[] = FROM "html\\help_ru.htm""\0";
 char accept_language[]= "Accept-Language: ru\n";
 char rmb_menu[] = 
 "Посмотреть исходник
-Редактировать исходник
+Редактировать исходник";
+char main_menu[] = 
+"Открыть файл
+Новое окно
 История
 Менеджер загрузок";
 char link_menu[] =
 "Копировать ссылку
 Скачать содержимое ссылки";
+char loading_text[] = "Загрузка...";
 #else
-char version[]="Text-based Browser 2.0 beta4";
 char page_not_found[] = FROM "html\\page_not_found_en.htm""\0";
 char homepage[] = FROM "html\\homepage_en.htm""\0";
 char help[] = FROM "html\\help_en.htm""\0";
 char accept_language[]= "Accept-Language: en\n";
 char rmb_menu[] =
 "View source
-Edit source
+Edit source";
+char main_menu[] = 
+"Open local file
+New window
 History
 Download Manager";
 char link_menu[] =
 "Copy link
 Download link contents";
+char loading_text[] = "Loading...";
 #endif
 
 #define URL_SIZE 4000
@@ -77,11 +80,15 @@ Download link contents";
 #define URL_SERVICE_HOMEPAGE "WebView:home"
 #define URL_SERVICE_HELP "WebView:help"
 
-#define TOOLBAR_GAPS 10
-dword TOOLBAR_H = 40;
+#define PADDING 9
+#define SKIN_Y 24
+#define TSZE 25
+dword TOOLBAR_H = PADDING+TSZE+PADDING+2;
 dword STATUSBAR_H = 15;
 
 int action_buf;
+
+_http http = {0, 0, 0, 0, 0, 0, 0};
 
 bool source_mode = false;
 
@@ -97,6 +104,8 @@ enum {
 	SANDWICH_BUTTON,
 	VIEW_SOURCE,
 	EDIT_SOURCE,
+	OPEN_FILE,
+	NEW_WINDOW,
 	VIEW_HISTORY,
 	DOWNLOAD_MANAGER,
 	COPY_LINK_URL,
@@ -107,10 +116,9 @@ char default_dir[] = "/rd/1";
 od_filter filter2 = { 16, "TXT\0HTM\0HTML\0\0" };
 
 char editURL[URL_SIZE+1];
-edit_box address_box = {NULL,TOOLBAR_GAPS+TOOLBAR_GAPS+51,10,0xffffff,0x94AECE,0xffffff,
-	0xffffff,0x10000000,URL_SIZE-2,#editURL,0,NULL,19,19};
+edit_box address_box = {, PADDING+TSZE*2+PADDING+6, PADDING+3, 0xffffff,
+	0x94AECE, 0xffffff, 0xffffff,0x10000000,URL_SIZE-2,#editURL,0,,19,19};
 
-#define SKIN_Y 24
 
 void LoadLibraries()
 {
@@ -143,8 +151,7 @@ void HandleParam()
 
 void main()
 {
-	int redirect_count = 0;
-	int i;
+	int i, btn, redirect_count=0;
 	LoadLibraries();
 	CreateDir("/tmp0/1/downloads");
 	Libimg_LoadImage(#skin, "/sys/toolbar.png");
@@ -171,10 +178,15 @@ void main()
 				WB1.DrawPage();
 				break;
 			}
+			if (mouse.up) && (! address_box.flags & ed_focus) && (address_box.flags & ed_shift_bac) 
+			{
+				DrawOmnibox(); //reset text selection
+			}
 			break;
 
 		case evButton:
-			ProcessEvent(GetButtonID());
+			btn = GetButtonID();
+			if (1==btn) ExitProcess(); else ProcessEvent(btn);
 			break;
 
 		case evKey:
@@ -225,7 +237,6 @@ void main()
 				GetScreenHeight()-700/2-random(80),800,700,0x73,0,0,0);
 			GetProcessInfo(#Form, SelfInfo);
 			system.color.get();
-			col_bg = system.color.work;
 			if (Form.status_window>2) { DrawTitle(#header); break; }
 			if (Form.height<120) { MoveSize(OLD,OLD,OLD,120); break; }
 			if (Form.width<280) { MoveSize(OLD,OLD,280,OLD); break; }
@@ -233,79 +244,83 @@ void main()
 			break;
 			
 		case evNetwork:
-			if (http.transfer > 0) {
-				http.receive();
-				EventUpdateProgressBar();
-				if (http.receive_result == 0) {
-					// Handle redirects
-					if (http.status_code >= 300) && (http.status_code < 400)
-					{
-						redirect_count++;
-						if (redirect_count>5)
-						{
-							notify("'Too many redirects.' -E");
-							StopLoading();
-						}
-						else
-						{
-							http.handle_redirect();
-							http.free();
-							GetAbsoluteURL(#http.redirect_url, history.current());
-							debug("Redirect: "); debugln(#http.redirect_url);
-							history.back();
-							OpenPage(#http.redirect_url);
-						}
-						break;
-					} 
-					redirect_count = 0;
-					// Loading the page is complete, free resources
+			if (http.transfer <= 0) break;
+			http.receive();
+			EventUpdateProgressBar();
+			if (http.receive_result != 0) break;
+			if (http.status_code >= 300) && (http.status_code < 400)
+			{
+				// Handle redirects
+				if (redirect_count<=5) {
+					redirect_count++;
+					http.handle_redirect();
 					http.free();
-					LoadInternalPage(http.content_pointer, http.content_received);
+					GetAbsoluteURL(#http.redirect_url, history.current());
+					history.back();
+					OpenPage(#http.redirect_url);
+				} else {
+					notify("'Too many redirects.' -E");
+					StopLoading();
 				}
+			} else {
+				// Loading the page is complete, free resources
+				redirect_count = 0;
+				http.free();
+				LoadInternalPage(http.content_pointer, http.content_received);
 			}
 	}
 }
 
 void SetElementSizes()
 {
-	address_box.top = TOOLBAR_H/2-10;
 	basic_line_h = calc(WB1.list.font_h * 130) / 100;
-	address_box.width = Form.cwidth - address_box.left - 55;
+	address_box.width = Form.cwidth - address_box.left - 52 - 16;
 	WB1.list.SetSizes(0, TOOLBAR_H, Form.width - 10 - scroll_wv.size_x, 
 		Form.cheight - TOOLBAR_H - STATUSBAR_H, basic_line_h);
 	WB1.list.wheel_size = 7 * basic_line_h;
 	WB1.list.column_max = WB1.list.w - scroll_wv.size_x / WB1.list.font_w + 1;
 	WB1.list.visible = WB1.list.h;
-	if (WB1.list.w!=WB1.DrawBuf.bufw) {
-		WB1.DrawBuf.Init(WB1.list.x, WB1.list.y, WB1.list.w, 400*20);
-		OpenPage(history.current());
-	}
 }
 
 
 
 void draw_window()
 {
-	DrawBar(0,0, Form.cwidth,TOOLBAR_H-2, panel_color);
-	DrawBar(0,TOOLBAR_H-2, Form.cwidth,1, 0xD7D0D3);
-	DrawBar(0,TOOLBAR_H-1, Form.cwidth,1, border_color);
+	int i;
 	SetElementSizes();
-	DefineHiddenButton(TOOLBAR_GAPS, address_box.top-2, 24, skin.h-2, BACK_BUTTON);
-	DefineHiddenButton(TOOLBAR_GAPS+25, address_box.top-2, 24, skin.h-2, FORWARD_BUTTON);
-	img_draw stdcall(skin.image, TOOLBAR_GAPS-1, address_box.top-3, 51, skin.h, 0, SKIN_Y);
-	DefineHiddenButton(address_box.left+address_box.width-4, address_box.top-2, 20, skin.h-3, REFRESH_BUTTON);
-	DefineHiddenButton(Form.cwidth-31, address_box.top-3, 24, skin.h-1, SANDWICH_BUTTON);
-	img_draw stdcall(skin.image, Form.cwidth-27, address_box.top+1, 17, 18, 51, SKIN_Y);
-	DrawBar(0,Form.cheight - STATUSBAR_H, Form.cwidth,STATUSBAR_H, col_bg);
-	DrawBar(0,Form.cheight - STATUSBAR_H, Form.cwidth,1, border_color);
-	if (!header) {
-		OpenPage(history.current()); 
-		WB1.DrawScroller();
+
+	DrawBar(0,0, Form.cwidth,PADDING, system.color.work);
+	DrawBar(0,PADDING+TSZE+1, Form.cwidth,PADDING-1, system.color.work);
+	DrawBar(0,TOOLBAR_H-2, Form.cwidth,1, system.color.work_dark);
+	DrawBar(0,TOOLBAR_H-1, Form.cwidth,1, system.color.work_graph);
+	DrawBar(0, PADDING, address_box.left-2, TSZE+1, system.color.work);
+	DrawBar(address_box.left+address_box.width+18, PADDING, Form.cwidth-address_box.left-address_box.width-18, TSZE+1, system.color.work);
+
+	DrawTopPanelButton(BACK_BUTTON, PADDING-1, 30);
+	DrawTopPanelButton(FORWARD_BUTTON, PADDING+TSZE+PADDING-2, 31);
+	DrawTopPanelButton(SANDWICH_BUTTON, Form.cwidth-PADDING-TSZE-3, -1);
+	for (i=0; i<=2; i++) DrawBar(Form.cwidth-PADDING-TSZE+3, i*5+PADDING+7, 15, 3, system.color.work_graph);
+
+	DrawBar(0,Form.cheight - STATUSBAR_H, Form.cwidth,STATUSBAR_H, system.color.work);
+	DrawBar(0,Form.cheight - STATUSBAR_H, Form.cwidth,1, system.color.work_graph);
+
+	DrawRectangle(WB1.list.x + WB1.list.w, WB1.list.y, scroll_wv.size_x, 
+		WB1.list.h-1, scroll_wv.bckg_col);
+
+	if (WB1.list.w!=WB1.DrawBuf.bufw) {
+		WB1.DrawBuf.Init(WB1.list.x, WB1.list.y, WB1.list.w, 400*20);
+		if (!strncmp(history.current(),"http",4)) {
+			//nihuya ne izyachnoe reshenie, no pust' poka butet tak
+			i=source_mode;
+			debugval("source_mode", source_mode);
+			LoadInternalPage(#loading_text, sizeof(loading_text));
+			source_mode=i;
+			debugval("source_mode", source_mode);
+		}
+		OpenPage(history.current());
 	} else { 
 		WB1.DrawPage(); 
 		DrawOmnibox(); 
-		DrawRectangle(scroll_wv.start_x, scroll_wv.start_y, scroll_wv.size_x, 
-			scroll_wv.size_y-1, scroll_wv.bckg_col);
 	}
 	DrawProgress();
 }
@@ -315,8 +330,8 @@ void ProcessEvent(dword id__)
 {
 	switch (id__)
 	{
-		case 1:
-			ExitProcess();
+		case NEW_WINDOW:
+			RunProgram(#program_path, NULL);
 			return;
 		case SCAN_CODE_BS:
 		case BACK_BUTTON:
@@ -342,7 +357,7 @@ void ProcessEvent(dword id__)
 			}
 			return;
 		case SANDWICH_BUTTON:
-			EventShowPageMenu(Form.cwidth - 215, TOOLBAR_H-6);
+			EventShowMainMenu(Form.cwidth - 215, TOOLBAR_H-6);
 			return;
 		case VIEW_SOURCE:
 			EventViewSource();
@@ -373,6 +388,9 @@ void ProcessEvent(dword id__)
 				strcpy(#downloader_edit, PageLinks.GetURL(PageLinks.active));
 				CreateThread(#Downloader,#downloader_stak+4092);
 			}
+			return;
+		case OPEN_FILE:
+			EventOpenDialog();
 			return;
 		case SCAN_CODE_F12:
 			debug_mode ^= 1;
@@ -443,6 +461,7 @@ void OpenPage(dword _open_URL)
 	StopLoading();
 
 	strcpy(#editURL, _open_URL);
+	address_box.flags=0;
 	DrawOmnibox();
 
 	strncpy(#new_url, _open_URL, URL_SIZE);
@@ -461,12 +480,8 @@ void OpenPage(dword _open_URL)
 		else LoadInternalPage(#page_not_found, sizeof(page_not_found));
 	} else if (!strncmp(#new_url,"http:",5)) || (!strncmp(#new_url,"https:",6)) {
 		//WEB PAGE
-		img_draw stdcall(skin.image, address_box.left+address_box.width+1, 
-			address_box.top-3, 17, skin.h, 85, SKIN_Y);
-
 		if (ReplaceSpaceInUrl(#new_url, URL_SIZE)) {
 			strcpy(#editURL, #new_url);
-			DrawOmnibox();
 		}
 
 		if (!strncmp(#new_url,"http:",5)) {
@@ -476,6 +491,9 @@ void OpenPage(dword _open_URL)
 			strncat(#new_url, _open_URL, URL_SIZE);
 			http.get(#new_url);
 		}
+
+		DrawOmnibox();
+
 		if (!http.transfer) {
 			StopLoading();
 			LoadInternalPage(#page_not_found, sizeof(page_not_found));
@@ -491,6 +509,13 @@ void OpenPage(dword _open_URL)
 void EventClickLink(dword _click_URL)
 {
 	char new_url[URL_SIZE+1];
+
+	if (open_new_window) {
+		strcpy(#new_url, _click_URL);
+		GetAbsoluteURL(#new_url, history.current());
+		RunProgram(#program_path, #new_url);
+		return;
+	}
 
 	if (ESBYTE[_click_URL]=='#') {
 		if (anchors.get_pos_by_name(_click_URL+1)!=-1) {
@@ -569,23 +594,6 @@ void EventSubmitOmnibox()
 	}
 }
 
-void DrawOmnibox()
-{
-	int skin_x_offset;
-	
-	DrawRectangle(address_box.left-2, address_box.top-3, address_box.width+5, 25,border_color);
-
-	DrawBar(address_box.left-2, address_box.top-2, address_box.width+3, 1,0xD8DCD8);
-	DrawBar(address_box.left-2, address_box.top-1, address_box.width+3, 1, address_box.color);
-	img_draw stdcall(skin.image, address_box.left-2, address_box.top-3, 2, skin.h, 102, SKIN_Y);
-	if (address_box.flags & ed_focus) address_box.flags = ed_focus; else address_box.flags = 0;
-	EditBox_UpdateText(#address_box, address_box.flags);
-	edit_box_draw stdcall(#address_box);
-	if (http.transfer > 0) skin_x_offset = 85; else skin_x_offset = 68;
-	img_draw stdcall(skin.image, address_box.left+address_box.width+1, 
-		address_box.top-3, 17, skin.h, skin_x_offset, SKIN_Y);
-}
-
 void LoadInternalPage(dword _bufdata, _in_bufsize){
 	if (!_bufdata) || (!_in_bufsize) {
 		LoadInternalPage(#page_not_found, sizeof(page_not_found));
@@ -625,12 +633,17 @@ void DrawProgress()
 	} else {
 		persent = 10;
 	}
-	DrawBar(address_box.left-1, address_box.top+20, persent*address_box.width/100, 2, 0x72B7EB);
+	DrawBar(address_box.left-1, address_box.top+20, persent*address_box.width+16/100, 2, 0x72B7EB);
 }
 
 void EventShowPageMenu(dword _left, _top)
 {
 	menu.show(Form.left+_left-6,Form.top+_top+skin_height+3, 220, #rmb_menu, VIEW_SOURCE);
+}
+
+void EventShowMainMenu(dword _left, _top)
+{
+	menu.show(Form.left+_left-6+77,Form.top+_top+skin_height-3, 140, #main_menu, OPEN_FILE);
 }
 
 void EventShowLinkMenu(dword _left, _top)
@@ -678,10 +691,83 @@ void DrawStatusBar(dword _status_text)
 	status_text.start_x = 10;
 	status_text.start_y = Form.cheight - STATUSBAR_H + 3;
 	status_text.area_size_x = Form.cwidth - status_text.start_x -3;
-	DrawBar(status_text.start_x, status_text.start_y, status_text.area_size_x, 9, col_bg);
+	DrawBar(status_text.start_x, status_text.start_y, status_text.area_size_x, 9, system.color.work);
 	status_text.text_pointer = _status_text;
 	PathShow_prepare stdcall(#status_text);
 	PathShow_draw stdcall(#status_text);
 }
+
+
+void DrawOvalBorder(dword x,y,w,h, light,dark,right,dots)
+{
+	DrawBar(x+1,    y,     w, 1,   light);
+	DrawBar(x+1,    y+h+1, w, 1,   dark);
+	DrawBar(x,      y+1,   1, h-1, light);
+	DrawBar(x+w+1,  y+2,   1, h-2, right);
+
+	PutPixel(x,     y,     dots);
+	PutPixel(x+w+1, y+h+1, dots);
+	PutPixel(x,     y+h+1, dots);
+	PutPixel(x+w+1, y,     dots);
+	
+	PutPixel(x,     y+h, dark);
+	PutPixel(x+w+1, y+1, light);
+	PutPixel(x+w+1, y+h, dark);	
+}
+
+libimg_image top_icons;
+libimg_image left_icons;
+
+void DrawTopPanelButton(dword _button_id, _x, signed int _icon_n)
+{
+	static dword semi_white=0, bg_col, bg_col_light, bg_col_dark, bg_dark;
+	if (!semi_white) {
+		bg_col = system.color.work;
+		if (GrayScaleImage(#bg_col,1,1)<65) bg_dark=true; else bg_dark=false;
+		Libimg_LoadImage(#top_icons, "/sys/icons16.png");
+		Libimg_LoadImage(#left_icons, "/sys/icons16.png");
+
+		semi_white = MixColors(system.color.work, 0xFFFfff, bg_dark*90 + 96);
+		bg_col_dark = MixColors(system.color.work, system.color.work_graph, 90);
+		bg_col_light = MixColors(semi_white, 0xFFFfff, bg_dark*90 + 10);
+
+		Libimg_ReplaceColor(top_icons.image, top_icons.w, top_icons.h, 0xffFFFfff, semi_white);
+		Libimg_ReplaceColor(top_icons.image, top_icons.w, top_icons.h, 0xffCACBD6, MixColors(semi_white, 0, 220));
+
+		Libimg_ReplaceColor(left_icons.image, left_icons.w, left_icons.h, 0xffFFFfff, system.color.work);
+		Libimg_ReplaceColor(left_icons.image, left_icons.w, left_icons.h, 0xffCACBD6, MixColors(system.color.work, 0, 200));		
+	}
+
+	DrawWideRectangle(_x+1, PADDING+1, TSZE, TSZE, 5, semi_white);
+	DrawOvalBorder(_x, PADDING, TSZE, TSZE, bg_col_light, bg_col_dark, semi_white, system.color.work);
+
+	DefineHiddenButton(_x, PADDING, TSZE+1, TSZE+1, _button_id);
+	if (_icon_n==-1) {
+		DrawBar(_x+6, PADDING+5, 16, 16, semi_white);
+	} else {
+		img_draw stdcall(top_icons.image, _x+6, PADDING+5, 16, 16, 0, _icon_n*16);
+	}
+}
+
+void DrawOmnibox()
+{
+	int skin_x_offset;
+	
+	DrawOvalBorder(address_box.left-2, address_box.top-3, address_box.width+18, 24, system.color.work_graph, system.color.work_graph, system.color.work_graph, system.color.work_dark);
+	DrawBar(address_box.left-1, address_box.top-2, address_box.width+18, 1, 0xD8DCD8);
+	DrawBar(address_box.left-1, address_box.top-1, address_box.width+18, 1, address_box.color);
+	DrawBar(address_box.left-1, address_box.top, 1, 22, address_box.color);
+
+	if (address_box.flags & ed_focus) address_box.flags = ed_focus; else address_box.flags = 0;
+	EditBox_UpdateText(#address_box, address_box.flags);
+	edit_box_draw stdcall(#address_box);
+	if (http.transfer > 0) skin_x_offset = 85; else skin_x_offset = 68;
+	img_draw stdcall(skin.image, address_box.left+address_box.width+1, 
+		address_box.top-1, 16, skin.h-3, skin_x_offset, SKIN_Y+2);
+	DefineHiddenButton(address_box.left+address_box.width-1, address_box.top-2, 17, skin.h-3, REFRESH_BUTTON);
+
+	DrawProgress();
+}
+
 
 stop:

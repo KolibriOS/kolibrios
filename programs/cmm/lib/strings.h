@@ -249,7 +249,7 @@ inline fastcall int strlcpy(dword ESI, EDI, EBX)
 
 :void strncpy(dword dst, src, len)
 {
-	while (len)
+	while (len) && (ESBYTE[src])
 	{
 		ESBYTE[dst] = ESBYTE[src];
 		dst++;

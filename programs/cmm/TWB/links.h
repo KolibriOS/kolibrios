@@ -54,6 +54,7 @@ dword LinksArray::GetURL(int id)
 	return links[id].link;
 }
 
+bool open_new_window=false;
 void LinksArray::Clear()
 {
 	page_links.drop();
@@ -62,6 +63,7 @@ void LinksArray::Clear()
 	active = -1;
 	unic_count = 0;
 	CursorPointer.Restore();
+	open_new_window = false;
 }
 
 void LinksArray::DrawUnderline(dword und_id, list_first, list_y, color)
@@ -75,7 +77,7 @@ void LinksArray::DrawUnderline(dword und_id, list_first, list_y, color)
 	}
 }
 
-PathShow_data status_text = {0, 17,250, 6, 250, 0, 0, 0x0, 0xFFFfff, 0, NULL, 0};
+PathShow_data status_text = {0, 17,250, 6, 250};
 
 bool LinksArray::HoverAndProceed(dword mx, my, list_y, list_first)
 {
@@ -93,7 +95,9 @@ bool LinksArray::HoverAndProceed(dword mx, my, list_y, list_first)
 				return false;
 			}
 			if (mouse.mkm) && (mouse.up) {
-				RunProgram(#program_path, PageLinks.GetURL(PageLinks.active));
+				open_new_window = true;
+				EventClickLink(PageLinks.GetURL(PageLinks.active));
+				open_new_window = false;
 				return false;
 			}
 			if (mouse.lkm) && (mouse.up) { 

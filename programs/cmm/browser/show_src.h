@@ -80,9 +80,9 @@ dword ShowSource(dword _bufdata, _in_bufsize)
 			break;
 		case '\"':
 		case '\'':
-			if (TAG == mode) SourceBufAdd(VALUE, "<font color=#F301F2>&#39;");
-			else if (VALUE == mode) SourceBufAdd(TAG, "&#39;</font>");
-			else SourceBufAdd(NULL, "&#39;");
+			if (TAG == mode) SourceBufAdd(VALUE, "<font color=#F301F2>&quot;");
+			else if (VALUE == mode) SourceBufAdd(TAG, "&quot;</font>");
+			else SourceBufAdd(NULL, "&quot;");
 			break;
 		default:
 			ESBYTE[source_buf_end] = ESBYTE[i];

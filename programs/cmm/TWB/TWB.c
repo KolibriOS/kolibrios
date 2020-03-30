@@ -1,8 +1,7 @@
 #include "..\TWB\colors.h"
 #include "..\TWB\anchors.h"
 #include "..\TWB\parce_tag.h"
-#include "..\TWB\absolute_url.h"
-#include "..\TWB\unicode_tags.h"
+#include "..\TWB\special.h"
 #include "..\TWB\img_cache.h"
 dword page_bg;
 dword link_color_inactive;
@@ -22,6 +21,8 @@ struct _style {
 	image,
 	align;
 	dword bg_color;
+
+	dword main_title;
 };
 
 struct TWebBrowser {
@@ -63,13 +64,18 @@ void TWebBrowser::DrawStyle()
 {
 	dword start_x, line_length, stolbec_len;
 	
-	if (!header)
+	if (style.main_title)
 	{
 		strncpy(#header, #line, sizeof(header)-1);
+		strncat(#header, " - ", sizeof(header)-1);
+		strncat(#header, #version, sizeof(header)-1);
 		line = 0;
 		return;
 	}
-	if (t_html) && (!t_body) return;
+	if (t_html) && (!t_body) {
+		line = 0;
+		return;
+	}
 	
 	if (line)
 	{
@@ -112,7 +118,7 @@ void TWebBrowser::DrawStyle()
 void TWebBrowser::SetPageDefaults()
 {
 	style.b = style.u = style.s = style.h = style.blq = t_html = t_body = style.pre =
-	style.li = link = text_color_index = text_colors[0] = style.li_tab = false;
+	style.li = link = text_color_index = text_colors[0] = style.li_tab = style.main_title = false;
 	style.align = ALIGN_LEFT;
 	link_color_inactive = 0x0000FF;
 	link_color_active = 0xFF0000;
@@ -121,7 +127,7 @@ void TWebBrowser::SetPageDefaults()
 	DrawBuf.Fill(0, page_bg);
 	PageLinks.Clear();
 	anchors.clear();
-	strncpy(#header, #version, sizeof(header)-1);
+	header = NULL;
 	cur_encoding = CH_NULL;
 	draw_y = body_magrin;
 	stolbec = 0;
@@ -258,25 +264,34 @@ void TWebBrowser::ParseHtml(){
 	list.count = draw_y;
 	list.CheckDoesValuesOkey();
 	anchors.current = NULL;
+	if (!header) {
+		strncpy(#header, #version, sizeof(header)-1);
+		DrawTitle(#header);
+	}
 }
 //============================================================================================
 bool TWebBrowser::CheckForLineBreak()
 {
 	int line_break_pos;
 	char new_line_text[4096];
+	//Do we need a line break?
 	if (strlen(#line)*zoom + stolbec < list.column_max) return false;
+	//Yes, we do. Lets calculate where...
 	line_break_pos = strrchr(#line, ' ');
+	//Is a new line fits in the current line?
 	if (line_break_pos*zoom + stolbec > list.column_max) {
 		line_break_pos = list.column_max/zoom - stolbec;
 		while(line_break_pos) && (line[line_break_pos]!=' ') line_break_pos--;
 	}
-	if (!line_break_pos) && (strlen(#line)*zoom>list.column_max) {
-		line_break_pos=list.column_max/zoom; 
-		if (!stolbec)&&(style.pre) draw_y-=list.item_h; //hack to fix https://prnt.sc/rk3kyt
+	//Maybe a new line is too big for the whole new line? Then we have to split it
+	if (!line_break_pos) && (style.li_tab*5 + strlen(#line) * zoom >= list.column_max) {
+		line_break_pos = list.column_max/zoom - stolbec;
 	}
 	strcpy(#new_line_text, #line + line_break_pos);
-	line[line_break_pos] = 0x00;
+	line[line_break_pos] = 0x00;		
+	
 	DrawStyle();
+
 	strcpy(#line, #new_line_text);
 	NewLine();
 	//if (strlen(#line)*zoom + stolbec > list.column_max)CheckForLineBreak();
@@ -295,17 +310,11 @@ void TWebBrowser::SetStyle() {
 			list.first = draw_y;
 			anchors.current = NULL;
 		}
-	}	
-
+	}
 	if (tag.is("html")) {
 		t_html = tag.opened;
 		return;
 	}
-	if (tag.is("title")) {
-		if (tag.opened) header=NULL;
-		return;
-	}
-	
 	if (tag.is("q"))
 	{
 		if (tag.opened)	{
@@ -316,6 +325,11 @@ void TWebBrowser::SetStyle() {
 		if (!tag.opened) strcat(#line, "\" ");
 		return;
 	}
+	if (tag.is("title")) {
+		style.main_title = tag.opened;
+		if (!tag.opened) DrawTitle(#header);
+		return;
+	}
 	if (tag.is("body")) {
 		t_body = tag.opened;
 		if (value = tag.get_value_of("link="))  link_color_inactive = GetColor(value);
@@ -324,19 +338,6 @@ void TWebBrowser::SetStyle() {
 		if (value = tag.get_value_of("bgcolor=")) {
 			style.bg_color = page_bg = GetColor(value);
 			DrawBuf.Fill(0, page_bg);
-		}
-		if (tag.opened) {
-			if (cur_encoding==CH_NULL) {
-				cur_encoding = CH_CP866; 
-				//BufEncode(CH_UTF8);
-				debugln("Document has no information about encoding!");
-			}
-			if (!streq(#header, #version)) {
-				ChangeCharset(charsets[cur_encoding], "CP866", #header);
-				strncat(#header, " - ", sizeof(header)-1);
-				strncat(#header, #version, sizeof(header)-1);
-			}
-			DrawTitle(#header);
 		}
 		return;
 	}
@@ -415,28 +416,25 @@ void TWebBrowser::SetStyle() {
 		//ImgCache.Images( list.x, draw_y, WB1.list.w); 
 		return; 
 	}
+	if (tag.is("h4")) {
+		NewLine();
+		style.h = tag.opened;
+		style.b = tag.opened;
+	}
 	if (tag.is("h1")) || (tag.is("h2")) || (tag.is("h3")) || (tag.is("caption")) {
 		style.h = tag.opened;
-		if (tag.opened)
-		{
+		if (tag.opened) {
 			NewLine();
 			draw_y += 10;
 			WB1.zoom=2;
 			WB1.list.font_type |= 10011001b;
-			if (value = tag.get_value_of("align=")) {
-				if (streq(value, "center")) style.align = ALIGN_CENTER;
-				if (streq(value, "right")) style.align = ALIGN_RIGHT;
-			}
-			list.item_h = basic_line_h * 2;
+			list.item_h = basic_line_h * 2 - 2;
 			if (tag.is("h1")) style.b = true;
-		}
-		else
-		{
+		} else {
 			if (tag.is("h1")) style.b = false;
 			NewLine();
 			WB1.zoom=1;
 			WB1.list.font_type = 10011000b;
-			style.align = ALIGN_LEFT;
 			list.item_h = basic_line_h;
 		}
 		return;
@@ -451,6 +449,7 @@ void TWebBrowser::SetStyle() {
 		style.li = tag.opened;
 		if (tag.opened)
 		{
+			if (style.li_tab==0) style.li_tab++;
 			NewLine();
 			stolbec = style.li_tab * 5 - 2;
 			strcpy(#line, "\31 ");
@@ -462,10 +461,12 @@ void TWebBrowser::SetStyle() {
 		if (!tag.opened)
 		{
 			style.li = false;
-			style.li_tab--;
+			if (style.li_tab>0) style.li_tab--;
 			NewLine();
 		} 
-		else style.li_tab++;
+		else {
+			if (style.li_tab<5) style.li_tab++;
+		}
 	}
 	if (tag.is("hr")) {
 		if (value = tag.get_value_of("color=")) EDI = GetColor(value); else EDI = 0x999999;
@@ -490,7 +491,13 @@ void TWebBrowser::SetStyle() {
 			else if (streq(value,"iso-8859-5"))   || (streq(value,"iso8859-5"))   meta_encoding = CH_ISO8859_5;
 			else if (streq(value,"koi8-r"))       || (streq(value,"koi8-u"))      meta_encoding = CH_KOI8;
 		}
-		if (meta_encoding!=CH_NULL) BufEncode(meta_encoding);
+		if (meta_encoding!=CH_NULL) {
+			BufEncode(meta_encoding);
+			if (header) {
+				ChangeCharset(charsets[cur_encoding], "CP866", #header);
+				DrawTitle(#header);
+			}
+		}
 		return;
 	}
 }

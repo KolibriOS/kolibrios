@@ -20,6 +20,14 @@ char *unicode_symbols[]={
 "mdash", "-", //--
 
 "rsquo", "'",
+"sect", "#",
+
+"ensp",    " ",
+"emsp13",  " ",
+"emsp14",  " ",
+"numsp",   " ",
+"puncsp",  " ",
+"thinsp",  " ",
 
 "#1028", "\242",
 "#1030", "I",
@@ -33,6 +41,8 @@ char *unicode_symbols[]={
 "#8470", "N",
 "#8722", "-",
 "#9642", "-", //square in the middle of the line
+"#9658", ">",
+"#9660", "v",
 "#65122", "+",
 
 "uarr",  "\24",
@@ -44,6 +54,9 @@ char *unicode_symbols[]={
 "percnt","%",
 
 "#xfeff", "",
+
+"times", "x",
+"lowast","*",
 
 0}; 
 
