@@ -19,6 +19,7 @@
 
 //useful patterns
 #include "..\lib\patterns\simple_open_dialog.h"
+#include "..\lib\patterns\toolbar_button.h"
 
 char homepage[] = FROM "html\\homepage.htm""\0";
 char page_not_found[] = FROM "html\\page_not_found_en.htm""\0";
@@ -28,16 +29,14 @@ char accept_language[]= "Accept-Language: en\n";
 
 #define URL_SERVICE_HOME "CodeView:home"
 
+
+
 proc_info Form;
 
 
 dword TOOLBAR_H = 40;
 dword STATUSBAR_H = 0;
 
-
-dword col_bg = 0xE3E2E2;
-dword panel_color  = 0xE3E2E2;
-dword border_color = 0x8C8C8C;
 
 bool debug_mode = false;
 
@@ -46,10 +45,12 @@ bool open_in_a_new_window = false;
 enum { 
 	REFRESH_BUTTON, 
 	EDIT_SOURCE,
+	OPEN_PAGE,
 };
 
 #define URL_SIZE 4000;
 #include "..\TWB\TWB.c"
+TWebBrowser WB1;
 #include "highlight_c.h"
 
 char default_dir[] = "/rd/1";
@@ -74,7 +75,7 @@ void LoadLibraries()
 
 void main()
 {
-	int i;
+	int i, id;
 	LoadLibraries();
 	if (param) strcpy(#current_path, #param); else strcpy(#current_path, URL_SERVICE_HOME);
 	WB1.list.SetFont(8, 14, 10011000b);
@@ -96,7 +97,9 @@ void main()
 			break;
 
 		case evButton:
-			if (GetButtonID()==1) ExitProcess();
+			id = GetButtonID();
+			if (1==id) ExitProcess();
+			if (OPEN_PAGE==id) EventOpenDialog();
 			break;
 
 		case evKey:
@@ -133,9 +136,10 @@ void main()
 			break;
 
 		case evReDraw:
-			DefineAndDrawWindow(GetScreenWidth()-800/2-random(80),GetScreenHeight()-600/2-random(80),800,600,0x73,col_bg,0,0);
+			DefineAndDrawWindow(GetScreenWidth()-800/2-random(80),GetScreenHeight()-600/2-random(80),800,600,0x73,system.color.work,0,0);
 			GetProcessInfo(#Form, SelfInfo);
-			if (Form.status_window>2) { DrawTitle(#header); break; }
+			system.color.get();
+			if (Form.status_window>2) break;
 			if (Form.height<120) { MoveSize(OLD,OLD,OLD,120); break; }
 			if (Form.width<280) { MoveSize(OLD,OLD,280,OLD); break; }
 			SetElementSizes();
@@ -147,12 +151,11 @@ void main()
 void SetElementSizes()
 {
 	address_box.top = TOOLBAR_H/2-10;
-	basic_line_h = calc(WB1.list.font_h * 130) / 100;
-	address_box.left = address_box.top;
+	address_box.left = address_box.top+43;
 	address_box.width = Form.cwidth - address_box.left - address_box.left -14;
 	WB1.list.SetSizes(0, TOOLBAR_H, Form.width - 10 - scroll_wv.size_x, 
-		Form.cheight - TOOLBAR_H - STATUSBAR_H, basic_line_h);
-	WB1.list.wheel_size = 7 * basic_line_h;
+		Form.cheight - TOOLBAR_H - STATUSBAR_H, BASIC_LINE_H);
+	WB1.list.wheel_size = 7 * BASIC_LINE_H;
 	WB1.list.column_max = WB1.list.w - scroll_wv.size_x / WB1.list.font_w;
 	WB1.list.visible = WB1.list.h;
 	if (WB1.list.w!=WB1.DrawBuf.bufw) {
@@ -163,20 +166,21 @@ void SetElementSizes()
 
 void draw_window()
 {
-	DrawBar(0,0, Form.cwidth,TOOLBAR_H-2, panel_color);
+	DrawBar(0,0, Form.cwidth,TOOLBAR_H-2, system.color.work);
 	DrawBar(0,TOOLBAR_H-2, Form.cwidth,1, 0xD7D0D3);
-	DrawBar(0,TOOLBAR_H-1, Form.cwidth,1, border_color);
-	DrawRectangle(address_box.left-3, address_box.top-3, address_box.width+4, 25,border_color);
-	DrawBar(0,Form.cheight - STATUSBAR_H, Form.cwidth,STATUSBAR_H, col_bg);
-	DrawBar(0,Form.cheight - STATUSBAR_H, Form.cwidth,1, border_color);
+	DrawBar(0,TOOLBAR_H-1, Form.cwidth,1, system.color.work_graph);
+	DrawRectangle(address_box.left-3, address_box.top-3, address_box.width+4, 25,system.color.work_graph);
+	DrawBar(0,Form.cheight - STATUSBAR_H, Form.cwidth,STATUSBAR_H, system.color.work);
+	DrawBar(0,Form.cheight - STATUSBAR_H, Form.cwidth,1, system.color.work_graph);
 	DrawEditBoxWebView();
-	if (!header) {
+	if (!WB1.header) {
 		OpenPage(#current_path);
 	} else { 
 		WB1.DrawPage(); 
 		DrawEditBoxWebView(); 
 	}
 	DrawRectangle(scroll_wv.start_x, scroll_wv.start_y, scroll_wv.size_x, scroll_wv.size_y-1, scroll_wv.bckg_col);
+	DrawTopPanelButton(OPEN_PAGE, 10, address_box.top-3, 0);
 }
 
 
@@ -215,8 +219,6 @@ DrawEditBoxWebView()
 
 void LoadInternalPage(dword _bufpos, _bufsize)
 {
-	if (bufpointer) free(bufpointer);
-
 	if (!_bufpos) || (!_bufsize) {
 		LoadInternalPage(#page_not_found, sizeof(page_not_found));
 		return;
@@ -224,13 +226,8 @@ void LoadInternalPage(dword _bufpos, _bufsize)
 	strcpy(#edit_path, #current_path);
 	DrawEditBoxWebView();
 
-	bufpointer = _bufpos;
-	bufsize = _bufsize;
-	bufpointer = malloc(bufsize);
-	strcpy(bufpointer, _bufpos);
-
 	WB1.list.first = 0;
-	WB1.ParseHtml();
+	WB1.ParseHtml(_bufpos, _bufsize);
 	WB1.DrawPage();
 }
 

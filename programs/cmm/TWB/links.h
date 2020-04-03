@@ -114,7 +114,7 @@ bool LinksArray::HoverAndProceed(dword mx, my, list_y, list_first)
 			CursorPointer.Set();
 
 			if (links[active].underline) {
-				DrawUnderline(active, list_first, list_y, link_color_inactive);			
+				DrawUnderline(active, list_first, list_y, link_color_default);			
 			}
 
 			if (links[i].underline) {
@@ -130,7 +130,7 @@ bool LinksArray::HoverAndProceed(dword mx, my, list_y, list_first)
 	{
 		CursorPointer.Restore();
 		if (links[active].underline) {
-			DrawUnderline(active, list_first, list_y, link_color_inactive);
+			DrawUnderline(active, list_first, list_y, link_color_default);
 		}
 		DrawStatusBar(NULL);
 		active = -1;

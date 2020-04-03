@@ -274,6 +274,23 @@
 	ESBYTE[next_word_pointer] = '\n';
 }
 
+:void DrawOvalBorder(dword x,y,w,h, light,dark,right,dots)
+{
+	DrawBar(x+1,    y,     w, 1,   light);
+	DrawBar(x+1,    y+h+1, w, 1,   dark);
+	DrawBar(x,      y+1,   1, h-1, light);
+	DrawBar(x+w+1,  y+2,   1, h-2, right);
+
+	PutPixel(x,     y,     dots);
+	PutPixel(x+w+1, y+h+1, dots);
+	PutPixel(x,     y+h+1, dots);
+	PutPixel(x+w+1, y,     dots);
+	
+	PutPixel(x,     y+h, dark);
+	PutPixel(x+w+1, y+1, light);
+	PutPixel(x+w+1, y+h, dark);	
+}
+
 //this function increase falue and return it
 //useful for list of controls which goes one after one
 :struct incn

@@ -1,6 +1,8 @@
 //Leency & SoUrcerer, LGPL
 //Hidnplayer
 
+TWebBrowser WB1;
+
 #define LIST_INFO_H 59
 int status_bar_h = 15;
 
@@ -12,6 +14,8 @@ char *listpointer;
 char *mailstart;
 char *mailend;
 int mailsize;
+
+int cur_charset;
 
 
 enum {
@@ -353,19 +357,13 @@ void InitTWB() {
 	WB1.list.column_max = WB1.list.w - 30 / 6;
 	WB1.list.visible = WB1.list.h / WB1.list.item_h;
 	WB1.DrawBuf.Init(WB1.list.x, WB1.list.y, WB1.list.w, WB1.list.h);
-
-	strcpy(#header, #version);
 	WB1.list.first = WB1.list.count = 0;
 }
 
 
 void DrawLetter() {
-	bufsize = strlen(mdata);
-	bufpointer = mdata;
-	if (bufsize) && (bufpointer) {
-		WB1.ParseHtml();
-		WB1.DrawPage();
-	}
+	WB1.ParseHtml(mdata, strlen(mdata));
+	WB1.DrawPage();
 	DrawRectangle(scroll_wv.start_x, scroll_wv.start_y, scroll_wv.size_x, scroll_wv.size_y-1, 0xFFFfff);
 }
 
@@ -389,7 +387,8 @@ void DrawStatusBar() {
 		SetMailBoxStatus(cur_st_percent, cur_st_text);
 		DrawCaptButton(240, st_y+1, 36, status_bar_h-3, STOP_LOADING, system.color.work_button, system.color.work_button_text,"Stop");
 	}
-	DrawCaptButton(Form.cwidth - 100, st_y+1, 70, status_bar_h-2, CHANGE_CHARSET+BT_HIDE, system.color.work, system.color.work_text,charsets[cur_charset]);
+	DrawCaptButton(Form.cwidth - 100, st_y+1, 70, status_bar_h-2, CHANGE_CHARSET+BT_HIDE, 
+		system.color.work, system.color.work_text,cur_charset*10+#charsets);
 }
 
 

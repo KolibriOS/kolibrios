@@ -16,17 +16,19 @@ $DD 2 dup 0
 char aIconv_open[] = "iconv_open";
 char aIconv[]       = "iconv";
 
+char charsets[] = "UTF-8\0    KOI8-RU\0  CP1251\0   CP1252\0   ISO8859-5\0CP866";
+enum { CH_UTF8, CH_KOI8, CH_CP1251, CH_CP1252, CH_ISO8859_5, CH_CP866, CH_NULL };
 
 dword ChangeCharset(dword from_chs, to_chs, conv_buf)
 {
 	dword cd, in_len, out_len, new_buf;	
 
+	debug("iconv: from_chs = "); debugln(from_chs);
+	debug("iconv: to_chs = "); debugln(to_chs);
+
 	iconv_open stdcall (from_chs, to_chs); //CP866, CP1251, CP1252, KOI8-RU, UTF-8, ISO8859-5
-	if (EAX==-1)
-	{
-		debugln(from_chs);
-		debugln(to_chs);
-		debugln("iconv: wrong charset,\nuse only CP866, CP1251, CP1252, KOI8-RU, UTF-8, ISO8859-5");
+	if (EAX==-1) {
+		debugln("iconv: unsupported charset");
 		return 0; 
 	}
 	cd = EAX;
@@ -41,16 +43,11 @@ dword ChangeCharset(dword from_chs, to_chs, conv_buf)
 		debugval("in_len", in_len);
 		debugval("out_len", out_len);
 		new_buf = free(new_buf);
-		return 0;
+		return conv_buf;
 	}
 	strcpy(conv_buf, new_buf);
 	free(new_buf);
 	return conv_buf;
 }
-
-
-:int cur_charset;
-:char *charsets[] = { "UTF-8", "KOI8-RU", "CP1251", "CP1252", "ISO8859-5", "CP866", 0 };
-enum { CH_UTF8, CH_KOI8, CH_CP1251, CH_CP1252, CH_ISO8859_5, CH_CP866, CH_NULL };
 
 #endif

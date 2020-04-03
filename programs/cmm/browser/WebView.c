@@ -1,4 +1,3 @@
-//HTML Viewer in C--
 //Copyright 2007-2020 by Veliant & Leency
 //Asper, lev, Lrz, Barsuk, Nable, hidnplayr...
 
@@ -28,15 +27,18 @@
 #include "..\lib\patterns\history.h"
 #include "..\lib\patterns\http_downloader.h"
 #include "..\lib\patterns\simple_open_dialog.h"
+#include "..\lib\patterns\toolbar_button.h"
 
 #include "show_src.h"
 #include "download_manager.h"
 _history history;
 #include "history.h"
 bool debug_mode = false;
-#include "..\TWB\TWB.c"
+#include "..\TWB\TWB.c" //HTML Parser, a core component
 
-char version[]="WebView 2.0 Gold";
+TWebBrowser WB1;
+
+char version[]="WebView 2.1";
 
 #ifdef LANG_RUS
 char page_not_found[] = FROM "html\\page_not_found_ru.htm""\0";
@@ -88,7 +90,7 @@ dword STATUSBAR_H = 15;
 
 int action_buf;
 
-_http http = {0, 0, 0, 0, 0, 0, 0};
+_http http = 0;
 
 bool source_mode = false;
 
@@ -97,10 +99,12 @@ char stak[4096];
 proc_info Form;
 
 enum { 
+	ENCODINGS=900,
 	BACK_BUTTON=1000, 
 	FORWARD_BUTTON, 
 	REFRESH_BUTTON, 
 	GOTOURL_BUTTON, 
+	CHANGE_ENCODING,
 	SANDWICH_BUTTON,
 	VIEW_SOURCE,
 	EDIT_SOURCE,
@@ -159,6 +163,7 @@ void main()
 	skin.h = 26;
 	WB1.list.SetFont(8, 14, 10011000b);
 	WB1.list.no_selection = true;
+	WB1.custom_encoding = -1;
 	SetEventMask(EVM_REDRAW + EVM_KEY + EVM_BUTTON + EVM_MOUSE + EVM_MOUSE_FILTER + EVM_STACK);
 	loop() switch(WaitEvent())
 	{
@@ -237,7 +242,7 @@ void main()
 				GetScreenHeight()-700/2-random(80),800,700,0x73,0,0,0);
 			GetProcessInfo(#Form, SelfInfo);
 			system.color.get();
-			if (Form.status_window>2) { DrawTitle(#header); break; }
+			if (Form.status_window>2) break;
 			if (Form.height<120) { MoveSize(OLD,OLD,OLD,120); break; }
 			if (Form.width<280) { MoveSize(OLD,OLD,280,OLD); break; }
 			draw_window();
@@ -273,15 +278,13 @@ void main()
 
 void SetElementSizes()
 {
-	basic_line_h = calc(WB1.list.font_h * 130) / 100;
 	address_box.width = Form.cwidth - address_box.left - 52 - 16;
 	WB1.list.SetSizes(0, TOOLBAR_H, Form.width - 10 - scroll_wv.size_x, 
-		Form.cheight - TOOLBAR_H - STATUSBAR_H, basic_line_h);
-	WB1.list.wheel_size = 7 * basic_line_h;
+		Form.cheight - TOOLBAR_H - STATUSBAR_H, BASIC_LINE_H);
+	WB1.list.wheel_size = 7 * BASIC_LINE_H;
 	WB1.list.column_max = WB1.list.w - scroll_wv.size_x / WB1.list.font_w + 1;
 	WB1.list.visible = WB1.list.h;
 }
-
 
 
 void draw_window()
@@ -296,12 +299,11 @@ void draw_window()
 	DrawBar(0, PADDING, address_box.left-2, TSZE+1, system.color.work);
 	DrawBar(address_box.left+address_box.width+18, PADDING, Form.cwidth-address_box.left-address_box.width-18, TSZE+1, system.color.work);
 
-	DrawTopPanelButton(BACK_BUTTON, PADDING-1, 30);
-	DrawTopPanelButton(FORWARD_BUTTON, PADDING+TSZE+PADDING-2, 31);
-	DrawTopPanelButton(SANDWICH_BUTTON, Form.cwidth-PADDING-TSZE-3, -1);
+	DrawTopPanelButton(BACK_BUTTON, PADDING-1, PADDING, 30);
+	DrawTopPanelButton(FORWARD_BUTTON, PADDING+TSZE+PADDING-2, PADDING, 31);
+	DrawTopPanelButton(SANDWICH_BUTTON, Form.cwidth-PADDING-TSZE-3, PADDING, -1);
 	for (i=0; i<=2; i++) DrawBar(Form.cwidth-PADDING-TSZE+3, i*5+PADDING+7, 15, 3, system.color.work_graph);
 
-	DrawBar(0,Form.cheight - STATUSBAR_H, Form.cwidth,STATUSBAR_H, system.color.work);
 	DrawBar(0,Form.cheight - STATUSBAR_H, Form.cwidth,1, system.color.work_graph);
 
 	DrawRectangle(WB1.list.x + WB1.list.w, WB1.list.y, scroll_wv.size_x, 
@@ -310,12 +312,10 @@ void draw_window()
 	if (WB1.list.w!=WB1.DrawBuf.bufw) {
 		WB1.DrawBuf.Init(WB1.list.x, WB1.list.y, WB1.list.w, 400*20);
 		if (!strncmp(history.current(),"http",4)) {
-			//nihuya ne izyachnoe reshenie, no pust' poka butet tak
+			//nihuya ne izyashnoe reshenie, no pust' poka butet tak
 			i=source_mode;
-			debugval("source_mode", source_mode);
 			LoadInternalPage(#loading_text, sizeof(loading_text));
 			source_mode=i;
-			debugval("source_mode", source_mode);
 		}
 		OpenPage(history.current());
 	} else { 
@@ -323,6 +323,18 @@ void draw_window()
 		DrawOmnibox(); 
 	}
 	DrawProgress();
+	DrawStatusBar(NULL);
+}
+
+void EventChangeEncodingAndLoadPage(int _new_encoding)
+{
+	dword newbuf, newsize;
+	WB1.custom_encoding = _new_encoding;
+	newsize = strlen(WB1.o_bufpointer);
+	newbuf = malloc(newsize);
+	memmov(newbuf, WB1.o_bufpointer, newsize);
+	LoadInternalPage(newbuf, newsize);
+	free(newbuf);
 }
 
 
@@ -330,6 +342,9 @@ void ProcessEvent(dword id__)
 {
 	switch (id__)
 	{
+		case ENCODINGS...ENCODINGS+6:
+			EventChangeEncodingAndLoadPage(id__-ENCODINGS);
+			return;
 		case NEW_WINDOW:
 			RunProgram(#program_path, NULL);
 			return;
@@ -356,6 +371,9 @@ void ProcessEvent(dword id__)
 				OpenPage(history.current());
 			}
 			return;
+		case CHANGE_ENCODING:
+			EventShowEncodingsList(Form.cwidth - 150, status_text.start_y-117);
+			return;
 		case SANDWICH_BUTTON:
 			EventShowMainMenu(Form.cwidth - 215, TOOLBAR_H-6);
 			return;
@@ -366,7 +384,7 @@ void ProcessEvent(dword id__)
 			if (check_is_the_adress_local(history.current())) {
 				RunProgram("/rd/1/tinypad", history.current());
 			} else {
-				CreateFile(bufsize, bufpointer, "/tmp0/1/WebView_tmp.htm");
+				CreateFile(WB1.bufsize, WB1.bufpointer, "/tmp0/1/WebView_tmp.htm");
 				if (!EAX) RunProgram("/rd/1/tinypad", "/tmp0/1/WebView_tmp.htm");
 			}
 			return;
@@ -598,20 +616,17 @@ void LoadInternalPage(dword _bufdata, _in_bufsize){
 	if (!_bufdata) || (!_in_bufsize) {
 		LoadInternalPage(#page_not_found, sizeof(page_not_found));
 	} else {
-		bufsize = _in_bufsize;
-		if (bufpointer!=_bufdata) free(bufpointer);
-		bufpointer = malloc(bufsize);
-		memmov(bufpointer, _bufdata, bufsize);
 		WB1.list.first = 0; //scroll page to the top
 		DrawOmnibox();
 		if(!strrchr(#editURL, '#')) {
 			strcat(#editURL, #anchors.current);
 			DrawOmnibox();
 		}
-		WB1.ParseHtml();
+		WB1.ParseHtml(_bufdata, _in_bufsize);
+		DrawStatusBar(NULL);
 		if (source_mode) {
 			source_mode = false;
-			ShowSource(bufpointer, bufsize);
+			ShowSource(WB1.bufpointer, _in_bufsize);
 		} else {
 			WB1.DrawPage();			
 		}
@@ -638,16 +653,26 @@ void DrawProgress()
 
 void EventShowPageMenu(dword _left, _top)
 {
+	menu.selected = 0;
 	menu.show(Form.left+_left-6,Form.top+_top+skin_height+3, 220, #rmb_menu, VIEW_SOURCE);
+}
+
+void EventShowEncodingsList(dword _left, _top)
+{
+	menu.selected = WB1.cur_encoding + 1;
+	menu.show(Form.left+_left-6+77,Form.top+_top+skin_height-3, 100, 
+		"UTF-8\nKOI8-RU\nCP1251\nCP1252\nISO8859-5\nCP866", ENCODINGS);
 }
 
 void EventShowMainMenu(dword _left, _top)
 {
+	menu.selected = 0;
 	menu.show(Form.left+_left-6+77,Form.top+_top+skin_height-3, 140, #main_menu, OPEN_FILE);
 }
 
 void EventShowLinkMenu(dword _left, _top)
 {
+	menu.selected = 0;
 	menu.show(Form.left+_left-6,Form.top+_top+skin_height+3, 220, #link_menu, COPY_LINK_URL);
 }
 
@@ -688,72 +713,29 @@ void EventViewSource()
 
 void DrawStatusBar(dword _status_text)
 {
+	status_text.font_color = system.color.work_text;
 	status_text.start_x = 10;
-	status_text.start_y = Form.cheight - STATUSBAR_H + 3;
-	status_text.area_size_x = Form.cwidth - status_text.start_x -3;
-	DrawBar(status_text.start_x, status_text.start_y, status_text.area_size_x, 9, system.color.work);
-	status_text.text_pointer = _status_text;
-	PathShow_prepare stdcall(#status_text);
-	PathShow_draw stdcall(#status_text);
-}
-
-
-void DrawOvalBorder(dword x,y,w,h, light,dark,right,dots)
-{
-	DrawBar(x+1,    y,     w, 1,   light);
-	DrawBar(x+1,    y+h+1, w, 1,   dark);
-	DrawBar(x,      y+1,   1, h-1, light);
-	DrawBar(x+w+1,  y+2,   1, h-2, right);
-
-	PutPixel(x,     y,     dots);
-	PutPixel(x+w+1, y+h+1, dots);
-	PutPixel(x,     y+h+1, dots);
-	PutPixel(x+w+1, y,     dots);
-	
-	PutPixel(x,     y+h, dark);
-	PutPixel(x+w+1, y+1, light);
-	PutPixel(x+w+1, y+h, dark);	
-}
-
-libimg_image top_icons;
-libimg_image left_icons;
-
-void DrawTopPanelButton(dword _button_id, _x, signed int _icon_n)
-{
-	static dword semi_white=0, bg_col, bg_col_light, bg_col_dark, bg_dark;
-	if (!semi_white) {
-		bg_col = system.color.work;
-		if (GrayScaleImage(#bg_col,1,1)<65) bg_dark=true; else bg_dark=false;
-		Libimg_LoadImage(#top_icons, "/sys/icons16.png");
-		Libimg_LoadImage(#left_icons, "/sys/icons16.png");
-
-		semi_white = MixColors(system.color.work, 0xFFFfff, bg_dark*90 + 96);
-		bg_col_dark = MixColors(system.color.work, system.color.work_graph, 90);
-		bg_col_light = MixColors(semi_white, 0xFFFfff, bg_dark*90 + 10);
-
-		Libimg_ReplaceColor(top_icons.image, top_icons.w, top_icons.h, 0xffFFFfff, semi_white);
-		Libimg_ReplaceColor(top_icons.image, top_icons.w, top_icons.h, 0xffCACBD6, MixColors(semi_white, 0, 220));
-
-		Libimg_ReplaceColor(left_icons.image, left_icons.w, left_icons.h, 0xffFFFfff, system.color.work);
-		Libimg_ReplaceColor(left_icons.image, left_icons.w, left_icons.h, 0xffCACBD6, MixColors(system.color.work, 0, 200));		
+	status_text.start_y = Form.cheight - STATUSBAR_H + 4;
+	status_text.area_size_x = Form.cwidth - status_text.start_x -3 - 70;
+	//DrawBar(status_text.start_x, status_text.start_y, status_text.area_size_x, 9, system.color.work);
+	DrawBar(0,Form.cheight - STATUSBAR_H+1, Form.cwidth,STATUSBAR_H-1, system.color.work);
+	if (_status_text) {
+		status_text.text_pointer = _status_text;
+		PathShow_prepare stdcall(#status_text);
+		PathShow_draw stdcall(#status_text);		
 	}
-
-	DrawWideRectangle(_x+1, PADDING+1, TSZE, TSZE, 5, semi_white);
-	DrawOvalBorder(_x, PADDING, TSZE, TSZE, bg_col_light, bg_col_dark, semi_white, system.color.work);
-
-	DefineHiddenButton(_x, PADDING, TSZE+1, TSZE+1, _button_id);
-	if (_icon_n==-1) {
-		DrawBar(_x+6, PADDING+5, 16, 16, semi_white);
-	} else {
-		img_draw stdcall(top_icons.image, _x+6, PADDING+5, 16, 16, 0, _icon_n*16);
-	}
+	DefineHiddenButton(status_text.start_x+status_text.area_size_x+10, status_text.start_y-3,
+		60, 12, CHANGE_ENCODING);
+	WriteTextCenter(status_text.start_x+status_text.area_size_x+10,
+		status_text.start_y, 60, system.color.work_text, WB1.cur_encoding*10+#charsets);
 }
 
 void DrawOmnibox()
 {
 	int skin_x_offset;
 	
-	DrawOvalBorder(address_box.left-2, address_box.top-3, address_box.width+18, 24, system.color.work_graph, system.color.work_graph, system.color.work_graph, system.color.work_dark);
+	DrawOvalBorder(address_box.left-2, address_box.top-3, address_box.width+18, 24, system.color.work_graph, 
+		system.color.work_graph, system.color.work_graph, system.color.work_dark);
 	DrawBar(address_box.left-1, address_box.top-2, address_box.width+18, 1, 0xD8DCD8);
 	DrawBar(address_box.left-1, address_box.top-1, address_box.width+18, 1, address_box.color);
 	DrawBar(address_box.left-1, address_box.top, 1, 22, address_box.color);
