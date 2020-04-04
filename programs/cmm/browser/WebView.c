@@ -450,10 +450,10 @@ void OpenPage(dword _open_URL)
 
 	history.add(#new_url);
 
-	if (pages_cache.have(#new_url)) {
-		LoadInternalPage(pages_cache.current_page_buf, pages_cache.pages_cache.current_page_size);
-	}
-	else if (!strncmp(#new_url,"WebView:",8)) {
+	//if (pages_cache.have(#new_url)) {
+	//	LoadInternalPage(pages_cache.current_page_buf, pages_cache.pages_cache.current_page_size);
+	//} else
+	if (!strncmp(#new_url,"WebView:",8)) {
 		//INTERNAL PAGE
 		if (!strcmp(#new_url, URL_SERVICE_HOMEPAGE)) LoadInternalPage(#homepage, sizeof(homepage));
 		else if (!strcmp(#new_url, URL_SERVICE_HELP)) LoadInternalPage(#help, sizeof(help));
