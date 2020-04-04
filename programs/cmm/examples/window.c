@@ -20,4 +20,18 @@ void draw_window()
 	WriteText(100,50,0x80,0,"Textline small");
 	WriteText(100,70,0x90,0,"Textline big");
 	DrawBar(100, 110, 100, 100, 0x66AF86);
+	draw_ascii();
+}
+
+void draw_ascii()
+{
+	char s[2];
+	int i, x, y;
+	s[1]=EOS;
+	for (i=0; i<256; i++) {
+		y = i / 20;
+		x = i % 20;
+		s[0] = i;
+		WriteText(x*33, y*33, 0x91, 0, #s);
+	}
 }
