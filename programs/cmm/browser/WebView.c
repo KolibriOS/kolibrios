@@ -35,52 +35,11 @@ _history history;
 #include "history.h"
 bool debug_mode = false;
 #include "..\TWB\TWB.c" //HTML Parser, a core component
+#include "texts.h"
 
 TWebBrowser WB1;
 
-char version[]="WebView 2.1";
-
-#ifdef LANG_RUS
-char page_not_found[] = FROM "html\\page_not_found_ru.htm""\0";
-char homepage[] = FROM "html\\homepage_ru.htm""\0";
-char help[] = FROM "html\\help_ru.htm""\0";
-char accept_language[]= "Accept-Language: ru\n";
-char rmb_menu[] = 
-"Посмотреть исходник
-Редактировать исходник";
-char main_menu[] = 
-"Открыть файл
-Новое окно
-История
-Менеджер загрузок";
-char link_menu[] =
-"Копировать ссылку
-Скачать содержимое ссылки";
-char loading_text[] = "Загрузка...";
-#else
-char page_not_found[] = FROM "html\\page_not_found_en.htm""\0";
-char homepage[] = FROM "html\\homepage_en.htm""\0";
-char help[] = FROM "html\\help_en.htm""\0";
-char accept_language[]= "Accept-Language: en\n";
-char rmb_menu[] =
-"View source
-Edit source";
-char main_menu[] = 
-"Open local file
-New window
-History
-Download Manager";
-char link_menu[] =
-"Copy link
-Download link contents";
-char loading_text[] = "Loading...";
-#endif
-
 #define URL_SIZE 4000
-
-#define URL_SERVICE_HISTORY "WebView:history"
-#define URL_SERVICE_HOMEPAGE "WebView:home"
-#define URL_SERVICE_HELP "WebView:help"
 
 #define PADDING 9
 #define SKIN_Y 24
@@ -157,7 +116,8 @@ void main()
 {
 	int i, btn, redirect_count=0;
 	LoadLibraries();
-	CreateDir("/tmp0/1/downloads");
+	CreateDir("/tmp0/1/Downloads");
+	CreateDir("/tmp0/1/WebView_Cache");
 	Libimg_LoadImage(#skin, "/sys/toolbar.png");
 	HandleParam();
 	skin.h = 26;
@@ -490,7 +450,10 @@ void OpenPage(dword _open_URL)
 
 	history.add(#new_url);
 
-	if (!strncmp(#new_url,"WebView:",8)) {
+	if (pages_cache.have(#new_url)) {
+		LoadInternalPage(pages_cache.current_page_buf, pages_cache.pages_cache.current_page_size);
+	}
+	else if (!strncmp(#new_url,"WebView:",8)) {
 		//INTERNAL PAGE
 		if (!strcmp(#new_url, URL_SERVICE_HOMEPAGE)) LoadInternalPage(#homepage, sizeof(homepage));
 		else if (!strcmp(#new_url, URL_SERVICE_HELP)) LoadInternalPage(#help, sizeof(help));

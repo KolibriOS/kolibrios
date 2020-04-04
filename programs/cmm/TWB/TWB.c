@@ -36,15 +36,16 @@ struct TWebBrowser {
 	dword bufpointer;
 	dword bufsize;
 
+	void DrawStyle();
 	void SetPageDefaults();
 	void AddCharToTheLine();
 	void ParseHtml();
 	void SetStyle();
-	void DrawStyle();
-	void DrawPage();
-	void DrawScroller();
-	void NewLine();
 	bool CheckForLineBreak();
+	void NewLine();
+	void DrawScroller();
+	void ChangeEncoding();
+	void DrawPage();
 	char line[500];
 	char header[150];
 };
@@ -55,6 +56,7 @@ scroll_bar scroll_wv = { 15,NULL,NULL,NULL,0,2,NULL,0,0,0xeeeeee,0xBBBbbb,0xeeee
 void TWebBrowser::DrawStyle()
 {
 	dword start_x, line_length, stolbec_len;
+	dword text_color__;
 	
 	if (style.tag_title)
 	{
@@ -91,10 +93,14 @@ void TWebBrowser::DrawStyle()
 			DrawBuf.DrawBar(start_x, draw_y + list.item_h - calc(zoom*2), line_length, zoom, 0x999999);
 		}
 
-		DrawBuf.WriteText(start_x, draw_y, list.font_type, text_colors[text_color_index], #line);
-		if (style.b) DrawBuf.WriteText(start_x+1, draw_y, list.font_type, text_colors[text_color_index], #line);
-		if (style.s) DrawBuf.DrawBar(start_x, list.item_h / 2 - zoom + draw_y, line_length, zoom, text_colors[text_color_index]);
-		if (style.u) DrawBuf.DrawBar(start_x, list.item_h - zoom - zoom + draw_y, line_length, zoom, text_colors[text_color_index]);
+		text_color__ = text_colors[text_color_index];
+		if (link) && (text_colors[text_color_index]==text_colors[0]) text_color__ = link_color_default;
+
+
+		DrawBuf.WriteText(start_x, draw_y, list.font_type, text_color__, #line);
+		if (style.b) DrawBuf.WriteText(start_x+1, draw_y, list.font_type, text_color__, #line);
+		if (style.s) DrawBuf.DrawBar(start_x, list.item_h / 2 - zoom + draw_y, line_length, zoom, text_color__);
+		if (style.u) DrawBuf.DrawBar(start_x, list.item_h - zoom - zoom + draw_y, line_length, zoom, text_color__);
 		if (link) {
 			if (line[0]==' ') && (line[1]==NULL) {} else {
 				DrawBuf.DrawBar(start_x, draw_y + list.item_h - calc(zoom*2)-1, line_length, zoom, link_color_default);
@@ -222,7 +228,7 @@ void TWebBrowser::ParseHtml(dword _bufpointer, _bufsize){
 			while (ESBYTE[bufpos] !='>') && (bufpos < bufpointer + bufsize) //ïîëó÷àåì òåã è åãî ïàðàìåòðû
 			{
 				bukva = ESBYTE[bufpos];
-				if (bukva == '\9') || (bukva == '\x0a') || (bukva == '\x0d') bukva = ' ';
+				if (bukva == '\x9') || (bukva == '\x0a') || (bukva == '\x0d') bukva = ' ';
 				if (!ignor_param) && (bukva <>' ')
 				{
 					if (strlen(#tag.name)+1<sizeof(tag.name)) chrcat(#tag.name, bukva);
@@ -231,7 +237,7 @@ void TWebBrowser::ParseHtml(dword _bufpointer, _bufsize){
 				{
 					ignor_param = true;
 					if (strlen(#tag.params)+1<sizeof(tag.params)) strcat(#tag.params, #bukva);
-					//	chrncat(#tag.params, bukva, sizeof(tag.params)-1);
+					//chrncat(#tag.params, bukva, sizeof(tag.params)-1);
 				}
 				bufpos++;
 			}
@@ -294,13 +300,12 @@ bool TWebBrowser::CheckForLineBreak()
 
 	strcpy(#line, #new_line_text);
 	NewLine();
-	//if (strlen(#line)*zoom + stolbec > list.column_max)CheckForLineBreak();
+	//while (CheckForLineBreak()==true) {};
 	return true;
 }
 //============================================================================================
 void TWebBrowser::SetStyle() {
 	char img_path[4096]=0;
-	int meta_encoding;
 
 	dword value;
 
@@ -313,16 +318,6 @@ void TWebBrowser::SetStyle() {
 	}
 	if (tag.is("html")) {
 		t_html = tag.opened;
-		return;
-	}
-	if (tag.is("q"))
-	{
-		if (tag.opened)	{
-			meta_encoding = strlen(#line);
-			if (line[meta_encoding-1] != ' ') chrcat(#line, ' ');
-			chrcat(#line, '\"');
-		}
-		if (!tag.opened) strcat(#line, "\" ");
 		return;
 	}
 	if (tag.is("title")) {
@@ -339,25 +334,39 @@ void TWebBrowser::SetStyle() {
 			style.bg_color = page_bg = GetColor(value);
 			DrawBuf.Fill(0, page_bg);
 		}
+		// Autodetecting encoding if no encoding was set
+		if (tag.opened) && (custom_encoding==-1) && (cur_encoding == CH_CP866) {
+			if (strstr(bufpointer, "\208\190")) ChangeEncoding(CH_UTF8);
+			else if (chrnum(bufpointer, '\x246')>5) ChangeEncoding(CH_CP1251);
+		}
 		return;
 	}
+	if (tag.is("br")) { NewLine(); return; }
+	if (tag.is("b")) || (tag.is("strong")) || (tag.is("big")) { style.b = tag.opened; return; }
 	if (tag.is("a")) {
 		if (tag.opened)
 		{
-			if (link) IF(text_color_index > 0) text_color_index--; //åñëè ïðåäûäóùèé òåã à íå áûë çàêðûò
 			if (value = tag.get_value_of("href=")) && (!strstr(value,"javascript:"))
 			{
-				text_color_index++;
-				text_colors[text_color_index] = text_colors[text_color_index-1];
-				link = 1;
-				text_colors[text_color_index] = link_color_default;
+				link = true;
 				PageLinks.AddLink(value);
 			}
 		} else {
-			link = 0;
-			IF(text_color_index > 0) text_color_index--;
+			link = false;
 		}
 		return;
+	}
+	if (tag.is("iframe")) && (value = tag.get_value_of("src=")) {
+		NewLine();
+		strcpy(#line, "IFRAME: ");
+		DrawStyle();
+		link=true;
+		PageLinks.AddLink(value);
+		strncpy(#line, value, sizeof(TWebBrowser.line)-1);
+		while (CheckForLineBreak()) {};
+		DrawStyle();
+		link=false;
+		NewLine();
 	}
 	if (tag.is("font")) {
 		style.bg_color = page_bg;
@@ -385,16 +394,14 @@ void TWebBrowser::SetStyle() {
 		NewLine();
 		return;
 	}
-	if (tag.is("br")) { NewLine(); return; }
+	if (tag.is("pre")) { style.pre = tag.opened; return; }
 	if (tag.is("td")) { if (tag.opened) AddCharToTheLine(' '); return; }
 	if (tag.is("tr")) { if (tag.opened) NewLine(); return; }
-	if (tag.is("b")) || (tag.is("strong")) || (tag.is("big")) { style.b = tag.opened; return; }
 	if (tag.is("button")) { style.button = tag.opened; stolbec++; return; }
 	if (tag.is("u")) || (tag.is("ins")) { style.u=tag.opened; return;}
 	if (tag.is("s")) || (tag.is("strike")) || (tag.is("del")) { style.s=tag.opened; return; }
-	if (tag.is("dd")) { stolbec += 5; return; }
+	//if (tag.is("dd")) { stolbec += 5; return; } //stolbec overflow!
 	if (tag.is("blockquote")) { style.blq = tag.opened; return; }
-	if (tag.is("pre")) { style.pre = tag.opened; return; }
 	if (tag.is("code")) { 
 		if (tag.opened) style.bg_color = 0xe4ffcb; else style.bg_color = page_bg;
 		style.pre = tag.opened; return; 
@@ -473,6 +480,16 @@ void TWebBrowser::SetStyle() {
 		}
 		return;
 	}
+	if (tag.is("q"))
+	{
+		if (tag.opened)	{
+			EAX = strlen(#line);
+			if (line[EAX-1] != ' ') chrcat(#line, ' ');
+			chrcat(#line, '\"');
+		}
+		if (!tag.opened) strcat(#line, "\" ");
+		return;
+	}
 	if (tag.is("hr")) {
 		if (value = tag.get_value_of("color=")) EDI = GetColor(value); else EDI = 0x999999;
 		$push edi;
@@ -485,24 +502,15 @@ void TWebBrowser::SetStyle() {
 		return;
 	}
 	if (custom_encoding == -1) && (tag.is("meta")) || (tag.is("?xml")) {
-		meta_encoding = CH_CP866;
 		if (value = tag.get_value_of("charset=")) || (value = tag.get_value_of("content=")) || (value = tag.get_value_of("encoding="))
 		{
 			value += strrchr(value, '='); //search in content=
 			strlwr(value);
-			if      (streq(value,"utf-8"))        || (streq(value,"utf8"))        meta_encoding = CH_UTF8;
-			else if (streq(value,"windows-1251")) || (streq(value,"windows1251")) meta_encoding = CH_CP1251;
-			else if (streq(value,"dos"))          || (streq(value,"cp-866"))      meta_encoding = CH_CP866;
-			else if (streq(value,"iso-8859-5"))   || (streq(value,"iso8859-5"))   meta_encoding = CH_ISO8859_5;
-			else if (streq(value,"koi8-r"))       || (streq(value,"koi8-u"))      meta_encoding = CH_KOI8;
-		}
-		if (meta_encoding != CH_CP866) && (cur_encoding != meta_encoding) {
-			cur_encoding = meta_encoding;
-			bufpointer = ChangeCharset(cur_encoding*10+#charsets, "CP866", bufpointer);
-			if (header) {
-				ChangeCharset(cur_encoding*10+#charsets, "CP866", #header);
-				DrawTitle(#header);
-			}
+			if      (streq(value,"utf-8"))        || (streq(value,"utf8"))        ChangeEncoding(CH_UTF8);
+			else if (streq(value,"windows-1251")) || (streq(value,"windows1251")) ChangeEncoding(CH_CP1251);
+			else if (streq(value,"dos"))          || (streq(value,"cp-866"))      ChangeEncoding(CH_CP866);
+			else if (streq(value,"iso-8859-5"))   || (streq(value,"iso8859-5"))   ChangeEncoding(CH_ISO8859_5);
+			else if (streq(value,"koi8-r"))       || (streq(value,"koi8-u"))      ChangeEncoding(CH_KOI8);
 		}
 		return;
 	}
@@ -518,6 +526,17 @@ void TWebBrowser::DrawScroller()
 	scroll_wv.start_y = list.y;
 	scroll_wv.size_y = list.h;
 	scrollbar_v_draw(#scroll_wv);
+}
+//============================================================================================
+void TWebBrowser::ChangeEncoding(int _new_encoding)
+{
+	if (cur_encoding == _new_encoding) return;
+	cur_encoding = _new_encoding;
+	bufpointer = ChangeCharset(cur_encoding*10+#charsets, "CP866", bufpointer);
+	if (header) {
+		ChangeCharset(cur_encoding*10+#charsets, "CP866", #header);
+		DrawTitle(#header);
+	}
 }
 //============================================================================================
 void TWebBrowser::NewLine()
