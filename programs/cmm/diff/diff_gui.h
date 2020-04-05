@@ -132,7 +132,7 @@ void UpdateEditBoxes(dword f1, f2)
 void EventGo()
 {
 	char run_param[4096];
-	sprintf(#run_param, "\"%s\" \"%s\"", #src_path, #dst_path);
+	wsprintf(#run_param, "\"%s\" \"%s\"", #src_path, #dst_path);
 	RunProgram(I_Path, #run_param);
 }
 #endif

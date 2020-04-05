@@ -80,7 +80,9 @@ void DrawPreviewPhrase()
 	for (i=10, y=12; i<22; i++, y+=kfont.height+3;) //not flexible, need to calculate font count and max line length
 	{
 		if (colored.checked) c = pal[i-10]; else c=0;
-		sprintf(#line,"Размер шрифта/size font %d пикселей.",i);
+		strcpy(#line, "Размер шрифта/forn size is ");
+		strcat(#line, itoa(i));
+		strcat(#line, " пикселей/px.");
 		kfont.WriteIntoBuffer(14,y,Form.cwidth,Form.cheight-PANELH, 0xFFFFFF, c, i, #line);
 	}
 	if (kfont.smooth) kfont.ApplySmooth();

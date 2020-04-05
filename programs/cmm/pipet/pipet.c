@@ -1,4 +1,4 @@
-#define MEMSIZE 4096*10
+#define MEMSIZE 1024*40
 
 #include "../lib/gui.h"
 #include "../lib/clipboard.h"
@@ -89,13 +89,29 @@ void draw_window()
 	EventUpdateWindowContent();
 }
 
+//copy of sprintf() => %A
+void str2col(dword buf, number)
+{
+	byte s;
+	strlcpy(buf,"0x00000000",10);
+	buf+=10;
+	while(number)
+	{
+		$dec buf
+		s=number&0xF;
+		if(s>9)DSBYTE[buf]='A'+s-10;
+		else DSBYTE[buf]='0'+s;
+		number>>=4;
+	}
+}
+
 void EventUpdateWindowContent()
 {
-	sprintf(#picked_color_string, "%A", picked_color);
+	//sprintf(#picked_color_string, "%A", picked_color);
+	str2col(#picked_color_string, picked_color);
 	rgb.DwordToRgb(picked_color);
 	
-	EDI = 0xFFFfff;
-	WriteText(12,12, 0xD0, 0x000111, #picked_color_string+4);
+	WriteTextWithBg(12,12, 0xD0, 0x000111, #picked_color_string+4, 0xFFFfff);
 	
 	WriteNumber(12,33, 0xD0, 0xff0000, 3, rgb.r);
 	WriteNumber(43,33, 0xD0, 0x008000, 3, rgb.g);

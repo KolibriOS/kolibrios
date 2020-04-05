@@ -270,7 +270,8 @@ void EventShowFileProperties()
 {
 	char ss_param[4096];
 	if (!param) return;
-	sprintf(#ss_param, "-p %s", #param);
+	strcpy(#ss_param, "-p ");
+	strcpy(#ss_param+3, #param);
 	RunProgram("/sys/File managers/Eolite", #ss_param);
 }
 
@@ -365,7 +366,8 @@ void EventMenuClick()
 			EventOpenFileInAnotherProgram("/sys/develop/heed");
 			break;
 		case 25:
-			sprintf(#open_param,"~%s",#param);
+			open_param[0]='~';
+			strcpy(#open_param+1,#param);
 			RunProgram("/sys/@open", #open_param);
 			break;
 		//ColorSchemes

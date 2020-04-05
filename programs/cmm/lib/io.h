@@ -232,7 +232,9 @@
 	{
 		return PATH;
 	}
-	sprintf(#__PATH_NEW,"%s/%s",self.dir,PATH);
+	strcpy(#__PATH_NEW, self.dir);
+	chrcat(#__PATH_NEW, '/');
+	strcpy(#__PATH_NEW, PATH);
 	return #__PATH_NEW;
 }
 

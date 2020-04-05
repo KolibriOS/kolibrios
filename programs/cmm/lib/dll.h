@@ -7,20 +7,22 @@
 #endif
 
 #ifdef LANG_RUS
-	#define _TEXT_ERROR_ADD "'Ошибка при загрузке библиотеки"
+	#define _TEXT_ERROR_ADD "'Ошибка при загрузке библиотеки\n"
 #elif LANG_EST
-	#define _TEXT_ERROR_ADD "'Viga teegi laadimisel"
+	#define _TEXT_ERROR_ADD "'Viga teegi laadimisel\n"
 #else
-	#define _TEXT_ERROR_ADD "'Error while loading library"
+	#define _TEXT_ERROR_ADD "'Error while loading library\n"
 #endif
 
 char a_libdir[43]  = "/sys/lib/\0";
 
-:inline void error_init(dword text)
+:inline void error_init(dword lirary_path)
 {
-	dword TEXT_ERROR[1024];
-	sprintf(TEXT_ERROR, "%s `%s`' -E",_TEXT_ERROR_ADD,text);
-	notify(TEXT_ERROR);
+	char error_text[1024];
+    strcpy(#error_text, _TEXT_ERROR_ADD);
+    strcat(#error_text, lirary_path);
+    strcat(#error_text, "' -E");
+	notify(#error_text);
 }
 
 // stdcall with 1 parameter
