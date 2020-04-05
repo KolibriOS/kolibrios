@@ -917,6 +917,15 @@ inline signed strcoll(dword text1,text2)
 	return 0;
 }
 
+// void * memset( ptr, value, num );
+// fills the memory with a dword
+// example: memset(str,'-', sizeof(str));
+inline void MEMSETD(EDI,ECX,EAX)
+{
+	$REP 
+	$STOSD
+}
+
 :replace_char(dword in_str, char from_char, to_char, int length) {
 	int i;
 	for (i=0; i<length; i++) {

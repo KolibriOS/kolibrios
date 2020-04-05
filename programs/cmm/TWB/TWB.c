@@ -400,7 +400,15 @@ void TWebBrowser::SetStyle() {
 	if (tag.is("button")) { style.button = tag.opened; stolbec++; return; }
 	if (tag.is("u")) || (tag.is("ins")) { style.u=tag.opened; return;}
 	if (tag.is("s")) || (tag.is("strike")) || (tag.is("del")) { style.s=tag.opened; return; }
-	//if (tag.is("dd")) { stolbec += 5; return; } //stolbec overflow!
+	if (tag.is("dl")) { 
+		if (tag.opened) NewLine();
+		return; 
+	}
+	if (tag.is("dd")) { 
+		//NewLine();
+		//if (tag.opened) stolbec += 5;  //stolbec overflow! 
+		return; 
+	}
 	if (tag.is("blockquote")) { style.blq = tag.opened; return; }
 	if (tag.is("code")) { 
 		if (tag.opened) style.bg_color = 0xe4ffcb; else style.bg_color = page_bg;

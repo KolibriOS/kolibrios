@@ -36,6 +36,7 @@ _history history;
 bool debug_mode = false;
 #include "..\TWB\TWB.c" //HTML Parser, a core component
 #include "texts.h"
+#include "cache.h"
 
 TWebBrowser WB1;
 
@@ -117,7 +118,7 @@ void main()
 	int i, btn, redirect_count=0;
 	LoadLibraries();
 	CreateDir("/tmp0/1/Downloads");
-	CreateDir("/tmp0/1/WebView_Cache");
+	//CreateDir("/tmp0/1/WebView_Cache");
 	Libimg_LoadImage(#skin, "/sys/toolbar.png");
 	HandleParam();
 	skin.h = 26;
@@ -231,6 +232,7 @@ void main()
 				// Loading the page is complete, free resources
 				redirect_count = 0;
 				http.free();
+				pages_cache.add(history.current(), http.content_pointer, http.content_received);
 				LoadInternalPage(http.content_pointer, http.content_received);
 			}
 	}
@@ -450,15 +452,17 @@ void OpenPage(dword _open_URL)
 
 	history.add(#new_url);
 
-	//if (pages_cache.have(#new_url)) {
-	//	LoadInternalPage(pages_cache.current_page_buf, pages_cache.pages_cache.current_page_size);
-	//} else
-	if (!strncmp(#new_url,"WebView:",8)) {
+	if (pages_cache.has(#new_url)) {
+		//CACHED PAGE
+		LoadInternalPage(pages_cache.current_page_buf, pages_cache.current_page_size);
+
+	} else if (!strncmp(#new_url,"WebView:",8)) {
 		//INTERNAL PAGE
 		if (!strcmp(#new_url, URL_SERVICE_HOMEPAGE)) LoadInternalPage(#homepage, sizeof(homepage));
 		else if (!strcmp(#new_url, URL_SERVICE_HELP)) LoadInternalPage(#help, sizeof(help));
 		else if (!strcmp(#new_url, URL_SERVICE_HISTORY)) ShowHistory();
 		else LoadInternalPage(#page_not_found, sizeof(page_not_found));
+		
 	} else if (!strncmp(#new_url,"http:",5)) || (!strncmp(#new_url,"https:",6)) {
 		//WEB PAGE
 		if (ReplaceSpaceInUrl(#new_url, URL_SIZE)) {

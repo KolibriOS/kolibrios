@@ -49,9 +49,8 @@ void DrawBufer::Fill(dword start_pointer, i_fill_color)
 {
 	dword i;
 	dword max_i = bufw * bufh * 4 + buf_data + 8;
-	EDI = fill_color = i_fill_color;
-	for (ESI=buf_data+start_pointer+8; ESI<max_i; ESI+=4) ESDWORD[ESI] = EDI;
-	//for (i=buf_data+start_pointer+8; i<max_i; i+=4) ESDWORD[i] = fill_color;
+	fill_color = i_fill_color;
+	MEMSETD(buf_data+start_pointer+8, max_i-buf_data-start_pointer-8/4, fill_color);
 }
 
 void DrawBufer::DrawBar(dword x, y, w, h, color)
@@ -68,7 +67,7 @@ void DrawBufer::DrawBar(dword x, y, w, h, color)
 void DrawBufer::WriteText(dword x, y, byte fontType, dword color, str_offset)
 {
 	#define BUGFIX_32000 32000
-	int ydiv=0;
+	dword ydiv=0;
 	dword reserve_data_1, reserve_data_2;
 	dword new_buf_offset;
 	if (y + 30 >= bufh) IncreaseBufSize();
