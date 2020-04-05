@@ -29,12 +29,10 @@ progress_bar pb = {0, CONX, 58, 350, 17, 0, 0, 100, 0xFFFfff, 0x74DA00, 0x9F9F9F
 //progress_bar pb = {0, 180, 55, 225, 12, 0, 0, 100, 0xFFFfff, 0x74DA00, 0x9F9F9F};
 //progress_bar: value, left, top, width, height, style, min, max, back_color, progress_color, frame_color;
 
-	
- 
 bool downloader_opened;
 char downloader_stak[4096];
  
- 
+bool download_and_exit = false; 
  
 void Downloader()  
 {
