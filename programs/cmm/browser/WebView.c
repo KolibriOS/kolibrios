@@ -30,7 +30,6 @@
 #include "..\lib\patterns\toolbar_button.h"
 
 #include "show_src.h"
-bool download_and_exit = false;
 #include "download_manager.h"
 _history history;
 #include "history.h"
