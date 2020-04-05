@@ -89,6 +89,7 @@ void Downloader()
 			if (downloader.state == STATE_COMPLETED)
 			{
 				SaveDownloadedFile();
+				if (download_and_exit) ExitProcess();
 				StopDownloading();
 				DL_Draw_Window();
 				break;
@@ -145,6 +146,7 @@ void StartDownloading()
 		return;
 	}
 	if (!downloader.Start(#downloader_edit)) {
+		if (download_and_exit) ExitProcess();
 		notify("'Error while starting download process.\nPlease, check entered path and internet connection.' -E");
 		StopDownloading();
 		return;
@@ -217,10 +219,11 @@ void SaveDownloadedFile()
 	
 	for (i=0; i<strlen(#filepath); i++) if(filepath[i]==':')||(filepath[i]=='?')filepath[i]='-';
 
-	if (CreateFile(downloader.httpd.content_received, downloader.bufpointer, #filepath)==0)
+	if (CreateFile(downloader.httpd.content_received, downloader.bufpointer, #filepath)==0) {
 		sprintf(#notify_message, "%s%s%s",FILE_SAVED_AS,#filepath,"' -Dt");
-	else
+	} else {
 		sprintf(#notify_message, "%s%s%s","'Download manager\nError! Can\96t save file as ",#filepath,"' -Et");
+	}
 	
-	notify(#notify_message);
+	if (!download_and_exit) notify(#notify_message);
 }

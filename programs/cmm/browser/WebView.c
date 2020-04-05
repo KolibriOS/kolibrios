@@ -30,6 +30,7 @@
 #include "..\lib\patterns\toolbar_button.h"
 
 #include "show_src.h"
+bool download_and_exit = false;
 #include "download_manager.h"
 _history history;
 #include "history.h"
@@ -72,6 +73,7 @@ enum {
 	NEW_WINDOW,
 	VIEW_HISTORY,
 	DOWNLOAD_MANAGER,
+	UPDATE_BROWSER,
 	COPY_LINK_URL,
 	DOWNLOAD_LINK_CONTENTS,
 };
@@ -98,13 +100,19 @@ void LoadLibraries()
 void HandleParam()
 {
 	if (param) {
-		if (!strncmp(#param, "-d ", 3)) {
-			strcpy(#downloader_edit, #param+3);
-			CreateThread(#Downloader,#downloader_stak+4092);
+		if (!strncmp(#param, "-download_and_exit ", 19)) {
+			download_and_exit = true;
+			strcpy(#downloader_edit, #param+19);
+			Downloader();
 			ExitProcess();
-		} else if (!strncmp(#param, "-s ", 3)) {
+		} else if (!strncmp(#param, "-download ", 10)) {
+			strcpy(#downloader_edit, #param+10);
+			//CreateThread(#Downloader,#downloader_stak+4092);
+			Downloader();
+			ExitProcess();
+		} else if (!strncmp(#param, "-source ", 8)) {
 			source_mode = true;
-			history.add(#param + 3);
+			history.add(#param + 8);
 		} else {
 			history.add(#param);
 		}
@@ -358,6 +366,9 @@ void ProcessEvent(dword id__)
 				downloader_edit = NULL;
 				CreateThread(#Downloader,#downloader_stak+4092);
 			}
+			return;
+		case UPDATE_BROWSER:
+			EventUpdateBrowser();
 			return;
 		case COPY_LINK_URL:
 			Clipboard__CopyText(PageLinks.GetURL(PageLinks.active));
@@ -673,9 +684,56 @@ void EventOpenDialog()
 void EventViewSource()
 {
 	char source_view_param[URL_SIZE+1];
-	strcpy(#source_view_param, "-s ");
+	strcpy(#source_view_param, "-source ");
 	strncat(#source_view_param, history.current(), URL_SIZE);
 	RunProgram(#program_path, #source_view_param);
+}
+
+dword GetFileSize(dword _path)
+{
+	BDVK bdvk;
+	if (GetFileInfo(_path, #bdvk)!=0) {
+		return 0;
+	} else {
+		return bdvk.sizelo;
+	}
+}
+
+void EventUpdateBrowser()
+{
+	dword downloader_id, slot_n;
+	dword current_size;
+	dword new_size;
+	int error;
+
+	draw_window();
+
+	downloader_id = RunProgram(#program_path, #update_param);
+	do {
+		slot_n = GetProcessSlot(downloader_id);
+		pause(10);
+	} while (slot_n!=0);
+
+	current_size = GetFileSize(#program_path);
+	new_size = GetFileSize("/tmp0/1/Downloads/WebView.com");
+
+	if (!new_size) || (new_size<5000) {
+		notify(#update_download_error);
+		return;
+	}
+
+	if (current_size == new_size) {
+		notify(#update_is_current);
+		return;
+	}
+
+	if (error = CopyFileAtOnce(new_size, "/tmp0/1/Downloads/WebView.com", #program_path)) {
+		notify(#update_can_not_copy);
+	} else {
+		notify(#update_ok);
+		RunProgram(#program_path, history.current());
+		ExitProcess();
+	}
 }
 
 void DrawStatusBar(dword _status_text)

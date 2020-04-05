@@ -339,6 +339,40 @@ void DrawPixieTitle(dword _t)
 	theme.color_top_panel_folder_name, list.font_type, #title);
 }
 
+void DrawAboutWindow()
+{
+	proc_info pop_up;
+	loop() switch(WaitEvent())
+	{
+		case evButton: 
+			ExitProcess();
+			break;
+		case evKey:
+			GetKeys();
+			if (key_scancode == SCAN_CODE_ESC) ExitProcess();
+			break;
+		case evReDraw:
+			DefineDragableWindow(150, 200, 400, 400);
+			GetProcessInfo(#pop_up, SelfInfo);
+
+			DrawBar(0, 0, pop_up.width, pop_up.height, theme.color_top_panel_bg);
+			DrawRectangle(0, 0, pop_up.width, pop_up.height, theme.color_list_border);
+
+			DefineHiddenButton(pop_up.width - 27, 1, 26, 15, BUTTON_WINDOW_CLOSE);
+			//img_draw stdcall(skin.image, pop_up.width-28, 0, 28, 18, skin.w - 29, 0);
+			DrawCaptButton(pop_up.width-10-80, pop_up.height - 34, 80, 24, 2, 
+			  0x171717, 0xF5EFB3, "Cool");
+			
+			WriteText(131,16, 0x81, 0x8E7C61, "Pixie Player");
+			WriteText(130,15, 0x81, 0xF5EFB3, "Pixie Player");
+
+			WriteTextLines(10, 40, 0x90, theme.color_top_panel_song_name, ABOUT_MESSAGE, 19);
+			DrawIcon32(45, 15, theme.color_top_panel_bg, 65);
+			DrawIcon32(pop_up.width-32-45, 15, theme.color_top_panel_bg, 65);
+
+	}
+}
+
 //===================================================//
 //                                                   //
 //                     EVENTS                        //
@@ -408,7 +442,9 @@ void EventStartPlaying()
 	current_filename[strrchr(#current_filename, '.')-1] = '\0';
 	DrawPlayList();
 	DrawTopPanel();
+	//start_playing_time = 
 	player_run_id = RunProgram("/sys/media/ac97snd", #item_path);	
+	//player_run_id = RunProgram("/kolibrios/media/minimp3", #item_path);	
 	sprintf(#notify_message,"'Now playing:\n%s' -St",#current_filename);
 	if (!repeat) && (window_mode==WINDOW_MODE_SMALL)
 	{
@@ -538,41 +574,7 @@ void EventPermanentlyDeleteFile()
 
 void EventShowAbout()
 {
-	CreateThread(#ShowAboutThread,#menu_stak+4092);
-}
-
-void ShowAboutThread()
-{
-	proc_info pop_up;
-	loop() switch(WaitEvent())
-	{
-		case evButton: 
-			ExitProcess();
-			break;
-		case evKey:
-			GetKeys();
-			if (key_scancode == SCAN_CODE_ESC) ExitProcess();
-			break;
-		case evReDraw:
-			DefineDragableWindow(150, 200, 400, 400);
-			GetProcessInfo(#pop_up, SelfInfo);
-
-			DrawBar(0, 0, pop_up.width, pop_up.height, theme.color_top_panel_bg);
-			DrawRectangle(0, 0, pop_up.width, pop_up.height, theme.color_list_border);
-
-			DefineHiddenButton(pop_up.width - 27, 1, 26, 15, BUTTON_WINDOW_CLOSE);
-			//img_draw stdcall(skin.image, pop_up.width-28, 0, 28, 18, skin.w - 29, 0);
-			DrawCaptButton(pop_up.width-10-80, pop_up.height - 34, 80, 24, 2, 
-			  0x171717, 0xF5EFB3, "Cool");
-			
-			WriteText(131,16, 0x81, 0x8E7C61, "Pixie Player");
-			WriteText(130,15, 0x81, 0xF5EFB3, "Pixie Player");
-
-			WriteTextLines(10, 40, 0x90, theme.color_top_panel_song_name, ABOUT_MESSAGE, 19);
-			DrawIcon32(45, 15, theme.color_top_panel_bg, 65);
-			DrawIcon32(pop_up.width-32-45, 15, theme.color_top_panel_bg, 65);
-
-	}
+	CreateThread(#DrawAboutWindow,#menu_stak+4092);
 }
 
 /*
