@@ -18,7 +18,7 @@ SOFTWARE CENTER v2.86
 proc_info Form;
 llist list;
 collection app_path_collection;
-byte kolibrios_mounted;
+bool kolibrios_mounted;
 
 int window_width,
 	window_height;
@@ -29,7 +29,7 @@ int list_pos,
 	default_icon;
 
 char window_title[128],
-	 settings_ini_path[256] = "/sys/settings/";
+	 settings_ini_path[256];
 
 bool small_screen = false;
 
@@ -42,21 +42,19 @@ struct SW_COLORS
  	dword light;
  } swc;
 
-block ipos[128];
+block selection[128];
 
-void load_config()
+void load_ini_config(dword _ini_path)
 {
-	ini_get_str stdcall (#settings_ini_path, "Config", "title", #window_title, sizeof(window_title), "Software widget");
-	ini_get_int stdcall (#settings_ini_path, "Config", "win_width", 690);
-	window_width = EAX;
-	ini_get_int stdcall (#settings_ini_path, "Config", "cell_w", 73);
-	list.item_w = EAX;
-	ini_get_int stdcall (#settings_ini_path, "Config", "cell_h", 71);
-	list.item_h = EAX;
-	ini_get_int stdcall (#settings_ini_path, "Config", "default_icon", 2);
-	default_icon = EAX;
+	_ini ini;
+	ini.path = _ini_path;
+	ini.section = "Config";
+	ini.GetString("title", #window_title, sizeof(window_title), "Software widget");
+	window_width = ini.GetInt("win_width", 690);
+	list.item_w  = ini.GetInt("cell_w", 73);
+	list.item_h  = ini.GetInt("cell_h", 71);
+	default_icon = ini.GetInt("default_icon", 2);
 }
-
 
 void main()
 {   
@@ -68,17 +66,15 @@ void main()
 
 	kolibrios_mounted = dir_exists("/kolibrios");
 
-	if (param)
-	{
+	if (param) {
 		strcpy(#settings_ini_path, #param);
-	}
-	else
-	{
+	} else {
+		strcpy(#settings_ini_path, "/sys/settings/");
 		strcat(#settings_ini_path, I_Path + strrchr(I_Path, '/'));
 		strcat(#settings_ini_path, ".ini");		
 	}
 	
-	load_config();
+	load_ini_config(#settings_ini_path);
 	list.cur_y = -1;
 	list.y = 32;
 
@@ -98,13 +94,13 @@ void main()
 			if (SCAN_CODE_LEFT == key_scancode) key_scancode = SCAN_CODE_UP;
 			if (SCAN_CODE_RIGHT == key_scancode) key_scancode = SCAN_CODE_DOWN;
 			if (list.ProcessKey(key_scancode)) DrawSelection();
-			if (SCAN_CODE_ENTER == key_scancode) EventRunApp(list.cur_y);
+			if (SCAN_CODE_ENTER == key_scancode) EventIconClick(list.cur_y);
 			break;
 
 		case evButton:
 			id=GetButtonID();               
 			if (id==1) ExitProcess();
-			if (id>=100) EventRunApp(id-100);
+			if (id>=100) EventIconClick(id-100);
 			break;
 
 		case evReDraw:
@@ -120,7 +116,7 @@ void main()
 				list.y = 0;	
 			} else {
 				DrawTitle(NULL); 
-				draw_top_bar();
+				DrawTopBar();
 			}
 			DrawList();
 			DrawBar(0, row +1 * list.item_h + list_pos, Form.cwidth, -row - 1 * list.item_h - list_pos + Form.cheight, swc.list_bg);
@@ -169,10 +165,11 @@ void DrawList() {
 
 byte draw_icons_from_section(dword key_value, key_name, sec_name, f_name)
 {
-	int tmp,
-		icon_id,
+	int icon_id = default_icon,
 		icon_char_pos;
-	int text_w;
+	int space_pos;
+
+	dword icon_x, icon_y, text_x, text_y;
 
 	//do not show items located in /kolibrios/ if this directory not mounted
 	if (!strncmp(key_value, "/kolibrios/", 11)) || (!strncmp(key_value, "/k/", 3))
@@ -184,19 +181,28 @@ byte draw_icons_from_section(dword key_value, key_name, sec_name, f_name)
 	}
 
 	if (col==0) DrawBar(0, row * list.item_h + list_pos, Form.cwidth, list.item_h, swc.list_bg);
-	DefineButton(col*list.item_w+6, row*list.item_h + list_pos,list.item_w,list.item_h-5,list.count + 100 + BT_HIDE,0);
-	tmp = list.item_w/2;
+	DefineButton(col*list.item_w+6, row*list.item_h + list_pos,list.item_w,list.item_h-3,list.count + 100 + BT_HIDE,0);
 
 	icon_char_pos = strchr(key_value, ',');
-	if (icon_char_pos) icon_id = atoi(icon_char_pos+1); else icon_id = default_icon;
-	img_draw stdcall(skin.image, col*list.item_w+tmp-10, row*list.item_h+5 + list_pos, 32, 32, 0, icon_id*32);
+	icon_x = col*list.item_w+calc(list.item_w/2)-10;
+	icon_y = row*list.item_h+5 + list_pos;
+	selection[list.count].x = icon_x-2;
+	selection[list.count].y = icon_y-2;
 	if (icon_char_pos) ESBYTE[icon_char_pos] = '\0'; //delete icon from string
 	app_path_collection.add(key_value);
-	//kfont.WriteIntoWindowCenter(col*list.item_w+7,row*list.item_h+47 + list_pos, list.item_w,0, swc.list_bg, swc.dark, 12, key_name);
-	text_w = kfont.WriteIntoWindowCenter(col*list.item_w+5,row*list.item_h+46 + list_pos, list.item_w,0, swc.list_bg, swc.text, 12, key_name);
-	ipos[list.count].x = list.item_w-text_w/2+calc(col*list.item_w)+5;
-	ipos[list.count].y = row*list.item_h+46 + list_pos + 16;
-	ipos[list.count].w = text_w;
+
+	text_x = col*list.item_w+5;
+	text_y = list.item_h - 40 / 2;
+	if (kfont.getsize(key_name)+30<list.item_w) || (!strchr(key_name, ' ')) {
+		kfont.WriteIntoWindowCenter(text_x, row*list.item_h+46 + list_pos, list.item_w,0, swc.list_bg, swc.text, 12, key_name);
+	} else {
+		space_pos = strrchr(key_name, ' ');
+		ESBYTE[key_name+space_pos-1] = '\0';
+		kfont.WriteIntoWindowCenter(text_x, row*list.item_h+46 + list_pos - 2, list.item_w,0, swc.list_bg, swc.text, 12, key_name);
+		kfont.WriteIntoWindowCenter(text_x, row*list.item_h+46 + list_pos + 14, list.item_w,0, swc.list_bg, swc.text, 12, key_name+space_pos);
+	}
+	if (icon_char_pos) icon_id = atoi(icon_char_pos+1);
+	img_draw stdcall(skin.image, icon_x, icon_y, 32, 32, 0, icon_id*32);
 	list.count++;
 	col++;
 	return true;
@@ -231,7 +237,7 @@ byte process_sections(dword sec_name, f_name)
 	return true;
 }
 
-void draw_top_bar()
+void DrawTopBar()
 {
 	DrawBar(0,0,Form.cwidth, list.y-2, system.color.work);
 	DrawBar(0,list.y-2, Form.cwidth, 1, MixColors(system.color.work, system.color.work_graph, 180));
@@ -239,7 +245,7 @@ void draw_top_bar()
 	kfont.WriteIntoWindowCenter(0,5, Form.cwidth, list.y, system.color.work, system.color.work_text, 16, #window_title);
 }
 
-void EventRunApp(dword appid)
+void EventIconClick(dword appid)
 {
 	char run_app_path[4096]=0;
 	dword app_path = app_path_collection.get(appid);
@@ -264,13 +270,10 @@ void EventRunApp(dword appid)
 	strcat(#run_app_path, app_path);
 	// }end
 
-	if (file_exists(#run_app_path))
-	{
+	if (file_exists(#run_app_path)) {
 		io.run(#run_app_path, param_pos); //0 or offset
 		if (param_pos) ESBYTE[param_pos - 1] = '|';
-	}
-	else
-	{
+	} else {
 		notify("'Application not found' -E");
 	}
 }
@@ -281,7 +284,7 @@ void DrawSelection()
 	dword col;
 	for (i=0; i<list.count; i++) {
 		if (i==list.cur_y) col=0x0080FF; else col=swc.list_bg;
-		DrawBar(ipos[i].x, ipos[i].y, ipos[i].w+2, 3, col);
+		DrawWideRectangle(selection[i].x, selection[i].y, 36, 36, 2, col);
 	}
 }
 

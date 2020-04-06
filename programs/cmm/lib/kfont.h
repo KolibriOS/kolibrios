@@ -103,12 +103,12 @@ int kfont_char_width[255];
 	return true;
 }
 
-:dword KFONT::getsize(byte fontSizePoints, dword text1)
+:dword KFONT::getsize(byte font_size, dword text1)
 {
 	size.height = size.width = 0;
 	size.offset_x = size.offset_y = -1;
-	if (size.pt != fontSizePoints) {
-		size.pt = fontSizePoints;
+	if (size.pt != font_size) {
+		size.pt = font_size;
 		if(!changeSIZE())return 0;
 	}
 	WHILE(DSBYTE[text1])
@@ -123,7 +123,7 @@ int kfont_char_width[255];
 	return size.width;
 }
 
-//WILL NOT WORK if requested fontSizePoints 
+//WILL NOT WORK if requested font_size 
 //is differ from precalculated kfont_char_width[]
 :int KFONT::get_label_width(dword _label) 
 {
@@ -242,13 +242,13 @@ inline fastcall dword b32(EAX) { return DSDWORD[EAX]; }
 	}
 }
 
-:void KFONT::WriteIntoBuffer(int x,y,w,h; dword _background, _color; byte fontSizePoints; dword text1)
+:void KFONT::WriteIntoBuffer(int x,y,w,h; dword _background, _color; byte font_size; dword text1)
 {
 	dword new_raw_size;
 	if(!text1)return;
 	
-	if (size.pt != fontSizePoints) {
-		getsize(fontSizePoints, text1);
+	if (size.pt != font_size) {
+		getsize(font_size, text1);
 		y -= size.offset_y;
 	}
 	color = _color;
@@ -277,22 +277,22 @@ inline fastcall dword b32(EAX) { return DSDWORD[EAX]; }
 	return;
 }
 
-:int KFONT::WriteIntoWindow(int x,y; dword _background, _color; byte fontSizePoints; dword text1)
+:int KFONT::WriteIntoWindow(int x,y; dword _background, _color; byte font_size; dword text1)
 {
 	if(!text1)return 0;
-	getsize(fontSizePoints, text1);
+	getsize(font_size, text1);
 	raw_size = NULL;
 	WriteIntoBuffer(0, -size.offset_y, size.width-size.offset_x, 
-		size.height-size.offset_y, _background, _color, fontSizePoints, text1);
+		size.height-size.offset_y, _background, _color, font_size, text1);
 	if (smooth) ApplySmooth();
 	ShowBuffer(x,y);
 	return size.offset_x + size.width;
 }
 
-:int KFONT::WriteIntoWindowCenter(dword x,y,w,h; dword _background, _color; byte fontSizePoints; dword text1)
+:int KFONT::WriteIntoWindowCenter(dword x, _y,w,h, _background, _color; byte font_size; dword text1)
 {
-	getsize(fontSizePoints, text1);
-	return WriteIntoWindow(w-size.width/2+x-1,y, _background, _color, fontSizePoints, text1);
+	getsize(font_size, text1);
+	return WriteIntoWindow(w-size.width/2+x-1, _y, _background, _color, font_size, text1);
 }
 
 :void KFONT::ShowBuffer(dword _x, _y)
