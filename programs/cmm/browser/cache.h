@@ -8,6 +8,7 @@ struct PAGES_CACHE
 	collection size; //it has to be int
 	void add();
 	bool has();
+	void clear();
 } pages_cache;
 
 void PAGES_CACHE::add(dword _url, _data, _size)
@@ -31,4 +32,13 @@ bool PAGES_CACHE::has(dword _link)
 		return true;
 	}
 	return false;
+}
+
+void PAGES_CACHE::clear()
+{
+	url.drop();
+	data.drop();
+	size.drop();
+	current_page_buf = NULL;
+	current_page_size = NULL;
 }

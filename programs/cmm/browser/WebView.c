@@ -72,6 +72,7 @@ enum {
 	NEW_WINDOW,
 	VIEW_HISTORY,
 	DOWNLOAD_MANAGER,
+	CLEAR_CACHE,
 	UPDATE_BROWSER,
 	COPY_LINK_URL,
 	DOWNLOAD_LINK_CONTENTS,
@@ -140,7 +141,7 @@ void main()
 			mouse.get();
 			if (PageLinks.HoverAndProceed(mouse.x, WB1.list.first + mouse.y, WB1.list.y, WB1.list.first))
 			&& (mouse.pkm) && (mouse.up) {
-				if (WB1.list.MouseOver(mouse.x, mouse.y)) EventShowPageMenu(mouse.x, mouse.y);
+				if (WB1.list.MouseOver(mouse.x, mouse.y)) EventShowPageMenu();
 				break;
 			}
 			if (WB1.list.MouseScroll(mouse.vert)) WB1.DrawPage();
@@ -202,10 +203,6 @@ void main()
 			break;
 
 		case evReDraw:
-			if (menu.cur_y) {
-				ProcessEvent(menu.cur_y);
-				menu.cur_y = 0;
-			}
 			DefineAndDrawWindow(GetScreenWidth()-800/2-random(80),
 				GetScreenHeight()-700/2-random(80),800,700,0x73,0,0,0);
 			GetProcessInfo(#Form, SelfInfo);
@@ -259,6 +256,11 @@ void SetElementSizes()
 void draw_window()
 {
 	int i;
+	if (menu.cur_y) {
+		EAX = menu.cur_y;
+		menu.cur_y = 0;
+		ProcessEvent(EAX);
+	}
 	SetElementSizes();
 
 	DrawBar(0,0, Form.cwidth,PADDING, system.color.work);
@@ -341,10 +343,10 @@ void ProcessEvent(dword id__)
 			}
 			return;
 		case CHANGE_ENCODING:
-			EventShowEncodingsList(Form.cwidth - 150, status_text.start_y-117);
+			EventShowEncodingsList();
 			return;
 		case SANDWICH_BUTTON:
-			EventShowMainMenu(Form.cwidth - 215, TOOLBAR_H-6);
+			EventShowMainMenu();
 			return;
 		case VIEW_SOURCE:
 			EventViewSource();
@@ -368,6 +370,10 @@ void ProcessEvent(dword id__)
 			return;
 		case UPDATE_BROWSER:
 			EventUpdateBrowser();
+			return;
+		case CLEAR_CACHE:
+			pages_cache.clear();
+			notify(#clear_cache_ok);
 			return;
 		case COPY_LINK_URL:
 			Clipboard__CopyText(PageLinks.GetURL(PageLinks.active));
@@ -628,29 +634,29 @@ void DrawProgress()
 	DrawBar(address_box.left-1, address_box.top+20, persent*address_box.width+16/100, 2, 0x72B7EB);
 }
 
-void EventShowPageMenu(dword _left, _top)
+void EventShowPageMenu()
 {
 	menu.selected = 0;
-	menu.show(Form.left+_left-6,Form.top+_top+skin_height+3, 220, #rmb_menu, VIEW_SOURCE);
+	menu.show(Form.left + mouse.x+4, Form.top + skin_height + mouse.y, 220, #rmb_menu, VIEW_SOURCE);
 }
 
-void EventShowEncodingsList(dword _left, _top)
+void EventShowLinkMenu()
+{
+	menu.selected = 0;
+	menu.show(Form.left + mouse.x+4, Form.top + skin_height + mouse.y, 220, #link_menu, COPY_LINK_URL);
+}
+
+void EventShowEncodingsList()
 {
 	menu.selected = WB1.cur_encoding + 1;
-	menu.show(Form.left+_left-6+77,Form.top+_top+skin_height-3, 100, 
+	menu.show(Form.left + Form.cwidth - 95, Form.top + skin_height + status_text.start_y - 121, 90, 
 		"UTF-8\nKOI8-RU\nCP1251\nCP1252\nISO8859-5\nCP866", ENCODINGS);
 }
 
-void EventShowMainMenu(dword _left, _top)
+void EventShowMainMenu()
 {
 	menu.selected = 0;
-	menu.show(Form.left+_left-6+77,Form.top+_top+skin_height-3, 140, #main_menu, OPEN_FILE);
-}
-
-void EventShowLinkMenu(dword _left, _top)
-{
-	menu.selected = 0;
-	menu.show(Form.left+_left-6,Form.top+_top+skin_height+3, 220, #link_menu, COPY_LINK_URL);
+	menu.show(Form.left + Form.cwidth - 150, Form.top + skin_height + TOOLBAR_H-8, 140, #main_menu, OPEN_FILE);
 }
 
 void EventUpdateProgressBar()

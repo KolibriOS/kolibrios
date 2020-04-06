@@ -32,27 +32,26 @@
 
 :void _menu_thread()
 {
-	proc_info MenuForm;
-	SetEventMask(100111b);
+	MOUSE m;
+	DefineAndDrawWindow(menu.appear_x,menu.appear_y,menu.w+2,menu.h+4,0x01, 0, 0, 0x01fffFFF);
+	DrawPopup(0,0,menu.w,menu.h+3,0, 0xE4DFE1,0x9098B0);
+	_menu_draw_list();				
+	SetEventMask(EVM_REDRAW + EVM_KEY + EVM_MOUSE + EVM_MOUSE_FILTER);
 	loop() switch(WaitEvent())
 	{
 		case evMouse:
-			GetProcessInfo(#MenuForm, SelfInfo);
-			if (!CheckActiveProcess(MenuForm.ID)) _menu_no_item_click();
-			mouse.get();
-			if (menu.ProcessMouse(mouse.x, mouse.y)) _menu_draw_list();
-			if (mouse.lkm)&&(mouse.up) _menu_item_click();
+			m.get();
+			if (menu.ProcessMouse(m.x, m.y)) _menu_draw_list();
+			if (m.lkm)&&(m.up) _menu_item_click();
 			break;		
 		case evKey:
 			GetKeys();
-			if (key_scancode==SCAN_CODE_ESC) _menu_no_item_click();
+			if (key_scancode==SCAN_CODE_ESC) _menu_exit();
 			if (key_scancode==SCAN_CODE_ENTER) _menu_item_click();
 			if (menu.ProcessKey(key_scancode)) _menu_draw_list();
 			break;
 		case evReDraw:
-			DefineAndDrawWindow(menu.appear_x,menu.appear_y,menu.w+2,menu.h+4,0x01, 0, 0, 0x01fffFFF);
-			DrawPopup(0,0,menu.w,menu.h+3,0, 0xE4DFE1,0x9098B0);
-			_menu_draw_list();				
+			_menu_exit();
 	}
 }
 
@@ -74,7 +73,7 @@
 	KillProcess(menu_process_id);
 }
 
-:void _menu_no_item_click()
+:void _menu_exit()
 {
 	menu.cur_y = 0;
 	KillProcess(menu_process_id);
