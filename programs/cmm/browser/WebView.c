@@ -180,21 +180,7 @@ void main()
 				if (key_scancode == SCAN_CODE_TAB) {EventActivatePreviousTab();break;}
 			}
 
-			if (key_modifier&KEY_LCTRL) || (key_modifier&KEY_RCTRL) {
-				if (key_scancode == SCAN_CODE_KEY_O) EventOpenDialog();
-				else if (key_scancode == SCAN_CODE_KEY_H) ProcessEvent(VIEW_HISTORY);
-				else if (key_scancode == SCAN_CODE_KEY_U) EventViewSource();
-				else if (key_scancode == SCAN_CODE_KEY_T) EventOpenNewTab(URL_SERVICE_HOMEPAGE); 
-				else if (key_scancode == SCAN_CODE_KEY_N) RunProgram(#program_path, NULL);
-				else if (key_scancode == SCAN_CODE_KEY_J) ProcessEvent(DOWNLOAD_MANAGER);
-				else if (key_scancode == SCAN_CODE_KEY_R) ProcessEvent(REFRESH_BUTTON);
-				else if (key_scancode == SCAN_CODE_ENTER) EventSeachWeb();
-				else if (key_scancode == SCAN_CODE_LEFT)  ProcessEvent(BACK_BUTTON);
-				else if (key_scancode == SCAN_CODE_RIGHT) ProcessEvent(FORWARD_BUTTON);
-				else if (key_scancode == SCAN_CODE_KEY_W) EventCloseActiveTab();
-				else if (key_scancode == SCAN_CODE_TAB)   EventActivateNextTab();
-				break;
-			}
+			if (ProcessCtrlKeyEvent()) break;
 			
 			if (key_scancode == SCAN_CODE_F5) ProcessEvent(REFRESH_BUTTON);
 			
@@ -254,6 +240,50 @@ void main()
 				LoadInternalPage(http.content_pointer, http.content_received);
 			}
 	}
+}
+
+bool ProcessCtrlKeyEvent()
+{
+	if (key_modifier&KEY_LCTRL) || (key_modifier&KEY_RCTRL) switch(key_scancode) 
+	{
+		case SCAN_CODE_KEY_O:
+			EventOpenDialog();
+			return true;
+		case SCAN_CODE_KEY_H:
+			ProcessEvent(VIEW_HISTORY);
+			return true;
+		case SCAN_CODE_KEY_U:
+			EventViewSource();
+			return true;
+		case SCAN_CODE_KEY_T:
+			EventOpenNewTab(URL_SERVICE_HOMEPAGE); 
+			return true;
+		case SCAN_CODE_KEY_N:
+			RunProgram(#program_path, NULL);
+			return true;
+		case SCAN_CODE_KEY_J:
+			ProcessEvent(DOWNLOAD_MANAGER);
+			return true;
+		case SCAN_CODE_KEY_R:
+			ProcessEvent(REFRESH_BUTTON);
+			return true;
+		case SCAN_CODE_ENTER:
+			EventSeachWeb();
+			return true;
+		case SCAN_CODE_LEFT:
+			 ProcessEvent(BACK_BUTTON);
+			 return true;
+		case SCAN_CODE_RIGHT:
+			ProcessEvent(FORWARD_BUTTON);
+			return true;
+		case SCAN_CODE_KEY_W:
+			EventCloseActiveTab();
+			return true;
+		case SCAN_CODE_TAB:
+			EventActivateNextTab();
+			return true;
+	}
+	return false;
 }
 
 void SetElementSizes()
