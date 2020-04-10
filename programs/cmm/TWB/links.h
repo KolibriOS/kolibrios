@@ -7,6 +7,9 @@ dword CursorFile = FROM "../TWB/pointer.cur";
 
 #define MAXLINKS 2000
 
+bool open_new_window=false;
+bool open_new_tab=false;
+
 struct array_link {
 	dword link;
 	unsigned int x,y,w,h;
@@ -54,7 +57,6 @@ dword LinksArray::GetURL(int id)
 	return links[id].link;
 }
 
-bool open_new_window=false;
 void LinksArray::Clear()
 {
 	page_links.drop();
@@ -95,9 +97,15 @@ bool LinksArray::HoverAndProceed(dword mx, my, list_y, list_first)
 				return false;
 			}
 			if (mouse.mkm) && (mouse.up) {
-				open_new_window = true;
-				EventClickLink(PageLinks.GetURL(PageLinks.active));
-				open_new_window = false;
+				if (key_modifier&KEY_LSHIFT) || (key_modifier&KEY_RSHIFT) {
+					open_new_window = true;
+					EventClickLink(PageLinks.GetURL(PageLinks.active));
+					open_new_window = false;
+				} else {
+					open_new_tab = true;
+					EventClickLink(PageLinks.GetURL(PageLinks.active));
+					open_new_tab = false;
+				}
 				return false;
 			}
 			if (mouse.lkm) && (mouse.up) { 

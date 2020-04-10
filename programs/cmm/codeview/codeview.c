@@ -158,8 +158,8 @@ void SetElementSizes()
 	WB1.list.wheel_size = 7 * BASIC_LINE_H;
 	WB1.list.column_max = WB1.list.w - scroll_wv.size_x / WB1.list.font_w;
 	WB1.list.visible = WB1.list.h;
-	if (WB1.list.w!=WB1.DrawBuf.bufw) {
-		WB1.DrawBuf.Init(WB1.list.x, WB1.list.y, WB1.list.w, 32700);
+	if (WB1.list.w!=DrawBuf.bufw) {
+		DrawBuf.Init(WB1.list.x, WB1.list.y, WB1.list.w, 32700);
 		OpenPage(#current_path);
 	}
 }

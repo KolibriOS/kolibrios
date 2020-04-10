@@ -51,4 +51,12 @@ inline fastcall void debugln( EDX)
 	debugln(#tmpch);
 }
 
+:void debug_n(dword _text, _size)
+{
+	dword res_text = malloc(_size);
+	strncpy(res_text, _text, _size-1);
+	debugln(res_text);
+	free(res_text);
+}
+
 #endif

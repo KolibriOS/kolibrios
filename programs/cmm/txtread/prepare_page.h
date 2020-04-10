@@ -5,7 +5,7 @@ enum {
 
 #define DRAW_PADDING 12
 
-void Parcer(byte mode)
+void Parse(byte mode)
 {
 dword bufoff, buflen;
 byte ch;
@@ -51,14 +51,14 @@ void PreparePage()
 {
 	list.w = Form.cwidth-scroll.size_x-1;
 	list.count=0;
-	Parcer(COUNT_BUF_HEIGHT);
+	Parse(COUNT_BUF_HEIGHT);
 	
 	//draw text in buffer
 	list.SetSizes(0, TOOLBAR_H, list.w, Form.cheight-TOOLBAR_H, kfont.size.pt+6);
 	if (list.count < list.visible) list.count = list.visible;
 	kfont.size.height = list.count+1*list.item_h;
 	kfont.raw_size = 0;
-	Parcer(DRAW_BUF);
+	Parse(DRAW_BUF);
 
 	if (list.count > list.visible * 10) DrawPage();
 	//draw result

@@ -356,7 +356,7 @@ void InitTWB() {
 		Form.cheight - mail_list.y - mail_list.h - LIST_INFO_H - 1 - status_bar_h, 12);
 	WB1.list.column_max = WB1.list.w - 30 / 6;
 	WB1.list.visible = WB1.list.h / WB1.list.item_h;
-	WB1.DrawBuf.Init(WB1.list.x, WB1.list.y, WB1.list.w, WB1.list.h);
+	DrawBuf.Init(WB1.list.x, WB1.list.y, WB1.list.w, WB1.list.h);
 	WB1.list.first = WB1.list.count = 0;
 }
 

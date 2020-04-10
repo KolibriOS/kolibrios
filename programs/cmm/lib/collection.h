@@ -67,7 +67,10 @@ struct collection
 
 :void collection::drop() {
 	if (data_start) free(data_start);
-	data_size = data_start = element_offset[count] = count = 0;
+	data_size = 0;
+	data_start = 0;
+	element_offset[count] = 0;
+	count = 0;
 }
 
 

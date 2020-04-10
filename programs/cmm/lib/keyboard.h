@@ -128,12 +128,26 @@ GETKEYII:
 	key_ascii = AH;
 	$shr  eax,16
 	key_scancode = AL;
-	//get alt/shift/ctrl key status
+	key_modifier = GetKeyModifier();
+	EAX = key_editbox;
+}
+
+// ECX is a mode: 1 - scancodes, 0 - ascii
+inline fastcall SetKeyboardMode(ECX) 
+{
+	$mov  eax,66
+	$mov  ebx,1
+	//$mov  ecx,?  
+	$int 0x40	
+}
+
+//get alt/shift/ctrl key status
+inline fastcall dword GetKeyModifier()
+{
 	$mov eax,66
 	$mov ebx,3
 	$int 0x40
 	key_modifier = EAX;
-	EAX = key_editbox;
 }
 
 #endif

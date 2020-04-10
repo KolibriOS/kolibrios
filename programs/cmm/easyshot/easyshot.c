@@ -20,7 +20,6 @@
 	?define T_TAKE_SCREENSHOT "  Сделать скриншот"
 	?define T_SETTINGS "Настройки"
 	?define T_EDITBOX_FRAME " Путь сохранения скриншота "
-	?define T_MINIMIZE "Свернуть окно при снимке"
 	?define T_CONTINUOUS_SHOOTING "Continuous shooting"
 	?define T_DELAY "Задержка в секундах"
 	?define T_NO_DIR "'Папка не существует!' -E"
@@ -29,7 +28,6 @@
 	?define T_TAKE_SCREENSHOT "  Take a screenshot"
 	?define T_SETTINGS "Settings"
 	?define T_EDITBOX_FRAME " Save path "
-	?define T_MINIMIZE "Minimize window"
 	?define T_CONTINUOUS_SHOOTING "Continuous shooting"
 	?define T_DELAY "Delay in seconds"
 	?define T_NO_DIR "'Directory does not exists!' -E"
@@ -59,7 +57,6 @@ edit_box edit_save = {250,25,100,0xffffff,0x94AECE,0xFFFfff,0xffffff,
 	0x10000000,sizeof(save_path)-2,#save_path,0, 0b};
 
 more_less_box delay = { 1, 0, 64, T_DELAY };
-checkbox minimize = { T_MINIMIZE, true };
 checkbox continuous_shooting = { T_CONTINUOUS_SHOOTING, true };
 
 
@@ -136,11 +133,10 @@ void DrawMainContent()
 }
 
 void EventTakeScreenshot() {
-	if (minimize.checked) MinimizeWindow(); 
+	MinimizeWindow(); 
 	pause(delay.value*100);
 	CopyScreen(screenshot, 0, 0, screen.width, screen.height);
 	ActivateWindow(GetProcessSlot(Form.ID));
-	if (!minimize.checked) DrawMainContent();
 	EventSaveImageFile();
 }
 
@@ -150,7 +146,11 @@ void EventSaveImageFile()
 	char save_file_name[4096];
 	do {
 		i++;
-		sprintf(#save_file_name, "%s/screen_%i.png", #save_path_stable, i);
+		//sprintf(, "%s/screen_%i.png", #save_path_stable, i);
+		strcpy(#save_file_name, #save_path_stable);
+		strcat(#save_file_name, "/screen_");
+		strcat(#save_file_name, itoa(i));
+		strcat(#save_file_name, ".png");
 	} while (file_exists(#save_file_name));
 	save_image(screenshot, screen.width, screen.height, #save_file_name);
 }
@@ -171,7 +171,7 @@ void SettingsWindow()
 	case evKey:
 		GetKeys();
 		if (SCAN_CODE_ESC == key_scancode) ExitProcess();
-		EAX= key_ascii << 8;
+		EAX = key_editbox;
 		edit_box_key stdcall (#edit_save);	
 		break;
 
@@ -197,7 +197,6 @@ void SettingsWindow()
 
 		}
 		delay.click(id);
-		minimize.click(id);
 		break;
 
 	case evReDraw:
@@ -209,8 +208,7 @@ void DrawSettingsWindow()
 {
 	DefineAndDrawWindow(Form.left+100, Form.top-40, 400, 230, 0x34, system.color.work, T_SETTINGS, 0);
 	GetProcessInfo(#Settings, SelfInfo);
-	minimize.draw(15, 15);
-	delay.draw(15, 45);
+	delay.draw(15, 30);
 	DrawFrame(15, 85, 360, 95, T_EDITBOX_FRAME);
 		DrawEditBoxPos(32, 110, #edit_save);
 		DrawStandartCaptButton(edit_save.left + edit_save.width + 15, edit_save.top-3, BTN_OD, "...");

@@ -6,7 +6,7 @@
 #endif
 
 //libraries
-#define MEMSIZE 1024 * 850
+#define MEMSIZE 1024 * 1000
 #include "..\lib\gui.h"
 #include "..\lib\draw_buf.h"
 #include "..\lib\list_box.h"
@@ -29,24 +29,28 @@
 #include "..\lib\patterns\simple_open_dialog.h"
 #include "..\lib\patterns\toolbar_button.h"
 
-#include "show_src.h"
-#include "download_manager.h"
-_history history;
-#include "history.h"
-bool debug_mode = false;
-#include "..\TWB\TWB.c" //HTML Parser, a core component
 #include "texts.h"
 #include "cache.h"
+#include "show_src.h"
+#include "download_manager.h"
+
+bool debug_mode = false;
+
+#include "..\TWB\TWB.c" //HTML Parser, a core component
 
 TWebBrowser WB1;
+_history history;
 
-#define URL_SIZE 4000
+#include "history.h"
 
 #define PADDING 9
 #define SKIN_Y 24
 #define TSZE 25
+#define STATUSBAR_H 15
+#define TAB_H 20
 dword TOOLBAR_H = PADDING+TSZE+PADDING+2;
-dword STATUSBAR_H = 15;
+
+#define URL_SIZE 4000
 
 int action_buf;
 
@@ -59,8 +63,9 @@ char stak[4096];
 proc_info Form;
 
 enum { 
-	ENCODINGS=900,
-	BACK_BUTTON=1000, 
+	NEW_TAB=600,
+	ENCODINGS=700,
+	BACK_BUTTON=800, 
 	FORWARD_BUTTON, 
 	REFRESH_BUTTON, 
 	GOTOURL_BUTTON, 
@@ -76,7 +81,11 @@ enum {
 	UPDATE_BROWSER,
 	COPY_LINK_URL,
 	DOWNLOAD_LINK_CONTENTS,
+	TAB_ID,
+	TAB_CLOSE_ID = 900
 };
+
+#include "tabs.h"
 
 char default_dir[] = "/rd/1";
 od_filter filter2 = { 16, "TXT\0HTM\0HTML\0\0" };
@@ -165,18 +174,26 @@ void main()
 
 		case evKey:
 			GetKeys();
+			//if (key_scancode == SCAN_CODE_F1) {DebugTabs();break;}
+
+			if (key_modifier&KEY_LSHIFT) || (key_modifier&KEY_RSHIFT) {
+				if (key_scancode == SCAN_CODE_TAB) {EventActivatePreviousTab();break;}
+			}
+
 			if (key_modifier&KEY_LCTRL) || (key_modifier&KEY_RCTRL) {
-				if (key_scancode == SCAN_CODE_KEY_O) {EventOpenDialog();break;}
-				if (key_scancode == SCAN_CODE_KEY_H) {ProcessEvent(VIEW_HISTORY);break;}
-				if (key_scancode == SCAN_CODE_KEY_U) {EventViewSource();break;}
-				if (key_scancode == SCAN_CODE_KEY_T) 
-				|| (key_scancode == SCAN_CODE_KEY_N) {RunProgram(#program_path, NULL);break;}
-				if (key_scancode == SCAN_CODE_KEY_J) {ProcessEvent(DOWNLOAD_MANAGER);break;}
-				if (key_scancode == SCAN_CODE_KEY_R) {ProcessEvent(REFRESH_BUTTON);break;}
-				if (key_scancode == SCAN_CODE_ENTER) {EventSeachWeb();break;}
-				if (key_scancode == SCAN_CODE_LEFT)  {ProcessEvent(BACK_BUTTON);break;}
-				if (key_scancode == SCAN_CODE_RIGHT) {ProcessEvent(FORWARD_BUTTON);break;}
-				if (key_scancode == SCAN_CODE_KEY_W) {ExitProcess();break;}
+				if (key_scancode == SCAN_CODE_KEY_O) EventOpenDialog();
+				else if (key_scancode == SCAN_CODE_KEY_H) ProcessEvent(VIEW_HISTORY);
+				else if (key_scancode == SCAN_CODE_KEY_U) EventViewSource();
+				else if (key_scancode == SCAN_CODE_KEY_T) EventOpenNewTab(URL_SERVICE_HOMEPAGE); 
+				else if (key_scancode == SCAN_CODE_KEY_N) RunProgram(#program_path, NULL);
+				else if (key_scancode == SCAN_CODE_KEY_J) ProcessEvent(DOWNLOAD_MANAGER);
+				else if (key_scancode == SCAN_CODE_KEY_R) ProcessEvent(REFRESH_BUTTON);
+				else if (key_scancode == SCAN_CODE_ENTER) EventSeachWeb();
+				else if (key_scancode == SCAN_CODE_LEFT)  ProcessEvent(BACK_BUTTON);
+				else if (key_scancode == SCAN_CODE_RIGHT) ProcessEvent(FORWARD_BUTTON);
+				else if (key_scancode == SCAN_CODE_KEY_W) EventCloseActiveTab();
+				else if (key_scancode == SCAN_CODE_TAB)   EventActivateNextTab();
+				break;
 			}
 			
 			if (key_scancode == SCAN_CODE_F5) ProcessEvent(REFRESH_BUTTON);
@@ -185,14 +202,11 @@ void main()
 			{
 				if (key_scancode == SCAN_CODE_ENTER) {
 					ProcessEvent(key_scancode); 
-				}
-				else {
+				} else {
 					EAX = key_editbox; 
 					edit_box_key stdcall(#address_box);
 				}
-			}
-			else 
-			{
+			} else {
 				#define KEY_SCROLL_N 11
 				if (SCAN_CODE_UP   == key_scancode) for (i=0;i<KEY_SCROLL_N;i++) WB1.list.KeyUp();
 				if (SCAN_CODE_DOWN == key_scancode) for (i=0;i<KEY_SCROLL_N;i++) WB1.list.KeyDown();
@@ -203,7 +217,7 @@ void main()
 			break;
 
 		case evReDraw:
-			DefineAndDrawWindow(GetScreenWidth()-800/2-random(80),
+			DefineAndDrawWindow(40, //GetScreenWidth()-800/2-random(80),
 				GetScreenHeight()-700/2-random(80),800,700,0x73,0,0,0);
 			GetProcessInfo(#Form, SelfInfo);
 			system.color.get();
@@ -245,8 +259,8 @@ void main()
 void SetElementSizes()
 {
 	address_box.width = Form.cwidth - address_box.left - 52 - 16;
-	WB1.list.SetSizes(0, TOOLBAR_H, Form.width - 10 - scroll_wv.size_x, 
-		Form.cheight - TOOLBAR_H - STATUSBAR_H, BASIC_LINE_H);
+	WB1.list.SetSizes(0, TOOLBAR_H+TAB_H, Form.width - 10 - scroll_wv.size_x, 
+		Form.cheight - TOOLBAR_H - STATUSBAR_H - TAB_H, BASIC_LINE_H);
 	WB1.list.wheel_size = 7 * BASIC_LINE_H;
 	WB1.list.column_max = WB1.list.w - scroll_wv.size_x / WB1.list.font_w + 1;
 	WB1.list.visible = WB1.list.h;
@@ -265,7 +279,7 @@ void draw_window()
 
 	DrawBar(0,0, Form.cwidth,PADDING, system.color.work);
 	DrawBar(0,PADDING+TSZE+1, Form.cwidth,PADDING-1, system.color.work);
-	DrawBar(0,TOOLBAR_H-2, Form.cwidth,1, system.color.work_dark);
+	DrawBar(0,TOOLBAR_H-2, Form.cwidth,1, MixColors(system.color.work_dark, system.color.work, 180));
 	DrawBar(0,TOOLBAR_H-1, Form.cwidth,1, system.color.work_graph);
 	DrawBar(0, PADDING, address_box.left-2, TSZE+1, system.color.work);
 	DrawBar(address_box.left+address_box.width+18, PADDING, Form.cwidth-address_box.left-address_box.width-18, TSZE+1, system.color.work);
@@ -280,22 +294,32 @@ void draw_window()
 	DrawRectangle(WB1.list.x + WB1.list.w, WB1.list.y, scroll_wv.size_x, 
 		WB1.list.h-1, scroll_wv.bckg_col);
 
-	if (WB1.list.w!=WB1.DrawBuf.bufw) {
-		WB1.DrawBuf.Init(WB1.list.x, WB1.list.y, WB1.list.w, 400*20);
-		if (!strncmp(history.current(),"http",4)) {
-			//nihuya ne izyashnoe reshenie, no pust' poka butet tak
-			i=source_mode;
-			LoadInternalPage(#loading_text, sizeof(loading_text));
-			source_mode=i;
-		}
-		OpenPage(history.current());
-	} else { 
+	if (!BrowserWidthChanged()) { 
 		WB1.DrawPage(); 
 		DrawOmnibox(); 
 	}
 	DrawProgress();
 	DrawStatusBar(NULL);
+	DrawTabsBar();
 }
+
+bool BrowserWidthChanged()
+{
+	dword source_mode_holder;
+	if (WB1.list.w!=DrawBuf.bufw) {
+		DrawBuf.Init(WB1.list.x, WB1.list.y, WB1.list.w, 400*20);
+		if (!strncmp(history.current(),"http",4)) {
+			//nihuya ne izyashnoe reshenie, no pust' poka butet tak
+			source_mode_holder = source_mode;
+			LoadInternalPage(#loading_text, sizeof(loading_text));
+			source_mode = source_mode_holder;
+		}
+		OpenPage(history.current());
+		return true;
+	}
+	return false;
+}
+
 
 void EventChangeEncodingAndLoadPage(int _new_encoding)
 {
@@ -335,7 +359,7 @@ void ProcessEvent(dword id__)
 			EventSubmitOmnibox();
 			return;
 		case REFRESH_BUTTON:
-			if (http.transfer > 0) {
+			if (http.transfer) {
 				StopLoading();
 				draw_window();
 			} else {
@@ -392,6 +416,21 @@ void ProcessEvent(dword id__)
 			debug_mode ^= 1;
 			if (debug_mode) notify("'Debug mode ON'-I");
 			else notify("'Debug mode OFF'-I");
+			return;
+		case NEW_TAB:
+			if (http.transfer) break;
+			EventOpenNewTab(URL_SERVICE_HOMEPAGE);
+			return;
+		case TAB_ID...TAB_ID+TABS_MAX:
+			if (http.transfer) break;
+			if (mouse.mkm) {
+				EventTabClose(id__ - TAB_ID);
+			} else {
+				EventTabClick(id__ - TAB_ID);
+			}
+			return;
+		case TAB_CLOSE_ID...TAB_CLOSE_ID+TABS_MAX:
+			EventTabClose(id__ - TAB_CLOSE_ID);
 			return;
 	}
 }
@@ -456,9 +495,13 @@ void OpenPage(dword _open_URL)
 
 	StopLoading();
 
-	strcpy(#editURL, _open_URL);
-	address_box.flags=0;
-	DrawOmnibox();
+	if (open_new_tab) {
+		open_new_tab = false;
+		EventOpenNewTab(_open_URL);
+		return;
+	}
+
+	SetOmniboxText(_open_URL);
 
 	strncpy(#new_url, _open_URL, URL_SIZE);
 
@@ -535,7 +578,7 @@ void EventClickLink(dword _click_URL)
 		return;
 	}
 
-	if (http.transfer > 0) {
+	if (http.transfer) {
 		StopLoading();
 		history.back();
 	}
@@ -607,6 +650,7 @@ void LoadInternalPage(dword _bufdata, _in_bufsize){
 		}
 		WB1.ParseHtml(_bufdata, _in_bufsize);
 		DrawStatusBar(NULL);
+		DrawActiveTab();
 		if (source_mode) {
 			source_mode = false;
 			ShowSource(WB1.bufpointer, _in_bufsize);
@@ -689,9 +733,11 @@ void EventOpenDialog()
 void EventViewSource()
 {
 	char source_view_param[URL_SIZE+1];
-	strcpy(#source_view_param, "-source ");
-	strncat(#source_view_param, history.current(), URL_SIZE);
-	RunProgram(#program_path, #source_view_param);
+	//strcpy(#source_view_param, "-source ");
+	//strncat(#source_view_param, history.current(), URL_SIZE);
+	//RunProgram(#program_path, #source_view_param);
+	source_mode = true;
+	EventOpenNewTab(history.current());
 }
 
 dword GetFileSize(dword _path)
@@ -779,6 +825,13 @@ void DrawOmnibox()
 	DefineHiddenButton(address_box.left+address_box.width-1, address_box.top-2, 17, skin.h-3, REFRESH_BUTTON);
 
 	DrawProgress();
+}
+
+void SetOmniboxText(dword _text)
+{
+	strcpy(#editURL, _text);
+	address_box.flags=0;
+	DrawOmnibox();
 }
 
 

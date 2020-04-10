@@ -1,6 +1,6 @@
 #include "..\TWB\colors.h"
 #include "..\TWB\anchors.h"
-#include "..\TWB\parce_tag.h"
+#include "..\TWB\parse_tag.h"
 #include "..\TWB\special.h"
 #include "..\TWB\img_cache.h"
 #include "..\TWB\tag_list.h"
@@ -11,6 +11,9 @@ dword link_color_active;
 
 #define BODY_MARGIN 6
 #define BASIC_LINE_H 18
+
+DrawBufer DrawBuf;
+char line[500];
 
 struct _style {
 	bool
@@ -27,7 +30,6 @@ struct _style {
 struct TWebBrowser {
 	llist list;
 	_style style;
-	DrawBufer DrawBuf;
 	dword draw_y, stolbec;
 	int zoom;
 	dword o_bufpointer;
@@ -36,7 +38,7 @@ struct TWebBrowser {
 	dword bufpointer;
 	dword bufsize;
 
-	void DrawStyle();
+	void Paint();
 	void SetPageDefaults();
 	void AddCharToTheLine();
 	void ParseHtml();
@@ -46,14 +48,13 @@ struct TWebBrowser {
 	void DrawScroller();
 	void ChangeEncoding();
 	void DrawPage();
-	char line[500];
 	char header[150];
 };
 
 scroll_bar scroll_wv = { 15,NULL,NULL,NULL,0,2,NULL,0,0,0xeeeeee,0xBBBbbb,0xeeeeee};
 
 //============================================================================================
-void TWebBrowser::DrawStyle()
+void TWebBrowser::Paint()
 {
 	dword start_x, line_length, stolbec_len;
 	dword text_color__;
@@ -95,7 +96,6 @@ void TWebBrowser::DrawStyle()
 
 		text_color__ = text_colors[text_color_index];
 		if (link) && (text_colors[text_color_index]==text_colors[0]) text_color__ = link_color_default;
-
 
 		DrawBuf.WriteText(start_x, draw_y, list.font_type, text_color__, #line);
 		if (style.b) DrawBuf.WriteText(start_x+1, draw_y, list.font_type, text_color__, #line);
@@ -151,7 +151,7 @@ void TWebBrowser::AddCharToTheLine(unsigned char _char)
 		if (line[line_len-1]==' ') return; //no double spaces
 		if (!stolbec) && (!line) return; //no paces at the beginning of the line
 	}
-	if (line_len < sizeof(TWebBrowser.line)) chrcat(#line, _char);
+	if (line_len < sizeof(line)) chrcat(#line, _char);
 	CheckForLineBreak();
 }
 //============================================================================================
@@ -164,8 +164,12 @@ void TWebBrowser::ParseHtml(dword _bufpointer, _bufsize){
 	int tab_len;
 	dword bufpos;
 	bufsize = _bufsize;
-	bufpointer = malloc(bufsize);
-	memmov(bufpointer, _bufpointer, bufsize);
+	if (bufpointer != _bufpointer) {
+		bufpointer = malloc(bufsize);
+		memmov(bufpointer, _bufpointer, bufsize);
+	} else {
+		custom_encoding = CH_CP866;	
+	}
 	SetPageDefaults();
 	if (strstri(bufpointer, "<body")==-1) {
 		t_body = true;
@@ -178,7 +182,7 @@ void TWebBrowser::ParseHtml(dword _bufpointer, _bufsize){
 		{
 		case 0x0a:
 			if (style.pre) {
-				DrawStyle();
+				Paint();
 				NewLine();
 			} else {
 				AddCharToTheLine(0x0a);
@@ -199,7 +203,7 @@ void TWebBrowser::ParseHtml(dword _bufpointer, _bufsize){
 				bukva = ESBYTE[bufpos+j];
 				chrcat(#unicode_symbol, bukva);
 			}
-			if (GetUnicodeSymbol(#line, #unicode_symbol, sizeof(TWebBrowser.line)-1)) {
+			if (GetUnicodeSymbol(#line, #unicode_symbol, sizeof(line)-1)) {
 				bufpos += j;
 				CheckForLineBreak();
 			} else {
@@ -256,7 +260,7 @@ void TWebBrowser::ParseHtml(dword _bufpointer, _bufsize){
 
 			if (tag.name) {
 				CheckForLineBreak();
-				DrawStyle();
+				Paint();
 				if (tag.name) SetStyle();
 			}
 			break;
@@ -264,7 +268,7 @@ void TWebBrowser::ParseHtml(dword _bufpointer, _bufsize){
 			AddCharToTheLine(ESBYTE[bufpos]);
 		}
 	}
-	DrawStyle();
+	Paint();
 	NewLine();
 	list.count = draw_y;
 	list.CheckDoesValuesOkey();
@@ -296,7 +300,7 @@ bool TWebBrowser::CheckForLineBreak()
 	strcpy(#new_line_text, #line + line_break_pos);
 	line[line_break_pos] = 0x00;		
 	
-	DrawStyle();
+	Paint();
 
 	strcpy(#line, #new_line_text);
 	NewLine();
@@ -359,12 +363,12 @@ void TWebBrowser::SetStyle() {
 	if (tag.is("iframe")) && (value = tag.get_value_of("src=")) {
 		NewLine();
 		strcpy(#line, "IFRAME: ");
-		DrawStyle();
+		Paint();
 		link=true;
 		PageLinks.AddLink(value);
-		strncpy(#line, value, sizeof(TWebBrowser.line)-1);
+		strncpy(#line, value, sizeof(line)-1);
 		while (CheckForLineBreak()) {};
-		DrawStyle();
+		Paint();
 		link=false;
 		NewLine();
 	}
@@ -416,8 +420,8 @@ void TWebBrowser::SetStyle() {
 	}
 	if (tag.is("img")) {
 		if (value = tag.get_value_of("src=")) strlcpy(#img_path, value, sizeof(img_path)-1);
-		if (value = tag.get_value_of("title=")) && (strlen(value)<sizeof(TWebBrowser.line)-3) && (value) sprintf(#line, "[%s]", value); 
-		if (value = tag.get_value_of("alt=")) && (strlen(value)<sizeof(TWebBrowser.line)-3) && (value) sprintf(#line, "[%s]", value); 
+		if (value = tag.get_value_of("title=")) && (strlen(value)<sizeof(line)-3) && (value) sprintf(#line, "[%s]", value); 
+		if (value = tag.get_value_of("alt=")) && (strlen(value)<sizeof(line)-3) && (value) sprintf(#line, "[%s]", value); 
 		if (!img_path) { line=0; return; }
 		style.image = true;
 		text_color_index++;
@@ -429,7 +433,7 @@ void TWebBrowser::SetStyle() {
 			line[50]= NULL;
 		}
 		while (CheckForLineBreak()) {};
-		DrawStyle();
+		Paint();
 		text_color_index--;
 		style.image = false;
 		//ImgCache.Images( list.x, draw_y, list.w); 
