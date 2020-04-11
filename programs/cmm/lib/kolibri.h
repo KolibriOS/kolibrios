@@ -661,67 +661,17 @@ inline fastcall dword GetStartTime()
 	DrawBar(x+37,y+10,2,2,color);
 }
 
-:void __path_name__(dword BUF,PATH)
-{
-	dword beg = PATH;
-	dword pos = PATH;
-	dword sav = PATH;
-	dword i;
-	while(DSBYTE[pos])
-	{
-		if(DSBYTE[pos]=='/')sav = pos;
-		pos++;
-	}
-	i = sav-beg;
-	while(i)
-	{
-		DSBYTE[BUF] = DSBYTE[beg];
-		beg++;
-		BUF++;
-		i--;
-	}
-	/*while(DSBYTE[beg])
-	{
-		DSBYTE[BUF1] = DSBYTE[beg];
-		beg++;
-		BUF1++;
-	}*/
-	//DSBYTE[BUF1] = 0;
-	DSBYTE[BUF] = 0;
-}
-char __BUF_DIR__[4096];
-:struct SELF
-{
-	dword dir;
-	dword file;
-	dword path;
-} self;
-
-dword __generator;  // random number generator - äëÿ ãåíåðàöèè ñëó÷àéíûõ ÷èñåë
-
-:dword program_path_length;
+dword __generator;  // random number generator init
 
 //The initialization of the initial data before running
 void ______INIT______()
 {
-	//if (program_path[0]!='/') I_Path++;
-	
-	self.dir = #__BUF_DIR__;
-	self.file = 0;
-	self.path = I_Path;
-	__path_name__(#__BUF_DIR__,I_Path);
-	
 	skin_height   = GetSkinHeight();
 	screen.width  = GetScreenWidth()+1;
 	screen.height = GetScreenHeight()+1;
-	
-	__generator = GetStartTime();
-	
+	__generator = GetStartTime();	
 	mem_init();
-
-
 	main();
-	ExitProcess();
 }
 ______STOP______:
 #endif
@@ -732,4 +682,8 @@ ______STOP______:
 
 #ifndef INCLUDE_DEBUG_H
 #include "../lib/debug.h"
+#endif
+
+#ifndef INCLUDE_IPC_H
+#include "../lib/ipc.h"
 #endif

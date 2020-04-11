@@ -216,6 +216,28 @@
 	return NULL;
 }
 
+:void get_path_name(dword BUF,PATH)
+{
+	dword beg = PATH;
+	dword pos = PATH;
+	dword sav = PATH;
+	dword i;
+	while(DSBYTE[pos])
+	{
+		if(DSBYTE[pos]=='/')sav = pos;
+		pos++;
+	}
+	i = sav-beg;
+	while(i)
+	{
+		DSBYTE[BUF] = DSBYTE[beg];
+		beg++;
+		BUF++;
+		i--;
+	}
+	DSBYTE[BUF] = 0;
+}
+
 :struct __PATH
 {
 	dword file(...);
@@ -225,14 +247,18 @@
 :char __PATH_NEW[4096];
 :dword __PATH::path(dword PATH)
 {
+	char self_dir[4096];
 	dword pos;
-	if(!PATH) return self.dir;
+	
+	get_path_name(#self_dir,I_Path);
+
+	if(!PATH) return #self_dir;
 	pos = PATH;
 	if(DSBYTE[pos]=='/') || (!strncmp(PATH,"./",2))
 	{
 		return PATH;
 	}
-	strcpy(#__PATH_NEW, self.dir);
+	strcpy(#__PATH_NEW, #self_dir);
 	chrcat(#__PATH_NEW, '/');
 	strcpy(#__PATH_NEW, PATH);
 	return #__PATH_NEW;

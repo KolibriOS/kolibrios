@@ -227,6 +227,14 @@
 	DrawPopupShadow(x,y,w,h-1,skinned);
 }
 
+:void Draw3DPopup(dword x,y,w,h)
+{
+	DrawRectangle3D(x,y,w,h, system.color.work_dark, system.color.work_graph);
+	DrawBar(x+1,y+1,w-1,1,system.color.work_light);
+	DrawBar(x+1,y+2,1,h-2,system.color.work_light);
+	DrawPopupShadow(x,y,w,h-1,0);
+}
+
 :void DrawPopupShadow(dword x,y,w,h,skinned)
 {
 	PutShadow(w+x+1,y,1,h+2,skinned,2);
@@ -289,6 +297,16 @@
 	PutPixel(x,     y+h, dark);
 	PutPixel(x+w+1, y+1, light);
 	PutPixel(x+w+1, y+h, dark);	
+}
+
+:bool is_the_skin_dark()
+{
+	dword bg_col = system.color.work;
+	if (GrayScaleImage(#bg_col,1,1)<65) {
+		return true; 
+	} else {
+		return false;
+	}
 }
 
 //this function increase falue and return it

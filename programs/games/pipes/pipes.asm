@@ -1,6 +1,6 @@
 ;
 ;   pipes kolibri
-;   v1.41
+;   v1.42
 ;   2006 by Mario Birkner
 ;
 ;   l.mod. 29.01.19
@@ -274,11 +274,8 @@ pusha
       mov   ecx,dword [speed]
       add   byte [esi],10
       .down:
-      mov   eax,5
-      mov   ebx,2
-      mcall
-      mov   eax,11
-      mcall
+      mcall 5, 2
+      mcall 11
       cmp   eax,1
       jne   .nored
       call  draw_window
@@ -299,9 +296,7 @@ pusha
     cmp [stat],1
     jne .loose
     call draw_message
-    mov   eax,5
-    mov   ebx,500
-    mcall
+    mcall 5, 500
     mov [stat],0
     inc [level]
     cmp [speed],6                ;waterflowdelay < 6 ?
@@ -321,14 +316,10 @@ ret
 
 show_score:
 pusha
-mov  eax,47
-mov  ebx,0x20000
-mov  ecx,[time]
-mov  edx,60*65536+395
 mov  esi,fg2color
 mov  edi,bgcolor
 or   esi,0x50000000
-mcall
+mcall 47, 0x20000, [time], <60,395>
 mov  ebx,0x50000
 mov  ecx,[score]
 if lang eq et
@@ -407,23 +398,23 @@ pusha
     cmp   ebx,0
     jz    .nowcolor
     mov   ebx,eax
-    cmp   ebx,0x00B0B5B0
+    cmp   ebx,0x00B0B4B0
     jne   .nog1
     jmp   .wcolor
  .nog1:
-    cmp   ebx,0x00A0A5A0
+    cmp   ebx,0x00A0A4A0
     jne   .nog2
     jmp   .wcolor
  .nog2:
-    cmp   ebx,0x00909590
+    cmp   ebx,0x00909490
     jne   .nog3
     jmp   .wcolor
  .nog3:
-    cmp   ebx,0x00808580
+    cmp   ebx,0x00808480
     jne   .nog4
     jmp   .wcolor
  .nog4:
-    cmp   ebx,0x00707570
+    cmp   ebx,0x00707470
     jne   .nowcolor
     jmp   .wcolor
  .wcolor:
@@ -453,22 +444,17 @@ pusha
 
         cmp  [stat],3
         jne .stat1
-    mov   eax,4
-    mov   ebx,159 shl 16 +202
-    mov   edx,lbl_new_game
+
     mov   ecx,btcolor
     or    ecx,0xB0000000
-    mcall
+    mcall 4, <159,202>,,lbl_new_game
     jmp .nomessage
 
   .stat1:       
     cmp   [stat],1
      je   .winmessage
-    mov   eax,4
-    mov   ebx,170 shl 16 +196
-    mov   edx,lbl_gameover
     mov   ecx,btcolor OR 0xB0000000
-    mcall
+    mcall 4, <170,196>, , lbl_gameover
     add   ebx,8 shl 16 +17
     mov   edx,lbl_yscore
     mcall
@@ -481,12 +467,9 @@ pusha
     mcall
     jmp   .nomessage
    .winmessage:
-    mov   eax,4
-    mov   ebx,124 shl 16 +194
-    mov   edx,lbl_win
     mov   ecx,btcolor
     or    ecx,0xB0000000
-    mcall
+    mcall 4, <124,194>, , lbl_win
     add   ebx,17
     add   edx,lbl_win2-lbl_win
     mcall
@@ -515,10 +498,7 @@ pusha
     pop  edx
     push ebx
     push ecx
-    mov  eax,7
-    mov  ebx,0x10000
-    mov  ecx,32 shl 16 +32
-    mcall
+    mcall 7, 0x10000, <32,32>
     pop  ecx
     pop  ebx
     add  edx,33 shl 16
@@ -563,7 +543,7 @@ pusha
     mov   ebx,18 shl 16 +395
     mov   edx,lbl_score
     mcall
-    mov   ebx,340 shl 16 +405
+    mov   ebx,360 shl 16 +405
     mov   ecx,fg3color
     mov   edx,lbl_copy
     mcall
@@ -584,7 +564,6 @@ lbl_win      db '          T u b l i !           ',0
 lbl_win2     db '          Lähme edasi!          ',0
 lbl_yscore   db 'Sinu tulemus:',0
 lbl_toolbar  db 'Uus mäng:  Lihtne    Keskmine   Raske',0
-lbl_copy     db 'v1.41 2006,Mario Birkner',0
 lbl_score    db ' Aeg:   Tulemus:       Tase:',0
 else
 lbl_title    db 'Pipes',0
@@ -594,9 +573,10 @@ lbl_win      db '          G r e a t !           ',0
 lbl_win2     db "       Let's keep going!        ",0
 lbl_yscore   db 'Your Score:',0
 lbl_toolbar  db 'New Game:    Easy     Normal    Hard',0
-lbl_copy     db 'v1.41 2006,Mario Birkner',0
 lbl_score    db 'Time:    Score:       Level:',0
 end if
+
+lbl_copy     db '2006, Mario Birkner',0
 
 ;=================================================
 ; DATA - VARS
