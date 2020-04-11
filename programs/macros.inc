@@ -182,7 +182,7 @@ struc mls [sstring]
 
 
 ; strings
-macro sz name,[data] {       ; from MFAR [mike.dld]
+macro sz name,[data] {       ; [mike.dld]
  common
   if used name
    name db data
@@ -199,7 +199,7 @@ macro szZ name,[data] {      ; same as sz, but for zero terminated string [dunka
 }
 sz0 fix szZ
 
-macro lsz name,[lng,data] {  ; from MFAR [mike.dld]
+macro lsz name,[lng,data] {  ; [mike.dld]
  common
   if used name
    label name
@@ -212,7 +212,7 @@ macro lsz name,[lng,data] {  ; from MFAR [mike.dld]
   end if
 }
 
-macro szc name,elsz,[data] {         ; from MFAR [mike.dld]
+macro szc name,elsz,[data] {     ; [mike.dld]
  common
   local s,m
   m = 0
@@ -234,7 +234,7 @@ macro szc name,elsz,[data] {         ; from MFAR [mike.dld]
   end if
 }
 
-macro lszc name,elsz,[lng,data] {  ; from MFAR [mike.dld]
+macro lszc name,elsz,[lng,data] {  ; [mike.dld]
  common
   local s,m,c
   m = 0
@@ -292,7 +292,7 @@ include 'config.inc'
 ;__CPU_type equ p5
 SYSENTER_VAR    equ 0
 
-macro mcall a,b,c,d,e,f,g {   ; mike.dld, updated by Ghost for Fast System Calls
+macro mcall a,b,c,d,e,f,g {   ; [mike.dld], [Ghost]
  local  ..ret_point
  __mov eax,a
  __mov ebx,b

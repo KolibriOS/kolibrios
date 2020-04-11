@@ -5,7 +5,7 @@
 #include "../lib/kolibri.h"
 #endif
 
-:dword mem_init()
+inline dword mem_init()
 {
 	$push    ebx
 	$mov     eax, 68
@@ -13,7 +13,6 @@
 	$int     0x40
 	
 	$pop     ebx
-	return  EAX;
 }
 
 :dword malloc(dword size)
@@ -98,31 +97,27 @@ L2:
   }
 }
 
+#define SHM_OPEN        0x00
+#define SHM_OPEN_ALWAYS 0x04
+#define SHM_CREATE      0x08
+#define SHM_READ        0x00
+#define SHM_WRITE       0x01
 inline fastcall dword memopen(ECX, EDX, ESI)
 {
-	$push    ebx
 	$mov     eax, 68
 	$mov     ebx, 22
 	// ecx = area name, 31 symbols max
 	// edx = area size for SHM_CREATE SHM_OPEN_ALWAYS
 	// esi = flags, see the list below:
-	#define SHM_OPEN        0x00
-	#define SHM_OPEN_ALWAYS 0x04
-	#define SHM_CREATE      0x08
-	#define SHM_READ        0x00
-	#define SHM_WRITE       0x01
 	$int     0x40
-	$pop     ebx
 	// eax, edx - please check system documentation
 }
 
 inline fastcall dword memclose(ECX)
 {
-	$push    ebx
 	$mov     eax, 68
 	$mov     ebx, 23
 	$int     0x40
-	$pop     ebx
 	// eax destroyed
 }
 

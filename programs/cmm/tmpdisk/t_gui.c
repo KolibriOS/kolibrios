@@ -11,12 +11,12 @@
 ?define INTRO_TEXT_1 "Здесь будет отображаться список"
 ?define INTRO_TEXT_2 "виртуальных дисков в системе."
 ?define INTRO_TEXT_3 "Попробуйте добавить один..."
-?define SIZE_TEXT "Размер:"
+?define SIZE_TEXT "Размер нового диска в МБ:"
 ?define NOTIFY_TEXT_NO_DISK    "'Для начала добавьте хотя бы один диск' -W"
 ?define NOTIFY_SYSTEM_DISK0    "'Диск с номером 0 является системным и удалять его не рекомендуется. 
 В случае, если вы точно знаете, что делаете, удалить его можно с зажатой клавишей SHIFT.' -W"
 ?define NOTIFY_TEXT_DISK_LIMIT "'Достигнут предел количества виртуальных дисков' -W"
-?define FREE_RAM_TEXT "Размер свободной оперативной памяти: "
+?define FREE_RAM_TEXT "Размер свободной оперативной памяти: %i Mb"
 	
 #else
 ?define T_ADD_DISK " Add disk [Ins]"
@@ -24,12 +24,12 @@
 ?define INTRO_TEXT_1 " There will be list of mounted"
 ?define INTRO_TEXT_2 " virtual disks."
 ?define INTRO_TEXT_3 " Try to add one..."
-?define SIZE_TEXT "Size:"
+?define SIZE_TEXT "New Disk size in MB:"
 ?define NOTIFY_TEXT_NO_DISK    "'You need to have at least one disk' -W"
 ?define NOTIFY_SYSTEM_DISK0    "'Disc number 0 is a system disk. It is not recommended to delete it.
 In case when you know what you are doing you can delete it with the SHIFT key pressed.' -W"
 ?define NOTIFY_TEXT_DISK_LIMIT "'Reached the limit of the number of virtual disks' -W"
-?define FREE_RAM_TEXT "Free RAM size: "
+?define FREE_RAM_TEXT "Free RAM size: %i MB"
 #endif
 
 struct path_string { unsigned char Item[10]; };
@@ -41,7 +41,8 @@ char selected;
 
 proc_info Form;
 
-unsigned char icons[] = FROM "icons.raw";
+unsigned char icons_btn[] = FROM "img/btn.raw";
+unsigned char disk_icon[] = FROM "img/disk.raw";
 #define TOPPANELH 68
 #define BOTPANELH 26
 
@@ -56,7 +57,7 @@ void Main_Window()
 
 	load_dll(boxlib, #box_lib_init,0);
 	GetNewSizeDisk();
-	edit_disk_size.left = strlen(SIZE_TEXT)*9 + 10;
+	edit_disk_size.left = strlen(SIZE_TEXT)*8 + 13;
 	SetEventMask(EVM_REDRAW + EVM_KEY + EVM_BUTTON + EVM_MOUSE + EVM_MOUSE_FILTER);
 	loop()
 	{
@@ -141,19 +142,19 @@ void Main_Window()
 			break;
          case evReDraw:			
 			system.color.get();
-			DefineAndDrawWindow(170,150,405,290,0x74,system.color.work,"Virtual Disk Manager 0.68",0);
+			DefineAndDrawWindow(170,150,405,290,0x74,system.color.work,"Virtual Disk Manager 0.69",0);
 			GetProcessInfo(#Form, SelfInfo);
 			if (Form.status_window>2) break;
 
 			DrawBar(0,0,  Form.cwidth,TOPPANELH, system.color.work);
 			DrawBar(0,TOPPANELH, Form.cwidth,1,  system.color.work_graph);
 			WriteText(6, 9, 0x90, system.color.work_text, SIZE_TEXT);
-			WriteText(edit_disk_size.left + edit_disk_size.width + 12, 9, 0x90, system.color.work_text, "MB.");
-			DrawEditBox(#edit_disk_size);
+			DrawRectangle(edit_disk_size.left-1, edit_disk_size.top-1, edit_disk_size.width+2, 23,system.color.work_graph);
+			edit_box_draw stdcall (#edit_disk_size);
 			x = 6 + DrawStandartCaptButton(6, 36, 10, T_ADD_DISK);
 			DrawStandartCaptButton(x, 36, 11, T_DELETE_DISK);
-			_PutImage(6+6, 42,  14,14,   #icons);
-			_PutImage(x+6, 42,  14,14,   1*14*14*3+#icons);		
+			_PutImage(6+6, 42,  14,14, #icons_btn);
+			_PutImage(x+6, 42,  14,14, 14*14*3+#icons_btn);		
 			GetDisks();
 			DrawTmpDisks();
 		}
@@ -211,7 +212,7 @@ dword GetDiskSize(dword disk_n)
 {
 	BDVK bdvk;
 	char tmp_path[8];
-	strcpy(#tmp_path, "/tmp0/1");
+	strcpy(#tmp_path, "/tmp#/1");
 	tmp_path[4] = disk_n + '0';
 	GetFileInfo(#tmp_path, #bdvk);		
 	return bdvk.sizelo;
@@ -226,13 +227,12 @@ void DrawTmpDisks()
 	#define SELECTION_INACTIVE 0x757489;
 	dword selection_color;
 	char free_ram_text[60];
-	byte i, real_id;
-	int FreeRAM=GetFreeRAM()/1024;
+	byte i;
 
 	DrawBar(0,TOPPANELH+1, Form.cwidth,Form.cheight-TOPPANELH-BOTPANELH-2, 0xFFFFFF);
 	DrawBar(0,Form.cheight-BOTPANELH-1, Form.cwidth,1, system.color.work_graph);
 	DrawBar(0,Form.cheight-BOTPANELH, Form.cwidth,BOTPANELH, system.color.work);
-	sprintf(#free_ram_text, "%s%i MB", FREE_RAM_TEXT, FreeRAM);
+	sprintf(#free_ram_text, FREE_RAM_TEXT, GetFreeRAM()/1024);
 	WriteText(10, Form.cheight-20, 0x90, system.color.work_text, #free_ram_text);
 	if (disk_num==0)
 	{
@@ -242,14 +242,15 @@ void DrawTmpDisks()
 		return;
 	};
 	if (selected>=disk_num) selected=disk_num-1; //restore selected
-	for (i=0; i<10; i++) DeleteButton(20+i);
-	for (i=0; i<disk_num; i++)
+	for (i=0; i<10; i++)
 	{
+		DeleteButton(20+i);
+		if (i>=disk_num) continue;
 		DefineButton(disk_pos_x[i], disk_pos_y[i], 80, 40, 20+i, 0xFFFfff);
-		WriteText(disk_pos_x[i]+26,disk_pos_y[i]+6,  10110000b, 0x222222, #disk_list[i].Item);
-		real_id = disk_list[i].Item[3] - '0';
-		WriteText(disk_pos_x[i]+27,disk_pos_y[i]+24, 0x80, 0x555555, ConvertSize(GetDiskSize(real_id)));
-		_PutImage(disk_pos_x[i]+6,disk_pos_y[i]+6, 14,14, 2*14*14*3+#icons);
+		WriteText(disk_pos_x[i]+29,disk_pos_y[i]+6,  0x90, 0x222222, #disk_list[i].Item);
+		WriteText(disk_pos_x[i]+30,disk_pos_y[i]+24, 0x80, 0x555555, 
+			ConvertSize(GetDiskSize(disk_list[i].Item[3] - '0')));
+		_PutImage(disk_pos_x[i]+9,disk_pos_y[i]+10, 15,9, #disk_icon);
 		if (selected==i) {
 			if ( edit_disk_size.flags & ed_focus) 
 				selection_color = SELECTION_INACTIVE; 

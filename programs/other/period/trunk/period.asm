@@ -675,7 +675,7 @@ ret
 ;;                                      ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;---- begin ---- Данные для ГЛАВНОГО окна --------------------------
-caption 	  db  'Периодическая система Д.И.Менделеева by [navanax] & [Johnny_B]',0
+caption 	  db  'Периодическая система Д.И.Менделеева by navanax & Johnny_B',0
 density           db  'Плотность',0
 Atomic_massa	  db  'Атомная масса',0
 name    	  db  'Название',0
@@ -818,13 +818,13 @@ db 'Siborgovium '
 db 'Boronium    '
 db 'Hassium     '
 db 'Meithnerium '
-db 'Darmstadium '  ;110
+db 'Darmstadtium'  ;110
 db 'Roentgenium '
-db 'Ununbium    '
-db 'Ununtrium   '
-db 'Ununquadium '
-db 'Ununpentium '
-db 'Ununhexium  '  ;116
+db 'Copernicium '
+db 'Nihonium    '
+db 'Flerovium   '
+db 'Moscovium   '
+db 'Livermorium '  ;116
 
 
 ;---------------------------------
@@ -913,11 +913,11 @@ db 'Hs '
 db 'Mt '
 db 'Ds '
 db 'Rg '
-db 'Uub'
-db 'Uut'
-db 'Uuq'
-db 'Uup'
-db 'Uuh'
+db 'Cn '
+db 'Nh '
+db 'Fi '
+db 'Mc '
+db 'Lv '
 db 'Ce '
 db 'Pr '
 db 'Nd '
@@ -1544,13 +1544,13 @@ strtbl Rus_nazv, \
 "Борий", \
 "Гассий", \
 "Мейтнерий", \
-"?Дармстадий?", \
-"Рентгений", \
-"нет названия", \
-"нет названия", \	    ;110
-"нет названия", \
-"нет названия", \
-"нет названия"		    ;116
+"Дармштадтий", \ ;110
+"Рентгений", \ 
+"Коперниций", \
+"Нихоний", \	    
+"Флеровий", \
+"Московий", \
+"Ливерморий"		    ;116
 
 
 ;Первооткрыватели              ; 116 элементов

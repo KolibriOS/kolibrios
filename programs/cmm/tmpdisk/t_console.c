@@ -37,13 +37,6 @@ char Console_Work()
 	
 	switch (param[0])
 	{
-		case '?':
-		case 'h':
-			debugln("tmpdisk command line parameters:");
-			debugln("a[number]s[size in MB] - add RAM disk");
-			debugln("d[number] - delete RAM disk");
-			ExitProcess();
-			break;
 		case 'd': //Delete disk
 			del_disk.DiskId = param[1]-'0';
 			ioctl.handle   = driver_handle;
@@ -57,12 +50,9 @@ char Console_Work()
 			break;
 		case 'a': //Add disk
 			disk_size= strchr(#param, 's');
-			if (!disk_size)
-			{
+			if (!disk_size)	{
 				add_disk.DiskSize = GetFreeRAM() / 5 * 2;
-			}				
-			else
-			{
+			} else {
 				add_disk.DiskSize = atoi(disk_size+1)*2048;
 			}
 			add_disk.DiskId = param[1]-'0';
@@ -76,8 +66,10 @@ char Console_Work()
 			debugln(#size_t);
 			break;
 		default:
-			debugln("unknown command line parameters");
-			debugln("use 'h' or '?' for help");
+			debugln("\ntmpdisk: unknown command line parameters!");
+			debugln("valid parameters are:");
+			debugln("a[number]s[size in MB] - add RAM disk");
+			debugln("d[number] - delete RAM disk");
 			ExitProcess();			
 	}
 	

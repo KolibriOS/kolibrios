@@ -55,7 +55,7 @@ void main()
 	driver_handle = LoadDriver("tmpdisk");
 	if (driver_handle==0)
 	{
-		notify("'TmpDisk\nError: /rd1/1/drivers/tmpdisk.obj driver loading failed\nvirtual disk wouldn't be added' -tE");
+		notify("'TmpDisk\nError: /rd/1/drivers/tmpdisk.obj driver loading failed\nVirtual disk wouldn't be added' -tE");
 		ExitProcess();
 	}
 

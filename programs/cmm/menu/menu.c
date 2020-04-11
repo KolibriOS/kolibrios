@@ -20,6 +20,8 @@ int max_hotkey_len;
 
 int selected = 0;
 
+char shared_name[] = "LMENU";
+
 dword cur_param = #param;
 int GetNextParam()
 {
@@ -33,9 +35,8 @@ int GetNextParam()
 
 void GetWindowPosition()
 {
-	int position;
-	shared_mem = GetNextParam();
-	debugval("shared_mem", ESDWORD[shared_mem]);
+	int position, rez;
+	shared_mem = memopen(#shared_name, 4, SHM_WRITE);
 	win_x = GetNextParam();
 	win_y = GetNextParam();
 	selected = GetNextParam();
@@ -169,12 +170,12 @@ void draw_list()
 
 void click()
 {
-	ESDWORD[shared_mem] = menu1.cur_y + 1;
+	ESBYTE[shared_mem] = byte menu1.cur_y + 1;
 	ExitProcess();
 }
 
 void exit()
 {
-	ESDWORD[shared_mem] = 0;
+	ESBYTE[shared_mem] = 0;
 	ExitProcess();
 }
