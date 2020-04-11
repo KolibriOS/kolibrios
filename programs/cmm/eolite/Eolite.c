@@ -1,4 +1,4 @@
-//Leency, Veliant, Punk_Joker, PavelYakov & KolibriOS Team 2008-2019
+//Leency, Veliant, Punk_Joker, PavelYakov & KolibriOS Team 2008-2020
 //GNU GPL license.
 
 // 70.5 - get volume info and label
@@ -77,7 +77,6 @@ int toolbar_buttons_x[7]={9,46,85,134,167,203};
 bool active_about = false;
 bool active_settings = false;
 bool _not_draw = false;
-bool menu_call_mouse = false;
 bool exif_load = false;
 bool dir_at_fat16 = NULL;
 
@@ -110,7 +109,7 @@ _ini ini;
 
 char scroll_used=false;
 
-dword menu_stak,about_stak,properties_stak,settings_stak,copy_stak,delete_stak;
+dword about_stak,properties_stak,settings_stak,copy_stak,delete_stak;
 
 proc_info Form;
 int sc_slider_h;
@@ -261,13 +260,11 @@ void main()
 						}
 					}
 					//file menu
-					if (mouse.key&MOUSE_RIGHT)
+					if (mouse.key&MOUSE_RIGHT) && (mouse.up)
 					{
-						menu_call_mouse = 1;
 						if (files.ProcessMouse(mouse.x, mouse.y)) List_ReDraw();
 						if (getElementSelectedFlag(files.cur_y) == false) selected_count = 0; //on redraw selection would be flashed, see [L001] 
-						menu_stak = malloc(4096);
-						CreateThread(#FileMenu,menu_stak+4092);
+						EventShowListMenu();
 						break;
 					}
 				}
@@ -502,9 +499,9 @@ void main()
 								DrawFilePanels();
 								break;
 						case SCAN_CODE_MENU:
-								menu_call_mouse=0;
-								menu_stak = malloc(4096);
-								CreateThread(#FileMenu,menu_stak+4092);
+								mouse.x = files.x+15;
+								mouse.y = files.cur_y - files.first * files.item_h + files.y + 5;
+								EventShowListMenu();
 								break;
 						case SCAN_CODE_DEL:
 								Del_Form();
@@ -526,24 +523,11 @@ void main()
 			case evIPC:
 			case evReDraw:
 				draw_window();
-				if (action_buf) 
+				if (CheckActiveProcess(Form.ID)) && (GetMenuClick()) break;
+				if (action_buf==OPERATION_END)
 				{
-					if (action_buf==OPERATION_END)
-					{
-						FnProcess(5);
-						if (copy_stak) SelectFileByName(#copy_to+strrchr(#copy_to,'/'));
-					}
-					if (action_buf==100) Open(0);
-					if (action_buf==201) ShowOpenWithDialog();
-					if (action_buf==202) FnProcess(3); //F3
-					if (action_buf==203) FnProcess(4); //F4
-					if (action_buf==104) Copy(#file_path, NOCUT);
-					if (action_buf==105) Copy(#file_path, CUT);
-					if (action_buf==106) Paste();
-					if (action_buf==207) FnProcess(2);
-					if (action_buf==108) Del_Form();
-					if (action_buf==109) FnProcess(5);
-					if (action_buf==110) FnProcess(8);
+					FnProcess(5);
+					if (copy_stak) SelectFileByName(#copy_to+strrchr(#copy_to,'/'));
 					action_buf=0;
 				}
 			break;
@@ -554,8 +538,7 @@ void main()
 		
 		if(cmd_free)
 		{
-			if(cmd_free==1)      menu_stak=free(menu_stak);
-			else if(cmd_free==2) about_stak=free(about_stak);
+			if(cmd_free==2) about_stak=free(about_stak);
 			else if(cmd_free==3) properties_stak=free(properties_stak);
 			else if(cmd_free==4) settings_stak=free(settings_stak);
 			else if(cmd_free==5) copy_stak=free(copy_stak);

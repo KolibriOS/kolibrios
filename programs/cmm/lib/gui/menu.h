@@ -79,4 +79,27 @@
 	KillProcess(menu_process_id);
 }
 
+
+:dword shared_mem = NULL;
+:char shared_name[] = "LMENU";
+:void open_lmenu(dword _x, _y, _position, _selected, _text)
+{
+	if (!shared_mem) {
+		shared_mem = memopen(#shared_name, 20, SHM_CREATE);
+		if (EDX) shared_mem = memopen(#shared_name, 20, SHM_WRITE);
+	}
+	ESDWORD[shared_mem +  4] = _x;
+	ESDWORD[shared_mem +  8] = _y;
+	ESDWORD[shared_mem + 12] = _position;
+	ESDWORD[shared_mem + 16] = _selected;
+	RunProgram("/sys/develop/menu", _text);
+}
+
+:dword get_menu_click()
+{
+	dword res = ESDWORD[shared_mem];
+	ESDWORD[shared_mem] = 0;
+	return res;
+}
+
 #endif

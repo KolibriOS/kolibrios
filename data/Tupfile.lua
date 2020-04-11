@@ -608,6 +608,7 @@ tup.append_table(img_files, {
  {"TXTREAD", PROGS .. "/cmm/txtread/txtread.com"},
  {"TMPDISK", PROGS .. "/cmm/tmpdisk/tmpdisk.com"},
  {"DEVELOP/CLIPVIEW", PROGS .. "/cmm/clipview/clipview.com"},
+ {"DEVELOP/MENU", PROGS .. "/cmm/menu/menu.com"},
  {"File Managers/EOLITE", PROGS .. "/cmm/eolite/Eolite.com"},
  {"KF_VIEW", PROGS .. "/cmm/kf_font_viewer/font_viewer.com"},
  {"GAMES/CLICKS", PROGS .. "/games/clicks/trunk/clicks.com"},

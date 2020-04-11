@@ -111,7 +111,7 @@ void DrawActiveTab()
 	else DrawTabsBar();
 }
 
-void DrawNewTabButton()
+int DrawNewTabButton()
 {
 	dword btn_light = MixColors(system.color.work_button, 0xFFFfff, 220);
 	dword btn_dark = MixColors(system.color.work_button, 0, 180);
@@ -123,7 +123,10 @@ void DrawNewTabButton()
 		DrawRectangle3D(xxx+1, TOOLBAR_H, TAB_H, TAB_H-1, btn_light, btn_dark);
 		PutPixel(xxx+1+TAB_H, TOOLBAR_H, btn_dark);
 		DefineHiddenButton(xxx+1, TOOLBAR_H, TAB_H-1, TAB_H-1, NEW_TAB);
-		WriteText(xxx+7, TOOLBAR_H+2, 0x90, system.color.work_button_text, "+");	
+		WriteText(xxx+7, TOOLBAR_H+2, 0x90, system.color.work_button_text, "+");
+		return xxx + TAB_H + 2;
+	} else {
+		return xxx;
 	}
 }
 
@@ -132,8 +135,7 @@ void DrawTabsBar()
 	dword i;
 	tab_w = GetTabWidth();
 	for (i=0; i<tab.count; i++) DrawTab(i);
-	DrawNewTabButton();
-	i = tab_w * i + TAB_H + 2;
+	i = DrawNewTabButton();
 	DrawBar(i, TOOLBAR_H, Form.cwidth-i, TAB_H-1, MixColors(system.color.work_dark, system.color.work, 128));
 	DrawBar(i, TOOLBAR_H+TAB_H-1, Form.cwidth-i, 1, system.color.work_graph);
 }

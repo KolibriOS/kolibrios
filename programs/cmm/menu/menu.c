@@ -1,7 +1,7 @@
 #define MEMSIZE 4096*40
 
-#include "../lib/io.h"
 #include "../lib/gui.h"
+#include "../lib/io.h"
 #include "../lib/collection.h"
 #include "../lib/list_box.h"
 #include "../lib/fs.h"
@@ -11,7 +11,6 @@
 llist menu1;
 collection names;
 collection hotkeys;
-dword shared_mem;
 
 int win_x, win_y;
 
@@ -20,8 +19,7 @@ int max_hotkey_len;
 
 int selected = 0;
 
-char shared_name[] = "LMENU";
-
+/*
 dword cur_param = #param;
 int GetNextParam()
 {
@@ -32,15 +30,16 @@ int GetNextParam()
 	cur_param = next_param+1;
 	return result;	
 }
+*/
 
 void GetWindowPosition()
 {
 	int position, rez;
-	shared_mem = memopen(#shared_name, 4, SHM_WRITE);
-	win_x = GetNextParam();
-	win_y = GetNextParam();
-	selected = GetNextParam();
-	position = GetNextParam();
+	shared_mem = memopen(#shared_name, 20, SHM_WRITE);
+	win_x = ESDWORD[shared_mem +  4];
+	win_y = ESDWORD[shared_mem +  8];
+	position = ESDWORD[shared_mem + 12];
+	selected = ESDWORD[shared_mem + 16];
 	if (position==2) win_x -= menu1.w;
 	if (position==3) {
 		win_x -= menu1.w;
@@ -76,7 +75,12 @@ void main()
 {
 	proc_info Form;
 
-	GetMenuItems(strchr(#param, '\n') + 2);
+	if (!param) 
+		die(
+"'This is a menu component used in Eolite, WebView, etc...
+Please forget it if you are not a developer ;)' -I");
+
+	GetMenuItems(#param);
 	max_name_len = strlen(names.get(0)) * 6;
 	max_hotkey_len = strlen(hotkeys.get(0)) * 6;
 
@@ -170,12 +174,12 @@ void draw_list()
 
 void click()
 {
-	ESBYTE[shared_mem] = byte menu1.cur_y + 1;
+	ESDWORD[shared_mem] = menu1.cur_y + 1;
 	ExitProcess();
 }
 
 void exit()
 {
-	ESBYTE[shared_mem] = 0;
+	ESDWORD[shared_mem] = 0;
 	ExitProcess();
 }

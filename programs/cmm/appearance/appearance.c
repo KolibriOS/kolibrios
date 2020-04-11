@@ -32,7 +32,7 @@
 	?define T_SKINS       "Стиль окон"
 	?define T_WALLPAPERS  "Обои"
 	?define T_SELECT_FOLDER "Выбрать папку"
-	?define MENU_LIST "Открыть файл   Enter\nУдалить файл     Del"
+	?define MENU_LIST "Открыть файл   |Enter\nУдалить файл     |Del"
 	?define T_PICTURE_MODE " Положение картинки "
 	?define T_CHECKBOX_STRETCH "Растянуть"
 	?define T_CHECKBOX_TILED "Замостить"
@@ -42,7 +42,7 @@
 	?define T_SKINS       "Skins"
 	?define T_WALLPAPERS  "Wallpapers"
 	?define T_SELECT_FOLDER "Select folder"
-	?define MENU_LIST "Open file      Enter\nDelete file      Del"
+	?define MENU_LIST "Open file      |Enter\nDelete file      |Del"
 	?define T_PICTURE_MODE " Picture Mode "
 	?define T_CHECKBOX_STRETCH "Stretch"
 	?define T_CHECKBOX_TILED "Tiled"
@@ -121,11 +121,12 @@ void main()
 				edit_box_mouse stdcall (#edit_st);
 			}
 
-	  		if (mouse.pkm)&&(select_list.MouseOver(mouse.x, mouse.y)) {
+	  		if (mouse.key&MOUSE_RIGHT) && (mouse.up) 
+	  		&&(select_list.MouseOver(mouse.x, mouse.y)) {
 	  			select_list.ProcessMouse(mouse.x, mouse.y);
 				SelectList_Draw();
 				EventSetNewCurrent();
-	  			menu.show(Form.left+mouse.x, Form.top+mouse.y+skin_height, 146, MENU_LIST, 10); 
+	  			open_lmenu(Form.left+mouse.x+5, Form.top+mouse.y+skin_height, 1, 0, MENU_LIST);
 	  		}
 	  		break;
 
@@ -174,11 +175,7 @@ void main()
 		 
 		 case evReDraw:		
 			draw_window();
-	 		if (menu.cur_y) {
-				if (menu.cur_y == 10) EventOpenFile();
-				if (menu.cur_y == 11) EventDeleteFile();
-				menu.cur_y = 0;
-			};
+	 		EventHandleMenuClick();
    }
 }
 
@@ -406,6 +403,19 @@ void EventExit()
 {
 	if (cur_skin_path) ini.SetString("skin", #cur_skin_path, strlen(#cur_skin_path));
 	ExitProcess();
+}
+
+void EventHandleMenuClick()
+{
+	switch (get_menu_click()) 
+	{
+		case 1: 
+			EventOpenFile(); 
+			break;
+		case 2: 
+			EventDeleteFile();
+			break;
+	};
 }
 
 stop:
