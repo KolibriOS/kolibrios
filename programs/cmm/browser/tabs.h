@@ -69,6 +69,7 @@ int tab_w = DEFAULT_TABW;
 
 int GetTabWidth()
 {
+	if (tab.count == TABS_MAX) return Form.cwidth / tab.count;
 	if (tab.count * DEFAULT_TABW + TAB_H < Form.cwidth) return DEFAULT_TABW; else 
 	return Form.cwidth - TAB_H - 2 / tab.count;
 }
@@ -115,12 +116,15 @@ void DrawNewTabButton()
 	dword btn_light = MixColors(system.color.work_button, 0xFFFfff, 220);
 	dword btn_dark = MixColors(system.color.work_button, 0, 180);
 	int xxx = tab.count * tab_w;
-	DrawBar(xxx, TOOLBAR_H, 1, TAB_H, system.color.work_graph);
-	DrawBar(xxx+1, TOOLBAR_H, TAB_H, TAB_H-1, system.color.work_button);
-	DrawRectangle3D(xxx+1, TOOLBAR_H, TAB_H, TAB_H-1, btn_light, btn_dark);
-	PutPixel(xxx+1+TAB_H, TOOLBAR_H, btn_dark);
-	DefineHiddenButton(xxx+1, TOOLBAR_H, TAB_H-1, TAB_H-1, NEW_TAB);
-	WriteText(xxx+7, TOOLBAR_H+2, 0x90, system.color.work_button_text, "+");	
+
+	if (tab.count < TABS_MAX) {
+		DrawBar(xxx, TOOLBAR_H, 1, TAB_H, system.color.work_graph);
+		DrawBar(xxx+1, TOOLBAR_H, TAB_H, TAB_H-1, system.color.work_button);
+		DrawRectangle3D(xxx+1, TOOLBAR_H, TAB_H, TAB_H-1, btn_light, btn_dark);
+		PutPixel(xxx+1+TAB_H, TOOLBAR_H, btn_dark);
+		DefineHiddenButton(xxx+1, TOOLBAR_H, TAB_H-1, TAB_H-1, NEW_TAB);
+		WriteText(xxx+7, TOOLBAR_H+2, 0x90, system.color.work_button_text, "+");	
+	}
 }
 
 void DrawTabsBar()
