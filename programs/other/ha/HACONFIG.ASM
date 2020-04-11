@@ -230,7 +230,7 @@ noclose:
     mov word[coordModeMenu.x], ax
 
     mov eax, dword[pi+38]
-    add eax, buttonModeY + 13 ;17
+    add eax, buttonModeY + 20 ;20 - это смещение всплывающего меню
     mov word[coordModeMenu.y], ax
 
     stdcall [ksubmenu_draw], [modeMenu], coordModeMenu
@@ -1085,7 +1085,7 @@ coord:      ;координаты окна приложения
  .x dw 0
 
 draw_window:
-		mcall   12, 1  ; Start window redraw
+                mcall   12, 1  ; Start window redraw
 
         ;отобразим окно по центру экрана для этого:
         mcall 14 ;получим размеры экрана
