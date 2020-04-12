@@ -97,9 +97,11 @@
 
 :dword get_menu_click()
 {
-	dword res = ESDWORD[shared_mem];
-	ESDWORD[shared_mem] = 0;
-	return res;
+	//dword res = ESDWORD[shared_mem];
+	char res[2];
+	ReadFile(0, 2, #res, "/tmp0/1/menu.tmp");
+	//ESDWORD[shared_mem] = 0;
+	return res[0];
 }
 
 #endif
