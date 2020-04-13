@@ -7,8 +7,9 @@
     include "../../proc32.inc"
     include "../../dll.inc"
 ;    include "../../debug.inc"
-    include "../../notify.inc"
     include "../../string.inc"
+    
+    include "notify.inc"
 
  LINEH	    equ 12
  MARGIN     equ 12

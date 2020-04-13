@@ -34,8 +34,9 @@ include '../../proc32.inc'
 include '../../dll.inc'
 include '../../debug-fdo.inc'
 include '../../develop/libraries/http/http.inc'
-include '../../notify.inc'
 include '../../string.inc'
+
+include '../../system/notify3/notify.inc'
 
 include 'notify.asm'
 

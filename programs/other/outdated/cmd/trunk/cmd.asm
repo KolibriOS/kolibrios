@@ -18,7 +18,7 @@ use32
  dd 0x0
  dd 0x0
 
-include "..\..\..\macros.inc"
+include "..\..\..\..\macros.inc"
 include "lang.inc"
 START:
 
@@ -879,7 +879,7 @@ checmd:
 
  jmp ecmd
 
-err:
+errr:
  call clearsum
 
  call newline
@@ -2051,7 +2051,7 @@ chparam:
  cmp eax,0xfffffff0
  jb cmd_ok
 
- jmp err
+ jmp errr
 
 cls:
  call oldcmd
@@ -2443,7 +2443,7 @@ loop20:
  cmp eax,0xfffffff0
  jb cmd_ok_1
 
- jmp err
+ jmp errr
 
 cmd_ok_1:
  mov eax,dword [count]

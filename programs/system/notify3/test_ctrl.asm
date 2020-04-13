@@ -6,8 +6,9 @@
     include "../../macros.inc"
     include "../../proc32.inc"
 ;    include "../../debug.inc"
-    include "../../notify.inc"
     include "../../string.inc"
+	
+    include "notify.inc"
 
  @entry:
     mcall   68, 11
