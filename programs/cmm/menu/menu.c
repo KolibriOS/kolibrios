@@ -103,7 +103,7 @@ void main()
 			break;
 
 		case evReDraw:
-			DefineAndDrawWindow(win_x, win_y, menu1.w+4, menu1.h+3, 0x01, 0, 0, 0x01fffFFF);
+			DefineAndDrawWindow(win_x, win_y, menu1.w+4, menu1.h+4, 0x01, 0, 0, 0x01fffFFF);
 			system.color.get();
 			Draw3DPopup(0,0,menu1.w+2,menu1.h+2);
 			draw_list();

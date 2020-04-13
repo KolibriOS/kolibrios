@@ -219,11 +219,13 @@ struct _Image
         }
         else {
             if (CreateFile(encoded_size, encoded_data, _path) == 0) {
-                sprintf(#save_success_message, "'File saved as %s' -O", _path);
+                strcpy(#save_success_message, "'File saved as ");
+                strcat(#save_success_message, _path);
+                strcat(#save_success_message, "' -O");
                 notify(#save_success_message);
             }
             else {
-                notify("'Error saving image file!\nProbably not enought space or file system is not writable!\nPlease, check saving path.' -E");
+                notify("'Error saving image file!\nNot enough space? Path wrong?\nFile system is not writable?..' -E");
             }
         }
     }

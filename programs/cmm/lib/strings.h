@@ -867,7 +867,6 @@ inline cdecl int sprintf(dword buf, format,...)
 					strlcpy(buf,"0x00000000",10);
 					buf+=10;
 					l=buf;
-					debugval("tmp", tmp);
 					while(tmp)
 					{
 						$dec buf

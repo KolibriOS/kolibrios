@@ -23,6 +23,7 @@
 
 :bool more_less_box::click(unsigned id)
 {
+	if (disabled) return 0;
 	if (id==id_dec) { value = math.max(value-click_delta, min); redraw(); return 1; }
 	if (id==id_inc) { value = math.min(value+click_delta, max); redraw(); return 1; }
 	return 0;
@@ -42,7 +43,7 @@
 {
 	#define VALUE_FIELD_W 34
 	#define SIZE 18
-	dword text_col = system.color.work_text;
+	dword text_col;
 	dword value_text = itoa(value);
 
 	check_values();
@@ -55,11 +56,12 @@
 	{
 		DrawRectangle(x+1, y+1, VALUE_FIELD_W-2, SIZE-2, 0xffffff);
 		DrawBar(x+2, y+2, VALUE_FIELD_W-3, SIZE-3, 0xCCCccc);
-		text_col = MixColors(system.color.work, system.color.work_text, 128);
+		text_col = system.color.work_graph;
 	}
 	else 
 	{
 		DrawBar(x+2, y+2, VALUE_FIELD_W-3, SIZE-3, 0xffffff);
+		text_col = system.color.work_text;
 	}
 
 	WriteText( -strlen(value_text)+3*8 + x+6, SIZE / 2 + y -6, 0x90, 0x333333, value_text);
