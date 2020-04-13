@@ -159,7 +159,7 @@ void main()
 
 	system.color.get();
 	bg_col = system.color.work;
-	if (GrayScaleImage(#bg_col,1,1)<65) bg_dark=true; else bg_dark=false;
+	bg_dark = skin_is_dark();
 
 	semi_white = MixColors(system.color.work, 0xFFFfff, bg_dark*90 + 96);
 	Libimg_ReplaceColor(top_icons.image, top_icons.w, top_icons.h, 0xffFFFfff, semi_white);

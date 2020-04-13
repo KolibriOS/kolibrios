@@ -116,9 +116,9 @@ void EventShowListMenu()
 
 bool GetMenuClick()
 {
-	dword chick_id;
-	if (active_menu) && (chick_id = get_menu_click()) {
-		EventMenuClick(chick_id);
+	dword click_id;
+	if (active_menu) && (click_id = get_menu_click()) {
+		EventMenuClick(click_id);
 		return false;
 	}
 	return true;

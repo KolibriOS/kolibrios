@@ -230,24 +230,7 @@ void SetAppColors()
 	if (col.work == system.color.work) return;
 	old_list_bg_color = col.list_bg;
 	bg_col = system.color.work;
-	if (GrayScaleImage(#bg_col,1,1)>=65) 
-	{
-		//use light colors
-		col.def = true;
-		col.list_bg = 0xFFFfff;
-		col.list_gb_text = 0x000000;
-		col.list_text_hidden = 0xA6A6B7;
-		col.list_vert_line = 0xDDD7CF;
-		col.work = system.color.work;
-		col.graph = system.color.work_graph;
-		col.lpanel  = 0x00699C;
-		col.selec = col.selec_active = 0x94AECE;
-		col.selec_text = 0x000000;
-		system.color.work_dark = MixColors(0, system.color.work, 35);
-		col.slider_bg_big = 0xCDCFCF;
-		col.odd_line = 0xF1F1F1;
-	}
-	else 
+	if (skin_is_dark()) 
 	{
 		//use dark colors
 		col.def = false;
@@ -264,6 +247,23 @@ void SetAppColors()
 		if (col.list_bg==col.selec) col.selec = system.color.work_graph; //for fucking skins
 		col.slider_bg_big = MixColors(0xCED0D0, system.color.work, 35);
 		col.odd_line = MixColors(0xFFFfff, system.color.work, 15);
+	}
+	else 
+	{
+		//use light colors
+		col.def = true;
+		col.list_bg = 0xFFFfff;
+		col.list_gb_text = 0x000000;
+		col.list_text_hidden = 0xA6A6B7;
+		col.list_vert_line = 0xDDD7CF;
+		col.work = system.color.work;
+		col.graph = system.color.work_graph;
+		col.lpanel  = 0x00699C;
+		col.selec = col.selec_active = 0x94AECE;
+		col.selec_text = 0x000000;
+		system.color.work_dark = MixColors(0, system.color.work, 35);
+		col.slider_bg_big = 0xCDCFCF;
+		col.odd_line = 0xF1F1F1;
 	}
 	col.selec_inactive = MixColors(0xBBBbbb, col.list_bg, 65);
 	col.slider_bg_left = MixColors(col.graph, col.slider_bg_big, 10);

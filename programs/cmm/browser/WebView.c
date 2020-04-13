@@ -62,6 +62,8 @@ progress_bar wv_progress_bar;
 char stak[4096];
 proc_info Form;
 
+int menu_id=NULL;
+
 enum { 
 	NEW_TAB=600,
 	ENCODINGS=700,
@@ -203,9 +205,10 @@ void main()
 			break;
 
 		case evReDraw:
-			DefineAndDrawWindow(40, //GetScreenWidth()-800/2-random(80),
+			DefineAndDrawWindow(GetScreenWidth()-800/2-random(80), //40
 				GetScreenHeight()-700/2-random(80),800,700,0x73,0,0,0);
 			GetProcessInfo(#Form, SelfInfo);
+			ProcessMenuClick();
 			system.color.get();
 			if (Form.status_window>2) break;
 			if (Form.height<120) { MoveSize(OLD,OLD,OLD,120); break; }
@@ -300,11 +303,6 @@ void SetElementSizes()
 void draw_window()
 {
 	int i;
-	if (menu.cur_y) {
-		EAX = menu.cur_y;
-		menu.cur_y = 0;
-		ProcessEvent(EAX);
-	}
 	SetElementSizes();
 
 	DrawBar(0,0, Form.cwidth,PADDING, system.color.work);
@@ -710,27 +708,38 @@ void DrawProgress()
 
 void EventShowPageMenu()
 {
-	menu.selected = 0;
-	menu.show(Form.left + mouse.x+4, Form.top + skin_height + mouse.y, 220, #rmb_menu, VIEW_SOURCE);
+	open_lmenu(Form.left + mouse.x+4, Form.top + skin_height + mouse.y, MENU_ALIGN_TOP_LEFT, NULL, #rmb_menu);
+	menu_id = VIEW_SOURCE;
 }
 
 void EventShowLinkMenu()
 {
-	menu.selected = 0;
-	menu.show(Form.left + mouse.x+4, Form.top + skin_height + mouse.y, 220, #link_menu, COPY_LINK_URL);
-}
-
-void EventShowEncodingsList()
-{
-	menu.selected = WB1.cur_encoding + 1;
-	menu.show(Form.left + Form.cwidth - 95, Form.top + skin_height + status_text.start_y - 121, 90, 
-		"UTF-8\nKOI8-RU\nCP1251\nCP1252\nISO8859-5\nCP866", ENCODINGS);
+	open_lmenu(Form.left + mouse.x+4, Form.top + skin_height + mouse.y, MENU_ALIGN_TOP_LEFT, NULL, #link_menu);
+	menu_id = COPY_LINK_URL;
 }
 
 void EventShowMainMenu()
 {
-	menu.selected = 0;
-	menu.show(Form.left + Form.cwidth - 150, Form.top + skin_height + TOOLBAR_H-8, 140, #main_menu, OPEN_FILE);
+	open_lmenu(Form.left + Form.cwidth - PADDING, Form.top + skin_height + PADDING + TSZE + 3, 
+		MENU_ALIGN_TOP_RIGHT, NULL, #main_menu);
+	menu_id = OPEN_FILE;
+}
+
+void EventShowEncodingsList()
+{
+	open_lmenu(Form.left + Form.cwidth, Form.top + skin_height + status_text.start_y + 8, 
+		MENU_ALIGN_BOT_RIGHT, WB1.cur_encoding + 1, "UTF-8\nKOI8-RU\nCP1251\nCP1252\nISO8859-5\nCP866");
+	menu_id = ENCODINGS;
+}
+
+void ProcessMenuClick()
+{
+	int click_id;
+	if (menu_id) && (click_id = get_menu_click()) {
+		click_id += menu_id - 1;
+		menu_id = NULL;
+		ProcessEvent(click_id);
+	}
 }
 
 void EventUpdateProgressBar()

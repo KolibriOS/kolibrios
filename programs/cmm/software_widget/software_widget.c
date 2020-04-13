@@ -130,19 +130,19 @@ void SetAppColors()
 	system.color.get();
 	old_list_bg_color = swc.list_bg;
 	bg_col = system.color.work;
-	if (GrayScaleImage(#bg_col,1,1)>=65) 
+	if (skin_is_dark()) 
 	{
-		//light colors
-		swc.list_bg = 0xF3F3F3;
-	 	swc.text = 0x000000;
-	 	swc.dark = 0xDCDCDC;
-	 	swc.light = 0xFCFCFC;
-	} else {
 		//dark colors
 		swc.list_bg = system.color.work;
 	 	swc.text = system.color.work_text;
 	 	swc.dark = system.color.work_dark;
 	 	swc.light = system.color.work_light;
+	} else {
+		//light colors
+		swc.list_bg = 0xF3F3F3;
+	 	swc.text = 0x000000;
+	 	swc.dark = 0xDCDCDC;
+	 	swc.light = 0xFCFCFC;
 	}
 
 	if (swc.list_bg != old_list_bg_color)

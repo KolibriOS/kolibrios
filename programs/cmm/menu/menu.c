@@ -12,40 +12,39 @@ llist menu1;
 collection names;
 collection hotkeys;
 
-int win_x, win_y;
+int selected, win_x, win_y;
 
 int max_name_len;
 int max_hotkey_len;
 
-int selected = 0;
-
-/*
-dword cur_param = #param;
-int GetNextParam()
-{
-	int result;
-	dword next_param = strchr(cur_param, ' ');
-	ESBYTE[next_param] = '\0';
-	result = atoi(cur_param);
-	cur_param = next_param+1;
-	return result;	
-}
-*/
-
 void GetWindowPosition()
 {
-	int position, rez;
-	shared_mem = memopen(#shared_name, 20, SHM_READ);
+	int position;
+	shared_mem = memopen(#shared_name, 16, SHM_OPEN + SHM_WRITE);
+	selected = ESDWORD[shared_mem     ];
 	win_x    = ESDWORD[shared_mem +  4];
 	win_y    = ESDWORD[shared_mem +  8];
 	position = ESDWORD[shared_mem + 12];
-	selected = ESDWORD[shared_mem + 16];
-	if (position==2) win_x -= menu1.w;
-	if (position==3) {
+	if (position == MENU_ALIGN_TOP_RIGHT) win_x -= menu1.w;
+	if (position == MENU_ALIGN_BOT_LEFT) win_y -= menu1.h;
+	if (position == MENU_ALIGN_BOT_RIGHT) {
 		win_x -= menu1.w;
 		win_y -= menu1.h;
 	}
-	if (position==4) win_y -= menu1.h;
+}
+
+void GetMenuWidths()
+{
+	int i;
+	for (i=0; i<names.count; i++) {
+		max_name_len = math.max(max_name_len, strlen(names.get(i)));
+	}
+	for (i=0; i<hotkeys.count; i++) {
+		max_hotkey_len = math.max(max_hotkey_len, strlen(hotkeys.get(i)));
+	}
+	max_name_len = max_name_len * 6;
+	max_hotkey_len *= 6;
+	if (max_hotkey_len) max_name_len += 12;
 }
 
 void GetMenuItems(dword current_name)
@@ -61,7 +60,7 @@ void GetMenuItems(dword current_name)
 		if (hotkey) && (!next_name) {
 			ESBYTE[hotkey] = '\0';
 		} else {
-			hotkey = "  ";
+			hotkey = " ";
 		}
 	}
 
@@ -78,8 +77,7 @@ void main()
 	if (!param) die("'Menu component is for developers only' -I");
 
 	GetMenuItems(#param);
-	max_name_len = strlen(names.get(0)) * 6;
-	max_hotkey_len = strlen(hotkeys.get(0)) * 6;
+	GetMenuWidths();
 
 	menu1.count = names.count;
 	menu1.SetFont(6, 9, 0x80);
@@ -145,7 +143,7 @@ void draw_list()
 	dword active_top_border_color = MixColors(system.color.work_graph, system.color.work_button,240);
 	dword inactive_text_shadow_color = MixColors(system.color.work,0xFFFfff,150);
 	dword text_color;
-	bool skin_dark = is_the_skin_dark();
+	bool skin_dark = skin_is_dark();
 
 	for (i=0; i<menu1.count; i++;)
 	{
@@ -164,22 +162,17 @@ void draw_list()
 		}
 		WriteText(13, item_y + menu1.text_y, 0x80, text_color, names.get(i));
 	}
-	if (selected) WriteText(5, selected*ITEM_H + menu1.y + menu1.text_y, 0x80, 0xEE0000, "\x10");
+	if (selected) WriteText(5, selected-1*ITEM_H + menu1.y + menu1.text_y, 0x80, 0xEE0000, "\x10");
 }
 
 void click()
 {
-	char res[2];
-	res[0] = menu1.cur_y + 1;
-	res[1] = '\0';
-	//ESDWORD[shared_mem] = menu1.cur_y + 1;
-	CreateFile(2, #res, "/tmp0/1/menu.tmp");
+	ESDWORD[shared_mem] = menu1.cur_y + 1;
 	ExitProcess();
 }
 
 void exit()
 {
-	//ESDWORD[shared_mem] = 0;
-	CreateFile(2, 0, "/tmp0/1/menu.tmp");
+	ESDWORD[shared_mem] = 0;
 	ExitProcess();
 }

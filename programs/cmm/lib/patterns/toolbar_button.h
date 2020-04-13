@@ -3,15 +3,13 @@ void DrawTopPanelButton(dword _button_id, _x, _y, signed int _icon_n)
 {
 	#define TSZE 25
 	static libimg_image top_icons;
-	static dword semi_white=0, bg_col, bg_col_light, bg_col_dark, bg_dark;
+	static dword semi_white=0, bg_col_light, bg_col_dark;
 	if (!semi_white) {
-		bg_col = system.color.work;
-		if (GrayScaleImage(#bg_col,1,1)<65) bg_dark=true; else bg_dark=false;
 		Libimg_LoadImage(#top_icons, "/sys/icons16.png");
 
-		semi_white = MixColors(system.color.work, 0xFFFfff, bg_dark*90 + 96);
+		semi_white = MixColors(system.color.work, 0xFFFfff, skin_is_dark()*90 + 96);
 		bg_col_dark = MixColors(system.color.work, system.color.work_graph, 90);
-		bg_col_light = MixColors(semi_white, 0xFFFfff, bg_dark*90 + 10);
+		bg_col_light = MixColors(semi_white, 0xFFFfff, skin_is_dark()*90 + 10);
 
 		Libimg_ReplaceColor(top_icons.image, top_icons.w, top_icons.h, 0xffFFFfff, semi_white);
 		Libimg_ReplaceColor(top_icons.image, top_icons.w, top_icons.h, 0xffCACBD6, MixColors(semi_white, 0, 220));

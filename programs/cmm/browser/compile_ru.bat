@@ -6,4 +6,5 @@
 @rename WebView.com WebView
 @del warning.txt
 @del lang.h--
-@pause
+
+if not exist WebView ( @pause )

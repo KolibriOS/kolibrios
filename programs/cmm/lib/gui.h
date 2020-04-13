@@ -299,10 +299,17 @@
 	PutPixel(x+w+1, y+h, dark);	
 }
 
-:bool is_the_skin_dark()
+:bool skin_is_dark()
 {
-	dword bg_col = system.color.work;
-	if (GrayScaleImage(#bg_col,1,1)<65) {
+	dword gray;
+	dword color_image = #system.color.work;
+
+	gray = DSBYTE[color_image]*DSBYTE[color_image];
+	gray += DSBYTE[color_image+1]*DSBYTE[color_image+1];
+	gray += DSBYTE[color_image+2]*DSBYTE[color_image+2];
+	gray = sqrt(gray) / 3;
+
+	if (gray < 65) {
 		return true; 
 	} else {
 		return false;

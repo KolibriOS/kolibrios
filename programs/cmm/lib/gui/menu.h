@@ -79,29 +79,34 @@
 	KillProcess(menu_process_id);
 }
 
+#define MENU_ALIGN_TOP_LEFT  0
+#define MENU_ALIGN_TOP_RIGHT 1
+#define MENU_ALIGN_BOT_LEFT  2
+#define MENU_ALIGN_BOT_RIGHT 3
 
 :dword shared_mem = NULL;
 :char shared_name[] = "LMENU";
 :void open_lmenu(dword _x, _y, _position, _selected, _text)
 {
 	if (!shared_mem) {
-		shared_mem = memopen(#shared_name, 20, SHM_CREATE);
-		if (EDX) shared_mem = memopen(#shared_name, 20, SHM_WRITE);
+		shared_mem = memopen(#shared_name, 16, SHM_CREATE + SHM_WRITE);
+		if (EDX) shared_mem = memopen(#shared_name, 16, SHM_WRITE);
 	}
+	ESDWORD[shared_mem     ] = _selected;
 	ESDWORD[shared_mem +  4] = _x;
 	ESDWORD[shared_mem +  8] = _y;
 	ESDWORD[shared_mem + 12] = _position;
-	ESDWORD[shared_mem + 16] = _selected;
-	RunProgram("/sys/develop/menu", _text);
+	menu_process_id = RunProgram("/sys/develop/menu", _text);
 }
 
 :dword get_menu_click()
 {
-	//dword res = ESDWORD[shared_mem];
-	char res[2];
-	ReadFile(0, 2, #res, "/tmp0/1/menu.tmp");
-	//ESDWORD[shared_mem] = 0;
-	return res[0];
+	if (menu_process_id) && (GetProcessSlot(menu_process_id)) {
+		return NULL;
+	} else {
+		menu_process_id = NULL;
+		return ESDWORD[shared_mem];		
+	}
 }
 
 #endif

@@ -346,7 +346,10 @@ void TWebBrowser::SetStyle() {
 		return;
 	}
 	if (tag.is("br")) { NewLine(); return; }
-	if (tag.is("b")) || (tag.is("strong")) || (tag.is("big")) { style.b = tag.opened; return; }
+	if (tag.is("b")) || (tag.is("strong")) || (tag.is("big")) { 
+		style.b = tag.opened; 
+		return; 
+	}
 	if (tag.is("a")) {
 		if (tag.opened)
 		{
@@ -393,7 +396,7 @@ void TWebBrowser::SetStyle() {
 		NewLine();
 		return;
 	}
-	if (tag.is("p")) {
+	if (tag.is("p")) || (tag.is("w:p"))  {
 		IF (tag.prior[0] == 'h') || (streq(#tag.prior,"td")) || (streq(#tag.prior,"p")) return;
 		NewLine();
 		return;

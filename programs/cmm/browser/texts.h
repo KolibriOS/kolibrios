@@ -1,4 +1,4 @@
-char version[]="WebView 2.4a";
+char version[]="WebView 2.41";
 
 #ifdef LANG_RUS
 char page_not_found[] = FROM "html\\page_not_found_ru.htm""\0";
@@ -6,13 +6,13 @@ char homepage[] = FROM "html\\homepage_ru.htm""\0";
 char help[] = FROM "html\\help_ru.htm""\0";
 char accept_language[]= "Accept-Language: ru\n";
 char rmb_menu[] = 
-"Посмотреть исходник
+"Посмотреть исходник|CTRL+U
 Редактировать исходник";
 char main_menu[] = 
-"Открыть файл
-Новое окно
-История
-Менеджер загрузок
+"Открыть файл|CTRL+O
+Новое окно|CTRL+N
+История|CTRL+H
+Менеджер загрузок|CTRL+J
 Очистить кэш
 Обновить браузер";
 char link_menu[] =
@@ -32,13 +32,13 @@ char homepage[] = FROM "html\\homepage_en.htm""\0";
 char help[] = FROM "html\\help_en.htm""\0";
 char accept_language[]= "Accept-Language: en\n";
 char rmb_menu[] =
-"View source
+"View source|CTRL+U
 Edit source";
 char main_menu[] = 
-"Open local file
-New window
-History
-Download Manager
+"Open local file|CTRL+O
+New window|CTRL+N
+History|CTRL+H
+Download Manager|CTRL+J
 Clear cache
 Update browser";
 char link_menu[] =
