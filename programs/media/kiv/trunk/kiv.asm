@@ -2173,7 +2173,7 @@ DATA
 
 s_header        db ' - Kolibri Image Viewer',0
 window_style    dd 0x53FFFFFF
-window          BOX 101, 144, 529, 324  ; left top width height
+window          BOX 101, 144, 750, 600  ; left top width height
 window_prev     BOX 0, 0, 0, 0
 window_save     BOX 0, 0, 0, 0  ; restore after slide show
 client          BOX 0, 0, 0, 0

@@ -138,29 +138,43 @@ void ProcessKeys()
 void draw_list()
 {
 	int i, item_y;
+	dword name_color;
+	dword hotkey_color;
 
-	dword active_background_color = MixColors(system.color.work_button, system.color.work,230);
-	dword active_top_border_color = MixColors(system.color.work_graph, system.color.work_button,240);
-	dword inactive_text_shadow_color = MixColors(system.color.work,0xFFFfff,150);
-	dword text_color;
-	bool skin_dark = skin_is_dark();
+	static dword inactive_background_color;
+	static dword active_background_color;
+	static dword active_top_border_color;
+	static dword inactive_text_shadow_color;
+	static bool skin_dark;
+
+	static bool colors_set;
+	if (!colors_set) {
+		colors_set = true;
+		inactive_background_color = MixColors(system.color.work, 0xFFFfff,230);
+		active_background_color = MixColors(system.color.work_button, system.color.work,230);
+		active_top_border_color = MixColors(system.color.work_graph, system.color.work_button,240);
+		inactive_text_shadow_color = MixColors(system.color.work,0xFFFfff,120);
+		skin_dark = skin_is_dark();
+	}
 
 	for (i=0; i<menu1.count; i++;)
 	{
 		item_y = i*ITEM_H+menu1.y;
 		if (i==menu1.cur_y) {
-			text_color = system.color.work_button_text;
+			hotkey_color = name_color = system.color.work_button_text;
 			DrawBar(menu1.x, item_y+1,        menu1.w, ITEM_H-2, active_background_color);
 			DrawBar(menu1.x, item_y,          menu1.w, 1, active_top_border_color);
 			DrawBar(menu1.x, item_y+ITEM_H-1, menu1.w, 1, system.color.work_light);
-			WriteText(13 + max_name_len, item_y + menu1.text_y, 0x80, text_color, hotkeys.get(i));
 		} else {
-			text_color = system.color.work_text;
-			DrawBar(menu1.x, item_y, menu1.w, ITEM_H, system.color.work);
-			if (!skin_dark) WriteText(13+1, item_y + menu1.text_y +1, 0x80, inactive_text_shadow_color, names.get(i));
-			WriteText(13 + max_name_len, item_y + menu1.text_y, 0x80, system.color.work_graph, hotkeys.get(i));
+			name_color = system.color.work_text;
+			hotkey_color = system.color.work_graph;
+			DrawBar(menu1.x, item_y, menu1.w, ITEM_H, inactive_background_color);
+			if (!skin_dark) WriteText(13+1, item_y + menu1.text_y +1, 0x80, 
+				inactive_text_shadow_color, names.get(i));
 		}
-		WriteText(13, item_y + menu1.text_y, 0x80, text_color, names.get(i));
+		WriteText(-strlen(hotkeys.get(i))*6 + 13 + max_name_len + max_hotkey_len, 
+			item_y + menu1.text_y, 0x80, hotkey_color, hotkeys.get(i));
+		WriteText(13, item_y + menu1.text_y, 0x80, name_color, names.get(i));
 	}
 	if (selected) WriteText(5, selected-1*ITEM_H + menu1.y + menu1.text_y, 0x80, 0xEE0000, "\x10");
 }

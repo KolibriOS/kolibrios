@@ -44,7 +44,6 @@ _history history;
 #include "history.h"
 
 #define PADDING 9
-#define SKIN_Y 24
 #define TSZE 25
 #define STATUSBAR_H 15
 #define TAB_H 20
@@ -96,6 +95,8 @@ char editURL[URL_SIZE+1];
 edit_box address_box = {, PADDING+TSZE*2+PADDING+6, PADDING+3, 0xffffff,
 	0x94AECE, 0xffffff, 0xffffff,0x10000000,URL_SIZE-2,#editURL,0,,19,19};
 
+char editbox_icons[] = FROM "editbox_icons.raw";
+
 
 void LoadLibraries()
 {
@@ -138,9 +139,7 @@ void main()
 	LoadLibraries();
 	CreateDir("/tmp0/1/Downloads");
 	//CreateDir("/tmp0/1/WebView_Cache");
-	Libimg_LoadImage(#skin, "/sys/toolbar.png");
 	HandleParam();
-	skin.h = 26;
 	WB1.list.SetFont(8, 14, 10011000b);
 	WB1.list.no_selection = true;
 	WB1.custom_encoding = -1;
@@ -847,7 +846,7 @@ void DrawStatusBar(dword _status_text)
 
 void DrawOmnibox()
 {
-	int skin_x_offset;
+	int imgxoff;
 	
 	DrawOvalBorder(address_box.left-2, address_box.top-3, address_box.width+18, 24, system.color.work_graph, 
 		system.color.work_graph, system.color.work_graph, system.color.work_dark);
@@ -858,10 +857,9 @@ void DrawOmnibox()
 	if (address_box.flags & ed_focus) address_box.flags = ed_focus; else address_box.flags = 0;
 	EditBox_UpdateText(#address_box, address_box.flags);
 	edit_box_draw stdcall(#address_box);
-	if (http.transfer > 0) skin_x_offset = 85; else skin_x_offset = 68;
-	img_draw stdcall(skin.image, address_box.left+address_box.width+1, 
-		address_box.top-1, 16, skin.h-3, skin_x_offset, SKIN_Y+2);
-	DefineHiddenButton(address_box.left+address_box.width-1, address_box.top-2, 17, skin.h-3, REFRESH_BUTTON);
+	if (http.transfer) imgxoff = 16*23*3; else imgxoff = 0;
+	_PutImage(address_box.left+address_box.width+1, address_box.top-1, 16, 23, imgxoff + #editbox_icons);
+	DefineHiddenButton(address_box.left+address_box.width-1, address_box.top-2, 17, 23, REFRESH_BUTTON);
 
 	DrawProgress();
 }

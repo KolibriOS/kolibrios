@@ -1,4 +1,4 @@
-include "..\..\..\macros.inc"
+include "..\..\..\..\macros.inc"
 
 initipc:
  mov eax,9
