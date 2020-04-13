@@ -111,7 +111,7 @@ void EventShowListMenu()
 		text = #file_actions;
 		active_menu = MENU_FILE;
 	}
-	open_lmenu(mouse.x+Form.left+5, mouse.y+Form.top+3+skin_height, 1, 0, text);
+	open_lmenu(mouse.x+Form.left+5, mouse.y+Form.top+3+skin_height, MENU_ALIGN_TOP_LEFT, NULL, text);
 }
 
 bool GetMenuClick()
@@ -122,7 +122,5 @@ bool GetMenuClick()
 		return false;
 	}
 	return true;
-
-
 }
 

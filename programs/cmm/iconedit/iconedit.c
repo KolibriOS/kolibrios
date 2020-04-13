@@ -277,7 +277,7 @@ void main()
 		 
 		case evReDraw:
 			Window_CanvasReSize.thread_exists();
-			EventCheckMenuItemSelected();
+			if (CheckActiveProcess(Form.ID)) EventCheckMenuItemSelected();
 			DrawWindow();
 			break;
 	}
@@ -726,20 +726,19 @@ void EventCrop()
 
 void EventShowImageMenu()
 {
-	menu.selected = 0;
-	menu.show(Form.left+5 + image_menu_btn.x, 
-		Form.top+skin_height + image_menu_btn.y + image_menu_btn.h,
-		240, 
-		#image_menu_items, 
-		20);
+	open_lmenu(Form.left+5 + image_menu_btn.x, Form.top+skin_height + 
+		image_menu_btn.y + image_menu_btn.h, MENU_ALIGN_TOP_LEFT, NULL, #image_menu_items);
 }
 
 void EventCheckMenuItemSelected()
 {
-	if (menu.cur_y) {
-		if (20 == menu.cur_y) EventCountColorsUsed();
-		if (21 == menu.cur_y) EventReplaceImageColors(color1, color2);
-		menu.cur_y = 0;
+	switch(get_menu_click()) {
+		case 1: 
+			EventCountColorsUsed();
+			break;
+		case 2: 
+			EventReplaceImageColors(color1, color2);
+			break;
 	}
 }
 

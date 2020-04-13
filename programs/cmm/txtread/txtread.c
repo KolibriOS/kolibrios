@@ -97,6 +97,8 @@ int encoding;
 dword bg_color;
 dword text_color;
 
+dword menu_id;
+
 //===================================================//
 //                                                   //
 //                 INTERNAL INCLUDES                 //
@@ -148,7 +150,7 @@ void main()
 				HandleButtonEvent();
 				break;
 			case evReDraw:
-				EventMenuClick();
+				if (CheckActiveProcess(Form.ID)) EventMenuClick();
 				draw_window();
 		}
 	}
@@ -295,22 +297,23 @@ void EventMagnifyMinus()
 
 void EventShowEncodingList()
 {
-	menu.selected = encoding + 1;
-	menu.show(Form.left+5 + charsets_mx, Form.top+29+skin_height, 130,
-		"UTF-8\nKOI8-RU\nCP1251\nCP1252\nISO8859-5\nCP866", 10);
+	open_lmenu(Form.left+5 + charsets_mx, Form.top+29+skin_height, MENU_ALIGN_TOP_LEFT, encoding+1,
+		"UTF-8\nKOI8-RU\nCP1251\nCP1252\nISO8859-5\nCP866");
+	menu_id = 10;
 }
 
 void EventShowReopenMenu()
 {
-	menu.selected = 0;
-	menu.show(Form.left+5 + reopenin_mx, Form.top+29+skin_height, 130,
-		"Tinypad\nTextEdit\nWebView\nFB2Read\nHexView\nOther", 20);
+	open_lmenu(Form.left+5 + reopenin_mx, Form.top+29+skin_height, MENU_ALIGN_TOP_LEFT, 0,
+		"Tinypad\nTextEdit\nWebView\nFB2Read\nHexView\nOther");
+	menu_id = 20;
 }
 
 void EventShowColorSchemesList()
 {
-	menu.selected = curcol_scheme + 1;
-	menu.show(Form.left+5 + colscheme_mx, Form.top+29+skin_height, 175, #color_scheme_names, 30);
+	open_lmenu(Form.left+5 + colscheme_mx, Form.top+29+skin_height, MENU_ALIGN_TOP_LEFT, 
+		curcol_scheme+1, #color_scheme_names);
+	menu_id = 30;
 }
 
 void EventSetColorScheme(dword _setn)
@@ -343,11 +346,12 @@ void EventOpenFileInAnotherProgram(dword _app)
 void EventMenuClick()
 {
 	byte open_param[4096];
-	switch(menu.cur_y)
+	dword click_id = get_menu_click();
+	if (click_id) switch(click_id + menu_id - 1)
 	{
 		//Encoding
 		case 10...15:
-			EventChangeEncoding(menu.cur_y-10);
+			EventChangeEncoding(click_id-1);
 			break;
 		//Reopen
 		case 20:
@@ -372,11 +376,10 @@ void EventMenuClick()
 			break;
 		//ColorSchemes
 		case 30...38:
-			EventSetColorScheme(menu.cur_y-30);
+			EventSetColorScheme(click_id-1);
 			PreparePage();
 			break;
 	}
-	menu.cur_y = 0;
 }
 
 //===================================================//
@@ -399,7 +402,7 @@ void OpenFile(dword f_path)
 		io.buffer_data = INTRO_TEXT;
 		strcpy(#title, "Text Reader"); 
 	}
-	if (encoding!=CH_CP866) ChangeCharset(charsets[encoding], "CP866", io.buffer_data);
+	if (encoding!=CH_CP866) ChangeCharset(encoding, "CP866", io.buffer_data);
 	list.KeyHome();
 	list.ClearList();
 }

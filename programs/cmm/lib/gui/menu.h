@@ -105,7 +105,9 @@
 		return NULL;
 	} else {
 		menu_process_id = NULL;
-		return ESDWORD[shared_mem];		
+		EAX = ESDWORD[shared_mem];
+		ESDWORD[shared_mem] = 0;
+		return EAX;		
 	}
 }
 

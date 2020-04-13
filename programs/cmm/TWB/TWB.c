@@ -137,7 +137,7 @@ void TWebBrowser::SetPageDefaults()
 	memmov(o_bufpointer, bufpointer, bufsize);
 	if (custom_encoding != -1) {
 		cur_encoding = custom_encoding;
-		bufpointer = ChangeCharset(cur_encoding*10+#charsets, "CP866", bufpointer);
+		bufpointer = ChangeCharset(cur_encoding, "CP866", bufpointer);
 	}
 }
 //============================================================================================
@@ -547,9 +547,9 @@ void TWebBrowser::ChangeEncoding(int _new_encoding)
 {
 	if (cur_encoding == _new_encoding) return;
 	cur_encoding = _new_encoding;
-	bufpointer = ChangeCharset(cur_encoding*10+#charsets, "CP866", bufpointer);
+	bufpointer = ChangeCharset(cur_encoding, "CP866", bufpointer);
 	if (header) {
-		ChangeCharset(cur_encoding*10+#charsets, "CP866", #header);
+		ChangeCharset(cur_encoding, "CP866", #header);
 		DrawTitle(#header);
 	}
 }

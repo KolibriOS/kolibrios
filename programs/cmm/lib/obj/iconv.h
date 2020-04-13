@@ -23,6 +23,8 @@ dword ChangeCharset(dword from_chs, to_chs, conv_buf)
 {
 	dword cd, in_len, out_len, new_buf;	
 
+	from_chs = from_chs*10+#charsets;
+
 	debug("iconv: from_chs = "); debugln(from_chs);
 	debug("iconv: to_chs = "); debugln(to_chs);
 

@@ -333,7 +333,7 @@ void PreparePage()
 	_dom dom;
 
 	strcpy(#title, history.current()+strrchr(history.current(),'/'));
-	ChangeCharset(charsets[encoding], "CP866", io.buffer_data);
+	ChangeCharset(encoding, "CP866", io.buffer_data);
 	link.clear();
 
 	kfont.size.height = 0;

@@ -6,13 +6,13 @@ char homepage[] = FROM "html\\homepage_ru.htm""\0";
 char help[] = FROM "html\\help_ru.htm""\0";
 char accept_language[]= "Accept-Language: ru\n";
 char rmb_menu[] = 
-"Посмотреть исходник|CTRL+U
+"Посмотреть исходник|Ctrl+U
 Редактировать исходник";
 char main_menu[] = 
-"Открыть файл|CTRL+O
-Новое окно|CTRL+N
-История|CTRL+H
-Менеджер загрузок|CTRL+J
+"Открыть файл|Ctrl+O
+Новое окно|Ctrl+N
+История|Ctrl+H
+Менеджер загрузок|Ctrl+J
 Очистить кэш
 Обновить браузер";
 char link_menu[] =
@@ -32,13 +32,13 @@ char homepage[] = FROM "html\\homepage_en.htm""\0";
 char help[] = FROM "html\\help_en.htm""\0";
 char accept_language[]= "Accept-Language: en\n";
 char rmb_menu[] =
-"View source|CTRL+U
+"View source|Ctrl+U
 Edit source";
 char main_menu[] = 
-"Open local file|CTRL+O
-New window|CTRL+N
-History|CTRL+H
-Download Manager|CTRL+J
+"Open local file|Ctrl+O
+New window|Ctrl+N
+History|Ctrl+H
+Download Manager|Ctrl+J
 Clear cache
 Update browser";
 char link_menu[] =

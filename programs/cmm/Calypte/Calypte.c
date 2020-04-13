@@ -49,7 +49,7 @@ od_filter filter2 = { 8, "TXT\0\0" };
 ?define MENU3 "Reopen"
 
 char menu_file_list[] =
-"Open
+"Open|Ctrl+O
 Close
 Properties
 Exit";
@@ -196,10 +196,7 @@ void main()
 			break;
 		 
 		 case evReDraw:
-			if (menu.cur_y)
-			{
-				EventMenuClick();
-			}
+			if (CheckActiveProcess(Form.ID)) EventMenuClick();
 			draw_window();
 			break;
 	  }
@@ -268,7 +265,7 @@ void OpenFile(dword _path)
 	}
 	if (encoding!=CH_CP866)
 	{
-		ChangeCharset(charsets[encoding], "CP866", bufpointer);
+		ChangeCharset(encoding, "CP866", bufpointer);
 	}
 }
 
@@ -393,10 +390,11 @@ void DrawVerticalScroll()
 //                      EVENTS                       //
 //                                                   //
 //===================================================//
-
+dword menu_id;
 void EventMenuClick()
 {
-	switch(menu.cur_y)
+	dword click_id = get_menu_click();
+	if (click_id) switch(click_id + menu_id - 1)
 	{
 		//File
 		case FILE_SUBMENU_ID_OPEN:
@@ -413,7 +411,7 @@ void EventMenuClick()
 			break;
 		//Encoding
 		case MENU_ID_ENCODING...MENU_ID_ENCODING+9:
-			EventChangeEncoding(menu.cur_y-MENU_ID_ENCODING);
+			EventChangeEncoding(click_id-1);
 			break;
 		//Reopen
 		case FILE_SUBMENU_ID_TINYPAD:
@@ -440,8 +438,9 @@ void EventMenuClick()
 
 void EventShowMenu(dword _menu_item_x, _menu_list, _id, _selected)
 {
-	menu.selected = _selected;
-	menu.show(Form.left+5 + _menu_item_x, Form.top+skin_height + TOPPANELH, 140, _menu_list, _id);
+	open_lmenu(Form.left+5 + _menu_item_x, Form.top+skin_height + TOPPANELH, 
+		MENU_ALIGN_TOP_LEFT, _selected, _menu_list);
+	menu_id = _id;
 }
 
 void EventOpenFile()
