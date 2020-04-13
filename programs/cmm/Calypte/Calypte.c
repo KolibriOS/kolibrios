@@ -433,7 +433,6 @@ void EventMenuClick()
 			EventOpenFileInAnotherProgram("/sys/develop/heed");
 			break;
 	}
-	menu.cur_y = 0;
 }
 
 void EventShowMenu(dword _menu_item_x, _menu_list, _id, _selected)

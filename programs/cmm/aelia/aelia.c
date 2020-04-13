@@ -4,6 +4,7 @@
 #include "../lib/kfont.h"
 #include "../lib/io.h"
 #include "../lib/cursor.h"
+#include "../lib/list_box.h"
 
 #include "../lib/obj/box_lib.h"
 #include "../lib/obj/libini.h"
@@ -71,6 +72,8 @@ bool debug_mode=false;
 #include "prepare_page.h"
 //#include "special.h"
 
+int menu_id=0;
+
 #define SANDWICH_MENU "Refresh page\nEdit page\nHistory\nDownloader\nAbout"
 
 void InitDlls()
@@ -112,20 +115,7 @@ void main()
 				break;
 			case evReDraw:
 				draw_window();
-				if (menu.cur_y>=10) && (menu.cur_y<20) {
-					encoding = menu.cur_y - 10;
-					EventPageRefresh();
-					menu.cur_y = 0;
-				}
-				if (menu.cur_y>=20) {
-					menu.cur_y-=20;
-					if (menu.cur_y==0) EventPageRefresh();
-					if (menu.cur_y==1) EventRunEdit();
-					if (menu.cur_y==2) EventShowHistory();
-					if (menu.cur_y==3) EventShowDownloader();
-					if (menu.cur_y==4) EventShowInfo();
-					menu.cur_y = 0;
-				} 
+				if (CheckActiveProcess(Form.ID)) EventMenuClick();
 		}
 	}
 }
@@ -407,8 +397,34 @@ void EventRunEdit()
 
 void EventChangeEncoding()
 {
-	menu.selected = encoding + 1;
-	menu.show(Form.left+Form.cwidth-97,Form.top+TOOLBAR_H+skin_height-6, 130, "UTF-8\nKOI8-RU\nCP1251\nCP1252\nISO8859-5\nCP866", 10);
+	menu_id = 10;
+	open_lmenu(Form.left+Form.cwidth-36,Form.top+TOOLBAR_H+skin_height-6, MENU_ALIGN_TOP_RIGHT, 
+		encoding+1, "UTF-8\nKOI8-RU\nCP1251\nCP1252\nISO8859-5\nCP866");
+}
+
+void EventShowSandwichMenu()
+{
+	menu_id = 20;
+	open_lmenu(Form.left+Form.cwidth+3,Form.top+TOOLBAR_H+skin_height-6, 
+		MENU_ALIGN_TOP_RIGHT, 0, SANDWICH_MENU);
+}
+
+void EventMenuClick()
+{
+	dword click_id = get_menu_click();
+
+	if (menu_id == 10) && (click_id) {
+			encoding = click_id-1;
+			EventPageRefresh();
+			menu_id = 0;
+		}
+	if (menu_id == 20) {switch(click_id) {
+		case 1: EventPageRefresh(); break;
+		case 2: EventRunEdit(); break;
+		case 3: EventShowHistory(); break;
+		case 4: EventShowDownloader(); break;
+		case 5: EventShowInfo(); break;
+	} menu_id = 0;}
 }
 
 void EventShowInfo() {
@@ -428,12 +444,6 @@ void EventGoBack()
 void EventGoForward()
 {
 	if (history.forward()) EventOpenAddress(history.current());
-}
-
-void EventShowSandwichMenu()
-{
-	menu.selected = 0;
-	menu.show(Form.left+Form.cwidth-130,Form.top+TOOLBAR_H+skin_height-10, 130, SANDWICH_MENU, 20);
 }
 
 void EventPageRefresh()
@@ -547,3 +557,4 @@ void DrawStatusBar(dword _status_text)
 		PathShow_draw stdcall(#status_text);
 	}
 }
+

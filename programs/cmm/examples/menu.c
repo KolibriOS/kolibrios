@@ -3,36 +3,38 @@
 #include "../lib/io.h"
 #include "../lib/list_box.h"
 #include "../lib/gui.h"
+#include "../lib/fs.h"
 
 struct _object
 {
 	int x,y,w,h,id;
 };
 
-_object butv = { 20, 20, 100, 30, 10};
-_object buta = {150, 20, 100, 30, 20};
+_object butv = { 20, 20, 100, 20, 10};
+_object buta = {150, 20, 100, 20, 20};
 
 char vegetables[] = 
-"Onion
+"Onion    
 Melon
 Tomato
 Squash
 Salad";
 
 char animals[] =
-"Cat
+"Cat    
 Dog
 Pig
 Cow
 Goat
 Rabbit";
 
-byte category;
 
 
 void main()
 {
+	dword menu_id=0, click_id;
 	proc_info Form;
+	byte current_animal=1, current_veg=3;
 	int id;
 
 	loop() switch(WaitEvent())
@@ -41,12 +43,14 @@ void main()
 		id=GetButtonID();               
 		if (id==1) ExitProcess();
 		if (id==butv.id) {
-			menu.selected = category+1;
-			menu.show(Form.left+5 + butv.x, Form.top+skin_height + butv.y + butv.h, 140, #vegetables, butv.id);
+			menu_id = butv.id;
+			open_lmenu(Form.left+3 + butv.x, Form.top+skin_height + butv.y + butv.h, 
+				MENU_ALIGN_TOP_LEFT, current_veg, #vegetables);
 		}
 		if (id==buta.id) {
-			menu.selected = 0;
-			menu.show(Form.left+5 + buta.x, Form.top+skin_height + buta.y + buta.h, 140,    #animals, buta.id);
+			menu_id = buta.id;
+			open_lmenu(Form.left+5 + buta.x + buta.w, Form.top+skin_height + buta.y + buta.h, 
+				MENU_ALIGN_TOP_RIGHT, current_animal, #animals);
 		}
 		break;
 
@@ -55,8 +59,10 @@ void main()
 		break;
 	 
 	 case evReDraw:
-		if (menu.cur_y) {
-			if (menu.cur_y > butv.id) && (menu.cur_y < buta.id) category = menu.cur_y - butv.id;
+		if (click_id = get_menu_click()) {
+			if (menu_id == butv.id) current_veg = click_id;
+			if (menu_id == buta.id) current_animal = click_id;
+			menu_id = 0;
 		}
 		DefineAndDrawWindow(215,100,350,300,0x34,0xFFFFFF,"Window header",0);
 		GetProcessInfo(#Form, SelfInfo);

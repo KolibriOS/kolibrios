@@ -297,8 +297,8 @@ void EventMagnifyMinus()
 
 void EventShowEncodingList()
 {
-	open_lmenu(Form.left+5 + charsets_mx, Form.top+29+skin_height, MENU_ALIGN_TOP_LEFT, encoding+1,
-		"UTF-8\nKOI8-RU\nCP1251\nCP1252\nISO8859-5\nCP866");
+	open_lmenu(Form.left+5 + charsets_mx, Form.top+29+skin_height, MENU_ALIGN_TOP_LEFT, 
+		encoding+1, "UTF-8\nKOI8-RU\nCP1251\nCP1252\nISO8859-5\nCP866");
 	menu_id = 10;
 }
 
