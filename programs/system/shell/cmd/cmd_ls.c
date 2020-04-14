@@ -93,10 +93,13 @@ else
 
 		t =  (unsigned*) (k70.p16+32+(304)*i);
 		type_of_file = *t;
+        
+        int is_folder = 0;
+		if ( (0x10 == (type_of_file&0x10)) || (8 == (type_of_file&8)) ) { is_folder = 1; strcat(cur_file, "/"); }
 
-		if ( (0x10 == (type_of_file&0x10)) || (8 == (type_of_file&8)) ) strcat(cur_file, "/");
-
+        if (is_folder) { printf("\033[0;36m"); } // set cyan for folder
 		printf ("%*s", -longest_name_len, cur_file);
+		if (is_folder) { printf("\033[0m"); } // is had been set, reset
 
 		if ((i>0) && ((i+1)%columns_max == 0)) printf ("\n\r");
 		}	

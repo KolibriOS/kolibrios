@@ -23,8 +23,30 @@ if (CMD_HISTORY_NUM_REAL < CMD_HISTORY_NUM-1)
 	CMD_HISTORY_NUM_REAL++;
 
 }
+// ============================================================
 
+char * insert_string( char s1[], unsigned int pos, const char s2[] )
+{
+    unsigned int n1 = strlen( s1 );
+    unsigned int n2 = strlen( s2 );
 
+    if ( n1 < pos ) pos = n1;
+
+    unsigned int i;
+    for (  i = 0; i < n1 - pos; i++ )
+    {
+        s1[n1 + n2 - i - 1] = s1[n1 - i - 1];
+    }
+
+    for ( i = 0; i < n2; i++)
+    {
+        s1[pos+i] = s2[i];
+    }
+
+    s1[n1 + n2] = '\0';
+
+    return s1;
+}
 
 /// ===========================================================
 
@@ -102,30 +124,19 @@ for (;;)
 							{
 							if ((int)*(clipBuf+8)==1) // 866 encoding?
 								{
-								for (i = cmdPos; i < cmdLen; i++)
-									printf(" ");
-								for (i = cmdLen; i > 0; i--)
-									printf("%c %c", 8, 8);
-								cmdLen = 0;
-								cmdPos = 0;
-								CMD[0] = '\0';
+									// clear previous text
+									for (i = cmdPos; i < cmdLen; i++)
+										printf(" ");
+									for (i = cmdLen; i > 0; i--)
+										printf("%c %c", 8, 8);
 
-								// strcpy_n
-								for (i = 0; i < 255; i++)
-									{
-									CMD[i]=*(clipBuf+12+i);
-									if (CMD[i]=='\0')
-										break;
-									}
-								
-								cmdPos = cmdLen = strlen(CMD);
-/*								
-								printf("Length: %d\n", cmdLen);
-								for (i = 0; i < cmdLen; i++)
-									printf("%d ", CMD[i]);
-*/
-								printf("%s", CMD);
-
+									char *pasteText = clipBuf + 12;
+									int pasteLen = strlen(pasteText);
+									insert_string(CMD, cmdPos, pasteText);
+									cmdLen = strlen(CMD);
+									cmdPos += pasteLen;
+									printf("%s", CMD);
+                                    for (i = 0; i < cmdLen-cmdPos; i++) printf("%c", 8); // rewind the internal console cursor
 								}
 							}
 						}
@@ -204,6 +215,17 @@ for (;;)
 
 						cmdLen--;
 					}
+				break;
+
+
+			case 0x47: // Home
+				// move internal cursor and cmdPos to the beginning of the line
+				for (;cmdPos > 0; cmdPos--) {printf("%c", 8);}
+				break;
+
+			case 0x4F: // End
+				// move internal cursor and cmdPos to the end of the line 
+				for (;cmdPos < cmdLen; cmdPos++) {printf("%c", CMD[cmdPos]);}
 				break;
 
 			case 75: // Left
