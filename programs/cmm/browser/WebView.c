@@ -80,6 +80,8 @@ enum {
 	DOWNLOAD_MANAGER,
 	CLEAR_CACHE,
 	UPDATE_BROWSER,
+	IN_NEW_TAB,
+	IN_NEW_WINDOW,
 	COPY_LINK_URL,
 	DOWNLOAD_LINK_CONTENTS,
 	TAB_ID,
@@ -426,6 +428,16 @@ void ProcessEvent(dword id__)
 			pages_cache.clear();
 			notify(#clear_cache_ok);
 			return;
+		case IN_NEW_TAB:
+			open_new_tab = true;
+			EventOpenNewTab(PageLinks.GetURL(PageLinks.active));
+			open_new_tab = false;
+			return;
+		case IN_NEW_WINDOW:
+			open_new_tab = true;
+			RunProgram(#program_path, PageLinks.GetURL(PageLinks.active));
+			open_new_tab = false;
+			return;
 		case COPY_LINK_URL:
 			Clipboard__CopyText(PageLinks.GetURL(PageLinks.active));
 			notify("'URL copied to clipboard'O");
@@ -722,7 +734,7 @@ void EventShowPageMenu()
 void EventShowLinkMenu()
 {
 	open_lmenu(Form.left + mouse.x+4, Form.top + skin_height + mouse.y, MENU_ALIGN_TOP_LEFT, NULL, #link_menu);
-	menu_id = COPY_LINK_URL;
+	menu_id = IN_NEW_TAB;
 }
 
 void EventShowMainMenu()

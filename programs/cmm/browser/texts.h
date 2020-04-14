@@ -16,7 +16,9 @@ char main_menu[] =
 Очистить кэш
 Обновить браузер";
 char link_menu[] =
-"Копировать ссылку
+"Открыть в новой вкладке
+Открыть в новом окне
+Копировать ссылку
 Скачать содержимое ссылки";
 char loading_text[] = "Загрузка...";
 
@@ -42,7 +44,9 @@ Download Manager|Ctrl+J
 Clear cache
 Update browser";
 char link_menu[] =
-"Copy link
+"Open in new tab
+Open in new window
+Copy link
 Download link contents";
 char loading_text[] = "Loading...";
 char update_param[] = "-download_and_exit http://builds.kolibrios.org/eng/data/programs/cmm/browser/WebView.com";
