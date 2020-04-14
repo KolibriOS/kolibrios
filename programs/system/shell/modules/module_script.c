@@ -4,23 +4,23 @@
 int script_check(char file[])
 {
 
-kol_struct70	k70;
-char		buf[4];
+	kol_struct70	k70;
+	char		buf[4];
 
-k70.p00 = 0;
-k70.p04 = 0;
-//k70.p08 = 0;
-k70.p12 = 4; // читать 4 байта
-k70.p16 = (unsigned) buf;
-k70.p20 = 0;
-k70.p21 = file;
+	k70.p00 = 0;
+	k70.p04 = 0;
+	//k70.p08 = 0;
+	k70.p12 = 4; // read 4 bytes
+	k70.p16 = (unsigned) buf;
+	k70.p20 = 0;
+	k70.p21 = file;
 
-kol_file_70(&k70);
+	kol_file_70(&k70);
 
-if ( !strcmp(buf, script_sign) )
-	return TRUE;
-else
-	return FALSE;
+	if ( !strcmp(buf, script_sign) ) // if we found the script signature
+		return TRUE;
+	else
+		return FALSE;
 }
 
 /// ===========================================================
@@ -28,78 +28,78 @@ else
 int script_run(char exec[], char args[])
 {
 
-kol_struct70	k70;
-kol_struct_BDVK	bdvk;
-unsigned	result, i;
-unsigned	long long filesize, pos;
-char		*buf; //буфер, куда копируется скрипт
+	kol_struct70	k70;
+	kol_struct_BDVK	bdvk;
+	unsigned	result, i;
+	unsigned	long long filesize, pos;
+	char		*buf; // buffer, where script is copied
 
-k70.p00 = 5;
-k70.p04 = k70.p12 = 0;
-//k70.p08 = 0;
-k70.p16 = (unsigned) &bdvk;
-k70.p20 = 0;
-k70.p21 = exec;
+	k70.p00 = 5;
+	k70.p04 = k70.p12 = 0;
+	//k70.p08 = 0;
+	k70.p16 = (unsigned) &bdvk;
+	k70.p20 = 0;
+	k70.p21 = exec;
 
-result = kol_file_70(&k70); // получаем информацию о файле
-if ( 0 != result ) 
-	return FALSE;
+	result = kol_file_70(&k70); // get file info
+	if ( 0 != result ) 
+		return FALSE;
 
-filesize = bdvk.p32; // получаем размер файла
+	filesize = bdvk.p32; // get file size
 
-buf = malloc(filesize+256); // may fail for over 4Gb file, but impossible case
-if (NULL == buf)
-	return FALSE;
+	buf = malloc(filesize+256); // may fail for over 4Gb file, but impossible case
+	if (NULL == buf)
+		return FALSE;
 
-buf[filesize]=0;
+	buf[filesize]=0;
 
-k70.p00 = 0;
-k70.p04 = 0;
-//k70.p08 = 0;
-k70.p12 = filesize;
-k70.p16 = (unsigned) buf;
-k70.p20 = 0;
-k70.p21 = exec;
+	k70.p00 = 0;
+	k70.p04 = 0;
+	//k70.p08 = 0;
+	k70.p12 = filesize;
+	k70.p16 = (unsigned) buf;
+	k70.p20 = 0;
+	k70.p21 = exec;
 
-result = kol_file_70(&k70); // считываем файл в буфер
-if ( 0 != result ) 
-	{
-	free(buf);
-	return FALSE;
-	}
-
-pos = 0;
-
-for (;;) // обработка скрипта
-	{
-
-	if (pos > filesize)
-		break;
-
-	for (i=0;;i++) // считывание строки
+	result = kol_file_70(&k70); // read file to the buffer
+	if ( 0 != result ) 
 		{
-		if ((0x0A == buf[pos])||(0x0D == buf[pos])||(0 == buf[pos]))
-			{
-			pos++;
-			CMD[i] = '\0';
-			break;
-			}
-		CMD[i] = buf[pos];
-		pos++;
+		free(buf);
+		return FALSE;
 		}
 
-	if ( 0 == strlen(CMD) ) // пустая строка
-		continue;
+	pos = 0;
 
-	if ('#' == CMD[0]) // комментарий
-		continue;
+	for (;;) // script processing
+		{
 
-	command_execute();
+		if (pos > filesize)
+			break;
 
-	}
+		for (i=0;;i++) // reading a string
+			{
+			if ((0x0A == buf[pos])||(0x0D == buf[pos])||(0 == buf[pos]))
+				{
+				pos++;
+				CMD[i] = '\0';
+				break;
+				}
+			CMD[i] = buf[pos];
+			pos++;
+			}
 
-free(buf);
-return TRUE;
+		if ( 0 == strlen(CMD) ) // empty string
+			continue;
+
+		if ('#' == CMD[0]) // comment
+			continue;
+
+		command_execute();
+
+		}
+
+	free(buf);
+	return TRUE;
 }
 
 /// ===========================================================

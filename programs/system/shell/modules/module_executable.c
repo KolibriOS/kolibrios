@@ -4,63 +4,68 @@
 int executable_run(char cmd[], char args[])
 {
 
-char	exec[FILENAME_MAX];
-int		result;
+	char	exec[FILENAME_MAX];
+	int		result;
 
-if ( '/' == cmd[0]) // если путь абсолютный
+	if ( '/' == cmd[0]) // if path is absolute
 	{
-	strcpy(exec, cmd);
-
-	if (  !file_check(exec) ) // проверяем существование файла
+		strcpy(exec, cmd);
+		if (!file_check(exec) ) // check file existense
 		{
-		file_not_found(cmd);
-		return FALSE;
+			file_not_found(cmd);
+			return FALSE;
 		}
 	}
-
-else 
+	else 
 	{
-	strcpy(exec, cur_dir); // проверяем файл в текущем каталоге
-	if (exec[strlen(exec)-1] != '/') 
-		strcat(exec, "/"); // add slash
-	strcat(exec, cmd);
-	
-	if ( !file_check(exec) ) // проверяем существование файла
-		{
-		strcpy(exec, "/rd/1/"); // проверяем файл на виртуальном диске
+		strcpy(exec, cur_dir); // check file in current directory
+		if (exec[strlen(exec)-1] != '/') 
+			strcat(exec, "/"); // add slash
 		strcat(exec, cmd);
-			if ( !file_check(exec) ) // проверяем существование файла
-				{
+		
+		if ( !file_check(exec) ) // check file existense
+		{
+			strcpy(exec, "/rd/1/"); // check file on virtual disk
+			strcat(exec, cmd);
+			if ( !file_check(exec) ) // check file existense
+			{
 				file_not_found(cmd);
 				return FALSE;
-				}
+			}
 		}
 	}
 
+	// if file exists:
 
-if ( script_check(exec) )
-	return script_run(exec, args);
-
-/* запуск программы */
-result = program_run(exec, args);
-if (result > 0)
+	// try to run as a program
+	result = program_run(exec, args);
+	if (result > 0)
 	{
-	
-	if ( !program_console(result)  )
+		if ( !program_console(result)  )
 		{
-			LAST_PID = result;
-		#if LANG_ENG
-			printf ("  '%s' started. PID = %d\n\r", cmd, result);
-		#elif LANG_RUS
-			printf ("  '%s' запущен. PID = %d\n\r", cmd, result);
-		#endif
+				LAST_PID = result;
+			#if LANG_ENG
+				printf ("  '%s' started. PID = %d\n\r", cmd, result);
+			#elif LANG_RUS
+				printf ("  '%s' запущен. PID = %d\n\r", cmd, result);
+			#endif
 		}
-	return TRUE;
+		return TRUE;
 	}
-else	
+	else	
 	{
-	file_not_found(cmd);
-	return FALSE;
+		if ( script_check(exec) ) // if file is a valid script
+		{
+			return script_run(exec, args);
+		} else
+		{
+			#if LANG_ENG
+				printf ("Error in '%s' : script must start with #SHS line\n\r", cmd);
+			#elif LANG_RUS
+				printf ("Ошибка в '%s' : скрипт должен начинаться со строчки #SHS\n\r", cmd);
+			#endif
+			return FALSE;
+		}
 	}
 
 }
