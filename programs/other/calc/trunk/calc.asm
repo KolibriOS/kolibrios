@@ -715,7 +715,7 @@ next_button:
         cmp     [edx], byte 'x'
         jne     next_line
 
-		DrawRectangle3D DISPLAY_X-1,DISPLAY_Y-1,DISPLAY_W+2,DISPLAY_H+2, [sc.work_3d_dark], [sc.work_3d_light]
+		DrawRectangle3D DISPLAY_X-1,DISPLAY_Y-1,DISPLAY_W+2,DISPLAY_H+2, [sc.work_dark], [sc.work_light]
 		DrawRectangle DISPLAY_X,DISPLAY_Y,DISPLAY_W,DISPLAY_H, [sc.work_graph]
         mcall   38, < DISPLAY_X+1, DISPLAY_W+DISPLAY_X-1>, <DISPLAY_Y+1, DISPLAY_Y+1>, 0xE0E0E0 ; internal shadow
 		mcall     , < DISPLAY_X+1,  DISPLAY_X+1>, <DISPLAY_Y+2, DISPLAY_Y+DISPLAY_H-1>,          ; internal shadow

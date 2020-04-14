@@ -1,3 +1,12 @@
+BT_DEL     equ 0x80000000
+BT_HIDE    equ 0x40000000
+BT_NOFRAME equ 0x20000000
+
+macro DefineButton  x, y, w, h, id, background_color
+{
+	mcall 8, (x) shl 16 + (w), (y) shl 16 + (h), id, background_color
+}
+
 macro DrawBar  x, y, width, height, color 
 {
 	mcall 13, (x) shl 16 + (width), (y) shl 16 + (height), color
@@ -39,11 +48,3 @@ macro WriteTextBold  x, y, fontType, color, text
 	mcall
 }
 
-BT_DEL     equ 0x80000000
-BT_HIDE    equ 0x40000000
-BT_NOFRAME equ 0x20000000
-
-macro DefineButton  x, y, w, h, id, background_color
-{
-	mcall 8, (x) shl 16 + (w), (y) shl 16 + (h), id, background_color
-}

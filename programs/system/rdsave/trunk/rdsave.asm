@@ -359,7 +359,7 @@ draw_window:
 	m2m	dword [frame_data.font_backgr_color],[sc.work]
 	m2m dword [frame_data.font_color],[sc.work_text]
 	m2m dword [frame_data.ext_fr_col],[sc.work_graph]
-	m2m dword [frame_data.int_fr_col],[sc.work_3d_light]
+	m2m dword [frame_data.int_fr_col],[sc.work_light]
 	
 	push	dword frame_data
 	call	[Frame_draw]

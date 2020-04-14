@@ -21,6 +21,7 @@
 ;   Compile with FASM for Menuet
 ;******************************************************************************
   BTN_HEIGHT  = 22
+  BTN_WIDTH   = 140
   TXT_Y       = (BTN_HEIGHT)/2-4
 
   PANEL_HEIGHT	= 20
@@ -39,8 +40,8 @@
 	dd bootparam	; boot parameters
 	dd 0x0		; path
 ;------------------------------------------------------------------------------
-include "lang.inc"
 include "..\..\..\macros.inc"
+include "..\..\..\gui_patterns.inc"
 ;include "../../../debug.inc"             ; debug macros
 ;------------------------------------------------------------------------------
 align 4
@@ -475,7 +476,7 @@ mouse: 	      ; MOUSE EVENT HANDLER
 	jnz	click
 	mcall	37,1
 	ror	eax,16	  ; eax = [ Y | X ] relative to window
-	cmp	ax,140	   ; pointer in window?
+	cmp	ax,BTN_WIDTH	   ; pointer in window?
 	ja	noinwindow
 ; *** in window ***
 	shr	eax,16	  ; eax = [ 0 | Y ]
@@ -722,10 +723,11 @@ align 4
 .1:
 	shl	ecx,16
 	add	ecx,eax	    ; ecx = [ Y_START | Y_SIZE ]
+	dec ecx
 
 	movzx	ebx,[edi + x_start]
 	shl	ebx,16
-	mov	bx,140	    ; ebx = [ X_START | X_SIZE ]
+	mov	bx,BTN_WIDTH	    ; ebx = [ X_START | X_SIZE ]
 	mov	edx,0x01000000       ; color of work area RRGGBB,8->color gl
 	mov	esi,edx	    ; unmovable window
 	
@@ -788,9 +790,10 @@ draw_one_button:
 ; receives number of button in dl
 	push	edx
 	mov	eax,8
-	mov	ebx,140
+	mov	ebx,BTN_WIDTH
 	movzx	ecx,dl
 	imul	ecx,BTN_HEIGHT
+	mov [draw_y], ecx
 	shl	ecx,16
 	add	ecx,BTN_HEIGHT
 ; edx = button identifier
@@ -798,6 +801,7 @@ draw_one_button:
 	cmp	esi,0xdfdfdf
 	jb	nocorrect
 	sub	esi,0x1b1b1b
+	
 ;--------------------------------------
 align 4
 nocorrect: 
@@ -808,12 +812,24 @@ nocorrect:
 ;--------------------------------------
 align 4
 .nohighlight:
-	or	edx,0x20000000
+	or	edx,BT_NOFRAME + BT_HIDE
 				; dunkaist[
 	add	edx,0xd1ff00	; This makes first menu buttons differ
 				; from system close button with 0x000001 id
 				; dunkaist]
 	mcall
+	pusha
+	
+	mov edx, esi
+	mcall 13
+	
+	mcall   , BTN_WIDTH,     <[draw_y],1>,            [sc.work_light]
+	mcall   , 1,             <[draw_y],BTN_HEIGHT>
+	mcall   , <BTN_WIDTH,1>, <[draw_y],BTN_HEIGHT+1>, [sc.work_dark]
+	add [draw_y], BTN_HEIGHT-1
+	mcall   , BTN_WIDTH,     <[draw_y],1>
+	
+	popa
 	movzx	edx,dl
 	dec	dl
 	imul	ebx,edx,BTN_HEIGHT
@@ -910,6 +926,8 @@ screen_mouse_position:
 screen_size:
 .y	dw ?
 .x	dw ?
+;--------------------------------------
+draw_y dd ?
 ;--------------------------------------
 x_working_area:
 .right:		dw ?

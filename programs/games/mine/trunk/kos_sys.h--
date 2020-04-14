@@ -73,8 +73,8 @@ struct SystemColours
 {
   dword nonset1,
         nonset2,
-        work_3d_dark,
-        work_3d_light,
+        work_dark,
+        work_light,
         w_title,
         w_work,
         w_work_button,

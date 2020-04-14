@@ -47,7 +47,7 @@ inline fastcall void GetProcessInfo(dword EBX, ECX)
 }
 
 struct system_colors{
-	dword frame,grab,work_3d_dark,work_3d_light,grab_text,work,work_button,work_button_text,work_text,work_graph;
+	dword frame,grab,work_dark,work_light,grab_text,work,work_button,work_button_text,work_text,work_graph;
 	void get();
 };
 

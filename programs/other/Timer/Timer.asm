@@ -59,8 +59,8 @@ window:
 sc:
 .frames           dd 0
 .grab             dd 0
-.work_3d_dark      dd 0
-.work_3d_light dd 0
+.work_dark        dd 0
+.work_light       dd 0
 .grab_text        dd 0
 .work             dd 0
 .work_button      dd 0

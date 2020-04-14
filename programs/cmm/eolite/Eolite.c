@@ -150,18 +150,22 @@ byte cmd_free=0;
 #include "include\properties.h"
 #include "include\breadcrumbs.h"
 
-void main() 
+void load_libraries()
 {
-	dword id;
-	byte count_sl = 0;
-	signed x_old, y_old, dif_x, dif_y, adif_x, adif_y;
-	char stats;
-	rand_n = random(40);
-
 	load_dll(boxlib, #box_lib_init,0);
 	load_dll(libini, #lib_init,1);
 	load_dll(libio,  #libio_init,1);
 	load_dll(libimg, #libimg_init,1);
+}
+
+void main() 
+{
+	dword id;
+	byte count_sl = 0;
+
+	rand_n = random(40);
+
+	load_libraries();
 	
 	SetAppColors();
 	LoadIniSettings();
@@ -182,12 +186,9 @@ void main()
 	{
 		if (strlen(#param)>1) && (param[strlen(#param)-1]=='/') param[strlen(#param)-1]=NULL; //no "/" at the end
 
-		if (dir_exists(#param)==true) 
-		{
+		if (dir_exists(#param)) {
 			strcpy(#path, #param);
-		}
-		else
-		{
+		} else {
 			notify(T_NOTIFY_APP_PARAM_WRONG);
 		}
 	}
@@ -196,355 +197,309 @@ void main()
 	strcpy(#inactive_path, #path);
 	llist_copy(#files_inactive, #files);
 	SetEventMask(EVM_REDRAW+EVM_KEY+EVM_BUTTON+EVM_MOUSE+EVM_MOUSE_FILTER);
-	loop(){
-		switch(WaitEventTimeout(50))
-		{
-			case evMouse:
-				if (del_active) || (Form.status_window>2) break;
-				if (new_element_active) 
-				{
-					edit_box_mouse stdcall(#new_file_ed);
-					break;
-				}				
-				
-				mouse.get();
+	loop() switch(WaitEventTimeout(50))
+	{
+		case evMouse:
+			if (del_active) || (Form.status_window>2) break;
+			if (new_element_active) 
+			{
+				edit_box_mouse stdcall(#new_file_ed);
+				break;
+			}				
+			
+			mouse.get();
 
-				if (!mouse.mkm) && (stats>0) stats = 0;
-				if (mouse.mkm) && (!stats)
+			ProceedMouseGestures();
+			
+			if (files.MouseOver(mouse.x, mouse.y))
+			{
+				//select file
+				if (mouse.key&MOUSE_LEFT) && (mouse.up)
 				{
-					x_old = mouse.x;
-					y_old = mouse.y;
-					stats = 1;
-				}
-				if (mouse.mkm) && (stats==1)
-				{
-					dif_x = mouse.x-x_old;
-					dif_y = mouse.y-y_old;
-					adif_x = fabs(dif_x);
-					adif_y = fabs(dif_y);
-					
-					if (adif_x>adif_y)
-					{
-						if (dif_x > 150)
-						{
-							if (history.forward())
-								{
-									strcpy(#path, history.current());
-									files.KeyHome();
-									Open_Dir(#path,WITH_REDRAW);
-								}
-							stats = 0;
-						}
-						if (dif_x < -150)
-						{
-							GoBack();
-							stats = 0;
-						}
-					}
-					else
-					{
-						if (dif_y < -100)
-						{
-							Dir_Up();
-							stats = 0;
-						}
-					}
-				}	
-				if (files.MouseOver(mouse.x, mouse.y))
-				{
-					//select file
-					if (mouse.key&MOUSE_LEFT) && (mouse.up)
-					{
-						if (files.ProcessMouse(mouse.x, mouse.y)) List_ReDraw(); else {
-							if (mouse.y - files.y / files.item_h + files.first == files.cur_y) Open(0);
-						}
-					}
-					//file menu
-					if (mouse.key&MOUSE_RIGHT) && (mouse.up)
-					{
-						if (files.ProcessMouse(mouse.x, mouse.y)) List_ReDraw();
-						if (getElementSelectedFlag(files.cur_y) == false) selected_count = 0; //on redraw selection would be flashed, see [L001] 
-						EventShowListMenu();
-						break;
+					if (files.ProcessMouse(mouse.x, mouse.y)) List_ReDraw(); else {
+						if (mouse.y - files.y / files.item_h + files.first == files.cur_y) Open(0);
 					}
 				}
-
-				if (mouse.vert)
+				//file menu
+				if (mouse.key&MOUSE_RIGHT) && (mouse.up)
 				{
-					if (files.MouseScroll(mouse.vert)) List_ReDraw();
+					if (files.ProcessMouse(mouse.x, mouse.y)) List_ReDraw();
+					if (getElementSelectedFlag(files.cur_y) == false) selected_count = 0; //on redraw selection would be flashed, see [L001] 
+					EventShowListMenu();
 					break;
 				}
+			}
 
-				if (mouse.x>=files.x+files.w) && (mouse.x<=files.x+files.w+16) && (mouse.y>files.y-17) && (mouse.y<files.y)
+			if (mouse.vert)
+			{
+				if (files.MouseScroll(mouse.vert)) List_ReDraw();
+				break;
+			}
+
+			if (mouse.x>=files.x+files.w) && (mouse.x<=files.x+files.w+16) && (mouse.y>files.y-17) && (mouse.y<files.y)
+			{
+				if (mouse.lkm) DrawRectangle3D(files.x+files.w+1,files.y-16,14,14,system.color.work_dark,system.color.work_light);
+				WHILE (mouse.lkm) && (files.first>0)
 				{
-					if (mouse.lkm) DrawRectangle3D(files.x+files.w+1,files.y-16,14,14,system.color.work_dark,system.color.work_light);
-					WHILE (mouse.lkm) && (files.first>0)
-					{
-						pause(8);
-						files.first--;
-						List_ReDraw();
-						mouse.get();
-					}
-					DrawRectangle3D(files.x+files.w+1,files.y-16,14,14,system.color.work_light,system.color.work_dark);
+					pause(8);
+					files.first--;
+					List_ReDraw();
+					mouse.get();
 				}
+				DrawRectangle3D(files.x+files.w+1,files.y-16,14,14,system.color.work_light,system.color.work_dark);
+			}
 
-				if (mouse.x>=files.x+files.w) && (mouse.x<=files.x+files.w+16) && (mouse.y>files.y+files.h-16) && (mouse.y<files.y+files.h)
+			if (mouse.x>=files.x+files.w) && (mouse.x<=files.x+files.w+16) && (mouse.y>files.y+files.h-16) && (mouse.y<files.y+files.h)
+			{
+				if (mouse.lkm) DrawRectangle3D(files.x+files.w+1,files.y+files.h-15,14,14,system.color.work_dark,system.color.work_light);
+				while (mouse.lkm) && (files.first<files.count-files.visible)
 				{
-					if (mouse.lkm) DrawRectangle3D(files.x+files.w+1,files.y+files.h-15,14,14,system.color.work_dark,system.color.work_light);
-					while (mouse.lkm) && (files.first<files.count-files.visible)
-					{
-						pause(8);
-						files.first++;
-						List_ReDraw();
-						mouse.get();
-					}
-					DrawRectangle3D(files.x+files.w+1,files.y+files.h-15,14,14,system.color.work_light,system.color.work_dark);
+					pause(8);
+					files.first++;
+					List_ReDraw();
+					mouse.get();
 				}
+				DrawRectangle3D(files.x+files.w+1,files.y+files.h-15,14,14,system.color.work_light,system.color.work_dark);
+			}
 
-				//Scrooll
-				if (mouse.x>=files.x+files.w) && (mouse.x<=files.x+files.w+18) && (mouse.y>files.y) && (mouse.y<files.y+files.h-18) && (mouse.lkm) && (!scroll_used) {scroll_used=true; Scroll();}
-				if (scroll_used) && (mouse.up) { scroll_used=false; Scroll(); }
-				
-				if (scroll_used)
+			//Scrooll
+			if (mouse.x>=files.x+files.w) && (mouse.x<=files.x+files.w+18) && (mouse.y>files.y) && (mouse.y<files.y+files.h-18) && (mouse.lkm) && (!scroll_used) {scroll_used=true; Scroll();}
+			if (scroll_used) && (mouse.up) { scroll_used=false; Scroll(); }
+			
+			if (scroll_used)
+			{
+				if (sc_slider_h/2+files.y>mouse.y) || (mouse.y<0) || (mouse.y>4000) mouse.y=sc_slider_h/2+files.y; //anee eo?ni? iaa ieiii
+				id = files.first;
+				files.first = -sc_slider_h / 2 + mouse.y -files.y * files.count;
+				files.first /= files.h - 18;
+				if (files.visible+files.first>files.count) files.first=files.count-files.visible;
+				if (files.first<0) files.first=0;
+				if (id!=files.first) List_ReDraw();
+				break;
+			}
+
+			if (two_panels.checked) && (mouse.y > files.y) && (mouse.down) {
+				if (mouse.x<Form.cwidth/2)
 				{
-					if (sc_slider_h/2+files.y>mouse.y) || (mouse.y<0) || (mouse.y>4000) mouse.y=sc_slider_h/2+files.y; //anee eo?ni? iaa ieiii
-					id = files.first;
-					files.first = -sc_slider_h / 2 + mouse.y -files.y * files.count;
-					files.first /= files.h - 18;
-					if (files.visible+files.first>files.count) files.first=files.count-files.visible;
-					if (files.first<0) files.first=0;
-					if (id!=files.first) List_ReDraw();
+					if (active_panel!=1)
+					{
+						active_panel = 1;
+						ChangeActivePanel();
+					}
+				}
+				else
+				{
+					if (active_panel!=2)
+					{
+						active_panel = 2;
+						ChangeActivePanel();
+					}
+				}
+			}
+			break;  
+//Button pressed-----------------------------------------------------------------------------
+		case evButton:
+			id=GetButtonID();
+
+			if (new_element_active) || (del_active) {
+				if(POPUP_BTN1==id) || (POPUP_BTN2==id) {
+					if (del_active) Del_File(id-POPUP_BTN2);
+					if (new_element_active) NewElement(id-POPUP_BTN2);
+					DeleteButton(POPUP_BTN1);
+					DeleteButton(POPUP_BTN2);
+				}
+				break;					
+			}
+
+			switch(id) 
+			{
+				case CLOSE_BTN:
+						KillProcess(about_thread_id);
+						SaveIniSettings();
+						ExitProcess();
+				case PATH_BTN:
+						notify(COPY_PATH_STR);
+						Clipboard__CopyText(#path);
+						break;
+				case 21: //Back
+						EventHistoryGoBack();
+						break;
+				case 22: //Forward
+						EventHistoryGoForward();
+						break;
+				case 23:
+						Dir_Up();
+						break;
+				case 24:
+						Copy(#file_path, CUT);
+						break;
+				case 25:
+						Copy(#file_path, NOCUT);
+						break;
+				case 26:
+						Paste();
+						break;
+				case 31...33:
+						EventSort(id-30);
+						break;
+				case 50...60: //Actions
+						FnProcess(id-50);
+						break;
+				case 61: // Set path as default
+						SetDefaultPath(#path);
+						break;
+				case 100...120:
+					SystemDiscs.Click(id-100);
 					break;
-				}
+				case BREADCRUMB_ID...360:
+					ClickOnBreadCrumb(id-BREADCRUMB_ID);
+					break;
+			}
+			break;
+			
+//Key pressed-----------------------------------------------------------------------------
+		case evKey:
+			GetKeys();
 
-				if (two_panels.checked) && (mouse.y > files.y) && (mouse.down) {
-					if (mouse.x<Form.cwidth/2)
-					{
-						if (active_panel!=1)
-						{
-							active_panel = 1;
-							ChangeActivePanel();
-						}
-					}
-					else
-					{
-						if (active_panel!=2)
-						{
-							active_panel = 2;
-							ChangeActivePanel();
-						}
-					}
-				}
-				break;  
-	//Button pressed-----------------------------------------------------------------------------
-			case evButton:
-				id=GetButtonID();
+			if (Form.status_window>2) break;
 
-				if (new_element_active) || (del_active) {
-					if(POPUP_BTN1==id) || (POPUP_BTN2==id) {
-						if (del_active) Del_File(id-POPUP_BTN2);
-						if (new_element_active) NewElement(id-POPUP_BTN2);
-						DeleteButton(POPUP_BTN1);
-						DeleteButton(POPUP_BTN2);
-					}
-					break;					
-				}
-
-				switch(id) 
+			if (new_element_active) || (del_active)
+			{
+				if (del_active)
 				{
-					case CLOSE_BTN:
-							KillProcess(about_thread_id);
-							SaveIniSettings();
-							ExitProcess();
-					case PATH_BTN:
-							notify(COPY_PATH_STR);
-							Clipboard__CopyText(#path);
-							break;
-					case 21: //Back
-							GoBack();
-							break;
-					case 22: //Forward
-							if (history.forward())
-							{
-								strcpy(#path, history.current());
-								files.KeyHome();
-								Open_Dir(#path,WITH_REDRAW);
-							}
-							break;
-					case 23:
-							Dir_Up();
-							break;
-					case 24:
-							Copy(#file_path, CUT);
-							break;
-					case 25:
-							Copy(#file_path, NOCUT);
-							break;
-					case 26:
-							Paste();
-							break;
-					case 31...33:
-							EventSort(id-30);
-							break;
-					case 50...60: //Actions
-							FnProcess(id-50);
-							break;
-					case 61: // Set path as default
-							SetDefaultPath(#path);
-							break;
-					case 100...120:
-						SystemDiscs.Click(id-100);
-						break;
-					case BREADCRUMB_ID...360:
-						ClickOnBreadCrumb(id-BREADCRUMB_ID);
-						break;
+					if (key_scancode == SCAN_CODE_ENTER) Del_File(true);
+					if (key_scancode == SCAN_CODE_ESC) Del_File(false);
+				}
+				if (new_element_active)
+				{
+					if (key_scancode == SCAN_CODE_ENTER) NewElement(true);
+					if (key_scancode == SCAN_CODE_ESC) NewElement(false);
+					EAX = key_editbox;
+					edit_box_key stdcall (#new_file_ed);
 				}
 				break;
-				
-	//Key pressed-----------------------------------------------------------------------------
-			case evKey:
-				GetKeys();
+			}
 
-				if (Form.status_window>2) break;
+			if (files.ProcessKey(key_scancode))
+			{
+				List_ReDraw();
+				break;
+			}
 
-				if (new_element_active) || (del_active)
+			if (key_modifier&KEY_LCTRL) || (key_modifier&KEY_RCTRL)
+			{
+				switch(key_scancode)
 				{
-					if (del_active)
-					{
-						if (key_scancode == SCAN_CODE_ENTER) Del_File(true);
-						if (key_scancode == SCAN_CODE_ESC) Del_File(false);
-					}
-					if (new_element_active)
-					{
-						if (key_scancode == SCAN_CODE_ENTER) NewElement(true);
-						if (key_scancode == SCAN_CODE_ESC) NewElement(false);
-						EAX = key_editbox;
-						edit_box_key stdcall (#new_file_ed);
-					}
-					break;
+					case SCAN_CODE_F1...SCAN_CODE_F3:
+							EventSort(key_scancode - 58);
+							break;
+					case SCAN_CODE_1...SCAN_CODE_10:
+							key_scancode-=2;
+							if (key_scancode >= SystemDiscs.list.count) break;
+							if (!two_panels.checked)
+							{
+								DrawRectangle(17,key_scancode*16+74,159,16, 0); //display click
+								pause(7);										
+							}
+							SystemDiscs.Click(key_scancode);
+							break;
+					case SCAN_CODE_KEY_X:
+							Copy(#file_path, CUT);
+							break;						
+					case SCAN_CODE_KEY_C:
+							Copy(#file_path, NOCUT);
+							break;
+					case SCAN_CODE_KEY_V:
+							Paste();
+							break;
+					case SCAN_CODE_KEY_D: //set image as bg
+							strlcpy(#temp, "\\S__",4);
+							strcat(#temp, #file_path);
+							RunProgram("/sys/media/kiv", #temp);
+							break;
+					case SCAN_CODE_KEY_N: //create new window
+							if (Form.left==98) MoveSize(Form.left-20,Form.top-20,OLD,OLD);
+							RunProgram(I_Path, #path);
+							break; 
+					case SCAN_CODE_KEY_M:
+							Open_Dir(#inactive_path,WITH_REDRAW);
+							break; 
+					case SCAN_CODE_ENTER:
+							if (!itdir) ShowOpenWithDialog();
+							else Open(1);
+							break;
+					case SCAN_CODE_KEY_A:
+							EventSelectAllFiles(true);
+							break;
+					case SCAN_CODE_KEY_U: //unselect all files
+							selected_count = 0;
+							EventSelectAllFiles(false);
+							break;
 				}
+				break;
+			}
 
-				if (files.ProcessKey(key_scancode))
-				{
-					List_ReDraw();
-					break;
-				}
-
-				if (key_modifier&KEY_LCTRL) || (key_modifier&KEY_RCTRL)
-				{
-					switch(key_scancode)
-					{
-						case SCAN_CODE_F1...SCAN_CODE_F3:
-								EventSort(key_scancode - 58);
-								break;
-						case SCAN_CODE_1...SCAN_CODE_10:
-								key_scancode-=2;
-								if (key_scancode >= SystemDiscs.list.count) break;
-								if (!two_panels.checked)
-								{
-									DrawRectangle(17,key_scancode*16+74,159,16, 0); //display click
-									pause(7);										
-								}
-								SystemDiscs.Click(key_scancode);
-								break;
-						case SCAN_CODE_KEY_X:
-								Copy(#file_path, CUT);
-								break;						
-						case SCAN_CODE_KEY_C:
-								Copy(#file_path, NOCUT);
-								break;
-						case SCAN_CODE_KEY_V:
-								Paste();
-								break;
-						case SCAN_CODE_KEY_D: //set image as bg
-								strlcpy(#temp, "\\S__",4);
-								strcat(#temp, #file_path);
-								RunProgram("/sys/media/kiv", #temp);
-								break;
-						case SCAN_CODE_KEY_N: //create new window
-								if (Form.left==98) MoveSize(Form.left-20,Form.top-20,OLD,OLD);
-								RunProgram(I_Path, #path);
-								break; 
-						case SCAN_CODE_KEY_M:
-								Open_Dir(#inactive_path,WITH_REDRAW);
-								break; 
-						case SCAN_CODE_ENTER:
-								if (!itdir) ShowOpenWithDialog();
-								else Open(1);
-								break;
-						case SCAN_CODE_KEY_A:
-								EventSelectAllFiles(true);
-								break;
-						case SCAN_CODE_KEY_U: //unselect all files
-								selected_count = 0;
-								EventSelectAllFiles(false);
-								break;
-					}
-					break;
-				}
-
-				switch (key_scancode)
-				{
-						case SCAN_CODE_BS:
-								//GoBack();
-								Dir_Up();
-								break; 
-						case SCAN_CODE_ENTER:
-								Open(0);
-								break; 
-						case SCAN_CODE_TAB:
-								if (!two_panels.checked) break;
-								if (active_panel==1) active_panel=2; else active_panel=1;
-								ChangeActivePanel();
-								DrawFilePanels();
-								break;
-						case SCAN_CODE_MENU:
-								mouse.x = files.x+15;
-								mouse.y = files.cur_y - files.first * files.item_h + files.y + 5;
-								EventShowListMenu();
-								break;
-						case SCAN_CODE_DEL:
-								Del_Form();
-								break;
-						case SCAN_CODE_INS:
-								if (getElementSelectedFlag(files.cur_y) == true) setElementSelectedFlag(files.cur_y, false);
-								else setElementSelectedFlag(files.cur_y, true);
-								files.KeyDown();
-								List_ReDraw();
-								DrawStatusBar();
-								break;
-						case SCAN_CODE_F1...SCAN_CODE_F10:
-								FnProcess(key_scancode-58);
-								break; 
-						default:
-								EventSelectFileByKeyPress();
-				}                         
-			break;
-			case evIPC:
-			case evReDraw:
-				draw_window();
-				if (CheckActiveProcess(Form.ID)) && (GetMenuClick()) break;
-				if (action_buf==OPERATION_END)
-				{
-					FnProcess(5);
-					if (copy_stak) SelectFileByName(#copy_to+strrchr(#copy_to,'/'));
-					action_buf=0;
-				}
-			break;
-			default:
-				if (Form.status_window>2) break;
-				EventRefreshDisksAndFolders();
-		}
-		
-		if(cmd_free)
-		{
-			if(cmd_free==2) about_stak=free(about_stak);
-			else if(cmd_free==3) properties_stak=free(properties_stak);
-			else if(cmd_free==4) settings_stak=free(settings_stak);
-			else if(cmd_free==5) copy_stak=free(copy_stak);
-			else if(cmd_free==6) delete_stak=free(delete_stak);
-			cmd_free = false;
-		}
+			switch (key_scancode)
+			{
+					case SCAN_CODE_BS:
+							//EventHistoryGoBack();
+							Dir_Up();
+							break; 
+					case SCAN_CODE_ENTER:
+							Open(0);
+							break; 
+					case SCAN_CODE_TAB:
+							if (!two_panels.checked) break;
+							if (active_panel==1) active_panel=2; else active_panel=1;
+							ChangeActivePanel();
+							DrawFilePanels();
+							break;
+					case SCAN_CODE_MENU:
+							mouse.x = files.x+15;
+							mouse.y = files.cur_y - files.first * files.item_h + files.y + 5;
+							EventShowListMenu();
+							break;
+					case SCAN_CODE_DEL:
+							Del_Form();
+							break;
+					case SCAN_CODE_INS:
+							if (getElementSelectedFlag(files.cur_y) == true) setElementSelectedFlag(files.cur_y, false);
+							else setElementSelectedFlag(files.cur_y, true);
+							files.KeyDown();
+							List_ReDraw();
+							DrawStatusBar();
+							break;
+					case SCAN_CODE_F1...SCAN_CODE_F10:
+							FnProcess(key_scancode-58);
+							break; 
+					default:
+							EventSelectFileByKeyPress();
+			}                         
+		break;
+		case evIPC:
+		case evReDraw:
+			draw_window();
+			if (CheckActiveProcess(Form.ID)) && (GetMenuClick()) break;
+			if (action_buf==OPERATION_END)
+			{
+				FnProcess(5);
+				if (copy_stak) SelectFileByName(#copy_to+strrchr(#copy_to,'/'));
+				action_buf=0;
+			}
+		break;
+		default:
+			if (Form.status_window>2) break;
+			EventRefreshDisksAndFolders();
+	}
+	
+	if(cmd_free)
+	{
+		if(cmd_free==2) about_stak=free(about_stak);
+		else if(cmd_free==3) properties_stak=free(properties_stak);
+		else if(cmd_free==4) settings_stak=free(settings_stak);
+		else if(cmd_free==5) copy_stak=free(copy_stak);
+		else if(cmd_free==6) delete_stak=free(delete_stak);
+		cmd_free = false;
 	}
 }
 
@@ -817,7 +772,7 @@ void Open_Dir(dword dir_path, redraw){
 		if (errornum)
 		{
 			history.add(#path);
-			GoBack();
+			EventHistoryGoBack();
 			Write_Error(errornum);
 			return;
 		}
@@ -973,7 +928,7 @@ void Open(byte rez)
 	}
 }
 
-inline fastcall void GoBack()
+inline fastcall void EventHistoryGoBack()
 {
 	char cur_folder[4096];
 	strcpy(#cur_folder, #path);
@@ -1091,26 +1046,22 @@ void FnProcess(byte N)
 	switch(N)
 	{
 		case 1:
-			if (!active_about) 
-			{
+			if (!active_about) {
 				about_stak = malloc(4096);
 				about_thread_id = CreateThread(#about_dialog,about_stak+4092);
 				break;
-			}
-			else
-			{
+			} else {
 				ActivateWindow(GetProcessSlot(about_thread_id));
 			}
 			break;
 		case 2:
-			if (!files.count) break;
-			NewElement_Form(RENAME_ITEM, #file_name);
+			if (files.count) NewElement_Form(RENAME_ITEM, #file_name);
 			break;
 		case 3:
-			if (!itdir) RunProgram("/sys/tinypad", #file_path);
+			if (files.count) && (!itdir) RunProgram("/sys/tinypad", #file_path);
 			break;
 		case 4:
-			if (!itdir) RunProgram("/sys/develop/heed", #file_path);
+			if (files.count) && (!itdir) RunProgram("/sys/develop/heed", #file_path);
 			break;
 		case 5: //refresh cur dir & devs
 			if (two_panels.checked)
@@ -1236,6 +1187,51 @@ void EventSort(dword id)
 	DrawList();
 	Open_Dir(#path,WITH_REDRAW);
 	SelectFileByName(#selected_filename);
+}
+
+void EventHistoryGoForward()
+{
+	if (history.forward()) {
+		strcpy(#path, history.current());
+		files.KeyHome();
+		Open_Dir(#path,WITH_REDRAW);
+	}
+}
+
+void ProceedMouseGestures()
+{
+	char stats;
+	signed x_old, y_old, dif_x, dif_y, adif_x, adif_y;
+	if (!mouse.mkm) && (stats>0) stats = 0;
+	if (mouse.mkm) && (!stats)
+	{
+		x_old = mouse.x;
+		y_old = mouse.y;
+		stats = 1;
+	}
+	if (mouse.mkm) && (stats==1)
+	{
+		dif_x = mouse.x-x_old;
+		dif_y = mouse.y-y_old;
+		adif_x = fabs(dif_x);
+		adif_y = fabs(dif_y);
+		
+		if (adif_x>adif_y) {
+			if (dif_x > 150) {
+				EventHistoryGoForward();
+				stats = 0;
+			}
+			if (dif_x < -150) {
+				EventHistoryGoBack();
+				stats = 0;
+			}
+		} else {
+			if (dif_y < -100) {
+				Dir_Up();
+				stats = 0;
+			}
+		}
+	}
 }
 
 stop:

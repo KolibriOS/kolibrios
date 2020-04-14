@@ -33,8 +33,8 @@ app_colours:
 
 w_frame              dd ?
 w_grab               dd ?
-w_work_3d_dark        dd ?
-w_work_3d_light   dd ?
+w_work_dark          dd ?
+w_work_light         dd ?
 w_grab_text          dd ?
 w_work               dd ?
 w_work_button        dd ?

@@ -469,8 +469,8 @@ ends
 struct system_colors
   frame            dd ? ;nonset1
   grab             dd ? ;nonset2
-  work_3d_dark     dd ?
-  work_3d_light    dd ?
+  work_dark        dd ?
+  work_light       dd ?
   grab_text        dd ? ;window_title
   work             dd ?
   work_button      dd ?

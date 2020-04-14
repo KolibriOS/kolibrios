@@ -5,8 +5,8 @@ struc system_colors
 {
   .frame            dd ?
   .grab             dd ?
-  .work_3d_dark      dd ?
-  .work_3d_light dd ?
+  .work_dark        dd ?
+  .work_light       dd ?
   .grab_text        dd ?
   .work             dd ?
   .work_button      dd ?
