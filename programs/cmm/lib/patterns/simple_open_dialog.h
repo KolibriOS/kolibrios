@@ -1,7 +1,7 @@
 struct od_filter
  {
  	dword size; //size = len(#ext) + sizeof(dword)
- 	char ext[16];
+ 	char ext[25];
  };
 
 proc_info pr_inf;

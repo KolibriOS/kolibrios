@@ -1,5 +1,5 @@
 
-; application : View3ds ver. 0.068b - tiny .3ds and .asc files viewer
+; application : View3ds ver. 0.069 - tiny .3ds and .asc files viewer
 ;		with a few graphics effects demonstration.
 ; compiler    : FASM
 ; system      : KolibriOS
@@ -3379,34 +3379,55 @@ end if
 read_from_disk:
 if USE_LFN
 ;-
-    mov     eax, 70
-    mov     ebx, file_info
-    mov     dword[ebx], 5	   ;  -> subfunction number
-    int     0x40		   ;  -> read file size
-    mov     ebx, [fptr]
-    mov     ebx, dword[ebx+32]
-    inc     ebx
-    mov     [fsize], ebx
-
     mov     eax, 68
     mov     ebx, 11
-    int     0x40		   ;  -> create heap
+    int     0x40		   ;  -> init heap
 
-    mov     eax, 68
-    mov     ebx, 12
-    mov     ecx, [fsize]
-    int     0x40		   ;  -> allocate memory for file
-    mov     [fptr], eax 	   ;  -> eax = pointer to allocated mem
+    ;mov     eax, 70
+    ;mov     ebx, file_info
+    ;mov     dword[ebx], 5	   ;  -> subfunction number
+    ;int     0x40		   ;  -> read file size
+    ;mov     ebx, [fptr]
+    ;mov     ebx, dword[ebx+32]
+    ;inc     ebx
+    ;mov     [fsize], ebx
 
-    mov     eax, 70
-    mov     ebx, file_info
-    mov     dword[ebx],0
-    int     0x40		   ; -> read file
+    ;mov     eax, 68
+    ;mov     ebx, 12
+    ;mov     ecx, [fsize]
+    ;int     0x40		   ;  -> allocate memory for file
+    ;mov     [fptr], eax 	   ;  -> eax = pointer to allocated mem
 
-    mov     [fsize],ebx
-    cmp     eax,6
-    jnz     @f
-    xor     eax,eax	;;;;---
+    ;mov     eax, 70
+    ;mov     ebx, file_info
+    ;mov     dword[ebx],0
+    ;int     0x40		   ; -> read file
+	
+    ;mov     [fsize],ebx
+    ;cmp     eax,6
+    ;jnz     @f
+    ;xor     eax,eax	;;;;---
+	
+    ;cmp     eax,6
+    ;jnz     @f
+    ;xor     eax,eax	;;;;---
+
+    ;load kpacked files by Leency
+
+	mov     eax,68
+	mov     ebx,27
+	mov     ecx,I_Param
+	int     0x40
+
+    mov     [fsize],edx
+	mov     [file_info+16],eax
+	
+	test    eax,eax
+	jnz     .open_opened_well
+	mov     eax,6 ;otherwise => failed
+	jmp     @f
+	.open_opened_well:
+	xor     eax,eax
   @@:
 else
     mov      eax,58

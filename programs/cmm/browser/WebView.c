@@ -89,7 +89,7 @@ enum {
 #include "tabs.h"
 
 char default_dir[] = "/rd/1";
-od_filter filter2 = { 16, "TXT\0HTM\0HTML\0\0" };
+od_filter filter2 = { 22, "TXT\0HTM\0HTML\0DOCX\0\0" };
 
 char editURL[URL_SIZE+1];
 edit_box address_box = {, PADDING+TSZE*2+PADDING+6, PADDING+3, 0xffffff,
@@ -519,6 +519,7 @@ bool GetLocalFileData(dword _path)
 void OpenPage(dword _open_URL)
 {
 	char new_url[URL_SIZE+1];
+	int unz_id;
 
 	StopLoading();
 
@@ -571,6 +572,13 @@ void OpenPage(dword _open_URL)
 		}
 	} else {
 		//LOCAL PAGE
+		if (UrlExtIs(#new_url,".docx")) {
+			DeleteFile("/tmp0/1/temp/word/document.xml");
+			CreateDir("/tmp0/1/temp");
+			unz_id = RunProgram("/sys/unz", sprintf(#param, "-o \"/tmp0/1/temp\" -h \"%s\"", #new_url));
+			while (GetProcessSlot(unz_id)) pause(2);
+			strcpy(#new_url, "/tmp0/1/temp/word/document.xml");
+		} 
 		if (!GetLocalFileData(#new_url)) {
 			LoadInternalPage(#page_not_found, sizeof(page_not_found));
 		}
