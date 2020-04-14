@@ -35,7 +35,7 @@ bool TAB::close(int _tab_number)
 {
 	int i;
 	if (count==1) return false;
-	for (i=_tab_number; i<=TABS_MAX; i++) {
+	for (i=_tab_number; i<TABS_MAX; i++) {
 		data[i] = data[i+1];
 		tabstory[i] = tabstory[i+1];
 	}

@@ -36,6 +36,31 @@
 
 bool debug_mode = false;
 
+enum { 
+	NEW_TAB=600,
+	ENCODINGS=700,
+	BACK_BUTTON=800, 
+	FORWARD_BUTTON, 
+	REFRESH_BUTTON, 
+	GOTOURL_BUTTON, 
+	CHANGE_ENCODING,
+	SANDWICH_BUTTON,
+	VIEW_SOURCE,
+	EDIT_SOURCE,
+	OPEN_FILE,
+	NEW_WINDOW,
+	VIEW_HISTORY,
+	DOWNLOAD_MANAGER,
+	CLEAR_CACHE,
+	UPDATE_BROWSER,
+	IN_NEW_TAB,
+	IN_NEW_WINDOW,
+	COPY_LINK_URL,
+	DOWNLOAD_LINK_CONTENTS,
+	TAB_ID,
+	TAB_CLOSE_ID = 900
+};
+
 #include "..\TWB\TWB.c" //HTML Parser, a core component
 
 TWebBrowser WB1;
@@ -62,31 +87,6 @@ char stak[4096];
 proc_info Form;
 
 int menu_id=NULL;
-
-enum { 
-	NEW_TAB=600,
-	ENCODINGS=700,
-	BACK_BUTTON=800, 
-	FORWARD_BUTTON, 
-	REFRESH_BUTTON, 
-	GOTOURL_BUTTON, 
-	CHANGE_ENCODING,
-	SANDWICH_BUTTON,
-	VIEW_SOURCE,
-	EDIT_SOURCE,
-	OPEN_FILE,
-	NEW_WINDOW,
-	VIEW_HISTORY,
-	DOWNLOAD_MANAGER,
-	CLEAR_CACHE,
-	UPDATE_BROWSER,
-	IN_NEW_TAB,
-	IN_NEW_WINDOW,
-	COPY_LINK_URL,
-	DOWNLOAD_LINK_CONTENTS,
-	TAB_ID,
-	TAB_CLOSE_ID = 900
-};
 
 #include "tabs.h"
 
@@ -235,6 +235,7 @@ void main()
 				} else {
 					notify("'Too many redirects.' -E");
 					StopLoading();
+					redirect_count = 0;
 				}
 			} else {
 				// Loading the page is complete, free resources
@@ -430,12 +431,12 @@ void ProcessEvent(dword id__)
 			return;
 		case IN_NEW_TAB:
 			open_new_tab = true;
-			EventOpenNewTab(PageLinks.GetURL(PageLinks.active));
+			EventClickLink(PageLinks.GetURL(PageLinks.active));
 			open_new_tab = false;
 			return;
 		case IN_NEW_WINDOW:
 			open_new_tab = true;
-			RunProgram(#program_path, PageLinks.GetURL(PageLinks.active));
+			EventClickLink(PageLinks.GetURL(PageLinks.active));
 			open_new_tab = false;
 			return;
 		case COPY_LINK_URL:
