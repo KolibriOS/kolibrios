@@ -98,9 +98,13 @@ bool LinksArray::HoverAndProceed(dword mx, my, list_y, list_first)
 			}
 			if (mouse.mkm) && (mouse.up) {
 				if (key_modifier&KEY_LSHIFT) || (key_modifier&KEY_RSHIFT) {
-					ProcessEvent(IN_NEW_TAB);
+					open_new_window = true;
+					EventClickLink(PageLinks.GetURL(PageLinks.active));
+					open_new_window = false;
 				} else {
-					ProcessEvent(IN_NEW_WINDOW);
+					open_new_tab = true;
+					EventClickLink(PageLinks.GetURL(PageLinks.active));
+					open_new_tab = false;
 				}
 				return false;
 			}
