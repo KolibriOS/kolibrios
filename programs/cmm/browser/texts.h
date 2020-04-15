@@ -11,6 +11,7 @@ char rmb_menu[] =
 char main_menu[] = 
 "Открыть файл|Ctrl+O
 Новое окно|Ctrl+N
+-
 История|Ctrl+H
 Менеджер загрузок|Ctrl+J
 Очистить кэш
@@ -18,6 +19,7 @@ char main_menu[] =
 char link_menu[] =
 "Открыть в новой вкладке
 Открыть в новом окне
+-
 Копировать ссылку
 Скачать содержимое ссылки";
 char loading_text[] = "Загрузка...";
@@ -39,6 +41,7 @@ Edit source";
 char main_menu[] = 
 "Open local file|Ctrl+O
 New window|Ctrl+N
+-
 History|Ctrl+H
 Download Manager|Ctrl+J
 Clear cache
@@ -46,6 +49,7 @@ Update browser";
 char link_menu[] =
 "Open in new tab
 Open in new window
+-
 Copy link
 Download link contents";
 char loading_text[] = "Loading...";

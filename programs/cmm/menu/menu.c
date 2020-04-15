@@ -7,6 +7,7 @@
 #include "../lib/fs.h"
 
 #define ITEM_H 19
+#define SEP_H 4
 
 llist menu1;
 collection names;
@@ -16,6 +17,7 @@ int selected, win_x, win_y;
 
 int max_name_len;
 int max_hotkey_len;
+int menu_w, menu_h;
 
 void GetWindowPosition()
 {
@@ -70,6 +72,33 @@ void GetMenuItems(dword current_name)
 	if (next_name) GetMenuItems(next_name+2);
 }
 
+int GetSeparatorsCount()
+{
+	int i, count=0;
+	for (i=0; i<names.count; i++) {
+		if (streq(names.get(i), "-")) count++;
+	}
+	return count;
+}
+
+int MoveMouseToHandleSeparators(int _mouse_y)
+{
+	int i, item_y=menu1.y;
+	int item_i=0;
+	for (i=0; i<menu1.count; i++;)
+	{
+		if (streq(names.get(i), "-")) {
+			item_y += SEP_H;
+		} else {
+			item_y += ITEM_H;
+			item_i++;
+		}
+		if (_mouse_y >= item_y) && (_mouse_y < item_y + ITEM_H) {
+			return item_i * ITEM_H + menu1.y;
+		}
+	}
+}
+
 void main()
 {
 	proc_info Form;
@@ -79,9 +108,13 @@ void main()
 	GetMenuItems(#param);
 	GetMenuWidths();
 
+	menu_w = max_name_len + max_hotkey_len + 23;
+	menu_h = GetSeparatorsCount() * SEP_H 
+		+ calc(names.count - GetSeparatorsCount() * ITEM_H);
+
 	menu1.count = names.count;
 	menu1.SetFont(6, 9, 0x80);
-	menu1.SetSizes(2,2, max_name_len + max_hotkey_len + 23, menu1.count*ITEM_H, ITEM_H);
+	menu1.SetSizes(2,2, menu_w, menu_h, ITEM_H);
 	menu1.cur_y = -1;
 
 	GetWindowPosition();
@@ -93,8 +126,11 @@ void main()
 			GetProcessInfo(#Form, SelfInfo);
 			if (!CheckActiveProcess(Form.ID)) exit();
 			mouse.get();
-			if (menu1.ProcessMouse(mouse.x, mouse.y)) draw_list();
-			if (mouse.lkm)&&(mouse.up) click();
+			if (menu1.MouseOver(mouse.x, mouse.y)) {
+				mouse.y = MoveMouseToHandleSeparators(mouse.y);
+				if (menu1.ProcessMouse(mouse.x, mouse.y)) draw_list();
+				if (mouse.lkm)&&(mouse.up) click();	
+			} 
 			break;
 
 		case evKey:
@@ -121,7 +157,8 @@ void ProcessKeys()
 			click();
 
 		case SCAN_CODE_DOWN:
-			if (!menu1.KeyDown()) menu1.KeyHome();
+			if (!menu1.KeyDown()) 
+			|| (menu1.count - menu1.cur_y - GetSeparatorsCount() -1 < 0) menu1.KeyHome();
 			draw_list();
 			break;
 
@@ -137,7 +174,7 @@ void ProcessKeys()
 
 void draw_list()
 {
-	int i, item_y;
+	int i, item_y=menu1.y, item_i=0;
 	dword name_color;
 	dword hotkey_color;
 
@@ -159,22 +196,31 @@ void draw_list()
 
 	for (i=0; i<menu1.count; i++;)
 	{
-		item_y = i*ITEM_H+menu1.y;
-		if (i==menu1.cur_y) {
-			hotkey_color = name_color = system.color.work_button_text;
-			DrawBar(menu1.x, item_y+1,        menu1.w, ITEM_H-2, active_background_color);
-			DrawBar(menu1.x, item_y,          menu1.w, 1, active_top_border_color);
-			DrawBar(menu1.x, item_y+ITEM_H-1, menu1.w, 1, system.color.work_light);
+		if (streq(names.get(i), "-")) {
+			DrawBar(menu1.x, item_y+0, menu1.w, 1, inactive_background_color);
+			DrawBar(menu1.x, item_y+1, menu1.w, 1, system.color.work_dark);
+			DrawBar(menu1.x, item_y+2, menu1.w, 1, system.color.work_light);
+			DrawBar(menu1.x, item_y+3, menu1.w, 1, inactive_background_color);
+			item_y += SEP_H;
 		} else {
-			name_color = system.color.work_text;
-			hotkey_color = system.color.work_graph;
-			DrawBar(menu1.x, item_y, menu1.w, ITEM_H, inactive_background_color);
-			if (!skin_dark) WriteText(13+1, item_y + menu1.text_y +1, 0x80, 
-				inactive_text_shadow_color, names.get(i));
+			if (item_i==menu1.cur_y) {
+				hotkey_color = name_color = system.color.work_button_text;
+				DrawBar(menu1.x, item_y+1,        menu1.w, ITEM_H-2, active_background_color);
+				DrawBar(menu1.x, item_y,          menu1.w, 1, active_top_border_color);
+				DrawBar(menu1.x, item_y+ITEM_H-1, menu1.w, 1, system.color.work_light);
+			} else {
+				name_color = system.color.work_text;
+				hotkey_color = system.color.work_graph;
+				DrawBar(menu1.x, item_y, menu1.w, ITEM_H, inactive_background_color);
+				if (!skin_dark) WriteText(13+1, item_y + menu1.text_y +1, 0x80, 
+					inactive_text_shadow_color, names.get(i));
+			}
+			WriteText(-strlen(hotkeys.get(i))*6 + 13 + max_name_len + max_hotkey_len, 
+				item_y + menu1.text_y, 0x80, hotkey_color, hotkeys.get(i));
+			WriteText(13, item_y + menu1.text_y, 0x80, name_color, names.get(i));
+			item_y += ITEM_H;
+			item_i++;		
 		}
-		WriteText(-strlen(hotkeys.get(i))*6 + 13 + max_name_len + max_hotkey_len, 
-			item_y + menu1.text_y, 0x80, hotkey_color, hotkeys.get(i));
-		WriteText(13, item_y + menu1.text_y, 0x80, name_color, names.get(i));
 	}
 	if (selected) WriteText(5, selected-1*ITEM_H + menu1.y + menu1.text_y, 0x80, 0xEE0000, "\x10");
 }

@@ -435,9 +435,9 @@ void ProcessEvent(dword id__)
 			open_new_tab = false;
 			return;
 		case IN_NEW_WINDOW:
-			open_new_tab = true;
+			open_new_window = true;
 			EventClickLink(PageLinks.GetURL(PageLinks.active));
-			open_new_tab = false;
+			open_new_window = false;
 			return;
 		case COPY_LINK_URL:
 			Clipboard__CopyText(PageLinks.GetURL(PageLinks.active));

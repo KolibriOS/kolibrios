@@ -3,17 +3,21 @@
 char file_actions[]= 
 "Открыть           |Enter
 Открыть с помощью  |CrlEnt
+-
 Копировать         |Crl+C
 Вырезать           |Crl+X
 Вставить           |Crl+V
+-
 Переименовать      |F2
 Удалить            |Del
 Свойства           |F8";
 char folder_actions[]=
 "Открыть       |Enter
+-
 Копировать     |Crl+C
 Вырезать       |Crl+X
 Вставить       |Crl+V
+-
 Удалить        |Del
 Свойства       |F8";
 char empty_folder_actions[]=
@@ -23,17 +27,21 @@ char empty_folder_actions[]=
 char file_actions[]= 
 "Ava           |Enter
 Ava ...        |CrlEnt
+-
 Kopeeri        |Crl+C
 Lїika          |Crl+X
 Aseta          |Crl+V
+-
 Nimeta №mber   |F2
 Kustuta        |Del
 Properties     |F8";
 char folder_actions[]=
 "Ava           |Enter
+-
 Kopeeri        |Crl+C
 Lїika          |Crl+X
 Aseta          |Crl+V
+-
 Kustuta        |Del
 Properties     |F8";
 char empty_folder_actions[]=
@@ -43,17 +51,21 @@ char empty_folder_actions[]=
 char file_actions[]= 
 "Open         |Enter 
 Open with...  |CrlEnt
+-
 Copy          |Crl+C
 Cut           |Crl+X
 Paste         |Crl+V
+-
 Rename        |F2
 Delete        |Del
 Properties    |F8";
 char folder_actions[]=
 "Open        |Enter 
+-
 Copy         |Crl+C
 Cut          |Crl+X
 Paste        |Crl+V
+-
 Delete       |Del
 Properties   |F8";
 char empty_folder_actions[]=
