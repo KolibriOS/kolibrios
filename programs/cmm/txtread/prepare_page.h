@@ -34,8 +34,7 @@ dword line_start=io.buffer_data;
 				list.count++;
 			}
 			if (mode==DRAW_BUF) {
-				EBX = bufoff-line_start;
-				strlcpy(#line, line_start, EBX);
+				strlcpy(#line, line_start, bufoff-line_start);
 				kfont.WriteIntoBuffer(DRAW_PADDING,stroka_y,list.w,kfont.size.height, bg_color, text_color, kfont.size.pt, #line);
 				stroka_y += list.item_h;
 				line_start = bufoff;
@@ -54,7 +53,7 @@ void PreparePage()
 	Parse(COUNT_BUF_HEIGHT);
 	
 	//draw text in buffer
-	list.SetSizes(0, TOOLBAR_H, list.w, Form.cheight-TOOLBAR_H, kfont.size.pt+6);
+	list.SetSizes(0, TOOLBAR_H, list.w, Form.cheight-TOOLBAR_H, kfont.size.pt+8);
 	if (list.count < list.visible) list.count = list.visible;
 	kfont.size.height = list.count+1*list.item_h;
 	kfont.raw_size = 0;

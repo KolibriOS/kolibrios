@@ -73,7 +73,6 @@ int kfont_char_width[255];
 	if(font)free(font);
 	label_io.read(font_path);
 	if(!EAX) {
-		//debugln(font_path);
 		label_io.run("/sys/@notify", "'Error: KFONT is not loaded.' -E"); 
 		return false;
 	}
@@ -151,7 +150,7 @@ int kfont_char_width[255];
 	dword tmp, _;
 	byte X;
 	byte chaw_width=0;
-	if(s==32)return width/4;
+	if(s==32)return width/4+1;
 	if(s==9)return width;
 	s = Cp866ToAnsi(s);
 	tmp = block*s << 2 + font;

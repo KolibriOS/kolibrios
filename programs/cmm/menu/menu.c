@@ -199,9 +199,12 @@ void draw_list()
 	{
 		if (streq(names.get(i), "-")) {
 			DrawBar(menu1.x, item_y+0, menu1.w, 1, inactive_background_color);
-			DrawBar(menu1.x, item_y+1, menu1.w, 1, system.color.work_dark);
+			DrawBar(menu1.x-1, item_y+1, menu1.w+1, 1, system.color.work_dark);
 			DrawBar(menu1.x, item_y+2, menu1.w, 1, system.color.work_light);
 			DrawBar(menu1.x, item_y+3, menu1.w, 1, inactive_background_color);
+			//DrawBar(menu1.x, item_y+0, menu1.w, 4, inactive_background_color);
+			//DrawBar(13, item_y+1, menu1.w-24, 1, system.color.work_dark);
+			//DrawBar(13, item_y+2, menu1.w-24, 1, system.color.work_light);
 			item_y += SEP_H;
 		} else {
 			if (item_i==menu1.cur_y) {

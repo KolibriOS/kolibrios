@@ -222,10 +222,12 @@ void HandleKeyEvent()
 			case SCAN_CODE_KEY_I:
 				EventShowFileProperties();
 				break;
+			case SCAN_CODE_PLUS:
 			case SCAN_CODE_UP:
 				EventMagnifyPlus();
 				break;
 			case SCAN_CODE_DOWN:
+			case SCAN_CODE_MINUS:
 				EventMagnifyMinus();
 				break;
 			case SCAN_CODE_KEY_E:
@@ -439,8 +441,7 @@ void draw_window()
 	if ((Form.cwidth-scroll.size_x-1 == list.w) && 
 		(Form.cheight-TOOLBAR_H == list.h) && 
 		(list.count) 
-	)
-	{
+	) {
 		DrawPage(); 
 	} else {
 		PreparePage();
