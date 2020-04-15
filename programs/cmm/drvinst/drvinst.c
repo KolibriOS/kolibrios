@@ -246,6 +246,6 @@ void Event_RunInstall()
 	if (streq(#cur_type, "video")) {
 		RestartProcessByName("/sys/@taskbar", SINGLE);
 		RestartProcessByName("/sys/@docky", SINGLE);	
-		RestartProcessByName("/sys/@icon", MOLTIPLE);	
+		RestartProcessByName("/sys/@icon", MULTIPLE);	
 	}
 }
