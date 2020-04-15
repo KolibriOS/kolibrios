@@ -193,13 +193,16 @@ byte draw_icons_from_section(dword key_value, key_name, sec_name, f_name)
 
 	text_x = col*list.item_w+5;
 	text_y = list.item_h - 40 / 2;
-	if (kfont.getsize(key_name)+30<list.item_w) || (!strchr(key_name, ' ')) {
+	if (!strchr(key_name, ' ')) {//|| (kfont.getsize(key_name)+30<list.item_w) <== too slow
 		kfont.WriteIntoWindowCenter(text_x, row*list.item_h+46 + list_pos, list.item_w,0, swc.list_bg, swc.text, 12, key_name);
+		//WriteTextCenter(text_x, row*list.item_h+46 + list_pos+3, list.item_w, swc.text, key_name);
 	} else {
 		space_pos = strrchr(key_name, ' ');
 		ESBYTE[key_name+space_pos-1] = '\0';
 		kfont.WriteIntoWindowCenter(text_x, row*list.item_h+46 + list_pos - 2, list.item_w,0, swc.list_bg, swc.text, 12, key_name);
-		kfont.WriteIntoWindowCenter(text_x, row*list.item_h+46 + list_pos + 14, list.item_w,0, swc.list_bg, swc.text, 12, key_name+space_pos);
+		kfont.WriteIntoWindowCenter(text_x, row*list.item_h+46 + list_pos + 13, list.item_w,0, swc.list_bg, swc.text, 12, key_name+space_pos);
+		//WriteTextCenter(text_x, row*list.item_h+46 + list_pos, list.item_w, swc.text, key_name);
+		//WriteTextCenter(text_x, row*list.item_h+46 + list_pos + 10, list.item_w, swc.text, key_name+space_pos);
 	}
 	if (icon_char_pos) icon_id = atoi(icon_char_pos+1);
 	img_draw stdcall(skin.image, icon_x, icon_y, 32, 32, 0, icon_id*32);
