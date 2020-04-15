@@ -97,6 +97,7 @@ int MoveMouseToHandleSeparators(int _mouse_y)
 			return item_i * ITEM_H + menu1.y;
 		}
 	}
+	return _mouse_y;
 }
 
 void main()

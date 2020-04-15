@@ -346,10 +346,11 @@ void TWebBrowser::SetStyle() {
 		return;
 	}
 	if (tag.is("br")) { NewLine(); return; }
-	if (tag.is("b")) || (tag.is("strong")) || (tag.is("big")) { 
+	if (tag.is("b")) || (tag.is("strong")) || (tag.is("big")) || (tag.is("w:b")) { 
 		style.b = tag.opened; 
 		return; 
 	}
+	if (tag.is("w:r")) && (!tag.opened) { style.b = false; return; }
 	if (tag.is("a")) {
 		if (tag.opened)
 		{
