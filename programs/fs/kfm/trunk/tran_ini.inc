@@ -75,48 +75,50 @@ open_file_with_appl_1:
 open_file_with_appl:
 ; edx - start file name
 ; esi - start extension
-    mov   ebp,files_associations
+    ;mov   ebp,files_associations     ;Leency
 .1:
-    mov   [extension_start],esi
-    call  search_star_and_end_tags
-    cmp   ebp,-1
-    je	  .end
-    call  normalize_extension_of_file
-.search_association:
-    cmp   [end_tag],edi
-    jbe   .end
-    mov   esi,extension_temp_storage
-    mov   ecx,[extension_size]
-    inc   edi
-    cld
-    push   edi
-    rep  cmpsb
-    pop    edi
-    jne   .search_association
-    push  esi
-    mov   esi,edi
-    add   esi,[extension_size] ;4
-    cmp   [esi],byte ' '
-    je	  @f
-    pop   esi
-    jmp   .search_association
-@@:
-    add   esp,4
-    inc   esi
-    mov   edi,file_name  ;start_file_data.name
-    xor   eax,eax
-@@:
-    cld
-    lodsb
-    stosb
-    cmp    al,' '
-    cmp   al,13
-    jnz   @b
-    mov   [edi-1],byte 0 ;'#'
-    cmp   [use_patch],0
-    je	  @f
-    mov   [use_patch],0
-    jmp   .continue
+	
+    ; mov   [extension_start],esi     ;Leency: do not get file assoc 
+    ; call  search_star_and_end_tags  ;from KFM.INI, use /sys/@open
+    ; cmp   ebp,-1
+    ; je	  .end
+    ; call  normalize_extension_of_file
+; .search_association:
+    ; cmp   [end_tag],edi
+    ; jbe   .end
+    ; mov   esi,extension_temp_storage
+    ; mov   ecx,[extension_size]
+    ; inc   edi
+    ; cld
+    ; push   edi
+    ; rep  cmpsb
+    ; pop    edi
+    ; jne   .search_association
+    ; push  esi
+    ; mov   esi,edi
+    ; add   esi,[extension_size] ;4
+    ; cmp   [esi],byte ' '
+    ; je	  @f
+    ; pop   esi
+    ; jmp   .search_association
+; @@:
+    ; add   esp,4
+    ; inc   esi
+    ; mov   edi,file_name  ;start_file_data.name
+    ; xor   eax,eax
+; @@:
+    ; cld
+    ; lodsb
+    ; stosb
+    ; cmp    al,' '
+    ; cmp   al,13
+    ; jnz   @b
+    ; mov   [edi-1],byte 0 ;'#'
+    ; cmp   [use_patch],0
+    ; je	  @f
+    ; mov   [use_patch],0
+
+.run_sysopen:
 @@:
     cmp   [select_panel_counter],0
     jne   @f
@@ -154,7 +156,8 @@ open_file_with_appl:
     jnz   @b
 .continue:
     mov   [start_file_data.param],start_parameter
-    call  start_appl
+    ;call  start_appl ;Leency
+	mcall 70,sysopen  ;Leency
     cmp   eax,0
     jge   @f
     mov  ebx,0

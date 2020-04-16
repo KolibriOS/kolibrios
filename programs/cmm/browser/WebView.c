@@ -513,26 +513,30 @@ bool ReplaceSpaceInUrl(dword url, size) {
 	return was_changed;
 }
 
+bool HandleUrlFiles(dword _path, _data)
+{
+	dword url_from_file;
+	if (!UrlExtIs(_path, "url")) return false;
+	url_from_file = strstri(_data, "URL=");
+	if (url_from_file == -1) return false;
+	replace_char(url_from_file, '\n', '\0', strlen(url_from_file));
+	OpenPage(url_from_file); 		
+}
+
 bool GetLocalFileData(dword _path)
 {
-	dword data, size, url_from_file;
+	dword data, size;
 	file_size stdcall (_path);
-	if (!EBX) {
-		return false;
-	} else {
-		size = EBX;
-		data = malloc(size);
-		ReadFile(0, size, data, _path);
-		url_from_file = strstri(data, "URL=");
-		if (UrlExtIs(_path, "url")) && (url_from_file != -1) {
-			strtrim(url_from_file);
-			OpenPage(url_from_file); 				
-		} else {
-			LoadInternalPage(data, size);
-		}
-		free(data);
-		return true;
+	if (!EBX) return false;
+
+	size = EBX;
+	data = malloc(size);
+	ReadFile(0, size, data, _path);
+	if (!HandleUrlFiles(_path, data)) {
+		LoadInternalPage(data, size);
 	}
+	free(data);
+	return true;
 }
 
 void OpenPage(dword _open_URL)
