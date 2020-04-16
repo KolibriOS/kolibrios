@@ -515,7 +515,7 @@ bool ReplaceSpaceInUrl(dword url, size) {
 
 bool GetLocalFileData(dword _path)
 {
-	dword data, size;
+	dword data, size, url_from_file;
 	file_size stdcall (_path);
 	if (!EBX) {
 		return false;
@@ -523,7 +523,13 @@ bool GetLocalFileData(dword _path)
 		size = EBX;
 		data = malloc(size);
 		ReadFile(0, size, data, _path);
-		LoadInternalPage(data, size);
+		url_from_file = strstri(data, "URL=");
+		if (UrlExtIs(_path, "url")) && (url_from_file != -1) {
+			strtrim(url_from_file);
+			OpenPage(url_from_file); 				
+		} else {
+			LoadInternalPage(data, size);
+		}
 		free(data);
 		return true;
 	}
@@ -562,7 +568,7 @@ void OpenPage(dword _open_URL)
 		else if (!strcmp(#new_url, URL_SERVICE_HELP)) LoadInternalPage(#help, sizeof(help));
 		else if (!strcmp(#new_url, URL_SERVICE_HISTORY)) ShowHistory();
 		else LoadInternalPage(#page_not_found, sizeof(page_not_found));
-		
+
 	} else if (!strncmp(#new_url,"http:",5)) || (!strncmp(#new_url,"https:",6)) {
 		//WEB PAGE
 		if (ReplaceSpaceInUrl(#new_url, URL_SIZE)) {
