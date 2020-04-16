@@ -341,7 +341,7 @@ void TWebBrowser::SetStyle() {
 		// Autodetecting encoding if no encoding was set
 		if (tag.opened) && (custom_encoding==-1) && (cur_encoding == CH_CP866) {
 			if (strstr(bufpointer, "\208\190")) ChangeEncoding(CH_UTF8);
-			else if (chrnum(bufpointer, '\x246')>5) ChangeEncoding(CH_CP1251);
+			else if (chrnum(bufpointer, '\246')>5) ChangeEncoding(CH_CP1251);
 		}
 		return;
 	}

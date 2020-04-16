@@ -701,6 +701,7 @@ void LoadInternalPage(dword _bufdata, _in_bufsize){
 		DrawActiveTab();
 		if (source_mode) {
 			source_mode = false;
+			WB1.custom_encoding = CH_CP866;
 			ShowSource(WB1.bufpointer, _in_bufsize);
 		} else {
 			WB1.DrawPage();			
@@ -708,7 +709,7 @@ void LoadInternalPage(dword _bufdata, _in_bufsize){
 	}
 }
 
-byte UrlExtIs(dword base, ext)
+bool UrlExtIs(dword base, ext)
 {
 	if (!strcmpi(base + strlen(base) - strlen(ext), ext)) return true;
 	return false;

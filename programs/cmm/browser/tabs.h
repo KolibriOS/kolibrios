@@ -134,7 +134,7 @@ void DrawTabsBar()
 {
 	dword i;
 	tab_w = GetTabWidth();
-	for (i=0; i<tab.count; i++) DrawTab(i);
+	for (i=0; i<tab.count; i++) DrawTab(i); 
 	i = DrawNewTabButton();
 	DrawBar(i, TOOLBAR_H, Form.cwidth-i, TAB_H-1, MixColors(system.color.work_dark, system.color.work, 128));
 	DrawBar(i, TOOLBAR_H+TAB_H-1, Form.cwidth-i, 1, system.color.work_graph);
@@ -142,7 +142,7 @@ void DrawTabsBar()
 
 void EventTabClose(int _id)
 {
-	DeleteButton(tab.count);
+	DeleteButton(TAB_ID + tab.count-1);
 	if (_id == tab.active) {
 		tab.close(_id);
 		tab.restore(tab.active);
