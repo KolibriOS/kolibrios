@@ -1,5 +1,5 @@
 
-int cmd_cp(char param[])
+int cmd_mv(char param[])
 {
     char* argv[100];
     int argc;
@@ -17,12 +17,17 @@ int cmd_cp(char param[])
 
     argc = parameters_prepare(param, argv);
 
+    /*
+	argv[0] - path (abs or rel) to file
+	argv[1] - new location: path (abs or rel) to dir or file
+    */
+
     if (argc != 2)
     {
         #if LANG_ENG
-            printf("  cp <file_in> <file_out>\n\r");
+            printf("  mv <file_in> <file_out>\n\r");
         #elif LANG_RUS
-            printf("  cp <источник> <результат>\n\r");
+            printf("  mv <источник> <результат>\n\r");
         #endif
         parameters_free(argc, argv);
         return TRUE;
@@ -66,6 +71,12 @@ int cmd_cp(char param[])
             strcat(filename_out, "/"); // add slash
         }
         strcat(filename_out, fname);
+    }
+
+    if (strcmp(filename_in, filename_out) == 0) // if source file and destination file are same then exist with success
+    {
+    	result = 0;
+    	goto lbl_exit;
     }
 
 
@@ -140,6 +151,8 @@ int cmd_cp(char param[])
         offset += buf_size;
     } while (offset < filesize);
 
+    cmd_rm(filename_in); // remove source file
+
     lbl_exit:
 
     parameters_free(argc, argv);
@@ -149,4 +162,3 @@ int cmd_cp(char param[])
 
     return (result == 0);
 }
-

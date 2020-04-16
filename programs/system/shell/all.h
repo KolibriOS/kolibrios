@@ -15,6 +15,9 @@
 #include "globals.h"
 #include "prototypes.h"
 
+// from main file (shell.c). TODO - in future move to library
+void get_file_dir_loc(char *filepath, char *dir_path);
+
 #include "system/console.c"
 
 #include "cmd/cmd_about.c"
@@ -42,6 +45,8 @@
 #include "cmd/cmd_uptime.c"
 #include "cmd/cmd_history.c"
 #include "cmd/cmd_cp.c"
+#include "cmd/cmd_mv.c"
+#include "cmd/cmd_ren.c"
 #include "cmd/cmd_waitfor.c"
 
 #include "modules/module_command.c"
@@ -51,5 +56,7 @@
 #include "modules/module_executable.c"
 #include "modules/module_alias.c"
 #include "modules/module_parameters.c"
+
+typedef unsigned int size_t;
 
 /// ===========================================================

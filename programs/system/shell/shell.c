@@ -41,6 +41,20 @@ for (;;i--)
 		break;
 		}
 }
+/// ===========================================================
+
+void get_file_dir_loc(char *filepath, char *dir_path)
+{
+	char *res = strrchr(filepath, '/');
+	if (res == 0)
+	{
+		dir_path = '\0';
+		return;
+	}
+	size_t pos = res - filepath;
+	strncpy(dir_path, filepath, pos);
+	dir_path[pos] = '\0';
+}
 
 /// ===========================================================
 
@@ -160,7 +174,9 @@ command_execute();
 
 for (;;)
 	{
+	//printf("\033[32;1m"); 
 	printf ("# ");
+	//printf("\033[0m"); 
 	command_get();
 	command_execute();
 	}

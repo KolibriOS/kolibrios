@@ -8,6 +8,7 @@ unsigned	num_of_file; // number of files in directory
 unsigned	*t;
 unsigned	type_of_file; // check is this a file or a folder
 int		i, result;
+char tmp[FILENAME_MAX];
 
 bool single_column_mode = FALSE;
 
@@ -26,10 +27,24 @@ if (!strnicmp(dir,"-1",1))
 	dir += 3;
 	}
 
-if ( !strlen(dir) )
+if ( !strlen(dir) ) // if argument is empty, list current directory
 	k70.p21 = cur_dir;
 else
-	k70.p21 = dir;
+{
+	if (dir[0] != '/') // if given directory is relative path, then append cur_dir on left side
+	{
+		strcpy(tmp, cur_dir);
+	    if (tmp[strlen(tmp)-1] != '/')
+	    {
+	        strcat(tmp, "/"); // add slash
+	    }
+	    strcat(tmp, dir);
+	    k70.p21 = tmp;
+	} else // if given directory is an absolute path
+	{
+		k70.p21 = dir;
+	}
+}
 
 result = kol_file_70(&k70);
 if ( !((result==0) || (result==6)) ) // check does the directory exists

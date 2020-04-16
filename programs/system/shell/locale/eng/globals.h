@@ -6,6 +6,8 @@ const command_t COMMANDS[]=
 	{"cd",      "  Changes current directory. Usage:\n\r    cd <directory name>\n\r", &cmd_cd},
 	{"clear",   "  Clears the screen\n\r", &cmd_clear},
 	{"cp",      "  Copies file\n\r", &cmd_cp},
+	{"mv",      "  Moves file\n\r", &cmd_mv},
+	{"ren",     "  Renames file\n\r", &cmd_ren},
 	{"date",    "  Returns the current date and time\n\r", &cmd_date},
 	{"echo",    "  Echoes the data to the screen. Usage:\n\r    echo <data>\n\r", &cmd_echo},
 	{"exit",    "  Exits from Shell\n\r", &cmd_exit},

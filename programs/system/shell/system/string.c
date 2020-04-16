@@ -144,7 +144,7 @@ char* strchr(const char* string, int c)
 
 char* strrchr(const char* string, int c)
 {
-	char* last_found;
+	char* last_found = 0; // !
 	while (*string)
 	{
 		if (*string==c)
