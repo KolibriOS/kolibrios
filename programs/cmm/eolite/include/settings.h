@@ -108,7 +108,7 @@ void settings_dialog()
 				
 			case evReDraw:
 				DefineAndDrawWindow(Form.cwidth-300/2+Form.left, Form.cheight-292/2+Form.top, 400, 
-					435+skin_height,0x34,system.color.work,TITLE_SETT,0);
+					435+skin_height,0x34,sc.work,TITLE_SETT,0);
 				GetProcessInfo(#Settings, SelfInfo);
 				DrawSettingsCheckBoxes();
 		}
@@ -225,28 +225,26 @@ void LoadIcons()
 void SetAppColors()
 {
 	int i;
-	dword bg_col, old_list_bg_color;
-	system.color.get();
-	if (col.work == system.color.work) return;
-	old_list_bg_color = col.list_bg;
-	bg_col = system.color.work;
+	static dword bg_col;
+	dword old_list_bg_color = col.list_bg;
+	sc.get();
+	if (bg_col == sc.work) return;
+	bg_col = sc.work;
 	if (skin_is_dark()) 
 	{
 		//use dark colors
 		col.def = false;
-		col.list_bg = system.color.work;
-		col.list_gb_text = system.color.work_text;
+		col.list_bg = sc.work;
+		col.list_gb_text = sc.work_text;
 		col.list_text_hidden = 0xA6A6B7;
-		col.list_vert_line = system.color.work_graph;
-		col.work = system.color.work;
-		col.graph = system.color.work_graph;
-		col.lpanel  = MixColors(system.color.work_graph, system.color.work, 65);
-		col.selec = col.selec_active = system.color.work_button;
-		col.selec_text = system.color.work_button_text;
-		system.color.work_dark = MixColors(0, system.color.work, 35);
-		if (col.list_bg==col.selec) col.selec = system.color.work_graph; //for fucking skins
-		col.slider_bg_big = MixColors(0xCED0D0, system.color.work, 35);
-		col.odd_line = MixColors(0xFFFfff, system.color.work, 15);
+		col.list_vert_line = sc.work_graph;
+		col.lpanel  = MixColors(sc.work_graph, sc.work, 65);
+		col.selec = col.selec_active = sc.button;
+		col.selec_text = sc.button_text;
+		sc.work_dark = MixColors(0, sc.work, 35);
+		if (col.list_bg==col.selec) col.selec = sc.work_graph; //for fucking skins
+		col.slider_bg_big = MixColors(0xCED0D0, sc.work, 35);
+		col.odd_line = MixColors(0xFFFfff, sc.work, 15);
 	}
 	else 
 	{
@@ -256,18 +254,16 @@ void SetAppColors()
 		col.list_gb_text = 0x000000;
 		col.list_text_hidden = 0xA6A6B7;
 		col.list_vert_line = 0xDDD7CF;
-		col.work = system.color.work;
-		col.graph = system.color.work_graph;
 		col.lpanel  = 0x00699C;
 		col.selec = col.selec_active = 0x94AECE;
 		col.selec_text = 0x000000;
-		system.color.work_dark = MixColors(0, system.color.work, 35);
+		sc.work_dark = MixColors(0, sc.work, 35);
 		col.slider_bg_big = 0xCDCFCF;
 		col.odd_line = 0xF1F1F1;
 	}
 	col.selec_inactive = MixColors(0xBBBbbb, col.list_bg, 65);
-	col.slider_bg_left = MixColors(col.graph, col.slider_bg_big, 10);
-	for (i=0; i<20; i++) col.work_gradient[i] = MixColors(system.color.work_light, system.color.work, i*5);
+	col.slider_bg_left = MixColors(sc.work_graph, col.slider_bg_big, 10);
+	for (i=0; i<20; i++) col.work_gradient[i] = MixColors(sc.work_light, sc.work, i*5);
 	if (old_list_bg_color!=col.list_bg) LoadIcons();
 }
 

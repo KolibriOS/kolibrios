@@ -75,16 +75,16 @@ void Processes__Main()
 				WIN_CONTENT_H-BOTPANEL_H-TAB_HEIGHT, false);
 			SelectList_DrawBorder();
 
-			//DrawWideRectangle(0, 0, Form.cwidth, Form.cheight, 4, system.color.work);
+			//DrawWideRectangle(0, 0, Form.cwidth, Form.cheight, 4, sc.work);
 			DrawBar(select_list.x-2, select_list.y+select_list.h+2, 
-				select_list.w+scroll1.size_x+4, BOTPANEL_H, system.color.work);
+				select_list.w+scroll1.size_x+4, BOTPANEL_H, sc.work);
 			DrawCaptButton(Form.cwidth-110-WIN_PAD,
 				select_list.y+select_list.h+5,
 				110,25,BTN_ID_KILL_PROCESS,0xF38181, 0xFFFfff, T_END_PROCESS);
 			DrawCaptButton(Form.cwidth-230-WIN_PAD,
 				select_list.y+select_list.h+5,
 				110,25,BTN_ID_SHOW_PROCESS_INFO,
-				system.color.work_button, system.color.work_button_text, T_DETAILS);
+				sc.button, sc.button_text, T_DETAILS);
 			show_system.draw(select_list.x + 3, select_list.y+select_list.h+10);
 		default:
 			SelectList_LineChanged();

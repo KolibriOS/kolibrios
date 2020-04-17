@@ -100,7 +100,7 @@ void main()
 			break;
 
 		case evReDraw:
-			system.color.get();
+			sc.get();
 			DefineAndDrawWindow(215,100,CELL_SIZE+4*10 + 4 + 9,PANEL_Y+4+PANEL_H+skin_height,
 				0x34,0xC0C0C0,"Memory Blocks",0);
 			GetProcessInfo(#Form, SelfInfo);
@@ -187,17 +187,17 @@ void Draw_Pressed_Block(dword x, y)
 
 void Draw_Panel()
 {
-	DrawBar(0, PANEL_Y, Form.cwidth, 1, system.color.work_dark);
-	DrawBar(0, PANEL_Y+1, Form.cwidth, 1, system.color.work_light);
-	DrawBar(0, PANEL_Y+2, Form.cwidth, PANEL_H-2, system.color.work);
+	DrawBar(0, PANEL_Y, Form.cwidth, 1, sc.work_dark);
+	DrawBar(0, PANEL_Y+1, Form.cwidth, 1, sc.work_light);
+	DrawBar(0, PANEL_Y+2, Form.cwidth, PANEL_H-2, sc.work);
 	DrawStandartCaptButton(9, PANEL_Y+5, 5, LABEL_NEW_GAME);
 	Draw_Count();
 }
 
 void Draw_Count()
 {
-	DrawBar(Form.cwidth-32,PANEL_Y + 12,30,12,system.color.work);
-	WriteNumber(Form.cwidth-32, PANEL_Y + 12, 0x90, system.color.work_text, 3, count);
+	DrawBar(Form.cwidth-32,PANEL_Y + 12,30,12,sc.work);
+	WriteNumber(Form.cwidth-32, PANEL_Y + 12, 0x90, sc.work_text, 3, count);
 }
 
 

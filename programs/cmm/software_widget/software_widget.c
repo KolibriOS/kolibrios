@@ -105,7 +105,7 @@ void main()
 
 		case evReDraw:
 			SetAppColors();
-			DefineAndDrawWindow(screen.width-window_width/2,screen.height-window_height/2,window_width,window_height,0x74,system.color.work,"",0);
+			DefineAndDrawWindow(screen.width-window_width/2,screen.height-window_height/2,window_width,window_height,0x74,sc.work,"",0);
 			GetProcessInfo(#Form, SelfInfo);
 			if (Form.status_window>2) { 
 				DrawTitle(#window_title);
@@ -127,16 +127,16 @@ void main()
 void SetAppColors()
 {
 	dword bg_col, old_list_bg_color;
-	system.color.get();
+	sc.get();
 	old_list_bg_color = swc.list_bg;
-	bg_col = system.color.work;
+	bg_col = sc.work;
 	if (skin_is_dark()) 
 	{
 		//dark colors
-		swc.list_bg = system.color.work;
-	 	swc.text = system.color.work_text;
-	 	swc.dark = system.color.work_dark;
-	 	swc.light = system.color.work_light;
+		swc.list_bg = sc.work;
+	 	swc.text = sc.work_text;
+	 	swc.dark = sc.work_dark;
+	 	swc.light = sc.work_light;
 	} else {
 		//light colors
 		swc.list_bg = 0xF3F3F3;
@@ -242,10 +242,10 @@ byte process_sections(dword sec_name, f_name)
 
 void DrawTopBar()
 {
-	DrawBar(0,0,Form.cwidth, list.y-2, system.color.work);
-	DrawBar(0,list.y-2, Form.cwidth, 1, MixColors(system.color.work, system.color.work_graph, 180));
-	DrawBar(0,list.y-1, Form.cwidth, 1, system.color.work_graph);
-	kfont.WriteIntoWindowCenter(0,5, Form.cwidth, list.y, system.color.work, system.color.work_text, 16, #window_title);
+	DrawBar(0,0,Form.cwidth, list.y-2, sc.work);
+	DrawBar(0,list.y-2, Form.cwidth, 1, MixColors(sc.work, sc.work_graph, 180));
+	DrawBar(0,list.y-1, Form.cwidth, 1, sc.work_graph);
+	kfont.WriteIntoWindowCenter(0,5, Form.cwidth, list.y, sc.work, sc.work_text, 16, #window_title);
 }
 
 void EventIconClick(dword appid)

@@ -53,15 +53,15 @@ void SelectList_ProcessMouse()
 void SelectList_DrawBorder() {
 	DrawRectangle3D(select_list.x-2, select_list.y-2,
 		select_list.w+3+scroll1.size_x, select_list.h+3, 
-		system.color.work_dark, system.color.work_light);
-	DrawRectangle(select_list.x-1, select_list.y-1, select_list.w+1+scroll1.size_x, select_list.h+1, system.color.work_graph);
+		sc.work_dark, sc.work_light);
+	DrawRectangle(select_list.x-1, select_list.y-1, select_list.w+1+scroll1.size_x, select_list.h+1, sc.work_graph);
 }
 
 void SelectList_DrawScroller()
 {
-	scroll1.bckg_col = MixColors(system.color.work, 0xBBBbbb, 80);
-	scroll1.frnt_col = MixColors(system.color.work,0xFFFfff,120);
-	scroll1.line_col = system.color.work_graph;
+	scroll1.bckg_col = MixColors(sc.work, 0xBBBbbb, 80);
+	scroll1.frnt_col = MixColors(sc.work,0xFFFfff,120);
+	scroll1.line_col = sc.work_graph;
 
 	scroll1.max_area = select_list.count;
 	scroll1.cur_area = select_list.visible;

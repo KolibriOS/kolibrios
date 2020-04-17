@@ -21,21 +21,21 @@ void Scroll() {
 		if (sc_slider_h > sc_h-sc_slider_y+56) || (files.first+files.visible>=files.count) sc_slider_y= sc_y + sc_h - sc_slider_h - 1; //для большого списка 
 	}
 	//slider
-	DrawRectangle(sc_x,sc_slider_y,16,sc_slider_h,col.graph);
-	DrawRectangle3D(sc_x+1,sc_slider_y+1,14,sc_slider_h-2, system.color.work_light , system.color.work_dark);
+	DrawRectangle(sc_x,sc_slider_y,16,sc_slider_h,sc.work_graph);
+	DrawRectangle3D(sc_x+1,sc_slider_y+1,14,sc_slider_h-2, sc.work_light , sc.work_dark);
 	if (!scroll_used) for (i=0; i<13; i++) DrawBar(sc_x + 2 + i, sc_slider_y+2, 1, sc_slider_h-3, col.work_gradient[13-i]);
 	if (scroll_used)  for (i=0; i<13; i++) DrawBar(sc_x + 2 + i, sc_slider_y+2, 1, sc_slider_h-3, col.work_gradient[i]);
 
 	sc_center = sc_slider_h / 2 + sc_slider_y;
 
-	DrawBar(sc_x+4,   sc_center-3, 8,  1, col.graph);
-	DrawBar(sc_x+4+1, sc_center-2, 8,  1, system.color.work_light);
+	DrawBar(sc_x+4,   sc_center-3, 8,  1, sc.work_graph);
+	DrawBar(sc_x+4+1, sc_center-2, 8,  1, sc.work_light);
 
-	DrawBar(sc_x+3,   sc_center,   10, 1, col.graph);
-	DrawBar(sc_x+3+1, sc_center+1, 10, 1, system.color.work_light);
+	DrawBar(sc_x+3,   sc_center,   10, 1, sc.work_graph);
+	DrawBar(sc_x+3+1, sc_center+1, 10, 1, sc.work_light);
 
-	DrawBar(sc_x+4,   sc_center+3, 8,  1, col.graph);
-	DrawBar(sc_x+4+1, sc_center+4, 8,  1, system.color.work_light);
+	DrawBar(sc_x+4,   sc_center+3, 8,  1, sc.work_graph);
+	DrawBar(sc_x+4+1, sc_center+4, 8,  1, sc.work_light);
 
 	//area before slider
 	if (sc_slider_y > sc_y + 1) 
@@ -55,12 +55,12 @@ void Scroll() {
 
 void DrawFlatButtonSmall(dword x,y,width,height,id,text)
 {
-	DrawRectangle(x,y,width,height,col.graph);
-	DrawRectangle3D(x+1,y+1,width-2,height-2, system.color.work_light, system.color.work_dark);
-	PutPixel(x+width-1, y+1, system.color.work_dark);
+	DrawRectangle(x,y,width,height,sc.work_graph);
+	DrawRectangle3D(x+1,y+1,width-2,height-2, sc.work_light, sc.work_dark);
+	PutPixel(x+width-1, y+1, sc.work_dark);
 	DrawFilledBar(x+2, y+2, width-3, height-3);
 	if (id) DefineHiddenButton(x+1,y+1,width-2,height-2,id);
-	WriteText(-strlen(text)*6+width/2+x+1,height/2+y-3,0x80,system.color.work_text,text);
+	WriteText(-strlen(text)*6+width/2+x+1,height/2+y-3,0x80,sc.work_text,text);
 }
 
 void DrawFilledBar(dword x, y, w, h)
@@ -71,15 +71,15 @@ void DrawEolitePopup(dword b1_text, b2_text)
 {
 	int but_x;
 	int popin_x = files.w - popin_w / 2 + files.x ;
-	DrawPopup(popin_x, 160, popin_w, 95, 1, system.color.work, col.graph);
+	DrawPopup(popin_x, 160, popin_w, 95, 1, sc.work, sc.work_graph);
 	but_x = DrawStandartCaptButton(popin_x+23, 215, POPUP_BTN1, b1_text);
 	DrawStandartCaptButton(popin_x+23 + but_x, 215, POPUP_BTN2, b2_text);
 }
 
 void DrawDot(dword x,y) {
-	dword col_pxl = MixColors(col.graph, col.work, 60);
-	DrawBar(x+1,y,2,4,col.graph);
-	DrawBar(x,y+1,4,2,col.graph);
+	dword col_pxl = MixColors(sc.work_graph, sc.work, 60);
+	DrawBar(x+1,y,2,4,sc.work_graph);
+	DrawBar(x,y+1,4,2,sc.work_graph);
 	PutPixel(x,y,col_pxl);
 	PutPixel(x+3,y,col_pxl);
 	PutPixel(x,y+3,col_pxl);

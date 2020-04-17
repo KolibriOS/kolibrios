@@ -157,16 +157,16 @@ void main()
 	Libimg_LoadImage(#top_icons, "/sys/icons16.png");
 	Libimg_LoadImage(#left_icons, "/sys/icons16.png");
 
-	system.color.get();
-	bg_col = system.color.work;
+	sc.get();
+	bg_col = sc.work;
 	bg_dark = skin_is_dark();
 
-	semi_white = MixColors(system.color.work, 0xFFFfff, bg_dark*90 + 96);
+	semi_white = MixColors(sc.work, 0xFFFfff, bg_dark*90 + 96);
 	Libimg_ReplaceColor(top_icons.image, top_icons.w, top_icons.h, 0xffFFFfff, semi_white);
 	Libimg_ReplaceColor(top_icons.image, top_icons.w, top_icons.h, 0xffCACBD6, MixColors(semi_white, 0, 220));
 
-	Libimg_ReplaceColor(left_icons.image, left_icons.w, left_icons.h, 0xffFFFfff, system.color.work);
-	Libimg_ReplaceColor(left_icons.image, left_icons.w, left_icons.h, 0xffCACBD6, MixColors(system.color.work, 0, 200));
+	Libimg_ReplaceColor(left_icons.image, left_icons.w, left_icons.h, 0xffFFFfff, sc.work);
+	Libimg_ReplaceColor(left_icons.image, left_icons.w, left_icons.h, 0xffCACBD6, MixColors(sc.work, 0, 200));
 
 	//fix line and rectandle color for dark skins
 	if (bg_dark) Libimg_ReplaceColor(left_icons.image, left_icons.w, left_icons.h, 0xff545454, 0xffD3D3D4);
@@ -286,10 +286,10 @@ void main()
 void DrawTopPanelButton(dword _event, _hotkey, _x, _icon_n)
 {
 	DrawWideRectangle(_x, 4, 22, 22, 3, semi_white);
-	PutPixel(_x,4,system.color.work);
-	PutPixel(_x,4+21,system.color.work);
-	PutPixel(_x+21,4,system.color.work);
-	PutPixel(_x+21,4+21,system.color.work);
+	PutPixel(_x,4,sc.work);
+	PutPixel(_x,4+21,sc.work);
+	PutPixel(_x+21,4,sc.work);
+	PutPixel(_x+21,4+21,sc.work);
 	DefineHiddenButton(_x, 4, 21, 21, button.add(_event));
 	img_draw stdcall(top_icons.image, _x+3, 7, 16, 16, 0, _icon_n*16);
 	if (_hotkey) key.add_n(_hotkey, _event);
@@ -301,19 +301,19 @@ int DrawFlatPanelButton(dword _id, _x, _y, _text)
 	#define P 10
 	int w = strlen(_text)*6 + P + P;
 	DrawBar(_x, _y, w, 22, semi_white);
-	PutPixel(_x,_y,system.color.work);
-	PutPixel(_x,_y+21,system.color.work);
-	PutPixel(_x+w-1,_y,system.color.work);
-	PutPixel(_x+w-1,_y+21,system.color.work);
+	PutPixel(_x,_y,sc.work);
+	PutPixel(_x,_y+21,sc.work);
+	PutPixel(_x+w-1,_y,sc.work);
+	PutPixel(_x+w-1,_y+21,sc.work);
 	DefineHiddenButton(_x, _y, w, 21, _id);
-	WriteText(_x+P, _y+7, 0x80, system.color.work_text, _text);
+	WriteText(_x+P, _y+7, 0x80, sc.work_text, _text);
 	return w;
 }
 
 void DrawLeftPanelButton(dword _event, _hotkey, _y, _icon_n)
 {
 	int x = 5;
-	DrawRectangle(x, _y, 22-1, 22-1, system.color.work);
+	DrawRectangle(x, _y, 22-1, 22-1, sc.work);
 	DefineHiddenButton(x, _y, 21, 21, button.add(_event));
 	img_draw stdcall(left_icons.image, x+3, _y+3, 16, 16, 0, _icon_n*16);
 	key.add_n(_hotkey, _event);
@@ -329,8 +329,8 @@ void DrawStatusBar()
 		calc(strlen(#param)*8)+6,
 		18,
 		button.add(#EventCanvasResize),
-		system.color.work_button,
-		system.color.work_button_text,
+		sc.button,
+		sc.button_text,
 		#param
 		);
 }
@@ -343,7 +343,7 @@ void DrawWindow()
 	#define BLOCK_SPACE 10
 	incn tx;
 	incn ty;
-	system.color.get();
+	sc.get();
 	DefineAndDrawWindow(115+random(100), 50+random(100), 700, 540, 0x73, NULL, T_TITLE, 0);
 	GetProcessInfo(#Form, SelfInfo);
 	if (Form.status_window>2) return;
@@ -354,8 +354,8 @@ void DrawWindow()
 
 	right_bar.x = Form.cwidth - right_bar.w;
 	b_color_gradient.x = b_last_colors.x = b_default_palette.x = right_bar.x;
-	DrawBar(0, 0, Form.cwidth, TOPBAR_H-1, system.color.work);
-	DrawBar(0, TOPBAR_H-1, Form.cwidth, 1, system.color.work_graph);
+	DrawBar(0, 0, Form.cwidth, TOPBAR_H-1, sc.work);
+	DrawBar(0, TOPBAR_H-1, Form.cwidth, 1, sc.work_graph);
 
 	tx.n = 5-GAPH;
 	DrawTopPanelButton(#EventCreateNewIcon,  ECTRL + SCAN_CODE_KEY_N, tx.inc(GAPH), 2);
@@ -378,7 +378,7 @@ void DrawWindow()
 	
 	DrawEditArea();
 
-	DrawBar(0, TOPBAR_H, LEFTBAR_W-1, Form.cheight - TOPBAR_H, system.color.work);
+	DrawBar(0, TOPBAR_H, LEFTBAR_W-1, Form.cheight - TOPBAR_H, sc.work);
 
 	ty.n = right_bar.y - GAPV - 2;
 
@@ -395,19 +395,19 @@ void DrawWindow()
 	button.add_n(1, #EventExitIconEdit);
 
 	DrawBar(wrapper.x+wrapper.w, TOPBAR_H, Form.cwidth-wrapper.x-wrapper.w,
-		Form.cheight - TOPBAR_H, system.color.work);
+		Form.cheight - TOPBAR_H, sc.work);
 	DrawActiveColor(right_bar.y);
 	DrawColorPallets();
 	DrawPreview();
 
 	DrawBar(LEFTBAR_W-1, wrapper.y + wrapper.h, wrapper.w+1, 
-		Form.cheight - wrapper.y - wrapper.h, system.color.work);
+		Form.cheight - wrapper.y - wrapper.h, sc.work);
 	DrawStatusBar();
 }
 
 void DrawLeftPanelSelection()
 {
-	if (previousTool!=-1) DrawRectangle3D(5, previousTool*GAPV+right_bar.y-2, 16+3+2, 16+3+2, system.color.work, system.color.work);
+	if (previousTool!=-1) DrawRectangle3D(5, previousTool*GAPV+right_bar.y-2, 16+3+2, 16+3+2, sc.work, sc.work);
 	DrawRectangle3D(5, currentTool*GAPV+right_bar.y-2, 16+3+2, 16+3+2, 0x333333, 0x777777);
 }
 
@@ -437,7 +437,7 @@ void DrawEditArea()
 	left_side = canvas.x-wrapper.x-1;
 	top_side = canvas.y-wrapper.y-1;
 
-	DrawRectangle(wrapper.x-1, wrapper.y-1, wrapper.w, wrapper.h, system.color.work_graph);
+	DrawRectangle(wrapper.x-1, wrapper.y-1, wrapper.w, wrapper.h, sc.work_graph);
 
 	if (left_side>0)
 	{
@@ -468,7 +468,7 @@ void DrawActiveColor(dword iny)
 	DrawBar(right_bar.x+CELL+5+2, outy+2, CELL-4, CELL-4, color2);
 
 	//sprintf(#param, "%A", color1);
-	//WriteTextWithBg(right_bar.x+30, outy+3, 0xD0, system.color.work_text, #param+4, system.color.work);
+	//WriteTextWithBg(right_bar.x+30, outy+3, 0xD0, sc.work_text, #param+4, sc.work);
 	DrawCurrentColorGradient();
 }
 
@@ -510,7 +510,7 @@ void DrawCurrentColorGradient()
 	for (i=0 ; i<b_color_gradient.w; i++) {
 		DrawBar(b_color_gradient.x+i, b_color_gradient.y, 1, b_color_gradient.h, linear_gradient[i]);		
 	}
-	DrawGradientMarker(old_marker_pos, system.color.work);
+	DrawGradientMarker(old_marker_pos, sc.work);
 	old_marker_pos = DrawGradientMarker(lmax, 0xFFFfff * bg_dark);
 }
 
@@ -620,7 +620,7 @@ void ShowWindow_TestIcon()
 			DrawImageWithBg(0, 0, 0x000000);
 			DrawImageWithBg(1, 0, 0xFFFfff);
 			DrawImageWithBg(0, 1, GetPixelColorFromScreen(0, 0));
-			DrawImageWithBg(1, 1, system.color.work);
+			DrawImageWithBg(1, 1, sc.work);
 			break;
 	}
 }

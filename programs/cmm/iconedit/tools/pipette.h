@@ -13,7 +13,7 @@ void PipetteTool_onMouseEvent(int mouseX, int mouseY, int lkm, int pkm) {
 	DrawBar(Form.cwidth-30, 5, 20, 20, tool_color);
 	
 	if (mouse.down) {
-		DrawBar(Form.cwidth-30, 5, 20, 20, system.color.work);
+		DrawBar(Form.cwidth-30, 5, 20, 20, sc.work);
 		SetEventMask(EVM_REDRAW+EVM_KEY+EVM_BUTTON+EVM_MOUSE+EVM_MOUSE_FILTER);
 		if (mouse.key&MOUSE_LEFT) EventSetActiveColor(1, tool_color);
 		if (mouse.key&MOUSE_RIGHT) EventSetActiveColor(2, tool_color);

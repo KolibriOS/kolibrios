@@ -75,9 +75,9 @@ void General__Main()
 					GetFreeRAM()/1024,
 					"M"
 					);
-				DrawBar(ram.x+ram.w-96, ram.y-25, 96, 20, system.color.work);
+				DrawBar(ram.x+ram.w-96, ram.y-25, 96, 20, sc.work);
 				sprintf(#param, "%i KiB", GetTotalRAM()-GetFreeRAM());
-				WriteText(ram.x+ram.w-calc(strlen(#param)*8), ram.y-25, 0x90, system.color.work_text, #param);
+				WriteText(ram.x+ram.w-calc(strlen(#param)*8), ram.y-25, 0x90, sc.work_text, #param);
 
 				//MonitorRd();
 				dir_size.get("/rd/1");			
@@ -111,9 +111,9 @@ void General__Main()
 void DrawBlockHeader(dword _x, _y, _icon, _title, _subtitle)
 {
 	#define ICONGAP 45
-	WriteTextB(_x+ICONGAP, _y, 0x90, system.color.work_text, _title);
-	DrawIcon32(_x, _y, system.color.work, _icon);
-	WriteText(_x+ICONGAP, _y+20, 0x90, system.color.work_text, _subtitle);	
+	WriteTextB(_x+ICONGAP, _y, 0x90, sc.work_text, _title);
+	DrawIcon32(_x, _y, sc.work, _icon);
+	WriteText(_x+ICONGAP, _y+20, 0x90, sc.work_text, _subtitle);	
 }
 
 dword GetCpuLoad(dword max_h)
@@ -164,9 +164,9 @@ void MonitorCpu()
 	cpu_stack[pos] = GetCpuLoad(cpu.h);
 	if (cpu_stack[pos]<=2) || (cpu_stack[pos]>cpu.h) cpu_stack[pos]=2;
 	
-	DrawBar(cpu.x+cpu.w-30, cpu.y-25, 30, 20, system.color.work);
+	DrawBar(cpu.x+cpu.w-30, cpu.y-25, 30, 20, sc.work);
 	sprintf(#param, "%i%%", cpu_stack[pos]);
-	WriteText(cpu.x+cpu.w-calc(strlen(#param)*8), cpu.y-25, 0x90, system.color.work_text, #param);
+	WriteText(cpu.x+cpu.w-calc(strlen(#param)*8), cpu.y-25, 0x90, sc.work_text, #param);
 
 	for (i=0; i<WIN_CONTENT_W; i+=2) {
 		DrawBar(i+cpu.x, cpu.y, 1, cpu.h-cpu_stack[i], PROGRESS_BG);

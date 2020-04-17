@@ -210,7 +210,7 @@ void main()
 				GetScreenHeight()-700/2-random(80),800,700,0x73,0,0,0);
 			GetProcessInfo(#Form, SelfInfo);
 			ProcessMenuClick();
-			system.color.get();
+			sc.get();
 			if (Form.status_window>2) break;
 			if (Form.height<120) { MoveSize(OLD,OLD,OLD,120); break; }
 			if (Form.width<280) { MoveSize(OLD,OLD,280,OLD); break; }
@@ -307,19 +307,19 @@ void draw_window()
 	int i;
 	SetElementSizes();
 
-	DrawBar(0,0, Form.cwidth,PADDING, system.color.work);
-	DrawBar(0,PADDING+TSZE+1, Form.cwidth,PADDING-1, system.color.work);
-	DrawBar(0,TOOLBAR_H-2, Form.cwidth,1, MixColors(system.color.work_dark, system.color.work, 180));
-	DrawBar(0,TOOLBAR_H-1, Form.cwidth,1, system.color.work_graph);
-	DrawBar(0, PADDING, address_box.left-2, TSZE+1, system.color.work);
-	DrawBar(address_box.left+address_box.width+18, PADDING, Form.cwidth-address_box.left-address_box.width-18, TSZE+1, system.color.work);
+	DrawBar(0,0, Form.cwidth,PADDING, sc.work);
+	DrawBar(0,PADDING+TSZE+1, Form.cwidth,PADDING-1, sc.work);
+	DrawBar(0,TOOLBAR_H-2, Form.cwidth,1, MixColors(sc.work_dark, sc.work, 180));
+	DrawBar(0,TOOLBAR_H-1, Form.cwidth,1, sc.work_graph);
+	DrawBar(0, PADDING, address_box.left-2, TSZE+1, sc.work);
+	DrawBar(address_box.left+address_box.width+18, PADDING, Form.cwidth-address_box.left-address_box.width-18, TSZE+1, sc.work);
 
 	DrawTopPanelButton(BACK_BUTTON, PADDING-1, PADDING, 30);
 	DrawTopPanelButton(FORWARD_BUTTON, PADDING+TSZE+PADDING-2, PADDING, 31);
 	DrawTopPanelButton(SANDWICH_BUTTON, Form.cwidth-PADDING-TSZE-3, PADDING, -1);
-	for (i=0; i<=2; i++) DrawBar(Form.cwidth-PADDING-TSZE+3, i*5+PADDING+7, 15, 3, system.color.work_graph);
+	for (i=0; i<=2; i++) DrawBar(Form.cwidth-PADDING-TSZE+3, i*5+PADDING+7, 15, 3, sc.work_graph);
 
-	DrawBar(0,Form.cheight - STATUSBAR_H, Form.cwidth,1, system.color.work_graph);
+	DrawBar(0,Form.cheight - STATUSBAR_H, Form.cwidth,1, sc.work_graph);
 
 	DrawRectangle(WB1.list.x + WB1.list.w, WB1.list.y, scroll_wv.size_x, 
 		WB1.list.h-1, scroll_wv.bckg_col);
@@ -859,12 +859,12 @@ void EventUpdateBrowser()
 
 void DrawStatusBar(dword _status_text)
 {
-	status_text.font_color = system.color.work_text;
+	status_text.font_color = sc.work_text;
 	status_text.start_x = 10;
 	status_text.start_y = Form.cheight - STATUSBAR_H + 4;
 	status_text.area_size_x = Form.cwidth - status_text.start_x -3 - 70;
-	//DrawBar(status_text.start_x, status_text.start_y, status_text.area_size_x, 9, system.color.work);
-	DrawBar(0,Form.cheight - STATUSBAR_H+1, Form.cwidth,STATUSBAR_H-1, system.color.work);
+	//DrawBar(status_text.start_x, status_text.start_y, status_text.area_size_x, 9, sc.work);
+	DrawBar(0,Form.cheight - STATUSBAR_H+1, Form.cwidth,STATUSBAR_H-1, sc.work);
 	if (_status_text) {
 		status_text.text_pointer = _status_text;
 		PathShow_prepare stdcall(#status_text);
@@ -873,15 +873,15 @@ void DrawStatusBar(dword _status_text)
 	DefineHiddenButton(status_text.start_x+status_text.area_size_x+10, status_text.start_y-3,
 		60, 12, CHANGE_ENCODING);
 	WriteTextCenter(status_text.start_x+status_text.area_size_x+10,
-		status_text.start_y, 60, system.color.work_text, WB1.cur_encoding*10+#charsets);
+		status_text.start_y, 60, sc.work_text, WB1.cur_encoding*10+#charsets);
 }
 
 void DrawOmnibox()
 {
 	int imgxoff;
 	
-	DrawOvalBorder(address_box.left-2, address_box.top-3, address_box.width+18, 24, system.color.work_graph, 
-		system.color.work_graph, system.color.work_graph, system.color.work_dark);
+	DrawOvalBorder(address_box.left-2, address_box.top-3, address_box.width+18, 24, sc.work_graph, 
+		sc.work_graph, sc.work_graph, sc.work_dark);
 	DrawBar(address_box.left-1, address_box.top-2, address_box.width+18, 1, 0xD8DCD8);
 	DrawBar(address_box.left-1, address_box.top-1, address_box.width+18, 1, address_box.color);
 	DrawBar(address_box.left-1, address_box.top, 1, 22, address_box.color);

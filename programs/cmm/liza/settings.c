@@ -79,7 +79,7 @@ void SettingsDialog()
 
 		case evReDraw: _OPT_WIN:
 			if !(DefineWindow(OPTIONS_HEADER)) break;
-			DrawBar(0,0, Form.cwidth, Form.cheight, system.color.work);
+			DrawBar(0,0, Form.cwidth, Form.cheight, sc.work);
 			DrawOptionsWindow();
 			break;
 	}
@@ -91,14 +91,14 @@ void DrawOptionsWindow()
 	int i;
 	incn y;
 	y.n=0;
-	DrawBar(0, Form.cheight - 40, Form.cwidth, 1, system.color.work_graph);
+	DrawBar(0, Form.cheight - 40, Form.cwidth, 1, sc.work_graph);
 	DrawBar(0, Form.cheight - 40+1, Form.cwidth, 1, LBUMP);
-	DrawCaptButton(Form.cwidth-79, Form.cheight-32, 70, 25, 19, system.color.work_button, system.color.work_button_text,"Apply");
+	DrawCaptButton(Form.cwidth-79, Form.cheight-32, 70, 25, 19, sc.button, sc.button_text,"Apply");
 
-	WriteText(ELEM_X, y.inc(20), 0x81, system.color.work_text, "Network settings");
+	WriteText(ELEM_X, y.inc(20), 0x81, sc.work_text, "Network settings");
 	automatic.draw(ELEM_X, y.inc(65));
 	for (i=0; i<4; i++)	{
-		WriteTextWithBg(ELEM_X+40, i*35+POP_server_box.top + 3, 0xD0, system.color.work_text, text1[i], system.color.work);
+		WriteTextWithBg(ELEM_X+40, i*35+POP_server_box.top + 3, 0xD0, sc.work_text, text1[i], sc.work);
 	}
 	DrawEditBox(#POP_server_box);
 	DrawEditBox(#POP_server_port_box);

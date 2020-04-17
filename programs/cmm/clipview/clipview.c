@@ -77,7 +77,7 @@ void main()
 			break;
 		 
 		case evReDraw:
-			system.color.get();			
+			sc.get();			
 			DefineAndDrawWindow(screen.width-700/2,80,700,454+skin_height,0x73,0xE4DFE1,WINDOW_HEADER,0);
 			GetProcessInfo(#Form, SelfInfo);
 			IF (Form.status_window>=2) break;
@@ -103,14 +103,14 @@ void main()
 void DrawWindowContent()
 {
 	int button_x = select_list.x;
-	DrawBar(0,0, Form.cwidth, PANEL_TOP_H, system.color.work);
-	DrawBar(0,Form.cheight-PANEL_BOTTOM_H, Form.cwidth, PANEL_BOTTOM_H, system.color.work);
-	DrawWideRectangle(select_list.x-LIST_PADDING, select_list.y-LIST_PADDING, LIST_PADDING*2+select_list.w+scroll1.size_x, LIST_PADDING*2+select_list.h, LIST_PADDING-2, system.color.work);
+	DrawBar(0,0, Form.cwidth, PANEL_TOP_H, sc.work);
+	DrawBar(0,Form.cheight-PANEL_BOTTOM_H, Form.cwidth, PANEL_BOTTOM_H, sc.work);
+	DrawWideRectangle(select_list.x-LIST_PADDING, select_list.y-LIST_PADDING, LIST_PADDING*2+select_list.w+scroll1.size_x, LIST_PADDING*2+select_list.h, LIST_PADDING-2, sc.work);
 	button_x += DrawStandartCaptButton(button_x, select_list.y + select_list.h + 8, BT_DELETE_LAST_SLOT, T_DELETE_LAST_SLOT);
 	button_x += DrawStandartCaptButton(button_x, select_list.y + select_list.h + 8, BT_DELETE_ALL_SLOTS, T_DELETE_ALL_SLOTS);
 	button_x += DrawStandartCaptButton(button_x, select_list.y + select_list.h + 8, BT_UNLOCK, T_RESET_BUFFER_LOCK);
-	WriteText(select_list.x+12, select_list.y - 23, select_list.font_type, system.color.work_text, T_COLUMNS_TITLE);
-	WriteText(select_list.x+select_list.w - 88-14, select_list.y - 23, select_list.font_type, system.color.work_text, T_COLUMN_VIEW);
+	WriteText(select_list.x+12, select_list.y - 23, select_list.font_type, sc.work_text, T_COLUMNS_TITLE);
+	WriteText(select_list.x+select_list.w - 88-14, select_list.y - 23, select_list.font_type, sc.work_text, T_COLUMN_VIEW);
  	ClipViewSelectListDraw();
  	SelectList_DrawBorder();
 }

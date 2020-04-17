@@ -177,20 +177,20 @@ void DrawLoginScreen()
 	panel_x = Form.cwidth - PANEL_W /2;
 	panel_y = Form.cheight - PANEL_H /2 - 5;
 
-	DrawBar(0,0, Form.cwidth, Form.cheight, system.color.work);
+	DrawBar(0,0, Form.cwidth, Form.cheight, sc.work);
 	
-	WriteText(panel_x,panel_y-3,0x80,system.color.work_text,"Your Email:");
+	WriteText(panel_x,panel_y-3,0x80,sc.work_text,"Your Email:");
 	DrawEditBoxPos(panel_x+3, panel_y+12, #login_box);
 	
-	WriteText(panel_x,panel_y+45,0x80,system.color.work_text,"Password:");
+	WriteText(panel_x,panel_y+45,0x80,sc.work_text,"Password:");
 	DrawEditBoxPos(panel_x+3, panel_y+60, #pass_box);
 	
 	if (!aim)
 	{
-		DrawCaptButton(panel_x,panel_y+100,100,26,11,system.color.work_button, system.color.work_button_text,"Settings");
-		DrawCaptButton(panel_x+120,panel_y+100,100,26,12,system.color.work_button, system.color.work_button_text,"Enter >");
+		DrawCaptButton(panel_x,panel_y+100,100,26,11,sc.button, sc.button_text,"Settings");
+		DrawCaptButton(panel_x+120,panel_y+100,100,26,12,sc.button, sc.button_text,"Enter >");
 	} 
-	else DrawCaptButton(panel_x+120,panel_y+100,100,26,12,system.color.work_button, system.color.work_button_text,"Stop");
+	else DrawCaptButton(panel_x+120,panel_y+100,100,26,12,sc.button, sc.button_text,"Stop");
 	
 	SetLoginStatus(cur_st_text);
 }
@@ -217,6 +217,6 @@ void GetSettings()
 
 void SetLoginStatus(dword text1)
 {
-	if (text1) WriteText(10, Form.cheight-22, 0x80, system.color.work_text, text1);
+	if (text1) WriteText(10, Form.cheight-22, 0x80, sc.work_text, text1);
 	cur_st_text = text1;
 }

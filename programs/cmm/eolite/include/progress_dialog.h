@@ -33,7 +33,7 @@ void DisplayOperationForm()
 		title = T_DELETE_WINDOW_TITLE;
 		copy_bar.progress_color = 0xF17A65;
 	}
-	copy_bar.frame_color = system.color.work_graph;
+	copy_bar.frame_color = sc.work_graph;
 	switch(CheckEvent())
 	{
 		 case evButton:
@@ -42,12 +42,12 @@ void DisplayOperationForm()
 			break;
 			
 		case evReDraw:
-			DefineAndDrawWindow(Form.left+Form.width-200,Form.top+90,WIN_DIALOG_W+9,skin_height+WIN_DIALOG_H,0x34,system.color.work,title,0);
+			DefineAndDrawWindow(Form.left+Form.width-200,Form.top+90,WIN_DIALOG_W+9,skin_height+WIN_DIALOG_H,0x34,sc.work,title,0);
 			GetProcessInfo(#Dialog_Form, SelfInfo);
 			DrawCaptButton(WIN_DIALOG_W-PR_LEFT-101, PR_TOP+PR_H+6, 100,26, 2, 
-				system.color.work_button, system.color.work_button_text, T_ABORT_WINDOW_BUTTON);
+				sc.button, sc.button_text, T_ABORT_WINDOW_BUTTON);
 
-			DrawRectangle3D(PR_LEFT-1, PR_TOP-1, PR_W+1, PR_H+1, system.color.work_dark, system.color.work_light);
+			DrawRectangle3D(PR_LEFT-1, PR_TOP-1, PR_W+1, PR_H+1, sc.work_dark, sc.work_light);
 			//copying.draw_wrapper();
 	}
 }
@@ -65,8 +65,8 @@ void Operation_Draw_Progress(dword filename) {
 		return;
 	}
 	DisplayOperationForm();
-	DrawBar(PR_LEFT, PR_TOP-20, WIN_DIALOG_W-PR_LEFT, 15, system.color.work);
-	WriteText(PR_LEFT, PR_TOP-20, 0x90, system.color.work_text, filename);
+	DrawBar(PR_LEFT, PR_TOP-20, WIN_DIALOG_W-PR_LEFT, 15, sc.work);
+	WriteText(PR_LEFT, PR_TOP-20, 0x90, sc.work_text, filename);
 
 	progressbar_draw stdcall (#copy_bar);
 	progressbar_progress stdcall (#copy_bar);
@@ -74,6 +74,6 @@ void Operation_Draw_Progress(dword filename) {
 	//pause(1);
 	//copying.draw_progress(copy_bar.value*copying.w/copy_bar.max, copy_bar.value, copy_bar.max-copy_bar.value, "");
 
-	WriteTextWithBg(PR_LEFT, PR_TOP+PR_H+5, 0xD0, system.color.work_text, 
-		sprintf(#param, "%i/%i", copy_bar.value, copy_bar.max), system.color.work);
+	WriteTextWithBg(PR_LEFT, PR_TOP+PR_H+5, 0xD0, sc.work_text, 
+		sprintf(#param, "%i/%i", copy_bar.value, copy_bar.max), sc.work);
 }

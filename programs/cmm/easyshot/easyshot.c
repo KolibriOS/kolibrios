@@ -126,14 +126,14 @@ void DrawWindow()
 {
 	int i;
 
-	system.color.get();
+	sc.get();
 	DefineAndDrawWindow(screen.width-400, screen.height/3, 270, 
-		skin_height + 30+PD+PD, 0x34, system.color.work, "EasyShot",0);
+		skin_height + 30+PD+PD, 0x34, sc.work, "EasyShot",0);
 	GetProcessInfo(#Form, SelfInfo);
 
 	DrawCaptButton(PD, PD, 170, 28, BTN_MAKE_SCREENSHOT, 0x0090B8, 0xFFFfff, T_TAKE_SCREENSHOT);
-	DefineButton(PD+170+20, PD, 35, 28, BTN_SETTINGS, system.color.work_button);
-	for (i=0; i<=2; i++) DrawBar(PD+170+30, i*5+PD+9, 15, 2, system.color.work_button_text);
+	DefineButton(PD+170+20, PD, 35, 28, BTN_SETTINGS, sc.button);
+	for (i=0; i<=2; i++) DrawBar(PD+170+30, i*5+PD+9, 15, 2, sc.button_text);
 	delay.draw(PD, SETTINGS_Y);
 	DrawFileBox(#edit_save, T_EDITBOX_FRAME, BTN_CHOOSE_SAVING_PATH);	
 }

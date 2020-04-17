@@ -49,27 +49,27 @@
 	check_values();
 	x=_x; y=_y;
 
-	DrawRectangle(x, y, VALUE_FIELD_W+1, SIZE, system.color.work_graph);
+	DrawRectangle(x, y, VALUE_FIELD_W+1, SIZE, sc.work_graph);
 	DrawRectangle3D(x+1, y+1, VALUE_FIELD_W-2, SIZE-2, 0xDDDddd, 0xffffff);
 
 	if (disabled)
 	{
 		DrawRectangle(x+1, y+1, VALUE_FIELD_W-2, SIZE-2, 0xffffff);
 		DrawBar(x+2, y+2, VALUE_FIELD_W-3, SIZE-3, 0xCCCccc);
-		text_col = system.color.work_graph;
+		text_col = sc.work_graph;
 	}
 	else 
 	{
 		DrawBar(x+2, y+2, VALUE_FIELD_W-3, SIZE-3, 0xffffff);
-		text_col = system.color.work_text;
+		text_col = sc.work_text;
 	}
 
 	WriteText( -strlen(value_text)+3*8 + x+6, SIZE / 2 + y -6, 0x90, 0x333333, value_text);
 
-	DrawCaptButton(VALUE_FIELD_W + x + 1,    y, SIZE, SIZE, id_inc, system.color.work_button, system.color.work_button_text, "+");
-	DrawCaptButton(VALUE_FIELD_W + x + SIZE, y, SIZE, SIZE, id_dec, system.color.work_button, system.color.work_button_text, "-");
-	WriteTextWithBg(x+VALUE_FIELD_W+SIZE+SIZE+10, SIZE / 2 + y -7, 0xD0, text_col, text, system.color.work);
-	DrawRectangle3D(x-1,y-1,VALUE_FIELD_W+SIZE+SIZE+2,SIZE+2,system.color.work_dark,system.color.work_light);
+	DrawCaptButton(VALUE_FIELD_W + x + 1,    y, SIZE, SIZE, id_inc, sc.button, sc.button_text, "+");
+	DrawCaptButton(VALUE_FIELD_W + x + SIZE, y, SIZE, SIZE, id_dec, sc.button, sc.button_text, "-");
+	WriteTextWithBg(x+VALUE_FIELD_W+SIZE+SIZE+10, SIZE / 2 + y -7, 0xD0, text_col, text, sc.work);
+	DrawRectangle3D(x-1,y-1,VALUE_FIELD_W+SIZE+SIZE+2,SIZE+2,sc.work_dark,sc.work_light);
 }
 
 :void more_less_box::redraw()

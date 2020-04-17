@@ -181,8 +181,8 @@ void main()
 
 void draw_window()
 {
-	system.color.get();	
-	DefineAndDrawWindow(screen.width-600/2,80,630,504+skin_height,0x34,system.color.work,WINDOW_HEADER,0);
+	sc.get();	
+	DefineAndDrawWindow(screen.width-600/2,80,630,504+skin_height,0x34,sc.work,WINDOW_HEADER,0);
 	GetProcessInfo(#Form, SelfInfo);
 	IF (Form.status_window>=2) return;
 	DrawWindowContent();
@@ -193,7 +193,7 @@ void DrawWindowContent()
 	int id;
 	int list_w;
 
-	system.color.get();	
+	sc.get();	
 
 	if (tabs.active_tab == SKINS) list_w=250; else list_w=350;
 
@@ -222,7 +222,7 @@ void DrawWindowContent()
 
 	SelectList_Draw();
 	SelectList_DrawBorder();
-	//DrawWideRectangle(0, 0, Form.cwidth, Form.cheight, LP, system.color.work);
+	//DrawWideRectangle(0, 0, Form.cwidth, Form.cheight, LP, sc.work);
 
 	if (tabs.active_tab == SKINS)
 	{
@@ -278,8 +278,8 @@ void SelectList_DrawLine(dword i)
 	
 	if (select_list.cur_y-select_list.first==i)
 	{
-		DrawBar(select_list.x, yyy, select_list.w, select_list.item_h, system.color.work_button);
-		WriteText(select_list.x+12,yyy+select_list.text_y,select_list.font_type,system.color.work_button_text, #temp_filename);
+		DrawBar(select_list.x, yyy, select_list.w, select_list.item_h, sc.button);
+		WriteText(select_list.x+12,yyy+select_list.text_y,select_list.font_type,sc.button_text, #temp_filename);
 	}
 	else
 	{

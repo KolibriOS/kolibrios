@@ -383,7 +383,7 @@ proc load_settings ;//////////////////////////////////////////////////////////
 	mov	[auto_braces],al
 	invoke	ini.get_int,ini_path,ini_sec_options,ini_options_auto_indent,1
 	mov	[auto_indent],al
-	invoke	ini.get_int,ini_path,ini_sec_options,ini_options_optim_save,1
+	invoke	ini.get_int,ini_path,ini_sec_options,ini_options_optim_save,0
 	mov	[optim_save],al
 	invoke	ini.get_int,ini_path,ini_sec_options,ini_options_line_nums,0
 	mov	[line_nums],al

@@ -13,9 +13,9 @@ void DrawUiElementsPreview(dword x,y,h)
 	incn y2;
 	y2.n = y;
 	spinbox1.draw(x, y2.inc(30));
-	WriteText(x, y2.inc(30), 0x90, system.color.work_text, "C-- Edit");
+	WriteText(x, y2.inc(30), 0x90, sc.work_text, "C-- Edit");
 	DrawEditBoxPos(x, y2.inc(20), #edit_cmm);
-	WriteText(x, y2.inc(35), 0x90, system.color.work_text, "Strandard Edit");
+	WriteText(x, y2.inc(35), 0x90, sc.work_text, "Strandard Edit");
 	DrawStEditBoxPos(x, y2.inc(20), #edit_st);
 	DrawStandartCaptButton(x, y+h-40, GetFreeButtonId(), "Button1");
 	DrawStandartCaptButton(x+100, y+h-40, GetFreeButtonId(), "Button2");
@@ -23,8 +23,8 @@ void DrawUiElementsPreview(dword x,y,h)
 
 :void DrawStEditBoxPos(dword x,y, edit_box_pointer)
 {
-	dword c_inactive = MixColors(system.color.work_graph, system.color.work, 128);
-	dword c_active = MixColors(system.color.work_graph, 0, 128);
+	dword c_inactive = MixColors(sc.work_graph, sc.work, 128);
+	dword c_active = MixColors(sc.work_graph, 0, 128);
 	ESI = edit_box_pointer;
 	ESI.edit_box.left = x;
 	ESI.edit_box.top = y;

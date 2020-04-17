@@ -136,9 +136,9 @@ void main()
 			break;
 
 		case evReDraw:
-			DefineAndDrawWindow(GetScreenWidth()-800/2-random(80),GetScreenHeight()-600/2-random(80),800,600,0x73,system.color.work,0,0);
+			DefineAndDrawWindow(GetScreenWidth()-800/2-random(80),GetScreenHeight()-600/2-random(80),800,600,0x73,sc.work,0,0);
 			GetProcessInfo(#Form, SelfInfo);
-			system.color.get();
+			sc.get();
 			if (Form.status_window>2) break;
 			if (Form.height<120) { MoveSize(OLD,OLD,OLD,120); break; }
 			if (Form.width<280) { MoveSize(OLD,OLD,280,OLD); break; }
@@ -166,12 +166,12 @@ void SetElementSizes()
 
 void draw_window()
 {
-	DrawBar(0,0, Form.cwidth,TOOLBAR_H-2, system.color.work);
+	DrawBar(0,0, Form.cwidth,TOOLBAR_H-2, sc.work);
 	DrawBar(0,TOOLBAR_H-2, Form.cwidth,1, 0xD7D0D3);
-	DrawBar(0,TOOLBAR_H-1, Form.cwidth,1, system.color.work_graph);
-	DrawRectangle(address_box.left-3, address_box.top-3, address_box.width+4, 25,system.color.work_graph);
-	DrawBar(0,Form.cheight - STATUSBAR_H, Form.cwidth,STATUSBAR_H, system.color.work);
-	DrawBar(0,Form.cheight - STATUSBAR_H, Form.cwidth,1, system.color.work_graph);
+	DrawBar(0,TOOLBAR_H-1, Form.cwidth,1, sc.work_graph);
+	DrawRectangle(address_box.left-3, address_box.top-3, address_box.width+4, 25,sc.work_graph);
+	DrawBar(0,Form.cheight - STATUSBAR_H, Form.cwidth,STATUSBAR_H, sc.work);
+	DrawBar(0,Form.cheight - STATUSBAR_H, Form.cwidth,1, sc.work_graph);
 	DrawEditBoxWebView();
 	if (!WB1.header) {
 		OpenPage(#current_path);

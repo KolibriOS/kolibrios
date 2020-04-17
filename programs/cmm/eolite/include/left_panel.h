@@ -161,9 +161,8 @@ void _SystemDiscs::Draw()
 			{
 				strcat(#disc_name, #dev_name);
 				if (is_active) WriteText(draw_x+30,draw_y+5,0x80,0x555555,#disc_name);
-				WriteText(draw_x+29,draw_y+5,0x80,0,#disc_name);			}
-			else
-			{
+				WriteText(draw_x+29,draw_y+5,0x80,0,#disc_name);
+			} else {
 				if (is_active) WriteText(draw_x+30,draw_y+5,0x80,0x555555,#dev_name);
 				WriteText(draw_x+29,draw_y+5,0x80,0,#dev_name);
 			}
@@ -214,9 +213,9 @@ void Tip(int y, dword caption, id, arrow)
 		DrawFilledBarInner(17, y+1, 160, 16);
 		DrawBar(17,y+17,160,1,0x7E87A3);
 	} else {
-		DrawBar(17,y,160,1,col.graph);
+		DrawBar(17,y,160,1,sc.work_graph);
 		DrawBar(17,y+1,160,16,col.list_bg);
-		DrawBar(17,y+17,160,1,col.graph);
+		DrawBar(17,y+17,160,1,sc.work_graph);
 	}
 	WriteText(25,y+5,0x80,col.list_gb_text,caption);
 	if (id) DefineButton(159,y+1,16,16,id+BT_HIDE+BT_NOFRAME,0); //arrow button

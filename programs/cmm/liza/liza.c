@@ -125,8 +125,8 @@ void main() {
 
 
 int DefineWindow(dword wtitle) {
-	system.color.get();
-	DefineAndDrawWindow(GetScreenWidth()-WIN_W/2,GetScreenHeight()-WIN_H/2, WIN_W, WIN_H, 0x73,system.color.work, 0,0); 
+	sc.get();
+	DefineAndDrawWindow(GetScreenWidth()-WIN_W/2,GetScreenHeight()-WIN_H/2, WIN_W, WIN_H, 0x73,sc.work, 0,0); 
 	DrawTitle(wtitle);
 	GetProcessInfo(#Form, SelfInfo);
 	if (Form.status_window>2) return 0; //rolled_up

@@ -77,9 +77,9 @@ void main()
 #define WINH 300
 void draw_window()
 {
-	system.color.get();
+	sc.get();
 	DefineAndDrawWindow(screen.width-WINW/2,screen.height-WINH/2,
-		WINW+9,WINH+skin_height,0x34,system.color.work,"KolibriN10",0);
+		WINW+9,WINH+skin_height,0x34,sc.work,"KolibriN10",0);
 	DrawLogo();
 	if (install_complete) DrawInstallComplete(); else DrawIntro();
 }
@@ -87,15 +87,15 @@ void draw_window()
 void DrawIntro()
 {
 	DrawTextViewArea(30, 140, WINW-60, WINH-80, 
-		T_INTRO, -1, system.color.work_text);
+		T_INTRO, -1, sc.work_text);
 	DrawCaptButton(WINW-110/2, WINH-70, 110, 28, B_INSTALL, 
 		0x0092D8, 0xFFFfff, T_INSTALL);
 }
 
 void DrawInstallComplete()
 {
-	DrawIcon32(WINW-32/2, 140, system.color.work, 49);
-	WriteTextCenter(0,185, WINW, system.color.work_text, T_COMPLETE);
+	DrawIcon32(WINW-32/2, 140, sc.work, 49);
+	WriteTextCenter(0,185, WINW, sc.work_text, T_COMPLETE);
 	DrawCaptButton(WINW-110/2, WINH-70, 110, 28, CLOSE_BTN, 
 		0x0092D8, 0xFFFfff, T_EXIT);
 }

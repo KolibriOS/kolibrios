@@ -146,8 +146,8 @@ void main()
 				break;
 			
 		case evReDraw:
-				system.color.get();
-				DefineAndDrawWindow(130, 150, 465, 398 + skin_height, 0x34, system.color.work, WINDOW_TITLE, 0);
+				sc.get();
+				DefineAndDrawWindow(130, 150, 465, 398 + skin_height, 0x34, sc.work, WINDOW_TITLE, 0);
 				GetProcessInfo(#Form, SelfInfo);
 				if (Form.status_window>2) break;
 				DrawWindowContent();
@@ -170,7 +170,7 @@ void DrawWindowContent()
 	y.n = frame_y;
 	DefineButton(22, y.inc(18), PIMG_W-1, PIMG_H-1, 100 + BT_HIDE, 0);
 	DrawPanelsImage(y.n, tbAttachment);
-	WriteTextWithBg(68, y.inc(7), 0xD0, system.color.work_text, CHANGE_POS, system.color.work);
+	WriteTextWithBg(68, y.inc(7), 0xD0, sc.work_text, CHANGE_POS, sc.work);
 	tbSoftenUp.draw(22, y.inc(35));
 	tbClock.draw(win_center_x, y.n);
 	tbSoftenDown.draw(22, y.inc(24));
@@ -188,7 +188,7 @@ void DrawWindowContent()
 	frame_y = calc(y.inc(20));
 	DefineButton(22, y.inc(18), PIMG_W-1, PIMG_H-1, 200 + BT_HIDE, 0);
 	DrawPanelsImage(y.n, dkLocation+1);
-	WriteTextWithBg(68, y.inc(7), 0xD0, system.color.work_text, CHANGE_POS, system.color.work);
+	WriteTextWithBg(68, y.inc(7), 0xD0, sc.work_text, CHANGE_POS, sc.work);
 	dkFsize.draw(22, y.inc(35)); 
 	dkAshow.draw(win_center_x, y.n);
 	DrawFrame(PD, frame_y, Form.cwidth-PD-PD, Form.cheight-frame_y-PD, DOCK_FRAME_T);

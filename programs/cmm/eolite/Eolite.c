@@ -238,7 +238,7 @@ void main()
 
 			if (mouse.x>=files.x+files.w) && (mouse.x<=files.x+files.w+16) && (mouse.y>files.y-17) && (mouse.y<files.y)
 			{
-				if (mouse.lkm) DrawRectangle3D(files.x+files.w+1,files.y-16,14,14,system.color.work_dark,system.color.work_light);
+				if (mouse.lkm) DrawRectangle3D(files.x+files.w+1,files.y-16,14,14,sc.work_dark,sc.work_light);
 				WHILE (mouse.lkm) && (files.first>0)
 				{
 					pause(8);
@@ -246,12 +246,12 @@ void main()
 					List_ReDraw();
 					mouse.get();
 				}
-				DrawRectangle3D(files.x+files.w+1,files.y-16,14,14,system.color.work_light,system.color.work_dark);
+				DrawRectangle3D(files.x+files.w+1,files.y-16,14,14,sc.work_light,sc.work_dark);
 			}
 
 			if (mouse.x>=files.x+files.w) && (mouse.x<=files.x+files.w+16) && (mouse.y>files.y+files.h-16) && (mouse.y<files.y+files.h)
 			{
-				if (mouse.lkm) DrawRectangle3D(files.x+files.w+1,files.y+files.h-15,14,14,system.color.work_dark,system.color.work_light);
+				if (mouse.lkm) DrawRectangle3D(files.x+files.w+1,files.y+files.h-15,14,14,sc.work_dark,sc.work_light);
 				while (mouse.lkm) && (files.first<files.count-files.visible)
 				{
 					pause(8);
@@ -259,7 +259,7 @@ void main()
 					List_ReDraw();
 					mouse.get();
 				}
-				DrawRectangle3D(files.x+files.w+1,files.y+files.h-15,14,14,system.color.work_light,system.color.work_dark);
+				DrawRectangle3D(files.x+files.w+1,files.y+files.h-15,14,14,sc.work_light,sc.work_dark);
 			}
 
 			//Scrooll
@@ -514,21 +514,21 @@ void draw_window()
 	if ( two_panels.checked) && (Form.width < 573) { MoveSize(OLD,OLD,573,OLD); return; }
 	GetProcessInfo(#Form, SelfInfo);
 	SetAppColors();
-	ESDWORD[#toolbar_pal] = col.work;
-	ESDWORD[#toolbar_pal+4] = MixColors(0, col.work, 35);
+	ESDWORD[#toolbar_pal] = sc.work;
+	ESDWORD[#toolbar_pal+4] = MixColors(0, sc.work, 35);
 	PutPaletteImage(#toolbar, 246, 34, 0, 0, 8, #toolbar_pal);
-	DrawBar(127, 8, 1, 25, col.graph);
+	DrawBar(127, 8, 1, 25, sc.work_graph);
 	for (i=0; i<3; i++) DefineHiddenButton(toolbar_buttons_x[i]+2,7,31-5,29-5,21+i);
 	for (i=3; i<6; i++) DefineHiddenButton(toolbar_buttons_x[i],  5,31,  29,  21+i);
-	DrawBar(246,0, Form.cwidth - 246, 34, col.work);
+	DrawBar(246,0, Form.cwidth - 246, 34, sc.work);
 	DrawDot(Form.cwidth-17,12);
 	DrawDot(Form.cwidth-17,12+6);
 	DrawDot(Form.cwidth-17,12+12);
 	DefineHiddenButton(Form.cwidth-24,7,20,25,51+BT_NOFRAME); //dots
 	//main rectangles
-	DrawRectangle(1,40,Form.cwidth-3,Form.cheight - 42-status_bar_h,col.graph);
+	DrawRectangle(1,40,Form.cwidth-3,Form.cheight - 42-status_bar_h,sc.work_graph);
 	DrawRectangle(0,39,Form.cwidth-1,-show_status_bar.checked*status_bar_h + Form.cheight - 40,col.work_gradient[4]); //bg
-	for (i=0; i<6; i++) DrawBar(0, 34+i, Form.cwidth, 1, MixColors(system.color.work_dark, system.color.work, i*10));
+	for (i=0; i<6; i++) DrawBar(0, 34+i, Form.cwidth, 1, MixColors(sc.work_dark, sc.work, i*10));
 	llist_copy(#files_active, #files);
 	strcpy(#active_path, #path);
 	DrawStatusBar();
@@ -549,9 +549,9 @@ void DrawList()
 	if (sort_type==1) sorting_arrow_x = files.w - 141 / 2 + files.x + 18;
 	if (sort_type==2) sorting_arrow_x = files.x + files.w - 90;
 	if (sort_type==3) sorting_arrow_x = strlen(T_SIZE)*3-30+files.x+files.w;
-	WriteText(sorting_arrow_x,files.y-12,0x80, system.color.work_text, sorting_arrow_t);
-	DrawBar(files.x+files.w,files.y,1,files.h,col.graph);
-	if (two_panels.checked) && (files.x<5) DrawBar(files.x+files.w+16,files.y,1,files.h,col.graph);	
+	WriteText(sorting_arrow_x,files.y-12,0x80, sc.work_text, sorting_arrow_t);
+	DrawBar(files.x+files.w,files.y,1,files.h,sc.work_graph);
+	if (two_panels.checked) && (files.x<5) DrawBar(files.x+files.w+16,files.y,1,files.h,sc.work_graph);	
 }
 
 void DrawStatusBar()
@@ -560,13 +560,13 @@ void DrawStatusBar()
 	int go_up_folder_exists=0;
 	if (!show_status_bar.checked) return;
 	if (files.count>0) && (strcmp(file_mas[0]*304+buf+72,"..")==0) go_up_folder_exists=1;
-	DrawBar(0, Form.cheight - status_bar_h, Form.cwidth,  status_bar_h, system.color.work);
+	DrawBar(0, Form.cheight - status_bar_h, Form.cwidth,  status_bar_h, sc.work);
 	sprintf(#status_bar_str, T_STATUS_EVEMENTS, count_dir-go_up_folder_exists, files.count-count_dir);
-	WriteText(6,Form.cheight - 13,0x80,system.color.work_text,#status_bar_str);
+	WriteText(6,Form.cheight - 13,0x80,sc.work_text,#status_bar_str);
 	if (selected_count) {
 		sprintf(#status_bar_str, T_STATUS_SELECTED, selected_count);
 		WriteText(Form.cwidth - calc(strlen(#status_bar_str)*6)-6,Form.cheight - 13,
-			0x80,system.color.work_text,#status_bar_str);
+			0x80,sc.work_text,#status_bar_str);
 	}
 }
 
@@ -857,18 +857,18 @@ void Del_Form()
 	{
 		if (!files.count) return;
 		DrawEolitePopup(T_YES, T_NO);
-		WriteText(-strlen(T_DELETE_FILE)*3+110+dform_x,175,0x80,system.color.work_text,T_DELETE_FILE);
+		WriteText(-strlen(T_DELETE_FILE)*3+110+dform_x,175,0x80,sc.work_text,T_DELETE_FILE);
 		if (selected_count)
 		{
 			sprintf(#f_count,"%s%d%s",DEL_MORE_FILES_1,selected_count,DEL_MORE_FILES_2);
-			WriteText(-strlen(#f_count)*3+110+dform_x,190,0x80,system.color.work_text,#f_count);
+			WriteText(-strlen(#f_count)*3+110+dform_x,190,0x80,sc.work_text,#f_count);
 		}
 		else
 		{
 			if (strlen(#file_name)<28) 
 			{
-				WriteText(strlen(#file_name)*3+110+dform_x+2,190,0x80,system.color.work_text,"?");
-				WriteText(-strlen(#file_name)*3+110+dform_x,190,0x80,system.color.work_text,#file_name);
+				WriteText(strlen(#file_name)*3+110+dform_x+2,190,0x80,sc.work_text,"?");
+				WriteText(-strlen(#file_name)*3+110+dform_x,190,0x80,sc.work_text,#file_name);
 			}
 			else
 			{

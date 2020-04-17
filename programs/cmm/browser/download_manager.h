@@ -40,8 +40,8 @@ void Downloader()
 	downloader_opened = true;
 	SetEventMask(EVM_REDRAW + EVM_KEY + EVM_BUTTON + EVM_MOUSE + EVM_MOUSE_FILTER + EVM_STACK);
 
-	system.color.get();
-	pb.frame_color = system.color.work_dark;
+	sc.get();
+	pb.frame_color = sc.work_dark;
  
 	filepath[0] = NULL;
 	
@@ -66,7 +66,7 @@ void Downloader()
 			break;
 
 		case evReDraw:
-			DefineAndDrawWindow(215, 100, 580, 130, 0x74, system.color.work, DL_WINDOW_HEADER, 0);
+			DefineAndDrawWindow(215, 100, 580, 130, 0x74, sc.work, DL_WINDOW_HEADER, 0);
 			GetProcessInfo(#DL_Form, SelfInfo);
 			if (DL_Form.status_window>2) break;
 			if (DL_Form.height<120) MoveSize(OLD,OLD,OLD,120);
@@ -111,7 +111,7 @@ void DL_Draw_Window()
 {  
 	int but_x = 0;
 	int but_y = 58;
-	DrawBar(0,0, DL_Form.cwidth, DL_Form.cheight, system.color.work);
+	DrawBar(0,0, DL_Form.cwidth, DL_Form.cheight, sc.work);
 	DeleteButton(301);
 	DeleteButton(302);
 	DeleteButton(305);
@@ -130,7 +130,7 @@ void DL_Draw_Window()
 		DrawStandartCaptButton(DL_Form.width - 190, but_y, 302, STOP_DOWNLOADING);
 		DrawDownloading();
 	}
-	WriteText(CONX, ed.top + 4, 0x90, system.color.work_text, "URL:");
+	WriteText(CONX, ed.top + 4, 0x90, sc.work_text, "URL:");
     ed.width = DL_Form.cwidth - ed.left - CONX - 3;
 	ed.offset=0;
 	DrawEditBox(#ed);
@@ -188,8 +188,8 @@ void DrawDownloading()
 {
 	char bytes_received[70];
 	sprintf(#bytes_received, KB_RECEIVED, ConvertSizeToKb(downloader.httpd.content_received) );
-	DrawBar(CONX, pb.top + 22, pb.width, 16, system.color.work);
-	WriteText(CONX, pb.top + 22, 0x90, system.color.work_text, #bytes_received);
+	DrawBar(CONX, pb.top + 22, pb.width, 16, sc.work);
+	WriteText(CONX, pb.top + 22, 0x90, sc.work_text, #bytes_received);
 	//CalculateSpeed();
 	progressbar_draw stdcall(#pb);
 }

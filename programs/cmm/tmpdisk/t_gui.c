@@ -141,15 +141,15 @@ void Main_Window()
 			}
 			break;
          case evReDraw:			
-			system.color.get();
-			DefineAndDrawWindow(170,150,405,290,0x74,system.color.work,"Virtual Disk Manager 0.69",0);
+			sc.get();
+			DefineAndDrawWindow(170,150,405,290,0x74,sc.work,"Virtual Disk Manager 0.69",0);
 			GetProcessInfo(#Form, SelfInfo);
 			if (Form.status_window>2) break;
 
-			DrawBar(0,0,  Form.cwidth,TOPPANELH, system.color.work);
-			DrawBar(0,TOPPANELH, Form.cwidth,1,  system.color.work_graph);
-			WriteText(6, 9, 0x90, system.color.work_text, SIZE_TEXT);
-			DrawRectangle(edit_disk_size.left-1, edit_disk_size.top-1, edit_disk_size.width+2, 23,system.color.work_graph);
+			DrawBar(0,0,  Form.cwidth,TOPPANELH, sc.work);
+			DrawBar(0,TOPPANELH, Form.cwidth,1,  sc.work_graph);
+			WriteText(6, 9, 0x90, sc.work_text, SIZE_TEXT);
+			DrawRectangle(edit_disk_size.left-1, edit_disk_size.top-1, edit_disk_size.width+2, 23,sc.work_graph);
 			edit_box_draw stdcall (#edit_disk_size);
 			x = 6 + DrawStandartCaptButton(6, 36, 10, T_ADD_DISK);
 			DrawStandartCaptButton(x, 36, 11, T_DELETE_DISK);
@@ -230,10 +230,10 @@ void DrawTmpDisks()
 	byte i;
 
 	DrawBar(0,TOPPANELH+1, Form.cwidth,Form.cheight-TOPPANELH-BOTPANELH-2, 0xFFFFFF);
-	DrawBar(0,Form.cheight-BOTPANELH-1, Form.cwidth,1, system.color.work_graph);
-	DrawBar(0,Form.cheight-BOTPANELH, Form.cwidth,BOTPANELH, system.color.work);
+	DrawBar(0,Form.cheight-BOTPANELH-1, Form.cwidth,1, sc.work_graph);
+	DrawBar(0,Form.cheight-BOTPANELH, Form.cwidth,BOTPANELH, sc.work);
 	sprintf(#free_ram_text, FREE_RAM_TEXT, GetFreeRAM()/1024);
-	WriteText(10, Form.cheight-20, 0x90, system.color.work_text, #free_ram_text);
+	WriteText(10, Form.cheight-20, 0x90, sc.work_text, #free_ram_text);
 	if (disk_num==0)
 	{
 		WriteText(17,TOPPANELH+15,    0x90, 0x777777, INTRO_TEXT_1);

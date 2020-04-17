@@ -4,9 +4,9 @@ void DrawPathBar()
 {
 	PathShow.area_size_x = Form.cwidth-300;
 	DrawBar(PathShow.start_x-3, PathShow.start_y-6, PathShow.area_size_x+3, 19, col.odd_line);
-	DrawRectangle(PathShow.start_x-4,PathShow.start_y-7,PathShow.area_size_x+4,20,col.graph);
+	DrawRectangle(PathShow.start_x-4,PathShow.start_y-7,PathShow.area_size_x+4,20,sc.work_graph);
 	DefineHiddenButton(PathShow.start_x-4+1,PathShow.start_y-7+1,PathShow.area_size_x+4-2,20-2,PATH_BTN);
-	DrawBar(PathShow.start_x-4, PathShow.start_y+14, PathShow.area_size_x+5+18, 1, system.color.work_light);
+	DrawBar(PathShow.start_x-4, PathShow.start_y+14, PathShow.area_size_x+5+18, 1, sc.work_light);
 
 	DrawFlatButtonSmall(PathShow.start_x+PathShow.area_size_x,PathShow.start_y-7,18,20, 61, "\26");
 
@@ -46,7 +46,7 @@ void DrawBreadCrumbs()
 	//DrawFavButton(btn.x);
 	//btn.x+=20;
 	btn.x++;
-	DrawBar(btn.x,btn.y-1,Form.cwidth-btn.x-25,btn.h+3,col.work);
+	DrawBar(btn.x,btn.y-1,Form.cwidth-btn.x-25,btn.h+3,sc.work);
 }
 
 
@@ -64,10 +64,10 @@ void ClickOnBreadCrumb(unsigned clickid)
 void DrawBreadcrumbButton(dword x,y,w,h,id,text)
 {
 	int i;
-	DrawRectangle(x,y,w,h,col.graph);
+	DrawRectangle(x,y,w,h,sc.work_graph);
 	for (i=0; (i<h-1) & (i<20); i++) DrawBar(x+1, y+i+1, w-1, 1, col.work_gradient[20-i]);
-	DrawRectangle3D(x+1,y+1,w-2,h-2,system.color.work_light, system.color.work_dark);
+	DrawRectangle3D(x+1,y+1,w-2,h-2,sc.work_light, sc.work_dark);
 	DefineHiddenButton(x+1,y+1,w-2,h-2,id);
-	WriteText(-strlen(text)*8+w/2+x,h/2+y-7,0x90,system.color.work_text,text);
-	DrawBar(x, y+h+1, w+1, 1, system.color.work_light);
+	WriteText(-strlen(text)*8+w/2+x,h/2+y-7,0x90,sc.work_text,text);
+	DrawBar(x, y+h+1, w+1, 1, sc.work_light);
 }

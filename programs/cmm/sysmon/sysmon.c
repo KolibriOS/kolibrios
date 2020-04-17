@@ -61,9 +61,9 @@ void main()
 
 int Sysmon__DefineAndDrawWindow()
 {
-	system.color.get();
+	sc.get();
 	DefineAndDrawWindow(screen.width - WIN_CONTENT_H - 200, 100, WIN_CONTENT_W + WIN_PAD + WIN_PAD +9, 
-		WIN_CONTENT_H + TAB_HEIGHT + skin_height + 4, 0x34, system.color.work, "System Monitor",0);
+		WIN_CONTENT_H + TAB_HEIGHT + skin_height + 4, 0x34, sc.work, "System Monitor",0);
 	GetProcessInfo(#Form, SelfInfo);
 	if (Form.status_window>2) return false;
 	//if (Form.width  < 300) { MoveSize(OLD,OLD,300,OLD); break; }

@@ -99,8 +99,8 @@ void main() {
 				break;
 			
 		case evReDraw:
-				system.color.get();
-				DefineAndDrawWindow(430, 150, 424, 343+skin_height,0x34,system.color.work,WINDOW_TITLE,0);
+				sc.get();
+				DefineAndDrawWindow(430, 150, 424, 343+skin_height,0x34,sc.work,WINDOW_TITLE,0);
 				GetProcessInfo(#Form, SelfInfo);
 				if (Form.status_window>2) break;
 				mouse_frame.w = - FRAME_X * 2 + Form.cwidth;

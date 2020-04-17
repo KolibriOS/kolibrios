@@ -519,6 +519,7 @@ inline fastcall dword SetWindowLayerBehaviour(EDX, ESI)
 
 :void PutPaletteImage(dword inbuf,w,h,x,y,bits,pal)
 {
+	if (h<1) || (w<0) return;
 	EAX = 65;
 	EBX = inbuf;
 	ECX = w<<16+h;
@@ -641,26 +642,6 @@ inline fastcall dword GetStartTime()
 
 :byte skin_height;
 
-:void DrawDate(dword x, y, color, in_date)
-{
-	EDI = in_date;
-	EAX = 47;
-	EBX = 2<<16;
-	EDX = x<<16+y;
-	ESI = 0x90<<24+color;
-	ECX = EDI.date.day;
-	$int 0x40;
-	EDX += 20<<16;
-	ECX = EDI.date.month;
-	$int 0x40;
-	EDX += 20<<16;
-	EBX = 4<<16;
-	ECX = EDI.date.year;
-	$int 0x40;
-	DrawBar(x+17,y+10,2,2,color);
-	DrawBar(x+37,y+10,2,2,color);
-}
-
 dword __generator;  // random number generator init
 
 //The initialization of the initial data before running
@@ -670,7 +651,7 @@ void ______INIT______()
 	screen.width  = GetScreenWidth()+1;
 	screen.height = GetScreenHeight()+1;
 	__generator = GetStartTime();	
-	mem_init();
+	//mem_init();
 	main();
 }
 ______STOP______:

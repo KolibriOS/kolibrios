@@ -7,8 +7,8 @@ void DrawTopPanelButton(dword _button_id, _x, _y, signed int _icon_n)
 	if (!semi_white) {
 		Libimg_LoadImage(#top_icons, "/sys/icons16.png");
 
-		semi_white = MixColors(system.color.work, 0xFFFfff, skin_is_dark()*90 + 96);
-		bg_col_dark = MixColors(system.color.work, system.color.work_graph, 90);
+		semi_white = MixColors(sc.work, 0xFFFfff, skin_is_dark()*90 + 96);
+		bg_col_dark = MixColors(sc.work, sc.work_graph, 90);
 		bg_col_light = MixColors(semi_white, 0xFFFfff, skin_is_dark()*90 + 10);
 
 		Libimg_ReplaceColor(top_icons.image, top_icons.w, top_icons.h, 0xffFFFfff, semi_white);
@@ -16,7 +16,7 @@ void DrawTopPanelButton(dword _button_id, _x, _y, signed int _icon_n)
 	}
 
 	DrawWideRectangle(_x+1, _y+1, TSZE, TSZE, 5, semi_white);
-	DrawOvalBorder(_x, _y, TSZE, TSZE, bg_col_light, bg_col_dark, semi_white, system.color.work);
+	DrawOvalBorder(_x, _y, TSZE, TSZE, bg_col_light, bg_col_dark, semi_white, sc.work);
 
 	DefineHiddenButton(_x, _y, TSZE+1, TSZE+1, _button_id);
 	if (_icon_n==-1) {

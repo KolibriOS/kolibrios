@@ -208,18 +208,18 @@ int DrawMenuButton(dword x,y,id,text)
 	int textlen = strlen(text)*8;
 	int padding = 12;
 	DefineHiddenButton(x, y, textlen+padding+padding, TOPPANELH-2, id);
-	WriteText(x+padding,y+4, 0x90, MixColors(system.color.work, system.color.work_text, 70), text);
+	WriteText(x+padding,y+4, 0x90, MixColors(sc.work, sc.work_text, 70), text);
 	return textlen+padding+padding;
 }
 
 void draw_window()
 {
-	system.color.get();
+	sc.get();
 	DefineAndDrawWindow(screen.width-WIN_W/2,screen.height-WIN_H/2,WIN_W,WIN_H,0x73,0xFFFFFF,#win_title,0);
 	GetProcessInfo(#Form, SelfInfo);
-	DrawBar(0, 0, Form.cwidth, TOPPANELH-1, system.color.work);
-	DrawBar(0, TOPPANELH-1, Form.cwidth, 1, system.color.work_dark);
-	DrawBar(0, Form.cheight-BOTPANELH, Form.cwidth, BOTPANELH, system.color.work);
+	DrawBar(0, 0, Form.cwidth, TOPPANELH-1, sc.work);
+	DrawBar(0, TOPPANELH-1, Form.cwidth, 1, sc.work_dark);
+	DrawBar(0, Form.cheight-BOTPANELH, Form.cwidth, BOTPANELH, sc.work);
 	
 	menu_encoding_x = menu_file_x + DrawMenuButton(menu_file_x, 0, MENU_ID_FILE, MENU1);
 	menu_reopen_x = menu_encoding_x + DrawMenuButton(menu_encoding_x, 0, MENU_ID_ENCODING, MENU2);

@@ -128,10 +128,10 @@ void Draw_IntroWindow()
 {
 	incn y;
 	y.n = Form.cheight/2 - 80;
-	WriteTextB(30+2,y.n+2,0x81,MixColors(system.color.work, 0xB92234,220),T_CAUTION_TITLE);
+	WriteTextB(30+2,y.n+2,0x81,MixColors(sc.work, 0xB92234,220),T_CAUTION_TITLE);
 	WriteTextB(30,y.n,0x81,0xB92234,T_CAUTION_TITLE);
 	y.n = DrawTextViewArea(30, y.inc(30), Form.cwidth-60, Form.cheight-140, 
-		T_CAUTION_PARAGRAPH, -1, system.color.work_text);
+		T_CAUTION_PARAGRAPH, -1, sc.work_text);
 	active_button_id = BUTTON_ID_ASSEPT_RISK;
 	DrawStandartCaptButton(30, y.inc(10), BUTTON_ID_ASSEPT_RISK, T_ASSEPT_RISK);
 }
@@ -153,15 +153,15 @@ void Draw_DriverListWindow()
 	SelectList_DrawBorder();
 	//RIGHT FRAME
 	GetCurrentSectionData();
-	DrawBar(right_frame_x, PADDING+3, Form.cwidth - right_frame_x - PADDING, 80, system.color.work);
+	DrawBar(right_frame_x, PADDING+3, Form.cwidth - right_frame_x - PADDING, 80, sc.work);
 	if (streq(#cur_type, "disk")) icon_n = 50;
-	DrawIcon32(right_frame_x, PADDING, system.color.work, icon_n);	
-	WriteTextB(right_frame_x+44, PADDING+3, 0x81, system.color.work_text, ini_sections.get(select_list.cur_y));
-	WriteText(right_frame_x+44, PADDING+23, 0x80, system.color.work_text, #cur_version);
+	DrawIcon32(right_frame_x, PADDING, sc.work, icon_n);	
+	WriteTextB(right_frame_x+44, PADDING+3, 0x81, sc.work_text, ini_sections.get(select_list.cur_y));
+	WriteText(right_frame_x+44, PADDING+23, 0x80, sc.work_text, #cur_version);
 	if(cur_readme_path[0]) readme_w = DrawStandartCaptButton(right_frame_x, PADDING+45, BUTTON_ID_README, T_README);
 	DrawStandartCaptButton(right_frame_x + readme_w, PADDING+45, BUTTON_ID_INSTALL, T_INSTALL);
 	DrawTextViewArea(right_frame_x-2, PADDING+83, Form.cwidth - right_frame_x - PADDING, Form.cheight-PADDING-PADDING, 
-		#cur_description, system.color.work, system.color.work_text);
+		#cur_description, sc.work, sc.work_text);
 }
 
 void SelectList_DrawLine(dword i)
@@ -172,8 +172,8 @@ void SelectList_DrawLine(dword i)
 	
 	if (select_list.cur_y-select_list.first==i)
 	{
-		DrawBar(select_list.x, yyy, select_list.w, select_list.item_h, system.color.work_button);
-		WriteText(select_list.x+12,yyy+select_list.text_y,select_list.font_type,system.color.work_button_text, ini_sections.get(i));
+		DrawBar(select_list.x, yyy, select_list.w, select_list.item_h, sc.button);
+		WriteText(select_list.x+12,yyy+select_list.text_y,select_list.font_type,sc.button_text, ini_sections.get(i));
 	}
 	else
 	{
@@ -214,8 +214,8 @@ void Event_ProcessButtonId(int id)
 
 void Event_DrawWindow() 
 {
-	system.color.get();
-	DefineAndDrawWindow(215, 100, 600, 400, 0x33, system.color.work, WINDOW_TITLE,0);
+	sc.get();
+	DefineAndDrawWindow(215, 100, 600, 400, 0x33, sc.work, WINDOW_TITLE,0);
 	GetProcessInfo(#Form, SelfInfo);
 	if (Form.status_window>2) return;
 	if (Form.width  < 450) { MoveSize(OLD,OLD,450,OLD); return; }

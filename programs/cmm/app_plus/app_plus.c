@@ -103,16 +103,16 @@ void draw_window()
 {
 	incn y;
 	y.n=0;
-	system.color.get();
-	DefineAndDrawWindow(screen.width-570/2, 100, 570, 300+skin_height, 0x34, system.color.work, WINDOW_TITLE_TEXT,0);
+	sc.get();
+	DefineAndDrawWindow(screen.width-570/2, 100, 570, 300+skin_height, 0x34, sc.work, WINDOW_TITLE_TEXT,0);
 	GetProcessInfo(#Form, SelfInfo);
-	WriteTextB(CONX+2,y.inc(20)+2,0x81,MixColors(system.color.work, 0xB92234,220),CONTENT_HEADER_TEXT);
+	WriteTextB(CONX+2,y.inc(20)+2,0x81,MixColors(sc.work, 0xB92234,220),CONTENT_HEADER_TEXT);
 	WriteTextB(CONX,y.n,0x81,0xB92234,CONTENT_HEADER_TEXT);
 	
 	PutPaletteImage(#scr,144,171,Form.cwidth-180,y.n,8,#scr_pal);
-	DrawRectangle(Form.cwidth-180-1,y.n-1, 144+1,171+1, system.color.work_graph);
+	DrawRectangle(Form.cwidth-180-1,y.n-1, 144+1,171+1, sc.work_graph);
 
-	WriteTextLines(CONX,y.inc(50),0x90,system.color.work_text,DESCRIPTION_TEXT,20);
+	WriteTextLines(CONX,y.inc(50),0x90,sc.work_text,DESCRIPTION_TEXT,20);
 
 	DrawButtons();	
 }

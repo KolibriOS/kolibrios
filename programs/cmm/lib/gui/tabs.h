@@ -13,8 +13,8 @@
 
 :void _tabs::draw_wrapper()
 {
-	DrawRectangle(x,y+TAB_HEIGHT,w-1,h-TAB_HEIGHT, system.color.work_graph);
-	DrawRectangle(x+1,y+1+TAB_HEIGHT,w-3,h-2-TAB_HEIGHT, system.color.work_light);
+	DrawRectangle(x,y+TAB_HEIGHT,w-1,h-TAB_HEIGHT, sc.work_graph);
+	DrawRectangle(x+1,y+1+TAB_HEIGHT,w-3,h-2-TAB_HEIGHT, sc.work_light);
 }
 
 :void _tabs::draw_button(dword xx, but_id, text)
@@ -25,12 +25,12 @@
 	if (but_id==active_tab)
 	{
 		col_bg=0xE44C9C;
-		col_text=system.color.work_text;
+		col_text=sc.work_text;
 	}
 	else
 	{
 		col_bg=0xC3A1B7;
-		col_text= MixColors(system.color.work, system.color.work_text, 120);
+		col_text= MixColors(sc.work, sc.work_text, 120);
 	} 
 	DefineHiddenButton(xx-2,y, ww-1+4,hh-1, but_id);
 	WriteText(xx, y+6, 0x90, col_text, text);

@@ -95,8 +95,8 @@ void gui()
 
 void draw_window()
 {
-	system.color.get();
-	DefineAndDrawWindow(215, 100, WIN_W+9, 170 + skin_height, 0x34, system.color.work, #window_title,0);
+	sc.get();
+	DefineAndDrawWindow(215, 100, WIN_W+9, 170 + skin_height, 0x34, sc.work, #window_title,0);
 	//GetProcessInfo(#Form, SelfInfo);
 	if (READY==state) {
 		DrawFileBox(#src_box, T_FIRST, BID_SRC_OPEN);
@@ -105,9 +105,9 @@ void draw_window()
 	}
 	#ifdef COPYING
 	if (COPYING==state) {
-		pr.frame_color = system.color.work_graph;
-		DrawRectangle3D(PR_LEFT-1, PR_TOP-1, PR_W+1, PR_H+1, system.color.work_dark, 
-			system.color.work_light);
+		pr.frame_color = sc.work_graph;
+		DrawRectangle3D(PR_LEFT-1, PR_TOP-1, PR_W+1, PR_H+1, sc.work_dark, 
+			sc.work_light);
 		DrawProgress();
 		DrawStandartCaptButton(-19*8+WIN_W/2-15, dst_box.top + 35, B_STOP, "        Stop       ");
 	}

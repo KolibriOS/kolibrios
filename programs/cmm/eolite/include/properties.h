@@ -140,7 +140,7 @@ void SetProperties(int mode)
 void ShowConfirmQuestionPopin()
 {
 	apply_question_active = 1;
-	DrawPopup(15,80,250,90,1,system.color.work, system.color.work_graph);
+	DrawPopup(15,80,250,90,1,sc.work, sc.work_graph);
 	WriteText(35, 102, 0x90, 0x000000, QUEST_1);
 	WriteText(65, 117, 0x90, 0x000000, QUEST_2);
 	DrawStandartCaptButton(62,138,B_SETINGS_APPLY_SUBFOLDER,T_YES);
@@ -272,24 +272,24 @@ void DrawPropertiesWindow()
 	dword element_size;
 	incn y;
 	char temp_path[sizeof(file_path)];
-	DefineAndDrawWindow(Form.left + 150,150,315,360+skin_height,0x34,system.color.work,WINDOW_TITLE_PROPERTIES,0);
+	DefineAndDrawWindow(Form.left + 150,150,315,360+skin_height,0x34,sc.work,WINDOW_TITLE_PROPERTIES,0);
 	GetProcessInfo(#pform, SelfInfo);
 
 	DrawStandartCaptButton(pform.cwidth - 96, pform.cheight-34, B_CLOSE, T_CLOSE);
 	DrawStandartCaptButton(pform.cwidth -208, pform.cheight-34, B_APPLY, T_APPLY);
 	
-	WriteText(10, 78, 0x90, system.color.work_text, PR_T_DEST);
+	WriteText(10, 78, 0x90, sc.work_text, PR_T_DEST);
 	edit_box_draw stdcall (#path_to_file_ed);
 
-	WriteText(10, 97, 0x90, system.color.work_text, PR_T_SIZE);
+	WriteText(10, 97, 0x90, sc.work_text, PR_T_SIZE);
 	
 	if (selected_count)
 	{
 		PropertiesDrawIcon(NULL, "<lot>");
 		sprintf(#folder_info,"%s%d%s%d",SET_6,more_files_count.files,SET_7,more_files_count.folders);
-		WriteText(file_name_ed.left+4, 30, 0x90, system.color.work_text, #folder_info);
+		WriteText(file_name_ed.left+4, 30, 0x90, sc.work_text, #folder_info);
 		sprintf(#element_size_label,"%s (%d %s)",ConvertSize64(more_files_count.bytes, NULL),more_files_count.bytes,SET_BYTE_LANG);
-		WriteText(120, 97, 0x90, system.color.work_text, #element_size_label);
+		WriteText(120, 97, 0x90, sc.work_text, #element_size_label);
 	}
 	else
 	{
@@ -301,24 +301,24 @@ void DrawPropertiesWindow()
 			if (ext1) ext1 += #file_name2;
 			PropertiesDrawIcon(#temp_path, ext1);
 		}
-		WriteText(file_name_ed.left, file_name_ed.top-15, 0x80, system.color.work_text, PR_T_NAME);
+		WriteText(file_name_ed.left, file_name_ed.top-15, 0x80, sc.work_text, PR_T_NAME);
 		DrawEditBox(#file_name_ed);
 		
 		if (!itdir) element_size = file_info_general.sizelo;
 		else
 		{
-			WriteText(10,116, 0x90, system.color.work_text, PR_T_CONTAINS);                              
+			WriteText(10,116, 0x90, sc.work_text, PR_T_CONTAINS);                              
 			sprintf(#folder_info,"%s%d%s%d",SET_6,dir_size.files,SET_7,dir_size.folders);
-			WriteText(120, 116, 0x90, system.color.work_text, #folder_info);
+			WriteText(120, 116, 0x90, sc.work_text, #folder_info);
 			element_size = dir_size.bytes;
 		}
-		WriteTextLines(10,  136, 0x90, system.color.work_text, CREATED_OPENED_MODIFIED, 20);
-		DrawDate(120,  136, system.color.work_text, #file_info_general.datecreate);
-		DrawDate(120, 156, system.color.work_text, #file_info_general.datelastaccess);
-		DrawDate(120, 176, system.color.work_text, #file_info_general.datelastedit);
+		WriteTextLines(10,  136, 0x90, sc.work_text, CREATED_OPENED_MODIFIED, 20);
+		DrawDate(120,  136, sc.work_text, #file_info_general.datecreate);
+		DrawDate(120, 156, sc.work_text, #file_info_general.datelastaccess);
+		DrawDate(120, 176, sc.work_text, #file_info_general.datelastedit);
 
 		sprintf(#element_size_label,"%s (%d %s)",ConvertSize64(element_size, NULL),element_size,SET_BYTE_LANG);
-		WriteText(120, 99, 0x90, system.color.work_text, #element_size_label);
+		WriteText(120, 99, 0x90, sc.work_text, #element_size_label);
 	}
 	DrawFrame(10, 212, -10*2 + pform.cwidth - 2, 92, FLAGS);
 	y.n = 212; //212 => attributes_frame.y

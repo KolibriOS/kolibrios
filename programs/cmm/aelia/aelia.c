@@ -479,7 +479,7 @@ void draw_window()
 	if (Form.width  < 200) { MoveSize(OLD,OLD,200,OLD); return; }
 	if (Form.height < 200) { MoveSize(OLD,OLD,OLD,200); return; }
 
-	system.color.get();
+	sc.get();
 
 	list.SetSizes(0, TOOLBAR_H, Form.cwidth-scroll.size_x-1, 
 		Form.cheight-TOOLBAR_H-STATUSBAR_H, kfont.size.pt+4);
@@ -544,14 +544,14 @@ void DrawAddressBox()
 PathShow_data status_text = {0, 17,250, 6, 250, 0, 0, 0x0, 0xFFFfff, 0, NULL, 0};
 void DrawStatusBar(dword _status_text)
 {
-	DrawBar(0,Form.cheight - STATUSBAR_H, Form.cwidth,STATUSBAR_H, system.color.work);
+	DrawBar(0,Form.cheight - STATUSBAR_H, Form.cwidth,STATUSBAR_H, sc.work);
 	DrawBar(0,Form.cheight - STATUSBAR_H, Form.cwidth,1, 0x8C8C8C);
 
 	if (_status_text) {
 		status_text.start_x = 7;
 		status_text.start_y = Form.cheight - STATUSBAR_H + 3;
 		status_text.area_size_x = Form.cwidth - status_text.start_x -3;
-		status_text.font_color = system.color.work_text;
+		status_text.font_color = sc.work_text;
 		status_text.text_pointer = _status_text;
 		PathShow_prepare stdcall(#status_text);
 		PathShow_draw stdcall(#status_text);

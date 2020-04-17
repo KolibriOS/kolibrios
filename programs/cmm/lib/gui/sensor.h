@@ -23,8 +23,8 @@
 
 :void sensor::draw_wrapper()
 {
-	DrawRectangle(x-1, y-1, w+1, h+1, system.color.work_graph);
-	DrawRectangle3D(x-2, y-2, w+3, h+3, system.color.work_dark, system.color.work_light);
+	DrawRectangle(x-1, y-1, w+1, h+1, sc.work_graph);
+	DrawRectangle3D(x-2, y-2, w+3, h+3, sc.work_dark, sc.work_light);
 }
 
 :void sensor::draw_progress(dword progress_w, active_value, bg_value, mesure)
@@ -34,7 +34,7 @@
 
 	DrawBar(x, y,     w-progress_w, 1,   MixColors(PROGRESS_ACTIVE, PROGRESS_BG, 200));
 	DrawBar(x, y+1,   w-progress_w, h-2, PROGRESS_ACTIVE);
-	DrawBar(x, y+h-1, w-progress_w, 1,   MixColors(PROGRESS_ACTIVE, system.color.work_graph, 200));
+	DrawBar(x, y+h-1, w-progress_w, 1,   MixColors(PROGRESS_ACTIVE, sc.work_graph, 200));
 
 	sprintf(#param, "%i%s", active_value, mesure);
 	WriteText(w-progress_w- calc(strlen(#param)*8) /2 + x, h/2-7+y, 0x90, PROGRESS_BG, #param);

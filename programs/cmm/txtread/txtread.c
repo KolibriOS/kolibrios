@@ -417,14 +417,14 @@ void draw_window()
 	incn x;
 	DefineAndDrawWindow(Form.left,Form.top,Form.width,Form.height,0x73,0,#title,0);
 	GetProcessInfo(#Form, SelfInfo);
-	system.color.get();
+	sc.get();
 	if (Form.status_window>2) return;
 
 	if (Form.width  < 200) { MoveSize(OLD,OLD,200,OLD); return; }
 	if (Form.height < 200) { MoveSize(OLD,OLD,OLD,200); return; }
 	
-	DrawBar(0, 0, Form.cwidth, TOOLBAR_H - 1, system.color.work);
-	DrawBar(0, TOOLBAR_H - 1, Form.cwidth, 1, system.color.work_graph);
+	DrawBar(0, 0, Form.cwidth, TOOLBAR_H - 1, sc.work);
+	DrawBar(0, TOOLBAR_H - 1, Form.cwidth, 1, sc.work_graph);
 	
 	x.n = 0;
 	DrawToolbarButton(OPEN_FILE,       x.inc(8));
@@ -460,8 +460,8 @@ void DrawToolbarButton(char image_id, int x)
 {
 	DefineButton(x+1, 6, TOOLBAR_ICON_WIDTH, TOOLBAR_ICON_HEIGHT, 10+image_id + BT_HIDE, 0);
 	//img_draw stdcall(skin.image, x, 5, TOOLBAR_ICON_WIDTH, TOOLBAR_ICON_HEIGHT, TOOLBAR_ICON_WIDTH-1*image_id, 0);
-	DrawOvalBorder(x, 5, TOOLBAR_ICON_WIDTH, TOOLBAR_ICON_HEIGHT, system.color.work_graph, 
-		system.color.work_graph,system.color.work_graph, system.color.work_dark);
+	DrawOvalBorder(x, 5, TOOLBAR_ICON_WIDTH, TOOLBAR_ICON_HEIGHT, sc.work_graph, 
+		sc.work_graph,sc.work_graph, sc.work_dark);
 	img_draw stdcall(skin.image, x+1, 5+1, TOOLBAR_ICON_WIDTH, TOOLBAR_ICON_HEIGHT, TOOLBAR_ICON_WIDTH*image_id, 0);
 }
 

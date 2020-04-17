@@ -47,12 +47,12 @@ void main()
 
 void draw_window()
 {
-	system.color.get();
-	DefineAndDrawWindow(215, 100, 350, 300, 0x34, system.color.work, "Network testing utility",0);
+	sc.get();
+	DefineAndDrawWindow(215, 100, 350, 300, 0x34, sc.work, "Network testing utility",0);
 	button.init(10);
 	key.init(10);
 
-	WriteText(10,10, 0x90, system.color.work_text, "Download via:");
+	WriteText(10,10, 0x90, sc.work_text, "Download via:");
 	AddEvent(10, 30, #EventRunAsmDownloader, SCAN_CODE_F1, "ASM Downloader [F1]");
 	AddEvent(10, 60, #EventRunCmmDownloader, SCAN_CODE_F2, "C-- Downloader [F2]");
 	AddEvent(10, 120, #EventRunNetStat, SCAN_CODE_F3, "NetStat [F3]");

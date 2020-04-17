@@ -38,7 +38,7 @@ void main()
 			if (btn==PHRASE_TAB) || (btn==CHARS_TAB) tabs.click(btn);
 			goto _DRAW_WINDOW_CONTENT;
 		case evReDraw:
-			system.color.get();
+			sc.get();
 			DefineAndDrawWindow(215,100,WIN_W+9,WIN_H+skin_height+5,0x74,0xFFFFFF,#title,0);
 			GetProcessInfo(#Form, SelfInfo);
 			if (Form.status_window>2) break;
@@ -47,8 +47,8 @@ void main()
 			kfont.bold = bold.checked;
 			kfont.smooth = smooth.checked;
 
-			DrawBar(0, 0, Form.cwidth, PANELH-1, system.color.work);
-			DrawBar(0, PANELH-1,Form.cwidth,1,system.color.work_graph);
+			DrawBar(0, 0, Form.cwidth, PANELH-1, sc.work);
+			DrawBar(0, PANELH-1,Form.cwidth,1,sc.work_graph);
 			bold.draw(10, 8);
 			smooth.draw(83,8);
 			colored.draw(170,8);

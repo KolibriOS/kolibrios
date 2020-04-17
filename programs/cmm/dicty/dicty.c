@@ -76,18 +76,18 @@ void main()
 			break;
 			
          case evReDraw:
-			system.color.get();
-			DefineAndDrawWindow(215,120,500,350,0x73,system.color.work,WINDOW_TITLE,0);
+			sc.get();
+			DefineAndDrawWindow(215,120,500,350,0x73,sc.work,WINDOW_TITLE,0);
 			GetProcessInfo(#Form, SelfInfo);
 			if (Form.status_window>2) break;
 			if (Form.height<140) { MoveSize(OLD,OLD,OLD,140); break; }
 			if (Form.width<400) { MoveSize(OLD,OLD,400,OLD); break; }
-			DrawBar(0, 0, Form.cwidth, TOPH, system.color.work); //top bg
-			DrawBar(0, TOPH, Form.cwidth, 1, system.color.work_graph);
+			DrawBar(0, 0, Form.cwidth, TOPH, sc.work); //top bg
+			DrawBar(0, TOPH, Form.cwidth, 1, sc.work_graph);
 			edit1.width=Form.cwidth-edit1.left-edit1.left - 116;
 			edit_box_draw stdcall(#edit1);
 			DrawWideRectangle(edit1.left-2, edit1.top-2, edit1.width+3, 25, 2, 0xffffff);
-			DrawRectangle(edit1.left-3, edit1.top-3, edit1.width+4, 26, system.color.work_graph);
+			DrawRectangle(edit1.left-3, edit1.top-3, edit1.width+4, 26, sc.work_graph);
 			DrawTranslation();
 			DrawLangButtons();
       }
@@ -98,11 +98,11 @@ void main()
 void DrawLangButtons()
 {
 	dword direction;
-	DrawBar(Form.cwidth-111, edit1.top+3, 100, 25, system.color.work);
-	DefineButton(Form.cwidth-79, edit1.top-4+3, 20, 20, BUTTON_CHANGE_LANGUAGE, system.color.work_button);
-	WriteText(Form.cwidth-73, edit1.top-1+3, 10000001b, system.color.work_button_text, "\26");
+	DrawBar(Form.cwidth-111, edit1.top+3, 100, 25, sc.work);
+	DefineButton(Form.cwidth-79, edit1.top-4+3, 20, 20, BUTTON_CHANGE_LANGUAGE, sc.button);
+	WriteText(Form.cwidth-73, edit1.top-1+3, 10000001b, sc.button_text, "\26");
 	if (active_dict == ENG_RUS) direction = TEXT_VOC_R_E; else direction = TEXT_VOC_E_R;
-	WriteText(Form.cwidth-111, edit1.top+3, 0x90, system.color.work_text, direction);
+	WriteText(Form.cwidth-111, edit1.top+3, 0x90, sc.work_text, direction);
 }
 
 void Translate()

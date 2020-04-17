@@ -44,12 +44,12 @@ int id;
 		if (GetKeys()==27) ExitProcess();
 		break;
 	case evReDraw:
-		system.color.get();
+		sc.get();
 		DefineAndDrawWindow(screen.width-fw/2,screen.height-fh/2,fw,fh+skin_height,0x33,0xE0DFE3,"Rainbow (rgb test)",0);
 		_PutImage(0,0,256,256,#image);
-		DrawCaptButton(280,20, 110,30,DRAW1_BTN,system.color.work_button,system.color.work_button_text,"Draw 1");
-		DrawCaptButton(280,60, 110,30,DRAW2_BTN,system.color.work_button,system.color.work_button_text,"Draw 2");
-		DrawCaptButton(280,100,110,30,SETBG_BTN,system.color.work_button,system.color.work_button_text,"Background");
+		DrawCaptButton(280,20, 110,30,DRAW1_BTN,sc.button,sc.button_text,"Draw 1");
+		DrawCaptButton(280,60, 110,30,DRAW2_BTN,sc.button,sc.button_text,"Draw 2");
+		DrawCaptButton(280,100,110,30,SETBG_BTN,sc.button,sc.button_text,"Background");
   }
 }
 

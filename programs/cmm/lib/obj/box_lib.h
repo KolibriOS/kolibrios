@@ -219,10 +219,10 @@ struct frame
 :frame frame123 = { 0, 260, 10, 60, 16, NULL, 0xFFFfff, 1, NULL, 0, 1, 12, 0x000111, 0xCCCccc };
 :void DrawFrame(dword x,y,w,h,text)
 {
-	frame123.font_color = system.color.work_text;
-	frame123.ext_col = system.color.work_graph;
-	frame123.int_col = system.color.work_light;
-	frame123.font_backgr_color = system.color.work;
+	frame123.font_color = sc.work_text;
+	frame123.ext_col = sc.work_graph;
+	frame123.int_col = sc.work_light;
+	frame123.font_backgr_color = sc.work;
 
 	frame123.start_x = x;
 	frame123.start_y = y;

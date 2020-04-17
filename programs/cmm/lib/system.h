@@ -14,7 +14,7 @@ dword
 	work_text,
 	work_graph;
 	void get();
-};
+} sc;
 
 :void COLORS::get()
 {
@@ -24,10 +24,5 @@ dword
 	EDX = 40;
 	$int 0x40
 }
-
-:struct SYSTEM
-{
-	COLORS color;
-} system;
 
 #endif
