@@ -14,6 +14,7 @@ void setElementSelectedFlag(dword n, int state) {
 	}
 	if (state==true) selected_count++;
 	if (state==false) selected_count--;
+	if (selected_count<0) selected_count=0;
 }
 
 int getElementSelectedFlag(dword n) {

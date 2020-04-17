@@ -432,7 +432,6 @@ void main()
 							EventSelectAllFiles(true);
 							break;
 					case SCAN_CODE_KEY_U: //unselect all files
-							selected_count = 0;
 							EventSelectAllFiles(false);
 							break;
 				}
@@ -529,7 +528,7 @@ void draw_window()
 	//main rectangles
 	DrawRectangle(1,40,Form.cwidth-3,Form.cheight - 42-status_bar_h,col.graph);
 	DrawRectangle(0,39,Form.cwidth-1,-show_status_bar.checked*status_bar_h + Form.cheight - 40,col.work_gradient[4]); //bg
-	for (i=0; i<5; i++) DrawBar(0, 34+i, Form.cwidth, 1, col.work_gradient[-i*3+15]);
+	for (i=0; i<6; i++) DrawBar(0, 34+i, Form.cwidth, 1, MixColors(system.color.work_dark, system.color.work, i*10));
 	llist_copy(#files_active, #files);
 	strcpy(#active_path, #path);
 	DrawStatusBar();
@@ -562,8 +561,13 @@ void DrawStatusBar()
 	if (!show_status_bar.checked) return;
 	if (files.count>0) && (strcmp(file_mas[0]*304+buf+72,"..")==0) go_up_folder_exists=1;
 	DrawBar(0, Form.cheight - status_bar_h, Form.cwidth,  status_bar_h, system.color.work);
-	sprintf(#status_bar_str, STATUS_STR, files.count-go_up_folder_exists, count_dir-go_up_folder_exists, files.count-count_dir, selected_count);
+	sprintf(#status_bar_str, T_STATUS_EVEMENTS, count_dir-go_up_folder_exists, files.count-count_dir);
 	WriteText(6,Form.cheight - 13,0x80,system.color.work_text,#status_bar_str);
+	if (selected_count) {
+		sprintf(#status_bar_str, T_STATUS_SELECTED, selected_count);
+		WriteText(Form.cwidth - calc(strlen(#status_bar_str)*6)-6,Form.cheight - 13,
+			0x80,system.color.work_text,#status_bar_str);
+	}
 }
 
 void DrawFilePanels()

@@ -64,14 +64,7 @@ void DrawFlatButtonSmall(dword x,y,width,height,id,text)
 }
 
 void DrawFilledBar(dword x, y, w, h)
-{
-	int i, fill_h;
-	if (h < 12) {
-		for (i=0; i<h; i++) DrawBar(x, y+i, w, 1, col.work_gradient[-i*3+15]);
-	} else {
-		DrawBar(x, y, w, h, col.work_gradient[12]);
-	}
-}
+{ int i; for (i=0; i<h; i++) DrawBar(x, y+h-i-1, w, 1, col.work_gradient[i]); }
 
 int popin_w=260;
 void DrawEolitePopup(dword b1_text, b2_text)

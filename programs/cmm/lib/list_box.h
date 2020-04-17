@@ -206,6 +206,7 @@ struct llist
 	if (cur_y==count-1) && (first==count-visible) return 0;
 	cur_y = count-1;
 	first = count - visible;
+	CheckDoesValuesOkey();
 	return 1;
 }
 

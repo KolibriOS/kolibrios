@@ -267,7 +267,7 @@ void SetAppColors()
 	}
 	col.selec_inactive = MixColors(0xBBBbbb, col.list_bg, 65);
 	col.slider_bg_left = MixColors(col.graph, col.slider_bg_big, 10);
-	for (i=0; i<=20; i++) col.work_gradient[20-i] = MixColors(0, system.color.work, i);
+	for (i=0; i<20; i++) col.work_gradient[i] = MixColors(system.color.work_light, system.color.work, i*5);
 	if (old_list_bg_color!=col.list_bg) LoadIcons();
 }
 
