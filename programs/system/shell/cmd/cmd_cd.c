@@ -16,10 +16,10 @@ if (NULL == dir)
 	return TRUE;
 	}
 
-if ( 0 == strcmp(dir, ".") )
-	return FALSE;
+if ( 0 == strcmp(dir, ".") || 0 == strcmp(dir, "./") )
+	return TRUE;
 
-if (  ( 0 == strcmp(dir, "..") ) && ( 0 != strcmp(cur_dir, "/")) )
+if (  ( 0 == strcmp(dir, "..") ||  0 == strcmp(dir, "../") ) && ( 0 != strcmp(cur_dir, "/")) )
 	{
 	cur_dir[strlen(cur_dir)-1]='\0';
 	dir_truncate(cur_dir);
