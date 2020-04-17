@@ -9,8 +9,8 @@ dword
 	work_light,
 	window_title,
 	work,
-	work_button,
-	work_button_text,
+	button,
+	button_text,
 	work_text,
 	work_graph;
 	void get();
