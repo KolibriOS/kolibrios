@@ -58,6 +58,7 @@ VendorID        0x168C, 'Atheros Communications Inc.'
 VendorID        0x16EC, 'U.S. Robotics'
 VendorID        0x1743, 'Peppercon AG'
 VendorID        0x17F3, 'RDC Semiconductor'
+VendorID        0x1969, 'Atheros Communications Inc.'
 VendorID        0x4033, 'Addtron Technology Co Inc.'
 VendorID        0x8086, 'Intel Corp.'
 VendorID        0,      'Unknown'       ; <- terminator

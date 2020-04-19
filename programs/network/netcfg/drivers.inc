@@ -240,9 +240,13 @@ dd  0x31061106
 dd  0x30531106
 dd  0x0
 
-;db  'SKGE', 0
-;dd  0x500511ab          ; Belkin
-;dd  0x4b011186          ; D-Link DGE-530T (rev.B)
 
+db  'AR81XX', 0
+;dd  0x10911969          ; AR8161 - untested
+;dd  0xe0911969          ; E2200 - untested
+;dd  0x10901969          ; AR8162 - untested
+dd  0x10A11969          ; AR8171
+;dd  0x10A01969          ; AR8172 - untested
+dd  0x0
 
 dd  0x0 ; driverlist end
