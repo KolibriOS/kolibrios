@@ -28,8 +28,8 @@ entry START
 
         MAX_PKT_SIZE            = 1514          ; Maximum packet size
 
-        RX_RING_SIZE            = 8             ; Must be a power of 2, and minimum 8
-        TX_RING_SIZE            = 8             ; Must be a power of 2, and minimum 8
+        RX_RING_SIZE            = 64             ; Must be a power of 2, and minimum 8
+        TX_RING_SIZE            = 64             ; Must be a power of 2, and minimum 8
 
 section '.flat' readable writable executable
 
