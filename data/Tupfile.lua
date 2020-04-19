@@ -483,6 +483,7 @@ tup.append_table(img_files, {
  {"NETWORK/VNCC", PROGS .. "/network/vncc/vncc"},
  {"DRIVERS/VIDINTEL.SYS", "../drivers/video/vidintel.sys"},
  {"DRIVERS/3C59X.SYS", "../drivers/ethernet/3c59x.sys"},
+ {"DRIVERS/AR81XX.SYS", "../drivers/ethernet/ar81xx.sys"},
  {"DRIVERS/DEC21X4X.SYS", "../drivers/ethernet/dec21x4x.sys"},
  {"DRIVERS/FORCEDETH.SYS", "../drivers/ethernet/forcedeth.sys"},
  {"DRIVERS/I8254X.SYS", "../drivers/ethernet/i8254x.sys"},
