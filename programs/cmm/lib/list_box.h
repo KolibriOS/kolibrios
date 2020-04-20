@@ -78,12 +78,14 @@ struct llist
 	{
 		if (first == 0) return 0;
 		if (first > wheel_size+1) first -= wheel_size; else first=0;
+		CheckDoesValuesOkey();
 		return 1;
 	} 
 	if (scroll_state == 1)
 	{
 		if (visible + first == count) return 0;
 		if (visible+first+wheel_size+1 > count) first = count - visible; else first+=wheel_size;
+		CheckDoesValuesOkey();
 		return 1;
 	}
 	return 0;

@@ -651,7 +651,7 @@ void ______INIT______()
 	screen.width  = GetScreenWidth()+1;
 	screen.height = GetScreenHeight()+1;
 	__generator = GetStartTime();	
-	//mem_init();
+	mem_init();
 	main();
 }
 ______STOP______:
