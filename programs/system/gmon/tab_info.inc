@@ -144,9 +144,9 @@ if lang eq it
 		'Memoria libera (Kb)'
 else
 	lab_info_tab mls \
-		'CPU Vendor',\
+		'CPU vendor',\
 		'CPU frequency (MHz)',\
-		'MMX tehnology',\
+		'MMX technology',\
 		'Multiplier',\
 		'Monitoring chip',\
 		'Free memory (Kb)'

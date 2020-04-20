@@ -552,7 +552,7 @@ act_tab 	db	2			; active tab number
 tab_lab:
 .1: db 'Info'
 .2: db 'Tests'
-.3: db 'Configs'
+.3: db 'Config'
 .4: db 'About'
 title		db	'Ghost Monitor v0.4 [18/11/15]',0
 
