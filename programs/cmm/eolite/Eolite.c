@@ -163,7 +163,7 @@ void main()
 	dword id;
 	byte count_sl = 0;
 
-	rand_n = random(40);
+	rand_n = random(80);
 
 	load_libraries();
 	
@@ -1209,7 +1209,6 @@ void EventHistoryGoForward()
 
 void EventOpenNewEolite()
 {
-	//if (Form.left==98) MoveSize(Form.left-20,Form.top-20,OLD,OLD);
 	RunProgram(I_Path, #path);
 }
 
