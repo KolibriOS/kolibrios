@@ -22,6 +22,11 @@ char folder_actions[]=
 Свойства       |F8";
 char empty_folder_actions[]=
 "Вставить      |Crl+V";
+char burger_menu_items[] = 
+"Новое окно|Ctrl+N
+Открыть консоль|Ctrl+G
+Обновить папку|F5
+О программе|F1";
 
 #elif LANG_EST
 char file_actions[]= 
@@ -46,6 +51,11 @@ Kustuta        |Del
 Properties     |F8";
 char empty_folder_actions[]=
 "Aseta         |Crl+V";
+char burger_menu_items[] = 
+"New window|Ctrl+N
+Open console here|Ctrl+G
+Vфrskenda|F5
+About|F1";
 
 #else
 char file_actions[]= 
@@ -70,12 +80,13 @@ Delete       |Del
 Properties   |F8";
 char empty_folder_actions[]=
 "Paste        |Crl+V";
-
+char burger_menu_items[] = 
+"New window|Ctrl+N
+Open console here|Ctrl+G
+Refresh folder|F5
+About|F1";
 #endif
 
-//Обновить папку      |F5
-//Vфrskenda      |F5
-//Refresh      |F5
 
 enum { MENU_DIR=1, MENU_FILE, MENU_NO_FILE, MENU_BURGER };
 
@@ -104,6 +115,12 @@ void EventMenuClick(dword _id)
 		case 5: Del_Form(); break;
 		case 6: FnProcess(8); break;
 	}
+	if (active_menu == MENU_BURGER) switch(_id) {
+		case 1: EventOpenNewEolite(); break;
+		case 2: EventOpenConsoleHere(); break;
+		case 3: EventRefreshDisksAndFolders(); break;
+		case 4: FnProcess(1); break;		
+	}
 	active_menu = NULL;
 }
 
@@ -123,7 +140,15 @@ void EventShowListMenu()
 		text = #file_actions;
 		active_menu = MENU_FILE;
 	}
-	open_lmenu(mouse.x+Form.left+5, mouse.y+Form.top+3+skin_height, MENU_ALIGN_TOP_LEFT, NULL, text);
+	open_lmenu(mouse.x+Form.left+5, mouse.y+Form.top+3
+		+skin_height, MENU_ALIGN_TOP_LEFT, NULL, text);
+}
+
+void EventShowBurgerMenu()
+{
+	active_menu = MENU_BURGER;
+	open_lmenu(Form.width-10+Form.left, 35+Form.top+skin_height,
+		MENU_ALIGN_TOP_RIGHT, NULL, #burger_menu_items);
 }
 
 bool GetMenuClick()

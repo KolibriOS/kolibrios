@@ -342,7 +342,10 @@ void main()
 				case 31...33:
 						EventSort(id-30);
 						break;
-				case 50...60: //Actions
+				case 51:
+						EventShowBurgerMenu();
+						break;
+				case 52...60: //Actions
 						FnProcess(id-50);
 						break;
 				case 61: // Set path as default
@@ -409,6 +412,9 @@ void main()
 					case SCAN_CODE_KEY_C:
 							Copy(#file_path, NOCUT);
 							break;
+					case SCAN_CODE_KEY_G:
+							EventOpenConsoleHere();
+							break;
 					case SCAN_CODE_KEY_V:
 							Paste();
 							break;
@@ -417,9 +423,8 @@ void main()
 							strcat(#temp, #file_path);
 							RunProgram("/sys/media/kiv", #temp);
 							break;
-					case SCAN_CODE_KEY_N: //create new window
-							if (Form.left==98) MoveSize(Form.left-20,Form.top-20,OLD,OLD);
-							RunProgram(I_Path, #path);
+					case SCAN_CODE_KEY_N:
+							EventOpenNewEolite();
 							break; 
 					case SCAN_CODE_KEY_M:
 							Open_Dir(#inactive_path,WITH_REDRAW);
@@ -1200,6 +1205,18 @@ void EventHistoryGoForward()
 		files.KeyHome();
 		Open_Dir(#path,WITH_REDRAW);
 	}
+}
+
+void EventOpenNewEolite()
+{
+	//if (Form.left==98) MoveSize(Form.left-20,Form.top-20,OLD,OLD);
+	RunProgram(I_Path, #path);
+}
+
+void EventOpenConsoleHere()
+{
+	sprintf(#param, "pwd cd %s", #path);
+	RunProgram("/sys/shell", #param);
 }
 
 void ProceedMouseGestures()
