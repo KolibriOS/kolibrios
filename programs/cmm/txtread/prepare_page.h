@@ -1,11 +1,22 @@
-enum {
-	COUNT_BUF_HEIGHT,
-	DRAW_BUF
-};
+void ParseAndPaint()
+{
+	dword start_time = GetStartTime();
+	search.clear();
+	Parse();
+	Paint();
+	debugln("\nTextRead statistics in miliseconds...");
+	debugval("Page generate time", GetStartTime() - start_time);
+	if (list.count > list.visible * 10) DrawPage();
+	start_time = GetStartTime();
+	kfont.ApplySmooth();
+	debugval("Smooth", GetStartTime() - start_time);
+	DrawPage();
+}
+
 
 #define DRAW_PADDING 12
 
-void Parse(byte mode)
+void Parse()
 {
 dword bufoff, buflen;
 byte ch;
@@ -15,6 +26,7 @@ dword stroka_y=DRAW_PADDING-3;
 dword line_length=30;
 dword line_start=io.buffer_data;
 
+	list.count=0;
 	buflen = strlen(io.buffer_data) + io.buffer_data;
 	for (bufoff=io.buffer_data; bufoff<buflen; bufoff++)
 	{
@@ -28,39 +40,47 @@ dword line_start=io.buffer_data;
 				if (srch_pos == line_start) break; //no white space found in whole line
 				srch_pos--;
 			}
-			if (mode==COUNT_BUF_HEIGHT) {
-				line_start = bufoff;
-				line_length = 30;
-				list.count++;
-			}
-			if (mode==DRAW_BUF) {
-				strlcpy(#line, line_start, bufoff-line_start);
-				kfont.WriteIntoBuffer(DRAW_PADDING,stroka_y,list.w,kfont.size.height, bg_color, text_color, kfont.size.pt, #line);
-				stroka_y += list.item_h;
-				line_start = bufoff;
-				line_length = 30;
-			}
+			list.count++;
+			strlcpy(#line, line_start, bufoff-line_start);
+			search.add(stroka_y, #line);
+			stroka_y += list.item_h;
+			line_start = bufoff;
+			line_length = 30;
 		}
 	}
-	if (mode==COUNT_BUF_HEIGHT) list.count+=2;
-	if (mode==DRAW_BUF) kfont.WriteIntoBuffer(DRAW_PADDING,stroka_y,list.w,kfont.size.height, bg_color, text_color, kfont.size.pt, line_start);
-}
-
-void PreparePage() 
-{
-	list.w = Form.cwidth-scroll.size_x-1;
-	list.count=0;
-	Parse(COUNT_BUF_HEIGHT);
-	
-	//draw text in buffer
-	list.SetSizes(0, TOOLBAR_H, list.w, Form.cheight-TOOLBAR_H, kfont.size.pt+8);
+	list.count+=2;
+	list.visible = list.h / list.item_h;
 	if (list.count < list.visible) list.count = list.visible;
 	kfont.size.height = list.count+1*list.item_h;
 	kfont.raw_size = 0;
-	Parse(DRAW_BUF);
+	search.add(stroka_y, line_start);
+}
 
-	if (list.count > list.visible * 10) DrawPage();
-	//draw result
+void Paint()
+{
+	int i;
+	int cur_pos;
+	dword cur_line;
+	for ( i=0; i < search.lines.count; i++)
+	{
+		cur_pos = atoi(search.pos.get(i));
+		cur_line = search.lines.get(i);
+		kfont.WriteIntoBuffer(DRAW_PADDING, cur_pos, list.w,
+			kfont.size.height, bg_color, text_color, kfont.size.pt, cur_line);
+	}
+}
+
+:void PaintVisible()
+{
+	int i;
+	dword cur_pos;
+	dword cur_line;
+	for ( i=0; i < list.visible; i++)
+	{
+		cur_pos = atoi(search.pos.get(i + list.first));
+		cur_line = search.lines.get(i + list.first);
+		kfont.WriteIntoBuffer(DRAW_PADDING, cur_pos, list.w,
+			kfont.size.height, bg_color, text_color, kfont.size.pt, cur_line);
+	}
 	kfont.ApplySmooth();
-	DrawPage();
 }

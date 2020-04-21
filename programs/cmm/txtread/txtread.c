@@ -1,4 +1,4 @@
-#define MEMSIZE 4096*25
+#define MEMSIZE 1024*80
 
 //===================================================//
 //                                                   //
@@ -21,92 +21,61 @@
 
 //===================================================//
 //                                                   //
-//                       DATA                        //
+//                 INTERNAL INCLUDES                 //
 //                                                   //
 //===================================================//
+
+proc_info Form;
+llist list;
 
 #define TOOLBAR_H 34
 #define TOOLBAR_ICON_WIDTH  24
 #define TOOLBAR_ICON_HEIGHT 22
 
-#define DEFAULT_EDITOR "/sys/tinypad"
+dword bg_color;
+dword text_color;
 
-#define INTRO_TEXT "This is a plain Text Reader.\nTry to open some text file."
-#define VERSION "Text Reader v1.3"
-#define ABOUT "Idea: Leency, punk_joker
-Code: Leency, Veliant, KolibriOS Team
+#include "search.h"
+#include "prepare_page.h"
+#include "data.h"
 
-Hotkeys:
-Ctrl+O - open file
-Ctrl+I - show file properties
-Ctrl+Up - bigger font
-Ctrl+Down - smaller font
-Ctrl+Tab - select charset
-Ctrl+E - reopen current file in another app
- 
-Press any key..."
+int encoding;
+int curcol_scheme;
 
-dword color_schemes[] = {
-0xFFFfff, 0,
-0xF0F0F0, 0,
-0xFDF6E3, 0x101A21,
-0xFCF0DA, 0x171501,
-0xF0F0C7, 0,
-0x282C34, 0xABB2BF,
-0x282923, 0xD8D8D2
-};
+#include "ini.h"
 
-char color_scheme_names[] =
-"White & Black
-Grey & Black      RtfRead
-Linen & Black     Horst
-Antique & Black   Pocket
-Lemon & Black     Fb2Read
-DarkGrey & Grey   Godot
-DarkGrey & Grey   Monokai";
-
-char default_dir[] = "/rd/1";
-od_filter filter2 = { 8, "TXT\0\0" };
+//===================================================//
+//                                                   //
+//                       DATA                        //
+//                                                   //
+//===================================================//
 
 scroll_bar scroll = { 15,200,398,44,0,2,115,15,0,0xeeeeee,0xBBBbbb,0xeeeeee,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1};
-llist list;
 
-proc_info Form;
 char title[4196];
 
 bool help_opened = false;
-int charsets_mx;
-int reopenin_mx;
-int colscheme_mx;
 
-int curcol_scheme;
+int charsets_mx,
+    reopenin_mx,
+    colscheme_mx,
+    search_mx;
 
 enum {
 	OPEN_FILE,
 	MAGNIFY_MINUS,
 	MAGNIFY_PLUS,
-	CHANGE_ENCODING,
-	RUN_EDIT,
+	CHANGE_CHARSET,
+	REOPEN_IN_APP,
 	SHOW_INFO,
 	SHOW_FILE_PROPERTIES,
-	COLOR_SCHEME
+	COLOR_SCHEME,
+	SEARCH_BTN,
+	BTN_FIND_NEXT,
+	BTN_FIND_CLOSE
 };
 
-int encoding;
-
-dword bg_color;
-dword text_color;
-
 dword menu_id;
-
-//===================================================//
-//                                                   //
-//                 INTERNAL INCLUDES                 //
-//                                                   //
-//===================================================//
-
-#include "ini.h"
-#include "prepare_page.h"
 
 //===================================================//
 //                                                   //
@@ -133,7 +102,7 @@ void main()
 	EventSetColorScheme(curcol_scheme);
 	kfont.init(DEFAULT_FONT);
 	Libimg_LoadImage(#skin, abspath("toolbar.png"));
-	OpenFile(#param);
+	LoadFile(#param);
 	list.no_selection = true;
 	SetEventMask(EVM_REDRAW + EVM_KEY + EVM_BUTTON + EVM_MOUSE + EVM_MOUSE_FILTER);
 	loop()
@@ -158,23 +127,21 @@ void main()
 
 //===================================================//
 //                                                   //
-//                      EVENTS                       //
+//                  EVENT HANDLERS                   //
 //                                                   //
 //===================================================//
 
 void HandleButtonEvent()
 {
-	
-	byte btn = GetButtonID();
+	int btn = GetButtonID();
 	if (btn==1) {
 		SaveIniSettings();
 		ExitProcess();
 	}
-	btn-=10;
-	switch(btn)
+	switch(btn-10)
 	{
 		case OPEN_FILE:
-			EventOpenFile();
+			EventOpenDialog();
 			break;
 		case SHOW_FILE_PROPERTIES:
 			EventShowFileProperties();
@@ -185,10 +152,10 @@ void HandleButtonEvent()
 		case MAGNIFY_MINUS:
 			EventMagnifyMinus();
 			break;
-		case CHANGE_ENCODING:
-			EventShowEncodingList();
+		case CHANGE_CHARSET:
+			EventShowCharsetsList();
 			break;
-		case RUN_EDIT:
+		case REOPEN_IN_APP:
 			EventShowReopenMenu();
 			break;
 		case COLOR_SCHEME:
@@ -197,52 +164,80 @@ void HandleButtonEvent()
 		case SHOW_INFO:
 			EventShowInfo();
 			break;
+		case SEARCH_BTN:
+			if (search.visible) {
+				search.hide();
+			} else {
+				search.show();
+			}
+			break;
+		case BTN_FIND_NEXT:
+			EventSearchNext();
+			break;
+		case BTN_FIND_CLOSE:
+			search.hide();
+			break;
 	}
 }
 
-
 void HandleKeyEvent()
 {
+	int new_y;
 	if (help_opened) {
 		help_opened = false;
 		DrawPage();
 		return; 
 	}
 	GetKeys();
-	if (key_scancode == SCAN_CODE_F1) {
-		EventShowInfo();
-		return;
-	}
 	if (key_modifier & KEY_LCTRL) || (key_modifier & KEY_RCTRL) {
 		switch (key_scancode)
 		{
 			case SCAN_CODE_KEY_O:
-				EventOpenFile();
-				break;
+				EventOpenDialog();
+				return;
 			case SCAN_CODE_KEY_I:
 				EventShowFileProperties();
-				break;
+				return;
 			case SCAN_CODE_PLUS:
 			case SCAN_CODE_UP:
 				EventMagnifyPlus();
-				break;
+				return;
 			case SCAN_CODE_DOWN:
 			case SCAN_CODE_MINUS:
 				EventMagnifyMinus();
-				break;
+				return;
 			case SCAN_CODE_KEY_E:
 				EventShowReopenMenu();
-				break;
+				return;
 			case SCAN_CODE_TAB:
-				EventChangeEncoding();
-				break;
+				EventShowCharsetsList();
+				return;
+			case SCAN_CODE_KEY_F:
+				search.show();
+				return;
+			case SCAN_CODE_HOME:
+				list.KeyHome();
+				DrawPage();
 		}
-		return;
 	}
-	if (list.ProcessKey(key_scancode))
-		DrawPage();
+	switch (key_scancode)
+	{
+		case SCAN_CODE_F1:
+			EventShowInfo();
+			return;
+		case SCAN_CODE_ESC:
+			search.hide();
+			return;
+		case SCAN_CODE_ENTER:
+			if (! search_box.flags & ed_focus) return;
+		case SCAN_CODE_F3:
+			EventSearchNext();
+			return;
+	}
+	if (!search.edit_key()) {
+		if (list.ProcessKey(key_scancode)) DrawPage();
+	}
 }
-
 
 void HandleMouseEvent()
 {
@@ -257,16 +252,32 @@ void HandleMouseEvent()
 		list.first = scroll.position;
 		DrawPage(); 
 	}
+	search.edit_mouse();
 }
 
-/* ----------------------------------------------------- */
+//===================================================//
+//                                                   //
+//                      EVENTS                       //
+//                                                   //
+//===================================================//
 
-void EventOpenFile()
+bool EventSearchNext()
+{
+	int new_y = search.find_next(list.first, bg_color);
+	if (new_y) {
+		list.first = new_y / list.item_h;
+		list.CheckDoesValuesOkey();
+		DrawPage();		
+	}
+}
+
+void EventOpenDialog()
 {
 	OpenDialog_start stdcall (#o_dialog);
 	if (o_dialog.status) {
-		OpenFile(#openfile_path);
-		PreparePage();
+		LoadFile(#openfile_path);
+		search.clear();
+		ParseAndPaint();
 	}
 }
 
@@ -285,7 +296,7 @@ void EventMagnifyPlus()
 	if(!kfont.changeSIZE())
 		kfont.size.pt--;
 	else
-		PreparePage();
+		ParseAndPaint();
 }
 
 void EventMagnifyMinus()
@@ -294,28 +305,29 @@ void EventMagnifyMinus()
 	if(!kfont.changeSIZE())
 		kfont.size.pt++;
 	else
-		PreparePage();
+		ParseAndPaint();
 }
 
-void EventShowEncodingList()
+void EventShowCharsetsList()
 {
+	menu_id = CHANGE_CHARSET;
 	open_lmenu(Form.left+5 + charsets_mx, Form.top+29+skin_height, MENU_ALIGN_TOP_LEFT, 
 		encoding+1, "UTF-8\nKOI8-RU\nCP1251\nCP1252\nISO8859-5\nCP866");
-	menu_id = 10;
 }
 
 void EventShowReopenMenu()
 {
+	menu_id = REOPEN_IN_APP;
 	open_lmenu(Form.left+5 + reopenin_mx, Form.top+29+skin_height, MENU_ALIGN_TOP_LEFT, 0,
 		"Tinypad\nTextEdit\nWebView\nFB2Read\nHexView\nOther");
-	menu_id = 20;
 }
 
 void EventShowColorSchemesList()
 {
-	open_lmenu(Form.left+5 + colscheme_mx, Form.top+29+skin_height, MENU_ALIGN_TOP_LEFT, 
+	menu_id = COLOR_SCHEME;
+	open_lmenu(Form.left+2 + colscheme_mx + 26, 
+		Form.top+29+skin_height, MENU_ALIGN_TOP_RIGHT, 
 		curcol_scheme+1, #color_scheme_names);
-	menu_id = 30;
 }
 
 void EventSetColorScheme(dword _setn)
@@ -323,65 +335,65 @@ void EventSetColorScheme(dword _setn)
 	curcol_scheme = _setn;
 	bg_color   = color_schemes[curcol_scheme*2];
 	text_color = color_schemes[curcol_scheme*2+1];
+	if (list.count) ParseAndPaint();
 }
 
 void EventShowInfo() {
 	help_opened = true;
-	DrawBar(list.x, list.y, list.w, list.h, 0xFFFfff);
-	WriteText(list.x + 10, list.y + 10, 10000001b, 0x555555, VERSION);
-	WriteTextLines(list.x + 10, list.y+40, 10110000b, 0, ABOUT, 20);
+	DrawBar(list.x, list.y, list.w, list.h, bg_color);
+	WriteText(list.x + 10, list.y + 10, 10000001b, text_color, VERSION);
+	WriteTextLines(list.x + 10, list.y+40, 10110000b, text_color, ABOUT, 20);
 }
 
-void EventChangeEncoding(dword id)
+void EventChangeCharset(dword id)
 {
 	encoding = id;
-	OpenFile(#openfile_path);
-	PreparePage();
+	LoadFile(#openfile_path);
+	ParseAndPaint();
 	draw_window();
 }
 
-void EventOpenFileInAnotherProgram(dword _app)
+void EventOpenFileInAnotherProgram(dword _id)
 {
-	RunProgram(_app, #param);
-}
-
-void EventMenuClick()
-{
+	dword app;
 	byte open_param[4096];
-	dword click_id = get_menu_click();
-	if (click_id) switch(click_id + menu_id - 1)
-	{
-		//Encoding
-		case 10...15:
-			EventChangeEncoding(click_id-1);
+	switch(_id) {
+		case 0:
+			app = "/sys/tinypad";
 			break;
-		//Reopen
-		case 20:
-			EventOpenFileInAnotherProgram("/sys/tinypad");
+		case 1:
+			app = "/sys/develop/t_edit";
 			break;
-		case 21:
-			EventOpenFileInAnotherProgram("/sys/develop/t_edit");
+		case 2:
+			app = "/sys/network/webview";
 			break;
-		case 22:
-			EventOpenFileInAnotherProgram("/sys/network/webview");
+		case 3:
+			app = "/sys/fb2read";
 			break;
-		case 23:
-			EventOpenFileInAnotherProgram("/sys/fb2read");
+		case 4:
+			app = "/sys/develop/heed";
 			break;
-		case 24:
-			EventOpenFileInAnotherProgram("/sys/develop/heed");
-			break;
-		case 25:
+		case 5:
 			open_param[0]='~';
 			strcpy(#open_param+1,#param);
 			RunProgram("/sys/@open", #open_param);
 			break;
-		//ColorSchemes
-		case 30...38:
-			EventSetColorScheme(click_id-1);
-			PreparePage();
-			break;
 	}
+	RunProgram(app, #param);
+}
+
+void EventMenuClick()
+{
+	dword click_id = get_menu_click();
+
+	if (click_id) && (menu_id)
+	{
+		if (menu_id == CHANGE_CHARSET) EventChangeCharset(click_id-1);
+		else if (menu_id == REOPEN_IN_APP) EventOpenFileInAnotherProgram(click_id-1);
+		else if (menu_id == COLOR_SCHEME) EventSetColorScheme(click_id-1);
+		else notify("'Error: wrong menu number'E");
+	}
+	menu_id = NULL;
 }
 
 //===================================================//
@@ -390,37 +402,52 @@ void EventMenuClick()
 //                                                   //
 //===================================================//
 
-void OpenFile(dword f_path) 
+void LoadFile(dword f_path) 
 {
 	int tmp;
 	if (ESBYTE[f_path]) {
 		strcpy(#param, f_path);
-		io.read(#param);
+		if (!io.read(#param)) goto NO_DATA;
 		strcpy(#title, #param);
 		strcat(#title, " - Text Reader"); 
 	}
 	else {
+		NO_DATA:
 		if (list.count) return;
 		io.buffer_data = INTRO_TEXT;
 		strcpy(#title, "Text Reader"); 
 	}
 	if (encoding!=CH_CP866) ChangeCharset(encoding, "CP866", io.buffer_data);
-	list.KeyHome();
 	list.ClearList();
+}
+
+int DrawToolbarButton(char image_id, int x)
+{
+	DrawOvalBorder(x, 5, TOOLBAR_ICON_WIDTH, TOOLBAR_ICON_HEIGHT, sc.work_graph, 
+		sc.work_graph,sc.work_graph, sc.work_dark);
+	img_draw stdcall(skin.image, x+1, 5+1, TOOLBAR_ICON_WIDTH, TOOLBAR_ICON_HEIGHT, TOOLBAR_ICON_WIDTH*image_id, 0);
+
+	if (menu_id) && (menu_id == image_id) {
+		DrawRectangle3D(x+1, 6, TOOLBAR_ICON_WIDTH-1, TOOLBAR_ICON_HEIGHT-1, 0xCCCccc, 0xF8FCF8);
+		PutShadow(x+1, 6, TOOLBAR_ICON_WIDTH, TOOLBAR_ICON_HEIGHT, true, 2);
+	} 
+	DefineHiddenButton(x+1, 6, TOOLBAR_ICON_WIDTH, TOOLBAR_ICON_HEIGHT, 10+image_id);
+	return x;
 }
 
 void draw_window()
 {
-	#define BUTTONS_GAP 6
-	#define BLOCKS_GAP 15
+	#define BUTTONS_GAP 5
+	#define BLOCKS_GAP 18
 	#define TOOLBAR_BUTTON_WIDTH 26
 	incn x;
+	int old_w;
 	DefineAndDrawWindow(Form.left,Form.top,Form.width,Form.height,0x73,0,#title,0);
 	GetProcessInfo(#Form, SelfInfo);
 	sc.get();
 	if (Form.status_window>2) return;
 
-	if (Form.width  < 200) { MoveSize(OLD,OLD,200,OLD); return; }
+	if (Form.width  < 340) { MoveSize(OLD,OLD,340,OLD); return; }
 	if (Form.height < 200) { MoveSize(OLD,OLD,OLD,200); return; }
 	
 	DrawBar(0, 0, Form.cwidth, TOOLBAR_H - 1, sc.work);
@@ -432,19 +459,29 @@ void draw_window()
 
 	DrawToolbarButton(MAGNIFY_MINUS,   x.inc(TOOLBAR_BUTTON_WIDTH + BLOCKS_GAP));
 	DrawToolbarButton(MAGNIFY_PLUS,    x.inc(TOOLBAR_BUTTON_WIDTH - 1));
-	DrawToolbarButton(COLOR_SCHEME,    x.inc(TOOLBAR_BUTTON_WIDTH + BUTTONS_GAP)); colscheme_mx = x.n;
 
-	DrawToolbarButton(CHANGE_ENCODING, x.inc(TOOLBAR_BUTTON_WIDTH + BLOCKS_GAP)); charsets_mx = x.n;
-	DrawToolbarButton(RUN_EDIT,        x.inc(TOOLBAR_BUTTON_WIDTH + BLOCKS_GAP)); reopenin_mx = x.n;
-	DrawToolbarButton(SHOW_INFO,       Form.cwidth - 34);
-	
-	if ((Form.cwidth-scroll.size_x-1 == list.w) && 
-		(Form.cheight-TOOLBAR_H == list.h) && 
-		(list.count) 
-	) {
+	search_mx    = DrawToolbarButton(SEARCH_BTN,     x.inc(TOOLBAR_BUTTON_WIDTH + BLOCKS_GAP));
+	charsets_mx  = DrawToolbarButton(CHANGE_CHARSET, x.inc(TOOLBAR_BUTTON_WIDTH + BUTTONS_GAP));
+	reopenin_mx  = DrawToolbarButton(REOPEN_IN_APP,  x.inc(TOOLBAR_BUTTON_WIDTH + BUTTONS_GAP));
+
+	x.n = Form.cwidth - 34;
+	DrawToolbarButton(SHOW_INFO, x.n);
+	colscheme_mx = DrawToolbarButton(COLOR_SCHEME,   x.inc(-TOOLBAR_BUTTON_WIDTH - BUTTONS_GAP));
+
+	if (search.draw(BTN_FIND_NEXT+10, BTN_FIND_CLOSE+10)) {
+		DrawRectangle3D(search_mx+1, 6, TOOLBAR_ICON_WIDTH-1, 
+			TOOLBAR_ICON_HEIGHT-1, 0xCCCccc, 0xF8FCF8);
+	}
+
+	old_w = list.w;
+
+	list.SetSizes(0, TOOLBAR_H, Form.cwidth-scroll.size_x-1, 
+		Form.cheight-TOOLBAR_H-search.height(), math.round(kfont.size.pt * 1.4));
+
+	if ((Form.cwidth-scroll.size_x-1 == old_w) && (list.count)) {
 		DrawPage(); 
 	} else {
-		PreparePage();
+		ParseAndPaint();
 	}		
 	
 	DrawRectangle(scroll.start_x, scroll.start_y, scroll.size_x, scroll.size_y-1, scroll.bckg_col);
@@ -453,20 +490,7 @@ void draw_window()
 void DrawPage()
 {
 	kfont.ShowBufferPart(list.x, list.y, list.w, list.h, list.first*list.item_h*list.w);
-	DrawScroller();
-}
 
-void DrawToolbarButton(char image_id, int x)
-{
-	DefineButton(x+1, 6, TOOLBAR_ICON_WIDTH, TOOLBAR_ICON_HEIGHT, 10+image_id + BT_HIDE, 0);
-	//img_draw stdcall(skin.image, x, 5, TOOLBAR_ICON_WIDTH, TOOLBAR_ICON_HEIGHT, TOOLBAR_ICON_WIDTH-1*image_id, 0);
-	DrawOvalBorder(x, 5, TOOLBAR_ICON_WIDTH, TOOLBAR_ICON_HEIGHT, sc.work_graph, 
-		sc.work_graph,sc.work_graph, sc.work_dark);
-	img_draw stdcall(skin.image, x+1, 5+1, TOOLBAR_ICON_WIDTH, TOOLBAR_ICON_HEIGHT, TOOLBAR_ICON_WIDTH*image_id, 0);
-}
-
-void DrawScroller()
-{
 	scroll.max_area = list.count;
 	scroll.cur_area = list.visible;
 	scroll.position = list.first;
