@@ -228,6 +228,7 @@ void SetAppColors()
 	static dword bg_col;
 	dword old_list_bg_color = col.list_bg;
 	sc.get();
+	sc.work_dark = MixColors(0, sc.work, 35);
 	if (bg_col == sc.work) return;
 	bg_col = sc.work;
 	if (skin_is_dark()) 
@@ -241,7 +242,6 @@ void SetAppColors()
 		col.lpanel  = MixColors(sc.work_graph, sc.work, 65);
 		col.selec = col.selec_active = sc.button;
 		col.selec_text = sc.button_text;
-		sc.work_dark = MixColors(0, sc.work, 35);
 		if (col.list_bg==col.selec) col.selec = sc.work_graph; //for fucking skins
 		col.slider_bg_big = MixColors(0xCED0D0, sc.work, 35);
 		col.odd_line = MixColors(0xFFFfff, sc.work, 15);
@@ -257,7 +257,6 @@ void SetAppColors()
 		col.lpanel  = 0x00699C;
 		col.selec = col.selec_active = 0x94AECE;
 		col.selec_text = 0x000000;
-		sc.work_dark = MixColors(0, sc.work, 35);
 		col.slider_bg_big = 0xCDCFCF;
 		col.odd_line = 0xF1F1F1;
 	}

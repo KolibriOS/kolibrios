@@ -61,8 +61,6 @@ struct Eolite_colors
 	dword selec_active;
 	dword selec_inactive;
 	dword selec_text;
-	dword work;
-	dword graph;
 	dword list_bg;
 	dword list_gb_text;
 	dword list_text_hidden;
@@ -534,6 +532,7 @@ void draw_window()
 	DrawRectangle(1,40,Form.cwidth-3,Form.cheight - 42-status_bar_h,sc.work_graph);
 	DrawRectangle(0,39,Form.cwidth-1,-show_status_bar.checked*status_bar_h + Form.cheight - 40,col.work_gradient[4]); //bg
 	for (i=0; i<6; i++) DrawBar(0, 34+i, Form.cwidth, 1, MixColors(sc.work_dark, sc.work, i*10));
+	for (i=0; i<6; i++) DrawBar(0, 5-i, Form.cwidth, 1, MixColors(sc.work_light, sc.work, i*10));
 	llist_copy(#files_active, #files);
 	strcpy(#active_path, #path);
 	DrawStatusBar();
