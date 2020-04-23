@@ -168,7 +168,7 @@ extern int  stdcall _ksys_pci_read_config_word(int bus,int dev,int fn,int reg);
 extern int  stdcall _ksys_pci_read_config_dword(int bus,int dev,int fn,int reg);
 extern int  stdcall _ksys_pci_write_config_byte(int bus,int dev,int fn,int reg,int value);
 extern int  stdcall _ksys_pci_write_config_word(int bus,int dev,int fn,int reg,int value);
-extern int  stdcall _ksys_pci_write_config_value(int bus,int dev,int fn,int reg,int value);
+extern int  stdcall _ksys_pci_write_config_dword(int bus,int dev,int fn,int reg,int value);
 //--------------------------------------------------------------------------------------
 
 //------------------------Process information--------------------------------------
