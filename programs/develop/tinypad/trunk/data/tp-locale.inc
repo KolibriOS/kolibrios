@@ -16,12 +16,12 @@ menubar_res main_menu,\
   en,'Encoding'	,mm.Encoding,onshow.recode ,\
   en,'Options'	,mm.Options ,onshow.options,\
 \
-  et,'Fail'	,mm.File    ,onshow.file   ,\
-  et,'Muuda'	,mm.Edit    ,onshow.edit   ,\
-  et,'Otsi'	,mm.Search  ,onshow.search ,\
-  et,'K‰ivita'	,mm.Run     ,onshow.run    ,\
-  et,'Kodeering',mm.Encoding,onshow.recode ,\
-  et,'Seaded'	,mm.Options ,onshow.options,\
+  it,'Fail'	,mm.File    ,onshow.file   ,\
+  it,'Muuda'	,mm.Edit    ,onshow.edit   ,\
+  it,'Otsi'	,mm.Search  ,onshow.search ,\
+  it,'K‰ivita'	,mm.Run     ,onshow.run    ,\
+  it,'Kodeering',mm.Encoding,onshow.recode ,\
+  it,'Seaded'	,mm.Options ,onshow.options,\
 \
   sp,'Archivo'	,mm.File    ,onshow.file   ,\
   sp,'Editar'	,mm.Edit    ,onshow.edit   ,\
@@ -49,14 +49,14 @@ popup_res mm.File,\
   en,'-','',,\
   en,'Exit'	 ,'Alt+X'	,Exit	,\
 \
-  et,'Uus'	,'Ctrl+N'	,New	,\
-  et,'Ava...'	,'Ctrl+O'	,Open	,\
-  et,'Salvesta'	,'Ctrl+S'	,Save	,\
-  et,'Salvesta nimega...','Ctrl+Shift+S',SaveAs,\
-  et,'-','',,\
-  et,'Sulge'	,'Ctrl+F4'	,Close	,\
-  et,'-','',,\
-  et,'V‰lju'	,'Alt+X'	,Exit	,\
+  it,'Uus'	,'Ctrl+N'	,New	,\
+  it,'Ava...'	,'Ctrl+O'	,Open	,\
+  it,'Salvesta'	,'Ctrl+S'	,Save	,\
+  it,'Salvesta nimega...','Ctrl+Shift+S',SaveAs,\
+  it,'-','',,\
+  it,'Sulge'	,'Ctrl+F4'	,Close	,\
+  it,'-','',,\
+  it,'V‰lju'	,'Alt+X'	,Exit	,\
 \
   sp,'Nuevo'	,'Ctrl+N' ,New	,\
   sp,'Abrir...'	,'Ctrl+O' ,Open	,\
@@ -82,12 +82,12 @@ popup_res mm.Edit,\
   en,'-','',,\
   en,'Select all','Ctrl+A',SelAll,\
 \
-  et,'Lıika'	,'Ctrl+X',Cut	,\
-  et,'Kopeeri'	,'Ctrl+C',Copy	,\
-  et,'Kleebi'	,'Ctrl+V',Insert,\
-  et,'Kustuta'	,''	 ,Delete,\
-  et,'-','',,\
-  et,'Vali kıik','Ctrl+A',SelAll,\
+  it,'Lıika'	,'Ctrl+X',Cut	,\
+  it,'Kopeeri'	,'Ctrl+C',Copy	,\
+  it,'Kleebi'	,'Ctrl+V',Insert,\
+  it,'Kustuta'	,''	 ,Delete,\
+  it,'-','',,\
+  it,'Vali kıik','Ctrl+A',SelAll,\
 \
   sp,'Cortar'	,'Ctrl+X',Cut	,\
   sp,'Copiar'	,'Ctrl+C',Copy	,\
@@ -109,11 +109,11 @@ popup_res mm.Search,\
   en,'Find next'  ,'F3'    ,FindNext,\
   en,'Replace...' ,'Ctrl+H',Replace ,\
 \
-  et,'Positsioon...','Ctrl+G',Position,\
-  et,'-','',,\
-  et,'Leia...'      ,'Ctrl+F',Find    ,\
-  et,'Leia j‰rgmine','F3'    ,FindNext,\
-  et,'Asenda...'    ,'Ctrl+H',Replace ,\
+  it,'Positsioon...','Ctrl+G',Position,\
+  it,'-','',,\
+  it,'Leia...'      ,'Ctrl+F',Find    ,\
+  it,'Leia j‰rgmine','F3'    ,FindNext,\
+  it,'Asenda...'    ,'Ctrl+H',Replace ,\
 \
   sp,'PosiciÛn...'  ,'Ctrl+G',Position,\
   sp,'-','',,\
@@ -136,12 +136,12 @@ popup_res mm.Run,\
   en,'Debug board'	,''	  ,DbgBoard,\
   en,'System functions'	,''	  ,SysFuncs,\
 \
-  et,'K‰ivita'		,'F9'	  ,Run     ,\
-  et,'K‰ivita aastal siluri','F10',Debug   ,\
-  et,'Kompileeri'	,'Ctrl+F9',Compile ,\
-  et,'-','',,\
-  et,'Silumis paneel'	,''	  ,DbgBoard,\
-  et,'S¸steemi funktsioonid',''	  ,SysFuncs,\
+  it,'K‰ivita'		,'F9'	  ,Run     ,\
+  it,'K‰ivita aastal siluri','F10',Debug   ,\
+  it,'Kompileeri'	,'Ctrl+F9',Compile ,\
+  it,'-','',,\
+  it,'Silumis paneel'	,''	  ,DbgBoard,\
+  it,'S¸steemi funktsioonid',''	  ,SysFuncs,\
 \
   sp,'Ejecutar'		,'F9'	  ,Run     ,\
   sp,'Ejecutar en el depurador','F10',Debug,\
@@ -183,16 +183,16 @@ popup_res mm.Options,\
   en,'-','',,\
   en,'Appearance...'		,'',Appearance	,\
 \
-  et,'Zoom in'		  ,'Ctrl +',ZoomIn	,\
-  et,'Zoom out'		  ,'Ctrl -',ZoomOut	,\
-  et,'-','',,\
-  et,'Rea numbrid'		,'',LineNumbers	,\
-  et,'Turvaline valimine'	,'',SecureSel	,\
-  et,'Automaatsed sulud'	,'',AutoBrackets,\
-  et,'Automaatsed taandread'	,'',AutoIndents	,\
-  et,'Optimaalne t‰itmine salvestamisel','',OptimalFill,\
-  et,'-','',,\
-  et,'V‰limus...'		,'',Appearance	,\
+  it,'Zoom in'		  ,'Ctrl +',ZoomIn	,\
+  it,'Zoom out'		  ,'Ctrl -',ZoomOut	,\
+  it,'-','',,\
+  it,'Rea numbrid'		,'',LineNumbers	,\
+  it,'Turvaline valimine'	,'',SecureSel	,\
+  it,'Automaatsed sulud'	,'',AutoBrackets,\
+  it,'Automaatsed taandread'	,'',AutoIndents	,\
+  it,'Optimaalne t‰itmine salvestamisel','',OptimalFill,\
+  it,'-','',,\
+  it,'V‰limus...'		,'',Appearance	,\
 \
   sp,'Zoom in'		  ,'Ctrl +',ZoomIn	,\
   sp,'Zoom out'		  ,'Ctrl -',ZoomOut	,\
@@ -208,91 +208,91 @@ popup_res mm.Options,\
 lsz s_defname,\
   en,<'Untitled',0>,\
   ru,<'Å•ßÎ¨Ô≠≠Î©',0>,\
-  et,<'Nimetu',0>,\
+  it,<'Nimetu',0>,\
   sp,<'Sin tÌtulo',0>
 
 lsz s_modified,\
   ru,'àß¨•≠•≠Æ',\
   en,'Modified',\
-  et,'Muudetud',\
+  it,'Muudetud',\
   sp,'Modificado'
 
 lsz s_2filename,\
   ru,'à¨Ô ‰†©´†:',\
   en,'Filename:',\
-  et,'Faili nimi:',\
+  it,'Faili nimi:',\
   sp,'Nombre de archivo:'
 lsz s_2open,\
   ru,'é‚™‡Î‚Ï',\
   en,'Open',\
-  et,'Ava',\
+  it,'Ava',\
   sp,'Abrir'
 lsz s_2save,\
   ru,'ëÆÂ‡†≠®‚Ï',\
   en,'Save',\
-  et,'Salvesta',\
+  it,'Salvesta',\
   sp,'Guardar'
 lsz s_2save_no,\
   ru,'ç•‚',\
   en,'No',\
-  et,'Ei',\
+  it,'Ei',\
   sp,'No'
 lsz s_2find,\
   ru,'ç†©‚®',\
   en,'Find',\
-  et,'Leia',\
+  it,'Leia',\
   sp,'Buscar'
 db ':'
 lsz s_2replace,\
   ru,'á†¨•≠®‚Ï',\
   en,'Replace',\
-  et,'Asenda',\
+  it,'Asenda',\
   sp,'Reemplazar'
 db ':'
 lsz s_2cancel,\
   ru,'é‚¨•≠†',\
   en,'Cancel',\
-  et,'T¸hista',\
+  it,'T¸hista',\
   sp,'Cancelar'
 lsz s_color,\
   ru,'ñ¢•‚: 0x',\
   en,'Color: 0x',\
-  et,'V‰rv: 0x',\
+  it,'V‰rv: 0x',\
   sp,'Color: 0x'
 lsz s_tabpos,\
   ru,'ê†·ØÆ´Æ¶•≠®• ß†™´†§Æ™',\
   en,'Tabs placement',\
-  et,'Saki asetus',\
+  it,'Saki asetus',\
   sp,'Lugar de tabulador'
 
 lsz s_enter_filename,\
   ru,<'Ç¢•§®‚• ®¨Ô ‰†©´†',0>,\
   en,<'Enter filename',0>,\
-  et,<'Sisesta faili nimi',0>,\
+  it,<'Sisesta faili nimi',0>,\
   sp,<'Ingresa el nombre del archivo',0>
 
 lsz s_ask_save,\
   ru,<'Ü•´†•‚• ·ÆÂ‡†≠®‚Ï?',0>,\
   en,<'Would you like to save?',0>,\
-  et,<'Kas soovite salvestada?',0>,\	; Now correct
+  it,<'Kas soovite salvestada?',0>,\	; Now correct
   sp,<'øQuieres guardar?',0>
 
 lsz s_enter_text_to_find,\
   ru,<'Ç¢•§®‚• ‚•™·‚ §´Ô ØÆ®·™†',0>,\
   en,<'Enter text to find',0>,\
-  et,<'Sisesta otsitav tekst',0>,\
+  it,<'Sisesta otsitav tekst',0>,\
   sp,<'Ingresa el texto a buscar',0>
 
 lsz s_enter_text_to_replace,\
   ru,<'Ç¢•§®‚• ‚•™·‚ §´Ô ß†¨•≠Î',0>,\
   en,<'Enter text to replace',0>,\
-  et,<'Sisesta asendatav tekst',0>,\
+  it,<'Sisesta asendatav tekst',0>,\
   sp,<'Ingresa el texto a reemplazar',0>
 
 lsz s_text_not_found,\
   ru,<'ÑÆ·‚®£≠„‚ ™Æ≠•Ê ‰†©´†, ‚•™·‚ ≠• ≠†©§•≠',0>,\
   en,<'Reached end of file, text not found',0>,\
-  et,<'Faili lıpp, teksti ei leitud',0>,\
+  it,<'Faili lıpp, teksti ei leitud',0>,\
   sp,<'Se llegÛ al final del archivo, texto no encontrado',0>
 
 lszc s_fs_error,b,\
@@ -322,18 +322,18 @@ lszc s_fs_error,b,\
   en,<'Access denied (10)',0>,\
   en,<'Device error (11)',0>,\
 \
-  et,<'Operatsioon k‰ivitati edukalt (0)',0>,\
-  et,<'',0>,\
-  et,<'Failis¸steem ei toeta funktsiooni (2)',0>,\
-  et,<'Tundmatu failis¸steem (3)',0>,\
-  et,<'',0>,\
-  et,<'Faili ei suudetud avada (5)',0>,\
-  et,<'Operatsioon k‰ivitatud edukalt (6)',0>,\
-  et,<'Viit on v‰ljaspool programmi m‰lu (7)',0>,\
-  et,<'Ketas t‰is (8)',0>,\
-  et,<'FAT tabel h‰vitatud (9)',0>,\
-  et,<'Juurdep‰‰s keelatud (10)',0>,\
-  et,<'Seadme viga (11)',0>,\
+  it,<'Operatsioon k‰ivitati edukalt (0)',0>,\
+  it,<'',0>,\
+  it,<'Failis¸steem ei toeta funktsiooni (2)',0>,\
+  it,<'Tundmatu failis¸steem (3)',0>,\
+  it,<'',0>,\
+  it,<'Faili ei suudetud avada (5)',0>,\
+  it,<'Operatsioon k‰ivitatud edukalt (6)',0>,\
+  it,<'Viit on v‰ljaspool programmi m‰lu (7)',0>,\
+  it,<'Ketas t‰is (8)',0>,\
+  it,<'FAT tabel h‰vitatud (9)',0>,\
+  it,<'Juurdep‰‰s keelatud (10)',0>,\
+  it,<'Seadme viga (11)',0>,\
 \
   sp,<'OperaciÛn ejecutada correctamente (0)',0>,\
   sp,<'',0>,\
@@ -371,16 +371,16 @@ lszc s_appearance,b,\
   en,'Modified lines',\
   en,'Saved lines',\
 \
-  et,'Tekst',\
-  et,'Taust',\
-  et,'Valitud tekst',\
-  et,'Valitud taust',\
-  et,'S¸mbolid',\
-  et,'Numbrid',\
-  et,'Stringid',\
-  et,'Kommentaarid',\
-  et,'Muudetud read',\
-  et,'Salvestatud read',\
+  it,'Tekst',\
+  it,'Taust',\
+  it,'Valitud tekst',\
+  it,'Valitud taust',\
+  it,'S¸mbolid',\
+  it,'Numbrid',\
+  it,'Stringid',\
+  it,'Kommentaarid',\
+  it,'Muudetud read',\
+  it,'Salvestatud read',\
 \
   sp,'Texto',\
   sp,'Fondo',\
@@ -396,7 +396,7 @@ lszc s_appearance,b,\
 lsz sysfuncs_filename,\
   ru,<'SYSFUNCR.TXT',0>,\
   en,<'SYSFUNCS.TXT',0>,\
-  et,<'SYSFUNCET.TXT',0>,\
+  it,<'SYSFUNCET.TXT',0>,\
   sp,<'SYSFUNCS.TXT',0>
 
 sz s_example,'/sys/example.asm'

@@ -1,4 +1,4 @@
-@echo lang fix et >lang.inc
+@echo lang fix it >lang.inc
 @fasm tinypad.asm tinypad
 @kpack tinypad
 @erase lang.inc

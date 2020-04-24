@@ -201,6 +201,7 @@ extra_files = {
  {"kolibrios/games/jumpbump/", "common/games/jumpbump/*"},
  {"kolibrios/games/knight", "common/games/knight"},
  {"kolibrios/games/KosChess/", "common/games/KosChess/*"},
+ {"kolibrios/games/KosChess/images/", "common/games/KosChess/images/*"},
  {"kolibrios/games/LaserTank/", "common/games/LaserTank/*"},
  {"kolibrios/games/lrl/", "common/games/lrl/*"},
  {"kolibrios/games/mun/data/", "common/games/mun/data/*"},
