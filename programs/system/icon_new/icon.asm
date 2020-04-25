@@ -56,6 +56,8 @@ START:		; start of execution
 	test	eax,eax
 	jnz	ErrLoadLibs
 
+	mcall   30,1,curpath
+
 ; unpack deflate
 	mov	eax,[unpack_DeflateUnpack2]
 	mov	[deflate_unpack],eax
@@ -1095,6 +1097,8 @@ else
 end if
 
 secRButt	db 'rbmenu',0
+
+curpath     db '/sys',0
 
 PredItem	dd -1
 

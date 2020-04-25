@@ -37,14 +37,26 @@ char image_menu_items[] =
 Заменить все цвета 1 на 2";
 ?define T_MENU_IMAGE "Иконка"
 ?define T_TEST_ICON "Проверить иконку"
-?define T_TITLE "Icon Editor 0.60 Alpha"
+?define T_TITLE "Редактор иконок 0.60 Alpha"
+?define T_UNIC_COLORS_COUNT "'Уникальных цветов: %i.' -I"
+?define T_TOO_BIG_IMAGE_FOR_PREVIEW "'IconEdit
+Изображение слишком большое для предпросмотра!' -tE"
+?define T_ERROR_CROP_TOOL "'Для обрезки изображения вначале нужно выделить область.' -W"
+?define T_ERROR_IMA_ICONEDIT "'Это просто редактор иконок, выбраное
+изображение слишком велико для него!' -E"
 #else
 char image_menu_items[] = 
 "Count colors used
 Replace all colors equal to 1 by 2";
 ?define T_MENU_IMAGE "Icon"
 ?define T_TEST_ICON "Test Icon"
-?define T_TITLE "Редактор иконок 0.60 Alpha"
+?define T_TITLE "Icon Editor 0.60 Alpha"
+?define T_UNIC_COLORS_COUNT "'Image has %i unique colors.' -I"
+?define T_TOO_BIG_IMAGE_FOR_PREVIEW "'IconEdit
+Image is too big for preview!' -tE"
+?define T_ERROR_CROP_TOOL "'You need to select something before using crop tool.' -W"
+?define T_ERROR_IMA_ICONEDIT "'Hey, this is just an icon editor,
+selected image is too big to open!' -E"
 #endif
 
 
@@ -181,7 +193,7 @@ void main()
 		Libimg_LoadImage(#open_image, #param);
 
 		if (open_image.w*open_image.h>MAX_CELL_SIZE*MAX_CELL_SIZE) {
-			notify("'Hey, this is just an icon editor,\nselected image is too big to open!' -E");
+			notify(T_ERROR_IMA_ICONEDIT);
 			ExitProcess();
 		}
 		else {
@@ -600,7 +612,7 @@ void DrawImageWithBg(dword _x, _y, _col_to)
 void ShowWindow_TestIcon()
 {
 	if (image.rows>=preview_size) || (image.columns>=preview_size) {
-		notify("'IconEdit\nImage is too big for preview!' -tE");
+		notify(T_TOO_BIG_IMAGE_FOR_PREVIEW);
 		return;
 	}
 	loop() switch(WaitEvent())
@@ -720,7 +732,7 @@ void EventCrop()
 		DrawWindow();
 	}
 	else {
-		notify("'You need to select something before using crop tool.' -W");
+		notify(T_ERROR_CROP_TOOL);
 	}
 }
 
@@ -756,7 +768,7 @@ void EventCountColorsUsed()
 		}
 		if (unic) resi++;
 	}
-	notify( sprintf(#res_str, "'Image has %i unique colors.' -I", resi) );
+	notify( sprintf(#res_str, T_UNIC_COLORS_COUNT, resi) );
 }
 
 void EventReplaceImageColors(dword c1, c2)

@@ -161,7 +161,7 @@ struct llist
 		first++;
 		cur_y++;
 	}
-	if (cur_y < first) || (cur_y > first + visible)
+	if (cur_y < first) || (cur_y >= first + visible)
 	{
 		first = cur_y;
 		CheckDoesValuesOkey();
