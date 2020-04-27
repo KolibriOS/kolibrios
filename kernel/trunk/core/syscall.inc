@@ -179,7 +179,6 @@ iglobal
       dd undefined_syscall       ; 78-free
       dd undefined_syscall       ; 79-free
       dd fileSystemUnicode       ; 80-File system interface for different encodings
-      dd sys_array               ; 81-Array
 
         times 255 - ( ($-servetable2) /4 )  dd undefined_syscall
       dd sys_end                 ; -1-end application
