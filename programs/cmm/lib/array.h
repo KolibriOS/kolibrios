@@ -142,7 +142,7 @@
 	dword checkSum1 = 1;
 	dword checkSum2 = 0;
 	dword beginAddress = 0;
-	
+
 	beginAddress = text;
 	WHILE(DSBYTE[text])
 	{
@@ -171,6 +171,15 @@
 :byte Dictionary::init(dword size)
 {
 	RETURN array.init(size);
+}
+
+dword indexArray(dword address, key)
+{
+	dword offset = key&11b;
+	dword offsetAddress = offset*4+address;
+	IF (key==offset) RETURN 4*4+offsetAddress;
+	IF (!DSDWORD[offsetAddress]) DSDWORD[offsetAddress] = malloc(4*4*2);
+	RETURN indexArray(DSDWORD[offsetAddress], key>>2);
 }
 
 #endif
