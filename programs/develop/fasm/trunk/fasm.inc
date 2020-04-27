@@ -1,3 +1,9 @@
+ID_CLOSE_BTN	  = 1
+ID_COMPILE_BTN	  = 2
+ID_EXECUTE_BTN	  = 3
+ID_EXECDBG_BTN	  = 4
+ID_OPENDLG_BTN	  = 5
+
 center       fix false
 SYSTEMCOLORS fix sc
 PROCESSINFO  fix pinfo

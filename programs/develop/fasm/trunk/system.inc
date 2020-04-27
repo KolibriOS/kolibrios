@@ -461,7 +461,7 @@ display_character:
 	cmp	dl,0xa
 	jnz	dc1
 	and	[textxy],0x0000FFFF
-	add	[textxy], 7 shl 16 +53 and 0xFFFF0000 + 10
+	add	[textxy], 7 shl 16 +53 and 0xFFFF0000 + 16
 dc2:
   popa
 	ret
@@ -473,8 +473,10 @@ dc1:
 	cmp	ax,word[bottom_right+2]
 	ja	dc2
 	mov	[dc],dl
-	mcall	4,[textxy],[sc.work_text],dc,1
-	add	[textxy],0x00060000
+	mov ecx,[sc.work_text]
+	or  ecx,$10000000
+	mcall	4,[textxy],,dc,1
+	add	[textxy],0x00080000
 	popa
 	ret
 @@:

@@ -15,6 +15,11 @@ CONSOLE_MODE   = 32
 MAGIC1	       = 6*(text.line_size-1)+14
 MAX_PATH       = 100
 
+DEFAULT_WIN_W = 450
+DEFAULT_WIN_H = 350
+LINE_H = 25
+RIGHT_BTN_W = 80
+
 APP_MEMORY     = 0x00800000
 
 ;; Menuet header
@@ -233,70 +238,79 @@ draw_window:
 	
 	get_sys_colors 1,0
 	edit_boxes_set_sys_color edit1,editboxes_end,sc
-	check_boxes_set_sys_color2 ch1_dbg,ch1_dbg+ch_struc_size,sc
+	;check_boxes_set_sys_color2 ch1_dbg,ch1_dbg+ch_struc_size,sc
+	mov eax,[sc.work_text]
+	or eax, 0x90000000
+	mov	[ch1_dbg.text_color], eax
+	m2m	[ch1_dbg.border_color], [sc.work_graph]
 
 	mov	edx,[sc.work]
 	or	edx,0x33000000
 	xor	eax,eax
 	xor	esi,esi
-	mcall	,<100,280>,<90,260>,,,title	       ; Draw Window Label Text
+	mcall	,<150,DEFAULT_WIN_W>,<150,DEFAULT_WIN_H>,edx,,title
 
 	mcall	9,PROCESSINFO,-1
 
-	mov	eax,[PROCESSINFO+70] ;status of window
+	mov	eax,[PROCESSINFO+70] ;get status of window
 	test	eax,100b
 	jne	.end
 
-	cmp	dword[pinfo.box.width],230 ; проверяем ширину окна
+	cmp	dword[pinfo.box.width],230 ; check min-width
 	jge	@f
-	mov	dword[pinfo.box.width],230 ; если окно очень узкое, увеличиваем ширину для избежания глюков
+	mcall   67,-1,-1,300,-1
+	ret
 @@:
-	mpack	ecx,1,1
-	mov	ebx,[pinfo.box.width]
-	sub	ebx,10
-	mov	eax,8
-	mov	edx,0x4000000B
-	mpack	ebx,[pinfo.box.width],MAGIC1
-	msub	ebx,MAGIC1+10+1,0
-	mpack	ecx,0, (14*3+16)/3-1
-	madd	ecx,1,0
-	mcall	,,,0x00000002,[sc.work_button]
-	madd	ecx, (14*3+16)/3+1,0
-	mcall	,,,0x00000003
-	madd	ecx, (14*3+16)/3+1,0
-	mcall	,,,4
-;button for OpenDialog [..]
-	mov	ebx, 5*65536+47
-	mov	ecx, 33*65536+14
-	mcall	,,,5
-
-	mpack	ebx,6,0    ; Draw Window Text
-	add	ebx,1+ 14/2-3
-	mcall	4,,[sc.work_text],text,text.line_size	;InFile
-
-	add	ebx, 16 ;14
-	add	edx,text.line_size
-	mcall	;OutFile
-
-	mov	ecx,[sc.work_button_text]
-	add	ebx, 16 ;14
-	add	edx,text.line_size
-	mcall	;Path
-
-	mov	ebx,[pinfo.box.width]
-	sub	ebx,MAGIC1+10+1-9
-	shl	ebx,16
-	add	ebx,1+( (14*3+16)/3-1)/2-3
-	mcall	,,[sc.work_button_text],s_compile,7
-	add	ebx,(14*3+16)/3+1
-	mcall	,,,s_run
-	add	ebx,(14*3+16)/3+1
-	mcall	,,,s_debug
+	mpack	ebx,[pinfo.client_box.width],RIGHT_BTN_W
+	msub	ebx,RIGHT_BTN_W+1,0
+	mcall	8,ebx,<LINE_H*0+3,LINE_H-4>,ID_COMPILE_BTN,[sc.work_button]
+	mcall	 ,ebx,<LINE_H*1+3,LINE_H-4>,ID_EXECUTE_BTN
+	mcall	 ,ebx,<LINE_H*2+3,LINE_H-4>,ID_EXECDBG_BTN
 	
-	mpack	ebx,MAGIC1+6,0
-	add	ebx,1+ 14/2-3+ 14*0
-	mov	esi,[pinfo.box.width]
-	sub	esi,MAGIC1*2+5*2+6+3
+	
+;button for OpenDialog [..]
+	; mov	ebx, 5*65536+47
+	; mov	ecx, 33*65536+14
+	; mcall	,,,5
+
+	; mpack	ebx,6,0    ; Draw Window Text
+	; add	ebx,1+ 14/2-3
+	; mcall	4,,[sc.work_text],text,text.line_size	;InFile
+
+	; add	ebx, 16 ;14
+	; add	edx,text.line_size
+	; mcall	;OutFile
+
+	; mov	ecx,[sc.work_button_text]
+	; add	ebx, 16 ;14
+	; add	edx,text.line_size
+	; mcall	;Path
+	
+	mcall	8,<5,62>,<LINE_H*2+3,LINE_H-5>,ID_OPENDLG_BTN
+
+	mov	ecx, [sc.work_text]
+	or	ecx, $10000000
+	mcall	4,<6,LINE_H*0+6>,,text+text.line_size*0,text.line_size	;InFile
+	mcall	 ,<6,LINE_H*1+6>,,text+text.line_size*1,esi	     ;OutFile
+	mov	ecx, [sc.work_button_text]
+	or	ecx, $10000000
+	mcall	 ,<0,LINE_H*2+6>,,text+text.line_size*2,esi   ;Path
+
+	mov	ebx,[pinfo.client_box.width]
+	sub	ebx,RIGHT_BTN_W+1-9
+	shl	ebx,16
+	add	ebx,LINE_H/2-6
+	mov	ecx, [sc.work_button_text]
+	or	ecx, $10000000
+	mcall	 ,ebx,ecx,s_compile,7
+	add	ebx,LINE_H
+	mcall	 ,ebx,ecx,s_run
+	add	ebx,LINE_H
+	mcall	 ,ebx,ecx,s_debug
+	
+	mpack	ebx,MAGIC1+6,1+ 14/2-3+ 14*0
+	mov	esi,[pinfo.client_box.width]
+	sub	esi,MAGIC1*2+6+3	
 	mov	eax,esi
 	mov	cl,6
 	div	cl
@@ -308,8 +322,9 @@ draw_window:
 
 	call	draw_messages
 	
-	mov	eax,dword [pinfo.box.width]
-	sub	eax,127
+	mov	eax,dword [pinfo.client_box.width]
+	sub	eax,[edit1.left]
+	sub	eax,RIGHT_BTN_W+6
 	mov	dword[edit1.width],eax ; устанавливаем ширину текстовых полей
 	mov	dword[edit2.width],eax
 	mov	dword[edit3.width],eax
@@ -402,10 +417,10 @@ fun_opn_dlg: ;дг­ЄжЁп ¤«п ўл§®ў  OpenFile ¤Ё «®Ј 
 	ret
 ;---------------------------------------------------------------------
 draw_messages:
-	mpack	ebx,7-2,[pinfo.box.width]
-	sub	ebx,5*2+7*2-1-2*2
-	mpack	ecx,0,[pinfo.box.height]
-	madd	ecx, 14*3+16+1+7+1,-( 14*3+16+1+7*2+25)
+	mpack	ebx,7-2,[pinfo.client_box.width]
+	sub	ebx,9
+	mpack	ecx,0,[pinfo.client_box.height]
+	madd	ecx, LINE_H*4,-( LINE_H*4+5)
 	mov	word[bottom_right+2],bx
 	mov	word[bottom_right],cx
 	msub	[bottom_right],7,11
@@ -533,11 +548,11 @@ l_libs_start:
   lib1 l_libs lib1_name, cur_dir_path, library_path, system_dir1, err_message_found_lib1, head_f_l, import_proc_lib,err_message_import1, head_f_i
 load_lib_end:
 
-edit1 edit_box 153, 56, 1, 0xffffff, 0xff, 0x80ff, 0, 0x8000, (outfile-infile-1), infile, mouse_dd, 0, 11,11
-edit2 edit_box 153, 56, 17, 0xffffff, 0xff, 0x80ff, 0, 0x8000,(path-outfile-1), outfile, mouse_dd, 0, 7,7
-edit3 edit_box 153, 56, 33, 0xffffff, 0xff, 0x80ff, 0, 0x8000,(path_end-path-1), path, mouse_dd, 0, 6,6
+edit1 edit_box 153, 72, 3,          0xffffff, 0xA4C4E4, 0x80ff, 0, 0x10000000,(outfile-infile-1), infile, mouse_dd, 0, 11,11
+edit2 edit_box 153, 72, LINE_H+3,   0xffffff, 0xA4C4E4, 0x80ff, 0, 0x10000000,(path-outfile-1), outfile, mouse_dd, 0, 7,7
+edit3 edit_box 153, 72, LINE_H*2+3, 0xffffff, 0xA4C4E4, 0x80ff, 0, 0x10000000,(path_end-path-1), path, mouse_dd, 0, 6,6
 editboxes_end:
-ch1_dbg check_box2 (5 shl 16)+12, (49 shl 16)+12, 6, 0xffffff, 0x80ff, 0, s_dbgdescr,ch_flag_bottom
+ch1_dbg check_box2 (5 shl 16)+15, ((LINE_H*3+3) shl 16)+15, 6, 0xffffff, 0x80ff, 0x10000000, s_dbgdescr,ch_flag_top
 ;---------------------------------------------------------------------
 align 4
 OpenDialog_data:
@@ -605,7 +620,7 @@ start:
 	cmp	[_mode],NORMAL_MODE
 	jne	@f
 	call	draw_messages
-	mov	[textxy],7 shl 16 + 70
+	mov	[textxy],8 shl 16 + LINE_H*4+4
 @@:
 	mov	esi,_logo
 	call	display_string
