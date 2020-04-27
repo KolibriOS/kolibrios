@@ -1,3 +1,6 @@
+ALX_VEN_ID                                      = 0x1969
+
+ALX_DEV_ID_AR8131                               = 0x1063
 ALX_DEV_ID_AR8161                               = 0x1091
 ALX_DEV_ID_E2200                                = 0xe091
 ALX_DEV_ID_E2400                                = 0xe0a1

@@ -7,7 +7,10 @@
 ;;                                                                 ;;
 ;;  based on alx driver from TI-OpenLink                           ;;
 ;;                                                                 ;;
-;;    Written by hidnplayr (hidnplayr@gmail.com)                   ;;
+;;  Written by hidnplayr (hidnplayr@gmail.com)                     ;;
+;;                                                                 ;;
+;;  Thanks to: floppy121 for kindly providing me with the hardware ;;
+;;              that made the development of this driver possible. ;;
 ;;                                                                 ;;
 ;;          GNU GENERAL PUBLIC LICENSE                             ;;
 ;;             Version 2, June 1991                                ;;
@@ -77,6 +80,8 @@ struct  device          ETH_DEVICE
         io_addr         dd ?
         pci_bus         dd ?
         pci_dev         dd ?
+        pci_vid         dw ?    ; Vendor ID
+        pci_did         dw ?    ; Device ID
         irq_line        dd ?
         pci_rev         dd ?
         chip_rev        dd ?
@@ -311,6 +316,25 @@ probe:
         and     ax, not(PCI_CMD_INTX_DISABLE)
         invoke  PciWrite16, [ebx + device.pci_bus], [ebx + device.pci_dev], PCI_header00.command, eax
 
+; get device id
+        invoke  PciRead16, [ebx + device.pci_bus], [ebx + device.pci_dev], PCI_header00.device_id
+        mov     [ebx + device.pci_did], ax
+
+        mov     esi, chiplist
+  .loop:
+        cmp     word[esi+2], ax
+        je      .got_it
+        add     esi, 8
+        cmp     esi, chiplist + 6*8
+        jbe     .loop
+        DEBUGF  2, "Unknown chip: 0x%x, continuing anyway\n", ax
+        jmp     .done
+  .got_it:
+        mov     eax, dword[esi+4]
+        mov     [ebx + device.name], eax
+        DEBUGF  1, "Chip type = %s\n", eax
+  .done:
+
 ; get revision id.
         invoke  PciRead8, [ebx + device.pci_bus], [ebx + device.pci_dev], PCI_header00.revision_id
         and     eax, 0xff
@@ -318,7 +342,7 @@ probe:
         shr     al, ALX_PCI_REVID_SHIFT
         mov     [ebx + device.chip_rev], eax
 
-        DEBUGF  1,"revision: %u\n", al
+        DEBUGF  1,"Revision: %u\n", al
 
 ;;;        call    alx_reset_pcie
 
@@ -545,6 +569,8 @@ alx_identify_hw:
         ret
 
   .einval:
+        DEBUGF  1, "Invalid revision 0x%x\n", [ebx + device.chip_rev]
+
         xor     eax, eax
         dec     eax
         ret
@@ -923,6 +949,7 @@ alx_read_macaddr:
         ret
 
   .invalid:
+        DEBUGF  1, "Invalid MAC!\n"
         xor     eax, eax
         inc     eax
         ret
@@ -1406,7 +1433,7 @@ alx_configure_basic:
                 or (ALX_RXQ0_IDT_TBL_SIZE_DEF shl ALX_RXQ0_IDT_TBL_SIZE_SHIFT) \
                 or ALX_RXQ0_RSS_HSTYP_ALL or ALX_RXQ0_RSS_HASH_EN or ALX_RXQ0_IPV6_PARSE_EN
 
-        test    [ebx + device.pci_dev], 1       ;;; FIXME: is gigabit device?
+        test    [ebx + device.pci_did], 1       ;;; FIXME: is gigabit device?
         jz      @f
         or      eax, ALX_RXQ0_ASPM_THRESH_100M shl ALX_RXQ0_ASPM_THRESH_SHIFT
   @@:
@@ -1745,6 +1772,27 @@ end data
 include '../peimport.inc'
 
 my_service      db 'AR81XX',0                    ; max 16 chars include zero
+
+
+chiplist:
+                dd (ALX_DEV_ID_AR8131 shl 16) or ALX_VEN_ID, ar8131_sz
+                dd (ALX_DEV_ID_AR8161 shl 16) or ALX_VEN_ID, ar8161_sz
+                dd (ALX_DEV_ID_AR8162 shl 16) or ALX_VEN_ID, ar8162_sz
+                dd (ALX_DEV_ID_AR8171 shl 16) or ALX_VEN_ID, ar8171_sz
+                dd (ALX_DEV_ID_AR8172 shl 16) or ALX_VEN_ID, ar8172_sz
+                dd (ALX_DEV_ID_E2200 shl 16) or ALX_VEN_ID, e2200_sz
+                dd (ALX_DEV_ID_E2400 shl 16) or ALX_VEN_ID, e2400_sz
+                dd (ALX_DEV_ID_E2500 shl 16) or ALX_VEN_ID, e2500_sz
+                dd 0
+
+ar8131_sz       db "AR8131", 0
+ar8161_sz       db "AR8161", 0
+ar8162_sz       db "AR8162", 0
+ar8171_sz       db "QCA8171", 0
+ar8172_sz       db "QCA8172", 0
+e2200_sz        db "Killer E2200", 0
+e2400_sz        db "Killer E2400", 0
+e2500_sz        db "Killer E2500", 0
 
 include_debug_strings
 
