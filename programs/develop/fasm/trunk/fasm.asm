@@ -256,37 +256,26 @@ draw_window:
 	test	eax,100b
 	jne	.end
 
-	cmp	dword[pinfo.box.width],230 ; check min-width
+	WIN_MIN_W = 350
+	WIN_MIN_H = 300
+
+	cmp	dword[pinfo.client_box.width],WIN_MIN_W
 	jge	@f
-	mcall   67,-1,-1,300,-1
-	ret
+	mcall   67,-1,-1,WIN_MIN_W+20,-1
+	jmp .end
+@@:
+	cmp	dword[pinfo.client_box.height],WIN_MIN_H
+	jge	@f
+	mcall   67,-1,-1,-1,WIN_MIN_H+50
+	jmp .end
 @@:
 	mpack	ebx,[pinfo.client_box.width],RIGHT_BTN_W
 	msub	ebx,RIGHT_BTN_W+1,0
 	mcall	8,ebx,<LINE_H*0+3,LINE_H-4>,ID_COMPILE_BTN,[sc.work_button]
 	mcall	 ,ebx,<LINE_H*1+3,LINE_H-4>,ID_EXECUTE_BTN
 	mcall	 ,ebx,<LINE_H*2+3,LINE_H-4>,ID_EXECDBG_BTN
-	
-	
-;button for OpenDialog [..]
-	; mov	ebx, 5*65536+47
-	; mov	ecx, 33*65536+14
-	; mcall	,,,5
-
-	; mpack	ebx,6,0    ; Draw Window Text
-	; add	ebx,1+ 14/2-3
-	; mcall	4,,[sc.work_text],text,text.line_size	;InFile
-
-	; add	ebx, 16 ;14
-	; add	edx,text.line_size
-	; mcall	;OutFile
-
-	; mov	ecx,[sc.work_button_text]
-	; add	ebx, 16 ;14
-	; add	edx,text.line_size
-	; mcall	;Path
-	
-	mcall	8,<5,62>,<LINE_H*2+3,LINE_H-5>,ID_OPENDLG_BTN
+		
+	mcall	 ,<5,62>,<LINE_H*2+3,LINE_H-5>,ID_OPENDLG_BTN
 
 	mov	ecx, [sc.work_text]
 	or	ecx, $10000000
@@ -297,7 +286,7 @@ draw_window:
 	mcall	 ,<0,LINE_H*2+6>,,text+text.line_size*2,esi   ;Path
 
 	mov	ebx,[pinfo.client_box.width]
-	sub	ebx,RIGHT_BTN_W+1-9
+	sub	ebx,RIGHT_BTN_W-12
 	shl	ebx,16
 	add	ebx,LINE_H/2-6
 	mov	ecx, [sc.work_button_text]
@@ -417,7 +406,7 @@ fun_opn_dlg: ;функция для вызова OpenFile диалога
 	ret
 ;---------------------------------------------------------------------
 draw_messages:
-	mpack	ebx,7-2,[pinfo.client_box.width]
+	mpack	ebx,5,[pinfo.client_box.width]
 	sub	ebx,9
 	mpack	ecx,0,[pinfo.client_box.height]
 	madd	ecx, LINE_H*4,-( LINE_H*4+5)
@@ -425,7 +414,21 @@ draw_messages:
 	mov	word[bottom_right],cx
 	msub	[bottom_right],7,11
 	add	[bottom_right],7 shl 16 + 53
-	mcall	13,,,[sc.work]	; clear work area
+	mcall	13,,,0xFeFefe	; clear work area
+	
+	; draw top shadow
+	push ecx
+	mov cx,1
+	mov edx,0xDADEDA
+	mcall
+	
+	; draw left shadow
+	pop  ecx
+	push ebx
+	mov bx,1
+	mcall
+	pop  ebx
+	
 _cy = 0
 _sy = 2
 _cx = 4

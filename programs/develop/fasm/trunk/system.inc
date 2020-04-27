@@ -473,9 +473,7 @@ dc1:
 	cmp	ax,word[bottom_right+2]
 	ja	dc2
 	mov	[dc],dl
-	mov ecx,[sc.work_text]
-	or  ecx,$10000000
-	mcall	4,[textxy],,dc,1
+	mcall	4,[textxy],0x10000000,dc,1
 	add	[textxy],0x00080000
 	popa
 	ret

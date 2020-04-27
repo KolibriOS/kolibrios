@@ -2,7 +2,7 @@
 params:
 	rb 256
 ;---------------------------------------------------------------------	
-color_table	system_colors
+sc	system_colors
 
 innamelen	rd 1
 inname		rb 256	;48

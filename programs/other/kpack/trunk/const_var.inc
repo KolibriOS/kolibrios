@@ -1,30 +1,29 @@
 ;---------------------------------------------------------------------
-aQuestion	db '?'
-caption_str	db 'KPack',0
+aQuestion	db '?',0
+caption_str	db 'KPack - Kolibri Packer',0
 buttons1names	db ' InFile:'
 		db 'OutFile:'
 		db '   Path:'
-aCompress	db 'COMPRESS',0
-aDecompress	db 'DECOMPRESS',0
+aCompress	db ' Compress',0
+aDecompress	db 'Decompress',0
 definoutname	db 0
 defpath		db '/rd/1',0
 ;curedit		dd 0
 
-info_str	db 'KPack - Kolibri Packer, version 0.20',10
+info_str	db 'KPack - Kolibri Packer, version 0.21',10
 		db 'Uses LZMA v4.32 compression library',10,10
 info_len	= $ - info_str
-usage_str	db 'Written by diamond in 2006, 2007, 2009 specially for KolibriOS',10
+usage_str	db 'Written by diamond in 2006-2009 specially for KolibriOS',10
 		db 'Disassembled code, using Box_Lib, Proc_Lib and OpenDialog',10
-		db '    by Mario79, 2010',10
-		db 'LZMA  is copyright (c) 1999-2005 by Igor Pavlov',10
+		db 'by Mario79, 2010',10
+		db 'LZMA is copyright (c) 1999-2005 by Igor Pavlov',10
 		db 10
 		db 'Command-line usage:',10
-		db ' path_to_infile with zero',10
+		db '   path_to_infile with zero',10
 		db 10
 		db 'Window usage:',10
-		db 'Select file with PATH-button and press needed button',10
-		db ' or enter input and output file name,',10 
-		db ' enter path and press needed button',10
+		db '   Select file with PATH-button or set all data in the',10
+		db '   text fileds manually, then press an appropriate button',10
 usage_len	= $ - usage_str
 already_str	db 'Already packed kernel.mnt file',10
 already_len	= $ - already_str
@@ -79,26 +78,10 @@ Box_lib_import:
 edit_box_draw		dd aEdit_box_draw
 edit_box_key		dd aEdit_box_key
 edit_box_mouse		dd aEdit_box_mouse
-;version_ed		dd aVersion_ed
 
 init_checkbox		dd aInit_checkbox
 check_box_draw		dd aCheck_box_draw
 check_box_mouse		dd aCheck_box_mouse
-;version_ch		dd aVersion_ch
-
-;option_box_draw	dd aOption_box_draw
-;option_box_mouse	dd aOption_box_mouse
-;version_op		dd aVersion_op
-
-;scrollbar_ver_draw	dd aScrollbar_ver_draw
-;scrollbar_ver_mouse	dd aScrollbar_ver_mouse
-;scrollbar_hor_draw	dd aScrollbar_hor_draw
-;scrollbar_hor_mouse	dd aScrollbar_hor_mouse
-;version_scrollbar	dd aVersion_scrollbar
-
-;menu_bar_draw		dd aMenu_bar_draw
-;menu_bar_mouse		dd aMenu_bar_mouse
-;version_menu_bar	dd aVersion_menu_bar
 
 	dd 0
 	dd 0
@@ -106,26 +89,11 @@ check_box_mouse		dd aCheck_box_mouse
 aEdit_box_draw		db 'edit_box',0
 aEdit_box_key		db 'edit_box_key',0
 aEdit_box_mouse		db 'edit_box_mouse',0
-;aVersion_ed		db 'version_ed',0
 
 aInit_checkbox		db 'init_checkbox2',0
 aCheck_box_draw		db 'check_box_draw2',0
 aCheck_box_mouse	db 'check_box_mouse2',0
-;aVersion_ch		db 'version_ch',0
 
-;aOption_box_draw	db 'option_box_draw',0
-;aOption_box_mouse	db 'option_box_mouse',0
-;aVersion_op		db 'version_op',0
-
-;aScrollbar_ver_draw	db 'scrollbar_v_draw',0
-;aScrollbar_ver_mouse	db 'scrollbar_v_mouse',0
-;aScrollbar_hor_draw	db 'scrollbar_h_draw',0
-;aScrollbar_hor_mouse	db 'scrollbar_h_mouse',0
-;aVersion_scrollbar	db 'version_scrollbar',0
-
-;aMenu_bar_draw		db 'menu_bar_draw',0
-;aMenu_bar_mouse		db 'menu_bar_mouse',0
-;aVersion_menu_bar	db 'version_menu_bar',0
 ;---------------------------------------------------------------------
 head_f_i:
 head_f_l	db 'System error',0
@@ -192,19 +160,31 @@ dd	Filter.end - Filter.1
 .end:
 db	0
 
+WIN_W = 490
+WIN_H = 350
+LINE_H = 25
+RIGHT_BTN_W = 103
+EDIT_X = 76
+LOG_Y = LINE_H*3+5
+LOG_H = WIN_H-LOG_Y-9
+
 start_temp_file_name:	db 'temp.bin',0
 
 ;---------------------------------------------------------------------
 align 4
-edit1 edit_box 160, 60, 1, 0xffffff, 0xff, 0x80ff, 0, 0x8000, 256, inname, mouse_dd, 0, 11,11
-edit2 edit_box 160, 60, 17, 0xffffff, 0xff, 0x80ff, 0, 0x8000,256, outname, mouse_dd, 0, 7,7
-edit3 edit_box 160, 60, 33, 0xffffff, 0xff, 0x80ff, 0, 0x8000,256, path, mouse_dd, 0, 6,6
+edit1 edit_box WIN_W-EDIT_X-RIGHT_BTN_W-12, EDIT_X, 3,          0xffffff,\ 
+        0xA4C4E4, 0x80ff, 0, 0x10000000, 256, inname,  mouse_dd, 0, 11,11
+edit2 edit_box WIN_W-EDIT_X-RIGHT_BTN_W-12, EDIT_X, LINE_H+3,   0xffffff,\
+        0xA4C4E4, 0x80ff, 0, 0x10000000, 256, outname, mouse_dd, 0, 7,7
+edit3 edit_box WIN_W-EDIT_X-RIGHT_BTN_W-12, EDIT_X, LINE_H*2+3, 0xffffff,\
+        0xA4C4E4, 0x80ff, 0, 0x10000000, 256, path,    mouse_dd, 0, 6,6
 editboxes_end:
 
 mouse_dd dd 0
 ;---------------------------------------------------------------------
 
-check1 check_box2 (353 shl 16)+10,  (39 shl 16)+10, 4, 0x80FFFFFF, 0, 0, check_text, ch_flag_bottom
+check1 check_box2 ((WIN_W - RIGHT_BTN_W - 5) shl 16)+15, ((LINE_H*2+6) shl 16)+15, 6, 0xffffff,\
+        0x80ff, 0x10000000, check_text,ch_flag_top
 check1_end:
 
 check_text db 'Kernel',0
