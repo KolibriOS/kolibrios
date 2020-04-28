@@ -25,7 +25,7 @@ usage_str	db 'Written by diamond in 2006-2009 specially for KolibriOS',10
 		db 10
 		db 'Window usage:',10
 		db '   Select file with PATH-button or set all data in the',10
-		db '   text fileds manually, then press an appropriate button',10
+		db '   text fields manually, then press an appropriate button',10
 usage_len	= $ - usage_str
 already_str	db 'Already packed kernel.mnt file',10
 already_len	= $ - already_str
