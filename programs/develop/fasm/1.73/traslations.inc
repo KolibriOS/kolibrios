@@ -1,23 +1,21 @@
 
 include 'lang.inc'
 
-match =en,lang {
-text        db ' InFile:','OutFile:','   Path:'
-            .line_size = ($-text)/3
-s_compile	db 'COMPILE'
-s_run		db '  RUN  '
-s_debug 	db ' DEBUG '
-s_dbgdescr	db 'Generate debug information',0
-}
-
-match =ru,lang {
-text        db ' ВхФайл:','ВыхФайл:','   Путь:'
-            .line_size = ($-text)/3
-s_compile	db 'Компил.'
-s_run		db ' Пуск  '
-s_debug 	db 'Отладка'
-s_dbgdescr	db 'Создавать отладочную информацию',0
-}
+if lang eq ru
+	text        db ' ВхФайл:','ВыхФайл:','   Путь:'
+				.line_size = ($-text)/3
+	s_compile	db 'Компил.'
+	s_run		db ' Пуск  '
+	s_debug 	db 'Отладка'
+	s_dbgdescr	db 'Создавать отладочную информацию',0
+else
+	text        db ' InFile:','OutFile:','   Path:'
+				.line_size = ($-text)/3
+	s_compile	db 'COMPILE'
+	s_run		db '  RUN  '
+	s_debug 	db ' DEBUG '
+	s_dbgdescr	db 'Generate debug information',0
+end if
 
 sz_EPnotFound	db 'Not found entry point to ',0
 sizeof.sz_EPnotFound = $-sz_EPnotFound
