@@ -686,7 +686,6 @@ keyforexit db 'Это ваш снимок. Выход - любая клавиша.',0
 
 else
 text:
-.1 db 'Размер экрана и глубина цвета:      х     х   бит',0
 .1 db 'Screen size and color depth:        х     х   bit',0
 .3 db 'Screenshot save path:',0
 .9 db 'Current photo number:',0
