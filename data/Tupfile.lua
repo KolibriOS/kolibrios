@@ -407,7 +407,7 @@ tup.append_table(img_files, {
  {"DEMOS/WEB", PROGS .. "/demos/web/trunk/web"},
  {"DEVELOP/BOARD", PROGS .. "/system/board/trunk/board"},
  {"DEVELOP/cObj", PROGS .. "/develop/cObj/trunk/cObj"},
- {"DEVELOP/FASM", PROGS .. "/develop/fasm/trunk/fasm"},
+ {"DEVELOP/FASM", PROGS .. "/develop/fasm/1.73/fasm"},
  {"DEVELOP/H2D2B", PROGS .. "/develop/h2d2b/trunk/h2d2b"},
  {"DEVELOP/HEED", PROGS .. "/develop/heed/trunk/heed"},
  {"DEVELOP/KEYASCII", PROGS .. "/develop/keyascii/trunk/keyascii"},
