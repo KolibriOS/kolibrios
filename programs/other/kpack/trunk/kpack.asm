@@ -33,15 +33,33 @@ START:
 	mcall	68,11
 	mcall	40,0x80000027
 
-load_libraries l_libs_start,load_lib_end
+	load_libraries l_libs_start,load_lib_end
 	cmp eax,-1
 	je exit
 
 	init_checkboxes2 check1,check1_end
-	;push	check1
-	;call	[init_checkbox]
-
 	call	clear_messages
+
+; pack kernel ?
+	cmp	[params], dword '-ker'
+	jne @f
+
+	mov	esi,kernel_name
+	mov	edi,inname
+	call	copy_1
+
+	mov	esi,kernel_name
+	mov	edi,outname
+	call	copy_1
+	
+	mov	esi,defpath
+	mov	edi,path
+	call	copy_1
+
+	call	pack
+	jmp exit
+
+@@:
 ; set default path = /RD/1/
 	mov	esi,defpath
 	mov	edi,path
@@ -73,6 +91,7 @@ load_libraries l_libs_start,load_lib_end
 	pop	esi
 	mov	edi,outname
 	call	copy_1
+end_param:
 ;---------------------------------------------------------------------
 	call set_editbox_position_all
 ;---------------------------------------------------------------------

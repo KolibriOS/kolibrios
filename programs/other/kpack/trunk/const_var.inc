@@ -8,9 +8,10 @@ aCompress	db ' Compress',0
 aDecompress	db 'Decompress',0
 definoutname	db 0
 defpath		db '/rd/1',0
+kernel_name db 'kernel.mnt',0
 ;curedit		dd 0
 
-info_str	db 'KPack - Kolibri Packer, version 0.21',10
+info_str	db 'KPack - Kolibri Packer, version 0.22',10
 		db 'Uses LZMA v4.32 compression library',10,10
 info_len	= $ - info_str
 usage_str	db 'Written by diamond in 2006-2009 specially for KolibriOS',10
@@ -20,6 +21,7 @@ usage_str	db 'Written by diamond in 2006-2009 specially for KolibriOS',10
 		db 10
 		db 'Command-line usage:',10
 		db '   path_to_infile with zero',10
+		db '   use <-ker> key to pack kernel',10
 		db 10
 		db 'Window usage:',10
 		db '   Select file with PATH-button or set all data in the',10

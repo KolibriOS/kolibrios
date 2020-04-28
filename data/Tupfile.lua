@@ -364,7 +364,6 @@ tup.append_table(img_files, {
  {"HDD_INFO", PROGS .. "/system/hdd_info/trunk/hdd_info"},
  {"KBD", PROGS .. "/system/kbd/trunk/kbd"},
  {"KPACK", PROGS .. "/other/kpack/trunk/kpack"},
- {"KERPACK", PROGS .. "/other/outdated/kerpack/trunk/kerpack"},
  {"LAUNCHER", PROGS .. "/system/launcher/trunk/launcher"},
  {"LOADDRV", PROGS .. "/system/loaddrv/loaddrv"},
  {"MAGNIFY", PROGS .. "/demos/magnify/trunk/magnify"},
