@@ -398,8 +398,9 @@ draw_messages:
 	ret
 ;*********************************************************************
 draw_log_area:
-	DrawRectangle 5, LOG_Y, WIN_W-12, LOG_H, [sc.work_graph]	
+	DrawRectangle 5, LOG_Y, WIN_W-12, LOG_H, [sc.work_graph]
 	mcall	13, <6,WIN_W-13>, <LOG_Y+1,LOG_H-1>, 0xFFFfff
+	DrawRectangle3D 6, LOG_Y+1, WIN_W-13, LOG_H-1, 0xDEDEDE, [sc.work_graph] 
 	ret
 ;*********************************************************************
 draw_window:

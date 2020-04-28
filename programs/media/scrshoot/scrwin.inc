@@ -38,16 +38,7 @@ scr_window:
         stop_draw_window
 ret
 .close:
-        bt      word [ch3.flags],1   ; восстановить окно ?
-        jnc     @f
-
-        mov     eax,60
-        mov     ebx,2
-        mov     ecx,[app.pid]
-        mov     edx,messages.act_window
-        mov     esi,2
-        mcall
-@@:
+        mcall   60,2,[app.pid],messages.act_window,2
         jmp	close
 
 .label label 20,20,0x80000000,keyforexit

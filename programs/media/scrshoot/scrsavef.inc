@@ -6,9 +6,7 @@ pusha
         cmp     byte [fname_buf],0
         je      .no_file_name
 
-        mov     edi,sign_n_input
-        call    zstr_to_int
-        mov     [sign_n],al
+        mov     [sign_n],4
 
         ; генерируем имя файла
         xor     eax,eax

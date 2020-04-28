@@ -20,7 +20,7 @@
 
 format binary as ""
 
-title equ 'Screenshooter v 1.2' ; Заголовок окна
+title equ 'Screenshooter v1.21' ; Заголовок окна
 include '../../develop/libraries/box_lib/load_lib.mac'
 include '../../develop/libraries/box_lib/trunk/box_lib.mac'
 include '../../config.inc'		;for nightbuild
@@ -153,7 +153,6 @@ red:
 
 	and	[ch2.flags],dword 0
 	or	[ch5.flags],dword 1
-	and	[ch3.flags],dword 0
 	mov	[OpenDialog_data.draw_window],dword draw_window_direct
 
 	call	shoot
@@ -201,7 +200,6 @@ key:
 ;	stdcall	[edit_box_key], edit1
 	stdcall	[edit_box_key], edit2
 	stdcall	[edit_box_key], edit3
-	stdcall	[edit_box_key], edit4
 
 	jmp	still
 button:
@@ -218,7 +216,6 @@ mouse:
 ;	stdcall	[edit_box_mouse], edit1
 	stdcall	[edit_box_mouse], edit2
 	stdcall	[edit_box_mouse], edit3
-	stdcall	[edit_box_mouse], edit4
 ;----------------------------------
 	checkboxes_mouse2	check_boxes,check_boxes_end
 ;-----------------------------------
@@ -283,24 +280,14 @@ start_draw_window	 ; начало перерисовки
 	mcall SF_CREATE_WINDOW, 100*65536+320
 
 	; выводим числа в окно
-	mov	ebx,4 shl 16
 	movsx	ecx,word [scr.width] ; ширина экрана
-	mov	edx,95 shl 16
-	mov	dx,[label1.top]
-	push	dx
-	mov	esi,[sc.work_text]
-	mcall SF_DRAW_NUMBER
+	mcall SF_DRAW_NUMBER, <4,0>, , <188,[label1.top]>, [sc.work_text]
 	movsx	ecx,word [scr.height]	; высота экрана
-	mov	dx,[label2.top]
+	add edx, 37 shl 16
 	mcall
+	add edx, 36 shl 16
 	mov	ebx,2 shl 16
 	movsx	ecx,word [scr.bitspp]	; бит на пиксель
-	mov	edx,240 shl 16
-	pop	dx
-	mcall
-	mov	ebx,6 shl 16
-	mov	ecx,[scr.bytesps]	; байт на строку
-	mov	dx,[label2.top]
 	mcall
 
 	call	draw_number	 ; прорисовываем номер снимка
@@ -311,7 +298,6 @@ start_draw_window	 ; начало перерисовки
 ;	stdcall	[edit_box_draw], edit1
 	stdcall	[edit_box_draw], edit2
 	stdcall	[edit_box_draw], edit3
-	stdcall	[edit_box_draw], edit4
 ;------ end check all editbox -------
 
 	call	draw_PathShow
@@ -368,7 +354,6 @@ shoot:
 	jnc	@f
 	ret
 @@:
-
 	bt	dword [ch2.flags],1  ; показать окно предпросмотра ?
 	jnc	@f
 	cmp	[PrintScreen],0
@@ -388,20 +373,10 @@ shoot:
 .1:
 ; prepare for PathShow
 	stdcall	[PathShow_prepare], PathShow_data_1
-	
 	call	[OpenDialog_data.draw_window]
-
 	call	save_file
 @@:
-	
-	bt	word [ch3.flags],1   ; восстановить окно ?
-	jnc	@f
-
-	delay 100
-	mov	ecx,[slot_n]
-	activ_window
-@@:
-ret
+	ret
 
 ;--- получить память для снимка ---
 get_mem_for_shoot:
@@ -449,9 +424,7 @@ ret
 
 ;--- процедура прорисовки текущего номера ---
 draw_number:
-	mov	edi,sign_n_input
-	call	zstr_to_int
-	mov	[sign_n],al
+	mov	[sign_n],4
 	mov	cx,[label9.top]
 	shl	ecx,16
 	mov	cx,10
@@ -625,16 +598,9 @@ grab_text:
 	db	title,0
 
 labels:
-label1 label 5,5,0,text.1   ; ширина экрана
-label2 label 5,15,0,text.2   ; высота экрана
+label1 label 5,8,0,text.1   ; screen size and color depth
 label3 label 5,25,0,text.3   ; введите имя файла
-label4 label 150,5,0,text.4  ; бит на пиксель
-label5 label 150,15,0,text.5  ; байт на строку
-label6 label 115,138,0,text.6  ; 100 = 1 сек.
-;label7 label 10,190,0,text.7
-;label8 label 10,225,0,text.8
 label9 label 5,52,0,text.9   ; номер текущего симка
-label10 label 5,185,0,text.10
 status label 5,201,0,no_shoot
 labels_end:
 
@@ -653,49 +619,40 @@ err_message_found_lib3, head_f_l, import_libimg, err_message_import3, head_f_i
 end_l_libs:
 ;---------------------------------------------------------------------
 editboxes:
-;edit1 edit_box 300,5,35,cl_white,0,0,0,0,300,ed_buffer.1,mouse_dd,ed_focus,10,10	; путь к файлу
-edit2 edit_box 35,75,134,cl_white,0,0,0,0,9,ed_buffer.2,mouse_dd,ed_figure_only,3,3	    ; задержка
-edit3 edit_box 35,165,164,cl_white,0,0,0,0,9,ed_buffer.3,mouse_dd,ed_figure_only    ; автонумерация
-edit4 edit_box 16,165,181,cl_white,0,0,0,0,1,sign_n_input,mouse_dd,ed_figure_only,1
+;edit1 edit_box 300,5,35,cl_white,0,0,0,0,300,ed_buffer.1,mouse_dd,ed_focus,10,10    ; путь к файлу
+edit2 edit_box 35,170,134,cl_white,0,0,0,0,9,ed_buffer.2,mouse_dd,ed_figure_only,3,3 ; задержка
+edit3 edit_box 35,165,164,cl_white,0,0,0,0,9,ed_buffer.3,mouse_dd,ed_figure_only     ; автонумерация
 editboxes_end:
 ;---------------------------------------------------------------------
 buttons:
 but1 txt_button 150,5,15,65,2,0,0,but_text.1,one_shoot		   ; сделать снимок
-but2 txt_button 145,160,15,65,3,0,0,but_text.2,save_shoot	   ; сохранить снимок
-but3 txt_button 140,115,12,120,4,0,0,but_text.3,show_scr_window    ; показать снимок
+but2 txt_button 34,274,15,34,3,0,0,but_text.2,save_shoot	   ; "..." - выбрать путь сохранения 
+but3 txt_button 145,160,15,65,3,0,0,but_text.3,show_scr_window    ; показать снимок
 but4 txt_button 80,205,15,163,5,0,0,but_text.4,apply_number	   ; применить номер
 but5 txt_button 150,5,15,85,6,0,0,but_text.5,start_autoshoot	   ; начать автосъёмку
 but6 txt_button 145,160,15,85,7,0,0,but_text.6,stop_autoshoot	   ; остановить автосъёмку
-but7 txt_button 40,205,10,150,8,0,0,but_text.7,show_set_rect_window ; задать область
+but7 txt_button 40,70,10,180,8,0,0,but_text.7,show_set_rect_window ; задать область
 buttons_end:
 ;---------------------------------------------------------------------
 check_boxes:
 ch1 check_box2 (5 shl 16+11),(105 shl 16 +11),5,cl_white,0,0x80000000,ch_text.1,ch_flag_en+ch_flag_middle	; свернуть окно
-ch2 check_box2 (5 shl 16+11),(120 shl 16 +11),5,cl_white,0,0x80000000,ch_text.2,ch_flag_en+ch_flag_middle	; затем сделать активным
-ch3 check_box2 (1455 shl 16+11),(105 shl 16 +11),5,cl_white,0,0x80000000,ch_text.3,ch_flag_en+ch_flag_middle	; показать снимок
+ch2 check_box2 (5 shl 16+11),(120 shl 16 +11),5,cl_white,0,0x80000000,ch_text.2,ch_flag_en+ch_flag_middle	; show screenshot
 ch4 check_box2 (5 shl 16+11),(135 shl 16 +11),5,cl_white,0,0x80000000,ch_text.4,ch_flag_en+ch_flag_middle	; задержка
 ch5 check_box2 (5 shl 16+11),(150 shl 16 +11),5,cl_white,0,0x80000000,ch_text.5,ch_flag_en+ch_flag_middle
 ch6 check_box2 (5 shl 16+11),(165 shl 16 +11),5,cl_white,0,0x80000000,ch_text.6,ch_flag_en+ch_flag_middle
-use_rect check_box2 (145 shl 16+11),(150 shl 16 +11),5,cl_white,0,0x80000000,ch_text.7,ch_flag_middle		; исп. область
+use_rect check_box2 (5 shl 16+11),(180 shl 16 +11),5,cl_white,0,0x80000000,ch_text.7,ch_flag_middle		; исп. область
 ; автонумерация
 check_boxes_end:
 ;---------------------------------------------------------------------
 if lang eq ru
 text:
-.2 db 'Высота экрана:',0
-.1 db 'Ширина экрана:',0
-.3 db 'Введите полный путь к файлу:',0
-.4 db 'Бит на пиксель:',0
-.5 db 'Байт на строку:',0
-.6 db '100 = 1 секунда',0
-;.7: db 'Введите имя файла:',0
-;.8: db 'Вместо "*" в имени файла будет вставляться номер.',0
+.1 db 'Размер экрана и глубина цвета:      х     х   bit',0
+.3 db 'Путь для сохранения снимка:',0
 .9 db 'Номер текущего снимка:',0
-.10 db 'Количество знаков в номере:',0
 
 but_text:
 .1 db 'Сделать снимок экрана',0
-.2 db 'Сохранить снимок экрана',0
+.2 db '...',0
 .3 db 'Показать снимок сейчас',0
 .4 db 'Применить',0
 .5 db 'Начать автосъемку',0
@@ -705,8 +662,7 @@ but_text:
 ch_text:
 .1 db 'Свернуть окно',0
 .2 db 'Показать снимок',0
-.3 db 'затем сделать активным',0
-.4 db 'Задержка:',0
+.4 db 'Задержка в миллисекундах:',0
 .5 db 'Автосохранение',0
 .6 db 'Автонумерация, начиная с',0
 .7 db 'Область',0
@@ -722,24 +678,18 @@ disk_filled db 'Диск заполнен',0
 bad_fat_table db 'Таблица FAT разрушена',0
 ac_den db 'Доступ запрещен',0
 device_er db 'Ошибка устройства',0
-not_shooted db 'Сделайте снимок !!!',0
-no_file_name db 'Введите имя файла !!!',0
+not_shooted db 'Ошибка: вначале сделайте снимок',0
+no_file_name db 'Ошибка: следует ввести имя файла',0
 invalid_rect db 'Недопустимые размеры области',0
 keyforexit db 'Это ваш снимок. Выход - любая клавиша.',0
 
 
 else
 text:
-.2 db 'Screen width:',0
-.1 db 'Screen height:',0
-.3 db 'Enter full path to the file:',0
-.4 db 'Bits per pixel:',0
-.5 db 'Bytes per line:',0
-.6 db '100 = 1 second',0
-;.7: db 'Enter name of file:',0
-;.8: db 'Instead of "*" in filename the number will be included.',0
+.1 db 'Размер экрана и глубина цвета:      х     х   бит',0
+.1 db 'Screen size and color depth:        х     х   bit',0
+.3 db 'Screenshot save path:',0
 .9 db 'Current photo number:',0
-.10 db 'Amount of digits in number:',0
 
 but_text:
 .1 db 'Make screen photo',0
@@ -753,8 +703,7 @@ but_text:
 ch_text:
 .1 db 'Minimize window',0
 .2 db 'Show photo',0
-.3 db 'then make active',0
-.4 db 'Delay:',0
+.4 db 'Delay in milliseconds:',0
 .5 db 'Autosave',0
 .6 db 'Start numeration from',0
 .7 db 'Area',0
@@ -770,8 +719,8 @@ disk_filled db 'Disk is full',0
 bad_fat_table db 'FAT table destroyed',0
 ac_den db 'Access denied',0
 device_er db 'Device error',0
-not_shooted db 'Make a photo !!!',0
-no_file_name db 'Enter file name !!!',0
+not_shooted db 'Error: you need to make a photo first',0
+no_file_name db 'Please, enter file name.',0
 invalid_rect db 'Wrong area size',0
 keyforexit db 'This is your screenshot. Press any key.',0
 
@@ -836,8 +785,6 @@ db	0
 start_temp_file_name:	db '1.png',0
 
 ;---------------------------------------------------------------------
-sign_n_input:
-	db	'2',0
 
 PrintScreen	db  0
 autoshoot_flag	db  0
