@@ -1,293 +1,193 @@
+/*
+	STDCALL function
+	Author: PaulCodeman
+*/
 
-/* Lisp functions */
-
-:dword std_sleep(dword count, args)
+void initFunctionLisp()
 {
-	dword ret = 0;
-	dword arg = 0;
-	dword val = 0;
-	WHILE(count)
-	{
-		arg = DSDWORD[args];
-		REPEAT1:
-		IF (DSDWORD[arg+4] == TSym) 
-		{
-			arg = std_get(1, args);
-			goto REPEAT1;
-		}
-		IF (DSDWORD[arg+4] == TInt)
-		{
-			EAX = 5;
-			EBX = DSDWORD[arg];
-			$int 0x40
-		}
-		args+=4;
-		count--;
-	}
-	RETURN ret;
+	set_procedure("TEST",  #lisp_test);
+	set_procedure("SLEEP", #lisp_sleep);
+	set_procedure("PRINT", #lisp_print);
+	set_procedure("INPUT", #lisp_input);	
+	set_procedure("STDCALL", #lisp_stdcall);
+	set_procedure("SETQ",   #lisp_setq);
+	set_procedure("DEFVAR", #lisp_setq);
+	set_procedure("+",     #lisp_add);
+	set_procedure("-",     #lisp_sub);
+	set_procedure("=",     #lisp_cmp);
 }
 
-:dword std_set(dword count, args)
+dword lisp_test(dword args)
 {
+	malloc(sizeStruct);
+	DSDWORD[EAX] = TString;
+	DSDWORD[EAX+4] = "ZZZ";
+	return EAX;
+}
+
+dword lisp_setq(dword args)
+{
+	dword i = 0;
 	dword name = 0;
-	dword value = 0;
-	WHILE(count > 0)
+	dword data = 0;
+	while(1)
 	{
-		name = DSDWORD[args];
-		IF (DSDWORD[name+4] == TSym) name = DSDWORD[name];
-		ELSE 
+		i++;
+		data = indexArray(args, i);
+		data = DSDWORD[data];
+		IF (!data) break;
+		
+		if (i&1)
 		{
-			con_printf stdcall ("Error variable!");
-			ExitProcess();
+			name = DSDWORD[data+4];
 		}
-		args += 4;
-		value = DSDWORD[args];
-		args += 4;
-		variables.set(name, value);
-		count -= 2;
-	}
-}
-
-:dword std_get(dword count, args)
-{
-	dword name = 0;
-	IF(!count) RETURN 0;
-	name = DSDWORD[args];
-	IF (DSDWORD[name+4] != TSym)
-	{
-		con_printf stdcall ("Error variable!");
-		ExitProcess();
-	}
-	RETURN variables.get(DSDWORD[name]);
-}
-
-:dword std_str(dword count, args)
-{
-	dword tmp = 0;
-	IF(!count) RETURN "";
-	tmp = malloc(15);
-	itoa_(tmp,DSDWORD[args]);
-	RETURN tmp;
-}
-
-/* Math functions */
-:dword std_add(dword count, args)
-{
-	dword ret = 0;
-	WHILE(count)
-	{
-		ret += DSDWORD[args];
-		args+=4;
-		count--;
-	}
-	RETURN ret;
-}
-
-:dword std_exit(dword count, args)
-{
-	IF(initConsole) con_exit stdcall (1);
-	ExitProcess();
-}
-
-:dword std_sub(dword count, args)
-{
-	dword ret = 0;
-	IF(count)
-	{ 
-		ret = DSDWORD[args];
-		count--;
-		args+=4;
-	}
-	WHILE(count)
-	{
-		ret -= DSDWORD[args];
-		args += 4;
-		count--;
-	}
-	RETURN ret;
-}
-
-:dword std_type(dword count, args)
-{
-	dword ret = 0;
-	dword arg = 0;
-	dword val = 0;
-	ret = malloc(TLen);
-	DSDWORD[ret] = "nil";
-	DSDWORD[ret+4] = TStr;
-	WHILE(count)
-	{
-		arg = DSDWORD[args];
-		REPEAT1:
-		IF (DSDWORD[arg+4] == TSym) 
+		else
 		{
-			arg = std_get(1, args);
-			goto REPEAT1;
+			set_variable(name, data);
 		}
-		switch (DSDWORD[arg+4])
-		{
-			case TStr:
-				DSDWORD[ret] = "string";
-			break;
-			case TInt:
-				DSDWORD[ret] = "integer";
-			break;
-		}
-		args+=4;
-		count--;
 	}
-	RETURN ret;
+	return 0;
 }
 
-/* Console functions */
-:dword std_print(dword count, args)
+dword lisp_print(dword args)
 {
-	dword ret = 0;
-	dword arg = 0;
-	dword val = 0;
+	dword i = 0;
 	consoleInit();
-	IF (!count) con_printf stdcall ("nil");
-	WHILE(count)
+	while(1)
 	{
-		arg = DSDWORD[args];
-		REPEAT1:
-		IF (DSDWORD[arg+4] == TInt) val = itoa(DSDWORD[arg]);
-		ELSE IF (DSDWORD[arg+4] == TStr) val = DSDWORD[arg];
-		ELSE IF (DSDWORD[arg+4] == TSym) 
-		{
-			arg = std_get(1, args);
-			goto REPEAT1;
-		}
-		IF(!arg) con_printf stdcall ("nil");
-		ELSE con_printf stdcall (val);
-		args+=4;
-		count--;
+		i++;
+		indexArray(args, i);
+		IF (!DSDWORD[EAX]) break;
+		con_printf stdcall (string(DSDWORD[EAX]));
 	}
-	RETURN ret;
+	con_printf stdcall ("\r\n");
+	return 0;
 }
 
-:dword std_len(dword count, args)
+dword lisp_stdcall(dword args)
 {
-	dword ret = 0;
-	dword arg = 0;
-	dword val = 0;
-	ret = malloc(TLen);
-	DSDWORD[ret] = 0;
-	DSDWORD[ret+4] = TInt;
-	WHILE(count)
+	dword i = 0;
+	dword buffer = 0;
+	while(1)
 	{
-		arg = DSDWORD[args];
-		REPEAT1:
-		IF (DSDWORD[arg+4] == TStr) val = DSDWORD[arg];
-		ELSE IF (DSDWORD[arg+4] == TSym) 
-		{
-			arg = std_get(1, args);
-			goto REPEAT1;
-		}
-		ELSE return ret;
-		DSDWORD[ret] += DSDWORD[arg+8];
-		args+=4;
-		count--;
+		i++;
+		indexArray(args, i);
+		buffer = DSDWORD[EAX];
+		IF (!buffer) break;
+		$push DSDWORD[buffer+4];
 	}
-	RETURN ret;
+	IF (i == 2) $pop eax
+	IF (i == 3) $pop ebx
+	IF (i == 4) $pop ecx
+	$int 0x40
+	return EAX;
 }
 
-:dword std_cmp(dword count, args)
+dword lisp_input(dword args)
 {
-	dword ret = 0;
-	dword arg = 0;
-	dword val = 0;
-	dword tmp = 0;
-	dword x = 0;
-	dword y = 0;
-	byte start = 0;
-	ret = malloc(TLen);
-	DSDWORD[ret] = 0;
-	DSDWORD[ret+4] = TInt;
-	IF (!count) return ret;
-	while(count)
-	{
-		arg = DSDWORD[args];
-		REPEAT2:
-		IF (DSDWORD[arg+4] == TSym) 
-		{
-			arg = std_get(1, args);
-			goto REPEAT2;
-		}
-		IF (!start)
-		{
-			start = 1;
-			tmp = arg;
-			args+=4;
-			count--;
-			continue;
-		}
-		IF (DSDWORD[tmp+4] != DSDWORD[arg+4]) return ret;
-		IF (DSDWORD[tmp+4] == TInt)
-		{
-			IF (DSDWORD[tmp] != DSDWORD[arg]) return ret;
-		}
-		ELSE IF (DSDWORD[tmp+4] == TStr)
-		{
-			/*IF (!DSDWORD[tmp+8]) DSDWORD[tmp+8] = crc32(DSDWORD[tmp]);
-			IF (!DSDWORD[arg+8]) DSDWORD[arg+8] = crc32(DSDWORD[arg]);
-			IF (DSDWORD[tmp+8] != DSDWORD[arg+8]) return ret;*/
-			IF (strcmp(DSDWORD[tmp], DSDWORD[arg])) return ret;
-		}
-		args+=4;
-		count--;
-	}
-	DSDWORD[ret] = 1;
-	return ret;
-}
-
-:dword std_input(dword count, args)
-{
-	dword buf = 0;
+	dword buffer = 0;
 	consoleInit();
-	buf = malloc(100);
-	IF (count) std_print(count, args);
-	con_gets stdcall(buf, 100);
-	EDX = malloc(TLen);
-	DSDWORD[EDX] = buf;
-	DSDWORD[EDX+4] = TStr;
-	RETURN EDX;
+	buffer = malloc(100);
+	con_gets stdcall(buffer, 100);
+	malloc(sizeStruct);
+	DSDWORD[EAX] = TString;
+	DSDWORD[EAX+4] = buffer;
+	return EAX;
 }
 
-void Init()
+dword lisp_inc(dword args)
 {
-	functions.init(100);
-	
-	/* Console functions */
-	functions.set("print", #std_print);
-	functions.set("input", #std_input);
-	
-	/* String functions */
-	functions.set("str", #std_str);
-	functions.set("len", #std_len);
-	
-	/* System functions */
-	functions.set("exit", #std_exit);
-	
-	/* Math functions */
-	functions.set("+", #std_add);
-	functions.set("-", #std_sub);
-	functions.set("==", #std_cmp);
-	
-	/* Lisp functions */
-	functions.set("set", #std_set);
-	functions.set("get", #std_get);
-	functions.set("type", #std_type);
-	functions.set("sleep", #std_sleep);
-
-	
-	variables.init(100);
+	dword i = 0;
+	dword sum = 0;
+	dword buffer = 0;
+	while(1)
+	{
+		i++;
+		buffer = indexArray(args, i);
+		IF (!DSDWORD[buffer]) break;
+		buffer = DSDWORD[buffer];
+	}
+	return 0;
 }
 
-dword StdCall(dword count, name, args)
+dword lisp_add(dword args)
 {
-	functions.get(name);
-	IF(EAX) RETURN EAX(count, args);
-	RETURN 0;
+	dword i = 0;
+	dword sum = 0;
+	dword buffer = 0;
+	while(1)
+	{
+		i++;
+		buffer = indexArray(args, i);
+		IF (!DSDWORD[buffer]) break;
+		buffer = DSDWORD[buffer];
+		
+		sum += number(buffer);
+	}
+	malloc(sizeStruct);
+	DSDWORD[EAX] = TNumber;
+	DSDWORD[EAX+4] = sum;
+	return EAX;
 }
 
+dword lisp_sub(dword args)
+{
+	dword i = 0;
+	dword sum = 0;
+	while(1)
+	{
+		i++;
+		indexArray(args, i);
+		IF (!DSDWORD[EAX]) break;
+		sum -= number(DSDWORD[EAX]);
+	}
+	malloc(sizeStruct);
+	DSDWORD[EAX] = TNumber;
+	DSDWORD[EAX+4] = sum;
+	return EAX;
+}
+
+dword lisp_cmp(dword args)
+{
+	dword i = 0;
+	dword first = 0;
+	dword buffer = 0;
+	
+	while(1)
+	{
+		i++;
+		buffer = indexArray(args, i);
+		buffer = DSDWORD[buffer];
+		IF (!buffer) break;
+		if (i == 1)
+		{
+			first = buffer;
+		}
+		else 
+		{
+			if (DSDWORD[first+4] != DSDWORD[buffer+4])
+			{
+				malloc(sizeStruct);
+				DSDWORD[EAX] = TSymbol;
+				DSDWORD[EAX+4] = NIL;
+				return EAX;
+			}
+		}
+	}
+	if (i == 1) error_message("*** - EVAL: too few arguments given to =: (=)");
+	malloc(sizeStruct);
+	DSDWORD[EAX] = TSymbol;
+	DSDWORD[EAX+4] = "T";
+	return EAX;
+}
+
+dword lisp_sleep(dword args)
+{
+	dword time = 0;
+	indexArray(args, 1);
+	time = number(DSDWORD[EAX]);
+	EAX = 5;
+	EBX = time;
+	$int 0x40
+	return 0;
+}
