@@ -4,10 +4,8 @@
 #include <string.h>
 #include <stdlib.h>  /* added 08 Oct 31 */
 
-#if defined(__TINYC__)
 #include <conio.h>
-#define printf con_printf  /* siemargl for smaller @tinyC */
-#endif
+
 char *ExplainErr(int code);
 
 
@@ -20,7 +18,7 @@ char *ExplainErr(int code);
 #define IoFileClose(fi)    fclose(fi)
 #define InFileChar(fi)     CfileRead(fi)
 #define OutFileChar(fi,ch) fputc(ch,fi)
-#define ScreenChar(ch)     printf("%c",ch)
+#define ScreenChar(ch)     con_printf("%c",ch)
 #define KeyInChar          (char)getchar()
 #define NeedsEcho          true
 #define BreakTest          Broken
@@ -125,10 +123,22 @@ char Inch(void) {          /* read input character from stdin or file */
       Ouch(ch);         /* echo input to screen (but not output file) */
       return ch;}}
   ch = KeyInChar;                             /* get input from stdin */
-  if (ch == 0) exit(0);  /* Kolibri specific - our window was killed */
 
-  if (ch==13) printf ("\n");
-  if (ch==8) printf ("\b ");
+  // ---Leency 
+  // int __stdcall con_getch(void);
+  // For normal characters function returns ASCII-code. 
+  // For extended characters (eg, Fx, and arrows), first function call 
+  // returns 0 and second call returns the extended code (similar to the 
+  // DOS-function input). Starting from version 7, after closing the 
+  // console window, this function returns 0.
+  if (ch == 0) {
+      ch = (char)con_getch(); 
+      if (ch == 0) exit(0);  /* Kolibri specific - user closed window */
+      return 0;              /* Do not show anything on press extchar */
+  }
+
+  if (ch==13) con_printf ("\n");
+  if (ch==8) con_printf ("\b ");
   if (NeedsEcho) ScreenChar(ch);   /* alternative input may need this */
   if (oFile != NULL) OutFileChar(oFile,ch); /* echo it to output file */
   if (ch == '\n') {
@@ -804,7 +814,8 @@ void Interp(void) {
         InLend = InLine;
         while (true) {               /* read input line characters... */
           ch = Inch();
-          if (ch=='\r') break;                     /* end of the line */
+          if (!ch) continue;
+          else if (ch=='\r') break;                     /* end of the line */
           else if (ch=='\t') {
             Debugging = (Debugging+DEBUGON)&1;  /* maybe toggle debug */
             ch = ' ';}                       /* convert tabs to space */
@@ -1438,9 +1449,8 @@ void StartTinyBasic(char* ILtext) {
 
 int main(int argc, char* argv[]) {
 /*  CONSOLE_INIT("TinyBasic"); */
-#if defined(__TINYC__)
   if (con_init_console_dll()) return 1; // init fail
-#endif
+  con_set_title("TinyBasic");
 
   int nx;
   long int len;
@@ -1459,7 +1469,7 @@ int main(int argc, char* argv[]) {
           if (IL != NULL) len = fread(IL,1,len,tmpFile);
           IL[len] = '\0';
           IoFileClose(tmpFile);}}
-      else printf("Could not open file %s", argv[nx]);}
+      else con_printf("Could not open file %s", argv[nx]);}
     else if (strcmp(argv[nx],"-o")==0 && ++nx<argc)    /* output file */
       oFile = fopen(argv[nx],"w");
     else if (strcmp(argv[nx],"-i")==0 && ++nx<argc)     /* input file */
