@@ -1,6 +1,8 @@
 //Copyright 2007-2020 by Veliant & Leency
 //Asper, lev, Lrz, Barsuk, Nable, hidnplayr...
 
+//Licence restriction: compiling this app for WIN32 is forbidden.
+
 #ifndef AUTOBUILD
 	#include "lang.h--"
 #endif

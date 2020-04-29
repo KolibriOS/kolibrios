@@ -140,7 +140,6 @@ EXIT:
 ;-------------------------------------------------------------------------------
  make_text:
     stdcall string.concatenate, sz_text, params
-    stdcall string.concatenate, sz_sec_line_start, params
     stdcall string.concatenate, current_filename, params
 
     ret

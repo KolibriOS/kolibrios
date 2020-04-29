@@ -364,16 +364,14 @@ ctrl:
 rb 2048
 
  sz_text:
-    db "Netsurf installer                         ", 0
+    db "Downloading Netsurf                  ",10, 0
  sz_quote:
     db "'", 0
- sz_sec_line_start:
-    db 10, "Downloading:",10, 0
  sz_flags:
     db "Ddcpt", 0
 	
  sz_final_text:
-    db "Netsurf installer",10,"Download complete.",10,"Enjoy!",0
+    db "Netsurf download complete.",10,"Enjoy!",0
 
  fi_launch:
     dd	    7, 0, params, 0, 0
