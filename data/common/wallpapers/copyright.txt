@@ -5,6 +5,7 @@ Deink                         GreenToadMX              https://greentoadmx.devia
 Home                          Rand and Robyn Miller    Based on the game "Cosmic Osmo"
 Free Yourself                 Jonathan Besler          https://interfacelift.com/user/86064/jonathan_besler.html
 Unsplash                      Alexander Popov          https://unsplash.com/@5tep5
+KolibriOS Tan                 Viktorya Sidorova
 
 =====Icons====
 
@@ -15,3 +16,4 @@ Flood-it       iMoose	      http://benjamus.deviantart.com
 Dicty	       Susumu Yoshida http://www.mcdodesign.com
 GraphicBench   Wrim Rimbaug   https://www.deviantart.com/wrim
 Pig ($)        Gnome Patate   http://porctrijambiste.e-monsite.com/
+CPU,RAM        omercetin      https://www.deviantart.com/omercetin/art/PixeloPhilia2-166570194
