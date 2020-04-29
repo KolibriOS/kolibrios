@@ -298,21 +298,21 @@ filelist db 'netsurf', 0
          db 'res/throbber/throbber1.png', 0
          db 'res/throbber/throbber7.png', 0
          db 'res/throbber/throbber5.png', 0
-         db 'res/pointers/point.png', 0
-         db 'res/pointers/no_drop.png', 0
-         db 'res/pointers/wait.png', 0
-         db 'res/pointers/up-down.png', 0
-         db 'res/pointers/help.png', 0
-         db 'res/pointers/ru-ld.png', 0
-         db 'res/pointers/menu.png', 0
-         db 'res/pointers/not_allowed.png', 0
-         db 'res/pointers/cross.png', 0
-         db 'res/pointers/default.png', 0
-         db 'res/pointers/caret.png', 0
-         db 'res/pointers/left-right.png', 0
-         db 'res/pointers/lu-rd.png', 0
-         db 'res/pointers/progress.png', 0
-         db 'res/pointers/move.png', 0
+         ; db 'res/pointers/point.png', 0
+         ; db 'res/pointers/no_drop.png', 0
+         ; db 'res/pointers/wait.png', 0
+         ; db 'res/pointers/up-down.png', 0
+         ; db 'res/pointers/help.png', 0
+         ; db 'res/pointers/ru-ld.png', 0
+         ; db 'res/pointers/menu.png', 0
+         ; db 'res/pointers/not_allowed.png', 0
+         ; db 'res/pointers/cross.png', 0
+         ; db 'res/pointers/default.png', 0
+         ; db 'res/pointers/caret.png', 0
+         ; db 'res/pointers/left-right.png', 0
+         ; db 'res/pointers/lu-rd.png', 0
+         ; db 'res/pointers/progress.png', 0
+         ; db 'res/pointers/move.png', 0
          db 'res/icons/back.png', 0
          db 'res/icons/back_g.png', 0
          db 'res/icons/scrollr.png', 0
@@ -368,7 +368,7 @@ rb 2048
  sz_quote:
     db "'", 0
  sz_sec_line_start:
-    db 10, "Fetching:",10, 0
+    db 10, "Downloading:",10, 0
  sz_flags:
     db "Ddcpt", 0
 	

@@ -46,7 +46,7 @@ NOTIFY_RUN:
  ;; CONFIG PBAR
     mov     eax, [ctrl.addr]
     add     eax, NTCTRL_PBAR_MAX
-    mov     dword [eax], 55
+    mov     dword [eax], 39
 
     mov     eax, [ctrl.addr]
     add     eax, NTCTRL_PBAR_CUR
@@ -127,8 +127,6 @@ EXIT:
     mov     eax, [ctrl.addr]
     add     eax, NTCTRL_APPLY_TEXT
     mov     byte [eax], 1
-	
-	mcall 5, 300
 	
 	mcall   70, fileopen
 
