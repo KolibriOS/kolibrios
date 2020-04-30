@@ -85,5 +85,7 @@ int dlclose(void *handle) {
 
 // https://pubs.opengroup.org/onlinepubs/007908799/xsh/dlerror.html
 char *dlerror(void) {
-    return strdup(__error);
+    char *ret = __error ? strdup(__error) : NULL;
+    __error = NULL;
+    return ret;
 }
