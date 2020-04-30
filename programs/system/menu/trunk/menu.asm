@@ -443,6 +443,15 @@ runthread:
 	mov	cx,[esi + y_end]   ; y_end in cx
 	mov	bl,[esi + rows]    ; number of buttons in bl
 	sub	bl,ah	  ; number of btn from bottom
+
+	; Leency: store vars for case when attachement=top 
+	pusha
+	mov [prior_thread_selected_y_end], bl
+	mcall	9,procinfo,-1
+	m2m     [prior_thread_y], dword[procinfo+38]
+	m2m     [prior_thread_h], dword[procinfo+46]
+	popa
+
 	movzx	eax,al
 	mov	[buffer],eax		; thread id in buffer
 	movzx	ebx,bl
@@ -455,6 +464,7 @@ runthread:
 	mov	edi,esi
 	call	backconvert	      ; get number of this process (al)
 	mov	[edx + parent],al   ; store number of parent process
+
 	mov	al,[edx + rows]
 	mov	[edx + cur_sel],al  ; clear current selected element
 	mov	[edx + prev_sel],al ; clear previous selected element
@@ -711,8 +721,31 @@ draw_window:
 	movzx	ecx,[edi + y_end]
 	cmp	[panel_attachment],byte 1
 	je	@f
-;	add	ecx,eax
-;	sub	ecx,BTN_HEIGHT
+	
+	
+	;cmp	ebp,0x000 ; if this is first started thread
+	;je .1            ; then show it at the very top
+	
+	push  ebx eax
+	; if attachement=top 
+	; then NEW_WIN_Y = PRIOR_WIN_Y + PRIOR_WIN_H - ITEM_H + 1 - SEL_ITEM_Y
+
+	mov ecx, [prior_thread_y]
+	add ecx, [prior_thread_h]
+	sub ecx, BTN_HEIGHT
+	inc ecx
+
+	xor eax, eax
+	mov al, [prior_thread_selected_y_end]
+	mov ebx, BTN_HEIGHT
+	mul ebx
+		
+	sub ecx, eax
+
+	mov	[edi + cur_sel],1 ;if attachement=top then set item=1 selected
+	
+	pop eax ebx
+
 	jmp	.1
 ;--------------------------------------
 align 4
@@ -939,6 +972,9 @@ y_working_area:
 sc system_colors
 ;--------------------------------------
 last_key	db ?
+prior_thread_y dd ?
+prior_thread_h dd ?
+prior_thread_selected_y_end db ?
 ;------------------------------------------------------------------------------
 align 4
 menu_data	dd ?
