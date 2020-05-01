@@ -62,7 +62,7 @@ int kfont_char_width[255];
 	void ApplySmooth();
 	int WriteIntoWindow();
 	int WriteIntoWindowCenter();
-	void WriteIntoBuffer();
+	dword WriteIntoBuffer();
 	void ShowBuffer();
 	void ShowBufferPart();
 } kfont;
@@ -241,7 +241,7 @@ inline fastcall dword b32(EAX) { return DSDWORD[EAX]; }
 	}
 }
 
-:void KFONT::WriteIntoBuffer(int x,y,w,h; dword _background, _color; byte font_size; dword text1)
+:dword KFONT::WriteIntoBuffer(int x,y,w,h; dword _background, _color; byte font_size; dword text1)
 {
 	dword new_raw_size;
 	if(!text1)return;
@@ -273,7 +273,7 @@ inline fastcall dword b32(EAX) { return DSDWORD[EAX]; }
 		if(bold)x+=math.ceil(size.pt/17);
 		text1++;
 	}
-	return;
+	return x;
 }
 
 :int KFONT::WriteIntoWindow(int x,y; dword _background, _color; byte font_size; dword text1)

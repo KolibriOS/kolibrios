@@ -39,9 +39,7 @@ bool _tag::parse_params()
 	bool result = false;
 	if (!name) return false;
 	if (debug_mode) {
-		debugln(" ");
-		debugln(" ");
-		debug("tag: "); debugln(#name);
+		debug("\n\ntag: "); debugln(#name);
 		debug("params: "); debugln(#params);
 		debugln(" ");
 	}
