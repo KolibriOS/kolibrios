@@ -2,7 +2,7 @@
  * Template C-- program
 */
 
-#define MEMSIZE 4096*10
+#define MEMSIZE 1024*40
 
 #include "../lib/io.h"
 #include "../lib/gui.h"
