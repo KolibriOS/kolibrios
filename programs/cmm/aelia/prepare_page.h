@@ -137,50 +137,6 @@ struct _text {
 	dword width;
 };
 
-/*
-dword line_break;
-byte char_holder;
-
-if (ESBYTE[buf.pos]==0x0A) {
-	if (style.pre) {
-		draw.line_break();
-		continue;
-	}
-}
-
-while (get_label_len(text.start) + draw.x + 30 > list.w)
-{
-	for (line_break=tag.start-1; line_break>text.start; line_break--;)
-	{
-		char_holder = ESBYTE[line_break]; //set line end
-		ESBYTE[line_break] = '\0';
-		if (get_label_len(text.start) + draw.x + 30 <= list.w) break;
-		ESBYTE[line_break] = char_holder; //restore line
-	}
-	if (draw_on) {
-		if (style.a) {
-			link.add(draw.x,draw.y + size_pt_change,get_label_len(text.start),list.item_h,text.start," ");
-			label_draw_bar(draw.x, draw.y+kfont.size.pt+1, get_label_len(text.start), style.color);
-		}
-		WriteTextIntoBuf(draw.x, draw.y, style.color, text.start);
-	}
-	draw.x+=char_width[' '];
-	ESBYTE[line_break] = char_holder; //restore line
-	text.start = line_break;
-	draw.line_break();
-}
-if (draw_on) {
-	if (style.a) {
-		link.add(draw.x,draw.y + size_pt_change,get_label_len(text.start),list.item_h,text.start," ");	
-		label_draw_bar(draw.x, draw.y+kfont.size.pt+1, get_label_len(text.start), style.color);
-	}
-	WriteTextIntoBuf(draw.x, draw.y, style.color, text.start);
-}
-draw.x += char_width[' '];
-draw.x += get_label_len(text.start);
-*/
-
-
 /*========================================================
 =                                                        =
 =                         DOM                            =
@@ -275,15 +231,38 @@ void _dom::set_style()
 	*/
 }
 
-void _dom::apply_text()
+void _dom::apply_text(dword _intext)
 {
-	if (kfont.size.height) && (style.body) {
-		kfont.bold = style.bold;
-		canvas.write_text(draw.x, draw.y, style.color, text.start);
+	int label_w;
+	int textlen = strlen(_intext);
+	dword curline = malloc(textlen);
+
+	if (!textlen) || (!style.body) return;
+
+	do {
+		strlcpy(curline, _intext, textlen);
+		label_w = kfont.get_label_width(curline);
+		textlen--;
+	} while (label_w > list.w - draw.x - 10) && (textlen);
+
+	kfont.bold = style.bold;
+
+	if (kfont.size.height) {
+		canvas.write_text(draw.x, draw.y, style.color, curline);
 		if (style.a) {
-			canvas.draw_hor_line(draw.x, draw.y + list.item_h-2, kfont.get_label_width(text.start), style.color); 
-			link.add(draw.x, draw.y, kfont.get_label_width(text.start), list.item_h, text.start, "http://kolibrios.org");
-		}
+			canvas.draw_hor_line(draw.x, draw.y + list.item_h-2, 
+				kfont.get_label_width(curline), style.color); 
+			link.add(draw.x, draw.y, kfont.get_label_width(curline), 
+				list.item_h, curline, "http://kolibrios.org");
+		}		
+	}
+	draw.x += label_w;
+	strcpy(curline, _intext + textlen);
+
+	if (textlen) && (textlen < strlen(_intext)-1) {
+		draw.x = 0;
+		draw.y += list.item_h;
+		apply_text(_intext + textlen);
 	}
 }
 
@@ -300,7 +279,7 @@ void _dom::parse()
 			tag.start = i+1;
 			text.end = i-1;
 			ESBYTE[i] = '\0';
-			apply_text();
+			apply_text(text.start);
 		}
 		if (ESBYTE[i]=='>') {
 			tag.end = i-1;
@@ -338,50 +317,9 @@ void PreparePage()
 
 	kfont.size.height = 0;
 
-	if ( strstri(io.buffer_data, "<html") == -1 ) ParseTxt(); else dom.parse();
+	dom.parse();
 
 	kfont.ApplySmooth();
 
 	DrawPage();
-}
-
-void ParseTxt()
-{
-_canvas canvas;
-byte ch, zeroch=0;
-dword bufoff, buflen, line_start, srch_pos;
-int stroka_y=5, line_length=0;
-
-	line_start=io.buffer_data;
-	buflen = strlen(io.buffer_data) + io.buffer_data;
-	for (bufoff=io.buffer_data; bufoff<buflen; bufoff++)
-	{
-		ch = ESBYTE[bufoff];
-		line_length += kfont_char_width[ch];
-		if (line_length>=list.w-30) || (ch==10) {
-			srch_pos = bufoff;
-			loop()
-			{
-				if (__isWhite(ESBYTE[srch_pos])) { bufoff=srch_pos+1; break; } //normal word-break
-				if (srch_pos == line_start) break; //no white space found in whole line
-				srch_pos--;
-			}
-			if (kfont.size.height) {
-				ESBYTE[bufoff] >< zeroch; //set line end
-				canvas.write_text(8, stroka_y, 0x000000, line_start);
-				ESBYTE[bufoff] >< zeroch; //restore line
-			}
-			stroka_y += list.item_h;
-			line_start = bufoff;
-			line_length = 0;
-		}
-	}
-	if (!kfont.size.height) {
-		list.count = stroka_y/list.item_h+3;
-		if (list.count < list.visible) list.count = list.visible;
-		kfont.size.height = list.count+5*list.item_h;
-		kfont.raw_size = 0;
-		ParseTxt();
-	} 
-	else canvas.write_text(8, stroka_y, 0x000000, line_start);
 }

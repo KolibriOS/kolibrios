@@ -1,4 +1,4 @@
-#define MEMSIZE 4096*100
+#define MEMSIZE 1024*400
 
 #include "../lib/gui.h"
 #include "../lib/kfont.h"
@@ -94,7 +94,7 @@ void main()
 	OpenDialog_init stdcall (#o_dialog);
 	LoadIniSettings();
 	kfont.init(DEFAULT_FONT);
-	Libimg_LoadImage(#skin, abspath("toolbar.png"));
+	Libimg_LoadImage(#skin, abspath("atoolbar.png"));
 	list.no_selection = true;
 	SetEventMask(EVM_REDRAW + EVM_KEY + EVM_BUTTON + EVM_MOUSE + EVM_MOUSE_FILTER + EVM_STACK);
 	loop()

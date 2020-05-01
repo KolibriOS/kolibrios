@@ -1,13 +1,14 @@
 
 struct _canvas
 {
-	void write_text();
+	dword write_text();
 	void draw_hor_line();
 };
 
-void _canvas::write_text(int _x, _y; dword _text_col, _text_off) 
+dword _canvas::write_text(int _x, _y; dword _text_col, _text_off) 
 {
 	char error_message[128];
+	dword new_x;
 
 	if (_x > list.w) {
 		sprintf(#error_message, "ERROR: canvas.x overflow: H %d X %d", kfont.size.height, _x);
@@ -18,8 +19,9 @@ void _canvas::write_text(int _x, _y; dword _text_col, _text_off)
 		debugln(#error_message);
 		return;
 	}
-	kfont.WriteIntoBuffer(_x, _y, list.w, kfont.size.height, 0xFFFFFF, _text_col, kfont.size.pt, _text_off);
+	new_x = kfont.WriteIntoBuffer(_x, _y, list.w, kfont.size.height, 0xFFFFFF, _text_col, kfont.size.pt, _text_off);
 	if (_y/list.item_h-list.first==list.visible) DrawPage();
+	return new_x;
 }
 
 
