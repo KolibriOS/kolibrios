@@ -1,5 +1,5 @@
 format ELF
-include 'proc32.inc'
+include '../proc32.inc'
 section '.text' executable
 
 public _ksys_cofflib_load

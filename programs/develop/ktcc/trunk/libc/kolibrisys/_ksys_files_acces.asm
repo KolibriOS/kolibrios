@@ -2,7 +2,7 @@ format ELF
 
 section '.text' executable
 
-include 'proc32.inc'
+include '../proc32.inc'
 public _ksys_get_filesize
 public _ksys_readfile
 public _ksys_rewritefile

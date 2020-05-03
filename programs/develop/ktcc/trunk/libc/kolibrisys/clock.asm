@@ -1,6 +1,6 @@
 format ELF
 
-include "proc32.inc"
+include "../proc32.inc"
 
 section '.text' executable
 public _ksys_get_system_clock
