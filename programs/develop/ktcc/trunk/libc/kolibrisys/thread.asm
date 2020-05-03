@@ -1,13 +1,13 @@
 format ELF
 include "public_stdcall.inc"
 section '.text' executable
-extrn malloc
+extrn sysmalloc
 public_stdcall _ksys_start_thread,12
 ;arg1 - proc
 ;arg2 - stacksize
 ;arg3 - pid
   push  dword [esp+8]
-  call  malloc
+  call  sysmalloc
   test  eax,eax
   jz    .no_mem
   push  ebx
