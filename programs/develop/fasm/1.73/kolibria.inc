@@ -52,3 +52,5 @@ force@alignment equ
 include 'kolibri/structs/kernel.inc'
 include 'kolibri/structs/box_lib.inc'
 include 'kolibri/structs/proc_lib.inc'
+include 'kolibri/structs/coords.inc'
+include 'kolibri/structs/aces.inc'

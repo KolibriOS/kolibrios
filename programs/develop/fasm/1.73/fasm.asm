@@ -26,15 +26,8 @@ appname equ 'flat assembler '
 ;-------------------------------------------------
 ; INCLUDES
 ;-------------------------------------------------
-lang equ ru
 include 'kolibria.inc'
 include 'fasm.inc'
-
-MAX_PATH       = 100
-struc path name:?& {
-        .:
-	db name
-	rb MAX_PATH-$+. }
 ;-------------------------------------------------
 ; CODE
 ;-------------------------------------------------
@@ -119,8 +112,8 @@ parse_params:
 	ret
 ;-------------------------------------------------
 START:	    ; Start of execution
-	mov	edi, fileinfos
-	mov	ecx, (fileinfos_end-fileinfos)/4
+	mov	edi, file_IO_slots
+	mov	ecx, (file_IO_end-file_IO_slots)/4
 	or	eax, -1
 	rep	stosd
 	mcall	SF_SYS_MISC,SSF_HEAP_INIT
@@ -222,12 +215,12 @@ accept_systemcolors:
 draw_window:
 	cmp	dword[PROCESS_INFO.client_box.width],WIN_MIN_W
 	jge	@f
-	mcall   67,-1,-1,WIN_MIN_W+20,-1
+	mcall	SF_CHANGE_WINDOW,-1,-1,WIN_MIN_W+20,-1
 	ret
 @@:
 	cmp	dword[PROCESS_INFO.client_box.height],WIN_MIN_H
 	jge	@f
-	mcall   67,-1,-1,-1,WIN_MIN_H+50
+	mcall	SF_CHANGE_WINDOW,-1,-1,-1,WIN_MIN_H+50
 	ret
 @@:
 	mpack	ebx,[PROCESS_INFO.client_box.width],RIGHT_BTN_W
@@ -258,7 +251,7 @@ draw_window:
 	add	ebx,LINE_H
 	mcallb	SF_DRAW_TEXT,ebx,ecx,s_debug
 	
-	;MAGIC1	= 6*(text.line_size-1)+14 ;MAGIC???? MAGIC??????????? GO FYSLF.
+	;MAGIC1 = 6*(text.line_size-1)+14 ;MAGIC???? MAGIC??????????? GO FYSLF.
 	;mpack	ebx,MAGIC1+6,1+ 14/2-3+ 14*0
 	;mov	esi,[PROCESS_INFO.client_box.width]
 	;sub	esi,MAGIC1*2+6+3
@@ -553,9 +546,6 @@ include 'core/messages.inc'
 ;---------------------------------------------------------------------
 ; INITIALIZED DATA
 ;---------------------------------------------------------------------
-;match =en,lang {include 'lang/en.inc'}
-;match =ru,lang {include 'lang/ru.inc'}
-
 include 'traslations.inc'
 
 edit1 EDIT_BOX 153, 72, 3,	    0xffffff, 0xA4C4E4, 0x80ff, 0, 0x10000000,(outfile-infile-1), infile, mouse_dd, 0, 11,11
@@ -673,8 +663,8 @@ dbgfilename	rb MAX_PATH+4
 sc		system_colors
 sc_prev 	system_colors
 max_handles = 8
-fileinfos	rb (4+20+MAX_PATH)*max_handles
-fileinfos_end:
+file_IO_slots	    rb (4+sizeof.FILEIO+MAX_PATH)*max_handles;(4+20+MAX_PATH)*max_handles
+file_IO_end:
 PROCESS_INFO	process_information
 
 bytes_count dd ?

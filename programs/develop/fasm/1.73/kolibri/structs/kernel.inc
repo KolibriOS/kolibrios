@@ -38,13 +38,24 @@ struct system_colors
 ends
 
 struct FILEIO
-  cmd		 dd ?
-  offset	 dd ?
-  flags 	 dd ?
-  count 	 dd ?
-  buffer	 dd ?
-  ;              db ?
-  ;name          dd ?
+	cmd		dd ?
+	offset		dd ?
+	union
+		flags	dd ?
+		offshigh dd ?
+	ends
+	count		dd ?
+	buffer		dd ?
+ends
+label FILEIO.filesize dword at -4
+
+struct namedFILEIO FILEIO
+	name	db MAX_PATH dup (?)
+ends
+
+struct fullFILEIO FILEIO
+	name	db ?
+	lpname	dd ?
 ends
 
 struct FILEDATE

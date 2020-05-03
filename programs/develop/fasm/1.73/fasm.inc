@@ -7,16 +7,16 @@ ID_OPENDLG_BTN	  = 5
 NORMAL_MODE    = 8
 CONSOLE_MODE   = 32
 
+APP_MEMORY     = 0x00800000
+
 DEFAULT_WIN_W = 450
 DEFAULT_WIN_H = 350
-
-WIN_MIN_W = 350
-WIN_MIN_H = 300
-
+WIN_MIN_W     = 400
+WIN_MIN_H     = 350
 LINE_H = 25
 RIGHT_BTN_W = 80
 
-APP_MEMORY     = 0x00800000
+MAX_PATH       = 100
 
 macro mmov reg,a1,a2 {
  mov reg,(a1) shl 16 + (a2)
@@ -30,4 +30,7 @@ macro msub reg,a1,a2 {
  sub reg,(a1) shl 16 + (a2)
 }
 
-
+struc path name:?& {
+        .:
+	db name
+	rb MAX_PATH-$+. }

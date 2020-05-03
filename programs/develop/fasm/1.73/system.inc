@@ -2,10 +2,6 @@
 ; Copyright (c) 1999-2020, Tomasz Grysztar
 ; All rights reserved.
 
-
-
-
-
 init_memory:
 
 ;        mov ecx, 16*1024*1024
@@ -31,7 +27,7 @@ init_memory:
 	add	eax,[additional_memory]
 	mov	[additional_memory_end],eax
 	mov	[memory_start],eax
-	ret
+	retn
 
 exit_program:
 	cmp	[_mode],NORMAL_MODE
@@ -48,7 +44,7 @@ make_timestamp:
 	mcall	SF_SYSTEM_GET,SSF_TIME_COUNT
 	imul	eax,10
 	pop	ebx
-	ret
+	retn
 
 symbol_dump:
 
@@ -159,7 +155,7 @@ symbol_dump:
 	call	close
 	pop	edi
 
-	ret
+	retn
 
 get_environment_variable:
 	mov	ecx,[memory_end]
@@ -174,144 +170,128 @@ get_environment_variable:
 	rep	movsb
   .finish:
 ;       stc
-	ret
+	retn
 
 alloc_handle:
+; in:
+; out: ebx = file handle
+; on error: return to caller of caller with cf set
+; preserves: esi, edi
 	call	make_fullpaths
-	mov	ebx, fileinfos+4
-@@:
-	cmp	dword [ebx], -1
-	jz	.found
+	mov	ebx, file_IO_slots+4
+	jmp	check_file_IO_slot
+      next_file_IO_slot:
 	add	ebx, 4+20+MAX_PATH
-	cmp	ebx, fileinfos_end
-	jb	@b
-	stc
-	ret
-.found:
-	and	dword [ebx+4], 0
-	and	dword [ebx+8], 0
+	cmp	ebx, file_IO_end
+	jae	send_error_to_caller_of_caller
+      check_file_IO_slot:
+	cmp	[ebx+FILEIO.cmd], -1
+	jnz	next_file_IO_slot
+	and	[ebx+FILEIO.offset], 0
+	and	[ebx+FILEIO.flags], 0
+      adapt_path:
 	push	esi edi ecx
 	mov	esi, fullpath_open
-	lea	edi, [ebx+20]
+	lea	edi, [ebx+namedFILEIO.name]
 	mov	ecx, MAX_PATH
-	rep	movsb
+      copy_path:
+	lodsb
+	cmp	al,'\'
+	jne	path_char_ok
+	mov	al,'/'
+      path_char_ok:
+	stosb
+	or	al,al
+	loopnz	copy_path
 	pop	ecx edi esi
-	ret	; CF=0
+	jz	adapt_path.done
+      send_error_to_caller_of_caller:
+	stc
+	pop	eax
+      adapt_path.done:
+	ret
 
 create:
+; in:
+; out: ebx = file handle, cf set on error
+; preserves: esi, edi
 	call	alloc_handle
-	jc	.ret
-	and	dword [ebx-4], 0
-	mov	dword [ebx], 2
-.ret:
-	ret
+	and	[ebx+FILEIO.filesize], 0
+	mov	[ebx+FILEIO.cmd], SSF_CREATE_FILE
+	retn
 
 
 open:
-;        call    make_fullpaths
-
-;;       mov     eax,fullpath_open
-;;       DEBUGF  '"%s"\n',eax
-
-;        mov     dword[file_info_open+8],-1
-;        mcall   58,file_info_open
-;        or      eax,eax                 ; found
-;        jz      @f
-;        cmp     eax,6
-;        jne     file_error
-;@@: mov [filesize],ebx
-;        clc
-;        ret
-;file_error:
-;        stc
-;        ret
-
+; in:
+; out: ebx = file handle, cf set on error
+; preserves: esi, edi
 	call	alloc_handle
-	jc	.ret
-	mov	dword [ebx], SSF_GET_INFO
-	and	dword [ebx+12], 0
-	mov	dword [ebx+16], fileinfo
-	mov	eax, SF_FILE
+	mov	[ebx+FILEIO.cmd], SSF_GET_INFO
+	and	[ebx+FILEIO.count], 0
+	mov	[ebx+FILEIO.buffer], fileinfo
 	push	ebx
-	mcall
+	mcall	SF_FILE
 	pop	ebx
 	test	eax, eax
-	jnz	.fail
+	jnz	fail_close
 	mov	eax, dword[fileinfo.size]
-	mov	[ebx-4], eax
-	and	dword [ebx], 0
-.ret:
-	ret
-.fail:
-	or	dword [ebx], -1 ; close handle
+	mov	[ebx+FILEIO.filesize], eax
+	and	[ebx+FILEIO.cmd], SSF_READ_FILE
+	retn
+
+fail_close:
 	stc
-	ret
-
-read:
-;          pusha
-;          mov     edi,edx
-;          mov     esi,[filepos]
-;          add     esi,0x20000
-;          cld
-;          rep     movsb
-;          popa
-;;         ret
-
-	mov	[ebx+12], ecx
-	mov	[ebx+16], edx
-	push	ebx
-	mov	eax, SF_FILE
-	mcall
-	xchg	eax, [esp]
-	add	[eax+4], ebx
-	adc	[eax+8], dword 0
-	mov	ebx, eax
-	pop	eax
-	test	eax, eax
-	jz	.ok
-	cmp	eax, 6
-	jz	.ok
-	stc
-.ok:
-	ret
-
 close:
-	or	dword [ebx], -1
-	ret
-
-
-; ebx file handle
-; ecx count of bytes to write
-; edx pointer to buffer
+; in: ebx = file handle
+; preserves: ebx, esi, edi, cf
+	mov	[ebx+FILEIO.cmd], -1 ; close handle
+	retn
 write:
-;        pusha
-;        mov     [file_info_write+8],ecx
-;        mov     [file_info_write+12],edx
-;        mov     [filesize],edx
-;        mov     eax,58
-;        mov     ebx,file_info_write
-;        mcall
-;        popa
-;        ret
-
-	mov	[ebx+12], ecx
-	mov	[ebx+16], edx
+; in: ebx = file handle, edx - data, ecx = number of bytes
+; out: cf set on error
+; preserves: ebx, esi, edi
+	call	read_write
+	mov	[ebx+FILEIO.cmd], SSF_WRITE_FILE
+	jmp	read_write_check_S_OK
+read:
+; in: ebx = file handle, edx - buffer, ecx = number of bytes
+; out: cf set on error
+; preserves: ebx, esi, edi
+	call	read_write
+	cmp	eax, 6
+	jz	read_write_OK
+      read_write_check_S_OK:
+	test	eax, eax
+	jz	read_write_OK
+	stc
+	retn
+      read_write:
+	mov	[ebx+FILEIO.count], ecx
+	mov	[ebx+FILEIO.buffer], edx
 	push	ebx
-	mov	eax, SF_FILE
-	mcall
+	mcall	SF_FILE
 	xchg	eax, [esp]
-	add	[eax+4], ebx
-	adc	[eax+8], dword 0
+	add	[eax+FILEIO.offset], ebx
+	adc	[eax+FILEIO.offshigh], 0
 	mov	ebx, eax
 	pop	eax
-	mov	byte [ebx], 3
-	cmp	eax, 1
-	cmc
-	ret
+      read_write_OK:
+	retn
+
 
 make_fullpaths:
 	pusha
 	push	edx
+	mov	esi,edx
+	mov	ecx, MAX_PATH
+      copy_edxpath:
+	lodsb
+	cmp	al,'\'
+	jne	edxpath_char_ok
+	mov	byte[esi-1],'/'
+      edxpath_char_ok:
+	or	al,al
+	loopnz	copy_edxpath
 
 	mov	esi,path	      ; open
 ;       DEBUGF  "   '%s'",esi
@@ -325,6 +305,8 @@ make_fullpaths:
 
 	cmp	byte[esi],'/'
 	jne	@f
+	cmp	byte[esi],'\'
+	jne	@f
 	mov	edi,fullpath_open
 
     @@:
@@ -332,10 +314,6 @@ make_fullpaths:
 	stosb
 	cmp	al,0
 	jne	@b
-;       mov     ecx,12
-;       cld
-;       rep     movsb
-;       mov     byte[edi],0
 
 	mov	esi,path	      ; write
 	mov	edi,fullpath_write
@@ -348,6 +326,8 @@ make_fullpaths:
 
 	cmp	byte[esi],'/'
 	jne	@f
+	cmp	byte[esi],'\'
+	jne	@f
 	mov	edi,fullpath_write
 
     @@:
@@ -355,10 +335,6 @@ make_fullpaths:
 	stosb
 	cmp	al,0
 	jne	@b
-;        mov     ecx,12
-;        cld
-;        rep     movsb
-;        mov     byte[edi],0
 
 	mov	esi,path	      ; start
 	mov	edi,file_io_start.path
@@ -367,10 +343,11 @@ make_fullpaths:
 	movsb
 	cmp  byte[esi],0;' '
 	jne  newc3
-;        mov  esi,[esp]
 	pop	esi
 
 	cmp	byte[esi],'/'
+	jne	@f
+	cmp	byte[esi],'\'
 	jne	@f
 	mov	edi,file_io_start.path
 
@@ -379,77 +356,73 @@ make_fullpaths:
 	stosb
 	cmp	al,0
 	jne	@b
-;        mov  ecx,12
-;        cld
-;        rep  movsb
-;        mov  byte[edi],0
-
-;        add  esp,4
 	popa
-	ret
-
-
-
+	retn
 lseek:
-	cmp	al,0
+; in: ebx = file handle, al = method, edx = delta offset
+; out: cf set on error
+; preserves: ebx, esi, edi
+	cmp	al,FILE_BEGIN
 	jnz	@f
-	and	dword [ebx+4], 0
-	and	dword [ebx+8], 0
-    @@: cmp	al,2
+	and	[ebx+FILEIO.offset], 0
+	jmp	.common
+    @@: cmp	al,FILE_END
 	jnz	@f
-	mov	eax, [ebx-4]
-	mov	[ebx+4], eax
-	and	dword [ebx+8], 0
-    @@: add	dword [ebx+4], edx
-	adc	dword [ebx+8], 0
-	ret
+	mov	eax, [ebx+FILEIO.filesize]
+	mov	[ebx+FILEIO.offset], eax
+	jmp	.common
+    @@:
+    .common:
+	add	[ebx+FILEIO.offset], edx
+	retn
 
 display_character:
 	pusha
 	cmp	[_mode],NORMAL_MODE
 	jne	@f
-	cmp	dl,13
+	cmp	al,$D
 	jz	dc2
-	cmp	dl,0xa
+	cmp	al,$A
 	jnz	dc1
 	and	[textxy],0x0000FFFF
 	add	[textxy], 8 shl 16 and 0xFFFF0000 + 18
-dc2:
-  popa
-	ret
+	popa
+	retn
 dc1:
-  mov eax,[textxy]
+	mov	[dc],al
+	mov	eax,[textxy]
 	cmp	ax,word[bottom_right]
 	ja	dc2
 	shr	eax,16
 	cmp	ax,word[bottom_right+2]
 	ja	dc2
-	mov	[dc],dl
-	mcall	SF_DRAW_TEXT,[textxy],0x10000000,dc,1
+	mov	ecx,[sc.work_text]
+	or	ecx,$10000000
+	mcall	SF_DRAW_TEXT,[textxy],,dc,1
 	add	[textxy],0x00080000
+dc2:
 	popa
-	ret
+	retn
 @@:
-  mov	eax,SF_BOARD
-	mov	ebx,1
-	mov	cl,dl
-	mcall
+	mov	cl,al
+	mcall	SF_BOARD,SSF_DEBUG_WRITE
 	popa
-	ret
+	retn
 
 
 display_string:
-	pusha
-@@:
-  cmp	byte[esi],0
+; in:
+;  esi - ASCIIZ string
+; preserves: ebx, esi
+	push	esi
+@@:	lodsb
+	test	al,al
 	je	@f
-	mov	dl,[esi]
 	call	display_character
-	add	esi,1
 	jmp	@b
 @@:
-  popa
-	ret
+	pop	esi
+	retn
 
 display_number:
 	push	ebx
@@ -467,8 +440,7 @@ display_loop:
 	jz	digit_ok
 	not	bl
 display_digit:
-	mov	dl,al
-	add	dl,30h
+	add	al,'0'
 	push	ebx ecx
 	call	display_character
 	pop	ecx ebx
@@ -482,7 +454,7 @@ digit_ok:
 	or	ecx,ecx
 	jnz	display_loop
 	pop	ebx
-	ret
+	retn
 
 display_user_messages:
 ;    push   [skinh]
@@ -502,18 +474,22 @@ make_line_break:
 	mov	esi,crlf
 	call	display_string
 line_break_ok:
-	ret
+	retn
 
 display_block:
-	pusha
-@@: mov dl,[esi]
+; in:
+;  esi - string
+;  ecx = string length
+	push	esi
+@@:	lodsb
 	call	display_character
-	inc	esi
 	loop	@b
-	popa
-	ret
+	pop	esi
+	retn
 
 fatal_error:
+; no return, trashes stack
+
 	mov	esi,error_prefix
 	call	display_string
 	pop	esi
@@ -527,7 +503,7 @@ fatal_error:
 
 assembler_error:
 	call	display_user_messages
-	push	dword 0
+	push	0
 	mov	ebx,[current_line]
 get_error_lines:
 	push	ebx
@@ -549,12 +525,12 @@ display_error_line:
 	mov	eax,[ebx+4]
 	and	eax,7FFFFFFFh
 	call	display_number
-	mov	dl,']'
+	mov	al,']'
 	call	display_character
 	pop	esi
 	cmp	ebx,esi
 	je	line_number_ok
-	mov	dl,20h
+	mov	al,' '
 	call	display_character
 	push	esi
 	mov	esi,[esi]
@@ -567,7 +543,7 @@ display_error_line:
 	mov	eax,[esi+4]
 	and	eax,7FFFFFFFh
 	call	display_number
-	mov	dl,']'
+	mov	al,']'
 	call	display_character
 line_number_ok:
 	mov	esi,line_data_start
@@ -594,11 +570,11 @@ line_number_ok:
 	mov	esi,[additional_memory]
 get_line_data:
 	mov	al,[esi]
-	cmp	al,0Ah
+	cmp	al,$A
 	je	display_line_data
-	cmp	al,0Dh
+	cmp	al,$D
 	je	display_line_data
-	cmp	al,1Ah
+	cmp	al,$1A
 	je	display_line_data
 	or	al,al
 	jz	display_line_data
