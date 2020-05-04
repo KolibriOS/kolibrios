@@ -56,8 +56,13 @@ start:
 	copy_path fn_syntax_dir,sys_path,file_name,0 ;берем путь к папке с файлами синтаксиса
 	mcall SF_FILE,tree_file_struct
 
-	cmp ebx,0
-	jle .end_dir_init
+	cmp ebx,2
+	jg @f
+		notify_window_run file_name ;сообщение если не удалось открыть файлы
+		jmp .end_dir_init
+	@@:
+	;cmp ebx,0
+	;jle .end_dir_init
 		mov eax,dir_mem+32+40
 		mov ecx,ebx
 		@@:
@@ -353,7 +358,7 @@ get_wnd_in_focus:
 	;@@:
 	ret
 
-hed db 'TextEditor syntax file converter 29.01.19',0 ;подпись окна
+hed db 'TextEditor syntax file converter 06.02.20',0 ;подпись окна
 conv_tabl rb 128 ; таблица для конвертирования scan-кода в ascii-код
 
 txt_load_f db 'Загр. файл',0

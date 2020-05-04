@@ -1,7 +1,7 @@
 <html>
 <head>
 <title>библиотека для работы с 2d буферами</title>
-<meta http-equiv="content-type" content="text/html; charset=WINDOWS-1251">
+<meta charset="WINDOWS-1251">
 <style>
 body
 {
@@ -53,26 +53,47 @@ table { font-size: 15px; }
 <li><a href="#fun">Функции</a><br>
 <ul>
 <li><a href="#f_init">lib_init</a></li>
-<li><a href="#f_b_create">buf2d_create</a></li>
-<li><a href="#f_b_create_f">buf2d_create_f_img</a></li>
-<li><a href="#f_b_clear">buf2d_clear</a></li>
-<li><a href="#f_b_draw">buf2d_draw</a></li>
-<li><a href="#f_b_delete">buf2d_delete</a></li>
-<li><a href="#f_b_rotate">buf2d_rotate</a></li>
-<li><a href="#f_b_resize">buf2d_resize</a></li>
-<li><a href="#f_b_line">buf2d_line</a></li>
-<li><a href="#f_b_line_sm">buf2d_line_sm</a></li>
-<li><a href="#f_b_rect">buf2d_rect_by_size</a></li>
-<li><a href="#f_b_fil_rect">buf2d_filled_rect_by_size</a></li>
-<li><a href="#f_b_circle">buf2d_circle</a></li>
-<li><a href="#f_b_hdiv2">buf2d_img_hdiv2</a></li>
-<li><a href="#f_b_wdiv2">buf2d_img_wdiv2</a></li>
+<li><a href="#f_create">buf2d_create</a></li>
+<li><a href="#f_create_f">buf2d_create_f_img</a></li>
+<li><a href="#f_clear">buf2d_clear</a></li>
+<li><a href="#f_draw">buf2d_draw</a></li>
+<li><a href="#f_delete">buf2d_delete</a></li>
+<li><a href="#f_rotate">buf2d_rotate</a></li>
+<li><a href="#f_resize">buf2d_resize</a></li>
+<li><a href="#f_line">buf2d_line</a></li>
+<li><a href="#f_line_sm">buf2d_line_sm</a></li>
+<li><a href="#f_rect">buf2d_rect_by_size</a></li>
+<li><a href="#f_fil_rect">buf2d_filled_rect_by_size</a></li>
+<li><a href="#f_circle">buf2d_circle</a></li>
+<li><a href="#f_hdiv2">buf2d_img_hdiv2</a></li>
+<li><a href="#f_wdiv2">buf2d_img_wdiv2</a></li>
+<li>buf2d_conv_24_to_8</li>
+<li>buf2d_conv_24_to_32</li>
+<li><a href="#f_bit_blt">buf2d_bit_blt</a></li>
+<li>buf2d_bit_blt_transp</li>
+<li>buf2d_bit_blt_alpha</li>
+<li>buf2d_curve_bezier</li>
+<li>buf2d_convert_text_matrix</li>
+<li>buf2d_draw_text</li>
 <li><a href="#f_c_color">buf2d_crop_color</a></li>
+<li>buf2d_offset_h</li>
+<li>buf2d_flood_fill</li>
+<li>buf2d_set_pixel</li>
+<li>buf2d_get_pixel</li>
 <li><a href="#f_flip_h">buf2d_flip_h</a></li>
 <li><a href="#f_flip_v">buf2d_flip_v</a></li>
 <li><a href="#f_filter_d">buf2d_filter_dither</a></li>
 
 <li><a href="#f_v_brush_c">buf2d_vox_brush_create</a></li>
+<li>buf2d_vox_brush_delete</li>
+<li>buf2d_vox_obj_draw_1g</li>
+<li>buf2d_vox_obj_get_img_w_3g</li>
+<li>buf2d_vox_obj_get_img_h_3g</li>
+<li>buf2d_vox_obj_draw_3g</li>
+<li>buf2d_vox_obj_draw_3g_scaled</li>
+<li>buf2d_vox_obj_draw_3g_shadows</li>
+<li>buf2d_vox_obj_draw_pl</li>
+<li>buf2d_vox_obj_draw_pl_scaled</li>
 </ul>
 </li>
 <li><a href="#const">Константы</a></li>
@@ -119,34 +140,41 @@ buf_0:
 <h4><a name="f_init">lib_init</a></h4>
 <p>Эта функция получает указатели на функции работы с памятью, вызыватся должна при загрузке библиотеки. Можете использовать макрос <b>@use_library_mem</b>, для ее автоматической настройки.</p>
 
-<h4><a name="f_b_create">buf2d_create</a></h4>
+<h4><a name="f_create">buf2d_create</a></h4>
 <p>Создает буфер и чистит его фоновым цветом. Пример:</p>
 <pre>stdcall [buf2d_create], buf_0</pre>
 <p>где buf_0 - структура буфера.</p>
 <p>Параметры для создания буфера берутся из структуры.</p>
 
-<h4><a name="f_b_create_f">buf2d_create_f_img</a></h4>
+<h4><a name="f_create_f">buf2d_create_f_img</a></h4>
 <p>Создает буфер на основе изображения в формате <b>rgb</b>.</p>
+<pre>buf2d_w equ dword[edi+8] ;ширина буфера
+buf2d_h equ dword[edi+12] ;высота буфера
+mov edi,buf_i0
+mov buf2d_w,320
+mov buf2d_h,240
+stdcall [buf2d_create_f_img], edi,[open_file_img]</pre>
+<p>где buf_0 - структура буфера, open_file_img - указатель на данные изображения в формате <b>rgb</b>, 320 - ширина изображения в пикселях, 240 - высота изображения в пикселях.</p>
 
-<h4><a name="f_b_clear">buf2d_clear</a></h4>
+<h4><a name="f_clear">buf2d_clear</a></h4>
 <p>Чистит буфер указаным цветом. Пример:</p>
 <pre>buf2d_color equ dword[edi+16] ;цвет фона буфера
 mov edi,buf_0
 stdcall [buf2d_clear], edi, buf2d_color ;очищаем экран фоновым цветом</pre>
 <p>где buf_0 - структура буфера.</p>
 
-<h4><a name="f_b_draw">buf2d_draw</a></h4>
+<h4><a name="f_draw">buf2d_draw</a></h4>
 <p>Рисует буфер на экране (работает через системную ф. 7). Рисуются только буфера с глубиной цвета 24 бита.</p>
 
-<h4><a name="f_b_delete">buf2d_delete</a></h4>
+<h4><a name="f_delete">buf2d_delete</a></h4>
 <p>Освобождает память занятую изображением буфера.</p>
 
-<h4><a name="f_b_rotate">buf2d_rotate</a></h4>
+<h4><a name="f_rotate">buf2d_rotate</a></h4>
 <p>Поворачивает буфер на 90 или 180 градусов. Пример:</p>
 <pre>stdcall [buf2d_rotate], buf_0, 90</pre>
 <p>где buf_0 - структура буфера (может быть 8, 24 или 32 битным); 90 - угол поворота.</p>
 
-<h4><a name="f_b_resize">buf2d_resize</a></h4>
+<h4><a name="f_resize">buf2d_resize</a></h4>
 <p>Изменяет размеры буфера или изображения в буфере. Пока поддерживаются буфера с глубиной цвета 24 бита.</p>
 <p>Пример 1:</p>
 <pre>stdcall [buf2d_resize], buf_0, 0,300, 1 ;изменяем высоту буфера</pre>
@@ -156,34 +184,34 @@ stdcall [buf2d_clear], edi, buf2d_color ;очищаем экран фоновым цветом</pre>
 <p>где 250 - новая ширина буфера; 0 - новая высота буфера (0 означает не изменять размер); 2 - параметр указывающий что изменяем изображение в буфере.</p>
 <p>Если последний параметр равен 2 то размер буфера остается неизменным и функция работает аналогично так как и функции <b>buf2d_img_hdiv2</b>, <b>buf2d_img_wdiv2</b>. Разница в том, что buf2d_resize может сжимать изображения до заданного размера, а не ровно в 2 раза.</p>
 
-<h4><a name="f_b_line">buf2d_line</a></h4>
+<h4><a name="f_line">buf2d_line</a></h4>
 <p>Рисует в буфере линию с заданным цветом и координатами. Пример:</p>
 <pre>stdcall [buf2d_line], buf_0, 30,10, 110,70, 0xffff00 ;рисуем линию</pre>
 <p>где buf_0 - структура буфера в котором будет рисоваться линия; 30, 10, 110, 70 - координаты линии; 0xffff00 - цвет линии.</p>
 <p>Для рисования сглаженной линии используйте <b>buf2d_line_sm</b>.</p>
 
-<h4><a name="f_b_line_sm">buf2d_line_sm</a></h4>
+<h4><a name="f_line_sm">buf2d_line_sm</a></h4>
 <p>Рисует в буфере линию принимает такиже параметры как и функция <b>buf2d_line</b>. Данная функция рисует сглаженную линию более красивую чем <b>buf2d_line</b>, но работает медленнее неё за счет вычисления смешанных цветов фона и самой линии.</p>
 
-<h4><a name="f_b_rect">buf2d_rect_by_size</a></h4>
+<h4><a name="f_rect">buf2d_rect_by_size</a></h4>
 <p>Рисует прямоугольную рамку, по двум координатам, 2-я координата задана по размеру. Если размеры отрицательные рамка рисуется в обратном направлении.</p>
 <pre>stdcall [buf2d_rect_by_size], buf_0, 10,10,150,100, 0x8080</pre>
 <p>где buf_0 - структура буфера в котором будет рисоваться прямоугольник; 10, 10 - координаты левого верхнего угла (при отрицательных размерах координата правого нижнего); 150, 100 - размер прямоугольника; 0x8080 - цвет линии.</p>
 
-<h4><a name="f_b_fil_rect">buf2d_filled_rect_by_size</a></h4>
+<h4><a name="f_fil_rect">buf2d_filled_rect_by_size</a></h4>
 <p>Рисует закрашенный прямоугольник, по двум координатам, 2-я координата задана по размеру. Если размер задать 1*1, то будет нарисована точка размером в 1 пиксель, т.е. размер прямоугольника в пикселях будет равен указанному. Если размеры отрицательные прямоугольник рисуется в обратном направлении.</p>
 <pre>stdcall [buf2d_rect_by_size], buf_0, 10,10,150,100, 0x8080</pre>
 <p>где buf_0 - структура буфера в котором будет рисоваться прямоугольник; 10, 10 - координаты левого верхнего угла (при отрицательных размерах координата правого нижнего); 150, 100 - размер прямоугольника; 0x8080 - цвет прямоуголика.</p>
 
-<h4><a name="f_b_circle">buf2d_circle</a></h4>
+<h4><a name="f_circle">buf2d_circle</a></h4>
 <p>Рисует в буфере окружность с заданным цветом и радиусом. Пример:</p>
 <pre>stdcall [buf2d_circle], buf_0, 25, 70, 15, 0xff0000</pre>
 <p>где buf_0 - структура буфера в котором будет рисоваться окружность; 25, 70 - координаты центра; 15 - радиус; 0xff0000 - цвет.</p>
 
-<h4><a name="f_b_hdiv2">buf2d_img_hdiv2</a></h4>
+<h4><a name="f_hdiv2">buf2d_img_hdiv2</a></h4>
 <p>Сжимает изображение в буфере по высоте в 2 раза, при этом размер самого буфера не уменьшается.</p>
 
-<h4><a name="f_b_wdiv2">buf2d_img_wdiv2</a></h4>
+<h4><a name="f_wdiv2">buf2d_img_wdiv2</a></h4>
 <p>Сжимает изображение в буфере по ширине в 2 раза, при этом размер самого буфера не уменьшается.</p>
 
 <h4>buf2d_conv_24_to_8</h4>
@@ -198,7 +226,7 @@ stdcall [buf2d_clear], edi, buf2d_color ;очищаем экран фоновым цветом</pre>
 <p>До выполнения функции буфер buf_a должен быть 24 битным, а буфер buf_b - 8 битным.
  После выполнения функции буфер buf_a станет 32 битным, буфер buf_b не изменится.</p>
 
-<h4>buf2d_bit_blt</h4>
+<h4><a name="f_bit_blt">buf2d_bit_blt</a></h4>
 <p>Рисует в буфере изображение из другого буфера в указанных координатах. Буфер в котором рисут (приемник) должен быть 24 битным, а тот который рисуется (источник) 24 или 32 битным. Если буфер источник 32 битный, то его прозрачность при рисовании не учитывается, для учета прозрачности используется функция <i>buf2d_bit_blt_transp</i>. Пример:</p>
 <pre>stdcall [buf2d_bit_blt], buf_0, 50,30, buf_1 ;прорисовка среднего скина</pre>
 <p>где buf_0 - структура буфера в котором будет рисоваться изображение (приемник);
@@ -446,8 +474,8 @@ import_buf2d_lib:
 <p>29.07.10 - добавлены функции buf2d_crop_color и buf2d_offset_h;
  исправления в функции buf2d_delete.</p>
 <p>30.09.10 - добавлена функция buf2d_rect_by_size.</p>
-<p>04.10.10 - добавлена функция buf2d_filled_rect_by_size, доработана функция buf_bit_blt_alpha.</p>
-<p>07.10.10 - доработана функция buf_bit_blt (при попытке нарисовать изображение за пределами правого края буфера приложение вызвавшее функцию падало).</p>
+<p>04.10.10 - добавлена функция buf2d_filled_rect_by_size, доработана функция buf2d_bit_blt_alpha.</p>
+<p>07.10.10 - доработана функция buf2d_bit_blt (при попытке нарисовать изображение за пределами правого края буфера приложение вызвавшее функцию падало).</p>
 <p>11.10.10 - исправлено задание цветов в некоторых функциях, красный и синий цвета поменял местами. Теперь цвета совпадают с сисемными функциями.</p>
 <p>02.11.10 - добавлена функция buf2d_flood_fill.</p>
 <p>22.12.10 - изменено имя функции buf2d_cruve_bezier на buf2d_curve_bezier.</p>
@@ -461,10 +489,11 @@ import_buf2d_lib:
 <p>12.06.12 - добавлены функции для рисования воксельной графики.</p>
 <p>11.08.12 - функции для сжатия изображений buf2d_img_hdiv2 и buf2d_img_wdiv2 работают с 32 битными буферами.</p>
 <p>01.10.12 - добавлена функция поворота изображений на 90 и 180 градусов buf2d_rotate.</p>
-<p>15.11.12 - добавлена функция отражения 24 битных изображений по вертикали buf_flip_v, исправления в функции buf2d_img_hdiv2.</p>
+<p>15.11.12 - добавлена функция отражения 24 битных изображений по вертикали buf2d_flip_v, исправления в функции buf2d_img_hdiv2.</p>
 <p>14.12.12 - добавлена функция наложения фильтра buf2d_filter_dither.</p>
 <p>24.12.12 - добавлены 2 новых алгоритма в функцию наложения фильтра buf2d_filter_dither.</p>
-<p>30.01.15 - добавлена поддержка 32 битных буферов в функцию buf_flip_v, добавлена функция отражения по горизонтали buf_flip_h.</p>
+<p>30.01.15 - добавлена поддержка 32 битных буферов в функцию buf2d_flip_v, добавлена функция отражения по горизонтали buf2d_flip_h.</p>
 <p>09.02.16 - изменена функция buf2d_resize добавлен дополнительный параметр, который указывает менять ли изображение или размеры буфера.</p>
+<p>04.05.20 - функция buf2d_bit_blt может принимать отрицательные координаты в позиции копируемого буфера.</p>
 </body>
 </html>

@@ -267,8 +267,12 @@ align 4
 ;conv_tabl rb 128 ;таблица для конвертирования scan-кода в ascii-код
 buf db BUF_SIZE dup(0) ;буфер для копирования | вставки
 
-capt_header db 'macro wo txt,f1,p1,p2,p3{',13
-	db '@@: db txt',13,'rb @b+40-$',13,'dd f1+0',13,'db p1',13,'dw p2+0',13,'db p3',13,'}',13
+capt_header db 'macro wo txt,lf1,p1,p2,p3{',13
+	db '@@: db txt',13,'rb @b+40-$',13
+	db 'if lf1 eq',13,'dd 0',13 ;если ссылка f1 пустая
+	db 'else if lf1 eq 0',13,'dd 0',13 ;если ссылка f1 равна 0
+	db 'else',13,'dd f1.#lf1-f1',13,'end if',13 ;если ссылка f1 задана меткой
+	db 'db p1',13,'dw p2+0',13,'db p3',13,'}',13
 	db 'count_colors_text dd (text-color_wnd_text)/4',13
 	db 'count_key_words dd (f1-text)/48',13,0
 col_1 db 'color_cursor dd ',0	;+ 98 цвет курсора
@@ -286,9 +290,7 @@ capt_end_word db 39,'>,',0
 capt_type_dd db 9,'dd ',0
 capt_lbl_f1 db 'f1: db 0',13,0
 capt_end_word_f1 db 39,',0',13,0
-capt_calc_f1 db 'f1'
 capt_point db '.',0
-capt_lbl_f1_use db '-f1',0
 capt_null db '0',0
 
 KM_SHIFT equ 0x00010000

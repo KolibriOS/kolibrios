@@ -10,9 +10,14 @@ include '../../../../programs/load_img.inc'
 include '../trunk/vox_draw.inc'
 include '../trunk/vox_rotate.inc'
 include '../trunk/str.inc'
+include 'lang.inc'
 
 @use_library_mem mem.Alloc,mem.Free,mem.ReAlloc,dll.Load
-caption db 'Voxel mover 22.03.18',0 ;подпись окна
+if lang eq ru
+caption db 'Перемещение вокселей 04.05.20',0 ;подпись окна
+else
+caption db 'Voxel mover 04.05.20',0
+end if
 
 run_file_70 FileInfoBlock
 
@@ -518,80 +523,98 @@ button:
 		stdcall but_new_file, [open_file_vox]
 		call draw_objects
 		call draw_pok
+		jmp still
 	@@:
 	cmp ah,4
 	jne @f
 		call but_open_file
+		jmp still
 	@@:
 	cmp ah,5
 	jne @f
 		call but_save_file
+		jmp still
 	@@:
 	cmp ah,6
 	jne @f
 		call but_zoom_p
+		jmp still
 	@@:
 	cmp ah,7
 	jne @f
 		call but_zoom_m
+		jmp still
 	@@:
 	cmp ah,8
 	jne @f
 		call but_3
+		jmp still
 	@@:
 	cmp ah,9
 	jne @f
 		call but_4
+		jmp still
 	@@:
 	cmp ah,10
 	jne @f
 		call but_plane_inc
+		jmp still
 	@@:
 	cmp ah,11
 	jne @f
 		call but_plane_dec
+		jmp still
 	@@:
 	cmp ah,12
 	jne @f
 		call but_light
+		jmp still
 	@@:
 	cmp ah,13
 	jne @f
 		call but_rend_2_2
+		jmp still
 	@@:
 	cmp ah,14
 	jne @f
 		call but_move
+		jmp still
 	@@:
 	cmp ah,15
 	jne @f
 		dec dword[mov_x]
 		call draw_pok
+		jmp still
 	@@:
 	cmp ah,16
 	jne @f
 		inc dword[mov_x]
 		call draw_pok
+		jmp still
 	@@:
 	cmp ah,17
 	jne @f
 		dec dword[mov_y]
 		call draw_pok
+		jmp still
 	@@:
 	cmp ah,18
 	jne @f
 		inc dword[mov_y]
 		call draw_pok
+		jmp still
 	@@:
 	cmp ah,19
 	jne @f
 		dec dword[mov_z]
 		call draw_pok
+		jmp still
 	@@:
 	cmp ah,20
 	jne @f
 		inc dword[mov_z]
 		call draw_pok
+		jmp still
 	@@:
 	cmp ah,1
 	jne still
@@ -633,8 +656,8 @@ moved_file_vox dd 0
 
 align 4
 but_open_file:
-pushad
 	copy_path open_dialog_name,communication_area_default_path,file_name,0
+pushad
 	mov [OpenDialog_data.type],0
 	stdcall [OpenDialog_Start],OpenDialog_data
 	cmp [OpenDialog_data.status],2
@@ -676,8 +699,8 @@ popad
 
 align 4
 but_save_file:
-	pushad
 		copy_path open_dialog_name,communication_area_default_path,file_name,0
+	pushad		
 		mov [OpenDialog_data.type],1
 		stdcall [OpenDialog_Start],OpenDialog_data
 		cmp [OpenDialog_data.status],2
@@ -1133,12 +1156,21 @@ dd 1 shl 30,1 shl 30,1 shl 30,1 shl 30,1 shl 30
 dd 1 shl 31,1 shl 30,1 shl 30,1 shl 30,1 shl 31
 rd 999 ;32*32-25
 
+if lang eq ru
 txt_zoom db 'Масштаб:',0
 txt_curor: db 'Курсор: '
 .size: rb 10
 txt_n_plane db 'Сечение:',0
 txt_color db 'Цвет:',0
 txt_mov_offs: db 'Смещение: '
+else
+txt_zoom db 'Scale:',0
+txt_curor: db 'Cursor: '
+.size: rb 10
+txt_n_plane db 'Section:',0
+txt_color db 'Color:',0
+txt_mov_offs: db 'Offset: '
+end if
 .size: rb 30
 txt_mull db '*',0
 txt_space db ' ',0
@@ -1292,29 +1324,38 @@ db 'VOX',0
 db 0
 
 
-
-head_f_i:
-head_f_l db 'Системная ошибка',0
-
 system_dir_0 db '/sys/lib/'
 lib_name_0 db 'proc_lib.obj',0
-err_message_found_lib_0 db 'Не найдена библиотека ',39,'proc_lib.obj',39,0
-err_message_import_0 db 'Ошибка при импорте библиотеки ',39,'proc_lib.obj',39,0
-
 system_dir_1 db '/sys/lib/'
 lib_name_1 db 'libimg.obj',0
-err_message_found_lib_1 db 'Не найдена библиотека ',39,'libimg.obj',39,0
-err_message_import_1 db 'Ошибка при импорте библиотеки ',39,'libimg.obj',39,0
-
 system_dir_2 db '/sys/lib/'
 lib_name_2 db 'buf2d.obj',0
-err_msg_found_lib_2 db 'Не найдена библиотека ',39,'buf2d.obj',39,0
-err_msg_import_2 db 'Ошибка при импорте библиотеки ',39,'buf2d',39,0
-
 system_dir_3 db '/sys/lib/'
 lib_name_3 db 'libini.obj',0
-err_msg_found_lib_3 db 'Не найдена библиотека ',39,'libini.obj',39,0
-err_msg_import_3 db 'Ошибка при импорте библиотеки ',39,'libini',39,0
+
+align 4
+head_f_i:
+if lang eq ru
+head_f_l db '"Системная ошибка',0
+err_message_found_lib_0 db 'Не найдена библиотека ',39,'proc_lib.obj',39,'" -tE',0
+err_message_import_0 db 'Ошибка при импорте библиотеки ',39,'proc_lib.obj',39,'" -tE',0
+err_message_found_lib_1 db 'Не найдена библиотека ',39,'libimg.obj',39,'" -tE',0
+err_message_import_1 db 'Ошибка при импорте библиотеки ',39,'libimg.obj',39,'" -tE',0
+err_msg_found_lib_2 db 'Не найдена библиотека ',39,'buf2d.obj',39,'" -tE',0
+err_msg_import_2 db 'Ошибка при импорте библиотеки ',39,'buf2d',39,'" -tE',0
+err_msg_found_lib_3 db 'Не найдена библиотека ',39,'libini.obj',39,'" -tE',0
+err_msg_import_3 db 'Ошибка при импорте библиотеки ',39,'libini',39,'" -tE',0
+else
+head_f_l db '"System error',0
+err_message_found_lib_0 db 'Sorry I cannot found library ',39,'proc_lib.obj',39,'" -tE',0
+err_message_import_0 db 'Error on load import library ',39,'proc_lib.obj',39,'" -tE',0
+err_message_found_lib_1 db 'Sorry I cannot found library ',39,'libimg.obj',39,'" -tE',0
+err_message_import_1 db 'Error on load import library ',39,'libimg.obj',39,'" -tE',0
+err_msg_found_lib_2 db 'Sorry I cannot found library ',39,'buf2d.obj',39,'" -tE',0
+err_msg_import_2 db 'Error on load import library ',39,'buf2d',39,'" -tE',0
+err_msg_found_lib_3 db 'Sorry I cannot found library ',39,'libini.obj',39,'" -tE',0
+err_msg_import_3 db 'Error on load import library ',39,'libini',39,'" -tE',0
+end if
 
 l_libs_start:
 	lib0 l_libs lib_name_0, sys_path, file_name, system_dir_0,\
@@ -1469,7 +1510,7 @@ dd 0,0
 	aini_get_int   db 'ini_get_int',0
 	aini_get_color db 'ini_get_color',0
 
-mouse_dd dd 0x0
+mouse_dd dd 0
 sc system_colors 
 
 align 16

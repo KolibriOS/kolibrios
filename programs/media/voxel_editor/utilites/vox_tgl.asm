@@ -10,9 +10,14 @@ include '../../../../programs/load_img.inc'
 include '../../../../programs/develop/libraries/TinyGL/asm_fork/opengl_const.inc'
 include 'vox_3d.inc'
 include '../trunk/str.inc'
+include 'lang.inc'
 
 @use_library_mem mem.Alloc,mem.Free,mem.ReAlloc,dll.Load
-caption db 'Voxel viewer 22.03.18',0 ;подпись окна
+if lang eq ru
+caption db 'Просмотр вокселей 04.05.20',0 ;подпись окна
+else
+caption db 'Voxel viewer 04.05.20',0
+end if
 
 3d_wnd_l equ   5 ;отступ для tinygl буфера слева
 3d_wnd_t equ  30 ;отступ для tinygl буфера сверху
@@ -355,42 +360,52 @@ button:
 	cmp ah,3
 	jne @f
 		call but_new_file
+		jmp still
 	@@:
 	cmp ah,4
 	jne @f
 		call but_open_file
+		jmp still
 	@@:
 	cmp ah,5
 	jne @f
 		call but_save_file
+		jmp still
 	@@:
 	cmp ah,6
 	jne @f
 		call but_zoom_p
+		jmp still
 	@@:
 	cmp ah,7
 	jne @f
 		call but_zoom_m
+		jmp still
 	@@:
 	cmp ah,8
 	jne @f
-		call but_3
+		call but_light
+		jmp still
 	@@:
 	cmp ah,9
 	jne @f
 		call but_4
+		jmp still
 	@@:
 	cmp ah,10
 	jne @f
 		call but_5
+		jmp still
 	@@:
 	cmp ah,11
 	jne @f
-		call but_6
+		call but_info
+		jmp still
 	@@:
 	cmp ah,12
 	jne @f
 		call but_draw_cadr
+		jmp still
 	@@:
 	cmp ah,1
 	jne still
@@ -417,8 +432,8 @@ v_zoom dd 0
 
 align 4
 but_open_file:
-pushad
 	copy_path open_dialog_name,communication_area_default_path,file_name,0
+pushad
 	mov [OpenDialog_data.type],0
 	stdcall [OpenDialog_Start],OpenDialog_data
 	cmp [OpenDialog_data.status],2
@@ -564,8 +579,8 @@ draw_cadr:
 
 align 4
 but_save_file:
-	pushad
 	copy_path open_dialog_name,communication_area_default_path,file_name,0
+	pushad
 	mov [OpenDialog_data.type],1
 	stdcall [OpenDialog_Start],OpenDialog_data
 	cmp [OpenDialog_data.status],2
@@ -618,7 +633,7 @@ proc but_zoom_m uses eax
 endp
 
 align 4
-proc but_3 uses eax ebx ecx edx
+proc but_light uses eax ebx ecx edx
 	xor word[opt_light],1
 	cmp word[opt_light],0
 	je @f
@@ -652,7 +667,7 @@ proc but_5 uses eax ebx ecx edx
 endp
 
 align 4
-proc but_6 uses eax ebx ecx edx edi
+proc but_info uses eax ebx ecx edx edi
 	;вычисление статистики по вокселям
 	mov eax,[open_file_ogl]
 	or eax,eax
@@ -707,10 +722,17 @@ endp
 
 align 4
 txt_stat_m1:
+if lang eq ru
 	db 'Статистика',13,10,'Вокселей: '
 .v: rb 70
 txt_stat_m2:
 	db 13,10,'Отображаемых граней: '
+else
+	db 'Statistics',13,10,'Voxels: '
+.v: rb 70
+txt_stat_m2:
+	db 13,10,'Facets displayed: '
+end if
 .v: rb 20
 
 align 4
@@ -842,28 +864,38 @@ db 0
 
 
 
-head_f_i:
-head_f_l db 'Системная ошибка',0
-
 system_dir_0 db '/sys/lib/'
 lib_name_0 db 'proc_lib.obj',0
-err_message_found_lib_0 db 'Не найдена библиотека ',39,'proc_lib.obj',39,0
-err_message_import_0 db 'Ошибка при импорте библиотеки ',39,'proc_lib.obj',39,0
-
 system_dir_1 db '/sys/lib/'
 lib_name_1 db 'libimg.obj',0
-err_message_found_lib_1 db 'Не найдена библиотека ',39,'libimg.obj',39,0
-err_message_import_1 db 'Ошибка при импорте библиотеки ',39,'libimg.obj',39,0
-
 system_dir_2 db '/sys/lib/'
 lib_name_2 db 'buf2d.obj',0
-err_msg_found_lib_2 db 'Не найдена библиотека ',39,'buf2d.obj',39,0
-err_msg_import_2 db 'Ошибка при импорте библиотеки ',39,'buf2d',39,0
-
 system_dir_3 db '/sys/lib/'
 lib_name_3 db 'tinygl.obj',0
-err_msg_found_lib_3 db 'Не найдена библиотека ',39,'tinygl.obj',39,0
-err_msg_import_3 db 'Ошибка при импорте библиотеки ',39,'tinygl',39,0
+
+align 4
+head_f_i:
+if lang eq ru
+head_f_l db '"Системная ошибка',0
+err_message_found_lib_0 db 'Не найдена библиотека ',39,'proc_lib.obj',39,'" -tE',0
+err_message_import_0 db 'Ошибка при импорте библиотеки ',39,'proc_lib.obj',39,'" -tE',0
+err_message_found_lib_1 db 'Не найдена библиотека ',39,'libimg.obj',39,'" -tE',0
+err_message_import_1 db 'Ошибка при импорте библиотеки ',39,'libimg.obj',39,'" -tE',0
+err_msg_found_lib_2 db 'Не найдена библиотека ',39,'buf2d.obj',39,'" -tE',0
+err_msg_import_2 db 'Ошибка при импорте библиотеки ',39,'buf2d',39,'" -tE',0
+err_msg_found_lib_3 db 'Не найдена библиотека ',39,'tinygl.obj',39,'" -tE',0
+err_msg_import_3 db 'Ошибка при импорте библиотеки ',39,'tinygl',39,'" -tE',0
+else
+head_f_l db '"System error',0
+err_message_found_lib_0 db 'Sorry I cannot found library ',39,'proc_lib.obj',39,'" -tE',0
+err_message_import_0 db 'Error on load import library ',39,'proc_lib.obj',39,'" -tE',0
+err_message_found_lib_1 db 'Sorry I cannot found library ',39,'libimg.obj',39,'" -tE',0
+err_message_import_1 db 'Error on load import library ',39,'libimg.obj',39,'" -tE',0
+err_msg_found_lib_2 db 'Sorry I cannot found library ',39,'buf2d.obj',39,'" -tE',0
+err_msg_import_2 db 'Error on load import library ',39,'buf2d',39,'" -tE',0
+err_msg_found_lib_3 db 'Sorry I cannot found library ',39,'tinygl.obj',39,'" -tE',0
+err_msg_import_3 db 'Error on load import library ',39,'tinygl',39,'" -tE',0
+end if
 
 l_libs_start:
 	lib_0 l_libs lib_name_0, sys_path, file_name, system_dir_0,\

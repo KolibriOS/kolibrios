@@ -246,9 +246,7 @@ proc print_word, text:dword, index:dword
 
 	cmp dword[ecx+TexColViv.f1],0
 	je @f
-		stdcall str_cat,edi,capt_calc_f1
 		stdcall str_cat_value,edi,[index]
-		stdcall str_cat,edi,capt_lbl_f1_use
 	@@:
 
 	stdcall str_len,edi
@@ -322,6 +320,8 @@ proc code_string, text:dword, out_text:dword
 	stdcall str_len,esi
 	mov ecx,eax
 	mov edi,[out_text]
+	or ecx,ecx
+	jz .end_copy ;если строка со справкой пустая
 
 	.copy:
 		mov al,byte[esi]
