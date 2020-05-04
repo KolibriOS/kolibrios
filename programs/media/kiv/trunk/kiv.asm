@@ -1146,7 +1146,7 @@ proc draw_scale_button
         mov     [scale_button_letter], 'W'
 ;        cmp     [scale_mode], LIBIMG_SCALE_FIT_MIN
 @@:
-        mcall   4, , 0x800100ff, scale_button_letter
+        mcall   4, , 0x800000ff, scale_button_letter
         popad
         ret
 endp
@@ -2378,7 +2378,7 @@ palette:
     file 'kivicons.bmp':0x36,offbits-0x36
 buttons:
     file 'kivicons.bmp':offbits
-repeat 11
+repeat 10
 y = %-1
 z = 20-%
 repeat numimages*5
