@@ -7,9 +7,6 @@ read_folder_1_error:
 initiation_error:
     mov   [error_pointer],ini_file_name
     jmp   error_window
-buttons_error:
-    mov   [error_pointer],buttons_file_name
-    jmp   error_window
 icon_error:
     mov   [error_pointer],icons_file_name
 error_window:

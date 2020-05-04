@@ -272,3 +272,5 @@ sysopen:
         dd  7,0,start_parameter,0,0
         db  '/sys/@open',0
 ;---------------------------------------------------------------------
+buttons_file_data file 'images/buttons.raw'
+;icons_file_data	file 'icons.bmp'

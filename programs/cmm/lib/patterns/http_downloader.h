@@ -51,7 +51,7 @@ void _http::receive()
 
  }
 
-bool _http::handle_redirect()
+:bool _http::handle_redirect()
 {
 	dword redirect;
     http_find_header_field stdcall (transfer, "location\0");
@@ -152,7 +152,7 @@ bool DOWNLOADER::MonitorProgress()
 =====================================*/
 
 
-int check_is_the_adress_local(dword _in)
+:int check_is_the_adress_local(dword _in)
 {
 	if (ESBYTE[_in]!='/') return false;
 	_in++;
@@ -168,7 +168,7 @@ int check_is_the_adress_local(dword _in)
 	return false;
 }
 
-int check_is_the_url_absolute(dword _in)
+:int check_is_the_url_absolute(dword _in)
 {
 	if(!strncmp(_in,"ftp:",4)) return true;
 	if(!strncmp(_in,"http:",5)) return true;
@@ -181,7 +181,7 @@ int check_is_the_url_absolute(dword _in)
 	return false;
 }
 
-void get_absolute_url(dword _rez, _base, _new)
+:void get_absolute_url(dword _rez, _base, _new)
 {
 	int i;
 	//case: ./valera.html

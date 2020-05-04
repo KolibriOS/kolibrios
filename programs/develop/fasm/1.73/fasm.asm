@@ -252,15 +252,15 @@ draw_window:
 	mcallb	SF_DRAW_TEXT,ebx,ecx,s_debug
 	
 	;MAGIC1 = 6*(text.line_size-1)+14 ;MAGIC???? MAGIC??????????? GO FYSLF.
-	;mpack	ebx,MAGIC1+6,1+ 14/2-3+ 14*0
-	;mov	esi,[PROCESS_INFO.client_box.width]
-	;sub	esi,MAGIC1*2+6+3
-	;mov	eax,esi
-	;mov	cl,6
-	;div	cl
-	;cmp	al,MAX_PATH
-	;jbe	@f
-	;mov	al,MAX_PATH
+	;mpack  ebx,MAGIC1+6,1+ 14/2-3+ 14*0
+	;mov    esi,[PROCESS_INFO.client_box.width]
+	;sub    esi,MAGIC1*2+6+3
+	;mov    eax,esi
+	;mov    cl,6
+	;div    cl
+	;cmp    al,MAX_PATH
+	;jbe    @f
+	;mov    al,MAX_PATH
 ;@@:
 	movzx	esi,al
 
@@ -452,7 +452,7 @@ CUI_START:
 	
 	call	init_memory
 	
-	call	make_timestamp
+	call	get_tickcount
 	mov	[start_time],eax
 	
 	call	preprocessor
@@ -470,7 +470,7 @@ CUI_START:
 	call	display_number
 	mov	esi,_passes_suffix
 	call	display_string
-	call	make_timestamp
+	call	get_tickcount
 	sub	eax,[start_time]
 	xor	edx,edx
 	mov	ebx,100

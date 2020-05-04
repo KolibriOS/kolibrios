@@ -927,11 +927,11 @@ inline void MEMSETD(EDI,ECX,EAX)
 }
 
 :replace_char(dword in_str, char from_char, to_char, int length) {
-	int i;
-	for (i=0; i<length; i++) {
-		if (ESBYTE[in_str+i] == from_char) ESBYTE[in_str+i] = to_char;
+	dword max = in_str + length;
+	while (in_str < max) {
+		if (ESBYTE[in_str] == from_char) ESBYTE[in_str] = to_char;
+		in_str++;
 	}
-	ESBYTE[in_str+length]=0;
 }
 
 #endif

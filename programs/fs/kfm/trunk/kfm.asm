@@ -69,7 +69,6 @@ START:
     mov   [read_folder_name],ax
     mov   [read_folder_1_name],ax
     call  load_icon_and_convert_to_img
-    call  load_buttons_and_convert_to_img
     call  load_initiation_file
     call  add_memory_for_folders
     call  device_detect_f70
@@ -254,20 +253,6 @@ load_icon_and_convert_to_img:
     add   eax,mem
     call  prepare_load_data_1
     jnz   icon_error
-    call  convert_bmp_to_img
-    call  sub_application_memory
-    ret
-;---------------------------------------------------------------------
-load_buttons_and_convert_to_img:
-    mov   ebx,buttons_file_name
-    call  prepare_load_data
-    jnz   buttons_error
-    mov   eax,[appl_memory]
-    mov   [buttons_img_start],eax
-    call  prepare_load_data_2
-    add   eax,[buttons_img_start]
-    call  prepare_load_data_1
-    jnz   buttons_error
     call  convert_bmp_to_img
     call  sub_application_memory
     ret

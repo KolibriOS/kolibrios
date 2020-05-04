@@ -322,11 +322,18 @@
 {
 	dword n;
 	dword inc(dword _addition);
+	dword set(dword _new_val);
 };
 
 :dword incn::inc(dword _addition)
 {
-	n+=_addition;
+	n += _addition;
+	return n;
+}
+
+:dword incn::set(dword _new_val)
+{
+	n =_new_val;
 	return n;
 }
 

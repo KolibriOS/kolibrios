@@ -179,7 +179,6 @@ struct proc_info
 
 :void GetProcessInfo(dword _process_struct_pointer, _process_id)
 {
-	skin_height = GetSkinHeight();
 	EAX = 9;
 	EBX = _process_struct_pointer;
 	ECX = _process_id;

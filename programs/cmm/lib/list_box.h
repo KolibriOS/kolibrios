@@ -26,7 +26,9 @@ struct llist
 	int KeyDown(); 
 	int KeyUp(); 
 	int KeyHome(); 
+	int KeyHomeHor(); 
 	int KeyEnd(); 
+	int KeyEndHor(); 
 	int KeyPgDown(); 
 	int KeyPgUp(); 
 	int KeyLeft(); 
@@ -124,6 +126,13 @@ struct llist
 
 :int llist::ProcessKey(dword key)
 {
+	if (horisontal_selelection) switch(key)
+	{
+		case SCAN_CODE_LEFT:  return KeyLeft();
+		case SCAN_CODE_RIGHT: return KeyRight();
+		case SCAN_CODE_HOME:  return KeyHomeHor();
+		case SCAN_CODE_END:   return KeyEndHor();
+	}
 	switch(key)
 	{
 		case SCAN_CODE_DOWN: return KeyDown();
@@ -132,11 +141,6 @@ struct llist
 		case SCAN_CODE_END:  return KeyEnd();
 		case SCAN_CODE_PGUP: return KeyPgUp();
 		case SCAN_CODE_PGDN: return KeyPgDown();
-	}
-	if (horisontal_selelection) switch(key)
-	{
-		case SCAN_CODE_LEFT:  return KeyLeft();
-		case SCAN_CODE_RIGHT: return KeyRight();
 	}
 	return 0;
 }
@@ -164,8 +168,8 @@ struct llist
 	if (cur_y < first) || (cur_y >= first + visible)
 	{
 		first = cur_y;
-		CheckDoesValuesOkey();
 	}
+	CheckDoesValuesOkey();
 	return 1;
 }
 
@@ -193,6 +197,21 @@ struct llist
 		first = cur_y;
 		CheckDoesValuesOkey();
 	}
+	return 1;
+}
+
+:int llist::KeyHomeHor()
+{
+	if (cur_x==0) return 0;
+	cur_x = 0;
+	return 1;
+}
+
+:int llist::KeyEndHor()
+{
+	if (cur_x==column_max) return 0;
+	cur_x = column_max;
+	CheckDoesValuesOkey();
 	return 1;
 }
 
@@ -237,6 +256,7 @@ struct llist
 	if (visible + first > count) first = count - visible;
 	if (first < 0) first = 0;
 	if (cur_y >= count) cur_y = count - 1;
+	if (cur_x >= column_max) cur_x = column_max;
 	if (cur_y < 0) cur_y = 0;
 	if (cur_x < 0) cur_x = 0;
 }

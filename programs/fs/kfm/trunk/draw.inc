@@ -8,72 +8,32 @@ draw_buttons_panel:
 	sub	ebx,9
 	add	ebx,5 shl 16
 	mcall	13,,,0xffffff
+	
 	mov	edx,15 shl 16+20
 	add	edx,[skin_high]
-	pusha
-	call	.calculate_button
-	mcall	,,,150
-	popa
-	mcall	7,[buttons_img_start],<16,16>
-	add	edx,26 shl 16
-	add	ebx,16*16*3
-	pusha
-	call	.calculate_button
-	mcall	,,,151
-	popa
+	mcall	7,buttons_file_data,<198,16>
+	
+	mov ecx, 20
+	add ecx, [skin_high]
+	shl ecx, 16
+	add ecx, 16
+	mcall	8,<15,16>,,150+0x40000000
+	
+_new_but:
+	add	ebx,26 shl 16
+	inc edx
 	mcall
-	add	edx,26 shl 16
-	add	ebx,16*16*3
-	pusha
-	call	.calculate_button
-	mcall	,,,152
-	popa
-	mcall
-	add	edx,26 shl 16
-	add	ebx,16*16*3
-	pusha
-	call	.calculate_button
-	mcall	,,,153
-	popa
-	mcall
-	add	edx,26 shl 16
-	add	ebx,16*16*3
-	pusha
-	call	.calculate_button
-	mcall	,,,154
-	popa
-	mcall
-	add	edx,26 shl 16
-	add	ebx,16*16*3
-	pusha
-	call	.calculate_button
-	mcall	,,,155
-	popa
-	mcall
-	add	edx,26 shl 16
-	add	ebx,16*16*3
-	pusha
-	call	.calculate_button
-	mcall	,,,156
-	popa
-	mcall
-	add	edx,26 shl 16
-	add	ebx,16*16*3
-	pusha
-	call	.calculate_button
-	mcall	,,,157
-	popa
-	mcall
+	cmp edx, 157+0x40000000
+	jl  _new_but
+	
 	ret
 ;--------------------------------------
 .calculate_button:
-	mov	esi,0xffffff
 	mov	ebx,edx
 	mov	bx,15
 	mov	ecx,edx
 	shl	ecx,16
 	mov	cx,bx
-	mov	eax,8
 	ret
 ;------------------------------------------------------------------------------
 draw_left_sort_button:

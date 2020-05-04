@@ -39,11 +39,129 @@ exit_program:
 	or	eax,-1
 	mcall
 
-make_timestamp:
+get_tickcount:
 	push	ebx
 	mcall	SF_SYSTEM_GET,SSF_TIME_COUNT
 	imul	eax,10
 	pop	ebx
+	retn
+
+macro BCDtoHEX al {
+	aam	16
+	aad	10 }
+
+make_timestamp:
+	mcall	SF_GET_SYS_DATE ; $00SSMMHH (BCD)
+	mov	edx,eax
+	shr	eax,16
+	BCDtoHEX al
+	push	eax		; SECONDS
+	mov	al,dh
+	BCDtoHEX al
+	push	eax		; MINUTES
+	mov	al,dl
+	BCDtoHEX al
+	push	eax		; HOURS
+	mcall	SF_GET_SYS_DATE ; $00DDMMYY (BCD)
+	mov	edx,eax
+	shr	eax,16
+	BCDtoHEX al
+	push	eax		; DAY
+	mov	al,dl
+	BCDtoHEX al
+	add	eax,2000
+	push	eax		; YEAR
+	mov	ecx,eax
+	mov	al,dh
+	BCDtoHEX al
+	push	eax		; MONTH
+; ecx: YEAR
+; stack: MONTH, YEAR, DAY, HOURS, MINUTES, SECONDS, retaddr
+	mov	eax,ecx
+	sub	eax,1970
+	mov	ebx,365
+	mul	ebx
+	mov	ebp,eax
+	mov	eax,ecx
+	sub	eax,1969
+	shr	eax,2
+	add	ebp,eax
+	mov	eax,ecx
+	xor	edx,edx
+	sub	eax,1901
+	mov	ebx,100
+	div	ebx
+	sub	ebp,eax
+	mov	eax,ecx
+	xor	edx,edx
+	sub	eax,1601
+	mov	ebx,400
+	div	ebx
+	add	ebp,eax
+	pop	ecx
+; ecx: MONTH
+; stack: YEAR, DAY, HOURS, MINUTES, SECONDS, retaddr
+	mov	eax,ecx
+	dec	eax
+	mov	ebx,30
+	mul	ebx
+	add	ebp,eax
+	cmp	ecx,8
+	jbe	months_correction
+	mov	eax,ecx
+	sub	eax,7
+	shr	eax,1
+	add	ebp,eax
+	mov	ecx,8
+      months_correction:
+	mov	eax,ecx
+	shr	eax,1
+	add	ebp,eax
+	cmp	ecx,2
+	pop	ecx
+; ecx: YEAR
+; stack: DAY, HOURS, MINUTES, SECONDS, retaddr
+	jbe	day_correction_ok
+	sub	ebp,2
+	test	ecx,11b
+	jnz	day_correction_ok
+	xor	edx,edx
+	mov	eax,ecx
+	mov	ebx,100
+	div	ebx
+	or	edx,edx
+	jnz	day_correction
+	mov	eax,ecx
+	mov	ebx,400
+	div	ebx
+	or	edx,edx
+	jnz	day_correction_ok
+      day_correction:
+	inc	ebp
+      day_correction_ok:
+	pop	eax
+; eax: DAY
+; stack: HOURS, MINUTES, SECONDS, retaddr
+	dec	eax
+	add	eax,ebp
+	mov	ebx,24
+	mul	ebx
+	pop	ecx
+; ecx: HOURS
+; stack: MINUTES, SECONDS, retaddr
+	add	eax,ecx
+	mov	ebx,60
+	mul	ebx
+	pop	ecx
+; ecx: MINUTES
+; stack: SECONDS, retaddr
+	add	eax,ecx
+	mov	ebx,60
+	mul	ebx
+	pop	ecx
+; ecx: SECONDS
+; stack: retaddr
+	add	eax,ecx
 	retn
 
 symbol_dump:
