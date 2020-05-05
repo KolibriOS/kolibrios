@@ -187,7 +187,7 @@ extra_files = {
  {"kolibrios/emul/fceu/fceu", PROGS .. "/emulator/fceu/fceu"},
  {"kolibrios/emul/fceu/FCEU ReadMe.txt", PROGS .. "/emulator/fceu/FCEU ReadMe.txt"},
  {"kolibrios/emul/kwine/kwine", PROGS .. "/emulator/kwine/bin/kwine"},
- {"kolibrios/emul/kwine/lib/", PROGS .. "/emulator/kwine/bin/kwine/lib/*"},
+ {"kolibrios/emul/kwine/lib/", PROGS .. "/emulator/kwine/bin/lib/*"},
  {"kolibrios/demos/ak47.lif", "common/demos/ak47.lif"},
  {"kolibrios/demos/life2", "common/demos/life2"},
  {"kolibrios/demos/life3tb.png", PROGS .. "/games/life3/trunk/life3tb.png"},
