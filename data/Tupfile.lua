@@ -59,7 +59,6 @@ img_files = {
  {"SETTINGS/ASSOC.INI", "common/settings/assoc.ini"},
  {"SETTINGS/AUTORUN.DAT", "common/settings/AUTORUN.DAT"},
  {"SETTINGS/DOCKY.INI", "common/settings/docky.ini"},
- {"SETTINGS/ESKIN.INI", "common/settings/eskin.ini"},
  {"SETTINGS/FB2READ.INI", "common/settings/fb2read.ini"},
  {"SETTINGS/HOTANGLES.CFG", PROGS .. "/other/ha/SETTINGS/HOTANGLES.CFG"},
  {"SETTINGS/ICON.INI", build_type .. "/settings/icon.ini"},
