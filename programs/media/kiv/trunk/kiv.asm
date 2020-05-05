@@ -2396,10 +2396,10 @@ aPrev       db  'Prev',0
 aSlide      db  'SlideShow',0
 aTglbar     db  'ToggleBar',0
 
-inifileeskin db '/sys/settings/eskin.ini',0
-amain       db 'bg',0
-aprogram    db 'program',0
-aparam      db 'param',0
+inifileeskin db '/sys/settings/system.ini',0
+amain       db 'style',0
+aprogram    db 'bg_program',0
+aparam      db 'bg_param',0
 
 align 4
 check_modifier_table:

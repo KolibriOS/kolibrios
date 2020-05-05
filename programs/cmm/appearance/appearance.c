@@ -398,7 +398,7 @@ void EventOpenFile()
 	if (tabs.active_tab==WALLPAPERS) RunProgram("/sys/media/kiv", #cur_file_path);
 }
 
-_ini ini = { "/sys/settings/eskin.ini", "main" };
+_ini ini = { "/sys/settings/system.ini", "style" };
 void EventExit()
 {
 	if (cur_skin_path) ini.SetString("skin", #cur_skin_path, strlen(#cur_skin_path));

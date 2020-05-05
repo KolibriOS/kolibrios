@@ -1252,10 +1252,10 @@ circle:
     runmode	dd 1			  ; режим запуска (1-normal, 2-hidden, 3-colordialog)
     color2	dd 00FFFFFFh		  ; хранит значение второго выбранного цвета
 
-    inifileeskin db '/sys/settings/eskin.ini',0
-    amain       db 'main',0
-    aprogram    db 'program',0
-    aparam      db 'param',0
+    inifileeskin db '/sys/settings/system.ini',0
+    amain       db 'style',0
+    aprogram    db 'bg_program',0
+    aparam      db 'bg_param',0
 
 align 16
 @IMPORT:

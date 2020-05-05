@@ -115,9 +115,9 @@ library                                                 \
 import  libini, \        
         ini_set_int  ,'ini_set_int' 
 
-aIni          db  '/sys/settings/eskin.ini',0 
-aSectionSkn   db  'skin',0
-aButtonStyle  db  '3d',0
+aIni          db  '/sys/settings/system.ini',0 
+aSectionSkn   db  'style',0
+aButtonStyle  db  'buttons_gradient',0
 ;---------------------------------------------------------------------
 l_libs_start:
 
