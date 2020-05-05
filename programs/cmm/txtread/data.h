@@ -7,7 +7,7 @@
 #ifdef LANG_RUS
 
 #define INTRO_TEXT "Это простой просмотрщик текста.\nПопробуйте открыть какой-нибудь текстовый файл."
-#define VERSION "Text Reader v1.4"
+#define VERSION "Text Reader v1.41"
 #define ABOUT "Идея: Leency, punk_joker
 Код: Leency, Veliant, KolibriOS Team
 
@@ -38,7 +38,7 @@ char color_scheme_names[] =
 #else
 
 #define INTRO_TEXT "This is a plain Text Reader.\nTry to open some text file."
-#define VERSION "Text Reader v1.4"
+#define VERSION "Text Reader v1.41"
 #define ABOUT "Idea: Leency, punk_joker
 Code: Leency, Veliant, KolibriOS Team
 

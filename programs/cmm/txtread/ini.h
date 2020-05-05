@@ -3,7 +3,7 @@ _ini ini = { "/sys/settings/app.ini", "Txtread" };
 void LoadIniSettings()
 {
 	kfont.size.pt = ini.GetInt("FontSize", 14); 
-	encoding      = ini.GetInt("Encoding", CH_CP866);
+	encoding      = ini.GetInt("Encoding", CH_AUTO);
 	curcol_scheme = ini.GetInt("ColorScheme", 2);
 	Form.left     = ini.GetInt("WinX", 150); 
 	Form.top      = ini.GetInt("WinY", 50); 

@@ -312,7 +312,7 @@ void EventShowCharsetsList()
 {
 	menu_id = CHANGE_CHARSET;
 	open_lmenu(Form.left+5 + charsets_mx, Form.top+29+skin_height, MENU_ALIGN_TOP_LEFT, 
-		encoding+1, "UTF-8\nKOI8-RU\nCP1251\nCP1252\nISO8859-5\nCP866");
+		encoding+1, "UTF-8\nKOI8-RU\nCP1251\nCP1252\nISO8859-5\nCP866\nAUTO");
 }
 
 void EventShowReopenMenu()
@@ -342,7 +342,7 @@ void EventShowInfo() {
 	help_opened = true;
 	DrawBar(list.x, list.y, list.w, list.h, bg_color);
 	WriteText(list.x + 10, list.y + 10, 10000001b, text_color, VERSION);
-	WriteTextLines(list.x + 10, list.y+40, 10110000b, text_color, ABOUT, 20);
+	WriteTextLines(list.x + 10, list.y+40, 10010000b, text_color, ABOUT, 20);
 }
 
 void EventChangeCharset(dword id)
@@ -417,7 +417,15 @@ void LoadFile(dword f_path)
 		io.buffer_data = INTRO_TEXT;
 		strcpy(#title, "Text Reader"); 
 	}
-	if (encoding!=CH_CP866) ChangeCharset(encoding, "CP866", io.buffer_data);
+
+	// Autodetecting encoding
+	if (encoding==CH_AUTO) {
+		if (strstr(io.buffer_data, "\208\190")) ChangeCharset(CH_UTF8, "CP866", io.buffer_data);
+		else if (chrnum(io.buffer_data, '\246')>5) || (strstr(io.buffer_data, "пр")) ChangeCharset(CH_CP1251, "CP866", io.buffer_data);
+	} else {
+		if (encoding!=CH_CP866) ChangeCharset(encoding, "CP866", io.buffer_data);
+	}
+
 	list.ClearList();
 }
 
@@ -468,7 +476,7 @@ void draw_window()
 	DrawToolbarButton(SHOW_INFO, x.n);
 	colscheme_mx = DrawToolbarButton(COLOR_SCHEME,   x.inc(-TOOLBAR_BUTTON_WIDTH - BUTTONS_GAP));
 
-	if (search.draw(BTN_FIND_NEXT+10, BTN_FIND_CLOSE+10)) {
+	if (search.draw(BTN_FIND_NEXT+10, BTN_FIND_CLOSE+10, Form.cheight - SEARCH_H)) {
 		DrawRectangle3D(search_mx+1, 6, TOOLBAR_ICON_WIDTH-1, 
 			TOOLBAR_ICON_HEIGHT-1, 0xCCCccc, 0xF8FCF8);
 	}
