@@ -1,8 +1,27 @@
+/*  # KolibriOS Image Unpacker #
+
+Extracts files from FAT12 KolibriOS image to specified folder.
+
+Usage:  unimg path/to/img [output/folder] [-e]
+        -e: Exit on success
+        If output folder is skipped, the image will be unpacked at /TMP0/1/[file-name]
+
+Author: Magomed Kostoev (Boppan, mkostoevr): FAT12 file system, driver.
+Contributor: Kiril Lipatov (Leency) */
+
 #include <stdarg.h>
 #include <stdio.h>
 #include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
+
+#define TCC 0
+#define GCC 1
+#include "compiller.h"
+
+#ifdef GCC
+#define con_init con_init
+#endif
 
 typedef struct {
     size_t length;
@@ -49,12 +68,21 @@ static int fat12__open(Fat12 *this, const char *img);
 static int fat12__error(Fat12 *this, const char *errorMessage);
 
 static void mkdir(const char *name) {
+    #ifdef TCC
+    struct {
+        int fn;
+        int unused[4];
+        char b;
+        const char *path __attribute__((packed));
+    } info;
+    #else
     struct {
         int fn;
         int unused[4];
         char b;
         const char *path;
-    } __attribute__((packed)) info;
+    }  __attribute__((packed)) info;
+    #endif    
     memset(&info, 0, sizeof(info));
     info.fn = 9;
     info.b = 0;
@@ -394,28 +422,40 @@ static int callback(const char *name, size_t size, const uint8_t *data, void *pa
         }
     }
     printf("Extracting %s\n", outputPath->data);
-    writeFile(outputPath->data, size, data);
+    #ifdef TCC
+        FILE *fp = NULL;
+        if (!(fp = fopen(outputPath->data, "wb"))) { perror(NULL); }
+        fwrite(data, 1, size, fp);
+        fclose(fp);
+    #else
+        writeFile(outputPath->data, size, data);
+    #endif
     outputPath->data[outputPath->length] = '\0';
     return 0;
 }
 
 
 
-int main(int argc, char **argv) {
+int main(int argc, char* argv[]) {
     Fat12 fat12 = { 0 };
     char *imageFile = NULL;
     String outputFolder = { 0 };
+    int exit_code = 0;
+
+    char app_title[] = "UnImg - kolibri.img file unpacker";
+    con_init(-1, -1, -1, 350, app_title);
 
     if (argc < 2) { 
-        puts(" Usage:\n");
-        puts(" unimg \"/path/to/kolibri.img\" \"/optional/extract/path\"\n");
+        puts(" Usage:");
+        puts(" unimg \"/path/to/kolibri.img\" \"/optional/extract/path\"");
+        puts("       where optional key [-e] is exit on success");
+        exit(exit_code);
         return -1;
     } else {
     	imageFile = argv[1];
     	printf("File: %s\n", imageFile);
     }
     
-
     outputFolder.capacity = 4096;
     outputFolder.data = malloc(outputFolder.capacity);
 
@@ -428,6 +468,9 @@ int main(int argc, char **argv) {
 
     outputFolder.length = strlen(outputFolder.data);
 
+    // handle -e parameter - exit on success
+    if (argc >= 3 && !strcmp(argv[argc - 1], "-e")) { exit_code = 1; }
+
     if (!fat12__open(&fat12, imageFile)) { 
         return handleError(&fat12); 
     }
@@ -436,5 +479,6 @@ int main(int argc, char **argv) {
         return handleError(&fat12);
     }
 
-    puts("\nDONE!\n");
+    puts("\nDONE!");
+    exit(exit_code);
 }
