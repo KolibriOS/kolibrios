@@ -194,6 +194,11 @@ struct _Image
 }
 
 //NOTICE: DO NOT FORGET TO INIT libio AND libimg!!!
+#ifdef LANG_RUS
+#define TEXT_FILE_SAVED_AS "'File saved as "
+#else
+#define TEXT_FILE_SAVED_AS "'Файл сохранен как "
+#endif
 :void save_image(dword _image_pointer, _w, _h, _path)
 {
     char save_success_message[4096+200];
@@ -219,7 +224,7 @@ struct _Image
         }
         else {
             if (CreateFile(encoded_size, encoded_data, _path) == 0) {
-                strcpy(#save_success_message, "'File saved as ");
+                strcpy(#save_success_message, TEXT_FILE_SAVED_AS);
                 strcat(#save_success_message, _path);
                 strcat(#save_success_message, "' -O");
                 notify(#save_success_message);

@@ -4,7 +4,6 @@
 Графика            >      /@3
 Звук и видео       >      /@4
 Разработка         >      /@5
-Эмуляторы          >      /@6
 Система            >      /@7
 Офис               >      /@10
 Сеть               >      /@11
@@ -48,6 +47,7 @@ FlatWave                  /sys/3d/flatwav
 Аудиоплеер AC97SND        /sys/media/ac97snd
 Видеоплеер Fplay          /kolibrios/media/fplay
 Midi-плеер                /sys/media/midamp
+Детское пианино           /sys/media/piano
 #5    **** Разработка ****
 Упаковщик KPack           /sys/kpack
 Flat Assembler            /sys/develop/fasm
@@ -67,7 +67,6 @@ PokeMini                  /kolibrios/emul/pokemini
 ScummVM                   /kolibrios/emul/scummvm
 ZSNES Super Nintendo      /kolibrios/emul/zsnes
 #7    **** Система ****
-Системная панель          /sys/syspanel
 Файловые менеджеры >      /@8
 Спец. возможности  >      /@9
 Календарь                 /sys/calendar
@@ -75,6 +74,7 @@ ZSNES Super Nintendo      /kolibrios/emul/zsnes
 Виртуальные диски         /sys/tmpdisk
 Консоль SHELL             /sys/shell
 Сохранение образа         /sys/rdsave
+Системная панель          /sys/syspanel
 #8    **** Система -> Файловые менеджеры ****
 KFAR                      /sys/File Managers/kfar
 fNav                      /sys/File Managers/fNav/fNav
@@ -109,6 +109,7 @@ VNC Клиент                /sys/network/vncc
 Интернет загрузчик        /sys/network/downloader
 Текстовый браузер         /sys/network/webview
 #14   **** Разное ****
+Эмуляторы          >      /@6
 Создание скриншотов       /sys/scrshoot
 Аналоговые часы           /sys/demos/aclock
 Таблица Менделеева        /sys/period

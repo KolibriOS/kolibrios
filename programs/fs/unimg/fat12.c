@@ -329,7 +329,7 @@ static int fat12__open(Fat12 *this, const char *img) {
     this->rootDirectory = this->firstFat + this->numberOfFats 
         * this->sectorsPerFat * this->bytesPerSector;
     this->dataRegion = this->rootDirectory + this->maxRootEntries * 32;
-    con_printf("Bytes per sector: %d\n",      this->bytesPerSector);
+    con_printf("\nBytes per sector: %d\n",      this->bytesPerSector);
     con_printf("Sectors per claster: %d\n",   this->sectorsPerClaster);
     con_printf("Reserver sector count: %d\n", this->reservedSectorCount);
     con_printf("Number of FATs: %d\n",        this->numberOfFats);
@@ -338,7 +338,7 @@ static int fat12__open(Fat12 *this, const char *img) {
     con_printf("Sectors per FAT: %d\n",       this->sectorsPerFat);
     con_printf("First FAT: %d\n",             this->firstFat);
     con_printf("Root directory: %d\n",        this->rootDirectory);
-    con_printf("Data region: %d\n",           this->dataRegion);
+    con_printf("Data region: %d\n\n",           this->dataRegion);
     return 1;
 }
 
@@ -373,7 +373,7 @@ static int callback(const char *name, size_t size, const uint8_t *data, void *pa
             *fileNameDelim = '/';
         }
     }
-    con_printf("Extracting \"%s\"\n", outputPath->data);
+    con_printf("Extracting %s\n", outputPath->data);
     if (!(fp = fopen(outputPath->data, "wb"))) { perror(NULL); }
     fwrite(data, 1, size, fp);
     fclose(fp);
@@ -383,31 +383,36 @@ static int callback(const char *name, size_t size, const uint8_t *data, void *pa
 
 
 
-
 int main(int argc, char **argv) {
     Fat12 fat12 = { 0 };
     char *imageFile = NULL;
     String outputFolder = { 0 };
     int exit = 0;
 
-    if (con_init_console_dll()) return -1;
-    con_set_title("UnImg - kolibri.img file unpacker");
+	char app_title[] = "UnImg - kolibri.img file unpacker";
+	if (con_init_console_dll_param(-1, -1, -1, 350, app_title)) return -1;
 
     if (argc < 2) { 
-        con_write_asciiz("Usage: unimg \"/path/to/kolibri.img\" \"/optional/extract/path\" [-e]");
-        con_write_asciiz("-e\tExit on success");
+        con_write_asciiz(" Usage:\n");
+        con_write_asciiz(" unimg \"/path/to/kolibri.img\" \"/optional/extract/path\" [-e]\n");
+        con_write_asciiz("        where optional key [-e] is exit on success");
         con_exit(0);
         return -1;
+    } else {
+    	imageFile = argv[1];
+    	con_printf("File: %s\n", imageFile);
     }
     
-    imageFile = argv[1];
 
     outputFolder.capacity = 4096;
     outputFolder.data = malloc(outputFolder.capacity);
 
     //! ACHTUNG: possible buffer overflow, is 4096 enough in KolibriOS?
     if (argc >= 3 && argv[2][0] != '-') strcpy(outputFolder.data, argv[2]);
-    else strcpy(outputFolder.data, "/TMP0/1/KOLIBRI.IMG");
+    else {
+    	strcpy(outputFolder.data, "/tmp0/1");
+    	strcat(outputFolder.data, strrchr(imageFile, '/'));
+    }
 
     outputFolder.length = strlen(outputFolder.data);
 
