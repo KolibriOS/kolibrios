@@ -1,6 +1,6 @@
 ; ------------------------------------------------------------- ;
 ; KWINE is a fork of program PELoad written by 0CodErr
-; author - rgimad
+; author of fork - rgimad
 ; ------------------------------------------------------------- ;
 ORG 0
 BITS 32

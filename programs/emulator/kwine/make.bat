@@ -1,7 +1,13 @@
 @echo off
 set NASM="nasm\nasm.exe"
-%NASM% -f coff "lib\msvcrt.dll.asm" -o "..\lib\msvcrt.dll"
-strip --strip-debug "../lib/msvcrt.dll"
+rem set GCC="D:\MinGW_32_bit\bin\gcc.exe"
+set GCC="C:\MinGW\msys\1.0\home\autobuild\tools\win32\bin\kos32-gcc.exe"
+
+rem %NASM% -f coff "lib\msvcrt.dll.asm" -o "..\lib\msvcrt.dll"
+rem strip --strip-debug "../lib/msvcrt.dll"
+
+rem %GCC% -fno-ident -nostdlib -fno-builtin -c -std=gnu99 -o ..\lib\msvcrt.dll lib\msvcrt.dll.c
+%GCC% -fno-ident -fno-builtin -O0 -c -o ..\lib\msvcrt.dll lib\msvcrt.dll.c
 
 %NASM% -f coff "lib/kernel32.dll.asm" -o "../lib/kernel32.dll"
 strip --strip-debug "../lib/kernel32.dll"
