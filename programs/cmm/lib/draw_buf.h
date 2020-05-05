@@ -6,7 +6,7 @@
 #include "../lib/kolibri.h"
 #endif
 
-dword buf_data;
+dword buf_data=0;
 
 
 struct DrawBufer {
@@ -37,7 +37,7 @@ bool DrawBufer::Init(dword i_bufx, i_bufy, i_bufw, i_bufh)
 	bufy = i_bufy;
 	bufw = i_bufw; 
 	bufh = i_bufh;
-	buf_data = free(buf_data);
+	if (buf_data) buf_data = free(buf_data);
 	IncreaseBufSize();
 	if (!buf_data) return false;
 	ESDWORD[buf_data] = bufw;

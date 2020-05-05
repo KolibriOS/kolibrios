@@ -318,8 +318,7 @@ void draw_window()
 
 	DrawTopPanelButton(BACK_BUTTON, PADDING-1, PADDING, 30);
 	DrawTopPanelButton(FORWARD_BUTTON, PADDING+TSZE+PADDING-2, PADDING, 31);
-	DrawTopPanelButton(SANDWICH_BUTTON, Form.cwidth-PADDING-TSZE-3, PADDING, -1);
-	for (i=0; i<=2; i++) DrawBar(Form.cwidth-PADDING-TSZE+3, i*5+PADDING+7, 15, 3, sc.work_graph);
+	DrawTopPanelButton(SANDWICH_BUTTON, Form.cwidth-PADDING-TSZE-3, PADDING, -1); //burger menu
 
 	DrawBar(0,Form.cheight - STATUSBAR_H, Form.cwidth,1, sc.work_graph);
 

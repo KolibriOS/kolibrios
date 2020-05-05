@@ -1,9 +1,10 @@
 
-void DrawTopPanelButton(dword _button_id, _x, _y, signed int _icon_n)
+unsigned int DrawTopPanelButton(dword _button_id, _x, _y, signed int _icon_n)
 {
 	#define TSZE 25
 	static libimg_image top_icons;
 	static dword semi_white=0, bg_col_light, bg_col_dark;
+	int i;
 	if (!semi_white) {
 		Libimg_LoadImage(#top_icons, "/sys/icons16.png");
 
@@ -21,7 +22,9 @@ void DrawTopPanelButton(dword _button_id, _x, _y, signed int _icon_n)
 	DefineHiddenButton(_x, _y, TSZE+1, TSZE+1, _button_id);
 	if (_icon_n==-1) {
 		DrawBar(_x+6, _y+5, 16, 16, semi_white);
+		for (i=0; i<=2; i++) DrawBar(_x+6, i*5+_y+7, 15, 3, sc.work_graph);
 	} else {
 		img_draw stdcall(top_icons.image, _x+6, _y+5, 16, 16, 0, _icon_n*16);
 	}
+	return _x;
 }
