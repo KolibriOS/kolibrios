@@ -3,7 +3,6 @@
 #include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
-#include <conio.h>
 
 typedef struct {
     size_t length;
@@ -54,8 +53,8 @@ static void mkdir(const char *name) {
         int fn;
         int unused[4];
         char b;
-        const char *path __attribute__((packed));
-    } info;
+        const char *path;
+    } __attribute__((packed)) info;
     memset(&info, 0, sizeof(info));
     info.fn = 9;
     info.b = 0;
@@ -329,16 +328,16 @@ static int fat12__open(Fat12 *this, const char *img) {
     this->rootDirectory = this->firstFat + this->numberOfFats 
         * this->sectorsPerFat * this->bytesPerSector;
     this->dataRegion = this->rootDirectory + this->maxRootEntries * 32;
-    con_printf("\nBytes per sector: %d\n",      this->bytesPerSector);
-    con_printf("Sectors per claster: %d\n",   this->sectorsPerClaster);
-    con_printf("Reserver sector count: %d\n", this->reservedSectorCount);
-    con_printf("Number of FATs: %d\n",        this->numberOfFats);
-    con_printf("Max root entries: %d\n",      this->maxRootEntries);
-    con_printf("Total sectors: %d\n",         this->totalSectors);
-    con_printf("Sectors per FAT: %d\n",       this->sectorsPerFat);
-    con_printf("First FAT: %d\n",             this->firstFat);
-    con_printf("Root directory: %d\n",        this->rootDirectory);
-    con_printf("Data region: %d\n\n",           this->dataRegion);
+    printf("\nBytes per sector: %d\n",    this->bytesPerSector);
+    printf("Sectors per claster: %d\n",   this->sectorsPerClaster);
+    printf("Reserver sector count: %d\n", this->reservedSectorCount);
+    printf("Number of FATs: %d\n",        this->numberOfFats);
+    printf("Max root entries: %d\n",      this->maxRootEntries);
+    printf("Total sectors: %d\n",         this->totalSectors);
+    printf("Sectors per FAT: %d\n",       this->sectorsPerFat);
+    printf("First FAT: %d\n",             this->firstFat);
+    printf("Root directory: %d\n",        this->rootDirectory);
+    printf("Data region: %d\n\n",         this->dataRegion);
     return 1;
 }
 
@@ -348,13 +347,34 @@ static int fat12__error(Fat12 *this, const char *errorMessage) {
 }
 
 static int handleError(const Fat12 *fat12) {
-    con_printf("Error in Fat12: %s\n", fat12->errorMessage);
-    con_exit(0);
+    printf("Error in Fat12: %s\n", fat12->errorMessage);
     return -1;
 }
 
+void writeFile(const char *fileName, int size, const uint8_t *data) {
+//    FILE *fp = NULL;
+//    if (!(fp = fopen(fileName, "wb"))) { perror(NULL); }
+//    fwrite(data, 1, size, fp);
+//    fclose(fp);
+    struct Info {
+        int number;
+        int reserved0;
+        int reserved1;
+        int dataSize;
+        const void *data;
+        char zero;
+        const char *name;
+    } __attribute__((packed)) *info = calloc(sizeof(struct Info), 1);
+    
+    info->number = 2; // create/overwrite file
+    info->dataSize = size;
+    info->data = data;
+    info->zero = 0;
+    info->name = fileName;
+    asm volatile ("int $0x40" :: "a"(70), "b"(info));
+}
+
 static int callback(const char *name, size_t size, const uint8_t *data, void *param) {
-    FILE *fp = NULL;
     String *outputPath = param;
 
     while (outputPath->capacity < outputPath->length + strlen(name) + 1 + 1) {
@@ -373,10 +393,8 @@ static int callback(const char *name, size_t size, const uint8_t *data, void *pa
             *fileNameDelim = '/';
         }
     }
-    con_printf("Extracting %s\n", outputPath->data);
-    if (!(fp = fopen(outputPath->data, "wb"))) { perror(NULL); }
-    fwrite(data, 1, size, fp);
-    fclose(fp);
+    printf("Extracting %s\n", outputPath->data);
+    writeFile(outputPath->data, size, data);
     outputPath->data[outputPath->length] = '\0';
     return 0;
 }
@@ -387,20 +405,14 @@ int main(int argc, char **argv) {
     Fat12 fat12 = { 0 };
     char *imageFile = NULL;
     String outputFolder = { 0 };
-    int exit = 0;
-
-	char app_title[] = "UnImg - kolibri.img file unpacker";
-	if (con_init_console_dll_param(-1, -1, -1, 350, app_title)) return -1;
 
     if (argc < 2) { 
-        con_write_asciiz(" Usage:\n");
-        con_write_asciiz(" unimg \"/path/to/kolibri.img\" \"/optional/extract/path\" [-e]\n");
-        con_write_asciiz("        where optional key [-e] is exit on success");
-        con_exit(0);
+        puts(" Usage:\n");
+        puts(" unimg \"/path/to/kolibri.img\" \"/optional/extract/path\"\n");
         return -1;
     } else {
     	imageFile = argv[1];
-    	con_printf("File: %s\n", imageFile);
+    	printf("File: %s\n", imageFile);
     }
     
 
@@ -416,9 +428,6 @@ int main(int argc, char **argv) {
 
     outputFolder.length = strlen(outputFolder.data);
 
-    // handle -e parameter - exit on success
-    if (argc >= 3 && !strcmp(argv[argc - 1], "-e")) { exit = 1; }
-
     if (!fat12__open(&fat12, imageFile)) { 
         return handleError(&fat12); 
     }
@@ -427,6 +436,5 @@ int main(int argc, char **argv) {
         return handleError(&fat12);
     }
 
-    con_write_asciiz("\nDONE!\n\n");
-    con_exit(exit);
+    puts("\nDONE!\n");
 }
