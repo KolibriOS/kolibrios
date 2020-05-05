@@ -1,0 +1,5 @@
+@echo off
+fasm lib\kernel32.dll.asm ..\lib\kernel32.dll
+fasm lib\msvcrt.dll.asm ..\lib\msvcrt.dll
+fasm kwine.asm ..\kwine
+pause
