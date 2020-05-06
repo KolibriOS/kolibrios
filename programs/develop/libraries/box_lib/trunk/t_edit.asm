@@ -2140,30 +2140,30 @@ ted_go_to_pos:
 ; edi = pointer to tedit struct
 align 16
 ted_text_colored:
-  push eax edx
-  mov eax,ted_tim_ch
-  sub eax,ted_tim_undo
-  mov ted_tim_co,eax
-  mov edx,ted_tex
-  @@:
-    call ted_iterat_next
-    cmp edx,ted_tex_1
-    jle @f
-    mov byte[edx+1],0
-    jmp @b
-  @@:
+	push eax edx
+	mov eax,ted_tim_ch
+	sub eax,ted_tim_undo
+	mov ted_tim_co,eax
+	mov edx,ted_tex
+	@@:
+		call ted_iterat_next
+		cmp edx,ted_tex_1
+		jle @f
+		mov byte[edx+1],0
+		jmp @b
+	@@:
 
-  cmp ted_key_words_count,1
-  jl .no_colors
-  mov edx,ted_tex
-  @@:
-    call ted_text_find_sel_color
-    cmp edx,ted_tex_1
-    jle .no_colors
-    jmp @b
-  .no_colors:
-  pop edx eax
-  ret
+	cmp ted_key_words_count,1
+	jl .no_colors
+	mov edx,ted_tex
+	@@:
+		call ted_text_find_sel_color
+		cmp edx,ted_tex_1
+		jle .no_colors
+		jmp @b
+	.no_colors:
+	pop edx eax
+	ret
 
 
 ;input:
@@ -2189,10 +2189,10 @@ endl
 	mov dword[endPos],1
 	mov byte[find],0
 	mov byte[f_color],1
-	@@:
+	.cycle0:
 		call ted_iterat_next
 		cmp edx,ted_tex_1
-		jle @f
+		jle .cycle0end
 
 		xor eax,eax
 		mov al,byte[edx]
@@ -2200,7 +2200,7 @@ endl
 		add eax,ted_arr_key_pos
 		mov eax,[eax]
 		cmp eax,0
-		jl @b ;if( (word_n=ted_arr_key_pos[(unsigned char)tex[i].c])>-1 ){
+		jl .cycle0 ;if( (word_n=ted_arr_key_pos[(unsigned char)tex[i].c])>-1 ){
 
 		mov ecx,eax
 		;while(l_pos<ted_key_words_count && Col[l_pos].Text[0]==Col[word_n].Text[0])
@@ -2223,19 +2223,19 @@ align 4
 		call ted_iterat_next
 
 		;while(l_pos>word_n && Col[l_pos-1].Text[pos]!=tex[i].c)
-		.wh_3b:
+		@@:
 			cmp ecx,eax
-			jle .wh_3e
+			jle @f
 			dec ecx
 			ColToIndexOffset ecx,ebx
 			inc ecx
 			;cmp byte[ebx+esi],byte[edx]
 			mov bl,byte[ebx+esi]
 			cmp bl,byte[edx]
-			je .wh_3e
+			je @f
 				dec ecx
-			jmp .wh_3b
-		.wh_3e:
+			jmp @b
+		@@:
 
 		ColToIndexOffset eax,ebx
 		cmp byte[ebx+esi],0
@@ -2255,13 +2255,13 @@ align 4
 			call ted_iterat_perv
 
 			btr bx,0 ;1-1
-			jae .if_3e ;if(Col[word_n].wwo&1)
+			jae @f ;if(Col[word_n].wwo&1)
 				;u1= !(isalnum(cont_s)||cont_s=='_')
 				call isalnum
-				jae .if_3e
+				jae @f
 					mov byte[find],0
 					jmp .if_4e
-			.if_3e:
+			@@:
 
 			btr bx,3 ;4-1
 			jae .if_4e ;if(Col[word_n].wwo&8)
@@ -2275,13 +2275,13 @@ align 4
 			;call ted_iterat_next
 
 			btr bx,1 ;2-1
-			jae .if_5e ;if(Col[word_n].wwo&2)
+			jae @f ;if(Col[word_n].wwo&2)
 				;u1= !(isalnum(cont_s)||cont_s=='_')
 				call isalnum
-				jae .if_5e
+				jae @f
 					mov byte[find],0
 					jmp .if_6e
-			.if_5e:
+			@@:
 
 			btr bx,4 ;5-1
 			jae .if_6e ;if(Col[word_n].wwo&16)
@@ -2297,7 +2297,10 @@ align 4
 				mov bx,word[ebx+MAX_COLOR_WORD_LEN+5]
 				call ted_iterat_next_pos_char
 				cmp edx,ted_tex_1
-				jle .if_7e
+				jg @f
+					;если дошли до конца файла и не нашли символ конца разметки
+					call ted_iterat_perv
+				@@:
 					mov dword[endPos],edx
 			.if_7e:
 
@@ -2336,10 +2339,10 @@ align 4
 		.wh_2e:
 
 		cmp byte[find],1 ;if(fnd)break;
-		je @f
+		je .cycle0end
 			mov edx,[begPos];i=bP;
-		jmp @b
-	@@:
+		jmp .cycle0
+	.cycle0end:
 
 	cmp byte[find],1
 	jne .if_1e ;if(fnd){ // выделение найденого текста
@@ -4331,20 +4334,16 @@ ted_wnd_main_mouse_scroll:
 	or ax,ax
 	jz .no_scroll
 		mov ecx,ted_scr_w
-		mov ebx,[ecx+sb_offs_position] ;copy old scroll position
-		and eax,0xffff
-		btr ax,15
-		jae @f
-			or eax,0xffff8000
-		@@:
-		add [ecx+sb_offs_position],eax
-
-		mov eax,[ecx+sb_offs_position]
-		cmp eax,[ecx+sb_offs_max_area]
-		jb @f
-			mov [ecx+sb_offs_position],ebx ;if scroll position out of range
-			jmp .no_scroll
-		@@:
+		movsx eax,ax
+		lea eax,[eax+eax*2] ;умножаем на 3 (число строк прокрутки за одно движение колеса мыши)
+		add eax,[ecx+sb_offs_position]
+		mov ebx,[ecx+sb_offs_max_area]
+		shl ebx,1
+		sub ebx,[ecx+sb_offs_cur_area] ;отнимаем половину высоты окна
+		shr ebx,1
+		cmp eax,ebx
+		jae .no_scroll
+		mov [ecx+sb_offs_position],eax
 		stdcall ted_draw,edi
 	.no_scroll:
 	pop ecx ebx eax
