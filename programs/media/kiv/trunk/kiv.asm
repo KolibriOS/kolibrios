@@ -13,13 +13,13 @@ __DEBUG_LEVEL__  = 1
 
 LG_TRACE equ 1
 
-include 'config.inc'
-include 'proc32.inc'
-include 'macros.inc'
-include 'KOSfuncs.inc'
-include 'dll.inc'
-include 'debug-fdo.inc'
-include 'libimg.inc'
+include '../../../config.inc'
+include '../../../proc32.inc'
+include '../../../macros.inc'
+include '../../../KOSfuncs.inc'
+include '../../../dll.inc'
+include '../../../debug-fdo.inc'
+include '../../../develop/libraries/libs-dev/libimg/libimg.inc'
 
 
 KEY_MOVE_PIXELS   = 50
@@ -65,14 +65,23 @@ START:
         call    [OpenDialog_Init]
 
 ; initialize keyboard handling
-        invoke  ini_get_shortcut, inifilename, aShortcuts, aNext, -1, next_mod
+        invoke  ini_get_shortcut, inifilename, aKivSection, aNext, -1, next_mod
         mov     [next_key], eax
-        invoke  ini_get_shortcut, inifilename, aShortcuts, aPrev, -1, prev_mod
+        invoke  ini_get_shortcut, inifilename, aKivSection, aPrev, -1, prev_mod
         mov     [prev_key], eax
-        invoke  ini_get_shortcut, inifilename, aShortcuts, aSlide, -1, slide_mod
+        invoke  ini_get_shortcut, inifilename, aKivSection, aSlide, -1, slide_mod
         mov     [slide_key], eax
-        invoke  ini_get_shortcut, inifilename, aShortcuts, aTglbar, -1, tglbar_mod
+        invoke  ini_get_shortcut, inifilename, aKivSection, aTglbar, -1, tglbar_mod
         mov     [tglbar_key], eax
+		
+        invoke  ini_get_int, inifilename, aKivSection, aWinX, 100
+        mov     [window.left], eax
+        invoke  ini_get_int, inifilename, aKivSection, aWinY, 150
+        mov     [window.top], eax
+        invoke  ini_get_int, inifilename, aKivSection, aWinW, 0
+        mov     [window.width], eax
+        invoke  ini_get_int, inifilename, aKivSection, aWinH, 0
+        mov     [window.height], eax
 
         cmp     byte[__params], 0
         jnz     params_given
@@ -546,6 +555,10 @@ button:
         jnz     still
 
 exit:
+        invoke  ini_set_int, inifilename, aKivSection, aWinX, [window.left]
+        invoke  ini_set_int, inifilename, aKivSection, aWinY, [window.top]
+        invoke  ini_set_int, inifilename, aKivSection, aWinW, [window.width]
+        invoke  ini_set_int, inifilename, aKivSection, aWinH, [window.height]
         mcall   -1
 
 
@@ -1045,6 +1058,38 @@ proc draw_window
         jz      @f
         call    generate_window_header
 @@:
+		cmp     [window.width], 0
+		jne     @f
+		mcall   SF_GET_SCREEN_SIZE
+		mov     ebx,eax			  ;
+		shr     ebx,16			  ; ebx = width
+		movzx   esi,ax			  ; esi = height
+		
+		mov     eax, ebx
+		xor     edx, edx
+		mov     ebx, 3
+		div     ebx
+		imul     eax, 2
+		mov    [window.width], eax
+
+		xor     edx, edx
+		mov     ebx, 4
+		div     ebx
+		mov    [window.left], eax
+		
+		mov     eax, esi
+		xor     edx, edx
+		mov     ebx, 3
+		div     ebx
+		imul     eax, 2
+		mov    [window.height], eax
+		
+		xor     edx, edx
+		mov     ebx, 4
+		div     ebx
+		mov    [window.top], eax
+@@:
+
         mcall   SF_REDRAW, SSF_BEGIN_DRAW
         mov     ecx, [window.top]
         shl     ecx, 16
@@ -2189,7 +2234,7 @@ DATA
 
 s_header        db ' - Kolibri Image Viewer',0
 window_style    dd 0x53FFFFFF
-window          BOX 101, 144, 529, 324  ; left top width height
+window          BOX 100, 150, 0, 0  ; left top width height
 window_prev     BOX 0, 0, 0, 0
 window_save     BOX 0, 0, 0, 0  ; restore after slide show
 client          BOX 0, 0, 0, 0
@@ -2330,6 +2375,8 @@ import libimg                                     , \
 
 import libini                               , \
         ini_get_shortcut, 'ini_get_shortcut', \
+        ini_get_int,      'ini_get_int',\
+        ini_set_int,      'ini_set_int',\
         ini_set_str,      'ini_set_str'
 
 import sort                  ,\
@@ -2390,11 +2437,15 @@ end repeat
 end repeat
 
 inifilename db  '/sys/settings/app.ini',0
-aShortcuts  db  'Kiv',0
+aKivSection  db  'Kiv',0
 aNext       db  'Next',0
 aPrev       db  'Prev',0
 aSlide      db  'SlideShow',0
 aTglbar     db  'ToggleBar',0
+aWinX       db  'WinX',0
+aWinY       db  'WinY',0
+aWinW       db  'WinW',0
+aWinH       db  'WinH',0
 
 inifileeskin db '/sys/settings/system.ini',0
 amain       db 'style',0

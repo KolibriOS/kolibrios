@@ -157,9 +157,9 @@ void load_libraries()
 
 void handle_param()
 {
-	//-p : just show file/folder properties dialog
-	//-v : paste thread
-	//-d : delete thread
+	//-p <path> : just show file/folder properties dialog
+	//-d <path> : delete file/folder
+	//-v : paste files/folder from clipboard
 	if (param) && (param[0]=='-') switch (param[1]) 
 	{
 		case 'p':
@@ -168,16 +168,16 @@ void handle_param()
 			itdir = dir_exists(#file_path);
 			properties_dialog();
 			return;
-		case 'v':
-			cut_active = param[2] - '0';
-			strcpy(#path, #param + 4);
-			PasteThread();
-			return;
 		case 'd':
 			strcpy(#file_path, #param + 3);
 			itdir = dir_exists(#file_path);
 			DisplayOperationForm(DELETE_FLAG);
 			DeleteSingleElement();
+			return;
+		case 'v':
+			cut_active = param[2] - '0';
+			strcpy(#path, #param + 4);
+			PasteThread();
 			return;
 	}
 }
