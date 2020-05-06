@@ -15,9 +15,15 @@ void test1()
  collection s;
  {
 	s.add("Hello");
-	s.add("World!");
+	s.add("World");
 	debugln(s.get(0)); //-> Hello
 	debugln(s.get(1)); //-> World
+	s.delete_last();
+	debugln(s.get(0)); //-> Hello
+	debugln(s.get(1)); //-> 0
+	s.add("Kolibri");	
+	debugln(s.get(0)); //-> Hello
+	debugln(s.get(1)); //-> Kolibri
 	s.drop();
 }
 

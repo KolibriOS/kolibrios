@@ -16,8 +16,9 @@ void Sort_by_Name(int a, b)   // для первого вызова: a = 0, b = <элементов в мас
 	int j;
 	int isn = a;
 	if (a >= b) return;
-	for (j = a; j <= b; j++)
-		if (strcmp(file_mas[j]*304 + buf+72, file_mas[b]*304 + buf+72)<=0) { file_mas[isn] >< file_mas[j];   isn++;}
+	for (j = a; j <= b; j++) {
+		if (strcmpi(file_mas[j]*304 + buf+72, file_mas[b]*304 + buf+72)<=0) { file_mas[isn] >< file_mas[j];   isn++;}
+	}
 	Sort_by_Name(a, isn-2);
 	Sort_by_Name(isn, b);
 }
@@ -44,11 +45,9 @@ void Sort_by_Type(int a, b)   // для первого вызова: a = 0, b = <элементов в мас
 
 		n=strcmp(ext1, ext2);
 		if (n<0) { file_mas[isn] >< file_mas[j];   isn++;} 
-		if (!n) && (strcmp(filename1, filename2)<=0) { file_mas[isn] >< file_mas[j];   isn++;}
+		if (!n) && (strcmp(filename1, filename2) <= 0) { file_mas[isn] >< file_mas[j];   isn++;}
 	}
 	Sort_by_Type(a, isn-2);
 	Sort_by_Type(isn, b);
 }
-
-
 

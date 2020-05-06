@@ -21,6 +21,7 @@ dword tmp_size[10];
 
 void General__Main()
 {
+	DIR_SIZE dir_size;
 	dword cpu_frequency;
 	incn y;
 	SetEventMask(EVM_REDRAW + EVM_KEY + EVM_BUTTON);

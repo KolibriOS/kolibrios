@@ -95,23 +95,23 @@ bool active_menu = false;
 void EventMenuClick(dword _id)
 {
 	if (active_menu == MENU_NO_FILE) switch(_id) {
-		case 1: Paste(); break;
+		case 1: EventPaste(); break;
 	}
 	if (active_menu == MENU_FILE) switch(_id) {
 		case 1: Open(0); break;
 		case 2: ShowOpenWithDialog(); break;
-		case 3: Copy(#file_path, NOCUT); break;
-		case 4: Copy(#file_path, CUT); break;
-		case 5: Paste(); break;
+		case 3: EventCopy(NOCUT); break;
+		case 4: EventCopy(CUT); break;
+		case 5: EventPaste(); break;
 		case 6: FnProcess(2); break;
 		case 7: Del_Form(); break;
 		case 8: FnProcess(8); break;
 	}
 	if (active_menu == MENU_DIR) switch(_id) {
 		case 1: Open(0); break;
-		case 2: Copy(#file_path, NOCUT); break;
-		case 3: Copy(#file_path, CUT); break;
-		case 4: Paste(); break;
+		case 2: EventCopy(NOCUT); break;
+		case 3: EventCopy(CUT); break;
+		case 4: EventPaste(); break;
 		case 5: Del_Form(); break;
 		case 6: FnProcess(8); break;
 	}

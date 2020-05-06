@@ -107,7 +107,7 @@ _ini ini;
 
 char scroll_used=false;
 
-dword about_stak,properties_stak,settings_stak,copy_stak,delete_stak;
+dword about_stak=0,properties_stak=0,settings_stak=0,delete_stak=0;
 
 proc_info Form;
 int sc_slider_h;
@@ -138,12 +138,11 @@ byte cmd_free=0;
 #include "include\gui.h"
 #include "include\settings.h"
 #include "include\progress_dialog.h"
-#include "include\copy.h"
+#include "include\copy_and_delete.h"
 #include "include\sorting.h"
 #include "include\icons.h"
 #include "include\left_panel.h"
 #include "include\menu.h"
-#include "include\delete.h"
 #include "include\about.h"
 #include "include\properties.h"
 #include "include\breadcrumbs.h"
@@ -154,6 +153,33 @@ void load_libraries()
 	load_dll(libini, #lib_init,1);
 	load_dll(libio,  #libio_init,1);
 	load_dll(libimg, #libimg_init,1);
+}
+
+void handle_param()
+{
+	//-p : just show file/folder properties dialog
+	//-v : paste thread
+	//-d : delete thread
+	if (param) && (param[0]=='-') switch (param[1]) 
+	{
+		case 'p':
+			strcpy(#file_path, #param + 3);
+			strcpy(#file_name, #param + strrchr(#param, '/'));
+			itdir = dir_exists(#file_path);
+			properties_dialog();
+			return;
+		case 'v':
+			cut_active = param[2] - '0';
+			strcpy(#path, #param + 4);
+			PasteThread();
+			return;
+		case 'd':
+			strcpy(#file_path, #param + 3);
+			itdir = dir_exists(#file_path);
+			DisplayOperationForm(DELETE_FLAG);
+			DeleteSingleElement();
+			return;
+	}
 }
 
 void main() 
@@ -169,14 +195,7 @@ void main()
 	LoadIniSettings();
 	SystemDiscs.Get();
 
-	//-p just show file/folder properties dialog
-	if (param) && (param[0]=='-') && (param[1]=='p')
-	{
-		strcpy(#file_path, #param + 3);
-		strcpy(#file_name, #param + strrchr(#param, '/'));
-		properties_dialog();
-		ExitProcess();	
-	}
+	handle_param();
 
 	ESBYTE[0] = NULL;
 
@@ -300,12 +319,9 @@ void main()
 			id=GetButtonID();
 
 			if (new_element_active) || (del_active) {
-				if(POPUP_BTN1==id) || (POPUP_BTN2==id) {
-					if (del_active) Del_File(id-POPUP_BTN2);
-					if (new_element_active) NewElement(id-POPUP_BTN2);
-					DeleteButton(POPUP_BTN1);
-					DeleteButton(POPUP_BTN2);
-				}
+				if (POPUP_BTN1==id) && (del_active) EventDelete();
+				if (POPUP_BTN1==id) && (new_element_active) NewElement();
+				if (POPUP_BTN2==id) EventClosePopinForm();
 				break;					
 			}
 
@@ -329,13 +345,13 @@ void main()
 						Dir_Up();
 						break;
 				case 24:
-						Copy(#file_path, CUT);
+						EventCopy(CUT);
 						break;
 				case 25:
-						Copy(#file_path, NOCUT);
+						EventCopy(NOCUT);
 						break;
 				case 26:
-						Paste();
+						EventPaste();
 						break;
 				case 31...33:
 						EventSort(id-30);
@@ -368,13 +384,13 @@ void main()
 			{
 				if (del_active)
 				{
-					if (key_scancode == SCAN_CODE_ENTER) Del_File(true);
-					if (key_scancode == SCAN_CODE_ESC) Del_File(false);
+					if (key_scancode == SCAN_CODE_ENTER) EventDelete();
+					if (key_scancode == SCAN_CODE_ESC) EventClosePopinForm();
 				}
 				if (new_element_active)
 				{
-					if (key_scancode == SCAN_CODE_ENTER) NewElement(true);
-					if (key_scancode == SCAN_CODE_ESC) NewElement(false);
+					if (key_scancode == SCAN_CODE_ENTER) NewElement();
+					if (key_scancode == SCAN_CODE_ESC) EventClosePopinForm();
 					EAX = key_editbox;
 					edit_box_key stdcall (#new_file_ed);
 				}
@@ -405,16 +421,16 @@ void main()
 							SystemDiscs.Click(key_scancode);
 							break;
 					case SCAN_CODE_KEY_X:
-							Copy(#file_path, CUT);
+							EventCopy(CUT);
 							break;						
 					case SCAN_CODE_KEY_C:
-							Copy(#file_path, NOCUT);
+							EventCopy(NOCUT);
 							break;
 					case SCAN_CODE_KEY_G:
 							EventOpenConsoleHere();
 							break;
 					case SCAN_CODE_KEY_V:
-							Paste();
+							EventPaste();
 							break;
 					case SCAN_CODE_KEY_D: //set image as bg
 							strlcpy(#temp, "\\S__",4);
@@ -485,7 +501,6 @@ void main()
 			if (action_buf==OPERATION_END)
 			{
 				FnProcess(5);
-				if (copy_stak) SelectFileByName(#copy_to+strrchr(#copy_to,'/'));
 				action_buf=0;
 			}
 		break;
@@ -499,7 +514,6 @@ void main()
 		if(cmd_free==2) about_stak=free(about_stak);
 		else if(cmd_free==3) properties_stak=free(properties_stak);
 		else if(cmd_free==4) settings_stak=free(settings_stak);
-		else if(cmd_free==5) copy_stak=free(copy_stak);
 		else if(cmd_free==6) delete_stak=free(delete_stak);
 		cmd_free = false;
 	}
@@ -953,85 +967,81 @@ void ShowOpenWithDialog()
 	RunProgram("/sys/@open", #open_param);
 }
 
-void NewElement(byte newf)
+void NewElement()
 {
 	BDVK element_info;
 	byte del_rezult, copy_rezult, info_result;
-	if (newf)
+
+	sprintf(#temp,"%s/%s",#path,new_file_ed.text);
+	info_result = GetFileInfo(#temp, #element_info);
+	switch(new_element_active)
 	{
-		sprintf(#temp,"%s/%s",#path,new_file_ed.text);
-		info_result = GetFileInfo(#temp, #element_info);
-		switch(new_element_active)
-		{
-			case CREATE_FILE:
-				if (info_result==5)
+		case CREATE_FILE:
+			if (info_result==5)
+			{
+				CreateFile(0, 0, #temp);
+				if (EAX)
 				{
-					CreateFile(0, 0, #temp);
-					if (EAX)
+					if (EAX==5) notify(NOT_CREATE_FILE);
+					else Write_Error(EAX);
+				}
+			}
+			else
+			{
+				notify(FS_ITEM_ALREADY_EXISTS);
+			}
+			break;
+		case CREATE_FOLDER:
+			if (info_result==5)
+			{
+				CreateDir(#temp);
+				if (EAX)
+				{
+					if (EAX==5) notify(NOT_CREATE_FOLDER);
+					else Write_Error(EAX);
+				}
+			}
+			else
+			{
+				notify(FS_ITEM_ALREADY_EXISTS);
+			}
+			break;
+		case RENAME_ITEM:
+			if (info_result==5)
+			{
+				if (itdir)
+				{
+					//rename only empty folders
+					if (del_rezult = DeleteFile(#file_path))
 					{
-						if (EAX==5) notify(NOT_CREATE_FILE);
-						else Write_Error(EAX);
+						Write_Error(del_rezult);
+						return;
 					}
+					if (CreateDir(#temp)) CreateDir(#file_path);
+					Open_Dir(#path,WITH_REDRAW);
+					SelectFileByName(new_file_ed.text);
 				}
 				else
 				{
-					notify(FS_ITEM_ALREADY_EXISTS);
-				}
-				break;
-			case CREATE_FOLDER:
-				if (info_result==5)
-				{
-					CreateDir(#temp);
-					if (EAX)
+					if (copy_rezult = CopyFile(#file_path,#temp))
 					{
-						if (EAX==5) notify(NOT_CREATE_FOLDER);
-						else Write_Error(EAX);
-					}
-				}
-				else
-				{
-					notify(FS_ITEM_ALREADY_EXISTS);
-				}
-				break;
-			case RENAME_ITEM:
-				if (info_result==5)
-				{
-					if (itdir)
-					{
-						//rename only empty folders
-						if (del_rezult = DeleteFile(#file_path))
-						{
-							Write_Error(del_rezult);
-							return;
-						}
-						if (CreateDir(#temp)) CreateDir(#file_path);
-						Open_Dir(#path,WITH_REDRAW);
-						SelectFileByName(new_file_ed.text);
+						Write_Error(copy_rezult);
 					}
 					else
 					{
-						if (copy_rezult = CopyFile(#file_path,#temp))
-						{
-							Write_Error(copy_rezult);
-						}
-						else
-						{
-							DeleteFile(#file_path);
-							SelectFileByName(new_file_ed.text);
-						}
+						DeleteFile(#file_path);
+						SelectFileByName(new_file_ed.text);
 					}
 				}
-				else
-				{
-					notify(FS_ITEM_ALREADY_EXISTS);
-				}
-		}
-		new_element_active = 0;
-		Open_Dir(#path,WITH_REDRAW);
-		SelectFileByName(new_file_ed.text);
+			}
+			else
+			{
+				notify(FS_ITEM_ALREADY_EXISTS);
+			}
 	}
-	new_element_active = 0;
 	Open_Dir(#path,WITH_REDRAW);
+	SelectFileByName(new_file_ed.text);
+	EventClosePopinForm();
 }
 
 void NewElement_Form(byte crt, dword strng)
@@ -1093,8 +1103,7 @@ void FnProcess(byte N)
 			NewElement_Form(CREATE_FILE, T_NEW_FILE);
 			break;
 		case 8:
-			properties_stak = malloc(8096);
-			CreateThread(#properties_dialog, properties_stak+8092);
+			EventShowProperties();
 			break;
 		case 10: //F10
 			if (!active_settings) 
@@ -1250,6 +1259,47 @@ void ProceedMouseGestures()
 				stats = 0;
 			}
 		}
+	}
+}
+
+void EventPaste() {
+	char paste_line[4096+6];
+	sprintf(#paste_line, "-v%i %s", cut_active, #path);
+	RunProgram(#program_path, #paste_line);
+	EventClosePopinForm();
+}
+
+void EventDelete() 
+char line_param[4096+5];
+{
+	EventClosePopinForm();
+	if (!selected_count) {
+		sprintf(#line_param, "-d %s", #file_path);
+		RunProgram(#program_path, #line_param);
+	} else {
+		delete_stak = malloc(40000);
+		CreateThread(#DeleteSelectedElements,delete_stak+40000-4);
+	}
+}
+
+void EventClosePopinForm()
+{
+	del_active=0;
+	new_element_active = 0;
+	draw_window();
+	DeleteButton(POPUP_BTN1);
+	DeleteButton(POPUP_BTN2);
+}
+
+void EventShowProperties()
+char line_param[4096+5];
+{
+	if (!selected_count) {
+		sprintf(#line_param, "-p %s", #file_path);
+		RunProgram(#program_path, #line_param);
+	} else {
+		properties_stak = malloc(8096);
+		CreateThread(#properties_dialog, properties_stak+8092);
 	}
 }
 

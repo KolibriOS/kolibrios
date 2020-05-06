@@ -51,7 +51,8 @@ BDVK file_info_dirsize;
 
 bool apply_question_active;
 
-_dir_size more_files_count;
+DIR_SIZE more_files_count;
+DIR_SIZE dir_size;
 
 checkbox ch_read_only = { PR_T_ONLY_READ, NULL };
 checkbox ch_hidden = { PR_T_HIDDEN, NULL };

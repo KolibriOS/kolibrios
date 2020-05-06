@@ -491,7 +491,7 @@ LS3:
   }
 }
 
-inline dword strcmpi(dword cmp1, cmp2)
+inline signed int strcmpi(dword cmp1, cmp2)
 {
     char si, ue;
 
@@ -501,7 +501,7 @@ inline dword strcmpi(dword cmp1, cmp2)
         ue = DSBYTE[cmp2];
         if (si>='A') && (si<='Z') si +=32;
         if (ue>='A') && (ue<='Z') ue +=32;
-        if (si != ue) return -1;
+        if (si != ue) return si-ue;
         cmp1++;
         cmp2++;
         if ((DSBYTE[cmp1]=='\0') && (DSBYTE[cmp2]=='\0')) return 0;

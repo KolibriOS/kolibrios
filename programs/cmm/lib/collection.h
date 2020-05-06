@@ -20,6 +20,8 @@ struct collection
 	dword get_pos_by_name();
 	void drop();
 	void increase_data_size();
+	dword get_last();
+	bool delete_last();
 };
 
 :void collection::increase_data_size() {
@@ -40,7 +42,10 @@ struct collection
 }
 
 :int collection::addn(dword in, len) {
-	if (count >= 4000) return 0;
+	if (count >= 4000) {
+		debugln("collection: more than 4000 elements!");
+		return 0;
+	}
 	if (element_offset[count]+len+2 > data_size) {
 		increase_data_size();
 		addn(in, len);
@@ -55,6 +60,10 @@ struct collection
 :dword collection::get(dword pos) {
 	if (pos<0) || (pos>=count) return 0;
 	return data_start + element_offset[pos];
+}
+
+:dword collection::get_last() {
+	return get(count-1);
 }
 
 :dword collection::get_pos_by_name(dword name) {
@@ -73,6 +82,9 @@ struct collection
 	count = 0;
 }
 
+:bool collection::delete_last() {
+	count--;
+}
 
 /*========================================================
 =                                                        =

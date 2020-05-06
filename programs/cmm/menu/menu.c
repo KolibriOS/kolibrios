@@ -147,6 +147,13 @@ void main()
 	}
 }
 
+void CorrectLastItem()
+{
+	if (menu1.cur_y > menu1.count - GetSeparatorsCount() - 1) {
+		menu1.cur_y = menu1.count - GetSeparatorsCount() - 1;
+	}
+}
+
 void ProcessKeys()
 {
 	switch(key_scancode) 
@@ -164,9 +171,18 @@ void ProcessKeys()
 			break;
 
 		case SCAN_CODE_UP:
-			if (!menu1.KeyUp()) menu1.KeyEnd();
+			if (!menu1.KeyUp()) {
+				menu1.KeyEnd();
+				CorrectLastItem();
+			}
 			draw_list();
 			break;
+
+		case SCAN_CODE_END:
+			menu1.KeyEnd();
+			CorrectLastItem();
+			draw_list();
+			break;			
 
 		default:
 			if (menu1.ProcessKey(key_scancode)) draw_list();

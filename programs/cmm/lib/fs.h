@@ -6,6 +6,10 @@
 #include "../lib/date.h"
 #endif
 
+#ifndef INCLUDE_COLLECTION_H
+#include "../lib/collection.h"
+#endif
+
 //===================================================//
 //                                                   //
 //              Basic System Functions               //
@@ -235,14 +239,14 @@ enum
 	DIRS_ONLYREAL
 };
 :int GetDir(dword dir_buf, file_count, path, doptions)
+dword buf, fcount, error;
+char readbuf[32];
 {
-	dword buf, fcount, error;
-	buf = malloc(32);
-	error = ReadDir(0, buf, path);
+	error = ReadDir(0, #readbuf, path);
 	if (!error)
 	{
-		fcount = ESDWORD[buf+8];
-		buf = realloc(buf, fcount+1*304+32);
+		fcount = ESDWORD[#readbuf+8];
+		buf = malloc(fcount+1*304+32);
 		ReadDir(fcount, buf, path);
 		//fcount=EBX;
 
@@ -261,7 +265,7 @@ enum
 	}
 	else
 	{
-		ESDWORD[dir_buf] = free(buf);
+		ESDWORD[dir_buf] = 0;
 		ESDWORD[file_count] = 0;
 	}
 	return error;
@@ -421,26 +425,28 @@ int block_size=1024*1024*4; //copy by 4 MiB
 //                                                   //
 //===================================================//
 
-:struct _dir_size
+:struct DIR_SIZE
 {
 	BDVK dir_info;
 	dword folders;
 	dword files;
 	dword bytes;
-	void get();	
-	void calculate_loop();	
-} dir_size;
+	dword get();	
+	dword calculate_loop();	
+};
 
-:void _dir_size::get(dword way)
+:dword DIR_SIZE::get(dword way1)
 {
 	folders = files = bytes = 0;
-	if (way) calculate_loop(way);
+	if (!way1) return 0;
+	calculate_loop(way1);
 }
 
-:void _dir_size::calculate_loop(dword way)
+:dword DIR_SIZE::calculate_loop(dword way)
 {
 	dword dirbuf, fcount, i, filename;
 	dword cur_file;
+	if (!way) return 0;
 	if (dir_exists(way))
 	{
 		cur_file = malloc(4096);
@@ -467,6 +473,8 @@ int block_size=1024*1024*4; //copy by 4 MiB
 		free(cur_file);
 		free(dirbuf);
 	}
+	return files;
 }
+
 
 #endif

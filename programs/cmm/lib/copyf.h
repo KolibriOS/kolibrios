@@ -15,7 +15,7 @@
 	if (!from1) || (!in1)
 	{
 		notify("Error: too few copyf() params!");
-		return;
+		return -1;
 	}
 	if (error = GetFileInfo(from1, #CopyFile_atr1))
 	{

@@ -8,30 +8,35 @@
 
 proc_info Dialog_Form;
 progress_bar copy_bar = {0,PR_LEFT,PR_TOP,PR_W,PR_H,0,0,1,0xFFFFFF,0x00FF00,0x555555};
-//sensor copying = {PR_LEFT,PR_TOP,WIN_DIALOG_W-PR_LEFT-PR_LEFT,19};
 
-int operation_flag;
 enum {
+	REDRAW_FLAG,
 	COPY_FLAG, 
 	MOVE_FLAG, 
 	DELETE_FLAG, 
 	OPERATION_END
 };
 
-void DisplayOperationForm()
+void DisplayOperationForm(int operation_flag)
 {
 	dword title;
 	if (operation_flag==COPY_FLAG) {
 		title = T_COPY_WINDOW_TITLE;
 		copy_bar.progress_color = 0x00FF00;
+		copy_bar.value = 0; 
+		copy_bar.max = 0;
 	}
 	else if (operation_flag==MOVE_FLAG) {
 		title = T_MOVE_WINDOW_TITLE;
 		copy_bar.progress_color = 0x00FF00;
+		copy_bar.value = 0; 
+		copy_bar.max = 0;
 	}
 	else if (operation_flag==DELETE_FLAG) {
 		title = T_DELETE_WINDOW_TITLE;
 		copy_bar.progress_color = 0xF17A65;
+		copy_bar.value = 0; 
+		copy_bar.max = 0;
 	}
 	copy_bar.frame_color = sc.work_graph;
 	switch(CheckEvent())
@@ -42,13 +47,13 @@ void DisplayOperationForm()
 			break;
 			
 		case evReDraw:
-			DefineAndDrawWindow(Form.left+Form.width-200,Form.top+90,WIN_DIALOG_W+9,skin_height+WIN_DIALOG_H,0x34,sc.work,title,0);
+			DefineAndDrawWindow(Form.left+Form.width-200, Form.top+90, WIN_DIALOG_W+9,
+				skin_height+WIN_DIALOG_H, 0x34, sc.work, title, 0);
 			GetProcessInfo(#Dialog_Form, SelfInfo);
 			DrawCaptButton(WIN_DIALOG_W-PR_LEFT-101, PR_TOP+PR_H+6, 100,26, 2, 
 				sc.button, sc.button_text, T_ABORT_WINDOW_BUTTON);
 
 			DrawRectangle3D(PR_LEFT-1, PR_TOP-1, PR_W+1, PR_H+1, sc.work_dark, sc.work_light);
-			//copying.draw_wrapper();
 	}
 }
 
@@ -64,15 +69,12 @@ void Operation_Draw_Progress(dword filename) {
 		copy_bar.value++;
 		return;
 	}
-	DisplayOperationForm();
+	DisplayOperationForm(REDRAW_FLAG);
 	DrawBar(PR_LEFT, PR_TOP-20, WIN_DIALOG_W-PR_LEFT, 15, sc.work);
 	WriteText(PR_LEFT, PR_TOP-20, 0x90, sc.work_text, filename);
 
 	progressbar_draw stdcall (#copy_bar);
 	progressbar_progress stdcall (#copy_bar);
-	//copy_bar.value++;
-	//pause(1);
-	//copying.draw_progress(copy_bar.value*copying.w/copy_bar.max, copy_bar.value, copy_bar.max-copy_bar.value, "");
 
 	WriteTextWithBg(PR_LEFT, PR_TOP+PR_H+5, 0xD0, sc.work_text, 
 		sprintf(#param, "%i/%i", copy_bar.value, copy_bar.max), sc.work);
