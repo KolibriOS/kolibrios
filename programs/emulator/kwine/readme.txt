@@ -1,4 +1,4 @@
-KWINE v0.0.2
+KWINE
 
 Developers:
  - 0CodErr founder of project PEload
@@ -9,7 +9,3 @@ How to use:
        kwine, lib/kernel32.dll, lib/msvcrt.dll
  - usage:
        kwine mysuperexefile.exe
-
-Changelog:
- - msvcrt.dll rewritten in c
- - added malloc, free, realloc, strcmp, strcat, strlen, printf to msvcrt.dll

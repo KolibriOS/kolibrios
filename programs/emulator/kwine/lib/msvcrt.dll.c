@@ -12,6 +12,9 @@
 #include "stdio.c"
 #include "stdlib.c"
 
+#include "time.h"
+#include "time.c"
+
 
 typedef struct
 {
@@ -39,6 +42,9 @@ const char sz_free[] = "free";
 const char sz_realloc[] = "realloc";
 //const char sz_[] = "";
 
+// time
+const char sz_time[] = "time";
+
  
 //uint32_t EXPORTS[] __asm__("EXPORTS") =
 export_t EXPORTS[] = 
@@ -57,6 +63,9 @@ export_t EXPORTS[] =
 	{sz_malloc, (void*)malloc},
 	{sz_free, (void*)free},
 	{sz_realloc, (void*)realloc},
+
+	{sz_time, (void*)time},
+
 	{NULL, NULL},
 };
 
