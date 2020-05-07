@@ -28,6 +28,7 @@ img_files = {
  {"UNIMG", PROGS .. "/fs/unimg/unimg"},
  {"VMODE", "common/vmode"},
  {"3D/HOUSE.3DS", "common/3d/house.3ds"},
+ {"DEVELOP/BACKY", PROGS .. "/develop/backy/Backy"},
  {"DEVELOP/T_EDIT.INI", PROGS .. "/other/t_edit/t_edit.ini"},
  {"File Managers/ICONS.INI", "common/File Managers/icons.ini"},
  {"File Managers/KFM.INI", "common/File Managers/kfm.ini"},
@@ -625,12 +626,12 @@ tup.append_table(img_files, {
  {"NETWORK/WEBVIEW", PROGS .. "/cmm/browser/WebView.com"},
 })
 tup.append_table(extra_files, {
+ {"kolibrios/develop/utils/codeview", PROGS .. "/cmm/codeview/codeview.com"},
  {"kolibrios/drivers/drvinst.kex", PROGS .. "/cmm/drvinst/drvinst.com"},
  {"kolibrios/games/pig/pigex", PROGS .. "/cmm/examples/pigex.com"},
  {"kolibrios/games/the_bus/the_bus", PROGS .. "/cmm/the_bus/the_bus.com"},
  {"kolibrios/KolibriNext/install.kex", PROGS .. "/cmm/installer/install.com"},
  {"kolibrios/utils/appearance", PROGS .. "/cmm/appearance/appearance.com"},
- {"kolibrios/utils/codeview", PROGS .. "/cmm/codeview/codeview.com"},
  {"kolibrios/utils/dicty.kex", PROGS .. "/cmm/dicty/dicty.com"},
  {"kolibrios/utils/netcheck", PROGS .. "/cmm/examples/netcheck.com"},
  {"kolibrios/utils/notes", PROGS .. "/cmm/notes/notes.com"},

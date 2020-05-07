@@ -21,7 +21,7 @@ struct collection
 	void drop();
 	void increase_data_size();
 	dword get_last();
-	bool delete_last();
+	bool pop();
 };
 
 :void collection::increase_data_size() {
@@ -82,8 +82,8 @@ struct collection
 	count = 0;
 }
 
-:bool collection::delete_last() {
-	count--;
+:bool collection::pop() {
+	if (count>0) count--;
 }
 
 /*========================================================
@@ -94,29 +94,41 @@ struct collection
 
 struct collection_int
 {
-	int count;
-	dword element[4096*3];
-	int add();
+	dword buf;
+	dword buf_size;
+	unsigned count;
+	void alloc();
+	void add();
 	dword get();
 	dword get_last();
 	void pop();
 	void drop();
 };
 
-:int collection_int::add(dword in) {
-	if (count >= 4096*3) return 0;
-	element[count] = in;
+:void collection_int::alloc() {
+	if (!buf) {
+		buf_size = 4096;
+		buf = malloc(4096);
+	} else {
+		buf_size += 4096;
+		buf = realloc(buf, buf_size);
+	}
+}
+
+:void collection_int::add(dword _in) {
+	if (!buf) || (count * sizeof(dword) >= buf_size) alloc();
+	EAX = count * sizeof(dword) + buf;
+	ESDWORD[EAX] = _in;
 	count++;
-	return 1;
 }
 
 :dword collection_int::get(dword pos) {
 	if (pos<0) || (pos>=count) return 0;
-	return element[pos];
+	return ESDWORD[pos * sizeof(dword) + buf];
 }
 
 :dword collection_int::get_last() {
-	return element[count];
+	return get(count-1);
 }
 
 :void collection_int::pop() {
@@ -124,8 +136,7 @@ struct collection_int
 }
 
 :void collection_int::drop() {
-	element[0] = 
-	count = 0;
+	element[0] = count = 0;
 }
 
 #endif
