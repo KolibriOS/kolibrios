@@ -1,6 +1,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;                                                                 ;;
-;; Copyright (C) KolibriOS team 2010-2015. All rights reserved.    ;;
+;; Copyright (C) KolibriOS team 2010-2020. All rights reserved.    ;;
 ;; Distributed under terms of the GNU General Public License       ;;
 ;;                                                                 ;;
 ;;  ping.asm - ICMP echo client for KolibriOS                      ;;
@@ -14,8 +14,7 @@
 
 format binary as ""
 
-BUFFERSIZE      = 1500
-IDENTIFIER      = 0x1337
+BUFFERSIZE      = 65536
 
 use32
         org     0x0
@@ -58,6 +57,10 @@ START:
         push    25
         push    80
         call    [con_init]
+; Init identifier with our PID number
+        mcall   9, thread_info, -1
+        mov     eax, [thread_info.PID]
+        mov     [icmp_packet.id], ax
 ; expand payload to 65504 bytes
         mov     edi, icmp_packet.data+32
         mov     ecx, 65504/32-1
@@ -261,7 +264,13 @@ mainloop:
         cmp     eax, -1
         je      fail2
 
-        mcall   23, [timeout]
+        mov     [time_exceeded], 0
+  .receiveloop:
+        mov     ebx, [timeout]
+        sub     ebx, [time_exceeded]
+        jb      .no_response
+        mcall   23                              ; Wait for network event with timeout
+
         mcall   26, 10                          ; Get high precision timer count
         sub     eax, [time_reference]
         jz      @f
@@ -272,7 +281,7 @@ mainloop:
         jb      @f
         inc     eax
   @@:
-        mov     [time_reference], eax
+        mov     [time_exceeded], eax           ; Exceeded time in 1/100 s
 
 ; Receive reply
         mcall   recv, [socketnum], buffer_ptr, BUFFERSIZE, MSG_DONTWAIT
@@ -294,6 +303,11 @@ mainloop:
 
 ; make esi point to ICMP packet header
         add     esi, buffer_ptr
+
+; Check identifier
+        mov     ax, [icmp_packet.id]
+        cmp     [esi + ICMP_header.Identifier], ax
+        jne     .receiveloop
 
 ; we have a response, print the sender IP
         push    esi
@@ -324,10 +338,7 @@ mainloop:
 
   .echo_reply:
 
-        cmp     [esi + ICMP_header.Identifier], IDENTIFIER
-        jne     .invalid
-
-; Validate the packet
+; Validate the payload
         add     esi, sizeof.ICMP_header
         mov     ecx, [size]
         mov     edi, icmp_packet.data
@@ -336,12 +347,13 @@ mainloop:
 
 ; update stats
         inc     [stats.rx]
-        mov     eax, [time_reference]
+        mov     eax, [time_exceeded]
         add     [stats.time], eax
 
+; Print time exceeded
         movzx   eax, [buffer_ptr + IPv4_header.TimeToLive]
         push    eax
-        mov     eax, [time_reference]
+        mov     eax, [time_exceeded]
         xor     edx, edx
         mov     ebx, 10
         div     ebx
@@ -504,7 +516,8 @@ sockaddr1:
 .ip     dd 0
         rb 10
 
-time_reference  dd ?
+time_reference  dd ?    ; start time of sent packet
+time_exceeded   dd ?    ; time exceeded between send and receive
 ip_ptr          dd ?
 count           dd ?
 size            dd ?
@@ -544,12 +557,14 @@ socketnum       dd ?
 icmp_packet     db ICMP_ECHO    ; type
                 db 0            ; code
                 dw 0            ; checksum
- .id            dw IDENTIFIER   ; identifier
+ .id            dw 0            ; identifier
  .seq           dw 0x0000       ; sequence number
  .data          db 'abcdefghijklmnopqrstuvwxyz012345'
 
 I_END:
                 rb 65504-32
+
+thread_info process_information
 
 params          rb 1024
 buffer_ptr:     rb BUFFERSIZE
