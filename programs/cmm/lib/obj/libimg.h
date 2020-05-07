@@ -195,9 +195,9 @@ struct _Image
 
 //NOTICE: DO NOT FORGET TO INIT libio AND libimg!!!
 #ifdef LANG_RUS
-#define TEXT_FILE_SAVED_AS "'File saved as "
-#else
 #define TEXT_FILE_SAVED_AS "'Файл сохранен как "
+#else
+#define TEXT_FILE_SAVED_AS "'File saved as "
 #endif
 :void save_image(dword _image_pointer, _w, _h, _path)
 {

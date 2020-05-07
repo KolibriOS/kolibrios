@@ -390,12 +390,7 @@ void ProcessEvent(dword id__)
 			EventSubmitOmnibox();
 			return;
 		case REFRESH_BUTTON:
-			if (http.transfer) {
-				StopLoading();
-				draw_window();
-			} else {
-				OpenPage(history.current());
-			}
+			EventRefreshPage();
 			return;
 		case CHANGE_ENCODING:
 			EventShowEncodingsList();
@@ -429,6 +424,7 @@ void ProcessEvent(dword id__)
 		case CLEAR_CACHE:
 			pages_cache.clear();
 			notify(#clear_cache_ok);
+			EventRefreshPage();
 			return;
 		case IN_NEW_TAB:
 			open_new_tab = true;
@@ -809,6 +805,16 @@ void EventViewSource()
 	//RunProgram(#program_path, #source_view_param);
 	source_mode = true;
 	EventOpenNewTab(history.current());
+}
+
+void EventRefreshPage()
+{
+	if (http.transfer) {
+		StopLoading();
+		draw_window();
+	} else {
+		OpenPage(history.current());
+	}
 }
 
 dword GetFileSize(dword _path)

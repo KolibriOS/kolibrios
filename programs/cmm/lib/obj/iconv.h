@@ -16,7 +16,7 @@ $DD 2 dup 0
 char aIconv_open[] = "iconv_open";
 char aIconv[]       = "iconv";
 
-char charsets[] = "UTF-8\0    KOI8-RU\0  CP1251\0   CP1252\0   ISO8859-5\0CP866    \0AUTO";
+char charsets[] = "UTF-8\0    KOI8-RU\0  CP1251\0   CP1252\0   ISO8859-5\0CP866\0    AUTO";
 enum { CH_UTF8, CH_KOI8, CH_CP1251, CH_CP1252, CH_ISO8859_5, CH_CP866, CH_AUTO };
 
 dword ChangeCharset(dword from_chs, to_chs, conv_buf)

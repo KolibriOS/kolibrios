@@ -35,6 +35,7 @@ struct TWebBrowser {
 	dword o_bufpointer;
 	int cur_encoding, custom_encoding;
 	bool link, t_html, t_body;
+	dword link_bg;
 	dword bufpointer;
 	dword bufsize;
 
@@ -121,6 +122,7 @@ void TWebBrowser::SetPageDefaults()
 	link_color_default = 0x0000FF;
 	link_color_active = 0xFF0000;
 	page_bg = 0xFFFFFF;
+	link_bg = 0xFFFFFF;
 	style.bg_color = page_bg;
 	DrawBuf.Fill(0, page_bg);
 	PageLinks.Clear();
@@ -331,9 +333,10 @@ void TWebBrowser::SetStyle() {
 	}
 	if (tag.is("body")) {
 		t_body = tag.opened;
-		if (value = tag.get_value_of("link="))  link_color_default = GetColor(value);
-		if (value = tag.get_value_of("alink=")) link_color_active = GetColor(value);
-		if (value = tag.get_value_of("text="))  text_colors[0]=GetColor(value);
+		if (value = tag.get_value_of("link="))   link_color_default = GetColor(value);
+		if (value = tag.get_value_of("alink="))  link_color_active = GetColor(value);
+		if (value = tag.get_value_of("bglink=")) link_bg=GetColor(value);
+		if (value = tag.get_value_of("text="))   text_colors[0]=GetColor(value);
 		if (value = tag.get_value_of("bgcolor=")) {
 			style.bg_color = page_bg = GetColor(value);
 			DrawBuf.Fill(0, page_bg);
@@ -358,9 +361,11 @@ void TWebBrowser::SetStyle() {
 			{
 				link = true;
 				PageLinks.AddLink(value);
+				style.bg_color = link_bg;
 			}
 		} else {
 			link = false;
+			style.bg_color = page_bg;
 		}
 		return;
 	}
