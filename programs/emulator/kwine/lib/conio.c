@@ -42,12 +42,12 @@ void *load_library(char *name) {
 void *getprocaddress(void *exports, char *name)
 {
 	if (exports == NULL) { return 0; }
-	while (*(uint32_t*)exports != NULL)
+	while (*(uint32_t*)exports != 0)
 	{
 		char *str1 = (char*)(*(uint32_t*)exports);
 		if (strcmp(str1, name) == 0)
 		{
-            void *ptr = *(uint32_t*)(exports + 4);
+            void *ptr = (void*)*(uint32_t*)(exports + 4);
 
             // important for debug
             /*debug_board_write_string(name);
@@ -146,13 +146,13 @@ int con_init_console_dll(void)
 
 // --------------------------------------------------------------------
 
-int cdecl _getch()
+int _getch()
 {
 	con_init_console_dll();
 	return con_getch();
 }
 
-int cdecl _kbhit()
+int _kbhit()
 {
 	con_init_console_dll();
 	return con_kbhit();

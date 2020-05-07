@@ -10,13 +10,13 @@ int putchar(int ch)
 	return ch;
 }
 
-void cdecl puts(const char *str)
+void puts(const char *str)
 {
 	con_init_console_dll();
 	con_write_asciiz(str);
 }
 
-char* cdecl gets(char* str)
+char* gets(char* str)
 {
 	con_init_console_dll();
 	return con_gets(str, 256);

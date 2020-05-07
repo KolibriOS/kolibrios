@@ -117,7 +117,7 @@ lib            dd 0
 func           dd 0
 func_name      dd 0
 ; ------------------------------------------------------------- ;
-sz_pe_load     db "PELoad",0
+sz_pe_load     db "KWINE",0
 ; ------------------------------------------------------------- ;
 con_init            dd 0
 con_write_asciiz    dd 0
