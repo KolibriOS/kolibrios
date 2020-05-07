@@ -18,7 +18,7 @@ void test1()
 	s.add("World");
 	debugln(s.get(0)); //-> Hello
 	debugln(s.get(1)); //-> World
-	s.delete_last();
+	s.pop();
 	debugln(s.get(0)); //-> Hello
 	debugln(s.get(1)); //-> 0
 	s.add("Kolibri");	
