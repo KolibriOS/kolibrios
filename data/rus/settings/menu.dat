@@ -41,7 +41,7 @@ FlatWave                  /sys/3d/flatwav
 Редактор Animage          /sys/media/animage
 Наложение фильтров        /sys/media/imgf/imgf
 Палитра                   /sys/media/palitra
-Пипетка                   /sys/pipetka
+Пипетка                   /sys/develop/pipet
 #4    **** Звук и видео ****
 Аудиоплеер Pixie          /sys/media/pixie
 Аудиоплеер AC97SND        /sys/media/ac97snd

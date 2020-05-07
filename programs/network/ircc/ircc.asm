@@ -559,6 +559,8 @@ default_nick            db 'kolibri_user', 0
 default_real            db 'Kolibri User', 0
 default_quit            db 'KolibriOS forever', 0
 
+closing_cross           db 'x',0
+
 irc_colors              dd 0xffffff     ;  0 white
                         dd 0x000000     ;  1 black
                         dd 0x00007f     ;  2 blue (navy)

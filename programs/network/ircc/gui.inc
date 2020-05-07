@@ -272,11 +272,12 @@ draw_window_tabs:
         mov     edx, WINDOW_BTN_START
         mov     edi, windows
   .more_btn:
-        mov     esi, [colors.work_button]
+        mov     esi, [colors.work]
         cmp     [window_active], edi
         jne     @f
-        not     esi
-        and     esi, 0x00ffffff
+        ;not     esi
+        ;and     esi, 0x00ffffff
+		mov      esi,  [colors.work_light]  
       @@:
         mcall
         inc     edx
@@ -298,7 +299,18 @@ draw_window_tabs:
         mov     ecx, TOP_SPACE shl 16 + TAB_HEIGHT - 1
         mov     edx, WINDOW_BTN_CLOSE
         mov     esi, 0x00aa0000         ; red !
-        mcall
+		mcall
+
+		pusha
+		; write closing cross
+		mov     ebx, [xsize]
+		sub     ebx, 9
+        shl     ebx, 16
+		add     ebx, TOP_SPACE+3
+		mov     ecx, 0x80FFFfff
+		mov     edx, closing_cross
+        mcall   4
+		popa
   @@:
 
 ; Draw the windownames onto the buttons
@@ -308,7 +320,7 @@ draw_window_tabs:
         mov     esi, MAX_WINDOWS
         mov     edi, windows
   .more:
-        mov     ecx, [colors.work_button_text]
+        mov     ecx, [colors.work_text]
         test    [edi + window.flags], FLAG_UPDATED
         jz      @f
         mov     ecx, 0x00aa0000         ; RED!

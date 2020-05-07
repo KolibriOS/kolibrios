@@ -75,7 +75,6 @@ img_files = {
 -- For russian build, add russian-only files.
 if build_type == "rus" then tup.append_table(img_files, {
  {"EXAMPLE.ASM", PROGS .. "/develop/examples/example/trunk/rus/example.asm"},
- {"PIPETKA", build_type .. "/pipetka"},
  {"GAMES/BASEKURS.KLA", build_type .. "/games/basekurs.kla"},
  {"GAMES/PADENIE", build_type .. "/games/padenie"}, 
  {"File Managers/KFAR.INI", build_type .. "/File Managers/kfar.ini"},
@@ -613,6 +612,7 @@ tup.append_table(img_files, {
  {"TMPDISK", PROGS .. "/cmm/tmpdisk/tmpdisk.com"},
  {"DEVELOP/CLIPVIEW", PROGS .. "/cmm/clipview/clipview.com"},
  {"DEVELOP/MENU", PROGS .. "/cmm/menu/menu.com"},
+ {"DEVELOP/PIPET", PROGS .. "/cmm/pipet/pipet.com"},
  {"File Managers/EOLITE", PROGS .. "/cmm/eolite/Eolite.com"},
  {"KF_VIEW", PROGS .. "/cmm/kf_font_viewer/font_viewer.com"},
  {"GAMES/CLICKS", PROGS .. "/games/clicks/trunk/clicks.com"},

@@ -154,15 +154,15 @@
 	$mov ebx,#__file_F70.func
 	$int 0x40
 }
-:int __FILE::write(dword write_file_size, write_buffer, write_file_path)
+:int __FILE::write(dword write_offset, write_len, write_buffer, wfile_path)
 {
 	__file_F70.func = 2;
-	__file_F70.param1 = 0;
+	__file_F70.param1 = write_offset;
 	__file_F70.param2 = 0;
-	__file_F70.param3 = write_file_size;
+	__file_F70.param3 = write_len;
 	__file_F70.param4 = write_buffer;
 	__file_F70.rezerv = 0;
-	__file_F70.name = io.path.path(write_file_path);
+	__file_F70.name = io.path.path(wfile_path);
 	$mov eax,70
 	$mov ebx,#__file_F70.func
 	$int 0x40
@@ -326,7 +326,7 @@
 }	
 :int IO::write(dword PATH,data)
 {
-	file.write(0,strlen(data),data,PATH);
+	return file.write(0,strlen(data),data,PATH);
 }
 :char BYTE_HEAD_FILE_KPCK[4];
 :dword IO::read(dword PATH)
@@ -355,6 +355,7 @@
     $mov eax,70
     $mov ebx,#__file_F70.func
     $int 0x40
+    return EAX;
 }
 :signed IO::count(dword PATH)
 {

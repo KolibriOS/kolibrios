@@ -97,8 +97,8 @@ void TWebBrowser::Paint()
 		text_color__ = text_colors[text_color_index];
 		if (link) && (text_colors[text_color_index]==text_colors[0]) text_color__ = link_color_default;
 
-		DrawBuf.WriteText(start_x, draw_y, list.font_type, text_color__, #line);
-		if (style.b) DrawBuf.WriteText(start_x+1, draw_y, list.font_type, text_color__, #line);
+		DrawBuf.WriteText(start_x, draw_y, list.font_type, text_color__, #line, NULL);
+		if (style.b) DrawBuf.WriteText(start_x+1, draw_y, list.font_type, text_color__, #line, NULL);
 		if (style.s) DrawBuf.DrawBar(start_x, list.item_h / 2 - zoom + draw_y, line_length, zoom, text_color__);
 		if (style.u) DrawBuf.DrawBar(start_x, list.item_h - zoom - zoom + draw_y, line_length, zoom, text_color__);
 		if (link) {
