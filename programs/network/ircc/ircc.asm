@@ -1,6 +1,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;                                                                 ;;
-;; Copyright (C) KolibriOS team 2004-2018. All rights reserved.    ;;
+;; Copyright (C) KolibriOS team 2004-2020. All rights reserved.    ;;
 ;; Distributed under terms of the GNU General Public License       ;;
 ;;                                                                 ;;
 ;;  IRC client for KolibriOS                                       ;;
@@ -13,7 +13,7 @@
 ;;                                                                 ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-version equ '0.31'
+version equ '0.32'
 
 ; connection status
 STATUS_DISCONNECTED     = 0
@@ -185,25 +185,6 @@ START:
         test    eax, eax
         jz      exit
         mov     [ebx + window.type], WINDOWTYPE_SERVER
-
-; get system colors
-        mcall   48, 3, colors, 40
-
-; set edit box and scrollbar colors
-        mov     eax, [colors.work]
-        mov     [scroll1.bg_color], eax
-        mov     [scroll2.bg_color], eax
-
-        mov     eax, [colors.work_button]
-        mov     [scroll1.front_color], eax
-        mov     [scroll2.front_color], eax
-
-        mov     eax, [colors.work_text]
-        mov     [scroll1.line_color], eax
-        mov     [scroll2.line_color], eax
-
-        mov     [scroll1.type], 1               ; 0 = simple, 1 = skinned
-        mov     [scroll2.type], 1
 
 ; get settings from ini
         invoke  ini.get_str, path, str_user, str_nick, user_nick, MAX_NICK_LEN, default_nick

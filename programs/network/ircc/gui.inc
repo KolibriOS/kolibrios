@@ -1,6 +1,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;                                                                 ;;
-;; Copyright (C) KolibriOS team 2004-2018. All rights reserved.    ;;
+;; Copyright (C) KolibriOS team 2004-2020. All rights reserved.    ;;
 ;; Distributed under terms of the GNU General Public License       ;;
 ;;                                                                 ;;
 ;;   Written by hidnplayr@kolibrios.org                            ;;
@@ -14,6 +14,10 @@
 draw_window:    ; Completely redraw the window, recalculate all coordinates and sizes
 
         pusha
+
+; get system colors
+        mcall   48, 3, colors, 40
+        call    set_edit_box_and_scrollbar_colors
 
         mcall   9, thread_info, -1                      ; get information about this thread
         mov     eax, [thread_info.box.width]            ; window xsize
@@ -277,7 +281,7 @@ draw_window_tabs:
         jne     @f
         ;not     esi
         ;and     esi, 0x00ffffff
-		mov      esi,  [colors.work_light]  
+        mov      esi,  [colors.work_light]  
       @@:
         mcall
         inc     edx
@@ -299,18 +303,18 @@ draw_window_tabs:
         mov     ecx, TOP_SPACE shl 16 + TAB_HEIGHT - 1
         mov     edx, WINDOW_BTN_CLOSE
         mov     esi, 0x00aa0000         ; red !
-		mcall
+        mcall
 
-		pusha
-		; write closing cross
-		mov     ebx, [xsize]
-		sub     ebx, 9
+        pusha
+        ; write closing cross
+        mov     ebx, [xsize]
+        sub     ebx, 9
         shl     ebx, 16
-		add     ebx, TOP_SPACE+3
-		mov     ecx, 0x80FFFfff
-		mov     edx, closing_cross
+        add     ebx, TOP_SPACE+3
+        mov     ecx, 0x80FFFfff
+        mov     edx, closing_cross
         mcall   4
-		popa
+        popa
   @@:
 
 ; Draw the windownames onto the buttons
@@ -359,5 +363,23 @@ highlight_updated_tabs:
         dec     esi
         jnz     .more_
   .enough_:
+
+        ret
+		
+set_edit_box_and_scrollbar_colors:
+        mov     eax, [colors.work]
+        mov     [scroll1.bg_color], eax
+        mov     [scroll2.bg_color], eax
+
+        mov     eax, [colors.work_button]
+        mov     [scroll1.front_color], eax
+        mov     [scroll2.front_color], eax
+
+        mov     eax, [colors.work_text]
+        mov     [scroll1.line_color], eax
+        mov     [scroll2.line_color], eax
+
+        mov     [scroll1.type], 0               ; 0 = simple, 1 = skinned
+        mov     [scroll2.type], 0
 
         ret
