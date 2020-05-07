@@ -9,18 +9,26 @@ Usage:  unimg path/to/img [output/folder] [-e]
 Author: Magomed Kostoev (Boppan, mkostoevr): FAT12 file system, driver.
 Contributor: Kiril Lipatov (Leency) */
 
+#ifdef __TINYC__
+#   define TCC 1
+#else
+#   define GCC 1
+#endif
+
 #include <stdarg.h>
 #include <stdio.h>
 #include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
 
-#define TCC 0
-#define GCC 1
-#include "compiller.h"
-
-#ifdef GCC
-#define con_init con_init
+#if TCC
+#   include <conio.h>
+#   define printf con_printf
+#   define puts con_write_asciiz
+#else
+#   define con_init_console_dll() 0
+#   define con_set_title(s)
+#   define con_exit(close)
 #endif
 
 typedef struct {
@@ -68,21 +76,13 @@ static int fat12__open(Fat12 *this, const char *img);
 static int fat12__error(Fat12 *this, const char *errorMessage);
 
 static void mkdir(const char *name) {
-    #ifdef TCC
     struct {
         int fn;
         int unused[4];
         char b;
         const char *path __attribute__((packed));
     } info;
-    #else
-    struct {
-        int fn;
-        int unused[4];
-        char b;
-        const char *path;
-    }  __attribute__((packed)) info;
-    #endif    
+
     memset(&info, 0, sizeof(info));
     info.fn = 9;
     info.b = 0;
@@ -376,14 +376,12 @@ static int fat12__error(Fat12 *this, const char *errorMessage) {
 
 static int handleError(const Fat12 *fat12) {
     printf("Error in Fat12: %s\n", fat12->errorMessage);
+    con_exit(0);
     return -1;
 }
 
 void writeFile(const char *fileName, int size, const uint8_t *data) {
-//    FILE *fp = NULL;
-//    if (!(fp = fopen(fileName, "wb"))) { perror(NULL); }
-//    fwrite(data, 1, size, fp);
-//    fclose(fp);
+#if TCC
     struct Info {
         int number;
         int reserved0;
@@ -391,15 +389,22 @@ void writeFile(const char *fileName, int size, const uint8_t *data) {
         int dataSize;
         const void *data;
         char zero;
-        const char *name;
-    } __attribute__((packed)) *info = calloc(sizeof(struct Info), 1);
-    
-    info->number = 2; // create/overwrite file
-    info->dataSize = size;
-    info->data = data;
-    info->zero = 0;
-    info->name = fileName;
-    asm volatile ("int $0x40" :: "a"(70), "b"(info));
+        const char *name __attribute__((packed));
+    } info;
+
+    memset(&info, 0, sizeof(struct Info));
+    info.number = 2; // create/overwrite file
+    info.dataSize = size;
+    info.data = data;
+    info.zero = 0;
+    info.name = fileName;
+    asm volatile ("int $0x40" :: "a"(70), "b"(&info));
+#else
+    FILE *fp = NULL;
+    if (!(fp = fopen(fileName, "wb"))) { perror(NULL); }
+    fwrite(data, 1, size, fp);
+    fclose(fp);
+#endif
 }
 
 static int callback(const char *name, size_t size, const uint8_t *data, void *param) {
@@ -422,14 +427,7 @@ static int callback(const char *name, size_t size, const uint8_t *data, void *pa
         }
     }
     printf("Extracting %s\n", outputPath->data);
-    #ifdef TCC
-        FILE *fp = NULL;
-        if (!(fp = fopen(outputPath->data, "wb"))) { perror(NULL); }
-        fwrite(data, 1, size, fp);
-        fclose(fp);
-    #else
-        writeFile(outputPath->data, size, data);
-    #endif
+    writeFile(outputPath->data, size, data);
     outputPath->data[outputPath->length] = '\0';
     return 0;
 }
@@ -440,45 +438,45 @@ int main(int argc, char* argv[]) {
     Fat12 fat12 = { 0 };
     char *imageFile = NULL;
     String outputFolder = { 0 };
-    int exit_code = 0;
+    int closeOnExit = 0;
 
-    char app_title[] = "UnImg - kolibri.img file unpacker";
-    con_init(-1, -1, -1, 350, app_title);
+    if (con_init_console_dll()) { return -1; }
+    con_set_title("UnImg - kolibri.img file unpacker");
 
     if (argc < 2) { 
         puts(" Usage:");
         puts(" unimg \"/path/to/kolibri.img\" \"/optional/extract/path\"");
         puts("       where optional key [-e] is exit on success");
-        exit(exit_code);
+        con_exit(0);
         return -1;
     } else {
-    	imageFile = argv[1];
-    	printf("File: %s\n", imageFile);
+        imageFile = argv[1];
+        printf("File: %s\n", imageFile);
     }
     
     outputFolder.capacity = 4096;
     outputFolder.data = malloc(outputFolder.capacity);
 
     //! ACHTUNG: possible buffer overflow, is 4096 enough in KolibriOS?
-    if (argc >= 3 && argv[2][0] != '-') strcpy(outputFolder.data, argv[2]);
+    if (argc >= 3 && argv[2][0] != '-') { strcpy(outputFolder.data, argv[2]); }
     else {
-    	strcpy(outputFolder.data, "/tmp0/1");
-    	strcat(outputFolder.data, strrchr(imageFile, '/'));
+        strcpy(outputFolder.data, "/tmp0/1");
+        strcat(outputFolder.data, strrchr(imageFile, '/'));
     }
 
     outputFolder.length = strlen(outputFolder.data);
 
     // handle -e parameter - exit on success
-    if (argc >= 3 && !strcmp(argv[argc - 1], "-e")) { exit_code = 1; }
+    if (argc >= 3 && !strcmp(argv[argc - 1], "-e")) { closeOnExit = 1; }
 
-    if (!fat12__open(&fat12, imageFile)) { 
-        return handleError(&fat12); 
+    if (!fat12__open(&fat12, imageFile)) {
+        return handleError(&fat12);
     }
-
     if (!fat12__forEachFile(&fat12, callback, &outputFolder)) {
         return handleError(&fat12);
     }
 
     puts("\nDONE!");
-    exit(exit_code);
+    con_exit(closeOnExit);
+    return 0;
 }
