@@ -1,6 +1,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;                                                                 ;;
-;; Copyright (C) KolibriOS team 2010-2017. All rights reserved.    ;;
+;; Copyright (C) KolibriOS team 2010-2020. All rights reserved.    ;;
 ;; Distributed under terms of the GNU General Public License       ;;
 ;;                                                                 ;;
 ;;  tracert.asm - Trace network route for KolibriOS                ;;
@@ -239,7 +239,7 @@ mainloop:
         test    eax, eax
         jz      fail2
 
-        DEBUGF  2, "Answer after %u\n", eax
+        DEBUGF  2, "Answer of %u bytes\n", eax
 
 ; IP header length
         movzx   esi, byte[buffer_ptr]
@@ -263,6 +263,7 @@ mainloop:
 ;;        jne     .receive
 
 ; What kind of response is it?
+        DEBUGF  2, "Response Type: %u Code: %u\n", [esi + ICMP_header.Type], [esi + ICMP_header.Code]
         cmp     [esi + ICMP_header.Type], ICMP_UNREACH_PORT
         je      .last
         cmp     [esi + ICMP_header.Type], ICMP_TIMXCEED

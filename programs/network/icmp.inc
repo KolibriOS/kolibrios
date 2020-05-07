@@ -44,11 +44,11 @@ ICMP_PARAMPROB_ERRATPTR         =   0            ; error at param ptr
 ICMP_PARAMPROB_OPTABSENT        =   1            ; req. opt. absent
 ICMP_PARAMPROB_LENGTH           =   2            ; bad length
 
-ICMP_TSTAMP                     =   13              ; timestamp r=  est
+ICMP_TSTAMP                     =   13              ; timestamp request
 ICMP_TSTAMPREPLY                =   14              ; timestamp reply
-ICMP_IREQ                       =   15              ; information r=  est
+ICMP_IREQ                       =   15              ; information request
 ICMP_IREQREPLY                  =   16              ; information reply
-ICMP_MASKREQ                    =   17              ; address mask r=  est
+ICMP_MASKREQ                    =   17              ; address mask request
 ICMP_MASKREPLY                  =   18              ; address mask reply
 ICMP_TRACEROUTE                 =   30              ; traceroute
 ICMP_DATACONVERR                =   31              ; data conversion error
