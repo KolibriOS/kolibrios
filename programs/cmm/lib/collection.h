@@ -136,7 +136,7 @@ struct collection_int
 }
 
 :void collection_int::drop() {
-	element[0] = count = 0;
+	count = 0;
 }
 
 #endif
