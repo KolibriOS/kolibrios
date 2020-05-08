@@ -23,7 +23,7 @@ const char sNew[] = "New";
 const char er_file_not_found[] = "'Cannot open file' -E";
 const char er_format[] = "'Error: bad format' -E";
 const char msg_save[] = "'File saved' -O";
-const char msg_load[] = "'File loaded' -O";
+//const char msg_load[] = "'File loaded' -O";
 const char msg_save_error[] = "'Error saving file' -E";
 const char msg_new[] = "'Memory cleared' -I";
 
@@ -1058,16 +1058,17 @@ void EventLoadFile()
 {
 	stop_edit();
 	int r = LoadFile(fname);
-	char *result;
 	if (r > 0) {
 		calculate_values();
 		sel_moved = 0;
 		draw_grid();
-		result = (char*)msg_load;
+		//result = (char*)msg_load;
+	} else {
+		char *result;
+		if (r == -1) result = (char*)er_file_not_found;
+		else if (r == -2) result = (char*)er_format;
+		kos_AppRun("/sys/@notify", result);
 	}
-	else if (r == -1) result = (char*)er_file_not_found;
-	else if (r == -2) result = (char*)er_format;
-	kos_AppRun("/sys/@notify", result);
 }
 
 void EventGridSelectAll()

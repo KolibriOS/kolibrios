@@ -20,6 +20,7 @@ extern DWORD *cell_x, *cell_y;
 extern char ***buffer;
 extern DWORD buf_col, buf_row;
 extern DWORD buf_old_x, buf_old_y;
+DWORD filesize;
 
 extern bool sel_moved;
 
@@ -576,15 +577,22 @@ char *Kos_FileRead(kosFileInfo &fileInfo, int &code)
 
 char GetCsvSeparator(char *fname)
 {
-	char buffer[512];
+	char buffer[4096];
 	kosFileInfo fileInfo;
+	DWORD load_size;
+	
+	if (filesize < 4096) {
+		load_size = filesize; 
+	} else {
+		load_size = 4096;
+	}
 
 	rtlDebugOutString(fname);
 
 	strcpy(fileInfo.fileURL, fname);
 	fileInfo.OffsetLow = 0;
 	fileInfo.OffsetHigh = 0;
-	fileInfo.dataCount = 512;
+	fileInfo.dataCount = load_size;
 	fileInfo.rwMode = 0;
 	fileInfo.bufferPtr = (Byte *)buffer;
 	
@@ -714,7 +722,7 @@ int LoadFile(char *fname)
 	kosFileInfo fileInfo;
 	kosBDVK bdvk;
 	int filePointer = 0, i, j;
-	Dword res, filesize;
+	Dword res;
 	char buffer[512 + 1];
 	char *d, *s, *k;
 	int step = 0, items;
@@ -732,6 +740,8 @@ int LoadFile(char *fname)
 	{
 		return -1;
 	}
+	
+	filesize = bdvk.size_low;
 
 	if (str_is_csv(fname))
 		return LoadCSV(fname);
@@ -739,8 +749,6 @@ int LoadFile(char *fname)
 
 	// clear the table
 	reinit();
-
-	filesize = bdvk.size_low;
 
 	fileInfo.rwMode = 0;
 	fileInfo.dataCount = strlen(sFileSign);
