@@ -141,7 +141,7 @@ int SEARCH::highlight(dword _color, _bg_color)
 			col=_color;
 			found_count++;	
 		} 
-		draw_bar(0, atoi(pos.get(i)), 3, list.item_h, col);
+		//draw_bar(0, atoi(pos.get(i)), 3, list.item_h, col);
 	}
 }
 
