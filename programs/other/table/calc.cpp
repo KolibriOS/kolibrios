@@ -577,14 +577,14 @@ char *Kos_FileRead(kosFileInfo &fileInfo, int &code)
 
 char GetCsvSeparator(char *fname)
 {
-	char buffer[4096];
+	char buffer[512];
 	kosFileInfo fileInfo;
 	DWORD load_size;
 	
-	if (filesize < 4096) {
+	if (filesize < 512) {
 		load_size = filesize; 
 	} else {
-		load_size = 4096;
+		load_size = 512;
 	}
 
 	rtlDebugOutString(fname);
