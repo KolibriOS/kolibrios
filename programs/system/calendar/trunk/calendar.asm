@@ -400,70 +400,65 @@ day_bounds db -1,0,7,0,-7,0,1,0 ; left,down,up,right
     xor  [new_style],1
     jmp  upd
 
+update_clock:
+    mcall 22,0x00000000 
+    call draw_clock	
+    jmp  still
 
 reset:
     mcall 3
     mov  ecx,eax
     shl  ecx,16
     shr  ecx,16
-    mcall 22,0x00000000 
-    jmp  still
+    jmp  update_clock
 
 plus_hd:
     mcall 3
     mov  ecx,eax
     add  ecx,1
-    mcall 22,0x00000000 
-    jmp  still
+    jmp  update_clock
 
 plus_he:
     mcall 3
     mov  ecx,eax
     add  ecx,16
-    mcall 22,0x00000000 
-    jmp  still
+    jmp  update_clock
 
 minus_hd:
     mcall 3
     mov  ecx,eax
     sub  ecx,1
-	mcall 22,0x00000000
-    jmp  still
+    jmp  update_clock
 
 minus_he:
     mcall 3
     mov  ecx,eax
     sub  ecx,16
-	mcall 22,0x00000000 
-    jmp  still
+    jmp  update_clock
 
 plus_md:
     mcall 3
     mov  ecx,eax
     add  ecx,256
-	mcall 22,0x00000000 
-    jmp  still
+    jmp  update_clock
 
 plus_me:
     mcall 3
     mov  ecx,eax
     add  ecx,4096
-    mcall 22,0x00000000 
-    jmp  still
+    jmp  update_clock
 
 minus_md:
     mcall 3
     mov  ecx,eax
     sub  ecx,256
-    mcall 22,0x00000000
-    jmp  still
+    jmp  update_clock
 
 minus_me:
     mcall 3
     mov  ecx,eax
     sub  ecx,4096
-    mcall 22,0x00000000
-    jmp  still
+    jmp  update_clock
 
 set_date:
     mov  eax,0x00000000
