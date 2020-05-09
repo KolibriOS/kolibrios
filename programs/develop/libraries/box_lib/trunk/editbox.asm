@@ -730,7 +730,7 @@ edit_box_mouse._remove_selection:
 edit_box_mouse._blur:
         test    word ed_flags,ed_always_focus
         jne     edit_box_mouse._remove_selection
-        btr     ed_flags, bsf ed_focus ;if focused then remove focus, otherwise exit
+        btr     word ed_flags, bsf ed_focus ;if focused then remove focus, otherwise exit
         jnc     edit_box_mouse._remove_selection
         mov     ebp,ed_color
         call    edit_box.clear_cursor
