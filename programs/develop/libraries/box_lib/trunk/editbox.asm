@@ -548,6 +548,7 @@ edit_box_key.ctrl_v:
 .selected_done:
         mov     ecx,[eax]
         sub     ecx,3*4
+        push    ecx
 ; in ecx size of string to insert
         add     ecx,ed_size
         mov     edx,ed_max
@@ -581,7 +582,15 @@ edit_box_key.ctrl_v:
 ;        stosb
 ;        dec     ecx
 ;        jnz     @b
-        pop     edi eax
+        pop    edi eax
+;move cursor to the end of the inserted string		
+        pop    ecx
+        add    ecx,ed_pos
+        cmp    ecx,ed_max
+        jbe    @f
+        mov    ecx,ed_max
+@@:
+		mov    ed_pos, ecx
 .no_valid_text:
 ; remove unnecessary memory area
         mov     ecx,eax
