@@ -84,10 +84,12 @@ edit_box:
 .draw_bg_cursor_text:
         call    .check_offset
         call    .draw_bg
+        test    word ed_flags,ed_focus ; for unfocused controls =>
+        jz      .draw_cursor_text      ; do not draw selection(named shift)
         call    .draw_shift
 .draw_cursor_text:
         call    .draw_text
-        test    word ed_flags,ed_focus
+        test    word ed_flags,ed_focus ; and dosn`t draw cursor
         jz      .editbox_exit
         call    .draw_cursor
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -167,12 +169,14 @@ edit_box_key:
 ; restore ascii code
         rol     eax,8
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;Заглушка на обработку клавиш вверх и вниз т.е. при обнаружении этих кодов происходит выход из обработчика
+;Заглушка на обработку клавиш вверх и вниз т.е. при обнаружении
+;этих кодов происходит выход из обработчика
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 use_key_no_process   up,down,esc,enter,tab,numl,capsl,scrolll,pgup,pgdown
 ;--- нажата другая клавиша ---
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;Проверка установлен ли флаг при котором нужно выводить только цифры в нужном боксе
+;Проверка установлен ли флаг при котором нужно выводить 
+;только цифры в нужном боксе
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;
         test    word ed_flags,ed_figure_only  ; только цифры?
         jz      @f
@@ -718,17 +722,21 @@ edit_box_mouse.m_sh:
         call    edit_box.draw_cursor
 ; процедура установки фокуса
         jmp     edit_box_mouse.drc
+        
+edit_box_mouse._remove_selection:
+        and     word ed_flags,ed_shift_cl
+        jmp     edit_box.draw_bg_cursor_text
 
 edit_box_mouse._blur:
         test    word ed_flags,ed_always_focus
-        jne     edit_box.editbox_exit
-        btr     word ed_flags,1 ; если не в фокусе, выходим
-        jnc     edit_box.editbox_exit
+        jne     edit_box_mouse._remove_selection
+        btr     ed_flags, bsf ed_focus ;if focused then remove focus, otherwise exit
+        jnc     edit_box_mouse._remove_selection
         mov     ebp,ed_color
         call    edit_box.clear_cursor
 edit_box_mouse.drc:
         call    edit_box.draw_border
-        jmp     edit_box.editbox_exit
+        jmp     edit_box_mouse._remove_selection
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;Общие функции обработки

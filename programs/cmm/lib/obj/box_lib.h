@@ -133,10 +133,11 @@ dword width,
 {
 	dword ed_text;
 	ESI = ed;
-	ESI.edit_box.offset = ESI.edit_box.shift = ESI.edit_box.shift_old = 0;
+	//ESI.edit_box.offset = ESI.edit_box.shift = ESI.edit_box.shift_old = 0; //no need because of 7904
 	ESI.edit_box.flags = _flags;
 	ed_text = ESI.edit_box.text;
-	ESI.edit_box.pos = ESI.edit_box.size = strlen(ed_text);
+	//ESI.edit_box.pos =  //no need because of 7904
+	ESI.edit_box.size = strlen(ed_text);
 }
 
 struct scroll_bar
