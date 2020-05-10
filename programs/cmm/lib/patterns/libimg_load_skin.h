@@ -43,4 +43,15 @@
 	if (icon_n>=0) img_draw stdcall(icons32draw.image, x, y, 32, 32, 0, icon_n*32);
 }
 
+:libimg_image icons16draw;
+:void DrawIcon16(dword x,y, bg, icon_n) {
+	//load_dll(libimg, #libimg_init,1);
+	if (!icons16draw.image) {
+		Libimg_LoadImage(#icons16draw, "/sys/icons16.png");
+		Libimg_ReplaceColor(icons16draw.image, icons16draw.w, icons16draw.h, 0xffFFFfff, bg);
+		Libimg_ReplaceColor(icons16draw.image, icons16draw.w, icons16draw.h, 0xffCACBD6, MixColors(bg, 0, 220));
+	}
+	if (icon_n>=0) img_draw stdcall(icons16draw.image, x, y, 16, 16, 0, icon_n*16);
+}
+
 #endif

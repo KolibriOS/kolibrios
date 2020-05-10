@@ -1,12 +1,14 @@
-
+#ifndef TAB_PADDING
 #define TAB_PADDING 15
+#endif
+
 #define TAB_HEIGHT 28
 
 :struct _tabs
 {
 	int active_tab;
 	int x,y,w,h;
-	void draw_button();
+	dword draw_button();
 	int click();
 	void draw_wrapper();
 };
@@ -14,10 +16,10 @@
 :void _tabs::draw_wrapper()
 {
 	DrawRectangle(x,y+TAB_HEIGHT,w-1,h-TAB_HEIGHT, sc.work_graph);
-	DrawRectangle(x+1,y+1+TAB_HEIGHT,w-3,h-2-TAB_HEIGHT, sc.work_light);
+	DrawBar(x+1,y+1+TAB_HEIGHT,w-3,1, sc.work_light);
 }
 
-:void _tabs::draw_button(dword xx, but_id, text)
+:dword _tabs::draw_button(dword xx, but_id, text)
 {
 	dword col_bg, col_text;
 	dword ww=strlen(text)*8, hh=TAB_HEIGHT;
@@ -36,6 +38,7 @@
 	WriteText(xx, y+6, 0x90, col_text, text);
 	DrawBar(xx, y+hh-3, ww, 3, col_bg);
 	//DrawStandartCaptButton(xx, y, but_id, text); //GetFreeButtonId()
+	return xx;
 }
 
 :int _tabs::click(int N)

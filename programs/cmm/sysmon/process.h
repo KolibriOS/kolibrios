@@ -32,9 +32,9 @@ checkbox show_system = { T_SHOW_SYSTEM_PROCESSES, false };
 void Processes__Main()
 {
 	int btn;
-	SetEventMask(EVM_REDRAW + EVM_KEY + EVM_BUTTON + EVM_MOUSE + EVM_MOUSE_FILTER);
 	maxcpu = GetCpuFrequency();
-	goto _PROCESS_REDRAW;
+	SetEventMask(EVM_REDRAW + EVM_KEY + EVM_BUTTON + EVM_MOUSE + EVM_MOUSE_FILTER);
+	goto _PROCESS_REDRAW_3;
 	loop()
 	{
 	  WaitEventTimeout(50);
@@ -44,35 +44,31 @@ void Processes__Main()
 			SelectList_ProcessMouse();
 			break;
 		case evKey:
-			GetKeys();
+			Sysmon__KeyEvent();
 			if (select_list.ProcessKey(key_scancode)) SelectList_LineChanged();
 			break;
 		case evButton:
-			btn = GetButtonID();
-			Sysmon__ButtonEvent(btn);
+			btn = Sysmon__ButtonEvent();
 
-			if (show_system.click(btn))  
-			{
+			if (show_system.click(btn)) {
 				SelectList_LineChanged();
 			}
-			if (BTN_ID_KILL_PROCESS == btn)  
-			{
+			if (BTN_ID_KILL_PROCESS == btn) {
 				KillProcess(current_process_id);
 				pause(10);
 				SelectList_LineChanged(); 
 			}
-			if (BTN_ID_SHOW_PROCESS_INFO == btn)  
-			{
+			if (BTN_ID_SHOW_PROCESS_INFO == btn) {
 				io.run("/sys/tinfo", itoa(GetProcessSlot(current_process_id))); 
 			}
 			break;
 		case evReDraw: 
-			_PROCESS_REDRAW:
+			_PROCESS_REDRAW_3:
 			if (!Sysmon__DefineAndDrawWindow()) break;
 
 			SelectList_Init(WIN_PAD, WIN_CONTENT_Y, 
 				WIN_CONTENT_W-scroll1.size_x, 
-				WIN_CONTENT_H-BOTPANEL_H-TAB_HEIGHT, false);
+				WIN_CONTENT_H-BOTPANEL_H-WIN_CONTENT_Y, false);
 			SelectList_DrawBorder();
 
 			//DrawWideRectangle(0, 0, Form.cwidth, Form.cheight, 4, sc.work);

@@ -82,7 +82,10 @@ edit_box:
         mov     ed_height,eax
         call    .draw_border
 .draw_bg_cursor_text:
+        ;test   word ed_flags,ed_focus ; for unfocused controls =>
+        ;jz     .sjip_offset           ; do not recalculate offset (big OS behaviour)
         call    .check_offset
+;.sjip_offset:
         call    .draw_bg
         test    word ed_flags,ed_focus ; for unfocused controls =>
         jz      .draw_cursor_text      ; do not draw selection(named shift)
