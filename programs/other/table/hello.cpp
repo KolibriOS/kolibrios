@@ -59,12 +59,15 @@ kosSysColors sc;
 
 // editbox data
 char edit_text[256];
-edit_box cell_box = {0,9*8-6,WND_H - 16-32,0xffffff,0x94AECE,0,0x808080,0x10000000,255,(dword)&edit_text,0,0};
+edit_box cell_box = {0,9*8-6,WND_H - 16-32,0xffffff,0x94AECE,0,
+	0x808080,0x10000000,sizeof(edit_text)-1,(dword)&edit_text,0,0};
 
 // scrolls
 #define SCROLL_SIZE 16
-scroll_bar scroll_v = { SCROLL_SIZE,200,398, NULL, SCROLL_SIZE,0,115,15,0,0xeeeeee,0xD2CED0,0x555555,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1};
-scroll_bar scroll_h = { 200,NULL,SCROLL_SIZE, NULL, SCROLL_SIZE,0,115,15,0,0xeeeeee,0xD2CED0,0x555555,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1};
+scroll_bar scroll_v = { SCROLL_SIZE,200,398, NULL, SCROLL_SIZE,0,115,
+	15,0,0xeeeeee,0xD2CED0,0x555555,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1};
+scroll_bar scroll_h = { 200,NULL,SCROLL_SIZE, NULL, SCROLL_SIZE,0,115,
+	15,0,0xeeeeee,0xD2CED0,0x555555,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1};
 
 // ячейки - их параметры и текст
 DWORD col_count = 100, row_count = 100;
@@ -112,7 +115,8 @@ DWORD nx = 0, ny = 0;
 // редактирование имени файла
 bool fn_edit = 0;
 char fname[256];
-edit_box file_box = {160,9*8+12,WND_H - 16-32,0xffffff,0x94AECE,0,0x808080,0x10000000,255,(dword)&fname,0,0};
+edit_box file_box = {160,9*8+12,WND_H - 16-32,0xffffff,0x94AECE,
+	0,0x808080,0x10000000,sizeof(fname)-1,(dword)&fname,0,0};
 
 // изменение размеров
 #define SIZE_X 1 // состояние
@@ -557,8 +561,10 @@ void draw_window()
 	int panel_y = cHeight - MENU_PANEL_HEIGHT + 1;
 	kos_DrawBar(0, panel_y, cWidth, MENU_PANEL_HEIGHT-1, sc.work);
 	kos_WriteTextToWindow(3 + 1, panel_y + 14, 0x90, sc.work_text, (char*)sFilename, 0);	
+	
 	file_box.top = panel_y + 10;
-	#define BTX 230
+	file_box.width = cWidth - 265;
+	int BTX = cWidth - 190;
 	#define BTW 70
 	//save
 	kos_DefineButton(BTX + 25, file_box.top, BTW, 21, SAVE_BUTTON, sc.work);

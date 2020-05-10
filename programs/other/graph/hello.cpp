@@ -44,8 +44,8 @@ double x1,y1,x2,y2;
 char *funct = NULL;
 
 char edit_path[256];
-edit_box mybox = {0,92,WND_H-16-32,0xffffff,0x94AECE,0,0x808080,0x10000000,
-	sizeof(edit_path)-1,0,(dword)&edit_path, 0, 0};
+edit_box mybox = {0,92,WND_H-16-32,0xffffff,0x94AECE,0,0x808080,0x10000000,	
+	sizeof(edit_path)-1,(dword)&edit_path, 0, 0};
 
 char *full_head;
 
