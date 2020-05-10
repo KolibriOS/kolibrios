@@ -37,6 +37,7 @@
 #define WIN_CONTENT_W 400
 #define WIN_CONTENT_H 465
 #define ICONGAP 26
+#define BASE_TAB_BUTTON_ID 10
 proc_info Form;
 
 #ifdef LANG_RUS
@@ -51,13 +52,7 @@ proc_info Form;
 #define T_APP_TITLE "System Monitor"
 #endif
 
-enum {
-	TAB_GENERAL=20,
-	TAB_DRIVES,
-	TAB_PROCESSES
-};
-
-_tabs tabs = { TAB_GENERAL, 4, 10, WIN_CONTENT_W+WIN_PAD+WIN_PAD-4-4, TAB_HEIGHT };
+_tabs tabs = { 4, 10, WIN_CONTENT_W+WIN_PAD+WIN_PAD-4-4, BASE_TAB_BUTTON_ID };
 
 //===================================================//
 //                                                   //
@@ -75,10 +70,7 @@ int Sysmon__DefineAndDrawWindow()
 	if (Form.status_window>2) return false;
 	//if (Form.width  < 300) { MoveSize(OLD,OLD,300,OLD); break; }
 	//if (Form.height < 200) { MoveSize(OLD,OLD,OLD,200); break; }
-	tabs.draw_wrapper();
-	butx = tabs.draw_button(tabs.x+TAB_PADDING, TAB_GENERAL, T_CPU_AND_RAM);	
-	butx = tabs.draw_button(strlen(T_CPU_AND_RAM)*8+TAB_PADDING+butx, TAB_DRIVES, T_DRIVES);	
-	       tabs.draw_button(strlen(T_DRIVES)*8+TAB_PADDING+butx, TAB_PROCESSES, T_PROCESSES);
+	tabs.draw();
 	return true;
 }
 
@@ -86,18 +78,7 @@ int Sysmon__ButtonEvent()
 {
 	int bid = GetButtonID();
 	if (1==bid) ExitProcess();
-	if (TAB_GENERAL==bid) {
-		tabs.active_tab = TAB_GENERAL;
-		CPUnRAM__Main();
-	}
-	if (TAB_PROCESSES==bid) {
-		tabs.active_tab = TAB_PROCESSES;
-		Processes__Main();
-	}
-	if (TAB_DRIVES==bid) {
-		tabs.active_tab = TAB_DRIVES;
-		Drives__Main();
-	}
+	tabs.click();
 	return bid;
 }
 
@@ -117,5 +98,10 @@ void main()
 	load_dll(libimg, #libimg_init,1);
 	load_dll(libini, #lib_init,1);
 	load_dll(boxlib, #box_lib_init,0);
+
+	tabs.add(T_CPU_AND_RAM, #CPUnRAM__Main);
+	tabs.add(T_DRIVES,      #Drives__Main);
+	tabs.add(T_PROCESSES,   #Processes__Main);
+
 	CPUnRAM__Main();
 }

@@ -6,13 +6,10 @@
 #define PANELH 28
 #define WIN_W 490
 #define WIN_H 315
+#define BASE_TAB_BUTTON_ID 97
 proc_info Form;
 
-enum { 
-	PHRASE_TAB=20, CHARS_TAB
-};
-
-_tabs tabs = { PHRASE_TAB };
+_tabs tabs = { WIN_W-130, 0, NULL, BASE_TAB_BUTTON_ID };
 
 block preview = { 0, PANELH, WIN_W, WIN_H - PANELH };
 checkbox bold = { "Bold", false };
@@ -27,6 +24,10 @@ void main()
 	kfont.init(#param);
 	strcpy(#title, "Font preview: ");
 	strcat(#title, #param);
+
+	tabs.add("Phrase", #DrawPreviewPhrase);
+	tabs.add("Chars", #DrawPreviewChars);
+
 	loop() switch(WaitEvent())
 	{
 		case evButton:
@@ -35,7 +36,7 @@ void main()
 			bold.click(btn); 
 			smooth.click(btn);
 			colored.click(btn);
-			if (btn==PHRASE_TAB) || (btn==CHARS_TAB) tabs.click(btn);
+			tabs.click(btn);
 			goto _DRAW_WINDOW_CONTENT;
 		case evReDraw:
 			sc.get();
@@ -53,8 +54,8 @@ void main()
 			smooth.draw(83,8);
 			colored.draw(170,8);
 
-			tabs.draw_button(Form.cwidth-130, PHRASE_TAB, "Phrase");
-			tabs.draw_button(Form.cwidth-60, CHARS_TAB, "Chars");
+			tabs.draw();
+			tabs.draw_active_tab();
 
 			if (!kfont.font)
 			{
@@ -62,8 +63,6 @@ void main()
 				WriteText(10, 50, 0x82, 0xFF00FF, "Font is not loaded.");
 				break;
 			}
-			if (tabs.active_tab==PHRASE_TAB) DrawPreviewPhrase();
-			if (tabs.active_tab==CHARS_TAB) DrawPreviewChars();
 	}
 }
 

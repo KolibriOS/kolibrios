@@ -6,18 +6,19 @@
 #endif
 
 #define MEMSIZE 200*1024
-#include "..\lib\mem.h"
-#include "..\lib\strings.h"
-#include "..\lib\io.h"
-#include "..\lib\list_box.h"
-#include "..\lib\gui.h"
+#include "../lib/mem.h"
+#include "../lib/strings.h"
+#include "../lib/io.h"
+#include "../lib/list_box.h"
+#include "../lib/obj/libimg.h"
+#include "../lib/gui.h"
 
-#include "..\lib\obj\box_lib.h"
-#include "..\lib\obj\proc_lib.h"
-#include "..\lib\obj\libini.h"
+#include "../lib/obj/box_lib.h"
+#include "../lib/obj/proc_lib.h"
+#include "../lib/obj/libini.h"
 
-#include "..\lib\patterns\select_list.h"
-#include "..\lib\patterns\simple_open_dialog.h"
+#include "../lib/patterns/select_list.h"
+#include "../lib/patterns/simple_open_dialog.h"
 
 #include "ui_elements_preview.h"
 
@@ -29,8 +30,8 @@
 
 #ifdef LANG_RUS
 	?define WINDOW_HEADER "Настройки оформления"
-	?define T_SKINS       "Стиль окон"
-	?define T_WALLPAPERS  "Обои"
+	?define T_SKINS       "   Стиль окон"
+	?define T_WALLPAPERS  "   Обои"
 	?define T_SELECT_FOLDER "Выбрать папку"
 	?define MENU_LIST "Открыть файл   |Enter\nУдалить файл     |Del"
 	?define T_PICTURE_MODE " Положение картинки "
@@ -39,8 +40,8 @@
 	?define T_UPDATE_DOCK "Обновлять Dock-панель"
 #else
 	?define WINDOW_HEADER "Appearance"
-	?define T_SKINS       "Skins"
-	?define T_WALLPAPERS  "Wallpapers"
+	?define T_SKINS       "   Skins"
+	?define T_WALLPAPERS  "   Wallpapers"
 	?define T_SELECT_FOLDER "Select folder"
 	?define MENU_LIST "Open file      |Enter\nDelete file      |Del"
 	?define T_PICTURE_MODE " Picture Mode "
@@ -56,9 +57,8 @@ char wallp_folder_path[4096];
 
 signed int active_skin=-1, active_wallpaper=-1;
 enum { 
-	SKINS=2, 
-	WALLPAPERS,
-	BTN_SELECT_WALLP_FOLDER };
+	BASE_TAB_BUTTON_ID=2, 
+	BTN_SELECT_WALLP_FOLDER=10 };
 
 char folder_path[4096];
 char cur_file_path[4096];
@@ -71,7 +71,9 @@ int cur;
 proc_info Form;
 block skp;
 
-_tabs tabs = { SKINS, LP, LP, NULL, NULL };
+enum {SKINS, WALLPAPERS};
+
+_tabs tabs = { LP, LP, NULL, BASE_TAB_BUTTON_ID };
 
 checkbox update_docky = { T_UPDATE_DOCK, false };
 
@@ -98,17 +100,21 @@ void GetRealFolderPathes()
 
 void main()
 {   
-	int id, mouse_clicked;
+	int id;
 
 	GetRealFolderPathes();
 
 	load_dll(boxlib, #box_lib_init,0);
 	load_dll(libini, #lib_init,1);
+	load_dll(libio, #libio_init,1);
+	load_dll(libimg, #libimg_init,1);
 	load_dll(Proc_lib, #OpenDialog_init,0);
 	o_dialog.type = 2; //select folder
 	OpenDialog_init stdcall (#o_dialog);
 
-	EventTabClick(SKINS);
+	tabs.add(T_SKINS, #EventTabSkinsClick);	
+	tabs.add(T_WALLPAPERS, #EventTabWallpappersClick);
+	tabs.draw_active_tab();
 
 	SetEventMask(EVM_REDRAW + EVM_KEY + EVM_BUTTON + EVM_MOUSE + EVM_MOUSE_FILTER);
 	loop() switch(WaitEvent()) 
@@ -133,9 +139,8 @@ void main()
 		case evButton:
 			id=GetButtonID();
 			if (id==1) EventExit();
-			if (id==SKINS) EventTabClick(SKINS);
-			if (id==WALLPAPERS) EventTabClick(WALLPAPERS);
 			if (id==BTN_SELECT_WALLP_FOLDER) EventSelectWallpFolder();
+			tabs.click(id);
 			checkbox1.click(id);
 			spinbox1.click(id);
 			if (update_docky.click(id)) EventUpdateDocky();
@@ -147,10 +152,7 @@ void main()
 			GetKeys(); 
 			if (select_list.ProcessKey(key_scancode)) EventApply();
 			if (key_scancode==SCAN_CODE_ENTER) EventOpenFile();
-			if (key_scancode==SCAN_CODE_TAB) {
-				if (tabs.active_tab==SKINS) EventTabClick(WALLPAPERS); 
-				else EventTabClick(SKINS);				
-			}
+			if (key_scancode==SCAN_CODE_TAB) tabs.click(tabs.active_tab ^ 1);
 			if (key_scancode==SCAN_CODE_DEL) EventDeleteFile();
 
 			if (! edit_cmm.flags & ed_focus) && (! edit_st.flags & ed_focus)
@@ -181,7 +183,7 @@ void main()
 
 void draw_window()
 {
-	sc.get();	
+	sc.get();
 	DefineAndDrawWindow(screen.width-600/2,80,630,504+skin_height,0x34,sc.work,WINDOW_HEADER,0);
 	GetProcessInfo(#Form, SelfInfo);
 	IF (Form.status_window>=2) return;
@@ -198,17 +200,19 @@ void DrawWindowContent()
 	if (tabs.active_tab == SKINS) list_w=250; else list_w=350;
 
 	tabs.w = Form.cwidth-LP-LP;
-	tabs.h = Form.cheight-LP-LP;
-	tabs.draw_wrapper();
-	tabs.draw_button(tabs.x+TAB_PADDING, SKINS, T_SKINS);	
-	tabs.draw_button(strlen(T_SKINS)*8+tabs.x+TAB_PADDING+TAB_PADDING, WALLPAPERS, T_WALLPAPERS);
+	tabs.draw();
+	DrawIcon16(tabs.x + TAB_PADDING, 15, sc.work, 17);
+	DrawIcon16(strlen(T_SKINS)*8 + tabs.x + TAB_PADDING + TAB_PADDING, 15, sc.work, 6);
+
+	if (select_list.cur_y>select_list.visible) select_list.first=select_list.cur_y; 
+	select_list.CheckDoesValuesOkey();
 
 	id = select_list.cur_y;
 	SelectList_Init(
 		tabs.x+TAB_PADDING,
 		tabs.y+TAB_HEIGHT+TAB_PADDING, 
 		list_w, 
-		tabs.h - TAB_PADDING - TAB_PADDING - TAB_HEIGHT, 
+		Form.cheight-LP-LP - TAB_PADDING - TAB_PADDING - TAB_HEIGHT, 
 		false
 		);
 	select_list.cur_y = id;
@@ -299,28 +303,27 @@ void SelectList_LineChanged()
 //                                                   //
 //===================================================//
 
-void EventTabClick(int N)
+void EventTabSkinsClick()
 {
-	tabs.click(N);
-	if (tabs.active_tab == SKINS) 
-	{
-		active_wallpaper = select_list.cur_y;
-		strcpy(#folder_path, #skins_folder_path);
-		select_list.ClearList();
-		Open_Dir();
-		if (!select_list.count) notify("'No skins were found' -E");
-		select_list.cur_y = active_skin;
-	}
-	if (tabs.active_tab == WALLPAPERS)
-	{
-		active_skin = select_list.cur_y;
-		strcpy(#folder_path, #wallp_folder_path);
-		select_list.ClearList();
-		Open_Dir();
-		if (!select_list.count) notify("'No wallpapers were found' -E");
-		select_list.cur_y = active_wallpaper;
-	}
-	if (select_list.cur_y>select_list.visible) select_list.first=select_list.cur_y; select_list.CheckDoesValuesOkey();
+	active_wallpaper = select_list.cur_y;
+	strcpy(#folder_path, #skins_folder_path);
+	select_list.ClearList();
+	Open_Dir();
+	if (!select_list.count) notify("'No skins were found' -E");
+	select_list.cur_y = active_skin;	
+
+	if (select_list.w) draw_window();
+}
+
+void EventTabWallpappersClick()
+{
+	active_skin = select_list.cur_y;
+	strcpy(#folder_path, #wallp_folder_path);
+	select_list.ClearList();
+	Open_Dir();
+	if (!select_list.count) notify("'No wallpapers were found' -E");
+	select_list.cur_y = active_wallpaper;
+
 	if (select_list.w) draw_window();
 }
 
@@ -342,7 +345,7 @@ void EventSelectWallpFolder()
 	OpenDialog_start stdcall (#o_dialog);
 	if (o_dialog.status) {
 		strcpy(#wallp_folder_path, #opendir_path);
-		EventTabClick(WALLPAPERS);
+		EventTabWallpappersClick();
 	}
 }
 
