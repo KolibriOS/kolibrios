@@ -307,6 +307,9 @@ void SetElementSizes()
 void draw_window()
 {
 	int i;
+	bool burger_active = false;
+	if (menu_id == OPEN_FILE) burger_active = true;
+
 	SetElementSizes();
 
 	DrawBar(0,0, Form.cwidth,PADDING, sc.work);
@@ -316,9 +319,9 @@ void draw_window()
 	DrawBar(0, PADDING, address_box.left-2, TSZE+1, sc.work);
 	DrawBar(address_box.left+address_box.width+18, PADDING, Form.cwidth-address_box.left-address_box.width-18, TSZE+1, sc.work);
 
-	DrawTopPanelButton(BACK_BUTTON, PADDING-1, PADDING, 30);
-	DrawTopPanelButton(FORWARD_BUTTON, PADDING+TSZE+PADDING-2, PADDING, 31);
-	DrawTopPanelButton(SANDWICH_BUTTON, Form.cwidth-PADDING-TSZE-3, PADDING, -1); //burger menu
+	DrawTopPanelButton(BACK_BUTTON, PADDING-1, PADDING, 30, false);
+	DrawTopPanelButton(FORWARD_BUTTON, PADDING+TSZE+PADDING-2, PADDING, 31, false);
+	DrawTopPanelButton(SANDWICH_BUTTON, Form.cwidth-PADDING-TSZE-3, PADDING, -1, burger_active); //burger menu
 
 	DrawBar(0,Form.cheight - STATUSBAR_H, Form.cwidth,1, sc.work_graph);
 
@@ -763,10 +766,12 @@ void EventShowEncodingsList()
 void ProcessMenuClick()
 {
 	int click_id;
-	if (menu_id) && (click_id = get_menu_click()) {
-		click_id += menu_id - 1;
-		menu_id = NULL;
-		ProcessEvent(click_id);
+	if (menu_id) {
+		if (click_id = get_menu_click()) {
+			click_id += menu_id - 1;
+			ProcessEvent(click_id);
+		}
+		if (!menu_process_id) menu_id = NULL;
 	}
 }
 

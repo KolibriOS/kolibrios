@@ -209,8 +209,7 @@
 :void PutShadow(dword x,y,w,h,skinned,strength)
 {
 	proc_info wForm;
-	dword shadow_buf, skin_height;
-	shadow_buf = mem_Alloc(w*h*3);
+	dword shadow_buf = mem_Alloc(w*h*3);
  	GetProcessInfo(#wForm, SelfInfo);
 	CopyScreen(shadow_buf, 5*skinned+x+wForm.left, GetSkinHeight()*skinned+y+wForm.top, w, h);
 	ShadowImage(shadow_buf, w, h, strength);
