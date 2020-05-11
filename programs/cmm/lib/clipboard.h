@@ -65,7 +65,7 @@ inline fastcall dword Clipboard__ResetBlockingBuffer()
 
 :void Clipboard__CopyText(dword _text)
 {
-int size_buf;
+dword size_buf;
 dword buff_data;
 
 	size_buf = strlen(_text) + 12;

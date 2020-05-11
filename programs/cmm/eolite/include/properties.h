@@ -250,7 +250,8 @@ void properties_dialog()
 						EventApplyProperties();
 						break;
 
-					default:
+					case SCAN_CODE_KEY_A:
+					case SCAN_CODE_KEY_C:
 						if (key_modifier & KEY_LCTRL) || (key_modifier & KEY_RCTRL) {
 							EAX = key_editbox; 
 							edit_box_key stdcall(#file_name_ed);

@@ -37,6 +37,17 @@ enum {
 	}
 }
 
+:int GetProcessesCount(dword proc_name) {
+	int i, count=0;
+	proc_info Process;
+	for (i=0; i<MAX_PROCESS_COUNT; i++;)
+	{
+		GetProcessInfo(#Process, i);
+		if (strcmpi(#Process.name, proc_name)==0) count++;
+	}
+	return count;
+}
+
 :void RestartProcessByName(dword proc_name, byte multiple) {
 	KillProcessByName(proc_name + strrchr(proc_name, '/'), multiple);
 	RunProgram(proc_name, "");	

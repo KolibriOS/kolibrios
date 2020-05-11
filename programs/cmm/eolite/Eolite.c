@@ -206,7 +206,13 @@ void main()
 		if (dir_exists(#param)) {
 			strcpy(#path, #param);
 		} else {
-			notify(T_NOTIFY_APP_PARAM_WRONG);
+			file_size stdcall (#param);
+			if (EAX==-1) notify(T_NOTIFY_APP_PARAM_WRONG);
+			else {
+				param[strrchr(#param, '/')-1] = '\0';
+				strcpy(#path, #param);
+				//in future we need also to select file
+			}
 		}
 	}
 	

@@ -1,4 +1,4 @@
-char version[]="WebView 2.48";
+char version[]="WebView 2.5";
 
 #ifdef LANG_RUS
 char page_not_found[] = FROM "html\\page_not_found_ru.htm""\0";
@@ -65,3 +65,4 @@ char clear_cache_ok[] = "'WebView\nThe cache has been cleared.' -tI";
 #define URL_SERVICE_HOMEPAGE "WebView:home"
 #define URL_SERVICE_HELP "WebView:help"
 
+char webview_shared[] = "WEBVIEW";

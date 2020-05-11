@@ -30,6 +30,7 @@
 #include "..\lib\patterns\http_downloader.h"
 #include "..\lib\patterns\simple_open_dialog.h"
 #include "..\lib\patterns\toolbar_button.h"
+#include "..\lib\patterns\restart_process.h"
 
 #include "texts.h"
 #include "cache.h"
@@ -101,6 +102,7 @@ edit_box address_box = {, PADDING+TSZE*2+PADDING+6, PADDING+3, 0xffffff,
 
 char editbox_icons[] = FROM "editbox_icons.raw";
 
+dword shared_url;
 
 void LoadLibraries()
 {
@@ -130,11 +132,18 @@ void HandleParam()
 			source_mode = true;
 			history.add(#param + 8);
 		} else {
-			history.add(#param);
+			if (GetProcessesCount("WEBVIEW") == 1) {
+				history.add(#param);
+			} else {
+				shared_url = memopen(#webview_shared, URL_SIZE+1, SHM_OPEN + SHM_WRITE);
+				strncpy(shared_url, #param, URL_SIZE);
+				ExitProcess();
+			}
 		}
 	} else {
 		history.add(URL_SERVICE_HOMEPAGE);
 	}
+	shared_url = memopen(#webview_shared, URL_SIZE+1, SHM_CREATE + SHM_WRITE);
 }
 
 void main()
@@ -148,7 +157,7 @@ void main()
 	WB1.list.no_selection = true;
 	WB1.custom_encoding = -1;
 	SetEventMask(EVM_REDRAW + EVM_KEY + EVM_BUTTON + EVM_MOUSE + EVM_MOUSE_FILTER + EVM_STACK);
-	loop() switch(WaitEvent())
+	loop() switch(@WaitEventTimeout(30))
 	{
 		case evMouse:
 			edit_box_mouse stdcall (#address_box);
@@ -245,6 +254,13 @@ void main()
 				http.free();
 				pages_cache.add(history.current(), http.content_pointer, http.content_received);
 				LoadInternalPage(http.content_pointer, http.content_received);
+			}
+			break;
+		default:
+			if (ESDWORD[shared_url] != '\0') {
+				EventOpenNewTab(shared_url);
+				ESDWORD[shared_url] = '\0';
+				ActivateWindow(GetProcessSlot(Form.ID));
 			}
 	}
 }
