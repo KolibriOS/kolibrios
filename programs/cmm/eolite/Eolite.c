@@ -214,7 +214,7 @@ void main()
 	strcpy(#inactive_path, #path);
 	llist_copy(#files_inactive, #files);
 	SetEventMask(EVM_REDRAW+EVM_KEY+EVM_BUTTON+EVM_MOUSE+EVM_MOUSE_FILTER);
-	loop() switch(WaitEventTimeout(50))
+	loop() switch(@WaitEventTimeout(80))
 	{
 		case evMouse:
 			if (del_active) || (Form.status_window>2) break;

@@ -42,6 +42,12 @@ inline fastcall void debugln( EDX)
 	debugch(10);
 }
 
+inline fastcall void debugcls()
+{
+	char i;
+	for (i=0;i<70;i++) debugch(10);
+}
+
 :void debugval(dword text,number)
 {
 	char tmpch[12];

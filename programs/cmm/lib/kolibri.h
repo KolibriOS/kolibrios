@@ -73,6 +73,13 @@ char program_path[4096];
 
 inline fastcall dword calc(EAX) { return EAX; }
 
+inline fastcall swap(EAX, EBX)
+{
+	$push ESDWORD[EAX]
+	ESDWORD[EAX] = ESDWORD[EBX];
+	$pop ESDWORD[EBX];
+}
+
 :struct raw_image {
 	dword w, h, data;
 };

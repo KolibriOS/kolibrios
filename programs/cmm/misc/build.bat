@@ -1,13 +1,18 @@
 @echo off
 
-del *.kex
+echo #define LANG_ENG 1 >lang.h--
 
 For /R %%i In (*.c) Do c-- "%%i"
 
-rename *.com *.kex
 mkdir bin
-move *.kex bin\
+del bin\*.* /Q
+move *.com bin
+
+cd bin
+forfiles /S /M *.com /C "cmd /c rename @file @fname"
+cd ..
 
 del warning.txt
+del lang.h--
 
 pause
