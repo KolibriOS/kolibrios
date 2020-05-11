@@ -4420,7 +4420,7 @@ Parameters:
   * bl = 0 - subfunction number
   * bh = device number
 Returned value:
-  * eax = device type number
+  * eax = device type number, -1 on error
 
 ---------------------- Constants for registers: ----------------------
   eax - SF_NETWORK_GET (74)
@@ -4514,7 +4514,7 @@ Parameters:
   * bh = device number
 Returned value:
   * eax = Number of bytes sent since device start (lower dword)
-                  -1 on error
+          -1 on error
   * ebx = Number of bytes sent since device start (higher dword)
 
 ---------------------- Constants for registers: ----------------------
@@ -4529,7 +4529,7 @@ Parameters:
   * bh = device number
 Returned value:
   * eax = Number of bytes received since device start (lower dword)
-                  -1 on error
+          -1 on error
   * ebx = Number of bytes received since device start (higher dword)
 
 ---------------------- Constants for registers: ----------------------
@@ -4856,7 +4856,7 @@ Parameters:
   * eax = 76 - function number
   * high half of ebx = 1 (IPv4)
   * bh = device number
-  * bl = 7 (Set DNS address)
+  * bl = 7 (Set subnet mask)
   * ecx = subnet mask
 Returned value:
   * eax = -1 on error
@@ -4996,7 +4996,8 @@ Parameters:
 Returned value:
   * eax = -1 on error
 Remarks:
-	ARP_entry struct is defined in ARP.inc in kernel and currently looks like this:
+  * ARP_entry struct is defined in ARP.inc in kernel and currently
+    looks like this:
 struct  ARP_entry
         IP              dd ?
         MAC             dp ?
@@ -5005,7 +5006,7 @@ struct  ARP_entry
 ends
 
 ======================================================================
-==== Function 76, Protocol 5 - ARP, Subfunction 4, Add ARP entry ====
+===== Function 76, Protocol 5 - ARP, Subfunction 4, Add ARP entry ====
 ======================================================================
 Parameters:
   * eax = 76 - function number
@@ -5016,16 +5017,16 @@ Parameters:
 Returned value:
   * eax = -1 on error
 Remarks:
-	See previous function for details on ARP entry.
+  * See previous function for details on ARP entry.
 
 ======================================================================
-=== Function 76, Protocol 5 - ARP, Subfunction 5, Remove ARP entry ====
+=== Function 76, Protocol 5 - ARP, Subfunction 5, Remove ARP entry ===
 ======================================================================
 Parameters:
   * eax = 76 - function number
   * high half of ebx = 5 (ARP)
   * bh = device number
-  * bl = 3 (Read ARP entry)
+  * bl = 5 (Remove ARP entry)
   * ecx = ARP entry number (0 based), use -1 to clear whole ARP table.
 Returned value:
   * eax = -1 on error
