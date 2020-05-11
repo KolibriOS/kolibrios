@@ -24,10 +24,6 @@ int TEXT_X=PADDING,
 
 int delay = 400;
 
-#ifndef AUTOBUILD
-	#include "lang.h--"
-#endif
-
 #ifdef LANG_RUS
 	?define DEFAULT_TEXT "Эта программа показывает уведомления.";
 #else
