@@ -1,6 +1,7 @@
 -- Provides list of skins for distribution kit,
 -- included by ../data/Tupfile.lua.
 skinlist = {
+"ConLenov/FlowerMoon/FlowerMoon.skn",
 "ConLenov/mntech/mntech.skn",
 "ConLenov/LucidChocolate/LucidChocolate.skn",
 "ConLenov/LucidCream/LucidCream.skn",
