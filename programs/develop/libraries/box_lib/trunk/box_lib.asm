@@ -22,6 +22,7 @@ include '../../../../KOSfuncs.inc'
 include 'bl_sys.mac'
 include 'box_lib.mac' ;macro which should make life easier :)
 ;include '../../../../debug.inc'
+include 'keys.inc'
 
 ;-----------------------------------------------------------------------------
 mem.alloc   dd ? ;функция для выделения памяти
@@ -112,7 +113,7 @@ ret
 
 align 4
 proc draw_edge uses eax ebx ecx edx edi esi, box_l:dword, box_t:dword, box_w:dword, box_h:dword,\
-	col_0:dword, col_1:dword, col_2:dword
+        col_0:dword, col_1:dword, col_2:dword
 
 	mov esi,dword[col_1]
 	and esi,111111101111111011111110b
@@ -130,7 +131,7 @@ proc draw_edge uses eax ebx ecx edx edi esi, box_l:dword, box_t:dword, box_w:dwo
 	inc ecx
 
 	mov edi,3 ;for cycle
-	@@:
+        @@:
 		;calculate colors
 		and edx,111111101111111011111110b
 		add edx,esi
@@ -155,7 +156,7 @@ proc draw_edge uses eax ebx ecx edx edi esi, box_l:dword, box_t:dword, box_w:dwo
 	add ecx,dword[box_h]
 
 	mov edi,3 ;for cycle
-	@@:
+        @@:
 		;calculate colors
 		and edx,111111101111111011111110b
 		add edx,esi
@@ -179,7 +180,7 @@ proc draw_edge uses eax ebx ecx edx edi esi, box_l:dword, box_t:dword, box_w:dwo
 	inc ecx
 
 	mov edi,3 ;for cycle
-	@@:
+        @@:
 		;calculate colors
 		and edx,111111101111111011111110b
 		add edx,esi
@@ -203,7 +204,7 @@ proc draw_edge uses eax ebx ecx edx edi esi, box_l:dword, box_t:dword, box_w:dwo
 	add ecx,dword[box_h]
 
 	mov edi,3 ;for cycle
-	@@:
+        @@:
 		;calculate colors
 		and edx,111111101111111011111110b
 		add edx,esi
@@ -432,7 +433,7 @@ sz_ted_but_paste		db 'ted_but_paste',0
 sz_ted_but_undo 		db 'ted_but_undo',0
 sz_ted_but_redo 		db 'ted_but_redo',0
 sz_ted_but_reverse		db 'ted_but_reverse',0
-sz_ted_but_find			db 'ted_but_find',0
+sz_ted_but_find 		db 'ted_but_find',0
 sz_ted_but_replace		db 'ted_but_replace',0
 sz_ted_text_colored		db 'ted_text_colored',0
 sz_ted_go_to_position	db 'ted_go_to_position',0
@@ -444,7 +445,7 @@ szVersion_frame 		db 'version_frame',0
 sz_progressbar_draw	db 'progressbar_draw', 0
 sz_progressbar_progress db 'progressbar_progress', 0
 
-sz_tooltip_init			db 'tooltip_init', 0
+sz_tooltip_init 		db 'tooltip_init', 0
 sz_tooltip_delete		db 'tooltip_delete', 0
 sz_tooltip_test_show	db 'tooltip_test_show', 0
 sz_tooltip_mouse		db 'tooltip_mouse', 0
