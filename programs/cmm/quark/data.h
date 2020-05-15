@@ -9,11 +9,11 @@ char short_app_name[] = "Quark";
 #ifdef LANG_RUS
 
 char intro[] = "Это простой просмотрщик текста.
-Попробуйте открыть какой-нибудь текстовый файл.";
+Попробуйте открыть текстовый файл.";
 
 char copied_chars[] = "Скопировано сиволов: %i";
 
-char about[] = "Quark Text v0.2
+char about[] = "Quark Text v0.4
 Автор: Кирилл Липатов aka Leency
 Сайт: http://aspero.pro
 
@@ -44,12 +44,12 @@ char rmb_menu[] =
 
 #else
 
-char intro[] = "Quark will be a nice Code Editor one day.
+char intro[] = "Quark is a simple text viewer.
 Try to open some text file.";
 
 char copied_chars[] = "Copied %i chars";
 
-char about[] = "Quark Text v0.2
+char about[] = "Quark Text v0.4
 Author: Kiril Lipatov aka Leency 
 Website: http://aspero.pro
 

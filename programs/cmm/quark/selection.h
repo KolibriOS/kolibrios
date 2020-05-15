@@ -24,19 +24,22 @@ bool SELECTION::is_active()
 
 void SELECTION::draw_line(dword x,y,w)
 {
-	DrawBuf.DrawBar(x, y, w, list.item_h, color);
+	DrawBuf.DrawBar(x, y - list.first * list.item_h, w, list.item_h, color);
 }
 
 void SELECTION::draw(int i)
 {
 	if (is_active()) {
-		if (start_y == i) && (end_y == i) draw_line(start_x * list.font_w+2, start_y * list.item_h, end_x - start_x * list.font_w);
-		else if (start_y == i) draw_line(start_x * list.font_w+2, start_y * list.item_h, list.w -2- calc(start_x * list.font_w));
-		else if (end_y == i) draw_line(0, end_y * list.item_h, end_x * list.font_w+2);
+		if (start_y == i) && (end_y == i) draw_line(start_x * list.font_w+2, start_y, end_x - start_x * list.font_w);
+		else if (start_y == i) draw_line(start_x * list.font_w+2, start_y, list.w -2- calc(start_x * list.font_w));
+		else if (end_y == i) draw_line(0, end_y, end_x * list.font_w+2);
 		//DrawBuf.DrawBar(start_x * list.font_w + 2,  start_y * list.item_h, 2, list.item_h, 0x00FF00);
 		//DrawBuf.DrawBar(end_x * list.font_w + 0,  end_y * list.item_h, 2, list.item_h, 0xFF00FF);
 	}
-	DrawBuf.DrawBar(list.cur_x * list.font_w + 2,  list.cur_y * list.item_h, 2, list.item_h, theme.cursor); //DrawCursor
+	//DrawCursor
+	if (list.cur_y >= list.first) && (list.cur_y <= list.first+list.visible) {
+		DrawBuf.DrawBar(list.cur_x * list.font_w + 2,  list.cur_y - list.first * list.item_h, 2, list.item_h, theme.cursor);
+	}
 }
 
 void SELECTION::cancel()
@@ -49,6 +52,7 @@ void SELECTION::cancel()
 
 void SELECTION::set_start()
 {
+	if (selection.is_active()) return;
 	start_x = list.cur_x;
 	start_y = list.cur_y;
 	normalize();
@@ -61,8 +65,8 @@ void SELECTION::set_end()
 	end_y = list.cur_y;
 	normalize();
 	end_offset = lines.get(end_y) + end_x;
-	debugval("end_x", end_x);
-	debugval("end_y", end_y);
+	//debugval("end_x", end_x);
+	//debugval("end_y", end_y);
 }
 
 
@@ -78,11 +82,10 @@ void SELECTION::select_all()
 	start_x = 0;
 	end_y = lines.count-2;
 	end_x = lines.get(end_y+1) - lines.get(end_y);
-	//normalize();
 	start_offset = lines.get(start_y) + start_x;
 	end_offset = lines.get(end_y) + end_x;
-	debugval("end_x__", end_x);
-	debugval("end_y__", end_y);
+	//debugval("end_x__", end_x);
+	//debugval("end_y__", end_y);
 }
 
 bool SELECTION::swap_start_end()

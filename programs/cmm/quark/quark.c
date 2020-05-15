@@ -4,7 +4,7 @@
 	Licence: GPLv2
 
 	The core components of this app are:
-		1. list: text grid with keyboard and mouse proceed
+		1. list: text grid with keyboard and mouse events
 		2. lines: the mas of pointers for each line start
 		3. selection
 */
@@ -85,7 +85,8 @@ enum {
 	COLOR_SCHEME=8,
 	RMB_MENU,
 	BTN_FIND_NEXT,
-	BTN_FIND_CLOSE
+	BTN_FIND_CLOSE,
+	BTN_CHANGE_CHARSET
 };
 
 dword menu_id;
@@ -114,14 +115,12 @@ void LoadFileFromDocPack()
 {
 	dword bufsize = atoi(#param + 1) + 20;
 	dword bufpointer = malloc(bufsize);
-	dword filesize;
 
 	ESDWORD[bufpointer+0] = 0;
 	ESDWORD[bufpointer+4] = 8;
-
 	IpcSetArea(bufpointer, bufsize);
-	SetEventMask(EVM_IPC);
 
+	SetEventMask(EVM_IPC);
 	if (@WaitEventTimeout(200) != evIPC) {
 		notify("'IPC FAIL'E");
 		return;
@@ -190,6 +189,9 @@ void HandleButtonEvent()
 		case BTN_FIND_CLOSE:
 			search.hide();
 			break;
+		case BTN_CHANGE_CHARSET:
+			EventShowCharsetsList();
+			break;
 	}
 }
 
@@ -228,17 +230,6 @@ void HandleKeyEvent()
 			case SCAN_CODE_KEY_F:
 				search.show();
 				return;
-			case SCAN_CODE_HOME:
-				list.KeyHome();
-				list.KeyHomeHor();
-				DrawPage();
-				return;
-			case SCAN_CODE_END:
-				list.KeyEnd();
-				list.column_max = strlen(lines.get(list.cur_y));
-				list.KeyEndHor();
-				DrawPage();
-				return;
 			case SCAN_CODE_KEY_A:
 				selection.select_all();
 				DrawPage();
@@ -261,11 +252,16 @@ void HandleKeyEvent()
 	}
 	if (search.edit_key()) {
 		return;
-	} else if (list.ProcessKey(key_scancode)) {
-		DrawPage();
+	} else {
+		if (key_modifier & KEY_LSHIFT) || (key_modifier & KEY_RSHIFT) selection.set_start();
+		else selection.cancel();
+		if (list.ProcessKey(key_scancode)) {
+			if (key_modifier & KEY_LSHIFT) || (key_modifier & KEY_RSHIFT) selection.set_end();
+			DrawPage();
+		}
 		return;
 	}
-	EventInsertCharIntoText();
+	//EventInsertCharIntoText();
 }
 
 void HandleMouseEvent()
@@ -273,7 +269,7 @@ void HandleMouseEvent()
 	mouse.get();
 	list.wheel_size = 7;
 	if (list.MouseScroll(mouse.vert)) {
-		DrawPage(); 
+		DrawPage();
 		return; 
 	}
 	if (!scroll.delta2) && (list.MouseOver(mouse.x, mouse.y)) {
@@ -281,7 +277,7 @@ void HandleMouseEvent()
 
 			GetKeyModifier();
 			if (key_modifier & KEY_LSHIFT) || (key_modifier & KEY_RSHIFT) {
-				if (mouse.down) && (!selection.is_active()) selection.set_start();
+				if (mouse.down) selection.set_start();
 				list.ProcessMouse(mouse.x, mouse.y);
 				if (mouse.up) selection.set_end();
 				DrawPage();
@@ -290,6 +286,7 @@ void HandleMouseEvent()
 
 			list.ProcessMouse(mouse.x, mouse.y);
 			if (mouse.down) {
+				selection.cancel();
 				selection.set_start();
 			} 
 			selection.set_end();
@@ -386,15 +383,15 @@ void EventShowCharsetsList()
 void EventShowReopenMenu()
 {
 	menu_id = REOPEN_IN_APP;
-	open_lmenu(Form.left+5 + reopenin_mx, Form.top+29+skin_height, 
-		MENU_ALIGN_TOP_LEFT, NULL,
+	open_lmenu(Form.left+5 + reopenin_mx + 23, Form.top+29+skin_height, 
+		MENU_ALIGN_TOP_RIGHT, NULL,
 		"Tinypad\nTextEdit\nWebView\nFB2Read\nHexView\nOther");
 }
 
 void EventShowThemesList()
 {
 	menu_id = COLOR_SCHEME;
-	open_lmenu(Form.left+2 + theme_mx + 26, 
+	open_lmenu(Form.left+5 + theme_mx + 23, 
 		Form.top+29+skin_height, MENU_ALIGN_TOP_RIGHT, 
 		curcol_scheme+1, #color_scheme_names);
 }
@@ -646,17 +643,15 @@ void DrawToolbar()
 	AddTopBarButton(#EventOpenDialog,     ECTRL+SCAN_CODE_KEY_O, 0,  x.set(8), false);
 	//AddTopBarButton(#EventSave,           ECTRL+SCAN_CODE_KEY_S, 5,  x.inc(SMALL_GAP), false);
 	AddTopBarButton(#EventShowFileInfo,   ECTRL+SCAN_CODE_KEY_I, 10, x.inc(SMALL_GAP), false);
-	AddTopBarButton(#EventMagnifyMinus,   ECTRL+SCAN_CODE_MINUS, 32, x.inc(BIG_GAP),   false);
-	AddTopBarButton(#EventMagnifyPlus,    ECTRL+SCAN_CODE_PLUS,  33, x.inc(SMALL_GAP), false);
+	AddTopBarButton(#EventMagnifyMinus,   ECTRL+SCAN_CODE_MINUS, 33, x.inc(BIG_GAP),   false);
+	AddTopBarButton(#EventMagnifyPlus,    ECTRL+SCAN_CODE_PLUS,  32, x.inc(SMALL_GAP), false);
 	AddTopBarButton(#EventClickSearch,    ECTRL+SCAN_CODE_KEY_F, 49, x.inc(BIG_GAP),   serha);  search_mx = EAX;
 	x.set(Form.cwidth-4);
-	AddTopBarButton(#EventShowInfo,       NULL,                  -1, x.inc(-SMALL_GAP), false); burger_mx = EAX;
-	AddTopBarButton(#EventShowThemesList, NULL,                  40, x.inc(-BIG_GAP), thema); theme_mx = EAX;
+	//AddTopBarButton(#EventShowInfo,       NULL,                  -1, x.inc(-SMALL_GAP), false); burger_mx = EAX;
+	AddTopBarButton(#EventShowThemesList, NULL,                  40, x.inc(-SMALL_GAP), thema); theme_mx = EAX;
 	AddTopBarButton(#EventShowReopenMenu, ECTRL+SCAN_CODE_KEY_E, 16, x.inc(-SMALL_GAP),   reopa); reopenin_mx = EAX;
 	//AddTopBarButton(#EventOpenSysfuncs,   NULL,                  18, x.inc(-SMALL_GAP), false);
 	//AddTopBarButton(#EventOpenPipet,      NULL,                  39, x.inc(-SMALL_GAP), false);
-	DefineHiddenButton(Form.cwidth-70, Form.cheight - STATUSBAR_H + 1,
-		60, 12, button.add(#EventShowCharsetsList));
 }
 
 void DrawStatusBar(dword _in_text)
@@ -666,9 +661,13 @@ void DrawStatusBar(dword _in_text)
 	if (_in_text) strncpy(#status_text, _in_text, sizeof(status_text));
 	DrawBar(0,Form.cheight - STATUSBAR_H, Form.cwidth,1, sc.work_graph);
 	DrawBar(0,Form.cheight - STATUSBAR_H+1, Form.cwidth,STATUSBAR_H-1, sc.work);
-	WriteTextCenter(Form.cwidth-70, Form.cheight - STATUSBAR_H + 4,
-		60, sc.work_text, real_encoding*10+#charsets);
 	WriteText(5, Form.cheight - STATUSBAR_H + 4, 0x80, sc.work_text, #status_text);
+	if (param[0]) {
+		WriteTextCenter(Form.cwidth-70, Form.cheight - STATUSBAR_H + 4,
+			60, sc.work_text, real_encoding*10+#charsets);
+		DefineHiddenButton(Form.cwidth-70, Form.cheight - STATUSBAR_H + 1,
+			60, 12, BTN_CHANGE_CHARSET+10);
+	}
 }
 
 void draw_window()

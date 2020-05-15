@@ -2,19 +2,13 @@
 void ParseAndPaint()
 {
 	//search.clear();
-	list.KeyHome();
 	list.count=0;
+	selection.cancel();
 
 	Parse();
 
 	list.visible = list.h / list.item_h;
-	if (list.count < list.visible) {
-		DrawBuf.bufh = list.visible;
-	} else {
-		DrawBuf.bufh = list.count;
-	}
-
-	DrawBuf.Init(list.x, list.y, list.w, DrawBuf.bufh+1*list.item_h);
+	DrawBuf.Init(list.x, list.y, list.w, list.visible+1*list.item_h);
 	DrawPage();	
 }
 
@@ -28,7 +22,6 @@ dword buflen = strlen(io.buffer_data) + io.buffer_data;
 
 	lines.drop();
 	lines.add(io.buffer_data);
-	selection.cancel();
 
 	for (off = io.buffer_data; off < buflen; off++)
 	{
@@ -54,33 +47,33 @@ dword buflen = strlen(io.buffer_data) + io.buffer_data;
 void PaintVisible()
 {
 	int i;
-	dword y;
+	dword ydraw, absolute_y;
 	dword line_bg;
-	bool swapped = false;
+	bool swapped_selection = false;
 
 	list.column_max = lines.get(list.cur_y+1) - lines.get(list.cur_y);
 	list.CheckDoesValuesOkey();
 	if (selection.end_offset < selection.start_offset) {
-		swapped = selection.swap_start_end();
+		swapped_selection = selection.swap_start_end();
 	}
 
-	for ( i=list.first; i < list.first+list.visible+1; i++)
+	for ( i=0; i < list.visible+1; i++)
 	{
-		y = i * list.item_h;
+		ydraw = i * list.item_h;
+		absolute_y = i + list.first;
 		line_bg = theme.bg;
 
-		if (selection.start_y < i) && (selection.end_y > i) line_bg = selection.color;
-		DrawBuf.DrawBar(0, y, list.w, list.item_h, line_bg);
+		if (selection.start_y < absolute_y) && (selection.end_y > absolute_y) line_bg = selection.color;
+		DrawBuf.DrawBar(0, ydraw, list.w, list.item_h, line_bg);
 
-		selection.draw(i);
+		selection.draw(absolute_y);
 
-		if (i<list.count) DrawBuf.WriteText(3, y+3, list.font_type, theme.text, 
-			lines.get(i), lines.get(i+1) - lines.get(i));
+		if (absolute_y<list.count) DrawBuf.WriteText(3, ydraw+3, list.font_type, theme.text, 
+			lines.get(absolute_y), lines.get(absolute_y+1) - lines.get(absolute_y));
 	}
 
-	PutPaletteImage(list.first * DrawBuf.bufw * list.item_h * 4 + buf_data+8, 
-		DrawBuf.bufw, list.h, list.x, list.y, 32, 0);
+	PutPaletteImage(buf_data+8, DrawBuf.bufw, list.h, list.x, list.y, 32, 0);
 
-	if (swapped) selection.swap_start_end();
+	if (swapped_selection) selection.swap_start_end();
 }
 

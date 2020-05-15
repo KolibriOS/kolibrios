@@ -126,13 +126,18 @@ struct llist
 
 :int llist::ProcessKey(dword key)
 {
-	if (horisontal_selelection) switch(key)
-	{
-		case SCAN_CODE_LEFT:  return KeyLeft();
-		case SCAN_CODE_RIGHT: return KeyRight();
-		case SCAN_CODE_HOME:  return KeyHomeHor();
-		case SCAN_CODE_END:   return KeyEndHor();
-	}
+	if (horisontal_selelection) {
+		if (key_modifier & KEY_LCTRL) || (key_modifier & KEY_RCTRL)	switch(key)	{
+			case SCAN_CODE_HOME:  KeyHome(); break;
+			case SCAN_CODE_END:   KeyEnd();
+		} 
+		switch(key) {
+			case SCAN_CODE_LEFT:  return KeyLeft();
+			case SCAN_CODE_RIGHT: return KeyRight();
+			case SCAN_CODE_HOME:  return KeyHomeHor();
+			case SCAN_CODE_END:   return KeyEndHor();
+		}
+	} 
 	switch(key)
 	{
 		case SCAN_CODE_DOWN: return KeyDown();
