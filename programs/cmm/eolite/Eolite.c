@@ -213,7 +213,7 @@ void main()
 			else {
 				param[strrchr(#param, '/')-1] = '\0';
 				strcpy(#path, #param);
-				//in future we need also to select file
+				SelectFileByName(#param+strlen(#param)+1);
 			}
 		}
 	}
@@ -712,7 +712,7 @@ void Line_ReDraw(dword bgcol, filenum){
 		  y=filenum*files.item_h+files.y,
 		  icon_y = files.item_h-icon_size/2+1+y;
 		  BDVK file;
-		  char temp_path[sizeof(file_path)];
+		  char full_path[4096];
 	char label_file_name[4096];
 	if (filenum==-1) return;
 	DrawBar(files.x,y,4,files.item_h,bgcol);
@@ -727,7 +727,7 @@ void Line_ReDraw(dword bgcol, filenum){
 	file.sizelo   = ESDWORD[file_offet+32];
 	file.sizehi   = ESDWORD[file_offet+36];
 	file_name_off = file_offet+40;
-	sprintf(#temp_path,"%s/%s",#path,file_name_off);
+	sprintf(#full_path,"%s/%s",#path,file_name_off);
 
 	if (! TestBit(attr, 4) ) //file or folder?
 	{	
@@ -742,11 +742,11 @@ void Line_ReDraw(dword bgcol, filenum){
 			ext1="<DIR>";
 			WriteTextCenter(files.x+files.w-140, files.text_y+y+1, 72, col.list_gb_text, ext1);
 		}
-		if (chrnum(#path, '/')==1) file_size = GetDeviceSizeLabel(#temp_path);
+		if (chrnum(#path, '/')==1) file_size = GetDeviceSizeLabel(#full_path);
 	}
 	if (file_size) WriteText(7-strlen(file_size)*6+files.x+files.w-58, 
 			files.text_y+y+1, files.font_type, col.list_gb_text, file_size);
-	DrawIconByExtension(#temp_path, ext1, files.x+4, icon_y, bgcol);
+	DrawIconByExtension(#full_path, ext1, files.x+4, icon_y, bgcol);
 
 	if (TestBit(attr, 1)) || (TestBit(attr, 2)) text_col=col.list_text_hidden; //system or hiden?
 	if (bgcol==col.selec)
