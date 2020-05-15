@@ -358,26 +358,15 @@ void EventOpenFileInAnotherProgram(dword _id)
 	dword app;
 	byte open_param[4096];
 	switch(_id) {
-		case 0:
-			app = "/sys/tinypad";
-			break;
-		case 1:
-			app = "/sys/develop/t_edit";
-			break;
-		case 2:
-			app = "/sys/network/webview";
-			break;
-		case 3:
-			app = "/sys/fb2read";
-			break;
-		case 4:
-			app = "/sys/develop/heed";
-			break;
-		case 5:
-			open_param[0]='~';
+		case 0: app = "/sys/tinypad"; break;
+		case 1: app = "/sys/develop/t_edit"; break;
+		case 2: app = "/sys/network/webview"; break;
+		case 3: app = "/sys/fb2read"; break;
+		case 4: app = "/sys/develop/heed"; break;
+		case 5: open_param[0]='~';
 			strcpy(#open_param+1,#param);
 			RunProgram("/sys/@open", #open_param);
-			break;
+			return;
 	}
 	RunProgram(app, #param);
 }

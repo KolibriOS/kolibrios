@@ -164,8 +164,10 @@ void handle_param()
 	{
 		case 'p':
 			strcpy(#file_path, #param + 3);
-			strcpy(#file_name, #param + strrchr(#param, '/'));
 			itdir = dir_exists(#file_path);
+			strcpy(#file_name, #param + strrchr(#param, '/'));
+			param[strrchr(#param, '/')-1] = '\0';
+			strcpy(#path, #param + 3);
 			properties_dialog();
 			return;
 		case 'd':

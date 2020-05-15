@@ -144,6 +144,7 @@ void HandleParam()
 		history.add(URL_SERVICE_HOMEPAGE);
 	}
 	shared_url = memopen(#webview_shared, URL_SIZE+1, SHM_CREATE + SHM_WRITE);
+	ESDWORD[shared_url] = '\0';
 }
 
 void main()

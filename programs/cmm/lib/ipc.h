@@ -62,8 +62,8 @@ IPC применяется для посылок сообщений от одн�
 
 inline fastcall void IpcSetArea(ECX, EDX)
 {
-	$eax, 60
-	$ebx, 1
+	$mov eax, 60
+	$mov ebx, 1
 	// ecx = указатель на буфер
 	// edx = размер буфера
 	$int 64
@@ -72,8 +72,8 @@ inline fastcall void IpcSetArea(ECX, EDX)
 
 inline fastcall int SendIpcMessage(ECX, EDX, ESI)
 {
-	$eax, 60
-	$ebx, 2
+	$mov eax, 60
+	$mov ebx, 2
 	// ecx = PID приёмника
 	// edx = указатель на данные сообщения
 	// esi = длина сообщения (в байтах)
