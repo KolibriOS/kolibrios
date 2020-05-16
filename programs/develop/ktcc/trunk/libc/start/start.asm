@@ -5,6 +5,9 @@ public start as '_start'
 ;extrn mf_init
 extrn main
 ;include 'debug2.inc'
+include '..\..\..\..\..\proc32.inc'
+include '..\..\..\..\..\macros.inc'
+include '..\..\..\..\..\dll.inc'
 __DEBUG__=0
 
 ;start_:
@@ -12,7 +15,7 @@ virtual at 0
 	db 'MENUET01' ; 1. Magic number (8 bytes)
 	dd 0x01       ; 2. Version of executable file
 	dd start       ; 3. Start address
-	dd 0x0	      ; 4. Size of image
+imgsz	dd 0x0	      ; 4. Size of image
 	dd 0x100000   ; 5. Size of needed memory
 	dd 0x100000   ; 6. Pointer to stack
 hparams dd 0x0	      ; 7. Pointer to program arguments
@@ -26,14 +29,7 @@ start:
     mov ebx,11
     int 0x40
 
-;DEBUGF ' path "%s"\n params "%s"\n', .path, .params
-; check for overflow
-;; that not work
-;    mov  al, [path+buf_len-1]
-;    or	 al, [params+buf_len-1]
-;    jnz   .crash
-; check if path written by OS
-	mov  [argc], 0
+    mov  [argc], 0
     mov  eax, [hparams]
     test eax, eax
     jz	 .without_path
@@ -90,25 +86,16 @@ start:
     jmp  .parse
 
 .run:
-;DEBUGF 'call main(%x, %x) with params:\n', [argc], argv
-if __DEBUG__ = 1
-    mov  ecx, [argc]
-  @@:
-    lea  esi, [ecx * 4 + argv-4]
-    DEBUGF '0x%x) "%s"\n', cx, [esi]
-    loop @b
-end if
+    call load_imports
     push argv
     push [argc]
     call main
 .exit:
-;DEBUGF 'Exit from prog\n';
     xor  eax,eax
     dec  eax
     int  0x40
     dd	 -1
 .crash:
-;DEBUGF 'E:buffer overflowed\n'
     jmp  .exit
 ;============================
 push_param:
@@ -127,6 +114,96 @@ push_param:
 .dont_add:    
     ret
 ;==============================
+
+;==============================
+load_imports:
+;==============================
+;parameters
+;  none
+;description
+;  imports must be located at end of image (but before BSS sections)
+;  the address of end of imports (next byte after imports) is located in imgsz
+;  look at each import from that address up to illegal import
+;  legal import is such that:
+;    first pointer points to procedure name
+;      and is smaller than imgsz
+;    second pointer points lo library name, starting with 0x55, 0xAA
+;      and is smaller than imgsz
+;  each library should be initialized as appropriate, once
+;  so as library is initialized, its name will be replaced 0x00
+    mov ebx, [imgsz]                ; byte after imports
+.handle_next_import:
+    sub ebx, 4                      ; ebx = pointer to pointer to library name
+    mov esi, dword[ebx]             ; esi = pointer to library name
+    push ebx
+    push esi
+    call load_library               ; eax = pointer to library exports
+    pop esi
+    pop ebx
+    test eax, eax
+    jz .done
+    sub ebx, 4                      ; ebx = pointer to pointer to symbol name
+    push ebx
+    stdcall dll.GetProcAddress, eax, dword[ebx]
+    pop ebx
+    test eax, eax
+    jz .fail
+    mov dword[ebx], eax
+    jmp .handle_next_import
+.done:
+    ret
+.fail:
+    ret
+;==============================
+
+;==============================
+load_library:
+;==============================
+;parameters
+;  ebx: library name address
+;description
+;  each library should be initialized as appropriate, once
+;  so as library is initialized, its name will be replaced 0x00
+;  and 4 next bytes will be set to address of library
+    ; first two bytes of library name must be 0x55, 0xAA (is like a magic)
+    cld                ; move esi further, not back
+    cmp esi, [imgsz]
+    ja .fail
+    lodsb              ; al = first byte of library name
+    cmp al, 0x55
+    jne .fail
+    lodsb              ; al = second byte of library name
+    cmp al, 0xAA
+    jne .fail
+    lodsb              ; al = third byte of library name (0x00 if the library is already loaded)
+    test al, al
+    jnz .load
+    lodsd              ; if we here, then third byte is 0x00 => address of library is in next 4 bytes
+    ; now eax contains address of library
+    ret
+.load:
+    dec esi ; we checked on 0 before, let's go back
+    mov eax, 68
+    mov ebx, 19
+    mov ecx, esi
+    int 0x40           ; eax = address of exports
+    mov byte[esi], 0   ; library is loaded, let's place 0 in first byte of name
+    mov [esi + 1], eax ; now next 4 bytes of library name are replaced by address of library
+    ; call lib_init
+    stdcall dll.GetProcAddress, eax, lib_init_str ; eax = address of lib_init
+    test eax, eax
+    jz .ret
+    stdcall dll.Init, eax
+.ret:
+    mov eax, [esi + 1] ; put address of library into eax
+    ret
+.fail:
+    mov eax, 0
+    ret
+;==============================
+
+lib_init_str db 'lib_init', 0
+
 public argc as '__argc'
 public params as '__argv'
 public path as '__path'
