@@ -529,6 +529,7 @@ tup.append_table(extra_files, {
  {"HD_Load/USB_boot_old/", PROGS .. "/hd_load/usb_boot_old/MeOSload.com"},
  {"HD_Load/USB_boot_old/", PROGS .. "/hd_load/usb_boot_old/enable.exe"},
  {"kolibrios/3D/3dsheart", PROGS .. "/demos/3dsheart/trunk/3dsheart"},
+ {"kolibrios/3D/flatwav", PROGS .. "/demos/flatwav/trunk/flatwav"},
  {"kolibrios/3D/info3ds/INFO3DS", PROGS .. "/develop/info3ds/info3ds"},
  {"kolibrios/3D/info3ds/INFO3DS_U", PROGS .. "/develop/info3ds/info3ds_u"},
  {"kolibrios/3D/mos3de", PROGS .. "/demos/mos3de/mos3de"},

@@ -21,7 +21,6 @@
 Plasma                    /sys/demos/plasma
 Спираль                   /sys/demos/spiral
 Moveback                  /sys/demos/movback
-Life                      /sys/demos/life2
 TranTest                  /sys/demos/trantest
 Паутинка                  /sys/demos/web
 Фейерверк                 /sys/demos/firework
