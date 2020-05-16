@@ -51,7 +51,7 @@ void PaintVisible()
 	dword line_bg;
 	bool swapped_selection = false;
 
-	list.column_max = lines.get(list.cur_y+1) - lines.get(list.cur_y);
+	list.column_max = lines.len(list.cur_y);
 	list.CheckDoesValuesOkey();
 	if (selection.end_offset < selection.start_offset) {
 		swapped_selection = selection.swap_start_end();
@@ -69,7 +69,7 @@ void PaintVisible()
 		selection.draw(absolute_y);
 
 		if (absolute_y<list.count) DrawBuf.WriteText(3, ydraw+3, list.font_type, theme.text, 
-			lines.get(absolute_y), lines.get(absolute_y+1) - lines.get(absolute_y));
+			lines.get(absolute_y), lines.len(absolute_y));
 	}
 
 	PutPaletteImage(buf_data+8, DrawBuf.bufw, list.h, list.x, list.y, 32, 0);

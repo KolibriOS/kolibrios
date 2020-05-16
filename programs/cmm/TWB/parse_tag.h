@@ -97,7 +97,6 @@ bool _tag::get_next_param()
 	//find ATTR start and copy
 	while (i>0) && (!__isWhite(params[i])) i--;
 	strlcpy(#attr, #params + i + 1, sizeof(attr)-1);
-	strlwr(#attr);
 	params[i] = '\0';
  
 	//fix case: src=./images/KolibriOS_logo2.jpg?sid=e8ece8b38b
@@ -106,6 +105,7 @@ bool _tag::get_next_param()
 		strlcpy(#val, i+1, sizeof(val)-1);
 		ESBYTE[i+1] = '\0';
 	}
+	strlwr(#attr);
 
 	attributes.add(#attr);
 	values.add(#val);

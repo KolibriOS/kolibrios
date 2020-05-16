@@ -841,6 +841,10 @@ nocorrect:
 	inc	dl
 	cmp	[edi + cur_sel],dl
 	jne	.nohighlight
+	cmp esi,0
+	jne @f
+	mov esi,0x2a2a2a
+@@:
 	add	esi,0x1a1a1a
 ;--------------------------------------
 align 4
