@@ -1,21 +1,23 @@
 
 typedef Dword dword;
+typedef unsigned short word;
+typedef dword __stdcall dword_func(dword);
 
 dword  am__ = 0x0;
 dword  bm__ = 0x0;
 
-char aEdit_box_draw[9]  = "edit_box";
-char aEdit_box_key[13] = "edit_box_key";
-char aEdit_box_mouse[15] = "edit_box_mouse";
-char aVersion_ed[11] = "version_ed";
+char aEdit_box_draw[]  = "edit_box";
+char aEdit_box_key[]   = "edit_box_key";
+char aEdit_box_mouse[] = "edit_box_mouse";
+char aVersion_ed[]     = "version_ed";
 
-char aCheck_box_draw  [15] = "check_box_draw";
-char aCheck_box_mouse [16] = "check_box_mouse";
-char aVersion_ch      [11] = "version_ch";
+char aCheck_box_draw  [] = "check_box_draw";
+char aCheck_box_mouse [] = "check_box_mouse";
+char aVersion_ch      [] = "version_ch";
 
-char aOption_box_draw [16] = "option_box_draw";
-char aOption_box_mouse[17] = "option_box_mouse";
-char aVersion_op      [11] = "version_op" ;
+char aOption_box_draw [] = "option_box_draw";
+char aOption_box_mouse[] = "option_box_mouse";
+char aVersion_op      [] = "version_op" ;
 
 //BOX_LIB
 
@@ -33,8 +35,27 @@ dword dummy = 0;
 
 
 struct edit_box{
-dword width, left, top, color, shift_color, focus_border_color, blur_border_color,
-text_color, max, text, flags, size, pos, offset, cl_curs_x, cl_curs_y, shift, shift_old;
+dword width, 
+	left,
+	top, 
+	color, 
+	shift_color, 
+	focus_border_color, 
+	blur_border_color,
+	text_color,
+	max,
+	text,
+	mouse_variable,
+	flags,
+	size,
+	pos,
+	offset,
+	cl_curs_x,
+	cl_curs_y,
+	shift,
+	shift_old,
+	height,
+	ed_char_width;
 };
 
 void load_edit_box()
@@ -48,9 +69,9 @@ void load_edit_box()
 		return;
 	}
 
-	edit_box_draw = (dword_func*)kol_cofflib_procload(k, "edit_box");
-	edit_box_key = (dword_func*)kol_cofflib_procload(k,"edit_box_key");
-	edit_box_mouse = (dword_func*)kol_cofflib_procload(k,"edit_box_mouse");
+	edit_box_draw  = (dword_func*)kol_cofflib_procload(k, aEdit_box_draw);
+	edit_box_key   = (dword_func*)kol_cofflib_procload(k, aEdit_box_key);
+	edit_box_mouse = (dword_func*)kol_cofflib_procload(k, aEdit_box_mouse);
 	kos_SetMaskForEvents(0x27);
 
 	if (edit_box_draw == NULL || edit_box_key == NULL || edit_box_mouse == NULL)
