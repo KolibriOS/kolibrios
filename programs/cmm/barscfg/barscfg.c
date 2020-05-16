@@ -287,7 +287,7 @@ void EventDockyProcessButton(dword id)
 {
 	if (BTN_DOCKY_ATTACHEMENT == id) {
 		dkLocation++; 
-		if (dkLocation>3) dkLocation=1; 
+		if (dkLocation>4) dkLocation=1; 
 		DrawWindowContent(); 
 		SaveSettingsAndRestartProcess(DOCKY);
 	}

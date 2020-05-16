@@ -145,11 +145,14 @@ void SetAppColors()
 	 	swc.light = 0xFCFCFC;
 	}
 
-	if (swc.list_bg != old_list_bg_color)
-	{	
-		Libimg_LoadImage(#skin, "/sys/icons32.png");
-		Libimg_FillTransparent(skin.image, skin.w, skin.h, swc.list_bg);
-	}
+	if (!skin.image) LoadImages();
+	else if (swc.list_bg != old_list_bg_color) LoadImages();
+}
+
+void LoadImages()
+{
+	Libimg_LoadImage(#skin, "/sys/icons32.png");
+	Libimg_FillTransparent(skin.image, skin.w, skin.h, swc.list_bg);	
 }
 
 

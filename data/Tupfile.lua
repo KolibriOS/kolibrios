@@ -286,7 +286,7 @@ if build_type == "rus" then tup.append_table(extra_files, {
  {"kolibrios/games/Dungeons/Resources/Textures/HUD/", PROGS .. "/games/Dungeons/Resources/Textures/HUD/*"},
  {"kolibrios/games/Dungeons/Resources/Textures/", PROGS .. "/games/Dungeons/Resources/Textures/Licenses.txt"},
  {"kolibrios/games/Dungeons/", PROGS .. "/games/Dungeons/readme_ru.txt"},
- {"kolibrios/games/sstartrek/", "common/games/sstartrek/SStarTrek_ru"},
+ {"kolibrios/games/sstartrek/SStarTrek", "common/games/sstartrek/SStarTrek_ru"},
  {"kolibrios/games/WHOWTBAM/", build_type .. "/games/whowtbam"},
  {"kolibrios/games/WHOWTBAM/", build_type .. "/games/appdata.dat"},
  {"kolibrios/media/zsea/zsea_keys.txt", PROGS .. "/media/zsea/Docs/zSea_keys_rus.txt"},
@@ -302,7 +302,7 @@ if build_type == "rus" then tup.append_table(extra_files, {
  {"HD_Load/mtldr/install.txt", PROGS .. "/hd_load/mtldr/install_eng.txt"},
  {"HD_Load/USB_Boot/readme.txt", PROGS .. "/hd_load/usb_boot/readme_eng.txt"},
  {"kolibrios/games/ataka", "common/games/ataka/ataka_en"},
- {"kolibrios/games/sstartrek/", "common/games/sstartrek/SStarTrek_en"},
+ {"kolibrios/games/sstartrek/SStarTrek", "common/games/sstartrek/SStarTrek_en"},
  {"kolibrios/media/zsea/zsea_keys.txt", PROGS .. "/media/zsea/Docs/zSea_keys_eng.txt"},
 }) end
 --[[

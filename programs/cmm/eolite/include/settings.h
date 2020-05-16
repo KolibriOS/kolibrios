@@ -229,6 +229,7 @@ void SetAppColors()
 	dword old_list_bg_color = col.list_bg;
 	sc.get();
 	sc.work_dark = MixColors(0, sc.work, 35);
+	if (sc.work == 0) sc.work = 1;
 	if (bg_col == sc.work) return;
 	bg_col = sc.work;
 	if (skin_is_dark()) 

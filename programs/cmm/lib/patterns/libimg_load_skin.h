@@ -30,7 +30,7 @@
 
 :void Libimg_FillTransparent(dword struct_pointer, w, h, new_color)
 {
-	Libimg_ReplaceColor(struct_pointer, w, h, 0, new_color);
+	if (new_color!=0) Libimg_ReplaceColor(struct_pointer, w, h, 0, new_color);
 }
 
 :libimg_image icons32draw;

@@ -10,6 +10,7 @@ move *.com bin
 
 cd bin
 forfiles /S /M *.com /C "cmd /c rename @file @fname"
+rename software_widget syspanel
 cd ..
 
 del warning.txt
