@@ -212,7 +212,7 @@ int main(int argc, char** argv)
         }
 
 
-        itoab(*dta, num, 16);
+        itoa(*dta, num, 16);
 
         if (num[1] == 0)
         {
@@ -254,7 +254,7 @@ int main(int argc, char** argv)
         if (i == 2)
             dta = &seconds;
 
-        itoab(*dta, num, 16);
+        itoa(*dta, num, 16);
 
         if (num[1] == 0)
         {
