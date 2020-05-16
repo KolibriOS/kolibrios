@@ -1,5 +1,5 @@
 use32
-	org 0x0
+	org 0
 	db 'MENUET01'
 	dd 1,start,i_end,mem,stacktop,0,cur_dir_path
 
@@ -112,7 +112,7 @@ draw_window:
 	add ebx,IMAGE_TOOLBAR_ICON_SIZE
 	mcall ,,,(95 shl 16)+5 ;масштаб -
 
-	stdcall [kosglSwapBuffers]
+	call [kosglSwapBuffers]
 	mcall SF_REDRAW,SSF_END_DRAW
 	popad
 	ret
@@ -146,7 +146,7 @@ key:
 		mov byte[txt_angle_y.v],0
 		stdcall str_cat, txt_angle_y.v,Data_String
 		call draw_3d
-		stdcall [kosglSwapBuffers]
+		call [kosglSwapBuffers]
 	@@:
 	cmp ah,177 ;Down
 	jne @f
@@ -160,7 +160,7 @@ key:
 		mov byte[txt_angle_y.v],0
 		stdcall str_cat, txt_angle_y.v,Data_String
 		call draw_3d
-		stdcall [kosglSwapBuffers]
+		call [kosglSwapBuffers]
 	@@:
 	cmp ah,176 ;Left
 	jne @f
@@ -174,7 +174,7 @@ key:
 		mov byte[txt_angle_z.v],0
 		stdcall str_cat, txt_angle_z.v,Data_String
 		call draw_3d
-		stdcall [kosglSwapBuffers]
+		call [kosglSwapBuffers]
 	@@:
 	cmp ah,179 ;Right
 	jne @f
@@ -188,7 +188,7 @@ key:
 		mov byte[txt_angle_z.v],0
 		stdcall str_cat, txt_angle_z.v,Data_String
 		call draw_3d
-		stdcall [kosglSwapBuffers]
+		call [kosglSwapBuffers]
 	@@:
 
 	jmp still
@@ -227,14 +227,14 @@ align 4
 but_dr_0:
 	mov dword[dr_figure],0
 	call draw_3d
-	stdcall [kosglSwapBuffers]
+	call [kosglSwapBuffers]
 	ret
 
 align 4
 but_dr_1:
 	mov dword[dr_figure],1
 	call draw_3d
-	stdcall [kosglSwapBuffers]
+	call [kosglSwapBuffers]
 	ret
 
 align 4
@@ -257,7 +257,7 @@ but_zoom_p:
 	mov byte[txt_scale.v],0
 	stdcall str_cat, txt_scale.v,Data_String
 	call draw_3d
-	stdcall [kosglSwapBuffers]
+	call [kosglSwapBuffers]
 	ret
 
 align 4
@@ -280,14 +280,11 @@ but_zoom_m:
 	mov byte[txt_scale.v],0
 	stdcall str_cat, txt_scale.v,Data_String
 	call draw_3d
-	stdcall [kosglSwapBuffers]
+	call [kosglSwapBuffers]
 	ret
 
 align 4
 caption db 'Test textures, [Esc] - exit, [<-],[->],[Up],[Down] - rotate',0
-align 4
-ctx1 db 28 dup (0) ;TinyGLContext or KOSGLContext
-;sizeof.TinyGLContext = 28
 
 align 4
 draw_3d:
@@ -386,13 +383,6 @@ stdcall [glPopMatrix]
 	stdcall [buf2d_draw_text], buf_ogl, buf_1,txt_angle_z,5,15,0xffff00
 	stdcall [buf2d_draw_text], buf_ogl, buf_1,txt_angle_y,5,25,0xffff00
 	ret
-
-dr_figure dd 0
-qObj dd 0
-TexObj dd 0 ;массив указателей на текстуры (в данном случае 1 шт.)
-texture dd 0 ;указатель на память с текстурой
-text_w dd 0
-text_h dd 0
 
 scale dd 0.4 ;начальный масштаб
 sc_delt dd 0.05 ;изменение масштаба при нажатии
@@ -534,14 +524,14 @@ system_dir_1 db '/sys/lib/'
 lib_name_1 db 'buf2d.obj',0
 system_dir_2 db '/sys/lib/'
 lib_name_2 db 'libimg.obj',0
-err_msg_found_lib_0 db 'Sorry I cannot load library ',39,'tinygl.obj',39,0
-err_msg_found_lib_1 db 'Sorry I cannot load library ',39,'buf2d.obj',39,0
-err_msg_found_lib_2 db 'Sorry I cannot load library ',39,'libimg.obj',39,0
+err_msg_found_lib_0 db 'Sorry I cannot load library ',39,'tinygl.obj',39,'" -tE',0
+err_msg_found_lib_1 db 'Sorry I cannot load library ',39,'buf2d.obj',39,'" -tE',0
+err_msg_found_lib_2 db 'Sorry I cannot load library ',39,'libimg.obj',39,'" -tE',0
 head_f_i:
-head_f_l db 'System error',0
-err_msg_import_0 db 'Error on load import library ',39,'tinygl.obj',39,0
-err_msg_import_1 db 'Error on load import library ',39,'buf2d.obj',39,0
-err_msg_import_2 db 'Error on load import library ',39,'libimg.obj',39,0
+head_f_l db '"System error',0
+err_msg_import_0 db 'Error on load import library ',39,'tinygl.obj',39,'" -tE',0
+err_msg_import_1 db 'Error on load import library ',39,'buf2d.obj',39,'" -tE',0
+err_msg_import_2 db 'Error on load import library ',39,'libimg.obj',39,'" -tE',0
 ;--------------------------------------------------
 
 txt_scale:
@@ -589,6 +579,14 @@ l_libs_end:
 
 align 4
 i_end:
+	ctx1 db 28 dup (0) ;TinyGLContext or KOSGLContext
+	;sizeof.TinyGLContext = 28
+	dr_figure dd 0
+	qObj dd 0
+	TexObj dd 0 ;массив указателей на текстуры (в данном случае 1 шт.)
+	texture dd 0 ;указатель на память с текстурой
+	text_w dd 0
+	text_h dd 0
 	run_file_70 FileInfoBlock
 	sc system_colors
 align 16

@@ -25,7 +25,8 @@ proc endSharedState uses eax ebx, context:dword
 endp
 
 align 4
-proc glInit uses eax ebx ecx edx, zbuffer1:dword
+proc glInit, zbuffer1:dword
+pushad
 	stdcall gl_zalloc,sizeof.GLContext
 	mov dword[gl_ctx],eax
 	mov edx,eax
@@ -174,7 +175,7 @@ proc glInit uses eax ebx ecx edx, zbuffer1:dword
 
 	; depth test
 	mov dword[edx+GLContext.depth_test],0
-
+popad
 	ret
 endp
 
