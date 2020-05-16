@@ -100,6 +100,7 @@ struct collection_int
 	void alloc();
 	void add();
 	dword get();
+	dword len();
 	dword get_last();
 	void pop();
 	void drop();
@@ -125,6 +126,11 @@ struct collection_int
 :dword collection_int::get(dword pos) {
 	if (pos<0) || (pos>=count) return 0;
 	return ESDWORD[pos * sizeof(dword) + buf];
+}
+
+:dword collection_int::len(dword pos) {
+	if (pos<0) || (pos+1>=count) return 0;
+	return get(pos+1) - get(pos);
 }
 
 :dword collection_int::get_last() {

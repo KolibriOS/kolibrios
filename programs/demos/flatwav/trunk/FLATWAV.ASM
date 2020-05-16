@@ -681,26 +681,28 @@ draw_window:
        ; DRAW WINDOW
     mov  eax,0	    ; function 0 : define and draw window
     mov  ebx,120*65536+SIZE_X+20    ; [x start] *65536 + [x size]
-    mov  ecx,120*65536+SIZE_Y+45    ; [y start] *65536 + [y size]
+    mov  ecx,120*65536+SIZE_Y+55    ; [y start] *65536 + [y size]
     mov  edx,0x34000000     ; color of work area RRGGBB,8->color gl
-    ;mov  esi,0x805080d0     ; color of grab bar  RRGGBB,8->color gl
-    mov  edi,labelt	; color of frames    RRGGBB
+    mov  edi,win_title	; color of frames    RRGGBB
     int  0x40
 
       ; flag color button
     mov  eax,8	    ; function 8 : define and draw button
-    mov  ebx,(SIZE_X-30)*65536+20    ; [x start] *65536 + [x size]
-    mov  ecx,5*65536+12     ; [y start] *65536 + [y size]
-    mov  edx,2	    ; button id
-    mov  esi,0x555555	  ; button color RRGGBB
-    int  0x40
-       ; spped button
-    mov  eax,8	    ; function 8 : define and draw button
-    mov  ebx,(SIZE_X-60)*65536+20    ; [x start] *65536 + [x size]
+    mov  ebx,(SIZE_X-52)*65536+40    ; [x start] *65536 + [x size]
     mov  ecx,5*65536+12     ; [y start] *65536 + [y size]
     mov  edx,3	    ; button id
-    mov  esi,0x555555	  ; button color RRGGBB
+    mov  esi,0x888888	  ; button color RRGGBB
     int  0x40
+       ; speed button
+    sub  ebx,48*65536    ; [x start] *65536 + [x size]
+    dec  edx    ; button id
+    int  0x40
+	
+	mov  eax, 4
+	mov  ebx, (SIZE_X-100+6)*65536+8
+	mov  ecx, 0x80EEEeee
+	mov  edx, btn_title
+	int  0x40
 
     mov  eax,12      ; function 12:tell os about windowdraw
     mov  ebx,2	    ; 2, end of draw
@@ -731,9 +733,9 @@ dw 38,39,29
 
 
 
-labelt:
-     db   '3d wavy rotaring area',0
-labellen:
+win_title    db   '3d wavy rotaring area',0
+btn_title db 'Color   Speed',0
+
 sinbeta rd 1
 cosbeta rd 1
 singamma rd 1

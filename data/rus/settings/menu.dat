@@ -33,7 +33,6 @@ UnvWater                  /sys/demos/unvwater
 Ray tracing               /sys/3d/ray
 Просмотрщик 3DS           /sys/3d/view3ds
 Шестерёнки                /sys/3d/gears
-FlatWave                  /sys/3d/flatwav
 3D-Волны                  /sys/3d/3dwav
 #3    **** Графика ****
 Просмотр фото KIV         /sys/media/kiv
