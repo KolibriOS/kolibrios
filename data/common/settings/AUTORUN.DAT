@@ -9,13 +9,13 @@
 /SYS/SETUP		BOOT	0	# Load device settings
 /SYS/LOADDRV		RDC	0	# videodriver for RDC M2010/M2012
 /SYS/@TASKBAR		""	0	# Start taskbar
-/SYS/@ICON		""	0	# Multithread icon
 /SYS/ESKIN		""	0	# Set style
-/SYS/@DOCKY		""	0	# Start docky
+/SYS/@ICON		""	0	# Multithread icon
 /SYS/NETWORK/NETCFG	A	0	#
 /SYS/NETWORK/@ZEROCONF	""	0	# Network configuration
 /SYS/@VOLUME		""	0	# Start volume daemon
 /SYS/@SS		ASSM	0	# Screensaver
+/SYS/@DOCKY		""	0	# Start docky
 /SYS/TMPDISK		A0	-1	# Add virtual RAM disk /tmp0/1
 /SYS/SEARCHAP		""	-1	# Search and mount additional system directory
 /SYS/@HOTANGLES         ""      0       # Start Hot Angles

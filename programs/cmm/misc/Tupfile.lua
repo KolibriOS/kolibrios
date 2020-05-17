@@ -7,6 +7,7 @@ tup.rule("easyshot.c", "c-- /D=AUTOBUILD /D=$(C_LANG) %f" .. tup.getconfig("KPAC
 tup.rule("calypte.c", "c-- /D=AUTOBUILD /D=$(C_LANG) %f" .. tup.getconfig("KPACK_CMD"), "calypte.com")
 tup.rule("mblocks.c", "c-- /D=AUTOBUILD /D=$(C_LANG) %f" .. tup.getconfig("KPACK_CMD"), "mblocks.com")
 tup.rule("notify.c", "c-- /D=AUTOBUILD /D=$(C_LANG) %f" .. tup.getconfig("KPACK_CMD"), "notify.com")
+tup.rule("osupdate.c", "c-- /D=AUTOBUILD /D=$(C_LANG) %f" .. tup.getconfig("KPACK_CMD"), "osupdate.com")
 tup.rule("pipet.c", "c-- /D=AUTOBUILD /D=$(C_LANG) %f" .. tup.getconfig("KPACK_CMD"), "pipet.com")
 tup.rule("software_widget.c", "c-- /D=AUTOBUILD /D=$(C_LANG) %f" .. tup.getconfig("KPACK_CMD"), "software_widget.com")
 
