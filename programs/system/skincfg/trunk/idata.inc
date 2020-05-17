@@ -263,7 +263,7 @@ PathShow_data_1:
 .background_flag	dd 0	;+16
 .font_color		dd 0x0	;+20
 .background_color	dd 0x0	;+24
-.text_pointer		dd fname	;+28
+.text_pointer		dd dtp_name	;+28
 .work_area_pointer	dd text_work_area	;+32
 .temp_text_length	dd 0	;+36
 ;---------------------------------------------------------------------
@@ -291,7 +291,7 @@ OpenDialog_data:
 .start_path		dd open_dialog_path	;+24
 .draw_window		dd draw_window	;+28
 .status			dd 0	;+32
-.openfile_pach 		dd fname	;+36
+.openfile_pach 		dd dtp_name	;+36
 .filename_area		dd filename_area	;+40
 .filter_area		dd Filter
 .x:
@@ -348,9 +348,6 @@ Filter2:
 	db 'SKN',0
 .end:
 	db 0
-
-start_temp_file_name:
-	db 'default.dtp',0
 
 default_skin:
 	db '/sys/default.skn',0

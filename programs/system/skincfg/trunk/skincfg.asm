@@ -23,13 +23,14 @@
 	dd IM_END	; file size
 	dd I_END	; memory
 	dd stacktop	; stack pointer
-	dd skin_info	; parameters
+	dd app_param	; parameters
 	dd cur_dir_path	; path to file
  
 include 'lang.inc'
 include '../../../proc32.inc'
 include '../../../config.inc'		;for nightbuild
 include '../../../macros.inc'
+include '../../../string.inc'
 include '../../../dll.inc'
 include 'kglobals.inc'
 include 'unpacker.inc'
@@ -104,31 +105,8 @@ load_libraries l_libs_start,end_l_libs
 	test	eax,eax
 	jz	close
 ;---------------------------------------------------------------------
-	mov	edi,filename_area
-	mov	esi,start_temp_file_name
-	xor	eax,eax
-	cld
-@@:
-	lodsb
-	stosb
-	test	eax,eax
-	jnz	@b
-
-
-	mov	edi,fname
-	mov	esi,default_dtp
-	xor	eax,eax
-	cld
-@@:
-	lodsb
-	stosb
-	test	eax,eax
-	jnz	@b
-
-;---------------------------------------------------------------------
+; set default pathes
 	mov	edi,skin_info
-	cmp	byte [edi], 0
-	jne	skin_path_ready
 	mov	esi,default_skin
 	xor	eax,eax
 	cld
@@ -137,6 +115,56 @@ load_libraries l_libs_start,end_l_libs
 	stosb
 	test	eax,eax
 	jnz	@b
+	
+	mov	edi,dtp_name
+	mov	esi,default_dtp
+	xor	eax,eax
+	cld
+@@:
+	lodsb
+	stosb
+	test	eax,eax
+	jnz	@b
+;---------------------------------------------------------------------
+; check app param
+	stdcall string.length, app_param
+	add eax, app_param
+	mov ecx, [eax-4]
+	cmp ecx, '.skn'
+	je  load_skin_from_param
+	cmp ecx, '.dtp'
+	jne no_param
+	
+load_dtp_from_param:
+	mov	edi,dtp_name
+	mov	esi,app_param
+	xor	eax,eax
+	cld
+@@:
+	lodsb
+	stosb
+	test   eax,eax
+	jnz    @b	
+	call   load_dtp_file.1
+	jmp    skin_path_ready
+
+load_skin_from_param:
+	mov    edi,skin_info
+	mov    esi,app_param
+	xor    eax,eax
+	cld
+@@:
+	lodsb
+	stosb
+	test    eax,eax
+	jnz     @b	
+	call    load_skin_file.2
+	jmp     skin_path_ready
+
+no_param:
+	mcall	48,3,color_table,4*10	; get current colors
+	call	load_skin_file.2
+	
 skin_path_ready:	
 ;---------------------------------------------------------------------
 ;OpenDialog	initialisation
@@ -156,9 +184,6 @@ skin_path_ready:
 	
 	push	dword PathShow_data_2
 	call	[PathShow_prepare]
-;---------------------------------------------------------------------	
-	mcall	48,3,color_table,4*10	; get current colors
-	call	load_skin_file.2
 ;---------------------------------------------------------------------	
 red:
 	call	draw_window		; at first, draw the window
@@ -187,7 +212,7 @@ button:		; button
  	cmp	ah,12	; load file
  	jne	no_load
 
-	call	load_file
+	call	load_dtp_file
 	call	draw_window
  	jmp	still
 ;--------------------------------------
@@ -291,7 +316,7 @@ close:
 noid1:
  	jmp	still
 ;---------------------------------------------------------------------
-load_file:
+load_dtp_file:
 ;---------------------------------------------------------------------
 ; invoke OpenDialog
 	mov	[OpenDialog_data.type],dword 0
@@ -307,6 +332,7 @@ load_file:
 
 	call	draw_PathShow
 ;---------------------------------------------------------------------
+.2:
 	xor	eax, eax
 	mov	ebx, read_info
 	mov	dword [ebx], eax	; subfunction: read

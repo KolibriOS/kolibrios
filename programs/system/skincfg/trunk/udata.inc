@@ -7,7 +7,7 @@ read_info:
   .blocks       dd ?            ; 512 bytes
   .address      dd ?
   .workarea     dd ?
-fname rb 4096            ; filename
+dtp_name rb 4096
 
 virtual at read_info
  write_info:
@@ -26,7 +26,7 @@ read_info2:
   .workarea     dd ?
 skin_info rb 4096
 
-;param   rb      257
+app_param   rb      257
 
 align 4
 app_colours:

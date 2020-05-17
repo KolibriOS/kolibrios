@@ -338,7 +338,7 @@ void TWebBrowser::SetStyle() {
 		if (value = tag.get_value_of("bglink=")) link_bg=GetColor(value);
 		if (value = tag.get_value_of("text="))   text_colors[0]=GetColor(value);
 		if (value = tag.get_value_of("bgcolor=")) {
-			style.bg_color = page_bg = GetColor(value);
+			style.bg_color = page_bg = link_bg = GetColor(value);
 			DrawBuf.Fill(0, page_bg);
 		}
 		// Autodetecting encoding if no encoding was set
