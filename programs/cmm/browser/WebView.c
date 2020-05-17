@@ -388,6 +388,7 @@ void EventChangeEncodingAndLoadPage(int _new_encoding)
 
 void ProcessEvent(dword id__)
 {
+	char new_clip_url[URL_SIZE+1];
 	switch (id__)
 	{
 		case ENCODINGS...ENCODINGS+6:
@@ -459,12 +460,23 @@ void ProcessEvent(dword id__)
 			open_new_window = false;
 			return;
 		case COPY_LINK_URL:
-			Clipboard__CopyText(PageLinks.GetURL(PageLinks.active));
+			strncpy(#new_clip_url, PageLinks.GetURL(PageLinks.active), URL_SIZE);
+			if ( strcmp(#new_clip_url, "./", 2) )
+			{ 
+				Clipboard__CopyText( GetAbsoluteURL(#new_clip_url, history.current()) ); 
+			}
+			else {
+				Clipboard__CopyText( PageLinks.GetURL(PageLinks.active) ); 
+			}
 			notify("'URL copied to clipboard'O");
 			return;
 		case DOWNLOAD_LINK_CONTENTS:
 			if (!downloader_opened) {
 				strcpy(#downloader_edit, PageLinks.GetURL(PageLinks.active));
+				if ( strcmp(#downloader_edit, "./", 2) )
+				{ 
+					GetAbsoluteURL(#downloader_edit, history.current());
+				}
 				CreateThread(#Downloader,#downloader_stak+4092);
 			}
 			return;
