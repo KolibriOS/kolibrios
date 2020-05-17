@@ -491,6 +491,18 @@ LS3:
   }
 }
 
+inline int strnum(dword haystack, needle)
+{
+	int count = 0;
+	int needle_len = strlen(needle);
+	loop() {
+		if (! haystack = strstr(haystack, needle)) break;
+		haystack+=needle_len;
+		count++;
+	}
+	return count;
+}
+
 inline signed int strcmpi(dword cmp1, cmp2)
 {
     char si, ue;

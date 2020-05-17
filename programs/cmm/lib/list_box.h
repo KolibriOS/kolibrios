@@ -102,21 +102,21 @@ struct llist
 
 :int llist::ProcessMouse(int xx, yy)
 {
-	int cur_y_temp, cur_x_temp, ret=0;
+	int new_cur_y, new_cur_x, ret=0;
 	if (MouseOver(xx, yy))
 	{
-		cur_y_temp = yy - y / item_h + first;
-		if (cur_y_temp != cur_y) && (cur_y_temp<count)
+		new_cur_y = yy - y / item_h + first;
+		if (new_cur_y != cur_y) && (new_cur_y<count)
 		{
-			cur_y = cur_y_temp;
+			cur_y = new_cur_y;
 			ret = 1;
 		}
 		if (horisontal_selelection) 
 		{		
-			cur_x_temp = xx - x / item_w;
-			if (cur_x_temp != cur_x) && (cur_x_temp<column_max)
+			new_cur_x = xx - x / item_w;
+			if (new_cur_x != cur_x) && (new_cur_x<column_max)
 			{
-				cur_x = cur_x_temp;
+				cur_x = new_cur_x;
 				ret = 1;
 			}
 		}

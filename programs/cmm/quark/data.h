@@ -13,7 +13,7 @@ char intro[] = "Это простой просмотрщик текста.
 
 char copied_chars[] = "Скопировано сиволов: %i";
 
-char about[] = "Quark Text v0.4
+char about[] = "Quark Text v0.7
 Автор: Кирилл Липатов aka Leency
 Сайт: http://aspero.pro
 
@@ -31,8 +31,8 @@ F3 - искать далее
 Esc - скрыть панель поиска";
 
 char color_scheme_names[] = "Творожек\nКосмос   ";
-#define FILE_SAVED_WELL "'Файл успешно сохранен'O"
-#define FILE_NOT_SAVED "'Ошибка при сохранении файла!'E"
+?define FILE_SAVED_WELL "'Файл успешно сохранен'O"
+?define FILE_NOT_SAVED "'Ошибка при сохранении файла!'E"
 
 char rmb_menu[] = 
 "Вырезать|Ctrl+X
@@ -42,6 +42,9 @@ char rmb_menu[] =
 Открыть в папке
 Копировать путь файла";
 
+?define T_MATCHES "Найдено: %i   "
+?define T_FIND_NEXT "Найти далее"
+
 #else
 
 char intro[] = "Quark is a simple text viewer.
@@ -49,7 +52,7 @@ Try to open some text file.";
 
 char copied_chars[] = "Copied %i chars";
 
-char about[] = "Quark Text v0.4
+char about[] = "Quark Text v0.7
 Author: Kiril Lipatov aka Leency 
 Website: http://aspero.pro
 
@@ -67,8 +70,8 @@ F3 - search next
 Esc - hide search bar";
 
 char color_scheme_names[] = "Dairy\nCosmos   ";
-#define FILE_SAVED_WELL "'File saved'O"
-#define FILE_NOT_SAVED "'Error saving file!'E"
+?define FILE_SAVED_WELL "'File saved'O"
+?define FILE_NOT_SAVED "'Error saving file!'E"
 
 char rmb_menu[] = 
 "Cut|Ctrl+X
@@ -77,6 +80,9 @@ Paste|Ctrl+V
 -
 Reveal in folder
 Copy file path";
+
+?define T_MATCHES "Matches: %i   "
+?define T_FIND_NEXT " Find next "
 
 #endif
 

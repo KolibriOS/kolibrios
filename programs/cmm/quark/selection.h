@@ -11,6 +11,7 @@ struct SELECTION {
 	bool swap_start_end();
 	void normalize();
 	void select_all();
+	void debug();
 } selection;
 
 bool SELECTION::is_active()
@@ -33,6 +34,7 @@ void SELECTION::draw(int i)
 		if (start_y == i) && (end_y == i) draw_line(start_x * list.font_w+2, start_y, end_x - start_x * list.font_w);
 		else if (start_y == i) draw_line(start_x * list.font_w+2, start_y, list.w -2- calc(start_x * list.font_w));
 		else if (end_y == i) draw_line(0, end_y, end_x * list.font_w+2);
+		//only for debug:
 		//DrawBuf.DrawBar(start_x * list.font_w + 2,  start_y * list.item_h, 2, list.item_h, 0x00FF00);
 		//DrawBuf.DrawBar(end_x * list.font_w + 0,  end_y * list.item_h, 2, list.item_h, 0xFF00FF);
 	}
@@ -59,14 +61,19 @@ void SELECTION::set_start()
 	start_offset = lines.get(start_y) + start_x;
 }
 
+:void SELECTION::debug()
+{
+	char rez[256];
+	sprintf(#rez, "start_x: %d start_y: %d end_x: %d end_y: %d", start_x, start_y, end_x, end_y);
+	debugln(#rez);
+}
+
 void SELECTION::set_end()
 {
 	end_x = list.cur_x;
 	end_y = list.cur_y;
 	normalize();
 	end_offset = lines.get(end_y) + end_x;
-	//debugval("end_x", end_x);
-	//debugval("end_y", end_y);
 }
 
 
@@ -84,8 +91,6 @@ void SELECTION::select_all()
 	end_x = lines.get(end_y+1) - lines.get(end_y);
 	start_offset = lines.get(start_y) + start_x;
 	end_offset = lines.get(end_y) + end_x;
-	//debugval("end_x__", end_x);
-	//debugval("end_y__", end_y);
 }
 
 bool SELECTION::swap_start_end()

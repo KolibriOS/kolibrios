@@ -57,7 +57,7 @@ int font_size;
 
 #include "data.h"
 
-#include "../txtread/search.h"
+#include "search.h"
 #include "selection.h"
 #include "prepare_page.h"
 
@@ -71,8 +71,6 @@ scroll_bar scroll = { 15,200,398,44,0,2,115,15,0,0xeeeeee,
 	0xBBBbbb,0xeeeeee,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1};
 
 char title[4196];
-
-bool help_opened = false;
 
 int reopenin_mx,
     theme_mx,
@@ -197,18 +195,33 @@ void HandleButtonEvent()
 
 void HandleKeyEvent()
 {
-	int new_y;
-	if (help_opened) {
-		help_opened = false;
-		DrawPage();
-		return; 
-	}
 	GetKeys();
+
+	switch (key_scancode)
+	{
+		case SCAN_CODE_F1:
+			EventShowInfo();
+			return;
+		case SCAN_CODE_ESC:
+			search.hide();
+			return;
+		case SCAN_CODE_ENTER:
+			if (! search_box.flags & ed_focus) return;
+		case SCAN_CODE_F3:
+			EventSearchNext();
+			return;
+	}
+
+	if (search.edit_key()) return;
 
 	if (key_modifier & KEY_LCTRL) || (key_modifier & KEY_RCTRL) {
 		if (key.press(ECTRL + key_scancode)) return;
 		switch (key_scancode)
 		{
+			case SCAN_CODE_KEY_A:
+				selection.select_all();
+				DrawPage();
+				return;
 			case SCAN_CODE_KEY_X:
 				EventCut();
 				return;
@@ -230,36 +243,18 @@ void HandleKeyEvent()
 			case SCAN_CODE_KEY_F:
 				search.show();
 				return;
-			case SCAN_CODE_KEY_A:
-				selection.select_all();
-				DrawPage();
-				return;
 		}
 	}
-	switch (key_scancode)
-	{
-		case SCAN_CODE_F1:
-			EventShowInfo();
-			return;
-		case SCAN_CODE_ESC:
-			search.hide();
-			return;
-		case SCAN_CODE_ENTER:
-			if (! search_box.flags & ed_focus) return;
-		case SCAN_CODE_F3:
-			EventSearchNext();
-			return;
-	}
-	if (search.edit_key()) {
-		return;
+
+	if (key_modifier & KEY_LSHIFT) || (key_modifier & KEY_RSHIFT) {
+		selection.set_start();
 	} else {
-		if (key_modifier & KEY_LSHIFT) || (key_modifier & KEY_RSHIFT) selection.set_start();
-		else selection.cancel();
-		if (list.ProcessKey(key_scancode)) {
-			if (key_modifier & KEY_LSHIFT) || (key_modifier & KEY_RSHIFT) selection.set_end();
-			DrawPage();
-		}
-		return;
+		selection.cancel();
+	}
+
+	if (list.ProcessKey(key_scancode)) {
+		if (key_modifier & KEY_LSHIFT) || (key_modifier & KEY_RSHIFT) selection.set_end();
+		DrawPage();
 	}
 	//EventInsertCharIntoText();
 }
@@ -284,7 +279,11 @@ void HandleMouseEvent()
 				return;
 			}
 
+			//as we have lines of variable width, we need to recalculate column_max
+			list.column_max = lines.len(mouse.y - list.y / list.item_h + list.first);
+
 			list.ProcessMouse(mouse.x, mouse.y);
+
 			if (mouse.down) {
 				selection.cancel();
 				selection.set_start();
@@ -313,7 +312,7 @@ void HandleMouseEvent()
 
 bool EventSearchNext()
 {
-	int new_y = search.find_next(list.first, theme.bg);
+	int new_y = search.find_next(list.first);
 	if (new_y) {
 		list.first = new_y / list.item_h;
 		list.CheckDoesValuesOkey();
