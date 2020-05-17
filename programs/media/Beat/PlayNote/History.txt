@@ -1,0 +1,13 @@
+History:
+
+PlayNote 2020.05.17
+ Code optimization.
+
+PlayNote 2020.05.07
+ First release.
+
+
+
+
+
+
