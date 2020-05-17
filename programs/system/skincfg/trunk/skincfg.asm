@@ -106,25 +106,8 @@ load_libraries l_libs_start,end_l_libs
 	jz	close
 ;---------------------------------------------------------------------
 ; set default pathes
-	mov	edi,skin_info
-	mov	esi,default_skin
-	xor	eax,eax
-	cld
-@@:
-	lodsb
-	stosb
-	test	eax,eax
-	jnz	@b
-	
-	mov	edi,dtp_name
-	mov	esi,default_dtp
-	xor	eax,eax
-	cld
-@@:
-	lodsb
-	stosb
-	test	eax,eax
-	jnz	@b
+	stdcall string.copy, default_skin, skin_info
+	stdcall string.copy, default_dtp, dtp_name
 ;---------------------------------------------------------------------
 ; check app param
 	stdcall string.length, app_param
@@ -136,28 +119,12 @@ load_libraries l_libs_start,end_l_libs
 	jne no_param
 	
 load_dtp_from_param:
-	mov	edi,dtp_name
-	mov	esi,app_param
-	xor	eax,eax
-	cld
-@@:
-	lodsb
-	stosb
-	test   eax,eax
-	jnz    @b	
+	stdcall string.copy, app_param, dtp_name
 	call   load_dtp_file.1
 	jmp    skin_path_ready
 
 load_skin_from_param:
-	mov    edi,skin_info
-	mov    esi,app_param
-	xor    eax,eax
-	cld
-@@:
-	lodsb
-	stosb
-	test    eax,eax
-	jnz     @b	
+	stdcall string.copy, app_param, skin_info
 	call    load_skin_file.2
 	jmp     skin_path_ready
 
