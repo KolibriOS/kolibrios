@@ -131,6 +131,8 @@ void HandleParam()
 		} else if (!strncmp(#param, "-source ", 8)) {
 			source_mode = true;
 			history.add(#param + 8);
+		} else if (!strncmp(#param, "-new ", 5)) {
+			history.add(#param + 5);
 		} else {
 			if (GetProcessesCount("WEBVIEW") == 1) {
 				history.add(#param);
@@ -163,8 +165,8 @@ void main()
 		case evMouse:
 			edit_box_mouse stdcall (#address_box);
 			mouse.get();
-			if (PageLinks.HoverAndProceed(mouse.x, WB1.list.first + mouse.y, WB1.list.y, WB1.list.first))
-			&& (mouse.pkm) && (mouse.up) {
+			PageLinks.HoverAndProceed(mouse.x, WB1.list.first + mouse.y, WB1.list.y, WB1.list.first);
+			if (PageLinks.active == -1) && (mouse.pkm) && (mouse.up) {
 				if (WB1.list.MouseOver(mouse.x, mouse.y)) EventShowPageMenu();
 				break;
 			}
@@ -628,11 +630,14 @@ void OpenPage(dword _open_URL)
 void EventClickLink(dword _click_URL)
 {
 	char new_url[URL_SIZE+1];
+	char new_url_full[URL_SIZE+1];
 
 	if (open_new_window) {
-		strcpy(#new_url, _click_URL);
+		strncpy(#new_url, _click_URL, sizeof(new_url));
 		GetAbsoluteURL(#new_url, history.current());
-		RunProgram(#program_path, #new_url);
+		strcpy(#new_url_full, "-new ");
+		strncat(#new_url_full, #new_url, sizeof(new_url_full));
+		RunProgram(#program_path, #new_url_full);
 		return;
 	}
 

@@ -24,6 +24,7 @@ struct LinksArray {
 	unsigned int unic_count;
 	unsigned int active;
 	bool HoverAndProceed();
+	bool Click();
 	void AddLink();
 	void AddText();
 	dword GetURL();
@@ -81,6 +82,36 @@ void LinksArray::DrawUnderline(dword und_id, list_first, list_y, color)
 
 PathShow_data status_text = {0, 17,250, 6, 250};
 
+bool LinksArray::Click(dword list_first)
+{
+	if (mouse.lkm) && (mouse.down) {
+		DrawRectangle(links[active].x, -list_first + links[active].y, 
+		links[active].w, links[active].h, 0);
+		return false;
+	}
+	if (mouse.mkm) && (mouse.up) {
+		if (key_modifier&KEY_LSHIFT) || (key_modifier&KEY_RSHIFT) {
+			open_new_window = true;
+			EventClickLink(PageLinks.GetURL(PageLinks.active));
+			open_new_window = false;
+		} else {
+			open_new_tab = true;
+			EventClickLink(PageLinks.GetURL(PageLinks.active));
+			open_new_tab = false;
+		}
+		return false;
+	}
+	if (mouse.lkm) && (mouse.up) { 
+		CursorPointer.Restore();
+		EventClickLink(PageLinks.GetURL(PageLinks.active));
+		return false;
+	}
+	if (mouse.pkm) && (mouse.up) { 
+		EventShowLinkMenu();
+		return false;
+	}
+}
+
 bool LinksArray::HoverAndProceed(dword mx, my, list_y, list_first)
 {
 	int i;
@@ -91,46 +122,22 @@ bool LinksArray::HoverAndProceed(dword mx, my, list_y, list_first)
 		&& (mx<links[i].x+links[i].w) && (my<links[i].y+links[i].h)
 		&& (my>list_y+list_first)
 		{
-			if (mouse.lkm) && (mouse.down) {
-				DrawRectangle(links[active].x, -list_first + links[active].y, 
-				links[active].w, links[active].h, 0);
-				return false;
-			}
-			if (mouse.mkm) && (mouse.up) {
-				if (key_modifier&KEY_LSHIFT) || (key_modifier&KEY_RSHIFT) {
-					open_new_window = true;
-					EventClickLink(PageLinks.GetURL(PageLinks.active));
-					open_new_window = false;
-				} else {
-					open_new_tab = true;
-					EventClickLink(PageLinks.GetURL(PageLinks.active));
-					open_new_tab = false;
+			if (active!=i) {
+				CursorPointer.Load(#CursorFile);
+				CursorPointer.Set();
+
+				if (links[active].underline) {
+					DrawUnderline(active, list_first, list_y, link_color_default);			
 				}
-				return false;
-			}
-			if (mouse.lkm) && (mouse.up) { 
-				CursorPointer.Restore();
-				EventClickLink(PageLinks.GetURL(PageLinks.active));
-				return false;
-			}
-			if (mouse.pkm) && (mouse.up) { 
-				EventShowLinkMenu();
-				return false;
-			}
-			if (active==i) return false;
-			CursorPointer.Load(#CursorFile);
-			CursorPointer.Set();
 
-			if (links[active].underline) {
-				DrawUnderline(active, list_first, list_y, link_color_default);			
-			}
+				if (links[i].underline) {
+					DrawUnderline(i, list_first, list_y, page_bg);
+				}
 
-			if (links[i].underline) {
-				DrawUnderline(i, list_first, list_y, page_bg);
+				active = i;
+				DrawStatusBar(links[active].link);
 			}
-
-			active = i;
-			DrawStatusBar(links[active].link);
+			Click(list_first);
 			return true;
 		}
 	}
