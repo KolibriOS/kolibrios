@@ -1,14 +1,17 @@
 
 /*
-  Author: JohnXenox.
-  Description: The program for backing up a file.
+ * Author: JohnXenox aka Aleksandr Igorevich.
+ *
+ * Programme name: Backy
+ * Description: The programme for backing up a file.
+ *
+ * Works from command line, only!
+ */
 
-               Works from command line, only!
-*/
+#define CREATION_DATE "2020.05.17"
 
-#define CREATION_DATE "2020.05.07"
-
-#include <stdio.h>
+#include <conio.h>
+//#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -144,10 +147,14 @@ int main(int argc, char** argv)
     else
     {
         //con_init_console_dll_param(-1, 23, -1, 23, "Backy");
+        if (con_init_console_dll()) return 1; // init fail
+
+        printf("Useful info!");
 
         printf("\n Name: Backy");
         printf("\n Date: %s", CREATION_DATE);
         printf("\n Description: The programme for backing up a file.\n");
+
         printf("\n Author: JohnXenox\n");
 
         printf("\n Usage: backy <path1> <-o path2>\n");
@@ -212,7 +219,7 @@ int main(int argc, char** argv)
         }
 
 
-        itoa(*dta, num, 16);
+        itoab(*dta, num, 16);
 
         if (num[1] == 0)
         {
@@ -254,7 +261,7 @@ int main(int argc, char** argv)
         if (i == 2)
             dta = &seconds;
 
-        itoa(*dta, num, 16);
+        itoab(*dta, num, 16);
 
         if (num[1] == 0)
         {
