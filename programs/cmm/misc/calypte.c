@@ -421,7 +421,7 @@ void EventMenuClick()
 			EventOpenFileInAnotherProgram("/sys/develop/t_edit");
 			break;
 		case FILE_SUBMENU_ID_TEXTREAD:
-			EventOpenFileInAnotherProgram("/sys/txtread");
+			EventOpenFileInAnotherProgram("/sys/quark");
 			break;
 		case FILE_SUBMENU_ID_WEBVIEW:
 			EventOpenFileInAnotherProgram("/sys/network/webview");
