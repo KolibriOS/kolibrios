@@ -38,6 +38,7 @@ struct TWebBrowser {
 	dword link_bg;
 	dword bufpointer;
 	dword bufsize;
+	dword is_html;
 
 	void Paint();
 	void SetPageDefaults();
@@ -173,9 +174,13 @@ void TWebBrowser::ParseHtml(dword _bufpointer, _bufsize){
 		custom_encoding = CH_CP866;	
 	}
 	SetPageDefaults();
-	if (strstri(bufpointer, "<body")==-1) {
+	is_html = true;
+	if (!strstri(bufpointer, "<body")) {
 		t_body = true;
-		if (strstri(bufpointer, "<html")==-1)  style.pre = true; //show linebreaks for a plaint text
+		if (!strstri(bufpointer, "<html")) {
+			style.pre = true; //show linebreaks for a plaint text
+			is_html = false;
+		}
 	} 
 	for (bufpos=bufpointer ; (bufpos < bufpointer+bufsize) && (ESBYTE[bufpos]!=0) ; bufpos++;)
 	{
@@ -213,6 +218,7 @@ void TWebBrowser::ParseHtml(dword _bufpointer, _bufsize){
 			}
 			break;
 		case '<':
+			if (!is_html) goto _default;
 			bufpos++;
 			if (!strncmp(bufpos,"!--",3))
 			{
@@ -252,8 +258,7 @@ void TWebBrowser::ParseHtml(dword _bufpointer, _bufsize){
 			// ignore text inside the next tags
 			if (tag.is("script")) || (tag.is("style")) || (tag.is("binary")) || (tag.is("select"))  { 
 				sprintf(#tag.params, "</%s>", #tag.name);
-				j = strstri(bufpos, #tag.params);
-				if (j!=-1) bufpos = j-1;
+				if (j = strstri(bufpos, #tag.params)) bufpos = j-1;
 				break;
 			}
 
@@ -267,6 +272,7 @@ void TWebBrowser::ParseHtml(dword _bufpointer, _bufsize){
 			}
 			break;
 		default:
+			_default:
 			AddCharToTheLine(ESBYTE[bufpos]);
 		}
 	}

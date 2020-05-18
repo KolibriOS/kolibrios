@@ -55,6 +55,8 @@ int real_encoding = CH_CP866;
 int curcol_scheme;
 int font_size;
 
+bool enable_edit = false;
+
 #include "data.h"
 
 #include "search.h"
@@ -255,8 +257,9 @@ void HandleKeyEvent()
 	if (list.ProcessKey(key_scancode)) {
 		if (key_modifier & KEY_LSHIFT) || (key_modifier & KEY_RSHIFT) selection.set_end();
 		DrawPage();
+		return;
 	}
-	//EventInsertCharIntoText();
+	if(enable_edit) EventInsertCharIntoText();
 }
 
 void HandleMouseEvent()
@@ -314,7 +317,7 @@ bool EventSearchNext()
 {
 	int new_y = search.find_next(list.first);
 	if (new_y) {
-		list.first = new_y / list.item_h;
+		list.first = new_y;
 		list.CheckDoesValuesOkey();
 		DrawPage();		
 	}
@@ -576,6 +579,13 @@ void EventCopyFilePath()
 	DrawStatusBar(#copy_status_text);
 }
 
+void EventEnableEdit()
+{
+	enable_edit ^= 1;
+	if (enable_edit) notify("'Edit mode is enabled.\nNow you can only replace text, not insert, nor delete.'I");
+	draw_window();
+}
+
 //===================================================//
 //                                                   //
 //               DRAWS AND OTHER FUNCS               //
@@ -638,19 +648,21 @@ void DrawToolbar()
 	DrawBar(0, 0, Form.cwidth, TOOLBAR_H - 1, sc.work);
 	DrawBar(0, TOOLBAR_H - 1, Form.cwidth, 1, sc.work_graph);
 	
-	//AddTopBarButton(#EventNewFile,        ECTRL+SCAN_CODE_KEY_N, 2,  x.set(8),         false);
-	AddTopBarButton(#EventOpenDialog,     ECTRL+SCAN_CODE_KEY_O, 0,  x.set(8), false);
-	//AddTopBarButton(#EventSave,           ECTRL+SCAN_CODE_KEY_S, 5,  x.inc(SMALL_GAP), false);
-	AddTopBarButton(#EventShowFileInfo,   ECTRL+SCAN_CODE_KEY_I, 10, x.inc(SMALL_GAP), false);
-	AddTopBarButton(#EventMagnifyMinus,   ECTRL+SCAN_CODE_MINUS, 33, x.inc(BIG_GAP),   false);
-	AddTopBarButton(#EventMagnifyPlus,    ECTRL+SCAN_CODE_PLUS,  32, x.inc(SMALL_GAP), false);
-	AddTopBarButton(#EventClickSearch,    ECTRL+SCAN_CODE_KEY_F, 49, x.inc(BIG_GAP),   serha);  search_mx = EAX;
+	x.set(-SMALL_GAP+8);
+	if(enable_edit) AddTopBarButton(#EventNewFile,        ECTRL+SCAN_CODE_KEY_N, 2,  x.inc(SMALL_GAP), false);
+	                AddTopBarButton(#EventOpenDialog,     ECTRL+SCAN_CODE_KEY_O, 0,  x.inc(SMALL_GAP), false);
+	if(enable_edit) && (param[0]) AddTopBarButton(#EventSave,           ECTRL+SCAN_CODE_KEY_S, 5,  x.inc(SMALL_GAP), false);
+	                AddTopBarButton(#EventShowFileInfo,   ECTRL+SCAN_CODE_KEY_I, 10, x.inc(SMALL_GAP), false);
+	                AddTopBarButton(#EventMagnifyMinus,   ECTRL+SCAN_CODE_MINUS, 33, x.inc(BIG_GAP),   false);
+	                AddTopBarButton(#EventMagnifyPlus,    ECTRL+SCAN_CODE_PLUS,  32, x.inc(SMALL_GAP), false);
+	                AddTopBarButton(#EventClickSearch,    ECTRL+SCAN_CODE_KEY_F, 49, x.inc(BIG_GAP),   serha);  search_mx = EAX;
 	x.set(Form.cwidth-4);
-	//AddTopBarButton(#EventShowInfo,       NULL,                  -1, x.inc(-SMALL_GAP), false); burger_mx = EAX;
-	AddTopBarButton(#EventShowThemesList, NULL,                  40, x.inc(-SMALL_GAP), thema); theme_mx = EAX;
-	AddTopBarButton(#EventShowReopenMenu, ECTRL+SCAN_CODE_KEY_E, 16, x.inc(-SMALL_GAP),   reopa); reopenin_mx = EAX;
-	//AddTopBarButton(#EventOpenSysfuncs,   NULL,                  18, x.inc(-SMALL_GAP), false);
-	//AddTopBarButton(#EventOpenPipet,      NULL,                  39, x.inc(-SMALL_GAP), false);
+	                AddTopBarButton(#EventEnableEdit,       NULL,                  38, x.inc(-SMALL_GAP), enable_edit);
+	//if(enable_edit) AddTopBarButton(#EventShowInfo,       NULL,                  -1, x.inc(-SMALL_GAP), false); burger_mx = EAX;
+	                AddTopBarButton(#EventShowThemesList, NULL,                  40, x.inc(-BIG_GAP), thema); theme_mx = EAX;
+	                AddTopBarButton(#EventShowReopenMenu, ECTRL+SCAN_CODE_KEY_E, 16, x.inc(-SMALL_GAP),   reopa); reopenin_mx = EAX;
+	if(enable_edit) AddTopBarButton(#EventOpenSysfuncs,   NULL,                  18, x.inc(-SMALL_GAP), false);
+	if(enable_edit) AddTopBarButton(#EventOpenPipet,      NULL,                  39, x.inc(-SMALL_GAP), false);
 }
 
 void DrawStatusBar(dword _in_text)
@@ -719,6 +731,6 @@ void SetSizes(char _size)
 	list.item_w = list.font_w;
 	list.horisontal_selelection = true;
 	list.SetSizes(0, TOOLBAR_H, Form.cwidth-scroll.size_x-1, 
-		Form.cheight - TOOLBAR_H - search.height() - STATUSBAR_H /*- TAB_H*/, 
+		Form.cheight - TOOLBAR_H - calc(search.visible * SEARCH_H) - STATUSBAR_H /*- TAB_H*/, 
 		math.round(list.font_h * 1.4));
 }

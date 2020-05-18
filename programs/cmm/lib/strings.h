@@ -503,6 +503,18 @@ inline int strnum(dword haystack, needle)
 	return count;
 }
 
+inline int strinum(dword haystack, needle)
+{
+	int count = 0;
+	int needle_len = strlen(needle);
+	loop() {
+		if (! haystack = strstri(haystack, needle)) break;
+		haystack+=needle_len;
+		count++;
+	}
+	return count;
+}
+
 inline signed int strcmpi(dword cmp1, cmp2)
 {
     char si, ue;
@@ -537,7 +549,7 @@ inline dword strstri(dword searchin, usestr_s)
         searchin++;
         if (DSBYTE[usestr_e]=='\0') return searchin;
     }
-    return -1;
+    return 0;
 }
 
 
@@ -546,8 +558,7 @@ inline unsigned int strcpyb(dword search_in, copyin, startstr, endstr)
     dword startp, endp;
     dword copyin_start_off = copyin;
     if (startstr==0) startp = search_in; else startp = strstr(search_in, startstr) + strlen(startstr);
-    endp = strstri(startp, endstr);
-    if (endp==0) endp = startp+strlen(search_in);
+    if (! endp = strstri(startp, endstr)) endp = startp+strlen(search_in);
     //if (startp==endp) return 0;
     do
     { 

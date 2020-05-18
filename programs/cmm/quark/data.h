@@ -13,7 +13,7 @@ char intro[] = "Это простой просмотрщик текста.
 
 char copied_chars[] = "Скопировано сиволов: %i";
 
-char about[] = "Quark Text v0.7
+char about[] = "Quark Text v0.72
 Автор: Кирилл Липатов aka Leency
 Сайт: http://aspero.pro
 
@@ -52,7 +52,7 @@ Try to open some text file.";
 
 char copied_chars[] = "Copied %i chars";
 
-char about[] = "Quark Text v0.7
+char about[] = "Quark Text v0.72
 Author: Kiril Lipatov aka Leency 
 Website: http://aspero.pro
 
@@ -129,7 +129,7 @@ void LoadIniSettings()
 	Form.left     = ini.GetInt("WinX", 150); 
 	Form.top      = ini.GetInt("WinY", 50); 
 	Form.width    = ini.GetInt("WinW", 640); 
-	Form.height   = ini.GetInt("WinH", 560);
+	Form.height   = ini.GetInt("WinH", 563);
 }
 
 void SaveIniSettings()

@@ -1,4 +1,4 @@
-char version[]="WebView 2.5c";
+char version[]="WebView 2.5e";
 
 #ifdef LANG_RUS
 char page_not_found[] = FROM "html\\page_not_found_ru.htm""\0";
@@ -9,7 +9,7 @@ char rmb_menu[] =
 "Посмотреть исходник|Ctrl+U
 Редактировать исходник";
 char main_menu[] = 
-"Открыть файл|Ctrl+O
+"Открыть файл...|Ctrl+O
 Новое окно|Ctrl+N
 -
 История|Ctrl+H
@@ -39,7 +39,7 @@ char rmb_menu[] =
 "View source|Ctrl+U
 Edit source";
 char main_menu[] = 
-"Open local file|Ctrl+O
+"Open local file...|Ctrl+O
 New window|Ctrl+N
 -
 History|Ctrl+H

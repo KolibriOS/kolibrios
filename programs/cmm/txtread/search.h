@@ -124,7 +124,7 @@ int SEARCH::find_next(int _cur_pos, _bg_color)
 		draw_found();
 
 	for (i=_cur_pos+1; i<pos.count; i++) {
-		if (strstri(lines.get(i),#search_text)!=-1) return atoi(pos.get(i));
+		if (strstri(lines.get(i),#search_text)) return atoi(pos.get(i));
 	}
 	return false;
 }
@@ -135,7 +135,7 @@ int SEARCH::highlight(dword _color, _bg_color)
 	dword col;
 	found_count = 0;
 	for (i=0; i<pos.count; i++) {
-		if (strstri(lines.get(i),#search_text)==-1) {
+		if (!strstri(lines.get(i),#search_text)) {
 			col=_bg_color;
 		} else {
 			col=_color;

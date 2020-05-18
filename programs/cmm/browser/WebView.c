@@ -461,22 +461,14 @@ void ProcessEvent(dword id__)
 			return;
 		case COPY_LINK_URL:
 			strncpy(#new_clip_url, PageLinks.GetURL(PageLinks.active), URL_SIZE);
-			if ( strcmp(#new_clip_url, "./", 2) )
-			{ 
-				Clipboard__CopyText( GetAbsoluteURL(#new_clip_url, history.current()) ); 
-			}
-			else {
-				Clipboard__CopyText( PageLinks.GetURL(PageLinks.active) ); 
-			}
+			GetAbsoluteURL(#new_clip_url, history.current());
+			Clipboard__CopyText(#new_clip_url); 
 			notify("'URL copied to clipboard'O");
 			return;
 		case DOWNLOAD_LINK_CONTENTS:
 			if (!downloader_opened) {
 				strcpy(#downloader_edit, PageLinks.GetURL(PageLinks.active));
-				if ( strcmp(#downloader_edit, "./", 2) )
-				{ 
-					GetAbsoluteURL(#downloader_edit, history.current());
-				}
+				GetAbsoluteURL(#downloader_edit, history.current());
 				CreateThread(#Downloader,#downloader_stak+4092);
 			}
 			return;
@@ -548,10 +540,10 @@ bool HandleUrlFiles(dword _path, _data)
 {
 	dword url_from_file;
 	if (!UrlExtIs(_path, "url")) return false;
-	url_from_file = strstri(_data, "URL=");
-	if (url_from_file == -1) return false;
+	if (! url_from_file = strstri(_data, "URL=")) return false;
 	replace_char(url_from_file, '\n', '\0', strlen(url_from_file));
-	OpenPage(url_from_file); 		
+	OpenPage(url_from_file); 	
+	return true;	
 }
 
 bool GetLocalFileData(dword _path)

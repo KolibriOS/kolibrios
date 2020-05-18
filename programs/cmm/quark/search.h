@@ -9,8 +9,6 @@ struct SEARCH
 	void show();
 	void hide();
 	bool draw();
-	void draw_found();
-	int height();
 	bool edit_key();
 	bool edit_mouse();
 	void clear();
@@ -37,11 +35,6 @@ void SEARCH::hide()
 	draw_window();
 }
 
-int SEARCH::height()
-{
-	return visible * SEARCH_H;
-}
-
 bool SEARCH::edit_key()
 {
 	if (visible) && (search_box.flags & ed_focus) {
@@ -61,16 +54,9 @@ bool SEARCH::edit_mouse()
 	return false;
 }
 
-void SEARCH::draw_found()
-{
-	char matches[30];
-	sprintf(#matches, T_MATCHES, found_count);
-	WriteTextWithBg(search_box.left+search_box.width+14+110, 
-		search_box.top+3, 0xD0, sc.work_text, #matches, sc.work);
-}
-
 bool SEARCH::draw(dword _btn_find, _btn_hide, _y)
 {
+	char matches[30];
 	if (!visible) return false;
 	DrawBar(0, _y, Form.cwidth, 1, sc.work_graph);
 	DrawBar(0, _y+1, Form.cwidth, SEARCH_H-1, sc.work);
@@ -85,7 +71,9 @@ bool SEARCH::draw(dword _btn_find, _btn_hide, _y)
 	DrawCaptButton(search_box.left+search_box.width+14, search_box.top-1, 90, 
 		TOOLBAR_ICON_HEIGHT+1, _btn_find, sc.work_light, sc.work_text, T_FIND_NEXT);
 
-	draw_found();
+	sprintf(#matches, T_MATCHES, found_count);
+	WriteTextWithBg(search_box.left+search_box.width+14+110, 
+		search_box.top+3, 0xD0, sc.work_text, #matches, sc.work);
 
 	DefineHiddenButton(Form.cwidth-26, search_box.top-1, TOOLBAR_ICON_HEIGHT+1, 
 		TOOLBAR_ICON_HEIGHT+1, _btn_hide);
@@ -106,12 +94,11 @@ int SEARCH::find_next(int _cur_pos)
 	if (!search_text[0]) return false;
 
 	strcpy(#found_text, #search_text);
-	//highlight(0xFF0000, _bg_color);
-	found_count = strnum(io.buffer_data, #found_text);
-	draw_found();
+	found_count = strinum(io.buffer_data, #found_text);
+	draw_window();
 
 	for (i=_cur_pos+1; i<list.count; i++) {
-		if (strstri(lines.get(i),#search_text)!=-1) return atoi(lines.get(i));
+		if (strstri(lines.get(i),#search_text)) return i;
 	}
 	return false;
 }
