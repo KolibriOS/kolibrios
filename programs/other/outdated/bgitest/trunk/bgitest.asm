@@ -69,7 +69,7 @@ use32
 not1strun  dd	 0x0
 
 include 'lang.inc'
-include  '..\..\..\macros.inc'
+include  '..\..\..\..\macros.inc'
 ;include   'debug.inc'
 include  'bgifont.inc'
 
