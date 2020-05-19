@@ -29,6 +29,11 @@ static struct {
 #define KEY_ESC       1
 #define KEY_F     	 33
 
+static char title1[] = "TinyGL in KolibriOS";
+static char title2[] = "F full screen";
+static char title3[] = "ESC - exit";
+static char fps[]    = "FPS:";
+
 static unsigned char FullScreen = 0;
 static unsigned char skin = 3;
 
@@ -157,12 +162,24 @@ static void disabletgl()
 	delete pri;
 }
 
+static void Title()
+{
+     __menuet__write_text(300,8,0x10ffffff,fps,strlen(fps));
+     __menuet__write_text(8,8,0x10ffffff,title1,strlen(title1));
+	 __menuet__write_text(180,8,0x00ffffff,title2,strlen(title2));
+     __menuet__write_text(600,8,0x00ffffff,title3,strlen(title3));
+}
+
 static void draw_window(void)
 {
-  __menuet__window_redraw(1); // start redraw
-  __menuet__define_window(win.x,win.y,win.dx,win.dy,TYPEWIN(0,0,0,1,skin,0,0,0),0,
-    "Cubeline / F full screen / FPS:");
-  __menuet__window_redraw(2); // end redraw
+	// start redraw
+	__menuet__window_redraw(1);
+	// define&draw window
+	__menuet__define_window(win.x,win.y,win.dx,win.dy,TYPEWIN(0,0,0,1,skin,0,0,0),0,0);
+    // end redraw
+    __menuet__window_redraw(2);
+    // display string
+    Title();
 }
 
 int main(void)
