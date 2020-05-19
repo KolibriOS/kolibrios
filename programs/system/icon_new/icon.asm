@@ -196,10 +196,17 @@ MSGMouse:
 	mov	[MouseX],ebx
 
 
-	mcall	37,2
-	test	al,001b
-	jnz	LButtonPress
-	test	al,010b
+	mcall 37,3
+	test  eax,1b ; bit 0 is set = left button is held
+	jnz   @f
+	jmp   CheckRB
+@@:
+	test  eax,100000000b ; bit 8 is set = left button is pressed
+	jnz   @f
+	jmp   CheckRB
+@@:
+	jnz   LButtonPress
+CheckRB:
 	jnz	RButtonPress
 	jmp	messages
 

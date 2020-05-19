@@ -45,6 +45,7 @@ void Processes__Main()
 			break;
 		case evKey:
 			Sysmon__KeyEvent();
+			if (key_scancode == SCAN_CODE_DEL) EventKillCurrentProcess();
 			if (select_list.ProcessKey(key_scancode)) SelectList_LineChanged();
 			break;
 		case evButton:
@@ -54,9 +55,7 @@ void Processes__Main()
 				SelectList_LineChanged();
 			}
 			if (BTN_ID_KILL_PROCESS == btn) {
-				KillProcess(current_process_id);
-				pause(10);
-				SelectList_LineChanged(); 
+				EventKillCurrentProcess();
 			}
 			if (BTN_ID_SHOW_PROCESS_INFO == btn) {
 				io.run("/sys/tinfo", itoa(GetProcessSlot(current_process_id))); 
@@ -86,6 +85,13 @@ void Processes__Main()
 			SelectList_LineChanged();
 	  }
 	}
+}
+
+void EventKillCurrentProcess()
+{
+	KillProcess(current_process_id);
+	pause(10);
+	SelectList_LineChanged(); 
 }
 
 void Processes__GetProcessList()
