@@ -14,9 +14,9 @@ typedef struct {
     char * libraryName;
 } KosImp;
 
-static const char *__error;
+static int stdcall dll_Load(KosImp *importTableEntry);
 
-static int stdcall dll_Load(KosImp *importTable);
+static const char *__error;
 
 static int stdcall dll_Load(KosImp *importTableEntry) {
     for (; importTableEntry->importNames; importTableEntry++) {
@@ -38,7 +38,7 @@ static int stdcall dll_Load(KosImp *importTableEntry) {
 void *dlopen(const char *name, int mode) {
     KosExp *exports = NULL;
 
-    // загрузить либу сискаллом
+    // load library using syscall
     asm volatile ("int $0x40":"=a"(exports):"a"(68), "b"(19), "c"(name));
     if (!exports) {
         char libPath[256] = "/sys/lib/";
@@ -50,7 +50,7 @@ void *dlopen(const char *name, int mode) {
             return NULL;
         }
     }
-    // Вызвать что-нибудь что начинается с "lib_"
+    // call anything starting with "lib_"
     for (KosExp *export = exports; export->name; export++) {
         if (!memcmp(export->name, "lib_", 4)) {
             asm volatile (
