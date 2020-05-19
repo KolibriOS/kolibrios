@@ -175,6 +175,7 @@ extra_files = {
  {"kolibrios/develop/tcc/", PROGS ..  "/develop/ktcc/trunk/bin/*"},
  {"kolibrios/develop/tcc/lib/", PROGS ..  "/develop/ktcc/trunk/bin/lib/*"},
  {"kolibrios/develop/tcc/include/", PROGS ..  "/develop/ktcc/trunk/libc/include/*"},
+ {"kolibrios/develop/tcc/include/kos/", PROGS ..  "/develop/ktcc/trunk/libc/include/kos/*"},
  {"kolibrios/develop/tcc/samples/", PROGS ..  "/develop/ktcc/trunk/samples/*"},
  {"kolibrios/develop/TinyBasic/", "common/develop/TinyBasic/*"},
  {"kolibrios/utils/cnc_editor/cnc_editor", PROGS .. "/other/cnc_editor/cnc_editor"},
