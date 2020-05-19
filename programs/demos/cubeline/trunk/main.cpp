@@ -167,7 +167,7 @@ static void Title()
 static void draw_window(void)
 {
   __menuet__window_redraw(1); // start redraw
-  __menuet__define_window(win.x,win.y,win.dx,win.dy,TYPEWIN(0,0,0,1,skin,0,0,0),0,0);
+  __menuet__define_window(win.x,win.y,win.dx,win.dy,TYPEWIN(0,0,0,1,skin,0,0,0),0,title);
   __menuet__window_redraw(2); // end redraw
   Title();
 }
