@@ -29,8 +29,6 @@ static struct {
 #define KEY_ESC       1
 #define KEY_F     	 33
 
-static char *title[50] = "Cubeline / F full screen / FPS:";
-
 static unsigned char FullScreen = 0;
 static unsigned char skin = 3;
 
@@ -159,17 +157,12 @@ static void disabletgl()
 	delete pri;
 }
 
-static void Title()
-{
-  SysCall(71,1,title);
-}
-
 static void draw_window(void)
 {
   __menuet__window_redraw(1); // start redraw
-  __menuet__define_window(win.x,win.y,win.dx,win.dy,TYPEWIN(0,0,0,1,skin,0,0,0),0,0);
+  __menuet__define_window(win.x,win.y,win.dx,win.dy,TYPEWIN(0,0,0,1,skin,0,0,0),0,
+    "Cubeline / F full screen / FPS:");
   __menuet__window_redraw(2); // end redraw
-  Title();
 }
 
 int main(void)
