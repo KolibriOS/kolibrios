@@ -409,12 +409,13 @@ void EventShowRmbMenu()
 void EventSetColorScheme(dword _setn)
 {
 	curcol_scheme = _setn;
-	theme.bg      = color_schemes[curcol_scheme*5];
-	theme.text    = color_schemes[curcol_scheme*5+1];
+	theme.bg      = color_schemes[curcol_scheme*6];
+	theme.text    = color_schemes[curcol_scheme*6+1];
 	scroll.bckg_col = theme.bg;
-	scroll.frnt_col = scroll.line_col = color_schemes[curcol_scheme*5+2];
-	selection.color = color_schemes[curcol_scheme*5+3];
-	theme.cursor    = color_schemes[curcol_scheme*5+4];
+	scroll.frnt_col = scroll.line_col = color_schemes[curcol_scheme*6+2];
+	selection.color = color_schemes[curcol_scheme*6+3];
+	theme.cursor    = color_schemes[curcol_scheme*6+4];
+	theme.found     = color_schemes[curcol_scheme*6+5];
 	if (list.count) ParseAndPaint();
 }
 

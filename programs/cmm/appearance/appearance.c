@@ -204,9 +204,6 @@ void DrawWindowContent()
 	DrawIcon16(tabs.x + TAB_PADDING, 15, sc.work, 17);
 	DrawIcon16(strlen(T_SKINS)*8 + tabs.x + TAB_PADDING + TAB_PADDING, 15, sc.work, 6);
 
-	if (select_list.cur_y>select_list.visible) select_list.first=select_list.cur_y; 
-	select_list.CheckDoesValuesOkey();
-
 	id = select_list.cur_y;
 	SelectList_Init(
 		tabs.x+TAB_PADDING,
@@ -297,6 +294,17 @@ void SelectList_LineChanged()
 	EventApply();
 }
 
+void ActivateTab(int _id)
+{
+	select_list.ClearList();
+	Open_Dir();
+	if (!select_list.count) notify("'No files were found' -E");
+	select_list.cur_y = _id;
+	if (select_list.cur_y>select_list.visible) select_list.first=select_list.cur_y; 
+	select_list.CheckDoesValuesOkey();	
+	if (select_list.w) draw_window();
+}
+
 //===================================================//
 //                                                   //
 //                     EVENTS                        //
@@ -307,24 +315,14 @@ void EventTabSkinsClick()
 {
 	active_wallpaper = select_list.cur_y;
 	strcpy(#folder_path, #skins_folder_path);
-	select_list.ClearList();
-	Open_Dir();
-	if (!select_list.count) notify("'No skins were found' -E");
-	select_list.cur_y = active_skin;	
-
-	if (select_list.w) draw_window();
+	ActivateTab(active_skin);
 }
 
 void EventTabWallpappersClick()
 {
 	active_skin = select_list.cur_y;
 	strcpy(#folder_path, #wallp_folder_path);
-	select_list.ClearList();
-	Open_Dir();
-	if (!select_list.count) notify("'No wallpapers were found' -E");
-	select_list.cur_y = active_wallpaper;
-
-	if (select_list.w) draw_window();
+	ActivateTab(active_wallpaper);
 }
 
 void EventDeleteFile()

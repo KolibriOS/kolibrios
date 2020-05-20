@@ -1,7 +1,6 @@
 
 void ParseAndPaint()
 {
-	//search.clear();
 	list.count=0;
 	selection.cancel();
 
@@ -46,7 +45,8 @@ dword buflen = strlen(io.buffer_data) + io.buffer_data;
 
 void PaintVisible()
 {
-	int i;
+	int i, ff;
+	signed s1, s2;
 	dword ydraw, absolute_y;
 	dword line_bg;
 	bool swapped_selection = false;
@@ -68,6 +68,18 @@ void PaintVisible()
 
 		selection.draw(absolute_y);
 
+		if (search.visible) for (ff=0; ff<search.found.count; ff++) {
+			s1 = search.found.get(ff) - lines.get(absolute_y);
+			s2 = search.found.get(ff) - lines.get(absolute_y+1);
+
+			if (s2 > 0) break;
+
+			if (s1 > 0) && (s2 < 0) {
+				DrawBuf.DrawBar(search.found.get(ff) - lines.get(absolute_y) * list.font_w + 3,
+					ydraw, strlen(#found_text) * list.font_w, list.item_h, theme.found);
+			}
+		}
+
 		if (absolute_y<list.count) DrawBuf.WriteText(3, ydraw+3, list.font_type, theme.text, 
 			lines.get(absolute_y), lines.len(absolute_y));
 	}
@@ -76,4 +88,3 @@ void PaintVisible()
 
 	if (swapped_selection) selection.swap_start_end();
 }
-

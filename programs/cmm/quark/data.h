@@ -13,7 +13,7 @@ char intro[] = "Это простой просмотрщик текста.
 
 char copied_chars[] = "Скопировано сиволов: %i";
 
-char about[] = "Quark Text v0.72
+char about[] = "Quark Text v0.8
 Автор: Кирилл Липатов aka Leency
 Сайт: http://aspero.pro
 
@@ -52,7 +52,7 @@ Try to open some text file.";
 
 char copied_chars[] = "Copied %i chars";
 
-char about[] = "Quark Text v0.72
+char about[] = "Quark Text v0.8
 Author: Kiril Lipatov aka Leency 
 Website: http://aspero.pro
 
@@ -94,13 +94,13 @@ Copy file path";
 
 dword color_schemes[] = {
 //bg,     text,     scroll,   selected, cursor
-0xFCF0DA, 0x171501, 0xB2ACA0, 0xD8CAA7, 0xFF0000, //Dairy
-0x282923, 0xD8D8D2, 0x555551, 0x5A574A, 0xFFFfff  //Cosmos
+0xFCF0DA, 0x171501, 0xB2ACA0, 0xD8CAA7, 0xFF0000, 0xFEC53A, //Dairy
+0x282923, 0xD8D8D2, 0x555551, 0x5A574A, 0xFFFfff, 0x9D7E00 //Cosmos
 };
 
 struct THEME
 {
-	dword bg, text, cursor;
+	dword bg, text, cursor, found;
 } theme;
 
 char default_dir[] = "/rd/1";

@@ -6,12 +6,13 @@ struct SEARCH
 {
 	bool visible;
 	int found_count;
+	collection_int found;
 	void show();
 	void hide();
 	bool draw();
 	bool edit_key();
 	bool edit_mouse();
-	void clear();
+	int find_all();
 	int find_next();
 } search;
 
@@ -71,7 +72,7 @@ bool SEARCH::draw(dword _btn_find, _btn_hide, _y)
 	DrawCaptButton(search_box.left+search_box.width+14, search_box.top-1, 90, 
 		TOOLBAR_ICON_HEIGHT+1, _btn_find, sc.work_light, sc.work_text, T_FIND_NEXT);
 
-	sprintf(#matches, T_MATCHES, found_count);
+	sprintf(#matches, T_MATCHES, found.count);
 	WriteTextWithBg(search_box.left+search_box.width+14+110, 
 		search_box.top+3, 0xD0, sc.work_text, #matches, sc.work);
 
@@ -81,11 +82,16 @@ bool SEARCH::draw(dword _btn_find, _btn_hide, _y)
 	return true;
 }
 
-void SEARCH::clear()
+int SEARCH::find_all()
 {
-	visible = false;
-	found_text[0] = '\0';
-	found_count = 0;
+	dword haystack = io.buffer_data;
+	int needle_len = strlen(#found_text);
+	found.drop();
+	loop() {
+		if (! haystack = strstri(haystack, #found_text)) break;
+		found.add(haystack - needle_len);
+		haystack += needle_len;
+	}
 }
 
 int SEARCH::find_next(int _cur_pos)
@@ -93,13 +99,15 @@ int SEARCH::find_next(int _cur_pos)
 	int i;
 	if (!search_text[0]) return false;
 
-	strcpy(#found_text, #search_text);
-	found_count = strinum(io.buffer_data, #found_text);
+	if (!streq(#found_text, #search_text)) {
+		strcpy(#found_text, #search_text);
+		find_all();
+	}
 	draw_window();
 
-	for (i=_cur_pos+1; i<list.count; i++) {
-		if (strstri(lines.get(i),#search_text)) return i;
-	}
+	//for (i=_cur_pos+1; i<list.count; i++) {
+	//	if (strstri(lines.get(i),#search_text)) return i;
+	//}
 	return false;
 }
 

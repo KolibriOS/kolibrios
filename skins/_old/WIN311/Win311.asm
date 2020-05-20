@@ -1,8 +1,8 @@
-include 'skin.inc'
+include '..\..\skin.inc'
 
 SKIN_PARAMS \
   height          = bmp_base.height,\                       ; skin height
-  margins         = [5:1:44:1],\                            ; margins [left:top:right:bottom]
+  margins         = [6:4:44:2],\                            ; margins [left:top:right:bottom]
   colors active   = [binner=0x000000:\                      ; border inner color
                      bouter=0x000000:\                      ; border outer color
                      bframe=0xC0C0C0],\                     ; border frame color
