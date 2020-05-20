@@ -7,7 +7,7 @@ MK_C_SYM(__ieee754_exp)
 	fstl	%st(1)
 	frndint				
 	fstl	%st(2)
-	fsubrp				
+	fsubp				
 	f2xm1				 
 	fld1
 	faddp				
