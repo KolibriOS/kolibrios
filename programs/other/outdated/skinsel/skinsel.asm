@@ -1,4 +1,4 @@
-include '..\..\macros.inc'
+include '..\..\..\macros.inc'
 use32
         db      'MENUET01'
         dd      1
