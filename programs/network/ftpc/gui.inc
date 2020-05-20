@@ -105,7 +105,6 @@ gui: ;//////////////////////////////////////////////////////////////////////////
         m2m     dword[tree2.data_img], dword[icon_tl_nod]
     
       @@:
-        mcall   67, 35, 20, 830, 555 ; resize to main gui window's coordinates
         call    .draw
         ; create initial tree list for root_dir
         call    populate_local_tree_list
@@ -199,9 +198,9 @@ gui: ;//////////////////////////////////////////////////////////////////////////
         mcall   4, <TLIST2_X+TLIST_SZ-BT_SZ_X+5,80+5>, 0xb0000000+STR_COL, str_mkd
         
         ; draw "cancel" button
-        mcall   8, <555,55>, <308,25>, 10, BT_COL
+        ;mcall   8, <555,55>, <308,25>, 10, BT_COL
         ; string "Cancel"
-        mcall   4, <555+5,308+5>, 0xb0000000+STR_COL, str_abort
+        ;mcall   4, <555+5,308+5>, 0xb0000000+STR_COL, str_abort
         ; draw "change volume" button
         mcall   8, <TLIST1_X+TLIST_SZ-55,55>, <100-20,22>, 11, BT_COL
         ; string "Change"
@@ -222,9 +221,6 @@ gui: ;//////////////////////////////////////////////////////////////////////////
         stdcall [edit_box_draw], edit_mkd
         stdcall [edit_box_draw], edit_volume
         stdcall [edit_box_draw], edit_search
-
-        ; progress bar
-        stdcall [progressbar_draw], pb
 
         mcall   12,2
         ret
@@ -892,16 +888,16 @@ tree2 tree_list 64, 500, tl_list_box_mode, 16, 16, \
     0, el_focus, wScr2, fun_on_enter2
 
 ; editbox for mkd
-edit_mkd edit_box TLIST_SZ-45, TLIST2_X, 82, 0xffffff, 0x6a9480, 0, \
-    0xAABBCC, 0, 99, new_dir_buf, mouse_dd, 0
+edit_mkd edit_box TLIST_SZ-45, TLIST2_X, 80, 0xffffff, 0x94AECE, 0, \
+    0xAABBCC, 0x10000000, 63, new_dir_buf, mouse_dd, 0
 
 ; editbox for default volume
-edit_volume edit_box TLIST_SZ-60, TLIST1_X, 105-20, 0xffffff, 0x6a9480, 0, \
-    0xAABBCC, 0, 99, root_dir, mouse_dd, 0
+edit_volume edit_box TLIST_SZ-60, TLIST1_X, 80, 0xffffff, 0x94AECE, 0, \
+    0xAABBCC, 0x10000000, 99, root_dir, mouse_dd, 0
 
 ; editbox for search
-edit_search edit_box TLIST_SZ-60, TLIST2_X, 25, 0xffffff, 0x6a9480, 0, \
-    0xAABBCC, 0, 99, filter,mouse_dd, 0
+edit_search edit_box TLIST_SZ-60, TLIST2_X, 22, 0xffffff, 0x94AECE, 0, \
+    0xAABBCC, 0x10000000, 99, filter,mouse_dd, 0
  
 ; A subsidiary structure for scrolling
 align 4
@@ -1190,9 +1186,9 @@ run_file_70 FileInfoBlock ; required for libimg
 
 auto_list   db 1 ; to run LIST immediately after CWD
 filter      rb 512
-root_dir    db '/rd/1'
-            rb 507
-new_dir_buf rb 512
+root_dir    db '/tmp0/1'
+            rb 505
+new_dir_buf rb 64
 folder_data rb 32+32*304
 node_entry  db '1111'
             rb 512

@@ -933,9 +933,15 @@ logfile_offset  rd 1
 path            rb 1024
 
 initial_login   rb 1
-param_user      rb 1024
+
+param_user:     db 'anonymous',0
+rb 60
+
 param_password  rb 1024
-param_server_addr rb 1024
+
+param_server_addr db 'kolibrios.org'
+rb 1024
+
 param_path      rb 1024
 param_port      rb 6
 

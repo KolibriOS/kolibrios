@@ -240,7 +240,12 @@ push eax ebx
 ;------------------------------------------------
 .mouse_next:
 
-		mcall SF_MOUSE_GET,SSF_BUTTON
+		mcall SF_MOUSE_GET,SSF_BUTTON_EXT
+		test eax,$01000000
+		jz @f
+		call tl_on_press
+		ret
+@@:	
 		bt eax,0 ;left mouse button press
 pop ebx eax
 		jae .no_draw

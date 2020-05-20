@@ -7,7 +7,7 @@ WIN_Y = 300
 WIN_W = 390
 WIN_H = 230
 
-pad = 28 ; padding between editboxes
+PAD = 28 ; padding between editboxes
 
 ;;================================================================================================;;
 login_gui: ;//////////////////////////////////////////////////////////////////////////////////////;;
@@ -60,10 +60,10 @@ login_gui: ;////////////////////////////////////////////////////////////////////
         mov     ecx, 0x90000000
         or      ecx, [sc.work_text]
         mcall   4, <3,      8>, , gui_str_usr
-        mcall    , <3,pad*1+8>, , gui_str_pass
-        mcall    , <3,pad*2+8>, , gui_str_server
-        mcall    , <3,pad*3+8>, , gui_str_port
-        mcall    , <3,pad*4+8>, , gui_str_path
+        mcall    , <3,PAD*1+8>, , gui_str_pass
+        mcall    , <3,PAD*2+8>, , gui_str_server
+        mcall    , <3,PAD*3+8>, , gui_str_port
+        mcall    , <3,PAD*4+8>, , gui_str_path
 		
 		mov     ecx, 0x90000000
         or      ecx, [sc.work_button_text]
@@ -124,6 +124,7 @@ login_gui: ;////////////////////////////////////////////////////////////////////
         jmp     .still
 	
   .connect:
+		mcall   67, 35, 20, 830, 555 ; resize to main gui window's coordinates
         cmp     [param_server_addr], 0
 		jne     gui.main
 		
@@ -191,11 +192,11 @@ gui_str_null    db ' ',0
 str_error_addr  dd gui_str_null
 
 ; login window components
-edit_usr    edit_box 300,75,5,      0xffffff,0x94AECE,0,0xAABBCC,0x10000000,99,param_user,mouse_dd,ed_focus
-edit_pass   edit_box 300,75,pad+5,  0xffffff,0x94AECE,0,0xAABBCC,0x10000000,99,param_password,mouse_dd,ed_pass
-edit_server edit_box 300,75,pad*2+5,0xffffff,0x94AECE,0,0xAABBCC,0x10000000,99,param_server_addr,mouse_dd,0
-edit_port   edit_box 50, 75,pad*3+5,0xffffff,0x94AECE,0,0xAABBCC,0x10000000,99,param_port,mouse_dd,ed_figure_only
-edit_path   edit_box 300,75,pad*4+5,0xffffff,0x94AECE,0,0xAABBCC,0x10000000,99,param_path,mouse_dd,0
+edit_usr    edit_box 300,75,5,      0xffffff,0x94AECE,0,0xAABBCC,0x10000000,64,param_user,mouse_dd,ed_focus,9,9
+edit_pass   edit_box 300,75,PAD+5,  0xffffff,0x94AECE,0,0xAABBCC,0x10000000,99,param_password,mouse_dd,ed_pass
+edit_server edit_box 300,75,PAD*2+5,0xffffff,0x94AECE,0,0xAABBCC,0x10000000,1024,param_server_addr,mouse_dd,0,13,13
+edit_port   edit_box 50, 75,PAD*3+5,0xffffff,0x94AECE,0,0xAABBCC,0x10000000,99,param_port,mouse_dd,ed_figure_only
+edit_path   edit_box 300,75,PAD*4+5,0xffffff,0x94AECE,0,0xAABBCC,0x10000000,99,param_path,mouse_dd,0
 editboxes_end:
 
 mouse_dd rd 1
