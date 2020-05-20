@@ -115,10 +115,10 @@ draw_magnify:
 	sub	edx, [m_y]
 	mov	ebx, ecx
 	shl	ebx, 3+16
-	mov	bl, 7
+	mov	bl, 8
 	mov	ecx, edx
 	shl	ecx, 3+16
-	mov	cl, 7
+	mov	cl, 8
 	mov	edx, eax
 	mcall	13
 	pop	edx ecx

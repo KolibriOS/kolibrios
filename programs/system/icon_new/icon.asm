@@ -195,20 +195,27 @@ MSGMouse:
 	mov	[MouseY],ecx
 	mov	[MouseX],ebx
 
+MOUSE_STATE_LMB_HOLD = $00000001
+MOUSE_STATE_RMB_HOLD = $00000002
+MOUSE_EVENT_LMB_DOWN = $00000100
+MOUSE_EVENT_RMB_DOWN = $00000200
 
 	mcall 37,3
-	test  eax,1b ; bit 0 is set = left button is held
-	jnz   @f
-	jmp   CheckRB
+;check LMB is pressed
+	test  eax, MOUSE_STATE_LMB_HOLD
+	jz    @f
+	test  eax, MOUSE_EVENT_LMB_DOWN
+	jz    @f
+	jmp   LButtonPress
 @@:
-	test  eax,100000000b ; bit 8 is set = left button is pressed
-	jnz   @f
-	jmp   CheckRB
+;check RMB is pressed
+	test  eax, MOUSE_STATE_RMB_HOLD
+	jz    @f
+	test  eax, MOUSE_EVENT_RMB_DOWN
+	jz    @f
+	jmp	  RButtonPress
 @@:
-	jnz   LButtonPress
-CheckRB:
-	jnz	RButtonPress
-	jmp	messages
+	jmp	  messages
 
 ErrLoadLibs:
 	;dps     'Не удалось загрузить необходимые библиотеки'

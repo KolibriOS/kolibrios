@@ -1,5 +1,5 @@
 /* 
-	Quark Code Edit v0.2
+	Quark Code Edit
 	Author: Kiril Lipatov aka Leency
 	Licence: GPLv2
 
@@ -432,7 +432,7 @@ void EventChangeCharset(dword id)
 {
 	if (param[0]=='\0') return;
 	user_encoding = id;
-	LoadFile(#openfile_path);
+	LoadFile(#param);
 	ParseAndPaint();
 	draw_window();
 }
@@ -602,11 +602,12 @@ void EncodeToDos()
 		if (strstr(io.buffer_data, "\208\190")) real_encoding = CH_UTF8;
 		else {
 			if (chrnum(io.buffer_data, '\246')>5) 
-			|| (strstr(io.buffer_data, "пр")) real_encoding = CH_CP1251;
+			|| (strstr(io.buffer_data, "\239\240")) real_encoding = CH_CP1251;
 		}
 	}
-	if (real_encoding != CH_CP866) 
+	if (real_encoding != CH_CP866) {
 		ChangeCharset(real_encoding, "CP866", io.buffer_data);		
+	}
 }
 
 void LoadFile(dword f_path) 
