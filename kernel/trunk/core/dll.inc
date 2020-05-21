@@ -1,6 +1,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;                                                              ;;
-;; Copyright (C) KolibriOS team 2004-2016. All rights reserved. ;;
+;; Copyright (C) KolibriOS team 2004-2020. All rights reserved. ;;
 ;;  Distributed under terms of the GNU General Public License.  ;;
 ;;                                                              ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1228,7 +1228,7 @@ proc load_library stdcall, file_name:dword, encoding:dword
         mov     [eax+HDLL.parent], esi
         mov     edx, ebx
         shr     edx, 12
-        or      dword [page_tabs+(edx-1)*4], DONT_FREE_BLOCK
+        or      dword [page_tabs+(edx-1)*4], MEM_BLOCK_DONT_FREE
 ; copy entries of page table from kernel-side image to usermode
 ; use copy-on-write for user-mode image, so map as readonly
         xor     edi, edi

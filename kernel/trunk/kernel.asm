@@ -1,6 +1,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-;; Copyright (C) KolibriOS team 2004-2016. All rights reserved.
+;; Copyright (C) KolibriOS team 2004-2020. All rights reserved.
 ;; PROGRAMMING:
 ;; Ivan Poddubny
 ;; Marat Zakiyanov (Mario79)
@@ -2799,7 +2799,7 @@ align 4
         jz      .nomem
         mov     ebx, eax
         shr     ebx, 12
-        or      dword [page_tabs+(ebx-1)*4], DONT_FREE_BLOCK
+        or      dword [page_tabs+(ebx-1)*4], MEM_BLOCK_DONT_FREE
         mov     esi, [img_background]
         shr     esi, 12
         mov     ecx, [mem_BACKGROUND]
@@ -2844,7 +2844,7 @@ nosb6:
         mov     ebx, ecx
         shr     eax, 12
         mov     ecx, [page_tabs+(eax-1)*4]
-        test    cl, USED_BLOCK+DONT_FREE_BLOCK
+        test    cl, MEM_BLOCK_USED or MEM_BLOCK_DONT_FREE
         jz      .err
         jnp     .err
         push    eax
@@ -2862,7 +2862,7 @@ align 4
         inc     eax
         loop    @b
         pop     eax
-        and     dword [page_tabs+(eax-1)*4], not DONT_FREE_BLOCK
+        and     dword [page_tabs+(eax-1)*4], not MEM_BLOCK_DONT_FREE
         stdcall user_free, ebx
         mov     [esp+32], eax
         and     [bgrlockpid], 0

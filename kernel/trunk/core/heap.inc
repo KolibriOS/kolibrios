@@ -1,6 +1,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;                                                              ;;
-;; Copyright (C) KolibriOS team 2004-2015. All rights reserved. ;;
+;; Copyright (C) KolibriOS team 2004-2020. All rights reserved. ;;
 ;; Distributed under terms of the GNU General Public License    ;;
 ;;                                                              ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -18,18 +18,10 @@ struct  MEM_BLOCK
         handle          dd ? ;+28
 ends
 
-FREE_BLOCK      =  4
-USED_BLOCK      =  8
-DONT_FREE_BLOCK =  10h
-
-
-block_next   equ MEM_BLOCK.next_block
-block_prev   equ MEM_BLOCK.prev_block
-list_fd      equ MEM_BLOCK.list.next
-list_bk      equ MEM_BLOCK.list.prev
-block_base   equ MEM_BLOCK.base
-block_size   equ MEM_BLOCK.size
-block_flags  equ MEM_BLOCK.flags
+MEM_BLOCK_RESERVED  = 0x02      ; Will be allocated on first access (lazy allocation)
+MEM_BLOCK_FREE      = 0x04
+MEM_BLOCK_USED      = 0x08
+MEM_BLOCK_DONT_FREE = 0x10
 
 macro calc_index op
 {          shr op, 12
@@ -43,20 +35,20 @@ macro calc_index op
 align 4
 md:
 .add_to_used:
-        mov     eax, [esi+block_base]
-        mov     ebx, [esi+block_base]
+        mov     eax, [esi + MEM_BLOCK.base]
+        mov     ebx, [esi + MEM_BLOCK.base]
         shr     ebx, 6
         add     eax, ebx
         shr     ebx, 6
         add     eax, ebx
         shr     eax, 12
         and     eax, 63
-        inc     [mem_hash_cnt+eax*4]
+        inc     [mem_hash_cnt + eax*4]
 
-        lea     ecx, [mem_used_list+eax*8]
+        lea     ecx, [mem_used_list + eax*8]
         list_add esi, ecx
-        mov     [esi+block_flags], USED_BLOCK
-        mov     eax, [esi+block_size]
+        mov     [esi + MEM_BLOCK.flags], MEM_BLOCK_USED
+        mov     eax, [esi + MEM_BLOCK.size]
         sub     [heap_free], eax
         ret
 align 4
@@ -70,14 +62,14 @@ align 4
         shr     ecx, 12
         and     ecx, 63
 
-        lea     ebx, [mem_used_list+ecx*8]
+        lea     ebx, [mem_used_list + ecx*8]
         mov     esi, ebx
 .next:
-        mov     esi, [esi+list_fd]
+        mov     esi, [esi + MEM_BLOCK.list.next]
         cmp     esi, ebx
         je      .fail
 
-        cmp     eax, [esi+block_base]
+        cmp     eax, [esi + MEM_BLOCK.base]
         jne     .next
 
         ret
@@ -91,10 +83,10 @@ align 4
         test    esi, esi
         jz      .done
 
-        cmp     [esi+block_flags], USED_BLOCK
+        cmp     [esi + MEM_BLOCK.flags], MEM_BLOCK_USED
         jne     .fatal
 
-        dec     [mem_hash_cnt+ecx*4]
+        dec     [mem_hash_cnt + ecx*4]
         list_del esi
 .done:
         ret
@@ -104,9 +96,9 @@ align 4
 
 ;Initial heap state
 ;
-;+heap_size               terminator        USED_BLOCK
-;+4096*MEM_BLOCK.sizeof   free space        FREE_BLOCK
-;HEAP_BASE                heap_descriptors  USED_BLOCK
+; + heap_size               terminator        MEM_BLOCK_USED
+; + 4096*MEM_BLOCK.sizeof   free space        MEM_BLOCK_FREE
+;HEAP_BASE                heap_descriptors  MEM_BLOCK_USED
 ;
 
 align 4
@@ -114,7 +106,7 @@ proc init_kernel_heap
 
         mov     ecx, 64
         mov     edi, mem_block_list
-@@:
+  @@:
         mov     eax, edi
         stosd
         stosd
@@ -122,7 +114,7 @@ proc init_kernel_heap
 
         mov     ecx, 64
         mov     edi, mem_used_list
-@@:
+  @@:
         mov     eax, edi
         stosd
         stosd
@@ -136,54 +128,54 @@ proc init_kernel_heap
         call    commit_pages
 
         mov     edi, HEAP_BASE                     ;descriptors
-        mov     ebx, HEAP_BASE+sizeof.MEM_BLOCK      ;free space
-        mov     ecx, HEAP_BASE+sizeof.MEM_BLOCK*2    ;terminator
+        mov     ebx, HEAP_BASE + sizeof.MEM_BLOCK      ;free space
+        mov     ecx, HEAP_BASE + sizeof.MEM_BLOCK*2    ;terminator
 
         xor     eax, eax
-        mov     [edi+block_next], ebx
-        mov     [edi+block_prev], eax
-        mov     [edi+list_fd], eax
-        mov     [edi+list_bk], eax
-        mov     [edi+block_base], HEAP_BASE
-        mov     [edi+block_size], 4096*sizeof.MEM_BLOCK
-        mov     [edi+block_flags], USED_BLOCK
+        mov     [edi + MEM_BLOCK.next_block], ebx
+        mov     [edi + MEM_BLOCK.prev_block], eax
+        mov     [edi + MEM_BLOCK.list.next], eax
+        mov     [edi + MEM_BLOCK.list.prev], eax
+        mov     [edi + MEM_BLOCK.base], HEAP_BASE
+        mov     [edi + MEM_BLOCK.size], 4096*sizeof.MEM_BLOCK
+        mov     [edi + MEM_BLOCK.flags], MEM_BLOCK_USED
 
-        mov     [ecx+block_next], eax
-        mov     [ecx+block_prev], ebx
-        mov     [ecx+list_fd], eax
-        mov     [ecx+list_bk], eax
-        mov     [ecx+block_base], eax
-        mov     [ecx+block_size], eax
-        mov     [ecx+block_flags], USED_BLOCK
+        mov     [ecx + MEM_BLOCK.next_block], eax
+        mov     [ecx + MEM_BLOCK.prev_block], ebx
+        mov     [ecx + MEM_BLOCK.list.next], eax
+        mov     [ecx + MEM_BLOCK.list.prev], eax
+        mov     [ecx + MEM_BLOCK.base], eax
+        mov     [ecx + MEM_BLOCK.size], eax
+        mov     [ecx + MEM_BLOCK.flags], MEM_BLOCK_USED
 
-        mov     [ebx+block_next], ecx
-        mov     [ebx+block_prev], edi
-        mov     [ebx+block_base], HEAP_BASE+4096*sizeof.MEM_BLOCK
+        mov     [ebx + MEM_BLOCK.next_block], ecx
+        mov     [ebx + MEM_BLOCK.prev_block], edi
+        mov     [ebx + MEM_BLOCK.base], HEAP_BASE + 4096*sizeof.MEM_BLOCK
 
         mov     ecx, [pg_data.kernel_pages]
         shl     ecx, 12
-        sub     ecx, HEAP_BASE-OS_BASE+4096*sizeof.MEM_BLOCK
+        sub     ecx, HEAP_BASE-OS_BASE + 4096*sizeof.MEM_BLOCK
         mov     [heap_size], ecx
         mov     [heap_free], ecx
-        mov     [ebx+block_size], ecx
-        mov     [ebx+block_flags], FREE_BLOCK
+        mov     [ebx + MEM_BLOCK.size], ecx
+        mov     [ebx + MEM_BLOCK.flags], MEM_BLOCK_FREE
 
         mov     [mem_block_mask], eax
-        mov     [mem_block_mask+4], 0x80000000
+        mov     [mem_block_mask + 4], 0x80000000
 
-        mov     ecx, mem_block_list+63*8
+        mov     ecx, mem_block_list + 63*8
         list_add ebx, ecx
 
         mov     ecx, 4096-3-1
-        mov     eax, HEAP_BASE+sizeof.MEM_BLOCK*4
+        mov     eax, HEAP_BASE + sizeof.MEM_BLOCK*4
 
-        mov     [next_memblock], HEAP_BASE+sizeof.MEM_BLOCK *3
-@@:
+        mov     [next_memblock], HEAP_BASE + sizeof.MEM_BLOCK *3
+ @@:
         mov     [eax-sizeof.MEM_BLOCK], eax
         add     eax, sizeof.MEM_BLOCK
         loop    @B
 
-        mov     [eax-sizeof.MEM_BLOCK], dword 0
+        mov     dword[eax-sizeof.MEM_BLOCK], 0
 
         mov     ecx, heap_mutex
         call    mutex_init
@@ -207,7 +199,7 @@ get_small_block:
         cmp     ecx, 63
         jle     .get_index
         mov     ecx, 63
-.get_index:
+  .get_index:
         lea     esi, [mem_block_mask]
         xor     ebx, ebx
         or      edx, -1
@@ -218,29 +210,29 @@ get_small_block:
         sub     ecx, 32
         add     ebx, 32
         add     esi, 4
-.bit_test:
+  .bit_test:
         shl     edx, cl
         and     edx, [esi]
-.find:
+  .find:
         bsf     edi, edx
         jz      .high_mask
         add     ebx, edi
-        lea     ecx, [mem_block_list+ebx*8]
+        lea     ecx, [mem_block_list + ebx*8]
         mov     edi, ecx
-.next:
-        mov     edi, [edi+list_fd]
+  .next:
+        mov     edi, [edi + MEM_BLOCK.list.next]
         cmp     edi, ecx
         je      .err
-        cmp     eax, [edi+block_size]
+        cmp     eax, [edi + MEM_BLOCK.size]
         ja      .next
         ret
-.err:
+  .err:
         xor     edi, edi
         ret
 
-.high_mask:
+  .high_mask:
         add     esi, 4
-        cmp     esi, mem_block_mask+8
+        cmp     esi, mem_block_mask + 8
         jae     .err
         add     ebx, 32
         mov     edx, [esi]
@@ -249,19 +241,22 @@ get_small_block:
 
 align 4
 free_mem_block:
+
         mov     ebx, [next_memblock]
         mov     [eax], ebx
         mov     [next_memblock], eax
-        xor     ebx, ebx
 
-        mov     dword [eax+4], ebx
-        mov     dword [eax+8], ebx
-        mov     dword [eax+12], ebx
-        mov     dword [eax+16], ebx
-;           mov dword [eax+20], 0     ;don't clear block size
-        mov     dword [eax+24], ebx
-        mov     dword [eax+28], ebx
+        xor     ebx, ebx
+        mov     dword[eax + 4], ebx
+        mov     dword[eax + 8], ebx
+        mov     dword[eax + 12], ebx
+        mov     dword[eax + 16], ebx
+;           mov dword[eax + 20], 0     ;don't clear block size
+        mov     dword[eax + 24], ebx
+        mov     dword[eax + 28], ebx
+
         inc     [free_blocks]
+
         ret
 
 align 4
@@ -288,12 +283,12 @@ proc alloc_kernel_space stdcall, size:dword
         test    edi, edi
         jz      .error_unlock
 
-        cmp     [edi+block_flags], FREE_BLOCK
+        cmp     [edi + MEM_BLOCK.flags], MEM_BLOCK_FREE
         jne     .error_unlock
 
         mov     [block_ind], ebx  ;index of allocated block
 
-        mov     eax, [edi+block_size]
+        mov     eax, [edi + MEM_BLOCK.size]
         cmp     eax, [size]
         je      .m_eq_size
 
@@ -305,22 +300,22 @@ proc alloc_kernel_space stdcall, size:dword
         mov     eax, [esi]
         mov     [next_memblock], eax
 
-        mov     [esi+block_next], edi
-        mov     eax, [edi+block_prev]
-        mov     [esi+block_prev], eax
-        mov     [edi+block_prev], esi
-        mov     [esi+list_fd], 0
-        mov     [esi+list_bk], 0
-        mov     [eax+block_next], esi
+        mov     [esi + MEM_BLOCK.next_block], edi
+        mov     eax, [edi + MEM_BLOCK.prev_block]
+        mov     [esi + MEM_BLOCK.prev_block], eax
+        mov     [edi + MEM_BLOCK.prev_block], esi
+        mov     [esi + MEM_BLOCK.list.next], 0
+        mov     [esi + MEM_BLOCK.list.prev], 0
+        mov     [eax + MEM_BLOCK.next_block], esi
 
-        mov     ebx, [edi+block_base]
-        mov     [esi+block_base], ebx
+        mov     ebx, [edi + MEM_BLOCK.base]
+        mov     [esi + MEM_BLOCK.base], ebx
         mov     edx, [size]
-        mov     [esi+block_size], edx
-        add     [edi+block_base], edx
-        sub     [edi+block_size], edx
+        mov     [esi + MEM_BLOCK.size], edx
+        add     [edi + MEM_BLOCK.base], edx
+        sub     [edi + MEM_BLOCK.size], edx
 
-        mov     eax, [edi+block_size]
+        mov     eax, [edi + MEM_BLOCK.size]
         calc_index eax
         cmp     eax, [block_ind]
         je      .add_used
@@ -328,20 +323,20 @@ proc alloc_kernel_space stdcall, size:dword
         list_del edi
 
         mov     ecx, [block_ind]
-        lea     edx, [mem_block_list+ecx*8]
+        lea     edx, [mem_block_list + ecx*8]
         cmp     edx, [edx]
         jnz     @f
         btr     [mem_block_mask], ecx
 @@:
         bts     [mem_block_mask], eax
-        lea     edx, [mem_block_list+eax*8]  ;edx= list head
+        lea     edx, [mem_block_list + eax*8]  ;edx= list head
         list_add edi, edx
 .add_used:
 
         call    md.add_to_used
 
         spin_unlock_irqrestore heap_mutex
-        mov     eax, [esi+block_base]
+        mov     eax, [esi + MEM_BLOCK.base]
         pop     edi
         pop     esi
         pop     ebx
@@ -349,7 +344,7 @@ proc alloc_kernel_space stdcall, size:dword
 
 .m_eq_size:
         list_del edi
-        lea     edx, [mem_block_list+ebx*8]
+        lea     edx, [mem_block_list + ebx*8]
         cmp     edx, [edx]
         jnz     @f
         btr     [mem_block_mask], ebx
@@ -378,24 +373,24 @@ proc free_kernel_space stdcall uses ebx ecx edx esi edi, base:dword
         test    esi, esi
         jz      .fail
 
-        mov     eax, [esi+block_size]
+        mov     eax, [esi + MEM_BLOCK.size]
         add     [heap_free], eax
 
-        mov     edi, [esi+block_next]
-        cmp     [edi+block_flags], FREE_BLOCK
+        mov     edi, [esi + MEM_BLOCK.next_block]
+        cmp     [edi + MEM_BLOCK.flags], MEM_BLOCK_FREE
         jne     .prev
 
         list_del edi
 
-        mov     edx, [edi+block_next]
-        mov     [esi+block_next], edx
-        mov     [edx+block_prev], esi
-        mov     ecx, [edi+block_size]
-        add     [esi+block_size], ecx
+        mov     edx, [edi + MEM_BLOCK.next_block]
+        mov     [esi + MEM_BLOCK.next_block], edx
+        mov     [edx + MEM_BLOCK.prev_block], esi
+        mov     ecx, [edi + MEM_BLOCK.size]
+        add     [esi + MEM_BLOCK.size], ecx
 
         calc_index ecx
 
-        lea     edx, [mem_block_list+ecx*8]
+        lea     edx, [mem_block_list + ecx*8]
         cmp     edx, [edx]
         jne     @F
         btr     [mem_block_mask], ecx
@@ -403,21 +398,21 @@ proc free_kernel_space stdcall uses ebx ecx edx esi edi, base:dword
         mov     eax, edi
         call    free_mem_block
 .prev:
-        mov     edi, [esi+block_prev]
-        cmp     [edi+block_flags], FREE_BLOCK
+        mov     edi, [esi + MEM_BLOCK.prev_block]
+        cmp     [edi + MEM_BLOCK.flags], MEM_BLOCK_FREE
         jne     .insert
 
-        mov     edx, [esi+block_next]
-        mov     [edi+block_next], edx
-        mov     [edx+block_prev], edi
+        mov     edx, [esi + MEM_BLOCK.next_block]
+        mov     [edi + MEM_BLOCK.next_block], edx
+        mov     [edx + MEM_BLOCK.prev_block], edi
 
         mov     eax, esi
         call    free_mem_block
 
-        mov     ecx, [edi+block_size]
-        mov     eax, [esi+block_size]
+        mov     ecx, [edi + MEM_BLOCK.size]
+        mov     eax, [esi + MEM_BLOCK.size]
         add     eax, ecx
-        mov     [edi+block_size], eax
+        mov     [edi + MEM_BLOCK.size], eax
 
         calc_index eax                     ;new index
         calc_index ecx                     ;old index
@@ -428,14 +423,14 @@ proc free_kernel_space stdcall uses ebx ecx edx esi edi, base:dword
         list_del edi
         pop     ecx
 
-        lea     edx, [mem_block_list+ecx*8]
+        lea     edx, [mem_block_list + ecx*8]
         cmp     edx, [edx]
         jne     .add_block
         btr     [mem_block_mask], ecx
 
 .add_block:
         bts     [mem_block_mask], eax
-        lea     edx, [mem_block_list+eax*8]
+        lea     edx, [mem_block_list + eax*8]
         list_add edi, edx
 .m_eq:
         spin_unlock_irqrestore heap_mutex
@@ -443,8 +438,8 @@ proc free_kernel_space stdcall uses ebx ecx edx esi edi, base:dword
         not     eax
         ret
 .insert:
-        mov     [esi+block_flags], FREE_BLOCK
-        mov     eax, [esi+block_size]
+        mov     [esi + MEM_BLOCK.flags], MEM_BLOCK_FREE
+        mov     eax, [esi + MEM_BLOCK.size]
         calc_index eax
         mov     edi, esi
         jmp     .add_block
@@ -492,7 +487,7 @@ proc kernel_alloc stdcall, size:dword
         jz      .err
 
         mov     ecx, ebx
-        or      eax, PG_GLOBAL+PG_SWR
+        or      eax, PG_GLOBAL + PG_SWR
         mov     ebx, [lin_addr]
         call    commit_pages
 
@@ -506,7 +501,7 @@ proc kernel_alloc stdcall, size:dword
         test    eax, eax
         jz      .err
 
-        stdcall map_page, edx, eax, dword (PG_GLOBAL+PG_SWR)
+        stdcall map_page, edx, eax, dword (PG_GLOBAL + PG_SWR)
         add     edx, 0x1000
         dec     ebx
         jnz     @B
@@ -532,13 +527,13 @@ proc kernel_free stdcall, base:dword
         mov     eax, [base]
         call    md.find_used
 
-        cmp     [esi+block_flags], USED_BLOCK
+        cmp     [esi + MEM_BLOCK.flags], MEM_BLOCK_USED
         jne     .fail
 
         spin_unlock_irqrestore heap_mutex
 
-        mov     eax, [esi+block_base]
-        mov     ecx, [esi+block_size]
+        mov     eax, [esi + MEM_BLOCK.base]
+        mov     ecx, [esi + MEM_BLOCK.size]
         shr     ecx, 12
         call    release_pages   ;eax, ecx
         stdcall free_kernel_space, [base]
@@ -551,13 +546,6 @@ proc kernel_free stdcall, base:dword
         ret
 endp
 
-restore block_next
-restore block_prev
-restore block_list
-restore block_base
-restore block_size
-restore block_flags
-
 ;;;;;;;;;;;;;;      USER HEAP     ;;;;;;;;;;;;;;;;;
 
 HEAP_TOP  = 0x80000000
@@ -566,103 +554,106 @@ align 4
 proc init_heap
 
         mov     ebx, [current_process]
-        mov     eax, [ebx+PROC.heap_top]
+        mov     eax, [ebx + PROC.heap_top]
         test    eax, eax
         jz      @F
-        sub     eax, [ebx+PROC.heap_base]
+        sub     eax, [ebx + PROC.heap_base]
         sub     eax, PAGE_SIZE
         ret
 @@:
-        lea     ecx, [ebx+PROC.heap_lock]
+        lea     ecx, [ebx + PROC.heap_lock]
         call    mutex_init
 
-        mov     esi, [ebx+PROC.mem_used]
+        mov     esi, [ebx + PROC.mem_used]
         add     esi, 4095
         and     esi, not 4095
-        mov     [ebx+PROC.mem_used], esi
+        mov     [ebx + PROC.mem_used], esi
         mov     eax, HEAP_TOP
-        mov     [ebx+PROC.heap_base], esi
-        mov     [ebx+PROC.heap_top], eax
+        mov     [ebx + PROC.heap_base], esi
+        mov     [ebx + PROC.heap_top], eax
 
         sub     eax, esi
         shr     esi, 10
         mov     ecx, eax
         sub     eax, PAGE_SIZE
-        or      ecx, FREE_BLOCK
-        mov     [page_tabs+esi], ecx
+        or      ecx, MEM_BLOCK_FREE
+        mov     [page_tabs + esi], ecx
         ret
 endp
 
 align 4
 proc user_alloc stdcall, alloc_size:dword
+
         push    ebx esi edi
+
         mov     ebx, [current_process]
-        lea     ecx, [ebx+PROC.heap_lock]
+        lea     ecx, [ebx + PROC.heap_lock]
         call    mutex_lock
+
         mov     ecx, [alloc_size]
-        add     ecx, (4095+PAGE_SIZE)
+        add     ecx, (4095 + PAGE_SIZE)
         and     ecx, not 4095
-        mov     esi, dword [ebx+PROC.heap_base] ; heap_base
-        mov     edi, dword [ebx+PROC.heap_top]  ; heap_top
-.scan:
+        mov     esi, [ebx + PROC.heap_base]
+        mov     edi, [ebx + PROC.heap_top]
+  .scan:
         cmp     esi, edi
         jae     .m_exit
 
         mov     ebx, esi
         shr     ebx, 12
-        mov     eax, [page_tabs+ebx*4]
-        test    al, FREE_BLOCK
+        mov     eax, [page_tabs + ebx*4]
+        test    al, MEM_BLOCK_FREE
         jz      .test_used
         and     eax, 0xFFFFF000
         cmp     eax, ecx   ;alloc_size
         jb      .m_next
         jz      @f
 
-        lea     edx, [esi+ecx]
+        lea     edx, [esi + ecx]
         sub     eax, ecx
-        or      al, FREE_BLOCK
+        or      al, MEM_BLOCK_FREE
         shr     edx, 12
-        mov     [page_tabs+edx*4], eax
-@@:
-        or      ecx, USED_BLOCK
-        mov     [page_tabs+ebx*4], ecx
+        mov     [page_tabs + edx*4], eax
+  @@:
+        or      ecx, MEM_BLOCK_USED
+        mov     [page_tabs + ebx*4], ecx
         shr     ecx, 12
         inc     ebx
         dec     ecx
         jz      .no
-@@:
-        mov     dword [page_tabs+ebx*4], 2
+  @@:
+        mov     dword [page_tabs + ebx*4], MEM_BLOCK_RESERVED
         inc     ebx
         dec     ecx
         jnz     @B
-.no:
+  .no:
 
         mov     edx, [current_process]
         mov     ebx, [alloc_size]
         add     ebx, 0xFFF
         and     ebx, not 0xFFF
-        add     [edx+PROC.mem_used], ebx
+        add     [edx + PROC.mem_used], ebx
 
-        lea     ecx, [edx+PROC.heap_lock]
+        lea     ecx, [edx + PROC.heap_lock]
         call    mutex_unlock
 
-        lea     eax, [esi+4096]
+        lea     eax, [esi + 4096]
 
         pop     edi
         pop     esi
         pop     ebx
         ret
 .test_used:
-        test    al, USED_BLOCK
+        test    al, MEM_BLOCK_USED
         jz      .m_exit
 
-        and     eax, 0xFFFFF000
+        and     eax, 0xFFFFF000 ; not PAGESIZE
 .m_next:
         add     esi, eax
         jmp     .scan
 .m_exit:
         mov     ecx, [current_process]
-        lea     ecx, [ecx+PROC.heap_lock]
+        lea     ecx, [ecx + PROC.heap_lock]
         call    mutex_unlock
 
         xor     eax, eax
@@ -680,7 +671,7 @@ proc user_alloc_at stdcall, address:dword, alloc_size:dword
         push    edi
 
         mov     ebx, [current_process]
-        lea     ecx, [ebx+PROC.heap_lock]
+        lea     ecx, [ebx + PROC.heap_lock]
         call    mutex_lock
 
         mov     edx, [address]
@@ -688,8 +679,8 @@ proc user_alloc_at stdcall, address:dword, alloc_size:dword
         mov     [address], edx
         sub     edx, 0x1000
         jb      .error
-        mov     esi, [ebx+PROC.heap_base]
-        mov     edi, [ebx+PROC.heap_top]
+        mov     esi, [ebx + PROC.heap_base]
+        mov     edi, [ebx + PROC.heap_top]
         cmp     edx, esi
         jb      .error
 .scan:
@@ -697,7 +688,7 @@ proc user_alloc_at stdcall, address:dword, alloc_size:dword
         jae     .error
         mov     ebx, esi
         shr     ebx, 12
-        mov     eax, [page_tabs+ebx*4]
+        mov     eax, [page_tabs + ebx*4]
         mov     ecx, eax
         and     ecx, 0xFFFFF000
         add     ecx, esi
@@ -707,7 +698,7 @@ proc user_alloc_at stdcall, address:dword, alloc_size:dword
         jmp     .scan
 .error:
         mov     ecx, [current_process]
-        lea     ecx, [ecx+PROC.heap_lock]
+        lea     ecx, [ecx + PROC.heap_lock]
         call    mutex_unlock
 
         xor     eax, eax
@@ -716,7 +707,7 @@ proc user_alloc_at stdcall, address:dword, alloc_size:dword
         pop     ebx
         ret
 .found:
-        test    al, FREE_BLOCK
+        test    al, MEM_BLOCK_FREE
         jz      .error
         mov     eax, ecx
         sub     eax, edx
@@ -727,47 +718,47 @@ proc user_alloc_at stdcall, address:dword, alloc_size:dword
 ; Here we have 1 big free block which includes requested area.
 ; In general, 3 other blocks must be created instead:
 ; free at [esi, edx);
-; busy at [edx, edx+0x1000+ALIGN_UP(alloc_size,0x1000));
-; free at [edx+0x1000+ALIGN_UP(alloc_size,0x1000), ecx)
+; busy at [edx, edx + 0x1000 + ALIGN_UP(alloc_size,0x1000));
+; free at [edx + 0x1000 + ALIGN_UP(alloc_size,0x1000), ecx)
 ; First or third block (or both) may be absent.
         mov     eax, edx
         sub     eax, esi
         jz      .nofirst
-        or      al, FREE_BLOCK
-        mov     [page_tabs+ebx*4], eax
-.nofirst:
+        or      al, MEM_BLOCK_FREE
+        mov     [page_tabs + ebx*4], eax
+  .nofirst:
         mov     eax, [alloc_size]
         add     eax, 0x1FFF
         and     eax, not 0xFFF
         mov     ebx, edx
         add     edx, eax
         shr     ebx, 12
-        or      al, USED_BLOCK
-        mov     [page_tabs+ebx*4], eax
+        or      al, MEM_BLOCK_USED
+        mov     [page_tabs + ebx*4], eax
         shr     eax, 12
         dec     eax
         jz      .second_nofill
         inc     ebx
-.fill:
-        mov     dword [page_tabs+ebx*4], 2
+  .fill:
+        mov     dword [page_tabs + ebx*4], MEM_BLOCK_RESERVED
         inc     ebx
         dec     eax
         jnz     .fill
 
-.second_nofill:
+  .second_nofill:
         sub     ecx, edx
         jz      .nothird
-        or      cl, FREE_BLOCK
-        mov     [page_tabs+ebx*4], ecx
+        or      cl, MEM_BLOCK_FREE
+        mov     [page_tabs + ebx*4], ecx
 
-.nothird:
+  .nothird:
         mov     edx, [current_process]
         mov     ebx, [alloc_size]
         add     ebx, 0xFFF
         and     ebx, not 0xFFF
-        add     [edx+PROC.mem_used], ebx
+        add     [edx + PROC.mem_used], ebx
 
-        lea     ecx, [edx+PROC.heap_lock]
+        lea     ecx, [edx + PROC.heap_lock]
         call    mutex_unlock
 
         mov     eax, [address]
@@ -790,28 +781,28 @@ proc user_free stdcall, base:dword
         push    ebx
 
         mov     ebx, [current_process]
-        lea     ecx, [ebx+PROC.heap_lock]
+        lea     ecx, [ebx + PROC.heap_lock]
         call    mutex_lock
 
         xor     ebx, ebx
         shr     esi, 12
-        mov     eax, [page_tabs+(esi-1)*4]
-        test    al, USED_BLOCK
+        mov     eax, [page_tabs + (esi-1)*4]
+        test    al, MEM_BLOCK_USED
         jz      .cantfree
-        test    al, DONT_FREE_BLOCK
+        test    al, MEM_BLOCK_DONT_FREE
         jnz     .cantfree
 
         and     eax, not 4095
         mov     ecx, eax
-        or      al, FREE_BLOCK
-        mov     [page_tabs+(esi-1)*4], eax
+        or      al, MEM_BLOCK_FREE
+        mov     [page_tabs + (esi-1)*4], eax
         sub     ecx, 4096
         mov     ebx, ecx
         shr     ecx, 12
         jz      .released
-.release:
+  .release:
         xor     eax, eax
-        xchg    eax, [page_tabs+esi*4]
+        xchg    eax, [page_tabs + esi*4]
         test    al, 1
         jz      @F
         test    eax, PG_SHARED
@@ -820,24 +811,24 @@ proc user_free stdcall, base:dword
         mov     eax, esi
         shl     eax, 12
         invlpg  [eax]
-@@:
+  @@:
         inc     esi
         dec     ecx
         jnz     .release
 
-.released:
+ .released:
         push    edi
 
         mov     edx, [current_process]
-        lea     ecx, [edx+PROC.heap_lock]
-        mov     esi, dword [edx+PROC.heap_base]
-        mov     edi, dword [edx+PROC.heap_top]
-        sub     ebx, [edx+PROC.mem_used]
+        lea     ecx, [edx + PROC.heap_lock]
+        mov     esi, dword [edx + PROC.heap_base]
+        mov     edi, dword [edx + PROC.heap_top]
+        sub     ebx, [edx + PROC.mem_used]
         neg     ebx
-        mov     [edx+PROC.mem_used], ebx
+        mov     [edx + PROC.mem_used], ebx
         call    user_normalize
         pop     edi
-.exit:
+ .exit:
         call    mutex_unlock
 
         xor     eax, eax
@@ -846,11 +837,11 @@ proc user_free stdcall, base:dword
         pop     esi
         ret
 
-.cantfree:
+  .cantfree:
         mov     ecx, [current_process]
-        lea     ecx, [ecx+PROC.heap_lock]
+        lea     ecx, [ecx + PROC.heap_lock]
         jmp     .exit
-.fail:
+  .fail:
         xor     eax, eax
         pop     esi
         ret
@@ -871,23 +862,23 @@ proc user_unmap stdcall, base:dword, offset:dword, size:dword
         js      .error
 
         shr     ebx, 12                 ; chek block attributes
-        lea     ebx, [page_tabs+ebx*4]
+        lea     ebx, [page_tabs + ebx*4]
         mov     eax, [ebx-4]            ; block attributes
-        test    al, USED_BLOCK
+        test    al, MEM_BLOCK_USED
         jz      .error
-        test    al, DONT_FREE_BLOCK
+        test    al, MEM_BLOCK_DONT_FREE
         jnz     .error
 
         shr     edx, 12
-        lea     edx, [page_tabs+edx*4]  ; unmap offset
+        lea     edx, [page_tabs + edx*4]  ; unmap offset
 
         mov     ecx, [size]
         add     ecx, 4095
         shr     ecx, 12                 ; unmap size in pages
 
-        shr     eax, 12                 ; block size + 1 page
-        lea     ebx, [ebx+eax*4-4]      ; block end ptr
-        lea     eax, [edx+ecx*4]        ; unmap end ptr
+        shr     eax, 12                 ; block size  +  1 page
+        lea     ebx, [ebx + eax*4-4]      ; block end ptr
+        lea     eax, [edx + ecx*4]        ; unmap end ptr
 
         cmp     eax, ebx                ; check for overflow
         ja      .error
@@ -896,18 +887,18 @@ proc user_unmap stdcall, base:dword, offset:dword, size:dword
         and     ebx, not 4095           ; is it required ?
         add     ebx, [base]
 
-.unmap:
+  .unmap:
         mov     eax, [edx]              ; get page addres
         test    al, 1                   ; page mapped ?
         jz      @F
         test    eax, PG_SHARED          ; page shared ?
         jnz     @F
-        mov     [edx], dword 2
+        mov     dword[edx], MEM_BLOCK_RESERVED
                                         ; mark page as reserved
         invlpg  [ebx]                   ; when we start using
         call    free_page               ; empty c-o-w page instead this ?
-@@:
-        add     ebx, 4096
+  @@:
+        add     ebx, 4096       ; PAGESIZE?
         add     edx, 4
         dec     ecx
         jnz     .unmap
@@ -929,14 +920,14 @@ user_normalize:
         shr     esi, 12
         shr     edi, 12
 @@:
-        mov     eax, [page_tabs+esi*4]
-        test    al, USED_BLOCK
+        mov     eax, [page_tabs + esi*4]
+        test    al, MEM_BLOCK_USED
         jz      .test_free
         shr     eax, 12
         add     esi, eax
         jmp     @B
 .test_free:
-        test    al, FREE_BLOCK
+        test    al, MEM_BLOCK_FREE
         jz      .err
         mov     edx, eax
         shr     edx, 12
@@ -944,8 +935,8 @@ user_normalize:
         cmp     edx, edi
         jae     .exit
 
-        mov     ebx, [page_tabs+edx*4]
-        test    bl, USED_BLOCK
+        mov     ebx, [page_tabs + edx*4]
+        test    bl, MEM_BLOCK_USED
         jz      .next_free
 
         shr     ebx, 12
@@ -953,13 +944,13 @@ user_normalize:
         mov     esi, edx
         jmp     @B
 .next_free:
-        test    bl, FREE_BLOCK
+        test    bl, MEM_BLOCK_FREE
         jz      .err
-        and     dword [page_tabs+edx*4], 0
+        and     dword[page_tabs + edx*4], 0
         add     eax, ebx
-        and     eax, not 4095
-        or      eax, FREE_BLOCK
-        mov     [page_tabs+esi*4], eax
+        and     eax, not 4095           ; not (PAGESIZE - 1)    ?
+        or      eax, MEM_BLOCK_FREE
+        mov     [page_tabs + esi*4], eax
         jmp     @B
 .exit:
         xor     eax, eax
@@ -983,26 +974,26 @@ user_realloc:
 
         push    eax
         mov     ecx, [current_process]
-        lea     ecx, [ecx+PROC.heap_lock]
+        lea     ecx, [ecx + PROC.heap_lock]
         call    mutex_lock
         pop     eax
 
         lea     ecx, [eax - 0x1000]
         shr     ecx, 12
-        mov     edx, [page_tabs+ecx*4]
-        test    dl, USED_BLOCK
+        mov     edx, [page_tabs + ecx*4]
+        test    dl, MEM_BLOCK_USED
         jnz     @f
 ; attempt to realloc invalid pointer
 .ret0:
         mov     ecx, [current_process]
-        lea     ecx, [ecx+PROC.heap_lock]
+        lea     ecx, [ecx + PROC.heap_lock]
         call    mutex_unlock
 
         pop     edx ecx
         xor     eax, eax
         ret
 @@:
-        test    dl, DONT_FREE_BLOCK
+        test    dl, MEM_BLOCK_DONT_FREE
         jnz     .ret0
         add     ebx, 0x1FFF
         shr     edx, 12
@@ -1018,7 +1009,7 @@ user_realloc:
         jz      .release_done
         dec     edx
         xor     eax, eax
-        xchg    eax, [page_tabs+edx*4]
+        xchg    eax, [page_tabs + edx*4]
         test    al, 1
         jz      .loop
         call    free_page
@@ -1030,53 +1021,53 @@ user_realloc:
         sub     ebx, ecx
         cmp     ebx, 1
         jnz     .nofreeall
-        mov     eax, [page_tabs+ecx*4]
+        mov     eax, [page_tabs + ecx*4]
         and     eax, not 0xFFF
         mov     edx, [current_process]
-        mov     ebx, [edx+PROC.mem_used]
+        mov     ebx, [edx + PROC.mem_used]
         sub     ebx, eax
         add     ebx, 0x1000
-        or      al, FREE_BLOCK
-        mov     [page_tabs+ecx*4], eax
+        or      al, MEM_BLOCK_FREE
+        mov     [page_tabs + ecx*4], eax
         push    esi edi
-        mov     esi, [edx+PROC.heap_base]
-        mov     edi, [edx+PROC.heap_top]
-        mov     [edx+PROC.mem_used], ebx
+        mov     esi, [edx + PROC.heap_base]
+        mov     edi, [edx + PROC.heap_top]
+        mov     [edx + PROC.mem_used], ebx
         call    user_normalize
         pop     edi esi
         jmp     .ret0   ; all freed
 .nofreeall:
         sub     edx, ecx
         shl     ebx, 12
-        or      ebx, USED_BLOCK
-        xchg    [page_tabs+ecx*4], ebx
+        or      ebx, MEM_BLOCK_USED
+        xchg    [page_tabs + ecx*4], ebx
         shr     ebx, 12
         sub     ebx, edx
         push    ebx ecx edx
         mov     edx, [current_process]
         shl     ebx, 12
-        sub     ebx, [edx+PROC.mem_used]
+        sub     ebx, [edx + PROC.mem_used]
         neg     ebx
-        mov     [edx+PROC.mem_used], ebx
+        mov     [edx + PROC.mem_used], ebx
         pop     edx ecx ebx
-        lea     eax, [ecx+1]
+        lea     eax, [ecx + 1]
         shl     eax, 12
         push    eax
         add     ecx, edx
-        lea     edx, [ecx+ebx]
+        lea     edx, [ecx + ebx]
         shl     ebx, 12
         jz      .ret
         push    esi
         mov     esi, [current_process]
-        mov     esi, [esi+PROC.heap_top]
+        mov     esi, [esi + PROC.heap_top]
         shr     esi, 12
 @@:
         cmp     edx, esi
         jae     .merge_done
-        mov     eax, [page_tabs+edx*4]
-        test    al, USED_BLOCK
+        mov     eax, [page_tabs + edx*4]
+        test    al, MEM_BLOCK_USED
         jnz     .merge_done
-        and     dword [page_tabs+edx*4], 0
+        and     dword [page_tabs + edx*4], 0
         shr     eax, 12
         add     edx, eax
         shl     eax, 12
@@ -1084,11 +1075,11 @@ user_realloc:
         jmp     @b
 .merge_done:
         pop     esi
-        or      ebx, FREE_BLOCK
-        mov     [page_tabs+ecx*4], ebx
+        or      ebx, MEM_BLOCK_FREE
+        mov     [page_tabs + ecx*4], ebx
 .ret:
         mov     ecx, [current_process]
-        lea     ecx, [ecx+PROC.heap_lock]
+        lea     ecx, [ecx + PROC.heap_lock]
         call    mutex_unlock
         pop     eax edx ecx
         ret
@@ -1096,12 +1087,12 @@ user_realloc:
 .realloc_add:
 ; get some additional memory
         mov     eax, [current_process]
-        mov     eax, [eax+PROC.heap_top]
+        mov     eax, [eax + PROC.heap_top]
         shr     eax, 12
         cmp     edx, eax
         jae     .cant_inplace
-        mov     eax, [page_tabs+edx*4]
-        test    al, FREE_BLOCK
+        mov     eax, [page_tabs + edx*4]
+        test    al, MEM_BLOCK_FREE
         jz      .cant_inplace
         shr     eax, 12
         add     eax, edx
@@ -1109,19 +1100,19 @@ user_realloc:
         jb      .cant_inplace
         jz      @f
         shl     eax, 12
-        or      al, FREE_BLOCK
-        mov     [page_tabs+ebx*4], eax
+        or      al, MEM_BLOCK_FREE
+        mov     [page_tabs + ebx*4], eax
 @@:
         mov     eax, ebx
         sub     eax, ecx
         shl     eax, 12
-        or      al, USED_BLOCK
-        mov     [page_tabs+ecx*4], eax
-        lea     eax, [ecx+1]
+        or      al, MEM_BLOCK_USED
+        mov     [page_tabs + ecx*4], eax
+        lea     eax, [ecx + 1]
         shl     eax, 12
         push    eax
         push    edi
-        lea     edi, [page_tabs+edx*4]
+        lea     edi, [page_tabs + edx*4]
         mov     eax, 2
         sub     ebx, edx
         mov     ecx, ebx
@@ -1130,10 +1121,10 @@ user_realloc:
         pop     edi
         mov     edx, [current_process]
         shl     ebx, 12
-        add     [edx+PROC.mem_used], ebx
+        add     [edx + PROC.mem_used], ebx
 
         mov     ecx, [current_process]
-        lea     ecx, [ecx+PROC.heap_lock]
+        lea     ecx, [ecx + PROC.heap_lock]
         call    mutex_unlock
         pop     eax edx ecx
         ret
@@ -1141,16 +1132,16 @@ user_realloc:
 .cant_inplace:
         push    esi edi
         mov     eax, [current_process]
-        mov     esi, [eax+PROC.heap_base]
-        mov     edi, [eax+PROC.heap_top]
+        mov     esi, [eax + PROC.heap_base]
+        mov     edi, [eax + PROC.heap_top]
         shr     esi, 12
         shr     edi, 12
         sub     ebx, ecx
 .find_place:
         cmp     esi, edi
         jae     .place_not_found
-        mov     eax, [page_tabs+esi*4]
-        test    al, FREE_BLOCK
+        mov     eax, [page_tabs + esi*4]
+        test    al, MEM_BLOCK_FREE
         jz      .next_place
         shr     eax, 12
         cmp     eax, ebx
@@ -1170,31 +1161,31 @@ user_realloc:
         push    esi
         add     esi, ebx
         shl     eax, 12
-        or      al, FREE_BLOCK
-        mov     [page_tabs+esi*4], eax
+        or      al, MEM_BLOCK_FREE
+        mov     [page_tabs + esi*4], eax
         pop     esi
 @@:
         mov     eax, ebx
         shl     eax, 12
-        or      al, USED_BLOCK
-        mov     [page_tabs+esi*4], eax
+        or      al, MEM_BLOCK_USED
+        mov     [page_tabs + esi*4], eax
         inc     esi
         mov     eax, esi
         shl     eax, 12
         push    eax
-        mov     eax, [page_tabs+ecx*4]
+        mov     eax, [page_tabs + ecx*4]
         and     eax, not 0xFFF
-        or      al, FREE_BLOCK
+        or      al, MEM_BLOCK_FREE
         sub     edx, ecx
-        mov     [page_tabs+ecx*4], eax
+        mov     [page_tabs + ecx*4], eax
         inc     ecx
         dec     ebx
         dec     edx
         jz      .no
 @@:
         xor     eax, eax
-        xchg    eax, [page_tabs+ecx*4]
-        mov     [page_tabs+esi*4], eax
+        xchg    eax, [page_tabs + ecx*4]
+        mov     [page_tabs + esi*4], eax
         mov     eax, ecx
         shl     eax, 12
         invlpg  [eax]
@@ -1207,16 +1198,16 @@ user_realloc:
         push    ebx
         mov     edx, [current_process]
         shl     ebx, 12
-        add     [edx+PROC.mem_used], ebx
+        add     [edx + PROC.mem_used], ebx
         pop     ebx
 @@:
-        mov     dword [page_tabs+esi*4], 2
+        mov     dword [page_tabs + esi*4], MEM_BLOCK_RESERVED
         inc     esi
         dec     ebx
         jnz     @b
 
         mov     ecx, [current_process]
-        lea     ecx, [ecx+PROC.heap_lock]
+        lea     ecx, [ecx + PROC.heap_lock]
         call    mutex_unlock
         pop     eax edi esi edx ecx
         ret
@@ -1239,20 +1230,20 @@ destroy_smap:
         push    edi
 
         mov     edi, eax
-        mov     esi, [eax+SMAP.parent]
+        mov     esi, [eax + SMAP.parent]
         test    esi, esi
         jz      .done
 
-        lock dec [esi+SMEM.refcount]
+        lock dec [esi + SMEM.refcount]
         jnz     .done
 
-        mov     ecx, [esi+SMEM.bk]
-        mov     edx, [esi+SMEM.fd]
+        mov     ecx, [esi + SMEM.bk]
+        mov     edx, [esi + SMEM.fd]
 
-        mov     [ecx+SMEM.fd], edx
-        mov     [edx+SMEM.bk], ecx
+        mov     [ecx + SMEM.fd], edx
+        mov     [edx + SMEM.bk], ecx
 
-        stdcall kernel_free, [esi+SMEM.base]
+        stdcall kernel_free, [esi + SMEM.base]
         mov     eax, esi
         call    free
 .done:
@@ -1314,12 +1305,12 @@ align 4
         cmp     esi, shmem_list
         je      .not_found
 
-        lea     edx, [esi+SMEM.name]; link , base, size
+        lea     edx, [esi + SMEM.name]; link , base, size
         stdcall strncmp, edx, ebx, 32
         test    eax, eax
         je      .found
 
-        mov     esi, [esi+SMEM.fd]
+        mov     esi, [esi + SMEM.fd]
         jmp     @B
 
 .not_found:
@@ -1363,20 +1354,20 @@ align 4
         mov     edx, [access]
         and     edx, SHM_ACCESS_MASK
 
-        mov     [esi+SMEM.base], eax
-        mov     [esi+SMEM.size], ecx
-        mov     [esi+SMEM.access], edx
-        mov     [esi+SMEM.refcount], 0
-        mov     [esi+SMEM.name+28], 0
+        mov     [esi + SMEM.base], eax
+        mov     [esi + SMEM.size], ecx
+        mov     [esi + SMEM.access], edx
+        mov     [esi + SMEM.refcount], 0
+        mov     [esi + SMEM.name + 28], 0
 
-        lea     eax, [esi+SMEM.name]
+        lea     eax, [esi + SMEM.name]
         stdcall strncpy, eax, [name], 31
 
         mov     eax, [shmem_list.fd]
-        mov     [esi+SMEM.bk], shmem_list
-        mov     [esi+SMEM.fd], eax
+        mov     [esi + SMEM.bk], shmem_list
+        mov     [esi + SMEM.fd], eax
 
-        mov     [eax+SMEM.bk], esi
+        mov     [eax + SMEM.bk], esi
         mov     [shmem_list.fd], esi
 
         mov     [action], SHM_OPEN
@@ -1400,14 +1391,14 @@ align 4
 
         mov     eax, [access]
         and     eax, SHM_ACCESS_MASK
-        cmp     eax, [esi+SMEM.access]
+        cmp     eax, [esi + SMEM.access]
         mov     [access], eax
         mov     edx, E_ACCESS
         ja      .fail
 
         mov     ebx, [CURRENT_TASK]
         shl     ebx, 5
-        mov     ebx, [CURRENT_TASK+ebx+4]
+        mov     ebx, [CURRENT_TASK + ebx + 4]
         mov     eax, sizeof.SMAP
 
         call    create_kernel_object
@@ -1416,36 +1407,36 @@ align 4
         mov     edx, E_NOMEM
         jz      .fail
 
-        inc     [esi+SMEM.refcount]
+        inc     [esi + SMEM.refcount]
 
-        mov     [edi+SMAP.magic], 'SMAP'
-        mov     [edi+SMAP.destroy], destroy_smap
-        mov     [edi+SMAP.parent], esi
-        mov     [edi+SMAP.base], 0
+        mov     [edi + SMAP.magic], 'SMAP'
+        mov     [edi + SMAP.destroy], destroy_smap
+        mov     [edi + SMAP.parent], esi
+        mov     [edi + SMAP.base], 0
 
-        stdcall user_alloc, [esi+SMEM.size]
+        stdcall user_alloc, [esi + SMEM.size]
         test    eax, eax
         mov     [mapped], eax
         mov     edx, E_NOMEM
         jz      .cleanup2
 
-        mov     [edi+SMAP.base], eax
+        mov     [edi + SMAP.base], eax
 
-        mov     ecx, [esi+SMEM.size]
+        mov     ecx, [esi + SMEM.size]
         mov     [size], ecx
 
         shr     ecx, 12
         shr     eax, 10
 
-        mov     esi, [esi+SMEM.base]
+        mov     esi, [esi + SMEM.base]
         shr     esi, 10
-        lea     edi, [page_tabs+eax]
+        lea     edi, [page_tabs + eax]
         add     esi, page_tabs
 
         mov     edx, [access]
         or      edx, [owner_access]
         shl     edx, 1
-        or      edx, PG_SHARED+PG_UR
+        or      edx, PG_SHARED + PG_UR
 @@:
         lodsd
         and     eax, 0xFFFFF000
@@ -1495,7 +1486,7 @@ proc shmem_close stdcall, name:dword
         mov     esi, [current_slot]
         add     esi, APP_OBJ_OFFSET
 .next:
-        mov     eax, [esi+APPOBJ.fd]
+        mov     eax, [esi + APPOBJ.fd]
         test    eax, eax
         jz      @F
 
@@ -1503,22 +1494,22 @@ proc shmem_close stdcall, name:dword
         mov     esi, eax
         je      @F
 
-        cmp     [eax+SMAP.magic], 'SMAP'
+        cmp     [eax + SMAP.magic], 'SMAP'
         jne     .next
 
-        mov     edi, [eax+SMAP.parent]
+        mov     edi, [eax + SMAP.parent]
         test    edi, edi
         jz      .next
 
-        lea     edi, [edi+SMEM.name]
+        lea     edi, [edi + SMEM.name]
         stdcall strncmp, [name], edi, 32
         test    eax, eax
         jne     .next
 
-        stdcall user_free, [esi+SMAP.base]
+        stdcall user_free, [esi + SMAP.base]
 
         mov     eax, esi
-        call    [esi+APPOBJ.destroy]
+        call    [esi + APPOBJ.destroy]
 @@:
         popfd
         pop     edi
@@ -1526,3 +1517,4 @@ proc shmem_close stdcall, name:dword
 .fail:
         ret
 endp
+
