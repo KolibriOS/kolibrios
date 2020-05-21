@@ -1,6 +1,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;                                                              ;;
-;; Copyright (C) KolibriOS team 2004-2015. All rights reserved. ;;
+;; Copyright (C) KolibriOS team 2004-2020. All rights reserved. ;;
 ;; Distributed under terms of the GNU General Public License    ;;
 ;;                                                              ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -240,11 +240,7 @@
 ;
 ; 0x802E0000 -> 2EFFFF   irq data area  (64k)  ;BOOT_VAR
 ;
-; 0x802F0000 -> 2F3FFF   tcp memory  stack_data_start eth_data_start (16k)
-;
-; 0x802F4000 -> 30ffff   stack_data | stack_data_end (112k)
-;
-; 0x80310000 -> 317fff   resendQ (32k)
+; 0x802F0000 -> 317fff   free (160k)
 ;
 ; 0x80318000 -> 31ffff   skin_data (32k)
 ;
