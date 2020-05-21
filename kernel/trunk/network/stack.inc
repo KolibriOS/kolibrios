@@ -837,10 +837,10 @@ sys_protocols:
         cmp     bh, NET_DEVICES_MAX             ; Check if device number exists
         jae     .doesnt_exist
 
-        mov     esi, ebx
-        and     esi, 0x0000ff00
-        shr     esi, 6                          ; now we have the device num * 4 in esi
-        cmp     [esi + net_device_list], 0      ; check if device is running
+        mov     eax, ebx
+        and     eax, 0x0000ff00
+        shr     eax, 6                          ; now we have the device num * 4 in eax
+        cmp     [eax + net_device_list], 0      ; check if device is running
         je      .doesnt_exist
 
         push    .return                         ; return address (we will be using jumps instead of calls)
