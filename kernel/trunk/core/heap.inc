@@ -1529,7 +1529,7 @@ locals
 endl
 
 ; Size must be an exact multiple of pagesize
-        mov     eax, size
+        mov     eax, [size]
         test    eax, PAGE_SIZE-1
         jnz     .exit
 
@@ -1566,7 +1566,7 @@ endl
         jnz     .loop1
 
 ; Map second half of virtual memory to same physical memory
-        mov     ecx, [pages]
+        mov     ecx, [num_pages]
         mov     edi, [phys_ptr]
   .loop2:
         stdcall map_page, esi, edi, PG_UWR
