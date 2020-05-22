@@ -176,7 +176,7 @@ void MailBoxLoop() {
 					break;
 				}
 
-				PageLinks.HoverAndProceed(mouse.x, mouse.y);
+				links.hover(mouse.x, mouse.y);
 
 				if (!mail_list.count) break;
 				if (!panels_drag) { scrollbar_v_mouse (#scroll1); scrollbar_v_mouse (#scroll_wv); }
@@ -419,5 +419,5 @@ int GetLetterSize_(int number) {
 
 
 void EventClickLink() {
-	RunProgram("/sys/network/WebView", PageLinks.GetURL(PageLinks.active));	
+	RunProgram("/sys/network/WebView", links.active_url);	
 }

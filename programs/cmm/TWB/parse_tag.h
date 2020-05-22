@@ -71,18 +71,18 @@ bool _tag::get_next_param()
 	{
 		//remove quotes
 		quotes = params[i];
-		params[i] = EOS;
+		params[i] = '\0';
 		i--;
 
 		//find VAL start and copy
 		i = strrchr(#params, quotes);
 		strlcpy(#val, #params + i, sizeof(val)-1);
-		params[i] = EOS; 
+		params[i] = '\0'; 
 		i--;
 
 		//find ATTR end
 		while (i > 0) && (params[i] != '=') i--;
-		params[i+1] = EOS;
+		params[i+1] = '\0';
 	}
 	else
 	{

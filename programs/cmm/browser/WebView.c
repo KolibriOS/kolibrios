@@ -64,6 +64,8 @@ enum {
 	TAB_CLOSE_ID = 900
 };
 
+enum { TARGET_SAME_TAB, TARGET_NEW_WINDOW, TARGET_NEW_TAB };
+
 #include "..\TWB\TWB.c" //HTML Parser, a core component
 
 TWebBrowser WB1;
@@ -125,7 +127,6 @@ void HandleParam()
 			ExitProcess();
 		} else if (!strncmp(#param, "-download ", 10)) {
 			strcpy(#downloader_edit, #param+10);
-			//CreateThread(#Downloader,#downloader_stak+4092);
 			Downloader();
 			ExitProcess();
 		} else if (!strncmp(#param, "-source ", 8)) {
@@ -151,7 +152,7 @@ void HandleParam()
 
 void main()
 {
-	int i, btn, redirect_count=0;
+	int i, redirect_count=0;
 	LoadLibraries();
 	CreateDir("/tmp0/1/Downloads");
 	//CreateDir("/tmp0/1/WebView_Cache");
@@ -165,33 +166,47 @@ void main()
 		case evMouse:
 			edit_box_mouse stdcall (#address_box);
 			mouse.get();
-			PageLinks.HoverAndProceed(mouse.x, WB1.list.first + mouse.y, WB1.list.y, WB1.list.first);
-			if (PageLinks.active == -1) && (mouse.pkm) && (mouse.up) {
-				if (WB1.list.MouseOver(mouse.x, mouse.y)) EventShowPageMenu();
-				break;
-			}
+
 			if (WB1.list.MouseScroll(mouse.vert)) WB1.DrawPage();
+
 			scrollbar_v_mouse (#scroll_wv);
-			if (WB1.list.first != scroll_wv.position)
-			{
+			if (scroll_wv.delta) {
 				WB1.list.first = scroll_wv.position;
 				WB1.DrawPage();
 				break;
 			}
-			if (mouse.up) && (! address_box.flags & ed_focus) && (address_box.flags & ed_shift_bac) 
+
+			if (links.hover(WB1.list.y, WB1.list.first))
 			{
-				DrawOmnibox(); //reset text selection
+				if (mouse.mkm) {
+					if (key_modifier&KEY_LSHIFT) || (key_modifier&KEY_RSHIFT) {
+						EventClickLink(TARGET_NEW_WINDOW);
+					} else {
+						EventClickLink(TARGET_NEW_TAB);
+					}
+				}
+				if (mouse.lkm) { 
+					CursorPointer.Restore();
+					EventClickLink(TARGET_SAME_TAB);
+				}
+				if (mouse.pkm) {
+					CursorPointer.Restore();
+					EventShowLinkMenu();
+				}
+			} else {
+				CursorPointer.Restore();
+				if (mouse.pkm) && (WB1.list.MouseOver(mouse.x, mouse.y)) {
+					EventShowPageMenu();
+				}
 			}
 			break;
 
 		case evButton:
-			btn = GetButtonID();
-			if (1==btn) ExitProcess(); else ProcessEvent(btn);
+			ProcessEvent( GetButtonID() );
 			break;
 
 		case evKey:
 			GetKeys();
-			//if (key_scancode == SCAN_CODE_F1) {DebugTabs();break;}
 
 			if (key_modifier&KEY_LSHIFT) || (key_modifier&KEY_RSHIFT) {
 				if (key_scancode == SCAN_CODE_TAB) {EventActivatePreviousTab();break;}
@@ -352,7 +367,7 @@ void draw_window()
 		DrawOmnibox(); 
 	}
 	DrawProgress();
-	DrawStatusBar(NULL);
+	DrawStatusBar();
 	DrawTabsBar();
 }
 
@@ -388,9 +403,11 @@ void EventChangeEncodingAndLoadPage(int _new_encoding)
 
 void ProcessEvent(dword id__)
 {
-	char new_clip_url[URL_SIZE+1];
 	switch (id__)
 	{
+		case 1:
+			ExitProcess();
+			break;
 		case ENCODINGS...ENCODINGS+6:
 			EventChangeEncodingAndLoadPage(id__-ENCODINGS);
 			return;
@@ -450,25 +467,18 @@ void ProcessEvent(dword id__)
 			EventRefreshPage();
 			return;
 		case IN_NEW_TAB:
-			open_new_tab = true;
-			EventClickLink(PageLinks.GetURL(PageLinks.active));
-			open_new_tab = false;
+			EventClickLink(TARGET_NEW_TAB);
 			return;
 		case IN_NEW_WINDOW:
-			open_new_window = true;
-			EventClickLink(PageLinks.GetURL(PageLinks.active));
-			open_new_window = false;
+			EventClickLink(TARGET_NEW_WINDOW);
 			return;
 		case COPY_LINK_URL:
-			strncpy(#new_clip_url, PageLinks.GetURL(PageLinks.active), URL_SIZE);
-			GetAbsoluteURL(#new_clip_url, history.current());
-			Clipboard__CopyText(#new_clip_url); 
+			Clipboard__CopyText(GetAbsoluteActiveURL()); 
 			notify("'URL copied to clipboard'O");
 			return;
 		case DOWNLOAD_LINK_CONTENTS:
 			if (!downloader_opened) {
-				strcpy(#downloader_edit, PageLinks.GetURL(PageLinks.active));
-				GetAbsoluteURL(#downloader_edit, history.current());
+				strcpy(#downloader_edit, GetAbsoluteActiveURL());
 				CreateThread(#Downloader,#downloader_stak+4092);
 			}
 			return;
@@ -565,15 +575,10 @@ bool GetLocalFileData(dword _path)
 void OpenPage(dword _open_URL)
 {
 	char new_url[URL_SIZE+1];
+	char new_url_full[URL_SIZE+1];
 	int unz_id;
 
 	StopLoading();
-
-	if (open_new_tab) {
-		open_new_tab = false;
-		EventOpenNewTab(_open_URL);
-		return;
-	}
 
 	SetOmniboxText(_open_URL);
 
@@ -581,7 +586,9 @@ void OpenPage(dword _open_URL)
 
 	//Exclude # from the URL to the load page
 	//We will bring it back when we get the buffer
-	if (strrchr(#new_url, '#')) anchors.take_anchor_from(#new_url);
+	if (strrchr(#new_url, '#')) {
+		anchors.take_anchor_from(#new_url);
+	}
 
 	history.add(#new_url);
 
@@ -605,9 +612,9 @@ void OpenPage(dword _open_URL)
 		if (!strncmp(#new_url,"http:",5)) {
 			http.get(#new_url);
 		} else if (!strncmp(#new_url,"https://",8)) {
-			strcpy(#new_url, "http://gate.aspero.pro/?site=");
-			strncat(#new_url, _open_URL, URL_SIZE);
-			http.get(#new_url);
+			strcpy(#new_url_full, "http://gate.aspero.pro/?site=");
+			strncat(#new_url_full, #new_url, URL_SIZE);
+			http.get(#new_url_full);
 		}
 
 		DrawOmnibox();
@@ -631,34 +638,56 @@ void OpenPage(dword _open_URL)
 	}
 }
 
-void EventClickLink(dword _click_URL)
+
+bool EventClickAnchor()
+{
+	dword aURL = links.active_url;
+
+	if (anchors.get_pos_by_name(aURL+1)!=-1) {
+		WB1.list.first = anchors.get_pos_by_name(aURL+1);
+		//WB1.list.CheckDoesValuesOkey();
+		strcpy(#editURL, history.current());
+		strcat(#editURL, aURL);
+		DrawOmnibox();
+		WB1.DrawPage();
+		return true;
+	}
+	return false;
+}
+
+void EventClickLink(dword _target)
 {
 	char new_url[URL_SIZE+1];
 	char new_url_full[URL_SIZE+1];
+	dword aURL = GetAbsoluteActiveURL();
+	if (!aURL) return;
 
-	if (open_new_window) {
-		strncpy(#new_url, _click_URL, sizeof(new_url));
-		GetAbsoluteURL(#new_url, history.current());
+	strcpy(#new_url, aURL);
+
+	if (ESBYTE[aURL]=='#') {
+		if (_target == TARGET_SAME_TAB) {
+			EventClickAnchor(); 
+			return;
+		} else {
+			strcpy(#new_url, history.current());
+			strcat(#new_url, aURL);
+		}
+	}
+
+	if (_target == TARGET_NEW_TAB) {
+		EventOpenNewTab(#new_url);
+		return;
+	}
+
+	if (_target == TARGET_NEW_WINDOW) {
 		strcpy(#new_url_full, "-new ");
-		strncat(#new_url_full, #new_url, sizeof(new_url_full));
+		strncat(#new_url_full, #new_url, URL_SIZE);
 		RunProgram(#program_path, #new_url_full);
 		return;
 	}
 
-	if (ESBYTE[_click_URL]=='#') {
-		if (anchors.get_pos_by_name(_click_URL+1)!=-1) {
-			WB1.list.first = anchors.get_pos_by_name(_click_URL+1);
-			WB1.list.CheckDoesValuesOkey();
-		}
-		strcpy(#editURL, history.current());
-		strcat(#editURL, _click_URL);
-		DrawOmnibox();
-		WB1.DrawPage();
-		return;
-	}
-
-	if (!strncmp(_click_URL,"mailto:", 7)) || (!strncmp(_click_URL,"tel:", 4)) {
-		notify(_click_URL);
+	if (!strncmp(#new_url,"mailto:", 7)) || (!strncmp(#new_url,"tel:", 4)) {
+		notify(#new_url);
 		return;
 	}
 
@@ -666,9 +695,6 @@ void EventClickLink(dword _click_URL)
 		StopLoading();
 		history.back();
 	}
-
-	strcpy(#new_url, _click_URL);
-	GetAbsoluteURL(#new_url, history.current());
 
 	if (strrchr(#new_url, '#')!=0) {
 		anchors.take_anchor_from(#new_url);
@@ -717,7 +743,7 @@ void EventSubmitOmnibox()
 		OpenPage(#editURL);
 	} else {
 		strcpy(#new_url, "http://");
-		strncat(#new_url, #editURL, sizeof(new_url)-1);
+		strncat(#new_url, #editURL, URL_SIZE-1);
 		OpenPage(#new_url);
 	}
 }
@@ -733,7 +759,7 @@ void LoadInternalPage(dword _bufdata, _in_bufsize){
 			DrawOmnibox();
 		}
 		WB1.ParseHtml(_bufdata, _in_bufsize);
-		DrawStatusBar(NULL);
+		DrawStatusBar();
 		DrawActiveTab();
 		if (source_mode) {
 			source_mode = false;
@@ -784,7 +810,7 @@ void EventShowMainMenu()
 
 void EventShowEncodingsList()
 {
-	open_lmenu(Form.left + Form.cwidth, Form.top + skin_height + status_text.start_y + 8, 
+	open_lmenu(Form.left + Form.cwidth, Form.top + skin_height + Form.cheight - STATUSBAR_H + 12, 
 		MENU_ALIGN_BOT_RIGHT, WB1.cur_encoding + 1, "UTF-8\nKOI8-RU\nCP1251\nCP1252\nISO8859-5\nCP866");
 	menu_id = ENCODINGS;
 }
@@ -895,23 +921,17 @@ void EventUpdateBrowser()
 	}
 }
 
-void DrawStatusBar(dword _status_text)
+void DrawStatusBar()
 {
-	status_text.font_color = sc.work_text;
-	status_text.start_x = 10;
-	status_text.start_y = Form.cheight - STATUSBAR_H + 4;
-	status_text.area_size_x = Form.cwidth - status_text.start_x -3 - 70;
-	//DrawBar(status_text.start_x, status_text.start_y, status_text.area_size_x, 9, sc.work);
+	dword status_y = Form.cheight - STATUSBAR_H + 4;
+	dword status_w = Form.cwidth - 90;
 	DrawBar(0,Form.cheight - STATUSBAR_H+1, Form.cwidth,STATUSBAR_H-1, sc.work);
-	if (_status_text) {
-		status_text.text_pointer = _status_text;
-		PathShow_prepare stdcall(#status_text);
-		PathShow_draw stdcall(#status_text);		
+	if (links.active_url) {
+		ESI = math.min(status_w/6, strlen(links.active_url));
+		WriteText(10, status_y, 0, sc.work_text, links.active_url);
 	}
-	DefineHiddenButton(status_text.start_x+status_text.area_size_x+10, status_text.start_y-3,
-		60, 12, CHANGE_ENCODING);
-	WriteTextCenter(status_text.start_x+status_text.area_size_x+10,
-		status_text.start_y, 60, sc.work_text, WB1.cur_encoding*10+#charsets);
+	DefineHiddenButton(status_w+20, status_y-3, 60, 12, CHANGE_ENCODING);
+	WriteTextCenter(status_w+20, status_y, 60, sc.work_text, WB1.cur_encoding*10+#charsets);
 }
 
 void DrawOmnibox()
@@ -941,5 +961,15 @@ void SetOmniboxText(dword _text)
 	DrawOmnibox();
 }
 
+dword GetAbsoluteActiveURL()
+{
+	char abs_url[URL_SIZE];
+	if (links.active_url) {
+		strncpy(#abs_url, links.active_url, URL_SIZE);
+		GetAbsoluteURL(#abs_url, history.current());		
+		return #abs_url;
+	}
+	return 0;
+}
 
 stop:

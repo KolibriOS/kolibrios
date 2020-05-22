@@ -73,8 +73,8 @@ void ImageCache::Images(dword left1, top1, width1)
 	DrawBar(WB1.list.x, top1+imgh, WB1.list.w, -imgh % WB1.list.item_h + WB1.list.item_h, page_bg);
 	if (link)
 	{
-		UnsafeDefineButton(left1 - 5, top1, imgw, imgh-1, PageLinks.count + 400 + BT_HIDE, 0xB5BFC9);
-		PageLinks.AddText(0, imgw, imgh-1, NOLINE, 1);
+		UnsafeDefineButton(left1 - 5, top1, imgw, imgh-1, links.count + 400 + BT_HIDE, 0xB5BFC9);
+		links.AddText(0, imgw, imgh-1, NOLINE, 1);
 		WB1.DrawPage();
 	} 
 	*/

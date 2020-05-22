@@ -37,7 +37,7 @@ void _anchors::take_anchor_from(dword _URL)
 	int anchor_pos;
 	if (!current) && (_URL) && (anchor_pos = strrchr(_URL, '#')) {
 		strncpy(#current, _URL+anchor_pos-1, sizeof(_anchors.current)-1);
-		ESBYTE[_URL+anchor_pos-1] = EOS;
+		ESBYTE[_URL+anchor_pos-1] = '\0';
 	}
 }
 

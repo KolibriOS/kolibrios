@@ -64,7 +64,7 @@ struct PathShow_data
 dword type;
 word start_y,
 	start_x,
-	font_size_x,    // 6 - for font 0, 8 - for font 1
+	font_w,    // 6 - for font 0, 8 - for font 1
 	area_size_x;
 dword font_number,  // 0 - monospace, 1 - variable
 	background_flag,

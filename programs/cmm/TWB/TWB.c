@@ -35,7 +35,6 @@ struct TWebBrowser {
 	dword o_bufpointer;
 	int cur_encoding, custom_encoding;
 	bool link, t_html, t_body;
-	dword link_bg;
 	dword bufpointer;
 	dword bufsize;
 	dword is_html;
@@ -106,7 +105,7 @@ void TWebBrowser::Paint()
 		if (link) {
 			if (line[0]==' ') && (line[1]==NULL) {} else {
 				DrawBuf.DrawBar(start_x, draw_y + list.item_h - calc(zoom*2)-1, line_length, zoom, link_color_default);
-				PageLinks.AddText(start_x, draw_y + list.y, line_length, list.item_h - calc(zoom*2)-1, UNDERLINE, zoom);				
+				links.add_text(start_x, draw_y + list.y, line_length, list.item_h - calc(zoom*2)-1, zoom);				
 			}
 		}
 		stolbec += stolbec_len;
@@ -123,10 +122,9 @@ void TWebBrowser::SetPageDefaults()
 	link_color_default = 0x0000FF;
 	link_color_active = 0xFF0000;
 	page_bg = 0xFFFFFF;
-	link_bg = 0xFFFFFF;
 	style.bg_color = page_bg;
 	DrawBuf.Fill(0, page_bg);
-	PageLinks.Clear();
+	links.clear();
 	anchors.clear();
 	header = NULL;
 	cur_encoding = CH_CP866;
@@ -341,10 +339,9 @@ void TWebBrowser::SetStyle() {
 		t_body = tag.opened;
 		if (value = tag.get_value_of("link="))   link_color_default = GetColor(value);
 		if (value = tag.get_value_of("alink="))  link_color_active = GetColor(value);
-		if (value = tag.get_value_of("bglink=")) link_bg=GetColor(value);
 		if (value = tag.get_value_of("text="))   text_colors[0]=GetColor(value);
 		if (value = tag.get_value_of("bgcolor=")) {
-			style.bg_color = page_bg = link_bg = GetColor(value);
+			style.bg_color = page_bg = GetColor(value);
 			DrawBuf.Fill(0, page_bg);
 		}
 		// Autodetecting encoding if no encoding was set
@@ -366,8 +363,7 @@ void TWebBrowser::SetStyle() {
 			if (value = tag.get_value_of("href=")) && (!strstr(value,"javascript:"))
 			{
 				link = true;
-				PageLinks.AddLink(value);
-				style.bg_color = link_bg;
+				links.add_link(value);
 			}
 		} else {
 			link = false;
@@ -380,7 +376,7 @@ void TWebBrowser::SetStyle() {
 		strcpy(#line, "IFRAME: ");
 		Paint();
 		link=true;
-		PageLinks.AddLink(value);
+		links.add_link(value);
 		strncpy(#line, value, sizeof(line)-1);
 		while (CheckForLineBreak()) {};
 		Paint();

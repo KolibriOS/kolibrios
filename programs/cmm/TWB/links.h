@@ -2,153 +2,111 @@ CustomCursor CursorPointer;
 dword CursorFile = FROM "../TWB/pointer.cur";
 #include "..\lib\collection.h"
 
-#define NOLINE    0
-#define UNDERLINE 1
+struct PAGE_LINKS {
+	collection_int link;
+	collection_int x;
+	collection_int y;
+	collection_int w;
+	collection_int h;
+	collection_int id;
+	collection_int underline_h;
 
-#define MAXLINKS 2000
-
-bool open_new_window=false;
-bool open_new_tab=false;
-
-struct array_link {
-	dword link;
-	unsigned int x,y,w,h;
-	unsigned int unic_id;
-	int underline, underline_h;
-};
-
-struct LinksArray {
-	array_link links[MAXLINKS];
 	collection page_links;
-	unsigned int count;
-	unsigned int unic_count;
-	unsigned int active;
-	bool HoverAndProceed();
-	bool Click();
-	void AddLink();
-	void AddText();
-	dword GetURL();
-	void Clear();
-	void DrawUnderline();
-} PageLinks;
+	signed int active;
+	dword active_url;
+	bool hover();
+	void add_link();
+	void add_text();
+	void clear();
+	void draw_underline();
+} links;
 
-void LinksArray::AddLink(dword lpath)
+void PAGE_LINKS::add_link(dword lpath)
 {
-	if (count>= MAXLINKS) return;
 	page_links.add(lpath);
-	unic_count++;
 }
 
-void LinksArray::AddText(dword _x, _y, _w, _h, _link_underline, _underline_h)
+void PAGE_LINKS::add_text(dword _x, _y, _w, _h, _underline_h)
 {
-	if (count>= MAXLINKS) return;
-	links[count].x = _x;
-	links[count].y = _y;
-	links[count].w = _w;
-	links[count].h = _h;
-	links[count].underline = _link_underline;
-	links[count].underline_h = _underline_h;
-	links[count].link = page_links.get(page_links.count-1);
-	links[count].unic_id = unic_count;
-	count++;
+	x.add(_x);
+	y.add(_y);
+	w.add(_w);
+	h.add(_h);
+	underline_h.add(_underline_h);
+	link.add(page_links.get_last());
+	id.add(page_links.count);
 }
 
-dword LinksArray::GetURL(int id)
+void PAGE_LINKS::clear()
 {
-	return links[id].link;
-}
+	x.drop();
+	y.drop();
+	w.drop();
+	h.drop();
+	underline_h.drop();
+	link.drop();
+	id.drop();
 
-void LinksArray::Clear()
-{
 	page_links.drop();
 	page_links.realloc_size = 4096 * 32;
-	count = 0;
 	active = -1;
-	unic_count = 0;
+	active_url = 0;
 	CursorPointer.Restore();
-	open_new_window = false;
 }
 
-void LinksArray::DrawUnderline(dword und_id, list_first, list_y, color)
+void PAGE_LINKS::draw_underline(signed _id, dword list_first, list_y, color)
 {
 	int i;
-	for (i=0; i<count; i++) 
+	if (_id == -1) return;
+	for (i=0; i<id.count; i++) 
 	{
-		if (links[i].unic_id==links[und_id].unic_id) && (links[i].y + links[i].h - list_first > list_y) {
-			DrawBar(links[i].x, links[i].y + links[i].h - list_first, links[i].w, links[i].underline_h, color);
+		if (id.get(i) - id.get(_id) == 0) 
+		&& (y.get(i) + h.get(i) - list_first > list_y) {
+			DrawBar(x.get(i), y.get(i) + h.get(i) - list_first, 
+				w.get(i), underline_h.get(i), color);
 		}		
 	}
 }
 
-PathShow_data status_text = {0, 17,250, 6, 250};
-
-bool LinksArray::Click(dword list_first)
-{
-	if (mouse.lkm) && (mouse.down) {
-		DrawRectangle(links[active].x, -list_first + links[active].y, 
-		links[active].w, links[active].h, 0);
-		return false;
-	}
-	if (mouse.mkm) && (mouse.up) {
-		if (key_modifier&KEY_LSHIFT) || (key_modifier&KEY_RSHIFT) {
-			open_new_window = true;
-			EventClickLink(PageLinks.GetURL(PageLinks.active));
-			open_new_window = false;
-		} else {
-			open_new_tab = true;
-			EventClickLink(PageLinks.GetURL(PageLinks.active));
-			open_new_tab = false;
-		}
-		return false;
-	}
-	if (mouse.lkm) && (mouse.up) { 
-		CursorPointer.Restore();
-		EventClickLink(PageLinks.GetURL(PageLinks.active));
-		return false;
-	}
-	if (mouse.pkm) && (mouse.up) { 
-		EventShowLinkMenu();
-		return false;
-	}
-}
-
-bool LinksArray::HoverAndProceed(dword mx, my, list_y, list_first)
+bool PAGE_LINKS::hover(dword list_y, list_first)
 {
 	int i;
-	if (!count) return true;
-	for (i=0; i<count; i++)
+	int mx = mouse.x;
+	int my = mouse.y + list_first;
+	if (!id.count) return false;
+
+	//Here we check is any link hovered
+	for (i=0; i<id.count; i++)
 	{
-		if (mx>links[i].x) && (my>links[i].y) 
-		&& (mx<links[i].x+links[i].w) && (my<links[i].y+links[i].h)
+		if (mx>x.get(i)) && (my>y.get(i)) 
+		&& (mx<x.get(i)+w.get(i)) && (my<y.get(i)+h.get(i))
 		&& (my>list_y+list_first)
 		{
 			if (active!=i) {
 				CursorPointer.Load(#CursorFile);
 				CursorPointer.Set();
 
-				if (links[active].underline) {
-					DrawUnderline(active, list_first, list_y, link_color_default);			
-				}
+				draw_underline(active, list_first, list_y, link_color_default);			
+				draw_underline(i, list_first, list_y, page_bg);
 
-				if (links[i].underline) {
-					DrawUnderline(i, list_first, list_y, page_bg);
-				}
-
+				active_url = link.get(i);
 				active = i;
-				DrawStatusBar(links[active].link);
+				DrawStatusBar();
 			}
-			Click(list_first);
+			if (mouse.lkm) && (mouse.down) {
+				DrawRectangle(x.get(active), -list_first + y.get(active), 
+					w.get(active), h.get(active), 0);
+			}
 			return true;
 		}
 	}
-	if (active!=-1)
-	{
+	if (active_url) {
 		CursorPointer.Restore();
-		if (links[active].underline) {
-			DrawUnderline(active, list_first, list_y, link_color_default);
-		}
-		DrawStatusBar(NULL);
+		draw_underline(active, list_first, list_y, link_color_default);
+		active_url = 0;
 		active = -1;
+		DrawStatusBar();
 	}
+	return false;
 }
 

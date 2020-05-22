@@ -1,4 +1,4 @@
-char version[]="WebView 2.5e";
+char version[]="WebView 2.6";
 
 #ifdef LANG_RUS
 char page_not_found[] = FROM "html\\page_not_found_ru.htm""\0";

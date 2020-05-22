@@ -27,7 +27,7 @@ void draw_ascii()
 {
 	char s[2];
 	int i, x, y;
-	s[1]=EOS;
+	s[1] = '\0';
 	for (i=0; i<256; i++) {
 		y = i / 20;
 		x = i % 20;
