@@ -1,6 +1,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;                                                                 ;;
-;; Copyright (C) KolibriOS team 2004-2015. All rights reserved.    ;;
+;; Copyright (C) KolibriOS team 2004-2020. All rights reserved.    ;;
 ;; Distributed under terms of the GNU General Public License       ;;
 ;;                                                                 ;;
 ;;  HTTP library for KolibriOS                                     ;;
@@ -28,13 +28,15 @@ FLAG_KEEPALIVE          = 1 shl 8
 FLAG_STREAM             = 1 shl 9
 FLAG_REUSE_BUFFER       = 1 shl 10
 FLAG_BLOCK              = 1 shl 11
+FLAG_RING               = 1 shl 12
 
 ; error
 FLAG_INVALID_HEADER     = 1 shl 16
-FLAG_NO_RAM             = 1 shl 17
+FLAG_NO_RAM             = 1 shl 17      ; alloc failed
 FLAG_SOCKET_ERROR       = 1 shl 18
 FLAG_TIMEOUT_ERROR      = 1 shl 19
 FLAG_TRANSFER_FAILED    = 1 shl 20
+FLAG_NEED_MORE_SPACE    = 1 shl 21      ; need more space in existing buffer
 
 struc http_msg {
 
