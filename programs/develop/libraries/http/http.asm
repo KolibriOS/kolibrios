@@ -669,7 +669,7 @@ proc HTTP_receive identifier ;//////////////////////////////////////////////////
         jne     .receive
 
         test    [ebp + http_msg.flags], FLAG_RING
-        jz      .need_more_space
+        jnz     .need_more_space
 
         test    [ebp + http_msg.flags], FLAG_STREAM
         jz      .err_header
