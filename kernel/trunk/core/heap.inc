@@ -1518,3 +1518,72 @@ proc shmem_close stdcall, name:dword
         ret
 endp
 
+
+
+proc    user_ring stdcall, size:dword
+
+locals
+        virt_ptr        dd ?
+        phys_ptr        dd ?
+        num_pages       dd ?
+endl
+
+; Size must be an exact multiple of pagesize
+        mov     eax, size
+        test    eax, PAGE_SIZE-1
+        jnz     .exit
+
+; We must have at least one complete page
+        shr     eax, 12
+        jz      .exit
+        mov     [num_pages], eax
+
+; Allocate double the virtual memory
+        mov     eax, [size]
+        shl     eax, 1
+        jz      .exit
+        stdcall user_alloc, eax
+        test    eax, eax
+        jz      .exit
+        mov     [virt_ptr], eax
+
+; Now allocate physical memory
+        stdcall alloc_pages, [num_pages]
+        test    eax, eax
+        jz      .exit_free_virt
+        mov     [phys_ptr], eax
+
+; Map first half of virtual memory to physical memory
+        push    ecx esi edi
+        mov     ecx, [num_pages]
+        mov     esi, [virt_ptr]
+        mov     edi, [phys_ptr]
+  .loop1:
+        stdcall map_page, esi, edi, PG_UWR
+        add     esi, PAGE_SIZE
+        add     edi, PAGE_SIZE
+        dec     ecx
+        jnz     .loop1
+
+; Map second half of virtual memory to same physical memory
+        mov     ecx, [pages]
+        mov     edi, [phys_ptr]
+  .loop2:
+        stdcall map_page, esi, edi, PG_UWR
+        add     esi, PAGE_SIZE
+        add     edi, PAGE_SIZE
+        dec     ecx
+        jnz     .loop2
+        pop     edi esi ecx
+
+        mov     eax, [virt_ptr]
+        ret
+
+  .exit_free_virt:
+        stdcall user_free, [virt_ptr]
+
+  .exit:
+        xor     eax, eax
+        ret
+
+endp

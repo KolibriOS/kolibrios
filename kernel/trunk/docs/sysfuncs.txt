@@ -3612,6 +3612,25 @@ Returned value:
   * edx = size of the loaded file, or zero
 Remarks:
   * function loads file and unpacks, if necessary
+======================================================================
+======== Function 68, subfunction 29 - allocate ring memory. =========
+======================================================================
+Parameters:
+  * eax = 68 - function number
+  * ebx = 29 - subfunction number
+  * ecx = required size in bytes
+Returned value:
+  * eax = 0 - failed
+  * eax = pointer to the allocated ring
+Remarks:
+  * The requested size must be an exact multiple of pagesize (4 Kb)
+  * The function allocates memory in such a way that you can read and
+    write beyond the size of the allocated memory and will reach the 
+    beginning of the buffer again.
+
+---------------------- Constants for registers: ----------------------
+  eax - SF_SYS_MISC (68)
+  ebx - SSF_MEM_ALLOC_RING (29)  
 
 ======================================================================
 ====================== Function 69 - debugging. ======================

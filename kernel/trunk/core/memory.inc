@@ -1,6 +1,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;                                                              ;;
-;; Copyright (C) KolibriOS team 2004-2015. All rights reserved. ;;
+;; Copyright (C) KolibriOS team 2004-2020. All rights reserved. ;;
 ;; Distributed under terms of the GNU General Public License    ;;
 ;;                                                              ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -78,7 +78,7 @@ proc alloc_pages stdcall, count:dword
 .find:
         mov     edx, [count]
         mov     edi, ecx
-.match:
+  .match:
         cmp     byte [ecx], 0xFF
         jne     .next
         dec     edx
@@ -86,14 +86,14 @@ proc alloc_pages stdcall, count:dword
         inc     ecx
         cmp     ecx, ebx
         jb      .match
-.out_of_memory:
-.fail:
+  .out_of_memory:
+  .fail:
         xor     eax, eax
         pop     edi
         pop     ebx
         popfd
         ret
-.next:
+  .next:
         inc     ecx
         cmp     ecx, ebx
         jb      .find
@@ -102,7 +102,7 @@ proc alloc_pages stdcall, count:dword
         popfd
         xor     eax, eax
         ret
-.ok:
+  .ok:
         sub     ecx, edi
         inc     ecx
         push    esi
@@ -1103,7 +1103,7 @@ f68:
         jbe     sys_sheduler
         cmp     ebx, 11
         jb      undefined_syscall
-        cmp     ebx, 28
+        cmp     ebx, 29
         ja      undefined_syscall
         xor     eax, eax
         jmp     dword [f68call+ebx*4-11*4]
@@ -1220,6 +1220,11 @@ f68:
         stdcall kernel_free, ebp
         ret
 
+.29:
+        stdcall user_ring, ecx
+        mov     [esp+SYSCALL_STACK._eax], eax
+        ret
+
 .fail:
         mov     [esp+SYSCALL_STACK._eax], eax
         ret
@@ -1245,6 +1250,7 @@ f68call:   ; keep this table closer to main code
            dd f68.26   ; user_unmap
            dd f68.27   ; load_file_umode
            dd f68.28   ; loadFileUnicode
+           dd f68.29   ; user_ring
 
 align 4
 proc load_pe_driver stdcall, file:dword, cmdline:dword
