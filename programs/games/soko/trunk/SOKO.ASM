@@ -33,8 +33,6 @@ include 'macros.inc'    ; decrease code size (optional)
 include 'CELLTYPE.INC'  ; object identifiers
 ;include 'debug.inc'
 
-CUR_DIR equ '/sys/games/'       ; change it to appropriate path
-
 SKIN_SIZE       = 11520         ; size of skin file (16x240)
 
 ; field dimensions
@@ -93,7 +91,7 @@ START:
     mov  [inp_pos],0
   load_std:
     mov  esi,stdlev
-    mov  edi,path_end
+    mov  edi,file_name
     mov  ecx,stdlev_len-stdlev
     rep  movsb
     mov  ecx,10
@@ -293,7 +291,7 @@ still:
     mov  esi,fn_input
     mov  byte[esi+ecx],0
     inc  ecx
-    mov  edi,path_end
+    mov  edi,file_name
     rep  movsb
     jmp  reset_fi
   no_load:
@@ -1115,8 +1113,7 @@ file_info:
            dd 0, 0              ; file offset
            dd 0x20000           ; number of bytes to read
 cnf_level  dd strip             ; data buffer
-file_name  db CUR_DIR           ; Filename
-path_end   db 'SKIN.'
+file_name  db 'SKIN.'
 file_num   db 'RAW',0
 
            rb 256-($-file_name)
