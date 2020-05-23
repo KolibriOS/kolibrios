@@ -115,7 +115,7 @@ void SetProperties(int mode)
 			{
 				if (getElementSelectedFlag(i) == true) 
 				{
-					sprintf(#pcur_file,"%s/%s",#path,file_mas[i]*304+buf+72);
+					sprintf(#pcur_file,"%s/%s",#path,items.get(i)*304+buf+72);
 					SetPropertiesFile(#pcur_file, #file_info_general);
 					if (SET_PROPERTIES_ALL_SUBFOLDER == mode) {
 						if (dir_exists(#pcur_file)) SetPropertiesDir(#pcur_file);
@@ -157,8 +157,8 @@ void GetSizeMoreFiles(dword way)
 	{
 		if (getElementSelectedFlag(i) == true) 
 		{
-			sprintf(#cur_file,"%s/%s",way,file_mas[i]*304+buf+72);
-			if (TestBit(ESDWORD[file_mas[i]*304+buf+32], 4) )
+			sprintf(#cur_file,"%s/%s",way,items.get(i)*304+buf+72);
+			if (TestBit(ESDWORD[items.get(i)*304+buf+32], 4) )
 			{
 				more_files_count.calculate_loop(#cur_file);
 				more_files_count.folders++;

@@ -17,7 +17,7 @@ SOFTWARE CENTER v2.86
 
 proc_info Form;
 llist list;
-collection app_path_collection;
+collection app_path_collection=0;
 bool kolibrios_mounted;
 
 int window_width,

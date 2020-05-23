@@ -58,7 +58,7 @@ proc_info Form;
 #define WINDOW_STEP_DRIVER_LIST 2;
 char window_step = WINDOW_STEP_INTRO;
 
-collection ini_sections;
+collection ini_sections=0;
 
 char drvinf_path[4096] = "/kolibrios/drivers/drvinf.ini";
 char cur_version[64];

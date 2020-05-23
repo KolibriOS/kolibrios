@@ -7,7 +7,7 @@ struct _anchors {
 	int get_pos_by_name();
 	void clear();
 	void take_anchor_from();
-} anchors;
+} anchors=0;
 
 void _anchors::add(dword _name, _pos)
 {

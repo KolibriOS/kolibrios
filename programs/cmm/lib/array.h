@@ -41,7 +41,7 @@
 :byte Array::init(dword size)
 {
 	dword pointer = 0;
-	if (!size) size = 8;
+	if (!size) size = 240;
 	IF(!memory)
 	{
 		lenInitSize = size * 17;

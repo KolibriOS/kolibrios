@@ -10,8 +10,8 @@
 #define SEP_H 4
 
 llist menu1;
-collection names;
-collection hotkeys;
+collection names=0;
+collection hotkeys=0;
 
 int selected, win_x, win_y;
 

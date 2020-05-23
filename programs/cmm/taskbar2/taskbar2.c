@@ -26,7 +26,7 @@
 
 int current_process_id = 0;
 int proc_list[256];
-collection attached;
+collection attached=0;
 
 llist list;
 

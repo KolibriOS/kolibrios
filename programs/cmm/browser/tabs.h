@@ -7,8 +7,8 @@
 
 #define TABS_MAX 5
 
-TWebBrowser data[TABS_MAX+1];
-_history tabstory[TABS_MAX+1];
+TWebBrowser data[TABS_MAX+1]=0;
+_history tabstory[TABS_MAX+1]=0;
 
 struct TAB
 {

@@ -89,7 +89,7 @@ llist files, files_active, files_inactive;
 byte list_full_redraw;
 
 dword buf;
-dword file_mas[6898];
+collection_int items=0;
 int selected_count;
 int count_dir;
 
@@ -585,7 +585,7 @@ void DrawStatusBar()
 	char status_bar_str[80];
 	int go_up_folder_exists=0;
 	if (!show_status_bar.checked) return;
-	if (files.count>0) && (strcmp(file_mas[0]*304+buf+72,"..")==0) go_up_folder_exists=1;
+	if (files.count>0) && (streq(items.get(0)*304+buf+72,"..")) go_up_folder_exists=1;
 	DrawBar(0, Form.cheight - status_bar_h, Form.cwidth,  status_bar_h, sc.work);
 	sprintf(#status_bar_str, T_STATUS_EVEMENTS, count_dir-go_up_folder_exists, files.count-count_dir);
 	WriteText(6,Form.cheight - 13,0x80,sc.work_text,#status_bar_str);
@@ -721,7 +721,7 @@ void Line_ReDraw(dword bgcol, filenum){
 	if (colored_lines.checked) && (bgcol!=col.selec) && (filenum%2) bgcol=col.odd_line;
 	DrawBar(files.x+icon_size+4,y,files.w-icon_size-4,files.item_h,bgcol);
 
-	file_offet = file_mas[filenum+files.first]*304 + buf+32;
+	file_offet = items.get(filenum+files.first)*304 + buf+32;
 	attr = ESDWORD[file_offet];
 	file.selected = ESBYTE[file_offet+7];
 	file.sizelo   = ESDWORD[file_offet+32];
@@ -806,8 +806,6 @@ void Open_Dir(dword dir_path, redraw){
 			Write_Error(errornum);
 			return;
 		}
-		maxcount = sizeof(file_mas)/sizeof(dword)-1;
-		if (files.count>maxcount) files.count = maxcount;
 		if (files.count>0) && (files.cur_y-files.first==-1) files.cur_y=0;
 	}
 	if (files.count!=-1)
@@ -835,11 +833,14 @@ inline Sorting()
 {
 	dword d=0, f=1;
 	int j=0;
+	dword tmp;
 	dword file_off;
+
+	items.drop();
 
 	if (!strcmp(#path,"/")) //do not sort root folder
 	{
-		for(d=1;d<files.count;d++;) file_mas[d]=d;
+		for(d=1;d<files.count;d++;) items.set(d, d);
 		count_dir = d;
 		return;
 	}
@@ -848,12 +849,12 @@ inline Sorting()
 		if (dir_at_fat16) && (file_name_is_8_3(file_off+40)) strttl(file_off+40);
 		if (TestBit(ESDWORD[file_off],4)) //directory?
 		{
-			file_mas[d]=j;
+			items.set(d, j);
 			d++;
 		}
 		else
 		{
-			file_mas[files.count-f]=j;
+			items.set(files.count-f, j);
 			f++;
 		}
 	}
@@ -865,12 +866,14 @@ inline Sorting()
 	else if (sort_type==3) Sort_by_Size(d,files.count-1);
 	//reversed sorting
 	if (sort_desc) {
-		for (j=0; j<f/2; j++) file_mas[files.count-j-1]><file_mas[d+j];
-		//if (sort_type==1) for (j=0; j<d/2; j++) file_mas[d-j]><file_mas[j];
+		for (j=0; j<f/2; j++) {
+			items.swap(files.count-j-1, d+j);
+		}
+		//if (sort_type==1) for (j=0; j<d/2; j++) items[d-j]><items[j];
 	}
 	//make ".." first item in list
-	if (d>0) && (strncmp(file_mas[0]*304+buf+72,"..",2)!=0)
-		for(d--; d>0; d--;) if (!strncmp(file_mas[d]*304+buf+72,"..",2)) {file_mas[d]><file_mas[0]; break;}
+	if (d>0) && (strncmp(items.get(0)*304+buf+72,"..",2)!=0)
+		for(d--; d>0; d--;) if (!strncmp(items.get(d)*304+buf+72,"..",2)) {items.swap(d,0); break;}
 }
 
 
@@ -913,7 +916,7 @@ void SelectFileByName(dword that_file)
 	files.KeyHome();
 	Open_Dir(#path,ONLY_OPEN);
 	if (dir_at_fat16) && (file_name_is_8_3(that_file)) strttl(that_file);
-	for (ind=files.count-1; ind>=0; ind--;) { if (!strcmp(file_mas[ind]*304+buf+72,that_file)) break; }
+	for (ind=files.count-1; ind>=0; ind--;) { if (streq(items.get(ind)*304+buf+72,that_file)) break; }
 	files.cur_y = ind - 1;
 	files.KeyDown();
 	DrawStatusBar();
@@ -1150,7 +1153,7 @@ void EventSelectFileByKeyPress()
 	int i;
 	for (i=files.cur_y+1; i<files.count; i++)
 	{
-		strcpy(#temp, file_mas[i]*304+buf+72);
+		strcpy(#temp, items.get(i)*304+buf+72);
 		if (temp[0]==key_ascii) || (temp[0]==key_ascii-32)
 		{
 			files.cur_y = i - 1;

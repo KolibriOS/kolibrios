@@ -12,7 +12,7 @@ struct _tag
 	bool parse_params();
 	bool get_next_param();
 	dword get_value_of();
-} tag;
+} tag=0;
 
 bool _tag::is(dword _text) 
 { 

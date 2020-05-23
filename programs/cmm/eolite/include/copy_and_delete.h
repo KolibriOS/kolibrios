@@ -6,9 +6,9 @@
 //===================================================//
 
 void setElementSelectedFlag(dword n, int state) {
-	dword selected_offset = file_mas[n]*304 + buf+32 + 7;
+	dword selected_offset = items.get(n)*304 + buf+32 + 7;
 	ESBYTE[selected_offset] = state;
-	if (n==0) && (strncmp(file_mas[n]*304+buf+72,"..",2)==0) {
+	if (n==0) && (strncmp(items.get(n)*304+buf+72,"..",2)==0) {
 		ESBYTE[selected_offset] = false; //do not selec ".." directory
 		return;
 	}
@@ -18,7 +18,7 @@ void setElementSelectedFlag(dword n, int state) {
 }
 
 int getElementSelectedFlag(dword n) {
-	dword selected_offset = file_mas[n]*304 + buf+32 + 7;
+	dword selected_offset = items.get(n)*304 + buf+32 + 7;
 	return ESBYTE[selected_offset];
 }
 
@@ -71,7 +71,7 @@ void EventCopy(bool _cut_active)
 	for (i=0; i<files.count; i++) 
 	{
 		if (getElementSelectedFlag(i) == true) {
-			sprintf(#copy_t,"%s/%s",#path,file_mas[i]*304+buf+72);
+			sprintf(#copy_t,"%s/%s",#path,items.get(i)*304+buf+72);
 			path_len = strlen(#copy_t);
 			size_buf += path_len + 1;
 		}
@@ -85,7 +85,7 @@ void EventCopy(bool _cut_active)
 	for (i=0; i<files.count; i++) 
 	{
 		if (getElementSelectedFlag(i) == true) {
-			sprintf(copy_buf_offset,"%s/%s",#path,file_mas[i]*304+buf+72);
+			sprintf(copy_buf_offset,"%s/%s",#path,items.get(i)*304+buf+72);
 			copy_buf_offset += strlen(copy_buf_offset) + 1;
 		}
 	}
@@ -216,7 +216,7 @@ void DeleteSelectedElements()
 	for (i=0; i<files.count; i++) 
 	{
 		if (getElementSelectedFlag(i) == true) {
-			sprintf(#del_from,"%s/%s",#path,file_mas[i]*304+buf+72);
+			sprintf(#del_from,"%s/%s",#path,items.get(i)*304+buf+72);
 			copy_bar.max += GetFilesCount(#del_from);
 		}
 	}	
@@ -226,7 +226,7 @@ void DeleteSelectedElements()
 	for (i=0; i<files.count; i++) 
 	{
 		if (getElementSelectedFlag(i) == true) {
-			sprintf(#del_from,"%s/%s", #path, file_mas[i]*304+buf+72);
+			sprintf(#del_from,"%s/%s", #path, items.get(i)*304+buf+72);
 			Del_File2(#del_from, 1);
 		}
 	}

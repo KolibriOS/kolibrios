@@ -44,7 +44,7 @@ struct _SystemDiscs
 	void Get();
 	void Draw();
 	void Click();
-} SystemDiscs;
+} SystemDiscs=0;
 
 
 void GetDiskIconAndName(char disk_first_letter, dword dev_icon, disc_name)

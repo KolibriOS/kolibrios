@@ -116,7 +116,7 @@ dword bufsize;
 scroll_bar scroll_v = { SCROLL_SIZE,200,398,44,0,2,115,15,0,0xeeeeee,0xBBBbbb,0xeeeeee,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1};
 scroll_bar scroll_h = { SCROLL_SIZE,200,398,44,0,2,115,15,0,0xeeeeee,0xBBBbbb,0xeeeeee,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1};
 
-collection s;
+collection s=0;
 
 //===================================================//
 //                                                   //
