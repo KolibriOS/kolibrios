@@ -2,8 +2,6 @@
 #define INCLUDE_COLLECTION_H
 #print "[include <collection.h>]\n"
 
-#include "array.h"
-
 /*========================================================
 =                                                        =
 =                       Integer                          =
