@@ -1,6 +1,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;                                                                 ;;
-;; Copyright (C) KolibriOS team 2004-2017. All rights reserved.    ;;
+;; Copyright (C) KolibriOS team 2004-2020. All rights reserved.    ;;
 ;; Distributed under terms of the GNU General Public License       ;;
 ;;                                                                 ;;
 ;;  Part of the TCP/IP network stack for KolibriOS                 ;;
@@ -102,6 +102,8 @@ macro   tcp_init_socket socket {
         mov     [socket + TCP_SOCKET.SND_CWND], TCP_max_win shl TCP_max_winshift
         mov     [socket + TCP_SOCKET.SND_SSTHRESH], TCP_max_win shl TCP_max_winshift
 
+        mov     [socket + TCP_SOCKET.RCV_SCALE], 0
+        mov     [socket + TCP_SOCKET.SND_SCALE], 0
 
 }
 
@@ -139,7 +141,9 @@ tcp_pull_out_of_band:
 ;                                                                 ;
 ;-----------------------------------------------------------------;
 align 4
-tcp_drop:    ; FIXME CHECKME TODO
+tcp_drop:
+
+;;; TODO: check if error code is "Connection timed out' and handle accordingly
 
         DEBUGF  DEBUG_NETWORK_VERBOSE, "tcp_drop: %x\n", eax
 
@@ -152,19 +156,16 @@ tcp_drop:    ; FIXME CHECKME TODO
         call    tcp_output
         pop     eax
 
-;;; TODO: update stats
+        inc     [TCPS_drops]
 
+        mov     [eax + SOCKET.errorcode], ebx
         jmp     tcp_close
 
   .no_syn_received:
+        inc     [TCPS_conndrops]
 
-;;; TODO: update stats
-
-;;; TODO: check if error code is "Connection timed out' and handle accordingly
-
-;        mov     [eax + SOCKET.errorcode], ebx
-
-
+        mov     [eax + SOCKET.errorcode], ebx
+        jmp     tcp_close
 
 
 ;-----------------------------------------------------------------;

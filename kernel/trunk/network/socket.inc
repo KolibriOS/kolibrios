@@ -1,6 +1,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;                                                                 ;;
-;; Copyright (C) KolibriOS team 2004-2019. All rights reserved.    ;;
+;; Copyright (C) KolibriOS team 2004-2020. All rights reserved.    ;;
 ;; Distributed under terms of the GNU General Public License       ;;
 ;;                                                                 ;;
 ;;  Part of the TCP/IP network stack for KolibriOS                 ;;
@@ -292,7 +292,7 @@ sys_socket:
 align 4
 socket_open:
 
-        DEBUGF  DEBUG_NETWORK_VERBOSE, "SOCKET_open: domain=%u type=%u protocol=%x ", ecx, edx, esi
+        DEBUGF  DEBUG_NETWORK_VERBOSE, "SOCKET_open: domain=%u type=%u protocol=%x\n", ecx, edx, esi
 
         push    ecx edx esi
         call    socket_alloc
@@ -301,7 +301,7 @@ socket_open:
         jz      .nobuffs
 
         mov     [esp+32], edi           ; return socketnumber
-        DEBUGF  DEBUG_NETWORK_VERBOSE, "socknum=%u\n", edi
+        DEBUGF  DEBUG_NETWORK_VERBOSE, "SOCKET_open: socknum=%u\n", edi
 
         test    edx, SO_NONBLOCK
         jz      @f
@@ -374,7 +374,7 @@ align 4
   .tcp:
         mov     [eax + SOCKET.Protocol], IP_PROTO_TCP
         mov     [eax + SOCKET.snd_proc], socket_send_tcp
-        mov     [eax + SOCKET.rcv_proc], socket_receive_stream
+        mov     [eax + SOCKET.rcv_proc], socket_receive_tcp
         mov     [eax + SOCKET.connect_proc], tcp_connect
 
         tcp_init_socket eax
@@ -894,6 +894,20 @@ socket_receive_dgram:
         mov     esi, [eax + SOCKET_QUEUE_LOCATION + queue.r_ptr]
         mov     ecx, [esi + socket_queue_entry.data_size]
   @@:
+        ret
+
+align 4
+socket_receive_tcp:
+
+        call    socket_receive_stream
+
+        test    ecx, ecx
+        jz      @f
+        push    eax ebx ecx
+        call    tcp_output
+        pop     ecx ebx eax
+  @@:
+
         ret
 
 
@@ -1829,14 +1843,13 @@ socket_block:
 
         pushf
         cli
-
         ; Set the 'socket is blocked' flag
         or      [eax + SOCKET.state], SS_BLOCKED
 
         ; Suspend the thread
         push    edx
         mov     edx, [TASK_BASE]
-        mov     [edx + TASKDATA.state], 1               ; Suspended
+        mov     [edx + TASKDATA.state], TSTATE_RUN_SUSPENDED
 
         ; Remember the thread ID so we can wake it up again
         mov     edx, [edx + TASKDATA.pid]
@@ -1882,7 +1895,7 @@ socket_notify:
         cmp     [esi + TASKDATA.pid], ebx
         je      .found
         inc     ecx
-        add     esi, 0x20
+        add     esi, sizeof.TASKDATA
         cmp     ecx, [TASK_COUNT]
         jbe     .next
 
@@ -1914,7 +1927,7 @@ socket_notify:
 ; Socket and thread exists and socket is of blocking type
 ; We'll try to unblock it.
         and     [eax + SOCKET.state], not SS_BLOCKED    ; Clear the 'socket is blocked' flag
-        mov     [esi + TASKDATA.state], 0               ; Run the thread
+        mov     [esi + TASKDATA.state], TSTATE_RUNNING  ; Run the thread
 
         DEBUGF  DEBUG_NETWORK_VERBOSE, "SOCKET_notify: Unblocked socket!\n"
         pop     esi ecx ebx
