@@ -13,7 +13,7 @@ char intro[] = "Это простой просмотрщик текста.
 
 char copied_chars[] = "Скопировано сиволов: %i";
 
-char about[] = "Quark Text v0.8
+char about[] = "Quark Text v0.9
 Автор: Кирилл Липатов aka Leency
 Сайт: http://aspero.pro
 
@@ -52,7 +52,7 @@ Try to open some text file.";
 
 char copied_chars[] = "Copied %i chars";
 
-char about[] = "Quark Text v0.8
+char about[] = "Quark Text v0.9
 Author: Kiril Lipatov aka Leency 
 Website: http://aspero.pro
 

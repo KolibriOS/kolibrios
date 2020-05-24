@@ -56,6 +56,7 @@ int curcol_scheme;
 int font_size;
 
 bool enable_edit = false;
+bool search_next = false;
 
 #include "data.h"
 
@@ -315,11 +316,12 @@ void HandleMouseEvent()
 
 bool EventSearchNext()
 {
-	int new_y = search.find_next(list.first);
+	int new_y = search.find_next(list.first+1);
 	if (new_y) {
 		list.first = new_y;
 		list.CheckDoesValuesOkey();
-		DrawPage();		
+		search_next = true;
+		DrawPage();	
 	}
 }
 
@@ -690,7 +692,7 @@ void draw_window()
 	GetProcessInfo(#Form, SelfInfo);
 	sc.get();
 	if (Form.status_window>2) return;
-	if (Form.width  < 430) { MoveSize(OLD,OLD,430,OLD); return; }
+	if (Form.width  < 450) { MoveSize(OLD,OLD,450,OLD); return; }
 	if (Form.height < 200) { MoveSize(OLD,OLD,OLD,200); return; }
 	
 	button.init(40);

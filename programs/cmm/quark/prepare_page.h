@@ -68,7 +68,7 @@ void PaintVisible()
 
 		selection.draw(absolute_y);
 
-		if (search.visible) for (ff=0; ff<search.found.count; ff++) {
+		if (search.visible) || (search_next) for (ff=0; ff<search.found.count; ff++) {
 			s1 = search.found.get(ff) - lines.get(absolute_y);
 			s2 = search.found.get(ff) - lines.get(absolute_y+1);
 
@@ -77,6 +77,7 @@ void PaintVisible()
 			if (s1 > 0) && (s2 < 0) {
 				DrawBuf.DrawBar(search.found.get(ff) - lines.get(absolute_y) * list.font_w + 3,
 					ydraw, strlen(#found_text) * list.font_w, list.item_h, theme.found);
+				search_next = false;
 			}
 		}
 
