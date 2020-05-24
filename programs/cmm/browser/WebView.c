@@ -592,16 +592,26 @@ void OpenPage(dword _open_URL)
 
 	history.add(#new_url);
 
+	/*
+	There could be several possible types of addresses:
+	- cached page (only http/https)
+	- internal page
+	- web page
+	- local file
+	So we need to detect what incoming address is
+	and then halndle it in the propper way.
+	*/
+
 	if (pages_cache.has(#new_url)) {
 		//CACHED PAGE
 		LoadInternalPage(pages_cache.current_page_buf, pages_cache.current_page_size);
 
 	} else if (!strncmp(#new_url,"WebView:",8)) {
 		//INTERNAL PAGE
-		if (!strcmp(#new_url, URL_SERVICE_HOMEPAGE)) LoadInternalPage(#homepage, sizeof(homepage));
-		else if (!strcmp(#new_url, URL_SERVICE_HELP)) LoadInternalPage(#help, sizeof(help));
-		else if (!strcmp(#new_url, URL_SERVICE_HISTORY)) ShowHistory();
-		else LoadInternalPage(#page_not_found, sizeof(page_not_found));
+		if (streq(#new_url, URL_SERVICE_HOMEPAGE)) LoadInternalPage(#buidin_page_home, sizeof(buidin_page_home));
+		else if (streq(#new_url, URL_SERVICE_HELP)) LoadInternalPage(#buidin_page_help, sizeof(buidin_page_help));
+		else if (streq(#new_url, URL_SERVICE_HISTORY)) ShowHistory();
+		else LoadInternalPage(#buidin_page_error, sizeof(buidin_page_error));
 
 	} else if (!strncmp(#new_url,"http:",5)) || (!strncmp(#new_url,"https:",6)) {
 		//WEB PAGE
@@ -621,7 +631,7 @@ void OpenPage(dword _open_URL)
 
 		if (!http.transfer) {
 			StopLoading();
-			LoadInternalPage(#page_not_found, sizeof(page_not_found));
+			LoadInternalPage(#buidin_page_error, sizeof(buidin_page_error));
 		}
 	} else {
 		//LOCAL PAGE
@@ -633,7 +643,7 @@ void OpenPage(dword _open_URL)
 			strcpy(#new_url, "/tmp0/1/temp/word/document.xml");
 		} 
 		if (!GetLocalFileData(#new_url)) {
-			LoadInternalPage(#page_not_found, sizeof(page_not_found));
+			LoadInternalPage(#buidin_page_error, sizeof(buidin_page_error));
 		}
 	}
 }
@@ -750,7 +760,7 @@ void EventSubmitOmnibox()
 
 void LoadInternalPage(dword _bufdata, _in_bufsize){
 	if (!_bufdata) || (!_in_bufsize) {
-		LoadInternalPage(#page_not_found, sizeof(page_not_found));
+		LoadInternalPage(#buidin_page_error, sizeof(buidin_page_error));
 	} else {
 		WB1.list.first = 0; //scroll page to the top
 		DrawOmnibox();

@@ -1,9 +1,9 @@
 char version[]="WebView 2.61";
 
 #ifdef LANG_RUS
-char page_not_found[] = FROM "html\\page_not_found_ru.htm""\0";
-char homepage[] = FROM "html\\homepage_ru.htm""\0";
-char help[] = FROM "html\\help_ru.htm""\0";
+char buidin_page_error[] = FROM "buidin_pages\\page_not_found_ru.htm""\0";
+char buidin_page_home[]  = FROM "buidin_pages\\homepage_ru.htm""\0";
+char buidin_page_help[]  = FROM "buidin_pages\\help_ru.htm""\0";
 char accept_language[]= "Accept-Language: ru\n";
 char rmb_menu[] = 
 "Посмотреть исходник|Ctrl+U
@@ -31,9 +31,9 @@ char update_is_current[] = "'WebView\nВы уже используете последнюю версию.' -tI"
 char update_can_not_copy[] = "'WebView\nНе могу переместить новую версию из папки Downloads на Ramdisk. Возможно, не достаточно места.' -tE";
 char clear_cache_ok[] = "'WebView\nКэш очищен.' -tI";
 #else
-char page_not_found[] = FROM "html\\page_not_found_en.htm""\0";
-char homepage[] = FROM "html\\homepage_en.htm""\0";
-char help[] = FROM "html\\help_en.htm""\0";
+char buidin_page_error[] = FROM "buidin_pages\\page_not_found_en.htm""\0";
+char buidin_page_home[]  = FROM "buidin_pages\\homepage_en.htm""\0";
+char buidin_page_help[]  = FROM "buidin_pages\\help_en.htm""\0";
 char accept_language[]= "Accept-Language: en\n";
 char rmb_menu[] =
 "View source|Ctrl+U
