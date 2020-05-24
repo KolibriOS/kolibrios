@@ -45,7 +45,7 @@ void main()
 	load_dll(libimg, #libimg_init,1);
 
 	skin.load("/sys/icons32.png");
-	skin.fill_transparent(COLOR_CELL_BG);
+	skin.replace_color(0x00000000, COLOR_CELL_BG);
 
 	NewGame();
 

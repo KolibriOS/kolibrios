@@ -65,7 +65,7 @@ void main()
 	load_dll(libini, #lib_init,1);
 
 	skin.load("/sys/icons32.png");
-	skin.fill_transparent(COLOR_BG);
+	skin.replace_color(0x00000000, COLOR_BG);
 
 	ini_get_int stdcall ("/sys/appicons.ini", "taskbar", "attachement", ATTACHEMENT_BOTTOM); 
 	attachement = EAX;

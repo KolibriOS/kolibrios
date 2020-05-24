@@ -152,7 +152,7 @@ void SetAppColors()
 void LoadImages()
 {
 	skin.load("/sys/icons32.png");
-	skin.fill_transparent(swc.list_bg);	
+	skin.replace_color(0x00000000, swc.list_bg);	
 }
 
 

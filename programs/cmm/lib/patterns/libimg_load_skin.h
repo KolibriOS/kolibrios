@@ -10,7 +10,6 @@
 	void load_as24b();
 	void load();
 	void replace_color();
-	void fill_transparent();
 } skin;
 
 :void libimg_image::load_as24b(dword file_path)
@@ -50,17 +49,12 @@
 	for (i = imgsrc; i < max_i; i += 4)	if (DSDWORD[i]==old_color) DSDWORD[i] = new_color;
 }
 
-:void libimg_image::fill_transparent(new_color)
-{
-	if (new_color) replace_color(0, new_color);
-}
-
 :libimg_image icons32draw;
 :void DrawIcon32(dword x,y, bg, icon_n) {
 	//load_dll(libimg, #libimg_init,1);
 	if (!icons32draw.image) {
 		icons32draw.load("/sys/icons32.png");
-		icons32draw.fill_transparent(bg);
+		icons32draw.replace_color(0x00000000, bg);
 	}
 	if (icon_n>=0) img_draw stdcall(icons32draw.image, x, y, 32, 32, 0, icon_n*32);
 }
