@@ -30,6 +30,7 @@ dword img_destroy = #aimg_destroy;
 dword img_draw    = #aimg_draw;
 dword img_create  = #aimg_create;
 dword img_encode  = #aimg_encode;
+dword img_convert = #aimg_convert;
 
 //dword img_flip    = #aimg_flip;
 //dword img_rotate  = #aimg_rotate;
@@ -42,10 +43,13 @@ char aimg_to_rgb2[] = "img_to_rgb2";
 char aimg_decode[]  = "img_decode";
 char aimg_destroy[] = "img_destroy";
 char aimg_draw[]    = "img_draw";
-char aimg_create[]    = "img_create";
-char aimg_encode[]    = "img_encode";
+char aimg_create[]  = "img_create";
+char aimg_encode[]  = "img_encode";
+char aimg_convert[] = "img_convert";
 //char aimg_flip[]    = "img_flip";
 //char aimg_rotate[]  = "img_rotate ";
+
+//invoke  img.scale, ebx, 0, 0, [ebx + Image.Width], [ebx + Image.Height], 0, LIBIMG_SCALE_TYPE_STRETCH, LIBIMG_SCALE_ALG_BILINEAR, edx, ecx
 
 #define LIBIMG_FORMAT_BMP       1
 #define LIBIMG_FORMAT_ICO       2
@@ -234,6 +238,13 @@ struct _Image
             }
         }
     }
+}
+
+:dword convert_image(dword _image_pointer, _w, _h, _path)
+{
+    img_convert stdcall(_image_pointer, 0, Image_bpp32, 0, 0);
+    if (EAX!=0)
+    mov     [image_converted], eax    
 }
 
 #ifndef INCLUDE_LIBIMG_LOAD_SKIN_H

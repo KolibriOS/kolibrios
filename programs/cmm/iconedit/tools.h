@@ -2,7 +2,7 @@
 #define TOCANVAS 2
 
 
-struct Tool {
+struct TOOL {
 	int id;
 	dword cursor;
 	void (*activate)();
@@ -10,11 +10,10 @@ struct Tool {
 	void (*onMouseEvent)(int x, int y, int lkm, int pkm);
 	void (*onKeyEvent)(dword keycode);
 	void (*onCanvasDraw)();
-};
+} tools[8];
 
 int previousTool = -1;
 int currentTool = -1;
-Tool tools[8];
 
 enum {
 	TOOL_NONE = -1,
@@ -108,6 +107,7 @@ void setCurrentTool(int index) {
 	Cursor.Restore();
 	if (wrapper.hovered()) SetCursor();
 	DrawCanvas();
+	DrawLeftPanelSelection();
 }
 
 void SetCursor()

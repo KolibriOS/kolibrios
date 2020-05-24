@@ -151,8 +151,8 @@ void SetAppColors()
 
 void LoadImages()
 {
-	Libimg_LoadImage(#skin, "/sys/icons32.png");
-	Libimg_FillTransparent(skin.image, skin.w, skin.h, swc.list_bg);	
+	skin.load("/sys/icons32.png");
+	skin.fill_transparent(swc.list_bg);	
 }
 
 

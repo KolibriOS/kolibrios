@@ -44,8 +44,8 @@ void main()
 	load_dll(libio,  #libio_init,1);
 	load_dll(libimg, #libimg_init,1);
 
-	Libimg_LoadImage(#skin, "/sys/icons32.png");
-	Libimg_FillTransparent(skin.image, skin.w, skin.h, COLOR_CELL_BG);
+	skin.load("/sys/icons32.png");
+	skin.fill_transparent(COLOR_CELL_BG);
 
 	NewGame();
 

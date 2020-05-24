@@ -7,38 +7,60 @@
 
 :struct libimg_image {
 	dword image, w, h, imgsrc;
+	void load_as24b();
+	void load();
+	void replace_color();
+	void fill_transparent();
 } skin;
 
-:void Libimg_LoadImage(dword struct_pointer, file_path)
+:void libimg_image::load_as24b(dword file_path)
 {
-	dword image_pointer;
-	image_pointer = load_image(file_path);
+	dword image_pointer = load_image(file_path);
 	if (!image_pointer) notify("'Error: Image not loaded' -E");
-	ESDWORD[struct_pointer] = image_pointer;
-	ESDWORD[struct_pointer+4] = DSWORD[image_pointer+4];
-	ESDWORD[struct_pointer+8] = DSWORD[image_pointer+8];
-	ESDWORD[struct_pointer+12] = ESDWORD[image_pointer+24];
+
+	img_convert stdcall(image_pointer, 0, Image_bpp24, 0, 0);
+	if (!EAX) {
+		notify("'Error: Image can not be converted to 24b' -E");
+	} else {
+		image = image_pointer = EAX;
+		w = DSWORD[image_pointer+4];
+		h = DSWORD[image_pointer+8];
+		imgsrc = ESDWORD[image_pointer+24];		
+	}
 }
 
-:void Libimg_ReplaceColor(dword struct_pointer, w, h, old_color, new_color)
+:void libimg_image::load(dword file_path)
 {
-	dword i, max_i, image_data;
-	image_data = ESDWORD[struct_pointer + 24];
-	max_i =  w * h * 4 + image_data;
-	for (i = image_data; i < max_i; i += 4)	if (DSDWORD[i]==old_color) DSDWORD[i] = new_color;
+	dword image_pointer = load_image(file_path);
+	if (!EAX) {
+		notify("'Error: Image not loaded' -E");
+	} else {
+		image = image_pointer = EAX;
+		w = DSWORD[image_pointer+4];
+		h = DSWORD[image_pointer+8];
+		imgsrc = ESDWORD[image_pointer+24];		
+	}
+
 }
 
-:void Libimg_FillTransparent(dword struct_pointer, w, h, new_color)
+:void libimg_image::replace_color(dword old_color, new_color)
 {
-	if (new_color!=0) Libimg_ReplaceColor(struct_pointer, w, h, 0, new_color);
+	dword i, max_i;
+	max_i =  w * h * 4 + imgsrc;
+	for (i = imgsrc; i < max_i; i += 4)	if (DSDWORD[i]==old_color) DSDWORD[i] = new_color;
+}
+
+:void libimg_image::fill_transparent(new_color)
+{
+	if (new_color) replace_color(0, new_color);
 }
 
 :libimg_image icons32draw;
 :void DrawIcon32(dword x,y, bg, icon_n) {
 	//load_dll(libimg, #libimg_init,1);
 	if (!icons32draw.image) {
-		Libimg_LoadImage(#icons32draw, "/sys/icons32.png");
-		Libimg_FillTransparent(icons32draw.image, icons32draw.w, icons32draw.h, bg);
+		icons32draw.load("/sys/icons32.png");
+		icons32draw.fill_transparent(bg);
 	}
 	if (icon_n>=0) img_draw stdcall(icons32draw.image, x, y, 32, 32, 0, icon_n*32);
 }
@@ -47,9 +69,9 @@
 :void DrawIcon16(dword x,y, bg, icon_n) {
 	//load_dll(libimg, #libimg_init,1);
 	if (!icons16draw.image) {
-		Libimg_LoadImage(#icons16draw, "/sys/icons16.png");
-		Libimg_ReplaceColor(icons16draw.image, icons16draw.w, icons16draw.h, 0xffFFFfff, bg);
-		Libimg_ReplaceColor(icons16draw.image, icons16draw.w, icons16draw.h, 0xffCACBD6, MixColors(bg, 0, 220));
+		icons16draw.load("/sys/icons16.png");
+		icons16draw.replace_color(0xffFFFfff, bg);
+		icons16draw.replace_color(0xffCACBD6, MixColors(bg, 0, 220));
 	}
 	if (icon_n>=0) img_draw stdcall(icons16draw.image, x, y, 16, 16, 0, icon_n*16);
 }

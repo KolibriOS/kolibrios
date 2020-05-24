@@ -126,9 +126,9 @@ void main()
 
 	load_dll(libio,  #libio_init,1);
 	load_dll(libimg, #libimg_init,1);
-	Libimg_LoadImage(#menu, abspath("menu.png"));
-	Libimg_LoadImage(#road, abspath("road.png"));
-	Libimg_LoadImage(#objects, abspath("objects.png"));
+	menu.load(abspath("menu.png"));
+	road.load(abspath("road.png"));
+	objects.load(abspath("objects.png"));
 	
 	loop()
 	{

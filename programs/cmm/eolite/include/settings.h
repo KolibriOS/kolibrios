@@ -207,19 +207,19 @@ void Write_Error(int error_number)
 void LoadIcons()
 {
 	//ICONS16.PNG
-	Libimg_LoadImage(#icons16_default, "/sys/icons16.png");
-	Libimg_LoadImage(#icons16_selected, "/sys/icons16.png");
-	Libimg_ReplaceColor(icons16_selected.image, icons16_selected.w, icons16_selected.h, 0xffFFFfff, col.selec);
-	Libimg_ReplaceColor(icons16_selected.image, icons16_selected.w, icons16_selected.h, 0xffCACBD6, MixColors(col.selec, 0, 200));
+	icons16_default.load("/sys/icons16.png");
+	icons16_selected.load("/sys/icons16.png");
+	icons16_selected.replace_color(0xffFFFfff, col.selec);
+	icons16_selected.replace_color(0xffCACBD6, MixColors(col.selec, 0, 200));
 	if (col.list_bg!=0xFFFfff) {
-		Libimg_ReplaceColor(icons16_default.image, icons16_selected.w, icons16_selected.h, 0xffFFFfff, col.list_bg);
-		Libimg_ReplaceColor(icons16_default.image, icons16_selected.w, icons16_selected.h, 0xffCACBD6, MixColors(col.list_bg, 0, 200));		
+		icons16_default.replace_color(0xffFFFfff, col.list_bg);
+		icons16_default.replace_color(0xffCACBD6, MixColors(col.list_bg, 0, 200));		
 	}
 	//ICONS32.PNG
-	Libimg_LoadImage(#icons32_default, "/sys/icons32.png");
-	Libimg_LoadImage(#icons32_selected, "/sys/icons32.png");
-	Libimg_ReplaceColor(icons32_default.image, icons32_selected.w, icons32_selected.h, 0x00000000, col.list_bg);
-	Libimg_ReplaceColor(icons32_selected.image, icons32_selected.w, icons32_selected.h, 0x00000000, col.selec);	
+	icons32_default.load("/sys/icons32.png");
+	icons32_selected.load("/sys/icons32.png");
+	icons32_default.replace_color(0x00000000, col.list_bg);
+	icons32_selected.replace_color(0x00000000, col.selec);	
 }
 
 void SetAppColors()

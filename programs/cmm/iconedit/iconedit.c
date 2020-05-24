@@ -32,12 +32,16 @@
 //===================================================//
 
 #ifdef LANG_RUS
+char edit_menu_items[] = 
+"Вырезать|Ctrl+X
+Копировать|Ctrl+C
+Вставить|Ctrl+V";
 char image_menu_items[] = 
 "Количество использованных цветов
 Заменить все цвета 1 на 2";
 ?define T_MENU_IMAGE "Иконка"
 ?define T_TEST_ICON "Проверить иконку"
-?define T_TITLE "Редактор иконок 0.60 Alpha"
+?define T_TITLE "Редактор иконок 0.70 Beta"
 ?define T_UNIC_COLORS_COUNT "'Уникальных цветов: %i.' -I"
 ?define T_TOO_BIG_IMAGE_FOR_PREVIEW "'IconEdit
 Изображение слишком большое для предпросмотра!' -tE"
@@ -45,12 +49,16 @@ char image_menu_items[] =
 ?define T_ERROR_IMA_ICONEDIT "'Это просто редактор иконок, выбраное
 изображение слишком велико для него!' -E"
 #else
+char edit_menu_items[] = 
+"Cut|Ctrl+X
+Copy|Ctrl+C
+Paste|Ctrl+V";
 char image_menu_items[] = 
 "Count colors used
 Replace all colors equal to 1 by 2";
 ?define T_MENU_IMAGE "Icon"
 ?define T_TEST_ICON "Test Icon"
-?define T_TITLE "Icon Editor 0.60 Alpha"
+?define T_TITLE "Icon Editor 0.70 Beta"
 ?define T_UNIC_COLORS_COUNT "'Image has %i unique colors.' -I"
 ?define T_TOO_BIG_IMAGE_FOR_PREVIEW "'IconEdit
 Image is too big for preview!' -tE"
@@ -160,28 +168,26 @@ void main()
 {
 	word btn;
 	libimg_image open_image;
-	dword bg_col;
 
 	load_dll(libio,  #libio_init,  1);
 	load_dll(libimg, #libimg_init, 1);
 	load_dll(boxlib, #box_lib_init,0);
 
-	Libimg_LoadImage(#top_icons, "/sys/icons16.png");
-	Libimg_LoadImage(#left_icons, "/sys/icons16.png");
+	top_icons.load("/sys/icons16.png");
+	left_icons.load("/sys/icons16.png");
 
 	sc.get();
-	bg_col = sc.work;
 	bg_dark = skin_is_dark();
 
 	semi_white = MixColors(sc.work, 0xFFFfff, bg_dark*90 + 96);
-	Libimg_ReplaceColor(top_icons.image, top_icons.w, top_icons.h, 0xffFFFfff, semi_white);
-	Libimg_ReplaceColor(top_icons.image, top_icons.w, top_icons.h, 0xffCACBD6, MixColors(semi_white, 0, 220));
+	top_icons.replace_color(0xffFFFfff, semi_white);
+	top_icons.replace_color(0xffCACBD6, MixColors(semi_white, 0, 220));
 
-	Libimg_ReplaceColor(left_icons.image, left_icons.w, left_icons.h, 0xffFFFfff, sc.work);
-	Libimg_ReplaceColor(left_icons.image, left_icons.w, left_icons.h, 0xffCACBD6, MixColors(sc.work, 0, 200));
+	left_icons.replace_color(0xffFFFfff, sc.work);
+	left_icons.replace_color(0xffCACBD6, MixColors(sc.work, 0, 200));
 
 	//fix line and rectandle color for dark skins
-	if (bg_dark) Libimg_ReplaceColor(left_icons.image, left_icons.w, left_icons.h, 0xff545454, 0xffD3D3D4);
+	if (bg_dark) left_icons.replace_color(0xff545454, 0xffD3D3D4);
 
 	EventSetActiveColor(1, color1);
 
@@ -190,7 +196,7 @@ void main()
 	}
 	else
 	{
-		Libimg_LoadImage(#open_image, #param);
+		open_image.load_as24b(#param);
 
 		if (open_image.w*open_image.h>MAX_CELL_SIZE*MAX_CELL_SIZE) {
 			notify(T_ERROR_IMA_ICONEDIT);
@@ -369,14 +375,13 @@ void DrawWindow()
 	DrawBar(0, 0, Form.cwidth, TOPBAR_H-1, sc.work);
 	DrawBar(0, TOPBAR_H-1, Form.cwidth, 1, sc.work_graph);
 
-	tx.n = 5-GAPH;
-	DrawTopPanelButton(#EventCreateNewIcon,  ECTRL + SCAN_CODE_KEY_N, tx.inc(GAPH), 2);
+	DrawTopPanelButton(#EventCreateNewIcon,  ECTRL + SCAN_CODE_KEY_N, tx.set(5),    2);
 	DrawTopPanelButton(#EventOpenIcon,       ECTRL + SCAN_CODE_KEY_O, tx.inc(GAPH), 0);
 	DrawTopPanelButton(#EventSaveIconToFile, ECTRL + SCAN_CODE_KEY_S, tx.inc(GAPH), 5);
-	DrawTopPanelButton(#EventMoveLeft,       ECTRL + SCAN_CODE_LEFT, tx.inc(GAPH+BLOCK_SPACE), 30);
+	DrawTopPanelButton(#EventMoveLeft,       ECTRL + SCAN_CODE_LEFT,  tx.inc(GAPH+BLOCK_SPACE), 30);
 	DrawTopPanelButton(#EventMoveRight,      ECTRL + SCAN_CODE_RIGHT, tx.inc(GAPH), 31);
-	DrawTopPanelButton(#EventMoveUp,         ECTRL + SCAN_CODE_UP, tx.inc(GAPH), 32);
-	DrawTopPanelButton(#EventMoveDown,       ECTRL + SCAN_CODE_DOWN, tx.inc(GAPH), 33);
+	DrawTopPanelButton(#EventMoveUp,         ECTRL + SCAN_CODE_UP,    tx.inc(GAPH), 32);
+	DrawTopPanelButton(#EventMoveDown,       ECTRL + SCAN_CODE_DOWN,  tx.inc(GAPH), 33);
 	DrawTopPanelButton(#EventFlipHor,        0, tx.inc(GAPH+BLOCK_SPACE), 34);
 	DrawTopPanelButton(#EventFlipVer,        0, tx.inc(GAPH), 35);
 	DrawTopPanelButton(#EventRotateLeft,     ECTRL + SCAN_CODE_KEY_L, tx.inc(GAPH), 37);
@@ -384,7 +389,7 @@ void DrawWindow()
 	DrawTopPanelButton(#EventTestIcon,       ECTRL + SCAN_CODE_KEY_T, tx.inc(GAPH+BLOCK_SPACE), 12);
 	DrawTopPanelButton(#EventCrop,           0, tx.inc(GAPH+BLOCK_SPACE), 46);
 
-	image_menu_btn.x = tx.n;
+	image_menu_btn.x = tx.inc(GAPH+BLOCK_SPACE);
 	image_menu_btn.w = DrawFlatPanelButton(button.add(#EventShowImageMenu), image_menu_btn.x, image_menu_btn.y, T_MENU_IMAGE);
 	//tx.inc(image_menu_btn.w + BLOCK_SPACE);
 	
@@ -742,6 +747,12 @@ void EventShowImageMenu()
 		image_menu_btn.y + image_menu_btn.h, MENU_ALIGN_TOP_LEFT, NULL, #image_menu_items);
 }
 
+void EventShowEditMenu()
+{
+	open_lmenu(Form.left+5 + image_menu_btn.x, Form.top+skin_height + 
+		image_menu_btn.y + image_menu_btn.h, MENU_ALIGN_TOP_LEFT, NULL, #edit_menu_items);
+}
+
 void EventCheckMenuItemSelected()
 {
 	switch(get_menu_click()) {
@@ -794,14 +805,14 @@ void EventFlipVer() { EventMove(FLIP_VER); }
 void EventRotateLeft() { EventMove(ROTATE_LEFT); }
 void EventRotateRight() { EventMove(ROTATE_RIGHT); }
 
-void EventSelectToolPencil() { setCurrentTool(TOOL_PENCIL); DrawLeftPanelSelection(); }
-void EventSelectToolPick() { setCurrentTool(TOOL_PIPETTE); DrawLeftPanelSelection(); }
-void EventSelectToolFill() { setCurrentTool(TOOL_FILL); DrawLeftPanelSelection(); }
-void EventSelectToolLine() { setCurrentTool(TOOL_LINE); DrawLeftPanelSelection(); }
-void EventSelectToolRect() { setCurrentTool(TOOL_RECT); DrawLeftPanelSelection(); }
-void EventSelectToolBar() { setCurrentTool(TOOL_BAR); DrawLeftPanelSelection(); }
-void EventSelectToolSelect() { setCurrentTool(TOOL_SELECT); DrawLeftPanelSelection(); }
-void EventSelectToolScrCopy() { setCurrentTool(TOOL_SCREEN_COPY); DrawLeftPanelSelection(); }
+void EventSelectToolPencil() { setCurrentTool(TOOL_PENCIL); }
+void EventSelectToolPick() { setCurrentTool(TOOL_PIPETTE); }
+void EventSelectToolFill() { setCurrentTool(TOOL_FILL); }
+void EventSelectToolLine() { setCurrentTool(TOOL_LINE); }
+void EventSelectToolRect() { setCurrentTool(TOOL_RECT); }
+void EventSelectToolBar() { setCurrentTool(TOOL_BAR); }
+void EventSelectToolSelect() { setCurrentTool(TOOL_SELECT); }
+void EventSelectToolScrCopy() { setCurrentTool(TOOL_SCREEN_COPY);  }
 
 char test_icon_stak22[4096];
 
