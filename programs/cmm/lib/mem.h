@@ -5,14 +5,11 @@
 #include "../lib/kolibri.h"
 #endif
 
-inline dword mem_init()
+inline fastcall void mem_init()
 {
-	$push    ebx
 	$mov     eax, 68
 	$mov     ebx, 11
 	$int     0x40
-	
-	$pop     ebx
 }
 
 :dword malloc(dword size)

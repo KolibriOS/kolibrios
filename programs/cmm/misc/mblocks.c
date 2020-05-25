@@ -1,39 +1,42 @@
 /*
-   Memory Blocks for KolibriOS v1.11
+   Memory Blocks for KolibriOS v1.2
         Leency&Veliant Edition
-              2008-2019
+              2008-2020
 */
 
-#define MEMSIZE 4096 * 15
+#define MEMSIZE 1024 * 20
 #include "..\lib\gui.h"
 #include "..\lib\random.h"
 
 #include "..\lib\obj\libio.h"
 #include "..\lib\obj\libimg.h"
 
-proc_info Form;
-
 #ifndef AUTOBUILD
 #include "lang.h--"
 #endif
 
-#define COLOR_CELL_BG 0xFFFfff
-#define COLOR_CELL_BORDER 0x94AECE
+#define BTN_CLOSED 0
+#define BTN_PRESSED 1
+#define BTN_OPEN 2
+
 #define CELL_SIZE 43
 #define PANEL_Y CELL_SIZE+4*6 + 4
 #define PANEL_H 36
+#define WIN_W CELL_SIZE+4*10 + 4
+#define WIN_H PANEL_Y+PANEL_H
 
-#define strok 6      //cell count x
-#define stolbcov 10  //cell count y
+#define ROWS 6
+#define COLS 10
+#define COUNT ROWS*COLS
 
 #ifdef LANG_RUS
-	#define LABEL_NEW_GAME "Новая игра (F2)";
+	#define LABEL_NEW_GAME "Новая игра";
 #else
-	#define LABEL_NEW_GAME "New game (F2)";
+	#define LABEL_NEW_GAME " New game";
 #endif
 
-int bitstat[60], bitpict[60];
-dword butonsx[60], butonsy[60];
+int bitstat[COUNT], bitpict[COUNT];
+dword butonsx[COUNT], butonsy[COUNT];
 dword firstbit, secondbit;
 int count;
 
@@ -45,53 +48,53 @@ void main()
 	load_dll(libimg, #libimg_init,1);
 
 	skin.load("/sys/icons32.png");
-	skin.replace_color(0x00000000, COLOR_CELL_BG);
+	skin.replace_color(0x00000000, 0xFFFfff);
 
 	NewGame();
 
-	loop() switch(WaitEvent())
+	loop() switch(@WaitEvent())
 	{
 		case evKey:
-			GetKeys();
-		 	if (key_scancode==60) NewGame();
-		 	break;
-
+			if (@GetKeyScancode()==SCAN_CODE_F2) NewGame();
+			break;
+			
 		case evButton:
-			id = GetButtonID();
-			if (id==1) ExitProcess();
+			id = @GetButtonID();
+			if (id==1) @ExitProcess();
 			else if (id==5) NewGame();
 			else {
-					if (bitstat[id-100] == 0)
+					id -= 100;
+					if (bitstat[id] == BTN_CLOSED)
 					{
-						if (firstbit <> 0x0BAD)
+						if (firstbit != 0x0BAD)
 						{
-							if (secondbit <> 0x0BAD)
+							if (secondbit != 0x0BAD)
 							{
-								if (bitpict[firstbit-100] == bitpict[secondbit-100])
-									bitstat[firstbit-100] = bitstat[secondbit-100] = 2;
+								if (bitpict[firstbit] == bitpict[secondbit])
+									bitstat[firstbit] = bitstat[secondbit] = BTN_OPEN;
 								else
-									bitstat[firstbit-100] = bitstat[secondbit-100] = 0;
-								ReDraw_Game_Button(firstbit - 100);
-								ReDraw_Game_Button(secondbit - 100);
+									bitstat[firstbit] = bitstat[secondbit] = BTN_CLOSED;
+								ReDraw_Game_Button(firstbit);
+								ReDraw_Game_Button(secondbit);
 								secondbit = 0x0BAD;
 								firstbit = id;
-								bitstat[id-100] = 1;
-								ReDraw_Game_Button(id - 100);
+								bitstat[id] = BTN_PRESSED;
+								ReDraw_Game_Button(id);
 								count++;
 							}
-							else if (firstbit<>id)
+							else if (firstbit != id)
 							{
 								secondbit = id;
-								bitstat[id-100] = 1;
-								ReDraw_Game_Button(id - 100);
+								bitstat[id] = BTN_PRESSED;
+								ReDraw_Game_Button(id);
 								count++;
 							}
 						}
 						else
 						{
 							firstbit = id;
-							bitstat[id-100] = 1;
-							ReDraw_Game_Button(id - 100);
+							bitstat[id] = BTN_PRESSED;
+							ReDraw_Game_Button(id);
 							count++;
 						}
 					}
@@ -101,12 +104,10 @@ void main()
 
 		case evReDraw:
 			sc.get();
-			DefineAndDrawWindow(215,100,CELL_SIZE+4*10 + 4 + 9,PANEL_Y+4+PANEL_H+skin_height,
+			DefineAndDrawWindow(215,100,WIN_W + 9,WIN_H+4+skin_height,
 				0x34,0xC0C0C0,"Memory Blocks",0);
-			GetProcessInfo(#Form, SelfInfo);
 			Draw_Panel();
 			Draw_Game_Pole();
-			break;
 	}
 }
 
@@ -115,7 +116,7 @@ void NewGame()
 	int off;
 	int i;
 
-	FOR (i = 0; i < 60; i++)
+	FOR (i = 0; i < COUNT; i++)
 	{
 		bitstat[i] = 0;
 		bitpict[i] = 0;
@@ -123,81 +124,67 @@ void NewGame()
 
 	count = 0;
 	firstbit = secondbit = 0x0BAD;
-	FOR (i = 0; i < 30; i++)
+	FOR (i = 0; i < COUNT/2; i++)
 	{
-		do off = random(60); while (bitpict[off] != 0);
+		do off = random(COUNT); while (bitpict[off] != 0);
 		bitpict[off] = i;
-		do off = random(60); while (bitpict[off] != 0);
+		do off = random(COUNT); while (bitpict[off] != 0);
 		bitpict[off] = i;
 	}
 	Draw_Game_Pole();
 	Draw_Panel();
 }
 
-void ReDraw_Game_Button(int id)
-{
-	DefineButton(butonsx[id], butonsy[id], CELL_SIZE, CELL_SIZE, 100 + id + BT_HIDE, 0);
-	switch (bitstat[id])
-	{
-		case 0:
-			Draw_Block(butonsx[id], butonsy[id]);
-			break;
-		case 1:
-			Draw_Pressed_Block(butonsx[id], butonsy[id]);
-			img_draw stdcall(skin.image, butonsx[id]+6, butonsy[id]+6, 32, 32, 0, bitpict[id]*32);
-			BREAK;
-		case 2:
-			Draw_Open_Block(butonsx[id], butonsy[id]);
-			img_draw stdcall(skin.image, butonsx[id]+6, butonsy[id]+6, 32, 32, 0, bitpict[id]*32);
-			BREAK;
-	}
-}
-
 void Draw_Game_Pole()
 {
 	int i;
 	byte j;
-	for (j = 0; j < stolbcov; j++)	for (i = 0; i < strok; i++)
+	for (j = 0; j < COLS; j++)	for (i = 0; i < ROWS; i++)
 	{
-			butonsx[j*strok+i] = CELL_SIZE+4 * j + 4; //save coordinates to avoid 
-			butonsy[j*strok+i] = CELL_SIZE+4 * i + 4; //their recalculation after
-			ReDraw_Game_Button(j*strok + i);
+			butonsx[j*ROWS+i] = CELL_SIZE+4 * j + 4; //save coordinates to avoid 
+			butonsy[j*ROWS+i] = CELL_SIZE+4 * i + 4; //their recalculation after
+			ReDraw_Game_Button(j*ROWS + i);
 	}
 }
 
-void Draw_Block(dword x, y)
+void ReDraw_Game_Button(int id)
 {
-	DrawRectangle(x, y, CELL_SIZE, CELL_SIZE, COLOR_CELL_BORDER);//border
-	DrawRectangle3D(x + 1, y + 1, CELL_SIZE-2, CELL_SIZE-2, 0xFFFFFF, 0xDEDEDE);//bump
-	DrawBar(x + 2, y + 2, CELL_SIZE-3, CELL_SIZE-3, 0xBDC7D6);//background
-}
-
-void Draw_Open_Block(dword x, y)
-{
-	DrawRectangle(x, y, CELL_SIZE, CELL_SIZE, COLOR_CELL_BORDER);//border
-	DrawBar(x + 1, y + 1, CELL_SIZE-1, CELL_SIZE-1, COLOR_CELL_BG);//background
-}
-
-void Draw_Pressed_Block(dword x, y)
-{
-	DrawRectangle(x, y, CELL_SIZE, CELL_SIZE, COLOR_CELL_BORDER);//border
-	DrawWideRectangle(x + 1, y + 1, CELL_SIZE-1, CELL_SIZE-1, 2, 0x94DB00);//border green
-	DrawBar(x + 3, y + 3, CELL_SIZE-5, CELL_SIZE-5, COLOR_CELL_BG);//background
+	dword xx, yy;
+	xx = butonsx[id];
+	yy = butonsy[id];
+	DefineButton(xx, yy, CELL_SIZE, CELL_SIZE, 100 + BT_HIDE + id, 0);
+	DrawRectangle3D(xx, yy, CELL_SIZE, CELL_SIZE, 0x94AECE, 0x94AECE);//border
+	switch (bitstat[id])
+	{
+		case BTN_CLOSED:
+			DrawRectangle3D(xx + 1, yy + 1, CELL_SIZE-2, CELL_SIZE-2, 0xFFFFFF, 0xDEDEDE);//bump
+			DrawBar(xx + 2, yy + 2, CELL_SIZE-3, CELL_SIZE-3, 0xBDC7D6);//background
+			break;
+		case BTN_PRESSED:
+			DrawWideRectangle(xx + 1, yy + 1, CELL_SIZE-1, CELL_SIZE-1, 2, 0x94DB00);//border green
+			DrawBar(xx + 3, yy + 3, CELL_SIZE-5, CELL_SIZE-5, 0xFFFfff);//background
+			img_draw stdcall(skin.image, xx+6, yy+6, 32, 32, 0, bitpict[id]*32);
+			BREAK;
+		case BTN_OPEN:
+			DrawBar(xx+1, yy+1, CELL_SIZE-1, CELL_SIZE-1, 0xFFFfff);//background
+			img_draw stdcall(skin.image, xx+6, yy+6, 32, 32, 0, bitpict[id]*32);
+	}
 }
 
 void Draw_Panel()
 {
-	DrawBar(0, PANEL_Y, Form.cwidth, 1, sc.work_dark);
-	DrawBar(0, PANEL_Y+1, Form.cwidth, 1, sc.work_light);
-	DrawBar(0, PANEL_Y+2, Form.cwidth, PANEL_H-2, sc.work);
-	DrawStandartCaptButton(9, PANEL_Y+5, 5, LABEL_NEW_GAME);
+	DrawBar(0, PANEL_Y, WIN_W, 1, sc.work_dark);
+	DrawBar(0, PANEL_Y+1, WIN_W, 1, sc.work_light);
+	DrawBar(0, PANEL_Y+2, WIN_W, PANEL_H-2, sc.work);
+	DefineButton(9, PANEL_Y+5, 102, 26, 5, sc.button);
+	WriteText(20, PANEL_Y+11, 0x90, sc.button_text, LABEL_NEW_GAME);
 	Draw_Count();
 }
 
 void Draw_Count()
 {
-	DrawBar(Form.cwidth-32,PANEL_Y + 12,30,12,sc.work);
-	WriteNumber(Form.cwidth-32, PANEL_Y + 12, 0x90, sc.work_text, 3, count);
+	EDI = sc.work; //writing a number with bg
+	WriteNumber(WIN_W-32, PANEL_Y + 12, 0xD0, sc.work_text, 3, count);
 }
 
 

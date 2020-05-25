@@ -263,8 +263,9 @@ void EventIconClick(dword appid)
 
 	// the next block is created to save some space in ramdisk{
 	//
-	// convert relative path to absolute      "calc"    => "/sys/calc"
-	// convert short kolibrios path to full   "/k/calc" => "/kolibrios/calc"
+	// convert relative path to absolute      "calc"     => "/sys/calc"
+	// convert short kolibrios path to full   "/k/calc"  => "/kolibrios/calc"
+	// convert short kolibrios path to full   "/kg/2048" => "/kolibrios/games/2048"
 	// other copy => as is
 	if (ESBYTE[app_path]!='/') {
 		strcpy(#run_app_path, "/sys/");
@@ -272,6 +273,10 @@ void EventIconClick(dword appid)
 	else if (!strncmp(app_path, "/k/",3)) {
 		strcpy(#run_app_path, "/kolibrios/");
 		app_path+=3;
+	}
+	else if (!strncmp(app_path, "/kg/",3)) {
+		strcpy(#run_app_path, "/kolibrios/games/");
+		app_path+=4;
 	}
 	strcat(#run_app_path, app_path);
 	// }end

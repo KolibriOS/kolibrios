@@ -646,10 +646,10 @@ dword __generator;  // random number generator init
 //The initialization of the initial data before running
 void ______INIT______()
 {
-	skin_height   = GetSkinHeight();
-	screen.width  = GetScreenWidth()+1;
-	screen.height = GetScreenHeight()+1;
-	__generator = GetStartTime();	
+	skin_height   = @GetSkinHeight();
+	screen.width  = @GetScreenWidth()+1;
+	screen.height = @GetScreenHeight()+1;
+	__generator = @GetStartTime();	
 	mem_init();
 	main();
 }

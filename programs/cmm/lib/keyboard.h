@@ -133,6 +133,14 @@ GETKEYII:
 	EAX = key_editbox;
 }
 
+inline fastcall byte GetKeyScancode()
+{
+	$mov  eax,2
+	$int  0x40
+	$shr  eax,16
+	return AL;
+}
+
 // ECX is a mode: 1 - scancodes, 0 - ascii
 inline fastcall SetKeyboardMode(ECX) 
 {
