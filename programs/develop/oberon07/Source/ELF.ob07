@@ -1,4 +1,4 @@
-(*
+﻿(*
     BSD 2-Clause License
 
     Copyright (c) 2019, Anton Krotov
@@ -142,23 +142,27 @@ END WritePH64;
 PROCEDURE fixup (program: BIN.PROGRAM; text, data, bss: INTEGER; amd64: BOOLEAN);
 VAR
     reloc: BIN.RELOC;
-    L, delta: INTEGER;
+    code:  CHL.BYTELIST;
+    L, delta, delta0: INTEGER;
 
 BEGIN
+    code := program.code;
+    delta0 := 3 - 7 * ORD(amd64);
     reloc := program.rel_list.first(BIN.RELOC);
+
     WHILE reloc # NIL DO
 
-        L := BIN.get32le(program.code, reloc.offset);
-        delta := 3 - reloc.offset - text - 7 * ORD(amd64);
+        L := BIN.get32le(code, reloc.offset);
+        delta := delta0 - reloc.offset - text;
 
         CASE reloc.opcode OF
-        |BIN.PICDATA: BIN.put32le(program.code, reloc.offset, L + data + delta)
-        |BIN.PICCODE: BIN.put32le(program.code, reloc.offset, BIN.GetLabel(program, L) + text + delta)
-        |BIN.PICBSS:  BIN.put32le(program.code, reloc.offset, L + bss + delta)
+        |BIN.PICDATA: BIN.put32le(code, reloc.offset, L + data + delta)
+        |BIN.PICCODE: BIN.put32le(code, reloc.offset, BIN.GetLabel(program, L) + text + delta)
+        |BIN.PICBSS:  BIN.put32le(code, reloc.offset, L + bss + delta)
         END;
 
         reloc := reloc.next(BIN.RELOC)
-    END;
+    END
 END fixup;
 
 

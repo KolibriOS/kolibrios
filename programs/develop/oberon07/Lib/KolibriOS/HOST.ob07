@@ -1,7 +1,7 @@
-(*
+﻿(*
     BSD 2-Clause License
 
-    Copyright (c) 2018-2019, Anton Krotov
+    Copyright (c) 2018-2020, Anton Krotov
     All rights reserved.
 *)
 
@@ -56,6 +56,8 @@ VAR
     argc*: INTEGER;
 
     eol*: ARRAY 3 OF CHAR;
+
+    maxreal*: REAL;
 
 
 PROCEDURE [stdcall, "Console.obj", "con_init"] con_init (wnd_width, wnd_height, scr_width, scr_height, title: INTEGER);
@@ -453,6 +455,42 @@ PROCEDURE UnixTime* (): INTEGER;
 END UnixTime;
 
 
+PROCEDURE d2s* (x: REAL): INTEGER;
+VAR
+    h, l, s, e: INTEGER;
+
+BEGIN
+    SYSTEM.GET(SYSTEM.ADR(x), l);
+    SYSTEM.GET(SYSTEM.ADR(x) + 4, h);
+
+    s := ASR(h, 31) MOD 2;
+    e := (h DIV 100000H) MOD 2048;
+    IF e <= 896 THEN
+        h := (h MOD 100000H) * 8 + (l DIV 20000000H) MOD 8 + 800000H;
+        REPEAT
+            h := h DIV 2;
+            INC(e)
+        UNTIL e = 897;
+        e := 896;
+        l := (h MOD 8) * 20000000H;
+        h := h DIV 8
+    ELSIF (1151 <= e) & (e < 2047) THEN
+        e := 1151;
+        h := 0;
+        l := 0
+    ELSIF e = 2047 THEN
+        e := 1151;
+        IF (h MOD 100000H # 0) OR (l # 0) THEN
+            h := 80000H;
+            l := 0
+        END
+    END;
+    DEC(e, 896)
+
+    RETURN LSL(s, 31) + LSL(e, 23) + (h MOD 100000H) * 8 + (l DIV 20000000H) MOD 8
+END d2s;
+
+
 PROCEDURE splitf* (x: REAL; VAR a, b: INTEGER): INTEGER;
 BEGIN
     SYSTEM.GET(SYSTEM.ADR(x),     a);
@@ -463,6 +501,8 @@ END splitf;
 
 BEGIN
     eol[0] := 0DX; eol[1] := 0AX; eol[2] := 0X;
+    maxreal := 1.9;
+    PACK(maxreal, 1023);
     Console := API.import;
     IF Console THEN
         con_init(-1, -1, -1, -1, SYSTEM.SADR("Oberon-07 for KolibriOS"))

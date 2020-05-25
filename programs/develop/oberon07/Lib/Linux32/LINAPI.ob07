@@ -1,7 +1,7 @@
-(*
+﻿(*
     BSD 2-Clause License
 
-    Copyright (c) 2019, Anton Krotov
+    Copyright (c) 2019-2020, Anton Krotov
     All rights reserved.
 *)
 
@@ -13,6 +13,7 @@ IMPORT SYSTEM, API;
 TYPE
 
     TP* = API.TP;
+    SOFINI* = API.SOFINI;
 
 
 VAR
@@ -69,12 +70,17 @@ BEGIN
 END GetEnv;
 
 
+PROCEDURE SetFini* (ProcFini: SOFINI);
+BEGIN
+    API.SetFini(ProcFini)
+END SetFini;
+
+
 PROCEDURE init;
 VAR
     ptr: INTEGER;
 
 BEGIN
-
     IF API.MainParam # 0 THEN
         envc := -1;
         SYSTEM.GET(API.MainParam, argc);

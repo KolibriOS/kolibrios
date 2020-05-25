@@ -1,0 +1,169 @@
+﻿(*
+    BSD 2-Clause License
+
+    Copyright (c) 2019-2020, Anton Krotov
+    All rights reserved.
+*)
+
+MODULE API;
+
+IMPORT SYSTEM;
+
+
+CONST
+
+    RTLD_LAZY* = 1;
+    BIT_DEPTH* = 64;
+
+
+TYPE
+
+    TP* = ARRAY 2 OF INTEGER;
+    SOFINI* = PROCEDURE;
+
+
+VAR
+
+    eol*: ARRAY 2 OF CHAR;
+    MainParam*: INTEGER;
+
+    libc*, librt*: INTEGER;
+
+    dlopen*        : PROCEDURE [linux] (filename, flag: INTEGER): INTEGER;
+    dlsym*         : PROCEDURE [linux] (handle, symbol: INTEGER): INTEGER;
+
+    stdout*,
+    stdin*,
+    stderr*        : INTEGER;
+
+    malloc*        : PROCEDURE [linux] (size: INTEGER): INTEGER;
+    free*          : PROCEDURE [linux] (ptr: INTEGER);
+    _exit*         : PROCEDURE [linux] (code: INTEGER);
+    puts*          : PROCEDURE [linux] (pStr: INTEGER);
+    fwrite*,
+    fread*         : PROCEDURE [linux] (buffer, bytes, blocks, file: INTEGER): INTEGER;
+    fopen*         : PROCEDURE [linux] (fname, fmode: INTEGER): INTEGER;
+    fclose*        : PROCEDURE [linux] (file: INTEGER): INTEGER;
+
+    clock_gettime* : PROCEDURE [linux] (clock_id: INTEGER; VAR tp: TP): INTEGER;
+    time*          : PROCEDURE [linux] (ptr: INTEGER): INTEGER;
+
+    fini: SOFINI;
+
+
+PROCEDURE putc* (c: CHAR);
+VAR
+    res: INTEGER;
+
+BEGIN
+    res := fwrite(SYSTEM.ADR(c), 1, 1, stdout)
+END putc;
+
+
+PROCEDURE DebugMsg* (lpText, lpCaption: INTEGER);
+BEGIN
+    puts(lpCaption);
+    puts(lpText)
+END DebugMsg;
+
+
+PROCEDURE _NEW* (size: INTEGER): INTEGER;
+VAR
+    res, ptr, words: INTEGER;
+
+BEGIN
+    res := malloc(size);
+    IF res # 0 THEN
+        ptr := res;
+        words := size DIV SYSTEM.SIZE(INTEGER);
+        WHILE words > 0 DO
+            SYSTEM.PUT(ptr, 0);
+            INC(ptr, SYSTEM.SIZE(INTEGER));
+            DEC(words)
+        END
+    END
+
+    RETURN res
+END _NEW;
+
+
+PROCEDURE _DISPOSE* (p: INTEGER): INTEGER;
+BEGIN
+    free(p)
+    RETURN 0
+END _DISPOSE;
+
+
+PROCEDURE GetProcAdr (lib: INTEGER; name: ARRAY OF CHAR; VarAdr: INTEGER);
+VAR
+    sym: INTEGER;
+
+BEGIN
+    sym := dlsym(lib, SYSTEM.ADR(name[0]));
+    ASSERT(sym # 0);
+    SYSTEM.PUT(VarAdr, sym)
+END GetProcAdr;
+
+
+PROCEDURE init* (sp, code: INTEGER);
+BEGIN
+    fini := NIL;
+    SYSTEM.GET(code - 1000H - SYSTEM.SIZE(INTEGER) * 2, dlopen);
+    SYSTEM.GET(code - 1000H - SYSTEM.SIZE(INTEGER),     dlsym);
+    MainParam := sp;
+    eol := 0AX;
+
+    libc := dlopen(SYSTEM.SADR("libc.so.6"), RTLD_LAZY);
+    GetProcAdr(libc, "malloc", SYSTEM.ADR(malloc));
+    GetProcAdr(libc, "free", SYSTEM.ADR(free));
+    GetProcAdr(libc, "exit", SYSTEM.ADR(_exit));
+    GetProcAdr(libc, "stdout", SYSTEM.ADR(stdout));
+    GetProcAdr(libc, "stdin", SYSTEM.ADR(stdin));
+    GetProcAdr(libc, "stderr", SYSTEM.ADR(stderr));
+    SYSTEM.GET(stdout - SYSTEM.SIZE(INTEGER), stdout);
+    SYSTEM.GET(stdin  - SYSTEM.SIZE(INTEGER), stdin);
+    SYSTEM.GET(stderr - SYSTEM.SIZE(INTEGER), stderr);
+    GetProcAdr(libc, "puts", SYSTEM.ADR(puts));
+    GetProcAdr(libc, "fwrite", SYSTEM.ADR(fwrite));
+    GetProcAdr(libc, "fread", SYSTEM.ADR(fread));
+    GetProcAdr(libc, "fopen", SYSTEM.ADR(fopen));
+    GetProcAdr(libc, "fclose", SYSTEM.ADR(fclose));
+    GetProcAdr(libc, "time", SYSTEM.ADR(time));
+
+    librt := dlopen(SYSTEM.SADR("librt.so.1"), RTLD_LAZY);
+    GetProcAdr(librt, "clock_gettime", SYSTEM.ADR(clock_gettime))
+END init;
+
+
+PROCEDURE exit* (code: INTEGER);
+BEGIN
+    _exit(code)
+END exit;
+
+
+PROCEDURE exit_thread* (code: INTEGER);
+BEGIN
+    _exit(code)
+END exit_thread;
+
+
+PROCEDURE dllentry* (hinstDLL, fdwReason, lpvReserved: INTEGER): INTEGER;
+    RETURN 0
+END dllentry;
+
+
+PROCEDURE sofinit*;
+BEGIN
+    IF fini # NIL THEN
+        fini
+    END
+END sofinit;
+
+
+PROCEDURE SetFini* (ProcFini: SOFINI);
+BEGIN
+    fini := ProcFini
+END SetFini;
+
+
+END API.

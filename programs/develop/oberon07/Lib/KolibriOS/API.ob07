@@ -1,7 +1,7 @@
-(*
+﻿(*
     BSD 2-Clause License
 
-    Copyright (c) 2018, Anton Krotov
+    Copyright (c) 2018, 2020, Anton Krotov
     All rights reserved.
 *)
 
@@ -316,6 +316,15 @@ END SetMultiThr;
 PROCEDURE GetTickCount* (): INTEGER;
     RETURN K.sysfunc2(26, 9) * 10
 END GetTickCount;
+
+
+PROCEDURE dllentry* (hinstDLL, fdwReason, lpvReserved: INTEGER): INTEGER;
+    RETURN 0
+END dllentry;
+
+
+PROCEDURE sofinit*;
+END sofinit;
 
 
 END API.

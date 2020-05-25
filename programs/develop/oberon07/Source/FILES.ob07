@@ -1,7 +1,7 @@
-(*
+﻿(*
     BSD 2-Clause License
 
-    Copyright (c) 2018-2019, Anton Krotov
+    Copyright (c) 2018-2020, Anton Krotov
     All rights reserved.
 *)
 
@@ -17,7 +17,9 @@ TYPE
         ptr: INTEGER;
 
         buffer: ARRAY 64*1024 OF BYTE;
-        count:  INTEGER
+        count:  INTEGER;
+
+        chksum*: INTEGER
 
     END;
 
@@ -83,7 +85,8 @@ BEGIN
     IF ptr > 0 THEN
         file := NewFile();
         file.ptr := ptr;
-        file.count := 0
+        file.count := 0;
+        file.chksum := 0
     ELSE
         file := NIL
     END
@@ -190,27 +193,11 @@ END write;
 
 PROCEDURE WriteByte* (file: FILE; byte: BYTE): BOOLEAN;
 VAR
-    res: BOOLEAN;
+    arr: ARRAY 1 OF BYTE;
 
 BEGIN
-    res := TRUE;
-    IF (file # NIL) & (file.count >= 0) THEN
-        IF file.count = LEN(file.buffer) THEN
-            IF flush(file) # LEN(file.buffer) THEN
-                res := FALSE
-            ELSE
-                file.buffer[0] := byte;
-                file.count := 1
-            END
-        ELSE
-            file.buffer[file.count] := byte;
-            INC(file.count)
-        END
-    ELSE
-        res := FALSE
-    END
-
-    RETURN res
+    arr[0] := byte
+    RETURN write(file, arr, 1) = 1
 END WriteByte;
 
 

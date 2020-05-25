@@ -1,13 +1,13 @@
-(*
+﻿(*
     BSD 2-Clause License
 
-    Copyright (c) 2018-2019, Anton Krotov
+    Copyright (c) 2018-2020, Anton Krotov
     All rights reserved.
 *)
 
 MODULE ERRORS;
 
-IMPORT C := CONSOLE, UTILS, mConst := CONSTANTS;
+IMPORT C := CONSOLE, UTILS;
 
 
 PROCEDURE HintMsg* (name: ARRAY OF CHAR; line, col, hint: INTEGER);
@@ -73,7 +73,7 @@ BEGIN
     | 43: str := "expression is not an integer"
     | 44: str := "out of range 0..MAXSET"
     | 45: str := "division by zero"
-    | 46: str := "integer division by zero"
+    | 46: str := "IV out of range"
     | 47: str := "'OF' or ',' expected"
     | 48: str := "undeclared identifier"
     | 49: str := "type expected"
@@ -137,7 +137,7 @@ BEGIN
     |107: str := "too large parameter of CHR"
     |108: str := "a variable or a procedure expected"
     |109: str := "expression should be constant"
-
+    |110: str := "out of range 0..65535"
     |111: str := "record [noalign] cannot have a base type"
     |112: str := "record [noalign] cannot be a base type"
     |113: str := "result type of procedure should not be REAL"
@@ -146,8 +146,8 @@ BEGIN
     |116: str := "procedure too deep nested"
 
     |120: str := "too many formal parameters"
-
-    |122: str := "negative divisor"
+    |121: str := "multiply defined handler"
+    |122: str := "bad divisor"
     |123: str := "illegal flag"
     |124: str := "unknown flag"
     |125: str := "flag not supported"
@@ -184,7 +184,7 @@ END Error5;
 
 PROCEDURE WrongRTL* (ProcName: ARRAY OF CHAR);
 BEGIN
-    Error5("procedure ", mConst.RTL_NAME, ".", ProcName, " not found")
+    Error5("procedure ", UTILS.RTL_NAME, ".", ProcName, " not found")
 END WrongRTL;
 
 
@@ -209,7 +209,7 @@ BEGIN
     |204: Error1("size of variables is too large")
     |205: Error1("not enough parameters")
     |206: Error1("bad parameter <target>")
-    |207: Error3('inputfile name extension must be "', mConst.FILE_EXT, '"')
+    |207: Error3('inputfile name extension must be "', UTILS.FILE_EXT, '"')
     END
 END Error;
 

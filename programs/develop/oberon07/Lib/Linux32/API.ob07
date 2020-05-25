@@ -1,7 +1,7 @@
-(*
+﻿(*
     BSD 2-Clause License
 
-    Copyright (c) 2019, Anton Krotov
+    Copyright (c) 2019-2020, Anton Krotov
     All rights reserved.
 *)
 
@@ -13,11 +13,13 @@ IMPORT SYSTEM;
 CONST
 
     RTLD_LAZY* = 1;
+    BIT_DEPTH* = 32;
 
 
 TYPE
 
     TP* = ARRAY 2 OF INTEGER;
+    SOFINI* = PROCEDURE;
 
 
 VAR
@@ -45,6 +47,8 @@ VAR
 
     clock_gettime* : PROCEDURE [linux] (clock_id: INTEGER; VAR tp: TP): INTEGER;
     time*          : PROCEDURE [linux] (ptr: INTEGER): INTEGER;
+
+    fini: SOFINI;
 
 
 PROCEDURE putc* (c: CHAR);
@@ -103,6 +107,7 @@ END GetProcAdr;
 
 PROCEDURE init* (sp, code: INTEGER);
 BEGIN
+    fini := NIL;
     SYSTEM.GET(code - 1000H - SYSTEM.SIZE(INTEGER) * 2, dlopen);
     SYSTEM.GET(code - 1000H - SYSTEM.SIZE(INTEGER),     dlsym);
     MainParam := sp;
@@ -140,6 +145,25 @@ PROCEDURE exit_thread* (code: INTEGER);
 BEGIN
     _exit(code)
 END exit_thread;
+
+
+PROCEDURE dllentry* (hinstDLL, fdwReason, lpvReserved: INTEGER): INTEGER;
+    RETURN 0
+END dllentry;
+
+
+PROCEDURE sofinit*;
+BEGIN
+    IF fini # NIL THEN
+        fini
+    END
+END sofinit;
+
+
+PROCEDURE SetFini* (ProcFini: SOFINI);
+BEGIN
+    fini := ProcFini
+END SetFini;
 
 
 END API.

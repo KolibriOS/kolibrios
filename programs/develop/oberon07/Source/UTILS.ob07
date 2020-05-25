@@ -1,7 +1,7 @@
-(*
+﻿(*
     BSD 2-Clause License
 
-    Copyright (c) 2018-2019, Anton Krotov
+    Copyright (c) 2018-2020, Anton Krotov
     All rights reserved.
 *)
 
@@ -22,6 +22,14 @@ CONST
 
     min32* = -2147483647-1;
     max32* =  2147483647;
+
+    vMajor* = 1;
+    vMinor* = 29;
+
+    FILE_EXT* = ".ob07";
+    RTL_NAME* = "RTL";
+
+    MAX_GLOBAL_SIZE* = 1600000000;
 
 
 TYPE
@@ -110,6 +118,11 @@ PROCEDURE splitf* (x: REAL; VAR a, b: INTEGER): INTEGER;
 END splitf;
 
 
+PROCEDURE d2s* (x: REAL): INTEGER;
+    RETURN HOST.d2s(x)
+END d2s;
+
+
 PROCEDURE isRelative* (path: ARRAY OF CHAR): BOOLEAN;
     RETURN HOST.isRelative(path)
 END isRelative;
@@ -143,7 +156,7 @@ BEGIN
 END UnixTime;
 
 
-PROCEDURE SetBitDepth* (BitDepth: INTEGER);
+PROCEDURE SetBitDepth* (BitDepth: INTEGER; Double: BOOLEAN);
 BEGIN
     ASSERT((BitDepth = 16) OR (BitDepth = 32) OR (BitDepth = 64));
     bit_diff := bit_depth - BitDepth;
@@ -154,8 +167,13 @@ BEGIN
     target.maxHex    := BitDepth DIV 4;
     target.minInt    := ASR(minint, bit_diff);
     target.maxInt    := ASR(maxint, bit_diff);
-    target.maxReal   := 1.9;
-    PACK(target.maxReal, 1023);
+
+    IF Double THEN
+        target.maxReal := maxreal
+    ELSE
+        target.maxReal := 1.9;
+        PACK(target.maxReal, 127)
+    END
 END SetBitDepth;
 
 
@@ -197,8 +215,6 @@ VAR
     n: INTEGER;
 
 BEGIN
-    ASSERT(x > 0);
-
     n := 0;
     WHILE ~ODD(x) DO
         x := x DIV 2;
@@ -258,7 +274,6 @@ END init;
 BEGIN
     time := GetTickCount();
     COPY(HOST.eol, eol);
-    maxreal := 1.9;
-    PACK(maxreal, 1023);
+    maxreal := HOST.maxreal;
     init(days)
 END UTILS.

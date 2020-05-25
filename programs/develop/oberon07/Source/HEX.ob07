@@ -1,0 +1,127 @@
+﻿(*
+    BSD 2-Clause License
+
+    Copyright (c) 2020, Anton Krotov
+    All rights reserved.
+*)
+
+MODULE HEX;
+
+IMPORT FILES, WRITER, CHL := CHUNKLISTS;
+
+
+PROCEDURE hexdgt (n: BYTE): BYTE;
+BEGIN
+    IF n < 10 THEN
+        n := n + ORD("0")
+    ELSE
+        n := n - 10 + ORD("A")
+    END
+
+    RETURN n
+END hexdgt;
+
+
+PROCEDURE Byte (file: FILES.FILE; byte: BYTE);
+BEGIN
+    WRITER.WriteByte(file, hexdgt(byte DIV 16));
+    WRITER.WriteByte(file, hexdgt(byte MOD 16));
+    INC(file.chksum, byte);
+END Byte;
+
+
+PROCEDURE NewLine (file: FILES.FILE);
+BEGIN
+    Byte(file, (-file.chksum) MOD 256);
+    file.chksum := 0;
+    WRITER.WriteByte(file, 0DH);
+    WRITER.WriteByte(file, 0AH)
+END NewLine;
+
+
+PROCEDURE StartCode (file: FILES.FILE);
+BEGIN
+    WRITER.WriteByte(file, ORD(":"));
+    file.chksum := 0
+END StartCode;
+
+
+PROCEDURE Data* (file: FILES.FILE; mem: ARRAY OF BYTE; idx, cnt: INTEGER);
+VAR
+    i, len: INTEGER;
+
+BEGIN
+    WHILE cnt > 0 DO
+        len := MIN(cnt, 16);
+        StartCode(file);
+        Byte(file, len);
+        Byte(file, idx DIV 256);
+        Byte(file, idx MOD 256);
+        Byte(file, 0);
+        FOR i := 1 TO len DO
+            Byte(file, mem[idx]);
+            INC(idx)
+        END;
+        DEC(cnt, len);
+        NewLine(file)
+    END
+END Data;
+
+
+PROCEDURE ExtLA* (file: FILES.FILE; LA: INTEGER);
+BEGIN
+    ASSERT((0 <= LA) & (LA <= 0FFFFH));
+    StartCode(file);
+    Byte(file, 2);
+    Byte(file, 0);
+    Byte(file, 0);
+    Byte(file, 4);
+    Byte(file, LA DIV 256);
+    Byte(file, LA MOD 256);
+    NewLine(file)
+END ExtLA;
+
+
+PROCEDURE Data2* (file: FILES.FILE; mem: CHL.BYTELIST; idx, cnt, LA: INTEGER);
+VAR
+    i, len, offset: INTEGER;
+
+BEGIN
+    ExtLA(file, LA);
+    offset := 0;
+    WHILE cnt > 0 DO
+        ASSERT(offset <= 65536);
+        IF offset = 65536 THEN
+            INC(LA);
+            ExtLA(file, LA);
+            offset := 0
+        END;
+        len := MIN(cnt, 16);
+        StartCode(file);
+        Byte(file, len);
+        Byte(file, offset DIV 256);
+        Byte(file, offset MOD 256);
+        Byte(file, 0);
+        FOR i := 1 TO len DO
+            Byte(file, CHL.GetByte(mem, idx));
+            INC(idx);
+            INC(offset)
+        END;
+        DEC(cnt, len);
+        NewLine(file)
+    END
+END Data2;
+
+
+PROCEDURE End* (file: FILES.FILE);
+BEGIN
+    StartCode(file);
+    Byte(file, 0);
+    Byte(file, 0);
+    Byte(file, 0);
+    Byte(file, 1);
+    NewLine(file)
+END End;
+
+
+END HEX.

@@ -1,20 +1,20 @@
-(*
+﻿(*
     BSD 2-Clause License
 
-    Copyright (c) 2019, Anton Krotov
+    Copyright (c) 2019-2020, Anton Krotov
     All rights reserved.
 *)
 
 MODULE MSP430;
 
-IMPORT IL, LISTS, REG, CHL := CHUNKLISTS, ERRORS, FILES, WRITER,
+IMPORT IL, LISTS, REG, CHL := CHUNKLISTS, ERRORS, WR := WRITER, HEX,
        UTILS, C := CONSOLE, PROG, RTL := MSP430RTL;
 
 
 CONST
 
-    minRAM* = 128;  maxRAM* = 10240;
-    minROM* = 2048; maxROM* = 49152;
+    minRAM* = 128;  maxRAM* = 2048;
+    minROM* = 2048; maxROM* = 24576;
 
     minStackSize = 64;
 
@@ -24,7 +24,7 @@ CONST
 
     R4 = 4; R5 = 5; R6 = 6; R7 = 7;
 
-    IR = 13; HP = 14; BP = 15;
+    HP = 14; IR = 15;
 
     ACC = R4;
 
@@ -108,6 +108,8 @@ VAR
 
     IdxWords: RECORD src, dst: INTEGER END;
 
+    StkCnt: INTEGER;
+
 
 PROCEDURE EmitLabel (L: INTEGER);
 VAR
@@ -167,9 +169,18 @@ END bw;
 
 
 PROCEDURE src_x (x, Rn: INTEGER): INTEGER;
+VAR
+    res: INTEGER;
+
 BEGIN
-    IdxWords.src := x
-    RETURN Rn * 256 + sIDX
+    IF (x = 0) & ~(Rn IN {PC, SR, CG}) THEN
+        res := Rn * 256 + sINDIR
+    ELSE
+        IdxWords.src := x;
+        res := Rn * 256 + sIDX
+    END
+
+    RETURN res
 END src_x;
 
 
@@ -197,7 +208,7 @@ VAR
 BEGIN
     CASE x OF
     | 0: res := CG * 256
-    | 1: res := src_x(0, CG); IdxWords.src := NOWORD
+    | 1: res := CG * 256 + sIDX
     | 2: res := indir(CG)
     | 4: res := indir(SR)
     | 8: res := incr(SR)
@@ -213,9 +224,9 @@ END imm;
 
 PROCEDURE Op2 (op, src, dst: INTEGER);
 BEGIN
-    ASSERT(BITS(op) + {6, 12..15} = {6, 12..15});
-    ASSERT(BITS(src) + {4, 5, 8..11} = {4, 5, 8..11});
-    ASSERT(BITS(dst) + {0..3, 7} = {0..3, 7});
+    ASSERT(BITS(op) - {6, 12..15} = {});
+    ASSERT(BITS(src) - {4, 5, 8..11} = {});
+    ASSERT(BITS(dst) - {0..3, 7} = {});
 
     EmitWord(op + src + dst);
 
@@ -254,7 +265,8 @@ BEGIN
     ELSE
         Op1(opPUSH, PC, sINCR);
         EmitWord(imm)
-    END
+    END;
+    INC(StkCnt)
 END PushImm;
 
 
@@ -376,13 +388,15 @@ END Fixup;
 
 PROCEDURE Push (reg: INTEGER);
 BEGIN
-    Op1(opPUSH, reg, sREG)
+    Op1(opPUSH, reg, sREG);
+    INC(StkCnt)
 END Push;
 
 
 PROCEDURE Pop (reg: INTEGER);
 BEGIN
-    Op2(opMOV, incr(SP), reg)
+    Op2(opMOV, incr(SP), reg);
+    DEC(StkCnt)
 END Pop;
 
 
@@ -430,7 +444,8 @@ BEGIN
     EmitCall(RTL.rtl[proc].label);
     RTL.Used(proc);
     IF params > 0 THEN
-        Op2(opADD, imm(params * 2), SP)
+        Op2(opADD, imm(params * 2), SP);
+        DEC(StkCnt, params)
     END
 END CallRTL;
 
@@ -582,11 +597,26 @@ BEGIN
 END Neg;
 
 
+PROCEDURE LocalOffset (offset: INTEGER): INTEGER;
+    RETURN (offset + StkCnt - ORD(offset > 0)) * 2
+END LocalOffset;
+
+
+PROCEDURE LocalDst (offset: INTEGER): INTEGER;
+    RETURN dst_x(LocalOffset(offset), SP)
+END LocalDst;
+
+
+PROCEDURE LocalSrc (offset: INTEGER): INTEGER;
+    RETURN src_x(LocalOffset(offset), SP)
+END LocalSrc;
+
+
 PROCEDURE translate;
 VAR
     cmd, next: COMMAND;
 
-    opcode, param1, param2, label, L, a, n, c1, c2: INTEGER;
+    opcode, param1, param2, L, a, n, c1, c2: INTEGER;
 
     reg1, reg2: INTEGER;
 
@@ -623,6 +653,7 @@ BEGIN
 
         |IL.opSADR_PARAM:
             Op1(opPUSH, PC, sINCR);
+            INC(StkCnt);
             EmitWord(param2);
             Reloc(RDATA)
 
@@ -632,17 +663,18 @@ BEGIN
         |IL.opPUSHC:
             PushImm(param2)
 
+        |IL.opONERR:
+            PushImm(param2);
+            DEC(StkCnt);
+            EmitJmp(opJMP, param1)
+
         |IL.opLEAVEC:
             Pop(PC)
 
         |IL.opENTER:
             ASSERT(R.top = -1);
-
+            StkCnt := 0;
             EmitLabel(param1);
-
-            Push(BP);
-            MovRR(SP, BP);
-
             IF param2 > 8 THEN
                 Op2(opMOV, imm(param2), R4);
                 L := NewLabel();
@@ -668,14 +700,11 @@ BEGIN
                 END;
                 drop
             END;
-
             ASSERT(R.top = -1);
-
+            ASSERT(StkCnt = param1);
             IF param1 > 0 THEN
-                MovRR(BP, SP)
+                Op2(opADD, imm(param1 * 2), SP)
             END;
-
-            Pop(BP);
             Pop(PC)
 
         |IL.opRES:
@@ -684,7 +713,8 @@ BEGIN
 
         |IL.opCLEANUP:
             IF param2 # 0 THEN
-                Op2(opADD, imm(param2 * 2), SP)
+                Op2(opADD, imm(param2 * 2), SP);
+                DEC(StkCnt, param2)
             END
 
         |IL.opCONST:
@@ -720,14 +750,17 @@ BEGIN
 
         |IL.opLADR:
             reg1 := GetAnyReg();
-            MovRR(BP, reg1);
-            Op2(opADD, imm(param2 * 2), reg1)
+            n := LocalOffset(param2);
+            Op2(opMOV, SP * 256, reg1);
+            IF n # 0 THEN
+                Op2(opADD, imm(n), reg1)
+            END
 
         |IL.opLLOAD8:
-            Op2(opMOV + BW, src_x(param2 * 2, BP), GetAnyReg())
+            Op2(opMOV + BW, LocalSrc(param2), GetAnyReg())
 
         |IL.opLLOAD16, IL.opVADR:
-            Op2(opMOV, src_x(param2 * 2, BP), GetAnyReg())
+            Op2(opMOV, LocalSrc(param2), GetAnyReg())
 
         |IL.opGLOAD8:
             Op2(opMOV + BW, src_x(param2, SR), GetAnyReg());
@@ -747,12 +780,12 @@ BEGIN
 
         |IL.opVLOAD8:
             reg1 := GetAnyReg();
-            Op2(opMOV, src_x(param2 * 2, BP), reg1);
+            Op2(opMOV, LocalSrc(param2), reg1);
             Op2(opMOV + BW, indir(reg1), reg1)
 
         |IL.opVLOAD16:
             reg1 := GetAnyReg();
-            Op2(opMOV, src_x(param2 * 2, BP), reg1);
+            Op2(opMOV, LocalSrc(param2), reg1);
             Op2(opMOV, indir(reg1), reg1)
 
         |IL.opSAVE, IL.opSAVE16:
@@ -803,20 +836,15 @@ BEGIN
                 Op2(opSUB, imm(param2), reg1)
             END;
             IF opcode = IL.opSUBL THEN
-                reg2 := GetAnyReg();
-                Clear(reg2);
-                Op2(opSUB, reg1 * 256, reg2);
-                drop;
-                drop;
-                ASSERT(REG.GetReg(R, reg2))
+                Neg(reg1)
             END
 
         |IL.opLADR_SAVEC:
-            Op2(opMOV, imm(param2), dst_x(param1 * 2, BP))
+            Op2(opMOV, imm(param2), LocalDst(param1))
 
         |IL.opLADR_SAVE:
             UnOp(reg1);
-            Op2(opMOV, reg1 * 256, dst_x(param2 * 2, BP));
+            Op2(opMOV, reg1 * 256, LocalDst(param2));
             drop
 
         |IL.opGADR_SAVEC:
@@ -850,17 +878,14 @@ BEGIN
 
             drop;
             cc := cond(opcode);
+            next := cmd.next(COMMAND);
 
-            IF cmd.next(COMMAND).opcode = IL.opJE THEN
-                label := cmd.next(COMMAND).param1;
-                jcc(cc, label);
-                cmd := cmd.next(COMMAND)
-
-            ELSIF cmd.next(COMMAND).opcode = IL.opJNE THEN
-                label := cmd.next(COMMAND).param1;
-                jcc(ORD(BITS(cc) / {0}), label);
-                cmd := cmd.next(COMMAND)
-
+            IF next.opcode = IL.opJE THEN
+                jcc(cc, next.param1);
+                cmd := next
+            ELSIF next.opcode = IL.opJNE THEN
+                jcc(ORD(BITS(cc) / {0}), next.param1);
+                cmd := next
             ELSE
                 setcc(cc, GetAnyReg())
             END
@@ -942,14 +967,11 @@ BEGIN
             BinOp(reg1, reg2);
             IF param2 # -1 THEN
                 Op2(opCMP, reg1 * 256, reg2);
-                MovRR(reg2, reg1);
-                drop;
                 jcc(jb, param1)
-            ELSE
-                INCL(R.regs, reg1);
-                DEC(R.top);
-                R.stk[R.top] := reg2
-            END
+            END;
+            INCL(R.regs, reg1);
+            DEC(R.top);
+            R.stk[R.top] := reg2
 
         |IL.opINCC, IL.opINCCB:
             UnOp(reg1);
@@ -974,19 +996,19 @@ BEGIN
             drop
 
         |IL.opLADR_INCC, IL.opLADR_INCCB:
-            Op2(opADD + bw(opcode = IL.opLADR_INCCB), imm(param2), dst_x(param1 * 2, BP))
+            Op2(opADD + bw(opcode = IL.opLADR_INCCB), imm(param2), LocalDst(param1))
 
         |IL.opLADR_DECCB:
-            Op2(opSUB + BW, imm(param2), dst_x(param1 * 2, BP))
+            Op2(opSUB + BW, imm(param2), LocalDst(param1))
 
         |IL.opLADR_INC, IL.opLADR_INCB:
             UnOp(reg1);
-            Op2(opADD + bw(opcode = IL.opLADR_INCB), reg1 * 256, dst_x(param2 * 2, BP));
+            Op2(opADD + bw(opcode = IL.opLADR_INCB), reg1 * 256, LocalDst(param2));
             drop
 
         |IL.opLADR_DEC, IL.opLADR_DECB:
             UnOp(reg1);
-            Op2(opSUB + bw(opcode = IL.opLADR_DECB), reg1 * 256, dst_x(param2 * 2, BP));
+            Op2(opSUB + bw(opcode = IL.opLADR_DECB), reg1 * 256, LocalDst(param2));
             drop
 
         |IL.opPUSHT:
@@ -1023,6 +1045,7 @@ BEGIN
             UnOp(reg1);
             PushAll(0);
             Op1(opPUSH, reg1, sIDX);
+            INC(StkCnt);
             EmitWord(-2);
             PushImm(param2);
             CallRTL(RTL._guardrec, 2);
@@ -1078,36 +1101,29 @@ BEGIN
             CallRTL(RTL._length, 2);
             GetRegA
 
-        |IL.opMIN:
+        |IL.opMAX,IL.opMIN:
             BinOp(reg1, reg2);
             Op2(opCMP, reg2 * 256, reg1);
-            EmitWord(opJL + 1); (* jl L *)
-            MovRR(reg2, reg1);
-                                (* L: *)
-            drop
-
-
-        |IL.opMAX:
-            BinOp(reg1, reg2);
-            Op2(opCMP, reg2 * 256, reg1);
-            EmitWord(opJGE + 1); (* jge L *)
+            IF opcode = IL.opMIN THEN
+                cc := opJL + 1
+            ELSE
+                cc := opJGE + 1
+            END;
+            EmitWord(cc);        (* jge/jl L *)
             MovRR(reg2, reg1);
                                  (* L: *)
             drop
 
-        |IL.opMINC:
+        |IL.opMAXC, IL.opMINC:
             UnOp(reg1);
             Op2(opCMP, imm(param2), reg1);
             L := NewLabel();
-            jcc(jl, L);
-            Op2(opMOV, imm(param2), reg1);
-            EmitLabel(L)
-
-        |IL.opMAXC:
-            UnOp(reg1);
-            Op2(opCMP, imm(param2), reg1);
-            L := NewLabel();
-            jcc(jge, L);
+            IF opcode = IL.opMINC THEN
+                cc := jl
+            ELSE
+                cc := jge
+            END;
+            jcc(cc, L);
             Op2(opMOV, imm(param2), reg1);
             EmitLabel(L)
 
@@ -1152,10 +1168,6 @@ BEGIN
             UnOp(reg1);
             Op2(opMOV + BW, imm(param2), dst_x(0, reg1));
             drop
-
-        |IL.opODD:
-            UnOp(reg1);
-            Op2(opAND, imm(1), reg1)
 
         |IL.opEQS .. IL.opGES:
             PushAll(4);
@@ -1353,6 +1365,7 @@ BEGIN
             UnOp(reg1);
             PushAll_1;
             Op1(opPUSH, PC, sINCR);
+            INC(StkCnt);
             EmitWord(param2);
             Reloc(RDATA);
             Push(reg1);
@@ -1432,8 +1445,10 @@ BEGIN
             END
 
         |IL.opVADR_PARAM:
-            Op1(opPUSH, BP, sIDX);
-            EmitWord(param2 * 2)
+            reg1 := GetAnyReg();
+            Op2(opMOV, LocalSrc(param2), reg1);
+            Push(reg1);
+            drop
 
         |IL.opNEW:
             PushAll(1);
@@ -1505,8 +1520,11 @@ BEGIN
 
         |IL.opLADR_INCL, IL.opLADR_EXCL:
             PushAll(1);
-            MovRR(BP, ACC);
-            Op2(opADD, imm(param2 * 2), ACC);
+            MovRR(SP, ACC);
+            n := LocalOffset(param2);
+            IF n # 0 THEN
+                Op2(opADD, imm(n), ACC)
+            END;
             Push(ACC);
             IF opcode = IL.opLADR_INCL THEN
                 CallRTL(RTL._incl, 2)
@@ -1515,10 +1533,10 @@ BEGIN
             END
 
         |IL.opLADR_INCLC:
-            Op2(opBIS, imm(ORD({param2})), dst_x(param1 * 2, BP))
+            Op2(opBIS, imm(ORD({param2})), LocalDst(param1))
 
         |IL.opLADR_EXCLC:
-            Op2(opBIC, imm(ORD({param2})), dst_x(param1 * 2, BP))
+            Op2(opBIC, imm(ORD({param2})), LocalDst(param1))
 
         END;
 
@@ -1598,51 +1616,6 @@ BEGIN
 END epilog;
 
 
-PROCEDURE hexdgt (n: BYTE): BYTE;
-BEGIN
-    IF n < 10 THEN
-        n := n + ORD("0")
-    ELSE
-        n := n - 10 + ORD("A")
-    END
-
-    RETURN n
-END hexdgt;
-
-
-PROCEDURE WriteHexByte (file: FILES.FILE; byte: BYTE);
-BEGIN
-    WRITER.WriteByte(file, hexdgt(byte DIV 16));
-    WRITER.WriteByte(file, hexdgt(byte MOD 16));
-END WriteHexByte;
-
-
-PROCEDURE WriteHex (file: FILES.FILE; mem: ARRAY OF BYTE; idx, cnt: INTEGER);
-VAR
-    i, len, chksum: INTEGER;
-
-BEGIN
-    WHILE cnt > 0 DO
-        len := MIN(cnt, 16);
-        chksum := len + idx DIV 256 + idx MOD 256;
-        WRITER.WriteByte(file, ORD(":"));
-        WriteHexByte(file, len);
-        WriteHexByte(file, idx DIV 256);
-        WriteHexByte(file, idx MOD 256);
-        WriteHexByte(file, 0);
-        FOR i := 1 TO len DO
-            WriteHexByte(file, mem[idx]);
-            INC(chksum, mem[idx]);
-            INC(idx)
-        END;
-        WriteHexByte(file, (-chksum) MOD 256);
-        DEC(cnt, len);
-        WRITER.WriteByte(file, 0DH);
-        WRITER.WriteByte(file, 0AH)
-    END
-END WriteHex;
-
-
 PROCEDURE CodeGen* (outname: ARRAY OF CHAR; target: INTEGER; options: PROG.OPTIONS);
 VAR
     i, adr, heap, stack, TextSize, TypesSize, bits, n: INTEGER;
@@ -1653,7 +1626,7 @@ VAR
 
     reloc: RELOC;
 
-    file: FILES.FILE;
+    file: WR.FILE;
 
 BEGIN
     IdxWords.src := NOWORD;
@@ -1694,7 +1667,7 @@ BEGIN
     Code.size := Fixup(Code.address, IntVectorSize + TypesSize);
     Data.address := Code.address + Code.size;
     Data.size := CHL.Length(IL.codes.data);
-    Data.size := Data.size + ORD(ODD(Data.size));
+    Data.size := Data.size + Data.size MOD 2;
     TextSize  := Code.size + Data.size;
 
     IF Code.address + TextSize + MAX(IL.codes.dmin - Data.size, IntVectorSize + TypesSize) > 10000H  THEN
@@ -1702,7 +1675,7 @@ BEGIN
     END;
 
     Bss.address := RTL.ram + RTL.VarSize;
-    Bss.size := IL.codes.bss + ORD(ODD(IL.codes.bss));
+    Bss.size := IL.codes.bss + IL.codes.bss MOD 2;
     heap := Bss.address + Bss.size;
     stack := RTL.ram + ram;
     ASSERT(stack - heap >= minStackSize);
@@ -1754,25 +1727,19 @@ BEGIN
     PutWord(Free.size, adr);
     PutWord(4130H, adr); (* RET *)
     PutWord(stack, adr);
+    PutWord(0001H, adr); (* bsl signature (adr 0FFBEH) *)
 
     FOR i := 0 TO LEN(IV) - 1 DO
         PutWord(LabelOffs(IV[i]) * 2, adr)
     END;
 
-    file := FILES.create(outname);
-    WriteHex(file, mem, Code.address, TextSize);
-    WriteHex(file, mem, 10000H - IntVectorSize - TypesSize, IntVectorSize + TypesSize);
+    file := WR.Create(outname);
 
-    WRITER.WriteByte(file, ORD(":"));
-    WriteHexByte(file, 0);
-    WriteHexByte(file, 0);
-    WriteHexByte(file, 0);
-    WriteHexByte(file, 1);
-    WriteHexByte(file, 255);
-    WRITER.WriteByte(file, 0DH);
-    WRITER.WriteByte(file, 0AH);
+    HEX.Data(file, mem, Code.address, TextSize);
+    HEX.Data(file, mem, 10000H - IntVectorSize - TypesSize, IntVectorSize + TypesSize);
+    HEX.End(file);
 
-    FILES.close(file);
+    WR.Close(file);
 
     INC(TextSize, IntVectorSize + TypesSize);
     INC(Bss.size, minStackSize + RTL.VarSize);
@@ -1784,8 +1751,7 @@ BEGIN
             C.Hex(Free.address, 4); C.String("H..0"); C.Hex(Free.address + Free.size - 1, 4); C.StringLn("H)")
     END;
     C.Ln;
-    C.String(  "  ram:  "); C.Int(Bss.size); C.String(" of "); C.Int(ram); C.String("  ("); C.Int(Bss.size * 100 DIV ram); C.StringLn("%)");
-    C.StringLn("--------------------------------------------")
+    C.String(  "  ram:  "); C.Int(Bss.size); C.String(" of "); C.Int(ram); C.String("  ("); C.Int(Bss.size * 100 DIV ram); C.StringLn("%)")
 
 END CodeGen;
 

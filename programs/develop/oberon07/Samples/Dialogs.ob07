@@ -1,4 +1,4 @@
-MODULE Dialogs;
+﻿MODULE Dialogs;
 
 IMPORT KOSAPI, sys := SYSTEM, OpenDlg, ColorDlg;
 

@@ -1,7 +1,7 @@
-(*
+﻿(*
     BSD 2-Clause License
 
-    Copyright (c) 2018-2019, Anton Krotov
+    Copyright (c) 2018-2020, Anton Krotov
     All rights reserved.
 *)
 
@@ -9,8 +9,8 @@ MODULE STATEMENTS;
 
 IMPORT
 
-    PARS, PROG, SCAN, ARITH, STRINGS, LISTS, IL, X86, AMD64, MSP430,
-    ERRORS, UTILS, AVL := AVLTREES, CONSOLE, C := COLLECTIONS, mConst := CONSTANTS;
+    PARS, PROG, SCAN, ARITH, STRINGS, LISTS, IL, X86, AMD64, MSP430, THUMB,
+    ERRORS, UTILS, AVL := AVLTREES, CONSOLE, C := COLLECTIONS, TARGETS;
 
 
 CONST
@@ -28,8 +28,6 @@ CONST
     chkIDX* = 0; chkGUARD* = 1; chkPTR* = 2; chkCHR* = 3; chkWCHR* = 4; chkBYTE* = 5;
 
     chkALL* = {chkIDX, chkGUARD, chkPTR, chkCHR, chkWCHR, chkBYTE};
-
-    cpuX86 = 1; cpuAMD64 = 2; cpuMSP430 = 3;
 
 
 TYPE
@@ -362,8 +360,8 @@ END CheckRange;
 
 PROCEDURE assign (e: PARS.EXPR; VarType: PROG.TYPE_; line: INTEGER): BOOLEAN;
 VAR
-    res:    BOOLEAN;
-    label:  INTEGER;
+    res:   BOOLEAN;
+    label: INTEGER;
 
 BEGIN
     IF isExpr(e) OR (e.obj IN {ePROC, eIMP}) THEN
@@ -418,7 +416,7 @@ BEGIN
             IF e.obj = eCONST THEN
                 IL.Float(ARITH.Float(e.value))
             END;
-            IL.savef
+            IL.savef(e.obj = eCONST)
         ELSIF isChar(e) & (VarType = tCHAR) THEN
             IF e.obj = eCONST THEN
                 IL.AddCmd(IL.opSAVE8C, ARITH.Int(e.value))
@@ -500,6 +498,7 @@ VAR
     PROCEDURE ArrLen (t: PROG.TYPE_; n: INTEGER): INTEGER;
     VAR
         res: INTEGER;
+
     BEGIN
         REPEAT
             res := t.length;
@@ -513,8 +512,8 @@ VAR
 
     PROCEDURE OpenArray (t, t2: PROG.TYPE_);
     VAR
-        n: INTEGER;
-        d1, d2: INTEGER;
+        n, d1, d2: INTEGER;
+
     BEGIN
         IF t.length # 0 THEN
             IL.Param1;
@@ -606,7 +605,7 @@ BEGIN
                     IF p.type.base = tCHAR THEN
                         stroffs := String(e);
                         IL.StrAdr(stroffs);
-                        IF (CPU = cpuMSP430) & (p.type.size - strlen(e) - 1 > MSP430.IntVectorSize) THEN
+                        IF (CPU = TARGETS.cpuMSP430) & (p.type.size - strlen(e) - 1 > MSP430.IntVectorSize) THEN
                             ERRORS.WarningMsg(pos.line, pos.col, 0)
                         END
                     ELSE (* WCHAR *)
@@ -648,17 +647,16 @@ END PExpression;
 
 PROCEDURE stProc (parser: PARS.PARSER; VAR e: PARS.EXPR);
 VAR
-    e2:    PARS.EXPR;
-    pos:   PARS.POSITION;
-    proc:  INTEGER;
-    label: INTEGER;
-    n, i:  INTEGER;
-    code:  ARITH.VALUE;
-    e1:    PARS.EXPR;
-    wchar: BOOLEAN;
+    e1, e2: PARS.EXPR;
+    pos:    PARS.POSITION;
+    proc,
+    label,
+    n, i:   INTEGER;
+    code:   ARITH.VALUE;
+    wchar,
+    comma:  BOOLEAN;
     cmd1,
-    cmd2:  IL.COMMAND;
-    comma: BOOLEAN;
+    cmd2:   IL.COMMAND;
 
 
     PROCEDURE varparam (parser: PARS.PARSER; pos: PARS.POSITION; isfunc: isXXX; readOnly: BOOLEAN; VAR e: PARS.EXPR);
@@ -675,6 +673,7 @@ VAR
     PROCEDURE shift_minmax (proc: INTEGER): CHAR;
     VAR
         res: CHAR;
+
     BEGIN
         CASE proc OF
         |PROG.stASR: res := "A"
@@ -777,7 +776,7 @@ BEGIN
 
         |PROG.stNEW:
             varparam(parser, pos, isPtr, TRUE, e);
-            IF CPU = cpuMSP430 THEN
+            IF CPU = TARGETS.cpuMSP430 THEN
                 PARS.check(e.type.base.size + 16 < Options.ram, pos, 63)
             END;
             IL.New(e.type.base.size, e.type.base.num)
@@ -885,9 +884,9 @@ BEGIN
                 PARS.check(e2.type.typ IN PROG.BASICTYPES + {PROG.tPOINTER, PROG.tPROCEDURE}, pos, 66);
                 IF e2.obj = eCONST THEN
                     IF e2.type = tREAL THEN
-                        IL.setlast(endcall.prev(IL.COMMAND));
                         IL.Float(ARITH.Float(e2.value));
-                        IL.savef
+                        IL.setlast(endcall.prev(IL.COMMAND));
+                        IL.savef(FALSE)
                     ELSE
                         LoadConst(e2);
                         IL.setlast(endcall.prev(IL.COMMAND));
@@ -896,7 +895,7 @@ BEGIN
                 ELSE
                     IL.setlast(endcall.prev(IL.COMMAND));
                     IF e2.type = tREAL THEN
-                        IL.savef
+                        IL.savef(FALSE)
                     ELSIF e2.type = tBYTE THEN
                         IL.SysPut(tINTEGER.size)
                     ELSE
@@ -962,8 +961,10 @@ BEGIN
                 getpos(parser, pos);
                 PARS.ConstExpression(parser, code);
                 PARS.check(code.typ = ARITH.tINTEGER, pos, 43);
-                IF CPU # cpuMSP430 THEN
+                IF CPU IN {TARGETS.cpuX86, TARGETS.cpuAMD64} THEN
                     PARS.check(ARITH.range(code, 0, 255), pos, 42)
+                ELSIF CPU = TARGETS.cpuTHUMB THEN
+                    PARS.check(ARITH.range(code, 0, 65535), pos, 110)
                 END;
                 IL.AddCmd(IL.opCODE, ARITH.getInt(code));
                 comma := parser.sym = SCAN.lxCOMMA;
@@ -1113,7 +1114,7 @@ BEGIN
             IF e.obj = eCONST THEN
                 ARITH.odd(e.value)
             ELSE
-                IL.AddCmd0(IL.opODD)
+                IL.AddCmd(IL.opMODR, 2)
             END
 
         |PROG.stORD:
@@ -1340,7 +1341,7 @@ END qualident;
 
 PROCEDURE deref (pos: PARS.POSITION; e: PARS.EXPR; load: BOOLEAN; error: INTEGER);
 VAR
-    label:  INTEGER;
+    label: INTEGER;
 
 BEGIN
     IF load THEN
@@ -1409,9 +1410,8 @@ VAR
 
     PROCEDURE OpenIdx (parser: PARS.PARSER; pos: PARS.POSITION; e: PARS.EXPR);
     VAR
-        label:  INTEGER;
-        type:   PROG.TYPE_;
-        n, offset, k: INTEGER;
+        label, offset, n, k: INTEGER;
+        type: PROG.TYPE_;
 
     BEGIN
 
@@ -1571,12 +1571,12 @@ END designator;
 
 PROCEDURE ProcCall (e: PARS.EXPR; procType: PROG.TYPE_; isfloat: BOOLEAN; VAR fregs: INTEGER; parser: PARS.PARSER; pos: PARS.POSITION; CallStat: BOOLEAN);
 VAR
-    cconv:     INTEGER;
-    parSize:   INTEGER;
-    callconv:  INTEGER;
-    fparSize:  INTEGER;
-    int, flt:  INTEGER;
-    stk_par:   INTEGER;
+    cconv,
+    parSize,
+    callconv,
+    fparSize,
+    int, flt,
+    stk_par:  INTEGER;
 
 BEGIN
     cconv := procType.call;
@@ -1862,11 +1862,8 @@ VAR
     PROCEDURE term (parser: PARS.PARSER; VAR e: PARS.EXPR);
     VAR
         pos: PARS.POSITION;
-        op:  INTEGER;
         e1:  PARS.EXPR;
-
-        label:  INTEGER;
-        label1: INTEGER;
+        op, label, label1: INTEGER;
 
     BEGIN
         factor(parser, e);
@@ -1972,10 +1969,7 @@ VAR
             |SCAN.lxDIV, SCAN.lxMOD:
                 PARS.check(isInt(e) & isInt(e1), pos, 37);
                 IF e1.obj = eCONST THEN
-                    PARS.check(~ARITH.isZero(e1.value), pos, 46);
-                    IF CPU = cpuMSP430 THEN
-                        PARS.check(ARITH.Int(e1.value) > 0, pos, 122)
-                    END
+                    PARS.check(ARITH.Int(e1.value) > 0, pos, 122)
                 END;
                 IF (e.obj = eCONST) & (e1.obj = eCONST) THEN
 
@@ -1988,11 +1982,7 @@ VAR
                 ELSE
                     IF e1.obj # eCONST THEN
                         label1 := IL.NewLabel();
-                        IF CPU = cpuMSP430 THEN
-                            IL.AddJmpCmd(IL.opJG, label1)
-                        ELSE
-                            IL.AddJmpCmd(IL.opJNZ, label1)
-                        END
+                        IL.AddJmpCmd(IL.opJG, label1)
                     END;
                     IF e.obj = eCONST THEN
                         IL.OnError(pos.line, errDIV);
@@ -2223,7 +2213,6 @@ VAR
         res: BOOLEAN;
 
     BEGIN
-
         res := TRUE;
 
         IF isString(e) & isCharArray(e1) THEN
@@ -2527,11 +2516,11 @@ END expression;
 
 PROCEDURE ElementaryStatement (parser: PARS.PARSER);
 VAR
-    e, e1:    PARS.EXPR;
-    pos:      PARS.POSITION;
-    line:     INTEGER;
-    call:     BOOLEAN;
-    fregs:    INTEGER;
+    e, e1: PARS.EXPR;
+    pos:   PARS.POSITION;
+    line:  INTEGER;
+    call:  BOOLEAN;
+    fregs: INTEGER;
 
 BEGIN
     getpos(parser, pos);
@@ -2590,8 +2579,8 @@ END ElementaryStatement;
 
 PROCEDURE IfStatement (parser: PARS.PARSER; if: BOOLEAN);
 VAR
-    e:     PARS.EXPR;
-    pos:   PARS.POSITION;
+    e:   PARS.EXPR;
+    pos: PARS.POSITION;
 
     label, L: INTEGER;
 
@@ -2731,16 +2720,16 @@ END NewVariant;
 
 PROCEDURE CaseStatement (parser: PARS.PARSER);
 VAR
-    e:      PARS.EXPR;
-    pos:    PARS.POSITION;
+    e:   PARS.EXPR;
+    pos: PARS.POSITION;
 
 
     PROCEDURE Label (parser: PARS.PARSER; caseExpr: PARS.EXPR; VAR type: PROG.TYPE_): INTEGER;
     VAR
-        a:      INTEGER;
-        label:  PARS.EXPR;
-        pos:    PARS.POSITION;
-        value:  ARITH.VALUE;
+        a:     INTEGER;
+        label: PARS.EXPR;
+        pos:   PARS.POSITION;
+        value: ARITH.VALUE;
 
     BEGIN
         getpos(parser, pos);
@@ -2856,11 +2845,11 @@ VAR
 
     PROCEDURE case (parser: PARS.PARSER; caseExpr: PARS.EXPR; VAR tree: AVL.NODE; end: INTEGER);
     VAR
-        sym:      INTEGER;
-        t:        PROG.TYPE_;
-        variant:  INTEGER;
-        node:     AVL.NODE;
-        last:     IL.COMMAND;
+        sym:     INTEGER;
+        t:       PROG.TYPE_;
+        variant: INTEGER;
+        node:    AVL.NODE;
+        last:    IL.COMMAND;
 
     BEGIN
         sym := parser.sym;
@@ -2958,7 +2947,7 @@ VAR
     VAR
         table, end, else: INTEGER;
         tree: AVL.NODE;
-        item:  LISTS.ITEM;
+        item: LISTS.ITEM;
 
     BEGIN
         LISTS.push(CaseVariants, NewVariant(0, NIL));
@@ -3026,11 +3015,11 @@ BEGIN
     ELSIF isRec(e) THEN
         IL.drop;
         IL.AddCmd(IL.opLADR, e.ident.offset - 1);
-        IL.load(PARS.program.target.word)
+        IL.load(TARGETS.WordSize)
     ELSIF isPtr(e) THEN
         deref(pos, e, FALSE, errPTR);
-        IL.AddCmd(IL.opSUBR, PARS.program.target.word);
-        IL.load(PARS.program.target.word)
+        IL.AddCmd(IL.opSUBR, TARGETS.WordSize);
+        IL.load(TARGETS.WordSize)
     END;
 
     PARS.checklex(parser, SCAN.lxOF);
@@ -3222,7 +3211,7 @@ VAR
 
     PROCEDURE getproc (rtl: PROG.UNIT; name: SCAN.LEXSTR; idx: INTEGER);
     VAR
-        id:    PROG.IDENT;
+        id: PROG.IDENT;
 
     BEGIN
         id := PROG.getIdent(rtl, SCAN.enterid(name), FALSE);
@@ -3243,29 +3232,42 @@ BEGIN
     rtl := PARS.program.rtl;
     ASSERT(rtl # NIL);
 
-    IF CPU IN {cpuX86, cpuAMD64} THEN
-        getproc(rtl,  "_strcmp",    IL._strcmp);
-        getproc(rtl,  "_length",    IL._length);
-        getproc(rtl,  "_arrcpy",    IL._arrcpy);
-        getproc(rtl,  "_is",        IL._is);
-        getproc(rtl,  "_guard",     IL._guard);
-        getproc(rtl,  "_guardrec",  IL._guardrec);
-        getproc(rtl,  "_error",     IL._error);
-        getproc(rtl,  "_new",       IL._new);
-        getproc(rtl,  "_rot",       IL._rot);
-        getproc(rtl,  "_strcpy",    IL._strcpy);
-        getproc(rtl,  "_move",      IL._move);
-        getproc(rtl,  "_divmod",    IL._divmod);
-        getproc(rtl,  "_set",       IL._set);
-        getproc(rtl,  "_set1",      IL._set1);
-        getproc(rtl,  "_isrec",     IL._isrec);
-        getproc(rtl,  "_lengthw",   IL._lengthw);
-        getproc(rtl,  "_strcmpw",   IL._strcmpw);
-        getproc(rtl,  "_dllentry",  IL._dllentry);
-        getproc(rtl,  "_dispose",   IL._dispose);
-        getproc(rtl,  "_exit",      IL._exit);
-        getproc(rtl,  "_init",      IL._init);
-        getproc(rtl,  "_sofinit",   IL._sofinit)
+    getproc(rtl, "_strcmp",   IL._strcmp);
+    getproc(rtl, "_length",   IL._length);
+    getproc(rtl, "_arrcpy",   IL._arrcpy);
+    getproc(rtl, "_is",       IL._is);
+    getproc(rtl, "_guard",    IL._guard);
+    getproc(rtl, "_guardrec", IL._guardrec);
+    getproc(rtl, "_new",      IL._new);
+    getproc(rtl, "_rot",      IL._rot);
+    getproc(rtl, "_strcpy",   IL._strcpy);
+    getproc(rtl, "_move",     IL._move);
+    getproc(rtl, "_set",      IL._set);
+    getproc(rtl, "_set1",     IL._set1);
+    getproc(rtl, "_lengthw",  IL._lengthw);
+    getproc(rtl, "_strcmpw",  IL._strcmpw);
+    getproc(rtl, "_init",     IL._init);
+
+    IF CPU IN {TARGETS.cpuX86, TARGETS.cpuAMD64} THEN
+        getproc(rtl, "_error",    IL._error);
+        getproc(rtl, "_divmod",   IL._divmod);
+        getproc(rtl, "_exit",     IL._exit);
+        getproc(rtl, "_dispose",  IL._dispose);
+        getproc(rtl, "_isrec",    IL._isrec);
+        getproc(rtl, "_dllentry", IL._dllentry);
+        getproc(rtl, "_sofinit",  IL._sofinit)
+    ELSIF CPU = TARGETS.cpuTHUMB THEN
+        getproc(rtl, "_fmul",  IL._fmul);
+        getproc(rtl, "_fdiv",  IL._fdiv);
+        getproc(rtl, "_fdivi", IL._fdivi);
+        getproc(rtl, "_fadd",  IL._fadd);
+        getproc(rtl, "_fsub",  IL._fsub);
+        getproc(rtl, "_fsubi", IL._fsubi);
+        getproc(rtl, "_fcmp",  IL._fcmp);
+        getproc(rtl, "_floor", IL._floor);
+        getproc(rtl, "_flt",   IL._flt);
+        getproc(rtl, "_pack",  IL._pack);
+        getproc(rtl, "_unpk",  IL._unpk)
     END
 
 END setrtl;
@@ -3286,44 +3288,30 @@ BEGIN
     tREAL    := PARS.program.stTypes.tREAL;
 
     Options := options;
+    CPU := TARGETS.CPU;
 
-    CASE target OF
-    |mConst.Target_iConsole64, mConst.Target_iGUI64, mConst.Target_iDLL64, mConst.Target_iELF64, mConst.Target_iELFSO64:
-        CPU := cpuAMD64
-    |mConst.Target_iConsole, mConst.Target_iGUI, mConst.Target_iDLL,
-     mConst.Target_iKolibri, mConst.Target_iObject, mConst.Target_iELF32,
-     mConst.Target_iELFSO32:
-        CPU := cpuX86
-    |mConst.Target_iMSP430:
-        CPU := cpuMSP430
-    END;
-
-    ext := mConst.FILE_EXT;
+    ext := UTILS.FILE_EXT;
     CaseLabels := C.create();
     CaseVar := C.create();
 
     CaseVariants := LISTS.create(NIL);
     LISTS.push(CaseVariants, NewVariant(0, NIL));
 
-    CASE CPU OF
-    |cpuAMD64:  IL.init(6, IL.little_endian)
-    |cpuX86:    IL.init(8, IL.little_endian)
-    |cpuMSP430: IL.init(0, IL.little_endian)
-    END;
+    IL.init(CPU);
 
-    IF CPU # cpuMSP430 THEN
+    IF CPU # TARGETS.cpuMSP430 THEN
         parser := PARS.create(path, lib_path, StatSeq, expression, designator, chkreturn);
-        IF parser.open(parser, mConst.RTL_NAME) THEN
+        IF parser.open(parser, UTILS.RTL_NAME) THEN
             parser.parse(parser);
             PARS.destroy(parser)
         ELSE
             PARS.destroy(parser);
             parser := PARS.create(lib_path, lib_path, StatSeq, expression, designator, chkreturn);
-            IF parser.open(parser, mConst.RTL_NAME) THEN
+            IF parser.open(parser, UTILS.RTL_NAME) THEN
                 parser.parse(parser);
                 PARS.destroy(parser)
             ELSE
-                ERRORS.FileNotFound(lib_path, mConst.RTL_NAME, mConst.FILE_EXT)
+                ERRORS.FileNotFound(lib_path, UTILS.RTL_NAME, UTILS.FILE_EXT)
             END
         END
     END;
@@ -3334,16 +3322,16 @@ BEGIN
     IF parser.open(parser, modname) THEN
         parser.parse(parser)
     ELSE
-        ERRORS.FileNotFound(path, modname, mConst.FILE_EXT)
+        ERRORS.FileNotFound(path, modname, UTILS.FILE_EXT)
     END;
 
     PARS.destroy(parser);
 
-    IF PARS.program.bss > mConst.MAX_GLOBAL_SIZE THEN
+    IF PARS.program.bss > UTILS.MAX_GLOBAL_SIZE THEN
         ERRORS.Error(204)
     END;
 
-    IF CPU # cpuMSP430 THEN
+    IF CPU # TARGETS.cpuMSP430 THEN
         setrtl
     END;
 
@@ -3352,9 +3340,10 @@ BEGIN
     IL.set_bss(PARS.program.bss);
 
     CASE CPU OF
-    | cpuAMD64:  AMD64.CodeGen(outname, target, options)
-    |   cpuX86:    X86.CodeGen(outname, target, options)
-    |cpuMSP430: MSP430.CodeGen(outname, target, options)
+    |TARGETS.cpuAMD64:   AMD64.CodeGen(outname, target, options)
+    |TARGETS.cpuX86:       X86.CodeGen(outname, target, options)
+    |TARGETS.cpuMSP430: MSP430.CodeGen(outname, target, options)
+    |TARGETS.cpuTHUMB:   THUMB.CodeGen(outname, target, options)
     END
 
 END compile;

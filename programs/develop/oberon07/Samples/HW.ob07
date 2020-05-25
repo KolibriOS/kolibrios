@@ -1,4 +1,4 @@
-MODULE HW;
+﻿MODULE HW;
 
 IMPORT sys := SYSTEM, KOSAPI;
 

@@ -1,0 +1,142 @@
+﻿(*
+    BSD 2-Clause License
+
+    Copyright (c) 2019, Anton Krotov
+    All rights reserved.
+*)
+
+MODULE File;
+
+IMPORT SYSTEM, WINAPI;
+
+
+CONST
+
+    OPEN_R* = 0;     OPEN_W* = 1;     OPEN_RW* = 2;
+    SEEK_BEG* = 0;   SEEK_CUR* = 1;   SEEK_END* = 2;
+
+
+PROCEDURE Exists* (FName: ARRAY OF CHAR): BOOLEAN;
+VAR
+    FindData: WINAPI.TWin32FindData;
+    Handle:   INTEGER;
+
+BEGIN
+    Handle := WINAPI.FindFirstFile(SYSTEM.ADR(FName[0]), FindData);
+    IF Handle # -1 THEN
+        WINAPI.FindClose(Handle);
+        IF 4 IN FindData.dwFileAttributes THEN
+            Handle := -1
+        END
+    END
+
+    RETURN Handle # -1
+END Exists;
+
+
+PROCEDURE Delete* (FName: ARRAY OF CHAR): BOOLEAN;
+    RETURN WINAPI.DeleteFile(SYSTEM.ADR(FName[0])) # 0
+END Delete;
+
+
+PROCEDURE Create* (FName: ARRAY OF CHAR): INTEGER;
+    RETURN WINAPI.CreateFile(SYSTEM.ADR(FName[0]), 0C0000000H, 0, NIL, 2, 80H, 0)
+END Create;
+
+
+PROCEDURE Close* (F: INTEGER);
+BEGIN
+    WINAPI.CloseHandle(F)
+END Close;
+
+
+PROCEDURE Open* (FName: ARRAY OF CHAR; Mode: INTEGER): INTEGER;
+VAR
+    ofstr: WINAPI.OFSTRUCT;
+BEGIN
+    RETURN WINAPI.OpenFile(SYSTEM.ADR(FName[0]), ofstr, Mode)
+END Open;
+
+
+PROCEDURE Seek* (F, Offset, Origin: INTEGER): INTEGER;
+    RETURN WINAPI.SetFilePointer(F, Offset, 0, Origin)
+END Seek;
+
+
+PROCEDURE Read* (F, Buffer, Count: INTEGER): INTEGER;
+VAR
+    res, n: INTEGER;
+
+BEGIN
+    IF WINAPI.ReadFile(F, Buffer, Count, SYSTEM.ADR(n), NIL) = 0 THEN
+        res := -1
+    ELSE
+        res := n
+    END
+
+    RETURN res
+END Read;
+
+
+PROCEDURE Write* (F, Buffer, Count: INTEGER): INTEGER;
+VAR
+    res, n: INTEGER;
+
+BEGIN
+    IF WINAPI.WriteFile(F, Buffer, Count, SYSTEM.ADR(n), NIL) = 0 THEN
+        res := -1
+    ELSE
+        res := n
+    END
+
+    RETURN res
+END Write;
+
+
+PROCEDURE Load* (FName: ARRAY OF CHAR; VAR Size: INTEGER): INTEGER;
+VAR
+    res, n, F: INTEGER;
+
+BEGIN
+    res := 0;
+    F := Open(FName, OPEN_R);
+
+    IF F # -1 THEN
+        Size := Seek(F, 0, SEEK_END);
+        n    := Seek(F, 0, SEEK_BEG);
+        res  := WINAPI.GlobalAlloc(64, Size);
+        IF (res = 0) OR (Read(F, res, Size) # Size) THEN
+            IF res # 0 THEN
+                WINAPI.GlobalFree(Size);
+                res := 0;
+                Size := 0
+            END
+        END;
+        Close(F)
+    END
+
+    RETURN res
+END Load;
+
+
+PROCEDURE RemoveDir* (DirName: ARRAY OF CHAR): BOOLEAN;
+    RETURN WINAPI.RemoveDirectory(SYSTEM.ADR(DirName[0])) # 0
+END RemoveDir;
+
+
+PROCEDURE ExistsDir* (DirName: ARRAY OF CHAR): BOOLEAN;
+VAR
+    Code: SET;
+
+BEGIN
+    Code := WINAPI.GetFileAttributes(SYSTEM.ADR(DirName[0]))
+    RETURN (Code # {0..31}) & (4 IN Code)
+END ExistsDir;
+
+
+PROCEDURE CreateDir* (DirName: ARRAY OF CHAR): BOOLEAN;
+    RETURN WINAPI.CreateDirectory(SYSTEM.ADR(DirName[0]), NIL) # 0
+END CreateDir;
+
+
+END File.

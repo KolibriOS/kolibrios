@@ -1,13 +1,14 @@
-(*
+﻿(*
     BSD 2-Clause License
 
-    Copyright (c) 2018-2019, Anton Krotov
+    Copyright (c) 2018-2020, Anton Krotov
     All rights reserved.
 *)
 
 MODULE PARS;
 
-IMPORT PROG, SCAN, ARITH, STRINGS, ERRORS, LISTS, IL, CONSOLE, PATHS, UTILS, C := COLLECTIONS, mConst := CONSTANTS;
+IMPORT PROG, SCAN, ARITH, STRINGS, ERRORS, LISTS, IL, CONSOLE, PATHS, UTILS,
+       C := COLLECTIONS, TARGETS, THUMB;
 
 
 CONST
@@ -77,7 +78,7 @@ VAR
 
     parsers: C.COLLECTION;
 
-    lines*: INTEGER;
+    lines*, modules: INTEGER;
 
 
 PROCEDURE destroy* (VAR parser: PARSER);
@@ -132,7 +133,7 @@ VAR
 BEGIN
     SCAN.Next(parser.scanner, parser.lex);
     errno := parser.lex.error;
-    IF (errno = 0) & (program.target.sys = mConst.Target_iMSP430) THEN
+    IF (errno = 0) & (TARGETS.CPU = TARGETS.cpuMSP430) THEN
         IF parser.lex.sym = SCAN.lxFLOAT THEN
             errno := -SCAN.lxERROR13
         ELSIF (parser.lex.sym = SCAN.lxCHAR) & (parser.lex.value.typ = ARITH.tWCHAR) THEN
@@ -508,7 +509,7 @@ BEGIN
         check1(FALSE, parser, 124)
     END;
 
-    check1(sf IN program.target.sysflags, parser, 125);
+    check1(sf IN program.sysflags, parser, 125);
 
     IF proc THEN
         check1(sf IN PROG.proc_flags, parser, 123)
@@ -532,15 +533,15 @@ BEGIN
     |PROG.sf_code:
         res := PROG.code
     |PROG.sf_windows:
-        IF program.target.sys IN {mConst.Target_iConsole, mConst.Target_iGUI, mConst.Target_iDLL} THEN
+        IF TARGETS.OS = TARGETS.osWIN32 THEN
             res := PROG.stdcall
-        ELSIF program.target.sys IN {mConst.Target_iConsole64, mConst.Target_iGUI64, mConst.Target_iDLL64} THEN
+        ELSIF TARGETS.OS = TARGETS.osWIN64 THEN
             res := PROG.win64
         END
     |PROG.sf_linux:
-        IF program.target.sys IN {mConst.Target_iELF32, mConst.Target_iELFSO32} THEN
+        IF TARGETS.OS = TARGETS.osLINUX32 THEN
             res := PROG.ccall16
-        ELSIF program.target.sys IN {mConst.Target_iELF64, mConst.Target_iELFSO64} THEN
+        ELSIF TARGETS.OS = TARGETS.osLINUX64 THEN
             res := PROG.systemv
         END
     |PROG.sf_noalign:
@@ -577,6 +578,7 @@ BEGIN
         IF parser.sym = SCAN.lxCOMMA THEN
             ExpectSym(parser, SCAN.lxSTRING);
             dll := parser.lex.s;
+            STRINGS.UpCase(dll);
             ExpectSym(parser, SCAN.lxCOMMA);
             ExpectSym(parser, SCAN.lxSTRING);
             proc := parser.lex.s;
@@ -586,16 +588,19 @@ BEGIN
         checklex(parser, SCAN.lxRSQUARE);
         Next(parser)
     ELSE
-        CASE program.target.bit_depth OF
+        CASE TARGETS.BitDepth OF
         |16: call := PROG.default16
-        |32: call := PROG.default32
+        |32: IF TARGETS.target = TARGETS.STM32CM3 THEN
+                 call := PROG.ccall
+             ELSE
+                 call := PROG.default32
+             END
         |64: call := PROG.default64
         END
     END;
 
     IF import # NIL THEN
-        check(~(program.target.sys IN {mConst.Target_iELF32, mConst.Target_iELF64, mConst.Target_iELFSO32,
-            mConst.Target_iELFSO64, mConst.Target_iMSP430}), pos, 70)
+        check(TARGETS.Import, pos, 70)
     END
 
     RETURN call
@@ -751,8 +756,8 @@ BEGIN
         ExpectSym(parser, SCAN.lxTO);
         Next(parser);
 
-        t := PROG.enterType(program, PROG.tPOINTER, program.target.adr, 0, unit);
-        t.align := program.target.adr;
+        t := PROG.enterType(program, PROG.tPOINTER, TARGETS.AdrSize, 0, unit);
+        t.align := TARGETS.AdrSize;
 
         getpos(parser, pos);
 
@@ -770,8 +775,8 @@ BEGIN
 
     ELSIF parser.sym = SCAN.lxPROCEDURE THEN
         NextPos(parser, pos);
-        t := PROG.enterType(program, PROG.tPROCEDURE, program.target.adr, 0, unit);
-        t.align := program.target.adr;
+        t := PROG.enterType(program, PROG.tPROCEDURE, TARGETS.AdrSize, 0, unit);
+        t.align := TARGETS.AdrSize;
         t.call := procflag(parser, import, FALSE);
         FormalParameters(parser, t)
     ELSE
@@ -897,11 +902,13 @@ VAR
         variables:  LISTS.LIST;
         int, flt:   INTEGER;
         comma:      BOOLEAN;
-        code:       ARITH.VALUE;
-        codeProc:   BOOLEAN;
+        code, iv:   ARITH.VALUE;
+        codeProc,
+        handler:    BOOLEAN;
 
     BEGIN
         endmod := FALSE;
+        handler := FALSE;
 
         unit := parser.unit;
 
@@ -921,12 +928,26 @@ VAR
 
         check(PROG.openScope(unit, proc.proc), pos, 116);
 
-        proc.type := PROG.enterType(program, PROG.tPROCEDURE, program.target.adr, 0, unit);
+        proc.type := PROG.enterType(program, PROG.tPROCEDURE, TARGETS.AdrSize, 0, unit);
         t := proc.type;
-        t.align := program.target.adr;
+        t.align := TARGETS.AdrSize;
         t.call  := call;
 
         FormalParameters(parser, t);
+
+        IF parser.sym = SCAN.lxLSQUARE THEN
+            getpos(parser, pos2);
+            check(TARGETS.target = TARGETS.STM32CM3, pos2, 24);
+            Next(parser);
+            getpos(parser, pos2);
+            ConstExpression(parser, iv);
+            check(iv.typ = ARITH.tINTEGER, pos2, 43);
+            check((0 <= ARITH.Int(iv)) & (ARITH.Int(iv) <= THUMB.maxIVT), pos2, 46);
+            check(THUMB.SetIV(ARITH.Int(iv)), pos2, 121);
+            checklex(parser, SCAN.lxRSQUARE);
+            Next(parser);
+            handler := TRUE
+        END;
 
         codeProc := call IN {PROG.code, PROG._code};
 
@@ -948,7 +969,11 @@ VAR
 
         IF import = NIL THEN
             label := IL.NewLabel();
-            proc.proc.label := label
+            proc.proc.label := label;
+            proc.proc.used  := handler;
+            IF handler THEN
+                IL.AddCmd2(IL.opHANDLER, label, ARITH.Int(iv))
+            END
         END;
 
         IF codeProc THEN
@@ -958,8 +983,10 @@ VAR
                 getpos(parser, pos2);
                 ConstExpression(parser, code);
                 check(code.typ = ARITH.tINTEGER, pos2, 43);
-                IF program.target.sys # mConst.Target_iMSP430 THEN
+                IF TARGETS.CPU IN {TARGETS.cpuX86, TARGETS.cpuAMD64} THEN
                     check(ARITH.range(code, 0, 255), pos2, 42)
+                ELSIF TARGETS.CPU = TARGETS.cpuTHUMB THEN
+                    check(ARITH.range(code, 0, 65535), pos2, 110)
                 END;
                 IL.AddCmd(IL.opCODE, ARITH.getInt(code));
                 comma := parser.sym = SCAN.lxCOMMA;
@@ -976,8 +1003,8 @@ VAR
 
         IF import = NIL THEN
 
-            IF parser.main & proc.export & program.dll THEN
-                IF program.obj THEN
+            IF parser.main & proc.export & TARGETS.Dll THEN
+                IF TARGETS.target = TARGETS.KolibriOSDLL THEN
                     check((proc.name.s # "lib_init") & (proc.name.s # "version"), pos, 114)
                 END;
                 IL.AddExp(label, proc.name.s);
@@ -1023,8 +1050,8 @@ VAR
                 proc.proc.leave := IL.LeaveC()
             END;
 
-            IF program.target.sys = mConst.Target_iMSP430 THEN
-                check((enter.param2 * ORD(~codeProc) + proc.type.parSize) * 2 + 16 < program.target.options.ram, pos1, 63)
+            IF TARGETS.CPU = TARGETS.cpuMSP430 THEN
+                check((enter.param2 * ORD(~codeProc) + proc.type.parSize) * 2 + 16 < program.options.ram, pos1, 63)
             END
         END;
 
@@ -1141,7 +1168,13 @@ BEGIN
         ImportList(parser)
     END;
 
-    CONSOLE.String("compiling "); CONSOLE.String(unit.name.s);
+    INC(modules);
+
+    CONSOLE.String("compiling ");
+    IF TARGETS.CPU IN {TARGETS.cpuTHUMB, TARGETS.cpuMSP430} THEN
+        CONSOLE.String("("); CONSOLE.Int(modules); CONSOLE.String(") ")
+    END;
+    CONSOLE.String(unit.name.s);
     IF parser.unit.sysimport THEN
         CONSOLE.String(" (SYSTEM)")
     END;
@@ -1156,6 +1189,9 @@ BEGIN
     IL.SetLabel(errlabel);
     IL.StrAdr(name);
     IL.Param1;
+    IF TARGETS.CPU IN {TARGETS.cpuTHUMB, TARGETS.cpuMSP430} THEN
+        IL.AddCmd(IL.opPUSHC, modules)
+    END;
     IL.AddCmd0(IL.opERR);
 
     FOR errno := 1 TO LEN(IL.codes.errlabels) - 1 DO
@@ -1227,7 +1263,7 @@ BEGIN
 
     parser.path     := path;
     parser.lib_path := lib_path;
-    parser.ext      := mConst.FILE_EXT;
+    parser.ext      := UTILS.FILE_EXT;
     parser.fname    := path;
     parser.modname  := "";
     parser.scanner  := NIL;
@@ -1247,11 +1283,12 @@ BEGIN
 END create;
 
 
-PROCEDURE init* (bit_depth, target: INTEGER; options: PROG.OPTIONS);
+PROCEDURE init* (options: PROG.OPTIONS);
 BEGIN
-    program := PROG.create(bit_depth, target, options);
+    program := PROG.create(options);
     parsers := C.create();
-    lines   := 0
+    lines   := 0;
+    modules := 0
 END init;
 
 

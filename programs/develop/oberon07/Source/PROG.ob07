@@ -1,4 +1,4 @@
-(*
+﻿(*
     BSD 2-Clause License
 
     Copyright (c) 2018-2019, Anton Krotov
@@ -7,7 +7,7 @@
 
 MODULE PROG;
 
-IMPORT SCAN, LISTS, ARITH, ERRORS, C := COLLECTIONS, mConst := CONSTANTS, IL, UTILS;
+IMPORT SCAN, LISTS, ARITH, ERRORS, C := COLLECTIONS, IL, UTILS, TARGETS;
 
 
 CONST
@@ -199,24 +199,14 @@ TYPE
         locsize*:    INTEGER;
 
         procs*:      LISTS.LIST;
-        dll*:        BOOLEAN;
-        obj*:        BOOLEAN;
+
+        sysflags*:   SET;
+        options*:    OPTIONS;
 
         stTypes*:    RECORD
 
             tINTEGER*, tBYTE*, tCHAR*, tWCHAR*, tSET*, tBOOLEAN*, tREAL*,
             tSTRING*, tNIL*, tCARD32*, tANYREC*: TYPE_
-
-        END;
-
-        target*:     RECORD
-
-            bit_depth*:  INTEGER;
-            word*:       INTEGER;
-            adr*:        INTEGER;
-            sys*:        INTEGER;
-            sysflags*:   SET;
-            options*:    OPTIONS
 
         END
 
@@ -249,7 +239,6 @@ END NewIdent;
 
 PROCEDURE getOffset* (program: PROGRAM; varIdent: IDENT): INTEGER;
 VAR
-    word: INTEGER;
     size: INTEGER;
 
 BEGIN
@@ -263,9 +252,8 @@ BEGIN
                 END
             END
         ELSE
-            word := program.target.word;
-            IF UTILS.Align(size, word) THEN
-                size := size DIV word;
+            IF UTILS.Align(size, TARGETS.WordSize) THEN
+                size := size DIV TARGETS.WordSize;
                 IF UTILS.maxint - program.locsize >= size THEN
                     INC(program.locsize, size);
                     varIdent.offset := program.locsize
@@ -682,10 +670,12 @@ BEGIN
     ident      := addIdent(unit, SCAN.enterid("BOOLEAN"), idTYPE);
     ident.type := program.stTypes.tBOOLEAN;
 
-    IF program.target.sys # mConst.Target_iMSP430 THEN
+    IF TARGETS.RealSize # 0 THEN
         ident      := addIdent(unit, SCAN.enterid("REAL"), idTYPE);
-        ident.type := program.stTypes.tREAL;
+        ident.type := program.stTypes.tREAL
+    END;
 
+    IF TARGETS.BitDepth >= 32 THEN
         ident      := addIdent(unit, SCAN.enterid("WCHAR"), idTYPE);
         ident.type := program.stTypes.tWCHAR
     END
@@ -737,14 +727,19 @@ BEGIN
     EnterFunc(unit, "MIN",    stMIN);
     EnterFunc(unit, "MAX",    stMAX);
 
-    IF unit.program.target.sys # mConst.Target_iMSP430 THEN
-        EnterProc(unit, "PACK",    stPACK);
-        EnterProc(unit, "UNPK",    stUNPK);
-        EnterProc(unit, "DISPOSE", stDISPOSE);
+    IF TARGETS.RealSize # 0 THEN
+        EnterProc(unit, "PACK",  stPACK);
+        EnterProc(unit, "UNPK",  stUNPK);
+        EnterFunc(unit, "FLOOR", stFLOOR);
+        EnterFunc(unit, "FLT",   stFLT)
+    END;
 
-        EnterFunc(unit, "WCHR",    stWCHR);
-        EnterFunc(unit, "FLOOR",   stFLOOR);
-        EnterFunc(unit, "FLT",     stFLT)
+    IF TARGETS.BitDepth >= 32 THEN
+        EnterFunc(unit, "WCHR", stWCHR)
+    END;
+
+    IF TARGETS.Dispose THEN
+        EnterProc(unit, "DISPOSE", stDISPOSE)
     END
 
 END enterStProcs;
@@ -782,7 +777,7 @@ BEGIN
 
     unit.sysimport := FALSE;
 
-    IF unit.name.s = mConst.RTL_NAME THEN
+    IF unit.name.s = UTILS.RTL_NAME THEN
         program.rtl := unit
     END
 
@@ -1037,7 +1032,7 @@ BEGIN
     t.unit    := unit;
     t.num     := 0;
 
-    CASE program.target.bit_depth OF
+    CASE TARGETS.BitDepth OF
     |16: t.call := default16
     |32: t.call := default32
     |64: t.call := default64
@@ -1119,12 +1114,18 @@ BEGIN
         EnterProc(unit, "DINT", idSYSPROC, sysDINT)
     END;
          *)
-    IF program.target.sys # mConst.Target_iMSP430 THEN
-        EnterProc(unit, "WSADR",  idSYSFUNC, sysWSADR);
+    IF TARGETS.RealSize # 0 THEN
         EnterProc(unit, "INF",    idSYSFUNC, sysINF);
+    END;
+
+    IF TARGETS.CPU IN {TARGETS.cpuX86, TARGETS.cpuAMD64} THEN
+        EnterProc(unit, "COPY",   idSYSPROC, sysCOPY)
+    END;
+
+    IF TARGETS.BitDepth >= 32 THEN
+        EnterProc(unit, "WSADR",  idSYSFUNC, sysWSADR);
         EnterProc(unit, "PUT32",  idSYSPROC, sysPUT32);
         EnterProc(unit, "PUT16",  idSYSPROC, sysPUT16);
-        EnterProc(unit, "COPY",   idSYSPROC, sysCOPY);
 
         ident := addIdent(unit, SCAN.enterid("CARD32"), idTYPE);
         ident.type := program.stTypes.tCARD32;
@@ -1191,41 +1192,25 @@ BEGIN
 END DelUnused;
 
 
-PROCEDURE create* (bit_depth, target: INTEGER; options: OPTIONS): PROGRAM;
+PROCEDURE create* (options: OPTIONS): PROGRAM;
 VAR
     program: PROGRAM;
 
 BEGIN
     idents := C.create();
 
-    UTILS.SetBitDepth(bit_depth);
+    UTILS.SetBitDepth(TARGETS.BitDepth, TARGETS.RealSize = 8);
     NEW(program);
 
-    program.target.bit_depth := bit_depth;
-    program.target.word      := bit_depth DIV 8;
-    program.target.adr       := bit_depth DIV 8;
-    program.target.sys       := target;
-    program.target.options   := options;
+    program.options := options;
 
-    CASE target OF
-    |mConst.Target_iConsole,
-     mConst.Target_iGUI,
-     mConst.Target_iDLL:        program.target.sysflags := {sf_windows, sf_stdcall, sf_ccall, sf_ccall16, sf_noalign}
-
-    |mConst.Target_iELF32,
-     mConst.Target_iELFSO32:    program.target.sysflags := {sf_linux, sf_stdcall, sf_ccall, sf_ccall16, sf_noalign}
-
-    |mConst.Target_iKolibri,
-     mConst.Target_iObject:     program.target.sysflags := {sf_stdcall, sf_ccall, sf_ccall16, sf_noalign}
-
-    |mConst.Target_iConsole64,
-     mConst.Target_iGUI64,
-     mConst.Target_iDLL64:      program.target.sysflags := {sf_windows, sf_stdcall64, sf_win64, sf_systemv, sf_noalign}
-
-    |mConst.Target_iELF64,
-     mConst.Target_iELFSO64:    program.target.sysflags := {sf_linux, sf_stdcall64, sf_win64, sf_systemv, sf_noalign}
-
-    |mConst.Target_iMSP430:     program.target.sysflags := {sf_code}
+    CASE TARGETS.OS OF
+    |TARGETS.osWIN32:    program.sysflags := {sf_windows, sf_stdcall, sf_ccall, sf_ccall16, sf_noalign}
+    |TARGETS.osLINUX32:  program.sysflags := {sf_linux, sf_stdcall, sf_ccall, sf_ccall16, sf_noalign}
+    |TARGETS.osKOS:      program.sysflags := {sf_stdcall, sf_ccall, sf_ccall16, sf_noalign}
+    |TARGETS.osWIN64:    program.sysflags := {sf_windows, sf_stdcall64, sf_win64, sf_systemv, sf_noalign}
+    |TARGETS.osLINUX64:  program.sysflags := {sf_linux, sf_stdcall64, sf_win64, sf_systemv, sf_noalign}
+    |TARGETS.osNONE:     program.sysflags := {sf_code}
     END;
 
     program.recCount := -1;
@@ -1235,38 +1220,35 @@ BEGIN
     program.types := LISTS.create(NIL);
     program.procs := LISTS.create(NIL);
 
-    program.stTypes.tINTEGER := enterType(program, tINTEGER,  program.target.word, 0, NIL);
-    program.stTypes.tBYTE    := enterType(program, tBYTE,                       1, 0, NIL);
-    program.stTypes.tCHAR    := enterType(program, tCHAR,                       1, 0, NIL);
-    program.stTypes.tSET     := enterType(program, tSET,      program.target.word, 0, NIL);
-    program.stTypes.tBOOLEAN := enterType(program, tBOOLEAN,                    1, 0, NIL);
+    program.stTypes.tINTEGER := enterType(program, tINTEGER, TARGETS.WordSize, 0, NIL);
+    program.stTypes.tBYTE    := enterType(program, tBYTE,                   1, 0, NIL);
+    program.stTypes.tCHAR    := enterType(program, tCHAR,                   1, 0, NIL);
+    program.stTypes.tSET     := enterType(program, tSET,     TARGETS.WordSize, 0, NIL);
+    program.stTypes.tBOOLEAN := enterType(program, tBOOLEAN,                1, 0, NIL);
 
-    IF target # mConst.Target_iMSP430 THEN
-        program.stTypes.tWCHAR   := enterType(program, tWCHAR,  2, 0, NIL);
-        program.stTypes.tREAL    := enterType(program, tREAL,   8, 0, NIL);
-        program.stTypes.tCARD32  := enterType(program, tCARD32, 4, 0, NIL)
-    END;
-
-    program.stTypes.tSTRING  := enterType(program, tSTRING, program.target.word, 0, NIL);
-    program.stTypes.tNIL     := enterType(program, tNIL,    program.target.word, 0, NIL);
-
-    program.stTypes.tANYREC  := enterType(program, tRECORD, 0, 0, NIL);
-    program.stTypes.tANYREC.closed := TRUE;
-
-    program.stTypes.tINTEGER.align := program.stTypes.tINTEGER.size;
+    program.stTypes.tINTEGER.align := TARGETS.WordSize;
     program.stTypes.tBYTE.align    := 1;
-    program.stTypes.tCHAR.align    := program.stTypes.tCHAR.size;
-    program.stTypes.tSET.align     := program.stTypes.tSET.size;
-    program.stTypes.tBOOLEAN.align := program.stTypes.tBOOLEAN.size;
+    program.stTypes.tCHAR.align    := 1;
+    program.stTypes.tSET.align     := TARGETS.WordSize;
+    program.stTypes.tBOOLEAN.align := 1;
 
-    IF target # mConst.Target_iMSP430 THEN
-        program.stTypes.tWCHAR.align   := program.stTypes.tWCHAR.size;
-        program.stTypes.tREAL.align    := program.stTypes.tREAL.size;
-        program.stTypes.tCARD32.align  := program.stTypes.tCARD32.size
+    IF TARGETS.BitDepth >= 32 THEN
+        program.stTypes.tWCHAR  := enterType(program, tWCHAR,  2, 0, NIL);
+        program.stTypes.tCARD32 := enterType(program, tCARD32, 4, 0, NIL);
+        program.stTypes.tWCHAR.align  := 2;
+        program.stTypes.tCARD32.align := 4
     END;
 
-    program.dll := FALSE;
-    program.obj := FALSE;
+    IF TARGETS.RealSize # 0 THEN
+        program.stTypes.tREAL := enterType(program, tREAL, TARGETS.RealSize, 0, NIL);
+        program.stTypes.tREAL.align := TARGETS.RealSize
+    END;
+
+    program.stTypes.tSTRING := enterType(program, tSTRING, TARGETS.WordSize, 0, NIL);
+    program.stTypes.tNIL    := enterType(program, tNIL,    TARGETS.WordSize, 0, NIL);
+
+    program.stTypes.tANYREC := enterType(program, tRECORD, 0, 0, NIL);
+    program.stTypes.tANYREC.closed := TRUE;
 
     createSysUnit(program)
 

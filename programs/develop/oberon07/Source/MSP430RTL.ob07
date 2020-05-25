@@ -1,7 +1,7 @@
-(*
+﻿(*
     BSD 2-Clause License
 
-    Copyright (c) 2019, Anton Krotov
+    Copyright (c) 2019-2020, Anton Krotov
     All rights reserved.
 *)
 
@@ -39,7 +39,8 @@ CONST
     LenIV* = 32;
 
     iv          = 10000H - LenIV * 2;
-    sp          = iv - 2;
+    bsl         = iv - 2;
+    sp          = bsl - 2;
     empty_proc* = sp - 2;
     free_size   = empty_proc - 2;
     free_adr    = free_size - 2;
@@ -370,18 +371,20 @@ BEGIN
         Word1(4130H)                  (*  RET                      *)
     END;
 
-    (* _error (module, err, line: INTEGER) *)
+    (* _error (modNum, modName, err, line: INTEGER) *)
     IF rtl[_error].used THEN
         Label(rtl[_error].label);
         Word1(0C232H);               (*  BIC   #8, SR; DINT                 *)
         Word1(4303H);                (*  MOV   R3, R3; NOP                  *)
-        Word2(4114H, 2);             (*  MOV   2(SP), R4; R4 <- module      *)
-        Word2(4115H, 4);             (*  MOV   4(SP), R5; R5 <- err         *)
-        Word2(4116H, 6);             (*  MOV   6(SP), R6; R6 <- line        *)
+        Word2(4114H, 2);             (*  MOV   2(SP), R4; R4 <- modNum      *)
+        Word2(4115H, 4);             (*  MOV   4(SP), R5; R5 <- modName     *)
+        Word2(4116H, 6);             (*  MOV   6(SP), R6; R6 <- err         *)
+        Word2(4117H, 8);             (*  MOV   8(SP), R7; R7 <- line        *)
         Word2(4211H, sp);            (*  MOV   sp(SR), SP                   *)
+        Word1(1207H);                (*  PUSH  R7                           *)
         Word1(1206H);                (*  PUSH  R6                           *)
-        Word1(1204H);                (*  PUSH  R4                           *)
         Word1(1205H);                (*  PUSH  R5                           *)
+        Word1(1204H);                (*  PUSH  R4                           *)
         Word2(4214H, trap);          (*  MOV   trap(SR), R4                 *)
         Word1(9304H);                (*  TST   R4                           *)
         Word1(2400H + 1);            (*  JZ    L                            *)
@@ -663,14 +666,9 @@ BEGIN
     Label := pLabel;
     Word  := pWord;
     Call  := pCall;
-
-    IF ramSize > 2048 THEN
-        ram := 1100H
-    ELSE
-        ram := 200H
-    END;
-    trap := ram;
-    int  := trap + 2
+    ram   := 200H;
+    trap  := ram;
+    int   := trap + 2
 END Init;
 
 

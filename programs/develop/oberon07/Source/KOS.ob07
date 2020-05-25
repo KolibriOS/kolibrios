@@ -1,4 +1,4 @@
-(*
+﻿(*
     BSD 2-Clause License
 
     Copyright (c) 2018-2019, Anton Krotov
@@ -116,6 +116,7 @@ VAR
 
     icount, dcount, ccount: INTEGER;
 
+    code: CHL.BYTELIST;
 
 BEGIN
     base := 0;
@@ -141,43 +142,43 @@ BEGIN
     header.param    :=  header.sp;
     header.path     :=  header.param + PARAM_SIZE;
 
-
+    code := program.code;
     reloc := program.rel_list.first(BIN.RELOC);
     WHILE reloc # NIL DO
 
-        L := BIN.get32le(program.code, reloc.offset);
+        L := BIN.get32le(code, reloc.offset);
         delta := 3 - reloc.offset - text;
 
         CASE reloc.opcode OF
 
         |BIN.RIMP:
               iproc := BIN.GetIProc(program, L);
-              BIN.put32le(program.code, reloc.offset, idata + iproc.label)
+              BIN.put32le(code, reloc.offset, idata + iproc.label)
 
         |BIN.RBSS:
-              BIN.put32le(program.code, reloc.offset, L + bss)
+              BIN.put32le(code, reloc.offset, L + bss)
 
         |BIN.RDATA:
-              BIN.put32le(program.code, reloc.offset, L + data)
+              BIN.put32le(code, reloc.offset, L + data)
 
         |BIN.RCODE:
-              BIN.put32le(program.code, reloc.offset, BIN.GetLabel(program, L) + text)
+              BIN.put32le(code, reloc.offset, BIN.GetLabel(program, L) + text)
 
         |BIN.PICDATA:
-              BIN.put32le(program.code, reloc.offset, L + data + delta)
+              BIN.put32le(code, reloc.offset, L + data + delta)
 
         |BIN.PICCODE:
-              BIN.put32le(program.code, reloc.offset, BIN.GetLabel(program, L) + text + delta)
+              BIN.put32le(code, reloc.offset, BIN.GetLabel(program, L) + text + delta)
 
         |BIN.PICBSS:
-              BIN.put32le(program.code, reloc.offset, L + bss + delta)
+              BIN.put32le(code, reloc.offset, L + bss + delta)
 
         |BIN.PICIMP:
               iproc := BIN.GetIProc(program, L);
-              BIN.put32le(program.code, reloc.offset, idata + iproc.label + delta)
+              BIN.put32le(code, reloc.offset, idata + iproc.label + delta)
 
         |BIN.IMPTAB:
-              BIN.put32le(program.code, reloc.offset, idata + delta)
+              BIN.put32le(code, reloc.offset, idata + delta)
 
         END;
 
@@ -198,7 +199,7 @@ BEGIN
     WR.Write32LE(File, header.param);
     WR.Write32LE(File, header.path);
 
-    CHL.WriteToFile(File, program.code);
+    CHL.WriteToFile(File, code);
     WR.Padding(File, FileAlignment);
 
     CHL.WriteToFile(File, program.data);

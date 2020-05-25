@@ -1,0 +1,208 @@
+﻿(*
+    BSD 2-Clause License
+
+    Copyright (c) 2019-2020, Anton Krotov
+    All rights reserved.
+*)
+
+MODULE HOST;
+
+IMPORT SYSTEM, API, RTL;
+
+
+CONST
+
+    slash* = "/";
+    OS* = "LINUX";
+
+    bit_depth* = RTL.bit_depth;
+    maxint* = RTL.maxint;
+    minint* = RTL.minint;
+
+
+VAR
+
+    argc: INTEGER;
+
+    eol*: ARRAY 2 OF CHAR;
+
+    maxreal*: REAL;
+
+
+PROCEDURE ExitProcess* (code: INTEGER);
+BEGIN
+    API.exit(code)
+END ExitProcess;
+
+
+PROCEDURE GetArg* (n: INTEGER; VAR s: ARRAY OF CHAR);
+VAR
+    i, len, ptr: INTEGER;
+    c: CHAR;
+
+BEGIN
+    i := 0;
+    len := LEN(s) - 1;
+    IF (n < argc) & (len > 0) THEN
+        SYSTEM.GET(API.MainParam + (n + 1) * SYSTEM.SIZE(INTEGER), ptr);
+        REPEAT
+            SYSTEM.GET(ptr, c);
+            s[i] := c;
+            INC(i);
+            INC(ptr)
+        UNTIL (c = 0X) OR (i = len)
+    END;
+    s[i] := 0X
+END GetArg;
+
+
+PROCEDURE GetCurrentDirectory* (VAR path: ARRAY OF CHAR);
+VAR
+    n: INTEGER;
+
+BEGIN
+    GetArg(0, path);
+    n := LENGTH(path) - 1;
+    WHILE path[n] # slash DO
+        DEC(n)
+    END;
+    path[n + 1] := 0X
+END GetCurrentDirectory;
+
+
+PROCEDURE FileRead* (F: INTEGER; VAR Buffer: ARRAY OF CHAR; bytes: INTEGER): INTEGER;
+VAR
+    res: INTEGER;
+
+BEGIN
+    res := API.fread(SYSTEM.ADR(Buffer[0]), 1, bytes, F);
+    IF res <= 0 THEN
+        res := -1
+    END
+
+    RETURN res
+END FileRead;
+
+
+PROCEDURE FileWrite* (F: INTEGER; Buffer: ARRAY OF BYTE; bytes: INTEGER): INTEGER;
+VAR
+    res: INTEGER;
+
+BEGIN
+    res := API.fwrite(SYSTEM.ADR(Buffer[0]), 1, bytes, F);
+    IF res <= 0 THEN
+        res := -1
+    END
+
+    RETURN res
+END FileWrite;
+
+
+PROCEDURE FileCreate* (FName: ARRAY OF CHAR): INTEGER;
+    RETURN API.fopen(SYSTEM.ADR(FName[0]), SYSTEM.SADR("wb"))
+END FileCreate;
+
+
+PROCEDURE FileClose* (File: INTEGER);
+BEGIN
+    File := API.fclose(File)
+END FileClose;
+
+
+PROCEDURE FileOpen* (FName: ARRAY OF CHAR): INTEGER;
+    RETURN API.fopen(SYSTEM.ADR(FName[0]), SYSTEM.SADR("rb"))
+END FileOpen;
+
+
+PROCEDURE OutChar* (c: CHAR);
+BEGIN
+    API.putc(c)
+END OutChar;
+
+
+PROCEDURE GetTickCount* (): INTEGER;
+VAR
+    tp:  API.TP;
+    res: INTEGER;
+
+BEGIN
+    IF API.clock_gettime(0, tp) = 0 THEN
+        res := tp[0] * 100 + tp[1] DIV 10000000
+    ELSE
+        res := 0
+    END
+
+    RETURN res
+END GetTickCount;
+
+
+PROCEDURE isRelative* (path: ARRAY OF CHAR): BOOLEAN;
+    RETURN path[0] # slash
+END isRelative;
+
+
+PROCEDURE now* (VAR year, month, day, hour, min, sec: INTEGER);
+END now;
+
+
+PROCEDURE UnixTime* (): INTEGER;
+    RETURN API.time(0)
+END UnixTime;
+
+
+PROCEDURE d2s* (x: REAL): INTEGER;
+VAR
+    h, l, s, e: INTEGER;
+
+BEGIN
+    SYSTEM.GET(SYSTEM.ADR(x), l);
+    SYSTEM.GET(SYSTEM.ADR(x) + 4, h);
+
+    s := ASR(h, 31) MOD 2;
+    e := (h DIV 100000H) MOD 2048;
+    IF e <= 896 THEN
+        h := (h MOD 100000H) * 8 + (l DIV 20000000H) MOD 8 + 800000H;
+        REPEAT
+            h := h DIV 2;
+            INC(e)
+        UNTIL e = 897;
+        e := 896;
+        l := (h MOD 8) * 20000000H;
+        h := h DIV 8
+    ELSIF (1151 <= e) & (e < 2047) THEN
+        e := 1151;
+        h := 0;
+        l := 0
+    ELSIF e = 2047 THEN
+        e := 1151;
+        IF (h MOD 100000H # 0) OR (BITS(l) * {0..31} # {}) THEN
+            h := 80000H;
+            l := 0
+        END
+    END;
+    DEC(e, 896)
+
+    RETURN LSL(s, 31) + LSL(e, 23) + (h MOD 100000H) * 8 + (l DIV 20000000H) MOD 8
+END d2s;
+
+
+PROCEDURE splitf* (x: REAL; VAR a, b: INTEGER): INTEGER;
+VAR
+    res: INTEGER;
+
+BEGIN
+    a := 0;
+    b := 0;
+    SYSTEM.MOVE(SYSTEM.ADR(x), SYSTEM.ADR(a), 4);
+    SYSTEM.MOVE(SYSTEM.ADR(x) + 4, SYSTEM.ADR(b), 4);
+    SYSTEM.GET(SYSTEM.ADR(x), res)
+    RETURN res
+END splitf;
+
+
+BEGIN
+    eol := 0AX;
+    maxreal := 1.9;
+    PACK(maxreal, 1023);
+    SYSTEM.GET(API.MainParam, argc)
+END HOST.

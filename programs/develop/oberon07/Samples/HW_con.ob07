@@ -1,4 +1,4 @@
-MODULE HW_con;
+﻿MODULE HW_con;
 
 IMPORT Out, In, Console, DateTime;
 

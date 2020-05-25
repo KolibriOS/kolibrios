@@ -1,7 +1,7 @@
-(*
+﻿(*
     BSD 2-Clause License
 
-    Copyright (c) 2018-2019, Anton Krotov
+    Copyright (c) 2018-2020, Anton Krotov
     All rights reserved.
 *)
 
@@ -75,15 +75,20 @@ BEGIN
 END Float;
 
 
+PROCEDURE range* (i: VALUE; a, b: INTEGER): BOOLEAN;
+    RETURN (a <= i.int) & (i.int <= b)
+END range;
+
+
 PROCEDURE check* (v: VALUE): BOOLEAN;
 VAR
     res: BOOLEAN;
 
 BEGIN
     CASE v.typ OF
-    |tINTEGER: res := (UTILS.target.minInt <= v.int) & (v.int <= UTILS.target.maxInt)
-    |tCHAR:    res := (0 <= v.int) & (v.int <= 255)
-    |tWCHAR:   res := (0 <= v.int) & (v.int <= 65535)
+    |tINTEGER: res := range(v, UTILS.target.minInt, UTILS.target.maxInt)
+    |tCHAR:    res := range(v, 0, 255)
+    |tWCHAR:   res := range(v, 0, 65535)
     |tREAL:    res := (-UTILS.target.maxReal <= v.float) & (v.float <= UTILS.target.maxReal)
     END
 
@@ -196,61 +201,15 @@ END hconv;
 
 
 PROCEDURE opFloat2 (VAR a: REAL; b: REAL; op: CHAR): BOOLEAN;
-VAR
-    max: REAL;
-    res: BOOLEAN;
-
 BEGIN
-    max := UTILS.maxreal;
-
     CASE op OF
-    |"+":
-        IF (a < 0.0) & (b < 0.0) THEN
-            res := a > -max - b
-        ELSIF (a > 0.0) & (b > 0.0) THEN
-            res := a <  max - b
-        ELSE
-            res := TRUE
-        END;
-        IF res THEN
-            a := a + b
-        END
-
-    |"-":
-        IF (a < 0.0) & (b > 0.0) THEN
-            res := a > b - max
-        ELSIF (a > 0.0) & (b < 0.0) THEN
-            res := a < b + max
-        ELSE
-            res := TRUE
-        END;
-        IF res THEN
-            a := a - b
-        END
-
-    |"*":
-        IF (ABS(a) > 1.0) & (ABS(b) > 1.0) THEN
-            res := ABS(a) < max / ABS(b)
-        ELSE
-            res := TRUE
-        END;
-        IF res THEN
-            a := a * b
-        END
-
-    |"/":
-        IF ABS(b) < 1.0 THEN
-            res := ABS(a) < max * ABS(b)
-        ELSE
-            res := TRUE
-        END;
-        IF res THEN
-            a := a / b
-        END
-
+    |"+": a := a + b
+    |"-": a := a - b
+    |"*": a := a * b
+    |"/": a := a / b
     END
 
-    RETURN res
+    RETURN (-UTILS.maxreal <= a) & (a <= UTILS.maxreal) (* +inf > UTILS.maxreal *)
 END opFloat2;
 
 
@@ -407,13 +366,8 @@ VAR
 BEGIN
     ASSERT(x > 0);
 
-    n := 0;
-    WHILE ~ODD(x) DO
-        x := x DIV 2;
-        INC(n)
-    END;
-
-    IF x # 1 THEN
+    n := UTILS.Log2(x);
+    IF n = -1 THEN
         n := 255
     END
 
@@ -521,7 +475,7 @@ BEGIN
     |"-": success := subInt(a.int, b.int)
     |"*": success := mulInt(a.int, b.int)
     |"/": success := FALSE
-    |"D": IF (b.int # -1) OR (a.int # UTILS.minint) THEN a.int := a.int DIV b.int ELSE success := FALSE END
+    |"D": a.int := a.int DIV b.int
     |"M": a.int := a.int MOD b.int
     |"L": a.int := _LSL(a.int, b.int)
     |"A": a.int := _ASR(a.int, b.int)
@@ -668,11 +622,6 @@ BEGIN
     END;
     a.typ := tBOOLEAN
 END opBoolean;
-
-
-PROCEDURE range* (i: VALUE; a, b: INTEGER): BOOLEAN;
-    RETURN (a <= i.int) & (i.int <= b)
-END range;
 
 
 PROCEDURE less (v, v2: VALUE; VAR error: INTEGER): BOOLEAN;

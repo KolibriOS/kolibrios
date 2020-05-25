@@ -1,4 +1,4 @@
-(*
+﻿(*
     BSD 2-Clause License
 
     Copyright (c) 2018-2019, Anton Krotov
@@ -12,17 +12,12 @@ IMPORT LISTS, CHL := CHUNKLISTS, ARITH, UTILS;
 
 CONST
 
-    RCODE*    = 1;
-    RDATA*    = 2;
-    RBSS*     = 3;
-    RIMP*     = 4;
+    RCODE*  = 0;  PICCODE* = RCODE + 1;
+    RDATA*  = 2;  PICDATA* = RDATA + 1;
+    RBSS*   = 4;  PICBSS*  = RBSS + 1;
+    RIMP*   = 6;  PICIMP*  = RIMP + 1;
 
-    PICCODE*  = 5;
-    PICDATA*  = 6;
-    PICBSS*   = 7;
-    PICIMP*   = 8;
-
-    IMPTAB*   = 9;
+    IMPTAB* = 8;
 
 
 TYPE
@@ -209,6 +204,13 @@ BEGIN
         CHL.PushByte(program.code, UTILS.Byte(x, i))
     END
 END PutCode32LE;
+
+
+PROCEDURE PutCode16LE* (program: PROGRAM; x: INTEGER);
+BEGIN
+    CHL.PushByte(program.code, UTILS.Byte(x, 0));
+    CHL.PushByte(program.code, UTILS.Byte(x, 1))
+END PutCode16LE;
 
 
 PROCEDURE SetLabel* (program: PROGRAM; label, offset: INTEGER);

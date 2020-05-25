@@ -1,7 +1,7 @@
-(*
+﻿(*
     BSD 2-Clause License
 
-    Copyright (c) 2018-2019, Anton Krotov
+    Copyright (c) 2018-2020, Anton Krotov
     All rights reserved.
 *)
 
@@ -13,6 +13,7 @@ IMPORT UTILS;
 PROCEDURE append* (VAR s1: ARRAY OF CHAR; s2: ARRAY OF CHAR);
 VAR
     n1, n2, i, j: INTEGER;
+
 BEGIN
     n1 := LENGTH(s1);
     n2 := LENGTH(s2);
@@ -32,13 +33,12 @@ BEGIN
 END append;
 
 
-PROCEDURE reverse* (VAR s: ARRAY OF CHAR);
+PROCEDURE reverse (VAR s: ARRAY OF CHAR);
 VAR
     i, j: INTEGER;
     a, b: CHAR;
 
 BEGIN
-
     i := 0;
     j := LENGTH(s) - 1;
 
@@ -172,6 +172,27 @@ PROCEDURE space* (c: CHAR): BOOLEAN;
 END space;
 
 
+PROCEDURE cap (VAR c: CHAR);
+BEGIN
+    IF ("a" <= c) & (c <= "z") THEN
+        c := CHR(ORD(c) - 32)
+    END
+END cap;
+
+
+PROCEDURE UpCase* (VAR str: ARRAY OF CHAR);
+VAR
+    i: INTEGER;
+
+BEGIN
+    i := 0;
+    WHILE (i < LEN(str)) & (str[i] # 0X) DO
+        cap(str[i]);
+        INC(i)
+    END
+END UpCase;
+
+
 PROCEDURE StrToInt* (str: ARRAY OF CHAR; VAR x: INTEGER): BOOLEAN;
 VAR
     i, k: INTEGER;
@@ -276,21 +297,21 @@ BEGIN
             u := ORD(c)
 
         |0C1X..0DFX:
-            u := LSL(ORD(c) - 0C0H, 6);
+            u := (ORD(c) - 0C0H) * 64;
             IF i + 1 < srclen THEN
                 INC(i);
-                INC(u, ORD(BITS(ORD(src[i])) * {0..5}))
+                INC(u, ORD(src[i]) MOD 64)
             END
 
         |0E1X..0EFX:
-            u := LSL(ORD(c) - 0E0H, 12);
+            u := (ORD(c) - 0E0H) * 4096;
             IF i + 1 < srclen THEN
                 INC(i);
-                INC(u, ORD(BITS(ORD(src[i])) * {0..5}) * 64)
+                INC(u, (ORD(src[i]) MOD 64) * 64)
             END;
             IF i + 1 < srclen THEN
                 INC(i);
-                INC(u, ORD(BITS(ORD(src[i])) * {0..5}))
+                INC(u, ORD(src[i]) MOD 64)
             END
 (*
         |0F1X..0F7X:

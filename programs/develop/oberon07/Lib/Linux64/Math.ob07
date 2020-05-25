@@ -1,0 +1,311 @@
+﻿(*
+    BSD 2-Clause License
+
+    Copyright (c) 2019, Anton Krotov
+    All rights reserved.
+*)
+
+MODULE Math;
+
+IMPORT SYSTEM;
+
+
+CONST
+
+    e   *= 2.71828182845904523;
+    pi  *= 3.14159265358979324;
+    ln2 *= 0.693147180559945309;
+
+    eps = 1.0E-16;
+    MaxCosArg = 1000000.0 * pi;
+
+
+VAR
+
+    Exp: ARRAY 710 OF REAL;
+
+
+PROCEDURE [stdcall64] sqrt* (x: REAL): REAL;
+BEGIN
+    ASSERT(x >= 0.0);
+    SYSTEM.CODE(
+    0F2H, 0FH, 51H, 45H, 10H,  (*  sqrtsd  xmm0, qword[rbp + 10h]  *)
+    05DH,                      (*  pop     rbp                     *)
+    0C2H, 08H, 00H             (*  ret     8                       *)
+    )
+
+    RETURN 0.0
+END sqrt;
+
+
+PROCEDURE exp* (x: REAL): REAL;
+CONST
+    e25 = 1.284025416687741484; (* exp(0.25) *)
+
+VAR
+    a, s, res: REAL;
+    neg: BOOLEAN;
+    n: INTEGER;
+
+BEGIN
+    neg := x < 0.0;
+    IF neg THEN
+        x := -x
+    END;
+
+    IF x < FLT(LEN(Exp)) THEN
+        res := Exp[FLOOR(x)];
+        x := x - FLT(FLOOR(x));
+        WHILE x >= 0.25 DO
+            res := res * e25;
+            x := x - 0.25
+        END
+    ELSE
+        res := SYSTEM.INF();
+        x := 0.0
+    END;
+
+    n := 0;
+    a := 1.0;
+    s := 1.0;
+
+    REPEAT
+        INC(n);
+        a := a * x / FLT(n);
+        s := s + a
+    UNTIL a < eps;
+
+    IF neg THEN
+        res := 1.0 / (res * s)
+    ELSE
+        res := res * s
+    END
+
+    RETURN res
+END exp;
+
+
+PROCEDURE ln* (x: REAL): REAL;
+VAR
+    a, x2, res: REAL;
+    n: INTEGER;
+
+BEGIN
+    ASSERT(x > 0.0);
+    UNPK(x, n);
+
+    x   := (x - 1.0) / (x + 1.0);
+    x2  := x * x;
+    res := x + FLT(n) * (ln2 * 0.5);
+    n   := 1;
+
+    REPEAT
+        INC(n, 2);
+        x := x * x2;
+        a := x / FLT(n);
+        res := res + a
+    UNTIL a < eps
+
+    RETURN res * 2.0
+END ln;
+
+
+PROCEDURE power* (base, exponent: REAL): REAL;
+BEGIN
+    ASSERT(base > 0.0)
+    RETURN exp(exponent * ln(base))
+END power;
+
+
+PROCEDURE log* (base, x: REAL): REAL;
+BEGIN
+    ASSERT(base > 0.0);
+    ASSERT(x > 0.0)
+    RETURN ln(x) / ln(base)
+END log;
+
+
+PROCEDURE cos* (x: REAL): REAL;
+VAR
+    a, res: REAL;
+    n: INTEGER;
+
+BEGIN
+    x := ABS(x);
+    ASSERT(x <= MaxCosArg);
+
+    x   := x - FLT( FLOOR(x / (2.0 * pi)) ) * (2.0 * pi);
+    x   := x * x;
+    res := 0.0;
+    a   := 1.0;
+    n   := -1;
+
+    REPEAT
+        INC(n, 2);
+        res := res + a;
+        a := -a * x / FLT(n*n + n)
+    UNTIL ABS(a) < eps
+
+    RETURN res
+END cos;
+
+
+PROCEDURE sin* (x: REAL): REAL;
+BEGIN
+    ASSERT(ABS(x) <= MaxCosArg);
+    x := cos(x)
+    RETURN sqrt(1.0 - x * x)
+END sin;
+
+
+PROCEDURE tan* (x: REAL): REAL;
+BEGIN
+    ASSERT(ABS(x) <= MaxCosArg);
+    x := cos(x)
+    RETURN sqrt(1.0 - x * x) / x
+END tan;
+
+
+PROCEDURE arcsin* (x: REAL): REAL;
+
+
+    PROCEDURE arctan (x: REAL): REAL;
+    VAR
+        z, p, k: REAL;
+
+    BEGIN
+        p := x / (x * x + 1.0);
+        z := p * x;
+        x := 0.0;
+        k := 0.0;
+
+        REPEAT
+            k := k + 2.0;
+            x := x + p;
+            p := p * k * z / (k + 1.0)
+        UNTIL p < eps
+
+        RETURN x
+    END arctan;
+
+
+BEGIN
+    ASSERT(ABS(x) <= 1.0);
+
+    IF ABS(x) >= 0.707 THEN
+        x := 0.5 * pi - arctan(sqrt(1.0 - x * x) / x)
+    ELSE
+        x := arctan(x / sqrt(1.0 - x * x))
+    END
+
+    RETURN x
+END arcsin;
+
+
+PROCEDURE arccos* (x: REAL): REAL;
+BEGIN
+    ASSERT(ABS(x) <= 1.0)
+    RETURN 0.5 * pi - arcsin(x)
+END arccos;
+
+
+PROCEDURE arctan* (x: REAL): REAL;
+    RETURN arcsin(x / sqrt(1.0 + x * x))
+END arctan;
+
+
+PROCEDURE sinh* (x: REAL): REAL;
+BEGIN
+    x := exp(x)
+    RETURN (x - 1.0 / x) * 0.5
+END sinh;
+
+
+PROCEDURE cosh* (x: REAL): REAL;
+BEGIN
+    x := exp(x)
+    RETURN (x + 1.0 / x) * 0.5
+END cosh;
+
+
+PROCEDURE tanh* (x: REAL): REAL;
+BEGIN
+    IF x > 15.0 THEN
+        x := 1.0
+    ELSIF x < -15.0 THEN
+        x := -1.0
+    ELSE
+        x := exp(2.0 * x);
+        x := (x - 1.0) / (x + 1.0)
+    END
+
+    RETURN x
+END tanh;
+
+
+PROCEDURE arsinh* (x: REAL): REAL;
+    RETURN ln(x + sqrt(x * x + 1.0))
+END arsinh;
+
+
+PROCEDURE arcosh* (x: REAL): REAL;
+BEGIN
+    ASSERT(x >= 1.0)
+    RETURN ln(x + sqrt(x * x - 1.0))
+END arcosh;
+
+
+PROCEDURE artanh* (x: REAL): REAL;
+BEGIN
+    ASSERT(ABS(x) < 1.0)
+    RETURN 0.5 * ln((1.0 + x) / (1.0 - x))
+END artanh;
+
+
+PROCEDURE sgn* (x: REAL): INTEGER;
+VAR
+    res: INTEGER;
+
+BEGIN
+    IF x > 0.0 THEN
+        res := 1
+    ELSIF x < 0.0 THEN
+        res := -1
+    ELSE
+        res := 0
+    END
+
+    RETURN res
+END sgn;
+
+
+PROCEDURE fact* (n: INTEGER): REAL;
+VAR
+    res: REAL;
+
+BEGIN
+    res := 1.0;
+    WHILE n > 1 DO
+        res := res * FLT(n);
+        DEC(n)
+    END
+
+    RETURN res
+END fact;
+
+
+PROCEDURE init;
+VAR
+    i: INTEGER;
+
+BEGIN
+    Exp[0] := 1.0;
+    FOR i := 1 TO LEN(Exp) - 1 DO
+        Exp[i] := Exp[i - 1] * e
+    END
+END init;
+
+
+BEGIN
+    init
+END Math.
