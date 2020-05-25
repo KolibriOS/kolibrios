@@ -719,12 +719,12 @@ updatePlayerStatusText:
 ;
 ; window definition
 ;
-windowtitle	db	"C4 0.1",0
+windowtitle	db	"C4",0
 window:
 istruc WND
 	at WND.xposandsize,	dd	MOS_DWORD(0,WND_WIDTH)
 	at WND.yposandsize,	dd	MOS_DWORD(0,WND_HEIGHT)
-	at WND.workcolor,	dd	0x03000000 | WND_WORKCOLOR
+	at WND.workcolor,	dd	0x14000000 | WND_WORKCOLOR
 	at WND.grabcolor,	dd	0
 	at WND.framecolor,	dd	0
 	at WND.caption,		dd	windowtitle

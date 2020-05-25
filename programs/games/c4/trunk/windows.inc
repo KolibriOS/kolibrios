@@ -128,58 +128,14 @@ drawWindow:
 	mov cx,[edi + WND.yposandsize]
 .positionok:						; ebx/ecx contain dimensions
 
-	;
-	; colors
-	;
 	push edi
-	mov edx,[edi + WND.workcolor]
-	test dword [edi + WND.flags],WND_DEFAULT_WORKCOLOR
-	jz short .workcolorok
-	and edx,0xff000000
-	or edx,[WNDCOLORS + MOS_WNDCOLORS.work]
-.workcolorok:
-	mov esi,[edi + WND.grabcolor]
-	test dword [edi + WND.flags],WND_DEFAULT_GRABCOLOR
-	jz short .grabcolorok
-	and esi,0xff000000
-	or esi,[WNDCOLORS + MOS_WNDCOLORS.grab]
-.grabcolorok:
-	test dword [edi + WND.flags],WND_DEFAULT_FRAMECOLOR
-	mov edi,[edi + WND.framecolor]
-	jz short .framecolorok
-	and edi,0xff000000
-	or edi,[WNDCOLORS + MOS_WNDCOLORS.frame]
-.framecolorok:
 
 	; define window
 	mov eax,MOS_SC_DEFINEWINDOW
+	mov edx,[edi + WND.workcolor]
+	mov edi,windowtitle
 	int 0x40
 	pop edi
-
-	;
-	; caption
-	;
-	cmp dword [edi + WND.caption],0			; is there a caption ?
-	je short .captionok				; nope -> do nothing
-	mov ebx,MOS_DWORD(8,8)				; ebx = position
-	mov edx,[edi + WND.caption]			; edx -> string	
-	push edi					; get string length
-	mov edi,edx
-	mov ecx,-1
-	xor al,al					; scan for zero byte
-	repne scasb
-	sub edi,edx
-	dec edi
-	mov esi,edi
-	pop edi						; esi = string length
-	mov ecx,[edi + WND.captioncolor]
-	test dword [edi + WND.flags],WND_DEFAULT_CAPTIONCOLOR
-	jz short .captioncolorok
-	mov ecx,[WNDCOLORS + MOS_WNDCOLORS.grabText]
-.captioncolorok:
-	mov eax,MOS_SC_WRITETEXT
-	int 0x40
-.captionok:
 
 	popad
 	popfd

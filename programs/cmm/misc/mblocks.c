@@ -5,6 +5,8 @@
 */
 
 #define MEMSIZE 1024 * 20
+#define ENTRY_POINT #main
+
 #include "..\lib\gui.h"
 #include "..\lib\random.h"
 
@@ -104,7 +106,7 @@ void main()
 
 		case evReDraw:
 			sc.get();
-			DefineAndDrawWindow(215,100,WIN_W + 9,WIN_H+4+skin_height,
+			DefineAndDrawWindow(215,100,WIN_W + 9,WIN_H+4+GetSkinHeight(),
 				0x34,0xC0C0C0,"Memory Blocks",0);
 			Draw_Panel();
 			Draw_Game_Pole();

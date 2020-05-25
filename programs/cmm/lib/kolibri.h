@@ -14,9 +14,13 @@
 
 #code32 TRUE
 
+#ifndef ENTRY_POINT
+	#define ENTRY_POINT #______INIT______
+#endif
+
 char   os_name[8]   = {'M','E','N','U','E','T','0','1'};
 dword  os_version   = 0x00000001;
-dword  start_addr   = #______INIT______;
+dword  start_addr   = ENTRY_POINT;
 dword  final_addr   = #______STOP______+32;
 dword  alloc_mem    = MEMSIZE;
 dword  x86esp_reg   = MEMSIZE;
@@ -644,7 +648,7 @@ inline fastcall dword GetStartTime()
 dword __generator;  // random number generator init
 
 //The initialization of the initial data before running
-void ______INIT______()
+:void ______INIT______()
 {
 	skin_height   = @GetSkinHeight();
 	screen.width  = @GetScreenWidth()+1;
