@@ -4,7 +4,7 @@
 #include "../lib/gui.h"
 
 #define PANELH 28
-#define WIN_W 490
+#define WIN_W 520
 #define WIN_H 315
 #define BASE_TAB_BUTTON_ID 97
 

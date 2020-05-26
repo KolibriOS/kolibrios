@@ -235,13 +235,24 @@ void main()
 			mouse.get();
 
 			ProceedMouseGestures();
+
+			GetKeyModifier();
+			if (key_modifier&KEY_LSHIFT) || (key_modifier&KEY_RSHIFT)
+			if (mouse.key&MOUSE_LEFT) && (mouse.up) {
+				files.ProcessMouse(mouse.x, mouse.y);
+				EventChooseFile(files.cur_y);
+				List_ReDraw();
+				break;
+			}
 			
 			if (files.MouseOver(mouse.x, mouse.y))
 			{
 				//select file
 				if (mouse.key&MOUSE_LEFT) && (mouse.up)
 				{
-					if (files.ProcessMouse(mouse.x, mouse.y)) List_ReDraw(); else {
+					if (files.ProcessMouse(mouse.x, mouse.y)) {
+						List_ReDraw();
+					} else {
 						if (mouse.y - files.y / files.item_h + files.first == files.cur_y) Open(0);
 					}
 				}
@@ -405,6 +416,18 @@ void main()
 				break;
 			}
 
+			if (key_modifier&KEY_LSHIFT) || (key_modifier&KEY_RSHIFT) {
+				if (key_scancode == SCAN_CODE_DOWN) {
+					EventChooseFile(files.cur_y);
+					files.KeyDown();
+				} else if (key_scancode == SCAN_CODE_UP) {
+					EventChooseFile(files.cur_y);
+					files.KeyUp();
+				} else break;
+				List_ReDraw();
+				break;
+			}
+
 			if (files.ProcessKey(key_scancode))
 			{
 				List_ReDraw();
@@ -489,11 +512,9 @@ void main()
 							Del_Form();
 							break;
 					case SCAN_CODE_INS:
-							if (getElementSelectedFlag(files.cur_y) == true) setElementSelectedFlag(files.cur_y, false);
-							else setElementSelectedFlag(files.cur_y, true);
+							EventChooseFile(files.cur_y);
 							files.KeyDown();
 							List_ReDraw();
-							DrawStatusBar();
 							break;
 					case SCAN_CODE_F1...SCAN_CODE_F10:
 							FnProcess(key_scancode-58);
@@ -1312,6 +1333,16 @@ char line_param[4096+5];
 		properties_stak = malloc(8096);
 		CreateThread(#properties_dialog, properties_stak+8092);
 	}
+}
+
+void EventChooseFile(int _id)
+{
+	if (getElementSelectedFlag(_id) == true) {
+		setElementSelectedFlag(_id, false);
+	} else {
+		setElementSelectedFlag(_id, true);
+	}
+	DrawStatusBar();
 }
 
 stop:

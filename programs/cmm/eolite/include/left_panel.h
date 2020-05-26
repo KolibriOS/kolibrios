@@ -46,47 +46,48 @@ struct _SystemDiscs
 	void Click();
 } SystemDiscs=0;
 
+#define DEV_H 17
+#define DEV_H_HOR 21
 
 void GetDiskIconAndName(char disk_first_letter, dword dev_icon, disc_name)
 {
 	switch(disk_first_letter)
 	{
-		case 'k':
-			ESBYTE[dev_icon]=0;
-			strcpy(disc_name, T_PROG);
-			break;
 		case 'r':
 			ESBYTE[dev_icon]=0;
 			strcpy(disc_name, T_SYS);
 			break;
-		case 'c':
+		case 'k':
 			ESBYTE[dev_icon]=1;
-			strcpy(disc_name, T_CD);
+			strcpy(disc_name, T_PROG);
 			break;
 		case 'f':
 			ESBYTE[dev_icon]=2;
 			strcpy(disc_name, T_FD);
 			break;
+		case 'c':
+			ESBYTE[dev_icon]=3;
+			strcpy(disc_name, T_CD);
+			break;
 		case 'h':
 		case 'b':
-			ESBYTE[dev_icon]=3;
+			ESBYTE[dev_icon]=4;
 			strcpy(disc_name, T_HD);
 			break;
 		case 's':
-			ESBYTE[dev_icon]=3;
+			ESBYTE[dev_icon]=4;
 			strcpy(disc_name, T_SATA);
 			break;
-		case 'u':
-			ESBYTE[dev_icon]=5;
-			strcpy(disc_name, T_USB);
-			break;
 		case 't':
-			ESBYTE[dev_icon]=4;
+			ESBYTE[dev_icon]=5;
 			strcpy(disc_name, T_RAM);
 			break;
+		case 'u':
+			ESBYTE[dev_icon]=6;
+			strcpy(disc_name, T_USB);
+			break;
 		default:
-			ESBYTE[dev_icon]=3;
-			strcpy(disc_name, T_UNC);				
+			ESBYTE[dev_icon]=5;
 	}
 }
 
@@ -126,12 +127,12 @@ void _SystemDiscs::Get()
 void _SystemDiscs::Draw()
 {    
 	char dev_name[15], disc_name[100], i, dev_icon, is_active, name_len;
-	int draw_y, draw_x, draw_h;
+	int draw_y, draw_x;
 	
 	for (i=0; i<30; i++) DeleteButton(100+i);
 
-	if ( two_panels.checked) { draw_y = 41; draw_x =  2; draw_h = 21; }
-	if (!two_panels.checked) { draw_y = 74; draw_x = 17; draw_h = 16; }
+	if ( two_panels.checked) { draw_y = 41; draw_x =  2; }
+	if (!two_panels.checked) { draw_y = 74; draw_x = 17; }
 
 	for (i=0;i<list.count;i++)
 	{
@@ -141,21 +142,21 @@ void _SystemDiscs::Draw()
 		if (two_panels.checked)
 		{
 			name_len = strlen(#dev_name)-1*8;
-			DrawBar(draw_x, draw_y, name_len + 31, draw_h, 0xFFFFFF);
-			DefineButton(draw_x+2, draw_y, name_len + 27, draw_h-1, 100+i+BT_HIDE,0xFFFFFF);
-			_PutImage(draw_x + 5, draw_y+2, 18,17, is_active*6+dev_icon*17*18*3+#devices);
+			DrawBar(draw_x, draw_y, name_len + 31, DEV_H_HOR, 0xFFFFFF);
+			DefineButton(draw_x+2, draw_y, name_len + 27, DEV_H_HOR-1, 100+i+BT_HIDE,0xFFFFFF);
+			_PutImage(draw_x + 5, draw_y+2, 18,17, is_active*7+dev_icon*17*18*3+#devices);
 			WriteText(draw_x + 24, draw_y+3, 10110000b, 0, #dev_name+1);
 			draw_x += name_len + 31;
 			if (draw_x>=Form.cwidth-100) && (Form.cwidth) {
-				DrawBar(draw_x, draw_y, Form.cwidth - draw_x - 2, draw_h, 0xFFFFFF);
+				DrawBar(draw_x, draw_y, Form.cwidth - draw_x - 2, DEV_H_HOR, 0xFFFFFF);
 				draw_x = 2;
-				draw_y += draw_h;
+				draw_y += DEV_H_HOR;
 			}
 		}
 		else
 		{
-			DrawBar(draw_x,draw_y,6,draw_h+1,0xFFFFFF);
-			DrawBar(draw_x+6+18,draw_y,160-6-18,draw_h+1,0xFFFFFF);
+			DrawBar(draw_x,draw_y,6,DEV_H+1,0xFFFFFF);
+			DrawBar(draw_x+6+18,draw_y,160-6-18,DEV_H+1,0xFFFFFF);
 			DefineButton(draw_x,draw_y,159,16,100+i+BT_HIDE,0xFFFFFF);
 			if (show_dev_name.checked)
 			{
@@ -166,16 +167,18 @@ void _SystemDiscs::Draw()
 				if (is_active) WriteText(draw_x+30,draw_y+5,0x80,0x555555,#dev_name);
 				WriteText(draw_x+29,draw_y+5,0x80,0,#dev_name);
 			}
-			_PutImage(draw_x+6,draw_y, 18,17, is_active*6+dev_icon*17*18*3+#devices);
-			draw_y += draw_h;
+			_PutImage(draw_x+6,draw_y, 18,17, is_active*7+dev_icon*17*18*3+#devices);
+			draw_y += DEV_H;
 		}
 	}
 	if (two_panels.checked)
 	{
-		DrawBar(draw_x, draw_y, Form.cwidth - draw_x - 2, draw_h, 0xFFFFFF);
+		DrawBar(draw_x, draw_y, Form.cwidth - draw_x - 2, DEV_H_HOR, 0xFFFFFF);
 		DefineButton(Form.cwidth - 23, draw_y+2, 17,16, 60+BT_HIDE, 0xCCCccc);
 		_PutImage(Form.cwidth - 21, draw_y+4, 14,13, 2*14*13*3+#factions);
-		files.y = draw_y + draw_h + 17;
+		files.y = draw_y + DEV_H_HOR + 17;
+	} else {
+		DrawBar(draw_x+6, draw_y, 18, 1, 0xFFFfff);
 	}
 }
 
@@ -225,12 +228,12 @@ void Tip(int y, dword caption, id, arrow)
 void ActionsDraw()
 {
 	int i;
-	int actions_y= SystemDiscs.list.count*16+108, lineh=16;
+	int actions_y= SystemDiscs.list.count*DEV_H+108;
 	Tip(actions_y-18, T_ACTIONS, 77, ""); //заголовок
-	for (i=0; actions[i*3]!=0; i++, actions_y+=lineh)
+	for (i=0; actions[i*3]!=0; i++, actions_y+=DEV_H)
 	{
-		DrawBar(17,actions_y,160,lineh,0xFFFFFF); //белое
-		DefineButton(17,actions_y,159,lineh,actions[i*3]+BT_HIDE,0xE4DFE1);
+		DrawBar(17,actions_y,160,DEV_H,0xFFFFFF); //белое
+		DefineButton(17,actions_y,159,DEV_H,actions[i*3]+BT_HIDE,0xE4DFE1);
 		WriteText(45,actions_y+4,0x80,0,actions[i*3+1]);
 		WriteText(-strlen(actions[i*3+2])*6+170,actions_y+4,0x80,0x999999,actions[i*3+2]);
 		_PutImage(23,actions_y+2, 14,13, i*14*13*3+#factions);
@@ -239,8 +242,8 @@ void ActionsDraw()
 
 void DrawLeftPanelBg()
 {
-	int actions_y = SystemDiscs.list.count*16;
-	int start_y = actions_y+156;
+	int actions_y = SystemDiscs.list.count*DEV_H;
+	int start_y = actions_y+159;
 	int area_h;
 	DrawBar(2,41,190,15,col.lpanel);		      //синий пр€моугольник - над девайсами
 	DrawBar(17,actions_y+75,160,15,col.lpanel); //синий пр€моугольник - под девайсами
