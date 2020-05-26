@@ -237,7 +237,7 @@ void main()
 			ProceedMouseGestures();
 
 			GetKeyModifier();
-			if (key_modifier&KEY_LSHIFT) || (key_modifier&KEY_RSHIFT)
+			if (key_modifier&KEY_LCTRL) || (key_modifier&KEY_RCTRL)
 			if (mouse.key&MOUSE_LEFT) && (mouse.up) {
 				files.ProcessMouse(mouse.x, mouse.y);
 				EventChooseFile(files.cur_y);
