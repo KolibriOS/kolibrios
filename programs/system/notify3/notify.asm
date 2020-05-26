@@ -78,7 +78,7 @@
 
 ;; ALLOCATE MEMORY FOR THIS
     stdcall mem.Alloc, edx
-    mov     [img_data.rgb_obj], eax
+    mov     [img_data.file], eax
 
 ;; READ ICONS
     mov     dword [fi + 00], 0
@@ -87,12 +87,8 @@
     mcall   70, fi
 
 ;; DECODE ICONS
-    stdcall dword [img.decode], dword [img_data.rgb_obj], ebx, 0
+    stdcall dword [img.decode], dword [img_data.file], ebx, 0
     mov     dword [img_data.obj], eax
-    stdcall dword [img.to_rgb], dword [img_data.obj], dword [img_data.rgb_obj]
-    stdcall dword [img.destroy], dword [img_data.obj]
-
-
 
 ;; CALC HEIGHT
     mov     eax, [text.lines]
@@ -498,15 +494,13 @@
     cmpe    byte [params.icon], 0, @f
     movzx   ebx, byte [params.icon]
     dec     ebx
-    imul    ebx, 24 * 24 * 3
-    add     ebx, [img_data.rgb_obj]
+    imul    ebx, 24
 
     mov     edx, [window.height]
     shr     edx, 1
     sub     edx, 12
-    add     edx, LINEH shl 16
-
-    mcall   7, , <24, 24>
+	
+	stdcall dword [img.draw], dword [img_data.obj], 12, edx, 24, 24, 0, ebx
   @@:
 
     ret
@@ -764,7 +758,7 @@
     library img, "libimg.obj"
     import  img, img.to_rgb,  "img_to_rgb2", \
 		 img.decode,  "img_decode",  \
-		 img.destroy, "img_destroy"
+		 img.draw, "img_draw"
 
  ;----------------------------
 
@@ -830,7 +824,7 @@
  .ctrl	   rb 1
 
  img_data:
- .rgb_obj  rd 1
+ .file  rd 1
  .obj	   rd 1
 
  timer:
