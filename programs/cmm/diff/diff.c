@@ -75,7 +75,7 @@ bool getparam()
 		dstfilename = #param + strlen(#param) + 3;
 		return true;
 	}
-	notify("'Wrong params specified. Use next format:\nAPPPATH \"PARAM1\" \"PARAM2\"' -E");
+	notify("'Wrong params! Use format:\nAPPPATH \"PARAM1\" \"PARAM2\"' -E");
 	return false;
 }
 

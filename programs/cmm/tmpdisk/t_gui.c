@@ -55,20 +55,21 @@ void Main_Window()
 	word id;
 	int x;
 
+	#define NO_DLL_INIT
 	load_dll(boxlib, #box_lib_init,0);
 	GetNewSizeDisk();
 	edit_disk_size.left = strlen(SIZE_TEXT)*8 + 13;
-	SetEventMask(EVM_REDRAW + EVM_KEY + EVM_BUTTON + EVM_MOUSE + EVM_MOUSE_FILTER);
+	@SetEventMask(EVM_REDRAW + EVM_KEY + EVM_BUTTON + EVM_MOUSE + EVM_MOUSE_FILTER);
 	loop()
 	{
-		switch(WaitEvent()) 
+		switch(@WaitEvent()) 
 		{
 		case evMouse:
 			edit_box_mouse stdcall (#edit_disk_size);
 			break;
 			
 		case evButton:
-			id=GetButtonID();               
+			id = @GetButtonID();               
 			if (id==1) return;
 			if (id==10) AddDisk();
 			if (id==11) {
