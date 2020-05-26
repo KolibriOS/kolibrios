@@ -478,7 +478,8 @@ void ProcessEvent(dword id__)
 			return;
 		case DOWNLOAD_LINK_CONTENTS:
 			if (!downloader_opened) {
-				strcpy(#downloader_edit, GetAbsoluteActiveURL());
+				id__ = GetAbsoluteActiveURL();
+				strcpy(#downloader_edit, id__);
 				CreateThread(#Downloader,#downloader_stak+4092);
 			}
 			return;
