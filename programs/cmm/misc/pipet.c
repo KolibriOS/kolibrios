@@ -30,7 +30,6 @@ char picked_color_string[7];
 void main()
 {
 	bool pick_active = true;
-	int btn;
 	proc_info Form;
 	@SetEventMask(EVM_REDRAW + EVM_KEY + EVM_BUTTON + EVM_MOUSE);
 	@SetWindowLayerBehaviour(-1, ZPOS_ALWAYS_TOP);
@@ -48,23 +47,22 @@ void main()
 			break;
 
 		case evButton:
-			btn = @GetButtonID();
-			if (btn == BUTTON_CLOSE) ExitProcess();
-			if (btn == BUTTON_COPY) EventCopyHex();
-			if (btn == BUTTON_PICK) pick_active = true;
+			@GetButtonID();
+			if (EAX == BUTTON_CLOSE) ExitProcess();
+			if (EAX == BUTTON_COPY) EventCopyHex();
+			if (EAX == BUTTON_PICK) pick_active = true;
 			break;
 
 		case evKey:
-			key_scancode = @GetKeyScancode();
-			if (key_scancode == SCAN_CODE_ESC) @ExitProcess();
-			if (key_scancode == SCAN_CODE_KEY_C) EventCopyHex();
+			@GetKeyScancode();
+			if (AL == SCAN_CODE_ESC) @ExitProcess();
+			if (AL == SCAN_CODE_KEY_C) EventCopyHex();
 			break;
 		 
 		case evReDraw:
 			DefineUnDragableWindow(215, 100, FORM_W, FORM_H);
 			GetProcessInfo(#Form, SelfInfo);
 			draw_window();
-			break;
 	}
 }
 

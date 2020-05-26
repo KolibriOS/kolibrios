@@ -141,12 +141,17 @@ inline fastcall byte GetKeyScancode()
 	return AL;
 }
 
+inline fastcall GetKey()
+{
+	$mov  eax,2
+	$int  0x40
+}
+
 // ECX is a mode: 1 - scancodes, 0 - ascii
 inline fastcall SetKeyboardMode(ECX) 
 {
 	$mov  eax,66
-	$mov  ebx,1
-	//$mov  ecx,?  
+	$mov  ebx,1 
 	$int 0x40	
 }
 

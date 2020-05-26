@@ -234,7 +234,9 @@ asm {
        
         $jmp     import_loop01
 @import_done01:
+        #ifndef NO_DLL_INIT
         IF (need_init) dll_Init (DSDWORD[EDX+4]);
+        #endif
         return 0;
 @exit01:
         return -1;

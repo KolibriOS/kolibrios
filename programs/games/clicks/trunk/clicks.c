@@ -1,13 +1,14 @@
-//Leency 10.10.2011, JustClicks v2.0, GPL
 
 #include "lib\kolibri.h"
 #include "lib\random.h"
-#include "lib\boxes.txt"
+
+unsigned char block[] = FROM "lib\\boxes.raw";
+
 system_colors sc;
 
 //уровни сложности
 int DIFFICULTY_LEVEL=1; //по-умолчанию среднее поле
-char *BOARD_SIZES[]={ "S\0", "M\0", "L\0", 0 };
+char *BOARD_SIZES[]={ "S", "M", "L", 0 };
 int DIFFICULTY_LEV_PARAMS[]={ 9, 12, 16 };
 
 int BLOCKS_NUM; //количество квадратиков по ’ и по Y
@@ -25,20 +26,20 @@ int blocks_matrix[28*28]; //цвета дл€ пол€ с квадратиками
 #endif
 
 #ifdef LANG_RUS
-	char NEW_GAME_TEXT[]="З†≠ЃҐЃ [F2]";
-	char REZULT_TEXT[]="Р•ІгЂмв†в: ";
+	#define NEW_GAME_TEXT "З†≠ЃҐЃ [F2]"
+	#define RESULT_TEXT   "Р•ІгЂмв†в: "
 #elif LANG_EST
-	char NEW_GAME_TEXT[]="Uus mдng [F2]";
-	char REZULT_TEXT[]="Tulemus: ";
+	#define NEW_GAME_TEXT "Uus mдng [F2]"
+	#define RESULT_TEXT   "Tulemus: "
 #else
-	char NEW_GAME_TEXT[]="New Game [F2]";
-	char REZULT_TEXT[]="Result: ";
+	#define NEW_GAME_TEXT "New Game [F2]"
+	#define RESULT_TEXT   "Result: "
 #endif
 
 
 void main()
 {
-	int key_scancode, id;
+	int id;
 
 	BLOCKS_NUM=DIFFICULTY_LEV_PARAMS[DIFFICULTY_LEVEL];
 
@@ -48,7 +49,7 @@ void main()
 		switch(WaitEvent())
 		{
 			case evButton:
-				id = GetButtonID();
+				id = @GetButtonID();
 				if (id==1) ExitProcess();
 				if (id==2) || (id==3) goto _NEW_GAME_MARK;
 				if (id>=100)
@@ -70,15 +71,15 @@ void main()
 
 					new_game();
 
-					MoveSize(-1, -1, BLOCK_SIZE*BLOCKS_NUM +9, BLOCK_SIZE*BLOCKS_NUM +GetSkinWidth()+4+USER_PANEL_HEIGHT);
+					MoveSize(-1, -1, BLOCK_SIZE*BLOCKS_NUM +9, BLOCK_SIZE*BLOCKS_NUM +GetSkinHeight()+4+USER_PANEL_HEIGHT);
 					break;
 				}
 				break;
 			case evKey:
-				key_scancode = GetKeyScancode();
-				if (key_scancode==001) //Escape
+				@GetKeyScancode();
+				if (AL==001) //Escape
 					 ExitProcess();
-				if (key_scancode==060) //F2
+				if (AL==060) //F2
 				{
 					_NEW_GAME_MARK:
 						new_game();
@@ -169,7 +170,7 @@ void draw_window()
 	proc_info Form;
 
 	sc.get();
-	DefineAndDrawWindow(300,176, BLOCK_SIZE*BLOCKS_NUM +9, BLOCK_SIZE*BLOCKS_NUM +GetSkinWidth()+4+USER_PANEL_HEIGHT,
+	DefineAndDrawWindow(300,176, BLOCK_SIZE*BLOCKS_NUM +9, BLOCK_SIZE*BLOCKS_NUM +GetSkinHeight()+4+USER_PANEL_HEIGHT,
 		0x74,sc.work,0,0,HEADER);
 
 	//провер€ем не схлопнуто ли окно в заголовок
@@ -181,7 +182,7 @@ void draw_window()
 
 	DrawBar(0,PANEL_Y, PANEL_Y, USER_PANEL_HEIGHT, sc.work); //панель снизу
 
-	DrawCaptButton(10, PANEL_Y+7, 90, 20, 2, sc.work_button, sc.work_button_text,#NEW_GAME_TEXT);
+	DrawCaptButton(10, PANEL_Y+7, 90, 20, 2, sc.work_button, sc.work_button_text,NEW_GAME_TEXT);
 	DrawCaptButton(105,PANEL_Y+7, 20, 20, 10,sc.work_button, sc.work_button_text,BOARD_SIZES[DIFFICULTY_LEVEL]);
 
 	draw_field();
@@ -229,7 +230,7 @@ void draw_clicks_num()
 
 	if (check_for_end())
 	{
-		copystr(#REZULT_TEXT, #rezult);
+		copystr(RESULT_TEXT, #rezult);
 		copystr(IntToStr(BLOCKS_LEFT), #rezult+strlen(#rezult));
 		if (check_for_end()==1) copystr("Epic WIN!!1", #rezult);
 		DrawFlatButton(BLOCK_SIZE*BLOCKS_NUM/2-70, BLOCK_SIZE*BLOCKS_NUM/2-20, 140, 40, 3, #rezult);
@@ -243,8 +244,9 @@ void new_game()
 
 	//п€ть цветов используетс€ в игре дл€ квадратиков, MARKED дл€ того,
 	//чтобы отметить квадратики в процессе заливки и DELETED_BLOCK  дл€ их удалени€
-	for (i=0;i<BLOCKS_NUM*BLOCKS_NUM;i++)
+	for (i=0;i<BLOCKS_NUM*BLOCKS_NUM;i++) {
 		blocks_matrix[i] = random(5);
+	}
 	DeleteButton(3);
 }
 

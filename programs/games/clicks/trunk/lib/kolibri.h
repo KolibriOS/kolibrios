@@ -78,7 +78,7 @@ inline fastcall dword WaitEvent(){
  $int 0x40
 }
 
-int GetKeyScancode()
+inline fastcall int GetKeyScancode()
 {
 	$mov  eax,2
 	$int  0x40
@@ -177,7 +177,7 @@ inline fastcall MoveSize(int EBX,ECX,EDX,ESI)
 }
 
 
-inline fastcall dword GetSkinWidth()
+inline fastcall dword GetSkinHeight()
 {
 	$push ebx
 	$mov  eax, 48

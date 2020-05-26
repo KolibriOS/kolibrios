@@ -19,7 +19,7 @@
 //                                                   //
 //===================================================//
 
-?define WINDOW_HEADER "Clipboard Viewer v1.03"
+?define WINDOW_HEADER "Clipboard Viewer"
 ?define T_DELETE_LAST_SLOT "Delete last slot"
 ?define T_DELETE_ALL_SLOTS "Delete all slots"
 ?define T_RESET_BUFFER_LOCK "Reset the lock buffer"
@@ -50,19 +50,17 @@ proc_info Form;
 void main()
 {   
 	int id;
-	SetEventMask(EVM_REDRAW + EVM_KEY + EVM_BUTTON + EVM_MOUSE + EVM_MOUSE_FILTER);
+	@SetEventMask(EVM_REDRAW + EVM_KEY + EVM_BUTTON + EVM_MOUSE + EVM_MOUSE_FILTER);
+	#define NO_DLL_INIT
 	load_dll(boxlib, #box_lib_init,0);
-	loop() 
+	loop() switch(@WaitEventTimeout(10))
 	{
-	  WaitEventTimeout(10);
-	  switch(EAX & 0xFF)
-	  {
 	  	case evMouse:
 			SelectList_ProcessMouse();
 	  		break;
 
 		case evButton:
-			id = GetButtonID();
+			@GetButtonID();
 			if (id==1) ExitProcess();
 			if (id==BT_DELETE_LAST_SLOT) EventDeleteLastSlot();
 			if (id==BT_DELETE_ALL_SLOTS) EventDeleteAllSlots();
@@ -72,8 +70,9 @@ void main()
 			break;
 	  
 		case evKey:
-			GetKeys(); 
-			if (select_list.ProcessKey(key_scancode)) ClipViewSelectListDraw();
+			if (select_list.ProcessKey(@GetKeyScancode())) {
+				ClipViewSelectListDraw();
+			}
 			break;
 		 
 		case evReDraw:
@@ -81,8 +80,8 @@ void main()
 			DefineAndDrawWindow(screen.width-700/2,80,700,454+skin_height,0x73,0xE4DFE1,WINDOW_HEADER,0);
 			GetProcessInfo(#Form, SelfInfo);
 			IF (Form.status_window>=2) break;
-			if (Form.height < 200) { MoveSize(OLD,OLD,OLD,200); break; }
-			if (Form.width  < 570) { MoveSize(OLD,OLD,570,OLD); break; }
+			IF (Form.height < 200) { MoveSize(OLD,OLD,OLD,200); break; }
+			IF (Form.width  < 570) { MoveSize(OLD,OLD,570,OLD); break; }
 			SelectList_Init(
 				LIST_PADDING, 
 				LIST_PADDING+PANEL_TOP_H, 
@@ -96,7 +95,6 @@ void main()
 		default:
 			if (Clipboard__GetSlotCount() > select_list.count) ClipViewSelectListDraw();
 			break;
-	  }
    }
 }
 
@@ -109,8 +107,8 @@ void DrawWindowContent()
 	button_x += DrawStandartCaptButton(button_x, select_list.y + select_list.h + 8, BT_DELETE_LAST_SLOT, T_DELETE_LAST_SLOT);
 	button_x += DrawStandartCaptButton(button_x, select_list.y + select_list.h + 8, BT_DELETE_ALL_SLOTS, T_DELETE_ALL_SLOTS);
 	button_x += DrawStandartCaptButton(button_x, select_list.y + select_list.h + 8, BT_UNLOCK, T_RESET_BUFFER_LOCK);
-	WriteText(select_list.x+12, select_list.y - 23, select_list.font_type, sc.work_text, T_COLUMNS_TITLE);
-	WriteText(select_list.x+select_list.w - 88-14, select_list.y - 23, select_list.font_type, sc.work_text, T_COLUMN_VIEW);
+	WriteText(select_list.x+12, select_list.y - 23, 0x90, sc.work_text, T_COLUMNS_TITLE);
+	WriteText(select_list.x+select_list.w - 88-14, select_list.y - 23, 0x90, sc.work_text, T_COLUMN_VIEW);
  	ClipViewSelectListDraw();
  	SelectList_DrawBorder();
 }
@@ -129,10 +127,6 @@ void SelectList_DrawLine(dword i)
 {
 	int yyy, length, slot_data_type_number;
 	dword line_text[2048];
-	dword size_kb;
-	dword text_color = 0;
-	dword bgcol = 0xFFFfff;
-	if (i%2) bgcol = 0xF1F1F1;
 
 	slot_data = Clipboard__GetSlotData(select_list.first + i);
 	cdata.size = ESDWORD[slot_data];
@@ -144,30 +138,27 @@ void SelectList_DrawLine(dword i)
 	cdata.content = slot_data + cdata.content_offset; 
 
 	yyy = i*select_list.item_h+select_list.y;
-	DrawBar(select_list.x+1, yyy, select_list.w-1, select_list.item_h, bgcol);
-	WriteText(select_list.x+12, yyy+select_list.text_y, select_list.font_type, text_color, itoa(select_list.first + i));
-	size_kb = ConvertSizeToKb(cdata.size);
-	WriteText(select_list.x+44, yyy+select_list.text_y, select_list.font_type, text_color, size_kb);
+	DrawBar(select_list.x+1, yyy, select_list.w-1, select_list.item_h, -i%2 * 0x0E0E0E + 0xF1F1f1);
+	WriteText(select_list.x+12, yyy+select_list.text_y, 0x90, 0x000000, itoa(select_list.first + i));
+	EDX = ConvertSizeToKb(cdata.size);
+	WriteText(select_list.x+44, yyy+select_list.text_y, 0x90, 0x000000, EDX);
 	slot_data_type_number = cdata.type;
-	WriteText(select_list.x+140, yyy+select_list.text_y, select_list.font_type, text_color, data_type[slot_data_type_number]);
-	WriteText(select_list.x+select_list.w - 88, yyy+select_list.text_y, select_list.font_type, 0x006597, T_VIEW_OPTIONS);
+	WriteText(select_list.x+140, yyy+select_list.text_y, 0x90, 0x000000, data_type[slot_data_type_number]);
+	WriteText(select_list.x+select_list.w - 88, yyy+select_list.text_y, 0x90, 0x006597, T_VIEW_OPTIONS);
 	DefineButton(select_list.x+select_list.w - 95, yyy, 50, select_list.item_h, 100+i+BT_HIDE, NULL);
 	DefineButton(select_list.x+select_list.w - 95 + 51, yyy, 40, select_list.item_h, 300+i+BT_HIDE, NULL);
 
 	length = select_list.w-236 - 95 / select_list.font_w - 2;
 	if (cdata.size - cdata.content_offset < length) length = cdata.size - cdata.content_offset;
-	memmov(#line_text, cdata.content, length);
+	strlcpy(#line_text, cdata.content, length);
 	replace_char(#line_text, 0, 31, length); // 31 is a dot
-	WriteText(select_list.x+236, yyy+select_list.text_y, select_list.font_type, text_color, #line_text);
+	WriteText(select_list.x+236, yyy+select_list.text_y, 0x90, 0x000000, #line_text);
 }
 
 int SaveSlotContents(dword size, off) {
-	EAX = CreateFile(size, off, DEFAULT_SAVE_PATH);
-	if (!EAX)
-	{
+	if (! CreateFile(size, off, DEFAULT_SAVE_PATH))	{
 		return true;
-	}
-	else {
+	} else {
 		notify("'Can not create /tmp0/1/clipview.tmp\nPreview function is not available.' -E");
 	 	return false;
 	}

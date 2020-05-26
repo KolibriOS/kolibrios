@@ -35,11 +35,10 @@ enum {
 	BID_GO
 };
 
-#ifndef COPYING
-	#define T_FIRST "First file:"
-	#define T_SECOND "Second file:"
-	#define T_GO  " Compare "
-#endif
+#define T_FIRST "First file:"
+#define T_SECOND "Second file:"
+#define T_GO  " Compare "
+
 
 #define READY 0
 int state=READY;
@@ -52,13 +51,13 @@ int state=READY;
 
 void gui()
 {
-	word btn;
+	#define NO_DLL_INIT
 	load_dll(boxlib, #box_lib_init,0);
 	load_dll(Proc_lib,  #OpenDialog_init,0);
 	OpenDialog_init stdcall (#o_dialog);
-	SetEventMask(EVM_REDRAW + EVM_KEY + EVM_BUTTON + EVM_MOUSE + EVM_MOUSE_FILTER);
+	@SetEventMask(EVM_REDRAW + EVM_KEY + EVM_BUTTON + EVM_MOUSE + EVM_MOUSE_FILTER);
 
-	loop() switch(WaitEvent())
+	loop() switch(@WaitEvent())
 	{
 		case evMouse:
 			if (READY == state) {
@@ -68,23 +67,22 @@ void gui()
 			break;
 
 		case evButton:
-			btn = @GetButtonID();
-			if (btn == BID_EXIT_PRC) ExitProcess();
-			if (btn == BID_SRC_OPEN) EventOpenDialogFirst();
-			if (btn == BID_DST_OPEN) EventOpenDialogSecond();
-			if (btn == BID_GO) EventGo();
+			@GetButtonID();
+			if (EAX == BID_EXIT_PRC) ExitProcess();
+			if (EAX == BID_SRC_OPEN) EventOpenDialogFirst();
+			if (EAX == BID_DST_OPEN) EventOpenDialogSecond();
+			if (EAX == BID_GO) EventGo();
 			break;
 	  
 		case evKey:
-			GetKeys();
-			if (key_scancode == SCAN_CODE_ESC) ExitProcess();
-			if (key_scancode == SCAN_CODE_TAB) EventTabClick();
-			if (key_scancode == SCAN_CODE_ENTER) EventGo();
-			if (key_scancode == SCAN_CODE_INS) EventInsert();
-			EAX = key_editbox;
+			@GetKey();
 			edit_box_key stdcall (#src_box);
-			EAX = key_editbox;
 			edit_box_key stdcall (#dst_box);
+			EAX >>= 16;
+			if (AL == SCAN_CODE_ESC) ExitProcess();
+			if (AL == SCAN_CODE_TAB) EventTabClick();
+			if (AL == SCAN_CODE_ENTER) EventGo();
+			if (AL == SCAN_CODE_INS) EventInsert();
 			break;
 		 
 		case evReDraw:
@@ -103,15 +101,6 @@ void draw_window()
 		DrawFileBox(#dst_box, T_SECOND, BID_DST_OPEN);
 		DrawStandartCaptButton(dst_box.left - 2, dst_box.top + 40, BID_GO, T_GO);
 	}
-	#ifdef COPYING
-	if (COPYING==state) {
-		pr.frame_color = sc.work_graph;
-		DrawRectangle3D(PR_LEFT-1, PR_TOP-1, PR_W+1, PR_H+1, sc.work_dark, 
-			sc.work_light);
-		DrawProgress();
-		DrawStandartCaptButton(-19*8+WIN_W/2-15, dst_box.top + 35, B_STOP, "        Stop       ");
-	}
-	#endif
 }
 
 void UpdateEditBoxes(dword f1, f2)
@@ -128,14 +117,12 @@ void UpdateEditBoxes(dword f1, f2)
 //                                                   //
 //===================================================//
 
-#ifndef COPYING
 void EventGo()
 {
 	char run_param[4096];
 	wsprintf(#run_param, "\"%s\" \"%s\"", #src_path, #dst_path);
 	RunProgram(I_Path, #run_param);
 }
-#endif
 
 void EventTabClick()
 {
@@ -158,9 +145,6 @@ void EventOpenDialogFirst()
 
 void EventOpenDialogSecond()
 {
-	#ifdef COPYING
-	o_dialog.type = 1; //0-file, 1-save, 2-select folder
-	#endif
 	OpenDialog_start stdcall (#o_dialog);
 	if (o_dialog.status) {
 		strcpy(#dst_path, #openfile_path);

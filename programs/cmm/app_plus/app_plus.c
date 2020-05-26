@@ -79,21 +79,21 @@ void main()
 	CheckKosMounted();
 
 	o_dialog.type = 2;
+	#define NO_DLL_INIT
 	load_dll(Proc_lib, #OpenDialog_init,0);
 	OpenDialog_init stdcall (#o_dialog);
 	active_button_id = BTN_MANUAL_SEARCH;
 
-	loop() switch(WaitEvent())
+	loop() switch(@WaitEvent())
 	{	
 		case evButton:
 			EventButton(GetButtonID());
 			break;
 		case evKey:
-			GetKeys();
-			if (key_scancode == SCAN_CODE_ENTER) {
+			GetKeyScancode();
+			if (AL == SCAN_CODE_ENTER) {
 				EventButton(active_button_id);
-			}
-			else if (key_scancode == SCAN_CODE_TAB) {
+			} else if (AL == SCAN_CODE_TAB) {
 				active_button_id = active_button_id-10^1 + 10;
 				DrawButtons();
 			}
@@ -107,11 +107,10 @@ void main()
 void draw_window()
 {
 	incn y;
-	y.n=0;
 	sc.get();
 	DefineAndDrawWindow(screen.width-570/2, 100, 570, 300+skin_height, 0x34, sc.work, WINDOW_TITLE_TEXT,0);
 	GetProcessInfo(#Form, SelfInfo);
-	WriteTextB(CONX+2,y.inc(20)+2,0x81,MixColors(sc.work, 0xB92234,220),CONTENT_HEADER_TEXT);
+	WriteTextB(CONX+2,y.set(20)+2,0x81,MixColors(sc.work, 0xB92234,220),CONTENT_HEADER_TEXT);
 	WriteTextB(CONX,y.n,0x81,0xB92234,CONTENT_HEADER_TEXT);
 	
 	PutPaletteImage(#scr,144,171,Form.cwidth-180,y.n,8,#scr_pal);

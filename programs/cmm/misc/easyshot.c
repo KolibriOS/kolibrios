@@ -90,15 +90,15 @@ void main()
 	strcpy(#save_path, "/tmp0/1");
 	EditBox_UpdateText(#edit_save, 0);
 
-	SetEventMask(EVM_REDRAW+EVM_KEY+EVM_BUTTON+EVM_MOUSE+EVM_MOUSE_FILTER);
-	loop() switch(WaitEvent())
+	@SetEventMask(EVM_REDRAW+EVM_KEY+EVM_BUTTON+EVM_MOUSE+EVM_MOUSE_FILTER);
+	loop() switch(@WaitEvent())
 	{
 	case evMouse:
 		edit_box_mouse stdcall (#edit_save);
 		break;
 
 	case evButton:
-		id = GetButtonID();
+		id = @GetButtonID();
 		switch(id){
 			case CLOSE_BTN: ExitProcess();
 			case BTN_MAKE_SCREENSHOT: EventTakeScreenshot(); break;
@@ -109,11 +109,11 @@ void main()
 		break;
 
 	case evKey:
-		GetKeys();
-		if (SCAN_CODE_ENTER == key_scancode) EventTakeScreenshot();
-		if (SCAN_CODE_ESC == key_scancode) ExitProcess();
-		EAX = key_editbox;
-		edit_box_key stdcall (#edit_save);	
+		GetKey();
+		edit_box_key stdcall (#edit_save);
+		EAX >>= 16;
+		if (SCAN_CODE_ENTER == AL) EventTakeScreenshot();
+		if (SCAN_CODE_ESC == AL) ExitProcess();
 		break;
      
 	case evReDraw:

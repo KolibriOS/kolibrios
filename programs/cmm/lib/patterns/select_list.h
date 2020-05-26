@@ -29,9 +29,8 @@ void SelectList_Draw()
 	SelectList_DrawScroller();
 }
 
-void SelectList_ProcessMouse()
+signed SelectList_ProcessMouse()
 {
-	int mouse_clicked;
 	mouse.get();
 	scrollbar_v_mouse (#scroll1);
 	if (select_list.first != scroll1.position)
@@ -42,12 +41,10 @@ void SelectList_ProcessMouse()
 	
 	if (mouse.vert) && (select_list.MouseScroll(mouse.vert)) SelectList_Draw();
 
-	if (mouse.up)&&(mouse_clicked)
-	{
-		if (mouse.lkm) && (select_list.ProcessMouse(mouse.x, mouse.y)) SelectList_LineChanged();
-		mouse_clicked=false;
-	}
-	else if (mouse.down)&&(mouse.lkm) && (select_list.MouseOver(mouse.x, mouse.y)) mouse_clicked=true;
+	if (mouse.up) && (mouse.lkm) 
+		if (select_list.ProcessMouse(mouse.x, mouse.y)) {
+			SelectList_LineChanged();
+		}
 }
 
 void SelectList_DrawBorder() {

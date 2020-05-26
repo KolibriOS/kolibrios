@@ -104,7 +104,7 @@ void main()
 {
 	proc_info Form;
 
-	if (!param) die("'Menu component is for developers only' -I");
+	if (!param) RunProgram("/sys/network/WebView", "http://board.kolibrios.org/viewtopic.php?f=24&t=4233#p74599");
 
 	GetMenuItems(#param);
 	GetMenuWidths();
@@ -120,7 +120,7 @@ void main()
 
 	GetWindowPosition();
 
-	SetEventMask(EVM_REDRAW + EVM_KEY + EVM_BUTTON + EVM_MOUSE);
+	@SetEventMask(EVM_REDRAW + EVM_KEY + EVM_BUTTON + EVM_MOUSE);
 	loop() switch(WaitEvent())
 	{
 		case evMouse:			
@@ -135,7 +135,6 @@ void main()
 			break;
 
 		case evKey:
-			GetKeys();
 			ProcessKeys();
 			break;
 
@@ -154,8 +153,9 @@ void CorrectLastItem()
 	}
 }
 
-void ProcessKeys()
+inline ProcessKeys()
 {
+	key_scancode = @GetKeyScancode();
 	switch(key_scancode) 
 	{
 		case SCAN_CODE_ESC:

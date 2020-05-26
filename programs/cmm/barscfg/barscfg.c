@@ -95,18 +95,18 @@ checkbox tbClnDeskButton;
 
 void main()
 {
-	dword id, key;
+	dword id;
 
 	load_dll(libini, #lib_init,1);
 	load_dll(boxlib, #box_lib_init,0);
 
 	LoadCfg();
 
-	loop() switch(WaitEvent())
+	loop() switch(@WaitEvent())
 	{
 		case evButton: 
-				id=GetButtonID();
-				if (1==id) ExitProcess();
+				id = @GetButtonID();
+				if (1==id) @ExitProcess();
 
 				if (taskbar_on.checked) EventTaskbarProcessButton(id);
 				if (docky_on.checked) EventDockyProcessButton(id);
@@ -114,35 +114,17 @@ void main()
 				if (taskbar_on.click(id)) {
 					IF (taskbar_on.checked == true) RunProgram("/sys/@taskbar", 0);
 					ELSE KillProcessByName("@TASKBAR", SINGLE);
-					EAX = taskbar_on.checked ^ 1;
-					tbSoftenUp.disabled = EAX;
-					tbSoftenDown.disabled = EAX;
-					tbMinLeftButton.disabled = EAX;
-					tbMinRightButton.disabled = EAX;
-					tbRunApplButton.disabled = EAX;
-					tbClnDeskButton.disabled = EAX;
-					tbClock.disabled = EAX;
-					tbCpuUsage.disabled = EAX;
-					tbChangeLang.disabled = EAX;
-					tbMenuButton.disabled = EAX;
-					tbPanelHeight.disabled = EAX;
-					tbSoftenHeight.disabled = EAX;
-					tbButtonOffset.disabled = EAX;
-					tbButtonOffset.disabled = EAX;
 					DrawWindowContent();
 				}
 				if (docky_on.click(id)) {
 					IF (docky_on.checked == true) RunProgram("/sys/@docky", 0);
 					ELSE KillProcessByName("@DOCKY", SINGLE);
-					dkFsize.disabled = docky_on.checked ^ 1;
-					dkAshow.disabled = docky_on.checked ^ 1;
 					DrawWindowContent();
 				}
 				break;
 				
 		case evKey:
-				GetKeys();
-				if (key_scancode == SCAN_CODE_ESC) ExitProcess();
+				if (@GetKeyScancode() == SCAN_CODE_ESC) ExitProcess();
 				break;
 			
 		case evReDraw:
@@ -159,12 +141,36 @@ void DrawPanelsImage(dword y, n)
 	_PutImage(22, y, PIMG_W, PIMG_H, n * PIMG_W * PIMG_H * 3 + #panels_img_data);
 }
 
+void SetDisabledMode()
+{
+	EAX = taskbar_on.checked ^ 1;
+	tbSoftenUp.disabled = 
+	tbSoftenDown.disabled = 
+	tbMinLeftButton.disabled = 
+	tbMinRightButton.disabled = 
+	tbRunApplButton.disabled = 
+	tbClnDeskButton.disabled = 
+	tbClock.disabled = 
+	tbCpuUsage.disabled = 
+	tbChangeLang.disabled = 
+	tbMenuButton.disabled = 
+	tbPanelHeight.disabled = 
+	tbSoftenHeight.disabled = 
+	tbButtonOffset.disabled = 
+	tbButtonOffset.disabled = EAX;
+	//
+	dkFsize.disabled = 
+	dkAshow.disabled = docky_on.checked ^ 1;	
+}
+
 void DrawWindowContent()
 {
 	#define PD 10
 	dword frame_y;
 	word win_center_x = Form.cwidth / 2 + 20;
 	incn y;
+
+	SetDisabledMode();
 
 	frame_y = 15;
 	y.n = frame_y;

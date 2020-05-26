@@ -44,9 +44,8 @@ proc_info Form;
 #include "engine.h"
 #include "ini.h"
 
-dword ed_mouse;
 edit_box notebox = {NULL,NULL,NULL,COL_BG_ACTIVE,0x94AECE,COL_BG_ACTIVE,0xffffff,0,
-	MAX_LINE_CHARS-1,NULL,#ed_mouse,ed_always_focus+ed_focus};
+	MAX_LINE_CHARS-1,NULL,0,ed_always_focus+ed_focus};
 dword lists[] = { 0xEAEAEA, 0xCDCDCD, 0xF0F0F0, 0xD8D8D8, 0 };
 
 bool delete_active = false;
@@ -61,7 +60,6 @@ block delBtn;
 
 void main()
 {   
-	int btn;
 	bool first_redraw=true;
 	dword cur_line_offset;
 	load_dll(boxlib, #box_lib_init,0);
@@ -70,10 +68,10 @@ void main()
 	
 	if (param) notes.OpenTxt(#param); else notes.OpenTxt("/sys/notes.txt");
 
-	SetEventMask(EVM_REDRAW + EVM_KEY + EVM_BUTTON + EVM_MOUSE + EVM_MOUSE_FILTER);
+	@SetEventMask(EVM_REDRAW + EVM_KEY + EVM_BUTTON + EVM_MOUSE + EVM_MOUSE_FILTER);
 	LoadIniSettings();
 
-	loop() switch(WaitEvent())
+	loop() switch(@WaitEvent())
 	{
 		case evMouse:
 			edit_box_mouse stdcall (#notebox);
@@ -101,8 +99,8 @@ void main()
 			break;
 
 		 case evButton:
-			btn = GetButtonID();
-			switch(btn)
+			@GetButtonID();
+			switch(EAX)
 			{
 				case CLOSE_BTN:
 					EventExitApp();
@@ -111,7 +109,7 @@ void main()
 					EventDeleteCurrentNode();
 					break;
 				default: 
-					EventCheckBoxClick(btn-CHECKBOX_ID);
+					EventCheckBoxClick(EAX-CHECKBOX_ID);
 					break;
 			}  
 			break;
