@@ -34,8 +34,8 @@ points_init:
 ;настройка точек при открытии изображения
 ;(точки ставятся по углам изображения)
 align 4
-proc points_init_2 uses eax ecx edx edi, ot_x:dword
-	xor eax,eax
+proc points_init_2 uses eax ecx edx edi, ot_x:dword, ot_y:dword
+	mov eax,[ot_y]
 	mov edi,sel_pt
 	mov edx,[ot_x]
 	mov [edi+point2d.x],edx ;1
@@ -48,6 +48,7 @@ proc points_init_2 uses eax ecx edx edi, ot_x:dword
 	add edi,sizeof.point2d
 	mov [edi+point2d.x],ecx ;3
 	mov ecx,[buf_i0.h]
+	sub ecx,eax
 	mov [edi+point2d.y],ecx ;3
 	add edi,sizeof.point2d
 	mov [edi+point2d.x],edx ;4

@@ -12,10 +12,8 @@ include '../../../programs/develop/libraries/TinyGL/asm_fork/opengl_const.inc'
 include '../../../programs/develop/libraries/libs-dev/libimg/libimg.inc'
 include '../../../programs/develop/info3ds/info_fun_float.inc'
 
-txt_buf rb 8
-
 @use_library_mem mem.Alloc,mem.Free,mem.ReAlloc,dll.Load
-caption db 'Image transform 16.05.20',0 ;подпись окна
+caption db 'Image transform 26.05.20',0 ;подпись окна
 
 offs_zbuf_pbuf equ 24 ;const. from 'zbuffer.inc'
 
@@ -201,7 +199,6 @@ pushad
 			jmp .end2
 		.end1:
 			push buf_ogl
-			;call [kosglSwapBuffers]
 		.end2:
 		stdcall [buf2d_bit_blt], buf_0, [nav_x],[nav_y] ;,...
 
@@ -221,6 +218,13 @@ pushad
 		stdcall convert_int_to_str, 16
 		stdcall str_cat, edi,ebx
 		stdcall str_cat, edi,txt_space ;завершающий пробел
+		;ширина и высота изображения
+		mov eax,[buf_i0.w]
+		mov edi,txt_img_w.size
+		stdcall convert_int_to_str, 16
+		mov eax,[buf_i0.h]
+		mov edi,txt_img_h.size
+		stdcall convert_int_to_str, 16
 		mov byte[calc],0
 	.end0:
 	; *** рисование буфера ***
@@ -229,7 +233,11 @@ pushad
 	mov ecx,[sc.work_text]
 	or  ecx,0x80000000 or (1 shl 30)
 	mov edi,[sc.work] ;цвет фона окна
-	mcall SF_DRAW_TEXT,(275 shl 16)+7,,txt_f_size
+	mcall SF_DRAW_TEXT,(275 shl 16)+4,,txt_f_size
+	add ebx,9
+	mcall ,,,txt_img_w
+	add ebx,9
+	mcall ,,,txt_img_h
 popad
 	ret
 endp
@@ -491,13 +499,48 @@ popad
 	ret
 
 align 4
-proc mouse_left_u uses eax
+proc mouse_left_u uses eax ebx
 	call buf_get_mouse_coord
 	cmp eax,-1
 	je .end0
 		sub [mouse_down_x],eax
 		sub [mouse_down_y],ebx
 
+		cmp dword[sel_act],-1
+		je .end1
+			;двигаем точки
+			mov eax,[sel_act]
+			imul eax,sizeof.point2d
+			add eax,sel_pt
+			;coord x
+			mov ebx,dword[eax+point2d.x]
+			sub ebx,[mouse_down_x]
+			cmp ebx,0
+			jge @f
+				xor ebx,ebx
+			@@:
+			cmp ebx,[buf_i0.w]
+			jle @f
+				mov ebx,[buf_i0.w]
+			@@:
+			mov dword[eax+point2d.x],ebx
+			;coord y
+			mov ebx,dword[eax+point2d.y]
+			sub ebx,[mouse_down_y]
+			cmp ebx,0
+			jge @f
+				xor ebx,ebx
+			@@:
+			cmp ebx,[buf_i0.h]
+			jle @f
+				mov ebx,[buf_i0.h]
+			@@:
+			mov dword[eax+point2d.y],ebx
+			call points_update_prop
+			jmp .end2
+		.end1:
+
+		;двигаем изображение
 		mov eax,[nav_y]
 		sub eax,[mouse_down_y]
 		cmp eax,[nav_y_min]
@@ -521,9 +564,8 @@ proc mouse_left_u uses eax
 			mov eax,[nav_x_max]
 		@@:
 		mov [nav_x],eax
-
+	.end2:
 		mov byte[calc],1
-
 	.end0:
 	ret
 endp
@@ -620,11 +662,6 @@ proc but_open_file
 	mov dword[run_file_70.FileName], openfile_path
 	mcall SF_FILE,run_file_70
 
-	;mov eax,dword[open_b+32]
-	;mov edi,txt_buf
-	;stdcall convert_int_to_str,20
-	;notify_window_run txt_buf
-
 	mov ecx,dword[open_b+32] ;+32 qword: размер файла в байтах
 	mov [open_file_size],ecx
 	stdcall mem.ReAlloc,[open_file_img],ecx ;выделяем память для изображения
@@ -684,13 +721,22 @@ proc but_open_file
 			jg @f
 				mov eax,[ebx+4]
 			@@:
-			mov ecx,eax
-			mov edx,[ebx+8]
+			mov ecx,eax ;размер по x
+			stdcall getNextPowerOfTwo,[ebx+8]
+			cmp eax,[ebx+8]
+			jg @f
+				mov eax,[ebx+8]
+			@@:
+			mov edx,eax ;размер по y
 			stdcall [buf2d_resize], edi, ecx,edx,1 ;изменяем размеры буфера
+			stdcall [buf2d_clear], edi, buf2d_color
 			sub ecx,[ebx+4]
 			shr ecx,1
 			mov [buf_cop.l],cx
-			stdcall [buf2d_bit_blt], edi, ecx,0, buf_cop
+			sub edx,[ebx+8]
+			shr edx,1
+			mov [buf_cop.t],dx
+			stdcall [buf2d_bit_blt], edi, ecx,edx, buf_cop
 		.end_1:
 		
 		;создаем буфер для преобразованного изображения
@@ -742,26 +788,11 @@ proc but_open_file
 		stdcall [img_destroy], ebx
 		
 		movzx eax,word[buf_cop.l]
-		stdcall points_init_2,eax
+		movzx ebx,word[buf_cop.t]
+		stdcall points_init_2,eax,ebx
 
 		call calc_nav_params
-		xor eax,eax
-		mov [nav_x],eax
-		mov ebx,[nav_x_max]
-		cmp ebx,0
-		jle @f
-			;если маленькое изображение то ставим по центру
-			shr ebx,1
-			mov [nav_x],ebx
-		@@:
-		mov [nav_y],eax
-		mov ebx,[nav_y_max]
-		cmp ebx,0
-		jle @f
-			;если маленькое изображение то ставим по центру
-			shr ebx,1
-			mov [nav_y],ebx
-		@@:
+		stdcall nav_to_point, dword[sel_pt+point2d.x],dword[sel_pt+point2d.y]
 		mov byte[view_b],0
 		mov dword[sel_act],-1 ;снимаем выделение с точек
 		mov byte[calc],1
@@ -769,6 +800,51 @@ proc but_open_file
 
 	.end_open_file:
 	popad
+	ret
+endp
+
+align 4
+proc nav_to_point, coord_x:dword, coord_y:dword
+	;coord x
+	mov eax,[nav_x_max]
+	cmp eax,0
+	jle @f
+		;если маленькое изображение то ставим по центру
+		shr eax,1
+		jmp .end0
+	@@:
+	mov eax,[buf_0.w]
+	shr eax,1
+	sub eax,[coord_x]
+	cmp eax,[nav_x_min]
+	jge @f
+		mov eax,[nav_x_min]
+	@@:
+	cmp eax,[nav_x_max]
+	jle .end0
+		mov eax,[nav_x_max]
+	.end0:
+	mov [nav_x],eax
+	;coord y
+	mov eax,[nav_y_max]
+	cmp eax,0
+	jle @f
+		;если маленькое изображение то ставим по центру
+		shr eax,1
+		jmp .end1
+	@@:
+	mov eax,[buf_0.h]
+	shr eax,1
+	sub eax,[coord_y]
+	cmp eax,[nav_y_min]
+	jge @f
+		mov eax,[nav_y_min]
+	@@:
+	cmp eax,[nav_y_max]
+	jle .end1
+		mov eax,[nav_y_max]
+	.end1:
+	mov [nav_y],eax
 	ret
 endp
 
@@ -1090,6 +1166,10 @@ if lang eq ru
 	'которые станут углами преобразованого изображения." -tI',0
 	txt_pref db ' б ',0,' Кб',0,' Мб',0,' Гб',0 ;приставки: кило, мега, гига
 	txt_f_size db 'Размер: '
+.size: rb 16
+	txt_img_w db 'Ширина: '
+.size: rb 16
+	txt_img_h db 'Высота: '
 else
 	txt_err_save_img_file db 'Can',39,'t save *.png file.',0
 	txt_about db '"About',13,10,\
@@ -1098,6 +1178,10 @@ else
 	'that will become the corners of the converted image." -tI',0
 	txt_pref db ' b ',0,' Kb',0,' Mb',0,' Gb',0 ;приставки: кило, мега, гига
 	txt_f_size db 'Size: '
+.size: rb 16
+	txt_img_w db 'Width: '
+.size: rb 16
+	txt_img_h db 'Height: '
 end if
 .size: rb 16
 
@@ -1283,7 +1367,7 @@ buf_0: dd 0
 .t: dw 35 ;+6 top
 .w: dd 6*64 ;+8 w
 .h: dd 7*64 ;+12 h
-.color: dd 0xffffff ;+16 color
+.color: dd 0x808080 ;+16 color
 	db 24 ;+20 bit in pixel
 
 align 4
@@ -1333,6 +1417,7 @@ mouse_down_y dd ?
 sel_act dd ? ;точка выбранная для редактирования с клавиатуры
 sel_pt rb 8*sizeof.point2d ;точки для выбора 4-х углов
 last_time dd 0
+txt_buf rb 8
 procinfo process_information 
 sc system_colors 
 run_file_70 FileInfoBlock
