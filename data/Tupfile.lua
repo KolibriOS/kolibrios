@@ -27,7 +27,6 @@ img_files = {
  {"UNIMG", PROGS .. "/fs/unimg/unimg"},
  {"VMODE", "common/vmode"},
  {"3D/HOUSE.3DS", "common/3d/house.3ds"},
- {"DEVELOP/BACKY", PROGS .. "/develop/backy/Backy"},
  {"DEVELOP/T_EDIT.INI", PROGS .. "/other/t_edit/t_edit.ini"},
  {"File Managers/ICONS.INI", "common/File Managers/icons.ini"},
  {"File Managers/KFM.INI", "common/File Managers/kfm.ini"},
@@ -74,6 +73,7 @@ img_files = {
 -- For russian build, add russian-only files.
 if build_type == "rus" then tup.append_table(img_files, {
  {"EXAMPLE.ASM", PROGS .. "/develop/examples/example/trunk/rus/example.asm"},
+ {"DEVELOP/BACKY", PROGS .. "/develop/backy/Backy_ru"},
  {"GAMES/BASEKURS.KLA", build_type .. "/games/basekurs.kla"},
  {"GAMES/PADENIE", build_type .. "/games/padenie"}, 
  {"File Managers/KFAR.INI", build_type .. "/File Managers/kfar.ini"},
@@ -84,6 +84,7 @@ if build_type == "rus" then tup.append_table(img_files, {
  {"SETTINGS/SYSPANEL.INI", "rus/settings/syspanel.ini"},
 }) elseif build_type == "eng" then tup.append_table(img_files, {
  {"EXAMPLE.ASM", PROGS .. "/develop/examples/example/trunk/example.asm"},
+ {"DEVELOP/BACKY", PROGS .. "/develop/backy/Backy"},
  {"File Managers/KFAR.INI", "common/File Managers/kfar.ini"}, 
  {"File Managers/KFM_KEYS.TXT", PROGS .. "/fs/kfm/trunk/docs/english/kfm_keys.txt"},
  {"SETTINGS/.shell", PROGS .. "/system/shell/bin/eng/.shell"},
@@ -92,6 +93,7 @@ if build_type == "rus" then tup.append_table(img_files, {
  {"SETTINGS/SYSPANEL.INI", "common/settings/syspanel.ini"},
 }) elseif build_type == "sp" then tup.append_table(img_files, {
  {"EXAMPLE.ASM", PROGS .. "/develop/examples/example/trunk/example.asm"},
+ {"DEVELOP/BACKY", PROGS .. "/develop/backy/Backy"},
  {"File Managers/KFAR.INI", "common/File Managers/kfar.ini"}, 
  {"File Managers/KFM_KEYS.TXT", PROGS .. "/fs/kfm/trunk/docs/english/kfm_keys.txt"},
  {"SETTINGS/.shell", PROGS .. "/system/shell/bin/eng/.shell"},
@@ -100,6 +102,7 @@ if build_type == "rus" then tup.append_table(img_files, {
  {"SETTINGS/SYSPANEL.INI", "common/settings/syspanel.ini"},
 }) elseif build_type == "it" then tup.append_table(img_files, {
  {"EXAMPLE.ASM", PROGS .. "/develop/examples/example/trunk/example.asm"},
+ {"DEVELOP/BACKY", PROGS .. "/develop/backy/Backy"},
  {"File Managers/KFAR.INI", "common/File Managers/kfar.ini"},
  {"File Managers/KFM_KEYS.TXT", PROGS .. "/fs/kfm/trunk/docs/english/kfm_keys.txt"},
  {"SETTINGS/.shell", PROGS .. "/system/shell/bin/eng/.shell"},
@@ -108,6 +111,7 @@ if build_type == "rus" then tup.append_table(img_files, {
  {"SETTINGS/SYSPANEL.INI", "common/settings/syspanel.ini"},
 }) else tup.append_table(img_files, {
  {"EXAMPLE.ASM", PROGS .. "/develop/examples/example/trunk/example.asm"},
+ {"DEVELOP/BACKY", PROGS .. "/develop/backy/Backy"},
  {"File Managers/KFM_KEYS.TXT", PROGS .. "/fs/kfm/trunk/docs/english/kfm_keys.txt"},
  {"File Managers/KFAR.INI", "common/File Managers/kfar.ini"},
  {"SETTINGS/.shell", PROGS .. "/system/shell/bin/eng/.shell"},

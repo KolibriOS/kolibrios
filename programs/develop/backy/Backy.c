@@ -1,21 +1,22 @@
 
 /*
- * Author: JohnXenox aka Aleksandr Igorevich.
- *
  * Programme name: Backy
  * Description: The programme for backing up a file.
+ *
+ * Backy.c
+ * Author: JohnXenox aka Aleksandr Igorevich.
  *
  * Works from command line, only!
  */
 
-#define CREATION_DATE "2020.05.17"
+#define CREATION_DATE "2020.05.27"
 
 #include <conio.h>
-//#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
-#include "Backy-lib.h"
+#include "Backy_lang.h"
+#include "Backy_lib.h"
 
 int date = 0;
 int time = 0;
@@ -41,10 +42,14 @@ char ext[] = ".bak";
 
 char flag = 0;
 
+char state;
 
 
 int main(int argc, char** argv)
 {
+    if (con_init_console_dll()) return 1; // init fail.
+
+    con_set_title("Backy");
 
 // ============================================================ //
 // preprocessing arguments from the command line. ============= //
@@ -60,7 +65,7 @@ int main(int argc, char** argv)
 
 
 // ============================================================ //
-// preprocess the command line arguments. ===================== //
+// process the command line arguments. ======================== //
 
     if (argc > 1)
     {
@@ -88,7 +93,7 @@ int main(int argc, char** argv)
                 }
             }
 
-            // if inut path is found, then copy it into the array "path_in".
+            // if input path is found, then copy it into the array "path_in".
             if (*argv[i] == '/')
             {
                 flag = 2;
@@ -146,29 +151,47 @@ int main(int argc, char** argv)
     }
     else
     {
-        //con_init_console_dll_param(-1, 23, -1, 23, "Backy");
-        if (con_init_console_dll()) return 1; // init fail
+        con_set_title("Useful info!");
 
-        printf("Useful info!");
+        #if defined (lang_en)
 
-        printf("\n Name: Backy");
-        printf("\n Date: %s", CREATION_DATE);
-        printf("\n Description: The programme for backing up a file.\n");
+            con_printf("\n Name: Backy");
+            con_printf("\n Date: %s", CREATION_DATE);
+            con_printf("\n Description: The programme for backing up a file.\n");
 
-        printf("\n Author: JohnXenox\n");
+            con_printf("\n Author: JohnXenox\n");
 
-        printf("\n Usage: backy <path1> <-o path2>\n");
-        printf("  path1 - path to a file to be backuped.\n");
-        printf("  -o path2 - path to the output directory without the name of a file.\n\n");
+            con_printf("\n Usage: backy <path1> <-o path2>\n");
+            con_printf("  path1 - path to a file to be backuped.\n");
+            con_printf("  -o path2 - path to the output directory without the name of a file.\n\n");
 
-        printf(" Examples:\n");
-        printf("  backy test.c\n");
-        printf("  backy test.c -o /tmp0/1/\n");
-        printf("  backy /hd0/1/test.c\n");
-        printf("  backy /hd0/1/test.c -o /tmp0/1/\n");
+            con_printf(" Examples:\n");
+            con_printf("  backy test.c\n");
+            con_printf("  backy test.c -o /tmp0/1/\n");
+            con_printf("  backy /hd0/1/test.c\n");
+            con_printf("  backy /hd0/1/test.c -o /tmp0/1/\n");
 
-        exit(0);
-        return 1;
+        #elif defined (lang_ru)
+
+            con_printf("\n Имя: Backy");
+            con_printf("\n Дата: %s", CREATION_DATE);
+            con_printf("\n Описание: Программа для создания резервной копии файла.\n");
+
+            con_printf("\n Автор: JohnXenox\n");
+
+            con_printf("\n Использование: backy <path1> <-o path2>\n");
+            con_printf("  path1 - путь к файлу, который надо скопировать.\n");
+            con_printf("  -o path2 - путь к директории, в которую будет скопирована резервная копия файла.\n\n");
+
+            con_printf(" Примеры:\n");
+            con_printf("  backy test.c\n");
+            con_printf("  backy test.c -o /tmp0/1/\n");
+            con_printf("  backy /hd0/1/test.c\n");
+            con_printf("  backy /hd0/1/test.c -o /tmp0/1/\n");
+
+        #endif
+
+        return 0;
     }
 
     //printf("Path_in: %s\n", path_in);
@@ -293,29 +316,28 @@ int main(int argc, char** argv)
 // ============================================================ //
 // adding the name of the input file to the output path. ====== //
 
-    // searching the end of the path string.
     int i = 0;
     int y = 0;
 
-    // searching for zero terminator in the input path.
+    // searching for a zero terminator in the input path.
     while (path_in[i] != 0)
     {
         i++;
     }
 
-    // searching for slash in the input path.
+    // searching for a slash in the input path.
     while (path_in[i] != '/')
     {
         i--;
     }
 
-    // searching for zero terminator in the output path.
+    // searching for a zero terminator in the output path.
     while (path_out[y] != 0)
     {
         y++;
     }
 
-    // searching for slash in the output path.
+    // searching for a slash in the output path.
     if (path_out[y - 1] == '/')
     {
         y--;
@@ -329,7 +351,7 @@ int main(int argc, char** argv)
 
     i = 0;
 
-    // searching for zero terminator in the output path.
+    // searching for a zero terminator in the output path.
     while (path_out[i] != 0)
     {
         i++;
@@ -343,7 +365,7 @@ int main(int argc, char** argv)
 
     i += strlen(full_date);
 
-    // adding the extension to path.
+    // adding the extension to a path.
     strncpy(&path_out[i], ext, 4);
 
     //printf("Path_in: %s\n", path_in);
@@ -351,9 +373,21 @@ int main(int argc, char** argv)
 
     data = openFile(&length, path_in);
 
-    saveFile(length, data, 0, path_out);
+    if(data == 0)
+    {
+        #if defined (lang_en)
 
+            con_printf("\nThe file isn't found!\n");
 
-    return 0;
+        #elif defined (lang_ru)
+
+            con_printf("\nФайл не найден!\n");
+
+        #endif
+
+        return 13;
+    }
+
+    return checkStateOnSave(saveFile(length, data, 0, path_out));
 }
 

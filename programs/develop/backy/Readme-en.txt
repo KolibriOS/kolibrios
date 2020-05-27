@@ -1,4 +1,4 @@
-Backy (release date 2020.05.17)
+Backy (release date 2020.05.27)
 
 Backy is a programme for backing up a file.
 
