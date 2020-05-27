@@ -187,7 +187,7 @@ void handle_param()
 void main() 
 {
 	dword id;
-	byte count_sl = 0;
+	int old_cur_y;
 
 	rand_n = random(80);
 
@@ -236,24 +236,29 @@ void main()
 
 			ProceedMouseGestures();
 
-			GetKeyModifier();
-			if (key_modifier&KEY_LCTRL) || (key_modifier&KEY_RCTRL)
-			if (mouse.key&MOUSE_LEFT) && (mouse.up) {
-				files.ProcessMouse(mouse.x, mouse.y);
-				EventChooseFile(files.cur_y);
-				List_ReDraw();
+			if (mouse.vert)
+			{
+				if (files.MouseScroll(mouse.vert)) List_ReDraw();
 				break;
 			}
-			
+
 			if (files.MouseOver(mouse.x, mouse.y))
 			{
 				//select file
 				if (mouse.key&MOUSE_LEFT) && (mouse.up)
 				{
-					if (files.ProcessMouse(mouse.x, mouse.y)) {
+					GetKeyModifier();
+					old_cur_y = files.cur_y;
+					files.ProcessMouse(mouse.x, mouse.y);
+					if (key_modifier&KEY_LSHIFT) || (key_modifier&KEY_RSHIFT) {
+						EventChooseFilesRange(old_cur_y, files.cur_y);
+					} else if (key_modifier&KEY_LCTRL) || (key_modifier&KEY_RCTRL) {
+						EventChooseFile(files.cur_y);
+						DrawStatusBar();
 						List_ReDraw();
 					} else {
-						if (mouse.y - files.y / files.item_h + files.first == files.cur_y) Open(0);
+						if (old_cur_y == files.cur_y) Open(0);
+						else List_ReDraw();
 					}
 				}
 				//file menu
@@ -262,13 +267,7 @@ void main()
 					if (files.ProcessMouse(mouse.x, mouse.y)) List_ReDraw();
 					if (getElementSelectedFlag(files.cur_y) == false) selected_count = 0; //on redraw selection would be flashed, see [L001] 
 					EventShowListMenu();
-					break;
 				}
-			}
-
-			if (mouse.vert)
-			{
-				if (files.MouseScroll(mouse.vert)) List_ReDraw();
 				break;
 			}
 
@@ -417,14 +416,9 @@ void main()
 			}
 
 			if (key_modifier&KEY_LSHIFT) || (key_modifier&KEY_RSHIFT) {
-				if (key_scancode == SCAN_CODE_DOWN) {
-					EventChooseFile(files.cur_y);
-					files.KeyDown();
-				} else if (key_scancode == SCAN_CODE_UP) {
-					EventChooseFile(files.cur_y);
-					files.KeyUp();
-				} else break;
-				List_ReDraw();
+				old_cur_y = files.cur_y;
+				files.ProcessKey(key_scancode);
+				EventChooseFilesRange(old_cur_y, files.cur_y);
 				break;
 			}
 
@@ -479,10 +473,10 @@ void main()
 							else Open(1);
 							break;
 					case SCAN_CODE_KEY_A:
-							EventSelectAllFiles(true);
+							EventChooseAllFiles(true);
 							break;
 					case SCAN_CODE_KEY_U: //unselect all files
-							EventSelectAllFiles(false);
+							EventChooseAllFiles(false);
 							break;
 				}
 				break;
@@ -579,7 +573,7 @@ void draw_window()
 	llist_copy(#files_active, #files);
 	strcpy(#active_path, #path);
 	DrawStatusBar();
-	if (selected_count==0) Open_Dir(#path,ONLY_OPEN); //if there are no selected files -> refresh folder [L001] 
+	if (!selected_count) Open_Dir(#path,ONLY_OPEN); //if there are no selected files -> refresh folder [L001] 
 	DrawFilePanels();
 }
 
@@ -902,7 +896,7 @@ void Del_Form()
 {
 	byte f_count[128];
 	int dform_x = files.w - 220 / 2 + files.x;
-	if (selected_count==0) && (!strncmp(#file_name,"..",2)) return;
+	if (!selected_count) && (!strncmp(#file_name,"..",2)) return;
 	else
 	{
 		if (!files.count) return;
@@ -1161,14 +1155,6 @@ void ChangeActivePanel()
 	DrawFilePanels();
 }
 
-void EventSelectAllFiles(dword state)
-{
-	int i;
-	for (i=0; i<files.count; i++) setElementSelectedFlag(i, state);
-	List_ReDraw();
-	DrawStatusBar();
-}
-
 void EventSelectFileByKeyPress()
 {
 	int i;
@@ -1342,7 +1328,28 @@ void EventChooseFile(int _id)
 	} else {
 		setElementSelectedFlag(_id, true);
 	}
+}
+
+void EventChooseFilesRange(int _start, _end)
+{
+	if (_start > _end) _start >< _end;
+	if (_end - _start > 1) list_full_redraw = true;
+	while (_start < _end) {
+		EventChooseFile(_start); 
+		_start++;
+	}
+	DrawStatusBar();
+	List_ReDraw();
+}
+
+void EventChooseAllFiles(dword state)
+{
+	int i;
+	for (i=0; i<files.count; i++) setElementSelectedFlag(i, state);
+	List_ReDraw();
 	DrawStatusBar();
 }
+
+
 
 stop:
