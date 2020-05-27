@@ -110,7 +110,7 @@ void _SystemDiscs::Get()
 		for (j1=0; j1<dev_disc_num; j1++;)
 		{
 			sprintf(#sys_discs,"%s/%s",#dev_name,j1*304+ buf+72);
-			if (dir_exists(#sys_discs)) list.add(#sys_discs);
+			if (sys_discs[1]=='c') || (dir_exists(#sys_discs)) list.add(#sys_discs);
 		}
 		if (!strcmp(#sys_discs, "/rd/1")) 
 		{

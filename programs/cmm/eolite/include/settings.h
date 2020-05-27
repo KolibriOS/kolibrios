@@ -216,10 +216,12 @@ void LoadIcons()
 		icons16_default.replace_color(0xffCACBD6, MixColors(col.list_bg, 0, 200));		
 	}
 	//ICONS32.PNG
-	icons32_default.load("/sys/icons32.png");
-	icons32_selected.load("/sys/icons32.png");
-	icons32_default.replace_color(0x00000000, col.list_bg);
-	icons32_selected.replace_color(0x00000000, col.selec);	
+	if (big_icons.checked) {
+		icons32_default.load("/sys/icons32.png");
+		icons32_selected.load("/sys/icons32.png");
+		icons32_default.replace_color(0x00000000, col.list_bg);
+		icons32_selected.replace_color(0x00000000, col.selec);		
+	}
 }
 
 void SetAppColors()
@@ -281,7 +283,12 @@ void BigFontsChange()
 
 void BigIconsSwitch()
 {
-	if (big_icons.checked) icon_size=32; else icon_size=16; 
+	if (big_icons.checked) {
+		icon_size=32; 
+		LoadIcons();
+	} else {
+		icon_size=16; 
+	}
 	BigFontsChange();
 }
 

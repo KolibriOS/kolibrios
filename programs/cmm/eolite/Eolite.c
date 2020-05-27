@@ -335,7 +335,7 @@ void main()
 			break;  
 //Button pressed-----------------------------------------------------------------------------
 		case evButton:
-			id=GetButtonID();
+			id = @GetButtonID();
 
 			if (new_element_active) || (del_active) {
 				if (POPUP_BTN1==id) && (del_active) EventDelete();
