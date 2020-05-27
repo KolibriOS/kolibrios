@@ -60,7 +60,7 @@ void main()
 	  		break;
 
 		case evButton:
-			@GetButtonID();
+			id = @GetButtonID();
 			if (id==1) ExitProcess();
 			if (id==BT_DELETE_LAST_SLOT) EventDeleteLastSlot();
 			if (id==BT_DELETE_ALL_SLOTS) EventDeleteAllSlots();

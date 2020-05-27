@@ -175,7 +175,7 @@ void TWebBrowser::ParseHtml(dword _bufpointer, _bufsize){
 	is_html = true;
 	if (!strstri(bufpointer, "<body")) {
 		t_body = true;
-		if (!strstri(bufpointer, "<html")) {
+		if (!strstri(bufpointer, "<html")) && (!strstr(bufpointer, "<?xml")) && (!strstr(bufpointer, "<xml")) {
 			style.pre = true; //show linebreaks for a plaint text
 			is_html = false;
 		}

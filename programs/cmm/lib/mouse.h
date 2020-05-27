@@ -45,7 +45,7 @@
 	ECX = handle;
 	EAX = 37;
 	EBX = 5;
-	$int 0x40;
+	$int 64;
 }
 :dword MOUSE::hide()
 {
@@ -54,19 +54,19 @@
 		EAX = 68;
 		EBX = 12;
 		ECX = 32*32*4;
-		$int 0x40
+		$int 64
 		ECX = EAX;
 		_ = EAX;
 	} else ECX = _;
 	EAX = 37;
 	EBX = 4;
 	DX  = 2;
-	$int 0x40;
+	$int 64;
 	handle = EAX;
 	ECX = EAX;
 	EAX = 37;
 	EBX = 5;
-	$int 0x40;
+	$int 64;
 	handle = EAX;
 }
 
@@ -79,7 +79,7 @@
 		EBX = 19;
 		ECX = 4;
 		EDX = (x<<16)+y;
-		$int 0x40
+		$int 64
 		//move = true;
 	}
 	if((key)||(lkm|mkm|pkm))&&(down|up|click|dblclick|move)
@@ -89,7 +89,7 @@
 		EBX = 19;
 		ECX = key;
 		EDX = (x<<16)+y;
-		$int 0x40
+		$int 64
 	}
 }
 
@@ -97,7 +97,7 @@
 {
 	EAX = 18;
 	EBX = 15;
-	$int 0x40
+	$int 64
 }
 
 //get new attributes MOUSE
@@ -105,7 +105,7 @@
 {
 	EAX = 37;
 	EBX = 1;
-	$int	0x40
+	$int	64
 	$mov	ebx, eax
 	$shr	eax, 16
 	$and	ebx,0x0000FFFF
@@ -115,7 +115,7 @@
 	if (y>6000) y-=65535;
 	EAX = 37;
 	EBX = 2;
-	$int	0x40
+	$int	64
 	$mov	ebx, eax
 	$mov	ecx, eax
 	key = EAX;
@@ -180,7 +180,7 @@
 	//scroll
 	EAX = 37;
 	EBX = 7;
-	$int	0x40
+	$int	64
 	$mov	ebx, eax
 	$shr	eax, 16
 	$and	ebx,0x0000FFFF
@@ -213,45 +213,45 @@
 
 
 inline fastcall int GetMouseSpeed() {
-	$mov eax,18
-	$mov ebx,19
-	$mov ecx,0
-	$int 0x40
+	EAX = 18;
+	EBX = 19;
+	ECX = 0;
+	$int 64
 }
 
 inline fastcall void SetMouseSpeed(EDX) {
-	$mov eax,18
-	$mov ebx,19
-	$mov ecx,1
-	$int 0x40
+	EAX = 18;
+	EBX = 19;
+	ECX = 1;
+	$int 64
 }
 
 inline fastcall int GetMouseAcceleration() {
-	$mov eax,18
-	$mov ebx,19
-	$mov ecx,2
-	$int 0x40
+	EAX = 18;
+	EBX = 19;
+	ECX = 2;
+	$int 64
 }
 
 inline fastcall void SetMouseAcceleration(EDX) {
-	$mov eax,18
-	$mov ebx,19
-	$mov ecx,3
-	$int 0x40
+	EAX = 18;
+	EBX = 19;
+	ECX = 3;
+	$int 64
 }
 
 inline fastcall int GetMouseDoubleClickDelay() {
-	$mov eax,18
-	$mov ebx,19
-	$mov ecx,6
-	$int 0x40
+	EAX = 18;
+	EBX = 19;
+	ECX = 6;
+	$int 64
 }
 
 inline fastcall void SetMouseDoubleClickDelay(DL) {
-	$mov eax,18
-	$mov ebx,19
-	$mov ecx,7
-	$int 0x40
+	EAX = 18;
+	EBX = 19;
+	ECX = 7;
+	$int 64
 }
 
 #endif

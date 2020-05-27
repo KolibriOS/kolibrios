@@ -51,7 +51,9 @@
 :checkbox madmouse = { MADMOUSE, NULL };
 :checkbox com_mouse = { COMMOUSE, NULL };
 
-_ini ini = { "/sys/settings/system.ini", "loaded drivers" };
+char ini_path[] = "/sys/settings/system.ini";
+_ini ini_drivers = { #ini_path, "loaded drivers" };
+_ini ini_mouse = { #ini_path, "mouse" };
 
 void main() {
 	proc_info Form;
@@ -63,7 +65,7 @@ void main() {
 
 	SetEventMask(EVM_REDRAW+EVM_KEY+EVM_BUTTON+EVM_MOUSE+EVM_MOUSE_FILTER);	
 
-	loop() switch(WaitEvent())
+	loop() switch(@WaitEvent())
 	{
 		case evMouse:
 				mouse.get();
@@ -72,7 +74,7 @@ void main() {
 				break;
 
 		CASE evButton: 
-				id = GetButtonID();
+				id = @GetButtonID();
 				IF (1 == id) ExitApp();
 				else IF (pointer_speed.click(id)) ApplyCfg();
 				else IF (acceleration.click(id)) ApplyCfg();
@@ -93,9 +95,9 @@ void main() {
 				break;
 
 		case evKey:
-				GetKeys();
-				IF (key_scancode == SCAN_CODE_ESC) ExitApp();
-				IF (key_scancode == SCAN_CODE_F10) EventClickComMouse();
+				@GetKeyScancode();
+				IF (AL == SCAN_CODE_ESC) ExitApp();
+				IF (AL == SCAN_CODE_F10) EventClickComMouse();
 				break;
 			
 		case evReDraw:
@@ -125,14 +127,14 @@ void main() {
 
 void DrawMouseImage(dword l,r,m,v) {
 	#define IMG_W 59
-	#define IMG_H 101
+	#define IMG_H 100
 
 	IF (l) pal.left = red;
 	IF (m) pal.middle = red;
 	IF (r) pal.right = red;
 	IF (v) pal.middle = yellow;
 
-	PutPaletteImage(#panels_img_data,IMG_W,IMG_H,18+30,18+15,8,#pal);
+	PutPaletteImage(#panels_img_data,IMG_W,IMG_H,18+30,18+16,8,#pal);
 	pal.left = pal.right = white;
 	pal.middle = dgrey;
 	IF (v) {
@@ -153,23 +155,26 @@ void DrawControls() {
 }
 
 void LoadCfg() {
-	acceleration.value = GetMouseAcceleration();
-	pointer_speed.value = GetMouseSpeed();
-	double_click_delay.value = GetMouseDoubleClickDelay();
-	com_mouse.checked = ini.GetInt("com_mouse", 0);
+	acceleration.value = @GetMouseAcceleration();
+	pointer_speed.value = @GetMouseSpeed();
+	double_click_delay.value = @GetMouseDoubleClickDelay();
+	com_mouse.checked = ini_drivers.GetInt("com_mouse", 0);
 	madmouse.checked = CheckProcessExists("MADMOUSE");
 	emulation.checked = CheckProcessExists("MOUSEMUL");
 }
 
 void ExitApp() {
-	ini.SetInt("com_mouse", com_mouse.checked);
-	ExitProcess();
+	ini_drivers.SetInt("com_mouse", com_mouse.checked);
+	ini_mouse.SetInt("speed", pointer_speed.value);
+	ini_mouse.SetInt("acceleration", acceleration.value);
+	ini_mouse.SetInt("double_click_delay", double_click_delay.value);
+	@ExitProcess();
 }
 
 void ApplyCfg() {
-	SetMouseSpeed(pointer_speed.value);
-	SetMouseAcceleration(acceleration.value);
-	SetMouseDoubleClickDelay(double_click_delay.value);
+	@SetMouseSpeed(pointer_speed.value);
+	@SetMouseAcceleration(acceleration.value);
+	@SetMouseDoubleClickDelay(double_click_delay.value);
 }
 
 void EventClickComMouse()
@@ -179,13 +184,10 @@ void EventClickComMouse()
 		if (RunProgram("/sys/loaddrv", "COMMOUSE")>=0) {
 			notify(COMMOUSE_LOADED);
 			com_mouse.click(com_mouse.id);
-		}
-		else {
+		} else {
 			notify("'Error running LOADDRV' -E");
 		}
-	}
-	else
-	{
+	} else {
 		notify(COMMOUSE_CAN_NOT_UNLOAD);
 	}
 }
