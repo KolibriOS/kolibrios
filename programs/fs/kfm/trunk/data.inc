@@ -273,4 +273,4 @@ sysopen:
         db  '/sys/@open',0
 ;---------------------------------------------------------------------
 buttons_file_data file 'images/buttons.raw'
-;icons_file_data	file 'icons.bmp'
+icons_file_data	file 'images/icons.raw'

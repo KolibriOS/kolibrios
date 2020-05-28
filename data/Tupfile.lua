@@ -30,7 +30,6 @@ img_files = {
  {"DEVELOP/T_EDIT.INI", PROGS .. "/other/t_edit/t_edit.ini"},
  {"File Managers/ICONS.INI", "common/File Managers/icons.ini"},
  {"File Managers/KFM.INI", "common/File Managers/kfm.ini"},
- {"File Managers/ICONS.BMP", PROGS .. "/fs/kfm/trunk/icons.bmp"},
  {"File Managers/FNAV/ABOUT.TXT", "common/File Managers/fNav/About.txt"},
  {"File Managers/FNAV/FNAV", "common/File Managers/fNav/fNav.kex"},
  {"File Managers/FNAV/FNAV.EXT", "common/File Managers/fNav/fnav.ext"},

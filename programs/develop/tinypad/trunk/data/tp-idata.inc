@@ -4,8 +4,8 @@ hscrl_capt	dd	-1
 body_capt	dd	-1
 s_status	dd	0
 lineHeight	dd	LINEH
-charWidth	dd	6
-scale		db	0
+charWidth	dd	8
+scale		db	0x10
 ins_mode	db	1
 
 sz app_fasm    ,'/rd/1/develop/fasm',0

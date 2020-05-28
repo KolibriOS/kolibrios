@@ -68,7 +68,6 @@ START:
     mov   ax,[select_disk_char]
     mov   [read_folder_name],ax
     mov   [read_folder_1_name],ax
-    call  load_icon_and_convert_to_img
     call  load_initiation_file
     call  add_memory_for_folders
     call  device_detect_f70
@@ -245,18 +244,6 @@ prepare_load_data_3:
     mov   [read_file.size],eax
     ret
 ;---------------------------------------------------------------------
-load_icon_and_convert_to_img:
-    mov   ebx,icons_file_name
-    call  prepare_load_data
-    jnz   icon_error
-    call  prepare_load_data_2
-    add   eax,mem
-    call  prepare_load_data_1
-    jnz   icon_error
-    call  convert_bmp_to_img
-    call  sub_application_memory
-    ret
-;---------------------------------------------------------------------
 load_initiation_file:
     mov   ebx,ini_file_name
     call  prepare_load_data
@@ -349,6 +336,13 @@ sub_application_memory:
     mcall 64,1
     ret
 ;---------------------------------------------------------------------
+exit_apl:
+    mov  [confirmation_type],exit_type
+    call confirmation_action
+    cmp  [work_confirmation_yes],1
+    jne  red
+    mcall -1
+;---------------------------------------------------------------------
 include   'key.inc'
 ;---------------------------------------------------------------------
 include   'markfile.inc'
@@ -379,8 +373,6 @@ include   'err_wind.inc'
 ;---------------------------------------------------------------------
 include   'detect.inc'
 ;---------------------------------------------------------------------
-include   'conv_bmp.inc'
-;---------------------------------------------------------------------
 include   'tran_ini.inc'
 ;---------------------------------------------------------------------
 include   'help.inc'
@@ -388,8 +380,6 @@ include   'help.inc'
 include   'convchar.inc'
 ;---------------------------------------------------------------------
 include   'sort.inc'
-;---------------------------------------------------------------------
-include   'exit.inc'
 ;---------------------------------------------------------------------
 include   'progrbar.inc'
 ;---------------------------------------------------------------------

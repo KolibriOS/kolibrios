@@ -1,4 +1,4 @@
-header_text	  db 'Kolibri File Manager v0.48',0
+header_text	  db 'Kolibri File Manager v0.48b',0
 ;---------------------------------------------------------------------
 fbutton_name:
     .f1   db '1 Help',0
@@ -81,9 +81,6 @@ year_table:
 ;---------------------------------------------------------------------
 ini_file_name:
      db 'kfm.ini',0
-;---------------------------------------------------------------------
-icons_file_name:
-     db 'icons.bmp',0
 ;---------------------------------------------------------------------
 error_type:
      db 'File system error',0

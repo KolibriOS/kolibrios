@@ -1620,22 +1620,22 @@ endp
 ;---------------------------------------------------------------
 proc key.ctrl_plus ;///// ZOOM IN //////////////////////////////
 ;---------------------------------------------------------------
-	cmp	[scale],7
+	cmp	[scale],0x17
 	jz	@f
 	inc	[scale]
-	add	[lineHeight],LINEH
-	add	[charWidth],6
+	add	[lineHeight], LINEH
+	add	[charWidth], 8
 	jmp	draw_editor
 endp
 
 ;---------------------------------------------------------------
 proc key.ctrl_minus ;///// ZOOM OUT ////////////////////////////
 ;---------------------------------------------------------------
-	cmp	[scale],0
+	cmp	[scale],0x10
 	jz	@f
 	dec	[scale]
-	sub	[lineHeight],LINEH
-	sub	[charWidth],6
+	sub	[lineHeight], LINEH
+	sub	[charWidth], 8
 	jmp	draw_editor
 @@:
 	ret

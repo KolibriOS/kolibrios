@@ -224,11 +224,11 @@ draw_icon:
 
 	call	get_icon_number
 	imul	ebx,270
-	add	ebx,mem
+	add	ebx,icons_file_data
 	jmp	.draw
 ;--------------------------------------
 .draw_dir_pic:
-	mov	ebx,mem
+	mov	ebx,icons_file_data
 	cmp	[edx],word '..'
 	jne	 .draw
 
