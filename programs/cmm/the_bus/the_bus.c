@@ -112,12 +112,12 @@ void DrawObstacle(signed int x, y) {
 	}
 	DrawBar(x, y-don_step_y, don_w, don_step_y, COLOR_ROAD);
 	if (y>0) && (y<don_step_y) DrawBar(x, 0, don_w, y, COLOR_ROAD);
-	if (image_h>0) DrawLibImage(objects.image, x, y, don_w, image_h, 0, don_offset_y); 
+	if (image_h>0) objects.draw(x, y, don_w, image_h, 0, don_offset_y); 
 }
-void DrawBus(dword x, y) { DrawLibImage(objects.image, x, y, bus_w, bus_h, 0, 444); }
-void DrawBoom(dword x, y) { DrawLibImage(objects.image, x, y, 78, 66, 0, 536); }
-void DrawHighway() { DrawLibImage(road.image, 0,0, WIN_X, WIN_Y, 0, 0); }
-void DrawMenuBackground() { DrawLibImage(menu.image, 0, 0, WIN_X, WIN_Y, 0, 0); }
+void DrawBus(dword x, y) { objects.draw(x, y, bus_w, bus_h, 0, 444); }
+void DrawBoom(dword x, y) { objects.draw(x, y, 78, 66, 0, 536); }
+void DrawHighway() { road.draw(0,0, WIN_X, WIN_Y, 0, 0); }
+void DrawMenuBackground() { menu.draw(0, 0, WIN_X, WIN_Y, 0, 0); }
 
 void main()
 {
@@ -252,7 +252,7 @@ void StartNewGame()
 }
 
 void WriteScore() {
-	DrawLibImage(road.image, 20, 166, 120, 24, 20, 164);
+	road.draw(20, 166, 120, 24, 20, 164);
 	WriteText(20, 140, 0x81, 0xFFFFFF, SCORE_TEXT);
 	WriteText(20, 166, 0x81, 0xFFFFFF, itoa(score));
 }

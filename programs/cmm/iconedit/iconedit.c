@@ -17,7 +17,6 @@
 #include "../lib/obj/box_lib.h"
 
 #include "../lib/patterns/rgb.h"
-#include "../lib/patterns/libimg_load_skin.h"
 
 #include "colors_mas.h"
 
@@ -196,7 +195,8 @@ void main()
 	}
 	else
 	{
-		open_image.load_as24b(#param);
+		open_image.load(#param);
+		open_image.convert_into(IMAGE_BPP24);
 
 		if (open_image.w*open_image.h>MAX_CELL_SIZE*MAX_CELL_SIZE) {
 			notify(T_ERROR_IMA_ICONEDIT);

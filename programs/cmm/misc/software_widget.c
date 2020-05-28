@@ -87,10 +87,10 @@ void main()
 		small_screen = true;
 	}
 
-	loop() switch(WaitEvent())
+	loop() switch(@WaitEvent())
 	{
 		case evKey:
-			GetKeys();
+			key_scancode = @GetKeyScancode();
 			if (SCAN_CODE_LEFT == key_scancode) key_scancode = SCAN_CODE_UP;
 			if (SCAN_CODE_RIGHT == key_scancode) key_scancode = SCAN_CODE_DOWN;
 			if (list.ProcessKey(key_scancode)) DrawSelection();
@@ -98,7 +98,7 @@ void main()
 			break;
 
 		case evButton:
-			id=GetButtonID();               
+			id = @GetButtonID();               
 			if (id==1) ExitProcess();
 			if (id>=100) EventIconClick(id-100);
 			break;
@@ -144,17 +144,7 @@ void SetAppColors()
 	 	swc.dark = 0xDCDCDC;
 	 	swc.light = 0xFCFCFC;
 	}
-
-	if (!skin.image) LoadImages();
-	else if (swc.list_bg != old_list_bg_color) LoadImages();
 }
-
-void LoadImages()
-{
-	skin.load("/sys/icons32.png");
-	skin.replace_color(0x00000000, swc.list_bg);	
-}
-
 
 void DrawList() {
 	list.count = 0;
@@ -198,35 +188,29 @@ byte draw_icons_from_section(dword key_value, key_name, sec_name, f_name)
 	text_y = list.item_h - 40 / 2;
 	if (!strchr(key_name, ' ')) {//|| (kfont.getsize(key_name)+30<list.item_w) <== too slow
 		kfont.WriteIntoWindowCenter(text_x, row*list.item_h+46 + list_pos, list.item_w,0, swc.list_bg, swc.text, 12, key_name);
-		//WriteTextCenter(text_x, row*list.item_h+46 + list_pos+3, list.item_w, swc.text, key_name);
 	} else {
 		space_pos = strrchr(key_name, ' ');
 		ESBYTE[key_name+space_pos-1] = '\0';
 		kfont.WriteIntoWindowCenter(text_x, row*list.item_h+46 + list_pos - 2, list.item_w,0, swc.list_bg, swc.text, 12, key_name);
 		kfont.WriteIntoWindowCenter(text_x, row*list.item_h+46 + list_pos + 13, list.item_w,0, swc.list_bg, swc.text, 12, key_name+space_pos);
-		//WriteTextCenter(text_x, row*list.item_h+46 + list_pos, list.item_w, swc.text, key_name);
-		//WriteTextCenter(text_x, row*list.item_h+46 + list_pos + 10, list.item_w, swc.text, key_name+space_pos);
 	}
 	if (icon_char_pos) icon_id = atoi(icon_char_pos+1);
-	img_draw stdcall(skin.image, icon_x, icon_y, 32, 32, 0, icon_id*32);
+	if (Form.cwidth) DrawIcon32(icon_x, icon_y, swc.list_bg, icon_id);
 	list.count++;
 	col++;
 	return true;
 }
 
 
-int old_row; //to detect empty sections
 byte process_sections(dword sec_name, f_name)
 {
+	static int old_row; //to detect empty sections
 	int text_len;
 	if (!strcmp(sec_name, "Config")) return true;
 
-	if ((col==0) && (row==old_row)) 
-	{
+	if ((col==0) && (row==old_row)) {
 		list_pos -= 28;
-	}
-	else
-	{
+	} else {
 		row++;
 	}
 	col = 0;
@@ -253,7 +237,7 @@ void DrawTopBar()
 
 void EventIconClick(dword appid)
 {
-	char run_app_path[4096]=0;
+	char run_app_path[4096];
 	dword app_path = app_path_collection.get(appid);
 	dword param_pos = strchr(app_path, '|');
 	if (param_pos) {

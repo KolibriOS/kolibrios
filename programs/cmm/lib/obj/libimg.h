@@ -66,36 +66,91 @@ char aimg_convert[] = "img_convert";
 #define LIBIMG_FORMAT_XBM      13
 #define LIBIMG_FORMAT_Z80      14
 
-struct _Image
-{
-   dword Checksum; // ((Width ROL 16) OR Height) XOR Data[0]        ; ignored so far
-   dword Width;
-   dword Height;
-   dword Next;
-   dword Previous;
-   dword Type;     // one of Image.bppN
-   dword Data;
-   dword Palette;  // used iff Type eq Image.bpp1, Image.bpp2, Image.bpp4 or Image.bpp8i
-   dword Extended;
-   dword Flags;    // bitfield
-   dword Delay;    // used iff Image.IsAnimated is set in Flags
-};
-
 // values for Image.Type
 // must be consecutive to allow fast switch on Image.Type in support functions
-#define Image_bpp8i  1  // indexed
-#define Image_bpp24  2
-#define Image_bpp32  3
-#define Image_bpp15  4
-#define Image_bpp16  5
-#define Image_bpp1   6
-#define Image_bpp8g  7  // grayscale
-#define Image_bpp2i  8
-#define Image_bpp4i  9
-#define Image_bpp8a 10  // grayscale with alpha channel; application layer only!!! 
+#define IMAGE_BPP8i  1  // indexed
+#define IMAGE_BPP24  2
+#define IMAGE_BPP32  3
+#define IMAGE_BPP15  4
+#define IMAGE_BPP16  5
+#define IMAGE_BPP1   6
+#define IMAGE_BPP8g  7  // grayscale
+#define IMAGE_BPP2i  8
+#define IMAGE_BPP4i  9
+#define IMAGE_BPP8a 10  // grayscale with alpha channel; application layer only!!! 
                         // kernel doesn't handle this image type, 
                         // libimg can only create and destroy such images
 
+struct libimg_image
+{
+    dword checksum; // ((Width ROL 16) OR Height) XOR Data[0]        ; ignored so far
+    dword w;
+    dword h;
+    dword next;
+    dword previous;
+    dword type;     // one of Image.bppN
+    dword imgsrc;
+    dword palette;  // used iff Type eq Image.bpp1, Image.bpp2, Image.bpp4 or Image.bpp8i
+    dword extended;
+    dword flags;    // bitfield
+    dword delay;    // used iff Image.IsAnimated is set in Flags
+    dword image;
+    void load();
+    void convert_into();
+    void replace_color();
+    void set_vars();
+    void draw();
+};
+
+:void libimg_image::set_vars()
+{
+    $push edi
+    EDI = image;
+    checksum = DSWORD[EDI];
+    w = ESDWORD[EDI+4];
+    h = ESDWORD[EDI+8];
+    next = ESDWORD[EDI+12];
+    previous = ESDWORD[EDI+16];
+    imgsrc = ESDWORD[EDI+24];       
+    palette = ESDWORD[EDI+28];      
+    extended = ESDWORD[EDI+32];     
+    flags = ESDWORD[EDI+36];        
+    delay = ESDWORD[EDI+40];    
+    $pop edi
+}
+
+:void libimg_image::load(dword file_path)
+{
+    load_image(file_path);
+    if (!EAX) {
+        notify("'Error: Image not loaded'E");
+    } else {
+        image = EAX;
+        set_vars();
+    }
+}
+
+:void libimg_image::replace_color(dword old_color, new_color)
+{
+    EDX =  w * h * 4 + imgsrc;
+    for (ESI = imgsrc; ESI < EDX; ESI += 4) if (DSDWORD[ESI]==old_color) DSDWORD[ESI] = new_color;
+}
+
+:void libimg_image::draw(dword _x, _y, _w, _h, _xoff, _yoff)
+{
+    if (image) img_draw stdcall(image, _x, _y, _w, _h, _xoff, _yoff);
+}
+
+:void libimg_image::convert_into(dword _to)
+{
+    img_convert stdcall(image, 0, _to, 0, 0);
+    if (!EAX) {
+        notify("'LibImg convertation error!'E");
+    } else {
+        image = EAX;
+        set_vars();
+    }
+}
 
 :dword load_image(dword filename)
 {
@@ -185,18 +240,6 @@ struct _Image
     return EAX;
 }
 
-:void DrawLibImage(dword image_pointer,x,y,w,h,offx,offy) {
-    img_draw stdcall (
-        image_pointer, 
-        x, 
-        y, 
-        w, 
-        h, 
-        offx, 
-        offy
-    );  
-}
-
 //NOTICE: DO NOT FORGET TO INIT libio AND libimg!!!
 #ifdef LANG_RUS
 #define TEXT_FILE_SAVED_AS "'Файл сохранен как "
@@ -210,14 +253,14 @@ struct _Image
     dword encoded_size=0;
     dword image_ptr = 0;
     
-    image_ptr = create_image(Image_bpp24, _w, _h);
+    image_ptr = create_image(IMAGE_BPP24, _w, _h);
 
     if (image_ptr == 0) {
         notify("'Error saving file, probably not enought memory!' -E");
     }
     else {
         EDI = image_ptr;
-        memmov(EDI._Image.Data, _image_pointer, _w * _h * 3);
+        memmov(EDI.libimg_image.imgsrc, _image_pointer, _w * _h * 3);
 
         encoded_data = encode_image(image_ptr, LIBIMG_FORMAT_PNG, 0, #encoded_size);
 
@@ -240,16 +283,37 @@ struct _Image
     }
 }
 
-:dword convert_image(dword _image_pointer, _w, _h, _path)
-{
-    img_convert stdcall(_image_pointer, 0, Image_bpp32, 0, 0);
-    if (EAX!=0)
-    mov     [image_converted], eax    
+
+
+/////////////////////////////
+/*
+//  DRAW ICON PATTERN / TEMP
+*/
+/////////////////////////////
+
+:void DrawIcon32(dword x,y, _bg, icon_n) {
+    static libimg_image i32;
+    static dword bg;
+    //load_dll(libimg, #libimg_init,1);
+    if (!i32.image) || (bg!=_bg) {
+        bg = _bg;
+        i32.load("/sys/icons32.png");
+        i32.replace_color(0x00000000, bg);
+        debugln("wolo");
+    }
+    if (icon_n>=0) i32.draw(x, y, 32, 32, 0, icon_n*32);
 }
 
-#ifndef INCLUDE_LIBIMG_LOAD_SKIN_H
-#include "../lib/patterns/libimg_load_skin.h"
-#endif
+:void DrawIcon16(dword x,y, bg, icon_n) {
+    static libimg_image i16;
+    //load_dll(libimg, #libimg_init,1);
+    if (!i16.image) {
+        i16.load("/sys/icons16.png");
+        i16.replace_color(0xffFFFfff, bg);
+        i16.replace_color(0xffCACBD6, MixColors(bg, 0, 220));
+    }
+    if (icon_n>=0) i16.draw(x, y, 16, 16, 0, icon_n*16);
+}
 
 
 #endif

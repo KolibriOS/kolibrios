@@ -1,4 +1,4 @@
-#define MEMSIZE 4096*20
+#define MEMSIZE 1024*80
 
 //===================================================//
 //                                                   //
@@ -29,6 +29,8 @@ int proc_list[256];
 collection attached=0;
 
 llist list;
+
+_ini ini = { "/sys/settings/appicons.ini", "icons"};
 
 proc_info Form;
 proc_info Process;
@@ -64,9 +66,6 @@ void main()
 	load_dll(libimg, #libimg_init,1);
 	load_dll(libini, #lib_init,1);
 
-	skin.load("/sys/icons32.png");
-	skin.replace_color(0x00000000, COLOR_BG);
-
 	ini_get_int stdcall ("/sys/appicons.ini", "taskbar", "attachement", ATTACHEMENT_BOTTOM); 
 	attachement = EAX;
 
@@ -76,11 +75,8 @@ void main()
 	GetProcessInfo(#Form, SelfInfo);
 	SetWindowLayerBehaviour(-1, ZPOS_DESKTOP);
 	SetEventMask(EVM_REDRAW+EVM_KEY+EVM_BUTTON+EVM_MOUSE+EVM_MOUSE_FILTER);
-	loop()
+	loop() switch(@WaitEventTimeout(50))
 	{
-	  WaitEventTimeout(50);
-	  switch(EAX & 0xFF)
-	  {
 	   	case evMouse:
 			if (!CheckActiveProcess(Form.ID)) break;
 			mouse.get();
@@ -95,7 +91,7 @@ void main()
 			}
 			break;
 		case evButton:
-			btn = GetButtonID();
+			btn = @GetButtonID();
 			btn -= 100;
 			if (btn < attached.count) RunProgram(attached.get(btn), NULL);
 			else EventSetActiveProcess(btn);
@@ -105,7 +101,6 @@ void main()
 			list.SetSizes(0, 0, Form.width+1, Form.height+2, CELLH);
 		default:
 			DrawProcessList();
-	  }
 	}
 }
 
@@ -158,19 +153,12 @@ void DrawProcessList()
 	{
 		if (proc_list[i+list.first]==0) {
 			status_color = COLOR_BG;
-			ini_get_int stdcall (
-				"/sys/appicons.ini", 
-				"icons", 
-				attached.get(i+list.first)+strrchr(attached.get(i+list.first),'/'),
-				0
-				); 
-			icon_n = EAX;
+			icon_n = ini.GetInt(attached.get(i+list.first)+strrchr(attached.get(i+list.first),'/'), 2);
 		} 
 		else {
 			GetProcessInfo(#Process, proc_list[i+list.first]);
 			strlwr(#Process.name);
-			ini_get_int stdcall ("/sys/appicons.ini", "icons", #Process.name, 0); 
-			icon_n = EAX;
+			icon_n = ini.GetInt(#Process.name, 2);
 			if (CheckActiveProcess(Process.ID)) && (Process.status_window!=2) {
 				current_process_id = Process.ID;
 				status_color = COLOR_ACTIVE;
@@ -181,7 +169,7 @@ void DrawProcessList()
 		} 
 		DrawWideRectangle(posx, posy, 40, 40, CELL_PADDING, COLOR_BG);
 		DefineButton(posx, posy, CELLW-1, CELLH, 100+i+BT_HIDE+BT_NOFRAME, NULL);
-		img_draw stdcall(skin.image, posx+CELL_PADDING, posy+CELL_PADDING, 32, 32, 0, 32*icon_n);
+		DrawIcon32(posx+CELL_PADDING, posy+CELL_PADDING, COLOR_BG, icon_n);
 
 		if (ATTACHEMENT_BOTTOM==attachement) DrawBar(posx, posy+CELLH-ACTIVE_SIZE, CELLW, ACTIVE_SIZE, status_color);
 		if (ATTACHEMENT_LEFT  ==attachement) DrawBar(posx, posy, ACTIVE_SIZE, CELLH, status_color);
@@ -231,7 +219,7 @@ byte draw_icons_from_section(dword key_value, key_name, sec_name, f_name)
 void GetAttachedItems()
 {
 	attached.drop();
-	ini_enum_keys stdcall ("/sys/appicons.ini", "attached", #draw_icons_from_section);
+	ini_enum_keys stdcall ("/sys/settings/appicons.ini", "attached", #draw_icons_from_section);
 }
 //===================================================//
 //                                                   //

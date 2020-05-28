@@ -60,7 +60,7 @@ _ini taskbar_vars_ini = { #taskbar_ini_path, "Variables" };
 
 _ini docky_ini = { "/sys/settings/docky.ini", "@" };
 
-unsigned char panels_img_data[] = FROM "panels_image.raw";
+unsigned char panels_img_data[] = FROM "bars.raw";
 #define PIMG_W 37
 #define PIMG_H 27 //27*5
 

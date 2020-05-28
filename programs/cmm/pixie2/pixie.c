@@ -96,6 +96,8 @@ enum {
 	PLAYBACK_MODE_PLAYING
 };
 
+libimg_image skin;
+
 #define LAST_FOLDER_EXISTS 1
 
 //===================================================//
@@ -127,11 +129,9 @@ void main()
 		if (work_folder) param=LAST_FOLDER_EXISTS;
 	}
 	kfont.init(DEFAULT_FONT);	
-	SetEventMask(EVM_REDRAW + EVM_KEY + EVM_BUTTON + EVM_MOUSE + EVM_MOUSE_FILTER);
-	loop()
+	@SetEventMask(EVM_REDRAW + EVM_KEY + EVM_BUTTON + EVM_MOUSE + EVM_MOUSE_FILTER);
+	loop() switch(@WaitEventTimeout(10)) 
 	{
-	  WaitEventTimeout(10);
-	  switch(EAX & 0xFF) {
 	  	case evMouse:
 			mouse.get();
 			scrollbar_v_mouse (#scroll1);
@@ -153,7 +153,7 @@ void main()
 			if (mouse.down) && (mouse.y>skin_height) && (mouse.key&MOUSE_RIGHT) EventShowAbout();
 			break;
 		case evButton:
-			switch(GetButtonID()) {
+			switch(@GetButtonID()) {
 				case BUTTON_WINDOW_CLOSE: EventExitApp(); break;
 				case BUTTON_WINDOW_MINIMIZE: MinimizeWindow(); break;
 				case BUTTON_WINDOW_REDUCE: EventChangeWindowMode(); break;
@@ -204,8 +204,7 @@ void main()
 			break;
 		default:
 			EventCheckSongFinished();
-	  }
-   }
+	}
 }
 
 
@@ -341,35 +340,29 @@ void DrawPixieTitle(dword _t)
 
 void DrawAboutWindow()
 {
-	proc_info pop_up;
-	loop() switch(WaitEvent())
+	#define ABOUT_W 400
+	#define ABOUT_H 410
+	loop() switch(@WaitEvent()) 
 	{
-		case evButton: 
-			ExitProcess();
-			break;
-		case evKey:
-			GetKeys();
-			if (key_scancode == SCAN_CODE_ESC) ExitProcess();
-			break;
+		case evButton: ExitProcess(); break;
+		case evKey: if (GetKeyScancode() == SCAN_CODE_ESC) ExitProcess(); break;
 		case evReDraw:
-			DefineDragableWindow(150, 200, 400, 400);
-			GetProcessInfo(#pop_up, SelfInfo);
+			DefineDragableWindow(150, 200, ABOUT_W, ABOUT_H);
 
-			DrawBar(0, 0, pop_up.width, pop_up.height, theme.color_top_panel_bg);
-			DrawRectangle(0, 0, pop_up.width, pop_up.height, theme.color_list_border);
+			DrawBar(0, 0, ABOUT_W, ABOUT_H, theme.color_top_panel_bg);
+			DrawRectangle(0, 0, ABOUT_W, ABOUT_H, theme.color_list_border);
 
-			DefineHiddenButton(pop_up.width - 27, 1, 26, 15, BUTTON_WINDOW_CLOSE);
-			//img_draw stdcall(skin.image, pop_up.width-28, 0, 28, 18, skin.w - 29, 0);
-			DrawCaptButton(pop_up.width-10-80, pop_up.height - 34, 80, 24, 2, 
-			  0x171717, 0xF5EFB3, "Cool");
+			//DefineHiddenButton(ABOUT_W - 27, 1, 26, 15, BUTTON_WINDOW_CLOSE);
+			//skin.draw(ABOUT_W-28, 0, 28, 18, skin.w - 29, 0);
+			DrawCaptButton(ABOUT_W-10-80, ABOUT_H - 34, 80, 24, 2, 
+			  theme.color_top_panel_bg, 0xF5EFB3, "Cool");
 			
 			WriteText(131,16, 0x81, 0x8E7C61, "Pixie Player");
 			WriteText(130,15, 0x81, 0xF5EFB3, "Pixie Player");
 
 			WriteTextLines(10, 40, 0x90, theme.color_top_panel_song_name, ABOUT_MESSAGE, 19);
 			DrawIcon32(45, 15, theme.color_top_panel_bg, 65);
-			DrawIcon32(pop_up.width-32-45, 15, theme.color_top_panel_bg, 65);
-
+			DrawIcon32(ABOUT_W-32-45, 15, theme.color_top_panel_bg, 65);
 	}
 }
 

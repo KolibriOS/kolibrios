@@ -25,11 +25,12 @@ void ImageCache::Free()
 int ImageCache::GetImage(dword i_path)
 {
 	int i;
+	return 0;
 	for (i=0; i<=pics_count; i++) if (!strcmp(#pics[i].path, i_path)) return i; //image exists
 	// Load image and add it to Cache
 	pics_count++;
-	pics[pics_count].image = load_image(i_path);
-	strcpy(#pics[pics_count].path, i_path);
+	//pics[pics_count].image = load_EEERRRR_image(i_path);
+	//strcpy(#pics[pics_count].path, i_path);
 	return pics_count;
 }
 

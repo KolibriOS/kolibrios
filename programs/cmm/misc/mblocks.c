@@ -42,22 +42,18 @@ dword butonsx[COUNT], butonsy[COUNT];
 dword firstbit, secondbit;
 int count;
 
-
 void main()
 {   
 	dword id;
 	load_dll(libio,  #libio_init,1);
 	load_dll(libimg, #libimg_init,1);
 
-	skin.load("/sys/icons32.png");
-	skin.replace_color(0x00000000, 0xFFFfff);
-
 	NewGame();
 
 	loop() switch(@WaitEvent())
 	{
 		case evKey:
-			if (@GetKeyScancode()==SCAN_CODE_F2) NewGame();
+			//if (@GetKeyScancode()==SCAN_CODE_F2) NewGame();
 			break;
 			
 		case evButton:
@@ -80,26 +76,18 @@ void main()
 								ReDraw_Game_Button(secondbit);
 								secondbit = 0x0BAD;
 								firstbit = id;
-								bitstat[id] = BTN_PRESSED;
-								ReDraw_Game_Button(id);
 								count++;
-							}
-							else if (firstbit != id)
-							{
+							} else if (firstbit != id) {
 								secondbit = id;
-								bitstat[id] = BTN_PRESSED;
-								ReDraw_Game_Button(id);
 								count++;
 							}
-						}
-						else
-						{
+						} else {
 							firstbit = id;
-							bitstat[id] = BTN_PRESSED;
-							ReDraw_Game_Button(id);
 							count++;
 						}
 					}
+					bitstat[id] = BTN_PRESSED;
+					ReDraw_Game_Button(id);
 					Draw_Count();
 			}
 			break;
@@ -161,16 +149,15 @@ void ReDraw_Game_Button(int id)
 		case BTN_CLOSED:
 			DrawRectangle3D(xx + 1, yy + 1, CELL_SIZE-2, CELL_SIZE-2, 0xFFFFFF, 0xDEDEDE);//bump
 			DrawBar(xx + 2, yy + 2, CELL_SIZE-3, CELL_SIZE-3, 0xBDC7D6);//background
-			break;
+			return;
 		case BTN_PRESSED:
 			DrawWideRectangle(xx + 1, yy + 1, CELL_SIZE-1, CELL_SIZE-1, 2, 0x94DB00);//border green
 			DrawBar(xx + 3, yy + 3, CELL_SIZE-5, CELL_SIZE-5, 0xFFFfff);//background
-			img_draw stdcall(skin.image, xx+6, yy+6, 32, 32, 0, bitpict[id]*32);
 			BREAK;
 		case BTN_OPEN:
 			DrawBar(xx+1, yy+1, CELL_SIZE-1, CELL_SIZE-1, 0xFFFfff);//background
-			img_draw stdcall(skin.image, xx+6, yy+6, 32, 32, 0, bitpict[id]*32);
 	}
+	DrawIcon32(xx+6, yy+6, 0xFFFfff, bitpict[id]);
 }
 
 void Draw_Panel()

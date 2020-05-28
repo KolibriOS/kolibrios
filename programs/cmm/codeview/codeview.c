@@ -214,7 +214,6 @@ DrawEditBoxWebView()
 	address_box.offset = 0;
 	edit_box_draw stdcall(#address_box);
 	skin_x_offset = 51;
-	img_draw stdcall(skin.image, address_box.left+address_box.width+1, address_box.top-3, 17, skin.h, skin_x_offset, SKIN_Y);
 }
 
 void LoadInternalPage(dword _bufpos, _bufsize)
