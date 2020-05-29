@@ -1,9 +1,9 @@
 struct img
 {
 	collection src;
-	collection_img data;
+	collection_int data;
 	collection_int xywh;
-	drop();
+	void drop();
 };
 
 void img::drop()
@@ -12,6 +12,7 @@ void img::drop()
 	data.drop();
 }
 
+/*
 
 void ImageCache::Images(dword left1, top1, width1)
 {
@@ -31,7 +32,6 @@ void ImageCache::Images(dword left1, top1, width1)
 	imgh = DSWORD[pics[cur_pic].image+8];
 	if (imgw > width1) imgw = width1;
 	
-	/*
 	draw_y += imgh + 5; TEMPORARY TURN OFF!!!
 	
 	if (top1+imgh<WB1.list.y) || (top1>WB1.list.y+WB1.list.h-10) return; //if all image is out of visible area
@@ -56,7 +56,8 @@ void ImageCache::Images(dword left1, top1, width1)
 		links.AddText(0, imgw, imgh-1, NOLINE, 1);
 		WB1.DrawPage();
 	} 
-	*/
 }
 
 ImageCache ImgCache;
+
+*/
