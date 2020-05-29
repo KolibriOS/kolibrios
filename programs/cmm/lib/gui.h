@@ -206,7 +206,7 @@
 	DrawBar(x,y+8,w,1,0x4E00E7);
 }
 
-:void PutShadow(dword x,y,w,h,skinned,strength)
+:void PutShadow(dword x,y,w,h,skinned, signed strength)
 {
 	proc_info wForm;
 	dword shadow_buf = mem_Alloc(w*h*3);
@@ -260,14 +260,15 @@
 	return gray;
 }
 
-:void ShadowImage(dword color_image, w, h, strength)
+:void ShadowImage(dword color_image, w, h, signed strength)
 {
-	dword col, to;
+	byte col;
+	dword to;
 	strength = 10 - strength;
 	to = w*h*3 + color_image;
 	for ( ; color_image < to; color_image++)
 	{
-		col = strength * DSBYTE[color_image] / 10;
+		col = math.min(strength * DSBYTE[color_image] / 10, 255);
 		DSBYTE[color_image] = col;
 	}
 }
