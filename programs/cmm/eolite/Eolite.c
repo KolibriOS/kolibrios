@@ -508,6 +508,7 @@ void main()
 					case SCAN_CODE_INS:
 							EventChooseFile(files.cur_y);
 							files.KeyDown();
+							DrawStatusBar();
 							List_ReDraw();
 							break;
 					case SCAN_CODE_F1...SCAN_CODE_F10:

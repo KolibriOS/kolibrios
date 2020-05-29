@@ -88,7 +88,7 @@ void EventCopy(bool _cut_active)
 			sprintf(copy_buf_offset,"%s/%s",#path,items.get(i)*304+buf+72);
 			copy_buf_offset += strlen(copy_buf_offset) + 1;
 
-			setElementSelectedFlag(i, false);
+			//setElementSelectedFlag(i, false);
 
 			if (cut_active) {
 				if (i>=files.first) && (i<files.first+files.visible)
@@ -98,7 +98,7 @@ void EventCopy(bool _cut_active)
 	}
 	if (cut_active) {
 		pause(20);
-		List_ReDraw();		
+		List_ReDraw();
 	}
 	if (selected_count==1) setElementSelectedFlag(files.cur_y, false);
 	Clipboard__SetSlotData(size_buf, buff_data);
