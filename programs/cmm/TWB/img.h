@@ -1,37 +1,15 @@
-struct s_image
+struct img
 {
-	dword *image;
-	char path[4096];
+	collection src;
+	collection_img data;
+	collection_int xywh;
+	drop();
 };
 
-s_image pics[100]; //pics = mem_Alloc( 100*sizeof(s_image) );
-
-struct ImageCache {
-	int pics_count;
-	void Free();
-	int GetImage();
-	void Images();
-};
-
-void ImageCache::Free()
+void img::drop()
 {
-	for ( ; pics_count>0; pics_count--)
-	{
-		if (pics[pics_count].image) img_destroy stdcall (pics[pics_count].image);
-		pics[pics_count].path = NULL;
-	}
-}
-
-int ImageCache::GetImage(dword i_path)
-{
-	int i;
-	return 0;
-	for (i=0; i<=pics_count; i++) if (!strcmp(#pics[i].path, i_path)) return i; //image exists
-	// Load image and add it to Cache
-	pics_count++;
-	//pics[pics_count].image = load_EEERRRR_image(i_path);
-	//strcpy(#pics[pics_count].path, i_path);
-	return pics_count;
+	src.drop();
+	data.drop();
 }
 
 

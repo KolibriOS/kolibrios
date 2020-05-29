@@ -2,7 +2,7 @@
 #include "..\TWB\anchors.h"
 #include "..\TWB\parse_tag.h"
 #include "..\TWB\special.h"
-#include "..\TWB\img_cache.h"
+#include "..\TWB\img.h"
 #include "..\TWB\tag_list.h"
 dword page_bg;
 dword link_color_default;
