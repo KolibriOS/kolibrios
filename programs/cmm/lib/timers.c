@@ -1,5 +1,12 @@
 /* TIMERS PaulCodeman */
-
+/**
+	void Timers::revise(void) -> This function revising all timers.
+	void Timers::getTime(void) -> This function updating current time for timers.
+	dword set(dword,dword,byte); -> This function seting timer for function Timers::revise.
+	dword clear(dword); -> This function clearning anything timer.
+	---------
+	The functions setTimeout,setInterval,clearInterval,clearTimeout implementing functional JavaScript.
+*/
 #define offsetSizeTimers 4*3+1
 #define defaultMaxTimers 1000
 :struct Timers
@@ -8,8 +15,8 @@
     dword alloc;
     dword count;
     dword size;
-    void watch(void);
-    void getTime();
+    void revise(void);
+    void getTime(void);
     dword set(dword,dword,byte);
     dword clear(dword);
 };
@@ -20,7 +27,7 @@ void Timers::getTime(void)
 	$int 0x40
 	time = EAX;
 }
-void Timers::watch(void)
+void Timers::revise(void)
 {
 	dword position = 0;
 	dword i = 0;
@@ -74,7 +81,7 @@ dword Timers::set(dword function, newTime, byte repeat)
 }
 dword Timers::clear(dword id)
 {
-	IF (!alloc) || (!DSDWORD[id]) RETURN 0;
+	IF (!alloc) || (!id) || (!DSDWORD[id]) RETURN 0;
 	count--;
 	DSDWORD[id] = 0;
 	RETURN id;
