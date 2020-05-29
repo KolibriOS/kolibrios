@@ -1,19 +1,19 @@
-include 'skin.inc'
+include '../../../skin.inc'
 
 SKIN_PARAMS \
   height	  = bmp_base.height,\	  ; skin height
   margins	  = [5:1:43:1],\	  ; margins [left:top:right:bottom]
-  colors active   = [binner=0x000000:\	  ; border inner color
-		     bouter=0x000000:\	  ; border outer color
-		     bframe=0x162F44],\   ; border frame color
-  colors inactive = [binner=0x000000:\	  ; border inner color
-		     bouter=0x000000:\	  ; border outer color
-		     bframe=0x576168],\   ; border frame color
-  dtp		  = 'GRAY.DTP'		  ; dtp colors
+  colors active   = [binner=0x111B27:\	  ; border inner color
+		     bouter=0x111B27:\	  ; border outer color
+		     bframe=0x23364F],\   ; border frame color
+  colors inactive = [binner=0x111B27:\	  ; border inner color
+		     bouter=0x111B27:\	  ; border outer color
+		     bframe=0x5C646C],\   ; border frame color
+  dtp		  = 'menuet.dtp'	  ; dtp colors
 
 SKIN_BUTTONS \
-  close    = [-22:5][15:15],\		  ; buttons coordinates
-  minimize = [-39:5][15:15]		  ; [left:top][width:height]
+  close    = [-19:6][12:12],\		  ; buttons coordinates
+  minimize = [-35:6][12:12]		  ; [left:top][width:height]
 
 SKIN_BITMAPS \
   left active	= bmp_left,\		  ; skin bitmaps pointers
