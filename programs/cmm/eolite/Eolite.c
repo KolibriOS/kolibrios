@@ -3,6 +3,9 @@
 
 // 70.5 - get volume info and label
 
+#define TITLE "Eolite File Manager 4.46c"
+#define ABOUT_TITLE "EOLITE 4.46c"
+
 #ifndef AUTOBUILD
 #include "lang.h--"
 #endif
@@ -249,7 +252,10 @@ void main()
 				{
 					GetKeyModifier();
 					old_cur_y = files.cur_y;
-					files.ProcessMouse(mouse.x, mouse.y);
+					if (files.ProcessMouse(mouse.x, mouse.y)) && (!key_modifier) {
+						List_ReDraw();
+						break;
+					}
 					if (key_modifier&KEY_LSHIFT) || (key_modifier&KEY_RSHIFT) {
 						EventChooseFilesRange(old_cur_y, files.cur_y);
 					} else if (key_modifier&KEY_LCTRL) || (key_modifier&KEY_RCTRL) {
@@ -257,8 +263,7 @@ void main()
 						DrawStatusBar();
 						List_ReDraw();
 					} else {
-						if (old_cur_y == files.cur_y) Open(0);
-						else List_ReDraw();
+						if (mouse.y - files.y / files.item_h + files.first == files.cur_y) Open(0);
 					}
 				}
 				//file menu

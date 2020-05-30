@@ -1505,6 +1505,7 @@ window._.set_window_clientbox: ;///////////////////////////////////////////////
         shl     eax, 1
         neg     eax
         add     eax, [ecx + WDATA.box.width]
+        inc     eax  ;Leency: as window is created width+1 so client the same
         mov     [edi + SLOT_BASE + APPDATA.wnd_clientbox.width], eax
 
         movzx   eax, [ecx + WDATA.fl_wstyle]
@@ -1515,6 +1516,7 @@ window._.set_window_clientbox: ;///////////////////////////////////////////////
         neg     eax
         sub     eax, [esp]
         add     eax, [ecx + WDATA.box.height]
+        inc     eax  ;Leency: as window is created height+1 so client the same
         mov     [edi + SLOT_BASE + APPDATA.wnd_clientbox.height], eax
         add     esp, 4
         jmp     .exit

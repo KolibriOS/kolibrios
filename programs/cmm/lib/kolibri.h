@@ -175,9 +175,8 @@ struct proc_info
 	char	rezerv2;
 	dword	adress,use_memory,ID,left,top,width,height;
 	word	status_slot,rezerv3;
-	dword	work_left,work_top,work_width,work_height;
+	dword	cleft,ctop,cwidth,cheight;
 	char	status_window;
-	dword   cwidth,cheight;
 	byte    reserved[1024-71-8];
 };
 
@@ -187,8 +186,6 @@ struct proc_info
 	EBX = _process_struct_pointer;
 	ECX = _process_id;
 	$int  0x40
-	DSDWORD[EBX+71] = DSDWORD[EBX+42] - 9; //set cwidth
-	DSDWORD[EBX+75] = DSDWORD[EBX+46] - skin_height - 4; //set cheight
 }
 
 inline fastcall int GetPointOwner( EBX, ECX) //ebx=m.x, ecx=m.y

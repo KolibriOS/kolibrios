@@ -1,6 +1,3 @@
-#define TITLE "Eolite File Manager 4.46b"
-#define ABOUT_TITLE "EOLITE 4.46b"
-
 #ifdef LANG_RUS
 ?define T_FILE "” ©«"
 ?define T_TYPE "’¨¯"
