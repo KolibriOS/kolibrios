@@ -299,7 +299,6 @@ struct libimg_image
         bg = _bg;
         i32.load("/sys/icons32.png");
         i32.replace_color(0x00000000, bg);
-        debugln("wolo");
     }
     if (icon_n>=0) i32.draw(x, y, 32, 32, 0, icon_n*32);
 }

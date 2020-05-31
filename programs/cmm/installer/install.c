@@ -130,4 +130,4 @@ void EventInstall()
 	draw_window();
 }
 
-void Operation_Draw_Progress(dword filename) { debug("copying: "); debugln(filename); }
+void Operation_Draw_Progress(dword filename) { }

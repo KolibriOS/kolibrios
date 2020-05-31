@@ -53,5 +53,19 @@ enum {
 	RunProgram(proc_name, "");	
 }
 
+:void RestartAllProcess() {
+	int i;
+	proc_info Process, Self;
+	GetProcessInfo(#Self, -1);
+	for (i=0; i<MAX_PROCESS_COUNT; i++;)
+	{
+		GetProcessInfo(#Process, i);
+		if (Process.name) 
+		&& (!streq(#Process.name, "OS"))
+		&& (Process.ID != Self.ID)
+			KillProcess(Process.ID);
+	}
+	RunProgram("/sys/launcher", NULL);
+}
 
 #endif
