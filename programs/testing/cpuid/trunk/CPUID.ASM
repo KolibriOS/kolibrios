@@ -3022,7 +3022,7 @@ load_gif:
 
 ; DATA AREA
 
-title    db   'CPUID 2.31',0
+title    db   'CPUID 2.31 by S.Kuzmin & KolibriOS Team',0
 
 stm:
    db 'Internal name:', 0

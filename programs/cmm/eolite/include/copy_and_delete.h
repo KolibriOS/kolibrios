@@ -135,8 +135,9 @@ void PasteThread()
 		strcpy(#copy_from, path_offset);
 		if (!copy_from) DialogExit();
 		sprintf(#copy_to, "%s/%s", #path, #copy_from+strrchr(#copy_from,'/'));
-		if (!strcmp(#copy_from,#copy_to))
+		if (streq(#copy_from,#copy_to))
 		{
+			if (cut_active) continue;
 			sprintf(#copy_to, "%s/NEW_%s", #path, #copy_from+strrchr(#copy_from,'/'));
 		}
 		if (strstr(#copy_to, #copy_from))

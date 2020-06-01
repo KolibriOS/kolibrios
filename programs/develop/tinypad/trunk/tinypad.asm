@@ -413,9 +413,9 @@ proc load_settings ;//////////////////////////////////////////////////////////
 	mov	[mainwnd_pos.x],eax
 	invoke	ini.get_int,ini_path,ini_sec_window,ini_window_top,75
 	mov	[mainwnd_pos.y],eax
-	invoke	ini.get_int,ini_path,ini_sec_window,ini_window_width,6*80+6+SCRLW+5
+	invoke	ini.get_int,ini_path,ini_sec_window,ini_window_width,615;8*80+6+SCRLW+5
 	mov	[mainwnd_pos.w],eax
-	invoke	ini.get_int,ini_path,ini_sec_window,ini_window_height,402
+	invoke	ini.get_int,ini_path,ini_sec_window,ini_window_height,615
 	mov	[mainwnd_pos.h],eax
 
 	popad
