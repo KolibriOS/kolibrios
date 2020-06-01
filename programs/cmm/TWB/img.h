@@ -1,3 +1,4 @@
+
 struct _img
 {
 	collection url;
@@ -11,6 +12,8 @@ struct _img
 	void set_data();
 	void draw();
 };
+
+#ifndef NO_IMG
 
 dword _img::add(dword _path, _x, _y)
 {
@@ -132,3 +135,13 @@ void ImageCache::Images(dword left1, top1, width1)
 ImageCache ImgCache;
 
 */
+
+#else
+dword _img::add(dword _path, _x, _y) {};
+void _img::clear() {};
+dword _img::current_url() {};
+bool _img::next_url() {};
+void _img::set_data(dword _data, _data_len) {};
+void _img::draw(int _x, _y, _start, _height) {};
+
+#endif

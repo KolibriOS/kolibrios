@@ -1,5 +1,6 @@
 
 #define MEMSIZE 4096 * 200
+#define NO_IMG true
 
 //libraries
 #include "..\lib\gui.h"
