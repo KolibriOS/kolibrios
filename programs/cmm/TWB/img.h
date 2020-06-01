@@ -1,15 +1,86 @@
-struct img
+struct _img
 {
-	collection src;
-	collection_int data;
+	collection url;
 	collection_int xywh;
-	void drop();
+	collection_int data;
+	int getid;
+	dword add();
+	void clear();
+	dword current_url();
+	bool next_url();
+	void set_data();
+	void draw();
 };
 
-void img::drop()
+dword _img::add(dword _path, _x, _y)
 {
-	src.drop();
+	char full_path[URL_SIZE];
+	strncpy(#full_path, _path, URL_SIZE);
+	GetAbsoluteURL(#full_path, history.current());		
+
+	url.add(#full_path);
+	xywh.add(_x);
+	xywh.add(_y);
+	xywh.add(0);
+	xywh.add(0);
+	return full_path;
+}
+
+void _img::clear()
+{
+	url.drop();
+	xywh.drop();
 	data.drop();
+	getid = 0;
+}
+
+dword _img::current_url()
+{
+	return url.get(getid);
+}
+
+bool _img::next_url()
+{
+	if (getid < url.count-1) {
+		getid++;
+		return 1;
+	}
+	return 0;
+}
+
+void _img::set_data(dword _data, _data_len)
+{
+	data.set(getid, _data);
+}
+
+void DrawLibimgImage(dword _x, _y, _data, _data_len)
+{
+	libimg_image im;
+	img_decode stdcall (_data, _data_len, 0);
+	$or      eax, eax
+	$jz      __ERROR__
+	
+	im.image = EAX;
+	im.set_vars();
+	im.draw(_x, _y, im.w, im.h, 0, 0);	
+__ERROR__:
+}
+
+void _img::draw(int _x, _y, _start, _height)
+{
+	int i, img_x, img_y;
+
+	for (i=0; i<url.count; i++) 
+	{
+		img_x = xywh.get(i*4);
+		img_y = xywh.get(i*4 + 1);
+
+		if (img_y > _start) && (img_y < _start + _height) 
+		{
+			if (cache.has(url.get(i)))
+			DrawLibimgImage(img_x + _x, img_y-_start + _y, cache.current_buf, cache.current_size);
+		}
+	}
 }
 
 /*

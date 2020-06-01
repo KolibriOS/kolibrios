@@ -1,8 +1,6 @@
 //Copyright 2007-2020 by Veliant & Leency
 //Asper, lev, Lrz, Barsuk, Nable, hidnplayr...
 
-//Licence restriction: compiling this app for WIN32 is forbidden.
-
 #ifndef AUTOBUILD
 	#include "lang.h--"
 #endif
@@ -31,6 +29,10 @@
 #include "..\lib\patterns\simple_open_dialog.h"
 #include "..\lib\patterns\toolbar_button.h"
 #include "..\lib\patterns\restart_process.h"
+
+#define URL_SIZE 4000
+
+char version[]="WebView 2.65";
 
 #include "texts.h"
 #include "cache.h"
@@ -64,12 +66,13 @@ enum {
 	TAB_CLOSE_ID = 900
 };
 
+_history history;
+
 enum { TARGET_SAME_TAB, TARGET_NEW_WINDOW, TARGET_NEW_TAB };
 
 #include "..\TWB\TWB.c" //HTML Parser, a core component
 
 TWebBrowser WB1;
-_history history;
 
 #include "history.h"
 
@@ -78,10 +81,6 @@ _history history;
 #define STATUSBAR_H 15
 #define TAB_H 20
 dword TOOLBAR_H = PADDING+TSZE+PADDING+2;
-
-#define URL_SIZE 4000
-
-int action_buf;
 
 _http http = 0;
 
@@ -105,6 +104,8 @@ edit_box address_box = {, PADDING+TSZE*2+PADDING+6, PADDING+3, 0xffffff,
 char editbox_icons[] = FROM "editbox_icons.raw";
 
 dword shared_url;
+
+dword http_get_type;
 
 void LoadLibraries()
 {
@@ -202,7 +203,7 @@ void main()
 			break;
 
 		case evButton:
-			ProcessEvent( GetButtonID() );
+			ProcessEvent( @GetButtonID() );
 			break;
 
 		case evKey:
@@ -260,7 +261,8 @@ void main()
 					http.free();
 					GetAbsoluteURL(#http.redirect_url, history.current());
 					history.back();
-					OpenPage(#http.redirect_url);
+					if (http_get_type==PAGE) OpenPage(#http.redirect_url);
+					else if (http_get_type==IMG) http.get(#http.redirect_url);
 				} else {
 					notify("'Too many redirects.' -E");
 					StopLoading();
@@ -270,8 +272,15 @@ void main()
 				// Loading the page is complete, free resources
 				redirect_count = 0;
 				http.free();
-				pages_cache.add(history.current(), http.content_pointer, http.content_received);
-				LoadInternalPage(http.content_pointer, http.content_received);
+				if (http_get_type==PAGE) {
+					cache.add(history.current(), http.content_pointer, http.content_received, PAGE);
+					LoadInternalPage(http.content_pointer, http.content_received);
+				}
+				else if (http_get_type==IMG) {
+					cache.add(WB1.page_img.current_url(), http.content_pointer, http.content_received, IMG);
+					WB1.page_img.set_data(cache.data.get_last(), http.content_received);
+					GetImg();
+				}
 			}
 			break;
 		default:
@@ -287,44 +296,20 @@ bool ProcessCtrlKeyEvent()
 {
 	if (key_modifier&KEY_LCTRL) || (key_modifier&KEY_RCTRL) switch(key_scancode) 
 	{
-		case SCAN_CODE_KEY_O:
-			EventOpenDialog();
-			return true;
-		case SCAN_CODE_KEY_H:
-			ProcessEvent(VIEW_HISTORY);
-			return true;
-		case SCAN_CODE_KEY_U:
-			EventViewSource();
-			return true;
-		case SCAN_CODE_KEY_T:
-			EventOpenNewTab(URL_SERVICE_HOMEPAGE); 
-			return true;
-		case SCAN_CODE_KEY_N:
-			RunProgram(#program_path, NULL);
-			return true;
-		case SCAN_CODE_KEY_J:
-			ProcessEvent(DOWNLOAD_MANAGER);
-			return true;
-		case SCAN_CODE_KEY_R:
-			ProcessEvent(REFRESH_BUTTON);
-			return true;
-		case SCAN_CODE_ENTER:
-			EventSeachWeb();
-			return true;
-		case SCAN_CODE_LEFT:
-			 ProcessEvent(BACK_BUTTON);
-			 return true;
-		case SCAN_CODE_RIGHT:
-			ProcessEvent(FORWARD_BUTTON);
-			return true;
-		case SCAN_CODE_KEY_W:
-			EventCloseActiveTab();
-			return true;
-		case SCAN_CODE_TAB:
-			EventActivateNextTab();
-			return true;
+		case SCAN_CODE_KEY_O: EventOpenDialog(); return true;
+		case SCAN_CODE_KEY_H: ProcessEvent(VIEW_HISTORY); return true;
+		case SCAN_CODE_KEY_U: EventViewSource(); return true;
+		case SCAN_CODE_KEY_T: EventOpenNewTab(URL_SERVICE_HOMEPAGE); return true;
+		case SCAN_CODE_KEY_N: RunProgram(#program_path, NULL); return true;
+		case SCAN_CODE_KEY_J: ProcessEvent(DOWNLOAD_MANAGER); return true;
+		case SCAN_CODE_KEY_R: ProcessEvent(REFRESH_BUTTON); return true;
+		case SCAN_CODE_ENTER: EventSeachWeb(); return true;
+		case SCAN_CODE_LEFT:  ProcessEvent(BACK_BUTTON); return true;
+		case SCAN_CODE_RIGHT: ProcessEvent(FORWARD_BUTTON); return true;
+		case SCAN_CODE_KEY_W: EventCloseActiveTab(); return true;
+		case SCAN_CODE_TAB:   EventActivateNextTab(); return true;
+		default: return false;
 	}
-	return false;
 }
 
 void SetElementSizes()
@@ -462,7 +447,7 @@ void ProcessEvent(dword id__)
 			EventUpdateBrowser();
 			return;
 		case CLEAR_CACHE:
-			pages_cache.clear();
+			cache.clear();
 			notify(#clear_cache_ok);
 			EventRefreshPage();
 			return;
@@ -603,9 +588,9 @@ void OpenPage(dword _open_URL)
 	and then halndle it in the propper way.
 	*/
 
-	if (pages_cache.has(#new_url)) {
+	if (cache.has(#new_url)) {
 		//CACHED PAGE
-		LoadInternalPage(pages_cache.current_page_buf, pages_cache.current_page_size);
+		LoadInternalPage(cache.current_buf, cache.current_size);
 
 	} else if (!strncmp(#new_url,"WebView:",8)) {
 		//INTERNAL PAGE
@@ -620,6 +605,7 @@ void OpenPage(dword _open_URL)
 			strcpy(#editURL, #new_url);
 		}
 
+		http_get_type = PAGE;
 		if (!strncmp(#new_url,"http:",5)) {
 			http.get(#new_url);
 		} else if (!strncmp(#new_url,"https://",8)) {
@@ -777,8 +763,9 @@ void LoadInternalPage(dword _bufdata, _in_bufsize){
 			WB1.custom_encoding = CH_CP866;
 			ShowSource(WB1.bufpointer, _in_bufsize);
 		} else {
-			WB1.DrawPage();			
+			WB1.DrawPage();
 		}
+		//GetImg();
 	}
 }
 
@@ -941,6 +928,9 @@ void DrawStatusBar()
 		ESI = math.min(status_w/6, strlen(links.active_url));
 		WriteText(10, status_y, 0, sc.work_text, links.active_url);
 	}
+	if (http.transfer>0) && (http_get_type==IMG) {
+		//
+	}
 	DefineHiddenButton(status_w+20, status_y-3, 60, 12, CHANGE_ENCODING);
 	WriteTextCenter(status_w+20, status_y, 60, sc.work_text, WB1.cur_encoding*10+#charsets);
 }
@@ -981,6 +971,18 @@ dword GetAbsoluteActiveURL()
 		return #abs_url;
 	}
 	return 0;
+}
+
+dword GetImg()
+{
+	while (WB1.page_img.next_url()) {
+		if (cache.has(WB1.page_img.current_url())) continue;
+		http_get_type = IMG;
+		http.get(WB1.page_img.current_url());
+		return;
+	}
+	DrawOmnibox();
+	WB1.DrawPage();
 }
 
 stop:

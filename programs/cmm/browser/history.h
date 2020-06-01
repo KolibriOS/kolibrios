@@ -30,7 +30,7 @@ ShowHistory()
 	free(history_pointer);
 	history_pointer = malloc(history.items.data_size+256);
 	strcat(history_pointer, HISTORY_HEADER);
-	for (i=0; i<history.items.count-1; i++)
+	for (i=0; i<history.items.count-1; i++) //if (cache.type.get(i) == PAGE)
 	{
 		strcat(history_pointer, "\t<a href='");
 		strcat(history_pointer, history.items.get(i));
@@ -38,14 +38,14 @@ ShowHistory()
 		strcat(history_pointer, history.items.get(i));
 		strcat(history_pointer, "</a><br>");
 	}
-	/*
+
 	strcat(history_pointer, "<br><b>Cached images</b><br>");
-	for (i=1; i<ImgCache.pics_count; i++)
+	for (i=1; i<cache.url.count; i++) if (cache.type.get(i) == IMG)
 	{
 		strcat(history_pointer, "<a href='");
-		strcat(history_pointer, #pics[i].path);
+		strcat(history_pointer, cache.url.get(i));
 		strcat(history_pointer, "'>");
-		strcat(history_pointer, #pics[i].path);
+		strcat(history_pointer, cache.url.get(i));
 		strcat(history_pointer, "</a><br>");
 		
 		// strcat(history_pointer, "<img src='");
@@ -53,7 +53,7 @@ ShowHistory()
 		// strcat(history_pointer, "'><br>");
 		// strcat(history_pointer, #pics[i].path);
 	}
-	*/
+
 	strcat(history_pointer, "</body></html>");
 	LoadInternalPage(history_pointer, strlen(history_pointer));
 }

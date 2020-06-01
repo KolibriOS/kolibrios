@@ -1,17 +1,21 @@
+enum {
+	PAGE=1, IMG
+};
 
-struct PAGES_CACHE
+struct _cache
 {
-	dword current_page_buf;
-	dword current_page_size;
+	dword current_buf;
+	dword current_size;
 	collection url;
 	collection_int data;
 	collection_int size;
+	collection_int type;
 	void add();
 	bool has();
 	void clear();
-} pages_cache=0;
+} cache=0;
 
-void PAGES_CACHE::add(dword _url, _data, _size)
+void _cache::add(dword _url, _data, _size, _type)
 {
 	dword data_pointer;
 	data_pointer = malloc(_size);
@@ -20,25 +24,26 @@ void PAGES_CACHE::add(dword _url, _data, _size)
 
 	url.add(_url);
 	size.add(_size);
+	type.add(_type);
 }
 
-bool PAGES_CACHE::has(dword _link)
+bool _cache::has(dword _link)
 {
 	int pos;
 	pos = url.get_pos_by_name(_link);
 	if (pos != -1) {
-		current_page_buf = data.get(pos);
-		current_page_size = size.get(pos);
+		current_buf = data.get(pos);
+		current_size = size.get(pos);
 		return true;
 	}
 	return false;
 }
 
-void PAGES_CACHE::clear()
+void _cache::clear()
 {
 	url.drop();
 	data.drop();
 	size.drop();
-	current_page_buf = NULL;
-	current_page_size = NULL;
+	current_buf = NULL;
+	current_size = NULL;
 }

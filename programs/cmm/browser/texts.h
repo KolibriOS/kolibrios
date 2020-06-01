@@ -1,5 +1,3 @@
-char version[]="WebView 2.61b";
-
 #ifdef LANG_RUS
 char buidin_page_error[] = FROM "buidin_pages\\page_not_found_ru.htm""\0";
 char buidin_page_home[]  = FROM "buidin_pages\\homepage_ru.htm""\0";

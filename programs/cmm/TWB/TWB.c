@@ -18,6 +18,7 @@ char line[500];
 struct _style {
 	bool
 	b, u, s, h,
+	font,
 	pre,
 	blq,
 	button,
@@ -30,6 +31,7 @@ struct _style {
 struct TWebBrowser {
 	llist list;
 	_style style;
+	_img page_img;
 	dword draw_y, stolbec;
 	int zoom;
 	dword o_bufpointer;
@@ -95,8 +97,8 @@ void TWebBrowser::Paint()
 			DrawBuf.DrawBar(start_x, draw_y + list.item_h - calc(zoom*2), line_length, zoom, 0x999999);
 		}
 
-		text_color__ = text_colors[text_color_index];
-		if (link) && (text_colors[text_color_index]==text_colors[0]) text_color__ = link_color_default;
+		text_color__ = text_colors.get_last();
+		if (link) && (text_color__ == text_colors.get(0)) text_color__ = link_color_default;
 
 		DrawBuf.WriteText(start_x, draw_y, list.font_type, text_color__, #line, NULL);
 		if (style.b) DrawBuf.WriteText(start_x+1, draw_y, list.font_type, text_color__, #line, NULL);
@@ -117,7 +119,7 @@ void TWebBrowser::Paint()
 void TWebBrowser::SetPageDefaults()
 {
 	style.b = style.u = style.s = style.h = style.blq = t_html = t_body = style.pre =
-	link = text_color_index = text_colors[0] = style.tag_title = false;
+	link = style.tag_title = style.font = false;
 	style.tag_list.reset();
 	link_color_default = 0x0000FF;
 	link_color_active = 0xFF0000;
@@ -126,6 +128,9 @@ void TWebBrowser::SetPageDefaults()
 	DrawBuf.Fill(0, page_bg);
 	links.clear();
 	anchors.clear();
+	page_img.clear();
+	text_colors.drop();
+	text_colors.add(0);
 	header = NULL;
 	cur_encoding = CH_CP866;
 	draw_y = BODY_MARGIN;
@@ -339,7 +344,7 @@ void TWebBrowser::SetStyle() {
 		t_body = tag.opened;
 		if (value = tag.get_value_of("link="))   link_color_default = GetColor(value);
 		if (value = tag.get_value_of("alink="))  link_color_active = GetColor(value);
-		if (value = tag.get_value_of("text="))   text_colors[0]=GetColor(value);
+		if (value = tag.get_value_of("text="))   text_colors.set(0, GetColor(value));
 		if (value = tag.get_value_of("bgcolor=")) {
 			style.bg_color = page_bg = GetColor(value);
 			DrawBuf.Fill(0, page_bg);
@@ -384,19 +389,23 @@ void TWebBrowser::SetStyle() {
 		NewLine();
 	}
 	if (tag.is("font")) {
+		style.font = tag.opened;
 		style.bg_color = page_bg;
 		if (tag.opened)
 		{
-			text_color_index++;
-			text_colors[text_color_index] = text_colors[text_color_index-1];
-			if (value = tag.get_value_of("color=")) text_colors[text_color_index] = GetColor(value);
 			if (value = tag.get_value_of("bg=")) style.bg_color = GetColor(value);
+			if (value = tag.get_value_of("color=")) {
+				text_colors.add(GetColor(value));
+			} else {
+				text_colors.add(text_colors.get_last());
+			}
 		}
-		else if (text_color_index > 0) text_color_index--;
+		else text_colors.pop();
 		return;
 	}
 	if (tag.is("div")) {
 		if (streq(#tag.prior,"div")) && (tag.opened) return;
+		if (!tag.opened) && (style.font) text_colors.pop();
 		NewLine();
 		return;
 	}
@@ -435,8 +444,8 @@ void TWebBrowser::SetStyle() {
 		if (value = tag.get_value_of("alt=")) && (strlen(value)<sizeof(line)-3) && (value) sprintf(#line, "[%s]", value); 
 		if (!img_path) { line=0; return; }
 		style.image = true;
-		text_color_index++;
-		text_colors[text_color_index] = 0x9A6F29;
+		page_img.add(#img_path, stolbec+1*list.font_w+3, draw_y);
+		text_colors.add(0x9A6F29);
 		if (!line) {
 			if (!strncmp(#img_path, "data:", 5)) img_path=0;
 			replace_char(#img_path, '?', NULL, strlen(#img_path));
@@ -445,9 +454,8 @@ void TWebBrowser::SetStyle() {
 		}
 		while (CheckForLineBreak()) {};
 		Paint();
-		text_color_index--;
+		text_colors.pop();
 		style.image = false;
-		//ImgCache.Images( list.x, draw_y, list.w); 
 		return; 
 	}
 	if (tag.is("h4")) {
@@ -590,6 +598,7 @@ void TWebBrowser::NewLine()
 //============================================================================================
 void TWebBrowser::DrawPage()
 {
-	PutPaletteImage(list.first * DrawBuf.bufw * 4 + buf_data+8, DrawBuf.bufw, list.h, DrawBuf.bufx, DrawBuf.bufy, 32, 0);	
+	PutPaletteImage(list.first * DrawBuf.bufw * 4 + buf_data+8, DrawBuf.bufw, list.h, DrawBuf.bufx, DrawBuf.bufy, 32, 0);
+	page_img.draw(list.x, list.y, list.first, list.h);
 	DrawScroller();
 }

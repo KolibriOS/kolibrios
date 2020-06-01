@@ -6,8 +6,7 @@ struct color_spec {
 	int rgb;
 };
 
-dword text_colors[300];
-dword text_color_index;
+collection_int text_colors;
 
 struct color_spec color_specs[] = {
 	"aliceblue",	 0xF0F8FF,
@@ -159,7 +158,7 @@ dword StrToCol(char* htmlcolor)
 		textlen=0;
 	char ch=0x00;
 
-	if (ESBYTE[htmlcolor]<>'#') return text_colors[0];
+	if (ESBYTE[htmlcolor]<>'#') return text_colors.get(0);
 
 	textlen = strlen(htmlcolor);
 
@@ -177,7 +176,7 @@ dword StrToCol(char* htmlcolor)
 		return color;
 	}
 
-	return text_colors[0];
+	return text_colors.get(0);
 }
 
 dword GetColor(char* color_str)
@@ -192,5 +191,5 @@ dword GetColor(char* color_str)
 			if (!strcmpi(color_str, color_specs[ii].name)) return color_specs[ii].rgb;
 		}
 
-	return text_colors[0];
+	return text_colors.get(0);
 }
