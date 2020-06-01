@@ -13,18 +13,18 @@ vec_z equ 8
 ;---------------------- out : none ------------------------
 if 0
 make_vector:
-	fninit
-	fild	word[edi+x3d]		     ;edi+x3d
-	fisub	word[esi+x3d]		     ;esi+x3d
-	fstp	dword[ebx+vec_x]
+        fninit
+        fild    word[edi+x3d]                ;edi+x3d
+        fisub   word[esi+x3d]                ;esi+x3d
+        fstp    dword[ebx+vec_x]
 
-	fild	word[edi+y3d]
-	fisub	word[esi+y3d]
-	fstp	dword[ebx+vec_y]
+        fild    word[edi+y3d]
+        fisub   word[esi+y3d]
+        fstp    dword[ebx+vec_y]
 
-	fild	word[edi+z3d]
-	fisub	word[esi+z3d]
-	fstp	dword[ebx+vec_z]
+        fild    word[edi+z3d]
+        fisub   word[esi+z3d]
+        fstp    dword[ebx+vec_z]
 
 ret
 end if
@@ -32,10 +32,10 @@ reverse_mx_3x3:
 ; esi - source matrix
 ; edi - desired reversed matrix
 
-  push	ebp
-  mov	ebp,esp
-  sub	esp,4
-  .det	equ  ebp-4
+  push  ebp
+  mov   ebp,esp
+  sub   esp,4
+  .det  equ  ebp-4
 
   fninit
   fld  dword[esi]
@@ -160,18 +160,27 @@ reverse_mx_3x3:
 ret
 
 make_vector_r:
-	fninit
-	fld	dword[edi]		  ;edi+x3d
-	fsub	dword[esi]		  ;esi+x3d
-	fstp	dword[ebx+vec_x]
+   if Ext < SSE2
+        fninit
+        fld     dword[edi]                ;edi+x3d
+        fsub    dword[esi]                ;esi+x3d
+        fstp    dword[ebx+vec_x]
 
-	fld	dword[edi+4]
-	fsub	dword[esi+4]
-	fstp	dword[ebx+vec_y]
+        fld     dword[edi+4]
+        fsub    dword[esi+4]
+        fstp    dword[ebx+vec_y]
 
-	fld	dword[edi+8]
-	fsub	dword[esi+8]
-	fstp	dword[ebx+vec_z]
+        fld     dword[edi+8]
+        fsub    dword[esi+8]
+        fstp    dword[ebx+vec_z]
+    else
+        movups  xmm0,[esi]
+        movups  xmm1,[edi]
+        subps   xmm1,xmm0
+        movlps  [ebx],xmm1
+        movhlps  xmm1,xmm1
+        movss   [ebx+8],xmm1
+     end if
 
 ret
 ;---------------------- in: -------------------------------
@@ -180,61 +189,61 @@ ret
 ;--------------------------- ebx - pointer to result vector
 ;---------------------- out : none
 cross_product:
-	fninit
-	fld	dword [esi+vec_y]
-	fmul	dword [edi+vec_z]
-	fld	dword [esi+vec_z]
-	fmul	dword [edi+vec_y]
-	fsubp	;st1 ,st
-	fstp	dword [ebx+vec_x]
+        fninit
+        fld     dword [esi+vec_y]
+        fmul    dword [edi+vec_z]
+        fld     dword [esi+vec_z]
+        fmul    dword [edi+vec_y]
+        fsubp   ;st1 ,st
+        fstp    dword [ebx+vec_x]
 
-	fld	dword [esi+vec_z]
-	fmul	dword [edi+vec_x]
-	fld	dword [esi+vec_x]
-	fmul	dword [edi+vec_z]
-	fsubp	;st1 ,st
-	fstp	dword [ebx+vec_y]
+        fld     dword [esi+vec_z]
+        fmul    dword [edi+vec_x]
+        fld     dword [esi+vec_x]
+        fmul    dword [edi+vec_z]
+        fsubp   ;st1 ,st
+        fstp    dword [ebx+vec_y]
 
-	fld	dword [esi+vec_x]
-	fmul	dword [edi+vec_y]
-	fld	dword [esi+vec_y]
-	fmul	dword [edi+vec_x]
-	fsubp	;st1 ,st
-	fstp	dword [ebx+vec_z]
+        fld     dword [esi+vec_x]
+        fmul    dword [edi+vec_y]
+        fld     dword [esi+vec_y]
+        fmul    dword [edi+vec_x]
+        fsubp   ;st1 ,st
+        fstp    dword [ebx+vec_z]
 ret
 ;----------------------- in: ------------------------------
 ;---------------------------- edi - pointer to vector -----
 ;----------------------- out : none
 normalize_vector:
-	fninit
-	fld	dword [edi+vec_x]
-	fmul	st, st
-	fld	dword [edi+vec_y]
-	fmul	st, st
-	fld	dword [edi+vec_z]
-	fmul	st, st
-	faddp	st1, st
-	faddp	st1, st
-	fsqrt
+        fninit
+        fld     dword [edi+vec_x]
+        fmul    st, st
+        fld     dword [edi+vec_y]
+        fmul    st, st
+        fld     dword [edi+vec_z]
+        fmul    st, st
+        faddp   st1, st
+        faddp   st1, st
+        fsqrt
 
-	ftst
-	fstsw ax
-	sahf
-	jnz	@f
+        ftst
+        fstsw ax
+        sahf
+        jnz     @f
 
-	fst	dword [edi+vec_x]
-	fst	dword [edi+vec_y]
-	fstp	dword [edi+vec_z]
-	ret
+        fst     dword [edi+vec_x]
+        fst     dword [edi+vec_y]
+        fstp    dword [edi+vec_z]
+        ret
       @@:
-	fld st
-	fld st
-	fdivr dword [edi+vec_x]
-	fstp  dword [edi+vec_x]
-	fdivr dword [edi+vec_y]
-	fstp  dword [edi+vec_y]
-	fdivr dword [edi+vec_z]
-	fstp  dword [edi+vec_z]
+        fld st
+        fld st
+        fdivr dword [edi+vec_x]
+        fstp  dword [edi+vec_x]
+        fdivr dword [edi+vec_y]
+        fstp  dword [edi+vec_y]
+        fdivr dword [edi+vec_z]
+        fstp  dword [edi+vec_z]
 ret
 ;------------------in: -------------------------
 ;------------------ esi - pointer to 1st vector
@@ -242,15 +251,15 @@ ret
 ;------------------out: ------------------------
 ;------------------ st0 - dot-product
 dot_product:
-	fninit
-	fld	dword [esi+vec_x]
-	fmul	dword [edi+vec_x]
-	fld	dword [esi+vec_y]
-	fmul	dword [edi+vec_y]
-	fld	dword [esi+vec_z]
-	fmul	dword [edi+vec_z]
-	faddp
-	faddp
+        fninit
+        fld     dword [esi+vec_x]
+        fmul    dword [edi+vec_x]
+        fld     dword [esi+vec_y]
+        fmul    dword [edi+vec_y]
+        fld     dword [esi+vec_z]
+        fmul    dword [edi+vec_z]
+        faddp
+        faddp
 ret
 
 ; DOS version Coded by Mikolaj Felix aka Majuma
@@ -258,33 +267,33 @@ ret
 ; www.majuma.xt.pl
 ; into FASM translation by Macgub
 init_sincos_tab:
-.counter   equ	dword [ebp-4]  ; cur angle
+.counter   equ  dword [ebp-4]  ; cur angle
 
-     push	ebp
-     mov	ebp,esp
+     push       ebp
+     mov        ebp,esp
 
-     xor	eax,eax
-     push	eax	       ; init .counter
-     mov	edi,cos_tab
-     mov	esi,sin_tab
-     mov	ecx,256
+     xor        eax,eax
+     push       eax            ; init .counter
+     mov        edi,cos_tab
+     mov        esi,sin_tab
+     mov        ecx,256
      fninit
 
-     fld	.counter
+     fld        .counter
   @@:
-     fld	st
+     fld        st
      fsincos
-     fstp	dword [edi]
-     fstp	dword [esi]
+     fstp       dword [edi]
+     fstp       dword [esi]
 ;     fadd       [piD180]
-     fadd	[piD128]
-     add	esi,4
-     add	edi,4
-     loop	@b
-     ffree	st
+     fadd       [piD128]
+     add        esi,4
+     add        edi,4
+     loop       @b
+     ffree      st
 
-     mov	esp,ebp
-     pop	ebp
+     mov        esp,ebp
+     pop        ebp
 ret
 ;------
 ; esi - offset (pointer) to angles, edi offset to 3x3 matrix
@@ -469,36 +478,36 @@ ret
 add_scale_to_matrix:
      fninit
      fld     [rsscale]
-     fld     dword[esi] 	   ;-----
+     fld     dword[esi]            ;-----
      fmul    st,st1
      fstp    dword[esi]
-     fld     dword[esi+12]	     ; x scale
+     fld     dword[esi+12]           ; x scale
      fmul    st,st1
      fstp    dword[esi+12]
      fld     dword[esi+24]
      fmul    st,st1
-     fstp    dword[esi+24]	   ;------
+     fstp    dword[esi+24]         ;------
 
-     fld     dword[esi+4]	   ;-----
+     fld     dword[esi+4]          ;-----
      fmul    st,st1
      fstp    dword[esi+4]
-     fld     dword[esi+16]	      ; y scale
+     fld     dword[esi+16]            ; y scale
      fmul    st,st1
      fstp    dword[esi+16]
      fld     dword[esi+28]
      fmul    st,st1
-     fstp    dword[esi+28]	   ;------
+     fstp    dword[esi+28]         ;------
 
 
-     fld     dword[esi+8]	   ;-----
+     fld     dword[esi+8]          ;-----
      fmul    st,st1
      fstp    dword[esi+8]
-     fld     dword[esi+20]		; z scale
+     fld     dword[esi+20]              ; z scale
      fmul    st,st1
      fstp    dword[esi+20]
      fld     dword[esi+32]
      fmulp    st1,st
-     fstp    dword[esi+32]	   ;------
+     fstp    dword[esi+32]         ;------
 
 ret
 

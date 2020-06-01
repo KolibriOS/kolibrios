@@ -1,5 +1,14 @@
-View3ds 0.068b - tiny viewer to .3ds and .asc files with several graphics
-		effects implementation.
+View3ds 0.069 - tiny viewer to .3ds and .asc files with several graphics
+                effects implementation.
+
+
+What's new?
+1. KPacked files support by Leency.
+1. 32bit vertices indexes and ability to load whole RAM limited objects.
+   (Above 65535 vertices and triangles), (by me).
+2. I switch off painters algotithm mode (depth sorting). In app impelementetion it has
+   limited vertices count and produce less quality image than Z buffer Catmull algo.
+   In addition this switch off reduces app size, (by me).
 
 Buttons description:
 1.  rotary: choosing rotary axle: x, y, x+y.
@@ -11,8 +20,7 @@ Buttons description:
     mapping), grdl (Gouraud lines - edges only).
 3.  speed: idle, full.
 4,5. zoom in, out: no comment.
-6.  catmull: on -> use z buffer ( z coordinate interpolation), off -> depth sorting, painters
-    alghoritm).Txgrd, 2tex and bumptex models only with catmull  = on.
+6.  catmull: disabled
 7.  culling: backface culling on/ off.
 8.  rand. light: Randomize 3 unlinear lights( so called Phong's illumination).
 9.  Blur: blur N times; N=0,1,2,3,4,5
@@ -34,4 +42,4 @@ Buttons description:
     is released apply current position. You may also decrease whole handlers count by enable culling (using
     appropriate button) - some back handlers become hidden.
 
-			 Maciej Guba		 XI 2016
+                         Maciej Guba             V 2020

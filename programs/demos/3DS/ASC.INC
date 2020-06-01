@@ -31,7 +31,7 @@ read_asc:
     mov   ebx,eax
     push  eax
     call  ascii_to_integer
-    mov   [points_count_var],dx
+    mov   [points_count_var],edx
     pop   eax
 
   @@:
@@ -59,7 +59,7 @@ read_asc:
     mov   ebx,eax
     push  eax
     call  ascii_to_integer
-    mov   [triangles_count_var],dx
+    mov   [triangles_count_var],edx
     pop   eax
 
   @@:
@@ -114,7 +114,7 @@ read_asc:
     jne   .decode_coord
     pop   ebx
     inc   ebx
-    cmp   bx,[points_count_var]
+    cmp   ebx,[points_count_var]
     jne   .decode_vertices
     mov   dword[edi],-1
 
@@ -175,9 +175,9 @@ read_asc:
     call  ascii_to_integer
     mov   eax,edx
 
-    stosw
+    stosd
     pop   esi
-    add   esi,2
+    add   esi,4
 
     pop   ecx
     inc   ecx
@@ -185,7 +185,7 @@ read_asc:
     jne   .next_vertex_number
     pop   edx
     inc   edx
-    cmp   dx,[triangles_count_var]
+    cmp   edx,[triangles_count_var]
     jne   .decode_face
     mov   dword[edi],-1 ;dword[triangles+ebx+2],-1   ; end mark
     mov   eax,1  ;-> mark if ok

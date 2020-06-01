@@ -74,7 +74,7 @@
 	       db 3
 	       db 'shd. model'
 	       db 12
- dr_flag       db 0
+ dr_flag       db 0  ;  6 - dots
 	       dd shd_f
 
 	       db 4
@@ -457,8 +457,8 @@ align 8
 	scale	dd	? ; help scale variable
 	edges_counter dd ?
    ;==
-	triangles_count_var	dw ?
-	points_count_var	dw ?
+	triangles_count_var	dd ?
+	points_count_var	dd ?
      ;   triangles_ptr           dd ?
      ;   triangles_w_z_ptr       dd ?
      ;   triangles_normals_ptr   dd ?
@@ -485,9 +485,9 @@ align 8
 
    ;===
 
-	point_index1	    dw ?   ;-\
-	point_index2	    dw ?   ;  }  don't change order
-	point_index3	    dw ?   ;-/
+	point_index1	    dd ?   ;-\
+	point_index2	    dd ?   ;  }  don't change order
+	point_index3	    dd ?   ;-/
 	temp_col	    dw ?
 	high		    dd ?
 	rand_seed	    dw ?
