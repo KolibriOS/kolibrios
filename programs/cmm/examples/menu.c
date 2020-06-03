@@ -29,11 +29,11 @@ Goat
 Rabbit";
 
 
+proc_info Form;
 
 void main()
 {
 	dword menu_id=0, click_id;
-	proc_info Form;
 	byte current_animal=1, current_veg=3;
 	int id;
 
