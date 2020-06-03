@@ -44,13 +44,13 @@ void main()
 		if (id==1) ExitProcess();
 		if (id==butv.id) {
 			menu_id = butv.id;
-			open_lmenu(Form.left+3 + butv.x, Form.top+skin_height + butv.y + butv.h, 
-				MENU_ALIGN_TOP_LEFT, current_veg, #vegetables);
+			open_lmenu(butv.x, butv.y + butv.h, MENU_TOP_LEFT, 
+				current_veg, #vegetables);
 		}
 		if (id==buta.id) {
 			menu_id = buta.id;
-			open_lmenu(Form.left+5 + buta.x + buta.w, Form.top+skin_height + buta.y + buta.h, 
-				MENU_ALIGN_TOP_RIGHT, current_animal, #animals);
+			open_lmenu(buta.x + buta.w, buta.y + buta.h, 
+				MENU_TOP_RIGHT, current_animal, #animals);
 		}
 		break;
 

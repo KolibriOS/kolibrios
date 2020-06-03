@@ -140,15 +140,13 @@ void EventShowListMenu()
 		text = #file_actions;
 		active_menu = MENU_FILE;
 	}
-	open_lmenu(mouse.x+Form.left+5, mouse.y+Form.top+3
-		+skin_height, MENU_ALIGN_TOP_LEFT, NULL, text);
+	open_lmenu(mouse.x, mouse.y+3, MENU_TOP_LEFT, NULL, text);
 }
 
 void EventShowBurgerMenu()
 {
 	active_menu = MENU_BURGER;
-	open_lmenu(Form.width-10+Form.left, 35+Form.top+skin_height,
-		MENU_ALIGN_TOP_RIGHT, NULL, #burger_menu_items);
+	open_lmenu(Form.cwidth-6, 35, MENU_TOP_RIGHT, NULL, #burger_menu_items);
 }
 
 bool GetMenuClick()

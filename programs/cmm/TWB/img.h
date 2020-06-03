@@ -56,19 +56,6 @@ void _img::set_data(dword _data, _data_len)
 	data.set(getid, _data);
 }
 
-void DrawLibimgImage(dword _x, _y, _data, _data_len)
-{
-	libimg_image im;
-	img_decode stdcall (_data, _data_len, 0);
-	$or      eax, eax
-	$jz      __ERROR__
-	
-	im.image = EAX;
-	im.set_vars();
-	im.draw(_x, _y, im.w, im.h, 0, 0);	
-__ERROR__:
-}
-
 void _img::draw(int _x, _y, _start, _height)
 {
 	int i, img_x, img_y;
@@ -84,6 +71,19 @@ void _img::draw(int _x, _y, _start, _height)
 			DrawLibimgImage(img_x + _x, img_y-_start + _y, cache.current_buf, cache.current_size);
 		}
 	}
+}
+
+void DrawLibimgImage(dword _x, _y, _data, _data_len)
+{
+	libimg_image im;
+	img_decode stdcall (_data, _data_len, 0);
+	$or      eax, eax
+	$jz      __ERROR__
+	
+	im.image = EAX;
+	im.set_vars();
+	im.draw(_x, _y, im.w, im.h, 0, 0);	
+__ERROR__:
 }
 
 /*

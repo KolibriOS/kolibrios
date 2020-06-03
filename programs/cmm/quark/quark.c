@@ -379,32 +379,29 @@ void EventMagnifyPlus()
 void EventShowCharsetsList()
 {
 	menu_id = CHANGE_CHARSET;
-	open_lmenu(Form.left + Form.cwidth, Form.top + skin_height
-		+ Form.cheight - 6, MENU_ALIGN_BOT_RIGHT, user_encoding+1, 
+	open_lmenu(Form.cwidth-4, Form.cheight - 6, MENU_BOT_RIGHT, 
+		user_encoding+1, 
 		"UTF-8\nKOI8-RU\nCP1251\nCP1252\nISO8859-5\nCP866\nAUTO");
 }
 
 void EventShowReopenMenu()
 {
 	menu_id = REOPEN_IN_APP;
-	open_lmenu(Form.left+5 + reopenin_mx + 23, Form.top+29+skin_height, 
-		MENU_ALIGN_TOP_RIGHT, NULL,
+	open_lmenu(reopenin_mx + 23, 29, MENU_TOP_RIGHT, NULL,
 		"Tinypad\nTextEdit\nWebView\nFB2Read\nHexView\nOther");
 }
 
 void EventShowThemesList()
 {
 	menu_id = COLOR_SCHEME;
-	open_lmenu(Form.left+5 + theme_mx + 23, 
-		Form.top+29+skin_height, MENU_ALIGN_TOP_RIGHT, 
+	open_lmenu(theme_mx + 23, 29, MENU_TOP_RIGHT, 
 		curcol_scheme+1, #color_scheme_names);
 }
 
 void EventShowRmbMenu()
 {
 	menu_id = RMB_MENU;
-	open_lmenu(Form.left + mouse.x+4, Form.top + skin_height + mouse.y,
-		MENU_ALIGN_TOP_LEFT, NULL, #rmb_menu);
+	open_lmenu(mouse.x, mouse.y, MENU_TOP_LEFT, NULL, #rmb_menu);
 }
 
 

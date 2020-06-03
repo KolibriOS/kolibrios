@@ -437,8 +437,8 @@ void EventMenuClick()
 
 void EventShowMenu(dword _menu_item_x, _menu_list, _id, _selected)
 {
-	open_lmenu(Form.left+5 + _menu_item_x, Form.top+skin_height + TOPPANELH, 
-		MENU_ALIGN_TOP_LEFT, _selected, _menu_list);
+	open_lmenu(_menu_item_x, TOPPANELH, MENU_TOP_LEFT, 
+		_selected, _menu_list);
 	menu_id = _id;
 }
 

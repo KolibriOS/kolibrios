@@ -743,14 +743,14 @@ void EventCrop()
 
 void EventShowImageMenu()
 {
-	open_lmenu(Form.left+5 + image_menu_btn.x, Form.top+skin_height + 
-		image_menu_btn.y + image_menu_btn.h, MENU_ALIGN_TOP_LEFT, NULL, #image_menu_items);
+	open_lmenu(image_menu_btn.x, image_menu_btn.y + image_menu_btn.h, 
+		MENU_TOP_LEFT, NULL, #image_menu_items);
 }
 
 void EventShowEditMenu()
 {
-	open_lmenu(Form.left+5 + image_menu_btn.x, Form.top+skin_height + 
-		image_menu_btn.y + image_menu_btn.h, MENU_ALIGN_TOP_LEFT, NULL, #edit_menu_items);
+	open_lmenu(image_menu_btn.x, image_menu_btn.y + image_menu_btn.h, 
+		MENU_TOP_LEFT, NULL, #edit_menu_items);
 }
 
 void EventCheckMenuItemSelected()

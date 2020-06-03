@@ -132,7 +132,7 @@ void main()
 	  			select_list.ProcessMouse(mouse.x, mouse.y);
 				SelectList_Draw();
 				EventSetNewCurrent();
-	  			open_lmenu(Form.left+mouse.x+5, Form.top+mouse.y+skin_height, 1, 0, MENU_LIST);
+	  			open_lmenu(mouse.x, mouse.y, MENU_TOP_RIGHT, NULL, MENU_LIST);
 	  		}
 	  		break;
 

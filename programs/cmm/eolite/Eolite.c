@@ -3,8 +3,8 @@
 
 // 70.5 - get volume info and label
 
-#define TITLE "Eolite File Manager 4.46c"
-#define ABOUT_TITLE "EOLITE 4.46c"
+#define TITLE "Eolite File Manager 4.46d"
+#define ABOUT_TITLE "EOLITE 4.46d"
 
 #ifndef AUTOBUILD
 #include "lang.h--"
@@ -172,17 +172,20 @@ void handle_param()
 			param[strrchr(#param, '/')-1] = '\0';
 			strcpy(#path, #param + 3);
 			properties_dialog();
+			ExitProcess();
 			return;
 		case 'd':
 			strcpy(#file_path, #param + 3);
 			itdir = dir_exists(#file_path);
 			DisplayOperationForm(DELETE_FLAG);
 			DeleteSingleElement();
+			ExitProcess();
 			return;
 		case 'v':
 			cut_active = param[2] - '0';
 			strcpy(#path, #param + 4);
 			PasteThread();
+			ExitProcess();
 			return;
 	}
 }

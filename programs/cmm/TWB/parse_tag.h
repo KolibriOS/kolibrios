@@ -106,6 +106,7 @@ bool _tag::get_next_param()
 		ESBYTE[i+1] = '\0';
 	}
 	strlwr(#attr);
+	strrtrim(#val);
 
 	attributes.add(#attr);
 	values.add(#val);

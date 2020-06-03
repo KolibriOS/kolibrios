@@ -32,7 +32,7 @@
 
 #define URL_SIZE 4000
 
-char version[]="WebView 2.65";
+char version[]="WebView 2.65b";
 
 #include "texts.h"
 #include "cache.h"
@@ -789,27 +789,28 @@ void DrawProgress()
 
 void EventShowPageMenu()
 {
-	open_lmenu(Form.left + mouse.x+4, Form.top + skin_height + mouse.y, MENU_ALIGN_TOP_LEFT, NULL, #rmb_menu);
+	open_lmenu(mouse.x, mouse.y, MENU_TOP_LEFT, NULL, #rmb_menu);
 	menu_id = VIEW_SOURCE;
 }
 
 void EventShowLinkMenu()
 {
-	open_lmenu(Form.left + mouse.x+4, Form.top + skin_height + mouse.y, MENU_ALIGN_TOP_LEFT, NULL, #link_menu);
+	open_lmenu(mouse.x, mouse.y, MENU_TOP_LEFT, NULL, #link_menu);
 	menu_id = IN_NEW_TAB;
 }
 
 void EventShowMainMenu()
 {
-	open_lmenu(Form.left + Form.cwidth - PADDING, Form.top + skin_height + PADDING + TSZE + 3, 
-		MENU_ALIGN_TOP_RIGHT, NULL, #main_menu);
+	open_lmenu(Form.cwidth - PADDING -4, PADDING + TSZE + 3, 
+		MENU_TOP_RIGHT, NULL, #main_menu);
 	menu_id = OPEN_FILE;
 }
 
 void EventShowEncodingsList()
 {
-	open_lmenu(Form.left + Form.cwidth, Form.top + skin_height + Form.cheight - STATUSBAR_H + 12, 
-		MENU_ALIGN_BOT_RIGHT, WB1.cur_encoding + 1, "UTF-8\nKOI8-RU\nCP1251\nCP1252\nISO8859-5\nCP866");
+	open_lmenu(Form.cwidth-4, Form.cheight - STATUSBAR_H + 12, 
+		MENU_BOT_RIGHT, WB1.cur_encoding + 1, 
+		"UTF-8\nKOI8-RU\nCP1251\nCP1252\nISO8859-5\nCP866");
 	menu_id = ENCODINGS;
 }
 
