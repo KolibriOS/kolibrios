@@ -561,6 +561,7 @@ tup.append_table(extra_files, {
  {"kolibrios/games/invaders", PROGS .. "/games/invaders/invaders"},
  {"kolibrios/games/phenix", PROGS .. "/games/phenix/trunk/phenix"},
  {"kolibrios/games/soko/soko", PROGS .. "/games/soko/trunk/SOKO"},
+ {"kolibrios/media/img_transform", PROGS .. "/media/img_transform/img_transform"},
  {"kolibrios/media/zsea/zsea", PROGS .. "/media/zsea/zSea"},
  {"kolibrios/media/zsea/plugins/cnv_bmp.obj", PROGS .. "/media/zsea/plugins/bmp/cnv_bmp.obj"},
  {"kolibrios/media/zsea/plugins/cnv_gif.obj", PROGS .. "/media/zsea/plugins/gif/cnv_gif.obj"},
