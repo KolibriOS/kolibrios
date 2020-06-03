@@ -27,9 +27,9 @@ void GetWindowPosition()
 	win_x    = ESDWORD[shared_mem +  4];
 	win_y    = ESDWORD[shared_mem +  8];
 	position = ESDWORD[shared_mem + 12];
-	if (position == MENU_ALIGN_TOP_RIGHT) win_x -= menu1.w;
-	if (position == MENU_ALIGN_BOT_LEFT) win_y -= menu1.h;
-	if (position == MENU_ALIGN_BOT_RIGHT) {
+	if (position == MENU_TOP_RIGHT) win_x -= menu1.w;
+	if (position == MENU_BOT_LEFT) win_y -= menu1.h;
+	if (position == MENU_BOT_RIGHT) {
 		win_x -= menu1.w;
 		win_y -= menu1.h;
 	}
