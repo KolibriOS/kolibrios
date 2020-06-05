@@ -134,7 +134,7 @@ proc HTTP_buffersize_get ;//////////////////////////////////////////////////////
 ;< eax = buffer size in bytes                                                                     ;;
 ;;================================================================================================;;
 
-        mov     eax, BUFFERSIZE
+        mov     eax, [buffersize]
         ret
 
 endp
@@ -147,7 +147,7 @@ proc HTTP_buffersize_set ;//////////////////////////////////////////////////////
 ;> eax = buffer size in bytes                                                                     ;;
 ;;================================================================================================;;
 
-;        mov     [BUFFERSIZE], eax
+        mov     [buffersize], eax
         ret
 
 endp
@@ -1025,11 +1025,12 @@ proc HTTP_receive identifier ;//////////////////////////////////////////////////
         test    [ebp + http_msg.flags], FLAG_RING
         jz      @f
         mov     ebx, [ebp + http_msg.content_ptr]
-        add     ebx, BUFFERSIZE
+        add     ebx, [buffersize]
         cmp     [ebp + http_msg.write_ptr], ebx
         jb      @f
         DEBUGF  1, "Restarting at beginning of ring buffer\n"
-        sub     [ebp + http_msg.write_ptr], BUFFERSIZE
+        mov     ebx, [buffersize]
+        sub     [ebp + http_msg.write_ptr], ebx
   @@:
         ; Header was already parsed and connection isnt chunked.
         ; Update content_received
@@ -1087,11 +1088,12 @@ proc HTTP_receive identifier ;//////////////////////////////////////////////////
         test    [ebp + http_msg.flags], FLAG_RING
         jz      @f
         mov     ebx, [ebp + http_msg.content_ptr]
-        add     ebx, BUFFERSIZE
+        add     ebx, [buffersize]
         cmp     [ebp + http_msg.write_ptr], ebx
         jb      @f
         DEBUGF  1, "Restarting at beginning of ring buffer\n"
-        sub     [ebp + http_msg.write_ptr], BUFFERSIZE
+        mov     ebx, [buffersize]
+        sub     [ebp + http_msg.write_ptr], ebx
   @@:
         ; We only got a partial chunk, or need more chunks, update content_received and request more data
         add     [ebp + http_msg.content_received], eax
@@ -1138,6 +1140,8 @@ proc HTTP_receive identifier ;//////////////////////////////////////////////////
 
   .server_closed:
         DEBUGF  1, "server closed connection, transfer complete?\n"
+        mcall   close, [ebp + http_msg.socket]
+        and     [ebp + http_msg.flags], not FLAG_CONNECTED
         test    [ebp + http_msg.flags], FLAG_GOT_HEADER
         jz      .err_server_closed
         test    [ebp + http_msg.flags], FLAG_CONTENT_LENGTH
