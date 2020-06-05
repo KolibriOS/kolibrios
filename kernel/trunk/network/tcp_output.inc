@@ -1,6 +1,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;                                                                 ;;
-;; Copyright (C) KolibriOS team 2004-2017. All rights reserved.    ;;
+;; Copyright (C) KolibriOS team 2004-2020. All rights reserved.    ;;
 ;; Distributed under terms of the GNU General Public License       ;;
 ;;                                                                 ;;
 ;;  Part of the TCP/IP network stack for KolibriOS                 ;;
@@ -231,13 +231,13 @@ endl
         mov     ebx, TCP_max_win
         shl     ebx, cl
         pop     ecx
+        sub     ebx, [eax + TCP_SOCKET.RCV_ADV]
+        add     ebx, [eax + TCP_SOCKET.RCV_NXT]
 
         cmp     ebx, ecx
         jb      @f
         mov     ebx, ecx
        @@:
-        sub     ebx, [eax + TCP_SOCKET.RCV_ADV]
-        add     ebx, [eax + TCP_SOCKET.RCV_NXT]
 
         DEBUGF  DEBUG_NETWORK_VERBOSE, "TCP_output: we can increase window by %d bytes\n", ebx
 
