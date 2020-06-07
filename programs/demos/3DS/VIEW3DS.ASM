@@ -132,10 +132,10 @@ START:    ; start of execution
         call   calc_bumpmap
         call   calc_bumpmap_coords   ; bump and texture mapping
         call   draw_window
-    ;    mov     [draw_win_at_first],0
-;        mov    eax,40         ; set events mask
-;        mov    ebx,1100000000000000000000000100111b
-;        int    0x40
+        ;mov     [draw_win_at_first],0
+        ;mov    eax,40         ; set events mask
+        ;mov    ebx,1100000000000000000000000100111b
+        ;int    0x40
 still:
         cmp    [edit_flag],1
         jne    @f
@@ -161,16 +161,26 @@ still:
       @@:
         int     0x40
 
-        cmp     eax,1           ; redraw request ?
+        cmp     eax,1           ; redraw event ?
         je      red
-        cmp     eax,2           ; key in buffer ?
+        cmp     eax,2           ; key event ?
         je      key
-        cmp     eax,3           ; button in buffer ?
+        cmp     eax,3           ; button event ?
         je      button
-        cmp     eax,6
+        cmp     eax,6           ; mouse event ?
         jne     @f
-        cmp     [edit_flag],1
+        cmp     [edit_flag],1   ; handle mouse only when edit is active
         jne     @f
+
+        mov     eax,37
+        mov     ebx,7           ; get mouse scroll
+        int     0x40
+        and     eax, 0xFFFF     ; check only vertial
+        cmp     eax, 65535
+        je      button.zoom_in
+        cmp     eax, 1
+        je      button.zoom_out
+
         mov     eax,37
         mov     ebx,3   ;read mouse state
         int     0x40
@@ -208,6 +218,22 @@ still:
     key:                        ; key
         mov     eax,2           ; just read it and ignore
         int     0x40
+
+        cmp     ah, '+'
+        je      button.zoom_in
+        cmp     ah, '='
+        je      button.zoom_in
+        cmp     ah, '-'
+        je      button.zoom_out
+        cmp     ah, 176 ;left
+        je      add_vec_buttons.x_minus
+        cmp     ah, 179 ;right
+        je      add_vec_buttons.x_plus
+        cmp     ah, 178 ;up
+        je      add_vec_buttons.y_minus
+        cmp     ah, 177 ;down
+        je      add_vec_buttons.y_plus
+        
         jmp     noclose
 
     button:                     ; button
@@ -242,6 +268,7 @@ still:
                                       ; ah = 5 -> scale-
         cmp     ah,5
         jne     @f
+	    .zoom_out:
         mov     dword[scale],0.7
         fninit
         fld     [rsscale]
@@ -251,6 +278,7 @@ still:
       @@:
         cmp     ah,6                 ; ah = 6 ->  scale+
         jne     @f
+	    .zoom_in:
         mov     dword[scale],1.3
         fninit
         fld     [rsscale]
@@ -357,6 +385,7 @@ still:
         jne     @f
 ;        cmp     [move_flag],2
 ;        je      .set_light1
+        .y_minus:
         sub     [vect_y],10
         jmp     .next
       @@:
@@ -396,6 +425,7 @@ still:
         jne     .next2
         cmp     [move_flag],0
         jne     @f
+        .x_minus:
         sub     [vect_x],10
         jmp     .next2
       @@:
@@ -413,6 +443,7 @@ still:
         jne     .next3
         cmp     [move_flag],0
         jne     @f
+        .x_plus:
         add     [vect_x],10
         jmp     .next3
       @@:
@@ -441,6 +472,7 @@ still:
         cmp     [move_flag],0
         jne      @f
       ;  call    add_vector
+	    .y_plus:
         add     [vect_y],10
         jmp     .next5
       @@:
