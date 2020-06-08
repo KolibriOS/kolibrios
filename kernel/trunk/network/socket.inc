@@ -2474,7 +2474,7 @@ socket_is_disconnecting:
 align 4
 socket_is_disconnected:
 
-        DEBUGF  1, "SOCKET_is_disconnected: %x\n", eax
+        DEBUGF  DEBUG_NETWORK_VERBOSE, "SOCKET_is_disconnected: %x\n", eax
 
         and     [eax + SOCKET.state], not (SS_ISCONNECTING + SS_ISCONNECTED + SS_ISDISCONNECTING)
         or      [eax + SOCKET.state], SS_CANTRCVMORE + SS_CANTSENDMORE
