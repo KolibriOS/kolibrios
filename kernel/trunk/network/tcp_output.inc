@@ -32,7 +32,7 @@ proc tcp_output
 
 locals
         temp_bits       db ?
-        window          dd ?
+        rcv_window      dd ?
 endl
 
         DEBUGF  DEBUG_NETWORK_VERBOSE, "TCP_output: socket=%x state=%u\n", eax, [eax + TCP_SOCKET.t_state]
@@ -128,7 +128,7 @@ endl
 ; If FIN has been sent, but not ACKed, but we havent been called to retransmit, esi will be -1
 ; Otherwise, window shrank after we sent into it.
 
-        jae     .not_persist
+        jge     .not_persist
 
 ; enter persist state
 
@@ -176,8 +176,12 @@ endl
 ;-------------------------------
 ; calculate window advertisement
 
+        xor     ecx, ecx
+        test    [eax + SOCKET.state], SS_CANTRCVMORE
+        jnz     @f
         mov     ecx, SOCKET_BUFFER_SIZE
         sub     ecx, [eax + STREAM_SOCKET.rcv.size]
+  @@:
 
 ;------------------------------
 ; Sender silly window avoidance
@@ -235,7 +239,7 @@ endl
         add     ebx, [eax + TCP_SOCKET.RCV_NXT]
 
         cmp     ebx, ecx
-        jb      @f
+        jl      @f
         mov     ebx, ecx
        @@:
 
@@ -246,9 +250,8 @@ endl
         cmp     ebx, edi
         jae     .send
 
-        shl     ebx, 1
-;        cmp     ebx, [eax + TCP_SOCKET.]    ;;; TODO: check with receive buffer high water mark
-;        jae     TCP_send
+        cmp     ebx, SOCKET_BUFFER_SIZE/2
+        jae     .send
 
   .no_window:
 
@@ -289,11 +292,8 @@ endl
   .enter_persist:
 
         cmp     [eax + STREAM_SOCKET.snd.size], 0                       ; Data ready to send?
-        jne     @f
-        and     [eax + TCP_SOCKET.timer_flags], not timer_flag_retransmission
-        jne     @f
-
-        test    [eax + TCP_SOCKET.timer_flags], timer_flag_persist      ; Persist timer already expired?
+        je      @f
+        test    [eax + TCP_SOCKET.timer_flags], timer_flag_retransmission or timer_flag_persist
         jnz     @f
 
         DEBUGF  DEBUG_NETWORK_VERBOSE, "TCP_output: Entering persist state\n"
@@ -485,20 +485,30 @@ endl
 ; Calculate the receive window.
 ; Dont shrink window, but avoid silly window syndrome
 
+        xor     ebx, ebx
+        test    [eax + SOCKET.state], SS_CANTRCVMORE
+        jnz     @f
         mov     ebx, SOCKET_BUFFER_SIZE
         sub     ebx, [eax + STREAM_SOCKET.rcv.size]
 
         cmp     ebx, SOCKET_BUFFER_SIZE/4
-        jae     @f
+        jge     @f
         cmp     ebx, [eax + TCP_SOCKET.t_maxseg]
-        jae     @f
+        jge     @f
         xor     ebx, ebx
   @@:
 
-        cmp     ebx, TCP_max_win ;;;; shl rcv_scale
-        jbe     @f
-        mov     ebx, TCP_max_win ;;;; shl rcv_scale
+
+        mov     cl, [eax + TCP_SOCKET.RCV_SCALE]
+        push    eax
+        mov     eax, TCP_max_win
+        shl     eax, cl
+        cmp     ebx, eax
+        jle     @f
+        mov     ebx, eax
   @@:
+        pop     eax
+
 
         mov     ecx, [eax + TCP_SOCKET.RCV_ADV]
         sub     ecx, [eax + TCP_SOCKET.RCV_NXT]
@@ -507,8 +517,10 @@ endl
         mov     ebx, ecx
   @@:
 
+;; TODO URGENT POINTER
+
         DEBUGF  DEBUG_NETWORK_VERBOSE, "TCP_send: window=%u\n", ebx
-        mov     [window], ebx
+        mov     [rcv_window], ebx
 
         mov     cl, [eax + TCP_SOCKET.RCV_SCALE]
         shr     ebx, cl
@@ -668,7 +680,7 @@ endl
 
 ; update advertised receive window
 
-        mov     ecx, [window]
+        mov     ecx, [rcv_window]
         test    ecx, ecx
         jz      @f
         add     ecx, [eax + TCP_SOCKET.RCV_NXT]

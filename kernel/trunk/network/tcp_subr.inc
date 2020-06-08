@@ -185,9 +185,22 @@ tcp_disconnect:
         cmp     [eax + TCP_SOCKET.t_state], TCPS_ESTABLISHED
         jb      tcp_close       ; Connection not yet synchronised, just get rid of the socket
 
-; TODO: implement LINGER
+        test    [eax + SOCKET.options], SO_LINGER
+        jz      .nolinger
 
+; TODO: implement LINGER
+;        cmp     [eax + SOCKET.so_linger], 0
+;        je     TCP_drop
+
+  .nolinger:
         call    socket_is_disconnecting
+
+        push    eax
+        add     eax, STREAM_SOCKET.rcv
+        mov     ecx, [eax + RING_BUFFER.size]
+        call    socket_ring_free
+        pop     eax
+
         call    tcp_usrclosed
 
         test    eax, eax
@@ -311,7 +324,7 @@ tcp_respond:
         cmp     eax, TCP_max_win
         jbe     .lessthanmax
         mov     eax, TCP_max_win
-.lessthanmax:
+  .lessthanmax:
         mov     cl, [esi + TCP_SOCKET.RCV_SCALE]
         shr     eax, cl
 

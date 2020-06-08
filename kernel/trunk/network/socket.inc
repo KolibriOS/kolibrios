@@ -750,12 +750,15 @@ socket_close:
         ret
 
   .tcp:
-        call    tcp_usrclosed
-
-        test    eax, eax
+        test    [eax + SOCKET.state], SS_ISCONNECTED
         jz      @f
-        call    tcp_output                                      ; If connection is not closed yet, send the FIN
+        test    [eax + SOCKET.state], SS_ISDISCONNECTING
+        jnz     @f
+        call    tcp_disconnect
   @@:
+; TODO:
+; ...
+;       call    socket_free
         ret
 
 
@@ -2471,7 +2474,7 @@ socket_is_disconnecting:
 align 4
 socket_is_disconnected:
 
-        DEBUGF  DEBUG_NETWORK_VERBOSE, "SOCKET_is_disconnected: %x\n", eax
+        DEBUGF  1, "SOCKET_is_disconnected: %x\n", eax
 
         and     [eax + SOCKET.state], not (SS_ISCONNECTING + SS_ISCONNECTED + SS_ISDISCONNECTING)
         or      [eax + SOCKET.state], SS_CANTRCVMORE + SS_CANTSENDMORE
