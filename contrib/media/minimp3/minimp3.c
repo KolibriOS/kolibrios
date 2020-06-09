@@ -5,8 +5,8 @@
 // memset - may be optimized
 typedef unsigned int size_t;
 static inline void*  memset(void *mem, int c, unsigned size) {   
-
-	for (unsigned int i = 0; i < size; i++ )
+	unsigned int i;
+	for (i = 0; i < size; i++ )
 		*((char *)mem+i) = (char) c;
 	
 	return mem;	
@@ -14,8 +14,8 @@ static inline void*  memset(void *mem, int c, unsigned size) {
 
 // memcpy - may be optimized
 void* memcpy(void *dest, const void *src, size_t count) {  
-  
-	for (unsigned int i = 0; i < count; i++)
+	unsigned int i;
+	for (i = 0; i < count; i++)
 		*(char *)(dest+i) = *(char *)(src+i);
 	
 	return 0;
