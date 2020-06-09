@@ -4,5 +4,7 @@ then
   HELPERDIR = "../../../programs"
 end
 tup.include(HELPERDIR .. "/use_gcc.lua")
+NEWLIB_INCLUDE = "../../sdk/sources/newlib/libc/include"
+INCLUDES = INCLUDES .. " -I" .. NEWLIB_INCLUDE
 CFLAGS = CFLAGS_OPTIMIZE_SPEED .. " -o minimp3.obj  -U_WIN32 -nostdlib -fwhole-program"
 compile_gcc{"minimp3.c"}
