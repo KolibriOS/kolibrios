@@ -62,7 +62,7 @@ char szVersionM[]	="version_min";
 char szInit[]   	="init";
 char szDecode[] 	="decode";
 
-export_t EXPORTS[] __asm__("EXPORTS") =
+__attribute__((externally_visible)) export_t EXPORTS[] __asm__("EXPORTS") =
   {
 	{ szStart,		start },
 	{ szVersion,	version_major },
