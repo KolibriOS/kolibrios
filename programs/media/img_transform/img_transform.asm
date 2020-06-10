@@ -13,7 +13,7 @@ include '../../../programs/develop/libraries/libs-dev/libimg/libimg.inc'
 include '../../../programs/develop/info3ds/info_fun_float.inc'
 
 @use_library_mem mem.Alloc,mem.Free,mem.ReAlloc,dll.Load
-caption db 'Image transform 26.05.20',0 ;подпись окна
+caption db 'Image transform 10.06.20',0 ;подпись окна
 
 offs_zbuf_pbuf equ 24 ;const. from 'zbuffer.inc'
 
@@ -26,6 +26,9 @@ buf2d_t equ word[edi+6] ;отступ сверху
 buf2d_size_lt equ dword[edi+4] ;отступ слева и справа для буфера
 buf2d_color equ dword[edi+16] ;цвет фона буфера
 buf2d_bits equ byte[edi+20] ;количество бит в 1-й точке изображения
+
+NAV_WND_L equ 145
+NAV_WND_T equ 1
 
 include 'select_points.inc'
 
@@ -108,6 +111,7 @@ timer_funct:
 	pop ebx eax
 	cmp byte[calc],0
 	je still
+		call draw_nav_wnd
 		call draw_buffers
 	jmp still
 
@@ -142,6 +146,12 @@ pushad
 	@@:
 		stdcall [buf2d_resize],buf_0,ebx,eax,1
 		call calc_nav_params
+		mov eax,[nav_x]
+		call nav_x_corect
+		mov [nav_x],eax
+		mov eax,[nav_y]
+		call nav_y_corect
+		mov [nav_y],eax
 		mov byte[calc],1
 	.end0:
 
@@ -174,11 +184,64 @@ pushad
 	add edx,(25 shl 16) ;
 	int 0x40
 
+	call draw_nav_wnd
 	call draw_buffers
 
 	mcall SF_REDRAW,SSF_END_DRAW
 popad
 	ret
+
+;рисование навигационного окна
+align 4
+proc draw_nav_wnd
+	cmp dword[buf_i0],0
+	je .end0
+	bt dword[nav_x_min],31
+	jnc .end0
+	bt dword[nav_y_min],31
+	jnc .end0
+pushad
+		mov ebx,(NAV_WND_L shl 16)
+		add ebx,[nav_wnd_w]
+		mov ecx,(NAV_WND_T shl 16)
+		add ecx,[nav_wnd_h]
+		mcall SF_DRAW_RECT,,,0 ;изображение
+		mov ecx,[nav_wnd_zoom]
+		mov ebx,[nav_x]
+		neg ebx
+		sar ebx,cl
+		add ebx,NAV_WND_L
+		shl ebx,16
+		add ebx,[buf_0.w]
+		shr bx,cl
+		mov edx,[nav_y]
+		neg edx
+		sar edx,cl
+		add edx,NAV_WND_T
+		shl edx,16
+		add edx,[buf_0.h]
+		shr dx,cl
+		mov ecx,edx
+		mcall ,,,0x404080 ;часть изображения попадающая в окно
+		
+		mov edi,sel_pt
+		@@:
+			mov ecx,[nav_wnd_zoom]
+			mov ebx,[edi+point2d.x]
+			shr ebx,cl
+			add ebx,NAV_WND_L
+			mov edx,[edi+point2d.y]
+			shr edx,cl
+			add edx,NAV_WND_T
+			mov ecx,edx
+			mcall SF_PUT_PIXEL,,,0xffff00
+			add edi,sizeof.point2d
+			cmp edi,sel_pt+4*sizeof.point2d
+			jl @b
+popad
+	.end0:
+	ret
+endp
 
 align 4
 proc draw_buffers
@@ -456,6 +519,37 @@ proc buf_get_mouse_coord
 	ret
 endp
 
+;output:
+; eax - buffer coord X (если курсор за буфером -1)
+; ebx - buffer coord Y (если курсор за буфером -1)
+align 4
+proc nav_wnd_get_mouse_coord
+	mcall SF_MOUSE_GET,SSF_WINDOW_POSITION
+	cmp ax,NAV_WND_T
+	jl .no_buf ;не попали в окно буфера по оси y
+	cmp eax,NAV_WND_L shl 16
+	jl .no_buf ;не попали в окно буфера по оси x
+	mov ebx,eax
+	shr ebx,16
+
+	and eax,0xffff ;оставляем координату y
+	sub ax,NAV_WND_T
+	cmp eax,[nav_wnd_h]
+	jg .no_buf
+	sub bx,NAV_WND_L
+	cmp ebx,[nav_wnd_w]
+	jg .no_buf
+	xchg eax,ebx
+	jmp .end_f
+	.no_buf:
+		xor eax,eax
+		not eax
+		xor ebx,ebx
+		not ebx
+	.end_f:
+	ret
+endp
+
 align 4
 mouse_left_d:
 pushad
@@ -494,7 +588,17 @@ pushad
 			cmp ecx,4
 			jl .cycle0
 			mov dword[sel_act],-1
+		jmp .end2
 	.end0:
+	call nav_wnd_get_mouse_coord
+	cmp eax,-1
+	je .end2
+		mov ecx,[nav_wnd_zoom]
+		shl eax,cl
+		shl ebx,cl
+		stdcall nav_to_point, eax,ebx
+		mov byte[calc],1
+	.end2:
 popad
 	ret
 
@@ -543,26 +647,12 @@ proc mouse_left_u uses eax ebx
 		;двигаем изображение
 		mov eax,[nav_y]
 		sub eax,[mouse_down_y]
-		cmp eax,[nav_y_min]
-		jge @f
-			mov eax,[nav_y_min]
-		@@:
-		cmp eax,[nav_y_max]
-		jle @f
-			mov eax,[nav_y_max]
-		@@:
+		call nav_y_corect
 		mov [nav_y],eax
 
 		mov eax,[nav_x]
 		sub eax,[mouse_down_x]
-		cmp eax,[nav_x_min]
-		jge @f
-			mov eax,[nav_x_min]
-		@@:
-		cmp eax,[nav_x_max]
-		jle @f
-			mov eax,[nav_x_max]
-		@@:
+		call nav_x_corect
 		mov [nav_x],eax
 	.end2:
 		mov byte[calc],1
@@ -585,7 +675,7 @@ open_file_size dd 0 ;размер
 
 ;вычисление параметров для навигации по изображению
 align 4
-proc calc_nav_params uses eax edi
+proc calc_nav_params uses eax ecx edi
 	mov dword[nav_x_max],0
 	mov edi,buf_0
 	mov eax,buf2d_w
@@ -623,6 +713,33 @@ proc calc_nav_params uses eax edi
 		mov [nav_sy],edi
 	@@:
 	shr dword[nav_sy],1
+
+	xor ecx,ecx
+	mov eax,[buf_i0.w]
+	@@:
+		inc ecx
+		shr eax,1
+		cmp eax,100
+		jg @b
+	mov [nav_wnd_zoom],ecx
+	xor ecx,ecx
+	mov eax,[buf_i0.h]
+	@@:
+		inc ecx
+		shr eax,1
+		cmp eax,32
+		jg @b
+	cmp [nav_wnd_zoom],ecx
+	jg @f
+		mov [nav_wnd_zoom],ecx
+	@@:
+	mov ecx,[nav_wnd_zoom]
+	mov eax,[buf_i0.w]
+	shr eax,cl
+	mov [nav_wnd_w],eax
+	mov eax,[buf_i0.h]
+	shr eax,cl
+	mov [nav_wnd_h],eax
 	ret
 endp
 
@@ -699,23 +816,42 @@ proc but_open_file
 		mov edi,buf_i0
 		cmp buf2d_data,0
 		jne .end3
+			stdcall getNextPowerOfTwo,[ebx+8]
+			mov buf2d_h,eax
+			mov edx,eax
 			stdcall getNextPowerOfTwo,[ebx+4]
 			mov buf2d_w,eax
-			m2m buf2d_h,dword[ebx+8] ;+8 = image height
+			cmp edx,[ebx+8]
+			jne @f
 			cmp eax,[ebx+4]
-			jg @f
-				m2m buf2d_w,dword[ebx+4]
+			jne @f
+				;создание нового изображения по исходным размерам
 				stdcall [buf2d_create_f_img], edi,[open_file_img]
 				jmp .end_1
 			@@:
+				;создание нового изображения по преобразованным размерам
+				cmp eax,[ebx+4]
+				jge @f
+					mov eax,[ebx+4]
+					mov buf2d_w,eax
+				@@:
 				sub eax,[ebx+4]
 				shr eax,1
 				mov esi,eax
+				cmp edx,[ebx+8]
+				jge @f
+					mov edx,[ebx+8]
+					mov buf2d_h,edx
+				@@:
+				sub edx,[ebx+8]
+				shr edx,1
 				stdcall [buf2d_create], edi
 				mov [buf_cop.l],si
-				stdcall [buf2d_bit_blt], edi, esi,0, buf_cop
+				mov [buf_cop.t],dx
+				stdcall [buf2d_bit_blt], edi, esi,edx, buf_cop
 				jmp .end_1
 		.end3:
+			;преобразование созданного изображения
 			stdcall getNextPowerOfTwo,[ebx+4]
 			cmp eax,[ebx+4]
 			jg @f
@@ -816,13 +952,7 @@ proc nav_to_point, coord_x:dword, coord_y:dword
 	mov eax,[buf_0.w]
 	shr eax,1
 	sub eax,[coord_x]
-	cmp eax,[nav_x_min]
-	jge @f
-		mov eax,[nav_x_min]
-	@@:
-	cmp eax,[nav_x_max]
-	jle .end0
-		mov eax,[nav_x_max]
+	call nav_x_corect
 	.end0:
 	mov [nav_x],eax
 	;coord y
@@ -836,17 +966,43 @@ proc nav_to_point, coord_x:dword, coord_y:dword
 	mov eax,[buf_0.h]
 	shr eax,1
 	sub eax,[coord_y]
+	call nav_y_corect
+	.end1:
+	mov [nav_y],eax
+	ret
+endp
+
+;input:
+; eax - navigation coord x
+;output:
+; eax - valid coord x
+align 4
+nav_x_corect:
+	cmp eax,[nav_x_min]
+	jge @f
+		mov eax,[nav_x_min]
+	@@:
+	cmp eax,[nav_x_max]
+	jle @f
+		mov eax,[nav_x_max]
+	@@:
+	ret
+
+;input:
+; eax - navigation coord y
+;output:
+; eax - valid coord y
+align 4
+nav_y_corect:
 	cmp eax,[nav_y_min]
 	jge @f
 		mov eax,[nav_y_min]
 	@@:
 	cmp eax,[nav_y_max]
-	jle .end1
+	jle @f
 		mov eax,[nav_y_max]
-	.end1:
-	mov [nav_y],eax
+	@@:
 	ret
-endp
 
 align 4
 proc getNextPowerOfTwo uses ebx, n:dword
@@ -1412,6 +1568,9 @@ nav_x dd 0 ;текущ. коорд. x для навигации
 nav_y dd 0 ;текущ. коорд. y для навигации
 nav_sx dd 0 ;скрол по x
 nav_sy dd 0 ;скрол по y
+nav_wnd_w dd 0 ;ширина окна навигации
+nav_wnd_h dd 0 ;высоата окна навигации
+nav_wnd_zoom dd 0
 mouse_down_x dd ?
 mouse_down_y dd ?
 sel_act dd ? ;точка выбранная для редактирования с клавиатуры

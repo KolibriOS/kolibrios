@@ -1,6 +1,6 @@
 ; макрос для системной библиотеки box_lib.obj
 ; элемент TextEditor для Kolibri OS
-; файл последний раз изменялся 29.01.2019 IgorA
+; файл последний раз изменялся 10.06.2020 IgorA
 ; на код применена GPL2 лицензия
 
 ;input:
@@ -337,8 +337,7 @@ proc ted_key, edit:dword, table:dword, control:dword
 			stdcall ted_draw,edi
 			jmp @f
 		.no_red_0:
-		call ted_draw_main_cursor
-		mov ted_drag_k,0 ;заканчиваем выделение от клавиатуры
+		call ted_sel_end
 	@@:
 	cmp ah,80 ;177 ;Down
 	jne @f
@@ -350,8 +349,7 @@ proc ted_key, edit:dword, table:dword, control:dword
 			stdcall ted_draw,edi
 			jmp @f
 		.no_red_1:
-		call ted_draw_main_cursor
-		mov ted_drag_k,0 ;заканчиваем выделение от клавиатуры
+		call ted_sel_end
 	@@:
 	cmp ah,75 ;176 ;Left
 	jne @f
@@ -363,8 +361,7 @@ proc ted_key, edit:dword, table:dword, control:dword
 			stdcall ted_draw,edi
 			jmp @f
 		.no_red_2:
-		call ted_draw_main_cursor
-		mov ted_drag_k,0 ;заканчиваем выделение от клавиатуры
+		call ted_sel_end
 	@@:
 	cmp ah,77 ;179 ;Right
 	jne @f
@@ -376,8 +373,7 @@ proc ted_key, edit:dword, table:dword, control:dword
 			stdcall ted_draw,edi
 			jmp @f
 		.no_red_3:
-		call ted_draw_main_cursor
-		mov ted_drag_k,0 ;заканчиваем выделение от клавиатуры
+		call ted_sel_end
 	@@:
 	cmp ah,71 ;180 ;Home
 	jne @f
@@ -389,8 +385,7 @@ proc ted_key, edit:dword, table:dword, control:dword
 			stdcall ted_draw,edi
 			jmp @f
 		.no_red_4:
-		call ted_draw_main_cursor
-		mov ted_drag_k,0 ;заканчиваем выделение от клавиатуры
+		call ted_sel_end
 	@@:
 	cmp ah,79 ;181 ;End
 	jne @f
@@ -402,8 +397,7 @@ proc ted_key, edit:dword, table:dword, control:dword
 			stdcall ted_draw,edi
 			jmp @f
 		.no_red_5:
-		call ted_draw_main_cursor
-		mov ted_drag_k,0 ;заканчиваем выделение от клавиатуры
+		call ted_sel_end
 	@@:
 	cmp ah,73 ;184 ;PageUp
 	jne @f
@@ -412,6 +406,7 @@ proc ted_key, edit:dword, table:dword, control:dword
 		je @f
 		call ted_scroll_set_redraw
 		stdcall ted_draw,edi
+		mov ted_drag_k,0 ;заканчиваем выделение от клавиатуры
 	@@:
 	cmp ah,81 ;183 ;PageDown
 	jne @f
@@ -629,6 +624,29 @@ proc ted_sel_start uses eax ecx
 	add ecx,[eax+sb_offs_position]
 	mov ted_sel_y0,ecx
 	mov ted_sel_y1,ecx
+	ret
+endp
+
+;input:
+; edi = pointer to tedit struct
+;description:
+; Функция вызываемая при снятии выделения
+align 16
+proc ted_sel_end uses eax
+	mov ted_drag_k,0 ;заканчиваем выделение от клавиатуры
+	call ted_is_select
+	or al,al
+	jz @f
+		xor eax,eax
+		mov ted_sel_x0,eax
+		mov ted_sel_x1,eax
+		mov ted_sel_y0,eax
+		mov ted_sel_y1,eax
+		stdcall ted_draw,edi
+		jmp .end_f
+	@@:
+	call ted_draw_main_cursor
+	.end_f:
 	ret
 endp
 
@@ -1396,7 +1414,7 @@ proc ted_convert_sel_text, conv_fun:dword
 		@@:
 	.end_f:
 	popad
-	mov esi,dword[conv_cou]
+	mov esi,[conv_cou]
 	ret
 endp
 
@@ -3223,56 +3241,56 @@ endp
 ; edi = pointer to tedit struct
 align 16
 proc ted_sel_key_left
-  cmp ted_drag_k,1
-  je @f
-    call ted_sel_start
-  @@:
-  push dx
-    call ted_cur_move_left
-    call ted_sel_move
-    cmp ted_drag_k,1
-    je @f
-      mov ted_drag_k,1
-      mov dl,8
-    @@:
-    cmp dl,8
-    jne @f
-      call ted_scroll_set_redraw
-      stdcall ted_draw,edi
-      jmp .end_f
-    @@:
-      stdcall ted_draw_cur_line,edi
-    .end_f:
-  pop dx
-  ret
+	cmp ted_drag_k,1
+	je @f
+		call ted_sel_start
+	@@:
+	push dx
+		call ted_cur_move_left
+		call ted_sel_move
+		cmp ted_drag_k,1
+		je @f
+			mov ted_drag_k,1
+			mov dl,8
+		@@:
+		cmp dl,8
+		jne @f
+			call ted_scroll_set_redraw
+			stdcall ted_draw,edi
+			jmp .end_f
+		@@:
+		stdcall ted_draw_cur_line,edi
+		.end_f:
+	pop dx
+	ret
 endp
 
 ;input:
 ; edi = pointer to tedit struct
 align 16
 proc ted_sel_key_right
-  cmp ted_drag_k,1
-  je @f
-    call ted_sel_start
-  @@:
-  push dx
-    call ted_cur_move_right
-    call ted_sel_move
-    cmp ted_drag_k,1
-    je @f
-      mov ted_drag_k,1
-      mov dl,8
-    @@:
-    cmp dl,8
-    jne @f
-      call ted_scroll_set_redraw
-      stdcall ted_draw,edi
-      jmp .end_f
-    @@:
-      stdcall ted_draw_cur_line,edi
-    .end_f:
-  pop dx
-  ret
+	cmp ted_drag_k,1
+	je @f
+		call ted_sel_start
+	@@:
+	push dx
+		call ted_cur_move_right
+		call ted_sel_move
+		cmp ted_drag_k,1
+		je @f
+			mov ted_drag_k,1
+			mov dl,8
+		@@:
+		cmp dl,8
+		jne @f
+			call ted_scroll_set_redraw
+			stdcall ted_draw,edi
+			jmp .end_f
+		@@:
+		stdcall ted_draw_cur_line,edi
+		.end_f:
+	pop dx
+	ret
 endp
 
 ;input:
