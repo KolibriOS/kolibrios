@@ -1,6 +1,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;                                                              ;;
-;; Copyright (C) KolibriOS team 2004-2015. All rights reserved. ;;
+;; Copyright (C) KolibriOS team 2004-2020. All rights reserved. ;;
 ;; Distributed under terms of the GNU General Public License    ;;
 ;;                                                              ;;
 ;;  PCMCIA aka cardbus driver for KolibriOS                     ;;
@@ -31,7 +31,9 @@ entry START
         COMPATIBLE_API          = 0x0100
         API_VERSION             = (COMPATIBLE_API shl 16) + CURRENT_API
 
-        CARDBUS_IO              = 0xFC00
+        CARDBUS_IO_BASE         = 0x1400
+        CARDBUS_IO_SIZE         = 0x100
+        CARDBUS_IRQ             = 0x0A
 
         __DEBUG__               = 1
         __DEBUG_LEVEL__         = 1
@@ -176,7 +178,7 @@ proc detect
         and     eax, 0xff000000                                         ; Keep original latency setting, clear the rest
         mov     al, byte[bus]
         mov     ah, byte[card_bus]
-        mov     ebx, [card_bus]
+        mov     ebx, [card_bus]         ; sub bus nr???
         shl     ebx, 16
         or      eax, ebx
         DEBUGF  1, "Latency, bus,.. 0x%x\n", eax
@@ -204,7 +206,7 @@ proc detect
         push    eax
         invoke  PciWrite32, [bus], [devfn], PCI_header02.base_addr, eax ; base is 4 Kbyte aligned
         pop     ebx
-        invoke  MapIoMem, ebx, 4096, 0x1b
+        invoke  MapIoMem, ebx, 4096, PG_SW+PG_NOCACHE
         mov     ecx, eax
 
 ; Check if a card is present in the socket
@@ -226,7 +228,7 @@ proc detect
         ;mov     word[ecx + 0x802], 0x00F9       ; Assert reset, output enable, vcc=vpp=3.3V
         mov     dword[ecx + 0x10], 0x33         ; Request 3.3V for Vcc and Vpp (Control register)
         ;push    ecx
-        ;mov     esi, 10
+        ;mov     esi, 1
         ;invoke  Sleep
         ;pop     ecx
         ;mov     byte[ecx + 0x803], 0x40         ; stop reset
@@ -245,19 +247,16 @@ proc detect
 ; set to 0 the second interval (mem1 and IO1)
 ; IO0: size is 256 bytes
 
-irp     regvalue,   0x7efff000, 0x7effffff, 0x7effe000, 0x7effe000, CARDBUS_IO, CARDBUS_IO + 0xFF, 0, 0
-{
-common
-        reg = 0x1C
-forward
-        invoke  PciWrite32, [bus], [devfn], reg, regvalue
-        DEBUGF  1, "Writing 0x%x to 0x%x\n", regvalue, reg
-        reg = reg + 4
-}
-
-        invoke  PciWrite8, [bus], [devfn], PCI_header02.interrupt_line, 0xc    ; IRQ line
-
-        invoke  PciRead16, [bus], [devfn], PCI_header02.bridge_ctrl                 ; Bridge control
+        invoke  PciWrite32, [bus], [devfn], PCI_header02.mbar_0, 0x7EFFF000
+        invoke  PciWrite32, [bus], [devfn], PCI_header02.mlimit_0, 0x7EFFF000
+        invoke  PciWrite32, [bus], [devfn], PCI_header02.mbar_1, 0
+        invoke  PciWrite32, [bus], [devfn], PCI_header02.mlimit_1, 0
+        invoke  PciWrite32, [bus], [devfn], PCI_header02.iobar_0, CARDBUS_IO
+        invoke  PciWrite32, [bus], [devfn], PCI_header02.iolimit_0, CARDBUS_IO + 0xFC
+        invoke  PciWrite32, [bus], [devfn], PCI_header02.iobar_1, 0
+        invoke  PciWrite32, [bus], [devfn], PCI_header02.iolimit_1, 0
+        invoke  PciWrite8, [bus], [devfn], PCI_header02.interrupt_line, CARDBUS_IRQ     ; IRQ line
+        invoke  PciRead16, [bus], [devfn], PCI_header02.bridge_ctrl                     ; Bridge control
         or      ax, 0x0700                                      ; Enable write posting, both memory windows prefetchable
         invoke  PciWrite16, [bus], [devfn], PCI_header02.bridge_ctrl, eax
         DEBUGF  1, "Write posting enabled\n"
@@ -276,7 +275,7 @@ rept    17 reg
         mov     ecx, 100
   .waitactive:
         push    ecx
-        invoke  PciRead32, [card_bus], 0, PCI_header02.vendor_id         ; Check if the card is awake yet
+        invoke  PciRead32, [card_bus], 0, PCI_header.vendor_id         ; Check if the card is awake yet
         inc     eax
         jnz     .got_it
         mov     esi, 2
