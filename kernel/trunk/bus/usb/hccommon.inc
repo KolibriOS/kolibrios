@@ -20,8 +20,8 @@ usb_hc_func:
         dd      usb_wakeup_if_needed
         dd      usb_subscribe_control
         dd      usb_subscription_done
-        dd      usb_allocate_common
-        dd      usb_free_common
+        dd      slab_alloc
+        dd      slab_free
         dd      usb_td_to_virt
         dd      usb_init_transfer
         dd      usb_undo_tds
