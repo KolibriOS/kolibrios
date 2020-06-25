@@ -12,13 +12,13 @@
 :struct Timers
 {
 	dword time;
-    dword alloc;
-    dword count;
-    dword size;
-    void revise(void);
-    void getTime(void);
-    dword set(dword,dword,byte);
-    dword clear(dword);
+	dword alloc;
+	dword count;
+	dword size;
+	void revise(void);
+	void getTime(void);
+	dword set(dword,dword,byte);
+	dword clear(dword);
 };
 void Timers::getTime(void)
 {
@@ -88,20 +88,20 @@ dword Timers::clear(dword id)
 }
 
 // Analogs JS Functions
-:Timers Time = {0};
+:Timers Timer = {0};
 inline dword setTimeout(dword function, time)
 {
-	RETURN Time.set(function, time, 0);
+	RETURN Timer.set(function, time, 0);
 }
 inline dword setInterval(dword function, time)
 {
-	RETURN Time.set(function, time, 1);
+	RETURN Timer.set(function, time, 1);
 }
 inline dword clearTimeout(dword id)
 {
-	RETURN Time.clear(id);
+	RETURN Timer.clear(id);
 }
 inline dword clearInterval(dword id)
 {
-	RETURN Time.clear(id);
+	RETURN Timer.clear(id);
 }
