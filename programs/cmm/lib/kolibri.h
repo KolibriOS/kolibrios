@@ -94,7 +94,7 @@ inline fastcall dword CheckEvent()
 	$int 0x40
 }
 
-inline dword WaitEventTimeout(EBX)
+inline fastcall dword WaitEventTimeout(EBX)
 {
 	EAX = 23;
 	$int 0x40
