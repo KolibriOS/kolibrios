@@ -792,7 +792,7 @@ include "GRD_TEX.INC"
 include "TWO_TEX.INC"
 include "ASC.INC"
 if Ext >= SSE3
-include "3r_phg.inc"
+include "3R_PHG.INC"
 end if
 clear_vertices_index:
     mov   edi,[vertices_index_ptr]
