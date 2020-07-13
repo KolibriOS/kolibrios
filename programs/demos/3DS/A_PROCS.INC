@@ -76,11 +76,20 @@ end if
    mul     edx
 ;   shl     eax,9
    add     eax,dword .x
+
    lea     ebx,[eax*3]
+   cmp     [dr_flag],12 ; 32 bit col cause
+   jne     @f
+   add     ebx,eax
+  @@:
    mov     eax,[esi]
    mov     [edi+ebx],eax
  .skip:
    add     esi,3
+   cmp     [dr_flag],12
+   jne     @f
+   inc     esi
+  @@:
    inc     dword .x
    movzx   edx,word[size_x_var]
    cmp     dword .x,edx  ;SIZE_X
@@ -97,9 +106,12 @@ end if
    movzx   ecx,word[size_x_var]
    movzx   eax,word[size_y_var]
    imul    ecx,eax
+   cmp         [dr_flag],12
+   je          @f
    lea     ecx,[ecx*3]
    shr     ecx,2
  ;  mov     ecx,SIZE_X*SIZE_Y*3/4
+  @@:
    cld
    rep     movsd
 
@@ -156,23 +168,42 @@ if Ext >= SSE2
  sub   ecx,ebx
  mov   esi,[screen_ptr]
  mov   edi,[Zbuffer_ptr]
+ cmp   [dr_flag],12
+ je    @f
  lea   ebx,[ebx*3]
+ jmp   .f
+@@:
+ shl   ebx,2
+.f:
  mov   edx,esi
  add   esi,ebx
  lea   ebx,[ebx+esi]
  pxor  xmm0,xmm0
  push  eax
-@@:
+.emb:
+ cmp   [dr_flag],12
+ je    @f
  movlps     xmm1,[esi+3]
  movhps     xmm1,[esi+6]
- punpcklbw  xmm1,xmm0
  movlps     xmm2,[esi-3]
  movhps     xmm2,[esi]
- punpcklbw  xmm2,xmm0
  movlps     xmm3,[ebx]
  movhps     xmm3,[ebx+3]
  movlps     xmm4,[edx]
  movhps     xmm4,[edx+3]
+ jmp        .ff
+@@:
+ movlps     xmm1,[esi+4]
+ movhps     xmm1,[esi+8]
+ movlps     xmm2,[esi-4]
+ movhps     xmm2,[esi]
+ movlps     xmm3,[ebx]
+ movhps     xmm3,[ebx+4]
+ movlps     xmm4,[edx]
+ movhps     xmm4,[edx+4]
+.ff:
+ punpcklbw  xmm1,xmm0
+ punpcklbw  xmm2,xmm0
  punpcklbw  xmm3,xmm0
  punpcklbw  xmm4,xmm0
  psubsw     xmm1,xmm2
@@ -199,7 +230,12 @@ end if
 
  movd        eax,xmm1
  movzx       eax,al
+; cmp         [dr_flag],12
+; je          @f
  lea         eax,[eax*3+envmap_cub]
+; jmp         .fff
+;@@:
+
  mov         eax,[eax]
  mov        [edi],eax  ;xmm1
  psrldq     xmm1,8
@@ -209,23 +245,35 @@ end if
  mov        eax,[eax]
  mov        [edi+4],eax
 
+ cmp    [dr_flag],12
+ jne    @f
+ add    esi,2
+ add    ebx,2
+ add    edx,2
+@@:
 
  add    edi,8
  add    esi,6
  add    ebx,6
  add    edx,6
  sub    ecx,2
- jnc    @b
+ jnc    .emb
 
 
  pop    ecx  ;,eax
  mov    edi,[screen_ptr]
  mov    esi,[Zbuffer_ptr]
+ cmp    [dr_flag],12
+ je     .e
 @@:
  movsd
  dec    edi
  loop   @b
+.e:
+ rep    movsd
+
 end if
+
 ret
 
 ;align 16

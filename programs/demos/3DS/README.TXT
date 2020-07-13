@@ -1,14 +1,11 @@
-View3ds 0.069 - tiny viewer to .3ds and .asc files with several graphics
+View3ds 0.070 - tiny viewer to .3ds and .asc files with several graphics
                 effects implementation.
 
 
 What's new?
-1. KPacked files support by Leency.
-1. 32bit vertices indexes and ability to load whole RAM limited objects.
-   (Above 65535 vertices and triangles), (by me).
-2. I switch off painters algotithm mode (depth sorting). In app impelementetion it has
-   limited vertices count and produce less quality image than Z buffer Catmull algo.
-   In addition this switch off reduces app size, (by me).
+1. Some keys support by Leency.
+2. New displaying model - real Phong - real not fake normal vector interpolation, normalising it and calculating
+   dot product (one for each light). It requires SSE3.  (by me)
 
 Buttons description:
 1.  rotary: choosing rotary axle: x, y, x+y.
@@ -17,7 +14,7 @@ Buttons description:
     pos (position shading depend), dots (app draws only points - nodes of object),
     txgrd (texture mapping + smooth shading),  2tex (texture mapping + spherical
     environment mapping), bmap (bump + texture mapping),  cenv (cubic environment
-    mapping), grdl (Gouraud lines - edges only).
+    mapping), grdl (Gouraud lines - edges only), rphg (real Phong).
 3.  speed: idle, full.
 4,5. zoom in, out: no comment.
 6.  catmull: disabled
@@ -42,4 +39,4 @@ Buttons description:
     is released apply current position. You may also decrease whole handlers count by enable culling (using
     appropriate button) - some back handlers become hidden.
 
-                         Maciej Guba             V 2020
+                         Maciej Guba             VII 2020

@@ -749,10 +749,13 @@ if Ext>=SSE2
          push       ecx
          mov        edi,[screen_ptr]
          movzx      ecx,word[size_x_var]  ;SIZE_X*3/4
+
+         cmp         [dr_flag],12
+         je        @f
          lea        ecx,[ecx*3+1]
          shr        ecx,2
+       @@:
 
-   ;      mov        ecx,SIZE_X*3/4
          xor        eax,eax
          rep        stosd
    if 1
@@ -760,9 +763,16 @@ if Ext>=SSE2
          movzx      ecx,word[size_y_var]
          sub        ecx,3
          imul       ecx,ebx
+         cmp        [dr_flag],12  ; 32 bit per pix cause
+         je         @f
          lea        ecx,[ecx*3]
          shr        ecx,4
-         lea        ebx,[ebx*3]
+         lea        ebx,[ebx *3]
+         jmp        .blr
+       @@:
+
+         shr        ecx,2
+         shl        ebx,2
        ;  mov        ecx,(SIZE_X*(SIZE_Y-3))*3/16
      .blr:
      @@:
@@ -771,15 +781,19 @@ if Ext>=SSE2
          mov        ecx,edi
          sub        ecx,ebx
          movups     xmm1,[ecx]
+         cmp         [dr_flag],12
+         je         @f
          movups     xmm2,[edi-3]
          movups     xmm3,[edi+3]
-
+         jmp        .f
+        @@:
+         movups     xmm2,[edi-4]
+         movups     xmm3,[edi+4]
+        .f:
          pavgb      xmm0,xmm1
          pavgb      xmm2,xmm3
          pavgb      xmm0,xmm2
-
          psubusb    xmm0,xmm5  ; importand if fire
-
          movups     [edi],xmm0
          add        edi,16
          add        esi,16
@@ -788,12 +802,16 @@ if Ext>=SSE2
     end if
          xor        eax,eax
          movzx      ecx,word[size_x_var]
+         cmp        [dr_flag],12
+         je         @f
          lea        ecx,[ecx*3]
          shr        ecx,2
+        @@:
     ;     mov        ecx,SIZE_X*3/4
          rep        stosd
          pop        ecx
-         loop       .again_blur
+         dec        ecx
+         jnz       .again_blur
          mov        esp,ebp
          pop        ebp
 end if

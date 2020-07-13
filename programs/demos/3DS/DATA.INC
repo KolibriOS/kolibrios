@@ -1,214 +1,220 @@
    ; DATA AREA  ************************************
 
-	i3		dw	3
-	i256		dw	256
-	i255d		dd	255
-	dot_max 	dd	1.0	 ; dot product max and min
-	dot_min 	dd	0.0
-	env_const	dd	1.05
-	correct_tex	dw	255
-	tex_x_div2	dw	TEX_X  / 2
-	tex_y_div2	dw	TEX_Y  / 2
-	xobs		dw	0 ;SIZE_X / 2 ;200 ;observer  = camera
-	yobs		dw	0 ;SIZE_Y / 2 ;200 ;coordinates
-	zobs		dw	-1000
+        i3              dw      3
+        i12             dd      12
+        i256            dw      256
+        i255d           dd      255
+        dot_max         dd      1.0      ; dot product max and min
+        dot_min         dd      0.0
+        env_const       dd      1.05
+        correct_tex     dw      255
+        tex_x_div2      dw      TEX_X  / 2
+        tex_y_div2      dw      TEX_Y  / 2
+        xobs            dw      0 ;SIZE_X / 2 ;200 ;observer  = camera
+        yobs            dw      0 ;SIZE_Y / 2 ;200 ;coordinates
+        zobs            dw      -1000
      ;   size_x          dw      SIZE_X
      ;   size_y          dw      SIZE_Y
 
-	re_alloc_flag db 0
-	angle_counter dw 0
-	piD180	      dd 0.017453292519943295769236907684886
-	piD128	      dd 0.024544
-	const6	      dw 6,6,6,6
-	x_offset      dw SIZE_X / 2
-	y_offset      dw SIZE_Y / 2
-	z_offset      dw 0
-	rsscale       dd 175.0		 ; next real scale
-	vect_x	      dw SIZE_X / 2
-	vect_y	      dw SIZE_Y / 2
-	vect_z	      dw 0
-	angle_x       dw 0
-	angle_y       dw 0
-	angle_z       dw 0
-	sin_amplitude dd 50
-	sin_frq       dd 0.7
-	sin_delta     dd 0.07	 ; wave frequency granularity
-	convert_muler:
-		      dd 1, 10, 100, 1000, 10000
-	XYZpartices:
-		      db 'X','Y','Z'
-	i10	      dw 10
-	offset_y:
-	i25	      dw 25  ; screen buff offset
-	offset_x:
-	i5	      dw 5
-	triangles_ptr		dd 0
-	triangles_w_z_ptr	dd 0
-	triangles_normals_ptr	dd 0
-	points_normals_ptr	dd 0
-	points_normals_rot_ptr	dd 0
-	points_ptr		dd 0
-	points_rotated_ptr	dd 0
-	points_translated_ptr	dd 0
-	screen_ptr		dd 0
-	Zbuffer_ptr		dd 0
-	vertices_index_ptr	dd 0
+        re_alloc_flag db 0
+        angle_counter dw 0
+        piD180        dd 0.017453292519943295769236907684886
+        piD128        dd 0.024544
+        const6        dw 6,6,6,6
+        x_offset      dw SIZE_X / 2
+        y_offset      dw SIZE_Y / 2
+        z_offset      dw 0
+        rsscale       dd 175.0           ; next real scale
+        vect_x        dw SIZE_X / 2
+        vect_y        dw SIZE_Y / 2
+        vect_z        dw 0
+        angle_x       dw 0
+        angle_y       dw 0
+        angle_z       dw 0
+        sin_amplitude dd 50
+        sin_frq       dd 0.7
+        sin_delta     dd 0.07    ; wave frequency granularity
+        convert_muler:
+                      dd 1, 10, 100, 1000, 10000
+        XYZpartices:
+                      db 'X','Y','Z'
+        i10           dw 10
+        offset_y:
+        i25           dw 25  ; screen buff offset
+        offset_x:
+        i5            dw 5
+        triangles_ptr           dd 0
+        triangles_w_z_ptr       dd 0
+        triangles_normals_ptr   dd 0
+        points_normals_ptr      dd 0
+        points_normals_rot_ptr  dd 0
+        points_ptr              dd 0
+        points_rotated_ptr      dd 0
+        points_translated_ptr   dd 0
+        screen_ptr              dd 0
+        Zbuffer_ptr             dd 0
+        vertices_index_ptr      dd 0
 
 
      ;   draw_win_at_first db 1
-	vertex_edit_no	  dw 0
-	edit_start_x:
-			  dw 0
-	edit_start_y	  dw 0
-	edit_end_x:
-			  dw 0
-	edit_end_y	  dw 0
-	mouse_state	      dd 0
-	menu:
-	       db 2		   ; button number  = index
-	       db 'rotary    '	   ; label
-	       db 3		   ; max flag  + 1 , if = 255, no flag
- r_flag        db 1		   ; flag
-	       dd axl_f 	   ; offset to flags description
+        vertex_edit_no    dw 0
+        edit_start_x:
+                          dw 0
+        edit_start_y      dw 0
+        edit_end_x:
+                          dw 0
+        edit_end_y        dw 0
+        mouse_state           dd 0
 
-	       db 3
-	       db 'shd. model'
-	       db 12
+        menu:
+               db 2                ; button number  = index
+               db 'rotary    '     ; label
+               db 3                ; max flag  + 1 , if = 255, no flag
+ r_flag        db 1                ; flag
+               dd axl_f            ; offset to flags description
+
+               db 3
+               db 'shd. model'
+            if Ext >= SSE3
+               db 13
+            else
+               db 12
+            end if
  dr_flag       db 0  ;  6 - dots
-	       dd shd_f
+               dd shd_f
 
-	       db 4
-	       db 'speed     '
-	       db 2
+               db 4
+               db 'speed     '
+               db 2
  speed_flag    db 0
-	       dd spd_f
+               dd spd_f
 
-	       db 5
-	       db 'zoom out  '
-	       db 255
-	       db ?
-	       dd ?
+               db 5
+               db 'zoom out  '
+               db 255
+               db ?
+               dd ?
 
-	       db 6
-	       db 'zoom in   '
-	       db 255
-	       db ?
-	       dd ?
+               db 6
+               db 'zoom in   '
+               db 255
+               db ?
+               dd ?
 
-	       db 7
-	       db 'catmull   '
-	       db 2
+               db 7
+               db 'catmull   '
+               db 2
 catmull_flag   db 1
-	       dd onoff_f
+               dd onoff_f
 
-	       db 8
-	       db 'culling   '
-	       db 2
+               db 8
+               db 'culling   '
+               db 2
 culling_flag   db 0
-	       dd onoff_f
+               dd onoff_f
 
-	       db 9
-	       db 'rand.light'
-	       db 255
-	       db ?
-	       dd ?
+               db 9
+               db 'rand.light'
+               db 255
+               db ?
+               dd ?
 
-	       db 10
-	       db 'blur      '
-	       db 6
+               db 10
+               db 'blur      '
+               db 6
 blur_flag      db 0
-	       dd blur_f
+               dd blur_f
 
-	       db 11
-	       db 'mirror x  '
-	       db 2
+               db 11
+               db 'mirror x  '
+               db 2
 mirr_x_flag    db 0
-	       dd onoff_f
+               dd onoff_f
 
-	       db 12
-	       db 'mirror y  '
-	       db 2
+               db 12
+               db 'mirror y  '
+               db 2
 mirr_y_flag    db 0
-	       dd onoff_f
+               dd onoff_f
 
-	       db 13
-	       db 'mirror z  '
-	       db 2
+               db 13
+               db 'mirror z  '
+               db 2
 mirr_z_flag    db 0
-	       dd onoff_f
+               dd onoff_f
 
-	       db 14
-	       db 'xchg      '
-	       db 4
+               db 14
+               db 'xchg      '
+               db 4
 xchg_flag      db 0
-	       dd xchg_f
+               dd xchg_f
 
-	       db 15
-	       db 'emboss    '
-	       db 2
+               db 15
+               db 'emboss    '
+               db 2
 emboss_flag    db 0
-	       dd onoff_f
+               dd onoff_f
 
-	       db 16
-	       db 'fire      '
-	       db 3
+               db 16
+               db 'fire      '
+               db 3
 fire_flag      db 0
-	       dd blur_f
+               dd blur_f
 
-	       db 17
-	       db 'move      '
-	       db 3
+               db 17
+               db 'move      '
+               db 3
 move_flag      db 0
-	       dd move_f
+               dd move_f
 
-		  db 18
-		  db 'generate  '
-		  db 6
-generator_flag	  db 0
-		  dd blur_f
+                  db 18
+                  db 'generate  '
+                  db 6
+generator_flag    db 0
+                  dd blur_f
 
-		  db 19
-		  db 'bumps     '
-		  db 2
-bumps_flag	  db 0
-		  dd bumps_f
+                  db 19
+                  db 'bumps     '
+                  db 2
+bumps_flag        db 0
+                  dd bumps_f
 
-		  db 20
-		  db 'bumps deep'
-		  db 4
+                  db 20
+                  db 'bumps deep'
+                  db 4
 bumps_deep_flag   db 3
-		  dd bumps_d_f
+                  dd bumps_d_f
 
-		  db 21
-		  db 're-map tex'
-		  db 255
-map_tex_flag	  db ? ;1
-		  dd ?	;bumps_d_f
+                  db 21
+                  db 're-map tex'
+                  db 255
+map_tex_flag      db ? ;1
+                  dd ?  ;bumps_d_f
 
-		  db 22
-		  db 'bright +  '
-		  db 6
+                  db 22
+                  db 'bright +  '
+                  db 6
 inc_bright_flag   db 0 ;1
-		  dd blur_f
+                  dd blur_f
 
-		  db 23
-		  db 'bright -  '
-		  db 6
+                  db 23
+                  db 'bright -  '
+                  db 6
 dec_bright_flag   db 0 ;1
-		  dd blur_f
+                  dd blur_f
 
-		  db 24
-		  db 'wav effect'
-		  db 2
-sinus_flag	  db 0
-		  dd onoff_f
+                  db 24
+                  db 'wav effect'
+                  db 2
+sinus_flag        db 0
+                  dd onoff_f
 
 
-		  db 25
-		  db 'editor    '
-		  db 2
- edit_flag	  db 0
-		  dd onoff_f
+                  db 25
+                  db 'editor    '
+                  db 2
+ edit_flag        db 0
+                  dd onoff_f
 ;                  db 24
 ;                  db 'max       '
 ;                  db 2
@@ -242,10 +248,13 @@ sinus_flag	  db 0
 ;;                dd color_component_f
 
 
-	       db -1	   ; end mark
 
 
-flags:		   ; flags description
+
+               db -1       ; end mark
+
+
+flags:             ; flags description
  shd_f:
     db 'flat'
     db 'grd '
@@ -259,6 +268,7 @@ flags:		   ; flags description
     db 'btex'
     db 'cenv'
     db 'grdl'
+    db 'rphg'
  spd_f:
     db 'idle'
     db 'full'
@@ -279,13 +289,13 @@ flags:		   ; flags description
 ;;    db ' g  '
 ;;    db ' b  '
 
-	  blur_f:	       ; blur, fire
-	    db 'off '
+          blur_f:              ; blur, fire
+            db 'off '
 bumps_d_f:  db ' 1  '
-	    db ' 2  '
-	    db ' 3  '
-	    db ' 4  '
-	    db ' 5  '
+            db ' 2  '
+            db ' 3  '
+            db ' 4  '
+            db ' 5  '
 
  xchg_f:
     db 'no  '
@@ -303,25 +313,25 @@ bumps_d_f:  db ' 1  '
 ;    db 'cscl'
 base_vector:
     labelvector:
-	db   'add vector'
+        db   'add vector'
     labelvectorend:
     labelyminus:
-	db   'y -'
+        db   'y -'
     labelyminusend:
     labelzplus:
-	db   'z +'
+        db   'z +'
     labelzplusend:
     labelxminus:
-	db   'x -'
+        db   'x -'
     labelxminusend:
     labelxplus:
-	db   'x +'
+        db   'x +'
     labelxplusend:
     labelzminus:
-	db   'z -'
+        db   'z -'
     labelzminusend:
     labelyplus:
-	db   'y +'
+        db   'y +'
     labelyplusend:
 
 ;navigation_size = $ - labelvector
@@ -334,43 +344,46 @@ base_vector:
 ;        db   'r +'
 
     labelt:
-	db   'DEUS CARITAS EST'
+        db   'DEUS CARITAS EST'
       if Ext=MMX
-	db   ' (MMX)'
+        db   ' (MMX)'
       end if
       if Ext=SSE
-	db   ' (SSE)'
+        db   ' (SSE)'
       end if
       if Ext=SSE2
-	db   ' (SSE2)'
+        db   ' (SSE2)'
       end if
-	db   ' 0.069b',0
+      if Ext=SSE3
+        db   ' (SSE3)'
+      end if
+        db   ' 0.070',0
     labellen:
-	STRdata db '-1        '
+        STRdata db '-1        '
 
     all_lights_size dw lightsend-lights
 
 if USE_LFN
 
-	file_info:
-		dd	0
-		dd	0
-		dd	0
-	 fsize	dd	0 ;180000 ; sizeof(workarea)
-	 fptr	dd	0 ;workarea
-	file_name:
-		db	'/rd/1/3d/house.3ds',0
+        file_info:
+                dd      0
+                dd      0
+                dd      0
+         fsize  dd      0 ;180000 ; sizeof(workarea)
+         fptr   dd      0 ;workarea
+        file_name:
+                db      '/rd/1/3d/house.3ds',0
 
 else
 
-	file_info:
-		dd 0
-		dd 0
-	 fsize	dd 1
-		dd workarea
-		dd hash_table
-	file_name:
-		db   '/rd/1/teapot.3ds',0
+        file_info:
+                dd 0
+                dd 0
+         fsize  dd 1
+                dd workarea
+                dd hash_table
+        file_name:
+                db   '/rd/1/teapot.3ds',0
 end if
 
   ;I_END:
@@ -379,50 +392,60 @@ end if
 
 ;=============================================
 lights:
-     .light_vector	  dd	  0.0,0.0,-1.0	 ; x,y,z  Z cooficient of vector must be negative
-     .orginal_color_r	  db	  1		 ;  +12
-     .orginal_color_g	  db	  255		   ;
-     .orginal_color_b	  db	  1		 ;  +14
-     .min_color_r	  db	  1		 ;
-     .min_color_g	  db	  1		 ;  +16
-     .min_color_b	  db	  1		 ;
-     .max_color_r	  db	  255		 ;
-     .max_color_g	  db	  255		 ;
-     .max_color_b	  db	  255		 ;
-     .shine		  db	  24		 ;  +21
+     .light_vector        dd      0.0,0.0,-1.0   ; x,y,z  Z cooficient of vector must be negative
+     .orginal_color_r     db      1              ;  +12
+     .orginal_color_g     db      255              ;
+     .orginal_color_b     db      1              ;  +14
+     .min_color_r         db      1              ;
+     .min_color_g         db      1              ;  +16
+     .min_color_b         db      1              ;
+     .max_color_r         db      255            ;
+     .max_color_g         db      255            ;
+     .max_color_b         db      255            ;
+     .shine               db      24             ;  +21
  ;    LIGHT_SIZE equ ($-lights)
 
-	dd	-0.5,-0.5,-1.0	 ; x,y,z ;  .light_vector
-	db	5		 ; .orginal_color_r
-	db	1		 ; .orginal_color_g
-	db	135		 ; .orginal_color_b
-	db	19		 ; .min_color_r
-	db	19		 ; .min_color_g
-	db	19		 ; .min_color_b
-	db	255		 ; .max_color_r
-	db	255		 ; .max_color_g
-	db	255		 ; .max_color_b
-	db	16		 ; .shine
+        dd      -0.5,-0.5,-1.0   ; x,y,z ;  .light_vector
+        db      5                ; .orginal_color_r
+        db      1                ; .orginal_color_g
+        db      135              ; .orginal_color_b
+        db      19               ; .min_color_r
+        db      19               ; .min_color_g
+        db      19               ; .min_color_b
+        db      255              ; .max_color_r
+        db      255              ; .max_color_g
+        db      255              ; .max_color_b
+        db      16               ; .shine
 
-	dd	0.5,0.5,-1.0	; x,y,z ;  .light_vector
-	db	135		; .orginal_color_r
-	db	1		; .orginal_color_g
-	db	1		; .orginal_color_b
-	db	19		; .min_color_r
-	db	19		; .min_color_g
-	db	19		; .min_color_b
-	db	255		; .max_color_r
-	db	255		; .max_color_g
-	db	20		; .max_color_b
-	db	16		; .shine
+        dd      0.5,0.5,-1.0    ; x,y,z ;  .light_vector
+        db      135             ; .orginal_color_r
+        db      1               ; .orginal_color_g
+        db      1               ; .orginal_color_b
+        db      19              ; .min_color_r
+        db      19              ; .min_color_g
+        db      19              ; .min_color_b
+        db      255             ; .max_color_r
+        db      255             ; .max_color_g
+        db      20              ; .max_color_b
+        db      16              ; .shine
 ;        ALL_LIGHTS_SIZE equ ($ - lights)
 ;#all_lights_size dw ($ - lights) ;ALL_LIGHTS_SIZE
 ;===============================================
 
 lightsend:
+
+
+
+
 align 16
     emboss_bias:
-	   dw 128, 128, 128, 128, 128, 128, 128, 128
+           dw 128, 128, 128, 128, 128, 128, 128, 128
+    zero_hgst_dd:
+           dd -1, -1, -1, 0
+    mask_255f:
+           times 4 dd 255.0
+    the_zero:
+           times 4 dd 0.0
 
 I_END:
 if USE_LFN = 0
@@ -435,30 +458,30 @@ workarea   rb 180
 end if
 EndFile   dd ?
 align 8
-	sinbeta dd	?;+32
-	cosbeta dd	?
+        sinbeta dd      ?;+32
+        cosbeta dd      ?
 
-	xsub	dw	?
-	zsub	dw	?;+40
-	ysub	dw	?
+        xsub    dw      ?
+        zsub    dw      ?;+40
+        ysub    dw      ?
 
-	xx1	dw	?
-	yy1	dw	?
-	zz1	dw	?;+48    xx1 + 4
-	xx2	dw	?
-	yy2	dw	?
-	zz2	dw	?      ; xx1 + 10
-	xx3	dw	?;+56
-	yy3	dw	?
-	zz3	dw	?      ; xx1 + 16
-	col1	dd	?
-	col2	dd	?
-	col3	dd	?
-	scale	dd	? ; help scale variable
-	edges_counter dd ?
+        xx1     dw      ?
+        yy1     dw      ?
+        zz1     dw      ?;+48    xx1 + 4
+        xx2     dw      ?
+        yy2     dw      ?
+        zz2     dw      ?      ; xx1 + 10
+        xx3     dw      ?;+56
+        yy3     dw      ?
+        zz3     dw      ?      ; xx1 + 16
+        col1    dd      ?
+        col2    dd      ?
+        col3    dd      ?
+        scale   dd      ? ; help scale variable
+        edges_counter dd ?
    ;==
-	triangles_count_var	dd ?
-	points_count_var	dd ?
+        triangles_count_var     dd ?
+        points_count_var        dd ?
      ;   triangles_ptr           dd ?
      ;   triangles_w_z_ptr       dd ?
      ;   triangles_normals_ptr   dd ?
@@ -471,96 +494,101 @@ align 8
      ;   Zbuffer_ptr             dd ?
      ;   vertices_index_ptr      dd ?
       ;  edit_start_x:
-				dw ?	; don't change order
+                                dw ?    ; don't change order
       ;  edit_start_y            dw ?
      ;   edges_ptr               dd ?
-	size_y_var:
-				dw ?
-	size_x_var:
-				dw ?
-	x_start:
-				dw ?
-	y_start:
-				dw ?
+        size_y_var:
+                                dw ?
+        size_x_var:
+                                dw ?
+        x_start:
+                                dw ?
+        y_start:
+                                dw ?
 
    ;===
 
-	point_index1	    dd ?   ;-\
-	point_index2	    dd ?   ;  }  don't change order
-	point_index3	    dd ?   ;-/
-	temp_col	    dw ?
-	high		    dd ?
-	rand_seed	    dw ?
+        point_index1        dd ?   ;-\
+        point_index2        dd ?   ;  }  don't change order
+        point_index3        dd ?   ;-/
+        temp_col            dw ?
+        high                dd ?
+        rand_seed           dw ?
 align 8
-	buffer	dq	?
-	errr	dd	?
-	drr	dd	?
-	xx	dd	?
-	yy	dd	?
-	xst	dd	?
-	yst	dd	?
+        buffer  dq      ?
+        errr    dd      ?
+        drr     dd      ?
+        xx      dd      ?
+        yy      dd      ?
+        xst     dd      ?
+        yst     dd      ?
 ;        screen_ptr      dd     ?
 ;        Zbuffer_ptr     dd     ?
 
-	matrix	rb 36
-	cos_tab rd 360
-	sin_tab rd 360
+        matrix  rb 36
+        cos_tab rd 360
+        sin_tab rd 360
 
 align 16
 
 if USE_LFN = 0
      points:
-	rw (EndFile-SourceFile)/12*3
-	points_count = ($-points)/6
+        rw (EndFile-SourceFile)/12*3
+        points_count = ($-points)/6
      triangles:
-	rw  (EndFile-SourceFile)/12*3
-	triangles_count = ($-triangles)/6
+        rw  (EndFile-SourceFile)/12*3
+        triangles_count = ($-triangles)/6
 align 16
-	real_points rd points_count*3 + 1
+        real_points rd points_count*3 + 1
 align 16
-	rotated_points_r rd points_count*3 + 1
+        rotated_points_r rd points_count*3 + 1
 align 16
-	points_rotated rw points_count*3 + 2 ;means translated
+        points_rotated rw points_count*3 + 2 ;means translated
 align 16
-	triangles_normals rb triangles_count * 12 ;
+        triangles_normals rb triangles_count * 12 ;
 align 16
-	point_normals rb points_count * 12  ;one 3dvector - triple float dword x,y,z
+        point_normals rb points_count * 12  ;one 3dvector - triple float dword x,y,z
 align 16
-	point_normals_rotated rb points_count * 12
+        point_normals_rotated rb points_count * 12
 align 16
-	triangles_normals_rotated rb triangles_count * 12
+        triangles_normals_rotated rb triangles_count * 12
 
 else
     points_count = 180000/6*3
     triangles_count = 180000 / 6  ;($-triangles)/6
 end if
 align 16
-	label trizdd dword
-	label trizdq qword
-	triangles_with_z rw triangles_count*4 + 2 ; triangles triple dw + z position
+        label trizdd dword
+        label trizdq qword
+        triangles_with_z rw triangles_count*4 + 2 ; triangles triple dw + z position
 align 16
-	vectors rb 24
+        vectors rb 24
 ;align 16
 ;        points_color rb 6*points_count    ; each color as word
 ;        sorted_triangles rw triangles_count*3 + 2
 align 16
-	bumpmap 	rb	TEXTURE_SIZE + 1
+        bumpmap         rb      TEXTURE_SIZE + 1
 align 16
-	bumpmap2	rb	TEXTURE_SIZE + 1
+        bumpmap2        rb      TEXTURE_SIZE + 1
 align 16
-	envmap		rb	(TEXTURE_SIZE +1) * 3
+        envmap          rb      (TEXTURE_SIZE +1) * 3
 align 16
-	envmap_cub	rb	TEX_X * 3
+        envmap_cub      rb      TEX_X * 3
 align 16
-	texmap		rb	(TEXTURE_SIZE +1) * 3
+        texmap          rb      (TEXTURE_SIZE +1) * 3
 align 16
-	color_map	rb	(TEXTURE_SIZE +1) * 3
+        color_map       rb      (TEXTURE_SIZE +1) * 3
 align 16
-	tex_points	rb	points_count * 4  ; bump_map  and texture coords
-				; each point word x, word y
+        tex_points      rb      points_count * 4  ; bump_map  and texture coords
+                                ; each point word x, word y
 align 16
+       lights_aligned:
+       lights_aligned_end = $ + 16 * 12
+                        rb 16 * 12
+
+
 if Ext >= SSE2
-	sse_repository	rb	1024
+        sse_repository  rb      1024
 end if
   ;      SourceFile:             ; source file temporally in screen area
   ;      workarea        dd      ?
@@ -568,9 +596,10 @@ end if
     ;    screen          rb      SIZE_X * SIZE_Y * 3   ; screen buffer
 ;align 16
      ;   Z_buffer        rb      SIZE_X * SIZE_Y * 4
-	procinfo:
-			rb     1024 ; process info
-	I_Param 	rb	256
-	memStack	rb	4000 ;memory area for stack
+        procinfo:
+                        rb     1024 ; process info
+        I_Param         rb      256
+        memStack:
+        rb 2000
 align  16
 screen:

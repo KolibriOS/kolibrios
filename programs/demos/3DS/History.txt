@@ -1,3 +1,12 @@
+View3ds 0.069 - May 2020
+1. KPacked files support by Leency.
+2. 32bit vertices indexes and ability to load whole RAM limited objects.
+   (Above 65535 vertices and triangles), (by me).
+3. I switch off painters algotithm mode (depth sorting). In app impelementetion it has
+   limited vertices count and produce less quality image than Z buffer Catmull algo.
+   In addition this switch off reduces app size, (by me).
+
+-----------------------------------------------------------------------------------
 
 View3ds 0.068 - XI 2016
 1. Editing option - new 'editor' button.
@@ -108,7 +117,7 @@ View3ds 0.03 - March 2007.
 1. Two shading models: smooth + texture, spherical environment mapping + texture.
    Version only with z coordinate interpolation.
 2. Bit changed rotary. I took attempt in SSE instuctions. ( matrix multiplication )
-3. Color position depend drawing model	instead spot light ( I hope,spot light come
+3. Color position depend drawing model  instead spot light ( I hope,spot light come
    back in future ).
 -----------------------------------------------------------------------------------
 
