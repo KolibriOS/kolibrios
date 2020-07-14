@@ -9,9 +9,9 @@ $Revision$
 
 
 ;***************************************************
-;      предварительная очистка области таблицы
-;      поиск и занесение в таблицу приводов FDD
-;      автор Mario79
+;      clear the DRIVE_DATA table,
+;      search for FDDs and add them into the table
+;      author - Mario79
 ;***************************************************
         xor     eax, eax
         mov     edi, DRIVE_DATA

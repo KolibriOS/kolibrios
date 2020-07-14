@@ -129,7 +129,7 @@ exc_c:                            ; exceptions (all but 7th - #NM)
         mov     ax, app_data       ; exception
         mov     ds, ax             ; load proper values
         mov     es, ax             ; to registers
-        cld                        ; clear the destination flag
+        cld                        ; clear the direction flag
         movzx   ebx, bl
 ; redirect to V86 manager? (EFLAGS & 0x20000) != 0?
         test    byte[reg_eflags+2], 2

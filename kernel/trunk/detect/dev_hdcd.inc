@@ -163,7 +163,7 @@ convert_Sector512_value:
 .end:
         ret
 ;-----------------------------------------------------------------------------
-; Адрес считываемого сектора в режиме LBA
+; Address of reading sector in LBA mode
 uglobal
 SectorAddress   dd ?
 dev_name:
@@ -171,49 +171,49 @@ dev_name:
 endg
 ;-----------------------------------------------------------------------------
 ;*************************************************
-;*     ЧТЕНИЕ ИДЕНТИФИКАТОРА ЖЕСТКОГО ДИСКА      *
-;* Входные параметры передаются через глобальные *
-;* переменные:                                   *
-;* ChannelNumber - номер канала (1 или 2);       *
-;* DiskNumber - номер диска на канале (0 или 1). *
-;* Идентификационный блок данных считывается     *
-;* в массив Sector512.                           *
+;*     READING THE HARD DISK IDENTIFIER          *
+;* Input parameters are passed through the global*
+;* variables:                                    *
+;* ChannelNumber - channel number (1 or 2);      *
+;* DiskNumber - disk number on channel (0 or 1)  *
+;* Block of identificational data is reading     *
+;* to Sector512 array.                           *
 ;*************************************************
 ReadHDD_ID:
-; Задать режим CHS
+; set up CHS mode
         mov     [ATAAddressMode], 0
-; Послать команду идентификации устройства
+; send device identification command
         mov     [ATAFeatures], 0
         mov     [ATAHead], 0
         mov     [ATACommand], 0xEC
         call    SendCommandToHDD
-        cmp     [DevErrorCode], 0 ;проверить код ошибки
-        jne     @@End  ;закончить, сохранив код ошибки
+        cmp     [DevErrorCode], 0 ; check the error code
+        jne     @@End    ; finish, saving the error code
 
         mov     dx, [ATABasePortAddr]
-        add     dx, 7    ;адрес регистра состояни
+        add     dx, 7    ; address of state register
         mov     ecx, 0xffff
 @@WaitCompleet:
-        ; Проверить время выполнения команды
+        ; Check command execution time
         dec     ecx
-        jz      @@Error1  ;ошибка тайм-аута
-        ; Проверить готовность
+        jz      @@Error1 ; timeout error
+        ; Check if ready or not
         in      al, dx
-        test    al, 80h  ;состояние сигнала BSY
+        test    al, 80h  ; BSY signal state
         jnz     @@WaitCompleet
 
-        test    al, 1    ;состояние сигнала ERR
+        test    al, 1    ; ERR signal state
         jnz     @@Error6
 
-        test    al, 08h  ;состояние сигнала DRQ
+        test    al, 08h  ; DRQ signal state
         jz      @@WaitCompleet
-; Принять блок данных от контроллера
+; Receive data block from controller
         mov     edi, Sector512
-        mov     dx, [ATABasePortAddr];регистр данных
-        mov     cx, 256  ;число считываемых слов
-        rep insw         ;принять блок данных
+        mov     dx, [ATABasePortAddr]; data register
+        mov     cx, 256  ; number of word to receive
+        rep insw         ; receive data block
         ret
-; Записать код ошибки
+; write the error code
 @@Error1:
         mov     [DevErrorCode], 1
         ret
@@ -223,111 +223,111 @@ ReadHDD_ID:
         ret
 ;-----------------------------------------------------------------------------
 uglobal
-; Стандартные базовые адреса каналов 1 и 2
+; Standart base addresses of channels 1 or 2
 StandardATABases dw ?, ? ; 1F0h, 170h
-; Номер канала
+; Channel number
 ChannelNumber   db ?
-; Номер диска
+; Disk number
 DiskNumber      db ?
 DeviceNumber    db ?
-; Базовый адрес группы портов контроллера ATA
+; Base address of ATA controller's port group
 ATABasePortAddr dw ?
-; Параметры ATA-команды
-ATAFeatures     db ? ;особенности
-ATASectorCount  db ? ;количество обрабатываемых секторов
-ATASectorNumber db ? ;номер начального сектора
-ATACylinder     dw ? ;номер начального цилиндра
-ATAHead         db ? ;номер начальной головки
-ATAAddressMode  db ? ;режим адресации (0 - CHS, 1 - LBA)
-ATACommand      db ? ;код команды, подлежащей выполнению
-; Код ошибки (0 - нет ошибок, 1 - превышен допустимый
-; интервал ожидания, 2 - неверный код режима адресации,
-; 3 - неверный номер канала, 4 - неверный номер диска,
-; 5 - неверный номер головки, 6 - ошибка при выполнении
-; команды, 7 - таймаут при выборе канала)
+; ATA-command parameters
+ATAFeatures     db ? ; features
+ATASectorCount  db ? ; count of processing sectors
+ATASectorNumber db ? ; initial sector number
+ATACylinder     dw ? ; initial cylinder number
+ATAHead         db ? ; initial head number
+ATAAddressMode  db ? ; addressing mode (0 - CHS, 1 - LBA)
+ATACommand      db ? ; executing command number
+; Error code (0 - no errors, 1 - waiting time limit exceed
+; 2 - incorrect code of addressing mode,
+; 3 - incorrect channel number, 4 - incorrect disk number,
+; 5 - incorrect head number, 6 - command execution error,
+; 7 - time out when choosing channel)
 DevErrorCode dd ?
 endg
 ;-----------------------------------------------------------------------------
 ;****************************************************
-;*          ПОСЛАТЬ КОМАНДУ ЗАДАННОМУ ДИСКУ         *
-;* Входные параметры передаются через глобальные    *
-;* переменные:                                      *
-;* ChannelNumber - номер канала (1 или 2);          *
-;* DiskNumber - номер диска (0 или 1);              *
-;* ATAFeatures - "особенности";                     *
-;* ATASectorCount - количество секторов;            *
-;* ATASectorNumber - номер начального сектора;      *
-;* ATACylinder - номер начального цилиндра;         *
-;* ATAHead - номер начальной головки;               *
-;* ATAAddressMode - режим адресации (0-CHS, 1-LBA); *
-;* ATACommand - код команды.                        *
-;* После успешного выполнения функции:              *
-;* в ATABasePortAddr - базовый адрес HDD;           *
-;* в DevErrorCode - ноль.                           *
-;* При возникновении ошибки в DevErrorCode будет    *
-;* возвращен код ошибки.                            *
+;*          SEND COMMAND TO GIVEN DISK              *
+;* Input parameters are passed through the global   *
+;* variables:                                       *
+;* ChannelNumber - channel number (1 or 2);         *
+;* DiskNumber - disk number (0 or 1);               *
+;* ATAFeatures - "features";                        *
+;* ATASectorCount - sector count;                   *
+;* ATASectorNumber - initial sector number;         *
+;* ATACylinder - initial cylinder number;           *
+;* ATAHead - initial head number;                   *
+;* ATAAddressMode - addressing mode (0-CHS, 1-LBA); *
+;* ATACommand - command code.                       *
+;* If the function finished successfully:           *
+;* in ATABasePortAddr - base address of HDD;        *
+;* in DevErrorCode - zero.                          *
+;* If error has occured then in DevErrorCode will   *
+;* be the error code.                               *
 ;****************************************************
 SendCommandToHDD:
-; Проверить значение кода режима
+; Check the addressing mode code
         cmp     [ATAAddressMode], 1
         ja      @@Err2
-; Проверить корректность номера канала
+; Check the channel number correctness
         movzx   ebx, [ChannelNumber]
         dec     ebx
         cmp     ebx, 1
         ja      @@Err3
-; Установить базовый адрес
+; Set the base address
         shl     ebx, 1
         mov     ax, [ebx+StandardATABases]
         mov     [ATABasePortAddr], ax
-; Ожидание готовности HDD к приему команды
-        ; Выбрать нужный диск
+; Waiting for HDD ready to receive a command
+        ; Choose desired disk
         mov     dx, [ATABasePortAddr]
-        add     dx, 6   ;адрес регистра головок
+        add     dx, 6   ; address of the heads register
         mov     al, [DiskNumber]
-        cmp     al, 1   ;проверить номера диска
+        cmp     al, 1   ; check the disk number
         ja      @@Err4
 
         shl     al, 4
         or      al, 10100000b
         out     dx, al
-        ; Ожидать, пока диск не будет готов
+        ; Waiting for disk ready
         inc     dx
         mov     ecx, 0xfff
 @@WaitHDReady:
-        ; Проверить время ожидани
+        ; Check waiting time
         dec     ecx
         jz      @@Err1
-        ; Прочитать регистр состояни
+        ; Read the state register
         in      al, dx
-        ; Проверить состояние сигнала BSY
+        ; Check the state of BSY signal
         test    al, 80h
         jnz     @@WaitHDReady
-        ; Проверить состояние сигнала DRQ
+        ; Check the state of DRQ signal
         test    al, 08h
         jnz     @@WaitHDReady
-; Загрузить команду в регистры контроллера
+; load command to controller's registers
         cli
         mov     dx, [ATABasePortAddr]
-        inc     dx      ;регистр "особенностей"
+        inc     dx      ; "features" register
         mov     al, [ATAFeatures]
         out     dx, AL
-        inc     dx      ;счетчик секторов
+        inc     dx      ; sector counter
         mov     al, [ATASectorCount]
         out     dx, AL
-        inc     dx      ;регистр номера сектора
+        inc     dx      ; sector number register
         mov     al, [ATASectorNumber]
         out     dx, AL
-        inc     dx      ;номер цилиндра (младший байт)
+        inc     dx      ; cylinder number (low byte)
         mov     ax, [ATACylinder]
         out     dx, AL
-        inc     dx      ;номер цилиндра (старший байт)
+        inc     dx      ; cylinder number (high byte)
         mov     al, AH
         out     dx, AL
-        inc     dx      ;номер головки/номер диска
+        inc     dx      ; head number / disk number
         mov     al, [DiskNumber]
         shl     al, 4
-        cmp     [ATAHead], 0xF ;проверить номер головки
+        cmp     [ATAHead], 0xF ; check head number
         ja      @@Err5
 
         or      al, [ATAHead]
@@ -336,15 +336,15 @@ SendCommandToHDD:
         shl     ah, 6
         or      al, ah
         out     dx, al
-; Послать команду
+; Send command
         mov     al, [ATACommand]
-        inc     dx      ;регистр команд
+        inc     dx      ; command register
         out     dx, al
         sti
-; Сбросить признак ошибки
+; reset the error sign
         mov     [DevErrorCode], 0
         ret
-; Записать код ошибки
+; write error code
 @@Err1:
         mov     [DevErrorCode], 7
         ret
@@ -359,22 +359,22 @@ SendCommandToHDD:
         ret
 @@Err5:
         mov     [DevErrorCode], 5
-; Завершение работы программы
+; finish work
         ret
 ;-----------------------------------------------------------------------------
 ;*************************************************
-;*     ЧТЕНИЕ ИДЕНТИФИКАТОРА УСТРОЙСТВА ATAPI    *
-;* Входные параметры передаются через глобальные *
-;* перменные:                                    *
-;* ChannelNumber - номер канала;                 *
-;* DiskNumber - номер диска на канале.           *
-;* Идентификационный блок данных считывается     *
-;* в массив Sector512.                           *
+;*     READ ATAPI DEVICE IDENTIFIER              *
+;* Input parameters are passed through the global*
+;* variables:                                    *
+;* ChannelNumber - channel number;               *
+;* DiskNumber - disk number on channel.          *
+;* Block of identificational data is reading     *
+;* to Sector512 array.                           *                           *
 ;*************************************************
 ReadCD_ID:
-; Задать режим CHS
+; Set CHS mode
         mov     [ATAAddressMode], 0
-; Послать команду идентификации устройства
+; Send command for device identification
         mov     [ATAFeatures], 0
         mov     [ATASectorCount], 0
         mov     [ATASectorNumber], 0
@@ -382,33 +382,33 @@ ReadCD_ID:
         mov     [ATAHead], 0
         mov     [ATACommand], 0xA1
         call    SendCommandToHDD
-        cmp     [DevErrorCode], 0;проверить код ошибки
-        jne     @@End_1  ;закончить, сохранив код ошибки
-; Ожидать готовность данных HDD
+        cmp     [DevErrorCode], 0 ; check the error code
+        jne     @@End_1  ; finish, saving the error code
+; Wait for HDD data ready
         mov     dx, [ATABasePortAddr]
-        add     dx, 7  ;порт 1х7h
+        add     dx, 7      ; port 1х7h
         mov     ecx, 0xffff
 @@WaitCompleet_1:
-        ; Проверить врем
+        ; Check time
         dec     ecx
-        jz      @@Error1_1 ;ошибка тайм-аута
-        ; Проверить готовность
+        jz      @@Error1_1 ; time out error
+        ; Check readyness
         in      al, dx
-        test    al, 80h  ;состояние сигнала BSY
+        test    al, 80h    ; BSY signal state
         jnz     @@WaitCompleet_1
 
-        test    al, 1    ;состояние сигнала ERR
+        test    al, 1      ; ERR signal state
         jnz     @@Error6_1
 
-        test    al, 08h  ;состояние сигнала DRQ
+        test    al, 08h    ; DRQ signal state
         jz      @@WaitCompleet_1
-; Принять блок данных от контроллера
-        mov     edi, Sector512 ;offset Sector512
-        mov     dx, [ATABasePortAddr];порт 1x0h
-        mov     cx, 256;число считываемых слов
+; Receive data block from controller
+        mov     edi, Sector512 ; offset Sector512
+        mov     dx, [ATABasePortAddr] ; port 1x0h
+        mov     cx, 256    ; words read count
         rep insw
         ret
-; Записать код ошибки
+; write the error code
 @@Error1_1:
         mov     [DevErrorCode], 1
         ret
@@ -418,49 +418,49 @@ ReadCD_ID:
         ret
 ;-----------------------------------------------------------------------------
 ;*************************************************
-;*                СБРОС УСТРОЙСТВА               *
-;* Входные параметры передаются через глобальные *
-;* переменные:                                   *
-;* ChannelNumber - номер канала (1 или 2);       *
-;* DiskNumber - номер диска (0 или 1).           *
+;*                DEVICE RESET                   *
+;* Input parameters are passed through the global*
+;* variables:                                    *
+;* ChannelNumber - channel number (1 or 2);      *
+;* DiskNumber - disk number (0 or 1).            *
 ;*************************************************
 DeviceReset:
-; Проверить корректность номера канала
+; Check the channel number correctness
         movzx   ebx, [ChannelNumber]
         dec     ebx
         cmp     ebx, 1
         ja      @@Err3_2
-; Установить базовый адрес
+; Set base address
         shl     ebx, 1
         mov     dx, [ebx+StandardATABases]
         mov     [ATABasePortAddr], dx
-; Выбрать нужный диск
-        add     dx, 6   ;адрес регистра головок
+; Choose desired disk
+        add     dx, 6   ; address of heads register
         mov     al, [DiskNumber]
-        cmp     al, 1   ;проверить номера диска
+        cmp     al, 1   ; check disk number
         ja      @@Err4_2
 
         shl     al, 4
         or      al, 10100000b
         out     dx, al
-; Послать команду "Сброс"
+; Send the "Reset" command
         mov     al, 0x8
-        inc     dx      ;регистр команд
+        inc     dx      ; command register
         out     dx, al
         mov     ecx, 0x80000
 @@WaitHDReady_1:
-        ; Проверить время ожидани
+        ; Check waiting time
         dec     ecx
-        je      @@Err1_2 ;ошибка тайм-аута
-        ; Прочитать регистр состояни
+        je      @@Err1_2 ; time out error
+        ; read the state register
         in      al, dx
-        ; Проверить состояние сигнала BSY
+        ; Check the state of BSY signal
         test    al, 80h
         jnz     @@WaitHDReady_1
-; Сбросить признак ошибки
+; reset the error sign
         mov     [DevErrorCode], 0
         ret
-; Обработка ошибок
+; error processing
 @@Err1_2:
         mov     [DevErrorCode], 1
         ret
@@ -469,7 +469,7 @@ DeviceReset:
         ret
 @@Err4_2:
         mov     [DevErrorCode], 4
-; Записать код ошибки
+; write error code
         ret
 ;-----------------------------------------------------------------------------
 EndFindHDD:
