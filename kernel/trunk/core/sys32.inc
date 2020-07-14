@@ -14,18 +14,18 @@ build_interrupt_table:
         mov     ecx, 0x40
         mov     eax, (10001110b shl 24) + os_code
   @@:
-        movsw   ;low word of code-entry
-        stosd   ;interrupt gate type : os_code selector
-        movsw   ;high word of code-entry
+        movsw   ; low word of code-entry
+        stosd   ; interrupt gate type : os_code selector
+        movsw   ; high word of code-entry
         loop    @b
-        movsd   ;copy low  dword of trap gate for int 0x40
-        movsd   ;copy high dword of trap gate for int 0x40
+        movsd   ; copy low  dword of trap gate for int 0x40
+        movsd   ; copy high dword of trap gate for int 0x40
         mov     ecx, 23
         mov     eax, (10001110b shl 24) + os_code
   @@:
-        movsw   ;low word of code-entry
-        stosd   ;interrupt gate type : os_code selector
-        movsw   ;high word of code-entry
+        movsw   ; low word of code-entry
+        stosd   ; interrupt gate type : os_code selector
+        movsw   ; high word of code-entry
         loop    @b
         lidt    [esi]
         ret
@@ -33,13 +33,13 @@ build_interrupt_table:
 iglobal
   align 4
   sys_int:
-    ;exception handlers addresses (for interrupt gate construction)
+    ; exception handlers addresses (for interrupt gate construction)
         dd      e0,e1,e2,e3,e4,e5,e6,except_7 ; SEE: core/fpu.inc
         dd      e8,e9,e10,e11,e12,e13,page_fault_exc,e15
         dd      e16, e17,e18, e19
         times   12 dd unknown_interrupt ;int_20..int_31
 
-    ;interrupt handlers addresses (for interrupt gate construction)
+    ; interrupt handlers addresses (for interrupt gate construction)
         ; 0x20+ are IRQ handlers
         dd irq0
         rept 12 irqn:1  \{dd irq_serv.irq_\#irqn\}
@@ -53,8 +53,8 @@ iglobal
 
   idtreg: ; data for LIDT instruction (!!! must be immediately below sys_int data)
         dw      2*($-sys_int-4)-1
-        dd      idts ;0x8000B100
-        dw      0    ;alignment
+        dd      idts ; 0x8000B100
+        dw      0    ; alignment
 
   msg_fault_sel dd  msg_exc_8,msg_exc_u,msg_exc_a,msg_exc_b
                 dd  msg_exc_c,msg_exc_d,msg_exc_e,msg_exc_u
@@ -104,19 +104,19 @@ uglobal
   pf_err_code   dd ?
 endg
 
-page_fault_exc:                 ; дуракоусточивость: селекторы испорчены...
-        pop     [ss:pf_err_code]; действительно до следующего #PF
+page_fault_exc:                   ; foolproof: selectors are clobbered ...
+        pop     [ss:pf_err_code]  ; actually, until the next #PF
         save_ring3_context
         mov     bl, 14
 
-exc_c:                          ; исключения (все, кроме 7-го - #NM)
-; Фрэйм стека при исключении/прерывании из 3-го кольца + pushad (т.е., именно здесь)
+exc_c:                            ; exceptions (all but 7th - #NM)
+ ; stack frame when exception/interrupt from ring3 + pushad (i.e right here)
   reg_ss        equ esp+0x30
   reg_esp3      equ esp+0x2C
   reg_eflags    equ esp+0x28
   reg_cs3       equ esp+0x24
   reg_eip       equ esp+0x20
- ; это фрэйм от pushad
+ ; this if frame from pushad
   reg_eax       equ esp+0x1C
   reg_ecx       equ esp+0x18
   reg_edx       equ esp+0x14
@@ -126,15 +126,15 @@ exc_c:                          ; исключения (все, кроме 7-г�
   reg_esi       equ esp+0x04
   reg_edi       equ esp+0x00
 
-        mov     ax, app_data        ;исключение
-        mov     ds, ax                  ;загрузим правильные значения
-        mov     es, ax                  ;в регистры
-        cld                     ; и приводим DF к стандарту
+        mov     ax, app_data       ; exception
+        mov     ds, ax             ; load proper values
+        mov     es, ax             ; to registers
+        cld                        ; clear the destination flag
         movzx   ebx, bl
 ; redirect to V86 manager? (EFLAGS & 0x20000) != 0?
         test    byte[reg_eflags+2], 2
         jnz     v86_exc_c
-        cmp     bl, 14          ; #PF
+        cmp     bl, 14             ; #PF
         jne     @f
         call    page_fault_handler ; SEE: core/memory.inc
   @@:
@@ -303,12 +303,12 @@ show_error_parameters:
         shr     ecx, 10
         mov     edx, [master_tab+ecx*4]
         test    edx, PG_READ
-        jz      .fail             ;page table is not created
-                                  ;incorrect address in the program
+        jz      .fail             ; page table is not created
+                                  ; incorrect address in the program
 
         mov     eax, [page_tabs+ebx*4]
         test    eax, 2
-        jz      .fail             ;address not reserved for use. error
+        jz      .fail             ; address not reserved for use. error
 
         pop     ebx
         xor     eax, eax
@@ -365,17 +365,15 @@ unlock_application_table:
 
         ret
 
-;  * eax = 64 - номер функции
-;  * ebx = 1 - единственная подфункция
-;  * ecx = новый размер памяти
-;Возвращаемое значение:
-;  * eax = 0 - успешно
-;  * eax = 1 - недостаточно памяти
-
+; sysfn 64 implementation
 align 4
 sys_resize_app_memory:
-        ; ebx = 1 - resize
-        ; ecx = new amount of memory
+; in:   eax = 64 - function number
+;       ebx = 1 - number of its only subfunction
+;       ecx = new amount of memory
+; out:
+;       eax = 0 - success
+;       eax = 1 - out of memory
 
 ;        cmp    eax,1
         dec     ebx
@@ -446,7 +444,7 @@ destroy_thread:
         mov     ecx, [esi+8]
         mov     [eax+SLOT_BASE+APPDATA.io_map+4], ecx
 .nov86:
-;destroy per-thread kernel objects
+; destroy per-thread kernel objects
         mov     esi, [.slot]
         shl     esi, 8
         add     esi, SLOT_BASE+APP_OBJ_OFFSET
