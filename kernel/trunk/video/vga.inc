@@ -403,14 +403,14 @@ align 4
 align 4
 .no_mouseunder:
         shl     ebx, 9
-        lea     ebx, [ebx+ebx*4]   ; умножение на 5
+        lea     ebx, [ebx+ebx*4]  ; multiply by 5
         lea     edx, [ebx+ecx*4]  ; + x*BytesPerPixel (Vesa2.0 32)
         mov     edi, edx
-        add     edi, [LFBAddress]     ; + LFB address
+        add     edi, [LFBAddress] ; + LFB address
         mov     [edi], eax        ; write to LFB for Vesa2.0
         shr     edx, 5            ; change BytesPerPixel to 1/8
         mov     edi, edx
-        add     edi, VGABasePtr     ; address of pixel in VGA area
+        add     edi, VGABasePtr   ; address of pixel in VGA area
         and     ecx, 0x07         ; bit no. (modulo 8)
         pushfd
         ; edi = address, eax = 24bit colour, ecx = bit no. (modulo 8)
@@ -501,10 +501,10 @@ VGA_draw_bar_1:
         add     eax, [temp.cx]
         and     eax, 0xfff8
         shl     ebx, 9
-        lea     ebx, [ebx+ebx*4]; умножение на 5
+        lea     ebx, [ebx+ebx*4]  ; multiply by 5
         lea     ebx, [ebx+eax*4]  ; + x*BytesPerPixel (Vesa2.0 32)
         mov     esi, ebx
-        add     esi, [LFBAddress]     ; + LFB address
+        add     esi, [LFBAddress] ; + LFB address
         shr     ebx, 5            ; change BytesPerPixel to 1/8
         mov     edi, ebx
         add     edi, VGABasePtr   ; address of pixel in VGA area

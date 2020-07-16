@@ -9,15 +9,15 @@ $Revision$
 
 ;-----------------------------------------------------------------------------
 ;**********************************************************
-;  Непосредственная работа с устройством СD (ATAPI)
+;  Direct work with СD (ATAPI) device
 ;**********************************************************
-; Автор части исходного текста Кулаков Владимир Геннадьевич
-; Адаптация, доработка и разработка Mario79,<Lrz>
+; Author of a part of the source code -  Kulakov Vladimir Gennadievich
+; Adaptation, revision and development -  Mario79, <Lrz>
 
-; Максимальное количество повторений операции чтения
+; Maximum number of repeats of a read operation
 MaxRetr = 10
-; Предельное время ожидания готовности к приему команды
-; (в тиках)
+; Maximum waiting time for ready to receive a command
+; (in ticks)
 BSYWaitTime = 1000  ;2
 NoTickWaitTime = 0xfffff
 CDBlockSize = 2048
