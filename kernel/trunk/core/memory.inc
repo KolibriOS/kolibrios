@@ -14,10 +14,10 @@ proc alloc_page
         pushfd
         cli
         push    ebx
-;//-
+
         cmp     [pg_data.pages_free], 1
         jle     .out_of_memory
-;//-
+
 
         mov     ebx, [page_start]
         mov     ecx, [page_end]
@@ -32,27 +32,27 @@ proc alloc_page
         xor     eax, eax
         ret
 .found:
-;//-
+
         dec     [pg_data.pages_free]
         jz      .out_of_memory
-;//-
+
         btr     [ebx], eax
         mov     [page_start], ebx
         sub     ebx, sys_pgmap
         lea     eax, [eax+ebx*8]
         shl     eax, 12
-;//-       dec [pg_data.pages_free]
+;       dec [pg_data.pages_free]
         pop     ebx
         popfd
         ret
-;//-
+
 .out_of_memory:
         mov     [pg_data.pages_free], 1
         xor     eax, eax
         pop     ebx
         popfd
         ret
-;//-
+
 endp
 
 align 4
@@ -65,14 +65,14 @@ proc alloc_pages stdcall, count:dword
         add     eax, 7
         shr     eax, 3
         mov     [count], eax
-;//-
+
         mov     ebx, [pg_data.pages_free]
         sub     ebx, 9
         js      .out_of_memory
         shr     ebx, 3
         cmp     eax, ebx
         jg      .out_of_memory
-;//-
+
         mov     ecx, [page_start]
         mov     ebx, [page_end]
 .find:
@@ -538,7 +538,7 @@ endp
 ;  eax= linear address
 ;
 ; retval
-;  eax= phisical page address
+;  eax= physical page address
 
 align 4
 get_pg_addr:
@@ -567,14 +567,14 @@ proc page_fault_handler
         mov     eax, [pf_err_code]
 
         cmp     ebx, OS_BASE      ;ebx == .err_addr
-        jb      .user_space       ;страница в памяти приложения ;
+        jb      .user_space       ;page in application memory
 
         cmp     ebx, page_tabs
-        jb      .kernel_space     ;страница в памяти ядра
+        jb      .kernel_space     ;page in kernel memory
 
         cmp     ebx, kernel_tabs
-        jb      .alloc;.app_tabs  ;таблицы страниц приложения ;
-                                  ;просто создадим одну
+        jb      .alloc;.app_tabs  ;page tables of application ;
+                                  ;simply create one
 .core_tabs:
 .fail:  ;simply return to caller
         mov     esp, ebp
@@ -583,21 +583,21 @@ proc page_fault_handler
 
 .user_space:
         test    eax, PG_READ
-        jnz     .err_access       ;Страница присутствует
-                                  ;Ошибка доступа ?
+        jnz     .err_access       ;Page presents
+                                  ;Access error ?
 
         shr     ebx, 12
         mov     ecx, ebx
         shr     ecx, 10
         mov     edx, [master_tab+ecx*4]
         test    edx, PG_READ
-        jz      .fail             ;таблица страниц не создана
-                                  ;неверный адрес в программе
+        jz      .fail             ;page table is not created
+                                  ;incorrect address in program
 
         mov     eax, [page_tabs+ebx*4]
         test    eax, 2
-        jz      .fail             ;адрес не зарезервирован для ;
-                                  ;использования. Ошибка
+        jz      .fail             ;address is not reserved for usage. Error
+                                  
 .alloc:
         call    alloc_page
         test    eax, eax
@@ -652,16 +652,16 @@ proc page_fault_handler
 
 .kernel_space:
         test    eax, PG_READ
-        jz      .fail   ;страница не присутствует
+        jz      .fail   ;page does not present
 
         test    eax, 12 ;U/S (+below)
-        jnz     .fail   ;приложение обратилось к памяти
-                        ;ядра
+        jnz     .fail   ;application requested kernel memory
+                        
        ;test    eax, 8
-       ;jnz     .fail   ;установлен зарезервированный бит
-                        ;в таблицах страниц. добавлено в P4/Xeon
+       ;jnz     .fail   ;the reserved bit is set in page tables. Added in P4/Xeon
+                        
 
-;попытка записи в защищённую страницу ядра
+;an attempt to write to a protected kernel page
 
         cmp     ebx, tss._io_map_0
         jb      .fail

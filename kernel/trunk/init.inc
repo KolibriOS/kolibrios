@@ -307,7 +307,7 @@ init_BIOS32:
         test    al, al
         jnz     .PCI_BIOS32_not_found
 
- ; здесь создаются дискрипторы для PCI BIOS
+ ; descriptors for PCI BIOS are created here
 
         add     ebx, OS_BASE
         dec     ecx
@@ -331,7 +331,7 @@ init_BIOS32:
         mov     [(pci_bios_entry-OS_BASE)], edx
          ; jmp .end
 .PCI_BIOS32_not_found:
-        ; здесь должна заполнятся pci_emu_dat
+        ; pci_emu_dat structure should be filled here
 .BIOS32_not_found:
 .end:
         ret

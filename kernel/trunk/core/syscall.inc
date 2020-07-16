@@ -15,7 +15,7 @@ $Revision$
 
 align 32
 sysenter_entry:
-        ; Настраиваем стек
+        ; Setting up the stack
         mov     esp, [ss:tss._esp0]
         sti
         push    ebp                     ; save app esp + 4
@@ -33,7 +33,7 @@ sysenter_entry:
         call    unprotect_from_terminate
         popad
         ;------------------
-        xchg    ecx, [ss:esp]           ; в вершин стека - app ecx, ecx - app esp + 4
+        xchg    ecx, [ss:esp]           ; in the stack top - app ecx, ecx - app esp + 4
         sub     ecx, 4
         xchg    edx, [ecx]              ; edx - return point, & save original edx
         push    edx

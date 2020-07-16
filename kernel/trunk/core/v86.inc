@@ -358,8 +358,8 @@ v86_exc_c:
         jnz     .nogp
 ; Otherwise we can safely access byte at CS:IP
 ; (because it is #GP, not #PF handler)
-; Если бы мы могли схлопотать исключение только из-за чтения байтов кода,
-; мы бы его уже схлопотали и это было бы не #GP
+; If we could get an exception just because of reading code bytes,
+; we would have got it already and it wouldn't be #GP
         movzx   esi, word [esp+v86_regs.cs]
         shl     esi, 4
         add     esi, [esp+v86_regs.eip]
