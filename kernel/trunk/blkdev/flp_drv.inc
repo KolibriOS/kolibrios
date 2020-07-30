@@ -9,12 +9,12 @@ $Revision$
 
 
 ;**********************************************************
-;  Непосредственная работа с контроллером гибкого диска
+;  Direct work with floppy disk drive
 ;**********************************************************
-; Автор исходного текста  Кулаков Владимир Геннадьевич.
-; Адаптация и доработка Mario79
+; Source code author Kulakov Vladimir Gennadievich.
+; Adaptation and improvement Mario79
 
-;give_back_application_data:  ; переслать приложению
+;give_back_application_data:  ; give back to application
 ;     mov edi,[TASK_BASE]
 ;     mov edi,[edi+TASKDATA.mem_start]
 ;     add edi,ecx
@@ -25,7 +25,7 @@ give_back_application_data_1:
         rep movsd
         ret
 
-;take_data_from_application:   ; взять из приложени
+;take_data_from_application:   ; take from application
 ;     mov esi,[TASK_BASE]
 ;     mov esi,[esi+TASKDATA.mem_start]
 ;     add esi,ecx
@@ -36,37 +36,37 @@ take_data_from_application_1:
         rep movsd
         ret
 
-; Коды завершения операции с контроллером (FDC_Status)
-FDC_Normal         = 0 ;нормальное завершение
-FDC_TimeOut        = 1 ;ошибка тайм-аута
-FDC_DiskNotFound   = 2 ;в дисководе нет диска
-FDC_TrackNotFound  = 3 ;дорожка не найдена
-FDC_SectorNotFound = 4 ;сектор не найден
+; Controller operations result codes (FDC_Status)
+FDC_Normal         = 0 ; normal finish
+FDC_TimeOut        = 1 ; time out error
+FDC_DiskNotFound   = 2 ; no disk in drive
+FDC_TrackNotFound  = 3 ; track not found
+FDC_SectorNotFound = 4 ; sector not found
 
-; Максимальные значения координат сектора (заданные
-; значения соответствуют параметрам стандартного
-; трехдюймового гибкого диска объемом 1,44 Мб)
+; Maximum values of the sector coordinates (specified
+; values correspond to the parameters of the standard
+; 3-inch 1.44 MB floppy disk)
 MAX_Track   = 79
 MAX_Head    =  1
 MAX_Sector  = 18
 
 uglobal
-; Счетчик тиков таймера
+; Timer tick counter
 TickCounter dd ?
-; Код завершения операции с контроллером НГМД
+; Operation completion code with the floppy disk drive controller
 FDC_Status  DB ?
-; Флаг прерывания от НГМД
+; Interrupt flag from floppy disk drive
 FDD_IntFlag DB ?
-; Момент начала последней операции с НГМД
+; The moment of the beginning of the last operation with FDD
 FDD_Time    DD ?
-; Номер дисковода
+; Drive number
 FDD_Type    db 0
-; Координаты сектора
+; Sector coordinates
 FDD_Track   DB ?
 FDD_Head    DB ?
 FDD_Sector  DB ?
 
-; Блок результата операции
+; Operation result block
 FDC_ST0 DB ?
 FDC_ST1 DB ?
 FDC_ST2 DB ?
@@ -74,19 +74,19 @@ FDC_C   DB ?
 FDC_H   DB ?
 FDC_R   DB ?
 FDC_N   DB ?
-; Счетчик повторения операции чтени
+; Read operation repetition counter
 ReadRepCounter  DB ?
-; Счетчик повторения операции рекалибровки
+; Recalibration operation repetition counter
 RecalRepCounter DB ?
 endg
-; Область памяти для хранения прочитанного сектора
+; Memory area for storing the readed sector
 ;FDD_DataBuffer:  times 512 db 0   ;DB 512 DUP (?)
 fdd_motor_status db 0
 timer_fdd_motor  dd 0
 
-;*************************************
-;* ИНИЦИАЛИЗАЦИЯ РЕЖИМА ПДП ДЛЯ НГМД *
-;*************************************
+;**************************************
+;* INITIALIZATION OF DMA MODE FOR FDD *
+;**************************************
 Init_FDC_DMA:
         pushad
         mov     al, 0
@@ -115,31 +115,31 @@ Init_FDC_DMA:
         ret
 
 ;***********************************
-;* ЗАПИСАТЬ БАЙТ В ПОРТ ДАННЫХ FDC *
-;* Параметры:                      *
-;* AL - выводимый байт.            *
+;* WRITE BYTE TO FDC DATA PORT     *
+;* Parameters:                     *
+;* AL - byte to write.             *
 ;***********************************
 FDCDataOutput:
 ;       DEBUGF 1,'K : FDCDataOutput(%x)',al
 ;        pusha
         push    eax ecx edx
-        mov     AH, AL    ;запомнить байт в AH
-; Сбросить переменную состояния контроллера
+        mov     AH, AL    ; remember byte to AH
+; Reset controller state variable
         mov     [FDC_Status], FDC_Normal
-; Проверить готовность контроллера к приему данных
-        mov     DX, 3F4h  ;(порт состояния FDC)
-        mov     ecx, 0x10000 ;установить счетчик тайм-аута
+; Check the readiness of the controller to receive data
+        mov     DX, 3F4h  ; (FDC state port)
+        mov     ecx, 0x10000 ; set timeout counter
 @@TestRS:
-        in      AL, DX    ;прочитать регистр RS
-        and     AL, 0C0h  ;выделить разряды 6 и 7
-        cmp     AL, 80h   ;проверить разряды 6 и 7
+        in      AL, DX    ; read the RS register
+        and     AL, 0C0h  ; get digits 6 and 7
+        cmp     AL, 80h   ; check digits 6 and 7
         je      @@OutByteToFDC
         loop    @@TestRS
-; Ошибка тайм-аута
+; Time out error
 ;       DEBUGF 1,' timeout\n'
         mov     [FDC_Status], FDC_TimeOut
         jmp     @@End_5
-; Вывести байт в порт данных
+; Write byte to data port
 @@OutByteToFDC:
         inc     DX
         mov     AL, AH
@@ -151,30 +151,30 @@ FDCDataOutput:
         ret
 
 ;******************************************
-;*   ПРОЧИТАТЬ БАЙТ ИЗ ПОРТА ДАННЫХ FDC   *
-;* Процедура не имеет входных параметров. *
-;* Выходные данные:                       *
-;* AL - считанный байт.                   *
+;*   READ BYTE FROM FDC DATA PORT         *
+;* Procedure doesnt have input params.    *
+;* Output :                               *
+;* AL - byte read.                        *
 ;******************************************
 FDCDataInput:
         push    ECX
         push    DX
-; Сбросить переменную состояния контроллера
+; Reset controller state variable
         mov     [FDC_Status], FDC_Normal
-; Проверить готовность контроллера к передаче данных
-        mov     DX, 3F4h  ;(порт состояния FDC)
-        mov     ecx, 0x10000 ;установить счетчик тайм-аута
+; Check the readiness of the controller to receive data
+        mov     DX, 3F4h  ;(FDC state port)
+        mov     ecx, 0x10000 ; set timeout counter
 @@TestRS_1:
-        in      AL, DX    ;прочитать регистр RS
-        and     AL, 0C0h  ;выдлить разряды 6 и 7
-        cmp     AL, 0C0h  ;проверить разряды 6 и 7
+        in      AL, DX    ; read the RS register
+        and     AL, 0C0h  ; get digits 6 and 7
+        cmp     AL, 0C0h  ; check digits 6 and 7
         je      @@GetByteFromFDC
         loop    @@TestRS_1
-; Ошибка тайм-аута
+; Time out error
 ;       DEBUGF 1,'K : FDCDataInput: timeout\n'
         mov     [FDC_Status], FDC_TimeOut
         jmp     @@End_6
-; Ввести байт из порта данных
+; Get byte from data port
 @@GetByteFromFDC:
         inc     DX
         in      AL, DX
@@ -185,45 +185,45 @@ FDCDataInput:
         ret
 
 ;*********************************************
-;* ОБРАБОТЧИК ПРЕРЫВАНИЯ ОТ КОНТРОЛЛЕРА НГМД *
+;* FDC INTERRUPT HANDLER                     *
 ;*********************************************
 FDCInterrupt:
 ;       dbgstr 'FDCInterrupt'
-; Установить флаг прерывания
+; Set the interrupt flag
         mov     [FDD_IntFlag], 1
         mov     al, 1
         ret
 
 ;*******************************************
-;* ОЖИДАНИЕ ПРЕРЫВАНИЯ ОТ КОНТРОЛЛЕРА НГМД *
+;* WAIT FOR INTERRUPT FROM FDC             *
 ;*******************************************
 WaitFDCInterrupt:
         pusha
-; Сбросить байт состояния операции
+; Reset operation status byte
         mov     [FDC_Status], FDC_Normal
-; Обнулить счетчик тиков
+; Zero out the tick counter
         mov     eax, [timer_ticks]
         mov     [TickCounter], eax
-; Ожидать установки флага прерывания НГМД
+; Wait for the floppy disk interrupt flag to be set
 @@TestRS_2:
         call    change_task
         cmp     [FDD_IntFlag], 0
-        jnz     @@End_7           ;прерывание произошло
+        jnz     @@End_7           ; interrupt occured
         mov     eax, [timer_ticks]
         sub     eax, [TickCounter]
-        cmp     eax, 200;50 ;25   ;5 ;ожидать 5 тиков
+        cmp     eax, 200;50 ;25   ;5 ; wait 5 ticks
         jb      @@TestRS_2
 ;        jl      @@TestRS_2
-; Ошибка тайм-аута
+; Time out error
 ;       dbgstr 'WaitFDCInterrupt: timeout'
         mov     [FDC_Status], FDC_TimeOut
 @@End_7:
         popa
         ret
 
-;*********************************
-;* ВКЛЮЧИТЬ МОТОР ДИСКОВОДА "A:" *
-;*********************************
+;***********************************
+;* Turn on the motor of drive "A:" *
+;***********************************
 FDDMotorON:
 ;       dbgstr 'FDDMotorON'
         pusha
@@ -232,11 +232,11 @@ FDDMotorON:
         mov     al, [flp_number]
         cmp     [fdd_motor_status], al
         je      fdd_motor_on
-; Произвести сброс контроллера НГМД
-        mov     DX, 3F2h;порт управления двигателями
+; Reset the FDD controller
+        mov     DX, 3F2h  ; motor control port
         mov     AL, 0
         out     DX, AL
-; Выбрать и включить мотор дисковода
+; Select and turn on the drive motor
         cmp     [flp_number], 1
         jne     FDDMotorON_B
 ;        call    FDDMotorOFF_B
@@ -247,10 +247,10 @@ FDDMotorON_B:
         mov     AL, 2Dh   ; Floppy B
 FDDMotorON_1:
         out     DX, AL
-; Обнулить счетчик тиков
+; Zero out the tick counter
         mov     eax, [timer_ticks]
         mov     [TickCounter], eax
-; Ожидать 0,5 с
+; wait 0.5 s
 @@dT:
         call    change_task
         mov     eax, [timer_ticks]
@@ -283,7 +283,7 @@ fdd_motor_on:
         ret
 
 ;*****************************************
-;*  СОХРАНЕНИЕ УКАЗАТЕЛЯ ВРЕМЕНИ         *
+;*  SAVING TIME STAMP                    *
 ;*****************************************
 save_timer_fdd_motor:
         mov     eax, [timer_ticks]
@@ -291,7 +291,7 @@ save_timer_fdd_motor:
         ret
 
 ;*****************************************
-;*  ПРОВЕРКА ЗАДЕРЖКИ ВЫКЛЮЧЕНИЯ МОТОРА  *
+;*  CHECK THE MOTOR SHUTDOWN DELAY       *
 ;*****************************************
 proc check_fdd_motor_status_has_work?
         cmp     [fdd_motor_status], 0
@@ -324,7 +324,7 @@ end_check_fdd_motor_status:
         ret
 
 ;**********************************
-;* ВЫКЛЮЧИТЬ МОТОР ДИСКОВОДА      *
+;* TURN OFF MOTOR OF DRIVE        *
 ;**********************************
 FDDMotorOFF:
 ;       dbgstr 'FDDMotorOFF'
@@ -339,39 +339,39 @@ FDDMotorOFF_1:
 FDDMotorOFF_2:
         pop     DX
         pop     AX
-        ; сброс флагов кеширования в связи с устареванием информации
+        ; clearing caching flags due to information obsolescence
         or      [floppy_media_flags+0], FLOPPY_MEDIA_NEED_RESCAN
         or      [floppy_media_flags+1], FLOPPY_MEDIA_NEED_RESCAN
         ret
 
 FDDMotorOFF_A:
-        mov     DX, 3F2h;порт управления двигателями
-        mov     AL, 0Ch ; Floppy A
+        mov     DX, 3F2h  ; motor control port
+        mov     AL, 0Ch   ; Floppy A
         out     DX, AL
         ret
 
 FDDMotorOFF_B:
-        mov     DX, 3F2h;порт управления двигателями
-        mov     AL, 5h ; Floppy B
+        mov     DX, 3F2h  ; motor control port
+        mov     AL, 5h    ; Floppy B
         out     DX, AL
         ret
 
 ;*******************************
-;* РЕКАЛИБРОВКА ДИСКОВОДА "A:" *
+;* RECALIBRATE DRIVE "A:"      *
 ;*******************************
 RecalibrateFDD:
 ;       dbgstr 'RecalibrateFDD'
         pusha
         call    save_timer_fdd_motor
-; Сбросить флаг прерывания
+; Clear the interrupt flag
         mov     [FDD_IntFlag], 0
-; Подать команду "Рекалибровка"
+; Send the "Recalibration" command
         mov     AL, 07h
         call    FDCDataOutput
         mov     AL, [flp_number]
         dec     AL
         call    FDCDataOutput
-; Ожидать завершения операции
+; Wait for the operation to complete
         call    WaitFDCInterrupt
         cmp     [FDC_Status], 0
         jne     .fail
@@ -396,48 +396,48 @@ RecalibrateFDD:
         ret
 
 ;*****************************************************
-;*                    ПОИСК ДОРОЖКИ                  *
-;* Параметры передаются через глобальные переменные: *
-;* FDD_Track - номер дорожки (0-79);                 *
-;* FDD_Head - номер головки (0-1).                   *
-;* Результат операции заносится в FDC_Status.        *
+;*                    TRACK SEARCH                   *
+;* Parameters are passed through global variables:   *
+;* FDD_Track - track number (0-79);                  *
+;* FDD_Head - head number (0-1).                     *
+;* Result of operation is written to FDC_Status.     *
 ;*****************************************************
 SeekTrack:
 ;       dbgstr 'SeekTrack'
         pusha
         call    save_timer_fdd_motor
-; Сбросить флаг прерывания
+; Clear the interrupt flag
         mov     [FDD_IntFlag], 0
-; Подать команду "Поиск"
+; Send "Search" command
         mov     AL, 0Fh
         call    FDCDataOutput
-        ; Передать байт номера головки/накопител
+        ; Send head / drive number byte
         mov     AL, [FDD_Head]
         shl     AL, 2
         call    FDCDataOutput
-        ; Передать байт номера дорожки
+        ; Send track number byte
         mov     AL, [FDD_Track]
         call    FDCDataOutput
-; Ожидать завершения операции
+; Wait for the operation to complete
         call    WaitFDCInterrupt
         cmp     [FDC_Status], FDC_Normal
         jne     @@Exit
-; Сохранить результат поиска
+; Save search result
         mov     AL, 08h
         call    FDCDataOutput
         call    FDCDataInput
         mov     [FDC_ST0], AL
         call    FDCDataInput
         mov     [FDC_C], AL
-; Проверить результат поиска
-        ; Поиск завершен?
+; Check search result
+        ; Is search finished?
         test    [FDC_ST0], 100000b
         je      @@Err
-        ; Заданный трек найден?
+        ; Is the specified track found?
         mov     AL, [FDC_C]
         cmp     AL, [FDD_Track]
         jne     @@Err
-        ; Номер головки совпадает с заданным?
+        ; Does the head number match the specified one?
 ; The H bit (Head Address) in ST0 will always return a "0" (c) 82077AA datasheet,
 ; description of SEEK command. So we can not verify the proper head.
 ;        mov     AL, [FDC_ST0]
@@ -445,11 +445,11 @@ SeekTrack:
 ;        shr     AL, 2
 ;        cmp     AL, [FDD_Head]
 ;        jne     @@Err
-        ; Операция завершена успешно
+        ; Operation completed successfully
 ;        dbgstr 'SeekTrack: FDC_Normal'
         mov     [FDC_Status], FDC_Normal
         jmp     @@Exit
-@@Err:  ; Трек не найден
+@@Err:  ; Track not found
 ;       dbgstr 'SeekTrack: FDC_TrackNotFound'
         mov     [FDC_Status], FDC_TrackNotFound
 @@Exit:
@@ -458,30 +458,30 @@ SeekTrack:
         ret
 
 ;*******************************************************
-;*               ЧТЕНИЕ СЕКТОРА ДАННЫХ                 *
-;* Параметры передаются через глобальные переменные:   *
-;* FDD_Track - номер дорожки (0-79);                   *
-;* FDD_Head - номер головки (0-1);                     *
-;* FDD_Sector - номер сектора (1-18).                  *
-;* Результат операции заносится в FDC_Status.          *
-;* В случае успешного выполнения операции чтения       *
-;* содержимое сектора будет занесено в FDD_DataBuffer. *
+;*               READING A DATA SECTOR                 *
+;* Parameters are passed through global variables:     *
+;* FDD_Track - track number (0-79);                    *
+;* FDD_Head - head number (0-1);                       *
+;* FDD_Sector - sector number (1-18).                  *
+;* Result of operation is written to FDC_Status.       *
+;* If the read operation is successful, the contents   *
+;*  of the sector will be written to FDD_DataBuffer.   *
 ;*******************************************************
 ReadSector:
 ;       dbgstr 'ReadSector'
         pushad
         call    save_timer_fdd_motor
-; Сбросить флаг прерывания
+; Clear the interrupt flag
         mov     [FDD_IntFlag], 0
-; Установить скорость передачи 500 Кбайт/с
+; Set transmit speed to 500 Kb / s
         mov     AX, 0
         mov     DX, 03F7h
         out     DX, AL
-; Инициализировать канал прямого доступа к памяти
+; Initialize the DMA channel
         mov     [dmamode], 0x46
         call    Init_FDC_DMA
-; Подать команду "Чтение данных"
-        mov     AL, 0E6h ;чтение в мультитрековом режиме
+; Send "Data read" command
+        mov     AL, 0E6h ; reading in multi-track mode
         call    FDCDataOutput
         mov     AL, [FDD_Head]
         shl     AL, 2
@@ -494,19 +494,19 @@ ReadSector:
         call    FDCDataOutput
         mov     AL, [FDD_Sector]
         call    FDCDataOutput
-        mov     AL, 2   ;код размера сектора (512 байт)
+        mov     AL, 2   ; sector size code (512 byte)
         call    FDCDataOutput
-        mov     AL, 18 ;+1; 3Fh  ;число секторов на дорожке
+        mov     AL, 18 ;+1; 3Fh  ;number of sectors per track
         call    FDCDataOutput
-        mov     AL, 1Bh ;значение GPL
+        mov     AL, 1Bh ; GPL value
         call    FDCDataOutput
-        mov     AL, 0FFh;значение DTL
+        mov     AL, 0FFh; DTL value
         call    FDCDataOutput
-; Ожидаем прерывание по завершении операции
+; Waiting for an interrupt at the end of the operation
         call    WaitFDCInterrupt
         cmp     [FDC_Status], FDC_Normal
         jne     @@Exit_1
-; Считываем статус завершения операции
+; Read the operation completion status
         call    GetStatusInfo
         test    [FDC_ST0], 11011000b
         jnz     @@Err_1
@@ -522,21 +522,21 @@ ReadSector:
         ret
 
 ;*******************************************************
-;*   ЧТЕНИЕ СЕКТОРА (С ПОВТОРЕНИЕМ ОПЕРАЦИИ ПРИ СБОЕ)  *
-;* Параметры передаются через глобальные переменные:   *
-;* FDD_Track - номер дорожки (0-79);                   *
-;* FDD_Head - номер головки (0-1);                     *
-;* FDD_Sector - номер сектора (1-18).                  *
-;* Результат операции заносится в FDC_Status.          *
-;* В случае успешного выполнения операции чтения       *
-;* содержимое сектора будет занесено в FDD_DataBuffer. *
+;*   READ SECTOR (WITH RETRY OF OPERATION ON FAILURE)  *
+;* Parameters are passed through global variables:     *
+;* FDD_Track - track number (0-79);                    *
+;* FDD_Head - head number (0-1);                       *
+;* FDD_Sector - sector number (1-18).                  *
+;* Result of operation is written to FDC_Status.       *
+;* If the read operation is successful, the contents   *
+;*  of the sector will be written to FDD_DataBuffer.   *
 ;*******************************************************
 ReadSectWithRetr:
         pusha
-; Обнулить счетчик повторения операции рекалибровки
+; Reset the recalibration repetition counter
         mov     [RecalRepCounter], 0
 @@TryAgain:
-; Обнулить счетчик повторения операции чтени
+; Reset the read operation retry counter
         mov     [ReadRepCounter], 0
 @@ReadSector_1:
         call    ReadSector
@@ -544,11 +544,11 @@ ReadSectWithRetr:
         je      @@Exit_2
         cmp     [FDC_Status], 1
         je      @@Err_3
-        ; Троекратное повторение чтени
+        ; Three times repeat reading
         inc     [ReadRepCounter]
         cmp     [ReadRepCounter], 3
         jb      @@ReadSector_1
-        ; Троекратное повторение рекалибровки
+        ; Three times repeat recalibration
         call    RecalibrateFDD
         call    SeekTrack
         inc     [RecalRepCounter]
@@ -562,30 +562,30 @@ ReadSectWithRetr:
         ret
 
 ;*******************************************************
-;*               ЗАПИСЬ СЕКТОРА ДАННЫХ                 *
-;* Параметры передаются через глобальные переменные:   *
-;* FDD_Track - номер дорожки (0-79);                   *
-;* FDD_Head - номер головки (0-1);                     *
-;* FDD_Sector - номер сектора (1-18).                  *
-;* Результат операции заносится в FDC_Status.          *
-;* В случае успешного выполнения операции записи       *
-;* содержимое FDD_DataBuffer будет занесено в сектор.  *
+;*               WRITE DATA SECTOR                     *
+;* Parameters are passed through global variables:     *
+;* FDD_Track - track number (0-79);                    *
+;* FDD_Head - head number (0-1);                       *
+;* FDD_Sector - sector number (1-18).                  *
+;* Result of operation is written to FDC_Status.       *
+;* If the write operation is successful, the contents  *
+;* of FDD_DataBuffer will be written to the sector     *
 ;*******************************************************
 WriteSector:
 ;       dbgstr 'WriteSector'
         pushad
         call    save_timer_fdd_motor
-; Сбросить флаг прерывания
+; Clear the interrupt flag
         mov     [FDD_IntFlag], 0
-; Установить скорость передачи 500 Кбайт/с
+; Set transmit speed to 500 Kb / s
         mov     AX, 0
         mov     DX, 03F7h
         out     DX, AL
-; Инициализировать канал прямого доступа к памяти
+; Initialize the DMA channel
         mov     [dmamode], 0x4A
         call    Init_FDC_DMA
-; Подать команду "Запись данных"
-        mov     AL, 0xC5 ;0x45  ;запись в мультитрековом режиме
+; Send "Write data" command
+        mov     AL, 0xC5 ;0x45  ; write in multi-track mode
         call    FDCDataOutput
         mov     AL, [FDD_Head]
         shl     AL, 2
@@ -598,19 +598,19 @@ WriteSector:
         call    FDCDataOutput
         mov     AL, [FDD_Sector]
         call    FDCDataOutput
-        mov     AL, 2   ;код размера сектора (512 байт)
+        mov     AL, 2   ; sector size code (512 bytes)
         call    FDCDataOutput
-        mov     AL, 18; 3Fh  ;число секторов на дорожке
+        mov     AL, 18; 3Fh  ; sectors per track
         call    FDCDataOutput
-        mov     AL, 1Bh ;значение GPL
+        mov     AL, 1Bh ; GPL value
         call    FDCDataOutput
-        mov     AL, 0FFh;значение DTL
+        mov     AL, 0FFh; DTL value
         call    FDCDataOutput
-; Ожидаем прерывание по завершении операции
+; Waiting for an interrupt at the end of the operation
         call    WaitFDCInterrupt
         cmp     [FDC_Status], FDC_Normal
         jne     @@Exit_3
-; Считываем статус завершения операции
+; Reading the completion status of the operation
         call    GetStatusInfo
         test    [FDC_ST0], 11000000b ;11011000b
         jnz     @@Err_2
@@ -624,21 +624,21 @@ WriteSector:
         ret
 
 ;*******************************************************
-;*   ЗАПИСЬ СЕКТОРА (С ПОВТОРЕНИЕМ ОПЕРАЦИИ ПРИ СБОЕ)  *
-;* Параметры передаются через глобальные переменные:   *
-;* FDD_Track - номер дорожки (0-79);                   *
-;* FDD_Head - номер головки (0-1);                     *
-;* FDD_Sector - номер сектора (1-18).                  *
-;* Результат операции заносится в FDC_Status.          *
-;* В случае успешного выполнения операции записи       *
-;* содержимое FDD_DataBuffer будет занесено в сектор.  *
+;*   WRITE SECTOR (WITH REPEAT ON FAILURE)             *
+;* Parameters are passed through global variables:     *
+;* FDD_Track - track number (0-79);                    *
+;* FDD_Head - head number (0-1);                       *
+;* FDD_Sector - sector number (1-18).                  *
+;* Result of operation is written to FDC_Status.       *
+;* If the write operation is successful, the contents  *
+;* of FDD_DataBuffer will be written to the sector     *
 ;*******************************************************
 WriteSectWithRetr:
         pusha
-; Обнулить счетчик повторения операции рекалибровки
+; Reset the recalibration repetition counter
         mov     [RecalRepCounter], 0
 @@TryAgain_1:
-; Обнулить счетчик повторения операции чтени
+; Reset the read operation retry counter
         mov     [ReadRepCounter], 0
 @@WriteSector_1:
         call    WriteSector
@@ -646,11 +646,11 @@ WriteSectWithRetr:
         je      @@Exit_4
         cmp     [FDC_Status], 1
         je      @@Err_4
-        ; Троекратное повторение чтени
+        ; Three times repeat writing
         inc     [ReadRepCounter]
         cmp     [ReadRepCounter], 3
         jb      @@WriteSector_1
-        ; Троекратное повторение рекалибровки
+        ; Three times repeat recalibration
         call    RecalibrateFDD
         call    SeekTrack
         inc     [RecalRepCounter]
@@ -664,7 +664,7 @@ WriteSectWithRetr:
         ret
 
 ;*********************************************
-;* ПОЛУЧИТЬ ИНФОРМАЦИЮ О РЕЗУЛЬТАТЕ ОПЕРАЦИИ *
+;* GET INFORMATION ABOUT THE RESULT OF THE OPERATION
 ;*********************************************
 GetStatusInfo:
         push    AX
@@ -831,9 +831,9 @@ endp
 
 proc floppy_read_bootsector
         pushad
-        mov     [FDD_Track], 0; Цилиндр
-        mov     [FDD_Head], 0; Сторона
-        mov     [FDD_Sector], 1; Сектор
+        mov     [FDD_Track], 0  ; Cylinder
+        mov     [FDD_Head], 0   ; Head
+        mov     [FDD_Sector], 1 ; Sector
         call    FDDMotorON
         call    RecalibrateFDD
         cmp     [FDC_Status], 0

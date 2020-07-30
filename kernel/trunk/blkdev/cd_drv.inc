@@ -9,7 +9,7 @@ $Revision$
 
 ;-----------------------------------------------------------------------------
 ;**********************************************************
-;  Direct work with СD (ATAPI) device
+;  Direct work with CD (ATAPI) device
 ;**********************************************************
 ; Author of a part of the source code -  Kulakov Vladimir Gennadievich
 ; Adaptation, revision and development -  Mario79, <Lrz>
@@ -22,8 +22,8 @@ BSYWaitTime = 1000  ;2
 NoTickWaitTime = 0xfffff
 CDBlockSize = 2048
 ;********************************************
-;*        ЧТЕНИЕ СЕКТОРА С ПОВТОРАМИ        *
-;* Многократное повторение чтения при сбоях *
+;*        READING SECTOR WITH REPEATS       *
+;*      Repeated reads on failures          *
 ;********************************************
 ReadCDWRetr:
 ;-----------------------------------------------------------
@@ -86,42 +86,40 @@ align 4
 ;-----------------------------------------------------------------------------
 ReadCDWRetr_1:
         pushad
-; Цикл, пока команда не выполнена успешно или не
-; исчерпано количество попыток
+; Loop until the command is successful or the number of attempts is over
         mov     ecx, MaxRetr
 ;--------------------------------------
 align 4
 @@NextRetr:
-; Подать команду
+; Send a command
 ;*************************************************
-;*      ПОЛНОЕ ЧТЕНИЕ СЕКТОРА КОМПАКТ-ДИСКА      *
-;* Считываются данные пользователя, информация   *
-;* субканала и контрольная информация            *
-;* Входные параметры передаются через глобальные *
-;* перменные:                                    *
-;* ChannelNumber - номер канала;                 *
-;* DiskNumber - номер диска на канале;           *
-;* CDSectorAddress - адрес считываемого сектора. *
-;* Данные считывается в массив CDDataBuf.        *
+;*      FULL READ OF COMPACT DISK SECTOR         *
+;* User data, subchannel                         *
+;* information and control information are read  *
+;* Input parameters are passed through global    *
+;* variables:                                    *
+;* ChannelNumber - channel number;               *
+;* DiskNumber - disc number on channel;          *
+;* CDSectorAddress - address of reading sector.  *
+;* The data is read into the CDDataBuf array.    *
 ;*************************************************
 ;ReadCD:
         push    ecx
-; Очистить буфер пакетной команды
+; Flush the packet command buffer
         call    clear_packet_buffer
-; Сформировать пакетную команду для считывания
-; сектора данных
-; Задать код команды Read CD
+; Generate a packet command to read a data sector
+; Set the command code Read CD
         mov     [PacketCommand], byte 0x28 ;0xBE
-; Задать адрес сектора
+; Set the sector address
         mov     ax, word [CDSectorAddress+2]
         xchg    al, ah
         mov     word [PacketCommand+2], ax
         mov     ax, word [CDSectorAddress]
         xchg    al, ah
         mov     word [PacketCommand+4], ax
-; Задать количество считываемых секторов
+; Set the number of sectors to read
         mov     [PacketCommand+8], byte 1
-; Подать команду
+; Send a command
         call    SendPacketDatCommand
         pop     ecx
 
@@ -154,57 +152,54 @@ align 4
         popad
         ret
 ;-----------------------------------------------------------------------------
-; Универсальные процедуры, обеспечивающие выполнение
-;             пакетных команд в режиме PIO
-; Максимально допустимое время ожидания реакции
-; устройства на пакетную команду (в тиках)
+; General purpose procedures to execute packet commands in PIO Mode
+; Maximum allowable waiting time for the device to respond to a packet command (in ticks)
 ;-----------------------------------------------------------------------------
-MaxCDWaitTime = 1000 ;200 ;10 секунд
+MaxCDWaitTime = 1000 ;200 ;10 seconds
 uglobal
-; Область памяти для формирования пакетной команды
+; Memory area for generating a packet command
 PacketCommand:
                  rb 12  ;DB 12 DUP (?)
-; Адрес считываемого сектора данных
+; address of reading data sector
 CDSectorAddress:   dd ?
-; Время начала очередной операции с диском
+; Start time of the next disk operation
 TickCounter_1     dd 0
-; Время начала ожидания готовности устройства
+; Time to start waiting for device readiness
 WURStartTime      dd 0
-; указатель буфера для считывания
+; pointer to buffer to read data into
 CDDataBuf_pointer dd 0
 endg
 ;-----------------------------------------------------------------------------
 ;****************************************************
-;*    ПОСЛАТЬ УСТРОЙСТВУ ATAPI ПАКЕТНУЮ КОМАНДУ,    *
-;* ПРЕДУСМАТРИВАЮЩУЮ ПЕРЕДАЧУ ОДНОГО СЕКТОРА ДАННЫХ *
-;*     РАЗМЕРОМ 2048 БАЙТ ОТ УСТРОЙСТВА К ХОСТУ     *
-;* Входные параметры передаются через глобальные    *
-;* перменные:                                       *
-;* ChannelNumber - номер канала;                    *
-;* DiskNumber - номер диска на канале;              *
-;* PacketCommand - 12-байтный командный пакет;      *
-;* CDBlockSize - размер принимаемого блока данных.  *
+;*    SEND TO ATAPI DEVICE PACKET COMMAND,          *
+;* THAT MEANS TRASMIT ONE DATA SECTOR OF SIZE       *
+;*     2048 BYTE FROM DEVICE TO HOST                *
+;* Input parameters are passed through global       *
+;* variables:                                       *
+;* ChannelNumber - channel number;                  *
+;* DiskNumber - disk number on channel.             *
+;* PacketCommand - 12-byte command packet;          *
+;* CDBlockSize - size of receiving data block.      *
 ; return eax DevErrorCode
 ;****************************************************
 SendPacketDatCommand:
         xor     eax, eax
-; Задать режим CHS
+; Set CHS mode
         mov     byte [ATAAddressMode], al
-; Послать ATA-команду передачи пакетной команды
+; Send ATA command to send packet command
         mov     byte [ATAFeatures], al
         mov     byte [ATASectorCount], al
         mov     byte [ATASectorNumber], al
-        ; Загрузить размер передаваемого блока
+; Load the size of the sending block
         mov     [ATAHead], al
         mov     [ATACylinder], CDBlockSize
         mov     [ATACommand], 0xA0
         call    SendCommandToHDD_1
         test    eax, eax
-        jnz     @@End_8    ;закончить, сохранив код ошибки
-; Ожидание готовности дисковода к приему
-; пакетной команды
+        jnz     @@End_8    ; finish, saving the error code
+; Waiting for the drive to be ready to receive a packet command
         mov     dx, [ATABasePortAddr]
-        add     dx, 7    ;порт 1х7h
+        add     dx, 7    ; port 1x7h
         mov     ecx, NoTickWaitTime
 ;--------------------------------------
 align 4
@@ -220,25 +215,25 @@ align 4
 align 4
 @@:
         call    change_task
-        ; Проверить время выполнения команды
+        ; Check command execution time
         mov     eax, [timer_ticks]
         sub     eax, [TickCounter_1]
         cmp     eax, BSYWaitTime
-        ja      @@Err1_1   ;ошибка тайм-аута
-        ; Проверить готовность
+        ja      @@Err1_1   ; time out error
+        ; Check readiness
 ;--------------------------------------
 align 4
 .test:
         in      al, dx
-        test    al, 0x80  ;состояние сигнала BSY
+        test    al, 0x80  ; BSY signal state
         jnz     @@WaitDevice0
 
-        test    al, 1    ;состояние сигнала ERR
+        test    al, 1     ; ERR signal state
         jnz     @@Err6
 
-        test    al, 0x8  ;состояние сигнала DRQ
+        test    al, 0x8   ; DRQ signal state
         jz      @@WaitDevice0
-; Послать пакетную команду
+; Send a packet command
         cli
         mov     dx, [ATABasePortAddr]
         mov     ax, [PacketCommand]
@@ -254,9 +249,9 @@ align 4
         mov     ax, [PacketCommand+10]
         out     dx, ax
         sti
-; Ожидание готовности данных
+; Waiting for data to be ready
         mov     dx, [ATABasePortAddr]
-        add     dx, 7  ;порт 1х7h
+        add     dx, 7  ; port 1x7h
         mov     ecx, NoTickWaitTime
 ;--------------------------------------
 align 4
@@ -272,45 +267,45 @@ align 4
 align 4
 @@:
         call    change_task
-        ; Проверить время выполнения команды
+        ; Check command execution time
         mov     eax, [timer_ticks]
         sub     eax, [TickCounter_1]
         cmp     eax, MaxCDWaitTime
-        ja      @@Err1_1   ;ошибка тайм-аута
-        ; Проверить готовность
+        ja      @@Err1_1   ; time out error
+        ; Check readiness
 ;--------------------------------------
 align 4
 .test_1:
         in      al, dx
-        test    al, 0x80  ;состояние сигнала BSY
+        test    al, 0x80  ; BSY signal state
         jnz     @@WaitDevice1
 
-        test    al, 1    ;состояние сигнала ERR
+        test    al, 1    ; ERR signal state
         jnz     @@Err6_temp
 
-        test    al, 0x8  ;состояние сигнала DRQ
+        test    al, 0x8  ; DRQ signal state
         jz      @@WaitDevice1
-; Принять блок данных от контроллера
+; Receive data block from controller
         mov     edi, [CDDataBuf_pointer]
-        ; Загрузить адрес регистра данных контроллера
+        ; Load controller's data register address
         mov     dx, [ATABasePortAddr]
-        ; Загрузить в счетчик размер блока в байтах
+        ; Load the block size in bytes into the counter
         xor     ecx, ecx
         mov     cx, CDBlockSize
-        ; Вычислить размер блока в 16-разрядных словах
-        shr     cx, 1 ;разделить размер блока на 2
-        ; Принять блок данных
+        ; Calculate block size in 16-bit words
+        shr     cx, 1 ; divide block size by 2
+        ; Receive data block
         cli
         cld
         rep insw
         sti
 ;--------------------------------------
-; Успешное завершение приема данных
+; Successful completion of data receive
 @@End_8:
         xor     eax, eax
         ret
 ;--------------------------------------
-; Записать код ошибки
+; Write error code
 @@Err1_1:
         xor     eax, eax
         inc     eax
@@ -325,20 +320,20 @@ align 4
         ret
 ;-----------------------------------------------------------------------------
 ;***********************************************
-;*  ПОСЛАТЬ УСТРОЙСТВУ ATAPI ПАКЕТНУЮ КОМАНДУ, *
-;*     НЕ ПРЕДУСМАТРИВАЮЩУЮ ПЕРЕДАЧИ ДАННЫХ    *
-;* Входные параметры передаются через          *
-;* глобальные перменные:                       *
-;* ChannelNumber - номер канала;               *
-;* DiskNumber - номер диска на канале;         *
-;* PacketCommand - 12-байтный командный пакет. *
+;*  SEND TO ATAPI DEVICE PACKET COMMAND,       *
+;*     THAT DOESNT MEAN TRANSMIT DATA          *
+;* Input parameters are passed through global  *
+;* variables:                                  *
+;* ChannelNumber - channel number;             *
+;* DiskNumber - disk number on channel.        *
+;* PacketCommand - 12-byte command packet.     *
 ;***********************************************
 SendPacketNoDatCommand:
         pushad
         xor     eax, eax
-; Задать режим CHS
+; Set CHS mode
         mov     byte [ATAAddressMode], al
-; Послать ATA-команду передачи пакетной команды
+; Send ATA command to send packet command
         mov     byte [ATAFeatures], al
         mov     byte [ATASectorCount], al
         mov     byte [ATASectorNumber], al
@@ -347,31 +342,30 @@ SendPacketNoDatCommand:
         mov     [ATACommand], 0xA0
         call    SendCommandToHDD_1
         test    eax, eax
-        jnz     @@End_9  ;закончить, сохранив код ошибки
-; Ожидание готовности дисковода к приему
-; пакетной команды
+        jnz     @@End_9  ; finish, saving the error code
+; Waiting for the drive to be ready to receive a packet command
         mov     dx, [ATABasePortAddr]
-        add     dx, 7  ;порт 1х7h
+        add     dx, 7  ; port 1x7h
 ;--------------------------------------
 align 4
 @@WaitDevice0_1:
         call    change_task
-        ; Проверить время ожидания
+        ; Check waiting time
         mov     eax, [timer_ticks]
         sub     eax, [TickCounter_1]
         cmp     eax, BSYWaitTime
-        ja      @@Err1_3   ;ошибка тайм-аута
-        ; Проверить готовность
+        ja      @@Err1_3  ; time out error
+        ; Check readiness
         in      al, dx
-        test    al, 0x80  ;состояние сигнала BSY
+        test    al, 0x80  ; BSY signal state
         jnz     @@WaitDevice0_1
 
-        test    al, 1    ;состояние сигнала ERR
+        test    al, 1     ; ERR signal state
         jnz     @@Err6_1
 
-        test    al, 0x8  ;состояние сигнала DRQ
+        test    al, 0x8   ; DRQ signal state
         jz      @@WaitDevice0_1
-; Послать пакетную команду
+; Send packet command
 ;        cli
         mov     dx, [ATABasePortAddr]
         mov     ax, word [PacketCommand]
@@ -389,27 +383,27 @@ align 4
 ;        sti
         cmp     [ignore_CD_eject_wait], 1
         je      @@clear_DEC
-; Ожидание подтверждения приема команды
+; Waiting for confirmation of command receive
         mov     dx, [ATABasePortAddr]
-        add     dx, 7  ;порт 1х7h
+        add     dx, 7  ; port 1x7h
 ;--------------------------------------
 align 4
 @@WaitDevice1_1:
         call    change_task
-        ; Проверить время выполнения команды
+        ; Check command execution time
         mov     eax, [timer_ticks]
         sub     eax, [TickCounter_1]
         cmp     eax, MaxCDWaitTime
-        ja      @@Err1_3   ;ошибка тайм-аута
-        ; Ожидать освобождения устройства
+        ja      @@Err1_3   ; time out error
+        ; Wait for device release
         in      al, dx
-        test    al, 0x80  ;состояние сигнала BSY
+        test    al, 0x80   ; BSY signal state
         jnz     @@WaitDevice1_1
 
-        test    al, 1    ;состояние сигнала ERR
+        test    al, 1      ; ERR signal state
         jnz     @@Err6_1
 
-        test    al, 0x40  ;состояние сигнала DRDY
+        test    al, 0x40   ; DRDY signal state
         jz      @@WaitDevice1_1
 ;--------------------------------------
 @@clear_DEC:
@@ -417,7 +411,7 @@ align 4
         popad
         ret
 ;--------------------------------------
-; Записать код ошибки
+; Write error code
 @@Err1_3:
         xor     eax, eax
         inc     eax
@@ -432,34 +426,34 @@ align 4
         ret
 ;-----------------------------------------------------------------------------
 ;****************************************************
-;*          ПОСЛАТЬ КОМАНДУ ЗАДАННОМУ ДИСКУ         *
-;* Входные параметры передаются через глобальные    *
-;* переменные:                                      *
-;* ChannelNumber - номер канала (1 или 2);          *
-;* DiskNumber - номер диска (0 или 1);              *
-;* ATAFeatures - "особенности";                     *
-;* ATASectorCount - количество секторов;            *
-;* ATASectorNumber - номер начального сектора;      *
-;* ATACylinder - номер начального цилиндра;         *
-;* ATAHead - номер начальной головки;               *
-;* ATAAddressMode - режим адресации (0-CHS, 1-LBA); *
-;* ATACommand - код команды.                        *
-;* После успешного выполнения функции:              *
-;* в ATABasePortAddr - базовый адрес HDD;           *
-;* в DevErrorCode - ноль.                           *
-;* При возникновении ошибки в DevErrorCode будет    *
-;* возвращен код ошибки в eax                       *
+;*          SEND COMMAND TO GIVEN DISK              *
+;* Input parameters are passed through the global   *
+;* variables:                                       *
+;* ChannelNumber - channel number (1 or 2);         *
+;* DiskNumber - disk number (0 or 1);               *
+;* ATAFeatures - "features";                        *
+;* ATASectorCount - sector count;                   *
+;* ATASectorNumber - initial sector number;         *
+;* ATACylinder - initial cylinder number;           *
+;* ATAHead - initial head number;                   *
+;* ATAAddressMode - addressing mode (0-CHS, 1-LBA); *
+;* ATACommand - command code.                       *
+;* If the function finished successfully:           *
+;* in ATABasePortAddr - base address of HDD;        *
+;* in DevErrorCode - zero.                          *
+;* If error has occured then in DevErrorCode will   *
+;* be the error code.                               *
 ;****************************************************
 SendCommandToHDD_1:
-; Проверить значение кода режима
+; Check the addressing mode code
         cmp     [ATAAddressMode], 1
         ja      @@Err2_4
-; Проверить корректность номера канала
+; Check the channel number correctness
         movzx   ebx, [ChannelNumber]
         dec     ebx
         cmp     ebx, 1
         ja      @@Err3_4
-; Установить базовый адрес
+; Set the base address
         shl     ebx, 2
         mov     eax, [cdpos]
         dec     eax
@@ -469,18 +463,18 @@ SendCommandToHDD_1:
         add     eax, ebx
         mov     ax, [eax+IDE_DATA.BAR0_val]
         mov     [ATABasePortAddr], ax
-; Ожидание готовности HDD к приему команды
-        ; Выбрать нужный диск
+; Waiting for HDD ready to receive a command
+        ; Choose desired disk
         mov     dx, [ATABasePortAddr]
-        add     dx, 6   ;адрес регистра головок
+        add     dx, 6   ; address of the heads register
         mov     al, [DiskNumber]
-        cmp     al, 1   ;проверить номера диска
+        cmp     al, 1   ; check the disk number
         ja      @@Err4_4
 
         shl     al, 4
         or      al, 10100000b
         out     dx, al
-        ; Ожидать, пока диск не будет готов
+        ; Waiting for disk ready
         inc     dx
         mov     eax, [timer_ticks]
         mov     [TickCounter_1], eax
@@ -499,43 +493,43 @@ align 4
 align 4
 @@:
         call    change_task
-        ; Проверить время ожидания
+        ; Check waiting time
         mov     eax, [timer_ticks]
         sub     eax, [TickCounter_1]
-        cmp     eax, BSYWaitTime ;300    ;ожидать 3 сек.
-        ja      @@Err1_4   ;ошибка тайм-аута
+        cmp     eax, BSYWaitTime ;300    ; wait for 3 seconds
+        ja      @@Err1_4   ; time out error
 ;--------------------------------------
 align 4
 .test:
-        in      al, dx ; Прочитать регистр состояния
-        ; Проверить состояние сигнала BSY
+        in      al, dx ; Read the state register
+        ; Check the state of BSY signal
         test    al, 0x80
         jnz     @@WaitHDReady_2
-        ; Проверить состояние сигнала DRQ
+        ; Check the state of DRQ signal
         test    al, 0x8
         jnz     @@WaitHDReady_2
-; Загрузить команду в регистры контроллера
+; load command to controller's registers
         cli
         mov     dx, [ATABasePortAddr]
-        inc     dx      ;регистр "особенностей"
+        inc     dx      ; "features" register
         mov     al, [ATAFeatures]
         out     dx, al
-        inc     dx      ;счетчик секторов
+        inc     dx      ; sector counter
         mov     al, [ATASectorCount]
         out     dx, al
-        inc     dx      ;регистр номера сектора
+        inc     dx      ; sector number register
         mov     al, [ATASectorNumber]
         out     dx, al
-        inc     dx      ;номер цилиндра (младший байт)
+        inc     dx      ; cylinder number (low byte)
         mov     ax, [ATACylinder]
         out     dx, al
-        inc     dx      ;номер цилиндра (старший байт)
+        inc     dx      ; cylinder number (high byte)
         mov     al, ah
         out     dx, al
-        inc     dx      ;номер головки/номер диска
+        inc     dx      ; head number / disk number
         mov     al, [DiskNumber]
         shl     al, 4
-        cmp     [ATAHead], 0xF ;проверить номер головки
+        cmp     [ATAHead], 0xF ; check head number
         ja      @@Err5_4
 
         or      al, [ATAHead]
@@ -544,9 +538,9 @@ align 4
         shl     ah, 6
         or      al, ah
         out     dx, al
-; Послать команду
+; Send command
         mov     al, [ATACommand]
-        inc     dx      ;регистр команд
+        inc     dx      ; command register
         out     dx, al
         sti
 ;--------------------------------------
@@ -554,7 +548,7 @@ align 4
         xor     eax, eax
         ret
 ;--------------------------------------
-; Записать код ошибки
+; Write error code
 @@Err1_4:
         xor     eax, eax
         inc     eax
@@ -577,27 +571,27 @@ align 4
         ret
 ;-----------------------------------------------------------------------------
 ;*************************************************
-;*    ОЖИДАНИЕ ГОТОВНОСТИ УСТРОЙСТВА К РАБОТЕ    *
-;* Входные параметры передаются через глобальные *
-;* перменные:                                    *
-;* ChannelNumber - номер канала;                 *
-;* DiskNumber - номер диска на канале.           *
+;*    WAIT FOR THE DEVICE IS READY FOR WORK      *
+;* Input parameters are passed through global    *
+;* variables:                                    *
+;* ChannelNumber - channel number;               *
+;* DiskNumber - disk number on channel.          *
 ;*************************************************
 WaitUnitReady:
         pusha
-; Запомнить время начала операции
+; Remember the peration start time
         mov     eax, [timer_ticks]
         mov     [WURStartTime], eax
-; Очистить буфер пакетной команды
+; Clear the packet command buffer
         call    clear_packet_buffer
-; Сформировать команду TEST UNIT READY
+; Generate TEST UNIT READY command
         mov     [PacketCommand], word 0
-; ЦИКЛ ОЖИДАНИЯ ГОТОВНОСТИ УСТРОЙСТВА
+; waiting loop for device readiness
         mov     ecx, NoTickWaitTime
 ;--------------------------------------
 align 4
 @@SendCommand:
-        ; Подать команду проверки готовности
+        ; Send readiness check command
         call    SendPacketNoDatCommand
         cmp     [timer_ticks_enable], 0
         jne     @f
@@ -613,17 +607,17 @@ align 4
 align 4
 @@:
         call    change_task
-        ; Проверить код ошибки
+        ; Check the error code
         cmp     [DevErrorCode], 0
         je      @@End_11
-        ; Проверить время ожидания готовности
+        ; Check waiting time
         mov     eax, [timer_ticks]
         sub     eax, [WURStartTime]
         cmp     eax, MaxCDWaitTime
         jb      @@SendCommand
 ;--------------------------------------
 .Error:
-        ; Ошибка тайм-аута
+        ; time out error
         mov     [DevErrorCode], 1
 ;--------------------------------------
 @@End_11:
@@ -631,21 +625,21 @@ align 4
         ret
 ;-----------------------------------------------------------------------------
 ;*************************************************
-;*            ЗАПРЕТИТЬ СМЕНУ ДИСКА              *
-;* Входные параметры передаются через глобальные *
-;* перменные:                                    *
-;* ChannelNumber - номер канала;                 *
-;* DiskNumber - номер диска на канале.           *
+;*            FORBID DISK CHANGE                 *
+;* Input parameters are passed through global    *
+;* variables:                                    *
+;* ChannelNumber - channel number;               *
+;* DiskNumber - disk number on channel.          *
 ;*************************************************
 prevent_medium_removal:
         pusha
-; Очистить буфер пакетной команды
+; Clear the packet command buffer
         call    clear_packet_buffer
-; Задать код команды
+; Set command code
         mov     [PacketCommand], byte 0x1E
-; Задать код запрета
+; Set "Forbid" code
         mov     [PacketCommand+4], byte 11b
-; Подать команду
+; Send command
         call    SendPacketNoDatCommand
         mov     eax, ATAPI_IDE0_lock
         add     eax, [cdpos]
@@ -655,21 +649,21 @@ prevent_medium_removal:
         ret
 ;-----------------------------------------------------------------------------
 ;*************************************************
-;*            РАЗРЕШИТЬ СМЕНУ ДИСКА              *
-;* Входные параметры передаются через глобальные *
-;* перменные:                                    *
-;* ChannelNumber - номер канала;                 *
-;* DiskNumber - номер диска на канале.           *
+;*            ALLOW DISK CHANGE                  *
+;* Input parameters are passed through global    *
+;* variables:                                    *
+;* ChannelNumber - channel number;               *
+;* DiskNumber - disk number on channel.          *
 ;*************************************************
 allow_medium_removal:
         pusha
-; Очистить буфер пакетной команды
+; Clear the packet command buffer
         call    clear_packet_buffer
-; Задать код команды
+; Set command code
         mov     [PacketCommand], byte 0x1E
-; Задать код запрета
+; unset "Forbid" code
         mov     [PacketCommand+4], byte 0
-; Подать команду
+; Send command
         call    SendPacketNoDatCommand
         mov     eax, ATAPI_IDE0_lock
         add     eax, [cdpos]
@@ -679,54 +673,54 @@ allow_medium_removal:
         ret
 ;-----------------------------------------------------------------------------
 ;*************************************************
-;*         ЗАГРУЗИТЬ НОСИТЕЛЬ В ДИСКОВОД         *
-;* Входные параметры передаются через глобальные *
-;* перменные:                                    *
-;* ChannelNumber - номер канала;                 *
-;* DiskNumber - номер диска на канале.           *
+;*         LOAD DISK TO THE DRIVE                *
+;* Input parameters are passed through global    *
+;* variables:                                    *
+;* ChannelNumber - channel number;               *
+;* DiskNumber - disk number on channel.          *
 ;*************************************************
 LoadMedium:
         pusha
-; Очистить буфер пакетной команды
+; Clear the packet command buffer
         call    clear_packet_buffer
-; Сформировать команду START/STOP UNIT
-        ; Задать код команды
+; Generate START/STOP UNIT command
+        ; Set command code
         mov     [PacketCommand], word 0x1B
-        ; Задать операцию загрузки носителя
+        ; Set disk loading operation
         mov     [PacketCommand+4], word 00000011b
-; Подать команду
+; Send command
         call    SendPacketNoDatCommand
         popa
         ret
 ;-----------------------------------------------------------------------------
 ;*************************************************
-;*         ИЗВЛЕЧЬ НОСИТЕЛЬ ИЗ ДИСКОВОДА         *
-;* Входные параметры передаются через глобальные *
-;* перменные:                                    *
-;* ChannelNumber - номер канала;                 *
-;* DiskNumber - номер диска на канале.           *
+;*         REMOVE THE DISK FROM THE DRIVE        *
+;* Input parameters are passed through global    *
+;* variables:                                    *
+;* ChannelNumber - channel number;               *
+;* DiskNumber - disk number on channel.          *
 ;*************************************************
 EjectMedium:
         pusha
-; Очистить буфер пакетной команды
+; Clear the packet command buffer
         call    clear_packet_buffer
-; Сформировать команду START/STOP UNIT
-        ; Задать код команды
+; Generate START/STOP UNIT command
+        ; Set command code
         mov     [PacketCommand], word 0x1B
-        ; Задать операцию извлечения носителя
+        ; Set the operation to eject disk
         mov     [PacketCommand+4], word 00000010b
-; Подать команду
+; Send command
         call    SendPacketNoDatCommand
         popa
         ret
 ;-----------------------------------------------------------------------------
 ;*************************************************
-;* Проверить событие нажатия кнопки извлечения   *
-;*                     диска                     *
-;* Входные параметры передаются через глобальные *
-;* переменные:                                   *
-;* ChannelNumber - номер канала;                 *
-;* DiskNumber - номер диска на канале.           *
+;* Check the event of pressing the eject button  *
+;*                                               *
+;* Input parameters are passed through global    *
+;* variables:                                    *
+;* ChannelNumber - channel number;               *
+;* DiskNumber - disk number on channel.          *
 ;*************************************************
 proc check_ATAPI_device_event_has_work?
         mov     eax, [timer_ticks]
@@ -1146,78 +1140,77 @@ ignore_CD_eject_wait db 0
 endg
 ;-----------------------------------------------------------------------------
 ;*************************************************
-;* Получить сообщение о событии или состоянии    *
-;*                  устройства                   *
-;* Входные параметры передаются через глобальные *
-;* переменные:                                   *
-;* ChannelNumber - номер канала;                 *
-;* DiskNumber - номер диска на канале.           *
+;* Get an event or device status message         *
+;*                                               *
+;* Input parameters are passed through global    *
+;* variables:                                    *
+;* ChannelNumber - channel number;               *
+;* DiskNumber - disk number on channel           *
 ;*************************************************
 GetEvent_StatusNotification:
         pusha
         mov     [CDDataBuf_pointer], CDDataBuf
-; Очистить буфер пакетной команды
+; Clear the packet command buffer
         call    clear_packet_buffer
-; Задать код команды
+; Set command code
         mov     [PacketCommand], byte 4Ah
         mov     [PacketCommand+1], byte 00000001b
-; Задать запрос класса сообщений
+; Set message class request
         mov     [PacketCommand+4], byte 00010000b
-; Размер выделенной области
+; Size of allocated area
         mov     [PacketCommand+7], byte 8h
         mov     [PacketCommand+8], byte 0h
-; Подать команду
+; Send command
         call    SendPacketDatCommand
         popa
         ret
 ;-----------------------------------------------------------------------------
 ;*************************************************
-; прочитать информацию из TOC
-;* Входные параметры передаются через глобальные *
-;* переменные:                                   *
-;* ChannelNumber - номер канала;                 *
-;* DiskNumber - номер диска на канале.           *
+; Read information from TOC (Table of contents)  *
+;* Input parameters are passed through global    *
+;* variables:                                    *
+;* ChannelNumber - channel number;               *
+;* DiskNumber - disk number on channel           *
 ;*************************************************
 Read_TOC:
         pusha
         mov     [CDDataBuf_pointer], CDDataBuf
-; Очистить буфер пакетной команды
+; Clear the packet command buffer
         call    clear_packet_buffer
-; Сформировать пакетную команду для считывания
-; сектора данных
+; Generate a packet command to read a data sector
         mov     [PacketCommand], byte 0x43
-        ; Задать формат
+        ; Set format
         mov     [PacketCommand+2], byte 1
-; Размер выделенной области
+; Size of allocated area
         mov     [PacketCommand+7], byte 0xFF
         mov     [PacketCommand+8], byte 0h
-; Подать команду
+; Send a command
         call    SendPacketDatCommand
         popa
         ret
 ;-----------------------------------------------------------------------------
-;*************************************************
-;* ОПРЕДЕЛИТЬ ОБЩЕЕ КОЛИЧЕСТВО СЕКТОРОВ НА ДИСКЕ *
-;* Входные параметры передаются через глобальные *
-;* переменные:                                   *
-;* ChannelNumber - номер канала;                 *
-;* DiskNumber - номер диска на канале.           *
-;*************************************************
+;*****************************************************
+;* DETERMINE THE TOTAL NUMBER OF SECTORS ON THE DISK *
+;* Input parameters are passed through global        *
+;* variables:                                        *
+;* ChannelNumber - channel number;                   *
+;* DiskNumber - disk number on channel               *
+;*****************************************************
 ;ReadCapacity:
 ;       pusha
-;; Очистить буфер пакетной команды
+;; Clear the packet command buffer
 ;       call  clear_packet_buffer
-;; Задать размер буфера в байтах
+;; Set the buffer size in bytes
 ;       mov     [CDBlockSize],8
-;; Сформировать команду READ CAPACITY
+;; Generate READ CAPACITY command
 ;       mov     [PacketCommand],word 25h
-;; Подать команду
+;; Send command
 ;       call    SendPacketDatCommand
 ;       popa
 ;       ret
 ;-----------------------------------------------------------------------------
 clear_packet_buffer:
-; Очистить буфер пакетной команды
+; Clear the packet command buffer
         and     [PacketCommand], dword 0
         and     [PacketCommand+4], dword 0
         and     [PacketCommand+8], dword 0
