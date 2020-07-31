@@ -11,8 +11,8 @@ $Revision$
 ;**********************************************************
 ;  Direct work with floppy disk drive
 ;**********************************************************
-; Source code author Kulakov Vladimir Gennadievich.
-; Adaptation and improvement Mario79
+; Source code author -  Kulakov Vladimir Gennadievich.
+; Adaptation and improvement -  Mario79.
 
 ;give_back_application_data:  ; give back to application
 ;     mov edi,[TASK_BASE]
