@@ -1,7 +1,7 @@
 @^ fix macro comment {
 ^@ fix }
 
-; -------------------------
+; --------------------------
 macro library [lname,fname]
 {
   forward
