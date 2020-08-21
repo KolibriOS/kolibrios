@@ -1,0 +1,13 @@
+Create new library wrapper
+
+1. Redefine lib_name and lib_name_str in __lib__.inc
+2. Create file for each symbol, basing on sample_symbol.asm and for each:
+2.1. Redefine fun to *your_symbol_name*
+2.2. Redefine fun_name to '*your_symbol_name*' (with quotes, this is ASCII string, no trailing zero need)
+3. Change make.bat as appropriate
+
+ACHTUNG: lib_name need to be unique in project, this is why I started it with "@" and put "." into.
+ACHTUNG: lib_name_str must be at least 5 symbols long, if is not, fix this adding padding to the path.
+
+Now you can create header file and declare extern variables pointers-to-functions, and then link your app with -llibname (put .a file in lib folder).
+For examples of such header files, look at include/kos/inputbox.h, include/kos/console.h and include/kos/http.h. IMO, first one is the simplest.
