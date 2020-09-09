@@ -161,6 +161,7 @@ E_LIB glClose ;(void)
 ; glu functions
 ;
 
+E_LIB gluPerspective ;(double, double, double, double)
 E_LIB gluNewQuadric
 E_LIB gluDeleteQuadric
 E_LIB gluQuadricDrawStyle

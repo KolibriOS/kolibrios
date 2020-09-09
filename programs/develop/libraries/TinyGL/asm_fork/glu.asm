@@ -12,6 +12,13 @@ offs_qobj_TextureFlag equ 8
 offs_qobj_Normals equ 12
 offs_qobj_ErrorFunc equ 16
 
+;Так как некоторые извращенческие функции OpenGL воспринимают только параметры
+;типа double (8 байт) то придется пихать их в стек макросом glpush
+macro glpush GLDoubleVar {
+	push dword[GLDoubleVar+4]
+	push dword[GLDoubleVar]
+}
+
 ;void drawTorus(float rc, int numc, float rt, int numt)
 ;{
 ;}
@@ -20,9 +27,43 @@ offs_qobj_ErrorFunc equ 16
 ;{
 ;}
 
-;void gluPerspective(GLdouble fovy, GLdouble aspect, GLdouble zNear, GLdouble zFar )
-;{
-;}
+align 4
+an360f dd 360.0
+
+align 16
+proc gluPerspective, fovy:qword, aspect:qword, zNear:qword, zFar:qword
+locals
+	mfW dq ?
+	fW dq ?
+	mfH dq ?
+	fH dq ?
+endl
+	fldpi
+	fmul qword[fovy]
+	fdiv dword[an360f]
+	fptan
+	ffree st0 ;выкидываем 1.0 которая осталось после вычисления тангенса
+	fincstp
+	fmul qword[zNear]
+	fld st0
+	fchs
+	fstp qword[mfH]
+	fst qword[fH]
+	fmul qword[aspect]
+	fld st0
+	fchs
+	fstp qword[mfW]
+	fstp qword[fW]
+
+	glpush zFar
+	glpush zNear
+	glpush fH
+	glpush mfH
+	glpush fW
+	glpush mfW
+	call glFrustum
+	ret
+endp
 
 ;void gluLookAt(GLdouble eyex, GLdouble eyey, GLdouble eyez,
 ;	  GLdouble centerx, GLdouble centery, GLdouble centerz,

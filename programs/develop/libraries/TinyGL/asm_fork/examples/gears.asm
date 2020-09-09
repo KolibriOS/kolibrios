@@ -1,5 +1,5 @@
 use32
-	org 0x0
+	org 0
 	db 'MENUET01'
 	dd 1,start,i_end,mem,stacktop,0,cur_dir_path
 
@@ -16,6 +16,13 @@ include 'fps.inc'
 macro matr_cell c_funct,c_param,funct,param, dia
 {
 	dia dword[esp-4*(c_param*(c_funct-funct)+(1+c_param-param))]
+}
+
+;Так как некоторые извращенческие функции OpenGL воспринимают только параметры
+;типа double (8 байт) то придется пихать их в стек макросом glpush
+macro glpush GLDoubleVar {
+	push dword[GLDoubleVar+4]
+	push dword[GLDoubleVar]
 }
 
 align 4
@@ -65,6 +72,21 @@ start:
 align 4
 red_win:
 	call draw_window
+	mcall SF_THREAD_INFO,procinfo,-1
+	mov eax,dword[procinfo.box.height]
+	cmp eax,120
+	jge @f
+		mov eax,120 ;min size
+	@@:
+	sub eax,42
+	mov ebx,dword[procinfo.box.width]
+	cmp ebx,200
+	jge @f
+		mov ebx,200
+	@@:
+	sub ebx,10
+		stdcall reshape, ebx,eax
+	.end0:
 
 align 16
 still:
@@ -93,12 +115,11 @@ a2 dd 0.3
 
 ; new window size or exposure
 align 4
-proc reshape uses ebx ecx, width:dword, height:dword
+proc reshape, width:dword, height:dword
 locals
 	h dq ?
 	mh dq ?
 endl
-
 	stdcall [glViewport], 0, 0, [width], [height]
 	stdcall [glMatrixMode], GL_PROJECTION
 	stdcall [glLoadIdentity]
@@ -107,11 +128,15 @@ endl
 	fst qword[h] ;h = height / width
 	fchs
 	fstp qword[mh]
-	mov ebx,ebp
-	sub ebx,8
-	mov ecx,ebp
-	sub ecx,16
-	stdcall [glFrustum], dword p1, dword p2, ebx, ecx, dword p5, dword p6
+	
+	glpush p6
+	glpush p5
+	glpush h
+	glpush mh
+	glpush p2
+	glpush p1
+	call [glFrustum]
+	
 	stdcall [glMatrixMode], GL_MODELVIEW
 	stdcall [glLoadIdentity]
 	stdcall [glTranslatef], 0.0, 0.0, -40.0
@@ -198,7 +223,6 @@ key:
 		fstp dword[view_roty]
 		call draw_3d
 	@@:
-
 	jmp still
 
 align 4
@@ -219,10 +243,6 @@ title3: db 'ESC - exit   Arrow keys - rotate   +/- zoom'
 .end: db 0
 fps:	db 'FPS:'
 .end: db 0
-
-align 4
-ctx1 db 28 dup (0) ;TinyGLContext or KOSGLContext
-;sizeof.TinyGLContext = 28
 
 align 16
 draw_3d:
@@ -887,14 +907,18 @@ include '../export.inc'
 ;--------------------------------------------------
 system_path db '/sys/lib/'
 name_tgl db 'tinygl.obj',0
-err_message_found_lib db 'Sorry I cannot load library tinygl.obj',0
+
 head_f_i:
-head_f_l db 'System error',0
-err_message_import db 'Error on load import library tinygl.obj',0
+head_f_l db '"System error',0
+err_message_import db 'Error on load import library ',39,'tinygl.obj',39,'" -tE',0
+err_message_found_lib db 'Sorry I cannot load library ',39,'tinygl.obj',39,'" -tE',0
 ;--------------------------------------------------
 
 align 16
 i_end:
+ctx1 db 28 dup (0) ;TinyGLContext or KOSGLContext
+;sizeof.TinyGLContext = 28
+procinfo process_information 
 	rb 4096
 stacktop:
 cur_dir_path:

@@ -538,29 +538,23 @@ endl
 endp
 
 align 4
-proc glFrustum uses eax, left:dword,right:dword,bottom:dword,top:dword,\
-	near:dword,farv:dword
+proc glFrustum uses eax, left:qword, right:qword, bottom:qword, top:qword,\
+	near:qword, farv:qword
 locals
 	p rd 7
 endl
 	mov dword[p],OP_Frustum
-	mov eax,[left]
-	fld qword[eax]
+	fld qword[left]
 	fstp dword[p+4]
-	mov eax,[right]
-	fld qword[eax]
+	fld qword[right]
 	fstp dword[p+8]
-	mov eax,[bottom]
-	fld qword[eax]
+	fld qword[bottom]
 	fstp dword[p+12]
-	mov eax,[top]
-	fld qword[eax]
+	fld qword[top]
 	fstp dword[p+16]
-	mov eax,[near]
-	fld qword[eax]
+	fld qword[near]
 	fstp dword[p+20]
-	mov eax,[farv]
-	fld qword[eax]
+	fld qword[farv]
 	fstp dword[p+24]
 
 	mov eax,ebp
