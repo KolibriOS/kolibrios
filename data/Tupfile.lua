@@ -764,6 +764,7 @@ for i,v in ipairs(img_dirs) do
   end
 end
 -- copy files
+output_deps = {"kolibri.img"}
 for i,v in ipairs(img_files) do
   local_file = v[2]
   if v[1] == "KERNEL.MNT" and tup.getconfig("INSERT_REVISION_ID") ~= ""
@@ -773,8 +774,8 @@ for i,v in ipairs(img_files) do
     -- note that .revision and .kernel.mnt must begin with .
     -- to prevent tup from tracking them
     if build_type == "rus"
-    then str='$(LANG=ru_RU.utf8 date -u +"[автосборка %d %b %Y %R, r$(cat .revision)]"|iconv -f utf8 -t cp866)'
-    else str='$(date -u +"[auto-build %d %b %Y %R, r$(cat .revision)]")'
+    then str='$(LANG=ru_RU.utf8 date -u +"[автосборка %d %b %Y %R, r$(get-current-revision)]"|iconv -f utf8 -t cp866)'
+    else str='$(date -u +"[auto-build %d %b %Y %R, r$(get-current-revision)]")'
     end
     str = string.gsub(str, "%$", "\\$") -- escape $ as \$
     str = string.gsub(str, "%%", "%%%%") -- escape % as %%
@@ -782,12 +783,13 @@ for i,v in ipairs(img_files) do
     make_img_command = make_img_command .. " && str=" .. str
     make_img_command = make_img_command .. ' && echo -n $str | dd of=.kernel.mnt bs=1 seek=`expr 279 - length "$str"` conv=notrunc 2>/dev/null'
     local_file = ".kernel.mnt"
+    table.insert(output_deps, local_file)
   end
   make_img_command = make_img_command .. ' && mcopy -moi kolibri.img "' .. local_file .. '" "::' .. v[1] .. '"'
 end
 
 -- generate tup rule for kolibri.img
-tup.definerule{inputs = input_deps, command = make_img_command, outputs = {"kolibri.img"}}
+tup.definerule{inputs = input_deps, command = make_img_command, outputs = output_deps}
 tup.definerule{inputs = {"../kernel/trunk/boot/uefi4kos.asm", "kolibri.img", "../kernel/trunk/kernel.bin"}, command = "fasm ../kernel/trunk/boot/uefi4kos.asm %o", outputs = {"kolibri.efi"}}
 
 -- generate command and dependencies for mkisofs
