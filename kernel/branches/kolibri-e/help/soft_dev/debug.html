@@ -1,0 +1,123 @@
+<html>
+  <head>
+    <title>Debugging Applications Guide</title>
+    <text><b>KolibriOS Help</b></text>
+    <text><a href="\help\help_main.html">[To main]</a></text>
+    <text><a href="\help\soft_dev\fasm_manual.html">  [To the next point] </a></text>
+    <text><a href="\help\comm_topics\sys_funct_main.html">  [To the previous point] </a></text>
+  </head>
+  <body>
+    <h2>Debugging Applications Guide</h2>
+    <text><b>Introduction</b></br></br>
+
+mtdbg is a debugger for the KolibriOS. This documentation describes the capabilities of the debugger and how to work with it. For questions, please visit our forum (board.kolibrios.org).</br></br>
+
+<b>General description</b></br></br>
+
+Mtdbg can only debug one program at a time. Let's call such a program loaded for debugging. If no program is loaded, the vast majority of debugging actions are not available.</br></br>
+
+mtdbg is controlled by the command line entered from the keyboard. The command line is displayed at the bottom of the debugger window. The standard input keys Backspace, Delete, Home, End, left / right arrows are processed.</br>
+Commands are not case sensitive. An arbitrary non-zero number of spaces is used as a separator.</br></br>
+
+The debugger can be terminated at any time with the "quit" command (no arguments). However, you can just click on the close button in the upper left corner of the window.</br></br>
+
+Running the debugger without command line parameters results in no program being loaded. Also, mtdbg can be run with the command line, in this case it will try to load the program with the name specified as the first command line argument and parameters specified as subsequent (if any).</br></br>
+
+If no program is loaded, you can load the program with the command load &lt;full name of the executable file&gt; [&lt;arguments&gt;].</br>
+For example:</br>
+load / rd / 1 / example</br>
+LOAD / rd / 1 / aclock w200 h200</br>
+LoaD / hd0 / 1 / menuetos / dosbox / dosbox</br></br>
+
+Everything after the first space after the name of the executable file is literally passed to the program as a command line.</br>
+The load command reports the result in a message window (just above the command line window). If the program was loaded, then this will appear the corresponding message; if not successful, the message will indicate the reason for the error. The most likely one is "file not found" if the filename is incorrect.</br></br>
+
+The debugger can load files with information about the names in the program (labels, global variables) - text files, each line of which has the form 0x &lt;hex_address_value&gt; &lt;name&gt; (lines that do not have this form are ignored). Such a file can be created manually or generated automatically when compiling the source by fasm.</br>
+Explicit loading is performed with the command load-symbols &lt;full name of the symbol file&gt;.</br>
+In addition, when executing the load command, the debugger checks for the existence of a file with the same name as the loaded binary and the extension .dbg (/rd/1/example.dbg for the first example above), and if there is one, loads it automatically (displaying the message "Symbols loaded" if everything is ok).</br></br>
+
+It may happen that the downloaded program is packed. The general principle of packaging programs is the following: first, the source file is packed (by some compression algorithm), then a small code is assigned, which receives control when the program starts, unpacks the source code in memory, and then transfers control to it. If the program is packed, then its "real" code is not visible and for debugging you must first go through the unpacker code. mtdbg detects most of the existing packers (mxp, mxp_lzo, mxp_nrv, mtappack) and in this case offers to automatically go to the "real" code. It is recommended to agree (press 'y' or Enter), but you can refuse.</br>
+In case of failure and in the case when the program is packed with something unknown, you can use the "unpack" command (no arguments). Call it only when you are sure that the program is packed and that control has not yet reached the main code! (Starting from Kolibri 0.6.5.0, this entire paragraph is no longer relevant, since applications can be packaged like any binaries with kpack and the unpacker code is in the kernel and unpacking is transparent for debugging.)</br></br>
+
+The loaded program can be nailed with the "terminate" command (no arguments). The detach command (with no arguments) is detached from the program, after which the program continues to execute normally, as if the debugger was not present. After both of these commands, the program ceases to be debuggable.</br></br>
+
+You can reload the program for debugging with the "reload" command (no arguments). If there is already a loaded program, then it is nailed and starts (from the very beginning) a new instance (with the same command line), in this case the command is similar to the commands terminate</br>
+load &lt;last program name&gt; &lt;last program arguments&gt;</br>
+Otherwise, the program that was debugged last (in the current session with mtdbg) (with the same command line) is loaded again, i.e. almost the same as load &lt;last program name&gt; &lt;last program arguments&gt;, but the reload command is shorter and more convenient in both cases; moreover, load considers that a new program is loaded, and transfers the data window (see below) to address zero, and reload saves the current address.</br></br>
+
+The "help" command is always available, which can be abbreviated to "h".</br>
+All teams are divided into groups:</br>
+help with no arguments displays a list of command groups.</br>
+help specifying a group displays a list of commands for that group with short comments.</br>
+help with a command specifies information about the specified command.</br>
+For example:</br>
+help</br>
+help control</br>
+h LoaD</br></br>
+
+The debugger window consists of the following items, listed from top to bottom:</br>
+- status bar. If there is a loaded program, it shows its name and state ("Running" / "Paused"), if not, it says "No program loaded".</br>
+- register window - shows the values ​​of general-purpose registers, eip register and flags register. The latter is written in two ways: the full hex value and the states of individual flags: CF, PF, AF, ZF, SF, DF, OF. If the flag is cleared, then a small letter is displayed; if set, capitalized.</br></br>
+
+Registers that have changed since the previous moment are highlighted in green.</br>
+- data window (dump window) - shows the contents of the loaded program memory</br>
+- code window (disassembler window) - shows the program code in the form of disassembled instructions</br>
+- message box</br>
+- command line window</br></br>
+
+In the dump window, you can view data starting from any address, for this there is the d &lt;expression&gt; command.</br>
+Command d without arguments scrolls down the dump window. The same applies to the code window and the u &lt;expression&gt; command or just u.</br>
+For example:</br>
+d esi - shows the data located at esi (for example, useful before executing the rep movsb instruction)</br>
+d esp - shows the stack</br>
+u eip - disassembles instructions starting with the current one</br></br>
+
+Expressions in mtdbg can include</br>
+- hexadecimal constants</br>
+- the names of all general purpose registers (8 32-bit, 8 16-bit and 8 8-bit) and eip register; 16- and 8-bit register values ​​are zero-expanded to 32 bits</br>
+- four arithmetic operations +, -, *, / (with standard precedence) and brackets</br>
+- [if there is information about symbols] names loaded from dbg file</br>
+All calculations are done modulo 2 ^ 32.</br>
+Examples of expressions:</br>
+eax</br>
+eip + 2</br>
+ecx-esi-1F</br>
+al + AH * bl</br>
+ax + 2 * bH * (eip + a73)</br>
+3 * esi * di / EAX</br>
+Command ? &lt;expression&gt; evaluates the value of the specified expression.</br></br>
+
+The values ​​of the registers of the loaded program can be changed with the r command, which has two absolutely equivalent forms:</br>
+r &lt;case&gt; &lt;expression&gt;</br>
+r &lt;case&gt; = &lt;expression&gt;</br>
+(in both cases, you can add spaces to your liking). As a register, you can specify any of the above - 24 general registers and eip.</br></br>
+
+Let's say the load command has successfully loaded a program for debugging. Immediately after loading, the program is suspended and does not run.</br>
+Pressing Ctrl + F7 (similar to the command line - the "s" command) takes one step in the loaded program, after which control returns to the debugger, which shows the new contents of registers and memory. The int 40h system call (as well as the sysenter and syscall instructions) counts as one step.</br>
+Pressing Ctrl + F8 (similar to the command line - the "p" command) also takes a step in the loaded program, but procedure calls, line operations with the rep / repz / repnz prefix, and loops are performed as one step.</br>
+Stepping instructions are used, as a rule, in separate sections of the program, when it is necessary, for example, to regularly monitor the values ​​of registers and / or some variables in memory.</br>
+The g &lt;expression&gt; command resumes the execution of the program and waits until control reaches eip = the corresponding address, and at this moment suspends the program. The "g" command with no arguments simply resumes program execution.</br></br>
+
+You can pause the program execution with the "stop" command (without arguments).</br></br>
+
+Usually it is required for the program to run normally, but when certain conditions are met, the program is suspended and the debugger takes control. The corresponding conditions are called breakpoints, breakpoint (s), in common parlance - breakpoints. The simplest type of breakpoints is to a specific address, i.e. abort execution on eip = &lt;specified value&gt;. These breakpoints are set with the bp &lt;expression&gt; command.</br></br>
+
+Comment. If there is only one such breakpoint, it is more convenient to use the "g" command with an argument instead.</br></br>
+
+Another type of breakpoints is by accessing a given area of ​​memory. There can be no more than four such breakpoints (since the hardware capabilities of x86 processors are used, where only 4 such breakpoints are allowed).</br>
+bpm &lt;expression&gt; - bryak to any access to the byte at the specified address</br>
+bpm w &lt;expression&gt; - bryak to write a byte at the specified address</br>
+bpmb, bpmw, bpmd &lt;expression&gt; - bryak to access, respectively, byte, word and doubleword at the specified address. bpm and bpmb are synonyms. When using bpmw, the bpmd address must be word-aligned (i.e. even) or double-word aligned (i.e., divisible by 4), respectively.</br>
+bpmb, bpmw, bpmd w &lt;expression&gt; - similarly for write break.</br></br>
+
+The list of set breakpoints can be viewed with the "bl" command, information about a specific breakpoint can be obtained with "bl &lt;number&gt;". Unnecessary breakpoints are removed with the "bc &lt;number&gt;" command, temporarily unnecessary ones can be disabled with the "bd &lt;number&gt;" command, when they are needed again, use the "be &lt;number&gt;" command.</br></br>
+
+Remarks.</br></br>
+    
+When debugging your own programs, you can insert int3 instructions into the code (note that there is no space!). Such an instruction throws an exception on normal startup, which will lead to the termination of the process, but when working under the debugger, the debugger is simply activated (with the message "int3 command at xxx"). This allows you not to think about which addresses to use in the g and / or bp commands. You can also generate a file with information about symbols and load it, then not only there is no need to independently calculate the addresses for "g" and "bp", but also "u", "d", "?" will understand the indication of the label / variable name.</br>
+All output and all input is hexadecimal.  </br>
+When the program is running, the register and data windows show information pertaining to the point before the resume; setting of register values ​​in this mode is not possible. However, the "d" command in this mode shows the information that was correct at the time the command was issued.</br>
+Written by diamond. Translated by Alex2003
+</text>
+</body>
+</html>

@@ -1,0 +1,81 @@
+<html>
+	
+<head>
+<title>Sys. function 70</title>
+<text><b>KolibriOS Help</b></text>
+<text><a href="\help\soft_dev\sys_funct_main.html">[Back to list system function]</a></text>
+<text><a href="\help\sys_funct\f69_main.html">  [Previous page]</a></text>
+<text>  [Next page]</text>
+</br>
+<head>
+	
+<body>
+<h2>System function 70 - Work with file system with long names support</h2>
+<text>Parameters:</br>
+  Register eax = 70</br>
+  Register ebx = pointer to the information structure</br>
+Returned value:</br>
+  Register eax = 0 - success; otherwise file system error code some subfunctions return value in other registers too.</br>
+General format of the information structure:</br>
+  +0: dword: subfunction number</br>
+  +4: dword: offset in file or folder</br>
+  +8: dword: higher part of offset or flags</br>
+  +12 = +0xC: dword: size of data</br>
+  +16 = +0x10: dword: pointer to data</br>
+  +20 = +0x14: ?: path - zero terminated string</br>
+  or</br>
+  +20 = +0x14: byte: 0</br>
+  +21 = +0x15: dword: pointer to string</br>
+Case sensitivity depends on filesystem.</br>
+If a path not begins with '/', it is considered a relative.</br>
+To get or set the current folder, use the sysfunction 30.</br>
+'../' in the path means a lift by one folder relatively current folder.</br>
+To set the encoding, put at the start of the string a byte with next values:</br>
+  1 = cp866</br>
+  2 = UTF-16LE</br>
+  3 = UTF-8</br>
+  otherwise will be used cp866. In an absolute path you may put this byte after the '/' or put an additional '/' before it.</br>
+  Also, you may use the sysfunction 80.</br>
+Format of an absolute path: /base/number/dir1/dir2/.../dirn/file, where base/number identifies device, on which file is located:</br>
+  RD/1 = ramdisk</br>
+  FD/1 = first floppy drive, FD/2 = second floppy drive</br>
+  HD0/x, HD1/x, HD2/x, HD3/x = hard drives accordingly on IDE0 (Primary Master), IDE1 (Primary Slave), IDE2 (Secondary Master), IDE3 (Secondary Slave); x - partition number on the selected hard drive, starts from 1</br>
+  CD0/1, CD1/1, CD2/1, CD3/1 = same for cd</br>
+  SYS = system folder (encoding inaffected key), second key may be set by sysfunction 30.3.</br>
+Examples:</br>
+  '/sys/example.asm',0</br>
+  '/rd/1/example.asm',0</br>
+  '/HD0/1/folder/file.txt',0</br>
+  '/hd2/2/pics/tanzania.bmp',0</br>
+  2,'/',0,'sys','/',0,'F',0,'I',0,'L',0,'E',0,0,0</br></br>
+
+Available subfunctions:</br>
+  subfunction 0 - read file</br>
+  subfunction 1 - read folder</br>
+  subfunction 2 - create/rewrite file</br>
+  subfunction 3 - write to existing file</br>
+  subfunction 4 - set file size</br>
+  subfunction 5 - get attributes of file/folder</br>
+  subfunction 6 - set attributes of file/folder</br>
+  subfunction 7 - start application</br>
+  subfunction 8 - delete file/folder</br>
+  subfunction 9 - create folder</br>
+For CD-drives due to hardware limitations only subfunctions 0,1,5 and 7 are available, other subfunctions return error with code 2.</br>
+At the first call of subfunctions 0,1,5,7 to ATAPI devices(CD and DVD) the manual control of tray is locked due to caching drive data. Unlocking is made when subfunction 4 of function 24 is called for corresponding device.</br>
+</br>
+  Value for register eax - 70 (SF_FILE).</br>
+  Values for register ebx:</br> 
+  0 - SSF_READ_FILE - subfunction 0 - read file with long names support.</br> 
+  1 - SSF_READ_FOLDER - subfunction 1 - read folder with long names support.</br> 
+  2 - SSF_CREATE_FILE - subfunction 2 - create/rewrite file with long names support.</br>
+  3 - SSF_WRITE_FILE - subfunction 3 - write to existing file with long names support.</br> 
+  4 - SSF_SET_END - subfunction 4 - set end of file.</br>
+  5 - SSF_GET_INFO - subfunction 5 - get information on file/folder.</br>
+  6 - SSF_SET_INFO - subfunction 6 - set attributes of file/folder.</br> 
+  7 - SSF_START_APP - subfunction 7 - start application.</br> 
+  8 - SSF_DELETE - subfunction 8 - delete file/folder.</br>
+  9 - SSF_CREATE_FOLDER - subfunction 9 - create folder.</br>
+</text>
+</body>
+
+</html>

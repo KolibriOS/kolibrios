@@ -1,0 +1,41 @@
+<html>
+	
+<head>
+<title>Sys. function 70</title>
+<text><b>KolibriOS Help</b></text>
+<text><a href="\help\soft_dev\sys_funct_main.html">[Back to list system function]</a></text>
+<text><a href="\help\sys_funct\f69_main.html">  [Previous page]</a></text>
+<text>  [Next page]</text>
+</br>
+<head>
+	
+<body>
+<h2>System function 68 - debugging.</h2>
+<text>A process can load other process as debugged by set of corresponding bit by call to subfunction 7 of function 70.</br>
+A process can have only one debugger; one process can debug some others. The system notifies debugger on events occuring with debugged process.</br> Messages are written to the buffer defined by subfunction 0.</br></text>
+<text>Format of a message:</br>
+  +0: dword: message code;</br>
+  +4: dword: PID of debugged process;</br>
+  +8: there can be additional data depending on message code.</br></br></text>
+<text>Message codes:</br>
+  1 = exception in addition dword-number of the exception is given process is suspended;</br>
+  2 = process has terminated comes at any termination: both through the system function -1, and at "murder" by any other process (including debugger itself);</br>
+  3 = debug exception int 1 = #DB in addition dword-image of the register DR6 is given: bits 0-3: condition of the corresponding breakpoint (set by subfunction 9) is satisfied bit 14: exception has occured because of the trace mode (flag TF is set TF) process is suspended.</br></br></text>
+<text>When debugger terminates, all debugged processes are killed. If debugger does not want this, it must previously detach by
+subfunction 3.</br></br></text>
+<text>All subfunctions are applicable only to processes/threads started from the current by function 70 with set debugging flag. Debugging of multithreaded programs is not supported yet.</br></br></text>
+<text>The full list of subfunctions:</br>
+  subfunction 0 - define data area for debug messages</br>
+  subfunction 1 - get contents of registers of debugged thread</br>
+  subfunction 2 - set contents of registers of debugged thread</br>
+  subfunction 3 - detach from debugged process</br>
+  subfunction 4 - suspend debugged thread</br>
+  subfunction 5 - resume debugged thread</br>
+  subfunction 6 - read from the memory of debugged process</br>
+  subfunction 7 - write to the memory of debugged process</br>
+  subfunction 8 - terminate debugged thread</br>
+  subfunction 9 - set/clear hardware breakpoint</br></text>
+
+</body>
+
+</html>
