@@ -58,8 +58,7 @@ endl
 		mov dword[q+8],ecx
 		mov esi,[p]
 		add esi,4
-		mov edi,ebp
-		sub edi,16 ;edi = &q[3]
+		lea edi,[ebp-16] ;edi = &q[3]
 		mov ecx,4
 		rep movsd
 		;mov edi,ebp
@@ -144,16 +143,14 @@ if DEBUG ;context.matrix_stack_ptr[0]
 	stdcall gl_print_matrix,dword[edx+GLContext.matrix_stack_ptr],4
 end if
 		; precompute inverse modelview
-		mov ebx,ebp
-		sub ebx,sizeof.M4
+		lea ebx,[ebp-sizeof.M4]
 		stdcall gl_M4_Inv, ebx,dword[edx+GLContext.matrix_stack_ptr]
 if DEBUG ;tmp
 	stdcall dbg_print,txt_sp,txt_nl
 	stdcall gl_print_matrix,ebx,4
 end if
 		push ebx
-		mov ebx,edx
-		add ebx,GLContext.matrix_model_view_inv
+		lea ebx,[edx+GLContext.matrix_model_view_inv]
 		stdcall gl_M4_Transpose, ebx
 if DEBUG ;context.matrix_model_view_inv
 	stdcall dbg_print,txt_sp,txt_nl
@@ -162,8 +159,7 @@ end if
 		jmp .end_if_0
 align 4
 	@@:
-		mov ecx,edx
-		add ecx,GLContext.matrix_model_projection
+		lea ecx,[edx+GLContext.matrix_model_projection]
 		; precompute projection matrix
 		stdcall gl_M4_Mul, ecx,dword[edx+GLContext.matrix_stack_ptr+4],dword[edx+GLContext.matrix_stack_ptr]
 
@@ -192,8 +188,7 @@ align 4
 	.end_if_0:
 
 		; test if the texture matrix is not Identity
-		mov eax,edx
-		add eax,GLContext.matrix_stack_ptr+8
+		lea eax,[edx+GLContext.matrix_stack_ptr+8]
 		stdcall gl_M4_IsId,eax
 		xor eax,1
 		mov dword[edx+GLContext.apply_texture_matrix],eax
@@ -265,9 +260,9 @@ align 4
 		; eye coordinates needed for lighting
 		mov ebx,dword[eax+GLContext.matrix_stack_ptr]
 		finit
-		fld dword[edx+offs_vert_coord+offs_X]
-		fld dword[edx+offs_vert_coord+offs_Y]
-		fld dword[edx+offs_vert_coord+offs_Z]
+		fld dword[edx+GLVertex.coord+offs_X]
+		fld dword[edx+GLVertex.coord+offs_Y]
+		fld dword[edx+GLVertex.coord+offs_Z]
 
 		mov ecx,4
 		.cycle_0:
@@ -280,7 +275,7 @@ align 4
 			fmul st0,st2       ;st0 *= v.coord.Z
 			fadd dword[ebx+12] ;st0 += m[3]
 			faddp              ;st0 = v.ec.X
-			fstp dword[edx+offs_vert_ec] ;v.ec.X = v.coord.X * m[0] + v.coord.Y * m[1] + v.coord.Z * m[2] + m[3]
+			fstp dword[edx+GLVertex.ec] ;v.ec.X = v.coord.X * m[0] + v.coord.Y * m[1] + v.coord.Z * m[2] + m[3]
 			add ebx,16 ;следущая строка матрицы
 			add edx,4  ;следущая координата вектора
 		loop .cycle_0
@@ -295,10 +290,10 @@ align 4
 		mov ebx,dword[eax+GLContext.matrix_stack_ptr+4]
 		mov edx,[v]
 
-		fld dword[edx+offs_vert_ec+offs_X]
-		fld dword[edx+offs_vert_ec+offs_Y]
-		fld dword[edx+offs_vert_ec+offs_Z]
-		fld dword[edx+offs_vert_ec+offs_W]
+		fld dword[edx+GLVertex.ec+offs_X]
+		fld dword[edx+GLVertex.ec+offs_Y]
+		fld dword[edx+GLVertex.ec+offs_Z]
+		fld dword[edx+GLVertex.ec+offs_W]
 
 		mov ecx,4
 		.cycle_1:
@@ -313,7 +308,7 @@ align 4
 			fld dword[ebx+12]  ;st0 = m[3]
 			fmul st0,st2       ;st0 *= v.ec.W
 			faddp              ;st0 = v.pc.X
-			fstp dword[edx+offs_vert_pc] ;v.pc.X = v.ec.X * m[0] + v.ec.Y * m[1] + v.ec.Z * m[2] + v.ec.W * m[3]
+			fstp dword[edx+GLVertex.pc] ;v.pc.X = v.ec.X * m[0] + v.ec.Y * m[1] + v.ec.Z * m[2] + v.ec.W * m[3]
 			add ebx,16 ;следущая строка матрицы
 			add edx,4  ;следущая координата вектора
 		loop .cycle_1
@@ -326,17 +321,15 @@ align 4
 		ffree st0
 		fincstp
 
-		mov ebx,eax
-		add ebx,GLContext.matrix_model_view_inv
-		mov edi,eax
-		add edi,GLContext.current_normal
+		lea ebx,[eax+GLContext.matrix_model_view_inv]
+		lea edi,[eax+GLContext.current_normal]
 		mov edx,[v]
 
 		fld dword[edi] ;edi = &n
 		fld dword[edi+offs_Y]
 		fld dword[edi+offs_Z]
 
-		add edx,offs_vert_normal
+		add edx,GLVertex.normal
 
 		fld dword[ebx]   ;st0 = m[0]
 		fmul st0,st3     ;st0 *= n.X
@@ -376,16 +369,14 @@ align 4
 	.els_0:
 		; no eye coordinates needed, no normal
 		; NOTE: W = 1 is assumed
-		mov ebx,eax
-		add ebx,GLContext.matrix_model_projection
+		lea ebx,[eax+GLContext.matrix_model_projection]
 
 		finit
-		fld dword[edx+offs_vert_coord+offs_X]
-		fld dword[edx+offs_vert_coord+offs_Y]
-		fld dword[edx+offs_vert_coord+offs_Z]
+		fld dword[edx+GLVertex.coord+offs_X]
+		fld dword[edx+GLVertex.coord+offs_Y]
+		fld dword[edx+GLVertex.coord+offs_Z]
 
-		mov esi,edx
-		add esi,offs_vert_pc
+		lea esi,[edx+GLVertex.pc]
 
 		fld dword[ebx]     ;st0 = m[0]
 		fmul st0,st3       ;st0 *= v.coord.X
@@ -449,13 +440,13 @@ align 4
 if DEBUG ;gl_vertex_transform
 	stdcall dbg_print,f_vt,txt_nl
 	mov edx,[v]
-	add edx,offs_vert_pc
+	add edx,GLVertex.pc
 	stdcall gl_print_matrix,edx,1
 end if
 	mov edx,[v]
-	stdcall gl_clipcode, dword[edx+offs_vert_pc+offs_X], dword[edx+offs_vert_pc+offs_Y],\
-		dword[edx+offs_vert_pc+offs_Z], dword[edx+offs_vert_pc+offs_W]
-	mov dword[edx+offs_vert_clip_code],eax
+	stdcall gl_clipcode, dword[edx+GLVertex.pc+offs_X], dword[edx+GLVertex.pc+offs_Y],\
+		dword[edx+GLVertex.pc+offs_Z], dword[edx+GLVertex.pc+offs_W]
+	mov dword[edx+GLVertex.clip_code],eax
 popad
 	ret
 endp
@@ -503,8 +494,7 @@ pushad
 
 	mov esi,[p]
 	add esi,4
-	mov edi,ebx
-	add edi,offs_vert_coord ;edi = &v.coord
+	lea edi,[ebx+GLVertex.coord] ;edi = &v.coord
 	mov ecx,4
 	rep movsd
 
@@ -517,10 +507,8 @@ pushad
 		jmp @f
 align 4
 	.els_0:
-		mov esi,edx
-		add esi,GLContext.current_color
-		mov edi,ebx
-		add edi,offs_vert_color ;edi = &v.color
+		lea esi,[edx+GLContext.current_color]
+		lea edi,[ebx+GLVertex.color] ;edi = &v.color
 		mov ecx,4
 		rep movsd
 	@@:
@@ -530,32 +518,28 @@ align 4
 	je @f
 		cmp dword[edx+GLContext.apply_texture_matrix],0
 		je .els_1
-			mov eax,edx
-			add eax,GLContext.current_tex_coord
+			lea eax,[edx+GLContext.current_tex_coord]
 			push eax ;&context.current_tex_coord
-			mov eax,ebx
-			add eax,offs_vert_tex_coord
+			lea eax,[ebx+GLVertex.tex_coord]
 			stdcall gl_M4_MulV4, eax, dword[edx+GLContext.matrix_stack_ptr+8]
 			jmp @f
 align 4
 		.els_1:
-			mov esi,edx
-			add esi,GLContext.current_tex_coord
-			mov edi,ebx
-			add edi,offs_vert_tex_coord
+			lea esi,[edx+GLContext.current_tex_coord]
+			lea edi,[ebx+GLVertex.tex_coord]
 			mov ecx,4
 			rep movsd
 	@@:
 
 	; precompute the mapping to the viewport
-	cmp dword[ebx+offs_vert_clip_code],0
+	cmp dword[ebx+GLVertex.clip_code],0
 	jne @f
 		stdcall gl_transform_to_viewport, edx,ebx
 	@@:
 
 	; edge flag
 	mov eax,[edx+GLContext.current_edge_flag]
-	mov dword[ebx+offs_vert_edge_flag],eax ;v.edge_flag = context.current_edge_flag
+	mov dword[ebx+GLVertex.edge_flag],eax ;v.edge_flag = context.current_edge_flag
 
 	cmp dword[edx+GLContext.begin_type],GL_POINTS
 	jne @f
@@ -585,8 +569,7 @@ align 4
 		cmp dword[n],1
 		jne .els_2
 			mov esi,[edx+GLContext.vertex]
-			mov edi,esi
-			add edi,2*sizeof.GLVertex
+			lea edi,[esi+2*sizeof.GLVertex]
 			mov ecx,(sizeof.GLVertex)/4 ;((...)/4) что-бы использовать movsd вместо movsb
 			rep movsd ;context.vertex[2] = context.vertex[0]
 			jmp .end_f
@@ -594,12 +577,9 @@ align 4
 		.els_2:
 		cmp dword[n],2
 		jne .end_f ;else if (n == 2)
-			mov eax,[edx+GLContext.vertex]
-			push eax
-			mov edi,eax
-			add eax,sizeof.GLVertex
-			mov esi,eax
-			stdcall gl_draw_line, edx, eax
+			mov edi,[edx+GLContext.vertex]
+			lea esi,[edi+sizeof.GLVertex]
+			stdcall gl_draw_line, edx, esi, edi
 			mov ecx,(sizeof.GLVertex)/4 ;((...)/4) что-бы использовать movsd вместо movsb
 			rep movsd ;context.vertex[0] = context.vertex[1]
 			mov dword[n],1
@@ -662,12 +642,10 @@ align 4
 		jne .end_f
 			mov eax,[edx+GLContext.vertex]
 			mov [esp-12],eax
-			add eax,sizeof.GLVertex
-			mov [esp-8],eax
-			mov edi,eax
-			add eax,sizeof.GLVertex
-			mov [esp-4],eax
-			mov esi,eax
+			lea edi,[eax+sizeof.GLVertex]
+			mov [esp-8],edi
+			lea esi,[edi+sizeof.GLVertex]
+			mov [esp-4],esi
 			sub esp,12
 			stdcall gl_draw_triangle, edx ;v0,v1,v2
 			mov ecx,(sizeof.GLVertex)/4 ;((...)/4) что-бы использовать movsd вместо movsb
@@ -682,15 +660,15 @@ align 4
 		jne .end_f
 			mov eax,[edx+GLContext.vertex]
 			add eax,2*sizeof.GLVertex
-			mov dword[eax+offs_vert_edge_flag],0 ;context.vertex[2].edge_flag = 0
+			mov dword[eax+GLVertex.edge_flag],0 ;context.vertex[2].edge_flag = 0
 			push eax
 			sub eax,sizeof.GLVertex
 			push eax
 			sub eax,sizeof.GLVertex
 			stdcall gl_draw_triangle, edx,eax ;v0,v1,v2
-			mov dword[eax+offs_vert_edge_flag],0 ;context.vertex[0].edge_flag = 0
+			mov dword[eax+GLVertex.edge_flag],0 ;context.vertex[0].edge_flag = 0
 			add eax,2*sizeof.GLVertex
-			mov dword[eax+offs_vert_edge_flag],1 ;context.vertex[2].edge_flag = 1
+			mov dword[eax+GLVertex.edge_flag],1 ;context.vertex[2].edge_flag = 1
 			add eax,sizeof.GLVertex
 			push eax
 			sub eax,sizeof.GLVertex

@@ -563,6 +563,31 @@ endl
 	ret
 endp
 
+align 4
+proc glOrtho uses eax, left:qword, right:qword, bottom:qword, top:qword,\
+	near:qword, farv:qword
+locals
+	p rd 7
+endl
+	mov dword[p],OP_Ortho
+	fld qword[left]
+	fstp dword[p+4]
+	fld qword[right]
+	fstp dword[p+8]
+	fld qword[bottom]
+	fstp dword[p+12]
+	fld qword[top]
+	fstp dword[p+16]
+	fld qword[near]
+	fstp dword[p+20]
+	fld qword[farv]
+	fstp dword[p+24]
+
+	lea eax,[ebp-28] ;=sizeof(dd)*7
+	stdcall gl_add_op,eax
+	ret
+endp
+
 ; lightening
 
 align 4

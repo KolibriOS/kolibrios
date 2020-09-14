@@ -96,8 +96,7 @@ align 4
 proc glopLoadMatrix uses eax edi esi, context:dword, p:dword
 	mov eax,[context]
 	mov edi,[eax+GLContext.matrix_mode]
-	shl edi,2
-	add edi,eax
+	lea edi,[eax+4*edi]
 	mov edi,dword[edi+GLContext.matrix_stack_ptr]
 
 	mov esi,[p]
@@ -112,8 +111,7 @@ align 4
 proc glopLoadIdentity uses eax ebx, context:dword, p:dword
 	mov eax,[context]
 	mov ebx,[eax+GLContext.matrix_mode]
-	shl ebx,2
-	add ebx,eax
+	lea ebx,[eax+4*ebx]
 
 	stdcall gl_M4_Id,[ebx+GLContext.matrix_stack_ptr]
 	gl_matrix_update eax,ebx
@@ -127,14 +125,12 @@ locals
 endl
 	mov esi,[p]
 	add esi,4
-	mov edi,ebp
-	sub edi,sizeof.M4
+	lea edi,[ebp-sizeof.M4]
 	stdcall gl_M4_Transpose,edi,esi ;транспонируем входную матрицу в локальную матрицу m
 
 	mov eax,[context]
 	mov esi,[eax+GLContext.matrix_mode]
-	shl esi,2
-	add esi,eax
+	lea esi,[eax+4*esi]
 	stdcall gl_M4_MulLeft,dword[esi+GLContext.matrix_stack_ptr],edi
 
 	gl_matrix_update eax,edi
@@ -149,9 +145,7 @@ proc glopPushMatrix uses eax ebx, context:dword, p:dword
 ;  assert( (c->matrix_stack_ptr[ebx] - c->matrix_stack[ebx] + 1 )
 ;	   < c->matrix_stack_depth_max[ebx] );
 
-	shl ebx,2
-	add ebx,eax
-	add ebx,GLContext.matrix_stack_ptr
+	lea ebx,[eax+4*ebx+GLContext.matrix_stack_ptr]
 	add dword[ebx],sizeof.M4
 	mov ebx,[ebx] ;ebx = ++context.matrix_stack_ptr[context.matrix_mode]
 
@@ -171,8 +165,7 @@ proc glopPopMatrix uses eax ebx, context:dword, p:dword
 
 ;  assert( c->matrix_stack_ptr[n] > c->matrix_stack[n] );
 
-	shl ebx,2
-	add ebx,eax
+	lea ebx,[eax+4*ebx]
 	sub dword[ebx+GLContext.matrix_stack_ptr],sizeof.M4
 
 	gl_matrix_update eax,ebx
@@ -193,8 +186,7 @@ endl
 
 	mov eax,[context]
 	mov ebx,[p]
-	mov ecx,ebp
-	sub ecx,sizeof.M4 ;ecx=&m
+	lea ecx,[ebp-sizeof.M4] ;ecx=&m
 	finit
 	fldpi
 	fmul dword[ebx+4]
@@ -425,8 +417,7 @@ endl
 
 	mov eax,[context]
 	mov ebx,[eax+GLContext.matrix_mode]
-	shl ebx,2
-	add ebx,eax
+	lea ebx,[eax+4*ebx]
 	stdcall gl_M4_MulLeft,dword[ebx+GLContext.matrix_stack_ptr],ecx
 	gl_matrix_update eax,ebx
 	jmp .end_f
@@ -445,8 +436,7 @@ proc glopScale uses eax ebx ecx, context:dword, p:dword
 
 	mov eax,[context]
 	mov ebx,[eax+GLContext.matrix_mode]
-	shl ebx,2
-	add ebx,eax
+	lea ebx,[eax+4*ebx]
 	mov ebx,[ebx+GLContext.matrix_stack_ptr] ;ebx = &m[0]
 
 	fld dword[ecx+ 4] ;x
@@ -482,8 +472,7 @@ proc glopTranslate uses eax ebx ecx, context:dword, p:dword
 
 	mov eax,[context]
 	mov ebx,[eax+GLContext.matrix_mode]
-	shl ebx,2
-	add ebx,eax
+	lea ebx,[eax+4*ebx]
 	mov ebx,[ebx+GLContext.matrix_stack_ptr] ;ebx = &m[0]
 
 	fld dword[ecx+ 4] ;x
@@ -607,4 +596,94 @@ end if
 	ret
 endp
 
-  
+align 4
+proc glopOrtho uses eax ebx ecx, context:dword, p:dword
+locals
+	x dd ?
+	y dd ?
+	A dd ?
+	B dd ?
+	C dd ?
+	D dd ?
+	m M4
+endl
+	mov eax,[context]
+	mov ebx,[p]
+
+	fld dword[ebx+8]
+	fsub dword[ebx+4]  ;st0 = (right-left)
+	fld1
+	fadd st0,st0       ;st0 = 2.0
+	fdiv st0,st1
+	fstp dword[x]      ;x = 2.0 / (right-left)
+	fld dword[ebx+16]
+	fsub dword[ebx+12] ;st0 = (top-bottom)
+	fld1
+	fadd st0,st0       ;st0 = 2.0
+	fdiv st0,st1
+	fstp dword[y]      ;y = 2.0 / (top-bottom)
+	fld dword[ebx+8]
+	fadd dword[ebx+4]
+	fchs               ;st0 = -(right+left)
+	fdiv st0,st2       ;st2 = (right-left)
+	fstp dword[A]      ;A = -(right+left) / (right-left)
+	fld dword[ebx+16]
+	fadd dword[ebx+12]
+	fchs               ;st0 = -(top+bottom)
+	fdiv st0,st1       ;st1 = (top-bottom)
+	fstp dword[B]      ;B = -(top+bottom) / (top-bottom)
+	fld dword[ebx+24]
+	fsub dword[ebx+20] ;st0 = (farp-near)
+	fld1
+	fadd st0,st0
+	fchs ;st0 = -2.0
+	fdiv st0,st1
+	fstp dword[C]      ;C = -2.0 / (farp-near)
+	fld dword[ebx+24]
+	fadd dword[ebx+20] ;st0 = farp+near
+	fchs               ;st0 = -(farp+near)
+	fdiv st0,st1
+	fstp dword[D]      ;D = -(farp*near) / (farp-near)
+	ffree st0
+	fincstp
+	ffree st0
+	fincstp
+	ffree st0
+	fincstp
+
+	lea ecx,[ebp-sizeof.M4]
+
+	mov ebx,[x]
+	mov dword[ecx],ebx
+	mov dword[ecx+4],0.0
+	mov dword[ecx+8],0.0
+	mov ebx,[A]
+	mov dword[ecx+12],ebx
+	mov dword[ecx+16],0.0
+	mov ebx,[y]
+	mov dword[ecx+20],ebx
+	mov dword[ecx+24],0.0
+	mov ebx,[B]
+	mov dword[ecx+28],ebx
+	mov dword[ecx+32],0.0
+	mov dword[ecx+36],0.0
+	mov ebx,[C]
+	mov dword[ecx+40],ebx
+	mov ebx,[D]
+	mov dword[ecx+44],ebx
+	mov dword[ecx+48],0.0
+	mov dword[ecx+52],0.0
+	mov dword[ecx+56],0.0
+	mov dword[ecx+60],1.0
+
+	mov ebx,[eax+GLContext.matrix_mode]
+	lea ebx,[eax+4*ebx]
+	stdcall gl_M4_MulLeft,dword[ebx+GLContext.matrix_stack_ptr],ecx
+
+if DEBUG ;glopOrtho
+	stdcall gl_print_matrix,ecx,4
+	stdcall gl_print_matrix,dword[ebx+GLContext.matrix_stack_ptr],4
+end if
+	gl_matrix_update eax,ebx
+	ret
+endp
