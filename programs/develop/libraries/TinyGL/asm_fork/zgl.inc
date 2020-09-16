@@ -75,21 +75,6 @@ struct GLLight
 	prev dd ? ;struct GLLight*
 ends
 
-offs_ligh_ambient equ 0 ;V4
-offs_ligh_diffuse equ 16 ;V4
-offs_ligh_specular equ 32 ;V4
-offs_ligh_position equ 48 ;V4	
-offs_ligh_spot_direction equ 64 ;V3
-offs_ligh_spot_exponent equ 76 ;dd ?
-offs_ligh_spot_cutoff equ 80 ;dd ?
-offs_ligh_attenuation equ 84 ;rd 3
-offs_ligh_cos_spot_cutoff equ 96 ;dd ?
-offs_ligh_norm_spot_direction equ 100 ;V3
-offs_ligh_norm_position equ 112 ;V3
-offs_ligh_enabled equ 124 ;dd ?
-offs_ligh_next equ 128 ;dd ?
-offs_ligh_prev equ 132 ;dd ?
-
 struct GLMaterial
 	emission V4
 	ambient  V4
@@ -101,14 +86,6 @@ struct GLMaterial
 	shininess_i dd ? ;int
 	do_specular dd ? ;int
 ends
-
-offs_mate_emission   equ 0 ;V4
-offs_mate_ambient   equ 16 ;V4
-offs_mate_diffuse   equ 32 ;V4
-offs_mate_specular  equ 48 ;V4
-offs_mate_shininess equ 64 ;dd
-offs_mate_shininess_i equ 68 ;dd
-offs_mate_do_specular equ 72 ;dd 
 
 struct GLViewport
 	xmin dd ? ;int
@@ -154,16 +131,6 @@ struct GLVertex
 	clip_code dd ? ;int ; clip code
 	zp ZBufferPoint ; integer coordinates for the rasterization
 ends
-
-offs_vert_edge_flag  equ 0
-offs_vert_normal     equ 4
-offs_vert_coord     equ 16 
-offs_vert_tex_coord equ 32
-offs_vert_color     equ 48
-offs_vert_ec        equ 64
-offs_vert_pc        equ 80
-offs_vert_clip_code equ 96
-offs_vert_zp       equ 100
 
 struct GLImage
 	pixmap dd ? ;void*

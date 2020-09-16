@@ -15,47 +15,46 @@ proc gl_transform_to_viewport uses eax ebx ecx, context:dword,v:dword
 
 	; coordinates
 	fld1
-	fdiv dword[ebx+offs_vert_pc+offs_W] ;st0 = 1/v.pc.W
+	fdiv dword[ebx+GLVertex.pc+offs_W] ;st0 = 1/v.pc.W
 
-	fld dword[ebx+offs_vert_pc+offs_X] ;st0 = v.pc.X
+	fld dword[ebx+GLVertex.pc+offs_X] ;st0 = v.pc.X
 	fmul st0,st1
 	fmul dword[eax+GLContext.viewport+offs_vpor_scale+offs_X]
 	fadd dword[eax+GLContext.viewport+offs_vpor_trans+offs_X]
-	fistp dword[ebx+offs_vert_zp] ;v.zp.x = st0, st0 = st1
+	fistp dword[ebx+GLVertex.zp] ;v.zp.x = st0, st0 = st1
 
-	fld dword[ebx+offs_vert_pc+offs_Y] ;st0 = v.pc.Y
+	fld dword[ebx+GLVertex.pc+offs_Y] ;st0 = v.pc.Y
 	fmul st0,st1
 	fmul dword[eax+GLContext.viewport+offs_vpor_scale+offs_Y]
 	fadd dword[eax+GLContext.viewport+offs_vpor_trans+offs_Y]
-	fistp dword[ebx+offs_vert_zp+offs_zbup_y] ;v.zp.y = st0, st0 = st1
+	fistp dword[ebx+GLVertex.zp+offs_zbup_y] ;v.zp.y = st0, st0 = st1
 
-	fld dword[ebx+offs_vert_pc+offs_Z] ;st0 = v.pc.Z
+	fld dword[ebx+GLVertex.pc+offs_Z] ;st0 = v.pc.Z
 	fmulp
 	fmul dword[eax+GLContext.viewport+offs_vpor_scale+offs_Z]
 	fadd dword[eax+GLContext.viewport+offs_vpor_trans+offs_Z]
-	fistp dword[ebx+offs_vert_zp+offs_zbup_z] ;v.zp.z = st0, st0 = st1
+	fistp dword[ebx+GLVertex.zp+offs_zbup_z] ;v.zp.z = st0, st0 = st1
 
 	; color
 	cmp dword[eax+GLContext.lighting_enabled],0 ;if (context.lighting_enabled)
 	je @f
-		mov ecx,ebx
-		add ecx,offs_vert_zp+offs_zbup_b
+		lea ecx,[ebx+GLVertex.zp+offs_zbup_b]
 		push ecx
 		add ecx,offs_zbup_g-offs_zbup_b
 		push ecx
 		add ecx,offs_zbup_r-offs_zbup_g
 		push ecx
-		stdcall RGBFtoRGBI, dword[ebx+offs_vert_color],dword[ebx+offs_vert_color+4],dword[ebx+offs_vert_color+8]
+		stdcall RGBFtoRGBI, dword[ebx+GLVertex.color],dword[ebx+GLVertex.color+4],dword[ebx+GLVertex.color+8]
 		jmp .end_if
 align 4
 	@@:
 		; no need to convert to integer if no lighting : take current color
 		mov ecx,[eax+GLContext.longcurrent_color]
-		mov dword[ebx+offs_vert_zp+offs_zbup_r],ecx
+		mov dword[ebx+GLVertex.zp+offs_zbup_r],ecx
 		mov ecx,[eax+GLContext.longcurrent_color+4]
-		mov dword[ebx+offs_vert_zp+offs_zbup_g],ecx
+		mov dword[ebx+GLVertex.zp+offs_zbup_g],ecx
 		mov ecx,[eax+GLContext.longcurrent_color+8]
-		mov dword[ebx+offs_vert_zp+offs_zbup_b],ecx
+		mov dword[ebx+GLVertex.zp+offs_zbup_b],ecx
 	.end_if:
   
 	; texture
@@ -66,13 +65,13 @@ align 4
 		;[eax+offs_text_images] = im = &context.current_texture.images[0]
 
 		fild dword[eax+offs_text_images+offs_imag_s_bound]
-		fmul dword[ebx+offs_vert_tex_coord+offs_X]
-		fistp dword[ebx+offs_vert_zp+offs_zbup_s]
+		fmul dword[ebx+GLVertex.tex_coord+offs_X]
+		fistp dword[ebx+GLVertex.zp+offs_zbup_s]
 		;v.zp.s=(int)(v.tex_coord.X * im.s_bound)
 
 		fild dword[eax+offs_text_images+offs_imag_t_bound]
-		fmul dword[ebx+offs_vert_tex_coord+offs_Y]
-		fistp dword[ebx+offs_vert_zp+offs_zbup_t]
+		fmul dword[ebx+GLVertex.tex_coord+offs_Y]
+		fistp dword[ebx+GLVertex.zp+offs_zbup_t]
 		;v.zp.t=(int)(v.tex_coord.Y * im.t_bound)
 	@@:
 	ret
@@ -113,16 +112,16 @@ endp
 align 16
 proc gl_draw_point uses eax ebx, context:dword, p0:dword
 	mov ebx,[p0]
-	cmp dword[ebx+offs_vert_clip_code],0 ;if (p0.clip_code == 0)
+	cmp dword[ebx+GLVertex.clip_code],0 ;if (p0.clip_code == 0)
 	jne @f
 	mov eax,[context]
 	cmp dword[eax+GLContext.render_mode],GL_SELECT
 	jne .els
-		stdcall gl_add_select, eax,dword[ebx+offs_vert_zp+offs_zbup_z],dword[ebx+offs_vert_zp+offs_zbup_z] ;p0.zp.z,p0.zp.z
+		stdcall gl_add_select, eax,dword[ebx+GLVertex.zp+offs_zbup_z],dword[ebx+GLVertex.zp+offs_zbup_z] ;p0.zp.z,p0.zp.z
 		jmp @f
 align 4
 	.els:
-		add ebx,offs_vert_zp
+		add ebx,GLVertex.zp
 		stdcall ZB_plot, dword[eax+GLContext.zb],ebx
 	@@:
 	ret
@@ -140,48 +139,48 @@ macro interpolate q, p0, p1, t
 	fld dword[t]
 
 	; интерполяция по координатам
-	fld dword[p1+offs_vert_pc]
-	fsub dword[p0+offs_vert_pc]
+	fld dword[p1+GLVertex.pc]
+	fsub dword[p0+GLVertex.pc]
 	fmul st0,st1
-	fadd dword[p0+offs_vert_pc]
-	fstp dword[q+offs_vert_pc] ;q.pc.X = p0.pc.X + (p1.pc.X - p0.pc.X) * t
+	fadd dword[p0+GLVertex.pc]
+	fstp dword[q+GLVertex.pc] ;q.pc.X = p0.pc.X + (p1.pc.X - p0.pc.X) * t
 
-	fld dword[p1+offs_vert_pc+offs_Y]
-	fsub dword[p0+offs_vert_pc+offs_Y]
+	fld dword[p1+GLVertex.pc+offs_Y]
+	fsub dword[p0+GLVertex.pc+offs_Y]
 	fmul st0,st1
-	fadd dword[p0+offs_vert_pc+offs_Y]
-	fstp dword[q+offs_vert_pc+offs_Y]
+	fadd dword[p0+GLVertex.pc+offs_Y]
+	fstp dword[q+GLVertex.pc+offs_Y]
 
-	fld dword[p1+offs_vert_pc+offs_Z]
-	fsub dword[p0+offs_vert_pc+offs_Z]
+	fld dword[p1+GLVertex.pc+offs_Z]
+	fsub dword[p0+GLVertex.pc+offs_Z]
 	fmul st0,st1
-	fadd dword[p0+offs_vert_pc+offs_Z]
-	fstp dword[q+offs_vert_pc+offs_Z]
+	fadd dword[p0+GLVertex.pc+offs_Z]
+	fstp dword[q+GLVertex.pc+offs_Z]
 
-	fld dword[p1+offs_vert_pc+offs_W]
-	fsub dword[p0+offs_vert_pc+offs_W]
+	fld dword[p1+GLVertex.pc+offs_W]
+	fsub dword[p0+GLVertex.pc+offs_W]
 	fmul st0,st1
-	fadd dword[p0+offs_vert_pc+offs_W]
-	fstp dword[q+offs_vert_pc+offs_W]
+	fadd dword[p0+GLVertex.pc+offs_W]
+	fstp dword[q+GLVertex.pc+offs_W]
 
 	; интерполяция по цвету
-	fld dword[p1+offs_vert_color]
-	fsub dword[p0+offs_vert_color]
+	fld dword[p1+GLVertex.color]
+	fsub dword[p0+GLVertex.color]
 	fmul st0,st1
-	fadd dword[p0+offs_vert_color]
-	fstp dword[q+offs_vert_color]
+	fadd dword[p0+GLVertex.color]
+	fstp dword[q+GLVertex.color]
 
-	fld dword[p1+offs_vert_color+4]
-	fsub dword[p0+offs_vert_color+4]
+	fld dword[p1+GLVertex.color+4]
+	fsub dword[p0+GLVertex.color+4]
 	fmul st0,st1
-	fadd dword[p0+offs_vert_color+4]
-	fstp dword[q+offs_vert_color+4]
+	fadd dword[p0+GLVertex.color+4]
+	fstp dword[q+GLVertex.color+4]
 
-	fld dword[p1+offs_vert_color+8]
-	fsub dword[p0+offs_vert_color+8]
+	fld dword[p1+GLVertex.color+8]
+	fsub dword[p0+GLVertex.color+8]
 	fmulp
-	fadd dword[p0+offs_vert_color+8]
-	fstp dword[q+offs_vert_color+8]
+	fadd dword[p0+GLVertex.color+8]
+	fstp dword[q+GLVertex.color+8]
 }
 
 ;
@@ -280,20 +279,20 @@ pushad
 	mov edi,[p1]
 	mov esi,[p2]
 
-	cmp dword[edi+offs_vert_clip_code],0
+	cmp dword[edi+GLVertex.clip_code],0
 	jne .els_i
-	cmp dword[esi+offs_vert_clip_code],0
+	cmp dword[esi+GLVertex.clip_code],0
 	jne .els_i
 		;if ( (p1.clip_code | p2.clip_code) == 0)
 		cmp dword[edx+GLContext.render_mode],GL_SELECT ;if (context.render_mode == GL_SELECT)
 		jne .els_1
-			stdcall gl_add_select1, edx,dword[edi+offs_vert_zp+offs_zbup_z],\
-				dword[esi+offs_vert_zp+offs_zbup_z],dword[esi+offs_vert_zp+offs_zbup_z]
+			stdcall gl_add_select1, edx,dword[edi+GLVertex.zp+offs_zbup_z],\
+				dword[esi+GLVertex.zp+offs_zbup_z],dword[esi+GLVertex.zp+offs_zbup_z]
 			jmp .end_f
 align 4
 		.els_1:
-			add edi,offs_vert_zp
-			add esi,offs_vert_zp
+			add edi,GLVertex.zp
+			add esi,GLVertex.zp
 			push esi
 			push edi
 			push dword[edx+GLContext.zb]
@@ -309,39 +308,38 @@ align 4
 align 4
 	.els_i:
 		;else if ( (p1.clip_code & p2.clip_code) != 0 )
-		mov eax,[edi+offs_vert_clip_code]
-		and eax,[esi+offs_vert_clip_code]
+		mov eax,[edi+GLVertex.clip_code]
+		and eax,[esi+GLVertex.clip_code]
 		or eax,eax
 		jnz .end_f
 	.els_0:
 
-	fld dword[esi+offs_vert_pc+offs_X]
-	fsub dword[edi+offs_vert_pc+offs_X]
+	fld dword[esi+GLVertex.pc+offs_X]
+	fsub dword[edi+GLVertex.pc+offs_X]
 	fstp dword[d_x] ;d_x = p2.pc.X - p1.pc.X
-	fld dword[esi+offs_vert_pc+offs_Y]
-	fsub dword[edi+offs_vert_pc+offs_Y]
+	fld dword[esi+GLVertex.pc+offs_Y]
+	fsub dword[edi+GLVertex.pc+offs_Y]
 	fstp dword[d_y] ;d_y = p2.pc.Y - p1.pc.Y
-	fld dword[esi+offs_vert_pc+offs_Z]
-	fsub dword[edi+offs_vert_pc+offs_Z]
+	fld dword[esi+GLVertex.pc+offs_Z]
+	fsub dword[edi+GLVertex.pc+offs_Z]
 	fstp dword[d_z] ;d_z = p2.pc.Z - p1.pc.Z
-	fld dword[esi+offs_vert_pc+offs_W]
-	fsub dword[edi+offs_vert_pc+offs_W]
+	fld dword[esi+GLVertex.pc+offs_W]
+	fsub dword[edi+GLVertex.pc+offs_W]
 	fstp dword[d_w] ;d_w = p2.pc.W - p1.pc.W
 
-	mov eax,[edi+offs_vert_pc+offs_X]
+	mov eax,[edi+GLVertex.pc+offs_X]
 	mov [x1],eax ;x1 = p1.pc.X
-	mov eax,[edi+offs_vert_pc+offs_Y]
+	mov eax,[edi+GLVertex.pc+offs_Y]
 	mov [y1],eax ;y1 = p1.pc.Y
-	mov eax,[edi+offs_vert_pc+offs_Z]
+	mov eax,[edi+GLVertex.pc+offs_Z]
 	mov [z1],eax ;z1 = p1.pc.Z
-	mov eax,[edi+offs_vert_pc+offs_W]
+	mov eax,[edi+GLVertex.pc+offs_W]
 	mov [w1],eax ;w1 = p1.pc.W
 
 	mov dword[tmin],0.0
 	mov dword[tmax],1.0
 
-	mov eax,ebp
-	sub eax,4
+	lea eax,[ebp-4]
 	push eax ;толкаем в стек адрес &tmax
 	sub eax,4
 	push eax ;толкаем в стек адрес &tmin
@@ -419,8 +417,7 @@ align 4
 	bt eax,0
 	jnc .end_f
 
-	mov eax,ebp
-	sub eax,8+2*sizeof.GLVertex ;eax = &q1
+	lea eax,[ebp-8-2*sizeof.GLVertex] ;eax = &q1
 	interpolate eax,edi,esi,tmin
 	stdcall gl_transform_to_viewport, edx,eax
 	add eax,sizeof.GLVertex ;eax = &q2
@@ -428,26 +425,24 @@ align 4
 	stdcall gl_transform_to_viewport, edx,eax
 
 	sub eax,sizeof.GLVertex ;eax = &q1
-	mov ebx,eax
-	add ebx,offs_vert_zp+offs_zbup_b
+	lea ebx,[eax+GLVertex.zp+offs_zbup_b]
 	push ebx
 	add ebx,offs_zbup_g-offs_zbup_b
 	push ebx
 	add ebx,offs_zbup_r-offs_zbup_g
 	push ebx
-	stdcall RGBFtoRGBI, dword[eax+offs_vert_color],dword[eax+offs_vert_color+4],dword[eax+offs_vert_color+8]
+	stdcall RGBFtoRGBI, dword[eax+GLVertex.color],dword[eax+GLVertex.color+4],dword[eax+GLVertex.color+8]
 
 	add eax,sizeof.GLVertex ;eax = &q2
-	mov ebx,eax
-	add ebx,offs_vert_zp+offs_zbup_b
+	lea ebx,[eax+GLVertex.zp+offs_zbup_b]
 	push ebx
 	add ebx,offs_zbup_g-offs_zbup_b
 	push ebx
 	add ebx,offs_zbup_r-offs_zbup_g
 	push ebx
-	stdcall RGBFtoRGBI, dword[eax+offs_vert_color],dword[eax+offs_vert_color+4],dword[eax+offs_vert_color+8]
+	stdcall RGBFtoRGBI, dword[eax+GLVertex.color],dword[eax+GLVertex.color+4],dword[eax+GLVertex.color+8]
 
-	add eax,offs_vert_zp ;eax = &q2.zp
+	add eax,GLVertex.zp ;eax = &q2.zp
 	push eax
 	sub eax,sizeof.GLVertex ;eax = &q1.zp
 	push eax
@@ -595,61 +590,60 @@ proc updateTmp uses eax ecx edx, context:dword, p0:dword, p1:dword, t:dword
 	cmp dword[edx+GLContext.current_shade_model],GL_SMOOTH ;if (context.current_shade_model == GL_SMOOTH)
 	jne .els_0
 		mov ecx,[p1]
-		fld dword[ecx+offs_vert_color]
-		fsub dword[eax+offs_vert_color]
+		fld dword[ecx+GLVertex.color]
+		fsub dword[eax+GLVertex.color]
 		fmul dword[t]
-		fadd dword[eax+offs_vert_color]
-		fstp dword[edi+offs_vert_color] ;q.color.v[0]=p0.color.v[0] + (p1.color.v[0]-p0.color.v[0])*t
-		fld dword[ecx+offs_vert_color+4]
-		fsub dword[eax+offs_vert_color+4]
+		fadd dword[eax+GLVertex.color]
+		fstp dword[edi+GLVertex.color] ;q.color.v[0]=p0.color.v[0] + (p1.color.v[0]-p0.color.v[0])*t
+		fld dword[ecx+GLVertex.color+4]
+		fsub dword[eax+GLVertex.color+4]
 		fmul dword[t]
-		fadd dword[eax+offs_vert_color+4]
-		fstp dword[edi+offs_vert_color+4] ;q.color.v[1]=p0.color.v[1] + (p1.color.v[1]-p0.color.v[1])*t
-		fld dword[ecx+offs_vert_color+8]
-		fsub dword[eax+offs_vert_color+8]
+		fadd dword[eax+GLVertex.color+4]
+		fstp dword[edi+GLVertex.color+4] ;q.color.v[1]=p0.color.v[1] + (p1.color.v[1]-p0.color.v[1])*t
+		fld dword[ecx+GLVertex.color+8]
+		fsub dword[eax+GLVertex.color+8]
 		fmul dword[t]
-		fadd dword[eax+offs_vert_color+8]
-		fstp dword[edi+offs_vert_color+8] ;q.color.v[2]=p0.color.v[2] + (p1.color.v[2]-p0.color.v[2])*t
+		fadd dword[eax+GLVertex.color+8]
+		fstp dword[edi+GLVertex.color+8] ;q.color.v[2]=p0.color.v[2] + (p1.color.v[2]-p0.color.v[2])*t
 		jmp @f
 align 4
 	.els_0:
-		mov ecx,[eax+offs_vert_color]
-		mov [edi+offs_vert_color],ecx ;q.color.v[0]=p0.color.v[0]
-		mov ecx,[eax+offs_vert_color+4]
-		mov [edi+offs_vert_color+4],ecx ;q.color.v[1]=p0.color.v[1]
-		mov ecx,[eax+offs_vert_color+8]
-		mov [edi+offs_vert_color+8],ecx ;q.color.v[2]=p0.color.v[2]
+		mov ecx,[eax+GLVertex.color]
+		mov [edi+GLVertex.color],ecx ;q.color.v[0]=p0.color.v[0]
+		mov ecx,[eax+GLVertex.color+4]
+		mov [edi+GLVertex.color+4],ecx ;q.color.v[1]=p0.color.v[1]
+		mov ecx,[eax+GLVertex.color+8]
+		mov [edi+GLVertex.color+8],ecx ;q.color.v[2]=p0.color.v[2]
 	@@:
 
 	cmp dword[edx+GLContext.texture_2d_enabled],0 ;if (context.texture_2d_enabled)
 	je @f
 		mov ecx,[p1]
-		fld dword[ecx+offs_vert_tex_coord+offs_X]
-		fsub dword[eax+offs_vert_tex_coord+offs_X]
+		fld dword[ecx+GLVertex.tex_coord+offs_X]
+		fsub dword[eax+GLVertex.tex_coord+offs_X]
 		fmul dword[t]
-		fadd dword[eax+offs_vert_tex_coord+offs_X]
-		fstp dword[edi+offs_vert_tex_coord+offs_X] ;q.tex_coord.X=p0.tex_coord.X + (p1.tex_coord.X-p0.tex_coord.X)*t
-		fld dword[ecx+offs_vert_tex_coord+offs_Y]
-		fsub dword[eax+offs_vert_tex_coord+offs_Y]
+		fadd dword[eax+GLVertex.tex_coord+offs_X]
+		fstp dword[edi+GLVertex.tex_coord+offs_X] ;q.tex_coord.X=p0.tex_coord.X + (p1.tex_coord.X-p0.tex_coord.X)*t
+		fld dword[ecx+GLVertex.tex_coord+offs_Y]
+		fsub dword[eax+GLVertex.tex_coord+offs_Y]
 		fmul dword[t]
-		fadd dword[eax+offs_vert_tex_coord+offs_Y]
-		fstp dword[edi+offs_vert_tex_coord+offs_Y] ;q.tex_coord.Y=p0.tex_coord.Y + (p1.tex_coord.Y-p0.tex_coord.Y)*t
+		fadd dword[eax+GLVertex.tex_coord+offs_Y]
+		fstp dword[edi+GLVertex.tex_coord+offs_Y] ;q.tex_coord.Y=p0.tex_coord.Y + (p1.tex_coord.Y-p0.tex_coord.Y)*t
 	@@:
 
-	stdcall gl_clipcode, [edi+offs_vert_pc+offs_X],[edi+offs_vert_pc+offs_Y],\
-		[edi+offs_vert_pc+offs_Z],[edi+offs_vert_pc+offs_W]
-	mov dword[edi+offs_vert_clip_code],eax
+	stdcall gl_clipcode, [edi+GLVertex.pc+offs_X],[edi+GLVertex.pc+offs_Y],\
+		[edi+GLVertex.pc+offs_Z],[edi+GLVertex.pc+offs_W]
+	mov dword[edi+GLVertex.clip_code],eax
 	or eax,eax ;if (q.clip_code==0)
 	jnz @f
 		stdcall gl_transform_to_viewport,[context],edi
-		mov eax,edi
-		add eax,offs_vert_zp+offs_zbup_b
+		lea eax,[edi+GLVertex.zp+offs_zbup_b]
 		push eax
 		add eax,offs_zbup_g-offs_zbup_b
 		push eax
 		add eax,offs_zbup_r-offs_zbup_g
 		push eax
-		stdcall RGBFtoRGBI, dword[edi+offs_vert_color],dword[edi+offs_vert_color+4],dword[edi+offs_vert_color+8]
+		stdcall RGBFtoRGBI, dword[edi+GLVertex.color],dword[edi+GLVertex.color+4],dword[edi+GLVertex.color+8]
 	@@:
 	ret
 endp
@@ -665,12 +659,12 @@ pushad
 	mov ebx,[p0]
 	mov ecx,[p1]
 	mov edx,[p2]
-	mov edi,[ebx+offs_vert_clip_code]
+	mov edi,[ebx+GLVertex.clip_code]
 	mov dword[cc],edi
-	mov eax,[ecx+offs_vert_clip_code]
+	mov eax,[ecx+GLVertex.clip_code]
 	mov dword[cc+4],eax
 	or edi,eax
-	mov eax,[edx+offs_vert_clip_code]
+	mov eax,[edx+GLVertex.clip_code]
 	mov dword[cc+8],eax
 	or edi,eax ;co = cc[0] | cc[1] | cc[2]
 
@@ -678,21 +672,21 @@ pushad
 	;or edi,___ - было выше
 	jnz .els_0
 		;if (co==0)
-		mov edi,dword[edx+offs_vert_zp+offs_zbup_x]
-		sub edi,dword[ebx+offs_vert_zp+offs_zbup_x]
+		mov edi,dword[edx+GLVertex.zp+offs_zbup_x]
+		sub edi,dword[ebx+GLVertex.zp+offs_zbup_x]
 		mov dword[norm],edi ;p2.x-p0.x
 		fild dword[norm]
-		mov edi,dword[ecx+offs_vert_zp+offs_zbup_y]
-		sub edi,dword[ebx+offs_vert_zp+offs_zbup_y]
+		mov edi,dword[ecx+GLVertex.zp+offs_zbup_y]
+		sub edi,dword[ebx+GLVertex.zp+offs_zbup_y]
 		mov dword[norm],edi ;p1.y-p0.y
 		fimul dword[norm]
 		fchs
-		mov edi,dword[ecx+offs_vert_zp+offs_zbup_x]
-		sub edi,dword[ebx+offs_vert_zp+offs_zbup_x]
+		mov edi,dword[ecx+GLVertex.zp+offs_zbup_x]
+		sub edi,dword[ebx+GLVertex.zp+offs_zbup_x]
 		mov dword[norm],edi ;p1.x-p0.x
 		fild dword[norm]
-		mov edi,dword[edx+offs_vert_zp+offs_zbup_y]
-		sub edi,dword[ebx+offs_vert_zp+offs_zbup_y]
+		mov edi,dword[edx+GLVertex.zp+offs_zbup_y]
+		sub edi,dword[ebx+GLVertex.zp+offs_zbup_y]
 		mov dword[norm],edi ;p2.y-p0.y
 		fimul dword[norm]
 		faddp
@@ -770,12 +764,12 @@ pushad
 	mov ecx,[p1]
 	mov edx,[p2]
 
-	mov edi,[ebx+offs_vert_clip_code]
+	mov edi,[ebx+GLVertex.clip_code]
 	mov [cc],edi
-	mov eax,[ecx+offs_vert_clip_code]
+	mov eax,[ecx+GLVertex.clip_code]
 	mov [cc+4],eax
 	or edi,eax
-	mov eax,[edx+offs_vert_clip_code]
+	mov eax,[edx+GLVertex.clip_code]
 	mov [cc+8],eax
 	or edi,eax
 	mov [co],edi ;co = cc[0] | cc[1] | cc[2]
@@ -869,54 +863,49 @@ align 4
 		.els_2_end:
 
 		mov ebx,[q]
-		add ebx,offs_vert_pc
+		add ebx,GLVertex.pc
 		mov ecx,[q+4]
-		add ecx,offs_vert_pc
+		add ecx,GLVertex.pc
 		mov edx,[q+8]
-		add edx,offs_vert_pc
+		add edx,GLVertex.pc
 
 		lea eax,[clip_proc]
 		mov edi,[clip_bit]
-		shl edi,2
-		add eax,edi
-		mov edi,ebp
-		sub edi,(2*sizeof.GLVertex)-offs_vert_pc
+		lea eax,[eax+4*edi]
+		lea edi,[ebp-(2*sizeof.GLVertex)+GLVertex.pc]
 		stdcall dword[eax],edi,ebx,ecx ;clip_proc[clip_bit](&tmp1.pc,&q[0].pc,&q[1].pc)
-		sub edi,offs_vert_pc
+		sub edi,GLVertex.pc
 
-		sub ebx,offs_vert_pc
-		sub ecx,offs_vert_pc
+		sub ebx,GLVertex.pc
+		sub ecx,GLVertex.pc
 		stdcall updateTmp,[context],ebx,ecx,eax ;(c,&tmp1,q[0],q[1],tt)
-		add ebx,offs_vert_pc
+		add ebx,GLVertex.pc
 
 		lea eax,[clip_proc]
 		mov edi,[clip_bit]
-		shl edi,2
-		add eax,edi
-		mov edi,ebp
-		sub edi,sizeof.GLVertex-offs_vert_pc
+		lea eax,[eax+4*edi]
+		lea edi,[ebp-sizeof.GLVertex+GLVertex.pc]
 		stdcall dword[eax],edi,ebx,edx ;clip_proc[clip_bit](&tmp2.pc,&q[0].pc,&q[2].pc)
-		sub edi,offs_vert_pc
-		sub ebx,offs_vert_pc
-		sub edx,offs_vert_pc
+		sub edi,GLVertex.pc
+		sub ebx,GLVertex.pc
+		sub edx,GLVertex.pc
 		stdcall updateTmp,[context],ebx,edx,eax ;(c,&tmp2,q[0],q[2],tt)
 
-		mov eax,[ebx+offs_vert_edge_flag]
+		mov eax,[ebx+GLVertex.edge_flag]
 		mov [tmp1.edge_flag],eax ;q[0].edge_flag
-		mov eax,[edx+offs_vert_edge_flag]
+		mov eax,[edx+GLVertex.edge_flag]
 		mov [edge_flag_tmp],eax	;q[2].edge_flag
-		mov dword[edx+offs_vert_edge_flag],0 ;q[2].edge_flag=0
+		mov dword[edx+GLVertex.edge_flag],0 ;q[2].edge_flag=0
 		mov eax,[clip_bit]
 		inc eax
 		push eax ;для вызова нижней функции
-		mov edi,ebp
-		sub edi,2*sizeof.GLVertex
+		lea edi,[ebp-2*sizeof.GLVertex]
 		stdcall gl_draw_triangle_clip,[context],edi,ecx,edx,eax ;gl_draw_triangle_clip(c,&tmp1,q[1],q[2],clip_bit+1)
 
 		mov dword[tmp2.edge_flag],0
 		mov dword[tmp1.edge_flag],0
 		mov eax,[edge_flag_tmp]
-		mov [edx+offs_vert_edge_flag],eax ;q[2].edge_flag=edge_flag_tmp
+		mov [edx+GLVertex.edge_flag],eax ;q[2].edge_flag=edge_flag_tmp
 		push edx
 		push edi
 		add edi,sizeof.GLVertex ;edi = &tmp2
@@ -954,34 +943,30 @@ align 4
 		.els_4_end:
 
 		mov ebx,[q]
-		add ebx,offs_vert_pc
+		add ebx,GLVertex.pc
 		mov ecx,[q+4]
-		add ecx,offs_vert_pc
+		add ecx,GLVertex.pc
 		mov edx,[q+8]
-		add edx,offs_vert_pc
+		add edx,GLVertex.pc
 
 		lea eax,[clip_proc]
 		mov edi,[clip_bit]
-		shl edi,2
-		add eax,edi
-		mov edi,ebp
-		sub edi,(2*sizeof.GLVertex)-offs_vert_pc
+		lea eax,[eax+4*edi]
+		lea edi,[ebp-(2*sizeof.GLVertex)+GLVertex.pc]
 		stdcall dword[eax],edi,ebx,ecx ;clip_proc[clip_bit](&tmp1.pc,&q[0].pc,&q[1].pc)
-		sub edi,offs_vert_pc
+		sub edi,GLVertex.pc
 		stdcall updateTmp,[context],[q],[q+4],eax
 
 		lea eax,[clip_proc]
 		mov edi,[clip_bit]
-		shl edi,2
-		add eax,edi
-		mov edi,ebp
-		sub edi,sizeof.GLVertex-offs_vert_pc
+		lea eax,[eax+4*edi]
+		lea edi,[ebp-sizeof.GLVertex+GLVertex.pc]
 		stdcall dword[eax],edi,ebx,edx ;clip_proc[clip_bit](&tmp2.pc,&q[0].pc,&q[2].pc)
-		sub edi,offs_vert_pc
+		sub edi,GLVertex.pc
 		stdcall updateTmp,[context],[q],[q+8],eax
 
 		mov dword[tmp1.edge_flag],1
-		mov eax,[edx+offs_vert_edge_flag-offs_vert_pc]
+		mov eax,[edx+GLVertex.edge_flag-GLVertex.pc]
 		mov dword[tmp2.edge_flag],eax ;tmp2.edge_flag = q[2].edge_flag
 		mov eax,[clip_bit]
 		inc eax
@@ -997,11 +982,11 @@ endp
 align 16
 proc gl_draw_triangle_select uses eax, context:dword, p0:dword,p1:dword,p2:dword
 	mov eax,[p2]
-	push dword[eax+offs_vert_zp+offs_Z]
+	push dword[eax+GLVertex.zp+offs_Z]
 	mov eax,[p1]
-	push dword[eax+offs_vert_zp+offs_Z]
+	push dword[eax+GLVertex.zp+offs_Z]
 	mov eax,[p0]
-	push dword[eax+offs_vert_zp+offs_Z]
+	push dword[eax+GLVertex.zp+offs_Z]
 	stdcall gl_add_select1, [context] ;,p0.zp.z, p1.zp.z, p2.zp.z
 	ret
 endp
@@ -1031,9 +1016,9 @@ if PROFILE eq 1
 end if
 
 	mov ebx,[p1]
-	add ebx,offs_vert_zp
+	add ebx,GLVertex.zp
 	mov ecx,[p2]
-	add ecx,offs_vert_zp
+	add ecx,GLVertex.zp
 	mov edx,[context]
 	cmp dword[edx+GLContext.texture_2d_enabled],0
 	je .els_i
@@ -1047,7 +1032,7 @@ end if
 		stdcall ZB_setTexture, [edx+GLContext.zb], [eax],\
 			[eax+offs_imag_s_bound],[eax+offs_imag_t_bound],[eax+offs_imag_xsize_log2]
 		mov eax,[p0]
-		add eax,offs_vert_zp
+		add eax,GLVertex.zp
 		push ecx
 		push ebx
 		push eax
@@ -1063,7 +1048,7 @@ align 4
 align 4
 	.els_i:
 		mov eax,[p0]
-		add eax,offs_vert_zp
+		add eax,GLVertex.zp
 		cmp dword[edx+GLContext.current_shade_model],GL_SMOOTH
 		jne .els
 			;else if (context.current_shade_model == GL_SMOOTH)
@@ -1093,32 +1078,29 @@ align 4
 
 	;if (p0.edge_flag) ZB_line_z(context.zb,&p0.zp,&p1.zp)
 	mov eax,[p0]
-	cmp dword[eax+offs_vert_edge_flag],0
+	cmp dword[eax+GLVertex.edge_flag],0
 	je @f
-		mov ebx,eax
-		add ebx,offs_vert_zp
+		lea ebx,[eax+GLVertex.zp]
 		mov eax,[p1]
-		add eax,offs_vert_zp
+		add eax,GLVertex.zp
 		stdcall ecx,dword[edx+GLContext.zb],ebx,eax
 	@@:
 	;if (p1.edge_flag) ZB_line_z(context.zb,&p1.zp,&p2.zp)
 	mov eax,[p1]
-	cmp dword[eax+offs_vert_edge_flag],0
+	cmp dword[eax+GLVertex.edge_flag],0
 	je @f
-		mov ebx,eax
-		add ebx,offs_vert_zp
+		lea ebx,[eax+GLVertex.zp]
 		mov eax,[p2]
-		add eax,offs_vert_zp
+		add eax,GLVertex.zp
 		stdcall ecx,dword[edx+GLContext.zb],ebx,eax
 	@@:
 	;if (p2.edge_flag) ZB_line_z(context.zb,&p2.zp,&p0.zp);
 	mov eax,[p2]
-	cmp dword[eax+offs_vert_edge_flag],0
+	cmp dword[eax+GLVertex.edge_flag],0
 	je @f
-		mov ebx,eax
-		add ebx,offs_vert_zp
+		lea ebx,[eax+GLVertex.zp]
 		mov eax,[p0]
-		add eax,offs_vert_zp
+		add eax,GLVertex.zp
 		stdcall ecx,dword[edx+GLContext.zb],ebx,eax
 	@@:
 
@@ -1127,28 +1109,25 @@ endp
 
 ; Render a clipped triangle in point mode
 align 16
-proc gl_draw_triangle_point uses eax ebx edx, context:dword, p0:dword,p1:dword,p2:dword
+proc gl_draw_triangle_point uses eax edx, context:dword, p0:dword,p1:dword,p2:dword
 	mov edx,[context]
 	mov eax,[p0]
-	cmp dword[eax+offs_vert_edge_flag],0
+	cmp dword[eax+GLVertex.edge_flag],0
 	je @f
-		mov ebx,eax
-		add ebx,offs_vert_zp
-		stdcall ZB_plot,dword[edx+GLContext.zb],ebx
+		lea eax,[eax+GLVertex.zp]
+		stdcall ZB_plot,dword[edx+GLContext.zb],eax
 	@@:
 	mov eax,[p1]
-	cmp dword[eax+offs_vert_edge_flag],0
+	cmp dword[eax+GLVertex.edge_flag],0
 	je @f
-		mov ebx,eax
-		add ebx,offs_vert_zp
-		stdcall ZB_plot,dword[edx+GLContext.zb],ebx
+		lea eax,[eax+GLVertex.zp]
+		stdcall ZB_plot,dword[edx+GLContext.zb],eax
 	@@:
 	mov eax,[p2]
-	cmp dword[eax+offs_vert_edge_flag],0
+	cmp dword[eax+GLVertex.edge_flag],0
 	je @f
-		mov ebx,eax
-		add ebx,offs_vert_zp
-		stdcall ZB_plot,dword[edx+GLContext.zb],ebx
+		lea eax,[eax+GLVertex.zp]
+		stdcall ZB_plot,dword[edx+GLContext.zb],eax
 	@@:
 	ret
 endp

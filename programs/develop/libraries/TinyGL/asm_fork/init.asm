@@ -64,17 +64,17 @@ pushad
 	mov eax,edx
 	add eax,GLContext.lights
 	.cycle_0:
-		gl_V4_New eax+offs_ligh_ambient, 0.0,0.0,0.0,1.0
-		gl_V4_New eax+offs_ligh_diffuse, 1.0,1.0,1.0,1.0
-		gl_V4_New eax+offs_ligh_specular, 1.0,1.0,1.0,1.0
-		gl_V4_New eax+offs_ligh_position, 0.0,0.0,1.0,0.0
-		gl_V3_New eax+offs_ligh_norm_position, 0.0,0.0,1.0
-		gl_V3_New eax+offs_ligh_spot_direction, 0.0,0.0,-1.0
-		gl_V3_New eax+offs_ligh_norm_spot_direction, 0.0,0.0,-1.0
-		mov dword[eax+offs_ligh_spot_exponent],0.0
-		mov dword[eax+offs_ligh_spot_cutoff],180.0
-		gl_V3_New eax+offs_ligh_attenuation, 1.0,0.0,0.0
-		mov dword[eax+offs_ligh_enabled],0
+		gl_V4_New eax+GLLight.ambient, 0.0,0.0,0.0,1.0
+		gl_V4_New eax+GLLight.diffuse, 1.0,1.0,1.0,1.0
+		gl_V4_New eax+GLLight.specular, 1.0,1.0,1.0,1.0
+		gl_V4_New eax+GLLight.position, 0.0,0.0,1.0,0.0
+		gl_V3_New eax+GLLight.norm_position, 0.0,0.0,1.0
+		gl_V3_New eax+GLLight.spot_direction, 0.0,0.0,-1.0
+		gl_V3_New eax+GLLight.norm_spot_direction, 0.0,0.0,-1.0
+		mov dword[eax+GLLight.spot_exponent],0.0
+		mov dword[eax+GLLight.spot_cutoff],180.0
+		gl_V3_New eax+GLLight.attenuation, 1.0,0.0,0.0
+		mov dword[eax+GLLight.enabled],0
 		add eax,sizeof.GLLight
 		dec ecx
 		cmp ecx,0
@@ -88,14 +88,13 @@ pushad
 
 	; default materials
 	mov ecx,2 ;for(i=0;i<2;i++)
-	mov eax,edx
-	add eax,GLContext.materials
+	lea eax,[edx+GLContext.materials]
 	@@:
-		gl_V4_New eax+offs_mate_emission, 0.0,0.0,0.0,1.0
-		gl_V4_New eax+offs_mate_ambient, 0.2,0.2,0.2,1.0
-		gl_V4_New eax+offs_mate_diffuse, 0.8,0.8,0.8,1.0
-		gl_V4_New eax+offs_mate_specular, 0.0,0.0,0.0,1.0
-		mov dword[eax+offs_mate_shininess], 0.0
+		gl_V4_New eax+GLMaterial.emission, 0.0,0.0,0.0,1.0
+		gl_V4_New eax+GLMaterial.ambient, 0.2,0.2,0.2,1.0
+		gl_V4_New eax+GLMaterial.diffuse, 0.8,0.8,0.8,1.0
+		gl_V4_New eax+GLMaterial.specular, 0.0,0.0,0.0,1.0
+		mov dword[eax+GLMaterial.shininess], 0.0
 		add eax,sizeof.GLMaterial
 	loop @b
 

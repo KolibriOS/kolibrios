@@ -11,46 +11,43 @@ proc glopMaterial uses eax ebx ecx edi esi, context:dword, p:dword
 	cmp ecx,GL_FRONT_AND_BACK ;if (mode == GL_FRONT_AND_BACK)
 	jne @f
 		mov dword[ebx+4],GL_FRONT ;p[1].i=GL_FRONT
-		mov edi,ebp
-		add edi,12
+		lea edi,[ebp+12]
 		stdcall glopMaterial,eax,edi
 		mov ecx,GL_BACK
 	@@:
-	mov edi,eax
-	add edi,GLContext.materials
+	lea edi,[eax+GLContext.materials]
 	cmp ecx,GL_FRONT ;if (mode == GL_FRONT) m=&context.materials[0]
 	je @f
 		add edi,sizeof.GLMaterial ;else m=&context.materials[1]
 	@@:
 
 	mov ecx,4
-	mov esi,ebx ;esi = &p
-	add esi,12 ;esi = &p[3]
+	lea esi,[ebx+12] ;esi = &p[3]
 	mov ebx,[ebx+8] ;ebx = p[2]
 	cmp ebx,GL_EMISSION
 	jne @f
-		;add edi,offs_mate_emission ;offs_mate_emission=0
+		;add edi,GLMaterial.emission ;GLMaterial.emission=0
 		rep movsd
 		jmp .end_f
 align 4
 	@@:
 	cmp ebx,GL_AMBIENT
 	jne @f
-		add edi,offs_mate_ambient
+		add edi,GLMaterial.ambient
 		rep movsd
 		jmp .end_f
 align 4
 	@@:
 	cmp ebx,GL_DIFFUSE
 	jne @f
-		add edi,offs_mate_diffuse
+		add edi,GLMaterial.diffuse
 		rep movsd
 		jmp .end_f
 align 4
 	@@:
 	cmp ebx,GL_SPECULAR
 	jne @f
-		add edi,offs_mate_specular
+		add edi,GLMaterial.specular
 		rep movsd
 		jmp .end_f
 align 4
@@ -58,7 +55,7 @@ align 4
 	cmp ebx,GL_SHININESS
 	jne @f
 		fld dword[esi]
-		add edi,offs_mate_shininess
+		add edi,GLMaterial.shininess
 		movsd
 		mov dword[edi],SPECULAR_BUFFER_RESOLUTION
 		fdiv dword[sp128f]
@@ -69,10 +66,10 @@ align 4
 	@@:
 	cmp ebx,GL_AMBIENT_AND_DIFFUSE
 	jne @f
-		add edi,offs_mate_ambient
+		add edi,GLMaterial.ambient
 		rep movsd
 		sub esi,16
-		;edi = &offs_mate_diffuse
+		;edi = &GLMaterial.diffuse
 		mov ecx,4
 		rep movsd
 		jmp .end_f
@@ -108,16 +105,14 @@ pushad
 
 	sub edx,GL_LIGHT0
 	imul edx,sizeof.GLLight
-	add edx,eax
-	add edx,GLContext.lights
+	lea edx,[eax+edx+GLContext.lights]
 
 	mov ecx,[ebx+8] ;ecx = p[2]
 	cmp ecx,GL_AMBIENT
 	jne @f
-		mov esi,ebx
-		add esi,12
+		lea esi,[ebx+12]
 		mov edi,edx
-		;add edi,offs_ligh_ambient ;offs_ligh_ambient = 0
+		;add edi,GLLight.ambient ;GLLight.ambient = 0
 		mov ecx,4
 		rep movsd ;l.ambient=v
 		jmp .end_f
@@ -125,10 +120,8 @@ align 4
 	@@:
 	cmp ecx,GL_DIFFUSE
 	jne @f
-		mov esi,ebx
-		add esi,12
-		mov edi,edx
-		add edi,offs_ligh_diffuse
+		lea esi,[ebx+12]
+		lea edi,[edx+GLLight.diffuse]
 		mov ecx,4
 		rep movsd ;l.diffuse=v
 		jmp .end_f
@@ -136,10 +129,8 @@ align 4
 	@@:
 	cmp ecx,GL_SPECULAR
 	jne @f
-		mov esi,ebx
-		add esi,12
-		mov edi,edx
-		add edi,offs_ligh_specular
+		lea esi,[ebx+12]
+		lea edi,[edx+GLLight.specular]
 		mov ecx,4
 		rep movsd ;l.specular=v
 		jmp .end_f
@@ -147,13 +138,10 @@ align 4
 	@@:
 	cmp ecx,GL_POSITION
 	jne @f
-		mov edi,ebx ;ebx = [ebp+12] = [p] = &p[0]
-		add edi,12 ;&p[3]
-		mov esi,ebp
-		sub esi,16 ;&pos
+		lea edi,[ebx+12] ;&p[3]
+		lea esi,[ebp-16] ;&pos
 		stdcall gl_M4_MulV4, esi,dword[eax+GLContext.matrix_stack_ptr],edi
-		mov edi,edx
-		add edi,offs_ligh_position
+		lea edi,[edx+GLLight.position]
 		mov ecx,4
 		rep movsd ;l.position=pos
 
@@ -164,13 +152,11 @@ align 4
 		jne .end_i
 			;mov esi,ebp
 			sub esi,16 ;&pos
-			mov edi,edx
-			add edi,offs_ligh_norm_position
+			lea edi,[edx+GLLight.norm_position]
 			mov ecx,3
 			rep movsd ;l.norm_position=pos[1,2,3]
 
-			;mov edi,edx
-			;add edi,offs_ligh_norm_position
+			;lea edi,[edx+GLLight.norm_position]
 			sub edi,12
 			stdcall gl_V3_Norm,edi ;&l.norm_position
 		.end_i:
@@ -181,21 +167,17 @@ align 4
 	@@:
 	cmp ecx,GL_SPOT_DIRECTION
 	jne @f
-		mov esi,ebx ;&p[0]
-		add esi,12
-		mov edi,edx
-		add edi,offs_ligh_spot_direction
+		lea esi,[ebx+12] ;&p[3]
+		lea edi,[edx+GLLight.spot_direction]
 		mov ecx,3
 		rep movsd ;l.spot_direction=v[0,1,2]
-		;mov esi,ebx
-		;add esi,12
+		;lea esi,[ebx+12]
 		sub esi,12
-		;mov edi,edx
-		;add edi,offs_ligh_norm_spot_direction
-		add edi,offs_ligh_norm_spot_direction-(offs_ligh_spot_direction+12)
+		;lea edi,[edx+GLLight.norm_spot_direction]
+		add edi,GLLight.norm_spot_direction-(GLLight.spot_direction+12)
 		mov ecx,3
 		rep movsd ;l.norm_spot_direction=v[0,1,2]
-		add edx,offs_ligh_norm_spot_direction
+		add edx,GLLight.norm_spot_direction
 		stdcall gl_V3_Norm,edx
 		jmp .end_f
 align 4
@@ -203,7 +185,7 @@ align 4
 	cmp ecx,GL_SPOT_EXPONENT
 	jne @f
 		mov ecx,[ebx+12]
-		mov [edi+offs_ligh_spot_exponent],ecx ;l.spot_exponent=p[3]
+		mov [edi+GLLight.spot_exponent],ecx ;l.spot_exponent=p[3]
 		jmp .end_f
 align 4
 	@@:
@@ -211,7 +193,7 @@ align 4
 	jne .end_spot_c
 		fld dword[ebp+12] ;float a=v.v[0]
 ;      assert(a == 180 || (a>=0 && a<=90));
-		fst dword[edi+offs_ligh_spot_cutoff] ;l.spot_cutoff=a
+		fst dword[edi+GLLight.spot_cutoff] ;l.spot_cutoff=a
 		fcom dword[an180f] ;if (a != 180)
 		fstsw ax
 		sahf
@@ -220,7 +202,7 @@ align 4
 			fmulp
 			fdiv dword[an180f]
 			fcos
-			fstp dword[edi+offs_ligh_cos_spot_cutoff] ;l.cos_spot_cutoff=cos(a * M_PI / 180.0)
+			fstp dword[edi+GLLight.cos_spot_cutoff] ;l.cos_spot_cutoff=cos(a * M_PI / 180.0)
 			jmp .end_f
 		@@:
 		ffree st0
@@ -231,21 +213,21 @@ align 4
 	cmp ecx,GL_CONSTANT_ATTENUATION
 	jne @f
 		mov ecx,[ebx+12]
-		mov [edi+offs_ligh_attenuation],ecx ;l->attenuation[0]=p[3]
+		mov [edi+GLLight.attenuation],ecx ;l->attenuation[0]=p[3]
 		jmp .end_f
 align 4
 	@@:
 	cmp ecx,GL_LINEAR_ATTENUATION
 	jne @f
 		mov ecx,[ebx+12]
-		mov [edi+offs_ligh_attenuation+4],ecx ;l->attenuation[1]=p[3]
+		mov [edi+GLLight.attenuation+4],ecx ;l->attenuation[1]=p[3]
 		jmp .end_f
 align 4
 	@@:
 	cmp ecx,GL_QUADRATIC_ATTENUATION
 	jne @f
 		mov ecx,[ebx+12]
-		mov [edi+offs_ligh_attenuation+8],ecx ;l->attenuation[2]=p[3]
+		mov [edi+GLLight.attenuation+8],ecx ;l->attenuation[2]=p[3]
 		jmp .end_f
 align 4
 	@@: ;default:
@@ -326,11 +308,10 @@ proc gl_enable_disable_light uses eax ebx ecx, context:dword, light:dword, v:dwo
 	mov eax,[context]
 	mov ebx,[light]
 	imul ebx,sizeof.GLLight
-	add ebx,eax
-	add ebx,GLContext.lights
+	lea ebx,[eax+ebx+GLContext.lights]
 
 	xor ecx,ecx
-	cmp dword[ebx+offs_ligh_enabled],0
+	cmp dword[ebx+GLLight.enabled],0
 	jne @f
 		not ecx
 	@@:
@@ -338,11 +319,11 @@ proc gl_enable_disable_light uses eax ebx ecx, context:dword, light:dword, v:dwo
 	or ecx,ecx
 	jz @f
 		;if (v && !l.enabled)
-		mov dword[ebx+offs_ligh_enabled],1
+		mov dword[ebx+GLLight.enabled],1
 		mov ecx,[eax+GLContext.first_light]
-		mov [ebx+offs_ligh_next],ecx
+		mov [ebx+GLLight.next],ecx
 		mov [eax+GLContext.first_light],ebx ;context.first_light = l
-		mov dword[ebx+offs_ligh_prev],0 ;l.prev = NULL
+		mov dword[ebx+GLLight.prev],0 ;l.prev = NULL
 		jmp .end_f
 align 4
 	@@:
@@ -351,26 +332,26 @@ align 4
 	jne @f
 		not ecx
 	@@:
-	and ecx,[ebx+offs_ligh_enabled]
+	and ecx,[ebx+GLLight.enabled]
 	or ecx,ecx
 	jz .end_f
 		;else if (!v && l.enabled)
-		mov dword[ebx+offs_ligh_enabled],0 ;l.enabled = 0
-		mov ecx,[ebx+offs_ligh_next]
-		cmp dword[ebx+offs_ligh_prev],0 ;if (l.prev == NULL)
+		mov dword[ebx+GLLight.enabled],0 ;l.enabled = 0
+		mov ecx,[ebx+GLLight.next]
+		cmp dword[ebx+GLLight.prev],0 ;if (l.prev == NULL)
 		jne .els_0
 			mov [eax+GLContext.first_light],ecx	;context.first_light = l.next
 			jmp @f
 align 4
 		.els_0:
-			mov eax,[ebx+offs_ligh_prev]
-			mov [eax+offs_ligh_next],ecx ;l.prev.next = l.next
+			mov eax,[ebx+GLLight.prev]
+			mov [eax+GLLight.next],ecx ;l.prev.next = l.next
 		@@:
-		cmp dword[ebx+offs_ligh_next],0
+		cmp dword[ebx+GLLight.next],0
 		je .end_f
-			mov ecx,[ebx+offs_ligh_prev]
-			mov eax,[ebx+offs_ligh_next]
-			mov [eax+offs_ligh_prev],ecx ;l.next.prev = l.prev
+			mov ecx,[ebx+GLLight.prev]
+			mov eax,[ebx+GLLight.next]
+			mov [eax+GLLight.prev],ecx ;l.next.prev = l.prev
 	.end_f:
 	ret
 endp
@@ -420,27 +401,26 @@ pushad
 	mov eax,[edx+GLContext.light_model_two_side]
 	mov [twoside],eax
 
-	add esi,offs_vert_normal
-	mov edi,ebp
-	sub edi,24 ;edi = &n
+	add esi,GLVertex.normal
+	lea edi,[ebp-24] ;edi = &n
 	movsd ;n.X=v.normal.X
 	movsd ;n.Y=v.normal.Y
 	movsd ;n.Z=v.normal.Z
 	mov esi,[v]
 
 	fld dword[edx+GLContext.ambient_light_model]
-	fmul dword[ecx+offs_mate_ambient]
-	fadd dword[ecx] ;offs_mate_emission=0
+	fmul dword[ecx+GLMaterial.ambient]
+	fadd dword[ecx] ;GLMaterial.emission=0
 	fstp dword[R] ;R=m.emission.v[0]+m.ambient.v[0]*context.ambient_light_model.v[0]
 	fld dword[edx+GLContext.ambient_light_model+4]
-	fmul dword[ecx+offs_mate_ambient+4]
-	fadd dword[ecx+offs_mate_emission+4]
+	fmul dword[ecx+GLMaterial.ambient+4]
+	fadd dword[ecx+GLMaterial.emission+4]
 	fstp dword[G]
 	fld dword[edx+GLContext.ambient_light_model+8]
-	fmul dword[ecx+offs_mate_ambient+8]
-	fadd dword[ecx+offs_mate_emission+8]
+	fmul dword[ecx+GLMaterial.ambient+8]
+	fadd dword[ecx+GLMaterial.emission+8]
 	fstp dword[B]
-	clampf [ecx+offs_mate_diffuse+12],0,1
+	clampf [ecx+GLMaterial.diffuse+12],0,1
 	mov [A],eax ;A=clampf(m.diffuse.v[3],0,1)
 
 	mov ebx,[edx+GLContext.first_light]
@@ -449,17 +429,17 @@ pushad
 		jz .cycle_0_end
 
 		; ambient
-		fld dword[ecx+offs_mate_ambient]
-		fmul dword[ebx] ;offs_ligh_ambient=0
+		fld dword[ecx+GLMaterial.ambient]
+		fmul dword[ebx] ;GLLight.ambient=0
 		fstp dword[lR] ;lR=l.ambient.v[0] * m.ambient.v[0]
-		fld dword[ecx+offs_mate_ambient+4]
-		fmul dword[ebx+offs_ligh_ambient+4]
+		fld dword[ecx+GLMaterial.ambient+4]
+		fmul dword[ebx+GLLight.ambient+4]
 		fstp dword[lG] ;lG=l.ambient.v[1] * m.ambient.v[1]
-		fld dword[ecx+offs_mate_ambient+8]
-		fmul dword[ebx+offs_ligh_ambient+8]
+		fld dword[ecx+GLMaterial.ambient+8]
+		fmul dword[ebx+GLLight.ambient+8]
 		fstp dword[lB] ;lB=l.ambient.v[2] * m.ambient.v[2]
 
-		fld dword[ebx+offs_ligh_position+offs_W]
+		fld dword[ebx+GLLight.position+offs_W]
 		ftst ;if (l.position.v[3] == 0)
 		fstsw ax
 		sahf
@@ -467,11 +447,11 @@ pushad
 			; light at infinity
 			ffree st0 ;l.position.v[3]
 			fincstp
-			mov eax,[ebx+offs_ligh_norm_position]
+			mov eax,[ebx+GLLight.norm_position]
 			mov [d],eax ;d.X=l.norm_position.v[0]
-			mov eax,[ebx+offs_ligh_norm_position+offs_Y]
+			mov eax,[ebx+GLLight.norm_position+offs_Y]
 			mov [d+offs_Y],eax ;d.Y=l.norm_position.v[1]
-			mov eax,[ebx+offs_ligh_norm_position+offs_Z]
+			mov eax,[ebx+GLLight.norm_position+offs_Z]
 			mov [d+offs_Z],eax ;d.Z=l.norm_position.v[2]
 			mov dword[att],1.0
 			jmp .els_0_end
@@ -480,14 +460,14 @@ align 4
 			; distance attenuation
 			ffree st0 ;l.position.v[3]
 			fincstp
-			fld dword[ebx+offs_ligh_position]
-			fsub dword[esi+offs_vert_ec]
+			fld dword[ebx+GLLight.position]
+			fsub dword[esi+GLVertex.ec]
 			fstp dword[d] ;d.X=l.position.v[0]-v.ec.v[0]
-			fld dword[ebx+offs_ligh_position+offs_Y]
-			fsub dword[esi+offs_vert_ec+offs_Y]
+			fld dword[ebx+GLLight.position+offs_Y]
+			fsub dword[esi+GLVertex.ec+offs_Y]
 			fstp dword[d+offs_Y] ;d.Y=l.position.v[1]-v.ec.v[1]
-			fld dword[ebx+offs_ligh_position+offs_Z]
-			fsub dword[esi+offs_vert_ec+offs_Z]
+			fld dword[ebx+GLLight.position+offs_Z]
+			fsub dword[esi+GLVertex.ec+offs_Z]
 			fstp dword[d+offs_Z] ;d.Z=l.position.v[2]-v.ec.v[2]
 			fld dword[d]
 			fmul st0,st0
@@ -516,11 +496,11 @@ align 4
 				ffree st0 ;1.0/dist
 				fincstp
 			@@:
-			fld dword[ebx+offs_ligh_attenuation+8]
+			fld dword[ebx+GLLight.attenuation+8]
 			fmul st0,st1 ;st0 = dist * l.attenuation[2]
-			fadd dword[ebx+offs_ligh_attenuation+4]
+			fadd dword[ebx+GLLight.attenuation+4]
 			fmul st0,st1
-			fadd dword[ebx+offs_ligh_attenuation]
+			fadd dword[ebx+GLLight.attenuation]
 			fld1
 			fdiv st0,st1
 			fstp dword[att] ;att = 1.0f/(l.attenuation[0]+dist*(l.attenuation[1]+dist*l.attenuation[2]))
@@ -550,18 +530,18 @@ align 4
 		sahf
 		jbe .if0_end
 			; diffuse light
-			fld dword[ecx+offs_mate_diffuse]
-			fmul dword[ebx+offs_ligh_diffuse]
+			fld dword[ecx+GLMaterial.diffuse]
+			fmul dword[ebx+GLLight.diffuse]
 			fmul st0,st1
 			fadd dword[lR]
 			fstp dword[lR] ;lR+=dot * l.diffuse.v[0] * m.diffuse.v[0]
-			fld dword[ecx+offs_mate_diffuse+4]
-			fmul dword[ebx+offs_ligh_diffuse+4]
+			fld dword[ecx+GLMaterial.diffuse+4]
+			fmul dword[ebx+GLLight.diffuse+4]
 			fmul st0,st1
 			fadd dword[lG]
 			fstp dword[lG] ;lG+=dot * l.diffuse.v[1] * m.diffuse.v[1]
-			fld dword[ecx+offs_mate_diffuse+8]
-			fmul dword[ebx+offs_ligh_diffuse+8]
+			fld dword[ecx+GLMaterial.diffuse+8]
+			fmul dword[ebx+GLLight.diffuse+8]
 			fmul st0,st1
 			fadd dword[lB]
 			fstp dword[lB] ;lB+=dot * l.diffuse.v[2] * m.diffuse.v[2]
@@ -569,17 +549,17 @@ align 4
 			fincstp
 
 			; spot light
-			fld dword[ebx+offs_ligh_spot_cutoff]
+			fld dword[ebx+GLLight.spot_cutoff]
 			fcomp dword[an180f] ;if (l.spot_cutoff != 180)
 			fstsw ax
 			sahf
 			je .if1_end
-				fld dword[ebx+offs_ligh_norm_spot_direction]
+				fld dword[ebx+GLLight.norm_spot_direction]
 				fmul dword[d]
-				fld dword[ebx+offs_ligh_norm_spot_direction+offs_Y]
+				fld dword[ebx+GLLight.norm_spot_direction+offs_Y]
 				fmul dword[d+offs_Y]
 				faddp
-				fld dword[ebx+offs_ligh_norm_spot_direction+offs_Z]
+				fld dword[ebx+GLLight.norm_spot_direction+offs_Z]
 				fmul dword[d+offs_Z]
 				faddp
 				fchs
@@ -592,19 +572,19 @@ align 4
 				jae @f
 					fchs ;dot_spot = -dot_spot
 				@@:
-				fcom dword[ebx+offs_ligh_cos_spot_cutoff] ;if (dot_spot < l.cos_spot_cutoff)
+				fcom dword[ebx+GLLight.cos_spot_cutoff] ;if (dot_spot < l.cos_spot_cutoff)
 				fstsw ax
 				sahf
 				jae .els_1
 					; no contribution
 					ffree st0 ;dot_spot
 					fincstp
-					mov ebx,[ebx+offs_ligh_next]
+					mov ebx,[ebx+GLLight.next]
 					jmp .cycle_0 ;continue
 align 4
 				.els_1:
 					; TODO: optimize
-					fld dword[ebx+offs_ligh_spot_exponent]
+					fld dword[ebx+GLLight.spot_exponent]
 					ftst ;if (l.spot_exponent > 0)
 					fstsw ax
 					sahf
@@ -639,14 +619,13 @@ align 4
 			; specular light
 			cmp dword[edx+GLContext.local_light_model],0 ;if (c.local_light_model)
 			je .els_2
-				mov eax,[esi+offs_vert_ec]
+				mov eax,[esi+GLVertex.ec]
 				mov [vcoord],eax ;vcoord.X=v.ec.X
-				mov eax,[esi+offs_vert_ec+offs_Y]
+				mov eax,[esi+GLVertex.ec+offs_Y]
 				mov [vcoord+offs_Y],eax ;vcoord.Y=v.ec.Y
-				mov eax,[esi+offs_vert_ec+offs_Z]
+				mov eax,[esi+GLVertex.ec+offs_Z]
 				mov [vcoord+offs_Z],eax ;vcoord.Z=v.ec.Z
-				mov eax,ebp
-				sub eax,12 ;eax = &vcoord
+				lea eax,[ebp-12] ;eax = &vcoord
 				stdcall gl_V3_Norm, eax
 				fld dword[d]
 				fsub dword[vcoord]
@@ -709,7 +688,7 @@ align 4
 				; TODO: optimize
 				; testing specular buffer code
 				; dot_spec= pow(dot_spec,m.shininess)
-				stdcall specbuf_get_buffer, edx, dword[ecx+offs_mate_shininess_i], dword[ecx+offs_mate_shininess]
+				stdcall specbuf_get_buffer, edx, dword[ecx+GLMaterial.shininess_i], dword[ecx+GLMaterial.shininess]
 				mov edi,eax ;edi = specbuf
 				mov dword[idx],SPECULAR_BUFFER_SIZE ;idx = SPECULAR_BUFFER_SIZE
 
@@ -724,19 +703,19 @@ align 4
 				shl dword[idx],2
 				add edi,dword[idx]
 				fld dword[edi+offs_spec_buf] ;dot_spec = specbuf.buf[idx]
-				fld dword[ebx+offs_ligh_specular]
+				fld dword[ebx+GLLight.specular]
 				fmul st0,st1
-				fmul dword[ecx+offs_mate_specular]
+				fmul dword[ecx+GLMaterial.specular]
 				fadd dword[lR]
 				fstp dword[lR] ;lR+=dot_spec * l.specular.v[0] * m.specular.v[0]
-				fld dword[ebx+offs_ligh_specular+4]
+				fld dword[ebx+GLLight.specular+4]
 				fmul st0,st1
-				fmul dword[ecx+offs_mate_specular+4]
+				fmul dword[ecx+GLMaterial.specular+4]
 				fadd dword[lG]
 				fstp dword[lG] ;lG+=dot_spec * l.specular.v[1] * m.specular.v[1]
-				fld dword[ebx+offs_ligh_specular+8]
+				fld dword[ebx+GLLight.specular+8]
 				fmul st0,st1
-				fmul dword[ecx+offs_mate_specular+8]
+				fmul dword[ecx+GLMaterial.specular+8]
 				fadd dword[lB]
 				fstp dword[lB] ;lB+=dot_spec * l.specular.v[2] * m.specular.v[2]
 		.if0_end:
@@ -759,19 +738,19 @@ align 4
 		fstp dword[B] ;B += att * lB
 		ffree st0 ;att
 		fincstp
-		mov ebx,[ebx+offs_ligh_next]
+		mov ebx,[ebx+GLLight.next]
 		jmp .cycle_0
 align 4
 	.cycle_0_end:
 
 	clampf [R],0,1
-	mov [esi+offs_vert_color],eax ;v.color.v[0]=clampf(R,0,1)
+	mov [esi+GLVertex.color],eax ;v.color.v[0]=clampf(R,0,1)
 	clampf [G],0,1
-	mov [esi+offs_vert_color+4],eax ;v.color.v[1]=clampf(G,0,1)
+	mov [esi+GLVertex.color+4],eax ;v.color.v[1]=clampf(G,0,1)
 	clampf [B],0,1
-	mov [esi+offs_vert_color+8],eax ;v.color.v[2]=clampf(B,0,1)
+	mov [esi+GLVertex.color+8],eax ;v.color.v[2]=clampf(B,0,1)
 	mov eax,[A]
-	mov [esi+offs_vert_color+12],eax ;v.color.v[3]=A
+	mov [esi+GLVertex.color+12],eax ;v.color.v[3]=A
 popad
 	ret
 endp
