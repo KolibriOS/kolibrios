@@ -45,6 +45,7 @@ endg
 ; so try to calculate it using partition structure,
 ; assuming that file systems fill the real size based on contents of the partition.
 ; 2a. Prepare for loop over partitions.
+        xor     eax, eax
         xor     ecx, ecx
         xor     edx, edx
 ; 2b. Check that at least one partition was recognized.
@@ -80,6 +81,7 @@ endg
         dec     esi
         jnz     @b
 .no_reclaim:
+        mov     eax, ebx
         pop     esi ebx ; restore used registers to be stdcall
         ret
 .fail:
