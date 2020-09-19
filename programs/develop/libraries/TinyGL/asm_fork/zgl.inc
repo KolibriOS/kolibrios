@@ -97,14 +97,6 @@ struct GLViewport
 	updated dd ? ;int
 ends
 
-offs_vpor_xmin   equ 0
-offs_vpor_ymin   equ 4
-offs_vpor_xsize  equ 8
-offs_vpor_ysize equ 12
-offs_vpor_scale equ 16
-offs_vpor_trans equ 28
-offs_vpor_updated equ 40
-
 struct GLParamBuffer
 	ops rd OP_BUFFER_MAX_SIZE ;GLParam[OP_BUFFER_MAX_SIZE]
 	next dd ? ;struct GLParamBuffer*

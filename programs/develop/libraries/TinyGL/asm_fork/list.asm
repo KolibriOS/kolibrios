@@ -5,7 +5,6 @@ macro ADD_OP a,b,c
 	db 'gl',`a,' ',c,0
 }
 include 'opinfo.inc'
-purge ADD_OP
 
 ;указатели на функции ;static void (*op_table_func[])(GLContext *,GLParam *)=
 align 4
@@ -15,7 +14,6 @@ macro ADD_OP a,b,c
 	dd glop#a
 }
 include 'opinfo.inc'
-purge ADD_OP
 
 ;число параметров в функциях
 align 4
@@ -25,7 +23,6 @@ macro ADD_OP a,b,c
 	dd b+1
 }
 include 'opinfo.inc'
-purge ADD_OP
 
 ;коды функций у которых нет входных параметров
 align 4
@@ -36,7 +33,6 @@ if b eq 0
 end if
 }
 include 'opinfo.inc'
-purge ADD_OP
 
 
 ;output:
@@ -332,19 +328,13 @@ proc glNewList uses eax ebx, list:dword, mode:dword
 endp
 
 align 4
-proc glEndList uses eax ebx
-locals
-	p dd ?
-endl
+proc glEndList uses eax
 	call gl_get_context
 
 ;  assert(c->compile_flag == 1);
 
 	; end of list
-	mov dword[p],OP_EndList
-	mov ebx,ebp
-	sub ebx,4 ;=sizeof(dd)
-	stdcall gl_compile_op,eax,ebx
+	stdcall gl_compile_op,eax,op_EndList
 
 	mov dword[eax+GLContext.compile_flag],0
 	mov dword[eax+GLContext.exec_flag],1

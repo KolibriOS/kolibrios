@@ -40,22 +40,16 @@ ends
 
 align 4
 proc gl_resize_viewport uses ebx ecx edx edi esi, context:dword, xsize_ptr:dword, ysize_ptr:dword
-	xor eax,eax
-
 	mov ecx,[xsize_ptr] ; ecx = &xsize
 	mov edi,[ecx]       ; edi =  xsize
 	mov esi,[ysize_ptr] ; esi = &ysize
 	mov esi,[esi]       ; esi =  ysize
 
-	; we ensure that xsize and ysize are multiples of 2 for the zbuffer.
-	; TODO: find a better solution
-	and edi, not 3
-	and esi, not 3
-
-	cmp edi,0
-	jne @f
-	cmp esi,0
-	jne @f
+	xor eax,eax
+	or edi,edi
+	jnz @f
+	or esi,esi
+	jnz @f
 		mov eax,-1
 		jmp .end_f
 	@@:
@@ -68,10 +62,10 @@ proc gl_resize_viewport uses ebx ecx edx edi esi, context:dword, xsize_ptr:dword
 
 	mov ebx,[context]
 	mov edx,[ebx+GLContext.opaque] ; edx = (TinyGLContext *)context.opaque
-	mov [edx+4],edi
-	mov [edx+12],edi ;d_x = xsize
-	mov [edx+8],esi
-	mov [edx+16],esi ;d_y = ysize
+	mov [edx+TinyGLContext.xsize],edi
+	mov [edx+TinyGLContext.d_x],edi
+	mov [edx+TinyGLContext.ysize],esi
+	mov [edx+TinyGLContext.d_y],esi
 
 	; resize the Z buffer
 	stdcall ZB_resize, dword[ebx+GLContext.zb],0,edi,esi
@@ -87,13 +81,13 @@ proc kosglMakeCurrent uses ebx ecx, win_x0:dword, win_y0:dword, win_x:dword, win
 	jne .end_f
 		; create the TinyGL context
 		mov ecx,[win_x0]
-		mov [ebx+20],ecx ;ctx.x = win_x0
+		mov [ebx+TinyGLContext.x],ecx
 		mov ecx,[win_y0]
-		mov [ebx+24],ecx ;ctx.y = win_y0
+		mov [ebx+TinyGLContext.y],ecx
 		mov ecx,[win_x]
-		mov [ebx+12],ecx ;ctx.d_x = win_x
+		mov [ebx+TinyGLContext.d_x],ecx
 		mov ecx,[win_y]
-		mov [ebx+16],ecx ;ctx.d_y = win_y
+		mov [ebx+TinyGLContext.d_y],ecx
 
 		; currently, we only support 16 bit rendering
 		xor eax,eax
@@ -116,8 +110,8 @@ proc kosglMakeCurrent uses ebx ecx, win_x0:dword, win_y0:dword, win_x:dword, win
 		mov dword[eax+GLContext.gl_resize_viewport],gl_resize_viewport
 
 		; set the viewport : we force a call to gl_resize_viewport
-		dec dword[eax+GLContext.viewport+offs_vpor_xsize]
-		dec dword[eax+GLContext.viewport+offs_vpor_ysize]
+		dec dword[eax+GLContext.viewport+GLViewport.xsize]
+		dec dword[eax+GLContext.viewport+GLViewport.ysize]
 
 		stdcall glViewport, 0, 0, [win_x], [win_y]
 	.end_f:
@@ -132,15 +126,15 @@ proc kosglSwapBuffers uses eax ebx ecx edx esi
 	; retrieve the current TinyGLContext
 	call gl_get_context
 	mov ebx,[eax+GLContext.zb]
-	mov ebx,[ebx+offs_zbuf_pbuf]
+	mov ebx,[ebx+ZBuffer.pbuf]
 	mov esi,[eax+GLContext.opaque] ;esi = &context.opaque
-	mov eax,7
-	mov ecx,[esi+12] ;d_x
+	mov eax,SF_PUT_IMAGE
+	mov ecx,[esi+TinyGLContext.d_x]
 	shl ecx,16
-	mov cx,[esi+16] ;d_y
-	mov edx,[esi+20] ;x
+	mov cx,word[esi+TinyGLContext.d_y]
+	mov edx,[esi+TinyGLContext.x]
 	shl edx,16
-	mov dx,[esi+24] ;y
+	mov dx,word[esi+TinyGLContext.y]
 	int 0x40
 	ret
 endp

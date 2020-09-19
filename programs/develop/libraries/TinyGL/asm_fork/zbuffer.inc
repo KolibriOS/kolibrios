@@ -63,6 +63,7 @@ struct ZBuffer
 	xsize dd ? ;int
 	ysize dd ? ;int
 	linesize dd ? ;int ;line size, in bytes
+		dd ? ;fix old error offset
 	mode dd ? ;int
     
 	zbuf dd ? ;*unsigned short
@@ -78,21 +79,6 @@ struct ZBuffer
 	t_bound dd ? ;unsigned int
 ends
 
-offs_zbuf_xsize equ 0
-offs_zbuf_ysize equ 4
-offs_zbuf_linesize equ 8
-offs_zbuf_mode equ 16
-offs_zbuf_zbuf equ 20
-offs_zbuf_pbuf equ 24
-offs_zbuf_frame_buffer_allocated equ 28
-offs_zbuf_nb_colors equ 32
-offs_zbuf_dctable equ 36
-offs_zbuf_ctable equ 40
-offs_zbuf_current_texture equ 44
-offs_zbuf_s_log2 equ 48
-offs_zbuf_s_bound equ 52
-offs_zbuf_t_bound equ 56
-
 struct ZBufferPoint
 	x dd ? ;int ;integer coordinates in the zbuffer
 	y dd ? ;int
@@ -106,17 +92,6 @@ struct ZBufferPoint
 	fsz dd ? ;float ;temporary coordinates for mapping
 	tz dd ? ;float
 ends
-
-offs_zbup_x equ  0
-offs_zbup_y equ  4
-offs_zbup_z equ  8
-offs_zbup_s equ 12
-offs_zbup_t equ 16
-offs_zbup_r equ 20
-offs_zbup_g equ 24
-offs_zbup_b equ 28
-offs_zbup_sz equ 32
-offs_zbup_tz equ 36
 
 ; ztriangle.c
 

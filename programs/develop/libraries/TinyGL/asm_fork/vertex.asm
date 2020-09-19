@@ -85,31 +85,31 @@ endl
 	fadd st1,st0 ;st1 = 2.0
 	fdiv st0,st1 ;st0 = 0.5
 
-	fild dword[eax+offs_vpor_xsize]
+	fild dword[eax+GLViewport.xsize]
 	fsub st0,st1
 	fdiv st0,st2
-	fst dword[eax+offs_vpor_scale+offs_X]
-	fiadd dword[eax+offs_vpor_xmin]
-	fstp dword[eax+offs_vpor_trans+offs_X]
+	fst dword[eax+GLViewport.scale+offs_X]
+	fiadd dword[eax+GLViewport.xmin]
+	fstp dword[eax+GLViewport.trans+offs_X]
 
-	fild dword[eax+offs_vpor_ysize]
+	fild dword[eax+GLViewport.ysize]
 	fsub st0,st1
 	fdiv st0,st2
 	fchs
-	fst dword[eax+offs_vpor_scale+offs_Y]
+	fst dword[eax+GLViewport.scale+offs_Y]
 	fchs
-	fiadd dword[eax+offs_vpor_ymin]
-	fstp dword[eax+offs_vpor_trans+offs_Y]
+	fiadd dword[eax+GLViewport.ymin]
+	fstp dword[eax+GLViewport.trans+offs_Y]
 
 	fld dword[zsize]
 	fsub st0,st1
 	fdiv st0,st2
 	fchs
-	fst dword[eax+offs_vpor_scale+offs_Z]
+	fst dword[eax+GLViewport.scale+offs_Z]
 	fchs
 	mov dword[zsize],(1 shl ZB_POINT_Z_FRAC_BITS) / 2
 	fiadd dword[zsize]
-	fstp dword[eax+offs_vpor_trans+offs_Z]
+	fstp dword[eax+GLViewport.trans+offs_Z]
 	ret
 endp
 
@@ -197,10 +197,10 @@ align 4
 	.end_mmpu:
 
 	; viewport
-	cmp dword[edx+GLContext.viewport+offs_vpor_updated],0 ;if (context.viewport.updated)
+	cmp dword[edx+GLContext.viewport+GLViewport.updated],0 ;if (context.viewport.updated)
 	je @f
 		stdcall gl_eval_viewport,edx
-		mov dword[edx+GLContext.viewport+offs_vpor_updated],0
+		mov dword[edx+GLContext.viewport+GLViewport.updated],0
 	@@:
 	; triangle drawing functions
 	cmp dword[edx+GLContext.render_mode],GL_SELECT

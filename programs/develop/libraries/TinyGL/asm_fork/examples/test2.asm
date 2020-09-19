@@ -62,7 +62,7 @@ red_win:
 
 align 16
 still:
-	mcall SF_CHECK_EVENT
+	mcall SF_WAIT_EVENT
 	cmp al,1
 	jz red_win
 	cmp al,2
@@ -100,6 +100,7 @@ key:
 		fstp dword[angle_z]
 		call draw_3d
 		call [kosglSwapBuffers]
+		jmp still
 	@@:
 	cmp ah,179 ;Right
 	jne @f
@@ -108,6 +109,7 @@ key:
 		fstp dword[angle_z]
 		call draw_3d
 		call [kosglSwapBuffers]
+		;jmp still
 	@@:
 
 	jmp still
@@ -134,7 +136,7 @@ call [glPushMatrix]
 
 	stdcall [glCallList],[obj1]
 
-stdcall [glPopMatrix]
+call [glPopMatrix]
 ret
 
 align 4

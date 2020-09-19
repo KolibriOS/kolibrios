@@ -3,27 +3,27 @@ align 4
 proc ZB_plot uses eax ebx ecx edx edi, zb:dword, p:dword
 	mov eax,[zb]
 	mov ebx,[p]
-	mov ecx,[ebx+offs_zbup_y]
-	imul ecx,[eax+offs_zbuf_xsize]
-	add ecx,[ebx+offs_zbup_x]
+	mov ecx,[ebx+ZBufferPoint.y]
+	imul ecx,[eax+ZBuffer.xsize]
+	add ecx,[ebx+ZBufferPoint.x]
 	shl ecx,1
-	add ecx,[eax+offs_zbuf_zbuf]
-	mov edx,[eax+offs_zbuf_linesize]
-	imul edx,[ebx+offs_zbup_y]
-	mov edi,[ebx+offs_zbup_x]
+	add ecx,[eax+ZBuffer.zbuf]
+	mov edx,[eax+ZBuffer.linesize]
+	imul edx,[ebx+ZBufferPoint.y]
+	mov edi,[ebx+ZBufferPoint.x]
 	imul edi,PSZB
 	add edx,edi
-	add edx,[eax+offs_zbuf_pbuf]
-	mov edi,[ebx+offs_zbup_z]
+	add edx,[eax+ZBuffer.pbuf]
+	mov edi,[ebx+ZBufferPoint.z]
 	shr edi,ZB_POINT_Z_FRAC_BITS
 	cmp di,word[ecx]
 	jl .end_f
 if TGL_FEATURE_RENDER_BITS eq 24
-	mov eax,[ebx+offs_zbup_r]
+	mov eax,[ebx+ZBufferPoint.r]
 	mov byte[edx],ah
-	mov eax,[ebx+offs_zbup_g]
+	mov eax,[ebx+ZBufferPoint.g]
 	mov byte[edx+1],ah
-	mov eax,[ebx+offs_zbup_b]
+	mov eax,[ebx+ZBufferPoint.b]
 	mov byte[edx+2],ah
 else
 ;	*pp = RGB_TO_PIXEL(p->r, p->g, p->b);
@@ -60,7 +60,7 @@ if DEBUG ;ZB_line_z
 push edi
 	mov ecx,80
 	mov eax,[p1]
-	mov eax,[eax+offs_zbup_x]
+	mov eax,[eax+ZBufferPoint.x]
 	lea edi,[buf_param]
 	stdcall convert_int_to_str,ecx
 	stdcall str_n_cat,edi,txt_zp_sp,2
@@ -69,7 +69,7 @@ push edi
 	sub ecx,eax
 
 	mov eax,[p1]
-	mov eax,[eax+offs_zbup_y]
+	mov eax,[eax+ZBufferPoint.y]
 	stdcall convert_int_to_str,ecx
 	stdcall str_n_cat,edi,txt_zp_sp,2
 	stdcall str_len,edi
@@ -77,7 +77,7 @@ push edi
 	sub ecx,eax
 
 	mov eax,[p2]
-	mov eax,[eax+offs_zbup_x]
+	mov eax,[eax+ZBufferPoint.x]
 	stdcall convert_int_to_str,ecx
 	stdcall str_n_cat,edi,txt_zp_sp,2
 	stdcall str_len,edi
@@ -85,7 +85,7 @@ push edi
 	sub ecx,eax
 
 	mov eax,[p2]
-	mov eax,[eax+offs_zbup_y]
+	mov eax,[eax+ZBufferPoint.y]
 	stdcall convert_int_to_str,ecx
 
 	stdcall str_n_cat,edi,txt_nl,2
@@ -93,10 +93,10 @@ push edi
 pop edi
 end if
 	mov ebx,[p1]
-	RGB_TO_PIXEL dword[ebx+offs_zbup_r],dword[ebx+offs_zbup_g],dword[ebx+offs_zbup_b]
+	RGB_TO_PIXEL dword[ebx+ZBufferPoint.r],dword[ebx+ZBufferPoint.g],dword[ebx+ZBufferPoint.b]
 	mov ecx,eax
 	mov ebx,[p2]
-	RGB_TO_PIXEL dword[ebx+offs_zbup_r],dword[ebx+offs_zbup_g],dword[ebx+offs_zbup_b]
+	RGB_TO_PIXEL dword[ebx+ZBufferPoint.r],dword[ebx+ZBufferPoint.g],dword[ebx+ZBufferPoint.b]
 
 	; choose if the line should have its color interpolated or not
 	cmp ecx,eax
@@ -115,7 +115,7 @@ if DEBUG ;ZB_line
 push edi
 	mov ecx,80
 	mov eax,[p1]
-	mov eax,[eax+offs_zbup_x]
+	mov eax,[eax+ZBufferPoint.x]
 	lea edi,[buf_param]
 	stdcall convert_int_to_str,ecx
 	stdcall str_n_cat,edi,txt_zp_sp,2
@@ -124,7 +124,7 @@ push edi
 	sub ecx,eax
 
 	mov eax,[p1]
-	mov eax,[eax+offs_zbup_y]
+	mov eax,[eax+ZBufferPoint.y]
 	stdcall convert_int_to_str,ecx
 	stdcall str_n_cat,edi,txt_zp_sp,2
 	stdcall str_len,edi
@@ -132,7 +132,7 @@ push edi
 	sub ecx,eax
 
 	mov eax,[p2]
-	mov eax,[eax+offs_zbup_x]
+	mov eax,[eax+ZBufferPoint.x]
 	stdcall convert_int_to_str,ecx
 	stdcall str_n_cat,edi,txt_zp_sp,2
 	stdcall str_len,edi
@@ -140,7 +140,7 @@ push edi
 	sub ecx,eax
 
 	mov eax,[p2]
-	mov eax,[eax+offs_zbup_y]
+	mov eax,[eax+ZBufferPoint.y]
 	stdcall convert_int_to_str,ecx
 
 	stdcall str_n_cat,edi,txt_nl,2
@@ -148,10 +148,10 @@ push edi
 pop edi
 end if
 	mov ebx,[p1]
-	RGB_TO_PIXEL dword[ebx+offs_zbup_r],dword[ebx+offs_zbup_g],dword[ebx+offs_zbup_b]
+	RGB_TO_PIXEL dword[ebx+ZBufferPoint.r],dword[ebx+ZBufferPoint.g],dword[ebx+ZBufferPoint.b]
 	mov ecx,eax
 	mov ebx,[p2]
-	RGB_TO_PIXEL dword[ebx+offs_zbup_r],dword[ebx+offs_zbup_g],dword[ebx+offs_zbup_b]
+	RGB_TO_PIXEL dword[ebx+ZBufferPoint.r],dword[ebx+ZBufferPoint.g],dword[ebx+ZBufferPoint.b]
 
 	; choose if the line should have its color interpolated or not
 	cmp ecx,eax

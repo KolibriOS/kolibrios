@@ -23,16 +23,16 @@ endl
 
 	; we may need to resize the zbuffer
 
-	cmp dword[edx+GLContext.viewport+offs_vpor_ysize],ecx
+	cmp dword[edx+GLContext.viewport+GLViewport.ysize],ecx
 	jne @f
 	mov ecx,[xmin]
-	cmp dword[edx+GLContext.viewport+offs_vpor_xmin],ecx
+	cmp dword[edx+GLContext.viewport+GLViewport.xmin],ecx
 	jne @f
 	mov ecx,[ymin]
-	cmp dword[edx+GLContext.viewport+offs_vpor_ymin],ecx
+	cmp dword[edx+GLContext.viewport+GLViewport.ymin],ecx
 	jne @f
 	mov ecx,[xsize]
-	cmp dword[edx+GLContext.viewport+offs_vpor_xsize],ecx
+	cmp dword[edx+GLContext.viewport+GLViewport.xsize],ecx
 	jne @f
 		jmp .end_f
 	@@:
@@ -70,15 +70,15 @@ endl
 		stdcall dbg_print,sz_glViewport,err_5
 	@@:
 	mov ecx,[xmin]
-	mov dword[edx+GLContext.viewport+offs_vpor_xmin],ecx
+	mov dword[edx+GLContext.viewport+GLViewport.xmin],ecx
 	mov ecx,[ymin]
-	mov dword[edx+GLContext.viewport+offs_vpor_ymin],ecx
+	mov dword[edx+GLContext.viewport+GLViewport.ymin],ecx
 	mov ecx,[xsize]
-	mov dword[edx+GLContext.viewport+offs_vpor_xsize],ecx
+	mov dword[edx+GLContext.viewport+GLViewport.xsize],ecx
 	mov ecx,[ysize]
-	mov dword[edx+GLContext.viewport+offs_vpor_ysize],ecx
+	mov dword[edx+GLContext.viewport+GLViewport.ysize],ecx
 
-	mov dword[edx+GLContext.viewport+offs_vpor_updated],1
+	mov dword[edx+GLContext.viewport+GLViewport.updated],1
 	.end_f:
 	ret
 endp

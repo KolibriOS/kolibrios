@@ -32,7 +32,7 @@ red_win:
 
 align 16
 still:
-	mcall SF_CHECK_EVENT
+	mcall SF_WAIT_EVENT
 	cmp al,1
 	jz red_win
 	cmp al,2
@@ -70,6 +70,7 @@ key:
 		fstp dword[angle_z]
 		call draw_3d
 		call [kosglSwapBuffers]
+		jmp still
 	@@:
 	cmp ah,179 ;Right
 	jne @f
@@ -78,6 +79,7 @@ key:
 		fstp dword[angle_z]
 		call draw_3d
 		call [kosglSwapBuffers]
+		;jmp still
 	@@:
 
 	jmp still
@@ -114,7 +116,7 @@ call [glPushMatrix]
 		stdcall [glVertex3f], -0.636,-0.636, 0.1
 		stdcall [glVertex3f], -0.9,   0.0, 0.1
 		stdcall [glVertex3f], -0.636, 0.636, 0.1
-	stdcall [glEnd]
+	call [glEnd]
 
 	stdcall [glBegin],GL_LINE_LOOP
 		stdcall [glVertex3f], 0.0, 1.1, 0.1
@@ -125,7 +127,7 @@ call [glPushMatrix]
 		stdcall [glVertex3f], -0.778, -0.778, 0.1
 		stdcall [glVertex3f], -2.1, 0.0, 0.1
 		stdcall [glVertex3f], -0.778, 0.778, 0.1
-	stdcall [glEnd]
+	call [glEnd]
 
 call [glPopMatrix]
 ret

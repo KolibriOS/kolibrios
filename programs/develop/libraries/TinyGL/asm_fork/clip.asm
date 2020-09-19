@@ -19,30 +19,30 @@ proc gl_transform_to_viewport uses eax ebx ecx, context:dword,v:dword
 
 	fld dword[ebx+GLVertex.pc+offs_X] ;st0 = v.pc.X
 	fmul st0,st1
-	fmul dword[eax+GLContext.viewport+offs_vpor_scale+offs_X]
-	fadd dword[eax+GLContext.viewport+offs_vpor_trans+offs_X]
+	fmul dword[eax+GLContext.viewport+GLViewport.scale+offs_X]
+	fadd dword[eax+GLContext.viewport+GLViewport.trans+offs_X]
 	fistp dword[ebx+GLVertex.zp] ;v.zp.x = st0, st0 = st1
 
 	fld dword[ebx+GLVertex.pc+offs_Y] ;st0 = v.pc.Y
 	fmul st0,st1
-	fmul dword[eax+GLContext.viewport+offs_vpor_scale+offs_Y]
-	fadd dword[eax+GLContext.viewport+offs_vpor_trans+offs_Y]
-	fistp dword[ebx+GLVertex.zp+offs_zbup_y] ;v.zp.y = st0, st0 = st1
+	fmul dword[eax+GLContext.viewport+GLViewport.scale+offs_Y]
+	fadd dword[eax+GLContext.viewport+GLViewport.trans+offs_Y]
+	fistp dword[ebx+GLVertex.zp+ZBufferPoint.y] ;v.zp.y = st0, st0 = st1
 
 	fld dword[ebx+GLVertex.pc+offs_Z] ;st0 = v.pc.Z
 	fmulp
-	fmul dword[eax+GLContext.viewport+offs_vpor_scale+offs_Z]
-	fadd dword[eax+GLContext.viewport+offs_vpor_trans+offs_Z]
-	fistp dword[ebx+GLVertex.zp+offs_zbup_z] ;v.zp.z = st0, st0 = st1
+	fmul dword[eax+GLContext.viewport+GLViewport.scale+offs_Z]
+	fadd dword[eax+GLContext.viewport+GLViewport.trans+offs_Z]
+	fistp dword[ebx+GLVertex.zp+ZBufferPoint.z] ;v.zp.z = st0, st0 = st1
 
 	; color
 	cmp dword[eax+GLContext.lighting_enabled],0 ;if (context.lighting_enabled)
 	je @f
-		lea ecx,[ebx+GLVertex.zp+offs_zbup_b]
+		lea ecx,[ebx+GLVertex.zp+ZBufferPoint.b]
 		push ecx
-		add ecx,offs_zbup_g-offs_zbup_b
+		add ecx,ZBufferPoint.g-ZBufferPoint.b
 		push ecx
-		add ecx,offs_zbup_r-offs_zbup_g
+		add ecx,ZBufferPoint.r-ZBufferPoint.g
 		push ecx
 		stdcall RGBFtoRGBI, dword[ebx+GLVertex.color],dword[ebx+GLVertex.color+4],dword[ebx+GLVertex.color+8]
 		jmp .end_if
@@ -50,11 +50,11 @@ align 4
 	@@:
 		; no need to convert to integer if no lighting : take current color
 		mov ecx,[eax+GLContext.longcurrent_color]
-		mov dword[ebx+GLVertex.zp+offs_zbup_r],ecx
+		mov dword[ebx+GLVertex.zp+ZBufferPoint.r],ecx
 		mov ecx,[eax+GLContext.longcurrent_color+4]
-		mov dword[ebx+GLVertex.zp+offs_zbup_g],ecx
+		mov dword[ebx+GLVertex.zp+ZBufferPoint.g],ecx
 		mov ecx,[eax+GLContext.longcurrent_color+8]
-		mov dword[ebx+GLVertex.zp+offs_zbup_b],ecx
+		mov dword[ebx+GLVertex.zp+ZBufferPoint.b],ecx
 	.end_if:
   
 	; texture
@@ -66,12 +66,12 @@ align 4
 
 		fild dword[eax+offs_text_images+offs_imag_s_bound]
 		fmul dword[ebx+GLVertex.tex_coord+offs_X]
-		fistp dword[ebx+GLVertex.zp+offs_zbup_s]
+		fistp dword[ebx+GLVertex.zp+ZBufferPoint.s]
 		;v.zp.s=(int)(v.tex_coord.X * im.s_bound)
 
 		fild dword[eax+offs_text_images+offs_imag_t_bound]
 		fmul dword[ebx+GLVertex.tex_coord+offs_Y]
-		fistp dword[ebx+GLVertex.zp+offs_zbup_t]
+		fistp dword[ebx+GLVertex.zp+ZBufferPoint.t]
 		;v.zp.t=(int)(v.tex_coord.Y * im.t_bound)
 	@@:
 	ret
@@ -117,7 +117,7 @@ proc gl_draw_point uses eax ebx, context:dword, p0:dword
 	mov eax,[context]
 	cmp dword[eax+GLContext.render_mode],GL_SELECT
 	jne .els
-		stdcall gl_add_select, eax,dword[ebx+GLVertex.zp+offs_zbup_z],dword[ebx+GLVertex.zp+offs_zbup_z] ;p0.zp.z,p0.zp.z
+		stdcall gl_add_select, eax,dword[ebx+GLVertex.zp+ZBufferPoint.z],dword[ebx+GLVertex.zp+ZBufferPoint.z] ;p0.zp.z,p0.zp.z
 		jmp @f
 align 4
 	.els:
@@ -286,8 +286,8 @@ pushad
 		;if ( (p1.clip_code | p2.clip_code) == 0)
 		cmp dword[edx+GLContext.render_mode],GL_SELECT ;if (context.render_mode == GL_SELECT)
 		jne .els_1
-			stdcall gl_add_select1, edx,dword[edi+GLVertex.zp+offs_zbup_z],\
-				dword[esi+GLVertex.zp+offs_zbup_z],dword[esi+GLVertex.zp+offs_zbup_z]
+			stdcall gl_add_select1, edx,dword[edi+GLVertex.zp+ZBufferPoint.z],\
+				dword[esi+GLVertex.zp+ZBufferPoint.z],dword[esi+GLVertex.zp+ZBufferPoint.z]
 			jmp .end_f
 align 4
 		.els_1:
@@ -425,20 +425,20 @@ align 4
 	stdcall gl_transform_to_viewport, edx,eax
 
 	sub eax,sizeof.GLVertex ;eax = &q1
-	lea ebx,[eax+GLVertex.zp+offs_zbup_b]
+	lea ebx,[eax+GLVertex.zp+ZBufferPoint.b]
 	push ebx
-	add ebx,offs_zbup_g-offs_zbup_b
+	add ebx,ZBufferPoint.g-ZBufferPoint.b
 	push ebx
-	add ebx,offs_zbup_r-offs_zbup_g
+	add ebx,ZBufferPoint.r-ZBufferPoint.g
 	push ebx
 	stdcall RGBFtoRGBI, dword[eax+GLVertex.color],dword[eax+GLVertex.color+4],dword[eax+GLVertex.color+8]
 
 	add eax,sizeof.GLVertex ;eax = &q2
-	lea ebx,[eax+GLVertex.zp+offs_zbup_b]
+	lea ebx,[eax+GLVertex.zp+ZBufferPoint.b]
 	push ebx
-	add ebx,offs_zbup_g-offs_zbup_b
+	add ebx,ZBufferPoint.g-ZBufferPoint.b
 	push ebx
-	add ebx,offs_zbup_r-offs_zbup_g
+	add ebx,ZBufferPoint.r-ZBufferPoint.g
 	push ebx
 	stdcall RGBFtoRGBI, dword[eax+GLVertex.color],dword[eax+GLVertex.color+4],dword[eax+GLVertex.color+8]
 
@@ -637,11 +637,11 @@ align 4
 	or eax,eax ;if (q.clip_code==0)
 	jnz @f
 		stdcall gl_transform_to_viewport,[context],edi
-		lea eax,[edi+GLVertex.zp+offs_zbup_b]
+		lea eax,[edi+GLVertex.zp+ZBufferPoint.b]
 		push eax
-		add eax,offs_zbup_g-offs_zbup_b
+		add eax,ZBufferPoint.g-ZBufferPoint.b
 		push eax
-		add eax,offs_zbup_r-offs_zbup_g
+		add eax,ZBufferPoint.r-ZBufferPoint.g
 		push eax
 		stdcall RGBFtoRGBI, dword[edi+GLVertex.color],dword[edi+GLVertex.color+4],dword[edi+GLVertex.color+8]
 	@@:
@@ -672,21 +672,21 @@ pushad
 	;or edi,___ - было выше
 	jnz .els_0
 		;if (co==0)
-		mov edi,dword[edx+GLVertex.zp+offs_zbup_x]
-		sub edi,dword[ebx+GLVertex.zp+offs_zbup_x]
+		mov edi,dword[edx+GLVertex.zp+ZBufferPoint.x]
+		sub edi,dword[ebx+GLVertex.zp+ZBufferPoint.x]
 		mov dword[norm],edi ;p2.x-p0.x
 		fild dword[norm]
-		mov edi,dword[ecx+GLVertex.zp+offs_zbup_y]
-		sub edi,dword[ebx+GLVertex.zp+offs_zbup_y]
+		mov edi,dword[ecx+GLVertex.zp+ZBufferPoint.y]
+		sub edi,dword[ebx+GLVertex.zp+ZBufferPoint.y]
 		mov dword[norm],edi ;p1.y-p0.y
 		fimul dword[norm]
 		fchs
-		mov edi,dword[ecx+GLVertex.zp+offs_zbup_x]
-		sub edi,dword[ebx+GLVertex.zp+offs_zbup_x]
+		mov edi,dword[ecx+GLVertex.zp+ZBufferPoint.x]
+		sub edi,dword[ebx+GLVertex.zp+ZBufferPoint.x]
 		mov dword[norm],edi ;p1.x-p0.x
 		fild dword[norm]
-		mov edi,dword[edx+GLVertex.zp+offs_zbup_y]
-		sub edi,dword[ebx+GLVertex.zp+offs_zbup_y]
+		mov edi,dword[edx+GLVertex.zp+ZBufferPoint.y]
+		sub edi,dword[ebx+GLVertex.zp+ZBufferPoint.y]
 		mov dword[norm],edi ;p2.y-p0.y
 		fimul dword[norm]
 		faddp

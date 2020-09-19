@@ -41,13 +41,13 @@ pushad
 
 	; viewport
 	xor eax,eax
-	mov dword[edx+GLContext.viewport+offs_vpor_xmin],eax
-	mov dword[edx+GLContext.viewport+offs_vpor_ymin],eax
-	mov eax,[ecx+offs_zbuf_xsize]
-	mov dword[edx+GLContext.viewport+offs_vpor_xsize],eax
-	mov eax,[ecx+offs_zbuf_ysize]
-	mov dword[edx+GLContext.viewport+offs_vpor_ysize],eax
-	mov dword[edx+GLContext.viewport+offs_vpor_updated],1
+	mov dword[edx+GLContext.viewport+GLViewport.xmin],eax
+	mov dword[edx+GLContext.viewport+GLViewport.ymin],eax
+	mov eax,[ecx+ZBuffer.xsize]
+	mov dword[edx+GLContext.viewport+GLViewport.xsize],eax
+	mov eax,[ecx+ZBuffer.ysize]
+	mov dword[edx+GLContext.viewport+GLViewport.ysize],eax
+	mov dword[edx+GLContext.viewport+GLViewport.updated],1
 
 	; shared state
 	stdcall initSharedState,edx

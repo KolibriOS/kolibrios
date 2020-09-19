@@ -38,12 +38,12 @@ macro DRAW_INIT
 {
 if TGL_FEATURE_RENDER_BITS eq 24
 	mov ecx,[p2]
-	mov eax,[ecx+offs_zbup_r]
-	mov [colorR],ah ;colorR=p2.r>>8
-	mov eax,[ecx+offs_zbup_g]
+	mov eax,[ecx+ZBufferPoint.r]
+	mov [colorB],ah ;colorB=p2.r>>8
+	mov eax,[ecx+ZBufferPoint.g]
 	mov [colorG],ah ;colorG=p2.g>>8
-	mov eax,[ecx+offs_zbup_b]
-	mov [colorB],ah ;colorB=p2.b>>8
+	mov eax,[ecx+ZBufferPoint.b]
+	mov [colorR],ah ;colorR=p2.b>>8
 ;else
 ;color=RGB_TO_PIXEL(p2.r,p2.g,p2.b)
 end if
@@ -52,6 +52,9 @@ end if
 macro PUT_PIXEL _a
 {
 local .end_0
+if _a eq 0
+	mov ebx,[dzdx]
+end if
 	mov eax,[z]
 	shr eax,ZB_POINT_Z_FRAC_BITS
 	cmp ax,word[esi+2*_a] ;if (zz >= pz[_a])
@@ -59,26 +62,24 @@ local .end_0
 		;edi = pp
 		mov word[esi+2*_a],ax ;пишем в буфер глубины новое значение
 if TGL_FEATURE_RENDER_BITS eq 24
-		mov al,[colorR]
-		mov ah,[colorG]
+		mov ax,word[colorB] ;сохраняем colorB и colorG
 		mov word[edi+3*_a],ax
-		mov al,[colorB]
+		mov al,[colorR]
 		mov byte[edi+3*_a +2],al
 ;else
 ;pp[_a]=color
 end if
 	.end_0:
-	mov eax,[dzdx]
-	add [z],eax
+	add [z],ebx
 }
 
 align 16
 proc ZB_fillTriangleFlat, zb:dword, p0:dword, p1:dword, p2:dword
 locals
 if TGL_FEATURE_RENDER_BITS eq 24
-	colorR db ?
+	colorB db ?
 	colorG db ?
-	colorB db ? ;unsigned char
+	colorR db ? ;unsigned char
 else
 	color dd ? ;int
 end if
@@ -106,9 +107,8 @@ local .end_0
 		;edi = pp
 		mov word[esi+2*_a],ax ;пишем в буфер глубины новое значение
 if TGL_FEATURE_RENDER_BITS eq 24
-		mov ebx,[or1]
 		mov eax,[og1]
-		mov al,bh
+		mov al,byte[or1+1]
 		mov word[edi+3*_a],ax
 		mov eax,[ob1]
 		mov byte[edi+3*_a +2],ah
@@ -117,12 +117,14 @@ end if
 ;pp[_a] = RGB_TO_PIXEL(or1, og1, ob1)
 ;end if
 	.end_0:
-	mov eax,[dzdx]
-	add [z],eax
-	mov eax,[dgdx]
-	add [og1],eax
-	mov eax,[drdx]
-	add [or1],eax
+if _a eq 0
+	mov ebx,[dzdx]
+	mov ecx,[dgdx]
+	mov edx,[drdx]
+end if
+	add [z],ebx
+	add [og1],ecx
+	add [or1],edx
 	mov eax,[dbdx]
 	add [ob1],eax
 }
@@ -137,13 +139,13 @@ proc ZB_setTexture uses eax ebx, zb:dword, texture:dword,\
 	s_bound:dword, t_bound:dword, s_log2:dword
 	mov eax,[zb]
 	mov ebx,[texture]
-	mov dword[eax+offs_zbuf_current_texture],ebx
+	mov dword[eax+ZBuffer.current_texture],ebx
 	mov ebx,[s_log2]
-	mov dword[eax+offs_zbuf_s_log2],ebx
+	mov dword[eax+ZBuffer.s_log2],ebx
 	mov ebx,[s_bound]
-	mov dword[eax+offs_zbuf_s_bound],ebx
+	mov dword[eax+ZBuffer.s_bound],ebx
 	mov ebx,[t_bound]
-	mov dword[eax+offs_zbuf_t_bound],ebx
+	mov dword[eax+ZBuffer.t_bound],ebx
 	ret
 endp
 
@@ -153,13 +155,13 @@ INTERP_ST equ 1
 macro DRAW_INIT
 {
 	mov eax,[zb]
-	mov ebx,[eax+offs_zbuf_current_texture]
+	mov ebx,[eax+ZBuffer.current_texture]
 	mov [texture],ebx
-	mov ebx,[eax+offs_zbuf_s_log2]
+	mov ebx,[eax+ZBuffer.s_log2]
 	mov [s_log2],ebx ;s_log2 = zb.s_log2
-	mov ebx,[eax+offs_zbuf_s_bound]
+	mov ebx,[eax+ZBuffer.s_bound]
 	mov [s_bound],ebx ;s_bound = zb.s_bound
-	mov ebx,[eax+offs_zbuf_t_bound]
+	mov ebx,[eax+ZBuffer.t_bound]
 	mov [t_bound],ebx ;t_bound = zb.t_bound
 }
 
@@ -181,7 +183,7 @@ if TGL_FEATURE_RENDER_BITS eq 24
 		and eax,[s_bound]
 		shr eax,ZB_POINT_TEXEL_SIZE
 		or ebx,eax
-		imul ebx,3
+		lea ebx,[ebx+2*ebx]
 		add ebx,[texture] ;ptr = texture + (((t & 0x3fc00000) | s) >> 14) * 3
 		mov ax,word[ebx]
 		mov word[edi+3*_a],ax ;pp[3 * _a]= ptr[0,1]
@@ -222,13 +224,13 @@ NB_INTERP equ 8
 macro DRAW_INIT
 {
 	mov eax,[zb]
-	mov ebx,[eax+offs_zbuf_current_texture]
+	mov ebx,[eax+ZBuffer.current_texture]
 	mov [texture],ebx
-	mov ebx,[eax+offs_zbuf_s_log2]
+	mov ebx,[eax+ZBuffer.s_log2]
 	mov [s_log2],ebx ;s_log2 = zb.s_log2
-	mov ebx,[eax+offs_zbuf_s_bound]
+	mov ebx,[eax+ZBuffer.s_bound]
 	mov [s_bound],ebx ;s_bound = zb.s_bound
-	mov ebx,[eax+offs_zbuf_t_bound]
+	mov ebx,[eax+ZBuffer.t_bound]
 	mov [t_bound],ebx ;t_bound = zb.t_bound
 	mov dword[esp-4],NB_INTERP
 	fild dword[esp-4]
@@ -261,7 +263,7 @@ if TGL_FEATURE_RENDER_BITS eq 24
 		and eax,[s_bound]
 		shr eax,ZB_POINT_TEXEL_SIZE
 		or ebx,eax
-		imul ebx,3
+		lea ebx,[ebx+2*ebx]
 		add ebx,[texture] ;ptr = texture + (((t & 0x3fc00000) | (s & 0x003FC000)) >> 14) * 3
 		mov ax,word[ebx]
 		mov word[edi+3*_a],ax ;pp[3 * _a]= ptr[0,1]

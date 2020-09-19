@@ -2,8 +2,9 @@ format MS COFF
 public EXPORTS
 section '.flat' code readable align 16
 
-include '../../../../../programs/proc32.inc'
-include '../../../../../programs/macros.inc'
+include '../../../../proc32.inc'
+include '../../../../macros.inc'
+include '../../../../KOSfuncs.inc'
 
 DEBUG equ 0
 
@@ -85,23 +86,22 @@ endp
 
 align 4
 .str:
-	mov ecx,0x0a ;задается система счисления изменяются регистры ebx,eax,ecx,edx входные параметры eax - число
-	;преревод числа в ASCII строку входные данные ecx=система счисленя edi адрес куда записывать, будем строку, причем конец переменной 
-	cmp eax,ecx ;сравнить если в eax меньше чем в ecx то перейти на @@-1 т.е. на pop eax
+	mov ecx,10
+	cmp eax,ecx
 	jb @f
-		xor edx,edx ;очистить edx
-		div ecx   ;разделить - остаток в edx
-		push edx  ;положить в стек
-		call .str ;перейти на саму себя т.е. вызвать саму себя и так до того момента пока в eax не станет меньше чем в ecx
+		xor edx,edx
+		div ecx
+		push edx
+		call .str
 		pop eax
-	@@: ;cmp al,10 ;проверить не меньше ли значение в al чем 10 (для системы счисленя 10 данная команда - лишная))
+	@@:
 	cmp edi,esi
 	jge @f
-		or al,0x30 ;данная команда короче  чем две выше
-		stosb	   ;записать элемент из регистра al в ячеку памяти es:edi
-		mov byte[edi],0 ;в конец строки ставим 0, что-бы не вылазил мусор
+		or al,0x30
+		stosb
+		mov byte[edi],0
 	@@:
-	ret	   ;пока в стеке храниться кол-во вызовов то столько раз мы и будем вызываться
+	ret
 end if
 
 ; ***
@@ -156,8 +156,8 @@ f_fill_tr_nll db ' len',0
 align 4
 proc dbg_print, fun:dword, mes:dword
 pushad
-	mov eax,63
-	mov ebx,1
+	mov eax,SF_BOARD
+	mov ebx,SSF_DEBUG_WRITE
 
 	mov esi,[fun]
 	@@:

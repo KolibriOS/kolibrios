@@ -24,12 +24,12 @@ pushad
 
 	mov eax,[p1]
 	mov ebx,[p2]
-	mov ecx,[ebx+offs_zbup_y]
-	cmp [eax+offs_zbup_y], ecx ;if (p1.y > p2.y)
+	mov ecx,[ebx+ZBufferPoint.y]
+	cmp [eax+ZBufferPoint.y], ecx ;if (p1.y > p2.y)
 	jg @f
 	jl .end_0 ;if (p1.y != p2.y)
-	mov ecx,[ebx+offs_zbup_x]
-	cmp [eax+offs_zbup_x], ecx ;if (p1.x > p2.x)
+	mov ecx,[ebx+ZBufferPoint.x]
+	cmp [eax+ZBufferPoint.x], ecx ;if (p1.x > p2.x)
 	jle .end_0 ;if (p1.x <= p2.x)
 	@@: ;if (p1.y > p2.y || (p1.y == p2.y && p1.x > p2.x))
 		mov [p1],ebx
@@ -37,42 +37,42 @@ pushad
 	.end_0:
 
 	mov eax,[zb]
-	mov edx,[eax+offs_zbuf_xsize]
+	mov edx,[eax+ZBuffer.xsize]
 	mov [sx],edx
 	mov ecx,[p1]
-	mov edi,[eax+offs_zbuf_linesize]
-	imul edi,[ecx+offs_zbup_y]
-	mov edx,[ecx+offs_zbup_x]
+	mov edi,[eax+ZBuffer.linesize]
+	imul edi,[ecx+ZBufferPoint.y]
+	mov edx,[ecx+ZBufferPoint.x]
 	imul edx,PSZB
 	add edi,edx
-	add edi,[eax+offs_zbuf_pbuf] ;edi = (zb.pbuf + zb.linesize*p1.y + p1.x*PSZB)
+	add edi,[eax+ZBuffer.pbuf] ;edi = (zb.pbuf + zb.linesize*p1.y + p1.x*PSZB)
 if INTERP_Z eq 1
-	mov edx,[ecx+offs_zbup_y]
+	mov edx,[ecx+ZBufferPoint.y]
 	imul edx,[sx]
-	add edx,[ecx+offs_zbup_x]
+	add edx,[ecx+ZBufferPoint.x]
 	shl edx,1
-	add edx,[eax+offs_zbuf_zbuf]
+	add edx,[eax+ZBuffer.zbuf]
 	mov [pz],edx ;pz = zb.zbuf + (p1.y*sx + p1.x)
-	mov edx,[ecx+offs_zbup_z]
+	mov edx,[ecx+ZBufferPoint.z]
 	mov [z],edx ;z = p1.z
 end if
 
 	mov ebx,[p2]
-	mov eax,[ebx+offs_zbup_x]
-	sub eax,[ecx+offs_zbup_x]
+	mov eax,[ebx+ZBufferPoint.x]
+	sub eax,[ecx+ZBufferPoint.x]
 	mov [d_x],eax ;d_x = p2.x - p1.x
-	mov eax,[ebx+offs_zbup_y]
-	sub eax,[ecx+offs_zbup_y]
+	mov eax,[ebx+ZBufferPoint.y]
+	sub eax,[ecx+ZBufferPoint.y]
 	mov [d_y],eax ;d_y = p2.y - p1.y
 if TGL_FEATURE_RENDER_BITS eq 24
 	; for 24 bits, we store the colors in different variables
-	mov eax,[ebx+offs_zbup_r]
+	mov eax,[ebx+ZBufferPoint.r]
 	shr eax,8
 	mov [r],eax ;r = p2.r >> 8
-	mov eax,[ebx+offs_zbup_g]
+	mov eax,[ebx+ZBufferPoint.g]
 	shr eax,8
 	mov [g],eax ;g = p2.g >> 8
-	mov eax,[ebx+offs_zbup_b]
+	mov eax,[ebx+ZBufferPoint.b]
 	shr eax,8
 	mov [b],eax ;b = p2.b >> 8
 end if
@@ -123,12 +123,12 @@ local .mz_2
 if INTERP_Z eq 1
 	mov ebx,[p1]
 	mov eax,[p2]
-	mov eax,[eax+offs_zbup_z]
-	cmp eax,[ebx+offs_zbup_z]
+	mov eax,[eax+ZBufferPoint.z]
+	cmp eax,[ebx+ZBufferPoint.z]
 	jg .mz_0
 	je .mz_1
 		;if(p2.z<p1.z)
-		sub eax,[ebx+offs_zbup_z]
+		sub eax,[ebx+ZBufferPoint.z]
 		neg eax
 		inc eax
 		xor edx,edx
@@ -137,7 +137,7 @@ if INTERP_Z eq 1
 		inc eax
 		jmp .mz_2
 	.mz_0:
-	sub eax,[ebx+offs_zbup_z]
+	sub eax,[ebx+ZBufferPoint.z]
 	xor edx,edx
 	div dword[n]
 	jmp .mz_2

@@ -20,15 +20,13 @@ proc ZB_open uses ecx edi, xsize:dword, ysize:dword, mode:dword,\
 	mov edi,eax
 
 	mov eax,[ysize]
-	mov [edi+offs_zbuf_ysize],eax
+	mov [edi+ZBuffer.ysize],eax
 	mov eax,[xsize]
-	mov [edi+offs_zbuf_xsize],eax
+	mov [edi+ZBuffer.xsize],eax
 	imul eax,PSZB
-	add eax,3
-	and eax,not 3
-	mov [edi+offs_zbuf_linesize],eax
+	mov [edi+ZBuffer.linesize],eax
 	mov eax,[mode]
-	mov [edi+offs_zbuf_mode],eax
+	mov [edi+ZBuffer.mode],eax
 
 if TGL_FEATURE_32_BITS eq 1
 	cmp eax,ZB_MODE_RGBA
@@ -41,29 +39,29 @@ end if
 	cmp eax,ZB_MODE_5R6G5B
 	jne @f
 	.correct:
-		mov dword[edi+offs_zbuf_nb_colors],0
+		mov dword[edi+ZBuffer.nb_colors],0
 		jmp .end_s
 	@@: ;default:
 		stdcall dbg_print,f_zb_opn,err_3
 		jmp .error
 	.end_s:
 
-	mov ecx,[edi+offs_zbuf_xsize]
-	imul ecx,[edi+offs_zbuf_ysize]
+	mov ecx,[edi+ZBuffer.xsize]
+	imul ecx,[edi+ZBuffer.ysize]
 	shl ecx,1 ;*= sizeof(unsigned short)
 
 	stdcall gl_malloc, ecx
-	mov [edi+offs_zbuf_zbuf],eax
+	mov [edi+ZBuffer.zbuf],eax
 	cmp eax,0
 	jne @f
 		stdcall dbg_print,f_zb_opn,err_2
 		jmp .error
 	@@:
 
-	mov dword[edi+offs_zbuf_frame_buffer_allocated],0
-	mov dword[edi+offs_zbuf_pbuf],0 ;NULL
+	mov dword[edi+ZBuffer.frame_buffer_allocated],0
+	mov dword[edi+ZBuffer.pbuf],0 ;NULL
 
-	mov dword[edi+offs_zbuf_current_texture],0 ;NULL
+	mov dword[edi+ZBuffer.current_texture],0 ;NULL
 
 	mov eax,edi
 	jmp .end_f
@@ -87,45 +85,41 @@ align 16
 proc ZB_resize uses eax ebx ecx edi esi, zb:dword, frame_buffer:dword, xsize:dword, ysize:dword
 	mov ebx,[zb]
 
-	; xsize must be a multiple of 4
 	mov edi,[xsize]
-	and edi,not 3
 	mov esi,[ysize]
 	
-	mov [ebx+offs_zbuf_xsize], edi
-	mov [ebx+offs_zbuf_ysize], esi
+	mov [ebx+ZBuffer.xsize], edi
+	mov [ebx+ZBuffer.ysize], esi
 
 	mov eax,edi
 	imul eax,PSZB
-	add eax,3
-	and eax,not 3
-	mov [ebx+offs_zbuf_linesize],eax ;zb.linesize = (xsize * PSZB + 3) & ~3
+	mov [ebx+ZBuffer.linesize],eax ;zb.linesize = (xsize * PSZB + 3) & ~3
 
 	mov ecx,edi
 	imul ecx,esi
 	shl ecx,1 ;*= sizeof(unsigned short)
 
-	stdcall gl_free,dword[ebx+offs_zbuf_zbuf]
+	stdcall gl_free,dword[ebx+ZBuffer.zbuf]
 	stdcall gl_malloc,ecx
-	mov [ebx+offs_zbuf_zbuf],eax
+	mov [ebx+ZBuffer.zbuf],eax
 
-	cmp dword[ebx+offs_zbuf_frame_buffer_allocated],0
+	cmp dword[ebx+ZBuffer.frame_buffer_allocated],0
 	je @f
-		stdcall gl_free,dword[ebx+offs_zbuf_pbuf]
+		stdcall gl_free,dword[ebx+ZBuffer.pbuf]
 	@@:
 
 	cmp dword[frame_buffer],0
 	jne .els_0
 		inc esi
-		imul esi,dword[ebx+offs_zbuf_linesize]
+		imul esi,dword[ebx+ZBuffer.linesize]
 		stdcall gl_malloc,esi
-		mov dword[ebx+offs_zbuf_pbuf],eax
-		mov dword[ebx+offs_zbuf_frame_buffer_allocated],1
+		mov dword[ebx+ZBuffer.pbuf],eax
+		mov dword[ebx+ZBuffer.frame_buffer_allocated],1
 		jmp @f
 	.els_0:
 		mov eax,[frame_buffer]
-		mov dword[ebx+offs_zbuf_pbuf],eax
-		mov dword[ebx+offs_zbuf_frame_buffer_allocated],0
+		mov dword[ebx+ZBuffer.pbuf],eax
+		mov dword[ebx+ZBuffer.frame_buffer_allocated],0
 	@@:
 	ret
 endp
@@ -434,11 +428,12 @@ proc memset_l uses eax ecx edi, adr:dword, val:dword, count:dword
 	ret
 endp
 
-; count must be a multiple of 4 and >= 4
+;input:
+; count - число пикселей RGB для закраски
 ;destroy:
-; edi, esi
+; eax, ecx, edi, esi
 align 16
-proc memset_RGB24 uses eax ecx, adr:dword, r:dword, g:dword, b:dword, count:dword
+proc memset_RGB24, adr:dword, r:dword, g:dword, b:dword, count:dword
 	mov esi,[adr]
 	mov eax,[r] ;копируем в буфер первые 12 байт (минимальное число кратное 3 и 4)
 	mov byte[esi],al
@@ -461,17 +456,20 @@ proc memset_RGB24 uses eax ecx, adr:dword, r:dword, g:dword, b:dword, count:dwor
 	cmp ecx,1
 	jle .end_f ;если ширина буфера меньше 12 байт, то выходим
 	dec ecx
-	mov edi,esi
-	add edi,12
+	lea edi,[esi+12]
 
 	mov eax,[esi]
 	cmp eax,[esi+4]
 	jne @f
 		;если r=g и g=b и b=r
-		mov esi,ecx
-		shl ecx,2
-		sub ecx,esi ;ecx*=3
+		lea ecx,[ecx+2*ecx] ;ecx*=3
 		rep stosd
+		mov ecx,[count]
+		and ecx,3
+		cmp ecx,0
+		je .end_f
+		lea ecx,[ecx+2*ecx] ;ecx*=3
+		rep stosb
 		jmp .end_f
 align 16
 	@@: ;если r!=g или g!=b или b!=r
@@ -480,6 +478,12 @@ align 16
 		movsd
 		sub esi,12
 	loop @b
+		mov ecx,[count]
+		and ecx,3
+		cmp ecx,0
+		je .end_f
+		lea ecx,[ecx+2*ecx] ;ecx*=3
+		rep movsb
 	.end_f:
 	ret
 endp
@@ -494,14 +498,19 @@ proc ZB_clear uses eax ebx ecx edi esi, zb:dword, clear_z:dword, z:dword,\
 	mov eax,[zb]
 	cmp dword[clear_z],0
 	je @f
-		mov ebx,[eax+offs_zbuf_xsize]
-		imul ebx,[eax+offs_zbuf_ysize]
-		stdcall memset_s, [eax+offs_zbuf_zbuf],[z],ebx
+		mov ebx,[eax+ZBuffer.xsize]
+		imul ebx,[eax+ZBuffer.ysize]
+		stdcall memset_s, [eax+ZBuffer.zbuf],[z],ebx
 	@@:
 	cmp dword[clear_color],0
 	je @f
+if TGL_FEATURE_RENDER_BITS eq 32
+		;color = RGB_TO_PIXEL(r, g, b)
+		;memset_l(ebx, color, zb->xsize)
+end if
 if TGL_FEATURE_RENDER_BITS eq 24
-		mov ebx,[eax+offs_zbuf_xsize]
+		mov ebx,[eax+ZBuffer.xsize]
+		imul ebx,[eax+ZBuffer.ysize]
 		push ebx
 		mov ebx,[b]
 		shr ebx,8
@@ -512,22 +521,8 @@ if TGL_FEATURE_RENDER_BITS eq 24
 		mov ebx,[r]
 		shr ebx,8
 		push ebx
-		add esp,16
+		stdcall memset_RGB24, [eax+ZBuffer.pbuf]
 end if
-		mov ebx,[eax+offs_zbuf_pbuf]
-		mov ecx,[eax+offs_zbuf_ysize]
-align 4
-		.cycle_0:
-if TGL_FEATURE_RENDER_BITS eq 32
-			;color = RGB_TO_PIXEL(r, g, b)
-			;memset_l(ebx, color, zb->xsize)
-end if
-if TGL_FEATURE_RENDER_BITS eq 24
-			sub esp,16
-			stdcall memset_RGB24,ebx
-end if
-			add ebx,[eax+offs_zbuf_linesize]
-		loop .cycle_0
 	@@:
 	ret
 endp

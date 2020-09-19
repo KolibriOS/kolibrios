@@ -119,18 +119,18 @@ pushad
 	mov ebx,[p0]
 	mov ecx,[p1]
 	mov edx,[p2]
-	mov eax,[edx+offs_zbup_y]
-	cmp [ecx+offs_zbup_y],eax ;(2-1)
+	mov eax,[edx+ZBufferPoint.y]
+	cmp [ecx+ZBufferPoint.y],eax ;(2-1)
 	jle @f
 		xchg edx,ecx
 	@@:
-	mov eax,[ecx+offs_zbup_y]
-	cmp [ebx+offs_zbup_y],eax ;(1-0)
+	mov eax,[ecx+ZBufferPoint.y]
+	cmp [ebx+ZBufferPoint.y],eax ;(1-0)
 	jle @f
 		xchg ecx,ebx
 	@@:
-	mov eax,[edx+offs_zbup_y]
-	cmp [ecx+offs_zbup_y],eax ;(2-1)
+	mov eax,[edx+ZBufferPoint.y]
+	cmp [ecx+ZBufferPoint.y],eax ;(2-1)
 	jle @f
 		xchg edx,ecx
 	@@:
@@ -139,18 +139,18 @@ pushad
 	mov [p2],edx
 
 	; we compute dXdx and dXdy for all interpolated values
-	mov eax,[ecx+offs_zbup_x]
-	sub eax,[ebx+offs_zbup_x]
+	mov eax,[ecx+ZBufferPoint.x]
+	sub eax,[ebx+ZBufferPoint.x]
 	mov [fdx1],eax ;p1.x - p0.x
-	mov eax,[ecx+offs_zbup_y]
-	sub eax,[ebx+offs_zbup_y]
+	mov eax,[ecx+ZBufferPoint.y]
+	sub eax,[ebx+ZBufferPoint.y]
 	mov [fdy1],eax ;p1.y - p0.y
 
-	mov eax,[edx+offs_zbup_x]
-	sub eax,[ebx+offs_zbup_x]
+	mov eax,[edx+ZBufferPoint.x]
+	sub eax,[ebx+ZBufferPoint.x]
 	mov [fdx2],eax ;p2.x - p0.x
-	mov eax,[edx+offs_zbup_y]
-	sub eax,[ebx+offs_zbup_y]
+	mov eax,[edx+ZBufferPoint.y]
+	sub eax,[ebx+ZBufferPoint.y]
 	mov [fdy2],eax ;p2.y - p0.y
 
 	fild dword[fdx1]
@@ -183,11 +183,11 @@ pushad
 	fstp dword[fdy2] ;fdy2 *= fz
 
 if INTERP_Z eq 1
-	mov eax,[ecx+offs_zbup_z]
-	sub eax,[ebx+offs_zbup_z]
+	mov eax,[ecx+ZBufferPoint.z]
+	sub eax,[ebx+ZBufferPoint.z]
 	mov [d1],eax
-	mov eax,[edx+offs_zbup_z]
-	sub eax,[ebx+offs_zbup_z]
+	mov eax,[edx+ZBufferPoint.z]
+	sub eax,[ebx+ZBufferPoint.z]
 	mov [d2],eax
 	fild dword[d1] ;d1 = p1.z - p0.z
 	fild dword[d2] ;d2 = p2.z - p0.z
@@ -198,11 +198,11 @@ if INTERP_Z eq 1
 end if
 
 if INTERP_RGB eq 1
-	mov eax,[ecx+offs_zbup_r]
-	sub eax,[ebx+offs_zbup_r]
+	mov eax,[ecx+ZBufferPoint.r]
+	sub eax,[ebx+ZBufferPoint.r]
 	mov [d1],eax
-	mov eax,[edx+offs_zbup_r]
-	sub eax,[ebx+offs_zbup_r]
+	mov eax,[edx+ZBufferPoint.r]
+	sub eax,[ebx+ZBufferPoint.r]
 	mov [d2],eax
 	fild dword[d1] ;d1 = p1.r - p0.r
 	fild dword[d2] ;d2 = p2.r - p0.r
@@ -211,11 +211,11 @@ if INTERP_RGB eq 1
 	;drdy = (int) (fdx1*d2 - fdx2*d1)
 	calc_d1d2 fi, drdx, drdy
 
-	mov eax,[ecx+offs_zbup_g]
-	sub eax,[ebx+offs_zbup_g]
+	mov eax,[ecx+ZBufferPoint.g]
+	sub eax,[ebx+ZBufferPoint.g]
 	mov [d1],eax
-	mov eax,[edx+offs_zbup_g]
-	sub eax,[ebx+offs_zbup_g]
+	mov eax,[edx+ZBufferPoint.g]
+	sub eax,[ebx+ZBufferPoint.g]
 	mov [d2],eax
 	fild dword[d1] ;d1 = p1.g - p0.g
 	fild dword[d2] ;d2 = p2.g - p0.g
@@ -224,11 +224,11 @@ if INTERP_RGB eq 1
 	;dgdy = (int) (fdx1*d2 - fdx2*d1)
 	calc_d1d2 fi, dgdx, dgdy
 
-	mov eax,[ecx+offs_zbup_b]
-	sub eax,[ebx+offs_zbup_b]
+	mov eax,[ecx+ZBufferPoint.b]
+	sub eax,[ebx+ZBufferPoint.b]
 	mov [d1],eax
-	mov eax,[edx+offs_zbup_b]
-	sub eax,[ebx+offs_zbup_b]
+	mov eax,[edx+ZBufferPoint.b]
+	sub eax,[ebx+ZBufferPoint.b]
 	mov [d2],eax
 	fild dword[d1] ;d1 = p1.b - p0.b
 	fild dword[d2] ;d2 = p2.b - p0.b
@@ -239,11 +239,11 @@ if INTERP_RGB eq 1
 end if
 
 if INTERP_ST eq 1
-	mov eax,[ecx+offs_zbup_s]
-	sub eax,[ebx+offs_zbup_s]
+	mov eax,[ecx+ZBufferPoint.s]
+	sub eax,[ebx+ZBufferPoint.s]
 	mov [d1],eax
-	mov eax,[edx+offs_zbup_s]
-	sub eax,[ebx+offs_zbup_s]
+	mov eax,[edx+ZBufferPoint.s]
+	sub eax,[ebx+ZBufferPoint.s]
 	mov [d2],eax
 	fild dword[d1] ;d1 = p1.s - p0.s
 	fild dword[d2] ;d2 = p2.s - p0.s
@@ -252,11 +252,11 @@ if INTERP_ST eq 1
 	;dsdy = (int) (fdx1*d2 - fdx2*d1)
 	calc_d1d2 fi, dsdx, dsdy
 
-	mov eax,[ecx+offs_zbup_t]
-	sub eax,[ebx+offs_zbup_t]
+	mov eax,[ecx+ZBufferPoint.t]
+	sub eax,[ebx+ZBufferPoint.t]
 	mov [d1],eax
-	mov eax,[edx+offs_zbup_t]
-	sub eax,[ebx+offs_zbup_t]
+	mov eax,[edx+ZBufferPoint.t]
+	sub eax,[ebx+ZBufferPoint.t]
 	mov [d2],eax
 	fild dword[d1] ;d1 = p1.t - p0.t
 	fild dword[d2] ;d2 = p2.t - p0.t
@@ -267,43 +267,43 @@ if INTERP_ST eq 1
 end if
 
 if INTERP_STZ eq 1
-	fild dword[ebx+offs_zbup_z]
-	fild dword[ebx+offs_zbup_s]
+	fild dword[ebx+ZBufferPoint.z]
+	fild dword[ebx+ZBufferPoint.s]
 	fmul st0,st1
-	fstp dword[ebx+offs_zbup_sz] ;p0.sz = (float) p0.s * p0.z
-	fild dword[ebx+offs_zbup_t]
+	fstp dword[ebx+ZBufferPoint.fsz] ;p0.sz = (float) p0.s * p0.z
+	fild dword[ebx+ZBufferPoint.t]
 	fmulp
-	fstp dword[ebx+offs_zbup_tz] ;p0.tz = (float) p0.t * p0.z
+	fstp dword[ebx+ZBufferPoint.tz] ;p0.tz = (float) p0.t * p0.z
 
-	fild dword[ecx+offs_zbup_z]
-	fild dword[ecx+offs_zbup_s]
+	fild dword[ecx+ZBufferPoint.z]
+	fild dword[ecx+ZBufferPoint.s]
 	fmul st0,st1
-	fstp dword[ecx+offs_zbup_sz] ;p1.sz = (float) p1.s * p1.z
-	fild dword[ecx+offs_zbup_t]
+	fstp dword[ecx+ZBufferPoint.fsz] ;p1.sz = (float) p1.s * p1.z
+	fild dword[ecx+ZBufferPoint.t]
 	fmulp
-	fstp dword[ecx+offs_zbup_tz] ;p1.tz = (float) p1.t * p1.z
+	fstp dword[ecx+ZBufferPoint.tz] ;p1.tz = (float) p1.t * p1.z
 
-	fild dword[edx+offs_zbup_z]
-	fild dword[edx+offs_zbup_s]
+	fild dword[edx+ZBufferPoint.z]
+	fild dword[edx+ZBufferPoint.s]
 	fmul st0,st1
-	fstp dword[edx+offs_zbup_sz] ;p2.sz = (float) p2.s * p2.z
-	fild dword[edx+offs_zbup_t]
+	fstp dword[edx+ZBufferPoint.fsz] ;p2.sz = (float) p2.s * p2.z
+	fild dword[edx+ZBufferPoint.t]
 	fmulp
-	fstp dword[edx+offs_zbup_tz] ;p2.tz = (float) p2.t * p2.z
+	fstp dword[edx+ZBufferPoint.tz] ;p2.tz = (float) p2.t * p2.z
 
-	fld dword[ecx+offs_zbup_sz]
-	fsub dword[ebx+offs_zbup_sz] ;d1 = p1.sz - p0.sz
-	fld dword[edx+offs_zbup_sz]
-	fsub dword[ebx+offs_zbup_sz] ;d2 = p2.sz - p0.sz
+	fld dword[ecx+ZBufferPoint.fsz]
+	fsub dword[ebx+ZBufferPoint.fsz] ;d1 = p1.sz - p0.sz
+	fld dword[edx+ZBufferPoint.fsz]
+	fsub dword[ebx+ZBufferPoint.fsz] ;d2 = p2.sz - p0.sz
 
 	;dszdx = (fdy2*d1 - fdy1*d2)
 	;dszdy = (fdx1*d2 - fdx2*d1)
 	calc_d1d2 f, dszdx, dszdy
 
-	fld dword[ecx+offs_zbup_tz]
-	fsub dword[ebx+offs_zbup_tz] ;d1 = p1.tz - p0.tz
-	fld dword[edx+offs_zbup_tz]
-	fsub dword[ebx+offs_zbup_tz] ;d2 = p2.tz - p0.tz
+	fld dword[ecx+ZBufferPoint.tz]
+	fsub dword[ebx+ZBufferPoint.tz] ;d1 = p1.tz - p0.tz
+	fld dword[edx+ZBufferPoint.tz]
+	fsub dword[ebx+ZBufferPoint.tz] ;d2 = p2.tz - p0.tz
 
 	;dtzdx = (fdy2*d1 - fdy1*d2)
 	;dtzdy = (fdx1*d2 - fdx2*d1)
@@ -312,14 +312,14 @@ end if
 
 	; screen coordinates
 	mov eax,[zb]
-	mov edx,[eax+offs_zbuf_linesize]
-	imul edx,[ebx+offs_zbup_y]
-	add edx,[eax+offs_zbuf_pbuf]
+	mov edx,[eax+ZBuffer.linesize]
+	imul edx,[ebx+ZBufferPoint.y]
+	add edx,[eax+ZBuffer.pbuf]
 	mov [pp1],edx ;pp1 = zb.pbuf + zb.linesize * p0.y
-	mov edx,[eax+offs_zbuf_xsize]
-	imul edx,[ebx+offs_zbup_y]
+	mov edx,[eax+ZBuffer.xsize]
+	imul edx,[ebx+ZBufferPoint.y]
 	shl edx,1
-	add edx,[eax+offs_zbuf_zbuf]
+	add edx,[eax+ZBuffer.zbuf]
 	mov [pz1],edx ;pz1 = zb.zbuf + zb.xsize * p0.y
 
 	DRAW_INIT
@@ -349,8 +349,8 @@ align 4
 				mov [l2],ecx
 				mov [pr2],edx
 			.end_1:
-			mov eax,[ecx+offs_zbup_y]
-			sub eax,[ebx+offs_zbup_y]
+			mov eax,[ecx+ZBufferPoint.y]
+			sub eax,[ebx+ZBufferPoint.y]
 			mov [nb_lines],eax ;nb_lines = p1.y - p0.y
 			jmp .end_0
 align 4
@@ -374,8 +374,8 @@ align 4
 				mov [l1],ecx
 				mov [l2],edx
 			.end_2:
-			mov eax,[edx+offs_zbup_y]
-			sub eax,[ecx+offs_zbup_y]
+			mov eax,[edx+ZBufferPoint.y]
+			sub eax,[ecx+ZBufferPoint.y]
 			inc eax
 			mov [nb_lines],eax ;nb_lines = p2.y - p1.y + 1
 		.end_0:
@@ -385,11 +385,11 @@ align 4
 	je .end_upd_l
 		mov ebx,[l1]
 		mov ecx,[l2]
-		mov edx,[ecx+offs_zbup_y]
-		sub edx,[ebx+offs_zbup_y]
+		mov edx,[ecx+ZBufferPoint.y]
+		sub edx,[ebx+ZBufferPoint.y]
 		mov [dy1],edx ;dy1 = l2.y - l1.y
-		mov eax,[ecx+offs_zbup_x]
-		sub eax,[ebx+offs_zbup_x]
+		mov eax,[ecx+ZBufferPoint.x]
+		sub eax,[ebx+ZBufferPoint.x]
 		mov [dx1],eax ;dx1 = l2.x - l1.x
 		cmp edx,0 ;if (dy1 > 0) 
 		jle .els_3
@@ -412,7 +412,7 @@ align 4
 		.els_3:
 			xor eax,eax
 		.end_3:
-		mov edx,[ebx+offs_zbup_x]
+		mov edx,[ebx+ZBufferPoint.x]
 		mov [x1],edx ;x1 = l1.x
 		mov dword[error],0 ;error = 0
 		mov dword[derror],eax
@@ -424,7 +424,7 @@ align 4
 
 if INTERP_Z eq 1
 	mov eax,[l1]
-	mov eax,[eax+offs_zbup_z]
+	mov eax,[eax+ZBufferPoint.z]
 	mov [z1],eax ;z1 = l1.z
 	mov eax,[dzdx]
 	imul eax,[dxdy_min]
@@ -435,7 +435,7 @@ if INTERP_Z eq 1
 end if
 if INTERP_RGB eq 1
 	mov ebx,[l1]
-	mov eax,[ebx+offs_zbup_r]
+	mov eax,[ebx+ZBufferPoint.r]
 	mov [r1],eax ;r1 = l1.r
 	mov eax,[drdx]
 	imul eax,[dxdy_min]
@@ -444,7 +444,7 @@ if INTERP_RGB eq 1
 	add eax,[drdx]
 	mov [drdl_max],eax ;drdl_max = drdl_min +drdx
 
-	mov eax,[ebx+offs_zbup_g]
+	mov eax,[ebx+ZBufferPoint.g]
 	mov [g1],eax ;g1 = l1.g
 	mov eax,[dgdx]
 	imul eax,[dxdy_min]
@@ -453,7 +453,7 @@ if INTERP_RGB eq 1
 	add eax,[dgdx]
 	mov [dgdl_max],eax ;dgdl_max = dgdl_min +dgdx
 
-	mov eax,[ebx+offs_zbup_b]
+	mov eax,[ebx+ZBufferPoint.b]
 	mov [b1],eax ;b1 = l1.b
 	mov eax,[dbdx]
 	imul eax,[dxdy_min]
@@ -464,7 +464,7 @@ if INTERP_RGB eq 1
 end if
 if INTERP_ST eq 1
 	mov ebx,[l1]
-	mov eax,[ebx+offs_zbup_s]
+	mov eax,[ebx+ZBufferPoint.s]
 	mov [s1],eax ;s1 = l1.s
 	mov eax,[dsdx]
 	imul eax,[dxdy_min]
@@ -473,7 +473,7 @@ if INTERP_ST eq 1
 	add eax,[dsdx]
 	mov [dsdl_max],eax ;dsdl_max = dsdl_min +dsdx
 
-	mov eax,[ebx+offs_zbup_t]
+	mov eax,[ebx+ZBufferPoint.t]
 	mov [t1],eax ;t1 = l1.t
 	mov eax,[dtdx]
 	imul eax,[dxdy_min]
@@ -484,7 +484,7 @@ if INTERP_ST eq 1
 end if
 if INTERP_STZ eq 1
 	mov ebx,[l1]
-	mov eax,[ebx+offs_zbup_sz]
+	mov eax,[ebx+ZBufferPoint.fsz]
 	mov [sz1],eax ;sz1 = l1.sz - преобразований нет, потому без сопроцессора
 	fild dword[dxdy_min]
 	fmul dword[dszdx]
@@ -493,7 +493,7 @@ if INTERP_STZ eq 1
 	fadd dword[dszdx]
 	fstp dword[dszdl_max] ;dszdl_max = dszdl_min +dszdx
 
-	mov eax,[ebx+offs_zbup_tz]
+	mov eax,[ebx+ZBufferPoint.tz]
 	mov [tz1],eax ;tz1 = l1.tz - преобразований нет, потому без сопроцессора
 	fild dword[dxdy_min]
 	fmul dword[dtzdx]
@@ -510,14 +510,14 @@ end if
 	je .end_upd_r
 		mov ebx,[pr1]
 		mov ecx,[pr2]
-		mov edx,[ebx+offs_zbup_x]
-		mov eax,[ecx+offs_zbup_x]
+		mov edx,[ebx+ZBufferPoint.x]
+		mov eax,[ecx+ZBufferPoint.x]
 		sub eax,edx
 		;mov [dx2],eax ;dx2 = pr2.x - pr1.x
 		shl edx,16
 		mov [x2],edx ; x2 = pr1.x << 16
-		mov edx,[ecx+offs_zbup_y]
-		sub edx,[ebx+offs_zbup_y]
+		mov edx,[ecx+ZBufferPoint.y]
+		sub edx,[ebx+ZBufferPoint.y]
 		mov [dy2],edx ;dy2 = pr2.y - pr1.y
 		cmp edx,0 ;if (dy2 > 0) 
 		jle .els_4
@@ -763,9 +763,9 @@ end if
 
 			; screen coordinates
 			mov ebx,[zb]
-			mov eax,[ebx+offs_zbuf_linesize]
+			mov eax,[ebx+ZBuffer.linesize]
 			add [pp1],eax
-			mov eax,[ebx+offs_zbuf_xsize]
+			mov eax,[ebx+ZBuffer.xsize]
 			shl eax,1
 			add [pz1],eax
 			jmp .beg_w_lin

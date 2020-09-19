@@ -78,7 +78,7 @@ red_win:
 	jge @f
 		mov eax,120 ;min size
 	@@:
-	sub eax,42
+	sub eax,43
 	mov ebx,dword[procinfo.box.width]
 	cmp ebx,200
 	jge @f
@@ -91,16 +91,23 @@ red_win:
 align 16
 still:
 	call draw_3d
+	cmp dword[stop],1
+	je @f
+		stdcall Fps, 365,4
 
-	stdcall Fps, 365,4
-	mov dword[esp-4],eax
-	fild dword[esp-4]
-	fmul dword[a2]
-	fadd dword[a1]
-	fadd dword[angle]
-	fstp dword[angle]
+		mov dword[esp-4],eax
+		fild dword[esp-4]
+		fmul dword[a2]
+		fadd dword[a1]
+		fadd dword[angle]
+		fstp dword[angle]
 
-	mcall SF_CHECK_EVENT
+		mcall SF_CHECK_EVENT
+		jmp .end0
+align 4
+	@@:
+		mcall SF_WAIT_EVENT
+	.end0:
 	cmp al,1
 	jz red_win
 	cmp al,2
@@ -156,7 +163,7 @@ draw_window:
 	mcall SF_REDRAW,SSF_BEGIN_DRAW
 
 	mcall SF_CREATE_WINDOW,(50 shl 16)+409,(30 shl 16)+425,0x33404040,,title1
-	stdcall [kosglSwapBuffers]
+	call [kosglSwapBuffers]
 
 	;Title
 	mcall SF_DRAW_TEXT,(338 shl 16)+4,0xc0c0c0,fps,   fps.end-fps
@@ -179,49 +186,54 @@ key:
 		fld dword[scale]
 		fdiv dword[delt_sc]
 		fstp dword[scale]
-		call draw_3d
+		jmp still
 	@@:
 	cmp ah,61 ;=
 	jne @f
 		fld dword[scale]
 		fdiv dword[delt_sc]
 		fstp dword[scale]
-		call draw_3d
+		jmp still
 	@@:
 	cmp ah,45 ;-
 	jne @f
 		fld dword[scale]
 		fmul dword[delt_sc]
 		fstp dword[scale]
-		call draw_3d
+		jmp still
+	@@:
+	cmp ah,112 ;P
+	jne @f
+		xor dword[stop],1
+		jmp still
 	@@:
 	cmp ah,178 ;Up
 	jne @f
 		fld dword[view_rotx]
 		fadd dword[delt_size]
 		fstp dword[view_rotx]
-		call draw_3d
+		jmp still
 	@@:
 	cmp ah,177 ;Down
 	jne @f
 		fld dword[view_rotx]
 		fsub dword[delt_size]
 		fstp dword[view_rotx]
-		call draw_3d
+		jmp still
 	@@:
 	cmp ah,176 ;Left
 	jne @f
 		fld dword[view_roty]
 		fadd dword[delt_size]
 		fstp dword[view_roty]
-		call draw_3d
+		jmp still
 	@@:
 	cmp ah,179 ;Right
 	jne @f
 		fld dword[view_roty]
 		fsub dword[delt_size]
 		fstp dword[view_roty]
-		call draw_3d
+		jmp still
 	@@:
 	jmp still
 
@@ -237,9 +249,9 @@ button:
 align 4
 title1: db 'TinyGL in KolibriOS'
 .end: db 0
-title2: db 'F full screen'
-.end: db 0
-title3: db 'ESC - exit   Arrow keys - rotate   +/- zoom'
+;title2: db 'F full screen'
+;.end: db 0
+title3: db 'ESC - exit, Arrow keys - rotate, +/- zoom, P - pause'
 .end: db 0
 fps:	db 'FPS:'
 .end: db 0
@@ -248,19 +260,19 @@ align 16
 draw_3d:
 	stdcall [glClear], GL_COLOR_BUFFER_BIT + GL_DEPTH_BUFFER_BIT
 
-	stdcall [glPushMatrix]
+	call [glPushMatrix]
 	stdcall [glScalef],  [scale], [scale], [scale]
 	stdcall [glRotatef], [view_rotx], 1.0, 0.0, 0.0
 	stdcall [glRotatef], [view_roty], 0.0, 1.0, 0.0
 	stdcall [glRotatef], [view_rotz], 0.0, 0.0, 1.0
 
-	stdcall [glPushMatrix]
+	call [glPushMatrix]
 	stdcall [glTranslatef], -3.0, -2.0, 0.0
 	stdcall [glRotatef], [angle], 0.0, 0.0, 1.0
 	stdcall [glCallList],[gear1]
-	stdcall [glPopMatrix]
+	call [glPopMatrix]
 
-	stdcall [glPushMatrix]
+	call [glPushMatrix]
 	stdcall [glTranslatef], 3.1, -2.0, 0.0
 	push dword 1.0
 	push dword 0.0
@@ -277,9 +289,9 @@ draw_3d:
 	sub esp,4
 	call [glRotatef] ;, -2.0*angle-9.0, 0.0, 0.0, 1.0
 	stdcall [glCallList],[gear2]
-	stdcall [glPopMatrix]
+	call [glPopMatrix]
 
-	stdcall [glPushMatrix]
+	call [glPushMatrix]
 	stdcall [glTranslatef], -3.1, 4.2, 0.0
 	push dword 1.0
 	push dword 0.0
@@ -296,11 +308,11 @@ draw_3d:
 	sub esp,4
 	call [glRotatef] ;, -2.0*angle-25.0, 0.0, 0.0, 1.0
 	stdcall [glCallList],[gear3]
-	stdcall [glPopMatrix]
+	call [glPopMatrix]
 
-	stdcall [glPopMatrix]
+	call [glPopMatrix]
 
-	stdcall [kosglSwapBuffers]
+	call [kosglSwapBuffers]
 
 ;   count++;
 ;   if (count==limit) {
@@ -330,6 +342,7 @@ angle dd 0.0
 
 limit dd ?
 count dd 1
+stop  dd 0 ;пауза
 
 ;
 ;  Draw a gear wheel.  You'll probably want to call this function when
