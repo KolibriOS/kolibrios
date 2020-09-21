@@ -10,7 +10,7 @@ if (NULL == dir || strlen(dir) == 0)
 	{
 	#if LANG_ENG
 		printf("  rmdir <directory>\n\r");
-	#elif LANG_ENG
+	#elif LANG_RUS
 		printf("  rmdir <директория>\n\r");
 	#endif
 	return TRUE;
