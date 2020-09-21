@@ -1,0 +1,29 @@
+#!/bin/bash
+make_gen()
+{
+    cat .makefile >> makefile
+}
+
+if [[ $1 == "-rus"  &&  $# == 1 ]]
+    then
+    echo "Russian language selected!"
+    echo "#define LANG_RUS 1" > lang.h
+    echo "DIR=bin/rus" > makefile
+    make_gen
+    exit 0
+elif [[ $1 == "-eng" && $# == 1 ]]
+    then
+    echo "English language selected!"
+    echo "#define LANG_ENG 1" > lang.h
+    echo "DIR=bin/eng" > makefile
+    make_gen
+    exit 0
+else
+    echo "Reference: ./configure <lang>
+    Languages:
+    -rus - Configure as Russian
+    -eng - Configure as English"
+    exit 0
+fi
+
+
