@@ -152,6 +152,7 @@ int main(int argc, char **argv)
 		{
 			case evButton:
 				Button();
+				
 				break;
 		  
 			case evKey:
