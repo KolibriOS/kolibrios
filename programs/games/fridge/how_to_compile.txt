@@ -1,0 +1,1 @@
+To compilation, you need to have kolibri_libimg.h and loadlibimg.o from C_Layer in this catalog
