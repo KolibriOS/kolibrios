@@ -22,8 +22,8 @@ path_to_libgcc="$dir_path/sdk/lib"
 kos32-gcc  $gcc_keys -I $path_to_headers -o $app_name.o $app_name.c
 
 case $compile_mode in
-  1) kos32-ld  $ld_keys1 -T $path_to_ldscript1 -Map=$app_name.map -L $path_to_libgcc -L $path_to_libc -o $app_name.kex $app_name.o -lc -lgcc -lc  ;;
-  2) kos32-ld  $ld_keys2 -T $path_to_ldscript2 -Map=$app_name.map -L $path_to_libgcc -L $path_to_libc  -o $app_name.kex $app_name.o -lgcc -lc.dll ;;
+  1) kos32-ld  $ld_keys1 -T $path_to_ldscript1 -Map=$app_name.map -L $path_to_libgcc -L $path_to_libc -o $app_name.kex $app_name.o loadlibimg.o -lc -lgcc -lc  ;;
+  2) kos32-ld  $ld_keys2 -T $path_to_ldscript2 -Map=$app_name.map -L $path_to_libgcc -L $path_to_libc  -o $app_name.kex $app_name.o loadlibimg.o -lgcc -lc.dll ;;
   *) exit 1 ;;
 esac
 
@@ -31,5 +31,5 @@ kos32-strip  -s $app_name.kex -o $app_name.kex
 kos32-objcopy  $app_name.kex -O binary
 rm  $app_name.o
 rm  $app_name.map
-
+sleep 100
 exit 0

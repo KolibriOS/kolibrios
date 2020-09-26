@@ -1,6 +1,9 @@
 #include <kos32sys.h>
 #include <string.h>
 #include <stdlib.h>
+#include <stdio.h>
+
+#include "kolibri_libimg.h"
 
 /* 
  EVENTS LOOK LIKE IN C--
@@ -16,8 +19,6 @@
 
 #define bs 44
 
-#define FIRSTC 0x137F00
-#define SECONDC 0x0013FF
 
 int field[_size][_size] = {
 	{0, 0, 0, 1},
@@ -28,15 +29,90 @@ int field[_size][_size] = {
 
 char* title = "Fridge v0.1";
 
+// PICTURES LOADING CODE
+
+char temp_path[4096];
+char* HOR;
+char* VER;
+
+
+char*   load_file_inmem(char* fname, int32_t* read_sz)
+{
+    FILE *f = fopen(fname, "rb");
+    if (!f) {
+        exit(1);
+    }
+    if (fseek(f, 0, SEEK_END)) {
+        exit(1);
+    }
+    int filesize = ftell(f);
+    rewind(f);
+    char* fdata = malloc(filesize);
+    if(!fdata) {
+        exit(1);
+    }
+    *read_sz = fread(fdata, 1, filesize, f);
+    if (ferror(f)) {
+        exit(1);
+    }
+    fclose(f);
+
+    return fdata;
+}
+
+
+
+
+void load_pict() {
+	const int icon_rgb_size = bs*bs;
+    char *image_data,
+         *filedata;
+    
+    strcpy(temp_path, "h.png");
+
+    int32_t read_bytes;
+    filedata = load_file_inmem(temp_path, &read_bytes);
+    HOR = malloc(icon_rgb_size * 3);
+    
+    image_data = img_decode(filedata, read_bytes, 0); 
+    
+    img_to_rgb2(image_data, HOR);
+    
+    
+    strcpy(temp_path, "v.png");
+
+    filedata = load_file_inmem(temp_path, &read_bytes);
+    VER = malloc(icon_rgb_size * 3);
+    
+    image_data = img_decode(filedata, read_bytes, 0); 
+    
+    img_to_rgb2(image_data, VER);
+    
+    img_destroy(image_data);
+    free(filedata);
+}
+
+
+
+
+// END OF PIC LOAD CODE
+
+
+void redraw_buttons() {
+	for (int j = 5, yy = 0; yy<_size; j+=bs, yy++)
+			for (int i = 15, xx = 0; xx<_size; i+=bs, xx++)
+			{
+				define_button(65536 * i + (bs-1), 65536 * j + (bs-1), ((xx+1)*10)+yy+1, 0xbbbbbb);
+				
+				if (field[yy][xx]) draw_bitmap(VER, i, j, bs, bs);
+				else draw_bitmap(HOR, i, j, bs, bs);
+			}
+}
+
 void draw_window(){
         BeginDraw(); 
-        DrawWindow(215,100,225, 225,title,0xEEEeee,0x34);
-        for (int j = 10, yy = 0; yy<_size; j+=bs, yy++)
-			for (int i = 10, xx = 0; xx<_size; i+=bs, xx++)
-			{
-				if (field[yy][xx]) define_button(65536 * i + bs, 65536 * j + bs, ((xx+1)*10)+yy+1, FIRSTC);
-				else define_button(65536 * i + bs, 65536 * j + bs, ((xx+1)*10)+yy+1, SECONDC);
-			}
+        DrawWindow(215,100,220, 220,title,0xbbbbbb,0x34);
+        redraw_buttons();
         EndDraw();
 }
 
@@ -55,12 +131,20 @@ void Button() {
 			
 		if (field[y][x]) field[y][x] = 0; else field[y][x] = 1;
 		
-		draw_window();
+		redraw_buttons();
 	}
 }
 
-int main()
+int main(int argc, char **argv)
 {
+    if (kolibri_libimg_init() == -1) 
+    {
+		printf("Can not load libimg.obj!\n");
+		exit(1);
+	}
+    
+    load_pict();
+    
     draw_window();
     while(1)
     {
