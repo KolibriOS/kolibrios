@@ -227,12 +227,12 @@ start:
 	stdcall [glEnable], GL_NORMALIZE ;делам нормали одинаковой величины во избежание артефактов
 	stdcall [glClearColor], [color_bk+8],[color_bk+4],[color_bk],0.0
 	stdcall [glShadeModel], GL_SMOOTH
-	stdcall [gluNewQuadric]
+	call [gluNewQuadric]
 	mov [qObj],eax
 
 	mov eax,dword[ctx1] ;eax -> TinyGLContext.GLContext
 	mov eax,[eax] ;eax -> ZBuffer
-	mov eax,[eax+offs_zbuf_pbuf] ;eax -> ZBuffer.pbuf
+	mov eax,[eax+ZBuffer.pbuf]
 	mov dword[buf_ogl],eax
 
 	;open file from cmd line
@@ -287,14 +287,14 @@ mouse:
 		stdcall [tl_node_get_data],tree1
 		or eax,eax
 		jz .end_d
-			mov ebx,dword[eax]
+			mov ebx,[eax]
 			add ebx,dword[open_file_data] ;получаем значение сдвига в памяти
 			cmp word[ebx],CHUNK_OBJBLOCK
 			jne .end_d
 
 		mcall SF_MOUSE_GET,SSF_WINDOW_POSITION
 		mov ebx,eax
-		shr ebx,16 ;mouse.x
+		sar ebx,16 ;mouse.x
 		cmp ebx,3d_wnd_l
 		jg @f
 			mov ebx,3d_wnd_l
@@ -304,7 +304,7 @@ mouse:
 		jle @f
 			mov ebx,3d_wnd_w
 		@@:
-		and eax,0xffff ;mouse.y
+		movsx eax,ax ;mouse.y
 		cmp eax,3d_wnd_t
 		jg @f
 			mov eax,3d_wnd_t
@@ -346,13 +346,13 @@ mouse:
 		;mouse l. but. press
 		mcall SF_MOUSE_GET,SSF_WINDOW_POSITION
 		mov ebx,eax
-		shr ebx,16 ;mouse.x
+		sar ebx,16 ;mouse.x
 		cmp ebx,3d_wnd_l
 		jl .end_d
 		sub ebx,3d_wnd_l
 		cmp ebx,3d_wnd_w
 		jg .end_d
-		and eax,0xffff ;mouse.y
+		movsx eax,ax ;mouse.y
 		cmp eax,3d_wnd_t
 		jl .end_d
 		sub eax,3d_wnd_t
@@ -363,7 +363,7 @@ mouse:
 		mov dword[mouse_y],eax
 	.end_d:
 
-	stdcall [tl_mouse], dword tree1
+	stdcall [tl_mouse], tree1
 	stdcall [kmainmenu_dispatch_cursorevent], [main_menu]
 	pop ebx eax
 	ret
@@ -378,19 +378,18 @@ timer_funct:
 	stdcall [tl_node_get_data],tree1
 	or eax,eax
 	jz .end_f
-		mov edi,eax
-		add edi,list_offs_obj3d
+		lea edi,[eax+list_offs_obj3d]
 		mov ebx,eax
-		mov eax,dword[ebx]
-		mov ecx,dword[ebx+4] ;размер блока
+		mov eax,[ebx]
+		mov ecx,[ebx+4] ;размер блока
 		stdcall hex_in_str, txt_3ds_offs.dig, eax,8
 		stdcall hex_in_str, txt_3ds_offs.siz, ecx,8
 
-		add eax,dword[open_file_data] ;получаем значение сдвига в памяти
-		cmp dword[offs_last_timer],eax
+		add eax,[open_file_data] ;получаем значение сдвига в памяти
+		cmp [offs_last_timer],eax
 		je .end_f
 			;если выделенный блок данных не совпадает с последним запомненным
-			mov dword[offs_last_timer],eax
+			mov [offs_last_timer],eax
 
 			cmp word[eax],CHUNK_OBJBLOCK
 			jne .end_oblo
@@ -422,7 +421,7 @@ timer_funct:
 
 			stdcall buf_draw_beg, buf_ogl
 			stdcall [buf2d_draw_text], buf_ogl, buf_1,txt_3ds_offs,5,35,0xb000
-			mov edx,dword[ebx+list_offs_p_data]
+			mov edx,[ebx+list_offs_p_data]
 			or edx,edx ;смотрим есть ли описание блока
 			jz .no_info
 				stdcall [buf2d_draw_text], buf_ogl, buf_1,edx,5,45,0xb000
@@ -1043,8 +1042,7 @@ proc add_3ds_object, icon:dword, level:dword, size_bl:dword, info_bl:dword
 		.no_capt:
 		mov ecx,(sizeof.obj_3d)/4
 		xor eax,eax
-		mov edi,buffer
-		add edi,list_offs_obj3d
+		mov edi,buffer+list_offs_obj3d
 		rep stosd
 		stdcall [tl_node_add], tree1, ebx, buffer
 		stdcall [tl_cur_next], tree1
@@ -1459,9 +1457,6 @@ align 4
 w_scr_t1 scrollbar 16,0, 3,0, 15, 100, 0,0, 0,0,0, 1
 
 align 4
-ctx1 db 28 dup (0) ;TinyGLContext or KOSGLContext
-;sizeof.TinyGLContext = 28
-
 qObj dd 0
 
 light_position dd 0.0, 0.0, -2.0, 1.0 ; Расположение источника [0][1][2]
@@ -1474,13 +1469,14 @@ white_light dd 0.8, 0.8, 0.8, 1.0 ; Цвет и интенсивность освещения, генерируемог
 lmodel_ambient dd 0.3, 0.3, 0.3, 1.0 ; Параметры фонового освещения
 
 if lang eq ru
-capt db 'info 3ds [user] версия 23.03.19',0 ;подпись окна
+capt db 'info 3ds [user] версия 29.09.20',0 ;подпись окна
 else
-capt db 'info 3ds [user] version 23.03.19',0 ;window caption
+capt db 'info 3ds [user] version 29.09.20',0 ;window caption
 end if
 
 align 16
 i_end:
+	ctx1 rb 28 ;sizeof.TinyGLContext = 28
 	procinfo process_information
 	run_file_70 FileInfoBlock
 	sc system_colors

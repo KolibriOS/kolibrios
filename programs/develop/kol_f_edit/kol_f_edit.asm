@@ -1,13 +1,7 @@
 use32
-	org 0x0
+	org 0
 	db 'MENUET01'
-	dd 0x1
-	dd start
-	dd i_end
-	dd mem
-	dd stacktop
-	dd buf_cmd_lin
-	dd sys_path
+	dd 1,start,i_end,mem,stacktop,buf_cmd_lin,sys_path
 
 include '../../macros.inc'
 include '../../proc32.inc'
@@ -21,7 +15,7 @@ include 'obj_codes.inc'
 
 @use_library_mem mem.Alloc,mem.Free,mem.ReAlloc, dll.Load
 
-hed db 'kol_f_edit 16.11.15',0
+hed db 'kol_f_edit 29.09.20',0
 
 sizeof.TreeList equ 20 ;need for element 'tree_list'
 
@@ -1337,34 +1331,34 @@ obj_m_win dd 0 ;структура главного окна
 ;
 if 1 ;lang eq ru
 
-	err_message_found_lib0 db 'Не найдена библиотека box_lib.obj',0  ;строка, которая будет в сформированном окне, если библиотека не будет найдена
-	err_message_import0 db 'Ошибка при импорте библиотеки box_lib.obj',0
-	err_message_found_lib1 db 'Не найдена библиотека proc_lib.obj',0
-	err_message_import1 db 'Ошибка при импорте библиотеки proc_lib.obj',0
-	err_message_found_lib2 db 'Не удалось найти библиотеку buf2d.obj',0
-	err_message_import2 db 'Ошибка при импорте библиотеки buf2d.obj',0
-	err_message_found_lib3 db 'Не удалось найти библиотеку libimg.obj',0
-	err_message_import3 db 'Ошибка при импорте библиотеки libimg.obj',0
-	err_message_found_lib4 db 'Не удалось найти библиотеку msgbox.obj',0
-	err_message_import4 db 'Ошибка при импорте библиотеки msgbox.obj',0
+	err_message_found_lib0 db 'Не найдена библиотека box_lib.obj',39,'" -tE',0
+	err_message_import0 db 'Ошибка при импорте библиотеки box_lib.obj',39,'" -tW',0
+	err_message_found_lib1 db 'Не найдена библиотека proc_lib.obj',39,'" -tE',0
+	err_message_import1 db 'Ошибка при импорте библиотеки proc_lib.obj',39,'" -tW',0
+	err_message_found_lib2 db 'Не удалось найти библиотеку buf2d.obj',39,'" -tE',0
+	err_message_import2 db 'Ошибка при импорте библиотеки buf2d.obj',39,'" -tW',0
+	err_message_found_lib3 db 'Не удалось найти библиотеку libimg.obj',39,'" -tE',0
+	err_message_import3 db 'Ошибка при импорте библиотеки libimg.obj',39,'" -tW',0
+	err_message_found_lib4 db 'Не удалось найти библиотеку msgbox.obj',39,'" -tE',0
+	err_message_import4 db 'Ошибка при импорте библиотеки msgbox.obj',39,'" -tW',0
 
 	head_f_i:
-	head_f_l db 'Системная ошибка',0 ;заголовок окна, при возникновении ошибки
+	head_f_l db '"Системная ошибка',0 ;заголовок окна, при возникновении ошибки
 else
 
-	err_message_found_lib0 db 'Sorry I cannot found library box_lib.obj',0
-	err_message_import0 db 'Error on load import library box_lib.obj',0
-	err_message_found_lib1 db 'Sorry I cannot found library proc_lib.obj',0
-	err_message_import1 db 'Error on load import library proc_lib.obj',0
-	err_message_found_lib2 db 'Sorry I cannot found library buf2d.obj',0
-	err_message_import2 db 'Error on load import library buf2d.obj',0
-	err_message_found_lib3 db 'Sorry I cannot found library libimg.obj',0
-	err_message_import3 db 'Error on load import library libimg.obj',0
-	err_message_found_lib4 db 'Sorry I cannot found library msgbox.obj',0
-	err_message_import4 db 'Error on load import library msgbox.obj',0
+	err_message_found_lib0 db 'Sorry I cannot found library box_lib.obj',39,'" -tE',0
+	err_message_import0 db 'Error on load import library box_lib.obj',39,'" -tW',0
+	err_message_found_lib1 db 'Sorry I cannot found library proc_lib.obj',39,'" -tE',0
+	err_message_import1 db 'Error on load import library proc_lib.obj',39,'" -tW',0
+	err_message_found_lib2 db 'Sorry I cannot found library buf2d.obj',39,'" -tE',0
+	err_message_import2 db 'Error on load import library buf2d.obj',39,'" -tW',0
+	err_message_found_lib3 db 'Sorry I cannot found library libimg.obj',39,'" -tE',0
+	err_message_import3 db 'Error on load import library libimg.obj',39,'" -tW',0
+	err_message_found_lib4 db 'Sorry I cannot found library msgbox.obj',39,'" -tE',0
+	err_message_import4 db 'Error on load import library msgbox.obj',39,'" -tW',0
 
 	head_f_i:
-	head_f_l db 'System error',0 ;заголовок окна, при возникновении ошибки
+	head_f_l db '"System error',0 ;заголовок окна, при возникновении ошибки
 end if
 
 	system_dir0 db '/sys/lib/'
@@ -1492,7 +1486,7 @@ import_box_lib:
 	ted_but_undo dd sz_ted_but_undo
 	ted_but_redo dd sz_ted_but_redo
 	ted_but_reverse dd sz_ted_but_reverse
-	ted_but_find_next dd sz_ted_but_find_next
+	ted_but_find dd sz_ted_but_find
 	ted_text_colored dd sz_ted_text_colored
 	;version_text_edit dd sz_ted_version
 
@@ -1558,7 +1552,7 @@ dd 0,0
 	sz_ted_but_undo 		db 'ted_but_undo',0
 	sz_ted_but_redo 		db 'ted_but_redo',0
 	sz_ted_but_reverse		db 'ted_but_reverse',0
-	sz_ted_but_find_next	db 'ted_but_find_next',0
+	sz_ted_but_find			db 'ted_but_find',0
 	sz_ted_text_colored		db 'ted_text_colored',0
 	;sz_ted_version db 'version_text_edit',0
 

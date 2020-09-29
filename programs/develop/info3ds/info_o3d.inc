@@ -2,7 +2,7 @@
 ; структуры и функции для рисования 3d объектов
 ;
 
-offs_zbuf_pbuf equ 24 ;const. from 'zbuffer.inc'
+include '../../develop/libraries/TinyGL/asm_fork/zbuffer.inc'
 
 struct obj_3d
 	poi_data dd ? ;указатель на координаты вершин
@@ -356,8 +356,7 @@ pushad
 		mov ecx,[ecx+obj_3d.poi_data]
 align 4
 		@@:
-			mov edi,ebp
-			sub edi,36 ;tbl2
+			lea edi,[ebp-36] ;tbl2
 			movzx esi,word[edx] ;1-я вершина
 			imul esi,12
 			add esi,ecx
@@ -377,8 +376,7 @@ align 4
 			movsd
 			movsd
 
-			mov esi,ebp
-			sub esi,72 ;tbl1
+			lea esi,[ebp-72] ;tbl1
 			sub edi,36 ;tbl2
 			;v1 <-> v2
 			fld dword[edi+12]
@@ -806,7 +804,7 @@ proc draw_3d uses eax ebx ecx edi, o_data:dword
 	cmp dword[edi+obj_3d.poi_count],2
 	jl .end_f
 	stdcall [glClear], GL_COLOR_BUFFER_BIT + GL_DEPTH_BUFFER_BIT ;очистим буфер цвета и глубины
-	stdcall [glPushMatrix]
+	call [glPushMatrix]
 	bt dword[draw_mode],bit_light
 	jnc @f
 		call SetLight
@@ -976,10 +974,10 @@ if version_edit eq 1
 		stdcall [glEnd]
 
 		stdcall [glColor3ub],[color_select+2],[color_select+1],[color_select]
-		stdcall [glPushMatrix]
+		call [glPushMatrix]
 			stdcall [glTranslatef], [eax],[eax+4],[eax+8]
 			stdcall [gluSphere], [qObj], [sph_radius], 8,8
-		stdcall [glPopMatrix]
+		call [glPopMatrix]
 	@@:
 
 	;рисование выделенных точек
@@ -997,10 +995,10 @@ align 4
 			jne .next_sel
 			stdcall [tl_node_poi_get_data], tree3,ebx
 			mov eax,[eax]
-			stdcall [glPushMatrix]
+			call [glPushMatrix]
 				stdcall [glTranslatef], [eax],[eax+4],[eax+8]
 				stdcall [gluSphere], [qObj], [sph_radius], 4,4
-			stdcall [glPopMatrix]
+			call [glPopMatrix]
 			dec ecx
 			jz .end_select
 			.next_sel:
@@ -1009,14 +1007,14 @@ align 4
     .end_select:
 end if
 
-	stdcall [glPopMatrix]
+	call [glPopMatrix]
 if version_edit eq 1
 	cmp dword[obj_poi_sel_c],0
 	je @f
 		stdcall [buf2d_draw_text], buf_ogl, buf_1,txt_select_vert,5,3,[color_select]
 	@@:
 end if
-	stdcall [kosglSwapBuffers]
+	call [kosglSwapBuffers]
 	.end_f:
 	ret
 endp

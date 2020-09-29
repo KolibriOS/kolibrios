@@ -231,12 +231,12 @@ start:
 	stdcall [glEnable], GL_NORMALIZE ;делам нормали одинаковой величины во избежание артефактов
 	stdcall [glClearColor], [color_bk+8],[color_bk+4],[color_bk],0.0
 	stdcall [glShadeModel], GL_SMOOTH
-	stdcall [gluNewQuadric]
+	call [gluNewQuadric]
 	mov [qObj],eax
 
 	mov eax,dword[ctx1] ;eax -> TinyGLContext.GLContext
 	mov eax,[eax] ;eax -> ZBuffer
-	mov eax,[eax+offs_zbuf_pbuf] ;eax -> ZBuffer.pbuf
+	mov eax,[eax+ZBuffer.pbuf]
 	mov dword[buf_ogl],eax
 
 	;open file from cmd line
@@ -1392,9 +1392,6 @@ align 4
 w_scr_t1 scrollbar 16,0, 3,0, 15, 100, 0,0, 0,0,0, 1
 
 align 4
-ctx1 db 28 dup (0) ;TinyGLContext or KOSGLContext
-;sizeof.TinyGLContext = 28
-
 qObj dd 0
 
 light_position dd 0.0, 0.0, -2.0, 1.0 ; Расположение источника [0][1][2]
@@ -1407,13 +1404,14 @@ white_light dd 0.8, 0.8, 0.8, 1.0 ; Цвет и интенсивность освещения, генерируемог
 lmodel_ambient dd 0.3, 0.3, 0.3, 1.0 ; Параметры фонового освещения
 
 if lang eq ru
-capt db 'info 3ds версия 23.03.19',0 ;подпись окна
+capt db 'info 3ds версия 29.09.20',0 ;подпись окна
 else
-capt db 'info 3ds version 23.03.19',0 ;window caption
+capt db 'info 3ds version 29.09.20',0 ;window caption
 end if
 
 align 16
 i_end:
+	ctx1 rb 28 ;sizeof.TinyGLContext = 28
 	procinfo process_information
 	run_file_70 FileInfoBlock
 	sc system_colors
