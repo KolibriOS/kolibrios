@@ -1130,6 +1130,10 @@ proc setup_os_slot
         shr     ecx, 2
         rep movsd
 
+        lea     eax, [edx+APP_EV_OFFSET]
+        mov     dword [edx+APPDATA.fd_ev], eax
+        mov     dword [edx+APPDATA.bk_ev], eax
+
         lea     eax, [edx+APP_OBJ_OFFSET]
         mov     dword [edx+APPDATA.fd_obj], eax
         mov     dword [edx+APPDATA.bk_obj], eax
