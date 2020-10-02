@@ -4,18 +4,17 @@ use32
 	dd 1,start,i_end,mem,stacktop,openfile_path,sys_path
 
 include 'lang.inc'
-include '../../../programs/macros.inc'
-include '../../../programs/proc32.inc'
-include '../../../programs/KOSfuncs.inc'
-include '../../../programs/load_img.inc'
-include '../../../programs/develop/libraries/TinyGL/asm_fork/opengl_const.inc'
-include '../../../programs/develop/libraries/libs-dev/libimg/libimg.inc'
-include '../../../programs/develop/info3ds/info_fun_float.inc'
+include '../../macros.inc'
+include '../../proc32.inc'
+include '../../KOSfuncs.inc'
+include '../../load_img.inc'
+include '../../develop/libraries/TinyGL/asm_fork/opengl_const.inc'
+include '../../develop/libraries/TinyGL/asm_fork/zbuffer.inc'
+include '../../develop/libraries/libs-dev/libimg/libimg.inc'
+include '../../develop/info3ds/info_fun_float.inc'
 
 @use_library_mem mem.Alloc,mem.Free,mem.ReAlloc,dll.Load
-caption db 'Image transform 10.06.20',0 ;подпись окна
-
-offs_zbuf_pbuf equ 24 ;const. from 'zbuffer.inc'
+caption db 'Image transform 02.10.20',0 ;подпись окна
 
 BUF_STRUCT_SIZE equ 21
 buf2d_data equ dword[edi] ;данные буфера изображения
@@ -266,6 +265,24 @@ pushad
 		stdcall [buf2d_bit_blt], buf_0, [nav_x],[nav_y] ;,...
 
 		call points_draw
+		xor eax,eax
+		cmp [u_line_v],eax
+		je @f
+			mov eax,[u_line_v]
+			add eax,[nav_x]
+			stdcall [buf2d_line], buf_0, eax,0, eax,[buf_0.h], 0xffffff
+			inc eax
+			stdcall [buf2d_line], buf_0, eax,0, eax,[buf_0.h], 0
+		@@:
+		xor eax,eax
+		cmp [u_line_h],eax
+		je @f
+			mov eax,[u_line_h]
+			add eax,[nav_y]
+			stdcall [buf2d_line], buf_0, 0,eax, [buf_0.w],eax, 0xffffff
+			inc eax
+			stdcall [buf2d_line], buf_0, 0,eax, [buf_0.w],eax, 0
+		@@:
 
 		; *** обновление подписи размера файла ***
 		mov edi,txt_f_size.size
@@ -355,6 +372,18 @@ key:
 	cmp ah,179 ;Right
 	jne @f
 		call but_img_move_right
+		jmp .end0
+	@@:
+	cmp ah,104 ;H
+	jne @f
+		call set_user_line_h
+		mov byte[calc],1
+		jmp .end0
+	@@:
+	cmp ah,118 ;V
+	jne @f
+		call set_user_line_w
+		mov byte[calc],1
 		jmp .end0
 	@@:
 
@@ -661,6 +690,48 @@ proc mouse_left_u uses eax ebx
 endp
 
 align 4
+set_user_line_h:
+pushad
+	call buf_get_mouse_coord
+	cmp eax,-1
+	je .end0
+		mov [mouse_down_y],ebx
+		sub ebx,[nav_y]
+		cmp eax,[buf_i0.h]
+		jle @f
+			mov eax,[buf_i0.h]
+		@@:
+		cmp [u_line_h],ebx
+		jne @f
+			xor ebx,ebx ;line on/off
+		@@:
+		mov [u_line_h],ebx
+	.end0:
+popad
+	ret
+
+align 4
+set_user_line_w:
+pushad
+	call buf_get_mouse_coord
+	cmp eax,-1
+	je .end0
+		mov [mouse_down_x],eax
+		sub eax,[nav_x]
+		cmp eax,[buf_i0.w]
+		jle @f
+			mov eax,[buf_i0.w]
+		@@:
+		cmp [u_line_v],eax
+		jne @f
+			xor eax,eax ;line on/off
+		@@:
+		mov [u_line_v],eax
+	.end0:
+popad
+	ret
+
+align 4
 proc but_new_file uses eax edi esi
 	xor eax,eax
 	mov [open_file_size],eax
@@ -715,6 +786,7 @@ proc calc_nav_params uses eax ecx edi
 	shr dword[nav_sy],1
 
 	xor ecx,ecx
+	mov [u_line_v],ecx
 	mov eax,[buf_i0.w]
 	@@:
 		inc ecx
@@ -723,6 +795,7 @@ proc calc_nav_params uses eax ecx edi
 		jg @b
 	mov [nav_wnd_zoom],ecx
 	xor ecx,ecx
+	mov [u_line_h],ecx
 	mov eax,[buf_i0.h]
 	@@:
 		inc ecx
@@ -878,10 +951,8 @@ proc but_open_file
 		;создаем буфер для преобразованного изображения
 		mov edi,buf_ogl
 		mov eax,[buf_i0.w]
-		and eax, not 3
 		mov buf2d_w,eax
 		mov eax,[buf_i0.h]
-		and eax, not 3
 		mov buf2d_h,eax
 		cmp buf2d_data,0
 		jne @f
@@ -897,7 +968,7 @@ proc but_open_file
 		.end_2:
 		mov eax,dword[ctx1] ;eax -> TinyGLContext.GLContext
 		mov eax,[eax] ;eax -> ZBuffer
-		mov eax,[eax+offs_zbuf_pbuf] ;eax -> ZBuffer.pbuf
+		mov eax,[eax+ZBuffer.pbuf]
 		mov buf2d_data,eax
 
 		stdcall [buf2d_bit_blt], edi, 0,0, buf_i0 ;копируем изображение для востановления
@@ -1115,7 +1186,7 @@ but_about:
 	ret
 
 align 4
-calc db 0
+calc db 0 ;0 - не пересчитывать буфер, 1 - пересчитать и обновить буфер
 view_b db 0 ;0 - исходный буфер, 1 - просмотр результата
 trans_a db 0 ;0 - преобразовать по заданному размеру, 1 - преобразовать на весь буфер
 
@@ -1557,8 +1628,7 @@ buf_ogl: dd 0,0
 
 align 16
 i_end:
-ctx1 db 28 dup (0) ;TinyGLContext or KOSGLContext
-;sizeof.TinyGLContext = 28
+ctx1 rb 28 ;sizeof.TinyGLContext = 28
 TexObj dd 0 ;массив указателей на текстуры (в данном случае 1 шт.)
 nav_x_min dd 0 ;мин. коорд. x для навигации
 nav_y_min dd 0 ;мин. коорд. y для навигации
@@ -1576,6 +1646,8 @@ mouse_down_y dd ?
 sel_act dd ? ;точка выбранная для редактирования с клавиатуры
 sel_pt rb 8*sizeof.point2d ;точки для выбора 4-х углов
 last_time dd 0
+u_line_v dd 0 ;вертикальная линия
+u_line_h dd 0 ;горизонтальная линия
 txt_buf rb 8
 procinfo process_information 
 sc system_colors 
