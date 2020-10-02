@@ -251,9 +251,9 @@ SYS_SHUTDOWN        = OS_BASE + 0x000FF00
 TASK_ACTIVATE       = OS_BASE + 0x000FF01
 
 
-TMP_STACK_TOP       = 0x006CC00
+TMP_STACK_TOP       = 0x007CC00
 
-sys_proc            = OS_BASE + 0x006F000
+sys_proc            = OS_BASE + 0x007E000
 
 SLOT_BASE           = OS_BASE + 0x0080000
 

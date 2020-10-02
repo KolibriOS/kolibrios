@@ -528,6 +528,9 @@ if ~ lang eq sp
 diff16 "end of .bss",0,$
 end if
 
+; check if kernel fits memmap
+assert $-OS_BASE+0x1000 < TMP_STACK_TOP
+
 org (OS_BASE+0x0100000)
 
 ; Currently size of memory allocated for the ramdisk is fixed.
