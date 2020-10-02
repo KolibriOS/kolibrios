@@ -1,1 +1,3 @@
-To compilation, you need to have kolibri_libimg.h and loadlibimg.o from C_Layer in this catalog
+To compilation, you need to have kolibri_libimg.h from /contrib/C_Layer/INCLUDES int this folder
+You need to have loadlibimg.o from /contrib/C_Layer/OBJ (rename loadlibimg.obj to loadlibimg.o) too in this folder
+
