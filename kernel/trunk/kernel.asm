@@ -697,7 +697,7 @@ endg
         call    PIT_init
 
 ; Register ramdisk file system
-        cmp     byte [BOOT.dev+0x10000], 1
+        cmp     byte [BOOT.dev], 1
         je      @f
 
         mov     esi, boot_initramdisk
