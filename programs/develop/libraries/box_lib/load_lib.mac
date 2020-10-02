@@ -107,7 +107,7 @@ library_fun_memory_alloc equ 0 ;не использовать в макросах проверку на функции '
 
 align 4
 arrea_xx dd 0
-file_name db '/rd/1/@notify',0
+file_name db '/sys/@notify',0
 
 align 4
 run_notify_struct:

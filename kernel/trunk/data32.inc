@@ -147,9 +147,9 @@ msg_unresolved db 'unresolved ',0
 ;end if
 msg_CR         db  13,10,0
 
-szPS2MDriver    db '/rd/1/drivers/PS2MOUSE.SYS',0
+szPS2MDriver    db '/sys/drivers/PS2MOUSE.SYS',0
 ;szCOM_MDriver   db 'COM_MOUSE',0
-szVidintel      db '/rd/1/drivers/vidintel.sys',0
+szVidintel      db '/sys/drivers/vidintel.sys',0
 szUSB           db 'USB',0
 
 szEXPORTS      db 'EXPORTS',0
@@ -158,8 +158,8 @@ sz_EXPORTS     db '_EXPORTS',0
 szIMPORTS      db 'IMPORTS',0
 
 read_firstapp  db '/sys/'
-firstapp       db '/RD/1/LAUNCHER',0
-notifyapp      db '/RD/1/@notify',0
+firstapp       db '/sys/LAUNCHER',0
+notifyapp      db '/sys/@notify',0
 if lang eq ru
 ud_user_message  cp866 'Ошибка: неподдерживаемая инструкция процессора',0
 mtrr_user_message cp866 '"Обнаружена проблема с конфигурацией MTRR.\nПроизводительность может быть пониженной" -dW',0
@@ -175,9 +175,9 @@ kernel_file_load:
         dq      0       ; offset in file
         dd      0x31000 ; number of bytes to read
         dd      _CLEAN_ZONE ; buffer for data
-        db      '/RD/1/KERNEL.MNT',0
+        db      '/sys/KERNEL.MNT',0
 
-dev_data_path  db '/RD/1/DRIVERS/DEVICES.DAT',0
+dev_data_path  db '/sys/DRIVERS/DEVICES.DAT',0
 
 align 4
 

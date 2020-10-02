@@ -308,7 +308,7 @@ export 'kolibri.dll' \
 
 end data
 
-kolibri_dll             db      '/rd/1/lib/kolibri.dll',0
+kolibri_dll             db      '/sys/lib/kolibri.dll',0
 .size = $ - kolibri_dll
 
 console_dll             db      'console.dll',0
@@ -322,11 +322,11 @@ msg_relocated2          db      ' applied',13,10,0
 msg_noreloc1            db      'Module ',0
 msg_noreloc2            db      ' is not at preferred base and has no fixups',0
 loader_debugboard_prefix db     'S : ',0
-notify_program          db      '/rd/1/@notify',0
+notify_program          db      '/sys/@notify',0
 msg_cannot_open         db      'Cannot open ',0
 msg_paths_begin         db      ' in any of '
 
-module_path1    db      '/rd/1/lib/'
+module_path1    db      '/sys/lib/'
 .size = $ - module_path1
                         db      ', '
 module_path2    db      '/kolibrios/lib/'

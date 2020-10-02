@@ -472,7 +472,7 @@ od_path:
 	db '/sys/File Managers/OpenDial',0
 	
 communication_area_default_pach:
-	db '/rd/1',0
+	db '/sys',0
 
 Filter:
 dd Filter.end - Filter.1

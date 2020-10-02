@@ -130,7 +130,7 @@ point2	dd 0
 	dd 0
 	dd 1
 	dd inicont
-	db '/rd/1/settings/lang.ini',0
+	db '/sys/settings/lang.ini',0
 
 get_key:
 	dd 0
@@ -138,7 +138,7 @@ point	dd 0
 	dd 0
 	dd 384
 	dd current_keymap
-	db '/rd/1/settings/keymap.key',0
+	db '/sys/settings/keymap.key',0
 
 key_r		db 0
 key_r2		db 0

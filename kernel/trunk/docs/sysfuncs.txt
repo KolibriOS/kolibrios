@@ -1697,7 +1697,7 @@ Returned value:
 Remarks:
   * If the buffer is too small to hold all path, only part of the string
     will be copied and terminated with 0.
-  * By default, current folder for the thread is "/rd/1".
+  * By default, current folder for the thread is "/sys".
   * At process/thread creation the current folder will be inherited
     from the parent.
 ----------------------------------------------------------------------
@@ -1741,7 +1741,7 @@ Returned value:
 Remarks:
   * If the buffer is too small to hold all path, only part of the string
     will be copied and terminated with 0.
-  * By default, current folder for the thread is "/rd/1".
+  * By default, current folder for the thread is "/sys".
   * At process/thread creation the current folder will be inherited
     from the parent.
 
@@ -3348,7 +3348,7 @@ Remarks:
   * Driver name is case-sensitive.
     Maximum length of the name is 16 characters, including
     terminating null character, the rest is ignored.
-  * Driver ABC is loaded from file /rd/1/drivers/ABC.sys.
+  * Driver ABC is loaded from file /sys/drivers/ABC.sys.
 
 ---------------------- Constants for registers: ----------------------
   eax - SF_SYS_MISC (68)

@@ -1,5 +1,5 @@
-ICON_STRIP	equ '/rd/1/icons32.png'
-ICON_INI	equ '/rd/1/settings/icon.ini'
+ICON_STRIP	equ '/sys/icons32.png'
+ICON_INI	equ '/sys/settings/icon.ini'
 ICON_SIZE	equ 68	  ;размер области для иконки с надписью
 IMG_SIZE	equ 32	  ;размер иконок
 TEXT_BOTTOM_Y	equ 14	  ;отступ по Y текста от низа иконки
@@ -1047,7 +1047,7 @@ DlgAddActiv	dd 0
 
 IconIni 	db ICON_INI,0
 
-pthNotify	db '/rd/1/@notify',0
+pthNotify	db '/sys/@notify',0
 
 keyName 	db 'name',0
 keyPath 	db 'path',0

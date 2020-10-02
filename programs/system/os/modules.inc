@@ -7,7 +7,7 @@
 ;
 ;  If filename starts with '/', it is treated as an absolute file name.
 ;  Otherwise, dlopen searches for filename in predefined locations:
-;  /rd/1/lib, /kolibrios/lib, directory of the executable file.
+;  /sys/lib, /kolibrios/lib, directory of the executable file.
 ;  The current directory is *not* searched.
 ;
 ;  If the same module is loaded again with dlopen(), the same
@@ -511,7 +511,7 @@ proc load_module uses ebx esi ebp
         jmp     .load_failed
 .relative:
 ; 1d. The given path is relative.
-; Try /rd/1/lib/, /kolibrios/lib/ and path to executable
+; Try /sys/lib/, /kolibrios/lib/ and path to executable
 ; in this order.
         stdcall try_map_module, module_path1, module_path1.size
         test    eax, eax
