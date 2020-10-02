@@ -287,13 +287,13 @@ else
 ; \end{diamond}[02.12.2005]
 
 ; if bootloader sets cx = 'HA' and dx = 'RD', then bx contains identifier of source disk
-; (see comment to BOOT_LO.bx_from_load and loader_doc.txt)
-        mov     word [es:BOOT_LO.bx_from_load], 'r1'  ; default value: /rd/1
+; (see comment to BOOT_LO.sys_disk and loader_doc.txt)
+        mov     word [es:BOOT_LO.sys_disk], 'r1'  ; default value: /rd/1
         cmp     cx, 'HA'
         jnz     no_hd_load
         cmp     dx, 'RD'
         jnz     no_hd_load
-        mov     [es:BOOT_LO.bx_from_load], bx
+        mov     [es:BOOT_LO.sys_disk], bx
 no_hd_load:
 
 ; set up stack
@@ -971,14 +971,14 @@ end if
 
         mov     al, [preboot_device]
         dec     al
-        mov     [es:BOOT_LO.dev], al
+        mov     [es:BOOT_LO.rd_load_from], al
 
 ; GET MEMORY MAP
 include '../detect/biosmem.inc'
 
 ; READ DISKETTE TO MEMORY
 
-        cmp     byte [es:BOOT_LO.dev], 0
+        cmp     byte [es:BOOT_LO.rd_load_from], RD_LOAD_FROM_FLOPPY
         jne     no_sys_on_floppy
         mov     si, diskload
         call    print
@@ -1305,7 +1305,7 @@ no_sys_on_floppy:
         out     dx, al
 
 if defined extended_primary_loader
-        cmp     [es:BOOT_LO.dev], 1
+        cmp     [es:BOOT_LO.rd_load_from], RD_LOAD_FROM_HD
         jne     no_sys_from_primary
 ; load kolibri.img using callback from primary loader
         and     word [movedesc + 24 + 2], 0

@@ -697,12 +697,11 @@ endg
         call    PIT_init
 
 ; Register ramdisk file system
-        cmp     byte [BOOT.dev], 1
+        cmp     [BOOT.rd_load_from], RD_LOAD_FROM_HD    ; will be loaded later
         je      @f
-
-        mov     esi, boot_initramdisk
-        call    boot_log
-        call    ramdisk_init
+        cmp     [BOOT.rd_load_from], RD_LOAD_FROM_NONE
+        je      @f
+        call    register_ramdisk
 ;--------------------------------------
 @@:
         mov     esi, boot_initapic
@@ -794,7 +793,7 @@ include 'detect/dev_fd.inc'
 include 'detect/init_ata.inc'
 ;-----------------------------------------------------------------------------
 if 0
-        mov     ax, [BOOT.bx_from_load]
+        mov     ax, [BOOT.sys_disk]
         cmp     ax, 'r1'; if using not ram disk, then load librares and parameters {SPraid.simba}
         je      no_lib_load
 

@@ -683,6 +683,12 @@ struct e820entry
         type dd ?
 ends
 
+RD_LOAD_FROM_FLOPPY = 0
+RD_LOAD_FROM_HD     = 1
+RD_LOAD_FROM_MEMORY = 2
+RD_LOAD_FROM_FORMAT = 3
+RD_LOAD_FROM_NONE   = 4
+
 struct  boot_data
         bpp             db ?    ; bits per pixel
         pitch           dw ?    ; scanline length
@@ -710,13 +716,10 @@ struct  boot_data
         apm_code_32     dw ?
         apm_code_16     dw ?
         apm_data_16     dw ?
-        dev             db ?
+        rd_load_from    db ?    ; Device to load ramdisk from, RD_LOAD_FROM_*
                         db ?
         kernel_restart  dw ?
-        bx_from_load    dw ?
-        ; low byte: a,b,c,d -- hdX, r -- rdX
-        ; high byte: symbol 'X' as in the line above, e.g. '1', not 1
-        ; see loader_doc.txt for details
+        sys_disk        dw ?    ; Device to mount on /sys/, see loader_doc.txt for details
         acpi_rsdp       dd ?
                         rb 0x1f
         bios_hd_cnt     db ?    ; number of BIOS hard disks

@@ -28,7 +28,7 @@ proc Parser_params
     locals
         buff    rb  4   ; for test cd
     endl
-        mov     ax, [BOOT.bx_from_load]
+        mov     ax, [BOOT.sys_disk]
         mov     ecx, sysdir_path
         mov     [ecx-64], dword 'sys'
         mov     [ecx-2], byte 3

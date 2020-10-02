@@ -232,7 +232,7 @@ main:
         mov     word[esi + BOOT_LO.apm_code_16], 0
         mov     word[esi + BOOT_LO.apm_data_16], 0
         mov     byte[esi + BOOT_LO.bios_hd_cnt], 0
-        mov     word[esi + BOOT_LO.bx_from_load], 'r1'   ; boot from /rd/1
+        mov     word[esi + BOOT_LO.sys_disk], 'r1'   ; boot from /rd/1
 
 
         lgdt    [cs:GDTR]
