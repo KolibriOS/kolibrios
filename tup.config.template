@@ -39,7 +39,8 @@
 # CONFIG_KERPACK_CMD=&& kerpack %o
 # CONFIG_PESTRIP_CMD=&& EXENAME=%o fasm $(ROOT)/data/common/pestrip.asm %o
 
-### BUILD_TYPE, if set, enables building kolibri.img and kolibri.iso.
+### BUILD_TYPE, if set, enables building kolibri.img, kolibri.iso and
+### kolibri.raw.
 ### Must match subdirectory name in $(ROOT)/data.
 ### Requires Linux.
 # CONFIG_BUILD_TYPE=eng

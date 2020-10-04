@@ -27,9 +27,12 @@ preboot_debug       db  0 ; load kernel in debug mode? (1-yes, 2-no)
 preboot_launcher    db  0 ; start launcher after kernel is loaded? (1-yes, 2-no)
 preboot_dma         db  0 ; use DMA for access to HDD (1-always, 2-only for read, 3-never)
 preboot_device      db  0 ; device to load ramdisk from
-                          ;   0-floppy 1-harddisk 2-kernel restart
-                          ;   3-format ram disk 4-don't use ramdisk
+                          ;   1-floppy 2-harddisk 3-kernel restart
+                          ;   4-format ram disk 5-don't use ramdisk
+                          ; !!!! 0 - autodetect !!!!
 preboot_biosdisk    db  0 ; use V86 to access disks through BIOS (1-yes, 2-no)
+preboot_syspath     db  '/RD/1',0 ; path to /sys dir
+                    rb  20-($-preboot_syspath)
 if defined extended_primary_loader
 ; timeout in 1/18th of second for config settings screen
 preboot_timeout     dw  PREBOOT_TIMEOUT*18

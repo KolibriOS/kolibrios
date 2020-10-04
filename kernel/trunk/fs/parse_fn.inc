@@ -28,6 +28,16 @@ proc Parser_params
     locals
         buff    rb  4   ; for test cd
     endl
+if defined extended_primary_loader
+        mov     ecx, sysdir_path
+        mov     [ecx-64], dword 'sys'
+        mov     [ecx-2], byte 3
+        mov     esi, BOOT.syspath
+        mov     edi, sysdir_path-1
+        mov     ecx, 20
+        rep movsb
+        ret
+else
         mov     ax, [BOOT.sys_disk]
         mov     ecx, sysdir_path
         mov     [ecx-64], dword 'sys'
@@ -61,6 +71,7 @@ proc Parser_params
         jne     .next_cd
 @@:
         ret
+end if
 
 .hard_disk:
         sub     al, '1'

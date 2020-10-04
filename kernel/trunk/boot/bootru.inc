@@ -30,7 +30,8 @@ gr_mode   cp866      "Выберите видеорежим: ",13,10,0
 ask_bd    cp866      "Добавить диски, видимые через BIOS в режиме V86? [1-да, 2-нет]: ",0
 
 if defined extended_primary_loader
-bdev      cp866      "Загрузить образ из [1-дискета; 2-kolibri.img из папки загрузки]: ",0
+bdev      cp866      "Загрузить образ из [1-дискета; 2-kolibri.img из папки загрузки;",13,10
+          cp866      "║                     3-не загружать]: ",0
 else
 bdev      cp866      "Загрузить образ из [1-дискета; 2-C:\kolibri.img (FAT32);",13,10
           cp866      "║                    3-использовать уже загруженный образ;",13,10
@@ -73,9 +74,10 @@ ask_launcher    cp866 "Запустить первую программу (LAUNC
 preboot_device_msg cp866 " [e] Образ дискеты: ",0
 
 if defined extended_primary_loader
-preboot_device_msgs dw 0,pdm1,pdm2,0
+preboot_device_msgs dw 0,pdm1,pdm2,pdm3,0
 pdm1      cp866      "настоящая дискета",13,10,0
 pdm2      cp866      "kolibri.img из папки загрузки",13,10,0
+pdm3      cp866      "не загружать образ рамдиска",13,10,0
 else
 preboot_device_msgs dw 0,pdm1,pdm2,pdm3,pdm4,0
 pdm1      cp866      "настоящая дискета",13,10,0

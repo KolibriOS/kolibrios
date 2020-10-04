@@ -683,11 +683,11 @@ struct e820entry
         type dd ?
 ends
 
-RD_LOAD_FROM_FLOPPY = 0
-RD_LOAD_FROM_HD     = 1
-RD_LOAD_FROM_MEMORY = 2
-RD_LOAD_FROM_FORMAT = 3
-RD_LOAD_FROM_NONE   = 4
+RD_LOAD_FROM_FLOPPY = 1
+RD_LOAD_FROM_HD     = 2
+RD_LOAD_FROM_MEMORY = 3
+RD_LOAD_FROM_FORMAT = 4
+RD_LOAD_FROM_NONE   = 5
 
 struct  boot_data
         bpp             db ?    ; bits per pixel
@@ -721,7 +721,7 @@ struct  boot_data
         kernel_restart  dw ?
         sys_disk        dw ?    ; Device to mount on /sys/, see loader_doc.txt for details
         acpi_rsdp       dd ?
-                        rb 0x1f
+        syspath         rb 0x1f
         bios_hd_cnt     db ?    ; number of BIOS hard disks
         bios_hd         rb 0x80 ; BIOS hard disks
         memmap_block_cnt dd ?   ; available physical memory map: number of blocks

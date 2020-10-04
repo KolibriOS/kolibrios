@@ -790,7 +790,6 @@ end
 
 -- generate tup rule for kolibri.img
 tup.definerule{inputs = input_deps, command = make_img_command, outputs = output_deps}
-tup.definerule{inputs = {"../kernel/trunk/boot/uefi4kos.asm", "kolibri.img", "../kernel/trunk/kernel.bin"}, command = "fasm ../kernel/trunk/boot/uefi4kos.asm %o", outputs = {"kolibri.efi"}}
 
 -- generate command and dependencies for mkisofs
 input_deps = {"kolibri.img"}
@@ -822,3 +821,40 @@ for i,v in ipairs(distr_extra_files) do
   else tup.definerule{inputs = {v.group or v[2]}, command = cmd, outputs = {"distribution_kit/" .. v[1]}}
   end
 end
+
+
+-- generate tup rule for kolibri.efi
+tup.definerule{inputs = {"../kernel/trunk/boot/uefi4kos.asm", "kolibri.img", "../kernel/trunk/kernel.bin.ext_loader"},
+               command = "fasm -dUEFI=1 -dextended_primary_loader=1 ../kernel/trunk/boot/uefi4kos.asm %o",
+               outputs = {"kolibri.efi"}}
+
+input_deps = {"kolibri.img", "../kernel/trunk/bootloader/extended_primary_loader/fat32/kordldr.f32.bin", "../kernel/trunk/bootloader/extended_primary_loader/fat32/bootsect.bin", "../kernel/trunk/kernel.mnt.ext_loader"}
+make_raw_command = '^ MKIMG kolibri.raw^ ' -- for tup: don't write full command to logs
+make_raw_command = make_raw_command .. "dd if=/dev/zero of=kolibri.raw bs=1048576 count=64 2>&1"
+make_raw_command = make_raw_command .. " && parted --script kolibri.raw mktable msdos"
+make_raw_command = make_raw_command .. " && parted --script kolibri.raw unit MiB mkpart primary fat32 1 100%%"
+make_raw_command = make_raw_command .. " && parted --script kolibri.raw set 1 boot on"
+bootsector = "../kernel/trunk/bootloader/extended_primary_loader/fat32/bootsect.bin"
+make_raw_command = make_raw_command .. " && mformat -i kolibri.raw@@1M -v KOLIBRIOS -T 129024 -h 16 -s 32 -H 2048 -c 1 -F -B " .. bootsector .. " ::"
+make_raw_command = make_raw_command .. " && mcopy -moi kolibri.raw@@1M ../kernel/trunk/kernel.mnt.ext_loader ::KERNEL.MNT"
+make_raw_command = make_raw_command .. " && mcopy -moi kolibri.raw@@1M kolibri.img ::KOLIBRI.IMG"
+make_raw_command = make_raw_command .. " && mcopy -moi kolibri.raw@@1M ../kernel/trunk/bootloader/extended_primary_loader/fat32/kordldr.f32.bin ::KORDLDR.F32"
+make_raw_command = make_raw_command .. " && mcopy -moi kolibri.raw@@1M ../kernel/trunk/bootloader/extended_primary_loader/config.ini ::CONFIG.INI"
+
+make_raw_command = make_raw_command .. ' && mmd -i kolibri.raw@@1M ::KOLIBRIOS'
+
+-- make folders
+table.sort(img_dirs)
+for i,v in ipairs(img_dirs) do
+  if v ~= img_dirs[i-1] then
+    make_raw_command = make_raw_command .. ' && mmd -i kolibri.raw@@1M "::KOLIBRIOS/' .. v .. '"'
+  end
+end
+
+for i,v in ipairs(img_files) do
+  local_file = v[2]
+  make_raw_command = make_raw_command .. ' && mcopy -moi kolibri.raw@@1M "' .. local_file .. '" "::KOLIBRIOS/' .. v[1] .. '"'
+end
+
+-- generate tup rule for kolibri.raw
+tup.definerule{inputs = input_deps, command = make_raw_command, outputs = {"kolibri.raw"}}

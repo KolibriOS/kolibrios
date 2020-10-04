@@ -138,7 +138,11 @@ pci_data_sel   =  pci_data_32-gdts
 ; places revision number there.
 if ~ defined UEFI
   bootbios:
-  file 'bootbios.bin'
+  if ~ defined extended_primary_loader
+    file 'bootbios.bin'
+  else
+    file 'bootbios.bin.ext_loader'
+  end if
   if __REV__ > 0
     cur_pos = 0
     cnt = 0
@@ -697,8 +701,10 @@ endg
         call    PIT_init
 
 ; Register ramdisk file system
+if ~ defined extended_primary_loader
         cmp     [BOOT.rd_load_from], RD_LOAD_FROM_HD    ; will be loaded later
         je      @f
+end if
         cmp     [BOOT.rd_load_from], RD_LOAD_FROM_NONE
         je      @f
         call    register_ramdisk
@@ -1097,6 +1103,14 @@ boot_log:
 
         popad
 
+        ret
+
+;-----------------------------------------------------------------------------
+; Register ramdisk file system
+register_ramdisk:
+        mov     esi, boot_initramdisk
+        call    boot_log
+        call    ramdisk_init
         ret
 
 ; in: edx -> APPDATA for OS/IDLE slot

@@ -27,10 +27,10 @@ s_vesa    db      "Version of VESA: "
 
 gr_mode   db      "Select a videomode: ",13,10,0
 
-ask_bd     db      "Add disks visible by BIOS emulated in V86-mode? [1-yes, 2-no]: ",0
+ask_bd    db      "Add disks visible by BIOS emulated in V86-mode? [1-yes, 2-no]: ",0
 
 if defined extended_primary_loader
-bdev      db      "Load ramdisk from [1-floppy; 2-kolibri.img]: ",0
+bdev      db      "Load ramdisk from [1-floppy; 2-kolibri.img; 3-don't load]: ",0
 else
 bdev      db      "Load ramdisk from [1-floppy; 2-C:\kolibri.img (FAT32);"
           db      13,10,186,"                    "
@@ -75,9 +75,10 @@ ask_launcher   db "Start first application (LAUNCHER) after kernel is loaded? [1
 preboot_device_msg db " [e] Floppy image: ",0
 
 if defined extended_primary_loader
-preboot_device_msgs dw 0,pdm1,pdm2,0
+preboot_device_msgs dw 0,pdm1,pdm2,pdm3,0
 pdm1      db      "real floppy",13,10,0
 pdm2      db      "C:\kolibri.img (FAT32)",13,10,0
+pdm3      db      "do not use floppy image",13,10,0
 else
 preboot_device_msgs dw 0,pdm1,pdm2,pdm3,pdm4,0
 pdm1      db      "real floppy",13,10,0

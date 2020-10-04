@@ -75,13 +75,6 @@ read_ramdisk:
         call    register_ramdisk
         jmp     yes_sys_on_hd
 ;-----------------------------------------------------------------------------
-; Register ramdisk file system
-register_ramdisk:
-        mov     esi, boot_initramdisk
-        call    boot_log
-        call    ramdisk_init
-        ret
-;-----------------------------------------------------------------------------
 iglobal
 align 4
 read_image_fsinfo:

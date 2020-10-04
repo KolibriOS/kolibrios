@@ -3,7 +3,7 @@ entry main
 
  
 section '.text' code executable readable
- 
+
 include '../struct.inc'
 include '../macros.inc'
 include '../const.inc'
@@ -204,14 +204,14 @@ main:
 
         cli
 
-        mov     rsi, kernel_bin_data_begin
+        mov     rsi, kernel_data_begin
         mov     rdi, KERNEL_BASE
-        mov     rcx, (kernel_bin_data_end - kernel_bin_data_begin + 7) / 8
+        mov     rcx, (kernel_data_end - kernel_data_begin + 7) / 8
         rep movsq
 
-        mov     rsi, kolibri_img_data_begin
+        mov     rsi, ramdisk_data_begin
         mov     rdi, RAMDISK_BASE
-        mov     rcx, (kolibri_img_data_end - kolibri_img_data_begin + 7 ) / 8
+        mov     rcx, (ramdisk_data_end - ramdisk_data_begin + 7 ) / 8
         rep movsq
 
         xor     esi, esi
@@ -232,8 +232,10 @@ main:
         mov     word[esi + BOOT_LO.apm_code_16], 0
         mov     word[esi + BOOT_LO.apm_data_16], 0
         mov     byte[esi + BOOT_LO.bios_hd_cnt], 0
-        mov     word[esi + BOOT_LO.sys_disk], 'r1'   ; boot from /rd/1
-
+        mov     rsi, syspath
+        mov     rdi, BOOT_LO.syspath
+        mov     ecx, 32
+        rep movsb
 
         lgdt    [cs:GDTR]
 
@@ -428,17 +430,19 @@ msg_success     du 'Success!',13,10,0
 msg_error       du 'Error!',13,10,0
 msg             du 79 dup ' ',13,10,0
 
+syspath         db '/RD/1',0
+
 memory_map      rb MEMORY_MAP_SIZE
 gop_buffer      rb GOP_BUFFER_SIZE
 
 
-kernel_bin_data_begin:
-file '../kernel.bin'
-kernel_bin_data_end:
+kernel_data_begin:
+file '../kernel.bin.ext_loader'
+kernel_data_end:
  
-kolibri_img_data_begin:
+ramdisk_data_begin:
 file '../../../data/kolibri.img'
-kolibri_img_data_end:
+ramdisk_data_end:
 
 align 16
 data fixups

@@ -667,7 +667,7 @@ end if
         jnz     .show_remarks
 ; e) preboot_device = from where to boot?
 if defined extended_primary_loader
-        _ask_question bdev,'12',preboot_device              ; range accepted for answer: 1-2
+        _ask_question bdev,'13',preboot_device  ; range accepted for answer: 1-3
 else
         _ask_question bdev,'14',preboot_device              ; range accepted for answer: 1-4
 end if
@@ -970,8 +970,24 @@ end if
 ; BOOT DEVICE
 
         mov     al, [preboot_device]
-        dec     al
+if defined extended_primary_loader
+        cmp     al, RD_LOAD_FROM_MEMORY
+        jnz     @f
+        mov     al, RD_LOAD_FROM_NONE
+@@:
+end if
         mov     [es:BOOT_LO.rd_load_from], al
+
+; /sys path
+        mov     eax, dword[preboot_syspath+0]
+        mov     dword[es:BOOT_LO.syspath+0], eax
+        mov     eax, dword[preboot_syspath+4]
+        mov     dword[es:BOOT_LO.syspath+4], eax
+        mov     eax, dword[preboot_syspath+8]
+        mov     dword[es:BOOT_LO.syspath+8], eax
+        mov     eax, dword[preboot_syspath+12]
+        mov     dword[es:BOOT_LO.syspath+12], eax
+
 
 ; GET MEMORY MAP
 include '../detect/biosmem.inc'

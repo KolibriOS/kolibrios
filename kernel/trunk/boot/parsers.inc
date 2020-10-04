@@ -74,10 +74,23 @@ parse_imgfrom:
         jc      .nothing
         cmp     al, 1
         jb      .nothing
-        cmp     al, 2
+        cmp     al, 3
         ja      .nothing
         mov     [es:preboot_device], al
 .nothing:
+        ret
+
+parse_syspath:
+; everything except spaces
+        mov     bx, preboot_syspath
+.next_char:
+        call    parse_char
+        jc      .done
+        mov     [es:bx], al
+        inc     bx
+        jmp     .next_char
+.done:
+        mov     byte[es:bx], 0          ; terminator
         ret
 
 parse_char:

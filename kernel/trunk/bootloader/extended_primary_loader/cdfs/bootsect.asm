@@ -50,7 +50,8 @@ real_start:
 ; get file system information
 ; scan for Primary Volume Descriptor
         db      66h
-        movi    eax, 10h-1
+        push    10h-1
+        pop     eax
 pvd_scan_loop:
         mov     cx, 1
         inc     eax

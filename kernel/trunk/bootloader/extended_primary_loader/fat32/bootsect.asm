@@ -24,7 +24,7 @@
 ; SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ;*****************************************************************************
 
-use_lba = 0
+use_lba = 1
         org     0x7C00
         jmp     start
         nop
