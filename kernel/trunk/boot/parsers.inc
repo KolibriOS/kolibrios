@@ -69,7 +69,7 @@ parse_biosdisks:
         ret
 
 parse_imgfrom:
-; boot device (1-floppy 2-kolibri.img using primary loader)
+; boot device (1-floppy 2-kolibri.img using primary loader, 3-don't use ramdisk)
         call    parse_number
         jc      .nothing
         cmp     al, 1

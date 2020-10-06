@@ -375,6 +375,11 @@ high_code:
         mov     al, [BOOT.launcher_start] ; Start the first app (LAUNCHER) after kernel is loaded?
         mov     [launcher_start], al
 
+        mov     eax, [BOOT.devicesdat_size]
+        mov     [acpi_dev_size], eax
+        mov     eax, [BOOT.devicesdat_data]
+        mov     [acpi_dev_data], eax
+
         mov     esi, BOOT.bios_hd
         movzx   ecx, byte [esi-1]
         mov     [NumBiosDisks], ecx

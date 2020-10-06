@@ -3,7 +3,7 @@
 ;*          UEFI library for fasm by bzt, Public Domain              *
 ;*                                                                   *
 ;*********************************************************************
- 
+
 ; EFI_MEMORY_TYPE
 EFI_RESERVED_MEMORY_TYPE        = 0
 EFI_LOADER_CODE                 = 1
@@ -21,6 +21,11 @@ EFI_MEMORY_MAPPED_IO_PORT_SPACE = 12
 EFI_PAL_CODE                    = 13
 EFI_PERSISTENT_MEMORY           = 14
 EFI_MAX_MEMORY_TYPE             = 15
+
+; EFI_ALLOCATE_TYPE
+EFI_ALLOCATE_ANY_PAGES   = 0
+EFI_ALLOCATE_MAX_ADDRESS = 1
+EFI_ALLOCATE_ADDRESS     = 2
 
 EFI_MEMORY_UC                   = 0x0000000000000001
 EFI_MEMORY_WC                   = 0x0000000000000002
@@ -61,7 +66,20 @@ EFI_ABORTED                     = EFIERR or 21
 EFI_ICMP_ERROR                  = EFIERR or 22
 EFI_TFTP_ERROR                  = EFIERR or 23
 EFI_PROTOCOL_ERROR              = EFIERR or 24
- 
+
+struct EFI_FILE_SYSTEM_INFO
+  Size          dq ?
+  ReadOnly      db ?
+                rb 7
+  VolumeSize    dq ?
+  FreeSpace     dq ?
+  BlockSize     dd ?
+  VolumeLabel   rw 32
+ends
+
+EFI_FILE_SYSTEM_INFO_ID equ 0x93,0x6e,0x57,0x09,0x3f,0x6d,0xd2,0x11, \
+                            0x39,0x8e,0x00,0xa0,0xc9,0x69,0x72,0x3b
+
 EFI_SYSTEM_TABLE_SIGNATURE      equ     0x49,0x42,0x49,0x20,0x53,0x59,0x53,0x54
 struct EFI_TABLE_HEADER
   Signature             dq ?
@@ -70,7 +88,7 @@ struct EFI_TABLE_HEADER
   CRC32                 dd ?
   Reserved              dd ?
 ends
- 
+
 struct EFI_SYSTEM_TABLE
   Hdr                   EFI_TABLE_HEADER
   FirmwareVendor        dq ?
@@ -87,7 +105,7 @@ struct EFI_SYSTEM_TABLE
   NumberOfTableEntries  dq ?
   ConfigurationTable    dq ?
 ends
- 
+
 struct SIMPLE_TEXT_OUTPUT_INTERFACE
   Reset                 dq ?
   OutputString          dq ?
@@ -100,14 +118,14 @@ struct SIMPLE_TEXT_OUTPUT_INTERFACE
   EnableCursor          dq ?
   Mode                  dq ?
 ends
- 
- 
+
+
 struct SIMPLE_INPUT_INTERFACE
   Reset                 dq ?
   ReadKeyStroke         dq ?
   WaitForKey            dq ?
 ends
- 
+
 struct EFI_BOOT_SERVICES_TABLE
   Hdr                   EFI_TABLE_HEADER
   RaisePriority         dq ?
@@ -154,7 +172,7 @@ struct EFI_BOOT_SERVICES_TABLE
   CopyMem               dq ?
   SetMem                dq ?
 ends
- 
+
 struct EFI_RUNTIME_SERVICES_TABLE
   Hdr                   EFI_TABLE_HEADER
   GetTime               dq ?
@@ -169,7 +187,7 @@ struct EFI_RUNTIME_SERVICES_TABLE
   GetNextHighMonoCount  dq ?
   ResetSystem           dq ?
 ends
- 
+
 struct EFI_TIME
   Year                  dw ?
   Month                 db ?
@@ -184,8 +202,39 @@ struct EFI_TIME
   Pad2                  db ?
   sizeof                db ?
 ends
- 
-EFI_LOADED_IMAGE_PROTOCOL_UUID  equ     0xA1,0x31,0x1b,0x5b,0x62,0x95,0xd2,0x11,0x8E,0x3F,0x00,0xA0,0xC9,0x69,0x72,0x3B
+
+EFI_SIMPLE_FILE_SYSTEM_PROTOCOL_GUID equ 0x22,0x5b,0x4e,0x96,0x59,0x64,0xd2,0x11, \
+                                         0x8e,0x39,0x00,0xa0,0xc9,0x69,0x72,0x3b
+
+struct EFI_SIMPLE_FILE_SYSTEM_PROTOCOL
+  Revision              dq ?
+  OpenVolume            dq ?
+ends
+
+EFI_FILE_MODE_READ   = 1
+EFI_FILE_MODE_WRITE  = 2
+EFI_FILE_MODE_CREATE = 0x8000000000000000
+
+struct EFI_FILE_PROTOCOL
+  Revision              dq ?
+  Open                  dq ?
+  Close                 dq ?
+  Delete                dq ?
+  Read                  dq ?
+  Write                 dq ?
+  GetPosition           dq ?
+  SetPosition           dq ?
+  GetInfo               dq ?
+  SetInfo               dq ?
+  Flush                 dq ?
+  OpenEx                dq ?
+  ReadEx                dq ?
+  WriteEx               dq ?
+  FlushEx               dq ?
+ends
+
+EFI_LOADED_IMAGE_PROTOCOL_GUID  equ     0xA1,0x31,0x1b,0x5b,0x62,0x95,0xd2,0x11, \
+                                        0x8E,0x3F,0x00,0xA0,0xC9,0x69,0x72,0x3B
 struct EFI_LOADED_IMAGE_PROTOCOL
   Revision              dd ?
                         dd ?
@@ -202,8 +251,9 @@ struct EFI_LOADED_IMAGE_PROTOCOL
   ImageDataType         dd ?
   UnLoad                dq ?
 ends
- 
-EFI_BLOCK_IO_PROTOCOL_UUID      equ     0x21,0x5b,0x4e,0x96,0x59,0x64,0xd2,0x11,0x8e,0x39,0x00,0xa0,0xc9,0x69,0x72,0x3b
+
+EFI_BLOCK_IO_PROTOCOL_GUID      equ     0x21,0x5b,0x4e,0x96,0x59,0x64,0xd2,0x11, \
+                                        0x8e,0x39,0x00,0xa0,0xc9,0x69,0x72,0x3b
 struct EFI_BLOCK_IO_PROTOCOL
   Revision              dq ?
   Media                 dq ?
@@ -212,7 +262,7 @@ struct EFI_BLOCK_IO_PROTOCOL
   WriteBlocks           dq ?
   FlushBlocks           dq ?
 ends
- 
+
 struct EFI_BLOCK_IO_MEDIA
   MediaId               dd ?
   RemovableMedia        db ?
@@ -225,15 +275,16 @@ struct EFI_BLOCK_IO_MEDIA
   IoAlign               dd ?
   LastBlock             dq ?
 ends
- 
-EFI_GRAPHICS_OUTPUT_PROTOCOL_UUID equ   0xde,0xa9,0x42,0x90,0xdc,0x23,0x38,0x4a,0x96,0xfb,0x7a,0xde,0xd0,0x80,0x51,0x6a
+
+EFI_GRAPHICS_OUTPUT_PROTOCOL_GUID equ   0xde,0xa9,0x42,0x90,0xdc,0x23,0x38,0x4a, \
+                                        0x96,0xfb,0x7a,0xde,0xd0,0x80,0x51,0x6a
 struct EFI_GRAPHICS_OUTPUT_PROTOCOL
   QueryMode             dq ?
   SetMode               dq ?
   Blt                   dq ?
   Mode                  dq ?
 ends
- 
+
 struct EFI_GRAPHICS_OUTPUT_PROTOCOL_MODE
   MaxMode               dd ?
   Mode                  dd ?
@@ -242,7 +293,7 @@ struct EFI_GRAPHICS_OUTPUT_PROTOCOL_MODE
   FrameBufferBase       dq ?
   FrameBufferSize       dq ?
 ends
- 
+
 struct EFI_GRAPHICS_OUTPUT_MODE_INFORMATION
   Version               dd ?
   HorizontalResolution  dd ?
@@ -272,9 +323,9 @@ macro InitializeLib
         mov     [efi_handler], rcx      ; ImageHandle
         mov     [efi_ptr], rdx          ; pointer to SystemTable
 }
- 
+
 ;invoke an UEFI function
-macro uefi_call_wrapper interface,function,arg1,arg2,arg3,arg4,arg5,arg6,arg7,arg8,arg9,arg10,arg11
+macro eficall interface,function,arg1,arg2,arg3,arg4,arg5,arg6,arg7,arg8,arg9,arg10,arg11
 {
 numarg = 0
 
@@ -400,13 +451,13 @@ else
 end if
         call    uefifunc
 }
- 
+
 ;*********************************************************************
 ;*                       Library functions                           *
 ;*********************************************************************
- 
+
 section '.text' code executable readable
- 
+
 uefifunc:
         ;save stack pointer
         mov     qword [uefi_rsptmp], rsp
@@ -457,7 +508,7 @@ uefifunc:
         ;restore old stack
         mov     rsp, qword [uefi_rsptmp]
         ret
- 
+
 section '.data' data readable writeable
 efi_handler     dq 0
 efi_ptr         dq 0

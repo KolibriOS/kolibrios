@@ -177,7 +177,7 @@ kernel_file_load:
         dd      _CLEAN_ZONE ; buffer for data
         db      '/sys/KERNEL.MNT',0
 
-dev_data_path  db '/sys/DRIVERS/DEVICES.DAT',0
+dev_data_path  db '/RD/1/DRIVERS/DEVICES.DAT',0
 
 align 4
 

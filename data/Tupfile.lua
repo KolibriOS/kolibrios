@@ -822,12 +822,7 @@ for i,v in ipairs(distr_extra_files) do
   end
 end
 
-
--- generate tup rule for kolibri.efi
-tup.definerule{inputs = {"../kernel/trunk/boot/uefi4kos.asm", "kolibri.img", "../kernel/trunk/kernel.bin.ext_loader"},
-               command = "fasm -dUEFI=1 -dextended_primary_loader=1 ../kernel/trunk/boot/uefi4kos.asm %o",
-               outputs = {"kolibri.efi"}}
-
+-- generate command and dependencies for kolibri.raw
 input_deps = {"kolibri.img", "../kernel/trunk/bootloader/extended_primary_loader/fat32/kordldr.f32.bin", "../kernel/trunk/bootloader/extended_primary_loader/fat32/bootsect.bin", "../kernel/trunk/kernel.mnt.ext_loader"}
 make_raw_command = '^ MKIMG kolibri.raw^ ' -- for tup: don't write full command to logs
 make_raw_command = make_raw_command .. "dd if=/dev/zero of=kolibri.raw bs=1048576 count=64 2>&1"
