@@ -326,6 +326,8 @@ proc find_next_task
         pop     ecx
         spin_unlock_irqrestore SchedulerLock
 .found:
+        ; the line below assumes APPDATA is 256 bytes long and SLOT_BASE is
+        ; aligned on 0x10000
         mov     [CURRENT_TASK], bh
         mov     [TASK_BASE], edi
         rdtsc   ;call  _rdtsc

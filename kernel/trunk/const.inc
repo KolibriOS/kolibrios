@@ -536,7 +536,10 @@ struct  APPDATA
         wnd_clientbox   BOX             ;+216
         priority        dd ?            ;+232
         in_schedule     LHEAD           ;+236
+                        rd 3            ;+244
 ends
+
+assert sizeof.APPDATA = 256
 
 APP_OBJ_OFFSET  = 48
 APP_EV_OFFSET   = 40

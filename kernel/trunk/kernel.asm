@@ -599,7 +599,7 @@ high_code:
 
         mov     [current_process], sys_proc
 
-        mov     edx, SLOT_BASE+256*1
+        mov     edx, SLOT_BASE+sizeof.APPDATA*1
         mov     ebx, [os_stack_seg]
         add     ebx, RING0_STACK_SIZE
         add     ebx, [xsave_area_size]
@@ -611,7 +611,7 @@ high_code:
         mov     ecx, IDLE_PRIORITY
         call    scheduler_add_thread
 
-        mov     edx, SLOT_BASE+256*2
+        mov     edx, SLOT_BASE+sizeof.APPDATA*2
         mov     ebx, [os_stack_seg]
         call    setup_os_slot
         mov     dword [edx], 'OS'
@@ -620,8 +620,8 @@ high_code:
 
         mov     dword [CURRENT_TASK], 2
         mov     dword [TASK_COUNT], 2
-        mov     dword [current_slot], SLOT_BASE + 256*2
-        mov     dword [TASK_BASE], CURRENT_TASK + 32*2
+        mov     dword [current_slot], SLOT_BASE + sizeof.APPDATA*2
+        mov     dword [TASK_BASE], CURRENT_TASK + sizeof.TASKDATA*2
 
 ; Move other CPUs to deep sleep, if it is useful
 uglobal
@@ -880,8 +880,8 @@ include "detect/vortex86.inc"                     ; Vortex86 SoC detection code
 
         call    init_display
         mov     eax, [def_cursor]
-        mov     [SLOT_BASE+APPDATA.cursor+256], eax
-        mov     [SLOT_BASE+APPDATA.cursor+256*2], eax
+        mov     [SLOT_BASE+APPDATA.cursor+sizeof.APPDATA], eax
+        mov     [SLOT_BASE+APPDATA.cursor+sizeof.APPDATA*2], eax
 
 ; PRINT CPU FREQUENCY
 
@@ -977,14 +977,14 @@ include "detect/vortex86.inc"                     ; Vortex86 SoC detection code
 ; Protect I/O permission map
 
         mov     esi, [default_io_map]
-        stdcall map_page, esi, [SLOT_BASE+256+APPDATA.io_map], PG_READ
+        stdcall map_page, esi, [SLOT_BASE+sizeof.APPDATA+APPDATA.io_map], PG_READ
         add     esi, 0x1000
-        stdcall map_page, esi, [SLOT_BASE+256+APPDATA.io_map+4], PG_READ
+        stdcall map_page, esi, [SLOT_BASE+sizeof.APPDATA+APPDATA.io_map+4], PG_READ
 
         stdcall map_page, tss._io_map_0, \
-                [SLOT_BASE+256+APPDATA.io_map], PG_READ
+                [SLOT_BASE+sizeof.APPDATA+APPDATA.io_map], PG_READ
         stdcall map_page, tss._io_map_1, \
-                [SLOT_BASE+256+APPDATA.io_map+4], PG_READ
+                [SLOT_BASE+sizeof.APPDATA+APPDATA.io_map+4], PG_READ
 
 ; SET KEYBOARD PARAMETERS
         mov     al, 0xf6       ; reset keyboard, scan enabled
@@ -1122,7 +1122,7 @@ register_ramdisk:
 ; in: ebx = stack base
 proc setup_os_slot
         xor     eax, eax
-        mov     ecx, 256/4
+        mov     ecx, sizeof.APPDATA/4
         mov     edi, edx
         rep stosd
 
@@ -3506,8 +3506,8 @@ nocpustart:
 ;--------------------------------------
 align 4
 .set_mouse_event:
-        add     edi, 256
-        add     ebx, 32
+        add     edi, sizeof.APPDATA
+        add     ebx, sizeof.TASKDATA
         test    [ebx+TASKDATA.event_mask], 0x80000000
         jz      .pos_filter
 
@@ -3574,7 +3574,7 @@ backgr:
 ;--------------------------------------
 align 4
 set_bgr_event:
-        add     edi, 256
+        add     edi, sizeof.APPDATA
         mov     eax, [BG_Rect_X_left_right]
         mov     edx, [BG_Rect_Y_top_bottom]
         cmp     [edi+SLOT_BASE+APPDATA.draw_bgr_x], 0

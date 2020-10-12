@@ -128,7 +128,7 @@ proc fs_execute
         lea     edi, [SLOT_BASE+eax]
         mov     [slot_base], edi
 ; clean extended information about process
-        mov     ecx, 256/4
+        mov     ecx, sizeof.APPDATA/4
         xor     eax, eax
         cld
         rep stosd
@@ -726,7 +726,7 @@ proc new_sys_threads
         shl     edi, 8
         add     edi, SLOT_BASE
         mov     edx, edi      ;edx=edi - pointer to extended infomation about new thread
-        mov     ecx, 256/4
+        mov     ecx, sizeof.APPDATA/4
         xor     eax, eax
         cld
         rep stosd             ;clean extended information about new thread
@@ -918,9 +918,9 @@ proc set_app_params stdcall,slot:dword, params:dword, flags:dword
         mov     [eax+SLOT_BASE+APPDATA.terminate_protection], 80000001h
 
 ;set default io permission map
-        mov     ecx, [SLOT_BASE+256+APPDATA.io_map]
+        mov     ecx, [SLOT_BASE+sizeof.APPDATA+APPDATA.io_map]
         mov     [eax+SLOT_BASE+APPDATA.io_map], ecx
-        mov     ecx, [SLOT_BASE+256+APPDATA.io_map+4]
+        mov     ecx, [SLOT_BASE+sizeof.APPDATA+APPDATA.io_map+4]
         mov     [eax+SLOT_BASE+APPDATA.io_map+4], ecx
 
         mov     esi, fpu_data

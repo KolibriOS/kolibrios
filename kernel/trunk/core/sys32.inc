@@ -467,7 +467,7 @@ destroy_thread:
         jne     @F
 
         mov     [fpu_owner], 2
-        mov     eax, [256*2+SLOT_BASE+APPDATA.fpu_state]
+        mov     eax, [sizeof.APPDATA*2+SLOT_BASE+APPDATA.fpu_state]
         clts
         bt      [cpu_caps], CAPS_SSE
         jnc     .no_SSE
@@ -611,12 +611,12 @@ destroy_thread:
         add     edi, SLOT_BASE
 
         mov     eax, [edi+APPDATA.io_map]
-        cmp     eax, [SLOT_BASE+256+APPDATA.io_map]
+        cmp     eax, [SLOT_BASE+sizeof.APPDATA+APPDATA.io_map]
         je      @F
         call    free_page
 @@:
         mov     eax, [edi+APPDATA.io_map+4]
-        cmp     eax, [SLOT_BASE+256+APPDATA.io_map+4]
+        cmp     eax, [SLOT_BASE+sizeof.APPDATA+APPDATA.io_map+4]
         je      @F
         call    free_page
 @@:
@@ -822,7 +822,7 @@ proc unprotect_from_terminate
         ret
 endp
 
-; Request termination of thread identified by edx = SLOT_BASE + slot*256.
+; Request termination of thread identified by edx = SLOT_BASE + slot*sizeof.APPDATA.
 ; Called by anyone.
 proc request_terminate
         xor     eax, eax        ; set return value
