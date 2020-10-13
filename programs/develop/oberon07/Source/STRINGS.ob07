@@ -10,9 +10,20 @@ MODULE STRINGS;
 IMPORT UTILS;
 
 
+PROCEDURE copy* (src: ARRAY OF CHAR; VAR dst: ARRAY OF CHAR; spos, dpos, count: INTEGER);
+BEGIN
+    WHILE count > 0 DO
+        dst[dpos] := src[spos];
+        INC(spos);
+        INC(dpos);
+        DEC(count)
+    END
+END copy;
+
+
 PROCEDURE append* (VAR s1: ARRAY OF CHAR; s2: ARRAY OF CHAR);
 VAR
-    n1, n2, i, j: INTEGER;
+    n1, n2: INTEGER;
 
 BEGIN
     n1 := LENGTH(s1);
@@ -20,43 +31,14 @@ BEGIN
 
     ASSERT(n1 + n2 < LEN(s1));
 
-    i := 0;
-    j := n1;
-    WHILE i < n2 DO
-        s1[j] := s2[i];
-        INC(i);
-        INC(j)
-    END;
-
-    s1[j] := 0X
-
+    copy(s2, s1, 0, n1, n2);
+    s1[n1 + n2] := 0X
 END append;
-
-
-PROCEDURE reverse (VAR s: ARRAY OF CHAR);
-VAR
-    i, j: INTEGER;
-    a, b: CHAR;
-
-BEGIN
-    i := 0;
-    j := LENGTH(s) - 1;
-
-    WHILE i < j DO
-        a := s[i];
-        b := s[j];
-        s[i] := b;
-        s[j] := a;
-        INC(i);
-        DEC(j)
-    END
-END reverse;
 
 
 PROCEDURE IntToStr* (x: INTEGER; VAR str: ARRAY OF CHAR);
 VAR
     i, a: INTEGER;
-    minus: BOOLEAN;
 
 BEGIN
     IF x = UTILS.minint THEN
@@ -67,63 +49,39 @@ BEGIN
         END
 
     ELSE
-
-        minus := x < 0;
-        IF minus THEN
-            x := -x
-        END;
         i := 0;
-        a := 0;
-        REPEAT
-            str[i] := CHR(x MOD 10 + ORD("0"));
-            x := x DIV 10;
-            INC(i)
-        UNTIL x = 0;
-
-        IF minus THEN
-            str[i] := "-";
-            INC(i)
+        IF x < 0 THEN
+            x := -x;
+            i := 1;
+            str[0] := "-"
         END;
+
+        a := x;
+        REPEAT
+            INC(i);
+            a := a DIV 10
+        UNTIL a = 0;
 
         str[i] := 0X;
-        reverse(str)
 
+        REPEAT
+            DEC(i);
+            str[i] := CHR(x MOD 10 + ORD("0"));
+            x := x DIV 10
+        UNTIL x = 0
     END
 END IntToStr;
-
-
-PROCEDURE hexdgt (n: BYTE): BYTE;
-BEGIN
-    IF n < 10 THEN
-        n := n + ORD("0")
-    ELSE
-        n := n - 10 + ORD("A")
-    END
-
-    RETURN n
-END hexdgt;
 
 
 PROCEDURE IntToHex* (x: INTEGER; VAR str: ARRAY OF CHAR; n: INTEGER);
 BEGIN
     str[n] := 0X;
     WHILE n > 0 DO
-        str[n - 1] := CHR(hexdgt(x MOD 16));
+        str[n - 1] := CHR(UTILS.hexdgt(x MOD 16));
         x := x DIV 16;
         DEC(n)
     END
 END IntToHex;
-
-
-PROCEDURE copy* (src: ARRAY OF CHAR; VAR dst: ARRAY OF CHAR; spos, dpos, count: INTEGER);
-BEGIN
-    WHILE count > 0 DO
-        dst[dpos] := src[spos];
-        INC(spos);
-        INC(dpos);
-        DEC(count)
-    END
-END copy;
 
 
 PROCEDURE search* (s: ARRAY OF CHAR; VAR pos: INTEGER; c: CHAR; forward: BOOLEAN);
@@ -185,10 +143,10 @@ VAR
     i: INTEGER;
 
 BEGIN
-    i := 0;
-    WHILE (i < LEN(str)) & (str[i] # 0X) DO
+    i := LENGTH(str) - 1;
+    WHILE i >= 0 DO
         cap(str[i]);
-        INC(i)
+        DEC(i)
     END
 END UpCase;
 

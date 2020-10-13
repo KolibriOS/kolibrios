@@ -34,7 +34,7 @@ TYPE
     EXPR* = RECORD
 
         obj*:         INTEGER;
-        type*:        PROG.TYPE_;
+        _type*:       PROG._TYPE;
         value*:       ARITH.VALUE;
         stproc*:      INTEGER;
         readOnly*:    BOOLEAN;
@@ -44,7 +44,7 @@ TYPE
 
     STATPROC  = PROCEDURE (parser: PARSER);
     EXPRPROC  = PROCEDURE (parser: PARSER; VAR e: EXPR);
-    RETPROC   = PROCEDURE (parser: PARSER; e: EXPR; t: PROG.TYPE_; pos: POSITION): BOOLEAN;
+    RETPROC   = PROCEDURE (parser: PARSER; e: EXPR; t: PROG._TYPE; pos: POSITION): BOOLEAN;
 
     rPARSER = RECORD (C.ITEM)
 
@@ -73,8 +73,6 @@ TYPE
 
 
 VAR
-
-    program*: PROG.PROGRAM;
 
     parsers: C.COLLECTION;
 
@@ -133,10 +131,10 @@ VAR
 BEGIN
     SCAN.Next(parser.scanner, parser.lex);
     errno := parser.lex.error;
-    IF (errno = 0) & (TARGETS.CPU = TARGETS.cpuMSP430) THEN
-        IF parser.lex.sym = SCAN.lxFLOAT THEN
+    IF errno = 0 THEN
+        IF (TARGETS.RealSize = 0) & (parser.lex.sym = SCAN.lxFLOAT) THEN
             errno := -SCAN.lxERROR13
-        ELSIF (parser.lex.sym = SCAN.lxCHAR) & (parser.lex.value.typ = ARITH.tWCHAR) THEN
+        ELSIF (TARGETS.BitDepth = 16) & (parser.lex.sym = SCAN.lxCHAR) & (parser.lex.value.typ = ARITH.tWCHAR) THEN
             errno := -SCAN.lxERROR10
         END
     END;
@@ -184,7 +182,6 @@ BEGIN
         |SCAN.lxSEMI:    err := 24
         |SCAN.lxRETURN:  err := 38
         |SCAN.lxMODULE:  err := 21
-        |SCAN.lxSTRING:  err := 66
         END;
 
         check1(FALSE, parser, err)
@@ -227,7 +224,7 @@ BEGIN
 
         IF (parser.sym = SCAN.lxCOMMA) OR (parser.sym = SCAN.lxSEMI) THEN
             alias := FALSE;
-            unit := PROG.getUnit(program, name);
+            unit := PROG.getUnit(name);
 
             IF unit # NIL THEN
                 check(unit.closed, pos, 31)
@@ -250,7 +247,7 @@ BEGIN
                 unit := parser2.unit;
                 destroy(parser2)
             END;
-            IF unit = program.sysunit THEN
+            IF unit = PROG.program.sysunit THEN
                 parser.unit.sysimport := TRUE
             END;
             ident.unit := unit
@@ -350,7 +347,7 @@ BEGIN
 END ConstExpression;
 
 
-PROCEDURE FieldList (parser: PARSER; rec: PROG.TYPE_);
+PROCEDURE FieldList (parser: PARSER; rec: PROG._TYPE);
 VAR
     name:   SCAN.IDENT;
     export: BOOLEAN;
@@ -387,18 +384,18 @@ BEGIN
 END FieldList;
 
 
-PROCEDURE FormalParameters (parser: PARSER; type: PROG.TYPE_);
+PROCEDURE FormalParameters (parser: PARSER; _type: PROG._TYPE);
 VAR
     ident: PROG.IDENT;
 
 
-    PROCEDURE FPSection (parser: PARSER; type: PROG.TYPE_);
+    PROCEDURE FPSection (parser: PARSER; _type: PROG._TYPE);
     VAR
         ident:   PROG.IDENT;
         exit:    BOOLEAN;
         vPar:    BOOLEAN;
         dim:     INTEGER;
-        t0, t1:  PROG.TYPE_;
+        t0, t1:  PROG._TYPE;
 
     BEGIN
         vPar := parser.sym = SCAN.lxVAR;
@@ -410,7 +407,7 @@ VAR
         exit := FALSE;
 
         WHILE (parser.sym = SCAN.lxIDENT) & ~exit DO
-            check1(PROG.addParam(type, parser.lex.ident, vPar), parser, 30);
+            check1(PROG.addParam(_type, parser.lex.ident, vPar), parser, 30);
             Next(parser);
             IF parser.sym = SCAN.lxCOMMA THEN
                 ExpectSym(parser, SCAN.lxIDENT)
@@ -427,17 +424,17 @@ VAR
                 ident := QIdent(parser, FALSE);
                 check1(ident.typ = PROG.idTYPE, parser, 68);
 
-                t0 := ident.type;
+                t0 := ident._type;
                 t1 := t0;
 
                 WHILE dim > 0 DO
-                    t1 := PROG.enterType(program, PROG.tARRAY, -1, 0, parser.unit);
+                    t1 := PROG.enterType(PROG.tARRAY, -1, 0, parser.unit);
                     t1.base := t0;
                     t0 := t1;
                     DEC(dim)
                 END;
 
-                PROG.setParams(type, t1);
+                PROG.setParams(_type, t1);
                 Next(parser);
                 exit := TRUE
             ELSE
@@ -454,10 +451,10 @@ BEGIN
         Next(parser);
 
         IF (parser.sym = SCAN.lxVAR) OR (parser.sym = SCAN.lxIDENT) THEN
-            FPSection(parser, type);
+            FPSection(parser, _type);
             WHILE parser.sym = SCAN.lxSEMI DO
                 Next(parser);
-                FPSection(parser, type)
+                FPSection(parser, _type)
             END
         END;
 
@@ -468,12 +465,12 @@ BEGIN
             ExpectSym(parser, SCAN.lxIDENT);
             ident := QIdent(parser, FALSE);
             check1(ident.typ = PROG.idTYPE, parser, 68);
-            check1(~(ident.type.typ IN {PROG.tRECORD, PROG.tARRAY}), parser, 69);
-            check1( ~(ODD(type.call) & (ident.type.typ = PROG.tREAL)), parser, 113);
-            type.base := ident.type;
+            check1(~(ident._type.typ IN {PROG.tRECORD, PROG.tARRAY}), parser, 69);
+            check1( ~(ODD(_type.call) & (ident._type.typ = PROG.tREAL)), parser, 113);
+            _type.base := ident._type;
             Next(parser)
         ELSE
-            type.base := NIL
+            _type.base := NIL
         END
 
     END
@@ -503,13 +500,15 @@ BEGIN
         sf := PROG.sf_linux
     ELSIF parser.lex.s = "code" THEN
         sf := PROG.sf_code
+    ELSIF parser.lex.s = "oberon" THEN
+        sf := PROG.sf_oberon
     ELSIF parser.lex.s = "noalign" THEN
         sf := PROG.sf_noalign
     ELSE
         check1(FALSE, parser, 124)
     END;
 
-    check1(sf IN program.sysflags, parser, 125);
+    check1(sf IN PROG.program.sysflags, parser, 125);
 
     IF proc THEN
         check1(sf IN PROG.proc_flags, parser, 123)
@@ -532,6 +531,12 @@ BEGIN
         res := PROG.systemv
     |PROG.sf_code:
         res := PROG.code
+    |PROG.sf_oberon:
+        IF TARGETS.OS IN {TARGETS.osWIN32, TARGETS.osLINUX32, TARGETS.osKOS} THEN
+            res := PROG.default32
+        ELSIF TARGETS.OS IN {TARGETS.osWIN64, TARGETS.osLINUX64} THEN
+            res := PROG.default64
+        END
     |PROG.sf_windows:
         IF TARGETS.OS = TARGETS.osWIN32 THEN
             res := PROG.stdcall
@@ -552,15 +557,33 @@ BEGIN
 END sysflag;
 
 
-PROCEDURE procflag (parser: PARSER; VAR import: IL.IMPORT_PROC; isProc: BOOLEAN): INTEGER;
+PROCEDURE procflag (parser: PARSER; VAR _import: IL.IMPORT_PROC; isProc: BOOLEAN): INTEGER;
 VAR
     call: INTEGER;
     dll, proc: SCAN.LEXSTR;
     pos: POSITION;
 
-BEGIN
 
-    import := NIL;
+    PROCEDURE getStr (parser: PARSER; VAR name: SCAN.LEXSTR);
+    VAR
+        pos: POSITION;
+        str: ARITH.VALUE;
+
+    BEGIN
+        getpos(parser, pos);
+        ConstExpression(parser, str);
+        IF str.typ = ARITH.tSTRING THEN
+            name := str.string(SCAN.IDENT).s
+        ELSIF str.typ = ARITH.tCHAR THEN
+            ARITH.charToStr(str, name)
+        ELSE
+            check(FALSE, pos, 117)
+        END
+    END getStr;
+
+
+BEGIN
+    _import := NIL;
 
     IF parser.sym = SCAN.lxLSQUARE THEN
         getpos(parser, pos);
@@ -572,34 +595,32 @@ BEGIN
             Next(parser);
             INC(call)
         END;
-        IF ~isProc THEN
-            checklex(parser, SCAN.lxRSQUARE)
-        END;
-        IF parser.sym = SCAN.lxCOMMA THEN
-            ExpectSym(parser, SCAN.lxSTRING);
-            dll := parser.lex.s;
-            STRINGS.UpCase(dll);
-            ExpectSym(parser, SCAN.lxCOMMA);
-            ExpectSym(parser, SCAN.lxSTRING);
-            proc := parser.lex.s;
+
+        IF isProc & (parser.sym = SCAN.lxCOMMA) THEN
             Next(parser);
-            import := IL.AddImp(dll, proc)
+            getStr(parser, dll);
+            STRINGS.UpCase(dll);
+            checklex(parser, SCAN.lxCOMMA);
+            Next(parser);
+            getStr(parser, proc);
+            _import := IL.AddImp(dll, proc)
         END;
+
         checklex(parser, SCAN.lxRSQUARE);
         Next(parser)
     ELSE
         CASE TARGETS.BitDepth OF
         |16: call := PROG.default16
-        |32: IF TARGETS.target = TARGETS.STM32CM3 THEN
-                 call := PROG.ccall
-             ELSE
+        |32: IF TARGETS.CPU = TARGETS.cpuX86 THEN
                  call := PROG.default32
+             ELSE
+                 call := PROG.ccall
              END
         |64: call := PROG.default64
         END
     END;
 
-    IF import # NIL THEN
+    IF _import # NIL THEN
         check(TARGETS.Import, pos, 70)
     END
 
@@ -607,7 +628,7 @@ BEGIN
 END procflag;
 
 
-PROCEDURE type (parser: PARSER; VAR t: PROG.TYPE_; flags: SET);
+PROCEDURE _type (parser: PARSER; VAR t: PROG._TYPE; flags: SET);
 CONST
     comma   = 0;
     closed  = 1;
@@ -619,11 +640,11 @@ VAR
     ident:      PROG.IDENT;
     unit:       PROG.UNIT;
     pos, pos2:  POSITION;
-    fieldType:  PROG.TYPE_;
+    fieldType:  PROG._TYPE;
     baseIdent:  SCAN.IDENT;
     a, b:       INTEGER;
     RecFlag:    INTEGER;
-    import:     IL.IMPORT_PROC;
+    _import:     IL.IMPORT_PROC;
 
 BEGIN
     unit := parser.unit;
@@ -634,7 +655,7 @@ BEGIN
 
         IF ident # NIL THEN
             check1(ident.typ = PROG.idTYPE, parser, 49);
-            t := ident.type;
+            t := ident._type;
             check1(t # NIL, parser, 50);
             IF closed IN flags THEN
                 check1(t.closed, parser, 50)
@@ -656,13 +677,13 @@ BEGIN
         check(ARITH.check(arrLen),         pos, 39);
         check(ARITH.getInt(arrLen) > 0,    pos, 51);
 
-        t := PROG.enterType(program, PROG.tARRAY, -1, ARITH.getInt(arrLen), unit);
+        t := PROG.enterType(PROG.tARRAY, -1, ARITH.getInt(arrLen), unit);
 
         IF parser.sym = SCAN.lxCOMMA THEN
-            type(parser, t.base, {comma, closed})
+            _type(parser, t.base, {comma, closed})
         ELSIF parser.sym = SCAN.lxOF THEN
             Next(parser);
-            type(parser, t.base, {closed})
+            _type(parser, t.base, {closed})
         ELSE
             check1(FALSE, parser, 47)
         END;
@@ -681,7 +702,7 @@ BEGIN
         getpos(parser, pos2);
         Next(parser);
 
-        t := PROG.enterType(program, PROG.tRECORD, 0, 0, unit);
+        t := PROG.enterType(PROG.tRECORD, 0, 0, unit);
         t.align := 1;
 
         IF parser.sym = SCAN.lxLSQUARE THEN
@@ -698,7 +719,7 @@ BEGIN
             ExpectSym(parser, SCAN.lxIDENT);
             getpos(parser, pos);
 
-            type(parser, t.base, {closed});
+            _type(parser, t.base, {closed});
 
             check(t.base.typ IN {PROG.tRECORD, PROG.tPOINTER}, pos, 52);
 
@@ -717,7 +738,7 @@ BEGIN
                 t.align := t.base.align
             END
         ELSE
-            t.base := program.stTypes.tANYREC
+            t.base := PROG.program.stTypes.tANYREC
         END;
 
         WHILE parser.sym = SCAN.lxIDENT DO
@@ -726,7 +747,7 @@ BEGIN
             ASSERT(parser.sym = SCAN.lxCOLON);
             Next(parser);
 
-            type(parser, fieldType, {closed});
+            _type(parser, fieldType, {closed});
             check(PROG.setFields(t, fieldType), pos2, 104);
 
             IF (fieldType.align > t.align) & ~t.noalign THEN
@@ -756,7 +777,7 @@ BEGIN
         ExpectSym(parser, SCAN.lxTO);
         Next(parser);
 
-        t := PROG.enterType(program, PROG.tPOINTER, TARGETS.AdrSize, 0, unit);
+        t := PROG.enterType(PROG.tPOINTER, TARGETS.AdrSize, 0, unit);
         t.align := TARGETS.AdrSize;
 
         getpos(parser, pos);
@@ -765,7 +786,7 @@ BEGIN
             baseIdent := parser.lex.ident
         END;
 
-        type(parser, t.base, {forward});
+        _type(parser, t.base, {forward});
 
         IF t.base # NIL THEN
             check(t.base.typ = PROG.tRECORD, pos, 58)
@@ -775,15 +796,15 @@ BEGIN
 
     ELSIF parser.sym = SCAN.lxPROCEDURE THEN
         NextPos(parser, pos);
-        t := PROG.enterType(program, PROG.tPROCEDURE, TARGETS.AdrSize, 0, unit);
+        t := PROG.enterType(PROG.tPROCEDURE, TARGETS.AdrSize, 0, unit);
         t.align := TARGETS.AdrSize;
-        t.call := procflag(parser, import, FALSE);
+        t.call := procflag(parser, _import, FALSE);
         FormalParameters(parser, t)
     ELSE
         check1(FALSE, parser, 49)
     END
 
-END type;
+END _type;
 
 
 PROCEDURE IdentDef (parser: PARSER; typ: INTEGER; VAR name: SCAN.IDENT): PROG.IDENT;
@@ -811,14 +832,14 @@ BEGIN
 END IdentDef;
 
 
-PROCEDURE ConstTypeDeclaration (parser: PARSER; const: BOOLEAN);
+PROCEDURE ConstTypeDeclaration (parser: PARSER; _const: BOOLEAN);
 VAR
     ident: PROG.IDENT;
     name:  SCAN.IDENT;
     pos:   POSITION;
 
 BEGIN
-    IF const THEN
+    IF _const THEN
         ident := IdentDef(parser, PROG.idNONE, name)
     ELSE
         ident := IdentDef(parser, PROG.idTYPE, name)
@@ -827,7 +848,7 @@ BEGIN
     checklex(parser, SCAN.lxEQ);
     NextPos(parser, pos);
 
-    IF const THEN
+    IF _const THEN
         ConstExpression(parser, ident.value);
         IF ident.value.typ = ARITH.tINTEGER THEN
             check(ARITH.check(ident.value), pos, 39)
@@ -835,9 +856,9 @@ BEGIN
             check(ARITH.check(ident.value), pos, 40)
         END;
         ident.typ  := PROG.idCONST;
-        ident.type := PROG.getType(program, ident.value.typ)
+        ident._type := PROG.getType(ident.value.typ)
     ELSE
-        type(parser, ident.type, {})
+        _type(parser, ident._type, {})
     END;
 
     checklex(parser, SCAN.lxSEMI);
@@ -850,7 +871,7 @@ PROCEDURE VarDeclaration (parser: PARSER);
 VAR
     ident: PROG.IDENT;
     name:  SCAN.IDENT;
-    t:     PROG.TYPE_;
+    t:     PROG._TYPE;
 
 BEGIN
 
@@ -861,7 +882,7 @@ BEGIN
             ExpectSym(parser, SCAN.lxIDENT)
         ELSIF parser.sym = SCAN.lxCOLON THEN
             Next(parser);
-            type(parser, t, {});
+            _type(parser, t, {});
             PROG.setVarsType(parser.unit, t);
             checklex(parser, SCAN.lxSEMI);
             Next(parser)
@@ -895,8 +916,8 @@ VAR
         label:      INTEGER;
         enter:      IL.COMMAND;
         call:       INTEGER;
-        t:          PROG.TYPE_;
-        import:     IL.IMPORT_PROC;
+        t:          PROG._TYPE;
+        _import:    IL.IMPORT_PROC;
         endmod, b:  BOOLEAN;
         fparams:    SET;
         variables:  LISTS.LIST;
@@ -912,24 +933,27 @@ VAR
 
         unit := parser.unit;
 
-        call := procflag(parser, import, TRUE);
+        call := procflag(parser, _import, TRUE);
 
         getpos(parser, pos);
         pos1 := pos;
         checklex(parser, SCAN.lxIDENT);
 
-        IF import # NIL THEN
+        IF _import # NIL THEN
             proc := IdentDef(parser, PROG.idIMP, name);
-            proc.import := import;
-            program.procs.last(PROG.PROC).import := import
+            proc._import := _import;
+            IF _import.name = "" THEN
+                _import.name := name.s
+            END;
+            PROG.program.procs.last(PROG.PROC)._import := _import
         ELSE
             proc := IdentDef(parser, PROG.idPROC, name)
         END;
 
         check(PROG.openScope(unit, proc.proc), pos, 116);
 
-        proc.type := PROG.enterType(program, PROG.tPROCEDURE, TARGETS.AdrSize, 0, unit);
-        t := proc.type;
+        proc._type := PROG.enterType(PROG.tPROCEDURE, TARGETS.AdrSize, 0, unit);
+        t := proc._type;
         t.align := TARGETS.AdrSize;
         t.call  := call;
 
@@ -959,7 +983,7 @@ VAR
         WHILE param # NIL DO
             ident := PROG.addIdent(unit, param.name, PROG.idPARAM);
             ASSERT(ident # NIL);
-            ident.type := param.type;
+            ident._type := param._type;
             ident.offset := param.offset;
             IF param.vPar THEN
                 ident.typ := PROG.idVPAR
@@ -967,7 +991,7 @@ VAR
             param := param.next(PROG.PARAM)
         END;
 
-        IF import = NIL THEN
+        IF _import = NIL THEN
             label := IL.NewLabel();
             proc.proc.label := label;
             proc.proc.used  := handler;
@@ -983,10 +1007,11 @@ VAR
                 getpos(parser, pos2);
                 ConstExpression(parser, code);
                 check(code.typ = ARITH.tINTEGER, pos2, 43);
-                IF TARGETS.CPU IN {TARGETS.cpuX86, TARGETS.cpuAMD64} THEN
-                    check(ARITH.range(code, 0, 255), pos2, 42)
-                ELSIF TARGETS.CPU = TARGETS.cpuTHUMB THEN
-                    check(ARITH.range(code, 0, 65535), pos2, 110)
+                IF TARGETS.WordSize > TARGETS.InstrSize THEN
+                    CASE TARGETS.InstrSize OF
+                    |1: check(ARITH.range(code, 0, 255), pos, 42)
+                    |2: check(ARITH.range(code, 0, 65535), pos, 110)
+                    END
                 END;
                 IL.AddCmd(IL.opCODE, ARITH.getInt(code));
                 comma := parser.sym = SCAN.lxCOMMA;
@@ -1001,7 +1026,7 @@ VAR
         checklex(parser, SCAN.lxSEMI);
         Next(parser);
 
-        IF import = NIL THEN
+        IF _import = NIL THEN
 
             IF parser.main & proc.export & TARGETS.Dll THEN
                 IF TARGETS.target = TARGETS.KolibriOSDLL THEN
@@ -1015,13 +1040,13 @@ VAR
                 b := DeclarationSequence(parser)
             END;
 
-            program.locsize := 0;
+            PROG.ResetLocSize;
             IF call IN {PROG._win64, PROG.win64} THEN
-                fparams := PROG.getFloatParamsPos(proc.type, 3, int, flt);
-                enter := IL.Enter(label, LSL(ORD(fparams), 5) + MIN(proc.type.parSize, 4))
+                fparams := PROG.getFloatParamsPos(proc._type, 3, int, flt);
+                enter := IL.Enter(label, LSL(ORD(fparams), 5) + MIN(proc._type.parSize, 4))
             ELSIF call IN {PROG._systemv, PROG.systemv} THEN
-                fparams := PROG.getFloatParamsPos(proc.type, PROG.MAXSYSVPARAM - 1, int, flt);
-                enter := IL.Enter(label, -(LSL(ORD(fparams), 5) + proc.type.parSize))
+                fparams := PROG.getFloatParamsPos(proc._type, PROG.MAXSYSVPARAM - 1, int, flt);
+                enter := IL.Enter(label, -(LSL(ORD(fparams), 5) + proc._type.parSize))
             ELSIF codeProc THEN
 
             ELSE
@@ -1042,42 +1067,48 @@ VAR
             END;
 
             IF ~codeProc THEN
-                proc.proc.leave := IL.Leave(t.base # NIL, (t.base # NIL) & (t.base.typ = PROG.tREAL), program.locsize,
+                proc.proc.leave := IL.Leave(t.base # NIL, (t.base # NIL) & (t.base.typ = PROG.tREAL), PROG.program.locsize,
                     t.parSize * ORD((t.call IN PROG.callee_clean_up) OR (t.call IN {PROG.systemv, PROG._systemv})));
-                enter.param2 := program.locsize;
+                enter.param2 := PROG.program.locsize;
                 checklex(parser, SCAN.lxEND)
             ELSE
                 proc.proc.leave := IL.LeaveC()
             END;
 
             IF TARGETS.CPU = TARGETS.cpuMSP430 THEN
-                check((enter.param2 * ORD(~codeProc) + proc.type.parSize) * 2 + 16 < program.options.ram, pos1, 63)
+                check((enter.param2 * ORD(~codeProc) + proc._type.parSize) * 2 + 16 < PROG.program.options.ram, pos1, 63)
             END
         END;
 
         IF parser.sym = SCAN.lxEND THEN
-            ExpectSym(parser, SCAN.lxIDENT);
-            getpos(parser, pos);
-            endname := parser.lex.ident;
-            IF ~codeProc & (import = NIL) THEN
-                check(endname = name, pos, 60);
-                ExpectSym(parser, SCAN.lxSEMI);
-                Next(parser)
-            ELSE
-                IF endname = parser.unit.name THEN
-                    ExpectSym(parser, SCAN.lxPOINT);
-                    Next(parser);
-                    endmod := TRUE
-                ELSIF endname = name THEN
+            Next(parser);
+            IF parser.sym = SCAN.lxIDENT THEN
+                getpos(parser, pos);
+                endname := parser.lex.ident;
+                IF ~codeProc & (_import = NIL) THEN
+                    check(endname = name, pos, 60);
                     ExpectSym(parser, SCAN.lxSEMI);
                     Next(parser)
                 ELSE
-                    error(pos, 60)
+                    IF endname = parser.unit.name THEN
+                        ExpectSym(parser, SCAN.lxPOINT);
+                        Next(parser);
+                        endmod := TRUE
+                    ELSIF endname = name THEN
+                        ExpectSym(parser, SCAN.lxSEMI);
+                        Next(parser)
+                    ELSE
+                        error(pos, 60)
+                    END
                 END
+            ELSIF parser.sym = SCAN.lxSEMI THEN
+                Next(parser)
+            ELSE
+                checklex(parser, SCAN.lxIDENT)
             END
         END;
 
-        IF ~codeProc & (import = NIL) THEN
+        IF ~codeProc & (_import = NIL) THEN
             variables := LISTS.create(NIL);
         ELSE
             variables := NIL
@@ -1085,7 +1116,7 @@ VAR
 
         PROG.closeScope(unit, variables);
 
-        IF ~codeProc & (import = NIL) THEN
+        IF ~codeProc & (_import = NIL) THEN
             enter.variables := variables
         END
 
@@ -1157,7 +1188,7 @@ BEGIN
         check1(parser.lex.s = parser.modname, parser, 23)
     END;
 
-    unit := PROG.newUnit(program, parser.lex.ident);
+    unit := PROG.newUnit(parser.lex.ident);
 
     parser.unit := unit;
 
@@ -1171,14 +1202,16 @@ BEGIN
     INC(modules);
 
     CONSOLE.String("compiling ");
-    IF TARGETS.CPU IN {TARGETS.cpuTHUMB, TARGETS.cpuMSP430} THEN
-        CONSOLE.String("("); CONSOLE.Int(modules); CONSOLE.String(") ")
-    END;
+    CONSOLE.String("("); CONSOLE.Int(modules); CONSOLE.String(") ");
     CONSOLE.String(unit.name.s);
     IF parser.unit.sysimport THEN
         CONSOLE.String(" (SYSTEM)")
     END;
     CONSOLE.Ln;
+
+    IF TARGETS.CPU IN {TARGETS.cpuX86, TARGETS.cpuAMD64} THEN
+        IL.fname(parser.fname)
+    END;
 
     label := IL.NewLabel();
     IL.AddJmpCmd(IL.opJMP, label);
@@ -1189,9 +1222,7 @@ BEGIN
     IL.SetLabel(errlabel);
     IL.StrAdr(name);
     IL.Param1;
-    IF TARGETS.CPU IN {TARGETS.cpuTHUMB, TARGETS.cpuMSP430} THEN
-        IL.AddCmd(IL.opPUSHC, modules)
-    END;
+    IL.AddCmd(IL.opPUSHC, modules);
     IL.AddCmd0(IL.opERR);
 
     FOR errno := 1 TO LEN(IL.codes.errlabels) - 1 DO
@@ -1285,7 +1316,7 @@ END create;
 
 PROCEDURE init* (options: PROG.OPTIONS);
 BEGIN
-    program := PROG.create(options);
+    PROG.create(options);
     parsers := C.create();
     lines   := 0;
     modules := 0

@@ -1,5 +1,5 @@
 ﻿(*
-    Copyright 2016, 2018 Anton Krotov
+    Copyright 2016, 2018, 2020 Anton Krotov
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU Lesser General Public License as published by
@@ -24,7 +24,7 @@ TYPE
   DRAW_WINDOW = PROCEDURE;
 
   TDialog = RECORD
-    type,
+    _type,
     procinfo,
     com_area_name,
     com_area,
@@ -66,7 +66,7 @@ BEGIN
   END
 END Show;
 
-PROCEDURE Create*(draw_window: DRAW_WINDOW; type: INTEGER; def_path, filter: ARRAY OF CHAR): Dialog;
+PROCEDURE Create*(draw_window: DRAW_WINDOW; _type: INTEGER; def_path, filter: ARRAY OF CHAR): Dialog;
 VAR res: Dialog; n, i: INTEGER;
 
   PROCEDURE replace(VAR str: ARRAY OF CHAR; c1, c2: CHAR);
@@ -88,7 +88,7 @@ BEGIN
     IF res.filter_area # NIL THEN
       res.s_com_area_name    := "FFFFFFFF_open_dialog";
       res.com_area           := 0;
-      res.type               := type;
+      res._type              := _type;
       res.draw_window        := draw_window;
       COPY(def_path, res.s_dir_default_path);
       COPY(filter,   res.filter_area.filter);

@@ -372,33 +372,29 @@ END PCharToStr;
 
 PROCEDURE IntToStr (x: INTEGER; VAR str: ARRAY OF CHAR);
 VAR
-    i, a, b: INTEGER;
-    c: CHAR;
+    i, a: INTEGER;
 
 BEGIN
     i := 0;
+    a := x;
     REPEAT
-        str[i] := CHR(x MOD 10 + ORD("0"));
-        x := x DIV 10;
-        INC(i)
-    UNTIL x = 0;
+        INC(i);
+        a := a DIV 10
+    UNTIL a = 0;
 
-    a := 0;
-    b := i - 1;
-    WHILE a < b DO
-        c := str[a];
-        str[a] := str[b];
-        str[b] := c;
-        INC(a);
-        DEC(b)
-    END;
-    str[i] := 0X
+    str[i] := 0X;
+
+    REPEAT
+        DEC(i);
+        str[i] := CHR(x MOD 10 + ORD("0"));
+        x := x DIV 10
+    UNTIL x = 0
 END IntToStr;
 
 
 PROCEDURE append (VAR s1: ARRAY OF CHAR; s2: ARRAY OF CHAR);
 VAR
-    n1, n2, i, j: INTEGER;
+    n1, n2: INTEGER;
 
 BEGIN
     n1 := LENGTH(s1);
@@ -406,19 +402,12 @@ BEGIN
 
     ASSERT(n1 + n2 < LEN(s1));
 
-    i := 0;
-    j := n1;
-    WHILE i < n2 DO
-        s1[j] := s2[i];
-        INC(i);
-        INC(j)
-    END;
-
-    s1[j] := 0X
+    SYSTEM.MOVE(SYSTEM.ADR(s2[0]), SYSTEM.ADR(s1[n1]), n2);
+    s1[n1 + n2] := 0X
 END append;
 
 
-PROCEDURE [stdcall] _error* (module, err, line: INTEGER);
+PROCEDURE [stdcall] _error* (modnum, _module, err, line: INTEGER);
 VAR
     s, temp: ARRAY 1024 OF CHAR;
 
@@ -437,10 +426,8 @@ BEGIN
     |11: s := "BYTE out of range"
     END;
 
-    append(s, API.eol);
-
-    append(s, "module: "); PCharToStr(module, temp); append(s, temp); append(s, API.eol);
-    append(s, "line: ");   IntToStr(line, temp);     append(s, temp);
+    append(s, API.eol + "module: "); PCharToStr(_module, temp); append(s, temp);
+    append(s, API.eol + "line: ");   IntToStr(line, temp);     append(s, temp);
 
     API.DebugMsg(SYSTEM.ADR(s[0]), name);
 

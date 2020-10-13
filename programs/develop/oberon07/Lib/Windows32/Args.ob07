@@ -1,7 +1,7 @@
 ﻿(*
     BSD 2-Clause License
 
-    Copyright (c) 2019, Anton Krotov
+    Copyright (c) 2019-2020, Anton Krotov
     All rights reserved.
 *)
 
@@ -54,7 +54,7 @@ VAR
 
 
 BEGIN
-    p := WINAPI.GetCommandLine();
+    p := WINAPI.GetCommandLineA();
     cond := 0;
     count := 0;
     WHILE (count < MAX_PARAM) & (cond # 6) DO

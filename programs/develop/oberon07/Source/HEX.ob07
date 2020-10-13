@@ -7,120 +7,110 @@
 
 MODULE HEX;
 
-IMPORT FILES, WRITER, CHL := CHUNKLISTS;
+IMPORT WRITER, CHL := CHUNKLISTS, UTILS;
 
 
-PROCEDURE hexdgt (n: BYTE): BYTE;
+VAR
+
+    chksum: INTEGER;
+
+
+PROCEDURE Byte (byte: BYTE);
 BEGIN
-    IF n < 10 THEN
-        n := n + ORD("0")
-    ELSE
-        n := n - 10 + ORD("A")
-    END
-
-    RETURN n
-END hexdgt;
-
-
-PROCEDURE Byte (file: FILES.FILE; byte: BYTE);
-BEGIN
-    WRITER.WriteByte(file, hexdgt(byte DIV 16));
-    WRITER.WriteByte(file, hexdgt(byte MOD 16));
-    INC(file.chksum, byte);
+    WRITER.WriteByte(UTILS.hexdgt(byte DIV 16));
+    WRITER.WriteByte(UTILS.hexdgt(byte MOD 16));
+    INC(chksum, byte)
 END Byte;
 
 
-PROCEDURE NewLine (file: FILES.FILE);
+PROCEDURE Byte4 (a, b, c, d: BYTE);
 BEGIN
-    Byte(file, (-file.chksum) MOD 256);
-    file.chksum := 0;
-    WRITER.WriteByte(file, 0DH);
-    WRITER.WriteByte(file, 0AH)
+    Byte(a);
+    Byte(b);
+    Byte(c);
+    Byte(d)
+END Byte4;
+
+
+PROCEDURE NewLine;
+BEGIN
+    Byte((-chksum) MOD 256);
+    chksum := 0;
+    WRITER.WriteByte(0DH);
+    WRITER.WriteByte(0AH)
 END NewLine;
 
 
-PROCEDURE StartCode (file: FILES.FILE);
+PROCEDURE StartCode;
 BEGIN
-    WRITER.WriteByte(file, ORD(":"));
-    file.chksum := 0
+    WRITER.WriteByte(ORD(":"));
+    chksum := 0
 END StartCode;
 
 
-PROCEDURE Data* (file: FILES.FILE; mem: ARRAY OF BYTE; idx, cnt: INTEGER);
+PROCEDURE Data* (mem: ARRAY OF BYTE; idx, cnt: INTEGER);
 VAR
     i, len: INTEGER;
 
 BEGIN
     WHILE cnt > 0 DO
         len := MIN(cnt, 16);
-        StartCode(file);
-        Byte(file, len);
-        Byte(file, idx DIV 256);
-        Byte(file, idx MOD 256);
-        Byte(file, 0);
+        StartCode;
+        Byte4(len, idx DIV 256, idx MOD 256, 0);
         FOR i := 1 TO len DO
-            Byte(file, mem[idx]);
+            Byte(mem[idx]);
             INC(idx)
         END;
         DEC(cnt, len);
-        NewLine(file)
+        NewLine
     END
 END Data;
 
 
-PROCEDURE ExtLA* (file: FILES.FILE; LA: INTEGER);
+PROCEDURE ExtLA* (LA: INTEGER);
 BEGIN
     ASSERT((0 <= LA) & (LA <= 0FFFFH));
-    StartCode(file);
-    Byte(file, 2);
-    Byte(file, 0);
-    Byte(file, 0);
-    Byte(file, 4);
-    Byte(file, LA DIV 256);
-    Byte(file, LA MOD 256);
-    NewLine(file)
+    StartCode;
+    Byte4(2, 0, 0, 4);
+    Byte(LA DIV 256);
+    Byte(LA MOD 256);
+    NewLine
 END ExtLA;
 
 
-PROCEDURE Data2* (file: FILES.FILE; mem: CHL.BYTELIST; idx, cnt, LA: INTEGER);
+PROCEDURE Data2* (mem: CHL.BYTELIST; idx, cnt, LA: INTEGER);
 VAR
     i, len, offset: INTEGER;
 
 BEGIN
-    ExtLA(file, LA);
+    ExtLA(LA);
     offset := 0;
     WHILE cnt > 0 DO
         ASSERT(offset <= 65536);
         IF offset = 65536 THEN
             INC(LA);
-            ExtLA(file, LA);
+            ExtLA(LA);
             offset := 0
         END;
         len := MIN(cnt, 16);
-        StartCode(file);
-        Byte(file, len);
-        Byte(file, offset DIV 256);
-        Byte(file, offset MOD 256);
-        Byte(file, 0);
+        StartCode;
+        Byte4(len, offset DIV 256, offset MOD 256, 0);
         FOR i := 1 TO len DO
-            Byte(file, CHL.GetByte(mem, idx));
+            Byte(CHL.GetByte(mem, idx));
             INC(idx);
             INC(offset)
         END;
         DEC(cnt, len);
-        NewLine(file)
+        NewLine
     END
 END Data2;
 
 
-PROCEDURE End* (file: FILES.FILE);
+PROCEDURE End*;
 BEGIN
-    StartCode(file);
-    Byte(file, 0);
-    Byte(file, 0);
-    Byte(file, 0);
-    Byte(file, 1);
-    NewLine(file)
+    StartCode;
+    Byte4(0, 0, 0, 1);
+    NewLine
 END End;
 
 

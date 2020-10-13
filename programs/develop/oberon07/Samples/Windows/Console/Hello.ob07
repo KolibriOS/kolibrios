@@ -1,0 +1,13 @@
+﻿MODULE Hello;
+
+IMPORT Console, In, Out;
+
+
+BEGIN
+    Console.open;
+
+    Out.String("Hello, world!");
+    In.Ln;
+
+    Console.exit(TRUE)
+END Hello.

@@ -1,7 +1,7 @@
 ﻿(*
     BSD 2-Clause License
 
-    Copyright (c) 2018-2019, Anton Krotov
+    Copyright (c) 2018-2020, Anton Krotov
     All rights reserved.
 *)
 
@@ -156,8 +156,8 @@ END GetAnyReg;
 
 PROCEDURE GetReg* (VAR R: REGS; reg: INTEGER): BOOLEAN;
 VAR
-    free, n: INTEGER;
-    res: BOOLEAN;
+    free: INTEGER;
+    res:  BOOLEAN;
 
 
     PROCEDURE exch (VAR R: REGS; reg1, reg2: INTEGER);
@@ -178,8 +178,8 @@ BEGIN
         Put(R, reg);
         res := TRUE
     ELSE
-        n := InStk(R, reg);
-        IF n # -1 THEN
+        res := InStk(R, reg) # -1;
+        IF res THEN
             free := GetFreeReg(R);
             IF free # -1 THEN
                 Put(R, free);
@@ -192,10 +192,7 @@ BEGIN
                 IF free # reg THEN
                     exch(R, reg, free)
                 END
-            END;
-            res := TRUE
-        ELSE
-            res := FALSE
+            END
         END
     END
 

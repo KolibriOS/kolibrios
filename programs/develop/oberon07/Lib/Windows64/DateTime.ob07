@@ -1,13 +1,13 @@
 ﻿(*
     BSD 2-Clause License
 
-    Copyright (c) 2019, Anton Krotov
+    Copyright (c) 2019-2020, Anton Krotov
     All rights reserved.
 *)
 
 MODULE DateTime;
 
-IMPORT WINAPI;
+IMPORT WINAPI, SYSTEM;
 
 
 CONST
@@ -114,6 +114,29 @@ BEGIN
     Now(Year, Month, Day, Hour, Min, Sec, MSec)
     RETURN Encode(Year, Month, Day, Hour, Min, Sec, MSec)
 END NowEncode;
+
+
+PROCEDURE NowUnixTime* (): INTEGER;
+    RETURN WINAPI.time(0)
+END NowUnixTime;
+
+
+PROCEDURE UnixTime* (Year, Month, Day, Hour, Min, Sec: INTEGER): INTEGER;
+VAR
+    t: WINAPI.tm;
+
+BEGIN
+    DEC(Year, 1900);
+    DEC(Month);
+    SYSTEM.GET(SYSTEM.ADR(Sec),   t.sec);
+    SYSTEM.GET(SYSTEM.ADR(Min),   t.min);
+    SYSTEM.GET(SYSTEM.ADR(Hour),  t.hour);
+    SYSTEM.GET(SYSTEM.ADR(Day),   t.mday);
+    SYSTEM.GET(SYSTEM.ADR(Month), t.mon);
+    SYSTEM.GET(SYSTEM.ADR(Year),  t.year);
+
+    RETURN WINAPI.mktime(t)
+END UnixTime;
 
 
 PROCEDURE init;

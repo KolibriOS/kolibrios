@@ -13,25 +13,42 @@ IMPORT SYSTEM, API, RTL;
 CONST
 
     slash* = "/";
-    OS* = "LINUX";
+    eol* = 0AX;
 
     bit_depth* = RTL.bit_depth;
     maxint* = RTL.maxint;
     minint* = RTL.minint;
 
+    RTLD_LAZY = 1;
+
+
+TYPE
+
+    TP = ARRAY 2 OF INTEGER;
+
 
 VAR
 
+    maxreal*: REAL;
+
     argc: INTEGER;
 
-    eol*: ARRAY 2 OF CHAR;
+    libc, librt: INTEGER;
 
-    maxreal*: REAL;
+    stdout: INTEGER;
+
+    fread, fwrite : PROCEDURE [linux] (buffer, bytes, blocks, file: INTEGER): INTEGER;
+    fopen         : PROCEDURE [linux] (fname, fmode: INTEGER): INTEGER;
+    fclose        : PROCEDURE [linux] (file: INTEGER): INTEGER;
+    _chmod        : PROCEDURE [linux] (fname: INTEGER; mode: SET): INTEGER;
+    time          : PROCEDURE [linux] (ptr: INTEGER): INTEGER;
+    clock_gettime : PROCEDURE [linux] (clock_id: INTEGER; VAR tp: TP): INTEGER;
+    exit          : PROCEDURE [linux] (code: INTEGER);
 
 
 PROCEDURE ExitProcess* (code: INTEGER);
 BEGIN
-    API.exit(code)
+    exit(code)
 END ExitProcess;
 
 
@@ -75,7 +92,7 @@ VAR
     res: INTEGER;
 
 BEGIN
-    res := API.fread(SYSTEM.ADR(Buffer[0]), 1, bytes, F);
+    res := fread(SYSTEM.ADR(Buffer[0]), 1, bytes, F);
     IF res <= 0 THEN
         res := -1
     END
@@ -89,7 +106,7 @@ VAR
     res: INTEGER;
 
 BEGIN
-    res := API.fwrite(SYSTEM.ADR(Buffer[0]), 1, bytes, F);
+    res := fwrite(SYSTEM.ADR(Buffer[0]), 1, bytes, F);
     IF res <= 0 THEN
         res := -1
     END
@@ -99,34 +116,45 @@ END FileWrite;
 
 
 PROCEDURE FileCreate* (FName: ARRAY OF CHAR): INTEGER;
-    RETURN API.fopen(SYSTEM.ADR(FName[0]), SYSTEM.SADR("wb"))
+    RETURN fopen(SYSTEM.ADR(FName[0]), SYSTEM.SADR("wb"))
 END FileCreate;
 
 
 PROCEDURE FileClose* (File: INTEGER);
 BEGIN
-    File := API.fclose(File)
+    File := fclose(File)
 END FileClose;
 
 
+PROCEDURE chmod* (FName: ARRAY OF CHAR);
+VAR
+    res: INTEGER;
+BEGIN
+    res := _chmod(SYSTEM.ADR(FName[0]), {0, 2..8}) (* rwxrwxr-x *)
+END chmod;
+
+
 PROCEDURE FileOpen* (FName: ARRAY OF CHAR): INTEGER;
-    RETURN API.fopen(SYSTEM.ADR(FName[0]), SYSTEM.SADR("rb"))
+    RETURN fopen(SYSTEM.ADR(FName[0]), SYSTEM.SADR("rb"))
 END FileOpen;
 
 
 PROCEDURE OutChar* (c: CHAR);
+VAR
+    res: INTEGER;
+
 BEGIN
-    API.putc(c)
+    res := fwrite(SYSTEM.ADR(c), 1, 1, stdout)
 END OutChar;
 
 
 PROCEDURE GetTickCount* (): INTEGER;
 VAR
-    tp:  API.TP;
+    tp:  TP;
     res: INTEGER;
 
 BEGIN
-    IF API.clock_gettime(0, tp) = 0 THEN
+    IF clock_gettime(0, tp) = 0 THEN
         res := tp[0] * 100 + tp[1] DIV 10000000
     ELSE
         res := 0
@@ -141,13 +169,23 @@ PROCEDURE isRelative* (path: ARRAY OF CHAR): BOOLEAN;
 END isRelative;
 
 
-PROCEDURE now* (VAR year, month, day, hour, min, sec: INTEGER);
-END now;
-
-
 PROCEDURE UnixTime* (): INTEGER;
-    RETURN API.time(0)
+    RETURN time(0)
 END UnixTime;
+
+
+PROCEDURE splitf* (x: REAL; VAR a, b: INTEGER): INTEGER;
+VAR
+    res: INTEGER;
+
+BEGIN
+    a := 0;
+    b := 0;
+    SYSTEM.GET32(SYSTEM.ADR(x), a);
+    SYSTEM.GET32(SYSTEM.ADR(x) + 4, b);
+    SYSTEM.GET(SYSTEM.ADR(x), res)
+    RETURN res
+END splitf;
 
 
 PROCEDURE d2s* (x: REAL): INTEGER;
@@ -155,8 +193,7 @@ VAR
     h, l, s, e: INTEGER;
 
 BEGIN
-    SYSTEM.GET(SYSTEM.ADR(x), l);
-    SYSTEM.GET(SYSTEM.ADR(x) + 4, h);
+    e := splitf(x, l, h);
 
     s := ASR(h, 31) MOD 2;
     e := (h DIV 100000H) MOD 2048;
@@ -186,23 +223,32 @@ BEGIN
 END d2s;
 
 
-PROCEDURE splitf* (x: REAL; VAR a, b: INTEGER): INTEGER;
+PROCEDURE GetSym (lib: INTEGER; name: ARRAY OF CHAR; VarAdr: INTEGER);
 VAR
-    res: INTEGER;
+    sym: INTEGER;
 
 BEGIN
-    a := 0;
-    b := 0;
-    SYSTEM.MOVE(SYSTEM.ADR(x), SYSTEM.ADR(a), 4);
-    SYSTEM.MOVE(SYSTEM.ADR(x) + 4, SYSTEM.ADR(b), 4);
-    SYSTEM.GET(SYSTEM.ADR(x), res)
-    RETURN res
-END splitf;
+    sym := API.dlsym(lib, SYSTEM.ADR(name[0]));
+    ASSERT(sym # 0);
+    SYSTEM.PUT(VarAdr, sym)
+END GetSym;
 
 
 BEGIN
-    eol := 0AX;
     maxreal := 1.9;
     PACK(maxreal, 1023);
-    SYSTEM.GET(API.MainParam, argc)
+    SYSTEM.GET(API.MainParam, argc);
+
+    libc := API.libc;
+    GetSym(libc, "fread",  SYSTEM.ADR(fread));
+    GetSym(libc, "fwrite", SYSTEM.ADR(fwrite));
+    GetSym(libc, "fopen",  SYSTEM.ADR(fopen));
+    GetSym(libc, "fclose", SYSTEM.ADR(fclose));
+    GetSym(libc, "chmod",  SYSTEM.ADR(_chmod));
+    GetSym(libc, "time",   SYSTEM.ADR(time));
+    GetSym(libc, "exit",   SYSTEM.ADR(exit));
+    GetSym(libc, "stdout", SYSTEM.ADR(stdout)); SYSTEM.GET(stdout - SYSTEM.SIZE(INTEGER), stdout);
+
+    librt := API.dlopen(SYSTEM.SADR("librt.so.1"), RTLD_LAZY);
+    GetSym(librt, "clock_gettime", SYSTEM.ADR(clock_gettime))
 END HOST.

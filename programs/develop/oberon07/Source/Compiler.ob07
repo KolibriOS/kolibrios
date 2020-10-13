@@ -8,14 +8,14 @@
 MODULE Compiler;
 
 IMPORT ST := STATEMENTS, PARS, UTILS, PATHS, PROG, C := CONSOLE,
-       ERRORS, STRINGS, WRITER, MSP430, THUMB, TARGETS;
+       ERRORS, STRINGS, WRITER, MSP430, THUMB, TARGETS, SCAN;
 
 
 PROCEDURE keys (VAR options: PROG.OPTIONS; VAR out: PARS.PATH);
 VAR
     param: PARS.PATH;
     i, j:  INTEGER;
-    end:   BOOLEAN;
+    _end:  BOOLEAN;
     value: INTEGER;
     minor,
     major: INTEGER;
@@ -24,7 +24,7 @@ VAR
 BEGIN
     out := "";
     checking := options.checking;
-    end := FALSE;
+    _end := FALSE;
     i := 3;
     REPEAT
         UTILS.GetArg(i, param);
@@ -113,18 +113,26 @@ BEGIN
                 DEC(i)
             END
 
+        ELSIF param = "-lower" THEN
+            options.lower := TRUE
+
         ELSIF param = "-pic" THEN
             options.pic := TRUE
 
+        ELSIF param = "-def" THEN
+            INC(i);
+            UTILS.GetArg(i, param);
+            SCAN.NewDef(param)
+
         ELSIF param = "" THEN
-            end := TRUE
+            _end := TRUE
 
         ELSE
             ERRORS.BadParam(param)
         END;
 
         INC(i)
-    UNTIL end;
+    UNTIL _end;
 
     options.checking := checking
 END keys;
@@ -165,6 +173,7 @@ BEGIN
     options.stack := 2;
     options.version := 65536;
     options.pic := FALSE;
+    options.lower := FALSE;
     options.checking := ST.chkALL;
 
     PATHS.GetCurrentDirectory(app_path);
@@ -203,6 +212,8 @@ BEGIN
         C.StringLn("  -stk <size>           set size of stack in Mbytes (Windows, Linux, KolibriOS)"); C.Ln;
         C.StringLn("  -nochk <'ptibcwra'>   disable runtime checking (pointers, types, indexes,");
         C.StringLn("                        BYTE, CHR, WCHR)"); C.Ln;
+        C.StringLn("  -lower                allow lower case for keywords"); C.Ln;
+        C.StringLn("  -def <identifier>     define conditional compilation symbol"); C.Ln;
         C.StringLn("  -ver <major.minor>    set version of program (KolibriOS DLL)"); C.Ln;
         C.StringLn("  -ram <size>           set size of RAM in bytes (MSP430) or Kbytes (STM32)"); C.Ln;
         C.StringLn("  -rom <size>           set size of ROM in bytes (MSP430) or Kbytes (STM32)"); C.Ln;
@@ -225,6 +236,8 @@ BEGIN
     IF param = "" THEN
         ERRORS.Error(205)
     END;
+
+    SCAN.NewDef(param);
 
     IF TARGETS.Select(param) THEN
         target := TARGETS.target

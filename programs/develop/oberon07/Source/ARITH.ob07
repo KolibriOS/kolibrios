@@ -16,10 +16,11 @@ CONST
     tBOOLEAN* = 4;  tCHAR* = 5;  tWCHAR*  = 6;
     tSTRING*  = 7;
 
+    opEQ* = 0; opNE* = 1; opLT* = 2; opLE* = 3; opGT* = 4; opGE* = 5;
+    opIN* = 6; opIS* = 7;
+
 
 TYPE
-
-    RELATION* = ARRAY 3 OF CHAR;
 
     VALUE* = RECORD
 
@@ -672,7 +673,7 @@ BEGIN
 END equal;
 
 
-PROCEDURE relation* (VAR v: VALUE; v2: VALUE; operator: RELATION; VAR error: INTEGER);
+PROCEDURE relation* (VAR v: VALUE; v2: VALUE; op: INTEGER; VAR error: INTEGER);
 VAR
     res: BOOLEAN;
 
@@ -681,36 +682,34 @@ BEGIN
 
     res := FALSE;
 
-    CASE operator[0] OF
+    CASE op OF
 
-    |"=":
+    |opEQ:
         res := equal(v, v2, error)
 
-    |"#":
+    |opNE:
         res := ~equal(v, v2, error)
 
-    |"<":
-        IF operator[1] = "=" THEN
-            res := less(v, v2, error);
-            IF error = 0 THEN
-                res := equal(v, v2, error) OR res
-            END
-        ELSE
-            res := less(v, v2, error)
+    |opLT:
+        res := less(v, v2, error)
+
+    |opLE:
+        res := less(v, v2, error);
+        IF error = 0 THEN
+            res := equal(v, v2, error) OR res
         END
 
-    |">":
-        IF operator[1] = "=" THEN
-            res := ~less(v, v2, error)
-        ELSE
-            res := less(v, v2, error);
-            IF error = 0 THEN
-                res := equal(v, v2, error) OR res
-            END;
-            res := ~res
-        END
+    |opGE:
+        res := ~less(v, v2, error)
 
-    |"I":
+    |opGT:
+        res := less(v, v2, error);
+        IF error = 0 THEN
+            res := equal(v, v2, error) OR res
+        END;
+        res := ~res
+
+    |opIN:
         IF (v.typ = tINTEGER) & (v2.typ = tSET) THEN
             IF range(v, 0, UTILS.target.maxSet) THEN
                 res := v.int IN v2.set
@@ -760,6 +759,20 @@ BEGIN
 
     RETURN check(v)
 END setInt;
+
+
+PROCEDURE concat* (VAR s: ARRAY OF CHAR; s1: ARRAY OF CHAR): BOOLEAN;
+VAR
+    res: BOOLEAN;
+
+BEGIN
+    res := LENGTH(s) + LENGTH(s1) < LEN(s);
+    IF res THEN
+        STRINGS.append(s, s1)
+    END
+
+    RETURN res
+END concat;
 
 
 PROCEDURE init;

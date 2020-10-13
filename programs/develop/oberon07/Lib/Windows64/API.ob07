@@ -12,12 +12,17 @@ IMPORT SYSTEM;
 
 CONST
 
+    eol* = 0DX + 0AX;
+
     SectionAlignment = 1000H;
 
     DLL_PROCESS_ATTACH = 1;
     DLL_THREAD_ATTACH  = 2;
     DLL_THREAD_DETACH  = 3;
     DLL_PROCESS_DETACH = 0;
+
+    KERNEL = "kernel32.dll";
+    USER   = "user32.dll";
 
 
 TYPE
@@ -27,7 +32,6 @@ TYPE
 
 VAR
 
-    eol*:  ARRAY 3 OF CHAR;
     base*: INTEGER;
     heap:  INTEGER;
 
@@ -36,13 +40,12 @@ VAR
     thread_attach: DLL_ENTRY;
 
 
-PROCEDURE [windows-, "kernel32.dll", "ExitProcess"]    ExitProcess (code: INTEGER);
-PROCEDURE [windows-, "kernel32.dll", "ExitThread"]     ExitThread (code: INTEGER);
-PROCEDURE [windows-, "kernel32.dll", "GetProcessHeap"] GetProcessHeap (): INTEGER;
-PROCEDURE [windows-, "kernel32.dll", "HeapAlloc"]      HeapAlloc (hHeap, dwFlags, dwBytes: INTEGER): INTEGER;
-PROCEDURE [windows-, "kernel32.dll", "HeapFree"]       HeapFree(hHeap, dwFlags, lpMem: INTEGER);
-
-PROCEDURE [windows-, "user32.dll", "MessageBoxA"]      MessageBoxA (hWnd, lpText, lpCaption, uType: INTEGER): INTEGER;
+PROCEDURE [windows-, KERNEL, ""] ExitProcess (code: INTEGER);
+PROCEDURE [windows-, KERNEL, ""] ExitThread (code: INTEGER);
+PROCEDURE [windows-, KERNEL, ""] GetProcessHeap (): INTEGER;
+PROCEDURE [windows-, KERNEL, ""] HeapAlloc (hHeap, dwFlags, dwBytes: INTEGER): INTEGER;
+PROCEDURE [windows-, KERNEL, ""] HeapFree (hHeap, dwFlags, lpMem: INTEGER);
+PROCEDURE [windows-, USER,   ""] MessageBoxA (hWnd, lpText, lpCaption, uType: INTEGER): INTEGER;
 
 
 PROCEDURE DebugMsg* (lpText, lpCaption: INTEGER);
@@ -68,7 +71,6 @@ BEGIN
     process_detach := NIL;
     thread_detach  := NIL;
     thread_attach  := NIL;
-    eol[0] := 0DX; eol[1] := 0AX; eol[2] := 0X;
     base := code - SectionAlignment;
     heap := GetProcessHeap()
 END init;

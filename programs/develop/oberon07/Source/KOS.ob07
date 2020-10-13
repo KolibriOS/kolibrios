@@ -1,7 +1,7 @@
 ﻿(*
     BSD 2-Clause License
 
-    Copyright (c) 2018-2019, Anton Krotov
+    Copyright (c) 2018-2020, Anton Krotov
     All rights reserved.
 *)
 
@@ -19,8 +19,6 @@ CONST
 
 TYPE
 
-    FILE = WR.FILE;
-
     HEADER = RECORD
 
         menuet01: ARRAY 9 OF CHAR;
@@ -29,29 +27,19 @@ TYPE
     END;
 
 
-PROCEDURE align (n, _align: INTEGER): INTEGER;
-BEGIN
-    IF n MOD _align # 0 THEN
-        n := n + _align - (n MOD _align)
-    END
-
-    RETURN n
-END align;
-
-
 PROCEDURE Import* (program: BIN.PROGRAM; idata: INTEGER; VAR ImportTable: CHL.INTLIST; VAR len, libcount, size: INTEGER);
 VAR
-    i:      INTEGER;
-    import: BIN.IMPRT;
+    i:   INTEGER;
+    imp: BIN.IMPRT;
 
 BEGIN
     libcount  := 0;
-    import := program.imp_list.first(BIN.IMPRT);
-    WHILE import # NIL DO
-        IF import.label = 0 THEN
+    imp := program.imp_list.first(BIN.IMPRT);
+    WHILE imp # NIL DO
+        IF imp.label = 0 THEN
             INC(libcount)
         END;
-        import := import.next(BIN.IMPRT)
+        imp := imp.next(BIN.IMPRT)
     END;
 
     len  := libcount * 2 + 2;
@@ -63,29 +51,29 @@ BEGIN
     END;
 
     i := 0;
-    import := program.imp_list.first(BIN.IMPRT);
-    WHILE import # NIL DO
+    imp := program.imp_list.first(BIN.IMPRT);
+    WHILE imp # NIL DO
 
-        IF import.label = 0 THEN
+        IF imp.label = 0 THEN
             CHL.SetInt(ImportTable, len, 0);
             INC(len);
             CHL.SetInt(ImportTable, i, idata + len * SIZE_OF_DWORD);
             INC(i);
-            CHL.SetInt(ImportTable, i, import.nameoffs + size + idata);
+            CHL.SetInt(ImportTable, i, imp.nameoffs + size + idata);
             INC(i)
         ELSE
-            CHL.SetInt(ImportTable, len, import.nameoffs + size + idata);
-            import.label := len * SIZE_OF_DWORD;
+            CHL.SetInt(ImportTable, len, imp.nameoffs + size + idata);
+            imp.label := len * SIZE_OF_DWORD;
             INC(len)
         END;
 
-        import := import.next(BIN.IMPRT)
+        imp := imp.next(BIN.IMPRT)
     END;
     CHL.SetInt(ImportTable, len, 0);
     CHL.SetInt(ImportTable, i, 0);
     CHL.SetInt(ImportTable, i + 1, 0);
     INC(len);
-    size := size + CHL.Length(program.import)
+    INC(size, CHL.Length(program._import))
 END Import;
 
 
@@ -100,7 +88,7 @@ CONST
 VAR
     header: HEADER;
 
-    base, text, data, idata, bss: INTEGER;
+    base, text, data, idata, bss, offset: INTEGER;
 
     reloc:   BIN.RELOC;
     iproc:   BIN.IMPRT;
@@ -108,8 +96,6 @@ VAR
     delta:   INTEGER;
 
     i: INTEGER;
-
-    File: FILE;
 
     ImportTable: CHL.INTLIST;
     ILen, libcount, isize: INTEGER;
@@ -121,23 +107,23 @@ VAR
 BEGIN
     base := 0;
 
-    icount := CHL.Length(program.import);
+    icount := CHL.Length(program._import);
     dcount := CHL.Length(program.data);
     ccount := CHL.Length(program.code);
 
     text  := base + HEADER_SIZE;
-    data  := align(text + ccount, FileAlignment);
-    idata := align(data + dcount, FileAlignment);
+    data  := WR.align(text + ccount, FileAlignment);
+    idata := WR.align(data + dcount, FileAlignment);
 
     Import(program, idata, ImportTable, ILen, libcount, isize);
 
-    bss := align(idata + isize, FileAlignment);
+    bss := WR.align(idata + isize, FileAlignment);
 
     header.menuet01 := "MENUET01";
     header.ver      :=  1;
     header.start    :=  text;
     header.size     :=  idata + isize - base;
-    header.mem      :=  align(header.size + program.stack + program.bss + PARAM_SIZE * 2 + 4096, FileAlignment);
+    header.mem      :=  WR.align(header.size + program.stack + program.bss + PARAM_SIZE * 2 + 4096, FileAlignment);
     header.sp       :=  base + header.mem - PARAM_SIZE * 2;
     header.param    :=  header.sp;
     header.path     :=  header.param + PARAM_SIZE;
@@ -146,73 +132,74 @@ BEGIN
     reloc := program.rel_list.first(BIN.RELOC);
     WHILE reloc # NIL DO
 
-        L := BIN.get32le(code, reloc.offset);
-        delta := 3 - reloc.offset - text;
+        offset := reloc.offset;
+        L := BIN.get32le(code, offset);
+        delta := 3 - offset - text;
 
         CASE reloc.opcode OF
 
         |BIN.RIMP:
               iproc := BIN.GetIProc(program, L);
-              BIN.put32le(code, reloc.offset, idata + iproc.label)
+              delta := idata + iproc.label
 
         |BIN.RBSS:
-              BIN.put32le(code, reloc.offset, L + bss)
+              delta := L + bss
 
         |BIN.RDATA:
-              BIN.put32le(code, reloc.offset, L + data)
+              delta := L + data
 
         |BIN.RCODE:
-              BIN.put32le(code, reloc.offset, BIN.GetLabel(program, L) + text)
+              delta := BIN.GetLabel(program, L) + text
 
         |BIN.PICDATA:
-              BIN.put32le(code, reloc.offset, L + data + delta)
+              INC(delta, L + data)
 
         |BIN.PICCODE:
-              BIN.put32le(code, reloc.offset, BIN.GetLabel(program, L) + text + delta)
+              INC(delta, BIN.GetLabel(program, L) + text)
 
         |BIN.PICBSS:
-              BIN.put32le(code, reloc.offset, L + bss + delta)
+              INC(delta, L + bss)
 
         |BIN.PICIMP:
               iproc := BIN.GetIProc(program, L);
-              BIN.put32le(code, reloc.offset, idata + iproc.label + delta)
+              INC(delta, idata + iproc.label)
 
         |BIN.IMPTAB:
-              BIN.put32le(code, reloc.offset, idata + delta)
+              INC(delta, idata)
 
         END;
+        BIN.put32le(code, offset, delta);
 
         reloc := reloc.next(BIN.RELOC)
     END;
 
-    File := WR.Create(FileName);
+    WR.Create(FileName);
 
     FOR i := 0 TO 7 DO
-        WR.WriteByte(File, ORD(header.menuet01[i]))
+        WR.WriteByte(ORD(header.menuet01[i]))
     END;
 
-    WR.Write32LE(File, header.ver);
-    WR.Write32LE(File, header.start);
-    WR.Write32LE(File, header.size);
-    WR.Write32LE(File, header.mem);
-    WR.Write32LE(File, header.sp);
-    WR.Write32LE(File, header.param);
-    WR.Write32LE(File, header.path);
+    WR.Write32LE(header.ver);
+    WR.Write32LE(header.start);
+    WR.Write32LE(header.size);
+    WR.Write32LE(header.mem);
+    WR.Write32LE(header.sp);
+    WR.Write32LE(header.param);
+    WR.Write32LE(header.path);
 
-    CHL.WriteToFile(File, code);
-    WR.Padding(File, FileAlignment);
+    CHL.WriteToFile(code);
+    WR.Padding(FileAlignment);
 
-    CHL.WriteToFile(File, program.data);
-    WR.Padding(File, FileAlignment);
+    CHL.WriteToFile(program.data);
+    WR.Padding(FileAlignment);
 
     FOR i := 0 TO ILen - 1 DO
-        WR.Write32LE(File, CHL.GetInt(ImportTable, i))
+        WR.Write32LE(CHL.GetInt(ImportTable, i))
     END;
 
-    CHL.WriteToFile(File, program.import);
+    CHL.WriteToFile(program._import);
 
-    WR.Close(File)
-
+    WR.Close
 END write;
 
 

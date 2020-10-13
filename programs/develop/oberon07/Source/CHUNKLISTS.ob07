@@ -153,14 +153,14 @@ BEGIN
 END GetStr;
 
 
-PROCEDURE WriteToFile* (file: WR.FILE; list: BYTELIST);
+PROCEDURE WriteToFile* (list: BYTELIST);
 VAR
     chunk: BYTECHUNK;
 
 BEGIN
     chunk := list.first(BYTECHUNK);
     WHILE chunk # NIL DO
-        WR.Write(file, chunk.data, chunk.count);
+        WR.Write(chunk.data, chunk.count);
         chunk := chunk.next(BYTECHUNK)
     END
 END WriteToFile;

@@ -616,14 +616,14 @@ VAR
 
     PROCEDURE SetIV (idx, label, CodeAdr: INTEGER);
     VAR
-        l, h: ANYCODE;
+        l, h: LISTS.ITEM;
 
     BEGIN
-        l := CodeList.first(ANYCODE);
-        h := l.next(ANYCODE);
+        l := CodeList.first;
+        h := l.next;
         WHILE idx > 0 DO
-            l := h.next(ANYCODE);
-            h := l.next(ANYCODE);
+            l := h.next;
+            h := l.next;
             DEC(idx)
         END;
         label := BIN.GetLabel(program, label) * 2 + CodeAdr + 1;
@@ -719,7 +719,7 @@ BEGIN
                     PutCode(second)
                 END
 
-        |JCC:  genbc(code)
+        |JCC:   genbc(code)
 
         |CBXZ:
                 IF code.len > 1 THEN
@@ -784,8 +784,9 @@ END mov;
 
 PROCEDURE xchg (r1, r2: INTEGER);
 BEGIN
-    push(r1); push(r2);
-    pop(r1); pop(r2)
+    push(r1);
+    mov(r1, r2);
+    pop(r2)
 END xchg;
 
 
@@ -1092,7 +1093,7 @@ BEGIN
 
         |IL.opCALLP:
             UnOp(r1);
-            AddImm8(r1, 1);
+            AddImm8(r1, 1); (* Thumb mode *)
             gen5(3, TRUE, FALSE, r1, 0); (* blx r1 *)
             drop;
             ASSERT(R.top = -1)
@@ -1176,7 +1177,7 @@ BEGIN
         |IL.opERR:
             call(genTrap)
 
-        |IL.opNOP:
+        |IL.opNOP, IL.opAND, IL.opOR:
 
         |IL.opSADR:
             reloc(GetAnyReg(), BIN.RDATA + pic, stroffs + param2)
@@ -1347,37 +1348,25 @@ BEGIN
                 SetCC(jne, r1)
             END
 
-        |IL.opACC:
-            IF (R.top # 0) OR (R.stk[0] # ACC) THEN
-                PushAll(0);
-                GetRegA;
-                pop(ACC);
-                DEC(R.pushed)
-            END
-
         |IL.opDROP:
             UnOp(r1);
             drop
 
-        |IL.opJNZ:
+        |IL.opJNZ1:
             UnOp(r1);
             cbnz(r1, param1)
-
-        |IL.opJZ:
-            UnOp(r1);
-            cbz(r1, param1)
 
         |IL.opJG:
             UnOp(r1);
             Tst(r1);
             jcc(jg, param1)
 
-        |IL.opJE:
+        |IL.opJNZ:
             UnOp(r1);
             cbnz(r1, param1);
             drop
 
-        |IL.opJNE:
+        |IL.opJZ:
             UnOp(r1);
             cbz(r1, param1);
             drop
@@ -1435,10 +1424,10 @@ BEGIN
             cc := cond(opcode);
             next := cmd.next(COMMAND);
 
-            IF next.opcode = IL.opJE THEN
+            IF next.opcode = IL.opJNZ THEN
                 jcc(cc, next.param1);
                 cmd := next
-            ELSIF next.opcode = IL.opJNE THEN
+            ELSIF next.opcode = IL.opJZ THEN
                 jcc(inv0(cc), next.param1);
                 cmd := next
             ELSE
@@ -1487,7 +1476,7 @@ BEGIN
             END;
             drop
 
-        |IL.opADDL, IL.opADDR:
+        |IL.opADDC:
             UnOp(r1);
             AddConst(r1, param2)
 
@@ -1761,7 +1750,7 @@ BEGIN
             gen4(14, r2, r1); (* bic r1, r2 *)
             drop
 
-        |IL.opADDSL, IL.opADDSR:
+        |IL.opADDSC:
             MovConst(GetAnyReg(), param2);
             BinOp(r1, r2);
             gen4(12, r2, r1); (* orr r1, r2 *)
@@ -2014,7 +2003,7 @@ BEGIN
             CallRTL(IL._fdivi, 2);
             GetRegA
 
-        |IL.opADDF, IL.opADDFI:
+        |IL.opADDF:
             PushAll(2);
             CallRTL(IL._fadd, 2);
             GetRegA
@@ -2336,8 +2325,6 @@ VAR
 
     DataAdr, BssAdr, DataSize, BssSize, CodeSize: INTEGER;
 
-    File: WR.FILE;
-
 BEGIN
     IF target = TARGETS.STM32CM3 THEN
         CortexM3
@@ -2387,12 +2374,12 @@ BEGIN
         ERRORS.Error(204)
     END;
 
-    File := WR.Create(outname);
+    WR.Create(outname);
 
-    HEX.Data2(File, program.code, 0, CodeSize, high(Target.FlashAdr));
-    HEX.End(File);
+    HEX.Data2(program.code, 0, CodeSize, high(Target.FlashAdr));
+    HEX.End;
 
-    WR.Close(File);
+    WR.Close;
 
     C.StringLn("--------------------------------------------");
     C.String(  "  rom:  "); C.Int(CodeSize); C.String(" of "); C.Int(rom); C.String("  ("); C.Int(CodeSize * 100 DIV rom); C.StringLn("%)");

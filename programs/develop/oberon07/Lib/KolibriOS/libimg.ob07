@@ -1,5 +1,5 @@
 ﻿(*
-    Copyright 2016, 2018 KolibriOS team
+    Copyright 2016, 2018, 2020 KolibriOS team
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU Lesser General Public License as published by
@@ -203,7 +203,7 @@ VAR
 
 
 
-    img_create         *: PROCEDURE (width, height, type: INTEGER): INTEGER;
+    img_create         *: PROCEDURE (width, height, _type: INTEGER): INTEGER;
 (*
 ;;------------------------------------------------------------------------------------------------;;
 ;? creates an Image structure and initializes some its fields                                     ;;

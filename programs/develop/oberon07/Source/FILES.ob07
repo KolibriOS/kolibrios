@@ -17,9 +17,7 @@ TYPE
         ptr: INTEGER;
 
         buffer: ARRAY 64*1024 OF BYTE;
-        count:  INTEGER;
-
-        chksum*: INTEGER
+        count:  INTEGER
 
     END;
 
@@ -85,8 +83,7 @@ BEGIN
     IF ptr > 0 THEN
         file := NewFile();
         file.ptr := ptr;
-        file.count := 0;
-        file.chksum := 0
+        file.count := 0
     ELSE
         file := NIL
     END

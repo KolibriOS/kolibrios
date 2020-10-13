@@ -1,0 +1,36 @@
+﻿Условная компиляция
+
+синтаксис:
+
+    $IF "(" ident {"|" ident} ")"
+        <...>
+    {$ELSIF "(" ident {"|" ident} ")"}
+        <...>
+    [$ELSE]
+        <...>
+    $END
+
+    где ident:
+    - одно из возможных значений параметра <target> в командной строке
+    - пользовательский идентификатор, переданный с ключом -def при компиляции
+
+примеры:
+
+    $IF (win64con | win64gui | win64dll)
+        OS := "WIN64";
+    $ELSIF (win32con | win32gui | win32dll)
+        OS := "WIN32";
+    $ELSIF (linux64exe | linux64so)
+        OS := "LINUX64";
+    $ELSIF (linux32exe | linux32so)
+        OS := "LINUX32";
+    $ELSE
+        OS := "UNKNOWN";
+    $END
+
+
+    $IF (CPUX86_64) (* -def CPUX86_64 *)
+        bit_depth := 64;
+    $ELSE
+        bit_depth := 32;
+    $END

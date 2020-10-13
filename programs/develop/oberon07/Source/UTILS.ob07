@@ -13,18 +13,17 @@ IMPORT HOST;
 CONST
 
     slash* = HOST.slash;
+    eol* = HOST.eol;
 
     bit_depth* = HOST.bit_depth;
     maxint* = HOST.maxint;
     minint* = HOST.minint;
 
-    OS = HOST.OS;
-
     min32* = -2147483647-1;
     max32* =  2147483647;
 
     vMajor* = 1;
-    vMinor* = 29;
+    vMinor* = 43;
 
     FILE_EXT* = ".ob07";
     RTL_NAME* = "RTL";
@@ -32,16 +31,9 @@ CONST
     MAX_GLOBAL_SIZE* = 1600000000;
 
 
-TYPE
-
-    DAYS = ARRAY 12, 31, 2 OF INTEGER;
-
-
 VAR
 
     time*: INTEGER;
-
-    eol*:  ARRAY 3 OF CHAR;
 
     maxreal*: REAL;
 
@@ -60,8 +52,6 @@ VAR
       END;
 
     bit_diff*: INTEGER;
-
-    days: DAYS;
 
 
 PROCEDURE FileRead* (F: INTEGER; VAR Buffer: ARRAY OF CHAR; bytes: INTEGER): INTEGER;
@@ -88,6 +78,12 @@ END FileClose;
 PROCEDURE FileOpen* (FName: ARRAY OF CHAR): INTEGER;
     RETURN HOST.FileOpen(FName)
 END FileOpen;
+
+
+PROCEDURE chmod* (FName: ARRAY OF CHAR);
+BEGIN
+    HOST.chmod(FName)
+END chmod;
 
 
 PROCEDURE GetArg* (i: INTEGER; VAR str: ARRAY OF CHAR);
@@ -134,25 +130,8 @@ BEGIN
 END GetCurrentDirectory;
 
 
-PROCEDURE GetUnixTime* (year, month, day, hour, min, sec: INTEGER): INTEGER;
-    RETURN ((year - 1970) * 365 + days[month - 1, day - 1, ORD(year DIV 4 = 0)] + (year - 1969) DIV 4) * 86400 + hour * 3600 + min * 60 + sec
-END GetUnixTime;
-
-
 PROCEDURE UnixTime* (): INTEGER;
-VAR
-    year, month, day, hour, min, sec: INTEGER;
-    res: INTEGER;
-
-BEGIN
-    IF OS = "LINUX" THEN
-        res := HOST.UnixTime()
-    ELSE
-        HOST.now(year, month, day, hour, min, sec);
-        res := GetUnixTime(year, month, day, hour, min, sec)
-    END
-
-    RETURN res
+    RETURN HOST.UnixTime()
 END UnixTime;
 
 
@@ -229,51 +208,19 @@ BEGIN
 END Log2;
 
 
-PROCEDURE init (VAR days: DAYS);
-VAR
-    i, j, n0, n1: INTEGER;
-
+PROCEDURE hexdgt* (n: BYTE): BYTE;
 BEGIN
-
-    FOR i := 0 TO 11 DO
-        FOR j := 0 TO 30 DO
-            days[i, j, 0] := 0;
-            days[i, j, 1] := 0;
-        END
-    END;
-
-    days[ 1, 28, 0] := -1;
-
-    FOR i := 0 TO 1 DO
-        days[ 1, 29, i] := -1;
-        days[ 1, 30, i] := -1;
-        days[ 3, 30, i] := -1;
-        days[ 5, 30, i] := -1;
-        days[ 8, 30, i] := -1;
-        days[10, 30, i] := -1;
-    END;
-
-    n0 := 0;
-    n1 := 0;
-    FOR i := 0 TO 11 DO
-        FOR j := 0 TO 30 DO
-            IF days[i, j, 0] = 0 THEN
-                days[i, j, 0] := n0;
-                INC(n0)
-            END;
-            IF days[i, j, 1] = 0 THEN
-                days[i, j, 1] := n1;
-                INC(n1)
-            END
-        END
+    IF n < 10 THEN
+        INC(n, ORD("0"))
+    ELSE
+        INC(n, ORD("A") - 10)
     END
 
-END init;
+    RETURN n
+END hexdgt;
 
 
 BEGIN
     time := GetTickCount();
-    COPY(HOST.eol, eol);
-    maxreal := HOST.maxreal;
-    init(days)
+    maxreal := HOST.maxreal
 END UTILS.

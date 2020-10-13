@@ -144,7 +144,9 @@ BEGIN
     |114: str := "identifiers 'lib_init' and 'version' are reserved"
     |115: str := "recursive constant definition"
     |116: str := "procedure too deep nested"
-
+    |117: str := "string expected"
+    |118: str := "'$END', '$ELSE' or '$ELSIF' without '$IF'"
+    |119: str := "'$IF', '$ELSIF', '$ELSE' or '$END' expected"
     |120: str := "too many formal parameters"
     |121: str := "multiply defined handler"
     |122: str := "bad divisor"
@@ -210,6 +212,7 @@ BEGIN
     |205: Error1("not enough parameters")
     |206: Error1("bad parameter <target>")
     |207: Error3('inputfile name extension must be "', UTILS.FILE_EXT, '"')
+    |208: Error1("not enough RAM")
     END
 END Error;
 

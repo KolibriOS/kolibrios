@@ -1,13 +1,13 @@
 ﻿(*
     BSD 2-Clause License
 
-    Copyright (c) 2018-2019, Anton Krotov
+    Copyright (c) 2018-2020, Anton Krotov
     All rights reserved.
 *)
 
 MODULE SCAN;
 
-IMPORT TXT := TEXTDRV, AVL := AVLTREES, ARITH, S := STRINGS;
+IMPORT TXT := TEXTDRV, AVL := AVLTREES, ARITH, S := STRINGS, ERRORS, LISTS;
 
 
 CONST
@@ -47,6 +47,12 @@ CONST
 TYPE
 
     LEXSTR* = ARRAY LEXLEN OF CHAR;
+
+    DEF = POINTER TO RECORD (LISTS.ITEM)
+
+        ident: LEXSTR
+
+    END;
 
     IDENT* = POINTER TO RECORD (AVL.DATA)
 
@@ -88,7 +94,9 @@ VAR
 
     NewIdent: IDENT;
 
-    upto: BOOLEAN;
+    upto, LowerCase, _if: BOOLEAN;
+
+    def: LISTS.LIST;
 
 
 PROCEDURE nodecmp (a, b: AVL.DATA): INTEGER;
@@ -166,7 +174,7 @@ PROCEDURE number (text: TXT.TEXT; VAR lex: LEX);
 VAR
     c: CHAR;
     hex: BOOLEAN;
-    error: INTEGER;
+    error, sym: INTEGER;
 
 BEGIN
     c := text.peak;
@@ -174,7 +182,7 @@ BEGIN
 
     error := 0;
 
-    lex.sym := lxINTEGER;
+    sym := lxINTEGER;
     hex := FALSE;
 
     WHILE S.digit(c) DO
@@ -191,26 +199,26 @@ BEGIN
     IF c = "H" THEN
         putchar(lex, c);
         TXT.next(text);
-        lex.sym := lxHEX
+        sym := lxHEX
 
     ELSIF c = "X" THEN
         putchar(lex, c);
         TXT.next(text);
-        lex.sym := lxCHAR
+        sym := lxCHAR
 
     ELSIF c = "." THEN
 
         IF hex THEN
-            lex.sym := lxERROR01
+            sym := lxERROR01
         ELSE
 
             c := nextc(text);
 
             IF c # "." THEN
                 putchar(lex, ".");
-                lex.sym := lxFLOAT
+                sym := lxFLOAT
             ELSE
-                lex.sym := lxINTEGER;
+                sym := lxINTEGER;
                 text.peak := 7FX;
                 upto := TRUE
             END;
@@ -235,7 +243,7 @@ BEGIN
                         c := nextc(text)
                     END
                 ELSE
-                    lex.sym := lxERROR02
+                    sym := lxERROR02
                 END
 
             END
@@ -243,31 +251,32 @@ BEGIN
         END
 
     ELSIF hex THEN
-        lex.sym := lxERROR01
+        sym := lxERROR01
 
     END;
 
-    IF lex.over & (lex.sym >= 0) THEN
-        lex.sym := lxERROR07
+    IF lex.over & (sym >= 0) THEN
+        sym := lxERROR07
     END;
 
-    IF lex.sym = lxINTEGER THEN
+    IF sym = lxINTEGER THEN
         ARITH.iconv(lex.s, lex.value, error)
-    ELSIF (lex.sym = lxHEX) OR (lex.sym = lxCHAR) THEN
+    ELSIF (sym = lxHEX) OR (sym = lxCHAR) THEN
         ARITH.hconv(lex.s, lex.value, error)
-    ELSIF lex.sym = lxFLOAT THEN
+    ELSIF sym = lxFLOAT THEN
         ARITH.fconv(lex.s, lex.value, error)
     END;
 
     CASE error OF
     |0:
-    |1: lex.sym := lxERROR08
-    |2: lex.sym := lxERROR09
-    |3: lex.sym := lxERROR10
-    |4: lex.sym := lxERROR11
-    |5: lex.sym := lxERROR12
-    END
+    |1: sym := lxERROR08
+    |2: sym := lxERROR09
+    |3: sym := lxERROR10
+    |4: sym := lxERROR11
+    |5: sym := lxERROR12
+    END;
 
+    lex.sym := sym
 END number;
 
 
@@ -349,115 +358,120 @@ END comment;
 
 
 PROCEDURE delimiter (text: TXT.TEXT; VAR lex: LEX; c: CHAR);
+VAR
+    sym: INTEGER;
+
 BEGIN
     putchar(lex, c);
     c := nextc(text);
 
     CASE lex.s[0] OF
     |"+":
-        lex.sym := lxPLUS
+        sym := lxPLUS
 
     |"-":
-        lex.sym := lxMINUS
+        sym := lxMINUS
 
     |"*":
-        lex.sym := lxMUL
+        sym := lxMUL
 
     |"/":
-        lex.sym := lxSLASH;
+        sym := lxSLASH;
 
         IF c = "/" THEN
-            lex.sym := lxCOMMENT;
+            sym := lxCOMMENT;
             REPEAT
                 TXT.next(text)
             UNTIL text.eol OR text.eof
         END
 
     |"~":
-        lex.sym := lxNOT
+        sym := lxNOT
 
     |"&":
-        lex.sym := lxAND
+        sym := lxAND
 
     |".":
-        lex.sym := lxPOINT;
+        sym := lxPOINT;
 
         IF c = "." THEN
-            lex.sym := lxRANGE;
+            sym := lxRANGE;
             putchar(lex, c);
             TXT.next(text)
         END
 
     |",":
-        lex.sym := lxCOMMA
+        sym := lxCOMMA
 
     |";":
-        lex.sym := lxSEMI
+        sym := lxSEMI
 
     |"|":
-        lex.sym := lxBAR
+        sym := lxBAR
 
     |"(":
-        lex.sym := lxLROUND;
+        sym := lxLROUND;
 
         IF c = "*" THEN
-            lex.sym := lxCOMMENT;
+            sym := lxCOMMENT;
             TXT.next(text);
             comment(text)
         END
 
     |"[":
-        lex.sym := lxLSQUARE
+        sym := lxLSQUARE
 
     |"{":
-        lex.sym := lxLCURLY
+        sym := lxLCURLY
 
     |"^":
-        lex.sym := lxCARET
+        sym := lxCARET
 
     |"=":
-        lex.sym := lxEQ
+        sym := lxEQ
 
     |"#":
-        lex.sym := lxNE
+        sym := lxNE
 
     |"<":
-        lex.sym := lxLT;
+        sym := lxLT;
 
         IF c = "=" THEN
-            lex.sym := lxLE;
+            sym := lxLE;
             putchar(lex, c);
             TXT.next(text)
         END
 
     |">":
-        lex.sym := lxGT;
+        sym := lxGT;
 
         IF c = "=" THEN
-            lex.sym := lxGE;
+            sym := lxGE;
             putchar(lex, c);
             TXT.next(text)
         END
 
     |":":
-        lex.sym := lxCOLON;
+        sym := lxCOLON;
 
         IF c = "=" THEN
-            lex.sym := lxASSIGN;
+            sym := lxASSIGN;
             putchar(lex, c);
             TXT.next(text)
         END
 
     |")":
-        lex.sym := lxRROUND
+        sym := lxRROUND
 
     |"]":
-        lex.sym := lxRSQUARE
+        sym := lxRSQUARE
 
     |"}":
-        lex.sym := lxRCURLY
+        sym := lxRCURLY
 
-    END
+    END;
+
+    lex.sym := sym
 
 END delimiter;
 
@@ -465,6 +479,107 @@ END delimiter;
 PROCEDURE Next* (text: SCANNER; VAR lex: LEX);
 VAR
     c: CHAR;
+
+
+    PROCEDURE check (cond: BOOLEAN; text: SCANNER; lex: LEX; errno: INTEGER);
+    BEGIN
+        IF ~cond THEN
+            ERRORS.ErrorMsg(text.fname, lex.pos.line, lex.pos.col, errno)
+        END
+    END check;
+
+
+    PROCEDURE IsDef (str: ARRAY OF CHAR): BOOLEAN;
+    VAR
+        cur: DEF;
+
+    BEGIN
+        cur := def.first(DEF);
+        WHILE (cur # NIL) & (cur.ident # str) DO
+            cur := cur.next(DEF)
+        END
+
+        RETURN cur # NIL
+    END IsDef;
+
+
+    PROCEDURE Skip (text: SCANNER);
+    VAR
+        i: INTEGER;
+
+    BEGIN
+        i := 0;
+        WHILE (i <= text.ifc) & ~text._skip[i] DO
+            INC(i)
+        END;
+        text.skip := i <= text.ifc
+    END Skip;
+
+
+    PROCEDURE prep_if (text: SCANNER; VAR lex: LEX);
+    VAR
+        skip: BOOLEAN;
+
+    BEGIN
+        INC(text.ifc);
+        text._elsif[text.ifc] := lex.sym = lxELSIF;
+        IF lex.sym = lxIF THEN
+            INC(text.elsec);
+            text._else[text.elsec] := FALSE
+        END;
+        _if := TRUE;
+        skip := TRUE;
+        text.skip := FALSE;
+
+        Next(text, lex);
+        check(lex.sym = lxLROUND, text, lex, 64);
+
+        Next(text, lex);
+        check(lex.sym = lxIDENT, text, lex, 22);
+
+        REPEAT
+            IF IsDef(lex.s) THEN
+                skip := FALSE
+            END;
+
+            Next(text, lex);
+            IF lex.sym = lxBAR THEN
+                Next(text, lex);
+                check(lex.sym = lxIDENT, text, lex, 22)
+            ELSE
+                check(lex.sym = lxRROUND, text, lex, 33)
+            END
+        UNTIL lex.sym = lxRROUND;
+
+        _if := FALSE;
+        text._skip[text.ifc] := skip;
+        Skip(text);
+        Next(text, lex)
+    END prep_if;
+
+
+    PROCEDURE prep_end (text: SCANNER; VAR lex: LEX);
+    BEGIN
+        check(text.ifc > 0, text, lex, 118);
+        IF lex.sym = lxEND THEN
+            WHILE text._elsif[text.ifc] DO
+                DEC(text.ifc)
+            END;
+            DEC(text.ifc);
+            DEC(text.elsec)
+        ELSIF (lex.sym = lxELSE) OR (lex.sym = lxELSIF) THEN
+            check(~text._else[text.elsec], text, lex, 118);
+            text._skip[text.ifc] := ~text._skip[text.ifc];
+            text._else[text.elsec] := lex.sym = lxELSE
+        END;
+        Skip(text);
+        IF lex.sym = lxELSIF THEN
+            prep_if(text, lex)
+        ELSE
+            Next(text, lex)
+        END
+    END prep_end;
+
 
 BEGIN
 
@@ -490,8 +605,26 @@ BEGIN
             string(text, lex, c)
         ELSIF delimiters[ORD(c)] THEN
             delimiter(text, lex, c)
+        ELSIF c = "$" THEN
+            IF S.letter(nextc(text)) THEN
+                ident(text, lex);
+                IF lex.sym = lxIF THEN
+                    IF ~_if THEN
+                        prep_if(text, lex)
+                    END
+                ELSIF (lex.sym = lxEND) OR (lex.sym = lxELSE) OR (lex.sym = lxELSIF) THEN
+                    IF ~_if THEN
+                        prep_end(text, lex)
+                    END
+                ELSE
+                    check(FALSE, text, lex, 119)
+                END
+            ELSE
+                check(FALSE, text, lex, 119)
+            END
         ELSIF c = 0X THEN
             lex.sym := lxEOF;
+            text.skip := FALSE;
             IF text.eof THEN
                 INC(lex.pos.col)
             END
@@ -514,7 +647,7 @@ BEGIN
             lex.error := 0
         END
 
-    UNTIL lex.sym # lxCOMMENT
+    UNTIL (lex.sym # lxCOMMENT) & ~text.skip
 
 END Next;
 
@@ -530,7 +663,7 @@ BEGIN
 END close;
 
 
-PROCEDURE init;
+PROCEDURE init* (lower: BOOLEAN);
 VAR
     i: INTEGER;
     delim: ARRAY 23 OF CHAR;
@@ -539,15 +672,23 @@ VAR
     PROCEDURE enterkw (key: INTEGER; kw: LEXSTR);
     VAR
         id: IDENT;
+        upper: LEXSTR;
 
     BEGIN
-        id := enterid(kw);
+        IF LowerCase THEN
+            id := enterid(kw);
+            id.key := key
+        END;
+        upper := kw;
+        S.UpCase(upper);
+        id := enterid(upper);
         id.key := key
     END enterkw;
 
 
 BEGIN
     upto := FALSE;
+    LowerCase := lower;
 
     FOR i := 0 TO 255 DO
         delimiters[i] := FALSE
@@ -567,43 +708,54 @@ BEGIN
 
     idents := NIL;
 
-    enterkw(lxARRAY, "ARRAY");
-    enterkw(lxBEGIN, "BEGIN");
-    enterkw(lxBY, "BY");
-    enterkw(lxCASE, "CASE");
-    enterkw(lxCONST, "CONST");
-    enterkw(lxDIV, "DIV");
-    enterkw(lxDO, "DO");
-    enterkw(lxELSE, "ELSE");
-    enterkw(lxELSIF, "ELSIF");
-    enterkw(lxEND, "END");
-    enterkw(lxFALSE, "FALSE");
-    enterkw(lxFOR, "FOR");
-    enterkw(lxIF, "IF");
-    enterkw(lxIMPORT, "IMPORT");
-    enterkw(lxIN, "IN");
-    enterkw(lxIS, "IS");
-    enterkw(lxMOD, "MOD");
-    enterkw(lxMODULE, "MODULE");
-    enterkw(lxNIL, "NIL");
-    enterkw(lxOF, "OF");
-    enterkw(lxOR, "OR");
-    enterkw(lxPOINTER, "POINTER");
-    enterkw(lxPROCEDURE, "PROCEDURE");
-    enterkw(lxRECORD, "RECORD");
-    enterkw(lxREPEAT, "REPEAT");
-    enterkw(lxRETURN, "RETURN");
-    enterkw(lxTHEN, "THEN");
-    enterkw(lxTO, "TO");
-    enterkw(lxTRUE, "TRUE");
-    enterkw(lxTYPE, "TYPE");
-    enterkw(lxUNTIL, "UNTIL");
-    enterkw(lxVAR, "VAR");
-    enterkw(lxWHILE, "WHILE")
+    enterkw(lxARRAY, "array");
+    enterkw(lxBEGIN, "begin");
+    enterkw(lxBY, "by");
+    enterkw(lxCASE, "case");
+    enterkw(lxCONST, "const");
+    enterkw(lxDIV, "div");
+    enterkw(lxDO, "do");
+    enterkw(lxELSE, "else");
+    enterkw(lxELSIF, "elsif");
+    enterkw(lxEND, "end");
+    enterkw(lxFALSE, "false");
+    enterkw(lxFOR, "for");
+    enterkw(lxIF, "if");
+    enterkw(lxIMPORT, "import");
+    enterkw(lxIN, "in");
+    enterkw(lxIS, "is");
+    enterkw(lxMOD, "mod");
+    enterkw(lxMODULE, "module");
+    enterkw(lxNIL, "nil");
+    enterkw(lxOF, "of");
+    enterkw(lxOR, "or");
+    enterkw(lxPOINTER, "pointer");
+    enterkw(lxPROCEDURE, "procedure");
+    enterkw(lxRECORD, "record");
+    enterkw(lxREPEAT, "repeat");
+    enterkw(lxRETURN, "return");
+    enterkw(lxTHEN, "then");
+    enterkw(lxTO, "to");
+    enterkw(lxTRUE, "true");
+    enterkw(lxTYPE, "type");
+    enterkw(lxUNTIL, "until");
+    enterkw(lxVAR, "var");
+    enterkw(lxWHILE, "while")
 
 END init;
 
 
+PROCEDURE NewDef* (str: ARRAY OF CHAR);
+VAR
+    item: DEF;
+
 BEGIN
-    init
+    NEW(item);
+    COPY(str, item.ident);
+    LISTS.push(def, item)
+END NewDef;
+
+
+BEGIN
+    def := LISTS.create(NIL)
 END SCAN.

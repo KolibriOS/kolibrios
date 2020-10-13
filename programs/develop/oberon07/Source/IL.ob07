@@ -7,13 +7,10 @@
 
 MODULE IL;
 
-IMPORT LISTS, SCAN, STRINGS, CHL := CHUNKLISTS, C := COLLECTIONS, TARGETS;
+IMPORT LISTS, SCAN, STRINGS, CHL := CHUNKLISTS, C := COLLECTIONS, TARGETS, PATHS;
 
 
 CONST
-
-    little_endian* = 0;
-    big_endian* = 1;
 
     call_stack* = 0;
     call_win64* = 1;
@@ -22,7 +19,7 @@ CONST
     opJMP* = 0; opLABEL* = 1; opCOPYS* = 2; opGADR* = 3; opCONST* = 4; opLLOAD32* = 5;
     opCOPYA* = 6; opCASET* = 7; opMULC* = 8; opMUL* = 9; opDIV* = 10; opMOD* = 11;
     opDIVL* = 12; opMODL* = 13; opDIVR* = 14; opMODR* = 15; opUMINUS* = 16;
-    opADD* = 17; opSUB* = 18; opADDL* = 19; opSUBL* = 20; opADDR* = 21; opSUBR* = 22;
+    opADD* = 17; opSUB* = 18; opONERR* = 19; opSUBL* = 20; opADDC* = 21; opSUBR* = 22;
     opSAVE* = 23; opSAVEC* = 24; opSAVE8* = 25; opSAVE8C* = 26; opCHKBYTE* = 27; opDROP* = 28;
     opNOT* = 29;
 
@@ -34,14 +31,14 @@ CONST
 
     opVLOAD32* = 60; opGLOAD32* = 61;
 
-    opJNE* = 62; opJE* = 63;
+    opJZ* = 62; opJNZ* = 63;
 
     opSAVE32* = 64; opLLOAD8* = 65;
 
     opCONSTF* = 66; opLOADF* = 67; opSAVEF* = 68; opMULF* = 69; opDIVF* = 70; opDIVFI* = 71;
-    opUMINF* = 72; opADDFI* = 73; opSUBFI* = 74; opADDF* = 75; opSUBF* = 76;
+    opUMINF* = 72; opSAVEFI* = 73; opSUBFI* = 74; opADDF* = 75; opSUBF* = 76;
 
-    opACC* = 77; opJG* = 78;
+    opJNZ1* = 77; opJG* = 78;
     opINCCB* = 79; opDECCB* = 80; opINCB* = 81; opDECB* = 82;
 
     opCASEL* = 83; opCASER* = 84; opCASELR* = 85;
@@ -55,7 +52,7 @@ CONST
     opSBOOL* = 100; opSBOOLC* = 101; opNOP* = 102;
 
     opMULS* = 103; opMULSC* = 104; opDIVS* = 105; opDIVSC* = 106;
-    opADDS* = 107; opSUBS* = 108; opADDSL* = 109; opSUBSL* = 110; opADDSR* = 111; opSUBSR* = 112;
+    opADDS* = 107; opSUBS* = 108; opERR* = 109; opSUBSL* = 110; opADDSC* = 111; opSUBSR* = 112;
     opUMINS* = 113; opIN* = 114; opINL* = 115; opINR* = 116;
     opRSET* = 117; opRSETL* = 118; opRSETR* = 119; opRSET1* = 120; opLENGTH* = 121;
 
@@ -65,25 +62,24 @@ CONST
     opPACK* = 134; opPACKC* = 135; opUNPK* = 136; opCOPY* = 137; opENTER* = 138; opLEAVE* = 139;
     opCALL* = 140; opSAVEP* = 141; opCALLP* = 142; opEQP* = 143; opNEP* = 144; opLEAVER* = 145;
     opGET* = 146; opSAVE16* = 147; opABS* = 148; opFABS* = 149; opFLOOR* = 150; opFLT* = 151;
-    opORD* = 153; opASR* = 154; opLSL* = 155; opROR* = 156;
+    opGETC* = 152; opORD* = 153; opASR* = 154; opLSL* = 155; opROR* = 156;
     opASR1* = 157; opLSL1* = 158; opROR1* = 159; opASR2* = 160; opLSL2* = 161; opROR2* = 162;
     opPUSHP* = 163; opLADR* = 164; opTYPEGP* = 165; opIS* = 166; opPUSHF* = 167; opVADR* = 168;
     opPUSHT* = 169; opTYPEGR* = 170; opISREC* = 171; opCHKIDX* = 172; opPARAM* = 173;
-    opCHKIDX2* = 174; opLEN* = 175; opROT* = 176; opSAVES* = 177; opSADR* = 178; opERR* = 179;
+    opCHKIDX2* = 174; opLEN* = 175; opROT* = 176; opSAVES* = 177; opSADR* = 178; opLENGTHW* = 179;
 
     opCHR* = 180; opENDSW* = 181; opLEAVEF* = 182; opCLEANUP* = 183; opMOVE* = 184;
     opLSR* = 185; opLSR1* = 186; opLSR2* = 187;
-    opMIN* = 188; opMINC* = 189; opMAX* = 190; opMAXC* = 191; opJNZ* = 192;
-    opEQB* = 193; opNEB* = 194; opINF* = 195; opJZ* = 196; opVLOAD8* = 197; opGLOAD8* = 198;
+    opMIN* = 188; opMINC* = 189; opMAX* = 190; opMAXC* = 191; opSYSVALIGN16* = 192;
+    opEQB* = 193; opNEB* = 194; opINF* = 195; opWIN64ALIGN16* = 196; opVLOAD8* = 197; opGLOAD8* = 198;
     opLLOAD16* = 199; opVLOAD16* = 200; opGLOAD16* = 201;
     opLOAD64* = 202; opLLOAD64* = 203; opVLOAD64* = 204; opGLOAD64* = 205; opSAVE64* = 206;
 
     opTYPEGD* = 207; opCALLI* = 208; opPUSHIP* = 209; opSAVEIP* = 210; opEQIP* = 211; opNEIP* = 212;
-    opSAVE16C* = 213; opWCHR* = 214; opGETC* = 215; opLENGTHW* = 216;
+    opSAVE16C* = 213; opWCHR* = 214; opHANDLER* = 215;
 
-    opSYSVCALL* = 217; opSYSVCALLI* = 218; opSYSVCALLP* = 219; opSYSVALIGN16* = 220; opWIN64ALIGN16* = 221;
-
-    opONERR* = 222; opSAVEFI* = 223; opHANDLER* = 224;
+    opSYSVCALL* = 216; opSYSVCALLI* = 217; opSYSVCALLP* = 218; opFNAME* = 219;
+    opAND* = 220; opOR* = 221;
 
 
     opSADR_PARAM* = -1; opLOAD64_PARAM* = -2; opLLOAD64_PARAM* = -3; opGLOAD64_PARAM* = -4;
@@ -154,6 +150,12 @@ TYPE
 
     END;
 
+    FNAMECMD* = POINTER TO RECORD (COMMAND)
+
+        fname*: PATHS.PATH
+
+    END;
+
     CMDSTACK = POINTER TO RECORD
 
         data: ARRAY 1000 OF COMMAND;
@@ -192,7 +194,7 @@ TYPE
         endcall:    CMDSTACK;
         commands*:  LISTS.LIST;
         export*:    LISTS.LIST;
-        import*:    LISTS.LIST;
+        _import*:   LISTS.LIST;
         types*:     CHL.INTLIST;
         data*:      CHL.BYTELIST;
         dmin*:      INTEGER;
@@ -204,7 +206,6 @@ TYPE
         charoffs:   ARRAY 256 OF INTEGER;
         wcharoffs:  ARRAY 65536 OF INTEGER;
 
-        fregs:      INTEGER;
         wstr:       ARRAY 4*1024 OF WCHAR
     END;
 
@@ -212,7 +213,7 @@ TYPE
 VAR
 
     codes*: CODES;
-    endianness, numRegsFloat, CPU: INTEGER;
+    CPU: INTEGER;
 
     commands, variables: C.COLLECTION;
 
@@ -343,10 +344,10 @@ BEGIN
 
     i := 0;
     WHILE i < n DO
-        IF endianness = little_endian THEN
+        IF TARGETS.LittleEndian THEN
             PutByte(ORD(codes.wstr[i]) MOD 256);
             PutByte(ORD(codes.wstr[i]) DIV 256)
-        ELSIF endianness = big_endian THEN
+        ELSE
             PutByte(ORD(codes.wstr[i]) DIV 256);
             PutByte(ORD(codes.wstr[i]) MOD 256)
         END;
@@ -373,10 +374,10 @@ BEGIN
             INC(res)
         END;
 
-        IF endianness = little_endian THEN
+        IF TARGETS.LittleEndian THEN
             PutByte(c MOD 256);
             PutByte(c DIV 256)
-        ELSIF endianness = big_endian THEN
+        ELSE
             PutByte(c DIV 256);
             PutByte(c MOD 256)
         END;
@@ -410,19 +411,19 @@ BEGIN
 END pop;
 
 
-PROCEDURE pushBegEnd* (VAR beg, end: COMMAND);
+PROCEDURE pushBegEnd* (VAR beg, _end: COMMAND);
 BEGIN
     push(codes.begcall, beg);
-    push(codes.endcall, end);
+    push(codes.endcall, _end);
     beg := codes.last;
-    end := beg.next(COMMAND)
+    _end := beg.next(COMMAND)
 END pushBegEnd;
 
 
-PROCEDURE popBegEnd* (VAR beg, end: COMMAND);
+PROCEDURE popBegEnd* (VAR beg, _end: COMMAND);
 BEGIN
     beg := pop(codes.begcall);
-    end := pop(codes.endcall)
+    _end := pop(codes.endcall)
 END popBegEnd;
 
 
@@ -493,6 +494,9 @@ BEGIN
 
         ELSIF (nov.opcode = opMULC) & (old_opcode = opMULC) THEN
             cur.param2 := param2 * cur.param2
+
+        ELSIF (nov.opcode = opADDC) & (old_opcode = opADDC) THEN
+            cur.param2 := param2 + cur.param2
 
         ELSE
             old_opcode := -1
@@ -631,10 +635,10 @@ BEGIN
     prev := codes.last;
     not := prev.opcode = opNOT;
     IF not THEN
-        IF opcode = opJE THEN
-            opcode := opJNE
-        ELSIF opcode = opJNE THEN
-            opcode := opJE
+        IF opcode = opJNZ THEN
+            opcode := opJZ
+        ELSIF opcode = opJZ THEN
+            opcode := opJNZ
         ELSE
             not := FALSE
         END
@@ -645,8 +649,77 @@ BEGIN
     IF not THEN
         delete(prev)
     END
-
 END AddJmpCmd;
+
+
+PROCEDURE AndOrOpt* (VAR label: INTEGER);
+VAR
+    cur, prev: COMMAND;
+    i, op, l: INTEGER;
+    jz, not: BOOLEAN;
+
+BEGIN
+    cur := codes.last;
+    not := cur.opcode = opNOT;
+    IF not THEN
+        cur := cur.prev(COMMAND)
+    END;
+
+    IF cur.opcode = opAND THEN
+        op := opAND
+    ELSIF cur.opcode = opOR THEN
+        op := opOR
+    ELSE
+        op := -1
+    END;
+
+    cur := codes.last;
+
+    IF op # -1 THEN
+        IF not THEN
+            IF op = opAND THEN
+                op := opOR
+            ELSE (* op = opOR *)
+                op := opAND
+            END;
+            prev := cur.prev(COMMAND);
+            delete(cur);
+            cur := prev
+        END;
+
+        FOR i := 1 TO 9 DO
+            IF i = 8 THEN
+                l := cur.param1
+            ELSIF i = 9 THEN
+                jz := cur.opcode = opJZ
+            END;
+            prev := cur.prev(COMMAND);
+            delete(cur);
+            cur := prev
+        END;
+
+        setlast(cur);
+
+        IF op = opAND THEN
+            label := l;
+            jz := ~jz
+        END;
+
+        IF jz THEN
+            AddJmpCmd(opJZ, label)
+        ELSE
+            AddJmpCmd(opJNZ, label)
+        END;
+
+        IF op = opOR THEN
+            SetLabel(l)
+        END
+    ELSE
+        AddJmpCmd(opJZ, label)
+    END;
+
+    setlast(codes.last)
+END AndOrOpt;
 
 
 PROCEDURE OnError* (line, error: INTEGER);
@@ -661,7 +734,7 @@ VAR
 BEGIN
     AddCmd(op, t);
     label := NewLabel();
-    AddJmpCmd(opJE, label);
+    AddJmpCmd(opJNZ, label);
     OnError(line, error);
     SetLabel(label)
 END TypeGuard;
@@ -685,14 +758,6 @@ BEGIN
 END New;
 
 
-PROCEDURE fcmp* (opcode: INTEGER);
-BEGIN
-    AddCmd(opcode, 0);
-    DEC(codes.fregs, 2);
-    ASSERT(codes.fregs >= 0)
-END fcmp;
-
-
 PROCEDURE not*;
 VAR
     prev: COMMAND;
@@ -705,6 +770,14 @@ BEGIN
         AddCmd0(opNOT)
     END
 END not;
+
+
+PROCEDURE _ord*;
+BEGIN
+    IF (codes.last.opcode # opAND) & (codes.last.opcode # opOR) THEN
+        AddCmd0(opORD)
+    END
+END _ord;
 
 
 PROCEDURE Enter* (label, params: INTEGER): COMMAND;
@@ -900,42 +973,8 @@ BEGIN
         AddCmd0(opSAVEFI)
     ELSE
         AddCmd0(opSAVEF)
-    END;
-    DEC(codes.fregs);
-    ASSERT(codes.fregs >= 0)
+    END
 END savef;
-
-
-PROCEDURE pushf*;
-BEGIN
-    AddCmd0(opPUSHF);
-    DEC(codes.fregs);
-    ASSERT(codes.fregs >= 0)
-END pushf;
-
-
-PROCEDURE loadf* (): BOOLEAN;
-BEGIN
-    AddCmd0(opLOADF);
-    INC(codes.fregs)
-    RETURN codes.fregs < numRegsFloat
-END loadf;
-
-
-PROCEDURE inf* (): BOOLEAN;
-BEGIN
-    AddCmd0(opINF);
-    INC(codes.fregs)
-    RETURN codes.fregs < numRegsFloat
-END inf;
-
-
-PROCEDURE fbinop* (opcode: INTEGER);
-BEGIN
-    AddCmd0(opcode);
-    DEC(codes.fregs);
-    ASSERT(codes.fregs > 0)
-END fbinop;
 
 
 PROCEDURE saves* (offset, length: INTEGER);
@@ -952,22 +991,6 @@ BEGIN
         AddCmd0(opABS)
     END
 END abs;
-
-
-PROCEDURE floor*;
-BEGIN
-    AddCmd0(opFLOOR);
-    DEC(codes.fregs);
-    ASSERT(codes.fregs >= 0)
-END floor;
-
-
-PROCEDURE flt* (): BOOLEAN;
-BEGIN
-    AddCmd0(opFLT);
-    INC(codes.fregs)
-    RETURN codes.fregs < numRegsFloat
-END flt;
 
 
 PROCEDURE shift_minmax* (op: CHAR);
@@ -1015,7 +1038,7 @@ BEGIN
 END len;
 
 
-PROCEDURE Float* (r: REAL);
+PROCEDURE Float* (r: REAL; line, col: INTEGER);
 VAR
     cmd: COMMAND;
 
@@ -1023,43 +1046,10 @@ BEGIN
     cmd := NewCmd();
     cmd.opcode := opCONSTF;
     cmd.float := r;
-    insert(codes.last, cmd);
-    INC(codes.fregs);
-    ASSERT(codes.fregs <= numRegsFloat)
+    cmd.param1 := line;
+    cmd.param2 := col;
+    insert(codes.last, cmd)
 END Float;
-
-
-PROCEDURE precall* (flt: BOOLEAN): INTEGER;
-VAR
-    res: INTEGER;
-BEGIN
-    res := codes.fregs;
-    AddCmd2(opPRECALL, ORD(flt), res);
-    codes.fregs := 0
-    RETURN res
-END precall;
-
-
-PROCEDURE resf* (fregs: INTEGER): BOOLEAN;
-BEGIN
-    AddCmd(opRESF, fregs);
-    codes.fregs := fregs + 1
-    RETURN codes.fregs < numRegsFloat
-END resf;
-
-
-PROCEDURE res* (fregs: INTEGER);
-BEGIN
-    AddCmd(opRES, fregs);
-    codes.fregs := fregs
-END res;
-
-
-PROCEDURE retf*;
-BEGIN
-    DEC(codes.fregs);
-    ASSERT(codes.fregs = 0)
-END retf;
 
 
 PROCEDURE drop*;
@@ -1068,7 +1058,7 @@ BEGIN
 END drop;
 
 
-PROCEDURE case* (a, b, L, R: INTEGER);
+PROCEDURE _case* (a, b, L, R: INTEGER);
 VAR
     cmd: COMMAND;
 
@@ -1084,13 +1074,19 @@ BEGIN
         AddCmd2(opCASEL, a, L);
         AddCmd2(opCASER, b, R)
     END
-END case;
+END _case;
 
 
-PROCEDURE caset* (a, label: INTEGER);
+PROCEDURE fname* (name: PATHS.PATH);
+VAR
+    cmd: FNAMECMD;
+
 BEGIN
-    AddCmd2(opCASET, label, a)
-END caset;
+    NEW(cmd);
+    cmd.opcode := opFNAME;
+    cmd.fname := name;
+    insert(codes.last, cmd)
+END fname;
 
 
 PROCEDURE AddExp* (label: INTEGER; name: SCAN.LEXSTR);
@@ -1111,7 +1107,7 @@ VAR
     p:   IMPORT_PROC;
 
 BEGIN
-    lib := codes.import.first(IMPORT_LIB);
+    lib := codes._import.first(IMPORT_LIB);
     WHILE (lib # NIL) & (lib.name # dll) DO
         lib := lib.next(IMPORT_LIB)
     END;
@@ -1120,7 +1116,7 @@ BEGIN
         NEW(lib);
         lib.name := dll;
         lib.procs := LISTS.create(NIL);
-        LISTS.push(codes.import, lib)
+        LISTS.push(codes._import, lib)
     END;
 
     p := lib.procs.first(IMPORT_PROC);
@@ -1153,7 +1149,7 @@ BEGIN
         lib := imp(IMPORT_PROC).lib;
         LISTS.delete(lib.procs, imp);
         IF lib.procs.first = NIL THEN
-            LISTS.delete(codes.import, lib)
+            LISTS.delete(codes._import, lib)
         END
     END
 END DelImport;
@@ -1161,21 +1157,14 @@ END DelImport;
 
 PROCEDURE init* (pCPU: INTEGER);
 VAR
-    cmd:    COMMAND;
-    i:      INTEGER;
+    cmd: COMMAND;
+    i:   INTEGER;
 
 BEGIN
     commands := C.create();
     variables := C.create();
 
     CPU := pCPU;
-    endianness := little_endian;
-    CASE CPU OF
-    |TARGETS.cpuAMD64:  numRegsFloat := 6
-    |TARGETS.cpuX86:    numRegsFloat := 8
-    |TARGETS.cpuMSP430: numRegsFloat := 0
-    |TARGETS.cpuTHUMB:  numRegsFloat := 256
-    END;
 
     NEW(codes.begcall);
     codes.begcall.top := -1;
@@ -1183,7 +1172,7 @@ BEGIN
     codes.endcall.top := -1;
     codes.commands := LISTS.create(NIL);
     codes.export   := LISTS.create(NIL);
-    codes.import   := LISTS.create(NIL);
+    codes._import  := LISTS.create(NIL);
     codes.types    := CHL.CreateIntList();
     codes.data     := CHL.CreateByteList();
 
@@ -1194,8 +1183,6 @@ BEGIN
     AddRec(0);
 
     codes.lcount := 0;
-
-    codes.fregs := 0;
 
     FOR i := 0 TO LEN(codes.charoffs) - 1 DO
         codes.charoffs[i] := -1

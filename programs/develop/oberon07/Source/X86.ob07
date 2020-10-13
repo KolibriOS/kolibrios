@@ -8,7 +8,7 @@
 MODULE X86;
 
 IMPORT IL, REG, UTILS, LISTS, BIN, PE32, KOS, MSCOFF, ELF, PROG,
-       CHL := CHUNKLISTS, PATHS, TARGETS;
+       CHL := CHUNKLISTS, PATHS, TARGETS, ERRORS;
 
 
 CONST
@@ -22,12 +22,16 @@ CONST
     esp = 4;
     ebp = 5;
 
+    MAX_FR = 7;
+
     sete = 94H; setne = 95H; setl = 9CH; setge = 9DH; setle = 9EH; setg = 9FH; setc = 92H; setnc = 93H;
 
     je = 84H; jne = 85H; jl = 8CH; jge = 8DH; jle = 8EH; jg = 8FH; jb = 82H; jnb = 83H;
 
 
     CODECHUNK = 8;
+
+    FPR_ERR = 41;
 
 
 TYPE
@@ -92,6 +96,10 @@ VAR
 
     tcount: INTEGER;
 
+    FR: ARRAY 1000 OF INTEGER;
+
+    fname: PATHS.PATH;
+
 
 PROCEDURE OutByte* (n: BYTE);
 VAR
@@ -146,7 +154,7 @@ BEGIN
 END OutWord;
 
 
-PROCEDURE isByte (n: INTEGER): BOOLEAN;
+PROCEDURE isByte* (n: INTEGER): BOOLEAN;
     RETURN (-128 <= n) & (n <= 127)
 END isByte;
 
@@ -182,24 +190,24 @@ BEGIN
 END shift;
 
 
-PROCEDURE mov (reg1, reg2: INTEGER);
+PROCEDURE oprr (op: BYTE; reg1, reg2: INTEGER); (* op reg1, reg2 *)
 BEGIN
-    OutByte2(89H, 0C0H + reg2 * 8 + reg1)  (* mov reg1, reg2 *)
+    OutByte2(op, 0C0H + 8 * reg2 + reg1)
+END oprr;
+
+
+PROCEDURE mov (reg1, reg2: INTEGER); (* mov reg1, reg2 *)
+BEGIN
+    oprr(89H, reg1, reg2)
 END mov;
 
 
-PROCEDURE xchg (reg1, reg2: INTEGER);
-VAR
-    regs: SET;
-
+PROCEDURE xchg (reg1, reg2: INTEGER); (* xchg reg1, reg2 *)
 BEGIN
-    regs := {reg1, reg2};
-    IF regs = {eax, ecx} THEN
-        OutByte(91H)                (* xchg eax, ecx *)
-    ELSIF regs = {eax, edx} THEN
-        OutByte(92H)                (* xchg eax, edx *)
-    ELSIF regs = {ecx, edx} THEN
-        OutByte2(87H, 0D1H)         (* xchg ecx, edx *)
+    IF eax IN {reg1, reg2} THEN
+        OutByte(90H + reg1 + reg2)
+    ELSE
+        oprr(87H, reg1, reg2)
     END
 END xchg;
 
@@ -216,14 +224,24 @@ BEGIN
 END push;
 
 
+PROCEDURE xor (reg1, reg2: INTEGER); (* xor reg1, reg2 *)
+BEGIN
+    oprr(31H, reg1, reg2)
+END xor;
+
+
 PROCEDURE movrc (reg, n: INTEGER);
 BEGIN
-    OutByte(0B8H + reg); (* mov reg, n *)
-    OutInt(n)
+    IF n = 0 THEN
+        xor(reg, reg)
+    ELSE
+        OutByte(0B8H + reg); (* mov reg, n *)
+        OutInt(n)
+    END
 END movrc;
 
 
-PROCEDURE pushc (n: INTEGER);
+PROCEDURE pushc* (n: INTEGER);
 BEGIN
     OutByte(68H + short(n)); (* push n *)
     OutIntByte(n)
@@ -248,67 +266,85 @@ BEGIN
 END not;
 
 
-PROCEDURE add (reg1, reg2: INTEGER);
+PROCEDURE add (reg1, reg2: INTEGER); (* add reg1, reg2 *)
 BEGIN
-    OutByte2(01H, 0C0H + reg2 * 8 + reg1)  (* add reg1, reg2 *)
+    oprr(01H, reg1, reg2)
 END add;
 
 
-PROCEDURE andrc (reg, n: INTEGER);
+PROCEDURE oprc* (op, reg, n: INTEGER);
 BEGIN
-    OutByte2(81H + short(n), 0E0H + reg);  (* and reg, n *)
-    OutIntByte(n)
+    IF (reg = eax) & ~isByte(n) THEN
+        CASE op OF
+        |0C0H: op := 05H (* add *)
+        |0E8H: op := 2DH (* sub *)
+        |0F8H: op := 3DH (* cmp *)
+        |0E0H: op := 25H (* and *)
+        |0C8H: op := 0DH (* or  *)
+        |0F0H: op := 35H (* xor *)
+        END;
+        OutByte(op);
+        OutInt(n)
+    ELSE
+        OutByte2(81H + short(n), op + reg MOD 8);
+        OutIntByte(n)
+    END
+END oprc;
+
+
+PROCEDURE andrc (reg, n: INTEGER); (* and reg, n *)
+BEGIN
+    oprc(0E0H, reg, n)
 END andrc;
 
 
-PROCEDURE orrc (reg, n: INTEGER);
+PROCEDURE orrc (reg, n: INTEGER); (* or reg, n *)
 BEGIN
-    OutByte2(81H + short(n), 0C8H + reg);  (* or reg, n *)
-    OutIntByte(n)
+    oprc(0C8H, reg, n)
 END orrc;
 
 
-PROCEDURE addrc (reg, n: INTEGER);
+PROCEDURE xorrc (reg, n: INTEGER); (* xor reg, n *)
 BEGIN
-    OutByte2(81H + short(n), 0C0H + reg);  (* add reg, n *)
-    OutIntByte(n)
+    oprc(0F0H, reg, n)
+END xorrc;
+
+
+PROCEDURE addrc (reg, n: INTEGER); (* add reg, n *)
+BEGIN
+    oprc(0C0H, reg, n)
 END addrc;
 
 
-PROCEDURE subrc (reg, n: INTEGER);
+PROCEDURE subrc (reg, n: INTEGER); (* sub reg, n *)
 BEGIN
-    OutByte2(81H + short(n), 0E8H + reg);  (* sub reg, n *)
-    OutIntByte(n)
+    oprc(0E8H, reg, n)
 END subrc;
 
 
-PROCEDURE cmprr (reg1, reg2: INTEGER);
-BEGIN
-    OutByte2(39H, 0C0H + reg2 * 8 + reg1)  (* cmp reg1, reg2 *)
-END cmprr;
-
-
-PROCEDURE cmprc (reg, n: INTEGER);
+PROCEDURE cmprc (reg, n: INTEGER); (* cmp reg, n *)
 BEGIN
     IF n = 0 THEN
         test(reg)
     ELSE
-        OutByte2(81H + short(n), 0F8H + reg);  (* cmp reg, n *)
-        OutIntByte(n)
+        oprc(0F8H, reg, n)
     END
 END cmprc;
 
 
-PROCEDURE setcc (cond, reg: INTEGER);
+PROCEDURE cmprr (reg1, reg2: INTEGER); (* cmp reg1, reg2 *)
 BEGIN
-    OutByte3(0FH, cond, 0C0H + reg)  (* setcc reg *)
+    oprr(39H, reg1, reg2)
+END cmprr;
+
+
+PROCEDURE setcc* (cc, reg: INTEGER); (* setcc reg *)
+BEGIN
+    IF reg >= 8 THEN
+        OutByte(41H)
+    END;
+    OutByte3(0FH, cc, 0C0H + reg MOD 8)
 END setcc;
-
-
-PROCEDURE xor (reg1, reg2: INTEGER);
-BEGIN
-    OutByte2(31H, 0C0H + reg2 * 8 + reg1) (* xor reg1, reg2 *)
-END xor;
 
 
 PROCEDURE ret*;
@@ -578,7 +614,7 @@ BEGIN
     OutByte2(0DAH, 0E9H);       (* fucompp *)
     OutByte3(09BH, 0DFH, 0E0H); (* fstsw ax *)
     OutByte(09EH);              (* sahf *)
-    movrc(eax, 0)
+    OutByte(0B8H); OutInt(0)    (* mov eax, 0 *)
 END fcmp;
 
 
@@ -694,7 +730,7 @@ PROCEDURE translate (pic: BOOLEAN; stroffs: INTEGER);
 VAR
     cmd, next: COMMAND;
 
-    reg1, reg2: INTEGER;
+    reg1, reg2, fr: INTEGER;
 
     n, a, b, label, cc: INTEGER;
 
@@ -704,6 +740,8 @@ VAR
 
 BEGIN
     cmd := IL.codes.commands.first(COMMAND);
+
+    fr := -1;
 
     WHILE cmd # NIL DO
 
@@ -738,16 +776,18 @@ BEGIN
             ASSERT(R.top = -1)
 
         |IL.opPRECALL:
-            n := param2;
-            IF (param1 # 0) & (n # 0) THEN
+            PushAll(0);
+            IF (param2 # 0) & (fr >= 0) THEN
                 subrc(esp, 8)
             END;
-            WHILE n > 0 DO
+            INC(FR[0]);
+            FR[FR[0]] := fr + 1;
+            WHILE fr >= 0 DO
                 subrc(esp, 8);
                 OutByte3(0DDH, 01CH, 024H); (* fstp qword[esp] *)
-                DEC(n)
+                DEC(fr)
             END;
-            PushAll(0)
+            ASSERT(fr = -1)
 
         |IL.opALIGN16:
             ASSERT(eax IN R.regs);
@@ -759,27 +799,31 @@ BEGIN
             END;
             push(eax)
 
-        |IL.opRES:
+        |IL.opRESF, IL.opRES:
             ASSERT(R.top = -1);
-            GetRegA;
-            n := param2;
-            WHILE n > 0 DO
-                OutByte3(0DDH, 004H, 024H); (* fld qword[esp] *)
-                addrc(esp, 8);
-                DEC(n)
-            END
+            ASSERT(fr = -1);
+            n := FR[FR[0]]; DEC(FR[0]);
 
-        |IL.opRESF:
-            n := param2;
-            IF n > 0 THEN
-                OutByte3(0DDH, 5CH + long(n * 8), 24H);
-                OutIntByte(n * 8); (* fstp qword[esp + n*8] *)
-                INC(n)
+            IF opcode = IL.opRESF THEN
+                INC(fr);
+                IF n > 0 THEN
+                    OutByte3(0DDH, 5CH + long(n * 8), 24H);
+                    OutIntByte(n * 8); (* fstp qword[esp + n*8] *)
+                    DEC(fr);
+                    INC(n)
+                END;
+
+                IF fr + n > MAX_FR THEN
+                    ERRORS.ErrorMsg(fname, param1, param2, FPR_ERR)
+                END
+            ELSE
+                GetRegA
             END;
 
             WHILE n > 0 DO
                 OutByte3(0DDH, 004H, 024H); (* fld qword[esp] *)
                 addrc(esp, 8);
+                INC(fr);
                 DEC(n)
             END
 
@@ -816,6 +860,12 @@ BEGIN
 
             ASSERT(R.top = -1);
 
+            IF opcode = IL.opLEAVEF THEN
+                DEC(fr)
+            END;
+
+            ASSERT(fr = -1);
+
             IF param1 > 0 THEN
                 mov(esp, ebp)
             END;
@@ -849,9 +899,8 @@ BEGIN
             END
 
         |IL.opCLEANUP:
-            n := param2 * 4;
-            IF n # 0 THEN
-                addrc(esp, n)
+            IF param2 # 0 THEN
+                addrc(esp, param2 * 4)
             END
 
         |IL.opPOPSP:
@@ -863,9 +912,14 @@ BEGIN
         |IL.opLABEL:
             SetLabel(param1) (* L: *)
 
-        |IL.opNOP:
+        |IL.opNOP, IL.opAND, IL.opOR:
 
         |IL.opGADR:
+            next := cmd.next(COMMAND);
+            IF next.opcode = IL.opADDC THEN
+                INC(param2, next.param2);
+                cmd := next
+            END;
             reg1 := GetAnyReg();
             IF pic THEN
                 Pic(reg1, BIN.PICBSS, param2)
@@ -875,7 +929,12 @@ BEGIN
             END
 
         |IL.opLADR:
+            next := cmd.next(COMMAND);
             n := param2 * 4;
+            IF next.opcode = IL.opADDC THEN
+                INC(n, next.param2);
+                cmd := next
+            END;
             OutByte2(8DH, 45H + GetAnyReg() * 8 + long(n));  (* lea reg1, dword[ebp + n] *)
             OutIntByte(n)
 
@@ -907,7 +966,6 @@ BEGIN
             drop
 
         |IL.opVLOAD32:
-            n := param2 * 4;
             reg1 := GetAnyReg();
             movrm(reg1, ebp, param2 * 4);
             movrm(reg1, reg1, 0)
@@ -979,7 +1037,7 @@ BEGIN
             add(reg1, reg2);
             drop
 
-        |IL.opADDL, IL.opADDR:
+        |IL.opADDC:
             IF param2 # 0 THEN
                 UnOp(reg1);
                 next := cmd.next(COMMAND);
@@ -1010,18 +1068,17 @@ BEGIN
 
         |IL.opSUB:
             BinOp(reg1, reg2);
-            OutByte2(29H, 0C0H + reg2 * 8 + reg1); (* sub reg1, reg2 *)
+            oprr(29H, reg1, reg2); (* sub reg1, reg2 *)
             drop
 
         |IL.opSUBR, IL.opSUBL:
             UnOp(reg1);
-            n := param2;
-            IF n = 1 THEN
+            IF param2 = 1 THEN
                 OutByte(48H + reg1) (* dec reg1 *)
-            ELSIF n = -1 THEN
+            ELSIF param2 = -1 THEN
                 OutByte(40H + reg1) (* inc reg1 *)
-            ELSIF n # 0 THEN
-                subrc(reg1, n)
+            ELSIF param2 # 0 THEN
+                subrc(reg1, param2)
             END;
             IF opcode = IL.opSUBL THEN
                 neg(reg1)
@@ -1111,7 +1168,7 @@ BEGIN
                 reg2 := GetAnyReg();
                 Pic(reg2, BIN.PICIMP, param2);
                 pushm(reg2, 0);
-                OutByte2(08FH, reg1);         (* pop  dword[reg1] *)
+                OutByte2(08FH, reg1);  (* pop dword[reg1] *)
                 drop
             ELSE
                 OutByte2(0FFH, 035H);  (* push dword[L] *)
@@ -1179,10 +1236,10 @@ BEGIN
             cc := cond(opcode);
             next := cmd.next(COMMAND);
 
-            IF next.opcode = IL.opJE THEN
+            IF next.opcode = IL.opJNZ THEN
                 jcc(cc, next.param1);
                 cmd := next
-            ELSIF next.opcode = IL.opJNE THEN
+            ELSIF next.opcode = IL.opJZ THEN
                 jcc(inv0(cc), next.param1);
                 cmd := next
             ELSE
@@ -1212,40 +1269,27 @@ BEGIN
             END;
             andrc(reg1, 1)
 
-        |IL.opACC:
-            IF (R.top # 0) OR (R.stk[0] # eax) THEN
-                PushAll(0);
-                GetRegA;
-                pop(eax);
-                DEC(R.pushed)
-            END
-
         |IL.opDROP:
             UnOp(reg1);
             drop
 
-        |IL.opJNZ:
+        |IL.opJNZ1:
             UnOp(reg1);
             test(reg1);
             jcc(jne, param1)
-
-        |IL.opJZ:
-            UnOp(reg1);
-            test(reg1);
-            jcc(je, param1)
 
         |IL.opJG:
             UnOp(reg1);
             test(reg1);
             jcc(jg, param1)
 
-        |IL.opJE:
+        |IL.opJNZ:
             UnOp(reg1);
             test(reg1);
             jcc(jne, param1);
             drop
 
-        |IL.opJNE:
+        |IL.opJZ:
             UnOp(reg1);
             test(reg1);
             jcc(je, param1);
@@ -1389,7 +1433,7 @@ BEGIN
 
         |IL.opMULS:
             BinOp(reg1, reg2);
-            OutByte2(21H, 0C0H + reg2 * 8 + reg1); (* and reg1, reg2 *)
+            oprr(21H, reg1, reg2); (* and reg1, reg2 *)
             drop
 
         |IL.opMULSC:
@@ -1403,21 +1447,20 @@ BEGIN
 
         |IL.opDIVSC:
             UnOp(reg1);
-            OutByte2(81H + short(param2), 0F0H + reg1);  (* xor reg1, n *)
-            OutIntByte(param2)
+            xorrc(reg1, param2)
 
         |IL.opADDS:
             BinOp(reg1, reg2);
-            OutByte2(9H, 0C0H + reg2 * 8 + reg1); (* or reg1, reg2 *)
+            oprr(9H, reg1, reg2); (* or reg1, reg2 *)
             drop
 
         |IL.opSUBS:
             BinOp(reg1, reg2);
             not(reg2);
-            OutByte2(21H, 0C0H + reg2 * 8 + reg1); (* and reg1, reg2 *)
+            oprr(21H, reg1, reg2); (* and reg1, reg2 *)
             drop
 
-        |IL.opADDSL, IL.opADDSR:
+        |IL.opADDSC:
             UnOp(reg1);
             orrc(reg1, param2)
 
@@ -1508,9 +1551,15 @@ BEGIN
         |IL.opMAXC, IL.opMINC:
             UnOp(reg1);
             cmprc(reg1, param2);
-            OutByte2(07DH + ORD(opcode = IL.opMINC), 5);  (* jge/jle L *)
-            movrc(reg1, param2)
-            (* L: *)
+            label := NewLabel();
+            IF opcode = IL.opMINC THEN
+                cc := jle
+            ELSE
+                cc := jge
+            END;
+            jcc(cc, label);
+            movrc(reg1, param2);
+            SetLabel(label)
 
         |IL.opIN, IL.opINR:
             IF opcode = IL.opINR THEN
@@ -1824,15 +1873,25 @@ BEGIN
             drop
 
         |IL.opPUSHF:
+            ASSERT(fr >= 0);
+            DEC(fr);
             subrc(esp, 8);
             OutByte3(0DDH, 01CH, 024H)    (* fstp qword[esp] *)
 
         |IL.opLOADF:
+            INC(fr);
+            IF fr > MAX_FR THEN
+                ERRORS.ErrorMsg(fname, param1, param2, FPR_ERR)
+            END;
             UnOp(reg1);
             OutByte2(0DDH, reg1);         (* fld qword[reg1] *)
             drop
 
         |IL.opCONSTF:
+            INC(fr);
+            IF fr > MAX_FR THEN
+                ERRORS.ErrorMsg(fname, param1, param2, FPR_ERR)
+            END;
             float := cmd.float;
             IF float = 0.0 THEN
                 OutByte2(0D9H, 0EEH)      (* fldz *)
@@ -1850,35 +1909,55 @@ BEGIN
             END
 
         |IL.opSAVEF, IL.opSAVEFI:
+            ASSERT(fr >= 0);
+            DEC(fr);
             UnOp(reg1);
             OutByte2(0DDH, 018H + reg1); (* fstp qword[reg1] *)
             drop
 
-        |IL.opADDF, IL.opADDFI:
+        |IL.opADDF:
+            ASSERT(fr >= 1);
+            DEC(fr);
             OutByte2(0DEH, 0C1H)  (* faddp st1, st *)
 
         |IL.opSUBF:
+            ASSERT(fr >= 1);
+            DEC(fr);
             OutByte2(0DEH, 0E9H)  (* fsubp st1, st *)
 
         |IL.opSUBFI:
+            ASSERT(fr >= 1);
+            DEC(fr);
             OutByte2(0DEH, 0E1H)  (* fsubrp st1, st *)
 
         |IL.opMULF:
+            ASSERT(fr >= 1);
+            DEC(fr);
             OutByte2(0DEH, 0C9H)  (* fmulp st1, st *)
 
         |IL.opDIVF:
+            ASSERT(fr >= 1);
+            DEC(fr);
             OutByte2(0DEH, 0F9H)  (* fdivp st1, st *)
 
         |IL.opDIVFI:
+            ASSERT(fr >= 1);
+            DEC(fr);
             OutByte2(0DEH, 0F1H)  (* fdivrp st1, st *)
 
         |IL.opUMINF:
+            ASSERT(fr >= 0);
             OutByte2(0D9H, 0E0H)  (* fchs *)
 
         |IL.opFABS:
+            ASSERT(fr >= 0);
             OutByte2(0D9H, 0E1H)  (* fabs *)
 
         |IL.opFLT:
+            INC(fr);
+            IF fr > MAX_FR THEN
+                ERRORS.ErrorMsg(fname, param1, param2, FPR_ERR)
+            END;
             UnOp(reg1);
             push(reg1);
             OutByte3(0DBH, 004H, 024H); (* fild dword[esp] *)
@@ -1886,6 +1965,8 @@ BEGIN
             drop
 
         |IL.opFLOOR:
+            ASSERT(fr >= 0);
+            DEC(fr);
             subrc(esp, 8);
             OutByte2(09BH, 0D9H); OutByte3(07CH, 024H, 004H);                   (* fstcw word[esp+4]                    *)
             OutByte2(09BH, 0D9H); OutByte3(07CH, 024H, 006H);                   (* fstcw word[esp+6]                    *)
@@ -1899,18 +1980,24 @@ BEGIN
             addrc(esp, 4)
 
         |IL.opEQF:
+            ASSERT(fr >= 1);
+            DEC(fr, 2);
             fcmp;
             OutByte2(07AH, 003H);       (* jp L *)
             setcc(sete, al)
                                         (* L: *)
 
         |IL.opNEF:
+            ASSERT(fr >= 1);
+            DEC(fr, 2);
             fcmp;
             OutByte2(07AH, 003H);       (* jp L *)
             setcc(setne, al)
                                         (* L: *)
 
         |IL.opLTF:
+            ASSERT(fr >= 1);
+            DEC(fr, 2);
             fcmp;
             OutByte2(07AH, 00EH);       (* jp L *)
             setcc(setc, al);
@@ -1921,6 +2008,8 @@ BEGIN
                                         (* L: *)
 
         |IL.opGTF:
+            ASSERT(fr >= 1);
+            DEC(fr, 2);
             fcmp;
             OutByte2(07AH, 00FH);       (* jp L *)
             setcc(setc, al);
@@ -1931,12 +2020,16 @@ BEGIN
                                         (* L: *)
 
         |IL.opLEF:
+            ASSERT(fr >= 1);
+            DEC(fr, 2);
             fcmp;
             OutByte2(07AH, 003H);       (* jp L *)
             setcc(setnc, al)
                                         (* L: *)
 
         |IL.opGEF:
+            ASSERT(fr >= 1);
+            DEC(fr, 2);
             fcmp;
             OutByte2(07AH, 010H);       (* jp L *)
             setcc(setc, al);
@@ -1948,6 +2041,10 @@ BEGIN
                                         (* L: *)
 
         |IL.opINF:
+            INC(fr);
+            IF fr > MAX_FR THEN
+                ERRORS.ErrorMsg(fname, param1, param2, FPR_ERR)
+            END;
             pushc(7FF00000H);
             pushc(0);
             OutByte3(0DDH, 004H, 024H);  (* fld qword[esp] *)
@@ -2076,6 +2173,9 @@ BEGIN
             OutIntByte(n);
             OutByte(param2)
 
+        |IL.opFNAME:
+            fname := cmd(IL.FNAMECMD).fname
+
         |IL.opLOOP, IL.opENDLOOP:
 
         END;
@@ -2084,8 +2184,8 @@ BEGIN
     END;
 
     ASSERT(R.pushed = 0);
-    ASSERT(R.top = -1)
-
+    ASSERT(R.top = -1);
+    ASSERT(fr = -1)
 END translate;
 
 
@@ -2094,9 +2194,9 @@ VAR
     reg1, entry, L, dcount: INTEGER;
 
 BEGIN
-
     entry := NewLabel();
     SetLabel(entry);
+    dcount := CHL.Length(IL.codes.data);
 
     IF target = TARGETS.Win32DLL THEN
         push(ebp);
@@ -2106,19 +2206,17 @@ BEGIN
         pushm(ebp, 8);
         CallRTL(pic, IL._dllentry);
         test(eax);
-        jcc(je, dllret)
+        jcc(je, dllret);
+        pushc(0)
     ELSIF target = TARGETS.KolibriOSDLL THEN
-        SetLabel(dllinit)
-    END;
-
-    IF target = TARGETS.KolibriOS THEN
+        SetLabel(dllinit);
+        OutByte(68H);  (* push IMPORT *)
+        Reloc(BIN.IMPTAB, 0)
+    ELSIF target = TARGETS.KolibriOS THEN
         reg1 := GetAnyReg();
         Pic(reg1, BIN.IMPTAB, 0);
         push(reg1);    (* push IMPORT *)
         drop
-    ELSIF target = TARGETS.KolibriOSDLL THEN
-        OutByte(68H);  (* push IMPORT *)
-        Reloc(BIN.IMPTAB, 0)
     ELSIF target = TARGETS.Linux32 THEN
         push(esp)
     ELSE
@@ -2128,40 +2226,26 @@ BEGIN
     IF pic THEN
         reg1 := GetAnyReg();
         Pic(reg1, BIN.PICCODE, entry);
-        push(reg1);     (* push CODE *)
-        drop
-    ELSE
-        OutByte(68H);  (* push CODE *)
-        Reloc(BIN.RCODE, entry)
-    END;
-
-    IF pic THEN
-        reg1 := GetAnyReg();
+        push(reg1);    (* push CODE *)
         Pic(reg1, BIN.PICDATA, 0);
         push(reg1);    (* push _data *)
-        drop
-    ELSE
-        OutByte(68H);  (* push _data *)
-        Reloc(BIN.RDATA, 0)
-    END;
-
-    dcount := CHL.Length(IL.codes.data);
-
-    pushc(tcount);
-
-    IF pic THEN
-        reg1 := GetAnyReg();
+        pushc(tcount);
         Pic(reg1, BIN.PICDATA, tcount * 4 + dcount);
         push(reg1);    (* push _data + tcount * 4 + dcount *)
         drop
     ELSE
+        OutByte(68H);  (* push CODE *)
+        Reloc(BIN.RCODE, entry);
         OutByte(68H);  (* push _data *)
+        Reloc(BIN.RDATA, 0);
+        pushc(tcount);
+        OutByte(68H);  (* push _data + tcount * 4 + dcount *)
         Reloc(BIN.RDATA, tcount * 4 + dcount)
     END;
 
     CallRTL(pic, IL._init);
 
-    IF target = TARGETS.Linux32 THEN
+    IF target IN {TARGETS.Win32C, TARGETS.Win32GUI, TARGETS.Linux32} THEN
         L := NewLabel();
         pushc(0);
         push(esp);
@@ -2186,7 +2270,7 @@ VAR
     dcount, i: INTEGER;
 
 
-    PROCEDURE import (imp: LISTS.LIST);
+    PROCEDURE _import (imp: LISTS.LIST);
     VAR
         lib:  IL.IMPORT_LIB;
         proc: IL.IMPORT_PROC;
@@ -2204,7 +2288,7 @@ VAR
             lib := lib.next(IL.IMPORT_LIB)
         END
 
-    END import;
+    END _import;
 
 
 BEGIN
@@ -2256,12 +2340,11 @@ BEGIN
         exp := exp.next(IL.EXPORT_PROC)
     END;
 
-    import(IL.codes.import);
+    _import(IL.codes._import);
 
     IL.set_bss(MAX(IL.codes.bss, MAX(IL.codes.dmin - CHL.Length(IL.codes.data), 4)));
 
-    BIN.SetParams(program, IL.codes.bss, stack * (1024 * 1024), WCHR(ver DIV 65536), WCHR(ver MOD 65536));
-
+    BIN.SetParams(program, IL.codes.bss, stack * (1024 * 1024), WCHR(ver DIV 65536), WCHR(ver MOD 65536))
 END epilog;
 
 
@@ -2271,6 +2354,7 @@ VAR
     opt: PROG.OPTIONS;
 
 BEGIN
+    FR[0] := 0;
     tcount := CHL.Length(IL.codes.types);
 
     opt := options;

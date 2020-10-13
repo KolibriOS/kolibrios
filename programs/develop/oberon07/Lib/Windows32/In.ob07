@@ -1,289 +1,80 @@
 ﻿(*
-    Copyright 2013, 2017, 2018 Anton Krotov
+    BSD 2-Clause License
 
-    This program is free software: you can redistribute it and/or modify
-    it under the terms of the GNU Lesser General Public License as published by
-    the Free Software Foundation, either version 3 of the License, or
-    (at your option) any later version.
-
-    This program is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU Lesser General Public License for more details.
-
-    You should have received a copy of the GNU Lesser General Public License
-    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+    Copyright (c) 2020, Anton Krotov
+    All rights reserved.
 *)
 
 MODULE In;
 
-IMPORT sys := SYSTEM, WINAPI;
+IMPORT SYSTEM;
 
-TYPE
 
-  STRING = ARRAY 260 OF CHAR;
+CONST
+
+    MAX_LEN = 1024;
+
 
 VAR
 
-  Done*: BOOLEAN;
-  hConsoleInput: INTEGER;
+    Done*: BOOLEAN;
+    hConsoleInput: INTEGER;
+    s: ARRAY MAX_LEN + 4 OF CHAR;
 
-PROCEDURE digit(ch: CHAR): BOOLEAN;
-  RETURN (ch >= "0") & (ch <= "9")
-END digit;
 
-PROCEDURE CheckInt(s: STRING; VAR first, last: INTEGER; VAR neg: BOOLEAN; Point: BOOLEAN): BOOLEAN;
-VAR i: INTEGER;
+PROCEDURE [ccall,   "msvcrt.dll",   ""] sscanf (buf: INTEGER; fmt: INTEGER; adr: INTEGER): INTEGER;
+PROCEDURE [windows, "kernel32.dll", ""] GetStdHandle (nStdHandle: INTEGER): INTEGER;
+PROCEDURE [windows, "kernel32.dll", ""] ReadConsoleA (hConsoleInput, lpBuffer, nNumberOfCharsToRead, lpNumberOfCharsRead, lpReserved: INTEGER);
+
+
+PROCEDURE String* (VAR str: ARRAY OF CHAR);
+VAR
+    count: INTEGER;
+
 BEGIN
-  i := 0;
-  neg := FALSE;
-  WHILE (s[i] <= 20X) & (s[i] # 0X) DO
-    INC(i)
-  END;
-  IF s[i] = "-" THEN
-    neg := TRUE;
-    INC(i)
-  ELSIF s[i] = "+" THEN
-    INC(i)
-  END;
-  first := i;
-  WHILE digit(s[i]) DO
-    INC(i)
-  END;
-  last := i
-  RETURN ((s[i] <= 20X) OR (Point & (s[i] = "."))) & digit(s[first])
-END CheckInt;
-
-PROCEDURE IsMinInt(str: STRING; pos: INTEGER): BOOLEAN;
-VAR i: INTEGER; min: STRING;
-BEGIN
-  i := 0;
-  min := "2147483648";
-  WHILE (min[i] # 0X) & (str[i] # 0X) & (min[i] = str[i + pos]) DO
-    INC(i)
-  END
-  RETURN i = 10
-END IsMinInt;
-
-PROCEDURE StrToInt(str: STRING; VAR err: BOOLEAN): INTEGER;
-CONST maxINT = 7FFFFFFFH;
-VAR i, n, res: INTEGER; flag, neg: BOOLEAN;
-BEGIN
-  res := 0;
-  flag := CheckInt(str, i, n, neg, FALSE);
-  err := ~flag;
-  IF flag & neg & IsMinInt(str, i) THEN
-    flag := FALSE;
-    neg := FALSE;
-    res := 80000000H
-  END;
-  WHILE flag & digit(str[i]) DO
-    IF res > maxINT DIV 10 THEN
-      err := TRUE;
-      flag := FALSE;
-      res := 0
-    ELSE
-      res := res * 10;
-      IF res > maxINT - (ORD(str[i]) - ORD("0")) THEN
-        err := TRUE;
-        flag := FALSE;
-        res := 0
-      ELSE
-        res := res + (ORD(str[i]) - ORD("0"));
-        INC(i)
-      END
-    END
-  END;
-  IF neg THEN
-    res := -res
-  END
-  RETURN res
-END StrToInt;
-
-PROCEDURE Space(s: STRING): BOOLEAN;
-VAR i: INTEGER;
-BEGIN
-  i := 0;
-  WHILE (s[i] # 0X) & (s[i] <= 20X) DO
-    INC(i)
-  END
-  RETURN s[i] = 0X
-END Space;
-
-PROCEDURE CheckReal(s: STRING; VAR n: INTEGER; VAR neg: BOOLEAN): BOOLEAN;
-VAR i: INTEGER; Res: BOOLEAN;
-BEGIN
-  Res := CheckInt(s, n, i, neg, TRUE);
-  IF Res THEN
-    IF s[i] = "." THEN
-      INC(i);
-      WHILE digit(s[i]) DO
-        INC(i)
-      END;
-      IF (s[i] = "D") OR (s[i] = "E") OR (s[i] = "d") OR (s[i] = "e") THEN
-        INC(i);
-        IF (s[i] = "+") OR (s[i] = "-") THEN
-          INC(i)
-        END;
-        Res := digit(s[i]);
-        WHILE digit(s[i]) DO
-          INC(i)
-        END
-      END
-    END
-  END
-  RETURN Res & (s[i] <= 20X)
-END CheckReal;
-
-PROCEDURE StrToFloat(str: STRING; VAR err: BOOLEAN): REAL;
-CONST maxDBL = 1.69E308; maxINT = 7FFFFFFFH;
-VAR i, scale: INTEGER; res, m, d: REAL; minus, neg: BOOLEAN;
-
-  PROCEDURE part1(VAR res, d: REAL; VAR i: INTEGER; str: STRING): BOOLEAN;
-  BEGIN
-    res := 0.0;
-    d := 1.0;
-    WHILE digit(str[i]) DO
-      res := res * 10.0 + FLT(ORD(str[i]) - ORD("0"));
-      INC(i)
+    ReadConsoleA(hConsoleInput, SYSTEM.ADR(s[0]), MAX_LEN, SYSTEM.ADR(count), 0);
+    IF (s[count - 1] = 0AX) & (s[count - 2] = 0DX) THEN
+        DEC(count, 2)
     END;
-    IF str[i] = "." THEN
-      INC(i);
-      WHILE digit(str[i]) DO
-        d := d / 10.0;
-        res := res + FLT(ORD(str[i]) - ORD("0")) * d;
-        INC(i)
-      END
-    END
-    RETURN str[i] # 0X
-  END part1;
-
-  PROCEDURE part2(VAR i, scale: INTEGER; VAR m, res: REAL; VAR minus, err: BOOLEAN; str: STRING): BOOLEAN;
-  BEGIN
-    INC(i);
-    m := 10.0;
-    minus := FALSE;
-    IF str[i] = "+" THEN
-      INC(i)
-    ELSIF str[i] = "-" THEN
-      minus := TRUE;
-      INC(i);
-      m := 0.1
-    END;
-    scale := 0;
-    err := FALSE;
-    WHILE ~err & digit(str[i]) DO
-      IF scale > maxINT DIV 10 THEN
-        err := TRUE;
-        res := 0.0
-      ELSE
-        scale := scale * 10;
-        IF scale > maxINT - (ORD(str[i]) - ORD("0")) THEN
-          err := TRUE;
-          res := 0.0
-        ELSE
-          scale := scale + (ORD(str[i]) - ORD("0"));
-          INC(i)
-        END
-      END
-    END
-    RETURN ~err
-  END part2;
-
-  PROCEDURE part3 (VAR err, minus: BOOLEAN; VAR scale: INTEGER; VAR res, m: REAL);
-  VAR i: INTEGER;
-  BEGIN
-    err := FALSE;
-    IF scale = maxINT THEN
-      err := TRUE;
-      res := 0.0
-    END;
-    i := 1;
-    WHILE ~err & (i <= scale) DO
-      IF ~minus & (res > maxDBL / m) THEN
-        err := TRUE;
-        res := 0.0
-      ELSE
-        res := res * m;
-        INC(i)
-      END
-    END
-  END part3;
-
-BEGIN
-  IF CheckReal(str, i, neg) THEN
-    IF part1(res, d, i, str) & part2(i, scale, m, res, minus, err, str) THEN
-      part3(err, minus, scale, res, m)
-    END;
-    IF neg THEN
-      res := -res
-    END
-  ELSE
-    res := 0.0;
-    err := TRUE
-  END
-  RETURN res
-END StrToFloat;
-
-PROCEDURE String*(VAR s: ARRAY OF CHAR);
-VAR count, i: INTEGER; str: STRING;
-BEGIN
-  WINAPI.ReadConsole(hConsoleInput, sys.ADR(str[0]), 256, sys.ADR(count), 0);
-  IF (str[count - 1] = 0AX) & (str[count - 2] = 0DX) THEN
-    DEC(count, 2)
-  END;
-  str[256] := 0X;
-  str[count] := 0X;
-  i := 0;
-  WHILE (i < LEN(s) - 1) & (i < LEN(str)) & (str[i] # 0X) DO
-      s[i] := str[i];
-      INC(i)
-  END;
-  s[i] := 0X;
-  Done := TRUE
+    s[count] := 0X;
+    COPY(s, str);
+    str[LEN(str) - 1] := 0X;
+    Done := TRUE
 END String;
 
-PROCEDURE Char*(VAR x: CHAR);
-VAR str: STRING;
-BEGIN
-  String(str);
-  x := str[0];
-  Done := TRUE
-END Char;
 
-PROCEDURE Ln*;
-VAR str: STRING;
+PROCEDURE Int* (VAR x: INTEGER);
 BEGIN
-  String(str);
-  Done := TRUE
-END Ln;
+    String(s);
+    Done := sscanf(SYSTEM.ADR(s[0]), SYSTEM.SADR("%d"), SYSTEM.ADR(x)) = 1
+END Int;
 
-PROCEDURE Real*(VAR x: REAL);
-VAR str: STRING; err: BOOLEAN;
+
+PROCEDURE Real* (VAR x: REAL);
 BEGIN
-  err := FALSE;
-  REPEAT
-    String(str)
-  UNTIL ~Space(str);
-  x := StrToFloat(str, err);
-  Done := ~err
+    String(s);
+    Done := sscanf(SYSTEM.ADR(s[0]), SYSTEM.SADR("%lf"), SYSTEM.ADR(x)) = 1
 END Real;
 
-PROCEDURE Int*(VAR x: INTEGER);
-VAR str: STRING; err: BOOLEAN;
+
+PROCEDURE Char* (VAR x: CHAR);
 BEGIN
-  err := FALSE;
-  REPEAT
-    String(str)
-  UNTIL ~Space(str);
-  x := StrToInt(str, err);
-  Done := ~err
-END Int;
+    String(s);
+    x := s[0]
+END Char;
+
+
+PROCEDURE Ln*;
+BEGIN
+    String(s)
+END Ln;
+
 
 PROCEDURE Open*;
 BEGIN
-  hConsoleInput := WINAPI.GetStdHandle(-10);
-  Done := TRUE
+    hConsoleInput := GetStdHandle(-10);
+    Done := TRUE
 END Open;
+
 
 END In.

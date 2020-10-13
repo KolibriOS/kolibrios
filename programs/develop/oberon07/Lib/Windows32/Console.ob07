@@ -1,7 +1,7 @@
 ﻿(*
     BSD 2-Clause License
 
-    Copyright (c) 2019, Anton Krotov
+    Copyright (c) 2019-2020, Anton Krotov
     All rights reserved.
 *)
 
@@ -48,7 +48,7 @@ VAR
 BEGIN
     WINAPI.GetConsoleScreenBufferInfo(hConsoleOutput, ScrBufInfo);
     fill := ORD(ScrBufInfo.dwSize.X) * ORD(ScrBufInfo.dwSize.Y);
-    WINAPI.FillConsoleOutputCharacter(hConsoleOutput, 20H, fill, 0, SYSTEM.ADR(fill));
+    WINAPI.FillConsoleOutputCharacterA(hConsoleOutput, 20H, fill, 0, SYSTEM.ADR(fill));
     WINAPI.FillConsoleOutputAttribute(hConsoleOutput, ORD(ScrBufInfo.wAttributes), fill, 0, SYSTEM.ADR(fill));
     SetCursor(0, 0)
 END Cls;

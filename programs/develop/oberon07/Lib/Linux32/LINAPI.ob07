@@ -7,18 +7,16 @@
 
 MODULE LINAPI;
 
-IMPORT SYSTEM, API;
+IMPORT SYSTEM, API, Libdl;
 
 
 TYPE
 
-    TP* = API.TP;
-    SOFINI* = API.SOFINI;
+    TP* = ARRAY 2 OF INTEGER;
+    SOFINI* = PROCEDURE;
 
 
 VAR
-
-    argc*, envc*: INTEGER;
 
     libc*, librt*: INTEGER;
 
@@ -39,79 +37,44 @@ VAR
     clock_gettime* : PROCEDURE [linux] (clock_id: INTEGER; VAR tp: TP): INTEGER;
 
 
-PROCEDURE GetArg* (n: INTEGER; VAR s: ARRAY OF CHAR);
-VAR
-    i, len, ptr: INTEGER;
-    c: CHAR;
-
-BEGIN
-    i := 0;
-    len := LEN(s) - 1;
-    IF (0 <= n) & (n <= argc + envc) & (n # argc) & (len > 0) THEN
-        SYSTEM.GET(API.MainParam + (n + 1) * SYSTEM.SIZE(INTEGER), ptr);
-        REPEAT
-            SYSTEM.GET(ptr, c);
-            s[i] := c;
-            INC(i);
-            INC(ptr)
-        UNTIL (c = 0X) OR (i = len)
-    END;
-    s[i] := 0X
-END GetArg;
-
-
-PROCEDURE GetEnv* (n: INTEGER; VAR s: ARRAY OF CHAR);
-BEGIN
-    IF (0 <= n) & (n < envc) THEN
-        GetArg(n + argc + 1, s)
-    ELSE
-        s[0] := 0X
-    END
-END GetEnv;
-
-
 PROCEDURE SetFini* (ProcFini: SOFINI);
 BEGIN
     API.SetFini(ProcFini)
 END SetFini;
 
 
-PROCEDURE init;
+PROCEDURE GetSym (lib: INTEGER; name: ARRAY OF CHAR; VarAdr: INTEGER);
 VAR
-    ptr: INTEGER;
+    sym: INTEGER;
 
 BEGIN
-    IF API.MainParam # 0 THEN
-        envc := -1;
-        SYSTEM.GET(API.MainParam, argc);
-        REPEAT
-            SYSTEM.GET(API.MainParam + (envc + argc + 3) * SYSTEM.SIZE(INTEGER), ptr);
-            INC(envc)
-        UNTIL ptr = 0
-    ELSE
-        envc := 0;
-        argc := 0
-    END;
+    sym := Libdl.sym(lib, name);
+    ASSERT(sym # 0);
+    SYSTEM.PUT(VarAdr, sym)
+END GetSym;
 
+
+PROCEDURE init;
+BEGIN
     libc := API.libc;
 
-    stdout := API.stdout;
-    stdin  := API.stdin;
-    stderr := API.stderr;
+    GetSym(libc, "exit",   SYSTEM.ADR(exit));
+    GetSym(libc, "puts",   SYSTEM.ADR(puts));
+    GetSym(libc, "malloc", SYSTEM.ADR(malloc));
+    GetSym(libc, "free",   SYSTEM.ADR(free));
+    GetSym(libc, "fread",  SYSTEM.ADR(fread));
+    GetSym(libc, "fwrite", SYSTEM.ADR(fwrite));
+    GetSym(libc, "fopen",  SYSTEM.ADR(fopen));
+    GetSym(libc, "fclose", SYSTEM.ADR(fclose));
+    GetSym(libc, "time",   SYSTEM.ADR(time));
 
-    malloc := API.malloc;
-    free   := API.free;
-    exit   := API._exit;
-    puts   := API.puts;
-    fwrite := API.fwrite;
-    fread  := API.fread;
-    fopen  := API.fopen;
-    fclose := API.fclose;
-    time   := API.time;
+    GetSym(libc, "stdout", SYSTEM.ADR(stdout)); SYSTEM.GET(stdout - SYSTEM.SIZE(INTEGER), stdout);
+    GetSym(libc, "stdin",  SYSTEM.ADR(stdin));  SYSTEM.GET(stdin  - SYSTEM.SIZE(INTEGER), stdin);
+    GetSym(libc, "stderr", SYSTEM.ADR(stderr)); SYSTEM.GET(stderr - SYSTEM.SIZE(INTEGER), stderr);
 
-    librt := API.librt;
+    librt := Libdl.open("librt.so.1", Libdl.LAZY);
 
-    clock_gettime := API.clock_gettime
+    GetSym(librt, "clock_gettime", SYSTEM.ADR(clock_gettime))
 END init;
 
 

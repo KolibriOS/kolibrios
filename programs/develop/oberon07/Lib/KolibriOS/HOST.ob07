@@ -13,7 +13,7 @@ IMPORT SYSTEM, K := KOSAPI, API, RTL;
 CONST
 
     slash* = "/";
-    OS* = "KOS";
+    eol* = 0DX + 0AX;
 
     bit_depth* = RTL.bit_depth;
     maxint* = RTL.maxint;
@@ -23,6 +23,8 @@ CONST
 
 
 TYPE
+
+    DAYS = ARRAY 12, 31, 2 OF INTEGER;
 
     FNAME = ARRAY 520 OF CHAR;
 
@@ -52,10 +54,10 @@ VAR
 
     Console: BOOLEAN;
 
+    days: DAYS;
+
     Params: ARRAY MAX_PARAM, 2 OF INTEGER;
     argc*: INTEGER;
-
-    eol*: ARRAY 3 OF CHAR;
 
     maxreal*: REAL;
 
@@ -273,6 +275,10 @@ BEGIN
 END FileOpen;
 
 
+PROCEDURE chmod* (FName: ARRAY OF CHAR);
+END chmod;
+
+
 PROCEDURE GetTickCount* (): INTEGER;
     RETURN K.sysfunc2(26, 9)
 END GetTickCount;
@@ -382,8 +388,8 @@ BEGIN
                 s[j] := c;
                 INC(j)
             END;
-            INC(i);
-        END;
+            INC(i)
+        END
     END;
     s[j] := 0X
 END GetArg;
@@ -408,9 +414,9 @@ PROCEDURE isRelative* (path: ARRAY OF CHAR): BOOLEAN;
 END isRelative;
 
 
-PROCEDURE now* (VAR year, month, day, hour, min, sec: INTEGER);
+PROCEDURE UnixTime* (): INTEGER;
 VAR
-    date, time: INTEGER;
+    date, time, year, month, day, hour, min, sec: INTEGER;
 
 BEGIN
     date  := K.sysfunc1(29);
@@ -446,13 +452,18 @@ BEGIN
     sec   := (time MOD 16) * 10 + sec;
     time  := time DIV 16;
 
-    year := year + 2000
-END now;
+    INC(year, 2000)
 
-
-PROCEDURE UnixTime* (): INTEGER;
-    RETURN 0
+    RETURN ((year - 1970) * 365 + days[month - 1, day - 1, ORD(year DIV 4 = 0)] + (year - 1969) DIV 4) * 86400 + hour * 3600 + min * 60 + sec
 END UnixTime;
+
+
+PROCEDURE splitf* (x: REAL; VAR a, b: INTEGER): INTEGER;
+BEGIN
+    SYSTEM.GET32(SYSTEM.ADR(x), a);
+    SYSTEM.GET32(SYSTEM.ADR(x) + 4, b)
+    RETURN a
+END splitf;
 
 
 PROCEDURE d2s* (x: REAL): INTEGER;
@@ -460,8 +471,7 @@ VAR
     h, l, s, e: INTEGER;
 
 BEGIN
-    SYSTEM.GET(SYSTEM.ADR(x), l);
-    SYSTEM.GET(SYSTEM.ADR(x) + 4, h);
+    e := splitf(x, l, h);
 
     s := ASR(h, 31) MOD 2;
     e := (h DIV 100000H) MOD 2048;
@@ -480,7 +490,7 @@ BEGIN
         l := 0
     ELSIF e = 2047 THEN
         e := 1151;
-        IF (h MOD 100000H # 0) OR (l # 0) THEN
+        IF (h MOD 100000H # 0) OR (BITS(l) * {0..31} # {}) THEN
             h := 80000H;
             l := 0
         END
@@ -491,21 +501,55 @@ BEGIN
 END d2s;
 
 
-PROCEDURE splitf* (x: REAL; VAR a, b: INTEGER): INTEGER;
-BEGIN
-    SYSTEM.GET(SYSTEM.ADR(x),     a);
-    SYSTEM.GET(SYSTEM.ADR(x) + 4, b)
-    RETURN a
-END splitf;
-
+PROCEDURE init (VAR days: DAYS);
+VAR
+    i, j, n0, n1: INTEGER;
 
 BEGIN
-    eol[0] := 0DX; eol[1] := 0AX; eol[2] := 0X;
+
+    FOR i := 0 TO 11 DO
+        FOR j := 0 TO 30 DO
+            days[i, j, 0] := 0;
+            days[i, j, 1] := 0;
+        END
+    END;
+
+    days[ 1, 28, 0] := -1;
+
+    FOR i := 0 TO 1 DO
+        days[ 1, 29, i] := -1;
+        days[ 1, 30, i] := -1;
+        days[ 3, 30, i] := -1;
+        days[ 5, 30, i] := -1;
+        days[ 8, 30, i] := -1;
+        days[10, 30, i] := -1;
+    END;
+
+    n0 := 0;
+    n1 := 0;
+    FOR i := 0 TO 11 DO
+        FOR j := 0 TO 30 DO
+            IF days[i, j, 0] = 0 THEN
+                days[i, j, 0] := n0;
+                INC(n0)
+            END;
+            IF days[i, j, 1] = 0 THEN
+                days[i, j, 1] := n1;
+                INC(n1)
+            END
+        END
+    END;
+
     maxreal := 1.9;
     PACK(maxreal, 1023);
-    Console := API.import;
+    Console := API._import;
     IF Console THEN
         con_init(-1, -1, -1, -1, SYSTEM.SADR("Oberon-07 for KolibriOS"))
     END;
     ParamParse
+END init;
+
+
+BEGIN
+    init(days)
 END HOST.

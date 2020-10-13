@@ -1,5 +1,5 @@
 ﻿(*
-    Copyright 2016, 2018 Anton Krotov
+    Copyright 2016, 2018, 2020 Anton Krotov
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU Lesser General Public License as published by
@@ -24,7 +24,7 @@ TYPE
   DRAW_WINDOW = PROCEDURE;
 
   TDialog = RECORD
-    type,
+    _type,
     procinfo,
     com_area_name,
     com_area,
@@ -61,7 +61,7 @@ BEGIN
   IF res # NIL THEN
     res.s_com_area_name := "FFFFFFFF_color_dlg";
     res.com_area := 0;
-    res.type := 0;
+    res._type := 0;
     res.color_type := 0;
     res.procinfo := sys.ADR(res.procinf[0]);
     res.com_area_name := sys.ADR(res.s_com_area_name[0]);

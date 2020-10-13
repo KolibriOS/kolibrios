@@ -24,11 +24,17 @@ CONST
     Linux64*      = 11;
     Linux64SO*    = 12;
     STM32CM3*     = 13;
+    RVM32I*       = 14;
 
     cpuX86* = 0; cpuAMD64* = 1; cpuMSP430* = 2; cpuTHUMB* = 3;
+    cpuRVM32I* = 4;
 
     osNONE*    = 0;  osWIN32*   = 1;  osWIN64* = 2;
     osLINUX32* = 3;  osLINUX64* = 4;  osKOS*   = 5;
+
+    noDISPOSE = {MSP430, STM32CM3, RVM32I};
+
+    noRTL = {MSP430};
 
 
 TYPE
@@ -37,7 +43,7 @@ TYPE
 
     TARGET = RECORD
 
-        target, CPU, BitDepth, OS, RealSize: INTEGER;
+        target, CPU, OS, RealSize: INTEGER;
         ComLinePar*, LibDir, FileExt: STRING
 
     END;
@@ -45,18 +51,23 @@ TYPE
 
 VAR
 
-    Targets*: ARRAY 14 OF TARGET;
+    Targets*: ARRAY 15 OF TARGET;
 
-    target*, CPU*, BitDepth*, OS*, RealSize*, WordSize*, AdrSize*: INTEGER;
+    CPUs: ARRAY 5 OF
+        RECORD
+            BitDepth, InstrSize: INTEGER;
+            LittleEndian: BOOLEAN
+        END;
+
+    target*, CPU*, BitDepth*, OS*, RealSize*, WordSize*, AdrSize*, InstrSize*: INTEGER;
     ComLinePar*, LibDir*, FileExt*: STRING;
-    Import*, Dispose*, Dll*: BOOLEAN;
+    Import*, Dispose*, RTL*, Dll*, LittleEndian*: BOOLEAN;
 
 
-PROCEDURE Enter (idx, CPU, BitDepth, RealSize, OS: INTEGER; ComLinePar, LibDir, FileExt: STRING);
+PROCEDURE Enter (idx, CPU, RealSize, OS: INTEGER; ComLinePar, LibDir, FileExt: STRING);
 BEGIN
     Targets[idx].target := idx;
     Targets[idx].CPU := CPU;
-    Targets[idx].BitDepth := BitDepth;
     Targets[idx].RealSize := RealSize;
     Targets[idx].OS := OS;
     Targets[idx].ComLinePar := ComLinePar;
@@ -80,7 +91,9 @@ BEGIN
     IF res THEN
         target := Targets[i].target;
         CPU := Targets[i].CPU;
-        BitDepth := Targets[i].BitDepth;
+        BitDepth := CPUs[CPU].BitDepth;
+        InstrSize := CPUs[CPU].InstrSize;
+        LittleEndian := CPUs[CPU].LittleEndian;
         RealSize := Targets[i].RealSize;
         OS := Targets[i].OS;
         ComLinePar := Targets[i].ComLinePar;
@@ -88,7 +101,8 @@ BEGIN
         FileExt := Targets[i].FileExt;
 
         Import := OS IN {osWIN32, osWIN64, osKOS};
-        Dispose := ~(target IN {MSP430, STM32CM3});
+        Dispose := ~(target IN noDISPOSE);
+        RTL := ~(target IN noRTL);
         Dll := target IN {Linux32SO, Linux64SO, Win32DLL, Win64DLL, KolibriOSDLL};
         WordSize := BitDepth DIV 8;
         AdrSize  := WordSize
@@ -98,19 +112,34 @@ BEGIN
 END Select;
 
 
+PROCEDURE EnterCPU (cpu, BitDepth, InstrSize: INTEGER; LittleEndian: BOOLEAN);
 BEGIN
-    Enter( MSP430,        cpuMSP430,  16,  0,  osNONE,     "msp430",      "MSP430",     ".hex");
-    Enter( Win32C,        cpuX86,     32,  8,  osWIN32,    "win32con",    "Windows32",  ".exe");
-    Enter( Win32GUI,      cpuX86,     32,  8,  osWIN32,    "win32gui",    "Windows32",  ".exe");
-    Enter( Win32DLL,      cpuX86,     32,  8,  osWIN32,    "win32dll",    "Windows32",  ".dll");
-    Enter( KolibriOS,     cpuX86,     32,  8,  osKOS,      "kosexe",      "KolibriOS",  "");
-    Enter( KolibriOSDLL,  cpuX86,     32,  8,  osKOS,      "kosdll",      "KolibriOS",  ".obj");
-    Enter( Win64C,        cpuAMD64,   64,  8,  osWIN64,    "win64con",    "Windows64",  ".exe");
-    Enter( Win64GUI,      cpuAMD64,   64,  8,  osWIN64,    "win64gui",    "Windows64",  ".exe");
-    Enter( Win64DLL,      cpuAMD64,   64,  8,  osWIN64,    "win64dll",    "Windows64",  ".dll");
-    Enter( Linux32,       cpuX86,     32,  8,  osLINUX32,  "linux32exe",  "Linux32",    "");
-    Enter( Linux32SO,     cpuX86,     32,  8,  osLINUX32,  "linux32so",   "Linux32",    ".so");
-    Enter( Linux64,       cpuAMD64,   64,  8,  osLINUX64,  "linux64exe",  "Linux64",    "");
-    Enter( Linux64SO,     cpuAMD64,   64,  8,  osLINUX64,  "linux64so",   "Linux64",    ".so");
-    Enter( STM32CM3,      cpuTHUMB,   32,  4,  osNONE,     "stm32cm3",    "STM32CM3",   ".hex");
+    CPUs[cpu].BitDepth := BitDepth;
+    CPUs[cpu].InstrSize := InstrSize;
+    CPUs[cpu].LittleEndian := LittleEndian
+END EnterCPU;
+
+
+BEGIN
+    EnterCPU(cpuX86,    32, 1, TRUE);
+    EnterCPU(cpuAMD64,  64, 1, TRUE);
+    EnterCPU(cpuMSP430, 16, 2, TRUE);
+    EnterCPU(cpuTHUMB,  32, 2, TRUE);
+    EnterCPU(cpuRVM32I, 32, 4, TRUE);
+
+    Enter( MSP430,        cpuMSP430,  0,  osNONE,     "msp430",      "MSP430",     ".hex");
+    Enter( Win32C,        cpuX86,     8,  osWIN32,    "win32con",    "Windows32",  ".exe");
+    Enter( Win32GUI,      cpuX86,     8,  osWIN32,    "win32gui",    "Windows32",  ".exe");
+    Enter( Win32DLL,      cpuX86,     8,  osWIN32,    "win32dll",    "Windows32",  ".dll");
+    Enter( KolibriOS,     cpuX86,     8,  osKOS,      "kosexe",      "KolibriOS",  "");
+    Enter( KolibriOSDLL,  cpuX86,     8,  osKOS,      "kosdll",      "KolibriOS",  ".obj");
+    Enter( Win64C,        cpuAMD64,   8,  osWIN64,    "win64con",    "Windows64",  ".exe");
+    Enter( Win64GUI,      cpuAMD64,   8,  osWIN64,    "win64gui",    "Windows64",  ".exe");
+    Enter( Win64DLL,      cpuAMD64,   8,  osWIN64,    "win64dll",    "Windows64",  ".dll");
+    Enter( Linux32,       cpuX86,     8,  osLINUX32,  "linux32exe",  "Linux32",    "");
+    Enter( Linux32SO,     cpuX86,     8,  osLINUX32,  "linux32so",   "Linux32",    ".so");
+    Enter( Linux64,       cpuAMD64,   8,  osLINUX64,  "linux64exe",  "Linux64",    "");
+    Enter( Linux64SO,     cpuAMD64,   8,  osLINUX64,  "linux64so",   "Linux64",    ".so");
+    Enter( STM32CM3,      cpuTHUMB,   4,  osNONE,     "stm32cm3",    "STM32CM3",   ".hex");
+    Enter( RVM32I,        cpuRVM32I,  4,  osNONE,     "rvm32i",      "RVM32I",     ".bin");
 END TARGETS.

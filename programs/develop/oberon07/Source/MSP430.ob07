@@ -421,8 +421,7 @@ END mov;
 PROCEDURE xchg (reg1, reg2: INTEGER);
 BEGIN
     Push(reg1);
-    Push(reg2);
-    Pop(reg1);
+    mov(reg1, reg2);
     Pop(reg2)
 END xchg;
 
@@ -819,7 +818,7 @@ BEGIN
             Op2(opADD, reg2 * 256, reg1);
             drop
 
-        |IL.opADDL, IL.opADDR:
+        |IL.opADDC:
             IF param2 # 0 THEN
                 UnOp(reg1);
                 Op2(opADD, imm(param2), reg1)
@@ -880,55 +879,42 @@ BEGIN
             cc := cond(opcode);
             next := cmd.next(COMMAND);
 
-            IF next.opcode = IL.opJE THEN
+            IF next.opcode = IL.opJNZ THEN
                 jcc(cc, next.param1);
                 cmd := next
-            ELSIF next.opcode = IL.opJNE THEN
+            ELSIF next.opcode = IL.opJZ THEN
                 jcc(ORD(BITS(cc) / {0}), next.param1);
                 cmd := next
             ELSE
                 setcc(cc, GetAnyReg())
             END
 
-        |IL.opNOP:
+        |IL.opNOP, IL.opAND, IL.opOR:
 
         |IL.opCODE:
             EmitWord(param2)
-
-        |IL.opACC:
-            IF (R.top # 0) OR (R.stk[0] # ACC) THEN
-                PushAll(0);
-                GetRegA;
-                Pop(ACC);
-                DEC(R.pushed)
-            END
 
         |IL.opDROP:
             UnOp(reg1);
             drop
 
-        |IL.opJNZ:
+        |IL.opJNZ1:
             UnOp(reg1);
             Test(reg1);
             jcc(jne, param1)
-
-        |IL.opJZ:
-            UnOp(reg1);
-            Test(reg1);
-            jcc(je, param1)
 
         |IL.opJG:
             UnOp(reg1);
             Test(reg1);
             jcc(jg, param1)
 
-        |IL.opJE:
+        |IL.opJNZ:
             UnOp(reg1);
             Test(reg1);
             jcc(jne, param1);
             drop
 
-        |IL.opJNE:
+        |IL.opJZ:
             UnOp(reg1);
             Test(reg1);
             jcc(je, param1);
@@ -957,6 +943,11 @@ BEGIN
             UnOp(reg2);
             drop;
             Op2(opMOV + bw(param2 = 1), src_x(param1, SR), dst_x(0, reg2))
+
+        |IL.opCHKBYTE:
+            BinOp(reg1, reg2);
+            Op2(opCMP, imm(256), reg1);
+            jcc(jb, param1)
 
         |IL.opCHKIDX:
             UnOp(reg1);
@@ -1079,7 +1070,7 @@ BEGIN
             Op2(opBIC, reg2 * 256, reg1);
             drop
 
-        |IL.opADDSL, IL.opADDSR:
+        |IL.opADDSC:
             UnOp(reg1);
             Op2(opBIS, imm(param2), reg1)
 
@@ -1188,11 +1179,6 @@ BEGIN
 
             INCL(R.regs, reg1);
             ASSERT(REG.GetReg(R, reg1))
-
-        |IL.opCHKBYTE:
-            BinOp(reg1, reg2);
-            Op2(opCMP, imm(256), reg1);
-            jcc(jb, param1)
 
         |IL.opLSL, IL.opASR, IL.opROR, IL.opLSR:
             PushAll(2);
@@ -1618,15 +1604,13 @@ END epilog;
 
 PROCEDURE CodeGen* (outname: ARRAY OF CHAR; target: INTEGER; options: PROG.OPTIONS);
 VAR
-    i, adr, heap, stack, TextSize, TypesSize, bits, n: INTEGER;
+    i, adr, heap, stack, TextSize, TypesSize, bits, n, val: INTEGER;
 
     Code, Data, Bss, Free: RECORD address, size: INTEGER END;
 
     ram, rom: INTEGER;
 
     reloc: RELOC;
-
-    file: WR.FILE;
 
 BEGIN
     IdxWords.src := NOWORD;
@@ -1687,10 +1671,11 @@ BEGIN
     reloc := RelList.first(RELOC);
     WHILE reloc # NIL DO
         adr := reloc.WordPtr.offset * 2;
+        val := reloc.WordPtr.val;
         CASE reloc.section OF
-        |RCODE: PutWord(LabelOffs(reloc.WordPtr.val) * 2, adr)
-        |RDATA: PutWord(reloc.WordPtr.val + Data.address, adr)
-        |RBSS:  PutWord(reloc.WordPtr.val + Bss.address, adr)
+        |RCODE: PutWord(LabelOffs(val) * 2, adr)
+        |RDATA: PutWord(val + Data.address, adr)
+        |RBSS:  PutWord(val + Bss.address, adr)
         END;
         reloc := reloc.next(RELOC)
     END;
@@ -1733,13 +1718,13 @@ BEGIN
         PutWord(LabelOffs(IV[i]) * 2, adr)
     END;
 
-    file := WR.Create(outname);
+    WR.Create(outname);
 
-    HEX.Data(file, mem, Code.address, TextSize);
-    HEX.Data(file, mem, 10000H - IntVectorSize - TypesSize, IntVectorSize + TypesSize);
-    HEX.End(file);
+    HEX.Data(mem, Code.address, TextSize);
+    HEX.Data(mem, 10000H - IntVectorSize - TypesSize, IntVectorSize + TypesSize);
+    HEX.End;
 
-    WR.Close(file);
+    WR.Close;
 
     INC(TextSize, IntVectorSize + TypesSize);
     INC(Bss.size, minStackSize + RTL.VarSize);

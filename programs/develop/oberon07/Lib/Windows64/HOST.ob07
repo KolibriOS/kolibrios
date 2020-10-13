@@ -13,7 +13,7 @@ IMPORT SYSTEM, RTL;
 CONST
 
     slash* = "\";
-    OS* = "WINDOWS";
+    eol* = 0DX + 0AX;
 
     bit_depth* = RTL.bit_depth;
     maxint* = RTL.maxint;
@@ -59,19 +59,6 @@ TYPE
 
     END;
 
-    TSystemTime = RECORD
-
-        Year,
-        Month,
-        DayOfWeek,
-        Day,
-        Hour,
-        Min,
-        Sec,
-        MSec:  WCHAR
-
-    END;
-
 
 VAR
 
@@ -79,8 +66,6 @@ VAR
 
     Params: ARRAY MAX_PARAM, 2 OF INTEGER;
     argc: INTEGER;
-
-    eol*: ARRAY 3 OF CHAR;
 
     maxreal*: REAL;
 
@@ -116,11 +101,11 @@ PROCEDURE [windows-, "kernel32.dll", "OpenFile"]
 PROCEDURE [windows-, "kernel32.dll", "GetCurrentDirectoryA"]
     _GetCurrentDirectory (nBufferLength, lpBuffer: INTEGER): INTEGER;
 
-PROCEDURE [windows-, "kernel32.dll", "GetSystemTime"]
-    _GetSystemTime (T: TSystemTime);
-
-PROCEDURE [windows-, "kernel32.dll", "ExitProcess"]
+PROCEDURE [windows, "kernel32.dll", "ExitProcess"]
     _ExitProcess (code: INTEGER);
+
+PROCEDURE [windows, "msvcrt.dll", "time"]
+    _time (ptr: INTEGER): INTEGER;
 
 
 PROCEDURE ExitProcess* (code: INTEGER);
@@ -215,13 +200,11 @@ END GetArg;
 
 PROCEDURE FileRead* (F: INTEGER; VAR Buffer: ARRAY OF CHAR; bytes: INTEGER): INTEGER;
 VAR
-    res, n: INTEGER;
+    res: INTEGER;
 
 BEGIN
-    IF _ReadFile(F, SYSTEM.ADR(Buffer[0]), bytes, n, NIL) = 0 THEN
+    IF _ReadFile(F, SYSTEM.ADR(Buffer[0]), bytes, res, NIL) = 0 THEN
         res := -1
-    ELSE
-        res := n
     END
 
     RETURN res
@@ -230,13 +213,11 @@ END FileRead;
 
 PROCEDURE FileWrite* (F: INTEGER; Buffer: ARRAY OF BYTE; bytes: INTEGER): INTEGER;
 VAR
-    res, n: INTEGER;
+    res: INTEGER;
 
 BEGIN
-    IF _WriteFile(F, SYSTEM.ADR(Buffer[0]), bytes, n, NIL) = 0 THEN
+    IF _WriteFile(F, SYSTEM.ADR(Buffer[0]), bytes, res, NIL) = 0 THEN
         res := -1
-    ELSE
-        res := n
     END
 
     RETURN res
@@ -269,6 +250,10 @@ BEGIN
 END FileOpen;
 
 
+PROCEDURE chmod* (FName: ARRAY OF CHAR);
+END chmod;
+
+
 PROCEDURE OutChar* (c: CHAR);
 VAR
     count: INTEGER;
@@ -292,24 +277,23 @@ PROCEDURE isRelative* (path: ARRAY OF CHAR): BOOLEAN;
 END isRelative;
 
 
-PROCEDURE now* (VAR year, month, day, hour, min, sec: INTEGER);
+PROCEDURE UnixTime* (): INTEGER;
+    RETURN _time(0)
+END UnixTime;
+
+
+PROCEDURE splitf* (x: REAL; VAR a, b: INTEGER): INTEGER;
 VAR
-    T: TSystemTime;
+    res: INTEGER;
 
 BEGIN
-    _GetSystemTime(T);
-    year  := ORD(T.Year);
-    month := ORD(T.Month);
-    day   := ORD(T.Day);
-    hour  := ORD(T.Hour);
-    min   := ORD(T.Min);
-    sec   := ORD(T.Sec)
-END now;
-
-
-PROCEDURE UnixTime* (): INTEGER;
-    RETURN 0
-END UnixTime;
+    a := 0;
+    b := 0;
+    SYSTEM.GET32(SYSTEM.ADR(x), a);
+    SYSTEM.GET32(SYSTEM.ADR(x) + 4, b);
+    SYSTEM.GET(SYSTEM.ADR(x), res)
+    RETURN res
+END splitf;
 
 
 PROCEDURE d2s* (x: REAL): INTEGER;
@@ -317,8 +301,7 @@ VAR
     h, l, s, e: INTEGER;
 
 BEGIN
-    SYSTEM.GET(SYSTEM.ADR(x), l);
-    SYSTEM.GET(SYSTEM.ADR(x) + 4, h);
+    e := splitf(x, l, h);
 
     s := ASR(h, 31) MOD 2;
     e := (h DIV 100000H) MOD 2048;
@@ -348,22 +331,7 @@ BEGIN
 END d2s;
 
 
-PROCEDURE splitf* (x: REAL; VAR a, b: INTEGER): INTEGER;
-VAR
-    res: INTEGER;
-
 BEGIN
-    a := 0;
-    b := 0;
-    SYSTEM.MOVE(SYSTEM.ADR(x), SYSTEM.ADR(a), 4);
-    SYSTEM.MOVE(SYSTEM.ADR(x) + 4, SYSTEM.ADR(b), 4);
-    SYSTEM.GET(SYSTEM.ADR(x), res)
-    RETURN res
-END splitf;
-
-
-BEGIN
-    eol[0] := 0DX; eol[1] := 0AX; eol[2] := 0X;
     maxreal := 1.9;
     PACK(maxreal, 1023);
     hConsoleOutput := _GetStdHandle(-11);

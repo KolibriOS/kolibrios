@@ -1,18 +1,8 @@
 ﻿(*
-    Copyright 2013, 2014, 2018, 2019 Anton Krotov
+    BSD 2-Clause License
 
-    This program is free software: you can redistribute it and/or modify
-    it under the terms of the GNU Lesser General Public License as published by
-    the Free Software Foundation, either version 3 of the License, or
-    (at your option) any later version.
-
-    This program is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU Lesser General Public License for more details.
-
-    You should have received a copy of the GNU Lesser General Public License
-    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+    Copyright (c) 2013-2014, 2018-2020 Anton Krotov
+    All rights reserved.
 *)
 
 MODULE Math;
@@ -235,6 +225,16 @@ BEGIN
 END frac;
 
 
+PROCEDURE sqri* (x: INTEGER): INTEGER;
+    RETURN x * x
+END sqri;
+
+
+PROCEDURE sqrr* (x: REAL): REAL;
+    RETURN x * x
+END sqrr;
+
+
 PROCEDURE arcsin* (x: REAL): REAL;
     RETURN arctan2(x, sqrt(1.0 - x * x))
 END arcsin;
@@ -349,6 +349,40 @@ BEGIN
 END power;
 
 
+PROCEDURE ipower* (base: REAL; exponent: INTEGER): REAL;
+VAR
+    i: INTEGER;
+    a: REAL;
+
+BEGIN
+    a := 1.0;
+
+    IF base # 0.0 THEN
+        IF exponent # 0 THEN
+            IF exponent < 0 THEN
+                base := 1.0 / base
+            END;
+            i := ABS(exponent);
+            WHILE i > 0 DO
+                WHILE ~ODD(i) DO
+                    i := LSR(i, 1);
+                    base := sqrr(base)
+                END;
+                DEC(i);
+                a := a * base
+            END
+        ELSE
+            a := 1.0
+        END
+    ELSE
+        ASSERT(exponent > 0);
+        a := 0.0
+    END
+
+    RETURN a
+END ipower;
+
+
 PROCEDURE sgn* (x: REAL): INTEGER;
 VAR
     res: INTEGER;
@@ -379,6 +413,38 @@ BEGIN
 
     RETURN res
 END fact;
+
+
+PROCEDURE DegToRad* (x: REAL): REAL;
+    RETURN x * (pi / 180.0)
+END DegToRad;
+
+
+PROCEDURE RadToDeg* (x: REAL): REAL;
+    RETURN x * (180.0 / pi)
+END RadToDeg;
+
+
+(* Return hypotenuse of triangle *)
+PROCEDURE hypot* (x, y: REAL): REAL;
+VAR
+    a: REAL;
+
+BEGIN
+    x := ABS(x);
+    y := ABS(y);
+    IF x > y THEN
+        a := x * sqrt(1.0 + sqrr(y / x))
+    ELSE
+        IF x > 0.0 THEN
+            a := y * sqrt(1.0 + sqrr(x / y))
+        ELSE
+            a := y
+        END
+    END
+
+    RETURN a
+END hypot;
 
 
 END Math.

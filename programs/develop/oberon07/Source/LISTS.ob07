@@ -1,7 +1,7 @@
 ﻿(*
     BSD 2-Clause License
 
-    Copyright (c) 2018-2019, Anton Krotov
+    Copyright (c) 2018-2020, Anton Krotov
     All rights reserved.
 *)
 
@@ -32,17 +32,14 @@ BEGIN
 
     IF list.first = NIL THEN
         list.first := item;
-        list.last  := item;
-        item.prev  := NIL;
-        item.next  := NIL
+        item.prev  := NIL
     ELSE
         ASSERT(list.last # NIL);
-
         item.prev := list.last;
-        list.last.next := item;
-        item.next := NIL;
-        list.last := item
-    END
+        list.last.next := item
+    END;
+    list.last := item;
+    item.next := NIL
 END push;
 
 
@@ -108,16 +105,13 @@ BEGIN
 
     IF prev # NIL THEN
         prev.next := nov;
-        nov.prev := prev;
-        cur.prev := nov;
-        nov.next := cur
+        nov.prev := prev
     ELSE
         nov.prev := NIL;
-        cur.prev := nov;
-        nov.next := cur;
         list.first := nov
-    END
-
+    END;
+    cur.prev := nov;
+    nov.next := cur
 END insertL;
 
 

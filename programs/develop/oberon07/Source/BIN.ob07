@@ -1,7 +1,7 @@
 ﻿(*
     BSD 2-Clause License
 
-    Copyright (c) 2018-2019, Anton Krotov
+    Copyright (c) 2018-2020, Anton Krotov
     All rights reserved.
 *)
 
@@ -56,7 +56,7 @@ TYPE
         vmajor*,
         vminor*:    WCHAR;
         modname*:   INTEGER;
-        import*:    CHL.BYTELIST;
+        _import*:   CHL.BYTELIST;
         export*:    CHL.BYTELIST;
         rel_list*:  LISTS.LIST;
         imp_list*:  LISTS.LIST;
@@ -84,10 +84,10 @@ BEGIN
     program.imp_list := LISTS.create(NIL);
     program.exp_list := LISTS.create(NIL);
 
-    program.data   := CHL.CreateByteList();
-    program.code   := CHL.CreateByteList();
-    program.import := CHL.CreateByteList();
-    program.export := CHL.CreateByteList()
+    program.data    := CHL.CreateByteList();
+    program.code    := CHL.CreateByteList();
+    program._import := CHL.CreateByteList();
+    program.export  := CHL.CreateByteList()
 
     RETURN program
 END create;
@@ -120,7 +120,7 @@ BEGIN
 END PutData;
 
 
-PROCEDURE get32le* (array: CHL.BYTELIST; idx: INTEGER): INTEGER;
+PROCEDURE get32le* (_array: CHL.BYTELIST; idx: INTEGER): INTEGER;
 VAR
     i: INTEGER;
     x: INTEGER;
@@ -129,7 +129,7 @@ BEGIN
     x := 0;
 
     FOR i := 3 TO 0 BY -1 DO
-        x := LSL(x, 8) + CHL.GetByte(array, idx + i)
+        x := LSL(x, 8) + CHL.GetByte(_array, idx + i)
     END;
 
     IF UTILS.bit_depth = 64 THEN
@@ -143,13 +143,13 @@ BEGIN
 END get32le;
 
 
-PROCEDURE put32le* (array: CHL.BYTELIST; idx: INTEGER; x: INTEGER);
+PROCEDURE put32le* (_array: CHL.BYTELIST; idx: INTEGER; x: INTEGER);
 VAR
     i: INTEGER;
 
 BEGIN
     FOR i := 0 TO 3 DO
-        CHL.SetByte(array, idx + i, UTILS.Byte(x, i))
+        CHL.SetByte(_array, idx + i, UTILS.Byte(x, i))
     END
 END put32le;
 
@@ -224,15 +224,15 @@ VAR
     imp: IMPRT;
 
 BEGIN
-    CHL.PushByte(program.import, 0);
-    CHL.PushByte(program.import, 0);
+    CHL.PushByte(program._import, 0);
+    CHL.PushByte(program._import, 0);
 
-    IF ODD(CHL.Length(program.import)) THEN
-        CHL.PushByte(program.import, 0)
+    IF ODD(CHL.Length(program._import)) THEN
+        CHL.PushByte(program._import, 0)
     END;
 
     NEW(imp);
-    imp.nameoffs := CHL.PushStr(program.import, name);
+    imp.nameoffs := CHL.PushStr(program._import, name);
     imp.label := label;
     LISTS.push(program.imp_list, imp)
 END Import;
@@ -285,19 +285,18 @@ END Export;
 
 PROCEDURE GetIProc* (program: PROGRAM; n: INTEGER): IMPRT;
 VAR
-    import: IMPRT;
-    res:    IMPRT;
+    _import, res: IMPRT;
 
 BEGIN
-    import  := program.imp_list.first(IMPRT);
+    _import  := program.imp_list.first(IMPRT);
 
     res := NIL;
-    WHILE (import # NIL) & (n >= 0) DO
-        IF import.label # 0 THEN
-            res := import;
+    WHILE (_import # NIL) & (n >= 0) DO
+        IF _import.label # 0 THEN
+            res := _import;
             DEC(n)
         END;
-        import := import.next(IMPRT)
+        _import := _import.next(IMPRT)
     END;
 
     ASSERT(n = -1)
@@ -349,7 +348,7 @@ BEGIN
 END fixup;
 
 
-PROCEDURE InitArray* (VAR array: ARRAY OF BYTE; VAR idx: INTEGER; hex: ARRAY OF CHAR);
+PROCEDURE InitArray* (VAR _array: ARRAY OF BYTE; VAR idx: INTEGER; hex: ARRAY OF CHAR);
 VAR
     i, k: INTEGER;
 
@@ -375,7 +374,7 @@ BEGIN
     k := k DIV 2;
 
     FOR i := 0 TO k - 1 DO
-        array[i + idx] := hexdgt(hex[2 * i]) * 16 + hexdgt(hex[2 * i + 1])
+        _array[i + idx] := hexdgt(hex[2 * i]) * 16 + hexdgt(hex[2 * i + 1])
     END;
 
     INC(idx, k)

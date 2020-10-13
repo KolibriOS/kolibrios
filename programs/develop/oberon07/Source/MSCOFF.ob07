@@ -28,28 +28,30 @@ TYPE
     SH = PE32.IMAGE_SECTION_HEADER;
 
 
-PROCEDURE WriteReloc (File: WR.FILE; VirtualAddress, SymbolTableIndex, Type: INTEGER);
+PROCEDURE WriteReloc (VirtualAddress, SymbolTableIndex, Type: INTEGER);
 BEGIN
-    WR.Write32LE(File, VirtualAddress);
-    WR.Write32LE(File, SymbolTableIndex);
-    WR.Write16LE(File, Type)
+    WR.Write32LE(VirtualAddress);
+    WR.Write32LE(SymbolTableIndex);
+    WR.Write16LE(Type)
 END WriteReloc;
 
 
-PROCEDURE Reloc (program: BIN.PROGRAM; File: WR.FILE);
+PROCEDURE Reloc (program: BIN.PROGRAM);
 VAR
-    reloc: BIN.RELOC;
+    reloc:  BIN.RELOC;
+    offset: INTEGER;
 
 BEGIN
     reloc := program.rel_list.first(BIN.RELOC);
     WHILE reloc # NIL DO
 
+        offset := reloc.offset;
         CASE reloc.opcode OF
         |BIN.RIMP,
-         BIN.IMPTAB: WriteReloc(File, reloc.offset, 4, 6)
-        |BIN.RBSS:   WriteReloc(File, reloc.offset, 5, 6)
-        |BIN.RDATA:  WriteReloc(File, reloc.offset, 2, 6)
-        |BIN.RCODE:  WriteReloc(File, reloc.offset, 1, 6)
+         BIN.IMPTAB: WriteReloc(offset, 4, 6)
+        |BIN.RBSS:   WriteReloc(offset, 5, 6)
+        |BIN.RDATA:  WriteReloc(offset, 2, 6)
+        |BIN.RCODE:  WriteReloc(offset, 1, 6)
         END;
 
         reloc := reloc.next(BIN.RELOC)
@@ -62,6 +64,7 @@ VAR
     reloc:   BIN.RELOC;
     iproc:   BIN.IMPRT;
     res, L:  INTEGER;
+    offset:  INTEGER;
     code:    CHL.BYTELIST;
 
 BEGIN
@@ -71,16 +74,17 @@ BEGIN
     WHILE reloc # NIL DO
 
         INC(res);
+        offset := reloc.offset;
 
         IF reloc.opcode = BIN.RIMP THEN
-            L := BIN.get32le(code, reloc.offset);
+            L := BIN.get32le(code, offset);
             iproc := BIN.GetIProc(program, L);
-            BIN.put32le(code, reloc.offset, iproc.label)
+            BIN.put32le(code, offset, iproc.label)
         END;
 
         IF reloc.opcode = BIN.RCODE THEN
-            L := BIN.get32le(code, reloc.offset);
-            BIN.put32le(code, reloc.offset, BIN.GetLabel(program, L))
+            L := BIN.get32le(code, offset);
+            BIN.put32le(code, offset, BIN.GetLabel(program, L))
         END;
 
         reloc := reloc.next(BIN.RELOC)
@@ -92,7 +96,6 @@ END RelocCount;
 
 PROCEDURE write* (program: BIN.PROGRAM; FileName: ARRAY OF CHAR; ver: INTEGER);
 VAR
-    File:  WR.FILE;
     exp:   BIN.EXPRT;
     n, i:  INTEGER;
 
@@ -145,7 +148,7 @@ BEGIN
     KOS.Import(program, 0, ImportTable, ILen, LibCount, isize);
     ExpCount := LISTS.count(program.exp_list);
 
-    icount := CHL.Length(program.import);
+    icount := CHL.Length(program._import);
     dcount := CHL.Length(program.data);
     ccount := CHL.Length(program.code);
     ecount := CHL.Length(program.export);
@@ -219,91 +222,87 @@ BEGIN
 
     FileHeader.PointerToSymbolTable := idata.PointerToRelocations + ORD(idata.NumberOfRelocations) * 10;
 
-    File := WR.Create(FileName);
+    WR.Create(FileName);
 
-    PE32.WriteFileHeader(File, FileHeader);
+    PE32.WriteFileHeader(FileHeader);
 
-    PE32.WriteSectionHeader(File, flat);
-    PE32.WriteSectionHeader(File, data);
-    PE32.WriteSectionHeader(File, edata);
-    PE32.WriteSectionHeader(File, idata);
-    PE32.WriteSectionHeader(File, bss);
+    PE32.WriteSectionHeader(flat);
+    PE32.WriteSectionHeader(data);
+    PE32.WriteSectionHeader(edata);
+    PE32.WriteSectionHeader(idata);
+    PE32.WriteSectionHeader(bss);
 
-    CHL.WriteToFile(File, program.code);
-    CHL.WriteToFile(File, program.data);
+    CHL.WriteToFile(program.code);
+    CHL.WriteToFile(program.data);
 
     exp := program.exp_list.first(BIN.EXPRT);
     WHILE exp # NIL DO
-        WR.Write32LE(File, exp.nameoffs + edata.SizeOfRawData - ecount);
-        WR.Write32LE(File, exp.label);
+        WR.Write32LE(exp.nameoffs + edata.SizeOfRawData - ecount);
+        WR.Write32LE(exp.label);
         exp := exp.next(BIN.EXPRT)
     END;
 
-    WR.Write32LE(File, ((ExpCount + 1) * 2 + 1) * SIZE_OF_DWORD);
-    WR.Write32LE(File, ver);
+    WR.Write32LE(((ExpCount + 1) * 2 + 1) * SIZE_OF_DWORD);
+    WR.Write32LE(ver);
 
-    WR.Write32LE(File, 0);
+    WR.Write32LE(0);
 
-    PE32.WriteName(File, szversion);
-    CHL.WriteToFile(File, program.export);
+    PE32.WriteName(szversion);
+    CHL.WriteToFile(program.export);
 
     FOR i := 0 TO ILen - 1 DO
-        WR.Write32LE(File, CHL.GetInt(ImportTable, i))
+        WR.Write32LE(CHL.GetInt(ImportTable, i))
     END;
 
-    CHL.WriteToFile(File, program.import);
+    CHL.WriteToFile(program._import);
 
-    Reloc(program, File);
+    Reloc(program);
 
     n := 0;
     exp := program.exp_list.first(BIN.EXPRT);
     WHILE exp # NIL DO
-        WriteReloc(File, n, 3, 6);
+        WriteReloc(n, 3, 6);
         INC(n, 4);
 
-        WriteReloc(File, n, 1, 6);
+        WriteReloc(n, 1, 6);
         INC(n, 4);
 
         exp := exp.next(BIN.EXPRT)
     END;
 
-    WriteReloc(File, n, 3, 6);
+    WriteReloc(n, 3, 6);
 
-    i := 0;
-    WHILE i < LibCount * 2 DO
-        WriteReloc(File, i * SIZE_OF_DWORD, 4, 6);
-        INC(i);
-        WriteReloc(File, i * SIZE_OF_DWORD, 4, 6);
-        INC(i)
+    FOR i := 0 TO LibCount * 2 - 1 DO
+        WriteReloc(i * SIZE_OF_DWORD, 4, 6)
     END;
 
     FOR i := LibCount * 2 TO ILen - 1 DO
         IF CHL.GetInt(ImportTable, i) # 0 THEN
-            WriteReloc(File, i * SIZE_OF_DWORD, 4, 6)
+            WriteReloc(i * SIZE_OF_DWORD, 4, 6)
         END
     END;
 
-    PE32.WriteName(File, "EXPORTS");
-    WriteReloc(File, 0, 3, 2);
+    PE32.WriteName("EXPORTS");
+    WriteReloc(0, 3, 2);
 
-    PE32.WriteName(File, ".flat");
-    WriteReloc(File, 0, 1, 3);
+    PE32.WriteName(".flat");
+    WriteReloc(0, 1, 3);
 
-    PE32.WriteName(File, ".data");
-    WriteReloc(File, 0, 2, 3);
+    PE32.WriteName(".data");
+    WriteReloc(0, 2, 3);
 
-    PE32.WriteName(File, ".edata");
-    WriteReloc(File, 0, 3, 3);
+    PE32.WriteName(".edata");
+    WriteReloc(0, 3, 3);
 
-    PE32.WriteName(File, ".idata");
-    WriteReloc(File, 0, 4, 3);
+    PE32.WriteName(".idata");
+    WriteReloc(0, 4, 3);
 
-    PE32.WriteName(File, ".bss");
-    WriteReloc(File, 0, 5, 3);
+    PE32.WriteName(".bss");
+    WriteReloc(0, 5, 3);
 
-    WR.Write32LE(File, 4);
+    WR.Write32LE(4);
 
-    WR.Close(File)
+    WR.Close
 END write;
 
 
