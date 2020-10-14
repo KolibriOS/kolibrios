@@ -170,6 +170,7 @@ extra_files = {
  {"kolibrios/develop/oberon07/Docs/", PROGS .. "/develop/oberon07/Docs/*"},
  {"kolibrios/develop/oberon07/Lib/KolibriOS/", PROGS .. "/develop/oberon07/Lib/KolibriOS/*"},
  {"kolibrios/develop/oberon07/Samples/", PROGS .. "/develop/oberon07/Samples/*"},
+ {"kolibrios/develop/oberon07/tools/", PROGS .. "/develop/oberon07/tools/*"},
  {"kolibrios/develop/c--/", PROGS .. "/cmm/c--/*"},
  {"kolibrios/develop/lua/lua", "../contrib/other/lua-5.2.0/lua"},
  {"kolibrios/develop/lua/calc.lua", "../contrib/other/lua-5.2.0/calc.lua"},
