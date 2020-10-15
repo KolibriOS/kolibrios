@@ -16,9 +16,9 @@ typedef struct {
 
 typedef void (*msgbox_callback)(void);
 
-extern void (*msgbox_create)(msgbox *, void *thread) __attribute__((__stdcall__)); // clears callbacks, ! if fix lib, we can return eax as of Fn51
-extern void (*msgbox_setfunctions)(msgbox_callback*) __attribute__((__stdcall__)); // must be called immediately after create, zero-ended array
-extern void (*msgbox_reinit)(msgbox *) __attribute__((__stdcall__));  // recalc sizes when structure changes, called auto when MsgBoxCreate
+extern void (*msgbox_create __attribute__((__stdcall__)))(msgbox *, void *thread); // clears callbacks, ! if fix lib, we can return eax as of Fn51
+extern void (*msgbox_setfunctions __attribute__((__stdcall__)))(msgbox_callback*); // must be called immediately after create, zero-ended array
+extern void (*msgbox_reinit __attribute__((__stdcall__)))(msgbox *) ;  // recalc sizes when structure changes, called auto when MsgBoxCreate
 
 static inline msgbox* kolibri_new_msgbox(char* title, char* text, int def_but, ...)
 /// text can be multilined by code 13 = "\r"
