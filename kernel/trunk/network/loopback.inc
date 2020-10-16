@@ -25,8 +25,8 @@ LOOPBACK_DEVICE:
         .mtu            dd 4096
         .name           dd .namestr
 
-        .unload         dd .dummy_fn
-        .reset          dd .dummy_fn
+        .unload         dd loop_dummy
+        .reset          dd loop_dummy
         .transmit       dd loop_input
 
         .bytes_tx       dq 0
@@ -38,9 +38,6 @@ LOOPBACK_DEVICE:
         .hwacc          dd NET_HWACC_TCP_IPv4_IN + NET_HWACC_TCP_IPv4_OUT
 
         .namestr        db 'loopback', 0
-
-        .dummy_fn:
-        ret
 
 endg
 
@@ -60,6 +57,19 @@ local   .fail
 
   .fail:
 }
+
+;-----------------------------------------------------------------;
+;                                                                 ;
+; loop_dummy                                                      ;
+;                                                                 ;
+;   IN: /                                                         ;
+;                                                                 ;
+;  OUT: /                                                         ;
+;                                                                 ;
+;-----------------------------------------------------------------;
+align 4
+loop_dummy:
+        ret
 
 ;-----------------------------------------------------------------;
 ;                                                                 ;
