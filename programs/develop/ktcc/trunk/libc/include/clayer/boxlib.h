@@ -36,10 +36,10 @@ typedef struct {
     uint32_t ar_offset;
 } __attribute__ ((__packed__)) scrollbar;
 
-extern void (*scrollbar_h_draw)(scrollbar*) __attribute__((__stdcall__));
-extern void (*scrollbar_h_mouse)(scrollbar*) __attribute__((__stdcall__));
-extern void (*scrollbar_v_draw)(scrollbar*) __attribute__((__stdcall__));
-extern void (*scrollbar_v_mouse)(scrollbar*) __attribute__((__stdcall__));
+extern void (*scrollbar_h_draw __attribute__((__stdcall__)))(scrollbar*);
+extern void (*scrollbar_h_mouse __attribute__((__stdcall__)))(scrollbar*);
+extern void (*scrollbar_v_draw __attribute__((__stdcall__)))(scrollbar*);
+extern void (*scrollbar_v_mouse __attribute__((__stdcall__)))(scrollbar*);
 
 // CHECKBOX
 typedef struct {
@@ -56,9 +56,9 @@ typedef struct {
     unsigned int size_of_str;
 }check_box;
 
-extern void (*check_box_draw2)(check_box *) __attribute__((__stdcall__));
-extern void (*check_box_mouse2)(check_box *)__attribute__((__stdcall__));
-extern void (*init_checkbox2)(check_box *)__attribute__((__stdcall__));
+extern void (*check_box_draw2  __attribute__((__stdcall__)))(check_box *);
+extern void (*check_box_mouse2  __attribute__((__stdcall__)))(check_box *);
+extern void (*init_checkbox2 __attribute__((__stdcall__)))(check_box *);
 
 // DBUTTON
 typedef struct {
@@ -78,8 +78,8 @@ typedef struct {
     uint32_t click;          // clicked - 1, zero it after tested
 } pict_button;
 
-extern void (*dynamic_button_draw)(pict_button *) __attribute__((__stdcall__));
-extern void (*dynamic_button_mouse)(pict_button *) __attribute__((__stdcall__));
+extern void (*dynamic_button_draw __attribute__((__stdcall__)))(pict_button *);
+extern void (*dynamic_button_mouse __attribute__((__stdcall__)))(pict_button *);
 
 // EDITBOX
 
@@ -109,10 +109,10 @@ typedef struct edit_box_t {
     unsigned int char_width;
 }edit_box;
 
-extern void (*edit_box_draw)(edit_box *) __attribute__((__stdcall__));
-extern void (*edit_box_key)(edit_box *) __attribute__((__stdcall__));
-extern void (*edit_box_mouse)(edit_box *) __attribute__((__stdcall__));
-extern void (*edit_box_set_text)(edit_box *, char *) __attribute__((__stdcall__));
+extern void (*edit_box_draw  __attribute__((__stdcall__)))(edit_box *);
+extern void (*edit_box_key  __attribute__((__stdcall__)))(edit_box *);
+extern void (*edit_box_mouse  __attribute__((__stdcall__)))(edit_box *);
+extern void (*edit_box_set_text  __attribute__((__stdcall__)))(edit_box *, char *);
 extern volatile unsigned press_key;
 
 // FRAME
@@ -131,7 +131,7 @@ typedef struct {
 	color_t font_bg_color;
 }frame;
 
-extern void (*frame_draw)(frame *) __attribute__((__stdcall__));
+extern void (*frame_draw)(frame *);
 
 // MENUBAR
 typedef struct
@@ -172,12 +172,12 @@ typedef struct
 	uint32_t get_mouse_flag;
 } menubar;
 
-extern void (*menu_bar_draw)(menubar *) __attribute__((__stdcall__));
-extern void (*menu_bar_mouse)(menubar *) __attribute__((__stdcall__));
-extern void (*menu_bar_activate)(menubar *) __attribute__((__stdcall__));
+extern void (*menu_bar_draw)(menubar *);
+extern void (*menu_bar_mouse)(menubar *);
+extern void (*menu_bar_activate)(menubar *);
 
 // OPTIONBOX
-typedef struct __attribute__ ((__packed__)) option_box_t {
+typedef struct option_box_t {
     struct option_box_t **selected;
     uint16_t posx;
     uint16_t posy;
@@ -189,10 +189,10 @@ typedef struct __attribute__ ((__packed__)) option_box_t {
     char *text;
     uint32_t text_len;
     uint32_t flags;
-}option_box;
+} __attribute__ ((__packed__)) option_box;
 
-extern void (*option_box_draw)(option_box **) __attribute__((__stdcall__));
-extern void (*option_box_mouse)(option_box **)__attribute__((__stdcall__));
+extern void (*option_box_draw __attribute__((__stdcall__)))(option_box **);
+extern void (*option_box_mouse __attribute__((__stdcall__)))(option_box **);
 
 // PATHSHOW
 typedef struct {
@@ -209,8 +209,8 @@ typedef struct {
     uint32_t temp_text_length;
 } __attribute__ ((__packed__)) pathview;
 
-extern void (*path_show_prepare)(pathview *) __attribute__((__stdcall__));
-extern void (*path_show_draw)(pathview *) __attribute__((__stdcall__));
+extern void (*path_show_prepare  __attribute__((__stdcall__)))(pathview *);
+extern void (*path_show_draw __attribute__((__stdcall__)))(pathview *);
 
 // PROGRESSBAR
 typedef struct {
@@ -227,8 +227,8 @@ typedef struct {
     unsigned int frame_color;
 } progressbar;
 
-extern void (*progressbar_draw)(progressbar *) __attribute__((__stdcall__));
-extern void (*progressbar_progress)(progressbar *) __attribute__((__stdcall__));
+extern void (*progressbar_draw __attribute__((__stdcall__)))(progressbar *);
+extern void (*progressbar_progress __attribute__((__stdcall__)))(progressbar *);
 
 
 #endif /* KOLIBRI_BOXLIB_H */

@@ -1,76 +1,71 @@
-// WRITED BY MAXCODEHACK
-// Need to other sample, this sample is very shitcode)
-
-#include <stdio.h>
+// sample writed by maxcodehack
+#include <kos32sys1.h>
 #include <stdlib.h>
-#include <string.h>
-#include <stdarg.h>
-#include "kos32sys1.h"
 #include <clayer/boxlib.h>
 
-struct kolibri_system_colors sys_color_table;
+#define evReDraw  1
+#define evKey     2
+#define evButton  3
+#define evExit    4
+#define evDesktop 5
+#define evMouse   6
+#define evIPC     7
+#define evNetwork 8
+#define evDebug   9
 
-char statusbar[255];
-char proc_info[1024];
-char text_line[255];
+#define WIN_W 640
+#define WIN_H 563
 
-enum BUTTONS
-{
-    BTN_QUIT = 1,
-    BTN_POP = 10,
-    BTN_UNLOCK = 11
-};
+char* title = "Boxlib example";
+int win_bg_color = 0x858585;
+scrollbar scroll = {15, WIN_W - 26, WIN_H - 29, 0, 0, 2, 115, 15, 0,0x707070,0xD2CED0,0x555555,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1};
 
-#define FONT_W 8
-#define FONT_H 14
-#define LINES 10
-
-void draw_window()
-{
-    int win_hight, win_width, i, pos_y = get_skin_height() + 36;  // 60 == 24+36
-
-    // start redraw
-    begin_draw();
-	// define&draw window
-	sys_create_window(10, 40, 600, 400, "My window", /*sys_color_table.work_area*/0xFFFFFF, 0x13);
-
-    // end redraw
-    end_draw();
+void draw_window(){
+        begin_draw(); 
+        sys_create_window(215,100,WIN_W,WIN_H,title,win_bg_color,0x34);
+        scrollbar_v_draw(&scroll);
+        end_draw();
 }
-scrollbar scroll_ver = {15, 100 - 26, 100 - 29, 0, 0, 2 /* type */, 115, 15, 0,0x353B47,0xD2CED0,0x555555,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1};
+
+//// EVENTMASK
+#define EVM_REDRAW        1
+#define EVM_KEY           2
+#define EVM_BUTTON        4
+#define EVM_EXIT          8
+#define EVM_BACKGROUND    16
+#define EVM_MOUSE         32
+#define EVM_IPC           64
+#define EVM_STACK         128
+#define EVM_DEBUG         256
+#define EVM_STACK2        512
+#define EVM_MOUSE_FILTER  0x80000000
+#define EVM_CURSOR_FILTER 0x40000000
+//// EVENTMASK
+
+
 int main()
 {
-    kolibri_boxlib_init();
-    int gui_event;
-    uint32_t pressed_button = 0, mouse_button;
-    pos_t   mouse_pos;
-
-    get_system_colors(&sys_color_table);
-    set_event_mask(0xC0000027); // mouse events only when focused window and mouse inside
-
-    do
-    {
-        gui_event = get_os_event(); 
-        switch(gui_event)
-        {
-        case KOLIBRI_EVENT_NONE:
-            // background work
-			break;
-        case KOLIBRI_EVENT_REDRAW:
-            draw_window();
-            scrollbar_v_draw(&scroll_ver);
-			break;
-        case KOLIBRI_EVENT_KEY:
-            // scroll
-			break;
-        case KOLIBRI_EVENT_BUTTON:
-            
-            break;
-        case KOLIBRI_EVENT_MOUSE:
-            scrollbar_v_mouse(&scroll_ver);
-            break;
-        }
-    } while(1);
-
-  return 0;
+	kolibri_boxlib_init();
+	
+	set_event_mask(EVM_REDRAW + EVM_KEY + EVM_BUTTON + EVM_MOUSE + EVM_MOUSE_FILTER);
+	while(1)
+	{
+		switch(get_os_event())
+		{
+			case evButton:
+				if (get_os_button() == 1) exit(0);
+				break;
+		  
+			case evKey:
+				get_key();
+				break;
+			 
+			case evReDraw:
+				draw_window();
+				break;
+			case evMouse:
+				scrollbar_v_mouse(&scroll);
+				break;
+		}
+	}
 }
