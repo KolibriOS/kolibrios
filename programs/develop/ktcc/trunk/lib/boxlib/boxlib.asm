@@ -1,4 +1,4 @@
-; writed by maxcodehack
+; writed by maxñodehack
 ; adaptation of clayer for ktcc
 format elf
 use32                                   ; Tell compiler to use 32 bit instructions
@@ -6,11 +6,11 @@ use32                                   ; Tell compiler to use 32 bit instructio
 section '.text' executable
 
 
-include 'proc32.inc'
-include 'macros.inc'
+include '../../../../../proc32.inc'
+include '../../../../../macros.inc'
 purge section,mov,add,sub
         
-include 'dll.inc'
+include '../../../../../dll.inc'
 
 
 public init_boxlib as 'kolibri_boxlib_init'

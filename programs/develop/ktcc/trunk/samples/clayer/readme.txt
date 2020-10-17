@@ -1,1 +1,0 @@
-kos32-tcc boxlib.c loadboxlib.o -lck -o boxlib.kex
