@@ -1,4 +1,4 @@
-; writed by maxñodehack
+; writed by maxcodehack
 ; adaptation of clayer for ktcc
 format elf
 use32                                   ; Tell compiler to use 32 bit instructions

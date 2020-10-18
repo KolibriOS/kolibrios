@@ -1,3 +1,5 @@
+// BOXLIB EXAMPLE (scrollbar)
+// Writed by maxcodehack
 #include <kos32sys1.h>
 #include <stdlib.h>
 #include <clayer/boxlib.h>
