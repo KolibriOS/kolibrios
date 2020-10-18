@@ -1,8 +1,9 @@
-#include <kos/console.h>
+#include <conio.h>
 #include <kos/http.h>
 #include <kos/inputbox.h>
 
 int main() {
+    if (con_init_console_dll()) return 1; // init fail
     con_write_asciiz("Wait, I'll ask you... when I'll done to fetch one site...\n");
     con_set_title("Dynamicaly linked app");
     http_msg *h = get("http://example.com", 0, HTTP_FLAG_BLOCK, "");
