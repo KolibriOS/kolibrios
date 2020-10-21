@@ -1974,9 +1974,9 @@ align 4
 ;--------------------------------------
 align 4
 .move_others_down:
-        ; ax <- process no
+        ; bx <- process no
         movzx   ebx, word[esi]
-        ; ax <- position in window stack
+        ; bx <- position in window stack
         movzx   ebx, word[WIN_STACK + ebx * 2]
 
         ; drop others

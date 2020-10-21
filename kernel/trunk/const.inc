@@ -258,8 +258,6 @@ SLOT_BASE           = OS_BASE + 0x0080000
 
 VGABasePtr          = OS_BASE + 0x00A0000
 
-UPPER_KERNEL_PAGES  = OS_BASE + 0x0400000
-
 virtual at            OS_BASE + 0x05FFF80
   tss  TSS
 end virtual
