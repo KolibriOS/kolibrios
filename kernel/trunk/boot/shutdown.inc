@@ -13,33 +13,12 @@
 
 $Revision$
 
-; ACPI Generic Address Structure
-struct GAS
-        asid        db ? ; address space id
-        bit_width   db ?
-        bit_offset  db ?
-        access_size db ?
-        address     DQ ?
-ends
-
-ASID.SYSTEM_MEMORY = 0
-ASID.SYSTEM_IO     = 1
-ASID.PCI_CONFIG    = 2
-ASID.PCI_EC        = 3
-ASID.PCI_SMBUS     = 4
-
-ACCESS_SIZE.UNDEFINED = 0
-ACCESS_SIZE.BYTE      = 1
-ACCESS_SIZE.WORD      = 2
-ACCESS_SIZE.DWORD     = 3
-ACCESS_SIZE.QWORD     = 4
-
 align 4
 system_shutdown:          ; shut down the system
 
-        cmp     byte [BOOT.shutdown_type], SYSTEM_SHUTDOWN
+        cmp     [BOOT.shutdown_type], SYSTEM_SHUTDOWN
         jb      @F
-        cmp     byte [BOOT.shutdown_type], SYSTEM_RESTART
+        cmp     [BOOT.shutdown_type], SYSTEM_RESTART
         jbe     .valid
 @@:
         ret
@@ -83,7 +62,7 @@ yes_shutdown_param:
         cli
         call    IRQ_mask_all
 
-        mov     eax, dword[BOOT.shutdown_type]
+        movzx   eax, [BOOT.shutdown_type]
         cmp     al, SYSTEM_RESTART
         jne     @F
 
@@ -98,34 +77,24 @@ yes_shutdown_param:
         mov     ecx, (restart_code_end - restart_code_start)/4
         rep movsd
 
-        call    create_trampoline_pgmap
-        mov     cr3, eax
-        jmp     @F
-org $-OS_BASE
-@@:
-
-;disable paging
-
-        mov     eax, cr0
-        and     eax, 0x7FFFFFFF
-        mov     cr0, eax
-        mov     eax, cr3
-        mov     cr3, eax
-
-        cmp     byte [BOOT_LO.shutdown_type], SYSTEM_SHUTDOWN
-        jne     no_acpi_power_off
+        cmp     [BOOT.shutdown_type], SYSTEM_SHUTDOWN
+        jne     not_power_off
 
 ; system_power_off
 
-        mov     ebx, [acpi_fadt_base-OS_BASE]
-        cmp     dword [ebx], 'FACP'
-        jne     no_acpi_power_off
-        mov     esi, [acpi_dsdt_base-OS_BASE]
-        cmp     dword [esi], 'DSDT'
-        jne     no_acpi_power_off
-        mov     eax, [esi+4] ; DSDT length
+        mov     ebx, [acpi_fadt_base]
+        test    ebx, ebx
+        jz      no_acpi
+        cmp     [ebx+ACPI_TABLE.Signature], 'FACP'
+        jne     no_acpi
+        mov     esi, [acpi_ssdt_base]   ; first SSDT is DSDT
+        test    esi, esi
+        jz      no_acpi
+        cmp     [esi+ACPI_TABLE.Signature], 'DSDT'
+        jne     no_acpi
+        mov     eax, [esi+ACPI_TABLE.Length]
         sub     eax, 36+4
-        jbe     no_acpi_power_off
+        jbe     no_acpi
         add     esi, 36
 .scan_dsdt:
         cmp     dword [esi], '_S5_'
@@ -143,7 +112,7 @@ org $-OS_BASE
         cmp     byte [esi], 0 ; 0 means zero byte, 0Ah xx means byte xx
         jz      @f
         cmp     byte [esi], 0xA
-        jnz     no_acpi_power_off
+        jnz     no_acpi
         inc     esi
         mov     cl, [esi]
 @@:
@@ -153,7 +122,7 @@ org $-OS_BASE
         cmp     byte [esi], 0
         jz      @f
         cmp     byte [esi], 0xA
-        jnz     no_acpi_power_off
+        jnz     no_acpi
         inc     esi
         mov     ch, [esi]
 @@:
@@ -162,14 +131,14 @@ org $-OS_BASE
         inc     esi
         dec     eax
         jnz     .scan_dsdt
-        jmp     no_acpi_power_off
+        jmp     no_acpi
 do_acpi_power_off:
-        mov     edx, [ebx+48]
+        mov     edx, [ebx+ACPI_FADT.SMI_CMD]
         test    edx, edx
         jz      .nosmi
-        mov     al, [ebx+52]
+        mov     al, [ebx+ACPI_FADT.ACPI_ENABLE]
         out     dx, al
-        mov     edx, [ebx+64]
+        mov     edx, [ebx+ACPI_FADT.PM1a_CNT_BLK]
 @@:
         in      ax, dx
         test    al, 1
@@ -178,12 +147,12 @@ do_acpi_power_off:
         and     cx, 0x0707
         shl     cx, 2
         or      cx, 0x2020
-        mov     edx, [ebx+64]
+        mov     edx, [ebx+ACPI_FADT.PM1a_CNT_BLK]
         in      ax, dx
         and     ax, 203h
         or      ah, cl
         out     dx, ax
-        mov     edx, [ebx+68]
+        mov     edx, [ebx+ACPI_FADT.PM1b_CNT_BLK]
         test    edx, edx
         jz      @f
         in      ax, dx
@@ -191,40 +160,72 @@ do_acpi_power_off:
         or      ah, ch
         out     dx, ax
 @@:
-        jmp     $
+        jmp     no_acpi
 
-no_acpi_power_off:
-        cmp     byte[BOOT_LO.shutdown_type], SYSTEM_REBOOT
-        jnz     no_acpi_reboot
+not_power_off:
+        cmp     [BOOT.shutdown_type], SYSTEM_REBOOT
+        jnz     not_reboot
         ; try to reboot via ACPI fixed features
-        mov     ebx, [acpi_fadt_base-OS_BASE]
-        cmp     dword[ebx], 'FACP'
-        jne     no_acpi_power_off
-        test    dword[ebx+0x70], 1 SHL 10    ; RESET_REG_SUP
-        jz      no_acpi_reboot
-        cmp     [ebx+0x74+GAS.asid], ASID.SYSTEM_IO
-        jnz     no_acpi_reboot
-        cmp     [ebx+0x74+GAS.bit_width], 8
-        jnz     no_acpi_reboot
-        cmp     [ebx+0x74+GAS.bit_offset], 0
-        jnz     no_acpi_reboot
-        cmp     [ebx+0x74+GAS.access_size], ACCESS_SIZE.BYTE
-        ja      no_acpi_reboot
-        cmp     [ebx+0x74+GAS.address.hi], 0
-        jnz     no_acpi_reboot
-        mov     edx, [ebx+0x74+GAS.address.lo]
-        movzx   eax, byte[ebx+0x80]
+        mov     ebx, [acpi_fadt_base]
+        test    ebx, ebx
+        jz      no_acpi
+        cmp     [ebx+ACPI_TABLE.Signature], 'FACP'
+        jne     no_acpi
+        cmp     [ebx+ACPI_FADT.Length], ACPI_FADT.RESET_VALUE
+        jbe     no_acpi
+        test    [ebx+ACPI_FADT.Flags], 1 SHL 10    ; reset_reg_supported
+        jz      no_acpi
+        cmp     [ebx+ACPI_FADT.RESET_REG.ASID], ASID.SYSTEM_IO
+        jnz     no_acpi
+        cmp     [ebx+ACPI_FADT.RESET_REG.BitWidth], 8
+        jnz     no_acpi
+        cmp     [ebx+ACPI_FADT.RESET_REG.BitOffset], 0
+        jnz     no_acpi
+        cmp     [ebx+ACPI_FADT.RESET_REG.AccessSize], ACCESS_SIZE.BYTE
+        ja      no_acpi
+        cmp     [ebx+ACPI_FADT.RESET_REG.Address.hi], 0
+        jnz     no_acpi
+        ; 'enable' ACPI
+        mov     edx, [ebx+ACPI_FADT.SMI_CMD]
+        test    edx, edx
+        jz      .nosmi
+        mov     al, [ebx+ACPI_FADT.ACPI_ENABLE]
         out     dx, al
-        jmp     $
-        ; unreachable
-no_acpi_reboot:
+        mov     edx, [ebx+ACPI_FADT.PM1a_CNT_BLK]
+@@:
+        in      ax, dx
+        test    al, 1
+        jz      @b
+.nosmi:
+
+        mov     edx, [ebx+ACPI_FADT.RESET_REG.Address.lo]
+        movzx   eax, [ebx+ACPI_FADT.RESET_VALUE]
+        out     dx, al
+        jmp     no_acpi
+
+not_reboot:
+no_acpi:
+        call    create_trampoline_pgmap
+        mov     cr3, eax
+        jmp     @F
+org $-OS_BASE
+@@:
+
+;disable paging
+
+        mov     eax, cr0
+        and     eax, 0x7FFFFFFF
+        mov     cr0, eax
+        mov     eax, cr3
+        mov     cr3, eax
+
         jmp     0x50000
 
 align 4
 restart_code_start:
 org 0x50000
 
-        cmp     byte [BOOT_LO.shutdown_type], SYSTEM_RESTART
+        cmp     [BOOT_LO.shutdown_type], SYSTEM_RESTART
         jne     @F
 
         mov     esi, _CLEAN_ZONE-OS_BASE

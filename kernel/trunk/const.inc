@@ -248,7 +248,6 @@ BTN_ADDR            = OS_BASE + 0x000FE88
 MEM_AMOUNT          = OS_BASE + 0x000FE8C
 
 SYS_SHUTDOWN        = OS_BASE + 0x000FF00
-TASK_ACTIVATE       = OS_BASE + 0x000FF01
 
 
 TMP_STACK_TOP       = 0x007CC00
@@ -278,7 +277,7 @@ LFB_BASE            = 0xFE000000
 
 new_app_base        = 0;
 
-twdw                = 0x2000   ; CURRENT_TASK - window_data
+twdw                = CURRENT_TASK - window_data
 
 std_application_base_address   = new_app_base
 RING0_STACK_SIZE    = 0x2000

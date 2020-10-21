@@ -561,8 +561,3 @@ get_clock_ns:
         mov     edx, 10000000
         mul     edx
         ret
-
-align 4
-acpi_get_root_ptr:
-        mov     eax, [acpi_rsdp]
-        ret

@@ -210,8 +210,7 @@ B32:
         call    test_cpu
         bts     [cpu_caps-OS_BASE], CAPS_TSC    ;force use rdtsc
 
-        call    check_acpi
-        call    init_hpet
+        call    acpi_locate
         call    init_BIOS32
 ; MEMORY MODEL
         call    mem_test
@@ -552,14 +551,17 @@ high_code:
 @@:
         mov     [clipboard_main_list], eax
 
+        call    check_acpi
+
         mov     eax, [hpet_base]
         test    eax, eax
         jz      @F
         mov     eax, [hpet_base]
         stdcall map_io_mem, [hpet_base], 1024, PG_GLOBAL+PAT_UC+PG_SWR
         mov     [hpet_base], eax
-        mov     eax, [eax]
+        mov     eax, [eax+HPET_ID]
         DEBUGF  1, "K : HPET caps %x\n", eax
+        call    init_hpet
 @@:
 ; SET UP OS TASK
 
@@ -892,7 +894,7 @@ include "detect/vortex86.inc"                     ; Vortex86 SoC detection code
         mov     ebx, [hpet_base]
         test    ebx, ebx
         jz      @F
-        mov     ebx, [ebx+0xF0]
+        mov     ebx, [ebx+HPET_COUNTER]
 
         rdtsc
         mov     ecx, 1000

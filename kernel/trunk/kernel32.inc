@@ -24,9 +24,12 @@ include "core/string.inc"
 include "core/v86.inc"          ; 16-bit mode machine
 include "core/irq.inc"          ; interrupt handling functions
 include "core/apic.inc"
+include "core/hpet.inc"
 include "core/timers.inc"
 include "core/clipboard.inc"
 include "core/slab.inc"
+
+include "acpi/acpi.inc"
 
 include "posix/posix.inc"
 

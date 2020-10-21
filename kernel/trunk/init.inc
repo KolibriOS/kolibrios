@@ -410,43 +410,66 @@ proc test_cpu
         ret
 endp
 
-iglobal
-align 4
-acpi_lapic_base   dd 0xfee00000   ; default local apic base
-endg
-
-uglobal
-align 4
-acpi_rsdp         rd 1
-acpi_rsdt         rd 1
-acpi_madt         rd 1
-
-acpi_dev_data     rd 1
-acpi_dev_size     rd 1
-
-acpi_rsdt_base    rd 1
-acpi_fadt_base    rd 1
-acpi_dsdt_base    rd 1
-acpi_dsdt_size    rd 1
-acpi_madt_base    rd 1
-acpi_ioapic_base  rd MAX_IOAPICS
-acpi_hpet_base    rd 1
-hpet_base         rd 1
-hpet_period       rd 1
-hpet_timers       rd 1
-hpet_tsc_start    rd 2
-cpu_count         rd 1
-smpt              rd 16
-endg
-
 ACPI_HI_RSDP_WINDOW_START  = 0x000E0000
 ACPI_HI_RSDP_WINDOW_END    = 0x00100000
 ACPI_RSDP_CHECKSUM_LENGTH  = 20
 
-ACPI_HPET_SIGN             = 'HPET'
-ACPI_MADT_SIGN             = 'APIC'
-ACPI_FADT_SIGN             = 'FACP'
+proc acpi_locate_tables uses ebx esi edi
+        mov     ebx, [ebx+ACPI_RSDP.RsdtAddress]
+        mov     [acpi_rsdt_base-OS_BASE], ebx
+        mov     eax, [ebx+ACPI_RSDT.Length]
+        mov     [acpi_rsdt_size-OS_BASE], eax
 
+        mov     esi, [acpi_rsdt_base-OS_BASE]
+        mov     ecx, [esi+ACPI_RSDT.Length]
+        lea     edi, [esi+ecx]
+        add     esi, sizeof.ACPI_TABLE
+        movi    ecx, 1
+.next_table:
+        cmp     esi, edi
+        jae     .done
+        lodsd
+        cmp     [eax+ACPI_TABLE.Signature], 'SSDT'      ; skip DSDT if present
+        jz      .ssdt                                   ; read it from FADT
+        cmp     [eax+ACPI_TABLE.Signature], 'FACP'      ; this is FADT
+        jz      .fadt
+        cmp     [eax+ACPI_TABLE.Signature], 'APIC'      ; this is MADT
+        jz      .madt
+        cmp     [eax+ACPI_TABLE.Signature], 'HPET'
+        jz      .hpet
+        jmp     .next_table
+.ssdt:
+        mov     [acpi_ssdt_base+ecx*4-OS_BASE], eax
+        mov     eax, [eax+ACPI_TABLE.Length]
+        mov     [acpi_ssdt_size+ecx*4-OS_BASE], eax
+        inc     ecx
+        jmp     .next_table
+.fadt:
+        mov     [acpi_fadt_base-OS_BASE], eax
+        cmp     [eax+ACPI_FADT.DSDT], 0
+        jz      @f
+        mov     edx, [eax+ACPI_FADT.DSDT]
+        mov     [acpi_ssdt_base-OS_BASE], edx
+        mov     edx, [edx+ACPI_TABLE.Length]
+        mov     [acpi_ssdt_size-OS_BASE], edx
+@@:
+        mov     eax, [eax+ACPI_TABLE.Length]
+        mov     [acpi_fadt_size-OS_BASE], eax
+        jmp     .next_table
+.madt:
+        mov     [acpi_madt_base-OS_BASE], eax
+        mov     eax, [eax+ACPI_TABLE.Length]
+        mov     [acpi_madt_size-OS_BASE], eax
+        jmp     .next_table
+.hpet:
+        mov     [acpi_hpet_base-OS_BASE], eax
+        mov     eax, [eax+ACPI_TABLE.Length]
+        mov     [acpi_hpet_size-OS_BASE], eax
+        jmp     .next_table
+.done:
+        mov     [acpi_ssdt_cnt-OS_BASE], ecx
+        ret
+endp
 
 acpi_locate:
         push    ebx
@@ -474,7 +497,11 @@ else
         call    .check
 end if
 .done:
-        mov     eax, ebx
+        mov     [acpi_rsdp_base-OS_BASE], ebx
+        test    ebx, ebx
+        jz      @f
+        call    acpi_locate_tables
+@@:
         pop     edi
         pop     ebx
         ret
@@ -502,185 +529,3 @@ end if
         jb      .check
         xor     ebx, ebx
         ret
-
-align 4
-rsdt_find:           ;ecx= rsdt edx= SIG
-        push    ebx
-        push    esi
-
-        lea     ebx, [ecx+36]
-        mov     esi, [ecx+4]
-        add     esi, ecx
-align 4
-.next:
-        mov     eax, [ebx]
-        cmp     [eax], edx
-        je      .done
-
-        add     ebx, 4
-        cmp     ebx, esi
-        jb      .next
-
-        xor     eax, eax
-        pop     esi
-        pop     ebx
-        ret
-
-.done:
-        mov     eax, [ebx]
-        pop     esi
-        pop     ebx
-        ret
-
-align 4
-check_acpi:
-
-        call    acpi_locate
-        test    eax, eax
-        jz      .done
-
-        mov     [acpi_rsdp-OS_BASE], eax
-        mov     ecx, [eax+16]
-        mov     edx, ACPI_FADT_SIGN
-        mov     [acpi_rsdt_base-OS_BASE], ecx
-        call    rsdt_find
-        mov     [acpi_fadt_base-OS_BASE], eax
-        test    eax, eax
-        jz      @f
-
-        mov     eax, [eax+40]
-        mov     [acpi_dsdt_base-OS_BASE], eax
-        mov     eax, [eax+4]
-        mov     [acpi_dsdt_size-OS_BASE], eax
-@@:
-        mov     edx, ACPI_HPET_SIGN
-        mov     ecx, [acpi_rsdt_base-OS_BASE]
-        call    rsdt_find
-        test    eax, eax
-        jz      @F
-
-        mov     [acpi_hpet_base-OS_BASE], eax
-        mov     eax, [eax+44]
-        mov     [hpet_base-OS_BASE], eax
-@@:
-        mov     edx, ACPI_MADT_SIGN
-        mov     ecx, [acpi_rsdt_base-OS_BASE]
-        call    rsdt_find
-        test    eax, eax
-        jz      .done
-
-        mov     [acpi_madt_base-OS_BASE], eax
-        mov     ecx, [eax+36]
-        mov     [acpi_lapic_base-OS_BASE], ecx
-
-        mov     edi, smpt-OS_BASE
-        mov     ebx, [ecx+0x20]
-        shr     ebx, 24              ; read APIC ID
-
-        mov     [edi], ebx           ; bootstrap always first
-        inc     [cpu_count-OS_BASE]
-        add     edi, 4
-
-        mov     [ioapic_cnt-OS_BASE], 0
-        lea     edx, [eax+44]
-        mov     ecx, [eax+4]
-        add     ecx, eax
-.check:
-        mov     eax, [edx]
-        cmp     al, 0
-        je      .lapic
-        cmp     al, 1
-        je      .io_apic
-        jmp     .next
-.lapic:
-        shr     eax, 24              ; get APIC ID
-        cmp     eax, ebx             ; skip self
-        je      .next
-
-        test    [edx+4], byte 1      ; is enabled ?
-        jz      .next
-
-        cmp     [cpu_count-OS_BASE], 16
-        jae     .next
-
-        stosd                        ; store APIC ID
-        inc     [cpu_count-OS_BASE]
-.next:
-        mov     eax, [edx]
-        movzx   eax, ah
-        add     edx, eax
-        cmp     edx, ecx
-        jb      .check
-.done:
-        ret
-
-.io_apic:
-        mov     eax, [ioapic_cnt-OS_BASE]
-        push    dword[edx+4]
-        pop     [acpi_ioapic_base-OS_BASE+eax*4]
-        push    dword[edx+8]
-        pop     [ioapic_gsi_base-OS_BASE+eax*4]
-        inc     [ioapic_cnt-OS_BASE]
-        jmp     .next
-
-HPET_PERIOD             = 0x0004
-HPET_CFG_ENABLE         = 0x0001
-HPET_CFG                = 0x0010
-HPET_COUNTER            = 0x00f0
-HPET_T0_CFG             = 0x0100
-
-HPET_TN_LEVEL           = 0x0002
-HPET_TN_ENABLE          = 0x0004
-HPET_TN_FSB             = 0x4000
-
-align 4
-init_hpet:
-        mov     ebx, [hpet_base-OS_BASE]
-        test    ebx, ebx
-        jz      .done
-
-        mov     eax, [ebx]
-        and     ah, 0x1F
-        inc     ah
-        movzx   eax, ah
-        mov     [hpet_timers-OS_BASE], eax
-        mov     ecx, eax
-
-        mov     eax, [ebx+HPET_PERIOD]
-        xor     edx, edx
-        shld    edx, eax, 10
-        shl     eax, 10
-        mov     esi, 1000000
-        div     esi
-        mov     [hpet_period-OS_BASE], eax
-
-        mov     esi, [ebx+HPET_CFG]
-        and     esi, not HPET_CFG_ENABLE
-        mov     [ebx+HPET_CFG], esi             ;stop main counter
-
-        lea     edx, [ebx+HPET_T0_CFG]
-@@:
-        jcxz    @F
-        mov     eax, [edx]
-        and     eax, not (HPET_TN_ENABLE+HPET_TN_LEVEL+HPET_TN_FSB)
-        mov     [edx], eax
-        add     edx, 0x20
-        dec     ecx
-        jmp     @B
-@@:
-        mov     [ebx+HPET_COUNTER], ecx         ;reset main counter
-        mov     [ebx+HPET_COUNTER+4], ecx
-
-        or      esi, HPET_CFG_ENABLE
-        mov     [ebx+HPET_CFG], esi             ;and start again
-
-.done:
-        rdtsc
-        mov     [hpet_tsc_start-OS_BASE], eax
-        mov     [hpet_tsc_start+4-OS_BASE], edx
-
-        ret
-
-
-
-
