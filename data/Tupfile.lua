@@ -215,6 +215,7 @@ extra_files = {
  {"kolibrios/games/mun/mun", "common/games/mun/mun"}, 
  {"kolibrios/games/pig/", "common/games/pig/*"},
  {"kolibrios/games/soko/", "common/games/soko/*"},
+ {"kolibrios/games/fridge/", "common/games/fridge/*"},
  {"kolibrios/games/the_bus/menu.png", PROGS .. "/cmm/the_bus/menu.png"},
  {"kolibrios/games/the_bus/objects.png", PROGS .. "/cmm/the_bus/objects.png"},
  {"kolibrios/games/the_bus/road.png", PROGS .. "/cmm/the_bus/road.png"},
