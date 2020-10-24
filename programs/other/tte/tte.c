@@ -14,7 +14,7 @@
 *   You should have received a copy of the GNU General Public License
 *   along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
-/* Kolibri port by Siemargl 2018 
+/* Kolibri port by Siemargl 2018 and update by maxcodehack 2020
  * my fixes mostly commented with triple comment ///
  * */
 
@@ -1369,7 +1369,7 @@ void editorDrawWelcomeMessage(struct a_buf* ab) {
     // Using snprintf to truncate message in case the terminal
     // is too tiny to handle the entire string.
     int welcome_len = snprintf(welcome, sizeof(welcome),
-        "tte %s <http://dmoral.es/>", TTE_VERSION);
+        "TinyTextEditor %s", TTE_VERSION);
     if (welcome_len > ec.screen_cols)
         welcome_len = ec.screen_cols;
     // Centering the message.
@@ -1764,15 +1764,18 @@ int handleArgs(int argc, char* argv[]) {
 
 int main(int argc, char* argv[]) {
 	if (con_init_console_dll()) return 1; // init fail
-
+	con_set_title("TinyTextEditor");
     initEditor();
     int arg_response = handleArgs(argc, argv);
-    if (arg_response == 1)
-        editorOpen(argv[1]);
+    if (arg_response == 1) {
+		editorOpen(argv[1]);
+		char* title = argv[1];
+		strcat(title, " - TinyTextEditor");
+		con_set_title(title);
+	}  
     else if (arg_response == -1)
         return 0;
     enableRawMode();
-
     editorSetStatusMessage(" Ctrl-Q, ^Z to quit | Ctrl-S to save | (tte -h | --help for more info)");
 
     while (1) {
