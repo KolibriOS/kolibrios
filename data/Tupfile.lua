@@ -825,7 +825,7 @@ for i,v in ipairs(distr_extra_files) do
 end
 
 -- generate command and dependencies for kolibri.raw
-input_deps = {"kolibri.img", "../kernel/trunk/bootloader/extended_primary_loader/fat32/kordldr.f32.bin", "../kernel/trunk/bootloader/extended_primary_loader/fat32/bootsect.bin", "../kernel/trunk/kernel.mnt.ext_loader"}
+input_deps = {"kolibri.img", "../kernel/trunk/bootloader/extended_primary_loader/fat32/kordldr.f32", "../kernel/trunk/bootloader/extended_primary_loader/fat32/bootsect.bin", "../kernel/trunk/kernel.mnt.ext_loader"}
 make_raw_command = '^ MKIMG kolibri.raw^ ' -- for tup: don't write full command to logs
 make_raw_command = make_raw_command .. "dd if=/dev/zero of=kolibri.raw bs=1048576 count=64 2>&1"
 make_raw_command = make_raw_command .. " && parted --script kolibri.raw mktable msdos"
@@ -835,7 +835,7 @@ bootsector = "../kernel/trunk/bootloader/extended_primary_loader/fat32/bootsect.
 make_raw_command = make_raw_command .. " && mformat -i kolibri.raw@@1M -v KOLIBRIOS -T 129024 -h 16 -s 32 -H 2048 -c 1 -F -B " .. bootsector .. " ::"
 make_raw_command = make_raw_command .. " && mcopy -moi kolibri.raw@@1M ../kernel/trunk/kernel.mnt.ext_loader ::KERNEL.MNT"
 make_raw_command = make_raw_command .. " && mcopy -moi kolibri.raw@@1M kolibri.img ::KOLIBRI.IMG"
-make_raw_command = make_raw_command .. " && mcopy -moi kolibri.raw@@1M ../kernel/trunk/bootloader/extended_primary_loader/fat32/kordldr.f32.bin ::KORDLDR.F32"
+make_raw_command = make_raw_command .. " && mcopy -moi kolibri.raw@@1M ../kernel/trunk/bootloader/extended_primary_loader/fat32/kordldr.f32 ::KORDLDR.F32"
 make_raw_command = make_raw_command .. " && mcopy -moi kolibri.raw@@1M ../kernel/trunk/bootloader/extended_primary_loader/config.ini ::CONFIG.INI"
 
 make_raw_command = make_raw_command .. ' && mmd -i kolibri.raw@@1M ::KOLIBRIOS'
