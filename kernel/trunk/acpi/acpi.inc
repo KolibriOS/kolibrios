@@ -229,6 +229,11 @@ check_acpi:
 
         mov     ecx, [eax+ACPI_MADT.Local_IC_Addr]
         mov     [acpi_lapic_base], ecx
+        push    eax
+        stdcall map_io_mem, ecx, 0x1000, PG_GLOBAL+PG_NOCACHE+PG_SWR
+        mov     [LAPIC_BASE], eax
+        mov     ecx, eax
+        pop     eax
 
         mov     edi, smpt
         mov     ebx, [ecx+APIC_ID]

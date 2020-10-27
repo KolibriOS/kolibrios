@@ -646,9 +646,13 @@ endg
         mov     edi, OS_BASE + 8000h
         mov     ecx, (ap_init16_size + 3) / 4
         rep movsd
+        mov     eax, [LAPIC_BASE]
+        test    eax, eax
+        jnz     @f
         stdcall map_io_mem, [acpi_lapic_base], 0x1000, PG_GLOBAL+PG_NOCACHE+PG_SWR
         mov     [LAPIC_BASE], eax
-        lea     edi, [eax+300h]
+@@:
+        lea     edi, [eax+APIC_ICRL]
         mov     esi, smpt+4
         dec     ebx
 .wake_cpus_loop:
