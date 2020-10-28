@@ -155,11 +155,12 @@ end if
 align 4
 LAPIC_init:
 
-        cmp     [LAPIC_BASE], 0
-        jne     .done
-
+        mov     eax, [LAPIC_BASE]
+        test    eax, eax
+        jnz     @f
         stdcall map_io_mem, [acpi_lapic_base], 0x1000, PG_GLOBAL+PG_NOCACHE+PG_SWR
         mov     [LAPIC_BASE], eax
+@@:
         mov     esi, eax
 
         ; Program Destination Format Register for Flat mode.
