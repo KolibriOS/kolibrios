@@ -94,7 +94,7 @@ struct editor_syntax {
     char** file_match;
     // This will be a NULL-terminated array of strings, each string containing
     // a keyword. To differentiate between the two types of keywords,
-    // we’ll terminate the second type of keywords with a pipe (|)
+    // we'll terminate the second type of keywords with a pipe (|)
     // character (also known as a vertical bar).
     char** keywords;
     // We let each language specify its own single-line comment pattern.
@@ -1763,8 +1763,7 @@ int handleArgs(int argc, char* argv[]) {
 }
 
 int main(int argc, char* argv[]) {
-	if (con_init_console_dll()) return 1; // init fail
-	con_set_title("TinyTextEditor");
+	con_init_console_dll_param(con_def_wnd_width, con_def_wnd_height, con_def_wnd_width, con_def_wnd_height, "TinyTextEditor");
     initEditor();
     int arg_response = handleArgs(argc, argv);
     if (arg_response == 1) {
