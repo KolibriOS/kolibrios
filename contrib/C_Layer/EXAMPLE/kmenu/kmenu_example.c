@@ -41,7 +41,7 @@ int main()
   ksubmenu_add(main_menu, kmenuitem__submenu_new(KMENUITEM_SUBMENU, "File", sub_menu1));
   ksubmenu_add(main_menu, kmenuitem__submenu_new(KMENUITEM_SUBMENU, "Edit", sub_menu2));
 
-  extern volatile unsigned press_key;
+  unsigned press_key;
 
   do  /* Start of main activity loop */
     {
@@ -59,7 +59,7 @@ int main()
 	  }
 	  press_key = key.val;
 
-	  kolibri_handle_event_key(main_window);
+	  kolibri_handle_event_key(main_window, key);
 	}
       else if(gui_event == KOLIBRI_EVENT_BUTTON)
 	{

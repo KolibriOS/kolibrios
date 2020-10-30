@@ -12,7 +12,7 @@ CFLAGS = -c -O2 -msse2 -fno-ident -U__WIN32__ -U_Win32 -U_WIN32 -U__MINGW32__ -U
 
 INCLUDES= -I./winlib -I./pxdraw -I $(SDK_DIR)/sources/newlib/libc/include -I $(SDK_DIR)/sources/freetype/include
 INCLUDES+= -I $(CONTRIB_DIR)/toolchain/binutils/bfd -I $(CONTRIB_DIR)/toolchain/binutils/include
-LIBPATH:= -L./ -L $(SDK_DIR)/lib
+LIBPATH:= -L./ -L $(SDK_DIR)/lib -L /home/autobuild/tools/win32/mingw32/lib
 
 LIB_SRCS= 			\
 	  pxdraw/context.c	\

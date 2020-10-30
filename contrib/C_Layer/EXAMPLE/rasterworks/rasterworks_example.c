@@ -19,7 +19,7 @@ int main()
 
   kolibri_window *main_window = kolibri_new_window(50, 50, 800, 300, "rasterworks example");
   
-  extern volatile unsigned press_key;
+  unsigned press_key;
   
   int ln_str = countUTF8Z("Пример работы", -1);
   void *buffi = malloc(768*256*3 * sizeof(char));
@@ -43,7 +43,7 @@ int main()
       if(gui_event == KOLIBRI_EVENT_REDRAW)
 	{
 	  kolibri_handle_event_redraw(main_window);
-	  DrawBitmap(buffi, 5, 5, 768, 256);
+	  DrawBitmap(buffi+8, 5, 5, 768, 256);
 	}
       else if(gui_event == KOLIBRI_EVENT_KEY)
 	{
@@ -53,7 +53,7 @@ int main()
 	  }
 	  press_key = key.val;
 
-	  kolibri_handle_event_key(main_window);
+	  kolibri_handle_event_key(main_window, key);
 	}
       else if(gui_event == KOLIBRI_EVENT_BUTTON)
 	{
