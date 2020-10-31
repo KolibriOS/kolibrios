@@ -1,5 +1,3 @@
-
-FASM= fasm.exe
 CC = kos32-gcc
 AR = kos32-ar
 LD = kos32-ld
