@@ -15,11 +15,11 @@ LIB_DIR:= $(SDK_DIR)/lib
 
 DEFINES = -D__unix__ -DMESA_EGL_NO_X11_HEADERS
 
-INCLUDES= -I. -I$(SDK_DIR)/sources/newlib/libc/include -I$(SDK_DIR)/sources/Mesa/include -I$(SDK_DIR)/sources/eglut
+INCLUDES= -I. -I$(SDK_DIR)/sources/newlib/libc/include -I$(SDK_DIR)/sources/Mesa/mesa-9.2.5/include -I$(SDK_DIR)/sources/eglut
 
 LIBS_EGL:= -leglut -legl.dll
 LIBS_OSM:= -losmesa.dll
-LIBS:= -lGL.dll -lpixlib.dll -lgcc -lc.dll -lapp
+LIBS:= -lGL.dll -lpixlib3 -lgcc -lc.dll
 
 LIBPATH:= -L$(LIB_DIR) -L/home/autobuild/tools/win32/mingw32/lib
 
