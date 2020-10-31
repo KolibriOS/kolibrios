@@ -11,7 +11,7 @@ LDFLAGS = -static -S -nostdlib -T $(SDK_DIR)/sources/newlib/app.lds \
 CFLAGS = -g -U_Win32 -U_WIN32 -U__MINGW32__
 
 INCLUDES= -I. -I$(SDK_DIR)/sources/newlib/libc/include -I$(CLAYER)/INCLUDE
-LIBPATH:= -L $(SDK_DIR)/lib -L /home/autobuild/tools/win32/mingw32/lib
+LIBPATH:= -L $(SDK_DIR)/lib -L /home/autobuild/tools/win32/lib
 
 OBJPATH = $(CLAYER)/OBJ
 
