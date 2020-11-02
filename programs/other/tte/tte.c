@@ -14,9 +14,10 @@
 *   You should have received a copy of the GNU General Public License
 *   along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
+
 /* Kolibri port by Siemargl 2018 and update by maxcodehack 2020
  * my fixes mostly commented with triple comment ///
- * */
+ */
 
 /*** Include section ***/
 
@@ -45,6 +46,8 @@
 ///#include <unistd.h>
 #include <conio.h>
 
+/// Notify
+#include "notify.h"
 
 
 /*** Define section ***/
@@ -1723,7 +1726,8 @@ void initEditor() {
 }
 
 void printHelp() {
-    printf("Usage: tte [OPTIONS] [FILE]\n\n");
+/*	
+	printf("Usage: tte [OPTIONS] [FILE]\n\n");
     printf("\nKEYBINDINGS\n-----------\n\n");
     printf("Keybinding\t\tAction\n\n");
     printf("Ctrl-Q,^Z \t\tExit\n");
@@ -1734,7 +1738,7 @@ void printHelp() {
     printf("Ctrl-C    \t\tCopy line\n");
     printf("Ctrl-X    \t\tCut line\n");
     printf("Ctrl-V    \t\tPaste line\n");
- ///   printf("Ctrl-P    \t\tPause tte (type \"fg\" to resume)\n");
+///   printf("Ctrl-P    \t\tPause tte (type \"fg\" to resume)\n");
 
     printf("\n\nOPTIONS\n-------\n\n");
     printf("Option        \t\tAction\n\n");
@@ -1742,6 +1746,29 @@ void printHelp() {
     printf("-v | --version\t\tPrints the version of tte\n");
 
     printf("\n\nFor now, usage of ISO 8859-1 is recommended.\n");
+*/
+    
+    /// NOTIFY HOTKEYS 
+    char* __help__ = 
+    "'Hotkeys: \n\
+^Q, ^Z   Exit \n\
+Ctrl-S   Save \n\
+Ctrl-F   Search. Esc, \n\
+    enter and arrows to interact once searching \n\
+Ctrl-E   Flip line upwards \n\
+Ctrl-D   Flip line downwards \n\
+Ctrl-C   Copy line \n\
+Ctrl-X   Cut line \n\
+Ctrl-V   Paste line' -t -I";
+    notify(__help__);
+    
+    /// NOTIFY OPTIONS
+    __help__ = 
+    "'Options:\n\
+-h, --help     Prints the help \n\
+-v, --version  Prints the version of tte \n\
+For now, usage of ISO 8859-1 is recommended.\n' -t -I";
+	notify(__help__);
 }
 
 // 1 if editor should open, 0 otherwise, -1 if the program should exit
@@ -1754,7 +1781,11 @@ int handleArgs(int argc, char* argv[]) {
             printHelp();
             return -1;
         } else if(strncmp("-v", argv[1], 2) == 0 || strncmp("--version", argv[1], 9) == 0) {
-            printf("tte - version %s\n", TTE_VERSION);
+            char* _notify_version = "'Version:\n";
+            strcat(_notify_version, TTE_VERSION);
+            strcat(_notify_version, "' -t -I");
+            /// printf("tte - version %s\n", TTE_VERSION);
+            notify(_notify_version);
             return -1;
         }
     }
