@@ -1,11 +1,11 @@
 #ifndef __MENUET_FILE_OPEN_H_INCLUDED_
 #define __MENUET_FILE_OPEN_H_INCLUDED_
 
-#include <menuet.h>
+#include <kolibri.h>
 
-// Menuet interface.
+// Kolibri interface.
 
-namespace Menuet   // All menuet functions, types and data are nested in the (Menuet) namespace.
+namespace Kolibri   // All kolibri functions, types and data are nested in the (Kolibri) namespace.
 {
 	struct TOpenFileStruct;   // Data for a file open dialog.
 #define MENUET_OPEN_FILE_INIT {}   // Initializer of the file open struct, cat be redefined in a realization of the library
@@ -21,7 +21,7 @@ namespace Menuet   // All menuet functions, types and data are nested in the (Me
 
 #ifdef __MENUET__
 
-namespace Menuet
+namespace Kolibri
 {
 // Structures.
 
@@ -81,7 +81,7 @@ namespace Menuet
 
 #else   // else: def __MENUET__
 
-namespace Menuet
+namespace Kolibri
 {
 	struct TOpenFileStruct
 	{

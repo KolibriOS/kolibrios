@@ -1,12 +1,12 @@
 #ifndef __MENUET_HEAP_H_INCLUDED_
 #define __MENUET_HEAP_H_INCLUDED_
 
-#include <menuet.h>
+#include <kolibri.h>
 #include <memheap.h>
 
-// Menuet memory heap interface.
+// Kolibri memory heap interface.
 
-namespace Menuet   // All menuet functions, types and data are nested in the (Menuet) namespace.
+namespace Kolibri   // All kolibri functions, types and data are nested in the (Kolibri) namespace.
 {
 	void *Alloc(unsigned int size);
 	void *ReAlloc(void *mem, unsigned int size);
@@ -15,7 +15,7 @@ namespace Menuet   // All menuet functions, types and data are nested in the (Me
 
 #ifdef __MENUET__
 
-namespace Menuet
+namespace Kolibri
 {
 
 // Global variables

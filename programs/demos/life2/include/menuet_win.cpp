@@ -1,4 +1,3 @@
-#include <windows.h>
 #include <string.h>
 #include <process.h>
 #include <stdio.h>
@@ -6,11 +5,11 @@
 #include <assert.h>
 #include <deque.h>
 
-#include <menuet.h>
-#include <me_heap.h>
-#include <me_file.h>
+#include <kolibri.h>
+#include <kos_heap.h>
+#include <kos_file.h>
 
-using namespace Menuet;
+using namespace Kolibri;
 using namespace std;
 
 const char file_prefix[] = "";
@@ -236,7 +235,7 @@ int ThreadMainProc(void *user)
 	return 0;
 }
 
-namespace Menuet
+namespace Kolibri
 {
 	void Main() {ThreadMain();}
 

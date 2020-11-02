@@ -1,5 +1,4 @@
-define @Menuet@StrLen$qpxc
-  push edi
+proc @Kolibri@StrLen$qpxc uses edi
   cld
   mov  edi,[esp+8]
   mov  ecx,-1
@@ -7,13 +6,10 @@ define @Menuet@StrLen$qpxc
   repnz scas byte [edi]
   not  ecx
   lea  eax,[ecx-1]
-  pop  edi
   ret
-enddef
+endp
 
-define @Menuet@StrCopy$qpcpxc
-  push esi
-  push edi
+proc @Kolibri@StrCopy$qpcpxc uses esi edi
   cld
   mov  edi,[esp+16]
   mov  ecx,-1
@@ -29,14 +25,10 @@ define @Menuet@StrCopy$qpcpxc
   mov  ecx,edx
   and  ecx,3
   rep movs byte [edi],[esi]
-  pop  edi
-  pop  esi
   ret
-enddef
+endp
 
-define @Menuet@MemCopy$qpvpxvui
-  push esi
-  push edi
+proc @Kolibri@MemCopy$qpvpxvui uses esi edi
   cld
   mov  edi,[esp+12]
   mov  eax,edi
@@ -48,13 +40,10 @@ define @Menuet@MemCopy$qpvpxvui
   mov  ecx,edx
   and  ecx,3
   rep movs byte [edi],[esi]
-  pop  edi
-  pop  esi
   ret
-enddef
+endp
 
-define @Menuet@MemSet$qpvcui
-  push edi
+proc @Kolibri@MemSet$qpvcui uses edi
   cld
   mov  edi,[esp+8]
   mov  al,[esp+12]
@@ -69,12 +58,11 @@ define @Menuet@MemSet$qpvcui
   mov  ecx,edx
   and  ecx,3
   rep stos byte [edi]
-  pop  edi
   mov  eax,[esp+4]
   ret
-enddef
+endp
 
-define __ftol
+proc __ftol
   sub  esp,12
   wait
   fstcw word [esp+8]
@@ -89,9 +77,9 @@ define __ftol
   mov  edx,[esp+4]
   add  esp,12
   ret
-enddef
+endp
 
-define @Menuet@Floor$qd
+proc @Kolibri@Floor$qd
   fld  qword [esp+4]
   mov  ax,[esp+10]
   shl  ax,1
@@ -114,5 +102,5 @@ define @Menuet@Floor$qd
   add  esp,2
 Menuet_floor_end:
   ret
-enddef
+endp
 

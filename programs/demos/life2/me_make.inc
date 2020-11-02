@@ -5,9 +5,10 @@
 STACKSIZE   equ 102400
 HEAPSIZE    equ 102400
 
-include "include\me_start.inc"
-include "include\me_func.inc"
-include "include\me_heap.inc"
-include "me_cdlg.inc"
+include "..\..\proc32.inc"
+include "include\kos_start.inc"
+include "include\kos_func.inc"
+include "include\kos_heap.inc"
+include "kos_cdlg.inc"
 include "mmxlife.inc"
 ;include "sse2life.inc"

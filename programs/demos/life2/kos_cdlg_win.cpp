@@ -1,11 +1,10 @@
-#include <windows.h>
 #include <commdlg.h>
 
-#include <menuet.h>
-#include <me_heap.h>
-#include "me_cdlg.h"
+#include <kolibri.h>
+#include <kos_heap.h>
+#include "kos_cdlg.h"
 
-using namespace Menuet;
+using namespace Kolibri;
 
 extern HINSTANCE hInstance;
 
@@ -31,7 +30,7 @@ struct TOpenFileData
 	char name[1];
 };
 
-namespace Menuet
+namespace Kolibri
 {
 	TOpenFileStruct::TOpenFileStruct() : data(0) {}
 

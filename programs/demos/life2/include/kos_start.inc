@@ -1,12 +1,12 @@
 use32
-org 0x0
+org 0
   db 'MENUET01'
-  dd 0x1
-  dd MenuetEntryPoint
+  dd 1
+  dd @Kolibri@Main$qv
   dd I_END
   dd U_END+STACKSIZE+HEAPSIZE
   dd U_END+STACKSIZE
-  dd @Menuet@CommandLine,0x0
+  dd @Kolibri@CommandLine,0
 
 ptr equ
 offset equ
@@ -78,13 +78,8 @@ macro newdef x,[link]
     usedef link
 }
 
-macro nextdef x,[link]
+macro nextdef x
 {
-  common
-    usedef x
-    end if
-    if x eq
-    else if used x
-    x:
-    usedef link
+x:
 }
+

@@ -1,12 +1,12 @@
 #ifndef __MENUET_FILE_H_INCLUDED_
 #define __MENUET_FILE_H_INCLUDED_
 
-#include <menuet.h>
-#include <me_heap.h>
+#include <kolibri.h>
+#include <kos_heap.h>
 
-// Menuet file interface.
+// Kolibri file interface.
 
-namespace Menuet   // All menuet functions, types and data are nested in the (Menuet) namespace.
+namespace Kolibri   // All kolibri functions, types and data are nested in the (Kolibri) namespace.
 {
 	struct _FileDataStruct;
 	typedef _FileDataStruct *TFileData;
@@ -24,7 +24,7 @@ namespace Menuet   // All menuet functions, types and data are nested in the (Me
 
 #ifdef __MENUET__
 
-namespace Menuet
+namespace Kolibri
 {
 // Define the file data structure.
 
@@ -264,7 +264,7 @@ namespace Menuet
 
 #else   // def  __MENUET__
 
-namespace Menuet
+namespace Kolibri
 {
 	struct _FileDataStruct
 	{

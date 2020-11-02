@@ -1,11 +1,11 @@
-#include <menuet.h>
-#include <me_heap.h>
-#include <me_file.h>
+#include <kolibri.h>
+#include <kos_heap.h>
+#include <kos_file.h>
 #include "lifegen.h"
 #include "life_bmp.h"
-#include "me_cdlg.h"
+#include "kos_cdlg.h"
 
-using namespace Menuet;
+using namespace Kolibri;
 
 /***
 #define StrLen   LibbStrLen
@@ -20,14 +20,13 @@ void *(*MemCopy)(void *dest, const void *src, unsigned int n) = 0;
 void *(*MemSet)(void *s, char c, unsigned int n) = 0;
 double (*Floor)(double x) = 0;
 
-#include <windows.h>
 void LibbInit()
 {
 	HINSTANCE hLib = LoadLibrary("Libb.dll");
 	if (!hLib)
 	{
 		DebugPutString("Can't load the library.\n");
-		Menuet::Abort();
+		Kolibri::Abort();
 	}
 	StrLen = (unsigned int(*)(const char *str))GetProcAddress(hLib, "StrLen");
 	StrCopy = (char *(*)(char *dest, const char *src))GetProcAddress(hLib, "StrCopy");
@@ -1789,7 +1788,7 @@ int MenuetOnIdle(TThreadData th)
 	return res;
 }
 
-void MenuetOnSize(int window_rect[], Menuet::TThreadData th)
+void MenuetOnSize(int window_rect[], Kolibri::TThreadData th)
 {
 	unsigned short w, h;
 	GetClientSize(w, h, window_rect[2], window_rect[3], th);
@@ -1964,13 +1963,13 @@ void DllInit()
 	if (!hLib)
 	{
 		DebugPutString("Can't load the library.\n");
-		Menuet::Abort();
+		Kolibri::Abort();
 	}
 	DllOneGeneration = (void(__stdcall*)(int, int, void*, const void*, int))GetProcAddress(hLib, "OneGeneration");
 	if (!DllOneGeneration)
 	{
 		DebugPutString("Can't get a library function.\n");
-		Menuet::Abort();
+		Kolibri::Abort();
 	}
 }
 

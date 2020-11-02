@@ -1,11 +1,11 @@
 #ifndef __MENUET_H_INCLUDED_
 #define __MENUET_H_INCLUDED_
 
-#include <me_lib.h>
+#include <kos_lib.h>
 
-// Menuet interface.
+// Kolibri interface.
 
-namespace Menuet   // All menuet functions, types and data are nested in the (Menuet) namespace.
+namespace Kolibri   // All kolibri functions, types and data are nested in the (Kolibri) namespace.
 {
 	const char *DebugPrefix = "User program: ";
 	char CommandLine[257];
@@ -137,17 +137,17 @@ namespace Menuet   // All menuet functions, types and data are nested in the (Me
 
 // Function, defined outside.
 
-bool MenuetOnStart(Menuet::TStartData &me_start, Menuet::TThreadData thread_data);
+bool MenuetOnStart(Kolibri::TStartData &me_start, Kolibri::TThreadData thread_data);
 			// Window will be created iff return value is true.
-bool MenuetOnClose(Menuet::TThreadData thread_data);     // Window will be closed iff return value is true.
-int MenuetOnIdle(Menuet::TThreadData thread_data);       // Return the time to wait next message.
-void MenuetOnSize(int window_rect[/* 4 */], Menuet::TThreadData thread_data);  // When the window is resized.
-void MenuetOnKeyPress(Menuet::TThreadData thread_data);  // When user press a key.
-void MenuetOnMouse(Menuet::TThreadData thread_data);     // When user move a mouse.
+bool MenuetOnClose(Kolibri::TThreadData thread_data);     // Window will be closed iff return value is true.
+int MenuetOnIdle(Kolibri::TThreadData thread_data);       // Return the time to wait next message.
+void MenuetOnSize(int window_rect[/* 4 */], Kolibri::TThreadData thread_data);  // When the window is resized.
+void MenuetOnKeyPress(Kolibri::TThreadData thread_data);  // When user press a key.
+void MenuetOnMouse(Kolibri::TThreadData thread_data);     // When user move a mouse.
 
 #ifdef __MENUET__
 
-namespace Menuet
+namespace Kolibri
 {
 // Structures.
 
@@ -248,7 +248,7 @@ namespace Menuet
 
 // Constants from fasm.
 
-#include <me_func.inc>
+#include <kos_func.inc>
 
 // Functions.
 
@@ -508,7 +508,7 @@ namespace Menuet
 
 #else   // def __MENUET__
 
-namespace Menuet
+namespace Kolibri
 {
 	struct TMutex
 	{

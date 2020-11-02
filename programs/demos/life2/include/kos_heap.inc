@@ -1,16 +1,16 @@
 ;/***
 
-MenuetHeapInit = @@Menuet@_HeapInit$qpvt1t1
+MenuetHeapInit = @@Kolibri@_HeapInit$qpvt1t1
 
-MenuetHeapAlloc = @@Menuet@Alloc$qui
+MenuetHeapAlloc = @@Kolibri@Alloc$qui
 
-MenuetHeapReAlloc = @@Menuet@ReAlloc$qpvui
+MenuetHeapReAlloc = @@Kolibri@ReAlloc$qpvui
 
-MenuetHeapFree = @@Menuet@Free$qpv
+MenuetHeapFree = @@Kolibri@Free$qpv
 
-MenuetHeapFreeAndThreadFinish = @Menuet@_FreeAndThreadFinish$qpvpi
+MenuetHeapFreeAndThreadFinish = @Kolibri@_FreeAndThreadFinish$qpvpi
 
-define @Menuet@_SetUseMemory$qui
+proc @Kolibri@_SetUseMemory$qui
   push ebx
   mov  eax,64
   mov  ebx,1
@@ -18,23 +18,23 @@ define @Menuet@_SetUseMemory$qui
   int  0x40
   pop  ebx
   test eax,eax
-  jnz  Menuet_set_use_memory_nomem
+  jnz  .set_use_memory_nomem
   push ecx
-  push dword [@Menuet@_MenuetMemBlock]
+  push dword [@Kolibri@_MenuetMemBlock]
   call @@MemoryHeap@ResizeBlock$q20MemoryHeap@TMemBlockpv
   add  esp,8
   mov  al,1
   ret
-Menuet_set_use_memory_nomem:
+.set_use_memory_nomem:
   xor  al,al
   ret
-enddef
+endp
 
-define @Menuet@_RecalculateUseMemory$qui
+proc @Kolibri@_RecalculateUseMemory$qui
   mov  eax,dword [esp+4]
   mov  ecx,(U_END + 3) and not 3
   cmp  eax,ecx
-  jna  Menuet_recalculate_use_memory_min
+  jna  .recalculate_use_memory_min
   push ebx
   sub  eax,ecx
   mov  ebx,6
@@ -45,35 +45,35 @@ define @Menuet@_RecalculateUseMemory$qui
   and  eax,not 3
   pop  ebx
   ret
-Menuet_recalculate_use_memory_min:
+.recalculate_use_memory_min:
   mov  eax,ecx
   ret
-enddef
+endp
 
-define @Menuet@_FreeAndThreadFinish$qpvpi
+proc @Kolibri@_FreeAndThreadFinish$qpvpi
   mov  ebx,1
   mov  ecx,[esp+8]
-  jmp  Menuet_heap_free_tf_wait
-Menuet_heap_free_tf_wait_loop:
+  jmp  .heap_free_tf_wait
+.heap_free_tf_wait_loop:
   mov  eax,5
   int  0x40
   shl  ebx,1
   cmp  ebx,MENUET_MUTEX_MAX_TIME_WAIT
-  jna  Menuet_heap_free_tf_wait
+  jna  .heap_free_tf_wait
   mov  ebx,MENUET_MUTEX_MAX_TIME_WAIT
-Menuet_heap_free_tf_wait:
+.heap_free_tf_wait:
   cmp  dword [ecx],0
-  jnz  @Menuet@ExitProcess$qv
-  lock bts dword [@Menuet@_MemHeapMutex],0
-  jc   Menuet_heap_free_tf_wait_loop
+  jnz  @Kolibri@ExitProcess$qv
+  lock bts dword [@Kolibri@_MemHeapMutex],0
+  jc   .heap_free_tf_wait_loop
   push dword [esp+4]
-  push @Menuet@_MenuetFreeSpace
+  push @Kolibri@_MenuetFreeSpace
   call @@MemoryHeap@Free$qr21MemoryHeap@TFreeSpacepv
   add  esp,8
-  mov  byte [@Menuet@_MemHeapMutex],0x40
+  mov  byte [@Kolibri@_MemHeapMutex],0x40
   or   eax,-1
   int  0x40
-enddef
+endp
 
 macro call func
 {
