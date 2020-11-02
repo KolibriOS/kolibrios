@@ -1,5 +1,10 @@
 This is the C Layer for KolibriOS.
 
+Usage:
+- Say 'make' in 'ASM' folder (need installed FASM)
+- Say 'make' in 'EXAMPLE' folder (need installed kos32-gcc), now we have compiled samples
+
+
 Along with the C Library we have, this will serve as the backbone to easily use libraries aand programs available in C.
 This is also useful for porting.
 Also useful for new developers who don't know assembly but know C.
