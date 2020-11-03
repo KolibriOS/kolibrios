@@ -22,6 +22,7 @@ img_files = {
  {"ICONS16.PNG", "common/icons16.png"},
  {"INDEX.HTM", "common/index_htm"},
  {"KUZKINA.MID", "common/kuzkina.mid"},
+ {"SINE.MP3", "common/sine.mp3"},
  {"LANG.INC", build_type .. "/lang.inc"},
  {"NOTIFY3.PNG", "common/notify3.png"},
  {"UNIMG", PROGS .. "/fs/unimg/unimg"},
