@@ -71,7 +71,7 @@ Clipboard viewer          /sys/develop/clipview
 Calendar                  /sys/calendar
 Terminal                  /sys/terminal
 Task manager              /sys/cpu
-System panel              /sys/syspenel
+System panel              /sys/syspanel
 #8 **** FILE MANAGEMENT ****
 KFAR                      /sys/File Managers/kfar
 fNav                      /sys/File Managers/fNav/fNav
