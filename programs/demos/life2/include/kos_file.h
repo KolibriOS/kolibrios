@@ -1,5 +1,5 @@
-#ifndef __MENUET_FILE_H_INCLUDED_
-#define __MENUET_FILE_H_INCLUDED_
+#ifndef __KOLIBRI_FILE_H_INCLUDED_
+#define __KOLIBRI_FILE_H_INCLUDED_
 
 #include <kolibri.h>
 #include <kos_heap.h>
@@ -67,7 +67,7 @@ namespace Kolibri
 		if (!name || !name[0]) return 0;
 		unsigned int name_len = StrLen(name) + 1;
 		unsigned int data_len = (_FileDataStruct::PosName + name_len + 3) & ~3;
-		buffer_length = (buffer_length / MENUET_FILE_BLOCK_SIZE) * MENUET_FILE_BLOCK_SIZE;
+		buffer_length = (buffer_length / KOLIBRI_FILE_BLOCK_SIZE) * KOLIBRI_FILE_BLOCK_SIZE;
 		if (buffer_length) data_len += buffer_length + 2*sizeof(unsigned int);
 		TFileData file = (TFileData)Alloc(_FileDataStruct::PosName + data_len);
 		if (!file) return 0;
@@ -119,7 +119,7 @@ namespace Kolibri
 		if (file_data->buffer) buffer = file_data->buffer;
 		else if (temp_mem)
 		{
-			buffer = (unsigned int*)((char*)temp_mem + MENUET_FILE_BLOCK_SIZE);
+			buffer = (unsigned int*)((char*)temp_mem + KOLIBRI_FILE_BLOCK_SIZE);
 		}
 		else return 0;
 		if (!buffer[1]) return 0;
@@ -142,18 +142,18 @@ namespace Kolibri
 	{
 		int res;
 		unsigned int len0, len1;
-		size /= MENUET_FILE_BLOCK_SIZE;
+		size /= KOLIBRI_FILE_BLOCK_SIZE;
 		if (!file_data || !mem || size <= 0) return -1;
 		file_data->access_param[0] = 0;
-		file_data->access_param[1] = (file_data->position / MENUET_FILE_BLOCK_SIZE) * MENUET_FILE_BLOCK_SIZE;
+		file_data->access_param[1] = (file_data->position / KOLIBRI_FILE_BLOCK_SIZE) * KOLIBRI_FILE_BLOCK_SIZE;
 		file_data->access_param[2] = 0;
-		file_data->access_param[3] = size * MENUET_FILE_BLOCK_SIZE;
+		file_data->access_param[3] = size * KOLIBRI_FILE_BLOCK_SIZE;
 		file_data->access_param[4] = (unsigned int)mem;
 		res = _FileAccess(file_data->access_param);
 		if (res != 0 && res != 6) return (res & 255) - 1024;
 		if (file_data->length <= file_data->position) return 0;
 		len0 = file_data->length - file_data->position;
-		len1 = size * MENUET_FILE_BLOCK_SIZE - (file_data->position % MENUET_FILE_BLOCK_SIZE);
+		len1 = size * KOLIBRI_FILE_BLOCK_SIZE - (file_data->position % KOLIBRI_FILE_BLOCK_SIZE);
 		return (len0 <= len1) ? len0 : len1;
 	}
 
@@ -167,16 +167,16 @@ namespace Kolibri
 		{
 			if (!temp_mem)
 			{
-				temp_mem = Alloc(MENUET_FILE_BLOCK_SIZE + 2*sizeof(unsigned int));
+				temp_mem = Alloc(KOLIBRI_FILE_BLOCK_SIZE + 2*sizeof(unsigned int));
 				if (!temp_mem) return -10;
 			}
-			buffer = (unsigned int*)((char*)temp_mem + MENUET_FILE_BLOCK_SIZE);
-			buffer[0] = MENUET_FILE_BLOCK_SIZE;
+			buffer = (unsigned int*)((char*)temp_mem + KOLIBRI_FILE_BLOCK_SIZE);
+			buffer[0] = KOLIBRI_FILE_BLOCK_SIZE;
 		}
 		buffer[1] = buffer[0];
 		res = _FileReadSystem(file_data, (char*)buffer - buffer[1], buffer[1]);
 		if (res < 0) buffer[1] = 0;
-		else buffer[1] -= file_data->position % MENUET_FILE_BLOCK_SIZE;
+		else buffer[1] -= file_data->position % KOLIBRI_FILE_BLOCK_SIZE;
 		return res;
 	}
 
@@ -200,7 +200,7 @@ namespace Kolibri
 		read_len = res;
 		mem = (char*)mem + res;
 		size -= res;
-		tlen = file_data->position % MENUET_FILE_BLOCK_SIZE;
+		tlen = file_data->position % KOLIBRI_FILE_BLOCK_SIZE;
 		if (tlen)
 		{
 			res = _FileBufferSystem(file_data, temp_mem);
@@ -220,7 +220,7 @@ namespace Kolibri
 			mem = (char*)mem + res;
 			size -= res;
 		}
-		if (size >= (file_data->buffer ? file_data->buffer[0] : MENUET_FILE_BLOCK_SIZE))
+		if (size >= (file_data->buffer ? file_data->buffer[0] : KOLIBRI_FILE_BLOCK_SIZE))
 		{
 			res = _FileReadSystem(file_data, mem, size);
 			if (res < 0)
@@ -230,7 +230,7 @@ namespace Kolibri
 			}
 			file_data->position += res;
 			read_len += res;
-			if (res < (size / MENUET_FILE_BLOCK_SIZE) * MENUET_FILE_BLOCK_SIZE)
+			if (res < (size / KOLIBRI_FILE_BLOCK_SIZE) * KOLIBRI_FILE_BLOCK_SIZE)
 			{
 				if (temp_mem) Free(temp_mem);
 				return read_len;
@@ -274,5 +274,5 @@ namespace Kolibri
 
 #endif  // else: def  __MENUET__
 
-#endif  // ndef __MENUET_FILE_H_INCLUDED_
+#endif  // ndef __KOLIBRI_FILE_H_INCLUDED_
 

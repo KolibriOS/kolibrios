@@ -1699,7 +1699,7 @@ void Paint(int what, TThreadData th)
 	SetPicture(picture, (unsigned short)xpar.win, (unsigned short)ypar.win, th);
 }
 
-bool MenuetOnStart(TStartData &me_start, TThreadData th)
+bool KolibriOnStart(TStartData &me_start, TThreadData th)
 {
 	randomize();
 	me_start.WinData.Title = "Black and white Life";
@@ -1714,14 +1714,14 @@ bool MenuetOnStart(TStartData &me_start, TThreadData th)
 	return true;
 }
 
-bool MenuetOnClose(TThreadData)
+bool KolibriOnClose(TThreadData)
 {
 	SetPictureSize(0, 0);
 	SetPoleSize(0, 0);
 	return true;
 }
 
-int MenuetOnIdle(TThreadData th)
+int KolibriOnIdle(TThreadData th)
 {
 	static const unsigned int WAIT_TIME = 2, GEN_TIME = 1;
 	int res = -1;
@@ -1788,7 +1788,7 @@ int MenuetOnIdle(TThreadData th)
 	return res;
 }
 
-void MenuetOnSize(int window_rect[], Kolibri::TThreadData th)
+void KolibriOnSize(int window_rect[], Kolibri::TThreadData th)
 {
 	unsigned short w, h;
 	GetClientSize(w, h, window_rect[2], window_rect[3], th);
@@ -1798,7 +1798,7 @@ void MenuetOnSize(int window_rect[], Kolibri::TThreadData th)
 	Paint(PaintWNull | PaintWNow, th);
 }
 
-void MenuetOnKeyPress(TThreadData th)
+void KolibriOnKeyPress(TThreadData th)
 {
 	int ch;
 	while ((ch = GetKey()) >= 0)
@@ -1898,7 +1898,7 @@ void MenuetOnKeyPress(TThreadData th)
 	}
 }
 
-void MenuetOnMouse(TThreadData th)
+void KolibriOnMouse(TThreadData th)
 {
 	short xp = 0, yp = 0;
 	int w, h, x, y, xx, yy, m;

@@ -1,5 +1,5 @@
-#ifndef __MENUET_H_INCLUDED_
-#define __MENUET_H_INCLUDED_
+#ifndef __KOLIBRI_H_INCLUDED_
+#define __KOLIBRI_H_INCLUDED_
 
 #include <kos_lib.h>
 
@@ -17,7 +17,7 @@ namespace Kolibri   // All kolibri functions, types and data are nested in the (
 		const char *Title;
 	};
 
-	struct TStartData   // This structure is used only for MenuetOnStart function.
+	struct TStartData   // This structure is used only for KolibriOnStart function.
 	{
 		unsigned short Left, Width, Top, Height; // Initial window rectangle.
 		TWindowData WinData;
@@ -59,7 +59,7 @@ namespace Kolibri   // All kolibri functions, types and data are nested in the (
 	void ExitThread();   // Exit from the current thread
 	void ExitThread(TThreadData thread_data);
 	void ReturnMessageLoop();   // Return to the message loop of the thread. Exit from the thread
-	void ReturnMessageLoop(TThreadData thread_data);   //_ if it is called from (MenuetOnStart).
+	void ReturnMessageLoop(TThreadData thread_data);   //_ if it is called from (KolibriOnStart).
 
 	void Delay(unsigned int time);   // Delay the execution of the program during (time) hundredth seconds.
 	unsigned int Clock();   // Return the time from starting of the system to this moment in hundredth of seconds.
@@ -133,17 +133,18 @@ namespace Kolibri   // All kolibri functions, types and data are nested in the (
 			//_ the same size as the main thread if (stack_size) less that 4096. Set the beginning
 			//_ of the stack if (stack_end) is zero or (stack_size) is not zero, in this case stack
 			//_ will be deleted automaticaly from dynamic memory at the finish of the thread.
+	void DrawText(short x, short y, int color, const char* string);
 }
 
 // Function, defined outside.
 
-bool MenuetOnStart(Kolibri::TStartData &me_start, Kolibri::TThreadData thread_data);
+bool KolibriOnStart(Kolibri::TStartData &me_start, Kolibri::TThreadData thread_data);
 			// Window will be created iff return value is true.
-bool MenuetOnClose(Kolibri::TThreadData thread_data);     // Window will be closed iff return value is true.
-int MenuetOnIdle(Kolibri::TThreadData thread_data);       // Return the time to wait next message.
-void MenuetOnSize(int window_rect[/* 4 */], Kolibri::TThreadData thread_data);  // When the window is resized.
-void MenuetOnKeyPress(Kolibri::TThreadData thread_data);  // When user press a key.
-void MenuetOnMouse(Kolibri::TThreadData thread_data);     // When user move a mouse.
+bool KolibriOnClose(Kolibri::TThreadData thread_data);     // Window will be closed iff return value is true.
+int KolibriOnIdle(Kolibri::TThreadData thread_data);       // Return the time to wait next message.
+void KolibriOnSize(int window_rect[/* 4 */], Kolibri::TThreadData thread_data);  // When the window is resized.
+void KolibriOnKeyPress(Kolibri::TThreadData thread_data);  // When user press a key.
+void KolibriOnMouse(Kolibri::TThreadData thread_data);     // When user move a mouse.
 
 #ifdef __MENUET__
 
@@ -258,18 +259,18 @@ namespace Kolibri
 
 	void _GetStartData(TStartData &start_data, TThreadData thread_data)
 	{
-		start_data.Left = (unsigned short)((unsigned long)thread_data[MENUET_THREAD_DATA_X] >> 16);
-		start_data.Width = (unsigned short)((unsigned long)thread_data[MENUET_THREAD_DATA_X]);
-		start_data.Top = (unsigned short)((unsigned long)thread_data[MENUET_THREAD_DATA_Y] >> 16);
-		start_data.Height = (unsigned short)((unsigned long)thread_data[MENUET_THREAD_DATA_Y]);
+		start_data.Left = (unsigned short)((unsigned long)thread_data[KOLIBRI_THREAD_DATA_X] >> 16);
+		start_data.Width = (unsigned short)((unsigned long)thread_data[KOLIBRI_THREAD_DATA_X]);
+		start_data.Top = (unsigned short)((unsigned long)thread_data[KOLIBRI_THREAD_DATA_Y] >> 16);
+		start_data.Height = (unsigned short)((unsigned long)thread_data[KOLIBRI_THREAD_DATA_Y]);
 		GetWindowData(start_data.WinData, thread_data);
 	}
 
 	void _SetStartData(const TStartData &start_data, TThreadData thread_data)
 	{
-		(unsigned long&)thread_data[MENUET_THREAD_DATA_X] =
+		(unsigned long&)thread_data[KOLIBRI_THREAD_DATA_X] =
 					((unsigned int)start_data.Left << 16) | start_data.Width;
-		(unsigned long&)thread_data[MENUET_THREAD_DATA_Y] =
+		(unsigned long&)thread_data[KOLIBRI_THREAD_DATA_Y] =
 					((unsigned int)start_data.Top << 16) | start_data.Height;
 		SetWindowData(start_data.WinData, thread_data);
 	}
@@ -373,9 +374,9 @@ namespace Kolibri
 		Lock(&_ThreadMutex);
 		if (_ExitProcessNow) ExitProcess();
 		thread_table_item = &_ThreadTable[_HashByte(pid)];
-		thread_data[MENUET_THREAD_DATA_NEXT] = (void*)*thread_table_item;
-		(unsigned int&)thread_data[MENUET_THREAD_DATA_PID] = pid;
-		*(_TThreadDataTemplate*)(thread_data + MENUET_THREAD_DATA_FLAG) = _ThreadDataTemplate;
+		thread_data[KOLIBRI_THREAD_DATA_NEXT] = (void*)*thread_table_item;
+		(unsigned int&)thread_data[KOLIBRI_THREAD_DATA_PID] = pid;
+		*(_TThreadDataTemplate*)(thread_data + KOLIBRI_THREAD_DATA_FLAG) = _ThreadDataTemplate;
 		*thread_table_item = thread_data;
 		UnLock(&_ThreadMutex);
 		if (_ExitProcessNow) ExitProcess();
@@ -383,10 +384,10 @@ namespace Kolibri
 		TStartData start_data;
 		_GetStartData(start_data, thread_data);
 		_ApplyCommonColors(start_data.WinData);
-		(unsigned int&)thread_data[MENUET_THREAD_DATA_FLAG] |= 0x40000000;
-		thread_data[MENUET_THREAD_DATA_TITLE] = (void*)(&start_data);
-		if (!MenuetOnStart(start_data, thread_data)) return false;
-		(unsigned int&)thread_data[MENUET_THREAD_DATA_FLAG] &= ~0x40000000;
+		(unsigned int&)thread_data[KOLIBRI_THREAD_DATA_FLAG] |= 0x40000000;
+		thread_data[KOLIBRI_THREAD_DATA_TITLE] = (void*)(&start_data);
+		if (!KolibriOnStart(start_data, thread_data)) return false;
+		(unsigned int&)thread_data[KOLIBRI_THREAD_DATA_FLAG] &= ~0x40000000;
 		_SetStartData(start_data, thread_data);
 		return true;
 	}
@@ -402,10 +403,10 @@ namespace Kolibri
 		{
 			if (*thread_table_item == thread_data)
 			{
-				*thread_table_item = (TThreadData)thread_data[MENUET_THREAD_DATA_NEXT];
+				*thread_table_item = (TThreadData)thread_data[KOLIBRI_THREAD_DATA_NEXT];
 				break;
 			}
-			thread_table_item = (TThreadData*)(*thread_table_item + MENUET_THREAD_DATA_NEXT);
+			thread_table_item = (TThreadData*)(*thread_table_item + KOLIBRI_THREAD_DATA_NEXT);
 		}
 		UnLock(&_ThreadMutex);
 		if (_ExitProcessNow) ExitProcess();
@@ -413,59 +414,59 @@ namespace Kolibri
 
 	void GetWindowData(TWindowData &win_data, TThreadData thread_data)
 	{
-		if ((unsigned int)thread_data[MENUET_THREAD_DATA_FLAG] & 0x40000000)
+		if ((unsigned int)thread_data[KOLIBRI_THREAD_DATA_FLAG] & 0x40000000)
 		{
-			win_data = ((TStartData*)thread_data[MENUET_THREAD_DATA_TITLE])->WinData;
+			win_data = ((TStartData*)thread_data[KOLIBRI_THREAD_DATA_TITLE])->WinData;
 			return;
 		}
-		win_data.WindowType = (unsigned short)((unsigned int)thread_data[MENUET_THREAD_DATA_C_WINDOW] >> 24);
-		win_data.HeaderType = (unsigned short)((unsigned int)thread_data[MENUET_THREAD_DATA_C_HEADER] >> 24);
-		win_data.WindowColor = (unsigned int)thread_data[MENUET_THREAD_DATA_C_WINDOW] & 0xFFFFFF;
-		win_data.HeaderColor = (unsigned int)thread_data[MENUET_THREAD_DATA_C_HEADER] & 0xFFFFFF;
-		win_data.BorderColor = (unsigned int)thread_data[MENUET_THREAD_DATA_C_BORDER] & 0xFFFFFF;
-		win_data.TitleColor = (unsigned int)thread_data[MENUET_THREAD_DATA_C_TITLE] & 0xFFFFFF;
-		win_data.Title = (char*)thread_data[MENUET_THREAD_DATA_TITLE];
+		win_data.WindowType = (unsigned short)((unsigned int)thread_data[KOLIBRI_THREAD_DATA_C_WINDOW] >> 24);
+		win_data.HeaderType = (unsigned short)((unsigned int)thread_data[KOLIBRI_THREAD_DATA_C_HEADER] >> 24);
+		win_data.WindowColor = (unsigned int)thread_data[KOLIBRI_THREAD_DATA_C_WINDOW] & 0xFFFFFF;
+		win_data.HeaderColor = (unsigned int)thread_data[KOLIBRI_THREAD_DATA_C_HEADER] & 0xFFFFFF;
+		win_data.BorderColor = (unsigned int)thread_data[KOLIBRI_THREAD_DATA_C_BORDER] & 0xFFFFFF;
+		win_data.TitleColor = (unsigned int)thread_data[KOLIBRI_THREAD_DATA_C_TITLE] & 0xFFFFFF;
+		win_data.Title = (char*)thread_data[KOLIBRI_THREAD_DATA_TITLE];
 	}
 
 	void SetWindowData(const TWindowData &win_data, TThreadData thread_data)
 	{
-		if ((unsigned int)thread_data[MENUET_THREAD_DATA_FLAG] & 0x40000000)
+		if ((unsigned int)thread_data[KOLIBRI_THREAD_DATA_FLAG] & 0x40000000)
 		{
-			((TStartData*)thread_data[MENUET_THREAD_DATA_TITLE])->WinData = win_data;
+			((TStartData*)thread_data[KOLIBRI_THREAD_DATA_TITLE])->WinData = win_data;
 			return;
 		}
-		(unsigned int&)thread_data[MENUET_THREAD_DATA_C_WINDOW] =
+		(unsigned int&)thread_data[KOLIBRI_THREAD_DATA_C_WINDOW] =
 					((unsigned int)win_data.WindowType << 24) | (win_data.WindowColor & 0xFFFFFF);
-		(unsigned int&)thread_data[MENUET_THREAD_DATA_C_HEADER] =
+		(unsigned int&)thread_data[KOLIBRI_THREAD_DATA_C_HEADER] =
 					((unsigned int)win_data.HeaderType << 24) | (win_data.HeaderColor & 0xFFFFFF);
-		(unsigned int&)thread_data[MENUET_THREAD_DATA_C_BORDER] = win_data.BorderColor & 0xFFFFFF;
-		(unsigned int&)thread_data[MENUET_THREAD_DATA_C_TITLE] = win_data.TitleColor & 0xFFFFFF;
-		thread_data[MENUET_THREAD_DATA_TITLE] = (void*)win_data.Title;
+		(unsigned int&)thread_data[KOLIBRI_THREAD_DATA_C_BORDER] = win_data.BorderColor & 0xFFFFFF;
+		(unsigned int&)thread_data[KOLIBRI_THREAD_DATA_C_TITLE] = win_data.TitleColor & 0xFFFFFF;
+		thread_data[KOLIBRI_THREAD_DATA_TITLE] = (void*)win_data.Title;
 		Invalidate(1, thread_data);
 	}
 
 	void CloseWindow(TThreadData thread_data)
 	{
-		(unsigned int&)thread_data[MENUET_THREAD_DATA_FLAG] |= 0x80000000;
+		(unsigned int&)thread_data[KOLIBRI_THREAD_DATA_FLAG] |= 0x80000000;
 	}
 
 	void Invalidate(int frame, TThreadData thread_data)
 	{
 		if (frame < 0) return;
-		(unsigned int&)thread_data[MENUET_THREAD_DATA_FLAG] |= (frame ? 3 : 1);
+		(unsigned int&)thread_data[KOLIBRI_THREAD_DATA_FLAG] |= (frame ? 3 : 1);
 	}
 
 	void* GetPicture(unsigned short &width, unsigned short &height, TThreadData thread_data)
 	{
-		width = (unsigned short)((unsigned int)thread_data[MENUET_THREAD_DATA_SZ_PICT] >> 16);
-		height = (unsigned short)((unsigned int)thread_data[MENUET_THREAD_DATA_SZ_PICT]);
-		return (void*)thread_data[MENUET_THREAD_DATA_PICTURE];
+		width = (unsigned short)((unsigned int)thread_data[KOLIBRI_THREAD_DATA_SZ_PICT] >> 16);
+		height = (unsigned short)((unsigned int)thread_data[KOLIBRI_THREAD_DATA_SZ_PICT]);
+		return (void*)thread_data[KOLIBRI_THREAD_DATA_PICTURE];
 	}
 
 	void SetPicture(void *picture, unsigned short width, unsigned short height, TThreadData thread_data)
 	{
-		thread_data[MENUET_THREAD_DATA_PICTURE] = (void*)picture;
-		(unsigned int&)thread_data[MENUET_THREAD_DATA_SZ_PICT] =
+		thread_data[KOLIBRI_THREAD_DATA_PICTURE] = (void*)picture;
+		(unsigned int&)thread_data[KOLIBRI_THREAD_DATA_SZ_PICT] =
 					(width == 0 || height == 0) ? 0 : (((unsigned int)width << 16) | height);
 		Invalidate(0, thread_data);
 	}
@@ -474,9 +475,9 @@ namespace Kolibri
 
 	void GetBorderHeader(unsigned short &border_size, unsigned short &header_size, TThreadData thread_data)
 	{
-		int win_type = ((unsigned int)thread_data[MENUET_THREAD_DATA_FLAG] & 0x40000000) ?
-			((TStartData*)thread_data[MENUET_THREAD_DATA_TITLE])->WinData.WindowType :
-		   ((unsigned int)thread_data[MENUET_THREAD_DATA_C_WINDOW] >> 24);
+		int win_type = ((unsigned int)thread_data[KOLIBRI_THREAD_DATA_FLAG] & 0x40000000) ?
+			((TStartData*)thread_data[KOLIBRI_THREAD_DATA_TITLE])->WinData.WindowType :
+		   ((unsigned int)thread_data[KOLIBRI_THREAD_DATA_C_WINDOW] >> 24);
 		border_size = MENUET_BORDER_SIZE;
 		header_size = short(((win_type & 15) == 3) ? _GetSkinHeader() : MENUET_HEADER_SIZE);
 	}
@@ -533,5 +534,5 @@ namespace Kolibri
 
 #endif  // else: def __MENUET__
 
-#endif  // ndef __MENUET_H_INCLUDED_
+#endif  // ndef __KOLIBRI_H_INCLUDED_
 

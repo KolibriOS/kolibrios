@@ -46,13 +46,13 @@ macro usedef [link]
     if ~link eq
     virtual at 0
   forward
-    dd   link
+    dd	 link
   common
     end virtual
     end if
 }
 
-macro define x,[link]
+macro define_f x,[link]
 {
   common
     if x eq

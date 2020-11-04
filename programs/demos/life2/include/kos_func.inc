@@ -4,48 +4,48 @@ MENUET_BORDER_SIZE = 4;
 MENUET_HEADER_SIZE = 20;
 
 ;const int
-MENUET_THREAD_DATA_USER     = 0; // Thread data begin from the user dword
+KOLIBRI_THREAD_DATA_USER     = 0; // Thread data begin from the user dword
 ;const int
-MENUET_THREAD_DATA_ST_BEGIN = 1; // Stack beginning follows after the user dword
+KOLIBRI_THREAD_DATA_ST_BEGIN = 1; // Stack beginning follows after the user dword
 ;const int
-MENUET_THREAD_DATA_NEXT     = 2;
+KOLIBRI_THREAD_DATA_NEXT     = 2;
 ;const int
-MENUET_THREAD_DATA_PID	    = 3;
+KOLIBRI_THREAD_DATA_PID	    = 3;
 ;const int
-MENUET_THREAD_DATA_FLAG     = 4;
+KOLIBRI_THREAD_DATA_FLAG     = 4;
 ;const int
-MENUET_THREAD_DATA_X	    = 5;
+KOLIBRI_THREAD_DATA_X	    = 5;
 ;const int
-MENUET_THREAD_DATA_Y	    = 6;
+KOLIBRI_THREAD_DATA_Y	    = 6;
 ;const int
-MENUET_THREAD_DATA_C_WINDOW = 7;
+KOLIBRI_THREAD_DATA_C_WINDOW = 7;
 ;const int
-MENUET_THREAD_DATA_C_HEADER = 8;
+KOLIBRI_THREAD_DATA_C_HEADER = 8;
 ;const int
-MENUET_THREAD_DATA_C_BORDER = 9;
+KOLIBRI_THREAD_DATA_C_BORDER = 9;
 ;const int
-MENUET_THREAD_DATA_C_TITLE  = 10;
+KOLIBRI_THREAD_DATA_C_TITLE  = 10;
 ;const int
-MENUET_THREAD_DATA_TITLE    = 11;
+KOLIBRI_THREAD_DATA_TITLE    = 11;
 ;const int
-MENUET_THREAD_DATA_PICTURE  = 12;
+KOLIBRI_THREAD_DATA_PICTURE  = 12;
 ;const int
-MENUET_THREAD_DATA_SZ_PICT  = 13;
+KOLIBRI_THREAD_DATA_SZ_PICT  = 13;
 ;const int
-MENUET_THREAD_DATA_LAST_SX  = 14;
+KOLIBRI_THREAD_DATA_LAST_SX  = 14;
 ;const int
-MENUET_THREAD_DATA_LAST_SY  = 15;
+KOLIBRI_THREAD_DATA_LAST_SY  = 15;
 ;const int
-MENUET_THREAD_DATA_LEN	    = 16;
+KOLIBRI_THREAD_DATA_LEN	    = 16;
 
 ;const int
 MENUET_MUTEX_MAX_TIME_WAIT  = 20;
 
 ;const int
-MENUET_FILE_BLOCK_SIZE	    = 512;
+KOLIBRI_FILE_BLOCK_SIZE	    = 512;
 
 ;const int
-MENUET_FILE_MEMORY_OS_NEED  = 4096;
+KOLIBRI_FILE_MEMORY_OS_NEED  = 4096;
 
 ;/***
 
@@ -139,7 +139,7 @@ proc @Kolibri@ThreadMain$qpvt1
   xchg ebx,[esp+4]
   xchg ebp,[esp+8]
   push esi edi
-  sub  esp,MENUET_THREAD_DATA_LEN*4
+  sub  esp,KOLIBRI_THREAD_DATA_LEN*4
   mov  [esp],ebx
   mov  [esp+4],ebp
   mov  eax,40
@@ -165,21 +165,21 @@ end if
   jnz  .main_test_close_first
   jmp  .main_end
 .main_close_first:
-  btr  dword [esp+MENUET_THREAD_DATA_FLAG*4],31
+  btr  dword [esp+KOLIBRI_THREAD_DATA_FLAG*4],31
   push esp
-  call @@MenuetOnClose$qppv
+  call @@KolibriOnClose$qppv
   pop  ecx
   test al,al
   jnz  .main_end
 .main_test_close_first:
-  cmp  dword [esp+MENUET_THREAD_DATA_FLAG*4],0
+  cmp  dword [esp+KOLIBRI_THREAD_DATA_FLAG*4],0
   jl   .main_close_first
   push esp
   push dword 1
   call @Kolibri@Redraw$qippv
   add  esp,8
 .main_paint_msg:
-  or   dword [esp+MENUET_THREAD_DATA_FLAG*4],3
+  or   dword [esp+KOLIBRI_THREAD_DATA_FLAG*4],3
   sub  esp,1024
   mov  eax,9
   mov  ebx,esp
@@ -190,13 +190,13 @@ end if
   mov  ecx,[esp+42]
   mov  edx,[esp+46]
   add  esp,1024
-  cmp  ecx,[esp+MENUET_THREAD_DATA_LAST_SX*4]
+  cmp  ecx,[esp+KOLIBRI_THREAD_DATA_LAST_SX*4]
   jnz  .main_size
-  cmp  edx,[esp+MENUET_THREAD_DATA_LAST_SY*4]
+  cmp  edx,[esp+KOLIBRI_THREAD_DATA_LAST_SY*4]
   jz   .main_paint
 .main_size:
-  mov  [esp+MENUET_THREAD_DATA_LAST_SX*4],ecx
-  mov  [esp+MENUET_THREAD_DATA_LAST_SY*4],edx
+  mov  [esp+KOLIBRI_THREAD_DATA_LAST_SX*4],ecx
+  mov  [esp+KOLIBRI_THREAD_DATA_LAST_SY*4],edx
   push edx
   push ecx
   push ebx
@@ -205,12 +205,12 @@ end if
   mov  edx,esp
   push ecx
   push edx
-  call @@MenuetOnSize$qpippv
+  call @@KolibriOnSize$qpippv
   add  esp,24
-  test dword [esp+MENUET_THREAD_DATA_FLAG*4],3
+  test dword [esp+KOLIBRI_THREAD_DATA_FLAG*4],3
   jz   .main_cycle
 .main_paint:
-  cmp  dword [esp+MENUET_THREAD_DATA_FLAG*4],0
+  cmp  dword [esp+KOLIBRI_THREAD_DATA_FLAG*4],0
   jl   .main_close
   push esp
   push dword 0
@@ -219,15 +219,15 @@ end if
 .main_cycle:
   mov  eax,11
 .main_message:
-  cmp  dword [esp+MENUET_THREAD_DATA_FLAG*4],0
+  cmp  dword [esp+KOLIBRI_THREAD_DATA_FLAG*4],0
   jl   .main_close
   int  0x40
   test eax,eax
   jnz  .main_on_message
-  cmp  dword [esp+MENUET_THREAD_DATA_FLAG*4],0
+  cmp  dword [esp+KOLIBRI_THREAD_DATA_FLAG*4],0
   jne  .main_paint
   push esp
-  call @@MenuetOnIdle$qppv
+  call @@KolibriOnIdle$qppv
   pop  ecx
   test eax,eax
   jz   .main_cycle
@@ -240,12 +240,12 @@ end if
   jmp  .main_message
 .main_key_press:
   push esp
-  call @@MenuetOnKeyPress$qppv
+  call @@KolibriOnKeyPress$qppv
   pop  ecx
   jmp  .main_cycle
 .main_mouse:
   push esp
-  call @@MenuetOnMouse$qppv
+  call @@KolibriOnMouse$qppv
   pop  ecx
   jmp  .main_cycle
 .main_on_message:
@@ -263,9 +263,9 @@ end if
   test al,al
   jnz  .main_cycle
 .main_close:
-  btr  dword [esp+MENUET_THREAD_DATA_FLAG*4],31
+  btr  dword [esp+KOLIBRI_THREAD_DATA_FLAG*4],31
   push esp
-  call @@MenuetOnClose$qppv
+  call @@KolibriOnClose$qppv
   pop  ecx
   test al,al
   jz   .main_button
@@ -304,7 +304,7 @@ end if
   lock dec dword [@Kolibri@_ThreadScanCount+4]
   mov  ebp,[esp+4]
   mov  ebx,[esp]
-  add  esp,MENUET_THREAD_DATA_LEN*4
+  add  esp,KOLIBRI_THREAD_DATA_LEN*4
   mov  eax,ebp
   pop  edi esi
   xchg ebp,[esp+8]
@@ -324,7 +324,7 @@ macro call func
 proc @Kolibri@Redraw$qippv
   push ebp
   mov  ebp,[esp+12]
-  mov  edx,[ebp+MENUET_THREAD_DATA_FLAG*4]
+  mov  edx,[ebp+KOLIBRI_THREAD_DATA_FLAG*4]
   cmp  dword [esp+8],0
   jl   .redraw_only_inv
   jz   .redraw_no_frame
@@ -333,7 +333,7 @@ proc @Kolibri@Redraw$qippv
   bt   edx,30
   jnc  .redraw_begin
   or   dl,1
-  mov  [ebp+MENUET_THREAD_DATA_FLAG*4],edx
+  mov  [ebp+KOLIBRI_THREAD_DATA_FLAG*4],edx
   jmp  .redraw_end
 .redraw_only_inv:
   test dl,3
@@ -343,20 +343,20 @@ proc @Kolibri@Redraw$qippv
   ret
 .redraw_begin:
   push ebx esi edi
-  and  dword [ebp+MENUET_THREAD_DATA_FLAG*4],0xFFFFFFFC
+  and  dword [ebp+KOLIBRI_THREAD_DATA_FLAG*4],0xFFFFFFFC
   test dl,2
   jz   .redraw_picture
   mov  eax,12
   mov  ebx,1
   int  0x40
   xor  eax,eax
-  mov  ebx,[ebp+MENUET_THREAD_DATA_X*4]
-  mov  ecx,[ebp+MENUET_THREAD_DATA_Y*4]
-  mov  edx,[ebp+MENUET_THREAD_DATA_C_WINDOW*4]
-  mov  esi,[ebp+MENUET_THREAD_DATA_C_HEADER*4]
-  mov  edi,[ebp+MENUET_THREAD_DATA_C_BORDER*4]
+  mov  ebx,[ebp+KOLIBRI_THREAD_DATA_X*4]
+  mov  ecx,[ebp+KOLIBRI_THREAD_DATA_Y*4]
+  mov  edx,[ebp+KOLIBRI_THREAD_DATA_C_WINDOW*4]
+  mov  esi,[ebp+KOLIBRI_THREAD_DATA_C_HEADER*4]
+  mov  edi,[ebp+KOLIBRI_THREAD_DATA_C_BORDER*4]
   int  0x40
-  mov  edx,[ebp+MENUET_THREAD_DATA_TITLE*4]
+  mov  edx,[ebp+KOLIBRI_THREAD_DATA_TITLE*4]
   test edx,edx
   jz   .window_defined
   mov  edi,edx
@@ -370,7 +370,7 @@ proc @Kolibri@Redraw$qippv
   jz   .window_defined
   mov  eax,4
   mov  ebx,0x00070007
-  mov  ecx,[ebp+MENUET_THREAD_DATA_C_TITLE*4]
+  mov  ecx,[ebp+KOLIBRI_THREAD_DATA_C_TITLE*4]
   int  0x40
 .window_defined:
   mov  eax,12
@@ -380,12 +380,12 @@ proc @Kolibri@Redraw$qippv
   mov  eax,12
   mov  ebx,2
   int  0x40
-  mov  esi,[ebp+MENUET_THREAD_DATA_PICTURE*4]
+  mov  esi,[ebp+KOLIBRI_THREAD_DATA_PICTURE*4]
   test esi,esi
   jz   .redraw_end_draw
-  mov  ecx,[ebp+MENUET_THREAD_DATA_SZ_PICT*4]
+  mov  ecx,[ebp+KOLIBRI_THREAD_DATA_SZ_PICT*4]
   jecxz .redraw_end_draw
-  mov  al,byte [ebp+MENUET_THREAD_DATA_C_WINDOW*4+3]
+  mov  al,byte [ebp+KOLIBRI_THREAD_DATA_C_WINDOW*4+3]
   and  al,15
   mov  edx,MENUET_BORDER_SIZE*65536+MENUET_HEADER_SIZE
   cmp  al,3
@@ -448,11 +448,11 @@ proc @Kolibri@ExitProcess$qv
   mov  eax,dword [@Kolibri@_ThreadTable+eax*4]
   jmp  .exit_process_test
 .exit_process_next:
-  mov  eax,dword [eax+MENUET_THREAD_DATA_NEXT*4]
+  mov  eax,dword [eax+KOLIBRI_THREAD_DATA_NEXT*4]
 .exit_process_test:
   test eax,eax
   jz   .exit_process_continue
-  cmp  ebx,[eax+MENUET_THREAD_DATA_PID*4]
+  cmp  ebx,[eax+KOLIBRI_THREAD_DATA_PID*4]
   jnz  .exit_process_next
   mov  eax,18
   mov  ebx,2
@@ -492,7 +492,7 @@ endp
 
 proc @Kolibri@ReturnMessageLoop$qppv,@Kolibri@ThreadMain$qpvt1
   mov  esp,[esp+4]
-  bt   dword [esp+MENUET_THREAD_DATA_FLAG*4],30
+  bt   dword [esp+KOLIBRI_THREAD_DATA_FLAG*4],30
   jc   Menuet_main_end
   jmp  Menuet_main_cycle
 endp
@@ -584,6 +584,17 @@ proc @Kolibri@ReadCommonColors$qpui uses ebx
   ret
 endp
 
+proc @Kolibri@DrawText$qssipxc uses ebx
+  mov  eax,4
+  mov  ebx,[esp+8-2]
+  mov  bx,[esp+12]
+  mov  ecx,[esp+16]
+  or   ecx,0x80000000
+  mov  edx,[esp+20]
+  int  0x40
+  ret
+endp
+
 proc @Kolibri@GetProcessInfo$qpuipct1t1piui uses ebx esi edi
   sub  esp,1024
   mov  eax,9
@@ -646,7 +657,7 @@ endp
 
 proc @Kolibri@GetPid$qppv
   mov  ecx,[esp+4]
-  mov  eax,[ecx+MENUET_THREAD_DATA_PID*4]
+  mov  eax,[ecx+KOLIBRI_THREAD_DATA_PID*4]
   ret
 endp
 
@@ -691,11 +702,11 @@ proc @Kolibri@GetThreadData$qui
   mov  ecx,[esp+4]
   jmp  .get_thread_data_test
 .get_thread_data_loop:
-  mov  eax,dword [eax+MENUET_THREAD_DATA_NEXT*4]
+  mov  eax,dword [eax+KOLIBRI_THREAD_DATA_NEXT*4]
 .get_thread_data_test:
   test eax,eax
   jz   .get_thread_data_end
-  cmp  ecx,[eax+MENUET_THREAD_DATA_PID*4]
+  cmp  ecx,[eax+KOLIBRI_THREAD_DATA_PID*4]
   jnz  .get_thread_data_loop
 .get_thread_data_end:
   lock dec dword [@Kolibri@_ThreadScanCount]
