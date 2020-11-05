@@ -556,7 +556,6 @@ high_code:
         mov     eax, [hpet_base]
         test    eax, eax
         jz      @F
-        mov     eax, [hpet_base]
         stdcall map_io_mem, [hpet_base], 1024, PG_GLOBAL+PAT_UC+PG_SWR
         mov     [hpet_base], eax
         mov     eax, [eax+HPET_ID]
@@ -3931,9 +3930,33 @@ endg
 ;-----------------------------------------------------------------------------
 align 4
 delay_ms:     ; delay in 1/1000 sec
-        push    eax
-        push    ecx
+        pushad
 
+        cmp     [hpet_base], 0
+        jz      .no_hpet
+        mov     eax, esi
+        mov     edx, 10_000_000 ; cs to ns
+        mul     edx
+        mov     ebx, edx
+        mov     ecx, eax
+
+        push    ecx
+        call    get_clock_ns
+        pop     ecx
+        mov     edi, edx
+        mov     esi, eax
+.wait:
+        push    ecx
+        call    get_clock_ns
+        pop     ecx
+        sub     eax, esi
+        sbb     edx, edi
+        sub     eax, ecx
+        sbb     edx, ebx
+        jc      .wait
+        jmp     .done
+
+.no_hpet:
         mov     ecx, esi
         ; <CPU clock fix by Sergey Kuzmin aka Wildwest>
         imul    ecx, 33941
@@ -3944,19 +3967,18 @@ delay_ms:     ; delay in 1/1000 sec
         and     al, 0x10
         mov     ah, al
         cld
-;--------------------------------------
-align 4
-cnt1:
+
+.cnt1:
         in      al, 0x61
         and     al, 0x10
         cmp     al, ah
-        jz      cnt1
+        jz      .cnt1
 
         mov     ah, al
-        loop    cnt1
+        loop    .cnt1
 
-        pop     ecx
-        pop     eax
+.done:
+        popad
         ret
 ;-----------------------------------------------------------------------------
 align 4
