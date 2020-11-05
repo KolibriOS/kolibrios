@@ -52,7 +52,7 @@ macro usedef [link]
     end if
 }
 
-macro define_f x,[link]
+macro define x,[link]
 {
   common
     if x eq

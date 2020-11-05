@@ -42,15 +42,15 @@ proc @Kolibri@OpenFileDialog$qr23Kolibri@TOpenFileStruct uses ebx esi edi ebp
   mov  ebx,1
   int  0x40
   xor  eax,eax
-  mov  ebx,[ebp+MENUET_THREAD_DATA_X*4]
-  mov  ecx,[ebp+MENUET_THREAD_DATA_Y*4]
-  mov  edx,[ebp+MENUET_THREAD_DATA_C_WINDOW*4]
-  mov  esi,[ebp+MENUET_THREAD_DATA_C_HEADER*4]
-  mov  edi,[ebp+MENUET_THREAD_DATA_C_BORDER*4]
+  mov  ebx,[ebp+KOLIBRI_THREAD_DATA_X*4]
+  mov  ecx,[ebp+KOLIBRI_THREAD_DATA_Y*4]
+  mov  edx,[ebp+KOLIBRI_THREAD_DATA_C_WINDOW*4]
+  mov  esi,[ebp+KOLIBRI_THREAD_DATA_C_HEADER*4]
+  mov  edi,[ebp+KOLIBRI_THREAD_DATA_C_BORDER*4]
   int  0x40
   mov  eax,4
   mov  ebx,0x00070007
-  mov  ecx,[ebp+MENUET_THREAD_DATA_C_TITLE*4]
+  mov  ecx,[ebp+KOLIBRI_THREAD_DATA_C_TITLE*4]
   mov  edx,Kolibri_open_file_dlg_name
   mov  esi,Kolibri_open_file_dlg_name_end - Kolibri_open_file_dlg_name
   int  0x40
