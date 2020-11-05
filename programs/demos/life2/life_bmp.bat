@@ -1,4 +1,4 @@
-bmp2h < life_bmp.bat > life_bmp.h
+life_bmp\bmp2h < life_bmp.bat > life_bmp.h
 
 rem <array:bmp> menu_picture
 rem <bitmap> life_bmp\hidemenu.bmp
