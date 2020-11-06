@@ -1,0 +1,12 @@
+program: kos_make
+	wine $(KOS32_BCC)/kos32-bcc -S -v- -R- -6 -a4 -O2 -Og -Oi -Ov -OS -k- -D__KOLIBRI__ -I$(INCLUDE) $(FILENAME).cpp
+	echo 'include "kos_make.inc"' > f_$(FILENAME).asm
+	$(T2FASM)/t2fasm < $(FILENAME).asm >> f_$(FILENAME).asm
+	fasm f_$(FILENAME).asm $(FILENAME).kex
+	
+	rm f_$(FILENAME).asm
+	rm $(FILENAME).asm
+	rm kos_make.inc
+
+kos_make:
+	echo 'STACKSIZE equ 102400 \n HEAPSIZE equ 102400 \n include "$(SVN_PROGR)/proc32.inc" \ninclude "$(INCLUDE)/kos_start.inc" \n include "$(INCLUDE)/kos_func.inc" \n include "$(INCLUDE)/kos_heap.inc"' > kos_make.inc
