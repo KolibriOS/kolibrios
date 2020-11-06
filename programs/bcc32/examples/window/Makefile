@@ -14,6 +14,6 @@ INCLUDE:=$(SVN_BCC32)/include
 KOS32_BCC:=/home/autobuild/borlandcpp/bin
 
 # Filename without .cpp
-FILENAME:=hello
+FILENAME:=window
 
 include $(SVN_BCC32)/Makefile_app

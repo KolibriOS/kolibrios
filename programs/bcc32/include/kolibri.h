@@ -37,6 +37,7 @@ namespace Kolibri   // All kolibri functions, types and data are nested in the (
 	// Note: pass only thread data of current thread as (thread_data) parameter to these functions.
 
 	void Main();   // Main function is called at program startup.
+	void DrawButton(long id, long color, long x, long y, long c_x, long c_y);   // Draw Standard button
 	void* ThreadMain(void *user = 0, void *stack_begin = 0);
 			// Called at thread startup, (user) is placed in thread data as a user dword,
 			//_ (stack_begin) is placed in thread data as a stack beginning.

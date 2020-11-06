@@ -5,7 +5,7 @@
 using namespace Kolibri;
 
 const char header[] = "Title";
-const char string[] = "Text";
+const char string[] = "Exit";
 
 bool KolibriOnStart(TStartData &kos_start, TThreadData th)
 {
@@ -20,7 +20,8 @@ bool KolibriOnStart(TStartData &kos_start, TThreadData th)
 
 void KolibriOnPaint(void)
 {
-	DrawText(10, 10, 0, string);
+	DrawButton(2,0xB0B0B0, 10,10,50,20);
+	DrawText(15, 15, 0, string);
 }
 bool KolibriOnClose(TThreadData th)
 {

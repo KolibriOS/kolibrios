@@ -485,6 +485,20 @@ proc @Kolibri@GetPackedTime$qv
   ret
 endp
 
+proc @Kolibri@DrawButton$qllllll uses ebx esi
+  mov  eax,8
+  mov  ebx,[esp+12+8]
+  shl  ebx,16
+  mov  bx,[esp+20+8]
+  mov  ecx,[esp+16+8]
+  shl  ecx,16
+  mov  cx,[esp+24+8]
+  mov  edx,[esp+4+8]
+  mov  esi,[esp+8+8]
+  int  0x40
+  ret 
+endp
+
 proc @Kolibri@GetTime$qpi
   mov  eax,3
   int  0x40
