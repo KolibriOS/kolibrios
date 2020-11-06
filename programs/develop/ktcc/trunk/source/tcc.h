@@ -871,6 +871,7 @@ struct TCCState {
     int do_bench; /* option -bench */
     int gen_deps; /* option -MD  */
     char *deps_outfile; /* option -MF */
+    int nobss; /* option -nobss, omit BSS section (KolibriOS-only) */
     ParseArgsState *parse_args_state;
 };
 

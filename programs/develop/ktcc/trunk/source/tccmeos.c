@@ -273,14 +273,17 @@ int tcc_output_me(TCCState* s1,const char *filename)
 		fwrite(si->data,1,si->data_size,f);
 	for (si=me.data_sections;si;si=si->next)
 		fwrite(si->data,1,si->data_size,f);
-	for (si=me.bss_sections;si;si=si->next)
+	if (!s1->nobss)
 	{
-    	if (si->data == NULL)
+		for (si=me.bss_sections;si;si=si->next)
 		{
-//         	printf("\nError! BSS data is NULL! size:%i",(int)si->data_size);
-         	si->data = calloc(si->data_size, 1);
-      	}
-		fwrite(si->data, 1, si->data_size, f);
+	    	if (si->data == NULL)
+			{
+	//         	printf("\nError! BSS data is NULL! size:%i",(int)si->data_size);
+	         	si->data = calloc(si->data_size, 1);
+	      	}
+			fwrite(si->data, 1, si->data_size, f);
+		}
 	}
 /*
     if (me.bss_sections) // Siemargl testin, what we lose
