@@ -1746,6 +1746,9 @@ sys_getsetup:
         dec     ecx
         jnz     .shift
 
+        cmp     ebx, 0x7FFFFFFF ; if given memory address belongs to kernel then error
+        ja      .addr_error
+
         mov     eax, keymap
         mov     ecx, 128
         call    memmove
@@ -1756,6 +1759,9 @@ sys_getsetup:
         dec     ecx
         jnz     .alt
 
+        cmp     ebx, 0x7FFFFFFF
+        ja      .addr_error
+
         mov     eax, keymap_shift
         mov     ecx, 128
         call    memmove
@@ -1765,6 +1771,9 @@ sys_getsetup:
 ; 3 = layout with pressed Alt
         dec     ecx
         jne     .country
+
+        cmp     ebx, 0x7FFFFFFF
+        ja      .addr_error
 
         mov     eax, keymap_alt
         mov     ecx, 128
@@ -1779,6 +1788,10 @@ sys_getsetup:
         movzx   eax, word [keyboard]
         mov     [esp+32], eax
         ret
+
+.addr_error:    ; if given memory address is illegal
+        mov     eax, -1
+        ret        
 ;--------------------------------------
 @@:
 ; F.26.5 - get system language
