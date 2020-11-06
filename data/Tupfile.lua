@@ -825,7 +825,7 @@ for i,v in ipairs(distr_extra_files) do
   end
 end
 
--- kolibri.raw
+-- build kolibri.raw
 raw_mbr = "../programs/hd_load/usb_boot/mbr"
 raw_bootsector = "../kernel/trunk/bootloader/extended_primary_loader/fat32/bootsect.bin"
 raw_files = {
@@ -833,10 +833,11 @@ raw_files = {
  {"KORDLDR.F32", "../kernel/trunk/bootloader/extended_primary_loader/fat32/kordldr.f32"},
  {"KERNEL.MNT", "../kernel/trunk/kernel.mnt.ext_loader"},
  {"CONFIG.INI", "../kernel/trunk/bootloader/extended_primary_loader/config.ini"},
- {"EFI/BOOT/BOOTX64.EFI", "../kernel/trunk/bootloader/uefi4kos/kolibri.efi"},
- {"EFI/BOOT/KOLIBRI.IMG", "kolibri.img"},
- {"EFI/BOOT/KOLIBRI.INI", "../kernel/trunk/bootloader/uefi4kos/kolibri.ini"},
- {"EFI/BOOT/KOLIBRI.KRN", "../kernel/trunk/kolibri.krn"}
+ {"EFI/BOOT/BOOTX64.EFI", "../kernel/trunk/bootloader/uefi4kos/bootx64.efi"},
+ {"EFI/BOOT/BOOTIA32.EFI", "../kernel/trunk/bootloader/uefi4kos/bootia32.efi"},
+ {"EFI/KOLIBRIOS/KOLIBRI.IMG", "kolibri.img"},
+ {"EFI/KOLIBRIOS/KOLIBRI.INI", "../kernel/trunk/bootloader/uefi4kos/kolibri.ini"},
+ {"EFI/KOLIBRIOS/KOLIBRI.KRN", "../kernel/trunk/kolibri.krn"}
 }
 
 for i,v in ipairs(img_files) do

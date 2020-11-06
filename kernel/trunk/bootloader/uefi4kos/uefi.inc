@@ -1,8 +1,19 @@
-;*********************************************************************
-;*                                                                   *
-;*          UEFI library for fasm by bzt, Public Domain              *
-;*                                                                   *
-;*********************************************************************
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;                                                              ;;
+;; Copyright (C) KolibriOS team 2020. All rights reserved.      ;;
+;; Distributed under terms of the GNU General Public License    ;;
+;; Version 2, or (at your option) any later version.            ;;
+;;                                                              ;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;                                                              ;;
+;; Based on UEFI library for fasm by bzt, Public Domain.        ;;
+;;                                                              ;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+EFI_LOCATE_SEARCH_TYPE:
+.AllHandles       = 0
+.ByRegisterNotify = 1
+.ByProtocol       = 2
 
 ; EFI_MEMORY_TYPE
 EFI_RESERVED_MEMORY_TYPE        = 0
@@ -27,20 +38,18 @@ EFI_ALLOCATE_ANY_PAGES   = 0
 EFI_ALLOCATE_MAX_ADDRESS = 1
 EFI_ALLOCATE_ADDRESS     = 2
 
-EFI_MEMORY_UC                   = 0x0000000000000001
-EFI_MEMORY_WC                   = 0x0000000000000002
-EFI_MEMORY_WT                   = 0x0000000000000004
-EFI_MEMORY_WB                   = 0x0000000000000008
-EFI_MEMORY_UCE                  = 0x0000000000000010
-EFI_MEMORY_WP                   = 0x0000000000001000
-EFI_MEMORY_RP                   = 0x0000000000002000
-EFI_MEMORY_XP                   = 0x0000000000004000
-EFI_MEMORY_NV                   = 0x0000000000008000
-EFI_MEMORY_MORE_RELIABLE        = 0x0000000000010000
-EFI_MEMORY_RO                   = 0x0000000000020000
-EFI_MEMORY_RUNTIME              = 0x8000000000000000
+EFI_MEMORY_UC                   = 0x00000001
+EFI_MEMORY_WC                   = 0x00000002
+EFI_MEMORY_WT                   = 0x00000004
+EFI_MEMORY_WB                   = 0x00000008
+EFI_MEMORY_UCE                  = 0x00000010
+EFI_MEMORY_WP                   = 0x00001000
+EFI_MEMORY_RP                   = 0x00002000
+EFI_MEMORY_XP                   = 0x00004000
+EFI_MEMORY_NV                   = 0x00008000
+EFI_MEMORY_MORE_RELIABLE        = 0x00010000
+EFI_MEMORY_RO                   = 0x00020000
 
-EFIERR                          = 0x8000000000000000
 EFI_SUCCESS                     = 0
 EFI_LOAD_ERROR                  = EFIERR or 1
 EFI_INVALID_PARAMETER           = EFIERR or 2
@@ -67,231 +76,190 @@ EFI_ICMP_ERROR                  = EFIERR or 22
 EFI_TFTP_ERROR                  = EFIERR or 23
 EFI_PROTOCOL_ERROR              = EFIERR or 24
 
-struct EFI_FILE_SYSTEM_INFO
-  Size          dq ?
-  ReadOnly      db ?
-                rb 7
-  VolumeSize    dq ?
-  FreeSpace     dq ?
-  BlockSize     dd ?
-  VolumeLabel   rw 32
-ends
 
 EFI_FILE_SYSTEM_INFO_ID equ 0x93,0x6e,0x57,0x09,0x3f,0x6d,0xd2,0x11, \
                             0x39,0x8e,0x00,0xa0,0xc9,0x69,0x72,0x3b
 
-EFI_SYSTEM_TABLE_SIGNATURE      equ     0x49,0x42,0x49,0x20,0x53,0x59,0x53,0x54
+EFI_SYSTEM_TABLE_SIGNATURE equ 0x49,0x42,0x49,0x20,0x53,0x59,0x53,0x54
+
+EFI_SIMPLE_FILE_SYSTEM_PROTOCOL_GUID equ 0x22,0x5b,0x4e,0x96, \
+                                         0x59,0x64,0xd2,0x11, \
+                                         0x8e,0x39,0x00,0xa0, \
+                                         0xc9,0x69,0x72,0x3b
+
+EFI_LOADED_IMAGE_PROTOCOL_GUID equ 0xA1,0x31,0x1b,0x5b,0x62,0x95,0xd2,0x11, \
+                                    0x8E,0x3F,0x00,0xA0,0xC9,0x69,0x72,0x3B
+
+EFI_BLOCK_IO_PROTOCOL_GUID equ 0x21,0x5b,0x4e,0x96,0x59,0x64,0xd2,0x11, \
+                               0x8e,0x39,0x00,0xa0,0xc9,0x69,0x72,0x3b
+
+EFI_GRAPHICS_OUTPUT_PROTOCOL_GUID equ 0xde,0xa9,0x42,0x90,0xdc,0x23,0x38,0x4a, \
+                                      0x96,0xfb,0x7a,0xde,0xd0,0x80,0x51,0x6a
+
+EFI_FILE_MODE_READ   = 1
+EFI_FILE_MODE_WRITE  = 2
+EFI_FILE_MODE_CREATE = 0x8000000000000000
+
+struct EFI_MEMORY_DESCRIPTOR
+  Type          dd ?
+                dd ?    ; align
+  PhysicalStart DQ ?
+  VirtualStart  DQ ?
+  NumberOfPages DQ ?
+  Attribute     DQ ?
+ends
+
+struct EFI_FILE_SYSTEM_INFO
+  Size          DQ ?
+  ReadOnly      db ?
+                rb 7
+  VolumeSize    DQ ?
+  FreeSpace     DQ ?
+  BlockSize     dd ?
+  VolumeLabel   rw 32
+ends
+
 struct EFI_TABLE_HEADER
-  Signature             dq ?
+  Signature             DQ ?
   Revision              dd ?
   HeaderSize            dd ?
   CRC32                 dd ?
   Reserved              dd ?
 ends
 
-struct EFI_SYSTEM_TABLE
-  Hdr                   EFI_TABLE_HEADER
-  FirmwareVendor        dq ?
-  FirmwareRevision      dd ?
-                        dd ?
-  ConsoleInHandle       dq ?
-  ConIn                 dq ?
-  ConsoleOutHandle      dq ?
-  ConOut                dq ?
-  StandardErrorHandle   dq ?
-  StdErr                dq ?
-  RuntimeServices       dq ?
-  BootServices          dq ?
-  NumberOfTableEntries  dq ?
-  ConfigurationTable    dq ?
-ends
-
-struct SIMPLE_TEXT_OUTPUT_INTERFACE
-  Reset                 dq ?
-  OutputString          dq ?
-  TestString            dq ?
-  QueryMode             dq ?
-  SetMode               dq ?
-  SetAttribute          dq ?
-  ClearScreen           dq ?
-  SetCursorPosition     dq ?
-  EnableCursor          dq ?
-  Mode                  dq ?
+struct EFI_SIMPLE_TEXT_OUTPUT_PROTOCOL
+  Reset                 DN ?
+  OutputString          DN ?
+  TestString            DN ?
+  QueryMode             DN ?
+  SetMode               DN ?
+  SetAttribute          DN ?
+  ClearScreen           DN ?
+  SetCursorPosition     DN ?
+  EnableCursor          DN ?
+  Mode                  DN ?
 ends
 
 
 struct SIMPLE_INPUT_INTERFACE
-  Reset                 dq ?
-  ReadKeyStroke         dq ?
-  WaitForKey            dq ?
+  Reset                 DN ?
+  ReadKeyStroke         DN ?
+  WaitForKey            DN ?
 ends
 
-struct EFI_BOOT_SERVICES_TABLE
+struct EFI_BOOT_SERVICES
+  Hdr                        EFI_TABLE_HEADER
+  RaisePriority              DN ?
+  RestorePriority            DN ?
+  AllocatePages              DN ?
+  FreePages                  DN ?
+  GetMemoryMap               DN ?
+  AllocatePool               DN ?
+  FreePool                   DN ?
+  CreateEvent                DN ?
+  SetTimer                   DN ?
+  WaitForEvent               DN ?
+  SignalEvent                DN ?
+  CloseEvent                 DN ?
+  CheckEvent                 DN ?
+  InstallProtocolInterface   DN ?
+  ReInstallProtocolInterface DN ?
+  UnInstallProtocolInterface DN ?
+  HandleProtocol             DN ?
+  Reserved                   DN ?
+  RegisterProtocolNotify     DN ?
+  LocateHandle               DN ?
+  LocateDevicePath           DN ?
+  InstallConfigurationTable  DN ?
+  ImageLoad                  DN ?
+  ImageStart                 DN ?
+  Exit                       DN ?
+  ImageUnLoad                DN ?
+  ExitBootServices           DN ?
+  GetNextMonotonicCount      DN ?
+  Stall                      DN ?
+  SetWatchdogTimer           DN ?
+  ConnectController          DN ?
+  DisConnectController       DN ?
+  OpenProtocol               DN ?
+  CloseProtocol              DN ?
+  OpenProtocolInformation    DN ?
+  ProtocolsPerHandle         DN ?
+  LocateHandleBuffer         DN ?
+  LocateProtocol             DN ?
+  InstallMultipleProtocolInterfaces DN ?
+  UnInstallMultipleProtocolInterfaces DN ?
+  CalculateCrc32             DN ?
+  CopyMem                    DN ?
+  SetMem                     DN ?
+ends
+
+struct EFI_RUNTIME_SERVICES
   Hdr                   EFI_TABLE_HEADER
-  RaisePriority         dq ?
-  RestorePriority       dq ?
-  AllocatePages         dq ?
-  FreePages             dq ?
-  GetMemoryMap          dq ?
-  AllocatePool          dq ?
-  FreePool              dq ?
-  CreateEvent           dq ?
-  SetTimer              dq ?
-  WaitForEvent          dq ?
-  SignalEvent           dq ?
-  CloseEvent            dq ?
-  CheckEvent            dq ?
-  InstallProtocolInterface dq ?
-  ReInstallProtocolInterface dq ?
-  UnInstallProtocolInterface dq ?
-  HandleProtocol        dq ?
-  Void                  dq ?
-  RegisterProtocolNotify dq ?
-  LocateHandle          dq ?
-  LocateDevicePath      dq ?
-  InstallConfigurationTable dq ?
-  ImageLoad             dq ?
-  ImageStart            dq ?
-  Exit                  dq ?
-  ImageUnLoad           dq ?
-  ExitBootServices      dq ?
-  GetNextMonotonicCount dq ?
-  Stall                 dq ?
-  SetWatchdogTimer      dq ?
-  ConnectController     dq ?
-  DisConnectController  dq ?
-  OpenProtocol          dq ?
-  CloseProtocol         dq ?
-  OpenProtocolInformation dq ?
-  ProtocolsPerHandle    dq ?
-  LocateHandleBuffer    dq ?
-  LocateProtocol        dq ?
-  InstallMultipleProtocolInterfaces dq ?
-  UnInstallMultipleProtocolInterfaces dq ?
-  CalculateCrc32        dq ?
-  CopyMem               dq ?
-  SetMem                dq ?
+  GetTime               DN ?
+  SetTime               DN ?
+  GetWakeUpTime         DN ?
+  SetWakeUpTime         DN ?
+  SetVirtualAddressMap  DN ?
+  ConvertPointer        DN ?
+  GetVariable           DN ?
+  GetNextVariableName   DN ?
+  SetVariable           DN ?
+  GetNextHighMonoCount  DN ?
+  ResetSystem           DN ?
 ends
-
-struct EFI_RUNTIME_SERVICES_TABLE
-  Hdr                   EFI_TABLE_HEADER
-  GetTime               dq ?
-  SetTime               dq ?
-  GetWakeUpTime         dq ?
-  SetWakeUpTime         dq ?
-  SetVirtualAddressMap  dq ?
-  ConvertPointer        dq ?
-  GetVariable           dq ?
-  GetNextVariableName   dq ?
-  SetVariable           dq ?
-  GetNextHighMonoCount  dq ?
-  ResetSystem           dq ?
-ends
-
-struct EFI_TIME
-  Year                  dw ?
-  Month                 db ?
-  Day                   db ?
-  Hour                  db ?
-  Minute                db ?
-  Second                db ?
-  Pad1                  db ?
-  Nanosecond            dd ?
-  TimeZone              dw ?
-  Daylight              db ?
-  Pad2                  db ?
-  sizeof                db ?
-ends
-
-EFI_SIMPLE_FILE_SYSTEM_PROTOCOL_GUID equ 0x22,0x5b,0x4e,0x96,0x59,0x64,0xd2,0x11, \
-                                         0x8e,0x39,0x00,0xa0,0xc9,0x69,0x72,0x3b
 
 struct EFI_SIMPLE_FILE_SYSTEM_PROTOCOL
-  Revision              dq ?
-  OpenVolume            dq ?
+  Revision              DQ ?
+  OpenVolume            DN ?
 ends
-
-EFI_FILE_MODE_READ   = 1
-EFI_FILE_MODE_WRITE  = 2
-EFI_FILE_MODE_CREATE = 0x8000000000000000
 
 struct EFI_FILE_PROTOCOL
-  Revision              dq ?
-  Open                  dq ?
-  Close                 dq ?
-  Delete                dq ?
-  Read                  dq ?
-  Write                 dq ?
-  GetPosition           dq ?
-  SetPosition           dq ?
-  GetInfo               dq ?
-  SetInfo               dq ?
-  Flush                 dq ?
-  OpenEx                dq ?
-  ReadEx                dq ?
-  WriteEx               dq ?
-  FlushEx               dq ?
+  Revision              DQ ?
+  Open                  DN ?
+  Close                 DN ?
+  Delete                DN ?
+  Read                  DN ?
+  Write                 DN ?
+  GetPosition           DN ?
+  SetPosition           DN ?
+  GetInfo               DN ?
+  SetInfo               DN ?
+  Flush                 DN ?
+  OpenEx                DN ?
+  ReadEx                DN ?
+  WriteEx               DN ?
+  FlushEx               DN ?
 ends
 
-EFI_LOADED_IMAGE_PROTOCOL_GUID  equ     0xA1,0x31,0x1b,0x5b,0x62,0x95,0xd2,0x11, \
-                                        0x8E,0x3F,0x00,0xA0,0xC9,0x69,0x72,0x3B
-struct EFI_LOADED_IMAGE_PROTOCOL
-  Revision              dd ?
-                        dd ?
-  ParentHandle          dq ?
-  SystemTable           dq ?
-  DeviceHandle          dq ?
-  FilePath              dq ?
-  Reserved              dq ?
-  LoadOptionsSize       dd ?
-                        dd ?
-  ImageBase             dq ?
-  ImageSize             dq ?
-  ImageCodeType         dd ?
-  ImageDataType         dd ?
-  UnLoad                dq ?
-ends
-
-EFI_BLOCK_IO_PROTOCOL_GUID      equ     0x21,0x5b,0x4e,0x96,0x59,0x64,0xd2,0x11, \
-                                        0x8e,0x39,0x00,0xa0,0xc9,0x69,0x72,0x3b
-struct EFI_BLOCK_IO_PROTOCOL
-  Revision              dq ?
-  Media                 dq ?
-  Reset                 dq ?
-  ReadBlocks            dq ?
-  WriteBlocks           dq ?
-  FlushBlocks           dq ?
-ends
-
-struct EFI_BLOCK_IO_MEDIA
-  MediaId               dd ?
-  RemovableMedia        db ?
-  MediaPresent          db ?
-  LogicalPartition      db ?
-  ReadOnly              db ?
-  WriteCaching          db ?
-                        rb 3
-  BlockSize             dd ?
-  IoAlign               dd ?
-  LastBlock             dq ?
-ends
-
-EFI_GRAPHICS_OUTPUT_PROTOCOL_GUID equ   0xde,0xa9,0x42,0x90,0xdc,0x23,0x38,0x4a, \
-                                        0x96,0xfb,0x7a,0xde,0xd0,0x80,0x51,0x6a
 struct EFI_GRAPHICS_OUTPUT_PROTOCOL
-  QueryMode             dq ?
-  SetMode               dq ?
-  Blt                   dq ?
-  Mode                  dq ?
+  QueryMode             DN ?
+  SetMode               DN ?
+  Blt                   DN ?
+  Mode                  DN ?
 ends
 
 struct EFI_GRAPHICS_OUTPUT_PROTOCOL_MODE
   MaxMode               dd ?
   Mode                  dd ?
-  nfo                   dq ?
-  SizeOfInfo            dq ?
-  FrameBufferBase       dq ?
-  FrameBufferSize       dq ?
+  Info                  DN ?
+  SizeOfInfo            DN ?
+  FrameBufferBase       DQ ?
+  FrameBufferSize       DN ?
+ends
+
+EFI_GRAPHICS_PIXEL_FORMAT:
+.PixelRedGreenBlueReserved8BitPerColor = 0
+.PixelBlueGreenRedReserved8BitPerColor = 1
+.PixelBitMask = 2
+.PixelBltOnly = 3
+.PixelFormatMax = 4
+
+struct EFI_PIXEL_BITMASK
+  RedMask               dd ?
+  GreenMask             dd ?
+  BlueMask              dd ?
+  ReservedMask          dd ?
 ends
 
 struct EFI_GRAPHICS_OUTPUT_MODE_INFORMATION
@@ -299,217 +267,6 @@ struct EFI_GRAPHICS_OUTPUT_MODE_INFORMATION
   HorizontalResolution  dd ?
   VerticalResolution    dd ?
   PixelFormat           dd ?
-  RedMask               dd ?
-  GreenMask             dd ?
-  BlueMask              dd ?
-  Reserved              dd ?
+  PixelInformation      EFI_PIXEL_BITMASK
   PixelsPerScanLine     dd ?
 ends
-
-;---macros to make life easier---
-;call it early, after entry point is the best
-macro InitializeLib
-{
-        clc
-        test    rdx, rdx
-        jz      .badout
-        cmp     dword[rdx], 'IBI '      ; 20494249h
-        jz      @f
-  .badout:
-        xor     ecx, ecx
-        xor     edx, edx
-        stc
-    @@:
-        mov     [efi_handler], rcx      ; ImageHandle
-        mov     [efi_ptr], rdx          ; pointer to SystemTable
-}
-
-;invoke an UEFI function
-macro eficall interface,function,arg1,arg2,arg3,arg4,arg5,arg6,arg7,arg8,arg9,arg10,arg11
-{
-numarg = 0
-
-if ~ arg11 eq
-  numarg = numarg + 1
-  if ~ arg11 eq rdi
-        mov     rdi, arg11
-  end if
-end if
-
-if ~ arg10 eq
-  numarg = numarg + 1
-  if ~ arg10 eq rsi
-        mov     rsi, arg10
-  end if
-end if
-
-if ~ arg9 eq
-  numarg = numarg + 1
-  if ~ arg9 eq r14
-        mov     r14, arg9
-  end if
-end if
-
-if ~ arg8 eq
-  numarg = numarg + 1
-  if ~ arg8 eq r13
-        mov     r13, arg8
-  end if
-end if
-
-if ~ arg7 eq
-  numarg = numarg + 1
-  if ~ arg7 eq r12
-        mov     r12, arg7
-  end if
-end if
-
-if ~ arg6 eq
-  numarg = numarg + 1
-  if ~ arg6 eq r11
-        mov     r11, arg6
-  end if
-end if
-
-if ~ arg5 eq
-  numarg = numarg + 1
-  if ~ arg5 eq r10
-        mov     r10, arg5
-  end if
-end if
-
-if ~ arg4 eq
-  numarg = numarg + 1
-  if ~ arg4 eq r9
-        mov     r9, arg4
-  end if
-end if
-
-if ~ arg3 eq
-  numarg = numarg + 1
-  if ~ arg3 eq r8
-        mov     r8, arg3
-  end if
-end if
-
-if ~ arg2 eq
-  numarg = numarg + 1
-  if ~ arg2 eq rdx
-        mov     rdx, arg2
-  end if
-end if
-
-if ~ arg1 eq
-  numarg = numarg + 1
-  if ~ arg1 eq rcx
-    if ~ arg1 in <ConsoleInHandle,ConIn,ConsoleOutHandle,ConOut,StandardErrorHandle,StdErr,RuntimeServices,BootServices>
-        mov     rcx, arg1
-    end if
-  end if
-end if
-
-        xor     rax, rax
-        mov     al, numarg
-
-if interface in <ConsoleInHandle,ConIn,ConsoleOutHandle,ConOut,StandardErrorHandle,StdErr,RuntimeServices,BootServices>
-        mov     rbx, [efi_ptr]
-        mov     rbx, [rbx + EFI_SYSTEM_TABLE.#interface]
-else
-  if ~ interface eq rbx
-        mov     rbx, interface
-  end if
-end if
-
-if arg1 in <ConsoleInHandle,ConIn,ConsoleOutHandle,ConOut,StandardErrorHandle,StdErr,RuntimeServices,BootServices>
-        mov     rcx, rbx
-end if
-
-if defined SIMPLE_INPUT_INTERFACE.#function
-        mov     rbx, [rbx + SIMPLE_INPUT_INTERFACE.#function]
-else
- if defined SIMPLE_TEXT_OUTPUT_INTERFACE.#function
-        mov     rbx, [rbx + SIMPLE_TEXT_OUTPUT_INTERFACE.#function]
- else
-  if defined EFI_BOOT_SERVICES_TABLE.#function
-        mov     rbx, [rbx + EFI_BOOT_SERVICES_TABLE.#function]
-  else
-   if defined EFI_RUNTIME_SERVICES_TABLE.#function
-        mov     rbx, [rbx + EFI_RUNTIME_SERVICES_TABLE.#function]
-   else
-    if defined EFI_GRAPHICS_OUTPUT_PROTOCOL.#function
-        mov     rbx, [rbx + EFI_GRAPHICS_OUTPUT_PROTOCOL.#function]
-    else
-     if defined EFI_GRAPHICS_OUTPUT_PROTOCOL_MODE.#function
-        mov     rbx, [rbx + EFI_GRAPHICS_OUTPUT_PROTOCOL_MODE.#function]
-     else
-        mov     rbx, [rbx + function]
-     end if
-    end if
-   end if
-  end if
- end if
-end if
-        call    uefifunc
-}
-
-;*********************************************************************
-;*                       Library functions                           *
-;*********************************************************************
-
-section '.text' code executable readable
-
-uefifunc:
-        ;save stack pointer
-        mov     qword [uefi_rsptmp], rsp
-        ;set up new aligned stack
-        and     esp, 0xFFFFFFF0
-        ;alignment check on arguments
-        bt      eax, 0
-        jnc     @f
-        push    rax
-        ;arguments
-@@:
-        cmp     al, 11
-        jb      @f
-        push    rdi
-@@:
-        cmp     al, 10
-        jb      @f
-        push    rsi
-@@:
-        cmp     al, 9
-        jb      @f
-        push    r14
-@@:
-        cmp     al, 8
-        jb      @f
-        push    r13
-@@:
-        cmp     al, 7
-        jb      @f
-        push    r12
-@@:
-        cmp     al, 6
-        jb      @f
-        push    r11
-@@:
-        cmp     al, 5
-        jb      @f
-        push    r10
-@@:
-        ;space for
-        ;r9
-        ;r8
-        ;rdx
-        ;rcx
-        sub     rsp, 4*8
-        ;call function
-        call    rbx
-        ;restore old stack
-        mov     rsp, qword [uefi_rsptmp]
-        ret
-
-section '.data' data readable writeable
-efi_handler     dq 0
-efi_ptr         dq 0
-uefi_rsptmp     dq 0
