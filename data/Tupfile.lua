@@ -825,51 +825,77 @@ for i,v in ipairs(distr_extra_files) do
   end
 end
 
--- generate command and dependencies for kolibri.raw
-input_deps = {"kolibri.img",
-              "../kernel/trunk/bootloader/extended_primary_loader/fat32/kordldr.f32",
-              "../kernel/trunk/bootloader/extended_primary_loader/fat32/bootsect.bin",
-              "../kernel/trunk/kernel.mnt.ext_loader",
-              "../kernel/trunk/bootloader/uefi4kos/kolibri.efi",
-              "../kernel/trunk/bootloader/uefi4kos/kolibri.ini",
-              "../kernel/trunk/kolibri.krn",
-              "../programs/hd_load/usb_boot/mbr"}
+-- kolibri.raw
+raw_mbr = "../programs/hd_load/usb_boot/mbr"
+raw_bootsector = "../kernel/trunk/bootloader/extended_primary_loader/fat32/bootsect.bin"
+raw_files = {
+ {"KOLIBRI.IMG", "kolibri.img"},
+ {"KORDLDR.F32", "../kernel/trunk/bootloader/extended_primary_loader/fat32/kordldr.f32"},
+ {"KERNEL.MNT", "../kernel/trunk/kernel.mnt.ext_loader"},
+ {"CONFIG.INI", "../kernel/trunk/bootloader/extended_primary_loader/config.ini"},
+ {"EFI/BOOT/BOOTX64.EFI", "../kernel/trunk/bootloader/uefi4kos/kolibri.efi"},
+ {"EFI/BOOT/KOLIBRI.IMG", "kolibri.img"},
+ {"EFI/BOOT/KOLIBRI.INI", "../kernel/trunk/bootloader/uefi4kos/kolibri.ini"},
+ {"EFI/BOOT/KOLIBRI.KRN", "../kernel/trunk/kolibri.krn"}
+}
+
+for i,v in ipairs(img_files) do
+  raw_file = "KOLIBRIOS/" .. string.upper(v[1])
+  local_file = v[2]
+  tup.append_table(raw_files, {{raw_file, local_file}})
+end
+
+tup.append_table(raw_files, extra_files)
+
 make_raw_command = '^ MKIMG kolibri.raw^ ' -- for tup: don't write full command to logs
-make_raw_command = make_raw_command .. "dd if=/dev/zero of=kolibri.raw bs=1MiB count=64 2>&1"
+make_raw_command = make_raw_command .. "dd if=/dev/zero of=kolibri.raw bs=1MiB count=128 2>&1"
 make_raw_command = make_raw_command .. " && parted --script kolibri.raw mktable gpt"
-make_raw_command = make_raw_command .. " && parted --script kolibri.raw unit MiB mkpart primary fat32 1 63"
+make_raw_command = make_raw_command .. " && parted --script kolibri.raw unit MiB mkpart primary fat32 1 127"
 make_raw_command = make_raw_command .. " && parted --script kolibri.raw set 1 esp on"
 make_raw_command = make_raw_command .. " && sgdisk kolibri.raw --hybrid 1:EE"
-make_raw_command = make_raw_command .. " && dd if=../programs/hd_load/usb_boot/mbr of=kolibri.raw bs=1 count=\\$((0x1b8)) conv=notrunc"
-make_raw_command = make_raw_command .. " && dd if=../programs/hd_load/usb_boot/mbr of=kolibri.raw bs=1 count=1 skip=\\$((0x5a)) seek=\\$((0x1be)) conv=notrunc"
-bootsector = "../kernel/trunk/bootloader/extended_primary_loader/fat32/bootsect.bin"
-make_raw_command = make_raw_command .. " && mformat -i kolibri.raw@@1M -v KOLIBRIOS -T 126976 -h 16 -s 32 -H 2048 -c 1 -F -B " .. bootsector .. " ::"
--- BIOS boot
-make_raw_command = make_raw_command .. " && mcopy -moi kolibri.raw@@1M ../kernel/trunk/kernel.mnt.ext_loader ::KERNEL.MNT"
-make_raw_command = make_raw_command .. " && mcopy -moi kolibri.raw@@1M kolibri.img ::KOLIBRI.IMG"
-make_raw_command = make_raw_command .. " && mcopy -moi kolibri.raw@@1M ../kernel/trunk/bootloader/extended_primary_loader/fat32/kordldr.f32 ::KORDLDR.F32"
-make_raw_command = make_raw_command .. " && mcopy -moi kolibri.raw@@1M ../kernel/trunk/bootloader/extended_primary_loader/config.ini ::CONFIG.INI"
--- UEFI boot
-make_raw_command = make_raw_command .. ' && mmd -i kolibri.raw@@1M ::EFI'
-make_raw_command = make_raw_command .. ' && mmd -i kolibri.raw@@1M ::EFI/BOOT'
-make_raw_command = make_raw_command .. " && mcopy -moi kolibri.raw@@1M ../kernel/trunk/bootloader/uefi4kos/kolibri.efi ::EFI/BOOT/BOOTX64.EFI"
-make_raw_command = make_raw_command .. " && mcopy -moi kolibri.raw@@1M ../kernel/trunk/bootloader/uefi4kos/kolibri.ini ::EFI/BOOT/KOLIBRI.INI"
-make_raw_command = make_raw_command .. " && mcopy -moi kolibri.raw@@1M ../kernel/trunk/kolibri.krn ::EFI/BOOT/KOLIBRI.KRN"
-make_raw_command = make_raw_command .. " && mcopy -moi kolibri.raw@@1M kolibri.img ::EFI/BOOT/KOLIBRI.IMG"
+make_raw_command = make_raw_command .. " && dd if=" .. raw_mbr .. " of=kolibri.raw bs=1 count=\\$((0x1b8)) conv=notrunc"
+make_raw_command = make_raw_command .. " && dd if=" .. raw_mbr .. " of=kolibri.raw bs=1 count=1 skip=\\$((0x5a)) seek=\\$((0x1be)) conv=notrunc"
+make_raw_command = make_raw_command .. " && mformat -i kolibri.raw@@1M -v KOLIBRIOS -T \\$(((128-1-1)*1024*1024/512)) -h 16 -s 32 -H 2048 -c 1 -F -B " .. raw_bootsector .. " ::"
 
-make_raw_command = make_raw_command .. ' && mmd -i kolibri.raw@@1M ::KOLIBRIOS'
+-- generate list of directories to be created inside kolibri.raw
+raw_dirs = {}
+input_deps = {raw_mbr, raw_bootsector}
+for i,v in ipairs(raw_files) do
+  raw_file = v[1]
+  local_file = v[2]
 
--- make folders
-table.sort(img_dirs)
-for i,v in ipairs(img_dirs) do
-  if v ~= img_dirs[i-1] then
-    make_raw_command = make_raw_command .. ' && mmd -i kolibri.raw@@1M "::KOLIBRIOS/' .. v .. '"'
+  if raw_file ~= "/" then
+    slash_pos = 0
+    while true do
+      slash_pos = string.find(raw_file, '/', slash_pos + 1)
+      if not slash_pos then break end
+      table.insert(raw_dirs, string.sub(raw_file, 1, slash_pos - 1))
+    end
+  end
+
+  -- tup does not want to see hidden files as dependencies
+  if not string.match(local_file, "/%.") then
+    table.insert(input_deps, v.group or local_file)
   end
 end
 
-for i,v in ipairs(img_files) do
+-- img_files and extra_files have some common dirs with different case
+for i,d in ipairs(raw_dirs) do
+  raw_dirs[i] = string.upper(raw_dirs[i])
+end
+
+-- make folders
+table.sort(raw_dirs)
+for i,v in ipairs(raw_dirs) do
+  if v ~= raw_dirs[i-1] then
+    make_raw_command = make_raw_command .. ' && mmd -i kolibri.raw@@1M "::' .. v .. '"'
+  end
+end
+
+-- copy files
+for i,v in ipairs(raw_files) do
   local_file = v[2]
-  make_raw_command = make_raw_command .. ' && mcopy -moi kolibri.raw@@1M "' .. local_file .. '" "::KOLIBRIOS/' .. v[1] .. '"'
+  make_raw_command = make_raw_command .. ' && mcopy -moi kolibri.raw@@1M "' .. local_file .. '" "::' .. v[1] .. '"'
 end
 
 -- generate tup rule for kolibri.raw
