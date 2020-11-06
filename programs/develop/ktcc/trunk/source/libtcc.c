@@ -2038,8 +2038,7 @@ enum {
     TCC_OPTION_MD,
     TCC_OPTION_MF,
     TCC_OPTION_x,
-    TCC_OPTION_stack,
-    TCC_OPTION_nobss
+    TCC_OPTION_stack
 };
 
 #define TCC_OPTION_HAS_ARG 0x0001
@@ -2101,7 +2100,6 @@ static const TCCOption tcc_options[] = {
     { "MF", TCC_OPTION_MF, TCC_OPTION_HAS_ARG },
     { "x", TCC_OPTION_x, TCC_OPTION_HAS_ARG },
     { "stack", TCC_OPTION_stack, TCC_OPTION_HAS_ARG | TCC_OPTION_NOSEP},
-    { "nobss", TCC_OPTION_nobss, 0 },
     { NULL, 0, 0 },
 };
 
@@ -2433,9 +2431,6 @@ ST_FUNC int tcc_parse_args1(TCCState *s, int argc, char **argv)
 #ifdef TCC_TARGET_MEOS
             s->pe_stack_size = strtoul(optarg+1, NULL, 10);
 #endif
-            break;
-        case TCC_OPTION_nobss:
-            s->nobss = 1;
             break;
         default:
             if (s->warn_unsupported) {
