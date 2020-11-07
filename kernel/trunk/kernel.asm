@@ -1746,8 +1746,14 @@ sys_getsetup:
         dec     ecx
         jnz     .shift
 
-        cmp     ebx, 0x7FFFFFFF ; if given memory address belongs to kernel then error
-        ja      .addr_error
+        ; if given memory address belongs to kernel then error
+        push    ebx 
+        mov     eax, ebx
+        mov     ebx, 128
+        call    is_region_userspace
+        pop     ebx
+        test    eax, eax
+        jz      .addr_error
 
         mov     eax, keymap
         mov     ecx, 128
@@ -1759,8 +1765,13 @@ sys_getsetup:
         dec     ecx
         jnz     .alt
 
-        cmp     ebx, 0x7FFFFFFF
-        ja      .addr_error
+        push    ebx 
+        mov     eax, ebx
+        mov     ebx, 128
+        call    is_region_userspace
+        pop     ebx
+        test    eax, eax
+        jz      .addr_error
 
         mov     eax, keymap_shift
         mov     ecx, 128
@@ -1772,8 +1783,13 @@ sys_getsetup:
         dec     ecx
         jne     .country
 
-        cmp     ebx, 0x7FFFFFFF
-        ja      .addr_error
+        push    ebx 
+        mov     eax, ebx
+        mov     ebx, 128
+        call    is_region_userspace
+        pop     ebx
+        test    eax, eax
+        jz      .addr_error
 
         mov     eax, keymap_alt
         mov     ecx, 128
@@ -5647,11 +5663,29 @@ sys_apm:
 ; -----------------------------------------
 
 align 4
-
 undefined_syscall:                      ; Undefined system call
         mov     [esp + 32], dword -1
         ret
 
+align 4
+; check if given memory region lays in lower 2gb (userspace memory) or not
+is_region_userspace:
+; in:  eax = base
+;      ebx = len
+; out: eax = 1 if region in userspace memory, 0 if not
+        push    esi edi ecx
+        add     eax, ebx
+        cmp     eax, OS_BASE
+        ja      @f
+
+        mov     eax, 1
+        jmp     .ret 
+
+@@:
+        xor     eax, eax
+.ret:
+        pop     ecx edi esi
+        ret 
 
 if ~ lang eq sp
 diff16 "end of .text segment",0,$
