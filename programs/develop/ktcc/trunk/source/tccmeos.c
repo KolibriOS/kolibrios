@@ -263,10 +263,6 @@ int tcc_output_me(TCCState* s1,const char *filename)
 	f=fopen(filename,"wb");
     for (i=0;i<8;i++)
         me.header.magic[i]=me_magic[i];
-	/*me.header.magic[0]='M';me.header.magic[1]='E';
-	me.header.magic[2]='N';me.header.magic[3]='U';
-	me.header.magic[4]='E';me.header.magic[5]='T';
-	me.header.magic[6]='0';me.header.magic[7]='1';*/
 	fwrite(&me.header,1,sizeof(IMAGE_MEOS_FILE_HEADER),f);
 	meos_section_info* si;
 	for(si=me.code_sections;si;si=si->next)
