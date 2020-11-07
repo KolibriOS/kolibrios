@@ -1552,6 +1552,9 @@ Parameters:
     copied
 Returned value:
   * function does not return value
+    but if pointer in edx is illegal, for example,
+    [edx, edx + 128) region intersects with kernel memory,
+    then function returns -1
 Or:
   * eax = 26 - function number
   * ebx = 2 - subfunction number
