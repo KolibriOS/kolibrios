@@ -5,15 +5,15 @@
 ; last update:  1/03/2007
 ; written by:   Ivan Poddubny
 ; e-mail:       ivan-yar@bk.ru
-;modified by: Heavyiron
+;modified by: Heavyiron, maxcodehack
 
-; <--- include all MeOS stuff --->
+; <--- include all KolibriOS stuff --->
 include "lang.inc"
 include "..\..\..\..\macros.inc"
 
 
-; <--- start of MenuetOS application --->
-MEOS_APP_START
+; <--- start of KolibriOS application --->
+KOS_APP_START
 
 
 ; <--- start of code --->
@@ -88,5 +88,5 @@ end if
 UDATA
 sc   system_colors
 
-MEOS_APP_END
-; <--- end of MenuetOS application --->
+KOS_APP_END
+; <--- end of KolibriOS application --->

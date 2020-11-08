@@ -5,7 +5,7 @@
 ;заголовок приложения
         include '..\..\..\..\macros.inc'
         include 'editbox.inc'
-meos_app_start
+KOS_APP_START
 align 4
         use_edit_box 
 ;Область кода
@@ -64,5 +64,5 @@ ed_buffer:
 ;два запасных байта необходимы для того что бы не пепереписать следующией байты, в конце буфера 0
 buffer_end:
 align 16
-meos_app_end  
+KOS_APP_END  
 udata

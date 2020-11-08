@@ -1,5 +1,5 @@
 ; Hello, World! - Programm example for CMD shell
-; Compile with FASM for Menuet
+; Compile with FASM
 ;
 ; You must run this program from CMD shell only
 ;

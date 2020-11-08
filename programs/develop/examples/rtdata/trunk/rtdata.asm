@@ -1,7 +1,7 @@
 ;
 ;   COMMUNICATING WITH MODEM: PORTS & IRQ
 ;
-;   Compile with FASM for Menuet
+;   Compile with FASM
 ;
 
 include "lang.inc"

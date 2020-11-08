@@ -2,7 +2,7 @@
 ;
 ;   MENU / DIALOG EXAMPLE
 ;
-;   Compile with FASM for Menuet
+;   Compile with FASM
 ;
 
 use32

@@ -1,7 +1,7 @@
 ;
 ;    CPU SPEED INDICATIOR
 ;
-;    Compile with FASM for Menuet
+;    Compile with FASM
 ;
 
   use32

@@ -1,7 +1,7 @@
 ;
 ;   Example for Inter Process Communication
 ;
-;   Compile with FASM for Menuet
+;   Compile with FASM
 ;
 include 'lang.inc'
 include '..\..\..\..\macros.inc'
