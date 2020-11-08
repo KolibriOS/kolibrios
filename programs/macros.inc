@@ -110,6 +110,7 @@ macro meos_app_start
   dd 0x0
  }
 MEOS_APP_START fix meos_app_start
+KOS_APP_START fix meos_app_start
 
 macro code
  {
@@ -147,6 +148,7 @@ macro meos_app_end
   __memory:
  }
 MEOS_APP_END fix meos_app_end
+KOS_APP_END fix meos_app_end
 
 
 ; macro for defining multiline text data
