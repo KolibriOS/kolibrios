@@ -20,9 +20,28 @@ bool KolibriOnStart(TStartData &kos_start, TThreadData th)
 
 void KolibriOnPaint(void)
 {
-	DrawButton(2,0xB0B0B0, 10,10,50,20);
+	DrawButton(1,0xB0B0B0, 10,10,50,20);
 	DrawText(15, 15, 0, string);
+	DrawButton(2,0xff0000, 10,40,50,20);
+	DrawButton(3,0x00ff00, 70,10,50,20);
+	DrawButton(4,0x0000ff, 70,40,50,20);
 }
+
+void KolibriOnButton(long id, TThreadData th)
+{
+	switch(id){
+	case 2:
+		SetWindowCaption("Red");
+		break;
+	case 3:
+		SetWindowCaption("Green");
+		break;
+	case 4:
+		SetWindowCaption("Blue");
+		//break;
+	};
+}
+/*
 bool KolibriOnClose(TThreadData th)
 {
 	return true;
@@ -37,3 +56,4 @@ void KolibriOnKeyPress(TThreadData th)
 	GetKey();
 }
 void KolibriOnMouse(TThreadData th) {}
+*/

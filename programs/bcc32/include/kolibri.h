@@ -55,8 +55,8 @@ namespace Kolibri   // All kolibri functions, types and data are nested in the (
 														   //_ if (frame) is negative do nothing.
 	void MoveWindow(const int window_rect[/* 4 */]);   // Move and resize current window.
 
-	void Abort();   // Abnormally terminate a program.
-	void ExitProcess();   // Exit from the process, don't call any destructors of global varyables
+	void ExitDebug();    // Abnormally terminate a program.
+	void ExitProcess();  // Exit from the process, don't call any destructors of global varyables
 	void ExitThread();   // Exit from the current thread
 	void ExitThread(TThreadData thread_data);
 	void ReturnMessageLoop();   // Return to the message loop of the thread. Exit from the thread
@@ -135,6 +135,7 @@ namespace Kolibri   // All kolibri functions, types and data are nested in the (
 			//_ of the stack if (stack_end) is zero or (stack_size) is not zero, in this case stack
 			//_ will be deleted automaticaly from dynamic memory at the finish of the thread.
 	void DrawText(short x, short y, int color, const char* string);
+	void SetWindowCaption(const char* caption);
 }
 
 // Function, defined outside.
@@ -146,6 +147,7 @@ int KolibriOnIdle(Kolibri::TThreadData thread_data);       // Return the time to
 void KolibriOnSize(int window_rect[/* 4 */], Kolibri::TThreadData thread_data);  // When the window is resized.
 void KolibriOnKeyPress(Kolibri::TThreadData thread_data);  // When user press a key.
 void KolibriOnMouse(Kolibri::TThreadData thread_data);     // When user move a mouse.
+void KolibriOnButton(long id, Kolibri::TThreadData th);
 
 #ifdef __KOLIBRI__
 
