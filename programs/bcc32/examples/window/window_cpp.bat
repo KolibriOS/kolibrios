@@ -1,4 +1,4 @@
-Set NAME=hello
+Set NAME=window
 Set BCC_DIR=..\..\..\bcc32
 kos32-bcc -S -v- -R- -6 -a4 -O2 -Og -Oi -Ov -OS -k- -D__KOLIBRI__ -I..\..\..\bcc32\include %NAME%.cpp
 
