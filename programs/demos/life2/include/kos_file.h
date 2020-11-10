@@ -22,7 +22,7 @@ namespace Kolibri   // All kolibri functions, types and data are nested in the (
 	int FileRead(TFileData file_data, void *mem, int size);
 }
 
-#ifdef __MENUET__
+#ifdef __KOLIBRI__
 
 namespace Kolibri
 {
@@ -262,7 +262,7 @@ namespace Kolibri
 	}
 }
 
-#else   // def  __MENUET__
+#else   // def  __KOLIBRI__
 
 namespace Kolibri
 {
@@ -272,7 +272,7 @@ namespace Kolibri
 	};
 }
 
-#endif  // else: def  __MENUET__
+#endif  // else: def  __KOLIBRI__
 
 #endif  // ndef __KOLIBRI_FILE_H_INCLUDED_
 

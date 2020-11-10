@@ -28,10 +28,10 @@ namespace Kolibri   // All kolibri functions, types and data are nested in the (
 			//_ The stack will be deleted from dynamic memory at the finish of the thread if stack beginning is not zero.
 
 	struct TMutex;   // Simple mutex can be locked only once at a time.
-#define MENUET_MUTEX_INIT {}   // Simple mutex initializer, cat be redefined in a realization of the library
+#define KOLIBRI_MUTEX_INIT {}   // Simple mutex initializer, cat be redefined in a realization of the library
 
 	struct TRecMutex;   // Recursive mutex can be locked many times by a single thread at a time.
-#define MENUET_REC_MUTEX_INIT {}   // Recursive mutex initializer, cat be redefined in a realization of the library
+#define KOLIBRI_REC_MUTEX_INIT {}   // Recursive mutex initializer, cat be redefined in a realization of the library
 
 	// Some functions have two forms: the fast form with (thread_data) parameter and the form without it.
 	// Note: pass only thread data of current thread as (thread_data) parameter to these functions.
@@ -146,7 +146,7 @@ void KolibriOnSize(int window_rect[/* 4 */], Kolibri::TThreadData thread_data); 
 void KolibriOnKeyPress(Kolibri::TThreadData thread_data);  // When user press a key.
 void KolibriOnMouse(Kolibri::TThreadData thread_data);     // When user move a mouse.
 
-#ifdef __MENUET__
+#ifdef __KOLIBRI__
 
 namespace Kolibri
 {
@@ -156,15 +156,15 @@ namespace Kolibri
 	{
 		unsigned int mut;
 	};
-#undef  MENUET_MUTEX_INIT
-#define MENUET_MUTEX_INIT {0x40}   // Simple mutex initializer, cat be redefined in a realization of the library
+#undef  KOLIBRI_MUTEX_INIT
+#define KOLIBRI_MUTEX_INIT {0x40}   // Simple mutex initializer, cat be redefined in a realization of the library
 
 	struct TRecMutex   // Recursive mutex can be locked many times by a single thread at a time.
 	{
 		unsigned int mut, pid;
 	};
-#undef  MENUET_REC_MUTEX_INIT
-#define MENUET_REC_MUTEX_INIT {0x20,-1}   // Recursive mutex initializer, cat be redefined in a realization of the library
+#undef  KOLIBRI_REC_MUTEX_INIT
+#define KOLIBRI_REC_MUTEX_INIT {0x20,-1}   // Recursive mutex initializer, cat be redefined in a realization of the library
 
 // Global variables.
 
@@ -172,7 +172,7 @@ namespace Kolibri
 	volatile unsigned int _ThreadScanCount[2] = {0, 0};
 	volatile int _ThreadNumber = 1;
 	volatile int _ExitProcessNow = 0;
-	TMutex _ThreadMutex = MENUET_MUTEX_INIT;
+	TMutex _ThreadMutex = KOLIBRI_MUTEX_INIT;
 	unsigned int _ThreadSavedBegProc[4];
 
 // Inline functions.
@@ -478,8 +478,8 @@ namespace Kolibri
 		int win_type = ((unsigned int)thread_data[KOLIBRI_THREAD_DATA_FLAG] & 0x40000000) ?
 			((TStartData*)thread_data[KOLIBRI_THREAD_DATA_TITLE])->WinData.WindowType :
 		   ((unsigned int)thread_data[KOLIBRI_THREAD_DATA_C_WINDOW] >> 24);
-		border_size = MENUET_BORDER_SIZE;
-		header_size = short(((win_type & 15) == 3) ? _GetSkinHeader() : MENUET_HEADER_SIZE);
+		border_size = KOLIBRI_BORDER_SIZE;
+		header_size = short(((win_type & 15) == 3) ? _GetSkinHeader() : KOLIBRI_HEADER_SIZE);
 	}
 
 	void GetClientSize(unsigned short &width, unsigned short &height,
@@ -507,7 +507,7 @@ namespace Kolibri
 	}
 }
 
-#else   // def __MENUET__
+#else   // def __KOLIBRI__
 
 namespace Kolibri
 {
@@ -518,8 +518,8 @@ namespace Kolibri
 		TMutex();
 		~TMutex();
 	};
-#undef  MENUET_MUTEX_INIT
-#define MENUET_MUTEX_INIT  TMutex()
+#undef  KOLIBRI_MUTEX_INIT
+#define KOLIBRI_MUTEX_INIT  TMutex()
 
 	struct TRecMutex
 	{
@@ -528,11 +528,11 @@ namespace Kolibri
 		TRecMutex();
 		~TRecMutex();
 	};
-#undef  MENUET_REC_MUTEX_INIT
-#define MENUET_REC_MUTEX_INIT  TRecMutex()
+#undef  KOLIBRI_REC_MUTEX_INIT
+#define KOLIBRI_REC_MUTEX_INIT  TRecMutex()
 }
 
-#endif  // else: def __MENUET__
+#endif  // else: def __KOLIBRI__
 
 #endif  // ndef __KOLIBRI_H_INCLUDED_
 

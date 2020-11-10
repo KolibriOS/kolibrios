@@ -1,5 +1,5 @@
-#ifndef __MENUET_LIB_H_INCLUDED_
-#define __MENUET_LIB_H_INCLUDED_
+#ifndef __KOLIBRI_LIB_H_INCLUDED_
+#define __KOLIBRI_LIB_H_INCLUDED_
 
 // Kolibri interface.
 
@@ -13,4 +13,4 @@ namespace Kolibri   // All kolibri functions, types and data are nested in the (
 	double Floor(double x);
 }
 
-#endif  // __MENUET_LIB_H_INCLUDED_
+#endif  // __KOLIBRI_LIB_H_INCLUDED_

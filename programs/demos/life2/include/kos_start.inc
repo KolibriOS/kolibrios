@@ -8,6 +8,9 @@ org 0
   dd U_END+STACKSIZE
   dd @Kolibri@CommandLine,0
 
+include "..\..\..\KOSfuncs.inc"
+include "..\..\proc32.inc"
+
 ptr equ
 offset equ
 short equ
@@ -39,47 +42,3 @@ macro movsw a,b
 macro segment name {}
 
 macro endseg  name {}
-
-macro usedef [link]
-{
-  common
-    if ~link eq
-    virtual at 0
-  forward
-    dd	 link
-  common
-    end virtual
-    end if
-}
-
-macro define_f x,[link]
-{
-  common
-    if x eq
-    else if used x
-    x:
-    usedef link
-}
-
-macro enddef [link]
-{
-  common
-    usedef link
-    end if
-}
-
-macro newdef x,[link]
-{
-  common
-    end if
-    if x eq
-    else if used x
-    x:
-    usedef link
-}
-
-macro nextdef x
-{
-x:
-}
-

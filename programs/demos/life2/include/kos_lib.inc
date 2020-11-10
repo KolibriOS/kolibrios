@@ -84,7 +84,7 @@ proc @Kolibri@Floor$qd
   mov  ax,[esp+10]
   shl  ax,1
   cmp  ax,0x8680
-  ja   Menuet_floor_end
+  ja   Kolibri_floor_end
   mov  ch,4
   sub  esp,2
   wait
@@ -100,7 +100,7 @@ proc @Kolibri@Floor$qd
   mov  [esp],dx
   fldcw word [esp]
   add  esp,2
-Menuet_floor_end:
+Kolibri_floor_end:
   ret
 endp
 

@@ -107,11 +107,11 @@ AxisParam xpar = {0, 0, 0};
 AxisParam ypar = {0, 0, 0};
 MouseParam mpar = {0, 0, 0, 0, 0, MouseParam::HitNull};
 MenuParam menu;
-TOpenFileStruct open_file_str = MENUET_OPEN_FILE_INIT;
+TOpenFileStruct open_file_str = KOLIBRI_OPEN_FILE_INIT;
 TimeGeneration timegen[TimeGenLength];
 int timegenpos = 0;
 
-#ifdef __MENUET__
+#ifdef __KOLIBRI__
 
 inline int abs(int i) {return (i >= 0) ? i : (-i);}
 
@@ -1950,34 +1950,3 @@ void KolibriOnMouse(TThreadData th)
 	}
 	mpar.button = m;
 }
-
-#ifndef __MENUET__
-
-#include <windows.h>
-
-void __stdcall (*DllOneGeneration)(int w, int h, void *dest, const void *src, int flag) = 0;
-
-void DllInit()
-{
-	HINSTANCE hLib = LoadLibrary("LifeGen.dll");
-	if (!hLib)
-	{
-		DebugPutString("Can't load the library.\n");
-		Kolibri::Abort();
-	}
-	DllOneGeneration = (void(__stdcall*)(int, int, void*, const void*, int))GetProcAddress(hLib, "OneGeneration");
-	if (!DllOneGeneration)
-	{
-		DebugPutString("Can't get a library function.\n");
-		Kolibri::Abort();
-	}
-}
-
-void __stdcall OneGeneration(int w, int h, void *dest, const void *src, int flag)
-{
-	if (!DllOneGeneration) DllInit();
-	DllOneGeneration(w, h, dest, src, flag);
-}
-
-#endif
-

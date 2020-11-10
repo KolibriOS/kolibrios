@@ -1,7 +1,7 @@
 ;const int
-MENUET_BORDER_SIZE = 4;
+KOLIBRI_BORDER_SIZE = 4;
 ;const int
-MENUET_HEADER_SIZE = 20;
+KOLIBRI_HEADER_SIZE = 20;
 
 ;const int
 KOLIBRI_THREAD_DATA_USER     = 0; // Thread data begin from the user dword
@@ -39,7 +39,7 @@ KOLIBRI_THREAD_DATA_LAST_SY  = 15;
 KOLIBRI_THREAD_DATA_LEN	    = 16;
 
 ;const int
-MENUET_MUTEX_MAX_TIME_WAIT  = 20;
+KOLIBRI_MUTEX_MAX_TIME_WAIT  = 20;
 
 ;const int
 KOLIBRI_FILE_BLOCK_SIZE	    = 512;
@@ -53,23 +53,23 @@ macro segment name
 {
   segment name
   if name eq _init_ | name eq _INIT_
-Menuet_SegmentInit:
+Kolibri_SegmentInit:
   else if name eq _exit_ | name eq _EXIT_
-Menuet_SegmentExit:
+Kolibri_SegmentExit:
   end if
 }
 
 macro endseg  name
 {
   if name eq _init_ | name eq _INIT_
-Menuet_SegmentInitEnd:
+Kolibri_SegmentInitEnd:
   else if name eq _exit_ | name eq _EXIT_
-Menuet_SegmentExitEnd:
+Kolibri_SegmentExitEnd:
   end if
   endseg  name
 }
 
-macro Menuet_Put_MovEaxVal_Ret	address,val
+macro Kolibri_Put_MovEaxVal_Ret	address,val
 {
   mov  byte [address],0xB8
   mov  dword [address+4],0xC089C300
@@ -79,7 +79,7 @@ macro Menuet_Put_MovEaxVal_Ret	address,val
 proc @Kolibri@Main$qv
   and  esp,not 3
   sub  esp,1024
-  mov  eax,9
+  mov  eax,SF_THREAD_INFO
   mov  ebx,esp
   mov  ecx,-1
   int  0x40
@@ -97,21 +97,21 @@ end if
   cld
   mov  edi,@Kolibri@_ThreadTable
   mov  ecx,256
-  rep stos dword [edi]
+  rep stosd
   mov  esi,@Kolibri@GetPid$qv
   mov  edi,@Kolibri@_ThreadSavedBegProc
-  movs dword [edi],[esi]
-  movs dword [edi],[esi]
+  movsd
+  movsd
   mov  esi,@Kolibri@GetThreadData$qv
-  movs dword [edi],[esi]
-  movs dword [edi],[esi]
-  Menuet_Put_MovEaxVal_Ret  @Kolibri@GetPid$qv,edx
-if defined MenuetHeapInit
+  movsd
+  movsd
+  Kolibri_Put_MovEaxVal_Ret  @Kolibri@GetPid$qv,edx
+if defined KolibriHeapInit
   mov  ecx,esp
   push ebx
   push ecx
   push U_END
-  call MenuetHeapInit	; Initialize a dynamic heap and create new memory in its begin.
+  call KolibriHeapInit	; Initialize a dynamic heap and create new memory in its begin.
   pop  ecx		; Parameters: begin of a new heap, end of data to create in
   mov  [esp+4],eax	; the begin of a heap. Return address of the created data.
   mov  dword [esp],0
@@ -123,12 +123,12 @@ end if
   call @Kolibri@ThreadMain$qpvt1
 .ThreadFinish:
   add  esp,8
-if defined MenuetHeapFreeAndThreadFinish
+if defined KolibriHeapFreeAndThreadFinish
   test eax,eax
   jz   .ThreadFinish_end
   push dword @Kolibri@_ExitProcessNow
   push eax
-  call MenuetHeapFreeAndThreadFinish   ; Free the given memory and finish the thread,
+  call KolibriHeapFreeAndThreadFinish   ; Free the given memory and finish the thread,
 end if				       ; should exit process if second argument points to not zero.
 .ThreadFinish_end:
   or   eax,-1
@@ -142,16 +142,16 @@ proc @Kolibri@ThreadMain$qpvt1
   sub  esp,KOLIBRI_THREAD_DATA_LEN*4
   mov  [esp],ebx
   mov  [esp+4],ebp
-  mov  eax,40
+  mov  eax,SF_SET_EVENTS_MASK
   mov  ebx,0x27
   int  0x40
   mov  ebx,esp
   cmp  byte [@Kolibri@_ThreadSavedBegProc],0x90
   jz   .main_else_first_check
-  Menuet_Put_MovEaxVal_Ret  @Kolibri@GetThreadData$qv,esp
-if defined Menuet_SegmentInit & defined Menuet_SegmentInitEnd
-  push Menuet_SegmentInitEnd
-  push Menuet_SegmentInit
+  Kolibri_Put_MovEaxVal_Ret  @Kolibri@GetThreadData$qv,esp
+if defined Kolibri_SegmentInit & defined Kolibri_SegmentInitEnd
+  push Kolibri_SegmentInitEnd
+  push Kolibri_SegmentInit
   jmp  .main_after_first_check
 end if
 .main_else_first_check:
@@ -166,11 +166,13 @@ end if
   jmp  .main_end
 .main_close_first:
   btr  dword [esp+KOLIBRI_THREAD_DATA_FLAG*4],31
+if defined @@KolibriOnClose$qppv
   push esp
   call @@KolibriOnClose$qppv
   pop  ecx
   test al,al
   jnz  .main_end
+end if
 .main_test_close_first:
   cmp  dword [esp+KOLIBRI_THREAD_DATA_FLAG*4],0
   jl   .main_close_first
@@ -181,7 +183,7 @@ end if
 .main_paint_msg:
   or   dword [esp+KOLIBRI_THREAD_DATA_FLAG*4],3
   sub  esp,1024
-  mov  eax,9
+  mov  eax,SF_THREAD_INFO
   mov  ebx,esp
   mov  ecx,-1
   int  0x40
@@ -197,6 +199,7 @@ end if
 .main_size:
   mov  [esp+KOLIBRI_THREAD_DATA_LAST_SX*4],ecx
   mov  [esp+KOLIBRI_THREAD_DATA_LAST_SY*4],edx
+if defined @@KolibriOnSize$qpippv
   push edx
   push ecx
   push ebx
@@ -207,6 +210,7 @@ end if
   push edx
   call @@KolibriOnSize$qpippv
   add  esp,24
+end if
   test dword [esp+KOLIBRI_THREAD_DATA_FLAG*4],3
   jz   .main_cycle
 .main_paint:
@@ -217,7 +221,7 @@ end if
   call @Kolibri@Redraw$qippv
   add  esp,8
 .main_cycle:
-  mov  eax,11
+  mov  eax,SF_CHECK_EVENT
 .main_message:
   cmp  dword [esp+KOLIBRI_THREAD_DATA_FLAG*4],0
   jl   .main_close
@@ -226,56 +230,86 @@ end if
   jnz  .main_on_message
   cmp  dword [esp+KOLIBRI_THREAD_DATA_FLAG*4],0
   jne  .main_paint
+if defined @@KolibriOnIdle$qppv
   push esp
   call @@KolibriOnIdle$qppv
   pop  ecx
+else
+  or eax,-1
+end if
   test eax,eax
   jz   .main_cycle
   jl   .main_wait_message
   mov  ebx,eax
-  mov  eax,23
+  mov  eax,SF_WAIT_EVENT_TIMEOUT
   jmp  .main_message
 .main_wait_message:
-  mov  eax,10
+  mov  eax,SF_WAIT_EVENT
   jmp  .main_message
+if defined @@KolibriOnKeyPress$qppv
 .main_key_press:
   push esp
   call @@KolibriOnKeyPress$qppv
   pop  ecx
   jmp  .main_cycle
+end if
+if defined @@KolibriOnMouse$qppv
 .main_mouse:
   push esp
   call @@KolibriOnMouse$qppv
   pop  ecx
   jmp  .main_cycle
+end if
+
+align 4
 .main_on_message:
   dec  eax
   jz   .main_paint_msg
   dec  eax
+if defined @@KolibriOnKeyPress$qppv
   jz   .main_key_press
+else
+  jz   .main_cycle
+end if
   cmp  eax,4
+if defined @@KolibriOnMouse$qppv
   jz   .main_mouse
+else
+  jz   .main_cycle
+end if
   dec  eax
   jnz  .main_cycle
+
+align 4
 .main_button:
-  mov  eax,17
+  mov  eax,SF_GET_BUTTON
   int  0x40
-  test al,al
-  jnz  .main_cycle
+  shr  eax,8
+  cmp  eax,1
+  je   .main_close
+if defined @@KolibriOnButton$qlppv
+  push esp
+  push eax
+  call @@KolibriOnButton$qlppv
+  add  esp,8
+end if
+  jmp  .main_cycle
 .main_close:
   btr  dword [esp+KOLIBRI_THREAD_DATA_FLAG*4],31
+if defined @@KolibriOnClose$qppv
   push esp
   call @@KolibriOnClose$qppv
   pop  ecx
   test al,al
   jz   .main_button
+end if
 .main_end:
   mov  ebx,esp
   lock dec dword [@Kolibri@_ThreadNumber]
-if defined Menuet_SegmentExit & defined Menuet_SegmentExitEnd
+if defined Kolibri_SegmentExit & defined Kolibri_SegmentExitEnd
   jnz  .main_else_last_check
-  push Menuet_SegmentExitEnd
-  push Menuet_SegmentExit
+  push Kolibri_SegmentExitEnd
+  push Kolibri_SegmentExit
   jmp  .main_after_last_check
 end if
 .main_else_last_check:
@@ -290,12 +324,12 @@ end if
   mov  ebx,1
   jmp  .main_end_wait
 .main_end_wait_loop:
-  mov  eax,5
+  mov  eax,SF_SLEEP
   int  0x40
   shl  ebx,1
-  cmp  ebx,MENUET_MUTEX_MAX_TIME_WAIT
+  cmp  ebx,KOLIBRI_MUTEX_MAX_TIME_WAIT
   jna  .main_end_wait
-  mov  ebx,MENUET_MUTEX_MAX_TIME_WAIT
+  mov  ebx,KOLIBRI_MUTEX_MAX_TIME_WAIT
 .main_end_wait:
   cmp  dword [@Kolibri@_ExitProcessNow],0
   jnz  @Kolibri@ExitProcess$qv
@@ -346,8 +380,8 @@ proc @Kolibri@Redraw$qippv
   and  dword [ebp+KOLIBRI_THREAD_DATA_FLAG*4],0xFFFFFFFC
   test dl,2
   jz   .redraw_picture
-  mov  eax,12
-  mov  ebx,1
+  mov  eax,SF_REDRAW
+  mov  ebx,SSF_BEGIN_DRAW
   int  0x40
   xor  eax,eax
   mov  ebx,[ebp+KOLIBRI_THREAD_DATA_X*4]
@@ -368,17 +402,14 @@ proc @Kolibri@Redraw$qippv
   mov  esi,ecx
   dec  esi
   jz   .window_defined
-  mov  eax,4
+  mov  eax,SF_DRAW_TEXT
   mov  ebx,0x00070007
   mov  ecx,[ebp+KOLIBRI_THREAD_DATA_C_TITLE*4]
   int  0x40
 .window_defined:
-  mov  eax,12
-  mov  ebx,2
-  int  0x40
 .redraw_picture:
-  mov  eax,12
-  mov  ebx,2
+  mov  eax,SF_REDRAW
+  mov  ebx,SSF_END_DRAW
   int  0x40
   mov  esi,[ebp+KOLIBRI_THREAD_DATA_PICTURE*4]
   test esi,esi
@@ -387,15 +418,15 @@ proc @Kolibri@Redraw$qippv
   jecxz .redraw_end_draw
   mov  al,byte [ebp+KOLIBRI_THREAD_DATA_C_WINDOW*4+3]
   and  al,15
-  mov  edx,MENUET_BORDER_SIZE*65536+MENUET_HEADER_SIZE
+  mov  edx,KOLIBRI_BORDER_SIZE*65536+KOLIBRI_HEADER_SIZE
   cmp  al,3
   jnz  .redraw_no_skin
-  mov  eax,48
-  mov  ebx,4
+  mov  eax,SF_STYLE_SETTINGS
+  mov  ebx,SSF_GET_SKIN_HEIGHT
   int  0x40
   mov  dx,ax
 .redraw_no_skin:
-  mov  eax,7
+  mov  eax,SF_PUT_IMAGE
   mov  ebx,esi
   int  0x40
 .redraw_end_draw:
@@ -409,29 +440,32 @@ proc @Kolibri@MoveWindow$qxpxi uses ebx esi
   mov  ecx,[eax+4]
   mov  edx,[eax+8]
   mov  esi,[eax+12]
-  mov  eax,67
+  mov  eax,SF_CHANGE_WINDOW
   int  0x40
   ret
 endp
 
-;proc @Kolibri@Abort$qv
-;  push dword [@Kolibri@DebugPrefix]
-;  call @Kolibri@DebugPutString$qpxc
-;  mov	dword [esp],Menuet_abort_string
-;  call @Kolibri@DebugPutString$qpxc
-;  pop	ecx
+proc @Kolibri@ExitDebug$qv
+  push dword [@Kolibri@DebugPrefix]
+  call @Kolibri@DebugPutString$qpxc
+  mov	dword [esp],Kolibri_debug_string
+  call @Kolibri@DebugPutString$qpxc
+  pop	ecx
+  jmp  @Kolibri@ExitProcess$qv
+endp
+
 proc @Kolibri@ExitProcess$qv
   lock bts dword [@Kolibri@_ExitProcessNow],0
   jc   .exit_process_wait
   sub  esp,1024
-  mov  eax,9
+  mov  eax,SF_THREAD_INFO
   mov  ebx,esp
   mov  ecx,-1
   int  0x40
   mov  esi,eax
   mov  edi,[esp+30]
 .exit_process_loop:
-  mov  eax,9
+  mov  eax,SF_THREAD_INFO
   mov  ebx,esp
   mov  ecx,esi
   int  0x40
@@ -443,7 +477,7 @@ proc @Kolibri@ExitProcess$qv
   inc  ebx
   jz   .exit_process_continue
   mov  ebx,eax
-  call Menuet_HashInt
+  call Kolibri_HashInt
   movzx eax,al
   mov  eax,dword [@Kolibri@_ThreadTable+eax*4]
   jmp  .exit_process_test
@@ -454,8 +488,8 @@ proc @Kolibri@ExitProcess$qv
   jz   .exit_process_continue
   cmp  ebx,[eax+KOLIBRI_THREAD_DATA_PID*4]
   jnz  .exit_process_next
-  mov  eax,18
-  mov  ebx,2
+  mov  eax,SF_SYSTEM
+  mov  ebx,SSF_TERMINATE_THREAD
   mov  ecx,esi
   int  0x40
 .exit_process_continue:
@@ -472,53 +506,65 @@ end if
   or   eax,-1
   int  0x40
 .exit_process_wait:
-  mov  eax,5
+  mov  eax,SF_SLEEP
   mov  ebx,1
 .exit_process_wait_loop:
   cmp  dword [@Kolibri@_ExitProcessNow],0
   jl   .exit_process_end
   int  0x40
   shl  ebx,1
-  cmp  ebx,MENUET_MUTEX_MAX_TIME_WAIT
+  cmp  ebx,KOLIBRI_MUTEX_MAX_TIME_WAIT
   jna  .exit_process_wait_loop
-  mov  ebx,MENUET_MUTEX_MAX_TIME_WAIT
+  mov  ebx,KOLIBRI_MUTEX_MAX_TIME_WAIT
   jmp  .exit_process_wait_loop
 endp
 
 proc @Kolibri@ExitThread$qppv,@Kolibri@ThreadMain$qpvt1
   mov  esp,[esp+4]
-  jmp  Menuet_main_end
+  jmp  Kolibri_main_end
 endp
 
 proc @Kolibri@ReturnMessageLoop$qppv,@Kolibri@ThreadMain$qpvt1
   mov  esp,[esp+4]
   bt   dword [esp+KOLIBRI_THREAD_DATA_FLAG*4],30
-  jc   Menuet_main_end
-  jmp  Menuet_main_cycle
+  jc   Kolibri_main_end
+  jmp  Kolibri_main_cycle
 endp
 
 proc @Kolibri@Delay$qui uses ebx
-  mov  eax,5
+  mov  eax,SF_SLEEP
   mov  ebx,[esp+8]
   int  0x40
   ret
 endp
 
 proc @Kolibri@Clock$qv uses ebx
-  mov  eax,26
-  mov  ebx,9
+  mov  eax,SF_SYSTEM_GET
+  mov  ebx,SSF_TIME_COUNT
   int  0x40
   ret
 endp
 
+proc @Kolibri@DrawButton$qllllll uses ebx esi
+  mov  eax,SF_DEFINE_BUTTON
+  mov  ebx,[esp+12-2+8]
+  mov  bx,[esp+20+8]
+  mov  ecx,[esp+16-2+8]
+  mov  cx,[esp+24+8]
+  mov  edx,[esp+4+8]
+  mov  esi,[esp+8+8]
+  int  0x40
+  ret 
+endp
+
 proc @Kolibri@GetPackedTime$qv
-  mov  eax,3
+  mov  eax,SF_GET_SYS_TIME
   int  0x40
   ret
 endp
 
 proc @Kolibri@GetTime$qpi
-  mov  eax,3
+  mov  eax,SF_GET_SYS_TIME
   int  0x40
   mov  edx,[esp+4]
   movzx ecx,al
@@ -544,13 +590,13 @@ proc @Kolibri@GetTime$qpi
 endp
 
 proc @Kolibri@GetPackedDate$qv
-  mov  eax,29
+  mov  eax,SF_GET_SYS_DATE
   int  0x40
   ret
 endp
 
 proc @Kolibri@GetDate$qpi
-  mov  eax,29
+  mov  eax,SF_GET_SYS_DATE
   int  0x40
   mov  edx,[esp+4]
   movzx ecx,al
@@ -576,8 +622,8 @@ proc @Kolibri@GetDate$qpi
 endp
 
 proc @Kolibri@ReadCommonColors$qpui uses ebx
-  mov  eax,48
-  mov  ebx,3
+  mov  eax,SF_STYLE_SETTINGS
+  mov  ebx,SSF_GET_COLORS
   mov  ecx,[esp+8]
   mov  edx,40
   int  0x40
@@ -585,7 +631,7 @@ proc @Kolibri@ReadCommonColors$qpui uses ebx
 endp
 
 proc @Kolibri@DrawText$qssipxc uses ebx
-  mov  eax,4
+  mov  eax,SF_DRAW_TEXT
   mov  ebx,[esp+8-2]
   mov  bx,[esp+12]
   mov  ecx,[esp+16]
@@ -595,9 +641,17 @@ proc @Kolibri@DrawText$qssipxc uses ebx
   ret
 endp
 
+proc @Kolibri@SetWindowCaption$qpxc uses ebx
+  mov  eax,SF_SET_CAPTION
+  mov  ebx,2
+  mov  ecx,[esp+8]
+  int  0x40
+  ret
+endp
+
 proc @Kolibri@GetProcessInfo$qpuipct1t1piui uses ebx esi edi
   sub  esp,1024
-  mov  eax,9
+  mov  eax,SF_THREAD_INFO
   mov  ebx,esp
   mov  ecx,[1024+12+24+esp]
   int  0x40
@@ -612,9 +666,9 @@ proc @Kolibri@GetProcessInfo$qpuipct1t1piui uses ebx esi edi
   jz   .get_proc_info_no_name
   lea  esi,[esp+10]
   cld
-  movs dword [edi],[esi]
-  movs dword [edi],[esi]
-  movs dword [edi],[esi]
+  movsd
+  movsd
+  movsd
   mov  byte [edi],0
   xor  edi,edi
 .get_proc_info_no_name:
@@ -634,10 +688,10 @@ proc @Kolibri@GetProcessInfo$qpuipct1t1piui uses ebx esi edi
   jz   .get_proc_info_no_rect
   lea  esi,[esp+34]
   cld
-  movs dword [edi],[esi]
-  movs dword [edi],[esi]
-  movs dword [edi],[esi]
-  movs dword [edi],[esi]
+  movsd
+  movsd
+  movsd
+  movsd
   xor  edi,edi
 .get_proc_info_no_rect:
   add  esp,1024
@@ -646,7 +700,7 @@ endp
 
 proc @Kolibri@GetPid$qv uses ebx
   sub  esp,1024
-  mov  eax,9
+  mov  eax,SF_THREAD_INFO
   mov  ebx,esp
   mov  ecx,-1
   int  0x40
@@ -665,11 +719,11 @@ proc @Kolibri@_HashByte$qui
 @Kolibri@_HashWord$qui:
 @Kolibri@_HashDword$qui:
   mov  eax,[esp+4]
-Menuet_HashInt:
-  mul  dword [Menuet_hash_int_val0]
+Kolibri_HashInt:
+  mul  dword [Kolibri_hash_int_val0]
   xor  eax,edx
   bswap eax
-  mul  dword [Menuet_hash_int_val1]
+  mul  dword [Kolibri_hash_int_val1]
   shrd eax,edx,14
   bswap eax
   lea  eax,[eax+4*eax]
@@ -677,10 +731,12 @@ Menuet_HashInt:
   ret
 endp
 
-Menuet_hash_int_val0:
+if defined @Kolibri@_HashByte$qui | defined @Kolibri@_HashWord$qui | defined @Kolibri@_HashDword$qui
+Kolibri_hash_int_val0:
   dd   0xA82F94C5
-Menuet_hash_int_val1:
+Kolibri_hash_int_val1:
   dd   0x9193780B
+end if
 
 proc @Kolibri@GetThreadData$qv
   call @Kolibri@GetPid$qv
@@ -692,7 +748,7 @@ endp
 
 proc @Kolibri@GetThreadData$qui
   mov  eax,[esp+4]
-  call Menuet_HashInt
+  call Kolibri_HashInt
   movzx eax,al
   cmp  dword [@Kolibri@_ThreadScanCount+4],0
   jnz  .get_thread_data_wait
@@ -713,16 +769,16 @@ proc @Kolibri@GetThreadData$qui
   ret
 .get_thread_data_wait:
   push eax ebx
-  mov  eax,5
+  mov  eax,SF_SLEEP
   mov  ebx,1
 .get_thread_data_wait_loop:
   int  0x40
   cmp  dword [@Kolibri@_ThreadScanCount+4],0
   jz   .get_thread_data_wait_end
   shl  ebx,1
-  cmp  ebx,MENUET_MUTEX_MAX_TIME_WAIT
+  cmp  ebx,KOLIBRI_MUTEX_MAX_TIME_WAIT
   jna  .get_thread_data_wait_loop
-  mov  ebx,MENUET_MUTEX_MAX_TIME_WAIT
+  mov  ebx,KOLIBRI_MUTEX_MAX_TIME_WAIT
   jmp  .get_thread_data_wait_loop
 .get_thread_data_wait_end:
   pop  ebx eax
@@ -730,14 +786,14 @@ proc @Kolibri@GetThreadData$qui
 endp
 
 proc @Kolibri@_GetSkinHeader$qv uses ebx
-  mov  eax,48
-  mov  ebx,4
+  mov  eax,SF_STYLE_SETTINGS
+  mov  ebx,SSF_GET_SKIN_HEIGHT
   int  0x40
   ret
 endp
 
 proc @Kolibri@GetScreenSize$qrust1
-  mov  eax,14
+  mov  eax,SF_GET_SCREEN_SIZE
   int  0x40
   mov  ecx,[esp+8]
   mov  word [ecx],ax
@@ -747,14 +803,14 @@ proc @Kolibri@GetScreenSize$qrust1
   ret
 endp
 
-proc Menuet_MutexLockNoWait
+proc Kolibri_MutexLockNoWait
   pop  eax
   xor  al,al
   ret
 endp
 
-proc Menuet_MutexLockWait uses ebx
-  mov  eax,5
+proc Kolibri_MutexLockWait uses ebx
+  mov  eax,SF_SLEEP
   xor  ebx,ebx
 .lock_wait_cycle:
   int  0x40
@@ -764,23 +820,23 @@ proc Menuet_MutexLockWait uses ebx
   ret
 endp
 
-proc Menuet_MutexLockWaitTime
+proc Kolibri_MutexLockWaitTime
   cmp  dword [esp+12],0
   jng  .MutexLockWait
   push ebx edx
   mov  edx,[esp+20]
-  mov  eax,26
-  mov  ebx,9
+  mov  eax,SF_SYSTEM_GET
+  mov  ebx,SSF_TIME_COUNT
   int  0x40
   add  edx,eax
 .lock_wait_time_cycle:
-  mov  eax,5
+  mov  eax,SF_SLEEP
   xor  ebx,ebx
   int  0x40
   shl  byte [ecx],1
   jnz  .lock_wait_time_ret_true
-  mov  eax,26
-  mov  ebx,9
+  mov  eax,SF_SYSTEM_GET
+  mov  ebx,SSF_TIME_COUNT
   int  0x40
   cmp  eax,edx
   js   .lock_wait_time_cycle
@@ -793,7 +849,7 @@ proc Menuet_MutexLockWaitTime
   ret
 endp
 
-proc Menuet_MutexLock
+proc Kolibri_MutexLock
   shl  byte [ecx],1
   jnz  .lock_first
   call eax
@@ -803,21 +859,21 @@ proc Menuet_MutexLock
 endp
 
 proc @Kolibri@TryLock$qp14Kolibri@TMutex
-  mov  eax,Menuet_MutexLockNoWait
+  mov  eax,Kolibri_MutexLockNoWait
   mov  ecx,[esp+4]
-  jmp  Menuet_MutexLock
+  jmp  Kolibri_MutexLock
 endp
 
 proc @Kolibri@Lock$qp14Kolibri@TMutex
-  mov  eax,Menuet_MutexLockWait
+  mov  eax,Kolibri_MutexLockWait
   mov  ecx,[esp+4]
-  jmp  Menuet_MutexLock
+  jmp  Kolibri_MutexLock
 endp
 
 proc @Kolibri@LockTime$qp14Kolibri@TMutexi
-  mov  eax,Menuet_MutexLockWaitTime
+  mov  eax,Kolibri_MutexLockWaitTime
   mov  ecx,[esp+4]
-  jmp  Menuet_MutexLock
+  jmp  Kolibri_MutexLock
 endp
 
 proc @Kolibri@UnLock$qp14Kolibri@TMutex
@@ -828,14 +884,14 @@ proc @Kolibri@UnLock$qp14Kolibri@TMutex
 .unlock_pause:
   mov  byte [ecx],0x40
   push ebx
-  mov  eax,5
+  mov  eax,SF_SLEEP
   xor  ebx,ebx
   int  0x40
   pop  ebx
   ret
 endp
 
-proc Menuet_MutexLockRec
+proc Kolibri_MutexLockRec
   shl  byte [ecx],1
   jng  .lock_first
   cmp  dword [ecx+4],edx
@@ -853,31 +909,31 @@ proc Menuet_MutexLockRec
 .lock_rec_overflow:
   push dword [@Kolibri@DebugPrefix]
   call @Kolibri@DebugPutString$qpxc
-  mov  dword [esp],Menuet_try_lock_rec_overflow_string
+  mov  dword [esp],Kolibri_try_lock_rec_overflow_string
   call @Kolibri@DebugPutString$qpxc
   pop  ecx
-  jmp  @Kolibri@Abort$qv
+  jmp  @Kolibri@ExitDebug$qv
 endp
 
 proc @Kolibri@TryLock$qp16Kolibri@TRecMutexui
-  mov  eax,Menuet_MutexLockNoWait
+  mov  eax,Kolibri_MutexLockNoWait
   mov  ecx,[esp+4]
   mov  edx,[esp+8]
-  jmp  Menuet_MutexLockRec
+  jmp  Kolibri_MutexLockRec
 endp
 
 proc @Kolibri@Lock$qp16Kolibri@TRecMutexui
-  mov  eax,Menuet_MutexLockWait
+  mov  eax,Kolibri_MutexLockWait
   mov  ecx,[esp+4]
   mov  edx,[esp+8]
-  jmp  Menuet_MutexLockRec
+  jmp  Kolibri_MutexLockRec
 endp
 
 proc @Kolibri@LockTime$qp16Kolibri@TRecMutexiui
-  mov  eax,Menuet_MutexLockWaitTime
+  mov  eax,Kolibri_MutexLockWaitTime
   mov  ecx,[esp+4]
   mov  edx,[esp+12]
-  jmp  Menuet_MutexLockRec
+  jmp  Kolibri_MutexLockRec
 endp
 
 proc @Kolibri@UnLock$qp16Kolibri@TRecMutexui
@@ -896,7 +952,7 @@ proc @Kolibri@UnLock$qp16Kolibri@TRecMutexui
 .unlock_rec_pause:
   mov  byte [ecx],0x20
   push ebx
-  mov  eax,5
+  mov  eax,SF_SLEEP
   xor  ebx,ebx
   int  0x40
   pop  ebx
@@ -904,10 +960,10 @@ proc @Kolibri@UnLock$qp16Kolibri@TRecMutexui
 .unlock_rec_notlocked:
   push dword [@Kolibri@DebugPrefix]
   call @Kolibri@DebugPutString$qpxc
-  mov  dword [esp],Menuet_unlock_rec_notlocked_string
+  mov  dword [esp],Kolibri_unlock_rec_notlocked_string
   call @Kolibri@DebugPutString$qpxc
   pop  ecx
-  jmp  @Kolibri@Abort$qv
+  jmp  @Kolibri@ExitDebug$qv
 endp
 
 proc @Kolibri@DebugPutChar$qc
@@ -918,23 +974,22 @@ proc @Kolibri@DebugPutChar$qc
   cmp  cl,10
   jz   .debug_put_char_enter
 .debug_put_char_after_cmp:
-  mov  eax,63
-  mov  ebx,1
+  mov  eax,SF_BOARD
+  mov  ebx,SSF_DEBUG_WRITE
   int  0x40
   pop  ebx
 .debug_put_char_ret:
   ret
 .debug_put_char_enter:
   mov  cl,13
-  mov  eax,63
-  mov  ebx,1
+  mov  eax,SF_BOARD
+  mov  ebx,SSF_DEBUG_WRITE
   int  0x40
   mov  cl,10
   jmp  .debug_put_char_after_cmp
 endp
 
-proc @Kolibri@DebugPutString$qpxc
-  push esi
+proc @Kolibri@DebugPutString$qpxc uses esi
   push dword 0
   mov  esi,dword [esp+12]
   jmp  .debug_put_string_test
@@ -947,32 +1002,32 @@ proc @Kolibri@DebugPutString$qpxc
   or   al,[esi]
   test al,al
   jnz  .debug_put_string_loop
-  pop  ecx esi
+  pop  ecx
   ret
 endp
 
 proc @Kolibri@GetKey$qv
-  mov  eax,2
+  mov  eax,SF_GET_KEY
   int  0x40
   test al,al
   jnz  .get_key_eof
   movzx eax,ah
   ret
 .get_key_eof:
-  mov  eax,-1
+  mov  eax,SF_TERMINATE_PROCESS
   ret
 endp
 
 proc @Kolibri@GetMouseButton$qv uses ebx
-  mov  eax,37
-  mov  ebx,2
+  mov  eax,SF_MOUSE_GET
+  mov  ebx,SSF_BUTTON
   int  0x40
   ret
 endp
 
 proc @Kolibri@GetMousePosition$qrst1o uses ebx
-  mov  eax,37
-  xor  ebx,ebx
+  mov  eax,SF_MOUSE_GET
+  xor  ebx,ebx ;SSF_SCREEN_POSITION
   cmp  byte [esp+16],0
   jnz  .get_mouse_pos_absolute
   inc  ebx
@@ -998,13 +1053,13 @@ proc @Kolibri@CreateThread$qpvuit1
   mov  ebx,[esp+12]
   test edx,edx
   jnz  .create_thread_after_new
-if defined MenuetHeapAlloc
+if defined KolibriHeapAlloc
   cmp  ebx,4096
   jnb  .create_thread_alloc
   mov  ebx,STACKSIZE
 .create_thread_alloc:
   push ebx
-  call MenuetHeapAlloc	 ; Create new dynamic memory of the given size
+  call KolibriHeapAlloc	 ; Create new dynamic memory of the given size
   pop  ecx
   test eax,eax
   jnz  .create_thread_mem_created
@@ -1027,8 +1082,8 @@ end if
   mov  ecx,[esp+8]
   mov  dword [edx+8],ebx
   mov  dword [edx+4],ecx
-  mov  dword [edx],Menuet_ThreadFinish
-  mov  eax,51
+  mov  dword [edx],Kolibri_ThreadFinish
+  mov  eax,SF_CREATE_THREAD
   mov  ebx,1
   mov  ecx,@Kolibri@ThreadMain$qpvt1
   int  0x40
@@ -1037,11 +1092,11 @@ end if
   inc  ebx
   jnz  .create_thread_end
   lock dec dword [@Kolibri@_ThreadNumber]
-if defined MenuetHeapFree
+if defined KolibriHeapFree
   or   ebx,[edx+8]
   jz   .create_thread_end
   push ebx
-  call MenuetHeapFree	; Delete the given dynamic memory
+  call KolibriHeapFree	; Delete the given dynamic memory
   pop  ecx
 end if
 .create_thread_end:
@@ -1052,23 +1107,23 @@ end if
   cld
   mov  esi,@Kolibri@_ThreadSavedBegProc
   mov  edi,@Kolibri@GetPid$qv
-  movs dword [edi],[esi]
-  movs dword [edi],[esi]
+  movsd
+  movsd
   mov  edi,@Kolibri@GetThreadData$qv
-  movs dword [edi],[esi]
-  movs dword [edi],[esi]
+  movsd
+  movsd
   mov  eax,0x90909090
   mov  edi,@Kolibri@_ThreadSavedBegProc
-  stos dword [edi]
-  stos dword [edi]
-  stos dword [edi]
-  stos dword [edi]
+  stosd
+  stosd
+  stosd
+  stosd
   pop  edi esi
   jmp  .create_thread_fill_stack
 endp
 
 proc @Kolibri@_FileAccess$qpv uses ebx
-  mov  eax,70
+  mov  eax,SF_FILE
   mov  ebx,[esp+8]
   int  0x40
   mov  ecx,[esp+8]
@@ -1076,12 +1131,20 @@ proc @Kolibri@_FileAccess$qpv uses ebx
   ret
 endp
 
-Menuet_abort_string:
+if defined Kolibri_debug_string
+Kolibri_debug_string:
   db 'Abnormal program termination.',10,0
-Menuet_try_lock_rec_overflow_string:
+end if
+
+if defined Kolibri_MutexLockRec
+Kolibri_try_lock_rec_overflow_string:
   db 'Recursive mutex lock count overflow.',10,0
-Menuet_unlock_rec_notlocked_string:
+end if
+
+if defined @Kolibri@UnLock$qp16Kolibri@TRecMutexui
+Kolibri_unlock_rec_notlocked_string:
   db 'Recursive mutex unlock error.',10,0
+end if
 
 include "kos_lib.inc"
 

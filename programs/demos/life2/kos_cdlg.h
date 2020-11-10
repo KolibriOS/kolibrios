@@ -1,5 +1,5 @@
-#ifndef __MENUET_FILE_OPEN_H_INCLUDED_
-#define __MENUET_FILE_OPEN_H_INCLUDED_
+#ifndef __KOLIBRI_FILE_OPEN_H_INCLUDED_
+#define __KOLIBRI_FILE_OPEN_H_INCLUDED_
 
 #include <kolibri.h>
 
@@ -8,7 +8,7 @@
 namespace Kolibri   // All kolibri functions, types and data are nested in the (Kolibri) namespace.
 {
 	struct TOpenFileStruct;   // Data for a file open dialog.
-#define MENUET_OPEN_FILE_INIT {}   // Initializer of the file open struct, cat be redefined in a realization of the library
+#define KOLIBRI_OPEN_FILE_INIT {}   // Initializer of the file open struct, cat be redefined in a realization of the library
 
 	void OpenFileInit(TOpenFileStruct &ofs);
 	void OpenFileDelete(TOpenFileStruct &ofs);
@@ -19,7 +19,7 @@ namespace Kolibri   // All kolibri functions, types and data are nested in the (
 	bool OpenFileSetName(TOpenFileStruct &ofs, char *name);
 }
 
-#ifdef __MENUET__
+#ifdef __KOLIBRI__
 
 namespace Kolibri
 {
@@ -30,8 +30,8 @@ namespace Kolibri
 		int state;
 		char *name;
 	};
-#undef  MENUET_OPEN_FILE_INIT
-#define MENUET_OPEN_FILE_INIT  {0,0}
+#undef  KOLIBRI_OPEN_FILE_INIT
+#define KOLIBRI_OPEN_FILE_INIT  {0,0}
 
 // Inline functions.
 
@@ -79,7 +79,7 @@ namespace Kolibri
 	}
 }
 
-#else   // else: def __MENUET__
+#else   // else: def __KOLIBRI__
 
 namespace Kolibri
 {
@@ -90,11 +90,11 @@ namespace Kolibri
 		TOpenFileStruct();
 		~TOpenFileStruct();
 	};
-#undef  MENUET_OPEN_FILE_INIT
-#define MENUET_OPEN_FILE_INIT  TOpenFileStruct()
+#undef  KOLIBRI_OPEN_FILE_INIT
+#define KOLIBRI_OPEN_FILE_INIT  TOpenFileStruct()
 }
 
-#endif  // __MENUET__
+#endif  // __KOLIBRI__
 
-#endif  // __MENUET_FILE_OPEN_H_INCLUDED_
+#endif  // __KOLIBRI_FILE_OPEN_H_INCLUDED_
 

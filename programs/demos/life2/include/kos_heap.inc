@@ -1,14 +1,14 @@
 ;/***
 
-MenuetHeapInit = @@Kolibri@_HeapInit$qpvt1t1
+KolibriHeapInit = @@Kolibri@_HeapInit$qpvt1t1
 
-MenuetHeapAlloc = @@Kolibri@Alloc$qui
+KolibriHeapAlloc = @@Kolibri@Alloc$qui
 
-MenuetHeapReAlloc = @@Kolibri@ReAlloc$qpvui
+KolibriHeapReAlloc = @@Kolibri@ReAlloc$qpvui
 
-MenuetHeapFree = @@Kolibri@Free$qpv
+KolibriHeapFree = @@Kolibri@Free$qpv
 
-MenuetHeapFreeAndThreadFinish = @Kolibri@_FreeAndThreadFinish$qpvpi
+KolibriHeapFreeAndThreadFinish = @Kolibri@_FreeAndThreadFinish$qpvpi
 
 proc @Kolibri@_SetUseMemory$qui
   push ebx
@@ -20,7 +20,7 @@ proc @Kolibri@_SetUseMemory$qui
   test eax,eax
   jnz  .set_use_memory_nomem
   push ecx
-  push dword [@Kolibri@_MenuetMemBlock]
+  push dword [@Kolibri@_KolibriMemBlock]
   call @@MemoryHeap@ResizeBlock$q20MemoryHeap@TMemBlockpv
   add  esp,8
   mov  al,1
@@ -58,16 +58,16 @@ proc @Kolibri@_FreeAndThreadFinish$qpvpi
   mov  eax,5
   int  0x40
   shl  ebx,1
-  cmp  ebx,MENUET_MUTEX_MAX_TIME_WAIT
+  cmp  ebx,KOLIBRI_MUTEX_MAX_TIME_WAIT
   jna  .heap_free_tf_wait
-  mov  ebx,MENUET_MUTEX_MAX_TIME_WAIT
+  mov  ebx,KOLIBRI_MUTEX_MAX_TIME_WAIT
 .heap_free_tf_wait:
   cmp  dword [ecx],0
   jnz  @Kolibri@ExitProcess$qv
   lock bts dword [@Kolibri@_MemHeapMutex],0
   jc   .heap_free_tf_wait_loop
   push dword [esp+4]
-  push @Kolibri@_MenuetFreeSpace
+  push @Kolibri@_KolibriFreeSpace
   call @@MemoryHeap@Free$qr21MemoryHeap@TFreeSpacepv
   add  esp,8
   mov  byte [@Kolibri@_MemHeapMutex],0x40

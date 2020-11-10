@@ -7,7 +7,7 @@ macro writestr [arg]
   pushad
   push straddr
   push strend
-  jmp  @Menuet@DebugPutString$qpxc
+  jmp  @Kolibri@DebugPutString$qpxc
   straddr db arg,0
   strend:
   pop  eax

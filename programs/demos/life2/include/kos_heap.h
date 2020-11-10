@@ -1,5 +1,5 @@
-#ifndef __MENUET_HEAP_H_INCLUDED_
-#define __MENUET_HEAP_H_INCLUDED_
+#ifndef __KOLIBRI_HEAP_H_INCLUDED_
+#define __KOLIBRI_HEAP_H_INCLUDED_
 
 #include <kolibri.h>
 #include <memheap.h>
@@ -13,29 +13,29 @@ namespace Kolibri   // All kolibri functions, types and data are nested in the (
 	void Free(void *mem);
 }
 
-#ifdef __MENUET__
+#ifdef __KOLIBRI__
 
 namespace Kolibri
 {
 
 // Global variables
 
-	MemoryHeap::TFreeSpace _MenuetFreeSpace;
-	MemoryHeap::TMemBlock  _MenuetMemBlock;
-	TMutex _MemHeapMutex = MENUET_MUTEX_INIT;
+	MemoryHeap::TFreeSpace _KolibriFreeSpace;
+	MemoryHeap::TMemBlock  _KolibriMemBlock;
+	TMutex _MemHeapMutex = KOLIBRI_MUTEX_INIT;
 
 // Functions
 
 	void *_HeapInit(void *begin, void *use_end, void *end)
 	{
-		MemoryHeap::InitFreeSpace(_MenuetFreeSpace);
-		_MenuetMemBlock = MemoryHeap::CreateBlock(begin, end, _MenuetFreeSpace);
-		unsigned int use_beg = (unsigned int)MemoryHeap::BlockBegin(_MenuetMemBlock) +
+		MemoryHeap::InitFreeSpace(_KolibriFreeSpace);
+		_KolibriMemBlock = MemoryHeap::CreateBlock(begin, end, _KolibriFreeSpace);
+		unsigned int use_beg = (unsigned int)MemoryHeap::BlockBegin(_KolibriMemBlock) +
 					MemoryHeap::BlockAddSize - MemoryHeap::BlockEndSize;
 		unsigned int use_size = (unsigned int)use_end;
 		if (use_size <= use_beg) return 0;
 		else use_size -= use_beg;
-		return MemoryHeap::Alloc(_MenuetFreeSpace, use_size);
+		return MemoryHeap::Alloc(_KolibriFreeSpace, use_size);
 	}
 
 	bool _SetUseMemory(unsigned int use_mem);
@@ -46,13 +46,13 @@ namespace Kolibri
 	{
 		if (!size) return 0;
 		Lock(&_MemHeapMutex);
-		void *res = MemoryHeap::Alloc(_MenuetFreeSpace, size);
+		void *res = MemoryHeap::Alloc(_KolibriFreeSpace, size);
 		if (!res)
 		{
-			unsigned use_mem = (unsigned int)MemoryHeap::BlockEndFor(_MenuetMemBlock, size);
+			unsigned use_mem = (unsigned int)MemoryHeap::BlockEndFor(_KolibriMemBlock, size);
 			if (_SetUseMemory(_RecalculateUseMemory(use_mem)))
 			{
-				res = MemoryHeap::Alloc(_MenuetFreeSpace, size);
+				res = MemoryHeap::Alloc(_KolibriFreeSpace, size);
 			}
 		}
 		UnLock(&_MemHeapMutex);
@@ -62,13 +62,13 @@ namespace Kolibri
 	void *ReAlloc(void *mem, unsigned int size)
 	{
 		Lock(&_MemHeapMutex);
-		void *res = MemoryHeap::ReAlloc(_MenuetFreeSpace, mem, size);
+		void *res = MemoryHeap::ReAlloc(_KolibriFreeSpace, mem, size);
 		if (!res && size)
 		{
-			unsigned use_mem = (unsigned int)MemoryHeap::BlockEndFor(_MenuetMemBlock, size);
+			unsigned use_mem = (unsigned int)MemoryHeap::BlockEndFor(_KolibriMemBlock, size);
 			if (_SetUseMemory(_RecalculateUseMemory(use_mem)))
 			{
-				res = MemoryHeap::ReAlloc(_MenuetFreeSpace, mem, size);
+				res = MemoryHeap::ReAlloc(_KolibriFreeSpace, mem, size);
 			}
 		}
 		UnLock(&_MemHeapMutex);
@@ -78,13 +78,13 @@ namespace Kolibri
 	void Free(void *mem)
 	{
 		Lock(&_MemHeapMutex);
-		MemoryHeap::Free(_MenuetFreeSpace, mem);
+		MemoryHeap::Free(_KolibriFreeSpace, mem);
 		UnLock(&_MemHeapMutex);
 	}
 
 	void _FreeAndThreadFinish(void *mem, int *exit_proc_now);
 }
 
-#endif  // def  __MENUET__
+#endif  // def  __KOLIBRI__
 
-#endif  // ndef __MENUET_HEAP_H_INCLUDED_
+#endif  // ndef __KOLIBRI_HEAP_H_INCLUDED_

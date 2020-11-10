@@ -39,7 +39,7 @@ struct TThreadDataStruct
 TThreadDataStruct /*__thread*/ ThreadDataStruct;
 int nCmdShow;
 HINSTANCE hInstance;
-const char szWindowClass[] = "Menuet window";
+const char szWindowClass[] = "Kolibri window";
 
 void FinalizeThreadData()
 {
@@ -127,53 +127,53 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 			return 0;
 		case WM_TIMER:
 			t = CalculateNewTime();
-			while (MenuetOnIdle((TThreadData)(&ThreadDataStruct)) == 0 &&
+			while (KolibriOnIdle((TThreadData)(&ThreadDataStruct)) == 0 &&
 					GetTickCount() - t + 2 < timeout);
 			return 0;
 		case WM_MOUSEMOVE:
-			MenuetOnMouse((TThreadData)(&ThreadDataStruct));
+			KolibriOnMouse((TThreadData)(&ThreadDataStruct));
 			return 0;
 		case WM_LBUTTONDOWN:
 			if (!ThreadDataStruct.mouse_state) SetCapture(hWnd);
 			ThreadDataStruct.mouse_state |= 1;
-			MenuetOnMouse((TThreadData)(&ThreadDataStruct));
+			KolibriOnMouse((TThreadData)(&ThreadDataStruct));
 			return 0;
 		case WM_LBUTTONUP:
 			if (ThreadDataStruct.mouse_state & 1)
 			{
 				ThreadDataStruct.mouse_state &= ~1;
 				if (!ThreadDataStruct.mouse_state) ReleaseCapture();
-				MenuetOnMouse((TThreadData)(&ThreadDataStruct));
+				KolibriOnMouse((TThreadData)(&ThreadDataStruct));
 			}
 			return 0;
 		case WM_RBUTTONDOWN:
 			if (!ThreadDataStruct.mouse_state) SetCapture(hWnd);
 			ThreadDataStruct.mouse_state |= 2;
-			MenuetOnMouse((TThreadData)(&ThreadDataStruct));
+			KolibriOnMouse((TThreadData)(&ThreadDataStruct));
 			return 0;
 		case WM_RBUTTONUP:
 			if (ThreadDataStruct.mouse_state & 2)
 			{
 				ThreadDataStruct.mouse_state &= ~2;
 				if (!ThreadDataStruct.mouse_state) ReleaseCapture();
-				MenuetOnMouse((TThreadData)(&ThreadDataStruct));
+				KolibriOnMouse((TThreadData)(&ThreadDataStruct));
 			}
 			return 0;
 		case WM_CAPTURECHANGED:
 			if (ThreadDataStruct.mouse_state)
 			{
 				ThreadDataStruct.mouse_state = 0;
-				MenuetOnMouse((TThreadData)(&ThreadDataStruct));
+				KolibriOnMouse((TThreadData)(&ThreadDataStruct));
 			}
 			return 0;
 		//case WM_SYSKEYDOWN: case WM_KEYDOWN:
 		case WM_CHAR:
 			ThreadDataStruct.keys->push_back((unsigned char)wParam);
-			MenuetOnKeyPress((TThreadData)(&ThreadDataStruct));
+			KolibriOnKeyPress((TThreadData)(&ThreadDataStruct));
 			return 0;
 		case WM_SIZE:
 			GetProcessInfo(0, 0, 0, 0, window_rect);
-			MenuetOnSize(window_rect, (TThreadData)(&ThreadDataStruct));
+			KolibriOnSize(window_rect, (TThreadData)(&ThreadDataStruct));
 			InvalidateRect(hWnd, 0, 0);
 			return 0;
 		case WM_PAINT:
@@ -182,7 +182,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 			EndPaint(hWnd, &ps);
 			return 0;
 		case WM_CLOSE:
-			if (MenuetOnClose((TThreadData)(&ThreadDataStruct)))
+			if (KolibriOnClose((TThreadData)(&ThreadDataStruct)))
 			{
 				ThreadDataStruct.flag = -1;
 			}
@@ -262,12 +262,12 @@ namespace Kolibri
 		start_data.WinData.BorderColor = 0x000000;
 		start_data.WinData.TitleColor = 0xFFFF40;
 		start_data.WinData.Title = 0;
-		if (MenuetOnStart(start_data, (TThreadData)(&ThreadDataStruct)))
+		if (KolibriOnStart(start_data, (TThreadData)(&ThreadDataStruct)))
 		{
 			while (ThreadDataStruct.flag < 0)
 			{
 				ThreadDataStruct.flag &= ~0x80000000;
-				if (MenuetOnClose((TThreadData)(&ThreadDataStruct)))
+				if (KolibriOnClose((TThreadData)(&ThreadDataStruct)))
 				{
 					ThreadDataStruct.flag = -1;
 					break;
