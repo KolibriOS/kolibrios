@@ -25,7 +25,7 @@ int main()
                 case 1:
                     begin_draw();
                     sys_create_window(50, 50, 800, 300, "rasterworks example" ,0x34f0f0f0, 0x14);
-                    draw_bitmap(buffi, 5, 25, 768, 256);
+                    draw_bitmap(buffi+8, 5, 25, 768, 256);
                     end_draw();
                 break;
 

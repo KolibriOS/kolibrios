@@ -17,17 +17,18 @@
 #define WIN_W 640
 #define WIN_H 563
 
+uint32_t wheels;
 char* title = "Boxlib example";
 int win_bg_color = 0x858585;
 scrollbar scroll = {15, WIN_W - 26, WIN_H - 29, 0, 0, 2, 215, 15, 0,0x707070,0xD2CED0,0x555555,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1};
 progressbar pg = {0, 10, 10, 270, 35, 1, 0, 200, 0xB4B4B4, 0x2728FF, 0xA9A9A9};
 
 void draw_window(){
-        begin_draw(); 
-        sys_create_window(215,100,WIN_W,WIN_H,title,win_bg_color,0x34);
+        BeginDraw(); 
+        DrawWindow(215,100,WIN_W,WIN_H,title,win_bg_color,0x34);
         scrollbar_v_draw(&scroll);
         progressbar_draw(&pg);
-        end_draw();
+        EndDraw();
 }
 
 //// EVENTMASK
@@ -53,7 +54,7 @@ int main()
 	set_event_mask(EVM_REDRAW + EVM_KEY + EVM_BUTTON + EVM_MOUSE + EVM_MOUSE_FILTER);
 	while(1)
 	{
-		switch(get_os_event())
+		switch(GetOsEvent())
 		{
 			case evButton:
 				if (get_os_button() == 1) exit(0);
@@ -68,6 +69,22 @@ int main()
 				break;
 			case evMouse:
 				scrollbar_v_mouse(&scroll);
+				
+				// Wheel scrolling
+				// Quite unstable
+				/*
+				int scroll_strong = 40;
+				wheels = GetMouseWheels();
+				if(wheels & 0xFFFF)
+				{
+					if((short)wheels > 0 && scroll.position < scroll.max_area - scroll_strong)
+						scroll.position += scroll_strong;
+					else if((short)wheels < 0 && scroll.position > 0)
+						scroll.position -= scroll_strong;
+					
+					scrollbar_v_draw(&scroll);
+				}
+				*/
 				pg.value = scroll.position;
 				progressbar_draw(&pg);
 				break;

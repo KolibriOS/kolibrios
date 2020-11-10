@@ -757,7 +757,7 @@ void __attribute__ ((noinline)) debug_board_printf(const char *format,...)
 
 
 
-// TinyC don't support aliasing of static inline funcs
+// TinyC don't support aliasing of static inline funcs, but support #define :)
 #ifndef __TINYC__
 static inline void BeginDraw(void) __attribute__ ((alias ("begin_draw")));
 static inline void EndDraw(void) __attribute__ ((alias ("end_draw")));
@@ -785,6 +785,28 @@ static inline void* UserRealloc(void *mem, size_t size) __attribute__ ((alias ("
 static inline int *UserUnmap(void *base, size_t offset, size_t size) __attribute__ ((alias ("user_unmap")));
 static inline ufile_t LoadFile(const char *path) __attribute__ ((alias ("load_file")));
 static inline void GetProcInfo(char *info) __attribute__ ((alias ("get_proc_info")));
+#else
+	#define BeginDraw begin_draw
+	#define EndDraw end_draw
+	#define DrawWindow sys_create_window
+	#define DefineButton define_button
+	#define DrawLine draw_line
+	#define DrawBar draw_bar
+	#define DrawBitmap draw_bitmap
+	#define GetSkinHeight get_skin_height
+	#define GetMousePos get_mouse_pos
+	#define GetMouseButtons get_mouse_buttons
+	#define GetMouseWheels get_mouse_wheels
+	#define LoadCursor load_cursor
+	#define SetCursor set_cursor
+	#define DestroyCursor destroy_cursor
+	#define GetOsEvent get_os_event
+	#define UserAlloc user_alloc
+	#define UserFree user_free
+	#define UserRealloc user_realloc
+	#define UserUnmap user_unmap
+	#define LoadFile load_file
+	#define GetProcInfo get_proc_info
 #endif
 
 #ifdef __cplusplus
