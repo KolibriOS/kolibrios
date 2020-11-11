@@ -63,7 +63,6 @@ struct ZBuffer
 	xsize dd ? ;int
 	ysize dd ? ;int
 	linesize dd ? ;int ;line size, in bytes
-		dd ? ;fix old error offset
 	mode dd ? ;int
     
 	zbuf dd ? ;*unsigned short

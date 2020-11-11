@@ -8,15 +8,20 @@ include '../../../../../macros.inc'
 include '../../../../../KOSfuncs.inc'
 include '../../../../../load_img.inc'
 include '../opengl_const.inc'
+include '../zbuffer.inc'
 include '../../../../../develop/info3ds/info_fun_float.inc'
 
 @use_library_mem mem.Alloc,mem.Free,mem.ReAlloc,dll.Load
 
+;Макрос для параметров типа double (8 байт)
+macro glpush GLDoubleVar {
+	push dword[GLDoubleVar+4]
+	push dword[GLDoubleVar]
+}
+
 align 4
 image_data_toolbar dd 0
 IMAGE_TOOLBAR_ICON_SIZE equ 21*21*3
-
-offs_zbuf_pbuf equ 24 ;const. from 'zbuffer.inc'
 
 align 4
 start:
@@ -38,7 +43,7 @@ load_libraries l_libs_start,l_libs_end
 	stdcall [kosglMakeCurrent], 5,30,[buf_ogl.w],[buf_ogl.h],ctx1
 	stdcall [glEnable], GL_DEPTH_TEST
 	stdcall [glEnable], GL_NORMALIZE ;делам нормали одинаковой величины во избежание артефактов
-	stdcall [gluNewQuadric]
+	call [gluNewQuadric]
 	mov [qObj],eax
 	stdcall [gluQuadricTexture], eax,GL_TRUE
 
@@ -47,7 +52,7 @@ load_libraries l_libs_start,l_libs_end
 
 	mov eax,dword[ctx1] ;eax -> TinyGLContext.GLContext
 	mov eax,[eax] ;eax -> ZBuffer
-	mov eax,[eax+offs_zbuf_pbuf] ;eax -> ZBuffer.pbuf
+	mov eax,[eax+ZBuffer.pbuf]
 	mov dword[buf_ogl],eax
 
 	load_image_file 'font8x9.bmp', image_data_toolbar, buf_1.w,buf_1.h
@@ -292,7 +297,7 @@ align 4
 draw_3d:
 stdcall [glClear], GL_COLOR_BUFFER_BIT + GL_DEPTH_BUFFER_BIT ;очистим буфер цвета и глубины
 
-stdcall [glPushMatrix]
+call [glPushMatrix]
 	stdcall [glTranslatef], 0.0,0.0,0.5
 	stdcall [glScalef], [scale], [scale], [scale]
 	stdcall [glScalef], 1.0, 1.0, 0.1 ;прижимаем сферу, что-бы сразу не вылазила при увеличении
@@ -314,7 +319,7 @@ jne @f
 	stdcall [gluQuadricDrawStyle], [qObj],GLU_FILL
 	stdcall [gluSphere], [qObj], 1.0, 64,64
 @@:
-stdcall [glPopMatrix]
+call [glPopMatrix]
 
 	stdcall [buf2d_draw_text], buf_ogl, buf_1,txt_scale,5,5,0xffff00
 	stdcall [buf2d_draw_text], buf_ogl, buf_1,txt_angle_y,5,15,0xffff00
@@ -403,49 +408,51 @@ import_buf2d:
 align 4
 import_libimg:
 	dd alib_init1
-	img_is_img  dd aimg_is_img
-	img_info    dd aimg_info
-	img_from_file dd aimg_from_file
-	img_to_file dd aimg_to_file
-	img_from_rgb dd aimg_from_rgb
-	img_to_rgb  dd aimg_to_rgb
+;	img_is_img  dd aimg_is_img
+;	img_info    dd aimg_info
+;	img_from_file dd aimg_from_file
+;	img_to_file dd aimg_to_file
+;	img_from_rgb dd aimg_from_rgb
+;	img_to_rgb  dd aimg_to_rgb
 	img_to_rgb2 dd aimg_to_rgb2
 	img_decode  dd aimg_decode
-	img_encode  dd aimg_encode
-	img_create  dd aimg_create
+;	img_encode  dd aimg_encode
+;	img_create  dd aimg_create
 	img_destroy dd aimg_destroy
-	img_destroy_layer dd aimg_destroy_layer
-	img_count   dd aimg_count
-	img_lock_bits dd aimg_lock_bits
-	img_unlock_bits dd aimg_unlock_bits
-	img_flip    dd aimg_flip
-	img_flip_layer dd aimg_flip_layer
-	img_rotate  dd aimg_rotate
-	img_rotate_layer dd aimg_rotate_layer
-	img_draw    dd aimg_draw
+;	img_destroy_layer dd aimg_destroy_layer
+;	img_count   dd aimg_count
+;	img_lock_bits dd aimg_lock_bits
+;	img_unlock_bits dd aimg_unlock_bits
+;	img_flip    dd aimg_flip
+;	img_flip_layer dd aimg_flip_layer
+;	img_rotate  dd aimg_rotate
+;	img_rotate_layer dd aimg_rotate_layer
+;	img_draw    dd aimg_draw
+;	img_convert dd aimg_convert
 
 	dd 0,0
 	alib_init1   db 'lib_init',0
-	aimg_is_img  db 'img_is_img',0 ;определяет по данным, может ли библиотека сделать из них изображение
-	aimg_info    db 'img_info',0
-	aimg_from_file db 'img_from_file',0
-	aimg_to_file db 'img_to_file',0
-	aimg_from_rgb db 'img_from_rgb',0
-	aimg_to_rgb  db 'img_to_rgb',0 ;преобразование изображения в данные RGB
+;	aimg_is_img  db 'img_is_img',0 ;определяет по данным, может ли библиотека сделать из них изображение
+;	aimg_info    db 'img_info',0
+;	aimg_from_file db 'img_from_file',0
+;	aimg_to_file db 'img_to_file',0
+;	aimg_from_rgb db 'img_from_rgb',0
+;	aimg_to_rgb  db 'img_to_rgb',0 ;преобразование изображения в данные RGB
 	aimg_to_rgb2 db 'img_to_rgb2',0
 	aimg_decode  db 'img_decode',0 ;автоматически определяет формат графических данных
-	aimg_encode  db 'img_encode',0
-	aimg_create  db 'img_create',0
+;	aimg_encode  db 'img_encode',0
+;	aimg_create  db 'img_create',0
 	aimg_destroy db 'img_destroy',0
-	aimg_destroy_layer db 'img_destroy_layer',0
-	aimg_count   db 'img_count',0
-	aimg_lock_bits db 'img_lock_bits',0
-	aimg_unlock_bits db 'img_unlock_bits',0
-	aimg_flip    db 'img_flip',0
-	aimg_flip_layer db 'img_flip_layer',0
-	aimg_rotate  db 'img_rotate',0
-	aimg_rotate_layer db 'img_rotate_layer',0
-	aimg_draw    db 'img_draw',0
+;	aimg_destroy_layer db 'img_destroy_layer',0
+;	aimg_count   db 'img_count',0
+;	aimg_lock_bits db 'img_lock_bits',0
+;	aimg_unlock_bits db 'img_unlock_bits',0
+;	aimg_flip    db 'img_flip',0
+;	aimg_flip_layer db 'img_flip_layer',0
+;	aimg_rotate  db 'img_rotate',0
+;	aimg_rotate_layer db 'img_rotate_layer',0
+;	aimg_draw    db 'img_draw',0
+;	aimg_convert db 'img_convert',0
 
 ;--------------------------------------------------
 system_dir_0 db '/sys/lib/'
@@ -515,8 +522,7 @@ l_libs_end:
 
 align 4
 i_end:
-	ctx1 db 28 dup (0) ;TinyGLContext or KOSGLContext
-	;sizeof.TinyGLContext = 28
+	ctx1 rb 28 ;sizeof.TinyGLContext = 28
 	dr_figure dd 0
 	qObj dd 0
 	TexObj dd 0 ;массив указателей на текстуры (в данном случае 1 шт.)

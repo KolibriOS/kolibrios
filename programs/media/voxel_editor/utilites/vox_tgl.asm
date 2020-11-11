@@ -3,20 +3,21 @@ use32
 	db 'MENUET01' ;идентиф. исполняемого файла всегда 8 байт
 	dd 1, start, i_end, mem, stacktop, openfile_path, sys_path
 
-include '../../../../programs/macros.inc'
-include '../../../../programs/proc32.inc'
-include '../../../../programs/KOSfuncs.inc'
-include '../../../../programs/load_img.inc'
-include '../../../../programs/develop/libraries/TinyGL/asm_fork/opengl_const.inc'
+include '../../../macros.inc'
+include '../../../proc32.inc'
+include '../../../KOSfuncs.inc'
+include '../../../load_img.inc'
+include '../../../develop/libraries/TinyGL/asm_fork/opengl_const.inc'
+include '../../../develop/libraries/TinyGL/asm_fork/zbuffer.inc'
 include 'vox_3d.inc'
 include '../trunk/str.inc'
 include 'lang.inc'
 
 @use_library_mem mem.Alloc,mem.Free,mem.ReAlloc,dll.Load
 if lang eq ru
-caption db 'Просмотр вокселей 04.05.20',0 ;подпись окна
+caption db 'Просмотр вокселей 11.11.20',0 ;подпись окна
 else
-caption db 'Voxel viewer 04.05.20',0
+caption db 'Voxel viewer 11.11.20',0
 end if
 
 3d_wnd_l equ   5 ;отступ для tinygl буфера слева
@@ -27,8 +28,6 @@ end if
 IMAGE_TOOLBAR_ICON_SIZE equ 16*16*3
 IMAGE_TOOLBAR_SIZE equ IMAGE_TOOLBAR_ICON_SIZE*10
 image_data_toolbar dd 0
-
-offs_zbuf_pbuf equ 24
 
 align 4
 start:
@@ -111,7 +110,7 @@ timer_funct:
 	fsub dword[delt_size]
 	fstp dword[angle_y]
 	call draw_3d
-	stdcall [kosglSwapBuffers]
+	call [kosglSwapBuffers]
 
 	popad
 	jmp still
@@ -130,37 +129,28 @@ pushad
 	mcall SF_DEFINE_BUTTON,(5 shl 16)+20,(5 shl 16)+20,3,[sc.work_button]
 
 	mov ebx,(30 shl 16)+20
-	mov edx,4
-	int 0x40
+	mcall ,,,4
 	add ebx,25 shl 16
-	mov edx,5
-	int 0x40
+	mcall ,,,5
 	add ebx,30 shl 16
-	mov edx,6
-	int 0x40
+	mcall ,,,6
 	add ebx,25 shl 16
-	mov edx,7
-	int 0x40
+	mcall ,,,7
 	add ebx,25 shl 16
-	mov edx,8
-	int 0x40
+	mcall ,,,8
 	add ebx,25 shl 16
-	mov edx,9
-	int 0x40
+	mcall ,,,9
 	add ebx,25 shl 16
-	mov edx,10
-	int 0x40
+	mcall ,,,10
 	add ebx,25 shl 16
-	mov edx,11
-	int 0x40
+	mcall ,,,11
 	add ebx,25 shl 16
-	mov edx,12
-	int 0x40
+	mcall ,,,12
 
 	call draw_toolbar_i
 
 	stdcall [buf2d_draw], buf_0
-	stdcall [kosglSwapBuffers]
+	call [kosglSwapBuffers]
 
 	mcall SF_REDRAW,SSF_END_DRAW
 popad
@@ -241,34 +231,31 @@ key:
 		fld dword[angle_x]
 		fadd dword[delt_size]
 		fstp dword[angle_x]
-		call draw_3d
-		stdcall [kosglSwapBuffers]
+		jmp .end0
 	@@:
 	cmp ah,177 ;Down
 	jne @f
 		fld dword[angle_x]
 		fsub dword[delt_size]
 		fstp dword[angle_x]
-		call draw_3d
-		stdcall [kosglSwapBuffers]
+		jmp .end0
 	@@:
 	cmp ah,176 ;Left
 	jne @f
 		fld dword[angle_y]
 		fadd dword[delt_size]
 		fstp dword[angle_y]
-		call draw_3d
-		stdcall [kosglSwapBuffers]
+		jmp .end0
 	@@:
 	cmp ah,179 ;Right
-	jne @f
+	jne still  ;@f
 		fld dword[angle_y]
 		fsub dword[delt_size]
 		fstp dword[angle_y]
+	.end0:
 		call draw_3d
-		stdcall [kosglSwapBuffers]
-	@@:
-
+		call [kosglSwapBuffers]
+	;@@:
 	jmp still
 
 
@@ -319,7 +306,7 @@ mouse:
 		fstp dword[angle_y]
 
 		call draw_3d
-		stdcall [kosglSwapBuffers]
+		call [kosglSwapBuffers]
 		jmp .end_d
 	.end_m:
 	bt eax,16
@@ -562,7 +549,7 @@ align 4
 draw_cadr:
 	mov eax,dword[ctx1] ;eax -> TinyGLContext.GLContext
 	mov eax,[eax] ;eax -> ZBuffer
-	mov eax,[eax+offs_zbuf_pbuf] ;eax -> ZBuffer.pbuf
+	mov eax,[eax+ZBuffer.pbuf]
 	mov dword[buf_1],eax
 
 	mov dword[buf_1.w],512
@@ -615,7 +602,7 @@ proc but_zoom_p uses eax
         inc dword[v_zoom]
         stdcall buf_vox_obj_create_3d,[open_file_data],[open_file_ogl],0,0,[v_zoom]
 		call draw_3d
-		stdcall [kosglSwapBuffers]
+		call [kosglSwapBuffers]
     @@:
     ret
 endp
@@ -627,7 +614,7 @@ proc but_zoom_m uses eax
         dec dword[v_zoom]
         stdcall buf_vox_obj_create_3d,[open_file_data],[open_file_ogl],0,0,[v_zoom]
 		call draw_3d
-		stdcall [kosglSwapBuffers]
+		call [kosglSwapBuffers]
     @@:
     ret
 endp
@@ -646,7 +633,7 @@ proc but_light uses eax ebx ecx edx
 	.end_light:
 	call draw_toolbar_i
 	call draw_3d
-	stdcall [kosglSwapBuffers]
+	call [kosglSwapBuffers]
 	ret
 endp
 
@@ -655,7 +642,7 @@ proc but_4 uses eax ebx ecx edx
 	xor word[opt_cube_box],1
 	call draw_toolbar_i
 	call draw_3d
-	stdcall [kosglSwapBuffers]
+	call [kosglSwapBuffers]
 	ret
 endp
 
@@ -747,7 +734,7 @@ proc but_draw_cadr uses eax ebx ecx edx
 	cmp word[opt_auto_rotate],0
 	jne @f
 		call draw_3d
-		;stdcall [kosglSwapBuffers]
+		;call [kosglSwapBuffers]
 	@@:
 	ret
 endp
@@ -772,7 +759,7 @@ draw_3d:
 	stdcall [glRotatef], [angle_z],0.0,0.0,1.0
 	stdcall draw_voxels_3d,[open_file_ogl]
 
-	stdcall [glPopMatrix]
+	call [glPopMatrix]
 ret
 
 align 4
@@ -911,49 +898,51 @@ l_libs_end:
 align 4
 import_libimg:
 	dd alib_init1
-	img_is_img  dd aimg_is_img
-	img_info    dd aimg_info
-	img_from_file dd aimg_from_file
-	img_to_file dd aimg_to_file
-	img_from_rgb dd aimg_from_rgb
-	img_to_rgb  dd aimg_to_rgb
+;	img_is_img  dd aimg_is_img
+;	img_info    dd aimg_info
+;	img_from_file dd aimg_from_file
+;	img_to_file dd aimg_to_file
+;	img_from_rgb dd aimg_from_rgb
+;	img_to_rgb  dd aimg_to_rgb
 	img_to_rgb2 dd aimg_to_rgb2
 	img_decode  dd aimg_decode
-	img_encode  dd aimg_encode
-	img_create  dd aimg_create
+;	img_encode  dd aimg_encode
+;	img_create  dd aimg_create
 	img_destroy dd aimg_destroy
-	img_destroy_layer dd aimg_destroy_layer
-	img_count   dd aimg_count
-	img_lock_bits dd aimg_lock_bits
-	img_unlock_bits dd aimg_unlock_bits
-	img_flip    dd aimg_flip
-	img_flip_layer dd aimg_flip_layer
-	img_rotate  dd aimg_rotate
-	img_rotate_layer dd aimg_rotate_layer
-	img_draw    dd aimg_draw
+;	img_destroy_layer dd aimg_destroy_layer
+;	img_count   dd aimg_count
+;	img_lock_bits dd aimg_lock_bits
+;	img_unlock_bits dd aimg_unlock_bits
+;	img_flip    dd aimg_flip
+;	img_flip_layer dd aimg_flip_layer
+;	img_rotate  dd aimg_rotate
+;	img_rotate_layer dd aimg_rotate_layer
+;	img_draw    dd aimg_draw
+;	img_convert dd aimg_convert
 
 	dd 0,0
 	alib_init1   db 'lib_init',0
-	aimg_is_img  db 'img_is_img',0 ;определяет по данным, может ли библиотека сделать из них изображение
-	aimg_info    db 'img_info',0
-	aimg_from_file db 'img_from_file',0
-	aimg_to_file db 'img_to_file',0
-	aimg_from_rgb db 'img_from_rgb',0
-	aimg_to_rgb  db 'img_to_rgb',0 ;преобразование изображения в данные RGB
+;	aimg_is_img  db 'img_is_img',0 ;определяет по данным, может ли библиотека сделать из них изображение
+;	aimg_info    db 'img_info',0
+;	aimg_from_file db 'img_from_file',0
+;	aimg_to_file db 'img_to_file',0
+;	aimg_from_rgb db 'img_from_rgb',0
+;	aimg_to_rgb  db 'img_to_rgb',0 ;преобразование изображения в данные RGB
 	aimg_to_rgb2 db 'img_to_rgb2',0
 	aimg_decode  db 'img_decode',0 ;автоматически определяет формат графических данных
-	aimg_encode  db 'img_encode',0
-	aimg_create  db 'img_create',0
+;	aimg_encode  db 'img_encode',0
+;	aimg_create  db 'img_create',0
 	aimg_destroy db 'img_destroy',0
-	aimg_destroy_layer db 'img_destroy_layer',0
-	aimg_count   db 'img_count',0
-	aimg_lock_bits db 'img_lock_bits',0
-	aimg_unlock_bits db 'img_unlock_bits',0
-	aimg_flip    db 'img_flip',0
-	aimg_flip_layer db 'img_flip_layer',0
-	aimg_rotate  db 'img_rotate',0
-	aimg_rotate_layer db 'img_rotate_layer',0
-	aimg_draw    db 'img_draw',0
+;	aimg_destroy_layer db 'img_destroy_layer',0
+;	aimg_count   db 'img_count',0
+;	aimg_lock_bits db 'img_lock_bits',0
+;	aimg_unlock_bits db 'img_unlock_bits',0
+;	aimg_flip    db 'img_flip',0
+;	aimg_flip_layer db 'img_flip_layer',0
+;	aimg_rotate  db 'img_rotate',0
+;	aimg_rotate_layer db 'img_rotate_layer',0
+;	aimg_draw    db 'img_draw',0
+;	aimg_convert db 'img_convert',0
 
 align 4
 proclib_import: ;описание экспортируемых функций
@@ -1023,13 +1012,13 @@ macro E_LIB n
 {
 	n dd sz_#n
 }
-include '../../../../programs/develop/libraries/TinyGL/asm_fork/export.inc'
+include '../../../develop/libraries/TinyGL/asm_fork/export.inc'
 	dd 0,0
 macro E_LIB n
 {
 	sz_#n db `n,0
 }
-include '../../../../programs/develop/libraries/TinyGL/asm_fork/export.inc'
+include '../../../develop/libraries/TinyGL/asm_fork/export.inc'
 
 last_time dd 0
 
@@ -1051,18 +1040,11 @@ buf_1: dd 0 ;указатель на буфер изображения
 .color: dd 0xffffff ;+16 color
 	db 24 ;+20 bit in pixel
 
-align 4
-ctx1 db 28 dup (0) ;TinyGLContext or KOSGLContext
-;sizeof.TinyGLContext = 28
-
 scale dd 1.414213562
 angle_x dd 0.0
 angle_y dd 0.0
 angle_z dd 0.0
 delt_size dd 3.0
-mouse_drag dd 0 ;режим поворота сцены от перемещении курсора мыши
-mouse_x dd 0
-mouse_y dd 0
 angle_dxm dd 2.8444 ;~ 3d_wnd_w/180 - прибавление углов поворота сцены при вращении мышей
 angle_dym dd 2.8444 ;~ 3d_wnd_h/180
 
@@ -1082,6 +1064,10 @@ lmodel_ambient dd 0.3, 0.3, 0.3, 1.0 ; Параметры фонового освещения
 
 align 16
 i_end:
+	ctx1 rb 28 ;sizeof.TinyGLContext = 28
+	mouse_drag dd 0 ;режим поворота сцены от перемещении курсора мыши
+	mouse_x dd 0
+	mouse_y dd 0
 	rb 4096
 stacktop:
 	sys_path rb 1024
