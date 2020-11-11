@@ -3964,7 +3964,7 @@ delay_ms:     ; delay in 1/1000 sec
         cmp     [hpet_base], 0
         jz      .no_hpet
         mov     eax, esi
-        mov     edx, 10_000_000 ; cs to ns
+        mov     edx, 1_000_000 ; ms to ns
         mul     edx
         mov     ebx, edx
         mov     ecx, eax
