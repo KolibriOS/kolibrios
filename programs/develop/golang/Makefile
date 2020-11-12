@@ -1,4 +1,4 @@
-PROGRAM=main
+PROGRAM=example
 SOURCES=syscalls.o colors.go.o colors.gox os.go.o os.gox $(PROGRAM).go.o
 LIBOBJ=os.go.o syscalls.o colors.go.o
 GOFLAGS= -nostdlib -nostdinc -fno-stack-protector -fno-split-stack -static -m32 -g -I.

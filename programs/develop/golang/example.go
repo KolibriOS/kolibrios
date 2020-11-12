@@ -1,4 +1,5 @@
 package kernel
+
 import "os"
 import "colors"
 
@@ -21,6 +22,7 @@ func RedrawAll(bar_pos int){
     os.CreateButton(300, 128, 80, 30, Btn2, colors.Blue);
     os.WriteText(32,128, 0x11000000 | colors.White,btn_txt1, 10)
     os.WriteText(320,128, 0x11000000 | colors.White,btn_txt2, 10)
+    os.DrawBar(uint32(bar_pos), 90, 100, 30, colors.Red);
 }
 
 func Load() {
