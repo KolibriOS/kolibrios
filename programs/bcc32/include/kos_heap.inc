@@ -34,6 +34,7 @@ endp
 proc @MemoryHeap@mem_Free$qpv uses ebx
   mov  eax,SF_SYS_MISC
   mov  ebx,SSF_MEM_FREE
+  mov  ecx,[esp+8]
   int  0x40
   ret
 endp

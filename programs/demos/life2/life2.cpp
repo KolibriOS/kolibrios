@@ -1362,7 +1362,7 @@ void MenuOpenDialogEnd(TThreadData th)
 	if (state != 2) return;
 	char *name = OpenFileGetName(open_file_str);
 	if (!name) return;
-	TFileData file = FileOpen(name);
+	FileInfoBlock* file = FileOpen(name);
 	if (!file) return;
 	int k = FileGetLength(file);
 	unsigned char *pict = 0;

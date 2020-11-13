@@ -41,12 +41,6 @@ KOLIBRI_THREAD_DATA_LEN	    = 16;
 ;const int
 KOLIBRI_MUTEX_MAX_TIME_WAIT  = 20;
 
-;const int
-KOLIBRI_FILE_BLOCK_SIZE	    = 512;
-
-;const int
-KOLIBRI_FILE_MEMORY_OS_NEED  = 4096;
-
 ;/***
 
 macro segment name
@@ -1122,7 +1116,7 @@ end if
   jmp  .create_thread_fill_stack
 endp
 
-proc @Kolibri@_FileAccess$qpv uses ebx
+proc @Kolibri@_FileAccess$qp21Kolibri@FileInfoBlock uses ebx
   mov  eax,SF_FILE
   mov  ebx,[esp+8]
   int  0x40

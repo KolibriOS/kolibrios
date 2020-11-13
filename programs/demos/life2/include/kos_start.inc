@@ -8,7 +8,7 @@ org 0
   dd U_END+STACKSIZE
   dd @Kolibri@CommandLine,0
 
-include "..\..\..\KOSfuncs.inc"
+include "..\..\KOSfuncs.inc"
 include "..\..\proc32.inc"
 
 ptr equ
