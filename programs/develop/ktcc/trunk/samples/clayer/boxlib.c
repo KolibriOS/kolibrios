@@ -1,5 +1,6 @@
 // BOXLIB EXAMPLE (scrollbar, progressbar)
 // Writed by maxcodehack
+// GCC version is in /contrib/C_Layer/EXAMPLE/boxlib
 #include <kos32sys1.h>
 #include <stdlib.h>
 #include <clayer/boxlib.h>
