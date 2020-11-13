@@ -8,5 +8,6 @@
 ../tcc clayer/msgbox.c  -lck -lmsgbox -o msgbox
 ../tcc graphics.c -lck -lgb -o graphics
 ../tcc clayer/rasterworks.c -lck -lrasterworks -o rasterworks
-../tcc clayer/boxlib.c -lck -lbox -o boxlib_ex
+../tcc clayer/boxlib.c -lck -lbox -o boxlib
+../tcc clayer/libimg.c -lck -limg -o libimg
 exit

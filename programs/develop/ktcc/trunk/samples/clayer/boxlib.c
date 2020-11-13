@@ -20,13 +20,17 @@
 
 uint32_t wheels;
 char* title = "Boxlib example";
-int win_bg_color = 0x858585;
 scrollbar scroll = {15, WIN_W - 26, WIN_H - 29, 0, 0, 2, 215, 15, 0,0x707070,0xD2CED0,0x555555,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1};
 progressbar pg = {0, 10, 10, 270, 35, 1, 0, 200, 0xB4B4B4, 0x2728FF, 0xA9A9A9};
 
+/*
+// System colors
+struct kolibri_system_colors sys_color;
+*/
+
 void draw_window(){
         BeginDraw(); 
-        DrawWindow(215,100,WIN_W,WIN_H,title,win_bg_color,0x34);
+        DrawWindow(215,100,WIN_W,WIN_H,title, /* sys_color.work_area */ 0x858585, 0x34);
         scrollbar_v_draw(&scroll);
         progressbar_draw(&pg);
         EndDraw();
@@ -51,7 +55,9 @@ void draw_window(){
 int main()
 {
 	kolibri_boxlib_init();
-	
+	/*
+	get_system_colors(&sys_color);
+	*/
 	set_event_mask(EVM_REDRAW + EVM_KEY + EVM_BUTTON + EVM_MOUSE + EVM_MOUSE_FILTER);
 	while(1)
 	{
