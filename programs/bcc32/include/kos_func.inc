@@ -101,19 +101,11 @@ end if
   movsd
   Kolibri_Put_MovEaxVal_Ret  @Kolibri@GetPid$qv,edx
 if defined KolibriHeapInit
-  mov  ecx,esp
-  push ebx
-  push ecx
-  push U_END
-  call KolibriHeapInit	; Initialize a dynamic heap and create new memory in its begin.
-  pop  ecx		; Parameters: begin of a new heap, end of data to create in
-  mov  [esp+4],eax	; the begin of a heap. Return address of the created data.
-  mov  dword [esp],0
-else
+  call KolibriHeapInit	; Initialize a dynamic heap
+end if
   xor  eax,eax
   push eax
   push eax
-end if
   call @Kolibri@ThreadMain$qpvt1
 .ThreadFinish:
   add  esp,8
