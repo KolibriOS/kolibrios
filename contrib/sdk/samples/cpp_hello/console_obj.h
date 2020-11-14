@@ -4,8 +4,8 @@
 #include <string.h>
 #include <stdlib.h>
 
-#ifndef CONSOLE_H
-#define CONSOLE_H
+#ifndef CONSOLE_OBJ_H
+#define CONSOLE_OBJ_H
 
 #ifdef __cplusplus
 extern "C" {
