@@ -20,7 +20,7 @@
 
 uint32_t wheels;
 char* title = "Boxlib example";
-scrollbar scroll = {15, WIN_W - 26, WIN_H - 29, 0, 0, 2, 215, 15, 0,0x707070,0xD2CED0,0x555555,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1};
+scrollbar scroll = {15, WIN_W - 26, WIN_H - 29, 0, 0, 2, 215, 15, 0,0x707070,0xD2CED0,0x555555,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0};
 progressbar pg = {0, 10, 10, 270, 35, 1, 0, 200, 0xB4B4B4, 0x2728FF, 0xA9A9A9};
 
 /*
