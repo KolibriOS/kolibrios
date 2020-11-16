@@ -12,7 +12,7 @@ include '../../../develop/libraries/box_lib/load_lib.mac'
 ;include 'lang.inc'
 
 @use_library_mem mem.Alloc,mem.Free,mem.ReAlloc,dll.Load
-hed db 'Life 04.11.18',0 ;подпись окна
+hed db 'Life 16.11.20',0 ;подпись окна
 
 run_file_70 FileInfoBlock
 image_data dd 0 ;указатель на временную память. для нужен преобразования изображения
@@ -75,20 +75,17 @@ align 4
 proc pole_init_colors uses eax ebx ecx edx esi edi, col_pole:dword, col_cell_n:dword, col_cell_o:dword
 	mov esi,[CellColors]
 	mov ebx,[col_pole]
-	mov dword[esi],ebx
+	mov [esi],ebx
 
+	lea edi,[esi+4*COL_MEM]
 	add esi,4
-	mov edi,COL_MEM
-	dec edi
-	shl edi,2
-	add edi,esi
 	; esi - указатель на 1-й градиентный цвет
 	; edi - указатель на последний градиентный цвет
 	mov eax,[col_cell_n]
 	mov ebx,[col_cell_o]
 
-	mov dword[esi],eax
-	mov dword[edi],ebx
+	mov [esi],eax
+	mov [edi],ebx
 	;need save ecx edx
 	stdcall middle_colors, esi,edi
 
@@ -1767,13 +1764,6 @@ import_buf2d:
 	sz_buf2d_filled_rect_by_size db 'buf2d_filled_rect_by_size',0
 	sz_buf2d_set_pixel db 'buf2d_set_pixel',0
 
-mouse_dd dd 0
-sc system_colors 
-last_time dd 0
-
-align 16
-procinfo process_information 
-
 align 4
 buf_0: dd 0
 .l: dw 0 ;+4 left
@@ -1783,7 +1773,12 @@ buf_0: dd 0
 .color: dd 0xffffd0 ;+16 color
 	db 24 ;+20 bit in pixel
 
+align 16
 i_end:
+	mouse_dd dd 0
+	last_time dd 0
+	sc system_colors 
+	procinfo process_information
 	rb 1024
 stacktop:
 	sys_path rb 1024

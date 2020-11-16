@@ -16,7 +16,7 @@ proc @Kolibri@OpenFileDialog$qr23Kolibri@TOpenFileStruct uses ebx esi edi ebp
   mov  esi,ecx
 .open_file_dlg_alloc:
   push esi
-  call @@Kolibri@Alloc$qui
+  call @Kolibri@Alloc$qul
   pop  ecx
   test eax,eax
   jz   .open_file_dlg_ret
@@ -97,7 +97,7 @@ proc @Kolibri@OpenFileDialog$qr23Kolibri@TOpenFileStruct uses ebx esi edi ebp
   push eax
   push esi
   push dword [esp+8]
-  call @@Kolibri@ReAlloc$qpvui
+  call @Kolibri@ReAlloc$qpvul
   add  esp,8
   mov  ecx,eax
   pop  eax
@@ -131,7 +131,7 @@ proc @Kolibri@OpenFileDialog$qr23Kolibri@TOpenFileStruct uses ebx esi edi ebp
   mov  [esp+8],eax
   push eax
   push dword [esp+4]
-  call @@Kolibri@ReAlloc$qpvui
+  call @Kolibri@ReAlloc$qpvul
   add  esp,8
   test eax,eax
   jz   .open_file_dlg_end
@@ -143,12 +143,12 @@ proc @Kolibri@OpenFileDialog$qr23Kolibri@TOpenFileStruct uses ebx esi edi ebp
   mov  ebx,[esp+20]
   mov  dword [ebx],2
   push dword [ebx+4]
-  call @@Kolibri@Free$qpv
+  call @Kolibri@Free$qpv
   pop  ecx
   mov  [ebx+4],esi
   jmp  .open_file_dlg_invalidate
 .open_file_dlg_end:
-  call @@Kolibri@Free$qpv
+  call @Kolibri@Free$qpv
   add  esp,12
   mov  ebx,[esp+20]
   mov  dword [ebx],1

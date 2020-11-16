@@ -197,7 +197,6 @@ extra_files = {
  {"kolibrios/emul/kwine/lib/", PROGS .. "/emulator/kwine/bin/lib/*"},
  {"kolibrios/demos/ak47.lif", "common/demos/ak47.lif"},
  {"kolibrios/demos/life2", "common/demos/life2"},
- {"kolibrios/demos/life3tb.png", PROGS .. "/games/life3/trunk/life3tb.png"},
  {"kolibrios/demos/relay.lif", "common/demos/relay.lif"},
  {"kolibrios/demos/rpento.lif", "common/demos/rpento.lif"},
  {"kolibrios/games/BabyPainter", "common/games/BabyPainter"},
