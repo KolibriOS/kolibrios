@@ -1,6 +1,17 @@
 # SDL build makefile_test
 # writed by maxcodehack
 
+# first export MENUETDEV
+# second
+# for build:
+# make -f Makefile_test install
+# for clean:
+# make -f Makefile_test clean
+
+# if you get many errors looks:
+# " multiple definition of `inportb' "
+# comment them in $(MENUETDEV)/include/inlines/pc.h
+
 CC = kos32-gcc
 AR = kos32-ar
 LD = kos32-ld
@@ -10,13 +21,9 @@ SDK_DIR:= $(abspath ../../..)
 endian_OBJS = endian/SDL_endian.o
 file_OBJS = file/SDL_rwops.o
 
-# First save this:
 hermes_OBJS = hermes/mmxp2_32.o hermes/mmx_main.o hermes/x86p_16.o \
         hermes/x86p_32.o hermes/x86_main.o
-        
-# After only this
-# hermes_OBJS = hermes/mmxp2_32.obj hermes/mmx_main.o hermes/x86p_16.obj \
-        hermes/x86p_32.obj hermes/x86_main.obj
+
 thread_OBJS = thread/SDL_syscond.o thread/SDL_sysmutex.o thread/SDL_syssem.o \
         thread/SDL_systhread.o thread/SDL_thread.o
 timer_OBJS = timer/SDL_timer.o timer/dummy/SDL_systimer.o
@@ -59,11 +66,11 @@ install: libSDL.a
 libSDL.a: $(OBJS)
 	$(AR) $(ARFLAGS) libSDL.a $(OBJS)
  
-%.obj : %.asm Makefile
+%.o : %.asm Makefile
 	nasm -f coff $< $
  
 %.o : %.c Makefile
 	$(CC) $(CFLAGS) -o $@ $<
  
 clean:
-	-rm -f */*.o
+	rm -f */*.o \ rm *.o \ rm */*/*.o
