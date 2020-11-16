@@ -8,6 +8,10 @@ objcopy -O binary sdltest
 
 Now sdltest is your binary to run on Kolibri for SDL Demo.
 
+-- ashmew2
+
+You can found Makefile
+-- maxcodehack
 */
 
 #include <stdio.h>
