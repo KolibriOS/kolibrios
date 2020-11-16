@@ -1,96 +1,138 @@
-/* Instructions to compile this file with newlib (Assuming you have set up environment
+/*
 
-kos32-gcc -c -I/home/bob/kolibrios/contrib/sdk/sources/newlib/libc/include -I/home/bob/kolibrios/contrib/sdk/sources/libpng/ -I/home/bob/kolibrios/contrib/sdk/sources/zlib -I/home/bob/kolibrios/contrib/sdk/sources/freetype/include -I/home/bob/kolibrios/contrib/sdk/sources/freetype/include -I/home/bob/kolibrios/contrib/sdk/sources/SDL-1.2.2/include/ -std=c99 -D_KOLIBRIOS -Dnskolibrios -g   -Wundef   -U_Win32 -U_WIN32 -U__MINGW32__ SDLTest.c
-
-  kos32-ld SDLTest.o -T/home/bob/kolibrios/contrib/sdk/sources/newlib/libc/app.lds -nostdlib -static --image-base 0 -lgcc -L/home/autobuild/tools/win32/mingw32/lib /home/autobuild/tools/win32/lib/libdll.a /home/autobuild/tools/win32/lib/libapp.a /home/autobuild/tools/win32/lib/libSDL.a /home/autobuild/tools/win32/lib/libc.dll.a -static -o sdltest
-
-objcopy -O binary sdltest
-
-Now sdltest is your binary to run on Kolibri for SDL Demo.
-
--- ashmew2
-
-You can found Makefile
+Makefile in this folder
 -- maxcodehack
 */
 
+/* Simple program:  Test bitmap blits */
+
 #include <stdio.h>
-#include <SDL.h>
+#include <stdlib.h>
+#include <string.h>
 
-#define WIDTH 640
-#define HEIGHT 480
-#define BPP 4
-#define DEPTH 32
+// We can use Newlib functions with Menuetlibc library SDL!
+#include <kos32sys.h>
 
-void setpixel(SDL_Surface *screen, int x, int y, Uint8 r, Uint8 g, Uint8 b)
+#include "SDL.h"
+#include "picture.xbm"
+
+SDL_Surface *LoadXBM(SDL_Surface *screen, int w, int h, Uint8 *bits)
 {
-    Uint32 *pixmem32;
-    Uint32 colour;  
- 
-    colour = SDL_MapRGB( screen->format, r, g, b );
-  
-    pixmem32 = (Uint32*) screen->pixels  + y + x;
-    *pixmem32 = colour;
+	SDL_Surface *bitmap;
+	Uint8 *line;
+
+	/* Allocate the bitmap */
+	bitmap = SDL_CreateRGBSurface(SDL_SWSURFACE, w, h, 1, 0, 0, 0, 0);
+	if ( bitmap == NULL ) {
+		fprintf(stderr, "Couldn't allocate bitmap: %s\n",
+						SDL_GetError());
+		return(NULL);
+	}
+
+	/* Copy the pixels */
+	line = (Uint8 *)bitmap->pixels;
+	w = (w+7)/8;
+	while ( h-- ) {
+		memcpy(line, bits, w);
+		/* X11 Bitmap images have the bits reversed */
+		{ int i, j; Uint8 *buf, byte;
+			for ( buf=line, i=0; i<w; ++i, ++buf ) {
+				byte = *buf;
+				*buf = 0;
+				for ( j=7; j>=0; --j ) {
+					*buf |= (byte&0x01)<<j;
+					byte >>= 1;
+				}
+			}
+		}
+		line += bitmap->pitch;
+		bits += w;
+	}
+	return(bitmap);
 }
 
-
-void DrawScreen(SDL_Surface* screen, int h)
-{ 
-    int x, y, ytimesw;
-  
-    if(SDL_MUSTLOCK(screen)) 
-    {
-        if(SDL_LockSurface(screen) < 0) return;
-    }
-
-    for(y = 0; y < screen->h; y++ ) 
-    {
-        ytimesw = y*screen->pitch/BPP;
-        for( x = 0; x < screen->w; x++ ) 
-        {
-            setpixel(screen, x, ytimesw, (x*x)/256+3*y+h, (y*y)/256+x+h, h);
-        }
-    }
-    if(SDL_MUSTLOCK(screen)) SDL_UnlockSurface(screen);
-  
-    SDL_Flip(screen); 
-}
-
-
-int main(int argc, char* argv[])
+int main(int argc, char *argv[])
 {
-    SDL_Surface *screen;
-    SDL_Event event;
-  
-    int keypress = 0;
-    int h=0; 
-  
-    if (SDL_Init(SDL_INIT_VIDEO) < 0 ) return 1;
-   
-    if (!(screen = SDL_SetVideoMode(WIDTH, HEIGHT, DEPTH, SDL_FULLSCREEN|SDL_HWSURFACE)))
-    {
-        SDL_Quit();
-        return 1;
-    }
-  
-    while(!keypress) 
-    {
-         DrawScreen(screen,h++);
-         while(SDL_PollEvent(&event)) 
-         {      
-              switch (event.type) 
-              {
-                  case SDL_QUIT:
-	              keypress = 1;
-	              break;
-                  case SDL_KEYDOWN:
-                       keypress = 1;
-                       break;
-              }
-         }
-    }
+	SDL_Surface *screen;
+	SDL_Surface *bitmap;
+	Uint8  video_bpp;
+	Uint32 videoflags;
+	Uint8 *buffer;
+	int i, done;
+	SDL_Event event;
 
-    SDL_Quit();
-  
-    return 0;
+	/* Initialize SDL */
+	if ( SDL_Init(SDL_INIT_VIDEO) < 0 ) {
+		fprintf(stderr, "Couldn't initialize SDL: %s\n",SDL_GetError());
+		exit(1);
+	}
+	atexit(SDL_Quit);
+
+	video_bpp = 0;
+	videoflags = SDL_SWSURFACE;
+	/* Set 640x480 video mode */
+	if ( (screen=SDL_SetVideoMode(640,480,video_bpp,videoflags)) == NULL ) {
+		fprintf(stderr, "Couldn't set 640x480x%d video mode: %s\n",
+						video_bpp, SDL_GetError());
+		exit(2);
+	}
+
+	/* Set the surface pixels and refresh! */
+	if ( SDL_LockSurface(screen) < 0 ) {
+		fprintf(stderr, "Couldn't lock the display surface: %s\n",
+							SDL_GetError());
+		exit(2);
+	}
+	buffer=(Uint8 *)screen->pixels;
+	for ( i=0; i<screen->h; ++i ) {
+		memset(buffer,(i*255)/screen->h, screen->pitch);
+		buffer += screen->pitch;
+	}
+	SDL_UnlockSurface(screen);
+	SDL_UpdateRect(screen, 0, 0, 0, 0);
+
+	/* Load the bitmap */
+	bitmap = LoadXBM(screen, picture_width, picture_height,
+					(Uint8 *)picture_bits);
+	if ( bitmap == NULL ) {
+		exit(1);
+	}
+
+	/* Wait for a keystroke */
+	done = 0;
+	while ( !done ) {
+		/* Check for events */
+		while ( SDL_PollEvent(&event) ) {
+			switch (event.type) {
+				case SDL_MOUSEBUTTONDOWN: {
+					SDL_Rect dst;
+
+					dst.x = event.button.x - bitmap->w/2;
+					dst.y = event.button.y - bitmap->h/2;
+					dst.w = bitmap->w;
+					dst.h = bitmap->h;
+					SDL_BlitSurface(bitmap, NULL,
+								screen, &dst);
+					SDL_UpdateRects(screen,1,&dst);
+					}
+					break;
+				case SDL_KEYDOWN:
+					/* Any key press quits the app... */
+					done = 1;
+					break;
+				case SDL_QUIT:
+					done = 1;
+					break;
+				default:
+					break;
+			}
+			
+			// We can use Newlib functions with Menuetlibc library SDL!
+			// For example:
+			draw_bar(10, 10, 50, 50, 0xFFFFFF);
+		}
+	}
+	SDL_FreeSurface(bitmap);
+	SDL_Quit();
+	return 0;
 }

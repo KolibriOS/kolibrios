@@ -13,7 +13,7 @@ default: SDL-demo
 
 SDL-demo: $(OBJECTS) Makefile
 	$(CC) $(CFLAGS) $(INCLUDES) -o SDLTest.o SDLTest.c
-	$(LD) $(LDFLAGS) $(LIBPATH) --subsystem native -o SDLTest SDLTest.o -lgcc -lSDL -lc.dll -lc_ -lsound  # -lc_ is a menuetlibc libc, not newlib. Write you lib name
+	$(LD) $(LDFLAGS) $(LIBPATH) --subsystem native -o SDLTest SDLTest.o -lgcc -lSDL -lc.dll -lc -lc_ -lsound  # -lc_ is a menuetlibc, -lc - newlib
 	kos32-strip -s SDLTest -o SDLTest
 	objcopy SDLTest -O binary
 	rm SDLTest.o
