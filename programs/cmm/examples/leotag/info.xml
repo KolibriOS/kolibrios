@@ -1,22 +1,15 @@
 <?xml version="1.0" encoding="utf-8"?>
-<application window="main">
-	<resources>
-		<color name="textColor">#55FFFF</color>
-		<color name="rectColor">#FF5555</color>
-		<color name="backgroundColor">#554141</color>
-		<string name="revision"> REV 7321 </string>
-		<string name="date"> 17.09.2018 </string>
-	</resources>
-	<keyboard language="c--" type="press" key="KEY_ESC">
+<application>
+	<keyboard language="C--" type="press" key="KEY_ESC">
 		ExitProcess();
 	</keyboard>
 	<keyboard language="lisp" type="press" key="KEY_ESC">
 		(exit)
 	</keyboard>
-	<window name="main" type="UnDragable" right="15" bottom="15" width="150" height="80">
-		<DrawFillRect left="0" top="0" width="150" height="80" color="@color/backgroundColor" />
-		<DrawRect left="0" top="0" width="150" height="80" weight="3" color="@color/rectColor" />
-		<DrawText left="15" top="20" type="0x81" color="@color/textColor" value="@string/revision" />
-		<DrawText left="15" top="45" type="0x81" color="@color/textColor" value="@string/date" />
+	<window type="undragable" right="15" bottom="15" width="150" height="80">
+		<DrawBar left="0" top="0" width="150" height="80" color="#414155" />
+		<DrawRect left="0" top="0" width="150" height="80" weight="3" color="#5555FF" />
+		<DrawText left="15" top="20" type="0x81" color="#FFFF55" value=" REV 7321 " />
+		<DrawText left="15" top="45" type="0x81" color="#FFFF55" value="17.09.2018" />
 	</window>
 </application>
