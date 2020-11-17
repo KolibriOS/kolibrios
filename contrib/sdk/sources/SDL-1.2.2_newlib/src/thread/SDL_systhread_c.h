@@ -26,4 +26,4 @@
 /* Stub until we implement threads on this platform */
 typedef int SYS_ThreadHandle;
 
-#define DISABLE_THREADS
+//#define DISABLE_THREADS

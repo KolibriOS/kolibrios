@@ -7,12 +7,12 @@ CFLAGS = -c -fno-ident -O2 -fomit-frame-pointer -fno-ident -U__WIN32__ -U_Win32 
 
 INCLUDES = -I ../include -I $(SDK_DIR)/sources/newlib/libc/include
 
-FITZ_SRC := $(notdir $(wildcard *.c))
-OBJECTS =  $(patsubst %.c, %.o, $(FITZ_SRC))
+SYSCALL_SRC := $(notdir $(wildcard *.c))
+OBJECTS =  $(patsubst %.c, %.o, $(SYSCALL_SRC))
 
-default: $(patsubst %.c,%.o,$(FITZ_SRC))
+default: $(patsubst %.c,%.o,$(SYSCALL_SRC))
 
-%.o : %.c Makefile $(FITZ_SRC)
+%.o : %.c Makefile $(SYSCALL_SRC)
 	$(CC) $(CFLAGS) $(INCLUDES) -o $@ $<
 
 clean:

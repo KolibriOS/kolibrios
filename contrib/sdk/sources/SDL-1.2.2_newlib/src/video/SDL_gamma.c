@@ -29,6 +29,7 @@
 #include <math.h>
 #endif
 #include <stdlib.h>
+#include <string.h>
 
 #include "SDL_error.h"
 #include "SDL_sysvideo.h"
