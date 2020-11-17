@@ -639,13 +639,18 @@ main:
         mov     ecx, [descriptor_size]
         div     ecx
         mov     ecx, eax
+        cmp     ecx, MAX_MEMMAP_BLOCKS
+        jbe     @f
+        mov     ecx, MAX_MEMMAP_BLOCKS
+@@:
+        xor     eax, eax
+        mov     [eax+BOOT_LO.memmap_block_cnt], 0
         mov     esi, [memory_map]
 .next_descr:
         call    add_uefi_memmap
         add     esi, [descriptor_size]
         add     edi, sizeof.e820entry
         dec     ecx
-        test    ecx, ecx
         jnz     .next_descr
 
         ; kernel
