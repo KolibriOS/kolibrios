@@ -422,9 +422,10 @@ make_fullpaths:
 	mov	esi,[esp]
 
 	cmp	byte[esi],'/'
-	jne	@f
+	je	abs_path
 	cmp	byte[esi],'\'
 	jne	@f
+    abs_path:
 	mov	edi,fullpath_open
 
     @@:
