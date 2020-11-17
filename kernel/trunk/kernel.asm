@@ -5674,13 +5674,16 @@ is_region_userspace:
 ;      ebx = len
 ; out: eax = 1 if region in userspace memory, 0 if not
         push    esi edi ecx
+
+        cmp     eax, OS_BASE
+        ja      @f
+
         add     eax, ebx
         cmp     eax, OS_BASE
         ja      @f
 
         mov     eax, 1
-        jmp     .ret 
-
+        jmp     .ret
 @@:
         xor     eax, eax
 .ret:
