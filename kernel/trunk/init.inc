@@ -10,7 +10,7 @@ $Revision$
 align 4
 proc mem_test
 ; if we have BIOS with fn E820, skip the test
-        cmp     dword [BOOT_LO.memmap_block_cnt], 0
+        cmp     [BOOT_LO.memmap_block_cnt], 0
         jnz     .ret
 
         mov     eax, cr0
@@ -32,12 +32,12 @@ proc mem_test
         mov     cr0, eax
         inc     dword [BOOT_LO.memmap_block_cnt]
         xor     eax, eax
-        mov     [BOOT_LO.memmap_blocks + e820entry.addr.lo], eax
-        mov     [BOOT_LO.memmap_blocks + e820entry.addr.hi], eax
-        mov     [BOOT_LO.memmap_blocks + e820entry.size.lo], edi
-        mov     [BOOT_LO.memmap_blocks + e820entry.size.hi], eax
+        mov     [BOOT_LO.memmap_blocks+e820entry.addr.lo], eax
+        mov     [BOOT_LO.memmap_blocks+e820entry.addr.hi], eax
+        mov     [BOOT_LO.memmap_blocks+e820entry.size.lo], edi
+        mov     [BOOT_LO.memmap_blocks+e820entry.size.hi], eax
         inc     eax
-        mov     [BOOT_LO.memmap_blocks + e820entry.type], eax
+        mov     [BOOT_LO.memmap_blocks+e820entry.type], eax
 .ret:
         ret
 endp
@@ -46,34 +46,34 @@ align 4
 proc init_mem
 ; calculate maximum allocatable address and number of allocatable pages
         mov     edi, BOOT_LO.memmap_blocks
-        mov     ecx, [edi-4]
+        mov     ecx, [edi-4]    ; memmap_block_cnt
         xor     esi, esi; esi will hold total amount of memory
         xor     edx, edx; edx will hold maximum allocatable address
 .calcmax:
 ; round all to pages
-        mov     eax, [edi]
-        cmp     [edi+16], byte 1
+        mov     eax, [edi+e820entry.addr.lo]
+        cmp     byte [edi+e820entry.type], 1
         jne     .unusable
 
         test    eax, 0xFFF
         jz      @f
         neg     eax
         and     eax, 0xFFF
-        add     [edi], eax
-        adc     dword [edi+4], 0
-        sub     [edi+8], eax
-        sbb     dword [edi+12], 0
+        add     [edi+e820entry.addr.lo], eax
+        adc     [edi+e820entry.addr.hi], 0
+        sub     [edi+e820entry.size.lo], eax
+        sbb     [edi+e820entry.size.hi], 0
         jc      .unusable
 @@:
-        and     dword [edi+8], not 0xFFF
+        and     [edi+e820entry.size.lo], not 0xFFF
         jz      .unusable
-; ignore memory after 4 Gb
-        cmp     dword [edi+4], 0
+; ignore memory after 4 GiB
+        cmp     [edi+e820entry.addr.hi], 0
         jnz     .unusable
         mov     eax, [edi]
-        cmp     dword [edi+12], 0
+        cmp     [edi+e820entry.size.hi], 0
         jnz     .overflow
-        add     eax, [edi+8]
+        add     eax, [edi+e820entry.size.lo]
         jnc     @f
 .overflow:
         mov     eax, 0xFFFFF000
@@ -82,14 +82,14 @@ proc init_mem
         jae     @f
         mov     edx, eax
 @@:
-        sub     eax, [edi]
-        mov     [edi+8], eax
+        sub     eax, [edi+e820entry.addr.lo]
+        mov     [edi+e820entry.size.lo], eax
         add     esi, eax
         jmp     .usable
 .unusable:
-;        and     dword [edi+8], 0
+;        and     dword [edi+e820entry.size.lo], 0
 .usable:
-        add     edi, 20
+        add     edi, sizeof.e820entry
         loop    .calcmax
 .calculated:
         mov     [MEM_AMOUNT-OS_BASE], esi
@@ -195,13 +195,13 @@ proc init_page_map
         mov     ebx, BOOT_LO.memmap_blocks
         mov     edx, [ebx-4]
 .scanmap:
-        cmp     [ebx+16], byte 1
+        cmp     byte [ebx+e820entry.type], 1
         jne     .next
 
-        mov     ecx, [ebx+8]
+        mov     ecx, [ebx+e820entry.size.lo]
         shr     ecx, 12; ecx = number of pages
         jz      .next
-        mov     edi, [ebx]
+        mov     edi, [ebx+e820entry.addr.lo]
         shr     edi, 12; edi = first page
         mov     eax, edi
         shr     edi, 5
@@ -239,7 +239,7 @@ proc init_page_map
         inc     eax
         loop    @b
 .next:
-        add     ebx, 20
+        add     ebx, sizeof.e820entry
         dec     edx
         jnz     .scanmap
 
