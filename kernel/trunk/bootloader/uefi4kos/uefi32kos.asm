@@ -425,8 +425,7 @@ main:
         ccall   [eax+EFI_BOOT_SERVICES.AllocatePages], \
                 EFI_ALLOCATE_MAX_ADDRESS, EFI_RESERVED_MEMORY_TYPE, 1, \
                 devicesdat_data
-        test    eax, eax
-        jnz     .error
+        call    halt_on_error
 
         mov     eax, [esi+EFI_SYSTEM_TABLE.ConOut]
         ccall   [eax+EFI_SIMPLE_TEXT_OUTPUT_PROTOCOL.OutputString], eax, \
@@ -457,17 +456,7 @@ main:
         ccall   [eax+EFI_SIMPLE_TEXT_OUTPUT_PROTOCOL.OutputString], eax, msg
 
         mov     eax, [status]
-        test    eax, eax
-        jz      @f
-        call    clearbuf
-        mov     edi, msg
-        call    num2hex
-        mov     eax, [esi+EFI_SYSTEM_TABLE.ConOut]
-        ccall   [eax+EFI_SIMPLE_TEXT_OUTPUT_PROTOCOL.OutputString], eax, msg_error
-        mov     eax, [esi+EFI_SYSTEM_TABLE.ConOut]
-        ccall   [eax+EFI_SIMPLE_TEXT_OUTPUT_PROTOCOL.OutputString], eax, msg
-        jmp     $
-@@:
+        call    halt_on_error
 
         mov     eax, [esi+EFI_SYSTEM_TABLE.ConOut]
         ccall   [eax+EFI_SIMPLE_TEXT_OUTPUT_PROTOCOL.OutputString], eax, \
@@ -506,36 +495,7 @@ main:
         jmp     .next_gop_handle
 @@:
 
-        mov     eax, [esi+EFI_SYSTEM_TABLE.ConOut]
-        ccall   [eax+EFI_SIMPLE_TEXT_OUTPUT_PROTOCOL.OutputString], eax, \
-                msg_look_for_rsdp
-
-        mov     ebx, [efi_table]
-        mov     edi, [ebx+EFI_SYSTEM_TABLE.ConfigurationTable]
-        mov     ecx, [ebx+EFI_SYSTEM_TABLE.NumberOfTableEntries]
-.next_table:
-        dec     ecx
-        js      .all_tables_done
-        ; EFI_ACPI_TABLE_GUID
-        cmp     dword[edi+EFI_CONFIGURATION_TABLE.VendorGUID+0x0], 0x8868e871
-        jnz     .not_acpi20
-        cmp     dword[edi+EFI_CONFIGURATION_TABLE.VendorGUID+0x4], 0x11d3e4f1
-        jnz     .not_acpi20
-        cmp     dword[edi+EFI_CONFIGURATION_TABLE.VendorGUID+0x8], 0x800022bc
-        jnz     .not_acpi20
-        cmp     dword[edi+EFI_CONFIGURATION_TABLE.VendorGUID+0xc], 0x81883cc7
-        jnz     .not_acpi20
-        mov     eax, [edi+EFI_CONFIGURATION_TABLE.VendorTable]
-        mov     edx, BOOT_LO.acpi_rsdp
-        mov     [edx], eax
-        mov     eax, [esi+EFI_SYSTEM_TABLE.ConOut]
-        ccall   [eax+EFI_SIMPLE_TEXT_OUTPUT_PROTOCOL.OutputString], eax, \
-                msg_rsdp_found
-        jmp     .all_tables_done
-.not_acpi20:
-        add     edi, sizeof.EFI_CONFIGURATION_TABLE
-        jmp     .next_table
-.all_tables_done:
+        call    find_rsdp
 
         mov     eax, [esi+EFI_SYSTEM_TABLE.ConOut]
         ccall   [eax+EFI_SIMPLE_TEXT_OUTPUT_PROTOCOL.OutputString], eax, \
@@ -575,17 +535,7 @@ main:
         movzx   ecx, [cfg_opt_value_vmode]
         mov     eax, [gop_interface]
         ccall   [eax+EFI_GRAPHICS_OUTPUT_PROTOCOL.SetMode], eax, ecx
-        test    eax, eax
-        jz      @f
-        call    clearbuf
-        mov     edi, msg
-        call    num2hex
-        mov     eax, [esi+EFI_SYSTEM_TABLE.ConOut]
-        ccall   [eax+EFI_SIMPLE_TEXT_OUTPUT_PROTOCOL.OutputString], eax, msg
-        mov     eax, [esi+EFI_SYSTEM_TABLE.ConOut]
-        ccall   [eax+EFI_SIMPLE_TEXT_OUTPUT_PROTOCOL.OutputString], eax, msg_error
-        jmp     $
-@@:
+        call    halt_on_error
 
         mov     ecx, [gop_interface]
         mov     edx, [ecx+EFI_GRAPHICS_OUTPUT_PROTOCOL.Mode]
@@ -615,44 +565,6 @@ main:
         mov     byte[edx+BOOT_LO.pci_data+3], 0x02
         mov     dword[edx+BOOT_LO.pci_data+4], 0xe3
 
-
-        mov     eax, [efi_table]
-        mov     eax, [eax+EFI_SYSTEM_TABLE.BootServices]
-        ccall   [eax+EFI_BOOT_SERVICES.AllocatePages], \
-                EFI_ALLOCATE_ANY_PAGES, EFI_RESERVED_MEMORY_TYPE, \
-                MEMORY_MAP_SIZE/0x1000, memory_map
-        test    eax, eax
-        jnz     .error
-
-        mov     eax, [efi_table]
-        mov     eax, [eax+EFI_SYSTEM_TABLE.BootServices]
-        ccall   [eax+EFI_BOOT_SERVICES.GetMemoryMap], memory_map_size, \
-                [memory_map], memory_map_key, descriptor_size, descriptor_ver
-        test    eax, eax
-        jnz     .error
-
-        mov     edi, BOOT_LO.memmap_block_cnt
-        mov     dword[edi], 0
-        mov     edi, BOOT_LO.memmap_blocks
-        mov     eax, [memory_map_size]
-        xor     edx, edx
-        mov     ecx, [descriptor_size]
-        div     ecx
-        mov     ecx, eax
-        cmp     ecx, MAX_MEMMAP_BLOCKS
-        jbe     @f
-        mov     ecx, MAX_MEMMAP_BLOCKS
-@@:
-        xor     eax, eax
-        mov     [eax+BOOT_LO.memmap_block_cnt], 0
-        mov     esi, [memory_map]
-.next_descr:
-        call    add_uefi_memmap
-        add     esi, [descriptor_size]
-        add     edi, sizeof.e820entry
-        dec     ecx
-        jnz     .next_descr
-
         ; kernel
 ;        eficall BootServices, AllocatePages, EFI_RESERVED_MEMORY_TYPE, \
 ;                450000/0x1000, EFI_ALLOCATE_ADDRESS
@@ -661,13 +573,14 @@ main:
 ;        eficall BootServices, AllocatePages, EFI_RESERVED_MEMORY_TYPE, \
 ;                2880*512/0x1000, EFI_ALLOCATE_ADDRESS
 
+        call    calc_memmap
+;        call    dump_memmap
+
         mov     eax, [efi_table]
         mov     eax, [eax+EFI_SYSTEM_TABLE.BootServices]
         ccall   [eax+EFI_BOOT_SERVICES.ExitBootServices], [efi_handle], \
                 [memory_map_key]
-        test    eax, eax
-        jnz     .error
-
+        call    halt_on_error
 
         cli
 
@@ -744,75 +657,136 @@ main:
                 msg_error
         jmp     $
 
+halt_on_error:
+        test    eax, eax
+        jz      @f
+        call    clearbuf
+        mov     edi, msg
+        call    num2hex
+        mov     eax, [esi+EFI_SYSTEM_TABLE.ConOut]
+        ccall   [eax+EFI_SIMPLE_TEXT_OUTPUT_PROTOCOL.OutputString], eax, \
+                msg_error
+        mov     eax, [esi+EFI_SYSTEM_TABLE.ConOut]
+        ccall   [eax+EFI_SIMPLE_TEXT_OUTPUT_PROTOCOL.OutputString], eax, msg
+        jmp     $
+@@:
+        ret
+
+proc find_rsdp
+        mov     eax, [esi+EFI_SYSTEM_TABLE.ConOut]
+        ccall   [eax+EFI_SIMPLE_TEXT_OUTPUT_PROTOCOL.OutputString], eax, \
+                msg_look_for_rsdp
+
+        mov     edi, [esi+EFI_SYSTEM_TABLE.ConfigurationTable]
+        mov     ecx, [esi+EFI_SYSTEM_TABLE.NumberOfTableEntries]
+.next_table:
+        dec     ecx
+        js      .all_tables_done
+        ; EFI_ACPI_TABLE_GUID
+        cmp     dword[edi+EFI_CONFIGURATION_TABLE.VendorGUID+0x0], 0x8868e871
+        jnz     .not_acpi20
+        cmp     dword[edi+EFI_CONFIGURATION_TABLE.VendorGUID+0x4], 0x11d3e4f1
+        jnz     .not_acpi20
+        cmp     dword[edi+EFI_CONFIGURATION_TABLE.VendorGUID+0x8], 0x800022bc
+        jnz     .not_acpi20
+        cmp     dword[edi+EFI_CONFIGURATION_TABLE.VendorGUID+0xc], 0x81883cc7
+        jnz     .not_acpi20
+        mov     eax, [edi+EFI_CONFIGURATION_TABLE.VendorTable]
+        mov     edx, BOOT_LO.acpi_rsdp
+        mov     [edx], eax
+        mov     eax, [esi+EFI_SYSTEM_TABLE.ConOut]
+        ccall   [eax+EFI_SIMPLE_TEXT_OUTPUT_PROTOCOL.OutputString], eax, \
+                msg_rsdp_found
+        jmp     .all_tables_done
+.not_acpi20:
+        add     edi, sizeof.EFI_CONFIGURATION_TABLE
+        jmp     .next_table
+.all_tables_done:
+        ret
+endp
+
+proc calc_memmap
+        mov     eax, [esi+EFI_SYSTEM_TABLE.BootServices]
+        ccall   [eax+EFI_BOOT_SERVICES.AllocatePages], EFI_ALLOCATE_ANY_PAGES, \
+                EFI_RESERVED_MEMORY_TYPE, MEMORY_MAP_SIZE/0x1000, memory_map
+        call    halt_on_error
+
+        mov     eax, [esi+EFI_SYSTEM_TABLE.BootServices]
+        ccall   [eax+EFI_BOOT_SERVICES.GetMemoryMap], memory_map_size, \
+                [memory_map], memory_map_key, descriptor_size, descriptor_ver
+        call    halt_on_error
+
+        push    esi
+        mov     edi, BOOT_LO.memmap_blocks
+        mov     dword[edi-4], 0 ; memmap_block_cnt
+        mov     esi, [memory_map]
+        mov     ebx, esi
+        add     ebx, [memory_map_size]
+.next_descr:
+        call    add_uefi_memmap
+        add     esi, [descriptor_size]
+        cmp     esi, ebx
+        jb      .next_descr
+        pop     esi
+        ret
+endp
+
 ; linux/arch/x86/platform/efi/efi.c
 ; do_add_efi_memmap
 proc add_uefi_memmap
-locals
-  pew dd ?
-endl
-        pushad
+        cmp     [BOOT_LO.memmap_block_cnt], MAX_MEMMAP_BLOCKS
+        jz      .done
 
-        mov     edx, [esi+EFI_MEMORY_DESCRIPTOR.Type]
+        mov     eax, [esi+EFI_MEMORY_DESCRIPTOR.PhysicalStart.lo]
+        mov     edx, [esi+EFI_MEMORY_DESCRIPTOR.PhysicalStart.hi]
+        mov     [edi+e820entry.addr.lo], eax
+        mov     [edi+e820entry.addr.hi], edx
 
-        mov     eax, [esi+EFI_MEMORY_DESCRIPTOR.PhysicalStart.lo] ; FIXME hi
-        mov     [edi+e820entry.addr], eax
-
-        mov     eax, [esi+EFI_MEMORY_DESCRIPTOR.NumberOfPages]
+        mov     eax, [esi+EFI_MEMORY_DESCRIPTOR.NumberOfPages.lo]
+        mov     edx, [esi+EFI_MEMORY_DESCRIPTOR.NumberOfPages.hi]
+        shld    edx, eax, 12
         shl     eax, 12
-        mov     [edi+e820entry.size], eax
+        mov     [edi+e820entry.size.lo], eax
+        mov     [edi+e820entry.size.hi], edx
 
-
-        cmp     edx, EFI_LOADER_CODE
-        jz      .case0
-        cmp     edx, EFI_LOADER_DATA
-        jz      .case0
-        cmp     edx, EFI_BOOT_SERVICES_CODE
-        jz      .case0
-        cmp     edx, EFI_BOOT_SERVICES_DATA
-        jz      .case0
-        cmp     edx, EFI_CONVENTIONAL_MEMORY
-        jz      .case0
-        cmp     edx, EFI_ACPI_RECLAIM_MEMORY
-        jz      .case1
-        cmp     edx, EFI_ACPI_MEMORY_NVS
-        jz      .case2
-        cmp     edx, EFI_UNUSABLE_MEMORY
-        jz      .case3
-        cmp     edx, EFI_PERSISTENT_MEMORY
-        jz      .case4
-        jmp     .default
-
-.case0:
-        test    [esi+EFI_MEMORY_DESCRIPTOR.Attribute.lo], EFI_MEMORY_WB
-        jz      @f
-        mov     eax, E820_RAM
-        jmp     .done
-    @@:
-        mov     eax, E820_RESERVED
-        jmp     .done
-.case1:
+        mov     ecx, [esi+EFI_MEMORY_DESCRIPTOR.Type]
+        cmp     ecx, EFI_LOADER_CODE
+        jz      .mem_ram_if_wb
+        cmp     ecx, EFI_LOADER_DATA
+        jz      .mem_ram_if_wb
+        cmp     ecx, EFI_BOOT_SERVICES_CODE
+        jz      .mem_ram_if_wb
+        cmp     ecx, EFI_BOOT_SERVICES_DATA
+        jz      .mem_ram_if_wb
+        cmp     ecx, EFI_CONVENTIONAL_MEMORY
+        jz      .mem_ram_if_wb
+        cmp     ecx, EFI_ACPI_RECLAIM_MEMORY
         mov     eax, E820_ACPI
-        jmp     .done
-.case2:
+        jz      .type_done
+        cmp     ecx, EFI_ACPI_MEMORY_NVS
         mov     eax, E820_NVS
-        jmp     .done
-.case3:
+        jz      .type_done
+        cmp     ecx, EFI_UNUSABLE_MEMORY
         mov     eax, E820_UNUSABLE
-        jmp     .done
-.case4:
+        jz      .type_done
+        cmp     ecx, EFI_PERSISTENT_MEMORY
         mov     eax, E820_PMEM
-        jmp     .done
-.default:
+        jz      .type_done
+        jmp     .reserved
+.mem_ram_if_wb:
+        test    [esi+EFI_MEMORY_DESCRIPTOR.Attribute.lo], EFI_MEMORY_WB
+        mov     eax, E820_RAM
+        jnz     .type_done
+.reserved:
         mov     eax, E820_RESERVED
-        jmp     .done
-
-.done:
+.type_done:
         mov     [edi+e820entry.type], eax
-
-        mov     eax, BOOT_LO.memmap_block_cnt
-        inc     word[eax]
-
-        popad
+        cmp     eax, E820_RAM
+        jnz     @f
+        inc     [BOOT_LO.memmap_block_cnt]
+        add     edi, sizeof.e820entry
+@@:
+.done:
         ret
 endp
 

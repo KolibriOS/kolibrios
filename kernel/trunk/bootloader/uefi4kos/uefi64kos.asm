@@ -712,9 +712,6 @@ main:
         call    ask_for_params
 @@:
 
-;        call    calc_memmap
-;        call    dump_memmap
-
         movzx   ecx, [cfg_opt_value_vmode]
         eficall [gop_interface], EFI_GRAPHICS_OUTPUT_PROTOCOL.SetMode, \
                 [gop_interface], rcx
@@ -770,6 +767,7 @@ main:
 ;                2880*512/0x1000, EFI_ALLOCATE_ADDRESS
 
         call    calc_memmap
+;        call    dump_memmap
 
         mov     rbx, [efi_table]
         mov     rbx, [rbx+EFI_SYSTEM_TABLE.BootServices]
@@ -861,7 +859,6 @@ use64
 
 
 halt_on_error:
-        push    rax rbx rcx rdx rsi rdi
         test    eax, eax
         jz      @f
         call    clearbuf
@@ -876,7 +873,6 @@ halt_on_error:
         eficall rbx, EFI_SIMPLE_TEXT_OUTPUT_PROTOCOL.OutputString, rbx, msg
         jmp     $
 @@:
-        pop     rdi rsi rdx rcx rbx rax
         ret
 
 find_rsdp:
@@ -922,27 +918,16 @@ calc_memmap:
                 [memory_map], memory_map_key, descriptor_size, descriptor_ver
         call    halt_on_error
 
-        mov     rdi, BOOT_LO.memmap_block_cnt
-        mov     dword[rdi], 0
         mov     rdi, BOOT_LO.memmap_blocks
-        mov     rax, [memory_map_size]
-        xor     edx, edx
-        mov     rcx, [descriptor_size]
-        div     ecx
-        mov     ecx, eax
-        cmp     ecx, MAX_MEMMAP_BLOCKS
-        jbe     @f
-        mov     ecx, MAX_MEMMAP_BLOCKS
-@@:
-        xor     eax, eax
-        mov     [rax+BOOT_LO.memmap_block_cnt], 0
+        mov     dword[rdi-4], 0 ; memmap_block_cnt
         mov     rsi, [memory_map]
+        mov     rbx, rsi
+        add     rbx, [memory_map_size]
 .next_descr:
         call    add_uefi_memmap
         add     rsi, [descriptor_size]
-        add     rdi, sizeof.e820entry
-        dec     ecx
-        jnz     .next_descr
+        cmp     rsi, rbx
+        jb      .next_descr
         ret
 
 dump_memmap:
@@ -997,70 +982,56 @@ dump_memmap:
 ; linux/arch/x86/platform/efi/efi.c
 ; do_add_efi_memmap
 add_uefi_memmap:
-        push    rax rbx rcx rdx rsi rdi
+        xor     eax, eax
+        cmp     [rax+BOOT_LO.memmap_block_cnt], MAX_MEMMAP_BLOCKS
+        jz      .done
 
-        mov     r10d, [rsi+EFI_MEMORY_DESCRIPTOR.Type]
-        mov     r11, [rsi+EFI_MEMORY_DESCRIPTOR.PhysicalStart]
-        mov     r13, [rsi+EFI_MEMORY_DESCRIPTOR.NumberOfPages]
-        mov     r14, [rsi+EFI_MEMORY_DESCRIPTOR.Attribute]
+        mov     rax, [rsi+EFI_MEMORY_DESCRIPTOR.PhysicalStart]
+        mov     [rdi+e820entry.addr], rax
 
-        mov     [rdi+e820entry.addr], r11
-        mov     rax, r13
+        mov     rax, [rsi+EFI_MEMORY_DESCRIPTOR.NumberOfPages]
         shl     rax, 12
         mov     [rdi+e820entry.size], rax
 
-
-        cmp     r10d, EFI_LOADER_CODE
-        jz      .case0
-        cmp     r10d, EFI_LOADER_DATA
-        jz      .case0
-        cmp     r10d, EFI_BOOT_SERVICES_CODE
-        jz      .case0
-        cmp     r10d, EFI_BOOT_SERVICES_DATA
-        jz      .case0
-        cmp     r10d, EFI_CONVENTIONAL_MEMORY
-        jz      .case0
-        cmp     r10d, EFI_ACPI_RECLAIM_MEMORY
-        jz      .case1
-        cmp     r10d, EFI_ACPI_MEMORY_NVS
-        jz      .case2
-        cmp     r10d, EFI_UNUSABLE_MEMORY
-        jz      .case3
-        cmp     r10d, EFI_PERSISTENT_MEMORY
-        jz      .case4
-        jmp     .default
-
-.case0:
-        test    r14, EFI_MEMORY_WB
-        jz      @f
-        mov     eax, E820_RAM
-        jmp     .done
-    @@:
-        mov     eax, E820_RESERVED
-        jmp     .done
-.case1:
+        mov     ecx, [rsi+EFI_MEMORY_DESCRIPTOR.Type]
+        cmp     ecx, EFI_LOADER_CODE
+        jz      .mem_ram_if_wb
+        cmp     ecx, EFI_LOADER_DATA
+        jz      .mem_ram_if_wb
+        cmp     ecx, EFI_BOOT_SERVICES_CODE
+        jz      .mem_ram_if_wb
+        cmp     ecx, EFI_BOOT_SERVICES_DATA
+        jz      .mem_ram_if_wb
+        cmp     ecx, EFI_CONVENTIONAL_MEMORY
+        jz      .mem_ram_if_wb
+        cmp     ecx, EFI_ACPI_RECLAIM_MEMORY
         mov     eax, E820_ACPI
-        jmp     .done
-.case2:
+        jz      .type_done
+        cmp     ecx, EFI_ACPI_MEMORY_NVS
         mov     eax, E820_NVS
-        jmp     .done
-.case3:
+        jz      .type_done
+        cmp     ecx, EFI_UNUSABLE_MEMORY
         mov     eax, E820_UNUSABLE
-        jmp     .done
-.case4:
+        jz      .type_done
+        cmp     ecx, EFI_PERSISTENT_MEMORY
         mov     eax, E820_PMEM
-        jmp     .done
-.default:
+        jz      .type_done
+        jmp     .reserved
+.mem_ram_if_wb:
+        test    [rsi+EFI_MEMORY_DESCRIPTOR.Attribute], dword EFI_MEMORY_WB
+        mov     eax, E820_RAM
+        jnz     .type_done
+.reserved:
         mov     eax, E820_RESERVED
-        jmp     .done
-
-.done:
+.type_done:
         mov     [rdi+e820entry.type], eax
-
-        mov     rax, BOOT_LO.memmap_block_cnt
-        inc     word[rax]
-
-        pop     rdi rsi rdx rcx rbx rax
+        cmp     eax, E820_RAM
+        jnz     @f
+        xor     eax, eax
+        inc     [rax+BOOT_LO.memmap_block_cnt]
+        add     rdi, sizeof.e820entry
+@@:
+.done:
         ret
 
 
