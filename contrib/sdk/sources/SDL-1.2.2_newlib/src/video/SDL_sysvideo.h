@@ -386,7 +386,7 @@ extern VideoBootStrap QZ_bootstrap;
 #ifdef ENABLE_CYBERGRAPHICS
 extern VideoBootStrap CGX_bootstrap;
 #endif
-#ifdef ENABLE_MENUETOS
+#ifdef ENABLE_KOLIBRIOS
 extern VideoBootStrap mosvideo_bootstrab;
 #endif
 /* This is the current video device */

@@ -41,6 +41,6 @@ static char rcsid =
 #define CANT_THREAD_EVENTS
 #endif
 
-#ifdef __MENUETOS__
+#ifdef __KOLIBRIOS__
 #define CANT_THREAD_EVENTS
 #endif

@@ -1,7 +1,3 @@
-# SDL build makefile_test
-# writed by maxcodehack
-
-
 CC = kos32-gcc
 AR = kos32-ar
 LD = kos32-ld
@@ -38,9 +34,9 @@ CFLAGS = -c -O2 -D_REENTRANT -I../include -I SYSCALL/include -I. -DPACKAGE=\"SDL
         -fexpensive-optimizations -Wall -DENABLE_AUDIO -UDISABLE_AUDIO -DDISABLE_JOYSTICK \
         -DDISABLE_CDROM -DDISABLE_THREADS -DENABLE_TIMERS \
         -DUSE_ASMBLIT -Ihermes -Iaudio -Ivideo -Ievents \
-        -Ijoystick -Icdrom -Ithread -Itimer -Iendian -Ifile -DENABLE_MENUETOS \
+        -Ijoystick -Icdrom -Ithread -Itimer -Iendian -Ifile -DENABLE_KOLIBRIOS \
         -DNO_SIGNAL_H -DDISABLE_STDIO -DNEED_SDL_GETENV -DENABLE_FILE -UDISABLE_FILE \
-        -D__MENUETOS__ -DDEBUG_VIDEO -UWIN32 -U_Win32 -U_WIN32 -U__MINGW32__ \
+        -D__KOLIBRIOS__ -DDEBUG_VIDEO -UWIN32 -U_Win32 -U_WIN32 -U__MINGW32__ \
         -I../../newlib/libc/include/
  
  

@@ -95,7 +95,7 @@ static VideoBootStrap *bootstrap[] = {
 #ifdef ENABLE_PHOTON
 	&ph_bootstrap,
 #endif
-#ifdef ENABLE_MENUETOS
+#ifdef ENABLE_KOLIBRIOS
 	&mosvideo_bootstrab,
 #endif
 	NULL
