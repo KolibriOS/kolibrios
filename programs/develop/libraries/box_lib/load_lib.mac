@@ -1,7 +1,3 @@
-;13.03.2013 - use @notify
-;08.06.2010 - new macros @use_library_mem
-;08.05.2009 - bugfix
-;14.04.2009 - a macros for code load library the box_lib.obj from '/sys/lib/' or current dirrectory.
 ; The macros for load any library/libraries:
 ; Copyright (c) 2009, <Lrz>
 ; All rights reserved.
@@ -93,7 +89,7 @@
 
 
 
-macro @use_library
+macro @use_library mem_alloc,mem_free,mem_realloc,dll_load
 {
 local lp1
 local lp2
@@ -103,7 +99,10 @@ local lp5
 local lp6
 local file_name
 
-library_fun_memory_alloc equ 0 ;не использовать в макросах проверку на функции 'lib_init'
+library_fun_memory_alloc equ mem_alloc
+library_fun_memory_free equ mem_free
+library_fun_memory_realloc equ mem_realloc
+library_fun_dll_load equ dll_load
 
 align 4
 arrea_xx dd 0
@@ -245,11 +244,7 @@ align 4
 
 macro @use_library_mem mem_alloc,mem_free,mem_realloc,dll_load
 {
-@use_library
-library_fun_memory_alloc equ mem_alloc
-library_fun_memory_free equ mem_free
-library_fun_memory_realloc equ mem_realloc
-library_fun_dll_load equ dll_load
+@use_library mem_alloc,mem_free,mem_realloc,dll_load
 }
 
 macro sys_load_library library_name__, cur_dir_path__, library_path__, system_path__, err_message_found_lib__, head_f_l__, myimport, err_message_import__, head_f_i__,point_dir_name__
@@ -263,10 +258,10 @@ local i_exit
 	jnz		i_begin
 
 if point_dir_name__ eq
-		copy_path   library_name__, cur_dir_path__, library_path__,0
+		copy_path   library_name__, [32], library_path__,0
 else
 		;the macros making way /current path a program/ + name system library
-		copy_path   library_name__, cur_dir_path__, library_path__,point_dir_name__
+		copy_path   library_name__, [32], library_path__,point_dir_name__
 end if
 		mcall	68,19,library_path__ ; load of alternative
 		test	eax,eax
@@ -297,10 +292,10 @@ local i_error
 local i_exit
 
 if point_dir_name__ eq
-		copy_path   library_name__, cur_dir_path__, library_path__,0
+		copy_path   library_name__, [32], library_path__,0
 else
 		;the macros making way /current path a program/ + name system library
-		copy_path   library_name__, cur_dir_path__, library_path__,point_dir_name__
+		copy_path   library_name__, [32], library_path__,point_dir_name__
 end if
 		mcall	68,19,library_path__ ; load of alternative
 		test	eax,eax
@@ -341,17 +336,16 @@ local cycle1n
 local cycle1e
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 library_name__            equ [ebp]
-cur_dir_path__            equ [ebp+4]
-library_path__            equ [ebp+8]
-system_path__             equ [ebp+12]
-err_message_found_lib__   equ [ebp+16]   
-head_f_l__                equ [ebp+20]
-my_import                 equ [ebp+24] 
-err_message_import__      equ [ebp+28]
-head_f_i__                equ [ebp+32]
-point_dir_name__          equ [ebp+36]
-adr_load_lib              equ dword [ebp+40]
-status_lib                equ dword [ebp+44]
+library_path__            equ [ebp+4]
+system_path__             equ [ebp+8]
+err_message_found_lib__   equ [ebp+12]   
+head_f_l__                equ [ebp+16]
+my_import                 equ [ebp+20] 
+err_message_import__      equ [ebp+24]
+head_f_i__                equ [ebp+28]
+point_dir_name__          equ [ebp+32]
+adr_load_lib              equ dword [ebp+36]
+status_lib                equ dword [ebp+40]
 
 	mov	ebp,_start
 	mov	ecx,(_end-_start)/ll_struc_size
@@ -363,7 +357,7 @@ align 4
         jnz     end_steep 
 
         ;the macros making way /current path a program/ + name system library
-		copy_path  library_name__, cur_dir_path__, library_path__,point_dir_name__
+		copy_path  library_name__, [32], library_path__,point_dir_name__
         
         mcall   68,19,library_path__ ; load of alternative
         test    eax,eax
@@ -425,17 +419,16 @@ local cycle1n
 local cycle1e
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 library_name__            equ [ebp]
-cur_dir_path__            equ [ebp+4]
-library_path__            equ [ebp+8]
-system_path__             equ [ebp+12]
-err_message_found_lib__   equ [ebp+16]   
-head_f_l__                equ [ebp+20]
-my_import                 equ [ebp+24] 
-err_message_import__      equ [ebp+28]
-head_f_i__                equ [ebp+32]
-point_dir_name__          equ [ebp+36]
-adr_load_lib              equ dword [ebp+40]
-status_lib                equ dword [ebp+44]
+library_path__            equ [ebp+4]
+system_path__             equ [ebp+8]
+err_message_found_lib__   equ [ebp+12]   
+head_f_l__                equ [ebp+16]
+my_import                 equ [ebp+20] 
+err_message_import__      equ [ebp+24]
+head_f_i__                equ [ebp+28]
+point_dir_name__          equ [ebp+32]
+adr_load_lib              equ dword [ebp+36]
+status_lib                equ dword [ebp+40]
 
 	mov	ebp,_start
 	mov	ecx,(_end-_start)/ll_struc_size
@@ -444,7 +437,7 @@ align 4
 		push	ecx
 
 		;the macros making way /current path a program/ + name system library
-		copy_path    library_name__, cur_dir_path__, library_path__,point_dir_name__
+		copy_path    library_name__, [32], library_path__,point_dir_name__
 
 		mcall	68,19,library_path__  ; load of alternative
 		test	eax,eax
@@ -573,7 +566,7 @@ import_found:
         mov     [esi-4], eax ;копируем указатель (на функцию) в программу, -4 ставим потому что esi было сдвинуто командой lodsd
         pop     edx ;устанавливаем edx на начало библиотечных функций
 ;--- проверяем совпадает ли имя экспортированной функции с 'lib_init'
-if library_fun_memory_alloc eq 0
+if library_fun_memory_alloc eq
 else
 		cmp dword[ebx],'lib_'
 		jne		import_loop
@@ -602,11 +595,10 @@ exit:
 } 
 ;---------------------------------------------------------------------
 
-ll_struc_size = 48;($-library_name__)    ; constant   size of struct
+ll_struc_size = 44;($-library_name__)    ; constant   size of struct
 struc l_libs library_name__, cur_dir_path__, library_path__, system_path__, err_message_found_lib__, head_f_l__, my_import, err_message_import__, head_f_i__,point_dir_name; struct for loading libraries
 {        
 .library_name__           dd library_name__        ; имя загружаемой библиотеки
-.cur_dir_path__           dd cur_dir_path__        ; указатель на буфер в котором содержиться путь от куда была запущена программа
                         
 .library_path__           dd library_path__        ; указатель на буфер в котором будет софоримирован путь к библиотеки, если нужно вычислить путь до либы с места запуска программы, обычно нужно, в случаях, если либа расположена в той же папке
 .complete_path            dd system_path__         ; путь который четко содержит путь
