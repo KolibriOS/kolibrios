@@ -6,8 +6,8 @@
 
 format ELF
 use32
-include 'proc32.inc'
-include 'struct.inc'
+include '../../../../proc32.inc'
+include '../../../../struct.inc'
 include 'tinypy.inc'
 
 extrn tp_dict
