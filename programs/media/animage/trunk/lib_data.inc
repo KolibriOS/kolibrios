@@ -1,27 +1,13 @@
 ;---------------------------------------------------------------------
-head_f_i:
-head_f_l	db 'System error',0
-;---------------------------------------------------------------------
 system_dir_1: db '/sys/lib/libimg.obj',0
-err_message_found_lib_1 db 39,'libimg.obj',39,' - Not found!',0
-err_message_import_1 db 39,'libimg.obj',39,' - Wrong import!',0
-
-system_dir_ProcLib db '/sys/lib/proc_lib.obj',0
-err_message_found_lib2 db 39,'proc_lib.obj',39,' - Not found!',0
-err_message_import2	db 39,'proc_lib.obj',39,' - Wrong import!',0
-
+system_dir_2 db '/sys/lib/proc_lib.obj',0
 system_dir_3: db '/sys/lib/kmenu.obj',0
-err_message_found_lib_3 db 39,'kmenu.obj',39,' - Not found!',0
-err_message_import_3 db 39,'kmenu.obj',39,' - Wrong import!',0
 ;---------------------------------------------------------------------
 align 4
 l_libs_start:
-	lib1 l_libs system_dir_1+9, cur_dir_path, library_path, system_dir_1,\
-		err_message_found_lib_1, head_f_l, import_libimg, err_message_import_1, head_f_i
-	lib2 l_libs system_dir_ProcLib+9, cur_dir_path, library_path, system_dir_ProcLib, \
-		err_message_found_lib2, head_f_l, ProcLib_import, err_message_import2, head_f_i
-	lib3 l_libs system_dir_3+9, cur_dir_path, library_path, system_dir_3,\
-		err_message_found_lib_3, head_f_l, import_libkmenu, err_message_import_3, head_f_i
+	lib1 l_libs system_dir_1+9, library_path, system_dir_1, import_libimg
+	lib2 l_libs system_dir_2+9, library_path, system_dir_2, ProcLib_import
+	lib3 l_libs system_dir_3+9, library_path, system_dir_3, import_libkmenu
 end_l_libs:
 ;---------------------------------------------------------------------
 align 4

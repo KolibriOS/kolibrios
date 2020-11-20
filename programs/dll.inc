@@ -125,9 +125,11 @@ proc strcmp, str1:dword, str2:dword
 	ret
 endp
 ;-----------------------------------------------------------------------------
+if defined dll.Load
 s_libdir:
   db '/sys/lib/'
   .fname rb 32
+end if
 ;-----------------------------------------------------------------------------
 proc mem.Alloc, size
 	push	ebx ecx
