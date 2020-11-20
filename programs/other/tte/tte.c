@@ -459,8 +459,6 @@ void enableRawMode() {
 ///        die("Failed to set raw mode");
 }
 
-
-
 /// by Siemargl rewritten, still Ctrl+ combination works only in english locale, so need analyze scancode
 int editorReadKey() {
     int key = con_getch2();
@@ -1798,7 +1796,11 @@ int main(int argc, char* argv[]) {
     initEditor();
     int arg_response = handleArgs(argc, argv);
     if (arg_response == 1) {
-		editorOpen(argv[1]);
+		char* filename = argv[1];
+		// tolower
+		for (int i = 0; i < strlen(filename); i++) filename[i] = tolower(filename[i]);
+		
+		editorOpen(filename);
 		char* title = argv[1];
 		strcat(title, " - TinyTextEditor");
 		con_set_title(title);
@@ -1812,7 +1814,6 @@ int main(int argc, char* argv[]) {
         editorRefreshScreen();
         editorProcessKeypress();
     }
-
 	con_exit(1);
     return 0;
 }
