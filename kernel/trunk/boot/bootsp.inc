@@ -13,7 +13,7 @@
 
 ; Para modificar éste archivo es necesario abrirlo con codificación CP850
 
-$Revision: 2455 $
+$Revision$
 
 
 d80x25_bottom:
