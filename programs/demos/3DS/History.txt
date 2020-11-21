@@ -1,3 +1,12 @@
+
+View3ds 0.070 - VII 2020
+
+1. Some keys support by Leency.
+2. New displaying model - real Phong - real not fake normal vector interpolation,
+   normalising it and calculating  dot product (one for each light).
+   It requires SSE3.  (by me, Maciej Guba)
+-----------------------------------------------------------------------------------
+
 View3ds 0.069 - May 2020
 1. KPacked files support by Leency.
 2. 32bit vertices indexes and ability to load whole RAM limited objects.
@@ -5,7 +14,6 @@ View3ds 0.069 - May 2020
 3. I switch off painters algotithm mode (depth sorting). In app impelementetion it has
    limited vertices count and produce less quality image than Z buffer Catmull algo.
    In addition this switch off reduces app size, (by me).
-
 -----------------------------------------------------------------------------------
 
 View3ds 0.068 - XI 2016

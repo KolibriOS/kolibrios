@@ -79,7 +79,7 @@ end if
 
    lea     ebx,[eax*3]
    cmp     [dr_flag],12 ; 32 bit col cause
-   jne     @f
+   jl      @f
    add     ebx,eax
   @@:
    mov     eax,[esi]
@@ -87,7 +87,7 @@ end if
  .skip:
    add     esi,3
    cmp     [dr_flag],12
-   jne     @f
+   jl      @f
    inc     esi
   @@:
    inc     dword .x
@@ -106,8 +106,8 @@ end if
    movzx   ecx,word[size_x_var]
    movzx   eax,word[size_y_var]
    imul    ecx,eax
-   cmp         [dr_flag],12
-   je          @f
+   cmp     [dr_flag],12
+   jge     @f
    lea     ecx,[ecx*3]
    shr     ecx,2
  ;  mov     ecx,SIZE_X*SIZE_Y*3/4
@@ -169,7 +169,7 @@ if Ext >= SSE2
  mov   esi,[screen_ptr]
  mov   edi,[Zbuffer_ptr]
  cmp   [dr_flag],12
- je    @f
+ jge   @f
  lea   ebx,[ebx*3]
  jmp   .f
 @@:
@@ -182,7 +182,7 @@ if Ext >= SSE2
  push  eax
 .emb:
  cmp   [dr_flag],12
- je    @f
+ jge   @f
  movlps     xmm1,[esi+3]
  movhps     xmm1,[esi+6]
  movlps     xmm2,[esi-3]
@@ -246,7 +246,7 @@ end if
  mov        [edi+4],eax
 
  cmp    [dr_flag],12
- jne    @f
+ jl     @f
  add    esi,2
  add    ebx,2
  add    edx,2
@@ -264,7 +264,7 @@ end if
  mov    edi,[screen_ptr]
  mov    esi,[Zbuffer_ptr]
  cmp    [dr_flag],12
- je     .e
+ jge    .e
 @@:
  movsd
  dec    edi
@@ -562,8 +562,6 @@ generate_object2:  ; torus
         pop     ebp
 
 ret
-
-
 generate_object3:  ; heart
 ;locals
 ;   counter dw ?
@@ -754,4 +752,6 @@ generate_object3:  ; heart
         pop     ebp
 
 ret
+
+
 

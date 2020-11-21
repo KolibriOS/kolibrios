@@ -751,7 +751,7 @@ if Ext>=SSE2
          movzx      ecx,word[size_x_var]  ;SIZE_X*3/4
 
          cmp         [dr_flag],12
-         je        @f
+         jge        @f
          lea        ecx,[ecx*3+1]
          shr        ecx,2
        @@:
@@ -764,7 +764,7 @@ if Ext>=SSE2
          sub        ecx,3
          imul       ecx,ebx
          cmp        [dr_flag],12  ; 32 bit per pix cause
-         je         @f
+         jge        @f
          lea        ecx,[ecx*3]
          shr        ecx,4
          lea        ebx,[ebx *3]
@@ -782,7 +782,7 @@ if Ext>=SSE2
          sub        ecx,ebx
          movups     xmm1,[ecx]
          cmp         [dr_flag],12
-         je         @f
+         jge        @f
          movups     xmm2,[edi-3]
          movups     xmm3,[edi+3]
          jmp        .f
@@ -803,7 +803,7 @@ if Ext>=SSE2
          xor        eax,eax
          movzx      ecx,word[size_x_var]
          cmp        [dr_flag],12
-         je         @f
+         jge        @f
          lea        ecx,[ecx*3]
          shr        ecx,2
         @@:

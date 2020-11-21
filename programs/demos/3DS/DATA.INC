@@ -13,8 +13,6 @@
         xobs            dw      0 ;SIZE_X / 2 ;200 ;observer  = camera
         yobs            dw      0 ;SIZE_Y / 2 ;200 ;coordinates
         zobs            dw      -1000
-     ;   size_x          dw      SIZE_X
-     ;   size_y          dw      SIZE_Y
 
         re_alloc_flag db 0
         angle_counter dw 0
@@ -56,7 +54,6 @@
         vertices_index_ptr      dd 0
 
 
-     ;   draw_win_at_first db 1
         vertex_edit_no    dw 0
         edit_start_x:
                           dw 0
@@ -76,7 +73,7 @@
                db 3
                db 'shd. model'
             if Ext >= SSE3
-               db 13
+               db 14
             else
                db 12
             end if
@@ -269,6 +266,7 @@ flags:             ; flags description
     db 'cenv'
     db 'grdl'
     db 'rphg'
+    db 'glas'
  spd_f:
     db 'idle'
     db 'full'
@@ -279,15 +277,6 @@ flags:             ; flags description
  onoff_f:
     db 'off '
     db 'on  '
-; light_component_f:
-;    db 'norm '                ; diffuse   |
-;    db 'min'                  ; specular  |  or sth. like this
-;    db 'max '                 ; emmisive  |
-
-;; color_component_f:
-;;    db ' r  '
-;;    db ' g  '
-;;    db ' b  '
 
           blur_f:              ; blur, fire
             db 'off '
@@ -334,14 +323,6 @@ base_vector:
         db   'y +'
     labelyplusend:
 
-;navigation_size = $ - labelvector
-;        db   'set color '
-;        db   'r -'
-;        db   'g +'
-;        db   'b -'
-;        db   'b +'
-;        db   'g -'
-;        db   'r +'
 
     labelt:
         db   'DEUS CARITAS EST'
@@ -357,13 +338,12 @@ base_vector:
       if Ext=SSE3
         db   ' (SSE3)'
       end if
-        db   ' 0.070',0
+        db   ' 0.071',0
     labellen:
         STRdata db '-1        '
 
     all_lights_size dw lightsend-lights
 
-if USE_LFN
 
         file_info:
                 dd      0
@@ -373,20 +353,7 @@ if USE_LFN
          fptr   dd      0 ;workarea
         file_name:
                 db      '/rd/1/3d/house.3ds',0
-
-else
-
-        file_info:
-                dd 0
-                dd 0
-         fsize  dd 1
-                dd workarea
-                dd hash_table
-        file_name:
-                db   '/rd/1/teapot.3ds',0
-end if
-
-  ;I_END:
+         ;      db      '/tmp0/1/ant.3ds',0
 
       rb 256
 
@@ -448,14 +415,8 @@ align 16
            times 4 dd 0.0
 
 I_END:
-if USE_LFN = 0
-hash_table rb 4096
-SourceFile:
-workarea   rb 180000
-else
 SourceFile:
 workarea   rb 180
-end if
 EndFile   dd ?
 align 8
         sinbeta dd      ?;+32
@@ -478,29 +439,16 @@ align 8
         col2    dd      ?
         col3    dd      ?
         scale   dd      ? ; help scale variable
-        edges_counter dd ?
+
    ;==
         triangles_count_var     dd ?
         points_count_var        dd ?
-     ;   triangles_ptr           dd ?
-     ;   triangles_w_z_ptr       dd ?
-     ;   triangles_normals_ptr   dd ?
-     ;   points_normals_ptr      dd ?
-     ;   points_normals_rot_ptr  dd ?
-     ;   points_ptr              dd ?
-     ;   points_rotated_ptr      dd ?
-     ;   points_translated_ptr   dd ?
-     ;   screen_ptr              dd ?
-     ;   Zbuffer_ptr             dd ?
-     ;   vertices_index_ptr      dd ?
-      ;  edit_start_x:
-                                dw ?    ; don't change order
-      ;  edit_start_y            dw ?
-     ;   edges_ptr               dd ?
+
         size_y_var:
-                                dw ?
+        yres_var                dw ?
+
         size_x_var:
-                                dw ?
+        xres_var                dw ?
         x_start:
                                 dw ?
         y_start:
@@ -512,6 +460,8 @@ align 8
         point_index2        dd ?   ;  }  don't change order
         point_index3        dd ?   ;-/
         temp_col            dw ?
+        temp1               dd ?
+        temp2               dd ?
         high                dd ?
         rand_seed           dw ?
 align 8
@@ -531,41 +481,15 @@ align 8
 
 align 16
 
-if USE_LFN = 0
-     points:
-        rw (EndFile-SourceFile)/12*3
-        points_count = ($-points)/6
-     triangles:
-        rw  (EndFile-SourceFile)/12*3
-        triangles_count = ($-triangles)/6
-align 16
-        real_points rd points_count*3 + 1
-align 16
-        rotated_points_r rd points_count*3 + 1
-align 16
-        points_rotated rw points_count*3 + 2 ;means translated
-align 16
-        triangles_normals rb triangles_count * 12 ;
-align 16
-        point_normals rb points_count * 12  ;one 3dvector - triple float dword x,y,z
-align 16
-        point_normals_rotated rb points_count * 12
-align 16
-        triangles_normals_rotated rb triangles_count * 12
 
-else
     points_count = 180000/6*3
     triangles_count = 180000 / 6  ;($-triangles)/6
-end if
 align 16
         label trizdd dword
         label trizdq qword
         triangles_with_z rw triangles_count*4 + 2 ; triangles triple dw + z position
 align 16
         vectors rb 24
-;align 16
-;        points_color rb 6*points_count    ; each color as word
-;        sorted_triangles rw triangles_count*3 + 2
 align 16
         bumpmap         rb      TEXTURE_SIZE + 1
 align 16
@@ -577,7 +501,7 @@ align 16
 align 16
         texmap          rb      (TEXTURE_SIZE +1) * 3
 align 16
-        color_map       rb      (TEXTURE_SIZE +1) * 3
+        color_map       rb      (TEXTURE_SIZE +100) * 3
 align 16
         tex_points      rb      points_count * 4  ; bump_map  and texture coords
                                 ; each point word x, word y

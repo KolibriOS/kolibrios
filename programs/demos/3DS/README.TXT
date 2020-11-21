@@ -1,11 +1,12 @@
-View3ds 0.070 - tiny viewer to .3ds and .asc files with several graphics
+View3ds 0.071 - tiny viewer to .3ds and .asc files with several graphics
                 effects implementation.
 
 
 What's new?
-1. Some keys support by Leency.
-2. New displaying model - real Phong - real not fake normal vector interpolation, normalising it and calculating
-   dot product (one for each light). It requires SSE3.  (by me)
+1. New displaying model - glass -  it's two pass rendering. First pass calculates
+   Z position of all front pixels, second render image with adding reflective
+   component of light only for front pixels. Transparent effect by adding with saturation.
+2. I removed bug with performing generation object after choosing 'emboss' option.
 
 Buttons description:
 1.  rotary: choosing rotary axle: x, y, x+y.
@@ -39,4 +40,4 @@ Buttons description:
     is released apply current position. You may also decrease whole handlers count by enable culling (using
     appropriate button) - some back handlers become hidden.
 
-                         Maciej Guba             VII 2020
+                         Maciej Guba             VIII 2020

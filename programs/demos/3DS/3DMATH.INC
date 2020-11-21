@@ -11,23 +11,6 @@ vec_z equ 8
 ;------------------------ edi - pointer to 2nd 3d point ---
 ;------------------------ ebx - pointer to result vector --
 ;---------------------- out : none ------------------------
-if 0
-make_vector:
-        fninit
-        fild    word[edi+x3d]                ;edi+x3d
-        fisub   word[esi+x3d]                ;esi+x3d
-        fstp    dword[ebx+vec_x]
-
-        fild    word[edi+y3d]
-        fisub   word[esi+y3d]
-        fstp    dword[ebx+vec_y]
-
-        fild    word[edi+z3d]
-        fisub   word[esi+z3d]
-        fstp    dword[ebx+vec_z]
-
-ret
-end if
 reverse_mx_3x3:
 ; esi - source matrix
 ; edi - desired reversed matrix
@@ -215,6 +198,20 @@ ret
 ;---------------------------- edi - pointer to vector -----
 ;----------------------- out : none
 normalize_vector:
+if Ext >= SSE3
+        movups  xmm0,[edi]
+        andps   xmm0,[zero_hgst_dd]
+        movups  xmm1,xmm0
+        mulps   xmm0,xmm0
+        haddps  xmm0,xmm0
+        haddps  xmm0,xmm0
+        rsqrtps xmm0,xmm0
+        mulps   xmm0,xmm1
+        movlps  [edi],xmm0
+        movhlps xmm0,xmm0
+        movss   [edi+8],xmm0
+else
+
         fninit
         fld     dword [edi+vec_x]
         fmul    st, st
@@ -244,6 +241,7 @@ normalize_vector:
         fstp  dword [edi+vec_y]
         fdivr dword [edi+vec_z]
         fstp  dword [edi+vec_z]
+end if
 ret
 ;------------------in: -------------------------
 ;------------------ esi - pointer to 1st vector
@@ -252,6 +250,16 @@ ret
 ;------------------ st0 - dot-product
 dot_product:
         fninit
+;if Ext >=SSE3
+;        movups  xmm0,[esi]
+;        movups  xmm1,[edi]
+;        andps   xmm0,[zero_hgst_dd]
+;        mulps   xmm0,xmm1
+;        haddps  xmm0,xmm0
+;        haddps  xmm0,xmm0
+;        movss   [esp-4],xmm0
+;        fld     dword[esp-4]
+;else
         fld     dword [esi+vec_x]
         fmul    dword [edi+vec_x]
         fld     dword [esi+vec_y]
@@ -260,6 +268,7 @@ dot_product:
         fmul    dword [edi+vec_z]
         faddp
         faddp
+;end if
 ret
 
 ; DOS version Coded by Mikolaj Felix aka Majuma
