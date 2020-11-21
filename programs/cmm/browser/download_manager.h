@@ -138,9 +138,22 @@ void DL_Draw_Window()
  
 void StartDownloading()
 {
+	char http_url[URL_SIZE];
+	char proxy_url[URL_SIZE];
 	StopDownloading();
-	if (strncmp(#downloader_edit,"http://",7)!=0) {
-		notify("'File address should start from http://' -E");
+	if (!strncmp(#downloader_edit,"https://",7)) {
+		notify("'HTTPS for download is not supported, trying to download the file via HTTP' -W");
+		sprintf(#http_url, "http://%s", #downloader_edit+8);
+		if (!downloader.Start(#http_url)) {
+			notify("'Download failed.' -E");
+			StopDownloading();
+		}
+		//sprintf(#proxy_url, "http://gate.aspero.pro/?site=%s", #downloader_edit);
+		//if (!downloader.Start(#proxy_url)) {
+		//	notify("'Download failed.' -E");
+		//	StopDownloading();
+		//}
+		DL_Draw_Window();
 		return;
 	}
 	if (!downloader.Start(#downloader_edit)) {
