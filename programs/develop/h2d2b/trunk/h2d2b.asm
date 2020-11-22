@@ -19,7 +19,8 @@ use32
 
 include '../../../proc32.inc'
 include '../../../macros.inc' ; макросы облегчают жизнь ассемблерщиков!
-include '../../../develop/libraries/box_lib/load_lib.mac'
+include '../../../KOSfuncs.inc'
+include '../../../load_lib.mac'
 include '../../../develop/libraries/box_lib/trunk/box_lib.mac'
 include 'lang.inc'
 
@@ -289,12 +290,9 @@ editboxes_end:
 
 system_dir_0 db '/sys/lib/'
 lib_name_0 db 'box_lib.obj',0
-err_msg_found_lib_0 db 'Не найдена библиотека ',39,'box_lib.obj',39,0
-err_msg_import_0 db 'Ошибка при импорте библиотеки ',39,'box_lib',39,0
 
 l_libs_start:
-	lib_0 l_libs lib_name_0, sys_path, library_path, system_dir_0,\
-		err_msg_found_lib_0,head_f_l,import_box_lib,err_msg_import_0,head_f_i
+	lib_0 l_libs lib_name_0, library_path, system_dir_0,import_box_lib
 l_libs_end:
 
 align 4
@@ -312,8 +310,8 @@ dd 0,0
 	;sz_edit_box_set_text db 'edit_box_set_text',0
 
 i_end:
- sys_colors		system_colors
- rb 0x400					;stack
- sys_path rb 4096
- library_path rb 4096
-e_end:				   ; метка конца программы
+	sys_colors system_colors
+	sys_path rb 4096
+	library_path rb 4096
+	rb 0x400	; stack
+e_end:			; метка конца программы

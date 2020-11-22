@@ -2,35 +2,27 @@
 ;и другим программистам, а также
 ;Теплову Алексею (<Lrz> www.lrz.land.ru)
 use32
-  org 0x0
+  org 0
   db 'MENUET01' ;идентиф. исполняемого файла всегда 8 байт
-  dd 0x1
-  dd start
-  dd i_end ; размер приложения
-  dd mem
-  dd stacktop
-  dd 0x0 ;library_path
-  dd cur_dir_path
+  dd 0,start,i_end,mem,stacktop,0,cur_dir_path
 
+include '../../KOSfuncs.inc'
 include '../../macros.inc'
-include '../../develop/libraries/box_lib/load_lib.mac'
+include '../../proc32.inc'
+include '../../load_lib.mac'
 include 'lang.inc'
 
 @use_library
 
 align 4
 start:
+  mcall SF_SET_EVENTS_MASK,0x25 ;маска ожидаемых событий
 
-  mov eax,40
-  mov ebx,0x25 ;маска ожидаемых событий
-  mcall
-
-  sys_load_library  msgbox_name, cur_dir_path, library_path, system_path, \
-    err_message_found_lib, head_f_l, msgbox_lib_import, err_message_import, head_f_i
+  sys_load_library  msgbox_name, library_path, system_path, msgbox_lib_import
 
 
 red_win:
-  mcall 12,1
+  mcall SF_REDRAW,SSF_BEGIN_DRAW
 
   xor eax,eax
   mov ebx,50*65536+200
@@ -40,7 +32,7 @@ red_win:
   mov edi,hed
   mcall
 
-  mov eax,8 ;кнопка
+  mov eax,SF_DEFINE_BUTTON
   mov ebx,10*65536+30
   mov ecx,110*65536+20
   mov edx,7
@@ -71,28 +63,28 @@ red_win:
   mov ebx,50*65536+115
   mov ecx,0x4000d0
   or  ecx,0x80000000
-  mov edx,txt140
+  mov edx,txt5
   mcall
 
   mov ebx,50*65536+90
-  mov edx,txt139
+  mov edx,txt4
   mcall
 
   mov ebx,50*65536+65
-  mov edx,txt138
+  mov edx,txt3
   mcall
 
   mov ebx,50*65536+40
-  mov edx,txt137
+  mov edx,txt2
   mcall
 
   mov ebx,50*65536+15
-  mov edx,txt136
+  mov edx,txt1
   mcall
 
   push eax ebx ecx edx esi
   ;line numbers
-  mov eax,47
+  mov eax,SF_DRAW_NUMBER
   mov esi,0xd00000
   mov ebx,0x10000 ;format
 
@@ -122,11 +114,11 @@ red_win:
 
   pop esi edx ecx ebx eax
   call draw_square
-  mcall 12,2
+  mcall SF_REDRAW,SSF_END_DRAW
 
+align 4
 still:
-  mov eax,10
-  mcall
+  mcall SF_WAIT_EVENT
 
   cmp al,1 ;изм. положение окна
   jz red_win
@@ -135,7 +127,7 @@ still:
   jmp still
 
 button:
-  mcall 17 ;получить код нажатой кнопки
+  mcall SF_GET_BUTTON
 
   cmp ah,3
   jz  but_1
@@ -151,64 +143,46 @@ button:
   cmp ah,1
   jne still
 .exit:
-  mcall -1 ;выход из программы
+  mcall SF_TERMINATE_PROCESS
 
 but_1:
-  push thread
-  push msgbox_1
-  call [mb_create]
+  stdcall [mb_create],msgbox_1,thread
   jmp still
 
 but_2:
-  push thread
-  push msgbox_2
-  call [mb_create]
-    ;mov eax,5
-    ;mov ebx,50
-    ;int 0x40
-  push msgbox_2_funct
-  call [mb_setfunctions]
+  stdcall [mb_create],msgbox_2,thread
+  stdcall [mb_setfunctions],msgbox_2_funct
   jmp still
 
 but_3:
-  push thread
-  push msgbox_3
-  call [mb_create]
+  stdcall [mb_create],msgbox_3,thread
   jmp still
 
 but_4:
-  push thread
-  push msgbox_4
-  call [mb_create]
+  stdcall [mb_create],msgbox_4,thread
   jmp still
 
 but_5:
-  push thread
-  push msgbox_5
-  call [mb_create]
-
-  mcall 5,100 ;stop program
-
-  push msgbox_5_2
-  call [mb_reinit]
-
+  stdcall [mb_create],msgbox_5,thread
+  mcall SF_SLEEP,100 ;stop program
+  stdcall [mb_reinit],msgbox_5_2
   jmp still
 
 if lang eq ru
-  txt136 db 'простое',0
-  txt137 db '3 кнопки',0
-  txt138 db '3 строки',0
-  txt139 db 'большое',0
-  txt140 db 'mb_reinit',0
+  txt1 db 'простое',0
+  txt2 db '3 кнопки',0
+  txt3 db '3 строки',0
+  txt4 db 'большое',0
+  txt5 db 'mb_reinit',0
   hed db 'Пример использования MsgBox',0
 else
-  txt136 db 'Simple',0
-  txt137 db '3 buttons',0
-  txt138 db '3 lines',0
-  txt139 db 'Big',0
-  txt140 db 'mb_reinit',0
+  txt1 db 'Simple',0
+  txt2 db '3 buttons',0
+  txt3 db '3 lines',0
+  txt4 db 'Big',0
+  txt5 db 'mb_reinit',0
   hed db 'MsgBox usage example',0
-end if  
+end if	
 ;sc system_colors
 
 
@@ -240,20 +214,18 @@ else
 end if
   db 0
 msgbox_2_funct:
-  dd 0
-  dd 0
-  dd fun_show_help
+  dd 0,0,fun_show_help
 
 msgbox_3:
   dw 0
   db 'MBox 3 lines',0 ;+2 = +MB_TEXT_OFFSET
 if lang eq ru
   db 'Строка 1',13,'Строка 2',13,'Строка 3',0
-  db '2009 г.',0 ;button1
+  db '2020 г.',0 ;button1
 else
   db 'Line 1',13,'Line 2',13,'Line 3',0
-  db 'Year 2009',0 ;button1
-end if  
+  db 'Year 2020',0 ;button1
+end if	
   db 0
 msgbox_4:
   dw 0
@@ -282,21 +254,9 @@ end if
   db '       @......@....@..@....@.........@',13
   db '        @@@@@@@@@@@@@@@@@@@@@@@@@@@@@',0
 if lang eq ru
-  db 'Пн',0
-  db 'Вт',0
-  db 'Ср',0
-  db 'Чт',0
-  db 'Пт',0
-  db 'Сб',0
-  db 'Воскресение',0
+  db 'Пн',0,'Вт',0,'Ср',0,'Чт',0,'Пт',0,'Сб',0,'Воскресение',0
 else
-  db 'Sun',0
-  db 'Mon',0
-  db 'Tue',0
-  db 'Wed',0
-  db 'Thu',0
-  db 'Fri',0
-  db 'Sat',0
+  db 'Sun',0,'Mon',0,'Tue',0,'Wed',0,'Thu',0,'Fri',0,'Sat',0
 end if
   db 0
 msgbox_5:
@@ -310,7 +270,7 @@ else
   db 'Message',0 ;+2 = +MB_TEXT_OFFSET
   db 'Running process ...',0
   db 'Stop',0
-  db 'Abort',0
+  db 'Terminate',0
 end if
   db 0
 msgbox_5_2:
@@ -339,38 +299,20 @@ msgbox_lib_import:
 ;--------------------------------------------------
 system_path db '/sys/lib/'
 msgbox_name db 'msgbox.obj',0
-err_message_found_lib db 'Sorry I cannot load library msgbox.obj',0
-head_f_i:
-head_f_l db 'System error',0
-err_message_import db 'Error on load import library msgbox.obj',0
 ;--------------------------------------------------
 
 draw_square:
   cmp byte[sh_help],0
   je @f
     push eax ebx ecx edx
-    mov eax,13 ;рисование прямоугольника
-    mov ebx,105*65536+70
-    mov ecx,15*65536+50
-    mov edx,0x8080ff
-    int 0x40
+    mcall SF_DRAW_RECT, 105*65536+70, 15*65536+50, 0x8080ff
+    mcall SF_DRAW_TEXT, 110*65536+25, 0xffffff, txt_help
 
-    mov eax,4 ;рисование текста
-    mov ebx,110*65536+25
-    mov ecx,0xffffff
-    mov edx,txt_help
-    mov esi,9
-    mcall
-
-    mov eax,47
     mov esi,0xffff
     mov ebx,0x10000 ;format
-    xor ecx,ecx
-    mov cl,byte[sh_help]
-    mov dx,150
-    shl edx,16
-    mov dx,40
-    int 0x40
+    movzx ecx,byte[sh_help]
+    mov edx,(150 shl 16)+40
+    mcall SF_DRAW_NUMBER
 
     pop edx ecx ebx eax
   @@:
@@ -390,6 +332,7 @@ else
 txt_help db 'Help...'
 end if
 
+align 16
 i_end: ;конец кода
     rb 1024
   thread:

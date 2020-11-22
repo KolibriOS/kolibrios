@@ -3,9 +3,10 @@ use32
 	db 'MENUET01'
 	dd 1,start,i_end,mem,stacktop,buf_cmd_lin,sys_path
 
+include '../../KOSfuncs.inc'
 include '../../macros.inc'
 include '../../proc32.inc'
-include '../../develop/libraries/box_lib/load_lib.mac'
+include '../../load_lib.mac'
 include '../../develop/libraries/box_lib/trunk/box_lib.mac'
 include '../../dll.inc'
 include '../../system/skincfg/trunk/kglobals.inc'
@@ -13,7 +14,7 @@ include '../../system/skincfg/trunk/unpacker.inc'
 include 'strlen.inc'
 include 'obj_codes.inc'
 
-@use_library_mem mem.Alloc,mem.Free,mem.ReAlloc, dll.Load
+@use_library mem.Alloc,mem.Free,mem.ReAlloc, dll.Load
 
 hed db 'kol_f_edit 29.09.20',0
 
@@ -88,12 +89,12 @@ macro load_image_file path,buf,size { ;макрос для загрузки изображений
 	cmp ebx,0xffffffff
 	je @f
 		;определяем вид изображения и переводим его во временный буфер image_data
-		stdcall dword[img_decode], dword[buf],ebx,0
-		mov dword[image_data],eax
+		stdcall [img_decode], [buf],ebx,0
+		mov [image_data],eax
 		;преобразуем изображение к формату rgb
-		stdcall dword[img_to_rgb2], dword[image_data],dword[buf]
+		stdcall [img_to_rgb2], [image_data],[buf]
 		;удаляем временный буфер image_data
-		stdcall dword[img_destroy], dword[image_data]
+		stdcall [img_destroy], [image_data]
 	@@:
 }
 
@@ -205,8 +206,8 @@ start:
 	mcall 48,3,sc,sizeof.system_colors
 	mcall 40,0x27
 
-	stdcall dword[tl_data_init], tree1
-	stdcall dword[tl_data_init], tree2
+	stdcall [tl_data_init], tree1
+	stdcall [tl_data_init], tree2
 
 	copy_path fn_icon,sys_path,file_name,0 ;формируем полный путь к файлу изображения, подразумеваем что он в одной папке с программой
 	mov [run_file_70.Function], 0
@@ -478,15 +479,15 @@ pushad
 		mcall 4,10*65536+35,0x80ff0000,txtErrOpen
 	@@:
 
-	stdcall [edit_box_draw], dword edit1
-	stdcall [edit_box_draw], dword edit_sav
+	stdcall [edit_box_draw], edit1
+	stdcall [edit_box_draw], edit_sav
 
 	mov dword[w_scr_t1.all_redraw],1
-	;stdcall [scrollbar_ver_draw],dword w_scr_t1
-	stdcall [tl_draw],dword tree1
+	;stdcall [scrollbar_ver_draw], w_scr_t1
+	stdcall [tl_draw], tree1
 	mov dword[w_scr_t2.all_redraw],1
-	;stdcall [scrollbar_ver_draw],dword w_scr_t2
-	stdcall [tl_draw],dword tree2
+	;stdcall [scrollbar_ver_draw], w_scr_t2
+	stdcall [tl_draw], tree2
 
 	cmp byte[show_mode],0 ;условие видимости окна конструктора
 	jne @f
@@ -502,10 +503,10 @@ popad
 
 align 4
 mouse:
-	stdcall [edit_box_mouse], dword edit1
-	stdcall [edit_box_mouse], dword edit_sav
-	stdcall [tl_mouse], dword tree1
-	stdcall [tl_mouse], dword tree2
+	stdcall [edit_box_mouse], edit1
+	stdcall [edit_box_mouse], edit_sav
+	stdcall [tl_mouse], tree1
+	stdcall [tl_mouse], tree2
 	cmp byte[show_mode],1 ;условие видимости текстового окна
 	jne @f
 		stdcall [ted_mouse], tedit0
@@ -516,10 +517,10 @@ mouse:
 align 4
 key:
 	mcall 2
-	stdcall [edit_box_key], dword edit1
-	stdcall [edit_box_key], dword edit_sav
-	stdcall [tl_key], dword tree1
-	stdcall [tl_key], dword tree2
+	stdcall [edit_box_key], edit1
+	stdcall [edit_box_key], edit_sav
+	stdcall [tl_key], tree1
+	stdcall [tl_key], tree2
 
 	jmp still
 
@@ -1328,39 +1329,6 @@ foc_obj dd 0 ;объект в фокусе
 obj_count_txt_props dd 0 ;количество используемых текстовых свойств
 obj_m_win dd 0 ;структура главного окна
 
-;
-if 1 ;lang eq ru
-
-	err_message_found_lib0 db 'Не найдена библиотека box_lib.obj',39,'" -tE',0
-	err_message_import0 db 'Ошибка при импорте библиотеки box_lib.obj',39,'" -tW',0
-	err_message_found_lib1 db 'Не найдена библиотека proc_lib.obj',39,'" -tE',0
-	err_message_import1 db 'Ошибка при импорте библиотеки proc_lib.obj',39,'" -tW',0
-	err_message_found_lib2 db 'Не удалось найти библиотеку buf2d.obj',39,'" -tE',0
-	err_message_import2 db 'Ошибка при импорте библиотеки buf2d.obj',39,'" -tW',0
-	err_message_found_lib3 db 'Не удалось найти библиотеку libimg.obj',39,'" -tE',0
-	err_message_import3 db 'Ошибка при импорте библиотеки libimg.obj',39,'" -tW',0
-	err_message_found_lib4 db 'Не удалось найти библиотеку msgbox.obj',39,'" -tE',0
-	err_message_import4 db 'Ошибка при импорте библиотеки msgbox.obj',39,'" -tW',0
-
-	head_f_i:
-	head_f_l db '"Системная ошибка',0 ;заголовок окна, при возникновении ошибки
-else
-
-	err_message_found_lib0 db 'Sorry I cannot found library box_lib.obj',39,'" -tE',0
-	err_message_import0 db 'Error on load import library box_lib.obj',39,'" -tW',0
-	err_message_found_lib1 db 'Sorry I cannot found library proc_lib.obj',39,'" -tE',0
-	err_message_import1 db 'Error on load import library proc_lib.obj',39,'" -tW',0
-	err_message_found_lib2 db 'Sorry I cannot found library buf2d.obj',39,'" -tE',0
-	err_message_import2 db 'Error on load import library buf2d.obj',39,'" -tW',0
-	err_message_found_lib3 db 'Sorry I cannot found library libimg.obj',39,'" -tE',0
-	err_message_import3 db 'Error on load import library libimg.obj',39,'" -tW',0
-	err_message_found_lib4 db 'Sorry I cannot found library msgbox.obj',39,'" -tE',0
-	err_message_import4 db 'Error on load import library msgbox.obj',39,'" -tW',0
-
-	head_f_i:
-	head_f_l db '"System error',0 ;заголовок окна, при возникновении ошибки
-end if
-
 	system_dir0 db '/sys/lib/'
 	lib0_name db 'box_lib.obj',0
 
@@ -1624,11 +1592,11 @@ dd 0,0
 
 ;library structures
 l_libs_start:
-	lib0 l_libs lib0_name, sys_path, library_path, system_dir0, err_message_found_lib0, head_f_l, import_box_lib, err_message_import0, head_f_i
-	lib1 l_libs lib1_name, sys_path, library_path, system_dir1, err_message_found_lib1, head_f_l, import_proc_lib,err_message_import1, head_f_i
-	lib2 l_libs lib2_name, sys_path, library_path, system_dir2, err_message_found_lib2, head_f_l, import_buf2d_lib, err_message_import2, head_f_i
-	lib3 l_libs lib3_name, sys_path, library_path, system_dir3, err_message_found_lib3, head_f_l, import_libimg, err_message_import3, head_f_i
-	lib4 l_libs lib4_name, sys_path, library_path, system_dir4, err_message_found_lib4, head_f_l, import_msgbox_lib, err_message_import4, head_f_i
+	lib0 l_libs lib0_name, library_path, system_dir0, import_box_lib
+	lib1 l_libs lib1_name, library_path, system_dir1, import_proc_lib
+	lib2 l_libs lib2_name, library_path, system_dir2, import_buf2d_lib
+	lib3 l_libs lib3_name, library_path, system_dir3, import_libimg
+	lib4 l_libs lib4_name, library_path, system_dir4, import_msgbox_lib
 load_lib_end:
 
 

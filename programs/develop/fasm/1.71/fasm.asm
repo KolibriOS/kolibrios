@@ -1,7 +1,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;                                                 ;;
 ;;  flat assembler source                          ;;
-;;  Copyright (c) 1999-2012, Tomasz Grysztar       ;;
+;;  Copyright (c) 1999-2020, Tomasz Grysztar       ;;
 ;;  All rights reserved.                           ;;
 ;;                                                 ;;
 ;;  KolibriOS port by KolibriOS Team               ;;
@@ -42,7 +42,8 @@ purge add,sub	 ; macros.inc does incorrect substitution
 include 'fasm.inc'
 
 include '../../../develop/libraries/box_lib/trunk/box_lib.mac'
-include '../../../develop/libraries/box_lib/load_lib.mac'
+include '../../../KOSfuncs.inc'
+include '../../../load_lib.mac'
   @use_library
 
 center fix true
@@ -476,12 +477,6 @@ text:
   s_dbgdescr db 'Создавать отладочную информацию',0
 
 
-  err_message_found_lib0 db 'Не найдена библиотека box_lib.obj',0  ;строка, которая будет в сформированном окне, если библиотека не будет найдена
-  err_message_import0 db 'Ошибка при импорте библиотеки box_lib.obj',0
-  err_message_found_lib1 db 'Не найдена библиотека proc_lib.obj',0
-  err_message_import1 db 'Ошибка при импорте библиотеки proc_lib.obj',0
-  head_f_i:
-  head_f_l db 'Системная ошибка',0 ;заголовок окна, при возникновении ошибки
 else
 text:
   db ' InFile:'
@@ -496,13 +491,6 @@ text:
   s_dbgdescr db 'Generate debug information',0
 
 
-  err_message_found_lib0 db 'Sorry I cannot found library box_lib.obj',0
-  err_message_import0 db 'Error on load import library box_lib.obj',0
-  err_message_found_lib1 db 'Sorry I cannot found library proc_lib.obj',0
-  err_message_import1 db 'Error on load import library proc_lib.obj',0
-
-  head_f_i:
-  head_f_l db 'System error',0 ;заголовок окна, при возникновении ошибки
 end if
 
   system_dir0 db '/sys/lib/'
@@ -547,8 +535,8 @@ aOpenDialog_Start	db 'OpenDialog_start',0
 ;---------------------------------------------------------------------
 ;library structures
 l_libs_start:
-  lib0 l_libs lib0_name, cur_dir_path, library_path, system_dir0, err_message_found_lib0, head_f_l, import_box_lib, err_message_import0, head_f_i
-  lib1 l_libs lib1_name, cur_dir_path, library_path, system_dir1, err_message_found_lib1, head_f_l, import_proc_lib,err_message_import1, head_f_i
+  lib0 l_libs lib0_name, library_path, system_dir0, import_box_lib
+  lib1 l_libs lib1_name, library_path, system_dir1, import_proc_lib
 load_lib_end:
 
 edit1 edit_box 153, 72, 3,          0xffffff, 0xA4C4E4, 0x80ff, 0, 0x10000000,(outfile-infile-1), infile, mouse_dd, 0, 11,11

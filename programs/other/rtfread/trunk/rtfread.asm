@@ -60,7 +60,8 @@ AR_OFFSET               equ     10
 include '../../../config.inc' ;for nightbuild
 include '../../../macros.inc' ; макросы облегчают жизнь ассемблерщиков!
 include '../../../develop/libraries/box_lib/trunk/box_lib.mac'
-include '../../../develop/libraries/box_lib/load_lib.mac'
+include '../../../KOSfuncs.inc'
+include '../../../load_lib.mac'
 
 @use_library
 
@@ -749,25 +750,14 @@ skin_height             dd      0x0
 ;---------------------------------------------------------------------
 l_libs_start:
 
-library01  l_libs system_dir_ProcLib+9, cur_dir_path, library_path, system_dir_ProcLib, \
-err_message_found_lib2, head_f_l, ProcLib_import, err_message_import2, head_f_i
+library01  l_libs system_dir_ProcLib+9, library_path, system_dir_ProcLib, ProcLib_import
 
-library02  l_libs system_dir_Boxlib+9, cur_dir_path, library_path, system_dir_Boxlib, \
-err_message_found_lib1, head_f_l, Box_lib_import, err_message_import1, head_f_i
+library02  l_libs system_dir_Boxlib+9, library_path, system_dir_Boxlib, Box_lib_import
 
 end_l_libs:
 ;---------------------------------------------------------------------
 system_dir_ProcLib      db '/sys/lib/proc_lib.obj',0
 system_dir_Boxlib       db '/sys/lib/box_lib.obj',0
-
-head_f_i:
-head_f_l                db 'error',0
-
-err_message_found_lib1  db 'box_lib.obj - Not found!',0
-err_message_found_lib2  db 'proc_lib.obj - Not found!',0
-
-err_message_import1     db 'box_lib.obj - Wrong import!',0
-err_message_import2     db 'proc_lib.obj - Wrong import!',0
 
 ;---------------------------------------------------------------------
 align 4

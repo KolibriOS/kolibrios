@@ -60,10 +60,11 @@ use32
 _title	equ 'HeEd 0.16', 0
 
 include	'lang.inc'
+include '../../../KOSfuncs.inc'
 include '../../../config.inc'		;for nightbuild
 include '../../../macros.inc'
 include	'../../libraries/box_lib/trunk/box_lib.mac'
-include	'../../libraries/box_lib/load_lib.mac'
+include	'../../../load_lib.mac'
 
 @use_library
 ;--------------------------------------------------------------------
@@ -3289,23 +3290,9 @@ help_but_text	= menu_text_area_3 ;db	'Help',0
 
 head_f_i:
 if lang eq ru
- head_f_l	db 'ошибка',0
- err_message_found_lib1		db 'box_lib.obj - Не найден!',0
- err_message_found_lib2		db 'proc_lib.obj - Не найден!',0
-
- err_message_import1			db 'box_lib.obj - Ошибка импорта!',0
- err_message_import2			db 'proc_lib.obj - Ошибка импорта!',0
-
  error_open_file_string	db "Файл не найден!",0
  error_save_file_string	db "Файл не сохранен!",0
 else
- head_f_l	db 'error',0
- err_message_found_lib1		db 'box_lib.obj - Not found!',0
- err_message_found_lib2		db 'proc_lib.obj - Not found!',0
-
- err_message_import1			db 'box_lib.obj - Wrong import!',0
- err_message_import2			db 'proc_lib.obj - Wrong import!',0
-
  error_open_file_string	db "Isn't found!",0
  error_save_file_string	db "Isn't saved!",0
 end if
@@ -3397,14 +3384,10 @@ koi8_r		file 'koi8-r-8x16'
 title	db	_title
 ;---------------------------------------------------------------------
 l_libs_start:
-;	load_library	boxlib_name,cur_dir_path,buf_cmd_lin,system_path,\
-;	err_message_found_lib,head_f_l,myimport,err_message_import,head_f_i
 
-library01  l_libs system_dir_Boxlib+9, cur_dir_path, buf_cmd_lin, system_dir_Boxlib, \
-err_message_found_lib1, head_f_l, Box_lib_import, err_message_import1, head_f_i
+library01  l_libs system_dir_Boxlib+9, buf_cmd_lin, system_dir_Boxlib, Box_lib_import
 
-library02  l_libs system_dir_ProcLib+9, cur_dir_path, buf_cmd_lin, system_dir_ProcLib, \
-err_message_found_lib2, head_f_l, ProcLib_import, err_message_import2, head_f_i
+library02  l_libs system_dir_ProcLib+9, buf_cmd_lin, system_dir_ProcLib, ProcLib_import
 
 end_l_libs:
 ;---------------------------------------------------------------------

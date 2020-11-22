@@ -16,14 +16,14 @@ include 'lang.inc'
 include '../../../../macros.inc'
 include '../../../../proc32.inc'
 include '../../../../KOSfuncs.inc'
-include '../../../../develop/libraries/box_lib/load_lib.mac'
+include '../../../../load_lib.mac'
 include '../../../../dll.inc'
 
 KMENUITEM_NORMAL equ 0
 KMENUITEM_SUBMENU equ 1
 KMENUITEM_SEPARATOR equ 2
 
-@use_library_mem mem.Alloc,mem.Free,mem.ReAlloc,dll.Load
+@use_library mem.Alloc,mem.Free,mem.ReAlloc,dll.Load
 
 start:                             ; start of execution
 
@@ -264,22 +264,9 @@ align 4
 system_dir_0 db '/sys/lib/'
 lib_name_0 db 'kmenu.obj',0
 
-if lang eq ru
-	head_f_i:
-	head_f_l db 'Системная ошибка',0
-	err_msg_found_lib_0 db 'Не найдена библиотека ',39,'kmenu.obj',39,0
-	err_msg_import_0 db 'Ошибка при импорте библиотеки ',39,'kmenu',39,0
-else
-	head_f_i:
-	head_f_l db 'System error',0
-	err_msg_found_lib_0 db 'Sorry I cannot found library ',39,'kmenu.obj',39,0
-	err_msg_import_0 db 'Error on load import library ',39,'kmenu.obj',39,0
-end if
-
 align 4
 l_libs_start:
-	lib_0 l_libs lib_name_0, sys_path, file_name, system_dir_0,\
-		err_msg_found_lib_0, head_f_l, import_libkmenu,err_msg_import_0,head_f_i
+	lib_0 l_libs lib_name_0, file_name, system_dir_0, import_libkmenu
 l_libs_end:
 
 align 4

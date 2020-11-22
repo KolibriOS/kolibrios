@@ -1,18 +1,15 @@
 use32
-	org 0x0
-	db 'MENUET01' ;идентиф. исполняемого файла всегда 8 байт
-	dd 0x1
-	dd start
-	dd i_end ;размер приложения
-	dd mem,stacktop
-	dd 0,sys_path
+	org 0
+	db 'MENUET01'
+	dd 1,start,i_end,mem,stacktop,0,cur_dir_path
 
+include '../../../../../KOSfuncs.inc'
 include '../../../../../macros.inc'
 include '../../../../../proc32.inc'
-include '../../../../../develop/libraries/box_lib/load_lib.mac'
+include '../../../../../load_lib.mac'
 include '../../../../../dll.inc'
 
-@use_library_mem mem.Alloc,mem.Free,mem.ReAlloc, dll.Load
+@use_library mem.Alloc,mem.Free,mem.ReAlloc, dll.Load
 
 struct FileInfoBlock
 	Function dd ?
@@ -58,12 +55,12 @@ macro load_image_file path,buf,size { ;макрос для загрузки изображений
 	cmp ebx,0xffffffff
 	je @f
 		;определяем вид изображения и переводим его во временный буфер image_data
-		stdcall dword[img_decode], dword[buf],ebx,0
-		mov dword[image_data],eax
+		stdcall [img_decode], [buf],ebx,0
+		mov [image_data],eax
 		;преобразуем изображение к формату rgb
-		stdcall dword[img_to_rgb2], dword[image_data],dword[buf]
+		stdcall [img_to_rgb2], [image_data],[buf]
 		;удаляем временный буфер image_data
-		stdcall dword[img_destroy], dword[image_data]
+		stdcall [img_destroy], [image_data]
 	@@:
 }
 
@@ -146,23 +143,17 @@ draw_window:
 	popad
 	ret
 
-head_f_i:
-head_f_l  db 'Системная ошибка',0
 
 system_dir0 db '/sys/lib/'
 name_buf2d db 'buf2d.obj',0
-err_message_found_lib0 db 'Не удалось найти библиотеку buf2d.obj',0
-err_message_import0 db 'Ошибка при импорте библиотеки buf2d.obj',0
 
 system_dir1 db '/sys/lib/'
 name_libimg db 'libimg.obj',0
-err_message_found_lib1 db 'Не удалось найти библиотеку libimg.obj',0
-err_message_import1 db 'Ошибка при импорте библиотеки libimg.obj',0
 
 ;library structures
 l_libs_start:
-	lib0 l_libs name_buf2d,  sys_path, file_name, system_dir0, err_message_found_lib0, head_f_l, import_buf2d_lib, err_message_import0, head_f_i
-	lib1 l_libs name_libimg, sys_path, file_name, system_dir1, err_message_found_lib1, head_f_l, import_libimg, err_message_import1, head_f_i
+	lib0 l_libs name_buf2d,  file_name, system_dir0, import_buf2d_lib
+	lib1 l_libs name_libimg, file_name, system_dir1, import_libimg
 load_lib_end:
 
 align 4

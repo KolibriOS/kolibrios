@@ -1,23 +1,19 @@
 use32
-	org 0x0
-	db 'MENUET01' ;идентиф. исполняемого файла всегда 8 байт
-	dd 0x1
-	dd start
-	dd i_end ;размер приложения
-	dd mem,stacktop
-	dd 0,cur_dir_path
+	org 0
+	db 'MENUET01'
+	dd 1,start,i_end,mem,stacktop,0,cur_dir_path
 
+include '../../../../../KOSfuncs.inc'
 include '../../../../../macros.inc'
 include '../../../../../proc32.inc'
-include '../../../../../develop/libraries/box_lib/load_lib.mac'
+include '../../../../../load_lib.mac'
 include '../../../../../dll.inc'
 
-@use_library_mem mem.Alloc,mem.Free,mem.ReAlloc, 0 ;dll.Load
+@use_library mem.Alloc,mem.Free,mem.ReAlloc, 0 ;dll.Load
 
 align 4
 start:
-	load_library vectors_name, cur_dir_path, library_path, system_path, \
-		err_message_found_lib, head_f_l, import_buf2d_lib, err_message_import, head_f_i
+	load_library lib0_name, library_path, system_path, import_buf2d_lib
 	cmp eax,-1
 	jz button.exit
 
@@ -132,11 +128,7 @@ buf_0:
 
 ;--------------------------------------------------
 system_path db '/sys/lib/'
-vectors_name db 'buf2d.obj',0
-err_message_found_lib db 'Sorry I cannot load library buf2d.obj',0
-head_f_i:
-head_f_l db 'System error',0
-err_message_import db 'Error on load import library buf2d.obj',0
+lib0_name db 'buf2d.obj',0
 ;--------------------------------------------------
 
 i_end: ;конец кода

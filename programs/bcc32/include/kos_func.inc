@@ -77,16 +77,13 @@ proc @Kolibri@Main$qv
   mov  ebx,esp
   mov  ecx,-1
   int  0x40
-  mov  ebx,[esp+26]
-  mov  edx,[esp+30]
+  mov  ebx,[esp+process_information.used_memory]
+  mov  edx,[esp+process_information.PID]
   lea  eax,[ebx-0x20]
   add  esp,1024
   cmp  esp,eax
   cmova esp,eax
   and  esp,not 3
-if defined @Kolibri@CommandLine
-	mov	byte [@Kolibri@CommandLine+256], 0
-end if
   xor  eax,eax
   cld
   mov  edi,@Kolibri@_ThreadTable
@@ -173,10 +170,10 @@ end if
   mov  ebx,esp
   mov  ecx,-1
   int  0x40
-  mov  eax,[esp+34]
-  mov  ebx,[esp+38]
-  mov  ecx,[esp+42]
-  mov  edx,[esp+46]
+  mov  eax,[esp+process_information.box.left]
+  mov  ebx,[esp+process_information.box.top]
+  mov  ecx,[esp+process_information.box.width]
+  mov  edx,[esp+process_information.box.height]
   add  esp,1024
   cmp  ecx,[esp+KOLIBRI_THREAD_DATA_LAST_SX*4]
   jnz  .main_size
@@ -332,15 +329,6 @@ end if
   ret
 endp
 
-macro call func
-{
-  if func eq __chkstk
-	sub  esp,eax
-  else
-	call func
-  end if
-}
-
 proc @Kolibri@Redraw$qippv
   push ebp
   mov  ebp,[esp+12]
@@ -379,7 +367,7 @@ proc @Kolibri@Redraw$qippv
   add  ecx,5-1
   mov  edx,[ebp+KOLIBRI_THREAD_DATA_C_WINDOW*4]
   mov  edi,[ebp+KOLIBRI_THREAD_DATA_TITLE*4]
-  xor  eax,eax
+  xor  eax,eax ;SF_CREATE_WINDOW
   int  0x40
 .redraw_picture:
   call	@@KolibriOnPaint$qv
@@ -420,13 +408,13 @@ proc @Kolibri@ExitProcess$qv
   mov  ecx,-1
   int  0x40
   mov  esi,eax
-  mov  edi,[esp+30]
+  mov  edi,[esp+process_information.PID]
 .exit_process_loop:
   mov  eax,SF_THREAD_INFO
   mov  ebx,esp
   mov  ecx,esi
   int  0x40
-  mov  eax,[esp+30]
+  mov  eax,[esp+process_information.PID]
   cmp  eax,edi
   jz   .exit_process_continue
   mov  ebx,eax
@@ -476,16 +464,16 @@ end if
   jmp  .exit_process_wait_loop
 endp
 
-proc @Kolibri@ExitThread$qppv,@Kolibri@ThreadMain$qpvt1
+proc @Kolibri@ExitThread$qppv
   mov  esp,[esp+4]
-  jmp  Kolibri_main_end
+  jmp  @Kolibri@ThreadMain$qpvt1.main_end
 endp
 
-proc @Kolibri@ReturnMessageLoop$qppv,@Kolibri@ThreadMain$qpvt1
+proc @Kolibri@ReturnMessageLoop$qppv
   mov  esp,[esp+4]
   bt   dword [esp+KOLIBRI_THREAD_DATA_FLAG*4],30
-  jc   Kolibri_main_end
-  jmp  Kolibri_main_cycle
+  jc   @Kolibri@ThreadMain$qpvt1.main_end
+  jmp  @Kolibri@ThreadMain$qpvt1.main_cycle
 endp
 
 proc @Kolibri@Delay$qui uses ebx
@@ -598,6 +586,17 @@ proc @Kolibri@DrawText$qssipxc uses ebx
   ret
 endp
 
+proc @Kolibri@PutImage$qpucllll uses ebx
+  mov  eax,SF_PUT_IMAGE
+  mov  ebx,[esp+8]
+  mov  ecx,[esp+20-2]
+  mov  cx,[esp+24]
+  mov  edx,[esp+12-2]
+  mov  dx,[esp+16]
+  int  0x40
+  ret
+endp
+
 proc @Kolibri@SetWindowCaption$qpxc uses ebx
   mov  eax,SF_SET_CAPTION
   mov  ebx,2
@@ -621,7 +620,7 @@ proc @Kolibri@GetProcessInfo$qpuipct1t1piui uses ebx esi edi
 .get_proc_info_no_usecpu:
   or   edi,[1024+12+8+esp]
   jz   .get_proc_info_no_name
-  lea  esi,[esp+10]
+  lea  esi,[esp+process_information.process_name]
   cld
   movsd
   movsd
@@ -631,19 +630,19 @@ proc @Kolibri@GetProcessInfo$qpuipct1t1piui uses ebx esi edi
 .get_proc_info_no_name:
   or   edi,[1024+12+12+esp]
   jz   .get_proc_info_no_mem
-  mov  ecx,[esp+26]
+  mov  ecx,[esp+process_information.used_memory]
   mov  [edi],ecx
   xor  edi,edi
 .get_proc_info_no_mem:
   or   edi,[1024+12+16+esp]
   jz   .get_proc_info_no_pid
-  mov  ecx,[esp+30]
+  mov  ecx,[esp+process_information.PID]
   mov  [edi],ecx
   xor  edi,edi
 .get_proc_info_no_pid:
   or   edi,[1024+12+20+esp]
   jz   .get_proc_info_no_rect
-  lea  esi,[esp+34]
+  lea  esi,[esp+process_information.box]
   cld
   movsd
   movsd

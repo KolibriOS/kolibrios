@@ -192,7 +192,7 @@ macro sys_load_library library_name__, library_path__, system_path__, myimport, 
 local i_begin
 local i_error
 local i_exit
-
+	push ebx
 	mcall	SF_SYS_MISC,SSF_LOAD_DLL,system_path__   ; load of sys directory
 	test	eax,eax
 	jnz		i_begin
@@ -218,15 +218,18 @@ align 4
 		call	l_lib_init_error_window
 		notify_window_run [arrea_xx] ; создаем окно @notify
 	i_exit:
+	pop ebx
 }
 ;---------------------------------------------------------------------
 
+;output:
+; eax - если удачно то 0
 macro load_library library_name__, library_path__, system_path__, myimport, point_dir_name__
 {
 local i_begin
 local i_error
 local i_exit
-
+	push ebx
 if point_dir_name__ eq
 		copy_path   library_name__, [32], library_path__,0
 else
@@ -252,6 +255,7 @@ align 4
 		call	l_lib_init_error_window
 		notify_window_run [arrea_xx] ; создаем окно @notify
 	i_exit:
+	pop ebx
 ;---------------------------------------------------------------------
 }
 
@@ -441,6 +445,7 @@ pop ebx eax
 ; myimport - импортируемые функции
 ;output:
 ; eax - если удачно то 0 или указатель на имя функции которую не удалось загрузить
+; ebx - разрушается
 macro import_boxlib myimport
 {
 local import_loop
@@ -452,9 +457,10 @@ local import_done
 local exit
 local import_not_found
 ; initialize import
-        
+	push esi
         mov     edx, eax
-        mov     esi,myimport
+        mov     esi, myimport
+		cld
 import_loop:
         lodsd	;mov eax,dword[esi] ;add esi,4 ;получаем в eax указатель на имя импортируемой функции
         test    eax, eax
@@ -465,6 +471,7 @@ import_find:
         test    ebx, ebx
         jz      import_not_found ;если указатель на имя функции = 0 (в библиотеке)
         push    eax ;eax - указатель на имя экспортируемой функции (в пользовательской программе)
+align 4
 lp:
         mov     cl, [eax]
         cmp     cl, [ebx] ;сравниваем имена функций в библиотеке и в пользовательской программе
@@ -512,6 +519,7 @@ import_not_found:
 import_done:
         xor     eax,eax ;=0 все загрузилось удачно
 exit:
+	pop esi
 }
 ;---------------------------------------------------------------------
 
