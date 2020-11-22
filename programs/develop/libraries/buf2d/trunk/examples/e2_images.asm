@@ -296,7 +296,7 @@ import_buf2d_lib:
 i_end:
 	rb 1024
 stacktop:
-	sys_path rb 4096
+	cur_dir_path rb 4096
 	file_name:
 		rb 4096
 	plugin_path:
