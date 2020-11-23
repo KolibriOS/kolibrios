@@ -138,7 +138,6 @@ a named subitem "group=path/<groupname>" and the file should be put in <groupnam
 extra_files = {
  {"/", "common/distr_data/autorun.inf"},
  {"/", "common/distr_data/KolibriOS_icon.ico"},
- {"/", build_type .. "/settings/kolibri.lbl"},
  {"Docs/stack.txt", "../kernel/trunk/docs/stack.txt"},
  {"HD_Load/9x2klbr/", "common/HD_load/9x2klbr/LDKLBR.VXD"},
  {"HD_Load/MeOSLoad/", PROGS .. "/hd_load/meosload/AUTOEXEC.BAT"},
@@ -273,6 +272,7 @@ extra_files = {
  {"kolibrios/res/templates/", PROGS .. "/emulator/e80/trunk/games/*"},
  {"kolibrios/res/templates/NES/", "common/templates/NES/*"},
  {"kolibrios/res/wallpapers/", "common/wallpapers/*"},
+ {"kolibrios/res/system/", build_type .. "/settings/kolibri.lbl"},
  }
 if build_type == "rus" then tup.append_table(extra_files, {
  {"Docs/cp866/config.txt", build_type .. "/docs/CONFIG.TXT"},

@@ -73,7 +73,7 @@ start_dir:
 basic_file_path:
 	db '/sys/settings/'
 basic_file_name:
-	db 'kolibri.lbl',0
+	db 'kolibrios/res/system/kolibri.lbl',0
 additional_dir_name:
     db 'kolibrios',0
 real_additional_dir:
