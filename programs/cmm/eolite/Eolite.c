@@ -3,8 +3,8 @@
 
 // 70.5 - get volume info and label
 
-#define TITLE "Eolite File Manager 4.46d"
-#define ABOUT_TITLE "EOLITE 4.46d"
+#define TITLE "Eolite File Manager 4.47"
+#define ABOUT_TITLE "EOLITE 4.47"
 
 #ifndef AUTOBUILD
 #include "lang.h--"
@@ -72,6 +72,7 @@ struct Eolite_colors
 	dword slider_bg_left;
 	dword odd_line;
 } col;
+dword waves_pal[256];
 
 int toolbar_buttons_x[7]={9,46,85,134,167,203};
 

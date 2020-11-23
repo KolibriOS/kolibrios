@@ -248,6 +248,7 @@ void SetAppColors()
 		if (col.list_bg==col.selec) col.selec = sc.work_graph; //for fucking skins
 		col.slider_bg_big = MixColors(0xCED0D0, sc.work, 35);
 		col.odd_line = MixColors(0xFFFfff, sc.work, 15);
+		for (i=0; blue_hl_pal[i]!=0; i++) waves_pal[i] = MixColors(col.lpanel, blue_hl_pal[i], 180);
 	}
 	else 
 	{
@@ -262,6 +263,7 @@ void SetAppColors()
 		col.selec_text = 0x000000;
 		col.slider_bg_big = 0xCDCFCF;
 		col.odd_line = 0xF1F1F1;
+		for (i=0; blue_hl_pal[i]!=0; i++) waves_pal[i] = blue_hl_pal[i];
 	}
 	col.selec_inactive = MixColors(0xBBBbbb, col.list_bg, 65);
 	col.slider_bg_left = MixColors(sc.work_graph, col.slider_bg_big, 10);

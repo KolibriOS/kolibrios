@@ -229,7 +229,7 @@ void ActionsDraw()
 {
 	int i;
 	int actions_y= SystemDiscs.list.count*DEV_H+108;
-	Tip(actions_y-18, T_ACTIONS, 77, ""); //заголовок
+	Tip(actions_y-18, T_ACTIONS, 77, "");
 	for (i=0; actions[i*3]!=0; i++, actions_y+=DEV_H)
 	{
 		DrawBar(17,actions_y,160,DEV_H,0xFFFFFF); //белое
@@ -245,24 +245,19 @@ void DrawLeftPanelBg()
 	int actions_y = SystemDiscs.list.count*DEV_H;
 	int start_y = actions_y+159;
 	int area_h;
-	DrawBar(2,41,190,15,col.lpanel);		      //синий прямоугольник - над девайсами
-	DrawBar(17,actions_y+75,160,15,col.lpanel); //синий прямоугольник - под девайсами
+	int i;
+	DrawBar(2,41,190,15,waves_pal[0]);		      //above devices block
+	DrawBar(17,actions_y+75,160,15,waves_pal[0]); //below devices block
 	PutShadow(17,actions_y+75,160,1,1,3);
 	PutShadow(18,actions_y+75+1,158,1,1,1);
-	DrawBar(2,56,15,actions_y+103,col.lpanel);	          //синий прямоугольник - слева       
-	DrawBar(177,56,15,actions_y+103,col.lpanel);            //синий прямоугольник - справа
+	DrawBar(2,56,15,actions_y+103,waves_pal[0]);	          //on the left
+	DrawBar(177,56,15,actions_y+103,waves_pal[0]);            //on the right
 	area_h = Form.cheight-start_y-2 - status_bar_h;
-	if (col.def) 
-	{
-		if (area_h < 268){
-			PutPaletteImage(#blue_hl, 190, area_h, 2, start_y, 8, #blue_hl_pal);
-		} else {
-			DrawBar(2,start_y,190, area_h-268, col.lpanel);
-			PutPaletteImage(#blue_hl, 190, 268, 2, Form.cheight-270-status_bar_h, 8, #blue_hl_pal);
-		}
-	}
-	else {
-		DrawBar(2,start_y,190, area_h, col.lpanel);
+	if (area_h < 268){
+		PutPaletteImage(#blue_hl, 190, area_h, 2, start_y, 8, #waves_pal);
+	} else {
+		DrawBar(2,start_y,190, area_h-268, waves_pal[0]);
+		PutPaletteImage(#blue_hl, 190, 268, 2, Form.cheight-270-status_bar_h, 8, #waves_pal);
 	}
 	PutShadow(17,start_y,160,1,1,3);
 	PutShadow(18,start_y+1,158,1,1,1);
