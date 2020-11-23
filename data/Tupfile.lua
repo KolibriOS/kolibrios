@@ -169,6 +169,7 @@ extra_files = {
  {"kolibrios/develop/c--/", PROGS .. "/cmm/c--/*"},
  {"kolibrios/develop/fpc/", "common/develop/fpc/*"},
  {"kolibrios/develop/fpc/examples/", PROGS .. "/develop/fp/examples/*"},
+ {"kolibrios/develop/fpc/examples/build.sh", "common/develop/fpc/build.sh"},
  {"kolibrios/develop/lua/lua", "../contrib/other/lua-5.2.0/lua"},
  {"kolibrios/develop/lua/calc.lua", "../contrib/other/lua-5.2.0/calc.lua"},
  {"kolibrios/develop/lua/console.lua", "../contrib/other/lua-5.2.0/console.lua"},
