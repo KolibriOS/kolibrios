@@ -168,7 +168,7 @@ extra_files = {
  {"kolibrios/3D/TEXT_2.PNG", PROGS .. "/develop/libraries/TinyGL/asm_fork/examples/text_2.png"},
  {"kolibrios/develop/c--/", PROGS .. "/cmm/c--/*"},
  {"kolibrios/develop/fpc/", "common/develop/fpc/*"},
- {"kolibrios/develop/fpc/examples/", PROGS .. "/develop/fp/examples/*"},
+ {"kolibrios/develop/fpc/examples/", PROGS .. "/develop/fp/examples/src/*"},
  {"kolibrios/develop/fpc/examples/build.sh", "common/develop/fpc/build.sh"},
  {"kolibrios/develop/lua/lua", "../contrib/other/lua-5.2.0/lua"},
  {"kolibrios/develop/lua/calc.lua", "../contrib/other/lua-5.2.0/calc.lua"},
