@@ -4,7 +4,7 @@ org 0
   dd 1
   dd @Kolibri@Main$qv
   dd I_END
-  dd U_END+STACKSIZE+HEAPSIZE
+  dd U_END+STACKSIZE ;+HEAPSIZE
   dd U_END+STACKSIZE
 if defined @Kolibri@CommandLine
   dd @Kolibri@CommandLine
