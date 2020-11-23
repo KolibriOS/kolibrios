@@ -283,6 +283,9 @@ Parameters:
     ecx = -1 - get information on the current thread
 Returned value:
   * eax = maximum number of the slot of a thread
+    but if pointer in ebx is illegal, for example,
+    [ebx, ebx + 0x4C) region intersects with kernel memory,
+    then function returns -1
   * buffer pointed to by ebx contains the following information:
     * +0: dword: usage of the processor (how many time units
       per second leaves on execution of this thread)

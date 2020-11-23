@@ -3159,6 +3159,14 @@ sys_cpuusage:
 ;  +26 dword     used mem
 ;  +30 dword     PID , process idenfification number
 ;
+        ; if given memory address belongs to kernel then error
+        push    ebx
+        mov     eax, ebx
+        mov     ebx, 0x4C
+        call    is_region_userspace
+        pop     ebx
+        test    eax, eax
+        jz      .addr_error
 
         cmp     ecx, -1 ; who am I ?
         jne     .no_who_am_i
@@ -3248,6 +3256,10 @@ sys_cpuusage:
         mov     eax, [TASK_COUNT]
         mov     [esp+32], eax
         ret
+
+.addr_error:    ; if given memory address is illegal
+        mov     eax, -1
+        ret   
 
 align 4
 sys_clock:
