@@ -949,6 +949,14 @@ Parameters:
     the information will be placed
 Returned value:
   * function does not return value
+    but if pointer in ecx is illegal, for example,
+    [ecx, ecx + 9) region intersects with kernel memory,
+    then function returns -1
+Remarks:
+  * At the moment only the part of the buffer by a size
+    9 bytes is used. Nevertheless it is recommended to use
+    16 byte buffer for the future compatibility, in the future
+    some fields can be added.
 Structure of the buffer:
 db a,b,c,d for version a.b.c.d
 db 0: reserved

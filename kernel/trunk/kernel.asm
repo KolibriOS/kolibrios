@@ -2455,11 +2455,21 @@ sysfn_lastkey:          ; 18.12 = return 0 (backward compatibility)
         ret
 ;------------------------------------------------------------------------------
 sysfn_getversion:       ; 18.13 = get kernel ID and version
+        ; if given memory address belongs to kernel then error
+        mov     eax, ecx
+        mov     ebx, version_end-version_inf
+        call    is_region_userspace
+        test    eax, eax
+        jz      .addr_error
+
         mov     edi, ecx
         mov     esi, version_inf
         mov     ecx, version_end-version_inf
         rep movsb
         ret
+.addr_error:    ; if given memory address is illegal
+        mov     eax, -1
+        ret   
 ;------------------------------------------------------------------------------
 sysfn_waitretrace:     ; 18.14 = sys wait retrace
      ;wait retrace functions
