@@ -2468,7 +2468,7 @@ sysfn_getversion:       ; 18.13 = get kernel ID and version
         rep movsb
         ret
 .addr_error:    ; if given memory address is illegal
-        mov     eax, -1
+        mov     dword [esp+32], -1
         ret   
 ;------------------------------------------------------------------------------
 sysfn_waitretrace:     ; 18.14 = sys wait retrace
