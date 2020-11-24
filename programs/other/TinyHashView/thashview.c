@@ -13,7 +13,7 @@
 #define FALSE 0;
 #define MAX_HASH_LEN 65 // Максимальная длина строки
 #define WINDOW_W 665
-#define VERSION "%s - thashview 2.2"
+#define VERSION "%s - thashview 2.3"
 
 typedef unsigned char bool;
 struct kolibri_system_colors sys_color_table;
@@ -169,7 +169,7 @@ void redraw_window() //Рисуем окно
     pos_t win_pos = get_mouse_pos(0); //Получаем позицию курсора мыши.
     sprintf(title,VERSION, filename); // Устанавливаем заголовок окна
     begin_draw(); //Начинаем рисование интерфейса )
-    sys_create_window(win_pos.x, win_pos.y, WINDOW_W, 150, title, GREY, 0x14); // Создаём окно.
+    sys_create_window(win_pos.x, win_pos.y, WINDOW_W, 150, title, sys_color_table.work_area, 0x14); // Создаём окно.
 
     draw_bar(10, 121, 525,20, WHITE); // Создаём прямоугольник для поля ввода
     draw_text_sys(edit_box_buff,15, 125, 0, 0x90000000| edit_box_text_color); // Выводим текст из буффера ввода
@@ -206,17 +206,21 @@ void redraw_window() //Рисуем окно
 
 void paste_to_edit_buffer()    // Вставить из буффера обмена
 {
-    char *temp_buff;
-    temp_buff=kol_clip_get(kol_clip_num()-1);
-    memset(edit_box_buff,0,MAX_HASH_LEN);
-    if(((int)*(temp_buff)>0) && ((int)*(temp_buff+4)==0) && ((int)*(temp_buff+8)==1))
+    char *temp_buff=NULL;
+    if(kol_clip_num()>0)
     {
-        strncpy(edit_box_buff,temp_buff+12, MAX_HASH_LEN-1);
-        str_pos=strlen(edit_box_buff);
-        notify_show("'Pasted from clipboard!' -I");
-        edit_box_text_color=BLACK;
+        temp_buff=kol_clip_get(kol_clip_num()-1);
+        memset(edit_box_buff,0,MAX_HASH_LEN);
+        if(((int)*(temp_buff)>0) && ((int)*(temp_buff+4)==0) && ((int)*(temp_buff+8)==1))
+        {
+            strncpy(edit_box_buff,temp_buff+12, MAX_HASH_LEN-1);
+            str_pos=strlen(edit_box_buff);
+            notify_show("'Pasted from clipboard!' -I");
+            edit_box_text_color=BLACK;
+            user_free(temp_buff);
+        
+        }
     }
-    user_free(temp_buff);
 }
 
 
@@ -296,8 +300,7 @@ bool hash_compare() // Главная функция для сравнения
 
 void edit_box(oskey_t key)      //Функция реализующая строку ввода
 {
-    edit_box_text_color=BLACK;
-
+    edit_box_text_color=sys_color_table.frame_area;
     if(key.code==CTRL_V) // Если нажато Ctrl+V то вставить из буфера обмена
     {
         paste_to_edit_buffer();

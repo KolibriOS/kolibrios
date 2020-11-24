@@ -140,7 +140,7 @@ BOOL WINAPI DllMain (HINSTANCE hDll, DWORD dwReason, LPVOID lpReserved)
 }
 #endif
 #else // _WIN32
-#ifdef TCC_TARGET_MEOS
+#if defined TCC_TARGET_MEOS && ! TCC_TARGET_MEOS_LINUX
 /* on Kolibri host, we suppose the lib and includes are at the location of 'tcc' /lib, /include */
 static void tcc_set_lib_path_kos(TCCState *s)
 {
@@ -1092,7 +1092,7 @@ LIBTCCAPI TCCState *tcc_new(void)
 #ifdef _WIN32
     tcc_set_lib_path_w32(s);
 #else
-#ifdef TCC_TARGET_MEOS
+#if defined TCC_TARGET_MEOS && ! TCC_TARGET_MEOS_LINUX
     tcc_set_lib_path_kos(s);
 #else
     tcc_set_lib_path(s, CONFIG_TCCDIR);

@@ -1,0 +1,13 @@
+CC=gcc
+NAME=kos32-tcc
+
+SRC=libtcc.c tcc.c
+CFLAGS= -DTCC_TARGET_MEOS_LINUX
+LFLAGS= -m32 -static 
+
+all:
+	$(CC) $(CFLAGS) $(LFLAGS) $(SRC) -o $(NAME) 
+install: 
+	cp $(NAME) ../bin 
+clean:
+	rm -f $(NAME)
