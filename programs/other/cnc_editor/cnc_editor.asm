@@ -7,13 +7,14 @@ include '../../macros.inc'
 include '../../proc32.inc'
 include '../../KOSfuncs.inc'
 include '../../load_img.inc'
+include '../../load_lib.mac'
 include '../../develop/libraries/libs-dev/libimg/libimg.inc'
 include '../../develop/libraries/box_lib/trunk/box_lib.mac'
 include 'lang.inc'
 include 'cnc_editor.inc'
 include '../../develop/info3ds/info_fun_float.inc'
 
-@use_library_mem mem.Alloc,mem.Free,mem.ReAlloc,dll.Load
+@use_library mem.Alloc,mem.Free,mem.ReAlloc,dll.Load
 caption db 'CNC editor 23.05.19',0 ;подпись окна
 
 run_file_70 FileInfoBlock
@@ -2096,39 +2097,12 @@ lib_name_2 db 'buf2d.obj',0
 system_dir_3 db '/sys/lib/'
 lib_name_3 db 'box_lib.obj',0
 
-head_f_i:
-if lang eq ru
-	head_f_l db '"Системная ошибка',0
-	err_message_found_lib_0 db 'Не найдена библиотека ',39,'proc_lib.obj',39,'" -tE',0
-	err_message_import_0 db 'Ошибка при импорте библиотеки ',39,'proc_lib.obj',39,'" -tW',0
-	err_message_found_lib_1 db 'Не найдена библиотека ',39,'libimg.obj',39,'" -tE',0
-	err_message_import_1 db 'Ошибка при импорте библиотеки ',39,'libimg.obj',39,'" -tW',0
-	err_msg_found_lib_2 db 'Не найдена библиотека ',39,'buf2d.obj',39,'" -tE',0
-	err_msg_import_2 db 'Ошибка при импорте библиотеки ',39,'buf2d',39,'" -tW',0
-	err_msg_found_lib_3 db 'Не найдена библиотека ',39,'box_lib.obj',39,'" -tE',0
-	err_msg_import_3 db 'Ошибка при импорте библиотеки ',39,'box_lib',39,'" -tW',0
-else
-	head_f_l db '"System error',0
-	err_message_found_lib_0 db 'Sorry I cannot found library ',39,'proc_lib.obj',39,'" -tE',0
-	err_message_import_0 db 'Error on load import library ',39,'proc_lib.obj',39,'" -tW',0
-	err_message_found_lib_1 db 'Sorry I cannot found library ',39,'libimg.obj',39,'" -tE',0
-	err_message_import_1 db 'Error on load import library ',39,'libimg.obj',39,'" -tW',0
-	err_msg_found_lib_2 db 'Sorry I cannot found library ',39,'buf2d.obj',39,'" -tE',0
-	err_msg_import_2 db 'Error on load import library ',39,'buf2d',39,'" -tW',0
-	err_msg_found_lib_3 db 'Sorry I cannot found library ',39,'box_lib.obj',39,'" -tE',0
-	err_msg_import_3 db 'Error on load import library ',39,'box_lib',39,'" -tW',0
-end if
-
 align 4
 l_libs_start:
-	lib_0 l_libs lib_name_0, sys_path, file_name, system_dir_0,\
-		err_message_found_lib_0, head_f_l, proclib_import,err_message_import_0, head_f_i
-	lib_1 l_libs lib_name_1, sys_path, file_name, system_dir_1,\
-		err_message_found_lib_1, head_f_l, import_libimg, err_message_import_1, head_f_i
-	lib_2 l_libs lib_name_2, sys_path, library_path, system_dir_2,\
-		err_msg_found_lib_2,head_f_l,import_buf2d,err_msg_import_2,head_f_i
-	lib_3 l_libs lib_name_3, sys_path, file_name, system_dir_3,\
-		err_msg_found_lib_3, head_f_l, import_box_lib,err_msg_import_3,head_f_i
+	lib_0 l_libs lib_name_0, file_name, system_dir_0, import_proclib
+	lib_1 l_libs lib_name_1, file_name, system_dir_1, import_libimg
+	lib_2 l_libs lib_name_2, library_path, system_dir_2, import_buf2d
+	lib_3 l_libs lib_name_3, file_name, system_dir_3, import_box_lib
 l_libs_end:
 
 align 4
@@ -2179,7 +2153,7 @@ import_libimg:
 	aimg_draw    db 'img_draw',0
 
 align 4
-proclib_import: ;описание экспортируемых функций
+import_proclib:
 	OpenDialog_Init dd aOpenDialog_Init
 	OpenDialog_Start dd aOpenDialog_Start
 	OpenDialog_Set_file_name dd aOpenDialog_Set_file_name

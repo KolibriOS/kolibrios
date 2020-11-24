@@ -1,42 +1,36 @@
 #include <kolibri.h>
 #include <kos_heap.h>
 #include <kos_file.h>
+#include <load_lib.h>
+#include <l_proc_lib.h>
 #include "lifegen.h"
 #include "life_bmp.h"
-#include "kos_cdlg.h"
 
 using namespace Kolibri;
 
-/***
-#define StrLen   LibbStrLen
-#define StrCopy  LibbStrCopy
-#define MemCopy  LibbMemCopy
-#define MemSet   LibbMemSet
-#define Floor    LibbFloor
+char library_path[2048];
 
-unsigned int (*StrLen)(const char *str) = 0;
-char *(*StrCopy)(char *dest, const char *src) = 0;
-void *(*MemCopy)(void *dest, const void *src, unsigned int n) = 0;
-void *(*MemSet)(void *s, char c, unsigned int n) = 0;
-double (*Floor)(double x) = 0;
+OpenDialog_data ofd;
+unsigned char procinfo[1024];
+char plugin_path[4096], filename_area[256];
+od_filter filter1 = { 8, "LIF\0\0" };
 
-void LibbInit()
-{
-	HINSTANCE hLib = LoadLibrary("Libb.dll");
-	if (!hLib)
-	{
-		DebugPutString("Can't load the library.\n");
-		Kolibri::Abort();
-	}
-	StrLen = (unsigned int(*)(const char *str))GetProcAddress(hLib, "StrLen");
-	StrCopy = (char *(*)(char *dest, const char *src))GetProcAddress(hLib, "StrCopy");
-	MemCopy = (void *(*)(void *dest, const void *src, unsigned int n))GetProcAddress(hLib, "MemCopy");
-	MemSet = (void *(*)(void *s, char c, unsigned int n))GetProcAddress(hLib, "MemSet");
-	Floor = (double (*)(double x))GetProcAddress(hLib, "Floor");
+namespace Kolibri{
+	char CurrentDirectoryPath[2048];
 }
 
-#pragma startup LibbInit
-/**/
+void __stdcall DrawWindow()
+{
+	asm{
+		push ebx
+		mcall SF_REDRAW,SSF_BEGIN_DRAW
+	}
+	//KolibriOnPaint();
+	asm{
+		mcall SF_REDRAW,SSF_END_DRAW
+		pop ebx
+	}
+}
 
 void __stdcall OneGeneration(int w, int h, void *dest, const void *src, int flag);
 
@@ -107,7 +101,7 @@ AxisParam xpar = {0, 0, 0};
 AxisParam ypar = {0, 0, 0};
 MouseParam mpar = {0, 0, 0, 0, 0, MouseParam::HitNull};
 MenuParam menu;
-TOpenFileStruct open_file_str = KOLIBRI_OPEN_FILE_INIT;
+bool open_file_str = false;
 TimeGeneration timegen[TimeGenLength];
 int timegenpos = 0;
 
@@ -1356,11 +1350,9 @@ void LifeScreenPutPicture(const unsigned char *pict, int size, TThreadData th)
 
 void MenuOpenDialogEnd(TThreadData th)
 {
-	int state = OpenFileGetState(open_file_str);
-	if (state <= 0) return;
-	OpenFileSetState(open_file_str, 0);
-	if (state != 2) return;
-	char *name = OpenFileGetName(open_file_str);
+	if(!ofd.openfile_path[0] || !open_file_str) return;
+	open_file_str = false;
+	char *name = ofd.openfile_path;
 	if (!name) return;
 	FileInfoBlock* file = FileOpen(name);
 	if (!file) return;
@@ -1467,8 +1459,9 @@ void MenuMouseClick(int x, int y, int m, TThreadData th)
 			MenuClearClick(th);
 			break;
 		case MenuIOpen:
-			if (OpenFileGetState(open_file_str) < 0) break;
-			OpenFileDialog(open_file_str);
+			ofd.type = 0; // 0 - open
+			OpenDialog_Start(&ofd);
+			if(ofd.status==1) open_file_str = true;
 			break;
 		case MenuIAbout:
 			MenuAboutClick(th);
@@ -1706,11 +1699,26 @@ bool KolibriOnStart(TStartData &me_start, TThreadData th)
 	me_start.Width = 500; me_start.Height = 400;
 	InitGenerate();
 	InitMenuButton();
-	if (CommandLine[0])
+	if(LoadLibrary("proc_lib.obj", library_path, "/sys/lib/proc_lib.obj", &import_proc_lib))
 	{
-		open_file_str.state = 2;
-		OpenFileSetName(open_file_str, CommandLine);
-	}
+		ofd.procinfo = procinfo;
+		ofd.com_area_name = "FFFFFFFF_open_dialog";
+		ofd.com_area = 0;
+		ofd.opendir_path = plugin_path;
+		ofd.dir_default_path = "/rd/1";
+		ofd.start_path = "/rd/1/File managers/opendial";
+		ofd.draw_window = DrawWindow;
+		ofd.status = 0;
+		ofd.openfile_path = CommandLine;
+		ofd.filename_area = filename_area;
+		ofd.filter_area = &filter1;
+		ofd.x_size = 420;
+		ofd.x_start = 10;
+		ofd.y_size = 320;
+		ofd.y_start = 10;
+		OpenDialog_Init(&ofd);
+	} else return false;
+	if (CommandLine[0]) open_file_str = true;
 	return true;
 }
 
@@ -1725,7 +1733,7 @@ int KolibriOnIdle(TThreadData th)
 {
 	static const unsigned int WAIT_TIME = 2, GEN_TIME = 1;
 	int res = -1;
-	if (OpenFileGetState(open_file_str) > 0)
+	if (open_file_str)
 	{
 		MenuOpenDialogEnd(th);
 		res = 0;
@@ -1826,8 +1834,9 @@ void KolibriOnKeyPress(TThreadData th)
 				break;
 			case 'o':
 			case 'O':
-				if (OpenFileGetState(open_file_str) < 0) break;
-				OpenFileDialog(open_file_str);
+				ofd.type = 0; // 0 - open
+				OpenDialog_Start(&ofd);
+				if(ofd.status==1) open_file_str=true;
 				break;
 			case 'a':
 			case 'A':

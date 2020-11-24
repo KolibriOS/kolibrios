@@ -84,9 +84,6 @@ proc @Kolibri@Main$qv
   cmp  esp,eax
   cmova esp,eax
   and  esp,not 3
-if defined @Kolibri@CommandLine
-	mov	byte [@Kolibri@CommandLine+256], 0
-end if
   xor  eax,eax
   cld
   mov  edi,@Kolibri@_ThreadTable
@@ -389,8 +386,9 @@ proc @Kolibri@Redraw$qippv
   dec  esi
   jz   .window_defined
   mov  eax,SF_DRAW_TEXT
-  mov  ebx,0x00070007
+  mov  ebx,0x00070005
   mov  ecx,[ebp+KOLIBRI_THREAD_DATA_C_TITLE*4]
+  or   ecx,1 shl 28 ;make big font
   int  0x40
 .window_defined:
 .redraw_picture:

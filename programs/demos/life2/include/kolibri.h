@@ -8,7 +8,7 @@
 namespace Kolibri   // All kolibri functions, types and data are nested in the (Kolibri) namespace.
 {
 	const char *DebugPrefix = "User program: ";
-	char CommandLine[257];
+	char CommandLine[2048];
 
 	struct TWindowData   // Data for drawing a window.
 	{
@@ -508,31 +508,6 @@ namespace Kolibri
 		GetBorderHeader(dx, dy);
 		x -= dx; y -= dy;
 	}
-}
-
-#else   // def __KOLIBRI__
-
-namespace Kolibri
-{
-	struct TMutex
-	{
-		unsigned int mut;
-
-		TMutex();
-		~TMutex();
-	};
-#undef  KOLIBRI_MUTEX_INIT
-#define KOLIBRI_MUTEX_INIT  TMutex()
-
-	struct TRecMutex
-	{
-		unsigned int mut;
-
-		TRecMutex();
-		~TRecMutex();
-	};
-#undef  KOLIBRI_REC_MUTEX_INIT
-#define KOLIBRI_REC_MUTEX_INIT  TRecMutex()
 }
 
 #endif  // else: def __KOLIBRI__
