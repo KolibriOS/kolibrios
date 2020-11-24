@@ -1806,7 +1806,7 @@ sys_getsetup:
         ret
 
 .addr_error:    ; if given memory address is illegal
-        mov     eax, -1
+        mov     dword [esp+32], -1
         ret        
 ;--------------------------------------
 @@:
@@ -3268,7 +3268,7 @@ sys_cpuusage:
         ret
 
 .addr_error:    ; if given memory address is illegal
-        mov     eax, -1
+        mov     dword [esp+32], -1
         ret   
 
 align 4
