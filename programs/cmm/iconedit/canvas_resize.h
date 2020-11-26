@@ -41,7 +41,7 @@ void CanvasReSize_Thread()
 		if (SCAN_CODE_ENTER == key_scancode) EventApplyClick();
 		if (SCAN_CODE_TAB == key_scancode) EventTabClick();
 
-		EAX= key_ascii << 8;
+		EAX = key_editbox;
 		edit_box_key stdcall (#edit_columns);	
 		edit_box_key stdcall (#edit_rows);	
 		break;

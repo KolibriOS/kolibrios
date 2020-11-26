@@ -1450,7 +1450,7 @@ text    db  "This is a Hot Angles Configurator.                            "
  hed:
 title   db  "Hot Angles Configurator", 0
 buttonText db "  Apply  ", 0
-buttonTextSize = 5
+buttonTextSize = 9
 
 ch_text db 'Activate "Hot Angles"',0       ;сопровождающий текст для чек бокса
 

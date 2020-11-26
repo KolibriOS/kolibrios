@@ -40,7 +40,7 @@ char image_menu_items[] =
 Заменить все цвета 1 на 2";
 ?define T_MENU_IMAGE "Иконка"
 ?define T_TEST_ICON "Проверить иконку"
-?define T_TITLE "Редактор иконок 0.70 Beta"
+?define T_TITLE "Редактор иконок 0.70a Beta"
 ?define T_UNIC_COLORS_COUNT "'Уникальных цветов: %i.' -I"
 ?define T_TOO_BIG_IMAGE_FOR_PREVIEW "'IconEdit
 Изображение слишком большое для предпросмотра!' -tE"
