@@ -45,14 +45,14 @@
 ;         released to the public domain by the author.
 ;
 ;
-; to assemble &amp; link:
+; to assemble & link:
 ;   TASM /m2 tinyfrac       (assemble using two pass mode if required)
 ;   TLINK /Tdc tinyfrac     (link Target platform is DOS, COM file)
 ;
 ;
 
-PIXWIDTH    equ 511
-PIXHEIGHT   equ 255
+PIXWIDTH    equ 512
+PIXHEIGHT   equ 256
 
 ZOOMLIMIT   equ  13       ; can change to up to 13 for extended zoom in
 
@@ -61,113 +61,54 @@ ZOOMLIMIT   equ  13       ; can change to up to 13 for extended zoom in
 DELTA       equ 200       ; the unit of pan movement in pixels
 THRESHOLD   equ  7        ; must be in the range of (0,255)
 STARTSCALE  equ  5        ; a number from 0 to ZOOMLIMIT, inclusive
-CHAR_COLOR  equ 0fh       ; white on black background (for PRINTZOOM feature)
 
-
+IMGBUF      equ 0x1000
 
 ; ************************************************************
 ;
-;   Menuet header
-
+;   KolibriOS header
+;
+; ************************************************************
 
 use32
+        org     0x0
 
-                  org     0x0
-
-                  db      'MENUET01'
-                  dd      0x01
-                  dd      START
-                  dd      I_END
-                  dd      0x62000
-                  dd      0x1000
-                  dd      0,0
+        db      'MENUET01'
+        dd      0x01
+        dd      START
+        dd      I_END
+        dd      PIXWIDTH*PIXHEIGHT*3+IMGBUF+I_END
+        dd      0x1000
+        dd      0,0
 
 include 'lang.inc'
 include '..\..\..\macros.inc'
 
-STARTX  dd  200
-STARTY  dd  120
-
-scaleaddy dd 120
-scaleaddx dd 200
-
 START:
-
-red:
-        call    draw_window
-        call    draw_fractal
-
+        call draw_fractal
+redraw:
+        call draw_window
 still:
-
-        mov  eax,10
-        mcall
+        mcall 10
 
         dec  eax
-        jz   red
+        jz   redraw
         dec  eax
         jz   key
 
       button:
-        mov  al,17
-        mcall
-
+        mcall 17
         cmp  ah,1
-        jne  no_close
-        or   eax,-1
-        mcall
-      no_close:
-
-        cmp  ah,2
-        jne  no_bgr
-
-
-        mov  eax,15   ; bgr 512 x 256
-        mov  ebx,1
-        mov  ecx,512
-        mov  edx,256
-        mcall
-
-        mov  eax,15
-        mov  ebx,5
-        mov  ecx,0x1000
-        mov  edx,0
-        mov  esi,512*3*256
-        mcall
-
-        mov  eax,15
-        mov  ebx,3
-        mcall
-
-        jmp  still
-
-      no_bgr:
-
-        cmp  ah,3
-        jb   no_color
-        cmp  ah,5
-        jg   no_color
-        shr  eax,8
-        sub  eax,3
-        imul eax,8
-        add  eax,8
-        not  eax
-        and  eax,11000b
-        mov  [shlc],al
-        call draw_fractal
-        jmp  still
-
-      no_color:
-
-        jmp  still
-
+        jne  still
+        mcall -1
 
       key:
-        mov  al,2
-        mcall
+        mcall 2
+        shr eax,16
 
-        cmp  ah,'e'
-        je   cycle
-        cmp  ah,'r'
+        cmp  al,24 ;'o'
+		je cycle
+        cmp  al,23 ;'i'
         je   cycle
         jmp  no_cycle
       cycle:
@@ -175,7 +116,7 @@ still:
         jmp  still
       no_cycle:
 
-        cmp  ah,'q'
+        cmp  al,13 ;'+'
         jne  no_in
         inc  byte [scale]
         mov  ebx,[STARTX]
@@ -186,9 +127,11 @@ still:
         imul ebx,2
         sub  ebx,[scaleaddy]
         mov  [STARTY],ebx
+        call draw_fractal
+        jmp  still
       no_in:
 
-        cmp  ah,'w'
+        cmp  al,12 ;'-'
         jne  no_out
         dec  byte [scale]
         mov  ebx,[STARTX]
@@ -199,50 +142,99 @@ still:
         add  ebx,[scaleaddy]
         shr  ebx,1
         mov  [STARTY],ebx
-      no_out:
-
-        cmp  ah,130+48
-        jne  no_up
-        sub  [STARTY],100
-      no_up:
-
-        cmp  ah,129+48
-        jne  no_down
-        add  [STARTY],100
-      no_down:
-
-        cmp  ah,128+48
-        jne  no_left
-        sub  [STARTX],100
-      no_left:
-
-        cmp  ah,131+48
-        jne  no_right
-        add  [STARTX],100
-      no_right:
-
         call draw_fractal
         jmp  still
+      no_out:
+
+        cmp  al,72
+        jne  no_up
+        sub  [STARTY],100
+        call draw_fractal
+        jmp  still
+      no_up:
+
+        cmp  al,80
+        jne  no_down
+        add  [STARTY],100
+        call draw_fractal
+        jmp  still
+      no_down:
+
+        cmp  al,75
+        jne  no_left
+        sub  [STARTX],100
+        call draw_fractal
+        jmp  still
+      no_left:
+
+        cmp  al,77
+        jne  no_right
+        add  [STARTX],100
+        call draw_fractal
+        jmp  still
+      no_right:
+      
+        cmp  al,19 ;'r'
+        jne  no_red
+        mov  ah,3
+        call colorize
+        jmp  still
+      no_red:
+      
+        cmp  al,34 ;'g'
+        jne  no_green
+        mov  ah,4
+        call colorize
+        jmp  still
+      no_green:
+      
+        cmp  al,48 ;'b'
+        jne  no_blue
+        mov  ah,5
+        call colorize
+        jmp  still
+      no_blue:
+      
+        cmp  al,17 ;'w'
+        jne  no_set_as_wallpaper
+        mcall 15, 1, PIXWIDTH, PIXHEIGHT
+		mcall 15, 4, 1 ;mode 1-tiled, 0-stretch
+        mcall 15, 5, IMGBUF, 0, PIXWIDTH*3*PIXHEIGHT
+        mcall 15, 3 
+      no_set_as_wallpaper:
+
+        jmp  still
+
+colorize:       
+        shr  eax,8
+        sub  eax,3
+        imul eax,8
+        add  eax,8
+        not  eax
+        and  eax,11000b
+        mov  [shlc],al
+        call draw_fractal
+        ret
 
 color_cycle:
 
      pusha
      mov  ecx,0x08080808
-     mov  esi,(256/8)*5
-     cmp  ah,'e'
+     mov  esi,(PIXHEIGHT/8)*5
+     cmp  al,24
      je   f_out
      mov  ecx,-0x08080808
-     mov  esi,(256/8)*5-1
+     mov  esi,(PIXHEIGHT/8)*5-1
    f_out:
 
    newcycle:
-     mov  edi,0x1000
+     mov  edi,IMGBUF
    newpix:
      mov  eax,[edi]
      add  eax,ecx
      mov  [edi],eax
      add  edi,4
-     cmp  edi,0x1000+512*256*3
+     cmp  edi,IMGBUF+PIXWIDTH*PIXHEIGHT*3
      jb   newpix
      call put_image
      mov  eax,5
@@ -252,8 +244,8 @@ color_cycle:
      jnz  newcycle
 
      mov  eax,0
-     mov  edi,0x1000
-     mov  ecx,512*256*3 / 4 +50
+     mov  edi,IMGBUF
+     mov  ecx,PIXWIDTH*PIXHEIGHT*3 / 4 +50
      cld
      rep  stosd
 
@@ -264,23 +256,16 @@ color_cycle:
      ret
 
 
-
-
-
 ; **********************************************************************
 ;
 ;    Tinyfrac
 ;
-
+; **********************************************************************
 
 draw_fractal:
 
         pusha
-        mov     eax,4
-        mov     ebx,10*65536+30
-        mov     ecx,0x80ffffff
-        mov     edx,calc
-        mcall
+        mcall 4, 10*65536+10, 0xD0ffffff, calc_txt, 0
         popa
         pusha
 
@@ -291,14 +276,14 @@ draw_fractal:
 ;       This routine is the fractal drawing engine.  It has been
 ;       optimized for size, sacrificing speed.
 
-        mov     cx, PIXHEIGHT   ; height of screen in pixels
+        mov     cx, PIXHEIGHT ; height of screen in pixels
 
         sub     di,cx           ; adjust our Y offset
 @@CalcRow:
 
         push    cx
 
-        mov     cx, PIXWIDTH -1  ; width of screen in pixels
+        mov     cx, PIXWIDTH ; width of screen in pixels
 
         sub     bp,cx           ;
 @@CalcPixel:
@@ -345,22 +330,6 @@ draw_fractal:
 
         ret
 
-
-put_image:
-
-        pusha
-
-        mov  eax,7
-        mov  ebx,0x1000
-        mov  ecx,512*65536+256
-        mov  edx,4*65536+21
-        mcall
-
-        popa
-
-        ret
-
-
 shlc db 0
 
 put_pixel:
@@ -384,15 +353,15 @@ put_pixel:
         add     cl,3
         shl     eax,cl
         and     eax,ebx
-        mov     [0x1000+edi],eax
+        mov     [IMGBUF+edi],eax
         popa
 
         ret
 
 
 ;****************************************************************************
- ;
- ;       This routine multiplies AX by DX and shifts the result (in
+;
+;       This routine multiplies AX by DX and shifts the result (in
 ;       DX:AX) to the right by scale bits (or scale+1 bits if CY is
 ;       set).  The resulting value is left in AX.  DX is destroyed.
 ;
@@ -414,74 +383,46 @@ scale   db      STARTSCALE
         ret                     ;
 
 
-
 ; **********************************************************************
 ;
-;                   WINDOW DEFINITIONS AND DRAW
+;     WINDOW DEFINITIONS AND DRAW
 ;
 ; **********************************************************************
-
-
 
 draw_window:
-
       pusha
-
-      mov  eax,12
-      mov  ebx,1
-      mcall
-
-      xor  eax,eax
-      mov  ebx,50*65536+PIXWIDTH+8
-      mov  ecx,100*65536+PIXHEIGHT+25
-      mov  edx,0x14334455
-      mov  edi,title
-      mcall
-
-      mov  eax,8
-      mov  ebx,290*65536+112
-      mov  ecx,5*65536+12
-      mov  edx,2
-      mov  esi,0x808080
-      mcall
-
-      mov  ebx,420*65536+12
-      mov  ecx,5*65536+12
-      mov  edx,3
-      mov  esi,0xa00000
-      mov  edi,3
-      ;mov  eax,8
-    newcolor:
-      mcall
-      add  ebx,13*65536
-      shr  esi,8
-      inc  edx
-      dec  edi
-      jnz  newcolor
-
-      mov  eax,4
-      mov  ebx,300*65536+8
-      mov  ecx,0x80ffffff
-      mov  edx,button_txt
-      mcall
-
-      mov  eax,12
-      mov  ebx,2
-      mcall
-
+      mcall 12, 1
+	  
+      mcall 48, 4                        ;get skin height
+      lea   ecx, [50*65536+PIXHEIGHT+4+eax]
+      mcall 0,<50,PIXWIDTH+9>,,0x74000000,,header_txt ;draw window
+	  
+      call    put_image
+	  
+      mcall 12, 2
       popa
       ret
 
+put_image:
+        pusha
+        mcall 7, IMGBUF, PIXWIDTH*65536+PIXHEIGHT, 0*65536+0
+        popa
+        ret
 
-; ***************************************************************
+
+; **********************************************************************
 ;
 ;     DATA AREA
 ;
+; **********************************************************************
 
+header_txt  db 'Move by Arrows, zoom +/-, cycle O/I, bgr W, color R/G/B',0
+calc_txt    db 'Calculating...',0
 
-title      db 'Tinyfrac - MOVE: ARROWS, ZOOM Q/W, CYCLE: E/R',0
-button_txt  db 'Set as wallpaper',0
+STARTX  dd  200
+STARTY  dd  120
 
-calc        db 'CALCULATING',0
+scaleaddy dd 120
+scaleaddx dd 200
 
 I_END:
