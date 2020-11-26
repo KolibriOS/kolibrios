@@ -15,6 +15,7 @@ include '../../proc32.inc'
 include '../../macros.inc'
 include '../../KOSfuncs.inc'
 include '../../load_img.inc'
+include '../../load_lib.mac'
 include '../../develop/libraries/box_lib/trunk/box_lib.mac'
 include '../../system/skincfg/trunk/kglobals.inc'
 include '../../system/skincfg/trunk/unpacker.inc'
@@ -27,7 +28,7 @@ include 'strlen.inc'
 include 't_draw.inc' ;draw main window functions
 include 'wnd_k_words.inc'
 
-@use_library_mem mem.Alloc,mem.Free,mem.ReAlloc,dll.Load
+@use_library mem.Alloc,mem.Free,mem.ReAlloc,dll.Load
 
 align 4
 icon_tl_sys dd 0 ;указатель на память для хранения системных иконок
@@ -143,12 +144,12 @@ mov	ebp,lib0
 	shl eax,24
 	mov dword[tedit0.font_size],eax
 	;кнопки на панели
-	ini_panel key_but_new,    ID_BUT_NEW
+	ini_panel key_but_new,	  ID_BUT_NEW
 	ini_panel key_but_open,   ID_BUT_OPEN
 	ini_panel key_but_save,   ID_BUT_SAVE
 	ini_panel key_but_save_as,ID_BUT_SAVE_AS
 	ini_panel key_but_select, ID_BUT_SELECT
-	ini_panel key_but_cut,    ID_BUT_CUT
+	ini_panel key_but_cut,	  ID_BUT_CUT
 	ini_panel key_but_copy,   ID_BUT_COPY
 	ini_panel key_but_paste,  ID_BUT_PASTE
 	ini_panel key_but_find,   ID_BUT_FIND
@@ -371,52 +372,14 @@ edit_goto edit_box TED_PANEL_WIDTH-1, 0, 20, 0xffffff, 0xff80, 0xff0000, 0xff, 0
 
 unpac_mem dd 0
 
-if lang eq ru
-  head_f_i:
-  head_f_l db '"Системная ошибка',0
-  err_message_found_lib0 db 'Не найдена библиотека ',39,'box_lib.obj',39,'" -tE',0
-  err_message_import0 db 'Ошибка при импорте библиотеки ',39,'box_lib.obj',39,'" -tW',0
-  err_message_found_lib1 db 'Не найдена библиотека ',39,'msgbox.obj',39,'" -tE',0
-  err_message_import1 db 'Ошибка при импорте библиотеки ',39,'msgbox.obj',39,'" -tW',0
-  err_message_found_lib2 db 'Не найдена библиотека ',39,'proc_lib.obj',39,'" -tE',0
-  err_message_import2 db 'Ошибка при импорте библиотеки ',39,'proc_lib.obj',39,'" -tW',0
-  err_message_found_lib_3 db 'Не найдена библиотека ',39,'libimg.obj',39,'" -tE',0
-  err_message_import_3 db 'Ошибка при импорте библиотеки ',39,'libimg.obj',39,'" -tW',0
-  err_message_found_lib_4 db 'Не найдена библиотека ',39,'libini.obj',39,'" -tE',0
-  err_message_import_4 db 'Ошибка при импорте библиотеки ',39,'libini.obj',39,'" -tW',0
-  err_message_found_lib_5 db 'Не найдена библиотека ',39,'libkmenu.obj',39,'" -tE',0
-  err_message_import_5 db 'Ошибка при импорте библиотеки ',39,'libkmenu.obj',39,'" -tW',0
-else
-  head_f_i:
-  head_f_l db '"System error',0
-  err_message_found_lib0 db 'Sorry I cannot found library ',39,'box_lib.obj',39,'" -tE',0
-  err_message_import0 db 'Error on load import library ',39,'box_lib.obj',39,'" -tW',0
-  err_message_found_lib1 db 'Sorry I cannot found library ',39,'msgbox.obj',39,'" -tE',0
-  err_message_import1 db 'Error on load import library ',39,'msgbox.obj',39,'" -tW',0
-  err_message_found_lib2 db 'Sorry I cannot found library ',39,'proc_lib.obj',39,'" -tE',0
-  err_message_import2 db 'Error on load import library ',39,'proc_lib.obj',39,'" -tW',0
-  err_message_found_lib_3 db 'Sorry I cannot found library ',39,'libimg.obj',39,'" -tE',0
-  err_message_import_3 db 'Error on load import library ',39,'libimg.obj',39,'" -tW',0
-  err_message_found_lib_4 db 'Sorry I cannot found library ',39,'libini.obj',39,'" -tE',0
-  err_message_import_4 db 'Error on load import library ',39,'libini.obj',39,'" -tW',0
-  err_message_found_lib_5 db 'Sorry I cannot found library ',39,'libkmenu.obj',39,'" -tE',0
-  err_message_import_5 db 'Error on load import library ',39,'libkmenu.obj',39,'" -tW',0
-end if
-
 ;library structures
 l_libs_start:
-	lib0 l_libs lib_name_0, sys_path, file_name, system_dir_0,\
-		err_message_found_lib0, head_f_l, import_box_lib,err_message_import0, head_f_i
-	lib1 l_libs lib_name_1, sys_path, file_name, system_dir_1,\
-		err_message_found_lib1, head_f_l, import_msgbox_lib, err_message_import1, head_f_i
-	lib2 l_libs lib_name_2, sys_path, file_name, system_dir_2,\
-		err_message_found_lib2, head_f_l, import_proclib, err_message_import2, head_f_i
-	lib3 l_libs lib_name_3, sys_path, file_name, system_dir_3,\
-		err_message_found_lib_3, head_f_l, import_libimg, err_message_import_3, head_f_i
-	lib4 l_libs lib_name_4, sys_path, file_name, system_dir_4,\
-		err_message_found_lib_4, head_f_l, import_libini, err_message_import_4, head_f_i
-	lib5 l_libs lib_name_5, sys_path, file_name, system_dir_5,\
-		err_message_found_lib_5, head_f_l, import_libkmenu, err_message_import_5, head_f_i
+	lib0 l_libs lib_name_0, file_name, system_dir_0, import_box_lib
+	lib1 l_libs lib_name_1, file_name, system_dir_1, import_msgbox_lib
+	lib2 l_libs lib_name_2, file_name, system_dir_2, import_proclib
+	lib3 l_libs lib_name_3, file_name, system_dir_3, import_libimg
+	lib4 l_libs lib_name_4, file_name, system_dir_4, import_libini
+	lib5 l_libs lib_name_5, file_name, system_dir_5, import_libkmenu
 load_lib_end:
 
 IncludeIGlobals

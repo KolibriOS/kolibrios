@@ -10,6 +10,7 @@ include '../../proc32.inc'
 include '../../KOSfuncs.inc'
 include '../../develop/libraries/libs-dev/libimg/libimg.inc'
 include '../../load_img.inc'
+include '../../load_lib.mac'
 include '../../develop/libraries/box_lib/trunk/box_lib.mac'
 include '../../develop/libraries/TinyGL/asm_fork/opengl_const.inc'
 include 'lang.inc'
@@ -18,7 +19,7 @@ include 'info_menu.inc'
 include 'data.inc'
 include 'convert_stl_3ds.inc'
 
-@use_library_mem mem.Alloc,mem.Free,mem.ReAlloc,dll.Load
+@use_library mem.Alloc,mem.Free,mem.ReAlloc,dll.Load
 
 ID_ICON_CHUNK_MAIN equ 0 ;иконка главного блока
 ID_ICON_CHUNK_NOT_FOUND equ 1 ;иконка не известного блока
@@ -1074,58 +1075,15 @@ lib_name_5 db 'tinygl.obj',0
 system_dir_6 db '/sys/lib/'
 lib_name_6 db 'libini.obj',0
 
-if lang eq ru
-	head_f_i:
-	head_f_l db '"Системная ошибка',0
-	err_msg_found_lib_0 db 'Не найдена библиотека ',39,'proc_lib.obj',39,'" -tE',0
-	err_msg_import_0 db 'Ошибка при импорте библиотеки ',39,'proc_lib.obj',39,'" -tW',0
-	err_msg_found_lib_1 db 'Не найдена библиотека ',39,'libimg.obj',39,'" -tE',0
-	err_msg_import_1 db 'Ошибка при импорте библиотеки ',39,'libimg.obj',39,'" -tW',0
-	err_msg_found_lib_2 db 'Не найдена библиотека ',39,'box_lib.obj',39,'" -tE',0
-	err_msg_import_2 db 'Ошибка при импорте библиотеки ',39,'box_lib',39,'" -tW',0
-	err_msg_found_lib_3 db 'Не найдена библиотека ',39,'buf2d.obj',39,'" -tE',0
-	err_msg_import_3 db 'Ошибка при импорте библиотеки ',39,'buf2d',39,'" -tW',0
-	err_msg_found_lib_4 db 'Не найдена библиотека ',39,'kmenu.obj',39,'" -tE',0
-	err_msg_import_4 db 'Ошибка при импорте библиотеки ',39,'kmenu',39,'" -tW',0
-	err_msg_found_lib_5 db 'Не найдена библиотека ',39,'tinygl.obj',39,'" -tE',0
-	err_msg_import_5 db 'Ошибка при импорте библиотеки ',39,'tinygl',39,'" -tW',0
-	err_msg_found_lib_6 db 'Не найдена библиотека ',39,'libini.obj',39,'" -tE',0
-	err_msg_import_6 db 'Ошибка при импорте библиотеки ',39,'libini',39,'" -tW',0
-else
-	head_f_i:
-	head_f_l db '"System error',0
-	err_msg_found_lib_0 db 'Sorry I cannot found library ',39,'proc_lib.obj',39,'" -tE',0
-	err_msg_import_0 db 'Error on load import library ',39,'proc_lib.obj',39,'" -tW',0
-	err_msg_found_lib_1 db 'Sorry I cannot found library ',39,'libimg.obj',39,'" -tE',0
-	err_msg_import_1 db 'Error on load import library ',39,'libimg.obj',39,'" -tW',0
-	err_msg_found_lib_2 db 'Sorry I cannot found library ',39,'box_lib.obj',39,'" -tE',0
-	err_msg_import_2 db 'Error on load import library ',39,'box_lib.obj',39,'" -tW',0
-	err_msg_found_lib_3 db 'Sorry I cannot found library ',39,'buf2d.obj',39,'" -tE',0
-	err_msg_import_3 db 'Error on load import library ',39,'buf2d.obj',39,'" -tW',0
-	err_msg_found_lib_4 db 'Sorry I cannot found library ',39,'kmenu.obj',39,'" -tE',0
-	err_msg_import_4 db 'Error on load import library ',39,'kmenu.obj',39,'" -tW',0
-	err_msg_found_lib_5 db 'Sorry I cannot found library ',39,'tinygl.obj',39,'" -tE',0
-	err_msg_import_5 db 'Error on load import library ',39,'tinygl',39,'" -tW',0
-	err_msg_found_lib_6 db 'Sorry I cannot found library ',39,'libini.obj',39,'" -tE',0
-	err_msg_import_6 db 'Error on load import library ',39,'libini',39,'" -tW',0
-end if
-
 align 4
 l_libs_start:
-	lib_0 l_libs lib_name_0, sys_path, file_name, system_dir_0,\
-		err_msg_found_lib_0, head_f_l, proclib_import,err_msg_import_0,head_f_i
-	lib_1 l_libs lib_name_1, sys_path, file_name, system_dir_1,\
-		err_msg_found_lib_1, head_f_l, import_libimg, err_msg_import_1,head_f_i
-	lib_2 l_libs lib_name_2, sys_path, file_name,  system_dir_2,\
-		err_msg_found_lib_2, head_f_l, import_box_lib,err_msg_import_2,head_f_i
-	lib_3 l_libs lib_name_3, sys_path, file_name,  system_dir_3,\
-		err_msg_found_lib_3, head_f_l, import_buf2d,  err_msg_import_3,head_f_i
-	lib_4 l_libs lib_name_4, sys_path, file_name,  system_dir_4,\
-		err_msg_found_lib_4, head_f_l, import_libkmenu,err_msg_import_4,head_f_i
-	lib_5 l_libs lib_name_5, sys_path, file_name,  system_dir_5,\
-		err_msg_found_lib_5, head_f_l, import_lib_tinygl,err_msg_import_5,head_f_i
-	lib_6 l_libs lib_name_6, sys_path, file_name,  system_dir_6,\
-		err_msg_found_lib_6, head_f_l, import_libini, err_msg_import_6,head_f_i		
+	lib_0 l_libs lib_name_0, file_name, system_dir_0, import_proclib
+	lib_1 l_libs lib_name_1, file_name, system_dir_1, import_libimg
+	lib_2 l_libs lib_name_2, file_name, system_dir_2, import_box_lib
+	lib_3 l_libs lib_name_3, file_name, system_dir_3, import_buf2d
+	lib_4 l_libs lib_name_4, file_name, system_dir_4, import_libkmenu
+	lib_5 l_libs lib_name_5, file_name, system_dir_5, import_lib_tinygl
+	lib_6 l_libs lib_name_6, file_name, system_dir_6, import_libini	
 l_libs_end:
 
 align 4
@@ -1176,7 +1134,7 @@ import_libimg:
 	aimg_draw    db 'img_draw',0
 
 align 4
-proclib_import:
+import_proclib:
 	OpenDialog_Init dd aOpenDialog_Init
 	OpenDialog_Start dd aOpenDialog_Start
 	OpenDialog_Set_file_name dd aOpenDialog_Set_file_name

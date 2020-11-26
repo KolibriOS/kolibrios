@@ -38,7 +38,7 @@
 ; Память перераспределяется на увеличение i umen'shenie.
 ; Файл загружается целиком.
 
-; Макросы load_lib.mac, editbox_ex и библиотеку box_lib.obj создали:
+; Макросы load_lib.mac и библиотеку box_lib.obj создали:
 ; <Lrz> - Alexey Teplov / Алексей Теплов
 ; Mario79, Mario - Marat Zakiyanov / Марат Закиянов
 ; Diamondz - Evgeny Grechnikov / Евгений Гречников и др.
@@ -47,9 +47,9 @@
 ; babalbes@yandex.ru
 ;--------------------------------------------------------------------
 use32
-	org	0x0
+	org	0
 	db	'MENUET01'
-	dd	0x1
+	dd	1
 	dd	START	;program start
 	dd	I_END	;program image	size
 	dd	(D_END+0x600) and not 3	;required amount of memory
@@ -91,17 +91,17 @@ FIRST_HEX equ 0*65536+24
 scroll_width_size equ 15
 ;--------------------------------------------------------------------
 struct	f70
-	func_n	rd 1
-	param1	rd 1
-	param2	rd 1
-	param3	rd 1
-	param4	rd 1
+	Function	rd 1
+	Position	rd 1
+	Flags	rd 1
+	Count	rd 1
+	Buffer	rd 1
 	rezerv	rb 1
-	name	rd 1
+	FileName	rd 1
 ends
 ;--------------------------------------------------------------------
 START:
-	mcall	68,11
+	mcall	SF_SYS_MISC,SSF_HEAP_INIT
 
 load_libraries l_libs_start,end_l_libs
 ;--------------------------------------------------------------------
@@ -139,15 +139,15 @@ load_libraries l_libs_start,end_l_libs
 	test	eax,eax
 	jnz	@b
 
-	mcall	40,0x27
+	mcall	SF_SET_EVENTS_MASK,0x27
 
-	mcall	68,12,32*1024	;страничный буфер
+	mcall	SF_SYS_MISC,SSF_MEM_ALLOC,32*1024	;страничный буфер
 	mov	[screen_table],eax
-	mcall	68,12,4*1024
+	mcall	SF_SYS_MISC,SSF_MEM_ALLOC,4*1024
 
 	mov	[file_buffer],eax
 
-	mcall	68,12,1024
+	mcall	SF_SYS_MISC,SSF_MEM_ALLOC,1024
 	mov	[copy_buf],eax
 
 
@@ -165,16 +165,16 @@ load_libraries l_libs_start,end_l_libs
 	mov	[edit1.size],esi
 
 	;общесистемные клавиши для Shift+курсоры
-;	mcall	66,4,75,1
-;	mcall	66,,77
-;	mcall	66,,72
-;	mcall	66,,80
+;	mcall	SF_KEYBOARD,SSF_SET_SYS_HOTKEY,75,1
+;	mcall	SF_KEYBOARD,,77
+;	mcall	SF_KEYBOARD,,72
+;	mcall	SF_KEYBOARD,,80
 
 	call	ready_screen_buffer
 ;	jmp	open_file
-	mcall	9,procinfo,-1
+	mcall	SF_THREAD_INFO,procinfo,-1
 	mov	ecx,[ebx+30]	; PID
-	mcall	18,21
+	mcall	SF_SYSTEM,SSF_GET_THREAD_SLOT
 	mov	[active_process],eax	; WINDOW SLOT
 ;--------------------------------------------------------------------
 ; open the file if program has a file path, when it was launched
@@ -185,7 +185,7 @@ redraw_all:
 	call	control_minimal_window_size
 	call	draw_window_1
 still:
-	mcall	10
+	mcall	SF_WAIT_EVENT
 
 	cmp	eax,6
 	je	mouse
@@ -199,7 +199,7 @@ still:
 ;---------------------------------------------------------------------
 control_minimal_window_size:
 	pusha
-	mcall	9,procinfo,-1
+	mcall	SF_THREAD_INFO,procinfo,-1
 	mov	eax,[ebx+70]
 	test	eax,10b
 	jnz	.end
@@ -213,7 +213,7 @@ control_minimal_window_size:
 	cmp	eax,299
 	jae	@f
 	mov	esi,299
-	mcall	67,-1,ebx,ebx
+	mcall	SF_CHANGE_WINDOW,-1,ebx,ebx
 @@:
 	mov	edx,-1
 	mov	eax,procinfo
@@ -221,7 +221,7 @@ control_minimal_window_size:
 	cmp	eax,399
 	jae	@f
 	mov	edx,399
-	mcall	67,-1,ebx,,ebx
+	mcall	SF_CHANGE_WINDOW,-1,ebx,,ebx
 @@:
 .end:
 	popa
@@ -251,7 +251,7 @@ draw_window_1:
 	ret
 ;---------------------------------------------------------------------
 key:
-	mcall	2
+	mcall	SF_GET_KEY
 	dec	al
 	jz	still
 	dec	al
@@ -360,7 +360,7 @@ key:
 	jmp	still
 ;--------------------------------------------------------------------
 button:
-	mcall	17
+	mcall	SF_GET_BUTTON
 	dec	ah
 	jnz	still
 
@@ -368,11 +368,11 @@ button:
 ;--------------------------------------------------------------------
 align	4
 mouse:
-	mcall	18,7
+	mcall	SF_SYSTEM,SSF_GET_ACTIVE_WINDOW
 	cmp	[active_process],eax
 	jne	still
 
-	mcall	37,7
+	mcall	SF_MOUSE_GET,SSF_SCROLL_DATA
 	test	eax,eax
 	jz	.menu_bar_1;.mouse
 	bt	eax,15
@@ -474,7 +474,7 @@ mouse:
 	jmp	still
 ;--------------------------------------------------------------------
 .scroll_bar:
-;	mcall	37,2
+;	mcall	SF_MOUSE_GET,SSF_BUTTON
 ;	test	eax,eax
 ;	jnz	@f
 ;	btr	[flags],5
@@ -483,7 +483,7 @@ mouse:
 
 .mouse:
 .vertical:
-	mcall	37,2
+	mcall	SF_MOUSE_GET,SSF_BUTTON
 	test	eax,eax
 	jnz	@f
 	btr	[flags],5
@@ -496,7 +496,7 @@ mouse:
 	bt	[flags],7
 	jc	.horizontal_0
 
-	mcall	37,1
+	mcall	SF_MOUSE_GET,SSF_WINDOW_POSITION
 	shr	eax,16
 	cmp	ax,[scroll_bar_data_vertical.start_x]
 	jb	.horizontal
@@ -566,7 +566,7 @@ mouse:
 	cmp	eax,[scroll_bar_data_horizontal.cur_area]
 	jbe	.other
 
-	mcall	37,1
+	mcall	SF_MOUSE_GET,SSF_WINDOW_POSITION
 	cmp	ax,[scroll_bar_data_horizontal.start_y]
 	jb	still
 	sub	ax,[scroll_bar_data_horizontal.start_y]
@@ -575,7 +575,7 @@ mouse:
 
 	; mouse event for Horizontal ScrollBar
 .horizontal_0:
-;	mcall	37,2
+;	mcall	SF_MOUSE_GET,SSF_BUTTON
 ;	test	eax,eax
 ;	jnz	@f
 ;	btr	[flags],5
@@ -584,7 +584,7 @@ mouse:
 ;@@:;	bt	[flags],7
 ;	jc	@f
 
-;	mcall	37,1
+;	mcall	SF_MOUSE_GET,SSF_WINDOW_POSITION
 ;	shr	eax,16
 ;	cmp	ax,[scroll_bar_data_vertical.start_x]
 ;	jb	.horizontal
@@ -951,7 +951,7 @@ main_area:
 	div	ecx
 	mov	[scroll_bar_data_vertical.position],eax
 
-	mcall	37,2	;кпопка	мыши нажата - нет смысла перерисовывать ScrollBar
+	mcall	SF_MOUSE_GET,SSF_BUTTON	;кпопка	мыши нажата - нет смысла перерисовывать ScrollBar
 	test	eax,eax
 	jnz	.4
 	push	dword scroll_bar_data_vertical
@@ -995,7 +995,7 @@ main_area:
 	add	ebx,font_buffer
 	mov	ecx,8*65536+16
 	mov	ebp,0
-	mcall	65
+	mcall	SF_PUT_IMAGE_EXT
 	pop	edi
 
 	add	edi,2
@@ -1046,7 +1046,7 @@ main_area:
 	shl	ebx,16
 	mov	bx,ax
 	mov	cx,16
-	mcall	13,,,frgrd_color
+	mcall	SF_DRAW_RECT,,,frgrd_color
 .ls1:
 	popad
 	jmp	@f
@@ -1076,7 +1076,7 @@ main_area:
 .no_inc_ebx:
 	sub	ecx,2*65536
 	mov	cx,2
-	mcall	13
+	mcall	SF_DRAW_RECT
 	popad
 
 	pushad
@@ -1097,7 +1097,7 @@ main_area:
 	jnz	.no_inc_ebx_2
 	inc	ebx
 .no_inc_ebx_2:
-	mcall	13,,,frgrd_color
+	mcall	SF_DRAW_RECT,,,frgrd_color
 .10:
 	popad
 	jmp	@f
@@ -1227,7 +1227,7 @@ show_current_offset:
 	shl	ebx,4
 	add	ebx,font_buffer
 	push	eax
-	mcall	65
+	mcall	SF_PUT_IMAGE_EXT
 	pop	eax
 	sub	edx,8*65536
 	dec	dword [esp]
@@ -1268,7 +1268,7 @@ hex_output:	;вывод hex строки из 8 символов
 	xchg	eax,ebx
 	mov	edi,palitra.5
 	mov	ebp,0
-	mcall	65
+	mcall	SF_PUT_IMAGE_EXT
 	add	edx,8*65536
 	pop	edi
 	inc	edi
@@ -1357,7 +1357,7 @@ raspred_mem:
 	mul	ecx
 	add	ecx,eax
 .1:
-	mcall	68,20,,[file_buffer]
+	mcall	SF_SYS_MISC,SSF_MEM_REALLOC,,[file_buffer]
 .ret:
 	popad
 	ret
@@ -1394,8 +1394,8 @@ align	4
 draw_window:
 	call	create_title
 	xor	esi,esi
-	mcall	0,100*65536+653,100*65536+360,((0x73 shl 24) + frgrd_color),,title_buf	;title
-	mcall	9,threath_buf,-1
+	mcall	SF_CREATE_WINDOW,100*65536+653,100*65536+360,((0x73 shl 24) + frgrd_color),,title_buf	;title
+	mcall	SF_THREAD_INFO,threath_buf,-1
 ;	cmp	byte [threath_buf+70],3	;окно свёрнуто в заголовок?
 ;	jnae	@f
 	mov	eax,[threath_buf+70]
@@ -1413,7 +1413,7 @@ draw_window:
 	mov	esi,dword [threath_buf+46]
 	sub	esi,dword [threath_buf+66]
 	add	esi,24*4
-	mcall	67,-1,-1,-1,
+	mcall	SF_CHANGE_WINDOW,-1,-1,-1,
 	jmp	.@d
 ;--------------------------------------
 @@:
@@ -1422,7 +1422,7 @@ draw_window:
 	mov	edx,dword [threath_buf+42]
 	sub	edx,dword [threath_buf+62]
 	add	edx,26*6
-	mcall	67,-1,-1,,-1
+	mcall	SF_CHANGE_WINDOW,-1,-1,,-1
 	jmp	.@d
 ;--------------------------------------
 @@:
@@ -1468,12 +1468,12 @@ draw_window:
 	ror	ecx,16
 	mov	cx,18
 	ror	ecx,16
-	mcall	13,,,frgrd_color	;полоса сверху
+	mcall	SF_DRAW_RECT,,,frgrd_color	;полоса сверху
 
 	mcall	,,18,panel_clr1	;верхняя панель
 
 	dec	ebx
-	mcall	38,,<18,18>,panel_clr2
+	mcall	SF_DRAW_LINE,,<18,18>,panel_clr2
 	mov	ecx,dword [threath_buf+66]
 	sub	cx,18
 	push	cx
@@ -1483,7 +1483,7 @@ draw_window:
 	inc	ebx
 	add	ecx,1*65536
 	mov	cx,18
-	mcall	13,,,panel_clr1
+	mcall	SF_DRAW_RECT,,,panel_clr1
 
 
 	mov	eax,dword [threath_buf+62]
@@ -1520,7 +1520,7 @@ draw_window:
 	sub	ecx,1*65536
 	movzx	ebx,	word [scroll_bar_data_vertical.start_x]
 	inc	ebx
-	mcall	13,,,frgrd_color
+	mcall	SF_DRAW_RECT,,,frgrd_color
 
 	pop	eax
 
@@ -1610,15 +1610,15 @@ draw_window:
 ;--------------------------------------------------------------------
 align	4
 start_draw:
-	mcall	12,1
+	mcall	SF_REDRAW,SSF_BEGIN_DRAW
 	ret
 ;--------------------------------------------------------------------
 end_draw:
-	mcall	12,2
+	mcall	SF_REDRAW,SSF_END_DRAW
 	ret
 ;--------------------------------------------------------------------
 close_prog:
-	mcall	-1
+	mcall	SF_TERMINATE_PROCESS
 ;--------------------------------------------------------------------
 change_codepage:	;меняем вторую половину таблицы
 	test	ah,ah
@@ -1672,7 +1672,7 @@ show_codepage:
 	shl	bx,4
 	add	ebx,font_buffer
 	mov	edi,palitra.5
-	mcall	65
+	mcall	SF_PUT_IMAGE_EXT
 	add	edx,8*65536
 	pop	edi
 	inc	edi
@@ -1702,7 +1702,7 @@ show_insert:	;отображение режима вставки/замены
 .2:
 	add	ebx,font_buffer
 	mov	edi,palitra.5
-	mcall	65
+	mcall	SF_PUT_IMAGE_EXT
 	add	edx,8*65536
 	pop	edi
 	inc	edi
@@ -1716,17 +1716,17 @@ create_help_window:
 	pushad
         cmp	[help_is_open_already], 1
         jne	@f
-  	mov     ECX, [help_window_pid]
-        mcall   18, 21
-        xchg    EAX, ECX
-        mcall   18, 3
+  	mov     ecx, [help_window_pid]
+        mcall   SF_SYSTEM, SSF_GET_THREAD_SLOT
+        xchg    eax, ecx
+        mcall   SF_SYSTEM, SSF_FOCUS_WINDOW
 	popad
         ret
 ;---------------------------------------------------------------------
 @@:
-	mcall	51,1,.thread,(.threat_stack+16*4)
+	mcall	SF_CREATE_THREAD,1,.thread,(.threat_stack+16*4)
         mov     [help_is_open_already], 1
-        mov     [help_window_pid], EAX
+        mov     [help_window_pid], eax
 	popad
 	ret
 ;--------------------------------------------------------------------
@@ -1734,7 +1734,7 @@ create_help_window:
 	call	.window
 ;--------------------------------------------------------------------
 .still:
-	mcall	10
+	mcall	SF_WAIT_EVENT
 	dec	al
 	jz	.red
 	dec	al
@@ -1744,13 +1744,13 @@ create_help_window:
 	jmp	.still
 ;--------------------------------------------------------------------
         and	[help_is_open_already], 0
-	mcall	-1
+	mcall	SF_TERMINATE_PROCESS
 .button:
-	mcall	17,1
+	mcall	SF_GET_BUTTON
 	cmp	ah,1
 	jne	@f
         and	[help_is_open_already], 0
-	mcall	-1
+	mcall	SF_TERMINATE_PROCESS
 @@:
 	cmp	ah,2
 	jne	@f
@@ -1771,7 +1771,7 @@ create_help_window:
 	jmp	.red
 ;--------------------------------------------------------------------
 .key:
-	mcall	2
+	mcall	SF_GET_KEY
 	jmp	.still
 ;--------------------------------------------------------------------
 .red:
@@ -1780,9 +1780,9 @@ create_help_window:
 ;--------------------------------------------------------------------
 .window:
 	pushad
-	mcall	12,1
-	mcall	0,50*65536+320,0x70*65536+240,0x13000000,,help_but_text
-	mcall	8,<130,20>,<6,12>,2,0xaaaaaa
+	mcall	SF_REDRAW,SSF_BEGIN_DRAW
+	mcall	SF_CREATE_WINDOW,50*65536+320,0x70*65536+240,0x13000000,,help_but_text
+	mcall	SF_DEFINE_BUTTON,<130,20>,<6,12>,2,0xaaaaaa
 	mcall	,<150,20>,,3,
 	mov	ebx,8*65536+15
 	mov	ecx,0x00DDDDDD
@@ -1794,107 +1794,63 @@ create_help_window:
 	mul	si
 	mov	edx,help_text
 	add	edx,eax
-	mov	eax,4
+	mov	eax,SF_DRAW_TEXT
 @@:
 	add	ebx,0x10
 	mcall
 	add	edx,51
 	dec	edi
 	jnz	@b
-	mcall	12,2
+	mcall	SF_REDRAW,SSF_END_DRAW
 	popad
 	ret
 ;--------------------------------------------------------------------
 .threat_stack:	times	16	dd	0
 ;--------------------------------------------------------------------
 open_file:
-	mov	[func_70.func_n],5
-	mov	[func_70.param1],0
-	mov	[func_70.param2],0
-	mov	[func_70.param3],0
-	mov	[func_70.param4],bufferfinfo
+	mov	[func_70.Function],SSF_GET_INFO
+	mov	[func_70.Position],0
+	mov	[func_70.Flags],0
+	mov	[func_70.Count],0
+	mov	[func_70.Buffer],bufferfinfo
 	mov	[func_70.rezerv],0
-	mov	[func_70.name],file_name
-	mcall	70,func_70
+	mov	[func_70.FileName],file_name
+	mcall	SF_FILE,func_70
 
 	test	al,al	;файл найден?
 	jz	@f
-	mcall	4,400*65536+31,0x80CC0000,error_open_file_string
+	mcall	SF_DRAW_TEXT,400*65536+31,0x80CC0000,error_open_file_string
 	jmp	open_file
 ;--------------------------------------------------------------------
 @@:
-;	mov	edx,[blocks_counter]
-;	mov	edi,[blocks_table]
-;	@@:	mov	ecx,[edi]	;высвобождаем:
-;	mcall	68,13	;блоки файла
-;	add	edi,8
-;	dec	edx
-;	jnz	@b
-;	mcall	68,13,[blocks_table]	;таблицу
-
 	mov	eax,	dword [bufferfinfo+32]	;копируем размер файла
 	mov	[file_size],eax
 
-;	mov	ebx,65536	;64КБ блок
-;	xor	edx,edx
-;	div	ebx
-;	push	dx	;длина последнего блока
-;	test	dx,dx
-;	jz	@f
-;	inc	eax
-;	@@:	test	eax,eax
-;	jnz	@f
-;	inc	eax
-;	@@:	mov	[blocks_counter],eax
-;	sal	eax,3;*8	;размер таблицы с индексами блоков
-;;	add	eax,32	;решаем	проблему с 32МБ файлами
-
-;	mov	ecx,eax	;выделяем память:
-;	mcall	68,12	;под таблицу
-;	mov	[blocks_table],eax
-;	mov	edi,eax
-;	mov	ecx,[blocks_counter]
-;	@@:	mov	dword [edi+4],65536
-;	add	edi,8
-;	loop	@b
-;	xor	edx,edx
-;	pop	dx	;длина последнего блока
-;	mov	dword [edi-4],edx
-
-;	mov	edx,[blocks_counter]
-;	mov	edi,[blocks_table]
-;@@:	mcall	68,12,[edi+4]	;под блок
-;	mov	[edi],eax
-;	add	edi,8
-;	dec	edx
-;	jnz	@b
-
-	mcall	68,13,[file_buffer]
+	mcall	SF_SYS_MISC,SSF_MEM_FREE,[file_buffer]
 	test	eax,eax
 	jnz	@f
 	;здесь ошибка на не освобождение блока
 @@:
-	mcall	68,12,[file_size]
+	mov ecx,[file_size]
+	or ecx,ecx
+	jnz @f
+	inc ecx ;если размер файла 0 байт
+@@:
+	mcall	SF_SYS_MISC,SSF_MEM_ALLOC
 	mov	[file_buffer],eax
 
 ;;имеем таблицу: [ DWORD указатель на первый элемент блока : DWORD длина блока ]
 
-;	mov	ecx,[blocks_counter]	;открываем файл
-;	mov	edi,[blocks_table]
-	mov	[func_70.func_n],0
-	mov	[func_70.param1],0
-	mov	[func_70.param2],0
+	mov	[func_70.Function],SSF_READ_FILE
+	mov	[func_70.Position],0
+	mov	[func_70.Flags],0
 	mov	[func_70.rezerv],0
-	mov	[func_70.name],file_name
-;@@:
+	mov	[func_70.FileName],file_name
 	push	dword [file_size];dword [edi+4]
-	pop	dword [func_70.param3]
+	pop	dword [func_70.Count]
 	push	dword [file_buffer];dword [edi]
-	pop	dword [func_70.param4]
-	mcall	70,func_70
-;	add	edi,8
-;	add	dword [func_70.param1],65536
-;	loop	@b
+	pop	dword [func_70.Buffer]
+	mcall	SF_FILE,func_70
 
 	test	eax,eax
 	jz	@f
@@ -1911,8 +1867,6 @@ open_dialog_save:
 	call    [OpenDialog_Start]
 
 ;	cmp	[OpenDialog_data.status],2	; OpenDialog does not start
-;;	je	.sysxtree	; some kind of alternative, instead OpenDialog
-;	je	save_file
 	cmp	[OpenDialog_data.status],1
 	jne	still
 	mov	esi,fname_buf
@@ -1932,28 +1886,28 @@ open_dialog_save:
 ;	jmp	save_file
 ;-------------------------------------------------------------------------------
 save_file:	;сохраняем файл
-	mov	[func_70.func_n],2
-	mov	[func_70.param1],0
-	mov	[func_70.param2],0
+	mov	[func_70.Function],SSF_CREATE_FILE
+	mov	[func_70.Position],0
+	mov	[func_70.Flags],0
 	push	[file_size]
-	pop	[func_70.param3]
+	pop	[func_70.Count]
 	push	[file_buffer]
-	pop	[func_70.param4]
+	pop	[func_70.Buffer]
 	mov	[func_70.rezerv],0
-	mov	[func_70.name],file_name
-	mcall	70,func_70
+	mov	[func_70.FileName],file_name
+	mcall	SF_FILE,func_70
 	cmp	al,0	;сохранён удачно?
 	je	redraw_all
-	mcall	4,400*65536+31,0x80CC0000,error_save_file_string
+	mcall	SF_DRAW_TEXT,400*65536+31,0x80CC0000,error_save_file_string
 	jmp	save_file
 ;-------------------------------------------------------------------------------
 draw_ed_box:	;рисование edit box'а
 .1:
 	push	eax	ebx	ecx	edx
-	mcall	13,180*65536+220,25*65536+70,0xaaaaaa
+	mcall	SF_DRAW_RECT,180*65536+220,25*65536+70,0xaaaaaa
 	bt	[flags],9
 	jnc	@f
-	mcall	4,246*65536+35,0x80ffffff,sel_text
+	mcall	SF_DRAW_TEXT,246*65536+35,0x80ffffff,sel_text
 @@:
 	bt	[flags],2
 	jnc	@f
@@ -1974,7 +1928,7 @@ draw_ed_box:	;рисование edit box'а
 	loop	@b
 	pop	edx	ecx	ebx	eax
 .2:
-	mcall	10
+	mcall	SF_WAIT_EVENT
 	cmp	al,6
 	je	.mouse
 	cmp	al,3
@@ -2018,7 +1972,7 @@ draw_ed_box:	;рисование edit box'а
 	jmp	.2
 ;--------------------------------------------------------------------
 .keys:
-	mcall	2
+	mcall	SF_GET_KEY
 	cmp	ah,13
 	je	.4
 	cmp	ah,27
@@ -2184,7 +2138,7 @@ draw_ed_box:	;рисование edit box'а
 	jmp	.2
 ;--------------------------------------------------------------------
 .button:
-	mcall	17
+	mcall	SF_GET_BUTTON
 	cmp	ah,1
 	jne	.2
 	jmp	close_prog
@@ -2194,7 +2148,7 @@ draw_ed_box:	;рисование edit box'а
 	add	esp,4
 	jmp	redraw_all
 .4:
-	mcall	13,180*65536+220,25*65536+70,frgrd_color
+	mcall	SF_DRAW_RECT,180*65536+220,25*65536+70,frgrd_color
 	ret
 ;--------------------------------------------------------------------
 strtohex:
@@ -2756,7 +2710,7 @@ copy_to_buf:
 	inc	eax
 	mov	ecx,eax
 	mov	[copy_len],eax
-	mcall	68,20,,[copy_buf]
+	mcall	SF_SYS_MISC,SSF_MEM_REALLOC,,[copy_buf]
 	mov	esi,[shblock_beg]
 	mov	edi,[copy_buf]
 	add	esi,[file_buffer]
@@ -2915,7 +2869,6 @@ open_dialog:
 	call    [OpenDialog_Start]
 
 ;	cmp	[OpenDialog_data.status],2	; OpenDialog does not start
-;	je	.sysxtree	; some kind of alternative, instead OpenDialog
 	cmp	[OpenDialog_data.status],1
 	jne	still
 .start:

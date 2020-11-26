@@ -23,7 +23,7 @@ include 'convert_stl_3ds.inc'
 3d_wnd_w equ 344
 3d_wnd_h equ 312
 
-@use_library_mem mem.Alloc,mem.Free,mem.ReAlloc,dll.Load
+@use_library mem.Alloc,mem.Free,mem.ReAlloc,dll.Load
 
 ID_ICON_CHUNK_MAIN equ 0 ;иконка главного блока
 ID_ICON_CHUNK_NOT_FOUND equ 1 ;иконка не известного блока
