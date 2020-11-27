@@ -1,7 +1,7 @@
 ;Огромная благодарность Maxxxx32, Diamond, Heavyiron
 ;и другим программистам, а также Теплову Алексею
 use32
-  org 0x0
+  org 0
   db 'MENUET01' ;идентиф. исполняемого файла всегда 8 байт
   dd 1,start,i_end,mem,stacktop,0,sys_path
 
@@ -9,6 +9,7 @@ include '../../proc32.inc'
 include '../../macros.inc'
 include '../../KOSfuncs.inc'
 include '../../load_img.inc'
+include '../../load_lib.mac'
 include '../../develop/libraries/box_lib/trunk/box_lib.mac'
 
 min_window_w equ 485 ;минимальная ширина окна
@@ -18,7 +19,7 @@ otst_panel_left equ 265
 include 'tile_fun.inc'
 include 'pl_import.inc'
 
-@use_library_mem mem.Alloc,mem.Free,mem.ReAlloc, dll.Load
+@use_library mem.Alloc,mem.Free,mem.ReAlloc, dll.Load
 
 fn_metki db 'pl_metki.lst',0
 ini_name db 'planet_v.ini',0
@@ -363,19 +364,6 @@ pushad
 popad
 	ret
 
-  head_f_i:
-  head_f_l  db 'Системная ошибка',0
-  err_message_found_lib0 db 'Не найдена библиотека box_lib.obj',0
-  err_message_import0 db 'Ошибка при импорте библиотеки box_lib.obj',0
-  err_message_found_lib1 db 'Не найдена библиотека libimg.obj',0
-  err_message_import1 db 'Ошибка при импорте библиотеки libimg.obj',0
-  err_message_found_lib2 db 'Не найдена библиотека str.obj',0
-  err_message_import2 db 'Ошибка при импорте библиотеки str.obj',0
-  err_message_found_lib3 db 'Не найдена библиотека libini.obj',0
-  err_message_import3 db 'Ошибка при импорте библиотеки libini.obj',0
-  err_message_found_lib4 db 'Не найдена библиотека proc_lib.obj',0
-  err_message_import4 db 'Ошибка при импорте библиотеки proc_lib.obj',0
-
 system_dir0 db '/sys/lib/'
 lib0_name db 'box_lib.obj',0
 
@@ -393,16 +381,11 @@ lib4_name db 'proc_lib.obj',0
 
 ;library structures
 l_libs_start:
-	lib_0 l_libs lib0_name, sys_path, file_name, system_dir0,\
-		err_message_found_lib0, head_f_l, boxlib_import, err_message_import0, head_f_i
-	lib_1 l_libs lib1_name, sys_path, file_name, system_dir1,\
-		err_message_found_lib1, head_f_l, libimg_import, err_message_import1, head_f_i
-	lib_2 l_libs lib2_name, sys_path, file_name, system_dir2,\
-		err_message_found_lib2, head_f_l, strlib_import, err_message_import2, head_f_i
-	lib_3 l_libs lib3_name, sys_path, file_name, system_dir3,\
-		err_message_found_lib3, head_f_l, libini_import, err_message_import3, head_f_i
-	lib_4 l_libs lib4_name, sys_path, file_name, system_dir4,\
-		err_message_found_lib4, head_f_l, proclib_import, err_message_import4, head_f_i
+	lib_0 l_libs lib0_name, file_name, system_dir0, boxlib_import
+	lib_1 l_libs lib1_name, file_name, system_dir1, libimg_import
+	lib_2 l_libs lib2_name, file_name, system_dir2, strlib_import
+	lib_3 l_libs lib3_name, file_name, system_dir3, libini_import
+	lib_4 l_libs lib4_name, file_name, system_dir4, proclib_import
 load_lib_end:
 
 align 4
@@ -887,23 +870,23 @@ endp
 
 align 4
 .str:
-	mov ecx,0x0a ;задается система счисления изменяются регистры ebx,eax,ecx,edx входные параметры eax - число
-	;преревод числа в ASCII строку взодные данные ecx=система счисленя edi адрес куда записывать, будем строку, причем конец переменной 
-	cmp eax,ecx ;сравнить если в eax меньше чем в ecx то перейти на @@-1 т.е. на pop eax
+	mov ecx,10
+	cmp eax,ecx
 	jb @f
-		xor edx,edx ;очистить edx
-		div ecx   ;разделить - остаток в edx
-		push edx  ;положить в стек
-		call .str ;перейти на саму себя т.е. вызвать саму себя и так до того момента пока в eax не станет меньше чем в ecx
+		xor edx,edx
+		div ecx
+		push edx
+		;dec edi  ;смещение необходимое для записи с конца строки
+		call .str
 		pop eax
-	@@: ;cmp al,10 ;проверить не меньше ли значение в al чем 10 (для системы счисленя 10 данная команда - лишная))
+	@@:
 	cmp edi,esi
 	jge @f
-		or al,0x30 ;данная команда короче  чем две выше
-		stosb	   ;записать элемент из регистра al в ячеку памяти es:edi
+		or al,0x30
+		stosb
 		mov byte[edi],0 ;в конец строки ставим 0, что-бы не вылазил мусор
 	@@:
-	ret	   ;пока в стеке храниться кол-во вызовов то столько раз мы и будем вызываться
+	ret
 
 hed db 'Planet viewer 16.02.16',0 ;подпись окна
 mouse_dd dd 0 ;нужно для Shift-а в editbox

@@ -820,6 +820,12 @@ proc ted_on_open_file
 	push edx ;source
 	push esi
 
+	or ebx,ebx
+	jnz @f
+		;если файл пустой
+		stdcall ted_clear,edi,1 ;чистим всю память
+		jmp .end_opn
+	@@:
 	stdcall ted_clear,edi,0 ;чистим не всю память, потому что ниже будем ее заполнять новыми даными
 
 	;когда символ завершения строки только 10 (без 13)
@@ -842,9 +848,8 @@ proc ted_on_open_file
 	.no_10:
 
 	;переводим открытый файл внутрь элемента t_edit
-	mov eax,ebx
 	mov ecx,ebx
-	add eax,2
+	lea eax,[ebx+2]
 	ConvertIndexToPointer eax
 	mov edx,ted_tex
 	add edx,ebx
@@ -860,8 +865,8 @@ proc ted_on_open_file
 		mov dword[eax+symbol.tc],-1
 		mov dword[eax+symbol.td],0
 
-		cmp ecx,0
-		je @f
+		or ecx,ecx
+		jz @f
 		dec ecx
 		dec edx
 		sub eax,sizeof.symbol
@@ -890,11 +895,11 @@ proc ted_on_open_file
 	@@: ;clear memory, need if before was open big file
 		add edx,sizeof.symbol
 		cmp edx,ted_tex_end
-		jge @f
+		jge .end_opn
 			mov dword[edx+symbol.tc],0
 			mov dword[edx+symbol.td],0
 		jmp @b
-	@@:
+	.end_opn:
 
 	call ted_get_num_lines
 	cmp eax,TED_LINES_IN_NEW_FILE
@@ -2446,12 +2451,11 @@ endp
 ; edi = pointer to tedit struct
 ; end_pos = position end 'symbol' struct
 align 16
-proc ted_find_help_id, end_pos:dword
+proc ted_find_help_id uses ebx ecx, end_pos:dword
 ; ecx = word_n
 ; ebx = l_pos
   mov ted_help_id,-1
 
-  push ebx ecx
     xor ebx,ebx
     mov bl,[edx]
     shl bx,2 ;ebx*=4
@@ -2518,7 +2522,6 @@ proc ted_find_help_id, end_pos:dword
       ;return word_n;
 
     .if_0e:
-  pop ecx ebx
   ret
 endp
 
@@ -2588,8 +2591,7 @@ align 4
 	or eax,eax
 	jz @f
 	cmp eax,6
-	je @f
-		jmp .ret_f
+	jne .ret_f
 	@@:
 	cmp ebx,-1
 	je .ret_f
@@ -3427,8 +3429,7 @@ align 4
 		cmp byte[edx],9
 		je @f
 		cmp byte[edx],13
-		je @f
-			jmp .end_f
+		jne .end_f
 		@@:
 			lea edx,[ted_symbol_space]
 	.end_f:
@@ -3472,8 +3473,8 @@ proc ted_draw, edit:dword
 
 	stdcall ted_clear_line_before_draw, edi,ebx,1,esi
 	call ted_get_first_visible_pos
-	cmp edx,0
-	je .no_draw_text
+	or edx,edx
+	jz .no_draw_text
 	mov esi,1 ;длинна выводимого текста по 1-му символу
 	@@:
 		call ted_iterat_next
