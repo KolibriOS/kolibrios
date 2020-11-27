@@ -95,7 +95,6 @@ skinlist = {
 "_old/OpusOs_Blue/OpusOs_Blue.skn",
 "_old/Organics/Organics.skn",
 "_old/plum/plum.skn",
-"_old/Rednex/Rednex.skn",
 "_old/RoboTech/BRoboTech/BRoboTech.skn",
 "_old/RoboTech/GRoboTech/GRoboTech.skn",
 "_old/Russia/Russia.skn",

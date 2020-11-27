@@ -1,5 +1,5 @@
 //11.03.12 - start!
-//ver 2.3
+//ver 2.31
 
 #ifndef AUTOBUILD
 	?include "lang.h--"
@@ -263,9 +263,24 @@ void Open_Dir()
 		}
 		cur = select_list.count;
 		files_mas[cur]=j;
-		if (!strcmpi("default.skn",#temp_filename)) files_mas[0]><files_mas[select_list.count];
 		select_list.count++;
 	}
+	Sort_by_Name(0, select_list.count-1);
+}
+
+void Sort_by_Name(int a, b) // for the first call: a = 0, b = sizeof(mas) - 1
+{                                        
+	int j;
+	int isn = a;
+	if (a >= b) return;
+	for (j = a; j <= b; j++) {
+		if (strcmpi(io.dir.position(files_mas[j]), io.dir.position(files_mas[b]))<=0) { 
+			files_mas[isn] >< files_mas[j]; 
+			isn++;
+		}
+	}
+	Sort_by_Name(a, isn-2);
+	Sort_by_Name(isn, b);
 }
 
 void SelectList_DrawLine(dword i)
