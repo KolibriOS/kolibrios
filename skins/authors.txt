@@ -4,6 +4,7 @@ bat                     Heavyiron
 black-glass             ChE
 Black_lace              Rock_maniak_forever
 blackskin               Aqwas
+Blacky                  maxcodehack
 Blended                 Aqwas
 Brick                   Rock_maniak_forever
 BrownLustre             Rock_maniak_forever
