@@ -18,7 +18,7 @@ skinlist = {
 "Leency/Shkvorka/Shkvorka.skn",
 "Leency/Workbench/Workbench.skn",
 "Leency/Yeah/Yeah.skn",
-"maxcodehack/Blacky/Blacky.skn",
+"maxcodehack/blacky/Blacky.skn",
 "loggy/loggy.skn",
 "night/night.skn",
 "_old/5imple Alpha/1.5imple Alpha/1.5imple Alpha.skn",
