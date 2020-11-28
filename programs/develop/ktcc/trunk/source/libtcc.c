@@ -71,6 +71,10 @@ ST_DATA struct TCCState *tcc_state;
 #ifdef TCC_TARGET_MEOS
 #include "tccmeos.c"
 #endif
+#ifdef TCC_TARGET_MEOS_LINUX
+#include <libgen.h>
+#endif
+
 
 #endif /* ONE_SOURCE */
 
@@ -140,7 +144,7 @@ BOOL WINAPI DllMain (HINSTANCE hDll, DWORD dwReason, LPVOID lpReserved)
 }
 #endif
 #else // _WIN32
-#if defined TCC_TARGET_MEOS && ! TCC_TARGET_MEOS_LINUX
+#if defined TCC_TARGET_MEOS
 /* on Kolibri host, we suppose the lib and includes are at the location of 'tcc' /lib, /include */
 static void tcc_set_lib_path_kos(TCCState *s)
 {
@@ -152,9 +156,19 @@ static void tcc_set_lib_path_kos(TCCState *s)
     *p = 0;
     tcc_set_lib_path(s, path);
 }
-#endif
-#endif
 
+#if defined TCC_TARGET_MEOS_LINUX
+static void tcc_set_lib_path_linux(TCCState *s)
+{
+    char buff[4096+1];
+    readlink("/proc/self/exe", buff, 4096);
+    const char *path = dirname(buff);
+    tcc_set_lib_path(s, path);
+}
+
+#endif
+#endif
+#endif
 /********************************************************/
 /* copy a string and truncate it. */
 PUB_FUNC char *pstrcpy(char *buf, int buf_size, const char *s)
@@ -1092,10 +1106,16 @@ LIBTCCAPI TCCState *tcc_new(void)
 #ifdef _WIN32
     tcc_set_lib_path_w32(s);
 #else
+
 #if defined TCC_TARGET_MEOS && ! TCC_TARGET_MEOS_LINUX
     tcc_set_lib_path_kos(s);
 #else
+    
+#ifdef TCC_TARGET_MEOS_LINUX
+    tcc_set_lib_path_linux(s);
+#else
     tcc_set_lib_path(s, CONFIG_TCCDIR);
+#endif
 #endif
 #endif
     s->output_type = 0;
