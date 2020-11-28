@@ -17,7 +17,7 @@ use32
 include '../../../proc32.inc'
 include '../../../macros.inc'
 include '../../../KOSfuncs.inc'
-include '../../../develop/libraries/box_lib/load_lib.mac'
+include '../../../load_lib.mac'
 include '../../../develop/libraries/box_lib/trunk/box_lib.mac'
 include '../../../develop/info3ds/info_fun_float.inc'
 include 'lang.inc'
@@ -259,17 +259,9 @@ binstr db 'bin:',0
 if lang eq ru
 	numstr db 'Число:',0
 	Okstr db 'Ввод',0
-	head_f_i:
-	head_f_l db '"Системная ошибка',0
-	err_msg_found_lib_0 db 'Не найдена библиотека ',39,'box_lib.obj',39,'" -tE',0
-	err_msg_import_0 db 'Ошибка при импорте библиотеки ',39,'box_lib',39,'" -tW',0
 else
 	numstr db 'Number:',0
 	Okstr db 'Ok',0
-	head_f_i:
-	head_f_l db '"System error',0
-	err_msg_found_lib_0 db 'Sorry I cannot found library ',39,'box_lib.obj',39,'" -tE',0
-	err_msg_import_0 db 'Error on load import library ',39,'box_lib',39,'" -tW',0
 end if
 
 mouse_dd dd 0
@@ -294,8 +286,7 @@ lib_name_0 db 'box_lib.obj',0
 
 
 l_libs_start:
-	lib_0 l_libs lib_name_0, sys_path, library_path, system_dir_0,\
-		err_msg_found_lib_0,head_f_l,import_box_lib,err_msg_import_0,head_f_i
+	lib_0 l_libs lib_name_0, library_path, system_dir_0,import_box_lib
 l_libs_end:
 
 align 4

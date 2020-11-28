@@ -146,6 +146,7 @@ include 'init_data.inc'
 @@:
 ;OpenDialog     initialisation
         stdcall [OpenDialog_Init], OpenDialog_data
+        stdcall [ColorDialog_Init], ColorDialog_data
 ;---------------------------------------------------------------------
 
 align 4
@@ -206,7 +207,6 @@ include 'menu.inc'
 
 include 'lib_data.inc'
 include 'panel_data.inc'
-include 'palitra256.inc'
 include 'brushes.inc'
 include 'spray.inc'
 include 'width_lines.inc'

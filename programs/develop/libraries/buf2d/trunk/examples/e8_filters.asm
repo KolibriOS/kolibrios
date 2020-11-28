@@ -1,18 +1,15 @@
 use32
-	org 0x0
+	org 0
 	db 'MENUET01' ;идентиф. исполняемого файла всегда 8 байт
-	dd 0x1
-	dd start
-	dd i_end ;размер приложения
-	dd mem,stacktop
-	dd 0,sys_path
+	dd 1,start,i_end,mem,stacktop,0,sys_path
 
 include '../../../../../macros.inc'
 include '../../../../../proc32.inc'
-include '../../../../../develop/libraries/box_lib/load_lib.mac'
+include '../../../../../KOSfuncs.inc'
+include '../../../../../load_lib.mac'
 include '../../../../../dll.inc'
 
-@use_library_mem mem.Alloc,mem.Free,mem.ReAlloc, dll.Load
+@use_library mem.Alloc,mem.Free,mem.ReAlloc, dll.Load
 
 struct FileInfoBlock
 	Function dd ?
@@ -46,9 +43,9 @@ macro load_image_file path,buf,size { ;макрос для загрузки изображений
 			db 0
 		@@:
 		;32 - стандартный адрес по которому должен быть буфер с системным путем
-		copy_path .path_str,[32],file_name,0x0
+		copy_path .path_str,[32],file_name,0
 	else
-		copy_path path,[32],file_name,0x0 ;формируем полный путь к файлу изображения, подразумеваем что он в одной папке с программой
+		copy_path path,[32],file_name,0 ;формируем полный путь к файлу изображения, подразумеваем что он в одной папке с программой
 	end if
 
 	stdcall mem.Alloc, dword size ;выделяем память для изображения
@@ -67,12 +64,12 @@ macro load_image_file path,buf,size { ;макрос для загрузки изображений
 	cmp ebx,0xffffffff
 	je @f
 		;определяем вид изображения и переводим его во временный буфер image_data
-		stdcall dword[img_decode], dword[buf],ebx,0
-		mov dword[image_data],eax
+		stdcall [img_decode], [buf],ebx,0
+		mov [image_data],eax
 		;преобразуем изображение к формату rgb
-		stdcall dword[img_to_rgb2], dword[image_data],dword[buf]
+		stdcall [img_to_rgb2], [image_data],[buf]
 		;удаляем временный буфер image_data
-		stdcall dword[img_destroy], dword[image_data]
+		stdcall [img_destroy], [image_data]
 	@@:
 }
 
@@ -84,16 +81,16 @@ start:
 	mov	ebp,lib0
 	cmp	dword [ebp+ll_struc_size-4],0
 	jz	@f
-		mcall -1 ;exit not correct
+		mcall SF_TERMINATE_PROCESS
 	@@:
 	mov	ebp,lib1
 	cmp	dword [ebp+ll_struc_size-4],0
 	jz	@f
-		mcall -1 ;exit not correct
+		mcall SF_TERMINATE_PROCESS
 	@@:
 
-	mcall 40,0x27
-	mcall 48,3,sc,sizeof.system_colors ;получаем системные цвета
+	mcall SF_SET_EVENTS_MASK,0x27
+	mcall SF_STYLE_SETTINGS,SSF_GET_COLORS,sc,sizeof.system_colors ;получаем системные цвета
 
 	load_image_file 'img1.png',image_data_rgb, IMAGE_FILE1_SIZE
 	stdcall [buf2d_create_f_img], buf_0,[image_data_rgb] ;создаем буфер
@@ -110,13 +107,13 @@ red_win:
 
 align 4
 still: ;главный цикл
-	mcall 10
+	mcall SF_WAIT_EVENT
 
-	cmp al,0x1 ;изменилось положение окна
+	cmp al,1 ;изменилось положение окна
 	jz red_win
-	cmp al,0x2
+	cmp al,2
 	jz key
-	cmp al,0x3
+	cmp al,3
 	jz button
 
 	jmp still
@@ -124,7 +121,7 @@ still: ;главный цикл
 align 4
 key:
 	push eax ebx
-	mcall 2
+	mcall SF_GET_KEY
 ;...
 	pop ebx eax
 	jmp still
@@ -133,49 +130,42 @@ key:
 align 4
 draw_window:
 	pushad
-	mcall 12,1
+	mcall SF_REDRAW,SSF_BEGIN_DRAW
 
 	mov edx,[sc.work]
 	or  edx,0x33000000
-	mcall 0,(20 shl 16)+670,(20 shl 16)+520,,,caption ;создание окна
+	mcall SF_CREATE_WINDOW,(20 shl 16)+670,(20 shl 16)+520,,,caption ;создание окна
 
 	stdcall [buf2d_draw], buf_0
 	stdcall [buf2d_draw], buf_1
 	stdcall [buf2d_draw], buf_2
 	
-	mcall 12,2
+	mcall SF_REDRAW,SSF_END_DRAW
 	popad
 	ret
 
-head_f_i:
-head_f_l  db 'Системная ошибка',0
-
 system_dir0 db '/sys/lib/'
 name_buf2d db 'buf2d.obj',0
-err_message_found_lib0 db 'Не удалось найти библиотеку buf2d.obj',0
-err_message_import0 db 'Ошибка при импорте библиотеки buf2d.obj',0
 
 system_dir1 db '/sys/lib/'
 name_libimg db 'libimg.obj',0
-err_message_found_lib1 db 'Не удалось найти библиотеку libimg.obj',0
-err_message_import1 db 'Ошибка при импорте библиотеки libimg.obj',0
 
 ;library structures
 l_libs_start:
-	lib0 l_libs name_buf2d,  sys_path, file_name, system_dir0, err_message_found_lib0, head_f_l, import_buf2d_lib, err_message_import0, head_f_i
-	lib1 l_libs name_libimg, sys_path, file_name, system_dir1, err_message_found_lib1, head_f_l, import_libimg, err_message_import1, head_f_i
+	lib0 l_libs name_buf2d,  file_name, system_dir0, import_buf2d_lib
+	lib1 l_libs name_libimg, file_name, system_dir1, import_libimg
 load_lib_end:
 
 align 4
 button:
-	mcall 17 ;получить код нажатой кнопки
+	mcall SF_GET_BUTTON
 	cmp ah,1
 	jne still
 .exit:
 	stdcall [buf2d_delete],buf_0 ;удаляем буфер
 	stdcall [buf2d_delete],buf_1 ;удаляем буфер
 	stdcall [buf2d_delete],buf_2 ;удаляем буфер
-	mcall -1 ;выход из программы
+	mcall SF_TERMINATE_PROCESS
 
 image_data dd 0 ;память для преобразования картинки функциями libimg
 image_data_gray dd 0 ;память с преобразованным изображением в формате 8-bit
@@ -183,7 +173,7 @@ image_data_rgb dd 0 ;память с преобразованным изображением в формате rgb
 image_data_foto dd 0
 
 run_file_70 FileInfoBlock
-caption db 'Draw images 13.09.11',0 ;подпись окна
+caption db 'Draw images 28.11.20',0 ;подпись окна
 sc system_colors  ;системные цвета
 
 align 4
@@ -281,9 +271,8 @@ import_buf2d_lib:
 	sz_buf2d_delete db 'buf2d_delete',0
 	sz_buf2d_filter_dither db 'buf2d_filter_dither',0
 
+align 16
 i_end:
-	rb 1024
-stacktop:
 	sys_path rb 4096
 	file_name:
 		rb 4096
@@ -293,4 +282,6 @@ stacktop:
 		rb 4096
 	filename_area:
 		rb 256
+		rb 1024
+stacktop:
 mem:

@@ -6,7 +6,7 @@ org 0
 include '../../../../proc32.inc'
 include '../../../../macros.inc'
 include '../../../../KOSfuncs.inc'
-include '../../../../develop/libraries/box_lib/load_lib.mac'
+include '../../../../load_lib.mac'
 
 include 'deflate.inc'
 include 'debug.inc'
@@ -262,14 +262,8 @@ import_archiver:
 system_dir_0 db '/sys/lib/'
 lib_name_0 db 'archiver.obj',0
 
-err_message_found_lib0 db 'Sorry I cannot load library archiver.obj',0
-head_f_i:
-head_f_l db 'System error',0
-err_message_import0 db 'Error on load import library archiver.obj',0
-
 l_libs_start:
-	lib0 l_libs lib_name_0, cur_dir_path, library_path, system_dir_0,\
-		err_message_found_lib0, head_f_l, import_archiver,err_message_import0, head_f_i
+	lib0 l_libs lib_name_0, library_path, system_dir_0, import_archiver
 load_lib_end:
 ;---------------------------------------------------------------------
 

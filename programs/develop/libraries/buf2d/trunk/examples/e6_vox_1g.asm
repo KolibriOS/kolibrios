@@ -1,18 +1,15 @@
 use32
-	org 0x0
+	org 0
 	db 'MENUET01' ;идентиф. исполняемого файла всегда 8 байт
-	dd 0x1
-	dd start
-	dd i_end ;размер приложения
-	dd mem,stacktop
-	dd 0,cur_dir_path
+	dd 1,start,i_end,mem,stacktop,0,cur_dir_path
 
 include '../../../../../macros.inc'
 include '../../../../../proc32.inc'
-include '../../../../../develop/libraries/box_lib/load_lib.mac'
+include '../../../../../KOSfuncs.inc'
+include '../../../../../load_lib.mac'
 include '../../../../../dll.inc'
 
-@use_library_mem mem.Alloc,mem.Free,mem.ReAlloc, 0 ;dll.Load
+@use_library mem.Alloc,mem.Free,mem.ReAlloc, 0 ;dll.Load
 
 struct FileInfoBlock
 	Function dd ?
@@ -60,19 +57,18 @@ endp
 
 align 4
 start:
-	load_library vectors_name, cur_dir_path, library_path, system_path, \
-		err_message_found_lib, head_f_l, import_buf2d_lib, err_message_import, head_f_i
+	load_library name_buf2d, library_path, system_path, import_buf2d_lib
 	cmp eax,-1
 	jz button.exit
 
-	mcall 40,0x27
+	mcall SF_SET_EVENTS_MASK,0x27
 	stdcall [buf2d_create], buf_0 ;создаем буфер
 	stdcall [buf2d_create], buf_z
 
 	stdcall mem.Alloc,max_open_file_size
 	mov dword[open_file_vox],eax
 
-	copy_path f_name,[32],file_name,0x0
+	copy_path f_name,[32],file_name,0
 
 	mov eax,70 ;70-я функция работа с файлами
 	mov [run_file_70.Function], 0
@@ -99,7 +95,7 @@ red_win:
 
 align 4
 still:
-	mcall 10
+	mcall SF_WAIT_EVENT
 	cmp al,1 ;изменилось положение окна
 	jz red_win
 	cmp al,2
@@ -111,20 +107,20 @@ still:
 align 4
 draw_window:
 	pushad
-	mcall 12,1
+	mcall SF_REDRAW,SSF_BEGIN_DRAW
 
 	mov edx,0x33000000
-	mcall 0,(50 shl 16)+330,(30 shl 16)+295,,,caption
+	mcall SF_CREATE_WINDOW,(50 shl 16)+330,(30 shl 16)+295,,,caption
 
 	stdcall [buf2d_draw], buf_0
 
-	mcall 12,2
+	mcall SF_REDRAW,SSF_END_DRAW
 	popad
 	ret
 
 align 4
 key:
-	mcall 2
+	mcall SF_GET_KEY
 
 	cmp ah,27 ;Esc
 	je button.exit
@@ -133,14 +129,14 @@ key:
 
 align 4
 button:
-	mcall 17 ;получить код нажатой кнопки
+	mcall SF_GET_BUTTON
 	cmp ah,1
 	jne still
 .exit:
 	stdcall [buf2d_delete],buf_0 ;удаляем буфер
 	stdcall [buf2d_delete],buf_z
 	stdcall mem.Free,[open_file_vox]
-	mcall -1 ;выход из программы
+	mcall SF_TERMINATE_PROCESS
 
 caption db 'Test buf2d library, [Esc] - exit',0
 
@@ -206,21 +202,18 @@ buf_z:
 
 ;--------------------------------------------------
 system_path db '/sys/lib/'
-vectors_name db 'buf2d.obj',0
-err_message_found_lib db 'Sorry I cannot load library buf2d.obj',0
-head_f_i:
-head_f_l db 'System error',0
-err_message_import db 'Error on load import library buf2d.obj',0
+name_buf2d db 'buf2d.obj',0
 ;--------------------------------------------------
 
+align 16
 i_end: ;конец кода
-	rb 1024
-stacktop:
-	file_name:
-		rb 4096
+file_name:
+	rb 4096
 cur_dir_path:
 	rb 4096
 library_path:
 	rb 4096
+	rb 1024
+stacktop:
 mem:
 

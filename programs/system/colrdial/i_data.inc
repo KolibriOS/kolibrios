@@ -19,16 +19,10 @@ plugins_directory	db 0
 
 system_dir_Boxlib	db '/sys/lib/box_lib.obj',0
 
-ihead_f_i:
-ihead_f_l	db 'System	error',0
-
-er_message_found_lib	db 'box_lib.obj - Not found!',0
-er_message_import	db 'box_lib.obj - Wrong import!',0
-
 align	4
 l_libs_start:
-library01	l_libs	system_dir_Boxlib+9,path,file_name,system_dir_Boxlib,\
-er_message_found_lib,ihead_f_l,Box_lib_import,er_message_import,ihead_f_i,plugins_directory
+library01	l_libs	system_dir_Boxlib+9,file_name,system_dir_Boxlib,\
+Box_lib_import,plugins_directory
 
 end_l_libs:
 ;---------------------------------------------------------------------

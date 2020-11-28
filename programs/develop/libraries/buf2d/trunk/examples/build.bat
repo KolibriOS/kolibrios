@@ -1,6 +1,4 @@
 if not exist bin mkdir bin
-@fasm.exe -m 16384 ..\buf2d.asm bin\buf2d.obj
-@kpack bin\buf2d.obj
 
 if not exist bin\font8x9.bmp @copy ..\..\..\..\..\fs\kfar\trunk\font8x9.bmp bin\font8x9.bmp
 @copy foto.jpg bin\foto.jpg

@@ -81,7 +81,8 @@ include '../../macros.inc'
 ;define __DEBUG__ 1
 ;define __DEBUG_LEVEL__ 1
 ;include '../../debug-fdo.inc'
-include '../../develop/libraries/box_lib/load_lib.mac'
+include '../../KOSfuncs.inc'
+include '../../load_lib.mac'
 include '../../develop/libraries/box_lib/trunk/box_lib.mac'
 ;include 'macros.inc'
 ;include 'load_lib.mac'
@@ -2530,34 +2531,19 @@ system_dir_CnvPNG	db '/sys/lib/cnv_png.obj',0
 system_dir_Sort 	db '/sys/lib/sort.obj',0
 system_dir_UNPACK	db '/sys/lib/archiver.obj',0
 
-ihead_f_i:
-ihead_f_l	db 'System      error',0
-
-er_message_found_lib	db 'box_lib.obj - Not found!',0
-er_message_import	db 'box_lib.obj - Wrong import!',0
-
-er_message_found_lib2	db 'cnv_png.obj - Not found!',0
-er_message_import2	db 'cnv_png.obj - Wrong import!',0
-
-err_message_found_lib3	db 'sort.obj - Not found!',0
-err_message_import3	db 'sort.obj - Wrong import!',0
-
-err_message_found_lib4	db 'archiver.obj - Not found!',0
-err_message_import4	db 'archiver.obj - Wrong import!',0
-
 align	4
 l_libs_start:
-library01	l_libs	system_dir_Boxlib+9,path,file_name,system_dir_Boxlib,\
-er_message_found_lib,ihead_f_l,Box_lib_import,er_message_import,ihead_f_i,plugins_directory
+library01	l_libs	system_dir_Boxlib+9,file_name,system_dir_Boxlib,\
+Box_lib_import,plugins_directory
 
-library02	l_libs	system_dir_CnvPNG+9,path,file_name,system_dir_CnvPNG,\
-er_message_found_lib2,ihead_f_l,cnv_png_import,er_message_import2,ihead_f_i,plugins_directory
+library02	l_libs	system_dir_CnvPNG+9,file_name,system_dir_CnvPNG,\
+cnv_png_import,plugins_directory
 
-library03	l_libs	system_dir_Sort+9,path,file_name,system_dir_Sort,\
-err_message_found_lib3,ihead_f_l,Sort_import,err_message_import3,ihead_f_i,plugins_directory
+library03	l_libs	system_dir_Sort+9,file_name,system_dir_Sort,\
+Sort_import,plugins_directory
 
-library04	l_libs	system_dir_UNPACK+9,path,file_name,system_dir_UNPACK,\
-err_message_found_lib4,ihead_f_l,UNPACK_import,err_message_import4,ihead_f_i,plugins_directory
+library04	l_libs	system_dir_UNPACK+9,file_name,system_dir_UNPACK,\
+UNPACK_import,plugins_directory
 
 end_l_libs:
 

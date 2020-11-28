@@ -6,10 +6,10 @@ drawwin:
 	mcall SF_THREAD_INFO,procinfo
 	mov	esi,procinfo
 
-	mov	eax,[esi+34]
-	mov	ebx,[esi+38]
-	mov	ecx,[esi+42]
-	mov	edx,[esi+46]
+	mov	eax,[esi+process_information.box.left]
+	mov	ebx,[esi+process_information.box.top]
+	mov	ecx,[esi+process_information.box.width]
+	mov	edx,[esi+process_information.box.height]
 	mov	[Window_CordinatX],eax
 	mov	[Window_CordinatY],ebx
 	
@@ -45,10 +45,8 @@ no_znak2:
 
 	mcall SF_REDRAW,SSF_BEGIN_DRAW
 ;------------------------------------------------
-	mov	ebx,50 ;[Window_CordinatX]
-	mov	ecx,50 ;[Window_CordinatY]
-	shl	ebx,16
-	shl	ecx,16
+	mov	ebx,50 shl 16 ;[Window_CordinatX]
+	mov	ecx,50 shl 16 ;[Window_CordinatY]
 	add	ebx, [Window_SizeX]
 	add	ecx, [Window_SizeY]
 	mcall SF_CREATE_WINDOW,,,0x73aabbcc,,name_of_program
@@ -69,18 +67,10 @@ no_znak2:
 	shl ebx, 16
 	add ebx, [Window_SizeX]
 	sub	ebx, 9
-	mov ecx, ci_panel_y_pos
-	shl ecx, 16
-	add ecx, 51
+	mov ecx, (ci_panel_y_pos shl 16) + 51
 	mov edx, 0xD5CDCB
-	mcall 13
+	mcall SF_DRAW_RECT
 
-	;mov	eax,ci_panel_x_pos
-	;mov	ebx,ci_panel_y_pos
-	;mov	ecx,[Window_SizeX]
-	;mov	edx,50
-	;mov	esi,1
-	;sub	ecx,5+ci_panel_x_pos+ci_offs_skin_w
 	call	draw_icons
 	call	PrintMousePos
 ;------------------------------------------------

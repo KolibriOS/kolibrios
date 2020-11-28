@@ -638,99 +638,17 @@ TakeButtonInstruments:
 	cmp eax,51
 	jne no_palette
 
-	mov eax,20
-	mov ebx,ci_palete_y_pos
-	mov ecx,32*10+32*5+7
-	mov edx,140
-	mov  esi,1
-	call draw_volume_rectangle
-	mov [x],20+5
-	mov [y],ci_palete_y_pos+10
-	mov edi,256
-	xor esi,esi
-	next_rectangle:
-	mov ebx,[x]
-	mov ecx,[y]
-	mov edx,[palitra+esi]
-	and edx,0xffffff
-	shl ebx,16
-	shl ecx,16
-	add ebx,13
-	add ecx,13
-	mcall SF_DRAW_RECT
-	add [x],15
-	cmp [x],20+15*32
-	jl no_new_line
-	mov [x],20+5
-	add [y],15
-	no_new_line:
-	add esi,4
-	dec edi
-	jnz next_rectangle
-
-	wait_events:
-	mcall SF_WAIT_EVENT
-
-	cmp eax,1
-	jne @f
-		ret
+	stdcall [ColorDialog_Start],ColorDialog_data
+; 2 - use another method/not found program
+	;cmp	[ColorDialog_data.status],2
+	;je	no_palette
+; 1 - OK, color selected	
+	cmp	[ColorDialog_data.status],1
+	jne	@f
+		mov	eax,[ColorDialog_data.color]
+		mov [Color],eax
 	@@:
-	cmp eax,2
-	jne no_keys
-		mcall SF_GET_KEY
-		jmp wait_events
-	no_keys:
-	cmp eax,3
-	jne no_buttons
-		mcall SF_GET_BUTTON
-		jmp wait_events
-	no_buttons:
-	cmp eax,6
-	jne wait_events
-
-	call GetMouseClick
-
-	test eax,eax
-	jz wait_events
-	call GetMouseCoordinats
-	mov [x],20+5
-	mov [y],ci_palete_y_pos+10
-	mov [counter],0
-	next_rectangle_column:
-	mov eax,[x]
-	mov ebx,[y]
-	mov ecx,[MouseX]
-	mov edx,[MouseY]
-	mov esi,13
-	mov edi,13
-	call columnus
-	test eax,eax
-	jz no_columnus_color
-
-	mov eax,[counter]
-	shl eax,2
-	mov ebx,[palitra+eax]
-	and ebx,0xffffff
-	mov [Color],ebx
-	no_columnus_color:
-
-	add [x],15
-
-	cmp [x],20+15*32
-	jl no_new_line_column
-
-	mov [x],20+5
-	add [y],15
-	no_new_line_column:
-
-	inc [counter]
-
-	cmp [counter],257
-	jne next_rectangle_column
-
-	mcall SF_SLEEP,10
-
-	call drawwin
+	;call drawwin
 
 	mov eax,[Last_instrument]
 	mov [Current_instrument],eax

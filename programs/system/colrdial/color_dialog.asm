@@ -80,7 +80,8 @@
   dd	 path
 ;---------------------------------------------------------------------
 include '../../macros.inc'
-include '../../develop/libraries/box_lib/load_lib.mac'
+include '../../KOSfuncs.inc'
+include '../../load_lib.mac'
 include '../../develop/libraries/box_lib/trunk/box_lib.mac'
 ;include 'lang.inc'
 ;include '../../debug.inc'

@@ -23,19 +23,8 @@ load_convert_plugins:
 	cld
 	rep movsd
 	
-	mov esi,[cnv_plugin_name_pointer]
-	mov edi,err_message_found_lib.1
-	mov ecx,128/4
-	rep movsd
-	
-	mov esi,[cnv_plugin_name_pointer]
-	mov edi,err_message_import.1
-	mov ecx,128/4
-	rep movsd
-	
-load_library system_path.1, path, library_path, system_path, \
-err_message_found_lib, head_f_l, \
-[cnv_plugin_import_pointer], err_message_import, head_f_i, plugins_directory
+load_library system_path.1, library_path, system_path, \
+[cnv_plugin_import_pointer], plugins_directory
 
 	test  eax,eax
 	jnz    START.exit_1
