@@ -2197,6 +2197,13 @@ sysfn_shutdown:          ; 18.9 = system shutdown
                        dd 0x0
   endg
 ;------------------------------------------------------------------------------
+; in: eax -- APPDATA ptr
+; out: Z/z -- is/not kernel thread
+is_kernel_thread:
+        mov     eax, [eax+APPDATA.process]
+        cmp     eax, [SLOT_BASE+2*sizeof.APPDATA+APPDATA.process]       ; OS
+        ret
+;------------------------------------------------------------------------------
 sysfn_terminate:        ; 18.2 = TERMINATE
         push    ecx
         cmp     ecx, 2
@@ -2205,10 +2212,15 @@ sysfn_terminate:        ; 18.2 = TERMINATE
         cmp     ecx, edx
         ja      noprocessterminate
         mov     eax, [TASK_COUNT]
-        shl     ecx, 5
+        shl     ecx, BSF sizeof.TASKDATA
         mov     edx, [ecx+CURRENT_TASK+TASKDATA.pid]
         add     ecx, CURRENT_TASK+TASKDATA.state
-        cmp     byte [ecx], 9
+        cmp     byte [ecx], TSTATE_FREE
+        jz      noprocessterminate
+        push    eax
+        lea     eax, [(ecx-(CURRENT_TASK and 1FFFFFFFh)-TASKDATA.state)*8+SLOT_BASE]
+        call    is_kernel_thread
+        pop     eax
         jz      noprocessterminate
         push    ecx edx
         lea     edx, [(ecx-(CURRENT_TASK and 1FFFFFFFh)-TASKDATA.state)*8+SLOT_BASE]
