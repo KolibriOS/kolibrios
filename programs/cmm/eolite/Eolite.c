@@ -3,8 +3,8 @@
 
 // 70.5 - get volume info and label
 
-#define TITLE "Eolite File Manager 4.47"
-#define ABOUT_TITLE "EOLITE 4.47"
+#define TITLE "Eolite File Manager 4.47a"
+#define ABOUT_TITLE "EOLITE 4.47a"
 
 #ifndef AUTOBUILD
 #include "lang.h--"
@@ -767,7 +767,7 @@ void Line_ReDraw(dword bgcol, filenum){
 			ext1="<DIR>";
 			WriteTextCenter(files.x+files.w-140, files.text_y+y+1, 72, col.list_gb_text, ext1);
 		}
-		if (chrnum(#path, '/')==1) file_size = GetDeviceSizeLabel(#full_path);
+		if (chrnum(#path, '/')==1) && (streq(#path, "/kolibrios")==false) file_size = GetDeviceSizeLabel(#full_path);
 	}
 	if (file_size) WriteText(7-strlen(file_size)*6+files.x+files.w-58, 
 			files.text_y+y+1, files.font_type, col.list_gb_text, file_size);
