@@ -1,9 +1,9 @@
 INCLUDE = include
 LIBSFORBUILD = math
 LIBNAME = libck.a
-CC = gcc
+CC = ../bin/kos32-tcc
 CFLAGS = -I$(INCLUDE) -m32 -nostdinc -nostdlib -DGNUC
-DIRS := stdio kolibrisys string stdlib memory math 
+DIRS := stdio memory kolibrisys string stdlib math dlfcn libgen fs
 
 ##############################################################
 #files := $(foreach dir,$(DIRS),$(dir)/$(wildcard $(dir)/*))
@@ -28,3 +28,6 @@ $(asmfiles):
 
 clean:
 	$(doClean)
+
+install:
+	cp $(LIBNAME) ../bin/lib

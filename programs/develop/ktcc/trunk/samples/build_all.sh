@@ -11,4 +11,5 @@
 ../tcc clayer/boxlib.c -lck -lbox -o /tmp0/1/boxlib_ex
 ../tcc clayer/libimg.c -lck -limg -o /tmp0/1/libimg_ex
 ../tcc console/console.c -lck -limg -o /tmp0/1/console
+../tcc dir_example.c -lck -o /tmp0/1/dir_example
 exit
