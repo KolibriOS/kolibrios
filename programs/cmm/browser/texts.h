@@ -1,7 +1,7 @@
 #ifdef LANG_RUS
-char buidin_page_error[] = FROM "buidin_pages\\page_not_found_ru.htm""\0";
-char buidin_page_home[]  = FROM "buidin_pages\\homepage_ru.htm""\0";
-char buidin_page_help[]  = FROM "buidin_pages\\help_ru.htm""\0";
+char buildin_page_error[] = FROM "res/page_not_found_ru.htm""\0";
+char buildin_page_home[]  = FROM "res/homepage_ru.htm""\0";
+char buildin_page_help[]  = FROM "res/help_ru.htm""\0";
 char accept_language[]= "Accept-Language: ru\n";
 char rmb_menu[] = 
 "Посмотреть исходник|Ctrl+U
@@ -22,16 +22,16 @@ char link_menu[] =
 Скачать содержимое ссылки";
 char loading_text[] = "Загрузка...";
 
-char update_param[] = "-download_and_exit http://builds.kolibrios.org/rus/data/programs/cmm/browser/WebView.com";
+char update_param[] = "-exit http://builds.kolibrios.org/rus/data/programs/cmm/browser/WebView.com";
 char update_download_error[] = "'WebView\nОшибка при получении обновлений!' -tE";
 char update_ok[] = "'WebView\nБраузер был успешно обновлен!' -tO";
 char update_is_current[] = "'WebView\nВы уже используете последнюю версию.' -tI";
 char update_can_not_copy[] = "'WebView\nНе могу переместить новую версию из папки Downloads на Ramdisk. Возможно, не достаточно места.' -tE";
 char clear_cache_ok[] = "'WebView\nКэш очищен.' -tI";
 #else
-char buidin_page_error[] = FROM "buidin_pages\\page_not_found_en.htm""\0";
-char buidin_page_home[]  = FROM "buidin_pages\\homepage_en.htm""\0";
-char buidin_page_help[]  = FROM "buidin_pages\\help_en.htm""\0";
+char buildin_page_error[] = FROM "res/page_not_found_en.htm""\0";
+char buildin_page_home[]  = FROM "res/homepage_en.htm""\0";
+char buildin_page_help[]  = FROM "res/help_en.htm""\0";
 char accept_language[]= "Accept-Language: en\n";
 char rmb_menu[] =
 "View source|Ctrl+U
@@ -51,7 +51,7 @@ Open in new window
 Copy link
 Download link contents";
 char loading_text[] = "Loading...";
-char update_param[] = "-download_and_exit http://builds.kolibrios.org/eng/data/programs/cmm/browser/WebView.com";
+char update_param[] = "-exit http://builds.kolibrios.org/eng/data/programs/cmm/browser/WebView.com";
 char update_download_error[] = "'WebView\nError receiving an up to date information!' -tE";
 char update_ok[] = "'WebView\nThe browser has been updated!' -tO";
 char update_is_current[] = "'WebView\nThe browser is up to date.' -tI";

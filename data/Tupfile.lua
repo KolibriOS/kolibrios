@@ -641,6 +641,7 @@ tup.append_table(img_files, {
  {"GAMES/MINE", PROGS .. "/games/mine/trunk/mine"},
  {"MEDIA/PIXIE", PROGS .. "/cmm/pixie2/pixie.com"},
  {"MEDIA/ICONEDIT", PROGS .. "/cmm/iconedit/iconedit.com"},
+ {"NETWORK/DL", PROGS .. "/cmm/downloader/dl.com"},
  {"NETWORK/WEBVIEW", PROGS .. "/cmm/browser/WebView.com"},
 })
 tup.append_table(extra_files, {

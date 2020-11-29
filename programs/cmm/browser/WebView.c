@@ -30,14 +30,15 @@
 #include "..\lib\patterns\toolbar_button.h"
 #include "..\lib\patterns\restart_process.h"
 
+char editbox_icons[] = FROM "res/editbox_icons.raw";
+
 #define URL_SIZE 4000
 
-char version[]="WebView 2.65b";
+char version[]="WebView 2.66";
 
 #include "texts.h"
 #include "cache.h"
 #include "show_src.h"
-#include "download_manager.h"
 
 bool debug_mode = false;
 
@@ -101,8 +102,6 @@ char editURL[URL_SIZE+1];
 edit_box address_box = {, PADDING+TSZE*2+PADDING+6, PADDING+3, 0xffffff,
 	0x94AECE, 0xffffff, 0xffffff,0x10000000,URL_SIZE-2,#editURL,0,,19,19};
 
-char editbox_icons[] = FROM "editbox_icons.raw";
-
 dword shared_url;
 
 dword http_get_type;
@@ -120,17 +119,10 @@ void LoadLibraries()
 
 void HandleParam()
 {
-	if (param) {
-		if (!strncmp(#param, "-download_and_exit ", 19)) {
-			download_and_exit = true;
-			strcpy(#downloader_edit, #param+19);
-			Downloader();
-			ExitProcess();
-		} else if (!strncmp(#param, "-download ", 10)) {
-			strcpy(#downloader_edit, #param+10);
-			Downloader();
-			ExitProcess();
-		} else if (!strncmp(#param, "-source ", 8)) {
+	if (!param) {
+		history.add(URL_SERVICE_HOMEPAGE);
+	} else {
+		if (!strncmp(#param, "-source ", 8)) {
 			source_mode = true;
 			history.add(#param + 8);
 		} else if (!strncmp(#param, "-new ", 5)) {
@@ -144,8 +136,6 @@ void HandleParam()
 				ExitProcess();
 			}
 		}
-	} else {
-		history.add(URL_SERVICE_HOMEPAGE);
 	}
 	shared_url = memopen(#webview_shared, URL_SIZE+1, SHM_CREATE + SHM_WRITE);
 	ESDWORD[shared_url] = '\0';
@@ -155,7 +145,6 @@ void main()
 {
 	int i, redirect_count=0;
 	LoadLibraries();
-	CreateDir("/tmp0/1/Downloads");
 	//CreateDir("/tmp0/1/WebView_Cache");
 	HandleParam();
 	WB1.list.SetFont(8, 14, 10011000b);
@@ -438,10 +427,7 @@ void ProcessEvent(dword id__)
 			OpenPage(URL_SERVICE_HISTORY);
 			return;
 		case DOWNLOAD_MANAGER:
-			if (!downloader_opened) {
-				downloader_edit = NULL;
-				CreateThread(#Downloader,#downloader_stak+4092);
-			}
+			EventOpenDownloader("");
 			return;
 		case UPDATE_BROWSER:
 			EventUpdateBrowser();
@@ -462,11 +448,7 @@ void ProcessEvent(dword id__)
 			notify("'URL copied to clipboard'O");
 			return;
 		case DOWNLOAD_LINK_CONTENTS:
-			if (!downloader_opened) {
-				id__ = GetAbsoluteActiveURL();
-				strcpy(#downloader_edit, id__);
-				CreateThread(#Downloader,#downloader_stak+4092);
-			}
+			EventOpenDownloader( GetAbsoluteActiveURL() );
 			return;
 		case OPEN_FILE:
 			EventOpenDialog();
@@ -594,10 +576,10 @@ void OpenPage(dword _open_URL)
 
 	} else if (!strncmp(#new_url,"WebView:",8)) {
 		//INTERNAL PAGE
-		if (streq(#new_url, URL_SERVICE_HOMEPAGE)) LoadInternalPage(#buidin_page_home, sizeof(buidin_page_home));
-		else if (streq(#new_url, URL_SERVICE_HELP)) LoadInternalPage(#buidin_page_help, sizeof(buidin_page_help));
+		if (streq(#new_url, URL_SERVICE_HOMEPAGE)) LoadInternalPage(#buildin_page_home, sizeof(buildin_page_home));
+		else if (streq(#new_url, URL_SERVICE_HELP)) LoadInternalPage(#buildin_page_help, sizeof(buildin_page_help));
 		else if (streq(#new_url, URL_SERVICE_HISTORY)) ShowHistory();
-		else LoadInternalPage(#buidin_page_error, sizeof(buidin_page_error));
+		else LoadInternalPage(#buildin_page_error, sizeof(buildin_page_error));
 
 	} else if (!strncmp(#new_url,"http:",5)) || (!strncmp(#new_url,"https:",6)) {
 		//WEB PAGE
@@ -618,7 +600,7 @@ void OpenPage(dword _open_URL)
 
 		if (!http.transfer) {
 			StopLoading();
-			LoadInternalPage(#buidin_page_error, sizeof(buidin_page_error));
+			LoadInternalPage(#buildin_page_error, sizeof(buildin_page_error));
 		}
 	} else {
 		//LOCAL PAGE
@@ -630,11 +612,16 @@ void OpenPage(dword _open_URL)
 			strcpy(#new_url, "/tmp0/1/temp/word/document.xml");
 		} 
 		if (!GetLocalFileData(#new_url)) {
-			LoadInternalPage(#buidin_page_error, sizeof(buidin_page_error));
+			LoadInternalPage(#buildin_page_error, sizeof(buildin_page_error));
 		}
 	}
 }
 
+dword EventOpenDownloader(dword _url)
+{
+	//char download_params[URL_SIZE+50];
+	return RunProgram("/sys/network/dl", _url);
+}
 
 bool EventClickAnchor()
 {
@@ -720,11 +707,7 @@ void EventClickLink(dword _target)
 		if (UrlExtIs(#new_url,".png")==true) || (UrlExtIs(#new_url,".jpg")==true) 
 		|| (UrlExtIs(#new_url,".zip")==true) || (UrlExtIs(#new_url,".kex")==true) || (UrlExtIs(#new_url,".pdf")==true)
 		|| (UrlExtIs(#new_url,".7z")==true) {
-			if (!downloader_opened) {
-				strcpy(#downloader_edit, #new_url);
-				CreateThread(#Downloader,#downloader_stak+4092);
-			}
-			else notify("'WebView\nPlease, start a new download only when previous ended.'Et");
+			EventOpenDownloader(#new_url);
 			return;
 		}
 	}
@@ -747,7 +730,7 @@ void EventSubmitOmnibox()
 
 void LoadInternalPage(dword _bufdata, _in_bufsize){
 	if (!_bufdata) || (!_in_bufsize) {
-		LoadInternalPage(#buidin_page_error, sizeof(buidin_page_error));
+		LoadInternalPage(#buildin_page_error, sizeof(buildin_page_error));
 	} else {
 		WB1.list.first = 0; //scroll page to the top
 		DrawOmnibox();
@@ -892,7 +875,7 @@ void EventUpdateBrowser()
 
 	draw_window();
 
-	downloader_id = RunProgram(#program_path, #update_param);
+	downloader_id = EventOpenDownloader(#update_param);
 	do {
 		slot_n = GetProcessSlot(downloader_id);
 		pause(10);

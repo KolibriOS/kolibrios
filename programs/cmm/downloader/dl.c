@@ -1,77 +1,70 @@
+//Copyright 2020 by Leency
+
+#define MEMSIZE 1024 * 100
+#include "../lib/gui.h"
+#include "../lib/random.h"
+#include "../lib/obj/box_lib.h"
+#include "../lib/obj/http.h"
+#include "../lib/patterns/http_downloader.h"
+
+#include "const.h"
+
 DOWNLOADER downloader;
 
-#ifdef LANG_RUS
-	#define DL_WINDOW_HEADER "Менеджер загрузок"
-	#define START_DOWNLOADING "Начать закачку"
-	#define STOP_DOWNLOADING "Остановить"
-	#define SHOW_IN_FOLDER "Показать в папке"
-	#define OPEN_FILE_TEXT "Открыть файл"
-	#define FILE_SAVED_AS "'Менеджер загрузок\nФайл сохранен как "
-	#define KB_RECEIVED "Идет скачивание... %s получено"
-#else
-	#define DL_WINDOW_HEADER "Download Manager"
-	#define START_DOWNLOADING "Start downloading"
-	#define STOP_DOWNLOADING "Stop downloading"
-	#define SHOW_IN_FOLDER "Show in folder"
-	#define OPEN_FILE_TEXT "Open file"
-	#define FILE_SAVED_AS "'Download manager\nFile saved as "
-	#define KB_RECEIVED "Downloading... %s received"
-#endif
-char save_to[4096] = "/tmp0/1/Downloads";
- 
-#define CONX 15
-
-proc_info DL_Form;
-char downloader_edit[10000];
+char downloader_edit[4000];
 char filepath[4096];
-edit_box ed = {NULL,57,20,0xffffff,0x94AECE,0xffffff,0xffffff,0x10000000,sizeof(downloader_edit)-2,#downloader_edit,0,ed_focus,19,19};
-progress_bar pb = {0, CONX, 58, 350, 17, 0, 0, 100, 0xFFFfff, 0x74DA00, 0x9F9F9F};
-//progress_bar pb = {0, 180, 55, 225, 12, 0, 0, 100, 0xFFFfff, 0x74DA00, 0x9F9F9F};
+edit_box ed = {WIN_W-GAPX-GAPX,GAPX,20,0xffffff,0x94AECE,0xffffff,0xffffff,0x10000000,
+	sizeof(downloader_edit)-2,#downloader_edit,0,ed_focus,19,19};
+progress_bar pb = {0, GAPX, 58, 350, 17, 0, 0, 100, 0xFFFfff, 0x74DA00, 0x9F9F9F};
 //progress_bar: value, left, top, width, height, style, min, max, back_color, progress_color, frame_color;
+ 
+bool exit_when_done = false; 
 
-bool downloader_opened;
-char downloader_stak[4096];
  
-bool download_and_exit = false; 
- 
-void Downloader()  
+void main()  
 {
-	if (!dir_exists(#save_to)) CreateDir(#save_to);
-	downloader_opened = true;
-	SetEventMask(EVM_REDRAW + EVM_KEY + EVM_BUTTON + EVM_MOUSE + EVM_MOUSE_FILTER + EVM_STACK);
+	dword shared_url;
+	load_dll(boxlib,  #box_lib_init,0);
+	load_dll(libHTTP, #http_lib_init,1);
 
-	sc.get();
-	pb.frame_color = sc.work_dark;
- 
-	filepath[0] = NULL;
-	
-	downloader.Stop();
+	if (!dir_exists(#save_to)) CreateDir(#save_to);
+
+	if (param) {
+		if (!strncmp(#param, "-exit ", 6)) {
+			exit_when_done = true;
+			param += 6;
+		}
+
+		if (!strncmp(#param, "-mem", 5)) {
+			shared_url = memopen(#dl_shared, URL_SIZE+1, SHM_OPEN + SHM_WRITE);
+			strcpy(#downloader_edit, shared_url);
+		} else {
+			strcpy(#downloader_edit, #param);
+		}
+	} 
 	if (downloader_edit[0]) StartDownloading(); else strcpy(#downloader_edit, "http://");
 	ed.size = ed.pos = ed.shift = ed.shift_old = strlen(#downloader_edit);
  
-	loop() switch(WaitEvent())
+	@SetEventMask(EVM_REDRAW + EVM_KEY + EVM_BUTTON + EVM_MOUSE + EVM_MOUSE_FILTER + EVM_STACK);
+	@SetWindowLayerBehaviour(-1, ZPOS_ALWAYS_TOP);
+	loop() switch(@WaitEvent())
 	{
 		case evMouse:
 			edit_box_mouse stdcall (#ed);
 			break;
 
 		case evButton:
-			Key_Scan(GetButtonID());
+			ProcessEvent(GetButtonID());
 			break;
 
 		case evKey:
 			GetKeys();
 			edit_box_key stdcall(#ed);
-			if (key_scancode==SCAN_CODE_ENTER) Key_Scan(301);
+			if (key_scancode==SCAN_CODE_ENTER) ProcessEvent(301);
 			break;
 
 		case evReDraw:
-			DefineAndDrawWindow(215, 100, 580, 130, 0x74, sc.work, DL_WINDOW_HEADER, 0);
-			GetProcessInfo(#DL_Form, SelfInfo);
-			if (DL_Form.status_window>2) break;
-			if (DL_Form.height<120) MoveSize(OLD,OLD,OLD,120);
-			if (DL_Form.width<280) MoveSize(OLD,OLD,280,OLD);
-			DL_Draw_Window();
+			DrawWindow();
 			break;
 		   
 		default:
@@ -87,38 +80,38 @@ void Downloader()
 			if (downloader.state == STATE_COMPLETED)
 			{
 				SaveDownloadedFile();
-				if (download_and_exit) ExitProcess();
+				if (exit_when_done) ExitProcess();
 				StopDownloading();
-				DL_Draw_Window();
+				DrawWindow();
 				break;
 			}          
 	}
 }
  
-void Key_Scan(int id)
+void ProcessEvent(int id)
 {
-	if (id==001) { downloader_opened=false; StopDownloading(); ExitProcess(); }
+	if (id==001) { StopDownloading(); ExitProcess(); }
 	if (id==301) && (downloader.httpd.transfer <= 0) StartDownloading();
 	if (id==302) StopDownloading();
-	if (id==305) RunProgram("/sys/File managers/Eolite", #save_to);
+	if (id==305) RunProgram("/sys/File managers/Eolite", #filepath);
 	if (id==306) {
 		SetCurDir(#save_to);
 		RunProgram("/sys/@open", #filepath);
 	}
 }
  
-void DL_Draw_Window()
+void DrawWindow()
 {  
 	int but_x = 0;
 	int but_y = 58;
-	DrawBar(0,0, DL_Form.cwidth, DL_Form.cheight, sc.work);
-	DeleteButton(301);
-	DeleteButton(302);
-	DeleteButton(305);
-	DeleteButton(306);
+
+	sc.get();
+	pb.frame_color = sc.work_dark;
+	DefineAndDrawWindow(110 + random(300), 100 + random(300), WIN_W+9, WIN_H + 5 + skin_height, 0x34, sc.work, DL_WINDOW_HEADER, 0);
+
 	if (downloader.state == STATE_NOT_STARTED) || (downloader.state == STATE_COMPLETED)
 	{
-		but_x = CONX + DrawStandartCaptButton(CONX, but_y, 301, START_DOWNLOADING);   
+		but_x = GAPX + DrawStandartCaptButton(GAPX, but_y, 301, START_DOWNLOADING);   
 		if (filepath[0])
 		{
 			but_x += DrawStandartCaptButton(but_x, but_y, 305, SHOW_IN_FOLDER);
@@ -127,11 +120,9 @@ void DL_Draw_Window()
 	}
 	if (downloader.state == STATE_IN_PROGRESS)
 	{
-		DrawStandartCaptButton(DL_Form.width - 190, but_y, 302, STOP_DOWNLOADING);
+		DrawStandartCaptButton(WIN_W - 190, but_y, 302, STOP_DOWNLOADING);
 		DrawDownloading();
 	}
-	WriteText(CONX, ed.top + 4, 0x90, sc.work_text, "URL:");
-    ed.width = DL_Form.cwidth - ed.left - CONX - 3;
 	ed.offset=0;
 	DrawEditBox(#ed);
 }
@@ -143,7 +134,7 @@ void StartDownloading()
 	StopDownloading();
 	if (!strncmp(#downloader_edit,"https://",7)) {
 		notify("'HTTPS for download is not supported, trying to download the file via HTTP' -W");
-		sprintf(#http_url, "http://%s", #downloader_edit+8);
+		miniprintf(#http_url, "http://%s", #downloader_edit+8);
 		if (!downloader.Start(#http_url)) {
 			notify("'Download failed.' -E");
 			StopDownloading();
@@ -153,19 +144,19 @@ void StartDownloading()
 		//	notify("'Download failed.' -E");
 		//	StopDownloading();
 		//}
-		DL_Draw_Window();
+		DrawWindow();
 		return;
 	}
 	if (!downloader.Start(#downloader_edit)) {
-		if (download_and_exit) ExitProcess();
-		notify("'Error while starting download process.\nPlease, check entered path and internet connection.' -E");
+		if (exit_when_done) ExitProcess();
+		notify(T_ERROR_STARTING_DOWNLOAD);
 		StopDownloading();
 		return;
 	}
 	ed.blur_border_color = 0xCACACA;
 	ed.flags = 100000000000b;
 	pb.value = 0;
-	DL_Draw_Window();
+	DrawWindow();
 }
 
 /*
@@ -200,9 +191,8 @@ void CalculateSpeed()
 void DrawDownloading()
 {
 	char bytes_received[70];
-	sprintf(#bytes_received, KB_RECEIVED, ConvertSizeToKb(downloader.httpd.content_received) );
-	DrawBar(CONX, pb.top + 22, pb.width, 16, sc.work);
-	WriteText(CONX, pb.top + 22, 0x90, sc.work_text, #bytes_received);
+	miniprintf(#bytes_received, KB_RECEIVED, ConvertSizeToKb(downloader.httpd.content_received) );
+	WriteTextWithBg(GAPX, pb.top + 22, 0xD0, sc.work_text, #bytes_received, sc.work);
 	//CalculateSpeed();
 	progressbar_draw stdcall(#pb);
 }
@@ -212,7 +202,7 @@ void StopDownloading()
 	downloader.Stop();
 	ed.blur_border_color = 0xFFFfff;
 	ed.flags = 10b;
-	DL_Draw_Window();
+	DrawWindow();
 }
 
 void SaveDownloadedFile()
@@ -226,15 +216,27 @@ void SaveDownloadedFile()
 	while (aux[strlen(#aux)-1] == '/') {
 		aux[strlen(#aux)-1] = 0;
 	}
-	sprintf(#filepath, "%s/%s", #save_to, #aux+strrchr(#aux, '/'));
+
+	//miniprintf(#filepath, "%s/", #save_to);
+	strcpy(#filepath, #save_to);
+	chrcat(#filepath, '/');
+	strcat(#filepath, #aux+strrchr(#aux, '/'));
 	
 	for (i=0; i<strlen(#filepath); i++) if(filepath[i]==':')||(filepath[i]=='?')filepath[i]='-';
 
 	if (CreateFile(downloader.httpd.content_received, downloader.bufpointer, #filepath)==0) {
-		sprintf(#notify_message, "%s%s%s",FILE_SAVED_AS,#filepath,"' -Dt");
+		miniprintf(#notify_message, FILE_SAVED_AS, #filepath);
 	} else {
-		sprintf(#notify_message, "%s%s%s","'Download manager\nError! Can\96t save file as ",#filepath,"' -Et");
+		miniprintf(#notify_message, FILE_NOT_SAVED, #filepath);
 	}
+
+	/*
+	if (CreateFile(downloader.httpd.content_received, downloader.bufpointer, #filepath)==0) {
+		strcpy(#notify_message, "'Download complete' -Dt");
+	} else {
+		strcpy(#notify_message, "'Error saving downloaded file!' -Et");
+	}
+	*/
 	
-	if (!download_and_exit) notify(#notify_message);
+	if (!exit_when_done) notify(#notify_message);
 }

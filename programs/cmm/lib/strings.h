@@ -842,6 +842,16 @@ inline signed csshexdec(dword text)
 	return ret;
 }
 
+void miniprintf(dword dst, format, insert_line)
+{
+	dword in_pos = strchr(format, '%');
+	if (ESBYTE[in_pos+1] == 's') {
+		strlcpy(dst, format, in_pos - format);
+		strcat(dst, insert_line);
+		strcat(dst, in_pos+2);
+	}
+}
+
 inline cdecl int sprintf(dword buf, format,...)
 {
 	#define END_ARGS 0xFF00FF //ARGS FUNCTION

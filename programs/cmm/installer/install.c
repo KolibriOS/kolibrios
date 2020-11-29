@@ -37,6 +37,7 @@ char logo[] = "
 #endif
 
 #define B_INSTALL 10
+#define B_EXIT 11
 
 bool install_complete = false;
 
@@ -50,8 +51,8 @@ void main()
 	{
 		case evButton:
 			btn = GetButtonID();               
-			if (btn == 1) ExitProcess();
-			if (btn == B_INSTALL) EventInstall();
+			if (btn == 1) || (B_EXIT == btn) ExitProcess();
+			if (B_INSTALL == btn) EventInstall();
 			break;
 	  
 		case evKey:
@@ -96,7 +97,7 @@ void DrawInstallComplete()
 {
 	DrawIcon32(WINW-32/2, 140, sc.work, 49);
 	WriteTextCenter(0,185, WINW, sc.work_text, T_COMPLETE);
-	DrawCaptButton(WINW-110/2, WINH-70, 110, 28, CLOSE_BTN, 
+	DrawCaptButton(WINW-110/2, WINH-70, 110, 28, B_EXIT, 
 		0x0092D8, 0xFFFfff, T_EXIT);
 }
 
