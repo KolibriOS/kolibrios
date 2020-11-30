@@ -135,6 +135,7 @@ namespace Kolibri   // All kolibri functions, types and data are nested in the (
 			//_ of the stack if (stack_end) is zero or (stack_size) is not zero, in this case stack
 			//_ will be deleted automaticaly from dynamic memory at the finish of the thread.
 	void DrawText(short x, short y, int color, const char* string);
+	void DrawRect(long l, long t, long w, long h, long color);
 	void PutImage(unsigned char* img_data, long img_l, long img_t, long img_w, long img_h);
 	void SetWindowCaption(const char* caption);
 }

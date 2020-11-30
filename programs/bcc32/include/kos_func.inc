@@ -70,6 +70,7 @@ macro Kolibri_Put_MovEaxVal_Ret	address,val
   mov  dword [address+1],val
 }
 
+align 4
 proc @Kolibri@Main$qv
   and  esp,not 3
   sub  esp,1024
@@ -118,6 +119,7 @@ end if				       ; should exit process if second argument points to not zero.
   int  0x40
 endp
 
+align 4
 proc @Kolibri@ThreadMain$qpvt1
   xchg ebx,[esp+4]
   xchg ebp,[esp+8]
@@ -329,6 +331,7 @@ end if
   ret
 endp
 
+align 4
 proc @Kolibri@Redraw$qippv
   push ebp
   mov  ebp,[esp+12]
@@ -379,6 +382,7 @@ proc @Kolibri@Redraw$qippv
   ret
 endp
 
+align 4
 proc @Kolibri@MoveWindow$qxpxi uses ebx esi
   mov  eax,[esp+12]
   mov  ebx,[eax]
@@ -390,6 +394,7 @@ proc @Kolibri@MoveWindow$qxpxi uses ebx esi
   ret
 endp
 
+align 4
 proc @Kolibri@ExitDebug$qv
   push dword [@Kolibri@DebugPrefix]
   call @Kolibri@DebugPutString$qpxc
@@ -399,6 +404,7 @@ proc @Kolibri@ExitDebug$qv
   jmp  @Kolibri@ExitProcess$qv
 endp
 
+align 4
 proc @Kolibri@ExitProcess$qv
   lock bts dword [@Kolibri@_ExitProcessNow],0
   jc   .exit_process_wait
@@ -464,11 +470,13 @@ end if
   jmp  .exit_process_wait_loop
 endp
 
+align 4
 proc @Kolibri@ExitThread$qppv
   mov  esp,[esp+4]
   jmp  @Kolibri@ThreadMain$qpvt1.main_end
 endp
 
+align 4
 proc @Kolibri@ReturnMessageLoop$qppv
   mov  esp,[esp+4]
   bt   dword [esp+KOLIBRI_THREAD_DATA_FLAG*4],30
@@ -476,6 +484,7 @@ proc @Kolibri@ReturnMessageLoop$qppv
   jmp  @Kolibri@ThreadMain$qpvt1.main_cycle
 endp
 
+align 4
 proc @Kolibri@Delay$qui uses ebx
   mov  eax,SF_SLEEP
   mov  ebx,[esp+8]
@@ -483,6 +492,7 @@ proc @Kolibri@Delay$qui uses ebx
   ret
 endp
 
+align 4
 proc @Kolibri@Clock$qv uses ebx
   mov  eax,SF_SYSTEM_GET
   mov  ebx,SSF_TIME_COUNT
@@ -490,6 +500,7 @@ proc @Kolibri@Clock$qv uses ebx
   ret
 endp
 
+align 4
 proc @Kolibri@DrawButton$qllllll uses ebx esi
   mov  eax,SF_DEFINE_BUTTON
   mov  ebx,[esp+12-2+8]
@@ -502,12 +513,14 @@ proc @Kolibri@DrawButton$qllllll uses ebx esi
   ret 
 endp
 
+align 4
 proc @Kolibri@GetPackedTime$qv
   mov  eax,SF_GET_SYS_TIME
   int  0x40
   ret
 endp
 
+align 4
 proc @Kolibri@GetTime$qpi
   mov  eax,SF_GET_SYS_TIME
   int  0x40
@@ -534,12 +547,14 @@ proc @Kolibri@GetTime$qpi
   ret
 endp
 
+align 4
 proc @Kolibri@GetPackedDate$qv
   mov  eax,SF_GET_SYS_DATE
   int  0x40
   ret
 endp
 
+align 4
 proc @Kolibri@GetDate$qpi
   mov  eax,SF_GET_SYS_DATE
   int  0x40
@@ -566,6 +581,7 @@ proc @Kolibri@GetDate$qpi
   ret
 endp
 
+align 4
 proc @Kolibri@ReadCommonColors$qpui uses ebx
   mov  eax,SF_STYLE_SETTINGS
   mov  ebx,SSF_GET_COLORS
@@ -575,6 +591,7 @@ proc @Kolibri@ReadCommonColors$qpui uses ebx
   ret
 endp
 
+align 4
 proc @Kolibri@DrawText$qssipxc uses ebx
   mov  eax,SF_DRAW_TEXT
   mov  ebx,[esp+8-2]
@@ -586,6 +603,19 @@ proc @Kolibri@DrawText$qssipxc uses ebx
   ret
 endp
 
+align 4
+proc @Kolibri@DrawRect$qlllll uses ebx
+  mov  eax,SF_DRAW_RECT
+  mov  ebx,[esp+8-2]
+  mov  bx,[esp+16]
+  mov  ecx,[esp+12-2]
+  mov  cx,[esp+20]
+  mov  edx,[esp+24]
+  int  0x40
+  ret
+endp
+
+align 4
 proc @Kolibri@PutImage$qpucllll uses ebx
   mov  eax,SF_PUT_IMAGE
   mov  ebx,[esp+8]
@@ -597,6 +627,7 @@ proc @Kolibri@PutImage$qpucllll uses ebx
   ret
 endp
 
+align 4
 proc @Kolibri@SetWindowCaption$qpxc uses ebx
   mov  eax,SF_SET_CAPTION
   mov  ebx,2
@@ -605,6 +636,7 @@ proc @Kolibri@SetWindowCaption$qpxc uses ebx
   ret
 endp
 
+align 4
 proc @Kolibri@GetProcessInfo$qpuipct1t1piui uses ebx esi edi
   sub  esp,1024
   mov  eax,SF_THREAD_INFO
@@ -654,23 +686,26 @@ proc @Kolibri@GetProcessInfo$qpuipct1t1piui uses ebx esi edi
   ret
 endp
 
+align 4
 proc @Kolibri@GetPid$qv uses ebx
   sub  esp,1024
   mov  eax,SF_THREAD_INFO
   mov  ebx,esp
   mov  ecx,-1
   int  0x40
-  mov  eax,[esp+30]
+  mov  eax,[esp+process_information.PID]
   add  esp,1024
   ret
 endp
 
+align 4
 proc @Kolibri@GetPid$qppv
   mov  ecx,[esp+4]
   mov  eax,[ecx+KOLIBRI_THREAD_DATA_PID*4]
   ret
 endp
 
+align 4
 proc @Kolibri@_HashByte$qui
 @Kolibri@_HashWord$qui:
 @Kolibri@_HashDword$qui:
@@ -694,6 +729,7 @@ Kolibri_hash_int_val1:
   dd   0x9193780B
 end if
 
+align 4
 proc @Kolibri@GetThreadData$qv
   call @Kolibri@GetPid$qv
   push eax
@@ -702,6 +738,7 @@ proc @Kolibri@GetThreadData$qv
   ret
 endp
 
+align 4
 proc @Kolibri@GetThreadData$qui
   mov  eax,[esp+4]
   call Kolibri_HashInt
@@ -741,6 +778,7 @@ proc @Kolibri@GetThreadData$qui
   jmp .get_thread_data_nowait
 endp
 
+align 4
 proc @Kolibri@_GetSkinHeader$qv uses ebx
   mov  eax,SF_STYLE_SETTINGS
   mov  ebx,SSF_GET_SKIN_HEIGHT
@@ -748,6 +786,7 @@ proc @Kolibri@_GetSkinHeader$qv uses ebx
   ret
 endp
 
+align 4
 proc @Kolibri@GetScreenSize$qrust1
   mov  eax,SF_GET_SCREEN_SIZE
   int  0x40
@@ -759,12 +798,14 @@ proc @Kolibri@GetScreenSize$qrust1
   ret
 endp
 
+align 4
 proc Kolibri_MutexLockNoWait
   pop  eax
   xor  al,al
   ret
 endp
 
+align 4
 proc Kolibri_MutexLockWait uses ebx
   mov  eax,SF_SLEEP
   xor  ebx,ebx
@@ -776,6 +817,7 @@ proc Kolibri_MutexLockWait uses ebx
   ret
 endp
 
+align 4
 proc Kolibri_MutexLockWaitTime
   cmp  dword [esp+12],0
   jng  .MutexLockWait
@@ -805,6 +847,7 @@ proc Kolibri_MutexLockWaitTime
   ret
 endp
 
+align 4
 proc Kolibri_MutexLock
   shl  byte [ecx],1
   jnz  .lock_first
@@ -814,24 +857,28 @@ proc Kolibri_MutexLock
   ret
 endp
 
+align 4
 proc @Kolibri@TryLock$qp14Kolibri@TMutex
   mov  eax,Kolibri_MutexLockNoWait
   mov  ecx,[esp+4]
   jmp  Kolibri_MutexLock
 endp
 
+align 4
 proc @Kolibri@Lock$qp14Kolibri@TMutex
   mov  eax,Kolibri_MutexLockWait
   mov  ecx,[esp+4]
   jmp  Kolibri_MutexLock
 endp
 
+align 4
 proc @Kolibri@LockTime$qp14Kolibri@TMutexi
   mov  eax,Kolibri_MutexLockWaitTime
   mov  ecx,[esp+4]
   jmp  Kolibri_MutexLock
 endp
 
+align 4
 proc @Kolibri@UnLock$qp14Kolibri@TMutex
   mov  ecx,[esp+4]
   shr  byte [ecx],1
@@ -847,6 +894,7 @@ proc @Kolibri@UnLock$qp14Kolibri@TMutex
   ret
 endp
 
+align 4
 proc Kolibri_MutexLockRec
   shl  byte [ecx],1
   jng  .lock_first
@@ -871,6 +919,7 @@ proc Kolibri_MutexLockRec
   jmp  @Kolibri@ExitDebug$qv
 endp
 
+align 4
 proc @Kolibri@TryLock$qp16Kolibri@TRecMutexui
   mov  eax,Kolibri_MutexLockNoWait
   mov  ecx,[esp+4]
@@ -878,6 +927,7 @@ proc @Kolibri@TryLock$qp16Kolibri@TRecMutexui
   jmp  Kolibri_MutexLockRec
 endp
 
+align 4
 proc @Kolibri@Lock$qp16Kolibri@TRecMutexui
   mov  eax,Kolibri_MutexLockWait
   mov  ecx,[esp+4]
@@ -885,6 +935,7 @@ proc @Kolibri@Lock$qp16Kolibri@TRecMutexui
   jmp  Kolibri_MutexLockRec
 endp
 
+align 4
 proc @Kolibri@LockTime$qp16Kolibri@TRecMutexiui
   mov  eax,Kolibri_MutexLockWaitTime
   mov  ecx,[esp+4]
@@ -892,6 +943,7 @@ proc @Kolibri@LockTime$qp16Kolibri@TRecMutexiui
   jmp  Kolibri_MutexLockRec
 endp
 
+align 4
 proc @Kolibri@UnLock$qp16Kolibri@TRecMutexui
   mov  ecx,[esp+4]
   mov  edx,[esp+8]
@@ -922,6 +974,7 @@ proc @Kolibri@UnLock$qp16Kolibri@TRecMutexui
   jmp  @Kolibri@ExitDebug$qv
 endp
 
+align 4
 proc @Kolibri@DebugPutChar$qc
   mov  cl,byte [esp+4]
   cmp  cl,13
@@ -945,6 +998,7 @@ proc @Kolibri@DebugPutChar$qc
   jmp  .debug_put_char_after_cmp
 endp
 
+align 4
 proc @Kolibri@DebugPutString$qpxc uses esi
   push dword 0
   mov  esi,dword [esp+12]
@@ -962,6 +1016,7 @@ proc @Kolibri@DebugPutString$qpxc uses esi
   ret
 endp
 
+align 4
 proc @Kolibri@GetKey$qv
   mov  eax,SF_GET_KEY
   int  0x40
@@ -974,6 +1029,7 @@ proc @Kolibri@GetKey$qv
   ret
 endp
 
+align 4
 proc @Kolibri@GetMouseButton$qv uses ebx
   mov  eax,SF_MOUSE_GET
   mov  ebx,SSF_BUTTON
@@ -981,6 +1037,7 @@ proc @Kolibri@GetMouseButton$qv uses ebx
   ret
 endp
 
+align 4
 proc @Kolibri@GetMousePosition$qrst1o uses ebx
   mov  eax,SF_MOUSE_GET
   xor  ebx,ebx ;SSF_SCREEN_POSITION
@@ -997,12 +1054,14 @@ proc @Kolibri@GetMousePosition$qrst1o uses ebx
   ret
 endp
 
+align 4
 proc @Kolibri@WasThreadCreated$qv
   cmp  byte [@Kolibri@_ThreadSavedBegProc],0x90
   setz al
   ret
 endp
 
+align 4
 proc @Kolibri@CreateThread$qpvuit1
   push ebx
   mov  edx,[esp+16]
@@ -1078,6 +1137,7 @@ end if
   jmp  .create_thread_fill_stack
 endp
 
+align 4
 proc @Kolibri@_FileAccess$qp21Kolibri@FileInfoBlock uses ebx
   mov  eax,SF_FILE
   mov  ebx,[esp+8]
