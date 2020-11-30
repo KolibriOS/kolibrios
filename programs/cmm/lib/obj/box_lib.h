@@ -19,13 +19,11 @@ dword edit_box_draw     = #aEdit_box_draw;
 dword edit_box_key      = #aEdit_box_key;
 dword edit_box_mouse    = #aEdit_box_mouse;
 dword edit_box_set_text = #aEdit_box_set_text;
-dword version_ed        = #aVersion_ed;
 
 dword scrollbar_v_draw  = #aScrollbar_v_draw;
 dword scrollbar_v_mouse = #aScrollbar_v_mouse;
 dword scrollbar_h_draw  = #aScrollbar_h_draw;
 dword scrollbar_h_mouse = #aScrollbar_h_mouse;
-dword version_scrollbar = #aVersion_scrollbar;
 
 dword PathShow_prepare  = #aPathShow_prepare;
 dword PathShow_draw     = #aPathShow_draw;
@@ -41,19 +39,17 @@ char aEdit_box_draw []    = "edit_box";
 char aEdit_box_key  []    = "edit_box_key";
 char aEdit_box_mouse[]    = "edit_box_mouse";
 char aEdit_box_set_text[] = "edit_box_set_text";
-char aVersion_ed    []    = "version_ed";
 
-char aboxlib_init[]        = "lib_init";
+char aboxlib_init[]       = "lib_init";
 char aScrollbar_v_draw [] = "scrollbar_v_draw";
 char aScrollbar_v_mouse[] = "scrollbar_v_mouse";
 char aScrollbar_h_draw [] = "scrollbar_h_draw";
 char aScrollbar_h_mouse[] = "scrollbar_h_mouse";
-char aVersion_scrollbar[] = "version_scrollbar";
 
 char aPathShow_prepare [] = "PathShow_prepare";
 char aPathShow_draw    [] = "PathShow_draw";
 
-char aProgressbar_draw  [] = "progressbar_draw";
+char aProgressbar_draw    [] = "progressbar_draw";
 char aProgressbar_progress[] = "progressbar_progress";
 
 char aFrame_draw[] = "frame_draw";

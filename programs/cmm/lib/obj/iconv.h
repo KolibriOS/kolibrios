@@ -25,8 +25,8 @@ dword ChangeCharset(dword from_chs, to_chs, conv_buf)
 
 	from_chs = from_chs*10+#charsets;
 
-	debug("iconv: from_chs = "); debugln(from_chs);
-	debug("iconv: to_chs = "); debugln(to_chs);
+	//debug("iconv: from_chs = "); debugln(from_chs);
+	//debug("iconv: to_chs = "); debugln(to_chs);
 
 	iconv_open stdcall (from_chs, to_chs); //CP866, CP1251, CP1252, KOI8-RU, UTF-8, ISO8859-5
 	if (EAX==-1) {
@@ -38,9 +38,9 @@ dword ChangeCharset(dword from_chs, to_chs, conv_buf)
 	in_len = out_len = strlen(conv_buf)+1;
 	new_buf = mem_Alloc(in_len);
 	iconv stdcall (cd, #conv_buf, #in_len, #new_buf, #out_len);
-	cd = EAX;
-	if (cd!=0)
+	if (EAX!=0)
 	{
+		cd = EAX;
 		debugval("iconv: something is wrong with stdcall iconv()", cd);
 		debugval("in_len", in_len);
 		debugval("out_len", out_len);

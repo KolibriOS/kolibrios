@@ -23,7 +23,6 @@
 
 #include "../lib/obj/libio.h"
 #include "../lib/obj/libimg.h"
-#include "../lib/obj/libini.h"
 #include "../lib/obj/box_lib.h"
 
 #include "../lib/patterns/select_list.h"
@@ -110,7 +109,6 @@ void load_lib()
 {
 	load_dll(libio, #libio_init,1);
 	load_dll(libimg, #libimg_init,1);
-	load_dll(libini, #lib_init,1);
 	load_dll(boxlib, #box_lib_init,0);
 }
 

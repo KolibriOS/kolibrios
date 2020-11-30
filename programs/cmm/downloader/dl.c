@@ -3,22 +3,26 @@
 #define MEMSIZE 1024 * 100
 #include "../lib/gui.h"
 #include "../lib/random.h"
+
 #include "../lib/obj/box_lib.h"
 #include "../lib/obj/http.h"
+#include "../lib/obj/libini.h"
+
 #include "../lib/patterns/http_downloader.h"
 
 #include "const.h"
 
 DOWNLOADER downloader;
+checkbox autoclose = { T_AUTOCLOSE, true }; 
 
 char downloader_edit[4000];
 char filepath[4096];
 edit_box ed = {WIN_W-GAPX-GAPX,GAPX,20,0xffffff,0x94AECE,0xffffff,0xffffff,0x10000000,
 	sizeof(downloader_edit)-2,#downloader_edit,0,ed_focus,19,19};
-progress_bar pb = {0, GAPX, 58, 350, 17, 0, 0, 100, 0xFFFfff, 0x74DA00, 0x9F9F9F};
+progress_bar pb = {0, GAPX, 58, 315, 17, 0, 0, 100, 0xFFFfff, 0x74DA00, 0x9F9F9F};
 //progress_bar: value, left, top, width, height, style, min, max, back_color, progress_color, frame_color;
  
-bool exit_when_done = false; 
+bool exit_when_done = false;
 
  
 void main()  
@@ -26,6 +30,7 @@ void main()
 	dword shared_url;
 	load_dll(boxlib,  #box_lib_init,0);
 	load_dll(libHTTP, #http_lib_init,1);
+	load_dll(libini, #lib_init,1);
 
 	if (!dir_exists(#save_to)) CreateDir(#save_to);
 
@@ -36,7 +41,7 @@ void main()
 		}
 
 		if (!strncmp(#param, "-mem", 5)) {
-			shared_url = memopen(#dl_shared, URL_SIZE+1, SHM_OPEN + SHM_WRITE);
+			//shared_url = memopen(#dl_shared, URL_SIZE+1, SHM_OPEN + SHM_WRITE);
 			strcpy(#downloader_edit, shared_url);
 		} else {
 			strcpy(#downloader_edit, #param);
@@ -90,6 +95,7 @@ void main()
  
 void ProcessEvent(int id)
 {
+	autoclose.click(id);
 	if (id==001) { StopDownloading(); ExitProcess(); }
 	if (id==301) && (downloader.httpd.transfer <= 0) StartDownloading();
 	if (id==302) StopDownloading();
@@ -103,24 +109,26 @@ void ProcessEvent(int id)
 void DrawWindow()
 {  
 	int but_x = 0;
-	int but_y = 58;
+	#define BUT_Y 58;
 
 	sc.get();
 	pb.frame_color = sc.work_dark;
 	DefineAndDrawWindow(110 + random(300), 100 + random(300), WIN_W+9, WIN_H + 5 + skin_height, 0x34, sc.work, DL_WINDOW_HEADER, 0);
 
+	autoclose.draw(WIN_W-135, BUT_Y+6);
+	
 	if (downloader.state == STATE_NOT_STARTED) || (downloader.state == STATE_COMPLETED)
 	{
-		but_x = GAPX + DrawStandartCaptButton(GAPX, but_y, 301, START_DOWNLOADING);   
+		but_x = GAPX + DrawStandartCaptButton(GAPX, BUT_Y, 301, START_DOWNLOADING);   
 		if (filepath[0])
 		{
-			but_x += DrawStandartCaptButton(but_x, but_y, 305, SHOW_IN_FOLDER);
-			DrawStandartCaptButton(but_x, but_y, 306, OPEN_FILE_TEXT);  
+			but_x += DrawStandartCaptButton(but_x, BUT_Y, 305, SHOW_IN_FOLDER);
+			DrawStandartCaptButton(but_x, BUT_Y, 306, OPEN_FILE_TEXT);  
 		}
 	}
 	if (downloader.state == STATE_IN_PROGRESS)
 	{
-		DrawStandartCaptButton(WIN_W - 190, but_y, 302, STOP_DOWNLOADING);
+		DrawStandartCaptButton(WIN_W - 240, BUT_Y, 302, STOP_DOWNLOADING);
 		DrawDownloading();
 	}
 	ed.offset=0;
@@ -239,4 +247,5 @@ void SaveDownloadedFile()
 	*/
 	
 	if (!exit_when_done) notify(#notify_message);
+	if (autoclose.checked) ExitProcess();
 }
