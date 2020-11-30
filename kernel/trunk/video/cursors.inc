@@ -1165,12 +1165,13 @@ init_display:
         mov     [edi+display_t.cr_list.next], ecx
         mov     [edi+display_t.cr_list.prev], ecx
 
+if ~defined UEFI
         cmp     [SCR_MODE], word 0x13
         jbe     .fail
 
         test    word [SCR_MODE], 0x4000
         jz      .fail
-
+end if
         mov     ebx, restore_32
         mov     ecx, move_cursor_32
         mov     edx, Vesa20_putpixel32_new

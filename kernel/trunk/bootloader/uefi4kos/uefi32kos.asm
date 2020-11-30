@@ -24,6 +24,7 @@ FILE_BUFFER_SIZE = 0x1000
 
 KERNEL_BASE  =  0x10000
 RAMDISK_BASE = 0x100000
+MAX_FILE_SIZE = 0x10000000
 
 CODE_32_SELECTOR = 8
 DATA_32_SELECTOR = 16
@@ -410,12 +411,12 @@ main:
         mov     eax, [esi+EFI_SYSTEM_TABLE.ConOut]
         ccall   [eax+EFI_SIMPLE_TEXT_OUTPUT_PROTOCOL.OutputString], eax, \
                 msg_load_kernel
-        stdcall load_file, [esp_root], kernel_name, KERNEL_BASE, -1, 1
+        stdcall load_file, [esp_root], kernel_name, KERNEL_BASE, MAX_FILE_SIZE, 1
 
         mov     eax, [esi+EFI_SYSTEM_TABLE.ConOut]
         ccall   [eax+EFI_SIMPLE_TEXT_OUTPUT_PROTOCOL.OutputString], eax, \
                 msg_load_ramdisk
-        stdcall load_file, [esp_root], ramdisk_name, RAMDISK_BASE, -1, 1
+        stdcall load_file, [esp_root], ramdisk_name, RAMDISK_BASE, MAX_FILE_SIZE, 1
 
         mov     eax, [esi+EFI_SYSTEM_TABLE.ConOut]
         ccall   [eax+EFI_SIMPLE_TEXT_OUTPUT_PROTOCOL.OutputString], eax, \
@@ -845,43 +846,25 @@ proc clearbuf
         ret
 endp
 
-section '.data' data readable writeable
-efi_handle dd 0
-efi_table  dd 0
-
+section '.rodata' data readable
+align 16
 GDTR:
         dw 3*8-1
         dq GDT
+align 16
 GDT:
         dw 0, 0, 0, 0
         dw 0FFFFh,0,9A00h,0CFh          ; 32-bit code
         dw 0FFFFh,0,9200h,0CFh          ; flat data
 
-
-fb_base         dd 0
-
 gopuuid         db EFI_GRAPHICS_OUTPUT_PROTOCOL_GUID
-gop_buffer_size dd GOP_BUFFER_SIZE
-gop_handle      dd 0
-gop_interface   dd 0
-gop_info_size   dd 0
-gop_info        dd 0
-
 lipuuid         db EFI_LOADED_IMAGE_PROTOCOL_GUID
-lip_buffer_size dd LIP_BUFFER_SIZE
-lip_handle      dd 0
-lip_interface   dd 0
-
 sfspguid        db EFI_SIMPLE_FILE_SYSTEM_PROTOCOL_GUID
-sfsp_interface  dd 0
 
-esp_root        dd ?
-file_handle     dd ?
 file_name       du "\EFI\KOLIBRIOS\KOLIBRI.INI",0
 kernel_name     du "\EFI\KOLIBRIOS\KOLIBRI.KRN",0
 ramdisk_name    du "\EFI\KOLIBRIOS\KOLIBRI.IMG",0
 devicesdat_name du "\EFI\KOLIBRIOS\DEVICES.DAT",0
-file_buffer_size dd FILE_BUFFER_SIZE-1  ; leave the last byte for \0
 
 config_options  dd cfg_opt_name_resolution, cfg_opt_func_resolution, \
                    cfg_opt_cmnt_resolution, \
@@ -922,30 +905,6 @@ cfg_opt_cmnt_ask_params     db "# Interrupt booting to ask the user for boot", \
 cfg_opt_cmnt_imgfrom        db "# Where to load ramdisk image from",0
 cfg_opt_cmnt_syspath        db "# Path to /sys directory",0
 
-cfg_opt_used_resolution     db 0
-cfg_opt_used_acpi           db 0
-cfg_opt_used_debug_print    db 0
-cfg_opt_used_launcher_start db 0
-cfg_opt_used_mtrr           db 0
-cfg_opt_used_ask_params     db 0
-cfg_opt_used_imgfrom        db 0
-cfg_opt_used_syspath        db 0
-
-cfg_opt_value_vmode          db 0
-cfg_opt_value_acpi           db 0
-cfg_opt_value_debug_print    db 0
-cfg_opt_value_launcher_start db 1
-cfg_opt_value_mtrr           db 0
-cfg_opt_value_ask_params     db 0
-cfg_opt_value_imgfrom        db RD_LOAD_FROM_MEMORY
-cfg_opt_value_syspath        db "/RD/1",0
-                             rb 20
-
-memory_map_key  dd 0
-descriptor_size dd 0
-descriptor_ver  dd 0
-memory_map_size dd MEMORY_MAP_SIZE
-
 msg_u4k_loaded            du "uefi32kos loaded",13,10,0
 msg_read_options          du "Read options from config file",13,10,0
 msg_load_kernel           du "Load kernel",13,10,0
@@ -970,6 +929,53 @@ msg_error_no_such_vmode   du "No such vmode",13,10,0
 msg_error_out_of_handlers du "Out of handlers",13,10,0
 msg_error_open_file       du "Error: can't open file ",0
 msg                       du 79 dup " ",13,10,0
+
+
+section '.data' data readable writeable
+efi_handle dd 0
+efi_table  dd 0
+
+fb_base         dd 0
+
+gop_buffer_size dd GOP_BUFFER_SIZE
+gop_handle      dd 0
+gop_interface   dd 0
+gop_info_size   dd 0
+gop_info        dd 0
+
+lip_buffer_size dd LIP_BUFFER_SIZE
+lip_handle      dd 0
+lip_interface   dd 0
+
+sfsp_interface  dd 0
+
+esp_root        dd ?
+file_handle     dd ?
+file_buffer_size dd FILE_BUFFER_SIZE-1  ; leave the last byte for \0
+
+cfg_opt_used_resolution     db 0
+cfg_opt_used_acpi           db 0
+cfg_opt_used_debug_print    db 0
+cfg_opt_used_launcher_start db 0
+cfg_opt_used_mtrr           db 0
+cfg_opt_used_ask_params     db 0
+cfg_opt_used_imgfrom        db 0
+cfg_opt_used_syspath        db 0
+
+cfg_opt_value_vmode          db 0
+cfg_opt_value_acpi           db 0
+cfg_opt_value_debug_print    db 0
+cfg_opt_value_launcher_start db 1
+cfg_opt_value_mtrr           db 0
+cfg_opt_value_ask_params     db 0
+cfg_opt_value_imgfrom        db RD_LOAD_FROM_MEMORY
+cfg_opt_value_syspath        db "/RD/1",0
+                             rb 20
+
+memory_map_key  dd 0
+descriptor_size dd 0
+descriptor_ver  dd 0
+memory_map_size dd MEMORY_MAP_SIZE
 
 efi_fs_info_id db EFI_FILE_SYSTEM_INFO_ID
 efi_fs_info_size dq sizeof.EFI_FILE_SYSTEM_INFO

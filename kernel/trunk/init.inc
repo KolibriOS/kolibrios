@@ -70,7 +70,7 @@ proc init_mem
 ; ignore memory after 4 GiB
         cmp     [edi+e820entry.addr.hi], 0
         jnz     .unusable
-        mov     eax, [edi]
+        mov     eax, [edi+e820entry.addr.lo]
         cmp     [edi+e820entry.size.hi], 0
         jnz     .overflow
         add     eax, [edi+e820entry.size.lo]
