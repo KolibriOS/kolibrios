@@ -4,7 +4,8 @@ title:
 	
 history_text:
 	db ' History: ',0
-	
+
+communication_area	dd param
 ;---------------------------------------------------------------------
 align 4
 window_x:
@@ -32,10 +33,10 @@ Box_lib_import:
 ;init_lib	dd a_init
 ;version_lib	dd a_version
 
-
-;edit_box_draw		dd aEdit_box_draw
-;edit_box_key		dd aEdit_box_key
-;edit_box_mouse		dd aEdit_box_mouse
+edit_box_draw		dd aEdit_box_draw
+edit_box_key		dd aEdit_box_key
+edit_box_mouse		dd aEdit_box_mouse
+edit_box_set_text	dd aEdit_box_set_text
 ;version_ed		dd aVersion_ed
 
 ;check_box_draw	dd aCheck_box_draw
@@ -73,15 +74,15 @@ scrollbar_ver_mouse	dd aScrollbar_ver_mouse
 Frame_draw		dd sz_Frame_draw
 ;Version_frame		dd szVersion_frame
 
-	dd 0
-	dd 0
+	dd 0,0
 
 ;a_init			db 'lib_init',0
 ;a_version		db 'version',0
 
-;aEdit_box_draw		db 'edit_box',0
-;aEdit_box_key		db 'edit_box_key',0
-;aEdit_box_mouse		db 'edit_box_mouse',0
+aEdit_box_draw		db 'edit_box',0
+aEdit_box_key		db 'edit_box_key',0
+aEdit_box_mouse		db 'edit_box_mouse',0
+aEdit_box_set_text	db 'edit_box_set_text',0
 ;aVersion_ed		db 'version_ed',0
 
 ;aCheck_box_draw	db 'check_box_draw',0
@@ -238,5 +239,10 @@ frame_data:
 .font_size_y		dd 9 ;+36
 .font_color		dd 0x0 ;+40
 .font_backgr_color	dd 0xEEEeee ;+44
+;---------------------------------------------------------------------
+mouse_dd dd edit1
+edit1 edit_box ed_size_x, c_start_x+c_size_x+10, c_start_y, 0xffffff, 0xa0a0a0, 0xff, 0, 0, 8, string1, mouse_dd, 0
+sz_0x db '0x______',0,0
+string1 rb 10
 ;---------------------------------------------------------------------
 OK_Cancel db 'OK              Cancel',0

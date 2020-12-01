@@ -37,8 +37,9 @@ use32		     ; транслятор, использующий 32 разрядных команды
     dd 0x0		; указатель на строку с параметрами.
     dd way_of_ini
 include '../../../../macros.inc'
+include '../../../../KOSfuncs.inc'
+include '../../../../load_lib.mac'
 include '../../box_lib/trunk/box_lib.mac'
-include '../../box_lib/load_lib.mac'
 	@use_library	;use load lib macros
 start:
 ;universal load library/librarys
@@ -136,10 +137,8 @@ draw_window:		;рисование окна приложения
 ;>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 ;DATA данные
 l_libs_start:
-library01 l_libs library_name, way_of_ini, library_path, system_path, err_message_found_lib, head_f_l, font_import, err_message_import, head_f_i
-
-library02 l_libs library_name1, way_of_ini, library_path, system_path1, err_message_found_lib1, head_f_l, import_box_lib, err_message_import1, head_f_i
-
+library01 l_libs library_name, library_path, system_path, font_import
+library02 l_libs library_name1, library_path, system_path1, import_box_lib
 end_l_libs:
 
 ;
@@ -148,14 +147,6 @@ library_name	 db 'fonts_lib.obj',0
 
 system_path1	  db '/sys/lib/'
 library_name1	  db 'box_lib.obj',0
-
-err_message_found_lib	db 'Sorry I cannot load library fonts_lib.obj',0
-err_message_found_lib1	db 'Sorry I cannot load library box_lib.obj',0
-
-head_f_i:
-head_f_l	db 'System error',0
-err_message_import	db 'Error on load import library fonts_lib.obj',0
-err_message_import1	db 'Error on load import library box_lib.obj',0
 
 align 4
 import_box_lib:   

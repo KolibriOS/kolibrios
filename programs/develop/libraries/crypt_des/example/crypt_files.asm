@@ -1,21 +1,16 @@
 use32
-	org 0x0
+	org 0
 	db 'MENUET01' ;идентиф. исполняемого файла всегда 8 байт
-	dd 0x1
-	dd start
-	dd i_end ;размер приложения
-	dd mem
-	dd stacktop
-	dd 0
-	dd sys_path
+	dd 1, start, i_end, mem, stacktop, 0, sys_path
 
 include '../../../../macros.inc'
 include '../../../../proc32.inc'
-include '../../../../develop/libraries/box_lib/load_lib.mac'
+include '../../../../KOSfuncs.inc'
+include '../../../../load_lib.mac'
 include '../../../../develop/libraries/box_lib/trunk/box_lib.mac'
 include '../../../../dll.inc'
 
-@use_library_mem mem.Alloc,mem.Free,mem.ReAlloc,dll.Load
+@use_library mem.Alloc,mem.Free,mem.ReAlloc,dll.Load
 caption db 'Шифрование алгоритмом DES 05.03.13',0 ;подпись окна
 
 struct FileInfoBlock
@@ -57,8 +52,8 @@ macro load_image_file path,buf,size { ;макрос для загрузки изображений
 	stdcall mem.Alloc, dword size ;выделяем память для изображения
 	mov [buf],eax
 
-	mov eax,70 ;70-я функция работа с файлами
-	mov [run_file_70.Function], 0
+	mov eax,SF_FILE
+	mov [run_file_70.Function], SSF_READ_FILE
 	mov [run_file_70.Position], 0
 	mov [run_file_70.Flags], 0
 	mov [run_file_70.Count], dword size
@@ -70,12 +65,12 @@ macro load_image_file path,buf,size { ;макрос для загрузки изображений
 	cmp ebx,0xffffffff
 	je @f
 		;определяем вид изображения и переводим его во временный буфер image_data
-		stdcall dword[img_decode], dword[buf],ebx,0
-		mov dword[image_data],eax
+		stdcall [img_decode], [buf],ebx,0
+		mov [image_data],eax
 		;преобразуем изображение к формату rgb
-		stdcall dword[img_to_rgb2], dword[image_data],dword[buf]
+		stdcall [img_to_rgb2], [image_data],[buf]
 		;удаляем временный буфер image_data
-		stdcall dword[img_destroy], dword[image_data]
+		stdcall [img_destroy], [image_data]
 	@@:
 }
 
@@ -88,10 +83,10 @@ start:
 	mov	ebp,lib_0
 	cmp	dword [ebp+ll_struc_size-4],0
 	jz	@f
-		mcall -1 ;exit not correct
+		mcall SF_TERMINATE_PROCESS
 	@@:
-	mcall 48,3,sc,sizeof.system_colors
-	mcall 40,0xC0000027
+	mcall SF_STYLE_SETTINGS,SSF_GET_COLORS,sc,sizeof.system_colors
+	mcall SF_SET_EVENTS_MASK,0xC0000027
 	stdcall [OpenDialog_Init],OpenDialog_data ;подготовка диалога
 
 	stdcall [buf2d_create], buf_0 ;создание буфера
@@ -115,7 +110,7 @@ red_win:
 
 align 4
 still:
-	mcall 10
+	mcall SF_WAIT_EVENT
 
 	cmp al,1
 	jz red_win
@@ -132,47 +127,24 @@ still:
 align 4
 draw_window:
 pushad
-	mcall 12,1
+	mcall SF_REDRAW,SSF_BEGIN_DRAW
 
 	; *** рисование главного окна (выполняется 1 раз при запуске) ***
-	xor eax,eax
-	mov ebx,(20 shl 16)+480
-	mov ecx,(20 shl 16)+410
 	mov edx,[sc.work]
 	or  edx,(3 shl 24)+0x10000000+0x20000000
 	mov edi,caption
-	int 0x40
+	mcall SF_CREATE_WINDOW, (20 shl 16)+480, (20 shl 16)+410
 
 	; *** создание кнопок на панель ***
-	mov eax,8
-	mov ebx,(5 shl 16)+20
-	mov ecx,(5 shl 16)+20
-	mov edx,3
 	mov esi,[sc.work_button]
-	int 0x40
-
-	mov ebx,(30 shl 16)+20
-	mov edx,4
-	int 0x40
-
-	mov ebx,(55 shl 16)+20
-	mov edx,5
-	int 0x40
-
-	mov ebx,(85 shl 16)+20
-	mov edx,6
-	int 0x40
-
-	mov ebx,(110 shl 16)+20
-	mov edx,7
-	int 0x40
+	mcall SF_DEFINE_BUTTON, (5 shl 16)+20, (5 shl 16)+20, 3
+	mcall ,(30 shl 16)+20,,4
+	mcall ,(55 shl 16)+20,,5
+	mcall ,(85 shl 16)+20,,6
+	mcall ,(110 shl 16)+20,,7
 
 	; *** рисование иконок на кнопках ***
-	mov eax,7
-	mov ebx,[image_data_toolbar]
-	mov ecx,(16 shl 16)+16
-	mov edx,(7 shl 16)+7 ;icon new
-	int 0x40
+	mcall SF_PUT_IMAGE, [image_data_toolbar], (16 shl 16)+16, (7 shl 16)+7 ;icon new
 
 	add ebx,IMAGE_TOOLBAR_ICON_SIZE
 	add edx,(25 shl 16) ;icon open
@@ -193,13 +165,13 @@ pushad
 	; *** рисование буфера ***
 	stdcall [buf2d_draw], buf_0
 
-	mcall 12,2
+	mcall SF_REDRAW,SSF_END_DRAW
 popad
 	ret
 
 align 4
 key:
-	mcall 2
+	mcall SF_GET_KEY
 	stdcall [edit_box_key], dword edit1
 	jmp still
 
@@ -210,7 +182,7 @@ mouse:
 
 align 4
 button:
-	mcall 17
+	mcall SF_GET_BUTTON
 	cmp ah,3
 	jne @f
 		call but_new_file
@@ -238,7 +210,7 @@ button:
 	stdcall [buf2d_delete],buf_1 ;удаляем буфер
 	stdcall mem.Free,[image_data_toolbar]
 	stdcall mem.Free,[open_file]
-	mcall -1
+	mcall SF_TERMINATE_PROCESS
 
 
 align 4
@@ -261,8 +233,8 @@ but_open_file:
 	je .end_open_file
 	;код при удачном открытии диалога
 
-	mov eax,70 ;70-я функция работа с файлами
-	mov [run_file_70.Function], 0
+	mov eax,SF_FILE
+	mov [run_file_70.Function], SSF_READ_FILE
 	mov [run_file_70.Position], 0
 	mov [run_file_70.Flags], 0
 	mov dword[run_file_70.Count], max_open_file_size
@@ -275,9 +247,9 @@ but_open_file:
 	je .end_open_file
 
 	mov [open_file_size],ebx
-	add ebx,dword[open_file]
+	add ebx,[open_file]
 	mov byte[ebx],0 ;на случай если ранее был открыт файл большего размера чистим конец буфера с файлом
-	mcall 71,1,openfile_path
+	mcall SF_SET_CAPTION,1,openfile_path
 
 	call draw_file
 	.end_open_file:
@@ -292,7 +264,7 @@ pushad
 	je .open_file
 	mov eax,[open_file]
 	mov ebx,3
-	mov edx,dword[open_file_size]
+	mov edx,[open_file_size]
 	.cycle_0:
 		mov edi,txt_buf
 		mov esi,eax
@@ -319,7 +291,7 @@ pushad
 		jl @f
 		add eax,56
 		add ebx,10
-		cmp ebx,dword[buf_0.h]
+		cmp ebx,[buf_0.h]
 		jl .cycle_0
 	jmp @f
 	.open_file:
@@ -339,8 +311,8 @@ but_save_file:
 	je .end_save_file
 	;код при удачном открытии диалога
 
-	mov eax,70 ;70-я функция работа с файлами
-	mov [run_file_70.Function], 2
+	mov eax,SF_FILE
+	mov [run_file_70.Function], SSF_CREATE_FILE
 	mov [run_file_70.Position], 0
 	mov [run_file_70.Flags], 0
 	mov ebx, dword[open_file]
@@ -419,46 +391,23 @@ db 'ASM',0
 db 0
 
 
-
-head_f_i:
-head_f_l db 'Системная ошибка',0
-
 system_dir_0 db '/sys/lib/'
 lib_name_0 db 'proc_lib.obj',0
-err_message_found_lib_0 db 'Не найдена библиотека ',39,'proc_lib.obj',39,0
-err_message_import_0 db 'Ошибка при импорте библиотеки ',39,'proc_lib.obj',39,0
-
 system_dir_1 db '/sys/lib/'
 lib_name_1 db 'libimg.obj',0
-err_message_found_lib_1 db 'Не найдена библиотека ',39,'libimg.obj',39,0
-err_message_import_1 db 'Ошибка при импорте библиотеки ',39,'libimg.obj',39,0
-
 system_dir_2 db '/sys/lib/'
 lib_name_2 db 'buf2d.obj',0
-err_msg_found_lib_2 db 'Не найдена библиотека ',39,'buf2d.obj',39,0
-err_msg_import_2 db 'Ошибка при импорте библиотеки ',39,'buf2d',39,0
-
 system_dir_3 db '/sys/lib/'
 lib_name_3 db 'crypt_des.obj',0
-err_msg_found_lib_3 db 'Не найдена библиотека ',39,'crypt_des.obj',39,0
-err_msg_import_3 db 'Ошибка при импорте библиотеки ',39,'crypt_des',39,0
-
 system_dir_4 db '/sys/lib/'
 lib_name_4 db 'box_lib.obj',0
-err_msg_found_lib_4 db 'Не найдена библиотека ',39,'box_lib.obj',39,0
-err_msg_import_4 db 'Ошибка при импорте библиотеки ',39,'box_lib',39,0
 
 l_libs_start:
-	lib_0 l_libs lib_name_0, sys_path, file_name, system_dir_0,\
-		err_message_found_lib_0, head_f_l, proclib_import,err_message_import_0, head_f_i
-	lib_1 l_libs lib_name_1, sys_path, file_name, system_dir_1,\
-		err_message_found_lib_1, head_f_l, import_libimg, err_message_import_1, head_f_i
-	lib_2 l_libs lib_name_2, sys_path, library_path, system_dir_2,\
-		err_msg_found_lib_2,head_f_l,import_buf2d,err_msg_import_2,head_f_i
-	lib_3 l_libs lib_name_3, sys_path, library_path, system_dir_3,\
-		err_msg_found_lib_3,head_f_l,import_des,err_msg_import_3,head_f_i
-	lib_4 l_libs lib_name_4, sys_path, library_path, system_dir_4,\
-		err_msg_found_lib_4,head_f_l,import_box_lib,err_msg_import_4,head_f_i
+	lib_0 l_libs lib_name_0, file_name, system_dir_0, import_proclib
+	lib_1 l_libs lib_name_1, file_name, system_dir_1, import_libimg
+	lib_2 l_libs lib_name_2, library_path, system_dir_2, import_buf2d
+	lib_3 l_libs lib_name_3, library_path, system_dir_3, import_des
+	lib_4 l_libs lib_name_4, library_path, system_dir_4, import_box_lib
 l_libs_end:
 
 align 4
@@ -509,7 +458,7 @@ import_libimg:
 	aimg_draw    db 'img_draw',0
 
 align 4
-proclib_import: ;описание экспортируемых функций
+import_proclib: ;описание экспортируемых функций
 	OpenDialog_Init dd aOpenDialog_Init
 	OpenDialog_Start dd aOpenDialog_Start
 dd 0,0
@@ -592,10 +541,6 @@ import_box_lib:
 	;sz_edit_box_set_text db 'edit_box_set_text',0
 
 mouse_dd dd 0x0
-sc system_colors 
-
-align 16
-procinfo process_information 
 
 align 4
 buf_0: dd 0 ;указатель на буфер изображения
@@ -623,12 +568,14 @@ txt_buf rb 80
 txt_key db 'des_0123',0
 mem_key rb 120
 
+align 16
 i_end:
+	procinfo process_information
+	sc system_colors 
 	rb 2048
 stacktop:
 	sys_path rb 1024
-	file_name:
-		rb 1024 ;4096 
+	file_name rb 1024 ;4096 
 	library_path rb 1024
 	plugin_path rb 4096
 	openfile_path rb 4096

@@ -1,21 +1,16 @@
 use32
-	org 0x0
+	org 0
 	db 'MENUET01' ;идентиф. исполняемого файла всегда 8 байт
-	dd 0x1
-	dd start
-	dd i_end ;размер приложения
-	dd mem
-	dd stacktop
-	dd 0x0
-	dd sys_path
+	dd 1, start, i_end, mem, stacktop, 0, sys_path
 
 include '../../../macros.inc'
 include '../../../proc32.inc'
-include '../../../develop/libraries/box_lib/load_lib.mac'
+include '../../../KOSfuncs.inc'
+include '../../../load_lib.mac'
 include '../../../develop/libraries/box_lib/trunk/box_lib.mac' ;макросы для задания элементов box_lib
 include '../../../dll.inc'
 
-@use_library_mem mem.Alloc,mem.Free,mem.ReAlloc, dll.Load
+@use_library mem.Alloc,mem.Free,mem.ReAlloc, dll.Load
 
 ;флаги, для функции обрезания буфера
 BUF2D_OPT_CROP_TOP equ 1 ;обрезка сверху
@@ -129,16 +124,16 @@ macro load_image_file path,buf,size { ;макрос для загрузки изображений
 			db 0
 		@@:
 		;32 - стандартный адрес по которому должен быть буфер с системным путем
-		copy_path .path_str,[32],file_name,0x0
+		copy_path .path_str,[32],file_name,0
 	else
-		copy_path path,[32],file_name,0x0 ;формируем полный путь к файлу изображения, подразумеваем что он в одной папке с программой
+		copy_path path,[32],file_name,0 ;формируем полный путь к файлу изображения, подразумеваем что он в одной папке с программой
 	end if
 
 	stdcall mem.Alloc, dword size ;выделяем память для изображения
 	mov [buf],eax
 
-	mov eax,70 ;70-я функция работа с файлами
-	mov [run_file_70.Function], 0
+	mov eax,SF_FILE
+	mov [run_file_70.Function], SSF_READ_FILE
 	mov [run_file_70.Position], 0
 	mov [run_file_70.Flags], 0
 	mov [run_file_70.Count], dword size
@@ -150,12 +145,12 @@ macro load_image_file path,buf,size { ;макрос для загрузки изображений
 	cmp ebx,0xffffffff
 	je @f
 		;определяем вид изображения и переводим его во временный буфер image_data
-		stdcall dword[img_decode], dword[buf],ebx,0
-		mov dword[image_data],eax
+		stdcall [img_decode], [buf],ebx,0
+		mov [image_data],eax
 		;преобразуем изображение к формату rgb
-		stdcall dword[img_to_rgb2], dword[image_data],dword[buf]
+		stdcall [img_to_rgb2], [image_data],[buf]
 		;удаляем временный буфер image_data
-		stdcall dword[img_destroy], dword[image_data]
+		stdcall [img_destroy], [image_data]
 	@@:
 }
 
@@ -205,10 +200,10 @@ rand_next:
 ;x(k+1) = (a*x(k)+c) mod m
 ; a=22695477, c=1, m=2^32
 push eax
-	mov eax,dword[rand_x]
+	mov eax,[rand_x]
 	imul eax,22695477
 	inc eax
-	mov dword[rand_x],eax
+	mov [rand_x],eax
 pop eax
 	ret
 
@@ -218,13 +213,13 @@ pop eax
 ;по фоновому цвету и трафарет будет занимат ьмного места в памяти
 align 4
 proc CreateTrapharetBuffer uses eax edi, buf:dword, img_data:dword
-	mov edi,dword[buf]
+	mov edi,[buf]
 
 	;заполнение данных буфера
 	mov buf2d_size_lt,0
-	mov eax,dword[displ_w]
+	mov eax,[displ_w]
 	mov buf2d_w,eax
-	mov eax,dword[displ_h]
+	mov eax,[displ_h]
 	mov buf2d_h,eax
 	mov buf2d_color,0xffffff
 	mov buf2d_bits,24
@@ -438,7 +433,7 @@ CountEggsInc: ;увеличиваем счетчик яиц на 1
 		and ax,0xf ;через каждые 16 яиц уменьшаем время
 		cmp ax,0
 		jne @f
-			mov edi,dword[game_delay_min] ;минимальная задержка
+			mov edi,[game_delay_min] ;минимальная задержка
 			cmp dword[game_spd],edi
 			jle @f
 				dec dword[game_spd]
@@ -600,8 +595,8 @@ proc InitGame, b:dword ;первоначальные настройки игры
 		mov dword[game_spd],eax ;задержка игры
 	.end_init:
 
-	mcall 26,9
-	mov dword[rand_x],eax ;заполняем 1-е случайное число
+	mcall SF_SYSTEM_GET,SSF_TIME_COUNT
+	mov [rand_x],eax ;заполняем 1-е случайное число
 	pop ebx eax
 
 	ret
@@ -610,15 +605,15 @@ endp
 align 4
 proc LoadArrayBuffer, f_name:dword, buf_start:dword, count:dword
 	pushad
-	mov edx,dword[displ_bytes]
+	mov edx,[displ_bytes]
 	mov ecx,edx
-	imul ecx,dword[count]
-	mov eax,dword[f_name]
+	imul ecx,[count]
+	mov eax,[f_name]
 	load_image_file eax,image_data_gray,ecx
-		mov edx,dword[displ_bytes]
+		mov edx,[displ_bytes]
 		mov eax,[image_data_gray]
-		mov edi,dword[buf_start]
-		mov ecx,dword[count]
+		mov edi,[buf_start]
+		mov ecx,[count]
 		cld
 		@@: ;считываем 3 буфера с декорациями
 			stdcall CreateTrapharetBuffer,edi,eax
@@ -636,8 +631,8 @@ align 4
 user_is_select:
 	push eax ecx esi edi
 	stdcall [tl_node_get_data], tree1
-	cmp eax,0 ;если имя игры пустое
-	je @f
+	or eax,eax ;если имя игры пустое
+	jz @f
 		mov esi,eax	
 		mov edi,ini_name
 		mov ecx,FILE_NAME_MAX
@@ -659,39 +654,39 @@ align 4
 InitAll:
 	pushad
 	;работа с файлом настроек
-	copy_path ini_name,sys_path,file_name,0x0
-	stdcall dword[ini_get_int],file_name,ini_sec_files,key_displ_w,210
-	mov	dword[displ_w],eax
-	stdcall dword[ini_get_int],file_name,ini_sec_files,key_displ_h,140
-	mov	dword[displ_h],eax
-	stdcall dword[ini_get_str],file_name,ini_sec_files,key_file_decorat,fn_icon0,FILE_NAME_MAX,ini_def_decorat_file
-	stdcall dword[ini_get_str],file_name,ini_sec_files,key_file_unit,fn_icon1,FILE_NAME_MAX,ini_def_unit_file
-	stdcall dword[ini_get_str],file_name,ini_sec_files,key_file_objects,fn_icon2,FILE_NAME_MAX,ini_def_objects_file
-	stdcall dword[ini_get_str],file_name,ini_sec_files,key_file_lost,fn_icon3,FILE_NAME_MAX,ini_def_lost_file
+	copy_path ini_name,sys_path,file_name,0
+	stdcall [ini_get_int],file_name,ini_sec_files,key_displ_w,210
+	mov	[displ_w],eax
+	stdcall [ini_get_int],file_name,ini_sec_files,key_displ_h,140
+	mov	[displ_h],eax
+	stdcall [ini_get_str],file_name,ini_sec_files,key_file_decorat,fn_icon0,FILE_NAME_MAX,ini_def_decorat_file
+	stdcall [ini_get_str],file_name,ini_sec_files,key_file_unit,fn_icon1,FILE_NAME_MAX,ini_def_unit_file
+	stdcall [ini_get_str],file_name,ini_sec_files,key_file_objects,fn_icon2,FILE_NAME_MAX,ini_def_objects_file
+	stdcall [ini_get_str],file_name,ini_sec_files,key_file_lost,fn_icon3,FILE_NAME_MAX,ini_def_lost_file
 
-	stdcall dword[ini_get_int],file_name,ini_sec_files,key_shadow_x,2
-	mov	dword[offs_shadow_x],eax
-	stdcall dword[ini_get_int],file_name,ini_sec_files,key_shadow_y,2
-	mov	dword[offs_shadow_y],eax
+	stdcall [ini_get_int],file_name,ini_sec_files,key_shadow_x,2
+	mov	[offs_shadow_x],eax
+	stdcall [ini_get_int],file_name,ini_sec_files,key_shadow_y,2
+	mov	[offs_shadow_y],eax
 
 	;считывание настроек влияющих на скорсть игры
-	stdcall dword[ini_get_int],file_name,ini_sec_game,key_delay_a,65
-	mov	dword[game_delay_a],eax
-	stdcall dword[ini_get_int],file_name,ini_sec_game,key_delay_b,35
-	mov	dword[game_delay_b],eax
-	stdcall dword[ini_get_int],file_name,ini_sec_game,key_delay_min,15
-	mov	dword[game_delay_min],eax
+	stdcall [ini_get_int],file_name,ini_sec_game,key_delay_a,65
+	mov	[game_delay_a],eax
+	stdcall [ini_get_int],file_name,ini_sec_game,key_delay_b,35
+	mov	[game_delay_b],eax
+	stdcall [ini_get_int],file_name,ini_sec_game,key_delay_min,15
+	mov	[game_delay_min],eax
 	
-	stdcall dword[ini_get_color],file_name,ini_sec_color,key_color_fon,0xffffff
-	mov	dword[color_fon],eax
-	stdcall dword[ini_get_color],file_name,ini_sec_color,key_color_shadows,0xd0d0d0
-	mov	dword[color_shadows],eax
-	stdcall dword[ini_get_color],file_name,ini_sec_color,key_color_unit,0
-	mov	dword[color_wolf],eax
-	stdcall dword[ini_get_color],file_name,ini_sec_color,key_color_egg,0x404080
-	mov	dword[color_egg],eax
-	stdcall dword[ini_get_color],file_name,ini_sec_color,key_color_chick,0x00d0d0
-	mov	dword[color_chick],eax
+	stdcall [ini_get_color],file_name,ini_sec_color,key_color_fon,0xffffff
+	mov	[color_fon],eax
+	stdcall [ini_get_color],file_name,ini_sec_color,key_color_shadows,0xd0d0d0
+	mov	[color_shadows],eax
+	stdcall [ini_get_color],file_name,ini_sec_color,key_color_unit,0
+	mov	[color_wolf],eax
+	stdcall [ini_get_color],file_name,ini_sec_color,key_color_egg,0x404080
+	mov	[color_egg],eax
+	stdcall [ini_get_color],file_name,ini_sec_color,key_color_chick,0x00d0d0
+	mov	[color_chick],eax
 
 	mov ebx,color_decorat
 	mov byte[key_color_decorat.ind],'0'
@@ -699,17 +694,17 @@ InitAll:
 	cld
 	@@:
 		push ecx ;функция ini_get_color имеет право манять регистр ecx
-		stdcall dword[ini_get_color],file_name,ini_sec_color,key_color_decorat,0x000080
+		stdcall [ini_get_color],file_name,ini_sec_color,key_color_decorat,0x000080
 		pop ecx
-		mov dword[ebx],eax
+		mov [ebx],eax
 		add ebx,4
 		inc byte[key_color_decorat.ind]
 		loop @b
 
-	mov edx,dword[displ_w]
-	imul edx,dword[displ_h]
+	mov edx,[displ_w]
+	imul edx,[displ_h]
 	lea edx,[edx+edx*2]
-	mov dword[displ_bytes],edx ;вычисляем размер игрового поля
+	mov [displ_bytes],edx ;вычисляем размер игрового поля
 
 	stdcall LoadArrayBuffer, fn_icon0, buf_decor,3 ;считываем 3 буфера с декорациями
 	stdcall LoadArrayBuffer, fn_icon1, buf_wolf,9 ;считываем 9 буферов с волком и зайцем
@@ -761,11 +756,11 @@ start:
 	jnz @f
 	jmp .lib
 	@@:
-		mcall -1 ;exit not correct
+		mcall SF_TERMINATE_PROCESS
 	.lib:
 
-	mcall 40,0x27
-	mcall 48,3,sc,sizeof.system_colors ;получаем системные цвета
+	mcall SF_SET_EVENTS_MASK,0x27
+	mcall SF_STYLE_SETTINGS,SSF_GET_COLORS,sc,sizeof.system_colors
 
 ;******************************************************************************
 ; подготовка списка игр
@@ -780,9 +775,9 @@ start:
 	m2m dword[tree1.data_img_sys],buf2d_data
 
 	;работа с главным файлом настроек
-	copy_path ini_m_name,sys_path,file_name,0x0
+	copy_path ini_m_name,sys_path,file_name,0
 
-	stdcall dword[ini_get_int],file_name,ini_sec_files,key_count,1
+	stdcall [ini_get_int],file_name,ini_sec_files,key_count,1
 	mov	ecx,eax
 	mov dl,'0'
 	cld
@@ -790,14 +785,14 @@ start:
 		mov byte[key_game_ind],dl
 		inc dl
 		push ecx edx
-		stdcall dword[ini_get_str],file_name,ini_sec_files,key_game,txt_tile_type_0,FILE_NAME_MAX,ini_def_decorat_file
-		stdcall dword[tl_node_add], tree1, 0, txt_tile_type_0 ;добавляем название игры
-		stdcall dword[tl_cur_next], tree1 ;переносим курсор вниз, что-бы не поменялся порядок игр
+		stdcall [ini_get_str],file_name,ini_sec_files,key_game,txt_tile_type_0,FILE_NAME_MAX,ini_def_decorat_file
+		stdcall [tl_node_add], tree1, 0, txt_tile_type_0 ;добавляем название игры
+		stdcall [tl_cur_next], tree1 ;переносим курсор вниз, что-бы не поменялся порядок игр
 		pop edx ecx
 	loop @b
-	stdcall dword[tl_cur_beg], tree1 ;переносим курсор вверх
+	stdcall [tl_cur_beg], tree1 ;переносим курсор вверх
 
-	mcall 26,9
+	mcall SF_SYSTEM_GET,SSF_TIME_COUNT
 	mov [last_time],eax
 
 
@@ -812,21 +807,21 @@ still: ;главный цикл
 	cmp byte[game_select_mode],0
 	jne .select_mode
 	
-	mcall 26,9 ;берем системное время
+	mcall SF_SYSTEM_GET,SSF_TIME_COUNT
 	mov ebx,[last_time]
-	add ebx,dword[game_spd] ;delay
+	add ebx,[game_spd] ;delay
 	sub ebx,eax
-	cmp ebx,dword[game_spd] ;delay
+	cmp ebx,[game_spd] ;delay
 	ja it_is_time_now
 	test ebx,ebx
 	jz it_is_time_now
-	mcall 23
-	cmp eax,0
-	je it_is_time_now
+	mcall SF_WAIT_EVENT_TIMEOUT
+	or eax,eax
+	jz it_is_time_now
 
 	jmp @f
 	.select_mode:
-		mcall 10
+		mcall SF_WAIT_EVENT
 	@@:
 
 	cmp al,1 ;изменилось положение окна
@@ -850,7 +845,7 @@ mouse:
 
 align 4
 it_is_time_now:
-	mcall 26,9
+	mcall SF_SYSTEM_GET,SSF_TIME_COUNT
 	mov [last_time],eax
 
 	;cmp byte[game_select_mode],0
@@ -864,7 +859,7 @@ it_is_time_now:
 align 4
 key:
 	push eax ebx
-	mcall 2
+	mcall SF_GET_KEY
 
 	cmp byte[game_select_mode],0
 	je @f
@@ -914,7 +909,7 @@ key:
 align 4
 draw_window:
 	pushad
-	mcall 12,1
+	mcall SF_REDRAW,SSF_BEGIN_DRAW
 
 	xor eax,eax
 	mov ebx,20*65536+480
@@ -924,28 +919,28 @@ draw_window:
 	or edx,0x73000000
 	mov edi,hed
 	mcall ;создание окна
-	mcall 9,procinfo,-1
+	mcall SF_THREAD_INFO,procinfo,-1
 
 	cmp byte[game_select_mode],0
 	jne .select_mode
 
 	mov edi,buf_displ
-	mov eax,dword[procinfo.client_box.width]
-	cmp eax,dword[displ_w]
+	mov eax,[procinfo.client_box.width]
+	cmp eax,[displ_w]
 	jle @f
-		sub eax,dword[displ_w]
+		sub eax,[displ_w]
 		shr eax,1
 		mov buf2d_l,ax ;выправниваем буфер по центру окна
 	@@:
 
 	call draw_display
 
-	mov eax,13 ;рисование прямоугольника
+	mov eax,SF_DRAW_RECT
 	mov edx,[sc.work]
 	xor esi,esi
 	mov si,buf2d_l
-	add esi,dword[displ_w]
-	mov ebx,dword[procinfo.client_box.width]
+	add esi,[displ_w]
+	mov ebx,[procinfo.client_box.width]
 	inc ebx
 	cmp esi,ebx
 	jge @f
@@ -953,41 +948,37 @@ draw_window:
 		rol ebx,16
 		mov bx,si
 		rol ebx,16
-		mov ecx,dword[procinfo.client_box.height]
+		mov ecx,[procinfo.client_box.height]
 		inc ecx
 		int 0x40 ;рисование правого бокового поля
 		jmp .draw_s
 	@@:
-		mov esi,dword[procinfo.client_box.width] ;когда по ширине не влазит
+		mov esi,[procinfo.client_box.width] ;когда по ширине не влазит
 		inc esi
 	.draw_s:
 
 	; *** рисование кнопок ***
 push esi
-	mov eax,8
-	xor ebx,ebx
-	mov bx,buf2d_l
+	movzx ebx,buf2d_l
 	add ebx,buf2d_w
 	add ebx,BUT1_L
 	shl ebx,16
 	mov bx,BUT1_W
 	mov ecx,BUT1_T*65536+BUT1_H
-	mov edx,5
-	;or edx,0x40000000
-	mov esi,dword[color_but_sm]
-	int 0x40
+	mov esi,[color_but_sm]
+	mcall SF_DEFINE_BUTTON,,,5
 
 	inc edx
 	add ecx,BUT1_NEXT_TOP
 	int 0x40
 pop esi
 
-	mov bx,BUT1_H
-	add ebx,3*65536;+3
-	mov ecx,dword[color_but_te]
+	mov bx,BUT1_H-4
+	add ebx,8 shl 16
+	mov ecx,[color_but_te]
 	or  ecx,0x80000000
 	mov edx,txt_game_a
-	mcall 4
+	mcall SF_DRAW_TEXT
 
 	ror ebx,16
 	add ebx,BUT1_NEXT_TOP
@@ -996,13 +987,13 @@ pop esi
 	int 0x40
 
 	; *** восстановление параметров ***
-	mov eax,13 ;рисование прямоугольника
+	mov eax,SF_DRAW_RECT
 	mov edx,[sc.work]
 
 	mov ebx,esi
-	mov ecx,dword[procinfo.client_box.height]
+	mov ecx,[procinfo.client_box.height]
 	inc ecx
-	mov esi,dword[displ_h]
+	mov esi,[displ_h]
 	cmp esi,ebx
 	jge @f
 		sub ecx,esi
@@ -1014,18 +1005,18 @@ pop esi
 	
 	xor ebx,ebx
 	mov bx,buf2d_l
-	mov ecx,dword[displ_h]
+	mov ecx,[displ_h]
 	int 0x40 ;рисование левого бокового поля
 
 	jmp @f
 	.select_mode:
-		stdcall dword[tl_draw],dword tree1
+		stdcall [tl_draw], tree1
 		mov edi,tree1
 		add edi,tl_offs_box
 		stdcall draw_rect_border, procinfo.client_box, edi
 	@@:
 
-	mcall 12,2
+	mcall SF_REDRAW,SSF_END_DRAW
 	popad
 	ret
 
@@ -1035,15 +1026,15 @@ pop esi
 align 4
 proc draw_rect_border, client_rect:dword, user_box:dword
 	pushad
-	mov esi,dword[user_box]
+	mov esi,[user_box]
 	cmp esi,0
 	je @f
-		mov edi,dword[client_rect]
+		mov edi,[client_rect]
 		mov ebx,dword[edi+8] ;+8 = width
 		inc bx
 		mov ecx,dword[esi+4] ;+4 = top
 		mov edx,[sc.work]
-		mcall 13 ;top
+		mcall SF_DRAW_RECT ;top
 
 		mov eax,dword[esi+4] ;+4 = top
 		add eax,dword[esi+12] ;+12 = height
@@ -1054,7 +1045,7 @@ proc draw_rect_border, client_rect:dword, user_box:dword
 			mov cx,word[edi+12] ;+12 = bottom
 			inc cx
 			sub cx,ax
-			mcall 13 ;bottom
+			mcall SF_DRAW_RECT ;bottom
 		.no_bottom:
 
 		mov ebx,dword[esi] ;+0 left
@@ -1062,7 +1053,7 @@ proc draw_rect_border, client_rect:dword, user_box:dword
 		shl ecx,16
 		mov cx,word[esi+12] ;+12 = height
 		inc cx 
-		mcall 13 ;left
+		mcall SF_DRAW_RECT ;left
 
 		mov eax,dword[esi] ;+0 left
 		add eax,dword[esi+8] ;+8 = width
@@ -1071,7 +1062,7 @@ proc draw_rect_border, client_rect:dword, user_box:dword
 		mov bx,word[edi+8] ;+8 = right
 		sub bx,ax
 		inc bx
-		mcall 13 ;right
+		mcall SF_DRAW_RECT ;right
 	@@:
 	popad
 	ret
@@ -1080,13 +1071,13 @@ endp
 align 4
 draw_display:
 
-	stdcall mem_copy, dword[buf_fon],dword[buf_displ],dword[displ_bytes] ;копирование изображения из фонового буфера
+	stdcall mem_copy, [buf_fon],[buf_displ],[displ_bytes] ;копирование изображения из фонового буфера
 	call DrawZaac ;рисуем зайца
 	call DrawWolf ;рисуем волка
 	call DrawEggs ;рисуем яйца
 
 push eax
-	mov eax,dword[displ_w]
+	mov eax,[displ_w]
 	shr eax,1
 	stdcall [buf2d_draw_text], buf_displ, buf_font,game_text,eax,[offs_shadow_x],[color_wolf] ;рисуем строку с текстом
 pop eax
@@ -1095,7 +1086,7 @@ pop eax
 
 align 4
 button:
-	mcall 17 ;получить код нажатой кнопки
+	mcall SF_GET_BUTTON
 
 	cmp ah,5
 	jne @f
@@ -1142,73 +1133,65 @@ button:
 
 	mov dword[tree1.data_img_sys],0 ;чистим указатель на изображение
 	stdcall dword[tl_data_clear], tree1
-	mcall -1 ;выход из программы
-
-head_f_i:
-head_f_l  db 'Системная ошибка',0
+	mcall SF_TERMINATE_PROCESS
 
 system_dir0 db '/sys/lib/'
 lib0_name db 'buf2d.obj',0
-err_message_found_lib0 db 'Не удалось найти библиотеку buf2d.obj',0
-err_message_import0 db 'Ошибка при импорте библиотеки buf2d.obj',0
-
 system_dir1 db '/sys/lib/'
 lib1_name db 'libimg.obj',0
-err_message_found_lib1 db 'Не удалось найти библиотеку libimg.obj',0
-err_message_import1 db 'Ошибка при импорте библиотеки libimg.obj',0
-
 system_dir2 db '/sys/lib/'
 lib2_name db 'libini.obj',0
-err_message_found_lib2 db 'Не удалось найти библиотеку libini.obj',0
-err_message_import2 db 'Ошибка при импорте библиотеки libini.obj',0
-
 system_dir3 db '/sys/lib/'
 lib3_name db 'box_lib.obj',0
-err_message_found_lib3 db 'Не удалось найти библиотеку box_lib.obj',0
-err_message_import3 db 'Ошибка при импорте библиотеки box_lib.obj',0
 
 ;library structures
 l_libs_start:
-	lib0 l_libs lib0_name,	sys_path, file_name, system_dir0, err_message_found_lib0, head_f_l, import_buf2d_lib, err_message_import0, head_f_i
-	lib1 l_libs lib1_name, sys_path, file_name, system_dir1, err_message_found_lib1, head_f_l, import_libimg, err_message_import1, head_f_i
-	lib2 l_libs lib2_name, sys_path, file_name, system_dir2, err_message_found_lib2, head_f_l, import_libini, err_message_import2, head_f_i
-	lib3 l_libs lib3_name, sys_path, file_name, system_dir3, err_message_found_lib3, head_f_l, import_box_lib, err_message_import3, head_f_i
+	lib0 l_libs lib0_name, file_name, system_dir0, import_buf2d_lib
+	lib1 l_libs lib1_name, file_name, system_dir1, import_libimg
+	lib2 l_libs lib2_name, file_name, system_dir2, import_libini
+	lib3 l_libs lib3_name, file_name, system_dir3, import_box_lib
 load_lib_end:
 
 align 4
 proc mem_copy uses ecx esi edi, source:dword, destination:dword, len:dword
 	cld
-	mov esi, dword[source]
-	mov edi, dword[destination]
-	mov ecx, dword[len]
+	mov esi, [source]
+	mov edi, [destination]
+	mov ecx, [len]
 	rep movsb
 	ret
 endp
 
+;input:
+; eax - число
+; edi - буфер для строки
 align 4
 convert_to_str:
 	pushad
-	mov dword[edi+1],0
-	cld
+	lea esi,[edi+8] ;8 - длинна буфера -1
 	call .str
 	popad
 	ret
 
 align 4
 .str:
-  mov ecx,0x0a ;задается система счисления изменяются регистры ebx,eax,ecx,edx входные параметры eax - число
-    ;преревод числа в ASCII строку взодные данные ecx=система счисленя edi адрес куда записывать, будем строку, причем конец переменной 
-  cmp eax,ecx  ;сравнить если в eax меньше чем в ecx то перейти на @@-1 т.е. на pop eax
-  jb @f
-  xor edx,edx  ;очистить edx
-  div ecx      ;разделить - остаток в edx
-  push edx     ;положить в стек
-  call .str;перейти на саму себя т.е. вызвать саму себя и так до того момента пока в eax не станет меньше чем в ecx
-  pop eax
-  @@: ;cmp al,10 ;проверить не меньше ли значение в al чем 10 (для системы счисленя 10 данная команда - лишная))
-  or al,0x30  ;данная команда короче  чем две выше 
-  stosb       ;записать элемент из регистра al в ячеку памяти es:edi
-  ret	      ;вернуться очень интересный ход т.к. пока в стеке храниться кол-во вызовов то столько раз мы и будем вызываться
+	mov ecx,10
+	cmp eax,ecx
+	jb @f
+		xor edx,edx
+		div ecx
+		push edx
+		;dec edi  ;смещение необходимое для записи с конца строки
+		call .str
+		pop eax
+	@@:
+	cmp edi,esi
+	jge @f
+		or al,0x30
+		stosb
+		mov byte[edi],0 ;в конец строки ставим 0, что-бы не вылазил мусор
+	@@:
+	ret
 
 
 last_time dd 0
@@ -1216,7 +1199,7 @@ image_data dd 0 ;память для преобразования картинки функциями libimg
 image_data_gray dd 0 ;память с временными серыми изображениями в формате 24-bit, из которых будут создаваться трафареты
 
 run_file_70 FileInfoBlock
-hed db 'Nu pogodi 10.11.15',0 ;подпись окна
+hed db 'Nu pogodi 10.12.20',0 ;подпись окна
 sc system_colors  ;системные цвета
 
 count_of_dir_list_files equ 10

@@ -814,9 +814,9 @@ tree3 tree_list MAX_OBJECT_SIZE,3, tl_key_no_edit+tl_list_box_mode,\
 	16,16, 0xffffff,0xb0d0ff,0x400040, 5,290,303,140, 16, 4,0, el_focus,\
 	w_scr_t3,get_point_coords
 
-edit1 edit_box 80,  76, 269, 0xffd0d0, 0xff, 0x80ff, 0, 0x8000, 34, string1, mouse_dd, 0
-edit2 edit_box 80, 160, 269, 0xd0d0ff, 0xff, 0x80ff, 0, 0x8000, 34, string2, mouse_dd, 0
-edit3 edit_box 80, 244, 269, 0xd0ffd0, 0xff, 0x80ff, 0, 0x8000, 34, string3, mouse_dd, 0
+edit1 edit_box 80,  76, 269, 0xffd0d0, 0xff, 0x80ff, 0, 0x8000, 32, string1, mouse_dd, 0
+edit2 edit_box 80, 160, 269, 0xd0d0ff, 0xff, 0x80ff, 0, 0x8000, 32, string2, mouse_dd, 0
+edit3 edit_box 80, 244, 269, 0xd0ffd0, 0xff, 0x80ff, 0, 0x8000, 32, string3, mouse_dd, 0
 editboxes_end:
 
 string1 rb 34
