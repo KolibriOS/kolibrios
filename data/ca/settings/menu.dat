@@ -74,7 +74,6 @@ Dispositius               /sys/setup
 Generador de fons         /sys/media/palitra
 Colors i Apariència       /sys/skincfg
 Dreseres de teclat        /sys/mykey
-Mode de vídeo ATI         /sys/vmode
 #9    **** SENSORS ****
 Procesos                  /sys/cpu
 Dispositius PCI           /sys/pcidev

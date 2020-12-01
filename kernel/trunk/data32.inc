@@ -168,7 +168,6 @@ ud_user_message db 'Error: unsupported processor instruction',0
 mtrr_user_message db '"There is a problem with MTRR configuration.\nPerformance can be low" -dW',0
 end if
 
-vmode          db  '/sys/drivers/VMODE.MDR',0
 kernel_file_load:
 ; load kernel.mnt to _CLEAN_ZONE
         dd      0       ; subfunction

@@ -26,7 +26,6 @@ img_files = {
  {"LANG.INC", build_type .. "/lang.inc"},
  {"NOTIFY3.PNG", "common/notify3.png"},
  {"UNIMG", PROGS .. "/fs/unimg/unimg"},
- {"VMODE", "common/vmode"},
  {"3D/HOUSE.3DS", "common/3d/house.3ds"},
  {"DEVELOP/T_EDIT.INI", PROGS .. "/other/t_edit/t_edit.ini"},
  {"File Managers/ICONS.INI", "common/File Managers/icons.ini"},
@@ -187,8 +186,6 @@ extra_files = {
  {"kolibrios/develop/tcc/samples/", PROGS ..  "/develop/ktcc/trunk/samples/*"},
  {"kolibrios/develop/tcc/samples/clayer/", PROGS ..  "/develop/ktcc/trunk/samples/clayer/*"},
  {"kolibrios/develop/TinyBasic/", "common/develop/TinyBasic/*"},
- {"kolibrios/utils/cnc_editor/cnc_editor", PROGS .. "/other/cnc_editor/cnc_editor"},
- {"kolibrios/utils/cnc_editor/kolibri.NC", PROGS .. "/other/cnc_editor/kolibri.NC"},
  {"kolibrios/emul/", "common/emul/*"},
  {"kolibrios/emul/dosbox/", "common/emul/DosBox/*"},
  {"kolibrios/emul/e80/readme.txt", PROGS .. "/emulator/e80/trunk/readme.txt"},
@@ -276,6 +273,9 @@ extra_files = {
  {"kolibrios/res/templates/NES/", "common/templates/NES/*"},
  {"kolibrios/res/wallpapers/", "common/wallpapers/*"},
  {"kolibrios/res/system/", build_type .. "/settings/kolibri.lbl"},
+ {"kolibrios/utils/cnc_editor/cnc_editor", PROGS .. "/other/cnc_editor/cnc_editor"},
+ {"kolibrios/utils/cnc_editor/kolibri.NC", PROGS .. "/other/cnc_editor/kolibri.NC"},
+ {"kolibrios/utils/vmode", "common/vmode"},
  }
 if build_type == "rus" then tup.append_table(extra_files, {
  {"Docs/cp866/config.txt", build_type .. "/docs/CONFIG.TXT"},
