@@ -10,7 +10,7 @@ set CC=kos32-tcc
 set CFLAGS=-c -nostdinc -DGNUC -I"%cd%\%INCLUDE%" -Wall
 set AR=kos32-ar
 set ASM=fasm
-set dirs=stdio memory kolibrisys string stdlib math dlfcn libgen
+set dirs=stdio memory kolibrisys string stdlib math dlfcn libgen fs
 rem #### END OF CONFIG SECTION ####
 
 set objs=
