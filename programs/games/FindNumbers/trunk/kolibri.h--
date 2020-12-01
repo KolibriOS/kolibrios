@@ -6,14 +6,12 @@ char   os_name[8]   = {'M','E','N','U','E','T','0','1'};
 dword  os_version   = 0x00000001;
 dword  start_addr   = #main;
 dword  final_addr   = #stop+32;
-dword  alloc_mem    = 0x00100000;
-dword  x86esp_reg   = 0x00100000;
-dword  I_Param      = #param;
+dword  alloc_mem    = 0x0090000;
+dword  x86esp_reg   = 0x0090000;
+dword  I_Param      = 0x0;
 dword  I_Icon       = 0x0;
-char param[256]="";
 
 //Events
-#define evMouse	6
 #define evButton	3
 #define evKey		2
 #define evReDraw	1
@@ -44,31 +42,27 @@ inline fastcall word GetButtonID(){
  EAX = EAX >> 8;
 }
 
-inline fastcall dword strlen(dword EDI){
-	EAX=0;
-	ECX=-1;
-	$REPNE $SCASB
-	EAX-=2+ECX;
+inline fastcall ExitProcess(){
+ EAX = -1;              // close this program
+ $int 0x40
 }
 
-byte WindowRePaint=0;
-inline fastcall void WindowRedrawStatus(dword EBX)
+void DefineAndDrawWindow(dword x,y,sizeX,sizeY,byte mainAreaType,dword mainAreaColour,EDI)
 {
 	EAX = 12;              // function 12:tell os about windowdraw
+	EBX = 1;
 	$int 0x40
-	IF (EBX==1) WindowRePaint=1; ELSE WindowRePaint=0;
-}
-
-void DefineAndDrawWindow(dword x,y,sizeX,sizeY,byte mainAreaType,dword mainAreaColour,byte headerType,dword headerColour,EDI)
-{
+	
 	EBX = x << 16 + sizeX;
 	ECX = y << 16 + sizeY;
 	EDX = mainAreaType << 24 | mainAreaColour;
-	ESI = headerType << 24 | headerColour;
 	$xor eax,eax
 	$int 0x40
-}   
-
+	
+	EAX = 12;              // function 12:tell os about windowdraw
+	EBX = 2;
+	$int 0x40
+}
 
 void WriteText(dword x,y,byte fontType, dword color, EDX, ESI)
 {
@@ -80,14 +74,12 @@ void WriteText(dword x,y,byte fontType, dword color, EDX, ESI)
 
 void WriteNumber(dword x,y,byte fontType, ESI, ECX) 
 {
-EAX = 47;
-EBX = 2<<16;
-EDX = x<<16+y;
-ESI = fontType<<24+ESI;
-$int 0x40;
+	EAX = 47;
+	EBX = 2<<16;
+	EDX = x<<16+y;
+	ESI = fontType<<24+ESI;
+	$int 0x40;
 } 
-
-
 
 void DrawBar(dword x,y,w,h,EDX)
 {
@@ -111,16 +103,6 @@ inline fastcall void DeleteButton(dword EDX)
 	EDX += BT_DEL;
 	$int 0x40;
 }
-
-void DrawFlatButton(dword x,y,width,height,id,color,text)
-{
-	DrawRegion_3D(x,y,width,height,0x94AECE,0x94AECE);
-	DrawRegion_3D(x+1,y+1,width-2,height-2,0xFFFFFF,0xC7C7C7);
-	DrawBar(x+2,y+2,width-3,height-3,color); //§ «ЁўЄ 
-	IF (id<>0)	DefineButton(x,y,width,height,id+BT_HIDE,0xEFEBEF); //Є­®ЇЄ 
-	WriteText(-strlen(text)*6+width/2+x+1,height/2-3+y,0x80,0,text,0);
-}
-
 
 dword generator;  // random number generator - для генерации случайных чисел
 
@@ -152,17 +134,4 @@ dword generator;  // random number generator - для генерации случайных чисел
     ror eax,16
   }
   generator = EAX;
-}
-
-inline fastcall ExitProcess(){
- EAX = -1;              // close this program
- $int 0x40
-}
-
-void DrawRegion_3D(dword x,y,width,height,color1,color2)
-{
-	DrawBar(x,y,width+1,1,color1);
-	DrawBar(x,y+1,1,height-1,color1);
-	DrawBar(x+width,y+1,1,height,color2);
-	DrawBar(x,y+height,width,1,color2);
 }

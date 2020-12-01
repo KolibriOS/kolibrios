@@ -1,8 +1,7 @@
 //(C) Artemonische, 2010
 
 #pragma option meos
-//#include "..\lib\kolibri.h--" //подключаем библиотеку с KolibriOS API
-#include "kolibri.h--"
+#include "kolibri.h--" //подключаем библиотеку с KolibriOS API
 
 #ifndef AUTOBUILD
 #include "lang.h--"
@@ -28,87 +27,71 @@
 	?define BOT_RIGHT_TEXT "Remains to find: "
 	?define BOT_LEFT_NUMBER_COL 116
 	?define BOT_RIGHT_NUMBER_COL 252
-	?define F2_TEXT "Anew (F2)"
+	?define F2_TEXT " Anew (F2) "
 	?define WIN_TEXT "You have found all numbers! :)"
 #endif
 
-int find=10;
-struct
-	{
+int find;
+struct {
 	int x;
 	int y;
 	int button_id;
 	int mark;
 	int text;
-	}box[81];
+}box[81];
+
+#define BUTTON_NEW_GAME 582
 
 void main()
 {	
 	int button,tempi,tempj;
 	randomize();
-	initialization();
-	draw_window();
-	draw_buttons();
-	loop()
+	new_game();
+	loop() switch(@WaitEvent())
 	{
-		switch(WaitEvent())
-		{
-			case evButton:
-				button=GetButtonID();
-				IF (button==1)
+		case evButton:
+			button=@GetButtonID();
+			IF (button==1)
+				{
+				ExitProcess();
+				}
+			IF (button==BUTTON_NEW_GAME)
+				{
+				new_game();
+				}
+			if (button>500) && (button<BUTTON_NEW_GAME) && (box[button-500].text == find)
+				{
+				box[button-500].mark=2;
+				find++;
+				IF (find==91)
 					{
-					ExitProcess();
-					}
-				IF (button==582)
-					{
-					find=10;
-					initialization();
 					draw_window();
-					draw_buttons();
 					}
-				if (button>500) && (button<582) && (box[button-500].text == find)
+				else
 					{
-					box[button-500].mark=2;
-					find++;
-					IF (find==91)
-						{
-						draw_window();
-						}
-					else
-						{
-						DeleteButton(button);
-						tempi=box[button-500].y*30-30;
-						tempj=30*box[button-500].x-16;
-						DrawBar(tempi,tempj,30,30,0xDCFFDC);
-						DrawBar(70,289,16,8,0xDCFFDC);
-						DrawBar(252,289,16,8,0xDCFFDC);
-						WriteNumber(70,289,0x80,0,find);
-						WriteNumber(252,289,0x80,0,90-find+1);
-						}
+					DeleteButton(button);
+					tempi=box[button-500].y*30-30;
+					tempj=30*box[button-500].x-16;
+					DrawBar(tempi,tempj,30,30,0xDCFFDC);
+					DrawBar(70,289,16,8,0xDCFFDC);
+					DrawBar(252,289,16,8,0xDCFFDC);
+					WriteNumber(70,289,0x80,0,find);
+					WriteNumber(252,289,0x80,0,90-find+1);
 					}
-				BREAK;
-			case evKey: //если произошло нажатие клавиши на клавиатуре
-				IF (GetKey()==051)
-					{
-					find=10;
-					initialization();
-					draw_window();
-					draw_buttons();
-					}
-				BREAK;
-			case evReDraw:
-				draw_window();
-				draw_buttons();
-				break;
-		}
+				}
+			BREAK;
+		case evKey: //если произошло нажатие клавиши на клавиатуре
+			IF (@GetKey()==051) new_game(); //F2
+			BREAK;
+		case evReDraw:
+			draw_window();
+			draw_buttons();
 	}
-	ExitProcess();
 }
 
 void draw_window()
 {
-	WindowRedrawStatus(1); //начало перерисовки окна
-	DefineAndDrawWindow(300,176,280,340,0x34,0xDCFFDC,0,0,"FindNumbers v1.1"); //рисуем окно
+	DefineAndDrawWindow(300,176,280,343,0x34,0xDCFFDC,"FindNumbers");
 	DrawBar(0,13,271,1,0x0CFF0C); //линия сверху
 	DrawBar(0,285,271,1,0x0CFF0C);
 	DrawBar(0,299,271,1,0x0CFF0C); //линия снизу
@@ -119,15 +102,28 @@ void draw_window()
 		WriteText(BOT_RIGHT_TEXT_COL,289,0x80,0x000000,BOT_RIGHT_TEXT);
 		WriteNumber(BOT_LEFT_NUMBER_COL,289,0x80,0,find);
 		WriteNumber(BOT_RIGHT_NUMBER_COL,289,0x80,0,90-find+1);
-		DrawFlatButton(155,300,115,14,582,0xAFFFAF,F2_TEXT);
+		DrawNewGameButton(155,300,115,14,0xAFFFAF);
 		WriteText(2,304,0x80,0x000000,"Made by Artemonische,2010");
 		}
 	IF (find==91)
 		{
 		WriteText(70,100,0x80,0x000000,WIN_TEXT);
-		DrawFlatButton(100,110,70,20,582,0xE4DFE1,F2_TEXT);
+		DrawNewGameButton(100,110,70,20,0xE4DFE1);
 		}
-	WindowRedrawStatus(2); //конец перерисовки окна
+}
+
+void DrawNewGameButton(dword x,y,width,height,color)
+{
+	DefineButton(x,y,width,height,BUTTON_NEW_GAME,color);
+	WriteText(-11*6+width/2+x+1,height/2-3+y,0x80,0,F2_TEXT,0);
+}
+
+void new_game()
+{
+	find=10;
+	initialization();
+	draw_window();
+	draw_buttons();
 }
 
 void draw_buttons()
