@@ -32,8 +32,6 @@
 
 char editbox_icons[] = FROM "res/editbox_icons.raw";
 
-#define URL_SIZE 4000
-
 char version[]="WebView 2.7";
 
 #include "texts.h"
