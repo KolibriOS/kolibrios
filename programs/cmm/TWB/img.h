@@ -19,7 +19,7 @@ dword _img::add(dword _path, _x, _y)
 {
 	char full_path[URL_SIZE];
 	strncpy(#full_path, _path, URL_SIZE);
-	GetAbsoluteURL(#full_path, history.current());		
+	get_absolute_url(#full_path, history.current());		
 
 	url.add(#full_path);
 	xywh.add(_x);
@@ -93,7 +93,7 @@ void ImageCache::Images(dword left1, top1, width1)
 	dword image;
     dword imgw=0, imgh=0, img_lines_first=0, cur_pic=0;
 	
-	//GetAbsoluteURL(#img_path);
+	//getting abs url from (#img_path);
 	//cur_pic = GetImage(#img_path);
 
 	if (!pics[cur_pic].image) 

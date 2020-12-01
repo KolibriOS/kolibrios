@@ -34,7 +34,7 @@ char editbox_icons[] = FROM "res/editbox_icons.raw";
 
 #define URL_SIZE 4000
 
-char version[]="WebView 2.66";
+char version[]="WebView 2.7";
 
 #include "texts.h"
 #include "cache.h"
@@ -240,6 +240,12 @@ void main()
 			if (http.transfer <= 0) break;
 			http.receive();
 			EventUpdateProgressBar();
+			if (http.check_content_type()) && (!strncmp(#http.content_type,"application",11)) {
+				EventOpenDownloader(history.current());
+				StopLoading();
+				history.back();
+				EventRefreshPage();
+			}
 			if (http.receive_result != 0) break;
 			if (http.status_code >= 300) && (http.status_code < 400)
 			{
@@ -247,8 +253,6 @@ void main()
 				if (redirect_count<=5) {
 					redirect_count++;
 					http.handle_redirect();
-					http.free();
-					GetAbsoluteURL(#http.redirect_url, history.current());
 					history.back();
 					if (http_get_type==PAGE) OpenPage(#http.redirect_url);
 					else if (http_get_type==IMG) http.get(#http.redirect_url);
@@ -260,7 +264,7 @@ void main()
 			} else {
 				// Loading the page is complete, free resources
 				redirect_count = 0;
-				http.free();
+				http.hfree();
 				if (http_get_type==PAGE) {
 					cache.add(history.current(), http.content_pointer, http.content_received, PAGE);
 					LoadInternalPage(http.content_pointer, http.content_received);
@@ -951,7 +955,7 @@ dword GetAbsoluteActiveURL()
 	char abs_url[URL_SIZE];
 	if (links.active_url) {
 		strncpy(#abs_url, links.active_url, URL_SIZE);
-		GetAbsoluteURL(#abs_url, history.current());		
+		get_absolute_url(#abs_url, history.current());		
 		return #abs_url;
 	}
 	return 0;

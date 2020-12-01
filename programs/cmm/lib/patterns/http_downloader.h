@@ -6,7 +6,7 @@
 
 struct _http
 {
-    dword url;
+	dword cur_url;
     dword transfer;
     dword content_length;
     dword content_received;
@@ -14,23 +14,25 @@ struct _http
     dword receive_result;
     dword content_pointer;
     char redirect_url[4096*3];
-    char finaladress[4096*3];
+    char content_type[64];
 
     dword get();
-    void free();
+    void hfree();
     void receive();
     bool handle_redirect();
+    dword check_content_type();
 };
 
 dword _http::get(dword _url)
 {
-    url = _url;
-    http_get stdcall (url, 0, 0, #accept_language);
+	cur_url = _url;
+    http_get stdcall (_url, 0, 0, #accept_language);
+    content_type[0] = '\0';
     transfer = EAX;
     return transfer;
 }
 
-void _http::free()
+void _http::hfree()
 {
     http_free stdcall (transfer);
     transfer=0;
@@ -53,7 +55,6 @@ void _http::receive()
 
 :bool _http::handle_redirect()
 {
-	dword redirect;
     http_find_header_field stdcall (transfer, "location\0");
     if (EAX!=0) {
         ESI = EAX;
@@ -63,11 +64,29 @@ void _http::receive()
             $stosb;
         } while (AL != 0) && (AL != 13) && (AL != 10);
         DSBYTE[EDI-1]='\0';
-        get_absolute_url(#finaladress, url, #redirect_url);
-        strcpy(url, #finaladress);
-        return true;
+        get_absolute_url(#redirect_url, cur_url);
+        hfree();
+        return #redirect_url;
     }
-    return false;
+    return NULL;
+}
+
+:dword _http::check_content_type()
+{
+	if (content_type[0]) return NULL;
+    http_find_header_field stdcall (transfer, "content-type\0");
+    if (EAX!=0) {
+        ESI = EAX;
+        EDI = #content_type;
+        do {
+            $lodsb;
+            $stosb;
+        } while (AL != 0) && (AL != 13) && (AL != 10);
+        DSBYTE[EDI-1]='\0';
+        debugln(#content_type);
+        return #content_type;
+    }
+    return NULL;
 }
 
 //===================================================//
@@ -83,8 +102,7 @@ enum {
 	STATE_COMPLETED 
 };
 
-struct DOWNLOADER {
-	_http httpd;
+struct DOWNLOADER : _http {
 	dword bufpointer, bufsize, url;
 	int state;
 	dword Start();
@@ -96,50 +114,47 @@ dword DOWNLOADER::Start(dword _url)
 {
 	url = _url;
 	state = STATE_IN_PROGRESS;
-	httpd.get(url);
-	if (!httpd.transfer) Stop();
-	return httpd.transfer;
+	get(_url);
+	if (!transfer) Stop();
+	return transfer;
 }
 
 void DOWNLOADER::Stop()
 {
 	state = STATE_NOT_STARTED;
-	if (httpd.transfer!=0)
+	if (transfer!=0)
 	{
-		EAX = httpd.transfer;
+		EAX = transfer;
 		EAX = EAX.http_msg.content_ptr;		// get pointer to data
 		$push EAX							// save it on the stack
-		http_free stdcall (httpd.transfer);	// abort connection
+		http_free stdcall (transfer);	// abort connection
 		$pop  EAX							
 		free(EAX);						// free data
-		httpd.transfer=0;
+		transfer=0;
 		bufsize = 0;
 		bufpointer = free(bufpointer);
 	}
-	httpd.content_received = httpd.content_length = 0;
+	content_received = content_length = 0;
 }
 
 bool DOWNLOADER::MonitorProgress() 
 {
-	if (httpd.transfer <= 0) return false;
-	httpd.receive();
-	if (!httpd.content_length) httpd.content_length = httpd.content_received * 20;
+	if (transfer <= 0) return false;
+	receive();
+	if (!content_length) content_length = content_received * 20;
 
-	if (httpd.receive_result == 0) {
-		if (httpd.status_code >= 300) && (httpd.status_code < 400)
+	if (receive_result == 0) {
+		if (status_code >= 300) && (status_code < 400)
 		{
-			httpd.handle_redirect();
-			strcpy(url, httpd.url);
-			get_absolute_url(#httpd.finaladress, url, #httpd.redirect_url);
+			url = handle_redirect();
 			Stop();
-			Start(#httpd.finaladress);
-			url = #httpd.finaladress;
+			Start(url);
 			return false;
 		}
 		state = STATE_COMPLETED;
-		bufpointer = httpd.content_pointer;
-		bufsize = httpd.content_received;
-		httpd.free();
+		bufpointer = content_pointer;
+		bufsize = content_received;
+		hfree();
 	}
 	return true;
 }
@@ -181,42 +196,7 @@ bool DOWNLOADER::MonitorProgress()
 	return false;
 }
 
-:void get_absolute_url(dword _rez, _base, _new)
-{
-	int i;
-	//case: ./valera.html
-	if (!strncmp(_new,"./", 2)) _new+=2;
-	//case: http://site.name
-	if (check_is_the_url_absolute(_new)) {
-		strcpy(_rez, _new);
-		goto _GET_ABSOLUTE_URL_END;
-	}
-	//case: /valera.html
-	if (ESBYTE[_new] == '/') //remove everything after site domain name
-	{
-		strcpy(_rez, _base);
-		i = strchr(_rez+8,'/');
-		if (i<1) i=strlen(_rez)+_rez;
-		strcpy(i, _new);
-		goto _GET_ABSOLUTE_URL_END;
-	}	
-	//case: ../../valera.html
-	strcpy(_rez, _base);
-	ESBYTE[ strrchr(_rez,'/') + _rez -1 ] = '\0'; //remove name
-	while (!strncmp(_new,"../",3))
-	{
-		_new += 3;
-		ESBYTE[ strrchr(_rez,'/') + _rez -1 ] = '\0';	
-	}
-	//case: valera.html
-	chrcat(_rez, '/');
-	strcat(_rez, _new); 
-	_GET_ABSOLUTE_URL_END:
-	while (i=strstr(_rez, "&amp;")) strcpy(i+1, i+5);	
-}
-
-
-:dword GetAbsoluteURL(dword new_URL, base_URL)
+:dword get_absolute_url(dword new_URL, base_URL)
 {
 	int i;
 	dword orig_URL = new_URL;

@@ -6,14 +6,13 @@
 
 #include "../lib/obj/box_lib.h"
 #include "../lib/obj/http.h"
-#include "../lib/obj/libini.h"
 
 #include "../lib/patterns/http_downloader.h"
 
 #include "const.h"
 
 DOWNLOADER downloader;
-checkbox autoclose = { T_AUTOCLOSE, true }; 
+checkbox autoclose = { T_AUTOCLOSE, false }; 
 
 char downloader_edit[4000];
 char filepath[4096];
@@ -30,7 +29,6 @@ void main()
 	dword shared_url;
 	load_dll(boxlib,  #box_lib_init,0);
 	load_dll(libHTTP, #http_lib_init,1);
-	load_dll(libini, #lib_init,1);
 
 	if (!dir_exists(#save_to)) CreateDir(#save_to);
 
@@ -74,8 +72,8 @@ void main()
 		   
 		default:
 			if (!downloader.MonitorProgress()) break;
-			pb.max = downloader.httpd.content_length / 100;
-			EDI = downloader.httpd.content_received/100;
+			pb.max = downloader.content_length / 100;
+			EDI = downloader.content_received/100;
 			if (pb.value != EDI)
 			{
 				pb.value = EDI;
@@ -97,7 +95,7 @@ void ProcessEvent(int id)
 {
 	autoclose.click(id);
 	if (id==001) { StopDownloading(); ExitProcess(); }
-	if (id==301) && (downloader.httpd.transfer <= 0) StartDownloading();
+	if (id==301) && (downloader.transfer <= 0) StartDownloading();
 	if (id==302) StopDownloading();
 	if (id==305) RunProgram("/sys/File managers/Eolite", #filepath);
 	if (id==306) {
@@ -141,17 +139,17 @@ void StartDownloading()
 	char proxy_url[URL_SIZE];
 	StopDownloading();
 	if (!strncmp(#downloader_edit,"https://",7)) {
-		notify("'HTTPS for download is not supported, trying to download the file via HTTP' -W");
-		miniprintf(#http_url, "http://%s", #downloader_edit+8);
-		if (!downloader.Start(#http_url)) {
-			notify("'Download failed.' -E");
-			StopDownloading();
-		}
-		//sprintf(#proxy_url, "http://gate.aspero.pro/?site=%s", #downloader_edit);
-		//if (!downloader.Start(#proxy_url)) {
+		//notify("'HTTPS for download is not supported, trying to download the file via HTTP' -W");
+		//miniprintf(#http_url, "http://%s", #downloader_edit+8);
+		//if (!downloader.Start(#http_url)) {
 		//	notify("'Download failed.' -E");
 		//	StopDownloading();
 		//}
+		miniprintf(#proxy_url, "http://gate.aspero.pro/?site=%s", #downloader_edit);
+		if (!downloader.Start(#proxy_url)) {
+			notify("'Download failed.' -E");
+			StopDownloading();
+		}
 		DrawWindow();
 		return;
 	}
@@ -185,11 +183,11 @@ void CalculateSpeed()
 	if (time.old) {
 		time.gone = time.cur - time.old;
 		if (time.gone > 200) {
-			speed = downloader.httpd.content_received - netdata_received / time.gone * 100;
+			speed = downloader.content_received - netdata_received / time.gone * 100;
 			debugval("speed", speed);
 			debugln(ConvertSizeToKb(speed) );
 			time.old = time.cur;
-			netdata_received = downloader.httpd.content_received;
+			netdata_received = downloader.content_received;
 		}
 	}
 	else time.old = time.cur;
@@ -199,7 +197,7 @@ void CalculateSpeed()
 void DrawDownloading()
 {
 	char bytes_received[70];
-	miniprintf(#bytes_received, KB_RECEIVED, ConvertSizeToKb(downloader.httpd.content_received) );
+	miniprintf(#bytes_received, KB_RECEIVED, ConvertSizeToKb(downloader.content_received) );
 	WriteTextWithBg(GAPX, pb.top + 22, 0xD0, sc.work_text, #bytes_received, sc.work);
 	//CalculateSpeed();
 	progressbar_draw stdcall(#pb);
@@ -232,14 +230,14 @@ void SaveDownloadedFile()
 	
 	for (i=0; i<strlen(#filepath); i++) if(filepath[i]==':')||(filepath[i]=='?')filepath[i]='-';
 
-	if (CreateFile(downloader.httpd.content_received, downloader.bufpointer, #filepath)==0) {
+	if (CreateFile(downloader.content_received, downloader.bufpointer, #filepath)==0) {
 		miniprintf(#notify_message, FILE_SAVED_AS, #filepath);
 	} else {
 		miniprintf(#notify_message, FILE_NOT_SAVED, #filepath);
 	}
 
 	/*
-	if (CreateFile(downloader.httpd.content_received, downloader.bufpointer, #filepath)==0) {
+	if (CreateFile(downloader.content_received, downloader.bufpointer, #filepath)==0) {
 		strcpy(#notify_message, "'Download complete' -Dt");
 	} else {
 		strcpy(#notify_message, "'Error saving downloaded file!' -Et");
