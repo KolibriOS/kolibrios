@@ -5,7 +5,6 @@
 
 #define rmfile(obj) rmdir(obj)
 #define PATH_MAX 4096
-#define PATH_MAX 4096
 #define T_FOLDER 16
 #define T_FILE 0 
 #define FS_ERROR -1
