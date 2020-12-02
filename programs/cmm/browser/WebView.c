@@ -32,7 +32,7 @@
 
 char editbox_icons[] = FROM "res/editbox_icons.raw";
 
-char version[]="WebView 2.7";
+char version[]="WebView 2.7a";
 
 #include "texts.h"
 #include "cache.h"
@@ -238,7 +238,8 @@ void main()
 			if (http.transfer <= 0) break;
 			http.receive();
 			EventUpdateProgressBar();
-			if (http.check_content_type()) && (!strncmp(#http.content_type,"application",11)) {
+			if (http.check_content_type()) // application || image
+			if (http.content_type[0] == 'a') || (http.content_type[0] == 'i') { 
 				EventOpenDownloader(history.current());
 				StopLoading();
 				history.back();
@@ -705,13 +706,6 @@ void EventClickLink(dword _target)
 			}
 			return;
 		}
-	} else {
-		if (UrlExtIs(#new_url,".png")==true) || (UrlExtIs(#new_url,".jpg")==true) 
-		|| (UrlExtIs(#new_url,".zip")==true) || (UrlExtIs(#new_url,".kex")==true) || (UrlExtIs(#new_url,".pdf")==true)
-		|| (UrlExtIs(#new_url,".7z")==true) {
-			EventOpenDownloader(#new_url);
-			return;
-		}
 	}
 	OpenPage(#new_url);
 }
@@ -741,6 +735,14 @@ void LoadInternalPage(dword _bufdata, _in_bufsize){
 			DrawOmnibox();
 		}
 		WB1.ParseHtml(_bufdata, _in_bufsize);
+		// REJECTED. Reason: infinite redirect at Google Results.
+		/*
+		if (WB1.redirect) { //<meta http-equiv="refresh" content="0; url=http://site.com">
+			get_absolute_url(#WB1.redirect, history.current());
+			history.back();
+			OpenPage(#WB1.redirect);
+		}
+		*/
 		DrawStatusBar();
 		DrawActiveTab();
 		if (source_mode) {

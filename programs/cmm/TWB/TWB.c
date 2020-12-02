@@ -52,6 +52,7 @@ struct TWebBrowser {
 	void ChangeEncoding();
 	void DrawPage();
 	char header[150];
+	char redirect[URL_SIZE];
 };
 
 scroll_bar scroll_wv = { 15,NULL,NULL,NULL,0,2,NULL,0,0,0xeeeeee,0xBBBbbb,0xeeeeee};
@@ -137,6 +138,7 @@ void TWebBrowser::SetPageDefaults()
 	stolbec = 0;
 	line = 0;
 	zoom = 1;
+	redirect = '\0';
 	//hold original buffer
 	if (o_bufpointer) o_bufpointer=free(o_bufpointer);
 	o_bufpointer = malloc(bufsize);
@@ -532,16 +534,22 @@ void TWebBrowser::SetStyle() {
 		draw_y += 10;
 		return;
 	}
+	if (tag.is("meta")) {
+		if (streq(tag.get_value_of("http-equiv="), "refresh")) && (value = tag.get_value_of("content=")) {
+			if (value = strstri(value, "url=")) strcpy(#redirect, value);
+		}
+	}
 	if (custom_encoding == -1) && (tag.is("meta")) || (tag.is("?xml")) {
 		if (value = tag.get_value_of("charset=")) || (value = tag.get_value_of("content=")) || (value = tag.get_value_of("encoding="))
 		{
 			value += strrchr(value, '='); //search in content=
+			if (ESBYTE[value] == '"') value++;
 			strlwr(value);
-			if      (streq(value,"utf-8"))        || (streq(value,"utf8"))        ChangeEncoding(CH_UTF8);
-			else if (streq(value,"windows-1251")) || (streq(value,"windows1251")) ChangeEncoding(CH_CP1251);
-			else if (streq(value,"dos"))          || (streq(value,"cp-866"))      ChangeEncoding(CH_CP866);
-			else if (streq(value,"iso-8859-5"))   || (streq(value,"iso8859-5"))   ChangeEncoding(CH_ISO8859_5);
-			else if (streq(value,"koi8-r"))       || (streq(value,"koi8-u"))      ChangeEncoding(CH_KOI8);
+			if      (streqrp(value,"utf-8"))        || (streqrp(value,"utf8"))        { ChangeEncoding(CH_UTF8); debugln("UTF"); }
+			else if (streqrp(value,"windows-1251")) || (streqrp(value,"windows1251")) ChangeEncoding(CH_CP1251);
+			else if (streqrp(value,"dos"))          || (streqrp(value,"cp-866"))      ChangeEncoding(CH_CP866);
+			else if (streqrp(value,"iso-8859-5"))   || (streqrp(value,"iso8859-5"))   ChangeEncoding(CH_ISO8859_5);
+			else if (streqrp(value,"koi8-r"))       || (streqrp(value,"koi8-u"))      ChangeEncoding(CH_KOI8);
 		}
 		return;
 	}

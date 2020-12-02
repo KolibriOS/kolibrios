@@ -206,7 +206,7 @@ inline signed int strcmp(dword text1, text2)
 }
 
 
-inline fastcall streq(ESI, EDI)
+inline fastcall bool streq(ESI, EDI)
 {
 	loop()
 	{
@@ -220,7 +220,18 @@ inline fastcall streq(ESI, EDI)
 		ESI++;
 		EDI++;
 	}
-	return true;
+}
+
+inline fastcall bool streqrp(ESI, EDI) //streq right part
+{
+	if(DSBYTE[ESI]==0) || (DSBYTE[EDI]==0) return false;
+	loop()
+	{
+		if(DSBYTE[EDI]==0) return true;
+		if(DSBYTE[ESI]!=DSBYTE[EDI]) return false;
+		ESI++;
+		EDI++;
+	}
 }
 
 inline fastcall void strcpy( EDI, ESI)
