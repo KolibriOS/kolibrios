@@ -276,6 +276,7 @@ extra_files = {
  {"kolibrios/utils/cnc_editor/cnc_editor", PROGS .. "/other/cnc_editor/cnc_editor"},
  {"kolibrios/utils/cnc_editor/kolibri.NC", PROGS .. "/other/cnc_editor/kolibri.NC"},
  {"kolibrios/utils/vmode", "common/vmode"},
+ {"kolibrios/utils/texture", "common/utils/texture"},
  }
 if build_type == "rus" then tup.append_table(extra_files, {
  {"Docs/cp866/config.txt", build_type .. "/docs/CONFIG.TXT"},
