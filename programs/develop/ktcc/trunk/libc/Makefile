@@ -3,7 +3,7 @@ LIBSFORBUILD = math
 LIBNAME = libck.a
 CC = ../bin/kos32-tcc
 CFLAGS = -I$(INCLUDE) -m32 -nostdinc -nostdlib -DGNUC
-DIRS := stdio memory kolibrisys string stdlib math dlfcn libgen fs
+DIRS := stdio memory kolibrisys string stdlib math dlfcn libgen fs net
 
 ##############################################################
 #files := $(foreach dir,$(DIRS),$(dir)/$(wildcard $(dir)/*))
@@ -19,7 +19,7 @@ doClean = rm $(cfiles) $(asmfiles)
 endif
 
 all: $(cfiles) $(asmfiles)
-	ar -ru $(LIBNAME) $^
+	ar -rcs $(LIBNAME) $^
 
 $(cfiles): $(INCLUDE)/*.h
 
