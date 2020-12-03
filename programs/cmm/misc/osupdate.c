@@ -11,7 +11,6 @@
 #include "../lib/obj/network.h"
 
 #include "../lib/patterns/restart_process.h"
-#include "../lib/patterns/http_downloader.h"
 
 #ifndef AUTOBUILD
 #include "lang.h--"
