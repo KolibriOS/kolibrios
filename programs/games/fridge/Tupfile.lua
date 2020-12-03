@@ -4,8 +4,10 @@ tup.include(HELPERDIR .. "/use_gcc.lua")
 tup.include(HELPERDIR .. "/use_newlib.lua")
 
 -- C_Layer
-CFLAGS = CFLAGS .. " -std=c99 -I ../../../contrib/C_Layer/INCLUDE"
-LDFLAGS = LDFLAGS .. " ../../../contrib/C_Layer/OBJ/loadlibimg.obj"
+CFLAGS = CFLAGS .. " -std=c99 -Wall -Wextra"
+INCLUDES = INCLUDES .. " -I../../../contrib/C_Layer/INCLUDE"
+table.insert(LIBDEPS, "../../../contrib/C_Layer/OBJ/<C_Layer>")
+LIBS = LIBS .. " ../../../contrib/C_Layer/OBJ/loadlibimg.o"
 
 compile_gcc{"fridge.c"}
 link_gcc("fridge")
