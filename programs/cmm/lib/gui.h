@@ -178,7 +178,7 @@
 	DrawEditBox(dword edit_box_pointer);
 }
 
-:void DrawProgressBar(dword st_x, st_y, st_w, st_h, col_fon, col_border, col_fill, col_text, progress_percent)
+:void DrawProgressBar(dword st_x, st_y, st_w, st_h, col_fon, col_border, col_fill, progress_percent)
 {
 	int progress_w;
 	static int fill_old;

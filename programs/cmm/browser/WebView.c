@@ -25,14 +25,13 @@
 
 //useful patterns
 #include "..\lib\patterns\history.h"
-#include "..\lib\patterns\http_downloader.h"
 #include "..\lib\patterns\simple_open_dialog.h"
 #include "..\lib\patterns\toolbar_button.h"
 #include "..\lib\patterns\restart_process.h"
 
 char editbox_icons[] = FROM "res/editbox_icons.raw";
 
-char version[]="WebView 2.7a";
+char version[]="WebView 2.7b";
 
 #include "texts.h"
 #include "cache.h"
@@ -60,7 +59,7 @@ enum {
 	IN_NEW_TAB,
 	IN_NEW_WINDOW,
 	COPY_LINK_URL,
-	DOWNLOAD_LINK_CONTENTS,
+	DOWNLOAD_LINK_CT,
 	TAB_ID,
 	TAB_CLOSE_ID = 900
 };
@@ -143,7 +142,6 @@ void main()
 {
 	int i, redirect_count=0;
 	LoadLibraries();
-	//CreateDir("/tmp0/1/WebView_Cache");
 	HandleParam();
 	WB1.list.SetFont(8, 14, 10011000b);
 	WB1.list.no_selection = true;
@@ -238,23 +236,14 @@ void main()
 			if (http.transfer <= 0) break;
 			http.receive();
 			EventUpdateProgressBar();
-			if (http.check_content_type()) // application || image
-			if (http.content_type[0] == 'a') || (http.content_type[0] == 'i') { 
-				EventOpenDownloader(history.current());
-				StopLoading();
-				history.back();
-				EventRefreshPage();
-			}
+			CheckContentType();
 			if (http.receive_result != 0) break;
 			if (http.status_code >= 300) && (http.status_code < 400)
 			{
 				// Handle redirects
 				if (redirect_count<=5) {
 					redirect_count++;
-					http.handle_redirect();
-					history.back();
-					if (http_get_type==PAGE) OpenPage(#http.redirect_url);
-					else if (http_get_type==IMG) http.get(#http.redirect_url);
+					HandleRedirect();
 				} else {
 					notify("'Too many redirects.' -E");
 					StopLoading();
@@ -382,116 +371,78 @@ void ProcessEvent(dword id__)
 {
 	switch (id__)
 	{
-		case 1:
-			ExitProcess();
-			break;
-		case ENCODINGS...ENCODINGS+6:
-			EventChangeEncodingAndLoadPage(id__-ENCODINGS);
-			return;
-		case NEW_WINDOW:
-			RunProgram(#program_path, NULL);
-			return;
+		case 1: ExitProcess();
+		case TAB_CLOSE_ID...TAB_CLOSE_ID+TABS_MAX: EventTabClose(id__ - TAB_CLOSE_ID); return;
+		case TAB_ID...TAB_ID+TABS_MAX: EventAllTabsClick(id__ - TAB_ID); return;
+		case ENCODINGS...ENCODINGS+6: EventChangeEncodingAndLoadPage(id__-ENCODINGS); return;
+		case NEW_WINDOW:       RunProgram(#program_path, NULL); return;
+		case NEW_TAB:          if (!http.transfer) EventOpenNewTab(URL_SERVICE_HOMEPAGE); return;
 		case SCAN_CODE_BS:
-		case BACK_BUTTON:
-			if (history.back()) {
-				OpenPage(history.current());
-			}
-			return;
-		case FORWARD_BUTTON:
-			if (history.forward()) {
-				OpenPage(history.current());
-			}
-			return;
+		case BACK_BUTTON:      if (history.back()) OpenPage(history.current()); return;
+		case FORWARD_BUTTON:   if (history.forward()) OpenPage(history.current()); return;
 		case GOTOURL_BUTTON:
-		case SCAN_CODE_ENTER:
-			EventSubmitOmnibox();
-			return;
-		case REFRESH_BUTTON:
-			EventRefreshPage();
-			return;
-		case CHANGE_ENCODING:
-			EventShowEncodingsList();
-			return;
-		case SANDWICH_BUTTON:
-			EventShowMainMenu();
-			return;
-		case VIEW_SOURCE:
-			EventViewSource();
-			break;
-		case EDIT_SOURCE:
-			if (check_is_the_adress_local(history.current())) {
-				RunProgram("/rd/1/tinypad", history.current());
-			} else {
-				CreateFile(WB1.bufsize, WB1.bufpointer, "/tmp0/1/WebView_tmp.htm");
-				if (!EAX) RunProgram("/rd/1/tinypad", "/tmp0/1/WebView_tmp.htm");
-			}
-			return;
-		case VIEW_HISTORY:
-			OpenPage(URL_SERVICE_HISTORY);
-			return;
-		case DOWNLOAD_MANAGER:
-			EventOpenDownloader("");
-			return;
-		case UPDATE_BROWSER:
-			EventUpdateBrowser();
-			return;
-		case CLEAR_CACHE:
-			cache.clear();
-			notify(#clear_cache_ok);
-			EventRefreshPage();
-			return;
-		case IN_NEW_TAB:
-			EventClickLink(TARGET_NEW_TAB);
-			return;
-		case IN_NEW_WINDOW:
-			EventClickLink(TARGET_NEW_WINDOW);
-			return;
-		case COPY_LINK_URL:
-			Clipboard__CopyText(GetAbsoluteActiveURL()); 
-			notify("'URL copied to clipboard'O");
-			return;
-		case DOWNLOAD_LINK_CONTENTS:
-			EventOpenDownloader( GetAbsoluteActiveURL() );
-			return;
-		case OPEN_FILE:
-			EventOpenDialog();
-			return;
-		case SCAN_CODE_F12:
-			debug_mode ^= 1;
-			if (debug_mode) notify("'Debug mode ON'-I");
-			else notify("'Debug mode OFF'-I");
-			return;
-		case NEW_TAB:
-			if (http.transfer) break;
-			EventOpenNewTab(URL_SERVICE_HOMEPAGE);
-			return;
-		case TAB_ID...TAB_ID+TABS_MAX:
-			if (http.transfer) break;
-			if (mouse.mkm) {
-				EventTabClose(id__ - TAB_ID);
-			} else {
-				EventTabClick(id__ - TAB_ID);
-			}
-			return;
-		case TAB_CLOSE_ID...TAB_CLOSE_ID+TABS_MAX:
-			EventTabClose(id__ - TAB_CLOSE_ID);
-			return;
+		case SCAN_CODE_ENTER:  EventSubmitOmnibox();	return;
+		case REFRESH_BUTTON:   EventRefreshPage(); return;
+		case CHANGE_ENCODING:  EventShowEncodingsList(); return;
+		case SANDWICH_BUTTON:  EventShowMainMenu(); return;
+		case VIEW_SOURCE:      EventViewSource(); return;
+		case EDIT_SOURCE:      EventEditSource(); return;
+		case VIEW_HISTORY:     OpenPage(URL_SERVICE_HISTORY); return;
+		case DOWNLOAD_MANAGER: EventOpenDownloader(""); return;
+		case UPDATE_BROWSER:   EventUpdateBrowser(); return;
+		case CLEAR_CACHE:      EventClearCache(); return;
+		case IN_NEW_TAB:       EventClickLink(TARGET_NEW_TAB); return;
+		case IN_NEW_WINDOW:    EventClickLink(TARGET_NEW_WINDOW); return;
+		case COPY_LINK_URL:    EventCopyLinkToClipboard(); return;
+		case DOWNLOAD_LINK_CT: EventOpenDownloader( GetAbsoluteActiveURL() ); return;
+		case OPEN_FILE:        EventOpenDialog(); return;
+		case SCAN_CODE_F12:    EventToggleDebugMode(); return;
 	}
+}
+
+void EventToggleDebugMode()
+{
+	debug_mode ^= 1;
+	if (debug_mode) notify("'Debug mode ON'-I");
+	else notify("'Debug mode OFF'-I");
+}
+
+void EventAllTabsClick(dword _n)
+{
+	if (http.transfer) return;
+	if (mouse.mkm) {
+		EventTabClose(_n);
+	} else {
+		EventTabClick(_n);
+	}	
+}
+
+void EventEditSource()
+{
+	if (check_is_the_adress_local(history.current())) {
+		RunProgram("/rd/1/tinypad", history.current());
+	} else {
+		CreateFile(WB1.bufsize, WB1.bufpointer, "/tmp0/1/WebView_tmp.htm");
+		if (!EAX) RunProgram("/rd/1/tinypad", "/tmp0/1/WebView_tmp.htm");
+	}
+}
+
+void EventClearCache()
+{
+	cache.clear();
+	notify(#clear_cache_ok);
+	EventRefreshPage();
+}
+
+void EventCopyLinkToClipboard()
+{
+	Clipboard__CopyText(GetAbsoluteActiveURL()); 
+	notify("'URL copied to clipboard'O");
 }
 
 void StopLoading()
 {
-	if (http.transfer)
-	{
-		EAX = http.transfer;
-		EAX = EAX.http_msg.content_ptr;		// get pointer to data
-		$push	EAX							// save it on the stack
-		http_free stdcall (http.transfer);	// abort connection
-		$pop	EAX							
-		free(EAX);						// free data
-		http.transfer=0;
-		pause(10);
-	}
+	if (http.stop()) pause(10);
 	wv_progress_bar.value = 0;
 	DrawOmnibox();
 }
@@ -842,10 +793,6 @@ void EventOpenDialog()
 
 void EventViewSource()
 {
-	char source_view_param[URL_SIZE+1];
-	//strcpy(#source_view_param, "-source ");
-	//strncat(#source_view_param, history.current(), URL_SIZE);
-	//RunProgram(#program_path, #source_view_param);
 	source_mode = true;
 	EventOpenNewTab(history.current());
 }
@@ -959,6 +906,29 @@ dword GetAbsoluteActiveURL()
 		return #abs_url;
 	}
 	return 0;
+}
+
+void CheckContentType()
+{
+	char content_type[64];
+	if (http.header_field("content-type\0", #content_type, sizeof(content_type))) // application || image
+	if (content_type[0] == 'a') || (content_type[0] == 'i') { 
+		EventOpenDownloader(history.current());
+		StopLoading();
+		history.back();
+		EventRefreshPage();
+	}
+}
+
+void HandleRedirect()
+{
+	char redirect_url[URL_SIZE];
+	http.header_field("location\0", #redirect_url, URL_SIZE);
+	get_absolute_url(#redirect_url, history.current());
+	history.back();
+	http.hfree();
+	if (http_get_type==PAGE) OpenPage(#redirect_url);
+	else if (http_get_type==IMG) http.get(#redirect_url);
 }
 
 dword GetImg()

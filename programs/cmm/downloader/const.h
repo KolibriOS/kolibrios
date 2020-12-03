@@ -6,10 +6,10 @@
 
 #ifdef LANG_RUS
 	#define DL_WINDOW_HEADER "Менеджер загрузок"
-	#define START_DOWNLOADING "Скачать"
-	#define STOP_DOWNLOADING "Отмена"
-	#define SHOW_IN_FOLDER "Показать в папке"
-	#define OPEN_FILE_TEXT "Открыть файл"
+	#define T_DOWNLOAD "Скачать"
+	#define T_CANCEL "Отмена"
+	#define T_OPEN_DIR "Показать в папке"
+	#define T_RUN "Открыть файл"
 	#define FILE_SAVED_AS "'Менеджер загрузок\nФайл сохранен как %s' -Dt"
 	#define FILE_NOT_SAVED "'Менеджер загрузок\nОшибка! Файл не может быть сохранен как\n%s' -Et"
 	#define KB_RECEIVED "Идет скачивание... %s получено"
@@ -18,10 +18,10 @@
 	char accept_language[]= "Accept-Language: ru\n";
 #else
 	#define DL_WINDOW_HEADER "Download Manager"
-	#define START_DOWNLOADING "Download"
-	#define STOP_DOWNLOADING "Cancel"
-	#define SHOW_IN_FOLDER "Show in folder"
-	#define OPEN_FILE_TEXT "Open file"
+	#define T_DOWNLOAD "Download"
+	#define T_CANCEL "Cancel"
+	#define T_OPEN_DIR " Show in folder "
+	#define T_RUN "Open file"
 	#define FILE_SAVED_AS "'Download manager\nFile saved as %s' -Dt"
 	#define FILE_NOT_SAVED "'Download manager\nError! Can\96t save file as %s' -Et"
 	#define KB_RECEIVED "Downloading... %s received"
@@ -34,7 +34,13 @@
 #define WIN_W 580
 #define WIN_H 100
 
-#define URL_SIZE 4000
-
 char save_to[] = "/tmp0/1/Downloads";
 char dl_shared[] = "DL";
+
+enum { 
+	BTN_EXIT=1,
+	BTN_START,
+	BTN_STOP,
+	BTN_DIR, 
+	BTN_RUN, 
+};
