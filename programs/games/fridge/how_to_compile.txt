@@ -1,3 +1,0 @@
-First say 'make' in /contrib/C_Layer/ASM
-Second say 'make' here
-You will find 'fridge.kex' here

@@ -691,6 +691,7 @@ tup.append_table(extra_files, {
  {"kolibrios/games/nsider", PROGS .. "/games/nsider/nsider"},
  {"kolibrios/games/quake/", "common/games/quake/*"}, -- not really gcc, but no sense without sdlquake
  {"kolibrios/games/quake/", "../contrib/other/sdlquake-1.0.9/sdlquake"},
+ {"kolibrios/games/fridge/", PROGS .. "/games/fridge/fridge"},
 })
 -- For russian build, add russian-only programs.
 if build_type == "rus" then tup.append_table(extra_files, {
