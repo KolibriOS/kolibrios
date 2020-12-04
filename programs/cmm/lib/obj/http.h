@@ -153,7 +153,6 @@ void _http::receive()
 			$dec edx
 		} while (AL != 0) && (AL != 13) && (AL != 10) && (EDX>0);
 		DSBYTE[EDI-1]='\0';
-		debugln(_dst);
 		return _dst;
 	}
 	return NULL;

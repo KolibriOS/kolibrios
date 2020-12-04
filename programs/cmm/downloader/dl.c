@@ -7,7 +7,6 @@
 
 #include "const.h"
 
-dword bufpointer, bufsize;
 bool exit_param = false;
 
 _http http;
@@ -28,8 +27,8 @@ void main()
 	load_dll(boxlib,  #box_lib_init,0);
 	load_dll(libHTTP, #http_lib_init,1);
 
-	if (!dir_exists(#save_to)) CreateDir(#save_to);
-	SetCurDir(#save_to);
+	if (!dir_exists(#save_dir)) CreateDir(#save_dir);
+	SetCurDir(#save_dir);
 
 	if (param) {
 		if (!strncmp(#param, "-exit ", 6)) {
@@ -45,7 +44,6 @@ void main()
 		}
 	}
 	if (main_url[0]) StartDownloading(); else strcpy(#main_url, "http://");
-	EditBox_UpdateText(#ed, #main_url);
  
 	@SetEventMask(EVM_REDRAW + EVM_KEY + EVM_BUTTON + EVM_MOUSE + EVM_MOUSE_FILTER + EVM_STACK);
 	@SetWindowLayerBehaviour(-1, ZPOS_ALWAYS_TOP);
@@ -112,7 +110,7 @@ void StartDownloading()
 	if (!strncmp(#main_url,"https:",6)) {
 		miniprintf(#proxy_url, "http://gate.aspero.pro/?site=%s", #main_url);
 		strcpy(#main_url, #proxy_url);
-		EditBox_UpdateText(#ed, #main_url);
+		EditBox_UpdateText(#ed, ed.flags);
 		//notify("'HTTPS for download is not supported, trying to download the file via HTTP' -W");
 		//miniprintf(#http_url, "http://%s", #main_url+8);
 		//if (!downloader.Start(#http_url)) {
@@ -122,7 +120,7 @@ void StartDownloading()
 	}
 	if (http.get(#main_url)) {
 		ed.blur_border_color = 0xCACACA;
-		ed.flags = 100000000000b;
+		EditBox_UpdateText(#ed, ed_disabled);
 		pb.value = 0;
 		DrawWindow();
 	} else {
@@ -150,14 +148,12 @@ void DrawDownloadingProgress()
  
 void StopDownloading()
 {
-	if (http.stop()) {
-		bufsize = 0;
-		bufpointer = free(bufpointer);
-	}
+	http.stop();
+	if (http.content_pointer) http.content_pointer = free(http.content_pointer);
 	http.content_received = http.content_length = 0;
 
 	ed.blur_border_color = 0xFFFfff;
-	ed.flags = 10b;
+	EditBox_UpdateText(#ed, ed_focus);
 	DrawWindow();
 }
 
@@ -168,57 +164,53 @@ void MonitorProgress()
 	http.receive();
 	if (!http.content_length) http.content_length = http.content_received * 20; //MOVE?
 
-	if (http.receive_result == 0) {
-		if (http.status_code >= 300) && (http.status_code < 400)
-		{
-			http.header_field("location\0", #redirect_url, URL_SIZE);
+	if (http.receive_result) {
+		DrawDownloadingProgress();  
+	} else {
+		if (http.status_code >= 300) && (http.status_code < 400) {
+			http.header_field("location", #redirect_url, URL_SIZE);
 			get_absolute_url(#redirect_url, #main_url);
 			strcpy(#main_url, #redirect_url);
-			EditBox_UpdateText(#ed, #main_url);
 			StopDownloading();
 			StartDownloading();
 			return;
 		}
-		bufpointer = http.content_pointer;
-		bufsize = http.content_received;
-		http.hfree();
-	}
-
-	DrawDownloadingProgress();
-
-	if (!http.receive_result)
-	{
 		SaveFile();
 		if (exit_param) ExitProcess();
 		StopDownloading();
 		DrawWindow();
-		return;
-	}     
+
+		http.hfree();
+	}
 }
 
 void SaveFile()
 {
 	int i;
-	char aux[2048];
 	char notify_message[4296];
+	char file_name[URL_SIZE+96];
 
-	//char file_name[URL_SIZE];
-	//Content-Disposition: attachment; filename="RealFootball_2018_Nokia_5800_EN_IGP_EU_TS_101.zip"
-	//header_field("Content-Disposition\0", #redirect_url, URL_SIZE);
-
-	// Clean all slashes at the end
-	strcpy(#aux, #main_url);
-	while (aux[strlen(#aux)-1] == '/') {
-		aux[strlen(#aux)-1] = 0;
-	}
-
-	strcpy(#filepath, #save_to);
+	strcpy(#filepath, #save_dir);
 	chrcat(#filepath, '/');
-	strcat(#filepath, #aux+strrchr(#aux, '/'));
+
+	//Content-Disposition: attachment; filename="RealFootball_2018_Nokia_5800_EN_IGP_EU_TS_101.zip"
+	if (http.header_field("content-disposition", #file_name, sizeof(file_name))) {
+		if (EDX = strstr(#file_name,"filename=\"")) { 
+			strcat(#filepath, EDX+10);
+			ESBYTE[strchr(#filepath,'\"')] = '\0';
+		}
+	} else {
+		// Clean all slashes at the end
+		strcpy(#file_name, #main_url);
+		while (file_name[strlen(#file_name)-1] == '/') {
+			file_name[strlen(#file_name)-1] = 0;
+		}
+		strcat(#filepath, #file_name+strrchr(#file_name, '/'));	
+	}
 	
 	for (i=0; i<strlen(#filepath); i++) if(filepath[i]==':')||(filepath[i]=='?')filepath[i]='-';
 
-	if (CreateFile(http.content_received, bufpointer, #filepath)==0) {
+	if (CreateFile(http.content_received, http.content_pointer, #filepath)==0) {
 		miniprintf(#notify_message, FILE_SAVED_AS, #filepath);
 	} else {
 		miniprintf(#notify_message, FILE_NOT_SAVED, #filepath);

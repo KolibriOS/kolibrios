@@ -210,7 +210,7 @@ void TWebBrowser::ParseHtml(dword _bufpointer, _bufsize){
 			}
 			break;
 		case '&': //&nbsp; and so on
-			for (j=1, unicode_symbol=0; (ESBYTE[bufpos+j]<>';') && (j<8); j++)
+			for (j=1, unicode_symbol=0; (ESBYTE[bufpos+j]<>';') && (!__isWhite(ESBYTE[bufpos+j])) && (j<8); j++)
 			{
 				bukva = ESBYTE[bufpos+j];
 				chrcat(#unicode_symbol, bukva);

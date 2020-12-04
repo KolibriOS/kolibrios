@@ -31,7 +31,7 @@
 
 char editbox_icons[] = FROM "res/editbox_icons.raw";
 
-char version[]="WebView 2.7b";
+char version[]="WebView 2.7c";
 
 #include "texts.h"
 #include "cache.h"
@@ -911,7 +911,7 @@ dword GetAbsoluteActiveURL()
 void CheckContentType()
 {
 	char content_type[64];
-	if (http.header_field("content-type\0", #content_type, sizeof(content_type))) // application || image
+	if (http.header_field("content-type", #content_type, sizeof(content_type))) // application || image
 	if (content_type[0] == 'a') || (content_type[0] == 'i') { 
 		EventOpenDownloader(history.current());
 		StopLoading();
@@ -923,7 +923,7 @@ void CheckContentType()
 void HandleRedirect()
 {
 	char redirect_url[URL_SIZE];
-	http.header_field("location\0", #redirect_url, URL_SIZE);
+	http.header_field("location", #redirect_url, URL_SIZE);
 	get_absolute_url(#redirect_url, history.current());
 	history.back();
 	http.hfree();

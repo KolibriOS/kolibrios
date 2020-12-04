@@ -34,7 +34,7 @@
 #define WIN_W 580
 #define WIN_H 100
 
-char save_to[] = "/tmp0/1/Downloads";
+char save_dir[] = "/tmp0/1/Downloads";
 char dl_shared[] = "DL";
 
 enum { 
