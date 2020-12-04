@@ -3,38 +3,54 @@ struct _img
 {
 	collection url;
 	collection_int xywh;
-	collection_int data;
 	int getid;
-	dword add();
+
 	void clear();
+	dword add_pos();
+	bool set_size();
+
 	dword current_url();
 	bool next_url();
-	void set_data();
-	void draw();
+	
+	void draw_all();
+	bool draw();
 };
-
-#ifndef NO_IMG
-
-dword _img::add(dword _path, _x, _y)
-{
-	char full_path[URL_SIZE];
-	strncpy(#full_path, _path, URL_SIZE);
-	get_absolute_url(#full_path, history.current());		
-
-	url.add(#full_path);
-	xywh.add(_x);
-	xywh.add(_y);
-	xywh.add(0);
-	xywh.add(0);
-	return full_path;
-}
 
 void _img::clear()
 {
 	url.drop();
 	xywh.drop();
-	data.drop();
 	getid = 0;
+}
+
+dword _img::add_pos(dword _path, _x, _y)
+{
+	char full_path[URL_SIZE];
+	strncpy(#full_path, _path, URL_SIZE);
+	get_absolute_url(#full_path, history.current());
+
+	url.add(#full_path);
+	xywh.add(_x);
+	xywh.add(_y);
+	xywh.add(NULL);
+	xywh.add(NULL);
+	return full_path;
+}
+
+bool _img::set_size(dword _buf, _size)
+{
+	char vvv[1000];
+	int w, h;
+	img_decode stdcall (_buf, _size, 0);
+	if (EAX) {
+		EDI = EAX;
+		w = ESDWORD[EDI+4];
+    	h = ESDWORD[EDI+8];
+		xywh.set(getid*4+2, ESDWORD[EDI+4]);
+		xywh.set(getid*4+3, ESDWORD[EDI+8]);
+		sprintf(#vvv, "%s w:%i h:%i", current_url(), w, h);
+		debugln(#vvv);
+	}	
 }
 
 dword _img::current_url()
@@ -51,39 +67,27 @@ bool _img::next_url()
 	return 0;
 }
 
-void _img::set_data(dword _data, _data_len)
+void _img::draw_all(int _x, _y, _start, _height)
 {
-	data.set(getid, _data);
-}
-
-void _img::draw(int _x, _y, _start, _height)
-{
-	int i, img_x, img_y;
+	int i, img_y;
 
 	for (i=0; i<url.count; i++) 
 	{
-		img_x = xywh.get(i*4);
 		img_y = xywh.get(i*4 + 1);
 
 		if (img_y > _start) && (img_y < _start + _height) 
-		{
-			if (cache.has(url.get(i)))
-			DrawLibimgImage(img_x + _x, img_y-_start + _y, cache.current_buf, cache.current_size);
-		}
+		&& (cache.has(url.get(i))) draw(_x, _y, _start, i);
 	}
 }
 
-void DrawLibimgImage(dword _x, _y, _data, _data_len)
+bool _img::draw(int _x, _y, _start, i)
 {
 	libimg_image im;
-	img_decode stdcall (_data, _data_len, 0);
-	$or      eax, eax
-	$jz      __ERROR__
-	
-	im.image = EAX;
-	im.set_vars();
-	im.draw(_x, _y, im.w, im.h, 0, 0);	
-__ERROR__:
+	img_decode stdcall (cache.current_buf, cache.current_size, 0);
+	if (EAX) {
+		im.image = EAX;
+		im.draw(xywh.get(i*4) + _x, xywh.get(i*4+1) - _start + _y, im.w, im.h, 0, 0);				
+	}	
 }
 
 /*
@@ -136,12 +140,3 @@ ImageCache ImgCache;
 
 */
 
-#else
-dword _img::add(dword _path, _x, _y) {};
-void _img::clear() {};
-dword _img::current_url() {};
-bool _img::next_url() {};
-void _img::set_data(dword _data, _data_len) {};
-void _img::draw(int _x, _y, _start, _height) {};
-
-#endif

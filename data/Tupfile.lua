@@ -646,7 +646,6 @@ tup.append_table(img_files, {
  {"NETWORK/WEBVIEW", PROGS .. "/cmm/browser/WebView.com"},
 })
 tup.append_table(extra_files, {
- {"kolibrios/develop/utils/codeview", PROGS .. "/cmm/codeview/codeview.com"},
  {"kolibrios/drivers/drvinst.kex", PROGS .. "/cmm/drvinst/drvinst.com"},
  {"kolibrios/games/pig/pigex", PROGS .. "/cmm/examples/pigex.com"},
  {"kolibrios/games/the_bus/the_bus", PROGS .. "/cmm/the_bus/the_bus.com"},

@@ -446,7 +446,7 @@ void TWebBrowser::SetStyle() {
 		if (value = tag.get_value_of("alt=")) && (strlen(value)<sizeof(line)-3) && (value) sprintf(#line, "[%s]", value); 
 		if (!img_path) { line=0; return; }
 		style.image = true;
-		page_img.add(#img_path, stolbec+1*list.font_w+3, draw_y);
+		page_img.add_pos(#img_path, stolbec+1*list.font_w+3, draw_y);
 		text_colors.add(0x9A6F29);
 		if (!line) {
 			if (!strncmp(#img_path, "data:", 5)) img_path=0;
@@ -607,6 +607,6 @@ void TWebBrowser::NewLine()
 void TWebBrowser::DrawPage()
 {
 	PutPaletteImage(list.first * DrawBuf.bufw * 4 + buf_data+8, DrawBuf.bufw, list.h, DrawBuf.bufx, DrawBuf.bufy, 32, 0);
-	page_img.draw(list.x, list.y, list.first, list.h);
+	page_img.draw_all(list.x, list.y, list.first, list.h);
 	DrawScroller();
 }

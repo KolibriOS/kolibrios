@@ -31,7 +31,7 @@
 
 char editbox_icons[] = FROM "res/editbox_icons.raw";
 
-char version[]="WebView 2.7c";
+char version[]="WebView 2.7e";
 
 #include "texts.h"
 #include "cache.h"
@@ -236,7 +236,7 @@ void main()
 			if (http.transfer <= 0) break;
 			http.receive();
 			EventUpdateProgressBar();
-			CheckContentType();
+			if (http_get_type==PAGE) CheckContentType();
 			if (http.receive_result != 0) break;
 			if (http.status_code >= 300) && (http.status_code < 400)
 			{
@@ -259,7 +259,7 @@ void main()
 				}
 				else if (http_get_type==IMG) {
 					cache.add(WB1.page_img.current_url(), http.content_pointer, http.content_received, IMG);
-					WB1.page_img.set_data(cache.data.get_last(), http.content_received);
+					WB1.page_img.set_size(http.content_pointer, http.content_received);
 					GetImg();
 				}
 			}
