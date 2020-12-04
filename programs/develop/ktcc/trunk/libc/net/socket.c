@@ -96,5 +96,6 @@ int socketpair()
     asm volatile(
         "int $0x40"
         :"=b"(err_code)
+        :"a"(75), "b"(10)
     ); 
 }
