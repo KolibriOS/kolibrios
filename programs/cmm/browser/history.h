@@ -42,16 +42,10 @@ ShowHistory()
 	strcat(history_pointer, "<br><b>Cached images</b><br>");
 	for (i=1; i<cache.url.count; i++) if (cache.type.get(i) == IMG)
 	{
-		strcat(history_pointer, "<a href='");
 		strcat(history_pointer, cache.url.get(i));
-		strcat(history_pointer, "'>");
+		strcat(history_pointer, "<img src='");
 		strcat(history_pointer, cache.url.get(i));
-		strcat(history_pointer, "</a><br>");
-		
-		// strcat(history_pointer, "<img src='");
-		// strcat(history_pointer, #pics[i].path);
-		// strcat(history_pointer, "'><br>");
-		// strcat(history_pointer, #pics[i].path);
+		strcat(history_pointer, "'><br>");
 	}
 
 	strcat(history_pointer, "</body></html>");

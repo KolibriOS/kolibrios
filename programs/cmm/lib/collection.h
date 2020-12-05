@@ -16,7 +16,7 @@ struct collection_int
 	void alloc();
 	void add();
 	dword get();
-	void set();
+	dword set();
 	void swap();
 	dword len();
 	dword get_last();
@@ -47,10 +47,11 @@ struct collection_int
 }
 
 
-:void collection_int::set(dword pos, _in) {
+:dword collection_int::set(dword pos, _in) {
 	while (pos >= count) add(0);
 	EAX = pos * sizeof(dword) + buf;
 	ESDWORD[EAX] = _in;
+	return ESDWORD[EAX];
 }
 
 :void collection_int::swap(dword pos1, pos2) {

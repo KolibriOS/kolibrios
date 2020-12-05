@@ -5,7 +5,7 @@
 #define MOUSE_LEFT   001b
 #define MOUSE_RIGHT  010b
 #define MOUSE_LR     011b
-#define MOUSE_CENTER 100b
+#define MOUSE_MIDDLE 100b
 
 /**
  *  The structure of the MOUSE

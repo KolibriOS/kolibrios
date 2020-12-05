@@ -1,5 +1,5 @@
 CustomCursor CursorPointer;
-dword CursorFile = FROM "../TWB/pointer.cur";
+dword CursorFile = FROM "TWB/pointer.cur";
 #include "..\lib\collection.h"
 
 struct PAGE_LINKS {
