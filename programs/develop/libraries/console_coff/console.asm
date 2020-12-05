@@ -7,7 +7,6 @@ format MS COFF
 public EXPORTS
 
 section '.flat' code readable align 16
-
 include 'font.inc'
 include 'conscrl.inc'
 
@@ -1882,6 +1881,12 @@ con.msg_loop:
         jmp     con.mouse
 con.button:
 ; we have only one button, close
+        mov     eax, 18
+        mov     ebx, 18
+        mov     ecx,[process_info_buffer+30]
+        dec     ecx
+        int     0x40 ; kill parent process
+
 con.thread_exit:
         or      byte [con_flags+1], 2
         and     [con.console_tid], 0
