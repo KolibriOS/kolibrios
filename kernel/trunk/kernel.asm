@@ -1747,12 +1747,7 @@ sys_getsetup:
         jnz     .shift
 
         ; if given memory address belongs to kernel then error
-        push    ebx 
-        mov     eax, ebx
-        mov     ebx, 128
-        call    is_region_userspace
-        pop     ebx
-        test    eax, eax
+        stdcall is_region_userspace, ebx, 128
         jz      .addr_error
 
         mov     eax, keymap
@@ -1765,12 +1760,7 @@ sys_getsetup:
         dec     ecx
         jnz     .alt
 
-        push    ebx 
-        mov     eax, ebx
-        mov     ebx, 128
-        call    is_region_userspace
-        pop     ebx
-        test    eax, eax
+        stdcall is_region_userspace, ebx, 128
         jz      .addr_error
 
         mov     eax, keymap_shift
@@ -1783,12 +1773,7 @@ sys_getsetup:
         dec     ecx
         jne     .country
 
-        push    ebx 
-        mov     eax, ebx
-        mov     ebx, 128
-        call    is_region_userspace
-        pop     ebx
-        test    eax, eax
+        stdcall is_region_userspace, ebx, 128
         jz      .addr_error
 
         mov     eax, keymap_alt
@@ -2468,10 +2453,7 @@ sysfn_lastkey:          ; 18.12 = return 0 (backward compatibility)
 ;------------------------------------------------------------------------------
 sysfn_getversion:       ; 18.13 = get kernel ID and version
         ; if given memory address belongs to kernel then error
-        mov     eax, ecx
-        mov     ebx, version_end-version_inf
-        call    is_region_userspace
-        test    eax, eax
+        stdcall is_region_userspace, ecx, version_end-version_inf
         jz      .addr_error
 
         mov     edi, ecx
@@ -3182,12 +3164,7 @@ sys_cpuusage:
 ;  +30 dword     PID , process idenfification number
 ;
         ; if given memory address belongs to kernel then error
-        push    ebx
-        mov     eax, ebx
-        mov     ebx, 0x4C
-        call    is_region_userspace
-        pop     ebx
-        test    eax, eax
+        stdcall is_region_userspace, ebx, 0x4C
         jz      .addr_error
 
         cmp     ecx, -1 ; who am I ?
@@ -5701,18 +5678,27 @@ undefined_syscall:                      ; Undefined system call
         mov     [esp + 32], dword -1
         ret
 
-align 4
 ; check if given memory region lays in lower 2gb (userspace memory) or not
-is_region_userspace:
-; in:  eax = base
-;      ebx = len
-; out: eax = 1 if region in userspace memory, 0 if not
-        push    esi edi ecx
+align 4
+proc is_region_userspace stdcall, base:dword, len:dword
+; in:
+;      base = base address of region
+;      len = lenght of region
+; out: ZF = 1 if region in userspace memory
+;      ZF = 0 otherwise
+        push    eax ebx
+        mov     eax, [base]
 
         cmp     eax, OS_BASE
         ja      @f
 
-        add     eax, ebx
+        mov     ebx, 0xFFFFFFFF
+        sub     ebx, [base]
+        inc     ebx
+        cmp     [len], ebx
+        ja      @f
+
+        add     eax, [len]
         cmp     eax, OS_BASE
         ja      @f
 
@@ -5721,8 +5707,10 @@ is_region_userspace:
 @@:
         xor     eax, eax
 .ret:
-        pop     ecx edi esi
+        test    eax, eax
+        pop     ebx eax
         ret 
+endp
 
 if ~ lang eq sp
 diff16 "end of .text segment",0,$
