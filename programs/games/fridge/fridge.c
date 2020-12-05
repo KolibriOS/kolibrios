@@ -3,11 +3,10 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <time.h>
-
-#include "kolibri_libimg.h"
-
-
-
+#include <kolibri_libimg.h>
+/*
+#include "mp3.h"
+*/
 //EVENTS LOOK LIKE IN C--
 #define evReDraw  1
 #define evKey     2
@@ -31,10 +30,6 @@ int field[_size][_size] = {
 	{0, 0, 1, 0},
 	{0, 0, 0, 1},
 	{1, 0, 0, 0}
-	/*{0, 0, 0, 0},
-	{0, 0, 0, 0},
-	{0, 0, 0, 0},
-	{0, 0, 0, 0}*/
 };
 short vict = 0;
 short debug_pr = 0;
@@ -173,6 +168,8 @@ void Button() {
 			draw_game_window();
 		} else
 		{
+			// PlayMusic("./rotate.mp3");
+			
 			int x = (id/10)-1;
 			int y = (id%10)-1;
 			
