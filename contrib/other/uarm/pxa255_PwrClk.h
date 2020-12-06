@@ -2,7 +2,7 @@
 #define _PXA255_PWR_CLK_H_
 
 #include "mem.h"
-#include "cpu.h"
+#include "CPU.h"
 
 
 

@@ -2,7 +2,7 @@
 #define _PXA255_LCD_H_
 
 #include "mem.h"
-#include "cpu.h"
+#include "CPU.h"
 #include "pxa255_IC.h"
 
 #ifndef EMBEDDED

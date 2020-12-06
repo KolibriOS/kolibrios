@@ -2,7 +2,7 @@
 #define _PXA255_UART_H_
 
 #include "mem.h"
-#include "cpu.h"
+#include "CPU.h"
 #include "pxa255_IC.h"
 
 

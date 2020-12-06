@@ -2,7 +2,7 @@
 #define _PXA255_DSP_H_
 
 #include "mem.h"
-#include "cpu.h"
+#include "CPU.h"
 
 
 

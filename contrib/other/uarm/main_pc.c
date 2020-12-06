@@ -176,8 +176,8 @@ int main(int argc, char** argv){
 	int gdbPort = 0;
 	
 	if(argc != 3 && argc != 2){
-		fprintf(stderr,"usage: %s path_to_disk [gdbPort]\n", argv[0]);
-		return -1;	
+		fprintf(stdout,"usage: %s path_to_disk [gdbPort]\n", argv[0]);
+		return 0;	
 	}
 	
 	//setup the terminal

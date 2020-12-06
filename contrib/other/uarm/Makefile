@@ -9,8 +9,14 @@ LDFLAGS = -static -S -nostdlib -T $(SDK_DIR)/sources/newlib/app.lds --image-base
 INCLUDES = -I $(SDK_DIR)/sources/newlib/libc/include
 LIBPATH = -L $(SDK_DIR)/lib -L /home/autobuild/tools/win32/mingw32/lib
 
-SRC := $(notdir $(wildcard *.c))
-OBJECTS =  $(patsubst %.c, %.o, $(SRC))
+
+# Only selected
+SRC = RAM.c icache.c MMU.c pxa255_PwrClk.c pxa255_IC.c pxa255_GPIO.c callout_RAM.c rt.c pxa255_RTC.c SoC.c pxa255_UART.c pxa255_TIMR.c mem.c dcache.c pxa255_LCD.c cp15.c pxa255_DMA.c math64.c CPU.c main_pc.c pxa255_DSP.c
+
+# All .c files
+# SRC = $(notdir $(wildcard *.c))
+
+OBJECTS = $(patsubst %.c, %.o, $(SRC))
 
 default: $(patsubst %.c,%.o,$(SRC))
 	kos32-ld $(LDFLAGS) $(LIBPATH) --subsystem console -o uARMk $(OBJECTS) -lgcc -lc.dll
@@ -18,3 +24,6 @@ default: $(patsubst %.c,%.o,$(SRC))
 
 %.o : %.c Makefile $(SRC)
 	$(CC) $(CFLAGS) $(INCLUDES) -o $@ $<
+
+clean:
+	rm *.o
