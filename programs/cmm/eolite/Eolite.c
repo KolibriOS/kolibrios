@@ -134,7 +134,7 @@ int status_bar_h = 0;
 int icon_size = 16;
 
 edit_box new_file_ed = {200,213,180,0xFFFFFF,0x94AECE,0xFFFFFF,0xFFFFFF,0x10000000,
-	248,#new_element_name,0,100000000000010b,6,0};
+	248,#new_element_name,0,ed_focus+ed_always_focus,6,0};
 PathShow_data FileShow = {0, 56,215, 8, 100, 1, 0, 0x0, 0xFFFfff, #file_name, #temp, 0};
 byte cmd_free=0;
 #include "include\translations.h"
@@ -1086,8 +1086,7 @@ void NewElement_Form(byte crt, dword strng)
 	if (!new_element_active)
 	{
 		new_element_active = crt;
-		strcpy(#new_element_name, strng);
-		EditBox_UpdateText(#new_file_ed, ed_focus+ed_always_focus);
+		edit_box_set_text stdcall (#new_file_ed, strng);
 	}
 	if (new_element_active==3) DrawEolitePopup(T_RENAME, T_CANCEL);
 	else DrawEolitePopup(T_CREATE, T_CANCEL);

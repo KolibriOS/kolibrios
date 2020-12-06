@@ -43,7 +43,9 @@ void main()
 			strcpy(#main_url, #param);
 		}
 	}
-	if (main_url[0]) StartDownloading(); else strcpy(#main_url, "http://");
+	if (main_url[0]) StartDownloading(); else {
+		edit_box_set_text stdcall (#ed, "http://");
+	}
  
 	@SetEventMask(EVM_REDRAW + EVM_KEY + EVM_BUTTON + EVM_MOUSE + EVM_MOUSE_FILTER + EVM_STACK);
 	@SetWindowLayerBehaviour(-1, ZPOS_ALWAYS_TOP);
