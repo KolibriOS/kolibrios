@@ -166,7 +166,6 @@ void EventTabClick(int _id)
 	if (_id==-1) _id = tab.count-1;
 	tab.save_state();
 	tab.restore(_id);
-	SetElementSizes();
 	if (!BrowserWidthChanged()) {
 		DrawTabsBar();
 		WB1.ParseHtml(WB1.bufpointer, WB1.bufsize);
@@ -192,24 +191,3 @@ void EventActivatePreviousTab()
 	EventTabClick(tab.active-1);
 }
 
-
-:void DebugTabs()
-{
-	debugln("\n\n\nHISTORY==========================");
-	history.add("history");
-	history.debug();
-
-	debugln("\n\n\nTABSTORY[0]======================");
-	tabstory[0].add("tabstory0");
-	tabstory[0].debug();
-
-	debugln("\n\n\nTABSTORY[1]======================");
-	tabstory[1].add("tabstory1");
-	tabstory[1].debug();
-
-	debugln("\n\n\n\n");
-	debugval("history.items.data_start", history.items.data_start);
-	debugval("tabstory[0].items.data_start", tabstory[0].items.data_start);
-	debugval("tabstory[1].items.data_start", tabstory[1].items.data_start);
-	debugln("\n\n\n\n");
-}

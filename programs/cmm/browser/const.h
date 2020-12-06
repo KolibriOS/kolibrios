@@ -64,3 +64,17 @@ char clear_cache_ok[] = "'WebView\nThe cache has been cleared.' -tI";
 #define URL_SERVICE_HELP "WebView:help"
 
 char webview_shared[] = "WEBVIEW";
+
+enum { 
+	NEW_TAB=600,
+	ENCODINGS=700,
+	BACK_BUTTON=800, 
+	FORWARD_BUTTON,  REFRESH_BUTTON, GOTOURL_BUTTON,   CHANGE_ENCODING,
+	SANDWICH_BUTTON, VIEW_SOURCE,    EDIT_SOURCE,      OPEN_FILE,
+	NEW_WINDOW,      VIEW_HISTORY,   DOWNLOAD_MANAGER, CLEAR_CACHE,
+	UPDATE_BROWSER,  IN_NEW_TAB,     IN_NEW_WINDOW,    COPY_LINK_URL,
+	DOWNLOAD_LINK_CT, TAB_ID, 
+	TAB_CLOSE_ID = 900
+};
+
+char editbox_icons[] = FROM "res/editbox_icons.raw";
