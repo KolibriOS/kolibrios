@@ -19,8 +19,8 @@ SRC = RAM.c icache.c MMU.c pxa255_PwrClk.c pxa255_IC.c pxa255_GPIO.c callout_RAM
 OBJECTS = $(patsubst %.c, %.o, $(SRC))
 
 default: $(patsubst %.c,%.o,$(SRC))
-	kos32-ld $(LDFLAGS) $(LIBPATH) --subsystem console -o uARMk $(OBJECTS) -lgcc -lc.dll
-	objcopy uARMk -O binary
+	kos32-ld $(LDFLAGS) $(LIBPATH) --subsystem console -o uARM $(OBJECTS) -lgcc -lc.dll
+	objcopy uARM -O binary
 
 %.o : %.c Makefile $(SRC)
 	$(CC) $(CFLAGS) $(INCLUDES) -o $@ $<
