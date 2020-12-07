@@ -171,8 +171,9 @@ extern int  stdcall _ksys_pci_write_config_word(int bus,int dev,int fn,int reg,i
 extern int  stdcall _ksys_pci_write_config_dword(int bus,int dev,int fn,int reg,int value);
 //--------------------------------------------------------------------------------------
 
-//------------------------Process information--------------------------------------
+//------------------------Working with processes--------------------------------------
 extern int  stdcall _ksys_get_process_table(struct process_table_entry *proctab,int pid); //if pid=-1 than get info about him.
+extern int  stdcall _ksys_kill_process(int pid); // if it returns -1 then an error.
 //---------------------------------------------------------------------------------
 
 //-----------------Old functions for work with sound(Sound Blaster only).---------

@@ -13,4 +13,5 @@
 ../tcc console/console.c -lck -limg -o /tmp0/1/console
 ../tcc dir_example.c -lck -o /tmp0/1/dir_example
 ../tcc net/tcpsrv_demo.c -lck -o /tmp0/1/tcpsrv_demo
+../tcc net/nslookup.c -lck -o /tmp0/1/nslookup
 exit
