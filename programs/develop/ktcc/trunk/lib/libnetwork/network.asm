@@ -43,7 +43,7 @@ import networklib, \
         inet_ntoa, 'inet_ntoa', \
         getaddrinfo, 'getaddrinfo', \
         freeaddrinfo, 'freeaddrinfo'
-	
+
 public inet_addr as 'inet_addr'
 public inet_ntoa as 'inet_ntoa'
 public getaddrinfo as 'getaddrinfo'
