@@ -188,15 +188,13 @@ void properties_dialog()
 	else
 	{
 		GetFileInfo(#file_path, #file_info_general);
-		strcpy(#file_name2, #file_name);
-		EditBox_UpdateText(#file_name_ed, 0);
+		edit_box_set_text stdcall (#file_name_ed, #file_name);
 		if(itdir) dir_size.get(#file_path);
 		ch_read_only.checked = file_info_general.readonly;
 		ch_hidden.checked = file_info_general.hidden;
 		ch_system.checked = file_info_general.system;
 	}
-	strcpy(#path_to_file, #path);
-	path_to_file_ed.size = strlen(#path_to_file);
+	edit_box_set_text stdcall (#path_to_file_ed, #path);
 	
 	SetEventMask(EVM_REDRAW + EVM_KEY + EVM_BUTTON + EVM_MOUSE + EVM_MOUSE_FILTER);
 	loop() switch(WaitEvent())

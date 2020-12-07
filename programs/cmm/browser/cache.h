@@ -6,6 +6,7 @@ struct _cache
 {
 	dword current_buf;
 	dword current_size;
+	dword current_type;
 	collection url;
 	collection_int data;
 	collection_int size;
@@ -34,6 +35,7 @@ bool _cache::has(dword _link)
 	if (pos != -1) {
 		current_buf = data.get(pos);
 		current_size = size.get(pos);
+		current_type = type.get(pos);
 		return true;
 	}
 	return false;

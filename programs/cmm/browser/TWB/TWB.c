@@ -31,7 +31,7 @@ struct _style {
 struct TWebBrowser {
 	llist list;
 	_style style;
-	_img page_img;
+	_img img;
 	dword draw_y, stolbec;
 	int zoom;
 	dword o_bufpointer;
@@ -129,7 +129,7 @@ void TWebBrowser::SetPageDefaults()
 	DrawBuf.Fill(0, page_bg);
 	links.clear();
 	anchors.clear();
-	page_img.clear();
+	img.clear();
 	text_colors.drop();
 	text_colors.add(0);
 	header = NULL;
@@ -254,10 +254,11 @@ void TWebBrowser::ParseHtml(dword _bufpointer, _bufsize){
 
 			ignor_param=false;
 			while (ESBYTE[bufpos] !='>') && (bufpos < bufpointer + bufsize) //ïîëó÷àåì òåã è åãî ïàðàìåòðû
+			//&& (!chrnum(#tag.params,'\"') % 2) //<a title="<small>ATI</small><br>9800xt" href="vgamuseum.ru/9800xt">
 			{
 				bukva = ESBYTE[bufpos];
 				if (__isWhite(bukva)) bukva = ' ';
-				if (!ignor_param) && (bukva <>' ') {
+				if (!ignor_param) && (bukva!=' ') {
 					if (strlen(#tag.name)+1<sizeof(tag.name)) chrcat(#tag.name, bukva);
 				} else {
 					ignor_param = true;
@@ -450,6 +451,50 @@ void TWebBrowser::SetStyle() {
 	}
 	if (tag.is("img")) {
 		value = tag.get_value_of("src=");
+		if (!value) goto NOIMG;
+
+		strlcpy(#img_path, value, sizeof(img_path)-1);
+		get_absolute_url(#img_path, history.current());
+
+		if (cache.has(#img_path)) 
+		{
+			img_decode stdcall (cache.current_buf, cache.current_size, 0);
+			if (!EAX) goto NOIMG;
+
+			EDI = EAX;
+			img.w.add(ESDWORD[EDI+4]);
+			img.h.add(ESDWORD[EDI+8]);
+			free(EDI);
+
+			img.url.add(#img_path);
+
+			if (img.w.get_last() / 6 + 1 + stolbec > list.column_max) {
+				NewLine();
+			} 
+			img.x.add(stolbec*list.font_w+3);
+			img.y.add(draw_y);
+
+			stolbec += img.w.get_last() / 6 + 1;
+
+			if (img.h.get_last() > list.item_h) {
+				draw_y += img.h.get_last() - list.item_h; 
+				NewLine();
+			}
+
+			if (link) links.add_text(
+				img.x.get_last() + list.x,
+				img.y.get_last() + list.y, 
+				img.w.get_last(), 
+				img.h.get_last(), 
+				0);
+
+			//debugval(img.url.get_last(), img.y.get_last());
+
+			return;
+		} else {
+			img.url.add(#img_path);
+		}
+		NOIMG:
 
 		/*
 		if (streqrp(value, "data:")) {
@@ -460,30 +505,6 @@ void TWebBrowser::SetStyle() {
 			base64_decode stdcall (#pass_b64, value, strlen(value));
 		} else 
 		*/
-		strlcpy(#img_path, value, sizeof(img_path)-1);
-		
-		if (!img_path) { line=0; return; }
-
-		value = page_img.add_pos(#img_path, stolbec+1*list.font_w+3, draw_y);
-
-		if (cache.has(value)) {
-			if (page_img.set_size(page_img.url.count-1, cache.current_buf, cache.current_size)) {
-
-				if (link) links.add_text(
-					stolbec * list.font_w + BODY_MARGIN + list.x,
-					draw_y + list.y, 
-					page_img.xywh.get(page_img.url.count-1*4+2), 
-					page_img.xywh.get(page_img.url.count-1*4+3), 
-					0);
-
-				stolbec += page_img.xywh.get(page_img.url.count-1*4+2) / 6 + 1;
-				//if (stolbec > list.column_max) NewLine();
-				value = page_img.xywh.get(page_img.url.count-1*4+3);
-				if (value > list.item_h) {draw_y += value - list.item_h; NewLine();}
-
-				return;
-			}
-		}
 
 		if (value = tag.get_value_of("title=")) && (strlen(value)<sizeof(line)-3) && (value) sprintf(#line, "[%s]", value); 
 		if (value = tag.get_value_of("alt=")) && (strlen(value)<sizeof(line)-3) && (value) sprintf(#line, "[%s]", value);
@@ -587,7 +608,7 @@ void TWebBrowser::SetStyle() {
 			value += strrchr(value, '='); //search in content=
 			if (ESBYTE[value] == '"') value++;
 			strlwr(value);
-			if      (streqrp(value,"utf-8"))        || (streqrp(value,"utf8"))        { ChangeEncoding(CH_UTF8); debugln("UTF"); }
+			if      (streqrp(value,"utf-8"))        || (streqrp(value,"utf8"))        ChangeEncoding(CH_UTF8);
 			else if (streqrp(value,"windows-1251")) || (streqrp(value,"windows1251")) ChangeEncoding(CH_CP1251);
 			else if (streqrp(value,"dos"))          || (streqrp(value,"cp-866"))      ChangeEncoding(CH_CP866);
 			else if (streqrp(value,"iso-8859-5"))   || (streqrp(value,"iso8859-5"))   ChangeEncoding(CH_ISO8859_5);
@@ -648,7 +669,16 @@ void TWebBrowser::NewLine()
 //============================================================================================
 void TWebBrowser::DrawPage()
 {
+	int i, img_y;
 	PutPaletteImage(list.first * DrawBuf.bufw * 4 + buf_data+8, DrawBuf.bufw, list.h, DrawBuf.bufx, DrawBuf.bufy, 32, 0);
-	page_img.draw_all(list.x, list.y, list.w, list.h, list.first);
 	DrawScroller();
+	//img.draw_all(list.x, list.y, list.w, list.h, list.first);
+
+	for (i=0; i<img.url.count; i++) 
+	{
+		img_y = img.y.get(i);
+
+		if (img_y + img.h.get(i) > list.first) && (img_y - list.h < list.first) 
+		&& (cache.has(img.url.get(i))) img.draw(list.x, list.y, list.w, list.h, list.first, i);
+	}
 }

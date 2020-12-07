@@ -2,15 +2,10 @@
 struct _img
 {
 	collection url;
-	collection_int xywh;
-	int getid;
+	collection_int x,y,w,h;
 
 	void clear();
-	dword add_pos();
-	bool set_size();
-
-	dword current_url();
-	bool next_url();
+	void add();
 	
 	void draw_all();
 	bool draw();
@@ -19,80 +14,55 @@ struct _img
 void _img::clear()
 {
 	url.drop();
-	xywh.drop();
-	getid = 0;
+	x.drop();
+	y.drop();
+	w.drop();
+	h.drop();
 }
 
-dword _img::add_pos(dword _path, _x, _y)
+void _img::add(dword _path, _x, _y, _w, _h)
 {
-	char full_path[URL_SIZE];
-	strncpy(#full_path, _path, URL_SIZE);
-	get_absolute_url(#full_path, history.current());
-
-	url.add(#full_path);
-	xywh.add(_x);
-	xywh.add(_y);
-	xywh.add(NULL);
-	xywh.add(NULL);
-	return #full_path;
+	url.add(_path);
+	x.add(_x);
+	y.add(_y);
+	w.add(_w);
+	h.add(_h);
 }
 
-bool _img::set_size(dword _id, _buf, _size)
-{
-	img_decode stdcall (_buf, _size, 0);
-	if (EAX) {
-		EDI = EAX;
-		xywh.set(_id*4+2, ESDWORD[EDI+4]);
-		xywh.set(_id*4+3, ESDWORD[EDI+8]);
-		free(EDI);
-		return true;
-	}	
-	return false;
-}
-
-//DELTE!!!!!11111111111111111111111111111111111111
-dword _img::current_url()
-{
-	return url.get(getid);
-}
-
-//DELTE!!!!!11111111111111111111111111111111111111
-bool _img::next_url()
-{
-	if (getid < url.count-1) {
-		getid++;
-		return 1;
-	}
-	return 0;
-}
-
+/*
 void _img::draw_all(int _x, _y, _w, _h, _start)
 {
 	int i, img_y;
 
 	for (i=0; i<url.count; i++) 
 	{
-		img_y = xywh.get(i*4 + 1);
+		img_y = y.get(i);
 
-		if (img_y > _start) && (img_y < _start + _h) 
+		if (img_y + h.get(i) > _start) && (img_y - _h < _start) 
 		&& (cache.has(url.get(i))) draw(_x, _y, _w, _h, _start, i);
 	}
 }
+*/
 
 bool _img::draw(int _x, _y, _w, _h, _start, i)
 {
-	int img_x, img_y, img_w, img_h;
+	int img_x, img_y, img_w, img_h, invisible_h=0;
 	img_decode stdcall (cache.current_buf, cache.current_size, 0);
 	if (EAX) {
 		EDI = EAX;
 
-		img_x = xywh.get(i*4+0);
-		img_y = xywh.get(i*4+1);
-		img_w = math.min(xywh.set(getid*4+2, ESDWORD[EDI+4]), _w - img_x);
-		img_h = math.min(xywh.set(getid*4+3, ESDWORD[EDI+8]), _h + _start - img_y);
+		img_x = x.get(i);
+		img_y = y.get(i);
+		img_w = math.min(w.set(i, ESDWORD[EDI+4]), _w - img_x);
+		img_h = math.min(h.set(i, ESDWORD[EDI+8]), _h + _start - img_y);
 
+		if (_start > img_y) {
+			invisible_h = _start - img_y;
+			img_y = _start;
+		}
 
-		img_draw stdcall(EDI, img_x + _x, img_y - _start + _y, img_w, img_h, 0, 0);	
+		img_draw stdcall(EDI, img_x + _x, img_y - _start + _y, img_w, img_h - invisible_h, 0, invisible_h);	
 		free(EDI);
 	}	
 }
+

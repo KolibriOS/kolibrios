@@ -33,17 +33,18 @@
 #include "..\lib\patterns\toolbar_button.h"
 #include "..\lib\patterns\restart_process.h"
 
+#include "const.h"
+#include "cache.h"
+#include "show_src.h"
+
 //===================================================//
 //                                                   //
 //                       DATA                        //
 //                                                   //
 //===================================================//
+char version[]="WebView 2.8 BETA";
 
-char version[]="WebView 2.8 ALPHA PREVIEW";
-
-#include "const.h"
-#include "cache.h"
-#include "show_src.h"
+#define DEFAULT_URL URL_SERVICE_HOMEPAGE
 
 bool debug_mode = false;
 bool show_images = false;
@@ -72,9 +73,12 @@ progress_bar prbar;
 char stak[4096];
 proc_info Form;
 
-int menu_id=NULL;
-
 #include "tabs.h"
+
+dword cur_img_url;
+dword shared_url;
+dword http_get_type;
+int menu_id=NULL;
 
 char default_dir[] = "/rd/1";
 od_filter filter2 = { 22, "TXT\0HTM\0HTML\0DOCX\0\0" };
@@ -82,10 +86,6 @@ od_filter filter2 = { 22, "TXT\0HTM\0HTML\0DOCX\0\0" };
 char editURL[URL_SIZE+1];
 edit_box omnibox_edit = {, PADDING+TSZE*2+PADDING+6, PADDING+3, 0xffffff,
 	0x94AECE, 0xffffff, 0xffffff,0x10000000,URL_SIZE-2,#editURL,0,,19,19};
-
-dword shared_url;
-
-dword http_get_type;
 
 //===================================================//
 //                                                   //
@@ -108,7 +108,7 @@ void LoadLibraries()
 void HandleParam()
 {
 	if (!param) {
-		history.add(URL_SERVICE_HOMEPAGE);
+		history.add(DEFAULT_URL);
 	} else {
 		if (!strncmp(#param, "-source ", 8)) {
 			source_mode = true;
@@ -203,8 +203,16 @@ void main()
 		case evNetwork:
 			if (http.transfer <= 0) break;
 			http.receive();
-			if (http_get_type==PAGE) CheckContentType();
-			EventUpdateProgressBar();
+
+			if (http_get_type==PAGE) {
+				CheckContentType();				
+				prbar.max = http.content_length;
+				if (prbar.value != http.content_received) {
+					prbar.value = http.content_received;	
+					DrawProgress();
+				}
+			}
+
 			if (http.receive_result != 0) break;
 			if (http.status_code >= 300) && (http.status_code < 400)
 			{
@@ -226,9 +234,8 @@ void main()
 					LoadInternalPage(http.content_pointer, http.content_received);
 				}
 				else if (http_get_type==IMG) {
-					cache.add(WB1.page_img.current_url(), http.content_pointer, http.content_received, IMG);
-					WB1.page_img.set_size(WB1.page_img.getid, http.content_pointer, http.content_received);
-					GetImg();
+					cache.add(cur_img_url, http.content_pointer, http.content_received, IMG);
+					GetImg(false);
 				}
 			}
 			break;
@@ -300,6 +307,7 @@ bool ProcessKeyEvent()
 		case SCAN_CODE_RIGHT: ProcessButtonClick(FORWARD_BUTTON); return true;
 		case SCAN_CODE_KEY_W: EventCloseActiveTab(); return true;
 		case SCAN_CODE_TAB:   EventActivateNextTab(); return true;
+		case SCAN_CODE_F5:    EventClearCache(); return;
 		default: return false;
 	}
 
@@ -493,17 +501,20 @@ bool GetLocalFileData(dword _path)
 	return true;
 }
 
-void GetUrl(dword _http_url)
+bool GetUrl(dword _http_url)
 {
 	char new_url_full[URL_SIZE+1];
 
 	if (!strncmp(_http_url,"http:",5)) {
 		http.get(_http_url);
+		return true;
 	} else if (!strncmp(_http_url,"https://",8)) {
 		strcpy(#new_url_full, "http://gate.aspero.pro/?site=");
 		strncat(#new_url_full, _http_url, URL_SIZE);
 		http.get(#new_url_full);
+		return true;
 	}
+	return false;
 }
 
 void OpenPage(dword _open_URL)
@@ -537,7 +548,8 @@ void OpenPage(dword _open_URL)
 
 	if (cache.has(#new_url)) {
 		//CACHED PAGE
-		LoadInternalPage(cache.current_buf, cache.current_size);
+		if (cache.current_type==PAGE) LoadInternalPage(cache.current_buf, cache.current_size);
+		else {EventOpenDownloader(#new_url);return;}
 
 	} else if (!strncmp(#new_url,"WebView:",8)) {
 		//INTERNAL PAGE
@@ -708,7 +720,7 @@ void LoadInternalPage(dword _bufdata, _in_bufsize){
 		} else {
 			WB1.DrawPage();
 		}
-		GetImg();
+		GetImg(true);
 	}
 }
 
@@ -723,7 +735,7 @@ void DrawProgress()
 	dword pct;
 	if (!http.transfer) return;
 	if (http_get_type==PAGE) && (prbar.max) pct = prbar.value*30/prbar.max; else pct = 10;
-	if (http_get_type==IMG) pct = WB1.page_img.getid * 70 / WB1.page_img.url.count + 30;
+	if (http_get_type==IMG) pct = prbar.value * 70 / prbar.max + 30;
 	DrawBar(omnibox_edit.left-1, omnibox_edit.top+20, pct*omnibox_edit.width+16/100, 2, 0x72B7EB);
 }
 
@@ -763,16 +775,6 @@ void ProcessMenuClick()
 			ProcessButtonClick(click_id);
 		}
 		if (!menu_process_id) menu_id = NULL;
-	}
-}
-
-void EventUpdateProgressBar()
-{
-	prbar.max = http.content_length;
-	if (prbar.value != http.content_received)
-	{
-		prbar.value = http.content_received;	
-		DrawProgress();
 	}
 }
 
@@ -890,9 +892,7 @@ void DrawOmnibox()
 
 void SetOmniboxText(dword _text)
 {
-	strcpy(#editURL, _text);
-	omnibox_edit.flags=0;
-	DrawOmnibox();
+	edit_box_set_text stdcall (#omnibox_edit, _text);
 }
 
 dword GetAbsoluteActiveURL()
@@ -929,16 +929,22 @@ void HandleRedirect()
 	else if (http_get_type==IMG) GetUrl(#redirect_url);
 }
 
-dword GetImg()
+dword GetImg(bool _new)
 {
+	int i;
 	if (!show_images) return;
-	while (WB1.page_img.next_url()) {
-		DrawProgress();
-		if (cache.has(WB1.page_img.current_url())) continue;
-		http_get_type = IMG;
-		GetUrl(WB1.page_img.current_url());
-		return;
+	http_get_type = IMG;
+
+	for (i = 0; i < WB1.img.url.count; i++)
+	{
+		cur_img_url = WB1.img.url.get(i);
+		if (cache.has(cur_img_url)==false) {
+			prbar.max = WB1.img.url.count;
+			prbar.value = i;
+			if (GetUrl(cur_img_url)) {DrawProgress(); return;}
+		}
 	}
+	if (_new) return;
 	DrawOmnibox();
 	WB1.ParseHtml(WB1.o_bufpointer, WB1.bufsize);
 	WB1.DrawPage();
