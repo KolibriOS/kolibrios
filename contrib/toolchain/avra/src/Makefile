@@ -21,7 +21,7 @@ OBJ_ALL = $(OBJECTS) args.o stdextra.o
 default: avra
 
 avra: $(OBJ_ALL)
-	$(LD) $(OBJ_ALL) $(LDFLAGS) $(LIBPATH) -o avra -lgcc -lc.dll -lapp
+	$(LD) $(OBJ_ALL) $(LDFLAGS) $(LIBPATH) -o avra -lgcc -lc.dll
 	objcopy avra -O binary
 
 args.o: args.c misc.h args.h 
