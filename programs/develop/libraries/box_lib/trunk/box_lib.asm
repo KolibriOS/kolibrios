@@ -1,6 +1,6 @@
 ;*****************************************************************************
 ; Box_Lib - library of graphical components
-; Copyright (C) KolibriOS team 2008-2016. All rights reserved.
+; Copyright (C) KolibriOS team 2008-2020. All rights reserved.
 ;
 ; Authors:
 ; Alexey Teplov aka <Lrz>
@@ -19,7 +19,6 @@ section '.flat' code readable align 16
 include '../../../../macros.inc'
 include '../../../../proc32.inc'
 include '../../../../KOSfuncs.inc'
-include 'bl_sys.mac'
 include 'box_lib.mac' ;macro which should make life easier :)
 ;include '../../../../debug.inc'
 include 'keys.inc'
@@ -31,71 +30,20 @@ mem.realloc dd ? ;функция для перераспределения памяти
 dll.load    dd ?
 
 ;----------------------------------------------------
-;EditBox
-include 'editbox.asm' ;editbox
-
-;----------------------------------------------------
-;CheckBox
-include 'checkbox.asm' ;checkbox
-
+include 'editbox.asm'     ;editbox
+include 'checkbox.asm'    ;checkbox
+include 'optionbox.asm'   ;optionbox
+include 'scrollbar.asm'   ;scrollbar
+include 'd_button.asm'    ;dinamic_button
+include 'menubar.asm'     ;menubar
+include 'filebrowser.asm' ;filebrowser
+include 'tree_list.asm'   ;tree_list, list_box
+include 'pathshow.asm'    ;pathshow
+include 't_edit.asm'      ;text_editor
+include 'frame.asm'       ;frame
+include 'progressbar.asm' ;progressbar
+include 'tooltip.asm'     ;tooltip
 ;--------------------------------------------------
-;radiobutton Group
-include 'optionbox.asm' ;optionbox
-
-;--------------------------------------------------
-;scrollbar Group
-;--------------------------------------------------
-align 16
-use_scroll_bar
-align 16
-use_scroll_bar_vertical
-align 16
-use_scroll_bar_horizontal
-
-;--------------------------------------------------
-;dinamic button Group
-;--------------------------------------------------
-align 16
-use_dinamic_button
-
-;--------------------------------------------------
-;menubar Group
-;--------------------------------------------------
-align 16
-use_menu_bar
-
-;--------------------------------------------------
-;filebrowser Group
-;--------------------------------------------------
-align 16
-use_file_browser
-
-;--------------------------------------------------
-;tree list
-include 'tree_list.asm' ;tree_list, list_box
-
-;--------------------------------------------------
-;PathShow Group
-;--------------------------------------------------
-align 16
-use_path_show
-
-;--------------------------------------------------
-;text editor
-include 't_edit.asm' ;text_editor
-
-;--------------------------------------------------
-;Frame Group
-;--------------------------------------------------
-align 16
-use_frame
-;--------------------------------------------------
-;ProgressBar
-;--------------------------------------------------
-use_progressbar
-
-;--------------------------------------------------
-include 'tooltip.asm' ;tooltip
 
 ;input:
 ; eax = указатель на функцию выделения памяти
@@ -115,23 +63,23 @@ align 4
 proc draw_edge uses eax ebx ecx edx edi esi, box_l:dword, box_t:dword, box_w:dword, box_h:dword,\
         col_0:dword, col_1:dword, col_2:dword
 
-	mov esi,dword[col_1]
+	mov esi,[col_1]
 	and esi,111111101111111011111110b
 
 	mov eax,SF_DRAW_RECT
 	;bottom line
-	mov edx,dword[col_2]
-	mov ebx,dword[box_l]
+	mov edx,[col_2]
+	mov ebx,[box_l]
 	shl ebx,16
-	add ebx,dword[box_w]
+	add ebx,[box_w]
 	inc ebx ;для заливки диагональных пикселей
-	mov ecx,dword[box_t]
-	add ecx,dword[box_h]
+	mov ecx,[box_t]
+	add ecx,[box_h]
 	shl ecx,16
 	inc ecx
 
 	mov edi,3 ;for cycle
-        @@:
+	@@:
 		;calculate colors
 		and edx,111111101111111011111110b
 		add edx,esi
@@ -146,17 +94,17 @@ proc draw_edge uses eax ebx ecx edx edi esi, box_l:dword, box_t:dword, box_w:dwo
 	jnz @b
 
 	;right line
-	mov edx,dword[col_2]
-	mov ebx,dword[box_l]
-	add ebx,dword[box_w]
+	mov edx,[col_2]
+	mov ebx,[box_l]
+	add ebx,[box_w]
 	shl ebx,16
 	inc ebx
-	mov ecx,dword[box_t]
+	mov ecx,[box_t]
 	shl ecx,16
-	add ecx,dword[box_h]
+	add ecx,[box_h]
 
 	mov edi,3 ;for cycle
-        @@:
+	@@:
 		;calculate colors
 		and edx,111111101111111011111110b
 		add edx,esi
@@ -171,11 +119,11 @@ proc draw_edge uses eax ebx ecx edx edi esi, box_l:dword, box_t:dword, box_w:dwo
 	jnz @b
 
 	;top line
-	mov edx,dword[col_0]
-	mov ebx,dword[box_l]
+	mov edx,[col_0]
+	mov ebx,[box_l]
 	shl ebx,16
-	add ebx,dword[box_w]
-	mov ecx,dword[box_t]
+	add ebx,[box_w]
+	mov ecx,[box_t]
 	shl ecx,16
 	inc ecx
 
@@ -195,16 +143,16 @@ proc draw_edge uses eax ebx ecx edx edi esi, box_l:dword, box_t:dword, box_w:dwo
 	jnz @b
 
 	;left line
-	mov edx,dword[col_0]
-	mov ebx,dword[box_l]
+	mov edx,[col_0]
+	mov ebx,[box_l]
 	shl ebx,16
 	inc ebx
-	mov ecx,dword[box_t]
+	mov ecx,[box_t]
 	shl ecx,16
-	add ecx,dword[box_h]
+	add ecx,[box_h]
 
 	mov edi,3 ;for cycle
-        @@:
+	@@:
 		;calculate colors
 		and edx,111111101111111011111110b
 		add edx,esi
@@ -235,9 +183,9 @@ dd	sz_edit_box_mouse,		edit_box_mouse
 dd	sz_edit_box_set_text,		edit_box_set_text
 dd	szVersion_ed,			0x00000001
 
-dd	sz_init_checkbox2,		init_checkbox2
-dd	sz_check_box_draw2,		check_box_draw2
-dd	sz_check_box_mouse2,		check_box_mouse2
+dd	sz_init_checkbox,		init_checkbox
+dd	sz_check_box_draw,		check_box_draw
+dd	sz_check_box_mouse,		check_box_mouse
 dd	szVersion_ch2,			0x00000002
 
 dd	sz_option_box_draw,		option_box_draw
@@ -349,9 +297,9 @@ sz_edit_box_mouse		db 'edit_box_mouse',0
 sz_edit_box_set_text		db 'edit_box_set_text',0
 szVersion_ed			db 'version_ed',0
 
-sz_init_checkbox2		db 'init_checkbox2',0
-sz_check_box_draw2		db 'check_box_draw2',0
-sz_check_box_mouse2		db 'check_box_mouse2',0
+sz_init_checkbox		db 'init_checkbox2',0
+sz_check_box_draw		db 'check_box_draw2',0
+sz_check_box_mouse		db 'check_box_mouse2',0
 szVersion_ch2			db 'version_ch2',0
 
 sz_option_box_draw		db 'option_box_draw',0

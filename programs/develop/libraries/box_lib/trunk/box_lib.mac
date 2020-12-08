@@ -108,30 +108,22 @@ macro edit_boxes_set_sys_color start,end,color_table
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;Basic macros for use CheckBox                            ;
-;Last change 17.01.2013                                   ;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-ch_text_margin equ [edi+8] ;=4 расстояние от прямоугольника чек бокса до надписи
-ch_color equ [edi+12]      ;цвет внутри checkbox
-ch_border_color equ [edi+16] ; or [edi+4] ;цвет рамки checkbox ее можно задать самостоятельно
-ch_text_color   equ [edi+20] ;[edi+4]  ;цвет текста
-ch_text_ptr     equ [edi+24] ;указатель на начало текстовой строки
-ch_flags equ [edi+28]      ;флаги
-
 ch_struc_size=36                ;размер структуры
 ch_flag_en=10b                  ;флаг установленного чек бокса.
 ch_flag_top=0x0                 ;флаг расположения текста вверху т.е. 3-й бит
 ch_flag_middle=100b             ;флаг расположения текста в центре т.е. 4-й бит.
 ch_flag_bottom=1000b            ;флаг расположения текста в низу т.е. по умолчанию принимается значение внизу т.е. отсуствие 3-го и 4-го бита
 
-2ch_left_s      equ [ebp]       ;кордината начала рисования по х
-2ch_top_s       equ [ebp+4]     ;координата начала рисования по у
-2ch_text_margin equ [ebp+8]     ;=4 расстояние от прямоугольника чек бокса до надписи
-2ch_color       equ [ebp+12]    ;цвет внутри checkbox
-2ch_border_color        equ [ebp+16]    ; or [edi+4] ;цвет рамки checkbox ее можно задать самостоятельно
-2ch_text_color  equ [ebp+20]    ;[edi+4]  ;цвет текста
-2ch_text_ptr    equ [ebp+24]    ;указатель на начало текстовой строки
-2ch_flags       equ [ebp+28]    ;флаги
-2ch_sz_str      equ [ebp+32]    ;длинна строки, вычисляется при инициализации компонента
+ch_left_s      equ [ebp]       ;кордината начала рисования по х
+ch_top_s       equ [ebp+4]     ;координата начала рисования по у
+ch_text_margin equ [ebp+8]     ;=4 расстояние от прямоугольника чек бокса до надписи
+ch_color       equ [ebp+12]    ;цвет внутри checkbox
+ch_border_color        equ [ebp+16]    ; or [edi+4] ;цвет рамки checkbox ее можно задать самостоятельно
+ch_text_color  equ [ebp+20]    ;[edi+4]  ;цвет текста
+ch_text_ptr    equ [ebp+24]    ;указатель на начало текстовой строки
+ch_flags       equ [ebp+28]    ;флаги
+ch_sz_str      equ [ebp+32]    ;длинна строки, вычисляется при инициализации компонента
 
 struc check_box2 left_s,top_s,ch_text_margin,color,border_color,text_color,text,flags
 {                               ;структура параметров для чек бокса
@@ -143,7 +135,7 @@ struc check_box2 left_s,top_s,ch_text_margin,color,border_color,text_color,text,
 .text_color     dd text_color   ;цвет надписи
 .text           dd text         ;адрес в коде программы где расположен текст
 .flags          dd flags+0      ;флаги
-.size_of_str    dd 0x0          ;длинна строки, вычисляется при инициализации компонента
+.size_of_str    dd 0          ;длинна строки, вычисляется при инициализации компонента
 }
 
 ;Макрос проверки щелчка мышки над группой checkboxes.
@@ -211,9 +203,9 @@ macro check_boxes_set_sys_color2 start,end,color_table
 @@:
         push    dword [esi+32]          ;цвет текста в рабочей области окна
         or      dword [esp],0x80000000  ;необходимо для вывода ASCIIZ строк
-        pop     dword 2ch_text_color
+        pop     dword ch_text_color
         push    dword [esi+36]          ;цвет графики в окне (разделительные линии и т.п.)
-        pop     dword 2ch_border_color
+        pop     dword ch_border_color
         add     ebp,ch_struc_size
         loop    @b
 }

@@ -1,7 +1,0 @@
-include 'scrollbar.mac'		;macro implements scrollbar
-include 'd_button.mac'		;macro implements dinamic_button
-include 'menubar.mac'		;macro implements menubar
-include 'filebrowser.mac'	;macro implements filebrowser
-include 'pathshow.mac'		;macro implements pathshow
-include 'frame.mac'		;macro implements frame
-include 'progressbar.mac' ;macro implements progressbar

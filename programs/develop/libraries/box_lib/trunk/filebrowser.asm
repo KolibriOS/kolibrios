@@ -32,9 +32,6 @@ popa
 ret 4
 }
 ;*****************************************************************************
-macro	use_file_browser
-{
-file_browser:
 fb_type				equ dword [edi]		;dword
 fb_size_x			equ [edi+4]		;word
 fb_start_x			equ [edi+6]		;word
@@ -97,6 +94,7 @@ fb_mouse_pos_old		equ dword [edi+196]	;dword
 fb_marked_counter		equ dword [edi+200]	;dword
 fb_keymap_pointer		equ dword [edi+204]	;dword
 ;---------------------------------------------------------------------
+align 16
 fb_draw_panel:
 	pusha
 	mov	edi,dword [esp+36]
@@ -134,6 +132,7 @@ fb_draw_panel_1:
 	popa
 	ret
 ;---------------------------------------------------------------------
+align 4
 fb_clear_panel:
 	cmp	fb_all_redraw,1
 	jne	@f
@@ -142,12 +141,14 @@ fb_clear_panel:
 @@:
 	ret
 ;---------------------------------------------------------------------
+align 4
 fb_calc_folder_sysdata:
 	mov	eax,fb_folder_data
 	mov	eax,[eax+4]
 	mov	fb_folder_block,eax
 	ret
 ;---------------------------------------------------------------------
+align 4
 fb_calc_max_panel_line:
 	xor	eax,eax
 	xor	ebx,ebx
@@ -162,6 +163,7 @@ fb_calc_max_panel_line:
 	mov	fb_max_panel_line,eax
 	ret
 ;---------------------------------------------------------------------
+align 4
 fb_draw_panel_selection:
 	cmp	fb_all_redraw,2
 	je	.end
@@ -197,16 +199,17 @@ fb_draw_panel_selection:
 	shl	eax,16
 	push	eax
 	add	ebx,eax
-	mcall	13
+	mcall	SF_DRAW_RECT
 	pop	ebx
 	cmp	fb_all_redraw,0
 	je	.end
 	mov	bx,fb_start_x
 	ror	ebx,16
-	mcall	13,,,fb_background_color
+	mcall	SF_DRAW_RECT,,,fb_background_color
 .end:
 	ret
 ;---------------------------------------------------------------------
+align 4
 fb_for_all_panel_selection:
 	xor	edx,edx
 	mov	dx,fb_line_size_y
@@ -224,6 +227,7 @@ fb_for_all_panel_selection:
 @@:
 	ret
 ;---------------------------------------------------------------------
+align 4
 fb_draw_folder_data:
 	mov	eax,fb_folder_block
 	sub	eax,fb_max_panel_line
@@ -325,7 +329,7 @@ fb_draw_folder_data:
 	mov	esi,2
 	mov	ecx,fb_reduct_text_color
 	mov	edx,dword fb_truncated_filename_char
-	mcall	4
+	mcall	SF_DRAW_TEXT
 	pop	edx
 .continue:
 	pop	ebx
@@ -335,6 +339,7 @@ fb_draw_folder_data:
 	inc	eax
 	jmp	.start
 ;--------------------------------------
+align 4
 .draw_name_temp_area:
 	pusha
 	mov	eax,fb_max_name_temp_size
@@ -370,7 +375,7 @@ fb_draw_folder_data:
 	mov	eax,fb_select_color
 @@:
 	mov	edi,eax
-	mcall	4
+	mcall	SF_DRAW_TEXT
 	popa
 	ret
 ;--------------------------------------
@@ -395,10 +400,11 @@ fb_draw_folder_data:
 	sub	bx,3
 	rol	ebx,16
 	mov	edx,fb_background_color	;0xffffff
-	mcall	13
+	mcall	SF_DRAW_RECT
 @@:
 	ret
 ;---------------------------------------------------------------------
+align 4
 fb_clear_line:
 	mov	fb_draw_panel_selection_flag,0
 	pusha
@@ -426,12 +432,12 @@ fb_clear_line:
 	sub	bx,fb_icon_size_x
 	sub	bx,3
 	rol	ebx,16
-	mov	edx,fb_background_color
-	mcall	13
+	mcall	SF_DRAW_RECT,,,fb_background_color
 .end:
 	popa
 	ret
 ;---------------------------------------------------------------------
+align 4
 fb_draw_type_size_date:
 	pusha
 	mov	eax,fb_type_table
@@ -503,6 +509,7 @@ fb_draw_type_size_date:
 	mov	[eax+6+4],word '- '
 	jmp	.date
 ;-----------------------------------------
+align 4
 .call_decimal_string:
 	mov	ebx,fb_type_table
 	add	ebx,6
@@ -510,14 +517,14 @@ fb_draw_type_size_date:
 	mov	[ebx],dl
 	jmp	.size_convert_end
 ;-----------------------------------------
+align 4
 .copy_size:
 ;/0x40000000 - Gb
 ;/0x100000 - Mb
 ;/0x400 Kb
 	mov	[eax+6],dword '    '
 	mov	[eax+6+4],word '  '
-	push	ebx
-	push	edx
+	push	ebx edx
 	mov	eax,[edx-40+32]
 	mov	ebx,eax
 	shr	eax,30 ; /(1024*1024*1024)
@@ -565,8 +572,7 @@ fb_draw_type_size_date:
 	jmp	@r
 @@:
 	pop	edi
-	pop	edx
-	pop	ebx
+	pop	edx ebx
 ;-----------------------------------------
 .date:
 	xor	eax,eax
@@ -617,10 +623,11 @@ fb_draw_type_size_date:
 	mov	eax,fb_select_color
 @@:
 	mov	edi,eax
-	mcall	4
+	mcall	SF_DRAW_TEXT
 	popa
 	ret
 ;---------------------------------------------------------------------
+align 4
 fb_draw_icon:
 	pusha
 	xor	eax,eax
@@ -663,7 +670,7 @@ fb_draw_icon:
 	xor	ebp,ebp
 	push	edi
 	mov	edi,fb_palette_raw
-	mcall	65
+	mcall	SF_PUT_IMAGE_EXT
 	pop	edi
 	popa
 	ret
@@ -674,6 +681,7 @@ fb_draw_icon:
 ;  EBX - address of string
 ; Output:
 ;  string contains the number, marked the end of the code 0
+align 4
 fb_decimal_string_2:
 	push	eax ebx ecx edx
 	xor	ecx,ecx
@@ -702,6 +710,7 @@ fb_decimal_string_2:
 	pop	edx ecx ebx eax
 	ret
 ;---------------------------------------------------------------------
+align 4
 fb_decimal_string_4:
 	push	eax ecx edx
 	xor	ecx,ecx
@@ -730,6 +739,7 @@ fb_decimal_string_4:
 	pop	edx ecx eax
 	ret
 ;---------------------------------------------------------------------
+align 4
 fb_get_icon_number:
 	push	eax
 	mov	ebp,fb_extension_size
@@ -811,6 +821,7 @@ fb_get_icon_number:
 	pop	eax
 	ret
 ;---------------------------------------------------------------------
+align 4
 .calculate_1:
 	add	ebx,eax
 .calculate:
@@ -819,6 +830,7 @@ fb_get_icon_number:
 	lodsb
 	ret
 ;---------------------------------------------------------------------
+align 4
 fb_char_toupper:
 ; convert character to uppercase, using cp866 encoding
 ; in: al=symbol
@@ -843,6 +855,7 @@ fb_char_toupper:
 	and	al, not 0x20
 	ret
 ;---------------------------------------------------------------------
+align 4
 fb_char_todown:
 ; convert character to lowercase, using cp866 encoding
 ; in: al=symbol
@@ -875,16 +888,17 @@ fb_truncated_filename_char:
 ; mouse event
 ;*****************************************************************************
 ;*****************************************************************************
+align 4
 fb_mouse:
 	pusha
 	mov	edi,dword [esp+36]
 ;-------------------------------------------------------
-	mcall	37,2
+	mcall	SF_MOUSE_GET,SSF_BUTTON
 	mov	ebx,fb_mouse_keys
 	mov	fb_mouse_keys_old,ebx
 	mov	fb_mouse_keys,eax
  	
-	mcall	37,1
+	mcall	SF_MOUSE_GET,SSF_WINDOW_POSITION
 	mov	ebx,fb_mouse_pos
 	mov	fb_mouse_pos_old,ebx
 	mov	fb_mouse_pos,eax
@@ -999,12 +1013,12 @@ fb_mouse:
 	jne	.mark_mouse
 	mov	edx,2
 	mov	fb_mouse_keys_delta,edx
-	mcall	26,9
+	mcall	SF_SYSTEM_GET,SSF_TIME_COUNT
 	add	eax,fb_mouse_key_delay
 	mov	fb_mouse_keys_tick,eax
 	jmp	.continue_2
 .enter_2:
-	mcall	26,9
+	mcall	SF_SYSTEM_GET,SSF_TIME_COUNT
 	cmp	eax,fb_mouse_keys_tick
 	ja	@f
 ;	mov	eax,fb_mouse_pos_old
@@ -1026,6 +1040,7 @@ fb_mouse:
 	call	fb_prepare_selected_BDVK_adress
 file_browser_exit
 ;-------------------------------------------------------
+align 4
 .mark_mouse:
 	call	fb_key.mark_1
 	call	fb_draw_panel_1
@@ -1033,6 +1048,7 @@ file_browser_exit
 	mov	fb_mouse_keys_delta,eax
 	jmp	.exit_fb	
 ;-------------------------------------------------------
+align 4
 .enter_3:
 	xor	eax,eax
 	mov	fb_mouse_keys,eax
@@ -1043,6 +1059,7 @@ file_browser_exit
 	mov	fb_max_name_temp_size,eax
 	ret
 ;-------------------------------------------------------
+align 4
 .store_old_cursor_line:
 	push	eax
 	mov	ax,fb_start_draw_cursor_line
@@ -1053,6 +1070,7 @@ file_browser_exit
 	ret
 ;*****************************************************************************
 ;*****************************************************************************
+align 4
 fb_prepare_selected_BDVK_adress:
 	xor	eax,eax
 	mov	ax,fb_start_draw_cursor_line
@@ -1083,6 +1101,7 @@ fb_prepare_selected_BDVK_adress:
 ; 12 - Search with key
 ;*****************************************************************************
 ;*****************************************************************************
+align 4
 fb_key:
 	pusha
 	mov	edi,dword [esp+36]
@@ -1097,6 +1116,7 @@ fb_key:
 	je	.exit_fb
 	jmp	dword [eax]
 ;-------------------------------------------------------
+align 4
 .arrow_down:
 	mov	ax,fb_start_draw_cursor_line
 	add	ax,fb_line_size_y
@@ -1126,6 +1146,7 @@ fb_key:
 	call	fb_draw_panel_3
 	jmp	.exit_fb
 ;-------------------------------------------------------
+align 4
 .arrow_up:
 	mov	ax,fb_start_draw_cursor_line
 	add	ax,fb_start_y
@@ -1144,6 +1165,7 @@ fb_key:
 	call	fb_draw_panel_3
 	jmp	.exit_fb
 ;-------------------------------------------------------
+align 4
 .page_down:
 	mov	eax,fb_max_panel_line
 	mov	ebx,fb_folder_block
@@ -1186,6 +1208,7 @@ fb_key:
 	call	fb_draw_panel_2
 	jmp	.exit_fb
 ;-------------------------------------------------------
+align 4
 .prepare_data_down:
 	mov	ecx,fb_folder_block
 	sub	ecx,fb_start_draw_line
@@ -1196,6 +1219,7 @@ fb_key:
 	cmp	cx,fb_start_draw_cursor_line
 	ret
 ;-------------------------------------------------------
+align 4
 .page_up:
 	mov	eax,fb_max_panel_line
 	mov	ebx,fb_start_draw_line
@@ -1216,6 +1240,7 @@ fb_key:
 	call	fb_draw_panel_2
 	jmp	.exit_fb
 ;-------------------------------------------------------
+align 4
 .home:
 	cmp	fb_start_draw_line,0
 	jne	@f
@@ -1228,6 +1253,7 @@ fb_key:
 	call	fb_draw_panel_2
 	jmp	.exit_fb
 ;-------------------------------------------------------
+align 4
 .end:
 	mov	eax,fb_folder_block
 	sub	eax,fb_max_panel_line
@@ -1242,14 +1268,17 @@ fb_key:
 	mov	eax,fb_max_panel_line
 	jmp	.page_down_0
 ;-------------------------------------------------------
+align 4
 .enter:
 	call	fb_mouse.enter_3
 	jmp	.exit_fb
 ;-------------------------------------------------------
+align 4
 .mark:
 	call	.mark_1
 	jmp	.arrow_down	
 ;-------------------------------------------------------
+align 4
 .mark_1:
 	mov	eax,fb_folder_block
 	test	eax,eax
@@ -1284,6 +1313,7 @@ fb_key:
 .exit:
 	ret
 ;-------------------------------------------------------
+align 4
 .mark_all:
 	mov	eax,fb_folder_block
 	test	eax,eax
@@ -1326,6 +1356,7 @@ fb_key:
 	mov	fb_marked_counter,eax
 	jmp	.exit_fb
 ;-------------------------------------------------------	
+align 4
 .select_mark_action:
 	add	ebx,299-40
 	cmp	fb_temp_counter,0
@@ -1345,6 +1376,7 @@ fb_key:
 .select_mark_action_1:
 	ret
 ;-------------------------------------------------------
+align 4
 .unmark_all:
 	mov	eax,fb_folder_block
 	test	eax,eax
@@ -1353,6 +1385,7 @@ fb_key:
 	mov	fb_temp_counter,1
 	jmp	.mark_all_1
 ;-------------------------------------------------------
+align 4
 .invert_mark:
 	mov	eax,fb_folder_block
 	test	eax,eax
@@ -1373,8 +1406,9 @@ fb_key:
 ;  * bit 9  (mask 0x200): left Win is pressed
 ;  * bit 10 (mask 0x400): right Win is pressed
 ;-------------------------------------------------------
+align 4
 .search_with_key:
-	mcall	66,3
+	mcall	SF_BOARD,SSF_GET_CONTROL_KEYS
 	test	al,11b
 	jnz	.shift_layout
 
@@ -1391,7 +1425,7 @@ fb_key:
 .alt_layout:
 	mov	ecx,3	; Alt
 .get_keyboard_layout:
-	mcall	26,2,,fb_keymap_pointer
+	mcall	SF_SYSTEM_GET,SSF_KEYBOARD_LAYOUT,,fb_keymap_pointer
 	xor	eax,eax
 	mov	ax,fb_key_action_num
 	add	eax,fb_keymap_pointer
@@ -1474,6 +1508,7 @@ fb_key:
 	call	fb_prepare_selected_BDVK_adress
 file_browser_exit
 ;-------------------------------------------------------
+align 4
 fb_key_table:
 	dd	0
 	dd	fb_key.arrow_down	; 1
@@ -1491,10 +1526,12 @@ fb_key_table:
 .end:
 	dd	0
 ;-------------------------------------------------------
+align 4
 fb_draw_panel_3:
 	mov	eax,2
 	mov	fb_all_redraw,eax
 	jmp	fb_draw_panel_2.1
+align 4
 fb_draw_panel_2:
 	xor	eax,eax
 	inc	eax
@@ -1508,4 +1545,3 @@ fb_draw_panel_2:
 	mov	fb_draw_scroll_bar,eax
 	ret
 
-}

@@ -14,24 +14,15 @@ macro draw_status text_ptr
 
 macro start_draw_window
 {
-        ;mov     eax,12
-        push    12
-        pop     eax
-        xor     ebx,ebx
-        inc     ebx
-        mcall
+	xor     ebx,ebx
+	inc     ebx
+	mcall   SF_REDRAW
 }
 
 ;--- сообщить системе о завершении перерисовки окна ---
 macro stop_draw_window
 {
-        ;mov     eax,12
-        push    12
-        pop     eax
-        ;mov     ebx,2
-        push    2
-        pop     ebx
-        mcall
+	mcall   SF_REDRAW, SSF_END_DRAW
 }
 
 ;--- установить маску ожидаемых событий ---
@@ -39,8 +30,7 @@ macro stop_draw_window
 ;--- ожидать события ---
 macro wait_event redraw,key,button,mouse,ipc,other
 {
-        mov     eax,10
-        mcall
+        mcall   SF_WAIT_EVENT
         dec     ax
 if redraw eq
 else
@@ -77,76 +67,25 @@ end if
 ;--- установить маску ожидаемых событий ---
 macro set_events_mask mask
 {
-        ;mov     eax,40
-        push    40
-        pop     eax
-        ;mov     ebx,mask
-        push    mask
-        pop     ebx
-        mcall
+	mcall   SF_SET_EVENTS_MASK, mask
 }
 
-;macro check_boxes_set_sys_color start,end,color_table
-;{
-;ch_left equ [edi]    ;координата начала рисования по х
-;ch_top equ [edi+4]   ;координата начала рисования по у
-;ch_text_margin equ [edi+8]      ;=4 расстояние от прямоугольника чек бокса до надписи 
-;ch_size equ [edi+8]             ;12 размер квадрата чек бокса 
-;ch_color equ [edi+12]           ;цвет внутри checkbox
-;ch_border_color equ [edi+16] ; or [edi+4] ;цвет рамки checkbox ее можно задать самостоятельно
-;ch_text_color equ   [edi+20];[edi+4]  ;цвет текста
-;ch_text_ptr equ [edi+24]    ;указатель на начало текстовой строки 
-;ch_text_length equ [edi+28]
-;ch_flags equ [edi+32]       ;флаги 
-
-
-;ch_left equ [edi]    ;координата начала рисования по х
-;ch_top equ [edi+2]   ;координата начала рисования по у
-;ch_color equ [edi+4] ;цвет внутри checkbox
-;ch_border_color equ [edi+8] ;цвет рамки checkbox
-;ch_text_color equ [edi+12]  ;цвет текста
-;ch_text_ptr equ [edi+16]    ;указатель на начало текстовой строки
-;ch_text_length equ [edi+20] ;длина надписи (2^64 такой длины может быть текст)
-;ch_flags equ [edi+24]       ;флаги
-
-;        mov     edi,start
-;        mov     ecx,((end-start)/ch_struc_size)
-;        mov     esi,color_table
-;@@:
-;        push    dword [esi+32]
-;        pop     dword ch_text_color
-;        push    dword [esi+36]
-;        pop     dword ch_border_color
-;        add     edi,ch_struc_size
-;        loop    @b
-;}
 macro get_key
 {
-        ;mov     eax,2
-        push    2
-        pop     eax
-        mcall
+	mcall   SF_GET_KEY
 }
 ;--- получить код нажатой кнопки ---
 macro get_pressed_button
 {
-        ;mov     eax,17
-        push    17
-        pop     eax
-        mcall
+	mcall   SF_GET_BUTTON
 }
 macro get_active_window
 {
-        mov     eax,18
-        mov     ebx,7
-        mcall
+	mcall   SF_SYSTEM,SSF_GET_ACTIVE_WINDOW
 }
-;--- Ї®«гзЁвм Ё­д®а¬ жЁо ® Їа®жҐббҐ ---
+;--- получить информацию о процессе ---
 macro get_procinfo proc_inf_buf,slot_num
 {
-        ;mov     eax,9
-        push    9
-        pop     eax
         ;mov     ebx,proc_inf_buf
         push    proc_inf_buf
         pop     ebx
@@ -158,11 +97,11 @@ else
         push    slot_num
         pop     ecx
 end if
-        mcall
+        mcall   SF_THREAD_INFO
 }
 macro get_screen_prop  struc_ptr
 {
-        mov     eax,61
+        mov     eax,SF_GET_GRAPHICAL_PARAMS
         push    eax eax
         xor     ebx,ebx
         inc     ebx
@@ -179,39 +118,31 @@ macro get_screen_prop  struc_ptr
 }
 macro min_window
 {
-        mov     eax,18
-        mov     ebx,10
-        mcall
+	mcall   SF_SYSTEM,SSF_MINIMIZE_WINDOW
 }
 macro app_close
 {
-        or     eax,-1
-        mcall
+	mcall  SF_TERMINATE_PROCESS
 }
 macro get_skin_height
 {
-        mov     eax,48
-        mov     ebx,4
-        mcall
+	mcall   SF_STYLE_SETTINGS,SSF_GET_SKIN_HEIGHT
 }
 macro delay time
 {
-        mov     eax,5
 if time eq
 else
-        mov     ebx,time
+	mov     ebx,time
 end if
-        mcall
+	mcall   SF_SLEEP
 }
 macro activ_window slot_n
 {
-        mov     eax,18
-        mov     ebx,3
 if slot_n eq
 else
-        mov     ecx,slot_n
+	mov     ecx,slot_n
 end if
-        mcall
+	mcall   SF_SYSTEM,SSF_FOCUS_WINDOW
 }
 struc screen_prop
 {
@@ -261,7 +192,7 @@ struc ipc_buffer size
 .messages: rb size
 }
 
-;--- жўҐв  ---
+;--- цвета  ---
 cl_white=0xffffff
 cl_black=0x000000
 

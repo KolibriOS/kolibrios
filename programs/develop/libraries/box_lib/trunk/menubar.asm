@@ -31,8 +31,7 @@ popa
 ret 4
 }
 ;*****************************************************************************
-macro use_menu_bar
-{
+align 16
 menu_bar:
 m_type			equ [edi]
 m_size_x		equ [edi+4]
@@ -94,7 +93,7 @@ m_get_mouse_flag	equ [edi+116]
 .active:
 	mov	edx,m_frnt_col
 @@:
-	mcall	13
+	mcall	SF_DRAW_RECT
 	shr	ecx,16
 	mov	bx,cx
 	movzx	eax,word m_size_y
@@ -109,14 +108,11 @@ m_get_mouse_flag	equ [edi+116]
 	add	ecx,0x80000000
 @@:
 	mov	edx,m_text_pointer
-	mcall	4
+	mcall	SF_DRAW_TEXT
 	ret
 
 .draw_2:
-	mov	ebx,m_size_x1
-	mov	ecx,m_size_y1
-	mov	edx,m_menu_col
-	mcall	13
+	mcall	SF_DRAW_RECT,m_size_x1,m_size_y1,m_menu_col
 	ret
 
 .calculate_font_offset:
@@ -136,8 +132,7 @@ m_get_mouse_flag	equ [edi+116]
 	shl	eax,16
 	add	ecx,eax
 	mov	cx,m_interval
-	mov	edx,m_menu_col
-	mcall	13
+	mcall	SF_DRAW_RECT,,,m_menu_col
 	pop	ecx ebx
     
 	push	ebx ecx
@@ -147,7 +142,7 @@ m_get_mouse_flag	equ [edi+116]
 	add	ecx,eax
 	mov	cx,m_interval
 	mov	edx,m_menu_sel_col
-	mcall	13
+	mcall	SF_DRAW_RECT
 	pop	ecx ebx
 	
 	shr	ecx,16
@@ -169,7 +164,7 @@ m_get_mouse_flag	equ [edi+116]
 	add	ecx,0xC0000000
 	push	edi
 	mov	edi,eax
-	mcall	4
+	mcall	SF_DRAW_TEXT
 	pop	edi
 	call	.get_next_text
 	inc	ebp
@@ -277,7 +272,7 @@ m_get_mouse_flag	equ [edi+116]
 .red:
 	call	.draw_3
 .still:
-	mcall	10
+	mcall	SF_WAIT_EVENT
 	cmp	eax,1
 	je	.exit_menu_3
 	cmp	eax,2
@@ -289,7 +284,7 @@ m_get_mouse_flag	equ [edi+116]
 	jmp	.still
 	
 .key_menu:
-	mcall	2
+	mcall	SF_GET_KEY
 
 	cmp	dword m_extended_key,1
 	je	.extended_key
@@ -442,12 +437,12 @@ m_get_mouse_flag	equ [edi+116]
 	jmp	.exit_menu_3
 ;---------------------------------------------------------------------
 .processing_real_mouse:
-	mcall	37,2
+	mcall	SF_MOUSE_GET,SSF_BUTTON
 	mov	ebx,m_mouse_keys
 	mov	m_mouse_keys_old,ebx
 	mov	m_mouse_keys,eax
 	 
-	mcall 37,1
+	mcall	SF_MOUSE_GET,SSF_WINDOW_POSITION
 	ret
 ;---------------------------------------------------------------------
 .allocate_menu_area:
@@ -456,21 +451,21 @@ m_get_mouse_flag	equ [edi+116]
 	movzx	eax,word m_size_y1
 	imul	ecx,eax
 	lea	ecx,[ecx*3]
-	mcall	68, 12
+	mcall	SF_SYS_MISC,SSF_MEM_ALLOC
 	mov	m_buf_adress,eax
 	ret
 ;---------------------------------------------------------------------
 .free_menu_area:
 	cmp	dword m_buf_adress,0
 	je	@f
-	mcall	68,13,m_buf_adress
+	mcall	SF_SYS_MISC,SSF_MEM_FREE,m_buf_adress
 	xor	eax,eax
 	mov	m_buf_adress,eax
 @@:
 	ret
 ;---------------------------------------------------------------------
 .get_menu_area:
-	mcall	9, m_procinfo,-1
+	mcall	SF_THREAD_INFO, m_procinfo,-1
 	 
 	mov	cx,m_size_x1
 	shl	ecx,16
@@ -485,7 +480,7 @@ m_get_mouse_flag	equ [edi+116]
 	add	dx,[eax+38]
 	add	dx,[eax+58]
 	 
-	mcall	36, m_buf_adress
+	mcall	SF_GET_IMAGE, m_buf_adress
 	ret
 ;---------------------------------------------------------------------
 .put_menu_area:
@@ -497,7 +492,7 @@ m_get_mouse_flag	equ [edi+116]
 	shl	edx,16
 	mov	dx,m_start_y1
 	 
-	mcall	7, m_buf_adress
+	mcall	SF_PUT_IMAGE, m_buf_adress
 	call	.free_menu_area
 	ret
 ;---------------------------------------------------------------------
@@ -601,5 +596,3 @@ m_get_mouse_flag	equ [edi+116]
 	mov	m_click,dword 0
 @@:
 menu_bar_exit
-}
-

@@ -33,12 +33,11 @@ macro path_show_start
 ;*****************************************************************************
 macro path_show_exit
 {
-popa         
+popa
 ret 4
 }
 ;*****************************************************************************
-macro use_path_show
-{
+align 16
 path_show: 
 ps_type			equ [edi]	;dword
 ps_start_y		equ [edi+4]	;word
@@ -146,7 +145,6 @@ path_show_start
 	and	eax,0xffffff
 	xor	esi,esi
 	mov	edi,eax
-	mcall	4
+	mcall	SF_DRAW_TEXT
 path_show_exit
-}
 ;*****************************************************************************

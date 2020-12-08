@@ -1,9 +1,9 @@
-; MIDI PLAYER FOR MENUET v1.0
+; MIDI PLAYER FOR KOLIBRI v1.0
 ; Written in pure assembler by Ivushkin Andrey aka Willow
 ;
 ;
 ; Created:      December 7, 2004
-; Last changed: July 29, 2005
+; Last changed: December 8, 2020
 ;
 ; COMPILE WITH FASM
 
@@ -53,23 +53,21 @@ FL_BOTTRED equ 0x100
 FL_MULSEL  equ 0x8000
 
 use32
-  org    0x0
+  org    0
 
   db     'MENUET01'
-  dd     0x01
-  dd     START
-  dd     IM_END
+  dd     1, START, IM_END
   dd     I_END ;APP_MEM
   dd     stacktop ;APP_MEM - 1024
-  dd     I_PARAM
-  dd     cur_dir_path
+  dd     I_PARAM, cur_dir_path
   
 listsel    dd 0
 channel dd 0
 COLOR_ORDER equ MENUETOS
 include '../../../config.inc'           ;for nightbuild
 include '../../../macros.inc' ; decrease code size (optional)
-include '../../../develop/libraries/box_lib/load_lib.mac'
+include '../../../KOSfuncs.inc'
+include '../../../load_lib.mac'
 
 @use_library
 
@@ -86,8 +84,8 @@ hdrimg:
 btns:
     file 'buttons.gif'
 START:
-        mcall 68, 11
-                
+    mcall SF_SYS_MISC, SSF_HEAP_INIT
+
 load_libraries l_libs_start,end_l_libs
 
     mov  esi,I_PARAM
@@ -99,13 +97,13 @@ load_libraries l_libs_start,end_l_libs
     mov byte [edi-1], 0
 @@:
 ;OpenDialog initialisation
-        push    dword OpenDialog_data
-        call    [OpenDialog_Init]
+    push    dword OpenDialog_data
+    call    [OpenDialog_Init]
 
     or   [flag],FL_BOTTRED;+FL_MUTE
     mov  ecx,ipcarea
     call init_ipc
-    mcall 40,1000111b
+    mcall SF_SET_EVENTS_MASK,1000111b
     mov  esi,btns
     mov  edi,btn_raw
     call ReadGIF
@@ -116,7 +114,7 @@ load_libraries l_libs_start,end_l_libs
     mov  edi,bottom_raw
     call ReadGIF
     call respawn
-    mcall 9,prcinfo,-1
+    mcall SF_THREAD_INFO,prcinfo,-1
     mov  edx,[ebx+30]
     mov  [parentPID],edx
     mov  esi,I_PARAM
@@ -190,9 +188,7 @@ clearpath:
     mov  esi,filename
     mov  edi,I_PARAM
     rep  movsd
-    mov  eax,70
-    mov  ebx,file_info
-    mcall
+    mcall SF_FILE,file_info
     add  ebx,workarea
     mov  [midi_limit],ebx
     mov  edi,I_PARAM
@@ -245,7 +241,7 @@ decode_end:
     test [flag],FL_PLAY
     jz   .noplay
     call draw_window
-    mcall 5,100
+    mcall SF_SLEEP,100
     mov  eax,IPC_PLAY
     call ipc_send
   .noplay:
@@ -263,8 +259,7 @@ red:
 still:
     mov  ecx,ipcarea
     call init_ipc
-    mov  eax,10
-    mcall
+    mcall SF_WAIT_EVENT
 prc_event:
     test eax,eax
     jz   still
@@ -290,7 +285,7 @@ prc_event:
     xor  edx,edx
     test [flag],FL_SHUFFLE
     jz   .noshuf
-    mcall 26,9
+    mcall SF_SYSTEM_GET,SSF_TIME_COUNT
     movzx ebx,byte[list_count]
     div  ebx
     mov  eax,edx
@@ -424,12 +419,6 @@ db 0
 ;---------------------------------------------------------------------
 system_dir_ProcLib                      db '/sys/lib/proc_lib.obj',0
 
-head_f_i:
-head_f_l        db 'error',0
-err_message_found_lib2          db 'proc_lib.obj - Not found!',0
-
-err_message_import2                     db 'proc_lib.obj - Wrong import!',0
-
 ;---------------------------------------------------------------------
 align 4
 ProcLib_import:
@@ -444,8 +433,8 @@ aOpenDialog_Start       db 'OpenDialog_start',0
 ;---------------------------------------------------------------------
 l_libs_start:
 
-library01  l_libs system_dir_ProcLib+9, cur_dir_path, temp_dir_pach, system_dir_ProcLib, \
-err_message_found_lib2, head_f_l, ProcLib_import, err_message_import2, head_f_i
+library01  l_libs system_dir_ProcLib+9, temp_dir_pach, system_dir_ProcLib, \
+	ProcLib_import
 
 end_l_libs:
 ;---------------------------------------------------------------------

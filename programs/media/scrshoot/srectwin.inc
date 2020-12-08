@@ -55,6 +55,7 @@ align 4
 
         jmp     .still
 
+align 4
 .draw_window:
         start_draw_window
 
@@ -130,8 +131,9 @@ init_editbox:
 		call    [edit_box_set_text] ;ecx,edi
 ret
 ;--------------------------------------------------------------------
-;--- Считывание облати ----------------------------------------------
+;--- Считывание области ---------------------------------------------
 ;--------------------------------------------------------------------
+align 4
 read_rect:
         bt      dword [use_rect_active_window.flags],1
         jc      read_rect_from_active_window
@@ -173,6 +175,7 @@ read_rect:
         mov     [rect.height],ax
 ret
 
+align 4
 read_rect_from_active_window:
         call    get_active_window_info
 
@@ -188,6 +191,7 @@ read_rect_from_active_window:
         mov     [rect.height],ax
 ret
 
+align 4
 draw_rect_on_screen:
 
         xor     edx,edx
@@ -237,37 +241,11 @@ ret
 
 ;>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 ;DATA данные
-;Всегда соблюдать последовательность в имени.
 
 system_dir_Boxlib	db '/sys/lib/box_lib.obj',0
 system_dir_ProcLib	db '/sys/lib/proc_lib.obj',0
 system_dir_LibImg   db '/sys/lib/libimg.obj',0
 
-if lang eq ru
-head_f_i:
-head_f_l	db 'Системная ошибка',0
-
-err_message_found_lib1	db 'box_lib.obj - не найдена!',0
-err_message_found_lib2	db 'proc_lib.obj - не найдена!',0
-err_message_found_lib3	db 'libimg.obj - не найдена!',0
-
-err_message_import1	db 'box_lib.obj - ошибка импорта!',0
-err_message_import2	db 'proc_lib.obj - ошибка импорта!',0
-err_message_import3	db 'libimg.obj - ошибка импорта!',0
-
-else
-
-head_f_i:
-head_f_l	db 'System error',0
-
-err_message_found_lib1	db 'box_lib.obj - Not found!',0
-err_message_found_lib2	db 'proc_lib.obj - Not found!',0
-err_message_found_lib3	db 'libimg.obj - Not found!',0
-
-err_message_import1	db 'box_lib.obj - Wrong import!',0
-err_message_import2	db 'proc_lib.obj - Wrong import!',0
-err_message_import3	db 'libimg.obj - Wrong import!',0
-end if
 ;---------------------------------------------------------------------
 align 4
 ProcLib_import:

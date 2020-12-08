@@ -7,7 +7,7 @@ include '../../../macros.inc'
 include '../../../proc32.inc'
 include '../../../KOSfuncs.inc'
 include '../../../load_img.inc'
-include '../../../develop/libraries/box_lib/load_lib.mac'
+include '../../../load_lib.mac'
 
 ;include 'lang.inc'
 
@@ -603,8 +603,8 @@ pole_next_gen:
 				add edi,[memCell] ;edi -> &memCell[fristC]
 				mov esi,[edi] ;swp=memCell[fristC];
 				mov edx,[ecx] ;edx - уже не используем, потому можем портить
-				mov dword[edi],edx ;memCell[fristC]=memCell[i];
-				mov dword[ecx],esi ;memCell[i]=swp;
+				mov [edi],edx ;memCell[fristC]=memCell[i];
+				mov [ecx],esi ;memCell[i]=swp;
 				dec eax
 				dec ebx
 				sub ecx,4
@@ -614,10 +614,10 @@ pole_next_gen:
 		cmp ebx,eax
 		jle @b
 	mov ebx,[memCell]
-	mov dword[ebx],eax ;firstC <- eax
+	mov [ebx],eax ;firstC <- eax
 
-	mov dword[b_sort],eax
-	stdcall pole_fl_sort, dword[memCell],eax
+	mov [b_sort],eax
+	stdcall pole_fl_sort, [memCell],eax
 
 	mov ecx,[memCell]
 	mov ebx,1
@@ -628,7 +628,7 @@ pole_next_gen:
 		jae .no_change
 			xor byte[edx+Cell.liv],3
 			mov edi,[tim]
-			mov dword[edx+Cell.tc],edi
+			mov [edx+Cell.tc],edi
 			bt word[edx+Cell.liv],0
 			jc .new_cell
 				push eax
@@ -722,8 +722,8 @@ proc pole_fl_sort, a:dword, n:dword
 		add edi,ecx ;edi -> &a[i]
 		mov esi,[edi] ;w=a[i];
 		mov edx,[ecx+4]
-		mov dword[edi],edx ;a[i]=a[1];
-		mov dword[ecx+4],esi ;a[1]=w;
+		mov [edi],edx ;a[i]=a[1];
+		mov [ecx+4],esi ;a[1]=w;
 
 		dec eax
 		cmp eax,2
@@ -749,7 +749,7 @@ endl
 	lea edx,[ebx*4]
 	add edx,eax
 	mov edx,[edx]
-	mov dword[copy],edx ;copy=a[i];
+	mov [copy],edx ;copy=a[i];
 	mov edi,ebx
 	shl edi,1 ;m=i<<1;
 	.cycle_b: ;while (m<=k) {
@@ -774,7 +774,7 @@ endl
 		;if (pole_compare_cells_bm(a[j],copy)) {
 		lea edx,[esi*4]
 		add edx,eax
-		stdcall pole_compare_cells_bm, dword[edx],dword[copy]
+		stdcall pole_compare_cells_bm, dword[edx],[copy]
 		cmp dl,0
 		je .cycle_e ;} else break; //выход из цикла
 
@@ -795,7 +795,7 @@ endl
 	shl ebx,2
 	add eax,ebx
 	mov edx,[copy]
-	mov dword[eax],edx ;a[i]=copy;
+	mov [eax],edx ;a[i]=copy;
 
 	popad
 	ret
@@ -1480,7 +1480,7 @@ but_pole_up:
 		xor edx,edx
 		div ecx
 	@@:
-	add dword[Cor_y],eax
+	add [Cor_y],eax
 	pop edx ecx eax
 	stdcall [buf2d_clear], buf_0, [buf_0.color]
 	call pole_paint
@@ -1499,7 +1499,7 @@ but_pole_dn:
 		xor edx,edx
 		div ecx
 	@@:
-	sub dword[Cor_y],eax
+	sub [Cor_y],eax
 	pop edx ecx eax
 	stdcall [buf2d_clear], buf_0, [buf_0.color]
 	call pole_paint
@@ -1511,14 +1511,13 @@ but_pole_left:
 	push eax ecx edx
 	mov eax,[buf_0.w]
 	shr eax,2
-	xor ecx,ecx
-	mov cl,byte[zoom]
-	cmp cx,2
+	movzx ecx,byte[zoom]
+	cmp ecx,2
 	jl @f ;деление на величину zoom
 		xor edx,edx
 		div ecx
 	@@:
-	add dword[Cor_x],eax
+	add [Cor_x],eax
 	pop edx ecx eax
 	stdcall [buf2d_clear], buf_0, [buf_0.color]
 	call pole_paint
@@ -1537,25 +1536,20 @@ but_pole_right:
 		xor edx,edx
 		div ecx
 	@@:
-	sub dword[Cor_x],eax
+	sub [Cor_x],eax
 	pop edx ecx eax
 	stdcall [buf2d_clear], buf_0, [buf_0.color]
 	call pole_paint
 	stdcall [buf2d_draw], buf_0
 	ret
 
-;align 4
-;but_bru_clear:
-;        ret
-
 ;input:
 ; buf - указатель на строку, число должно быть в 10 или 16 ричном виде
 ;output:
 ; eax - число
 align 4
-proc conv_str_to_int, buf:dword
+proc conv_str_to_int uses ebx ecx esi, buf:dword
 	xor eax,eax
-	push ebx ecx esi
 	xor ebx,ebx
 	mov esi,[buf]
 	;определение отрицательных чисел
@@ -1617,7 +1611,6 @@ proc conv_str_to_int, buf:dword
 		sub ecx,eax
 		mov eax,ecx
 	@@:
-	pop esi ecx ebx
 	ret
 endp
 
@@ -1661,32 +1654,17 @@ db 'RLE',0
 db 0
 
 
-
-head_f_i:
-head_f_l db '"Системная ошибка',0
-
 system_dir_0 db '/sys/lib/'
 lib_name_0 db 'proc_lib.obj',0
-err_message_found_lib_0 db 'Не найдена библиотека ',39,'proc_lib.obj',39,'" -tE',0
-err_message_import_0 db 'Ошибка при импорте библиотеки ',39,'proc_lib.obj',39,'" -tE',0
-
 system_dir_1 db '/sys/lib/'
 lib_name_1 db 'libimg.obj',0
-err_message_found_lib_1 db 'Не найдена библиотека ',39,'libimg.obj',39,'" -tE',0
-err_message_import_1 db 'Ошибка при импорте библиотеки ',39,'libimg.obj',39,'" -tE',0
-
 system_dir_2 db '/sys/lib/'
 lib_name_2 db 'buf2d.obj',0
-err_msg_found_lib_2 db 'Не найдена библиотека ',39,'buf2d.obj',39,'" -tE',0
-err_msg_import_2 db 'Ошибка при импорте библиотеки ',39,'buf2d',39,'" -tE',0
 
 l_libs_start:
-	lib0 l_libs lib_name_0, 0, file_name, system_dir_0,\
-		err_message_found_lib_0, head_f_l, proclib_import,err_message_import_0, head_f_i
-	lib1 l_libs lib_name_1, 0, file_name, system_dir_1,\
-		err_message_found_lib_1, head_f_l, import_libimg, err_message_import_1, head_f_i
-	lib2 l_libs lib_name_2, 0, file_name, system_dir_2,\
-		err_msg_found_lib_2,head_f_l,import_buf2d,err_msg_import_2,head_f_i
+	lib0 l_libs lib_name_0, file_name, system_dir_0, import_proclib
+	lib1 l_libs lib_name_1, file_name, system_dir_1, import_libimg
+	lib2 l_libs lib_name_2, file_name, system_dir_2, import_buf2d
 l_libs_end:
 
 align 4
@@ -1702,7 +1680,7 @@ import_libimg:
 	aimg_destroy db 'img_destroy',0
 
 align 4
-proclib_import: ;описание экспортируемых функций
+import_proclib:
 	OpenDialog_Init dd aOpenDialog_Init
 	OpenDialog_Start dd aOpenDialog_Start
 dd 0,0
@@ -1740,16 +1718,15 @@ buf_0: dd 0
 
 align 16
 i_end:
-	mouse_dd dd 0
-	last_time dd 0
-	sc system_colors 
+	mouse_dd rd 1
+	last_time rd 1
+	sc system_colors
 	procinfo process_information
-	rb 1024
-stacktop:
 	sys_path rb 1024
-	file_name:
-		rb 2048 ;4096 
+	file_name rb 2048 ;4096
 	plugin_path rb 4096
 	openfile_path rb 4096
 	filename_area rb 256
+	rb 1024
+stacktop:
 mem:

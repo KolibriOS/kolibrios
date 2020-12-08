@@ -40,8 +40,6 @@ popa
 ret 4
 }
 ;*****************************************************************************
-macro use_frame
-{
 fr equ [esp + 36]
 frame: 
 fr_type              equ [eax + FR_STYLE]         ; dword 
@@ -63,7 +61,7 @@ fr_font_backgr_color equ [eax + FR_BACK_COLOR]    ; dword
 ; draw event
 ;*****************************************************************************
 ;*****************************************************************************
-align 4
+align 16
 .draw:
 frame_start
         mov    eax, fr
@@ -259,12 +257,11 @@ align 4
 ;--------------------------------------
 align 4
 .draw_1:
-        mov     edx,fr_text_pointer
-        mov     edi,fr_font_backgr_color
-	mcall	4
+	mov     edx,fr_text_pointer
+	mov     edi,fr_font_backgr_color
+	mcall	SF_DRAW_TEXT
 ;----------------------------------------------------------------------
 align 4
 .exit:
 frame_exit
-}
 ;*****************************************************************************

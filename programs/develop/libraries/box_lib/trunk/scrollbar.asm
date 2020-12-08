@@ -53,8 +53,7 @@ macro draw_up_arrow_vertical
 	sub	ebx,4 shl 16
 	mov	bx,7
 	mov	cx,1
-	mov	eax,13
-	int	0x40
+	mcall	SF_DRAW_RECT
 	sub	ecx,1 shl 16
 	add	ebx,1 shl 16
 	mov	bx,5
@@ -98,7 +97,7 @@ macro draw_up_arrow_vertical_type2
 	add	cx,1
 	sub	bx,3
 
-	mcall	38,,,sb_line_col
+	mcall	SF_DRAW_LINE,,,sb_line_col
 
 	add	bx,6
 	
@@ -127,8 +126,7 @@ macro draw_down_arrow_vertical
 	mov	bx,7
 	sub	ecx,2 shl 16
 	mov	cx,1
-	mov	eax,13
-	int	0x40
+	mcall	SF_DRAW_RECT
 	add	ecx,1 shl 16
 	add	ebx,1 shl 16
 	mov	bx,5
@@ -174,7 +172,7 @@ macro draw_down_arrow_vertical_type2
 	sub	cx,2
 	sub	bx,3
 
-	mcall	38,,,sb_line_col
+	mcall	SF_DRAW_LINE,,,sb_line_col
 
 	add	bx,6
 	
@@ -184,8 +182,7 @@ macro draw_down_arrow_vertical_type2
 ;*****************************************************************************
 macro draw_runner_center_vertical
 {
-	push	ebx
-	push	ecx
+	push	ebx ecx
 	
 	xor	eax,eax
 	mov	ax,sb_size_x
@@ -203,8 +200,7 @@ macro draw_runner_center_vertical
 	mov	bx,10
 	add	ecx,4 shl 16
 	mov	cx,1
-	mov	eax,13
-	int	0x40
+	mcall	SF_DRAW_RECT
 	add	ecx,3 shl 16
 	sub	ebx,1 shl 16
 	mov	bx,12
@@ -213,8 +209,7 @@ macro draw_runner_center_vertical
 	mov	bx,10
 	add	ecx,3 shl 16
 	int	0x40
-	pop	ecx
-	pop	ebx
+	pop	ecx ebx
 }
 ;*****************************************************************************
 macro draw_up_arrow_horizontal
@@ -238,8 +233,7 @@ macro draw_up_arrow_horizontal
 	mov	cx,7
 	mov	bx,1
 	
-	mov	eax,13
-	int	0x40
+	mcall	SF_DRAW_RECT
 	sub	ebx,1 shl 16
 	add	ecx,1 shl 16
 	mov	cx,5
@@ -283,7 +277,7 @@ macro draw_up_arrow_horizontal_type2
 	add	bx,1
 	sub	cx,3
 
-	mcall	38,,,sb_line_col
+	mcall	SF_DRAW_LINE,,,sb_line_col
 
 	add	cx,6
 	
@@ -312,8 +306,7 @@ macro draw_down_arrow_horizontal
 	mov	cx,7
 	sub	ebx,2 shl 16
 	mov	bx,1
-	mov	eax,13
-	int	0x40
+	mcall	SF_DRAW_RECT
 	add	ebx,1 shl 16
 	add	ecx,1 shl 16
 	mov	cx,5
@@ -359,7 +352,7 @@ macro draw_down_arrow_horizontal_type2
 	sub	cx,2
 	sub	bx,3
 
-	mcall	38,,,sb_line_col
+	mcall	SF_DRAW_LINE,,,sb_line_col
 
 	add	cx,6
 	
@@ -369,8 +362,7 @@ macro draw_down_arrow_horizontal_type2
 ;*****************************************************************************
 macro draw_runner_center_horizontal
 {
-	push	ebx
-	push	ecx
+	push	ebx ecx
 	
 	xor	eax,eax
 	mov	ax,sb_size_y
@@ -388,8 +380,7 @@ macro draw_runner_center_horizontal
 	mov	cx,10
 	add	ebx,4 shl 16
 	mov	bx,1
-	mov	eax,13
-	int	0x40
+	mcall	SF_DRAW_RECT
 	add	ebx,3 shl 16
 	sub	ecx,1 shl 16
 	mov	cx,12
@@ -398,13 +389,9 @@ macro draw_runner_center_horizontal
 	mov	cx,10
 	add	ebx,3 shl 16
 	int	0x40
-	pop	ecx
-	pop	ebx
+	pop	ecx ebx
 }
 ;*****************************************************************************
-macro use_scroll_bar
-{
-scroll_bar:
 sb_size_x	equ [edi]
 sb_start_x	equ [edi+2]
 sb_size_y	equ [edi+4]
@@ -432,14 +419,13 @@ sb_position2	equ [edi+72]
 sb_work_size	equ [edi+76]
 sb_all_redraw	equ [edi+80]
 sb_ar_offset	equ [edi+84]
-}
+
 ;*****************************************************************************
 ;*****************************************************************************
 ; draw event
 ;*****************************************************************************
 ;*****************************************************************************
-macro use_scroll_bar_vertical
-{
+align 16
 scroll_bar_vertical:
 .draw:
 	pusha
@@ -520,7 +506,7 @@ scroll_bar_exit
 	inc	ebx
 	mov	ecx,sb_size_y
 	mov	edx,sb_line_col
-	mov	eax,13
+	mov	eax,SF_DRAW_RECT
 	cmp	dword sb_all_redraw,0
 	je	@f
 	int	0x40	; left extreme line
@@ -574,7 +560,7 @@ draw_up_arrow_vertical
 	mov	edx,sb_line_col
 	cmp	dword sb_all_redraw,0
 	je	@f
-	mcall	13	;  top button - bottom line
+	mcall	SF_DRAW_RECT	;  top button - bottom line
 @@:
 	pop	ecx
 ;********************************* 
@@ -588,7 +574,7 @@ draw_up_arrow_vertical
 	mov	cx,0
 	add	ecx,sb_position2
 	dec	cx
-	mov	eax,13
+	mov	eax,SF_DRAW_RECT
 	test	cx,0x8000
 	jnz	@f
 	mov	edx,sb_bckg_col
@@ -655,8 +641,7 @@ draw_runner_center_vertical
 	test	cx,0x8000
 	jnz	@f
 	mov	edx,sb_bckg_col
-	mov	eax,13
-	int	0x40	; bottom interval
+	mcall	SF_DRAW_RECT	; bottom interval
 @@:	
 	pop	ecx	
 ;*********************************	
@@ -667,7 +652,7 @@ draw_runner_center_vertical
 	shl	ecx,16
 	inc	ecx
 	mov	edx,sb_line_col
-	mov	eax,13
+	mov	eax,SF_DRAW_RECT
 	cmp	dword sb_all_redraw,0
 	je	@f
 	int	0x40	; bottom button - top line
@@ -703,7 +688,7 @@ draw_down_arrow_vertical
 	mov	cx,1
 	cmp	dword sb_all_redraw,0
 	je	@f
-	mcall	13	; bottom button - extreme line
+	mcall	SF_DRAW_RECT	; bottom button - extreme line
 ;-----------------------------------------------------------------------------
 ; scrollbar type 1 - stylish frame
 	cmp	word sb_type,1
@@ -732,14 +717,14 @@ draw_down_arrow_vertical
 .mouse:
 	pusha
 	mov	edi,dword [esp+36]
-	mcall	37,1
+	mcall	SF_MOUSE_GET,SSF_WINDOW_POSITION
 	mov	sb_m_pos,eax
 	cmp	dword sb_m_pos_2,0
 	jne	@f
 	
 	mov	sb_m_pos_2,eax	
 @@:
-	mcall	37,2
+	mcall	SF_MOUSE_GET,SSF_BUTTON
 	mov	sb_m_keys,eax	
 
 	cmp	sb_m_keys,eax
@@ -1031,15 +1016,14 @@ draw_down_arrow_vertical
 	jmp	.all_sb	
 .exit_sb:	
 scroll_bar_exit
-}
+
 
 ;*****************************************************************************
 ;*****************************************************************************
 ;*****************************************************************************
 ;*****************************************************************************
 ;*****************************************************************************
-macro use_scroll_bar_horizontal
-{
+align 16
 scroll_bar_horizontal:
 .draw:
 	pusha
@@ -1121,7 +1105,7 @@ scroll_bar_exit
 	shl	ecx,16
 	inc	ecx	
 	mov	edx,sb_line_col
-	mov	eax,13
+	mov	eax,SF_DRAW_RECT
 	cmp	dword sb_all_redraw,0
 	je	@f
 	int	0x40	; top extreme line
@@ -1175,7 +1159,7 @@ draw_up_arrow_horizontal
 	mov	edx,sb_line_col
 	cmp	dword sb_all_redraw,0
 	je	@f
-	mcall	13	;  left  button - right line
+	mcall	SF_DRAW_RECT	;  left  button - right line
 @@:
 	pop	ebx
 ;********************************* 
@@ -1189,7 +1173,7 @@ draw_up_arrow_horizontal
 	mov	bx,0
 	add	ebx,sb_position2
 	dec	bx
-	mov	eax,13
+	mov	eax,SF_DRAW_RECT
 	test	bx,0x8000
 	jnz	@f
 	mov	edx,sb_bckg_col
@@ -1257,8 +1241,7 @@ draw_runner_center_horizontal
 	test	bx,0x8000
 	jnz	@f
 	mov	edx,sb_bckg_col
-	mov	eax,13
-	int	0x40	; bottom interval
+	mcall	SF_DRAW_RECT	; bottom interval
 @@:
 	pop	ebx	
 ;*********************************	
@@ -1269,7 +1252,7 @@ draw_runner_center_horizontal
 	shl	ebx,16
 	inc	ebx
 	mov	edx,sb_line_col
-	mov	eax,13
+	mov	eax,SF_DRAW_RECT
 	cmp	dword sb_all_redraw,0
 	je	@f
 	int	0x40	; bottom button - top line
@@ -1305,7 +1288,7 @@ draw_down_arrow_horizontal
 	mov	bx,1
 	cmp	dword sb_all_redraw,0
 	je	@f
-	mcall	13	; bottom button - extreme line
+	mcall	SF_DRAW_RECT	; bottom button - extreme line
 ;-----------------------------------------------------------------------------
 ; scrollbar type 1 - stylish frame
 	cmp	word sb_type,1
@@ -1334,14 +1317,14 @@ draw_down_arrow_horizontal
 .mouse:
 	pusha
 	mov	 edi,dword [esp+36]
-	mcall	37,1
+	mcall	SF_MOUSE_GET,SSF_WINDOW_POSITION
 	mov	sb_m_pos,eax
 	cmp	dword sb_m_pos_2,0
 	jne	@f
 	
 	mov	sb_m_pos_2,eax	
 @@:
-	mcall	37,2
+	mcall	SF_MOUSE_GET,SSF_BUTTON
 	mov	sb_m_keys,eax	
 
 	cmp	sb_m_keys,eax
@@ -1641,4 +1624,3 @@ draw_down_arrow_horizontal
 ;*****************************************************************************
 .exit_sb:
 scroll_bar_exit
-}

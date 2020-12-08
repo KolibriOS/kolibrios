@@ -44,13 +44,14 @@ KMENUITEM_SEPARATOR equ 2
 include 'lang.inc'
 include '../../macros.inc'
 include '../../proc32.inc'
+include '../../KOSfuncs.inc'
 include '../../dll.inc'
 include '../../develop/libraries/box_lib/trunk/box_lib.mac' ;for uses checkBox and editBox
-include '../../develop/libraries/box_lib/load_lib.mac'
+include '../../load_lib.mac'
 @use_library
 
 START:
-   mcall 48,3,sc,sizeof.system_colors ;get system colors
+   mcall SF_STYLE_SETTINGS,SSF_GET_COLORS,sc,sizeof.system_colors ;get system colors
 
    stdcall dll.Load, @IMPORT
    or      eax, eax
@@ -61,10 +62,10 @@ START:
 
    ;set mask for events:
    ;сообщение о перерисовке,нажата кнопка, определЄнна€ ранее, событие от мыши (что-то случилось - нажатие на кнопку мыши или перемещение; сбрасываетс€ при прочтении)
-   mcall 40, 0x27
+   mcall SF_SET_EVENTS_MASK, 0x27
 
    mov ecx,[sc.work_text]
-   and ecx, 0x9FFFFFFF
+   and ecx,0x9FFFFFFF
    or  ecx,0x90000000
 
    call initBuf
@@ -120,7 +121,7 @@ START:
    call  draw_window
 
 event_wait:
-   mcall 10
+   mcall SF_WAIT_EVENT
 
    cmp     eax, 1       ; Event redraw
    je      redraw
@@ -142,18 +143,18 @@ redraw:
    jmp     event_wait
 
 key:
-   mcall 2
+   mcall SF_GET_KEY
    invoke  edit_box_key, editLabel
    invoke  edit_box_key, editMBR
    jmp     event_wait
 
 button:
-    mcall 17
+    mcall SF_GET_BUTTON
 
     cmp ah, 1         ;Close button
     jne @f
 exit:
-    mcall -1
+    mcall SF_TERMINATE_PROCESS
 @@:
    cmp ah, 2          ;Format button
    jne @f
@@ -225,7 +226,7 @@ butFormat:
 
 butSelectFS:
    push eax ebx ecx
-   mcall 9, pi, -1 ;get window coord
+   mcall SF_THREAD_INFO, pi, -1 ;get window coord
 
    mov eax, dword[pi+34]
    add eax, Otstup
@@ -241,7 +242,7 @@ butSelectFS:
 
 butUnit:
    push eax ebx ecx
-   mcall 9, pi, -1
+   mcall SF_THREAD_INFO, pi, -1
 
    mov eax, dword[pi+34]
    add eax, Otstup+80+30+delta
@@ -257,7 +258,7 @@ butUnit:
 
 butDevice:
    push eax ebx ecx
-   mcall 9, pi, -1
+   mcall SF_THREAD_INFO, pi, -1
 
    mov eax, dword[pi+34]
    add eax, Otstup+80+30+delta
@@ -279,9 +280,9 @@ draw_warningWindow:
    ret
 
 draw_window:
-   mcall  12, 1
+   mcall  SF_REDRAW, SSF_BEGIN_DRAW
 
-        mov     eax, 0                  ; function 0 : define and draw window
+        mov     eax, SF_CREATE_WINDOW           ; define and draw window
         mov     ebx, 100 * 65536 + (290+delta)  ; [x start] *65536 + [x size]
         mov     ecx, 100 * 65536 + (310+dy)  ; [y start] *65536 + [y size]
         mov     edx,[sc.work]    ;0x14FFFFFF
@@ -293,38 +294,24 @@ draw_window:
         mcall
 
 
-        mov ebx, (290+delta-Otstup-130+10)*65536+130
-        mov ecx, (270+dy)*65536+(20+3)
-        mov edx, 0x00000002
         mov esi, 0xAABBCC
-        mcall 8
+        mcall SF_DEFINE_BUTTON, (290+delta-Otstup-130+10)*65536+130, (270+dy)*65536+(20+3), 2
 
-        mov ebx, (290+delta-Otstup-50-2)*65536+(50+2)
-        mov ecx, (210+dy)*65536+21 ;14
-        mov edx, 0x00000003
-        mov esi, 0xAABBCC
-        mcall 8
+        inc edx
+        mcall , (290+delta-Otstup-50-2)*65536+(50+2), (210+dy)*65536+21 ;14
 
         ;button select FS
-        mov ebx, Otstup*65536+120
-        mov ecx, (110)*65536+(21)
-        mov edx, 0x00000004
+        inc edx
         mov esi, 0xFFFFFF
-        mcall 8
+        mcall , Otstup*65536+120, (110)*65536+(21)
 
         ;button select unit size
-        mov ebx, (Otstup+80+30+delta)*65536+120
-        mov ecx, (110)*65536+(21)
-        mov edx, 0x00000005
-        mov esi, 0xFFFFFF
-        mcall 8
+        inc edx
+        mcall , (Otstup+80+30+delta)*65536+120, (110)*65536+(21)
 
         ;button select device
-        mov ebx, (Otstup+80+30+delta)*65536+120
-        mov ecx, (60)*65536+(21)
-        mov edx, 0x00000006
-        mov esi, 0xFFFFFF
-        mcall 8
+        inc edx
+        mcall , (Otstup+80+30+delta)*65536+120, (60)*65536+(21)
 
        invoke check_box_draw, ch1  ;рисование чекбоксов
        invoke check_box_draw, ch2
@@ -345,7 +332,7 @@ draw_window:
         push    dword frame_data2
         invoke  frame_draw
 
-        mcall 12, 2
+        mcall SF_REDRAW, SSF_END_DRAW
         ret
 
 
@@ -385,13 +372,6 @@ unittext:
   .6 db '32 К°', 0
   .7 db '64 К°', 0
 
-head_f_i:
-  head_f_l  db 'С®бв•ђ≠†п Ѓи®°™†',0
-  err_message_found_lib0 db 'Н• ≠†©§•≠† °®°Ђ®Ѓв•™† ',39,'proc_lib.obj',39,0
-  err_message_import0 db 'Ои®°™† ѓа® ®ђѓЃав• °®°Ђ®Ѓв•™® ',39,'proc_lib.obj',39,0
-  err_message_found_lib1 db 'Н• ≠†©§•≠† °®°Ђ®Ѓв•™† ',39,'kmenu.obj',39,0
-  err_message_import1 db 'Ои®°™† ѓа® ®ђѓЃав• °®°Ђ®Ѓв•™® ',39,'kmenu',39,0
-
 else           ;EN language
 
 title   db  "Formatting Disk Utility", 0
@@ -418,13 +398,6 @@ unittext:
   .6 db '32 Kb', 0
   .7 db '64 Kb', 0
 
-head_f_i:
-  head_f_l  db 'System error',0
-  err_message_found_lib0 db 'Could not find library ',39,'proc_lib.obj',39,0
-  err_message_import0 db 'Error importing library ',39,'proc_lib.obj',39,0
-  err_message_found_lib1 db 'Could not find library ',39,'kmenu.obj',39,0
-  err_message_import1 db 'Error importing library ',39,'kmenu',39,0
-
 end if
 
 
@@ -450,11 +423,11 @@ getDeviceList:
    mov [kmDevice], eax
    sizeBDVK = 560   ;304 ;
 
-   mcall 68, 11
+   mcall SF_SYS_MISC, SSF_HEAP_INIT
 
-   mcall 68, 12, sizeBDVK*maxDeviceCount+32
+   mcall SF_SYS_MISC, SSF_MEM_ALLOC, sizeBDVK*maxDeviceCount+32
    mov dword[read_folder_struct.return], eax
-   mcall 70, read_folder_struct
+   mcall SF_FILE, read_folder_struct
    cmp eax, 0
    je .next
    cmp eax, 6
@@ -500,27 +473,27 @@ draw_super_text:
    mov eax, text.volume
    mov     edx, eax
    mov     esi, 13
-   mcall 4
+   mcall SF_DRAW_TEXT
 
    mov     ebx, Otstup * 65536 + 99-6
    mov     edx, text.fs
    mov     esi, 12
-   mcall 4
+   mcall SF_DRAW_TEXT
 
    mov     ebx, (Otstup+80+30+delta) * 65536 + 99-6
    mov     edx, text.unit
    mov     esi, 21
-   mcall 4
+   mcall SF_DRAW_TEXT
 
    mov     ebx, (Otstup+80+30+delta) * 65536 + 49-6
    mov     edx, text.disk
    mov     esi, 9
-   mcall 4
+   mcall SF_DRAW_TEXT
 
 ;   mov     ebx, Otstup * 65536 + (151-6+dy)
 ;   mov     edx, text.option
 ;   mov     esi, 8
-;   mcall 4
+;   mcall SF_DRAW_TEXT
 
    mov     ebx, (Otstup+80+30+delta +5) * 65536 + (110+3)
    mov dl, byte[kmUnitID]
@@ -567,7 +540,7 @@ draw_super_text:
    mov byte[kmUnitID], 0
    mov     edx, unittext.0
 .printUnit:
-   mcall 4
+   mcall SF_DRAW_TEXT
 
    mov     ebx, (Otstup+5) * 65536 + (110+3)
    mov dl, byte[kmID]
@@ -600,7 +573,7 @@ draw_super_text:
    mov     edx, kmNone
 .printFS:
    ;mov     esi, 8
-   mcall 4
+   mcall SF_DRAW_TEXT
 
    ;button device
    mov     ebx, (Otstup+80+30+delta +5) * 65536 + (60+3)
@@ -609,7 +582,7 @@ draw_super_text:
    add edx, deviceAdrStr
    mov edx, dword[edx]
    ;call setCurrentDeviceInEDX
-   mcall 4
+   mcall SF_DRAW_TEXT
 
    ;buttons text
    mov     ebx, (290+delta-Otstup-130+10+2+10) * 65536 + (277-3+dy)
@@ -617,14 +590,14 @@ draw_super_text:
    mov eax, text.format
    mov     edx, eax
    mov     esi, 6
-   mcall 4
+   mcall SF_DRAW_TEXT
 
    mov     ebx, (290+delta-Otstup-52+6+8) * 65536 + (213+dy)
    ;mov     ecx, 0xFFFFFF
    mov eax, browse ;text.browse
    mov     edx, eax
    mov     esi, 6
-   mcall 4
+   mcall SF_DRAW_TEXT
 
    pop esi edi edx ecx ebx eax
    ret
@@ -777,7 +750,7 @@ dd 0,0
         akmenuitem_draw  db 'kmenuitem_draw',0
 
 align 4
-proclib_import:
+import_proclib:
         OpenDialog_Init dd aOpenDialog_Init
         OpenDialog_Start dd aOpenDialog_Start
 dd 0,0
@@ -839,8 +812,8 @@ kmExt2: db 'EXT2', 0
 ;kmXFS: db 'XFS', 0
 
 l_libs_start:
-    lib0 l_libs lib0_name, sys_path, file_name, system_dir0, err_message_found_lib0, head_f_l, proclib_import,err_message_import0, head_f_i
-    lib1 l_libs lib1_name, sys_path, file_name, system_dir0, err_message_found_lib1, head_f_l, import_libkmenu,err_message_import1,head_f_i
+    lib0 l_libs lib0_name, file_name, system_dir0, import_proclib
+    lib1 l_libs lib1_name, file_name, system_dir0, import_libkmenu
 load_lib_end:
 
 ;размеры: 80 и 120

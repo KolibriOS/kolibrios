@@ -1,5 +1,3 @@
-macro use_progressbar
-{
 pb equ [esp + 4 + 8*4]
 align 16
 progressbar_draw:
@@ -15,7 +13,7 @@ progressbar_draw:
         add    esi, edi
         dec    ebp
         dec    esi
-        mov    eax, 38
+        mov    eax, SF_DRAW_LINE
         shl    ebx, 16
         mov    bx, bp
         shrd   ecx, edi, 16
@@ -54,7 +52,7 @@ progressbar_draw:
         add    ebx, edi
         add    ecx, [eax + PB_HEIGHT]
         dec    ecx
-        mov    eax, 13
+        mov    eax, SF_DRAW_RECT
         dec    ecx
         int    64
 ; draw last part of non-progress rectangle
@@ -133,11 +131,10 @@ progressbar_progress:
         add    ebx, esi
         dec    ecx
         sub    ebx, edi
-        mov    eax, 13
+        mov    eax, SF_DRAW_RECT
         dec    ecx
         int    64
 ; .skip:
         popad
         ret    4
 restore pb
-}

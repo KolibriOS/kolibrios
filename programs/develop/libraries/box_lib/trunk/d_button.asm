@@ -31,8 +31,7 @@ popa
 ret 4
 }
 ;*****************************************************************************
-macro use_dinamic_button
-{
+align 16
 dinamic_button:
 db_type				equ [edi]
 db_size_x			equ [edi+4]
@@ -89,7 +88,7 @@ dinamic_button_exit
 	
 	push  edi
 	mov   edi,db_palette_raw
-	mcall 65
+	mcall SF_PUT_IMAGE_EXT
 	pop   edi
 	ret
 ;*****************************************************************************
@@ -97,16 +96,17 @@ dinamic_button_exit
 ; mouse event
 ;*****************************************************************************
 ;*****************************************************************************
+align 4
 .mouse:
 	pusha
 	mov   edi,dword [esp+36]
-     mcall 37,2
+     mcall SF_MOUSE_GET,SSF_BUTTON
 	 mov   ebx,db_mouse_keys
 	 mov   db_mouse_keys_old,ebx
 	 
      mov   db_mouse_keys,eax  
 	 
-     mcall 37,1
+     mcall SF_MOUSE_GET,SSF_WINDOW_POSITION
      mov   db_mouse_pos,eax	
 	 
      test  eax,0x80000000
@@ -149,10 +149,10 @@ dinamic_button_exit
 	 
 	 mov   db_select,dword 2
 	 call  .draw_1
-	 mcall 5, 25
+	 mcall SF_SLEEP, 25
 	 mov   db_select,dword 1
 	 call  .draw_1
-	 
+
 	 mov    db_click,dword 1
 	 jmp   .exit_menu_2
 	 
@@ -167,4 +167,3 @@ dinamic_button_exit
 ;	mov    db_click,dword 0
 .exit_menu_2:
 dinamic_button_exit
-}

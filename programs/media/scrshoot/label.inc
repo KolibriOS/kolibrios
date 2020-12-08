@@ -2,19 +2,14 @@ macro use_label
 {
 draw_label:
 pusha
-        xor     esi,esi
-        mov     edx,[edi+8]
+	xor     esi,esi
+	mov     edx,[edi+8]
 .check_next:
-        mov     ah,[edx+esi]
-        inc     esi
-        test    ah,ah
-        jz      @f
-        jmp     .check_next
-@@:
-        mov     eax,4
-        mov     ebx,[edi]
-        mov     ecx,[edi+4]
-        mcall
+	mov     ah,[edx+esi]
+	inc     esi
+	test    ah,ah
+	jnz     .check_next
+	mcall   SF_DRAW_TEXT,[edi],[edi+4]
 popa
 ret
 }

@@ -21,7 +21,7 @@
 format binary as ""
 
 title equ 'Screenshooter v1.21' ; Заголовок окна
-include '../../develop/libraries/box_lib/load_lib.mac'
+include '../../load_lib.mac'
 include '../../develop/libraries/box_lib/trunk/box_lib.mac'
 include '../../config.inc'		;for nightbuild
 include '../../proc32.inc'
@@ -34,21 +34,15 @@ include 'textwork.inc'
 include 'scrshoot.mac'
 
 use32		     
-    org 0x0
+    org 0
     db 'MENUET01'
-    dd 0x1
-    dd start
-    dd IM_END
-    dd i_end
-    dd stacktop
-    dd cmdstr
-    dd cur_dir_path
+    dd 1, start, IM_END, i_end, stacktop, cmdstr, cur_dir_path
 
 include 'lang.inc'
 include '../../dll.inc'
 
 align 4
-	@use_library_mem mem.Alloc,mem.Free,mem.ReAlloc,dll.Load
+	@use_library mem.Alloc,mem.Free,mem.ReAlloc,dll.Load
 	use_txt_button				;  |
 	use_label				;  |-- GUI компоненты и некоторые процедуры
 	use_text_work				; /
@@ -607,14 +601,14 @@ labels_end:
 ;---------------------------------------------------------------------
 l_libs_start:
 
-library01  l_libs system_dir_Boxlib+9, cur_dir_path, library_path, system_dir_Boxlib, \
-err_message_found_lib1, head_f_l, Box_lib_import, err_message_import1, head_f_i
+library01  l_libs system_dir_Boxlib+9, library_path, system_dir_Boxlib, \
+	Box_lib_import
 
-library02  l_libs system_dir_ProcLib+9, cur_dir_path, library_path, system_dir_ProcLib, \
-err_message_found_lib2, head_f_l, ProcLib_import, err_message_import2, head_f_i
+library02  l_libs system_dir_ProcLib+9, library_path, system_dir_ProcLib, \
+	ProcLib_import
 
-library03  l_libs system_dir_LibImg+9, cur_dir_path, library_path, system_dir_LibImg, \
-err_message_found_lib3, head_f_l, import_libimg, err_message_import3, head_f_i
+library03  l_libs system_dir_LibImg+9, library_path, system_dir_LibImg, \
+	import_libimg
 
 end_l_libs:
 ;---------------------------------------------------------------------

@@ -23,15 +23,16 @@ use32
 	dd cur_dir_path
 ;---------------------------------------------------------------------
 include '../../../config.inc'		;for nightbuild
+include '../../../KOSfuncs.inc'
 include '../../../macros.inc'
 include '../../../gui_patterns.inc'
 include '../../../develop/libraries/box_lib/trunk/box_lib.mac'
-include '../../../develop/libraries/box_lib/load_lib.mac'
+include '../../../load_lib.mac'
   @use_library
 
 START:
-	mcall	68,11
-	mcall	40,0x80000027
+	mcall	SF_SYS_MISC,SSF_HEAP_INIT
+	mcall	SF_SET_EVENTS_MASK,0x80000027
 
 	load_libraries l_libs_start,load_lib_end
 	cmp eax,-1
@@ -130,7 +131,7 @@ red:
 	call	draw_window
 ;--------------------------------------
 still:
-	mcall	10
+	mcall	SF_WAIT_EVENT
 	dec	eax
 	jz	red
 
@@ -182,11 +183,11 @@ clear_messages:
 exit:
 	xor	eax,eax
 	dec	eax
-	mcall
+	mcall	;SF_TERMINATE_PROCESS
 ;*********************************************************************
 button:
 ; button pressed
-	mcall	17
+	mcall	SF_GET_BUTTON
 	xchg	al,ah
 	cmp	al,7
 	jz	but7
@@ -318,7 +319,7 @@ set_editbox_position_all:
 	ret
 ;*********************************************************************
 key:
-	mcall	2
+	mcall	SF_GET_KEY
 
 	push	dword edit1
 	call	[edit_box_key]
@@ -408,7 +409,7 @@ draw_messages:
 	neg	ecx
 	mov	esi,ecx
 	pop	edi
-	mcall	4,,0xB0000000,edi
+	mcall	SF_DRAW_TEXT,,0xB0000000,edi
 	add	ebx,16
 	add	edi,80
 	cmp	edi,message_cur_pos
@@ -418,20 +419,20 @@ draw_messages:
 ;*********************************************************************
 draw_log_area:
 	DrawRectangle 5, LOG_Y, WIN_W-12, LOG_H, [sc.work_graph]
-	mcall	13, <6,WIN_W-13>, <LOG_Y+1,LOG_H-1>, 0xFFFfff
+	mcall	SF_DRAW_RECT, <6,WIN_W-13>, <LOG_Y+1,LOG_H-1>, 0xFFFfff
 	DrawRectangle3D 6, LOG_Y+1, WIN_W-13, LOG_H-1, 0xDEDEDE, [sc.work_graph] 
 	ret
 ;*********************************************************************
 draw_window:
 ; start redraw
-	mcall	12,1	
-	mcall	48,3,sc,40
+	mcall	SF_REDRAW,SSF_BEGIN_DRAW	
+	mcall	SF_STYLE_SETTINGS,SSF_GET_COLORS,sc,40
 	;--------------------------------------
 	edit_boxes_set_sys_color edit1,editboxes_end,sc
 	check_boxes_set_sys_color2 check1,check1_end,sc
 	;--------------------------------------
 ; define window
-	mcall 48,4
+	mcall	SF_STYLE_SETTINGS,SSF_GET_SKIN_HEIGHT
 
 	mov	ecx,100 shl 16 + WIN_H
 	add ecx, eax
@@ -440,8 +441,8 @@ draw_window:
 	add	edx,34000000h
 	xor	esi,esi
 	xor	edi,edi
-	mcall	0,<250,WIN_W+10>,,,,caption_str
-	mcall	9,procinfo,-1
+	mcall	SF_CREATE_WINDOW,<250,WIN_W+10>,,,,caption_str
+	mcall	SF_THREAD_INFO,procinfo,-1
 	
 	mov	eax,[procinfo+70] ;status of window
 	test	eax,100b
@@ -457,7 +458,7 @@ draw_window:
 	call	draw_editbox
 ; end redraw
 .end:
-	mcall	12,2
+	mcall	SF_REDRAW,SSF_END_DRAW
 	ret
 ;*********************************************************************
 draw_editbox:
@@ -494,7 +495,7 @@ set_editbox_position:
 draw_buttons:
 ; define compress button
 	mov	cx,18
-	mcall	8,<WIN_W - RIGHT_BTN_W - 5, RIGHT_BTN_W>, <3, 20>,2,[sc.work_button]
+	mcall	SF_DEFINE_BUTTON,<WIN_W - RIGHT_BTN_W - 5, RIGHT_BTN_W>, <3, 20>,2,[sc.work_button]
 ; uncompress button
 	inc	edx
 	add	ecx,LINE_H shl 16
@@ -506,10 +507,10 @@ draw_buttons:
 	mov ecx,[sc.work_button_text]
 	or  ecx,0x90000000
 	mov edx,aQuestion
-	mcall  4,<WIN_W-19, LINE_H*2+5>
+	mcall	SF_DRAW_TEXT,<WIN_W-19, LINE_H*2+5>
 	pop	esi
 ; define Path button
-	mcall	8,<6,64>,<LINE_H*2+3,20>,4
+	mcall	SF_DEFINE_BUTTON,<6,64>,<LINE_H*2+3,20>,4
 ; text on Path button
 	mov	ebx,8 shl 16+5
 	mov	al,4
@@ -522,7 +523,7 @@ draw_buttons:
 ; text on settings buttons
 	mov ecx, [sc.work_text]
 	or ecx, 0x10000000
-	mcall , <8, 5>, , buttons1names, 8
+	mcall	, <8, 5>, , buttons1names, 8
 
 	add	edx,esi
 	add	ebx,LINE_H
