@@ -22,14 +22,14 @@ format MS COFF
 
 public @EXPORT as 'EXPORTS'
 
-include '../../../../struct.inc'
-include '../../../../proc32.inc'
-include '../../../../macros.inc'
-include '../../../../config.inc'
-include '../../../../debug-fdo.inc'
+include 'struct.inc'
+include 'proc32.inc'
+include 'macros.inc'
+include 'config.inc'
+include 'debug-fdo.inc'
 __DEBUG__ = 0
 __DEBUG_LEVEL__ = 1
-include '../../../../develop/libraries/libs-dev/libio/libio.inc'
+include 'libio.inc'
 purge section,mov,add,sub
 
 include 'libimg.inc'
@@ -52,6 +52,11 @@ include 'xbm/xbm.asm'
 
 include 'scale.asm'
 include 'convert.asm'
+
+COMPOSITE_MODE equ MMX
+; MMX | pretty fast and compatible
+; SSE | a bit faster, but may be unsupported by some CPUs
+include 'blend.asm'
 
 ;;================================================================================================;;
 proc lib_init ;///////////////////////////////////////////////////////////////////////////////////;;
@@ -2743,6 +2748,7 @@ img._.get_scanline_len: ;///////////////////////////////////////////////////////
 ;;////////////////////////////////////////////////////////////////////////////////////////////////;;
 ;;================================================================================================;;
 
+section '.data' data readable writable align 16
 ;include_debug_strings
 
 align 4
@@ -2807,6 +2813,7 @@ export                                      \
     img.scale          , 'img_scale'          , \
     img.get_scaled_size, 'img_get_scaled_size', \
     img.convert        , 'img_convert'        , \
+    img.blend          , 'img_blend'          , \
     img.formats_table  , 'img_formats_table'
 
 ; import from deflate unpacker
@@ -2841,7 +2848,6 @@ gif_default_palette:
     db  0, 0, 0
     db  0xFF, 0xFF, 0xFF
 
-section '.data' data readable writable align 16
 ; uninitialized data - global constant tables
 mem.alloc   dd ?
 mem.free    dd ?

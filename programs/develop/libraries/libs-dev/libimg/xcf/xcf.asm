@@ -29,10 +29,6 @@
 include	'xcf.inc'
 ;include	'../../../../../system/board/trunk/debug.inc'
 
-COMPOSITE_MODE		equ	MMX
-; MMX     | pretty fast and compatible
-; SSE     | a bit faster, but may be unsupported by some CPUs
-
 MAX_LAYERS		=	255
 
 ;;================================================================================================;;
@@ -1616,10 +1612,6 @@ endl
 	ret
 endp
 
-
-match =MMX,	COMPOSITE_MODE{include	'composite_mmx.asm'}
-match =SSE,	COMPOSITE_MODE{include	'composite_sse.asm'}
-
 ;;================================================================================================;;
 ;;////////////////////////////////////////////////////////////////////////////////////////////////;;
 ;;================================================================================================;;
@@ -1636,28 +1628,3 @@ xcf._.prop_table_begin:
 		dd	11, xcf._.parse_properties.11
 		dd	15, xcf._.parse_properties.15
 xcf._.prop_table_end:
-
-xcf._.composite_table.begin:
-  .p00	dd 00, xcf._.composite_rgb_00, xcf._.composite_gray_00, xcf._.composite_indexed_00	; Normal
-  .p01	dd 01, xcf._.composite_rgb_01, xcf._.composite_gray_01, xcf._.composite_gray_01		; Dissolve	: random dithering to discrete alpha
-;  .p02	dd 02, xcf._.composite_rgb_02, 0,			xcf._.composite_indexed_02	; Behind	: not selectable in the GIMP UI. not implemented
-  .p03	dd 03, xcf._.composite_rgb_03, xcf._.composite_rgb_03, xcf._.composite_indexed_00	; Multiply
-  .p04	dd 04, xcf._.composite_rgb_04, xcf._.composite_rgb_04, xcf._.composite_indexed_00	; Screen
-  .p05	dd 05, xcf._.composite_rgb_05, xcf._.composite_rgb_05, xcf._.composite_indexed_00	; Overlay
-  .p06	dd 06, xcf._.composite_rgb_06, xcf._.composite_rgb_06, xcf._.composite_indexed_00	; Difference
-  .p07	dd 07, xcf._.composite_rgb_07, xcf._.composite_rgb_07, xcf._.composite_indexed_00	; Addition
-  .p08	dd 08, xcf._.composite_rgb_08, xcf._.composite_rgb_08, xcf._.composite_indexed_00	; Subtract
-  .p09	dd 09, xcf._.composite_rgb_09, xcf._.composite_rgb_09, xcf._.composite_indexed_00	; Darken Only
-  .p10	dd 10, xcf._.composite_rgb_10, xcf._.composite_rgb_10, xcf._.composite_indexed_00	; Lighten Only
-  .p11	dd 11, xcf._.composite_rgb_11, xcf._.composite_gray_00, xcf._.composite_indexed_00	; Hue (H of HSV)
-  .p12	dd 12, xcf._.composite_rgb_12, xcf._.composite_gray_00, xcf._.composite_indexed_00	; Saturation (S of HSV)
-  .p13	dd 13, xcf._.composite_rgb_13, xcf._.composite_gray_00, xcf._.composite_indexed_00	; Color (H and S of HSL)
-  .p14	dd 14, xcf._.composite_rgb_14, xcf._.composite_gray_00, xcf._.composite_indexed_00	; Value (V of HSV)
-  .p15	dd 15, xcf._.composite_rgb_15, xcf._.composite_rgb_15, xcf._.composite_indexed_00	; Divide
-  .p16	dd 16, xcf._.composite_rgb_16, xcf._.composite_rgb_16, xcf._.composite_indexed_00	; Dodge
-  .p17	dd 17, xcf._.composite_rgb_17, xcf._.composite_rgb_17, xcf._.composite_indexed_00	; Burn
-  .p18	dd 18, xcf._.composite_rgb_18, xcf._.composite_rgb_18, xcf._.composite_indexed_00	; Hard Light
-  .p19	dd 19, xcf._.composite_rgb_05, xcf._.composite_rgb_05, xcf._.composite_indexed_00	; Soft Light	: XCF >= 2 only ('soft light' == 'overlay')
-  .p20	dd 20, xcf._.composite_rgb_20, xcf._.composite_rgb_20, xcf._.composite_indexed_00	; Grain Extract	: XCF >= 2 only
-  .p21	dd 21, xcf._.composite_rgb_21, xcf._.composite_rgb_21, xcf._.composite_indexed_00	; Grain Merge	: XCF >= 2 only
-xcf._.composite_table.end:
