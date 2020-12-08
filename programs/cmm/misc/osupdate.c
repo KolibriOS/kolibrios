@@ -116,7 +116,7 @@ void main()
 			if (!http.receive_result) {
 				CreateFile(http.content_received, 
 					http.content_pointer, "/tmp0/1/latest.img");
-				http.hfree();
+				http.stop();
 				EventDownloadComplete();
 			}
 	}

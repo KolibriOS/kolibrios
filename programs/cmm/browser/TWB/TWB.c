@@ -464,7 +464,7 @@ void TWebBrowser::SetStyle() {
 			EDI = EAX;
 			img.w.add(ESDWORD[EDI+4]);
 			img.h.add(ESDWORD[EDI+8]);
-			free(EDI);
+			img_destroy stdcall(EDI);
 
 			img.url.add(#img_path);
 

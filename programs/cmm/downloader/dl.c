@@ -181,8 +181,6 @@ void MonitorProgress()
 		if (exit_param) ExitProcess();
 		StopDownloading();
 		DrawWindow();
-
-		http.hfree();
 	}
 }
 

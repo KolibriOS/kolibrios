@@ -43,6 +43,8 @@ bool _cache::has(dword _link)
 
 void _cache::clear()
 {
+	int i;
+	for (i=0; i<data.count; i++) free(data.get(i));
 	url.drop();
 	data.drop();
 	size.drop();
