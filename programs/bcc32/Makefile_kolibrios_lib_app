@@ -1,0 +1,5 @@
+program:
+	wine bcc32 -c $(FILENAME).c
+	wine link -edit $(FILENAME).obj
+	kos32-ld -T $(SVN_BCC)/LScript.x $(FILENAME).obj -o $(FILENAME).kex $(SVN)/contrib/sdk/lib/KolibriOS.lib
+	objcopy -O binary -j .all $(FILENAME).kex
