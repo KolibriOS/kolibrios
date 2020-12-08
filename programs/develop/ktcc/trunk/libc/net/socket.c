@@ -91,11 +91,13 @@ int getsockopt(int socket, optstruct* opt)
     );
 }
 
-int socketpair()
+int socketpair(int *sock1, int *sock2)
 {
     asm volatile(
         "int $0x40"
-        :"=b"(err_code)
+        :"=b"(*sock2), "=a"(*sock1) 
         :"a"(75), "b"(10)
-    ); 
+    );
+    err_code = *sock2;
+    return *sock1;
 }
