@@ -207,9 +207,9 @@ void _http::receive()
 
 	IF (!strncmp(new_URL,"//", 2)) 
 	{
-		strcpy(#newurl, "http:");
-		strcat(#newurl, new_URL);
-		strcpy(orig_URL, #newurl);
+		strncpy(#newurl, "http:", URL_SIZE);
+		strncat(#newurl, new_URL, URL_SIZE);
+		strncpy(orig_URL, #newurl, URL_SIZE);
 		return orig_URL;
 	}
 	
@@ -236,10 +236,10 @@ void _http::receive()
 		goto _CUT_ST_LEVEL_MARK;
 	}
 	
-	if (newurl[strlen(#newurl)-1]<>'/') strcat(#newurl, "/"); 
+	if (newurl[strlen(#newurl)-1]<>'/') strncat(#newurl, "/", URL_SIZE); 
 	
-	strcat(#newurl, new_URL);
-	strcpy(orig_URL, #newurl);
+	strncat(#newurl, new_URL, URL_SIZE);
+	strncpy(orig_URL, #newurl, URL_SIZE);
 	return orig_URL;
 }
 

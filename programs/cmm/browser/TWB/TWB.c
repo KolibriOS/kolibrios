@@ -158,6 +158,7 @@ void TWebBrowser::AddCharToTheLine(unsigned char _char)
 	{
 		if (line[line_len-1]==' ') return; //no double spaces
 		if (!stolbec) && (!line) return; //no paces at the beginning of the line
+		if (link) && (line_len==0) return;
 	}
 	if (line_len < sizeof(line)) chrcat(#line, _char);
 	CheckForLineBreak();
@@ -468,13 +469,14 @@ void TWebBrowser::SetStyle() {
 
 			img.url.add(#img_path);
 
-			if (img.w.get_last() / 6 + 1 + stolbec > list.column_max) {
+			if (img.w.get_last() / 6 + stolbec > list.column_max) {
 				NewLine();
 			} 
 			img.x.add(stolbec*list.font_w+3);
 			img.y.add(draw_y);
 
-			stolbec += img.w.get_last() / 6 + 1;
+			stolbec += img.w.get_last() / 6;
+			if (stolbec > list.column_max) NewLine();
 
 			if (img.h.get_last() > list.item_h) {
 				draw_y += img.h.get_last() - list.item_h; 
@@ -488,7 +490,6 @@ void TWebBrowser::SetStyle() {
 				img.h.get_last(), 
 				0);
 
-			//debugval(img.url.get_last(), img.y.get_last());
 
 			return;
 		} else {
@@ -511,6 +512,7 @@ void TWebBrowser::SetStyle() {
 		if (!line) {
 			if (!strncmp(#img_path, "data:", 5)) img_path=0;
 			replace_char(#img_path, '?', NULL, strlen(#img_path));
+			img_path[sizeof(line)-3] = '\0'; //prevent overflow in sprintf
 			sprintf(#line, "[%s]", #img_path+strrchr(#img_path, '/'));
 			line[50]= NULL;
 		}

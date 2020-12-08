@@ -25,11 +25,8 @@ struct DrawBufer {
 };
 
 char draw_buf_not_enaught_ram[] = 
-"'DrawBufer needs more memory than currenly available.
-Application could be unstable.
-
-Requested size: %i Mb
-Free RAM: %i Mb' -E";
+"'DrawBufer requested %i MB more memory than the system has.
+Application could be unstable.' -E";
 
 bool DrawBufer::Init(dword i_bufx, i_bufy, i_bufw, i_bufh)
 {
@@ -189,8 +186,8 @@ void DrawBufer::IncreaseBufSize()
 	}
 
 	free_ram_size = GetFreeRAM() * 1024;
-	if (alloc_size >= free_ram_size) {
-		sprintf(#error_str, #draw_buf_not_enaught_ram, alloc_size/1048576, free_ram_size/1048576);
+	if (alloc_size > free_ram_size) {
+		sprintf(#error_str, #draw_buf_not_enaught_ram, alloc_size - free_ram_size/1048576);
 		notify(#error_str);
 	}
 }
