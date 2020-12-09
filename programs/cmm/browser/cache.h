@@ -48,6 +48,7 @@ void _cache::clear()
 	url.drop();
 	data.drop();
 	size.drop();
+	type.drop();
 	current_buf = NULL;
 	current_size = NULL;
 }

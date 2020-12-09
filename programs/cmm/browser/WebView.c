@@ -42,7 +42,7 @@
 //                       DATA                        //
 //                                                   //
 //===================================================//
-char version[]="WebView 2.8 BETA 3";
+char version[]="WebView 2.8 BETA 4";
 
 #define DEFAULT_URL URL_SERVICE_HOMEPAGE
 
@@ -421,7 +421,7 @@ void EventAllTabsClick(dword _n)
 		EventTabClose(_n);
 	} else {
 		EventTabClick(_n);
-	}	
+	}
 }
 
 void EventEditSource()
@@ -451,7 +451,6 @@ void StopLoading()
 {
 	if (http.stop()) pause(10);
 	prbar.value = 0;
-	DrawOmnibox();
 }
 
 //rewrite into 
@@ -893,6 +892,8 @@ void DrawOmnibox()
 void SetOmniboxText(dword _text)
 {
 	edit_box_set_text stdcall (#omnibox_edit, _text);
+	omnibox_edit.pos = omnibox_edit.flags = 0;
+	DrawOmnibox();
 }
 
 dword GetAbsoluteActiveURL()

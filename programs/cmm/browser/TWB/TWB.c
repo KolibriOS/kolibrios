@@ -124,7 +124,7 @@ void TWebBrowser::SetPageDefaults()
 	style.tag_list.reset();
 	link_color_default = 0x0000FF;
 	link_color_active = 0xFF0000;
-	page_bg = 0xFFFFFF;
+	page_bg = 0xEBE8E9; //E0E3E3 EBE8E9
 	style.bg_color = page_bg;
 	DrawBuf.Fill(0, page_bg);
 	links.clear();
@@ -457,6 +457,7 @@ void TWebBrowser::SetStyle() {
 		strlcpy(#img_path, value, sizeof(img_path)-1);
 		get_absolute_url(#img_path, history.current());
 
+		//if (check_is_the_adress_local(#img_path)) <== load local files
 		if (cache.has(#img_path)) 
 		{
 			img_decode stdcall (cache.current_buf, cache.current_size, 0);
