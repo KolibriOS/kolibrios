@@ -1,3 +1,6 @@
+CC = kos32-gcc
+LD = kos32-ld
+SDK_DIR = ../../../sdk
 
 CFLAGS_OPT = -U_Win32 -U_WIN32 -U__MINGW32__ -UWIN32 -U_MSC_VER -O2 
 CFLAGS_OPT+= -fomit-frame-pointer -fno-ident -mno-ms-bitfields
@@ -34,7 +37,7 @@ OBJS  =  $(patsubst %.cpp, %.o, $(patsubst %.c, %.o, $(SRCS)))
 
 all: libiberty.a
 
-libiberty.a : $(OBJS) MAkefile
+libiberty.a : $(OBJS) Makefile
 	$(AR) crs libiberty.a $(OBJS)
 	mv -f libiberty.a $(SDK_DIR)/lib
 
