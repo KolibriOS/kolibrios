@@ -13,12 +13,12 @@ _http http;
 
 checkbox autoclose = { T_AUTOCLOSE, false }; 
 
-char main_url[URL_SIZE];
+char uEdit[URL_SIZE];
 char filepath[URL_SIZE+96];
 
 progress_bar pb = {0, GAPX, 58, 315, 17, 0, NULL, NULL, 0xFFFfff, 0x74DA00, NULL};
 edit_box ed = {WIN_W-GAPX-GAPX,GAPX,20,0xffffff,0x94AECE,0xffffff,0xffffff,
-	0x10000000, sizeof(main_url)-2,#main_url,0,ed_focus,19,19};
+	0x10000000, sizeof(uEdit)-2,#uEdit,0,ed_focus,19,19};
 
 
 void main()  
@@ -38,12 +38,12 @@ void main()
 
 		if (!strncmp(#param, "-mem", 5)) {
 			//shared_url = memopen(#dl_shared, URL_SIZE+1, SHM_OPEN + SHM_WRITE);
-			strcpy(#main_url, shared_url);
+			strcpy(#uEdit, shared_url);
 		} else {
-			strcpy(#main_url, #param);
+			strcpy(#uEdit, #param);
 		}
 	}
-	if (main_url[0]) StartDownloading(); else {
+	if (uEdit[0]) StartDownloading(); else {
 		edit_box_set_text stdcall (#ed, "http://");
 	}
  
@@ -106,21 +106,21 @@ void DrawWindow()
  
 void StartDownloading()
 {
-	char proxy_url[URL_SIZE];
+	char get_url[URL_SIZE+33];
 	if (http.transfer > 0) return;
 	filepath = '\0';
-	if (!strncmp(#main_url,"https:",6)) {
-		miniprintf(#proxy_url, "http://gate.aspero.pro/?site=%s", #main_url);
-		strcpy(#main_url, #proxy_url);
-		EditBox_UpdateText(#ed, ed.flags);
+	if (!strncmp(#uEdit,"https:",6)) {
+		miniprintf(#get_url, "http://gate.aspero.pro/?site=%s", #uEdit);
 		//notify("'HTTPS for download is not supported, trying to download the file via HTTP' -W");
-		//miniprintf(#http_url, "http://%s", #main_url+8);
+		//miniprintf(#http_url, "http://%s", #uEdit+8);
 		//if (!downloader.Start(#http_url)) {
 		//	notify("'Download failed.' -E");
 		//	StopDownloading();
 		//}
+	} else {
+		strcpy(#get_url, #uEdit);
 	}
-	if (http.get(#main_url)) {
+	if (http.get(#get_url)) {
 		ed.blur_border_color = 0xCACACA;
 		EditBox_UpdateText(#ed, ed_disabled);
 		pb.value = 0;
@@ -171,8 +171,8 @@ void MonitorProgress()
 	} else {
 		if (http.status_code >= 300) && (http.status_code < 400) {
 			http.header_field("location", #redirect_url, URL_SIZE);
-			get_absolute_url(#redirect_url, #main_url);
-			strcpy(#main_url, #redirect_url);
+			get_absolute_url(#redirect_url, #uEdit);
+			edit_box_set_text stdcall (#ed, #redirect_url);
 			StopDownloading();
 			StartDownloading();
 			return;
@@ -201,7 +201,7 @@ void SaveFile()
 		}
 	} else {
 		// Clean all slashes at the end
-		strcpy(#file_name, #main_url);
+		strcpy(#file_name, #uEdit);
 		while (file_name[strlen(#file_name)-1] == '/') {
 			file_name[strlen(#file_name)-1] = 0;
 		}
