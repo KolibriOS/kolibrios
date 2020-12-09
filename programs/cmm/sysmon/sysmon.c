@@ -1,6 +1,6 @@
 /*
  * System Monitor
- * version 1.3
+ * version 1.35
  * Author: Leency
 */
 
@@ -218,9 +218,8 @@ void Processes__GetProcessList()
 
 void SelectList_DrawLine(dword i)
 {
-	int posy;
-	char cpu_use[16];
-	char mem_use[16];
+	int posy, j, len;
+	char cpu_use[16], mem_use[16], mem_use_pretty[16];
 	dword bg_color;
 	proc_info Process;
 	static unsigned maxcpu;
@@ -238,9 +237,18 @@ void SelectList_DrawLine(dword i)
 
 	WriteText(GAP+5, posy+select_list.text_y, 0x90, 0, #Process.name);
 
-	if (Process.use_memory < 3670016000) {
+	if (Process.use_memory < 3670016000) 
+	{
 		sprintf(#mem_use, "%i", Process.use_memory/1024);
-		WriteText(GAP+123 - calc(strlen(#mem_use)-6*8), posy+select_list.text_y, 0x90, 0x444444, #mem_use);		
+		len = strlen(#mem_use);
+		strcpy(#mem_use_pretty, "               ");
+
+		for (j=1; j<=len; j++) {
+			EDI = sizeof(mem_use_pretty)-1-j - calc(j/4);
+			mem_use_pretty[EDI] = mem_use[len-j];
+		}
+
+		WriteText(GAP+109, posy+select_list.text_y, 0x90, 0x444444, #mem_use_pretty+16-9);
 	}
 
 	sprintf(#cpu_use, "%i", Process.use_cpu*100/maxcpu);
