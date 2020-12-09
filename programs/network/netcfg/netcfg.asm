@@ -341,7 +341,7 @@ load_and_start:
         jmp     .next
 
 
-
+ITEM_H = 15
 ;------------------------------------------------------------------
 ;* Print device info to screen
 Print_New_Device:
@@ -355,16 +355,16 @@ Print_New_Device:
         mov     cx, dx
         dec     cx
         shl     ecx, 16
-        add     ecx, 9
+        add     ecx, ITEM_H
 
         xor     edx, edx
         mov     dh, [V_Bus]
         mov     dl, [V_Dev]
 
-        mov     esi, 0x0000c0ff        ; color: yellow if selected, blue otherwise
+        mov     esi, 0x0059DFFF        ; color: yellow if selected, blue otherwise
         cmp     [selected], dx
         jne     @f
-        mov     esi, 0x00c0c000
+        mov     esi, 0x00FFCD0B
        @@:
 
         shl     edx, 8
@@ -375,6 +375,7 @@ Print_New_Device:
 
         xor     esi, esi                ; Color of text
         movzx   ecx, [PCI_Vendor]       ; number to be written
+		add     edx, 3
         mcall   47, 0x00040100          ; Write Vendor ID
 
         add     edx, (4*6+18) shl 16
@@ -507,7 +508,7 @@ include 'drivers.inc'
 DATA
 
 
-Form:   dw 800 ; window width (no more, special for 800x600)
+Form:   dw 740 ; window width (no more, special for 800x600)
         dw 100 ; window x start
         dw 220 ; window height
         dw 100 ; window y start
