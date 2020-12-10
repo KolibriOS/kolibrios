@@ -1,3 +1,7 @@
+CC = kos32-gcc
+LD = kos32-ld
+SDK_DIR = ../../../sdk
+
 NAME= ld-new
 
 LIB_DIR:= $(SDK_DIR)/lib
@@ -18,7 +22,7 @@ MDEFS=    -DDEFAULT_EMULATION='"i386pe"' -DBINDIR='"/home/autobuild/tools/win32/
 MDEFS+=   -DTOOLBINDIR='"/home/autobuild/tools/win32/mingw32/bin"' -DTARGET='"i686-pc-mingw32"'
 MDEFS+=   -DTARGET_SYSTEM_ROOT='"/home/autobuild/tools/win32"' -DTARGET_SYSTEM_ROOT_RELOCATABLE
 
-LIBS= -lbfd -liberty -lz -lgcc -lc.dll -lapp
+LIBS= -lc -lbfd -liberty -lz -lgcc -lc.dll
 
 LIBPATH:= -L$(LIB_DIR) -L/home/autobuild/tools/win32/mingw32/lib
 
