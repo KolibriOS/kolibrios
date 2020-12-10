@@ -19,8 +19,7 @@ SRCS = \
 	archive.c archures.c bfd.c bfdio.c	\
 	binary.c cache.c coff-bfd.c coffgen.c cofflink.c	\
 	compress.c corefile.c cpu-i386.c	\
-#	dwarf1.c dwarf2.c elf.c	elf32.c		\
-	dwarf1.c elf.c	elf32.c		\
+	dwarf1.c dwarf2.c elf.c	elf32.c		\
 	elf32-gen.c elf32-i386.c elf-attrs.c	\
 	elf-eh-frame.c elf-ifunc.c elflink.c	\
 	elf-nacl.c elf-strtab.c elf-vxworks.c	\
@@ -45,7 +44,7 @@ libbfd.a : $(OBJS) Makefile
 	$(CC) $(CFLAGS) $(DEFINES) $(INCLUDES) -o $@ $<
 
 dwarf2.o : dwarf2.c Makefile
-	$(CC) $(CFLAGS) $(DEFINES) -DDEBUGDIR='"/home/autobuild/tools/win32/lib/debug\"' $(INCLUDES) -o $@ $<
+	$(CC) $(CFLAGS) $(DEFINES) -DDEBUGDIR="\"/home/autobuild/tools/win32/lib/debug\"" $(INCLUDES) -o $@ $<
 
 
 targets.o : targets.c Makefile
