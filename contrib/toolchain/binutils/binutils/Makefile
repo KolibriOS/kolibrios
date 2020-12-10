@@ -1,3 +1,6 @@
+CC = kos32-gcc
+LD = kos32-ld
+SDK_DIR = ../../../sdk
 
 LIB_DIR:= $(SDK_DIR)/lib
 
@@ -11,7 +14,7 @@ INCLUDES= -I. -I../bfd -I../include -I$(SDK_DIR)/sources/newlib/libc/include
 DEFINES=  -DHAVE_CONFIG_H -DLOCALEDIR='"/home/autobuild/tools/win32/share/locale"'
 DEFINES+= -Dbin_dummy_emulation=bin_vanilla_emulation
 
-LIBS= -lbfd -liberty -lz -lgcc -lc.dll -lapp
+LIBS= -lc -lbfd -liberty -lz -lgcc -lc.dll
 
 LIBPATH:= -L$(LIB_DIR) -L/home/autobuild/tools/win32/mingw32/lib
 
