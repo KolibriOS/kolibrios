@@ -1,3 +1,6 @@
+CC = kos32-gcc
+LD = kos32-ld
+SDK_DIR = ../../../sdk
 
 LIB_DIR:= $(SDK_DIR)/lib
 
@@ -11,7 +14,7 @@ INCLUDES+= -I$(SDK_DIR)/sources/newlib/libc/include -I$(SDK_DIR)/sources/zlib
 
 DEFINES=  -DHAVE_CONFIG_H -DLOCALEDIR='"/home/autobuild/tools/win32/share/locale"'
 
-LIBS= -lopcodes -lbfd -liberty -lz -lgcc -lc.dll -lapp
+LIBS= -lc -lopcodes -lbfd -liberty -lz -lgcc -lc.dll
 
 LIBPATH:= -L$(LIB_DIR) -L/home/autobuild/tools/win32/mingw32/lib
 
