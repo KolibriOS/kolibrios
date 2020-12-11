@@ -1,6 +1,5 @@
-# gcc not kos32-gcc
 all:
-	gcc -c -O2 -nostdinc -nostdlib -m32 -march=i686 -fomit-frame-pointer -fno-builtin -fno-builtin-printf gb.c
+	../../bin/kos32-tcc -c gb.c -I ../../libc/include
 	ar -rcs libgb.a gb.o
 clean:
 	rm -f *.o

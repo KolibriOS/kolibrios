@@ -1,5 +1,5 @@
 
-#include "gb.h"
+#include <kos/gb.h>
 
 //=========================
 
