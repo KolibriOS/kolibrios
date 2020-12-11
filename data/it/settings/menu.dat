@@ -52,7 +52,7 @@ Diff Tool                 /sys/develop/diff
 Debug Board               /sys/develop/board
 Debugger                  /sys/develop/mtdbg
 Hex2Dec2Bin               /sys/develop/h2d2b
-Tavola caratteri          /sys/ASCIIVju
+Tavola caratteri          /sys/develop/ASCIIVju
 Codici ASCII              /sys/develop/keyascii
 SCAN-codes                /sys/develop/scancode
 #6    **** EXAMPLES ****
@@ -117,9 +117,9 @@ DNS lookup                /sys/network/nslookup
 Internet downloader       /sys/network/downloader
 Text-based browser        /sys/network/webview
 #15    **** OTHER ****
-Orologio analogico        /sys/demos/aclock
+Orologio analogico        /sys/aclock
 Orologio binario          /sys/demos/bcdclk
-Timer                     /sys/demos/timer
+Timer                     /sys/timer
 ScreenShoter              /sys/scrshoot
 Calendario                /sys/calendar
 Lettore RTF               /sys/rtfread

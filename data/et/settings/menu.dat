@@ -53,6 +53,7 @@ Diff Tool                 /sys/develop/diff
 Silumisaken               /sys/develop/board
 Silur                     /sys/develop/mtdbg
 Hex2Dec2Bin               /sys/develop/h2d2b
+Märgistiku tabel          /sys/develop/ASCIIVju
 ASCII-koodid              /sys/develop/keyascii
 SCAN-koodid               /sys/develop/scancode
 #6    **** EXAMPLES ****
@@ -115,9 +116,9 @@ VNC Viewer                /sys/network/vncc
 Interneti allalaadija     /sys/network/downloader
 Tekstipõhine brauser      /sys/network/webview
 #15    **** OTHER ****
-Analoogkell               /sys/demos/aclock
+Analoogkell               /sys/aclock
 Digitaalne kell           /sys/demos/bcdclk
-Taimer                    /sys/demos/timer
+Taimer                    /sys/timer
 Ekraani tõmmis            /sys/scrshoot
 Kalender                  /sys/calendar
 RTF faili lugeja          /sys/rtfread
@@ -129,7 +130,6 @@ FSPEED speed of FS        /sys/fspeed
 #17    **** SYSTEM SPECIAL ****
 Ekraani suurendusklaas    /sys/magnify
 Ekraani klaviatuur        /sys/zkey
-Märgistiku tabel          /sys/ASCIIVju
 #18    **** EMULATORS ****
 DOSBox DOS Emulator       /kolibrios/emul/DosBox/dosbox
 e80 (ZX Spectrum)         /kolibrios/emul/e80/e80

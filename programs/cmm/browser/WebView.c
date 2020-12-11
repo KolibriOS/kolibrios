@@ -78,6 +78,7 @@ proc_info Form;
 dword cur_img_url;
 dword shared_url;
 dword http_get_type;
+dword render_start_time;
 int menu_id=NULL;
 
 char default_dir[] = "/rd/1";
@@ -701,6 +702,7 @@ void LoadInternalPage(dword _bufdata, _in_bufsize){
 			strcat(#editURL, #anchors.current);
 			DrawOmnibox();
 		}
+		render_start_time = GetStartTime();
 		WB1.ParseHtml(_bufdata, _in_bufsize);
 		// REJECTED. Reason: infinite redirect at Google Results.
 		/*
@@ -949,6 +951,7 @@ dword GetImg(bool _new)
 	DrawOmnibox();
 	WB1.ParseHtml(WB1.o_bufpointer, WB1.bufsize);
 	WB1.DrawPage();
+	debugln(sprintf(#param, "WebView: page rendered in %i sec", GetStartTime()-render_start_time/100));
 }
 
 stop:

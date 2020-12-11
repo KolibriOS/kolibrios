@@ -52,7 +52,7 @@ Diff Tool                 /sys/develop/diff
 Debug Board               /sys/develop/board
 Debugger                  /sys/develop/mtdbg
 Base Converter            /sys/develop/h2d2b
-Character table           /sys/ASCIIVju
+Character table           /sys/develop/ASCIIVju
 Key ASCII-codes           /sys/develop/keyascii
 Key SCAN-codes            /sys/develop/scancode
 #6 **** EMULATORS ****
@@ -111,9 +111,9 @@ Text-based browser        /sys/network/webview
 FTP                       /sys/network/ftpd
 #14 **** OTHER ****
 Emulators*         >      /@6
-Analog clock              /sys/demos/aclock
+Analog clock              /sys/aclock
 Binary clock              /sys/demos/bcdclk
-Timer                     /sys/demos/timer
+Timer                     /sys/timer
 Screenshooter             /sys/scrshoot
 RTF reader                /sys/rtfread
 ##

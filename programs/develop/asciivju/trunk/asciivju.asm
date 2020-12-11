@@ -16,6 +16,9 @@ PANEL_Y              = BUTTON_SPACE*8+TABLE_BEGIN_Y+TABLE_BEGIN_Y
 FOCUS_SQUARE_COLOR   = 0x000080FF
 SWITCHER_BLINK_COLOR = 0x00808080
 
+FONT_SMALL = 0x01000000
+FONT_BIG   = 0x10000000
+
 
 start:
 still:
@@ -33,6 +36,8 @@ button:
         je      quit
         cmp     ax, 0xFFAA                      ; page switcher
         je      .switch_page                    ; any button with a character
+        cmp     ax, 0xEEBB                      ; page switcher
+        je      .switch_font                    
   .change_focus:
         mov     bl, [symbol_focused]
         mov     [symbol_unfocused], bl
@@ -41,6 +46,13 @@ button:
         stdcall draw_table, 0
         call    draw_codes
         jmp     still
+  .switch_font:
+        cmp     [font_type], FONT_SMALL
+		jne     @f
+		mov     [font_type], FONT_BIG
+		jmp     redraw
+    @@: mov     [font_type], FONT_SMALL
+	    jmp     redraw
   .switch_page:
         movzx   bx, [symbol_start]
         add     bx, BUTTON_ID_SHIFT
@@ -77,6 +89,7 @@ redraw:
         stdcall draw_table, 1
         call    draw_codes
         stdcall draw_page_switcher, 0
+		stdcall draw_font_switcher
 
     @@:
         mcall   12, 2
@@ -234,7 +247,8 @@ proc    draw_button
         shl     ebx, 16
         add     ebx, [button_y]
         add     ebx, 7
-        mcall   4, , 0x01000000, symbol_current, 1
+		mov     ecx, [font_type]
+        mcall   4, , , symbol_current, 1
 
         ret
 endp
@@ -247,7 +261,7 @@ proc    draw_page_switcher _blinking
         cmp     [_blinking], 1                  ; blinking?
         jne     @f
         mov     esi, SWITCHER_BLINK_COLOR
-    @@: mcall   , <2,98>, <PANEL_Y+1,23>, 0x2000FFAA
+    @@: mcall   , <2,98>, <PANEL_Y+1,23>, 0x0000FFAA
 
         mov     ecx, 0x81000000
         mov     edx, string_000_127
@@ -255,7 +269,20 @@ proc    draw_page_switcher _blinking
         je      @f
         mov     edx, string_128_255             ; ok, the second one
     @@: mcall   4, <10,PANEL_Y+6>,
-        mcall    , <115,PANEL_Y+6>, 0x81000000, string_ASCII_CODE
+        mcall    , <278,PANEL_Y+6>, 0x81000000, string_ASCII_CODE
+
+        ret
+endp
+
+proc    draw_font_switcher
+
+        mcall   8, <120,136>, <PANEL_Y+1,23>, 0x0000EEBB
+
+        mov     edx, string_font_small
+        cmp     [font_type], FONT_SMALL
+        je      @f
+        mov     edx, string_font_big
+    @@: mcall   4, <130,PANEL_Y+6>,,,10
 
         ret
 endp
@@ -264,8 +291,8 @@ endp
 proc    draw_codes
 
         movzx   ecx, [symbol_focused]
-        mcall   47, 0x00030000, , <250,PANEL_Y+6>, 0x41000000, 0xAAAaaa
-        mcall     , 0x00020100, , <500,PANEL_Y+6>,
+        mcall   47, 0x00030000, , <339,PANEL_Y+6>, 0x41000000, 0xAAAaaa
+        mcall     , 0x00020100, , <508,PANEL_Y+6>,
 
         ret
 endp
@@ -275,13 +302,17 @@ quit:
         mcall   -1
 
 
-szZ window_title                ,'ASCIIVju'
-szZ string_000_127              ,'000-127'
-szZ string_128_255              ,'128-255'
-szZ string_ASCII_CODE           ,'ASCII Code:      ASCII Hex-Code:'
+szZ window_title        ,'ASCIIVju'
+szZ string_000_127      ,'000-127'
+szZ string_128_255      ,'128-255'
+szZ string_font_small   ,'Font1 6x9 '
+szZ string_font_big     ,'Font2 8x14'
+szZ string_ASCII_CODE   ,'Code:     Hex-Code:'
 
 button_x                dd 2
 button_y                dd 2
+
+font_type               dd FONT_SMALL
 
 symbol_current          db 0
 symbol_start            db 0

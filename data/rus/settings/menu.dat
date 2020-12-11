@@ -54,14 +54,13 @@ HEX-редактор              /sys/develop/heed
 Diff tool                 /sys/develop/diff
 Отладчик                  /sys/develop/mtdbg
 Hex2Dec2Bin               /sys/develop/h2d2b
-Таблица символов          /sys/ASCIIVju
+Таблица символов          /sys/develop/ASCIIVju
 ASCII-коды                /sys/develop/keyascii
 SCAN-коды                 /sys/develop/scancode
 #6    **** Эмуляторы ****
 DOSBox DOS Emulator       /kolibrios/emul/DosBox/dosbox
 e80 (ZX Spectrum)         /kolibrios/emul/e80/e80
 FCE Ultra - NES           /kolibrios/emul/fceu/fceu
-PokeMini                  /kolibrios/emul/pokemini
 ScummVM                   /kolibrios/emul/scummvm
 ZSNES Super Nintendo      /kolibrios/emul/zsnes
 #7    **** Система ****
@@ -109,10 +108,10 @@ VNC Клиент                /sys/network/vncc
 #14   **** Разное ****
 Эмуляторы          >      /@6
 Создание скриншотов       /sys/scrshoot
-Аналоговые часы           /sys/demos/aclock
+Аналоговые часы           /sys/aclock
 Таблица Менделеева        /sys/period
 Тренажёр KJ|ABuIIIA       /sys/games/klavisha
 Бинарные часы             /sys/demos/bcdclk
-Таймер                    /sys/demos/timer
+Таймер                    /sys/timer
 Разархиватор Unz          /sys/unz
 ##

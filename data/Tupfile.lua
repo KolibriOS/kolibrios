@@ -366,7 +366,6 @@ tup.append_table(img_files, {
  {"@VOLUME", PROGS .. "/media/volume/volume"},
  {"HACONFIG", PROGS .. "/other/ha/HACONFIG"},
  {"APM", PROGS .. "/system/apm/apm"},
- {"ASCIIVJU", PROGS .. "/develop/asciivju/trunk/asciivju"},
  {"CALC", PROGS .. "/other/calc/trunk/calc"},
  {"CALENDAR", PROGS .. "/system/calendar/trunk/calendar"},
  {"COLRDIAL", PROGS .. "/system/colrdial/color_dialog"},
@@ -422,10 +421,10 @@ tup.append_table(img_files, {
  {"DEMOS/TRANTEST", PROGS .. "/demos/trantest/trunk/trantest"},
  {"DEMOS/TUBE", PROGS .. "/demos/tube/trunk/tube"},
  {"DEMOS/UNVWATER", PROGS .. "/demos/unvwater/trunk/unvwater"},
- {"DEMOS/USE_MB", PROGS .. "/demos/use_mb/use_mb"},
  {"DEMOS/WEB", PROGS .. "/demos/web/trunk/web"},
+ {"DEVELOP/ASCIIVJU", PROGS .. "/develop/asciivju/trunk/asciivju"},
  {"DEVELOP/BOARD", PROGS .. "/system/board/trunk/board"},
- {"DEVELOP/cObj", PROGS .. "/develop/cObj/trunk/cObj"},
+ {"DEVELOP/COBJ", PROGS .. "/develop/cObj/trunk/cObj"},
  {"DEVELOP/FASM", PROGS .. "/develop/fasm/1.73/fasm"},
  {"DEVELOP/H2D2B", PROGS .. "/develop/h2d2b/trunk/h2d2b"},
  {"DEVELOP/HEED", PROGS .. "/develop/heed/trunk/heed"},
@@ -433,8 +432,9 @@ tup.append_table(img_files, {
  {"DEVELOP/MTDBG", PROGS .. "/develop/mtdbg/mtdbg"},
  {"DEVELOP/SCANCODE", PROGS .. "/develop/scancode/trunk/scancode"},
  {"DEVELOP/T_EDIT", PROGS .. "/other/t_edit/t_edit"},
- {"DEVELOP/test_gets", PROGS .. "/develop/libraries/console_coff/examples/test_gets"},
- {"DEVELOP/THREAD", PROGS .. "/develop/examples/thread/trunk/thread"},
+ {"DEVELOP/EXAMPLES/CONGET", PROGS .. "/develop/libraries/console_coff/examples/test_gets"},
+ {"DEVELOP/EXAMPLES/THREAD", PROGS .. "/develop/examples/thread/trunk/thread"},
+ {"DEVELOP/EXAMPLES/USE_MB", PROGS .. "/demos/use_mb/use_mb"},
  {"DEVELOP/INFO/ASM.SYN", PROGS .. "/other/t_edit/info/asm.syn"},
  {"DEVELOP/INFO/CPP_CLA.SYN", PROGS .. "/other/t_edit/info/cpp_kol_cla.syn"},
  {"DEVELOP/INFO/CPP_DAR.SYN", PROGS .. "/other/t_edit/info/cpp_kol_dar.syn"},
@@ -583,7 +583,7 @@ tup.append_table(extra_files, {
 if build_type == "rus" then tup.append_table(img_files, {
  {"PERIOD", PROGS .. "/other/period/trunk/period"},
  {"GAMES/KLAVISHA", PROGS .. "/games/klavisha/trunk/klavisha"},
- {"DEVELOP/TESTCON2", PROGS .. "/develop/libraries/console_coff/examples/testcon2_rus"},
+ {"DEVELOP/EXAMPLES/TESTCON2", PROGS .. "/develop/libraries/console_coff/examples/testcon2_rus"},
 }) else tup.append_table(img_files, {
  {"DEVELOP/TESTCON2", PROGS .. "/develop/libraries/console_coff/examples/testcon2_eng"},
 }) end
@@ -597,10 +597,10 @@ end -- tup.getconfig('NO_FASM') ~= 'full'
 -- Programs that require NASM to compile.
 if tup.getconfig('NO_NASM') ~= 'full' then
 tup.append_table(img_files, {
+ {"ACLOCK", PROGS .. "/demos/aclock/trunk/aclock"},
  {"LOD", PROGS .. "/fs/lod/lod"},
+ {"TIMER", PROGS .. "/other/Timer/timer"},
  {"TINFO", PROGS .. "/system/tinfo/tinfo"},
- {"DEMOS/ACLOCK", PROGS .. "/demos/aclock/trunk/aclock"},
- {"DEMOS/TIMER", PROGS .. "/other/Timer/timer"},
  {"DEVELOP/MSTATE", PROGS .. "/develop/mstate/mstate"},
  {"GAMES/C4", PROGS .. "/games/c4/trunk/c4"},
  {"MEDIA/FILLSCR", PROGS .. "/media/FillScr/fillscr"},

@@ -455,6 +455,8 @@ void TWebBrowser::SetStyle() {
 		if (!value) value = tag.get_value_of("data-src=");
 		if (!value) goto NOIMG;
 
+		if (!strcmp(value + strrchr(value, '.'), "svg")) goto NOIMG;
+
 		strlcpy(#img_path, value, sizeof(img_path)-1);
 		get_absolute_url(#img_path, history.current());
 

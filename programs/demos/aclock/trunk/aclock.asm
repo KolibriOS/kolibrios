@@ -25,14 +25,14 @@
 ;	configuration stuff
 ;********************************************************************
 
-	%define APPNAME		"AClock 1.1"
+	%define APPNAME		"Clock"
 	%define STACKSIZE	1024
 
 	; default window position/dimensions (work area)
 	%define DEFAULT_XPOS	-20
 	%define DEFAULT_YPOS	20
-	%define DEFAULT_WIDTH	100
-	%define DEFAULT_HEIGHT	100
+	%define DEFAULT_WIDTH	110
+	%define DEFAULT_HEIGHT	110
 
 	; minimal size (horizontal and vertical) of work area
 	%define MIN_WIDTH	100

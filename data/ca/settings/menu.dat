@@ -52,6 +52,7 @@ Assemblador Flat          /sys/develop/fasm
 Panell de depuració       /sys/develop/board
 Depurador                 /sys/develop/mtdbg
 Hex2Dec2Bin               /sys/develop/h2d2b
+Taula de caràcters        /sys/develop/ASCIIVju
 Codis ASCII               /sys/develop/keyascii
 Codis SCAN                /sys/develop/scancode
 #6    **** EXEMPLES ****
@@ -114,9 +115,9 @@ Resoluci¢ó de noms        /sys/network/nslookup
 Client de baixades        /sys/network/downloader
 Navegador (mode text)     /sys/network/webview
 #15    **** ALTRES ****
-Rellotge analògic         /sys/demos/aclock
+Rellotge analògic         /sys/aclock
 Rellotge binari           /sys/demos/bcdclk
-Contador                  /sys/demos/timer
+Contador                  /sys/timer
 Capturador de pantalla    /sys/scrshoot
 Calendari                 /sys/calendar
 Lector de RTF             /sys/rtfread
@@ -124,7 +125,6 @@ Lector de RTF             /sys/rtfread
 #17    **** ACCESIBILITAT ****
 Ampliació de pantalla     /sys/magnify
 Teclat en pantalla        /sys/zkey
-Taula de caràcters        /sys/ASCIIVju
 #18    **** EMULADORS ****
 DOSBox DOS Emulador       /KolibriOS/emul/DosBox/dosbox
 e80 (ZX Spectrum)         /KolibriOS/emul/e80/e80
