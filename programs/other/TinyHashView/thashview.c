@@ -1,19 +1,18 @@
 /*Автор: Логаев Максим(turbocat2001) */
 #include <stdio.h>
 #include <stdlib.h>
-#include "kos32sys.h"
-#include "notify.h"
+#include <kos32sys1.h>
 #include <string.h>
 #include <stdarg.h>
-#include "algorithms/md5.h"
-#include "algorithms/sha1.h"
-#include "algorithms/sha256.h"
+#include <cryptal/md5.h>
+#include <cryptal/sha1.h>
+#include <cryptal/sha256.h>
 
 #define TRUE 1;
 #define FALSE 0;
 #define MAX_HASH_LEN 65 // Максимальная длина строки
 #define WINDOW_W 665
-#define VERSION "%s - thashview 2.3"
+#define VERSION "%s - thashview 2.4"
 
 typedef unsigned char bool;
 struct kolibri_system_colors sys_color_table;
@@ -59,7 +58,10 @@ enum BUTTONS // Кнопки в интрефейсе
     BTN_PASTE=50       //Вставить в edit_box(пока в разработке)
 };
 
-
+void notify_show(char *text)
+{
+   start_app("/sys/@notify", text);
+}
 
 void* safe_malloc(size_t size) // Безопасный malloc. Показывает уведомление об ошибке и закрывает программу если память не была выделена
 {
@@ -173,7 +175,7 @@ void redraw_window() //Рисуем окно
 
     draw_bar(10, 121, 525,20, WHITE); // Создаём прямоугольник для поля ввода
     draw_text_sys(edit_box_buff,15, 125, 0, 0x90000000| edit_box_text_color); // Выводим текст из буффера ввода
-    draw_text_sys("|",10+(8*str_pos),125,0,0x90000000 | sys_color_table.work_text);
+    draw_text_sys("|",10+(8*str_pos),125,0,0x90000000 | BLACK);
 
     define_button((10 << 16) + 60, (30 << 16) + 20, BTN_MD5, GREEN); // Определяем кнопку md5
     define_button((10 << 16) + 60, (60 << 16) + 20, BTN_SHA1, GREEN);// Определяем кнопку sha1
@@ -300,7 +302,7 @@ bool hash_compare() // Главная функция для сравнения
 
 void edit_box(oskey_t key)      //Функция реализующая строку ввода
 {
-    edit_box_text_color=sys_color_table.frame_area;
+    edit_box_text_color=BLACK;
     if(key.code==CTRL_V) // Если нажато Ctrl+V то вставить из буфера обмена
     {
         paste_to_edit_buffer();

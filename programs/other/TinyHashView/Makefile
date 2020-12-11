@@ -5,13 +5,12 @@ NAME=thashview
 KTCC=$(KTCC_DIR)/bin/kos32-tcc
 KPACK=kpack
 
-SRC=thashview.c algorithms/*.c
-CFLAGS=-nostdinc -I $(KTCC_DIR)/libc/include
-LFLAGS=-nostdlib -L $(KTCC_DIR)/bin/lib $(KTCC_DIR)/bin/lib/start.o
-LIBS = -lck
+SRC=thashview.c
+CFLAGS=-I $(KTCC_DIR)/libc/include
+LIBS = -lck -lcryptal
 
 all:
-	$(KTCC) $(CFLAGS) $(LFLAGS) $(SRC) $(LIBS) -o $(NAME)
+	$(KTCC) $(CFLAGS) $(SRC) $(LIBS) -o $(NAME)
 	$(KPACK) $(NAME)
 
 clean:
