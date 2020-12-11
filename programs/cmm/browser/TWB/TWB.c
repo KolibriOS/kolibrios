@@ -452,13 +452,14 @@ void TWebBrowser::SetStyle() {
 	}
 	if (tag.is("img")) {
 		value = tag.get_value_of("src=");
+		if (!value) value = tag.get_value_of("data-src=");
 		if (!value) goto NOIMG;
 
 		strlcpy(#img_path, value, sizeof(img_path)-1);
 		get_absolute_url(#img_path, history.current());
 
 		//if (check_is_the_adress_local(#img_path)) <== load local files
-		if (cache.has(#img_path)) 
+		if (cache.has(#img_path)) && (cache.current_size)
 		{
 			img_decode stdcall (cache.current_buf, cache.current_size, 0);
 			if (!EAX) goto NOIMG;

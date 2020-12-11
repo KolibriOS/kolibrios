@@ -42,7 +42,7 @@
 //                       DATA                        //
 //                                                   //
 //===================================================//
-char version[]="WebView 2.8 BETA 4";
+char version[]="WebView 2.8 BETA 5";
 
 #define DEFAULT_URL URL_SERVICE_HOMEPAGE
 

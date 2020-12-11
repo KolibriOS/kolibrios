@@ -720,6 +720,9 @@ proc img.decode _data, _length, _options ;//////////////////////////////////////
 ;< eax = 0 / pointer to image                                                                     ;;
 ;;================================================================================================;;
     push    ebx
+    mov ebx, [_length]
+    or  ebx,ebx
+    jz  .fail
     mov ebx, img.formats_table
     @@: stdcall [ebx + FormatsTableEntry.Is], [_data], [_length]
     or  eax, eax
@@ -727,6 +730,8 @@ proc img.decode _data, _length, _options ;//////////////////////////////////////
     add ebx, sizeof.FormatsTableEntry
     cmp dword[ebx], eax ;0
     jnz @b
+  .fail:
+    xor eax, eax
     pop ebx
     ret
     @@: mov eax, [ebx + FormatsTableEntry.Decode]
