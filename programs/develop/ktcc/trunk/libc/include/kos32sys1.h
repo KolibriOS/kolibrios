@@ -1,11 +1,6 @@
 #ifndef __KOS_32_SYS_H__
 #define __KOS_32_SYS_H__
 
-// file header taken from newlib
-// added many sys functions, compatible with tcc
-
-//#include <newlib.h>
-//#include <stdint.h>
 #include <stddef.h>
 #include <stdarg.h>
 typedef unsigned int uint32_t;
@@ -17,12 +12,6 @@ typedef unsigned long long uint64_t;
 #ifdef __cplusplus
 extern "C" {
 #endif
-
-//#ifdef CONFIG_DEBUF
-//  #define DBG(format,...) printf(format,##__VA_ARGS__)
-//#else
-//  #define DBG(format,...)
-//#endif
 
 #define TYPE_3_BORDER_WIDTH  5
 #define WIN_STATE_MINIMIZED  0x02
@@ -40,11 +29,19 @@ extern "C" {
 #define SHM_CREATE      0x08
 #define SHM_READ        0x00
 #define SHM_WRITE       0x01
+   
+// for clipboard funtions    
+#define UTF 0
+#define CP866 1
+#define CP1251 2
+#define TEXT 0
+#define IMAGE 1
+#define RAW 2
 
-
-
+//Read/Write data as type (int char, etc.) at address "addr" with offset "offset". eg DATA(int, buff, 8);
+#define DATA(type, addr, offset) *((type*)((uint8_t*)addr+offset))
+    
 typedef  unsigned int color_t;
-
 
 typedef union __attribute__((packed)) pos_t
 {
@@ -754,8 +751,6 @@ void __attribute__ ((noinline)) debug_board_printf(const char *format,...)
         debug_board_write_str(log_board);
 }
 */
-
-
 
 // TinyC don't support aliasing of static inline funcs, but support #define :)
 #ifndef __TINYC__
