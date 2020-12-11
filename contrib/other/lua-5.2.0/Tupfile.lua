@@ -3,6 +3,8 @@ HELPERDIR = (tup.getconfig("HELPERDIR") == "") and "../../../programs" or tup.ge
 tup.include(HELPERDIR .. "/use_gcc.lua")
 tup.include(HELPERDIR .. "/use_newlib.lua")
 CFLAGS = CFLAGS .. " -UWIN32 -U_WIN32 -U__WIN32__ -DLUA_COMPAT_ALL -DLUA_ANSI"
+
+LDFLAGS = "-call_shared -S -nostdlib -T$(NEWLIB_BASE)/sources/newlib/app-dynamic.lds --image-base 0"
 LDFLAGS = LDFLAGS .. " --disable-runtime-pseudo-reloc --subsystem native"
 compile_gcc{
   "lapi.c",
