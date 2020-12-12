@@ -194,6 +194,7 @@ extra_files = {
  {"kolibrios/emul/fceu/FCEU ReadMe.txt", PROGS .. "/emulator/fceu/FCEU ReadMe.txt"},
  {"kolibrios/emul/kwine/kwine", PROGS .. "/emulator/kwine/bin/kwine"},
  {"kolibrios/emul/kwine/lib/", PROGS .. "/emulator/kwine/bin/lib/*"},
+ {"kolibrios/emul/uarm", "../contrib/sdk/other/uarm/*"},
  {"kolibrios/demos/ak47.lif", "common/demos/ak47.lif"},
  {"kolibrios/demos/life2", "common/demos/life2"},
  {"kolibrios/demos/relay.lif", "common/demos/relay.lif"},
@@ -683,6 +684,7 @@ tup.append_table(img_files, {
 tup.append_table(extra_files, {
  {"kolibrios/3D/cubeline", PROGS .. "/demos/cubeline/trunk/cubeline"},
  {"kolibrios/emul/e80/e80", PROGS .. "/emulator/e80/trunk/e80"},
+ {"kolibrios/emul/uarm/", "../contrib/other/uarm/uARM"},
  {"kolibrios/games/2048", PROGS .. "/games/2048/2048"},
  {"kolibrios/games/donkey", PROGS .. "/games/donkey/donkey"},
  {"kolibrios/games/heliothryx", PROGS .. "/games/heliothryx/heliothryx"},
