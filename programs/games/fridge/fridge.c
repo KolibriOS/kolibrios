@@ -161,7 +161,7 @@ void Button() {
 		if (id == 1) exit(0); else
 		if (id == BUTTON_RESTART) {
 			SetUp();
-			vict = 0;
+			victory = 0;
 			draw_game_window();
 		} else
 		{
