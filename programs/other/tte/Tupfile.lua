@@ -3,7 +3,7 @@ HELPERDIR = (tup.getconfig("HELPERDIR") == "") and "../.." or tup.getconfig("HEL
 tup.include(HELPERDIR .. "/use_gcc.lua")
 tup.include(HELPERDIR .. "/use_newlib.lua")
 
-CFLAGS = CFLAGS .. " -DGCC_BUILD"
+CFLAGS = CFLAGS .. " -std=c99 -DGCC_BUILD"
 LDFLAGS = LDFLAGS .. " --subsystem native"
 
 compile_gcc{"tte.c", "notify.c", "getline.c"}
