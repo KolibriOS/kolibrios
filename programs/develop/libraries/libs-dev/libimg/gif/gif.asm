@@ -238,7 +238,7 @@ img.decode.gif.cur_color_table_size_child equ ebp + 4 + 4 + 4*3 + 4
 	movzx	eax, [ebx + gif.ImageDescriptor.Width]
 	movzx	ecx, [ebx + gif.ImageDescriptor.Height]
 	push	edx
-	stdcall img._.resize_data, [img], eax, ecx
+	stdcall img.resize_data, [img], eax, ecx
 	pop	edx
 	or	eax, eax
 	jz	.error
@@ -875,7 +875,7 @@ proc img.decode.gif._.superimpose ;/////////////////////////////////////////////
 	movzx	eax, [ebx + sizeof.gif.Image + gif.LogicalScreenDescriptor.ScreenHeight]
 	push	eax
 	movzx	eax, [ebx + sizeof.gif.Image + gif.LogicalScreenDescriptor.ScreenWidth]
-	stdcall	img._.resize_data, edx, eax
+	stdcall	img.resize_data, edx, eax
 	pop	edx
 	test	eax, eax
 	jz	.palette_nomem
@@ -989,7 +989,7 @@ proc img.decode.gif._.superimpose ;/////////////////////////////////////////////
 	movzx	eax, [ebx + gif.Header.lsd.ScreenHeight]
 	push	eax
 	movzx	eax, [ebx + gif.Header.lsd.ScreenWidth]
-	stdcall	img._.resize_data, edx, eax
+	stdcall	img.resize_data, edx, eax
 	pop	edx
 	test	eax, eax
 	jz	.convrgb_nomem
@@ -1092,7 +1092,7 @@ proc img.decode.gif._.superimpose ;/////////////////////////////////////////////
 	movzx	eax, [ebx + gif.Header.lsd.ScreenHeight]
 	push	eax
 	movzx	eax, [ebx + gif.Header.lsd.ScreenWidth]
-	stdcall	img._.resize_data, edx, eax
+	stdcall	img.resize_data, edx, eax
 	pop	edx
 	test	eax, eax
 	jz	.rgb_nomem

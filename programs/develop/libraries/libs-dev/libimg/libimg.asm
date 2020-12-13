@@ -852,7 +852,7 @@ proc img.create _width, _height, _type ;////////////////////////////////////////
 
     push    eax
 
-    stdcall img._.resize_data, eax, [_width], [_height]
+    stdcall img.resize_data, eax, [_width], [_height]
     or  eax, eax
     jz  .error.2
 
@@ -2557,13 +2557,17 @@ proc img._.delete _img ;////////////////////////////////////////////////////////
 endp
 
 ;;================================================================================================;;
-proc img._.resize_data _img, _width, _height ;////////////////////////////////////////////////////;;
+proc img.resize_data _img, _width, _height ;//////////////////////////////////////////////////////;;
 ;;------------------------------------------------------------------------------------------------;;
-;? --- TBD ---                                                                                    ;;
+;? Resize data block of image. New size is calculated from _width and _height params and internal ;;
+;? Image.Type value. All the internal fields are updated iff succeeded.                           ;;
+;? This function does not scale images, use img.scale if you need to.                             ;;
 ;;------------------------------------------------------------------------------------------------;;
-;> --- TBD ---                                                                                    ;;
+;> _img = pointer to image                                                                        ;;
+;> _width = new width                                                                             ;;
+;> _height = new height                                                                           ;;
 ;;------------------------------------------------------------------------------------------------;;
-;< --- TBD ---                                                                                    ;;
+;< eax = 0 (fail) / pointer to the new pixels data                                                ;;
 ;;================================================================================================;;
     push    ebx esi
     mov ebx, [_img]
@@ -2819,6 +2823,7 @@ export                                      \
     img.get_scaled_size, 'img_get_scaled_size', \
     img.convert        , 'img_convert'        , \
     img.blend          , 'img_blend'          , \
+    img.resize_data    , 'img_resize_data'    , \
     img.formats_table  , 'img_formats_table'
 
 ; import from deflate unpacker
