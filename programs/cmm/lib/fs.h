@@ -198,6 +198,16 @@ inline fastcall void GetCurDir( ECX, EDX)
 	$int 0x40
 }
 
+void read_file(dword path1, buf, size)
+{
+	EAX = 68;
+	EBX = 27;
+	ECX = path1;
+	$int 0x40;
+	ESDWORD[size] = EDX;
+	ESDWORD[buf] = EAX;
+}
+
 //===================================================//
 //                                                   //
 //                        Misc                       //

@@ -5,7 +5,6 @@ SOFTWARE CENTER v2.86
 #define MEMSIZE 4096 * 15
 #include "..\lib\strings.h" 
 #include "..\lib\mem.h" 
-#include "..\lib\io.h"
 #include "..\lib\gui.h"
 
 #include "..\lib\obj\libio.h"
@@ -266,7 +265,7 @@ void EventIconClick(dword appid)
 	// }end
 
 	if (file_exists(#run_app_path)) {
-		io.run(#run_app_path, param_pos); //0 or offset
+		RunProgram(#run_app_path, param_pos); //0 or offset
 		if (param_pos) ESBYTE[param_pos - 1] = '|';
 	} else {
 		notify("'Application not found' -E");

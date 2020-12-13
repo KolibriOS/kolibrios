@@ -21,7 +21,7 @@
 #endif
 
 #ifndef INCLUDE_IO_H
-#include "../lib/io.h"
+#include "../lib/fs.h"
 #endif
 
 #include "../lib/patterns/rgb.h"
@@ -69,14 +69,13 @@ int kfont_char_width[255];
 
 :bool KFONT::init(dword font_path)
 {
-	IO label_io;
+	dword fsize_notused;
 	if(font)free(font);
-	label_io.read(font_path);
+	read_file(font_path, #font_begin, #fsize_notused);
 	if(!EAX) {
-		label_io.run("/sys/@notify", "'Error: KFONT is not loaded.' -E"); 
+		RunProgram("/sys/@notify", "'Error: KFONT is not loaded.' -E"); 
 		return false;
 	}
-	font_begin = label_io.buffer_data;
 	changeSIZE();
 	smooth = true;
 	return true;

@@ -16,7 +16,6 @@
 //                                                   //
 //===================================================//
 
-#include "../lib/io.h"
 #include "../lib/gui.h"
 #include "../lib/fs.h"
 #include "../lib/list_box.h"
@@ -134,7 +133,7 @@ void main()
 				EventKillCurrentProcess();
 			}
 			if (BTN_ID_PROC_INFO == btn) {
-				io.run("/sys/tinfo", itoa(GetProcessSlot(current_process_id))); 
+				RunProgram("/sys/tinfo", itoa(GetProcessSlot(current_process_id))); 
 			}
 			break;
 		case evReDraw:

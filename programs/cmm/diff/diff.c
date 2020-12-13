@@ -2,10 +2,9 @@
 //by den po - jdp@bk.ru
 
 #define MEMSIZE 4096 * 60
-#include "../lib/io.h"
+#include "../lib/fs.h"
 #include "../lib/strings.h"
 #include "../lib/obj/console.h"
-IO io1, io2;
 
 #define MAX_PATH 260
 
@@ -92,11 +91,8 @@ console() {
 	char s1;
 	int s2;
 
-	srcfile = io1.read(srcfilename);
-	dstfile = io2.read(dstfilename);
-
-	srcfilesize = io1.FILES_SIZE;
-	dstfilesize = io2.FILES_SIZE;
+	read_file(srcfilename, #srcfile, #srcfilesize);
+	read_file(dstfilename, #dstfile, #dstfilesize);
 
 	if (!srcfile) die("'First file not found' -E"); 
 	if (!dstfile) die("'Second file not found' -E");
