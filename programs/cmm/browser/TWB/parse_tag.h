@@ -3,7 +3,7 @@ struct _tag
 {
 	char name[32];
 	char prior[32];
-	char params[5000];
+	char params[6000];
 	bool opened;
 	collection attributes;
 	collection values;
@@ -58,8 +58,8 @@ bool _tag::get_next_param()
 {
 	byte  quotes = NULL;
 	int   i;
-	unsigned char  val[4000];
-	unsigned char attr[4000];
+	unsigned char  val[6000];
+	unsigned char attr[6000];
 
 	if (!params) return false;
 	

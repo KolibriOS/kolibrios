@@ -120,6 +120,16 @@ inline fastcall word GetButtonID()
 	$shr eax,8
 }
 
+inline fastcall int GetKernelRev()
+{
+	char buf[16];
+	EAX = 18;
+	EBX = 13;
+	ECX = #buf;
+	$int 0x40
+	EAX = ESDWORD[#buf+5];
+}
+
 inline fastcall dword GetFreeRAM()
 {
 	$mov eax, 18

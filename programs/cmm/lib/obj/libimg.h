@@ -19,8 +19,6 @@ dword libimg = #alibimg;
 char alibimg[] = "/sys/lib/libimg.obj";
 	
 dword libimg_init   = #alibimg_init;
-dword img_is_img    = #aimg_is_img;
-dword img_to_rgb2   = #aimg_to_rgb2;
 dword img_decode    = #aimg_decode;
 dword img_destroy   = #aimg_destroy;
 dword img_draw      = #aimg_draw;
@@ -28,15 +26,18 @@ dword img_create    = #aimg_create;
 dword img_encode    = #aimg_encode;
 dword img_convert   = #aimg_convert;
 dword img_from_file = #aimg_from_file;
+dword img_blend     = #aimg_blend;
+//dword img_resize    = #aimg_resize;
+//dword img_is_img    = #aimg_is_img;
+//dword img_to_rgb2   = #aimg_to_rgb2;
+//dword img_scale     = #aimg_scale;
+//dword img_flip      = #aimg_flip;
+//dword img_rotate    = #aimg_rotate;
 
-//dword img_flip    = #aimg_flip;
-//dword img_rotate  = #aimg_rotate;
 $DD 2 dup 0
 
-//import  libimg                     , \
+//import
 char alibimg_init[]   = "lib_init";
-char aimg_is_img[]    = "img_is_img";
-char aimg_to_rgb2[]   = "img_to_rgb2";
 char aimg_decode[]    = "img_decode";
 char aimg_destroy[]   = "img_destroy";
 char aimg_draw[]      = "img_draw";
@@ -44,10 +45,13 @@ char aimg_create[]    = "img_create";
 char aimg_encode[]    = "img_encode";
 char aimg_convert[]   = "img_convert";
 char aimg_from_file[] = "img_from_file";
-//char aimg_flip[]    = "img_flip";
-//char aimg_rotate[]  = "img_rotate ";
-
-//invoke  img.scale, ebx, 0, 0, [ebx + Image.Width], [ebx + Image.Height], 0, LIBIMG_SCALE_TYPE_STRETCH, LIBIMG_SCALE_ALG_BILINEAR, edx, ecx
+char aimg_blend[]     = "img_blend";
+//char aimg_resize[]    = "img_resize";
+//char aimg_is_img[]    = "img_is_img";
+//char aimg_to_rgb2[]   = "img_to_rgb2";
+//char aimg_scale[]     = "img_scale";
+//char aimg_flip[]      = "img_flip";
+//char aimg_rotate[]    = "img_rotate";
 
 #define LIBIMG_FORMAT_BMP       1
 #define LIBIMG_FORMAT_ICO       2
@@ -104,16 +108,16 @@ struct libimg_image
 {
     $push edi
     EDI = image;
-    checksum = DSWORD[EDI];
+    //checksum = ESDWORD[EDI];
     w = ESDWORD[EDI+4];
     h = ESDWORD[EDI+8];
-    next = ESDWORD[EDI+12];
-    previous = ESDWORD[EDI+16];
+    //next = ESDWORD[EDI+12];
+    //previous = ESDWORD[EDI+16];
     imgsrc = ESDWORD[EDI+24];       
-    palette = ESDWORD[EDI+28];      
-    extended = ESDWORD[EDI+32];     
-    flags = ESDWORD[EDI+36];        
-    delay = ESDWORD[EDI+40];    
+    //palette = ESDWORD[EDI+28];      
+    //extended = ESDWORD[EDI+32];     
+    //flags = ESDWORD[EDI+36];        
+    //delay = ESDWORD[EDI+40];    
     $pop edi
 }
 

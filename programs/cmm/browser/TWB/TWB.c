@@ -2,7 +2,6 @@
 #include "TWB\anchors.h"
 #include "TWB\parse_tag.h"
 #include "TWB\special.h"
-#include "TWB\img.h"
 #include "TWB\tag_list.h"
 dword page_bg;
 dword link_color_default;
@@ -31,7 +30,6 @@ struct _style {
 struct TWebBrowser {
 	llist list;
 	_style style;
-	_img img;
 	dword draw_y, stolbec;
 	int zoom;
 	dword o_bufpointer;
@@ -40,6 +38,7 @@ struct TWebBrowser {
 	dword bufpointer;
 	dword bufsize;
 	dword is_html;
+	collection img_url;
 
 	void Paint();
 	void SetPageDefaults();
@@ -124,12 +123,12 @@ void TWebBrowser::SetPageDefaults()
 	style.tag_list.reset();
 	link_color_default = 0x0000FF;
 	link_color_active = 0xFF0000;
-	page_bg = 0xEBE8E9; //E0E3E3 EBE8E9
+	page_bg = 0xffEBE8E9; //E0E3E3 EBE8E9
 	style.bg_color = page_bg;
 	DrawBuf.Fill(0, page_bg);
 	links.clear();
 	anchors.clear();
-	img.clear();
+	img_url.drop();
 	text_colors.drop();
 	text_colors.add(0);
 	header = NULL;
@@ -333,6 +332,9 @@ bool TWebBrowser::CheckForLineBreak()
 //============================================================================================
 void TWebBrowser::SetStyle() {
 	char img_path[4096]=0;
+	dword imgbuf[44];
+	dword cur_img;
+	int img_x, img_y, img_w, img_h;
 
 	dword value;
 
@@ -452,64 +454,80 @@ void TWebBrowser::SetStyle() {
 	}
 	if (tag.is("img")) {
 		value = tag.get_value_of("src=");
-		if (!value) value = tag.get_value_of("data-src=");
 		if (!value) goto NOIMG;
 
 		if (!strcmp(value + strrchr(value, '.'), "svg")) goto NOIMG;
 
+		if (streqrp(value, "data:")) {
+			if (!strstr(value, "base64,")) goto NOIMG;
+			value = EAX+7;
+			if (ESBYTE[value]==' ') value++;
+			cur_img = malloc(strlen(value));
+			base64_decode stdcall (value, cur_img, strlen(value));
+			img_decode stdcall (cur_img, EAX, 0);
+			$push eax
+			free(cur_img);
+			$pop eax
+			if (EAX) goto IMGOK; else goto NOIMG;
+		} 
+
 		strlcpy(#img_path, value, sizeof(img_path)-1);
 		get_absolute_url(#img_path, history.current());
 
-		//if (check_is_the_adress_local(#img_path)) <== load local files
+		if (check_is_the_adress_local(#img_path)) {
+			img_from_file stdcall(#img_path);
+			if (EAX) goto IMGOK; else goto NOIMG;
+		}
+
 		if (cache.has(#img_path)) && (cache.current_size)
 		{
 			img_decode stdcall (cache.current_buf, cache.current_size, 0);
 			if (!EAX) goto NOIMG;
+			IMGOK:
 
-			EDI = EAX;
-			img.w.add(ESDWORD[EDI+4]);
-			img.h.add(ESDWORD[EDI+8]);
-			img_destroy stdcall(EDI);
+			cur_img = EAX;
+			img_h = ESDWORD[cur_img+8];
+			img_w = ESDWORD[cur_img+4];
 
-			img.url.add(#img_path);
-
-			if (img.w.get_last() / 6 + stolbec > list.column_max) {
+			if (img_w / 6 + stolbec > list.column_max) {
 				NewLine();
 			} 
-			img.x.add(stolbec*list.font_w+3);
-			img.y.add(draw_y);
+			img_x = stolbec*list.font_w+3;
+			img_y = draw_y;
 
-			stolbec += img.w.get_last() / 6;
+			img_w = math.min(img_w, DrawBuf.bufw - img_x);
+
+			stolbec += img_w / 6;
 			if (stolbec > list.column_max) NewLine();
 
-			if (img.h.get_last() > list.item_h) {
-				draw_y += img.h.get_last() - list.item_h; 
+			if (img_h > list.item_h + 5) {
+				draw_y += img_h - list.item_h; 
 				NewLine();
 			}
 
-			if (link) links.add_text(
-				img.x.get_last() + list.x,
-				img.y.get_last() + list.y, 
-				img.w.get_last(), 
-				img.h.get_last(), 
-				0);
+			if (link) links.add_text(img_x + list.x, img_y + list.y, img_w, img_h, 0);
 
+			if (img_y + img_h >= DrawBuf.bufh) DrawBuf.IncreaseBufSize();
 
+			if (ESDWORD[cur_img+20] != IMAGE_BPP32) {
+				img_convert stdcall(cur_img, 0, IMAGE_BPP32, 0, 0);
+				$push eax
+				img_destroy stdcall(cur_img);
+				$pop eax
+				cur_img = EAX;
+				if (!EAX) goto NOIMG;
+			}
+			imgbuf[04] = DrawBuf.bufw;
+			imgbuf[08] = DrawBuf.bufh;
+			imgbuf[20] = IMAGE_BPP32;
+			imgbuf[24] = buf_data+8;
+			img_blend stdcall(#imgbuf, cur_img, img_x, img_y, 0, 0, img_w, img_h);
+			img_destroy stdcall(cur_img);
 			return;
 		} else {
-			img.url.add(#img_path);
+			img_url.add(#img_path);
 		}
 		NOIMG:
-
-		/*
-		if (streqrp(value, "data:")) {
-			EAX = strstr(value, "base64,");
-			if (value == EAX) return;
-			value = EAX;
-			//cache.add(history.current(), http.content_pointer, http.content_received, PAGE);
-			base64_decode stdcall (#pass_b64, value, strlen(value));
-		} else 
-		*/
 
 		if (value = tag.get_value_of("title=")) && (strlen(value)<sizeof(line)-3) && (value) sprintf(#line, "[%s]", value); 
 		if (value = tag.get_value_of("alt=")) && (strlen(value)<sizeof(line)-3) && (value) sprintf(#line, "[%s]", value);
@@ -675,16 +693,6 @@ void TWebBrowser::NewLine()
 //============================================================================================
 void TWebBrowser::DrawPage()
 {
-	int i, img_y;
-	PutPaletteImage(list.first * DrawBuf.bufw * 4 + buf_data+8, DrawBuf.bufw, list.h, DrawBuf.bufx, DrawBuf.bufy, 32, 0);
+	DrawBuf.Show(list.first, list.h);
 	DrawScroller();
-	//img.draw_all(list.x, list.y, list.w, list.h, list.first);
-
-	for (i=0; i<img.url.count; i++) 
-	{
-		img_y = img.y.get(i);
-
-		if (img_y + img.h.get(i) > list.first) && (img_y - list.h < list.first) 
-		&& (cache.has(img.url.get(i))) img.draw(list.x, list.y, list.w, list.h, list.first, i);
-	}
 }

@@ -44,10 +44,9 @@ bool DrawBufer::Init(dword i_bufx, i_bufy, i_bufw, i_bufh)
 
 void DrawBufer::Fill(dword start_pointer, i_fill_color)
 {
-	dword i;
-	dword max_i = bufw * bufh * 4 + buf_data + 8;
+	dword max_i = bufw * bufh * 4 - start_pointer/4;
 	fill_color = i_fill_color;
-	@MEMSETD(buf_data+start_pointer+8, max_i-buf_data-start_pointer-8/4, fill_color);
+	@MEMSETD(buf_data+start_pointer+8, max_i, fill_color);
 }
 
 void DrawBufer::DrawBar(dword x, y, w, h, color)
@@ -122,45 +121,9 @@ void DrawBufer::AlignCenter(dword x,y,w,h, content_width)
 	}
 }
 
-/*
-void DrawBufer::Zoom2x(int zoom)
+void DrawBufer::Show(dword _y_offset, _h)
 {
-	int i, s;
-	dword point_x, max_i, zline_w, s_inc;
-
-	point_x = 0;
-	max_i = bufw * bufh * 4 + buf_data+8;
-	s_inc = zoom * 4;
-	zline_w = zbufw * 4;
-
-	for (i=buf_data+8, s=zbuf_data+8; i<max_i; i+=4, s+= s_inc) {
-		ESDWORD[s] = ESDWORD[i];
-		ESDWORD[s+4] = ESDWORD[i];
-		ESDWORD[s+zline_w] = ESDWORD[i];
-		ESDWORD[s+zline_w+4] = ESDWORD[i];
-		if (zoom==3)
-		{
-			ESDWORD[s+8] = ESDWORD[i];
-			ESDWORD[zline_w+s+8] = ESDWORD[i];
-			ESDWORD[zline_w*2+s] = ESDWORD[i];
-			ESDWORD[zline_w*2+s+4] = ESDWORD[i];
-			ESDWORD[zline_w*2+s+8] = ESDWORD[i];
-		}
-
-		point_x++;
-		if (point_x >= bufw) 
-		{
-			s += zoom - 1 * zline_w;
-			point_x = 0;
-		}
-	}
-}
-*/
-
-
-void DrawBufer::Show(dword _y_offset)
-{
-	PutPaletteImage(_y_offset * bufw * 4 + buf_data+8, bufw, bufh, bufx, bufy, 32, 0);	
+	PutPaletteImage(_y_offset * bufw * 4 + buf_data+8, bufw, _h, bufx, bufy, 32, 0);
 }
 
 void DrawBufer::IncreaseBufSize()

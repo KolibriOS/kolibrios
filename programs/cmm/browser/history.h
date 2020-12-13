@@ -43,7 +43,7 @@ ShowHistory()
 	for (i=1; i<cache.url.count; i++) if (cache.type.get(i) == IMG)
 	{
 		strcat(history_pointer, cache.url.get(i));
-		strcat(history_pointer, "<img src='");
+		strcat(history_pointer, " <img src='");
 		strcat(history_pointer, cache.url.get(i));
 		strcat(history_pointer, "'><br>");
 	}

@@ -11,7 +11,7 @@
 //                                                   //
 //===================================================//
 
-#define MEMSIZE 1024 * 1000
+#define MEMSIZE 1024 * 200
 #include "..\lib\gui.h"
 #include "..\lib\draw_buf.h"
 #include "..\lib\list_box.h"
@@ -41,12 +41,12 @@
 //                       DATA                        //
 //                                                   //
 //===================================================//
-char version[]="WebView 2.8 BETA 5";
+char version[]="WebView 3 GOLD";
 
-#define DEFAULT_URL URL_SERVICE_HOMEPAGE
+#define DEFAULT_URL URL URL_SERVICE_HOMEPAG
 
 bool debug_mode = false;
-bool show_images = false;
+bool show_images = true;
 
 _history history;
 
@@ -714,7 +714,7 @@ void LoadInternalPage(dword _bufdata, _in_bufsize){
 		} else {
 			WB1.DrawPage();
 		}
-		GetImg(true);
+		if (WB1.img_url.count) GetImg(true);
 	}
 }
 
@@ -924,11 +924,11 @@ dword GetImg(bool _new)
 	if (!show_images) return;
 	http_get_type = IMG;
 
-	for (i = 0; i < WB1.img.url.count; i++)
+	for (i = 0; i < WB1.img_url.count; i++)
 	{
-		cur_img_url = WB1.img.url.get(i);
+		cur_img_url = WB1.img_url.get(i);
 		if (cache.has(cur_img_url)==false) {
-			prbar.max = WB1.img.url.count;
+			prbar.max = WB1.img_url.count;
 			prbar.value = i;
 			if (GetUrl(cur_img_url)) {DrawProgress(); return;}
 		}
