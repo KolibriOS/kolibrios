@@ -294,6 +294,7 @@ struct libimg_image
     static dword pure_img32;
     if (!pure_img32) || (bg!=_bg) {
         bg = _bg;
+        if (pure_img32) img_destroy stdcall(pure_img32);
         img_from_file stdcall("/sys/icons32.png");
         pure_img32 = EAX;
         //now fill transparent with another color
@@ -312,6 +313,7 @@ struct libimg_image
     if (!pure_img16) || (bg!=_bg) {
         bg = _bg;
         bgshadow = MixColors(bg, 0, 220);
+        if (pure_img16) img_destroy stdcall(pure_img16);
         img_from_file stdcall("/sys/icons16.png");
         pure_img16 = EAX;
         //now fill transparent with another color
