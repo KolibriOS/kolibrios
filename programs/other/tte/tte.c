@@ -1785,7 +1785,7 @@ int handleArgs(int argc, char* argv[]) {
             printHelp();
             return -1;
         } else if(strncmp("-v", argv[1], 2) == 0 || strncmp("--version", argv[1], 9) == 0) {
-            char* _notify_version = "'Version:\n";
+            char _notify_version[256] = "'Version:\n";
             strcat(_notify_version, TTE_VERSION);
             strcat(_notify_version, "' -t -I");
             /// printf("tte - version %s\n", TTE_VERSION);
