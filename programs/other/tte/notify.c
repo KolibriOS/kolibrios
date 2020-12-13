@@ -21,7 +21,7 @@ int start_app(char *app_name, char *args){
     file_op.app_name = app_name;
 
     register int val;
-    asm volatile ("int $0x40":"=a"(val):"a"(70), "b"(&file_op));
+    asm volatile ("int $0x40":"=a"(val):"a"(70), "b"(&file_op): "memory");
 
     return val;
 }

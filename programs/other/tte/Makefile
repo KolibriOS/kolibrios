@@ -3,16 +3,16 @@ LD = kos32-ld
 
 SDK_DIR = $(abspath ../../../contrib/sdk)
 
-CFLAGS = -c -fno-ident -fomit-frame-pointer -fno-ident -U__WIN32__ -U_Win32 -U_WIN32 -U__MINGW32__ -UWIN32 
+CFLAGS = -c -fno-ident -O2 -fomit-frame-pointer -fno-ident -U__WIN32__ -U_Win32 -U_WIN32 -U__MINGW32__ -UWIN32 
 LDFLAGS = -static -S -nostdlib -T $(SDK_DIR)/sources/newlib/app.lds --image-base 0
 
 INCLUDES = -I $(SDK_DIR)/sources/newlib/libc/include
 LIBPATH = -L $(SDK_DIR)/lib -L /home/autobuild/tools/win32/mingw32/lib
 
 default:
-	$(CC) $(CFLAGS) -O2 $(INCLUDES) getline.c
-	$(CC) $(CFLAGS) -O2 $(INCLUDES) -DGCC_BUILD tte.c
-	$(CC) $(CFLAGS) -O0 $(INCLUDES) notify.c
+	$(CC) $(CFLAGS) $(INCLUDES) getline.c
+	$(CC) $(CFLAGS) $(INCLUDES) -DGCC_BUILD tte.c
+	$(CC) $(CFLAGS) $(INCLUDES) notify.c
 	kos32-ld $(LDFLAGS) $(LIBPATH) --subsystem native -o tte getline.o tte.o notify.o -lgcc -lc.dll
 	objcopy tte -O binary
 

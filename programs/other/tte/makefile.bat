@@ -1,1 +1,1 @@
-kos32-tcc.exe tte.c getline.c -o tte -lck
+kos32-tcc.exe -DTCC_BUILD tte.c getline.c -o tte -lck
