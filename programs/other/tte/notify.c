@@ -1,3 +1,5 @@
+#include <string.h>
+
 typedef unsigned int uint32_t;
 
 static inline

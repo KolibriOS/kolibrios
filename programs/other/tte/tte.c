@@ -44,10 +44,16 @@
 ///#include <termios.h>
 #include <time.h>
 ///#include <unistd.h>
+
+#ifdef TCC_BUILD
 #include <conio.h>
+#endif
+#ifdef GCC_BUILD
+#include "console_obj.h"
+#endif
 
 /// Notify
-#include "notify.h"
+void notify(char *text);
 
 
 /*** Define section ***/
@@ -504,10 +510,10 @@ int editorReadKey() {
 
 			case 6: // Ctrl+F
 				return CTRL_KEY('f');
-
+/*
 			case 8: // Ctrl+H
 				return CTRL_KEY('h');
-
+*/
 			case 24: // Ctrl+X
 				return CTRL_KEY('x');
 				
@@ -1792,7 +1798,15 @@ int handleArgs(int argc, char* argv[]) {
 }
 
 int main(int argc, char* argv[]) {
+	
+	#ifdef TCC_BUILD
 	con_init_console_dll_param(con_def_wnd_width, con_def_wnd_height, con_def_wnd_width, con_def_wnd_height, "TinyTextEditor");
+	#endif
+	#ifdef GCC_BUILD
+	load_console();
+	con_init(con_def_wnd_width, con_def_wnd_height, con_def_wnd_width, con_def_wnd_height, "TinyTextEditor");
+	#endif
+	
     initEditor();
     int arg_response = handleArgs(argc, argv);
     if (arg_response == 1) {
