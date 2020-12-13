@@ -43,7 +43,7 @@
 //===================================================//
 char version[]="WebView 3 GOLD";
 
-#define DEFAULT_URL URL URL_SERVICE_HOMEPAG
+#define DEFAULT_URL URL_SERVICE_HOMEPAG
 
 bool debug_mode = false;
 bool show_images = true;
