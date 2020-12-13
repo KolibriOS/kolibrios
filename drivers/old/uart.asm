@@ -5,14 +5,11 @@
 ;;                                                              ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-format MS COFF
+format PE DLL native 0.05
+entry START
 
-DEBUG           equ 1
-
-include 'proc32.inc'
-include 'imports.inc'
-
-
+__DEBUG__       equ 1
+__DEBUG_LEVEL__ equ 1  ; 1 = verbose, 2 = errors only
 
 API_VERSION       equ 0
 UART_VERSION      equ API_VERSION
@@ -26,6 +23,15 @@ TASK_COUNT        equ (OS_BASE+0x0003004)
 CURRENT_TASK      equ (OS_BASE+0x0003000)
 
 
+section '.flat' readable writable executable
+
+include 'proc32.inc'
+include 'struct.inc'
+include 'macros.inc'
+include 'fdo.inc'
+include 'peimport.inc'
+
+
 struc APPOBJ           ;common object header
 {
    .magic       dd ?   ;
@@ -33,29 +39,11 @@ struc APPOBJ           ;common object header
    .fd          dd ?   ;next object in list
    .bk          dd ?   ;prev object in list
    .pid         dd ?   ;owner id
-};
+}
 
 virtual at 0
   APPOBJ APPOBJ
 end virtual
-
-struc IOCTL
-{  .handle      dd ?
-   .io_code     dd ?
-   .input       dd ?
-   .inp_size    dd ?
-   .output      dd ?
-   .out_size    dd ?
-}
-
-virtual at 0
-  IOCTL IOCTL
-end virtual
-
-DEBUG            equ   1
-
-DRV_ENTRY        equ   1
-DRV_EXIT         equ  -1
 
 THR_REG          equ  0;  x3f8   ;transtitter/reciever
 IER_REG          equ  1;  x3f9   ;interrupt enable
@@ -106,7 +94,7 @@ MCR_DTR          equ  0x01     ;0-> DTR=1, 1-> DTR=0
 MCR_RTS          equ  0x02     ;0-> RTS=1, 1-> RTS=0
 MCR_OUT_1        equ  0x04     ;0-> OUT1=1, 1-> OUT1=0
 MCR_OUT_2        equ  0x08     ;0-> OUT2=1, 1-> OUT2=0;  enable intr
-MCR_LOOP         equ  0x10     ;lopback mode
+MCR_LOOP         equ  0x10     ;loopback mode
 
 MSR_DCTS         equ  0x01     ;delta clear to send
 MSR_DDSR         equ  0x02     ;delta data set redy
@@ -173,11 +161,12 @@ struc UART
    .xmit_free    dd ?
    .xmit_top     dd ?
 }
+
 virtual at 0
   UART UART
 end virtual
 
-UART_SIZE     equ 18*4
+UART_SIZE    equ 18*4
 
 struc CONNECTION
 {
@@ -197,21 +186,30 @@ end virtual
 
 CONNECTION_SIZE equ 7*4
 
-public START
-public service_proc
-public version
 
-section '.flat' code readable align 16
+;proc START c, state:dword
+;       cmp     [state], 1
 
-proc START stdcall, state:dword
+align 4
+proc START c, state:dword
+        DEBUGF  1, "Loading driver UART (entry at %x)...\n", START
 
-        cmp     [state], 1
+        push    esi                   ; [bw] ???
+        cmp     [state], DRV_ENTRY
         jne     .stop
 
-        mov     eax, UART_SIZE
-        call    Kmalloc
+        mov     esi, msg_start
+        invoke  SysMsgBoardStr
+
+        mov eax, UART_SIZE
+        invoke  Kmalloc
+;       invoke  Kmalloc, UART_SIZE  (1) -- failure
+;       invoke  Kmalloc, UART_SIZE  (2) -- success
+;       DEBUGF 1,"[UART.START] Kmalloc: UART_SIZE=%d eax=%d\n", UART_SIZE, eax
         test    eax, eax
         jz      .fail
+
+        DEBUGF  1, "Structure %x allocated\n", eax
 
         mov     [com1], eax
         mov     edi, eax
@@ -223,7 +221,7 @@ proc START stdcall, state:dword
         mov     eax, [com1]
         mov     [eax+UART.base], COM_1_BASE
 
-        stdcall AllocKernelSpace, 32768
+        invoke  AllocKernelSpace, 32768
 
         mov     edi, [com1]
         mov     edx, eax
@@ -236,7 +234,7 @@ proc START stdcall, state:dword
         add     eax, 8192
         mov     [edi+UART.xmit_top], eax
 
-        call    AllocPage
+        invoke  AllocPage
         test    eax, eax
         jz      .fail
 
@@ -245,7 +243,7 @@ proc START stdcall, state:dword
         mov     [page_tabs+edx*4], eax
         mov     [page_tabs+edx*4+8], eax
 
-        call    AllocPage
+        invoke  AllocPage
         test    eax, eax
         jz      .fail
 
@@ -253,7 +251,7 @@ proc START stdcall, state:dword
         mov     [page_tabs+edx*4+4], eax
         mov     [page_tabs+edx*4+12], eax
 
-        call    AllocPage
+        invoke  AllocPage
         test    eax, eax
         jz      .fail
 
@@ -261,7 +259,7 @@ proc START stdcall, state:dword
         mov     [page_tabs+edx*4+16], eax
         mov     [page_tabs+edx*4+24], eax
 
-        call    AllocPage
+        invoke  AllocPage
         test    eax, eax
         jz      .fail
 
@@ -282,11 +280,22 @@ proc START stdcall, state:dword
         mov     eax, edi
         call    uart_reset.internal   ;eax= uart
 
-        stdcall AttachIntHandler, COM_1_IRQ, com_1_isr, dword 0
-        stdcall RegService, sz_uart_srv, service_proc
+        invoke AttachIntHandler, COM_1_IRQ, com_1_isr, dword 0
+        test    eax, eax
+        jnz     @f
+        DEBUGF  2, "Could not attach int handler (%x)\n", COM_1_IRQ
+        jmp     .fail
+
+@@:
+        DEBUGF  1, "Attached int handler (%x)\n", COM_1_IRQ
+        pop     esi
+        invoke RegService, sz_uart_srv, service_proc
         ret
+
 .fail:
 .stop:
+        DEBUGF  2, "Failed\n"
+        pop     esi
         xor     eax, eax
         ret
 endp
@@ -312,7 +321,6 @@ PORT_WRITE      equ 9
 
 align 4
 proc service_proc stdcall, ioctl:dword
-
         mov     ebx, [ioctl]
         mov     eax, [ebx+io_code]
         cmp     eax, PORT_WRITE
@@ -349,15 +357,14 @@ proc service_proc stdcall, ioctl:dword
 .fail:
         or      eax, -1
         ret
-
 endp
 
-restore   handle
-restore   io_code
-restore   input
-restore   inp_size
-restore   output
-restore   out_size
+;restore   handle
+;restore   io_code
+;restore   input
+;restore   inp_size
+;restore   output
+;restore   out_size
 
 
 ; param
@@ -398,7 +405,8 @@ align 4
         out     dx, al       ;clear DTR & RTS
 
         mov     eax, esi
-        mov     ebx, RATE_2400
+;       mov     ebx, RATE_2400
+        mov     ebx, RATE_115200
         mov     ecx, LCR_8BIT+LCR_STOP_1
         call    uart_set_mode.internal
 
@@ -593,7 +601,7 @@ uart_open:
         cmp     eax, COM_MAX
         jae     .fail
 
-        mov     esi, [com1+eax*4]            ;uart
+        mov     esi, [com1+eax*4]        ;uart
         push    esi
 .do_wait:
         cmp     dword [esi+UART.lock], 0
@@ -613,7 +621,7 @@ uart_open:
         shl     ebx, 5
         mov     ebx, [CURRENT_TASK+ebx+4]
         mov     eax, CONNECTION_SIZE
-        call    CreateObject
+        invoke  CreateObject
         pop     esi                      ;uart
         test    eax, eax
         jz      .fail
@@ -640,15 +648,17 @@ uart_close:
 
         cmp     [eax+APPOBJ.destroy], uart_close.destroy
         jne     .fail
+
 .destroy:
+;       DEBUGF 1, "[UART.destroy] eax=%x uart=%x\n", eax, [eax+CONNECTION.uart]
         push    [eax+CONNECTION.uart]
-        call    DestroyObject   ;eax= object
-        pop     eax                     ;eax= uart
+        invoke  DestroyObject            ;eax= object
+        pop     eax                      ;eax= uart
         test    eax, eax
         jz      .fail
 
         mov     [eax+UART.state], UART_CLOSED
-        mov     [eax+UART.lock], 0;release port
+        mov     [eax+UART.lock], 0       ;release port
         xor     eax, eax
         ret
 .fail:
@@ -882,9 +892,11 @@ align 4
 com_2_isr:
         mov     ebx, [com2]
         jmp     com_1_isr.get_info
+
 align 4
 com_1_isr:
         mov     ebx, [com1]
+
 .get_info:
         mov     edx, [ebx+UART.base]
         add     edx, IIR_REG
@@ -910,6 +922,7 @@ isr_line:
 
 align 4
 isr_recieve:
+;       DEBUGF 1, "[UART.isr_recieve] ebx=%x\n", ebx
         mov     esi, [ebx+UART.base]
         add     esi, LSR_REG
         mov     edi, [ebx+UART.rcvr_wp]
@@ -967,10 +980,15 @@ isr_action  dd isr_modem
 
 version     dd (5 shl 16) or (UART_VERSION and 0xFFFF)
 
-sz_uart_srv db 'UART',0
+sz_uart_srv db 'UART', 0
+msg_start   db 'Loading UART driver...',13,10,0
+
+include_debug_strings  ; All data wich FDO uses will be included here
 
 align 4
-
 com1        rd 1
 com2        rd 1
 
+align 4
+data fixups
+end data
