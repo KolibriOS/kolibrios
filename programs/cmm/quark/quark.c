@@ -28,6 +28,7 @@
 
 #include "../lib/obj/box_lib.h"
 #include "../lib/obj/libini.h"
+#include "../lib/obj/libio.h"
 #include "../lib/obj/libimg.h"
 #include "../lib/obj/iconv.h"
 #include "../lib/obj/proc_lib.h"

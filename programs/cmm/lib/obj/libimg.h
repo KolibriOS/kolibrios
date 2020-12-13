@@ -14,38 +14,36 @@
 #include "../lib/dll.h"
 #endif
 
-#ifndef INCLUDE_LIBIO_H
-#include "../lib/obj/libio.h"
-#endif
-
 //library
 dword libimg = #alibimg;
 char alibimg[] = "/sys/lib/libimg.obj";
 	
-dword libimg_init = #alibimg_init;
-dword img_is_img  = #aimg_is_img;
-dword img_to_rgb2 = #aimg_to_rgb2;
-dword img_decode  = #aimg_decode;
-dword img_destroy = #aimg_destroy;
-dword img_draw    = #aimg_draw;
-dword img_create  = #aimg_create;
-dword img_encode  = #aimg_encode;
-dword img_convert = #aimg_convert;
+dword libimg_init   = #alibimg_init;
+dword img_is_img    = #aimg_is_img;
+dword img_to_rgb2   = #aimg_to_rgb2;
+dword img_decode    = #aimg_decode;
+dword img_destroy   = #aimg_destroy;
+dword img_draw      = #aimg_draw;
+dword img_create    = #aimg_create;
+dword img_encode    = #aimg_encode;
+dword img_convert   = #aimg_convert;
+dword img_from_file = #aimg_from_file;
 
 //dword img_flip    = #aimg_flip;
 //dword img_rotate  = #aimg_rotate;
 $DD 2 dup 0
 
 //import  libimg                     , \
-char alibimg_init[] = "lib_init";
-char aimg_is_img[]  = "img_is_img";
-char aimg_to_rgb2[] = "img_to_rgb2";
-char aimg_decode[]  = "img_decode";
-char aimg_destroy[] = "img_destroy";
-char aimg_draw[]    = "img_draw";
-char aimg_create[]  = "img_create";
-char aimg_encode[]  = "img_encode";
-char aimg_convert[] = "img_convert";
+char alibimg_init[]   = "lib_init";
+char aimg_is_img[]    = "img_is_img";
+char aimg_to_rgb2[]   = "img_to_rgb2";
+char aimg_decode[]    = "img_decode";
+char aimg_destroy[]   = "img_destroy";
+char aimg_draw[]      = "img_draw";
+char aimg_create[]    = "img_create";
+char aimg_encode[]    = "img_encode";
+char aimg_convert[]   = "img_convert";
+char aimg_from_file[] = "img_from_file";
 //char aimg_flip[]    = "img_flip";
 //char aimg_rotate[]  = "img_rotate ";
 
@@ -292,27 +290,38 @@ struct libimg_image
 /////////////////////////////
 
 :void DrawIcon32(dword x,y, _bg, icon_n) {
-    static libimg_image i32;
     static dword bg;
-    //load_dll(libimg, #libimg_init,1);
-    if (!i32.image) || (bg!=_bg) {
+    static dword pure_img32;
+    if (!pure_img32) || (bg!=_bg) {
         bg = _bg;
-        i32.load("/sys/icons32.png");
-        i32.replace_color(0x00000000, bg);
+        img_from_file stdcall("/sys/icons32.png");
+        pure_img32 = EAX;
+        //now fill transparent with another color
+        EDX = ESDWORD[EAX+4] * ESDWORD[EAX+8] * 4 + ESDWORD[EAX+24];
+        for (ESI = ESDWORD[EAX+24]; ESI < EDX; ESI += 4) {
+            if (DSDWORD[ESI]==0x00000000) DSDWORD[ESI] = bg;
+        }
     }
-    if (icon_n>=0) i32.draw(x, y, 32, 32, 0, icon_n*32);
+    img_draw stdcall(pure_img32, x, y, 32, 32, 0, icon_n*32);
 }
 
-:void DrawIcon16(dword x,y, bg, icon_n) {
-    static libimg_image i16;
-    //load_dll(libimg, #libimg_init,1);
-    if (!i16.image) {
-        i16.load("/sys/icons16.png");
-        i16.replace_color(0xffFFFfff, bg);
-        i16.replace_color(0xffCACBD6, MixColors(bg, 0, 220));
+:void DrawIcon16(dword x,y, _bg, icon_n) {
+    static dword bg;
+    static dword pure_img16;
+    dword bgshadow;
+    if (!pure_img16) || (bg!=_bg) {
+        bg = _bg;
+        bgshadow = MixColors(bg, 0, 220);
+        img_from_file stdcall("/sys/icons16.png");
+        pure_img16 = EAX;
+        //now fill transparent with another color
+        EDX = ESDWORD[EAX+4] * ESDWORD[EAX+8] * 4 + ESDWORD[EAX+24];
+        for (ESI = ESDWORD[EAX+24]; ESI < EDX; ESI += 4) {
+            if (DSDWORD[ESI]==0xffFFFfff) DSDWORD[ESI] = bg;
+            if (DSDWORD[ESI]==0xffCACBD6) DSDWORD[ESI] = bgshadow;
+        }
     }
-    if (icon_n>=0) i16.draw(x, y, 16, 16, 0, icon_n*16);
+    img_draw stdcall(pure_img16, x, y, 16, 16, 0, icon_n*16);
 }
-
 
 #endif

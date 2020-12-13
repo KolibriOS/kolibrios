@@ -47,7 +47,7 @@ void DrawBufer::Fill(dword start_pointer, i_fill_color)
 	dword i;
 	dword max_i = bufw * bufh * 4 + buf_data + 8;
 	fill_color = i_fill_color;
-	MEMSETD(buf_data+start_pointer+8, max_i-buf_data-start_pointer-8/4, fill_color);
+	@MEMSETD(buf_data+start_pointer+8, max_i-buf_data-start_pointer-8/4, fill_color);
 }
 
 void DrawBufer::DrawBar(dword x, y, w, h, color)
@@ -158,9 +158,9 @@ void DrawBufer::Zoom2x(int zoom)
 */
 
 
-void DrawBufer::Show()
+void DrawBufer::Show(dword _y_offset)
 {
-	PutPaletteImage(buf_data+8, bufw, bufh, bufx, bufy, 32, 0);	
+	PutPaletteImage(_y_offset * bufw * 4 + buf_data+8, bufw, bufh, bufx, bufy, 32, 0);	
 }
 
 void DrawBufer::IncreaseBufSize()

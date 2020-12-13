@@ -1,6 +1,6 @@
 /*
  * System Monitor
- * version 1.35
+ * version 1.36
  * Author: Leency
 */
 
@@ -43,9 +43,6 @@
 #define BOTPANEL_H 36
 
 #ifdef LANG_RUS
-	#define T_CPU_AND_RAM    "Процессор и ОЗУ"
-	#define T_DRIVES         "Диски"
-	#define T_PROCESSES      "Процессы"
 	#define T_APP_TITLE      "Системный монитор"
 	#define T_SHOW_SYSTEM    "Системные"
 	#define T_DETAILS        "Подробнее"
@@ -57,9 +54,6 @@
 	#define T_RD_USAGE       "Системный диск: %i Кб свободно из 1.4 Мб"
 	#define T_TMP_USAGE      "TMP%i диск: %i Мб свободно из %i Мб"
 #else
-	#define T_CPU_AND_RAM    "CPU & RAM"
-	#define T_DRIVES         "Drives"
-	#define T_PROCESSES      "Processes"
 	#define T_APP_TITLE      "System Monitor"
 	#define T_SHOW_SYSTEM    "System"
 	#define T_DETAILS        "Details"
@@ -118,7 +112,7 @@ void main()
 	//dword cpu_frequency = GetCpuFrequency()/1000;
 	load_lib();
 	SetEventMask(EVM_REDRAW + EVM_KEY + EVM_BUTTON + EVM_MOUSE + EVM_MOUSE_FILTER);
-	loop() switch(@WaitEventTimeout(120))
+	loop() switch(@WaitEventTimeout(50))
 	{
 	   	case evMouse:
 			SelectList_ProcessMouse();
@@ -175,9 +169,9 @@ void main()
 			ram.set_size(RIGHT_X, WIN_CONTENT_Y+170, right_w, 23);
 			rd.set_size(RIGHT_X, WIN_CONTENT_Y+240, right_w, 23);
 		default:
-			SelectList_LineChanged();
 			MonitorCpu();
 			MonitorRam();
+			SelectList_LineChanged();
 			MonitorRd();
 			MonitorTmp();
 	}
@@ -343,11 +337,11 @@ void MonitorCpu()
 	sprintf(#param, T_CPU_LOAD, cpu_stack[pos]);
 	DrawIconWithText(RIGHT_X, cpu.y - 25, 48, #param);
 	
-	for (i=0; i<right_w; i+=2) {
-		DrawBar(i+cpu.x, cpu.y, 1, cpu.h-cpu_stack[i], PROGRESS_BG);
-		DrawBar(i+cpu.x, cpu.h-cpu_stack[i]+cpu.y, 1, cpu_stack[i], LOAD_CPU);
-
-		DrawBar(i+1+cpu.x, cpu.y, 1, cpu.h, PROGRESS_BG);
+	#define LINEW 8
+	for (i=0; i<right_w; i+=LINEW) {
+		DrawBar(i+cpu.x, cpu.y, LINEW, cpu.h-cpu_stack[i], PROGRESS_BG);
+		DrawBar(i+cpu.x, cpu.h-cpu_stack[i]+cpu.y, LINEW, cpu_stack[i], 0xDFA13B);
+		//DrawBar(i+LINEW+cpu.x, cpu.y, 1, cpu.h, PROGRESS_BG);
 	}
 
 	pos++;

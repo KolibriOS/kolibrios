@@ -48,10 +48,10 @@ char *unicode_symbols[]={
 
 "#8594", "->",
 
-"uarr",  "\24",
-"darr",  "\25",
-"rarr",  "\26",
-"larr",  "\27", 
+"uarr",  "^",
+"darr",  "v",
+"rarr",  "->",
+"larr",  "<-", 
 
 "bull",  "\31",
 "percnt","%",

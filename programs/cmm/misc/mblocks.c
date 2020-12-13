@@ -10,7 +10,6 @@
 #include "..\lib\gui.h"
 #include "..\lib\random.h"
 
-#include "..\lib\obj\libio.h"
 #include "..\lib\obj\libimg.h"
 
 #ifndef AUTOBUILD
@@ -45,7 +44,6 @@ int count;
 void main()
 {   
 	dword id;
-	load_dll(libio,  #libio_init,1);
 	load_dll(libimg, #libimg_init,1);
 
 	NewGame();
@@ -157,7 +155,7 @@ void ReDraw_Game_Button(int id)
 		case BTN_OPEN:
 			DrawBar(xx+1, yy+1, CELL_SIZE-1, CELL_SIZE-1, 0xFFFfff);//background
 	}
-	DrawIcon32(xx+6, yy+6, 0xFFFfff, bitpict[id]);
+	DrawIcon32(xx+6, yy+6, 0xFFFfff, bitpict[id]+51); //skip first 51 icons as they are boring for game
 }
 
 void Draw_Panel()

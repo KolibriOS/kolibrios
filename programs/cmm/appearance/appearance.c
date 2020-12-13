@@ -106,7 +106,6 @@ void main()
 
 	load_dll(boxlib, #box_lib_init,0);
 	load_dll(libini, #lib_init,1);
-	load_dll(libio, #libio_init,1);
 	load_dll(libimg, #libimg_init,1);
 	load_dll(Proc_lib, #OpenDialog_init,0);
 	o_dialog.type = 2; //select folder
