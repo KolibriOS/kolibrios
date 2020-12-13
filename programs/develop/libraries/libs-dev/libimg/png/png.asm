@@ -280,7 +280,8 @@ end virtual
 	lodsd
 	dec	esi
 	bswap	eax
-	shr	eax, 8
+	mov     al, 0xff
+	ror	eax, 8
 	stosd
 	jmp	@b
 @@:
