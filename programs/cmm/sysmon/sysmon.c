@@ -20,7 +20,6 @@
 #include "../lib/fs.h"
 #include "../lib/list_box.h"
 
-#include "../lib/obj/libio.h"
 #include "../lib/obj/libimg.h"
 #include "../lib/obj/box_lib.h"
 
@@ -100,7 +99,6 @@ int right_w;
 
 void load_lib()
 {
-	load_dll(libio, #libio_init,1);
 	load_dll(libimg, #libimg_init,1);
 	load_dll(boxlib, #box_lib_init,0);
 }
@@ -260,8 +258,7 @@ void MonitorRd()
 	dword rdempty = malloc(1440*1024);
 	CreateFile(0, 1440*1024, rdempty, "/rd/1/rdempty");
 	free(rdempty);
-	file_size stdcall ("/rd/1/rdempty");
-	rdempty = EBX / 1024;
+	rdempty = get_file_size("/rd/1/rdempty") / 1024;
 	DeleteFile("/rd/1/rdempty");
 
 	sprintf(#param, T_RD_USAGE, rdempty);
@@ -288,10 +285,9 @@ void MonitorTmp()
 	dword free_space;
 	for (i=0; i<=9; i++) 
 	{
-		file_size stdcall ( sprintf(#param, "/tmp%i/1", i) );
-		tmp_size[i] =  EBX / 1024 / 1024;
-
-		if (EBX) {
+		get_file_size( sprintf(#param, "/tmp%i/1", i) );
+		if (EAX) {
+			tmp_size[i] =  EAX / 1024 / 1024;
 			free_space = tmp_size[i] - GetTmpDiskFreeSpace(i);
 			sprintf(#text_status, T_TMP_USAGE, i, free_space, tmp_size[i]);
 			tmp.set_size(RIGHT_X, yy, right_w, 23);

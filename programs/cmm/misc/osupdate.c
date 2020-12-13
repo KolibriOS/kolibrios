@@ -1,11 +1,9 @@
 #define MEMSIZE 1024*50
 
-#include "../lib/io.h"
 #include "../lib/gui.h"
 #include "../lib/copyf.h"
 
 #include "../lib/obj/libini.h"
-#include "../lib/obj/libio.h"
 #include "../lib/obj/libimg.h"
 #include "../lib/obj/http.h"
 #include "../lib/obj/network.h"
@@ -58,7 +56,6 @@ void main()
 {
 	int btn;
 	sensor progress;
-	load_dll(libio, #libio_init,1);
 	load_dll(libimg, #libimg_init,1);
 	load_dll(libHTTP,   #http_lib_init,1);
 	@SetEventMask(EVM_REDRAW + EVM_KEY + EVM_BUTTON + EVM_STACK);
@@ -127,8 +124,7 @@ dword GetFreeSpaceOfRamdisk()
 	dword rdempty = malloc(1440*1024);
 	CreateFile(0, 1440*1024, rdempty, "/rd/1/rdempty");
 	free(rdempty);
-	file_size stdcall ("/rd/1/rdempty");
-	rdempty = EBX;
+	rdempty = get_file_size("/rd/1/rdempty");
 	DeleteFile("/rd/1/rdempty");
 	return rdempty;
 }

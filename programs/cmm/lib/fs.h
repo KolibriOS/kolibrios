@@ -221,6 +221,13 @@ void read_file(dword path1, buf, size)
 	return false;
 }
 
+:dword get_file_size(dword _path)
+{
+	BDVK bdvk;
+	if (GetFileInfo(_path, #bdvk)!=0) return 0;
+	else return bdvk.sizelo;
+}
+
 /*
 // This implementation of dir_exists() is faster than
 // previous but here virtual folders like

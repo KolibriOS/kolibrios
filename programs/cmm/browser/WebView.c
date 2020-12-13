@@ -21,7 +21,6 @@
 #include "..\lib\clipboard.h"
 
 #include "..\lib\obj\box_lib.h"
-#include "..\lib\obj\libio.h"
 #include "..\lib\obj\libimg.h"
 #include "..\lib\obj\http.h"
 #include "..\lib\obj\iconv.h"
@@ -97,7 +96,6 @@ edit_box omnibox_edit = {, PADDING+TSZE*2+PADDING+6, PADDING+3, 0xffffff,
 void LoadLibraries()
 {
 	load_dll(boxlib,      #box_lib_init,0);
-	load_dll(libio,       #libio_init,1);
 	load_dll(libimg,      #libimg_init,1);
 	load_dll(libHTTP,     #http_lib_init,1);
 	load_dll(iconv_lib,   #iconv_open,0);
@@ -488,12 +486,7 @@ bool HandleUrlFiles(dword _path, _data)
 bool GetLocalFileData(dword _path)
 {
 	dword data, size;
-	file_size stdcall (_path);
-	if (!EBX) return false;
-
-	size = EBX;
-	data = malloc(size);
-	ReadFile(0, size, data, _path);
+	read_file(_path, #data, #size);
 	if (!HandleUrlFiles(_path, data)) {
 		LoadInternalPage(data, size);
 	}
@@ -812,13 +805,6 @@ void EventRefreshPage()
 	}
 }
 
-dword GetFileSize(dword _path)
-{
-	BDVK bdvk;
-	if (GetFileInfo(_path, #bdvk)!=0) return 0;
-	else return bdvk.sizelo;
-}
-
 void EventUpdateBrowser()
 {
 	dword downloader_id, slot_n;
@@ -833,8 +819,8 @@ void EventUpdateBrowser()
 		pause(10);
 	} while (slot_n!=0);
 
-	current_size = GetFileSize(#program_path);
-	new_size = GetFileSize("/tmp0/1/Downloads/WebView.com");
+	current_size = get_file_size(#program_path);
+	new_size = get_file_size("/tmp0/1/Downloads/WebView.com");
 
 	if (!new_size) || (new_size<5000) {
 		notify(#update_download_error);

@@ -3,8 +3,8 @@
 
 // 70.5 - get volume info and label
 
-#define TITLE "Eolite File Manager 4.47a"
-#define ABOUT_TITLE "EOLITE 4.47a"
+#define TITLE "Eolite File Manager 4.48"
+#define ABOUT_TITLE "EOLITE 4.48"
 
 #ifndef AUTOBUILD
 #include "lang.h--"
@@ -23,7 +23,6 @@
 #include "../lib/collection.h"
 #include "../lib/copyf.h"
 
-#include "../lib/obj/libio.h"
 #include "../lib/obj/libini.h"
 #include "../lib/obj/box_lib.h"
 #include "../lib/obj/libimg.h"
@@ -156,7 +155,6 @@ void load_libraries()
 {
 	load_dll(boxlib, #box_lib_init,0);
 	load_dll(libini, #lib_init,1);
-	load_dll(libio,  #libio_init,1);
 	load_dll(libimg, #libimg_init,1);
 }
 
@@ -216,12 +214,12 @@ void main()
 		if (dir_exists(#param)) {
 			strcpy(#path, #param);
 		} else {
-			file_size stdcall (#param);
-			if (EAX==-1) notify(T_NOTIFY_APP_PARAM_WRONG);
-			else {
+			if (file_exists(#param)) {
 				param[strrchr(#param, '/')-1] = '\0';
 				strcpy(#path, #param);
 				SelectFileByName(#param+strlen(#param)+1);
+			} else {
+				notify(T_NOTIFY_APP_PARAM_WRONG);
 			}
 		}
 	}
@@ -942,7 +940,7 @@ void SelectFileByName(dword that_file)
 	files.KeyHome();
 	Open_Dir(#path,ONLY_OPEN);
 	if (dir_at_fat16) && (file_name_is_8_3(that_file)) strttl(that_file);
-	for (ind=files.count-1; ind>=0; ind--;) { if (streq(items.get(ind)*304+buf+72,that_file)) break; }
+	for (ind=files.count-1; ind>=0; ind--;) { if (!strcmpi(items.get(ind)*304+buf+72,that_file)) break; }
 	files.cur_y = ind - 1;
 	files.KeyDown();
 	DrawStatusBar();

@@ -28,7 +28,6 @@ TODO
 
 #include "../lib/obj/iconv.h"
 #include "../lib/obj/box_lib.h"
-#include "../lib/obj/libio.h"
 #include "../lib/obj/proc_lib.h"
 #include "../lib/obj/librasterworks.h"
 
@@ -129,7 +128,6 @@ void main()
 	int id;
 
 	load_dll(boxlib,    #box_lib_init,   0);
-	load_dll(libio,     #libio_init,     1);
 	//load_dll(libini,    #lib_init,       1);
 	load_dll(iconv_lib, #iconv_open,     0);
 	load_dll(Proc_lib,  #OpenDialog_init,0);
@@ -250,18 +248,12 @@ void OpenFile(dword _path)
 	strcpy(#param, _path);
 	sprintf(#win_title, "%s - %s", TITLE, #param);
 	rows.KeyHome();
-	file_size stdcall (#param);
-	bufsize = EBX;
-	if (bufsize)
+	read_file(#param, #bufpointer, #bufsize);
+	if (!EAX)
 	{
-		bufpointer = mem_Free(bufpointer);
-		bufpointer = mem_Alloc(bufsize);
-		if (ReadFile(0, bufsize, bufpointer, #param) != 0)
-		{
-			bufpointer = 0;
-			notify("'Error opening file'-E");
-			return;
-		}
+		bufpointer = 0;
+		notify("'Error opening file'-E");
+		return;
 	}
 	if (encoding!=CH_CP866)
 	{
