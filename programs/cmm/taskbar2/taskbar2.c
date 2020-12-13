@@ -14,7 +14,6 @@
 
 #include "../lib/mem.h" 
 
-#include "../lib/obj/libio.h"
 #include "../lib/obj/libimg.h"
 #include "../lib/obj/libini.h"
 
@@ -62,7 +61,6 @@ dword COLOR_TEXT    = 0xFFFfff;
 void main()
 {
 	int btn;
-	load_dll(libio,  #libio_init,1);
 	load_dll(libimg, #libimg_init,1);
 	load_dll(libini, #lib_init,1);
 

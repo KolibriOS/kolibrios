@@ -5,7 +5,6 @@
 #include "../lib/copyf.h"
 
 #include "../lib/obj/libini.h"
-#include "../lib/obj/libio.h"
 #include "../lib/obj/libimg.h"
 
 #include "../lib/patterns/restart_process.h"
@@ -45,7 +44,6 @@ void main()
 {
 	word btn;
 	load_dll(libini, #lib_init,1);
-	load_dll(libio, #libio_init,1);
 	load_dll(libimg, #libimg_init,1);
 	loop() switch(WaitEventTimeout(300) & 0xFF)
 	{

@@ -17,7 +17,6 @@
 #include "../lib/obj/box_lib.h"
 #include "../lib/obj/network.h"
 #include "../lib/obj/http.h"
-#include "../lib/obj/libio.h"
 #include "../lib/obj/libimg.h"
 #include "../lib/obj/netcode.h"
 #include "../lib/obj/iconv.h"
@@ -113,7 +112,6 @@ void main() {
 	load_dll(boxlib, #box_lib_init,0);
 	load_dll(network_lib, #network_lib_init,0);
 	load_dll(netcode_lib, #base64_encode,0);
-	load_dll(libio, #libio_init,1);
 	load_dll(libimg, #libimg_init,1);
 	load_dll(iconv_lib, #iconv_open,0);
 	OpenMailDat();

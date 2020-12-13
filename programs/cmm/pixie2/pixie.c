@@ -12,7 +12,6 @@
 #include "../lib/random.h"
 #include "../lib/kfont.h"
 
-#include "../lib/obj/libio.h"
 #include "../lib/obj/libimg.h"
 #include "../lib/obj/libini.h"
 #include "../lib/obj/proc_lib.h"
@@ -112,7 +111,6 @@ libimg_image skin;
 void LoadLibraries()
 {
 	load_dll(boxlib, #box_lib_init,0);
-	load_dll(libio, #libio_init,1);
 	load_dll(libimg, #libimg_init,1);
 	load_dll(libini, #lib_init,1);
 	load_dll(Proc_lib, #OpenDialog_init,0);

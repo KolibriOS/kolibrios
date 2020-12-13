@@ -15,7 +15,6 @@ Copyright (C) 2008 O.Bogomaz
 #include "..\lib\kolibri.h"
 #include "..\lib\random.h"
 
-#include "..\lib\obj\libio.h"
 #include "..\lib\obj\libimg.h"
 
 libimg_image menu;
@@ -124,7 +123,6 @@ void main()
 	randomize();
 	StartNewGame();
 
-	load_dll(libio,  #libio_init,1);
 	load_dll(libimg, #libimg_init,1);
 	menu.load(abspath("menu.png"));
 	road.load(abspath("road.png"));

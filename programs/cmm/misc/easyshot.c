@@ -4,7 +4,6 @@
 #include "../lib/mem.h" 
 #include "../lib/gui.h" 
 
-#include "../lib/obj/libio.h"
 #include "../lib/obj/libimg.h"
 #include "../lib/obj/box_lib.h"
 #include "../lib/obj/proc_lib.h"
@@ -75,7 +74,6 @@ opendialog open_folder_dialog =
 
 void init_libraries()
 {
-	load_dll(libio,  #libio_init,  1);
 	load_dll(libimg, #libimg_init, 1);
 	load_dll(boxlib, #box_lib_init,0);
 	load_dll(Proc_lib,  #OpenDialog_init,0);

@@ -119,7 +119,8 @@ struct libimg_image
 
 :void libimg_image::load(dword file_path)
 {
-    load_image(file_path);
+    if (image) img_destroy stdcall(image);
+    img_from_file stdcall(file_path);
     if (!EAX) {
         notify("'Error: Image not loaded'E");
     } else {
@@ -150,81 +151,6 @@ struct libimg_image
     }
 }
 
-:dword load_image(dword filename)
-{
-        //align 4
-        dword img_data=0;
-        dword img_data_len=0;
-        dword fh=0;
-        dword image=0;
-
-        byte tmp_buf[40];
-        $and     img_data, 0
-        //$mov     eax, filename
-        //$push    eax        
-        //invoke  file.open, eax, O_READ
-        file_open stdcall (filename, O_READ);
-        $or      eax, eax
-        $jnz      loc05  
-        $stc
-        return 0;
-    @loc05:    
-        $mov     fh, eax
-        //invoke  file.size
-        file_size stdcall (filename);
-        $mov     img_data_len, ebx
-        //stdcall mem.Alloc, ebx
-        mem_Alloc(EBX);
-        
-        $test    eax, eax
-        $jz      error_close
-        $mov     img_data, eax
-        //invoke  file.read, [fh], eax, [img_data_len]
-        file_read stdcall (fh, EAX, img_data_len);
-        $cmp     eax, -1
-        $jz      error_close
-        $cmp     eax, img_data_len
-        $jnz     error_close
-        //invoke  file.close, [fh]
-        file_close stdcall (fh);
-        $inc     eax
-        $jz      error_
-//; img.decode checks for img.is_img
-//;       //invoke  img.is_img, [img_data], [img_data_len]
-//;       $or      eax, eax
-//;       $jz      exit
-        //invoke  img.decode, [img_data], [img_data_len], 0
-        EAX=img_data;
-        img_decode stdcall (EAX, img_data_len,0);
-        $or      eax, eax
-        $jz      error_
-        $cmp     image, 0
-        $pushf
-        $mov     image, eax
-        //call    init_frame
-        $popf
-        //call    update_image_sizes
-        mem_Free(img_data);//free_img_data(img_data);
-        $clc
-        return image;
-
-@error_free:
-        //invoke  img.destroy, [image]
-        img_destroy stdcall (image);
-        $jmp     error_
-
-@error_pop:
-        $pop     eax
-        $jmp     error_
-@error_close:
-        //invoke  file.close, [fh]
-        file_close stdcall (fh);
-@error_:
-        mem_Free(img_data);
-        $stc
-        return 0;
-}
-
 :dword create_image(dword type, dword width, dword height) {
     img_create stdcall(width, height, type);
     return EAX;
@@ -238,7 +164,6 @@ struct libimg_image
     return EAX;
 }
 
-//NOTICE: DO NOT FORGET TO INIT libio AND libimg!!!
 #ifdef LANG_RUS
 #define TEXT_FILE_SAVED_AS "'Файл сохранен как "
 #else

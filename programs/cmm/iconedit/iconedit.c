@@ -13,7 +13,6 @@
 #include "../lib/list_box.h"
 #include "../lib/events.h"
 
-#include "../lib/obj/libio.h"
 #include "../lib/obj/libimg.h"
 #include "../lib/obj/box_lib.h"
 
@@ -169,7 +168,6 @@ void main()
 	word btn;
 	libimg_image open_image;
 
-	load_dll(libio,  #libio_init,  1);
 	load_dll(libimg, #libimg_init, 1);
 	load_dll(boxlib, #box_lib_init,0);
 
