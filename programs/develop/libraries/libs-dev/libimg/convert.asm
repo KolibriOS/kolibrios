@@ -173,7 +173,7 @@ proc img._.convert.bpp8g_to_bpp1 _src, _dst
         mov     eax, [_dst]
         mov     eax, [eax + Image.Palette]
         mov     dword[eax], 0x00000000
-        mov     dword[eax + 4], 0x00ffffff
+        mov     dword[eax + 4], 0xffffffff
         mov     edx, [ebx + Image.Height]
   .bpp8g_to_bpp1.line:
         mov     ax, 0x0800
@@ -261,6 +261,7 @@ proc img._.convert.bpp24_to_bpp32 _src, _dst
         lodsw
         ror     eax, 16
         lodsb
+        mov     ah, 0xff        ; opaque
         rol     eax, 16
         stosd
         dec     ecx
@@ -584,7 +585,7 @@ proc img._.convert.bpp8a_to_bpp1 _src, _dst
         mov     eax, [_dst]
         mov     eax, [eax + Image.Palette]
         mov     dword[eax], 0x00000000
-        mov     dword[eax + 4], 0x00ffffff
+        mov     dword[eax + 4], 0xffffffff
         mov     edx, [ebx + Image.Height]
   .bpp8a_to_bpp1.line:
         mov     ax, 0x0800

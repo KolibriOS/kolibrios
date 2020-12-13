@@ -273,7 +273,8 @@ img.decode.gif.cur_color_table_size_child equ ebp + 4 + 4 + 4*3 + 4
 	lodsd
 	dec	esi
 	bswap	eax
-	shr	eax, 8
+	mov	al, 0xff        ; opaque
+	ror	eax, 8
 	stosd
 	loop	@b
 	add	ebx, sizeof.gif.ImageDescriptor
