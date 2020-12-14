@@ -15,4 +15,5 @@
 ../tcc net/tcpsrv_demo.c -lck -o /tmp0/1/tcpsrv_demo
 ../tcc net/nslookup.c -lck -lnetwork -o /tmp0/1/nslookup
 ../tcc getopt_ex.c -lck -o /tmp0/1/getopt_ex
+../tcc tinygl/fps.c tinygl/gears.c -o /tmp0/1/gears -ltinygl -lck
 exit
