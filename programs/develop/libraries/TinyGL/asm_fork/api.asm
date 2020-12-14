@@ -11,8 +11,36 @@ glVertex4f: ;x, y, z, w
 	ret 20 ;=sizeof(dd)*5
 
 align 4
+proc glVertex4d, x:qword, y:qword, z:qword, w:qword
+	add esp,-16
+	fld qword[w]
+	fstp dword[esp+12]
+	fld qword[z]
+	fstp dword[esp+8]
+	fld qword[y]
+	fstp dword[esp+4]
+	fld qword[x]
+	fstp dword[esp]
+	call glVertex4f
+	ret
+endp
+
+align 4
 proc glVertex2f, x:dword, y:dword
 	stdcall glVertex4f,[x],[y],0.0,1.0
+	ret
+endp
+
+align 4
+proc glVertex2d, x:qword, y:qword
+	push 1.0
+	push 0.0
+	add esp,-8
+	fld qword[y]
+	fstp dword[esp+4]
+	fld qword[x]
+	fstp dword[esp]
+	call glVertex4f
 	ret
 endp
 
@@ -24,8 +52,36 @@ proc glVertex2fv uses eax, v:dword
 endp
 
 align 4
+proc glVertex2dv uses eax, v:dword
+	mov eax,[v]
+	push 1.0
+	push 0.0
+	add esp,-8
+	fld qword[eax+8]
+	fstp dword[esp+4]
+	fld qword[eax]
+	fstp dword[esp]
+	call glVertex4f
+	ret
+endp
+
+align 4
 proc glVertex3f, x:dword, y:dword, z:dword
 	stdcall glVertex4f,[x],[y],[z],1.0
+	ret
+endp
+
+align 4
+proc glVertex3d, x:qword, y:qword, z:qword
+	push 1.0
+	add esp,-12
+	fld qword[z]
+	fstp dword[esp+8]
+	fld qword[y]
+	fstp dword[esp+4]
+	fld qword[x]
+	fstp dword[esp]
+	call glVertex4f
 	ret
 endp
 
@@ -37,9 +93,40 @@ proc glVertex3fv uses eax, v:dword
 endp
 
 align 4
+proc glVertex3dv uses eax, v:dword
+	mov eax,[v]
+	push 1.0
+	add esp,-12
+	fld qword[eax+16]
+	fstp dword[esp+8]
+	fld qword[eax+8]
+	fstp dword[esp+4]
+	fld qword[eax]
+	fstp dword[esp]
+	call glVertex4f
+	ret
+endp
+
+align 4
 proc glVertex4fv uses eax, v:dword
 	mov eax,[v]
 	stdcall glVertex4f,[eax],[eax+4],[eax+8],[eax+12]
+	ret
+endp
+
+align 4
+proc glVertex4dv uses eax, v:dword
+	mov eax,[v]
+	add esp,-16
+	fld qword[eax+24]
+	fstp dword[esp+12]
+	fld qword[eax+16]
+	fstp dword[esp+8]
+	fld qword[eax+8]
+	fstp dword[esp+4]
+	fld qword[eax]
+	fstp dword[esp]
+	call glVertex4f
 	ret
 endp
 

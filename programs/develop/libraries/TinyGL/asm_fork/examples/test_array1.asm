@@ -1,12 +1,12 @@
 use32
-	org 0x0
+	org 0
 	db 'MENUET01'
 	dd 1,start,i_end,mem,stacktop,0,cur_dir_path
 
 include '../../../../../proc32.inc'
 include '../../../../../macros.inc'
 include '../../../../../KOSfuncs.inc'
-include '../../../../../develop/libraries/box_lib/load_lib.mac'
+include '../../../../../load_lib.mac'
 include '../../../../../dll.inc'
 include '../opengl_const.inc'
 
@@ -14,8 +14,7 @@ include '../opengl_const.inc'
 
 align 4
 start:
-	load_library name_tgl, cur_dir_path, library_path, system_path, \
-		err_message_found_lib, head_f_l, import_lib_tinygl, err_message_import, head_f_i
+	load_library name_tgl, library_path, system_path, import_tinygl
 	cmp eax,SF_TERMINATE_PROCESS
 	jz button.exit
 
@@ -62,9 +61,8 @@ draw_window:
 	pushad
 	mcall SF_REDRAW,SSF_BEGIN_DRAW
 
-	mov edx,0x33ffffff
-	mcall SF_CREATE_WINDOW,(50 shl 16)+430,(30 shl 16)+400,,,caption
-	stdcall [kosglSwapBuffers]
+	mcall SF_CREATE_WINDOW,(50 shl 16)+430,(30 shl 16)+400,0x33ffffff,,caption
+	call [kosglSwapBuffers]
 
 	mcall SF_REDRAW,SSF_END_DRAW
 	popad
@@ -83,7 +81,7 @@ key:
 		fadd dword[delt_sc]
 		fstp dword[scale]
 		call draw_3d
-		stdcall [kosglSwapBuffers]
+		call [kosglSwapBuffers]
 	@@:
 	cmp ah,45 ;-
 	jne @f
@@ -91,7 +89,7 @@ key:
 		fsub dword[delt_sc]
 		fstp dword[scale]
 		call draw_3d
-		stdcall [kosglSwapBuffers]
+		call [kosglSwapBuffers]
 	@@:
 	cmp ah,178 ;Up
 	jne @f
@@ -99,7 +97,7 @@ key:
 		fadd dword[delt_size]
 		fstp dword[angle_y]
 		call draw_3d
-		stdcall [kosglSwapBuffers]
+		call [kosglSwapBuffers]
 	@@:
 	cmp ah,177 ;Down
 	jne @f
@@ -107,7 +105,7 @@ key:
 		fsub dword[delt_size]
 		fstp dword[angle_y]
 		call draw_3d
-		stdcall [kosglSwapBuffers]
+		call [kosglSwapBuffers]
 	@@:
 	cmp ah,176 ;Left
 	jne @f
@@ -115,7 +113,7 @@ key:
 		fadd dword[delt_size]
 		fstp dword[angle_x]
 		call draw_3d
-		stdcall [kosglSwapBuffers]
+		call [kosglSwapBuffers]
 	@@:
 	cmp ah,179 ;Right
 	jne @f
@@ -123,7 +121,7 @@ key:
 		fsub dword[delt_size]
 		fstp dword[angle_x]
 		call draw_3d
-		stdcall [kosglSwapBuffers]
+		call [kosglSwapBuffers]
 	@@:
 
 	jmp still
@@ -139,14 +137,11 @@ button:
 
 align 4
 caption db 'Test opengl 1.1 arrays, [Esc] - exit, [<-],[->],[Up],[Down] - rotate',0
-align 4
-ctx1 db 28 dup (0) ;TinyGLContext or KOSGLContext
-;sizeof.TinyGLContext = 28
 
 align 4
 draw_3d:
 stdcall [glClear], GL_COLOR_BUFFER_BIT + GL_DEPTH_BUFFER_BIT ;очистим буфер цвета и глубины
-stdcall [glPushMatrix]
+call [glPushMatrix]
 
 	;масштаб и повороты
 	stdcall [glTranslatef], 0.0,0.0,0.5
@@ -155,7 +150,7 @@ stdcall [glPushMatrix]
 	stdcall [glRotatef], [angle_y],0.0,1.0,0.0
 	stdcall [glRotatef], [angle_x],1.0,0.0,0.0
 
-	;рисование через тндексный массив
+	;рисование через индексный массив
 	mov eax,house_3ds ;начало внедренного файла 3ds
 	add eax,0xeb ;смещение по которому идут координаты вершин (получено с использованием программы info_3ds)
 	stdcall [glVertexPointer], 3, GL_FLOAT, 0, eax ;задаем массив для вершин, 3 - число координат для одной вершины
@@ -163,7 +158,7 @@ stdcall [glPushMatrix]
 	stdcall [glDrawElements], GL_TRIANGLES, 0x1a6*3, GL_UNSIGNED_SHORT, Indices ;mode, count, type, *indices
 	stdcall [glDisableClientState], GL_VERTEX_ARRAY ;отключаем режим рисования вершин
 
-stdcall [glPopMatrix]
+call [glPopMatrix]
 ret
 
 align 4
@@ -199,17 +194,13 @@ include '../export.inc'
 ;--------------------------------------------------
 system_path db '/sys/lib/'
 name_tgl db 'tinygl.obj',0
-err_message_found_lib db 'Sorry I cannot load library ',39,'tinygl.obj',39,0
-head_f_i:
-head_f_l db 'System error',0
-err_message_import db 'Error on load import library ',39,'tinygl.obj',39,0
 ;--------------------------------------------------
 
+align 4
 i_end:
+	ctx1 rb 28 ;sizeof.TinyGLContext = 28
+cur_dir_path rb 4096
+library_path rb 4096
 	rb 4096
 stacktop:
-cur_dir_path:
-	rb 4096
-library_path:
-	rb 4096
 mem:

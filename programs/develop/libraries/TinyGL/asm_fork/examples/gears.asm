@@ -6,7 +6,7 @@ use32
 include '../../../../../proc32.inc'
 include '../../../../../macros.inc'
 include '../../../../../KOSfuncs.inc'
-include '../../../../../develop/libraries/box_lib/load_lib.mac'
+include '../../../../../load_lib.mac'
 include '../../../../../dll.inc'
 include '../opengl_const.inc'
 include 'fps.inc'
@@ -18,8 +18,7 @@ macro matr_cell c_funct,c_param,funct,param, dia
 	dia dword[esp-4*(c_param*(c_funct-funct)+(1+c_param-param))]
 }
 
-;Так как некоторые извращенческие функции OpenGL воспринимают только параметры
-;типа double (8 байт) то придется пихать их в стек макросом glpush
+;Макрос для параметров типа double (8 байт)
 macro glpush GLDoubleVar {
 	push dword[GLDoubleVar+4]
 	push dword[GLDoubleVar]
@@ -27,8 +26,7 @@ macro glpush GLDoubleVar {
 
 align 4
 start:
-	load_library name_tgl, cur_dir_path, library_path, system_path, \
-		err_message_found_lib, head_f_l, import_lib_tinygl, err_message_import, head_f_i
+	load_library name_tgl, library_path, system_path, import_tinygl
 	cmp eax,SF_TERMINATE_PROCESS
 	jz button.exit
 
@@ -903,7 +901,7 @@ endp
 
 ;--------------------------------------------------
 align 4
-import_lib_tinygl:
+import_tinygl:
 
 macro E_LIB n
 {
@@ -920,11 +918,6 @@ include '../export.inc'
 ;--------------------------------------------------
 system_path db '/sys/lib/'
 name_tgl db 'tinygl.obj',0
-
-head_f_i:
-head_f_l db '"System error',0
-err_message_import db 'Error on load import library ',39,'tinygl.obj',39,'" -tE',0
-err_message_found_lib db 'Sorry I cannot load library ',39,'tinygl.obj',39,'" -tE',0
 ;--------------------------------------------------
 
 align 16
@@ -932,10 +925,8 @@ i_end:
 ctx1 db 28 dup (0) ;TinyGLContext or KOSGLContext
 ;sizeof.TinyGLContext = 28
 procinfo process_information 
+cur_dir_path rb 4096
+library_path rb 4096
 	rb 4096
 stacktop:
-cur_dir_path:
-	rb 4096
-library_path:
-	rb 4096
 mem:

@@ -48,8 +48,8 @@ proc png_set_sig_bytes uses eax edi, png_ptr:dword, num_bytes:dword
 	png_debug 1, 'in png_set_sig_bytes'
 
 	mov edi,[png_ptr]
-	cmp edi,0
-	je .end_f ;if (..==0) return
+	or edi,edi
+	jz .end_f ;if (..==0) return
 
 	mov eax,[num_bytes]
 	cmp eax,0
@@ -101,13 +101,10 @@ endp
 align 4
 proc png_zalloc uses edx ecx, png_ptr:dword, items:dword, size:dword
 
-	cmp dword[png_ptr],0
-	jne @f
-		xor eax,eax
-		jmp .end_f ;if (..==0) return 0
-	@@:
-
 	xor eax,eax
+	cmp dword[png_ptr],eax
+	je .end_f ;if (..==0) return 0
+
 	not eax
 	xor edx,edx
 	mov ecx,[size]
@@ -161,8 +158,8 @@ locals
 endl
 	mov edi,[png_ptr]
 	PNG_CHUNK_ANCILLARY [edi+png_struct.chunk_name]
-	cmp eax,0 ;if (..!=0)
-	je @f
+	or eax,eax ;if (..!=0)
+	jz @f
 		mov eax,[edi+png_struct.flags]
 		and eax,PNG_FLAG_CRC_ANCILLARY_MASK
 		cmp eax,PNG_FLAG_CRC_ANCILLARY_USE or PNG_FLAG_CRC_ANCILLARY_NOWARN
@@ -340,12 +337,12 @@ end if
 	; Call the general version checker (shared with read and write code):
 
 		stdcall png_user_version_check, ebx, [user_png_ver]
-		cmp eax,0
-		je .end0 ;if (..!=0)
+		or eax,eax
+		jz .end0 ;if (..!=0)
 			stdcall png_malloc_warn, ebx, sizeof.png_struct
 			;eax = png_ptr
-			cmp eax,0
-			je .end0 ;if (..!=0)
+			or eax,eax
+			jz .end0 ;if (..!=0)
 				; png_ptr->zstream holds a back-pointer to the png_struct, so
 				; this can only be done now:
 
@@ -379,34 +376,27 @@ endp
 ; Allocate the memory for an info_struct for the application.
 ;png_infop (png_structrp png_ptr)
 align 4
-proc png_create_info_struct uses ebx ecx edi, png_ptr:dword
+proc png_create_info_struct uses ecx edi, png_ptr:dword
 	png_debug 1, 'in png_create_info_struct'
-	;ebx - info_ptr dd ? ;png_inforp
 
-	mov edi,[png_ptr]
-	cmp edi,0
-	jne @f ;if (..==0) return 0
-		xor eax,eax
-		jmp .end_f
-	@@:
+	mov eax,[png_ptr]
+	or eax,eax
+	jz .end_f ;if (..==0) return 0
 
 	; Use the internal API that does not (or at least should not) error out, so
 	; that this call always returns ok.  The application typically sets up the
 	; error handling *after* creating the info_struct because this is the way it
 	; has always been done in 'example.asm'.
 
-	stdcall png_malloc_base, edi, sizeof.png_info_def
-	mov ebx,eax
-
-	cmp eax,0
-	je @f
+	stdcall png_malloc_base, eax, sizeof.png_info_def
+	or eax,eax
+	jz .end_f
+		push eax
 		mov edi,eax
 		xor eax,eax
 		mov ecx,sizeof.png_info_def
 		rep stosb ;memset(...
-	@@:
-
-	mov eax,ebx
+		pop eax
 .end_f:
 	ret
 endp
@@ -428,8 +418,8 @@ proc png_destroy_info_struct uses eax ebx ecx edi, png_ptr:dword, info_ptr_ptr:d
 	je .end_f ;if (..==0) return
 
 	mov edi,[info_ptr_ptr]
-	cmp edi,0 ;if (..!=0)
-	je .end_f
+	or edi,edi ;if (..!=0)
+	jz .end_f
 		; Do this first in case of an error below; if the app implements its own
 		; memory management this can lead to png_free calling png_error, which
 		; will abort this routine and return control to the app error handler.
@@ -490,11 +480,11 @@ proc png_data_freer uses edi esi, png_ptr:dword, info_ptr:dword, freer:dword, ma
 	png_debug 1, 'in png_data_freer'
 
 	mov edi,[png_ptr]
-	cmp edi,0
-	je .end_f
+	or edi,edi
+	jz .end_f
 	mov esi,[info_ptr]
-	cmp esi,0
-	je .end_f ;if (..==0 || ..==0) return
+	or esi,esi
+	jz .end_f ;if (..==0 || ..==0) return
 
 ;   if (freer == PNG_DESTROY_WILL_FREE_DATA)
 ;      info_ptr->free_me |= mask;
@@ -514,11 +504,11 @@ proc png_free_data uses eax edi esi, png_ptr:dword, info_ptr:dword, mask:dword, 
 	png_debug 1, 'in png_free_data'
 
 	mov edi,[png_ptr]
-	cmp edi,0
-	je .end_f
+	or edi,edi
+	jz .end_f
 	mov esi,[info_ptr]
-	cmp esi,0
-	je .end_f ;if (..==0 || ..==0) return
+	or esi,esi
+	jz .end_f ;if (..==0 || ..==0) return
 
 if PNG_TEXT_SUPPORTED eq 1
 	; Free text item num or (if num == -1) all text items
@@ -722,8 +712,8 @@ endp
 align 4
 proc png_get_io_ptr, png_ptr:dword
 	mov eax,[png_ptr]
-	cmp eax,0
-	je @f ;if (..==0) return 0
+	or eax,eax
+	jz @f ;if (..==0) return 0
 		mov eax,[eax+png_struct.io_ptr]
 	@@:
 	ret
@@ -742,8 +732,8 @@ proc png_init_io uses eax edi, png_ptr:dword, fp:dword
 	png_debug 1, 'in png_init_io'
 
 	mov edi,[png_ptr]
-	cmp edi,0
-	je @f ;if (..==0) return
+	or edi,edi
+	jz @f ;if (..==0) return
 		mov eax,[fp]
 		mov [edi+png_struct.io_ptr],eax
 	@@:
@@ -967,8 +957,8 @@ proc png_handle_as_unknown uses ecx edi esi, png_ptr:dword, chunk_name:dword
 ;   bytep p, p_end;
 
 	mov edi,[png_ptr]
-	cmp edi,0
-	je .end0
+	or edi,edi
+	jz .end0
 	cmp dword[chunk_name],0
 	je .end0
 	cmp dword[edi+png_struct.num_chunk_list],0
@@ -1020,8 +1010,8 @@ endp
 align 4
 proc png_reset_zstream, png_ptr:dword
 	mov eax,[png_ptr]
-	cmp eax,0
-	jne @f ;if (..==0)
+	or eax,eax
+	jnz @f ;if (..==0)
 		mov eax,Z_STREAM_ERROR
 		jmp .end_f
 	@@:
@@ -1289,8 +1279,8 @@ endp
 align 4
 proc png_colorspace_sync uses ecx edi esi, png_ptr:dword, info_ptr:dword
 	mov edi,[info_ptr]
-	cmp edi,0
-	je @f ;if (..==0) ;reduce code size; check here not in the caller
+	or edi,edi
+	jz @f ;if (..==0) ;reduce code size; check here not in the caller
 		mov ecx,sizeof.png_colorspace
 		mov esi,[png_ptr]
 		add esi,png_struct.colorspace
@@ -1935,8 +1925,8 @@ locals
 	message rb 196 ;char[] ;see below for calculation
 endl
 	mov eax,[colorspace]
-	cmp eax,0
-	je @f ;if (..!=0)
+	or eax,eax
+	jz @f ;if (..!=0)
 		or word[eax+png_colorspace.flags], PNG_COLORSPACE_INVALID
 	@@:
 
@@ -2857,8 +2847,8 @@ else
 	@@:
 end if
 
-	cmp ebx,0
-	je @f
+	or ebx,ebx
+	jz @f
 		png_error edi, 'Invalid IHDR data'
 	@@:
 	ret
@@ -4432,8 +4422,8 @@ endp
 align 4
 proc png_set_option uses ecx, png_ptr:dword, option:dword, onoff:dword
 	mov eax,[png_ptr]
-	cmp eax,0
-	je @f
+	or eax,eax
+	jz @f
 	mov ecx,[option]
 	cmp ecx,0
 	jl @f
@@ -4695,8 +4685,8 @@ proc png_image_free uses eax ebx, image:dword
 	; png_safe_execute will call this API after the return.
 
 	mov ebx,[image]
-	cmp ebx,0
-	je @f
+	or ebx,ebx
+	jz @f
 	cmp dword[ebx+png_image.opaque],0
 	je @f
 	mov eax,[ebx+png_image.opaque]

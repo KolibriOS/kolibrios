@@ -105,12 +105,6 @@ align 4
 end if
 
 ; ***
-glVertex2d: ;(double ,double)
-glVertex2dv: ;(double *)
-glVertex3d: ;(double ,double ,double)
-glVertex3dv: ;(double *)
-glVertex4d: ;(double ,double ,double, double )
-glVertex4dv: ;(double *)
 glColor3d: ;(double ,double ,double)
 glColor3dv: ;(double *)
 glColor4d: ;(double ,double ,double, double )

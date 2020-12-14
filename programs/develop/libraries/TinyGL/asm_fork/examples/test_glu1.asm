@@ -7,14 +7,13 @@ include '../../../../../proc32.inc'
 include '../../../../../macros.inc'
 include '../../../../../KOSfuncs.inc'
 include '../../../../../load_img.inc'
+include '../../../../../load_lib.mac'
 include '../opengl_const.inc'
 include '../zbuffer.inc'
 include '../../../../../develop/info3ds/info_fun_float.inc'
 
-@use_library_mem mem.Alloc,mem.Free,mem.ReAlloc,dll.Load
+@use_library mem.Alloc,mem.Free,mem.ReAlloc,dll.Load
 
-align 4
-image_data_toolbar dd 0
 IMAGE_TOOLBAR_ICON_SIZE equ 21*21*3
 
 ;Макрос для параметров типа double (8 байт)
@@ -366,7 +365,7 @@ lmodel_ambient dd 0.2, 0.2, 0.2, 1.0 ; Параметры фонового ос�
 
 ;--------------------------------------------------
 align 4
-import_lib_tinygl:
+import_tinygl:
 
 macro E_LIB n
 {
@@ -490,14 +489,6 @@ system_dir_1 db '/sys/lib/'
 lib_name_1 db 'buf2d.obj',0
 system_dir_2 db '/sys/lib/'
 lib_name_2 db 'libimg.obj',0
-err_msg_found_lib_0 db 'Sorry I cannot load library ',39,'tinygl.obj',39,'" -tE',0
-err_msg_found_lib_1 db 'Sorry I cannot load library ',39,'buf2d.obj',39,'" -tE',0
-err_msg_found_lib_2 db 'Sorry I cannot load library ',39,'libimg.obj',39,'" -tE',0
-head_f_i:
-head_f_l db '"System error',0
-err_msg_import_0 db 'Error on load import library ',39,'tinygl.obj',39,'" -tE',0
-err_msg_import_1 db 'Error on load import library ',39,'buf2d.obj',39,'" -tE',0
-err_msg_import_2 db 'Error on load import library ',39,'libimg.obj',39,'" -tE',0
 ;--------------------------------------------------
 
 txt_scale:
@@ -535,23 +526,21 @@ buf_1:
 
 align 4
 l_libs_start:
-	lib_0 l_libs lib_name_0, cur_dir_path, file_name,  system_dir_0,\
-		err_msg_found_lib_0, head_f_l, import_lib_tinygl,err_msg_import_0,head_f_i
-	lib_1 l_libs lib_name_1, cur_dir_path, file_name,  system_dir_1,\
-		err_msg_found_lib_1, head_f_l, import_buf2d,  err_msg_import_1,head_f_i
-	lib_2 l_libs lib_name_2, cur_dir_path, file_name, system_dir_2,\
-		err_msg_found_lib_2, head_f_l, import_libimg, err_msg_import_2, head_f_i
+	lib_0 l_libs lib_name_0, file_name, system_dir_0, import_tinygl
+	lib_1 l_libs lib_name_1, file_name, system_dir_1, import_buf2d
+	lib_2 l_libs lib_name_2, file_name, system_dir_2, import_libimg
 l_libs_end:
 
 align 4
 i_end:
 	ctx1 rb 28 ;sizeof.TinyGLContext = 28
+	image_data_toolbar dd 0
 	qObj dd 0
 	run_file_70 FileInfoBlock
 	sc system_colors
 align 16
+	cur_dir_path rb 4096
+	file_name rb 4096
 	rb 4096
 stacktop:
-	cur_dir_path rb 4096
-	file_name rb 4096 
 mem:

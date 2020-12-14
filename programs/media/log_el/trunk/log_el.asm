@@ -1,5 +1,5 @@
 use32
-	org 0x0
+	org 0
 	db 'MENUET01' ;идентиф. исполняемого файла всегда 8 байт
 	dd 1,start,i_end,mem,stacktop,0,sys_path
 
@@ -42,11 +42,12 @@ include '../../../macros.inc'
 include '../../../proc32.inc'
 include '../../../KOSfuncs.inc'
 include '../../../load_img.inc'
+include '../../../load_lib.mac'
 include '../../../develop/libraries/box_lib/trunk/box_lib.mac'
 include 'le_pole.inc'
 include 'le_signal.inc'
 
-@use_library_mem mem.Alloc,mem.Free,mem.ReAlloc,dll.Load
+@use_library mem.Alloc,mem.Free,mem.ReAlloc,dll.Load
 caption db 'Логические элементы 13.02.16',0 ;подпись окна
 
 panel_0_coord_top equ 5 ;верхняя координата 0-го ряда панели инструментов
@@ -171,12 +172,6 @@ mcs dd 1, 0, 0, 1,\
 	   0,-1, 1, 0
 
 IMAGE_TOOLBAR_ICON_SIZE equ 16*16*3
-image_data_toolbar dd 0
-
-icon_tl_sys dd 0 ;указатель на память для хранения системных иконок
-icon_toolbar dd 0 ;указатель на память для хранения иконок объектов
-
-image_data_gray dd 0 ;память с временными серыми изображениями в формате 24-bit, из которых будут создаваться трафареты
 
 cursors_count equ 4
 
@@ -196,7 +191,7 @@ align 4
 start:
 	load_libraries l_libs_start,l_libs_end
 	;проверка на сколько удачно загузилась библиотека
-	mov	ebp,lib_7
+	mov	ebp,lib4
 	cmp	dword [ebp+ll_struc_size-4],0
 	jz	@f
 		mcall SF_TERMINATE_PROCESS
@@ -205,7 +200,7 @@ start:
 	mcall SF_SET_EVENTS_MASK,0x27
 
 	;*** считывание настроек из *.ini файла
-	copy_path ini_name,sys_path,file_name,0x0
+	copy_path ini_name,sys_path,file_name,0
 
 	stdcall dword[ini_get_color],file_name,ini_sec_color,key_color_bkgnd,ini_def_c_bkgnd
 	mov dword[buf_0.color],eax
@@ -642,7 +637,7 @@ pushad
 	mcall SF_CREATE_WINDOW, (20 shl 16)+580,(20 shl 16)+415
 
 	; *** создание кнопок на панель ***
-	mcall SF_DEFINE_BUTTON, (5 shl 16)+20, (panel_0_coord_top shl 16)+20, 3,, [sc.work_button]
+	mcall SF_DEFINE_BUTTON, (5 shl 16)+20, (panel_0_coord_top shl 16)+20, 3, [sc.work_button]
 
 	add ebx,25 shl 16
 	mov edx,4
@@ -758,27 +753,26 @@ pushad
 	stdcall pole_draw_pok, pole
 
 	; *** создание кнопок установки сигналов set_0 и set_1 ***
-	mov esi,[sc.work_button]
-	mcall SF_DEFINE_BUTTON, (5 shl 16)+20, (panel_1_coord_top shl 16)+20, 20
+	mcall SF_DEFINE_BUTTON, (5 shl 16)+20, (panel_1_coord_top shl 16)+20, 20, [sc.work_button]
 
 	add ebx,25 shl 16
-	mov edx,21
+	inc edx
 	int 0x40
 
 	add ebx,30 shl 16
-	mov edx,22
+	inc edx
 	int 0x40
 
 	add ebx,25 shl 16
-	mov edx,23
+	inc edx
 	int 0x40
 
 	add ebx,25 shl 16
-	mov edx,24
+	inc edx
 	int 0x40
 
 	add ebx,25 shl 16
-	mov edx,25
+	inc edx
 	int 0x40
 
 	mov ecx,[sc.work_text]
@@ -808,8 +802,7 @@ pushad
 	int 0x40
 
 	; *** создание кнопок рисования провода ***
-	mov esi,[sc.work_button]
-	mcall SF_DEFINE_BUTTON, (5 shl 16)+20, (panel_2_coord_top shl 16)+20, 30
+	mcall SF_DEFINE_BUTTON, (5 shl 16)+20, (panel_2_coord_top shl 16)+20, 30, [sc.work_button]
 
 	add ebx,30 shl 16
 	mov edx,31
@@ -1043,11 +1036,6 @@ shem_colors:
 color_captions dd 0x808080
 
 align 4
-open_file_lif:
-	rb 2*4096 ;область для открытия файлов
-.end:
-
-align 4
 but_open_file:
 	pushad
 	copy_path open_dialog_name,communication_area_default_path,file_name,0
@@ -1080,8 +1068,8 @@ but_open_file:
 
 		mov esi,txt_size
 		call str_analiz_r
-		cmp edi,0
-		je @f
+		or edi,edi
+		jz @f
 			stdcall str_len,esi
 			add edi,eax
 			stdcall conv_str_to_int,edi
@@ -1104,8 +1092,8 @@ but_open_file:
 
 		mov esi,txt_elements
 		call str_analiz_r
-		cmp edi,0
-		je .end_elems
+		or edi,edi
+		jz .end_elems
 			stdcall str_len,esi
 			add edi,eax
 			stdcall conv_str_to_int,edi
@@ -1416,8 +1404,8 @@ pushad
 		inc edx
 		push edx
 		stdcall pole_cell_find, edi
-		cmp eax,0
-		je @f
+		or eax,eax
+		jz @f
 			or dword[napr],1
 		@@:
 
@@ -1427,8 +1415,8 @@ pushad
 		mov edx,[ebx+offs_cell_x]
 		push edx
 		stdcall pole_cell_find, edi
-		cmp eax,0
-		je @f
+		or eax,eax
+		jz @f
 			or dword[napr],2
 		@@:
 
@@ -1438,8 +1426,8 @@ pushad
 		dec edx
 		push edx
 		stdcall pole_cell_find, edi
-		cmp eax,0
-		je @f
+		or eax,eax
+		jz @f
 			or dword[napr],4
 		@@:
 
@@ -1449,8 +1437,8 @@ pushad
 		mov edx,[ebx+offs_cell_x]
 		push edx
 		stdcall pole_cell_find, edi
-		cmp eax,0
-		je @f
+		or eax,eax
+		jz @f
 			or dword[napr],8
 		@@:
 
@@ -1970,15 +1958,13 @@ proc move_rotate_n90 uses ecx edi, d_x:dword, d_y:dword, angle:dword
 endp
 
 align 4
-proc mem_copy, destination:dword, source:dword, len:dword
-  push ecx esi edi
-    cld
-    mov esi, dword[source]
-    mov edi, dword[destination]
-    mov ecx, dword[len]
-    rep movsb
-  pop edi esi ecx
-  ret
+proc mem_copy uses ecx esi edi, destination:dword, source:dword, len:dword
+	cld
+	mov edi,[destination]
+	mov esi,[source]
+	mov ecx,[len]
+	rep movsb
+	ret
 endp
 
 ;description:
@@ -2290,8 +2276,8 @@ proc set_pen_mode uses eax ebx ecx edx, mode:dword, icon:dword, hot_p:dword
 		add ecx,[buf_curs.data]
 		mcall SF_MOUSE_GET,SSF_LOAD_CURSOR
 
-		cmp eax,0
-		je @f
+		or eax,eax
+		jz @f
 			mov [cursor_pointer],eax
 			mcall SF_MOUSE_GET,SSF_SET_CURSOR,[cursor_pointer]
 	@@:
@@ -2339,15 +2325,6 @@ db 0
 
 include 'le_libs.inc'
 
-mouse_dd dd 0x0
-sc system_colors
-last_time dd 0
-
-
-
-align 16
-procinfo process_information
-
 align 4
 buf_0: dd 0 ;
 .l: dw 170 ;+4 left
@@ -2360,8 +2337,7 @@ buf_0: dd 0 ;
 align 4
 buf_font: ;буфер со шрифтом
 	dd 0 ;указатель на буфер изображения
-	dw 25 ;+4 left
-	dw 25 ;+6 top
+	dw 25,25 ;+4 left,top
 	dd 96 ;+8 w
 	dd 144 ;+12 h
 	dd 0 ;+16 color
@@ -2370,8 +2346,7 @@ buf_font: ;буфер со шрифтом
 align 4
 buf_curs: ;буфер с курсорами
 .data: dd 0 ;указатель на буфер изображения
-	dw 0 ;+4 left
-	dw 0 ;+6 top
+	dw 0,0 ;+4 left,top
 	dd 32 ;+8 w
 	dd 32*cursors_count ;+12 h
 	dd 0 ;+16 color
@@ -2380,8 +2355,7 @@ buf_curs: ;буфер с курсорами
 align 4
 buf_curs_8: ;буфер с курсорами
 .data: dd 0 ;указатель на буфер изображения
-	dw 0 ;+4 left
-	dw 0 ;+6 top
+	dw 0,0 ;+4 left,top
 	dd 32 ;+8 w
 	dd 32*cursors_count ;+12 h
 	dd 0 ;+16 color
@@ -2618,13 +2592,22 @@ align 4
 
 align 16
 i_end:
+	image_data_toolbar dd 0
+	icon_tl_sys dd 0 ;указатель на память для хранения системных иконок
+	icon_toolbar dd 0 ;указатель на память для хранения иконок объектов
+	image_data_gray dd 0 ;память с временными серыми изображениями в формате 24-bit, из которых будут создаваться трафареты
+	mouse_dd dd 0
+	last_time dd 0
+	sc system_colors
+	procinfo process_information
 	run_file_70 FileInfoBlock
+	open_file_lif:
+		rb 2*4096 ;область для открытия файлов
+	.end:
 	rb 1024
 stacktop:
 	sys_path rb 1024
-	file_name:
-		rb 1024 ;4096
-	library_path rb 1024
+	file_name rb 2048 ;4096
 	plugin_path rb 4096
 	openfile_path rb 4096
 	filename_area rb 256

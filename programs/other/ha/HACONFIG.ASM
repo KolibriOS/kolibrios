@@ -44,8 +44,9 @@ include 'lang.inc'       ;яюффхЁцър  ч√ъют яЁш ъюьяшы Ўшш
 include '../../macros.inc'
 include '../../proc32.inc'
 include '../../dll.inc'
+include '../../KOSfuncs.inc'
 include '../../develop/libraries/box_lib/trunk/box_lib.mac' ;ъюьяюэхэЄ√ checkBox ш editBox
-include '../../develop/libraries/box_lib/load_lib.mac'      ;ьръЁюё фы  чруЁєчъш сшсышюЄхъ
+include '../../load_lib.mac'      ;ьръЁюё фы  чруЁєчъш сшсышюЄхъ
 @use_library
 
 KMENUITEM_NORMAL    equ 0
@@ -1431,13 +1432,6 @@ valueModeMenu1  db 'классический режим              ',0
 valueModeMenu2  db 'режим горячей клавиши           ',0
 valueModeMenu3  db 'режим жеста по клавише активации',0
 
-head_f_i:
-        head_f_l  db 'Системная ошибка',0
-        err_message_found_lib0 db 'Не найдена библиотека ',39,'proc_lib.obj',39,0
-        err_message_import0 db 'Ошибка при импорте библиотеки ',39,'proc_lib.obj',39,0
-        err_message_found_lib1 db 'Не найдена библиотека ',39,'kmenu.obj',39,0
-        err_message_import1 db 'Ошибка при импорте библиотеки ',39,'kmenu',39,0
-
 hkCaption: db 'Клавиша:',0
 ;hkHint: db 'Нажмите любую клавишу',0
 radiusCaption: db 'Радиус:',0
@@ -1467,13 +1461,6 @@ valueModeMenu0  db 'disabled                        ',0
 valueModeMenu1  db 'classic mode                    ',0
 valueModeMenu2  db 'hot key mode                    ',0
 valueModeMenu3  db 'activation key gesture mode     ',0
-
-head_f_i:
-        head_f_l  db 'System error',0
-        err_message_found_lib0 db 'Could not find library ',39,'proc_lib.obj',39,0
-        err_message_import0 db 'Error importing library ',39,'proc_lib.obj',39,0
-        err_message_found_lib1 db 'Could not find library ',39,'kmenu.obj',39,0
-        err_message_import1 db 'Error importing library ',39,'kmenu',39,0
 
 hkCaption: db 'Key:',0
 ;hkHint: db 'press any key',0
@@ -1717,24 +1704,17 @@ coordModeMenu:
   .y dw 200
 
 
-align 4
-proclib_import: ;юяшёрэшх ¤ъёяюЁЄшЁєхь√ї ЇєэъЎшщ
-        OpenDialog_Init dd aOpenDialog_Init
-        OpenDialog_Start dd aOpenDialog_Start
-dd 0,0
-        aOpenDialog_Init db 'OpenDialog_init',0
-        aOpenDialog_Start db 'OpenDialog_start',0
- 
 system_dir0 db '/sys/lib/'
 lib0_name db 'proc_lib.obj',0
+system_dir1 db '/sys/lib/'
 lib1_name db 'kmenu.obj',0
 
 symbolDownArrow db 25,0
 
 ;library structures
 l_libs_start:
-    lib0 l_libs lib0_name, sys_path, file_name, system_dir0, err_message_found_lib0, head_f_l, proclib_import,err_message_import0, head_f_i
-    lib1 l_libs lib1_name, sys_path, file_name, system_dir0, err_message_found_lib1, head_f_l, import_libkmenu,err_message_import1,head_f_i
+    lib0 l_libs lib0_name, file_name, system_dir0, import_proclib
+    lib1 l_libs lib1_name, file_name, system_dir1, import_libkmenu
 load_lib_end:
 
 
@@ -1747,6 +1727,14 @@ editLD   edit_box 230-buttonW,Otstup+buttonW,120, 0xffffff, 0x6a9480, 0, 0xAABBC
 editRU   edit_box 230-buttonW,290,85, 0xffffff, 0x6a9480, 0, 0xAABBCC, 0x10000000, edMaxSize, dataBuffer.3, mouse_dd, 0, edMax, edMax
 editRD   edit_box 230-buttonW,290,120, 0xffffff, 0x6a9480, 0, 0xAABBCC, 0x10000000, edMaxSize, dataBuffer.4, mouse_dd, 0, edMax, edMax
 editRadius edit_box 40,(buttonHotKeyX + buttonHotKeyWidth + 20),buttonModeY, 0xffffff, 0x6a9480, 0, 0xAABBCC, 0x10000000, 4, radiusBuffer.data, mouse_dd, ed_figure_only, edMax, edMax
+
+align 4
+import_proclib:
+        OpenDialog_Init dd aOpenDialog_Init
+        OpenDialog_Start dd aOpenDialog_Start
+dd 0,0
+        aOpenDialog_Init db 'OpenDialog_init',0
+        aOpenDialog_Start db 'OpenDialog_start',0
 
 align 4
 import_libkmenu:
