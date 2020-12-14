@@ -22,8 +22,8 @@ typedef unsigned short word;
 
 typedef unsigned int fpos_t;
 typedef unsigned int size_t;
-
-typedef struct process_table_entry{
+#pragma pack(push,1)
+struct process_table_entry{
   int cpu_usage;             //+0
   int window_pos_info;       //+4
   short int reserved1;       //+8
@@ -43,7 +43,8 @@ typedef struct process_table_entry{
   int clientheight;          //+66
   unsigned char window_state;//+70
   char reserved3[1024-71];   //+71
-}__attribute__((packed));
+};
+#pragma pack(pop)
 
 //-----------------------------------------------------------------------------------
 //------------------------KolibriOS system acces to files----------------------------
