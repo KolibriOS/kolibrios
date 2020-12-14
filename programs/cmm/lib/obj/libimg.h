@@ -147,6 +147,9 @@ struct libimg_image
 :void libimg_image::convert_into(dword _to)
 {
     img_convert stdcall(image, 0, _to, 0, 0);
+    $push eax
+    img_destroy stdcall(image);
+    $pop eax
     if (!EAX) {
         notify("'LibImg convertation error!'E");
     } else {

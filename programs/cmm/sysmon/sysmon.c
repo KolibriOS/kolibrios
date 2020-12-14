@@ -108,7 +108,8 @@ void main()
 	int btn;
 	//dword cpu_frequency = GetCpuFrequency()/1000;
 	load_lib();
-	SetEventMask(EVM_REDRAW + EVM_KEY + EVM_BUTTON + EVM_MOUSE + EVM_MOUSE_FILTER);
+	@SetWindowLayerBehaviour(-1, ZPOS_ALWAYS_TOP);
+	@SetEventMask(EVM_REDRAW + EVM_KEY + EVM_BUTTON + EVM_MOUSE + EVM_MOUSE_FILTER);
 	loop() switch(@WaitEventTimeout(50))
 	{
 	   	case evMouse:
@@ -121,7 +122,7 @@ void main()
 			if (select_list.ProcessKey(key_scancode)) SelectList_LineChanged();
 			break;
 		case evButton:
-			btn = GetButtonID();
+			btn = @GetButtonID();
 			if (1==btn) ExitProcess();
 
 			if (show_system.click(btn)) {

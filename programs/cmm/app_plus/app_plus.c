@@ -70,6 +70,11 @@ need to reboot system to try again."
 
 void main()
 {
+	if (param) {
+		SetAdditionalSystemDirectory("kolibrios", #param+1);
+		ExitProcess();
+	}
+
 	WaitAutosearch();
 	CheckKosMounted();
 

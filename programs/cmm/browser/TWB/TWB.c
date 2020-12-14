@@ -282,7 +282,19 @@ void TWebBrowser::ParseHtml(dword _bufpointer, _bufsize){
 			if (tag.name) {
 				CheckForLineBreak();
 				Paint();
-				if (tag.name) SetStyle();
+				if (tag.name) {
+					EAX = cur_encoding;
+					$push eax
+					SetStyle();
+					$pop eax
+					// The thing is that UTF if longer than other encodings.
+					// So if encoding was changed to UTF than $bufpos position is wrong now,
+					// and we have to start parse from the very beginning
+					if (EAX != cur_encoding) && (cur_encoding == CH_UTF8) {
+						ParseHtml(bufpointer, bufsize);
+						return;
+					}
+				}
 			}
 			break;
 		default:
