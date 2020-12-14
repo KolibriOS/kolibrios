@@ -29,12 +29,8 @@
 	org	0x0
 
 	db 'MENUET01'
-	dd 0x01
-	dd START
-	dd IM_END
-	dd I_END
-	dd stacktop
-params dd PARAMS
+	dd 0x01, START, IM_END, I_END, stacktop
+	params dd PARAMS
 	dd 0x0
 ;---------------------------------------------------------------------
 delay dd 500 
@@ -74,8 +70,6 @@ basic_file_path:
 	db '/sys/settings/'
 basic_file_name:
 	db 'kolibrios/res/system/kolibri.lbl',0
-additional_dir_name:
-    db 'kolibrios',0
 real_additional_dir:
 	db '/kolibrios',0
 ;-------------------------------------------------------------------------------
@@ -88,6 +82,15 @@ include "../../debug-fdo.inc"
 START:
 ; process cmdline params
 	mov	esi, [params]
+	cmp	[esi], byte '/'
+	jne @f
+	mov esi, [params] ;user gave us the path so lets mount it
+	inc	esi
+	mov	edi,f30_3_work_area+64
+	call	proc_copy_path
+	mcall	30,3,f30_3_work_area
+	mcall   -1
+@@:	
 	test	[esi], byte 0xFF
 	jz	.params_done
 	cmp	word[esi], '-d' ; delay
@@ -136,7 +139,7 @@ exit:
 	je @f
 	mov [mount_attempt], 1 ;second mount attempt with delay
 	DEBUGF	2, "Searchap: second attempt after 5 seconds!\n"
-	mcall	5,[delay]
+	mcall	5, [delay]
 	jmp START.params_done
 @@:
 	mcall	-1
@@ -185,7 +188,7 @@ device_detect_f70:
 	je	.continue
 	mov	[right_folder_block],ebx
 	xor	ebp,ebp
-.start_copy_device_patch:
+.start_copy_device_path:
 	imul	edi,[retrieved_devices_table_counter],10
 	add	edi,retrieved_devices_table
 	mov	[edi],byte '/'
@@ -193,16 +196,16 @@ device_detect_f70:
 	imul	esi,[temp_counter_1],304
 	add	esi,[read_folder.return]
 	add	esi,32+40
-	call	proc_copy_patch
+	call	proc_copy_path
 	imul	esi,ebp,304
 	add	esi,[read_folder_1.return]
 	add	esi,32+40
 	mov	[edi-1],byte '/'
-	call	proc_copy_patch
+	call	proc_copy_path
 	inc	[retrieved_devices_table_counter]
 	inc	ebp
 	cmp	ebp,[right_folder_block]
-	jb	.start_copy_device_patch
+	jb	.start_copy_device_path
 .continue:
 	inc	[temp_counter_1]
 	mov	eax,[temp_counter_1]
@@ -363,14 +366,10 @@ compare_files_and_mount:
 ; prepare real directory path for mounting
 	inc	esi
 	mov	edi,f30_3_work_area+64
-	call	proc_copy_patch
+	call	proc_copy_path
 	dec	edi
 	mov	esi,real_additional_dir
-	call	proc_copy_patch
-; prepare fake directory name
-	mov	esi,additional_dir_name
-	mov	edi,f30_3_work_area
-	call	proc_copy_patch
+	call	proc_copy_path
 ; here is call kernel function to mount the found partition
 ; as "/kolibrios" directory to root directory "/"
 	mcall	30,3,f30_3_work_area
@@ -387,7 +386,7 @@ compare_files_and_mount:
 copy_folder_name:
 	mov	edi,read_folder_name+1
 .1:
-proc_copy_patch:
+proc_copy_path:
 	cld
 @@:
 	lodsb
@@ -398,7 +397,7 @@ proc_copy_patch:
 ;---------------------------------------------------------------------
 copy_folder_name_1:
 	mov	edi,read_folder_1_name+1
-	jmp	proc_copy_patch
+	jmp	proc_copy_path
 ;---------------------------------------------------------------------
 print_retrieved_devices_table:
 	mov	ecx,[retrieved_devices_table_counter]
@@ -447,7 +446,8 @@ mount_dir		rb 1
 ;-------------------------------------------------------------------------------
 align 4
 f30_3_work_area:
-	rb 128
+	db 'kolibrios',0 
+	rb 118
 ;-------------------------------------------------------------------------------
 align 4
 retrieved_devices_table:

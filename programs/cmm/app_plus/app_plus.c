@@ -70,11 +70,6 @@ need to reboot system to try again."
 
 void main()
 {
-	if (param) {
-		SetAdditionalSystemDirectory("kolibrios", #param+1);
-		ExitProcess();
-	}
-
 	WaitAutosearch();
 	CheckKosMounted();
 
@@ -90,7 +85,7 @@ void main()
 			EventButton(GetButtonID());
 			break;
 		case evKey:
-			GetKeyScancode();
+			@GetKeyScancode();
 			if (AL == SCAN_CODE_ENTER) {
 				EventButton(active_button_id);
 			} else if (AL == SCAN_CODE_TAB) {
