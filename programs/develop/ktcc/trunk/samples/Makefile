@@ -14,7 +14,7 @@ all:
 	../bin/kos32-tcc dir_example.c -lck -o dir_example.kex -I ../libc/include
 	../bin/kos32-tcc net/tcpsrv_demo.c -lck -o net/tcpsrv_demo.kex -I ../libc/include
 	../bin/kos32-tcc net/nslookup.c -lck -lnetwork -o net/nslookup.kex -I ../libc/include
-	../bin/kos32-tcc getopt_ex.c -lck -o getopt_ex -I ../libc/include
+	../bin/kos32-tcc getopt_ex.c -lck -o getopt_ex.kex -I ../libc/include
 
 clean:
 	rm *.kex
