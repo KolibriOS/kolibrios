@@ -91,7 +91,7 @@ bool PAGE_LINKS::hover(dword list_y, list_first)
 
 				active_url = link.get(i);
 				active = i;
-				DrawStatusBar();
+				DrawStatusBar(active_url);
 			}
 			if (mouse.lkm) && (mouse.down) {
 				DrawRectangle(x.get(active), -list_first + y.get(active), 
@@ -105,7 +105,7 @@ bool PAGE_LINKS::hover(dword list_y, list_first)
 		draw_underline(active, list_first, list_y, link_color_default);
 		active_url = 0;
 		active = -1;
-		DrawStatusBar();
+		DrawStatusBar(NULL);
 	}
 	return false;
 }

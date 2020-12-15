@@ -22,12 +22,14 @@ char link_menu[] =
 Скачать содержимое ссылки";
 char loading_text[] = "Загрузка...";
 
-char update_param[] = "-exit http://builds.kolibrios.org/rus/data/programs/cmm/browser/WebView.com";
+char update_param[] = "-e http://builds.kolibrios.org/rus/data/programs/cmm/browser/WebView.com";
 char update_download_error[] = "'WebView\nОшибка при получении обновлений!' -tE";
 char update_ok[] = "'WebView\nБраузер был успешно обновлен!' -tO";
 char update_is_current[] = "'WebView\nВы уже используете последнюю версию.' -tI";
 char update_can_not_copy[] = "'WebView\nНе могу переместить новую версию из папки Downloads на Ramdisk. Возможно, не достаточно места.' -tE";
 char clear_cache_ok[] = "'WebView\nКэш очищен.' -tI";
+#define T_RENDERING "Рендеринг страницы..."
+#define T_DONE_IN_SEC "Готово: %i сек"
 #else
 char buildin_page_error[] = FROM "res/page_not_found_en.htm""\0";
 char buildin_page_home[]  = FROM "res/homepage_en.htm""\0";
@@ -51,12 +53,14 @@ Open in new window
 Copy link
 Download link contents";
 char loading_text[] = "Loading...";
-char update_param[] = "-exit http://builds.kolibrios.org/eng/data/programs/cmm/browser/WebView.com";
+char update_param[] = "-e http://builds.kolibrios.org/eng/data/programs/cmm/browser/WebView.com";
 char update_download_error[] = "'WebView\nError receiving an up to date information!' -tE";
 char update_ok[] = "'WebView\nThe browser has been updated!' -tO";
 char update_is_current[] = "'WebView\nThe browser is up to date.' -tI";
 char update_can_not_copy[] = "'WebView\nError copying a new version from Downloads folder!\nProbably too litle space on Ramdisk.' -tE";
 char clear_cache_ok[] = "'WebView\nThe cache has been cleared.' -tI";
+#define T_RENDERING "Rendering..."
+#define T_DONE_IN_SEC "Done in %i sec"
 #endif
 
 #define URL_SERVICE_HISTORY "WebView:history"

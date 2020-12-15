@@ -1,4 +1,4 @@
-#define MEMSIZE 1024 * 100
+#define MEMSIZE 1024 * 40
 //Copyright 2020 by Leency
 #include "../lib/gui.h"
 #include "../lib/random.h"
@@ -8,6 +8,7 @@
 #include "const.h"
 
 bool exit_param = false;
+bool open_file = false;
 
 _http http;
 
@@ -31,9 +32,14 @@ void main()
 	SetCurDir(#save_dir);
 
 	if (param) {
-		if (!strncmp(#param, "-exit ", 6)) {
+		if (streqrp(#param, "-e ")) {
 			exit_param = true;
-			param += 6;
+			param += 3;
+		}
+		if (streqrp(#param, "-eo ")) {
+			exit_param = true;
+			open_file = true;
+			param += 4;
 		}
 
 		if (!strncmp(#param, "-mem", 5)) {
@@ -52,16 +58,15 @@ void main()
 	loop() switch(@WaitEvent())
 	{
 		case evMouse:  edit_box_mouse stdcall (#ed); break;
-		case evButton: ProcessButtonClick(); break;
+		case evButton: ProcessButtonClick(@GetButtonID()); break;
 		case evKey:    ProcessKeyPress(); break;
 		case evReDraw: DrawWindow(); break;
 		default:       MonitorProgress();
 	}
 }
  
-void ProcessButtonClick()
+void ProcessButtonClick(int id)
 {
-	int id = @GetButtonID();
 	autoclose.click(id);
 	if (id==BTN_EXIT) { StopDownloading(); ExitProcess(); }
 	if (id==BTN_START) StartDownloading();
@@ -217,6 +222,7 @@ void SaveFile()
 	}
 	
 	if (!exit_param) notify(#notify_message);
+	if (open_file) ProcessButtonClick(BTN_RUN);
 	if (autoclose.checked) ExitProcess();
 }
 

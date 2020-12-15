@@ -11,7 +11,7 @@
 //                                                   //
 //===================================================//
 
-#define MEMSIZE 1024 * 200
+#define MEMSIZE 1024 * 130
 #include "..\lib\gui.h"
 #include "..\lib\draw_buf.h"
 #include "..\lib\list_box.h"
@@ -41,7 +41,7 @@
 //                       DATA                        //
 //                                                   //
 //===================================================//
-char version[]="WebView 3.01";
+char version[]="WebView 3.03";
 
 #define DEFAULT_URL URL_SERVICE_HOMEPAGE
 
@@ -69,7 +69,6 @@ _http http = 0;
 bool source_mode = false;
 
 progress_bar prbar;
-char stak[4096];
 proc_info Form;
 
 #include "tabs.h"
@@ -213,6 +212,7 @@ void main()
 			}
 
 			if (http.receive_result != 0) break;
+			if (debug_mode) debugval("HTTP", http.status_code);
 			if (http.status_code >= 300) && (http.status_code < 400)
 			{
 				// Handle redirects
@@ -229,7 +229,8 @@ void main()
 				redirect_count = 0;
 				http.hfree();
 				if (http_get_type==PAGE) {
-					cache.add(history.current(), http.content_pointer, http.content_received, PAGE);
+					history.add(http.cur_url);
+					cache.add(http.cur_url, http.content_pointer, http.content_received, PAGE);
 					LoadInternalPage(http.content_pointer, http.content_received);
 				}
 				else if (http_get_type==IMG) {
@@ -362,7 +363,7 @@ void draw_window()
 		DrawOmnibox(); 
 	}
 	DrawProgress();
-	DrawStatusBar();
+	DrawStatusBar(NULL);
 	DrawTabsBar();
 }
 
@@ -527,8 +528,6 @@ void OpenPage(dword _open_URL)
 		anchors.take_anchor_from(#new_url);
 	}
 
-	history.add(#new_url);
-
 	/*
 	There could be several possible types of addresses:
 	- cached page (only http/https)
@@ -541,11 +540,17 @@ void OpenPage(dword _open_URL)
 
 	if (cache.has(#new_url)) {
 		//CACHED PAGE
-		if (cache.current_type==PAGE) LoadInternalPage(cache.current_buf, cache.current_size);
-		else {EventOpenDownloader(#new_url);return;}
+		if (cache.current_type==PAGE) {
+			history.add(#new_url);
+			LoadInternalPage(cache.current_buf, cache.current_size);
+		}
+		else {
+			EventDownloadAndOpenImage(#new_url);
+		}
 
 	} else if (!strncmp(#new_url,"WebView:",8)) {
 		//INTERNAL PAGE
+		history.add(#new_url);
 		if (streq(#new_url, URL_SERVICE_HOMEPAGE)) LoadInternalPage(#buildin_page_home, sizeof(buildin_page_home));
 		else if (streq(#new_url, URL_SERVICE_HELP)) LoadInternalPage(#buildin_page_help, sizeof(buildin_page_help));
 		else if (streq(#new_url, URL_SERVICE_HISTORY)) ShowHistory();
@@ -563,11 +568,12 @@ void OpenPage(dword _open_URL)
 		DrawOmnibox();
 
 		if (!http.transfer) {
-			StopLoading();
+			history.add(#new_url);
 			LoadInternalPage(#buildin_page_error, sizeof(buildin_page_error));
 		}
 	} else {
 		//LOCAL PAGE
+		history.add(#new_url);
 		if (UrlExtIs(#new_url,".docx")) {
 			DeleteFile("/tmp0/1/temp/word/document.xml");
 			CreateDir("/tmp0/1/temp");
@@ -640,7 +646,6 @@ void EventClickLink(dword _target)
 
 	if (http.transfer) {
 		StopLoading();
-		history.back();
 	}
 
 	if (strrchr(#new_url, '#')!=0) {
@@ -704,7 +709,7 @@ void LoadInternalPage(dword _bufdata, _in_bufsize){
 			OpenPage(#WB1.redirect);
 		}
 		*/
-		DrawStatusBar();
+		DrawStatusBar(NULL);
 		DrawActiveTab();
 		if (source_mode) {
 			source_mode = false;
@@ -821,15 +826,8 @@ void EventUpdateBrowser()
 	current_size = get_file_size(#program_path);
 	new_size = get_file_size("/tmp0/1/Downloads/WebView.com");
 
-	if (!new_size) || (new_size<5000) {
-		notify(#update_download_error);
-		return;
-	}
-
-	if (current_size == new_size) {
-		notify(#update_is_current);
-		return;
-	}
+	if (!new_size) || (new_size<5000) { notify(#update_download_error); return; }
+	if (current_size == new_size) { notify(#update_is_current);	return; }
 
 	if (CopyFileAtOnce(new_size, "/tmp0/1/Downloads/WebView.com", #program_path)) {
 		notify(#update_can_not_copy);
@@ -840,17 +838,14 @@ void EventUpdateBrowser()
 	}
 }
 
-void DrawStatusBar()
+void DrawStatusBar(dword _msg)
 {
 	dword status_y = Form.cheight - STATUSBAR_H + 4;
 	dword status_w = Form.cwidth - 90;
 	DrawBar(0,Form.cheight - STATUSBAR_H+1, Form.cwidth,STATUSBAR_H-1, sc.work);
-	if (links.active_url) {
-		ESI = math.min(status_w/6, strlen(links.active_url));
-		WriteText(10, status_y, 0, sc.work_text, links.active_url);
-	}
-	if (http.transfer>0) && (http_get_type==IMG) {
-		//
+	if (_msg) {
+		ESI = math.min(status_w/6, strlen(_msg));
+		WriteText(10, status_y, 0, sc.work_text, _msg);
 	}
 	DefineHiddenButton(status_w+20, status_y-3, 60, 12, CHANGE_ENCODING);
 	WriteTextCenter(status_w+20, status_y, 60, sc.work_text, WB1.cur_encoding*10+#charsets);
@@ -898,20 +893,29 @@ void CheckContentType()
 {
 	char content_type[64];
 	if (http.header_field("content-type", #content_type, sizeof(content_type))) // application || image
-	if (content_type[0] == 'a') || (content_type[0] == 'i') { 
+
+	if (content_type[0] == 'i') {
+		EventDownloadAndOpenImage(http.cur_url);
+		StopLoading();
+	}if (content_type[0] == 'a') { 
 		EventOpenDownloader(history.current());
 		StopLoading();
-		history.back();
-		EventRefreshPage();
 	}
+}
+
+void EventDownloadAndOpenImage(dword _url)
+{
+	char image_download_url[URL_SIZE];
+	strcpy(#image_download_url, "-eo ");
+	strncat(#image_download_url, _url, URL_SIZE);
+	EventOpenDownloader(#image_download_url);
 }
 
 void HandleRedirect()
 {
 	char redirect_url[URL_SIZE];
 	http.header_field("location", #redirect_url, URL_SIZE);
-	get_absolute_url(#redirect_url, history.current());
-	if (http_get_type==PAGE) history.back();
+	get_absolute_url(#redirect_url, http.cur_url);
 	http.hfree();
 	if (http_get_type==PAGE) OpenPage(#redirect_url);
 	else if (http_get_type==IMG) GetUrl(#redirect_url);
@@ -929,14 +933,16 @@ dword GetImg(bool _new)
 		if (cache.has(cur_img_url)==false) {
 			prbar.max = WB1.img_url.count;
 			prbar.value = i;
-			if (GetUrl(cur_img_url)) {DrawProgress(); return;}
+			if (GetUrl(cur_img_url)) {DrawStatusBar(cur_img_url); DrawProgress(); return;}
 		}
 	}
 	if (_new) return;
 	DrawOmnibox();
+	DrawStatusBar(T_RENDERING);
 	WB1.ParseHtml(WB1.o_bufpointer, WB1.bufsize);
 	WB1.DrawPage();
-	debugln(sprintf(#param, "WebView: page rendered in %i sec", GetStartTime()-render_start_time/100));
+	debugln(sprintf(#param, T_DONE_IN_SEC, GetStartTime()-render_start_time/100));
+	DrawStatusBar(NULL);
 }
 
 stop:
