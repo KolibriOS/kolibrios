@@ -41,7 +41,7 @@
 //                       DATA                        //
 //                                                   //
 //===================================================//
-char version[]="WebView 3 GOLD";
+char version[]="WebView 3.01";
 
 #define DEFAULT_URL URL_SERVICE_HOMEPAGE
 
@@ -593,7 +593,6 @@ bool EventClickAnchor()
 
 	if (anchors.get_pos_by_name(aURL+1)!=-1) {
 		WB1.list.first = anchors.get_pos_by_name(aURL+1);
-		//WB1.list.CheckDoesValuesOkey();
 		strcpy(#editURL, history.current());
 		strcat(#editURL, aURL);
 		DrawOmnibox();

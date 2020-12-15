@@ -189,7 +189,6 @@ void TWebBrowser::ParseHtml(dword _bufpointer, _bufsize){
 	} 
 	for (bufpos=bufpointer ; (bufpos < bufpointer+bufsize) && (ESBYTE[bufpos]!=0) ; bufpos++;)
 	{
-		//bukva = ESBYTE[bufpos];
 		switch (ESBYTE[bufpos])
 		{
 		case 0x0a:
@@ -212,8 +211,7 @@ void TWebBrowser::ParseHtml(dword _bufpointer, _bufsize){
 		case '&': //&nbsp; and so on
 			for (j=1, unicode_symbol=0; (ESBYTE[bufpos+j]<>';') && (!__isWhite(ESBYTE[bufpos+j])) && (j<8); j++)
 			{
-				bukva = ESBYTE[bufpos+j];
-				chrcat(#unicode_symbol, bukva);
+				chrcat(#unicode_symbol, ESBYTE[bufpos+j]);
 			}
 			if (GetUnicodeSymbol(#line, #unicode_symbol, sizeof(line)-1)) {
 				bufpos += j;
@@ -228,6 +226,7 @@ void TWebBrowser::ParseHtml(dword _bufpointer, _bufsize){
 			switch (ESBYTE[bufpos]) {
 				case '!':
 				case '/':
+				case '?':
 				case 'a'...'z':
 				case 'A'...'Z':
 					goto _TAG;

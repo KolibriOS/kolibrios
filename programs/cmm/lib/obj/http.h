@@ -101,7 +101,7 @@ dword _http::get(dword _url)
 	cur_url = _url;
 	http_get stdcall (_url, 0, 0, #accept_language);
 	transfer = EAX;
-	return transfer;
+	return EAX;
 }
 
 void _http::hfree()
@@ -203,41 +203,39 @@ void _http::receive()
 
 	while (i=strstr(new_URL, "&amp;")) strcpy(i+1, i+5);
 
-	if (check_is_the_url_absolute(new_URL)) return orig_URL;
+	if (check_is_the_url_absolute(new_URL)) return new_URL;
 
-	IF (!strncmp(new_URL,"//", 2)) 
-	{
-		strncpy(#newurl, "http:", URL_SIZE);
-		strncat(#newurl, new_URL, URL_SIZE);
-		strncpy(orig_URL, #newurl, URL_SIZE);
-		return orig_URL;
+	switch(ESBYTE[new_URL]) {
+		case '.':
+			new_URL++;
+			if (ESBYTE[new_URL] == '/') {
+				new_URL++;
+			}
+			else if (ESBYTE[new_URL] == '.') && (ESBYTE[new_URL+1] == '/') {
+				_GO_UP:
+				new_URL+=2;
+				newurl[strrchr(#newurl, '/')-1] = '\0';				
+			}
+			goto _DEFAULT;
+		case '?':
+			strchr(#newurl+8, '?'); //returns EAX
+			if (EAX) ESBYTE[EAX] = '\0';
+			break;
+		case '/':
+			new_URL++;
+			if (ESBYTE[new_URL] == '/') {
+				strcpy(#newurl, "http:/");
+				break;
+			}
+			EAX = strchr(#newurl+8, '/');
+			if (EAX) ESBYTE[EAX] = '\0';
+		default:
+			_DEFAULT:
+			EAX = strrchr(#newurl, '/');
+			if (newurl[EAX-2]!='/') newurl[EAX] = '\0';
+			if (!strncmp(new_URL,"../",3)) goto _GO_UP;
+			if (newurl[strlen(#newurl)-1]!='/') strncat(#newurl, "/", URL_SIZE); 
 	}
-	
-	IF (!strncmp(new_URL,"./", 2)) new_URL+=2;
-
-	if (ESBYTE[new_URL] == '/') //remove everything after site domain name
-	{
-		i = strchr(#newurl+8, '/');
-		if (i) ESBYTE[i]=0;
-		new_URL+=1;
-	}
-		
-	_CUT_ST_LEVEL_MARK:
-		
-	if (newurl[strrchr(#newurl, '/')-2]<>'/')
-	{
-		newurl[strrchr(#newurl, '/')] = 0x00;
-	}
-	
-	IF (!strncmp(new_URL,"../",3))
-	{
-		new_URL+=3;
-		newurl[strrchr(#newurl, '/')-1] = 0x00;
-		goto _CUT_ST_LEVEL_MARK;
-	}
-	
-	if (newurl[strlen(#newurl)-1]<>'/') strncat(#newurl, "/", URL_SIZE); 
-	
 	strncat(#newurl, new_URL, URL_SIZE);
 	strncpy(orig_URL, #newurl, URL_SIZE);
 	return orig_URL;
