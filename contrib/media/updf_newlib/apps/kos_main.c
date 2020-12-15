@@ -356,18 +356,17 @@ void PageRotateRight(void)
 	DrawPageSides();
 }
 
-int main (void)
+int main (int argc, char* argv[])
 {
 	char ii, mouse_wheels_state;
-	char* original_command_line = *(char**)0x1C;
 	
-	if (*original_command_line == 0) {
+	if (argc == 1) {
 		kol_board_puts("uPDF: no param set, showing OpenDialog");
 		RunOpenApp();
 		__menuet__sys_exit();
 	}
 
-	kol_board_puts(original_command_line);
+	kol_board_puts(argv[1]);
 	kol_board_puts("\n");
 	
 	char buf[128];
@@ -381,7 +380,7 @@ int main (void)
 	gapp.resolution = resolution;
 	gapp.pageno = pageno;
 	kol_board_puts("PDF Open\n");
-	pdfapp_open(&gapp, original_command_line, 0, 0);
+	pdfapp_open(&gapp, argv[1], 0, 0);
 	kol_board_puts("PDF Opened\n");
 	wintitle(&gapp, 0);
 	 

@@ -1,3 +1,5 @@
+# BUILD ONLY LIBRARIES
+
 cd SYSCALL/src
 make
 cd ../..
@@ -21,8 +23,5 @@ cd ..
 cd draw
 make
 cd ..
-
-cd apps
-make
 
 sleep 100

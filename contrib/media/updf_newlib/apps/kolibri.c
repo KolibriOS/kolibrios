@@ -469,6 +469,8 @@ struct blit_call
 void kos_blit(int dstx, int dsty, int w, int h, int srcx, 
 	int srcy,int srcw, int srch, int stride, char *d)
 {
+	// Page fault
+	/*
 	struct blit_call image;
 	image.dstx=dstx;
 	image.dsty=dsty;
@@ -480,6 +482,7 @@ void kos_blit(int dstx, int dsty, int w, int h, int srcx,
 	image.srch=srch;
 	image.stride=stride;
 	image.d=d;
-	asm ("int $0x40"::"a"(73),"b"(0),"c"(&image));
+	asm("int $0x40"::"a"(73),"b"(0),"c"(&image));
+	*/
 }
 

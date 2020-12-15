@@ -53,7 +53,7 @@ struct rlimit {
   long rlim_max;		/* maximum value for rlim_cur */
 };
 
-/// ZAGLUSHKA ///
+/// STUB ///
 int getrusage(int _who, struct rusage *_rusage) {};
 
 #endif /* !_POSIX_SOURCE */

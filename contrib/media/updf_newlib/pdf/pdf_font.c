@@ -87,7 +87,7 @@ enum { UNKNOWN, TYPE1, TRUETYPE };
 
 static int ft_kind(FT_Face face)
 {
-	/// ZAGLUSHKA ///
+	/// STUB ///
 	//const char *kind = FT_Get_X11_Font_Format(face);
 	const char *kind = "TrueType";
 	
