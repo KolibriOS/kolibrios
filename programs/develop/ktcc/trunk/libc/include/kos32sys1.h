@@ -40,6 +40,12 @@ extern "C" {
 
 //Read/Write data as type (int char, etc.) at address "addr" with offset "offset". eg DATA(int, buff, 8);
 #define DATA(type, addr, offset) *((type*)((uint8_t*)addr+offset))
+
+typedef struct {
+    uint8_t blue;
+    uint8_t green;
+    uint8_t red;
+}RGB;
     
 typedef  unsigned int color_t;
 
@@ -128,7 +134,7 @@ struct ipc_buffer
     uint32_t    used;   // used bytes in buffer
     struct ipc_message  data[0];    // data begin
 };
-
+    
 static inline void begin_draw(void)
 {
     __asm__ __volatile__(

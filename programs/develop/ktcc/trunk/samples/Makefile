@@ -1,24 +1,27 @@
+CC=../bin/kos32-tcc
+CFLAGS= -I ../libc/include
+
 all:
-	../bin/kos32-tcc asm_ex.c -lck -o asm_ex.kex -I ../libc/include
-	../bin/kos32-tcc consoleio.c -lck -o consoleio.kex -I ../libc/include
-	../bin/kos32-tcc files.c -lck -o files.kex -I ../libc/include
-	../bin/kos32-tcc winbasics.c -lck -o winbasics.kex -I ../libc/include
-	../bin/kos32-tcc dynamic.c -lck -lhttp -linputbox -o dynamic.kex -I ../libc/include
-	../bin/kos32-tcc load_coff.c -o load_coff.kex -lck -I ../libc/include
-	../bin/kos32-tcc clayer/msgbox.c  -lck -lmsgbox -o clayer/msgbox.kex -I ../libc/include
-	../bin/kos32-tcc graphics.c -lck -lgb -o graphics.kex -I ../libc/include
-	../bin/kos32-tcc clayer/rasterworks.c -lck -lrasterworks -o clayer/rasterworks.kex -I ../libc/include
-	../bin/kos32-tcc clayer/boxlib.c -lck -lbox -o clayer/boxlib.kex -I ../libc/include
-	../bin/kos32-tcc clayer/libimg.c -lck -limg -o clayer/libimg.kex -I ../libc/include
-	../bin/kos32-tcc console/console.c -lck -limg -o console/console.kex -I ../libc/include
-	../bin/kos32-tcc dir_example.c -lck -o dir_example.kex -I ../libc/include
-	../bin/kos32-tcc net/tcpsrv_demo.c -lck -o net/tcpsrv_demo.kex -I ../libc/include
-	../bin/kos32-tcc net/nslookup.c -lck -lnetwork -o net/nslookup.kex -I ../libc/include
-	../bin/kos32-tcc getopt_ex.c -lck -o getopt_ex.kex -I ../libc/include
-	../bin/kos32-tcc tinygl/fps.c tinygl/gears.c -o gears.kex -I ../libc/include -ltinygl -lck
+	$(CC) $(CFLAGS) asm_ex.c -lck -o asm_ex.kex
+	$(CC) $(CFLAGS) consoleio.c -lck -o consoleio.kex 
+	$(CC) $(CFLAGS) files.c -lck -o files.kex 
+	$(CC) $(CFLAGS) winbasics.c -lck -o winbasics.kex 
+	$(CC) $(CFLAGS) dynamic.c -lck -lhttp -linputbox -o dynamic.kex 
+	$(CC) $(CFLAGS) load_coff.c -o load_coff.kex -lck
+	$(CC) $(CFLAGS) graphics.c -lck -lgb -o graphics.kex
+	$(CC) $(CFLAGS) dir_example.c -lck -o dir_example.kex 
+	$(CC) $(CFLAGS) getopt_ex.c -lck -o getopt_ex.kex 
+	
+	$(CC) $(CFLAGS) clayer/msgbox.c  -lck -lmsgbox -o clayer/msgbox.kex 
+	$(CC) $(CFLAGS) clayer/rasterworks.c -lck -lrasterworks -o clayer/rasterworks.kex 
+	$(CC) $(CFLAGS) clayer/boxlib.c -lck -lbox -o clayer/boxlib.kex 
+	$(CC) $(CFLAGS) clayer/libimg.c -lck -limg -o clayer/libimg.kex
+	$(CC) $(CFLAGS) clayer/dialog.c -lck -ldialog -o clayer/dialog.kex
+	
+	$(CC) $(CFLAGS) net/tcpsrv_demo.c -lck -o net/tcpsrv_demo.kex 
+	$(CC) $(CFLAGS) net/nslookup.c -lck -lnetwork -o net/nslookup.kex 
+	
+	$(CC) $(CFLAGS) tinygl/fps.c tinygl/gears.c -o tinygl/gears.kex -ltinygl -lck
 
 clean:
-	rm *.kex
-	rm clayer/*.kex
-	rm console/*.kex
-	rm net/*.kex
+	rm *.kex clayer/*.kex net/*.kex tinygl/*.kex
