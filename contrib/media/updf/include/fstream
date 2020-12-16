@@ -1,7 +1,0 @@
-#ifndef _FSTREAM_INCLUDED
-#define _FSTREAM_INCLUDED
-#include <iostream>
-/*namespace std
-{
-}*/
-#endif
