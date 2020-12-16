@@ -170,7 +170,23 @@ proc make_new_folder newfolder
     ret
 endp
 
+proc run_if_exists file_path
+    m2m   [fileinfo.path], [file_path]
+    mcall 70, fileinfo
+	test eax, eax
+	jnz   @f
+	m2m   [fileopen.path], [file_path]
+	mcall 70, fileopen
+	mcall -1
+@@:
+	ret
+endp
+
+
 START:
+	stdcall run_if_exists, TMP_netsurf
+	stdcall run_if_exists, ISO_netsurf
+
     mcall   68, 11                  ; init heap
 	call NOTIFY_RUN
 
@@ -183,9 +199,9 @@ START:
     DEBUGF 2, "NETSURF INSTALLER.\n"
 
     stdcall make_new_folder, dirname_res
-    stdcall make_new_folder, dirname_res_pointers
-    stdcall make_new_folder, dirname_res_throbber
-    stdcall make_new_folder, dirname_res_icons
+    ; stdcall make_new_folder, dirname_res_pointers
+    ; stdcall make_new_folder, dirname_res_throbber
+    ; stdcall make_new_folder, dirname_res_icons
 
 
 .get_next_file:
@@ -275,29 +291,31 @@ url              db 'www.kolibri-n.org/files/netsurf/',0
 ; so I use this small shit to fix it at NOTIFY_RUN phase
 filelist_first db '/tmp0/1/netsurf', 0
 
+MAX_FILES = 6
+
 filelist db 'netsurf', 0
          ;db 'netsurf-kolibrios.map', 0 ;what this???
          db 'res/adblock.css', 0
          db 'res/quirks.css', 0
          db 'res/Messages', 0
-         db 'res/licence.html', 0
          db 'res/default.css', 0
-         db 'res/netsurf.png', 0
          db 'res/sans.ttf', 0
-         db 'res/welcome.html', 0
          db 'res/internal.css', 0
-         db 'res/maps.html', 0
-         db 'res/favicon.png', 0
-         db 'res/credits.html', 0
-         db 'res/throbber/throbber8.png', 0
-         db 'res/throbber/throbber3.png', 0
-         db 'res/throbber/throbber4.png', 0
-         db 'res/throbber/throbber0.png', 0
-         db 'res/throbber/throbber6.png', 0
-         db 'res/throbber/throbber2.png', 0
-         db 'res/throbber/throbber1.png', 0
-         db 'res/throbber/throbber7.png', 0
-         db 'res/throbber/throbber5.png', 0
+         ; db 'res/welcome.html', 0
+         ; db 'res/licence.html', 0
+         ; db 'res/maps.html', 0
+         ; db 'res/credits.html', 0
+         ; db 'res/favicon.png', 0
+         ; db 'res/netsurf.png', 0
+         ; db 'res/throbber/throbber8.png', 0
+         ; db 'res/throbber/throbber3.png', 0
+         ; db 'res/throbber/throbber4.png', 0
+         ; db 'res/throbber/throbber0.png', 0
+         ; db 'res/throbber/throbber6.png', 0
+         ; db 'res/throbber/throbber2.png', 0
+         ; db 'res/throbber/throbber1.png', 0
+         ; db 'res/throbber/throbber7.png', 0
+         ; db 'res/throbber/throbber5.png', 0
          ; db 'res/pointers/point.png', 0
          ; db 'res/pointers/no_drop.png', 0
          ; db 'res/pointers/wait.png', 0
@@ -313,23 +331,23 @@ filelist db 'netsurf', 0
          ; db 'res/pointers/lu-rd.png', 0
          ; db 'res/pointers/progress.png', 0
          ; db 'res/pointers/move.png', 0
-         db 'res/icons/back.png', 0
-         db 'res/icons/back_g.png', 0
-         db 'res/icons/scrollr.png', 0
-         db 'res/icons/osk.png', 0
-         db 'res/icons/forward_g.png', 0
-         db 'res/icons/scrolll.png', 0
-         db 'res/icons/history.png', 0
-         db 'res/icons/forward.png', 0
-         db 'res/icons/home_g.png', 0
-         db 'res/icons/history_g.png', 0
-         db 'res/icons/reload_g.png', 0
-         db 'res/icons/scrollu.png', 0
-         db 'res/icons/stop.png', 0
-         db 'res/icons/scrolld.png', 0
-         db 'res/icons/stop_g.png', 0
-         db 'res/icons/home.png', 0
-         db 'res/icons/reload.png', 0
+         ; db 'res/icons/back.png', 0
+         ; db 'res/icons/back_g.png', 0
+         ; db 'res/icons/scrollr.png', 0
+         ; db 'res/icons/osk.png', 0
+         ; db 'res/icons/forward_g.png', 0
+         ; db 'res/icons/scrolll.png', 0
+         ; db 'res/icons/history.png', 0
+         ; db 'res/icons/forward.png', 0
+         ; db 'res/icons/home_g.png', 0
+         ; db 'res/icons/history_g.png', 0
+         ; db 'res/icons/reload_g.png', 0
+         ; db 'res/icons/scrollu.png', 0
+         ; db 'res/icons/stop.png', 0
+         ; db 'res/icons/scrolld.png', 0
+         ; db 'res/icons/stop_g.png', 0
+         ; db 'res/icons/home.png', 0
+         ; db 'res/icons/reload.png', 0
          db 0
 
 filelistoffset   dd filelist
@@ -354,9 +372,20 @@ socketdata       rb 4096
 current_url      rb URLMAXLEN
 current_filename rb FILENAMEMAXLEN
 
+ISO_netsurf db "/kolibrios/netsurf/netsurf", 0
+TMP_netsurf db "/tmp0/1/netsurf", 0
+
+bdvk_buf rb 560
+
+fileinfo    dd 5
+            dd 0,0,0
+            dd bdvk_buf
+            db 0
+.path       dd ?          ; path
+
 ;=====================================================================
 ; NOTIFY DATA
-timer	dd 0
+timer     dd 0
 params rb 256
 ctrl:
  .name rb 32
@@ -378,11 +407,9 @@ rb 2048
     db	    "/sys/@notify", 0
 	
 fileopen    dd 7
-            dd 0                    ; flags
-            dd 0                    ; parameters
-            dd 0                    ; reserved
-            dd 0                    ; reserved
-            db "/tmp0/1/netsurf", 0 ; path
+            dd 0,0,0,0
+            db 0
+.path       dd ?          ; path
 ;=====================================================================
-	
+
 I_END:
