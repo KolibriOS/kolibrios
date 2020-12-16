@@ -269,7 +269,7 @@ extra_files = {
  {"kolibrios/media/zsea/zsea.ini", PROGS .. "/media/zsea/zSea.ini"},
  {"kolibrios/media/zsea/buttons/buttons.png", PROGS .. "/media/zsea/buttons.png"},
  {"kolibrios/netsurf/netsurf", "common/network/netsurf/netsurf"},
- {"kolibrios/netsurf/netsurf/res/", "common/network/netsurf/netsurf/res/*"},
+ {"kolibrios/netsurf/netsurf/res/", "common/network/netsurf/res/*"},
  {"kolibrios/res/skins/", "../skins/authors.txt"},
  {"kolibrios/res/templates/", "common/templates/*"},
  {"kolibrios/res/templates/", PROGS .. "/emulator/e80/trunk/games/*"},
