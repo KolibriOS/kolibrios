@@ -41,7 +41,7 @@
 //                       DATA                        //
 //                                                   //
 //===================================================//
-char version[]="WebView 3.03";
+char version[]="WebView 3.04";
 
 #define DEFAULT_URL URL_SERVICE_HOMEPAGE
 
@@ -599,6 +599,7 @@ bool EventClickAnchor()
 
 	if (anchors.get_pos_by_name(aURL+1)!=-1) {
 		WB1.list.first = anchors.get_pos_by_name(aURL+1);
+		WB1.list.CheckDoesValuesOkey();
 		strcpy(#editURL, history.current());
 		strcat(#editURL, aURL);
 		DrawOmnibox();
@@ -842,6 +843,7 @@ void DrawStatusBar(dword _msg)
 {
 	dword status_y = Form.cheight - STATUSBAR_H + 4;
 	dword status_w = Form.cwidth - 90;
+	if (Form.status_window>2) return;
 	DrawBar(0,Form.cheight - STATUSBAR_H+1, Form.cwidth,STATUSBAR_H-1, sc.work);
 	if (_msg) {
 		ESI = math.min(status_w/6, strlen(_msg));

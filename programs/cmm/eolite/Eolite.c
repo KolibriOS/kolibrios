@@ -3,15 +3,15 @@
 
 // 70.5 - get volume info and label
 
-#define TITLE "Eolite File Manager 4.48"
-#define ABOUT_TITLE "EOLITE 4.48"
+#define TITLE "Eolite File Manager 4.49"
+#define ABOUT_TITLE "EOLITE 4.49"
 
 #ifndef AUTOBUILD
 #include "lang.h--"
 #endif
 
 //libraries
-#define MEMSIZE 1024 * 720
+#define MEMSIZE 1024 * 250
 #include "../lib/clipboard.h"
 #include "../lib/strings.h"
 #include "../lib/mem.h"
@@ -266,7 +266,7 @@ void main()
 						DrawStatusBar();
 						List_ReDraw();
 					} else {
-						if (mouse.y - files.y / files.item_h + files.first == files.cur_y) Open(0);
+						if (mouse.y - files.y / files.item_h + files.first == files.cur_y) EventOpen(0);
 					}
 				}
 				//file menu
@@ -342,7 +342,7 @@ void main()
 			break;  
 //Button pressed-----------------------------------------------------------------------------
 		case evButton:
-			id = @GetButtonID();
+			id = GetButtonID();
 
 			if (new_element_active) || (del_active) {
 				if (POPUP_BTN1==id) && (del_active) EventDelete();
@@ -424,6 +424,12 @@ void main()
 			}
 
 			if (key_modifier&KEY_LSHIFT) || (key_modifier&KEY_RSHIFT) {
+
+				if (key_scancode == SCAN_CODE_ENTER) {
+					EventOpenSelected(); 
+					break;
+				}
+
 				old_cur_y = files.cur_y;
 				files.ProcessKey(key_scancode);
 				EventChooseFilesRange(old_cur_y, files.cur_y);
@@ -478,7 +484,7 @@ void main()
 							break; 
 					case SCAN_CODE_ENTER:
 							if (!itdir) ShowOpenWithDialog();
-							else Open(1);
+							else EventOpen(1);
 							break;
 					case SCAN_CODE_KEY_A:
 							EventChooseAllFiles(true);
@@ -497,7 +503,7 @@ void main()
 							Dir_Up();
 							break; 
 					case SCAN_CODE_ENTER:
-							Open(0);
+							EventOpen(0);
 							break; 
 					case SCAN_CODE_TAB:
 							if (!two_panels.checked) break;
@@ -960,15 +966,25 @@ void Dir_Up()
 	SelectFileByName(#old_folder_name);
 }
 
-void Open(byte rez)
+void EventOpenSelected()
 {
-	byte temp[4096];
-	selected_count = 0;
-	if (rez)
+	int i;
+	dword file_off;
+	for (i=0; i<files.count; i++) if (getElementSelectedFlag(i)) { 
+		EDX = items.get(i)*304 + buf+32;
+		if (TestBit(ESDWORD[EDX], 4)) continue; //is foder
+		sprintf(#param,"%s/%s",#path, EDX+40);
+		RunProgram("/sys/@open", #param);
+	}
+}
+
+void EventOpen(byte _new_window)
+{
+	if (selected_count) && (!itdir) notify(T_USE_SHIFT_ENTER);
+	if (_new_window)
 	{
-		if (!strncmp(#file_name,"..",3)) return;
-		strcpy(#temp, #file_path);
-		RunProgram(I_Path, #temp);
+		if (streq(#file_name,"..")) return;
+		RunProgram(I_Path, #file_path);
 		return;
 	}
 	if (!files.count) return;

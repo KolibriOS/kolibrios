@@ -98,7 +98,7 @@ void EventMenuClick(dword _id)
 		case 1: EventPaste(); break;
 	}
 	if (active_menu == MENU_FILE) switch(_id) {
-		case 1: Open(0); break;
+		case 1: EventOpen(0); break;
 		case 2: ShowOpenWithDialog(); break;
 		case 3: EventCopy(NOCUT); break;
 		case 4: EventCopy(CUT); break;
@@ -108,7 +108,7 @@ void EventMenuClick(dword _id)
 		case 8: FnProcess(8); break;
 	}
 	if (active_menu == MENU_DIR) switch(_id) {
-		case 1: Open(0); break;
+		case 1: EventOpen(0); break;
 		case 2: EventCopy(NOCUT); break;
 		case 3: EventCopy(CUT); break;
 		case 4: EventPaste(); break;
