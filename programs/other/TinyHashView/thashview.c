@@ -1,5 +1,7 @@
-/*Автор: Логаев Максим(turbocat2001) */
+/* Copyright (C) 2019-2020 Logaev Maxim (turbocat2001), GPLv3 */
+
 #include <stdio.h>
+#include <stdbool.h>
 #include <stdlib.h>
 #include <kos32sys1.h>
 #include <string.h>
@@ -7,14 +9,14 @@
 #include <cryptal/md5.h>
 #include <cryptal/sha1.h>
 #include <cryptal/sha256.h>
+#include <clayer/dialog.h>
 
 #define TRUE 1;
 #define FALSE 0;
 #define MAX_HASH_LEN 65 // Максимальная длина строки
 #define WINDOW_W 665
-#define VERSION "%s - thashview 2.4"
+#define VERSION "%s - thashview 2.5"
 
-typedef unsigned char bool;
 struct kolibri_system_colors sys_color_table;
 
 char hex[]={"abcdefABCDEF1234567890"}; //Для проверки вводимых символов
@@ -33,7 +35,6 @@ enum MYCOLORS // Цвета
     WHITE = 0xFFFFFFFF,
     GREY  = 0x00DDD7CF
 };
-
 
 unsigned int str_pos=0; // Позиция курсора при печати в строке ввода
 int md5_flag=0, sha1_flag=0, sha256_flag=0; // Флаги показывающие была ли уже рассчитана котрольная сумма в функции check_sum()
@@ -168,8 +169,8 @@ void sprint_hash(BYTE *hash, char* hash_str, int hash_size) //Преобрауем двоичны
 
 void redraw_window() //Рисуем окно
 {
-    pos_t win_pos = get_mouse_pos(0); //Получаем позицию курсора мыши.
     sprintf(title,VERSION, filename); // Устанавливаем заголовок окна
+    pos_t win_pos = get_mouse_pos(0); // Получаем координаты курсора
     begin_draw(); //Начинаем рисование интерфейса )
     sys_create_window(win_pos.x, win_pos.y, WINDOW_W, 150, title, sys_color_table.work_area, 0x14); // Создаём окно.
 
@@ -213,14 +214,13 @@ void paste_to_edit_buffer()    // Вставить из буффера обмена
     {
         temp_buff=kol_clip_get(kol_clip_num()-1);
         memset(edit_box_buff,0,MAX_HASH_LEN);
-        if(((int)*(temp_buff)>0) && ((int)*(temp_buff+4)==0) && ((int)*(temp_buff+8)==1))
+        if(DATA(int, temp_buff,0)>0 && DATA(int,temp_buff,4)==TEXT && DATA(int,temp_buff,8)==CP866)
         {
             strncpy(edit_box_buff,temp_buff+12, MAX_HASH_LEN-1);
             str_pos=strlen(edit_box_buff);
             notify_show("'Pasted from clipboard!' -I");
             edit_box_text_color=BLACK;
             user_free(temp_buff);
-        
         }
     }
 }
@@ -232,8 +232,8 @@ void copy_to_clipboard(char *text) // Копирлвать в буффер обмена
     {
         char *temp_buffer=safe_malloc(MAX_HASH_LEN+12);
         memset(temp_buffer, 0, MAX_HASH_LEN);
-        *(temp_buffer+4)=0;
-        *(temp_buffer+8)=1;
+        DATA(char,temp_buffer,4)=TEXT;
+        DATA(char,temp_buffer,8)=CP866;
         strncpy(temp_buffer+12, text, MAX_HASH_LEN-1);
         kol_clip_set(strlen(text)+12, temp_buffer);
         notify_show("'Copied to clipboard!' -I");
@@ -325,15 +325,29 @@ void edit_box(oskey_t key)      //Функция реализующая строку ввода
 
 int main(int argc, char** argv)
 {
-    // получаем имя файла
-    if(argc<2) // Если аргументов нет то сообщаем об этом
+    if(argc<2) // Если аргументов нет, то запускаем диалог выбора файла
     {
-        notify_show("'No file selected!' -E");
-        exit(0);
+        kolibri_dialog_init(); // Инициализация библиотеки
+        open_dialog* dialog = kolibri_new_open_dialog(OPEN,0, 0, 420, 320);
+        OpenDialog_init(dialog);
+        OpenDialog_start(dialog); 
+        if(dialog->status==SUCCESS) // Если файл выбран
+        {
+            global_var_init(strlen(dialog->openfile_path));
+            strcpy(filename, dialog->openfile_path);  
+        }
+        else // Если файл не выбран
+        {
+            notify_show("'No file selected!' -E");
+            exit(0);
+        }
+        free(dialog);
     }
-
-    global_var_init(strlen(argv[1]));
-    strcpy(filename, argv[1]);
+    else
+    {
+        global_var_init(strlen(argv[1]));
+        strcpy(filename, argv[1]);
+    }
 
     if(NULL==fopen(filename,"rb")) // Если файла нет или не открывается
     {
@@ -346,11 +360,11 @@ int main(int argc, char** argv)
         notify_show("'Low screen resolution! Program will not display correctrly!' -W");
     }
 
-    int gui_event; // Перемная для хранения события
+    int gui_event; // Переменная для хранения события
     uint32_t pressed_button = 0; // Код нажатой кнопки в окне
 
     get_system_colors(&sys_color_table);
-    set_event_mask(0xC0000027); // Устанавливаем маску событий
+    set_event_mask(0xC0000027);// Устанавливаем маску событий
     do // Цикл обработки событий
     {
         gui_event = get_os_event(); // Получаем событие
@@ -427,4 +441,5 @@ int main(int argc, char** argv)
             }
         }
     }while(1);
+    exit(0);
 }

@@ -1,2 +1,2 @@
 #SHS
-/kolibrios/develop/tcc/tcc thashview.c -o thashview -lck -lcryptal
+/kolibrios/develop/tcc/tcc thashview.c -o thashview -lck -lcryptal -ldialog
