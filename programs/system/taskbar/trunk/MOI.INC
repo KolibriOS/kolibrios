@@ -10,13 +10,13 @@ load_ini:
 	mcall	70,get_ini
 	mov	al,[inicont]
 	sub	al,30h
-	mov	[lngcrc3],al
+	mov	[lngcrc2],al
 
-	mov	[point2],52h
+	mov	[point2],52h ;3d language in Ctrl+Shift
 	mcall  70,get_ini
 	mov	al,[inicont]
 	sub	al,30h
-	mov	[lngcrc2],al
+	mov	[lngcrc3],al
 
 	mov	[point2],06eh
 	mcall	70,get_ini
@@ -84,7 +84,7 @@ karu:
 	mov	[draw_flag_certainly],1
 	dec	[key_r2]
 	jns	@f
-	mov	[key_r2],2
+	mov	[key_r2],1 ; Languages count - 1
 @@:
 	xor	eax,eax
 	mov	al, [key_r2]

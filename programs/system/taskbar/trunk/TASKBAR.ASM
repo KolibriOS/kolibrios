@@ -121,7 +121,7 @@ handle_key:
 	je	prod
 
 	mov	[key_r],al
-	sub	[key_r],2
+	sub	[key_r],3
 	cmp	[key_r],9
 	jc	alter
 
