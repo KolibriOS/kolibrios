@@ -11,7 +11,6 @@
 ../tcc clayer/boxlib.c -lck -lbox -o /tmp0/1/boxlib_ex
 ../tcc clayer/libimg.c -lck -limg -o /tmp0/1/libimg_ex
 ../tcc clayer/dialog.c -lck -ldialog -o /tmp0/1/dialog_ex
-../tcc console/console.c -lck -limg -o /tmp0/1/console
 ../tcc dir_example.c -lck -o /tmp0/1/dir_example
 ../tcc net/tcpsrv_demo.c -lck -o /tmp0/1/tcpsrv_demo
 ../tcc net/nslookup.c -lck -lnetwork -o /tmp0/1/nslookup
