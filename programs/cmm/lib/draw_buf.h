@@ -128,33 +128,28 @@ void DrawBufer::Show(dword _y_offset, _h)
 
 void DrawBufer::IncreaseBufSize()
 {
-	static dword alloc_counter;
 	static dword bufh_initial;
 	dword alloc_size;
 	dword free_ram_size;
 	char error_str[256];
 
 	if (!buf_data) {
-		alloc_counter = 1;
-		bufh_initial = bufh;
-		alloc_size = bufw * bufh * 4 + 8;
+		alloc_size = bufh * bufw * 4 + 8;
 		buf_data = malloc(alloc_size);
-	}
-	else {
-		alloc_counter++;
-		bufh = bufh_initial * alloc_counter;
-		alloc_size = bufw * bufh * 4 + 8;
+	} else {
+		if (bufh_initial != bufh) bufh_initial = bufh;
+		bufh += 4096*1600/bufw; //+50 Mb
+		alloc_size = bufh * bufw * 4 + 8;
 		buf_data = realloc(buf_data, alloc_size);
-		Fill(alloc_counter - 1 * bufw * bufh_initial * 4 + 8, fill_color);
+		Fill(bufh_initial * bufw * 4 + 8, fill_color);
 	}
-
+	bufh_initial = bufh;
 	free_ram_size = GetFreeRAM() * 1024;
 	if (alloc_size > free_ram_size) {
 		sprintf(#error_str, #draw_buf_not_enaught_ram, alloc_size - free_ram_size/1048576);
 		notify(#error_str);
 	}
 }
-
 
 
 #endif

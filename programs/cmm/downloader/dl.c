@@ -54,7 +54,6 @@ void main()
 	}
  
 	@SetEventMask(EVM_REDRAW + EVM_KEY + EVM_BUTTON + EVM_MOUSE + EVM_MOUSE_FILTER + EVM_STACK);
-	@SetWindowLayerBehaviour(-1, ZPOS_ALWAYS_TOP);
 	loop() switch(@WaitEvent())
 	{
 		case evMouse:  edit_box_mouse stdcall (#ed); break;

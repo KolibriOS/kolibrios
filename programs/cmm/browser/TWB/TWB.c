@@ -304,6 +304,11 @@ void TWebBrowser::ParseHtml(dword _bufpointer, _bufsize){
 	Paint();
 	NewLine();
 	list.count = draw_y;
+
+	DrawBuf.bufh = math.max(list.visible, draw_y);
+	debugval("DrawBuf.bufh", DrawBuf.bufh);
+	buf_data = realloc(buf_data, DrawBuf.bufh * DrawBuf.bufw * 4 + 8);
+
 	list.CheckDoesValuesOkey();
 	anchors.current = NULL;
 	custom_encoding = -1;

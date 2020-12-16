@@ -106,9 +106,7 @@ void load_lib()
 void main()
 {
 	int btn;
-	//dword cpu_frequency = GetCpuFrequency()/1000;
 	load_lib();
-	@SetWindowLayerBehaviour(-1, ZPOS_ALWAYS_TOP);
 	@SetEventMask(EVM_REDRAW + EVM_KEY + EVM_BUTTON + EVM_MOUSE + EVM_MOUSE_FILTER);
 	loop() switch(@WaitEventTimeout(50))
 	{

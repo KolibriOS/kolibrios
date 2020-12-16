@@ -26,6 +26,9 @@ void _cache::add(dword _url, _data, _size, _type)
 	url.add(_url);
 	size.add(_size);
 	type.add(_type);
+
+	current_buf = data_pointer;
+	current_size = _size;
 }
 
 bool _cache::has(dword _link)
