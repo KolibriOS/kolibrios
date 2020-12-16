@@ -1,0 +1,3 @@
+#ifndef _ITERATOR_INCLUDED
+#define _ITERATOR_INCLUDED
+#endif
