@@ -1,5 +1,6 @@
 #include "kolibri.h"
 #include "string.h"
+#include <stdlib.h>
 
 
 extern char KOL_PATH[256];

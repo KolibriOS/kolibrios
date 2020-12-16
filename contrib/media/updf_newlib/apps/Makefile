@@ -19,3 +19,6 @@ default: $(patsubst %.c,%.o,$(APPS_SRC))
 
 %.o : %.c Makefile $(APPS_SRC)
 	$(CC) $(CFLAGS) $(INCLUDES) -o $@ $<
+
+clean:
+	rm *.o

@@ -1,20 +1,4 @@
-#ifndef __dj_include_sys_resource_h_
-#define __dj_include_sys_resource_h_
-
-#ifdef __cplusplus
-extern "C" {
-#endif
-
-#ifndef __dj_ENFORCE_ANSI_FREESTANDING
-
-#ifndef __STRICT_ANSI__
-
-#ifndef _POSIX_SOURCE
-
 #include <time.h>
-
-#define RUSAGE_SELF     0               /* calling process */
-#define RUSAGE_CHILDREN -1              /* terminated child processes */
 
 struct rusage {
   struct timeval ru_utime;	/* user time used */
@@ -35,36 +19,5 @@ struct rusage {
   long ru_nivcsw;		/* involuntary context switches */
 };
 
-#define RLIMIT_CPU	0	/* cpu time in milliseconds */
-#define RLIMIT_FSIZE	1	/* maximum file size */
-#define RLIMIT_DATA	2	/* data size */
-#define RLIMIT_STACK	3	/* stack size */
-#define RLIMIT_CORE	4	/* core file size */
-#define RLIMIT_RSS	5	/* resident set size */
-#define RLIMIT_MEMLOCK	6	/* locked-in-memory address space */
-#define RLIMIT_NPROC	7	/* number of processes */
-#define RLIMIT_NOFILE	8	/* number of open files */
-
-#define RLIM_NLIMITS	9	/* number of resource limits */
-#define RLIM_INFINITY	((long) ((1UL << 31) - 1UL))
-
-struct rlimit {
-  long rlim_cur;		/* current (soft) limit */
-  long rlim_max;		/* maximum value for rlim_cur */
-};
-
 /// STUB ///
 int getrusage(int _who, struct rusage *_rusage) {};
-
-#endif /* !_POSIX_SOURCE */
-#endif /* !__STRICT_ANSI__ */
-#endif /* !__dj_ENFORCE_ANSI_FREESTANDING */
-
-#ifndef __dj_ENFORCE_FUNCTION_CALLS
-#endif /* !__dj_ENFORCE_FUNCTION_CALLS */
-
-#ifdef __cplusplus
-}
-#endif
-
-#endif /* !__dj_include_sys_resource_h_ */

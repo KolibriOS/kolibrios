@@ -2,7 +2,6 @@
 #include "resource.h"
 
 #include <menuet/os.h>
-#define _WIN32
 #include "fitz.h"
 #include "mupdf.h"
 #include "pdfapp.h"
@@ -56,6 +55,13 @@ const char *help[] = {
 };
 
 /*==== CODE ====*/
+// Prototypes //
+void RunApp(char app[], char param[]);
+void winblit(pdfapp_t *app);
+void DrawPagination(void);
+void HandleNewPageNumber(unsigned char key);
+void ApplyNewPageNumber(void);
+void DrawWindow(void);
 
 
 // not implemented yet

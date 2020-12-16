@@ -2,7 +2,7 @@
 #include "mupdf.h"
 #include "pdfapp.h"
 
-// #include <ctype.h> /* for tolower() */
+#include <ctype.h> /* for tolower() */
 
 #define ZOOMSTEP 1.142857
 #define BEYOND_THRESHHOLD 40
