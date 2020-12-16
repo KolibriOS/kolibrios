@@ -107,9 +107,11 @@ void winclose(pdfapp_t *app)
 	__menuet__sys_exit();
 }
 
-void RunOpenApp()
+void RunOpenApp(char name[])
 {
-        RunApp("/sys/lod", "*pdf* ./mupdf");
+        char cmd[250] = "*pdf* ";
+        strcat(cmd, name);
+        RunApp("/sys/lod", cmd);
 }
 
 
@@ -362,7 +364,7 @@ int main (int argc, char* argv[])
 	
 	if (argc == 1) {
 		kol_board_puts("uPDF: no param set, showing OpenDialog");
-		RunOpenApp();
+		RunOpenApp(argv[0]);
 		__menuet__sys_exit();
 	}
 
@@ -433,7 +435,7 @@ int main (int argc, char* argv[])
 		case evButton:
 			butt = __menuet__get_button_id();
 			if(butt==1) __menuet__sys_exit();
-			if(butt==10) RunOpenApp();
+			if(butt==10) RunOpenApp(argv[0]);
 			if(butt==11) PageZoomOut(); //magnify -
 			if(butt==12) PageZoomIn(); //magnify +
 			if(butt==13) //show help
