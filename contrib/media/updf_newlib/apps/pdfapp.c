@@ -1,6 +1,7 @@
 #include "fitz.h"
 #include "mupdf.h"
 #include "pdfapp.h"
+#include "kolibri.h"
 
 #include <ctype.h> /* for tolower() */
 
@@ -109,12 +110,12 @@ static void pdfapp_open_pdf(pdfapp_t *app, char *filename, int fd)
 	/*
 	 * Open PDF and load xref table
 	 */
-__menuet__debug_out("FZ OPEN\n");
+kol_board_puts("FZ OPEN\n");
 	//file = fz_open_fd(fd);
-	__menuet__debug_out("FZ ready\n");
+	kol_board_puts("FZ ready\n");
 	error = pdf_open_xref(&app->xref, filename, NULL);
 	if (error){
-	__menuet__debug_out("FZ can't open\n");
+	kol_board_puts("FZ can't open\n");
 		pdfapp_error(app, fz_rethrow(error, "cannot open document '%s'", filename));}
 	fz_close(file);
 
@@ -160,16 +161,16 @@ __menuet__debug_out("FZ OPEN\n");
 	/*
 	 * Start at first page
 	 */
-	 __menuet__debug_out("Start at first page\n");
+	 kol_board_puts("Start at first page\n");
 
 	error = pdf_load_page_tree(app->xref);
 	if (error) {
-		__menuet__debug_out("Can't load tree\n");
+		kol_board_puts("Can't load tree\n");
 		pdfapp_error(app, fz_rethrow(error, "cannot load page tree"));}
 
-__menuet__debug_out("Page counter\n");
+kol_board_puts("Page counter\n");
 	app->pagecount = pdf_count_pages(app->xref);
-	__menuet__debug_out("All is set!\n");
+	kol_board_puts("All is set!\n");
 }
 
 void pdfapp_open(pdfapp_t *app, char *filename, int fd, int reload)
@@ -375,7 +376,7 @@ static void pdfapp_showpage(pdfapp_t *app, int loadpage, int drawpage, int repai
 
 		if (app->shrinkwrap)
 		{
-			__menuet__debug_out ("SHRINK\n");
+			kol_board_puts ("SHRINK\n");
 			int w = app->image->w;
 			int h = app->image->h;
 			if (app->winw == w)

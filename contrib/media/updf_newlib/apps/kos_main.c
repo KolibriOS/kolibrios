@@ -110,14 +110,14 @@ void winreloadfile(pdfapp_t *app)
 void winclose(pdfapp_t *app)
 {
 	pdfapp_close(&gapp);
-	__menuet__sys_exit();
+	exit(0);
 }
 
 void RunOpenApp(char name[])
 {
-        char cmd[250] = "*pdf* ";
-        strcat(cmd, name);
-        RunApp("/sys/lod", cmd);
+	char cmd[250] = "*pdf* ";
+	strcat(cmd, name);
+	RunApp("/sys/lod", cmd);
 }
 
 
@@ -371,7 +371,7 @@ int main (int argc, char* argv[])
 	if (argc == 1) {
 		kol_board_puts("uPDF: no param set, showing OpenDialog");
 		RunOpenApp(argv[0]);
-		__menuet__sys_exit();
+		exit(0);
 	}
 
 	kol_board_puts(argv[1]);
@@ -398,78 +398,77 @@ int main (int argc, char* argv[])
 	__menuet__get_screen_max(&screen_max_x, &screen_max_y);
 	__menuet__set_bitfield_for_wanted_events(EVENT_REDRAW+EVENT_KEY+EVENT_BUTTON+EVENT_MOUSE_CHANGE);
 
- for(;;)
- {
-
-	switch(__menuet__wait_for_event())
+	for(;;)
 	{
-		case evReDraw:
-			// gapp.shrinkwrap = 2;
-			__menuet__window_redraw(1);
-			__menuet__define_window(screen_max_x / 2 - 350-50+kos_random(50), 
-			screen_max_y / 2 - 300-50+kos_random(50), 
-			700, 600, 0x73000000, 0x800000FF, Title);
-			__menuet__window_redraw(2);
-			__menuet__get_process_table(&Form, PID_WHOAMI);
-			if (Form.window_state > 2) continue; //fix rolled up
-			Form.client_width++; //fix for Menuet kernel bug
-			Form.client_height++; //fix for Menuet kernel bug
-			DrawWindow();
-			break;
-
-		case evKey:
-			key = __menuet__getkey(); 
-			if (key_mode_enter_page_number)
-			{
-				HandleNewPageNumber(key);
+		switch(__menuet__wait_for_event())
+		{
+			case evReDraw:
+				// gapp.shrinkwrap = 2;
+				__menuet__window_redraw(1);
+				__menuet__define_window(screen_max_x / 2 - 350-50+kos_random(50), 
+				screen_max_y / 2 - 300-50+kos_random(50), 
+				700, 600, 0x73000000, 0x800000FF, Title);
+				__menuet__window_redraw(2);
+				__menuet__get_process_table(&Form, PID_WHOAMI);
+				if (Form.window_state > 2) continue; //fix rolled up
+				Form.client_width++; //fix for Menuet kernel bug
+				Form.client_height++; //fix for Menuet kernel bug
+				DrawWindow();
 				break;
-			}
-			if (key==ASCII_KEY_ESC)  DrawWindow(); //close help 
-			if (key==ASCII_KEY_PGDN) pdfapp_onkey(&gapp, ']');
-			if (key==ASCII_KEY_PGUP) pdfapp_onkey(&gapp, '[');
-			if (key==ASCII_KEY_HOME) pdfapp_onkey(&gapp, 'g');
-			if (key==ASCII_KEY_END ) pdfapp_onkey(&gapp, 'G');
-			if (key=='g' ) pdfapp_onkey(&gapp, 'c');
-			if ((key=='[' ) || (key=='l')) PageRotateLeft();
-			if ((key==']' ) || (key=='r')) PageRotateRight();
-			if (key==ASCII_KEY_DOWN ) PageScrollDown();
-			if (key==ASCII_KEY_UP ) PageScrollUp();
-			if (key=='-') PageZoomOut();
-			if ((key=='=') || (key=='+')) PageZoomIn();
-			break;
 
-		case evButton:
-			butt = __menuet__get_button_id();
-			if(butt==1) __menuet__sys_exit();
-			if(butt==10) RunOpenApp(argv[0]);
-			if(butt==11) PageZoomOut(); //magnify -
-			if(butt==12) PageZoomIn(); //magnify +
-			if(butt==13) //show help
-			{
-				kol_paint_bar(0, TOOLBAR_HEIGHT, Form.client_width, Form.client_height - TOOLBAR_HEIGHT, 0xF2F2F2);	
-				__menuet__write_text(20, TOOLBAR_HEIGHT + 20      , 0x90000000, "uPDF for KolibriOS v1.2", 0);
-				__menuet__write_text(21, TOOLBAR_HEIGHT + 20      , 0x90000000, "uPDF for KolibriOS v1.2", 0);
-				for (ii=0; help[ii]!=0; ii++) {
-					__menuet__write_text(20, TOOLBAR_HEIGHT + 60 + ii * 15, 0x80000000, help[ii], 0);
+			case evKey:
+				key = __menuet__getkey(); 
+				if (key_mode_enter_page_number)
+				{
+					HandleNewPageNumber(key);
+					break;
 				}
-			}
-			if(butt==14) pdfapp_onkey(&gapp, '['); //previous page
-			if(butt==15) pdfapp_onkey(&gapp, ']'); //next page
-			if(butt==16) PageRotateLeft();
-			if(butt==17) PageRotateRight();
-			if(butt==20) GetNewPageNumber();
-			break;
+				if (key==ASCII_KEY_ESC)  DrawWindow(); //close help 
+				if (key==ASCII_KEY_PGDN) pdfapp_onkey(&gapp, ']');
+				if (key==ASCII_KEY_PGUP) pdfapp_onkey(&gapp, '[');
+				if (key==ASCII_KEY_HOME) pdfapp_onkey(&gapp, 'g');
+				if (key==ASCII_KEY_END ) pdfapp_onkey(&gapp, 'G');
+				if (key=='g' ) pdfapp_onkey(&gapp, 'c');
+				if ((key=='[' ) || (key=='l')) PageRotateLeft();
+				if ((key==']' ) || (key=='r')) PageRotateRight();
+				if (key==ASCII_KEY_DOWN ) PageScrollDown();
+				if (key==ASCII_KEY_UP ) PageScrollUp();
+				if (key=='-') PageZoomOut();
+				if ((key=='=') || (key=='+')) PageZoomIn();
+				break;
 
-		case evMouse:
-			if (mouse_wheels_state = kos_get_mouse_wheels())
-			{
-				if (mouse_wheels_state==1) { PageScrollDown(); PageScrollDown(); }
-				if (mouse_wheels_state==-1) { PageScrollUp();  PageScrollUp();   }
-			}
-			//sprintf (debugstr, "mouse_wheels_state: %d \n", mouse_wheels_state);
-			//kol_board_puts(debugstr);
-			//pdfapp_onmouse(&gapp, int x, int y, int btn, int modifiers, int state)
-			break;
+			case evButton:
+				butt = __menuet__get_button_id();
+				if(butt==1) exit(0);
+				if(butt==10) RunOpenApp(argv[0]);
+				if(butt==11) PageZoomOut(); //magnify -
+				if(butt==12) PageZoomIn(); //magnify +
+				if(butt==13) //show help
+				{
+					kol_paint_bar(0, TOOLBAR_HEIGHT, Form.client_width, Form.client_height - TOOLBAR_HEIGHT, 0xF2F2F2);	
+					__menuet__write_text(20, TOOLBAR_HEIGHT + 20      , 0x90000000, "uPDF for KolibriOS v1.2", 0);
+					__menuet__write_text(21, TOOLBAR_HEIGHT + 20      , 0x90000000, "uPDF for KolibriOS v1.2", 0);
+					for (ii=0; help[ii]!=0; ii++) {
+						__menuet__write_text(20, TOOLBAR_HEIGHT + 60 + ii * 15, 0x80000000, help[ii], 0);
+					}
+				}
+				if(butt==14) pdfapp_onkey(&gapp, '['); //previous page
+				if(butt==15) pdfapp_onkey(&gapp, ']'); //next page
+				if(butt==16) PageRotateLeft();
+				if(butt==17) PageRotateRight();
+				if(butt==20) GetNewPageNumber();
+				break;
+
+			case evMouse:
+				if (mouse_wheels_state = kos_get_mouse_wheels())
+				{
+					if (mouse_wheels_state==1) { PageScrollDown(); PageScrollDown(); }
+					if (mouse_wheels_state==-1) { PageScrollUp();  PageScrollUp();   }
+				}
+				//sprintf (debugstr, "mouse_wheels_state: %d \n", mouse_wheels_state);
+				//kol_board_puts(debugstr);
+				//pdfapp_onmouse(&gapp, int x, int y, int btn, int modifiers, int state)
+				break;
+		}
 	}
-  }
 }

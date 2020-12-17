@@ -6,7 +6,7 @@ LDFLAGS = -static -nostdlib -T $(SDK_DIR)/sources/newlib/app.lds --image-base 0
 
 CFLAGS = -c -fno-ident -O2 -fomit-frame-pointer -fno-ident -U__WIN32__ -U_Win32 -U_WIN32 -U__MINGW32__ -UWIN32
 
-INCLUDES = -I ../SYSCALL/include -I $(SDK_DIR)/sources/newlib/libc/include -I $(SDK_DIR)/sources/freetype/include -I $(SDK_DIR)/sources/zlib -I ../include -I ../fitz -I ../pdf
+INCLUDES = -I ../SYSCALL/include -I $(SDK_DIR)/sources/newlib/libc/include -I $(SDK_DIR)/sources/freetype/include -I $(SDK_DIR)/sources/zlib -I ../fitz -I ../pdf
 LIBPATH = -L $(SDK_DIR)/lib -L /home/autobuild/tools/win32/mingw32/lib -L ../lib
 
 APPS_SRC := $(notdir $(wildcard *.c))
