@@ -7,51 +7,108 @@ struct _tag
 	bool opened;
 	collection attributes;
 	collection values;
+	dword value;
 	bool is();
-	bool reset();
-	bool parse_params();
+	bool parse_tag();
+	void debug_tag();
 	bool get_next_param();
 	dword get_value_of();
 } tag=0;
 
 bool _tag::is(dword _text) 
 { 
-	if ( !strcmp(#tag.name, _text) ) {
+	if ( !strcmp(#name, _text) ) {
 		return true;
 	} else {
 		return false; 
 	}
 }
 
-bool _tag::reset()
+bool _tag::parse_tag(dword _bufpos, bufend)
 {
-	if (!name) return false;
-	strcpy(#prior, #name);
-	name = NULL;
-	opened = true;
+	bool retok = true;
+	dword bufpos = ESDWORD[_bufpos];
+
+	dword closepos;
+	dword whitepos;
+
+	if (name) strcpy(#prior, #name); else prior = '\0';
+	name = '\0';
+	params = '\0';
 	attributes.drop();
-	values.drop();
-	return true;
+	values.drop();		
+
+	if (!strncmp(bufpos,"!--",3))
+	{
+		bufpos+=3;
+		//STRSTR
+		while (strncmp(bufpos,"-->",3)!=0) && (bufpos < bufend)
+		{
+			bufpos++;
+		}
+		bufpos+=2;
+		goto _RET;
+	}
+
+	if (ESBYTE[bufpos] == '/') {
+		opened = false;
+		bufpos++;
+	} else {
+		opened = true;
+	}
+
+	closepos = strchr(bufpos, '>');
+	whitepos = strchrw(bufpos, bufend-bufpos);
+	if (whitepos > closepos) {
+		//no param
+		strncpy(#name, bufpos, math.min(closepos - bufpos, sizeof(tag.name)));
+		debug_tag();
+		params = '\0';
+		bufpos = closepos;
+	} else {
+		//we have param
+		strncpy(#name, bufpos, math.min(whitepos - bufpos, sizeof(tag.name)));
+		strncpy(#params, whitepos, math.min(closepos - whitepos, sizeof(tag.params)));
+		debug_tag();
+		bufpos = closepos;
+		while (get_next_param());
+	}
+
+	if (!name) {
+		retok = false;
+		goto _RET;
+	}
+
+	strlwr(#name);
+
+	// ignore text inside the next tags
+	if (is("script")) || (is("style")) || (is("binary")) || (is("select")) { 
+		strcpy(#prior, #name);
+		sprintf(#name, "</%s>", #prior);
+		if (strstri(bufpos, #name)) bufpos = EAX-1;
+		retok = false;
+		goto _RET;
+	}
+
+	if (name[strlen(#name)-1]=='/') name[strlen(#name)-1]=NULL; //for <br/>
+
+_RET:
+	ESDWORD[_bufpos] = bufpos;
+	return retok;
 }
 
-bool _tag::parse_params()
+void _tag::debug_tag()
 {
-	bool result = false;
-	if (!name) return false;
-	if (debug_mode) {
-		debug("\n\ntag: "); debugln(#name);
-		debug("params: "); debugln(#params);
-		debugln(" ");
-	}
-	while (get_next_param()) {
-		result = true;
-		if (debug_mode) {
-			debug("attribute: "); debugln(attributes.get(attributes.count-1));
-			debug("value: "); debugln(values.get(values.count-1));
-			debugln(" ");
+	if (debug_mode) { 
+		debugch('<'); 
+		if (!opened) debugch('/');
+		debug(#name);
+		debugln(">");
+		if (params) {
+			debug("params: "); 
+			debugln(#params+1);
 		}
-	};
-	return result;
+	}
 }
 
 bool _tag::get_next_param()
@@ -111,6 +168,12 @@ bool _tag::get_next_param()
 	attributes.add(#attr);
 	values.add(#val);
 
+	if (debug_mode) {
+		debug("atr: "); debugln(#attr);
+		debug("val: "); debugln(#val);
+		debugch('\n');
+	}
+
 	return true;
 }
 
@@ -118,8 +181,9 @@ dword _tag::get_value_of(dword _attr_name)
 {
 	int pos = attributes.get_pos_by_name(_attr_name);
 	if (pos == -1) {
-		return 0;
+		value = 0;
 	} else {
-		return values.get(pos);
+		value = values.get(pos);
 	}
+	return value;
 }

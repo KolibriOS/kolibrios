@@ -7,7 +7,7 @@ void ParseAndPaint()
 	Parse();
 
 	list.visible = list.h / list.item_h;
-	DrawBuf.Init(list.x, list.y, list.w, list.visible+1*list.item_h);
+	canvas.Init(list.x, list.y, list.w, list.visible+1*list.item_h);
 	DrawPage();	
 }
 
@@ -64,7 +64,7 @@ void PaintVisible()
 		line_bg = theme.bg;
 
 		if (selection.start_y < absolute_y) && (selection.end_y > absolute_y) line_bg = selection.color;
-		DrawBuf.DrawBar(0, ydraw, list.w, list.item_h, line_bg);
+		canvas.DrawBar(0, ydraw, list.w, list.item_h, line_bg);
 
 		selection.draw(absolute_y);
 
@@ -75,17 +75,17 @@ void PaintVisible()
 			if (s2 > 0) break;
 
 			if (s1 > 0) && (s2 < 0) {
-				DrawBuf.DrawBar(search.found.get(ff) - lines.get(absolute_y) * list.font_w + 3,
+				canvas.DrawBar(search.found.get(ff) - lines.get(absolute_y) * list.font_w + 3,
 					ydraw, strlen(#found_text) * list.font_w, list.item_h, theme.found);
 				search_next = false;
 			}
 		}
 
-		if (absolute_y<list.count) DrawBuf.WriteText(3, ydraw+3, list.font_type, theme.text, 
+		if (absolute_y<list.count) canvas.WriteText(3, ydraw+3, list.font_type, theme.text, 
 			lines.get(absolute_y), lines.len(absolute_y));
 	}
 
-	PutPaletteImage(buf_data+8, DrawBuf.bufw, list.h, list.x, list.y, 32, 0);
+	PutPaletteImage(buf_data+8, canvas.bufw, list.h, list.x, list.y, 32, 0);
 
 	if (swapped_selection) selection.swap_start_end();
 }

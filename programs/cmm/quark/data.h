@@ -106,7 +106,7 @@ struct THEME
 char default_dir[] = "/rd/1";
 od_filter filter2 = { 33, "TXT\0ASM\0HTM\0HTML\0C\0H\0C--\0H--\0CPP\0\0" };
 
-DrawBufer DrawBuf;
+CANVAS canvas;
 
 dword cursor_pos=0;
 

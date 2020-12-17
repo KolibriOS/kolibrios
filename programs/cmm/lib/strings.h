@@ -407,6 +407,39 @@ inline fastcall void strcat( EDI, ESI)
 	ESBYTE[dst] = 0;
 }
 
+inline fastcall void chrcat(ESI, DI)
+{
+    while (ESBYTE[ESI]) ESI++;
+    ESBYTE[ESI] = DI;
+    ESI++;
+    ESBYTE[ESI] = 0;
+}
+
+inline fastcall void chrncat(EDI, AL, EDX)
+{
+    while (ESBYTE[EDI]) && (EDX) {
+    	EDI++;
+    	EDX--;
+    }
+    ESBYTE[EDI] = AL;
+    EDI++;
+    ESBYTE[EDI] = 0;
+}
+
+/*
+inline dword strchr(ESI, BL)
+{
+	loop()
+	{
+		AL = DSBYTE[ESI];
+		if(!AL)return 0;
+		if(AL==BL)return ESI;
+		ESI++;
+	}
+}
+*/
+
+/*
 :void chrncat(dword dst, unsigned char s, dword len)
 {
 	while (ESBYTE[dst]) && (len) {
@@ -418,14 +451,7 @@ inline fastcall void strcat( EDI, ESI)
 		ESBYTE[dst+1] = 0;
 	}
 }
-
-inline fastcall void chrcat(ESI, DI)
-{
-    while (ESBYTE[ESI]) ESI++;
-    ESBYTE[ESI] = DI;
-    ESI++;
-    ESBYTE[ESI] = 0;
-}
+*/
 
 inline dword strchr(dword shb;char s)
 {
@@ -436,6 +462,18 @@ inline dword strchr(dword shb;char s)
 		if(!ss)return 0;
 		if(ss==s)return shb;
 		shb++;
+	}
+}
+
+inline dword strchrw(dword str, len)
+{
+	len += str;
+	loop()
+	{
+		if(!DSBYTE[str])return 0;
+		if (__isWhite(DSBYTE[str])) return str;
+		str++;
+		if (str >= len) return 0;
 	}
 }
 

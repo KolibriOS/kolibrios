@@ -9,7 +9,7 @@
 dword buf_data=0;
 
 
-struct DrawBufer {
+struct CANVAS {
 	dword bufx, bufy, bufw, bufh;
 	dword fill_color;
 
@@ -25,10 +25,10 @@ struct DrawBufer {
 };
 
 char draw_buf_not_enaught_ram[] = 
-"'DrawBufer requested %i MB more memory than the system has.
+"'CANVAS requested %i MB more memory than the system has.
 Application could be unstable.' -E";
 
-bool DrawBufer::Init(dword i_bufx, i_bufy, i_bufw, i_bufh)
+bool CANVAS::Init(dword i_bufx, i_bufy, i_bufw, i_bufh)
 {
 	bufx = i_bufx;
 	bufy = i_bufy;
@@ -42,14 +42,14 @@ bool DrawBufer::Init(dword i_bufx, i_bufy, i_bufw, i_bufh)
 	return true;
 }
 
-void DrawBufer::Fill(dword start_pointer, i_fill_color)
+void CANVAS::Fill(dword start_pointer, i_fill_color)
 {
 	dword max_i = bufw * bufh * 4 - start_pointer/4;
 	fill_color = i_fill_color;
 	@MEMSETD(buf_data+start_pointer+8, max_i, fill_color);
 }
 
-void DrawBufer::DrawBar(dword x, y, w, h, color)
+void CANVAS::DrawBar(dword x, y, w, h, color)
 {
 	dword i, j;
 	if (y + h >= bufh) IncreaseBufSize();
@@ -60,7 +60,7 @@ void DrawBufer::DrawBar(dword x, y, w, h, color)
 	}
 }
 
-void DrawBufer::WriteText(dword x, y, byte fontType, dword color, str_offset, strlen)
+void CANVAS::WriteText(dword x, y, byte fontType, dword color, str_offset, strlen)
 {
 	#define BUGFIX_32000 32000
 	dword ydiv=0;
@@ -89,13 +89,13 @@ void DrawBufer::WriteText(dword x, y, byte fontType, dword color, str_offset, st
 	}
 }
 
-void DrawBufer::PutPixel(dword x, y, color)
+void CANVAS::PutPixel(dword x, y, color)
 {
 	dword pos = y*bufw+x*4+8+buf_data;
 	ESDWORD[pos] = color;
 }
 
-void DrawBufer::AlignRight(dword x,y,w,h, content_width)
+void CANVAS::AlignRight(dword x,y,w,h, content_width)
 {
 	dword i, j, l;
 	dword content_left = w - content_width / 2;
@@ -108,7 +108,7 @@ void DrawBufer::AlignRight(dword x,y,w,h, content_width)
 	}
 }
 
-void DrawBufer::AlignCenter(dword x,y,w,h, content_width)
+void CANVAS::AlignCenter(dword x,y,w,h, content_width)
 {
 	dword i, j, l;
 	dword content_left = w - content_width / 2;
@@ -121,12 +121,12 @@ void DrawBufer::AlignCenter(dword x,y,w,h, content_width)
 	}
 }
 
-void DrawBufer::Show(dword _y_offset, _h)
+void CANVAS::Show(dword _y_offset, _h)
 {
 	PutPaletteImage(_y_offset * bufw * 4 + buf_data+8, bufw, _h, bufx, bufy, 32, 0);
 }
 
-void DrawBufer::IncreaseBufSize()
+void CANVAS::IncreaseBufSize()
 {
 	static dword bufh_initial;
 	dword alloc_size;

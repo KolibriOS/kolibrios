@@ -41,7 +41,7 @@
 //                       DATA                        //
 //                                                   //
 //===================================================//
-char version[]="WebView 3.06";
+char version[]="WebView 3.1";
 
 #define DEFAULT_URL URL_SERVICE_HOMEPAGE
 
@@ -372,8 +372,8 @@ void draw_window()
 bool BrowserWidthChanged()
 {
 	dword source_mode_holder;
-	if (WB1.list.w!=DrawBuf.bufw) {
-		DrawBuf.Init(WB1.list.x, WB1.list.y, WB1.list.w, 400*20);
+	if (WB1.list.w!=canvas.bufw) {
+		canvas.Init(WB1.list.x, WB1.list.y, WB1.list.w, 400*20);
 		if (!strncmp(history.current(),"http",4)) {
 			//nihuya ne izyashnoe reshenie, no pust' poka butet tak
 			source_mode_holder = source_mode;
