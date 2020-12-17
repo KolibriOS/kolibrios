@@ -148,3 +148,4 @@ int kol_clip_set(int n, char buffer[]);
 void kos_blit(int dstx, int dsty, int w, int h, int srcx, 
 	int srcy,int srcw, int srch, int stride, char *d);
 int kos_random(int num);
+int kos_get_mouse_wheels(void);

@@ -347,7 +347,7 @@ static void pdfapp_showpage(pdfapp_t *app, int loadpage, int drawpage, int repai
 	{
 		sprintf(buf, "%s - %d/%d (%d dpi)", app->doctitle,
 				app->pageno, app->pagecount, app->resolution);
-		wintitle(app, buf);
+		/// wintitle(app, buf);
 
 		ctm = pdfapp_viewctm(app);
 		bbox = fz_round_rect(fz_transform_rect(ctm, app->page_bbox));

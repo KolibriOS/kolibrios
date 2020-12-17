@@ -48,7 +48,8 @@ double opj_clock(void) {
     struct rusage t;
     double procTime;
     /* (1) Get the rusage data structure at this moment (man getrusage) */
-    getrusage(0,&t);
+    /// STUB ///
+    /// getrusage(0,&t);
     /* (2) What is the elapsed time ? - CPU time = User time + System time */
 	/* (2a) Get the seconds */
     procTime = t.ru_utime.tv_sec + t.ru_stime.tv_sec;

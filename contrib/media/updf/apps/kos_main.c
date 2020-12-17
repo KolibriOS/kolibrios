@@ -1,6 +1,3 @@
-// getrusage
-#include "resource.h"
-
 #include <menuet/os.h>
 #include "fitz.h"
 #include "mupdf.h"
@@ -94,9 +91,8 @@ char *winpassword(pdfapp_t *app, char *filename)
 }
 
 
-void wintitle(pdfapp_t *app, char *s)
+void wintitle(pdfapp_t *app, char *s, char param[])
 {
-	char* param = *(char**)0x1C;
 	sprintf(Title,"%s - uPDF", strrchr(param, '/') + 1 );
 }
 
@@ -368,13 +364,20 @@ int main (int argc, char* argv[])
 {
 	char ii, mouse_wheels_state;
 	
+	// argv without spaces
+	char full_argv[1024];
+	for (int i = 1; i<argc; i++) {
+		if (i != 1) strcat(full_argv, " ");
+		strcat(full_argv, argv[i]);
+	}
+	
 	if (argc == 1) {
 		kol_board_puts("uPDF: no param set, showing OpenDialog");
 		RunOpenApp(argv[0]);
 		exit(0);
 	}
 
-	kol_board_puts(argv[1]);
+	kol_board_puts(full_argv);
 	kol_board_puts("\n");
 	
 	char buf[128];
@@ -388,9 +391,9 @@ int main (int argc, char* argv[])
 	gapp.resolution = resolution;
 	gapp.pageno = pageno;
 	kol_board_puts("PDF Open\n");
-	pdfapp_open(&gapp, argv[1], 0, 0);
+	pdfapp_open(&gapp, full_argv, 0, 0);
 	kol_board_puts("PDF Opened\n");
-	wintitle(&gapp, 0);
+	wintitle(&gapp, 0, full_argv);
 	 
 	kol_board_puts("Inital paint\n");
 	
@@ -411,8 +414,11 @@ int main (int argc, char* argv[])
 				__menuet__window_redraw(2);
 				__menuet__get_process_table(&Form, PID_WHOAMI);
 				if (Form.window_state > 2) continue; //fix rolled up
+				
+				// ??
 				Form.client_width++; //fix for Menuet kernel bug
 				Form.client_height++; //fix for Menuet kernel bug
+				
 				DrawWindow();
 				break;
 
