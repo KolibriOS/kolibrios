@@ -1,5 +1,6 @@
 #include "kolibri.h"
 #include "string.h"
+#include <stdlib.h>
 
 
 extern char KOL_PATH[256];
@@ -469,7 +470,7 @@ struct blit_call
 void kos_blit(int dstx, int dsty, int w, int h, int srcx, 
 	int srcy,int srcw, int srch, int stride, char *d)
 {
-	struct blit_call image;
+	volatile struct blit_call image;
 	image.dstx=dstx;
 	image.dsty=dsty;
 	image.w=w;
@@ -480,6 +481,7 @@ void kos_blit(int dstx, int dsty, int w, int h, int srcx,
 	image.srch=srch;
 	image.stride=stride;
 	image.d=d;
-	asm ("int $0x40"::"a"(73),"b"(0),"c"(&image));
+	asm("int $0x40"::"a"(73),"b"(0),"c"(&image));
+	
 }
 

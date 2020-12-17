@@ -1,6 +1,0 @@
-#ifndef _SSTREAM_INCLUDED
-#define _SSTREAM_INCLUDED
-/*namespace std
-{
-}*/
-#endif

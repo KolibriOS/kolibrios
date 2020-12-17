@@ -1,8 +1,0 @@
-CORE_KERNEL_FUNCTION("Exit",LispExit,0,YacasEvaluator::Function | YacasEvaluator::Fixed)
-CORE_KERNEL_FUNCTION("IsExitRequested",LispExitRequested,0,YacasEvaluator::Function | YacasEvaluator::Fixed)
-CORE_KERNEL_FUNCTION("HistorySize",LispHistorySize,1,YacasEvaluator::Function | YacasEvaluator::Fixed)
-CORE_KERNEL_FUNCTION("StaSiz",LispStackSize,0,YacasEvaluator::Function | YacasEvaluator::Fixed)
-CORE_KERNEL_FUNCTION("IsPromptShown",LispIsPromptShown,0,YacasEvaluator::Function | YacasEvaluator::Fixed)
-CORE_KERNEL_FUNCTION("ReadCmdLineString",LispReadCmdLineString,1,YacasEvaluator::Function | YacasEvaluator::Fixed)
-CORE_KERNEL_FUNCTION("GetTime",LispTime,1,YacasEvaluator::Macro | YacasEvaluator::Fixed)
-CORE_KERNEL_FUNCTION("FileSize",LispFileSize,1,YacasEvaluator::Function | YacasEvaluator::Fixed)

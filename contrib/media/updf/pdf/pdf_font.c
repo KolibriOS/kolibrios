@@ -87,7 +87,10 @@ enum { UNKNOWN, TYPE1, TRUETYPE };
 
 static int ft_kind(FT_Face face)
 {
-	const char *kind = FT_Get_X11_Font_Format(face);
+	/// STUB ///
+	//const char *kind = FT_Get_X11_Font_Format(face);
+	const char *kind = "TrueType";
+	
 	if (!strcmp(kind, "TrueType"))
 		return TRUETYPE;
 	if (!strcmp(kind, "Type 1"))

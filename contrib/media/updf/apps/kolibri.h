@@ -1,5 +1,7 @@
 
+#ifndef NULL
 #define NULL ((void*)0)
+#endif
 
 #define SHM_OPEN		0
 #define SHM_OPEN_ALWAYS	0x04
@@ -46,7 +48,7 @@ typedef struct
 {
 unsigned	p00;
 unsigned 	p04;
-unsigned 	p08;
+char	 	*p08;
 unsigned	p12;
 unsigned	p16;
 char		p20;
@@ -143,3 +145,6 @@ int kol_clip_num();
 char* kol_clip_get(int n);
 int kol_clip_set(int n, char buffer[]);
 
+void kos_blit(int dstx, int dsty, int w, int h, int srcx, 
+	int srcy,int srcw, int srch, int stride, char *d);
+int kos_random(int num);
