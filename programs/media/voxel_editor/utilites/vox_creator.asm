@@ -3,10 +3,11 @@ use32
 	db 'MENUET01' ;идентиф. исполняемого файла всегда 8 байт
 	dd 1,start,i_end,mem,stacktop,openfile_path,sys_path
 
-include '../../../../programs/macros.inc'
-include '../../../../programs/proc32.inc'
-include '../../../../programs/KOSfuncs.inc'
-include '../../../../programs/load_img.inc'
+include '../../../macros.inc'
+include '../../../proc32.inc'
+include '../../../KOSfuncs.inc'
+include '../../../load_img.inc'
+include '../../../load_lib.mac'
 include '../trunk/str.inc'
 include 'lang.inc'
 
@@ -15,7 +16,7 @@ vox_offs_data equ 12
 txt_buf rb 8
 include '../trunk/vox_rotate.inc'
 
-@use_library_mem mem.Alloc,mem.Free,mem.ReAlloc,dll.Load
+@use_library mem.Alloc,mem.Free,mem.ReAlloc,dll.Load
 if lang eq ru
 caption db 'Создатель вокселей 04.05.20',0 ;подпись окна
 else
@@ -32,7 +33,6 @@ buf2d_size_lt equ dword[edi+4] ;отступ слева и справа для буфера
 buf2d_color equ dword[edi+16] ;цвет фона буфера
 buf2d_bits equ byte[edi+20] ;количество бит в 1-й точке изображения
 
-run_file_70 FileInfoBlock
 vox_obj_size dd 0 ;размер воксельного объекта (для ускорения вставки)
 txt_space db ' ',0
 if lang eq ru
@@ -1279,39 +1279,11 @@ system_dir_3 db '/sys/lib/'
 lib_name_3 db 'msgbox.obj',0
 
 align 4
-head_f_i:
-if lang eq ru
-head_f_l db '"Системная ошибка',0
-err_message_found_lib_0 db 'Не найдена библиотека ',39,'proc_lib.obj',39,'" -tE',0
-err_message_import_0 db 'Ошибка при импорте библиотеки ',39,'proc_lib.obj',39,'" -tE',0
-err_message_found_lib_1 db 'Не найдена библиотека ',39,'libimg.obj',39,'" -tE',0
-err_message_import_1 db 'Ошибка при импорте библиотеки ',39,'libimg.obj',39,'" -tE',0
-err_msg_found_lib_2 db 'Не найдена библиотека ',39,'buf2d.obj',39,'" -tE',0
-err_msg_import_2 db 'Ошибка при импорте библиотеки ',39,'buf2d',39,'" -tE',0
-err_msg_found_lib_3 db 'Не найдена библиотека ',39,'msgbox.obj',39,'" -tE',0
-err_msg_import_3 db 'Ошибка при импорте библиотеки ',39,'msgbox',39,'" -tE',0
-else
-head_f_l db '"System error',0
-err_message_found_lib_0 db 'Sorry I cannot found library ',39,'proc_lib.obj',39,'" -tE',0
-err_message_import_0 db 'Error on load import library ',39,'proc_lib.obj',39,'" -tE',0
-err_message_found_lib_1 db 'Sorry I cannot found library ',39,'libimg.obj',39,'" -tE',0
-err_message_import_1 db 'Error on load import library ',39,'libimg.obj',39,'" -tE',0
-err_msg_found_lib_2 db 'Sorry I cannot found library ',39,'buf2d.obj',39,'" -tE',0
-err_msg_import_2 db 'Error on load import library ',39,'buf2d',39,'" -tE',0
-err_msg_found_lib_3 db 'Sorry I cannot found library ',39,'msgbox.obj',39,'" -tE',0
-err_msg_import_3 db 'Error on load import library ',39,'msgbox',39,'" -tE',0
-end if
-
-align 4
 l_libs_start:
-	lib_0 l_libs lib_name_0, sys_path, file_name, system_dir_0,\
-		err_message_found_lib_0, head_f_l, proclib_import,err_message_import_0, head_f_i
-	lib_1 l_libs lib_name_1, sys_path, file_name, system_dir_1,\
-		err_message_found_lib_1, head_f_l, import_libimg, err_message_import_1, head_f_i
-	lib_2 l_libs lib_name_2, sys_path, library_path, system_dir_2,\
-		err_msg_found_lib_2,head_f_l,import_buf2d,err_msg_import_2,head_f_i
-	lib_3 l_libs lib_name_3, sys_path, library_path, system_dir_3,\
-		err_msg_found_lib_3,head_f_l,import_msgbox_lib,err_msg_import_3,head_f_i
+	lib_0 l_libs lib_name_0, file_name, system_dir_0, import_proclib
+	lib_1 l_libs lib_name_1, file_name, system_dir_1, import_libimg
+	lib_2 l_libs lib_name_2, file_name, system_dir_2, import_buf2d
+	lib_3 l_libs lib_name_3, file_name, system_dir_3, import_msgbox_lib
 l_libs_end:
 
 align 4
@@ -1362,7 +1334,7 @@ import_libimg:
 	aimg_draw    db 'img_draw',0
 
 align 4
-proclib_import: ;описание экспортируемых функций
+import_proclib:
 	OpenDialog_Init dd aOpenDialog_Init
 	OpenDialog_Start dd aOpenDialog_Start
 dd 0,0
@@ -1454,13 +1426,6 @@ dd 0,0
 	amb_create db 'mb_create',0
 ;       amb_reinit db 'mb_reinit',0
 ;       amb_setfunctions db 'mb_setfunctions',0
-
-mouse_dd dd 0
-sc system_colors 
-last_time dd 0
-
-align 16
-procinfo process_information 
 
 align 4
 buf_0: dd 0
@@ -1562,14 +1527,17 @@ buf_vox:
 
 align 16
 i_end:
+	procinfo process_information
+	sc system_colors
+	run_file_70 FileInfoBlock
+	mouse_dd dd ?
+	last_time dd ?
 		rb 2048
 	thread:
 		rb 2048
 stacktop:
 	sys_path rb 1024
-	file_name:
-		rb 1024 ;4096 
-	library_path rb 1024
+	file_name rb 2048 ;4096 
 	plugin_path rb 4096
 	openfile_path rb 4096
 	filename_area rb 256

@@ -26,7 +26,7 @@
 
 ; подключение некоторых необходимых файлов:
 include 'dll.inc'
-include 'develop/libraries/box_lib/load_lib.mac'
+;include 'load_lib.mac'
 include 'develop/libraries/libs-dev/libio/libio.inc'
 
 align 4

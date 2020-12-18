@@ -3,23 +3,22 @@ use32
 	db 'MENUET01' ;идентиф. исполняемого файла всегда 8 байт
 	dd 1, start, i_end, mem, stacktop, openfile_path, sys_path
 
-include '../../../../programs/macros.inc'
-include '../../../../programs/proc32.inc'
-include '../../../../programs/KOSfuncs.inc'
-include '../../../../programs/load_img.inc'
+include '../../../macros.inc'
+include '../../../proc32.inc'
+include '../../../KOSfuncs.inc'
+include '../../../load_img.inc'
+include '../../../load_lib.mac'
 include '../trunk/vox_draw.inc'
 include '../trunk/vox_rotate.inc'
 include '../trunk/str.inc'
 include 'lang.inc'
 
-@use_library_mem mem.Alloc,mem.Free,mem.ReAlloc,dll.Load
+@use_library mem.Alloc,mem.Free,mem.ReAlloc,dll.Load
 if lang eq ru
 caption db 'Перемещение вокселей 04.05.20',0 ;подпись окна
 else
 caption db 'Voxel mover 04.05.20',0
 end if
-
-run_file_70 FileInfoBlock
 
 IMAGE_TOOLBAR_ICON_SIZE equ 16*16*3
 image_data_toolbar dd 0
@@ -61,7 +60,7 @@ align 4
 start:
 	load_libraries l_libs_start,l_libs_end
 	;проверка на сколько удачно загузилась библиотека
-	mov	ebp,lib_2
+	mov	ebp,lib0
 	cmp	dword [ebp+ll_struc_size-4],0
 	jz	@f
 		mcall SF_TERMINATE_PROCESS
@@ -1333,39 +1332,11 @@ lib_name_2 db 'buf2d.obj',0
 system_dir_3 db '/sys/lib/'
 lib_name_3 db 'libini.obj',0
 
-align 4
-head_f_i:
-if lang eq ru
-head_f_l db '"Системная ошибка',0
-err_message_found_lib_0 db 'Не найдена библиотека ',39,'proc_lib.obj',39,'" -tE',0
-err_message_import_0 db 'Ошибка при импорте библиотеки ',39,'proc_lib.obj',39,'" -tE',0
-err_message_found_lib_1 db 'Не найдена библиотека ',39,'libimg.obj',39,'" -tE',0
-err_message_import_1 db 'Ошибка при импорте библиотеки ',39,'libimg.obj',39,'" -tE',0
-err_msg_found_lib_2 db 'Не найдена библиотека ',39,'buf2d.obj',39,'" -tE',0
-err_msg_import_2 db 'Ошибка при импорте библиотеки ',39,'buf2d',39,'" -tE',0
-err_msg_found_lib_3 db 'Не найдена библиотека ',39,'libini.obj',39,'" -tE',0
-err_msg_import_3 db 'Ошибка при импорте библиотеки ',39,'libini',39,'" -tE',0
-else
-head_f_l db '"System error',0
-err_message_found_lib_0 db 'Sorry I cannot found library ',39,'proc_lib.obj',39,'" -tE',0
-err_message_import_0 db 'Error on load import library ',39,'proc_lib.obj',39,'" -tE',0
-err_message_found_lib_1 db 'Sorry I cannot found library ',39,'libimg.obj',39,'" -tE',0
-err_message_import_1 db 'Error on load import library ',39,'libimg.obj',39,'" -tE',0
-err_msg_found_lib_2 db 'Sorry I cannot found library ',39,'buf2d.obj',39,'" -tE',0
-err_msg_import_2 db 'Error on load import library ',39,'buf2d',39,'" -tE',0
-err_msg_found_lib_3 db 'Sorry I cannot found library ',39,'libini.obj',39,'" -tE',0
-err_msg_import_3 db 'Error on load import library ',39,'libini',39,'" -tE',0
-end if
-
 l_libs_start:
-	lib0 l_libs lib_name_0, sys_path, file_name, system_dir_0,\
-		err_message_found_lib_0, head_f_l, proclib_import,err_message_import_0, head_f_i
-	lib1 l_libs lib_name_1, sys_path, file_name, system_dir_1,\
-		err_message_found_lib_1, head_f_l, import_libimg, err_message_import_1, head_f_i
-	lib_2 l_libs lib_name_2, sys_path, library_path, system_dir_2,\
-		err_msg_found_lib_2,head_f_l,import_buf2d,err_msg_import_2,head_f_i
-	lib_3 l_libs lib_name_3, sys_path, library_path, system_dir_3,\
-		err_msg_found_lib_3,head_f_l,import_libini,err_msg_import_3,head_f_i
+	lib0 l_libs lib_name_0, file_name, system_dir_0, import_proclib
+	lib1 l_libs lib_name_1, file_name, system_dir_1, import_libimg
+	lib2 l_libs lib_name_2, file_name, system_dir_2, import_buf2d
+	lib3 l_libs lib_name_3, file_name, system_dir_3, import_libini
 l_libs_end:
 
 align 4
@@ -1416,7 +1387,7 @@ import_libimg:
 	aimg_draw    db 'img_draw',0
 
 align 4
-proclib_import: ;описание экспортируемых функций
+import_proclib:
 	OpenDialog_Init dd aOpenDialog_Init
 	OpenDialog_Start dd aOpenDialog_Start
 dd 0,0
@@ -1510,12 +1481,6 @@ dd 0,0
 	aini_get_int   db 'ini_get_int',0
 	aini_get_color db 'ini_get_color',0
 
-mouse_dd dd 0
-sc system_colors 
-
-align 16
-procinfo process_information 
-
 ;буфер основного изображения
 align 4
 buf_0: dd 0 ;указатель на дaные изображения
@@ -1576,14 +1541,16 @@ buf_vox:
 
 align 16
 i_end:
+	procinfo process_information
+	sc system_colors
+	run_file_70 FileInfoBlock
+	mouse_dd dd ?
 	wnd_s_pos: ;место для настроек стартовой позиции окна
 		rq 0
 	rb 4096 ;2048
 stacktop:
 	sys_path rb 1024
-	file_name:
-		rb 1024 ;4096 
-	library_path rb 1024
+	file_name rb 2048 ;4096 
 	plugin_path rb 1024 ;4096
 	openfile_path rb 1024 ;4096
 	filename_area rb 256

@@ -651,6 +651,21 @@ enum {
 	GL_ALL_ATTRIB_BITS	= 0x000fffff
 };
 
+/* some types */
+
+typedef int  GLenum;
+typedef void GLvoid;
+typedef unsigned char GLboolean;
+typedef signed char	GLbyte;    /* 1-byte signed */
+typedef short int   GLshort;   /* 2-byte signed */
+typedef long int    GLint;     /* 4-byte signed */
+typedef unsigned char GLubyte; /* 1-byte unsigned */
+typedef unsigned short int GLushort; /* 2-byte unsigned */
+typedef unsigned long int GLuint;    /* 4-byte unsigned */
+typedef float  GLfloat;  /* single precision float */
+typedef double GLdouble; /* double precision float */
+typedef int    GLsizei;
+
 struct ZBuffer
 {
 	long int xsize, ysize;
@@ -701,34 +716,34 @@ void (__stdcall* glVertex4d)(double x, double y, double z, double w) = (void (__
 void (__stdcall* glVertex4fv)(float* v) = (void (__stdcall*)(float*))&"glVertex4fv";
 void (__stdcall* glVertex4dv)(double* v) = (void (__stdcall*)(double*))&"glVertex4dv";
 void (__stdcall* glColor3f)(float r, float g, float b) = (void (__stdcall*)(float, float, float))&"glColor3f";
-//void (__stdcall* glColor3d)(...) = (void (__stdcall*)(...))&"glColor3d";
-//void (__stdcall* glColor3fv)(...) = (void (__stdcall*)(...))&"glColor3fv";
-//void (__stdcall* glColor3dv)(...) = (void (__stdcall*)(...))&"glColor3dv";
+void (__stdcall* glColor3d)(double r, double g, double b) = (void (__stdcall*)(double, double, double))&"glColor3d";
+void (__stdcall* glColor3fv)(float* v) = (void (__stdcall*)(float*))&"glColor3fv";
+void (__stdcall* glColor3dv)(double* v) = (void (__stdcall*)(double*))&"glColor3dv";
 void (__stdcall* glColor3ub)(unsigned char r, unsigned char g, unsigned char b) = (void (__stdcall*)(unsigned char, unsigned char, unsigned char))&"glColor3ub";
-//void (__stdcall* glColor4f)(...) = (void (__stdcall*)(...))&"glColor4f";
-//void (__stdcall* glColor4d)(...) = (void (__stdcall*)(...))&"glColor4d";
-//void (__stdcall* glColor4fv)(...) = (void (__stdcall*)(...))&"glColor4fv";
-//void (__stdcall* glColor4dv)(...) = (void (__stdcall*)(...))&"glColor4dv";
+void (__stdcall* glColor4f)(float r, float g, float b, float a) = (void (__stdcall*)(float, float, float, float))&"glColor4f";
+void (__stdcall* glColor4d)(double r, double g, double b, double a) = (void (__stdcall*)(double, double, double, double))&"glColor4d";
+void (__stdcall* glColor4fv)(float* v) = (void (__stdcall*)(float*))&"glColor4fv";
+void (__stdcall* glColor4dv)(double* v) = (void (__stdcall*)(double*))&"glColor4dv";
 void (__stdcall* glNormal3f)(float x, float y, float z) = (void (__stdcall*)(float, float, float))&"glNormal3f";
-//void (__stdcall* glNormal3d)(...) = (void (__stdcall*)(...))&"glNormal3d";
-//void (__stdcall* glNormal3fv)(...) = (void (__stdcall*)(...))&"glNormal3fv";
-//void (__stdcall* glNormal3dv)(...) = (void (__stdcall*)(...))&"glNormal3dv";
-//void (__stdcall* glTexCoord1f)(...) = (void (__stdcall*)(...))&"glTexCoord1f";
-//void (__stdcall* glTexCoord1d)(...) = (void (__stdcall*)(...))&"glTexCoord1d";
-//void (__stdcall* glTexCoord1fv)(...) = (void (__stdcall*)(...))&"glTexCoord1fv";
-//void (__stdcall* glTexCoord1dv)(...) = (void (__stdcall*)(...))&"glTexCoord1dv";
+void (__stdcall* glNormal3d)(double x, double y, double z) = (void (__stdcall*)(double, double, double))&"glNormal3d";
+void (__stdcall* glNormal3fv)(float* v) = (void (__stdcall*)(float*))&"glNormal3fv";
+void (__stdcall* glNormal3dv)(double* v) = (void (__stdcall*)(double*))&"glNormal3dv";
+void (__stdcall* glTexCoord1f)(float s) = (void (__stdcall*)(float))&"glTexCoord1f";
+void (__stdcall* glTexCoord1d)(double s) = (void (__stdcall*)(double))&"glTexCoord1d";
+void (__stdcall* glTexCoord1fv)(float* v) = (void (__stdcall*)(float*))&"glTexCoord1fv";
+void (__stdcall* glTexCoord1dv)(double* v) = (void (__stdcall*)(double*))&"glTexCoord1dv";
 void (__stdcall* glTexCoord2f)(float s, float t) = (void (__stdcall*)(float, float))&"glTexCoord2f";
-//void (__stdcall* glTexCoord2d)(...) = (void (__stdcall*)(...))&"glTexCoord2d";
+void (__stdcall* glTexCoord2d)(double s, double t) = (void (__stdcall*)(double, double))&"glTexCoord2d";
 void (__stdcall* glTexCoord2fv)(float* v) = (void (__stdcall*)(float*))&"glTexCoord2fv";
-//void (__stdcall* glTexCoord2dv)(...) = (void (__stdcall*)(...))&"glTexCoord2dv";
-//void (__stdcall* glTexCoord3f)(...) = (void (__stdcall*)(...))&"glTexCoord3f";
-//void (__stdcall* glTexCoord3d)(...) = (void (__stdcall*)(...))&"glTexCoord3d";
-//void (__stdcall* glTexCoord3fv)(...) = (void (__stdcall*)(...))&"glTexCoord3fv";
-//void (__stdcall* glTexCoord3dv)(...) = (void (__stdcall*)(...))&"glTexCoord3dv";
+void (__stdcall* glTexCoord2dv)(double* v) = (void (__stdcall*)(double*))&"glTexCoord2dv";
+void (__stdcall* glTexCoord3f)(float s, float t, float r) = (void (__stdcall*)(float, float, float))&"glTexCoord3f";
+void (__stdcall* glTexCoord3d)(double s, double t, double r) = (void (__stdcall*)(double, double, double))&"glTexCoord3d";
+void (__stdcall* glTexCoord3fv)(float* v) = (void (__stdcall*)(float*))&"glTexCoord3fv";
+void (__stdcall* glTexCoord3dv)(double* v) = (void (__stdcall*)(double*))&"glTexCoord3dv";
 void (__stdcall* glTexCoord4f)(float s, float t, float r, float q) = (void (__stdcall*)(float, float, float, float))&"glTexCoord4f";
-//void (__stdcall* glTexCoord4d)(...) = (void (__stdcall*)(...))&"glTexCoord4d";
-//void (__stdcall* glTexCoord4fv)(...) = (void (__stdcall*)(...))&"glTexCoord4fv";
-//void (__stdcall* glTexCoord4dv)(...) = (void (__stdcall*)(...))&"glTexCoord4dv";
+void (__stdcall* glTexCoord4d)(double s, double t, double r, double q) = (void (__stdcall*)(double, double, double, double))&"glTexCoord4d";
+void (__stdcall* glTexCoord4fv)(float* v) = (void (__stdcall*)(float*))&"glTexCoord4fv";
+void (__stdcall* glTexCoord4dv)(double* v) = (void (__stdcall*)(double*))&"glTexCoord4dv";
 void (__stdcall* glEdgeFlag)(int flag) = (void (__stdcall*)(int))&"glEdgeFlag";
 void (__stdcall* glMatrixMode)(int mode) = (void (__stdcall*)(int))&"glMatrixMode";
 void (__stdcall* glLoadMatrixf)(const float* m) = (void (__stdcall*)(const float*))&"glLoadMatrixf";
@@ -761,28 +776,28 @@ void (__stdcall* glBindTexture)(int target, int texture) = (void (__stdcall*)(in
 void (__stdcall* glTexImage2D)(int target, int level, int components, int width, int height, int border, int format, int type, void *pixels) = (void (__stdcall*)(int, int, int, int, int, int, int, int, void*))&"glTexImage2D";
 void (__stdcall* glTexEnvi)(int target, int pname, int param) = (void (__stdcall*)(int, int, int))&"glTexEnvi";
 void (__stdcall* glTexParameteri)(int target, int pname, int param) = (void (__stdcall*)(int, int, int))&"glTexParameteri";
-//void (__stdcall* glPixelStorei)(...) = (void (__stdcall*)(...))&"glPixelStorei";
+void (__stdcall* glPixelStorei)(int pname, int param) = (void (__stdcall*)(int, int))&"glPixelStorei";
 void (__stdcall* glMaterialfv)(int mode, int type, float* v) = (void (__stdcall*)(int, int, float*))&"glMaterialfv";
 void (__stdcall* glMaterialf)(int mode, int type, float v) = (void (__stdcall*)(int, int, float))&"glMaterialf";
 void (__stdcall* glColorMaterial)(int mode, int type) = (void (__stdcall*)(int, int))&"glColorMaterial";
 void (__stdcall* glLightfv)(int light, int type, float* v) = (void (__stdcall*)(int, int, float*))&"glLightfv";
-//void (__stdcall* glLightf)(...) = (void (__stdcall*)(...))&"glLightf";
-//void (__stdcall* glLightModeli)(...) = (void (__stdcall*)(...))&"glLightModeli";
+void (__stdcall* glLightf)(int light, int type, float v) = (void (__stdcall*)(int, int, float))&"glLightf";
+void (__stdcall* glLightModeli)(int pname, int param) = (void (__stdcall*)(int, int))&"glLightModeli";
 void (__stdcall* glLightModelfv)(int pname, float* param) = (void (__stdcall*)(int, float*))&"glLightModelfv";
-//void (__stdcall* glFlush)(...) = (void (__stdcall*)(...))&"glFlush";
-//void (__stdcall* glHint)(...) = (void (__stdcall*)(...))&"glHint";
-//void (__stdcall* glGetIntegerv)(...) = (void (__stdcall*)(...))&"glGetIntegerv";
+void (__stdcall* glFlush)() = (void (__stdcall*)())&"glFlush";
+void (__stdcall* glHint)(int target, int mode) = (void (__stdcall*)(int, int))&"glHint";
+void (__stdcall* glGetIntegerv)(int pname, int *params) = (void (__stdcall*)(int, int*))&"glGetIntegerv";
 //void (__stdcall* glGetFloatv)(...) = (void (__stdcall*)(...))&"glGetFloatv";
-//void (__stdcall* glFrontFace)(...) = (void (__stdcall*)(...))&"glFrontFace";
-//void (__stdcall* glEnableClientState)(...) = (void (__stdcall*)(...))&"glEnableClientState";
-//void (__stdcall* glDisableClientState)(...) = (void (__stdcall*)(...))&"glDisableClientState";
-//void (__stdcall* glArrayElement)(...) = (void (__stdcall*)(...))&"glArrayElement";
-//void (__stdcall* glDrawArrays)(...) = (void (__stdcall*)(...))&"glDrawArrays";
-//void (__stdcall* glDrawElements)(...) = (void (__stdcall*)(...))&"glDrawElements";
-//void (__stdcall* glVertexPointer)(...) = (void (__stdcall*)(...))&"glVertexPointer";
-//void (__stdcall* glColorPointer)(...) = (void (__stdcall*)(...))&"glColorPointer";
-//void (__stdcall* glNormalPointer)(...) = (void (__stdcall*)(...))&"glNormalPointer";
-//void (__stdcall* glTexCoordPointer)(...) = (void (__stdcall*)(...))&"glTexCoordPointer";
+void (__stdcall* glFrontFace)(int mode) = (void (__stdcall*)(int))&"glFrontFace";
+void (__stdcall* glEnableClientState)(GLenum array) = (void (__stdcall*)(GLenum))&"glEnableClientState";
+void (__stdcall* glDisableClientState)(GLenum array) = (void (__stdcall*)(GLenum))&"glDisableClientState";
+void (__stdcall* glArrayElement)(GLint index) = (void (__stdcall*)(GLint))&"glArrayElement";
+void (__stdcall* glDrawArrays)(GLenum mode, GLint first, GLsizei count) = (void (__stdcall*)(GLenum, GLint, GLsizei))&"glDrawArrays";
+void (__stdcall* glDrawElements)(GLenum  mode, GLsizei count, GLenum type, const GLvoid *indices) = (void (__stdcall*)(GLenum, GLsizei, GLenum, const GLvoid*))&"glDrawElements";
+void (__stdcall* glVertexPointer)(GLint size, GLenum type, GLsizei stride, const GLvoid* pointer) = (void (__stdcall*)(GLint, GLenum, GLsizei, const GLvoid*))&"glVertexPointer";
+void (__stdcall* glColorPointer)(GLint size, GLenum type, GLsizei stride, const GLvoid* pointer) = (void (__stdcall*)(GLint, GLenum, GLsizei, const GLvoid*))&"glColorPointer";
+void (__stdcall* glNormalPointer)(GLenum type, GLsizei stride, const GLvoid* pointer) = (void (__stdcall*)(GLenum, GLsizei, const GLvoid*))&"glNormalPointer";
+void (__stdcall* glTexCoordPointer)(GLint size, GLenum type, GLsizei stride, const GLvoid* pointer) = (void (__stdcall*)(GLint, GLenum, GLsizei, const GLvoid*))&"glTexCoordPointer";
 //void (__stdcall* glPolygonOffset)(...) = (void (__stdcall*)(...))&"glPolygonOffset";
 //void (__stdcall* glOrtho)(...) = (void (__stdcall*)(...))&"glOrtho";
 //void (__stdcall* glDebug)(...) = (void (__stdcall*)(...))&"glDebug";

@@ -876,10 +876,30 @@ import  libini, \
         ini.get_str,    'ini_get_str', \
         ini.get_int,    'ini_get_int'
 
+param_user:     db 'anonymous',0
+rb 60
 
+param_server_addr db 'kolibrios.org'
+rb 1024
+
+align 4
 i_end:
-
 ; uninitialised data
+
+run_file_70 FileInfoBlock ; required for libimg
+
+new_dir_buf rb 64
+folder_data rb 32+32*304
+
+remote_list_buf rb 1024
+file_name   rb 4096 ; required for libimg
+conv_tabl   rb 128
+ed_buffer   rb 100
+tedit_buffer rb 1024
+el_focus    dd ?
+;-----------------------
+
+procinfo        process_information
 
 interface_addr  rd 1
 
@@ -915,10 +935,10 @@ filestruct:
 filestruct2:
   .subfn        dd ?
   .offset       dd ?
-                dd 0
+                dd ?
   .size         dd ?
   .ptr          dd ?
-                db 0
+                db ?
   .name         dd ?
 
 folder_buf      rb 40
@@ -934,13 +954,7 @@ path            rb 1024
 
 initial_login   rb 1
 
-param_user:     db 'anonymous',0
-rb 60
-
 param_password  rb 1024
-
-param_server_addr db 'kolibrios.org'
-rb 1024
 
 param_path      rb 1024
 param_port      rb 6

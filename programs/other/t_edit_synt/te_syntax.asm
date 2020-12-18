@@ -11,13 +11,14 @@ include '../../macros.inc'
 include '../../proc32.inc'
 include '../../KOSfuncs.inc'
 include '../../load_img.inc'
+include '../../load_lib.mac'
 include '../../develop/libraries/box_lib/trunk/box_lib.mac'
 include '../../system/skincfg/trunk/kglobals.inc'
 include '../../system/skincfg/trunk/unpacker.inc'
 include 'te_data.inc'
 include 'te_work.inc' ;text work functions
 
-@use_library_mem mem.Alloc,mem.Free,mem.ReAlloc,dll.Load
+@use_library mem.Alloc,mem.Free,mem.ReAlloc,dll.Load
 
 icon_tl_sys dd 0 ;указатель на память для хранения системных иконок
 
@@ -324,8 +325,8 @@ align 4
 but_ctrl_o:
 	push eax
 	call get_wnd_in_focus
-	cmp eax,0
-	je @f
+	or eax,eax
+	jz @f
 		stdcall [ted_open_file], eax,str_file_70,[edit1.text]
 	@@:
 	pop eax
@@ -336,8 +337,8 @@ align 4
 but_ctrl_n:
 	push eax
 	call get_wnd_in_focus
-	cmp eax,0
-	je @f
+	or eax,eax
+	jz @f
 		stdcall [ted_clear], eax,1
 		stdcall [ted_draw], eax
 	@@:
@@ -358,7 +359,7 @@ get_wnd_in_focus:
 	;@@:
 	ret
 
-hed db 'TextEditor syntax file converter 06.02.20',0 ;подпись окна
+hed db 'TextEditor syntax file converter 18.12.20',0 ;подпись окна
 conv_tabl rb 128 ; таблица для конвертирования scan-кода в ascii-код
 
 txt_load_f db 'Загр. файл',0
@@ -366,17 +367,10 @@ txt_save_f db 'Сохр. файл',0
 txt_inp_file db 'Исх. файл:',0
 txt_out_file db 'Вых. файл:',0
 
-head_f_i:
-head_f_l db '"System error',0
-err_message_found_lib_0 db 'Sorry I cannot found library ',39,'box_lib.obj',39,'" -tE',0
-err_message_import_0 db 'Error on load import library ',39,'box_lib.obj',39,'" -tW',0
-err_message_found_lib_1 db 'Sorry I cannot found library ',39,'libimg.obj',39,'" -tE',0
-err_message_import_1 db 'Error on load import library ',39,'libimg.obj',39,'" -tW',0
-
 ;library structures
 l_libs_start:
-	lib0 l_libs lib_name_0, sys_path, file_name, system_dir_0, err_message_found_lib_0, head_f_l, import_box_lib,err_message_import_0, head_f_i
-	lib1 l_libs lib_name_1, sys_path, file_name, system_dir_1, err_message_found_lib_1, head_f_l, import_libimg,err_message_import_1, head_f_i
+	lib0 l_libs lib_name_0, file_name, system_dir_0, import_box_lib
+	lib1 l_libs lib_name_1, file_name, system_dir_1, import_libimg
 load_lib_end:
 
 IncludeIGlobals
@@ -385,14 +379,11 @@ align 16
 i_end:
 IncludeUGlobals
 	procinfo process_information
-		rb 1024
-	thread:
-		rb 1024
+	rb 1024
+thread:
+	rb 1024
 stacktop:
-  sys_path:
-    rb 4096
-  file_name:
-    rb 4096
-  file_name_rez:
-    rb 4096
+	sys_path rb 4096
+	file_name rb 4096
+	file_name_rez rb 4096
 mem:

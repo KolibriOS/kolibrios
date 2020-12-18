@@ -7,13 +7,14 @@ include '../../../macros.inc'
 include '../../../proc32.inc'
 include '../../../KOSfuncs.inc'
 include '../../../load_img.inc'
+include '../../../load_lib.mac'
 include '../../../develop/libraries/TinyGL/asm_fork/opengl_const.inc'
 include '../../../develop/libraries/TinyGL/asm_fork/zbuffer.inc'
 include 'vox_3d.inc'
 include '../trunk/str.inc'
 include 'lang.inc'
 
-@use_library_mem mem.Alloc,mem.Free,mem.ReAlloc,dll.Load
+@use_library mem.Alloc,mem.Free,mem.ReAlloc,dll.Load
 if lang eq ru
 caption db 'Просмотр вокселей 11.11.20',0 ;подпись окна
 else
@@ -27,7 +28,6 @@ end if
 
 IMAGE_TOOLBAR_ICON_SIZE equ 16*16*3
 IMAGE_TOOLBAR_SIZE equ IMAGE_TOOLBAR_ICON_SIZE*10
-image_data_toolbar dd 0
 
 align 4
 start:
@@ -850,7 +850,6 @@ db 'TXT',0
 db 0
 
 
-
 system_dir_0 db '/sys/lib/'
 lib_name_0 db 'proc_lib.obj',0
 system_dir_1 db '/sys/lib/'
@@ -860,39 +859,11 @@ lib_name_2 db 'buf2d.obj',0
 system_dir_3 db '/sys/lib/'
 lib_name_3 db 'tinygl.obj',0
 
-align 4
-head_f_i:
-if lang eq ru
-head_f_l db '"Системная ошибка',0
-err_message_found_lib_0 db 'Не найдена библиотека ',39,'proc_lib.obj',39,'" -tE',0
-err_message_import_0 db 'Ошибка при импорте библиотеки ',39,'proc_lib.obj',39,'" -tE',0
-err_message_found_lib_1 db 'Не найдена библиотека ',39,'libimg.obj',39,'" -tE',0
-err_message_import_1 db 'Ошибка при импорте библиотеки ',39,'libimg.obj',39,'" -tE',0
-err_msg_found_lib_2 db 'Не найдена библиотека ',39,'buf2d.obj',39,'" -tE',0
-err_msg_import_2 db 'Ошибка при импорте библиотеки ',39,'buf2d',39,'" -tE',0
-err_msg_found_lib_3 db 'Не найдена библиотека ',39,'tinygl.obj',39,'" -tE',0
-err_msg_import_3 db 'Ошибка при импорте библиотеки ',39,'tinygl',39,'" -tE',0
-else
-head_f_l db '"System error',0
-err_message_found_lib_0 db 'Sorry I cannot found library ',39,'proc_lib.obj',39,'" -tE',0
-err_message_import_0 db 'Error on load import library ',39,'proc_lib.obj',39,'" -tE',0
-err_message_found_lib_1 db 'Sorry I cannot found library ',39,'libimg.obj',39,'" -tE',0
-err_message_import_1 db 'Error on load import library ',39,'libimg.obj',39,'" -tE',0
-err_msg_found_lib_2 db 'Sorry I cannot found library ',39,'buf2d.obj',39,'" -tE',0
-err_msg_import_2 db 'Error on load import library ',39,'buf2d',39,'" -tE',0
-err_msg_found_lib_3 db 'Sorry I cannot found library ',39,'tinygl.obj',39,'" -tE',0
-err_msg_import_3 db 'Error on load import library ',39,'tinygl',39,'" -tE',0
-end if
-
 l_libs_start:
-	lib_0 l_libs lib_name_0, sys_path, file_name, system_dir_0,\
-		err_message_found_lib_0, head_f_l, proclib_import,err_message_import_0, head_f_i
-	lib_1 l_libs lib_name_1, sys_path, file_name, system_dir_1,\
-		err_message_found_lib_1, head_f_l, import_libimg, err_message_import_1, head_f_i
-	lib_2 l_libs lib_name_2, sys_path, library_path, system_dir_2,\
-		err_msg_found_lib_2,head_f_l,import_buf2d,err_msg_import_2,head_f_i
-	lib_3 l_libs lib_name_3, sys_path, library_path, system_dir_3,\
-		err_msg_found_lib_3,head_f_l,import_lib_tinygl,err_msg_import_3,head_f_i
+	lib_0 l_libs lib_name_0, file_name, system_dir_0, import_proclib
+	lib_1 l_libs lib_name_1, file_name, system_dir_1, import_libimg
+	lib_2 l_libs lib_name_2, file_name, system_dir_2, import_buf2d
+	lib_3 l_libs lib_name_3, file_name, system_dir_3, import_tinygl
 l_libs_end:
 
 align 4
@@ -945,7 +916,7 @@ import_libimg:
 ;	aimg_convert db 'img_convert',0
 
 align 4
-proclib_import: ;описание экспортируемых функций
+import_proclib:
 	OpenDialog_Init dd aOpenDialog_Init
 	OpenDialog_Start dd aOpenDialog_Start
 dd 0,0
@@ -1006,7 +977,7 @@ import_buf2d:
 
 ;--------------------------------------------------
 align 4
-import_lib_tinygl:
+import_tinygl:
 
 macro E_LIB n
 {
@@ -1065,14 +1036,14 @@ lmodel_ambient dd 0.3, 0.3, 0.3, 1.0 ; Параметры фонового освещения
 align 16
 i_end:
 	ctx1 rb 28 ;sizeof.TinyGLContext = 28
-	mouse_drag dd 0 ;режим поворота сцены от перемещении курсора мыши
-	mouse_x dd 0
-	mouse_y dd 0
+	image_data_toolbar dd ?
+	mouse_drag dd ? ;режим поворота сцены от перемещении курсора мыши
+	mouse_x dd ?
+	mouse_y dd ?
 	rb 4096
 stacktop:
 	sys_path rb 1024
 	file_name rb 2048 
-	library_path rb 1024
 	plugin_path rb 4096
 	openfile_path rb 4096
 	filename_area rb 256

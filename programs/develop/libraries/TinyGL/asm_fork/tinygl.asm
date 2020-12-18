@@ -21,7 +21,7 @@ include 'misc.asm'
 include 'clear.asm'
 include 'light.asm'
 include 'select.asm'
-;include 'get.asm'
+include 'get.asm'
 ;include 'error.asm'
 include 'zbuffer.asm'
 include 'zline.asm'
@@ -52,14 +52,17 @@ m_6 db '(6)',13,10,0
 m_7 db '(7)',13,10,0
 m_8 db '(8)',13,10,0
 m_9 db '(9)',13,10,0
+f_fill_tr_nl db ' lines',0
+f_zbz db ' ZB_line_z',0
+f_zb db ' ZB_line',0
 
 buf_param rb 80
 
 align 4
 proc str_n_cat uses eax ecx edi esi, str1:dword, str2:dword, n_len:dword
-	mov esi,dword[str2]
-	mov ecx,dword[n_len]
-	mov edi,dword[str1]
+	mov esi,[str2]
+	mov ecx,[n_len]
+	mov edi,[str1]
 	stdcall str_len,edi
 	add edi,eax
 	cld
@@ -105,26 +108,6 @@ align 4
 end if
 
 ; ***
-glColor3d: ;(double ,double ,double)
-glColor3dv: ;(double *)
-glColor4d: ;(double ,double ,double, double )
-glColor4dv: ;(double *)
-glNormal3d: ;(double ,double ,double)
-glNormal3dv: ;(double *)
-glTexCoord1f: ;(float)
-glTexCoord1d: ;(double)
-glTexCoord1fv: ;(float *)
-glTexCoord1dv: ;(double *)
-glTexCoord2d: ;(double ,double)
-glTexCoord2dv: ;(double *)
-glTexCoord3f: ;(float ,float ,float)
-glTexCoord3d: ;(double ,double ,double)
-glTexCoord3fv: ;(float *)
-glTexCoord3dv: ;(double *)
-glTexCoord4d: ;(double ,double ,double, double )
-glTexCoord4fv: ;(float *)
-glTexCoord4dv: ;(double *)
-glGetIntegerv: ;(int pname,int *params)
 glGetFloatv: ;(int pname, float *v)
 
 align 4
@@ -139,13 +122,7 @@ err_6 db 'unsupported option',13,10,0
 err_7 db 'assert(target == GL_TEXTURE_2D && texture >= 0)',13,10,0
 err_8 db 'combinaison of parameters not handled',13,10,0
 err_9 db 'GL_INVALID_ENUM',13,10,0
-f_zbz db ' ZB_line_z',0
-f_zb db ' ZB_line',0
-f_find_l db 'find_list',0
-f_alloc_l db 'alloc_list',0
-f_fill_tr db 'ZB_fillTriangle...',0
-f_fill_tr_nl db ' lines',0
-f_fill_tr_nll db ' len',0
+err_glGet db 'glGet: option not implemented',0
 
 align 4
 proc dbg_print, fun:dword, mes:dword

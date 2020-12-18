@@ -1,9 +1,9 @@
 include '../../load_img.inc'
 include '../../develop/libraries/libs-dev/libimg/libimg.inc'
 include '../../develop/libraries/box_lib/trunk/box_lib.mac'
-include '../../develop/libraries/box_lib/load_lib.mac'
+include '../../load_lib.mac'
 
-@use_library_mem mem.Alloc, mem.Free, mem.ReAlloc, dll.Load
+@use_library
  
 icon_tl_sys dd 0
 icon_tl_nod dd 0
@@ -1182,24 +1182,11 @@ import  libimg, \
         img_draw          , 'img_draw'
 
 
-run_file_70 FileInfoBlock ; required for libimg
-
 auto_list   db 1 ; to run LIST immediately after CWD
 filter      rb 512
 root_dir    db '/tmp0/1'
             rb 505
-new_dir_buf rb 64
-folder_data rb 32+32*304
 node_entry  db '1111'
             rb 512
 node_entry2 db '1111'
             rb 512
-remote_list_buf rb 1024
-file_name   rb 4096 ; required for libimg
-conv_tabl   rb 128
-ed_buffer   rb 100
-tedit_buffer rb 1024
-el_focus    dd 0
-;-----------------------
-
-procinfo        process_information

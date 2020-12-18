@@ -3,15 +3,16 @@ use32
 	db 'MENUET01' ;идентиф. исполняемого файла всегда 8 байт
 	dd 1, start, i_end, mem, stacktop, openfile_path, sys_path
 
-include '../../../../programs/macros.inc'
-include '../../../../programs/proc32.inc'
-include '../../../../programs/KOSfuncs.inc'
-include '../../../../programs/load_img.inc'
+include '../../../macros.inc'
+include '../../../proc32.inc'
+include '../../../KOSfuncs.inc'
+include '../../../load_img.inc'
+include '../../../load_lib.mac'
 include 'vox_draw.inc'
 include 'vox_rotate.inc'
 include 'str.inc'
 
-@use_library_mem mem.Alloc,mem.Free,mem.ReAlloc,dll.Load
+@use_library mem.Alloc,mem.Free,mem.ReAlloc,dll.Load
 caption db 'Voxel editor 22.03.18',0 ;подпись окна
 
 IMAGE_TOOLBAR_ICON_SIZE equ 16*16*3
@@ -1730,39 +1731,21 @@ db 'VOX',0
 db 0
 
 
-
-head_f_i:
-head_f_l db 'Системная ошибка',0
-
 system_dir_0 db '/sys/lib/'
 lib_name_0 db 'proc_lib.obj',0
-err_message_found_lib_0 db 'Не найдена библиотека ',39,'proc_lib.obj',39,0
-err_message_import_0 db 'Ошибка при импорте библиотеки ',39,'proc_lib.obj',39,0
-
 system_dir_1 db '/sys/lib/'
 lib_name_1 db 'libimg.obj',0
-err_message_found_lib_1 db 'Не найдена библиотека ',39,'libimg.obj',39,0
-err_message_import_1 db 'Ошибка при импорте библиотеки ',39,'libimg.obj',39,0
-
 system_dir_2 db '/sys/lib/'
 lib_name_2 db 'buf2d.obj',0
-err_msg_found_lib_2 db 'Не найдена библиотека ',39,'buf2d.obj',39,0
-err_msg_import_2 db 'Ошибка при импорте библиотеки ',39,'buf2d',39,0
-
 system_dir_3 db '/sys/lib/'
 lib_name_3 db 'libini.obj',0
-err_msg_found_lib_3 db 'Не найдена библиотека ',39,'libini.obj',39,0
-err_msg_import_3 db 'Ошибка при импорте библиотеки ',39,'libini',39,0
+
 
 l_libs_start:
-	lib_0 l_libs lib_name_0, sys_path, file_name, system_dir_0,\
-		err_message_found_lib_0, head_f_l, proclib_import,err_message_import_0, head_f_i
-	lib_1 l_libs lib_name_1, sys_path, file_name, system_dir_1,\
-		err_message_found_lib_1, head_f_l, import_libimg, err_message_import_1, head_f_i
-	lib_2 l_libs lib_name_2, sys_path, library_path, system_dir_2,\
-		err_msg_found_lib_2,head_f_l,import_buf2d,err_msg_import_2,head_f_i
-	lib_3 l_libs lib_name_3, sys_path, library_path, system_dir_3,\
-		err_msg_found_lib_3,head_f_l,import_libini,err_msg_import_3,head_f_i
+	lib_0 l_libs lib_name_0, file_name, system_dir_0, import_proclib
+	lib_1 l_libs lib_name_1, file_name, system_dir_1, import_libimg
+	lib_2 l_libs lib_name_2, file_name, system_dir_2, import_buf2d
+	lib_3 l_libs lib_name_3, file_name, system_dir_3, import_libini
 l_libs_end:
 
 align 4
@@ -1813,7 +1796,7 @@ import_libimg:
 	aimg_draw    db 'img_draw',0
 
 align 4
-proclib_import: ;описание экспортируемых функций
+import_proclib:
 	OpenDialog_Init dd aOpenDialog_Init
 	OpenDialog_Start dd aOpenDialog_Start
 dd 0,0
@@ -1913,12 +1896,6 @@ dd 0,0
 	aini_get_int   db 'ini_get_int',0
 	aini_get_color db 'ini_get_color',0
 
-mouse_dd dd 0x0
-sc system_colors 
-
-align 16
-procinfo process_information 
-
 ;буфер основного изображения
 align 4
 buf_0: dd 0 ;указатель на дaные изображения
@@ -1958,8 +1935,6 @@ buf_r_z:
 	rb BUF_STRUCT_SIZE
 
 align 4
-cursor_pointer dd 0 ;указатель на данные для курсора
-
 buf_curs: ;буфер с курсорами
 .data: dd 0 ;указатель на буфер изображения
 	dw 0 ;+4 left
@@ -2011,15 +1986,17 @@ buf_vox_g2:
 
 align 16
 i_end:
+	procinfo process_information
+	sc system_colors
+	mouse_dd dd ?
+	cursor_pointer dd ? ;указатель на данные для курсора
 	wnd_s_pos: ;место для настроек стартовой позиции окна
 		rq 0
 	rb 4096
 align 16
 stacktop:
 	sys_path rb 1024
-	file_name:
-		rb 1024 ;4096 
-	library_path rb 1024
+	file_name rb 2048 ;4096 
 	plugin_path rb 1024 ;4096
 	openfile_path rb 4096
 	filename_area rb 256

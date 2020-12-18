@@ -1,5 +1,5 @@
 ;CNC CONTROL
-;Igor Afanasyev (aka IgorA) and Sergey Efremenkov (aka theonlymirage), 2018
+;Igor Afanasyev (aka IgorA) and Sergey Efremenkov (aka theonlymirage), 2020
 
 ;02.10.18 - Only prototype UI
 ;08.10.18 - Add ComboBox (Button + KMenu), small text
@@ -14,6 +14,7 @@ include '../../macros.inc'
 include '../../proc32.inc'
 include '../../KOSfuncs.inc'
 include '../../load_img.inc'
+include '../../load_lib.mac'
 include '../../develop/libraries/libs-dev/libimg/libimg.inc'
 include '../../develop/libraries/box_lib/trunk/box_lib.mac'
 include 'lang.inc'
@@ -24,8 +25,8 @@ KMENUITEM_NORMAL equ 0
 KMENUITEM_SUBMENU equ 1
 KMENUITEM_SEPARATOR equ 2
 
-@use_library_mem mem.Alloc,mem.Free,mem.ReAlloc,dll.Load
-caption db 'CNC Control 22.05.19',0 ;подпись окна
+@use_library mem.Alloc,mem.Free,mem.ReAlloc,dll.Load
+caption db 'CNC Control 18.12.20',0 ;подпись окна
 
 run_file_70 FileInfoBlock
 
@@ -384,22 +385,17 @@ pushad
 
         ;delete port button, if it exist
         mov edx, 0x80000008
-        mcall 8
+        mcall SF_DEFINE_BUTTON
         ;draw button PORT
         buttonPortX = 433
         buttonPortY = 27 ;50
         buttonPortTextXoffset = 5
-        mov ebx, buttonPortX*65536 + 95   ;X + Width
-        mov ecx, buttonPortY*65536 + 20   ;Y + Height
-        mov edx, 0x00000008       ;button id
         mov esi, 0x00AABBCC       ;color button
-        mcall 8
+        mcall SF_DEFINE_BUTTON, buttonPortX*65536 + 95, buttonPortY*65536 + 20, 8
         ;draw text for button PORT
         mov     ebx, (buttonPortX+buttonPortTextXoffset) * 65536 + (buttonPortY+6)    ;(x, y)
-        mov     ecx, 0xFFFFFF
-        mov     edx, sz_PortMenu
         mov     esi, 11
-        mcall 4
+        mcall SF_DRAW_TEXT,, 0xFFFFFF, sz_PortMenu
         ;stdcall [kmainmenu_draw], [main_menu]
         ;mov word[coord.x], 0
         ;mov word[coord.y], 0
@@ -448,7 +444,7 @@ button:
         cmp ah, 8
         jne @f
                 push eax ebx ecx
-                mcall 9, pi, -1 ;get window coord
+                mcall SF_THREAD_INFO, pi, -1 ;get window coord
 
                 mov eax, dword[pi+34]
                 add eax, buttonPortX + 5
@@ -676,8 +672,8 @@ proc conv_str_to_int uses ebx ecx esi, buf:dword
 			inc esi
 			jmp .cycle_16
 	@@:
-	cmp ecx,0 ;если число отрицательное
-	jne @f
+	or ecx,ecx ;если число отрицательное
+	jnz @f
 		sub ecx,eax
 		mov eax,ecx
 	@@:
@@ -752,45 +748,13 @@ lib_name_3 db 'box_lib.obj',0
 system_dir_4 db '/sys/lib/'
 lib_name_4 db 'kmenu.obj',0
 
-head_f_i:
-if lang eq ru
-	head_f_l db '"Системная ошибка',0
-	err_message_found_lib_0 db 'Не найдена библиотека ',39,'proc_lib.obj',39,'" -tE',0
-	err_message_import_0 db 'Ошибка при импорте библиотеки ',39,'proc_lib.obj',39,'" -tW',0
-	err_message_found_lib_1 db 'Не найдена библиотека ',39,'libimg.obj',39,'" -tE',0
-	err_message_import_1 db 'Ошибка при импорте библиотеки ',39,'libimg.obj',39,'" -tW',0
-	err_msg_found_lib_2 db 'Не найдена библиотека ',39,'buf2d.obj',39,'" -tE',0
-	err_msg_import_2 db 'Ошибка при импорте библиотеки ',39,'buf2d',39,'" -tW',0
-	err_msg_found_lib_3 db 'Не найдена библиотека ',39,'box_lib.obj',39,'" -tE',0
-	err_msg_import_3 db 'Ошибка при импорте библиотеки ',39,'box_lib',39,'" -tW',0
-	err_msg_found_lib_4 db 'Не найдена библиотека ',39,'kmenu.obj',39,'" -tE',0
-	err_msg_import_4 db 'Ошибка при импорте библиотеки ',39,'kmenu',39,'" -tW',0
-else
-	head_f_l db '"System error',0
-	err_message_found_lib_0 db 'Sorry I cannot found library ',39,'proc_lib.obj',39,'" -tE',0
-	err_message_import_0 db 'Error on load import library ',39,'proc_lib.obj',39,'" -tW',0
-	err_message_found_lib_1 db 'Sorry I cannot found library ',39,'libimg.obj',39,'" -tE',0
-	err_message_import_1 db 'Error on load import library ',39,'libimg.obj',39,'" -tW',0
-	err_msg_found_lib_2 db 'Sorry I cannot found library ',39,'buf2d.obj',39,'" -tE',0
-	err_msg_import_2 db 'Error on load import library ',39,'buf2d',39,'" -tW',0
-	err_msg_found_lib_3 db 'Sorry I cannot found library ',39,'box_lib.obj',39,'" -tE',0
-	err_msg_import_3 db 'Error on load import library ',39,'box_lib',39,'" -tW',0
-	err_msg_found_lib_4 db 'Sorry I cannot found library ',39,'kmenu.obj',39,'" -tE',0
-	err_msg_import_4 db 'Error on load import library ',39,'kmenu',39,'" -tW',0
-end if
-
 align 4
 l_libs_start:
-	lib_0 l_libs lib_name_0, sys_path, file_name, system_dir_0,\
-		err_message_found_lib_0, head_f_l, proclib_import,err_message_import_0, head_f_i
-	lib_1 l_libs lib_name_1, sys_path, file_name, system_dir_1,\
-		err_message_found_lib_1, head_f_l, import_libimg, err_message_import_1, head_f_i
-	lib_2 l_libs lib_name_2, sys_path, library_path, system_dir_2,\
-		err_msg_found_lib_2,head_f_l,import_buf2d,err_msg_import_2,head_f_i
-	lib_3 l_libs lib_name_3, sys_path, file_name,  system_dir_3,\
-		err_msg_found_lib_3, head_f_l, import_box_lib,err_msg_import_3,head_f_i
-        lib_4 l_libs lib_name_4, sys_path, file_name, system_dir_4,\
-                err_msg_found_lib_4, head_f_l, import_libkmenu,err_msg_import_4,head_f_i
+	lib_0 l_libs lib_name_0, file_name, system_dir_0, import_proclib
+	lib_1 l_libs lib_name_1, file_name, system_dir_1, import_libimg
+	lib_2 l_libs lib_name_2, file_name, system_dir_2, import_buf2d
+	lib_3 l_libs lib_name_3, file_name, system_dir_3, import_box_lib
+	lib_4 l_libs lib_name_4, file_name, system_dir_4, import_libkmenu
 l_libs_end:
 
 align 4
@@ -841,7 +805,7 @@ import_libimg:
 	aimg_draw    db 'img_draw',0
 
 align 4
-proclib_import: ;описание экспортируемых функций
+import_proclib:
 	OpenDialog_Init dd aOpenDialog_Init
 	OpenDialog_Start dd aOpenDialog_Start
 	OpenDialog_Set_file_name dd aOpenDialog_Set_file_name
@@ -1048,9 +1012,9 @@ align 4
 align 4
 proc mem_copy uses ecx esi edi, destination:dword, source:dword, len:dword
 	cld
-	mov esi, dword[source]
-	mov edi, dword[destination]
-	mov ecx, dword[len]
+	mov esi, [source]
+	mov edi, [destination]
+	mov ecx, [len]
 	rep movsb
 	ret
 endp
@@ -1102,12 +1066,10 @@ thread_n_file:
 	rb 2048
 stacktop:
 	sys_path rb 1024
-	file_name:
-		rb 1024
-	library_path rb 1024
+	file_name rb 2048
 	plugin_path rb 4096
 	openfile_path rb 4096
 	filename_area rb 256
-        pi rb 1024
+	pi rb 1024
 mem:
 

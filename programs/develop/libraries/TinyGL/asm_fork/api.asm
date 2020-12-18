@@ -143,9 +143,36 @@ glNormal3f: ;x, y, z
 	ret 16 ;=sizeof(dd)*4
 
 align 4
+proc glNormal3d, x:qword, y:qword, z:qword
+	add esp,-12
+	fld qword[z]
+	fstp dword[esp+8]
+	fld qword[y]
+	fstp dword[esp+4]
+	fld qword[x]
+	fstp dword[esp]
+	call glNormal3f
+	ret
+endp
+
+align 4
 proc glNormal3fv uses eax, v:dword
 	mov eax,[v]
 	stdcall glNormal3f,[eax],[eax+4],[eax+8]
+	ret
+endp
+
+align 4
+proc glNormal3dv uses eax, v:dword
+	mov eax,[v]
+	add esp,-12
+	fld qword[eax+16]
+	fstp dword[esp+8]
+	fld qword[eax+8]
+	fstp dword[esp+4]
+	fld qword[eax]
+	fstp dword[esp]
+	call glNormal3f
 	ret
 endp
 
@@ -180,6 +207,21 @@ endl
 endp
 
 align 4
+proc glColor4d, r:qword, g:qword, b:qword, a:qword
+	add esp,-16
+	fld qword[a]
+	fstp dword[esp+12]
+	fld qword[b]
+	fstp dword[esp+8]
+	fld qword[g]
+	fstp dword[esp+4]
+	fld qword[r]
+	fstp dword[esp]
+	call glColor4f
+	ret
+endp
+
+align 4
 proc glColor4fv uses eax ebx, v:dword
 	mov eax,[v]
 	stdcall glColor4f,[eax],[eax+4],[eax+8],[eax+12],1.0
@@ -193,9 +235,38 @@ proc glColor3f, r:dword, g:dword, b:dword
 endp
 
 align 4
+proc glColor3d, r:qword, g:qword, b:qword
+	push 1.0
+	add esp,-12
+	fld qword[b]
+	fstp dword[esp+8]
+	fld qword[g]
+	fstp dword[esp+4]
+	fld qword[r]
+	fstp dword[esp]
+	call glColor4f
+	ret
+endp
+
+align 4
 proc glColor3fv uses eax, v:dword
 	mov eax,[v]
 	stdcall glColor4f,[eax],[eax+4],[eax+8],1.0
+	ret
+endp
+
+align 4
+proc glColor3dv uses eax, v:dword
+	mov eax,[v]
+	push 1.0
+	add esp,-12
+	fld qword[eax+16]
+	fstp dword[esp+8]
+	fld qword[eax+8]
+	fstp dword[esp+4]
+	fld qword[eax]
+	fstp dword[esp]
+	call glColor4f
 	ret
 endp
 
@@ -230,6 +301,22 @@ proc glColor3ub uses eax, r:dword, g:dword, b:dword
 	ret
 endp
 
+align 4
+proc glColor4dv uses eax, v:dword
+	mov eax,[v]
+	add esp,-16
+	fld qword[eax+24]
+	fstp dword[esp+12]
+	fld qword[eax+16]
+	fstp dword[esp+8]
+	fld qword[eax+8]
+	fstp dword[esp+4]
+	fld qword[eax]
+	fstp dword[esp]
+	call glColor4f
+	ret
+endp
+
 ; TexCoord
 
 align 4
@@ -243,8 +330,74 @@ glTexCoord4f: ;s, t, r, q
 	ret 20 ;=sizeof(dd)*5
 
 align 4
+proc glTexCoord4d, s:qword, t:qword, r:qword, q:qword
+	add esp,-16
+	fld qword[q]
+	fstp dword[esp+12]
+	fld qword[r]
+	fstp dword[esp+8]
+	fld qword[t]
+	fstp dword[esp+4]
+	fld qword[s]
+	fstp dword[esp]
+	call glTexCoord4f
+	ret
+endp
+
+align 4
+proc glTexCoord1f, s:dword
+	stdcall glTexCoord4f,[s],0.0,0.0,1.0
+	ret
+endp
+
+align 4
+proc glTexCoord1d, s:qword
+	push 1.0
+	push 0.0
+	push 0.0
+	add esp,-4
+	fld qword[s]
+	fstp dword[esp]
+	call glTexCoord4f
+	ret
+endp
+
+align 4
+proc glTexCoord1fv uses eax, v:dword
+	mov eax,[v]
+	stdcall glTexCoord4f,[eax],0.0,0.0,1.0
+	ret
+endp
+
+align 4
+proc glTexCoord1dv uses eax, v:dword
+	mov eax,[v]
+	push 1.0
+	push 0.0
+	push 0.0
+	add esp,-4
+	fld qword[eax]
+	fstp dword[esp]
+	call glTexCoord4f
+	ret
+endp
+
+align 4
 proc glTexCoord2f, s:dword, t:dword
 	stdcall glTexCoord4f,[s],[t],0.0,1.0
+	ret
+endp
+
+align 4
+proc glTexCoord2d, s:qword, t:qword
+	push 1.0
+	push 0.0
+	add esp,-8
+	fld qword[t]
+	fstp dword[esp+4]
+	fld qword[s]
+	fstp dword[esp]
+	call glTexCoord4f
 	ret
 endp
 
@@ -252,6 +405,85 @@ align 4
 proc glTexCoord2fv uses eax, v:dword
 	mov eax,[v]
 	stdcall glTexCoord4f,[eax],[eax+4],0.0,1.0
+	ret
+endp
+
+align 4
+proc glTexCoord2dv uses eax, v:dword
+	mov eax,[v]
+	push 1.0
+	push 0.0
+	add esp,-8
+	fld qword[eax+8]
+	fstp dword[esp+4]
+	fld qword[eax]
+	fstp dword[esp]
+	call glTexCoord4f
+	ret
+endp
+
+align 4
+proc glTexCoord3f, s:dword, t:dword, r:dword
+	stdcall glTexCoord4f,[s],[t],[r],1.0
+	ret
+endp
+
+align 4
+proc glTexCoord3d, s:qword, t:qword, r:qword
+	push 1.0
+	add esp,-12
+	fld qword[r]
+	fstp dword[esp+8]
+	fld qword[t]
+	fstp dword[esp+4]
+	fld qword[s]
+	fstp dword[esp]
+	call glTexCoord4f
+	ret
+endp
+
+align 4
+proc glTexCoord3fv uses eax, v:dword
+	mov eax,[v]
+	stdcall glTexCoord4f,[eax],[eax+4],[eax+8],1.0
+	ret
+endp
+
+align 4
+proc glTexCoord3dv uses eax, v:dword
+	mov eax,[v]
+	push 1.0
+	add esp,-12
+	fld qword[eax+16]
+	fstp dword[esp+8]
+	fld qword[eax+8]
+	fstp dword[esp+4]
+	fld qword[eax]
+	fstp dword[esp]
+	call glTexCoord4f
+	ret
+endp
+
+align 4
+proc glTexCoord4fv uses eax, v:dword
+	mov eax,[v]
+	stdcall glTexCoord4f,[eax],[eax+4],[eax+8],[eax+12]
+	ret
+endp
+
+align 4
+proc glTexCoord4dv uses eax, v:dword
+	mov eax,[v]
+	add esp,-16
+	fld qword[eax+24]
+	fstp dword[esp+12]
+	fld qword[eax+16]
+	fstp dword[esp+8]
+	fld qword[eax+8]
+	fstp dword[esp+4]
+	fld qword[eax]
+	fstp dword[esp]
+	call glTexCoord4f
 	ret
 endp
 
@@ -883,7 +1115,7 @@ glHint: ;target, mode
 
 align 4
 proc glDebug uses eax, mode:dword
-	stdcall gl_get_context ;после вызова функции в eax указатель на GLContext
+	call gl_get_context ;после вызова функции в eax указатель на GLContext
 	push dword[mode]
 	pop dword[eax+GLContext.print_flag]
 	ret
