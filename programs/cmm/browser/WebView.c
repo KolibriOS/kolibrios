@@ -41,7 +41,7 @@
 //                       DATA                        //
 //                                                   //
 //===================================================//
-char version[]="WebView 3.14";
+char version[]="WebView 3.15";
 
 #define DEFAULT_URL URL_SERVICE_HOMEPAGE
 
@@ -75,7 +75,7 @@ proc_info Form;
 
 dword cur_img_url;
 dword shared_url;
-dword http_get_type;
+dword http_get_type=PAGE;
 dword render_start_time;
 int menu_id=NULL;
 
@@ -723,7 +723,7 @@ void LoadInternalPage(dword _bufdata, _in_bufsize){
 		} else {
 			WB1.DrawPage();
 		}
-		if (WB1.img_url.count) GetImg(true);
+		if (WB1.img_url.count) { GetImg(true); DrawOmnibox(); }
 	}
 }
 

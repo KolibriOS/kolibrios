@@ -121,7 +121,7 @@ dword _tag::get_next_param(dword ps, pe)
 	// "q"  - quote char
 	char q = NULL;
 	dword fixeq;
-	unsigned char  val[6000];
+	dword val;
 	dword attr;
 	
 	if (ESBYTE[pe] == '/') pe--;
@@ -136,9 +136,9 @@ dword _tag::get_next_param(dword ps, pe)
 
 		//find VAL start and copy
 		pe = strrchr(ps, q) + ps;
-		strlcpy(#val, pe, sizeof(val)-1);
-		ESBYTE[pe] = '\0'; 
+		val = pe;
 		pe--;
+		ESBYTE[pe] = '\0'; 
 
 		//find ATTR end
 		while (pe > ps) && (ESBYTE[pe] != '=') pe--;
@@ -148,7 +148,7 @@ dword _tag::get_next_param(dword ps, pe)
 	{
 		//find VAL start and copy
 		while (pe > ps) && (ESBYTE[pe] != '=') pe--;
-		strlcpy(#val, pe+1, sizeof(val)-1);
+		val = pe+1;
 		ESBYTE[pe] = '\0';
 		//already have ATTR end
 	}
@@ -157,22 +157,25 @@ dword _tag::get_next_param(dword ps, pe)
 	while (pe>ps) && (!__isWhite(ESBYTE[pe])) pe--;
 	attr = pe + 1;
 	ESBYTE[pe] = '\0';
- 
-	//fix case: src=./images/KolibriOS_logo2.jpg?sid=e8ece8b38b
+
+	// Fix case: src=./images/logo?sid=e8ece8b38b
+	// Exchange '=' and '\0' position.
+	// attr: src=./images/logo?sid   =>   src
+	// val:  e8ece8b38b              =>   ./images/logo?sid=e8ece8b38b
 	fixeq = strchr(attr,'=');
 	if (!q) && (fixeq) {
-		strlcpy(#val, fixeq+1, sizeof(val)-1);
-		ESBYTE[fixeq+1] = '\0';
+		ESBYTE[val-1] >< ESBYTE[fixeq];
+		val = fixeq+1;
 	}
 	strlwr(attr);
-	strrtrim(#val);
+	strrtrim(val);
 
 	attributes.add(attr);
-	values.add(#val);
+	values.add(val);
 
 	if (debug_mode) {
 		debug("atr: "); debugln(attr);
-		debug("val: "); debugln(#val);
+		debug("val: "); debugln(val);
 		debugch('\n');
 	}
 
