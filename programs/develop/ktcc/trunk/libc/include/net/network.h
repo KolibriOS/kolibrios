@@ -48,7 +48,7 @@ struct addrinfo {
 extern int networklib_init ();
 extern int  (*inet_addr __attribute__ ((stdcall)))(const char* hostname);
 extern char* (*inet_ntoa __attribute__ ((stdcall)))(int ip_addr);
-extern int (*getaddrinfo __attribute__ ((stdcall)))(char* hostname, int servname, struct addrinfo* hints, struct addrinfo** res);
+extern int (*getaddrinfo __attribute__ ((stdcall)))(const char* hostname, const char* servname, const struct addrinfo* hints, struct addrinfo** res);
 extern void (*freeaddrinfo __attribute__ ((stdcall)))(struct addrinfo* ai);
 
 #endif
