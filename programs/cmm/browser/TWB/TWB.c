@@ -141,8 +141,7 @@ void TWebBrowser::SetPageDefaults()
 	style.reset();
 	link_color_default = 0x0000FF;
 	link_color_active = 0xFF0000;
-	page_bg = 0xffEBE8E9; //E0E3E3 EBE8E9
-	style.bg_color = page_bg;
+	style.bg_color = page_bg = 0xffEBE8E9; //E0E3E3 EBE8E9
 	canvas.Fill(0, page_bg);
 	links.clear();
 	anchors.clear();

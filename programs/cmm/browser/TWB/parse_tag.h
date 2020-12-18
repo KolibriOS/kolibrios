@@ -122,7 +122,7 @@ dword _tag::get_next_param(dword ps, pe)
 	char q = NULL;
 	dword fixeq;
 	unsigned char  val[6000];
-	unsigned char attr[6000];
+	dword attr;
 	
 	if (ESBYTE[pe] == '/') pe--;
 	while (pe>ps) && (__isWhite(ESBYTE[pe])) pe--;
@@ -155,23 +155,23 @@ dword _tag::get_next_param(dword ps, pe)
 
 	//find ATTR start and copy
 	while (pe>ps) && (!__isWhite(ESBYTE[pe])) pe--;
-	strlcpy(#attr, pe + 1, sizeof(attr)-1);
+	attr = pe + 1;
 	ESBYTE[pe] = '\0';
  
 	//fix case: src=./images/KolibriOS_logo2.jpg?sid=e8ece8b38b
-	fixeq = strchr(#attr,'=');
+	fixeq = strchr(attr,'=');
 	if (!q) && (fixeq) {
 		strlcpy(#val, fixeq+1, sizeof(val)-1);
 		ESBYTE[fixeq+1] = '\0';
 	}
-	strlwr(#attr);
+	strlwr(attr);
 	strrtrim(#val);
 
-	attributes.add(#attr);
+	attributes.add(attr);
 	values.add(#val);
 
 	if (debug_mode) {
-		debug("atr: "); debugln(#attr);
+		debug("atr: "); debugln(attr);
 		debug("val: "); debugln(#val);
 		debugch('\n');
 	}

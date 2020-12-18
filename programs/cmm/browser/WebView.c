@@ -41,7 +41,7 @@
 //                       DATA                        //
 //                                                   //
 //===================================================//
-char version[]="WebView 3.11";
+char version[]="WebView 3.12";
 
 #define DEFAULT_URL URL_SERVICE_HOMEPAGE
 
