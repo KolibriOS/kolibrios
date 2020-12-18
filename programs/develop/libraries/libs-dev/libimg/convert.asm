@@ -633,6 +633,22 @@ proc img._.convert.bpp8a_to_bpp24 _src, _dst
 endp
 
 
+proc img._.convert.bpp8a_to_bpp32 _src, _dst
+        mov     ecx, [ebx + Image.Width]
+        imul    ecx, [ebx + Image.Height]
+    @@:
+        lodsw
+        shl     eax, 8
+        mov     al, ah
+        shl     eax, 8
+        mov     al, ah
+        stosd
+        dec     ecx
+        jnz     @b
+        ret
+endp
+
+
 img.convert.bpp8i.table:
         dd Image.bpp24, img._.convert.bpp8i_to_bpp24
         dd Image.bpp32, img._.convert.bpp8i_to_bpp32
@@ -665,6 +681,7 @@ img.convert.bpp4i.table:
         dd 0
 img.convert.bpp8a.table:
         dd Image.bpp24, img._.convert.bpp8a_to_bpp24
+        dd Image.bpp32, img._.convert.bpp8a_to_bpp32
         dd 0
 
 img.convert.table:

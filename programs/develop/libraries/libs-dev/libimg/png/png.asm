@@ -56,12 +56,13 @@ img.decode.png:
 	xor	eax, eax	; .image = 0
 	pushad
 	mov	ebp, esp
-.localsize = 29*4
+.localsize = 30*4
 virtual at ebp - .localsize
 .width		dd	?
 .height		dd	?
 .bit_depth	dd	?
 .color_type	dd	?
+.transparent_color dd	?
 .bytes_per_pixel dd	?
 .scanline_len	dd	?
 .bits_per_pixel dd	?
@@ -158,6 +159,8 @@ end virtual
 	jz	.iend
 	cmp	eax, 'PLTE'
 	jz	.palette
+	cmp	eax, 'tRNS'
+	jz	.transparency
 ; unrecognized chunk, ignore
 	lea	esi, [esi+ecx+4]
 	pop	ecx
@@ -233,13 +236,16 @@ end virtual
 	add	eax, 7
 	shr	eax, 3
 	mov	[.bytes_per_pixel], eax
+	mov	[.transparent_color], 0
 ; allocate image
-	push	Image.bpp24
-	pop	eax
+	movi	eax, Image.bpp32
 	cmp	[.color_type], 2
 	jz	@f
 	mov	al, Image.bpp32
 	cmp	[.color_type], 6
+	jz	@f
+	mov	al, Image.bpp8a
+	cmp	[.color_type], 4
 	jz	@f
 	mov	al, Image.bpp8i
 @@:
@@ -288,11 +294,73 @@ end virtual
 	lodsd
 	dec	esi
 	bswap	eax
-	shr	eax, 8
+	mov     al, 0xff
+	ror	eax, 8
 	stosd
 	jmp	.next_chunk
+; convert 16 bit sample to 8 bit sample
+macro convert_16_to_8
+{
+local .l1,.l2
+	xor	ah, 0x80
+	js	.l1
+	cmp	al, ah
+	adc	al, 0
+	jmp	.l2
+.l1:
+	cmp	ah, al
+	sbb	al, 0
+.l2:
+}
+; tRNS chunk
+.transparency:
+	mov	eax, [.image]
+	test	eax, eax
+	jz	.invalid_chunk
+	cmp	[.color_type], 2	; rgb
+	jz	.transparency_rgb
+	cmp	[.color_type], 3	; indexed
+	jz	.transparency_indexed
+	add	esi, ecx
+	jmp	.next_chunk
+.transparency_rgb:
+	cmp	[.bit_depth], 16
+	jz	.transparency_rgb16
+	lodsw
+	shl	eax, 8
+	lodsw
+	shl	eax, 8
+	lodsw
+	mov	al, 0xff
+	ror	eax, 8
+	mov	[.transparent_color], eax
+	jmp	.next_chunk
+.transparency_rgb16:
+	lodsw
+	convert_16_to_8
+	shl	ax, 8
+	shl	eax, 8
+	lodsw
+	convert_16_to_8
+	shl	ax, 8
+	shl	eax, 8
+	lodsw
+	convert_16_to_8
+	shl	ax, 8
+	mov	al, 0xff
+	ror	eax, 8
+	mov	[.transparent_color], eax
+	jmp	.next_chunk
+.transparency_indexed:
+	mov	edi, [eax + Image.Palette]
+@@:
+	add	edi, 3
+	movsb
+	loop	@b
+	jmp	.next_chunk
 .idat:
-	jecxz	.next_chunk
+	test	ecx, ecx
+	jz	.next_chunk
 	cmp	[.idat_read], 0
 	jnz	@f
 	lodsb
@@ -654,22 +722,6 @@ macro init_block
 	init_block
 	lea	eax, [edi+eax*4]
 	push	eax
-
-; convert 16 bit sample to 8 bit sample
-macro convert_16_to_8
-{
-local .l1,.l2
-	xor	ah, 0x80
-	js	.l1
-	cmp	al, ah
-	adc	al, 0
-	jmp	.l2
-.l1:
-	cmp	ah, al
-	sbb	al, 0
-.l2:
-}
-
 .rgb_alpha2_16bit.innloop1:
 	push	edi
 	mov	ecx, ebx
@@ -872,20 +924,21 @@ local .l1
 	mov	[.i], ecx
 .rgb2.extloop:
 	init_block
-	lea	eax, [eax*3]
-	add	eax, edi
+	lea	eax, [edi+eax*4]
 	push	eax
 .rgb2.innloop1:
 	push	edi
 	mov	ecx, ebx
 .rgb2.innloop2:
-	mov	al, [esi+2]
-	mov	[edi], al
-	mov	al, [esi+1]
-	mov	[edi+1], al
-	mov	al, [esi]
-	mov	[edi+2], al
-	add	edi, 3
+	mov	eax, [esi]
+	bswap	eax
+	mov	al, 0xff
+	ror	eax, 8
+	cmp	eax, [.transparent_color]
+	jnz	@f
+	and	eax, 0x00ffffff
+@@:
+	stosd
 	dec	ecx
 	jnz	.rgb2.innloop2
 	pop	edi
@@ -947,7 +1000,6 @@ local .l1
 	ja	.rgb2_16bit
 	jmp	.convert_done
 .grayscale_alpha2:
-	call	.create_grayscale_palette
 	cmp	[.bit_depth], 16
 	jz	.grayscale_alpha2_16bit
 .grayscale_alpha2.next:
@@ -961,11 +1013,29 @@ local .l1
 	mov	[.i], ecx
 .grayscale_alpha2.extloop:
 	init_block
+	add	eax, eax
 	add	eax, edi
 	push	eax
-	mov	al, [esi]
-	add	esi, 2
-	block_byte_innerloop .grayscale_alpha2.extloop
+	lodsw
+macro block_word_innerloop extloop
+{
+local .l1
+.l1:
+	mov	ecx, ebx
+	rep	stosw
+	sub	edi, ebx
+	add	edi, [.row_distance]
+	dec	edx
+	jnz	.l1
+	pop	edi ebx
+	mov	eax, [.col_increment]
+	sub	[.i], eax
+	ja	extloop
+	add	edi, [.col_distance]
+	mov	eax, [.row_increment]
+	sub	[.j], eax
+}
+	block_word_innerloop .grayscale_alpha2.extloop
 	ja	.grayscale_alpha2.next
 	jmp	.convert_done
 .grayscale_alpha2_16bit:
@@ -979,12 +1049,17 @@ local .l1
 	mov	[.i], ecx
 .grayscale_alpha2_16bit.extloop:
 	init_block
+	add	eax, eax
 	add	eax, edi
 	push	eax
-	mov	ax, [esi]
-	add	esi, 4
+	lodsw
 	convert_16_to_8
-	block_byte_innerloop .grayscale_alpha2_16bit.extloop
+	mov	ecx, eax
+	lodsw
+	convert_16_to_8
+	mov	ah, cl
+	xchg	al, ah
+	block_word_innerloop .grayscale_alpha2_16bit.extloop
 	ja	.grayscale_alpha2_16bit
 .convert_done:
 ; next interlace pass
@@ -1070,7 +1145,7 @@ local .l1
 	jz	.graypal_common
 	mov	edx, 0xFFFFFF
 .graypal_common:
-	xor	eax, eax
+	mov	eax, 0xff000000
 @@:
 	stosd
 	add	eax, edx
