@@ -1,6 +1,6 @@
 void TWebBrowser::SetStyle() 
 {
-	if (tag.get_value_of("name=")) || (tag.get_value_of("id=")) {
+	if (tag.get_value_of("name")) || (tag.get_value_of("id")) {
 		anchors.add(tag.value, draw_y);
 		if (anchors.current) && (streq(tag.value, #anchors.current+1)) {
 			list.first = draw_y;
@@ -77,8 +77,8 @@ void TWebBrowser::tag_font()
 	style.bg_color = page_bg;
 	if (tag.opened)
 	{
-		if (tag.get_value_of("bg=")) style.bg_color = GetColor(tag.value);
-		if (tag.get_value_of("color=")) {
+		if (tag.get_value_of("bg")) style.bg_color = GetColor(tag.value);
+		if (tag.get_value_of("color")) {
 			text_colors.add(GetColor(tag.value));
 		} else {
 			text_colors.add(text_colors.get_last());
@@ -96,7 +96,7 @@ void TWebBrowser::tag_div()
 
 void TWebBrowser::tag_iframe()
 {
-	if (tag.get_value_of("src=")) {
+	if (tag.get_value_of("src")) {
 		NewLine();
 		strcpy(#line, "IFRAME: ");
 		Paint();
@@ -114,7 +114,7 @@ void TWebBrowser::tag_a()
 {
 	if (tag.opened)
 	{
-		if (tag.get_value_of("href=")) && (!strstr(tag.value,"javascript:"))
+		if (tag.get_value_of("href")) && (!strstr(tag.value,"javascript:"))
 		{
 			link = true;
 			links.add_link(tag.value);
@@ -127,8 +127,8 @@ void TWebBrowser::tag_a()
 
 void TWebBrowser::tag_meta_xml()
 {
-	if (custom_encoding == -1) if (tag.get_value_of("charset=")) 
-	|| (tag.get_value_of("content=")) || (tag.get_value_of("encoding="))
+	if (custom_encoding == -1) if (tag.get_value_of("charset")) 
+	|| (tag.get_value_of("content")) || (tag.get_value_of("encoding"))
 	{
 		EDX = strrchr(tag.value, '=') + tag.value; //search in content=
 		if (ESBYTE[EDX] == '"') EDX++;
@@ -139,8 +139,8 @@ void TWebBrowser::tag_meta_xml()
 		else if (streqrp(EDX,"iso-8859-5"))   || (streqrp(EDX,"iso8859-5"))   ChangeEncoding(CH_ISO8859_5);
 		else if (streqrp(EDX,"koi8-r"))       || (streqrp(EDX,"koi8-u"))      ChangeEncoding(CH_KOI8);
 	}
-	if (streq(tag.get_value_of("http-equiv="), "refresh")) && (tag.get_value_of("content=")) {
-		if (tag.value = strstri(tag.value, "url=")) strcpy(#redirect, tag.value);
+	if (streq(tag.get_value_of("http-equiv"), "refresh")) && (tag.get_value_of("content")) {
+		if (tag.value = strstri(tag.value, "url")) strcpy(#redirect, tag.value);
 	}
 }
 
@@ -187,7 +187,7 @@ void TWebBrowser::tag_li()
 void TWebBrowser::tag_hr()
 {
 	EAX = 0x999999;
-	if (tag.get_value_of("color=")) GetColor(tag.value);
+	if (tag.get_value_of("color")) GetColor(tag.value);
 	$push eax;
 	NewLine();
 	$pop edi;
@@ -201,10 +201,10 @@ void TWebBrowser::tag_hr()
 void TWebBrowser::tag_body()
 {
 	t_body = tag.opened;
-	if (tag.get_value_of("link="))   link_color_default = GetColor(tag.value);
-	if (tag.get_value_of("alink="))  link_color_active = GetColor(tag.value);
-	if (tag.get_value_of("text="))   text_colors.set(0, GetColor(tag.value));
-	if (tag.get_value_of("bgcolor=")) {
+	if (tag.get_value_of("link"))   link_color_default = GetColor(tag.value);
+	if (tag.get_value_of("alink"))  link_color_active = GetColor(tag.value);
+	if (tag.get_value_of("text"))   text_colors.set(0, GetColor(tag.value));
+	if (tag.get_value_of("bgcolor")) {
 		style.bg_color = page_bg = GetColor(tag.value);
 		canvas.Fill(0, page_bg);
 	}
@@ -260,7 +260,7 @@ void TWebBrowser::tag_img()
 	dword cur_img;
 	int img_x, img_y, img_w, img_h;
 
-	if (!tag.get_value_of("src=")) goto NOIMG;
+	if (!tag.get_value_of("src")) goto NOIMG;
 
 	if (streqrp(tag.value, "data:")) {
 		if (!strstr(tag.value, "base64,")) goto NOIMG;
@@ -334,7 +334,7 @@ IMGOK:
 	return;
 
 NOIMG:
-	if (tag.get_value_of("title=")) || (tag.get_value_of("alt=")) {
+	if (tag.get_value_of("title")) || (tag.get_value_of("alt")) {
 		strncpy(#img_path, tag.value, sizeof(line)-3);
 		sprintf(#line, "[%s]", #img_path);
 	} else {

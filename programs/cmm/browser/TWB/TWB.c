@@ -165,21 +165,6 @@ void TWebBrowser::SetPageDefaults()
 	}
 }
 //============================================================================================
-void TWebBrowser::AddCharToTheLine(unsigned char _char)
-{
-	dword line_len;
-	if (_char<=15) _char=' ';
-	line_len = strlen(#line);
-	if (!style.pre) && (_char == ' ')
-	{
-		if (line[line_len-1]==' ') return; //no double spaces
-		if (!stolbec) && (!line) return; //no paces at the beginning of the line
-		if (link) && (line_len==0) return;
-	}
-	if (line_len < sizeof(line)) chrcat(#line, _char);
-	CheckForLineBreak();
-}
-//============================================================================================
 void TWebBrowser::ParseHtml(dword _bufpointer, _bufsize){
 	char unicode_symbol[10];
 	dword j;
@@ -282,6 +267,21 @@ void TWebBrowser::ParseHtml(dword _bufpointer, _bufsize){
 	}
 }
 //============================================================================================
+void TWebBrowser::AddCharToTheLine(unsigned char _char)
+{
+	dword line_len;
+	if (_char<=15) _char=' ';
+	line_len = strlen(#line);
+	if (!style.pre) && (_char == ' ')
+	{
+		if (line[line_len-1]==' ') return; //no double spaces
+		if (!stolbec) && (!line) return; //no paces at the beginning of the line
+		if (link) && (line_len==0) return;
+	}
+	if (line_len < sizeof(line)) chrcat(#line, _char);
+	CheckForLineBreak();
+}
+//============================================================================================
 bool TWebBrowser::CheckForLineBreak()
 {
 	int line_break_pos;
@@ -309,17 +309,6 @@ bool TWebBrowser::CheckForLineBreak()
 	return true;
 }
 //============================================================================================
-void TWebBrowser::ChangeEncoding(int _new_encoding)
-{
-	if (cur_encoding == _new_encoding) return;
-	cur_encoding = _new_encoding;
-	bufpointer = ChangeCharset(cur_encoding, "CP866", bufpointer);
-	if (header) {
-		ChangeCharset(cur_encoding, "CP866", #header);
-		DrawTitle(#header);
-	}
-}
-//============================================================================================
 void TWebBrowser::NewLine()
 {
 	static int empty_line=0;
@@ -340,6 +329,17 @@ void TWebBrowser::NewLine()
 	draw_y += list.item_h;
 	if (style.blq) stolbec = 6; else stolbec = 0;
 	stolbec += style.tag_list.level * 5;
+}
+//============================================================================================
+void TWebBrowser::ChangeEncoding(int _new_encoding)
+{
+	if (cur_encoding == _new_encoding) return;
+	cur_encoding = _new_encoding;
+	bufpointer = ChangeCharset(cur_encoding, "CP866", bufpointer);
+	if (header) {
+		ChangeCharset(cur_encoding, "CP866", #header);
+		DrawTitle(#header);
+	}
 }
 //============================================================================================
 scroll_bar scroll_wv = 

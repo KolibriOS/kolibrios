@@ -142,14 +142,14 @@ dword _tag::get_next_param(dword ps, pe)
 
 		//find ATTR end
 		while (pe > ps) && (ESBYTE[pe] != '=') pe--;
-		ESBYTE[pe+1] = '\0';
+		ESBYTE[pe] = '\0';
 	}
 	else
 	{
 		//find VAL start and copy
 		while (pe > ps) && (ESBYTE[pe] != '=') pe--;
-		pe++;
-		strlcpy(#val, pe, sizeof(val)-1);
+		strlcpy(#val, pe+1, sizeof(val)-1);
+		ESBYTE[pe] = '\0';
 		//already have ATTR end
 	}
 

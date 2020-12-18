@@ -41,7 +41,7 @@
 //                       DATA                        //
 //                                                   //
 //===================================================//
-char version[]="WebView 3.12";
+char version[]="WebView 3.14";
 
 #define DEFAULT_URL URL_SERVICE_HOMEPAGE
 
@@ -904,7 +904,7 @@ void CheckContentType()
 		EventDownloadAndOpenImage(http.cur_url);
 		StopLoading();
 	}if (content_type[0] == 'a') { 
-		EventOpenDownloader(history.current());
+		EventOpenDownloader(http.cur_url);
 		StopLoading();
 	}
 }
