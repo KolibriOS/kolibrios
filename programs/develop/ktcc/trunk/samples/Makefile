@@ -19,7 +19,8 @@ all:
 	$(CC) $(CFLAGS) clayer/dialog.c -lck -ldialog -o clayer/dialog.kex
 	
 	$(CC) $(CFLAGS) net/tcpsrv_demo.c -lck -o net/tcpsrv_demo.kex 
-	$(CC) $(CFLAGS) net/nslookup.c -lck -lnetwork -o net/nslookup.kex 
+	$(CC) $(CFLAGS) net/nslookup.c -lck -lnetwork -o net/nslookup.kex
+	$(CC) $(CFLAGS) net/http_tcp_demo.c -lck -lnetwork -o net/http_tcp_demo.kex
 	
 	$(CC) $(CFLAGS) tinygl/fps.c tinygl/gears.c -o tinygl/gears.kex -ltinygl -lck
 
