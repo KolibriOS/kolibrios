@@ -485,3 +485,37 @@ void kos_blit(int dstx, int dsty, int w, int h, int srcx,
 	
 }
 
+void kos_move_window(int posx, int posy, int sizex, int sizey)
+{
+    __asm__ __volatile__(
+    "int $0x40"
+    ::"a"(67),
+      "b"(posx),
+      "c"(posy),
+      "d"(sizex),
+      "S"(sizey));
+};
+
+void kos_text(int x, int y, int color, const char* text, int len)
+{
+	asm volatile ("int $0x40"::"a"(4),"b"((x<<16) | y),"c"(color),"d"((unsigned long)text),"S"(len));
+};
+
+void kos_screen_max(int* x, int* y)
+{
+	unsigned long v;
+    __asm__ __volatile__(
+    "int $0x40"
+    :"=a"(v)
+    :"a"(14));
+    
+    if(x) *x = v >> 16;
+	if(y) *y = v & 0xFFFF;
+};
+
+int kol_get_key()
+{
+	unsigned short __ret;
+	asm volatile("int $0x40":"=a"(__ret):"0"(2));
+	if(!(__ret & 0xFF)) return (__ret>>8)&0xFF; else return 0;
+}

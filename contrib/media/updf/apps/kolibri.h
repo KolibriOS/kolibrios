@@ -3,6 +3,16 @@
 #define NULL ((void*)0)
 #endif
 
+#define EVENT_REDRAW              0x00000001
+#define EVENT_KEY                 0x00000002
+#define EVENT_BUTTON              0x00000004
+#define EVENT_END_REQUEST         0x00000008
+#define EVENT_DESKTOP_BACK_DRAW   0x00000010
+#define EVENT_MOUSE_CHANGE        0x00000020
+#define EVENT_IPC		          0x00000040
+#define EVENT_MOUSE_CURSOR_MASK   0x40000000
+#define EVENT_MOUSE_WINDOW_MASK   0x80000000
+
 #define SHM_OPEN		0
 #define SHM_OPEN_ALWAYS	0x04
 #define SHM_CREATE		0x08 
@@ -149,3 +159,41 @@ void kos_blit(int dstx, int dsty, int w, int h, int srcx,
 	int srcy,int srcw, int srch, int stride, char *d);
 int kos_random(int num);
 int kos_get_mouse_wheels(void);
+
+#define OLD -1
+void kos_move_window(int posx, int posy, int sizex, int sizey);
+
+void kos_text(int x, int y, int color, const char* text, int len);
+
+void kol_btn_define(unsigned x, unsigned y, unsigned w, unsigned h, unsigned d, unsigned c);
+void kos_screen_max(int* x, int* y);
+int kol_get_key();
+
+//// Struct from menuet/os.h
+
+typedef unsigned char       __u8;
+typedef unsigned short      __u16;
+typedef unsigned long       __u32;
+
+#pragma pack(push,1)
+
+struct process_table_entry
+{
+ __u32 cpu_usage;
+ __u16 pos_in_windowing_stack;
+ __u16 win_stack_val_at_ecx;
+ __u16 reserved1;
+ char name[12];
+ __u32 memstart;
+ __u32 memused;
+ __u32 pid;
+ __u32 winx_start,winy_start;
+ __u32 winx_size,winy_size;
+ __u16 thread_state;
+ __u16 reserved2;
+ __u32 client_left,client_top,client_width,client_height;
+ __u8 window_state;
+ __u8 reserved3[1024-71];
+};
+
+#pragma pack(pop)

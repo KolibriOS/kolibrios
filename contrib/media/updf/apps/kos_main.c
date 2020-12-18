@@ -1,14 +1,13 @@
-#include <menuet/os.h>
+/*==== INCLUDES ====*/
+
+//#include <menuet/os.h>
+#include <kos32sys.h>
 #include "fitz.h"
 #include "mupdf.h"
 #include "pdfapp.h"
 #include "icons/allbtns.h"
 #include "kolibri.h"
 
-void run_app()
-{
-	return;
-}
 
 /*==== DATA ====*/
 
@@ -58,7 +57,7 @@ void winblit(pdfapp_t *app);
 void DrawPagination(void);
 void HandleNewPageNumber(unsigned char key);
 void ApplyNewPageNumber(void);
-void DrawWindow(void);
+void DrawMainWindow(void);
 
 
 // not implemented yet
@@ -230,14 +229,14 @@ void HandleNewPageNumber(unsigned char key)
 	if (key==ASCII_KEY_ESC) 
 	{
 		key_mode_enter_page_number = 0;
-		DrawWindow();
+		DrawMainWindow();
 		return;
 	}
 
 	itoa(new_page_number, label_new_page, 10);
 	strcat(label_new_page, "_");
 	kol_paint_bar(show_area_x,  6, show_area_w, 22, 0xFDF88E);
-	__menuet__write_text(show_area_x + show_area_w/2 - strlen(label_new_page)*6/2, 14, 0x000000, label_new_page, strlen(label_new_page));
+	kos_text(show_area_x + show_area_w/2 - strlen(label_new_page)*6/2, 14, 0x000000, label_new_page, strlen(label_new_page));
 
 	if (new_page_number > gapp.pagecount) ApplyNewPageNumber();
 }
@@ -254,16 +253,16 @@ void DrawPagination(void)
 	char pages_display[12];
 	kol_paint_bar(show_area_x,  6, show_area_w, 22, 0xF4F4F4);
 	sprintf (pages_display, "%d/%d", gapp.pageno, gapp.pagecount);
-	__menuet__write_text(show_area_x + show_area_w/2 - strlen(pages_display)*6/2, 14, 0x000000, pages_display, strlen(pages_display));
+	kos_text(show_area_x + show_area_w/2 - strlen(pages_display)*6/2, 14, 0x000000, pages_display, strlen(pages_display));
 }
 
 void DrawToolbarButton(int x, char image_id)
 {
-	__menuet__make_button(x, 5, 26-1, 24-1, 10 + image_id + BT_HIDE, 0);
-	__menuet__putimage(x, 5, 26, 24, image_id * 24 * 26 * 3 + toolbar_image);
+	kol_btn_define(x, 5, 26-1, 24-1, 10 + image_id + BT_HIDE, 0);
+	draw_bitmap(image_id * 24 * 26 * 3 + toolbar_image, x, 5, 26, 24);
 }
 
-void DrawWindow(void)
+void DrawMainWindow(void)
 {
 	kol_paint_bar(0, 0, Form.client_width, TOOLBAR_HEIGHT - 1, 0xe1e1e1); // bar on the top (buttons holder)
 	kol_paint_bar(0, TOOLBAR_HEIGHT - 1, Form.client_width, 1, 0x7F7F7F);
@@ -276,7 +275,7 @@ void DrawWindow(void)
 	show_area_x = Form.client_width - show_area_w - 34;
 	DrawToolbarButton(show_area_x - 26,4); //prev page
 	DrawToolbarButton(show_area_x + show_area_w,5); //nex page
-	__menuet__make_button(show_area_x-1,  5, show_area_w+1, 23, 20 + BT_HIDE, 0xA4A4A4);
+	kol_btn_define(show_area_x-1,  5, show_area_w+1, 23, 20 + BT_HIDE, 0xA4A4A4);
 	kol_paint_bar(show_area_x,  5, show_area_w, 1, 0xA4A4A4);
 	kol_paint_bar(show_area_x, 28, show_area_w, 1, 0xA4A4A4);
 	winblit(&gapp);
@@ -333,7 +332,6 @@ void RunApp(char app[], char param[])
 	r.p21 = app;
 	kol_file_70(&r);
 }
-
 
 void PageZoomIn(void)
 {
@@ -398,38 +396,39 @@ int main (int argc, char* argv[])
 	kol_board_puts("Inital paint\n");
 	
 	int butt, key, screen_max_x, screen_max_y;
-	__menuet__get_screen_max(&screen_max_x, &screen_max_y);
-	__menuet__set_bitfield_for_wanted_events(EVENT_REDRAW+EVENT_KEY+EVENT_BUTTON+EVENT_MOUSE_CHANGE);
+	kos_screen_max(&screen_max_x, &screen_max_y);
+	kol_event_mask(EVENT_REDRAW+EVENT_KEY+EVENT_BUTTON+EVENT_MOUSE_CHANGE);
 
 	for(;;)
 	{
-		switch(__menuet__wait_for_event())
+		switch(get_os_event())
 		{
 			case evReDraw:
 				// gapp.shrinkwrap = 2;
-				__menuet__window_redraw(1);
-				__menuet__define_window(screen_max_x / 2 - 350-50+kos_random(50), 
+				BeginDraw();
+				kol_wnd_define(screen_max_x / 2 - 350-50+kos_random(50), 
 				screen_max_y / 2 - 300-50+kos_random(50), 
 				700, 600, 0x73000000, 0x800000FF, Title);
-				__menuet__window_redraw(2);
-				__menuet__get_process_table(&Form, PID_WHOAMI);
-				if (Form.window_state > 2) continue; //fix rolled up
+				EndDraw();
+				get_proc_info((char*)&Form);
 				
-				// ??
-				Form.client_width++; //fix for Menuet kernel bug
-				Form.client_height++; //fix for Menuet kernel bug
+				if (Form.window_state > 2) continue; // if Rolled-up
 				
-				DrawWindow();
+				// Minimal size (700x600)
+				if (Form.winx_size < 700) kos_move_window(OLD, OLD, 700, OLD);
+				if (Form.winy_size < 600) kos_move_window(OLD, OLD, OLD, 600);
+				
+				DrawMainWindow();
 				break;
 
 			case evKey:
-				key = __menuet__getkey(); 
+				key = kol_get_key();
 				if (key_mode_enter_page_number)
 				{
 					HandleNewPageNumber(key);
 					break;
 				}
-				if (key==ASCII_KEY_ESC)  DrawWindow(); //close help 
+				if (key==ASCII_KEY_ESC)  DrawMainWindow(); //close help 
 				if (key==ASCII_KEY_PGDN) pdfapp_onkey(&gapp, ']');
 				if (key==ASCII_KEY_PGUP) pdfapp_onkey(&gapp, '[');
 				if (key==ASCII_KEY_HOME) pdfapp_onkey(&gapp, 'g');
@@ -444,7 +443,7 @@ int main (int argc, char* argv[])
 				break;
 
 			case evButton:
-				butt = __menuet__get_button_id();
+				butt = get_os_button();
 				if(butt==1) exit(0);
 				if(butt==10) RunOpenApp(argv[0]);
 				if(butt==11) PageZoomOut(); //magnify -
@@ -452,10 +451,10 @@ int main (int argc, char* argv[])
 				if(butt==13) //show help
 				{
 					kol_paint_bar(0, TOOLBAR_HEIGHT, Form.client_width, Form.client_height - TOOLBAR_HEIGHT, 0xF2F2F2);	
-					__menuet__write_text(20, TOOLBAR_HEIGHT + 20      , 0x90000000, "uPDF for KolibriOS v1.2", 0);
-					__menuet__write_text(21, TOOLBAR_HEIGHT + 20      , 0x90000000, "uPDF for KolibriOS v1.2", 0);
+					kos_text(20, TOOLBAR_HEIGHT + 20      , 0x90000000, "uPDF for KolibriOS v1.2", 0);
+					kos_text(21, TOOLBAR_HEIGHT + 20      , 0x90000000, "uPDF for KolibriOS v1.2", 0);
 					for (ii=0; help[ii]!=0; ii++) {
-						__menuet__write_text(20, TOOLBAR_HEIGHT + 60 + ii * 15, 0x80000000, help[ii], 0);
+						kos_text(20, TOOLBAR_HEIGHT + 60 + ii * 15, 0x80000000, help[ii], 0);
 					}
 				}
 				if(butt==14) pdfapp_onkey(&gapp, '['); //previous page
