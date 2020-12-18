@@ -247,7 +247,7 @@ void TWebBrowser::ParseHtml(dword _bufpointer, _bufsize){
 					goto _DEFAULT;
 			}
 			_TAG:
-			if (tag.parse_tag(#bufpos, bufpointer + bufsize)) {
+			if (tag.parse(#bufpos, bufpointer + bufsize)) {
 				CheckForLineBreak();
 				Paint();
 				$push cur_encoding
@@ -307,7 +307,6 @@ bool TWebBrowser::CheckForLineBreak()
 
 	strcpy(#line, #new_line_text);
 	NewLine();
-	//while (CheckForLineBreak()==true) {};
 	return true;
 }
 //============================================================================================

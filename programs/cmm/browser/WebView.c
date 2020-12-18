@@ -41,7 +41,7 @@
 //                       DATA                        //
 //                                                   //
 //===================================================//
-char version[]="WebView 3.1";
+char version[]="WebView 3.11";
 
 #define DEFAULT_URL URL_SERVICE_HOMEPAGE
 
@@ -223,6 +223,7 @@ void main()
 					notify("'Too many redirects.' -E");
 					StopLoading();
 					redirect_count = 0;
+					if (http_get_type==IMG) goto _IMG_RES;
 				}
 			} else {
 				// Loading the page is complete, free resources
@@ -235,6 +236,7 @@ void main()
 					LoadInternalPage(cache.current_buf, cache.current_size);
 				}
 				else if (http_get_type==IMG) {
+					_IMG_RES:
 					cache.add(cur_img_url, http.content_pointer, http.content_received, IMG);
 					free(http.content_pointer);
 					GetImg(false);
@@ -934,6 +936,7 @@ dword GetImg(bool _new)
 	for (i = 0; i < WB1.img_url.count; i++)
 	{
 		cur_img_url = WB1.img_url.get(i);
+		if (debug_mode) {debug("get img: ");debugln(cur_img_url);}
 		if (cache.has(cur_img_url)==false) {
 			prbar.max = WB1.img_url.count;
 			prbar.value = i;

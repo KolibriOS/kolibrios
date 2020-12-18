@@ -3,15 +3,14 @@ struct _tag
 {
 	char name[32];
 	char prior[32];
-	char params[6000];
 	bool opened;
 	collection attributes;
 	collection values;
 	dword value;
 	bool is();
-	bool parse_tag();
+	bool parse();
 	void debug_tag();
-	bool get_next_param();
+	dword get_next_param();
 	dword get_value_of();
 } tag=0;
 
@@ -24,17 +23,17 @@ bool _tag::is(dword _text)
 	}
 }
 
-bool _tag::parse_tag(dword _bufpos, bufend)
+bool _tag::parse(dword _bufpos, bufend)
 {
 	bool retok = true;
 	dword bufpos = ESDWORD[_bufpos];
+	dword params, paramsend;
 
 	dword closepos;
 	dword whitepos;
 
 	if (name) strcpy(#prior, #name); else prior = '\0';
 	name = '\0';
-	params = '\0';
 	attributes.drop();
 	values.drop();		
 
@@ -47,6 +46,7 @@ bool _tag::parse_tag(dword _bufpos, bufend)
 			bufpos++;
 		}
 		bufpos+=2;
+		retok = false;
 		goto _RET;
 	}
 
@@ -59,38 +59,45 @@ bool _tag::parse_tag(dword _bufpos, bufend)
 
 	closepos = strchr(bufpos, '>');
 	whitepos = strchrw(bufpos, bufend-bufpos);
-	if (whitepos > closepos) {
+
+	if (debug_mode) {
+		if (!closepos) debugln("null closepos");
+		if (!whitepos) debugln("null whitepos");
+	}
+
+	if (!whitepos) || (whitepos > closepos) {
 		//no param
 		strncpy(#name, bufpos, math.min(closepos - bufpos, sizeof(tag.name)));
 		debug_tag();
-		params = '\0';
 		bufpos = closepos;
 	} else {
 		//we have param
 		strncpy(#name, bufpos, math.min(whitepos - bufpos, sizeof(tag.name)));
-		strncpy(#params, whitepos, math.min(closepos - whitepos, sizeof(tag.params)));
 		debug_tag();
 		bufpos = closepos;
-		while (get_next_param());
+
+		params = malloc(closepos - whitepos + 1);
+		strncpy(params, whitepos, closepos - whitepos);
+		if (debug_mode) { debug("params: "); debugln(params+1); }
+		paramsend = params + closepos - whitepos;
+		while (paramsend = get_next_param(params, paramsend-1));
+		free(params);
 	}
 
-	if (!name) {
+	if (name) {
+		strlwr(#name);
+		// ignore text inside the next tags
+		if (is("script")) || (is("style")) || (is("binary")) || (is("select")) { 
+			strcpy(#prior, #name);
+			sprintf(#name, "</%s>", #prior);
+			if (strstri(bufpos, #name)) bufpos = EAX-1;
+			retok = false;
+		} else {
+			if (name[strlen(#name)-1]=='/') name[strlen(#name)-1]=NULL; //for <br/>
+		}
+	} else {
 		retok = false;
-		goto _RET;
 	}
-
-	strlwr(#name);
-
-	// ignore text inside the next tags
-	if (is("script")) || (is("style")) || (is("binary")) || (is("select")) { 
-		strcpy(#prior, #name);
-		sprintf(#name, "</%s>", #prior);
-		if (strstri(bufpos, #name)) bufpos = EAX-1;
-		retok = false;
-		goto _RET;
-	}
-
-	if (name[strlen(#name)-1]=='/') name[strlen(#name)-1]=NULL; //for <br/>
 
 _RET:
 	ESDWORD[_bufpos] = bufpos;
@@ -104,63 +111,58 @@ void _tag::debug_tag()
 		if (!opened) debugch('/');
 		debug(#name);
 		debugln(">");
-		if (params) {
-			debug("params: "); 
-			debugln(#params+1);
-		}
 	}
 }
 
-bool _tag::get_next_param()
+dword _tag::get_next_param(dword ps, pe)
 {
-	byte  quotes = NULL;
-	int   i;
+	// "ps" - param start
+	// "pe" - param end
+	// "q"  - quote char
+	char q = NULL;
+	dword fixeq;
 	unsigned char  val[6000];
 	unsigned char attr[6000];
-
-	if (!params) return false;
 	
-	i = strlen(#params) - 1;
-	if (params[i] == '/') i--;
-	while (i>0) && (__isWhite(params[i])) i--;
+	if (ESBYTE[pe] == '/') pe--;
+	while (pe>ps) && (__isWhite(ESBYTE[pe])) pe--;
 
-	if (params[i] == '"') || (params[i] == '\'')
+	if (ESBYTE[pe] == '"') || (ESBYTE[pe] == '\'')
 	{
-		//remove quotes
-		quotes = params[i];
-		params[i] = '\0';
-		i--;
+		//remove quote
+		q = ESBYTE[pe];
+		ESBYTE[pe] = '\0';
+		pe--;
 
 		//find VAL start and copy
-		i = strrchr(#params, quotes);
-		strlcpy(#val, #params + i, sizeof(val)-1);
-		params[i] = '\0'; 
-		i--;
+		pe = strrchr(ps, q) + ps;
+		strlcpy(#val, pe, sizeof(val)-1);
+		ESBYTE[pe] = '\0'; 
+		pe--;
 
 		//find ATTR end
-		while (i > 0) && (params[i] != '=') i--;
-		params[i+1] = '\0';
+		while (pe > ps) && (ESBYTE[pe] != '=') pe--;
+		ESBYTE[pe+1] = '\0';
 	}
 	else
 	{
 		//find VAL start and copy
-		while (i > 0) && (params[i] != '=') i--;
-		i++;
-		strlcpy(#val, #params + i, sizeof(val)-1);
-
+		while (pe > ps) && (ESBYTE[pe] != '=') pe--;
+		pe++;
+		strlcpy(#val, pe, sizeof(val)-1);
 		//already have ATTR end
 	}
 
 	//find ATTR start and copy
-	while (i>0) && (!__isWhite(params[i])) i--;
-	strlcpy(#attr, #params + i + 1, sizeof(attr)-1);
-	params[i] = '\0';
+	while (pe>ps) && (!__isWhite(ESBYTE[pe])) pe--;
+	strlcpy(#attr, pe + 1, sizeof(attr)-1);
+	ESBYTE[pe] = '\0';
  
 	//fix case: src=./images/KolibriOS_logo2.jpg?sid=e8ece8b38b
-	i = strchr(#attr,'=');
-	if (!quotes) && (i) {
-		strlcpy(#val, i+1, sizeof(val)-1);
-		ESBYTE[i+1] = '\0';
+	fixeq = strchr(#attr,'=');
+	if (!q) && (fixeq) {
+		strlcpy(#val, fixeq+1, sizeof(val)-1);
+		ESBYTE[fixeq+1] = '\0';
 	}
 	strlwr(#attr);
 	strrtrim(#val);
@@ -174,7 +176,8 @@ bool _tag::get_next_param()
 		debugch('\n');
 	}
 
-	return true;
+	if (pe==ps) return NULL;
+	return pe;
 }
 
 dword _tag::get_value_of(dword _attr_name)

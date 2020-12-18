@@ -7,12 +7,12 @@ char rmb_menu[] =
 "Посмотреть исходник|Ctrl+U
 Редактировать исходник";
 char main_menu[] = 
-"Открыть файл...|Ctrl+O
-Новое окно|Ctrl+N
+"Открыть файл...|Ctrl+O 
+Новое окно|Ctrl+N 
 -
-История|Ctrl+H
-Менеджер загрузок|Ctrl+J
-Очистить кэш
+История|Ctrl+H 
+Менеджер загрузок  |Ctrl+J 
+Очистить кэш|Ctrl+F5
 Обновить браузер";
 char link_menu[] =
 "Открыть в новой вкладке
@@ -39,12 +39,12 @@ char rmb_menu[] =
 "View source|Ctrl+U
 Edit source";
 char main_menu[] = 
-"Open local file...|Ctrl+O
-New window|Ctrl+N
+"Open local file...|Ctrl+O 
+New window|Ctrl+N 
 -
-History|Ctrl+H
-Download Manager|Ctrl+J
-Clear cache
+History|Ctrl+H 
+Download Manager  |Ctrl+J 
+Clear cache|Ctrl+F5
 Update browser";
 char link_menu[] =
 "Open in new tab
