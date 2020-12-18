@@ -52,6 +52,40 @@ typedef struct
   int           out_size;
 }ioctl_t;
 
+#pragma pack(push, 1)
+struct proc_info
+{
+	unsigned long cpu_usage;
+	unsigned short pos_in_stack;
+	unsigned short slot;
+	unsigned short reserved2;
+	char name[12];
+	unsigned long address;
+	unsigned long memory_usage;
+	unsigned long ID;
+	unsigned long left,top;
+	unsigned long width,height;
+	unsigned short thread_state;
+	unsigned short reserved3;
+	unsigned long cleft, ctop, cwidth, cheight;
+	unsigned char window_state;
+	unsigned char reserved4[1024-71];
+};
+#pragma pack(pop)
+
+struct kolibri_system_colors {
+  color_t frame_area;
+  color_t grab_bar;
+  color_t grab_bar_button;
+  color_t grab_button_text;
+  color_t grab_text;
+  color_t work_area;
+  color_t work_button;
+  color_t work_button_text;
+  color_t work_text;
+  color_t work_graph;
+};
+
 static inline void begin_draw(void)
 {
     __asm__ __volatile__(
@@ -478,6 +512,13 @@ static inline int GetScreenSize(void)
     return retval;
 }
 
+static inline void get_system_colors(struct kolibri_system_colors *color_table)
+{
+  __asm__ volatile ("int $0x40"
+		    :
+		    :"a"(48),"b"(3),"c"(color_table),"d"(40)
+		    );
+}
 
 static inline void get_proc_info(char *info)
 {
