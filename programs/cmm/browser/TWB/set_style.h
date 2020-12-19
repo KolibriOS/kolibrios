@@ -74,17 +74,23 @@ void TWebBrowser::tag_title()
 void TWebBrowser::tag_font()
 {
 	style.font = tag.opened;
-	style.bg_color = page_bg;
 	if (tag.opened)
 	{
-		if (tag.get_value_of("bg")) style.bg_color = GetColor(tag.value);
+		if (tag.get_value_of("bg")) {
+			bg_colors.add(GetColor(tag.value));
+		} else {
+			bg_colors.add(bg_colors.get_last());
+		}
 		if (tag.get_value_of("color")) {
 			text_colors.add(GetColor(tag.value));
 		} else {
 			text_colors.add(text_colors.get_last());
 		}
 	}
-	else text_colors.pop();
+	else {
+		text_colors.pop();
+		bg_colors.pop();
+	}
 }
 
 void TWebBrowser::tag_div()
@@ -121,7 +127,6 @@ void TWebBrowser::tag_a()
 		}
 	} else {
 		link = false;
-		style.bg_color = page_bg;
 	}
 }
 
@@ -147,9 +152,9 @@ void TWebBrowser::tag_meta_xml()
 void TWebBrowser::tag_code()
 {
 	if (style.pre = tag.opened) {
-		style.bg_color = 0xe4ffcb; 
+		bg_colors.add(0xe4ffcb);
 	} else {
-		style.bg_color = page_bg;
+		bg_colors.pop();
 	}
 }
 
@@ -205,8 +210,8 @@ void TWebBrowser::tag_body()
 	if (tag.get_value_of("alink"))  link_color_active = GetColor(tag.value);
 	if (tag.get_value_of("text"))   text_colors.set(0, GetColor(tag.value));
 	if (tag.get_value_of("bgcolor")) {
-		style.bg_color = page_bg = GetColor(tag.value);
-		canvas.Fill(0, page_bg);
+		bg_colors.set(0, GetColor(tag.value));
+		canvas.Fill(0, bg_colors.get(0));
 	}
 	// Autodetecting encoding if no encoding was set
 	if (tag.opened) && (custom_encoding==-1) && (cur_encoding == CH_CP866) {
@@ -247,7 +252,7 @@ void TWebBrowser::tag_h1234_caption()
 			NewLine();
 			zoom=1;
 			list.font_type = 10011000b;
-			list.item_h = BASIC_LINE_H;
+			style.cur_line_h = list.item_h = BASIC_LINE_H;
 		}		
 	}
 }
@@ -260,7 +265,7 @@ void TWebBrowser::tag_img()
 	dword cur_img;
 	int img_x, img_y, img_w, img_h;
 
-	if (!tag.get_value_of("src")) goto NOIMG;
+	if (!tag.get_value_of("src")) return;
 
 	if (streqrp(tag.value, "data:")) {
 		if (!strstr(tag.value, "base64,")) goto NOIMG;
@@ -305,11 +310,10 @@ IMGOK:
 
 	img_w = math.min(img_w, canvas.bufw - img_x);
 
-	stolbec += img_w / 6;
-	if (stolbec > list.column_max) NewLine();
+	style.cur_line_h = math.max(list.item_h, img_h);
 
-	if (img_h > list.item_h + 5) {
-		draw_y += img_h - list.item_h; 
+	stolbec += img_w / 6;
+	if (stolbec > list.column_max) {
 		NewLine();
 	}
 

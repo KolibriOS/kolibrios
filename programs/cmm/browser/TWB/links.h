@@ -87,7 +87,7 @@ bool PAGE_LINKS::hover(dword list_y, list_first)
 				CursorPointer.Set();
 
 				draw_underline(active, list_first, list_y, link_color_default);			
-				draw_underline(i, list_first, list_y, page_bg);
+				draw_underline(i, list_first, list_y, DEFAULT_BG_COL);
 
 				active_url = link.get(i);
 				active = i;

@@ -3,7 +3,7 @@
 #include "TWB\parse_tag.h"
 #include "TWB\special.h"
 #include "TWB\tag_list.h"
-dword page_bg;
+#define DEFAULT_BG_COL 0xffEBE8E9;
 dword link_color_default;
 dword link_color_active;
 #include "TWB\links.h"
@@ -22,9 +22,9 @@ struct STYLE {
 	blq,
 	button,
 	image;
-	dword bg_color;
 	LIST tag_list;
 	dword title;
+	dword cur_line_h;
 	void reset();
 };
 
@@ -32,6 +32,7 @@ void STYLE::reset()
 {
 	b = u = s = h = blq = pre = title = false;
 	font = false;
+	cur_line_h = NULL;
 	tag_list.reset();
 }
 
@@ -103,9 +104,10 @@ void TWebBrowser::Paint()
 		start_x = stolbec * list.font_w + BODY_MARGIN + list.x;
 		stolbec_len = strlen(#line) * zoom;
 		line_length = stolbec_len * list.font_w;
+		style.cur_line_h = math.max(style.cur_line_h, list.item_h);
 
-		if (style.bg_color!=page_bg) {
-			canvas.DrawBar(start_x, draw_y, line_length, list.item_h, style.bg_color);
+		if (bg_colors.get_last() - bg_colors.get(0)) {
+			canvas.DrawBar(start_x, draw_y, line_length, list.item_h, bg_colors.get_last());
 		}
 
 		if (style.image) {
@@ -141,13 +143,15 @@ void TWebBrowser::SetPageDefaults()
 	style.reset();
 	link_color_default = 0x0000FF;
 	link_color_active = 0xFF0000;
-	style.bg_color = page_bg = 0xffEBE8E9; //E0E3E3 EBE8E9
-	canvas.Fill(0, page_bg);
+	//style.cur_line_h = list.item_h;
 	links.clear();
 	anchors.clear();
 	img_url.drop();
 	text_colors.drop();
 	text_colors.add(0);
+	bg_colors.drop();
+	bg_colors.add(DEFAULT_BG_COL);
+	canvas.Fill(0, DEFAULT_BG_COL);
 	header = NULL;
 	cur_encoding = CH_CP866;
 	draw_y = BODY_MARGIN;
@@ -326,7 +330,8 @@ void TWebBrowser::NewLine()
 	}
 
 	if (t_html) && (!t_body) return;
-	draw_y += list.item_h;
+	draw_y += style.cur_line_h;
+	style.cur_line_h = list.item_h;
 	if (style.blq) stolbec = 6; else stolbec = 0;
 	stolbec += style.tag_list.level * 5;
 }

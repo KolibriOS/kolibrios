@@ -45,7 +45,7 @@ bool CANVAS::Init(dword i_bufx, i_bufy, i_bufw, i_bufh)
 void CANVAS::Fill(dword start_pointer, i_fill_color)
 {
 	dword max_i = bufw * bufh * 4 - start_pointer/4;
-	fill_color = i_fill_color;
+	fill_color = i_fill_color | 0xFF000000; //set background color non-transparent
 	@MEMSETD(buf_data+start_pointer+8, max_i, fill_color);
 }
 
