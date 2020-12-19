@@ -33,6 +33,10 @@ void kol_wnd_move(unsigned x, unsigned y)
 asm volatile ("int $0x40"::"a"(67), "b"(x), "c"(y), "d"(-1), "S"(-1));
 }
 
+void kol_wnd_size(unsigned x, unsigned y)
+{
+asm volatile ("int $0x40"::"a"(67), "b"(-1), "c"(-1), "d"(x), "S"(y));
+};
 
 void kol_event_mask(unsigned e)
 {
@@ -485,17 +489,6 @@ void kos_blit(int dstx, int dsty, int w, int h, int srcx,
 	
 }
 
-void kos_move_window(int posx, int posy, int sizex, int sizey)
-{
-    __asm__ __volatile__(
-    "int $0x40"
-    ::"a"(67),
-      "b"(posx),
-      "c"(posy),
-      "d"(sizex),
-      "S"(sizey));
-};
-
 void kos_text(int x, int y, int color, const char* text, int len)
 {
 	asm volatile ("int $0x40"::"a"(4),"b"((x<<16) | y),"c"(color),"d"((unsigned long)text),"S"(len));
@@ -513,7 +506,7 @@ void kos_screen_max(int* x, int* y)
 	if(y) *y = v & 0xFFFF;
 };
 
-int kol_get_key()
+int kos_get_key()
 {
 	unsigned short __ret;
 	asm volatile("int $0x40":"=a"(__ret):"0"(2));

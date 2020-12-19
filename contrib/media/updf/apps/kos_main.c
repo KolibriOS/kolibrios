@@ -1,6 +1,5 @@
 /*==== INCLUDES ====*/
 
-//#include <menuet/os.h>
 #include <kos32sys.h>
 #include "fitz.h"
 #include "mupdf.h"
@@ -415,14 +414,14 @@ int main (int argc, char* argv[])
 				if (Form.window_state > 2) continue; // if Rolled-up
 				
 				// Minimal size (700x600)
-				if (Form.winx_size < 700) kos_move_window(OLD, OLD, 700, OLD);
-				if (Form.winy_size < 600) kos_move_window(OLD, OLD, OLD, 600);
+				if (Form.winx_size < 700) kol_wnd_size(700, OLD);
+				if (Form.winy_size < 600) kol_wnd_size(OLD, 600);
 				
 				DrawMainWindow();
 				break;
 
 			case evKey:
-				key = kol_get_key();
+				key = kos_get_key();
 				if (key_mode_enter_page_number)
 				{
 					HandleNewPageNumber(key);

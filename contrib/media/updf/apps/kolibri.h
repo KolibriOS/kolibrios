@@ -97,7 +97,11 @@ void	*data;
 void kol_exit();
 void kol_sleep(unsigned d);
 void kol_wnd_define(unsigned x, unsigned y, unsigned w, unsigned h, unsigned cs, unsigned b, char *t);
+
+#define OLD -1
 void kol_wnd_move(unsigned x, unsigned y);
+void kol_wnd_size(unsigned x, unsigned y);
+
 void kol_wnd_caption(char *s);
 void kol_event_mask(unsigned e);
 unsigned kol_event_wait();
@@ -154,22 +158,19 @@ void  kol_buffer_close(char name[]);
 int kol_clip_num();
 char* kol_clip_get(int n);
 int kol_clip_set(int n, char buffer[]);
+void kol_btn_define(unsigned x, unsigned y, unsigned w, unsigned h, unsigned d, unsigned c);
 
 void kos_blit(int dstx, int dsty, int w, int h, int srcx, 
 	int srcy,int srcw, int srch, int stride, char *d);
 int kos_random(int num);
 int kos_get_mouse_wheels(void);
-
-#define OLD -1
-void kos_move_window(int posx, int posy, int sizex, int sizey);
-
+void kos_screen_max(int* x, int* y);
+int kos_get_key();
 void kos_text(int x, int y, int color, const char* text, int len);
 
-void kol_btn_define(unsigned x, unsigned y, unsigned w, unsigned h, unsigned d, unsigned c);
-void kos_screen_max(int* x, int* y);
-int kol_get_key();
 
 //// Struct from menuet/os.h
+//// Need rewrite!
 
 typedef unsigned char       __u8;
 typedef unsigned short      __u16;
