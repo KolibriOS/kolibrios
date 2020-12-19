@@ -4,6 +4,7 @@
 #include <newlib.h>
 #include <stdint.h>
 #include <stddef.h>
+#include <string.h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -125,6 +126,16 @@ void sys_create_window(int x, int y, int w, int h, const char *name,
      "S"(0) : "memory");
 };
 
+#define OLD -1
+static inline
+void sys_change_window(int new_x, int new_y, int new_w, int new_h)
+{
+    __asm__ __volatile__(
+        "int $0x40"
+        ::"a"(67), "b"(new_x), "c"(new_y), "d"(new_w),"S"(new_h)
+    );
+}
+
 static inline
 void define_button(uint32_t x_w, uint32_t y_h, uint32_t id, uint32_t color)
 {
@@ -177,6 +188,18 @@ void draw_text_sys(const char *text, int x, int y, int len, color_t color)
       "S"(len),"c"(color)
      :"memory");
 }
+
+/*
+void define_button_text(int x, int y, int w, int h, uint32_t id, uint32_t color, char* text)
+{
+    define_button(x * 65536 + w, y * 65536 + h, id, color);
+    
+    int tx = ((((-strlen(text))*8)+w)/2)+x;
+	int ty = h/2-7+y;
+
+	draw_text_sys(text, tx, ty, strlen(text), 0x90000000);
+};
+*/
 
 static inline
 uint32_t get_skin_height(void)
@@ -264,6 +287,20 @@ static inline uint32_t  set_cursor(uint32_t  cursor)
     :"a"(37), "b"(5), "c"(cursor));
     return old;
 };
+
+
+#define EVM_REDRAW        1
+#define EVM_KEY           2
+#define EVM_BUTTON        4
+#define EVM_EXIT          8
+#define EVM_BACKGROUND    16
+#define EVM_MOUSE         32
+#define EVM_IPC           64
+#define EVM_STACK         128
+#define EVM_DEBUG         256
+#define EVM_STACK2        512
+#define EVM_MOUSE_FILTER  0x80000000
+#define EVM_CURSOR_FILTER 0x40000000
 
 static inline uint32_t set_wanted_events_mask(uint32_t event_mask)
 {
@@ -511,6 +548,19 @@ static inline int GetScreenSize(void)
     :"a"(61), "b"(1));
     return retval;
 }
+
+static inline
+pos_t max_screen_size()
+{
+	pos_t size;
+    __asm__ __volatile__(
+    "int $0x40"
+    :"=a"(size)
+    :"a"(14));
+    
+      
+     return size;
+};
 
 static inline void get_system_colors(struct kolibri_system_colors *color_table)
 {
