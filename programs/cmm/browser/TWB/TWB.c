@@ -83,8 +83,9 @@ struct TWebBrowser {
 //============================================================================================
 void TWebBrowser::Paint()
 {
-	dword start_x, line_length, stolbec_len;
-	dword text_color__;
+	unsigned px; //paint x coordinate
+	unsigned pw; //paint y coordinate
+	   dword pc; //paint color
 	
 	if (style.title)
 	{
@@ -101,37 +102,37 @@ void TWebBrowser::Paint()
 	
 	if (line)
 	{
-		start_x = stolbec * list.font_w + BODY_MARGIN + list.x;
-		stolbec_len = strlen(#line) * zoom;
-		line_length = stolbec_len * list.font_w;
+		px = stolbec * list.font_w + BODY_MARGIN + list.x;
+		pw = strlen(#line) * zoom * list.font_w;
+		stolbec += strlen(#line) * zoom;
+
 		style.cur_line_h = math.max(style.cur_line_h, list.item_h);
 
 		if (bg_colors.get_last() - bg_colors.get(0)) {
-			canvas.DrawBar(start_x, draw_y, line_length, list.item_h, bg_colors.get_last());
+			canvas.DrawBar(px, draw_y, pw, list.item_h, bg_colors.get_last());
 		}
 
 		if (style.image) {
-			canvas.DrawBar(start_x, draw_y, line_length, list.item_h-1, 0xF9DBCB);
+			canvas.DrawBar(px, draw_y, pw, list.item_h-1, 0xF9DBCB);
 		}
 		if (style.button) {
-			canvas.DrawBar(start_x, draw_y, line_length, list.item_h - calc(zoom*2), 0xCCCccc);
-			canvas.DrawBar(start_x, draw_y + list.item_h - calc(zoom*2), line_length, zoom, 0x999999);
+			canvas.DrawBar(px, draw_y, pw, list.item_h - calc(zoom*2), 0xCCCccc);
+			canvas.DrawBar(px, draw_y + list.item_h - calc(zoom*2), pw, zoom, 0x999999);
 		}
 
-		text_color__ = text_colors.get_last();
-		if (link) && (text_color__ == text_colors.get(0)) text_color__ = link_color_default;
+		pc = text_colors.get_last();
+		if (link) && (pc == text_colors.get(0)) pc = link_color_default;
 
-		canvas.WriteText(start_x, draw_y, list.font_type, text_color__, #line, NULL);
-		if (style.b) canvas.WriteText(start_x+1, draw_y, list.font_type, text_color__, #line, NULL);
-		if (style.s) canvas.DrawBar(start_x, list.item_h / 2 - zoom + draw_y, line_length, zoom, text_color__);
-		if (style.u) canvas.DrawBar(start_x, list.item_h - zoom - zoom + draw_y, line_length, zoom, text_color__);
+		canvas.WriteText(px, draw_y, list.font_type, pc, #line, NULL);
+		if (style.b) canvas.WriteText(px+1, draw_y, list.font_type, pc, #line, NULL);
+		if (style.s) canvas.DrawBar(px, list.item_h / 2 - zoom + draw_y, pw, zoom, pc);
+		if (style.u) canvas.DrawBar(px, list.item_h - zoom - zoom + draw_y, pw, zoom, pc);
 		if (link) {
 			if (line[0]==' ') && (line[1]==NULL) {} else {
-				canvas.DrawBar(start_x, draw_y + list.item_h - calc(zoom*2)-1, line_length, zoom, link_color_default);
-				links.add_text(start_x, draw_y + list.y, line_length, list.item_h - calc(zoom*2)-1, zoom);				
+				canvas.DrawBar(px, draw_y + list.item_h - calc(zoom*2)-1, pw, zoom, link_color_default);
+				links.add_text(px, draw_y + list.y, pw, list.item_h - calc(zoom*2)-1, zoom);				
 			}
 		}
-		stolbec += stolbec_len;
 		if (debug_mode) debugln(#line);
 		line = NULL;
 	}
@@ -143,7 +144,7 @@ void TWebBrowser::SetPageDefaults()
 	style.reset();
 	link_color_default = 0x0000FF;
 	link_color_active = 0xFF0000;
-	//style.cur_line_h = list.item_h;
+	style.cur_line_h = list.item_h;
 	links.clear();
 	anchors.clear();
 	img_url.drop();

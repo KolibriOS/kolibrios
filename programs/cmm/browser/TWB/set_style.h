@@ -30,7 +30,7 @@ void TWebBrowser::SetStyle()
 	if (tag.is("blockquote")) { style.blq = tag.opened;    return; }
 	if (tag.is("dl"))         { if (tag.opened) NewLine(); return; }
 	if (tag.is("tr"))         { if (tag.opened) NewLine(); return; }
-	if (tag.is("td"))         { if (tag.opened) AddCharToTheLine(' '); return; }
+	if (tag.is("td"))         { /*if (tag.opened) AddCharToTheLine(' ');*/ return; }
 	if (tag.is("button"))     { style.button = tag.opened; stolbec++;  return; }
 	if (tag.is("w:r"))        { if (!tag.opened) style.b = false;      return; }
 	if (tag.is("h1"))         { tag_h1234_caption();  return; }
@@ -54,7 +54,7 @@ void TWebBrowser::SetStyle()
 	if (tag.is("html"))       { t_html = tag.opened;  return; }
 	if (tag.is("dd")) { 
 		//NewLine();
-		//if (tag.opened) stolbec += 5; //stolbec overflow! 
+		//if (tag.opened) stolbec += 5; //may overflow! 
 		return; 
 	}
 }
@@ -265,7 +265,9 @@ void TWebBrowser::tag_img()
 	dword cur_img;
 	int img_x, img_y, img_w, img_h;
 
-	if (!tag.get_value_of("src")) return;
+	if (!tag.get_value_of("data-large-image")) 
+		if (!tag.get_value_of("data-src")) 
+			if (!tag.get_value_of("src")) return;
 
 	if (streqrp(tag.value, "data:")) {
 		if (!strstr(tag.value, "base64,")) goto NOIMG;
@@ -281,6 +283,8 @@ void TWebBrowser::tag_img()
 	} 
 
 	if (!strcmp(tag.value + strrchr(tag.value, '.'), "svg")) goto NOIMG;
+	if (!strcmp(tag.value + strrchr(tag.value, '.'), "webp")) goto NOIMG;
+
 	strlcpy(#img_path, tag.value, sizeof(img_path)-1);
 	get_absolute_url(#img_path, history.current());
 
@@ -302,17 +306,21 @@ IMGOK:
 	img_h = ESDWORD[cur_img+8];
 	img_w = ESDWORD[cur_img+4];
 
-	if (img_w / 6 + stolbec > list.column_max) {
+	if (img_w / 8 + stolbec > list.column_max) {
 		NewLine();
 	} 
-	img_x = stolbec*list.font_w+3;
+	img_x = stolbec*list.font_w + 3;
 	img_y = draw_y;
+
+	if (img_h < list.item_h) img_y += list.item_h - img_h / 2 - 1; else img_y -= 2;
 
 	img_w = math.min(img_w, canvas.bufw - img_x);
 
 	style.cur_line_h = math.max(list.item_h, img_h);
 
-	stolbec += img_w / 6;
+	stolbec += img_w / 8;
+	if (img_w % 8) stolbec++;
+
 	if (stolbec > list.column_max) {
 		NewLine();
 	}
