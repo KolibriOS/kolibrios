@@ -286,7 +286,6 @@ extra_files = {
  {"kolibrios/utils/cnc_editor/kolibri.NC", PROGS .. "/other/cnc_editor/kolibri.NC"},
  {"kolibrios/utils/vmode", "common/vmode"},
  {"kolibrios/utils/texture", "common/utils/texture"},
- {"kolibrios/utils/thashview", "common/utils/thashview"},
  }
 if build_type == "rus" then tup.append_table(extra_files, {
  {"Docs/cp866/config.txt", build_type .. "/docs/CONFIG.TXT"},
@@ -682,6 +681,13 @@ tup.append_table(extra_files, {
  {"kolibrios/games/LaserTank/LaserTank", PROGS .. "/games/LaserTank/trunk/LaserTank"},
 })
 end -- tup.getconfig('NO_MSVC') ~= 'full'
+
+-- Programs that require TCC to compile.
+if tup.getconfig('NO_TCC') ~= 'full' then
+tup.append_table(extra_files, {
+ {"kolibrios/utils/thashview", PROGS .. "/other/TinyHashView/thashview"},
+})
+end -- tup.getconfig('NO_TCC') ~= 'full' 
 
 -- Programs that require GCC to compile.
 if tup.getconfig('NO_GCC') ~= 'full' then
