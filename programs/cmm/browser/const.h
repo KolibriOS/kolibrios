@@ -2,7 +2,6 @@
 char buildin_page_error[] = FROM "res/page_not_found_ru.htm""\0";
 char buildin_page_home[]  = FROM "res/homepage_ru.htm""\0";
 char buildin_page_help[]  = FROM "res/help_ru.htm""\0";
-char buildin_page_test[]  = FROM "res/test.htm""\0";
 char accept_language[]= "Accept-Language: ru\n";
 char rmb_menu[] = 
 "Посмотреть исходник|Ctrl+U
@@ -63,6 +62,8 @@ char clear_cache_ok[] = "'WebView\nThe cache has been cleared.' -tI";
 #define T_RENDERING "Rendering..."
 #define T_DONE_IN_SEC "Done in %i sec"
 #endif
+
+char buildin_page_test[]  = FROM "res/test.htm""\0";
 
 #define URL_SERVICE_HISTORY "WebView:history"
 #define URL_SERVICE_HOMEPAGE "WebView:home"
