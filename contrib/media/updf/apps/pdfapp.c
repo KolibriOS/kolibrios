@@ -15,6 +15,7 @@ enum panning
 	PAN_TO_BOTTOM
 };
 
+void DrawPageSides(void);
 static void pdfapp_showpage(pdfapp_t *app, int loadpage, int drawpage, int repaint);
 
 static void pdfapp_warn(pdfapp_t *app, const char *fmt, ...)
@@ -358,11 +359,15 @@ static void pdfapp_showpage(pdfapp_t *app, int loadpage, int drawpage, int repai
 		if (app->grayscale)
 			colorspace = fz_device_gray;
 		else
-//#ifdef _WIN32
+/*
+#ifdef _WIN32
 			colorspace = fz_device_bgr;
-//#else
-	//		colorspace = fz_device_rgb;
-//#endif
+#else
+			colorspace = fz_device_rgb;
+#endif
+*/
+			colorspace = fz_device_bgr;
+		
 		app->image = fz_new_pixmap_with_rect(colorspace, bbox);
 		fz_clear_pixmap_with_color(app->image, 255);
 		idev = fz_new_draw_device(app->cache, app->image);
@@ -371,7 +376,7 @@ static void pdfapp_showpage(pdfapp_t *app, int loadpage, int drawpage, int repai
 	}
 
 	if (repaint)
-	{
+	{		
 		pdfapp_panview(app, app->panx, app->pany);
 
 		if (app->shrinkwrap)
@@ -397,6 +402,8 @@ static void pdfapp_showpage(pdfapp_t *app, int loadpage, int drawpage, int repai
 	}
 
 	fz_flush_warnings();
+	
+	DrawPageSides();
 }
 
 static void pdfapp_gotouri(pdfapp_t *app, fz_obj *uri)

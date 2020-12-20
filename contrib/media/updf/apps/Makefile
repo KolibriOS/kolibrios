@@ -9,7 +9,7 @@ CFLAGS = -c -fno-ident -O2 -fomit-frame-pointer -fno-ident -U__WIN32__ -U_Win32 
 INCLUDES = -I $(SDK_DIR)/sources/newlib/libc/include -I $(SDK_DIR)/sources/freetype/include -I $(SDK_DIR)/sources/zlib -I ../fitz -I ../pdf
 LIBPATH = -L $(SDK_DIR)/lib -L /home/autobuild/tools/win32/mingw32/lib -L ../lib
 
-APPS_SRC := $(notdir $(wildcard *.c))
+APPS_SRC := kolibri.c kos_main.c pdfapp.c
 
 default: $(patsubst %.c,%.o,$(APPS_SRC))
 	$(LD) $(LDFLAGS) $(LIBPATH) --subsystem native -o updf kolibri.o pdfapp.o kos_main.o -lmupdf -lfitz -lgcc -lfitz -ldraw -ljpeg -ljbig2dec -lfreetype -lopenjpeg -lz -lc.dll

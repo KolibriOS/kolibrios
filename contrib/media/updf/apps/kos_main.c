@@ -131,47 +131,23 @@ void winblit(pdfapp_t *app)
 	if (Form.client_width > gapp.image->w) window_center = (Form.client_width - gapp.image->w) / 2; else window_center = 0;
 
 	gapp.panx = 0;
-	if (gapp.image->n == 4) {
-		 	kos_blit(window_center + Form.client_left, 
-		 		Form.client_top + TOOLBAR_HEIGHT, 
-		 		Form.client_width, 
-		 		Form.client_height - TOOLBAR_HEIGHT, 
-		 		gapp.panx, 
-		 		gapp.pany, 
-		 		gapp.image->w, 
-		 		gapp.image->h, 
-		 		gapp.image->w * gapp.image->n, 
-		 		gapp.image->samples
-		 	);
-	}
-	else if (gapp.image->n == 2)
-	{
-		int i = gapp.image->w*gapp.image->h;
-		unsigned char *color = malloc(i*4);
-		if (color != NULL)
-		{
-			unsigned char *s = gapp.image->samples;
-			unsigned char *d = color;
-			for (; i > 0 ; i--)
-			{
-				d[2] = d[1] = d[0] = *s++;
-				d[3] = *s++;
-				d += 4;
-			}
-			kos_blit(window_center + Form.client_left, 
-				Form.client_top + TOOLBAR_HEIGHT, 
-				Form.client_width, 
-				Form.client_height - TOOLBAR_HEIGHT, 
-		 		gapp.panx, 
-		 		gapp.pany, 
-				gapp.image->w, 
-				gapp.image->h, 
-				gapp.image->w * 4, 
-				color
-			);
-			free(color);
-		}
-	}
+	
+	kos_blit(window_center + Form.client_left, 
+		Form.client_top + TOOLBAR_HEIGHT, 
+		Form.client_width, 
+		Form.client_height - TOOLBAR_HEIGHT, 
+		gapp.panx, 
+		gapp.pany, 
+		gapp.image->w, 
+		gapp.image->h, 
+		gapp.image->w * gapp.image->n, // stride
+		gapp.image->samples // image
+	);
+	
+/*	
+	void kos_blit(int dstx, int dsty, int w, int h, int srcx, int srcy, int srcw, int srch, int stride, char *d)
+*/
+
 }
 
 
@@ -369,7 +345,7 @@ int main (int argc, char* argv[])
 	}
 	
 	if (argc == 1) {
-		kol_board_puts("uPDF: no param set, showing OpenDialog");
+		kol_board_puts("uPDF: no param set, showing OpenDialog...\n");
 		RunOpenApp(argv[0]);
 		exit(0);
 	}
@@ -381,15 +357,15 @@ int main (int argc, char* argv[])
 	int resolution = 72;
 	int pageno = 1;
 	fz_accelerate();
-	kol_board_puts("PDF init\n");
+	kol_board_puts("PDF init...\n");
 	pdfapp_init(&gapp);
 	gapp.scrw = 600;
 	gapp.scrh = 400;
 	gapp.resolution = resolution;
 	gapp.pageno = pageno;
-	kol_board_puts("PDF Open\n");
+	kol_board_puts("PDF Open...\n");
 	pdfapp_open(&gapp, full_argv, 0, 0);
-	kol_board_puts("PDF Opened\n");
+	kol_board_puts("PDF Opened!\n");
 	wintitle(&gapp, 0, full_argv);
 	 
 	kol_board_puts("Inital paint\n");
