@@ -7,8 +7,12 @@
 
 int main(int argc, char **argv)
 {
-    import_functions();
-    js_dofile(J, argv[1]);
-    js_freestate (J);
+    if (argc == 1) {
+		printf("usage: %s [program.js]\n", argv[0]);
+	} else {
+		import_functions();
+		js_dofile(J, argv[1]);
+		js_freestate (J);
+	}
     exit(0);
 } 
