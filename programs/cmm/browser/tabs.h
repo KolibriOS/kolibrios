@@ -146,6 +146,7 @@ void EventTabClose(int _id)
 	if (_id == tab.active) {
 		tab.close(_id);
 		tab.restore(tab.active);
+		SetElementSizes();
 		WB1.ParseHtml(WB1.bufpointer, WB1.bufsize);
 		WB1.DrawPage();
 		SetOmniboxText(history.current());
@@ -166,11 +167,10 @@ void EventTabClick(int _id)
 	if (_id==-1) _id = tab.count-1;
 	tab.save_state();
 	tab.restore(_id);
-	if (!BrowserWidthChanged()) {
-		DrawTabsBar();
-		WB1.ParseHtml(WB1.bufpointer, WB1.bufsize);
-		WB1.DrawPage();		
-	}
+	DrawTabsBar();
+	SetElementSizes();
+	WB1.ParseHtml(WB1.bufpointer, WB1.bufsize);
+	WB1.DrawPage();		
 	SetOmniboxText(history.current());
 }
 

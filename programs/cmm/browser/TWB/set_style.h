@@ -31,7 +31,7 @@ void TWebBrowser::SetStyle()
 	if (tag.is("dl"))         { if (tag.opened) NewLine(); return; }
 	if (tag.is("tr"))         { if (tag.opened) NewLine(); return; }
 	if (tag.is("td"))         { /*if (tag.opened) AddCharToTheLine(' ');*/ return; }
-	if (tag.is("button"))     { style.button = tag.opened; stolbec++;  return; }
+	if (tag.is("button"))     { style.button = tag.opened; draw_x+=10;  return; }
 	if (tag.is("w:r"))        { if (!tag.opened) style.b = false;      return; }
 	if (tag.is("h1"))         { tag_h1234_caption();  return; }
 	if (tag.is("h2"))         { tag_h1234_caption();  return; }
@@ -180,11 +180,11 @@ void TWebBrowser::tag_li()
 		if (!style.pre) NewLine();
 		if (style.tag_list.order_type() == 'u') {
 			strcpy(#line, "\31 ");
-			stolbec = style.tag_list.level * 5 - 2;
+			draw_x = style.tag_list.level * 5 - 2 * list.font_w + BODY_MARGIN;
 		} 
 		if (style.tag_list.order_type() == 'o') {
 			sprintf(#line, "%i. ", style.tag_list.inc_counter());
-			stolbec = style.tag_list.level * 5 - strlen(#line);
+			draw_x = style.tag_list.level * 5 - 1 - strlen(#line) * list.font_w + BODY_MARGIN;
 		}
 	}
 }
@@ -243,15 +243,13 @@ void TWebBrowser::tag_h1234_caption()
 		if (tag.opened) {
 			if (!style.pre) NewLine();
 			draw_y += 10;
-			zoom=2;
-			list.font_type |= 10011001b;
+			list.SetFont(BASIC_CHAR_W*2, 14*2, 10011001b);
 			list.item_h = BASIC_LINE_H * 2 - 2;
 			if (tag.is("h1")) style.b = true;
 		} else {
 			if (tag.is("h1")) style.b = false;
 			NewLine();
-			zoom=1;
-			list.font_type = 10011000b;
+			list.SetFont(BASIC_CHAR_W, 14, 10011000b);
 			style.cur_line_h = list.item_h = BASIC_LINE_H;
 		}		
 	}
@@ -306,26 +304,14 @@ IMGOK:
 	img_h = ESDWORD[cur_img+8];
 	img_w = ESDWORD[cur_img+4];
 
-	if (img_w / 8 + stolbec > list.column_max) {
-		NewLine();
-	} 
-	img_x = stolbec*list.font_w + 3;
+	if (img_w + draw_x >= list.w) NewLine();
 	img_y = draw_y;
-
 	if (img_h < list.item_h) img_y += list.item_h - img_h / 2 - 1; else img_y -= 2;
+	style.cur_line_h = math.max(style.cur_line_h, img_h);
 
-	img_w = math.min(img_w, canvas.bufw - img_x);
+	img_w = math.min(img_w, canvas.bufw - draw_x);
 
-	style.cur_line_h = math.max(list.item_h, img_h);
-
-	stolbec += img_w / 8;
-	if (img_w % 8) stolbec++;
-
-	if (stolbec > list.column_max) {
-		NewLine();
-	}
-
-	if (link) links.add_text(img_x + list.x, img_y + list.y, img_w, img_h, 0);
+	if (link) links.add_text(draw_x + list.x, img_y + list.y, img_w, img_h, 0);
 
 	if (img_y + img_h >= canvas.bufh) canvas.IncreaseBufSize();
 
@@ -341,8 +327,11 @@ IMGOK:
 	imgbuf[08] = canvas.bufh;
 	imgbuf[20] = IMAGE_BPP32;
 	imgbuf[24] = buf_data+8;
-	img_blend stdcall(#imgbuf, cur_img, img_x, img_y, 0, 0, img_w, img_h);
+	img_blend stdcall(#imgbuf, cur_img, draw_x, img_y, 0, 0, img_w, img_h);
 	img_destroy stdcall(cur_img);
+
+	draw_x += img_w;
+	if (draw_x >= list.w) NewLine();
 	return;
 
 NOIMG:

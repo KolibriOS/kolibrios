@@ -41,7 +41,7 @@
 //                       DATA                        //
 //                                                   //
 //===================================================//
-char version[]="WebView 3.21";
+char version[]="WebView 3.25";
 
 #define DEFAULT_URL URL_SERVICE_HOMEPAGE
 
@@ -220,10 +220,10 @@ void main()
 					redirect_count++;
 					HandleRedirect();
 				} else {
-					notify("'Too many redirects.' -E");
 					StopLoading();
 					redirect_count = 0;
 					if (http_get_type==IMG) goto _IMG_RES;
+					notify("'Too many redirects.' -E");
 				}
 			} else {
 				// Loading the page is complete, free resources
@@ -335,7 +335,7 @@ bool ProcessKeyEvent()
 void SetElementSizes()
 {
 	omnibox_edit.width = Form.cwidth - omnibox_edit.left - 52 - 16;
-	WB1.list.SetSizes(0, TOOLBAR_H+TAB_H, Form.width - 10 - scroll_wv.size_x, 
+	WB1.list.SetSizes(0, TOOLBAR_H+TAB_H, Form.cwidth - scroll_wv.size_x, 
 		Form.cheight - TOOLBAR_H - STATUSBAR_H - TAB_H, BASIC_LINE_H);
 	WB1.list.wheel_size = 7 * BASIC_LINE_H;
 	WB1.list.column_max = WB1.list.w - scroll_wv.size_x / WB1.list.font_w + 1;
@@ -366,32 +366,16 @@ void draw_window()
 	DrawRectangle(WB1.list.x + WB1.list.w, WB1.list.y, scroll_wv.size_x, 
 		WB1.list.h-1, scroll_wv.bckg_col);
 
-	if (!BrowserWidthChanged()) { 
+	if (!canvas.bufw) {
+		OpenPage(history.current());
+	} else {
 		WB1.DrawPage(); 
-		DrawOmnibox(); 
+		DrawOmnibox();
 	}
 	DrawProgress();
 	DrawStatusBar(NULL);
 	DrawTabsBar();
 }
-
-bool BrowserWidthChanged()
-{
-	dword source_mode_holder;
-	if (WB1.list.w!=canvas.bufw) {
-		canvas.Init(WB1.list.x, WB1.list.y, WB1.list.w, 400*20);
-		if (!strncmp(history.current(),"http",4)) {
-			//nihuya ne izyashnoe reshenie, no pust' poka butet tak
-			source_mode_holder = source_mode;
-			LoadInternalPage(#loading_text, sizeof(loading_text));
-			source_mode = source_mode_holder;
-		}
-		OpenPage(history.current());
-		return true;
-	}
-	return false;
-}
-
 
 void EventChangeEncodingAndLoadPage(int _new_encoding)
 {
@@ -561,6 +545,7 @@ void OpenPage(dword _open_URL)
 		history.add(#new_url);
 		if (streq(#new_url, URL_SERVICE_HOMEPAGE)) LoadInternalPage(#buildin_page_home, sizeof(buildin_page_home));
 		else if (streq(#new_url, URL_SERVICE_HELP)) LoadInternalPage(#buildin_page_help, sizeof(buildin_page_help));
+		else if (streq(#new_url, URL_SERVICE_TEST)) LoadInternalPage(#buildin_page_test, sizeof(buildin_page_test));
 		else if (streq(#new_url, URL_SERVICE_HISTORY)) ShowHistory();
 		else LoadInternalPage(#buildin_page_error, sizeof(buildin_page_error));
 
@@ -950,7 +935,7 @@ dword GetImg(bool _new)
 	if (_new) return;
 	DrawOmnibox();
 	DrawStatusBar(T_RENDERING);
-	WB1.ParseHtml(WB1.o_bufpointer, WB1.bufsize);
+	WB1.ParseHtml(WB1.bufpointer, WB1.bufsize);
 	WB1.DrawPage();
 	debugln(sprintf(#param, T_DONE_IN_SEC, GetStartTime()-render_start_time/100));
 	DrawStatusBar(NULL);

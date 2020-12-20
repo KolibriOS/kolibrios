@@ -39,8 +39,7 @@ void STYLE::reset()
 struct TWebBrowser {
 	llist list;
 	STYLE style;
-	dword draw_y, stolbec;
-	int zoom;
+	dword draw_y, draw_x;
 	dword o_bufpointer;
 	int cur_encoding, custom_encoding;
 	bool link, t_html, t_body;
@@ -86,7 +85,8 @@ void TWebBrowser::Paint()
 	unsigned px; //paint x coordinate
 	unsigned pw; //paint y coordinate
 	   dword pc; //paint color
-	
+	   int zoom;
+
 	if (style.title)
 	{
 		strncpy(#header, #line, sizeof(TWebBrowser.header)-1);
@@ -102,37 +102,37 @@ void TWebBrowser::Paint()
 	
 	if (line)
 	{
-		px = stolbec * list.font_w + BODY_MARGIN + list.x;
-		pw = strlen(#line) * zoom * list.font_w;
-		stolbec += strlen(#line) * zoom;
+		pw = strlen(#line) * list.font_w;
+		zoom = list.font_w / BASIC_CHAR_W;
 
 		style.cur_line_h = math.max(style.cur_line_h, list.item_h);
 
 		if (bg_colors.get_last() - bg_colors.get(0)) {
-			canvas.DrawBar(px, draw_y, pw, list.item_h, bg_colors.get_last());
+			canvas.DrawBar(draw_x, draw_y, pw, list.item_h, bg_colors.get_last());
 		}
 
 		if (style.image) {
-			canvas.DrawBar(px, draw_y, pw, list.item_h-1, 0xF9DBCB);
+			canvas.DrawBar(draw_x, draw_y, pw, list.item_h-1, 0xF9DBCB);
 		}
 		if (style.button) {
-			canvas.DrawBar(px, draw_y, pw, list.item_h - calc(zoom*2), 0xCCCccc);
-			canvas.DrawBar(px, draw_y + list.item_h - calc(zoom*2), pw, zoom, 0x999999);
+			canvas.DrawBar(draw_x, draw_y, pw, list.item_h - calc(zoom*2), 0xCCCccc);
+			canvas.DrawBar(draw_x, draw_y + list.item_h - calc(zoom*2), pw, zoom, 0x999999);
 		}
 
 		pc = text_colors.get_last();
 		if (link) && (pc == text_colors.get(0)) pc = link_color_default;
 
-		canvas.WriteText(px, draw_y, list.font_type, pc, #line, NULL);
-		if (style.b) canvas.WriteText(px+1, draw_y, list.font_type, pc, #line, NULL);
-		if (style.s) canvas.DrawBar(px, list.item_h / 2 - zoom + draw_y, pw, zoom, pc);
-		if (style.u) canvas.DrawBar(px, list.item_h - zoom - zoom + draw_y, pw, zoom, pc);
+		canvas.WriteText(draw_x, draw_y, list.font_type, pc, #line, NULL);
+		if (style.b) canvas.WriteText(draw_x+1, draw_y, list.font_type, pc, #line, NULL);
+		if (style.s) canvas.DrawBar(draw_x, list.item_h / 2 - zoom + draw_y, pw, zoom, pc);
+		if (style.u) canvas.DrawBar(draw_x, list.item_h - zoom - zoom + draw_y, pw, zoom, pc);
 		if (link) {
 			if (line[0]==' ') && (line[1]==NULL) {} else {
-				canvas.DrawBar(px, draw_y + list.item_h - calc(zoom*2)-1, pw, zoom, link_color_default);
-				links.add_text(px, draw_y + list.y, pw, list.item_h - calc(zoom*2)-1, zoom);				
+				canvas.DrawBar(draw_x, draw_y + list.item_h - calc(zoom*2)-1, pw, zoom, link_color_default);
+				links.add_text(draw_x, draw_y + list.y, pw, list.item_h - calc(zoom*2)-1, zoom);				
 			}
 		}
+		draw_x += pw;
 		if (debug_mode) debugln(#line);
 		line = NULL;
 	}
@@ -156,9 +156,8 @@ void TWebBrowser::SetPageDefaults()
 	header = NULL;
 	cur_encoding = CH_CP866;
 	draw_y = BODY_MARGIN;
-	stolbec = 0;
+	draw_x = BODY_MARGIN;
 	line = 0;
-	zoom = 1;
 	redirect = '\0';
 	//hold original buffer
 	if (o_bufpointer) o_bufpointer=free(o_bufpointer);
@@ -176,6 +175,8 @@ void TWebBrowser::ParseHtml(dword _bufpointer, _bufsize){
 	int tab_len;
 	dword bufpos;
 	bufsize = _bufsize;
+
+	if (list.w!=canvas.bufw) canvas.Init(list.x, list.y, list.w, 400*20);
 
 	if (bufpointer != _bufpointer) {
 		bufpointer = malloc(bufsize);
@@ -206,7 +207,7 @@ void TWebBrowser::ParseHtml(dword _bufpointer, _bufsize){
 			break;
 		case 0x09:
 			if (style.pre) {
-				tab_len = strlen(#line) + stolbec % 4;
+				tab_len = draw_x - BODY_MARGIN / list.font_w + strlen(#line) % 4;
 				if (!tab_len) tab_len = 4; else tab_len = 4 - tab_len;
 				for (j=0; j<tab_len; j++;) chrcat(#line,' ');
 			} else {
@@ -280,7 +281,7 @@ void TWebBrowser::AddCharToTheLine(unsigned char _char)
 	if (!style.pre) && (_char == ' ')
 	{
 		if (line[line_len-1]==' ') return; //no double spaces
-		if (!stolbec) && (!line) return; //no paces at the beginning of the line
+		if (draw_x==BODY_MARGIN) && (!line) return; //no paces at the beginning of the line
 		if (link) && (line_len==0) return;
 	}
 	if (line_len < sizeof(line)) chrcat(#line, _char);
@@ -289,52 +290,51 @@ void TWebBrowser::AddCharToTheLine(unsigned char _char)
 //============================================================================================
 bool TWebBrowser::CheckForLineBreak()
 {
-	int line_break_pos;
-	char new_line_text[4096];
+	int break_pos;
+	char next_line[4096];
+	int zoom = list.font_w / BASIC_CHAR_W;
 	//Do we need a line break?
-	if (strlen(#line)*zoom + stolbec < list.column_max) return false;
+	if (strlen(#line) * list.font_w + draw_x < list.w) return false;
 	//Yes, we do. Lets calculate where...
-	line_break_pos = strrchr(#line, ' ');
+	break_pos = strrchr(#line, ' ');
+
 	//Is a new line fits in the current line?
-	if (line_break_pos*zoom + stolbec > list.column_max) {
-		line_break_pos = list.column_max/zoom - stolbec;
-		while(line_break_pos) && (line[line_break_pos]!=' ') line_break_pos--;
+	if (break_pos * list.font_w + draw_x > list.w) {
+		break_pos = list.w - draw_x /list.font_w;
+		while(break_pos) && (line[break_pos]!=' ') break_pos--;
 	}
 	//Maybe a new line is too big for the whole new line? Then we have to split it
-	if (!line_break_pos) && (style.tag_list.level*5 + strlen(#line) * zoom >= list.column_max) {
-		line_break_pos = list.column_max/zoom - stolbec;
+	if (!break_pos) && (style.tag_list.level*5 + strlen(#line) * zoom >= list.column_max) {
+		break_pos = list.w  - draw_x / list.font_w;
 	}
-	strcpy(#new_line_text, #line + line_break_pos);
-	line[line_break_pos] = 0x00;		
+
+	strcpy(#next_line, #line + break_pos);
+	line[break_pos] = 0x00;		
 	
 	Paint();
 
-	strcpy(#line, #new_line_text);
+	strcpy(#line, #next_line);
 	NewLine();
 	return true;
 }
 //============================================================================================
 void TWebBrowser::NewLine()
 {
-	static int empty_line=0;
+	static bool empty_line = true;
 
-	if (!stolbec) && (draw_y==BODY_MARGIN) return;
+	if (draw_x==BODY_MARGIN) && (draw_y==BODY_MARGIN) return;
+	if (t_html) && (!t_body) return;
 	
-	if (style.tag_list.level) && (stolbec == style.tag_list.level * 5) { 
-		if (empty_line<1) empty_line++;
-		else return;
-	} else if (!stolbec) { 
-		if (empty_line<1) empty_line++;
-		else return;
+	if (draw_x == style.tag_list.level * 5 * list.font_w + BODY_MARGIN) { 
+		if (!empty_line) empty_line=true; else return;
 	} else {
-		empty_line=0;
+		empty_line = false;
 	}
 
-	if (t_html) && (!t_body) return;
 	draw_y += style.cur_line_h;
 	style.cur_line_h = list.item_h;
-	if (style.blq) stolbec = 6; else stolbec = 0;
-	stolbec += style.tag_list.level * 5;
+	if (style.blq) draw_x = 6 * list.font_w; else draw_x = 0;
+	draw_x += style.tag_list.level * 5 * list.font_w + BODY_MARGIN;
 }
 //============================================================================================
 void TWebBrowser::ChangeEncoding(int _new_encoding)
@@ -354,6 +354,11 @@ scroll_bar scroll_wv =
 
 void TWebBrowser::DrawPage()
 {
+	if (list.w!=canvas.bufw) {
+		ParseHtml(bufpointer, bufsize);
+	}
+	canvas.Show(list.first, list.h);
+
 	scroll_wv.max_area = list.count;
 	scroll_wv.cur_area = list.visible;
 	scroll_wv.position = list.first;
@@ -363,5 +368,4 @@ void TWebBrowser::DrawPage()
 	scroll_wv.size_y = list.h;
 	scrollbar_v_draw(#scroll_wv);
 
-	canvas.Show(list.first, list.h);
 }

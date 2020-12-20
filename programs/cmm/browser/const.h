@@ -2,6 +2,7 @@
 char buildin_page_error[] = FROM "res/page_not_found_ru.htm""\0";
 char buildin_page_home[]  = FROM "res/homepage_ru.htm""\0";
 char buildin_page_help[]  = FROM "res/help_ru.htm""\0";
+char buildin_page_test[]  = FROM "res/test.htm""\0";
 char accept_language[]= "Accept-Language: ru\n";
 char rmb_menu[] = 
 "Посмотреть исходник|Ctrl+U
@@ -66,8 +67,11 @@ char clear_cache_ok[] = "'WebView\nThe cache has been cleared.' -tI";
 #define URL_SERVICE_HISTORY "WebView:history"
 #define URL_SERVICE_HOMEPAGE "WebView:home"
 #define URL_SERVICE_HELP "WebView:help"
+#define URL_SERVICE_TEST "WebView:test"
 
 char webview_shared[] = "WEBVIEW";
+
+#define BASIC_CHAR_W 8
 
 enum { 
 	NEW_TAB=600,
