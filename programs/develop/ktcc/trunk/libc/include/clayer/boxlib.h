@@ -1,9 +1,37 @@
-// writed by maxcodehack
+// writed by maxcodehack and superturbocat2001
 // adaptation of clayer for ktcc
 #ifndef KOLIBRI_BOXLIB_H
 #define KOLIBRI_BOXLIB_H
 
 extern int kolibri_boxlib_init(void);
+
+/*  flags meaning */
+#define ed_figure_only 0b1000000000000000   // одни символы
+#define ed_always_focus 0b100000000000000   // всегда с курсором (фокусом)
+#define ed_focus                     0b10    // фокус ввода приложения, мышится самостоятельно
+#define ed_pass                       0b1    // поле с паролем
+#define ed_shift_on                0b1000    // если не установлен -значит впервые нажат shift,если был установлен, значит мы уже что - то делали удерживая //shift
+#define ed_shift_on_off 0b1111111111110111
+#define ed_shift                     0b100    //включается при нажатии на shift т.е. если нажимаю
+#define ed_shift_off    0b1111111111111011
+#define ed_shift_bac               0b10000   //бит для очистки выделеного shift т.е. при установке говорит что есть выделение
+#define ed_shift_bac_cl 0b1111111111101111  //очистка при удалении выделения
+#define ed_shift_cl     0b1111111111100011
+#define ed_shift_mcl    0b1111111111111011
+#define ed_left_fl                0b100000
+#define ed_right_fl     0b1111111111011111
+#define ed_offset_fl             0b1000000
+#define ed_offset_cl    0b1111111110111111
+#define ed_insert               0b10000000
+#define ed_insert_cl    0b1111111101111111
+#define ed_mouse_on            0b100000000
+#define ed_mous_adn_b          0b100011000
+#define ed_mouse_off          ~ed_mouse_on
+#define ed_ctrl_on            0b1000000000
+#define ed_ctrl_off            ~ed_ctrl_on
+#define ed_alt_on            0b10000000000
+#define ed_alt_off             ~ed_alt_on
+#define ed_disabled         0b100000000000
 
 // SCROLLBAR
 typedef struct {
@@ -83,8 +111,9 @@ extern void (*dynamic_button_mouse __attribute__((__stdcall__)))(pict_button *);
 
 // EDITBOX
 
+#pragma pack(push,1)
 typedef struct edit_box_t {
-  unsigned int width;
+    unsigned int width;
     unsigned int left;
     unsigned int top;
     unsigned int color;
@@ -108,12 +137,12 @@ typedef struct edit_box_t {
     unsigned int height;
     unsigned int char_width;
 }edit_box;
+#pragma pack(pop)
 
 extern void (*edit_box_draw  __attribute__((__stdcall__)))(edit_box *);
-extern void (*edit_box_key  __attribute__((__stdcall__)))(edit_box *);
+extern void edit_box_key (edit_box *, unsigned int key_val)__attribute__((__stdcall__));
 extern void (*edit_box_mouse  __attribute__((__stdcall__)))(edit_box *);
 extern void (*edit_box_set_text  __attribute__((__stdcall__)))(edit_box *, char *);
-extern volatile unsigned press_key;
 
 // FRAME
 typedef struct {

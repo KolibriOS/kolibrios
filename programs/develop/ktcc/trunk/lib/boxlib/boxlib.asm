@@ -15,7 +15,6 @@ include '../../../../../dll.inc'
 
 public init_boxlib as 'kolibri_boxlib_init'
 
-
 proc init_boxlib
 local retval dd ?
         mov [retval], eax
@@ -38,22 +37,21 @@ endp
 
 ;; Wrapper to handle edit_box_key function for editboxes.
 ;; Call this baby from C (refer kolibri_editbox.h for details)
-;public editbox_key_thunk as '_editbox_key@4'   ; renamed due to ambiguity
-;public press_key as '_press_key'
+public editbox_key_thunk as 'edit_box_key'   ; renamed due to ambiguity
 ;; replaced by siemargl as inline ASM in C wrapper
-;editbox_key_thunk:
-;       mov [oldebp], ebp       ;Save ebp because GCC is crazy for it otherwise.
-;       pop ebp                 ;Save return address in ebp. Stack top is param now.
-;       mov eax, dword [press_key]
-;       call [edit_box_key]     ; The pointer we passed should be on the stack already.
-;       push ebp                ;push the return address back to stack
-;       mov ebp, [oldebp]
-;       ret
-;oldebp dd ?
-;press_key dd ?
-
-
+editbox_key_thunk:
+	mov eax, [esp+8]
+	mov [oldebp], ebp	;Save ebp because GCC is crazy for it otherwise.
+	pop ebp			;Save return address in ebp. Stack top is param now.
+	;mov eax, dword [press_key]
+	call [edit_box_key]	; The pointer we passed should be on the stack already.
+	push ebp		;push the return address back to stack
+	mov ebp, [oldebp]
+	ret
+oldebp dd ?
+       
 section '.data' writeable
+
 @IMPORT:
 library lib_boxlib,     'box_lib.obj'
 
@@ -140,7 +138,8 @@ import lib_boxlib, \
 
 
 public edit_box_draw as 'edit_box_draw'
-public edit_box_key as 'edit_box_key'
+;public edit_box_key as 'edit_box_key'
+
 public edit_box_mouse as 'edit_box_mouse'
 public edit_box_set_text as 'edit_box_set_text'
 
