@@ -41,7 +41,7 @@
 //                       DATA                        //
 //                                                   //
 //===================================================//
-char version[]="WebView 3.25";
+char version[]="WebView 3.26";
 
 #define DEFAULT_URL URL_SERVICE_HOMEPAGE
 
@@ -231,9 +231,11 @@ void main()
 				http.hfree();
 				if (http_get_type==PAGE) {
 					history.add(http.cur_url);
-					cache.add(http.cur_url, http.content_pointer, http.content_received, PAGE);
+					if (!strchr(http.cur_url, '?')) {
+						cache.add(http.cur_url, http.content_pointer, http.content_received, PAGE);
+					}
+					LoadInternalPage(http.content_pointer, http.content_received);
 					free(http.content_pointer);
-					LoadInternalPage(cache.current_buf, cache.current_size);
 				}
 				else if (http_get_type==IMG) {
 					_IMG_RES:

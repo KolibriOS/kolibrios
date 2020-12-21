@@ -17,21 +17,19 @@ void TWebBrowser::SetStyle()
 	if (tag.is("footer"))     { NewLine();                 return; } 
 	if (tag.is("figure"))     { NewLine();                 return; }
 	if (tag.is("w:p"))        { NewLine();                 return; }
-	if (tag.is("b"))          { style.b   = tag.opened;    return; }
-	if (tag.is("strong"))     { style.b   = tag.opened;    return; }
-	if (tag.is("big"))        { style.b   = tag.opened;    return; }
-	if (tag.is("w:b"))        { style.b   = tag.opened;    return; }
-	if (tag.is("u"))          { style.u   = tag.opened;    return; }
-	if (tag.is("ins"))        { style.u   = tag.opened;    return; }
-	if (tag.is("s"))          { style.s   = tag.opened;    return; }
-	if (tag.is("strike"))     { style.s   = tag.opened;    return; }
-	if (tag.is("del"))        { style.s   = tag.opened;    return; }
-	if (tag.is("pre"))        { style.pre = tag.opened;    return; }
-	if (tag.is("blockquote")) { style.blq = tag.opened;    return; }
+	if (tag.is("b"))          { style.b      = tag.opened; return; }
+	if (tag.is("strong"))     { style.b      = tag.opened; return; }
+	if (tag.is("big"))        { style.b      = tag.opened; return; }
+	if (tag.is("w:b"))        { style.b      = tag.opened; return; }
+	if (tag.is("u"))          { style.u      = tag.opened; return; }
+	if (tag.is("ins"))        { style.u      = tag.opened; return; }
+	if (tag.is("s"))          { style.s      = tag.opened; return; }
+	if (tag.is("strike"))     { style.s      = tag.opened; return; }
+	if (tag.is("del"))        { style.s      = tag.opened; return; }
+	if (tag.is("pre"))        { style.pre    = tag.opened; return; }
+	if (tag.is("blockquote")) { style.blq    = tag.opened; return; }
+	if (tag.is("button"))     { style.button = tag.opened; return; }
 	if (tag.is("dl"))         { if (tag.opened) NewLine(); return; }
-	if (tag.is("tr"))         { if (tag.opened) NewLine(); return; }
-	if (tag.is("td"))         { /*if (tag.opened) AddCharToTheLine(' ');*/ return; }
-	if (tag.is("button"))     { style.button = tag.opened; draw_x+=10;  return; }
 	if (tag.is("w:r"))        { if (!tag.opened) style.b = false;      return; }
 	if (tag.is("h1"))         { tag_h1234_caption();  return; }
 	if (tag.is("h2"))         { tag_h1234_caption();  return; }
@@ -52,6 +50,13 @@ void TWebBrowser::SetStyle()
 	if (tag.is("title"))      { tag_title();          return; }
 	if (tag.is("body"))       { tag_body();           return; }
 	if (tag.is("html"))       { t_html = tag.opened;  return; }
+
+	//TO BE REWORKED
+	//td_x = td_w = tr_y = highest_td = 0;
+	//if (tag.is("table"))      { tag_table();          return; }
+	//if (tag.is("td"))         { tag_td();             return; }
+	//if (tag.is("tr"))         { tag_tr();             return; }
+
 	if (tag.is("dd")) { 
 		//NewLine();
 		//if (tag.opened) stolbec += 5; //may overflow! 
@@ -105,12 +110,12 @@ void TWebBrowser::tag_iframe()
 	if (tag.get_value_of("src")) {
 		NewLine();
 		strcpy(#line, "IFRAME: ");
-		Paint();
+		Render();
 		link=true;
 		links.add_link(tag.value);
 		strncpy(#line, tag.value, sizeof(line)-1);
 		while (CheckForLineBreak()) {};
-		Paint();
+		Render();
 		link=false;
 		NewLine();
 	}
@@ -180,11 +185,11 @@ void TWebBrowser::tag_li()
 		if (!style.pre) NewLine();
 		if (style.tag_list.order_type() == 'u') {
 			strcpy(#line, "\31 ");
-			draw_x = style.tag_list.level * 5 - 2 * list.font_w + BODY_MARGIN;
+			draw_x = style.tag_list.level * 5 - 2 * list.font_w + left_gap;
 		} 
 		if (style.tag_list.order_type() == 'o') {
 			sprintf(#line, "%i. ", style.tag_list.inc_counter());
-			draw_x = style.tag_list.level * 5 - 1 - strlen(#line) * list.font_w + BODY_MARGIN;
+			draw_x = style.tag_list.level * 5 - 1 - strlen(#line) * list.font_w + left_gap;
 		}
 	}
 }
@@ -259,9 +264,7 @@ void TWebBrowser::tag_h1234_caption()
 void TWebBrowser::tag_img()
 {
 	char img_path[4096]=0;
-	dword imgbuf[44];
-	dword cur_img;
-	int img_x, img_y, img_w, img_h;
+	dword base64img;
 
 	if (!tag.get_value_of("data-large-image")) 
 		if (!tag.get_value_of("data-src")) 
@@ -271,11 +274,11 @@ void TWebBrowser::tag_img()
 		if (!strstr(tag.value, "base64,")) goto NOIMG;
 		EDX = EAX+7;
 		if (ESBYTE[EDX]==' ') EDX++;
-		cur_img = malloc(strlen(EDX));
-		base64_decode stdcall (EDX, cur_img, strlen(EDX));
-		img_decode stdcall (cur_img, EAX, 0);
+		base64img = malloc(strlen(EDX));
+		base64_decode stdcall (EDX, base64img, strlen(EDX));
+		img_decode stdcall (base64img, EAX, 0);
 		$push eax
-		free(cur_img);
+		free(base64img);
 		$pop eax
 		if (EAX) goto IMGOK; else goto NOIMG;
 	} 
@@ -300,39 +303,7 @@ void TWebBrowser::tag_img()
 	}
 
 IMGOK:
-	cur_img = EAX;
-	img_h = ESDWORD[cur_img+8];
-	img_w = ESDWORD[cur_img+4];
-
-	if (img_w + draw_x >= list.w) NewLine();
-	img_y = draw_y;
-	if (img_h < list.item_h) img_y += list.item_h - img_h / 2 - 1; else img_y -= 2;
-	style.cur_line_h = math.max(style.cur_line_h, img_h);
-
-	img_w = math.min(img_w, canvas.bufw - draw_x);
-
-	if (link) links.add_text(draw_x + list.x, img_y + list.y, img_w, img_h, 0);
-
-	if (img_y + img_h >= canvas.bufh) canvas.IncreaseBufSize();
-
-	if (ESDWORD[cur_img+20] != IMAGE_BPP32) {
-		img_convert stdcall(cur_img, 0, IMAGE_BPP32, 0, 0);
-		$push eax
-		img_destroy stdcall(cur_img);
-		$pop eax
-		cur_img = EAX;
-		if (!EAX) goto NOIMG;
-	}
-	imgbuf[04] = canvas.bufw;
-	imgbuf[08] = canvas.bufh;
-	imgbuf[20] = IMAGE_BPP32;
-	imgbuf[24] = buf_data+8;
-	img_blend stdcall(#imgbuf, cur_img, draw_x, img_y, 0, 0, img_w, img_h);
-	img_destroy stdcall(cur_img);
-
-	draw_x += img_w;
-	if (draw_x >= list.w) NewLine();
-	return;
+	if (RenderImage(EAX)) return;
 
 NOIMG:
 	if (tag.get_value_of("title")) || (tag.get_value_of("alt")) {
@@ -348,7 +319,62 @@ NOIMG:
 	while (CheckForLineBreak()) {};
 	text_colors.add(0x9A6F29);
 	style.image = true;
-	Paint();
+	Render();
 	style.image = false;
 	text_colors.pop();
+}
+
+
+
+unsigned tr_y;
+unsigned td_x, td_w;
+unsigned highest_td;
+int table_c=0;
+
+void TWebBrowser::tag_table()
+{
+	if (tag.opened) table_c++; else table_c--;
+}
+
+void TWebBrowser::tag_tr()
+{
+	if (table_c>1) return;
+	//style.tr = tag.opened;
+	NewLine();
+	draw_w = list.w - left_gap;
+	left_gap = BODY_MARGIN;
+	td_w = 0;
+	if (tag.opened) {
+		tr_y = draw_y;
+	} else {
+		//draw_y = highest_td;
+	}
+}
+
+void TWebBrowser::tag_td()
+{
+	if (table_c>1) return;
+	if (tag.opened) {
+		NewLine();
+		//highest_td = math.max(draw_y, tr_y);
+		if (tag.get_value_of("width")) td_w = atoi(tag.value);
+		draw_y = tr_y;
+		draw_x = left_gap;
+		debugval("td_w", td_w);
+		if (td_w > 20) draw_w = td_w; else draw_w = list.w - left_gap;
+	} else {
+		left_gap += td_w;
+		draw_w = list.w - left_gap;
+		/*
+		draw_w -= left_gap;
+		if (left_gap < 0) left_gap = BODY_MARGIN;
+		if (draw_w < 0) {
+			left_gap = BODY_MARGIN;
+			draw_w = list.w - left_gap;
+		}
+		debugval("left_gap", left_gap);
+		*/
+	}
+	debugval("td_w", td_w);
+	debugval("left_gap", left_gap);
 }

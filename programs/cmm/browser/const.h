@@ -72,8 +72,6 @@ char buildin_page_test[]  = FROM "res/test.htm""\0";
 
 char webview_shared[] = "WEBVIEW";
 
-#define BASIC_CHAR_W 8
-
 enum { 
 	NEW_TAB=600,
 	ENCODINGS=700,
