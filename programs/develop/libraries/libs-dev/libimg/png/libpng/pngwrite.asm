@@ -99,11 +99,11 @@ proc png_write_info_before_PLTE, png_ptr:dword, info_ptr:dword
 
 pushad
 	mov edi,[png_ptr]
-	cmp edi,0
-	je .end_f
+	or edi,edi
+	jz .end_f
 	mov esi,[info_ptr]
-	cmp esi,0
-	je .end_f ;if(..==0 || ..==0) return
+	or esi,esi
+	jz .end_f ;if(..==0 || ..==0) return
 
 	mov eax,[edi+png_struct.mode]
 	and eax,PNG_WROTE_INFO_BEFORE_PLTE
@@ -256,11 +256,11 @@ pushad
 	png_debug 1, 'in png_write_info'
 
 	mov edi,[png_ptr]
-	cmp edi,0
-	je .end_f
+	or edi,edi
+	jz .end_f
 	mov esi,[info_ptr]
-	cmp esi,0
-	je .end_f ;if (..==0 || ..==0) return
+	or esi,esi
+	jz .end_f ;if (..==0 || ..==0) return
 
 	stdcall png_write_info_before_PLTE, edi, esi
 
@@ -1842,7 +1842,6 @@ proc png_image_write_init uses ebx ecx edx edi esi, image:dword
 	test eax,eax
 	jz .end0 ;if (..!=0)
 		mov edi,eax
-		or dword[eax+png_struct.transformations],PNG_BGR ;transformation rgb for KoliriOS
 		stdcall png_create_info_struct, edi
 		;eax = info_ptr
 
@@ -2454,16 +2453,18 @@ endl
 
 	; The following four ints are actually booleans
 	and ecx,PNG_FORMAT_FLAG_COLORMAP
-	mov [colormap],ecx
+	mov [colormap],ecx ;colormap = (format & PNG_FORMAT_FLAG_COLORMAP)
 	not ecx
+
 	mov eax,[format]
 	and eax,PNG_FORMAT_FLAG_LINEAR
-	mov [linear],eax
-	mov eax,[format]
 	and eax,ecx
+	mov [linear],eax ;linear = !colormap && (format & PNG_FORMAT_FLAG_LINEAR)
+
+	mov eax,[format]
 	and eax,PNG_FORMAT_FLAG_ALPHA
 	and eax,ecx
-	mov [alpha],eax
+	mov [alpha],eax ;alpha = !colormap && (format & PNG_FORMAT_FLAG_ALPHA)
 	xor eax,eax ;false
 	cmp dword[edx+png_image_write_control.convert_to_8bit],0
 	jne @f
@@ -2758,7 +2759,7 @@ end if
 	; supported by the rest of the libpng write code; call it directly.
 
 	.end9: ;else
-if 1 ;;; IDAT compress all (only 24 bit)
+if 1 ;;; IDAT compress all
 		cmp dword[ebx+png_image.height],1
 		jl .end8
 		mov ecx,[edx+png_image_write_control.row_bytes]
@@ -2794,7 +2795,7 @@ locals
 endl
 pushad
 	mov edi,[png_ptr]
-png_debug 1, 'IDAT compress all'
+png_debug1 2, 'IDAT compress all len = %d', [len]
 
 	;create buffer with filters
 	stdcall png_zalloc, edi, 1, [len]
@@ -2815,9 +2816,14 @@ png_debug 1, 'IDAT compress all'
 	;init buffer with filters
 	mov ebx,[width]
 	mov edx,[height]
+	movzx eax,byte[edi+png_struct.color_type]
 	mov edi,[buf_f]
 	mov esi,[buf]
-	.cycle0:
+	
+	cmp eax,PNG_COLOR_TYPE_RGB_ALPHA
+	je .cycle5
+	
+	.cycle0: ;24 bit image
 	cmp edx,1
 	jl .cycle0end
 		mov ecx,ebx
@@ -2835,14 +2841,30 @@ align 4
 		dec edx
 		jmp .cycle0
 	.cycle0end:
+	jmp .cycle5end
+
+	.cycle5: ;32 bit image
+	cmp edx,1
+	jl .cycle5end
+		mov ecx,ebx
+		xor al,al
+		stosb ;insert filter (0 - none)
+align 4
+		.cycle6:
+			lodsd
+			bswap eax
+			ror eax,8
+			stosd
+			loop .cycle6
+		dec edx
+		jmp .cycle5
+	.cycle5end:
 
 	;make filters
 	mov edx,[height]
-	mov esi,[width]
-	imul esi,3 ;esi - rowbytes
-
-	inc esi
 	mov edi,[png_ptr]
+	mov esi,[edi+png_struct.rowbytes]
+	inc esi
 	cmp dword[edi+png_struct.try_row],0
 	jne @f ;if (..==0)
 		stdcall png_malloc, edi, esi
@@ -2938,8 +2960,7 @@ align 4
 	.cycle3end:
 	
 	mov edi,[png_ptr]
-	mov esi,edi
-	add esi,png_struct.zstream
+	lea esi,[edi+png_struct.zstream]
 	stdcall [deflateInit2], esi,\
 		-1, Z_DEFLATED, MAX_WBITS, DEF_MEM_LEVEL, Z_DEFAULT_STRATEGY
 
@@ -3095,8 +3116,8 @@ endl
 
 	; Write the image to the given buffer, or count the bytes if it is NULL
 	mov ebx,[image]
-	cmp ebx,0
-	je .end0
+	or ebx,ebx
+	jz .end0
 	cmp dword[ebx+png_image.version],PNG_IMAGE_VERSION
 	jne .end0 ;if (..!=0 && ..==..)
 		cmp dword[memory_bytes],0
@@ -3142,8 +3163,8 @@ endl
 				stdcall png_image_free, ebx
 
 				; write_memory returns true even if we ran out of buffer.
-				cmp ecx,0 ;if (..)
-				je .end4
+				or ecx,ecx ;if (..)
+				jz .end4
 					; On out-of-buffer this function returns '0' but still updates
 					; memory_bytes:
 
@@ -3167,8 +3188,8 @@ endl
 			std_png_image_error ebx, 'png_image_write_to_memory: invalid argument'
 			jmp .end_f
 	.end0:
-	cmp ebx,0
-	je .end1 ;else if (..!=0)
+	or ebx,ebx
+	jz .end1 ;else if (..!=0)
 		std_png_image_error ebx, 'png_image_write_to_memory: incorrect PNG_IMAGE_VERSION'
 		jmp .end_f
 	.end1: ;else

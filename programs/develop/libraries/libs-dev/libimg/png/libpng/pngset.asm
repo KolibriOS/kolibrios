@@ -24,11 +24,11 @@ proc png_set_bKGD uses ecx edi esi, png_ptr:dword, info_ptr:dword, background:dw
 	cmp dword[png_ptr],0
 	je .end_f
 	mov edi,[info_ptr]
-	cmp edi,0
-	je .end_f
+	or edi,edi
+	jz .end_f
 	mov esi,[background]
-	cmp esi,0
-	je .end_f ;if (..==0 || ..==0 || ..==0) return
+	or esi,esi
+	jz .end_f ;if (..==0 || ..==0 || ..==0) return
 
 	or dword[edi+png_info_def.valid],PNG_INFO_bKGD
 	add edi,png_info_def.background
@@ -87,11 +87,11 @@ proc png_set_cHRM_XYZ_fixed uses edi esi, png_ptr:dword, info_ptr:dword,\
 	png_debug1 1, 'in %s storage function', 'cHRM XYZ fixed'
 
 	mov edi,[png_ptr]
-	cmp edi,0
-	je .end_f
+	or edi,edi
+	jz .end_f
 	mov esi,[info_ptr]
-	cmp esi,0
-	je .end_f ;if (..==0 || ..==0) return
+	or esi,esi
+	jz .end_f ;if (..==0 || ..==0) return
 
 ;   XYZ.red_X = int_red_X;
 ;   XYZ.red_Y = int_red_Y;
@@ -155,11 +155,11 @@ proc png_set_gAMA_fixed uses eax edi esi, png_ptr:dword, info_ptr:dword, file_ga
 	png_debug1 1, 'in %s storage function', 'gAMA'
 
 	mov edi,[png_ptr]
-	cmp edi,0
-	je .end_f
+	or edi,edi
+	jz .end_f
 	mov esi,[info_ptr]
-	cmp esi,0
-	je .end_f ;if (..== 0 || ..== 0) return
+	or esi,esi
+	jz .end_f ;if (..== 0 || ..== 0) return
 
 	mov eax,esi
 	add eax,png_info_def.colorspace
@@ -186,11 +186,11 @@ proc png_set_hIST uses edi esi, png_ptr:dword, info_ptr:dword, hist:dword
 	png_debug1 1, 'in %s storage function', 'hIST'
 
 	mov edi,[png_ptr]
-	cmp edi,0
-	je .end_f
+	or edi,edi
+	jz .end_f
 	mov esi,[info_ptr]
-	cmp esi,0
-	je .end_f ;if (..== 0 || ..== 0) return
+	or esi,esi
+	jz .end_f ;if (..== 0 || ..== 0) return
 
 ;   if (info_ptr->num_palette == 0 || info_ptr->num_palette
 ;       > PNG_MAX_PALETTE_LENGTH)
@@ -236,11 +236,11 @@ proc png_set_IHDR, png_ptr:dword, info_ptr:dword,\
 	png_debug1 1, 'in %s storage function', 'IHDR'
 pushad
 	mov edi,[png_ptr]
-	cmp edi,0
-	je .end_f
+	or edi,edi
+	jz .end_f
 	mov esi,[info_ptr]
-	cmp esi,0
-	je .end_f ;if (..== 0 || ..== 0) return
+	or esi,esi
+	jz .end_f ;if (..== 0 || ..== 0) return
 
 	mov eax,[width]
 	mov [esi+png_info_def.width],eax
@@ -271,8 +271,8 @@ pushad
 	@@:
 	mov eax,ebx
 	and eax,PNG_COLOR_MASK_COLOR
-	cmp eax,0
-	je @f ;else if (..!=0)
+	or eax,eax
+	jz @f ;else if (..!=0)
 		mov byte[esi+png_info_def.channels], 3
 		jmp .end0
 	@@: ;else
@@ -281,8 +281,8 @@ pushad
 
 	mov eax,ebx
 	and eax,PNG_COLOR_MASK_ALPHA
-	cmp eax,0
-	je @f ;else if (..!=0)
+	or eax,eax
+	jz @f ;else if (..!=0)
 		inc byte[esi+png_info_def.channels]
 	@@:
 
@@ -307,8 +307,8 @@ proc png_set_oFFs uses eax esi, png_ptr:dword, info_ptr:dword, offset_x:dword, o
 	cmp dword[png_ptr],0
 	je @f
 	mov esi,[info_ptr]
-	cmp esi,0
-	je @f ;if (..==0 || ..==0) return
+	or esi,esi
+	jz @f ;if (..==0 || ..==0) return
 
 	mov eax,[offset_x]
 	mov [esi+png_info_def.x_offset],eax
@@ -332,11 +332,11 @@ proc png_set_pCAL uses edi esi, png_ptr:dword, info_ptr:dword, purpose:dword, X0
 	png_debug1 1, 'in %s storage function', 'pCAL'
 
 	mov edi,[png_ptr]
-	cmp edi,0
-	je .end_f
+	or edi,edi
+	jz .end_f
 	mov esi,[info_ptr]
-	cmp esi,0
-	je .end_f
+	or esi,esi
+	jz .end_f
 	cmp dword[purpose],0
 	je .end_f
 	cmp dword[units],0
@@ -599,11 +599,11 @@ proc png_set_PLTE uses eax edi esi, png_ptr:dword, info_ptr:dword, palette:dword
 	png_debug1 1, 'in %s storage function', 'PLTE'
 
 	mov edi,[png_ptr]
-	cmp edi,0
-	je .end_f
+	or edi,edi
+	jz .end_f
 	mov esi,[info_ptr]
-	cmp esi,0
-	je .end_f ;if (..==0 || ..==0) return
+	or esi,esi
+	jz .end_f ;if (..==0 || ..==0) return
 
 ;   max_palette_length = (info_ptr->color_type == PNG_COLOR_TYPE_PALETTE) ?
 ;      (1 << info_ptr->bit_depth) : PNG_MAX_PALETTE_LENGTH;
@@ -679,11 +679,11 @@ proc png_set_sRGB uses eax edi esi, png_ptr:dword, info_ptr:dword, srgb_intent:d
 	png_debug1 1, 'in %s storage function', 'sRGB'
 
 	mov edi,[png_ptr]
-	cmp edi,0
-	je .end_f
+	or edi,edi
+	jz .end_f
 	mov esi,[info_ptr]
-	cmp esi,0
-	je .end_f ;if (..==0 || ..==0)
+	or esi,esi
+	jz .end_f ;if (..==0 || ..==0)
 
 	mov eax,esi
 	add eax,png_info_def.colorspace
@@ -790,8 +790,8 @@ proc png_set_text uses eax edi, png_ptr:dword, info_ptr:dword, text_ptr:dword, n
 	mov edi,[png_ptr]
 	stdcall png_set_text_2, edi, [info_ptr], [text_ptr], [num_text]
 
-	cmp eax,0
-	je @f ;if (..!=0)
+	or eax,eax
+	jz @f ;if (..!=0)
 		png_error edi, 'Insufficient memory to store text'
 	@@:
 	ret
@@ -997,18 +997,18 @@ proc png_set_tIME uses eax ebx ecx edi esi, png_ptr:dword, info_ptr:dword, mod_t
 	png_debug1 1, 'in %s storage function', 'tIME'
 
 	mov ebx,[png_ptr]
-	cmp ebx,0
-	je .end_f
+	or ebx,ebx
+	jz .end_f
 	mov edi,[info_ptr]
-	cmp edi,0
-	je .end_f
+	or edi,edi
+	jz .end_f
 	mov esi,[mod_time]
-	cmp esi,0
-	je .end_f
+	or esi,esi
+	jz .end_f
 	mov eax,[ebx+png_struct.mode]
 	and eax,PNG_WROTE_tIME
-	cmp eax,0
-	jne .end_f ;if (..==0 || ..==0 || ..==0 || ..!=0) return
+	or eax,eax
+	jnz .end_f ;if (..==0 || ..==0 || ..==0 || ..!=0) return
 
 	cmp byte[esi+png_time.month],0
 	je @f
@@ -1251,11 +1251,11 @@ proc png_set_unknown_chunks uses edi esi, png_ptr:dword, info_ptr:dword, unknown
 ;   png_unknown_chunkp np;
 
 	mov edi,[png_ptr]
-	cmp edi,0
-	je .end_f
+	or edi,edi
+	jz .end_f
 	mov esi,[info_ptr]
-	cmp esi,0
-	je .end_f
+	or esi,esi
+	jz .end_f
 	cmp dword[num_unknowns],0
 	jle .end_f
 	cmp dword[unknowns],0
@@ -1431,8 +1431,8 @@ proc png_set_keep_unknown_chunks uses edi, png_ptr:dword, keep:dword, chunk_list
 ;   uint num_chunks, old_num_chunks;
 
 	mov edi,[png_ptr]
-	cmp edi,0
-	je .end_f ;if (..== 0) return
+	or edi,edi
+	jz .end_f ;if (..== 0) return
 
 ;   if (keep < 0 || keep >= PNG_HANDLE_CHUNK_LAST)
 ;   {
@@ -1588,8 +1588,8 @@ proc png_set_read_user_chunk_fn uses eax edi, png_ptr:dword, user_chunk_ptr:dwor
 	png_debug 1, 'in png_set_read_user_chunk_fn'
 
 	mov edi,[png_ptr]
-	cmp edi,0
-	je .end_f
+	or edi,edi
+	jz .end_f
 
 	mov eax,[read_user_chunk_fn]
 	mov [edi+png_struct.read_user_chunk_fn],eax
@@ -1605,11 +1605,11 @@ proc png_set_rows uses eax edi esi, png_ptr:dword, info_ptr:dword, row_pointers:
 	png_debug1 1, 'in %s storage function', 'rows'
 
 	mov edi,[png_ptr]
-	cmp edi,0
-	je .end_f
+	or edi,edi
+	jz .end_f
 	mov esi,[info_ptr]
-	cmp esi,0
-	je .end_f ;if (..==0 || ..==0) return
+	or esi,esi
+	jz .end_f ;if (..==0 || ..==0) return
 
 	mov eax,[row_pointers]
 	cmp dword[esi+png_info_def.row_pointers],0
@@ -1620,8 +1620,8 @@ proc png_set_rows uses eax edi esi, png_ptr:dword, info_ptr:dword, row_pointers:
 	@@:
 	mov [esi+png_info_def.row_pointers],eax
 
-	cmp eax,0
-	je .end_f ;if (..!=0)
+	or eax,eax
+	jz .end_f ;if (..!=0)
 		or dword[esi+png_info_def.valid],PNG_INFO_IDAT
 .end_f:
 	ret
@@ -1631,8 +1631,8 @@ endp
 align 4
 proc png_set_compression_buffer_size uses edi, png_ptr:dword, size:dword
 	mov edi,[png_ptr]
-	cmp edi,0
-	je .end_f ;if (..==0) return
+	or edi,edi
+	jz .end_f ;if (..==0) return
 
 ;   if (size == 0 || size > PNG_UINT_31_MAX)
 ;      png_error(png_ptr, "invalid compression buffer size");
@@ -1707,8 +1707,8 @@ proc png_set_user_limits uses eax edi, png_ptr:dword, user_width_max:dword, user
 	; regardless of dimensions, set both limits to 0x7fffffff.
 
 	mov edi,[png_ptr]
-	cmp edi,0
-	je @f
+	or edi,edi
+	jz @f
 		mov eax,[user_width_max]
 		mov [edi+png_struct.user_width_max],eax
 		mov eax,[user_height_max]

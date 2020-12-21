@@ -1178,21 +1178,29 @@ endl
 	mov	eax,[ebx+Image.Type]
 	cmp	eax,Image.bpp24
 	je @f
+	cmp	eax,Image.bpp32
+	jne .error
 		mov	ecx,LIBIMG_ERROR_BIT_DEPTH
-		jmp	.error
 	@@:
 
-	mov edx,ebp
-	sub edx,sizeof.png_image
+	lea edx,[ebp-sizeof.png_image]
 	mov dword[edx+png_image.version],PNG_IMAGE_VERSION
 	mov ecx,[ebx+Image.Width]
 	mov [edx+png_image.width],ecx ;Image width in pixels (columns)
+	cmp	eax,Image.bpp24
+	jne @f
+		mov dword[edx+png_image.format],PNG_FORMAT_RGB
+		imul ecx,3
+	@@:
+	cmp	eax,Image.bpp32
+	jne @f
+		mov dword[edx+png_image.format],PNG_FORMAT_RGBA
+		shl ecx,2
+	@@:
 	mov eax,[ebx+Image.Height]
 	mov [edx+png_image.height],eax ;Image height in pixels (rows)
-	mov dword[edx+png_image.format],PNG_COLOR_TYPE_RGB
 	;mov dword[edx+png_image.flags],PNG_IMAGE_FLAG_???
 
-	imul ecx,3
 	mov edi,ecx
 	imul edi,[ebx+Image.Height]
 	cmp edi,4096
@@ -1207,8 +1215,7 @@ endl
 		jmp	.error
     @@:
 	mov [encoded_file],eax
-	mov edi,edx
-	sub edi,4
+	lea edi,[edx-4]
 	stdcall png_image_write_to_memory, edx,eax,edi,0,[ebx+Image.Data],ecx,0
 	mov	eax,[encoded_file]
 	mov	ecx,[encoded_file_size]

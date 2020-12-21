@@ -362,8 +362,7 @@ endl
 
 	cmp dword[edi+png_struct.zowner],0
 	je .end0 ;if (..!=0)
-		mov ebx,ebp
-		sub ebx,64
+		lea ebx,[ebp-64]
 if (PNG_WARNINGS_SUPPORTED eq 1) | (PNG_ERROR_TEXT_SUPPORTED eq 1)
 		mov eax,[owner]
 		mov [ebx],eax
@@ -1012,8 +1011,7 @@ end if
 	mov [edi+png_struct.usr_channels],al
 
 	; Pack the header information into the buffer
-	mov ebx,ebp
-	sub ebx,13
+	lea ebx,[ebp-13]
 	stdcall png_save_uint_32, ebx, [width]
 	add ebx,4
 	stdcall png_save_uint_32, ebx, [height]
@@ -1043,8 +1041,7 @@ end if
 	cmp byte[edi+png_struct.color_type],PNG_COLOR_TYPE_PALETTE
 	je @f
 	cmp byte[edi+png_struct.bit_depth],8
-	jl @f ;if ((..==..)||(..<..))
-		jmp .els_5
+	jge .els_5 ;if ((..==..)||(..<..))
 	@@:
 		mov byte[edi+png_struct.do_filter], PNG_FILTER_NONE
 		jmp .end_5
@@ -1371,8 +1368,7 @@ endl
 	png_debug 1, 'in png_write_gAMA'
 
 	; file_gamma is saved in 1/100,000ths
-	mov ebx,ebp
-	sub ebx,4
+	lea ebx,[ebp-4]
 	stdcall png_save_uint_32 ,ebx, [file_gamma]
 	stdcall png_write_complete_chunk, [png_ptr], png_gAMA, ebx, 4
 	ret
@@ -1441,8 +1437,7 @@ endl
 ;         png_error(png_ptr, "Profile length does not match profile");
 ;   }
 
-	mov ebx,ebp
-	sub ebx,sizeof.compression_state
+	lea ebx,[ebp-sizeof.compression_state]
 	mov ecx,ebx ;ecx = &comp
 	sub ebx,81  ;ebx = &new_name
 	stdcall png_check_keyword, edi, [name], ebx
@@ -1632,8 +1627,7 @@ endl
 
 	; Each value is saved in 1/100,000ths
 	mov eax,[xy]
-	mov ebx,ebp
-	sub ebx,32
+	lea ebx,[ebp-32]
 ;   png_save_int_32(buf,      xy->whitex);
 ;   png_save_int_32(buf +  4, xy->whitey);
 
@@ -1691,8 +1685,7 @@ endl
 			jmp .end_f
 		@@:
 		movzx eax,word[ecx+png_color_16.gray]
-		mov ebx,ebp
-		sub ebx,6
+		lea ebx,[ebp-6]
 		stdcall png_save_uint_16, ebx, eax
 		stdcall png_write_complete_chunk, edi, png_tRNS, ebx, 2
 		jmp .end_f
@@ -1701,8 +1694,7 @@ endl
 	cmp dword[color_type],PNG_COLOR_TYPE_RGB
 	jne .end3 ;else if (..== ..)
 		; Three 16-bit values
-		mov ebx,ebp
-		sub ebx,6
+		lea ebx,[ebp-6]
 		mov ecx,[tran]
 		movzx eax,word[ecx+png_color_16.red]
 		stdcall png_save_uint_16, ebx, eax
@@ -1720,8 +1712,8 @@ end if
 		mov al,[ebx]
 		or al,[ebx+2]
 		or al,[ebx+4]
-		cmp al,0
-		je @f ;if (..|..|..!=0)
+		or al,al
+		jz @f ;if (..|..|..!=0)
 			png_app_warning edi, 'Ignoring attempt to write 16-bit tRNS chunk when bit_depth is 8'
 			jmp .end_f
 		@@:
@@ -1947,8 +1939,7 @@ endl
 	png_debug 1, 'in png_write_iTXt'
 pushad
 	mov edi,[png_ptr]
-	mov ebx,ebp
-	sub ebx,82+sizeof.compression_state
+	lea ebx,[ebp-(82+sizeof.compression_state)]
 	stdcall png_check_keyword, edi, [key], ebx
 	mov [key_len],eax
 
@@ -2057,8 +2048,7 @@ endl
 		png_warning edi, 'Unrecognized unit type for oFFs chunk'
 	@@:
 
-	mov ebx,ebp
-	sub ebx,9
+	lea ebx,[ebp-9]
 	stdcall png_save_int_32, ebx, [x_offset]
 	add ebx,4
 	stdcall png_save_int_32, ebx, [y_offset]
@@ -2095,8 +2085,7 @@ pushad
 		png_error edi, 'Unrecognized equation type for pCAL chunk'
 	@@:
 
-	mov ebx,ebp
-	sub ebx,84 ;ebx = &new_purpose
+	lea ebx,[ebp-84] ;ebx = &new_purpose
 	stdcall png_check_keyword, edi, [purpose], ebx
 	mov [purpose_len],eax
 
@@ -2129,8 +2118,7 @@ pushad
 	png_debug1 3, 'pCAL total length = %d', [total_len]
 	stdcall png_write_chunk_header, edi, png_pCAL, [total_len]
 	stdcall png_write_chunk_data, edi, ebx, [purpose_len]
-	mov ebx,ebp
-	sub ebx,94 ;ebx = &buf
+	lea ebx,[ebp-94] ;ebx = &buf
 	stdcall png_save_int_32, ebx, [X0]
 	add ebx,4
 	stdcall png_save_int_32, ebx, [X1]
@@ -2181,8 +2169,7 @@ endl
 		jmp .end_f
 	@@:
 
-	mov ebx,ebp
-	sub ebx,64
+	lea ebx,[ebp-64]
 	mov eax,[unit]
 	mov byte[ebx],al
 	mov ecx,[wlen]
@@ -2216,8 +2203,7 @@ endl
 		png_warning [png_ptr], 'Unrecognized unit type for pHYs chunk'
 	@@:
 
-	mov ebx,ebp
-	sub ebx,9
+	lea ebx,[ebp-9]
 	stdcall png_save_uint_32, ebx, [x_pixels_per_unit]
 	add ebx,4
 	stdcall png_save_uint_32, ebx, [y_pixels_per_unit]
@@ -2264,8 +2250,7 @@ endl
 
 	movzx ebx,word[eax+png_time.year]
 	push ebx
-	mov ebx,ebp
-	sub ebx,7
+	lea ebx,[ebp-7]
 	stdcall png_save_uint_16, ebx ;, year
 	add ebx,2
 	mov byte[ebx],cl ;month

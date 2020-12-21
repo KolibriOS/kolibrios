@@ -8,7 +8,7 @@ dd 1,START,I_END,MEM,STACKTOP,0,cur_dir_path
 include '../../../../../proc32.inc'
 include '../../../../../macros.inc'
 include '../../../../../KOSfuncs.inc'
-include '../../../box_lib/load_lib.mac'
+include '../../../../../load_lib.mac'
 include '../../../../../dll.inc'
 include '../../libimg/libimg.inc'
 
@@ -28,7 +28,7 @@ else
 end if
 }
 
-@use_library_mem mem.Alloc,mem.Free,mem.ReAlloc, dll.Load
+@use_library mem.Alloc,mem.Free,mem.ReAlloc, dll.Load
 
 align 4
 m1size dd 16*1024
@@ -251,18 +251,9 @@ lib_name_0 db 'buf2d.obj',0
 system_dir_1 db '/sys/lib/'
 lib_name_1 db 'libimg.obj',0
 
-err_message_found_lib0 db 'Sorry I cannot load library buf2d.obj',0
-err_message_found_lib1 db 'Sorry I cannot load library libimg.obj',0
-head_f_i:
-head_f_l db 'System error',0
-err_message_import0 db 'Error on load import library buf2d.obj',0
-err_message_import1 db 'Error on load import library libimg.obj',0
-
 l_libs_start:
-	lib0 l_libs lib_name_0, cur_dir_path, library_path, system_dir_0,\
-		err_message_found_lib0, head_f_l, import_buf2d_lib,err_message_import0, head_f_i
-	lib1 l_libs lib_name_1, cur_dir_path, library_path, system_dir_1,\
-		err_message_found_lib1, head_f_l, import_libimg, err_message_import1, head_f_i
+	lib0 l_libs lib_name_0, library_path, system_dir_0, import_buf2d_lib
+	lib1 l_libs lib_name_1, library_path, system_dir_1, import_libimg
 load_lib_end:
 ;---------------------------------------------------------------------
 
@@ -270,8 +261,6 @@ align 16
 I_END:
 	rd 4096
 STACKTOP:
-cur_dir_path:
-	rb 4096
-library_path:
-	rb 4096
+cur_dir_path rb 4096
+library_path rb 4096
 MEM:

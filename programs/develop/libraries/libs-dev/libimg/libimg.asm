@@ -1,20 +1,20 @@
 ;;================================================================================================;;
 ;;//// libimg.asm //// (c) mike.dld, 2007-2008, (c) diamond, 2009, (c) dunkaist, 2011-2013 ///////;;
 ;;================================================================================================;;
-;;                                                                                                ;;
-;; This file is part of Common development libraries (Libs-Dev).                                  ;;
-;;                                                                                                ;;
+;;												  ;;
+;; This file is part of Common development libraries (Libs-Dev).				  ;;
+;;												  ;;
 ;; Libs-Dev is free software: you can redistribute it and/or modify it under the terms of the GNU ;;
 ;; Lesser General Public License as published by the Free Software Foundation, either version 2.1 ;;
-;; of the License, or (at your option) any later version.                                         ;;
-;;                                                                                                ;;
+;; of the License, or (at your option) any later version.					  ;;
+;;												  ;;
 ;; Libs-Dev is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without  ;;
 ;; even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU  ;;
-;; Lesser General Public License for more details.                                                ;;
-;;                                                                                                ;;
+;; Lesser General Public License for more details.						  ;;
+;;												  ;;
 ;; You should have received a copy of the GNU Lesser General Public License along with Libs-Dev.  ;;
-;; If not, see <http://www.gnu.org/licenses/>.                                                    ;;
-;;                                                                                                ;;
+;; If not, see <http://www.gnu.org/licenses/>.							  ;;
+;;												  ;;
 ;;================================================================================================;;
 
 
@@ -61,14 +61,14 @@ include 'blend.asm'
 ;;================================================================================================;;
 proc lib_init ;///////////////////////////////////////////////////////////////////////////////////;;
 ;;------------------------------------------------------------------------------------------------;;
-;? Library entry point (called after library load)                                                ;;
+;? Library entry point (called after library load)						  ;;
 ;;------------------------------------------------------------------------------------------------;;
-;> eax = pointer to memory allocation routine                                                     ;;
-;> ebx = pointer to memory freeing routine                                                        ;;
-;> ecx = pointer to memory reallocation routine                                                   ;;
-;> edx = pointer to library loading routine                                                       ;;
+;> eax = pointer to memory allocation routine							  ;;
+;> ebx = pointer to memory freeing routine							  ;;
+;> ecx = pointer to memory reallocation routine 						  ;;
+;> edx = pointer to library loading routine							  ;;
 ;;------------------------------------------------------------------------------------------------;;
-;< eax = 1 (fail) / 0 (ok) (library initialization result)                                        ;;
+;< eax = 1 (fail) / 0 (ok) (library initialization result)					  ;;
 ;;================================================================================================;;
     mov [mem.alloc], eax
     mov [mem.free], ebx
@@ -90,23 +90,23 @@ proc lib_init ;/////////////////////////////////////////////////////////////////
     mov dword [img._.do_rgb.handlers + (Image.bpp16-1)*4], img._.do_rgb.bpp16.intel
   @@:
 
-  .ok:  xor eax,eax
+  .ok:	xor eax,eax
     ret
 endp
 
 ;;================================================================================================;;
 proc img.is_img _data, _length ;//////////////////////////////////////////////////////////////////;;
 ;;------------------------------------------------------------------------------------------------;;
-;? --- TBD ---                                                                                    ;;
+;? --- TBD ---											  ;;
 ;;------------------------------------------------------------------------------------------------;;
-;> --- TBD ---                                                                                    ;;
+;> --- TBD ---											  ;;
 ;;------------------------------------------------------------------------------------------------;;
-;< --- TBD ---                                                                                    ;;
+;< --- TBD ---											  ;;
 ;;================================================================================================;;
     push    ebx
     mov ebx, img.formats_table
     @@: stdcall [ebx + FormatsTableEntry.Is], [_data], [_length]
-    or  eax, eax
+    or	eax, eax
     jnz @f
     add ebx, sizeof.FormatsTableEntry
     cmp dword[ebx], 0
@@ -119,11 +119,11 @@ endp
 ;;================================================================================================;;
 proc img.info _data, _length ;////////////////////////////////////////////////////////////////////;;
 ;;------------------------------------------------------------------------------------------------;;
-;? --- TBD ---                                                                                    ;;
+;? --- TBD ---											  ;;
 ;;------------------------------------------------------------------------------------------------;;
-;> --- TBD ---                                                                                    ;;
+;> --- TBD ---											  ;;
 ;;------------------------------------------------------------------------------------------------;;
-;< --- TBD ---                                                                                    ;;
+;< --- TBD ---											  ;;
 ;;================================================================================================;;
     xor eax, eax
     ret
@@ -132,59 +132,59 @@ endp
 ;;================================================================================================;;
 proc img.from_file _filename ;////////////////////////////////////////////////////////////////////;;
 ;;------------------------------------------------------------------------------------------------;;
-;? load file from disk and decode it                                                              ;;
+;? load file from disk and decode it								  ;;
 ;;------------------------------------------------------------------------------------------------;;
-;> [_filename] = file name as passed to libio                                                     ;;
+;> [_filename] = file name as passed to libio							  ;;
 ;;------------------------------------------------------------------------------------------------;;
-;< eax = 0 / pointer to image                                                                     ;;
+;< eax = 0 / pointer to image									  ;;
 ;;================================================================================================;;
 locals
-        fd              dd ?
-        img_data_len    dd ?
-        img_data        dd ?    ; raw bytes
-        img             dd ?    ; Image pointer
+	fd		dd ?
+	img_data_len	dd ?
+	img_data	dd ?	; raw bytes
+	img		dd ?	; Image pointer
 endl
 	push	ebx
-        mov     [img], 0
-        invoke  file.open, [_filename], O_READ
-        mov     [fd], eax
-        test    eax, eax
-        jz      .exit
-        invoke  file.size, [_filename]
-        test    eax, eax
-        jnz     .exit_close
-        mov     [img_data_len], ebx
-        invoke  mem.alloc, ebx
-        test    eax, eax
-        jz      .exit_close
-        mov     [img_data], eax
-        invoke  file.read, [fd], eax, [img_data_len]
-        cmp     eax, -1
-        jz      .exit_free_close
-        cmp     eax, [img_data_len]
-        jnz     .exit_free_close
-        stdcall img.decode, [img_data], [img_data_len], 0
-        test    eax, eax
-        jz      .exit_free_close
-        mov     [img], eax
+	mov	[img], 0
+	invoke	file.open, [_filename], O_READ
+	mov	[fd], eax
+	test	eax, eax
+	jz	.exit
+	invoke	file.size, [_filename]
+	test	eax, eax
+	jnz	.exit_close
+	mov	[img_data_len], ebx
+	invoke	mem.alloc, ebx
+	test	eax, eax
+	jz	.exit_close
+	mov	[img_data], eax
+	invoke	file.read, [fd], eax, [img_data_len]
+	cmp	eax, -1
+	jz	.exit_free_close
+	cmp	eax, [img_data_len]
+	jnz	.exit_free_close
+	stdcall img.decode, [img_data], [img_data_len], 0
+	test	eax, eax
+	jz	.exit_free_close
+	mov	[img], eax
   .exit_free_close:
-        invoke  mem.free, [img_data]
+	invoke	mem.free, [img_data]
   .exit_close:
-        invoke  file.close, [fd]
-        mov     eax, [img]
+	invoke	file.close, [fd]
+	mov	eax, [img]
   .exit:
 	pop	ebx
-        ret
+	ret
 endp
 
 ;;================================================================================================;;
 proc img.to_file _img, _filename ;////////////////////////////////////////////////////////////////;;
 ;;------------------------------------------------------------------------------------------------;;
-;? --- TBD ---                                                                                    ;;
+;? --- TBD ---											  ;;
 ;;------------------------------------------------------------------------------------------------;;
-;> --- TBD ---                                                                                    ;;
+;> --- TBD ---											  ;;
 ;;------------------------------------------------------------------------------------------------;;
-;< eax = false / true                                                                             ;;
+;< eax = false / true										  ;;
 ;;================================================================================================;;
     xor eax, eax
     ret
@@ -193,11 +193,11 @@ endp
 ;;================================================================================================;;
 proc img.from_rgb _rgb_data ;/////////////////////////////////////////////////////////////////////;;
 ;;------------------------------------------------------------------------------------------------;;
-;? --- TBD ---                                                                                    ;;
+;? --- TBD ---											  ;;
 ;;------------------------------------------------------------------------------------------------;;
-;> --- TBD ---                                                                                    ;;
+;> --- TBD ---											  ;;
 ;;------------------------------------------------------------------------------------------------;;
-;< eax = 0 / pointer to image                                                                     ;;
+;< eax = 0 / pointer to image									  ;;
 ;;================================================================================================;;
     xor eax, eax
     ret
@@ -206,17 +206,17 @@ endp
 ;;================================================================================================;;
 proc img.to_rgb2 _img, _out ;/////////////////////////////////////////////////////////////////////;;
 ;;------------------------------------------------------------------------------------------------;;
-;? decodes image data into RGB triplets and stores them where [_out] points to                    ;;
+;? decodes image data into RGB triplets and stores them where [_out] points to			  ;;
 ;;------------------------------------------------------------------------------------------------;;
-;> [_img] = pointer to source image                                                               ;;
-;> [_out] = where to store RGB triplets                                                           ;;
+;> [_img] = pointer to source image								  ;;
+;> [_out] = where to store RGB triplets 							  ;;
 ;;------------------------------------------------------------------------------------------------;;
-;< none                                                                                           ;;
+;< none 											  ;;
 ;;================================================================================================;;
     push    esi edi
     mov esi, [_img]
     stdcall img._.validate, esi
-    or  eax, eax
+    or	eax, eax
     jnz .ret
     mov edi, [_out]
     call    img._.do_rgb
@@ -229,18 +229,18 @@ endp
 proc img.to_rgb _img ;////////////////////////////////////////////////////////////////////////////;;
 ;;------------------------------------------------------------------------------------------------;;
 ;? decodes image data into RGB triplets and returns pointer to memory area of following structure:;;
-;? width  dd ?                                                                                    ;;
-;? height dd ?                                                                                    ;;
-;? rgb triplets                                                                                   ;;
+;? width  dd ?											  ;;
+;? height dd ?											  ;;
+;? rgb triplets 										  ;;
 ;;------------------------------------------------------------------------------------------------;;
-;> [_img] = pointer to source image                                                               ;;
+;> [_img] = pointer to source image								  ;;
 ;;------------------------------------------------------------------------------------------------;;
-;< eax = 0 / pointer to rgb_data (array of [rgb] triplets)                                        ;;
+;< eax = 0 / pointer to rgb_data (array of [rgb] triplets)					  ;;
 ;;================================================================================================;;
     push    esi edi
     mov esi, [_img]
     stdcall img._.validate, esi
-    or  eax, eax
+    or	eax, eax
     jnz .error
 
     mov esi, [_img]
@@ -248,8 +248,8 @@ proc img.to_rgb _img ;//////////////////////////////////////////////////////////
     imul    ecx, [esi + Image.Height]
     lea eax, [ecx * 3 + 4 * 3]
     invoke  mem.alloc, eax
-    or  eax, eax
-    jz  .error
+    or	eax, eax
+    jz	.error
 
     mov edi, eax
     push    eax
@@ -271,12 +271,12 @@ endp
 ;;================================================================================================;;
 proc img._.do_rgb ;///////////////////////////////////////////////////////////////////////////////;;
 ;;------------------------------------------------------------------------------------------------;;
-;? decodes [esi + Image.Data] data into RGB triplets and stores them at [edi]                     ;;
+;? decodes [esi + Image.Data] data into RGB triplets and stores them at [edi]			  ;;
 ;;------------------------------------------------------------------------------------------------;;
-;> esi = pointer to source image                                                                  ;;
-;> edi = pointer to memory to store RGB triplets                                                  ;;
+;> esi = pointer to source image								  ;;
+;> edi = pointer to memory to store RGB triplets						  ;;
 ;;------------------------------------------------------------------------------------------------;;
-;< none                                                                                           ;;
+;< none 											  ;;
 ;;================================================================================================;;
     mov ecx, [esi + Image.Width]
     imul    ecx, [esi + Image.Height]
@@ -290,7 +290,7 @@ align 16
     mov ebx, [esi + Image.Palette]
     mov esi, [esi + Image.Data]
     sub ecx, 1
-    jz  .bpp8i.last
+    jz	.bpp8i.last
 @@:
     movzx   eax, byte [esi]
     add esi, 1
@@ -338,7 +338,7 @@ align 16
 .bpp15.intel:
     push    ebx ebp
     sub ecx, 4
-    jb  .bpp15.tail
+    jb	.bpp15.tail
 align 16
 .bpp15.intel.loop:
 repeat 2
@@ -389,7 +389,7 @@ end repeat
     jnb .bpp15.intel.loop
 .bpp15.tail:
     add ecx, 4
-    jz  .bpp15.done
+    jz	.bpp15.done
 @@:
     movzx   eax, word [esi]
     mov ebx, eax
@@ -418,7 +418,7 @@ end repeat
 .bpp15.amd:
     push    ebx ebp
     sub ecx, 4
-    jb  .bpp15.tail
+    jb	.bpp15.tail
 align 16
 .bpp15.amd.loop:
 repeat 4
@@ -454,7 +454,7 @@ end repeat
 .bpp16.intel:
     push    ebx ebp
     sub ecx, 4
-    jb  .bpp16.tail
+    jb	.bpp16.tail
 align 16
 .bpp16.intel.loop:
 repeat 2
@@ -504,7 +504,7 @@ end repeat
     jnb .bpp16.intel.loop
 .bpp16.tail:
     add ecx, 4
-    jz  .bpp16.done
+    jz	.bpp16.done
 @@:
     movzx   eax, word [esi]
     mov ebx, eax
@@ -533,7 +533,7 @@ end repeat
 .bpp16.amd:
     push    ebx ebp
     sub ecx, 4
-    jb  .bpp16.tail
+    jb	.bpp16.tail
 align 16
 .bpp16.amd.loop:
 repeat 4
@@ -605,7 +605,7 @@ align 16
     mov ecx, 7
   .bpp1.begin:
     xor eax, eax
-    bt  [esi], ecx
+    bt	[esi], ecx
     adc eax, 0
     mov eax, [ebx + eax*4]
     mov [edi], ax
@@ -711,13 +711,13 @@ endp
 ;;================================================================================================;;
 proc img.decode _data, _length, _options ;////////////////////////////////////////////////////////;;
 ;;------------------------------------------------------------------------------------------------;;
-;? decodes loaded into memory graphic file                                                        ;;
+;? decodes loaded into memory graphic file							  ;;
 ;;------------------------------------------------------------------------------------------------;;
-;> [_data]    = pointer to file in memory                                                         ;;
-;> [_length]  = size in bytes of memory area pointed to by [_data]                                ;;
-;> [_options] = 0 / pointer to the structure of additional options                                ;;
+;> [_data]    = pointer to file in memory							  ;;
+;> [_length]  = size in bytes of memory area pointed to by [_data]				  ;;
+;> [_options] = 0 / pointer to the structure of additional options				  ;;
 ;;------------------------------------------------------------------------------------------------;;
-;< eax = 0 / pointer to image                                                                     ;;
+;< eax = 0 / pointer to image									  ;;
 ;;================================================================================================;;
     push    ebx
     mov ebx, [_length]
@@ -725,7 +725,7 @@ proc img.decode _data, _length, _options ;//////////////////////////////////////
     jz  .fail
     mov ebx, img.formats_table
     @@: stdcall [ebx + FormatsTableEntry.Is], [_data], [_length]
-    or  eax, eax
+    or	eax, eax
     jnz @f
     add ebx, sizeof.FormatsTableEntry
     cmp dword[ebx], eax ;0
@@ -741,111 +741,111 @@ proc img.decode _data, _length, _options ;//////////////////////////////////////
 endp
 
 ;;================================================================================================;;
-proc img.encode _img, _common, _specific ;////////////////////////////////////////////////////////;;
+proc img.encode uses ebx, _img, _common, _specific ;////////////////////////////////////////////////////////;;
 ;;------------------------------------------------------------------------------------------------;;
-;? encode image to some format                                                                    ;;
+;? encode image to some format									  ;;
 ;;------------------------------------------------------------------------------------------------;;
-;> [_img]      = pointer to input image                                                           ;;
-;> [_common]   = some most important/common options                                               ;;
-;     0x00 :  byte : format id (defined in libimg.inc)                                            ;;
-;     0x01 :  byte : fast encoding (0) / best compression ratio (255)                             ;;
-;                    0 : store uncompressed data (if supported both by the format and libimg)     ;;
-;                    1 - 255 : use compression, if supported                                      ;;
-;                    this option may be ignored if any format specific options are defined        ;;
-;                    i.e. 0 here will be ignored if particular compression algorithm is specified ;;
-;     0x02 :  byte : flags (bitfield)                                                             ;;
-;                   0x01 : return an error if format specific conditions cannot be met            ;;
-;                   0x02 : preserve current bit depth. means 8bpp/16bpp/24bpp and so on           ;;
-;                   0x04 : delete alpha channel, if any                                           ;;
-;                   0x08 : flush alpha channel with 0xff, if any; add it if none                  ;;
-;     0x03 :  byte : reserved, must be 0                                                          ;;
-;> [_specific] = 0 / pointer to the structure of format specific options                          ;;
-;                   see <format_name>.inc for description                                         ;;
+;> [_img]      = pointer to input image 							  ;;
+;> [_common]   = some most important/common options						  ;;
+;     0x00 :  byte : format id (defined in libimg.inc)						  ;;
+;     0x01 :  byte : fast encoding (0) / best compression ratio (255)				  ;;
+;		     0 : store uncompressed data (if supported both by the format and libimg)	  ;;
+;		     1 - 255 : use compression, if supported					  ;;
+;		     this option may be ignored if any format specific options are defined	  ;;
+;		     i.e. 0 here will be ignored if particular compression algorithm is specified ;;
+;     0x02 :  byte : flags (bitfield)								  ;;
+;		    0x01 : return an error if format specific conditions cannot be met		  ;;
+;		    0x02 : preserve current bit depth. means 8bpp/16bpp/24bpp and so on 	  ;;
+;		    0x04 : delete alpha channel, if any 					  ;;
+;		    0x08 : flush alpha channel with 0xff, if any; add it if none		  ;;
+;     0x03 :  byte : reserved, must be 0							  ;;
+;> [_specific] = 0 / pointer to the structure of format specific options			  ;;
+;		    see <format_name>.inc for description					  ;;
 ;;------------------------------------------------------------------------------------------------;;
-;< eax = 0 / pointer to encoded data                                                              ;;
-;< ecx = error code / the size of encoded data                                                    ;;
-;     1 : out of memory                                                                           ;;
-;     2 : format is not supported                                                                 ;;
-;     3 : specific conditions cannot be satisfied                                                 ;;
-;     4 : bit depth cannot be preserved                                                           ;;
+;< eax = 0 / pointer to encoded data								  ;;
+;< ecx = error code / the size of encoded data							  ;;
+;     1 : out of memory 									  ;;
+;     2 : format is not supported								  ;;
+;     3 : specific conditions cannot be satisfied						  ;;
+;     4 : bit depth cannot be preserved 							  ;;
 ;;================================================================================================;;
-        mov     ebx, [_img]
+	mov	ebx, [_img]
 
-        movzx   eax, byte[_common]
-        dec     eax
-        imul    eax, sizeof.FormatsTableEntry
-        add     eax, FormatsTableEntry.Capabilities
-        add     eax, img.formats_table
-        mov     eax, [eax]
-        test    eax, 1                          ; is encoding to this format supported at all?
-        jnz     @f
-        mov     ecx, LIBIMG_ERROR_FORMAT
-        jmp     .error
+	movzx	eax, byte[_common]
+	dec	eax
+	imul	eax, sizeof.FormatsTableEntry
+	add	eax, FormatsTableEntry.Capabilities
+	add	eax, img.formats_table
+	mov	eax, [eax]
+	test	eax, 1				; is encoding to this format supported at all?
+	jnz	@f
+	mov	ecx, LIBIMG_ERROR_FORMAT
+	jmp	.error
     @@:
-        mov     ecx, [ebx + Image.Type]
-        mov     edx, 1
-        shl     edx, cl
-        test    eax, edx
-        jnz     .bit_depth_ok
-        test    byte[_common+2], LIBIMG_ENCODE_STRICT_BIT_DEPTH
-        jz      @f
-        mov     ecx, LIBIMG_ERROR_BIT_DEPTH
-        jmp     .error
+	mov	ecx, [ebx + Image.Type]
+	mov	edx, 1
+	shl	edx, cl
+	test	eax, edx
+	jnz	.bit_depth_ok
+	test	byte[_common+2], LIBIMG_ENCODE_STRICT_BIT_DEPTH
+	jz	@f
+	mov	ecx, LIBIMG_ERROR_BIT_DEPTH
+	jmp	.error
     @@:
-        mov     edx, 1 SHL Image.bpp24
-        test    eax, edx
-        jnz     @f
-        mov     ecx, LIBIMG_ERROR_BIT_DEPTH
-        jmp     .error
+	mov	edx, 1 SHL Image.bpp24
+	test	eax, edx
+	jnz	@f
+	mov	ecx, LIBIMG_ERROR_BIT_DEPTH
+	jmp	.error
     @@:
-        stdcall img.create, [ebx + Image.Width], [ebx + Image.Height], Image.bpp24
-        test    eax, eax
-        jnz     @f
-        mov     ecx, LIBIMG_ERROR_OUT_OF_MEMORY
-        jmp     .error
+	stdcall img.create, [ebx + Image.Width], [ebx + Image.Height], Image.bpp24
+	test	eax, eax
+	jnz	@f
+	mov	ecx, LIBIMG_ERROR_OUT_OF_MEMORY
+	jmp	.error
     @@:
-        push    eax
-        stdcall img.to_rgb2, ebx, [eax + Image.Data]
-        pop     ebx
+	push	eax
+	stdcall img.to_rgb2, ebx, [eax + Image.Data]
+	pop	ebx
 
   .bit_depth_ok:
-        movzx   eax, byte[_common]
-        dec     eax
-        imul    eax, sizeof.FormatsTableEntry
-        add     eax, FormatsTableEntry.Encode
-        add     eax, img.formats_table
-        mov     eax, [eax]
-        stdcall eax, [_img], [_common], [_specific]
-        push    eax ecx
-        cmp     ebx, [_img]
-        je      @f
-        stdcall img.destroy, ebx
+	movzx	eax, byte[_common]
+	dec	eax
+	imul	eax, sizeof.FormatsTableEntry
+	add	eax, FormatsTableEntry.Encode
+	add	eax, img.formats_table
+	mov	eax, [eax]
+	stdcall eax, [_img], [_common], [_specific]
+	push	eax ecx
+	cmp	ebx, [_img]
+	je	@f
+	stdcall img.destroy, ebx
     @@:
-        pop     ecx eax
-        jmp     .quit
+	pop	ecx eax
+	jmp	.quit
 
   .error:
-        xor     eax, eax
+	xor	eax, eax
   .quit:
-        ret
+	ret
 endp
 
 ;;================================================================================================;;
 proc img.create _width, _height, _type ;//////////////////////////////////////////////////////////;;
 ;;------------------------------------------------------------------------------------------------;;
-;? creates an Image structure and initializes some its fields                                     ;;
+;? creates an Image structure and initializes some its fields					  ;;
 ;;------------------------------------------------------------------------------------------------;;
-;> [_width]  = width of an image in pixels                                                        ;;
-;> [_height] = height of an image in pixels                                                       ;;
-;> [_type]   = one of the Image.bppN constants from libimg.inc                                    ;;
+;> [_width]  = width of an image in pixels							  ;;
+;> [_height] = height of an image in pixels							  ;;
+;> [_type]   = one of the Image.bppN constants from libimg.inc					  ;;
 ;;------------------------------------------------------------------------------------------------;;
-;< eax = 0 / pointer to image                                                                     ;;
+;< eax = 0 / pointer to image									  ;;
 ;;================================================================================================;;
     push    ecx
 
     stdcall img._.new
-    or  eax, eax
-    jz  .error
+    or	eax, eax
+    jz	.error
 
     mov ecx, [_type]
     mov [eax + Image.Type], ecx
@@ -853,14 +853,14 @@ proc img.create _width, _height, _type ;////////////////////////////////////////
     push    eax
 
     stdcall img.resize_data, eax, [_width], [_height]
-    or  eax, eax
-    jz  .error.2
+    or	eax, eax
+    jz	.error.2
 
     pop eax
     jmp .ret
 
   .error.2:
-;       pop     eax
+;	pop	eax
     stdcall img._.delete; eax
     xor eax, eax
 
@@ -873,23 +873,23 @@ endp
 ;;================================================================================================;;
 proc img.destroy.layer _img ;/////////////////////////////////////////////////////////////////////;;
 ;;------------------------------------------------------------------------------------------------;;
-;? frees memory occupied by an image and all the memory regions its fields point to               ;;
-;? for image sequences deletes only one frame and fixes Previous/Next pointers                    ;;
+;? frees memory occupied by an image and all the memory regions its fields point to		  ;;
+;? for image sequences deletes only one frame and fixes Previous/Next pointers			  ;;
 ;;------------------------------------------------------------------------------------------------;;
-;> [_img] = pointer to image                                                                      ;;
+;> [_img] = pointer to image									  ;;
 ;;------------------------------------------------------------------------------------------------;;
-;< eax = 0 (fail) / 1 (success)                                                                   ;;
+;< eax = 0 (fail) / 1 (success) 								  ;;
 ;;================================================================================================;;
     mov eax, [_img]
     mov edx, [eax + Image.Previous]
     test    edx, edx
-    jz  @f
+    jz	@f
     push    [eax + Image.Next]
     pop [edx + Image.Next]
 @@:
     mov edx, [eax + Image.Next]
     test    edx, edx
-    jz  @f
+    jz	@f
     push    [eax + Image.Previous]
     pop [edx + Image.Previous]
 @@:
@@ -900,19 +900,19 @@ endp
 ;;================================================================================================;;
 proc img.destroy _img ;///////////////////////////////////////////////////////////////////////////;;
 ;;------------------------------------------------------------------------------------------------;;
-;? frees memory occupied by an image and all the memory regions its fields point to               ;;
-;? follows Previous/Next pointers and deletes all the images in sequence                          ;;
+;? frees memory occupied by an image and all the memory regions its fields point to		  ;;
+;? follows Previous/Next pointers and deletes all the images in sequence			  ;;
 ;;------------------------------------------------------------------------------------------------;;
-;> [_img] = pointer to image                                                                      ;;
+;> [_img] = pointer to image									  ;;
 ;;------------------------------------------------------------------------------------------------;;
-;< eax = 0 (fail) / 1 (success)                                                                   ;;
+;< eax = 0 (fail) / 1 (success) 								  ;;
 ;;================================================================================================;;
     push    1
     mov eax, [_img]
     mov eax, [eax + Image.Previous]
 .destroy_prev_loop:
     test    eax, eax
-    jz  .destroy_prev_done
+    jz	.destroy_prev_done
     pushd   [eax + Image.Previous]
     stdcall img._.delete, eax
     test    eax, eax
@@ -940,29 +940,29 @@ endp
 ;;================================================================================================;;
 proc img.count _img ;/////////////////////////////////////////////////////////////////////////////;;
 ;;------------------------------------------------------------------------------------------------;;
-;? Get number of images in the list (e.g. in animated GIF file)                                   ;;
+;? Get number of images in the list (e.g. in animated GIF file) 				  ;;
 ;;------------------------------------------------------------------------------------------------;;
-;> _img = pointer to image                                                                        ;;
+;> _img = pointer to image									  ;;
 ;;------------------------------------------------------------------------------------------------;;
-;< eax = -1 (fail) / >0 (ok)                                                                      ;;
+;< eax = -1 (fail) / >0 (ok)									  ;;
 ;;================================================================================================;;
     push    ecx edx
     mov edx, [_img]
     stdcall img._.validate, edx
-    or  eax, eax
+    or	eax, eax
     jnz .error
 
     @@: mov eax, [edx + Image.Previous]
-    or  eax, eax
-    jz  @f
+    or	eax, eax
+    jz	@f
     mov edx, eax
     jmp @b
 
     @@: xor ecx, ecx
     @@: inc ecx
     mov eax, [edx + Image.Next]
-    or  eax, eax
-    jz  .exit
+    or	eax, eax
+    jz	.exit
     mov edx, eax
     jmp @b
 
@@ -972,7 +972,7 @@ proc img.count _img ;///////////////////////////////////////////////////////////
     ret
 
   .error:
-    or  eax, -1
+    or	eax, -1
     pop edx ecx
     ret
 endp
@@ -982,11 +982,11 @@ endp
 ;;================================================================================================;;
 proc img.lock_bits _img, _start_line, _end_line ;/////////////////////////////////////////////////;;
 ;;------------------------------------------------------------------------------------------------;;
-;? --- TBD ---                                                                                    ;;
+;? --- TBD ---											  ;;
 ;;------------------------------------------------------------------------------------------------;;
-;> --- TBD ---                                                                                    ;;
+;> --- TBD ---											  ;;
 ;;------------------------------------------------------------------------------------------------;;
-;< eax = 0 / pointer to bits                                                                      ;;
+;< eax = 0 / pointer to bits									  ;;
 ;;================================================================================================;;
     xor eax, eax
     ret
@@ -995,11 +995,11 @@ endp
 ;;================================================================================================;;
 proc img.unlock_bits _img, _lock ;////////////////////////////////////////////////////////////////;;
 ;;------------------------------------------------------------------------------------------------;;
-;? --- TBD ---                                                                                    ;;
+;? --- TBD ---											  ;;
 ;;------------------------------------------------------------------------------------------------;;
-;> --- TBD ---                                                                                    ;;
+;> --- TBD ---											  ;;
 ;;------------------------------------------------------------------------------------------------;;
-;< eax = false / true                                                                             ;;
+;< eax = false / true										  ;;
 ;;================================================================================================;;
     xor eax, eax
     ret
@@ -1008,12 +1008,12 @@ endp
 ;;================================================================================================;;
 proc img.flip.layer _img, _flip_kind ;////////////////////////////////////////////////////////////;;
 ;;------------------------------------------------------------------------------------------------;;
-;? Flip image layer                                                                               ;;
+;? Flip image layer										  ;;
 ;;------------------------------------------------------------------------------------------------;;
-;> _img = pointer to image                                                                        ;;
-;> _flip_kind = one of FLIP_* constants                                                           ;;
+;> _img = pointer to image									  ;;
+;> _flip_kind = one of FLIP_* constants 							  ;;
 ;;------------------------------------------------------------------------------------------------;;
-;< eax = false / true                                                                             ;;
+;< eax = false / true										  ;;
 ;;================================================================================================;;
 locals
   scanline_len dd ?
@@ -1022,7 +1022,7 @@ endl
     push    ebx esi edi
     mov ebx, [_img]
     stdcall img._.validate, ebx
-    or  eax, eax
+    or	eax, eax
     jnz .error
 
     mov ecx, [ebx + Image.Height]
@@ -1031,7 +1031,7 @@ endl
     mov [scanline_len], eax
 
     test    [_flip_kind], FLIP_VERTICAL
-    jz  .dont_flip_vert
+    jz	.dont_flip_vert
 
     imul    eax, ecx
     sub eax, [scanline_len]
@@ -1047,7 +1047,7 @@ endl
     shr ecx, 2
     @@:
     dec ecx
-    js  @f
+    js	@f
     mov eax, [esi]
     xchg    eax, [edi]
     mov [esi], eax
@@ -1058,7 +1058,7 @@ endl
 
     pop ecx
     and ecx, 3
-    jz  .cont_line_vert
+    jz	.cont_line_vert
     @@:
     mov al, [esi]
     xchg    al, [edi]
@@ -1079,7 +1079,7 @@ endl
   .dont_flip_vert:
 
     test    [_flip_kind], FLIP_HORIZONTAL
-    jz  .exit
+    jz	.exit
 
     mov ecx, [ebx + Image.Height]
     mov eax, [ebx + Image.Type]
@@ -1124,7 +1124,7 @@ endl
     add esi, 2
     sub edi, 2
     sub ecx, 2
-    ja  @b
+    ja	@b
 
     pop edi esi ecx
     add esi, [scanline_len]
@@ -1178,7 +1178,7 @@ endl
     add esi, 3
     sub edi, 3
     sub ecx, 2
-    ja  @b
+    ja	@b
 
     pop edi esi ecx
     add esi, [scanline_len]
@@ -1202,8 +1202,8 @@ endl
     mov ebx, [ebx + Image.Width]
     shr ebx, 1
 .bpp1_horz.bit:
-    bt  [edi], edx
-    jc  @f
+    bt	[edi], edx
+    jc	@f
     btr [esi], eax
     jmp .bpp1_horz.right
   @@:
@@ -1265,7 +1265,7 @@ endl
     shl ebx, cl
     not bh
     and bh, [esi]
-    or  bl, bh
+    or	bl, bh
     mov bh, [esi]
     mov [esi], bl
     shr ebx, 8
@@ -1278,7 +1278,7 @@ endl
     shl ebx, cl
     not bh
     and bh, [edi]
-    or  bl, bh
+    or	bl, bh
     mov [edi], bl
     pop ecx ebx
   .bpp2i_horz.pixel_done:
@@ -1331,7 +1331,7 @@ endl
     shl ebx, cl
     not bh
     and bh, [esi]
-    or  bl, bh
+    or	bl, bh
     mov bh, [esi]
     mov [esi], bl
     shr ebx, 8
@@ -1343,7 +1343,7 @@ endl
     shl ebx, cl
     not bh
     and bh, [edi]
-    or  bl, bh
+    or	bl, bh
     mov [edi], bl
     pop ecx ebx
   .bpp4i_horz.pixel_done:
@@ -1383,19 +1383,19 @@ endp
 ;;================================================================================================;;
 proc img.flip _img, _flip_kind ;//////////////////////////////////////////////////////////////////;;
 ;;------------------------------------------------------------------------------------------------;;
-;? Flip all layers of image                                                                       ;;
+;? Flip all layers of image									  ;;
 ;;------------------------------------------------------------------------------------------------;;
-;> _img = pointer to image                                                                        ;;
-;> _flip_kind = one of FLIP_* constants                                                           ;;
+;> _img = pointer to image									  ;;
+;> _flip_kind = one of FLIP_* constants 							  ;;
 ;;------------------------------------------------------------------------------------------------;;
-;< eax = false / true                                                                             ;;
+;< eax = false / true										  ;;
 ;;================================================================================================;;
     push    1
     mov ebx, [_img]
 @@:
     mov eax, [ebx + Image.Previous]
     test    eax, eax
-    jz  .loop
+    jz	.loop
     mov ebx, eax
     jmp @b
 .loop:
@@ -1414,19 +1414,19 @@ endp
 ;;================================================================================================;;
 proc img.rotate.layer _img, _rotate_kind ;////////////////////////////////////////////////////////;;
 ;;------------------------------------------------------------------------------------------------;;
-;? Rotate image layer                                                                             ;;
+;? Rotate image layer										  ;;
 ;;------------------------------------------------------------------------------------------------;;
-;> _img = pointer to image                                                                        ;;
-;> _rotate_kind = one of ROTATE_* constants                                                       ;;
+;> _img = pointer to image									  ;;
+;> _rotate_kind = one of ROTATE_* constants							  ;;
 ;;------------------------------------------------------------------------------------------------;;
-;< eax = false / true                                                                             ;;
+;< eax = false / true										  ;;
 ;;================================================================================================;;
 locals
   scanline_len_old    dd ?
   scanline_len_new    dd ?
   scanline_pixels_new dd ?
-  line_buffer         dd ?
-  pixels_ptr          dd ?
+  line_buffer	      dd ?
+  pixels_ptr	      dd ?
 endl
 
     mov [line_buffer], 0
@@ -1434,15 +1434,15 @@ endl
     push    ebx esi edi
     mov ebx, [_img]
     stdcall img._.validate, ebx
-    or  eax, eax
+    or	eax, eax
     jnz .error
 
     cmp [_rotate_kind], ROTATE_90_CCW
-    je  .rotate_ccw_low
+    je	.rotate_ccw_low
     cmp [_rotate_kind], ROTATE_90_CW
-    je  .rotate_cw_low
+    je	.rotate_cw_low
     cmp [_rotate_kind], ROTATE_180
-    je  .flip
+    je	.flip
     jmp .exit
 
   .rotate_ccw_low:
@@ -1452,8 +1452,8 @@ endl
     mov [scanline_len_new], eax
 
     invoke  mem.alloc, eax
-    or  eax, eax
-    jz  .error
+    or	eax, eax
+    jz	.error
     mov [line_buffer], eax
 
     mov eax, [ebx + Image.Width]
@@ -1467,23 +1467,23 @@ endl
     mov [pixels_ptr], eax
 
     cmp [ebx + Image.Type], Image.bpp1
-    jz  .rotate_ccw1
+    jz	.rotate_ccw1
     cmp [ebx + Image.Type], Image.bpp2i
-    jz  .rotate_ccw2i
+    jz	.rotate_ccw2i
     cmp [ebx + Image.Type], Image.bpp4i
-    jz  .rotate_ccw4i
+    jz	.rotate_ccw4i
     cmp [ebx + Image.Type], Image.bpp8i
-    jz  .rotate_ccw8ig
+    jz	.rotate_ccw8ig
     cmp [ebx + Image.Type], Image.bpp8g
-    jz  .rotate_ccw8ig
+    jz	.rotate_ccw8ig
     cmp [ebx + Image.Type], Image.bpp24
-    jz  .rotate_ccw24
+    jz	.rotate_ccw24
     cmp [ebx + Image.Type], Image.bpp32
-    jz  .rotate_ccw32
+    jz	.rotate_ccw32
 
   .next_column_ccw_low1x:
     dec ecx
-    js  .exchange_dims
+    js	.exchange_dims
     push    ecx
 
     mov edx, [scanline_len_old]
@@ -1531,7 +1531,7 @@ endl
 .rotate_ccw32:
   .next_column_ccw_low:
     dec ecx
-    js  .exchange_dims
+    js	.exchange_dims
     push    ecx
 
     mov edx, [scanline_len_old]
@@ -1570,7 +1570,7 @@ endl
 .rotate_ccw8ig:
   .next_column_ccw_low8ig:
     dec ecx
-    js  .exchange_dims
+    js	.exchange_dims
     push    ecx
 
     mov edx, [scanline_len_old]
@@ -1618,7 +1618,7 @@ endl
 .rotate_ccw24:
   .next_column_ccw_low24:
     dec ecx
-    js  .exchange_dims
+    js	.exchange_dims
     push    ecx
 
     mov edx, [scanline_len_old]
@@ -1673,12 +1673,12 @@ endl
     add eax, 7
     shr eax, 3
     imul eax, [ebx + Image.Width]
-    push eax                                            ; save new data size
+    push eax						; save new data size
 
     invoke  mem.alloc, eax
-    or  eax, eax
-    jz  .error
-    push eax                                            ; save pointer to new data
+    or	eax, eax
+    jz	.error
+    push eax						; save pointer to new data
 
     mov ecx, [ebx + Image.Width]
     and ecx, 7
@@ -1694,7 +1694,7 @@ endl
     add esi, edx
 
   .rotate_ccw1.begin:
-    bt  [esi], ecx
+    bt	[esi], ecx
     jc .rotate_ccw1.one
   .rotate_ccw1.zero:
     btr [edi], eax
@@ -1727,9 +1727,9 @@ endl
     add esi, edx
     jmp .rotate_ccw1.begin
   .rotate_ccw1.quit:
-    pop esi                                             ; get pointer to new data
+    pop esi						; get pointer to new data
     mov edi, [ebx + Image.Data]
-    pop ecx                                             ; get new data size
+    pop ecx						; get new data size
     rep movsb
     invoke  mem.free, esi
     pop edx ecx
@@ -1743,12 +1743,12 @@ endl
     add eax, 3
     shr eax, 2
     imul eax, [ebx + Image.Width]
-    push eax                                            ; save new data size
+    push eax						; save new data size
 
     invoke  mem.alloc, eax
-    or  eax, eax
-    jz  .error
-    push eax                                            ; save pointer to new data
+    or	eax, eax
+    jz	.error
+    push eax						; save pointer to new data
 
     mov ecx, [ebx + Image.Width]
     and ecx, 3
@@ -1777,7 +1777,7 @@ endl
     shl ebx, cl
     not bh
     and bh, [edi]
-    or  bl, bh
+    or	bl, bh
     mov [edi], bl
     pop ecx ebx
 
@@ -1806,9 +1806,9 @@ endl
     add esi, edx
     jmp .rotate_ccw2i.begin
   .rotate_ccw2i.quit:
-    pop esi                                             ; get pointer to new data
+    pop esi						; get pointer to new data
     mov edi, [ebx + Image.Data]
-    pop ecx                                             ; get new data size
+    pop ecx						; get new data size
     rep movsb
     invoke  mem.free, esi
     pop edx ecx
@@ -1822,12 +1822,12 @@ endl
     add eax, 1
     shr eax, 1
     imul eax, [ebx + Image.Width]
-    push eax                                            ; save new data size
+    push eax						; save new data size
 
     invoke  mem.alloc, eax
-    or  eax, eax
-    jz  .error
-    push eax                                            ; save pointer to new data
+    or	eax, eax
+    jz	.error
+    push eax						; save pointer to new data
 
     mov ecx, [ebx + Image.Width]
     and ecx, 1
@@ -1855,7 +1855,7 @@ endl
     shl ebx, cl
     not bh
     and bh, [edi]
-    or  bl, bh
+    or	bl, bh
     mov [edi], bl
     pop ecx ebx
 
@@ -1884,9 +1884,9 @@ endl
     add esi, edx
     jmp .rotate_ccw4i.begin
   .rotate_ccw4i.quit:
-    pop esi                                             ; get pointer to new data
+    pop esi						; get pointer to new data
     mov edi, [ebx + Image.Data]
-    pop ecx                                             ; get new data size
+    pop ecx						; get new data size
     rep movsb
     invoke  mem.free, esi
     pop edx ecx
@@ -1901,8 +1901,8 @@ endl
     mov [scanline_len_new], eax
 
     invoke  mem.alloc, eax
-    or  eax, eax
-    jz  .error
+    or	eax, eax
+    jz	.error
     mov [line_buffer], eax
 
     mov eax, [ebx + Image.Width]
@@ -1916,23 +1916,23 @@ endl
     mov [pixels_ptr], eax
 
     cmp [ebx + Image.Type], Image.bpp1
-    jz  .rotate_cw1
+    jz	.rotate_cw1
     cmp [ebx + Image.Type], Image.bpp2i
-    jz  .rotate_cw2i
+    jz	.rotate_cw2i
     cmp [ebx + Image.Type], Image.bpp4i
-    jz  .rotate_cw4i
+    jz	.rotate_cw4i
     cmp [ebx + Image.Type], Image.bpp8i
-    jz  .rotate_cw8ig
+    jz	.rotate_cw8ig
     cmp [ebx + Image.Type], Image.bpp8g
-    jz  .rotate_cw8ig
+    jz	.rotate_cw8ig
     cmp [ebx + Image.Type], Image.bpp24
-    jz  .rotate_cw24
+    jz	.rotate_cw24
     cmp [ebx + Image.Type], Image.bpp32
-    jz  .rotate_cw32
+    jz	.rotate_cw32
 
   .next_column_cw_low1x:
     dec ecx
-    js  .exchange_dims
+    js	.exchange_dims
     push    ecx
 
     mov edx, [scanline_len_old]
@@ -1982,7 +1982,7 @@ endl
 .rotate_cw32:
   .next_column_cw_low:
     dec ecx
-    js  .exchange_dims
+    js	.exchange_dims
     push    ecx
 
     mov edx, [scanline_len_old]
@@ -2024,7 +2024,7 @@ endl
 .rotate_cw8ig:
   .next_column_cw_low8ig:
     dec ecx
-    js  .exchange_dims
+    js	.exchange_dims
     push    ecx
 
     mov edx, [scanline_len_old]
@@ -2074,7 +2074,7 @@ endl
 .rotate_cw24:
   .next_column_cw_low24:
     dec ecx
-    js  .exchange_dims
+    js	.exchange_dims
     push    ecx
 
     mov edx, [scanline_len_old]
@@ -2133,12 +2133,12 @@ endl
     add eax, 7
     shr eax, 3
     imul [ebx + Image.Width]
-    push eax                                            ; save new data size
+    push eax						; save new data size
 
     invoke  mem.alloc, eax
-    or  eax, eax
-    jz  .error
-    push eax                                            ; save pointer to new data
+    or	eax, eax
+    jz	.error
+    push eax						; save pointer to new data
 
     mov edi, eax
     mov esi, [ebx + Image.Data]
@@ -2151,7 +2151,7 @@ endl
     mov edx, 0
 
   .rotate_cw1.begin:
-    bt  [esi], ecx
+    bt	[esi], ecx
     jc .rotate_cw1.one
   .rotate_cw1.zero:
     btr [edi], eax
@@ -2161,7 +2161,7 @@ endl
   @@:
     sub esi, [scanline_len_old]
     dec [scanline_pixels_new]
-    jz  .rotate_cw1.end_of_line
+    jz	.rotate_cw1.end_of_line
     sub eax, 1
     adc edi, 0
     and eax, 7
@@ -2169,7 +2169,7 @@ endl
   .rotate_cw1.end_of_line:
     inc edi
     mov eax, [ebx + Image.Height]
-    mov [scanline_pixels_new],   eax
+    mov [scanline_pixels_new],	 eax
     mov eax, 7
     dec ecx
     jns @f
@@ -2185,10 +2185,10 @@ endl
     add esi, edx
     jmp .rotate_cw1.begin
   .rotate_cw1.quit:
-    pop eax                                             ; get pointer to new data
+    pop eax						; get pointer to new data
     mov esi, eax
     mov edi, [ebx + Image.Data]
-    pop ecx                                             ; get new data size
+    pop ecx						; get new data size
     rep movsb
     invoke  mem.free, eax
     pop edx ecx
@@ -2202,12 +2202,12 @@ endl
     add eax, 3
     shr eax, 2
     imul [ebx + Image.Width]
-    push eax                                            ; save new data size
+    push eax						; save new data size
 
     invoke  mem.alloc, eax
-    or  eax, eax
-    jz  .error
-    push eax                                            ; save pointer to new data
+    or	eax, eax
+    jz	.error
+    push eax						; save pointer to new data
 
     mov edi, eax
     mov esi, [ebx + Image.Data]
@@ -2233,13 +2233,13 @@ endl
     shl ebx, cl
     not bh
     and bh, [edi]
-    or  bl, bh
+    or	bl, bh
     mov [edi], bl
     pop ecx ebx
 
     sub esi, [scanline_len_old]
     dec [scanline_pixels_new]
-    jz  .rotate_cw2i.end_of_line
+    jz	.rotate_cw2i.end_of_line
     sub eax, 1
     adc edi, 0
     and eax, 3
@@ -2247,7 +2247,7 @@ endl
   .rotate_cw2i.end_of_line:
     inc edi
     mov eax, [ebx + Image.Height]
-    mov [scanline_pixels_new],   eax
+    mov [scanline_pixels_new],	 eax
     mov eax, 3
     dec ecx
     jns @f
@@ -2263,10 +2263,10 @@ endl
     add esi, edx
     jmp .rotate_cw2i.begin
   .rotate_cw2i.quit:
-    pop eax                                             ; get pointer to new data
+    pop eax						; get pointer to new data
     mov esi, eax
     mov edi, [ebx + Image.Data]
-    pop ecx                                             ; get new data size
+    pop ecx						; get new data size
     rep movsb
     invoke  mem.free, eax
     pop edx ecx
@@ -2280,12 +2280,12 @@ endl
     add eax, 1
     shr eax, 1
     imul [ebx + Image.Width]
-    push eax                                            ; save new data size
+    push eax						; save new data size
 
     invoke  mem.alloc, eax
-    or  eax, eax
-    jz  .error
-    push eax                                            ; save pointer to new data
+    or	eax, eax
+    jz	.error
+    push eax						; save pointer to new data
 
     mov edi, eax
     mov esi, [ebx + Image.Data]
@@ -2310,13 +2310,13 @@ endl
     shl ebx, cl
     not bh
     and bh, [edi]
-    or  bl, bh
+    or	bl, bh
     mov [edi], bl
     pop ecx ebx
 
     sub esi, [scanline_len_old]
     dec [scanline_pixels_new]
-    jz  .rotate_cw4i.end_of_line
+    jz	.rotate_cw4i.end_of_line
     sub eax, 1
     adc edi, 0
     and eax, 1
@@ -2324,7 +2324,7 @@ endl
   .rotate_cw4i.end_of_line:
     inc edi
     mov eax, [ebx + Image.Height]
-    mov [scanline_pixels_new],   eax
+    mov [scanline_pixels_new],	 eax
     mov eax, 1
     dec ecx
     jns @f
@@ -2340,10 +2340,10 @@ endl
     add esi, edx
     jmp .rotate_cw4i.begin
   .rotate_cw4i.quit:
-    pop eax                                             ; get pointer to new data
+    pop eax						; get pointer to new data
     mov esi, eax
     mov edi, [ebx + Image.Data]
-    pop ecx                                             ; get new data size
+    pop ecx						; get new data size
     rep movsb
     invoke  mem.free, eax
     pop edx ecx
@@ -2353,7 +2353,7 @@ endl
   .flip:
     stdcall img.flip.layer, [_img], FLIP_VERTICAL
     test eax, eax
-    jz  .error
+    jz	.error
     jmp .exit
 
   .exchange_dims:
@@ -2377,19 +2377,19 @@ endp
 ;;================================================================================================;;
 proc img.rotate _img, _rotate_kind ;//////////////////////////////////////////////////////////////;;
 ;;------------------------------------------------------------------------------------------------;;
-;? Rotate all layers of image                                                                     ;;
+;? Rotate all layers of image									  ;;
 ;;------------------------------------------------------------------------------------------------;;
-;> _img = pointer to image                                                                        ;;
-;> _rotate_kind = one of ROTATE_* constants                                                       ;;
+;> _img = pointer to image									  ;;
+;> _rotate_kind = one of ROTATE_* constants							  ;;
 ;;------------------------------------------------------------------------------------------------;;
-;< eax = false / true                                                                             ;;
+;< eax = false / true										  ;;
 ;;================================================================================================;;
     push    1
     mov ebx, [_img]
 @@:
     mov eax, [ebx + Image.Previous]
     test    eax, eax
-    jz  .loop
+    jz	.loop
     mov ebx, eax
     jmp @b
 .loop:
@@ -2408,17 +2408,17 @@ endp
 ;;================================================================================================;;
 proc img.draw _img, _x, _y, _width, _height, _xpos, _ypos ;///////////////////////////////////////;;
 ;;------------------------------------------------------------------------------------------------;;
-;? Draw image in the window                                                                       ;;
+;? Draw image in the window									  ;;
 ;;------------------------------------------------------------------------------------------------;;
-;> _img = pointer to image                                                                        ;;
-;>_x = x-coordinate in the window                                                                 ;;
-;>_y = y-coordinate in the window                                                                 ;;
-;>_width = maximum width to draw                                                                  ;;
-;>_height = maximum height to draw                                                                ;;
-;>_xpos = offset in image by x-axis                                                               ;;
-;>_ypos = offset in image by y-axis                                                               ;;
+;> _img = pointer to image									  ;;
+;>_x = x-coordinate in the window								  ;;
+;>_y = y-coordinate in the window								  ;;
+;>_width = maximum width to draw								  ;;
+;>_height = maximum height to draw								  ;;
+;>_xpos = offset in image by x-axis								  ;;
+;>_ypos = offset in image by y-axis								  ;;
 ;;------------------------------------------------------------------------------------------------;;
-;< no return value                                                                                ;;
+;< no return value										  ;;
 ;;================================================================================================;;
     push    ebx esi edi
     mov ebx, [_img]
@@ -2429,14 +2429,14 @@ proc img.draw _img, _x, _y, _width, _height, _xpos, _ypos ;/////////////////////
     sub ecx, [_xpos]
     jbe .done
     cmp ecx, [_width]
-    jb  @f
+    jb	@f
     mov ecx, [_width]
 @@:
     mov edx, [ebx + Image.Height]
     sub edx, [_ypos]
     jbe .done
     cmp edx, [_height]
-    jb  @f
+    jb	@f
     mov edx, [_height]
 @@:
     mov eax, [ebx + Image.Width]
@@ -2471,26 +2471,26 @@ endp
 
 align 4
 img.formats_table:
-  .bmp  dd LIBIMG_FORMAT_BMP,  img.is.bmp,  img.decode.bmp,     img.encode.bmp, 1 + (1 SHL Image.bpp24) + (1 SHL Image.bpp32)
-  .ico  dd LIBIMG_FORMAT_ICO,  img.is.ico,  img.decode.ico_cur, img.encode.ico, 0
-  .cur  dd LIBIMG_FORMAT_CUR,  img.is.cur,  img.decode.ico_cur, img.encode.cur, 0
-  .gif  dd LIBIMG_FORMAT_GIF,  img.is.gif,  img.decode.gif,     img.encode.gif, 0
-  .png  dd LIBIMG_FORMAT_PNG,  img.is.png,  img.decode.png,     img.encode.png, 1 + (1 SHL Image.bpp24)
-  .jpg  dd LIBIMG_FORMAT_JPEG, img.is.jpg,  img.decode.jpg,     img.encode.jpg, 0
-  .tga  dd LIBIMG_FORMAT_TGA,  img.is.tga,  img.decode.tga,     img.encode.tga, 0
-  .pcx  dd LIBIMG_FORMAT_PCX,  img.is.pcx,  img.decode.pcx,     img.encode.pcx, 0
-  .xcf  dd LIBIMG_FORMAT_XCF,  img.is.xcf,  img.decode.xcf,     img.encode.xcf, 0
-  .tiff dd LIBIMG_FORMAT_TIFF, img.is.tiff, img.decode.tiff,    img.encode.tiff,0
-  .pnm  dd LIBIMG_FORMAT_PNM,  img.is.pnm,  img.decode.pnm,     img.encode.pnm, 1 + (1 SHL Image.bpp1) + (1 SHL Image.bpp8g) + (1 SHL Image.bpp24)
-  .wbmp dd LIBIMG_FORMAT_WBMP, img.is.wbmp, img.decode.wbmp,    img.encode.wbmp,0
-  .xbm  dd LIBIMG_FORMAT_XBM,  img.is.xbm,  img.decode.xbm,     img.encode.xbm, 0
-  .z80  dd LIBIMG_FORMAT_Z80,  img.is.z80,  img.decode.z80,     img.encode.z80, 0 ;this must be the last entry as there are no signatures in z80 screens at all
-        dd 0
+  .bmp	dd LIBIMG_FORMAT_BMP,  img.is.bmp,  img.decode.bmp,	img.encode.bmp, 1 + (1 SHL Image.bpp24) + (1 SHL Image.bpp32)
+  .ico	dd LIBIMG_FORMAT_ICO,  img.is.ico,  img.decode.ico_cur, img.encode.ico, 0
+  .cur	dd LIBIMG_FORMAT_CUR,  img.is.cur,  img.decode.ico_cur, img.encode.cur, 0
+  .gif	dd LIBIMG_FORMAT_GIF,  img.is.gif,  img.decode.gif,	img.encode.gif, 0
+  .png	dd LIBIMG_FORMAT_PNG,  img.is.png,  img.decode.png,	img.encode.png, 1 + (1 SHL Image.bpp24)
+  .jpg	dd LIBIMG_FORMAT_JPEG, img.is.jpg,  img.decode.jpg,	img.encode.jpg, 0
+  .tga	dd LIBIMG_FORMAT_TGA,  img.is.tga,  img.decode.tga,	img.encode.tga, 0
+  .pcx	dd LIBIMG_FORMAT_PCX,  img.is.pcx,  img.decode.pcx,	img.encode.pcx, 0
+  .xcf	dd LIBIMG_FORMAT_XCF,  img.is.xcf,  img.decode.xcf,	img.encode.xcf, 0
+  .tiff dd LIBIMG_FORMAT_TIFF, img.is.tiff, img.decode.tiff,	img.encode.tiff,0
+  .pnm	dd LIBIMG_FORMAT_PNM,  img.is.pnm,  img.decode.pnm,	img.encode.pnm, 1 + (1 SHL Image.bpp1) + (1 SHL Image.bpp8g) + (1 SHL Image.bpp24)
+  .wbmp dd LIBIMG_FORMAT_WBMP, img.is.wbmp, img.decode.wbmp,	img.encode.wbmp,0
+  .xbm	dd LIBIMG_FORMAT_XBM,  img.is.xbm,  img.decode.xbm,	img.encode.xbm, 0
+  .z80	dd LIBIMG_FORMAT_Z80,  img.is.z80,  img.decode.z80,	img.encode.z80, 0 ;this must be the last entry as there are no signatures in z80 screens at all
+	dd 0
 
 ;;================================================================================================;;
 ;;////////////////////////////////////////////////////////////////////////////////////////////////;;
 ;;================================================================================================;;
-;! Below are private procs you should never call directly from your code                          ;;
+;! Below are private procs you should never call directly from your code			  ;;
 ;;================================================================================================;;
 ;;////////////////////////////////////////////////////////////////////////////////////////////////;;
 ;;================================================================================================;;
@@ -2499,11 +2499,11 @@ img.formats_table:
 ;;================================================================================================;;
 proc img._.validate, _img ;///////////////////////////////////////////////////////////////////////;;
 ;;------------------------------------------------------------------------------------------------;;
-;? --- TBD ---                                                                                    ;;
+;? --- TBD ---											  ;;
 ;;------------------------------------------------------------------------------------------------;;
-;> --- TBD ---                                                                                    ;;
+;> --- TBD ---											  ;;
 ;;------------------------------------------------------------------------------------------------;;
-;< --- TBD ---                                                                                    ;;
+;< --- TBD ---											  ;;
 ;;================================================================================================;;
     xor eax, eax
     ret
@@ -2512,15 +2512,15 @@ endp
 ;;================================================================================================;;
 proc img._.new ;//////////////////////////////////////////////////////////////////////////////////;;
 ;;------------------------------------------------------------------------------------------------;;
-;? --- TBD ---                                                                                    ;;
+;? --- TBD ---											  ;;
 ;;------------------------------------------------------------------------------------------------;;
-;> --- TBD ---                                                                                    ;;
+;> --- TBD ---											  ;;
 ;;------------------------------------------------------------------------------------------------;;
-;< eax = 0 / pointer to image                                                                     ;;
+;< eax = 0 / pointer to image									  ;;
 ;;================================================================================================;;
     invoke  mem.alloc, sizeof.Image
     test    eax, eax
-    jz  @f
+    jz	@f
     push    ecx
     xor ecx, ecx
     mov [eax + Image.Data], ecx
@@ -2537,21 +2537,21 @@ endp
 ;;================================================================================================;;
 proc img._.delete _img ;//////////////////////////////////////////////////////////////////////////;;
 ;;------------------------------------------------------------------------------------------------;;
-;? --- TBD ---                                                                                    ;;
+;? --- TBD ---											  ;;
 ;;------------------------------------------------------------------------------------------------;;
-;> --- TBD ---                                                                                    ;;
+;> --- TBD ---											  ;;
 ;;------------------------------------------------------------------------------------------------;;
-;< eax = false / true                                                                             ;;
+;< eax = false / true										  ;;
 ;;================================================================================================;;
     push    edx
     mov edx, [_img]
     cmp [edx + Image.Data], 0
-    je  @f
+    je	@f
     invoke  mem.free, [edx + Image.Data]
     @@: cmp [edx + Image.Extended], 0
-    je  @f
+    je	@f
     invoke  mem.free, [edx + Image.Extended]
-    @@: invoke  mem.free, edx
+    @@: invoke	mem.free, edx
     pop edx
     ret
 endp
@@ -2580,21 +2580,21 @@ proc img.resize_data _img, _width, _height ;////////////////////////////////////
     jnz .error
     imul    eax, [_width]
     test    eax, eax
-    jz  .error
+    jz	.error
     cmp [ebx + Image.Type], Image.bpp1
-    jz  .bpp1
+    jz	.bpp1
     cmp [ebx + Image.Type], Image.bpp2i
-    jz  .bpp2i
+    jz	.bpp2i
     cmp [ebx + Image.Type], Image.bpp4i
-    jz  .bpp4i
+    jz	.bpp4i
     cmp [ebx + Image.Type], Image.bpp8i
-    jz  .bpp8i
+    jz	.bpp8i
     cmp [ebx + Image.Type], Image.bpp8g
-    jz  .bpp8g
+    jz	.bpp8g
     cmp [ebx + Image.Type], Image.bpp8a
-    jz  .bpp8a
+    jz	.bpp8a
     cmp [ebx + Image.Type], Image.bpp24
-    jz  .bpp24
+    jz	.bpp24
 .bpp32:
     shl eax, 2
     jmp @f
@@ -2659,8 +2659,8 @@ proc img.resize_data _img, _width, _height ;////////////////////////////////////
 @@:
     mov esi, eax
     invoke  mem.realloc, [ebx + Image.Data], eax
-    or  eax, eax
-    jz  .error
+    or	eax, eax
+    jz	.error
 
     mov [ebx + Image.Data], eax
     push    [_width]
@@ -2701,27 +2701,27 @@ endp
 ;;================================================================================================;;
 img._.get_scanline_len: ;/////////////////////////////////////////////////////////////////////////;;
 ;;------------------------------------------------------------------------------------------------;;
-;? Get scanline length of image in bytes                                                          ;;
+;? Get scanline length of image in bytes							  ;;
 ;;------------------------------------------------------------------------------------------------;;
-;> eax = width of image in pixels                                                                 ;;
-;> ebx = image                                                                                    ;;
+;> eax = width of image in pixels								  ;;
+;> ebx = image											  ;;
 ;;------------------------------------------------------------------------------------------------;;
-;< eax = scanline length in bytes                                                                 ;;
+;< eax = scanline length in bytes								  ;;
 ;;================================================================================================;;
     cmp [ebx + Image.Type], Image.bpp1
-    jz  .bpp1.1
+    jz	.bpp1.1
     cmp [ebx + Image.Type], Image.bpp2i
-    jz  .bpp2i.1
+    jz	.bpp2i.1
     cmp [ebx + Image.Type], Image.bpp4i
-    jz  .bpp4i.1
+    jz	.bpp4i.1
     cmp [ebx + Image.Type], Image.bpp8i
-    jz  .bpp8.1
+    jz	.bpp8.1
     cmp [ebx + Image.Type], Image.bpp8g
-    jz  .bpp8.1
+    jz	.bpp8.1
     cmp [ebx + Image.Type], Image.bpp8a
-    jz  .bpp8a.1
+    jz	.bpp8a.1
     cmp [ebx + Image.Type], Image.bpp24
-    jz  .bpp24.1
+    jz	.bpp24.1
     add eax, eax
     cmp [ebx + Image.Type], Image.bpp32
     jnz .quit
@@ -2752,7 +2752,7 @@ img._.get_scanline_len: ;///////////////////////////////////////////////////////
 ;;================================================================================================;;
 ;;////////////////////////////////////////////////////////////////////////////////////////////////;;
 ;;================================================================================================;;
-;! Below is private data you should never use directly from your code                             ;;
+;! Below is private data you should never use directly from your code				  ;;
 ;;================================================================================================;;
 ;;////////////////////////////////////////////////////////////////////////////////////////////////;;
 ;;================================================================================================;;
@@ -2761,33 +2761,33 @@ section '.data' data readable writable align 16
 ;include_debug_strings
 
 align 4
-type2bpp    dd  8, 24, 32, 15, 16, 1, 9, 2, 4
+type2bpp    dd	8, 24, 32, 15, 16, 1, 9, 2, 4
 img._.do_rgb.handlers:
-    dd  img._.do_rgb.bpp8i
-    dd  img._.do_rgb.bpp24
-    dd  img._.do_rgb.bpp32
-    dd  img._.do_rgb.bpp15.amd  ; can be overwritten in lib_init
-    dd  img._.do_rgb.bpp16.amd  ; can be overwritten in lib_init
-    dd  img._.do_rgb.bpp1
-    dd  img._.do_rgb.bpp8g
-    dd  img._.do_rgb.bpp2i
-    dd  img._.do_rgb.bpp4i
+    dd	img._.do_rgb.bpp8i
+    dd	img._.do_rgb.bpp24
+    dd	img._.do_rgb.bpp32
+    dd	img._.do_rgb.bpp15.amd	; can be overwritten in lib_init
+    dd	img._.do_rgb.bpp16.amd	; can be overwritten in lib_init
+    dd	img._.do_rgb.bpp1
+    dd	img._.do_rgb.bpp8g
+    dd	img._.do_rgb.bpp2i
+    dd	img._.do_rgb.bpp4i
 
 img.flip.layer.handlers_horz:
-    dd  img.flip.layer.bpp8ig_horz
-    dd  img.flip.layer.bpp24_horz
-    dd  img.flip.layer.bpp32_horz
-    dd  img.flip.layer.bpp1x_horz
-    dd  img.flip.layer.bpp1x_horz
-    dd  img.flip.layer.bpp1_horz
-    dd  img.flip.layer.bpp8ig_horz
-    dd  img.flip.layer.bpp2i_horz
-    dd  img.flip.layer.bpp4i_horz
+    dd	img.flip.layer.bpp8ig_horz
+    dd	img.flip.layer.bpp24_horz
+    dd	img.flip.layer.bpp32_horz
+    dd	img.flip.layer.bpp1x_horz
+    dd	img.flip.layer.bpp1x_horz
+    dd	img.flip.layer.bpp1_horz
+    dd	img.flip.layer.bpp8ig_horz
+    dd	img.flip.layer.bpp2i_horz
+    dd	img.flip.layer.bpp4i_horz
 
 ;;================================================================================================;;
 ;;////////////////////////////////////////////////////////////////////////////////////////////////;;
 ;;================================================================================================;;
-;! Exported functions section                                                                     ;;
+;! Exported functions section									  ;;
 ;;================================================================================================;;
 ;;////////////////////////////////////////////////////////////////////////////////////////////////;;
 ;;================================================================================================;;
@@ -2796,33 +2796,33 @@ img.flip.layer.handlers_horz:
 align 4
 @EXPORT:
 
-export                                      \
-    lib_init           , 'lib_init'           , \
-    0x00050007         , 'version'            , \
-    img.is_img         , 'img_is_img'         , \
-    img.info           , 'img_info'           , \
+export					    \
+    lib_init	       , 'lib_init'	      , \
+    0x00050007	       , 'version'	      , \
+    img.is_img	       , 'img_is_img'	      , \
+    img.info	       , 'img_info'	      , \
     img.from_file      , 'img_from_file'      , \
-    img.to_file        , 'img_to_file'        , \
+    img.to_file        , 'img_to_file'	      , \
     img.from_rgb       , 'img_from_rgb'       , \
-    img.to_rgb         , 'img_to_rgb'         , \
-    img.to_rgb2        , 'img_to_rgb2'        , \
-    img.decode         , 'img_decode'         , \
-    img.encode         , 'img_encode'         , \
-    img.create         , 'img_create'         , \
-    img.destroy        , 'img_destroy'        , \
+    img.to_rgb	       , 'img_to_rgb'	      , \
+    img.to_rgb2        , 'img_to_rgb2'	      , \
+    img.decode	       , 'img_decode'	      , \
+    img.encode	       , 'img_encode'	      , \
+    img.create	       , 'img_create'	      , \
+    img.destroy        , 'img_destroy'	      , \
     img.destroy.layer  , 'img_destroy_layer'  , \
-    img.count          , 'img_count'          , \
+    img.count	       , 'img_count'	      , \
     img.lock_bits      , 'img_lock_bits'      , \
     img.unlock_bits    , 'img_unlock_bits'    , \
-    img.flip           , 'img_flip'           , \
+    img.flip	       , 'img_flip'	      , \
     img.flip.layer     , 'img_flip_layer'     , \
-    img.rotate         , 'img_rotate'         , \
+    img.rotate	       , 'img_rotate'	      , \
     img.rotate.layer   , 'img_rotate_layer'   , \
-    img.draw           , 'img_draw'           , \
-    img.scale          , 'img_scale'          , \
+    img.draw	       , 'img_draw'	      , \
+    img.scale	       , 'img_scale'	      , \
     img.get_scaled_size, 'img_get_scaled_size', \
-    img.convert        , 'img_convert'        , \
-    img.blend          , 'img_blend'          , \
+    img.convert        , 'img_convert'	      , \
+    img.blend	       , 'img_blend'	      , \
     img.resize_data    , 'img_resize_data'    , \
     img.formats_table  , 'img_formats_table'
 
@@ -2831,32 +2831,32 @@ export                                      \
 align 16
 @IMPORT:
 
-library                           \
-        archiver, 'archiver.obj', \
-        libio   , 'libio.obj'
+library 			  \
+	archiver, 'archiver.obj', \
+	libio	, 'libio.obj'
 
-import  archiver, \
-        deflate_unpack2, 'deflate_unpack2',\
-        deflateInit2,    'deflateInit2',\
-        deflateReset,    'deflateReset',\
-        deflate,         'deflate',\
-        deflateEnd,      'deflateEnd',\
-        calc_crc32,      'calc_crc32'
+import	archiver, \
+	deflate_unpack2, 'deflate_unpack2',\
+	deflateInit2,	 'deflateInit2',\
+	deflateReset,	 'deflateReset',\
+	deflate,	 'deflate',\
+	deflateEnd,	 'deflateEnd',\
+	calc_crc32,	 'calc_crc32'
 
-import libio                    , \
-        file.size , 'file_size' , \
-        file.open , 'file_open' , \
-        file.read , 'file_read' , \
-        file.close, 'file_close'
+import libio			, \
+	file.size , 'file_size' , \
+	file.open , 'file_open' , \
+	file.read , 'file_read' , \
+	file.close, 'file_close'
 
 align 4
 ; mutex for unpacker loading
-deflate_loader_mutex    dd  0
+deflate_loader_mutex	dd  0
 
 ; default palette for GIF - b&w
 gif_default_palette:
-    db  0, 0, 0
-    db  0xFF, 0xFF, 0xFF
+    db	0, 0, 0
+    db	0xFF, 0xFF, 0xFF
 
 ; uninitialized data - global constant tables
 mem.alloc   dd ?
@@ -2865,7 +2865,7 @@ mem.realloc dd ?
 dll.load    dd ?
 
 ; data for YCbCr -> RGB translation
-color_table_1       rd  256
-color_table_2       rd  256
-color_table_3       rd  256
-color_table_4       rd  256
+color_table_1	    rd	256
+color_table_2	    rd	256
+color_table_3	    rd	256
+color_table_4	    rd	256
