@@ -7,7 +7,7 @@ KPACK=kpack
 
 SRC=thashview.c
 CFLAGS=-I $(KTCC_DIR)/libc/include
-LIBS = -lck -lcryptal -ldialog
+LIBS = -lck -lcryptal -ldialog -lbox
 
 all:
 	$(KTCC) $(CFLAGS) $(SRC) $(LIBS) -o $(NAME)

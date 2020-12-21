@@ -5,21 +5,21 @@
 #include <stdlib.h>
 #include <kos32sys1.h>
 #include <string.h>
-#include <stdarg.h>
 #include <cryptal/md5.h>
 #include <cryptal/sha1.h>
 #include <cryptal/sha256.h>
 #include <clayer/dialog.h>
+#include <clayer/boxlib.h>
 
 #define TRUE 1;
 #define FALSE 0;
 #define MAX_HASH_LEN 65 // Максимальная длина строки
 #define WINDOW_W 665
-#define VERSION "%s - thashview 2.5"
+#define VERSION "%s - thashview 2.6"
+#define EDIT_TEXT_SIZE 0x10000000
 
 struct kolibri_system_colors sys_color_table;
 
-char hex[]={"abcdefABCDEF1234567890"}; //Для проверки вводимых символов
 char hash_str_md5[MAX_HASH_LEN]=   "Click the 'MD5:' button to show the md5-checksum!      "; //Вывод MD5
 char hash_str_sha1[MAX_HASH_LEN]=  "Click the 'SHA1:' button to show the sha1-checksum!    "; //Вывод SHA1
 char hash_str_sha256[MAX_HASH_LEN]="Click the 'SHA256:' button to show the sha256-checksum!"; //Вывод SHA256
@@ -29,22 +29,15 @@ char *title; // Заголовок окна
 
 enum MYCOLORS // Цвета
 {
-    GREEN = 0x00067D06,
-    RED   = 0x00FF0000,
-    BLACK = 0x00000000,
-    WHITE = 0xFFFFFFFF,
-    GREY  = 0x00DDD7CF
+    GREEN = 0x067D06 | EDIT_TEXT_SIZE,
+    RED   = 0xFF0000 | EDIT_TEXT_SIZE,
+    BLACK = 0x000000 | EDIT_TEXT_SIZE,
+    WHITE = 0xFFFFFF,
+    GREY  = 0x919191
 };
 
-unsigned int str_pos=0; // Позиция курсора при печати в строке ввода
+edit_box hash_edit_box={WINDOW_W-140,10,121,WHITE,0,0,GREY,EDIT_TEXT_SIZE, MAX_HASH_LEN-1, edit_box_buff,NULL,ed_focus}; // Создаём структуру edit_box
 int md5_flag=0, sha1_flag=0, sha256_flag=0; // Флаги показывающие была ли уже рассчитана котрольная сумма в функции check_sum()
-int edit_box_text_color=BLACK; // Изначальный цвет текста в строке ввода
-
-enum MYKEYS // Коды клавиш
-{
-    CTRL_V=22,
-    BACKSPACE=8
-};
 
 enum BUTTONS // Кнопки в интрефейсе
 {
@@ -174,13 +167,11 @@ void redraw_window() //Рисуем окно
     begin_draw(); //Начинаем рисование интерфейса )
     sys_create_window(win_pos.x, win_pos.y, WINDOW_W, 150, title, sys_color_table.work_area, 0x14); // Создаём окно.
 
-    draw_bar(10, 121, 525,20, WHITE); // Создаём прямоугольник для поля ввода
-    draw_text_sys(edit_box_buff,15, 125, 0, 0x90000000| edit_box_text_color); // Выводим текст из буффера ввода
-    draw_text_sys("|",10+(8*str_pos),125,0,0x90000000 | BLACK);
+    edit_box_draw(&hash_edit_box); // Рисуем edit_box
 
-    define_button((10 << 16) + 60, (30 << 16) + 20, BTN_MD5, GREEN); // Определяем кнопку md5
-    define_button((10 << 16) + 60, (60 << 16) + 20, BTN_SHA1, GREEN);// Определяем кнопку sha1
-    define_button((10 << 16) + 60, (90 << 16) + 20, BTN_SHA256, GREEN);// Определяем кнопку sha256
+    define_button(X_W(10,60), Y_H(30,20), BTN_MD5, GREEN); // Определяем кнопку md5
+    define_button(X_W(10,60), Y_H(60,20), BTN_SHA1, GREEN);// Определяем кнопку sha1
+    define_button(X_W(10,60), Y_H(90,20), BTN_SHA256, GREEN);// Определяем кнопку sha256
 
     draw_text_sys("MD5:", 15, 34, 0,   0x90000000 | sys_color_table.work_button_text); // Пищем текст на кнопках
     draw_text_sys("SHA1:", 15, 64, 0,  0x90000000 | sys_color_table.work_button_text);
@@ -190,22 +181,20 @@ void redraw_window() //Рисуем окно
     draw_text_sys(hash_str_sha1, 80, 64, 0, 0x90000000 | sys_color_table.work_text);
     draw_text_sys(hash_str_sha256, 80, 94, 0, 0x90000000| sys_color_table.work_text);
 
-    define_button((610 << 16) + 42, (30 << 16) + 20, BTN_COPY_MD5, sys_color_table.work_button); // Определяем кнопки для копирования
-    define_button((610<< 16) + 42, (60 << 16) + 20, BTN_COPY_SHA1, sys_color_table.work_button);
-    define_button((610<< 16) + 42, (90 << 16) + 20, BTN_COPY_SHA256, sys_color_table.work_button);
+    define_button(X_W(610,42), Y_H(30, 20), BTN_COPY_MD5, sys_color_table.work_button); // Определяем кнопки для копирования
+    define_button(X_W(610,42), Y_H(60, 20), BTN_COPY_SHA1, sys_color_table.work_button);
+    define_button(X_W(610,42), Y_H(90, 20), BTN_COPY_SHA256, sys_color_table.work_button);
 
     draw_text_sys("Copy", 615, 34, 0,   0x90000000 | sys_color_table.work_button_text); // Пишем copy на всех кнопках для копирования
     draw_text_sys("Copy", 615, 64, 0,  0x90000000 | sys_color_table.work_button_text);
     draw_text_sys("Copy", 615, 94, 0, 0x90000000 | sys_color_table.work_button_text);
 
-    define_button((592<< 16) + 60, (120 << 16) + 20, BTN_CMP, GREEN); // Определяем кнопку для сравнения контольных сумм
+    define_button(X_W(592,60), Y_H(120,20), BTN_CMP, GREEN); // Определяем кнопку для сравнения контольных сумм
     draw_text_sys("Compare", 595, 124 , 0,0x90000000 | sys_color_table.work_button_text); // Пишем текс на кнопке.
-
-    define_button((540 << 16) + 45, (120 << 16) + 20, BTN_PASTE, sys_color_table.work_button); //Кнопка для вставки (неработает)
+    define_button(X_W(540, 45), Y_H(120,20), BTN_PASTE, sys_color_table.work_button); //Кнопка для вставки (неработает)
     draw_text_sys("Paste", 543, 124 , 0,0x90000000 | sys_color_table.work_button_text); // Текст paste на кнопке
     end_draw();
 }
-
 
 void paste_to_edit_buffer()    // Вставить из буффера обмена
 {
@@ -217,14 +206,13 @@ void paste_to_edit_buffer()    // Вставить из буффера обмена
         if(DATA(int, temp_buff,0)>0 && DATA(int,temp_buff,4)==TEXT && DATA(int,temp_buff,8)==CP866)
         {
             strncpy(edit_box_buff,temp_buff+12, MAX_HASH_LEN-1);
-            str_pos=strlen(edit_box_buff);
+            edit_box_set_text(&hash_edit_box,edit_box_buff);
             notify_show("'Pasted from clipboard!' -I");
-            edit_box_text_color=BLACK;
+            hash_edit_box.text_color = BLACK;
             user_free(temp_buff);
         }
     }
 }
-
 
 void copy_to_clipboard(char *text) // Копирлвать в буффер обмена
 {
@@ -261,35 +249,26 @@ bool hash_compare() // Главная функция для сравнения
         switch (alg) // Если вычисления ещё небыло
         {
         case MD5_BLOCK_SIZE:
-            if(md5_flag)
-            {
+            if(md5_flag){
                 return !strcmp(edit_box_buff,hash_str_md5);
-            }
-            else
-            {
+            }else{
                 return calc_and_cmp(hash_str_md5,alg);
             }
         break;
 
         case SHA1_BLOCK_SIZE:
-            if(sha1_flag)
-            {
+            if(sha1_flag){
                 return !strcmp(edit_box_buff,hash_str_sha1);
-            }
-            else
-            {
+            }else{
                 return calc_and_cmp(hash_str_sha1,alg);
             }
         break;
 
         case SHA256_BLOCK_SIZE:
 
-            if(sha256_flag)
-            {
+            if(sha256_flag){
                 return !strcmp(edit_box_buff,hash_str_sha256);
-            }
-            else
-            {
+            }else{
                 return calc_and_cmp(hash_str_sha256,alg);
             }
         break;
@@ -300,34 +279,12 @@ bool hash_compare() // Главная функция для сравнения
         }
 }
 
-void edit_box(oskey_t key)      //Функция реализующая строку ввода
-{
-    edit_box_text_color=BLACK;
-    if(key.code==CTRL_V) // Если нажато Ctrl+V то вставить из буфера обмена
-    {
-        paste_to_edit_buffer();
-    }
-    if(key.code==BACKSPACE && str_pos>0) // Если backspace то удалить последний символ
-    {
-        str_pos--;
-        edit_box_buff[str_pos]='\0';
-
-    }
-    else if(str_pos<MAX_HASH_LEN-1) // Ограничение длины ввода
-    {
-        if(strchr(hex,key.code)!=NULL)
-        {
-           edit_box_buff[str_pos]=key.code;
-           str_pos++;
-        }
-    }
-}
-
 int main(int argc, char** argv)
 {
+    kolibri_boxlib_init(); // Загружаем boxlib
     if(argc<2) // Если аргументов нет, то запускаем диалог выбора файла
     {
-        kolibri_dialog_init(); // Инициализация библиотеки
+        kolibri_dialog_init(); // загружаем proc_lib(libdialog)
         open_dialog* dialog = kolibri_new_open_dialog(OPEN,0, 0, 420, 320);
         OpenDialog_init(dialog);
         OpenDialog_start(dialog); 
@@ -364,6 +321,8 @@ int main(int argc, char** argv)
     uint32_t pressed_button = 0; // Код нажатой кнопки в окне
 
     get_system_colors(&sys_color_table);
+    hash_edit_box.shift_color=sys_color_table.work_button;
+
     set_event_mask(0xC0000027);// Устанавливаем маску событий
     do // Цикл обработки событий
     {
@@ -375,9 +334,12 @@ int main(int argc, char** argv)
         case KOLIBRI_EVENT_REDRAW:
             redraw_window();
             break;
+        case KOLIBRI_EVENT_MOUSE:
+            edit_box_mouse(&hash_edit_box);
+            break;        
         case KOLIBRI_EVENT_KEY:
-            edit_box(get_key()); // Получаем нажатую клавишу и задействуем строку ввода
-            redraw_window();
+            hash_edit_box.text_color = BLACK;
+            edit_box_key(&hash_edit_box,get_key().val);
             break;
         case KOLIBRI_EVENT_BUTTON: // Событие обработки кнопок
             pressed_button = get_os_button(); // Получение кода нажатой кнопки.
@@ -402,18 +364,18 @@ int main(int argc, char** argv)
                 break;
 
                 case BTN_COPY_MD5:
-                    redraw_window();
                     copy_to_clipboard(hash_str_md5);
+                    redraw_window();
                 break;
 
                 case BTN_COPY_SHA1:
-                    redraw_window();
                     copy_to_clipboard(hash_str_sha1);
+                    redraw_window();
                 break;
 
                 case BTN_COPY_SHA256:
-                    redraw_window();
                     copy_to_clipboard(hash_str_sha256);
+                    redraw_window();
                 break;
 
                 case BTN_PASTE:
@@ -425,12 +387,10 @@ int main(int argc, char** argv)
                 if(hash_compare())
                 {
                     notify_show("'The checksum matches :)' -OK");
-                    edit_box_text_color=GREEN; // Устанавливаем текст ввода зелёным если контрольная сумма совпадает
-                }
-                else
-                {
+                    hash_edit_box.text_color = GREEN; // Устанавливаем текст ввода зелёным если контрольная сумма совпадает
+                }else{
                     notify_show("'The checksum does not match! :(' -W");
-                    edit_box_text_color=RED; // Устанавливаем текст ввода красным если контрольная суммы не совпадает
+                    hash_edit_box.text_color = RED; // Устанавливаем текст ввода красным если контрольная суммы не совпадает
                 }
                 redraw_window();
                 break;
