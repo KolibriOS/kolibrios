@@ -1,8 +1,6 @@
 /*
 	newlib-style window example
 */
-
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -10,6 +8,8 @@
 #include "kos32sys1.h"
 
 struct kolibri_system_colors sys_color_table;
+void __attribute__ ((noinline)) debug_board_printf(const char *format,...);
+void __attribute__ ((noinline)) debug_board_write_str(const char* str);
 
 char statusbar[255];
 char proc_info[1024];

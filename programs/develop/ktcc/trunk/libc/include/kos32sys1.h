@@ -40,7 +40,9 @@ extern "C" {
 
 //Read/Write data as type (int char, etc.) at address "addr" with offset "offset". eg DATA(int, buff, 8);
 #define DATA(type, addr, offset) *((type*)((uint8_t*)addr+offset))
-
+#define X_W(X, W) ((X<<16)+W)
+#define Y_H X_W
+    
 typedef struct {
     uint8_t blue;
     uint8_t green;
@@ -747,28 +749,6 @@ int start_app(char *app_name, char *args){
 
     return val;
 }
-
-//added nonstatic inline because incomfortabre stepping in in debugger
-void __attribute__ ((noinline)) debug_board_write_str(const char* str);
-void __attribute__ ((noinline)) debug_board_printf(const char *format,...);
-
-/* copy body to only one project file
-void __attribute__ ((noinline)) debug_board_write_str(const char* str){
-  while(*str)
-    debug_board_write_byte(*str++);
-}
-
-void __attribute__ ((noinline)) debug_board_printf(const char *format,...)
-{
-        va_list ap;
-        char log_board[300];
-
-        va_start (ap, format);
-        vsnprintf(log_board, sizeof log_board, format, ap);
-        va_end(ap);
-        debug_board_write_str(log_board);
-}
-*/
 
 // TinyC don't support aliasing of static inline funcs, but support #define :)
 #ifndef __TINYC__
