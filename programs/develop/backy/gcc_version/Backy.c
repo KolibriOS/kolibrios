@@ -9,38 +9,6 @@
  * Works from command line, only!
  */
 
-
-// Copied from TCC
-char* strrev(char *p)
-{
-  char *q = p, *res = p, z;
-  while(q && *q) ++q; /* find eos */
-  for(--q; p < q; ++p, --q)
-  {
-  	z = *p;
-  	*p = *q;
-  	*q = z;
-  }
-  return res;
-}
-char* itoab(unsigned int n, char* s, int  b)
-{
-  char *ptr;
-  int lowbit;
-  ptr = s;
-  b >>= 1;
-  do {
-    lowbit = n & 1;
-    n = (n >> 1) & 0x7FFFFFFF;
-    *ptr = ((n % b) << 1) + lowbit;
-    if(*ptr < 10) *ptr += '0'; else *ptr += 55;
-    ++ptr;
-    } while(n /= b);
-  *ptr = 0;
-  return strrev(s);
-}
-
-
 #define CREATION_DATE "2020.05.27"
 
 #include <stdlib.h>
@@ -48,7 +16,6 @@ char* itoab(unsigned int n, char* s, int  b)
 #include <string.h>
 #include "console_obj.h"
 
-#include "Backy_lang.h"
 #include "Backy_lib.h"
 
 int date = 0;
@@ -421,6 +388,7 @@ int main(int argc, char** argv)
         return 13;
     }
 
-    return checkStateOnSave(saveFile(length, data, 0, path_out));
+    
+    saveFile(length, data, 0, path_out);//return checkStateOnSave(saveFile(length, data, 0, path_out));
 }
 

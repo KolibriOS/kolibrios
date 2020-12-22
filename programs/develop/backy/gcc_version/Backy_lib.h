@@ -6,6 +6,37 @@
 
 #ifndef __Backy_lib_h__
 #define __Backy_lib_h__
+
+// Copied from TCC
+char* strrev(char *p)
+{
+	char *q = p, *res = p, z;
+	while(q && *q) ++q; /* find eos */
+	for(--q; p < q; ++p, --q)
+	{
+	z = *p;
+	*p = *q;
+	*q = z;
+	}
+	return res;
+}
+char* itoab(unsigned int n, char* s, int  b)
+{
+	char *ptr;
+	int lowbit;
+	ptr = s;
+	b >>= 1;
+	do {
+	lowbit = n & 1;
+	n = (n >> 1) & 0x7FFFFFFF;
+	*ptr = ((n % b) << 1) + lowbit;
+	if(*ptr < 10) *ptr += '0'; else *ptr += 55;
+	++ptr;
+	} while(n /= b);
+	*ptr = 0;
+	return strrev(s);
+}
+
 /*
 typedef  unsigned int        uint32_t;
 typedef  unsigned char       uint8_t;
@@ -43,37 +74,34 @@ static inline void *openFile(uint32_t *length, const uint8_t *path)
     return fd;
 }
 
-// FILE SAVING NOT WORKING
-/*
-struct saveFile__
+struct saveFileStruct
 {
-    int num;
-    int res_;
-    int res;
-    int nbyte;
+    int p1;
+    int p2;
+    int p3;
+    int p4;
 
-    char* data_;
-    int enc_;
-    char* path_;
+    char* p5;
+    int p6;
+    char* p7;
 };
-*/
+
 static inline int32_t saveFile(uint32_t nbytes, uint8_t *data, uint32_t enc, uint8_t  *path)
 {
     int32_t val;
-/*
-    struct saveFile__ dt;
-    //uint8_t dt[28];  // basic information structure.
-    
-    dt.num = 2;       // subfunction number.
-    dt.res_= 0;       // reserved.
-    dt.res = 0;       // reserved.
-    dt.nbyte = nbytes;  // number of bytes to write.
-    dt.data_ = data;    // pointer to data.
-    dt.enc_ = enc;     // string encoding (0 = default, 1 = cp866, 2 = UTF-16LE, 3 = UTF-8).
-    dt.path_ = path;    // pointer to path.
 
-    __asm__ __volatile__("int $0x40":"=a"(val):"a"(80), "b"(&dt));
-*/
+    struct saveFileStruct dt; // basic information structure.
+    
+    dt.p1 = 2;       // subfunction number.
+    dt.p2= 0;        // reserved.
+    dt.p3 = 0;       // reserved.
+    dt.p4 = nbytes;  // number of bytes to write.
+    dt.p5 = data;    // pointer to data.
+    dt.p6 = enc;     // string encoding (0 = default, 1 = cp866, 2 = UTF-16LE, 3 = UTF-8).
+    dt.p7 = path;    // pointer to path.
+
+    __asm__ __volatile__("int $0x40":"=a"(val):"a"(80), "b"(&dt):"memory");
+
     return val;
 }
 

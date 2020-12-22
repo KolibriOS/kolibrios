@@ -9,19 +9,17 @@ CFLAGS = -c -fno-ident -O2 -fomit-frame-pointer -fno-ident -U__WIN32__ -U_Win32 
 INCLUDES = -I $(SDK_DIR)/sources/newlib/libc/include
 LIBPATH = -L $(SDK_DIR)/lib -L /home/autobuild/tools/win32/mingw32/lib
 
-ifndef LANG_backy
-LANG_backy = lang_en
+ifndef LANG_
+LANG_ = lang_en
 endif
 
 default: backy
 
 backy: $(OBJECTS) Makefile
-	echo "#define $(LANG_backy)" > Backy_lang.h
-	$(CC) $(CFLAGS) $(INCLUDES) -o Backy.o Backy.c
+	$(CC) $(CFLAGS) $(INCLUDES) -D$(LANG_) -o Backy.o Backy.c
 	$(LD) $(LDFLAGS) $(LIBPATH) --subsystem console -o Backy Backy.o -lgcc -lc.dll
 	kos32-strip -s Backy -o Backy
 	objcopy Backy -O binary
 	rm Backy.o
-	rm Backy_lang.h
 clean:
 	rm Backy
