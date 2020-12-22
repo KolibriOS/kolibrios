@@ -8,5 +8,7 @@ then CFLAGS = CFLAGS .. " -Dlang_ru"
 else CFLAGS = CFLAGS .. " -Dlang_en"
 end
 
+CFLAGS = CFLAGS .. " -std=c99"
+
 compile_gcc{"Backy.c"}
 link_gcc("Backy")
