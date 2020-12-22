@@ -93,7 +93,7 @@ void output_debug_string(const char *s)
 	unsigned int i = 0;
 	while(*(s + i))
 	{
-		asm volatile ("int $0x40"::"a"(63), "b"(1), "c"(*(s + i)));
+		__asm__ __volatile__ ("int $0x40"::"a"(63), "b"(1), "c"(*(s + i)));
 		i++;
 	}
 }
