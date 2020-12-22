@@ -8,5 +8,5 @@ then CFLAGS = CFLAGS .. " -Dlang_ru"
 else CFLAGS = CFLAGS .. " -Dlang_en"
 end
 
-compile_gcc{"backy.c"}
-link_gcc("backy")
+compile_gcc{"Backy.c"}
+link_gcc("Backy")
