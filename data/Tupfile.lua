@@ -191,7 +191,6 @@ extra_files = {
  {"kolibrios/develop/tcc/samples/clayer/", PROGS ..  "/develop/ktcc/trunk/samples/clayer/*"},
  {"kolibrios/develop/tcc/samples/net/", PROGS ..  "/develop/ktcc/trunk/samples/net/*"},
  {"kolibrios/develop/tcc/samples/tinygl/", PROGS ..  "/develop/ktcc/trunk/samples/tinygl/*"},
- {"kolibrios/develop/TinyBasic/", "common/develop/TinyBasic/*"},
  {"kolibrios/emul/", "common/emul/*"},
  {"kolibrios/emul/dosbox/", "common/emul/DosBox/*"},
  {"kolibrios/emul/e80/readme.txt", PROGS .. "/emulator/e80/trunk/readme.txt"},
@@ -686,6 +685,8 @@ end -- tup.getconfig('NO_MSVC') ~= 'full'
 if tup.getconfig('NO_TCC') ~= 'full' then
 tup.append_table(extra_files, {
  {"kolibrios/utils/thashview", PROGS .. "/other/TinyHashView/thashview"},
+ {"kolibrios/develop/TinyBasic/", PROGS .. "/develop/tinybasic/TinyBasic"},
+ {"kolibrios/develop/TinyBasic/", PROGS .. "/develop/tinybasic/TBuserMan.txt"},
 })
 end -- tup.getconfig('NO_TCC') ~= 'full' 
 
