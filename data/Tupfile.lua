@@ -687,6 +687,7 @@ tup.append_table(extra_files, {
  {"kolibrios/utils/thashview", PROGS .. "/other/TinyHashView/thashview"},
  {"kolibrios/develop/TinyBasic/", PROGS .. "/develop/tinybasic/TinyBasic"},
  {"kolibrios/develop/TinyBasic/", PROGS .. "/develop/tinybasic/TBuserMan.txt"},
+ {"kolibrios/utils/teatool", PROGS .. "/other/TEAtool/teatool"},
 })
 end -- tup.getconfig('NO_TCC') ~= 'full' 
 
