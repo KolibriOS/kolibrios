@@ -1,11 +1,12 @@
 #include "tp.c"
 /* INCLUDE */
 const char header[]="TinyPy for kolibriOS";
-extern _stdcall void kolibri_dbg_init(tp_vm *tp);
+
+extern void (*kolibri_dbg_init)(tp_vm *tp) __attribute__((__stdcall__));
 
 void main(int argc, const char *argv[]) {
     tp_vm *tp = tp_init(argc, argv);
-    kolibri_dbg_init(tp);
+    // kolibri_dbg_init(tp);
     kolibri_init(tp);
     CONSOLE_INIT(header);
     /* INIT */

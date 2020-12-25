@@ -4,19 +4,25 @@
 ; Exports: 
 ;           debug_print(msg) - prints a message to debug board.
 
-format ELF
-use32
-include '../../../../proc32.inc'
-include '../../../../struct.inc'
+format coff
+use32                                   ; Tell compiler to use 32 bit instructions
+
+section '.init' code			; Keep this line before includes or GCC messes up call addresses
+
+include '../../../proc32.inc'
+include '../../../struct.inc'
+purge section,mov,add,sub
 include 'tinypy.inc'
 
-extrn tp_dict
-extrn tp_set
-extrn tp_get
-extrn tp_None
-extrn tp_fnc
+include '../../../../programs/dll.inc'
 
-public kolibri_dbg_init
+extrn '_tp_dict' as tp_dict
+extrn '_tp_set' as tp_set
+extrn '_tp_get' as tp_get
+extrn '_tp_None' as tp_None
+extrn '_tp_fnc' as tp_fnc
+
+public kolibri_dbg_init as '_kolibri_dbg_init'
 
 ; Module name
 modname        db "kolibri_dbg"

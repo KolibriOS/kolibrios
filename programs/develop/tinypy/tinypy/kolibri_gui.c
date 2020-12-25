@@ -1,5 +1,5 @@
 #include "tp.h"
-#include <menuet/thread.h>
+#include <kos32sys.h>
 
 typedef unsigned short int uint16_t;
 typedef unsigned int uint32_t;
@@ -95,12 +95,15 @@ static tp_obj kolibri_run(TP)
                 {
                     param_list = tp_list(tp); /* Prepare parameters. */
                     _tp_list_append(tp, param_list.list.val, self);
-                    _tp_list_append(tp, param_list.list.val, tp_number(__menuet__getkey()));
+                    
+                    oskey_t key;
+                    key = get_key();
+                    _tp_list_append(tp, param_list.list.val, tp_number(key.code));
                     _tp_call(tp, &result, key_handler, param_list);
                 }
                 break;
             case 3:
-                button_id = __menuet__get_button_id();
+                button_id = get_os_button();
                 if (button_id == 1)
                     leave = 1;
                 else if (button_handler.type == TP_FNC)
@@ -129,7 +132,7 @@ static tp_obj kolibri_print_text(TP)
     uint32_t width = (uint32_t)tp_get(tp, self, tp_string("width")).number.val;
     tp_obj text = TP_TYPE(TP_STRING);
 
-    __menuet__write_text(x, y, textcolor, (char *)text.string.val, text.string.len);
+    draw_text_sys((char *)text.string.val, x, y, text.string.len, textcolor);
     /* Update cursor position. */
     ofs = 6 * text.string.len;
     tp_set(tp, self, tp_string("cury"), tp_number(y + 9 * ((x + ofs) / width)));

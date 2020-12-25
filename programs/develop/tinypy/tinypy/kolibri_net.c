@@ -1,5 +1,5 @@
 #include <sys/socket.h>
-#include <menuet/net.h>
+// #include <menuet/net.h>
 
 #include "tp.h"
 
@@ -28,18 +28,18 @@ extern int (* _cdecl con_printf)(const char* format,...);
  */
 static tp_obj kolibri_close_socket(TP)
 {
-    tp_obj self = TP_TYPE(TP_DICT);
-    __u32  socktype;
-    __u32  s;
+    // tp_obj self = TP_TYPE(TP_DICT);
+    // __u32  socktype;
+    // __u32  s;
 
-    GET_SOCKET_DESCRIPTOR(self, s);
+    // GET_SOCKET_DESCRIPTOR(self, s);
 
-    socktype = (__u32)tp_get(tp, self, tp_string("type")).number.val;
-    GET_SOCKET_DESCRIPTOR(self, s);
-    if (socktype == SOCK_STREAM)
-        __menuet__close_TCP_socket(s);
-    else if (socktype == SOCK_DGRAM)
-        __menuet__close_UDP_socket(s);
+    // socktype = (__u32)tp_get(tp, self, tp_string("type")).number.val;
+    // GET_SOCKET_DESCRIPTOR(self, s);
+    // if (socktype == SOCK_STREAM)
+    //     __menuet__close_TCP_socket(s);
+    // else if (socktype == SOCK_DGRAM)
+    //     __menuet__close_UDP_socket(s);
     return tp_True;
 }
 
@@ -53,23 +53,27 @@ static tp_obj kolibri_close_socket(TP)
  */
 static tp_obj kolibri_send(TP)
 {
-    tp_obj self = TP_TYPE(TP_DICT);
-    tp_obj data_obj = TP_TYPE(TP_STRING);
-    __u32  datalen = TP_DEFAULT(tp_False).number.val;
-    __u32  socktype = (__u32)tp_get(tp, self, tp_string("type")).number.val;
-    __u32  s;
-    int result;
+    // tp_obj self = TP_TYPE(TP_DICT);
+    // tp_obj data_obj = TP_TYPE(TP_STRING);
+    // __u32  datalen = TP_DEFAULT(tp_False).number.val;
+    // __u32  socktype = (__u32)tp_get(tp, self, tp_string("type")).number.val;
+    // __u32  s;
+    // int result;
 
-    GET_SOCKET_DESCRIPTOR(self, s);
+    // GET_SOCKET_DESCRIPTOR(self, s);
 
-    if (datalen < 0 || datalen > data_obj.string.len)
-        datalen = data_obj.string.len;
-    if (socktype == SOCK_STREAM)
-        result = __menuet__write_TCP_socket(s, datalen, (void *)data_obj.string.val);
-    else if (socktype == SOCK_DGRAM)
-        result = __menuet__write_UDP_socket(s, datalen, (void *)data_obj.string.val);
-    return tp_number(!(result != 0));
+    // if (datalen < 0 || datalen > data_obj.string.len)
+    //     datalen = data_obj.string.len;
+    // if (socktype == SOCK_STREAM)
+    //     result = __menuet__write_TCP_socket(s, datalen, (void *)data_obj.string.val);
+    // else if (socktype == SOCK_DGRAM)
+    //     result = __menuet__write_UDP_socket(s, datalen, (void *)data_obj.string.val);
+    // return tp_number(!(result != 0));
+    return tp_number(0);
 }
+
+#define __u32 unsigned int
+#define __u8 unsigned char
 
 /* Socket recv method.
  *
@@ -89,25 +93,25 @@ static tp_obj kolibri_recv(TP)
     __u32 bytes_read = 0;
     int i;
 
-    GET_SOCKET_DESCRIPTOR(self, s);
+    // GET_SOCKET_DESCRIPTOR(self, s);
 
-    if (datalen)
-        buf_size = datalen;
-    else
-        buf_size = 2048;
-    if (!(buf = malloc(datalen)))
-        tp_raise(tp_None, "Cannot allocate buffer for received data", tp_None);
-    p = buf;
-    while (__menuet__read_socket(s, &c) && bytes_read < buf_size)
-    {
-        *p++ = c;
-        bytes_read++;
-        if (bytes_read >= buf_size && !datalen)
-        {
-            buf_size += 1024;
-            buf = realloc(buf, buf_size);
-        }
-    }
+    // if (datalen)
+    //     buf_size = datalen;
+    // else
+    //     buf_size = 2048;
+    // if (!(buf = malloc(datalen)))
+    //     tp_raise(tp_None, "Cannot allocate buffer for received data", tp_None);
+    // p = buf;
+    // while (__menuet__read_socket(s, &c) && bytes_read < buf_size)
+    // {
+    //     *p++ = c;
+    //     bytes_read++;
+    //     if (bytes_read >= buf_size && !datalen)
+    //     {
+    //         buf_size += 1024;
+    //         buf = realloc(buf, buf_size);
+    //     }
+    // }
     return tp_string_n(buf, bytes_read);
 }
 
@@ -150,7 +154,7 @@ static tp_obj kolibri_inet_pton(TP)
     tp_obj obj;
     __u32 addr;
     obj = TP_TYPE(TP_STRING);
-    inet_pton(tp, (char *)obj.string.val, (int)obj.string.len, &addr);
+    // inet_pton(tp, (char *)obj.string.val, (int)obj.string.len, &addr);
     return tp_number(addr);
 }
 
@@ -163,18 +167,18 @@ static tp_obj kolibri_inet_pton(TP)
  */
 tp_obj kolibri_bind(TP)
 {
-    tp_obj self = TP_TYPE(TP_DICT);
-    tp_obj local_addr_obj = TP_OBJ();
-    __u32  local_port = (__u32)TP_TYPE(TP_NUMBER).number.val;
-    __u32  local_addr;
+    // tp_obj self = TP_TYPE(TP_DICT);
+    // tp_obj local_addr_obj = TP_OBJ();
+    // __u32  local_port = (__u32)TP_TYPE(TP_NUMBER).number.val;
+    // __u32  local_addr;
 
-    if (local_addr_obj.type == TP_NUMBER)
-        local_addr = local_addr_obj.number.val;
-    else if (local_addr_obj.type == TP_STRING)
-        inet_pton(tp, (const char *)local_addr_obj.string.val, local_addr_obj.string.len, &local_addr);
+    // if (local_addr_obj.type == TP_NUMBER)
+    //     local_addr = local_addr_obj.number.val;
+    // else if (local_addr_obj.type == TP_STRING)
+    //     inet_pton(tp, (const char *)local_addr_obj.string.val, local_addr_obj.string.len, &local_addr);
 
-    tp_set(tp, self, tp_string("local_addr"), tp_number(local_addr));
-    tp_set(tp, self, tp_string("local_port"), tp_number(local_port));
+    // tp_set(tp, self, tp_string("local_addr"), tp_number(local_addr));
+    // tp_set(tp, self, tp_string("local_port"), tp_number(local_port));
     return tp_None;
 }
 
@@ -185,30 +189,30 @@ tp_obj kolibri_bind(TP)
  */
 tp_obj kolibri_connect(TP)
 {
-    tp_obj self = TP_TYPE(TP_DICT);
-    tp_obj  remote_addr_obj = TP_OBJ();
-    __u32  remote_addr;
-    __u32  remote_port = (__u32)TP_TYPE(TP_NUMBER).number.val;
-    __u32  local_port  = tp_get(tp, self, tp_string("local_port")).number.val;
-    __u32  socktype = (__u32)tp_get(tp, self, tp_string("type")).number.val;
-    int  s = -1; /* Socket descriptor */
+    // tp_obj self = TP_TYPE(TP_DICT);
+    // tp_obj  remote_addr_obj = TP_OBJ();
+    // __u32  remote_addr;
+    // __u32  remote_port = (__u32)TP_TYPE(TP_NUMBER).number.val;
+    // __u32  local_port  = tp_get(tp, self, tp_string("local_port")).number.val;
+    // __u32  socktype = (__u32)tp_get(tp, self, tp_string("type")).number.val;
+    // int  s = -1; /* Socket descriptor */
 
 
-    if (remote_addr_obj.type == TP_NUMBER)
-        remote_addr = remote_addr_obj.number.val;
-    else if (remote_addr_obj.type == TP_STRING)
-        inet_pton(tp, (const char *)remote_addr_obj.string.val, remote_addr_obj.string.len, &remote_addr);
+    // if (remote_addr_obj.type == TP_NUMBER)
+    //     remote_addr = remote_addr_obj.number.val;
+    // else if (remote_addr_obj.type == TP_STRING)
+    //     inet_pton(tp, (const char *)remote_addr_obj.string.val, remote_addr_obj.string.len, &remote_addr);
 
-    if (socktype == SOCK_STREAM)
-        s = __menuet__open_TCP_socket(local_port, remote_port, remote_addr, 1);
-    else if (socktype == SOCK_DGRAM)
-        s = __menuet__open_UDP_socket(local_port, remote_port, remote_addr);
-    if (s >= 0)
-    {
-        tp_set(tp, self, tp_string("socket"), tp_number(s));
-        return tp_True;
-    }
-    else
+    // if (socktype == SOCK_STREAM)
+    //     s = __menuet__open_TCP_socket(local_port, remote_port, remote_addr, 1);
+    // else if (socktype == SOCK_DGRAM)
+    //     s = __menuet__open_UDP_socket(local_port, remote_port, remote_addr);
+    // if (s >= 0)
+    // {
+    //     tp_set(tp, self, tp_string("socket"), tp_number(s));
+    //     return tp_True;
+    // }
+    // else
         return tp_False;
 }
 
@@ -219,28 +223,28 @@ tp_obj kolibri_connect(TP)
  */
 tp_obj kolibri_listen(TP)
 {
-    tp_obj self = TP_TYPE(TP_DICT);
-    tp_obj remote_addr_obj = TP_OBJ();
-    __u32  remote_addr;
-    __u32  remote_port = (__u32)TP_TYPE(TP_NUMBER).number.val;
-    __u32  local_port  = tp_get(tp, self, tp_string("local_port")).number.val;
-    __u32  socktype = (__u32)tp_get(tp, self, tp_string("type")).number.val;
-    int  s = -1; /* Socket descriptor */
+    // tp_obj self = TP_TYPE(TP_DICT);
+    // tp_obj remote_addr_obj = TP_OBJ();
+    // __u32  remote_addr;
+    // __u32  remote_port = (__u32)TP_TYPE(TP_NUMBER).number.val;
+    // __u32  local_port  = tp_get(tp, self, tp_string("local_port")).number.val;
+    // __u32  socktype = (__u32)tp_get(tp, self, tp_string("type")).number.val;
+    // int  s = -1; /* Socket descriptor */
 
-    if (socktype != SOCK_STREAM)
-        tp_raise(tp_None, "IOError: attempt to listen on non-TCP socket", tp_None);
+    // if (socktype != SOCK_STREAM)
+    //     tp_raise(tp_None, "IOError: attempt to listen on non-TCP socket", tp_None);
 
-    if (remote_addr_obj.type == TP_NUMBER)
-        remote_addr = remote_addr_obj.number.val;
-    else if (remote_addr_obj.type == TP_STRING)
-        inet_pton(tp, (const char *)remote_addr_obj.string.val, remote_addr_obj.string.len, &remote_addr);
+    // if (remote_addr_obj.type == TP_NUMBER)
+    //     remote_addr = remote_addr_obj.number.val;
+    // else if (remote_addr_obj.type == TP_STRING)
+    //     inet_pton(tp, (const char *)remote_addr_obj.string.val, remote_addr_obj.string.len, &remote_addr);
 
-    if ((s = __menuet__open_TCP_socket(local_port, remote_port, remote_addr, 0)) >= 0)
-    {
-        tp_set(tp, self, tp_string("socket"), tp_number(s));
-        return tp_True;
-    }
-    else
+    // if ((s = __menuet__open_TCP_socket(local_port, remote_port, remote_addr, 0)) >= 0)
+    // {
+    //     tp_set(tp, self, tp_string("socket"), tp_number(s));
+    //     return tp_True;
+    // }
+    // else
         return tp_False;
 }
 
@@ -259,20 +263,20 @@ tp_obj kolibri_socket(TP)
     tp_obj sockfamily = TP_TYPE(TP_NUMBER);
     tp_obj socktype = TP_TYPE(TP_NUMBER);
 
-    if (fabs(sockfamily.number.val - AF_INET) > PRECISION ||
-        (fabs(socktype.number.val - SOCK_STREAM) > PRECISION &&
-         fabs(socktype.number.val - SOCK_DGRAM) > PRECISION))
-        return tp_None;
+    // if (fabs(sockfamily.number.val - AF_INET) > PRECISION ||
+    //     (fabs(socktype.number.val - SOCK_STREAM) > PRECISION &&
+    //      fabs(socktype.number.val - SOCK_DGRAM) > PRECISION))
+    //     return tp_None;
     s = tp_dict(tp);
-    tp_set(tp, s, tp_string("family"), sockfamily);
-    tp_set(tp, s, tp_string("type"), socktype);
-    tp_set(tp, s, tp_string("bind"), tp_method(tp, s, kolibri_bind));
-    tp_set(tp, s, tp_string("connect"), tp_method(tp, s, kolibri_connect));
-    tp_set(tp, s, tp_string("send"), tp_method(tp, s, kolibri_send));
-    tp_set(tp, s, tp_string("recv"), tp_method(tp, s, kolibri_recv));
-    tp_set(tp, s, tp_string("close"), tp_method(tp, s, kolibri_close_socket));
-    if (fabs(socktype.number.val - SOCK_STREAM) < PRECISION)
-        tp_set(tp, s, tp_string("listen"), tp_method(tp, s, kolibri_listen));
+    // tp_set(tp, s, tp_string("family"), sockfamily);
+    // tp_set(tp, s, tp_string("type"), socktype);
+    // tp_set(tp, s, tp_string("bind"), tp_method(tp, s, kolibri_bind));
+    // tp_set(tp, s, tp_string("connect"), tp_method(tp, s, kolibri_connect));
+    // tp_set(tp, s, tp_string("send"), tp_method(tp, s, kolibri_send));
+    // tp_set(tp, s, tp_string("recv"), tp_method(tp, s, kolibri_recv));
+    // tp_set(tp, s, tp_string("close"), tp_method(tp, s, kolibri_close_socket));
+    // if (fabs(socktype.number.val - SOCK_STREAM) < PRECISION)
+    //     tp_set(tp, s, tp_string("listen"), tp_method(tp, s, kolibri_listen));
     return s;
 }
 
@@ -280,9 +284,12 @@ tp_obj kolibri_socket_module(TP)
 {
     tp_obj socket_mod = tp_dict(tp);
 
-    tp_set(tp, socket_mod, tp_string("AF_INET"), tp_number(AF_INET));
-    tp_set(tp, socket_mod, tp_string("SOCK_STREAM"), tp_number(SOCK_STREAM));
-    tp_set(tp, socket_mod, tp_string("SOCK_DGRAM"), tp_number(SOCK_DGRAM));
+    // tp_set(tp, socket_mod, tp_string("AF_INET"), tp_number(AF_INET));
+    // tp_set(tp, socket_mod, tp_string("SOCK_STREAM"), tp_number(SOCK_STREAM));
+    // tp_set(tp, socket_mod, tp_string("SOCK_DGRAM"), tp_number(SOCK_DGRAM));
+    tp_set(tp, socket_mod, tp_string("AF_INET"), tp_number(0));
+    tp_set(tp, socket_mod, tp_string("SOCK_STREAM"), tp_number(0));
+    tp_set(tp, socket_mod, tp_string("SOCK_DGRAM"), tp_number(0));
     tp_set(tp, socket_mod, tp_string("inet_pton"), tp_fnc(tp, kolibri_inet_pton));
     tp_set(tp, socket_mod, tp_string("socket"), tp_fnc(tp, kolibri_socket));
     return socket_mod;
