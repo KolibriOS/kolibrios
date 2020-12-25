@@ -1,9 +1,9 @@
 #include "kolibri.h"
-
+/*
 #define __stdcall __attribute__((stdcall))
 #define _cdecl __attribute__((cdecl))
 #define _stdcall __attribute__((stdcall))
-
+*/
 void (* _stdcall con_init)(unsigned w_w, unsigned w_h, unsigned s_w, unsigned s_h, const char* t);
 int (* _cdecl con_printf)(const char* format,...);
 void (* _stdcall con_exit)(char bCloseWindow);

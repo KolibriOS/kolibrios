@@ -14,7 +14,7 @@ extern tp_obj tp_call(TP, const char *mod, const char *fnc, tp_obj params);
 extern void _tp_call(TP,tp_obj *dest, tp_obj fnc, tp_obj params);
 extern int tp_bool(TP,tp_obj v);
 extern tp_obj tp_has(TP,tp_obj self, tp_obj k);
-#define _cdecl __attribute__((cdecl))
+// #define _cdecl __attribute__((cdecl))
 extern int (* _cdecl con_printf)(const char* format,...);
 static tp_obj kolibri_show(TP)
 {

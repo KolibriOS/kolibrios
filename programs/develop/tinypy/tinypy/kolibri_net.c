@@ -8,7 +8,7 @@ extern tp_obj tp_method(TP,tp_obj self,tp_obj v(TP));
 extern tp_obj tp_fnc(TP,tp_obj v(TP));
 extern tp_obj tp_get(TP,tp_obj self, tp_obj k);
 tp_obj tp_has(TP,tp_obj self, tp_obj k);
-#define _cdecl __attribute__((cdecl))
+// #define _cdecl __attribute__((cdecl))
 extern int (* _cdecl con_printf)(const char* format,...);
 
 #define PRECISION 0.000001

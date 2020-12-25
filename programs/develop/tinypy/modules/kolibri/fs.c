@@ -8,7 +8,7 @@ extern tp_obj tp_string(char const *v);
 extern tp_obj tp_list(TP);
 extern tp_obj tp_dict(TP);
 extern void _tp_raise(TP,tp_obj);
-#define _cdecl __attribute__((cdecl))
+// #define _cdecl __attribute__((cdecl))
 extern int (* _cdecl con_printf)(const char* format,...);
 
 #define call70(par, st) asm volatile ("int   $0x40":"=a"(st):"a"(70), "b"(par))
