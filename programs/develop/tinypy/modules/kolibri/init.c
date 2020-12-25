@@ -2,6 +2,7 @@
 
 extern tp_obj kolibri_open(TP);
 extern tp_obj kolibri_mainwindow(TP);
+extern tp_obj kolibri_debug_print(TP);
 extern tp_obj kolibri_socket_module(TP);
 extern tp_obj tp_dict(TP);
 extern tp_obj tp_fnc(TP,tp_obj v(TP));
@@ -13,6 +14,8 @@ void kolibri_init(TP)
 
     tp_set(tp, kolibri_mod, tp_string("open"), tp_fnc(tp, kolibri_open));
     tp_set(tp, kolibri_mod, tp_string("window"), tp_fnc(tp, kolibri_mainwindow));
+    /* debug */
+    tp_set(tp, kolibri_mod, tp_string("debug_print"), tp_fnc(tp, kolibri_debug_print));
     /* socket is a separated module. */
     tp_set(tp, kolibri_mod, tp_string("socket"), socket_mod);
 

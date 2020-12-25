@@ -10,6 +10,7 @@ def onbtn():
     print("Button pressed")
 
 if __name__=="__main__":
+  kolibri.debug_print("Debug test line\n")
   w = kolibri.window(10,10,400, 400, False)
   w.on_show = onshow
   w.on_key = onkey

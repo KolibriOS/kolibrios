@@ -13,21 +13,24 @@ CFLAGS = -U_Win32 -U_WIN32 -U__MINGW32__ -mpreferred-stack-boundary=2 \
 INCLUDES= -I. -I$(SDK_DIR)/sources/newlib/libc/include
 LIBPATH:= -L $(SDK_DIR)/lib -L /home/autobuild/tools/win32/mingw32/lib
 
-
-OBJECTS =  tpmain.o kolibri_init.o kolibri_fs.o kolibri_gui.o kolibri_net.o kolibri_dbg.obj
+KOLIBRI_M_OBJ=  ../modules/kolibri/init.o  \
+		../modules/kolibri/fs.o    \
+		../modules/kolibri/net.o   \
+		../modules/kolibri/gui.o   \
+		../modules/kolibri/debug.o \
+		
+		
+OBJECTS =  tpmain.o $(KOLIBRI_M_OBJ)
 
 all:$(NAME)
 
-$(NAME): $(OBJECTS) Makefile
+$(NAME): $(OBJECTS)
 	$(LD) $(LIBPATH) --subsystem native -o $@ $(OBJECTS) $(LDFLAGS) -n -Map $(NAME).map
 	kos32-objcopy $@ -O binary
+	kpack $@
 
 %.o : %.c Makefile	
 	$(CC) -c $(INCLUDES) $(CFLAGS) -o $@ $<
 
-kolibri_dbg.obj: fasm_modules/kolibri_dbg.s
-	fasm fasm_modules/kolibri_dbg.s
-	cp fasm_modules/kolibri_dbg.obj .
-
 clean:
-	-rm -f *.o $(NAME).map fasm_modules/kolibri_dbg.obj kolibri_dbg.obj
+	rm -f *.o $(NAME).map $(KOLIBRI_M_OBJ)
