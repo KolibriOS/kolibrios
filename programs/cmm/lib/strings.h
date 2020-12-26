@@ -500,6 +500,17 @@ inline fastcall unsigned int chrnum( ESI, BL)
     return num;
 }
 
+inline fastcall unsigned int chrlnum( ESI, BL, EDI)
+{
+    int num = 0;
+    while(DSBYTE[ESI]) && (EDI)
+    { 
+        if (DSBYTE[ESI] == BL) num++;
+        ESI++;
+        EDI--;
+    }
+    return num;
+}
 
 inline fastcall signed int strstr( EBX, EDX)
 {

@@ -1,117 +1,117 @@
-#0    **** Главное меню ****
-Игровой центр             /sys/allgames
-Демки              >      /@1
-Графика            >      /@3
-Звук и видео       >      /@4
-Разработка         >      /@5
-Система            >      /@7
-Офис               >      /@10
-Сеть               >      /@11
-Разное             >      /@14
-Документация              /sys/docpack
-Запуск программы          /sys/run
-Завершение работы         /sys/end
-#1    **** Демки ****
-Трёхмерные         >      /@2
-Кружок                    /sys/demos/circle
-Фрактал Мандельброта      /sys/demos/tinyfrac
-Цвета                     /sys/demos/colorref
-Глаза                     /sys/demos/eyes
-Труба                     /sys/demos/tube
-Plasma                    /sys/demos/plasma
-Спираль                   /sys/demos/spiral
-Moveback                  /sys/demos/movback
-TranTest                  /sys/demos/trantest
-Паутинка                  /sys/demos/web
-Фейерверк                 /sys/demos/firework
-UnvWater                  /sys/demos/unvwater
-#2    **** Демки -> 3D ****
-Скринсейвер               /sys/3d/crownscr
-3D-Лабиринт               /sys/3d/free3d04
-3D-Куб                    /sys/3d/3dcube2
-Ray tracing               /sys/3d/ray
-Просмотрщик 3DS           /sys/3d/view3ds
-Шестерёнки                /sys/3d/gears
-3D-Волны                  /sys/3d/3dwav
-#3    **** Графика ****
-Просмотр фото KIV         /sys/media/kiv
-Просмотр фото zSea        /kolibrios/media/zsea/zsea
-Редактор Animage          /sys/media/animage
-Наложение фильтров        /sys/media/imgf/imgf
-Палитра                   /sys/media/palitra
-Пипетка                   /sys/develop/pipet
-#4    **** Звук и видео ****
-Аудиоплеер Pixie          /sys/media/pixie
-Аудиоплеер AC97SND        /sys/media/ac97snd
-Видеоплеер Fplay          /kolibrios/media/fplay
-Midi-плеер                /sys/media/midamp
-Детское пианино           /sys/media/piano
-#5    **** Разработка ****
-Упаковщик KPack           /sys/kpack
-Flat Assembler            /sys/develop/fasm
-Доска отладки             /sys/develop/board
-HEX-редактор              /sys/develop/heed
-Diff tool                 /sys/develop/diff
-Отладчик                  /sys/develop/mtdbg
-Hex2Dec2Bin               /sys/develop/h2d2b
-Таблица символов          /sys/develop/ASCIIVju
-ASCII-коды                /sys/develop/keyascii
-SCAN-коды                 /sys/develop/scancode
-#6    **** Эмуляторы ****
-DOSBox DOS Emulator       /kolibrios/emul/DosBox/dosbox
-e80 (ZX Spectrum)         /kolibrios/emul/e80/e80
-FCE Ultra - NES           /kolibrios/emul/fceu/fceu
-ScummVM                   /kolibrios/emul/scummvm
-ZSNES Super Nintendo      /kolibrios/emul/zsnes
-#7    **** Система ****
-Файловые менеджеры >      /@8
-Спец. возможности  >      /@9
-Календарь                 /sys/calendar
-Терминал                  /sys/terminal
-Виртуальные диски         /sys/tmpdisk
-Консоль SHELL             /sys/shell
-Сохранение образа         /sys/rdsave
-Системная панель          /sys/syspanel
-#8    **** Система -> Файловые менеджеры ****
-KFAR                      /sys/File Managers/kfar
-fNav                      /sys/File Managers/fNav/fNav
-KFM                       /sys/File Managers/kfm
-Eolite                    /sys/File Managers/Eolite
-#9   **** Система -> Спец.возможности ****
-Экранная лупа             /sys/magnify
-Экранная клавиатура       /sys/zkey
-#10    **** Офис ****
-Калькулятор               /sys/calc
-Редактор Tinypad          /sys/tinypad
-Редактор TextEdit         /sys/develop/t_edit
-Табличный процессор       /sys/table
-Построение графиков       /sys/graph
-Просмотр RTF              /sys/rtfread
-#11    **** Сеть ****
-Серверы            >      /@12
-Клиенты            >      /@13
-Настройки сети            /sys/network/netcfg
-Статус подключения        /sys/network/netstat
-#12   **** Сеть -> Серверы ****
-FTP daemon                /sys/network/ftpd
-#13   **** Сеть -> Клиенты ****
-IRC клиент                /sys/network/ircc
-FTP клиент                /sys/network/ftpc
-TFTP клиент               /sys/network/tftpc
-Ping                      /sys/network/ping
-Telnet                    /sys/network/telnet
-Synergy клиент            /sys/network/synergyc
-DNS lookup                /sys/network/nslookup
-VNC Клиент                /sys/network/vncc
-Интернет загрузчик        /sys/network/downloader
-Текстовый браузер         /sys/network/webview
-#14   **** Разное ****
-Эмуляторы          >      /@6
-Создание скриншотов       /sys/scrshoot
-Аналоговые часы           /sys/aclock
-Таблица Менделеева        /sys/period
-Тренажёр KJ|ABuIIIA       /sys/games/klavisha
-Бинарные часы             /sys/demos/bcdclk
-Таймер                    /sys/timer
-Разархиватор Unz          /sys/unz
+#0
+Игровой центр        |allgames
+Демки              > |@1
+Графика            > |@3
+Звук и видео       > |@4
+Разработка         > |@5
+Система            > |@7
+Офис               > |@10
+Сеть               > |@11
+Разное             > |@14
+Документация         |docpack
+Запуск программы     |run
+Завершение работы    |end
+#1 ==Демки
+Трёхмерные         > |@2
+Кружок               |demos/circle
+Фрактал Мандельброта |demos/tinyfrac
+Цвета                |demos/colorref
+Глаза                |demos/eyes
+Труба                |demos/tube
+Plasma               |demos/plasma
+Спираль              |demos/spiral
+Moveback             |demos/movback
+TranTest             |demos/trantest
+Паутинка             |demos/web
+Фейерверк            |demos/firework
+UnvWater             |demos/unvwater
+#2 ==3D
+Скринсейвер          |3d/crownscr
+3D-Лабиринт          |3d/free3d04
+3D-Куб               |3d/3dcube2
+Трассировка лучей    |3d/ray
+Просмотрщик 3DS      |3d/view3ds
+Шестерёнки           |3d/gears
+3D-Волны             |3d/3dwav
+#3 ==Графика
+Просмотр фото KIV    |media/kiv
+Просмотр фото zSea   |/kolibrios/media/zsea/zsea
+Редактор Animage     |media/animage
+Наложение фильтров   |media/imgf/imgf
+Палитра              |media/palitra
+Пипетка              |develop/pipet
+#4 ==Звук и видео
+Аудиоплеер Pixie     |media/pixie
+Аудиоплеер AC97SND   |media/ac97snd
+Видеоплеер Fplay     |/kolibrios/media/fplay
+Midi-плеер           |media/midamp
+Детское пианино      |media/piano
+#5 ==Разработка
+Упаковщик KPack      |kpack
+Flat Assembler       |develop/fasm
+Доска отладки        |develop/board
+HEX-редактор         |develop/heed
+Diff tool            |develop/diff
+Отладчик             |develop/mtdbg
+Hex2Dec2Bin          |develop/h2d2b
+Таблица символов     |develop/ASCIIVju
+ASCII-коды           |develop/keyascii
+SCAN-коды            |develop/scancode
+#6 ==Эмуляторы
+DOSBox               |/kolibrios/emul/DosBox/dosbox
+e80 (ZX Spectrum)    |/kolibrios/emul/e80/e80
+FCE Ultra - NES      |/kolibrios/emul/fceu/fceu
+ZSNES Super Nintendo |/kolibrios/emul/zsnes
+ScummVM              |/kolibrios/emul/scummvm
+#7 ==Система
+Файловые менеджеры > |@8
+Спец. возможности  > |@9
+Календарь            |calendar
+Терминал             |terminal
+Виртуальные диски    |tmpdisk
+Консоль SHELL        |shell
+Сохранение образа    |rdsave
+Системная панель     |syspanel
+#8 ==Система > ФМ
+KFAR                 |File Managers/kfar
+fNav                 |File Managers/fNav/fNav
+KFM                  |File Managers/kfm
+Eolite               |File Managers/Eolite
+#9 ==Система > Спец.возможности
+Экранная лупа        |magnify
+Экранная клавиатура  |zkey
+#10 ==Офис
+Калькулятор          |calc
+Редактор Tinypad     |tinypad
+Редактор TextEdit    |develop/t_edit
+Табличный процессор  |table
+Построение графиков  |graph
+Просмотр RTF         |rtfread
+#11 ==Сеть
+Серверы            > |@12
+Клиенты            > |@13
+Настройки сети       |network/netcfg
+Статус подключения   |network/netstat
+#12 ==Сеть > Серверы
+FTP daemon           |network/ftpd
+#13 ==Сеть > Клиенты
+IRC клиент           |network/ircc
+FTP клиент           |network/ftpc
+TFTP клиент          |network/tftpc
+Ping                 |network/ping
+Telnet               |network/telnet
+Synergy клиент       |network/synergyc
+DNS lookup           |network/nslookup
+VNC Клиент           |network/vncc
+Интернет загрузчик   |network/downloader
+Браузер WebView      |network/webview
+#14 ==Разное
+Эмуляторы          > |@6
+Создание скриншотов  |scrshoot
+Аналоговые часы      |aclock
+Таблица Менделеева   |period
+Тренажёр KJ|ABuIIIA  |games/klavisha
+Бинарные часы        |demos/bcdclk
+Таймер               |timer
+Разархиватор Unz     |unz
 ##

@@ -1,141 +1,140 @@
-#0    **** MAIN ****
-Centro de juegos          /sys/allgames
-Demos              >      /@1
-Gr ficos           >      /@3
-Multimedia         >      /@4
-Emulators          >      /@18
-Desarrollo         >      /@5
-Sistema            >      /@7
-Proceso de datos   >      /@11
-Red                >      /@12
-Otros              >      /@15
-Ayuda                     /sys/docpack
-Ejecutar aplicaci¢n       /sys/run
-Apagar                    /sys/end
-#1    **** DEMOS ****
-3D                 >      /@2
-C¡rculo                   /sys/demos/circle
-Fractal                   /sys/demos/tinyfrac
-Color demo                /sys/demos/colorref
-Ojos                      /sys/demos/eyes
-Tube                      /sys/demos/tube
-Plasma                    /sys/demos/plasma
-Spiral                    /sys/demos/spiral
-Moveback                  /sys/demos/movback
-TranTest                  /sys/demos/trantest
-WEB                       /sys/demos/web
-FireWork                  /sys/demos/firework
-UnvWater                  /sys/demos/unvwater
+#0    **** MAIN
+Centro de juegos      |allgames
+Demos              >  |@1
+Gr ficos           >  |@3
+Multimedia         >  |@4
+Emulators          >  |@18
+Desarrollo         >  |@5
+Sistema            >  |@7
+Proceso de datos   >  |@11
+Red                >  |@12
+Otros              >  |@15
+Ayuda                 |docpack
+Ejecutar aplicaci¢n   |run
+Apagar                |end
+#1    **** DEMOS
+3D                 >  |@2
+C¡rculo               |demos/circle
+Fractal               |demos/tinyfrac
+Color demo            |demos/colorref
+Ojos                  |demos/eyes
+Tube                  |demos/tube
+Plasma                |demos/plasma
+Spiral                |demos/spiral
+Moveback              |demos/movback
+TranTest              |demos/trantest
+WEB                   |demos/web
+FireWork              |demos/firework
+UnvWater              |demos/unvwater
 #2  **** 3D ****
-ScreenSaver               /sys/3d/crownscr
-3D-labyrinth              /sys/3d/free3d04
-3D-cube                   /sys/3d/3dcube2
-Ray tracing               /sys/3d/ray
-View3DS                   /sys/3d/view3ds
-Gears                     /sys/3d/gears
-3D-waved area             /sys/3d/3dwav
-#3   **** GRµFICOS ****
-Image viewer KIV          /sys/media/kiv
-Image viewer zSea         /kolibrios/media/zsea/zsea
-Animage                   /sys/media/animage
-Efectos de im genes       /sys/media/imgf/imgf
-Palitra                   /sys/media/palitra
-#4   **** MULTIMEDIA ****
-Pixie Audioplayer         /sys/media/pixie
-AC97SND Audioplayer       /sys/media/ac97snd
-Fplay - video             /kolibrios/media/fplay
-MidAMP                    /sys/media/midamp
-#5    **** DESARROLLO ****
-Ejemplos           >      /@6
-Archiver KPack            /sys/kpack
-Flat Assembler            /sys/develop/fasm
-Diff Tool                 /sys/develop/diff
-Debug Board               /sys/develop/board
-Debugger                  /sys/develop/mtdbg
-Hex2Dec2Bin               /sys/develop/h2d2b
-Tabla de caracteres       /sys/ASCIIVju
-C¢digos ASCII             /sys/develop/keyascii
-C¢digos SCAN              /sys/develop/scancode
-#6    **** EJEMPLOS ****
-Threads                   /sys/develop/thread
-Selector de color         /sys/demos/cslide
-Ejemplo de consola 1      /sys/develop/testcon2
-Ejemplo de consola 2      /sys/develop/test_gets
-Ejemplo de Messages       /sys/demos/use_mb
-#7    **** SISTEMA ****
-Configuraci¢n      >      /@8
-Sensores           >      /@9
-Archivos           >      /@10
-Pruebas            >      /@16
-Accesibilidad      >      /@17
-Debug board               /sys/develop/board
-Clipboard viewer          /sys/develop/clipview
-Terminal                  /sys/terminal
-#8    **** CONFIGURACIàN ****
-Dispositivos              /sys/setup
-Generador de fondo        /sys/media/palitra
-Colores y Apariencia      /sys/skincfg
-Atajos de teclado         /sys/mykey
-#9    **** SENSORES ****
-Procesos                  /sys/cpu
-Dispositivos PCI          /sys/pcidev
-CPUID                     /sys/cpuid
-Ghost Monitor             /sys/gmon
-K. Bus desconectado       /sys/kbd
-Informaci¢n de HDD        /sys/hdd_info
-#10  **** ARCHIVOS ****
-KFAR                      /sys/File Managers/kfar
-fNav                      /sys/File Managers/fNav/fNav
-KFM                       /sys/File Managers/kfm
-Eolite                    /sys/File Managers/Eolite
-Virtual disks             /sys/tmpdisk
-SHELL                     /sys/shell
-Guardar im gen RD         /sys/rdsave
-#11 **** PROCESO DE DATOS ****
-Calculadora               /sys/calc
-Tinypad                   /sys/tinypad
-TextEdit                  /sys/develop/t_edit
-Procesador de tablas      /sys/table
-Generador de gr ficas     /sys/graph
-Hex-Editor                /sys/develop/heed
-#12    **** RED ****
-Servidores         >      /@13
-Clientes           >      /@14
-Network devices           /sys/network/netcfg
-Network status            /sys/network/netstat
-#13    **** SERVIDORES ****
-FTP daemon                /sys/network/ftpd
-#14   **** CLIENTES ****
-Cliente IRC               /sys/network/ircc
-Cliente FTP               /sys/network/ftpc
-Cliente TFTP              /sys/network/tftpc
-Ping                      /sys/network/ping
-Cliente Telnet            /sys/network/telnet
-Cliente Synergy           /sys/network/synergyc
-Resoluci¢n de nombres     /sys/network/nslookup
-VNC Viewer                /sys/network/vncc
-Cliente de descarga       /sys/network/downloader
-Navegador (modo texto)    /sys/network/webview
-#15    **** OTROS ****
-Reloj anal¢gico           /sys/demos/aclock
-Reloj binario             /sys/demos/bcdclk
-Contador                  /sys/demos/timer
-Capturar de pantalla      /sys/scrshoot
-Calendario                /sys/calendar
-Lector de RTF             /sys/rtfread
-#16    **** PRUEBAS ****
-Protecci¢n                /sys/test
-Monitor                   /sys/disptest
-Velocidad de gr ficos     /sys/mgb
-FSPEED speed of FS        /sys/fspeed
-#17    **** ACCESIBILIDAD ****
-Ampliaci¢n de pantalla    /sys/magnify
-Teclado en pantalla       /sys/zkey
-#18    **** EMULATORS ****
-DOSBox DOS Emulator       /kolibrios/emul/DosBox/dosbox
-e80 (ZX Spectrum)         /kolibrios/emul/e80/e80
-FCE Ultra - NES           /kolibrios/emul/fceu/fceu
-Gameboy Color             /kolibrios/emul/gameboy
-ScummVM (adventure)       /kolibrios/emul/scummvm
-ZSNES Super Nintendo      /kolibrios/emul/zsnes
+ScreenSaver           |3d/crownscr
+3D-labyrinth          |3d/free3d04
+3D-cube               |3d/3dcube2
+Ray tracing           |3d/ray
+View3DS               |3d/view3ds
+Gears                 |3d/gears
+3D-waved area         |3d/3dwav
+#3   **** GRµFICOS
+Image viewer KIV      |media/kiv
+Image viewer zSea     |/kolibrios/media/zsea/zsea
+Animage               |media/animage
+Efectos de im genes   |media/imgf/imgf
+Palitra               |media/palitra
+#4   **** MULTIMEDIA
+Pixie Audioplayer     |media/pixie
+AC97SND Audioplayer   |media/ac97snd
+Fplay - video         |/kolibrios/media/fplay
+MidAMP                |media/midamp
+#5    **** DESARROLLO
+Ejemplos           >  |@6
+Archiver KPack        |kpack
+Flat Assembler        |develop/fasm
+Diff Tool             |develop/diff
+Debug Board           |develop/board
+Debugger              |develop/mtdbg
+Hex2Dec2Bin           |develop/h2d2b
+Tabla de caracteres   |ASCIIVju
+C¢digos ASCII         |develop/keyascii
+C¢digos SCAN          |develop/scancode
+#6    **** EJEMPLOS
+Threads               |develop/thread
+Selector de color     |demos/cslide
+Ejemplo de consola 1  |develop/testcon2
+Ejemplo de consola 2  |develop/test_gets
+Ejemplo de Messages   |demos/use_mb
+#7    **** SISTEMA
+Configuraci¢n      >  |@8
+Sensores           >  |@9
+Archivos           >  |@10
+Pruebas            >  |@16
+Accesibilidad      >  |@17
+Debug board           |develop/board
+Clipboard viewer      |develop/clipview
+Terminal              |terminal
+#8    **** CFG
+Dispositivos          |setup
+Generador de fondo    |media/palitra
+Colores y Apariencia  |skincfg
+Atajos de teclado     |mykey
+#9    **** SENSORES
+Procesos              |cpu
+Dispositivos PCI      |pcidev
+CPUID                 |cpuid
+Ghost Monitor         |gmon
+K. Bus desconectado   |kbd
+Informaci¢n de HDD    |hdd_info
+#10  **** ARCHIVOS
+KFAR                  |File Managers/kfar
+fNav                  |File Managers/fNav/fNav
+KFM                   |File Managers/kfm
+Eolite                |File Managers/Eolite
+Virtual disks         |tmpdisk
+SHELL                 |shell
+Guardar im gen RD     |rdsave
+#11 **** PROCESO DE DATOS
+Calculadora           |calc
+Tinypad               |tinypad
+TextEdit              |develop/t_edit
+Procesador de tablas  |table
+Generador de gr ficas |graph
+Hex-Editor            |develop/heed
+#12    **** RED
+Servidores         >  |@13
+Clientes           >  |@14
+Network devices       |network/netcfg
+Network status        |network/netstat
+#13    **** SERVIDORES
+FTP daemon            |network/ftpd
+#14   **** CLIENTES
+Cliente IRC           |network/ircc
+Cliente FTP           |network/ftpc
+Cliente TFTP          |network/tftpc
+Ping                  |network/ping
+Cliente Telnet        |network/telnet
+Cliente Synergy       |network/synergyc
+Resoluci¢n de nombres |network/nslookup
+VNC Viewer            |network/vncc
+Cliente de descarga   |network/downloader
+Navegador (modo texto)|network/webview
+#15    **** OTROS
+Reloj anal¢gico       |demos/aclock
+Reloj binario         |demos/bcdclk
+Contador              |demos/timer
+Capturar de pantalla  |scrshoot
+Calendario            |calendar
+Lector de RTF         |rtfread
+#16    **** PRUEBAS
+Protecci¢n            |test
+Monitor               |disptest
+Velocidad de gr ficos |mgb
+FSPEED speed of FS    |fspeed
+#17    **** ACCESIBILIDAD
+Ampliaci¢n de pantalla|magnify
+Teclado en pantalla   |zkey
+#18    **** EMULATORS
+DOSBox                |/kolibrios/emul/DosBox/dosbox
+e80 (ZX Spectrum)     |/kolibrios/emul/e80/e80
+FCE Ultra - NES       |/kolibrios/emul/fceu/fceu
+ZSNES Super Nintendo  |/kolibrios/emul/zsnes
+ScummVM (adventure)   |/kolibrios/emul/scummvm
 ##

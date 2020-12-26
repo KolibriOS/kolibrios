@@ -20,25 +20,26 @@
 ;
 ;   Compile with FASM for Menuet
 ;******************************************************************************
-  BTN_HEIGHT  = 22
-  BTN_WIDTH   = 140
-  TXT_Y       = (BTN_HEIGHT)/2-4
+  BTN_HEIGHT         = 22  ;26
+  BTN_WIDTH          = 140 ;178
+  TXT_Y              = (BTN_HEIGHT)/2-4
+  FONT_TYPE          = 0x80000000 ;0x90000000
 
-  PANEL_HEIGHT	= 20
-  MENU_BOTTON_X_POS	= 10
-  MENU_BOTTON_X_SIZE	= 50
+  PANEL_HEIGHT       = 20
+  MENU_BOTTON_X_POS  = 10
+  MENU_BOTTON_X_SIZE = 50
 ;------------------------------------------------------------------------------
 	use32
 	org 0x0
 
-	db 'MENUET01'	; 8 byte id
-	dd 0x01		; header version
-	dd START	; start of code
-	dd IM_END	; size of image
-	dd mem_end	; memory for app
-	dd stack_area	; esp
-	dd bootparam	; boot parameters
-	dd 0x0		; path
+	db 'MENUET01'  ; 8 byte id
+	dd 0x01        ; header version
+	dd START       ; start of code
+	dd IM_END      ; size of image
+	dd mem_end     ; memory for app
+	dd stack_area  ; esp
+	dd bootparam   ; boot parameters
+	dd 0x0         ; path
 ;------------------------------------------------------------------------------
 include "..\..\..\macros.inc"
 include "..\..\..\gui_patterns.inc"
@@ -76,6 +77,8 @@ align 4
 align 4
 START:		       ; start of execution
 	mcall	68,11
+	
+	mcall 30, 1, default_dir
 
 	mov	esi,bootparam	
 	cmp	[esi],byte 0
@@ -378,10 +381,10 @@ align 4
 	pop	eax
 	
 	mov	ecx,40
-	mov	al,'/'
+	mov	al,'|'
 	cld
 	repne	scasb
-	test	ecx,ecx	  ; if '/' not found
+	test	ecx,ecx	  ; if '|' not found
 	je	searchexit
 	
 	cmp	[edi],byte '@'     ; check for submenu
@@ -390,7 +393,7 @@ align 4
 	cmp	[last_key],179
 	je	searchexit
 	
-	dec	edi
+	;dec	edi
 	push	edi			; pointer to start of filename
 	call	searchstartstring	; search for next string
 	sub	edi,2		; to last byte of string
@@ -435,7 +438,7 @@ runthread:
 	
 	mov	[esi + child],al    ; this is my child
 	mov	cx,[esi + x_start]
-	add	cx,141	  ; new x_start in cx
+	add	cx,BTN_WIDTH+1	  ; new x_start in cx
 	movzx	edx,al
 	shl	edx,4
 	add	edx,[menu_data]       ; edx points to child's base address
@@ -684,9 +687,10 @@ align 4
 	mov	eax,[menu_mame]
 	cmp	[ebx+10],eax
 	jne	@f
-	mov	ax,[menu_mame+4]
-	cmp	[ebx+14],ax
-	jne	@f
+	; temporary to fit into 3 IMG sectors
+	;mov	ax,[menu_mame+4]
+	;cmp	[ebx+14],ax
+	;jne	@f
 	cmp	ecx,[active_process]
 	je	@f
 ; dph ecx
@@ -855,18 +859,20 @@ align 4
 				; from system close button with 0x000001 id
 				; dunkaist]
 	mcall
-	pusha
+	push edx 
 	
 	mov edx, esi
 	mcall 13
 	
-	mcall   , BTN_WIDTH,     <[draw_y],1>,            [sc.work_light]
-	mcall   , 1,             <[draw_y],BTN_HEIGHT>
-	mcall   , <BTN_WIDTH,1>, <[draw_y],BTN_HEIGHT+1>, [sc.work_dark]
-	add [draw_y], BTN_HEIGHT-1
-	mcall   , BTN_WIDTH,     <[draw_y],1>
+	mcall , BTN_WIDTH,<[draw_y],1>,[sc.work_light]
+	add     ecx, BTN_HEIGHT-1
+	mcall , 1
+	inc     ecx
+	mcall , <BTN_WIDTH,1>, , [sc.work_dark]
+	add     [draw_y], BTN_HEIGHT-1
+	mcall , BTN_WIDTH,<[draw_y],1>
 	
-	popa
+	pop edx
 	movzx	edx,dl
 	dec	dl
 	imul	ebx,edx,BTN_HEIGHT
@@ -905,8 +911,8 @@ searchstartstring:
 	ret
 ;------------------------------------------------------------------------------
 ;*** DATA AREA ****************************************************************
-menu_mame:
-	db '@MENU',0
+menu_mame:   db '@MENU',0
+default_dir: db '/sys',0
 
 align 4
 free_my_area_lock	dd 0
@@ -933,7 +939,7 @@ fileinfo:
  .size		 dd 0		; bytes to read
  .return	 dd procinfo	; return data pointer
  .name:
-     db   '/SYS/SETTINGS/MENU.DAT',0   ; ASCIIZ dir & filename
+     db   'SETTINGS/MENU.DAT',0   ; ASCIIZ dir & filename
 ;--------------------------------------
 align 4
 fileinfo_start:
@@ -981,18 +987,18 @@ prior_thread_h dd ?
 prior_thread_selected_y_end db ?
 ;------------------------------------------------------------------------------
 align 4
-menu_data	dd ?
+menu_data   dd ?
 ;--------------------------------------
-virtual at 0	      ; PROCESSES TABLE (located at menu_data)
-  pointer	dd ?   ; +0    pointer in file
-  rows		db ?	; +4    numer of strings
-  x_start	dw ?   ; +5    x start
-  y_end		dw ?   ; +7    y end
-  child		db ?   ; +9    id of child menu
-  parent	db ?   ; +10   id of parent menu
-  cur_sel	db ?   ; +11   current selection
-  prev_sel	db ?   ; +12   previous selection
-  rb		16-$+1 ; [16 bytes per element]
+virtual     at 0       ; PROCESSES TABLE (located at menu_data)
+  pointer   dd ?   ; +0    pointer in file
+  rows      db ?   ; +4    numer of strings
+  x_start   dw ?   ; +5    x start
+  y_end     dw ?   ; +7    y end
+  child     db ?   ; +9    id of child menu
+  parent    db ?   ; +10   id of parent menu
+  cur_sel   db ?   ; +11   current selection
+  prev_sel  db ?   ; +12   previous selection
+  rb        16-$+1 ; [16 bytes per element]
 end virtual
 ;------------------------------------------------------------------------------
 align 4

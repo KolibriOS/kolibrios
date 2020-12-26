@@ -1,141 +1,141 @@
-﻿#0    **** MAIN ****
-Centro gioco              /sys/allgames
-Demo               >      /@1
-Grafica            >      /@3
-Multimedia         >      /@4
-Emulators          >      /@18
-Sviluppo           >      /@5
-Sistema            >      /@7
-Data processing    >      /@11
-Network            >      /@12
-Altro              >      /@15
-Aiuto                     /sys/docpack
-Esegui applicazione       /sys/run
-Spegni                    /sys/end
-#1    **** DEMOS ****
-3D                 >      /@2
-Cerchio                   /sys/demos/circle
-Frattale                  /sys/demos/tinyfrac
-Demo Colori               /sys/demos/colorref
-Occhi                     /sys/demos/eyes
-Vortice                   /sys/demos/tube
-Plasma                    /sys/demos/plasma
-Spiral                    /sys/demos/spiral
-Moveback                  /sys/demos/movback
-TranTest                  /sys/demos/trantest
-WEB                       /sys/demos/web
-Fuochi d'artificio        /sys/demos/firework
-UnvWater                  /sys/demos/unvwater
-#2  **** 3D demos ****
-ScreenSaver               /sys/3d/crownscr
-Labirinto 3D              /sys/3d/free3d04
-3D-cube                   /sys/3d/3dcube2
-Ray tracing               /sys/3d/ray
-View3DS                   /sys/3d/view3ds
-Gears                     /sys/3d/gears
-3D-waved area             /sys/3d/3dwav
-#3   **** GRAPHICS ****
-Image viewer KIV          /sys/media/kiv
-Image viewer zSea         /KolibriOS/media/zsea/zsea
-Animage                   /sys/media/animage
-Palitra                   /sys/media/palitra
-#4   **** MULTIMEDIA ****
-Pixie Audioplayer         /sys/media/pixie
-AC97SND Audioplayer       /sys/media/ac97snd
-Fplay - video             /KolibriOS/media/fplay
-MidAMP                    /sys/media/midamp
-#5    **** PROGRAMMING ****
-Esempi             >      /@6
-Gestore di archivi KPack  /sys/kpack
-Compilatore FASM          /sys/develop/fasm
-Diff Tool                 /sys/develop/diff
-Debug Board               /sys/develop/board
-Debugger                  /sys/develop/mtdbg
-Hex2Dec2Bin               /sys/develop/h2d2b
-Tavola caratteri          /sys/develop/ASCIIVju
-Codici ASCII              /sys/develop/keyascii
-SCAN-codes                /sys/develop/scancode
-#6    **** EXAMPLES ****
-Thread                    /sys/develop/thread
-Color slider              /sys/demos/cslide
-Esempio Console 1         /sys/develop/testcon2
-Esempio Console 2         /sys/develop/test_gets
-Esempio Message Boxes     /sys/demos/use_mb
-#7    **** SYSTEM ****
-Impostazioni       >      /@8
-Sensori di sistema >      /@9
-Work with files    >      /@10
-Testing            >      /@13
-Opzioni Accessibil.>      /@17
-Debug board               /sys/develop/board
-Clipboard viewer          /sys/develop/clipview
-Terminal                  /sys/terminal
-#8    **** SETTINGS ****
-Device                    /sys/setup
-Generatore di sfondi      /sys/media/palitra
-Colori e temi             /sys/skincfg
-MyKey                     /sys/mykey
-Video mode for ATI        /sys/vmode
-#9    **** SYSTEM SENSORS ****
-Gestore processi          /sys/cpu
-PCI devices               /sys/pcidev
-CPUID                     /sys/cpuid
-Ghost Monitor             /sys/gmon
-K. Bus disconnected       /sys/kbd
-HDD informer              /sys/hdd_info
-#10  **** WORK WITH FILES ****
-KFAR                      /sys/File Managers/kfar
-fNav                      /sys/File Managers/fNav/fNav
-KFM                       /sys/File Managers/kfm
-Eolite                    /sys/File Managers/Eolite
-Virtual disks             /sys/tmpdisk
-SHELL console             /sys/shell
-Salva immagine RD         /sys/rdsave
-#11 **** DATA PROCESSING ****
-Calcolatrice              /sys/calc
-Tinypad                   /sys/tinypad
-TextEdit                  /sys/develop/t_edit
-Table Processor           /sys/table
-Graph builder             /sys/graph
-Hex-Editor                /sys/develop/heed
-#12    **** NET ****
-Servers            >      /@13
-Clients            >      /@14
-Network devices           /sys/network/netcfg
-Network status            /sys/network/netstat
-#13    **** SERVERS ****
-Demone FTP                /sys/network/ftpd
-#14   **** CLIENTS ****
-Client IRC                /sys/network/ircc
-Client FTP                /sys/network/ftpc
-Client TFTP               /sys/network/tftpc
-Ping                      /sys/network/ping
-Client Telnet             /sys/network/telnet
-Client Synergy            /sys/network/synergyc
-VNC Viewer                /sys/network/vncc
-DNS lookup                /sys/network/nslookup
-Internet downloader       /sys/network/downloader
-Text-based browser        /sys/network/webview
-#15    **** OTHER ****
-Orologio analogico        /sys/aclock
-Orologio binario          /sys/demos/bcdclk
-Timer                     /sys/timer
-ScreenShoter              /sys/scrshoot
-Calendario                /sys/calendar
-Lettore RTF               /sys/rtfread
-#16    **** SYSTEM TESTS ****
-Protection test           /sys/test
-Test Monitor              /sys/disptest
-Test graphics speed       /sys/mgb
-FSPEED speed of FS        /sys/fspeed
-#17    **** SYSTEM SPECIAL ****
-Lente di ingrandimento    /sys/magnify
-Tastiera da schermo       /sys/zkey
-#18    **** EMULATORS ****
-DOSBox DOS Emulator       /KolibriOS/emul/DosBox/dosbox
-e80 (ZX Spectrum)         /KolibriOS/emul/e80/e80
-FCE Ultra - NES           /KolibriOS/emul/fceu/fceu
-Gameboy Color             /KolibriOS/emul/gameboy
-ScummVM (adventure)       /KolibriOS/emul/scummvm
-ZSNES Super Nintendo      /KolibriOS/emul/zsnes
+﻿#0 **** MAIN
+Centro gioco          |allgames
+Demo               >  |@1
+Grafica            >  |@3
+Multimedia         >  |@4
+Emulators          >  |@18
+Sviluppo           >  |@5
+Sistema            >  |@7
+Data processing    >  |@11
+Network            >  |@12
+Altro              >  |@15
+Aiuto                 |docpack
+Esegui applicazione   |run
+Spegni                |end
+#1 **** DEMOS
+3D                 >  |@2
+Cerchio               |demos/circle
+Frattale              |demos/tinyfrac
+Demo Colori           |demos/colorref
+Occhi                 |demos/eyes
+Vortice               |demos/tube
+Plasma                |demos/plasma
+Spiral                |demos/spiral
+Moveback              |demos/movback
+TranTest              |demos/trantest
+WEB                   |demos/web
+Fuochi d'artificio    |demos/firework
+UnvWater              |demos/unvwater
+#2 **** 3D
+ScreenSaver           |3d/crownscr
+Labirinto 3D          |3d/free3d04
+3D-cube               |3d/3dcube2
+Ray tracing           |3d/ray
+View3DS               |3d/view3ds
+Gears                 |3d/gears
+3D-waved area         |3d/3dwav
+#3 **** GRAPHICS
+Image viewer KIV      |media/kiv
+Image viewer zSea     |/kolibrios/media/zsea/zsea
+Animage               |media/animage
+Palitra               |media/palitra
+#4 **** MULTIMEDIA
+Pixie Audioplayer     |media/pixie
+AC97SND Audioplayer   |media/ac97snd
+Fplay - video         |/kolibrios/media/fplay
+MidAMP                |media/midamp
+#5 **** DEV
+Esempi             >  |@6
+Gestore di archivi KPack  /kpack
+Compilatore FASM      |develop/fasm
+Diff Tool             |develop/diff
+Debug Board           |develop/board
+Debugger              |develop/mtdbg
+Hex2Dec2Bin           |develop/h2d2b
+Tavola caratteri      |develop/ASCIIVju
+Codici ASCII          |develop/keyascii
+SCAN-codes            |develop/scancode
+#6 **** EXAMPLES
+Thread                |develop/thread
+Color slider          |demos/cslide
+Esempio Console 1     |develop/testcon2
+Esempio Console 2     |develop/test_gets
+Esempio Message Boxes |demos/use_mb
+#7 **** SYSTEM
+Impostazioni       >  |@8
+Sensori di sistema >  |@9
+Work with files    >  |@10
+Testing            >  |@13
+Opzioni Accessibil.>  |@17
+Debug board           |develop/board
+Clipboard viewer      |develop/clipview
+Terminal              |terminal
+#8 **** SETTINGS
+Device                |setup
+Generatore di sfondi  |media/palitra
+Colori e temi         |skincfg
+MyKey                 |mykey
+Video mode for ATI    |vmode
+#9 **** SYSTEM SENSORS
+Gestore processi      |cpu
+PCI devices           |pcidev
+CPUID                 |cpuid
+Ghost Monitor         |gmon
+K. Bus disconnected   |kbd
+HDD informer          |hdd_info
+#10 **** FM
+KFAR                  |File Managers/kfar
+fNav                  |File Managers/fNav/fNav
+KFM                   |File Managers/kfm
+Eolite                |File Managers/Eolite
+Virtual disks         |tmpdisk
+SHELL console         |shell
+Salva immagine RD     |rdsave
+#11 **** DATA PROCESSING
+Calcolatrice          |calc
+Tinypad               |tinypad
+TextEdit              |develop/t_edit
+Table Processor       |table
+Graph builder         |graph
+Hex-Editor            |develop/heed
+#12 **** NET
+Servers            >  |@13
+Clients            >  |@14
+Network devices       |network/netcfg
+Network status        |network/netstat
+#13 **** SERVERS
+Demone FTP            |network/ftpd
+#14 **** CLIENTS
+Client IRC            |network/ircc
+Client FTP            |network/ftpc
+Client TFTP           |network/tftpc
+Ping                  |network/ping
+Client Telnet         |network/telnet
+Client Synergy        |network/synergyc
+VNC Viewer            |network/vncc
+DNS lookup            |network/nslookup
+Internet downloader   |network/downloader
+Text-based browser    |network/webview
+#15    **** OTHER
+Orologio analogico    |aclock
+Orologio binario      |demos/bcdclk
+Timer                 |timer
+ScreenShoter          |scrshoot
+Calendario            |calendar
+Lettore RTF           |rtfread
+#16 **** TESTS
+Protection test       |test
+Test Monitor          |disptest
+Test graphics speed   |mgb
+FSPEED speed of FS    |fspeed
+#17 **** SPECIAL
+Lente di ingrandimento|magnify
+Tastiera da schermo   |zkey
+#18 **** EMUL
+DOSBox DOS Emulator   |/kolibrios/emul/DosBox/dosbox
+e80 (ZX Spectrum)     |/kolibrios/emul/e80/e80
+FCE Ultra - NES       |/kolibrios/emul/fceu/fceu
+Gameboy Color         |/kolibrios/emul/gameboy
+ScummVM (adventure)   |/kolibrios/emul/scummvm
+ZSNES Super Nintendo  |/kolibrios/emul/zsnes
 ##
