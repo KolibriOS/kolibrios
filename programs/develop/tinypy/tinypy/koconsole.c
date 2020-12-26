@@ -8,6 +8,7 @@ void (* _stdcall con_init)(unsigned w_w, unsigned w_h, unsigned s_w, unsigned s_
 int (* _cdecl con_printf)(const char* format,...);
 void (* _stdcall con_exit)(char bCloseWindow);
 void (* __stdcall con_gets)(char* str, int n);
+void (* _stdcall con_set_title)(const char* title);
 
 void CONSOLE_INIT(const char title[])
 {
@@ -21,7 +22,9 @@ void CONSOLE_INIT(const char title[])
       !(con_gets = ( __stdcall void (*)(char*, int))
                   kol_cofflib_procload (imp, "con_gets"))||
       !(con_exit = ( _stdcall void (*)(char))
-                  kol_cofflib_procload (imp, "con_exit")))
+                  kol_cofflib_procload (imp, "con_exit")) ||
+      !(con_set_title = ( _stdcall void (*)(const char*))
+                  kol_cofflib_procload (imp, "con_set_title")))
   {
     kol_exit();
   }

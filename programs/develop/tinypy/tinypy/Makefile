@@ -1,4 +1,4 @@
-NAME=tinypy
+NAME = tinypy
 CC = kos32-gcc
 LD = kos32-ld
 
@@ -13,24 +13,24 @@ CFLAGS = -U_Win32 -U_WIN32 -U__MINGW32__ -mpreferred-stack-boundary=2 \
 INCLUDES= -I. -I$(SDK_DIR)/sources/newlib/libc/include
 LIBPATH:= -L $(SDK_DIR)/lib -L /home/autobuild/tools/win32/mingw32/lib
 
-KOLIBRI_M_OBJ=  ../modules/kolibri/init.o  \
-		../modules/kolibri/fs.o    \
-		../modules/kolibri/net.o   \
-		../modules/kolibri/gui.o   \
-		../modules/kolibri/debug.o \
-		
-		
-OBJECTS =  tpmain.o $(KOLIBRI_M_OBJ)
+MODULES_DIR = $(abspath ../modules)
 
-all:$(NAME)
+MODULES_OBJ =	$(MODULES_DIR)/kolibri/init.o  \
+				$(MODULES_DIR)/kolibri/fs.o    \
+				$(MODULES_DIR)/kolibri/net.o   \
+				$(MODULES_DIR)/kolibri/gui.o   \
+				$(MODULES_DIR)/kolibri/debug.o
+
+OBJECTS = tpmain.o $(MODULES_OBJ)
+
+all: $(NAME)
 
 $(NAME): $(OBJECTS)
-	$(LD) $(LIBPATH) --subsystem native -o $@ $(OBJECTS) $(LDFLAGS) -n -Map $(NAME).map
-	kos32-objcopy $@ -O binary
-	kpack $@
+	$(LD) $(LIBPATH) --subsystem native -o $@ $(OBJECTS) $(LDFLAGS) -n # -Map $(NAME).map
+	objcopy $@ -O binary
 
 %.o : %.c Makefile	
 	$(CC) -c $(INCLUDES) $(CFLAGS) -o $@ $<
 
 clean:
-	rm -f *.o $(NAME).map $(KOLIBRI_M_OBJ)
+	rm -f *.o $(NAME).map $(MODULES_OBJ)
