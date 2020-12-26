@@ -7,7 +7,9 @@ CFLAGS = CFLAGS .. " -std=c99 -U__WIN32__ -U_Win32 -U_WIN32 -U__MINGW32__ -UWIN3
 INCLUDES = INCLUDES .. " -I ."
 
 compile_gcc{"libmujs/utftype.c", "libmujs/jsproperty.c", "libmujs/jsobject.c", "libmujs/jsdtoa.c", "libmujs/jsbuiltin.c", "libmujs/jsvalue.c", "libmujs/jsnumber.c", "libmujs/jsparse.c", "libmujs/jsstate.c", "libmujs/jsgc.c", "libmujs/jsrepr.c", "libmujs/pp.c", "libmujs/utf.c", "libmujs/jsfunction.c", "libmujs/jsdump.c", "libmujs/regexp.c", "libmujs/jsstring.c", "libmujs/jsarray.c", "libmujs/jsrun.c", "libmujs/jsdate.c", "libmujs/jscompile.c", "libmujs/jslex.c", "libmujs/jsboolean.c", "libmujs/jserror.c", "libmujs/jsintern.c", "libmujs/jsmath.c", "libmujs/jsregexp.c", "libmujs/json.c"}
-tup.rule(OBJS, "ar rcs %o %f", {"libmujs.a", "<libmujs>"})
+tup.rule(OBJS, "kos32-ar rcs %o %f", {"libmujs.a", "<libmujs>"})
+
+OBJS = ""
 
 LDFLAGS = LDFLAGS .. " -L. --subsystem native"
 LIBS = LIBS .. " -lmujs"
