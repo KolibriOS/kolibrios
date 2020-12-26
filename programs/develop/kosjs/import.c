@@ -14,25 +14,10 @@ static void _WindowCreate()
     sys_create_window(js_toint(J, 1), js_toint(J, 2), js_toint(J, 3), js_toint(J, 4), js_tostring(J,5), js_touint32(J,6), js_touint32(J,7));
 }
 
-static  void _StartDraw()
-{
-   begin_draw();
-}
-
-static void _EndDraw()
-{
-    end_draw();
-}
-
 static void _DebugPrintS()
 {
     puts(js_tostring(J,1));
 
-}
-
-static void _GetEvent()
-{   
-    js_pushnumber(J, get_os_event()); 
 }
 
 static void _GetButtonEvent()
@@ -45,21 +30,42 @@ static void _WriteText()
     draw_text_sys(js_tostring(J,1), js_toint32(J,2), js_toint32(J,3), js_toint32(J,4), js_touint32(J,5));
 }
 
+// KolibriSyscall(EAX, EBX, ECX, EDX, EDI, ESI)
+static void _KolibriSyscall()
+{
+    __asm__ __volatile__(
+    "int $0x40"
+    ::"a"(js_toint32(J,1)),
+     "b"(js_toint32(J,2)),
+     "c"(js_toint32(J,3)),
+     "d"(js_toint32(J,4)),
+     "D"(js_toint32(J,5)),
+     "S"(js_toint32(J,6)) : "memory");
+}
+
+static void _KolibriSyscallReturnEAX()
+{
+    int _eax_;
+    
+    __asm__ __volatile__(
+    "int $0x40"
+    :"=a"(_eax_)
+    :"a"(js_toint32(J,1)),
+     "b"(js_toint32(J,2)),
+     "c"(js_toint32(J,3)),
+     "d"(js_toint32(J,4)),
+     "D"(js_toint32(J,5)),
+     "S"(js_toint32(J,6)) : "memory");
+     
+      js_pushnumber(J, _eax_);
+}
+
 void import_functions()
 {
     J = js_newstate(NULL, NULL, JS_STRICT);
     
     js_newcfunction(J, _WindowCreate, "WindowCreate", 7);
     js_setglobal(J, "WindowCreate");
-    
-    js_newcfunction(J, _StartDraw, "StartDraw", 0);
-    js_setglobal(J, "StartDraw");
-
-    js_newcfunction(J, _EndDraw, "EndDraw", 0);
-    js_setglobal(J, "EndDraw");
-
-    js_newcfunction(J, _GetEvent, "GetEvent", 0);
-    js_setglobal(J, "GetEvent");
 
     js_newcfunction(J, _DebugPrintS, "DebugPrintS", 0);
     js_setglobal(J, "DebugPrintS");
@@ -75,5 +81,11 @@ void import_functions()
 
     js_newcfunction(J, _WriteText, "WriteText", 5);
     js_setglobal(J, "WriteText");
+    
+    js_newcfunction(J, _KolibriSyscall, "KolibriSyscall", 6);
+    js_setglobal(J, "KolibriSyscall");
+    
+    js_newcfunction(J, _KolibriSyscallReturnEAX, "KolibriSyscallReturnEAX", 6);
+    js_setglobal(J, "KolibriSyscallReturnEAX");
 
 }
