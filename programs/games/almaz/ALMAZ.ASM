@@ -1,5 +1,5 @@
 
-WND_COLOR equ 0x54000000
+; Author: RU095@YANDEX.RU
 
 use32
   org	 0x0
@@ -13,21 +13,21 @@ use32
   dd	 0x0
 
 include 'lang.inc'
-include '..\..\macros.inc' ; ╨╝╨░╨║╤А╨╛╤Б╤Л ╨╛╨▒╨╗╨╡╨│╤З╨░╤О╤В ╨╢╨╕╨╖╨╜╤М ╨░╤Б╤Б╨╡╨╝╨▒╨╗╨╡╤А╤Й╨╕╨║╨╛╨▓!
+include '..\..\macros.inc' ; макросы облегчают жизнь ассемблерщиков!
 
 include 'ASCL.INC'
 include 'ASCGL.INC'
 
-
+WND_COLOR equ 0x74000000
 
 gif_hash_offset = gif_hash_area
 COLOR_ORDER equ MENUETOS
 
-DELAY equ  2	     ; ╨Ч╨░╨┤╨╡╤А╨╢╨║╨░ ╨┐╨╡╤А╨╡╨┤ ╨┐╨╡╤А╨╡╤Е╨╛╨┤╨╛╨╝ ╨║ ╤Б╨╗╨╡╨┤╤Г╤О╤Й╨╡╨╝╤Г ╨║╨░╨┤╤А╤Г ╨▓ ╨╝╤Б╨╡╨║
+DELAY equ  2	     ; Задержка перед переходом к следующему кадру в мсек
 
 START:
 ;****************
-; ╨Ю╤В╨║╤А╤Л╨▓╨░╨╡╨╝ ╤Д╨░╨╕╨╗
+; Открываем фаил
 ;****************
 openfile:
 ;    and  [entered],0
@@ -63,24 +63,24 @@ no_event:
     jmp  still
 
   key:
- ; ╨▒╨╗╨╛╨║╨░ ╨┤╨▓╨╕╨╢╨╡╨╜╨╕╤П ╨┐╨╡╤А╤Б╨╛╨╜╨░╨╢╨░
+ ; блока движения персонажа
     mov  eax,2
     int  0x40
-     cmp  ah, 179	   ; ╨┐╤А╨░╨▓╨╛  4
+     cmp  ah, 179	   ; право  4
      je go_mov
-     cmp  ah, 176	   ; ╨╗╨╡╨▓╨╛  1
+     cmp  ah, 176	   ; лево  1
      je go_mov
-     cmp  ah, 178	   ; ╨▓╨╡╤А╤Е  3
+     cmp  ah, 178	   ; верх  3
      je go_mov
-     cmp  ah, 177	   ; ╨╜╨╕╨╖  2
+     cmp  ah, 177	   ; низ  2
      je go_mov
-     cmp  ah, 120	   ; ╨╜╨╕╨╖  2
+     cmp  ah, 120	   ; низ  2
      je go_fire
-     cmp  ah, 122	   ; ╨╜╨╕╨╖  2
+     cmp  ah, 122	   ; низ  2
      je go_fire
-     cmp  ah, 239	   ; ╨╜╨╕╨╖  2
+     cmp  ah, 239	   ; низ  2
      je go_fire_left
-     cmp  ah, 231	   ; ╨╜╨╕╨╖  2
+     cmp  ah, 231	   ; низ  2
      je go_fire
 
 
@@ -89,7 +89,7 @@ no_event:
     go_mov:
        ;mov ebx, [v_mov2]
        mov [v_mov2], ah
-       sub word [v_mov2], 175	; ╨╛╤В╨╜╨╕╨╝╨░╨╡╨╝ ╨╛╤В ╨║╨╛╨┤╨░ ╨║╨╗╨░╨▓╨╕╤И╨╕ 175 ╨╕ ╨╛╤Б╤В╨░╨╡╤В╤Б╤П 1,2,3 ╨╕╨╗╨╕ 4 ╤Б╨╛╨╛╤В╨▓╨╡╤В╤Б╤В╨▓╨╡╨╜╨╜╨╛ ╨╜╨░╨┐╤А╨░╨▓╨╗╨╡╨╜╨╕╤П ╨┤╨▓╨╕╨╢╨╡╨╜╨╕╤П ╨┐╨╡╤А╤Б╨╛╨╜╨░╨╢╨░
+       sub word [v_mov2], 175	; отнимаем от кода клавиши 175 и остается 1,2,3 или 4 соответственно направления движения персонажа
       jmp no_mov    ; if not left, right, up, down, then go NO MOV
 
     go_fire_left:
@@ -100,29 +100,35 @@ no_event:
     go_fire:
        call fire
     no_mov:
- ; ╨║╨╛╨╜╨╡╤Ж ╨▒╨╗╨╛╨║╨░ ╨┤╨▓╨╕╨╢╨╡╨╜╨╕╤П ╨┐╨╡╤А╤Б╨╛╨╜╨░╨╢╨░
+ ; конец блока движения персонажа
     jmp  still
 
   button:
     mov  eax, 17
     int  0x40
 
-    cmp  ah, 1
-    jne still
-    mcall -1
+    cmp  ah,1
+    jne  noclose
+  _close:
+    or	 eax,-1
+    int  0x40
+  noclose:
+    jmp  still
 
 ;   *********************************************
-;   *******  ╨Ю╨Я╨а╨Х╨Ф╨Х╨Ы╨Х╨Э╨Ш╨Х ╨Ш ╨Ю╨в╨а╨Ш╨б╨Ю╨Т╨Ъ╨Р ╨Ю╨Ъ╨Э╨Р *******
+;   *******  ОПРЕДЕЛЕНИЕ И ОТРИСОВКА ОКНА *******
 ;   *********************************************
 
 draw_window:
     startwd
 
-    xor eax, eax ; more optimized "mov eax, 0"
-    mov  ebx, 50*65536+522
-    mov  ecx, 50*65536+536
+    mcall 48, 4
+    mov  ecx, 50*65536+516
+	add  ecx, eax
+    mov  ebx, 50*65536+521
     mov  edx, WND_COLOR
     mov  edi, title
+    xor  eax, eax
     int  0x40
 
     xor  ecx,ecx
@@ -147,22 +153,22 @@ ret
 
  labirint:
 
-   ; ╨▓╤Л╨▓╨╛╨┤ ╨▒╨╗╨╛╨║╨╛╨▓ ╨╗╨░╨▒╨╕╤А╨╕╨╜╤В╨░
+   ; вывод блоков лабиринта
    cycle:
 
     mov     eax, [Lab]
-    shl     eax, 5	    ; ╤Б╨┤╨▓╨╕╨│ ╤А╨╡╨│╨╕╤Б╤В╤А╨░ ╨▓ ╨┐╤А╨░╨▓╨╛ ╨╜╨░ 5 ╨┐╨╛╨╖╨╕╤Ж╨╕╨╕ ╨▓╤Б╨╡ ╤А╨░╨▓╨╜╨╛ ╤З╤В╨╛ ╤Г╨╝╨╜╨╛╨╢╨╕╨╗╨╕ ╨╜╨░ 32
+    shl     eax, 5	    ; сдвиг регистра в право на 5 позиции все равно что умножили на 32
     mov     [perem1], eax
     mov     eax, [Lab]
-    shr     eax, 4	    ; ╤Б╨┤╨▓╨╕╨│ ╤А╨╡╨│╨╕╤Б╤В╤А╨░ ╨▓ ╨╗╨╡╨▓╨╛
-    shl     eax, 5	    ; ╤Б╨┤╨▓╨╕╨│ ╨╛╨▒╤А╨░╤В╨╜╨╛ (╨▓╤Б╨╡ ╤А╨░╨▓╨╜╨╛ ╤З╤В╨╛ ╤Ж╨╡╨╗╨╛╤З╨╕╤Б╨╗╨╡╨╜╨╜╨╛╨╡ ╨┤╨╡╨╗╨╡╨╜╨╕╨╡╨╜╨░ 256)
+    shr     eax, 4	    ; сдвиг регистра в лево
+    shl     eax, 5	    ; сдвиг обратно (все равно что целочисленное делениена 256)
     mov     [perem2], eax
-    shl     eax, 4	    ; ╨▓╤Б╨╡ ╤А╨░╨▓╨╜╨╛ ╤З╤В╨╛ ╨╛╤В╨╜╨╕╨╝╨░╨╡╨╝ ╨╛╤В ╨║╨╛╨╛╤А╨┤╨╕╨╜╨░╤В ╨╜╨╡╨╜╤Г╨╢╨╜╤Л╨╣ ╨┐╤А╨╕╤А╨╛╤Б╤В -> ╨г-256*X
+    shl     eax, 4	    ; все равно что отнимаем от координат ненужный прирост -> У-256*X
     sbb  dword [perem1], eax;
 
   mov	 ebx, [Lab]
   sbb	 ebx, 1
-  mov	  eax,[Dangeon + ebx]	 ; ╨▒╨╡╤А╨╡╤В ╨▒╨░╨╣╤В ╨╕╨╖ ╨┤╨░╨╜╨│╨╡╨╛╨╜ + ╤Б╨╝╨╡╤Й╨╡╨╜╨╕╨╡
+  mov	  eax,[Dangeon + ebx]	 ; берет байт из дангеон + смещение
 
   cmp  ah, 1   ;
   je go_block
@@ -170,7 +176,7 @@ ret
   cmp  ah, 0   ;
   je back_block
 
-  cmp  ah, 12	; ╨╖╨░╨║╤А╨░╤Б╨║╨░ ╤Д╨╛╨╜╨░ ╨╖╨░ ╨░╨╗╨╝╨░╨╖╨╛╨╝
+  cmp  ah, 12	; закраска фона за алмазом
   je back_block
 
   cmp  ah, 3   ;
@@ -179,7 +185,7 @@ ret
   cmp  ah, 16	;
   je door_block
 
-  cmp  ah, 2   ; ╨╖╨░╨║╤А╨░╤Б╨║╨░ ╤Д╨╛╨╜╨░ ╨╖╨░ ╨░╨╗╨╝╨░╨╖╨╛╨╝
+  cmp  ah, 2   ; закраска фона за алмазом
   je cool_block
 
   jmp end_block
@@ -200,7 +206,7 @@ ret
     imgtoimg img_door1,dword [perem1],dword [perem2],canvas
 
     mov eax, [gold]
-    cmp ax, 10	      ; ╨╡╤Б╨╗╨╕ ╤Б╨╛╨▒╤А╨░╨╜╨╛ ╨▒╨╛╨╗╨╡╨╡ 10 ╨░╨╗╨╝╨░╨╖╨╛╨▓ ╨┤╨▓╨╡╤А╤М ╨╛╤В╨║╤А╤Л╤В╨░
+    cmp ax, 10	      ; если собрано более 10 алмазов дверь открыта
     jna end_block
     imgtoimg img_door2,dword [perem1],dword [perem2],canvas
    jmp end_block
@@ -208,7 +214,7 @@ ret
 
   boom_block:
     imgtoimg img_area,dword [perem1],dword [perem2],canvas
-	   mov ebp,18 ; ╨║╨░╨┤╤А
+	   mov ebp,18 ; кадр
 	   mov eax, dword [perem1]
 	   mov dword [X_anime], eax
 	   mov eax, dword [perem2]
@@ -221,7 +227,7 @@ ret
 	     jne  end_block
 
 	       mov    ebx, [Lab]
-		mov	byte [Dangeon + ebx], 0    ; ╨▒╨╡╤А╨╡╤В ╨▒╨░╨╣╤В ╨╕╨╖ ╨┤╨░╨╜╨│╨╡╨╛╨╜ + ╤Б╨╝╨╡╤Й╨╡╨╜╨╕╨╡
+		mov	byte [Dangeon + ebx], 0    ; берет байт из дангеон + смещение
 
 
   end_block:
@@ -242,26 +248,26 @@ ret
 
 
 ;*******************************************
-; ╨Ы╨Х╨б╨в╨Э╨Ш╨ж╨Р
+; ЛЕСТНИЦА
 ;*******************************************
  lestniza:
-   ; ╨▓╤Л╨▓╨╛╨┤ ╨▒╨╗╨╛╨║╨╛╨▓ ╨╗╨░╨▒╨╕╤А╨╕╨╜╤В╨░
+   ; вывод блоков лабиринта
    cycle2:
 
     mov     eax, [Lab]
-    shl     eax, 5	    ; ╤Б╨┤╨▓╨╕╨│ ╤А╨╡╨│╨╕╤Б╤В╤А╨░ ╨▓ ╨┐╤А╨░╨▓╨╛ ╨╜╨░ 5 ╨┐╨╛╨╖╨╕╤Ж╨╕╨╕ ╨▓╤Б╨╡ ╤А╨░╨▓╨╜╨╛ ╤З╤В╨╛ ╤Г╨╝╨╜╨╛╨╢╨╕╨╗╨╕ ╨╜╨░ 32
+    shl     eax, 5	    ; сдвиг регистра в право на 5 позиции все равно что умножили на 32
     mov     [perem1], eax
     mov     eax, [Lab]
-    shr     eax, 4	    ; ╤Б╨┤╨▓╨╕╨│ ╤А╨╡╨│╨╕╤Б╤В╤А╨░ ╨▓ ╨╗╨╡╨▓╨╛
-    shl     eax, 5	    ; ╤Б╨┤╨▓╨╕╨│ ╨╛╨▒╤А╨░╤В╨╜╨╛ (╨▓╤Б╨╡ ╤А╨░╨▓╨╜╨╛ ╤З╤В╨╛ ╤Ж╨╡╨╗╨╛╤З╨╕╤Б╨╗╨╡╨╜╨╜╨╛╨╡ ╨┤╨╡╨╗╨╡╨╜╨╕╨╡╨╜╨░ 256)
+    shr     eax, 4	    ; сдвиг регистра в лево
+    shl     eax, 5	    ; сдвиг обратно (все равно что целочисленное делениена 256)
     mov     [perem2], eax
-    shl     eax, 4	    ; ╨▓╤Б╨╡ ╤А╨░╨▓╨╜╨╛ ╤З╤В╨╛ ╨╛╤В╨╜╨╕╨╝╨░╨╡╨╝ ╨╛╤В ╨║╨╛╨╛╤А╨┤╨╕╨╜╨░╤В ╨╜╨╡╨╜╤Г╨╢╨╜╤Л╨╣ ╨┐╤А╨╕╤А╨╛╤Б╤В -> ╨г-256*X
+    shl     eax, 4	    ; все равно что отнимаем от координат ненужный прирост -> У-256*X
     sbb  dword [perem1], eax;
 
 
   mov	 ebx, [Lab]
   sbb	 ebx, 1
-  mov	  eax,[Dangeon + ebx]	 ; ╨▒╨╡╤А╨╡╤В ╨▒╨░╨╣╤В ╨╕╨╖ ╨┤╨░╨╜╨│╨╡╨╛╨╜ + ╤Б╨╝╨╡╤Й╨╡╨╜╨╕╨╡
+  mov	  eax,[Dangeon + ebx]	 ; берет байт из дангеон + смещение
 
   cmp  ah, 8   ;
   je go_lestniza
@@ -290,32 +296,32 @@ ret
 
 
 ;*******************************************
-; ╨Т╨Ю╨Ф╨Р     ╨╕  ╨Р╨Ы╨Ь╨Р╨Ч╨л
+; ВОДА     и  АЛМАЗЫ
 ;*******************************************
  water:
 
-   ; ╨▓╤Л╨▓╨╛╨┤ ╨▓╨╛╨┤╤Л ╨╗╨░╨▒╨╕╤А╨╕╨╜╤В╨░
+   ; вывод воды лабиринта
    cycle3:
 
     mov     eax, [Lab]
-    shl     eax, 5	    ; ╤Б╨┤╨▓╨╕╨│ ╤А╨╡╨│╨╕╤Б╤В╤А╨░ ╨▓ ╨┐╤А╨░╨▓╨╛ ╨╜╨░ 5 ╨┐╨╛╨╖╨╕╤Ж╨╕╨╕ ╨▓╤Б╨╡ ╤А╨░╨▓╨╜╨╛ ╤З╤В╨╛ ╤Г╨╝╨╜╨╛╨╢╨╕╨╗╨╕ ╨╜╨░ 32
+    shl     eax, 5	    ; сдвиг регистра в право на 5 позиции все равно что умножили на 32
     mov     [perem1], eax
     mov     eax, [Lab]
-    shr     eax, 4	    ; ╤Б╨┤╨▓╨╕╨│ ╤А╨╡╨│╨╕╤Б╤В╤А╨░ ╨▓ ╨╗╨╡╨▓╨╛
-    shl     eax, 5	    ; ╤Б╨┤╨▓╨╕╨│ ╨╛╨▒╤А╨░╤В╨╜╨╛ (╨▓╤Б╨╡ ╤А╨░╨▓╨╜╨╛ ╤З╤В╨╛ ╤Ж╨╡╨╗╨╛╤З╨╕╤Б╨╗╨╡╨╜╨╜╨╛╨╡ ╨┤╨╡╨╗╨╡╨╜╨╕╨╡╨╜╨░ 256)
+    shr     eax, 4	    ; сдвиг регистра в лево
+    shl     eax, 5	    ; сдвиг обратно (все равно что целочисленное делениена 256)
     mov     [perem2], eax
-    shl     eax, 4	    ; ╨▓╤Б╨╡ ╤А╨░╨▓╨╜╨╛ ╤З╤В╨╛ ╨╛╤В╨╜╨╕╨╝╨░╨╡╨╝ ╨╛╤В ╨║╨╛╨╛╤А╨┤╨╕╨╜╨░╤В ╨╜╨╡╨╜╤Г╨╢╨╜╤Л╨╣ ╨┐╤А╨╕╤А╨╛╤Б╤В -> ╨г-256*X
+    shl     eax, 4	    ; все равно что отнимаем от координат ненужный прирост -> У-256*X
     sbb  dword [perem1], eax;
 
 
   mov	 ebx, [Lab]
   sbb	 ebx, 1
-  mov	  eax,[Dangeon + ebx]	 ; ╨▒╨╡╤А╨╡╤В ╨▒╨░╨╣╤В ╨╕╨╖ ╨┤╨░╨╜╨│╨╡╨╛╨╜ + ╤Б╨╝╨╡╤Й╨╡╨╜╨╕╨╡
+  mov	  eax,[Dangeon + ebx]	 ; берет байт из дангеон + смещение
 
   cmp  ah, 4   ;
   je go_water
 
-  cmp  ah, 12	;  ╤А╨╕╤Б╨╛╨▓╨░╨╜╨╕╨╡ ╨░╨╗╨╝╨░╨╖╨╛╨▓
+  cmp  ah, 12	;  рисование алмазов
   je go_almaz
 
   jmp end_water
@@ -342,7 +348,7 @@ ret
    cmp eax, 10
    ja almaz2
 
-   mov ebp,14 ; ╨║╨░╨┤╤А
+   mov ebp,14 ; кадр
    mov eax, dword [perem1]
    mov dword [X_anime], eax
    mov eax, dword [perem2]
@@ -354,7 +360,7 @@ ret
    cmp eax, 20
    ja almaz3
 
-   mov ebp,15 ; ╨║╨░╨┤╤А
+   mov ebp,15 ; кадр
    mov eax, dword [perem1]
    mov dword [X_anime], eax
    mov eax, dword [perem2]
@@ -363,7 +369,7 @@ ret
    jmp end_water
 
    almaz3:
-   mov ebp,16 ; ╨║╨░╨┤╤А
+   mov ebp,16 ; кадр
    mov eax, dword [perem1]
    mov dword [X_anime], eax
    mov eax, dword [perem2]
@@ -390,10 +396,10 @@ ret
 
 
 ;*******************************************
-; ╨Т╤Л╨▓╨╛╨┤╨╕╨╝ ╤Б╨╗╨╡╨┤╤Г╤О╤Й╨╕╨╣ ╨║╨░╨┤╤А ╨╕╨╖ ╤Б╨┐╨╕╤Б╨║╨░ ╨║╨░╤А╤В╨╕╨╜╨╛╨║
+; Выводим следующий кадр из списка картинок
 ;*******************************************
 draw_subimage:
-  ;aframetoimg Image,32, 32,canvas,0x00ffffff ; ╨Э╨Х╨Т╨Ш╨Ф╨Ш╨Ь╨л╨Щ, ╨┐╤А╨╛╨╖╤А╨░╤З╨╜╤Л╨╣ ╨ж╨Т╨Х╨в ╨Ш╨Ы╨Ш ╨Э╨Х ╨а╨Ш╨б╨г╨Х╨Ь╨л╨Щ
+  ;aframetoimg Image,32, 32,canvas,0x00ffffff ; НЕВИДИМЫЙ, прозрачный ЦВЕТ ИЛИ НЕ РИСУЕМЫЙ
 
   call labirint
   call lestniza
@@ -401,7 +407,7 @@ draw_subimage:
   call enemy_mov
 ;-------------------------------------------------------------------------------
     mov ebx, [gold]
-    cmp bx, 5		;╤Г╨▓╨╡╨╗╨╕╤З╨╡╨╜╨╕╨╡ ╤Б╨║╨╛╤А╨╛╤Б╤В╨╕ ╨▓╤А╨░╨│╨╛╨▓ ╨╡╤Б╨╗╨╕ ╤Г╨║╤А╨░╨╗ ╨▒╨╛╨╗╨╡╨╡ 9
+    cmp bx, 5		;увеличение скорости врагов если украл более 9
     jna lov_velo
      call enemy_mas
      call enemy_mov
@@ -409,7 +415,7 @@ draw_subimage:
 ;-------------------------------------------------------------------------------
 ;-------------------------------------------------------------------------------
     mov ebx, [gold]
-    cmp bx, 9		;╤Г╨▓╨╡╨╗╨╕╤З╨╡╨╜╨╕╨╡ ╤Б╨║╨╛╤А╨╛╤Б╤В╨╕ ╨▓╤А╨░╨│╨╛╨▓ ╨╡╤Б╨╗╨╕ ╤Г╨║╤А╨░╨╗ ╨▒╨╛╨╗╨╡╨╡ 9
+    cmp bx, 9		;увеличение скорости врагов если украл более 9
     jna lov_velo2
      call enemy_mas
      call enemy_mov
@@ -432,7 +438,7 @@ draw_subimage:
   call proverka_gold
   call potop
 
-  setimg 6,20,canvas
+  setimg 0,0,canvas
 
   call timer
   call tablo
@@ -440,26 +446,26 @@ ret
 
 ;@@@@@@@@@@@@@@@@@@
 animashka:
-;!!!╨Т╨Р╨Ц╨Э╨Ю ╨┐╨╡╤А╨╡╨┤ ╨▓╤Л╨╖╨╛╨▓╨╛╨╝ ╨┐╤А╨╛╤Ж╨╡╨┤╤Г╤А╤Л ╨┤╨╛╨╗╨╢╨╡╨╜ ╨▒╤Л╤В╤М ╤Г╤Б╤В╨░╨╜╨╛╨▓╨╗╨╡╨╜ ebx[╨╜╨╛╨╝╨╡╤А ╨║╨░╨┤╤А╨░] ╨╕ x,y
+;!!!ВАЖНО перед вызовом процедуры должен быть установлен ebx[номер кадра] и x,y
 
   mov edi,coords
-  mov esi, Image ; ╨│╨╕╤Д ╨░╨╜╨╕╨╝╨░╤И╨║╨░ ╨▓ ╨┐╨░╨╝╤П╤В╨╕
+  mov esi, Image ; гиф анимашка в памяти
 ;
-;  mov ebp, dword [edi+8] ;ecx ╨╖╨┤╨╡╤Б╤М ╨║╨╛╨╜╨║╤А╨╡╤В╨╜╤Л╨╣ ╨╜╨╛╨╝╨╡╤А ╨▓╤Л╨▓╨╛╨┤╨╕╨╝╨╛╨│╨╛ ╨║╨░╨┤╤А╨░
-;  inc ebp ; ╤Г╨▓╨╡╨╗╨╕╤З╨╡╨╜╨╕╨╡ ╨║╨░╨┤╤А╨░
-;  cmp ebp,3 ;  ╨╝╨░╨║╤Б╨╕╨╝╨░╨╗╤М╨╜╨╛╨╡ ╨║╨╛╨╗╨╕╤З╨╡╤Б╤В╨▓╨╛ ╨║╨░╨┤╤А╨╛╨▓ !!!!!!!
-;  jna ok_fr ; ╨╡╤Б╨╗╨╕ ╨▓╤Л╨▓╨╛╨┤╨╕╨╝╤Л ╨║╨░╨┤╤А ╨╝╨╡╨╜╤М╤И╨╡ ╨╝╨░╨║╤Б╨╕╨╝╨░╨╗╤М╨╜╨╛╨│╨╛ ╨║╨╛╨╗╨╕╤З╨╡╤Б╤В╨▓╨░ ╨║╨░╨┤╤А╨╛╨▓
-;!!!!!!!!!  mov ebp,2 ;╨╛╨▒╨╜╤Г╨╗╨╡╨╜╨╕╨╡ ╨║╨░╨┤╤А╨░
+;  mov ebp, dword [edi+8] ;ecx здесь конкретный номер выводимого кадра
+;  inc ebp ; увеличение кадра
+;  cmp ebp,3 ;  максимальное количество кадров !!!!!!!
+;  jna ok_fr ; если выводимы кадр меньше максимального количества кадров
+;!!!!!!!!!  mov ebp,2 ;обнуление кадра
 
 ok_fr:
-  mov dword [edi+8], ebp ;╨╜╨╛╨╝╨╡╤А ╨▓╤Л╨▓╨╛╨┤╨╕╨╝╨╛╨│╨╛ ╨║╨░╨┤╤А╨░
+  mov dword [edi+8], ebp ;номер выводимого кадра
 loo:
-  cmp ebp,0  ; ╨╡╤Б╨╗╨╕ ╨║╨░╨┤╤А ╨╜╤Г╨╗╨╡╨▓╨╛╨╣ ╤В╨╛ ╤Б╤А╨░╨╖╤Г ╨╜╨░ ╨▓╤Л╨▓╨╛╨┤ ?
+  cmp ebp,0  ; если кадр нулевой то сразу на вывод ?
   je  setpic
-  movzx eax,word [esi+4]   ; ╨╡╤Б╨╗╨╕ ╨╜╨╡╤В ╤В╨╛ ╤Г╨▓╨╡╨╗╨╕╤З╨╕╨▓╨░╨╡╨╝ ╤Е ╤Г ?
+  movzx eax,word [esi+4]   ; если нет то увеличиваем х у ?
   movzx ebx,word [esi+6]
-  mul ebx ;dword [esi+4] ╤Г╨╝╨╜╨╛╨╢╨░╨╡╤В ebx ╨╜╨░ eax ╨╕ ╤А╨╡╨╖╤Г╨╗╤М╤В╨░╤В ╨▓ eax edx
-  mov ebx,3 ; ╨║╨╛╨╗╨╕╤З╨╡╤Б╤В╨▓╨╛ ╨║╨░╨┤╤А╨╛╨▓ ???
+  mul ebx ;dword [esi+4] умножает ebx на eax и результат в eax edx
+  mov ebx,3 ; количество кадров ???
   mul ebx
   add eax,8
   add esi,eax
@@ -468,9 +474,9 @@ loo:
 setpic:
 
   pushad
-; aframetoimg esi,dword [edi], dword [edi+4],canvas,0x00ffffff ; ╨Э╨Х╨Т╨Ш╨Ф╨Ш╨Ь╨л╨Щ, ╨┐╤А╨╛╨╖╤А╨░╤З╨╜╤Л╨╣ ╨ж╨Т╨Х╨в ╨Ш╨Ы╨Ш ╨Э╨Х ╨а╨Ш╨б╨г╨Х╨Ь╨л╨Щ
-;  aframetoimg esi,32, 32,canvas,0x00ffffff ; ╨Э╨Х╨Т╨Ш╨Ф╨Ш╨Ь╨л╨Щ, ╨┐╤А╨╛╨╖╤А╨░╤З╨╜╤Л╨╣ ╨ж╨Т╨Х╨в ╨Ш╨Ы╨Ш ╨Э╨Х ╨а╨Ш╨б╨г╨Х╨Ь╨л╨Щ
-  aframetoimg esi,dword [X_anime],dword [Y_anime],canvas,0x00ffffff ; ╨Э╨Х╨Т╨Ш╨Ф╨Ш╨Ь╨л╨Щ, ╨┐╤А╨╛╨╖╤А╨░╤З╨╜╤Л╨╣ ╨ж╨Т╨Х╨в ╨Ш╨Ы╨Ш ╨Э╨Х ╨а╨Ш╨б╨г╨Х╨Ь╨л╨Щ
+; aframetoimg esi,dword [edi], dword [edi+4],canvas,0x00ffffff ; НЕВИДИМЫЙ, прозрачный ЦВЕТ ИЛИ НЕ РИСУЕМЫЙ
+;  aframetoimg esi,32, 32,canvas,0x00ffffff ; НЕВИДИМЫЙ, прозрачный ЦВЕТ ИЛИ НЕ РИСУЕМЫЙ
+  aframetoimg esi,dword [X_anime],dword [Y_anime],canvas,0x00ffffff ; НЕВИДИМЫЙ, прозрачный ЦВЕТ ИЛИ НЕ РИСУЕМЫЙ
   ;call enemy_mas
   popad
 ret
@@ -484,7 +490,7 @@ ret
      add     eax, 1;
      mov     [timer1], eax
 
-     cmp     eax, 64   ;      ╤В╨░╨╣╨╝╨╡╤А ╨╛╤В 0 ╨┤╨╛ 64
+     cmp     eax, 64   ;      таймер от 0 до 64
      je nul_timer
      jmp timer_dalee
      nul_timer :
@@ -501,9 +507,9 @@ ret
 ; ENEMY
 ;*******************************************
 
- enemy_mas:	  ; ╨▓╤Л╨▓╨╛╨┤ ENEmy    ENEMYYYYYYYYYYYYYYY ENEMYYYYYYYYYYYYYY !!!
+ enemy_mas:	  ; вывод ENEmy    ENEMYYYYYYYYYYYYYYY ENEMYYYYYYYYYYYYYY !!!
 
-  mov word [Lab2], 0 ; ╨▓╤Б╨╡ ╨┤╨╡╨╗╨░╤В╤М ╨▓ WORD ╨╛╨┤╨╕╨╜ ╤Н╨╗╨╡╨╝╨╡╨╜╤В ╨▓ ╨╝╨░╤Б╤Б╨╕╨▓╨╡ +2 ╤Б╨╗╨╡╨┤╤Г╤О╤Й╨╕╨╣ ╨▓╤А╨░╨│ ╤Б╨╛╨╛╤В╨▓╤В╨╡╤В╤Б╤В╨▓╨╡╨╜╨╜╨╛ 6*2= + 12
+  mov word [Lab2], 0 ; все делать в WORD один элемент в массиве +2 следующий враг соотвтетственно 6*2= + 12
 
  cycle4:
 
@@ -513,27 +519,27 @@ ret
   mov	 esi, 0
 
   mov	 word bx, [Lab2]
-  mov	 word ax,[Enemy+bx]    ; ╨▒╨╡╤А╨╡╤В ╨▒╨░╨╣╤В ╨╕╨╖ Enemy + ╤Б╨╝╨╡╤Й╨╡╨╜╨╕╨╡
+  mov	 word ax,[Enemy+bx]    ; берет байт из Enemy + смещение
 
-  cmp  ax, 1   ;   ╨╛╨▒╤Л╤З╨╜╤Л╨╣ ╨▓╤А╨░╨│ ╨╜╨╛╨╝╨╡╤А 1
+  cmp  ax, 1   ;   обычный враг номер 1
   je go_enemy
 
   jmp end_enemy
   go_enemy:
 
-  add	 word bx, 2 ; X ╨║╨╛╨╛╤А╨╕╨┤╨╕╨╜╨░╤В╨░ ╨┤╨░╨╜╨╜╨╛╨│╨╛ ╨▓╤А╨░╨│╨░
+  add	 word bx, 2 ; X кооридината данного врага
   mov	 word ax, [Enemy + bx]
   mov	 word [X_enemy], ax
 
-  add	 word bx, 2 ; Y ╨║╨╛╨╛╤А╨╕╨┤╨╕╨╜╨░╤В╨░ ╨┤╨░╨╜╨╜╨╛╨│╨╛ ╨▓╤А╨░╨│╨░
+  add	 word bx, 2 ; Y кооридината данного врага
   mov	 word ax, [Enemy + ebx]
   mov	 word [Y_enemy], ax
 
-  add	 word bx, 2 ; ╨┐╨╛╨╗╨╛╨╢╨╡╨╜╨╕╨╡ ╨▓ ╨╝╨░╤Б╤Б╨╕╨▓╨╡ ╨┤╨░╨╜╨╜╨╛╨│╨╛ ╨▓╤А╨░╨│╨░
+  add	 word bx, 2 ; положение в массиве данного врага
   mov	 word ax, [Enemy + ebx]
   mov	 word [lab_enemy], ax
 
-  add	 word bx, 2 ; ╨╜╨░╨┐╤А╨░╨▓╨╗╨╡╨╜╨╕╨╡ ╨┤╨▓╨╕╨╢╨╡╨╜╨╕╤П ╨┤╨░╨╜╨╜╨╛╨│╨╛ ╨▓╤А╨░╨│╨░
+  add	 word bx, 2 ; направление движения данного врага
   mov	 word ax, [Enemy + ebx]
   mov	 word [mov_enemy], ax
 
@@ -541,9 +547,9 @@ ret
   mov	 word ax, [Enemy + ebx]
   mov	 word [life_enemy], ax
 
-  cmp  ax, 499;            ; ╨╖╨░╨╝╨╛╤А╨╛╨╢╨╡╨╜╨╜╤Л╨╡ ╨▓╤А╨░╨│╨╕
+  cmp  ax, 499;            ; замороженные враги
   ja enemy_dalee
-   mov ebp,2 ; ╨║╨░╨┤╤А
+   mov ebp,2 ; кадр
    mov eax, dword [X_enemy]
    mov dword [X_anime], eax
    mov eax, dword [Y_enemy]
@@ -564,7 +570,7 @@ ret
 
    enemy_1:
 
-   mov ebp,0 ; ╨║╨░╨┤╤А
+   mov ebp,0 ; кадр
    mov eax, dword [X_enemy]
    mov dword [X_anime], eax
    mov eax, dword [Y_enemy]
@@ -574,7 +580,7 @@ ret
    jmp enemy_bmp_end
 
    enemy_2:
-   mov ebp,1 ; ╨║╨░╨┤╤А
+   mov ebp,1 ; кадр
    mov eax, dword [X_enemy]
    mov dword [X_anime], eax
    mov eax, dword [Y_enemy]
@@ -602,7 +608,7 @@ ret
 ;   ENEMY MOV
 ;$$$$$$$$$$$$$$$$$$$$$$$$$$
 enemy_mov:
-  mov word [Lab2], 0 ; ╨▓╤Б╨╡ ╨┤╨╡╨╗╨░╤В╤М ╨▓ WORD ╨╛╨┤╨╕╨╜ ╤Н╨╗╨╡╨╝╨╡╨╜╤В ╨▓ ╨╝╨░╤Б╤Б╨╕╨▓╨╡ +2 ╤Б╨╗╨╡╨┤╤Г╤О╤Й╨╕╨╣ ╨▓╤А╨░╨│ ╤Б╨╛╨╛╤В╨▓╤В╨╡╤В╤Б╤В╨▓╨╡╨╜╨╜╨╛ 6*2= + 12
+  mov word [Lab2], 0 ; все делать в WORD один элемент в массиве +2 следующий враг соотвтетственно 6*2= + 12
 
  cycle5:
 
@@ -612,27 +618,27 @@ enemy_mov:
   mov	 esi, 0
 
   mov	 word bx, [Lab2]
-  mov	 word ax,[Enemy+bx]    ; ╨▒╨╡╤А╨╡╤В ╨▒╨░╨╣╤В ╨╕╨╖ Enemy + ╤Б╨╝╨╡╤Й╨╡╨╜╨╕╨╡
+  mov	 word ax,[Enemy+bx]    ; берет байт из Enemy + смещение
 
-  cmp  ax, 1   ;   ╨╛╨▒╤Л╤З╨╜╤Л╨╣ ╨▓╤А╨░╨│ ╨╜╨╛╨╝╨╡╤А 1
+  cmp  ax, 1   ;   обычный враг номер 1
   je go_mov_enemy
 
   jmp end_mov_enemy
   go_mov_enemy:
 
-  add	 word bx, 2 ; X ╨║╨╛╨╛╤А╨╕╨┤╨╕╨╜╨░╤В╨░ ╨┤╨░╨╜╨╜╨╛╨│╨╛ ╨▓╤А╨░╨│╨░
+  add	 word bx, 2 ; X кооридината данного врага
   mov	 word ax, [Enemy + bx]
   mov	 word [X_enemy], ax
 
-  add	 word bx, 2 ; Y ╨║╨╛╨╛╤А╨╕╨┤╨╕╨╜╨░╤В╨░ ╨┤╨░╨╜╨╜╨╛╨│╨╛ ╨▓╤А╨░╨│╨░
+  add	 word bx, 2 ; Y кооридината данного врага
   mov	 word ax, [Enemy + ebx]
   mov	 word [Y_enemy], ax
 
-  add	 word bx, 2 ; ╨┐╨╛╨╗╨╛╨╢╨╡╨╜╨╕╨╡ ╨▓ ╨╝╨░╤Б╤Б╨╕╨▓╨╡ ╨┤╨░╨╜╨╜╨╛╨│╨╛ ╨▓╤А╨░╨│╨░
+  add	 word bx, 2 ; положение в массиве данного врага
   mov	 word ax, [Enemy + ebx]
   mov	 word [lab_enemy], ax
 
-  add	 word bx, 2 ; ╨╜╨░╨┐╤А╨░╨▓╨╗╨╡╨╜╨╕╨╡ ╨┤╨▓╨╕╨╢╨╡╨╜╨╕╤П ╨┤╨░╨╜╨╜╨╛╨│╨╛ ╨▓╤А╨░╨│╨░
+  add	 word bx, 2 ; направление движения данного врага
   mov	 word ax, [Enemy + ebx]
   mov	 word [mov_enemy], ax
 
@@ -640,7 +646,7 @@ enemy_mov:
   mov	 word ax, [Enemy + ebx]
   mov	 word [life_enemy], ax
 
-  cmp  ax, 499;            ; ╨╖╨░╨╝╨╛╤А╨╛╨╢╨╡╨╜╨╜╤Л╨╡ ╨▓╤А╨░╨│╨╕
+  cmp  ax, 499;            ; замороженные враги
   ja  dalee_enemy_mov
   add ax, 1
 
@@ -649,7 +655,7 @@ enemy_mov:
   jmp end_mov_enemy
 
   dalee_enemy_mov:
-     ; ╨▒╨╗╨╛╨║ ╨┐╨╛╨╡╨┤╨░╨╜╨╕╤П ╨│╨╡╤А╨╛╤П
+     ; блок поедания героя
       mov  ax, [Xpl]
       add  ax, 23
       cmp ax, [X_enemy]
@@ -668,7 +674,7 @@ enemy_mov:
 	  delay 150
 
        ne_em:
-     ;╨С╨╗╨╛╨║ ╨┐╨╛╨┐╨░╨┤╨░╨╜╨╕╤П 1 ╨┐╤Г╨╗╨╕
+     ;Блок попадания 1 пули
 
   mov	 word bx, 0
   mov	 word ax,[Bullet + ebx]
@@ -700,14 +706,14 @@ enemy_mov:
     no_bullet:
 
 
-     ;╨С╨Ы╨Ю╨Ъ ╨Я╨а╨Ш╨а╨Ю╨б╨в╨Р ╨Ф╨Т╨Ш╨Ц╨Х╨Э╨Ш╨п ╨Т╨а╨Р╨У╨Ю╨Т
+     ;БЛОК ПРИРОСТА ДВИЖЕНИЯ ВРАГОВ
 	mov word ax, [mov_enemy]		      ;
 	cmp ax, 1	     ; left                   ;
 	jne next_2				      ;
 	  sbb	 word [X_enemy], 1		      ;
 	  mov	 word ax, [X_enemy]		      ;
 	  mov	 word bx, [Lab2]		      ;
-	  add	 word bx, 2 ; X ╨║╨╛╨╛╤А╨╕╨┤╨╕╨╜╨░╤В╨░ ╨┤╨░╨╜╨╜╨╛╨│╨╛ ╨▓╤А╨░╨│╨░
+	  add	 word bx, 2 ; X кооридината данного врага
 	  mov	 word [Enemy + bx], ax		      ;
 						      ;
 	next_2: 				      ;
@@ -716,7 +722,7 @@ enemy_mov:
 	  add	 word [Y_enemy], 1		      ;
 	  mov	 word ax, [Y_enemy]		      ;
 	  mov	 word bx, [Lab2]		      ;
-	  add	 word bx, 4 ; Y ╨║╨╛╨╛╤А╨╕╨┤╨╕╨╜╨░╤В╨░ ╨┤╨░╨╜╨╜╨╛╨│╨╛ ╨▓╤А╨░╨│╨░
+	  add	 word bx, 4 ; Y кооридината данного врага
 	  mov	 word [Enemy + bx], ax		      ;
 						      ;
 	next_3: 				      ;
@@ -725,16 +731,16 @@ enemy_mov:
 	  sbb	 word [Y_enemy], 1		      ;
 	  mov	 word ax, [Y_enemy]		      ;
 	  mov	 word bx, [Lab2]		      ;
-	  add	 word bx, 4 ; Y ╨║╨╛╨╛╤А╨╕╨┤╨╕╨╜╨░╤В╨░ ╨┤╨░╨╜╨╜╨╛╨│╨╛ ╨▓╤А╨░╨│╨░
+	  add	 word bx, 4 ; Y кооридината данного врага
 	  mov	 word [Enemy + bx], ax		      ;
 						      ;
 	next_4: 				      ;
 	cmp ax, 4	     ; right                  ;
 	jne next_end
 
-	     ;╨У╤А╨░╨▓╨╕╤В╨░╤Ж╨╕╨╛╨╜╨╜╨░╤П ╨╖╨░╨┐╨╗╨░╤В╨║╨░   ╨╗╨╡╤З╨╕╤В ╤В╤А╨░╨▒╨╗ - ╨║╨╛╨│╨┤╨░ ╨▓╤А╨░╨│ ╨┤╨▓╨╕╨│╨░╨╡╤В╤Б╤П ╤Б╨╗╨╡╨▓╨░ ╨╜╨░ ╨┐╤А╨░╨▓╨╛ ╤В╨╛ ╨┐╤А╨╛╨╗╨╡╤В╨░╨╡╤В ╨╛╨┤╨╕╨╜ ╨┐╤Г╤Б╤В╨╛╨╣ ╨▒╨╗╨╛╨║
-	      mov word bx, [X_enemy] ; ╨н╤В╨╛ ╤Г╤Б╨╗╨╛╨▓╨╕╨╡ ╨┐╨╛╨╖╨▓╨╛╨╗╤П╨╡╤В ╨┤╨╛╨▒╨╡╨╢╨░╤В╤М ╨┤╨╛ ╨┐╨╛╨╖╨╕╤Ж╨╕╨╕ ╨╜╨░╨┐╤А╨╛╤В╨╕╨▓ ╨▒╨╗╨╛╨║╨░
-	      and ebx, 31    ; X ╨▓ ╨┐╨╛╨╖╨╕╤Ж╨╕╨╕ ╨╜╨░╨┐╤А╨╛╤В╨╕╨▓ ╨▒╨╗╨╛╨║╨░
+	     ;Гравитационная заплатка   лечит трабл - когда враг двигается слева на право то пролетает один пустой блок
+	      mov word bx, [X_enemy] ; Это условие позволяет добежать до позиции напротив блока
+	      and ebx, 31    ; X в позиции напротив блока
 	      cmp bx, 0     ;
 	      jne n4_dalee   ;
 		mov    bx,[lab_enemy]
@@ -745,28 +751,28 @@ enemy_mov:
 		 je next_end
 		 cmp word ax, 4
 		 je next_end
-	      ;╨║╨╛╨╜╨╡╤Ж ╨╖╨░╨┐╨╗╨░╤В╨║╨╕
+	      ;конец заплатки
 
 	   n4_dalee:
 	;
 	  add	 word [X_enemy], 1		      ;
 	  mov	 word ax, [X_enemy]		      ;
 	  mov	 word bx, [Lab2]		      ;
-	  add	 word bx, 2 ; X ╨║╨╛╨╛╤А╨╕╨┤╨╕╨╜╨░╤В╨░ ╨┤╨░╨╜╨╜╨╛╨│╨╛ ╨▓╤А╨░╨│╨░
+	  add	 word bx, 2 ; X кооридината данного врага
 	  mov	 word [Enemy + bx], ax		      ;
 						      ;
 	next_end:
-	  ;END ╨С╨Ы╨Ю╨Ъ ╨Я╨а╨Ш╨а╨Ю╨б╨в╨Р ╨Ф╨Т╨Ш╨Ц╨Х╨Э╨Ш╨п ╨Т╨а╨Р╨У
+	  ;END БЛОК ПРИРОСТА ДВИЖЕНИЯ ВРАГ
 
 	  ;
 
-     ;  ╨а╨░╨╜╨┤╨╛╨╝╨╜╤Л╨╣ ╨▓╤Л╨▒╨╛╤А ╨╜╨░ ╨╗╨╡╤Б╨╜╨╕╤Ж╨╡
-	mov word bx, [X_enemy] ; ╨н╤В╨╛ ╤Г╤Б╨╗╨╛╨▓╨╕╨╡ ╨┐╨╛╨╖╨▓╨╛╨╗╤П╨╡╤В ╨┤╨╛╨▒╨╡╨╢╨░╤В╤М ╨┤╨╛ ╨┐╨╛╨╖╨╕╤Ж╨╕╨╕ ╨╜╨░╨┐╤А╨╛╤В╨╕╨▓ ╨▒╨╗╨╛╨║╨░
-	and ebx, 31    ; X ╨▓ ╨┐╨╛╨╖╨╕╤Ж╨╕╨╕ ╨╜╨░╨┐╤А╨╛╤В╨╕╨▓ ╨▒╨╗╨╛╨║╨░
+     ;  Рандомный выбор на леснице
+	mov word bx, [X_enemy] ; Это условие позволяет добежать до позиции напротив блока
+	and ebx, 31    ; X в позиции напротив блока
 	cmp bx, 0     ;
 	jne end_les   ;
-	   mov word bx, [Y_enemy] ; ╨н╤В╨╛ ╤Г╤Б╨╗╨╛╨▓╨╕╨╡ ╨┐╨╛╨╖╨▓╨╛╨╗╤П╨╡╤В ╨┤╨╛╨▒╨╡╨╢╨░╤В╤М ╨┤╨╛ ╨┐╨╛╨╖╨╕╤Ж╨╕╨╕ ╨╜╨░╨┐╤А╨╛╤В╨╕╨▓ ╨▒╨╗╨╛╨║╨░
-	   and ebx, 31	  ; X ╨▓ ╨┐╨╛╨╖╨╕╤Ж╨╕╨╕ ╨╜╨░╨┐╤А╨╛╤В╨╕╨▓ ╨▒╨╗╨╛╨║╨░
+	   mov word bx, [Y_enemy] ; Это условие позволяет добежать до позиции напротив блока
+	   and ebx, 31	  ; X в позиции напротив блока
 	   cmp bx, 0	 ;
 	   jne end_les	 ;
 
@@ -780,10 +786,10 @@ enemy_mov:
 		mov eax, [Ypl]
 		cmp eax, [Y_enemy]
 		jna bolee
-		mov    word [mov_enemy],2		    ; ╨▓╨╜╨╕╨╖
+		mov    word [mov_enemy],2		    ; вниз
 		mov    word ax, [mov_enemy]		    ;
 		mov    word bx, [Lab2]			    ;
-		add    word bx, 8  ; ╨╜╨░╨┐╤А╨░╨▓╨╗╨╡╨╜╨╕╨╡ ╨┤╨▓╨╕╨╢╨╡╨╜╨╕╤П ╨┤╨░╨╜╨╜╨╛╨│╨╛ ╨▓╤А╨░╨│╨░
+		add    word bx, 8  ; направление движения данного врага
 		mov    word [Enemy + bx], ax		    ;
 		jmp end_les
 
@@ -791,7 +797,7 @@ enemy_mov:
 		mov    word [mov_enemy],3		    ; up
 		mov    word ax, [mov_enemy]		    ;
 		mov    word bx, [Lab2]			    ;
-		add    word bx, 8  ; ╨╜╨░╨┐╤А╨░╨▓╨╗╨╡╨╜╨╕╨╡ ╨┤╨▓╨╕╨╢╨╡╨╜╨╕╤П ╨┤╨░╨╜╨╜╨╛╨│╨╛ ╨▓╤А╨░╨│╨░
+		add    word bx, 8  ; направление движения данного врага
 		mov    word [Enemy + bx], ax		    ;
 		jmp end_les
 
@@ -806,10 +812,10 @@ enemy_mov:
 		mov eax, [Xpl]
 		cmp eax, [X_enemy]
 		jna bolee2
-		mov    word [mov_enemy],4		    ; ╨▓╨╜╨╕╨╖
+		mov    word [mov_enemy],4		    ; вниз
 		mov    word ax, [mov_enemy]		    ;
 		mov    word bx, [Lab2]			    ;
-		add    word bx, 8  ; ╨╜╨░╨┐╤А╨░╨▓╨╗╨╡╨╜╨╕╨╡ ╨┤╨▓╨╕╨╢╨╡╨╜╨╕╤П ╨┤╨░╨╜╨╜╨╛╨│╨╛ ╨▓╤А╨░╨│╨░
+		add    word bx, 8  ; направление движения данного врага
 		mov    word [Enemy + bx], ax		    ;
 		jmp end_les
 
@@ -817,15 +823,15 @@ enemy_mov:
 		mov    word [mov_enemy],1		    ; up
 		mov    word ax, [mov_enemy]		    ;
 		mov    word bx, [Lab2]			    ;
-		add    word bx, 8  ; ╨╜╨░╨┐╤А╨░╨▓╨╗╨╡╨╜╨╕╨╡ ╨┤╨▓╨╕╨╢╨╡╨╜╨╕╤П ╨┤╨░╨╜╨╜╨╛╨│╨╛ ╨▓╤А╨░╨│╨░
+		add    word bx, 8  ; направление движения данного врага
 		mov    word [Enemy + bx], ax		    ;
 
 	end_les:
-     ;  end ╨а╨░╨╜╨┤╨╛╨╝╨╜╤Л╨╣ ╨▓╤Л╨▒╨╛╤А ╨╜╨░ ╨╗╨╡╤Б╨╜╨╕╤Ж╨╡
+     ;  end Рандомный выбор на леснице
 
-     ;╨У╤А╨░╨▓╨╕╤В╨░╤Ж╨╕╤П
-	mov word bx, [X_enemy] ; ╨н╤В╨╛ ╤Г╤Б╨╗╨╛╨▓╨╕╨╡ ╨┐╨╛╨╖╨▓╨╛╨╗╤П╨╡╤В ╨┤╨╛╨▒╨╡╨╢╨░╤В╤М ╨┤╨╛ ╨┐╨╛╨╖╨╕╤Ж╨╕╨╕ ╨╜╨░╨┐╤А╨╛╤В╨╕╨▓ ╨▒╨╗╨╛╨║╨░
-	and ebx, 31    ; X ╨▓ ╨┐╨╛╨╖╨╕╤Ж╨╕╨╕ ╨╜╨░╨┐╤А╨╛╤В╨╕╨▓ ╨▒╨╗╨╛╨║╨░
+     ;Гравитация
+	mov word bx, [X_enemy] ; Это условие позволяет добежать до позиции напротив блока
+	and ebx, 31    ; X в позиции напротив блока
 	cmp bx, 0     ;
 	jne end_grava	;
 
@@ -840,16 +846,16 @@ enemy_mov:
 		 je grava
 		 jmp end_grava
 		grava:
-		mov    word [mov_enemy], 2		    ; padenie ╨Т╨а╨Р╨У╨Р
+		mov    word [mov_enemy], 2		    ; padenie ВРАГА
 		mov    word ax, [mov_enemy]		    ;
 		mov    word bx, [Lab2]			    ;
-		add    word bx, 8  ; ╨╜╨░╨┐╤А╨░╨▓╨╗╨╡╨╜╨╕╨╡ ╨┤╨▓╨╕╨╢╨╡╨╜╨╕╤П ╨┤╨░╨╜╨╜╨╛╨│╨╛ ╨▓╤А╨░╨│╨░
+		add    word bx, 8  ; направление движения данного врага
 		mov    word [Enemy + bx], ax		    ;
 
 	end_grava:
-     ;╨║╨╛╨╜╨╡╤Ж ╨│╤А╨░╨▓╨╕╤В╨░╤Ж╨╕╨╕
+     ;конец гравитации
 
-	  ;╨▒╨╗╨╛╨║ ╤А╨░╤Б╤З╨╡╤В╨░ ╨┐╨╛╨╗╨╛╨╢╨╡╨╜╨╕╤П ╨▓╤А╨░╨│╨░ ╨▓ ╨╗╨░╨▒╨╕╤А╨╕╨╜╤В╨╡
+	  ;блок расчета положения врага в лабиринте
 	    mov eax, 0				  ;
 	    mov eax, [Y_enemy]			      ;
 	    shr eax, 5				  ;
@@ -860,30 +866,30 @@ enemy_mov:
 	    add eax, ebx			  ;
 	    mov [lab_enemy], eax		   ;
 		mov    word bx, [Lab2]			    ;
-		add    word bx, 6  ; ╨╜╨░╨┐╤А╨░╨▓╨╗╨╡╨╜╨╕╨╡ ╨┤╨▓╨╕╨╢╨╡╨╜╨╕╤П ╨┤╨░╨╜╨╜╨╛╨│╨╛ ╨▓╤А╨░╨│╨░
+		add    word bx, 6  ; направление движения данного врага
 		mov    word [Enemy + bx], ax		    ;
-	  ;╨▒╨╗╨╛╨║ ╤А╨░╤Б╤З╨╡╤В╨░ ╨┐╨╛╨╗╨╛╨╢╨╡╨╜╨╕╤П ╨▓╤А╨░╨│╨░ ╨▓ ╨╗╨░╨▒╨╕╤А╨╕╨╜╤В╨╡
+	  ;блок расчета положения врага в лабиринте
 
 
 
 
 
 
-       ;╨С╨Ы╨Ю╨Ъ ╨Ч╨Я╨Р╨Я╨а╨Х╨в╨Р ╨Ф╨Т╨╕╨╢╨╡╨╜╨╕╤П
-	mov word bx, [Y_enemy] ; ╨н╤В╨╛ ╤Г╤Б╨╗╨╛╨▓╨╕╨╡ ╨┐╨╛╨╖╨▓╨╛╨╗╤П╨╡╤В ╨┤╨╛╨▒╨╡╨╢╨░╤В╤М ╨┤╨╛ ╨┐╨╛╨╖╨╕╤Ж╨╕╨╕ ╨╜╨░╨┐╤А╨╛╤В╨╕╨▓ ╨▒╨╗╨╛╨║╨░
-	and bx, 31    ; Y ╨▓ ╨┐╨╛╨╖╨╕╤Ж╨╕╨╕ ╨╜╨░╨┐╤А╨╛╤В╨╕╨▓ ╨▒╨╗╨╛╨║╨░
+       ;БЛОК ЗПАПРЕТА ДВижения
+	mov word bx, [Y_enemy] ; Это условие позволяет добежать до позиции напротив блока
+	and bx, 31    ; Y в позиции напротив блока
 	cmp bx, 0     ;
 	jne end_zapret	 ;
-	   mov word ax, [X_enemy] ; ╨н╤В╨╛ ╤Г╤Б╨╗╨╛╨▓╨╕╨╡ ╨┐╨╛╨╖╨▓╨╛╨╗╤П╨╡╤В ╨┤╨╛╨▒╨╡╨╢╨░╤В╤М ╨┤╨╛ ╨┐╨╛╨╖╨╕╤Ж╨╕╨╕ ╨╜╨░╨┐╤А╨╛╤В╨╕╨▓ ╨▒╨╗╨╛╨║╨░
-	   and ax, 31	 ; X ╨▓ ╨┐╨╛╨╖╨╕╤Ж╨╕╨╕ ╨╜╨░╨┐╤А╨╛╤В╨╕╨▓ ╨▒╨╗╨╛╨║╨░
+	   mov word ax, [X_enemy] ; Это условие позволяет добежать до позиции напротив блока
+	   and ax, 31	 ; X в позиции напротив блока
 	   cmp ax, 0	 ;
 	   jne end_zapret   ;
 
-	      mov word ax, [mov_enemy] ; ╨н╤В╨╛ ╤Г╤Б╨╗╨╛╨▓╨╕╨╡ ╨┐╨╛╨╖╨▓╨╛╨╗╤П╨╡╤В ╨┤╨╛╨▒╨╡╨╢╨░╤В╤М ╨┤╨╛ ╨┐╨╛╨╖╨╕╤Ж╨╕╨╕ ╨╜╨░╨┐╤А╨╛╤В╨╕╨▓ ╨▒╨╗╨╛╨║╨░
+	      mov word ax, [mov_enemy] ; Это условие позволяет добежать до позиции напротив блока
 
 	      cmp ax, 0
 	      jne duma1
-		    ; ╨а╨░╨╜╨┤╨╛╨╝╨╜╤Л╨╣ ╨▓╤Л╨▒╨╛╤А ╨┤╨▓╨╕╨╢╨╡╨╜╨╕╤П
+		    ; Рандомный выбор движения
 		 mov eax, [timer1]
 		 and eax, 3
 		 cmp eax, 0
@@ -894,14 +900,14 @@ enemy_mov:
 		mov    word [mov_enemy], ax		     ;
 		mov    word ax, [mov_enemy]		    ;
 		mov    word bx, [Lab2]			    ;
-		add    word bx, 8  ; ╨╜╨░╨┐╤А╨░╨▓╨╗╨╡╨╜╨╕╨╡ ╨┤╨▓╨╕╨╢╨╡╨╜╨╕╤П ╨┤╨░╨╜╨╜╨╛╨│╨╛ ╨▓╤А╨░╨│╨░
+		add    word bx, 8  ; направление движения данного врага
 		mov    word [Enemy + bx], ax		    ;
 
 
 
 	      duma1:
 	      cmp ax, 4
-	      jne duma2  ; ╨┐╤А╨▓╨╡╤А╨║╨░ ╤Б╨┐╤А╨░╨▓╨░
+	      jne duma2  ; прверка справа
 		mov    bx,[lab_enemy]
 		add    bx,1
 		mov    ax, [Dangeon + bx]
@@ -912,7 +918,7 @@ enemy_mov:
 
 	      duma2:
 	      cmp ax, 1
-	      jne duma3  ; ╤Б╨╗╨╡╨▓╨░
+	      jne duma3  ; слева
 		mov    bx,[lab_enemy]
 		sbb    bx,1
 		mov    ax, [Dangeon + bx]
@@ -923,7 +929,7 @@ enemy_mov:
 
 	      duma3:
 	      cmp ax, 2
-	      jne duma4  ; ╤Б╨╜╨╕╨╖╤Г
+	      jne duma4  ; снизу
 		mov    bx,[lab_enemy]
 		add    bx,16
 		mov    ax, [Dangeon + bx]
@@ -934,16 +940,16 @@ enemy_mov:
 
 	      duma4:
 	      cmp ax, 3
-	      jne duma_stop  ; ╤Б╨▓╨╡╤А╤Е╤Г
+	      jne duma_stop  ; сверху
 
-		mov    bx,[lab_enemy]	  ; ╨╡╤Б╨╗╨╕ ╨║╨╕╤А╨┐╨╕╤З ╨╜╨░╨┤ ╨│╨╛╨╗╨╛╨▓╨╛╨╣
+		mov    bx,[lab_enemy]	  ; если кирпич над головой
 		sbb    bx,16
 		mov    ax, [Dangeon + bx]
 		and   eax,3
-		 cmp ax, 0		  ; ╨╡╤Б╨╗╨╕ ╨║╨╕╤А╨┐╨╕╤З ╨╜╨░╨┤ ╨│╨╛╨╗╨╛╨▓╨╛╨╣
+		 cmp ax, 0		  ; если кирпич над головой
 		 jne duma_stop
 
-		mov    bx,[lab_enemy]	  ; ╨╡╤Б╨╗╨╕ ╨▓╤А╨░╨│ ╨╜╨╡ ╨╜╨░ ╨╗╨╡╤Б╨╜╨╕╤Ж╨╡
+		mov    bx,[lab_enemy]	  ; если враг не на леснице
 		mov    ax, [Dangeon + bx]
 		and   eax,15
 		cmp ax, 8
@@ -953,16 +959,16 @@ enemy_mov:
 
 	      duma_stop:
 
-		mov    word [mov_enemy], 0		    ; ╨Ю╨б╨в╨Р╨Э╨Ю╨Т╨Ъ╨Р ╨Т╨а╨Р╨У╨Р
+		mov    word [mov_enemy], 0		    ; ОСТАНОВКА ВРАГА
 		mov    word ax, [mov_enemy]		    ;
 		mov    word bx, [Lab2]			    ;
-		add    word bx, 8  ; ╨╜╨░╨┐╤А╨░╨▓╨╗╨╡╨╜╨╕╨╡ ╨┤╨▓╨╕╨╢╨╡╨╜╨╕╤П ╨┤╨░╨╜╨╜╨╛╨│╨╛ ╨▓╤А╨░╨│╨░
+		add    word bx, 8  ; направление движения данного врага
 		mov    word [Enemy + bx], ax		    ;
 
 	   duma_end:
 
 	 end_zapret:
-	 ;╨║╨╛╨╜╨╡╤Ж ╨╖╨░╨┐╤А╨╡╤В╨░
+	 ;конец запрета
 
   end_mov_enemy:
 
@@ -987,18 +993,18 @@ ret
 
  hiro:
 
-  mov ecx, [v_fire]   ;╤Б╤В╤А╨╡╨╗╤М╨▒╨░
+  mov ecx, [v_fire]   ;стрельба
   cmp ecx, 0
   je  next_anima
       cmp ecx, 1
 	je wprawo
-	 mov ebp,12 ; ╨║╨░╨┤╤А
+	 mov ebp,12 ; кадр
 	 mov eax, dword [Xpl]
 	 mov dword [X_anime], eax
 	 mov eax, dword [Ypl]
 	 mov dword [Y_anime], eax
 	 call animashka
-	     mov ecx, [timer1]	 ;╤Б╤В╤А╨╡╨╗╤М╨▒╨░
+	     mov ecx, [timer1]	 ;стрельба
 	     and ecx, 15
 	     cmp ecx, 0
 	     jne  end_hiro
@@ -1006,20 +1012,20 @@ ret
 	  jmp end_hiro
 
 	 wprawo:
-	 mov ebp,11 ; ╨║╨░╨┤╤А
+	 mov ebp,11 ; кадр
 	 mov eax, dword [Xpl]
 	 mov dword [X_anime], eax
 	 mov eax, dword [Ypl]
 	 mov dword [Y_anime], eax
 	 call animashka
-	     mov ecx, [timer1]	 ;╤Б╤В╤А╨╡╨╗╤М╨▒╨░
+	     mov ecx, [timer1]	 ;стрельба
 	     and ecx, 15
 	     cmp ecx, 0
 	     jne  end_hiro
 	      mov dword [v_fire], 0
 	  jmp end_hiro
 
-		      ;╤Б╤В╤А╨╡╨╗╤М╨▒╨░
+		      ;стрельба
    jmp end_hiro
 
  next_anima:
@@ -1032,7 +1038,7 @@ ret
   cmp  eax, 7	;
   ja next_l1
 
-   mov ebp,3 ; ╨║╨░╨┤╤А
+   mov ebp,3 ; кадр
    mov eax, dword [Xpl]
    mov dword [X_anime], eax
    mov eax, dword [Ypl]
@@ -1041,14 +1047,14 @@ ret
    jmp end_hiro
 
    next_l1:
-   mov ebp,5 ; ╨║╨░╨┤╤А
+   mov ebp,5 ; кадр
    mov eax, dword [Xpl]
    mov dword [X_anime], eax
    mov eax, dword [Ypl]
    mov dword [Y_anime], eax
    call animashka
        pusha
-       mcall 55, eax, , , Music_mov   ; ╨╖╨▓╤Г╨║ ╨▓╤Л╤Б╤В╤А╨╡╨╗╨░
+       mcall 55, eax, , , Music_mov   ; звук выстрела
        popa
 
    jmp end_hiro
@@ -1063,7 +1069,7 @@ ret
   cmp  eax, 7	;
   ja next_d1
 
-   mov ebp,4 ; ╨║╨░╨┤╤А
+   mov ebp,4 ; кадр
    mov eax, dword [Xpl]
    mov dword [X_anime], eax
    mov eax, dword [Ypl]
@@ -1071,12 +1077,12 @@ ret
    call animashka
 
        pusha
-       mcall 55, eax, , , Music_mov   ; ╨╖╨▓╤Г╨║ ╨▓╤Л╤Б╤В╤А╨╡╨╗╨░
+       mcall 55, eax, , , Music_mov   ; звук выстрела
        popa
    jmp end_hiro
 
    next_d1:
-   mov ebp,6 ; ╨║╨░╨┤╤А
+   mov ebp,6 ; кадр
    mov eax, dword [Xpl]
    mov dword [X_anime], eax
    mov eax, dword [Ypl]
@@ -1088,16 +1094,16 @@ ret
   next_d:
   cmp eax, 2
   jne next_u
-   mov ebp,13 ; ╨║╨░╨┤╤А
+   mov ebp,13 ; кадр
     mov eax, [temp2]
     cmp eax, 8
     jne padaem
-   mov ebp,10 ; ╨║╨░╨┤╤А
+   mov ebp,10 ; кадр
     padaem:
     mov eax, [temp5]
     cmp eax, 8
     jne padaem2
-   mov ebp,10 ; ╨║╨░╨┤╤А
+   mov ebp,10 ; кадр
     padaem2:
    mov eax, dword [Xpl]
    mov dword [X_anime], eax
@@ -1115,7 +1121,7 @@ ret
   cmp  eax, 7	;
   ja next_u1
 
-   mov ebp,10 ; ╨║╨░╨┤╤А
+   mov ebp,10 ; кадр
    mov eax, dword [Xpl]
    mov dword [X_anime], eax
    mov eax, dword [Ypl]
@@ -1124,7 +1130,7 @@ ret
    jmp end_hiro
 
    next_u1:
-   mov ebp,9 ; ╨║╨░╨┤╤А
+   mov ebp,9 ; кадр
    mov eax, dword [Xpl]
    mov dword [X_anime], eax
    mov eax, dword [Ypl]
@@ -1136,7 +1142,7 @@ ret
   next_s:
   cmp eax, 0
   jne next_s
-   mov ebp,17; ╨║╨░╨┤╤А
+   mov ebp,17; кадр
    mov eax, dword [Xpl]
    mov dword [X_anime], eax
    mov eax, dword [Ypl]
@@ -1157,9 +1163,9 @@ ret
 ;****************
 hiro_mov:
 
-     ;╨Я╨а╨Х╨У╨а╨Р╨Ф
+     ;ПРЕГРАД
 
-       ; ╨▓╤Л╤З╨╕╤Б╨╗╨╡╨╜╨╕╨╡ ╤Б╨╛╤Б╨╡╨┤╨╜╨╕╤Е ╨▒╨╗╨╛╨║╨╛╨▓
+       ; вычисление соседних блоков
        mov    ebx, [hiro_lab]
        sbb    ebx,2
        mov    eax,[Dangeon + bx]    ;                 up
@@ -1170,32 +1176,32 @@ hiro_mov:
        mov    [temp2], ah	    ;
 
 ;-------------------------------------------------------------------------------
-;     ╨б╨▒╨╛╤А ╨░╨╗╨╝╨░╨╖╨╛╨▓
+;     Сбор алмазов
 ;-------------------------------------------------------------------------------
-	mov ecx, [Ypl] ; ╨н╤В╨╛ ╤Г╤Б╨╗╨╛╨▓╨╕╨╡ ╨┐╨╛╨╖╨▓╨╛╨╗╤П╨╡╤В ╨┤╨╛╨▒╨╡╨╢╨░╤В╤М ╨┤╨╛ ╨┐╨╛╨╖╨╕╤Ж╨╕╨╕ ╨╜╨░╨┐╤А╨╛╤В╨╕╨▓ ╨▒╨╗╨╛╨║╨░
-	and ecx, 31    ; Y ╨▓ ╨┐╨╛╨╖╨╕╤Ж╨╕╨╕ ╨╜╨░╨┐╤А╨╛╤В╨╕╨▓ ╨▒╨╗╨╛╨║╨░
+	mov ecx, [Ypl] ; Это условие позволяет добежать до позиции напротив блока
+	and ecx, 31    ; Y в позиции напротив блока
 
-	mov edx, [Xpl] ; ╨н╤В╨╛ ╤Г╤Б╨╗╨╛╨▓╨╕╨╡ ╨┐╨╛╨╖╨▓╨╛╨╗╤П╨╡╤В ╨┤╨╛╨▒╨╡╨╢╨░╤В╤М ╨┤╨╛ ╨┐╨╛╨╖╨╕╤Ж╨╕╨╕ ╨╜╨░╨┐╤А╨╛╤В╨╕╨▓ ╨▒╨╗╨╛╨║╨░
-	and edx, 31    ; Y ╨▓ ╨┐╨╛╨╖╨╕╤Ж╨╕╨╕ ╨╜╨░╨┐╤А╨╛╤В╨╕╨▓ ╨▒╨╗╨╛╨║╨░
-	or edx,ecx ; ╨Ь╤Л ╤З╨╡╤В╨║╨╛ ╤Б╨┐╨╛╨╖╨╕╤Ж╨╕╨╛╨╜╨╕╤А╨╛╨▓╨░╨╜╤Л ╨┐╨╛ ╨е ╨╕ ╨г
+	mov edx, [Xpl] ; Это условие позволяет добежать до позиции напротив блока
+	and edx, 31    ; Y в позиции напротив блока
+	or edx,ecx ; Мы четко спозиционированы по Х и У
 	cmp edx, 0
 	jne no_almaz
 
 	  cmp ah, 12
 	  jne no_almaz
 	  xor cx, cx
-	  add ebx,1  ; ╨Ч╨Р╨Я╨Ы╨Р╨в╨Ъ╨Р !!!  ╨▒╨╡╨╖ ╨╜╨╡╨╡ ╨┐╨╛╤З╨╡╨╝╤Г╤В╨╛ ╨╛╨▒╨╜╤Г╨╗╤П╨╡╤В ╨╜╨╡ ╨░╨╗╨╝╨░╨╖╤Л ╨░ ╤Б╨╛╤Б╨╡╨┤╨╜╨╕╨╡ ╨▒╨╗╨╛╨║╨╕
+	  add ebx,1  ; ЗАПЛАТКА !!!  без нее почемуто обнуляет не алмазы а соседние блоки
 	  mov  [Dangeon + bx], ch
-	  sbb ebx, 1  ; ╨Ч╨Р╨Я╨Ы╨Р╨в╨Ъ╨Р !!!
+	  sbb ebx, 1  ; ЗАПЛАТКА !!!
 	  mov ecx, [gold]
 	  add ecx, 1
 	  mov [gold], ecx
        pusha
-       mcall 55, eax, , , Music_almaz	; ╨╖╨▓╤Г╨║ Almaz
+       mcall 55, eax, , , Music_almaz	; звук Almaz
        popa
 	  no_almaz:
 ;-------------------------------------------------------------------------------
-;     ╨б╨▒╨╛╤А ╨░╨╗╨╝╨░╨╖╨╛╨▓
+;     Сбор алмазов
 ;-------------------------------------------------------------------------------
 				    ;                down
        add    ebx,1		    ;               temp5
@@ -1203,19 +1209,19 @@ hiro_mov:
        mov    [temp3], ah
 
        sbb    ebx,17		    ; !!!!!!!!!!!!
-       mov    eax,[Dangeon + bx]    ; ╨┐╤А╨╕ ╨╛╤В╤Б╤Г╤В╤Б╤В╨▓╨╕╨╕ ╨▒╨╕╨▒╨╗╨╕╨╛╤В╨╡╨║╨╕  MACROS.INC   ebx=17 , ╨┐╤А╨╕ ╨╡╨╡ ╨┐╤А╨╕╤Б╤Г╤В╤Б╤В╨▓╨╕╨╕ ebx=16
+       mov    eax,[Dangeon + bx]    ; при отсутствии библиотеки  MACROS.INC   ebx=17 , при ее присутствии ebx=16
        mov    [temp4], ah
 
        add    ebx,32		    ;
        mov    eax,[Dangeon + bx]    ;
        mov    [temp5], ah
-       ; ╨▓╤Л╤З╨╕╤Б╨╗╨╡╨╜╨╕╨╡ ╤Б╨╛╤Б╨╡╨┤╨╜╨╕╤Е ╨▒╨╗╨╛╨║╨╛╨▓
+       ; вычисление соседних блоков
 
 
 
 
 
-     ;╤А╨░╨╖╤А╨╡╤И╨╡╨╜╨╕╨╡ ╨╜╨░ ╨┤╨▓╨╕╨╢╨╡╨╜╨╕╨╡
+     ;разрешение на движение
      mov     eax,0		;
      mov     eax,[v_mov2]	;
      and     eax,7
@@ -1223,8 +1229,8 @@ hiro_mov:
      cmp eax, 2
      je smena
 
-	mov ebx, [Ypl] ; ╨н╤В╨╛ ╤Г╤Б╨╗╨╛╨▓╨╕╨╡ ╨┐╨╛╨╖╨▓╨╛╨╗╤П╨╡╤В ╨┤╨╛╨▒╨╡╨╢╨░╤В╤М ╨┤╨╛ ╨┐╨╛╨╖╨╕╤Ж╨╕╨╕ ╨╜╨░╨┐╤А╨╛╤В╨╕╨▓ ╨▒╨╗╨╛╨║╨░
-	and ebx, 31    ; Y ╨▓ ╨┐╨╛╨╖╨╕╤Ж╨╕╨╕ ╨╜╨░╨┐╤А╨╛╤В╨╕╨▓ ╨▒╨╗╨╛╨║╨░
+	mov ebx, [Ypl] ; Это условие позволяет добежать до позиции напротив блока
+	and ebx, 31    ; Y в позиции напротив блока
 	cmp ebx, 0     ;
 	jne end_tamgna	 ;
 	smena:
@@ -1236,8 +1242,8 @@ hiro_mov:
 	 cmp eax, 0
 	 je smena2
 
-	 mov ebx, [Xpl] ; ╨н╤В╨╛ ╤Г╤Б╨╗╨╛╨▓╨╕╨╡ ╨┐╨╛╨╖╨▓╨╛╨╗╤П╨╡╤В ╨┤╨╛╨▒╨╡╨╢╨░╤В╤М ╨┤╨╛ ╨┐╨╛╨╖╨╕╤Ж╨╕╨╕ ╨╜╨░╨┐╤А╨╛╤В╨╕╨▓ ╨▒╨╗╨╛╨║╨░
-	 and ebx, 31	; X ╨▓ ╨┐╨╛╨╖╨╕╤Ж╨╕╨╕ ╨╜╨░╨┐╤А╨╛╤В╨╕╨▓ ╨▒╨╗╨╛╨║╨░
+	 mov ebx, [Xpl] ; Это условие позволяет добежать до позиции напротив блока
+	 and ebx, 31	; X в позиции напротив блока
 	 cmp ebx, 0	;
 	 jne end_tamgna   ;
 
@@ -1246,16 +1252,16 @@ hiro_mov:
 	  and eax, 7
 	  mov [v_mov], eax
      end_tamgna:
-     ;╤А╨░╨╖╤А╨╡╤И╨╡╨╜╨╕╨╡ ╨╜╨░ ╨┤╨▓╨╕╨╢╨╡╨╜╨╕╨╡
+     ;разрешение на движение
 
 
-     ;╨г╨Я╨Ш╨а╨Р╨Э╨Ш╨Х ╨Т ╨Я╨а╨Х╨У╨а╨Р╨Ф╨г
+     ;УПИРАНИЕ В ПРЕГРАДУ
 	mov ebx, [Ypl] ;
-	and ebx, 31    ; Y ╨▓ ╨┐╨╛╨╖╨╕╤Ж╨╕╨╕ ╨╜╨░╨┐╤А╨╛╤В╨╕╨▓ ╨▒╨╗╨╛╨║╨░
+	and ebx, 31    ; Y в позиции напротив блока
 	cmp ebx, 0     ;
 	jne end_stop   ;
-	mov eax, [Xpl] ; ╨▒╨╡╨╖ ╨╝╨░╨║╤А╨╛╤Б╨░ ╤Н╤В╨╛╨│╨╛ ╨▒╨╗╨╛╨║╨░ ╨╜╨╡ ╨▒╤Л╨╗╨╛ ╨╛╨╜ ╨▒╤Л╨╗ ╨▓╨╜╤Г╤В╤А╨╕ ╨▒╨╗╨╛╨║╨░ ╤Г╨┐╨╕╤А╨░╨╜╨╕╨╣
-	and eax, 31    ; X ╨▓ ╨┐╨╛╨╖╨╕╤Ж╨╕╨╕ ╨╜╨░╨┐╤А╨╛╤В╨╕╨▓ ╨▒╨╗╨╛╨║╨░
+	mov eax, [Xpl] ; без макроса этого блока не было он был внутри блока упираний
+	and eax, 31    ; X в позиции напротив блока
 	cmp eax, 0     ;
 	jne end_stop   ;
      mov eax, [v_mov]
@@ -1266,7 +1272,7 @@ hiro_mov:
 
        stop_d:
 	mov ebx, [temp5]
-	  ;╨╖╨░╨┐╨╗╨░╤В╨║╨░ 2 ╤А╨░╨▓╨╜╨╛ 1 ╨╡╤Б╨╗╨╕ ╨▒╨╡╤В╨╛╨╜ ╤В╨╛ ╤Н╤В╨╛ ╨║╨░╨║ ╨║╨╕╤А╨┐╨╕╤З, ╨╕╨╜╨░╤З╨╡ ╨│╨╡╤А╨╛╨╣ ╨┐╤А╨╛╤Е╨╛╨┤╨╕╤В ╤Б╨║╨▓╨╛╨╖╤М ╨▒╨╡╤В╨╛╨╜
+	  ;заплатка 2 равно 1 если бетон то это как кирпич, иначе герой проходит сквозь бетон
 
 	  cmp ebx, 2
 	  jne no_zaplat1
@@ -1291,8 +1297,8 @@ hiro_mov:
 	and ebx,3
 	and eax, ebx
 
-    ;    mov ebx, [Ypl] ; ╨н╤В╨╛ ╤Г╤Б╨╗╨╛╨▓╨╕╨╡ ╨┐╨╛╨╖╨▓╨╛╨╗╤П╨╡╤В ╨┤╨╛╨▒╨╡╨╢╨░╤В╤М ╨┤╨╛ ╨┐╨╛╨╖╨╕╤Ж╨╕╨╕ ╨╜╨░╨┐╤А╨╛╤В╨╕╨▓ ╨▒╨╗╨╛╨║╨░
-    ;    and ebx, 31    ; Y ╨▓ ╨┐╨╛╨╖╨╕╤Ж╨╕╨╕ ╨╜╨░╨┐╤А╨╛╤В╨╕╨▓ ╨▒╨╗╨╛╨║╨░
+    ;    mov ebx, [Ypl] ; Это условие позволяет добежать до позиции напротив блока
+    ;    and ebx, 31    ; Y в позиции напротив блока
     ;    cmp ebx, 0     ;
     ;    jne end_stop   ;
 
@@ -1309,8 +1315,8 @@ hiro_mov:
 	mov ebx, [temp1]
 	and ebx,3
 
-    ;    mov eax, [Xpl] ; ╨н╤В╨╛ ╤Г╤Б╨╗╨╛╨▓╨╕╨╡ ╨┐╨╛╨╖╨▓╨╛╨╗╤П╨╡╤В ╨┤╨╛╨▒╨╡╨╢╨░╤В╤М ╨┤╨╛ ╨┐╨╛╨╖╨╕╤Ж╨╕╨╕ ╨╜╨░╨┐╤А╨╛╤В╨╕╨▓ ╨▒╨╗╨╛╨║╨░
-    ;    and eax, 31    ; Y ╨▓ ╨┐╨╛╨╖╨╕╤Ж╨╕╨╕ ╨╜╨░╨┐╤А╨╛╤В╨╕╨▓ ╨▒╨╗╨╛╨║╨░
+    ;    mov eax, [Xpl] ; Это условие позволяет добежать до позиции напротив блока
+    ;    and eax, 31    ; Y в позиции напротив блока
     ;    cmp eax, 0     ;
     ;    jne end_stop   ;
 
@@ -1332,21 +1338,21 @@ hiro_mov:
 	  mov [v_mov], ebx
 
       end_stop:
-     ;╨Я╨а╨Х╨У╨а╨Р╨Ф╨л
+     ;ПРЕГРАДЫ
 
 
      ;GRAVITACION
-	mov ebx, [Ypl] ; ╨н╤В╨╛ ╤Г╤Б╨╗╨╛╨▓╨╕╨╡ ╨┐╨╛╨╖╨▓╨╛╨╗╤П╨╡╤В ╨┤╨╛╨▒╨╡╨╢╨░╤В╤М ╨┤╨╛ ╨┐╨╛╨╖╨╕╤Ж╨╕╨╕ ╨╜╨░╨┐╤А╨╛╤В╨╕╨▓ ╨▒╨╗╨╛╨║╨░
-	and ebx, 31    ; Y ╨▓ ╨┐╨╛╨╖╨╕╤Ж╨╕╨╕ ╨╜╨░╨┐╤А╨╛╤В╨╕╨▓ ╨▒╨╗╨╛╨║╨░
+	mov ebx, [Ypl] ; Это условие позволяет добежать до позиции напротив блока
+	and ebx, 31    ; Y в позиции напротив блока
 
-	mov eax, [Xpl] ; ╨н╤В╨╛ ╤Г╤Б╨╗╨╛╨▓╨╕╨╡ ╨┐╨╛╨╖╨▓╨╛╨╗╤П╨╡╤В ╨┤╨╛╨▒╨╡╨╢╨░╤В╤М ╨┤╨╛ ╨┐╨╛╨╖╨╕╤Ж╨╕╨╕ ╨╜╨░╨┐╤А╨╛╤В╨╕╨▓ ╨▒╨╗╨╛╨║╨░
-	and eax, 31    ; Y ╨▓ ╨┐╨╛╨╖╨╕╤Ж╨╕╨╕ ╨╜╨░╨┐╤А╨╛╤В╨╕╨▓ ╨▒╨╗╨╛╨║╨░
-	or eax,ebx ; ╨Ь╤Л ╤З╨╡╤В╨║╨╛ ╤Б╨┐╨╛╨╖╨╕╤Ж╨╕╨╛╨╜╨╕╤А╨╛╨▓╨░╨╜╤Л ╨┐╨╛ ╨е ╨╕ ╨г
+	mov eax, [Xpl] ; Это условие позволяет добежать до позиции напротив блока
+	and eax, 31    ; Y в позиции напротив блока
+	or eax,ebx ; Мы четко спозиционированы по Х и У
 	cmp eax, 0
 	jne end_grav
 
 	  mov ebx, [temp2]    ;
-	  cmp ebx, 0	      ; ╨╖╨░╨┐╤А╨╡╤В ╨╜╨░ ╨┐╤А╤Л╨╢╨║╨╕ ╨▓╨▓╨╡╤А╤Е
+	  cmp ebx, 0	      ; запрет на прыжки вверх
 	  jne end_grav	      ;
 	    mov ebx, [v_mov]  ;
 	    cmp ebx, 3	      ;
@@ -1358,7 +1364,7 @@ hiro_mov:
 
 	dalee_gra:
 	add eax, [temp5]       ;
-	cmp eax, 0	       ; ╨┐╨░╨┤╨╡╨╜╨╕╨╡ ╨▓ ╨┐╤Г╤Б╤В╨╛╤В╤Г
+	cmp eax, 0	       ; падение в пустоту
 	 jne dalee_g	       ;
 	 mov eax, 2	       ;
 	 mov [v_mov],eax       ;
@@ -1367,7 +1373,7 @@ hiro_mov:
 
 	 dalee_g:
 	cmp eax, 4	       ;
-	 jne dalee_g2	       ; ╨┐╨░╨┤╨╡╨╜╨╕╨╡ ╨▓ ╨▓╨╛╨┤╤Г
+	 jne dalee_g2	       ; падение в воду
 	 mov eax, 2	       ;
 	 mov [v_mov],eax       ;
 	 mov eax, 0	       ;
@@ -1375,7 +1381,7 @@ hiro_mov:
 
 	 dalee_g2:
 	cmp eax, 12		;
-	 jne end_grav	       ; ╨┐╨░╨┤╨╡╨╜╨╕╨╡ ╨╜╨░ ╨░╨╗╨╝╨░╨╖
+	 jne end_grav	       ; падение на алмаз
 	 mov eax, 2	       ;
 	 mov [v_mov],eax       ;
 	 mov eax, 0	       ;
@@ -1387,7 +1393,7 @@ hiro_mov:
 
 
 
-     ; ╨Я╨а╨Ш╨а╨Ю╨б╨в ╨Ъ╨Ю╨Ю╨а╨Ф╨Ш╨Э╨Р╨в ╨У╨Х╨а╨Ю╨п
+     ; ПРИРОСТ КООРДИНАТ ГЕРОЯ
      mov     eax,0		;
      mov     eax,[v_mov]	;
      cmp     eax, 2		;
@@ -1431,12 +1437,12 @@ hiro_mov:
 	 mov ebx, [Xpl] 	;
 	 add ebx, 2		;
 	 mov [Xpl], ebx 	;
-    jmp hiro_mov_end	       ;╨┐╤А╨╕╤А╨╛╤Б╤В
-     ; ╨Я╨а╨Ш╨а╨Ю╨б╨в ╨Ъ╨Ю╨Ю╨а╨Ф╨Ш╨Э╨Р╨в ╨У╨Х╨а╨Ю╨п
+    jmp hiro_mov_end	       ;прирост
+     ; ПРИРОСТ КООРДИНАТ ГЕРОЯ
 
     hiro_mov_end:
 
-    ; ╨▓╤Л╤З╨╕╤Б╨╗╤П╨╡╨╝ ╨┐╨╛╨╗╨╛╨╢╨╡╨╜╨╕╨╡ ╨│╨╡╤А╨╛╤П ╨▓ ╨╗╨░╨▒╨╕╤А╨╕╨╜╤В╨╡
+    ; вычисляем положение героя в лабиринте
     mov eax, 0				  ;
     mov dword eax, [Ypl]			;
     shr eax, 5				  ;
@@ -1446,7 +1452,7 @@ hiro_mov:
     shr ebx, 5				  ;
     add eax, ebx			  ;
     mov [hiro_lab], eax 		  ;
-    ; ╨▓╤Л╤З╨╕╤Б╨╗╤П╨╡╨╝ ╨┐╨╛╨╗╨╛╨╢╨╡╨╜╨╕╨╡ ╨│╨╡╤А╨╛╤П ╨▓ ╨╗╨░╨▒╨╕╤А╨╕╨╜╤В╨╡
+    ; вычисляем положение героя в лабиринте
 ret
 ;****************
 ;  end Hiro mov
@@ -1457,10 +1463,10 @@ ret
 ; BULLET
 ;*******************************************
  bullet_mas:
-  mov word [Lab3], 0 ; ╨▓╤Б╨╡ ╨┤╨╡╨╗╨░╤В╤М ╨▓ WORD ╨╛╨┤╨╕╨╜ ╤Н╨╗╨╡╨╝╨╡╨╜╤В ╨▓ ╨╝╨░╤Б╤Б╨╕╨▓╨╡ +2 ╤Б╨╗╨╡╨┤╤Г╤О╤Й╨╕╨╣ ╨▓╤А╨░╨│ ╤Б╨╛╨╛╤В╨▓╤В╨╡╤В╤Б╤В╨▓╨╡╨╜╨╜╨╛ 6*2= + 12
+  mov word [Lab3], 0 ; все делать в WORD один элемент в массиве +2 следующий враг соотвтетственно 6*2= + 12
  cycle7:
   mov	 word bx, [Lab3]
-  mov	 word ax, [Bullet+bx]	 ; ╨▒╨╡╤А╨╡╤В ╨▒╨░╨╣╤В ╨╕╨╖ Enemy + ╤Б╨╝╨╡╤Й╨╡╨╜╨╕╨╡
+  mov	 word ax, [Bullet+bx]	 ; берет байт из Enemy + смещение
 
   cmp  ax, 1   ;   bullet ok
   je go_bullet
@@ -1468,11 +1474,11 @@ ret
   jmp end_bullet
   go_bullet:
 
-  add	 word bx, 2 ; X ╨║╨╛╨╛╤А╨╕╨┤╨╕╨╜╨░╤В╨░ ╨┤╨░╨╜╨╜╨╛╨│╨╛ ╨▓╤А╨░╨│╨░
+  add	 word bx, 2 ; X кооридината данного врага
   mov	 word ax, [Bullet + bx]
   mov	 word [X_bul], ax
 
-  add	 word bx, 2 ; X ╨║╨╛╨╛╤А╨╕╨┤╨╕╨╜╨░╤В╨░ ╨┤╨░╨╜╨╜╨╛╨│╨╛ ╨▓╤А╨░╨│╨░
+  add	 word bx, 2 ; X кооридината данного врага
   mov	 word ax, [Bullet + bx]
   mov	 word [Y_bul], ax
 
@@ -1498,11 +1504,11 @@ ret
 ; BULLET MOV
 ;*******************************************
  bullet_mov:
-  mov word [Lab3], 0 ; ╨▓╤Б╨╡ ╨┤╨╡╨╗╨░╤В╤М ╨▓ WORD ╨╛╨┤╨╕╨╜ ╤Н╨╗╨╡╨╝╨╡╨╜╤В ╨▓ ╨╝╨░╤Б╤Б╨╕╨▓╨╡ +2 ╤Б╨╗╨╡╨┤╤Г╤О╤Й╨╕╨╣ ╨▓╤А╨░╨│ ╤Б╨╛╨╛╤В╨▓╤В╨╡╤В╤Б╤В╨▓╨╡╨╜╨╜╨╛ 6*2= + 12
+  mov word [Lab3], 0 ; все делать в WORD один элемент в массиве +2 следующий враг соотвтетственно 6*2= + 12
 
  cycle8:
   mov	 word bx, [Lab3]
-  mov	 word ax, [Bullet+bx]	 ; ╨▒╨╡╤А╨╡╤В ╨▒╨░╨╣╤В ╨╕╨╖ Enemy + ╤Б╨╝╨╡╤Й╨╡╨╜╨╕╨╡
+  mov	 word ax, [Bullet+bx]	 ; берет байт из Enemy + смещение
 
   cmp  ax, 1   ;   bullet ok
   je go_bullet_mov
@@ -1510,11 +1516,11 @@ ret
   jmp end_bullet_mov
   go_bullet_mov:
 
-  add	 word bx, 2 ; X ╨║╨╛╨╛╤А╨╕╨┤╨╕╨╜╨░╤В╨░ ╨┤╨░╨╜╨╜╨╛╨│╨╛ ╨▓╤А╨░╨│╨░
+  add	 word bx, 2 ; X кооридината данного врага
   mov	 word ax, [Bullet + bx]
   mov	 word [X_bul], ax
 
-  add	 word bx, 2 ; X ╨║╨╛╨╛╤А╨╕╨┤╨╕╨╜╨░╤В╨░ ╨┤╨░╨╜╨╜╨╛╨│╨╛ ╨▓╤А╨░╨│╨░
+  add	 word bx, 2 ; X кооридината данного врага
   mov	 word ax, [Bullet + bx]
   mov	 word [Y_bul], ax
 
@@ -1540,7 +1546,7 @@ ret
 
     end_bullet_mov:
 
-    ; ╨▓╤Л╤З╨╕╤Б╨╗╤П╨╡╨╝ ╨┐╨╛╨╗╨╛╨╢╨╡╨╜╨╕╨╡ BULLET ╨▓ ╨╗╨░╨▒╨╕╤А╨╕╨╜╤В╨╡
+    ; вычисляем положение BULLET в лабиринте
     mov eax, 0				  ;
     mov eax, [Y_bul]			  ;
     shr eax, 5				  ;
@@ -1550,7 +1556,7 @@ ret
     shr ebx, 5				  ;
     add eax, ebx			  ;
     mov [lab_bullet], ax		   ;
-    ; ╨▓╤Л╤З╨╕╤Б╨╗╤П╨╡╨╝ ╨┐╨╛╨╗╨╛╨╢╨╡╨╜╨╕╨╡ BULLET ╨▓ ╨╗╨░╨▒╨╕╤А╨╕╨╜╤В╨╡
+    ; вычисляем положение BULLET в лабиринте
 
 		mov    word bx,[lab_bullet]
 		mov    dx, [Dangeon + bx]
@@ -1560,10 +1566,10 @@ ret
 
 		 cmp dx, 2
 		 je beton
-		   mov	  byte [Dangeon + bx], 3    ; ╨а╨Р╨Ч╨а╨г╨и╨Х╨Э╨Ш╨Х ╨Ъ╨Ш╨а╨Я╨Ш╨з╨Х╨Щ
+		   mov	  byte [Dangeon + bx], 3    ; РАЗРУШЕНИЕ КИРПИЧЕЙ
 		  beton:
 		   mov	  bx, [Lab3]
-		   mov	  byte [Bullet + ebx], 0    ; ╨▒╨╡╤А╨╡╤В ╨▒╨░╨╣╤В ╨╕╨╖ Enemy + ╤Б╨╝╨╡╤Й╨╡╨╜╨╕╨╡
+		   mov	  byte [Bullet + ebx], 0    ; берет байт из Enemy + смещение
 
 
 
@@ -1625,17 +1631,17 @@ fire:
   cmp cx, 0
    jne end_fire
        pusha
-       mcall 55, eax, , , Music_bah   ; ╨╖╨▓╤Г╨║ ╨▓╤Л╤Б╤В╤А╨╡╨╗╨░
+       mcall 55, eax, , , Music_bah   ; звук выстрела
        popa
 
   mov	 byte [Bullet + ebx], 1
 
-  add	 word bx, 2 ; X ╨║╨╛╨╛╤А╨╕╨┤╨╕╨╜╨░╤В╨░ ╨┤╨░╨╜╨╜╨╛╨│╨╛ ╨▓╤А╨░╨│╨░
+  add	 word bx, 2 ; X кооридината данного врага
   mov	 ax, [Xpl]
   add	 ax, 8
   mov	 word [Bullet + ebx],ax
 
-  add	 word bx, 2 ; X ╨║╨╛╨╛╤А╨╕╨┤╨╕╨╜╨░╤В╨░ ╨┤╨░╨╜╨╜╨╛╨│╨╛ ╨▓╤А╨░╨│╨░
+  add	 word bx, 2 ; X кооридината данного врага
   mov	 ax, [Ypl]
   add	 ax, 16
   mov	 word [Bullet + ebx],ax
@@ -1649,10 +1655,10 @@ ret
 ;-------------------------------------------------------------------------------
 
 
-;------------------------╨Ч╨░╨│╤А╤Г╨╖╨║╨░ ╤Г╤А╨╛╨▓╨╜╨╡╨╣---------------------------------------
+;------------------------Загрузка уровней---------------------------------------
 load_level:
     imgtoimg img_level,32,32,canvas
-  setimg 6,20,canvas
+  setimg 0,0,canvas
 
     xor eax,eax
     xor ebx,ebx
@@ -1672,7 +1678,7 @@ load_level:
     mov [gold], eax
     mov dword [Xpl], 32
     mov dword [Ypl], 448
-    mov dword [hiro_lab],0 ; ╨┐╤А╨╛╨╡╨║╤Ж╨╕╤П ╨│╨╡╤А╨╛╤П ╨▓ ╨╗╨░╨▒╨╕╤А╨╕╨╜╤В
+    mov dword [hiro_lab],0 ; проекция героя в лабиринт
     mov dword [v_mov], 0
     mov dword [v_mov2], 0
     mov dword [v_fire], 0
@@ -1689,10 +1695,10 @@ load_level:
      xor ebx, ebx
      mov    ebx, [Lab]
      add ebx, [delta_level]
-     mov     ax,[Dangeon2 + ebx]    ; ╨▒╨╡╤А╨╡╤В ╨▒╨░╨╣╤В ╨╕╨╖ ╨┤╨░╨╜╨│╨╡╨╛╨╜ + ╤Б╨╝╨╡╤Й╨╡╨╜╨╕╨╡
+     mov     ax,[Dangeon2 + ebx]    ; берет байт из дангеон + смещение
 
      sbb ebx, [delta_level]
-     mov      [Dangeon + ebx], ax    ; ╨▒╨╡╤А╨╡╤В ╨▒╨░╨╣╤В ╨╕╨╖ ╨┤╨░╨╜╨│╨╡╨╛╨╜ + ╤Б╨╝╨╡╤Й╨╡╨╜╨╕╨╡
+     mov      [Dangeon + ebx], ax    ; берет байт из дангеон + смещение
      add word [Lab],1
      mov     eax, [Lab]
 
@@ -1716,10 +1722,10 @@ proverka_gold:
 mov eax, [gold]
  cmp ax, 10
   jna net_deneg
-   mov eax, [temp2] ; ╨┤╨╛╨▒╨╡╨╢╨░╤В╤М ╨┤╨╛ ╨┤╨▓╨╡╤А╨╕
+   mov eax, [temp2] ; добежать до двери
    cmp ax, 16
     jne net_deneg
-       mov ax, [numer_level]  ; ╤Г╨▓╨╡╨╗╨╕╤З╨╡╨╜╨╕╨╡ ╨╗╨╡╨▓╨╡╨╗╨░
+       mov ax, [numer_level]  ; увеличение левела
 
        add ax, 1
        mov [numer_level],  ax
@@ -1732,12 +1738,12 @@ mov eax, [gold]
 ret
 
 ;-------------------------------------------------------------------------------
-; ╨г╨в╨Ю╨Я
+; УТОП
 potop:
-   mov eax, [temp2] ; ╨┤╨╛╨▒╨╡╨╢╨░╤В╤М ╨┤╨╛ ╨┤╨▓╨╡╤А╨╕
+   mov eax, [temp2] ; добежать до двери
    cmp ax, 4
     jne jiwoy
-       mov dword [gold], 0  ; ╤Г╨▓╨╡╨╗╨╕╤З╨╡╨╜╨╕╨╡ ╨╗╨╡╨▓╨╡╨╗╨░
+       mov dword [gold], 0  ; увеличение левела
 
      call load_level
      delay 100
@@ -1745,9 +1751,9 @@ potop:
 ret
 
 ;************************************
-;╨┐╨╛╨╗╨╛╨╢╨╡╨╜╨╕╨╡ ╨▓╤А╨░╨│╨╛╨▓ ╨╜╨░ ╨╜╨╛╨▓╨╛╨╝ ╤Г╤А╨╛╨▓╨╜╨╡
+;положение врагов на новом уровне
 enemy_plaz:
-  mov word [Lab2], 0 ; ╨▓╤Б╨╡ ╨┤╨╡╨╗╨░╤В╤М ╨▓ WORD ╨╛╨┤╨╕╨╜ ╤Н╨╗╨╡╨╝╨╡╨╜╤В ╨▓ ╨╝╨░╤Б╤Б╨╕╨▓╨╡ +2 ╤Б╨╗╨╡╨┤╤Г╤О╤Й╨╕╨╣ ╨▓╤А╨░╨│ ╤Б╨╛╨╛╤В╨▓╤В╨╡╤В╤Б╤В╨▓╨╡╨╜╨╜╨╛ 6*2= + 12
+  mov word [Lab2], 0 ; все делать в WORD один элемент в массиве +2 следующий враг соотвтетственно 6*2= + 12
   mov ax, [demon_kolvo]
   mov [demon], ax
 
@@ -1770,20 +1776,20 @@ enemy_plaz:
 	  add eax, 1
 	  shl eax,5
 	  mov	 word bx, [Lab2]		      ;
-	  add	 word bx, 2 ; X ╨║╨╛╨╛╤А╨╕╨┤╨╕╨╜╨░╤В╨░ ╨┤╨░╨╜╨╜╨╛╨│╨╛ ╨▓╤А╨░╨│╨░
+	  add	 word bx, 2 ; X кооридината данного врага
 	  mov	 word [Enemy + bx], ax		      ;
 						      ;
 	  random 12, eax
 	  add eax, 1
 	  shl eax,5
 	  mov	 word bx, [Lab2]		      ;
-	  add	 word bx, 4 ; Y ╨║╨╛╨╛╤А╨╕╨┤╨╕╨╜╨░╤В╨░ ╨┤╨░╨╜╨╜╨╛╨│╨╛ ╨▓╤А╨░╨│╨░
+	  add	 word bx, 4 ; Y кооридината данного врага
 	  mov	 word [Enemy + bx], ax		      ;
 
 	  mov	 word bx, [Lab2]		      ;
-	  add	 word bx, 8 ; ╨╜╨░╨┐╤А╨░╨▓╨╗╨╡╨╜╨╕╨╡ ╨┤╨▓╨╕╨╢╨╡╨╜╨╕╤П
+	  add	 word bx, 8 ; направление движения
 	  mov	 word [Enemy + bx], 0		     ;
-	  add	 word bx, 2 ; ╨╢╨╕╨╖╨╜╤М
+	  add	 word bx, 2 ; жизнь
 	  mov	 word [Enemy + bx], 500 	      ;
 
 
@@ -1802,14 +1808,14 @@ enemy_plaz:
 ret
 
 
-I_END:	; ╨║╨╛╨╜╨╡╤Ж ╨┐╤А╨╛╨│╤А╨░╨╝╨╝╤Л
+I_END:	; конец программы
 
 
 
 ;%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-  Xpl:	     dd 32  ; ╨║╨╛╨╛╤А╨┤╨╕╨╜╨░╤В╤Л ╨│╨╡╤А╨╛╤П
+  Xpl:	     dd 32  ; координаты героя
   Ypl:	     dd 448
-  hiro_lab:  dd 0 ; ╨┐╤А╨╛╨╡╨║╤Ж╨╕╤П ╨│╨╡╤А╨╛╤П ╨▓ ╨╗╨░╨▒╨╕╤А╨╕╨╜╤В
+  hiro_lab:  dd 0 ; проекция героя в лабиринт
   numer_level: dd 0
   delta_level: dd 0
   delta_level_end: dd 256
@@ -1834,8 +1840,8 @@ I_END:	; ╨║╨╛╨╜╨╡╤Ж ╨┐╤А╨╛╨│╤А╨░╨╝╨╝╤Л
   lab_enemy:	dw 0
   life_enemy:	 dw 0
 
-  anime : dd 0 ; ╨┐╨╡╤А╨╡╨╝╨╡╨╜╨╜╨░╤П ╨┤╨╗╤П ╨░╨╜╨╕╨╝╨░╤Ж╨╕╨╕ ╨│╨╡╤А╨╛╤П ╨╕ ╨┐╤А
-  anime2 : dd 0 ; ╨┐╨╡╤А╨╡╨╝╨╡╨╜╨╜╨░╤П ╨┤╨╗╤П ╨░╨╜╨╕╨╝╨░╤Ж╨╕╨╕ ╨│╨╡╤А╨╛╤П ╨╕ ╨┐╤А
+  anime : dd 0 ; переменная для анимации героя и пр
+  anime2 : dd 0 ; переменная для анимации героя и пр
 
   temp1: dd 0
   temp2: dd 0
@@ -1844,19 +1850,19 @@ I_END:	; ╨║╨╛╨╜╨╡╤Ж ╨┐╤А╨╛╨│╤А╨░╨╝╨╝╤Л
   temp5: dd 0
 
 
-  v_mov:     dd 0  ; ╨╜╨░╨┐╤А╨░╨▓╨╗╨╡╨╜╨╕╤П ╨┤╨▓╨╕╨╢╨╡╨╜╨╕╤П ╨┐╨╡╤А╤Б╨╛╨╜╨░╨╢╨░
-  v_mov2:     dd 0  ; ╨╜╨░╨┐╤А╨░╨▓╨╗╨╡╨╜╨╕╤П ╨┤╨▓╨╕╨╢╨╡╨╜╨╕╤П ╨┐╨╡╤А╤Б╨╛╨╜╨░╨╢╨░
-  v_fire:     dd 0  ; ╨╜╨░╨┐╤А╨░╨▓╨╗╨╡╨╜╨╕╤П ╨┤╨▓╨╕╨╢╨╡╨╜╨╕╤П ╨┐╨╡╤А╤Б╨╛╨╜╨░╨╢╨░
+  v_mov:     dd 0  ; направления движения персонажа
+  v_mov2:     dd 0  ; направления движения персонажа
+  v_fire:     dd 0  ; направления движения персонажа
   Lab:	     dd 0
   Lab2:      dw 0
   Lab3:      dw 0
   perem1:    dd 0
   perem2:    dd 0
 
-  timer1 dd 0 ; ╤В╨░╨╣╨╝╨╡╤А ╨╕╤Б╨┐╨╛╨╗╤М╨╖╤Г╨╡╨╝╤Л╨╣ ╨┤╨╗╤П ╨░╨╜╨╕╨╝╨░╤Ж╨╕╨╕ ╨▓╨╛╨┤╤Л, ╨▓╤А╨░╨│╨╛╨▓   --- ╨▒╨╡╨│╨░╨╡╤В ╨╛╤В 0 ╨┤╨╛ 10
+  timer1 dd 0 ; таймер используемый для анимации воды, врагов   --- бегает от 0 до 10
 
 ;-------------------------------------------------------------------------------
-;1 ╨╛╨▒╤Л╤З╨╜╨░╤П ╤Б╤В╨╡╨╜╨░, 2 ╨╜╨╡╨┐╤А╨╛╨▒╨╕╨▓╨░╨╡╨╝╨░╤П, 4 ╨▓╨╛╨┤╨░, 8 ╨╗╨╡╤Б╨╜╨╕╤Ж╨░, 12 ╨░╨╗╨╝╨░╨╖, 0 ╨┐╤Г╤Б╤В╨╛╤В╨░    16 - exit
+;1 обычная стена, 2 непробиваемая, 4 вода, 8 лесница, 12 алмаз, 0 пустота    16 - exit
 ;-------------------------------------------------------------------------------
 Dangeon:
 	  db  2,1,1,1,1,1,1,1,1,1,1,1,1,1,1,2
@@ -2047,7 +2053,7 @@ Bullet: dw 0,0,0,0,0,0
 ;-------------------------------------------------------------------------------
 
 
-Enemy:	dw  1,448,128,0,0,500	;╨▓╤А╨░╨│╨╕ ╨║╨╗╨░╤Б╤Б,╨е,╨г,╨┐╨╛╨╗╨╛╨╢╨╡╨╜╨╕╨╡ ╨▓ ╨╗╨░╨▒╨╕╤А╨╕╨╜╤В╨╡,╨╜╨░╨┐╤А╨░╨▓╨╗╨╡╨╜╨╕╨╡ ╨┤╨▓╨╕╨╢╨╡╨╜╨╕╤П,╨╢╨╕╨╖╨╜╤М
+Enemy:	dw  1,448,128,0,0,500	;враги класс,Х,У,положение в лабиринте,направление движения,жизнь
 	dw  0,32,32,0,0,0
 	dw  0,64,32,0,0,0
 	dw  0,416,32,0,0,0
@@ -2058,6 +2064,12 @@ Enemy:	dw  1,448,128,0,0,500	;╨▓╤А╨░╨│╨╕ ╨║╨╗╨░╤Б╤Б,╨е,╨г,╨┐╨╛╨╗╨╛╨╢╨╡╨╜╨╕╨╡ ╨▓ 
 	dw  0,448,448,0,0,0
 
 ;%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+if lang eq ru
+title db 'ПОДЗЕМЕЛЬЕ для КолибриОС <RU095@YANDEX.RU> z/x стрелять',0
+else
+title db 'Dungeon for KolibriOS <RU095@YANDEX.RU> z/x - shoot',0
+endf
 
 bullet_bmp:
 file 'bullet.bmp'
@@ -2099,7 +2111,6 @@ door2_bmp:
 file 'door2.bmp'
 rb 1
 
-title db 'Dungeon (z/x - shoot)',0
 
 img_level:
 rb 448*448*3+8
@@ -2152,15 +2163,14 @@ Music_almaz:
 
 entered    rd 1
 
-imgcount  rd 1	     ; ╨║╨╛╨╗-╨▓╨╛ ╨▓╤Б╨╡╨│╨╛ ╨║╨░╨┤╤А╨╛╨▓ ╨▓ ╨░╨╜╨╕╨╝╨░╤Ж╨╕╨╕
-img_index  rd 1      ; ╨╜╨╛╨╝╨╡╤А ╤В╨╡╨║╤Г╤Й╨╡╨│╨╛ ╨║╨░╨┤╤А╨░
+imgcount  rd 1	     ; кол-во всего кадров в анимации
+img_index  rd 1      ; номер текущего кадра
 
-;hashtable rd 4096    ; ╤А╨░╨▒╨╛╤З╨░╤П ╨╛╨▒╨╗╨░╤Б╤В╤М ╨┤╨╗╤П ╨а╨╡╨░╨┤╨У╨Ш╨д ╨┐╤А╨╛╤Ж╨╡╨┤╤Г╤А╤Л
+;hashtable rd 4096    ; рабочая область для РеадГИФ процедуры
 workarea:
 file 'aniall.gif'
 
-
-;temp rb 0x100000 ; ╨╝╨╡╤Б╤В╨╛ ╨┤╨╗╤П ╨У╨Ш╨д ╤Д╨░╨╕╨╗╨░
+;temp rb 0x100000 ; место для ГИФ фаила
 rb 10
 
 canvas:
