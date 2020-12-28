@@ -7,7 +7,7 @@
 
 #define TABS_MAX 5
 
-TWebBrowser data[TABS_MAX+1]=0;
+TWebBrowser tabdata[TABS_MAX+1]=0;
 _history tabstory[TABS_MAX+1]=0;
 
 struct TAB
@@ -36,7 +36,7 @@ bool TAB::close(int _tab_number)
 	int i;
 	if (count==1) return false;
 	for (i=_tab_number; i<TABS_MAX; i++) {
-		data[i] = data[i+1];
+		tabdata[i] = tabdata[i+1];
 		tabstory[i] = tabstory[i+1];
 	}
 	if (_tab_number<active) && (active>0) active--;
@@ -48,13 +48,13 @@ bool TAB::close(int _tab_number)
 void TAB::save_state()
 {
 	tabstory[active] = history;
-	data[active] = WB1;
+	tabdata[active] = WB1;
 }
 
 void TAB::restore(int _id)
 {
 	tab.active = _id;
-	WB1 = data[_id];	
+	WB1 = tabdata[_id];	
 	history = tabstory[_id];
 }
 
@@ -90,8 +90,8 @@ void DrawTab(int _id)
 		bgcol=sc.work;
 		border_bottom_color = sc.work_graph;
 	}
-	if (data[_id].header) {
-		strncpy(#header_no_version, #data[_id].header, strlen(#data[_id].header)-sizeof(version)-2);
+	if (tabdata[_id].header) {
+		strncpy(#header_no_version, #tabdata[_id].header, strlen(#tabdata[_id].header)-sizeof(version)-2);
 		strncpy(#name, #header_no_version, tab_w-CLOSE_S/6-2);
 	}
 	DrawBar(xxx, TOOLBAR_H, 1, TAB_H, sc.work_dark);

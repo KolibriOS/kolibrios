@@ -16,15 +16,6 @@
 
 char a_libdir[43]  = "/sys/lib/\0";
 
-:inline void error_init(dword lirary_path)
-{
-	char error_text[1024];
-    strcpy(#error_text, _TEXT_ERROR_ADD);
-    strcat(#error_text, lirary_path);
-    strcat(#error_text, "' -E");
-	notify(#error_text);
-}
-
 // stdcall with 1 parameter
 :void dll_Load() {
 asm {
@@ -188,9 +179,8 @@ asm {
     }
 }
 
-:int load_dll2(dword dllname, import_table, byte need_init)
+:void load_dll(dword dllname, import_table, byte need_init)
 {
-   //dword dllentry=0;
 // load DLL
         $mov     eax, 68
         $mov     ebx, 19
@@ -237,19 +227,18 @@ asm {
         #ifndef NO_DLL_INIT
         IF (need_init) dll_Init (DSDWORD[EDX+4]);
         #endif
-        return 0;
+        return;
 @exit01:
-        return -1;
+        error_init(dllname);
 }
 
-:byte load_dll(dword dllname, import_table, byte need_init)
+:inline void error_init(dword lirary_path)
 {
-	if (load_dll2(dllname, import_table, need_init))
-	{
-		error_init(dllname);
-		return false;
-	}
-	return true;
+    char error_text[1024];
+    strcpy(#error_text, _TEXT_ERROR_ADD);
+    strcat(#error_text, lirary_path);
+    strcat(#error_text, "' -E");
+    notify(#error_text);
 }
 
 

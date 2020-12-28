@@ -115,6 +115,7 @@ void TWebBrowser::SetPageDefaults()
 		cur_encoding = custom_encoding;
 		bufpointer = ChangeCharset(cur_encoding, "CP866", bufpointer);
 	}
+	list.SetFont(8, 14, 10011000b);
 }
 //============================================================================================
 void TWebBrowser::ParseHtml(dword _bufpointer, _bufsize){
@@ -150,7 +151,7 @@ void TWebBrowser::ParseHtml(dword _bufpointer, _bufsize){
 				Render();
 				NewLine();
 			} else {
-				AddCharToTheLine(0x0a);
+				AddCharToTheLine(' ');
 			}
 			break;
 		case 0x09:
@@ -159,7 +160,7 @@ void TWebBrowser::ParseHtml(dword _bufpointer, _bufsize){
 				if (!tab_len) tab_len = 4; else tab_len = 4 - tab_len;
 				for (j=0; j<tab_len; j++;) chrcat(#line,' ');
 			} else {
-				AddCharToTheLine(0x09);
+				AddCharToTheLine(' ');
 			}
 			break;
 		case '&': //&nbsp; and so on
@@ -176,15 +177,8 @@ void TWebBrowser::ParseHtml(dword _bufpointer, _bufsize){
 			break;
 		case '<':
 			if (!is_html) goto _DEFAULT;
+			if (!strchr("!/?abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ", ESBYTE[bufpos+1])) goto _DEFAULT;
 			bufpos++;
-			switch (ESBYTE[bufpos]) {
-				case '!': case '/': case '?': 
-				case 'a'...'z': case 'A'...'Z':
-					goto _TAG;
-				default:
-					goto _DEFAULT;
-			}
-			_TAG:
 			if (tag.parse(#bufpos, bufpointer + bufsize)) {
 				CheckForLineBreak();
 				Render();
@@ -314,6 +308,11 @@ void TWebBrowser::DrawPage()
 	scroll_wv.start_x = list.x + list.w;
 	scroll_wv.start_y = list.y;
 	scroll_wv.size_y = list.h;
-	scrollbar_v_draw(#scroll_wv);
 
+	if (list.count <= list.visible) {
+		DrawBar(scroll_wv.start_x, scroll_wv.start_y, scroll_wv.size_x, 
+		scroll_wv.size_y, bg_colors.get(0) & 0x00FFFFFF);
+	} else {
+		scrollbar_v_draw(#scroll_wv);		
+	}
 }

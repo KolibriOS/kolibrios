@@ -31,6 +31,7 @@ bool _tag::parse(dword _bufpos, bufend)
 
 	dword closepos;
 	dword whitepos;
+	dword openpos;
 
 	if (name) strcpy(#prior, #name); else prior = '\0';
 	name = '\0';
@@ -72,6 +73,19 @@ bool _tag::parse(dword _bufpos, bufend)
 		bufpos = closepos;
 	} else {
 		//we have param
+		while (chrlnum(whitepos, '\"', closepos - whitepos)%2) { //alt="Next>>"
+			/*
+			openpos = strchr(closepos+1, '<');
+			closepos = strchr(closepos+1, '>');
+			if (openpos) && (openpos < closepos) {
+				closepos = openpos - 1;
+				break;
+			}
+			*/
+			if (!openpos = strchr(closepos+1, '<')) break;
+			if (openpos < strchr(closepos+1, '>')) break;
+			if (!closepos = EAX) {closepos = bufend;break;}
+		}
 		strncpy(#name, bufpos, math.min(whitepos - bufpos, sizeof(tag.name)));
 		debug_tag();
 		bufpos = closepos;

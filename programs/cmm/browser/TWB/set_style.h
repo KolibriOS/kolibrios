@@ -52,16 +52,9 @@ void TWebBrowser::SetStyle()
 	if (tag.is("html"))       { t_html = tag.opened;  return; }
 
 	//TO BE REWORKED
-	//td_x = td_w = tr_y = highest_td = 0;
 	//if (tag.is("table"))      { tag_table();          return; }
-	//if (tag.is("td"))         { tag_td();             return; }
 	//if (tag.is("tr"))         { tag_tr();             return; }
-
-	if (tag.is("dd")) { 
-		//NewLine();
-		//if (tag.opened) stolbec += 5; //may overflow! 
-		return; 
-	}
+	//if (tag.is("td"))         { tag_td();             return; }
 }
 
 void TWebBrowser::tag_p()
@@ -101,6 +94,8 @@ void TWebBrowser::tag_font()
 void TWebBrowser::tag_div()
 {
 	if (streq(#tag.prior,"div")) && (tag.opened) return;
+	if (streq(#tag.prior,"td")) return;
+	//if (streq(#tag.prior,"div")) return;
 	if (!tag.opened) && (style.font) text_colors.pop();
 	NewLine();
 }
@@ -287,6 +282,7 @@ void TWebBrowser::tag_img()
 	if (!strcmp(tag.value + strrchr(tag.value, '.'), "webp")) goto NOIMG;
 
 	strlcpy(#img_path, tag.value, sizeof(img_path)-1);
+	replace_char(#img_path, ' ', '\0', sizeof(img_path));
 	get_absolute_url(#img_path, history.current());
 
 	if (check_is_the_adress_local(#img_path)) {

@@ -41,10 +41,6 @@
 //                       DATA                        //
 //                                                   //
 //===================================================//
-char version[]="WebView 3.26";
-
-#define DEFAULT_URL URL_SERVICE_HOMEPAGE
-
 bool debug_mode = false;
 bool show_images = true;
 
@@ -144,11 +140,13 @@ void main()
 
 			if (WB1.list.MouseScroll(mouse.vert)) WB1.DrawPage();
 
-			scrollbar_v_mouse (#scroll_wv);
-			if (scroll_wv.delta2) {
-				WB1.list.first = scroll_wv.position;
-				WB1.DrawPage();
-				break;
+			if (WB1.list.count > WB1.list.visible) {
+				scrollbar_v_mouse (#scroll_wv);
+				if (scroll_wv.delta2) {
+					WB1.list.first = scroll_wv.position;
+					WB1.DrawPage();
+					break;
+				}
 			}
 
 			if (links.hover(WB1.list.y, WB1.list.first))
@@ -187,8 +185,9 @@ void main()
 			break;
 
 		case evReDraw:
-			DefineAndDrawWindow(GetScreenWidth()-800/2-random(80),
-				GetScreenHeight()-700/2-random(80),800,700,0x73,0,0,0);
+			DefineAndDrawWindow(GetScreenWidth()-WIN_W/2-random(80),GetScreenHeight()-WIN_H/2-random(80),
+			//DefineAndDrawWindow(0,0,
+				WIN_W,WIN_H,0x73,0,0,0);
 			GetProcessInfo(#Form, SelfInfo);
 			ProcessMenuClick();
 			sc.get();
@@ -410,11 +409,11 @@ void EventToggleDebugMode()
 
 void EventAllTabsClick(dword _n)
 {
-	if (http.transfer) return;
 	if (mouse.mkm) {
+		StopLoading();
 		EventTabClose(_n);
 	} else {
-		EventTabClick(_n);
+		if (!http.transfer) EventTabClick(_n);
 	}
 }
 
