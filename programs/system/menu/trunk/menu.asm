@@ -18,12 +18,12 @@
 ;   MAIN MENU by lisovin@26.ru
 ;   Some parts of code rewritten by Ivan Poddubny <ivan-yar@bk.ru>
 ;
-;   Compile with FASM for Menuet
+;   Compile with FASM for Kolibri
 ;******************************************************************************
-  BTN_HEIGHT         = 22  ;26
-  BTN_WIDTH          = 140 ;178
-  TXT_Y              = (BTN_HEIGHT)/2-4
-  FONT_TYPE          = 0x80000000 ;0x90000000
+  BTN_HEIGHT         = 26
+  BTN_WIDTH          = 178
+  TXT_Y              = (BTN_HEIGHT)/2-6
+  FONT_TYPE          = 0x90000000
 
   PANEL_HEIGHT       = 20
   MENU_BOTTON_X_POS  = 10
@@ -896,7 +896,9 @@ align 4
 	dec	ecx
 	jnz	.findline
 	
-	mcall	4,,[sc.work_text],,21
+	mov ecx, [sc.work_text]
+	add ecx, FONT_TYPE
+	mcall	4,,,,21
 	pop	edx
 	ret
 ;------------------------------------------------------------------------------
