@@ -51,8 +51,8 @@ void TWebBrowser::SetStyle()
 	if (tag.is("body"))       { tag_body();           return; }
 	if (tag.is("html"))       { t_html = tag.opened;  return; }
 
-	//TO BE REWORKED
-	//if (tag.is("table"))      { tag_table();          return; }
+	if (tag.is("table"))      { tag_table();          return; }
+	if (tag.is("tr"))         { if (tag.opened) NewLine();    return; } //temp
 	//if (tag.is("tr"))         { tag_tr();             return; }
 	//if (tag.is("td"))         { tag_td();             return; }
 }
@@ -105,12 +105,11 @@ void TWebBrowser::tag_iframe()
 	if (tag.get_value_of("src")) {
 		NewLine();
 		strcpy(#line, "IFRAME: ");
-		Render();
+		RenderTextbuf();
 		link=true;
 		links.add_link(tag.value);
-		strncpy(#line, tag.value, sizeof(line)-1);
-		while (CheckForLineBreak()) {};
-		Render();
+		strncpy(#line, tag.value, sizeof(TWebBrowser.line)-1);
+		RenderTextbuf();
 		link=false;
 		NewLine();
 	}
@@ -191,15 +190,11 @@ void TWebBrowser::tag_li()
 
 void TWebBrowser::tag_hr()
 {
-	EAX = 0x999999;
-	if (tag.get_value_of("color")) GetColor(tag.value);
-	$push eax;
+	dword hrcol = 0x777777;
+	if (tag.get_value_of("color")) hrcol = GetColor(tag.value);
+	if (draw_x != left_gap) NewLine();
+	canvas.DrawBar(5, style.cur_line_h / 2 + draw_y - 1, draw_w-10, 1, hrcol);
 	NewLine();
-	$pop edi;
-	draw_y += 10;
-	canvas.DrawBar(5, draw_y - 1, list.w-10, 1, EDI);
-	NewLine();
-	draw_y += 10;
 	return;
 }
 
@@ -222,13 +217,7 @@ void TWebBrowser::tag_body()
 
 void TWebBrowser::tag_q()
 {
-	if (tag.opened)	{
-		AddCharToTheLine(' ');
-		AddCharToTheLine('\"');
-	} else {
-		AddCharToTheLine('\"');
-		AddCharToTheLine(' ');
-	}
+	chrncat(#line, '\"', sizeof(TWebBrowser.line));
 }
 
 void TWebBrowser::tag_h1234_caption()
@@ -303,19 +292,18 @@ IMGOK:
 
 NOIMG:
 	if (tag.get_value_of("title")) || (tag.get_value_of("alt")) {
-		strncpy(#img_path, tag.value, sizeof(line)-3);
+		strncpy(#img_path, tag.value, sizeof(TWebBrowser.line)-3);
 		sprintf(#line, "[%s]", #img_path);
 	} else {
 		if (streqrp(#img_path, "data:")) img_path=0;
 		replace_char(#img_path, '?', NULL, strlen(#img_path));
-		img_path[sizeof(line)-3] = '\0'; //prevent overflow in sprintf
+		img_path[sizeof(TWebBrowser.line)-3] = '\0'; //prevent overflow in sprintf
 		sprintf(#line, "[%s]", #img_path+strrchr(#img_path, '/'));
 		line[50]= NULL;
 	}
-	while (CheckForLineBreak()) {};
 	text_colors.add(0x9A6F29);
 	style.image = true;
-	Render();
+	RenderTextbuf();
 	style.image = false;
 	text_colors.pop();
 }
@@ -330,6 +318,7 @@ int table_c=0;
 void TWebBrowser::tag_table()
 {
 	if (tag.opened) table_c++; else table_c--;
+	if (!tag.opened) NewLine();
 }
 
 void TWebBrowser::tag_tr()

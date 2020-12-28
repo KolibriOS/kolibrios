@@ -1,6 +1,6 @@
 CANVAS canvas;
 
-void TWebBrowser::Render()
+void TWebBrowser::RenderLine()
 {
 	unsigned px; //paint x coordinate
 	unsigned pw; //paint y coordinate
@@ -56,6 +56,38 @@ void TWebBrowser::Render()
 		if (debug_mode) debugln(#line);
 		line = NULL;
 	}
+}
+
+void TWebBrowser::RenderTextbuf()
+{
+	int break_pos;
+	char next_line[4096];
+	int zoom = list.font_w / BASIC_CHAR_W;
+
+	//Do we need a line break?
+	while (strlen(#line) * list.font_w + draw_x >= draw_w) {
+		//Yes, we do. Lets calculate where...
+		break_pos = strrchr(#line, ' ');
+
+		//Is a new line fits in the current line?
+		if (break_pos * list.font_w + draw_x > draw_w) {
+			break_pos = draw_w - draw_x /list.font_w;
+			while(break_pos) && (line[break_pos]!=' ') break_pos--;
+		}
+		//Maybe a new line is too big for the whole new line? Then we have to split it
+		if (!break_pos) && (style.tag_list.level*5 + strlen(#line) * zoom >= list.column_max) {
+			break_pos = draw_w  - draw_x / list.font_w;
+		}
+
+		strcpy(#next_line, #line + break_pos);
+		line[break_pos] = 0x00;		
+		
+		RenderLine();
+
+		strcpy(#line, #next_line);
+		NewLine();		
+	}
+	RenderLine();
 }
 
 bool TWebBrowser::RenderImage(dword cur_img)

@@ -68,32 +68,44 @@ char *unicode_symbols[]={
 
 unsigned char unicode_chars[] = "€‚ƒ„…†‡‰‹‘’“”•–—™› ΅Ά£¤¥¦§¨©ª«¬­®―ΰαβγδεζηθικλμνξοπρh£\243i\105\244\0";
 
-bool GetUnicodeSymbol(dword _line, in_tag, size)
+bool GetUnicodeSymbol(dword _line, line_size, bufpos, buf_end)
 {
-	int j;
+	int i;
 	int code;
-	
-	for (j=0; unicode_symbols[j]!=0; j+=2;) 
+	char special_code[10];
+	bool white_end = false;
+	dword bufstart = bufpos;
+
+	for (i=0; i<9; i++, bufpos++)
 	{
-		if (!strcmp(in_tag, unicode_symbols[j]))
+		if (__isWhite(ESBYTE[bufpos])) {bufpos--; break;}
+		if (ESBYTE[bufpos] == ';') || (bufpos >= buf_end) break;
+		special_code[i] = ESBYTE[bufpos];
+	}
+	special_code[i] = '\0';
+	
+	for (i=0; unicode_symbols[i]!=0; i+=2;) 
+	{
+		if (!strcmp(#special_code, unicode_symbols[i]))
 		{
-			strncat(_line, unicode_symbols[j+1], size);
-			return true;
+			strncat(_line, unicode_symbols[i+1], line_size);
+			return bufpos;
 		}
 	}
 
-	if (ESBYTE[in_tag]=='#') 
+	if (special_code[0]=='#') 
 	{
-		code = atoi(in_tag + 1);
+		code = atoi(#special_code + 1);
 		if (code>=0) && (code<=255)	{
-			chrncat(_line, code, size); //NOT ALL ASCII CODES IN KOLIBRI ARE COMPATABLE WITH STANDARDS
-			return true;
+			chrncat(_line, code, line_size); //NOT ALL ASCII CODES IN KOLIBRI ARE COMPATABLE WITH STANDARDS
+			return bufpos;
 		}
 		if (code>=1040) && (code<=1040+72) {
-			chrncat(_line, unicode_chars[code-1040], size);
-			return true;
+			chrncat(_line, unicode_chars[code-1040], line_size);
+			return bufpos;
 		}
 	}
 
-	return false;
+	chrncat(_line, '&', line_size);
+	return bufstart;
 }

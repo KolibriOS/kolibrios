@@ -12,8 +12,6 @@ dword link_color_active;
 #define BASIC_CHAR_W 8
 #define BASIC_LINE_H 18
 
-char line[500];
-
 struct STYLE {
 	bool
 	b, u, s, h,
@@ -48,18 +46,19 @@ struct TWebBrowser {
 	dword is_html;
 	collection img_url;
 	char header[150];
+	char line[500];
 	char redirect[URL_SIZE];
 
 	void SetStyle();
-	void Render();
+	void RenderTextbuf();
+	void RenderLine();
 	bool RenderImage();
 
 	void SetPageDefaults();
-	void AddCharToTheLine();
 	void ParseHtml();
-	bool CheckForLineBreak();
 	void NewLine();
 	void ChangeEncoding();
+	void AddCharToTheLine();
 	void DrawPage();
 
 	void tag_a();
@@ -119,8 +118,6 @@ void TWebBrowser::SetPageDefaults()
 }
 //============================================================================================
 void TWebBrowser::ParseHtml(dword _bufpointer, _bufsize){
-	char unicode_symbol[10];
-	dword j;
 	int tab_len;
 	dword bufpos;
 	bufsize = _bufsize;
@@ -148,40 +145,30 @@ void TWebBrowser::ParseHtml(dword _bufpointer, _bufsize){
 		{
 		case 0x0a:
 			if (style.pre) {
-				Render();
+				RenderTextbuf();
 				NewLine();
 			} else {
-				AddCharToTheLine(' ');
+				goto _DEFAULT;
 			}
 			break;
 		case 0x09:
 			if (style.pre) {
 				tab_len = draw_x - left_gap / list.font_w + strlen(#line) % 4;
 				if (!tab_len) tab_len = 4; else tab_len = 4 - tab_len;
-				for (j=0; j<tab_len; j++;) chrcat(#line,' ');
+				while (tab_len) {chrcat(#line,' '); tab_len--;}
 			} else {
-				AddCharToTheLine(' ');
+				goto _DEFAULT;
 			}
 			break;
 		case '&': //&nbsp; and so on
-			for (j=1, unicode_symbol=0; (ESBYTE[bufpos+j]<>';') && (!__isWhite(ESBYTE[bufpos+j])) && (j<8); j++)
-			{
-				chrcat(#unicode_symbol, ESBYTE[bufpos+j]);
-			}
-			if (GetUnicodeSymbol(#line, #unicode_symbol, sizeof(line)-1)) {
-				bufpos += j;
-				CheckForLineBreak();
-			} else {
-				AddCharToTheLine('&');
-			}
+			bufpos = GetUnicodeSymbol(#line, sizeof(TWebBrowser.line), bufpos+1, bufpointer+bufsize);
 			break;
 		case '<':
 			if (!is_html) goto _DEFAULT;
 			if (!strchr("!/?abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ", ESBYTE[bufpos+1])) goto _DEFAULT;
 			bufpos++;
 			if (tag.parse(#bufpos, bufpointer + bufsize)) {
-				CheckForLineBreak();
-				Render();
+				RenderTextbuf();
 				$push cur_encoding
 				SetStyle();
 				$pop eax
@@ -199,11 +186,10 @@ void TWebBrowser::ParseHtml(dword _bufpointer, _bufsize){
 			AddCharToTheLine(ESBYTE[bufpos]);
 		}
 	}
-	Render();
-	NewLine();
-	list.count = draw_y;
+	RenderTextbuf();
+	list.count = draw_y + style.cur_line_h;
 
-	canvas.bufh = math.max(list.visible, draw_y);
+	canvas.bufh = math.max(list.visible, list.count);
 	buf_data = realloc(buf_data, canvas.bufh * canvas.bufw * 4 + 8);
 
 	list.CheckDoesValuesOkey();
@@ -217,47 +203,16 @@ void TWebBrowser::ParseHtml(dword _bufpointer, _bufsize){
 //============================================================================================
 void TWebBrowser::AddCharToTheLine(unsigned char _char)
 {
-	dword line_len;
+	dword line_len = strlen(#line);
 	if (_char<=15) _char=' ';
-	line_len = strlen(#line);
 	if (!style.pre) && (_char == ' ')
 	{
 		if (line[line_len-1]==' ') return; //no double spaces
 		if (draw_x==left_gap) && (!line) return; //no paces at the beginning of the line
 		if (link) && (line_len==0) return;
 	}
-	if (line_len < sizeof(line)) chrcat(#line, _char);
-	CheckForLineBreak();
-}
-//============================================================================================
-bool TWebBrowser::CheckForLineBreak()
-{
-	int break_pos;
-	char next_line[4096];
-	int zoom = list.font_w / BASIC_CHAR_W;
-	//Do we need a line break?
-	if (strlen(#line) * list.font_w + draw_x < draw_w) return false;
-	//Yes, we do. Lets calculate where...
-	break_pos = strrchr(#line, ' ');
-
-	//Is a new line fits in the current line?
-	if (break_pos * list.font_w + draw_x > draw_w) {
-		break_pos = draw_w - draw_x /list.font_w;
-		while(break_pos) && (line[break_pos]!=' ') break_pos--;
-	}
-	//Maybe a new line is too big for the whole new line? Then we have to split it
-	if (!break_pos) && (style.tag_list.level*5 + strlen(#line) * zoom >= list.column_max) {
-		break_pos = draw_w  - draw_x / list.font_w;
-	}
-
-	strcpy(#next_line, #line + break_pos);
-	line[break_pos] = 0x00;		
-	
-	Render();
-
-	strcpy(#line, #next_line);
-	NewLine();
-	return true;
+	if (line_len < sizeof(TWebBrowser.line)) chrcat(#line+line_len, _char);
+	if (line_len+1 * list.font_w + draw_x >= draw_w) RenderTextbuf();
 }
 //============================================================================================
 void TWebBrowser::NewLine()
@@ -290,9 +245,8 @@ void TWebBrowser::ChangeEncoding(int _new_encoding)
 	}
 }
 //============================================================================================
-scroll_bar scroll_wv = 
-{ 15,NULL,NULL,NULL,0,2,NULL,
-  0,0,0xeeeeee,0xBBBbbb,0xeeeeee};
+scroll_bar scroll_wv = { 15,NULL,NULL,NULL,
+  0,2,NULL,0,0,0xeeeeee,0xBBBbbb,0xeeeeee};
 
 void TWebBrowser::DrawPage()
 {
