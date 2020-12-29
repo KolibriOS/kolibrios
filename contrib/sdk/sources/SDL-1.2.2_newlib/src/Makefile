@@ -50,7 +50,7 @@ install: libSDL.a
 	mv -f libSDL.a $(SDK_DIR)/lib  
  
 libSDL.a: $(OBJS)
-	$(AR) $(ARFLAGS) libSDL.a $(OBJS) SYSCALL/src/*.o
+	$(AR) $(ARFLAGS) libSDL.a $(OBJS) SYSCALL/src/os.o
  
 %.o : %.asm Makefile
 	nasm -f coff $< $

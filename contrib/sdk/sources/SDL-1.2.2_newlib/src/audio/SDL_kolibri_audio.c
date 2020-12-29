@@ -1,4 +1,5 @@
 #include "SDL_audio.h"
+#include <kos32sys.h>
 #include <menuet/os.h>
 #include <stdlib.h>
 #include <string.h>
@@ -86,14 +87,14 @@ static void audio_thread(void)
         if (CreateBuffer(used_format|PCM_RING, 0, &hBuff))
         {
                 audio_response=1;
-                __menuet__sys_exit();
+                exit(0);
         }
         GetBufferSize(hBuff, &mix_size);
         SDL_printf("buffer created, size is %d\n",mix_size);
         mix_size >>= 1;
         data = malloc(mix_size);
         audio_response=1;
-        if (!data) __menuet__sys_exit();
+        if (!data) exit(0);
         // wait for resume
         while (audio_command!=AUDIO_RESUME)
                 Yield();
@@ -130,7 +131,7 @@ static void audio_thread(void)
                         audio_response = 1;
                         StopBuffer(hBuff);
                         DestroyBuffer(hBuff);
-                        __menuet__sys_exit();
+                        exit(0);
                 }
                 else
                 {
@@ -142,7 +143,7 @@ static void audio_thread(void)
                 	}
                 }
                 if (bPaused)
-                        __menuet__delay100(5);
+                        delay(5);
                 else
                 {
                         GetNotify(event);

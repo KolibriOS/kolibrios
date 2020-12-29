@@ -1,6 +1,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <menuet/os.h>
+#include <kos32sys.h>
 #include "SDL.h"
 #include "SDL_error.h"
 #include "SDL_video.h"
@@ -150,7 +151,7 @@ SDL_Surface * MenuetOS_SetVideoMode(_THIS, SDL_Surface *current, int width, int 
  }
  else
  {
-  __menuet__set_bitfield_for_wanted_events(0x27);
+  set_wanted_events_mask(0x27);
   was_initialized=1;
   MenuetOS_SDL_RepaintWnd();
  }
