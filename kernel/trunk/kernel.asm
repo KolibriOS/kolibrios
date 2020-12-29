@@ -5692,12 +5692,6 @@ proc is_region_userspace stdcall, base:dword, len:dword
         cmp     eax, OS_BASE
         ja      @f
 
-        mov     ebx, 0xFFFFFFFF
-        sub     ebx, [base]
-        inc     ebx
-        cmp     [len], ebx
-        ja      @f
-
         add     eax, [len]
         cmp     eax, OS_BASE
         ja      @f
