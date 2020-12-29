@@ -231,7 +231,7 @@ void main()
 				if (http_get_type==PAGE) {
 					history.add(http.cur_url);
 					if (!strchr(http.cur_url, '?')) {
-						cache.add(http.cur_url, http.content_pointer, http.content_received, PAGE);
+						cache.add(http.cur_url, http.content_pointer, http.content_received, PAGE, WB1.custom_encoding);
 					}
 					LoadInternalPage(http.content_pointer, http.content_received);
 					free(http.content_pointer);
@@ -239,9 +239,9 @@ void main()
 				else if (http_get_type==IMG) {
 					_IMG_RES:
 					if (http.status_code >= 200) && (http.status_code < 300) {
-						cache.add(cur_img_url, http.content_pointer, http.content_received, IMG);
+						cache.add(cur_img_url, http.content_pointer, http.content_received, IMG, NULL);
 					} else {
-						cache.add(cur_img_url, 0, 0, IMG);
+						cache.add(cur_img_url, 0, 0, IMG, NULL);
 					}
 					free(http.content_pointer);
 					GetImg(false);
@@ -271,7 +271,7 @@ void ProcessButtonClick(dword id__)
 		case 1: ExitProcess();
 		case TAB_CLOSE_ID...TAB_CLOSE_ID+TABS_MAX: EventTabClose(id__ - TAB_CLOSE_ID); return;
 		case TAB_ID...TAB_ID+TABS_MAX: EventAllTabsClick(id__ - TAB_ID); return;
-		case ENCODINGS...ENCODINGS+6: EventChangeEncodingAndLoadPage(id__-ENCODINGS); return;
+		case ENCODINGS...ENCODINGS+6: EventManuallyChangeEncoding(id__-ENCODINGS); return;
 		case NEW_WINDOW:       RunProgram(#program_path, NULL); return;
 		case NEW_TAB:          if (!http.transfer) EventOpenNewTab(URL_SERVICE_HOMEPAGE); return;
 		case SCAN_CODE_BS:
@@ -378,7 +378,7 @@ void draw_window()
 	DrawTabsBar();
 }
 
-void EventChangeEncodingAndLoadPage(int _new_encoding)
+void EventManuallyChangeEncoding(int _new_encoding)
 {
 	dword newbuf, newsize;
 	WB1.custom_encoding = _new_encoding;
@@ -535,6 +535,7 @@ void OpenPage(dword _open_URL)
 		//CACHED PAGE
 		if (cache.current_type==PAGE) {
 			history.add(#new_url);
+			WB1.custom_encoding = cache.current_charset;
 			LoadInternalPage(cache.current_buf, cache.current_size);
 		}
 		else {
@@ -544,6 +545,7 @@ void OpenPage(dword _open_URL)
 	} else if (!strncmp(#new_url,"WebView:",8)) {
 		//INTERNAL PAGE
 		history.add(#new_url);
+		WB1.custom_encoding = -1;
 		if (streq(#new_url, URL_SERVICE_HOMEPAGE)) LoadInternalPage(#buildin_page_home, sizeof(buildin_page_home));
 		else if (streq(#new_url, URL_SERVICE_HELP)) LoadInternalPage(#buildin_page_help, sizeof(buildin_page_help));
 		else if (streq(#new_url, URL_SERVICE_TEST)) LoadInternalPage(#buildin_page_test, sizeof(buildin_page_test));
@@ -774,7 +776,7 @@ void ProcessMenuClick()
 void EventSeachWeb()
 {
 	char new_url[URL_SIZE+1];
-	replace_char(#editURL, ' ', '_', URL_SIZE);
+	replace_char(#editURL, ' ', '+', URL_SIZE);
 	strcpy(#new_url, "https://www.google.com/search?q=");
 	strncat(#new_url, #editURL, URL_SIZE);
 	OpenPage(#new_url);
@@ -889,6 +891,10 @@ void CheckContentType()
 {
 	char content_type[64];
 	if (http.header_field("content-type", #content_type, sizeof(content_type))) // application || image
+
+	if (strchr(#content_type, '=')) {
+		WB1.custom_encoding = get_encoding_type_by_name(EAX+1);	
+	}
 
 	if (content_type[0] == 'i') {
 		EventDownloadAndOpenImage(http.cur_url);

@@ -154,6 +154,7 @@ void EventTabClose(int _id)
 		tab.close(_id);
 	}
 	DrawTabsBar();
+	DrawStatusBar(NULL);
 }
 
 void EventCloseActiveTab()
@@ -172,6 +173,7 @@ void EventTabClick(int _id)
 	WB1.ParseHtml(WB1.bufpointer, WB1.bufsize);
 	WB1.DrawPage();		
 	SetOmniboxText(history.current());
+	DrawStatusBar(NULL);
 }
 
 void EventOpenNewTab(dword _url)

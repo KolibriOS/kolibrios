@@ -104,11 +104,11 @@ void TWebBrowser::tag_iframe()
 {
 	if (tag.get_value_of("src")) {
 		NewLine();
-		strcpy(#line, "IFRAME: ");
+		strcpy(#linebuf, "IFRAME: ");
 		RenderTextbuf();
 		link=true;
 		links.add_link(tag.value);
-		strncpy(#line, tag.value, sizeof(TWebBrowser.line)-1);
+		strncpy(#linebuf, tag.value, sizeof(TWebBrowser.linebuf)-1);
 		RenderTextbuf();
 		link=false;
 		NewLine();
@@ -137,15 +137,23 @@ void TWebBrowser::tag_meta_xml()
 		EDX = strrchr(tag.value, '=') + tag.value; //search in content=
 		if (ESBYTE[EDX] == '"') EDX++;
 		strlwr(EDX);
-		if      (streqrp(EDX,"utf-8"))        || (streqrp(EDX,"utf8"))        ChangeEncoding(CH_UTF8);
-		else if (streqrp(EDX,"windows-1251")) || (streqrp(EDX,"windows1251")) ChangeEncoding(CH_CP1251);
-		else if (streqrp(EDX,"dos"))          || (streqrp(EDX,"cp-866"))      ChangeEncoding(CH_CP866);
-		else if (streqrp(EDX,"iso-8859-5"))   || (streqrp(EDX,"iso8859-5"))   ChangeEncoding(CH_ISO8859_5);
-		else if (streqrp(EDX,"koi8-r"))       || (streqrp(EDX,"koi8-u"))      ChangeEncoding(CH_KOI8);
+		EAX = get_encoding_type_by_name(EDX);
+		if (EAX!=-1) ChangeEncoding(EAX);
 	}
 	if (streq(tag.get_value_of("http-equiv"), "refresh")) && (tag.get_value_of("content")) {
 		if (tag.value = strstri(tag.value, "url")) strcpy(#redirect, tag.value);
 	}
+}
+
+signed int get_encoding_type_by_name(dword name)
+{
+	EDX = name;
+	if      (streqrp(EDX,"utf-8"))        || (streqrp(EDX,"utf8"))        return CH_UTF8;
+	else if (streqrp(EDX,"windows-1251")) || (streqrp(EDX,"windows1251")) return CH_CP1251;
+	else if (streqrp(EDX,"dos"))          || (streqrp(EDX,"cp-866"))      return CH_CP866;
+	else if (streqrp(EDX,"iso-8859-5"))   || (streqrp(EDX,"iso8859-5"))   return CH_ISO8859_5;
+	else if (streqrp(EDX,"koi8-r"))       || (streqrp(EDX,"koi8-u"))      return CH_KOI8;
+	return -1;
 }
 
 void TWebBrowser::tag_code()
@@ -178,12 +186,12 @@ void TWebBrowser::tag_li()
 		if (!style.tag_list.level) style.tag_list.upd_level(1, 'u');
 		if (!style.pre) NewLine();
 		if (style.tag_list.order_type() == 'u') {
-			strcpy(#line, "\31 ");
+			strcpy(#linebuf, "\31 ");
 			draw_x = style.tag_list.level * 5 - 2 * list.font_w + left_gap;
 		} 
 		if (style.tag_list.order_type() == 'o') {
-			sprintf(#line, "%i. ", style.tag_list.inc_counter());
-			draw_x = style.tag_list.level * 5 - 1 - strlen(#line) * list.font_w + left_gap;
+			sprintf(#linebuf, "%i. ", style.tag_list.inc_counter());
+			draw_x = style.tag_list.level * 5 - 1 - strlen(#linebuf) * list.font_w + left_gap;
 		}
 	}
 }
@@ -217,7 +225,7 @@ void TWebBrowser::tag_body()
 
 void TWebBrowser::tag_q()
 {
-	chrncat(#line, '\"', sizeof(TWebBrowser.line));
+	chrncat(#linebuf, '\"', sizeof(TWebBrowser.linebuf));
 }
 
 void TWebBrowser::tag_h1234_caption()
@@ -292,14 +300,14 @@ IMGOK:
 
 NOIMG:
 	if (tag.get_value_of("title")) || (tag.get_value_of("alt")) {
-		strncpy(#img_path, tag.value, sizeof(TWebBrowser.line)-3);
-		sprintf(#line, "[%s]", #img_path);
+		strncpy(#img_path, tag.value, sizeof(TWebBrowser.linebuf)-3);
+		sprintf(#linebuf, "[%s]", #img_path);
 	} else {
 		if (streqrp(#img_path, "data:")) img_path=0;
 		replace_char(#img_path, '?', NULL, strlen(#img_path));
-		img_path[sizeof(TWebBrowser.line)-3] = '\0'; //prevent overflow in sprintf
-		sprintf(#line, "[%s]", #img_path+strrchr(#img_path, '/'));
-		line[50]= NULL;
+		img_path[sizeof(TWebBrowser.linebuf)-3] = '\0'; //prevent overflow in sprintf
+		sprintf(#linebuf, "[%s]", #img_path+strrchr(#img_path, '/'));
+		linebuf[50]= NULL;
 	}
 	text_colors.add(0x9A6F29);
 	style.image = true;
@@ -310,56 +318,83 @@ NOIMG:
 
 
 
-unsigned tr_y;
-unsigned td_x, td_w;
-unsigned highest_td;
-int table_c=0;
+
+
+
+struct TABLE {
+	int count;
+	int col;
+	collection_int cx;
+	int row_y, next_row_y;
+} table;
+
+void TWebBrowser::tag_table_reset()
+{
+	table.count = 0;
+	table.cx.drop();
+	table.row_y = 0;
+	table.next_row_y = 0;
+}
 
 void TWebBrowser::tag_table()
 {
-	if (tag.opened) table_c++; else table_c--;
-	if (!tag.opened) NewLine();
+	if (tag.opened) {
+		if (!table.count) {
+			table.next_row_y = table.row_y = draw_y;
+		}
+		table.count++;
+	} else {
+		table.count--;
+		if (!table.count) {
+			draw_y = math.max(draw_y + style.cur_line_h, table.next_row_y);
+			left_gap = BODY_MARGIN;
+		}
+	} 
 }
 
 void TWebBrowser::tag_tr()
 {
-	if (table_c>1) return;
-	//style.tr = tag.opened;
-	NewLine();
-	draw_w = list.w - left_gap;
-	left_gap = BODY_MARGIN;
-	td_w = 0;
 	if (tag.opened) {
-		tr_y = draw_y;
-	} else {
-		//draw_y = highest_td;
+		if (table.count>1) {
+			NewLine();
+		} else {
+			table.col = 0;
+			table.row_y = math.max(draw_y + style.cur_line_h, table.next_row_y);
+			left_gap = BODY_MARGIN;
+			NewLine();	
+		}		
 	}
 }
 
 void TWebBrowser::tag_td()
 {
-	if (table_c>1) return;
+	if (table.count>1) return;
 	if (tag.opened) {
-		NewLine();
-		//highest_td = math.max(draw_y, tr_y);
-		if (tag.get_value_of("width")) td_w = atoi(tag.value);
-		draw_y = tr_y;
-		draw_x = left_gap;
-		debugval("td_w", td_w);
-		if (td_w > 20) draw_w = td_w; else draw_w = list.w - left_gap;
-	} else {
-		left_gap += td_w;
-		draw_w = list.w - left_gap;
-		/*
-		draw_w -= left_gap;
-		if (left_gap < 0) left_gap = BODY_MARGIN;
-		if (draw_w < 0) {
-			left_gap = BODY_MARGIN;
-			draw_w = list.w - left_gap;
+		table.next_row_y = math.max(draw_y + style.cur_line_h, table.next_row_y);
+		draw_y = table.row_y;
+		table.cx.set(table.col, math.max(draw_x,table.cx.get(table.col)) );
+		draw_x = left_gap = table.cx.get(table.col);
+		table.col++;
+		if (tag.get_value_of("width")) {
+			draw_w = EAX;
+			//debugval("draw_w", atoi(tag.value));
+			table.cx.set(table.col, draw_x + atoi(tag.value));
 		}
-		debugval("left_gap", left_gap);
-		*/
+		//if (tag.get_value_of("height")) table.next_row_y = draw_y + atoi(tag.value);
+	} 
+
+	if (left_gap >= list.w - list.font_w - 10) {
+		notify("left_gap overflow");
+		draw_x = left_gap = BODY_MARGIN;
+		table.cx.drop();
+		table.count = 999;
+		NewLine();
 	}
-	debugval("td_w", td_w);
-	debugval("left_gap", left_gap);
+
+	if (draw_w < 0) || (draw_w >= list.w) {
+		notify("draw_w overflow");
+		draw_x = left_gap = BODY_MARGIN;
+		draw_w = list.w - left_gap;
+		NewLine();
+	}
 }

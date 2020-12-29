@@ -46,7 +46,7 @@ struct TWebBrowser {
 	dword is_html;
 	collection img_url;
 	char header[150];
-	char line[500];
+	char linebuf[500];
 	char redirect[URL_SIZE];
 
 	void SetStyle();
@@ -76,6 +76,7 @@ struct TWebBrowser {
 	void tag_iframe();
 	void tag_title();
 	void tag_font();
+	void tag_table_reset();
 	void tag_table();
 	void tag_td();
 	void tag_tr();
@@ -100,21 +101,13 @@ void TWebBrowser::SetPageDefaults()
 	bg_colors.add(DEFAULT_BG_COL);
 	canvas.Fill(0, DEFAULT_BG_COL);
 	header = NULL;
-	cur_encoding = CH_CP866;
 	draw_y = BODY_MARGIN;
 	draw_x = left_gap = BODY_MARGIN;
 	draw_w = list.w - BODY_MARGIN;
-	line = 0;
+	linebuf = 0;
 	redirect = '\0';
-	//hold original buffer
-	if (o_bufpointer) o_bufpointer=free(o_bufpointer);
-	o_bufpointer = malloc(bufsize);
-	memmov(o_bufpointer, bufpointer, bufsize);
-	if (custom_encoding != -1) {
-		cur_encoding = custom_encoding;
-		bufpointer = ChangeCharset(cur_encoding, "CP866", bufpointer);
-	}
 	list.SetFont(8, 14, 10011000b);
+	tag_table_reset();
 }
 //============================================================================================
 void TWebBrowser::ParseHtml(dword _bufpointer, _bufsize){
@@ -124,12 +117,25 @@ void TWebBrowser::ParseHtml(dword _bufpointer, _bufsize){
 
 	if (list.w!=canvas.bufw) canvas.Init(list.x, list.y, list.w, 400*20);
 
-	if (bufpointer != _bufpointer) {
+	if (bufpointer == _bufpointer) {
+		custom_encoding = cur_encoding;	
+	} else {
 		bufpointer = malloc(bufsize);
 		memmov(bufpointer, _bufpointer, bufsize);
-	} else {
-		custom_encoding = CH_CP866;	
+
+		//hold original buffer
+		o_bufpointer = malloc(bufsize);
+		memmov(o_bufpointer, bufpointer, bufsize);
+
+		cur_encoding = CH_CP866;
+		if (custom_encoding != -1) {
+			cur_encoding = custom_encoding;
+			bufpointer = ChangeCharset(cur_encoding, "CP866", bufpointer);
+			bufsize = strlen(bufpointer);
+		}
 	}
+
+
 	SetPageDefaults();
 	is_html = true;
 	if (!strstri(bufpointer, "<body")) {
@@ -153,15 +159,15 @@ void TWebBrowser::ParseHtml(dword _bufpointer, _bufsize){
 			break;
 		case 0x09:
 			if (style.pre) {
-				tab_len = draw_x - left_gap / list.font_w + strlen(#line) % 4;
+				tab_len = draw_x - left_gap / list.font_w + strlen(#linebuf) % 4;
 				if (!tab_len) tab_len = 4; else tab_len = 4 - tab_len;
-				while (tab_len) {chrcat(#line,' '); tab_len--;}
+				while (tab_len) {chrcat(#linebuf,' '); tab_len--;}
 			} else {
 				goto _DEFAULT;
 			}
 			break;
 		case '&': //&nbsp; and so on
-			bufpos = GetUnicodeSymbol(#line, sizeof(TWebBrowser.line), bufpos+1, bufpointer+bufsize);
+			bufpos = GetUnicodeSymbol(#linebuf, sizeof(TWebBrowser.linebuf), bufpos+1, bufpointer+bufsize);
 			break;
 		case '<':
 			if (!is_html) goto _DEFAULT;
@@ -176,7 +182,7 @@ void TWebBrowser::ParseHtml(dword _bufpointer, _bufsize){
 				// So if encoding was changed from UTF to DOS than $bufpos position got wrong,
 				// and we have to start parse from the very beginning
 				if (EAX != cur_encoding) && (cur_encoding == CH_UTF8) {
-					ParseHtml(bufpointer, bufsize);
+					ParseHtml(bufpointer, strlen(bufpointer));
 					return;
 				}
 			}
@@ -194,7 +200,6 @@ void TWebBrowser::ParseHtml(dword _bufpointer, _bufsize){
 
 	list.CheckDoesValuesOkey();
 	anchors.current = NULL;
-	custom_encoding = -1;
 	if (!header) {
 		strncpy(#header, #version, sizeof(TWebBrowser.header)-1);
 		DrawTitle(#header);
@@ -203,15 +208,15 @@ void TWebBrowser::ParseHtml(dword _bufpointer, _bufsize){
 //============================================================================================
 void TWebBrowser::AddCharToTheLine(unsigned char _char)
 {
-	dword line_len = strlen(#line);
+	dword line_len = strlen(#linebuf);
 	if (_char<=15) _char=' ';
 	if (!style.pre) && (_char == ' ')
 	{
-		if (line[line_len-1]==' ') return; //no double spaces
-		if (draw_x==left_gap) && (!line) return; //no paces at the beginning of the line
+		if (linebuf[line_len-1]==' ') return; //no double spaces
+		if (draw_x==left_gap) && (!linebuf) return; //no paces at the beginning of the line
 		if (link) && (line_len==0) return;
 	}
-	if (line_len < sizeof(TWebBrowser.line)) chrcat(#line+line_len, _char);
+	if (line_len < sizeof(TWebBrowser.linebuf)) chrcat(#linebuf+line_len, _char);
 	if (line_len+1 * list.font_w + draw_x >= draw_w) RenderTextbuf();
 }
 //============================================================================================

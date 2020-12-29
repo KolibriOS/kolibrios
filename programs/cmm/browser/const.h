@@ -4,9 +4,9 @@
 //                     CYRILLIC                      //
 //                                                   //
 //===================================================//
-char buildin_page_error[] = FROM "res/page_not_found_ru.htm""\0";
-char buildin_page_home[]  = FROM "res/homepage_ru.htm""\0";
-char buildin_page_help[]  = FROM "res/help_ru.htm""\0";
+char buildin_page_error[] = FROM "res/page_not_found_ru.htm";
+char buildin_page_home[]  = FROM "res/homepage_ru.htm";
+char buildin_page_help[]  = FROM "res/help_ru.htm";
 char accept_language[]= "Accept-Language: ru\n";
 char rmb_menu[] = 
 "Посмотреть исходник|Ctrl+U
@@ -41,9 +41,9 @@ char clear_cache_ok[] = "'WebView\nКэш очищен.' -tI";
 //                      ENGLISH                      //
 //                                                   //
 //===================================================//
-char buildin_page_error[] = FROM "res/page_not_found_en.htm""\0";
-char buildin_page_home[]  = FROM "res/homepage_en.htm""\0";
-char buildin_page_help[]  = FROM "res/help_en.htm""\0";
+char buildin_page_error[] = FROM "res/page_not_found_en.htm";
+char buildin_page_home[]  = FROM "res/homepage_en.htm";
+char buildin_page_help[]  = FROM "res/help_en.htm";
 char accept_language[]= "Accept-Language: en\n";
 char rmb_menu[] =
 "View source|Ctrl+U
@@ -79,7 +79,7 @@ char clear_cache_ok[] = "'WebView\nThe cache has been cleared.' -tI";
 //                                                   //
 //===================================================//
 
-char buildin_page_test[]  = FROM "res/test.htm""\0";
+char buildin_page_test[]  = FROM "res/test.htm";
 
 #define URL_SERVICE_HISTORY  "WebView:history"
 #define URL_SERVICE_HOMEPAGE "WebView:home"
@@ -107,4 +107,4 @@ char editbox_icons[] = FROM "res/editbox_icons.raw";
 
 #define DEFAULT_URL URL_SERVICE_HOMEPAGE
 
-char version[]="WebView 3.28";
+char version[]="WebView 3.29";

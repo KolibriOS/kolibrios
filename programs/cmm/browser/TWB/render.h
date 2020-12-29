@@ -9,20 +9,20 @@ void TWebBrowser::RenderLine()
 
 	if (style.title)
 	{
-		strncpy(#header, #line, sizeof(TWebBrowser.header)-1);
+		strncpy(#header, #linebuf, sizeof(TWebBrowser.header)-1);
 		strncat(#header, " - ", sizeof(TWebBrowser.header)-1);
 		strncat(#header, #version, sizeof(TWebBrowser.header)-1);
-		line = 0;
+		linebuf = 0;
 		return;
 	}
 	if (t_html) && (!t_body) {
-		line = 0;
+		linebuf = 0;
 		return;
 	}
 	
-	if (line)
+	if (linebuf)
 	{
-		pw = strlen(#line) * list.font_w;
+		pw = strlen(#linebuf) * list.font_w;
 		zoom = list.font_w / BASIC_CHAR_W;
 
 		style.cur_line_h = math.max(style.cur_line_h, list.item_h);
@@ -42,19 +42,19 @@ void TWebBrowser::RenderLine()
 		pc = text_colors.get_last();
 		if (link) && (pc == text_colors.get(0)) pc = link_color_default;
 
-		canvas.WriteText(draw_x, draw_y, list.font_type, pc, #line, NULL);
-		if (style.b) canvas.WriteText(draw_x+1, draw_y, list.font_type, pc, #line, NULL);
+		canvas.WriteText(draw_x, draw_y, list.font_type, pc, #linebuf, NULL);
+		if (style.b) canvas.WriteText(draw_x+1, draw_y, list.font_type, pc, #linebuf, NULL);
 		if (style.s) canvas.DrawBar(draw_x, list.item_h / 2 - zoom + draw_y, pw, zoom, pc);
 		if (style.u) canvas.DrawBar(draw_x, list.item_h - zoom - zoom + draw_y, pw, zoom, pc);
 		if (link) {
-			if (line[0]==' ') && (line[1]==NULL) {} else {
+			if (linebuf[0]==' ') && (linebuf[1]==NULL) {} else {
 				canvas.DrawBar(draw_x, draw_y + list.item_h - calc(zoom*2)-1, pw, zoom, link_color_default);
 				links.add_text(draw_x, draw_y + list.y, pw, list.item_h - calc(zoom*2)-1, zoom);				
 			}
 		}
 		draw_x += pw;
-		if (debug_mode) debugln(#line);
-		line = NULL;
+		if (debug_mode) debugln(#linebuf);
+		linebuf = NULL;
 	}
 }
 
@@ -65,26 +65,26 @@ void TWebBrowser::RenderTextbuf()
 	int zoom = list.font_w / BASIC_CHAR_W;
 
 	//Do we need a line break?
-	while (strlen(#line) * list.font_w + draw_x >= draw_w) {
+	while (strlen(#linebuf) * list.font_w + draw_x >= draw_w) {
 		//Yes, we do. Lets calculate where...
-		break_pos = strrchr(#line, ' ');
+		break_pos = strrchr(#linebuf, ' ');
 
 		//Is a new line fits in the current line?
 		if (break_pos * list.font_w + draw_x > draw_w) {
 			break_pos = draw_w - draw_x /list.font_w;
-			while(break_pos) && (line[break_pos]!=' ') break_pos--;
+			while(break_pos) && (linebuf[break_pos]!=' ') break_pos--;
 		}
 		//Maybe a new line is too big for the whole new line? Then we have to split it
-		if (!break_pos) && (style.tag_list.level*5 + strlen(#line) * zoom >= list.column_max) {
+		if (!break_pos) && (style.tag_list.level*5 + strlen(#linebuf) * zoom >= list.column_max) {
 			break_pos = draw_w  - draw_x / list.font_w;
 		}
 
-		strcpy(#next_line, #line + break_pos);
-		line[break_pos] = 0x00;		
+		strcpy(#next_line, #linebuf + break_pos);
+		linebuf[break_pos] = 0x00;		
 		
 		RenderLine();
 
-		strcpy(#line, #next_line);
+		strcpy(#linebuf, #next_line);
 		NewLine();		
 	}
 	RenderLine();
