@@ -37,7 +37,8 @@ START:
         mcall   SF_SYSTEM, SSF_MOUSE_SETTINGS, SSSF_SET_SPEEDUP, 5
         mcall   SF_SYS_MISC, SSF_HEAP_INIT
         mcall   SF_KEYBOARD, SSF_SET_INPUT_MODE, 1  ; set kbd mode to scancodes
-        mcall   SF_SET_EVENTS_MASK, EVM_REDRAW or EVM_KEY or EVM_BUTTON or EVM_MOUSE or EVM_MOUSE_FILTER
+        mcall   SF_SET_EVENTS_MASK, EVM_REDRAW or EVM_KEY or EVM_BUTTON or \
+                EVM_MOUSE or EVM_MOUSE_FILTER
 
         stdcall dll.Load, @IMPORT
         or      eax, eax
@@ -57,7 +58,7 @@ START:
         mov     esi, __params
         mov     edi, path
         mov     ecx, 4096/4
-        rep     movsd
+        rep movsd
         mov     byte[edi-1], 0
 @@:
 ; OpenDialog initialisation
@@ -73,7 +74,7 @@ START:
         mov     [slide_key], eax
         invoke  ini_get_shortcut, inifilename, aKivSection, aTglbar, -1, tglbar_mod
         mov     [tglbar_key], eax
-		
+
         invoke  ini_get_int, inifilename, aKivSection, aWinX, 100
         mov     [window.left], eax
         invoke  ini_get_int, inifilename, aKivSection, aWinY, 150
@@ -100,7 +101,7 @@ START:
         mov     esi, path
         mov     edi, __params
         mov     ecx, 4096/4
-        rep     movsd
+        rep movsd
         mov     byte[edi-1], 0
         jmp     params_given
 
@@ -148,7 +149,7 @@ still:
 @@:
         movi    eax, SF_WAIT_EVENT_TIMEOUT
 .wait_event:
-        mcall   
+        mcall
         dec     eax
         jns     @f
         call    red_update_frame
@@ -470,7 +471,7 @@ button:
         invoke  img.rotate, [cur_image]
 @@:
         invoke  img.rotate, [orig_image]
-        mov    [bNewImage], 1
+        mov     [bNewImage], 1
         jmp     redraw_all
 
         ; rotate right
@@ -497,14 +498,14 @@ button:
         mov     edi, __params
         push    edi
         mov     ecx, 4096/4
-        rep     movsd
+        rep movsd
         mov     byte[edi-1], 0
 
         pop     esi
         push    esi
         call    find_last_name_component
 
-        pop     eax 
+        pop     eax
         push    [cur_image]
         stdcall load_image, eax
         jc      .restore_old
@@ -831,7 +832,7 @@ load_directory:
         sub     ecx, esi
         dec     ecx
         js      @f
-        rep     movsb
+        rep movsb
 @@:
         mov     byte[edi], 0
         mcall   68, 12, 0x1000
@@ -935,7 +936,7 @@ load_directory:
 .copy:
         mov     esi, [esp]
         mov     ecx, 304 / 4
-        rep     movsd
+        rep movsd
         inc     dword[esp+4]
 .nocopy:
 .noext:
@@ -1051,7 +1052,7 @@ proc draw_window
 @@:
         test    eax, eax
         jz      @f
-        mcall   SF_CHANGE_WINDOW, -1, -1, , 
+        mcall   SF_CHANGE_WINDOW, -1, -1, ,
 @@:
 
 .min_size_ok:
@@ -1059,36 +1060,36 @@ proc draw_window
         jz      @f
         call    generate_window_header
 @@:
-		cmp     [window.width], 0
-		jne     @f
-		mcall   SF_GET_SCREEN_SIZE
-		mov     ebx,eax			  ;
-		shr     ebx,16			  ; ebx = width
-		movzx   esi,ax			  ; esi = height
-		
-		mov     eax, ebx
-		xor     edx, edx
-		mov     ebx, 3
-		div     ebx
-		imul     eax, 2
-		mov    [window.width], eax
+        cmp     [window.width], 0
+        jne     @f
+        mcall   SF_GET_SCREEN_SIZE
+        mov     ebx, eax
+        shr     ebx, 16         ; ebx = width
+        movzx   esi, ax         ; esi = height
 
-		xor     edx, edx
-		mov     ebx, 4
-		div     ebx
-		mov    [window.left], eax
-		
-		mov     eax, esi
-		xor     edx, edx
-		mov     ebx, 3
-		div     ebx
-		imul     eax, 2
-		mov    [window.height], eax
-		
-		xor     edx, edx
-		mov     ebx, 4
-		div     ebx
-		mov    [window.top], eax
+        mov     eax, ebx
+        xor     edx, edx
+        mov     ebx, 3
+        div     ebx
+        imul    eax, 2
+        mov     [window.width], eax
+
+        xor     edx, edx
+        mov     ebx, 4
+        div     ebx
+        mov     [window.left], eax
+
+        mov     eax, esi
+        xor     edx, edx
+        mov     ebx, 3
+        div     ebx
+        imul    eax, 2
+        mov     [window.height], eax
+
+        xor     edx, edx
+        mov     ebx, 4
+        div     ebx
+        mov     [window.top], eax
 @@:
 
         mcall   SF_REDRAW, SSF_BEGIN_DRAW
@@ -1234,11 +1235,11 @@ proc draw_toolbar uses ebx esi edi
         mcall
         mov     ebx, [toolbar_abs_left]
         add     ebx, [toolbar.width]
-        sub     ebx, 25*5+10 
+        sub     ebx, 25*5+10
         shl     ebx, 16
         add     ebx, [toolbar_abs_left]
         add     ebx, [toolbar.width]
-        sub     ebx, 25*5+10 
+        sub     ebx, 25*5+10
         mcall
 
         mov     ebx, [toolbar_abs_left]
@@ -1260,7 +1261,7 @@ proc draw_toolbar uses ebx esi edi
         mcall    , , , 'scl'+40000000h
         mov     ebx, [toolbar_abs_left]
         add     ebx, [toolbar.width]
-        sub     ebx, 25*5+10 
+        sub     ebx, 25*5+10
         add     ebx, 5
         shl     ebx, 16
         mov     bl, 21
@@ -1308,7 +1309,7 @@ proc draw_toolbar uses ebx esi edi
         mcall   , buttons+rotccwbtn*20
         add     edx, 25*65536
         mcall   , buttons+rot180btn*20
- 
+
 .quit:
         ret
 endp
@@ -1529,7 +1530,7 @@ proc draw_fullscreen_controls
         add     edx, [canvas.top]
         mcall   65, buttons+backbtn*20, <20, 20>, , 8, palette
         add     edx, 25 SHL 16
-        mcall   65, buttons+forwardbtn*20,      , , 8, 
+        mcall   65, buttons+forwardbtn*20,      , , 8,
         pop     esi
         ret
 endp
@@ -1630,7 +1631,7 @@ proc generate_window_header
         push    eax ebx esi edi
         mov     esi, [last_name_component]
         mov     edi, window_header
-        mov     [window_header_len], 4    ; [,/,], 
+        mov     [window_header_len], 4    ; [,/,],
 
         mov     byte[edi], '['
         inc     edi
@@ -1968,7 +1969,7 @@ proc merge_icons_to_single_img _img
         mov     edi, [ebx+Image.Data]
         mov     ecx, [ebx+Image.Width]
         imul    ecx, [ebx+Image.Height]
-        rep     stosd
+        rep stosd
 
         mov     eax, [_img]
         cmp     [eax+Image.Type], Image.bpp32
@@ -2022,7 +2023,7 @@ endl
         add     edi, eax
 .next_line:
         mov     ecx, [edx+Image.Width]
-        rep     movsd
+        rep movsd
         mov     eax, [ebx+Image.Width]
         sub     eax, [edx+Image.Width]
         shl     eax, 2
@@ -2093,7 +2094,7 @@ proc recalc_client
 
         stdcall copy_box, work, work_prev
         xor     ecx, ecx
-        test     [bShowToolbar], 1
+        test    [bShowToolbar], 1
         jz      @f
         mov     ecx, [toolbar.height]
 @@:
@@ -2527,7 +2528,7 @@ db 'XBM',0
 db 0
 
 draw_window_fake:
-    ret
+        ret
 ;------------------------------------------------------------------------------
 scale_mode_calc dd scale_none_calc, 0, 0, 0, scale_fit_min_calc
 
