@@ -1,29 +1,29 @@
 CC = kos32-gcc
 AR = kos32-ar
 LD = kos32-ld
-CPP= kos32-g++
+CPP = kos32-g++
 STRIP = kos32-strip
 
 CFLAGS = -U_Win32 -U_WIN32 -U__MINGW32__ -c -O2 -fno-ident -fomit-frame-pointer
 
 ARFLAG = crs
 
-SDK_DIR:= $(abspath ../../..)
-LIB_DIR:= $(SDK_DIR)/lib
+SDK_DIR = $(abspath ../../..)
+LIB_DIR = $(SDK_DIR)/lib
 
 DEFINES = -D__unix__ -DMESA_EGL_NO_X11_HEADERS
 
-INCLUDES= -I. -I$(SDK_DIR)/sources/newlib/libc/include -I$(SDK_DIR)/sources/Mesa/mesa-9.2.5/include -I$(SDK_DIR)/sources/eglut
+INCLUDES = -I. -I$(SDK_DIR)/sources/newlib/libc/include -I$(SDK_DIR)/sources/Mesa/mesa-9.2.5/include -I$(SDK_DIR)/sources/eglut
 
-LIBS_EGL:= -leglut -legl.dll
-LIBS_OSM:= -losmesa.dll
-LIBS:= -lGL.dll -lpixlib3 -lgcc -lc.dll
+LIBS_EGL = -leglut -legl.dll
+LIBS_OSM = -losmesa.dll
+LIBS = -lGL.dll -lpixlib3 -lgcc -lc.dll
 
-LIBPATH:= -L$(LIB_DIR) -L/home/autobuild/tools/win32/mingw32/lib
+LIBPATH = -L$(LIB_DIR) -L/home/autobuild/tools/win32/mingw32/lib
 
-LDFLAGS = -static -nostdlib --stack 0x200000 -T$(SDK_DIR)/sources/newlib/app.lds --image-base 0
+LDFLAGS = -static -nostdlib --stack 0x200000 -T$(SDK_DIR)/sources/newlib/app.lds --image-base 0 --subsystem native
 
-SOURCES = 	gears.c				\
+SOURCES = gears.c				\
 		eglgears.c			\
 		osgears.c
  
