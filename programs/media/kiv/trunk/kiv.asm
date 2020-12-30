@@ -466,10 +466,11 @@ button:
         mov     eax, [cur_image]
         cmp     eax, [orig_image]
         jz      @f
-        invoke  img.destroy, [cur_image]
-        mov     [cur_image], 0
+        push    dword[esp]
+        invoke  img.rotate, [cur_image]
 @@:
         invoke  img.rotate, [orig_image]
+        mov    [bNewImage], 1
         jmp     redraw_all
 
         ; rotate right
@@ -1676,6 +1677,11 @@ proc scale_none_calc
 
         mov     [scale_mode], LIBIMG_SCALE_NONE
 
+        mov     eax, [cur_image]
+        cmp     eax, [orig_image]
+        jz      @f
+        invoke  img.destroy, eax
+@@:
         mov     eax, [orig_image]
         mov     [cur_image], eax
         mov     [cur_frame], eax
