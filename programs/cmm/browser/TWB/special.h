@@ -6,7 +6,7 @@ char *unicode_symbols[]={
 "#183","\31",   "middot", "\31", 
 "#149","-",
 "#151","-",
-"#160"," ",     "nbsp", " ",   "emsp", " ",
+"#160"," ",     "nbsp", "\t",   "emsp", " ",
 "#169","(c)",   "copy", "(c)",
 "#171","<<",    "laquo","<<",
 "#174","(r)",   "reg",  "(r)",
@@ -19,7 +19,7 @@ char *unicode_symbols[]={
 "ndash", "-",
 "mdash", "-", //--
 
-"rsquo", "'",
+"rsquo", "'", "apos", "'",
 "sect", "#",
 
 "ensp",    " ",

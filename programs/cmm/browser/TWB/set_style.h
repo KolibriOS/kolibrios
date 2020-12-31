@@ -87,15 +87,15 @@ void TWebBrowser::tag_font()
 	}
 	else {
 		text_colors.pop();
-		bg_colors.pop();
+		if (bg_colors.count>1) bg_colors.pop(); //never pop the last color
 	}
 }
 
 void TWebBrowser::tag_div()
 {
-	if (streq(#tag.prior,"div")) && (tag.opened) return;
+	//if (streq(#tag.prior,"div")) && (tag.opened) return;
 	if (streq(#tag.prior,"td")) return;
-	//if (streq(#tag.prior,"div")) return;
+	if (streq(#tag.prior,"div")) return;
 	if (!tag.opened) && (style.font) text_colors.pop();
 	NewLine();
 }
@@ -161,7 +161,7 @@ void TWebBrowser::tag_code()
 	if (style.pre = tag.opened) {
 		bg_colors.add(0xe4ffcb);
 	} else {
-		bg_colors.pop();
+		if (bg_colors.count>1) bg_colors.pop(); //never pop the last color
 	}
 }
 
@@ -384,7 +384,7 @@ void TWebBrowser::tag_td()
 	} 
 
 	if (left_gap >= list.w - list.font_w - 10) {
-		notify("left_gap overflow");
+		debugln("left_gap overflow");
 		draw_x = left_gap = BODY_MARGIN;
 		table.cx.drop();
 		table.count = 999;
@@ -392,7 +392,7 @@ void TWebBrowser::tag_td()
 	}
 
 	if (draw_w < 0) || (draw_w >= list.w) {
-		notify("draw_w overflow");
+		debugln("draw_w overflow");
 		draw_x = left_gap = BODY_MARGIN;
 		draw_w = list.w - left_gap;
 		NewLine();

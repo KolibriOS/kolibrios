@@ -216,8 +216,11 @@ void TWebBrowser::AddCharToTheLine(unsigned char _char)
 		if (draw_x==left_gap) && (!linebuf) return; //no paces at the beginning of the line
 		if (link) && (line_len==0) return;
 	}
-	if (line_len < sizeof(TWebBrowser.linebuf)) chrcat(#linebuf+line_len, _char);
-	if (line_len+1 * list.font_w + draw_x >= draw_w) RenderTextbuf();
+	if (line_len < sizeof(TWebBrowser.linebuf)) {
+		chrcat(#linebuf+line_len, _char);
+	} else {
+		RenderTextbuf();
+	}
 }
 //============================================================================================
 void TWebBrowser::NewLine()

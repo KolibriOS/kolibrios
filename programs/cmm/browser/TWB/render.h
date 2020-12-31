@@ -54,14 +54,15 @@ void TWebBrowser::RenderLine()
 		}
 		draw_x += pw;
 		if (debug_mode) debugln(#linebuf);
-		linebuf = NULL;
 	}
+	linebuf = NULL;
 }
+
 
 void TWebBrowser::RenderTextbuf()
 {
 	int break_pos;
-	char next_line[4096];
+	char next_line[sizeof(TWebBrowser.linebuf)];
 	int zoom = list.font_w / BASIC_CHAR_W;
 
 	//Do we need a line break?
@@ -72,20 +73,30 @@ void TWebBrowser::RenderTextbuf()
 		//Is a new line fits in the current line?
 		if (break_pos * list.font_w + draw_x > draw_w) {
 			break_pos = draw_w - draw_x /list.font_w;
-			while(break_pos) && (linebuf[break_pos]!=' ') break_pos--;
+			while(break_pos) {
+				if (linebuf[break_pos]==' ') {
+					break_pos++;
+					break;
+				}
+				break_pos--;
+			}
 		}
 		//Maybe a new line is too big for the whole new line? Then we have to split it
 		if (!break_pos) && (style.tag_list.level*5 + strlen(#linebuf) * zoom >= list.column_max) {
 			break_pos = draw_w  - draw_x / list.font_w;
 		}
 
-		strcpy(#next_line, #linebuf + break_pos);
-		linebuf[break_pos] = 0x00;		
-		
-		RenderLine();
 
-		strcpy(#linebuf, #next_line);
-		NewLine();		
+		if (break_pos) {
+			strlcpy(#next_line, #linebuf + break_pos, sizeof(next_line));
+			linebuf[break_pos] = 0x00;
+			RenderLine();
+			strlcpy(#linebuf, #next_line, sizeof(TWebBrowser.linebuf));
+			NewLine();
+		} else {
+			NewLine();
+			RenderLine();
+		}
 	}
 	RenderLine();
 }

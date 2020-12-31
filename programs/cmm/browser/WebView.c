@@ -211,7 +211,10 @@ void main()
 			}
 
 			if (http.receive_result != 0) break;
-			if (debug_mode) debugval("HTTP", http.status_code);
+			if (debug_mode) {
+				EAX = http.transfer;
+				debugln(#EAX.http_msg.http_header);
+			}
 			if (http.status_code >= 300) && (http.status_code < 400)
 			{
 				// Handle redirects
@@ -892,16 +895,19 @@ void CheckContentType()
 	char content_type[64];
 	if (http.header_field("content-type", #content_type, sizeof(content_type))) // application || image
 
-	if (strchr(#content_type, '=')) {
-		WB1.custom_encoding = get_encoding_type_by_name(EAX+1);	
-	}
-
 	if (content_type[0] == 'i') {
 		EventDownloadAndOpenImage(http.cur_url);
 		StopLoading();
-	}if (content_type[0] == 'a') { 
+	}
+	else if (content_type[0] == 'a') { 
 		EventOpenDownloader(http.cur_url);
 		StopLoading();
+	}
+	else {
+		WB1.custom_encoding = -1;
+		if (EAX = strchr(#content_type, '=')) {
+			WB1.custom_encoding = get_encoding_type_by_name(EAX+1);	
+		}
 	}
 }
 
