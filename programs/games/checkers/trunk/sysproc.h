@@ -9,7 +9,7 @@
   inline long GetProcessId() {return 0;}
   inline long DuplicateProcess() {return -1;}
   inline int random(int m) {return ((unsigned long)rand()) % m;}
-  inline void randomize() {srand(__menuet__getsystemclock());}
+  inline void randomize() {srand(time(0));}
 #elif defined __GNUC__
 # include <unistd.h>
 # define DIR_SEPARATOR	('/')
