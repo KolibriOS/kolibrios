@@ -11,7 +11,7 @@ void TWebBrowser::SetStyle()
 	if (tag.is("p"))          { tag_p();                   return; } 
 	if (tag.is("img"))        { tag_img();                 return; }
 	if (tag.is("div"))        { tag_div();                 return; }
-	if (tag.is("br"))         { NewLine();                 return; }
+	if (tag.is("br"))         { /*draw_x++;*/NewLine();    return; }
 	if (tag.is("header"))     { NewLine();                 return; }
 	if (tag.is("article"))    { NewLine();                 return; }
 	if (tag.is("footer"))     { NewLine();                 return; } 
@@ -202,6 +202,7 @@ void TWebBrowser::tag_hr()
 	if (tag.get_value_of("color")) hrcol = GetColor(tag.value);
 	if (draw_x != left_gap) NewLine();
 	canvas.DrawBar(5, style.cur_line_h / 2 + draw_y - 1, draw_w-10, 1, hrcol);
+	draw_x++;
 	NewLine();
 	return;
 }
@@ -319,82 +320,101 @@ NOIMG:
 
 
 
-
+int tdepth;
+int col_n;
 
 struct TABLE {
-	int count;
-	int col;
-	collection_int cx;
+	collection_int col_w;
+	collection_int col_span;
+	collection_int row_h;
 	int row_y, next_row_y;
-} table;
+	int colcount;
+} t[5];
 
 void TWebBrowser::tag_table_reset()
 {
-	table.count = 0;
-	table.cx.drop();
-	table.row_y = 0;
-	table.next_row_y = 0;
+	int i;
+	tdepth = 0;
+	for (i=0; i<5; i++) {
+		t[i].col_w.drop();
+		t[i].row_h.drop();
+		t[i].col_span.drop();
+		t[i].row_y = 0;
+		t[i].next_row_y = 0;
+	}
 }
 
 void TWebBrowser::tag_table()
 {
 	if (tag.opened) {
-		if (!table.count) {
-			table.next_row_y = table.row_y = draw_y;
+		if (tdepth==0) {
+			t[0].next_row_y = t[0].row_y = draw_y;
 		}
-		table.count++;
+		tdepth++;
 	} else {
-		table.count--;
-		if (!table.count) {
-			draw_y = math.max(draw_y + style.cur_line_h, table.next_row_y);
+		tdepth--;
+		if (tdepth==0) {
+			draw_y = math.max(draw_y + style.cur_line_h, t[0].next_row_y);
 			left_gap = BODY_MARGIN;
+			draw_w = list.w - BODY_MARGIN;
 		}
 	} 
 }
 
-void TWebBrowser::tag_tr()
+:void TWebBrowser::tag_tr()
 {
 	if (tag.opened) {
-		if (table.count>1) {
+		if (tdepth>1) {
 			NewLine();
 		} else {
-			table.col = 0;
-			table.row_y = math.max(draw_y + style.cur_line_h, table.next_row_y);
+			t[0].colcount = math.max(t[0].colcount, col_n);
+			col_n = 0;
+			t[0].row_y = math.max(draw_y + style.cur_line_h, t[0].next_row_y);
 			left_gap = BODY_MARGIN;
 			NewLine();	
 		}		
 	}
 }
 
-void TWebBrowser::tag_td()
+:void TWebBrowser::tag_td()
 {
-	if (table.count>1) return;
+	if (tdepth>1) return;
 	if (tag.opened) {
-		table.next_row_y = math.max(draw_y + style.cur_line_h, table.next_row_y);
-		draw_y = table.row_y;
-		table.cx.set(table.col, math.max(draw_x,table.cx.get(table.col)) );
-		draw_x = left_gap = table.cx.get(table.col);
-		table.col++;
-		if (tag.get_value_of("width")) {
-			draw_w = EAX;
-			//debugval("draw_w", atoi(tag.value));
-			table.cx.set(table.col, draw_x + atoi(tag.value));
+
+		t[0].next_row_y = math.max(draw_y + style.cur_line_h, t[0].next_row_y);
+		style.cur_line_h = list.item_h;
+		t[0].col_w.set(col_n, math.max(draw_x,t[0].col_w.get(col_n)) );
+		draw_x = left_gap = t[0].col_w.get(col_n);
+		draw_w = list.w - left_gap;
+		draw_y = t[0].row_y;
+		if (tag.get_number_of("width")) {
+			if (!strchr(tag.value, '%')) {
+				draw_w = tag.number;
+			} else {
+				if (tag.number < 100) {
+					draw_w = draw_w - left_gap * tag.number / 100;
+					if (draw_w > list.w - left_gap) draw_w = list.w - left_gap;
+				}
+			}
 		}
-		//if (tag.get_value_of("height")) table.next_row_y = draw_y + atoi(tag.value);
+		col_n++;
+		t[0].col_w.set(col_n, draw_x + draw_w);
+
+		if (left_gap >= list.w - list.font_w - 10) {
+			debugln("left_gap overflow");
+			draw_x = left_gap = BODY_MARGIN;
+			t[0].col_w.drop();
+			NewLine();
+			canvas.WriteText(draw_x, draw_y, 10011001b, 0xFE0000, "lgo", NULL);
+		}
+
+		if (draw_w < 0) || (draw_w >= list.w) {
+			debugln("draw_w overflow");
+			draw_x = left_gap = BODY_MARGIN;
+			draw_w = list.w - left_gap;
+			NewLine();
+			canvas.WriteText(draw_x, draw_y, 10011001b, 0x0000FE, "drwo", NULL);
+		}
 	} 
 
-	if (left_gap >= list.w - list.font_w - 10) {
-		debugln("left_gap overflow");
-		draw_x = left_gap = BODY_MARGIN;
-		table.cx.drop();
-		table.count = 999;
-		NewLine();
-	}
-
-	if (draw_w < 0) || (draw_w >= list.w) {
-		debugln("draw_w overflow");
-		draw_x = left_gap = BODY_MARGIN;
-		draw_w = list.w - left_gap;
-		NewLine();
-	}
 }

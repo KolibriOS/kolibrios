@@ -149,9 +149,10 @@ void main()
 				}
 			}
 
-			if (links.hover(WB1.list.y, WB1.list.first))
+			if (WB1.list.MouseOver(mouse.x, mouse.y)) && (links.hover(WB1.list.y, WB1.list.first))
 			{
 				if (mouse.key&MOUSE_MIDDLE) && (mouse.up) {
+					GetKeyModifier();
 					if (key_modifier&KEY_LSHIFT) || (key_modifier&KEY_RSHIFT) {
 						EventClickLink(TARGET_NEW_WINDOW);
 					} else {
@@ -298,29 +299,30 @@ void ProcessButtonClick(dword id__)
 	}
 }
 
-bool ProcessKeyEvent()
+void ProcessKeyEvent()
 {
 	if (key_modifier&KEY_LSHIFT) || (key_modifier&KEY_RSHIFT) 
 	{
 		if (key_scancode == SCAN_CODE_TAB) {EventActivatePreviousTab();return;}
+		if (key_scancode == SCAN_CODE_KEY_T) {EventOpenNewTab(URL_SERVICE_TEST);return;}
 	}
 
 	if (key_modifier&KEY_LCTRL) || (key_modifier&KEY_RCTRL) switch(key_scancode) 
 	{
-		case SCAN_CODE_KEY_O: EventOpenDialog(); return true;
-		case SCAN_CODE_KEY_H: ProcessButtonClick(VIEW_HISTORY); return true;
-		case SCAN_CODE_KEY_U: EventViewSource(); return true;
-		case SCAN_CODE_KEY_T: EventOpenNewTab(URL_SERVICE_HOMEPAGE); return true;
-		case SCAN_CODE_KEY_N: RunProgram(#program_path, NULL); return true;
-		case SCAN_CODE_KEY_J: ProcessButtonClick(DOWNLOAD_MANAGER); return true;
-		case SCAN_CODE_KEY_R: ProcessButtonClick(REFRESH_BUTTON); return true;
-		case SCAN_CODE_ENTER: EventSeachWeb(); return true;
-		case SCAN_CODE_LEFT:  ProcessButtonClick(BACK_BUTTON); return true;
-		case SCAN_CODE_RIGHT: ProcessButtonClick(FORWARD_BUTTON); return true;
-		case SCAN_CODE_KEY_W: EventCloseActiveTab(); return true;
-		case SCAN_CODE_TAB:   EventActivateNextTab(); return true;
+		case SCAN_CODE_KEY_O: EventOpenDialog(); return;
+		case SCAN_CODE_KEY_H: ProcessButtonClick(VIEW_HISTORY); return;
+		case SCAN_CODE_KEY_U: EventViewSource(); return;
+		case SCAN_CODE_KEY_T: EventOpenNewTab(URL_SERVICE_HOMEPAGE); return;
+		case SCAN_CODE_KEY_N: RunProgram(#program_path, NULL); return;
+		case SCAN_CODE_KEY_J: ProcessButtonClick(DOWNLOAD_MANAGER); return;
+		case SCAN_CODE_KEY_R: ProcessButtonClick(REFRESH_BUTTON); return;
+		case SCAN_CODE_ENTER: EventSeachWeb(); return;
+		case SCAN_CODE_LEFT:  ProcessButtonClick(BACK_BUTTON); return;
+		case SCAN_CODE_RIGHT: ProcessButtonClick(FORWARD_BUTTON); return;
+		case SCAN_CODE_KEY_W: EventCloseActiveTab(); return;
+		case SCAN_CODE_TAB:   EventActivateNextTab(); return;
 		case SCAN_CODE_F5:    EventClearCache(); return;
-		default: return false;
+		default: return;
 	}
 
 	switch(key_scancode) 
@@ -371,7 +373,7 @@ void draw_window()
 		WB1.list.h-1, scroll_wv.bckg_col);
 
 	if (!canvas.bufw) {
-		OpenPage(history.current());
+		EventOpenFirstPage();
 	} else {
 		WB1.DrawPage(); 
 		DrawOmnibox();
@@ -379,6 +381,11 @@ void draw_window()
 	DrawProgress();
 	DrawStatusBar(NULL);
 	DrawTabsBar();
+}
+
+void EventOpenFirstPage()
+{
+	OpenPage(history.current());
 }
 
 void EventManuallyChangeEncoding(int _new_encoding)
@@ -921,12 +928,13 @@ void EventDownloadAndOpenImage(dword _url)
 
 void HandleRedirect()
 {
-	char redirect_url[URL_SIZE];
-	http.header_field("location", #redirect_url, URL_SIZE);
-	get_absolute_url(#redirect_url, http.cur_url);
+	dword redirect_url = malloc(URL_SIZE);
+	http.header_field("location", redirect_url, URL_SIZE);
+	get_absolute_url(redirect_url, http.cur_url);
 	http.hfree();
-	if (http_get_type==PAGE) OpenPage(#redirect_url);
-	else if (http_get_type==IMG) GetUrl(#redirect_url);
+	if (http_get_type==PAGE) OpenPage(redirect_url);
+	else if (http_get_type==IMG) GetUrl(redirect_url);
+	free(redirect_url);
 }
 
 dword GetImg(bool _new)
@@ -948,7 +956,7 @@ dword GetImg(bool _new)
 	if (_new) return;
 	DrawOmnibox();
 	DrawStatusBar(T_RENDERING);
-	WB1.ParseHtml(WB1.bufpointer, WB1.bufsize);
+	WB1.Reparse();
 	WB1.DrawPage();
 	debugln(sprintf(#param, T_DONE_IN_SEC, GetStartTime()-render_start_time/100));
 	DrawStatusBar(NULL);

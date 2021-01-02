@@ -7,11 +7,13 @@ struct _tag
 	collection attributes;
 	collection values;
 	dword value;
+	dword number;
 	bool is();
 	bool parse();
 	void debug_tag();
 	dword get_next_param();
 	dword get_value_of();
+	signed get_number_of();
 } tag=0;
 
 bool _tag::is(dword _text) 
@@ -206,4 +208,14 @@ dword _tag::get_value_of(dword _attr_name)
 		value = values.get(pos);
 	}
 	return value;
+}
+
+signed _tag::get_number_of(dword _attr_name)
+{
+	if (get_value_of(_attr_name)) {
+		number = atoi(tag.value);
+	} else {
+		number = 0;
+	}
+	return number;
 }

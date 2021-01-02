@@ -147,7 +147,7 @@ void EventTabClose(int _id)
 		tab.close(_id);
 		tab.restore(tab.active);
 		SetElementSizes();
-		WB1.ParseHtml(WB1.bufpointer, WB1.bufsize);
+		WB1.Reparse();
 		WB1.DrawPage();
 		SetOmniboxText(history.current());
 	} else {
@@ -170,7 +170,7 @@ void EventTabClick(int _id)
 	tab.restore(_id);
 	DrawTabsBar();
 	SetElementSizes();
-	WB1.ParseHtml(WB1.bufpointer, WB1.bufsize);
+	WB1.Reparse();
 	WB1.DrawPage();		
 	SetOmniboxText(history.current());
 	DrawStatusBar(NULL);

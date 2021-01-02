@@ -56,6 +56,7 @@ struct TWebBrowser {
 
 	void SetPageDefaults();
 	void ParseHtml();
+	void Reparse();
 	void NewLine();
 	void ChangeEncoding();
 	void AddCharToTheLine();
@@ -108,6 +109,11 @@ void TWebBrowser::SetPageDefaults()
 	redirect = '\0';
 	list.SetFont(8, 14, 10011000b);
 	tag_table_reset();
+}
+//============================================================================================
+void TWebBrowser::Reparse()
+{
+	ParseHtml(bufpointer, bufsize);
 }
 //============================================================================================
 void TWebBrowser::ParseHtml(dword _bufpointer, _bufsize){
@@ -223,25 +229,6 @@ void TWebBrowser::AddCharToTheLine(unsigned char _char)
 	}
 }
 //============================================================================================
-void TWebBrowser::NewLine()
-{
-	static bool empty_line = true;
-
-	if (draw_x==left_gap) && (draw_y==BODY_MARGIN) return;
-	if (t_html) && (!t_body) return;
-	
-	if (draw_x == style.tag_list.level * 5 * list.font_w + left_gap) { 
-		if (!empty_line) empty_line=true; else return;
-	} else {
-		empty_line = false;
-	}
-
-	draw_y += style.cur_line_h;
-	style.cur_line_h = list.item_h;
-	if (style.blq) draw_x = 6 * list.font_w; else draw_x = 0;
-	draw_x += style.tag_list.level * 5 * list.font_w + left_gap;
-}
-//============================================================================================
 void TWebBrowser::ChangeEncoding(int _new_encoding)
 {
 	if (cur_encoding == _new_encoding) return;
@@ -258,9 +245,7 @@ scroll_bar scroll_wv = { 15,NULL,NULL,NULL,
 
 void TWebBrowser::DrawPage()
 {
-	if (list.w!=canvas.bufw) {
-		ParseHtml(bufpointer, bufsize);
-	}
+	if (list.w!=canvas.bufw) Reparse();
 	canvas.Show(list.first, list.h);
 
 	scroll_wv.max_area = list.count;
