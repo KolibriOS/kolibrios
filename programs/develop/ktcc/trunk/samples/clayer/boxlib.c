@@ -73,6 +73,7 @@ int main()
 		  
 			case KOLIBRI_EVENT_KEY:
 				edit_box_key(&ed, get_key().val);
+                draw_window();
 				break;
 			 
 			case KOLIBRI_EVENT_REDRAW:
@@ -97,6 +98,9 @@ int main()
 					}
                     else if((short)wheels < 0 && scroll.position > 0){
             			scroll.position -= scroll_strong;
+						if((int)scroll.position<0){
+							scroll.position=0;
+						}
 					}
             		scrollbar_v_draw(&scroll);
                 }
