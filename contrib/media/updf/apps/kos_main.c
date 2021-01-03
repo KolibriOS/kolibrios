@@ -16,7 +16,7 @@ char debugstr[256];
 char do_not_blit=0;
 
 #define TOOLBAR_HEIGHT 34
-struct process_table_entry Form;
+struct proc_info Form;
 
 #define DOCUMENT_BORDER 0x979797
 #define DOCUMENT_BG 0xABABAB
@@ -128,14 +128,14 @@ void winblit(pdfapp_t *app)
 
 	if (key_mode_enter_page_number==1) HandleNewPageNumber(0); else DrawPagination();
 
-	if (Form.client_width > gapp.image->w) window_center = (Form.client_width - gapp.image->w) / 2; else window_center = 0;
+	if (Form.cwidth > gapp.image->w) window_center = (Form.cwidth - gapp.image->w) / 2; else window_center = 0;
 
 	gapp.panx = 0;
 	
-	kos_blit(window_center + Form.client_left, 
-		Form.client_top + TOOLBAR_HEIGHT, 
-		Form.client_width, 
-		Form.client_height - TOOLBAR_HEIGHT, 
+	kos_blit(window_center + Form.cleft, 
+		Form.ctop + TOOLBAR_HEIGHT, 
+		Form.cwidth, 
+		Form.cheight - TOOLBAR_HEIGHT, 
 		gapp.panx, 
 		gapp.pany, 
 		gapp.image->w, 
@@ -153,27 +153,27 @@ void winblit(pdfapp_t *app)
 
 void DrawPageSides(void)
 {	
-	if (gapp.image->h < Form.client_height - TOOLBAR_HEIGHT) {
+	if (gapp.image->h < Form.cheight - TOOLBAR_HEIGHT) {
 		draw_h = gapp.image->h - gapp.pany; 
 	} else {
-		draw_h = Form.client_height - TOOLBAR_HEIGHT;
+		draw_h = Form.cheight - TOOLBAR_HEIGHT;
 	}
 	
-	if (gapp.image->w < Form.client_width) {
-		window_center = (Form.client_width - gapp.image->w) / 2;
+	if (gapp.image->w < Form.cwidth) {
+		window_center = (Form.cwidth - gapp.image->w) / 2;
 		draw_w = gapp.image->w + 2;
-		kol_paint_bar(0, TOOLBAR_HEIGHT, window_center-1, Form.client_height - TOOLBAR_HEIGHT, DOCUMENT_BG);
+		kol_paint_bar(0, TOOLBAR_HEIGHT, window_center-1, Form.cheight - TOOLBAR_HEIGHT, DOCUMENT_BG);
 		kol_paint_bar(window_center-1, TOOLBAR_HEIGHT, 1, draw_h, DOCUMENT_BORDER);
 		kol_paint_bar(window_center + gapp.image->w, TOOLBAR_HEIGHT, 1, draw_h, DOCUMENT_BORDER);
-		kol_paint_bar(window_center + gapp.image->w+1, TOOLBAR_HEIGHT, Form.client_width - window_center - gapp.image->w - 1, Form.client_height - TOOLBAR_HEIGHT, DOCUMENT_BG);
+		kol_paint_bar(window_center + gapp.image->w+1, TOOLBAR_HEIGHT, Form.cwidth - window_center - gapp.image->w - 1, Form.cheight - TOOLBAR_HEIGHT, DOCUMENT_BG);
 	} else {
 		window_center = 1;
-		draw_w = Form.client_width;
+		draw_w = Form.cwidth;
 	}
 	
 	kol_paint_bar(window_center - 1, gapp.image->h - gapp.pany + TOOLBAR_HEIGHT, draw_w, 1, DOCUMENT_BORDER);
 	kol_paint_bar(window_center - 1, gapp.image->h - gapp.pany + TOOLBAR_HEIGHT + 1, 
-		draw_w, Form.client_height - gapp.image->h - TOOLBAR_HEIGHT + gapp.pany - 1, DOCUMENT_BG);
+		draw_w, Form.cheight - gapp.image->h - TOOLBAR_HEIGHT + gapp.pany - 1, DOCUMENT_BG);
 }
 
 
@@ -239,15 +239,15 @@ void DrawToolbarButton(int x, char image_id)
 
 void DrawMainWindow(void)
 {
-	kol_paint_bar(0, 0, Form.client_width, TOOLBAR_HEIGHT - 1, 0xe1e1e1); // bar on the top (buttons holder)
-	kol_paint_bar(0, TOOLBAR_HEIGHT - 1, Form.client_width, 1, 0x7F7F7F);
+	kol_paint_bar(0, 0, Form.cwidth, TOOLBAR_HEIGHT - 1, 0xe1e1e1); // bar on the top (buttons holder)
+	kol_paint_bar(0, TOOLBAR_HEIGHT - 1, Form.cwidth, 1, 0x7F7F7F);
 	DrawToolbarButton(8,0); //open_folder
 	DrawToolbarButton(42,1); //magnify -
 	DrawToolbarButton(67,2);  //magnify +
 	DrawToolbarButton(101,6); //rotate left
 	DrawToolbarButton(126,7); //rotate right
-	DrawToolbarButton(Form.client_width - 160,3); //show help
-	show_area_x = Form.client_width - show_area_w - 34;
+	DrawToolbarButton(Form.cwidth - 160,3); //show help
+	show_area_x = Form.cwidth - show_area_w - 34;
 	DrawToolbarButton(show_area_x - 26,4); //prev page
 	DrawToolbarButton(show_area_x + show_area_w,5); //nex page
 	kol_btn_define(show_area_x-1,  5, show_area_w+1, 23, 20 + BT_HIDE, 0xA4A4A4);
@@ -263,7 +263,7 @@ void DrawMainWindow(void)
 void PageScrollDown(void)
 {
 	//pdfapp_onkey(&gapp, 'k'); //move down
-	if (gapp.image->h - gapp.pany - SCROLL_H < Form.client_height - TOOLBAR_HEIGHT)
+	if (gapp.image->h - gapp.pany - SCROLL_H < Form.cheight - TOOLBAR_HEIGHT)
 	{
 		pdfapp_onkey(&gapp, '.');
 	}
@@ -287,7 +287,7 @@ void PageScrollUp(void)
 		do_not_blit = 1;
 		pdfapp_onkey(&gapp, ',');
 		do_not_blit = 0;
-		gapp.pany = gapp.image->h - SCROLL_H - Form.client_height + TOOLBAR_HEIGHT;
+		gapp.pany = gapp.image->h - SCROLL_H - Form.cheight + TOOLBAR_HEIGHT;
 		if (gapp.pany < 0) gapp.pany = 0;
 		//sprintf (debugstr, "gapp.pany: %d \n", gapp.pany);
 		//kol_board_puts(debugstr);
@@ -390,8 +390,8 @@ int main (int argc, char* argv[])
 				if (Form.window_state > 2) continue; // if Rolled-up
 				
 				// Minimal size (700x600)
-				if (Form.winx_size < 700) kol_wnd_size(700, OLD);
-				if (Form.winy_size < 600) kol_wnd_size(OLD, 600);
+				if (Form.width < 700) sys_change_window(OLD, OLD, 700, OLD);
+				if (Form.height < 600) sys_change_window(OLD, OLD, OLD, 600);
 				
 				DrawMainWindow();
 				break;
@@ -425,7 +425,7 @@ int main (int argc, char* argv[])
 				if(butt==12) PageZoomIn(); //magnify +
 				if(butt==13) //show help
 				{
-					kol_paint_bar(0, TOOLBAR_HEIGHT, Form.client_width, Form.client_height - TOOLBAR_HEIGHT, 0xF2F2F2);	
+					kol_paint_bar(0, TOOLBAR_HEIGHT, Form.cwidth, Form.cheight - TOOLBAR_HEIGHT, 0xF2F2F2);	
 					kos_text(20, TOOLBAR_HEIGHT + 20      , 0x90000000, "uPDF for KolibriOS v1.2", 0);
 					kos_text(21, TOOLBAR_HEIGHT + 20      , 0x90000000, "uPDF for KolibriOS v1.2", 0);
 					for (ii=0; help[ii]!=0; ii++) {

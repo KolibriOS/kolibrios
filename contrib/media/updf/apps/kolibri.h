@@ -97,11 +97,6 @@ void	*data;
 void kol_exit();
 void kol_sleep(unsigned d);
 void kol_wnd_define(unsigned x, unsigned y, unsigned w, unsigned h, unsigned cs, unsigned b, char *t);
-
-#define OLD -1
-void kol_wnd_move(unsigned x, unsigned y);
-void kol_wnd_size(unsigned x, unsigned y);
-
 void kol_wnd_caption(char *s);
 void kol_event_mask(unsigned e);
 unsigned kol_event_wait();
@@ -167,34 +162,3 @@ int kos_get_mouse_wheels(void);
 void kos_screen_max(int* x, int* y);
 int kos_get_key();
 void kos_text(int x, int y, int color, const char* text, int len);
-
-
-//// Struct from menuet/os.h
-//// Need rewrite!
-
-typedef unsigned char       __u8;
-typedef unsigned short      __u16;
-typedef unsigned long       __u32;
-
-#pragma pack(push,1)
-
-struct process_table_entry
-{
- __u32 cpu_usage;
- __u16 pos_in_windowing_stack;
- __u16 win_stack_val_at_ecx;
- __u16 reserved1;
- char name[12];
- __u32 memstart;
- __u32 memused;
- __u32 pid;
- __u32 winx_start,winy_start;
- __u32 winx_size,winy_size;
- __u16 thread_state;
- __u16 reserved2;
- __u32 client_left,client_top,client_width,client_height;
- __u8 window_state;
- __u8 reserved3[1024-71];
-};
-
-#pragma pack(pop)

@@ -27,17 +27,6 @@ void kol_wnd_define(unsigned x, unsigned y, unsigned w, unsigned h, unsigned cs,
 asm volatile ("int $0x40"::"a"(0), "b"(x*65536+w), "c"(y*65536+h), "d"(cs), "D"(t), "S"(b) );
 }
 
-
-void kol_wnd_move(unsigned x, unsigned y)
-{
-asm volatile ("int $0x40"::"a"(67), "b"(x), "c"(y), "d"(-1), "S"(-1));
-}
-
-void kol_wnd_size(unsigned x, unsigned y)
-{
-asm volatile ("int $0x40"::"a"(67), "b"(-1), "c"(-1), "d"(x), "S"(y));
-};
-
 void kol_event_mask(unsigned e)
 {
 asm volatile ("int $0x40"::"a"(40), "b"(e));
