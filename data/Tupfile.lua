@@ -694,7 +694,6 @@ end -- tup.getconfig('NO_TCC') ~= 'full'
 -- Programs that require GCC to compile.
 if tup.getconfig('NO_GCC') ~= 'full' then
 tup.append_table(img_files, {
- {"GAMES/CHECKERS", PROGS .. "/games/checkers/trunk/checkers"},
  {"GAMES/REVERSI", PROGS .. "/games/reversi/trunk/reversi"},
  {"SHELL", PROGS .. "/system/shell/shell"},
 })
@@ -710,6 +709,7 @@ tup.append_table(extra_files, {
  {"kolibrios/games/quake/", "common/games/quake/*"}, -- not really gcc, but no sense without sdlquake
  {"kolibrios/games/quake/", "../contrib/other/sdlquake-1.0.9/sdlquake"},
  {"kolibrios/games/fridge/", PROGS .. "/games/fridge/fridge"},
+ {"kolibrios/games/", PROGS .. "/games/checkers/trunk/checkers"}
 })
 -- For russian build, add russian-only programs.
 if build_type == "rus" then tup.append_table(extra_files, {
