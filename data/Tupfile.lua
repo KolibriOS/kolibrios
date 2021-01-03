@@ -660,7 +660,6 @@ tup.append_table(extra_files, {
  {"kolibrios/KolibriNext/install.kex", PROGS .. "/cmm/installer/install.com"},
  {"kolibrios/utils/appearance", PROGS .. "/cmm/appearance/appearance.com"},
  {"kolibrios/utils/dicty.kex", PROGS .. "/cmm/dicty/dicty.com"},
- {"kolibrios/utils/netcheck", PROGS .. "/cmm/examples/netcheck.com"},
  {"kolibrios/utils/notes", PROGS .. "/cmm/notes/notes.com"},
 })
 end -- tup.getconfig('NO_CMM') ~= 'full'
