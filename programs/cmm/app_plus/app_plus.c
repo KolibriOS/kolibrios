@@ -6,7 +6,7 @@
 #include "..\lib\obj\proc_lib.h"
 #include "..\lib\patterns\simple_open_dialog.h"
 #include "..\lib\patterns\restart_process.h"
-#include "..\lib\added_sysdir.c"
+#include "added_sysdir.c"
 
 #ifndef AUTOBUILD
 #include "lang.h--"

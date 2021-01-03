@@ -114,8 +114,6 @@ void DrawLogo()
 
 void EventInstall()
 {
-	//#include "..\lib\added_sysdir.c";
-	//SetAdditionalSystemDirectory("kolibrios", abspath("install/kolibrios")+1);
 	ini_set_int stdcall ("/sys/settings/taskbar.ini", "Flags", "Attachment", 0);
 	copyf("/kolibrios/KolibriNext/settings", "/sys/settings");
 
