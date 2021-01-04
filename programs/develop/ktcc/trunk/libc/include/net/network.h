@@ -40,7 +40,7 @@ struct addrinfo {
     int     ai_protocol;
     int     ai_addrlen;
     char   *ai_canonname;
-    sockaddr *ai_addr;
+    struct sockaddr *ai_addr;
     struct addrinfo *ai_next;
 };  
 #pragma pack(pop)

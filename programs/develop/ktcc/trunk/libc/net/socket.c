@@ -19,7 +19,7 @@ int close(int socket)
     :"a"(75), "b"(1), "c"(socket)
     );
 }
-int bind(int socket, const sockaddr *addres, int addres_len)
+int bind(int socket, const struct sockaddr *addres, int addres_len)
 {
     asm volatile(
     "int $0x40"
@@ -37,7 +37,7 @@ int listen(int socket, int backlog)
     );
 }
 
-int connect(int socket,const sockaddr* address, int socket_len)
+int connect(int socket,const struct sockaddr* address, int socket_len)
 {
     asm volatile(
     "int $0x40"
@@ -46,7 +46,7 @@ int connect(int socket,const sockaddr* address, int socket_len)
     );
 }
 
-int accept(int socket, const sockaddr *address, int address_len)
+int accept(int socket, const struct sockaddr *address, int address_len)
 {
     asm volatile(
     "int $0x40"
