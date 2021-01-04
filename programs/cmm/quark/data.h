@@ -52,7 +52,7 @@ Try to open some text file.";
 
 char copied_chars[] = "Copied %i chars";
 
-char about[] = "Quark Text v0.9
+char about[] = "Quark Text v0.91
 Author: Kiril Lipatov aka Leency 
 Website: http://aspero.pro
 

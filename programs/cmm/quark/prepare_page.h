@@ -3,11 +3,8 @@ void ParseAndPaint()
 {
 	list.count=0;
 	selection.cancel();
-
+	if (list.w != canvas.bufw) canvas.Init(list.x, list.y, list.w, screen.height);
 	Parse();
-
-	list.visible = list.h / list.item_h;
-	canvas.Init(list.x, list.y, list.w, list.visible+1*list.item_h);
 	DrawPage();	
 }
 
