@@ -6,7 +6,7 @@
  * See (LICENSE)
  * -----------------------------------------------------------------------------
  */
-#include "console_obj.h"
+#include <sys/kos_LoadConsole.h>
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>

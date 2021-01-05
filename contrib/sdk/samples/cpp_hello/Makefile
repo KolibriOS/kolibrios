@@ -3,7 +3,7 @@ LD = kos32-ld
 
 SDK_DIR = $(abspath ../..)
 
-LDFLAGS = -call_shared -nostdlib -T $(SDK_DIR)/sources/newlib/app-dynamic.lds --image-base 0
+LDFLAGS = -static -nostdlib -T $(SDK_DIR)/sources/newlib/app.lds --image-base 0
 
 CFLAGS = -c -fno-ident -O2 -fomit-frame-pointer -fno-ident -U__WIN32__ -U_Win32 -U_WIN32 -U__MINGW32__ -UWIN32 -Wno-pointer-arith
 
@@ -18,7 +18,7 @@ OBJECTS = $(patsubst %.cpp, %.o, $(SOURCES))
 default: hello
 
 hello: $(OBJECTS) Makefile
-	$(LD) $(LDFLAGS) $(LIBPATH) --subsystem console -o hello.kex $(OBJECTS) -lstdc++ -lsupc++ -lgcc -lc
+	$(LD) $(LDFLAGS) $(LIBPATH) --subsystem console -o hello.kex $(OBJECTS) -lstdc++ -lsupc++ -lgcc -lc.dll
 	strip -s hello.kex -o hello.kex
 	objcopy hello.kex -O binary
 	rm *.o

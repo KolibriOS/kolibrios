@@ -2,7 +2,7 @@
 #include <iostream>
 
 // for 'console.obj' functions
-#include "console_obj.h"
+#include <sys/kos_LoadConsole.h>
 
 using namespace std;
 

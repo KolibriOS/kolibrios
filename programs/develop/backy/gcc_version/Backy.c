@@ -14,7 +14,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
-#include "console_obj.h"
+#include <sys/kos_LoadConsole.h>
 
 #include "Backy_lib.h"
 

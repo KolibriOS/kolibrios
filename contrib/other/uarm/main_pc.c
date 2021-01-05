@@ -11,7 +11,7 @@
 //#include <sys/select.h>
 #include <signal.h>
 //#include <termios.h>
-#include "console_obj.h"
+#include <sys/kos_LoadConsole.h>
 
 #define getch2 con_getch
 #define cprintf printf
