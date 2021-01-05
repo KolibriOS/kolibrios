@@ -21,6 +21,7 @@
 // Address families
 #define AF_UNSPEC 0
 #define AF_LOCAL 1
+#define AF_INET  2     // Default INET=IPv4
 #define AF_INET4 2     // IPv4
 #define AF_INET6 10    // IPv6
 
@@ -75,12 +76,12 @@
 int err_code;
 
 #pragma pack(push,1)
-typedef struct{
+struct sockaddr{
     unsigned short sin_family;
     unsigned short sin_port; 
     unsigned int sin_addr;
     unsigned long long sin_zero;
-}sockaddr; 
+}; 
 #pragma pack(pop)
 
 #pragma pack(push,1)
@@ -113,7 +114,8 @@ static inline int close(int socket)
     );
     return status;
 }
-static inline int bind(int socket, const sockaddr *addres, int addres_len)
+
+static inline int bind(int socket, const struct sockaddr *addres, int addres_len)
 {
     int status;
     asm volatile(
@@ -135,7 +137,7 @@ static inline int listen(int socket, int backlog)
     return status;
 }
 
-static inline int connect(int socket,const sockaddr* address, int socket_len)
+static inline int connect(int socket, const struct sockaddr* address, int socket_len)
 {
     int status;
     asm volatile(
@@ -146,7 +148,7 @@ static inline int connect(int socket,const sockaddr* address, int socket_len)
     return status;
 }
 
-static inline int accept(int socket, const sockaddr *address, int address_len)
+static inline int accept(int socket, const struct sockaddr *address, int address_len)
 {
     int new_socket;
     asm volatile(

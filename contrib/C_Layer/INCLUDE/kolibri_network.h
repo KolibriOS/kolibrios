@@ -33,14 +33,14 @@ unsigned short TTL;
 #pragma pack(pop)
 
 #pragma pack(push, 1)  
-struct addrinfo {
+struct addrinfo{
     int     ai_flags;
     int     ai_family;
     int     ai_socktype;
     int     ai_protocol;
     int     ai_addrlen;
     char   *ai_canonname;
-    sockaddr *ai_addr;
+    struct sockaddr *ai_addr;
     struct addrinfo *ai_next;
 };  
 #pragma pack(pop)
@@ -48,7 +48,7 @@ struct addrinfo {
 extern int networklib_init ();
 extern int (*inet_addr)(const char* hostname) __attribute__ ((stdcall));
 extern char* (*inet_ntoa)(int ip_addr) __attribute__ ((stdcall));
-extern int (*getaddrinfo)(char* hostname, int servname, struct addrinfo* hints, struct addrinfo** res) __attribute__ ((stdcall));
+extern int (*getaddrinfo)(char* hostname, char *servname, struct addrinfo* hints, struct addrinfo** res) __attribute__ ((stdcall));
 extern void (*freeaddrinfo)(struct addrinfo* ai) __attribute__ ((stdcall));
 
 #endif
