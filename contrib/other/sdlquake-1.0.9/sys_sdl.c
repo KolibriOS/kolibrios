@@ -11,6 +11,7 @@
 #include <string.h>
 #include <ctype.h>
 #include <errno.h>
+#include <kos32sys.h>
 #if !defined(__WIN32__) && !defined(_KOLIBRI)
 #include <sys/ipc.h>
 #include <sys/shm.h>
@@ -46,11 +47,8 @@ void Sys_Printf (char *fmt, ...)
 	va_start (argptr,fmt);
 	vsprintf (text,fmt,argptr);
 	va_end (argptr);
-#ifdef _KOLIBRI
-	__menuet__debug_out(text);
-#else
+
 	fprintf(stderr, "%s", text);
-#endif
 	
 	//Con_Print (text);
 }
@@ -102,17 +100,11 @@ void Sys_Error (char *error, ...)
     va_start (argptr,error);
     vsprintf (string,error,argptr);
     va_end (argptr);
-#ifdef _KOLIBRI
-	__menuet__debug_out("Error: ");
-	__menuet__debug_out(string);
-	__menuet__debug_out("\n");
-#else
+
 	fprintf(stderr, "Error: %s\n", string);
-#endif
 
 	Host_Shutdown ();
 	exit (1);
-
 } 
 
 void Sys_Warn (char *warning, ...)
@@ -123,12 +115,8 @@ void Sys_Warn (char *warning, ...)
     va_start (argptr,warning);
     vsprintf (string,warning,argptr);
     va_end (argptr);
-#ifdef _KOLIBRI
-	__menuet__debug_out("Warning: ");
-	__menuet__debug_out(string);
-#else
+
 	fprintf(stderr, "Warning: %s", string);
-#endif
 } 
 
 /*
@@ -282,7 +270,7 @@ void Sys_mkdir (char *path)
 #ifdef __WIN32__
     mkdir (path);
 #else
-    mkdir (path, 0777);
+    //mkdir (path, 0777);
 #endif
 }
 
@@ -376,7 +364,7 @@ void Sys_LineRefresh(void)
 void Sys_Sleep(void)
 {
 #ifdef _KOLIBRI
-	__menuet__delay100(1);
+	delay(1);
 #else
 	SDL_Delay(1);
 #endif
@@ -437,7 +425,7 @@ int main (int c, char **v)
             if (time < sys_ticrate.value && (vcrFile == -1 || recording) )
             {
 #ifdef _KOLIBRI
-                __menuet__delay100(1);
+                delay(1);
 #else
                 SDL_Delay (1);
 #endif

@@ -5,11 +5,14 @@ then
   HELPERDIR = "../../../programs"
 end
 tup.include(HELPERDIR .. "/use_gcc.lua")
-tup.include(HELPERDIR .. "/use_menuetlibc.lua")
-use_dynamic_stack() -- default 64K are not sufficient
-tup.include(HELPERDIR .. "/use_sdl.lua")
+tup.include(HELPERDIR .. "/use_newlib.lua")
+--use_dynamic_stack() -- default 64K are not sufficient
+tup.include(HELPERDIR .. "/use_sdl_newlib.lua")
 CFLAGS = CFLAGS .. " -DSDL -UWIN32 -U_WIN32 -U__WIN32__ -D_KOLIBRI"
 CFLAGS = CFLAGS .. " -DUSE_ASM"
+
+LDFLAGS = LDFLAGS .. " --subsystem native --stack 0x200000"
+
 -- CFLAGS = CFLAGS:gsub("-Os", "-O2")
 compile_gcc{
   "chase.c", "cl_demo.c", "cl_input.c", "cl_main.c", "cl_parse.c", "cl_tent.c",
