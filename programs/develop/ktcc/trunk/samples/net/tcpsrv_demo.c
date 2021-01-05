@@ -8,7 +8,7 @@ char msg2='\0';
 
 int main()
 {
-    sockaddr addr={AF_INET4, PORT(23) , 0, 0};
+    struct sockaddr addr={AF_INET4, PORT(23) , 0, 0};
     
     int sk1=socket(AF_INET4, SOCK_STREAM, IPPROTO_TCP);
     printf("Open socket: %d. Error: %d\n",sk1, err_code);
