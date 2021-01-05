@@ -24,16 +24,16 @@ static int ftime(struct timeb* tp)
 	return 0;
 }
 
-
+/*
 #include <memory.h>
-
+*/
 #ifndef _WIN32
 #include <unistd.h>
 #include <fcntl.h>
 #endif
 
 #ifndef NO_GRAPHICS
-#include <SDL/SDL.h>
+#include <SDL.h>
 #endif
 
 // Emulator system constants
@@ -276,15 +276,15 @@ void audio_callback(void *data, unsigned char *stream, int len)
 }
 #endif
 
-#define printf con_printf
-#define gets con_gets
-#undef main
-#include "console.c"
+#include <sys/kos_LoadConsole.h>
+#define kbhit con_kbhit
+#define getch con_getch
 
 // Emulator entry point
 int main(int argc, char **argv)
 {
-    CONSOLE_INIT("8086");
+    load_console();
+    con_set_title("8086tiny");
     
     //freopen("OUT", "w" ,stdout);
 #ifndef NO_GRAPHICS
@@ -695,7 +695,7 @@ int main(int argc, char **argv)
 				{
 					OPCODE_CHAIN 0: // PUTCHAR_AL
 						write(1, regs8, 1);
-                        printf("%c", regs8[0]);
+                        // printf("%c", regs8[0]);
 					OPCODE 1: // GET_RTC
 						time(&clock_buf);
 						ftime(&ms_clock);
