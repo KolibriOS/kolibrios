@@ -1,0 +1,61 @@
+Jump'n'Bump is done by many people. The authors and contributors are listed
+below. Invented and implemented was Jump'n'Bump by Brainchild Design as a
+DOS game. Later the source was released and Chuck Mason did the port to
+Linux using SDL. Some people contributed various stuff to it.
+The current maintainer is Florian Schulze.
+
+Mattias Brynervall <matbr656@student.liu.se>
+  Original DOS code.
+
+Andreas Brynervall <andreasb@acc.umu.se>
+Martin Magnusson <marma102@student.liu.se>
+  Original Graphics.
+
+Anders Nilsson <equel@swipnet.se>
+  Original Music.
+
+Chuck Mason <cemason@users.sourceforge.net>
+  The first Linux port using SDL.
+
+Philippe Brochard <phil.brochard@wanadoo.fr>
+  The jbmenu.tcl script.
+
+Joe Wreschnig <piman@sacredchao.net>
+  The manual page
+
+"timecop" <timecop@japan.co.jp>
+  pack and unpack.
+
+Jon Atkins <jcatki@home.com>
+  The network code of the Linux version.
+
+Gürkan Sengün <gurkan@linuks.mine.nu>
+  Made the website http://www.jumpbump.mine.nu/ and hosts it. Promotion.
+
+Florian Schulze <crow@icculus.org>
+  Cleaned up code. Added scaling graphics mode (800x512). Fixed sound.
+
+Ben Hines <bhines@alumni.ucsd.edu>
+  MacOS X fixes.
+
+Gil Megidish
+  Made the Kaillera network version.
+
+David García Rodríguez <bkron@hotmail.com>
+  Level making tutorial.
+
+Ryan C. Gordon <icculus@clutteredmind.org>
+  Made networking possible again.
+
+Martin Willemoes Hansen <mwh@sysrq.dk>
+  The python frontend.
+  http://mwh.sysrq.dk/programs/programs.phtml
+
+Alessandro Gatti <a.gatti@tiscali.it>
+  FreeBSD fixes.
+
+Ulrich Eckhardt <uli@doommachine.dyndns.org>
+  Cleanup and small patches for enhanced networking.
+
+Ricardo Cruz <rick2@aeiou.pt>
+  AI functions

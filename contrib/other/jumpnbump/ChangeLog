@@ -1,0 +1,95 @@
+27 Jun 2004 - 1.51
+  - refactored code to make it a bit simpler
+  - Added AI by Ricardo Cruz
+
+30 Mar 2004 - 1.42
+  - added support for gzip and bzip2 packed levels.
+
+21 Mar 2003 - 1.41
+  - new scaling filter which works with 8bit graphics. Removed the old scaler
+    completely, now fading and everything else works in scaled up mode.
+  - another attempt to fix sound on big endian systems.
+
+Sep 2002 - 1.40
+  - manpage update
+  - joystick support added
+  - freebsd ports (thanks rigel from #demoscene)
+  - a while back network code using kaillera was send to me by Gil Megidish,
+    it's not enabled, because it doesn't seem to work good enough.
+
+17 Aug 2002 - 1.39
+  - added -noflies option
+  - added client/server networking. Thanks to Ryan C. Gordon who did the base
+    work for it.
+
+11 Aug 2002 - 1.35
+   - gobpack added
+   - documentation updated
+   - little fixes here and there
+
+2 Aug 2002 - 1.34
+   - fixed too dark font
+   - attempt to fix sound and scaleup on big endian systems
+
+5 Jul 2002 - 1.33
+   - added -musicnosound option
+
+15 Jun 2002 - 1.32
+   - fix for off by one in -mirror
+     add icon for application (macosx,windows,x)
+
+10 Jun 2002 - 1.31
+   - rename jbmenu.tcl to jnbmenu.tcl, make it +x, add
+     options for -mirror and -scaleup
+     update manpage and -h with -scaleup
+     update makefiles accordingly
+     rename pack/unpack to jnbpack/jnbunpack
+     set gametitle
+
+9 Jun 2002 - 1.3
+   - Added -mirror commandline option to play the level mirrored
+   - Deleting temporary music file
+
+- 1.2
+   - MacOS X fixes
+   - some endian fixes
+
+24 Feb 2002 - 1.1
+   - fixed timing problems
+   - fixed crash when temporary music can't be written
+
+22 Feb 2002 - 1.0
+   - working sound
+   - new scaling graphics mode
+   - cleaned up code
+
+===========================================================================
+This is the changelog of the linux version from which this port is derived.
+
+25 Feb 2001 - 0.69
+   initial linux port, worked fine with freebsd too (chuck mason)
+
+26 Feb 2001 - 0.69
+   made sound be played (chuck mason)
+
+03 Mar 2001 - 0.70
+   fixing fps (longislandman)
+   changing player input: 4 player at one keyboard (tarzeau)
+   pack/unpack which packs/unpacks the leveldata (timecop)
+
+?? Mar 2001 - 0.70
+   network code has been written (longislandman, jonatkins.org)
+   it werks but we won't release it until it's good for the masses,
+   for test and fun play come join #keen on irc.linux.com
+   (be sure to have one udp port open if you have a firewall,
+   and also have sdl-mixer, sdl and sdl-net)
+
+16 Mar 2001 - 0.70
+   did a new screenshot http://jumpbump.mine.nu/port/jumpbumprocks.jpg
+   wrote a little faq http://jumpbump.mine.nu/port/jumpbumpfaq.txt
+   put online level-selector-menu http://jumpbump.mine.nu/port/jbmenu.tcl
+   (received from philippe brochard, thank you!)
+
+20 Mar 2001 - 0.72
+   repackaged tarballs with network code jnb-net.tar.gz,
+   menusystem and unpack/pack
