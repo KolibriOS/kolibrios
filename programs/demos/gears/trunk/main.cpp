@@ -12,7 +12,7 @@ iadn@bk.ru
  * Brian Paul
  */
  
-#include<menuet/os.h> 
+#include <kos32sys.h> 
 #include <kosgl.h> //TinyGL
 #include <string.h>
 #include <math.h>
@@ -41,7 +41,7 @@ char *fps    = "FPS:";
 unsigned char FullScreen = 0;
 unsigned char skin = 3;
 
-process_table_entry_* pri;
+proc_info* pri;
 KOSGLContext cgl;
 
 static GLfloat view_rotx=20.0, view_roty=30.0, view_rotz=0.0;
@@ -219,11 +219,11 @@ void init( void )
 
 void reshape()
 {   
-   __menuet__get_process_table((process_table_entry*)pri,-1);
-   glViewport(0, 0, pri->winx_size, pri->winy_size-20);
+   get_proc_info((char*)pri);
+   glViewport(0, 0, pri->width, pri->height-20);
    glMatrixMode(GL_PROJECTION);
    glLoadIdentity();
-   gluPerspective(45.0, (GLfloat)pri->winx_size/pri->winy_size, 1.0, 60.0);
+   gluPerspective(45.0, (GLfloat)pri->width/pri->height, 1.0, 60.0);
    glTranslatef( 0.0, 0.0, 20.0 );
    glMatrixMode(GL_MODELVIEW);
    glClear( GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT );     
@@ -235,24 +235,40 @@ void disabletgl()
 	delete pri;
 }
 
+void kos_text(int x, int y, int color, const char* text, int len)
+{
+	asm volatile ("int $0x40"::"a"(4),"b"((x<<16) | y),"c"(color),"d"((unsigned long)text),"S"(len));
+};
+
 void Title()
 {
-     __menuet__write_text(300,8,0x10ffffff,fps,strlen(fps));
-     __menuet__write_text(8,8,0x10ffffff,title1,strlen(title1));
-	 __menuet__write_text(180,8,0x00ffffff,title2,strlen(title2));
-     __menuet__write_text(600,8,0x00ffffff,title3,strlen(title3));
+     kos_text(300,8,0x10ffffff,fps,strlen(fps));
+	 kos_text(180,8,0x00ffffff,title2,strlen(title2));
+     kos_text(600,8,0x00ffffff,title3,strlen(title3));
+}
+
+void kol_wnd_define(unsigned x, unsigned y, unsigned w, unsigned h, unsigned cs, unsigned b, char *t)
+{
+asm volatile ("int $0x40"::"a"(0), "b"(x*65536+w), "c"(y*65536+h), "d"(cs), "D"(t), "S"(b) );
 }
 
 void draw_window(void)
 {
 	// start redraw
-	__menuet__window_redraw(1);
+	begin_draw();
 	// define&draw window
-	__menuet__define_window(win.x,win.y,win.dx,win.dy,TYPEWIN(0,0,0,1,skin,0,0,0),0,0);
+	kol_wnd_define(win.x,win.y,win.dx,win.dy,TYPEWIN(0,0,0,1,skin,0,0,0),0,title1);
     // end redraw
-    __menuet__window_redraw(2);
+    end_draw();
     // display string
     Title();
+}
+
+int kos_get_key()
+{
+	unsigned short __ret;
+	asm volatile("int $0x40":"=a"(__ret):"0"(2));
+	if(!(__ret & 0xFF)) return (__ret>>8)&0xFF; else return 0;
 }
 
 int main(void)          
@@ -270,7 +286,7 @@ int main(void)
 
   init();
 
-  pri=new process_table_entry_;
+  pri = new proc_info;
   SysCall(66,1,1);
 
   reshape();
@@ -315,7 +331,7 @@ do{
 				  	   	  break;
 				  	   	  
 		          case 2: 		          
-		          	   switch(__menuet__getkey()){
+		          	   switch(kos_get_key()){
 
 						   case KEY_F:
                                     if(!FullScreen){									 
