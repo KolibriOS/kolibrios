@@ -1230,16 +1230,16 @@ proc ted_text_add, edit:dword, text:dword, t_len:dword, add_opt:dword
 		add edx,sizeof.symbol
 		cmp edx,ted_tex_end
 		jge @f ;out of memory
-		cmp ebx,0
-		jne .beg_cycle
+		or ebx,ebx
+		jnz .beg_cycle
 		mov ted_ptr_free_symb,edx ;меняем указатель на свободный символ, для более быстрого поиска памяти
 		jmp .add_all
 	@@:
 	cmp ted_increase_size,0
 	je .add_all
 		call ted_memory_increase
-		cmp ebx,0
-		jne .beg_cycle
+		or ebx,ebx
+		jnz .beg_cycle
 	.add_all: ;все символы добавлены
 
 	call ted_text_colored
@@ -1954,27 +1954,27 @@ ted_strlen:
 ; ebx = symbol position in line
 align 16
 ted_get_text_coords:
-  push edx
-  xor eax,eax
-  xor ebx,ebx
-  @@:
-    call ted_iterat_perv
+	push edx
+	xor eax,eax
+	xor ebx,ebx
+	@@:
+		call ted_iterat_perv
 
-    cmp eax,0
-    jne .no_col_mov
-    inc ebx
-    .no_col_mov:
+		or eax,eax
+		jnz .no_col_mov
+			inc ebx
+		.no_col_mov:
 
-    cmp edx,ted_tex_1
-    jle @f
-    cmp byte [edx],13
-    jne @b
-    inc eax
-    jmp @b
-  @@:
-  dec ebx
-  pop edx
-  ret
+		cmp edx,ted_tex_1
+		jle @f
+		cmp byte [edx],13
+		jne @b
+		inc eax
+		jmp @b
+	@@:
+	dec ebx
+	pop edx
+	ret
 
 ;input:
 ; edi = pointer to tedit struct
@@ -3596,19 +3596,8 @@ pushad
 	imul edx,ted_rec_h
 	add ecx,edx
 
-	cmp ted_cur_ins,1 ;проверка режима работы курсора (обычный или вставка)
-	jne @f
-		mov edx,ted_rec_h
-		inc edx   ;1->1, 3->2, 5->3, ...
-		shr edx,1 ;edx = высота строки деленная на 2 (когда курсор не полный)
-		add ecx,edx
-	@@:
 	shl ecx,16
 	add ecx,ted_rec_h
-	cmp ted_cur_ins,1
-	jne @f
-		shr cx,1 ;делим высоту курсора на 2
-	@@:
 
 	mov ebx,ted_wnd_l ;calc rect -> x0,x1
 	add ebx,ted_rec_l
@@ -3617,6 +3606,10 @@ pushad
 	add ebx,edx
 	shl ebx,16
 	add ebx,ted_rec_w
+	cmp ted_cur_ins,1 ;проверка режима работы курсора (обычный или вставка)
+	jne @f
+		shr bx,2 ;уменьшаем ширину курсора
+	@@:
 
 	mov edx,ted_color_cursor
 	int 0x40 ;вывод курсора
@@ -3628,13 +3621,6 @@ pushad
 		ror ecx,16
 		mov bx,cx
 		add ebx,0x10001
-		cmp ted_cur_ins,1
-		jne .no_up_tetx
-			mov ecx,ted_rec_h
-			inc cx ; 1->1, 3->2, 5->3, ...
-			shr cx,1
-			sub bx,cx
-		.no_up_tetx:
 		mov ecx,ted_color_cur_text
 		or ecx,ted_font_size
 		call ted_convert_invis_symb
@@ -4362,6 +4348,20 @@ ted_wnd_main_mouse_scroll:
 		shr ebx,1
 		cmp eax,ebx
 		jae .no_scroll
+		mov ebx,ted_cur_y ;позиция курсора
+		sub ebx,eax       ;- новая позиция скроллинга
+		add ebx,[ecx+sb_offs_position] ;+ старая позиция скроллинга
+		bt ebx,31
+		jnc @f
+			xor ebx,ebx ;если курсор стал выше окна, то ставим на верхнюю строку
+		@@:
+		inc ebx
+		cmp ebx,[ecx+sb_offs_cur_area]
+		jle @f
+			mov ebx,[ecx+sb_offs_cur_area] ;если курсор стал ниже окна, то ставим на нижнюю строку
+		@@:
+		dec ebx
+		mov ted_cur_y,ebx
 		mov [ecx+sb_offs_position],eax
 		stdcall ted_draw,edi
 	.no_scroll:

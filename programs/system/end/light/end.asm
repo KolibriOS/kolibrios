@@ -1,6 +1,6 @@
 
 ; END
-; KolibriOS Team 2005-2016
+; KolibriOS Team 2005-2021
 
 fade equ 0
 
@@ -20,7 +20,8 @@ include 'lang.inc'
 include '../../../macros.inc'
 include '../../../proc32.inc'
 include '../../../dll.inc'
-include '../../../develop/libraries/box_lib/load_lib.mac'
+include '../../../KOSfuncs.inc'
+include '../../../load_lib.mac'
 include '../../../develop/libraries/box_lib/trunk/box_lib.mac'
 include '../../../gui_patterns.inc'
 include "../../../string.inc"
@@ -46,8 +47,7 @@ load_libraries l_libs_start,end_l_libs
 	test	eax,eax
 	jz	close
 
-push	dword check1
-call	[init_checkbox2]
+stdcall	[init_checkbox], check1
 
 stdcall dll.Init,[init_lib]
 
@@ -57,11 +57,11 @@ invoke	ini_get_int,ini_file,asettings,aautosave,0
 	jnz   @f
 	bts   dword [check1.flags],1
 @@:
-	mcall	40,0x80000027
+	mcall	SF_SET_EVENTS_MASK,0x80000027
 redraw:
     call draw_window
 still:
-    mov  al,10
+    mov  al,SF_WAIT_EVENT
     mcall				     ;wait here for event
     dec  eax
     jz	 redraw
@@ -70,8 +70,7 @@ still:
     dec  eax
     jz	 button
 
-    push dword check1
-    call [check_box_mouse2]
+    stdcall [check_box_mouse], check1
     bt	 dword [check1.flags],1
     jnc  @f
     mov  [autosave],1
@@ -81,8 +80,8 @@ still:
     jmp  still
 
 key:
-    mov  al,2
-    mcall				     ;eax=2 - get key code
+    mov  al,SF_GET_KEY
+    mcall				     ;get key code
     mov  al,ah
      cmp  al,13
      je   restart
@@ -96,10 +95,10 @@ key:
      jne   still
 
 close:
-    mcall -1
+    mcall SF_TERMINATE_PROCESS
 
 button:
-    mcall 17				     ;eax=17 - get pressed button id
+    mcall SF_GET_BUTTON				     ;get pressed button id
     xchg al,ah
     dec  eax
     jz	 close
@@ -140,32 +139,32 @@ end if
     jne   no_save
 
 if fade=0
-    mov   al,4
-    mcall   ,<50,120> ,0x800000cc,label7	;eax=4 - write text
+    mov   al,SF_DRAW_TEXT
+    mcall   ,<50,120> ,0x800000cc,label7
 end if
 
-    mcall 70,rdsave
+    mcall SF_FILE,rdsave
     test  eax,eax
     js	  no_save
     mov   ecx,eax
-    mcall 18,21
+    mcall SF_SYSTEM,SSF_GET_THREAD_SLOT
     mov   ecx,eax
 @@:
     push ecx
-    mcall 23,100
+    mcall SF_WAIT_EVENT_TIMEOUT,100
     dec   eax
     jnz   no_red
     call draw_window
 no_red:
     pop   ecx
-    mcall 9,proc_info
+    mcall SF_THREAD_INFO,proc_info
     cmp   [proc_info+50],9
     je	  no_save
     jmp   @b
 no_save:
     pop  ecx
-    mcall 18,9
-    mcall -1
+    mcall SF_SYSTEM,SSF_SHUTDOWN
+    mcall SF_TERMINATE_PROCESS
 ret
 
 checkbox:
@@ -176,15 +175,14 @@ checkbox:
 .1:
     mov   [autosave],0
 .draw:
-    push  dword check1
-    call  [check_box_draw2]
+    stdcall  [check_box_draw], check1
     jmp    still
 
 draw_window:
-    mcall 12,1
+    mcall SF_REDRAW,SSF_BEGIN_DRAW
 	
-    mov   al,14
-    mcall				     ;eax=14 - get screen max x & max y
+    mov   al,SF_GET_SCREEN_SIZE
+    mcall				     ;get screen max x & max y
     movzx ecx,ax
     shr   eax,17
     shl   eax,16
@@ -207,8 +205,7 @@ draw_window:
 	DefineButton  WIN_W-33, 2, 32, 20, CANCEL_BUTTON_ID, 0
 	WriteText  WIN_W-23, 5, 10000001b, 0xFFFfff, TEXT_CANCEL
 
-    push  dword check1
-    call  [check_box_draw2]
+    stdcall  [check_box_draw], check1
 
 macro EndButton  x, bgcol, id, but_text, hotkey_text
 {
@@ -226,7 +223,7 @@ macro EndButton  x, bgcol, id, but_text, hotkey_text
 	add  ebx,butw / 2 + x
 	shl  ebx,16
 	add  ebx,buty+8
-	mcall 4, , 10010000b shl 24 + 0xFFFfff, but_text
+	mcall SF_DRAW_TEXT, , 10010000b shl 24 + 0xFFFfff, but_text
 	add ebx,1 shl 16
 	mcall
 	stdcall string.length, hotkey_text
@@ -236,15 +233,15 @@ macro EndButton  x, bgcol, id, but_text, hotkey_text
 	add  ebx,butw / 2 + x
 	shl  ebx,16
 	add  ebx,buty+26
-	mcall 4, , 10000000b shl 24 + 0xFFFfff, hotkey_text
+	mcall SF_DRAW_TEXT, , 10000000b shl 24 + 0xFFFfff, hotkey_text
 }
 
 	EndButton  20, 0x4E91C5, HOME_BUTTON_ID,     TEXT_KERNEL, TEXT_HOME
 	EndButton 160, 0x55C891, REBOOT_BUTTON_ID,   TEXT_REBOOT, TEXT_ENTER
 	EndButton 300, 0xC75C54, POWEROFF_BUTTON_ID, TEXT_OFF,    TEXT_END
 
-    mov   al,12
-    mcall   ,2
+    mov   al,SF_REDRAW
+    mcall   ,SSF_END_DRAW
     ret
 ;---------------------------------------------------------------------
 ;data
@@ -258,11 +255,8 @@ proc_info  rb 1024
 
 autosave rd 1
 ;---------------------------------------------------------------------
-cur_dir_path:
-	rb 4096
-;---------------------------------------------------------------------
-library_path:
-	rb 4096
+cur_dir_path rb 4096
+library_path rb 4096
 ;---------------------------------------------------------------------
 align 32
 	rb 4096
