@@ -83,11 +83,15 @@ debug_terminate:
 debug_suspend:
 ; in: ecx=pid
 ; destroys eax,ecx
-        cli
-        mov     eax, ecx
-        call    pid_to_slot
-        shl     eax, 5
-        jz      .ret
+; { Patch by Coldy (rev. 7125), reason: http://board.kolibrios.org/viewtopic.php?f=1&t=1712&p=75957#p75957
+;        cli
+;        mov     eax, ecx
+;        call    pid_to_slot
+;        shl     eax, 5
+;        jz      .ret
+        call    get_debuggee_slot
+        jc      .ret
+; } End patch
         mov     cl, [CURRENT_TASK+eax+TASKDATA.state] ; process state
         test    cl, cl
         jz      .1
