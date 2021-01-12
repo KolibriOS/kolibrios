@@ -1,6 +1,6 @@
 ; элемент TreeList для библиотеки box_lib.obj
 ; на код применена GPL2 лицензия
-; последняя модификация 12.09.2017 IgorA
+; последняя модификация 12.01.2021 IgorA
 
 
 struct TreeNode
@@ -243,7 +243,11 @@ push eax ebx
 		mcall SF_MOUSE_GET,SSF_BUTTON_EXT
 		test eax,$01000000
 		jz @f
+		cmp tl_on_press,0
+		je @f
 		call tl_on_press
+		add esp,8
+		popad
 		ret
 @@:	
 		bt eax,0 ;left mouse button press
@@ -299,16 +303,14 @@ pop ebx eax
 		jl .no_open_close ;курсор стоит на пустом месте, без узлов
 		imul eax,sizeof.TreeNode
 		add eax,tl_data_nodes
-		xor bx,bx
-		mov bl,byte[eax+TreeNode.level] ;сохраняем уровень текущего узла
+		movzx bx,byte[eax+TreeNode.level] ;сохраняем уровень текущего узла
 		inc bx ;+ поле для курсора
 
 		cmp si,tl_img_cx
 		jl .no_open_close ;мышей попали на левое поле для курсора, где точно нет '+' и '-'
 			mov eax,esi
 			xor edx,edx
-			xor ecx,ecx
-			mov cx,tl_img_cx
+			movzx ecx,tl_img_cx
 			div ecx
 
 			cmp ax,bx

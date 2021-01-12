@@ -13,12 +13,13 @@ format binary as ""
         dd U_END                ; memory for app
         dd stack_area           ; esp
         dd 0x0                  ; boot parameters
-        dd 0x0                  ; path
+        dd cur_dir_path         ; path
 ;------------------------------------------------------------------------------
 include 'lang.inc'
 include '../../../macros.inc'
 include '../../../develop/libraries/box_lib/trunk/box_lib.mac'
-include '../../../develop/libraries/box_lib/load_lib.mac'
+include '../../../KOSfuncs.inc'
+include '../../../load_lib.mac'
 ;------------------------------------------------------------------------------
 display_processes=24    ;32             ; number of processes to show
 window_x_size=524
@@ -27,18 +28,17 @@ window_y_size=430
 @use_library    ;use load lib macros
 ;------------------------------------------------------------------------------
 START:                          ; start of execution
-        mcall   68,11
-sys_load_library  library_name, cur_dir_path, library_path, system_path, \
-err_message_found_lib, head_f_l, myimport, err_message_import, head_f_i
+        mcall   SF_SYS_MISC,SSF_HEAP_INIT
+sys_load_library  library_name, library_path, system_path, myimport
         inc     eax
         jz      close
 ;------------------------------------------------------------------------------
-        mcall   40,0x80000027 ;set event
+        mcall   SF_SET_EVENTS_MASK,0x80000027 ;set event
 ;------------------------------------------------------------------------------
 ;set window size and position for 0 function
 ;to [winxpos] and [winypos] variables
 ;get screen size
-        mcall   14
+        mcall   SF_GET_SCREEN_SIZE
         mov     ebx,eax
 ;calculate (x_screen-window_x_size)/2
         shr     ebx,16+1
@@ -57,7 +57,7 @@ err_message_found_lib, head_f_l, myimport, err_message_import, head_f_i
         mov     [winypos],eax
 ;------------------------------------------------------------------------------
         init_checkboxes2 check1,check1_end
-        mcall   48,3,sc,40
+        mcall   SF_STYLE_SETTINGS,SSF_GET_COLORS,sc,40
         edit_boxes_set_sys_color edit1,edit1_end,sc             ;set color
         ;check_boxes_set_sys_color2 check1,check1_end,sc ;set color
 ;------------------------------------------------------------------------------
@@ -68,7 +68,7 @@ red:
 ;------------------------------------------------------------------------------
 align 4
 still:
-        mcall   23,100          ; wait here for event 1 sec.
+        mcall   SF_WAIT_EVENT_TIMEOUT,100          ; wait here for event 1 sec.
 
 	test	eax,eax
 	jz	still_end
@@ -100,7 +100,7 @@ still:
 ;--------------------------------------
 align 4
 show_process_info_1:
-        mcall   26,9
+        mcall   SF_SYSTEM_GET,SSF_TIME_COUNT
         add     eax,100
         mov     [time_counter],eax
 
@@ -109,7 +109,7 @@ show_process_info_1:
 ;------------------------------------------------------------------------------
 align 4
 still_end:
-        mcall   26,9
+        mcall   SF_SYSTEM_GET,SSF_TIME_COUNT
         cmp     [time_counter],eax
         ja      still
 
@@ -121,7 +121,7 @@ still_end:
 ;------------------------------------------------------------------------------
 align 4
 key:                            ; key
-        mcall   2
+        mcall   SF_GET_KEY
 
         cmp     ah,184          ; PageUp
         jz      pgdn
@@ -147,7 +147,7 @@ key:                            ; key
 align 4
 button:
 ; get button id
-        mcall   17
+        mcall   SF_GET_BUTTON
         mov     bl, al ; save mouse button to bl
         shr     eax,8
 ;id in [10,50] corresponds to terminate buttons.
@@ -186,12 +186,12 @@ button:
         jnz    .pop
 ; launch tinfo app
         mov     ebx, tinfo
-        mov     eax, 70
+        mov     eax, SF_FILE
         int     64
         jmp     show_process_info_1
 .terminate:
 ;terminate application
-        mcall   18,2
+        mcall   SF_SYSTEM,SSF_TERMINATE_THREAD
         jmp     show_process_info_1
 ;--------------------------------------
 align 4
@@ -230,17 +230,17 @@ pgup:
 ;------------------------------------------------------------------------------
 align 4
 program_start:
-        mcall   70,file_start
+        mcall   SF_FILE,file_start
         jmp     show_process_info_1
 ;------------------------------------------------------------------------------
 align 4
 reboot:
-        mcall   70,sys_reboot
+        mcall   SF_FILE,sys_reboot
 ;close program if we going to reboot
 ;------------------------------------------------------------------------------
 align 4
 close:
-        or      eax,-1          ; close this program
+        or      eax,SF_TERMINATE_PROCESS ; close this program
         mcall
 ;------------------------------------------------------------------------------
 align 4
@@ -250,7 +250,7 @@ draw_empty_slot:
         mov     ecx,[curposy]
         shl     ecx,16
         mov     cx,10   ; button height
-        mcall   13,<111,393>,,[bar_bacground_color]
+        mcall   SF_DRAW_RECT,<111,393>,,[bar_bacground_color]
 @@:
         ret
 ;------------------------------------------------------------------------------
@@ -274,9 +274,9 @@ draw_next_process:
         mov     esi,0xaabbcc
 @@:
 		add     edx,0x80000000 ; delete a button
-		mcall   8              ; before create
+		mcall   SF_DEFINE_BUTTON ; before create
 		sub     edx,0x80000000 ; a new one below
-        mcall   8,<10,99>
+        mcall   SF_DEFINE_BUTTON,<10,99>
         mov     [btn_bacground_color],esi
 ;draw background for proccess information
         mov     edx,0xddffdd
@@ -287,7 +287,7 @@ draw_next_process:
         inc     cx
         cmp     [draw_window_flag],0
         je      @f
-        mcall   13,<110,395>
+        mcall   SF_DRAW_RECT,<110,395>
 @@:
         mov     [bar_bacground_color],edx
 ;nothing else should be done if there is no process for this button
@@ -312,7 +312,7 @@ align 4
         cmp     ecx,256
         jge     .no_processes
 ;load process information in buffer
-        mcall   9
+        mcall   SF_THREAD_INFO
 ;if current slot greater than maximal slot,
 ;there is no more proccesses.
         cmp     ecx,eax
@@ -363,7 +363,7 @@ align 4
         mov     [list_add],ecx
 ;get processor cpeed
 ;for percent calculating
-        mcall   18,5
+        mcall   SF_SYSTEM,SSF_GET_CPU_FREQUENCY
         xor     edx,edx
         mov     ebx,100
         div     ebx
@@ -404,18 +404,18 @@ align 4
         push    edi
         mov     edx,[curposy]
         add     edx,15*65536+3
-        mcall   47,<2,256>
+        mcall   SF_DRAW_NUMBER,<2,256>
 ;show process name
         mov     ebx,[curposy]
         add     ebx,40*65536+3
         mov     ecx,esi
-        mcall   4,,,process_info_buffer.process_name,11
+        mcall   SF_DRAW_TEXT,,,process_info_buffer.process_name,11
 ;show pid
         mov     edx,[curposy]
         add     edx,125*65536+3
         mov     esi,ecx
         or      esi,0x40000000
-        mcall   47,<8,256>,[process_info_buffer.PID],,,[bar_bacground_color]
+        mcall   SF_DRAW_NUMBER,<8,256>,[process_info_buffer.PID],,,[bar_bacground_color]
 ;show cpu usage
         add     edx,60*65536
         mcall   ,,[process_info_buffer.cpu_usage]
@@ -460,13 +460,13 @@ f11:
 ;   *********************************************
 align 4
 draw_window:
-        mcall   12, 1
+        mcall   SF_REDRAW, SSF_BEGIN_DRAW
 ; DRAW WINDOW
         xor     eax,eax                         ; function 0 : define and draw window
         xor     esi,esi
         mcall   ,[winxpos],[winypos],0x74ffffff,,title  ;0x34ddffdd
 
-        mcall   9,process_info_buffer,-1
+        mcall   SF_THREAD_INFO,process_info_buffer,-1
 
         mov     eax,[ebx+70]
         mov     [window_status],eax
@@ -484,19 +484,19 @@ draw_window:
         mov     [client_area_y_size],eax
 
         mov     ebx,[client_area_x_size]
-        mcall   13,,<0,20>,0xffffff
+        mcall   SF_DRAW_RECT,,<0,20>,0xffffff
 ; function 4 : write text to window
         xor     ecx,ecx
-        mcall   4,<17,8>,,text,text_len
+        mcall   SF_DRAW_TEXT,<17,8>,,text,text_len
 
-        mcall   13,<0,10>,<20,336>,0xffffff
+        mcall   SF_DRAW_RECT,<0,10>,<20,336>,0xffffff
 
         mov     ebx,[client_area_x_size]
         sub     ebx,10+100+395
         add     ebx,(10+100+395) shl 16
         mcall
 
-        mcall   26,9
+        mcall   SF_SYSTEM_GET,SSF_TIME_COUNT
         add     eax,100
         mov     [time_counter],eax
 
@@ -508,7 +508,7 @@ draw_window:
         mov     ecx,[client_area_y_size]
         sub     ecx,20+336
         add     ecx,(20+336) shl 16
-        mcall   13,,,0xffffff
+        mcall   SF_DRAW_RECT,,,0xffffff
 
         push    dword edit1
         call    [edit_box_draw]
@@ -517,7 +517,7 @@ draw_window:
         call    [check_box_draw]
 
 ; previous page button
-        mcall   8,<25,96>,<361,14>,51,0xccddee  ;0xaabbcc
+        mcall   SF_DEFINE_BUTTON,<25,96>,<361,14>,51,0xccddee  ;0xaabbcc
 ; next page button  52
         inc     edx
         mcall   ,<125,96>
@@ -534,14 +534,14 @@ draw_window:
         mcall
 ;"PREV PAGE", "NEXT PAGE" and "REBOOT" labels
         xor     ecx,ecx
-        mcall   4,<45,365>,,tbts,tbte-tbts
+        mcall   SF_DRAW_TEXT,<45,365>,,tbts,tbte-tbts
 ;"RUN" labels
         mcall   ,<464,385>,,tbts_3,tbte_2-tbts_3
 ;print application name in text box
 ;--------------------------------------
 align 4
 .exit:
-        mcall   12, 2
+        mcall   SF_REDRAW, SSF_END_DRAW
         ret
 ;------------------------------------------------------------------------------
 align 4
@@ -579,12 +579,7 @@ align 4
 ;------------------------------------------------------------------------------
 system_path      db '/sys/lib/'
 library_name     db 'box_lib.obj',0
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-err_message_found_lib   db 'Sorry I cannot load library box_lib.obj',0
-head_f_i:
-head_f_l        db 'System error',0
-err_message_import      db 'Error on load import library box_lib.obj',0
 ;------------------------------------------------------------------------------
 align 4
 myimport:
@@ -629,7 +624,7 @@ list_start  dd 0
 ;------------------------------------------------------------------------------
 align 4
 sys_reboot:
-            dd 7
+            dd SSF_START_APP
             dd 0
             dd 0
             dd 0
@@ -705,7 +700,7 @@ end if
 ; ---------------------------------------------------------------------------- ;
 align 4
 tinfo:
-                    dd 7
+                    dd SSF_START_APP
                     dd 0
 .params             dd .params_buf
                     dd 0
@@ -720,7 +715,7 @@ sz_tinfo_file_path  db "/sys/tinfo",0
 ; ---------------------------------------------------------------------------- ;
 align 4
 file_start:
-        dd 7
+        dd SSF_START_APP
         dd 0
         dd 0
         dd 0

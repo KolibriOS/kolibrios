@@ -1,6 +1,6 @@
 ; макрос для системной библиотеки box_lib.obj
 ; элемент TextEditor для Kolibri OS
-; файл последний раз изменялся 10.06.2020 IgorA
+; файл последний раз изменялся 12.01.2021 IgorA
 ; на код применена GPL2 лицензия
 
 ;input:
@@ -2201,7 +2201,7 @@ proc ted_text_find_sel_color uses eax ebx ecx esi
 locals
 	begPos dd ? ;начальная позиция
 	endPos dd ? ;конечная позиция
-	find db ? ;найдено / не найдено
+	find db ? ;0 - не найдено, 1 - найдено, 2 - найдено в конце файла
 	f_color db ? ;индекс цвета найденого слова
 endl
 ;eax = word_n текущий номер (позиция) проверяемого слова в списке
@@ -2217,9 +2217,8 @@ endl
 		cmp edx,ted_tex_1
 		jle .cycle0end
 
-		xor eax,eax
-		mov al,byte[edx]
-		shl ax,2 ;eax*=4
+		movzx eax,byte[edx]
+		shl eax,2 ;eax*=4
 		add eax,ted_arr_key_pos
 		mov eax,[eax]
 		cmp eax,0
@@ -2323,6 +2322,7 @@ align 4
 				jg @f
 					;если дошли до конца файла и не нашли символ конца разметки
 					call ted_iterat_perv
+					mov byte[find],2
 				@@:
 					mov dword[endPos],edx
 			.if_7e:
@@ -2361,21 +2361,23 @@ align 4
 			jmp .wh_2b
 		.wh_2e:
 
-		cmp byte[find],1 ;if(fnd)break;
-		je .cycle0end
+		cmp byte[find],0 ;if(fnd)break;
+		jne .cycle0end
 			mov edx,[begPos];i=bP;
 		jmp .cycle0
 	.cycle0end:
 
-	cmp byte[find],1
-	jne .if_1e ;if(fnd){ // выделение найденого текста
+	cmp byte[find],0
+	je .if_1e ;if(fnd){ // выделение найденого текста
 		;if(!mode_sf1 || (mode_sf1 && strlen(Col[word_n].f1->c_str())>0)){
 		mov eax,[begPos]
 		mov bl,[f_color]
 		mov [eax+1],bl ;tex[bP].col=f_color;
 		mov eax,[endPos]
 		mov byte[eax+1],0xff ;tex[eP].col=255;
-		;return ItPoPerv(eP); // возвращаем позицию конца вхождения
+		cmp byte[find],2
+		je .if_1e
+		;return ItPoPerv(eP); // возвращаем позицию конца вхождения		
 		mov edx,[endPos]
 		call ted_get_text_perv_pos
 		jmp @f
@@ -2456,9 +2458,8 @@ proc ted_find_help_id uses ebx ecx, end_pos:dword
 ; ebx = l_pos
   mov ted_help_id,-1
 
-    xor ebx,ebx
-    mov bl,[edx]
-    shl bx,2 ;ebx*=4
+    movzx ebx,byte[edx]
+    shl ebx,2 ;ebx*=4
     add ebx,ted_arr_key_pos
     mov ecx,[ebx]
     cmp ecx,0
@@ -3386,17 +3387,15 @@ ted_get_symb_color:
 			cmp edx,ted_tex_1
 			jle .exit
 		.on_first:
-			xor eax,eax
-			mov al,byte[edx+1]
-			or al,al ;если al=0 то цвет не меняется
+			movzx eax,byte[edx+1]
+			or eax,eax ;если al=0 то цвет не меняется
 			jz @b
 
 		cmp eax,ted_colors_text_count
 		jge .exit
 
-		shl ax,2 ;умножаем индекс цвета на 4 байта
 		mov ecx,ted_text_colors ;прибавляем смещение 1-го цвета
-		add ecx,eax
+		lea ecx,[ecx+4*eax]
 		mov ecx,[ecx] ;устанавливаем текущий цвет текста по смещению
 	.exit:
 	or ecx,ted_font_size
@@ -3774,9 +3773,8 @@ proc ted_draw_help_f1
 		add ebx,13 ;=3+10
 
 		;SetTextColor
-		xor eax,eax
-		mov al,byte[edx+MAX_COLOR_WORD_LEN+7]
-		shl ax,2
+		movzx eax,byte[edx+MAX_COLOR_WORD_LEN+7]
+		shl eax,2
 		mov ecx,ted_text_colors
 		add ecx,eax
 		mov ecx,[ecx]
@@ -4131,15 +4129,14 @@ proc ted_opt_draw_line_left uses ebx
 		or ebx,ebx
 		jz @f
 ;--------------------------------------
-xor eax,eax ;eax будет меняться
-mov al,byte[edx+1]
-or al,al
+;eax будет меняться
+movzx eax,byte[edx+1]
+or eax,eax
 jz .no_color
 cmp eax,ted_colors_text_count
 jge .no_color
-	xor ecx,ecx
-	mov cl,byte[edx+1]
-	shl cx,2
+	movzx ecx,byte[edx+1]
+	shl ecx,2
 	add ecx,ted_text_colors
 	mov ecx,[ecx]
 .no_color:
