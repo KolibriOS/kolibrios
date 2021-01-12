@@ -1,36 +1,32 @@
-NAME = tinypy
+NAME=tinypy
 CC = kos32-gcc
 LD = kos32-ld
 
-SDK_DIR:= $(abspath ../../../../contrib/sdk)
-
 LDFLAGS = -static -nostdlib -T $(SDK_DIR)/sources/newlib/app.lds \
-          --image-base 0 -lgcc -lc.dll
+          --image-base 0 -lgcc -lSDLn  -lc.dll -lsound
 
-CFLAGS = -U_Win32 -U_WIN32 -U__MINGW32__ -mpreferred-stack-boundary=2 \
-			-mincoming-stack-boundary=2 -fno-builtin -fno-common
+SDL_DIR = $(SDK_DIR)/sources/SDL-1.2.2_newlib
+          
+CFLAGS = -DCONIO -U_Win32 -U_WIN32 -U__MINGW32__ -mpreferred-stack-boundary=2 \
+			-mincoming-stack-boundary=2 -fno-builtin -fno-common  -O3 
 
-INCLUDES= -I. -I$(SDK_DIR)/sources/newlib/libc/include
-LIBPATH:= -L $(SDK_DIR)/lib -L /home/autobuild/tools/win32/mingw32/lib
+INCLUDES= -I. -I$(SDK_DIR)/sources/newlib/libc/include -I$(SDL_DIR)/include
+LIBPATH:= -L $(SDK_DIR)/lib -L /home/autobuild/tools/win32/mingw32/lib -L.  
 
-MODULES_DIR = $(abspath ../modules)
+STD_MODULES= ../std_modules/modules.o
+		
+OBJECTS =  tpmain.o $(STD_MODULES)
 
-MODULES_OBJ =	$(MODULES_DIR)/kolibri/init.o  \
-				$(MODULES_DIR)/kolibri/fs.o    \
-				$(MODULES_DIR)/kolibri/net.o   \
-				$(MODULES_DIR)/kolibri/gui.o   \
-				$(MODULES_DIR)/kolibri/debug.o
-
-OBJECTS = tpmain.o $(MODULES_OBJ)
-
-all: $(NAME)
+all:$(NAME)
 
 $(NAME): $(OBJECTS)
-	$(LD) $(LIBPATH) --subsystem native -o $@ $(OBJECTS) $(LDFLAGS) -n # -Map $(NAME).map
-	objcopy $@ -O binary
+	$(LD) $(LIBPATH) --subsystem native -o $@ $(OBJECTS) $(LDFLAGS) -n -Map $(NAME).map
+	strip -S $(NAME)
+	kos32-objcopy $@ -O binary
+	kpack $@
 
 %.o : %.c Makefile	
 	$(CC) -c $(INCLUDES) $(CFLAGS) -o $@ $<
 
 clean:
-	rm -f *.o $(NAME).map $(MODULES_OBJ)
+	rm -f $(NAME).map $(OBJECTS) *.o core/*.tpc core/*.pyc

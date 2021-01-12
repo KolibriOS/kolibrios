@@ -1,6 +1,6 @@
 # center: 10043
-import pygame
-if '.' in str(1.0):
+import pygame, sys
+if not "tinypy" in sys.version:
     import pygame.locals
 
 SW,SH = 120,120
