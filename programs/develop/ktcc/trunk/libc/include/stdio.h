@@ -2,6 +2,7 @@
 #define stdio_h
 
 #include "kolibrisys.h"
+#include <errno.h>
 #include <stdarg.h>
 /* use stdarg.h
 typedef char *va_list;
@@ -32,7 +33,6 @@ typedef struct {
 } FILE;
 
 #define stderr ((FILE*)3) /* works only for fprintf!!! */
-
 
 #define FILE_OPEN_READ 0
 #define FILE_OPEN_WRITE 1
@@ -101,30 +101,5 @@ int tiny_snprintf (char * s, size_t n, const char * format, ... );
 int tiny_vsnprintf (char * s, size_t n, const char * format, va_list args );
 // support %c, %s, %d, %x, %u, %% for 32-bit values only. no width specs, left align
 // always zero-ended
-
-extern int errno;
-/* errors codes from KOS, but minus */
-#ifndef E_SUCCESS
-
-# define E_SUCCESS (0)
-# define E_UNSUPPORTED (-2)
-# define E_UNKNOWNFS  (-3)
-# define E_NOTFOUND (-5)
-# define E_EOF  (-6)
-# define E_INVALIDPTR (-7)
-# define E_DISKFULL  (-8)
-# define E_FSYSERROR  (-9)
-# define E_ACCESS  (-10)
-# define E_HARDWARE  (-11)
-# define E_NOMEM  (-12)
-/* conversion errors */
-# define ERANGE (-20)
-# define EINVAL (-21)
-/* program run and pipe errors */
-# define E_NOMEM2 (-30)
-# define E_FILEFMT (-31)
-# define E_TOOMANY (-32)
-# define E_PARAM (-33)
 #endif
 
-#endif

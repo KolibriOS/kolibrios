@@ -2,6 +2,7 @@
 #define __SOCKET_H
 
 #include <stddef.h>
+#include <errno.h>
 
 // Socket Types
 #define SOCK_STREAM 1
@@ -53,27 +54,7 @@
 //Socket options
 #define SO_BINDTODEVICE (1<<9)
 #define SO_NONBLOCK (1<<31)
-
-// Error Codes
-#define ENOBUFS      1
-#define EINPROGRESS  2
-#define EOPNOTSUPP   4
-#define EWOULDBLOCK  6
-#define ENOTCONN     9
-#define EALREADY     10
-#define EINVALUE     11
-#define EMSGSIZE     12
-#define ENOMEM       18
-#define EADDRINUSE   20
-#define ECONNREFUSED 61
-#define ECONNRESET   52
-#define EISCONN      56
-#define ETIMEDOUT    60
-#define ECONNABORTED 53
-
-
 #define PORT(X) (X<<8)
-extern int err_code;
 
 #pragma pack(push,1)
 struct sockaddr{

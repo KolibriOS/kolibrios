@@ -35,22 +35,22 @@ int main() {
 
     puts("Connecting...\n");
     if (connect(sock, addr_info->ai_addr, addr_info->ai_addrlen) != 0) {
-    	printf("Connection failed, err_code = %d\n", err_code);
-    	exit(err_code);
+    	printf("Connection failed, errno = %d\n", errno);
+    	exit(errno);
     }
     puts("Connected successfully\n");
 
     puts("Sending request...\n");
     if (send(sock, request, strlen(request), MSG_NOFLAG) == -1) {
-    	printf("Sending failed, err_code = %d\n", err_code);
-    	exit(err_code);
+    	printf("Sending failed, errno = %d\n", errno);
+    	exit(errno);
     }
     puts("Request sended successfully, waiting for response...\n");
 
     char buf[512 + 1];
     if (recv(sock, buf, 512, MSG_NOFLAG) == -1) {
-    	printf("Receive failed, err_code = %d\n", err_code);
-    	exit(err_code);
+    	printf("Receive failed, errno = %d\n", errno);
+    	exit(errno);
     }
 
     printf("Response = %s\n", buf);
