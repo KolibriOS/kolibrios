@@ -128,10 +128,10 @@ extern __IMPORT char *program_invocation_short_name;
 #define ENOTEMPTY 90	/* Directory not empty */
 #define ENAMETOOLONG 91	/* File or path name too long */
 #define ELOOP 92	/* Too many symbolic links */
-#define EOPNOTSUPP 95	/* Operation not supported on socket */
+#define EOPNOTSUPP 4	/* Operation not supported on socket */
 #define EPFNOSUPPORT 96 /* Protocol family not supported */
-#define ECONNRESET 104  /* Connection reset by peer */
-#define ENOBUFS 105	/* No buffer space available */
+#define ECONNRESET 51  /* Connection reset by peer */
+#define ENOBUFS 1	/* No buffer space available */
 #define EAFNOSUPPORT 106 /* Address family not supported by protocol family */
 #define EPROTOTYPE 107	/* Protocol wrong type for socket */
 #define ENOTSOCK 108	/* Socket operation on non-socket */
@@ -139,26 +139,29 @@ extern __IMPORT char *program_invocation_short_name;
 #ifdef __LINUX_ERRNO_EXTENSIONS__
 #define ESHUTDOWN 110	/* Can't send after socket shutdown */
 #endif
-#define ECONNREFUSED 111	/* Connection refused */
-#define EADDRINUSE 112		/* Address already in use */
-#define ECONNABORTED 113	/* Software caused connection abort */
+#define ECONNREFUSED 61	/* Connection refused */
+#define EADDRINUSE 20		/* Address already in use */
+#define ECONNABORTED 53	/* Software caused connection abort */
 #define ENETUNREACH 114		/* Network is unreachable */
 #define ENETDOWN 115		/* Network interface is not configured */
-#define ETIMEDOUT 116		/* Connection timed out */
+#define ETIMEDOUT 60		/* Connection timed out */
 #define EHOSTDOWN 117		/* Host is down */
 #define EHOSTUNREACH 118	/* Host is unreachable */
-#define EINPROGRESS 119		/* Connection already in progress */
-#define EALREADY 120		/* Socket already connected */
+#define EINPROGRESS 2		/* Connection already in progress */
+#define EALREADY 10		/* Socket already connected */
 #define EDESTADDRREQ 121	/* Destination address required */
-#define EMSGSIZE 122		/* Message too long */
+#define EMSGSIZE 12		/* Message too long */
 #define EPROTONOSUPPORT 123	/* Unknown protocol */
 #ifdef __LINUX_ERRNO_EXTENSIONS__
 #define ESOCKTNOSUPPORT 124	/* Socket type not supported */
 #endif
 #define EADDRNOTAVAIL 125	/* Address not available */
 #define ENETRESET 126		/* Connection aborted by network */
-#define EISCONN 127		/* Socket is already connected */
-#define ENOTCONN 128		/* Socket is not connected */
+#define EISCONN 56		/* Socket is already connected */
+#define ENOTCONN 9		/* Socket is not connected */
+#define EINVALUE 11
+#define ENOMEM_S 18
+
 #define ETOOMANYREFS 129
 #ifdef __LINUX_ERRNO_EXTENSIONS__
 #define EPROCLIM 130
@@ -182,7 +185,7 @@ extern __IMPORT char *program_invocation_short_name;
 #ifdef __LINUX_ERRNO_EXTENSIONS__
 #define ESTRPIPE 143	/* Streams pipe error */
 #endif
-#define EWOULDBLOCK EAGAIN	/* Operation would block */
+#define EWOULDBLOCK 6	/* Operation would block */
 
 #define __ELASTERROR 2000	/* Users can add values starting here */
 
