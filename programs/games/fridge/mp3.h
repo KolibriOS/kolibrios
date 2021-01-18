@@ -1,7 +1,4 @@
-// !!!!!!!
-// -O0
-// (optimization 0)
-// !!!!!!!
+// Was written by maxcodehack
 
 #pragma pack(push,1)
 typedef struct 
@@ -18,7 +15,7 @@ char		*p21;
 
 int kol_file_70(kol_struct70 *k)
 {
-	asm volatile ("int $0x40"::"a"(70), "b"(k));
+	__asm__ __volatile__ ("int $0x40"::"a"(70), "b"(k) : "memory");
 }
 
 int RunApp(char *app, char *param)
@@ -36,7 +33,7 @@ int RunApp(char *app, char *param)
 
 
 void PlayMusic(char name[]) {
-	char param[] = "-h ";
+	char param[256] = "-h ";
 	strcat(param, name);
 	RunApp("/sys/media/ac97snd", param);
 };
