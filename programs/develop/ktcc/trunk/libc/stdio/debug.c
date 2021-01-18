@@ -1,4 +1,5 @@
 #include <stdarg.h>
+#include <stdio.h>
 #include <kolibrisys.h>
 
 void debug_printf(const char *format,...)

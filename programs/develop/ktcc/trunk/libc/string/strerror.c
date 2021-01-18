@@ -1,59 +1,105 @@
 #include <string.h>
+#include <errno.h>
 
 char* strerror(int err)
 {
     char *msg;
     switch(err)
     {
-    case 0:
-        msg = "success";
+    case E_SUCCESS:
+        msg = "Success";
         break;
     case -1:
-        msg = "end of file";
+        msg = "End of file";
         break;
-    case -2:
-        msg = "function is not supported for the given file system";
+    case E_UNSUPPORTED:
+        msg = "Function is not supported for the given file system";
         break;
-    case -3:
-        msg = "unknown file system";
+    case E_UNKNOWNFS:
+        msg = "Unknown file system";
         break;
-    case -5:
-        msg = "file not found";
+    case E_NOTFOUND:
+        msg = "File not found";
         break;
-    case -6:
-        msg = "end of file, EOF";
+    case E_EOF:
+        msg = "End of file, EOF";
         break;
-    case -7:
-        msg = "pointer lies outside of application memory";
+    case E_INVALIDPTR:
+        msg = "Pointer lies outside of application memory";
         break;
-    case -8:
-        msg = "disk is full";
+    case E_DISKFULL:
+        msg = "Disk is full";
         break;
-    case -9:
-        msg = "file system error";
+    case E_FSYSERROR:
+        msg = "Dile system error";
         break;
-    case -10:
-        msg = "access denied";
+    case E_ACCESS:
+        msg = "Access denied";
         break;
-    case -11:
-        msg = "device error";
+    case E_HARDWARE:
+        msg = "Device error";
         break;
-    case -12:
-        msg = "file system requires more memory";
+    case E_NOMEM:
+        msg = "File system requires more memory";
         break;
-    case -30:
-        msg = "not enough memory";
+    case E_NOMEM2:
+        msg = "Not enough memory";
         break;
-    case -31:
-        msg = "file is not executable";
+    case E_FILEFMT:
+        msg = "File is not executable";
         break;
-    case -32:
-        msg = "too many processes";
+    case E_TOOMANY:
+        msg = "Too many processes";
+        break;
+    /* Socket errors */
+    case ENOBUFS:
+        msg = "Broken buffer";
+        break;
+    case EINPROGRESS:
+        msg = "Operation now in progress";
+        break;
+    case EOPNOTSUPP:
+        msg = "Operation not supported on transport endpoint";
+        break;
+    case EWOULDBLOCK:
+        msg = "Operation would block";
+        break;
+    case ENOTCONN:
+        msg = "Transport endpoint is not connected";
+        break;
+    case EALREADY: 
+        msg = "Operation already in progress";
+        break;
+    case EINVALUE: 
+        msg = "Invalid argument"; 
+        break; 
+    case EMSGSIZE:
+        msg = "Message too long";
+        break;
+    case ENOMEM:
+        msg = "Out of memory";
+        break;
+    case EADDRINUSE:   
+        msg = "Address already in use"; 
+        break;
+    case ECONNREFUSED:
+        msg = "Connection refused";
+        break;
+    case ECONNRESET:
+        msg = "Connection reset by peer";
+        break;
+    case EISCONN:
+        msg = "Transport endpoint is already connected"; 
+        break;
+    case ETIMEDOUT:
+        msg = "Connection timed out";
+        break;
+    case ECONNABORTED: 
+        msg = "Software caused connection abort";
         break;
     default:
-        msg = "unknown error";
+        msg = "Unknown error";
         break;
     }
-
     return msg;
 }

@@ -15,7 +15,7 @@
 #define cdecl   __attribute__ ((cdecl))
 #define stdcall __attribute__ ((stdcall))
 //#endif
-
+typedef void* func_ptr;
 typedef unsigned int dword;
 typedef unsigned char byte;
 typedef unsigned short word;
@@ -191,7 +191,7 @@ extern void stdcall _ksys_sound_speaker_play(void* data);
 
 //------------------function for work with Dinamic Link Librarys(DLL)--------------
 extern dword* stdcall _ksys_cofflib_load(char* name);
-extern char* stdcall _ksys_cofflib_getproc(void* exp,char* sz_name);
+extern func_ptr stdcall _ksys_cofflib_getproc(void* exp,char* sz_name);
 //---------------------------------------------------------------------------------
 
 #endif

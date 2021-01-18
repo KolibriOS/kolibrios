@@ -11,18 +11,20 @@ int main()
     struct sockaddr addr={AF_INET4, PORT(23) , 0, 0};
     
     int sk1=socket(AF_INET4, SOCK_STREAM, IPPROTO_TCP);
-    printf("Open socket: %d. Error: %d\n",sk1, errno);
+    printf("Open socket: %d. Status: %s\n",sk1, strerror(errno));
     
     bind(sk1, &addr,sizeof(addr));
-    printf("Socket binding. Error: %d\n", errno);
+    printf("Socket binding. Status: %s\n", strerror(errno));
     
     listen(sk1, 1);
-    printf("Listening to a socket. Error: %d\n", errno);
+    printf("Listening to a socket. Status: %s\n", strerror(errno));
+    printf("You can connect to 'tcp server' via 'telnet' on localhost:23 !");
+    
     int sk2 = accept(sk1, &addr, sizeof(addr));
-    printf("Accept done. Error: %d\n", errno);
+    printf("Accept done. Status: %s\n", strerror(errno));
     
     send(sk2, msg1, strlen(msg1),MSG_NOFLAG);
-    printf("Send message: '%s'  Error: %d\n", msg1, errno);
+    printf("Send message: '%s'. Status: %s\n",msg1, strerror(errno));
     puts("Received data:");
     while(msg2!='!')
     {

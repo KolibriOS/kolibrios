@@ -1,3 +1,5 @@
+/* Copyright (C) 2019-2021 Logaev Maxim (turbocat2001), GPLv3 */
+
 #include <net/socket.h>
 
 int socket(int domain, int type, int protocol)

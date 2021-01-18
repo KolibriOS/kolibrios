@@ -1,3 +1,5 @@
+/* Copyright (C) 2019-2021 Logaev Maxim (turbocat2001), GPLv3 */
+
 #include <stdlib.h>
 #include <dir.h>
 #include <stdbool.h>
@@ -43,9 +45,9 @@ int lsdir(const char* dir, short_file_info **list)
     inf.p00 = 1;
     inf.p04 = 0;
     inf.p12 = 2;
-    inf.p16 = (unsigned*) malloc(32+inf.p12*560);
+    inf.p16 = (unsigned) malloc(32+inf.p12*560);
     inf.p20 = 0;
-    inf.p21 = dir;
+    inf.p21 = (char*)dir;
     
     if(kol_file_70(&inf))
     {
@@ -97,10 +99,10 @@ void setcwd(const char* cwd)
 
 bool rmdir(const char* dir)
 {
-    return dir_operations(8, dir);
+    return dir_operations(8, (char*)dir);
 }
 
 bool mkdir(const char* dir)
 {
-    return dir_operations(9, dir);
+    return dir_operations(9, (char*)dir);
 }
