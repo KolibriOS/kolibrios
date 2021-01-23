@@ -1,4 +1,4 @@
-/* Copyright (C) 2019-2020 Logaev Maxim (turbocat2001), GPLv3 */
+/* Copyright (C) 2019-2021 Logaev Maxim (turbocat2001), GPLv2 */
 
 #include <stdio.h>
 #include <string.h>
