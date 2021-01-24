@@ -45,14 +45,13 @@ import lib_libimg, \
 	img_flip_layer, 'img_flip_layer', \
 	img_rotate, 'img_rotate', \
 	img_rotate_layer, 'img_rotate_layer', \
-	img_draw, 'img_draw'
+	img_draw, 'img_draw', \ 
+	img_blend, 'img_blend', \
+	img_convert, 'img_convert', \
+    img_resize_data, 'img_resize_data', \
+    img_scale, 'img_scale'
 	
 public libimg_init as  '_libimg_init'
-;	public img_is_img as  '_img_is_img'
-;public img_info as  '_img_info'
-;public img_from_file as  '_img_from_file'
-;public img_to_file as  '_img_to_file'
-;public img_from_rgb as  '_img_from_rgb'
 public img_to_rgb as  '_img_to_rgb'
 public img_to_rgb2 as  '_img_to_rgb2'
 public img_decode as  '_img_decode'
@@ -61,10 +60,12 @@ public img_create as  '_img_create'
 public img_destroy as  '_img_destroy'
 public img_destroy_layer as  '_img_destroy_layer'
 public img_count as  '_img_count'
-;public img_lock_bits as  '_img_lock_bits'
-;public img_unlock_bits as  '_img_unlock_bits'
 public img_flip as  '_img_flip'
 public img_flip_layer as  '_img_flip_layer'
 public img_rotate as  '_img_rotate'
 public img_rotate_layer as  '_img_rotate_layer'
 public img_draw as  '_img_draw'
+public img_blend as '_img_blend'
+public img_convert as '_img_convert'
+public img_resize_data as '_img_resize_data'
+public img_scale as '_img_scale'
