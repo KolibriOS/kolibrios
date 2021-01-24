@@ -332,6 +332,18 @@ static inline uint32_t  LoadCursor(void *path, uint32_t flags) __attribute__ ((a
 static inline uint32_t SetCursor(uint32_t  cursor) __attribute__ ((alias ("set_cursor")));
 static inline int DestroyCursor(uint32_t cursor) __attribute__ ((alias ("destroy_cursor")));
 
+enum KOLIBRI_GUI_EVENTS {
+    KOLIBRI_EVENT_NONE = 0,     /* Event queue is empty */
+    KOLIBRI_EVENT_REDRAW = 1,   /* Window and window elements should be redrawn */
+    KOLIBRI_EVENT_KEY = 2,      /* A key on the keyboard was pressed */
+    KOLIBRI_EVENT_BUTTON = 3,   /* A button was clicked with the mouse */
+    KOLIBRI_EVENT_DESKTOP = 5,  /* Desktop redraw finished */
+    KOLIBRI_EVENT_MOUSE = 6,    /* Mouse activity (movement, button press) was detected */
+    KOLIBRI_EVENT_IPC = 7,      /* Interprocess communication notify */
+    KOLIBRI_EVENT_NETWORK = 8,  /* Network event */
+    KOLIBRI_EVENT_DEBUG = 9,    /* Debug subsystem event */
+    KOLIBRI_EVENT_IRQBEGIN = 16 /* 16..31 IRQ0..IRQ15 interrupt =IRQBEGIN+IRQn */
+};
 
 static inline
 uint32_t wait_for_event(uint32_t time)
