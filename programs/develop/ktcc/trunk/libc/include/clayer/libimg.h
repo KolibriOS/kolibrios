@@ -40,7 +40,7 @@ typedef struct{
   uint32_t Flags;    // bitfield
   uint32_t Delay;    // used iff Image.IsAnimated is set in Flags
 } Image;
-#pragma pack(pop);
+#pragma pack(pop)
 
 #define IMAGE_BPP8i  1  // indexed
 #define IMAGE_BPP24  2
