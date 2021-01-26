@@ -72,7 +72,7 @@ syscall_draw_window: ;///// system function 0 /////////////////////////////////
 syscall_display_settings: ;///// system function 48 ///////////////////////////
 ;------------------------------------------------------------------------------
         cmp     ebx, 13
-        ja      @f
+        ja      .ret
         jmp     dword[.ftable + ebx*4]
 
 align 4
