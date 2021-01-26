@@ -185,7 +185,6 @@ extra_files = {
  {"kolibrios/develop/tcc/", PROGS ..  "/develop/ktcc/trunk/bin/tcc"},
  {"kolibrios/develop/tcc/lib/", PROGS ..  "/develop/ktcc/trunk/bin/lib/*"},
  {"kolibrios/develop/tcc/include/", PROGS ..  "/develop/ktcc/trunk/libc/include/*"},
- {"kolibrios/develop/tcc/include/kos/", PROGS ..  "/develop/ktcc/trunk/libc/include/kos/*"},
  {"kolibrios/develop/tcc/include/clayer/", PROGS ..  "/develop/ktcc/trunk/libc/include/clayer/*"},
  {"kolibrios/develop/tcc/include/cryptal/", PROGS ..  "/develop/ktcc/trunk/libc/include/cryptal/*"},
  {"kolibrios/develop/tcc/include/net/", PROGS ..  "/develop/ktcc/trunk/libc/include/net/*"},
