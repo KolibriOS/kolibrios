@@ -9,7 +9,7 @@ int main() {
     con_write_asciiz("Wait, I'll ask you... when I'll done to fetch one site...\n");
     con_set_title("Dynamicaly linked app");
     
-    http_msg *h = http_get("http://kolibri.org/", 0,  HTTP_FLAG_BLOCK, "");
+    http_msg *h = http_get("http://kolibrios.org/en/", 0,  HTTP_FLAG_BLOCK, "");
     http_long_receive(h);
     
     if (h->status == OK) {
