@@ -1,18 +1,19 @@
 /*
-    This is adapded thunk for console.obj sys library
-    .h is equal to svn:\programs\develop\libraries\http\http_en.txt 
+    This is adapded thunk for http.obj sys library
+    .h is equal to svn:\\programs\develop\libraries\http\http_en.txt 
 
     Adapted for TCC's dynamic API by Magomed Kostoev, 2020
 */
 
-#ifndef __kos__http__h________
-#define __kos__http__h________
+#ifndef _HTTP_H_
+#define _HTTP_H_
 
 #define cdecl   __attribute__ ((cdecl))
 #define stdcall __attribute__ ((stdcall))
 
 // Bitflags for http_msg.flags
 // status
+
 #define HTTP_FLAG_HTTP11             1 << 0
 #define HTTP_FLAG_GOT_HEADER         1 << 1
 #define HTTP_FLAG_GOT_ALL_DATA       1 << 2
@@ -65,7 +66,7 @@ typedef struct http_msg_s {
     void *   content_ptr;      // ptr to content
     unsigned content_length;   // total length of HTTP content
     unsigned content_received; // number of currently received content bytes
-    char http_header[1];
+    char *   http_header;
 } http_msg;
 
 /*
@@ -77,7 +78,7 @@ typedef struct http_msg_s {
     Initiates a HTTP connection, using 'GET' method.
     Returns NULL on error, identifier otherwise.
 */
-extern http_msg * stdcall (*get)(const char *url, http_msg *identifier, unsigned flags, const char *add_header);
+extern http_msg * stdcall (*http_get)(const char *url, http_msg *identifier, unsigned flags, const char *add_header);
 
 /*
     url = pointer to ASCIIZ URL
@@ -88,7 +89,7 @@ extern http_msg * stdcall (*get)(const char *url, http_msg *identifier, unsigned
     Initiate a HTTP connection, using 'HEAD' method.
     Returns NULL on error, identifier otherwise.
 */
-extern http_msg * stdcall (*head)(const char *url, http_msg *identifier, unsigned flags, const char *add_header);
+extern http_msg * stdcall (*http_head)(const char *url, http_msg *identifier, unsigned flags, const char *add_header);
 
 /*
     url = pointer to ASCIIZ URL
@@ -103,7 +104,7 @@ extern http_msg * stdcall (*head)(const char *url, http_msg *identifier, unsigne
     using system function 75, 6.
     Returns 0 on error, identifier otherwise
 */
-extern http_msg * stdcall (*post)(const char *url, http_msg *identifier, unsigned flags, const char *add_header,
+extern http_msg * stdcall (*http_post)(const char *url, http_msg *identifier, unsigned flags, const char *add_header,
                                   const char *content_type, unsigned content_length);
 
 /*
@@ -125,7 +126,7 @@ extern http_msg * stdcall (*post)(const char *url, http_msg *identifier, unsigne
     In content_length you'll find the length of the content. 
     In content_received, you'll find the number of content bytes already received.
 */
-extern int stdcall (*receive)(http_msg *identifier);
+extern int stdcall (*http_receive)(http_msg *identifier);
 
 /*
     identifier = identifier which one of the previous functions returned
@@ -134,6 +135,11 @@ extern int stdcall (*receive)(http_msg *identifier);
     This procedure can be used to send data to the server (POST)
     Returns number of bytes sent, -1 on error
 */
-extern int stdcall (*send)(http_msg *identifier, void *dataptr, unsigned datalength);
+extern int stdcall (*http_send)(http_msg *identifier, void *dataptr, unsigned datalength);
 
-#endif // __kos__http__h________
+/*
+    Sometimes the http_receive function receives incomplete data. If you have the same problem then a macro can help you:
+*/
+#define http_long_receive(x) while(http_receive(x)){}; 
+
+#endif // _HTTP_H_

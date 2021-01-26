@@ -2,7 +2,7 @@ format ELF
 
 include "__lib__.inc"
 
-fun      equ get
+fun      equ http_get
 fun_str  equ 'get'
 
 section '.text'

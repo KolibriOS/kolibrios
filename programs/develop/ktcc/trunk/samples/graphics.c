@@ -1,7 +1,7 @@
 #include <kos32sys1.h>
 #include <stdlib.h>
 #include <string.h>
-#include <kos/gb.h>
+#include <clayer/gb.h>
 
 /// ===========================================================
 

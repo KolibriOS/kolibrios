@@ -1,14 +1,19 @@
 #include <conio.h>
-#include <kos/http.h>
-#include <kos/inputbox.h>
+#include <clayer/http.h>
+#include <clayer/inputbox.h>
+
+#define OK 200
 
 int main() {
     if (con_init_console_dll()) return 1; // init fail
     con_write_asciiz("Wait, I'll ask you... when I'll done to fetch one site...\n");
     con_set_title("Dynamicaly linked app");
-    http_msg *h = get("http://example.com", 0, HTTP_FLAG_BLOCK, "");
-    if (!receive(h)) {
-        con_printf("%s\n", h->content_ptr);
+    
+    http_msg *h = http_get("http://kolibri.org/", 0,  HTTP_FLAG_BLOCK, "");
+    http_long_receive(h);
+    
+    if (h->status == OK) {
+       con_write_string(h->content_ptr, h->content_length);
     } else {
         con_write_asciiz("Oops! Can't access to the page.\n");
     }
