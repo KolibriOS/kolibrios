@@ -15,7 +15,7 @@
 #include <clayer/http.h>
 #include <clayer/libimg.h>
 
-#define VERSION  "Weather 1.0b"
+#define VERSION  "Weather 1.2b"
 
 enum BUTTONS{
     BTN_QUIT = 1,
@@ -27,25 +27,33 @@ enum BUTTONS{
 #define API       "http://api.openweathermap.org/data/2.5/weather?q=%s&appid=%s&units=metric"
 #define IMAGE_URL "http://openweathermap.org/img/w/%s.png"
 #define START_YPOS 34 
+#define UTF8_W 8
+#define CP866_W 6
+
+#define WINDOW_W 200
 
 Image *image;
-char full_url[256];
+Image *blend;
+
+char full_url[512];
 char full_url_image[256];
 struct kolibri_system_colors sys_color_table;
 
+pos_t win_pos; 
+
 #pragma pack(push,1)
 typedef struct {
-    char *City;
-    float wind_speed;
+    char City[256];
+    int wind_speed;
     //int wind_deg;
     int pressure;
     int humidity;
-    char *weath_main;
-    char *weath_desc;
+    //char weath_main[256];
+    char weath_desc[256];
     int visibility;
     int timezone;
-    char* image_code;
-    double temp;
+    char image_code[4];
+    int temp;
 }open_weather_data;
 #pragma pack(pop)
 
@@ -67,9 +75,10 @@ void* safe_malloc(size_t size) // Безопасный malloc. Показыва�
     }
 }
 
+ char tmp_buff[100];
+
 static void draw_format_text_sys(int x, int y, color_t color, const char *format_str, ... )
 {
-    char tmp_buff[100];
     va_list ap;
     va_start (ap, format_str);
     vsnprintf(tmp_buff, sizeof tmp_buff ,format_str, ap);
@@ -81,19 +90,29 @@ void find_and_set(json_value *value, open_weather_data* weather)
 {
     for(int i=0; i<value->u.object.length; i++){
         if(!strcmp(JSON_OBJ(i).name, "main")){
-            weather->temp = JSON_OBJ(i).value->u.object.values[0].value->u.dbl;
+            if(JSON_OBJ(i).value->u.object.values[0].value->type==json_double)
+            {
+                weather->temp = (int)JSON_OBJ(i).value->u.object.values[0].value->u.dbl;
+            }else{
+                weather->temp = JSON_OBJ(i).value->u.object.values[0].value->u.integer;
+            }
             weather->pressure = JSON_OBJ(i).value->u.object.values[4].value->u.integer;
             weather->humidity = JSON_OBJ(i).value->u.object.values[5].value->u.integer;
         }
         if(!strcmp(JSON_OBJ(i).name, "name")){
-            weather->City = JSON_OBJ(i).value->u.string.ptr;
+            strcpy(weather->City,JSON_OBJ(i).value->u.string.ptr);
         }
         if(!strcmp(JSON_OBJ(i).name, "weather")){
-           weather->weath_desc = JSON_OBJ(i).value->u.array.values[0]->u.object.values[2].value->u.string.ptr;
-           weather->image_code = JSON_OBJ(i).value->u.array.values[0]->u.object.values[3].value->u.string.ptr;
+           strcpy(weather->weath_desc, JSON_OBJ(i).value->u.array.values[0]->u.object.values[2].value->u.string.ptr);
+           strcpy(weather->image_code, JSON_OBJ(i).value->u.array.values[0]->u.object.values[3].value->u.string.ptr);
         }
         if(!strcmp(JSON_OBJ(i).name, "wind")){
-            weather->wind_speed = JSON_OBJ(i).value->u.object.values[0].value->u.dbl;
+            if(JSON_OBJ(i).value->u.object.values[0].value->type==json_double)
+            {
+                weather->wind_speed = (int)JSON_OBJ(i).value->u.object.values[0].value->u.dbl;
+            }else{
+                weather->wind_speed = JSON_OBJ(i).value->u.object.values[0].value->u.integer;
+            }  
         }
         if(!strcmp(JSON_OBJ(i).name, "visibility")){
             weather->visibility = JSON_OBJ(i).value->u.integer;
@@ -105,6 +124,7 @@ void find_and_set(json_value *value, open_weather_data* weather)
             char *errmsg = safe_malloc(weather->timezone = JSON_OBJ(i).value->u.string.length+6);
             sprintf(errmsg,"'%s!' -E", JSON_OBJ(i).value->u.string.ptr);
             notify_show(errmsg);
+            free(errmsg);
         }
     }
 }
@@ -115,7 +135,7 @@ http_msg* get_json(char *City, char *Token)
     http_msg *h = http_get(full_url, 0,  HTTP_FLAG_BLOCK, "");
     http_long_receive(h);
     if (h->status == OK || h->status == 404) {
-       return h;
+        return h;
     } else {
         return NULL;
     }
@@ -135,10 +155,14 @@ void get_image(){
                 exit(0);
             }
         }
-        //blend = img_create(64, 64, IMAGE_BPP32);  // Create an empty layer
-        //img_fill_color(blend, 64, 64, sys_color_table.work_area); // Fill the layer with one color
-        image = img_scale(image, 0, 0, 50, 50, NULL, LIBIMG_SCALE_STRETCH , LIBIMG_INTER_BILINEAR, 64, 64);
-        //img_blend(blend, image, 0, 0, 0, 0, 64, 64);  // Blending images to display the alpha channel. 
+        user_free(h->content_ptr);
+        user_free(h);
+        blend = img_create(64, 64, IMAGE_BPP32);  // Create an empty layer
+        img_fill_color(blend, 64, 64, sys_color_table.work_area); // Fill the layer with one color
+        Image* image2 = img_scale(image, 0, 0, 50, 50, NULL, LIBIMG_SCALE_STRETCH , LIBIMG_INTER_BILINEAR, 64, 64);
+        img_blend(blend, image2, 0, 0, 0, 0, 64, 64);  // Blending images to display the alpha channel. 
+        img_destroy(image);
+        img_destroy(image2);
     }else{
        notify_show("'Image not loaded!!' -W"); 
     }  
@@ -146,29 +170,33 @@ void get_image(){
 
 void RedrawGUI() //Рисуем окно
 {
-    char buff[1000];
-    pos_t win_pos = get_mouse_pos(0); // Получаем координаты курсора
     begin_draw(); //Начинаем рисование интерфейса )
-    sys_create_window(win_pos.x, win_pos.y, 220, START_YPOS+200, VERSION, 0xffffff, 0x14); // Создаём окно.
-
-    draw_format_text_sys(10, START_YPOS, 0xB0000000 /*| sys_color_table.work_text*/,  "%s (UTC%+d)\0", myw.City, myw.timezone);
-    draw_format_text_sys(11, START_YPOS, 0xB0000000 /*| sys_color_table.work_text */, "%s (UTC%+d)\0", myw.City, myw.timezone);
-
-    img_draw(image, 10, START_YPOS+30, 64,64,0,0);
-
-    draw_format_text_sys(10, START_YPOS+20, 0xb0000000 /* | sys_color_table.work_text */, myw.weath_desc);
-    draw_format_text_sys(11, START_YPOS+20, 0xb0000000 /*| sys_color_table.work_text */, myw.weath_desc);
-
-    draw_format_text_sys(90, START_YPOS+45, 0xB1000000 /*| sys_color_table.work_text*/, "%.1f °C", myw.temp);  
-    draw_format_text_sys(91, START_YPOS+46, 0xB1000000 /*| sys_color_table.work_text*/, "%.1f °C", myw.temp);
-
-    draw_format_text_sys(10, START_YPOS+80, 0x90000000 /*| sys_color_table.work_text*/,  "Pressure:   %d hPa",myw.pressure);
-    draw_format_text_sys(10, START_YPOS+100, 0x90000000 /* | sys_color_table.work_text*/,"Humidity:   %d %s", myw.humidity, "%");
-    draw_format_text_sys(10, START_YPOS+120, 0x90000000 /*| sys_color_table.work_text*/, "Wind speed: %.1f m/s", myw.wind_speed);
-    draw_format_text_sys(10, START_YPOS+140, 0x90000000 /*| sys_color_table.work_text*/, "Visibility: %d m", myw.visibility);
     
-    define_button(X_W(65,80), Y_H(START_YPOS+160,30), BTN_UPDATE, sys_color_table.work_button);
-    draw_text_sys("Update",80 , START_YPOS+170, 0, 0x90000000 | sys_color_table.work_button_text);
+    int new_win_w = (strlen(myw.City)+11)*UTF8_W;
+    if(new_win_w<WINDOW_W){
+        new_win_w=WINDOW_W;
+    }
+    
+    sys_create_window(win_pos.x, win_pos.y, new_win_w, START_YPOS+200, VERSION, sys_color_table.work_area, 0x14); // Создаём окно.
+
+    draw_format_text_sys(20, START_YPOS, 0xB0000000 | sys_color_table.work_text, "%s (UTC%+d)", myw.City, myw.timezone);
+    draw_format_text_sys(21, START_YPOS, 0xB0000000 | sys_color_table.work_text, "%s (UTC%+d)", myw.City, myw.timezone);
+
+    img_draw(blend, 10, START_YPOS+30, 64,64,0,0);
+
+    draw_format_text_sys(20, START_YPOS+20, 0xb0000000 | sys_color_table.work_text, myw.weath_desc);
+    draw_format_text_sys(21, START_YPOS+20, 0xb0000000 | sys_color_table.work_text, myw.weath_desc);
+
+    draw_format_text_sys(100, START_YPOS+45, 0xB1000000 | sys_color_table.work_text, "%+d°C", myw.temp);  
+    draw_format_text_sys(101, START_YPOS+46, 0xB1000000 | sys_color_table.work_text, "%+d°C", myw.temp);
+
+    draw_format_text_sys(20, START_YPOS+80, 0x90000000 | sys_color_table.work_text,  "Pressure:   %d hPa",myw.pressure);
+    draw_format_text_sys(20, START_YPOS+100, 0x90000000 | sys_color_table.work_text, "Humidity:   %d %s", myw.humidity, "%");
+    draw_format_text_sys(20, START_YPOS+120, 0x90000000 | sys_color_table.work_text, "Wind speed: %d m/s", myw.wind_speed);
+    draw_format_text_sys(20, START_YPOS+140, 0x90000000 | sys_color_table.work_text, "Visibility: %d m", myw.visibility);
+    
+    define_button(X_W(new_win_w/2-40,80), Y_H(START_YPOS+160,30), BTN_UPDATE, sys_color_table.work_button);
+    draw_text_sys("Update", (new_win_w/2)-(CP866_W*4), START_YPOS+170, 0, 0x90000000 | sys_color_table.work_button_text);
     end_draw();
 }
 
@@ -199,32 +227,43 @@ void get_config(char **City, char **Token)
          exit(0);
     }
     free(config_buff);
+    fclose(config_j);
 }
 
 void Update(char* city, char* token)
 {
+    if(blend!=NULL){
+        img_destroy(blend);
+    }
     memset(&myw, 0, sizeof myw);
-    myw.City="None";
-    myw.weath_desc="unknown";
+    strcpy(myw.City,"None");
+    strcpy(myw.weath_desc,"unknown");
     http_msg *json_file = get_json(city, token);
     if(json_file != NULL){
-        json_value* value =json_parse (json_file->content_ptr, json_file->content_length);
+        json_value* value=json_parse (json_file->content_ptr, json_file->content_length);
         find_and_set(value, &myw);
         get_image();
+        json_value_free(value);
+        user_free(json_file->content_ptr);
+        user_free(json_file);
+
     }else{
-        notify_show("'Connection error!' -E");
+       notify_show("'Connection error!' -E");
     }
 }
 
 int main(){
-    kolibri_libimg_init();
+    win_pos = get_mouse_pos(0);
+    if(!kolibri_libimg_init()){
+        notify_show("Libimg.obj not loaded!' -E");
+        exit(0);
+    }
     get_system_colors(&sys_color_table);
-    
     char *City = NULL;
     char *Token = NULL;
     get_config(&City, &Token);
     Update(City,Token);
-   
+
     while(1){
         switch(get_os_event()){
             case KOLIBRI_EVENT_NONE:
