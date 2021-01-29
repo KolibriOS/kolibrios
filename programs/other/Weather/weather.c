@@ -15,30 +15,29 @@
 #include <clayer/http.h>
 #include <clayer/libimg.h>
 
-#define VERSION  "Weather 1.3"
+#define VERSION  "Weather 1.4"
 
 enum BUTTONS{
     BTN_QUIT = 1,
     BTN_UPDATE = 2
 };
 
-#define START_YPOS 34 
+#define START_YPOS 34
 #define UTF8_W 8
 #define CP866_W 6
 #define JSON_OBJ(X) value->u.object.values[X]
 #define OK 200
 
-unsigned WINDOW_W = 200;
+unsigned WINDOW_W = 230;
 
 #define API       "api.openweathermap.org/data/2.5/weather?q=%s&appid=%s&units=%s&lang=%s"
 #define IMAGE_URL "openweathermap.org/img/w/%s.png"
-
-Image *image;
+  
 Image *blend;
-char  *units;
+
 unsigned char char_size=1;
 
-char *wind_speed_str, *pressure_str, *visibility_str, *humidity_str, *update_str;
+char *wind_speed_str, *pressure_str, *visibility_str, *humidity_str, *update_str, *wind_deg_str;
         
 char lang[3]="en";
 char format_temp_str[6];
@@ -84,7 +83,7 @@ void* safe_malloc(size_t size)
 
 char tmp_buff[100];
 
-static void draw_format_text_sys(int x, int y, color_t color, const char *format_str, ... )
+void draw_format_text_sys(int x, int y, color_t color, const char *format_str, ... )
 {
     va_list ap;
     va_start (ap, format_str);
@@ -114,6 +113,7 @@ void find_and_set(json_value *value, struct open_weather_data* weather)
            strcpy(weather->image_code, JSON_OBJ(i).value->u.array.values[0]->u.object.values[3].value->u.string.ptr);
         }
         if(!strcmp(JSON_OBJ(i).name, "wind")){
+            weather->wind_deg = JSON_OBJ(i).value->u.object.values[1].value->u.integer;
             if(JSON_OBJ(i).value->u.object.values[0].value->type==json_double)
             {
                 weather->wind_speed = (int)JSON_OBJ(i).value->u.object.values[0].value->u.dbl;
@@ -150,13 +150,13 @@ http_msg* get_json(char *City, char *Token, char* Units)
     }
 }
 
-void get_image(){
+void get_image(){  // Функция загрузки изображения
     sprintf(full_url_image, IMAGE_URL, myw.image_code);
     http_msg *h= http_get(full_url_image, 0,  HTTP_FLAG_BLOCK, "");
     http_long_receive(h);
     
     if (h->status == OK) {
-        image = img_decode(h->content_ptr, h->content_length, 0); // Decode RAW data to Image data
+        Image *image = img_decode(h->content_ptr, h->content_length, 0); // Decode RAW data to Image data
         if (image->Type != IMAGE_BPP32) { 
             image = img_convert(image, NULL, IMAGE_BPP32, 0, 0); // Convert image to format BPP32
                 if (!image) {
@@ -168,79 +168,82 @@ void get_image(){
         img_fill_color(blend, 64, 64, sys_color_table.work_area); // Fill the layer with one color
         Image* image2 = img_scale(image, 0, 0, 50, 50, NULL, LIBIMG_SCALE_STRETCH , LIBIMG_INTER_BILINEAR, 64, 64);
         img_blend(blend, image2, 0, 0, 0, 0, 64, 64);  // Blending images to display the alpha channel. 
-        img_destroy(image);
+        // Уничтожаем ненужные структуры изображений
+        img_destroy(image); 
         img_destroy(image2);
     }else{
        notify_show("'Image not loaded!!' -W"); 
     } 
     user_free(h->content_ptr);
-    user_free(h); 
+    user_free(h);
+    h=NULL;
 }
 
-void RedrawGUI() 
+void RedrawGUI() // Перересовываем интерфейс
 {
-    begin_draw();
+    begin_draw();   // Начинам прорисовку
     
-    int new_win_w = (strlen(myw.City)/char_size+10)*(UTF8_W+char_size-1);
+    int new_win_w = (strlen(myw.City)/char_size+10)*(UTF8_W+char_size-1); // Если название города не влезает
     if(new_win_w<WINDOW_W){
         new_win_w=WINDOW_W;
     }
-    
-    sys_create_window(win_pos.x, win_pos.y, new_win_w, START_YPOS+200, VERSION, sys_color_table.work_area, 0x14);
-
+    // Рисуем окно
+    sys_create_window(win_pos.x, win_pos.y, new_win_w, START_YPOS+220, VERSION, sys_color_table.work_area, 0x14);
+    // Выводим жирным шрифтом название локации и временной зоны
     draw_format_text_sys(20, START_YPOS, 0xB0000000 | sys_color_table.work_text, "%s (UTC%+d)", myw.City, myw.timezone);
     draw_format_text_sys(21, START_YPOS, 0xB0000000 | sys_color_table.work_text, "%s (UTC%+d)", myw.City, myw.timezone);
-
+    // Выводим изображение
     img_draw(blend, 10, START_YPOS+30, 64,64,0,0);
-    
+    // Выводим жирным шрифтом название локации и временной зоны
     draw_format_text_sys(20, START_YPOS+20, 0xb0000000 | sys_color_table.work_text, myw.weath_desc);
     draw_format_text_sys(21, START_YPOS+20, 0xb0000000 | sys_color_table.work_text, myw.weath_desc);
-
+    // Выводим жирным шрифтом название локации и временной зоны
     draw_format_text_sys(100, START_YPOS+45, 0xb1000000 | sys_color_table.work_text, format_temp_str, myw.temp);  
     draw_format_text_sys(101, START_YPOS+46, 0xb1000000 | sys_color_table.work_text, format_temp_str, myw.temp);
-
+    // Выводим обычным шрифтом
     draw_format_text_sys(20, START_YPOS+80,  0xb0000000 | sys_color_table.work_text, pressure_str,myw.pressure);
     draw_format_text_sys(20, START_YPOS+100, 0xb0000000 | sys_color_table.work_text, humidity_str, myw.humidity, "%");
     draw_format_text_sys(20, START_YPOS+120, 0xb0000000 | sys_color_table.work_text, wind_speed_str, myw.wind_speed);
-    draw_format_text_sys(20, START_YPOS+140, 0xb0000000 | sys_color_table.work_text, visibility_str, myw.visibility);
-    
-    define_button(X_W(new_win_w/2-60,120), Y_H(START_YPOS+160,30), BTN_UPDATE, sys_color_table.work_button);
-    draw_text_sys(update_str, (new_win_w/2)-(UTF8_W*strlen(update_str)/2/char_size), START_YPOS+170, 0, 0xb0000000 | sys_color_table.work_button_text);
+    draw_format_text_sys(20, START_YPOS+140, 0xb0000000 | sys_color_table.work_text, wind_deg_str, myw.wind_deg);
+    draw_format_text_sys(20, START_YPOS+160, 0xb0000000 | sys_color_table.work_text, visibility_str, myw.visibility);
+    // Определяем кнопку
+    define_button(X_W(new_win_w/2-60,120), Y_H(START_YPOS+180,30), BTN_UPDATE, sys_color_table.work_button);
+    draw_text_sys(update_str, (new_win_w/2)-(UTF8_W*strlen(update_str)/2/char_size), START_YPOS+190, 0, 0xb0000000 | sys_color_table.work_button_text);
     end_draw();
 }
 
-void get_config(char **City, char **Token)
+void get_config(char **City, char **Token, char **Units) // Загружаем конфиг 
 {
-    FILE *config_j = fopen("weather.json", "rb");
+    FILE *config_j = fopen("weather.json", "rb"); 
     if(config_j==NULL){
         notify_show("'Configuration file not found!' -E");
         exit(0);
     }
-    size_t size = _ksys_get_filesize("weather.json");
+    size_t size = _ksys_get_filesize("weather.json"); // Получаем размер файла
     char *config_buff = safe_malloc(size+1);
     if(size != fread(config_buff, sizeof(char), size, config_j)){
         notify_show("'The configuration file was not fully read!' -E");
         exit(0);    
     }
-    json_value* value =json_parse (config_buff, size);
+    json_value* value =json_parse (config_buff, size); // Парсим конфиг
     for(int i=0; i<value->u.object.length; i++){
         if(!strcmp(JSON_OBJ(i).name, "Location")){   
-            *City = JSON_OBJ(i).value->u.string.ptr;
+            *City = JSON_OBJ(i).value->u.string.ptr;  // Получаем название города
         }
         if(!strcmp(JSON_OBJ(i).name, "Token")){
-            *Token = JSON_OBJ(i).value->u.string.ptr;
+            *Token = JSON_OBJ(i).value->u.string.ptr; // Получаем токен
         }
         if(!strcmp(JSON_OBJ(i).name, "Celsius")){
             if(JSON_OBJ(i).value->u.boolean){
-                units = "metric";
+                *Units = "metric";
                 temp_char = 'C';
             }else{
-                units = "imperial";
+                *Units = "imperial";
                 temp_char = 'F';
             }
         }
         if(!strcmp(JSON_OBJ(i).name, "Lang")){
-            strncpy(lang, JSON_OBJ(i).value->u.string.ptr,2);
+            strncpy(lang, JSON_OBJ(i).value->u.string.ptr,2); // Получам язык
         }
     }
     if(*City==NULL || *Token ==NULL){
@@ -251,22 +254,22 @@ void get_config(char **City, char **Token)
     fclose(config_j);
 }
 
-void Update(char* city, char* token)
+void Update(char* city, char* token, char* units) // Обновление данных
 {
     if(blend!=NULL){
-        img_destroy(blend);
+        img_destroy(blend); // Уничтожение картинки с прозрачностью
         blend = NULL;
     }
-    memset(&myw, 0, sizeof myw);
-    strcpy(myw.City,"None");
+    memset(&myw, 0, sizeof myw); // Обнуляем структуру
+    strcpy(myw.City,"None"); 
     strcpy(myw.weath_desc,"unknown");
-    http_msg *json_file = get_json(city, token, units);
+    http_msg *json_file = get_json(city, token, units); // Получаем данные о погоде в формате json 
     if(json_file != NULL){
-        json_value* value=json_parse (json_file->content_ptr, json_file->content_length);
-        find_and_set(value, &myw);
-        sprintf(format_temp_str, "%s°%c","%d",temp_char);
-        get_image();
-        json_value_free(value);
+        json_value* value=json_parse (json_file->content_ptr, json_file->content_length); // Парсим json файл
+        find_and_set(value, &myw);  //  Ищем значения в json
+        sprintf(format_temp_str, "%s°%c","%d",temp_char); // Формируем строку для вывода температуры
+        get_image(); // Получаем изображение
+        json_value_free(value); // Очищаем  ненужные данные
         user_free(json_file->content_ptr);
         user_free(json_file);
     }else{
@@ -277,57 +280,60 @@ void Update(char* city, char* token)
 void set_lang()
 {
     if(!strcmp(lang, "ru")){
-        wind_speed_str = "Скорость ветра: %d м/с";
-        pressure_str   = "Давление:       %d гПa";
-        visibility_str = "Видимость:      %d м";
-        humidity_str   = "Влажность:      %d%s";
+        wind_speed_str = "Скорость ветра:    %d м/с";
+        pressure_str   = "Давление:          %d гПa";
+        visibility_str = "Видимость:         %d м";
+        humidity_str   = "Влажность:         %d %s";
         update_str     = "Обновить";
+        wind_deg_str   = "Направление ветра: %d°";
+        WINDOW_W = 250;
         char_size = 2;
-        WINDOW_W = 230;
     }else if(!strcmp(lang, "de")){
         wind_speed_str = "Windgeschwindigkeit: %d m/s";
         pressure_str   = "Druck:               %d hPa";
         visibility_str = "Sichtbarkeit:        %d m";
-        humidity_str   = "Luftfeuchtigkeit:    %d%s";
+        humidity_str   = "Luftfeuchtigkeit:    %d %s";
+        wind_deg_str   = "Windrichtung         %d°";
         WINDOW_W = 270;
         update_str     = "Aktualisieren";
     }else{
-        pressure_str   = "Pressure:   %d hPa";
-        humidity_str   = "Humidity:   %d%s";
-        visibility_str = "Visibility: %d m";
-        wind_speed_str = "Wind speed: %d m/s";
+        pressure_str   = "Pressure:       %d hPa";
+        humidity_str   = "Humidity:       %d %s";
+        visibility_str = "Visibility:     %d m";
+        wind_speed_str = "Wind speed:     %d m/s";
+        wind_deg_str   = "Wind direction: %d°";
         update_str     = "Refresh";
     }
 }
 
 int main(){
-    win_pos = get_mouse_pos(0);
-    if(!kolibri_libimg_init()){
-        notify_show("Libimg.obj not loaded!' -E");
+    win_pos = get_mouse_pos(0); // Получаем позицию курсора
+    if(!kolibri_libimg_init()){ // Загружаем libimg.obj
+        notify_show("Libimg.obj not loaded!' -E");  
         exit(0);
     }
-    get_system_colors(&sys_color_table);
-    char *City = NULL;
-    char *Token = NULL;
+    get_system_colors(&sys_color_table); // Получаем таблица цветов
 
-    get_config(&City, &Token);
-    set_lang();
-    Update(City,Token);
+    char *City, *Token, *Units; // Указатели на токен, название города, систему мер
+
+    get_config(&City, &Token, &Units); // Загружаем конфиг
+    set_lang();  // Установить язык приложения
+    Update(City,Token, Units);  // Обновить данные
 
     while(1){
-        switch(get_os_event()){
-            case KOLIBRI_EVENT_NONE:
+        switch(get_os_event()){ // Получаем системное событие
+            case KOLIBRI_EVENT_NONE:    // Нет события
                 break;
-            case KOLIBRI_EVENT_REDRAW:
+            case KOLIBRI_EVENT_REDRAW:  // Событие перерисовки
                 RedrawGUI();
                 break;        
-            case KOLIBRI_EVENT_BUTTON: 
+            case KOLIBRI_EVENT_BUTTON:  // Событие кнопок
                 switch (get_os_button()){
-                    case BTN_UPDATE:
-                        Update(City, Token);
+                    case BTN_UPDATE:    // Кнопка обновить
+                        Update(City, Token, Units);
                         RedrawGUI();
                         break;
-                    case BTN_QUIT:
+                    case BTN_QUIT:      // Кнопка выхода
                         exit(0);
                         break;
                 }
