@@ -693,6 +693,7 @@ tup.append_table(extra_files, {
  {"kolibrios/develop/TinyBasic/", PROGS .. "/develop/tinybasic/TinyBasic"},
  {"kolibrios/develop/TinyBasic/", PROGS .. "/develop/tinybasic/TBuserMan.txt"},
  {"kolibrios/utils/teatool", PROGS .. "/other/TEAtool/teatool"},
+ {"kolibrios/utils/passwordgen", PROGS .. "/other/PasswordGen/passwordgen"},
 })
 end -- tup.getconfig('NO_TCC') ~= 'full' 
 
