@@ -1,6 +1,6 @@
 FASM = fasm
 
-OBJS = get.o head.o __lib__.o post.o receive.o send.o
+OBJS = get.o head.o __lib__.o post.o receive.o send.o free.o
 
 %.o : %.asm
 	$(FASM) $<

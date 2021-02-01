@@ -54,6 +54,7 @@ If however, you want to receive multiple files, or do other things in the progra
 You may use system function 10 or 23 to wait for network event before calling one or more receive() functions. 
 */
 
+#pragma pack(push,1)
 typedef struct http_msg_s {
     unsigned socket;           // socket on which the actual transfer happens
     unsigned flags;            // flags, reflects status of the transfer using bitflags
@@ -68,6 +69,7 @@ typedef struct http_msg_s {
     unsigned content_received; // number of currently received content bytes
     char *   http_header;
 } http_msg;
+#pragma pack(pop)
 
 /*
     url = pointer to ASCIIZ URL
@@ -140,6 +142,12 @@ extern int stdcall (*http_send)(http_msg *identifier, void *dataptr, unsigned da
 /*
     Sometimes the http_receive function receives incomplete data. If you have the same problem then a macro can help you:
 */
+
+extern int stdcall (*http_free)(http_msg *identifier);
+/*
+    Free unused data 
+*/
+
 #define http_long_receive(x) while(http_receive(x)){}; 
 
 #endif // _HTTP_H_
