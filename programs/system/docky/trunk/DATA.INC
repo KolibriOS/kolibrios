@@ -26,24 +26,14 @@ ini_data:
 ;-------------------------------------------------------------------------------
 load_lib_start:
     lib1    l_libs img.name,	     \
-		   sys_path,	     \
 		   file_name,	     \
 		   img.dir,	     \
-		   error,	     \
-		   error,	     \
-		   img, 	     \
-		   error,	     \
-		   error
+		   img
 
     lib2    l_libs ini.name,	     \
-		   sys_path,	     \
 		   file_name,	     \
 		   ini.dir,	     \
-		   error,	     \
-		   error,	     \
-		   ini, 	     \
-		   error,	     \
-		   error
+		   ini
 load_lib_end:
 ;-------------------------------------------------------------------------------
 img:
