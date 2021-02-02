@@ -937,18 +937,18 @@ else if lang eq et
 	.window_caption		utf8z	"Protsessid v0.2 - [Ctrl+Alt+Del]"
 	.tmp_window_caption	db	"Process manager v0.2 - [Ctrl+Alt+Del]", 0
 	
-	.process_name		utf8z	"NIMI/L�PETA"
+	.process_name		utf8z	"NIMI/LÕPETA"
 	.ptid			utf8z	"PID/TID"
-	.cpu_usage_cycles	utf8z	"CPU(TS�KLID)"
+	.cpu_usage_cycles	utf8z	"CPU(TSÜKLID)"
 	.cpu_usage_percent	utf8z	"CPU(%)"
-	.memory_usage		utf8z	"M�LU"
+	.memory_usage		utf8z	"MÄLU"
 	.window_stack_pos	utf8z	"W-PUHVER"
 	.window_position.x	utf8z	"W-POS-X"
 	.window_position.y	utf8z	"W-POS-Y"
 	
 	.previous_page		utf8z	"EELMINE LEHT"
-	.next_page		utf8z	"J�RGMINE LEHT"
-	.reboot			utf8z	"REBOODI S�STEEM"
+	.next_page		utf8z	"JÄRGMINE LEHT"
+	.reboot			utf8z	"REBOODI SÜSTEEM"
 	.run			utf8z	"START"
 	
 	.checkbox_caption	utf8z	"System"
@@ -958,28 +958,28 @@ else if lang eq et
 	.GB			utf8z	" GB"
 ;-------------------------------------------------------------------------------
 else if lang eq ru
-	.window_caption		utf8z	"????????? ????????? v0.2 - [Ctrl+Alt+Del]"
+	.window_caption		utf8z	"Диспетчер процессов v0.2 - [Ctrl+Alt+Del]"
 	.tmp_window_caption	db	"Process manager v0.2 - [Ctrl+Alt+Del]", 0
 	
-	.process_name		utf8z	"???/?????????"
+	.process_name		utf8z	"ИМЯ/ЗАВЕРШИТЬ"
 	.ptid			utf8z	"PID/TID"
-	.cpu_usage_cycles	utf8z	"CPU(?????)"
+	.cpu_usage_cycles	utf8z	"CPU(ТАКТЫ)"
 	.cpu_usage_percent	utf8z	"CPU(%)"
-	.memory_usage		utf8z	"??????"
+	.memory_usage		utf8z	"ПАМЯТЬ"
 	.window_stack_pos	utf8z	"W-STACK"
 	.window_position.x	utf8z	"W-POS-X"
 	.window_position.y	utf8z	"W-POS-Y"
 	
-	.previous_page		utf8z	"????. ???."
-	.next_page		utf8z	"????. ???."
-	.reboot			utf8z	"????????????"
-	.run			utf8z	"??????"
+	.previous_page		utf8z	"ПРЕД. СТР."
+	.next_page		utf8z	"СЛЕД. СТР."
+	.reboot			utf8z	"ПЕРЕЗАГРУЗКА"
+	.run			utf8z	"ЗАПУСК"
 	
-	.checkbox_caption	utf8z	"?????????"
+	.checkbox_caption	utf8z	"Системные"
 		
-	.KB			utf8z	" ??"
-	.MB			utf8z	" ??"
-	.GB			utf8z	" ??"
+	.KB			utf8z	" КБ"
+	.MB			utf8z	" МБ"
+	.GB			utf8z	" ГБ"
 ;-------------------------------------------------------------------------------
 else if lang eq it
 	.window_caption		utf8z	"Gestore processi v0.2 - [Ctrl+Alt+Del]"
