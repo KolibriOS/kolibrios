@@ -31,12 +31,12 @@ extern "C" {
 #define SHM_WRITE       0x01
    
 // for clipboard funtions    
-#define UTF 0
-#define CP866 1
-#define CP1251 2
-#define TEXT 0
-#define IMAGE 1
-#define RAW 2
+#define CLIP_UTF 0
+#define CLIP_CP866 1
+#define CLIP_CP1251 2
+#define CLIP_TEXT 0
+#define CLIP_IMAGE 1
+#define CLIP_RAW 2
 
 //Read/Write data as type (int char, etc.) at address "addr" with offset "offset". eg DATA(int, buff, 8);
 #define DATA(type, addr, offset) *((type*)((uint8_t*)addr+offset))
