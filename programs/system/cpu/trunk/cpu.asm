@@ -39,9 +39,9 @@ BUTTON:
 	.HEIGHT = 16 + 4
 EDITBOX:
 	.X = CHECKBOX.X + 100
-	.Y = UNDERTABLE.Y + BUTTON.HEIGHT + 25
+	.Y = UNDERTABLE.Y + BUTTON.HEIGHT + 20
 	.WIDTH = 465
-	.HEIGHT = 15
+	.HEIGHT = 23
 	
 CHECKBOX:
 	.X = PROCESS_TABLE.X
@@ -894,7 +894,7 @@ aCheck_box_mouse	db	"check_box_mouse2",0
 align 4
 check1 check_box2 CHECKBOX.X shl 16 + 12, CHECKBOX.Y shl 16 + 12, 6, 0x80D6DEE7, 0x4C5258, 0xB0000000, strings.checkbox_caption, ch_flag_top
 check1_end:
-edit1 edit_box EDITBOX.WIDTH, EDITBOX.X, EDITBOX.Y, 0xffffff, 0x6f9480, 0, 0xAABBCC, 0, start_application_c,\
+edit1 edit_box EDITBOX.WIDTH, EDITBOX.X, EDITBOX.Y, 0xffffff, 0x6f9480, 0, 0xAABBCC, 0x10000000, start_application_c,\
 	start_application,mouse_dd,ed_focus,start_application_e,start_application_e
 edit1_end:
 list_start	dd	0
@@ -910,8 +910,8 @@ sys_reboot:
 ;-------------------------------------------------------------------------------
 strings:
 if lang eq de
-	.window_caption		utf8z	"Prozesse  - [Ctrl+Alt+Del]"
-	.tmp_window_caption	db	"Process manager v0.2 - [Ctrl+Alt+Del]", 0
+	.window_caption		utf8z	"Prozesse v0.2.1 - [Ctrl+Alt+Del]"
+	.tmp_window_caption	db	"Process manager v0.2.1 - [Ctrl+Alt+Del]", 0
 	
 	.process_name		utf8z	"NAME/BEENDEN"
 	.ptid			utf8z	"PID/TID"
@@ -934,8 +934,8 @@ if lang eq de
 	.GB			utf8z	" GB"
 ;-------------------------------------------------------------------------------
 else if lang eq et
-	.window_caption		utf8z	"Protsessid v0.2 - [Ctrl+Alt+Del]"
-	.tmp_window_caption	db	"Process manager v0.2 - [Ctrl+Alt+Del]", 0
+	.window_caption		utf8z	"Protsessid v0.2.1 - [Ctrl+Alt+Del]"
+	.tmp_window_caption	db	"Process manager v0.2.1 - [Ctrl+Alt+Del]", 0
 	
 	.process_name		utf8z	"NIMI/LÕPETA"
 	.ptid			utf8z	"PID/TID"
@@ -958,8 +958,8 @@ else if lang eq et
 	.GB			utf8z	" GB"
 ;-------------------------------------------------------------------------------
 else if lang eq ru
-	.window_caption		utf8z	"Диспетчер процессов v0.2 - [Ctrl+Alt+Del]"
-	.tmp_window_caption	db	"Process manager v0.2 - [Ctrl+Alt+Del]", 0
+	.window_caption		utf8z	"Диспетчер процессов v0.2.1 - [Ctrl+Alt+Del]"
+	.tmp_window_caption	db	"Process manager v0.2.1 - [Ctrl+Alt+Del]", 0
 	
 	.process_name		utf8z	"ИМЯ/ЗАВЕРШИТЬ"
 	.ptid			utf8z	"PID/TID"
@@ -982,8 +982,8 @@ else if lang eq ru
 	.GB			utf8z	" ГБ"
 ;-------------------------------------------------------------------------------
 else if lang eq it
-	.window_caption		utf8z	"Gestore processi v0.2 - [Ctrl+Alt+Del]"
-	.tmp_window_caption	db	"Process manager v0.2 - [Ctrl+Alt+Del]", 0
+	.window_caption		utf8z	"Gestore processi v0.2.1 - [Ctrl+Alt+Del]"
+	.tmp_window_caption	db	"Process manager v0.2.1 - [Ctrl+Alt+Del]", 0
 	
 	.process_name		utf8z	"NOME-PROGRAMMA"
 	.ptid			utf8z	"PID/TID"
@@ -1006,8 +1006,8 @@ else if lang eq it
 	.GB			utf8z	" GB"
 ;-------------------------------------------------------------------------------
 else
-	.window_caption		utf8z	"Process manager v0.2 - [Ctrl+Alt+Del]"
-	.tmp_window_caption	db	"Process manager v0.2 - [Ctrl+Alt+Del]", 0
+	.window_caption		utf8z	"Process manager v0.2.1 - [Ctrl+Alt+Del]"
+	.tmp_window_caption	db	"Process manager v0.2.1 - [Ctrl+Alt+Del]", 0
 	
 	.process_name		utf8z	"NAME/TERMINATE"
 	.ptid			utf8z	"PID/TID"
