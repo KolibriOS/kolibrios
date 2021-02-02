@@ -15,13 +15,13 @@
 #define FALSE 0;
 #define MAX_HASH_LEN 65 // Максимальная длина строки
 #define WINDOW_W 665
-#define VERSION "%s - thashview 2.6"
+#define VERSION "%s - thashview 2.6.1"
 #define EDIT_TEXT_SIZE 0x10000000
 
 struct kolibri_system_colors sys_color_table;
 
-char hash_str_md5[MAX_HASH_LEN]=   "Click the 'MD5:' button to show the md5-checksum!      "; //Вывод MD5
-char hash_str_sha1[MAX_HASH_LEN]=  "Click the 'SHA1:' button to show the sha1-checksum!    "; //Вывод SHA1
+char hash_str_md5[MAX_HASH_LEN]=   "Click the 'MD5:' button to show the md5-checksum!"; //Вывод MD5
+char hash_str_sha1[MAX_HASH_LEN]=  "Click the 'SHA1:' button to show the sha1-checksum!"; //Вывод SHA1
 char hash_str_sha256[MAX_HASH_LEN]="Click the 'SHA256:' button to show the sha256-checksum!"; //Вывод SHA256
 char edit_box_buff[MAX_HASH_LEN]; // Буффер для ввода
 char *filename; // Имя обрабатываемого файла
@@ -60,13 +60,10 @@ void notify_show(char *text)
 void* safe_malloc(size_t size) // Безопасный malloc. Показывает уведомление об ошибке и закрывает программу если память не была выделена
 {
     void *p=malloc(size);
-    if(p==NULL)
-    {
+    if(p==NULL){
        notify_show("'Memory allocation error!' -E");
        exit(0);
-    }
-    else
-    {
+    }else{
         return p;
     }
 }
@@ -199,12 +196,10 @@ void redraw_window() //Рисуем окно
 void paste_to_edit_buffer()    // Вставить из буффера обмена
 {
     char *temp_buff=NULL;
-    if(kol_clip_num()>0)
-    {
+    if(kol_clip_num()>0){
         temp_buff=kol_clip_get(kol_clip_num()-1);
         memset(edit_box_buff,0,MAX_HASH_LEN);
-        if(DATA(int, temp_buff,0)>0 && DATA(int,temp_buff,4)==TEXT && DATA(int,temp_buff,8)==CP866)
-        {
+        if(DATA(int, temp_buff,0)>0 && DATA(int,temp_buff,4)==CLIP_TEXT && DATA(int,temp_buff,8)==CLIP_CP866){
             strncpy(edit_box_buff,temp_buff+12, MAX_HASH_LEN-1);
             edit_box_set_text(&hash_edit_box,edit_box_buff);
             notify_show("'Pasted from clipboard!' -I");
@@ -214,24 +209,27 @@ void paste_to_edit_buffer()    // Вставить из буффера обмена
     }
 }
 
-void copy_to_clipboard(char *text) // Копирлвать в буффер обмена
+void copy_to_clipboard(char *text) // Копировать в буфер обмена
 {
-    if(55!=strlen(text))
+    int text_hash_len = strlen(text)/2;
+    if(text_hash_len==MD5_BLOCK_SIZE  ||
+       text_hash_len==SHA1_BLOCK_SIZE || 
+       text_hash_len==SHA256_BLOCK_SIZE) // Если текст является хэш-строкой
     {
-        char *temp_buffer=safe_malloc(MAX_HASH_LEN+12);
-        memset(temp_buffer, 0, MAX_HASH_LEN);
-        DATA(char,temp_buffer,4)=TEXT;
-        DATA(char,temp_buffer,8)=CP866;
-        strncpy(temp_buffer+12, text, MAX_HASH_LEN-1);
-        kol_clip_set(strlen(text)+12, temp_buffer);
-        notify_show("'Copied to clipboard!' -I");
-        free(temp_buffer);
+        char *temp_buffer=safe_malloc(MAX_HASH_LEN+12); // Выделяем память для времнного буфера
+        memset(temp_buffer, 0, MAX_HASH_LEN);   // Зануляем буфер
+        DATA(char,temp_buffer,4)=CLIP_TEXT;     // Устанавливаем TEXT для буфера(Смещение 4 байта)
+        DATA(char,temp_buffer,8)=CLIP_CP866;    // Устанавливаем кодировку CP866(Смещение 8 байт)
+        strncpy(temp_buffer+12, text, MAX_HASH_LEN-1); // Копируем данные из text во временный буфер(Смещение 12 байт)
+        kol_clip_set(strlen(text)+12, temp_buffer); // Выполняем системный вызов и перемещаем данные из временного буфера в буфер обмена
+        notify_show("'Copied to clipboard!' -I");   
+        free(temp_buffer); // Освобожаем временный буфер.
     }
 }
 
 void print_pending_calc(char *str) // Выводим сообщение о том что контрольная суммма вычисляется.
 {
-  strcpy(str, "Please wait! Calculating checksum...                   ");
+  strcpy(str, "Please wait! Calculating checksum...");
   redraw_window();
 }
 
@@ -245,75 +243,61 @@ bool calc_and_cmp(char *hash_str_universal,int alg) // Вычисляем контрольную сум
 bool hash_compare() // Главная функция для сравнения
 {
    int alg=strlen(edit_box_buff)/2;
-
-        switch (alg) // Если вычисления ещё небыло
-        {
+   switch (alg){ // Если вычисления ещё небыло
         case MD5_BLOCK_SIZE:
             if(md5_flag){
                 return !strcmp(edit_box_buff,hash_str_md5);
             }else{
                 return calc_and_cmp(hash_str_md5,alg);
             }
-        break;
-
+            break;
         case SHA1_BLOCK_SIZE:
             if(sha1_flag){
                 return !strcmp(edit_box_buff,hash_str_sha1);
             }else{
                 return calc_and_cmp(hash_str_sha1,alg);
             }
-        break;
-
+            break;
         case SHA256_BLOCK_SIZE:
-
             if(sha256_flag){
                 return !strcmp(edit_box_buff,hash_str_sha256);
             }else{
                 return calc_and_cmp(hash_str_sha256,alg);
             }
-        break;
-
+            break;
         default:
             return FALSE;
-        break;
-        }
+            break;
+    }
 }
 
 int main(int argc, char** argv)
 {
     kolibri_boxlib_init(); // Загружаем boxlib
-    if(argc<2) // Если аргументов нет, то запускаем диалог выбора файла
-    {
+    if(argc<2){ // Если аргументов нет, то запускаем диалог выбора фа
         kolibri_dialog_init(); // загружаем proc_lib(libdialog)
         open_dialog* dialog = kolibri_new_open_dialog(OPEN,0, 0, 420, 320);
         OpenDialog_init(dialog);
         OpenDialog_start(dialog); 
-        if(dialog->status==SUCCESS) // Если файл выбран
-        {
+        if(dialog->status==SUCCESS){ // Если файл выбран
             global_var_init(strlen(dialog->openfile_path));
             strcpy(filename, dialog->openfile_path);  
-        }
-        else // Если файл не выбран
-        {
+        }else{ // Если файл не выбран
             notify_show("'No file selected!' -E");
             exit(0);
         }
         free(dialog);
-    }
-    else
-    {
+    }else{
         global_var_init(strlen(argv[1]));
         strcpy(filename, argv[1]);
     }
 
-    if(NULL==fopen(filename,"rb")) // Если файла нет или не открывается
-    {
+    if(NULL==fopen(filename,"rb")){ // Если файла нет или не открывается
         notify_show("'File not found!' -E");
         exit(0);
     }
 
-    if(GetScreenSize()/65536<WINDOW_W)
-    {
+    if(GetScreenSize()/65536<WINDOW_W){
         notify_show("'Low screen resolution! Program will not display correctrly!' -W");
     }
 
@@ -327,78 +311,61 @@ int main(int argc, char** argv)
     do // Цикл обработки событий
     {
         gui_event = get_os_event(); // Получаем событие
-        switch(gui_event) // Обрабатываем события
-        {
-        case KOLIBRI_EVENT_NONE:
-            break;
-        case KOLIBRI_EVENT_REDRAW:
-            redraw_window();
-            break;
-        case KOLIBRI_EVENT_MOUSE:
-            edit_box_mouse(&hash_edit_box);
-            break;        
-        case KOLIBRI_EVENT_KEY:
-            hash_edit_box.text_color = BLACK;
-            edit_box_key(&hash_edit_box,get_key().val);
-            break;
-        case KOLIBRI_EVENT_BUTTON: // Событие обработки кнопок
-            pressed_button = get_os_button(); // Получение кода нажатой кнопки.
-            switch (pressed_button) // Проверка какая кнопка была нажата
-            {
-                case BTN_MD5:
-                    print_pending_calc(hash_str_md5);
-                    sprint_hash(check_sum(MD5_BLOCK_SIZE),hash_str_md5, MD5_BLOCK_SIZE);
-                    redraw_window();
+        switch(gui_event){ // Обрабатываем события
+            case KOLIBRI_EVENT_NONE:
                 break;
-
-                case BTN_SHA1:
-                    print_pending_calc(hash_str_sha1);
-                    sprint_hash(check_sum(SHA1_BLOCK_SIZE),hash_str_sha1, SHA1_BLOCK_SIZE);
-                    redraw_window();
-                break;
-
-                case BTN_SHA256:
-                    print_pending_calc(hash_str_sha256);
-                    sprint_hash(check_sum(SHA256_BLOCK_SIZE),hash_str_sha256, SHA256_BLOCK_SIZE);
-                    redraw_window();
-                break;
-
-                case BTN_COPY_MD5:
-                    copy_to_clipboard(hash_str_md5);
-                    redraw_window();
-                break;
-
-                case BTN_COPY_SHA1:
-                    copy_to_clipboard(hash_str_sha1);
-                    redraw_window();
-                break;
-
-                case BTN_COPY_SHA256:
-                    copy_to_clipboard(hash_str_sha256);
-                    redraw_window();
-                break;
-
-                case BTN_PASTE:
-                    paste_to_edit_buffer();
-                    redraw_window();
-                break;
-
-                case BTN_CMP:
-                if(hash_compare())
-                {
-                    notify_show("'The checksum matches :)' -OK");
-                    hash_edit_box.text_color = GREEN; // Устанавливаем текст ввода зелёным если контрольная сумма совпадает
-                }else{
-                    notify_show("'The checksum does not match! :(' -W");
-                    hash_edit_box.text_color = RED; // Устанавливаем текст ввода красным если контрольная суммы не совпадает
-                }
+            case KOLIBRI_EVENT_REDRAW:
                 redraw_window();
                 break;
-
-                case BTN_QUIT:
-                    exit(0);
+            case KOLIBRI_EVENT_MOUSE:
+                edit_box_mouse(&hash_edit_box);
+                break;        
+            case KOLIBRI_EVENT_KEY:
+                hash_edit_box.text_color = BLACK;
+                edit_box_key(&hash_edit_box,get_key().val);
                 break;
-            }
+            case KOLIBRI_EVENT_BUTTON: // Событие обработки кнопок
+                pressed_button = get_os_button(); // Получение кода нажатой кнопки.
+                switch (pressed_button){ // Проверка какая кнопка была нажата
+                    case BTN_MD5:
+                        print_pending_calc(hash_str_md5);
+                        sprint_hash(check_sum(MD5_BLOCK_SIZE),hash_str_md5, MD5_BLOCK_SIZE);
+                        break;
+                    case BTN_SHA1:
+                        print_pending_calc(hash_str_sha1);
+                        sprint_hash(check_sum(SHA1_BLOCK_SIZE),hash_str_sha1, SHA1_BLOCK_SIZE);
+                        break;
+                    case BTN_SHA256:
+                        print_pending_calc(hash_str_sha256);
+                        sprint_hash(check_sum(SHA256_BLOCK_SIZE),hash_str_sha256, SHA256_BLOCK_SIZE);
+                        break;
+                    case BTN_COPY_MD5:
+                        copy_to_clipboard(hash_str_md5);
+                        break;
+                    case BTN_COPY_SHA1:
+                        copy_to_clipboard(hash_str_sha1);
+                        break;
+                    case BTN_COPY_SHA256:
+                        copy_to_clipboard(hash_str_sha256);
+                        break;
+                    case BTN_PASTE:
+                        paste_to_edit_buffer();
+                        break;
+                    case BTN_CMP:
+                        if(hash_compare()){
+                            notify_show("'The checksum matches :)' -OK");
+                            hash_edit_box.text_color = GREEN; // Устанавливаем текст ввода зелёным если контрольная сумма совпадает
+                        }else{
+                            notify_show("'The checksum does not match! :(' -W");
+                            hash_edit_box.text_color = RED; // Устанавливаем текст ввода красным если контрольная суммы не совпадает
+                        }
+                        break;
+                    case BTN_QUIT:
+                        exit(0);
+                        break;
+                }
+                redraw_window();
+                break; 
         }
     }while(1);
     exit(0);
