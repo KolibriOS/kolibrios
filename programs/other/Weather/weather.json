@@ -2,5 +2,6 @@
   "Celsius": true,
   "Location": "Moscow",
   "Token": "19ffa14b3dc0e238175829461d1788b8",
-  "Lang": "ru"
+  "Lang": "ru",
+  "AutoUpdate": 1
 }

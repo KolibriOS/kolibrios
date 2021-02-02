@@ -4,18 +4,29 @@
     Info: App uses api from openweathermap.org. 
     The standard configuration uses my token and the city of Moscow. 
     You can always change it in the weather.json file.
-    If you use UTF-8 encoding, then city names can be entered in different languages!
+    weather.json configuration example: 
+    
+    {
+        "Celsius": false,                                   // Enabled fahrenheit (Optional)
+        "Location": "Berlin",                               // City Berlin 
+        "Token": "19ffa14b3dc0e238175829461d1788b8",        // OpenWeatherMap token
+        "Lang": "ru",                                       // Language (Optional)
+        "AutoUpdate": 5                                     // In minutes. 0 - disabled (Optional)
+    }
+
 */
 
 #include <stdio.h>
 #include <string.h>
+#include <time.h>
+#include <stdbool.h>
 #include "json/json.h"
 #include <kos32sys1.h>
 #include <kolibrisys.h>
 #include <clayer/http.h>
 #include <clayer/libimg.h>
 
-#define VERSION  "Weather 1.4"
+#define VERSION  "Weather 1.5"
 
 enum BUTTONS{
     BTN_QUIT = 1,
@@ -33,9 +44,10 @@ unsigned WINDOW_W = 230;
 #define API       "api.openweathermap.org/data/2.5/weather?q=%s&appid=%s&units=%s&lang=%s"
 #define IMAGE_URL "openweathermap.org/img/w/%s.png"
   
-Image *blend;
+Image *blend=NULL;
 
 unsigned char char_size=1;
+uint64_t AutoUpdateTime = 0;
 
 char *wind_speed_str, *pressure_str, *visibility_str, *humidity_str, *update_str, *wind_deg_str;
         
@@ -72,7 +84,7 @@ void notify_show(char *text)
 
 void* safe_malloc(size_t size)
 {
-    void *p=user_alloc(size);
+    void *p=malloc(size);
     if(p==NULL){
        notify_show("'Memory allocation error!' -E");
        exit(0);
@@ -81,10 +93,9 @@ void* safe_malloc(size_t size)
     }
 }
 
-char tmp_buff[100];
-
-void draw_format_text_sys(int x, int y, color_t color, const char *format_str, ... )
+void draw_format_text_sys(int x, int y, color_t color, const char *format_str, ... ) // Форматированный вывод в окно
 {
+    char tmp_buff[100];
     va_list ap;
     va_start (ap, format_str);
     vsnprintf(tmp_buff, sizeof tmp_buff ,format_str, ap);
@@ -92,7 +103,7 @@ void draw_format_text_sys(int x, int y, color_t color, const char *format_str, .
     draw_text_sys(tmp_buff, x, y , 0, color);
 }
 
-void find_and_set(json_value *value, struct open_weather_data* weather)
+void find_and_set(json_value *value, struct open_weather_data* weather) // Ищем значения в json и заполняем структуру "myw"
 {
     for(int i=0; i<value->u.object.length; i++){
         if(!strcmp(JSON_OBJ(i).name, "main")){
@@ -106,7 +117,11 @@ void find_and_set(json_value *value, struct open_weather_data* weather)
             weather->humidity = JSON_OBJ(i).value->u.object.values[5].value->u.integer;
         }
         if(!strcmp(JSON_OBJ(i).name, "name")){
-            strcpy(weather->City,JSON_OBJ(i).value->u.string.ptr);
+            if(!strcmp(&JSON_OBJ(i).value->u.string.ptr[JSON_OBJ(i).value->u.string.length-3], "’")){
+                strncpy(weather->City, JSON_OBJ(i).value->u.string.ptr, JSON_OBJ(i).value->u.string.length-3);
+            }else{
+                strcpy(weather->City, JSON_OBJ(i).value->u.string.ptr);
+            }
         }
         if(!strcmp(JSON_OBJ(i).name, "weather")){
            strcpy(weather->weath_desc, JSON_OBJ(i).value->u.array.values[0]->u.object.values[2].value->u.string.ptr);
@@ -131,7 +146,7 @@ void find_and_set(json_value *value, struct open_weather_data* weather)
             char *errmsg = safe_malloc(weather->timezone = JSON_OBJ(i).value->u.string.length+6);
             sprintf(errmsg,"'%s!' -E", JSON_OBJ(i).value->u.string.ptr);
             notify_show(errmsg);
-            user_free(errmsg);
+            free(errmsg);
         }
     }
 }
@@ -144,46 +159,45 @@ http_msg* get_json(char *City, char *Token, char* Units)
     if (h->status == OK || h->status == 404) {
         return h;
     } else {
-        user_free(h->content_ptr);
-        user_free(h);
+        http_free(h);
         return NULL;
     }
 }
 
-void get_image(){  // Функция загрузки изображения
+void get_image() // Функция загрузки изображения
+{
     sprintf(full_url_image, IMAGE_URL, myw.image_code);
-    http_msg *h= http_get(full_url_image, 0,  HTTP_FLAG_BLOCK, "");
+    http_msg *h= http_get(full_url_image, 0, HTTP_FLAG_BLOCK, "");
     http_long_receive(h);
     
     if (h->status == OK) {
-        Image *image = img_decode(h->content_ptr, h->content_length, 0); // Decode RAW data to Image data
+        Image *image = img_decode(h->content_ptr, h->content_length, 0); // Декодирование RAW данных в данные изображения
         if (image->Type != IMAGE_BPP32) { 
-            image = img_convert(image, NULL, IMAGE_BPP32, 0, 0); // Convert image to format BPP32
+            image = img_convert(image, NULL, IMAGE_BPP32, 0, 0); // Конвертируем картику в BPP32
                 if (!image) {
                 notify_show("'Convetring image error!' -E");  
                 exit(0);
             }
         }
-        blend = img_create(64, 64, IMAGE_BPP32);  // Create an empty layer
-        img_fill_color(blend, 64, 64, sys_color_table.work_area); // Fill the layer with one color
-        Image* image2 = img_scale(image, 0, 0, 50, 50, NULL, LIBIMG_SCALE_STRETCH , LIBIMG_INTER_BILINEAR, 64, 64);
-        img_blend(blend, image2, 0, 0, 0, 0, 64, 64);  // Blending images to display the alpha channel. 
-        // Уничтожаем ненужные структуры изображений
-        img_destroy(image); 
-        img_destroy(image2);
+        blend = img_create(64, 64, IMAGE_BPP32);  // Создаём фон для картинки
+        img_fill_color(blend, 64, 64, sys_color_table.work_area); // Заливаем фон цветом окна
+        Image* image2 = img_scale(image, 0, 0, 50, 50, NULL, LIBIMG_SCALE_STRETCH , LIBIMG_INTER_BILINEAR, 64, 64); // Растягиваем изображение
+        img_blend(blend, image2, 0, 0, 0, 0, 64, 64);  // Смешиваем растянутую картинку и фон для получения прозрачности     
+        img_destroy(image);  // Уничтожаем исходную картинку        
+        img_destroy(image2); // Уничтажаем растянутую картинку  
     }else{
        notify_show("'Image not loaded!!' -W"); 
-    } 
-    user_free(h->content_ptr);
-    user_free(h);
-    h=NULL;
+    }
+    if(h!=NULL){
+        http_free(h);
+    }
 }
 
 void RedrawGUI() // Перересовываем интерфейс
 {
     begin_draw();   // Начинам прорисовку
-    
-    int new_win_w = (strlen(myw.City)/char_size+10)*(UTF8_W+char_size-1); // Если название города не влезает
+
+    int new_win_w = (strlen(myw.City)/char_size+10)*(UTF8_W+char_size-1); // Если название города не влезает в окно
     if(new_win_w<WINDOW_W){
         new_win_w=WINDOW_W;
     }
@@ -227,13 +241,13 @@ void get_config(char **City, char **Token, char **Units) // Загружаем �
     }
     json_value* value =json_parse (config_buff, size); // Парсим конфиг
     for(int i=0; i<value->u.object.length; i++){
-        if(!strcmp(JSON_OBJ(i).name, "Location")){   
+        if(!strcmp(JSON_OBJ(i).name, "Location") && JSON_OBJ(i).value->type==json_string){   
             *City = JSON_OBJ(i).value->u.string.ptr;  // Получаем название города
         }
-        if(!strcmp(JSON_OBJ(i).name, "Token")){
+        else if(!strcmp(JSON_OBJ(i).name, "Token") && JSON_OBJ(i).value->type==json_string){
             *Token = JSON_OBJ(i).value->u.string.ptr; // Получаем токен
         }
-        if(!strcmp(JSON_OBJ(i).name, "Celsius")){
+        else if(!strcmp(JSON_OBJ(i).name, "Celsius") && JSON_OBJ(i).value->type==json_boolean){
             if(JSON_OBJ(i).value->u.boolean){
                 *Units = "metric";
                 temp_char = 'C';
@@ -242,22 +256,25 @@ void get_config(char **City, char **Token, char **Units) // Загружаем �
                 temp_char = 'F';
             }
         }
-        if(!strcmp(JSON_OBJ(i).name, "Lang")){
-            strncpy(lang, JSON_OBJ(i).value->u.string.ptr,2); // Получам язык
+        else if(!strcmp(JSON_OBJ(i).name, "Lang") && JSON_OBJ(i).value->type==json_string){
+            strncpy(lang, JSON_OBJ(i).value->u.string.ptr,2); // Получаем язык
+        }
+        else if(!strcmp(JSON_OBJ(i).name, "AutoUpdate") && JSON_OBJ(i).value->type==json_integer){
+            AutoUpdateTime = JSON_OBJ(i).value->u.integer; // Получаем время автообновлений данных
         }
     }
     if(*City==NULL || *Token ==NULL){
          notify_show("'Invalid config!' -E");
          exit(0);
     }
-    user_free(config_buff);
+    free(config_buff);
     fclose(config_j);
 }
 
 void Update(char* city, char* token, char* units) // Обновление данных
 {
     if(blend!=NULL){
-        img_destroy(blend); // Уничтожение картинки с прозрачностью
+        img_destroy(blend); // Уничтожение картинику с прозрачностью
         blend = NULL;
     }
     memset(&myw, 0, sizeof myw); // Обнуляем структуру
@@ -265,13 +282,12 @@ void Update(char* city, char* token, char* units) // Обновление дан
     strcpy(myw.weath_desc,"unknown");
     http_msg *json_file = get_json(city, token, units); // Получаем данные о погоде в формате json 
     if(json_file != NULL){
-        json_value* value=json_parse (json_file->content_ptr, json_file->content_length); // Парсим json файл
+        json_value* value=json_parse(json_file->content_ptr, json_file->content_length); // Парсим json файл
         find_and_set(value, &myw);  //  Ищем значения в json
         sprintf(format_temp_str, "%s°%c","%d",temp_char); // Формируем строку для вывода температуры
-        get_image(); // Получаем изображение
-        json_value_free(value); // Очищаем  ненужные данные
-        user_free(json_file->content_ptr);
-        user_free(json_file);
+        get_image(); // Получаем картинку
+        json_value_free(value); // Уничтожаем полученные json значения
+        http_free(json_file);
     }else{
        notify_show("'Connection error!' -E");
     }
@@ -306,38 +322,51 @@ void set_lang()
     }
 }
 
-int main(){
+int main()
+{
     win_pos = get_mouse_pos(0); // Получаем позицию курсора
+
     if(!kolibri_libimg_init()){ // Загружаем libimg.obj
         notify_show("Libimg.obj not loaded!' -E");  
         exit(0);
     }
     get_system_colors(&sys_color_table); // Получаем таблица цветов
 
-    char *City, *Token, *Units; // Указатели на токен, название города, систему мер
+    char *City=NULL, *Token=NULL, *Units=NULL; // Указатели на токен, название города, систему мер
 
     get_config(&City, &Token, &Units); // Загружаем конфиг
     set_lang();  // Установить язык приложения
-    Update(City,Token, Units);  // Обновить данные
+    Update(City, Token, Units);
 
+    uint32_t (*event)();
+
+    if(AutoUpdateTime<=0){ 
+        event = get_os_event;
+    }else{ 
+        event = wait_for_event;
+    }
+    
     while(1){
-        switch(get_os_event()){ // Получаем системное событие
-            case KOLIBRI_EVENT_NONE:    // Нет события
+        switch(event(6000*AutoUpdateTime)){ // Получаем системное событие
+            case KOLIBRI_EVENT_NONE:        // Нет события
+                Update(City, Token, Units);
+                debug_printf("Weather: Update\n");
                 break;
-            case KOLIBRI_EVENT_REDRAW:  // Событие перерисовки
+            case KOLIBRI_EVENT_REDRAW:      // Событие перерисовки
                 RedrawGUI();
                 break;        
-            case KOLIBRI_EVENT_BUTTON:  // Событие кнопок
+            case KOLIBRI_EVENT_BUTTON:      // Событие кнопок
                 switch (get_os_button()){
-                    case BTN_UPDATE:    // Кнопка обновить
+                    case BTN_UPDATE:
                         Update(City, Token, Units);
                         RedrawGUI();
                         break;
-                    case BTN_QUIT:      // Кнопка выхода
+                    case BTN_QUIT:          // Кнопка выхода
                         exit(0);
                         break;
                 }
-        }
+                break;
+        }  
     }
     return 0;
 }
