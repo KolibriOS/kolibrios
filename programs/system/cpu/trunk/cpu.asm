@@ -94,6 +94,7 @@ align 4
 ;main loop when process name isn"t edited.
 red:
 	call	draw_window		; redraw all window
+	mcall	71, 2, strings.window_caption, 3	;set window caption
 ;-------------------------------------------------------------------------------
 align 4
 still:
@@ -495,7 +496,7 @@ draw_window:
 ; DRAW WINDOW
 	xor	eax,eax			 ; function 0 : define and draw window
 	xor	esi,esi
-	mcall	,[winxpos],[winypos], 0x34FFFFFF,, strings.tmp_window_caption	;0x34ddffdd
+	mcall	,[winxpos],[winypos], 0x24FFFFFF
 
 	mcall	SF_THREAD_INFO,process_info_buffer,-1
 
@@ -910,8 +911,7 @@ sys_reboot:
 ;-------------------------------------------------------------------------------
 strings:
 if lang eq de
-	.window_caption		utf8z	"Prozesse v0.2.1 - [Ctrl+Alt+Del]"
-	.tmp_window_caption	db	"Process manager v0.2.1 - [Ctrl+Alt+Del]", 0
+	.window_caption		utf8z	"Prozesse v0.2.2 - [Ctrl+Alt+Del]"
 	
 	.process_name		utf8z	"NAME/BEENDEN"
 	.ptid			utf8z	"PID/TID"
@@ -934,8 +934,7 @@ if lang eq de
 	.GB			utf8z	" GB"
 ;-------------------------------------------------------------------------------
 else if lang eq et
-	.window_caption		utf8z	"Protsessid v0.2.1 - [Ctrl+Alt+Del]"
-	.tmp_window_caption	db	"Process manager v0.2.1 - [Ctrl+Alt+Del]", 0
+	.window_caption		utf8z	"Protsessid v0.2.2 - [Ctrl+Alt+Del]"
 	
 	.process_name		utf8z	"NIMI/LÕPETA"
 	.ptid			utf8z	"PID/TID"
@@ -958,8 +957,7 @@ else if lang eq et
 	.GB			utf8z	" GB"
 ;-------------------------------------------------------------------------------
 else if lang eq ru
-	.window_caption		utf8z	"Диспетчер процессов v0.2.1 - [Ctrl+Alt+Del]"
-	.tmp_window_caption	db	"Process manager v0.2.1 - [Ctrl+Alt+Del]", 0
+	.window_caption		utf8z	"Диспетчер процессов v0.2.2 - [Ctrl+Alt+Del]"
 	
 	.process_name		utf8z	"ИМЯ/ЗАВЕРШИТЬ"
 	.ptid			utf8z	"PID/TID"
@@ -982,8 +980,7 @@ else if lang eq ru
 	.GB			utf8z	" ГБ"
 ;-------------------------------------------------------------------------------
 else if lang eq it
-	.window_caption		utf8z	"Gestore processi v0.2.1 - [Ctrl+Alt+Del]"
-	.tmp_window_caption	db	"Process manager v0.2.1 - [Ctrl+Alt+Del]", 0
+	.window_caption		utf8z	"Gestore processi v0.2.2 - [Ctrl+Alt+Del]"
 	
 	.process_name		utf8z	"NOME-PROGRAMMA"
 	.ptid			utf8z	"PID/TID"
@@ -1006,8 +1003,7 @@ else if lang eq it
 	.GB			utf8z	" GB"
 ;-------------------------------------------------------------------------------
 else
-	.window_caption		utf8z	"Process manager v0.2.1 - [Ctrl+Alt+Del]"
-	.tmp_window_caption	db	"Process manager v0.2.1 - [Ctrl+Alt+Del]", 0
+	.window_caption		utf8z	"Process manager v0.2.2 - [Ctrl+Alt+Del]"
 	
 	.process_name		utf8z	"NAME/TERMINATE"
 	.ptid			utf8z	"PID/TID"
