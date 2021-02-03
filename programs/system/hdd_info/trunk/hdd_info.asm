@@ -27,8 +27,8 @@ use32
 PRIMARY_CHANNEL equ 0x1f7
 SECONDARY_CHANNEL equ 0x177
 ; Ручной поиск портов по шине PCI (преимущественно для SATA):
-; mcall   21,12,1 ;разрешить низкоуровневый доступ к PCI
-; mcall   62,0x0006,((((0x1f shl 3) + 01) shl 8) + 0x10) ;см. ф-ю 62
+; mcall   SF_SYSTEM_SET,SSF_ACCESS_PCI,1 ;разрешить низкоуровневый доступ к PCI
+; mcall   SF_PCI,0x0006,((((0x1f shl 3) + 01) shl 8) + 0x10) ;см. ф-ю 62
 ; ax = 1 - стандартные порты (константы выше), или нестандартные (168-16f,1e8-1ef)
 ; Пример:
 ;  Fnc 02: 10-0x1c01,14-0x18f5,18-0x18f9,1c-0x18f1,BMA-0x1811,00000000
@@ -39,9 +39,10 @@ include 'lang.inc'	; language support
 
 ; Режимы Legacy, Native и пр. меняются через BIOS.
 include '../../../config.inc'		;for nightbuild
-include '..\..\..\macros.inc'
+include '../../../macros.inc'
 include '../../../develop/libraries/box_lib/trunk/box_lib.mac'
-include '../../../develop/libraries/box_lib/load_lib.mac'
+include '../../../KOSfuncs.inc'
+include '../../../load_lib.mac'
 	@use_library
 ;---------------------------------------------------------------------
 macro ab {
@@ -61,7 +62,7 @@ macro wba num,text {
 	bt	di,num
 	jnc	@f
 	ad
-	mcall	4,,0x80000000,text
+	mcall	SF_DRAW_TEXT,,0x80000000,text
 	}
 ;---------------------------------------------------------------------
 macro wba num,text {
@@ -69,7 +70,7 @@ macro wba num,text {
 	bt	di,num
 	jnc	@f
 	ad
-	mcall	4,,0x80000000,text
+	mcall	SF_DRAW_TEXT,,0x80000000,text
 	}
 ;---------------------------------------------------------------------
 macro sc num,text {
@@ -80,22 +81,21 @@ macro sc num,text {
 	}
 ;---------------------------------------------------------------------
 macro mz text,str1,str2,str3 {
-	mcall	4,,0x80444444,text
+	mcall	SF_DRAW_TEXT,,0x80444444,text
 	ab
 	mov	edx,ebx
 	push	ebx
 	str1
 	str2
 	str3
-	mcall	47,0x800a0000,,,0x0
+	mcall	SF_DRAW_NUMBER,0x800a0000,,,0x0
 	pop	ebx
 	sb
 	}
 ;---------------------------------------------------------------------
 START:
-;	load_library	boxlib_name,cur_dir_path,buf_cmd_lin,system_path,\
-;	err_message_found_lib,head_f_l,Box_lib_import,err_message_import,head_f_i
-	mcall	68,11
+;	load_library	boxlib_name,buf_cmd_lin,system_path,Box_lib_import
+	mcall	SF_SYS_MISC,SSF_HEAP_INIT
 
 load_libraries l_libs_start,end_l_libs
 
@@ -136,14 +136,14 @@ load_libraries l_libs_start,end_l_libs
 	call	[PathShow_prepare]
 ;---------------------------------------------------------------------
 
-	mcall	40,0x27
+	mcall	SF_SET_EVENTS_MASK,0x27
 ;---------------------------------------------------------------------
 redraw_all:
 redraw:
 	call	draw_window
 ;---------------------------------------------------------------------
 still:
-	mcall	10
+	mcall	SF_WAIT_EVENT
 	dec	al
 	jz	redraw_all
 	dec	al
@@ -154,7 +154,7 @@ still:
 mouse:
 	bt	[flags],2
 	jnc	still
-	mcall	37,2
+	mcall	SF_MOUSE_GET,SSF_BUTTON
 	test	al,al
 	jz	still
 	push	dword Option_boxs
@@ -173,8 +173,8 @@ copy_str_1:
 ;---------------------------------------------------------------------
 draw_PathShow:
 	pusha
-	mcall	13,<125,420>,<83,15>,0xFFFFED
-	mcall	13,,<100,15>,
+	mcall	SF_DRAW_RECT,<125,420>,<83,15>,0xFFFFED
+	mcall	SF_DRAW_RECT,,<100,15>,
 ; draw for PathShow
 	push	dword PathShow_data_1
 	call	[PathShow_draw]
@@ -185,27 +185,27 @@ draw_PathShow:
 	ret
 ;---------------------------------------------------------------------
 draw_window:
-	mcall	12,1
+	mcall	SF_REDRAW,SSF_BEGIN_DRAW
 	xor	esi,esi
-	mcall	0,<100,580>,<100,350>,0x34ffffff,,title
-	mcall	8,<1,30>,<1,15>,2,0x365732
+	mcall	SF_CREATE_WINDOW,<100,580>,<100,350>,0x34ffffff,,title
+	mcall	SF_DEFINE_BUTTON,<1,30>,<1,15>,2,0x365732
 	mcall	,<35,38>,,3,
 ;        mcall   ,<77,38>,,6,
 	mcall	,<120,45>,,7,
 
 	mcall	,<195,20>,,4,	;влево,вправо
 	mcall	,<217,20>,,5,
-	mcall	4,<4,6>,0x80ffffff,menu_text
+	mcall	SF_DRAW_TEXT,<4,6>,0x80ffffff,menu_text
 
 	mcall	,<260,6>,0x80000000,page_text
 	movzx	ecx, byte [page_num]
-	mcall	47,0x800a0000,,<300,6>,0x0
+	mcall	SF_DRAW_NUMBER,0x800a0000,,<300,6>,0x0
 
-	mcall	38,<2,535>,<20,20>,0x00aabbaa
+	mcall	SF_DRAW_LINE,<2,535>,<20,20>,0x00aabbaa
 	bt	[flags],2
 	jnc	@f
 	call	show_ControlBlock
-	mcall	4,<4,125>,0x80FF0000,[error_text]
+	mcall	SF_DRAW_TEXT,<4,125>,0x80FF0000,[error_text]
 	jmp	.end
 @@:
 	bt	[flags],6
@@ -222,11 +222,11 @@ draw_window:
 	jnc	.end
 	call	show_SmartBlock
 .end:
-	mcall	12,2
+	mcall	SF_REDRAW,SSF_END_DRAW
 	ret
 ;---------------------------------------------------------------------
 key:
-	mcall	2
+	mcall	SF_GET_KEY
 ;	push	edit1
 ;	call	[edit_box_key]
 ;	push	edit1
@@ -234,11 +234,11 @@ key:
 	jmp	still
 ;---------------------------------------------------------------------
 button:
-	mcall	17
+	mcall	SF_GET_BUTTON
 	cmp	ah,1
 	jne	@f
 close:
-	mcall	-1
+	mcall	SF_TERMINATE_PROCESS
 @@:
 	cmp	ah,2
 	jne	@f
@@ -377,7 +377,7 @@ close:
 	jmp	open_file
 ;---------------------------------------------------------------------
 open_file:
-	mov	[func_70.func_n],0
+	mov	[func_70.func_n],SSF_READ_FILE
 	mov	[func_70.param3],512
 	mov	[func_70.param4],InfoArray
 	mov	[func_70.name],filename_area
@@ -387,7 +387,7 @@ open_file:
 	mov	[func_70.param3],1024
 	mov	[func_70.name],filename_area2
 @@:
-	mcall	70,func_70
+	mcall	SF_FILE,func_70
 	test	al,al		;файл найден?
 	jnz	.1
 	mov	ax,[flags]
@@ -415,7 +415,7 @@ open_file:
 	jmp	redraw_all
 ;---------------------------------------------------------------------
 save_file:			;сохраняем файл
-	mov	[func_70.func_n],2
+	mov	[func_70.func_n],SSF_CREATE_FILE
 	mov	[func_70.param3],512
 	mov	[func_70.param4],InfoArray
 	mov	[func_70.name],filename_area
@@ -425,7 +425,7 @@ save_file:			;сохраняем файл
 	mov	[func_70.param3],1024
 	mov	[func_70.name],filename_area2
 @@:
-	mcall	70,func_70
+	mcall	SF_FILE,func_70
 	test	al,al			 ;сохранён удачно?
 	jz	good
 	bt	[flags],4
@@ -468,7 +468,7 @@ ports_:
 .0:
 	mov	ecx,edx
 	sub	ecx,7
-	mcall	46,0
+	mcall	SF_SET_PORTS,0
 	ret
 ;---------------------------------------------------------------------
 get_InfoBlock:
@@ -496,7 +496,7 @@ get_InfoBlock:
 	out	dx,al
 
 	push	bx
-	mcall	5,10
+	mcall	SF_SLEEP,10
 	pop	bx
 	xor	cx,cx
 .2:
@@ -521,20 +521,20 @@ get_InfoBlock:
 	btr	[flags],3
 
 	push	bx
-	mcall	5,10
+	mcall	SF_SLEEP,10
 	pop	bx
 
 	mov	ax,bx
 	add	dx,6
 	out	dx,al
 	pop	edx ecx
-	mcall	46,1
+	mcall	SF_SET_PORTS,1
 	ret
 ;---------------------------------------------------------------------
 .error:
 	bts	[flags],3
 	pop	edx ecx
-	mcall	46,1
+	mcall	SF_SET_PORTS,1
 	ret
 ;---------------------------------------------------------------------
 get_SmartBlock:
@@ -598,7 +598,7 @@ get_SmartBlock:
 	mov	al,0xb0
 	out	dx,al
 
-	mcall	5,10
+	mcall	SF_SLEEP,10
 
 	mov	esi,SmartArray	 ;Получить информацию
 	xor	edi,edi
@@ -611,7 +611,7 @@ get_SmartBlock:
 	cmp	edi,256
 	jne	.3
 
-	mcall	5,10
+	mcall	SF_SLEEP,10
 
 	add	dx,4
 	mov	al,0x4f
@@ -626,7 +626,7 @@ get_SmartBlock:
 	mov	al,0xb0
 	out	dx,al
 
-	mcall	5,10
+	mcall	SF_SLEEP,10
 
 	sub	dx,7
 .4:
@@ -644,17 +644,17 @@ get_SmartBlock:
 	out	dx,al
 .end:
 	pop	edx ecx
-	mcall	46,1
+	mcall	SF_SET_PORTS,1
 	ret
 ;---------------------------------------------------------------------
 .error:
 	bts	[flags],3
 	pop	edx ecx
-	mcall	46,1
+	mcall	SF_SET_PORTS,1
 	ret
 ;---------------------------------------------------------------------
 show_ControlBlock:
-	mcall	4,<4,30>,0x80000000,ctrl_text1
+	mcall	SF_DRAW_TEXT,<4,30>,0x80000000,ctrl_text1
 	mcall	,<4,45>,,ctrl_text2
 	push	dword Option_boxs
 	call	[option_box_draw]
@@ -662,12 +662,12 @@ show_ControlBlock:
 ;	call	[edit_box_draw]
 	call	draw_PathShow
 
-	mcall	8,<3,80>,<60,15>,8,0xf0f0f0
+	mcall	SF_DEFINE_BUTTON,<3,80>,<60,15>,8,0xf0f0f0
 	mcall	,<50,30>,<82,15>,9,	; Save Info
 	mcall	,<90,30>,,10,		; Load Info
 	mcall	,<50,30>,<100,15>,11,	; Save SMART
 	mcall	,<90,30>,,12,		; Load SMART
-	mcall	4,<4,87>,0x80000000,edbx_text1
+	mcall	SF_DRAW_TEXT,<4,87>,0x80000000,edbx_text1
 	mcall	,<7,64>,,smrt_text1
 	mcall	,<4,105>,,edbx_text2
 show_TestBlock:
@@ -694,7 +694,7 @@ show_InfoBlock:
 ;---------------------------------------------------------------------
 .page1:
 ;TABLE 1 of 11
-	mcall	4,5*65536+25,0x80444444,t.10_19
+	mcall	SF_DRAW_TEXT,5*65536+25,0x80444444,t.10_19
 	ab	;        add     ebx,300*65536
 	mcall	,,0x0,(InfoArray+10*2),((19-10)+1)*2
 	sb	;        sub     ebx,300*65536-12
@@ -712,42 +712,42 @@ show_InfoBlock:
 @@:
 	bt	di,4
 	jnc	 @f
-	mcall	4,,0x80000000,t.222.12.1
+	mcall	SF_DRAW_TEXT,,0x80000000,t.222.12.1
 @@:
 	bt	di,4
 	jc	@f
-	mcall	4,,0x80000000,t.222.12.0
+	mcall	SF_DRAW_TEXT,,0x80000000,t.222.12.0
 @@:
 	sb
-	mcall	4,,0x80444444,t.60_61
+	mcall	SF_DRAW_TEXT,,0x80444444,t.60_61
 	ab
 	mov	edx,ebx
 	push	ebx
 	mov	ecx, [InfoArray+60*2]
 	bswap	ecx
 	ror	ecx,16
-	mcall	47,0x800a0000,,,0x0
+	mcall	SF_DRAW_NUMBER,0x800a0000,,,0x0
 	shr	ecx,11	;LBA in MB
 	add	edx,70*65536
 	mcall	,,,,0x459a
 	pop	ebx
 
 	sb				;CHS
-	mcall	4,,0x80444444,t.chs
+	mcall	SF_DRAW_TEXT,,0x80444444,t.chs
 	ab
 	mov	edx,ebx
 	push	ebx
 	movzx	ecx, word [InfoArray+2]
 	xchg	ch,cl
-	mcall	47,0x80050000,,,0x0
+	mcall	SF_DRAW_NUMBER,0x80050000,,,0x0
 	add	edx,35*65536
 	movzx	ecx, word [InfoArray+6]
 	xchg	ch,cl
-	mcall	47,0x80040000,,,0x0
+	mcall	SF_DRAW_NUMBER,0x80040000,,,0x0
 	add	edx,15*65536
 	movzx	ecx, word [InfoArray+12]
 	xchg	ch,cl
-	mcall	;47,0x80040000,,,0x0
+	mcall	;SF_DRAW_NUMBER,0x80040000,,,0x0
 	add	edx,20*65536
 	push	ebx edx
 	xor	edx,edx
@@ -760,14 +760,14 @@ show_InfoBlock:
 	xchg	eax,ecx
 	pop	edx ebx
 	shr	ecx,11
-	mcall	47,0x800a0000,,,0x0
+	mcall	SF_DRAW_NUMBER,0x800a0000,,,0x0
 	pop	ebx
 
 	mov	ax,[InfoArray+48*2]
 	bt	ax,8
 	jnc	@f
 	sb
-	mcall	4,,0x80444444,t.48.0
+	mcall	SF_DRAW_TEXT,,0x80444444,t.48.0
 	ab
 	mcall	,,0x80000000,t.sup
 @@:
@@ -777,72 +777,72 @@ show_InfoBlock:
 	bt	di,13
 	jnc	@f
 	sb
-	mcall	4,,0x80444444,t.49.13.1
+	mcall	SF_DRAW_TEXT,,0x80444444,t.49.13.1
 	ab
 	mcall	,,0x80000000,t.sup
 @@:
 	bt	di,13
 	jc	@f
 	sb
-	mcall	4,,0x80444444,t.49.13.0
+	mcall	SF_DRAW_TEXT,,0x80444444,t.49.13.0
 	ab
 @@:
 	bt	di,11
 	jnc	@f
 	sb
-	mcall	4,,0x80444444,t.49.11.1
+	mcall	SF_DRAW_TEXT,,0x80444444,t.49.11.1
 	ab
 	mcall	,,0x80000000,t.sup
 @@:
 	bt	di,11
 	jc	@f
 	sb
-	mcall	4,,0x80444444,t.49.11.0
+	mcall	SF_DRAW_TEXT,,0x80444444,t.49.11.0
 	ab
 	mcall	,,0x80000000,t.sup
 @@:
 	bt	di,10
 	jnc	@f
 	sb
-	mcall	4,,0x80444444,t.49.10.1
+	mcall	SF_DRAW_TEXT,,0x80444444,t.49.10.1
 	ab
 @@:
 	bt	di,9
 	jnc	@f
 	sb
-	mcall	4,,0x80444444,t.49.9
+	mcall	SF_DRAW_TEXT,,0x80444444,t.49.9
 	ab
 	mcall	,,0x80000000,t.sup
 @@:
 	bt	di,8
 	jnc	@f
 	sb
-	mcall	4,,0x80444444,t.49.8
+	mcall	SF_DRAW_TEXT,,0x80444444,t.49.8
 	ab
 	mcall	,,0x80000000,t.sup
 @@:
 	sb
-	mcall	4,,0x80444444,t.47
+	mcall	SF_DRAW_TEXT,,0x80444444,t.47
 ;        add     ebx,10
-;        mcall   4,,0x80444444,t.47_
+;        mcall   SF_DRAW_TEXT,,0x80444444,t.47_
 	ab
 	mov	edx,ebx
 	movzx	ecx, word [InfoArray+47*2]
 	xchg	ch,cl
-	mcall	47,0x80050000,,,0x80000000
+	mcall	SF_DRAW_NUMBER,0x80050000,,,0x80000000
 	mov	ebx,edx
 
 
 ;PART 2 of 11
 	sb
-	mcall	4,,0x80444444,t.59
+	mcall	SF_DRAW_TEXT,,0x80444444,t.59
 ;        add     ebx,10
-;        mcall   4,,0x80444444,t.59_
+;        mcall   SF_DRAW_TEXT,,0x80444444,t.59_
 	ab
 	mov	edx,ebx
 	movzx	ecx, word [InfoArray+59*2]
 	xchg	ch,cl
-	mcall	47,0x80050000,,,0x0
+	mcall	SF_DRAW_NUMBER,0x80050000,,,0x0
 	mov	ebx,edx
 
 	mov	ax,[InfoArray+63*2]
@@ -853,114 +853,114 @@ show_InfoBlock:
 	mov	edx,ebx
 ;        push    ebx
 	sb
-	mcall	4,,0x80444444,t.63.10
+	mcall	SF_DRAW_TEXT,,0x80444444,t.63.10
 	ab
 	mcall	,,0x80000000,t.sel
 @@:
 	bt	di,9
 	jnc	@f
 	sb
-	mcall	4,,0x80444444,t.63.9
+	mcall	SF_DRAW_TEXT,,0x80444444,t.63.9
 	ab
 	mcall	,,0x80000000,t.sel
 @@:
 	bt	di,8
 	jnc	@f
 	sb
-	mcall	4,,0x80444444,t.63.8
+	mcall	SF_DRAW_TEXT,,0x80444444,t.63.8
 	ab
 	mcall	,,0x80000000,t.sel
 @@:
 	bt	di,2
 	jnc	@f
 	sb
-	mcall	4,,0x80444444,t.63.2
+	mcall	SF_DRAW_TEXT,,0x80444444,t.63.2
 	ab
 	mcall	,,0x80000000,t.sup
 @@:
 	bt	di,1
 	jnc	@f
 	sb
-	mcall	4,,0x80444444,t.63.1
+	mcall	SF_DRAW_TEXT,,0x80444444,t.63.1
 	ab
 	mcall	,,0x80000000,t.sup
 @@:
 	bt	di,0
 	jnc	@f
 	sb
-	mcall	4,,0x80444444,t.63.0
+	mcall	SF_DRAW_TEXT,,0x80444444,t.63.0
 	ab
 	mcall	,,0x80000000,t.sup
 @@:
 
 ;PART 3 of 11
 	sb
-	mcall	4,,0x80444444,t.75.0_4
+	mcall	SF_DRAW_TEXT,,0x80444444,t.75.0_4
 	ab
 	mov	edx,ebx
 	push	ebx
 	movzx	ecx, byte [InfoArray+75*2+1]
-	mcall	47,0x800a0000,,,0x0
+	mcall	SF_DRAW_NUMBER,0x800a0000,,,0x0
 	pop	ebx
 
 ;words 76-79 - SATA
 ;.word80:
 ;        sb
-;        mcall   4,,0x80444444,t.80
+;        mcall   SF_DRAW_TEXT,,0x80444444,t.80
 ;        ab
 ;        mov     cx,[InfoArray+80*2]
 ;        test    cx,cx
 ;        jnz     @f
-;        mcall   4,,0x80444444,t.unk
+;        mcall   SF_DRAW_TEXT,,0x80444444,t.unk
 ;        ret
 ;@@:     cmp     cx,-1
 ;        jne     @f
-;        mcall   4,,0x80444444,t.unk
+;        mcall   SF_DRAW_TEXT,,0x80444444,t.unk
 ;        ret
 ;@@:     xchg    ch,cl
 ;        mov     edx,ebx
-;        mcall   47,0x800a0000,,,0x0
+;        mcall   SF_DRAW_NUMBER,0x800a0000,,,0x0
 ;        mov     ebx,edx
 	sb
-	mcall	4,,0x80444444,t.80__
+	mcall	SF_DRAW_TEXT,,0x80444444,t.80__
 	mov	ax,[InfoArray+80*2]
 	ab
 	xchg	al,ah
 	mov	di,ax
 	bt	di,8
 	jnc	@f
-	mcall	4,,0x80000000,t.80.8
+	mcall	SF_DRAW_TEXT,,0x80000000,t.80.8
 	jmp	.end
 ;---------------------------------------------------------------------
 @@:
 	bt	di,7
 	jnc	@f
-	mcall	4,,0x80000000,t.80.7
+	mcall	SF_DRAW_TEXT,,0x80000000,t.80.7
 	jmp	.end
 ;---------------------------------------------------------------------
 @@:
 	bt	di,6
 	jnc	@f
-	mcall	4,,0x80000000,t.80.6
+	mcall	SF_DRAW_TEXT,,0x80000000,t.80.6
 	jmp	.end
 ;---------------------------------------------------------------------
 @@:
 	bt	di,5
 	jnc	@f
-	mcall	4,,0x80000000,t.80.5
+	mcall	SF_DRAW_TEXT,,0x80000000,t.80.5
 	jmp	.end
 ;---------------------------------------------------------------------
 @@:
 	bt	di,4
 	jnc	@f
-	mcall	4,,0x80000000,t.80.4
+	mcall	SF_DRAW_TEXT,,0x80000000,t.80.4
 	jmp	.end
 @@:
 	ret
 ;---------------------------------------------------------------------
 .page2:
 ;PART 4 of 11
-	mcall	4,5*65536+25,0x80444444,t.82
+	mcall	SF_DRAW_TEXT,5*65536+25,0x80444444,t.82
 	add	ebx,10*65536
 	mov	ax,[InfoArray+82*2]
 	xchg	al,ah
@@ -968,7 +968,7 @@ show_InfoBlock:
 	bt	di,14
 	jnc	@f
 	ad
-	mcall	4,,0x80000000,t.82.14
+	mcall	SF_DRAW_TEXT,,0x80000000,t.82.14
 	wba	13,t.82.13
 	wba	12,t.82.12
 	wba	10,t.82.10
@@ -1019,7 +1019,7 @@ show_InfoBlock:
 	ret
 ;---------------------------------------------------------------------
 .page3:
-	mcall	4,5*65536+25,0x80444444,t.85
+	mcall	SF_DRAW_TEXT,5*65536+25,0x80444444,t.85
 	add	ebx,10*65536
 	mov	ax,[InfoArray+85*2]
 	xchg	al,ah
@@ -1027,12 +1027,12 @@ show_InfoBlock:
 	bt	di,14
 	jnc	@f
 	ad
-	mcall	4,,0x80000000,t.85.14
+	mcall	SF_DRAW_TEXT,,0x80000000,t.85.14
 	wba	13,t.85.13
 	wba	12,t.85.12
 	wba	10,t.85.10
 ;        ad
-;        mcall   4,,0x80000000,t.85.10_
+;        mcall   SF_DRAW_TEXT,,0x80000000,t.85.10_
 	wba	9,t.85.9
 	wba	8,t.85.8
 	wba	7,t.85.7
@@ -1049,7 +1049,7 @@ show_InfoBlock:
 	bt	di,13
 	jnc	@f
 	ad
-	mcall	4,,0x80000000,t.86.13
+	mcall	SF_DRAW_TEXT,,0x80000000,t.86.13
 	wba	12,t.86.12
 	wba	11,t.86.11
 	wba	10,t.86.10
@@ -1095,13 +1095,13 @@ show_InfoBlock:
 @@:
 	test	di,di
 	jz	@f
-	mcall	4,,0x80444444,t.88
+	mcall	SF_DRAW_TEXT,,0x80444444,t.88
 	mov	edx,ebx
 	push	ebx
 	add	edx,90*65536
 	movzx	ecx, word di
 	dec	cl
-	mcall	47,0x800a0000,,,0x0
+	mcall	SF_DRAW_NUMBER,0x800a0000,,,0x0
 	pop	ebx
 	ad
 @@:
@@ -1138,13 +1138,13 @@ show_InfoBlock:
 @@:
 	test	di,di
 	jz	@f
-	mcall	4,,0x80444444,t.88.1_6
+	mcall	SF_DRAW_TEXT,,0x80444444,t.88.1_6
 	mov	edx,ebx
 	push	ebx
 	add	edx,90*65536
 	movzx	ecx, word di
 	dec	cl
-	mcall	47,0x800a0000,,,0x0
+	mcall	SF_DRAW_NUMBER,0x800a0000,,,0x0
 	pop	ebx
 	ad
 @@:
@@ -1163,28 +1163,28 @@ show_InfoBlock:
 	mz	t.104,<movzx   ecx, word [InfoArray+104*2]>,
 
 ;PART 6 of 11 ?
-	mcall	4,,0x80444444,t.106
+	mcall	SF_DRAW_TEXT,,0x80444444,t.106
 	add	ebx,12
 	mov	ax,[InfoArray+106*2]
 	xchg	ah,al
 	mov	di,ax
 	bt	di,13
 	jnc	@f
-	mcall	4,,0x80444444,t.106.13
+	mcall	SF_DRAW_TEXT,,0x80444444,t.106.13
 	add	ebx,15
 @@:
 	bt	di,12
 	jnc	@f
-	mcall	4,,0x80444444,t.106.12
+	mcall	SF_DRAW_TEXT,,0x80444444,t.106.12
 	add	ebx,15
 @@:
-	mcall	4,,0x80444444,t.106.0_3
+	mcall	SF_DRAW_TEXT,,0x80444444,t.106.0_3
 	ab
 	shl	di,12
 	shr	di,12
 	movzx	ecx,di
 	mov	edx,ebx
-	mcall	47,0x800a0000,,,0x0
+	mcall	SF_DRAW_NUMBER,0x800a0000,,,0x0
 	mov	ebx,edx
 	sb
 
@@ -1194,7 +1194,7 @@ show_InfoBlock:
 	ret
 ;---------------------------------------------------------------------
 .page5:
-;        mcall   4,5*65536+25,0x80444444,t.85
+;        mcall   SF_DRAW_TEXT,5*65536+25,0x80444444,t.85
 	ret
 ;---------------------------------------------------------------------
 show_SmartBlock:
@@ -1205,7 +1205,7 @@ show_SmartBlock:
 
 	cmp	byte [SmartArray+2],0
 	je	.end
-	mcall	4,5*65536+25,0x80444444,s.title
+	mcall	SF_DRAW_TEXT,5*65536+25,0x80444444,s.title
 	ad
 	movzx	ax, byte [SmartArray+2]
 	cmp	ax,30	;максимум 30 атрибутов
@@ -1219,7 +1219,7 @@ show_SmartBlock:
 
 	mov	edx,ebx
 	movzx	ecx,al
-	mcall	47,0x80030000,,,0x0
+	mcall	SF_DRAW_NUMBER,0x80030000,,,0x0
 	mov	ebx,edx
 	add	ebx,30*65536
 	pop	edx
@@ -1232,7 +1232,7 @@ show_SmartBlock:
 	and	al,1
 	jz	.1
 ;       mov     ecx,0x80ff0000
-  .1:	mcall	4,,,
+  .1:	mcall	SF_DRAW_TEXT,,,
 	sub	ebx,30*65536
 
 	mov	ecx,[esp]
@@ -1240,12 +1240,12 @@ show_SmartBlock:
 	movzx	ecx, byte [ecx]
 	add	ebx,400*65536
 	mov	edx,ebx
-	mcall	47,0x800a0000,,,0x0
+	mcall	SF_DRAW_NUMBER,0x800a0000,,,0x0
 	mov	ecx,[esp]
 	add	ecx,4
 	movzx	ecx, byte [ecx]
 	add	edx,30*65536
-	mcall	47,0x800a0000,,,0x0
+	mcall	SF_DRAW_NUMBER,0x800a0000,,,0x0
 	mov	ebx,edx
 	sub	ebx,(30+400)*65536
 
@@ -1660,32 +1660,12 @@ error_text	dd no_error_text
 system_dir_Boxlib	db '/sys/lib/box_lib.obj',0
 system_dir_ProcLib	db '/sys/lib/proc_lib.obj',0
 ;---------------------------------------------------------------------
-head_f_i:
-head_f_l	db 'System error',0
-
-if lang eq it
-	err_message_found_lib1	db 'box_lib.obj - Non trovato!',0
-	err_message_found_lib2	db 'proc_lib.obj - Non trovato!',0
-
-	err_message_import1	db 'box_lib.obj - Import errato!',0
-	err_message_import2	db 'proc_lib.obj - Import errato!',0
-
-else
-	err_message_found_lib1	db 'box_lib.obj - Not found!',0
-	err_message_found_lib2	db 'proc_lib.obj - Not found!',0
-
-	err_message_import1	db 'box_lib.obj - Wrong import!',0
-	err_message_import2	db 'proc_lib.obj - Wrong import!',0
-end if
-;---------------------------------------------------------------------
 align 4
 l_libs_start:
 
-library01  l_libs system_dir_Boxlib+9, cur_dir_path, library_path, system_dir_Boxlib, \
-err_message_found_lib1, head_f_l, Box_lib_import, err_message_import1, head_f_i
+library01  l_libs system_dir_Boxlib+9, library_path, system_dir_Boxlib, Box_lib_import
 
-library02  l_libs system_dir_ProcLib+9, cur_dir_path, library_path, system_dir_ProcLib, \
-err_message_found_lib2, head_f_l, ProcLib_import, err_message_import2, head_f_i
+library02  l_libs system_dir_ProcLib+9, library_path, system_dir_ProcLib, ProcLib_import
 
 end_l_libs:
 ;---------------------------------------------------------------------

@@ -32,6 +32,11 @@ if lang eq ru
 	l_lib_m2 db '"Системная ошибка',13,10,'Ошибка при импорте библиотеки ',39,0
 	l_lib_m3 db 39,13,10,'не найдена функция ',39,0
 	l_lib_m4 db 39,'" -tE',0
+else if lang eq it
+	l_lib_m1 db '"Errore di sistema',13,10,'Non trovato ',39,0
+	l_lib_m2 db '"Errore di sistema',13,10,'Import errato ',39,0
+	l_lib_m3 db 39,13,10,'funzione non trovata ',39,0
+	l_lib_m4 db 39,'" -tE',0
 else
 	l_lib_m1 db '"System error',13,10,'Sorry I cannot found library ',39,0
 	l_lib_m2 db '"System error',13,10,'Error on load import library ',39,0
@@ -48,11 +53,6 @@ run_notify_struct:
 	.Buffer dd 0
 		db 0
 	.FileName dd file_name
-
-@library_name     equ    dword [esp+16]
-@cur_dir_path     equ    dword [esp+12]
-@library_path     equ    dword [esp+8]
-@point_dir_name   equ    dword [esp+4]
 
 ;description:
 ; готовим текст для показа через @notify:
@@ -125,6 +125,11 @@ align 4
 	or eax,-1
 	pop ebp
 	ret 8
+
+@library_name     equ    dword [esp+16]
+@cur_dir_path     equ    dword [esp+12]
+@library_path     equ    dword [esp+8]
+@point_dir_name   equ    dword [esp+4]
 
 align 4
 @copy_path:
