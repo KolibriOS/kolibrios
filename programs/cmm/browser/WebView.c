@@ -231,7 +231,6 @@ void main()
 			} else {
 				// Loading the page is complete, free resources
 				redirect_count = 0;
-				http.hfree();
 				if (http_get_type==PAGE) {
 					history.add(http.cur_url);
 					if (!strchr(http.cur_url, '?')) {
@@ -250,6 +249,7 @@ void main()
 					free(http.content_pointer);
 					GetImg(false);
 				}
+				http.hfree();
 			}
 			break;
 		default:
