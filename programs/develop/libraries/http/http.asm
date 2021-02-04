@@ -201,8 +201,8 @@ proc HTTP_free identifier ;/////////////////////////////////////////////////////
         mcall   close, [ebp + http_msg.socket]
 
   .not_connected:
+        invoke  mem.free, [ebp + http_msg.content_ptr]
         invoke  mem.free, ebp
-
         popa
         ret
 
