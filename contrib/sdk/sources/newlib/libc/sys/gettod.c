@@ -27,11 +27,16 @@ _DEFUN (gettimeofday, (ptimeval, ptimezone),
         BCD_TO_BIN(tmblk.tm_min);
         BCD_TO_BIN(tmblk.tm_hour);
         __asm__ __volatile__("int $0x40":"=a"(xtmp):"0"(29));
-        tmblk.tm_mday = (xtmp>>16)&0xff;
-        tmblk.tm_mon = ((xtmp>>8)&0xff)-1;
-        tmblk.tm_year = ((xtmp&0xff)+2000)-1900;
-        tmblk.tm_wday = tmblk.tm_yday = 0;
-        tmblk.tm_isdst = -1;
+
+        int bcd_day =  (xtmp >> 16);
+        int bcd_mon =  ((xtmp & 0xFF00) >> 8);
+        int bcd_year = (xtmp & 0xFF);
+
+        tmblk.tm_mday = ((bcd_day & 0xF0)>>4)*10 + (bcd_day & 0x0F);
+        tmblk.tm_mon = ((bcd_mon & 0xF0)>>4)*10 + (bcd_mon & 0x0F) - 1;
+        tmblk.tm_year = ((bcd_year & 0xF0)>>4)*10 + (bcd_year & 0x0F) + 100;
+
+        tmblk.tm_wday = tmblk.tm_yday = tmblk.tm_isdst = -1;
         ptimeval->tv_sec = mktime(&tmblk);
         return 0;
     }
