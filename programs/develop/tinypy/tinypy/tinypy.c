@@ -105,6 +105,7 @@ Agreement.
 #include <time.h>
 
 #include "bc.c"
+#include "../std_modules/ksys/start_app.c"
 
 #ifdef __GNUC__
 #define tp_inline __inline__
@@ -1285,7 +1286,9 @@ tp_obj tp_replace(TP) {
 #ifdef CONIO
     #include "conio.c"
     tp_obj tp_print(TP) {
-        console_init();
+        if(!con_enabled){
+            console_init();
+        }
         int n = 0;
         tp_obj e;
         TP_LOOP(e)
@@ -1395,8 +1398,10 @@ tp_obj tp_range(TP) {
  * enables this, you better remove it before deploying your app :P
  */
 tp_obj tp_system(TP) {
-    char s[TP_CSTR_LEN]; tp_cstr(tp,TP_STR(),s,TP_CSTR_LEN);
-    int r = system(s);
+    const char * s = TP_TYPE(TP_STRING).string.val;
+    char *command=strtok((char*)s," ");
+    char *argm=strtok(NULL, " ");
+    int r =start_app(command, argm);
     return tp_number(r);
 }
 
