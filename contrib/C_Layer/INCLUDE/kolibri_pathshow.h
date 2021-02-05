@@ -17,7 +17,7 @@ typedef struct __attribute__ ((__packed__)) {
 
 
 
-inline pathview* kolibri_pathview(pathview* p, uint32_t x_y, uint32_t width, uint32_t font_number, uint32_t is_bkgr, char* text, char* temp_buf, color_t font, color_t  bkgr)
+static inline pathview* kolibri_pathview(pathview* p, uint32_t x_y, uint32_t width, uint32_t font_number, uint32_t is_bkgr, char* text, char* temp_buf, color_t font, color_t  bkgr)
 {
     p->type = p->temp_text_length = 0;
     p->x_y = x_y;
@@ -33,13 +33,13 @@ inline pathview* kolibri_pathview(pathview* p, uint32_t x_y, uint32_t width, uin
     return p;
 }
 
-inline pathview* kolibri_new_pathview(pathview* p, uint32_t x_y, uint32_t width, uint32_t font_number, uint32_t is_bkgr, char* text, char* temp_buf, color_t font, color_t  bkgr)
+static inline pathview* kolibri_new_pathview(pathview* p, uint32_t x_y, uint32_t width, uint32_t font_number, uint32_t is_bkgr, char* text, char* temp_buf, color_t font, color_t  bkgr)
 {
     pathview *new_pv = (pathview *)malloc(sizeof(pathview));
     return kolibri_pathview(new_pv, x_y, width, font_number, is_bkgr, text, temp_buf, font, bkgr);
 }
 
-inline void gui_add_pathview(kolibri_window *wnd, pathview* pv)
+static inline void gui_add_pathview(kolibri_window *wnd, pathview* pv)
 {
     kolibri_window_add_element(wnd, KOLIBRI_PATHSHOW, pv);
 }

@@ -20,8 +20,8 @@
 
 #define SCAN_CODE_ALTM  50
 #define SCAN_CODE_ALTE  18
-inline
-uint32_t get_os_keyb_modifiers()
+
+static inline uint32_t get_os_keyb_modifiers()
 {
     register uint32_t val;
     __asm__ __volatile__(
@@ -43,8 +43,7 @@ uint32_t get_os_keyb_modifiers()
 #define KEY_LWIN       0x200
 #define KEY_RWIN       0x400
 
-inline
-void set_os_keyb_mode(int mode)
+static inline void set_os_keyb_mode(int mode)
 // 0 - ASCII, 1 - SCAN
 {
     __asm__ __volatile__(

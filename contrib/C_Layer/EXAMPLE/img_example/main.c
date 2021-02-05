@@ -3,8 +3,9 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <stddef.h>
-#include <kolibri_libimg.h>
 #include <kos32sys.h>
+#include <kolibri_gui.h>
+#include <kolibri_libimg.h>
 
 #define NEW_IMG_H 128 
 #define NEW_IMG_W 128

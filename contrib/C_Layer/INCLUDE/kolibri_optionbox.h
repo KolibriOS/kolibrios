@@ -5,8 +5,8 @@ typedef struct __attribute__ ((__packed__)) option_box_t {
     struct option_box_t **selected;
     uint16_t posx;
     uint16_t posy;
-    uint32_t text_margin; // = 4 расстояние от прямоугольника чек бокса до надписи
-    uint32_t size;       // 12 размер квадрата чек бокса
+    uint32_t text_margin; // = 4 пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅ пїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ
+    uint32_t size;       // 12 пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅ
     color_t color;
     color_t border_color; // individual border
     color_t text_color;
@@ -18,7 +18,7 @@ typedef struct __attribute__ ((__packed__)) option_box_t {
 extern void (*option_box_draw)(option_box **) __attribute__((__stdcall__));
 extern void (*option_box_mouse)(option_box **)__attribute__((__stdcall__));
 
-inline option_box* gui_optionbox(option_box* ob, uint32_t x_y, char* text, option_box**select)
+static inline option_box* gui_optionbox(option_box* ob, uint32_t x_y, char* text, option_box**select)
 {
     ob->selected = select;
     ob->posx = x_y >> 16;
@@ -35,7 +35,7 @@ inline option_box* gui_optionbox(option_box* ob, uint32_t x_y, char* text, optio
     return ob;
 }
 
-inline option_box* gui_new_optionbox(uint32_t x_y, char* text, option_box**select)
+static inline option_box* gui_new_optionbox(uint32_t x_y, char* text, option_box**select)
 {
     option_box* ob = malloc(sizeof(option_box));
 
@@ -46,7 +46,7 @@ inline option_box* gui_new_optionbox(uint32_t x_y, char* text, option_box**selec
 
 #define gui_new_optionbox_def(a,b,c) gui_new_optionbox(a,b,c)
 
-inline void gui_add_optiongroup(kolibri_window *wnd, option_box** option_group)
+static inline void gui_add_optiongroup(kolibri_window *wnd, option_box** option_group)
 {
     kolibri_window_add_element(wnd, KOLIBRI_OPTIONGROUP, option_group);
 }

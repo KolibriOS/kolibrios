@@ -33,7 +33,7 @@ typedef struct __attribute__ ((__packed__)) {
     uint32_t ar_offset;
 } scrollbar;
 
-inline scrollbar* kolibri_scrollbar(scrollbar* sb, uint32_t x_w, uint32_t y_h, uint32_t btn_height, uint32_t max_area,
+static inline scrollbar* kolibri_scrollbar(scrollbar* sb, uint32_t x_w, uint32_t y_h, uint32_t btn_height, uint32_t max_area,
 	uint32_t cur_area, uint32_t position, uint32_t back_color, uint32_t front_color, uint32_t line_color)
 {
     memset(sb, 0, sizeof(scrollbar));
@@ -53,7 +53,7 @@ inline scrollbar* kolibri_scrollbar(scrollbar* sb, uint32_t x_w, uint32_t y_h, u
     return sb;
 };
 
-inline scrollbar* kolibri_new_scrollbar(uint32_t x_w, uint32_t y_h, uint32_t btn_height, uint32_t max_area,
+static inline scrollbar* kolibri_new_scrollbar(uint32_t x_w, uint32_t y_h, uint32_t btn_height, uint32_t max_area,
 	uint32_t cur_area, uint32_t position, uint32_t back_color, uint32_t front_color, uint32_t line_color)
 {
     scrollbar *sb = (scrollbar *)malloc(sizeof(scrollbar));
@@ -61,22 +61,22 @@ inline scrollbar* kolibri_new_scrollbar(uint32_t x_w, uint32_t y_h, uint32_t btn
     return kolibri_scrollbar(sb, x_w, y_h, btn_height, max_area, cur_area, position, back_color, front_color, line_color);
 };
 
-inline scrollbar* kolibri_scrollbar_def(scrollbar* sb, uint32_t x_w, uint32_t y_h, uint32_t max_area, uint32_t cur_area, uint32_t position)
+static inline scrollbar* kolibri_scrollbar_def(scrollbar* sb, uint32_t x_w, uint32_t y_h, uint32_t max_area, uint32_t cur_area, uint32_t position)
 {
     return kolibri_scrollbar(sb, x_w, y_h, 15, max_area, cur_area, position, kolibri_color_table.color_work_area, kolibri_color_table.color_work_button, kolibri_color_table.color_work_button_text);
 };
 
-inline scrollbar* kolibri_new_scrollbar_def(uint32_t x_w, uint32_t y_h, uint32_t max_area, uint32_t cur_area, uint32_t position)
+static inline scrollbar* kolibri_new_scrollbar_def(uint32_t x_w, uint32_t y_h, uint32_t max_area, uint32_t cur_area, uint32_t position)
 {
     return kolibri_new_scrollbar(x_w, y_h, 15, max_area, cur_area, position, kolibri_color_table.color_work_area, kolibri_color_table.color_work_button, kolibri_color_table.color_work_button_text);
 };
 
-inline void gui_add_scrollbar_h(kolibri_window *wnd, scrollbar* sb)
+static inline void gui_add_scrollbar_h(kolibri_window *wnd, scrollbar* sb)
 {
     kolibri_window_add_element(wnd, KOLIBRI_SCROLL_BAR_H, sb);
 }
 
-inline void gui_add_scrollbar_v(kolibri_window *wnd, scrollbar* sb)
+static inline void gui_add_scrollbar_v(kolibri_window *wnd, scrollbar* sb)
 {
     kolibri_window_add_element(wnd, KOLIBRI_SCROLL_BAR_V, sb);
 }

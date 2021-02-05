@@ -8,7 +8,7 @@ CLAYER:= $(abspath ../../)
 LDFLAGS = -static -S -nostdlib -T $(SDK_DIR)/sources/newlib/app-dynamic.lds \
           --image-base 0 -lgcc -ldll -lc.dll 
 
-CFLAGS = -g -U_Win32 -U_WIN32 -U__MINGW32__ -std=gnu90 -mno-ms-bitfields
+CFLAGS = -g -U_Win32 -U_WIN32 -U__MINGW32__ -std=c99 -mno-ms-bitfields
 
 INCLUDES= -I. -I$(SDK_DIR)/sources/newlib/libc/include -I$(CLAYER)/INCLUDE
 LIBPATH:= -L $(SDK_DIR)/lib -L /home/autobuild/tools/win32/mingw32/lib
@@ -47,4 +47,4 @@ dbutton_files: dbutton_files.o
 	$(CC) -c $(INCLUDES) $(CFLAGS) -o $@ $<
 
 clean:
-	-rm -f *.o
+	-rm -f *.o boardmsg boardmsg.map dbutton_files editor_tree_msgbox editor_tree_msgbox.map option_menu scroll_progress

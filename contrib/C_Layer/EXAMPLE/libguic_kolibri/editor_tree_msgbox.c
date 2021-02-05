@@ -22,6 +22,14 @@
 #include "kolibri_libimg.h"
 #include "kolibri_msgbox.h"
 
+/*extern inline scrollbar* kolibri_scrollbar(scrollbar* sb, uint32_t x_w, uint32_t y_h, uint32_t btn_height, uint32_t max_area,
+	uint32_t cur_area, uint32_t position, uint32_t back_color, uint32_t front_color, uint32_t line_color);
+
+extern inline scrollbar* kolibri_new_scrollbar(uint32_t x_w, uint32_t y_h, uint32_t btn_height, uint32_t max_area,
+	uint32_t cur_area, uint32_t position, uint32_t back_color, uint32_t front_color, uint32_t line_color);
+
+extern inline scrollbar* kolibri_new_scrollbar_def(uint32_t x_w, uint32_t y_h, uint32_t max_area, uint32_t cur_area, uint32_t position);
+*/
 char run_path[4096];
 char fname[4096];
 
@@ -83,17 +91,17 @@ int main(int argc, char **argv)
     treelist *tl = kolibri_new_treelist(X_Y(0, 200), X_Y(200, 200), 16, X_Y(16, 16), 100, 50, 0, 0, /*TL_KEY_NO_EDIT |*/ TL_DRAW_PAR_LINE, &ed_lock, 0x8080ff, 0x0000ff, 0xffffff);
     (*tl_data_init)(tl);
 
-    // читаем файл с курсорами и линиями
+    // пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅ пїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ
     strcpy(fname, run_path);
     strcat(fname, "tl_sys_16.png");
     tl->data_img_sys = load_image_file(fname);
 
-    // читаем файл с иконками узлов
+    // пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅ пїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅ
     strcpy(fname, run_path);
     strcat(fname, "tl_nod_16.png");
     tl->data_img = load_image_file(fname);
 
-    treelist_node_add(tl, "node1", 1, 0, 0); // где 1 номер иконки с книгой
+    treelist_node_add(tl, "node1", 1, 0, 0); // пїЅпїЅпїЅ 1 пїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅ пїЅпїЅпїЅпїЅпїЅпїЅ
     (*tl_cur_next)(tl);
     treelist_node_add(tl, "node1.1", 1, 0, 1);
     (*tl_cur_next)(tl);
@@ -110,7 +118,7 @@ int main(int argc, char **argv)
     treelist_node_add(tl, "node3", 1, 0, 0);
     (*tl_cur_next)(tl);
 
-    (*tl_cur_beg)(tl); //;ставим курсор на начало списка
+    (*tl_cur_beg)(tl); //;пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ
     gui_add_treelist(main_window, tl);
 
     // treelist as listbox, no caption, no icons
@@ -121,7 +129,7 @@ int main(int argc, char **argv)
     tl2->data_img_sys = tl->data_img_sys;
     //tl2->data_img = tl->data_img; - no icons will be drawed
 
-    treelist_node_add(tl2, "list1", 0, 0, 0); // где 1 номер иконки с книгой
+    treelist_node_add(tl2, "list1", 0, 0, 0); // пїЅпїЅпїЅ 1 пїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅ пїЅпїЅпїЅпїЅпїЅпїЅ
     (*tl_cur_next)(tl2);
 
     treelist_node_add(tl2, "list2", 0, 0, 0);
@@ -130,7 +138,7 @@ int main(int argc, char **argv)
     treelist_node_add(tl2, "list3", 0, 0, 0);
     (*tl_cur_next)(tl2);
 
-    (*tl_cur_beg)(tl2); //;ставим курсор на начало списка
+    (*tl_cur_beg)(tl2); //;пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ
     gui_add_treelist(main_window, tl2);
 
     msgbox* box = kolibri_new_msgbox("Exit", "Are\rYOU\rSure?", 3, "YES", "Absolute", "Not Yet", NULL);  // default NOT
@@ -230,14 +238,14 @@ char*   load_image_file(char* fname)
     char    *image_data = 0, *image_data_rgb = 0, *filedata = 0;
 
     filedata = load_file_inmem(fname, &read_bytes);
-    // определяем вид изображения и переводим его во временный буфер image_data
+    // пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅ пїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅ image_data
     image_data = (*img_decode)(filedata, read_bytes, 0);
     w = *(int*)(image_data +4);
     h = *(int*)(image_data +8);
     image_data_rgb = malloc(w * h * 3);
-    // преобразуем изображение к формату rgb
+    // пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ rgb
     (*img_to_rgb2)(image_data, image_data_rgb);
-    // удаляем временный буфер image_data
+    // пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅ image_data
     (*img_destroy)(image_data);
     free(filedata);
 

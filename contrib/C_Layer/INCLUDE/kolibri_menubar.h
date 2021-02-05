@@ -3,9 +3,9 @@
 
 typedef struct
 {
-	uint32_t type;   // 1 если нет подменю, просто пункт
+	uint32_t type;   // 1 пїЅпїЅпїЅпїЅ пїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ, пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅ
 
-	uint32_t x_w;   // верхний пункт
+	uint32_t x_w;   // пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅ
 	uint32_t y_h;
 
 	char* text_pointer;
@@ -14,12 +14,12 @@ typedef struct
 	uint32_t mouse_pos;
 	uint32_t mouse_keys;
 
-	uint32_t x_w1;  // подменю
+	uint32_t x_w1;  // пїЅпїЅпїЅпїЅпїЅпїЅпїЅ
 	uint32_t y_h1;
 
-	color_t bckg_col;  // фон верхнего пукта
-	color_t frnt_col;  // фон выбранного верхнего пункта
-	color_t menu_col;  // фон выпадающей части (подпукты)
+	color_t bckg_col;  // пїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅ
+	color_t frnt_col;  // пїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ
+	color_t menu_col;  // пїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅ (пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ)
 	uint32_t select;
 	uint32_t out_select;
 	char* buf_adress;
@@ -30,9 +30,9 @@ typedef struct
 	uint32_t interval;
 	uint32_t cursor_max;
 	uint32_t extended_key;
-	color_t menu_sel_col;  // цвет фона выбранного подпункта
-	color_t bckg_text_col; // цвет шрифта невыбранного пункта
-	color_t frnt_text_col;  // цвет шрифта выбранного пункта
+	color_t menu_sel_col;  // пїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ
+	color_t bckg_text_col; // пїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ
+	color_t frnt_text_col;  // пїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ
 	uint32_t mouse_keys_old;
 	uint32_t font_height;
 	uint32_t cursor_out;
@@ -79,28 +79,28 @@ static inline menubar* kolibri_menubar(menubar* bar, uint32_t x_w, uint32_t y_h,
     return bar;
 }
 
-inline menubar* kolibri_new_menubar(uint32_t x_w, uint32_t y_h, uint16_t sub_w, uint16_t sub_h, char **menutext,
+static inline menubar* kolibri_new_menubar(uint32_t x_w, uint32_t y_h, uint16_t sub_w, uint16_t sub_h, char **menutext,
                                 color_t sel_font, color_t unsel_font, color_t top_bg, color_t top_select, color_t sub_bg, color_t sub_select)
 {
     menubar *new_bar = (menubar*)malloc(sizeof(menubar));
     return kolibri_menubar(new_bar, x_w, y_h, sub_w, sub_h, menutext, sel_font, unsel_font, top_bg, top_select, sub_bg, sub_select);
 }
 
-inline menubar* kolibri_menubar_def(menubar* bar, uint32_t x_w, uint32_t y_h, uint16_t sub_w, uint16_t sub_h, char **menutext)
+static inline menubar* kolibri_menubar_def(menubar* bar, uint32_t x_w, uint32_t y_h, uint16_t sub_w, uint16_t sub_h, char **menutext)
 {
     return kolibri_menubar(bar, x_w, y_h, sub_w, sub_h, menutext,
                            kolibri_color_table.color_work_button_text, kolibri_color_table.color_work_text, kolibri_color_table.color_work_area,
                            kolibri_color_table.color_work_button, kolibri_color_table.color_grab_bar_button, kolibri_color_table.color_work_button);
 }
 
-inline menubar* kolibri_new_menubar_def(uint32_t x_w, uint32_t y_h, uint16_t sub_w, uint16_t sub_h, char **menutext)
+static inline menubar* kolibri_new_menubar_def(uint32_t x_w, uint32_t y_h, uint16_t sub_w, uint16_t sub_h, char **menutext)
 {
     return kolibri_new_menubar(x_w, y_h, sub_w, sub_h, menutext,
                            kolibri_color_table.color_work_button_text, kolibri_color_table.color_work_text, kolibri_color_table.color_work_area,
                            kolibri_color_table.color_work_button, kolibri_color_table.color_grab_bar_button, kolibri_color_table.color_work_button);
 }
 
-inline void gui_add_menubar(kolibri_window *wnd, menubar* bar)
+static inline void gui_add_menubar(kolibri_window *wnd, menubar* bar)
 {
     kolibri_window_add_element(wnd, KOLIBRI_MENU_BAR, bar);
 }

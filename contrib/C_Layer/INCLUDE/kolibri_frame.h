@@ -37,7 +37,7 @@ typedef struct {
 	color_t font_bg_color;
 }frame;
 
-inline frame* kolibri_frame(frame* f, uint32_t x_w, uint32_t y_h, color_t ext_col, color_t int_col, char *text, enum fr_text_position_t text_position,
+static inline frame* kolibri_frame(frame* f, uint32_t x_w, uint32_t y_h, color_t ext_col, color_t int_col, char *text, enum fr_text_position_t text_position,
                             color_t font_color, color_t font_bgcolor, enum fr_flags_t flags)
 {
     f->type = 0;
@@ -58,24 +58,24 @@ inline frame* kolibri_frame(frame* f, uint32_t x_w, uint32_t y_h, color_t ext_co
     return f;
 }
 
-inline frame* kolibri_new_frame(uint32_t x_w, uint32_t y_h, color_t ext_col, color_t int_col, char *text, enum fr_text_position_t text_position,
+static inline frame* kolibri_new_frame(uint32_t x_w, uint32_t y_h, color_t ext_col, color_t int_col, char *text, enum fr_text_position_t text_position,
                                 color_t font_color, color_t font_bgcolor, enum fr_flags_t flags)
 {
     frame *new_frame = (frame *)malloc(sizeof(frame));
     return kolibri_frame(new_frame, x_w, y_h, ext_col, int_col, text, text_position, font_color, font_bgcolor, flags);
 }
 
-inline frame* kolibri_frame_def(frame* f, uint32_t x_w, uint32_t y_h, char *text)
+static inline frame* kolibri_frame_def(frame* f, uint32_t x_w, uint32_t y_h, char *text)
 {
     return kolibri_frame(f, x_w, y_h, 0x00FCFCFC, 0x00DCDCDC, text, FR_TOP, kolibri_color_table.color_work_text, kolibri_color_table.color_work_area, 0);
 }
 
-inline frame* kolibri_new_frame_def(uint32_t x_w, uint32_t y_h, char *text)
+static inline frame* kolibri_new_frame_def(uint32_t x_w, uint32_t y_h, char *text)
 {
     return kolibri_new_frame(x_w, y_h, 0x00FCFCFC, 0x00DCDCDC, text, FR_TOP, kolibri_color_table.color_work_text, kolibri_color_table.color_work_area, 0);
 }
 
-inline void gui_add_frame(kolibri_window *wnd, frame* f)
+static inline void gui_add_frame(kolibri_window *wnd, frame* f)
 {
     kolibri_window_add_element(wnd, KOLIBRI_FRAME, f);
 }

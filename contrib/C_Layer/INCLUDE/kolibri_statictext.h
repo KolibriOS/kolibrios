@@ -66,7 +66,7 @@ void statictext_draw(statictext *st)
     :);
 }
 
-inline void gui_add_statictext(kolibri_window *wnd, statictext* st)
+static inline void gui_add_statictext(kolibri_window *wnd, statictext* st)
 {
     kolibri_window_add_element(wnd, KOLIBRI_STATICTEXT, st);
 }
@@ -104,7 +104,7 @@ staticnum* kolibri_new_staticnum_def(uint32_t xy, int32_t width, int32_t number)
     return kolibri_new_staticnum(xy, width, number, cp866, 0, kolibri_color_table.color_work_text, 0);
 }
 
-inline void gui_add_staticnum(kolibri_window *wnd, staticnum* sn)
+static inline void gui_add_staticnum(kolibri_window *wnd, staticnum* sn)
 {
     kolibri_window_add_element(wnd, KOLIBRI_STATICNUM, sn);
 }

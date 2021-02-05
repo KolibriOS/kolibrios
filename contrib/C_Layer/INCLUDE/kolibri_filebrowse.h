@@ -98,7 +98,7 @@ typedef struct __attribute__ ((__packed__)) {
 	uint32_t y_h; // 45, 550
 	uint32_t icon_size_xy;  // x_y (16, 16)
 	uint16_t line_size_x;  // not used
-	uint16_t line_size_y;  // 18 or 17  - высота линии - строки с файлом
+	uint16_t line_size_y;  // 18 or 17  - пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅ - пїЅпїЅпїЅпїЅпїЅпїЅ пїЅ пїЅпїЅпїЅпїЅпїЅпїЅ
 	uint16_t type_size_x;  // not used
 	uint16_t size_size_x;  // not used
 	uint16_t date_size_x;  // not used
@@ -116,9 +116,9 @@ typedef struct __attribute__ ((__packed__)) {
     color_t text_color; // self explained
     color_t reduct_text_color; // 0xff0000  - spec color for cutted filenames
     color_t marked_text_color; // not used
-    uint32_t max_panel_line;    // moved to scrollbar->cur_area, - максимальное число строк в окне, авторасчитывается
+    uint32_t max_panel_line;    // moved to scrollbar->cur_area, - пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅ пїЅ пїЅпїЅпїЅпїЅ, пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ
 	uint32_t select_panel_counter;  // !=0 if want to draw multiselection ???
-	uint32_t folder_block;   // auto formed, количество блоков данных входа каталога (БДВК) ????? format BDVK == bdfe,, // moved to scrollbar->max_area
+	uint32_t folder_block;   // auto formed, пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ (пїЅпїЅпїЅпїЅ) ????? format BDVK == bdfe,, // moved to scrollbar->max_area
 	uint32_t start_draw_line;    // internal - top showed file n. moved to scrollbar->position and back
 	uint16_t start_draw_cursor_line;  //internal
     void* folder_data;      // 32 byte - dir_header, +4 = number, +32 - bdvk[], size of rec(bdvk cp866) = 304byte
@@ -217,7 +217,7 @@ inline filebrowser* kolibri_filebrowser_def(filebrowser* fb, uint32_t x_w, uint3
 }
 */
 
-inline void gui_add_filebrowser(kolibri_window *wnd, filebrowser* f)
+static inline void gui_add_filebrowser(kolibri_window *wnd, filebrowser* f)
 {
     kolibri_window_add_element(wnd, KOLIBRI_FILEBROWSE, f);
 }
