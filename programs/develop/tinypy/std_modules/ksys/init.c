@@ -1,6 +1,5 @@
 #include "tinypy.h"
 #include "syscalls.c"
-#include "fs.c"
 
 #define EXPORT(MOD_NAME, F_NAME, F_POINT) tp_set(tp, MOD_NAME , tp_string(F_NAME), tp_fnc(tp, F_POINT))
 
@@ -21,9 +20,8 @@ void ksys_init(TP)
     EXPORT(ksys_mod, "get_event"    , _get_event);
     EXPORT(ksys_mod, "get_button"    ,_get_button);
     EXPORT(ksys_mod, "get_sys_colors",_get_sys_colors);
-    // filesystem 
-    EXPORT(ksys_mod, "open", kolibri_open);
-
+    EXPORT(ksys_mod, "get_key"      , _get_key);
+    
     tp_set(tp, ksys_mod, tp_string("__doc__"), tp_string("KolibriOS system specific functions."));
     tp_set(tp, ksys_mod, tp_string("__name__"), tp_string("kolibri"));
     tp_set(tp, ksys_mod, tp_string("__file__"), tp_string(__FILE__));

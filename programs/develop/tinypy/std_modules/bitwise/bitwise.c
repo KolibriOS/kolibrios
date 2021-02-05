@@ -11,3 +11,10 @@ static tp_obj _add(TP){
     return tp_number(num1 | num2);
 } 
 
+static tp_obj _mul(TP){
+    unsigned num1 = (unsigned)GET_NUM_ARG();
+    unsigned num2 = (unsigned)GET_NUM_ARG();
+    return tp_number(num1 & num2);
+    
+}
+

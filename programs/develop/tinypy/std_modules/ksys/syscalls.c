@@ -74,6 +74,21 @@ static tp_obj _get_button(TP){
     return tp_number(get_os_button());
 }
 
+static tp_obj _get_key(TP){
+    tp_obj key_obj = tp_dict(tp); 
+    oskey_t key_info = get_key();
+    tp_set(tp, key_obj, tp_string("code"), tp_number(key_info.code));
+    tp_set(tp, key_obj, tp_string("ctrl_key"), tp_number(key_info.ctrl_key)); 
+    tp_set(tp, key_obj, tp_string("state"), tp_number(key_info.state));
+    tp_set(tp, key_obj, tp_string("val"), tp_number(key_info.val));
+    return key_obj;
+}
+
+static tp_obj _start_app(TP){
+     const char *prog_name = GET_STR_ARG();
+     const char *args = GET_STR_ARG();
+}
+
 static tp_obj _get_sys_colors(TP){
     tp_obj color_obj = tp_dict(tp);
     struct kolibri_system_colors colors;
