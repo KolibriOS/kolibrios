@@ -36,6 +36,7 @@ UNDERTABLE:
 	.X = PROCESS_TABLE.X
 	.Y = PROCESS_TABLE.Y + PROCESS_TABLE.HEIGHT + 20
 BUTTON:
+    .WIDTH = 120
 	.HEIGHT = 16 + 4
 EDITBOX:
 	.X = CHECKBOX.X + 100
@@ -292,29 +293,36 @@ draw_next_process:
 ;output:
 ;	edi - next slot (or -1 if no next slot)
 ;registers corrupted!
-;create terminate process button
-	mov	ecx,[curposy]
+
+;putting 2 pixels to make the list of buttons visually solid
+	mov ecx,[curposy]
+	mcall SF_PUT_PIXEL, PROCESS_TABLE.X, , 0x586468
+	add ebx, BUTTON.WIDTH
+	mcall
+
+;create terminate process button	
+	;mov	ecx,[curposy]
 	shl	ecx,16
 	mov	cx, BUTTON.HEIGHT
 	mov	edx,[index]
 	add	edx,11
-	mov	esi,0xccddee
+	mov	esi,0xaabbcc
 	test	dword	[index],1
 	jz	@f
-	mov	esi,0xaabbcc
+	mov	esi,0xccddee
 @@:
 		add	edx,0x80000000 ; delete a button
 		mcall	SF_DEFINE_BUTTON ; before create
 		sub	edx,0x80000000 ; a new one below
-	mcall	SF_DEFINE_BUTTON,<10,120>
+	mcall	SF_DEFINE_BUTTON,<PROCESS_TABLE.X,BUTTON.WIDTH>
 	mov	[btn_bacground_color],esi
 ;draw background for proccess information
-	mov	edx,0xEFEFF5
+	mov	edx,0xDDDddf
 	test	dword	[index],1
 	jz	@f
-	mov	edx,0xffffff
+	mov	edx,0xFFFfff
 @@:
-	inc	cx
+	;inc	cx
 
 	mcall	SF_DRAW_RECT, <131, PROCESS_TABLE.WIDTH-131>
 
@@ -911,7 +919,7 @@ sys_reboot:
 ;-------------------------------------------------------------------------------
 strings:
 if lang eq de
-	.window_caption		utf8z	"Prozesse v0.2.2 - [Ctrl+Alt+Del]"
+	.window_caption		utf8z	"Prozesse v0.2.3 - [Ctrl+Alt+Del]"
 	
 	.process_name		utf8z	"NAME/BEENDEN"
 	.ptid			utf8z	"PID/TID"
@@ -919,8 +927,8 @@ if lang eq de
 	.cpu_usage_percent	utf8z	"CPU(%)"
 	.memory_usage		utf8z	"SPEICHER"
 	.window_stack_pos	utf8z	"W-STACK"
-	.window_position.x	utf8z	"W-POS-X"
-	.window_position.y	utf8z	"W-POS-Y"
+	.window_position.x	utf8z	"  WIN-X"
+	.window_position.y	utf8z	"  WIN-Y"
 	
 	.previous_page		utf8z	"SEITE ZURUECK"
 	.next_page		utf8z	"SEITE VOR"
@@ -934,7 +942,7 @@ if lang eq de
 	.GB			utf8z	" GB"
 ;-------------------------------------------------------------------------------
 else if lang eq et
-	.window_caption		utf8z	"Protsessid v0.2.2 - [Ctrl+Alt+Del]"
+	.window_caption		utf8z	"Protsessid v0.2.3 - [Ctrl+Alt+Del]"
 	
 	.process_name		utf8z	"NIMI/LÕPETA"
 	.ptid			utf8z	"PID/TID"
@@ -942,8 +950,8 @@ else if lang eq et
 	.cpu_usage_percent	utf8z	"CPU(%)"
 	.memory_usage		utf8z	"MÄLU"
 	.window_stack_pos	utf8z	"W-PUHVER"
-	.window_position.x	utf8z	"W-POS-X"
-	.window_position.y	utf8z	"W-POS-Y"
+	.window_position.x	utf8z	"  WIN-X"
+	.window_position.y	utf8z	"  WIN-Y"
 	
 	.previous_page		utf8z	"EELMINE LEHT"
 	.next_page		utf8z	"JÄRGMINE LEHT"
@@ -957,7 +965,7 @@ else if lang eq et
 	.GB			utf8z	" GB"
 ;-------------------------------------------------------------------------------
 else if lang eq ru
-	.window_caption		utf8z	"Диспетчер процессов v0.2.2 - [Ctrl+Alt+Del]"
+	.window_caption		utf8z	"Диспетчер процессов v0.2.3 - [Ctrl+Alt+Del]"
 	
 	.process_name		utf8z	"ИМЯ/ЗАВЕРШИТЬ"
 	.ptid			utf8z	"PID/TID"
@@ -965,8 +973,8 @@ else if lang eq ru
 	.cpu_usage_percent	utf8z	"CPU(%)"
 	.memory_usage		utf8z	"ПАМЯТЬ"
 	.window_stack_pos	utf8z	"W-STACK"
-	.window_position.x	utf8z	"W-POS-X"
-	.window_position.y	utf8z	"W-POS-Y"
+	.window_position.x	utf8z	"  WIN-X"
+	.window_position.y	utf8z	"  WIN-Y"
 	
 	.previous_page		utf8z	"ПРЕД. СТР."
 	.next_page		utf8z	"СЛЕД. СТР."
@@ -980,7 +988,7 @@ else if lang eq ru
 	.GB			utf8z	" ГБ"
 ;-------------------------------------------------------------------------------
 else if lang eq it
-	.window_caption		utf8z	"Gestore processi v0.2.2 - [Ctrl+Alt+Del]"
+	.window_caption		utf8z	"Gestore processi v0.2.3 - [Ctrl+Alt+Del]"
 	
 	.process_name		utf8z	"NOME-PROGRAMMA"
 	.ptid			utf8z	"PID/TID"
@@ -988,8 +996,8 @@ else if lang eq it
 	.cpu_usage_percent	utf8z	"CPU(%)"
 	.memory_usage		utf8z	"MEMORY"
 	.window_stack_pos	utf8z	"W-STACK"
-	.window_position.x	utf8z	"W-POS-X"
-	.window_position.y	utf8z	"W-POS-Y"
+	.window_position.x	utf8z	"  WIN-X"
+	.window_position.y	utf8z	"  WIN-Y"
 	
 	.previous_page		utf8z	"INDIETRO"
 	.next_page		utf8z	"AVANTI"
@@ -1003,7 +1011,7 @@ else if lang eq it
 	.GB			utf8z	" GB"
 ;-------------------------------------------------------------------------------
 else
-	.window_caption		utf8z	"Process manager v0.2.2 - [Ctrl+Alt+Del]"
+	.window_caption		utf8z	"Process manager v0.2.3 - [Ctrl+Alt+Del]"
 	
 	.process_name		utf8z	"NAME/TERMINATE"
 	.ptid			utf8z	"PID/TID"
@@ -1011,8 +1019,8 @@ else
 	.cpu_usage_percent	utf8z	"CPU(%)"
 	.memory_usage		utf8z	"MEMORY"
 	.window_stack_pos	utf8z	"W-STACK"
-	.window_position.x	utf8z	"W-POS-X"
-	.window_position.y	utf8z	"W-POS-Y"
+	.window_position.x	utf8z	"  WIN-X"
+	.window_position.y	utf8z	"  WIN-Y"
 	
 	
 	.previous_page		utf8z	"PREV PAGE"
