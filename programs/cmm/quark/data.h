@@ -8,12 +8,13 @@ char short_app_name[] = "Quark";
 
 #ifdef LANG_RUS
 
-char intro[] = "Это простой просмотрщик текста.
+char intro[] = "Это простой просмотрщик и редактор текста.
 Попробуйте открыть текстовый файл.";
 
-char copied_chars[] = "Скопировано сиволов: %i";
+char copied_chars[] = "%i символов скопировано";
+char chars_selected[] = "%i символов выделено";
 
-char about[] = "Quark Text v0.9
+char about[] = "Quark Text v0.95
 Автор: Кирилл Липатов aka Leency
 Сайт: http://aspero.pro
 
@@ -34,7 +35,7 @@ char color_scheme_names[] = "Творожек\nКосмос   ";
 ?define FILE_SAVED_WELL "'Файл успешно сохранен'O"
 ?define FILE_NOT_SAVED "'Ошибка при сохранении файла!'E"
 
-char rmb_menu[] = 
+char rmb_menu[] =
 "Вырезать|Ctrl+X
 Копировать|Ctrl+C
 Вставить|Ctrl+V
@@ -47,13 +48,14 @@ char rmb_menu[] =
 
 #else
 
-char intro[] = "Quark is a simple text viewer.
+char intro[] = "Quark is a simple text viewer and editor.
 Try to open some text file.";
 
-char copied_chars[] = "Copied %i chars";
+char copied_chars[] = "%i characters copied";
+char chars_selected[] = "%i characters selected";
 
-char about[] = "Quark Text v0.91
-Author: Kiril Lipatov aka Leency 
+char about[] = "Quark Text v0.95
+Author: Kiril Lipatov aka Leency
 Website: http://aspero.pro
 
 Hotkeys:
@@ -73,7 +75,7 @@ char color_scheme_names[] = "Dairy\nCosmos   ";
 ?define FILE_SAVED_WELL "'File saved'O"
 ?define FILE_NOT_SAVED "'Error saving file!'E"
 
-char rmb_menu[] = 
+char rmb_menu[] =
 "Cut|Ctrl+X
 Copy|Ctrl+C
 Paste|Ctrl+V
@@ -104,13 +106,15 @@ struct THEME
 } theme;
 
 char default_dir[] = "/rd/1";
-od_filter filter2 = { 33, "TXT\0ASM\0HTM\0HTML\0C\0H\0C--\0H--\0CPP\0\0" };
+od_filter filter2 = { 37, "TXT\0INI\0ASM\0HTM\0HTML\0C\0H\0C--\0H--\0CPP\0\0" };
 
 CANVAS canvas;
 
 dword cursor_pos=0;
 
 collection_int lines = {0};
+
+#define file_path param
 
 //===================================================//
 //                                                   //
@@ -123,12 +127,12 @@ _ini ini = { "/sys/settings/app.ini", "Quark" };
 
 void LoadIniSettings()
 {
-	font_size     = ini.GetInt("FontSize", 'M');
+	font_size     = ini.GetInt("FontSize", 1);
 	user_encoding = ini.GetInt("Encoding", CH_AUTO);
 	curcol_scheme = ini.GetInt("ColorScheme", 0);
-	Form.left     = ini.GetInt("WinX", 150); 
-	Form.top      = ini.GetInt("WinY", 50); 
-	Form.width    = ini.GetInt("WinW", 640); 
+	Form.left     = ini.GetInt("WinX", 150);
+	Form.top      = ini.GetInt("WinY", 50);
+	Form.width    = ini.GetInt("WinW", 640);
 	Form.height   = ini.GetInt("WinH", 563);
 }
 

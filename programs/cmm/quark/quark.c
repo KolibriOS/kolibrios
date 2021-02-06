@@ -1,15 +1,16 @@
-/* 
+/*
 	Quark Code Edit
 	Author: Kiril Lipatov aka Leency
 	Licence: GPLv2
 
 	The core components of this app are:
-		1. list: text grid with keyboard and mouse events
-		2. lines: the mas of pointers for each line start
-		3. selection
+		1. textbuf: page data
+		2. list: text grid with keyboard and mouse events
+		3. lines: the mas of pointers for each line start
+		4. selection
 */
 
-#define MEMSIZE 1024*100
+#define MEMSIZE 60*1024
 
 //===================================================//
 //                                                   //
@@ -43,6 +44,8 @@
 
 proc_info Form;
 llist list;
+scroll_bar scroll = { 15,200,398,44,0,2,115,15,0,0xeeeeee,
+	0xBBBbbb,0xeeeeee,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1};
 
 #define TOOLBAR_H 38
 #define TOOLBAR_ICON_WIDTH  24
@@ -55,13 +58,12 @@ int real_encoding = CH_CP866;
 int curcol_scheme;
 int font_size;
 
-bool enable_edit = false;
 bool search_next = false;
 
 #include "data.h"
-
-#include "search.h"
+#include "textbuf.h"
 #include "selection.h"
+#include "search.h"
 #include "prepare_page.h"
 
 //===================================================//
@@ -69,9 +71,6 @@ bool search_next = false;
 //                       DATA                        //
 //                                                   //
 //===================================================//
-
-scroll_bar scroll = { 15,200,398,44,0,2,115,15,0,0xeeeeee,
-	0xBBBbbb,0xeeeeee,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1};
 
 char title[4196];
 
@@ -86,6 +85,7 @@ enum {
 	COLOR_SCHEME=8,
 	RMB_MENU,
 	BTN_FIND_NEXT,
+	BTN_FIND_PREVIOUS,
 	BTN_FIND_CLOSE,
 	BTN_CHANGE_CHARSET
 };
@@ -113,7 +113,7 @@ void InitDlls()
 
 void LoadFileFromDocPack()
 {
-	dword bufsize = atoi(#param + 1) + 20;
+	dword bufsize = atoi(#file_path + 1) + 20;
 	dword bufpointer = malloc(bufsize);
 
 	ESDWORD[bufpointer+0] = 0;
@@ -123,47 +123,33 @@ void LoadFileFromDocPack()
 	SetEventMask(EVM_IPC);
 	if (@WaitEventTimeout(200) != evIPC) {
 		notify("'IPC FAIL'E");
-		return;
+	} else {
+		textbuf.set(bufpointer + 16, ESDWORD[bufpointer+12]);
 	}
-
-	io.buffer_data = malloc(ESDWORD[bufpointer+12]);
-	strcpy(io.buffer_data, bufpointer + 16);
+	free(bufpointer);
+	file_path[0]='\0';
+	sprintf(#title, "#DOCPACK - %s", #short_app_name);
 }
 
 void main()
-{   	
+{
 	InitDlls();
 	LoadIniSettings();
 	EventSetColorScheme(curcol_scheme);
-	if (param[0] == '*') {
+	if (file_path[0] == '*') {
 		LoadFileFromDocPack();
-		param[0]='\0';
-		sprintf(#title, "#DOCPACK - %s", #short_app_name);
 	} else {
-		if (streq(#param,"-new")) {Form.left+=40;Form.top+=40;}
-		LoadFile(#param);
+		if (streq(#file_path,"-new")) {Form.left+=40;Form.top+=40;}
+		LoadFile(#file_path);
 	}
 	SetEventMask(EVM_REDRAW + EVM_KEY + EVM_BUTTON + EVM_MOUSE + EVM_MOUSE_FILTER);
-	loop()
+	loop() switch(@WaitEventTimeout(400))
 	{
-		switch(@WaitEventTimeout(400))
-		{
-			case evMouse:
-				HandleMouseEvent();
-				break;
-			case evKey:
-				HandleKeyEvent();
-				break;
-			case evButton:
-				HandleButtonEvent();
-				break;
-			case evReDraw:
-				if (CheckActiveProcess(Form.ID)) EventMenuClick();
-				draw_window();
-				break;
-			default:
-				DrawStatusBar(" "); //clean DrawStatusBar text with delay
-		}
+		case evMouse:  HandleMouseEvent(); break;
+		case evKey:    HandleKeyEvent(); break;
+		case evButton: HandleButtonEvent(); break;
+		case evReDraw: draw_window(); break;
+		default:       DrawStatusBar(" "); //clean DrawStatusBar text with delay
 	}
 }
 
@@ -183,15 +169,10 @@ void HandleButtonEvent()
 	button.press(btn);
 	switch(btn-10)
 	{
-		case BTN_FIND_NEXT:
-			EventSearchNext();
-			break;
-		case BTN_FIND_CLOSE:
-			search.hide();
-			break;
-		case BTN_CHANGE_CHARSET:
-			EventShowCharsetsList();
-			break;
+		case BTN_FIND_NEXT:      EventSearchNext();       break;
+		case BTN_FIND_PREVIOUS:  EventSearchPrevious();   break;
+		case BTN_FIND_CLOSE:     search.hide();           break;
+		case BTN_CHANGE_CHARSET: EventShowCharsetsList(); break;
 	}
 }
 
@@ -208,9 +189,13 @@ void HandleKeyEvent()
 			search.hide();
 			return;
 		case SCAN_CODE_ENTER:
-			if (! search_box.flags & ed_focus) return;
+			if (! search_box.flags & ed_focus) break;
 		case SCAN_CODE_F3:
-			EventSearchNext();
+			if (key_modifier & KEY_LSHIFT) {
+				EventSearchPrevious();
+			} else {
+				EventSearchNext();
+			}
 			return;
 	}
 
@@ -220,46 +205,30 @@ void HandleKeyEvent()
 		if (key.press(ECTRL + key_scancode)) return;
 		switch (key_scancode)
 		{
-			case SCAN_CODE_KEY_A:
-				selection.select_all();
-				DrawPage();
-				return;
-			case SCAN_CODE_KEY_X:
-				EventCut();
-				return;
-			case SCAN_CODE_KEY_C:
-				EventCopy();
-				return;
-			case SCAN_CODE_KEY_V:
-				EventPaste();
-				return;
-			case SCAN_CODE_UP:
-				EventMagnifyPlus();
-				return;
-			case SCAN_CODE_DOWN:
-				EventMagnifyMinus();
-				return;
-			case SCAN_CODE_TAB:
-				EventShowCharsetsList();
-				return;
-			case SCAN_CODE_KEY_F:
-				search.show();
-				return;
+			case SCAN_CODE_KEY_A: EventSelectAllText();    return;
+			case SCAN_CODE_KEY_X: EventCut();              return;
+			case SCAN_CODE_KEY_C: EventCopy();             return;
+			case SCAN_CODE_KEY_V: EventPaste();            return;
+			case SCAN_CODE_UP:    EventMagnifyPlus();      return;
+			case SCAN_CODE_DOWN:  EventMagnifyMinus();     return;
+			case SCAN_CODE_TAB:   EventShowCharsetsList(); return;
+			case SCAN_CODE_KEY_F: search.show();           return;
 		}
 	}
 
 	if (key_modifier & KEY_LSHIFT) || (key_modifier & KEY_RSHIFT) {
 		selection.set_start();
 	} else {
+		EventInsertCharIntoText();
 		selection.cancel();
 	}
 
+	if (key_scancode == SCAN_CODE_LEFT) && (!list.cur_x) && (list.cur_y) list.column_max = lines.len(list.cur_y-1);
 	if (list.ProcessKey(key_scancode)) {
 		if (key_modifier & KEY_LSHIFT) || (key_modifier & KEY_RSHIFT) selection.set_end();
 		DrawPage();
 		return;
 	}
-	if(enable_edit) EventInsertCharIntoText();
 }
 
 void HandleMouseEvent()
@@ -268,7 +237,7 @@ void HandleMouseEvent()
 	list.wheel_size = 7;
 	if (list.MouseScroll(mouse.vert)) {
 		DrawPage();
-		return; 
+		return;
 	}
 	if (!scroll.delta2) && (list.MouseOver(mouse.x, mouse.y)) {
 		if (mouse.key&MOUSE_LEFT) {
@@ -290,7 +259,7 @@ void HandleMouseEvent()
 			if (mouse.down) {
 				selection.cancel();
 				selection.set_start();
-			} 
+			}
 			selection.set_end();
 			DrawPage();
 		}
@@ -298,11 +267,11 @@ void HandleMouseEvent()
 			EventShowRmbMenu();
 		}
 		return;
-	} 
+	}
 	scrollbar_v_mouse (#scroll);
 	if (list.first != scroll.position) {
 		list.first = scroll.position;
-		DrawPage(); 
+		DrawPage();
 	}
 	search.edit_mouse();
 }
@@ -315,12 +284,21 @@ void HandleMouseEvent()
 
 bool EventSearchNext()
 {
-	int new_y = search.find_next(list.first+1);
-	if (new_y) {
-		list.first = new_y;
+	if (search.find_next(list.first+1)) {
+		list.first = EAX;
 		list.CheckDoesValuesOkey();
 		search_next = true;
-		DrawPage();	
+		DrawPage();
+	}
+}
+
+bool EventSearchPrevious()
+{
+	if (search.find_prior(list.first)) {
+		list.first = EAX;
+		list.CheckDoesValuesOkey();
+		search_next = true;
+		DrawPage();
 	}
 }
 
@@ -342,44 +320,44 @@ void EventSave()
 {
 	int res;
 	char backy_param[4096];
-	if (io.buffer_data) {
-		io.dir.make("/tmp0/1/quark_backups");
-		sprintf(#backy_param, "%s -o /tmp0/1/quark_backups", #param);
-		io.run("/sys/develop/backy", #backy_param);
-		if (! io.write(#param, io.buffer_data) ) {
-			notify(FILE_SAVED_WELL);
-		} else {
-			notify(FILE_NOT_SAVED);
-		}
+	io.dir.make("/tmp0/1/quark_backups");
+	sprintf(#backy_param, "%s -o /tmp0/1/quark_backups", #file_path);
+	RunProgram("/sys/develop/backy", #backy_param);
+	if (! WriteFile(0, textbuf.len, textbuf.p, #file_path) ) {
+		notify(FILE_SAVED_WELL);
+	} else {
+		notify(FILE_NOT_SAVED);
 	}
 }
 
 void EventShowFileInfo()
 {
 	char ss_param[4096];
-	if (!param) return;
+	if (!file_path) return;
 	strcpy(#ss_param, "-p ");
-	strcpy(#ss_param+3, #param);
+	strcpy(#ss_param+3, #file_path);
 	RunProgram("/sys/File managers/Eolite", #ss_param);
 }
 
 void EventMagnifyMinus()
 {
-	SetSizes('S');
+	font_size = math.max(0, font_size-1);
+	SetFontSize(font_size);
 	ParseAndPaint();
 }
 
 void EventMagnifyPlus()
 {
-	SetSizes('M');
+	font_size = math.min(3, font_size+1);
+	SetFontSize(font_size);
 	ParseAndPaint();
 }
 
 void EventShowCharsetsList()
 {
 	menu_id = CHANGE_CHARSET;
-	open_lmenu(Form.cwidth-4, Form.cheight - 6, MENU_BOT_RIGHT, 
-		user_encoding+1, 
+	open_lmenu(Form.cwidth-4, Form.cheight - 6, MENU_BOT_RIGHT,
+		user_encoding+1,
 		"UTF-8\nKOI8-RU\nCP1251\nCP1252\nISO8859-5\nCP866\nAUTO");
 }
 
@@ -393,7 +371,7 @@ void EventShowReopenMenu()
 void EventShowThemesList()
 {
 	menu_id = COLOR_SCHEME;
-	open_lmenu(theme_mx + 23, 29, MENU_TOP_RIGHT, 
+	open_lmenu(theme_mx + 23, 29, MENU_TOP_RIGHT,
 		curcol_scheme+1, #color_scheme_names);
 }
 
@@ -419,19 +397,14 @@ void EventSetColorScheme(dword _setn)
 
 
 void EventShowInfo() {
-	static dword shared_about;
-	if (!shared_about) {
-		shared_about = memopen("QUARK_ABOUT", sizeof(about)+1, SHM_OPEN_ALWAYS + SHM_READ);
-		strcpy(shared_about, #about);
-	}
-	RunProgram("/sys/dialog", "-info 122 *QUARK_ABOUT");
+	notify(#about);
 }
 
 void EventChangeCharset(dword id)
 {
-	if (param[0]=='\0') return;
+	if (file_path[0]=='\0') return;
 	user_encoding = id;
-	LoadFile(#param);
+	LoadFile(#file_path);
 	ParseAndPaint();
 	draw_window();
 }
@@ -447,11 +420,11 @@ void EventOpenFileInOtherApp(dword _id)
 		case 3: app = "/sys/fb2read"; break;
 		case 4: app = "/sys/develop/heed"; break;
 		case 5: open_param[0]='~';
-			strcpy(#open_param+1,#param);
+			strcpy(#open_param+1,#file_path);
 			RunProgram("/sys/@open", #open_param);
 			return;
 	}
-	RunProgram(app, #param);
+	RunProgram(app, #file_path);
 }
 
 void EventMenuClick()
@@ -480,40 +453,67 @@ void EventClickSearch()
 
 void EventInsertCharIntoText()
 {
+	dword i;
 	dword cursor_pos = lines.get(list.cur_y) + list.cur_x;
 
 	switch(key_scancode)
 	{
 		case SCAN_CODE_DOWN:
 		case SCAN_CODE_UP:
+		case SCAN_CODE_LEFT:
+		case SCAN_CODE_RIGHT:
 		case SCAN_CODE_HOME:
 		case SCAN_CODE_END:
 		case SCAN_CODE_PGUP:
 		case SCAN_CODE_PGDN:
-		return;
+			return;
 		case SCAN_CODE_BS:
+			if (selection.is_active()) {
+				EventDeleteSelectedText();
+			} else {
+				if (!list.cur_x) && (!list.cur_y) break;
+				textbuf.del(cursor_pos-1, cursor_pos);
+				if (!list.cur_x) && (list.cur_y) {
+					list.column_max = lines.len(list.cur_y-1);
+					list.KeyLeft();
+				}
+				list.KeyLeft();
+			}
+			ParseAndPaint();
+			return;
 		case SCAN_CODE_DEL:
-		notify("'Not supported yet'A");
-		return;
+			if (selection.is_active()) {
+				EventDeleteSelectedText();
+			} else {
+				if (cursor_pos < textbuf.p + textbuf.len) textbuf.del(cursor_pos, cursor_pos+1);
+			}
+			ParseAndPaint();
+			return;
+		default:
+			if (selection.is_active()) {
+				EventDeleteSelectedText();
+				Parse();
+			}
+			cursor_pos = lines.get(list.cur_y) + list.cur_x;
+			textbuf.insert_ch(cursor_pos, key_ascii);
+			list.KeyRight();
+			Parse();
+			list.column_max = lines.len(list.cur_y);
+			if (key_scancode == SCAN_CODE_ENTER) list.KeyRight();
+			DrawPage();
 	}
-
-	if (list.cur_x >= list.column_max) return;
-
-	ESBYTE[cursor_pos] = key_ascii;
-	list.KeyRight();
-	PaintVisible();
 }
 
 void EventOpenSysfuncs()
 {
-	if (io.run("/sys/docpack", "f") <= 0) {
+	if (RunProgram("/sys/docpack", "f") <= 0) {
 		notify("'Can not open SysFunctions because\n/rd/1/docpack is not found!'E");
 	}
 }
 
 void EventOpenPipet()
 {
-	io.run("/sys/develop/pipet", NULL);
+	RunProgram("/sys/develop/pipet", NULL);
 }
 
 void EventRbmMenuClick(dword id)
@@ -527,9 +527,10 @@ void EventRbmMenuClick(dword id)
 	}
 }
 
-void EventCut()
+void EventSelectAllText()
 {
-	//selection.copy();
+	selection.select_all();
+	DrawPage();
 }
 
 void EventCopy()
@@ -560,29 +561,49 @@ void EventCopy()
 	DrawStatusBar(#copy_status_text);
 }
 
+void EventCut()
+{
+	if (!selection.is_active()) {
+		selection.start_offset = lines.get(list.cur_y);
+		selection.end_offset = lines.get(list.cur_y+1);
+	}
+	EventCopy();
+	EventDeleteSelectedText();
+	ParseAndPaint();
+}
+
 void EventPaste()
 {
-	//selection.copy();
+	int i;
+	dword buf = Clipboard__GetSlotData(Clipboard__GetSlotCount()-1);
+	if (selection.is_active()) {
+		EventDeleteSelectedText();
+	} 
+	cursor_pos = lines.get(list.cur_y) + list.cur_x;
+	textbuf.insert_str(cursor_pos, buf+12, ESDWORD[buf]-12);
+	for (i=0; i<ESDWORD[buf]-12; i++) list.KeyRight();
+	ParseAndPaint();
+}
+
+void EventDeleteSelectedText()
+{
+	textbuf.del(selection.start_offset, selection.end_offset);
+	list.cur_x = math.min(selection.start_x, selection.end_x);
+	list.cur_y = math.min(selection.start_y, selection.end_y);
+	selection.cancel();
 }
 
 void EventRevealInFolder()
 {
-	RunProgram("/sys/File managers/Eolite", #param);
+	RunProgram("/sys/File managers/Eolite", #file_path);
 }
 
 void EventCopyFilePath()
 {
 	char copy_status_text[32];
-	Clipboard__CopyText(#param);
-	sprintf(#copy_status_text, #copied_chars, strlen(#param));
+	Clipboard__CopyText(#file_path);
+	sprintf(#copy_status_text, #copied_chars, strlen(#file_path));
 	DrawStatusBar(#copy_status_text);
-}
-
-void EventEnableEdit()
-{
-	enable_edit ^= 1;
-	if (enable_edit) notify("'Edit mode is enabled.\nNow you can only replace text, not insert, nor delete.'I");
-	draw_window();
 }
 
 //===================================================//
@@ -598,36 +619,36 @@ void EncodeToDos()
 	// Autodetecting charset
 	if (real_encoding == CH_AUTO) {
 		real_encoding = CH_CP866;
-		if (strstr(io.buffer_data, "\208\190")) real_encoding = CH_UTF8;
+		if (strstr(textbuf.p, "\208\190")) real_encoding = CH_UTF8;
 		else {
-			if (chrnum(io.buffer_data, '\246')>5) 
-			|| (strstr(io.buffer_data, "\239\240")) real_encoding = CH_CP1251;
+			if (chrnum(textbuf.p, '\246')>5)
+			|| (strstr(textbuf.p, "\239\240")) real_encoding = CH_CP1251;
 		}
 	}
 	if (real_encoding != CH_CP866) {
-		ChangeCharset(real_encoding, "CP866", io.buffer_data);		
+		ChangeCharset(real_encoding, "CP866", textbuf.p);
 	}
 }
 
-void LoadFile(dword f_path) 
+void LoadFile(dword f_path)
 {
-	if (io.buffer_data) free(io.buffer_data);
 	if (ESBYTE[f_path]) {
-		strcpy(#param, f_path);
-		if (!io.read(#param)) goto NO_DATA;
-		sprintf(#title, "%s - %s", #param, #short_app_name);
-		EncodeToDos();	
+		strcpy(#file_path, f_path);
+		if (!io.read(#file_path)) goto NO_DATA;
+		textbuf.set(io.buffer_data, io.FILES_SIZE);
+		free(io.buffer_data);
+		sprintf(#title, "%s - %s", #file_path, #short_app_name);
+		EncodeToDos();
 	}
 	else {
 		NO_DATA:
-		io.buffer_data = malloc(sizeof(intro));
-		strcpy(io.buffer_data, #intro);
-		strcpy(#title, #short_app_name); 
+		textbuf.set(#intro, sizeof(intro)-1);
+		strcpy(#title, #short_app_name);
 	}
 	list.ClearList();
 }
 
-int AddTopBarButton(dword _event, _hotkey, char image_id, int x, pressed) {
+int TopBarBt(dword _event, _hotkey, char image_id, int x, pressed) {
 	if (_hotkey) key.add_n(_hotkey, _event);
 	return DrawTopPanelButton(button.add(_event), x, 5, image_id, pressed);
 }
@@ -635,34 +656,32 @@ int AddTopBarButton(dword _event, _hotkey, char image_id, int x, pressed) {
 
 void DrawToolbar()
 {
-	#define SMALL_GAP 26+5
-	#define BIG_GAP 26+18
+	#define GAP_S 26+5
+	#define GAP_B 26+18
 	incn x;
 	bool thema = false;
 	bool reopa = false;
 
-	bool serha = search.draw(BTN_FIND_NEXT+10, BTN_FIND_CLOSE+10, Form.cheight - SEARCH_H - STATUSBAR_H);
 	if (menu_id == COLOR_SCHEME) thema = true;
 	if (menu_id == REOPEN_IN_APP) reopa = true;
 
 	DrawBar(0, 0, Form.cwidth, TOOLBAR_H - 1, sc.work);
 	DrawBar(0, TOOLBAR_H - 1, Form.cwidth, 1, sc.work_graph);
-	
-	x.set(-SMALL_GAP+8);
-	if(enable_edit) AddTopBarButton(#EventNewFile,        ECTRL+SCAN_CODE_KEY_N, 2,  x.inc(SMALL_GAP), false);
-	                AddTopBarButton(#EventOpenDialog,     ECTRL+SCAN_CODE_KEY_O, 0,  x.inc(SMALL_GAP), false);
-	if(enable_edit) && (param[0]) AddTopBarButton(#EventSave,           ECTRL+SCAN_CODE_KEY_S, 5,  x.inc(SMALL_GAP), false);
-	                AddTopBarButton(#EventShowFileInfo,   ECTRL+SCAN_CODE_KEY_I, 10, x.inc(SMALL_GAP), false);
-	                AddTopBarButton(#EventMagnifyMinus,   ECTRL+SCAN_CODE_MINUS, 33, x.inc(BIG_GAP),   false);
-	                AddTopBarButton(#EventMagnifyPlus,    ECTRL+SCAN_CODE_PLUS,  32, x.inc(SMALL_GAP), false);
-	                AddTopBarButton(#EventClickSearch,    ECTRL+SCAN_CODE_KEY_F, 49, x.inc(BIG_GAP),   serha);  search_mx = EAX;
+
+	x.set(-GAP_S+8);
+	TopBarBt(#EventNewFile,        ECTRL+SCAN_CODE_KEY_N, 2,  x.inc(GAP_S), false);
+	TopBarBt(#EventOpenDialog,     ECTRL+SCAN_CODE_KEY_O, 0,  x.inc(GAP_S), false);
+	TopBarBt(#EventSave,           ECTRL+SCAN_CODE_KEY_S, 5,  x.inc(GAP_S), false);
+	TopBarBt(#EventShowFileInfo,   ECTRL+SCAN_CODE_KEY_I, 10, x.inc(GAP_S), false);
+	TopBarBt(#EventMagnifyMinus,   ECTRL+SCAN_CODE_MINUS, 33, x.inc(GAP_B),   false);
+	TopBarBt(#EventMagnifyPlus,    ECTRL+SCAN_CODE_PLUS,  32, x.inc(GAP_S), false);
+	TopBarBt(#EventClickSearch,    ECTRL+SCAN_CODE_KEY_F, 49, x.inc(GAP_B),   search.visible);  search_mx = EAX;
 	x.set(Form.cwidth-4);
-	                AddTopBarButton(#EventEnableEdit,       NULL,                  38, x.inc(-SMALL_GAP), enable_edit);
-	//if(enable_edit) AddTopBarButton(#EventShowInfo,       NULL,                  -1, x.inc(-SMALL_GAP), false); burger_mx = EAX;
-	                AddTopBarButton(#EventShowThemesList, NULL,                  40, x.inc(-BIG_GAP), thema); theme_mx = EAX;
-	                AddTopBarButton(#EventShowReopenMenu, ECTRL+SCAN_CODE_KEY_E, 16, x.inc(-SMALL_GAP),   reopa); reopenin_mx = EAX;
-	if(enable_edit) AddTopBarButton(#EventOpenSysfuncs,   NULL,                  18, x.inc(-SMALL_GAP), false);
-	if(enable_edit) AddTopBarButton(#EventOpenPipet,      NULL,                  39, x.inc(-SMALL_GAP), false);
+	TopBarBt(#EventShowInfo,       NULL,                  -1, x.inc(-GAP_S), false); burger_mx = EAX;
+	TopBarBt(#EventShowThemesList, NULL,                  40, x.inc(-GAP_B), thema); theme_mx = EAX;
+	TopBarBt(#EventShowReopenMenu, ECTRL+SCAN_CODE_KEY_E, 16, x.inc(-GAP_S), reopa); reopenin_mx = EAX;
+	TopBarBt(#EventOpenSysfuncs,   NULL,                  18, x.inc(-GAP_S), false);
+	TopBarBt(#EventOpenPipet,      NULL,                  39, x.inc(-GAP_S), false);
 }
 
 void DrawStatusBar(dword _in_text)
@@ -673,7 +692,7 @@ void DrawStatusBar(dword _in_text)
 	DrawBar(0,Form.cheight - STATUSBAR_H, Form.cwidth,1, sc.work_graph);
 	DrawBar(0,Form.cheight - STATUSBAR_H+1, Form.cwidth,STATUSBAR_H-1, sc.work);
 	WriteText(5, Form.cheight - STATUSBAR_H + 4, 0x80, sc.work_text, #status_text);
-	if (param[0]) {
+	if (file_path[0]) {
 		WriteTextCenter(Form.cwidth-70, Form.cheight - STATUSBAR_H + 4,
 			60, sc.work_text, real_encoding*10+#charsets);
 		DefineHiddenButton(Form.cwidth-70, Form.cheight - STATUSBAR_H + 1,
@@ -684,53 +703,70 @@ void DrawStatusBar(dword _in_text)
 void draw_window()
 {
 	int old_w = list.w;
+	if (CheckActiveProcess(Form.ID)) EventMenuClick();
 	DefineAndDrawWindow(Form.left,Form.top,Form.width,Form.height,0x73,0,#title,0);
 	GetProcessInfo(#Form, SelfInfo);
 	sc.get();
 	if (Form.status_window>2) return;
 	if (Form.width  < 450) { MoveSize(OLD,OLD,450,OLD); return; }
 	if (Form.height < 200) { MoveSize(OLD,OLD,OLD,200); return; }
-	
+
 	button.init(40);
 	key.init(40);
 
-	SetSizes(font_size);
+	SetFontSize(font_size);
 
 	if ((list.w == old_w) && (list.count)) {
-		DrawPage(); 
+		DrawPage();
 	} else {
 		ParseAndPaint();
 	}
 
 	DrawToolbar();
+	DrawSearch();
 	DrawStatusBar(NULL);
 }
 
-void DrawPage()
+bool DrawSearch()
 {
-	scroll.max_area = list.count;
-	scroll.cur_area = list.visible;
-	scroll.position = list.first;
-	scroll.all_redraw = 0;
-	scroll.start_x = list.x + list.w;
-	scroll.start_y = list.y;
-	scroll.size_y = list.h;
-	scrollbar_v_draw(#scroll);
+	char matches[30];
+	int _y = Form.cheight - SEARCH_H - STATUSBAR_H;
+	if (!search.visible) return false;
+	DrawBar(0, _y, Form.cwidth, 1, sc.work_graph);
+	DrawBar(0, _y+1, Form.cwidth, SEARCH_H-1, sc.work);
 
-	DrawRectangle(scroll.start_x, scroll.start_y, scroll.size_x, 
-		scroll.size_y-1, scroll.bckg_col);
-	PaintVisible();
+	search_box.top = _y + 6;
+	search_box.width = math.min(Form.width - 200, 150);
+
+	DrawRectangle(search_box.left-1, search_box.top-1, search_box.width+2, 23,sc.work_graph);
+
+	edit_box_draw stdcall(#search_box);
+
+	DrawCaptButton(search_box.left+search_box.width+14, search_box.top-1, 30,
+		TOOLBAR_ICON_HEIGHT+1, BTN_FIND_PREVIOUS+10, sc.work_light, sc.work_text, "<");
+	DrawCaptButton(search_box.left+search_box.width+44, search_box.top-1, 30,
+		TOOLBAR_ICON_HEIGHT+1, BTN_FIND_NEXT+10, sc.work_light, sc.work_text, ">");
+
+	sprintf(#matches, T_MATCHES, search.found.count);
+	WriteTextWithBg(search_box.left+search_box.width+14+85,
+		search_box.top+3, 0xD0, sc.work_text, #matches, sc.work);
+
+	DefineHiddenButton(Form.cwidth-26, search_box.top-1, TOOLBAR_ICON_HEIGHT+1,
+		TOOLBAR_ICON_HEIGHT+1, BTN_FIND_CLOSE+10);
+	WriteText(Form.cwidth-26+7, search_box.top+2, 0x81, sc.work_graph, "x");
+	return true;
 }
 
-
-void SetSizes(char _size)
+void SetFontSize(char _size)
 {
 	font_size = _size;
-	if (font_size == 'S') list.SetFont(6, 9, 00001000b);
-	if (font_size == 'M') list.SetFont(8, 14, 00011000b);
+	if (font_size == 0) list.SetFont(  6,      9, 00001000b);
+	if (font_size == 1) list.SetFont(  8,     14, 00011000b);
+	if (font_size == 2) list.SetFont(2*6,    2*9, 00001001b);
+	if (font_size == 3) list.SetFont(2*8, 2*14-2, 00011001b);
 	list.item_w = list.font_w;
 	list.horisontal_selelection = true;
-	list.SetSizes(0, TOOLBAR_H, Form.cwidth-scroll.size_x-1, 
-		Form.cheight - TOOLBAR_H - calc(search.visible * SEARCH_H) - STATUSBAR_H /*- TAB_H*/, 
+	list.SetSizes(0, TOOLBAR_H, Form.cwidth-scroll.size_x-1,
+		Form.cheight - TOOLBAR_H - calc(search.visible * SEARCH_H) - STATUSBAR_H /*- TAB_H*/,
 		math.round(list.font_h * 1.4));
 }

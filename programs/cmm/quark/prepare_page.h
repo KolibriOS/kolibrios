@@ -1,43 +1,71 @@
 
 void ParseAndPaint()
 {
-	list.count=0;
-	selection.cancel();
-	if (list.w != canvas.bufw) canvas.Init(list.x, list.y, list.w, screen.height);
 	Parse();
-	DrawPage();	
+	DrawPage();
 }
 
 void Parse()
 {
-dword off;
+dword ptr;
 int line_end;
-dword line_length=0;
-dword line_start = io.buffer_data;
-dword buflen = strlen(io.buffer_data) + io.buffer_data;
+dword line_length = 0;
+dword line_start = textbuf.p;
+
+	list.count=0;
+	selection.cancel();
+	if (list.w != canvas.bufw) canvas.Init(list.x, list.y, list.w, screen.height);
 
 	lines.drop();
-	lines.add(io.buffer_data);
+	lines.add(textbuf.p);
 
-	for (off = io.buffer_data; off < buflen; off++)
+	for (ptr = textbuf.p;    ptr < textbuf.p + textbuf.len;    ptr++)
 	{
 		line_length += list.font_w;
-		if (line_length + 30 >= list.w) || (ESBYTE[off] == 10)
+		if (line_length + 30 >= list.w) || (ESBYTE[ptr] == '\n')
 		{
+			//if (ESBYTE[ptr+1] == '\r') ptr++;
+			
 			//searching a 'white' for a normal word-break
-			for(line_end = off; line_end != line_start; line_end--) 
+			for(line_end = ptr; line_end != line_start; line_end--)
 			{
-				if (__isWhite(ESBYTE[line_end])) { off=line_end+1; break; }
+				if (__isWhite(ESBYTE[line_end])) { ptr=line_end+1; break; }
 			}
-			line_length = off - line_start * list.font_w;
+			line_length = ptr - line_start * list.font_w;
 			list.count++;
-			lines.add(off);
-			line_start = off;
+			lines.add(ptr);
+			line_start = ptr;
 			line_length = 0;
 		}
 	}
-	lines.add(buflen);
+	lines.add(ptr);
 	list.count++;
+}
+
+void DrawPage()
+{
+	char t[64];
+	scroll.max_area = list.count;
+	scroll.cur_area = list.visible;
+	scroll.position = list.first;
+	scroll.all_redraw = 0;
+	scroll.start_x = list.x + list.w;
+	scroll.start_y = list.y;
+	scroll.size_y = list.h;
+
+	if (list.count <= list.visible) {
+		DrawBar(scroll.start_x, scroll.start_y, scroll.size_x,
+		scroll.size_y, theme.bg);
+	} else {
+		scrollbar_v_draw(#scroll);
+	}
+	DrawRectangle(scroll.start_x, scroll.start_y, scroll.size_x,
+		scroll.size_y-1, scroll.bckg_col);
+
+	PaintVisible();
+
+	sprintf(#t, #chars_selected, math.abs(selection.end_offset - selection.start_offset));
+	if (selection.is_active()) DrawStatusBar(#t); else DrawStatusBar(" ");
 }
 
 void PaintVisible()
@@ -78,7 +106,7 @@ void PaintVisible()
 			}
 		}
 
-		if (absolute_y<list.count) canvas.WriteText(3, ydraw+3, list.font_type, theme.text, 
+		if (absolute_y<list.count) canvas.WriteText(3, ydraw+3, list.font_type, theme.text,
 			lines.get(absolute_y), lines.len(absolute_y));
 	}
 
