@@ -65,18 +65,18 @@ otherwise, these characters will be displayed like ordinary characters. */
 		30 = black characters
 		31 = red characters
 		32 = green characters
-		33 = brown characters
+		33 = yellow characters
 		34 = blue characters
-		35 = purple characters
-		36 = turqoise characters
+		35 = magenta characters
+		36 = cyan characters
 		37 = white characters
 		40 = black background
 		41 = red background
 		42 = green background
-		43 = brown background
+		43 = yellow background
 		44 = blue background
-		45 = purple background
-		46 = turqoise background
+		45 = magenta background
+		46 = cyan background
 		47 = white background
 	The following sequences appeared in version 5 of library:
 	Esc[2J - clear screen, move cursor to upper left corner
@@ -99,7 +99,7 @@ int __stdcall con_get_cursor_height(void);
 Get the height of the cursor.
 int __stdcall con_set_cursor_height(int new_height);
 Set the height of the cursor. This function returns previous value.
-An attempt to set the value out of the correct interval (from 0 to 
+An attempt to set the value out of the correct interval (from 0 to
 font_height-1) is ignored.
 Cursor with zero height isn't displayed.
 Default value: - 15% from  font height.
@@ -107,26 +107,26 @@ Default value: - 15% from  font height.
 int __stdcall con_getch(void);
 Get one character from the keyboard.
 
-For normal characters function returns ASCII-code. For extended 
+For normal characters function returns ASCII-code. For extended
 characters (eg, Fx, and arrows), first function call returns 0
-and second call returns the extended code (similar to the DOS-function 
+and second call returns the extended code (similar to the DOS-function
 input). Starting from version 7, after closing the console window,
 this function returns 0.
 
 word __stdcall con_getch2(void);
-Reads a character from the keyboard. Low byte contains the ASCII-code 
-(0 for extended characters), high byte - advanced code (like in BIOS 
+Reads a character from the keyboard. Low byte contains the ASCII-code
+(0 for extended characters), high byte - advanced code (like in BIOS
 input functions). Starting from version 7, after closing the console
 window, this function returns 0.
 
 int __stdcall con_kbhit(void);
 Returns 1 if a key was pressed, 0 otherwise. To read pressed keys use
-con_getch and con_getch2. Starting from version 6, after closing 
+con_getch and con_getch2. Starting from version 6, after closing
 the console window, this function returns 1.
 
 char* __stdcall con_gets(char* str, int n);
 Reads a string from the keyboard. Reading is interrupted when got
-"new line" character, or after reading the (n-1) characters (depending on 
+"new line" character, or after reading the (n-1) characters (depending on
 what comes first). In the first case the newline is also recorded in the
 str. The acquired line is complemented by a null character.
 Starting from version 6, the function returns a pointer to the entered
@@ -137,16 +137,16 @@ char* __stdcall con_gets2(con_gets2_callback callback, char* str, int n);
 Con_gets completely analogous, except that when the user
 press unrecognized key, it calls the specified callback-procedure
 (which may, for example, handle up / down for history and tab to enter
-autocompletion). You should pass to the procedure: key code and three pointers 
-- to the string, to the maximum length and to the current position. 
-function may change the contents of string and may change the string 
-itself (for example, to reallocate memory for increase the limit), 
+autocompletion). You should pass to the procedure: key code and three pointers
+- to the string, to the maximum length and to the current position.
+function may change the contents of string and may change the string
+itself (for example, to reallocate memory for increase the limit),
 maximum length, and position of the line - pointers are passed for it.
 Return value: 0 = line wasn't changed 1 = line changed, you should
-remove old string and display new, 2 = line changed, it is necessary 
+remove old string and display new, 2 = line changed, it is necessary
 to display it; 3 = immediately exit the function.
 Starting from version 6, the function returns a pointer to the entered
-line with the successful reading, and NULL if the console window was closed. 
+line with the successful reading, and NULL if the console window was closed.
 
 void __stdcall con_cls();
 Clear screen and set cursor at upper left corner.
