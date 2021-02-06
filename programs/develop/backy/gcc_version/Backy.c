@@ -47,9 +47,6 @@ char state;
 
 int main(int argc, char** argv)
 {
-    load_console();
-
-    con_set_title("Backy");
 
 // ============================================================ //
 // preprocessing arguments from the command line. ============= //
@@ -151,6 +148,8 @@ int main(int argc, char** argv)
     }
     else
     {
+   	    load_console();
+
         con_set_title("Useful info!");
 
         #if defined (lang_en)
@@ -375,6 +374,9 @@ int main(int argc, char** argv)
 
     if(data == 0)
     {
+   	    load_console();
+        con_set_title("Backy");
+
         #if defined (lang_en)
 
             con_printf("\nThe file isn't found!\n");

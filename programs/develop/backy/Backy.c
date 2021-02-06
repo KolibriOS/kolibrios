@@ -47,9 +47,6 @@ char state;
 
 int main(int argc, char** argv)
 {
-    if (con_init_console_dll()) return 1; // init fail.
-
-    con_set_title("Backy");
 
 // ============================================================ //
 // preprocessing arguments from the command line. ============= //
@@ -151,13 +148,15 @@ int main(int argc, char** argv)
     }
     else
     {
+    	if (con_init_console_dll()) return 1; // init fail.
+
         con_set_title("Useful info!");
 
         #if defined (lang_en)
 
             con_printf("\n Name: Backy");
             con_printf("\n Date: %s", CREATION_DATE);
-            con_printf("\n Description: The programme for backing up a file.\n");
+            con_printf("\n Description: The programm for backing up a file.\n");
 
             con_printf("\n Author: JohnXenox\n");
 
@@ -375,6 +374,9 @@ int main(int argc, char** argv)
 
     if(data == 0)
     {
+    	if (con_init_console_dll()) return 1; // init fail.
+        con_set_title("Backy");
+
         #if defined (lang_en)
 
             con_printf("\nThe file isn't found!\n");
