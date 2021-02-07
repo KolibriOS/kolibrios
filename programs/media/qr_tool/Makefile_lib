@@ -1,0 +1,26 @@
+CC = kos32-gcc
+AR = kos32-ar
+
+SDK_DIR:= /home/programist/KOS_SVN/contrib/sdk
+
+INCLUDES= -Ilib -I$(SDK_DIR)/sources/newlib/libc/include
+
+CFLAGS = -O2 -std=c99 -Wall -W #-D_FILE_OFFSET_BITS=64
+ARFLAGS = -rcs
+
+SOURCES = lib/decode.c lib/identify.c lib/quirc.c lib/version_db.c
+HEADERS = lib/quirc.h lib/quirc_internal.h
+OBJECTS =  $(patsubst %.c, %.o, $(SOURCES))
+
+.PHONY: all clean
+
+all: libquirc.a
+
+libquirc.a: $(OBJECTS)
+	$(AR) $(ARFLAGS) $@ $(OBJECTS)
+
+%.o : %.c $(HEADERS) Makefile
+	$(CC) -c $(INCLUDES) $(CFLAGS) -o $@ $<
+
+clean:
+	rm -f *.o lib/*.o libquirc.a
