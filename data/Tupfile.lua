@@ -67,7 +67,7 @@ img_files = {
  {"SETTINGS/NETWORK.INI", "common/settings/network.ini"},
  {"SETTINGS/SYSTEM.INI", "common/settings/system.ini"},
  {"SETTINGS/TASKBAR.INI", "common/settings/taskbar.ini"},
- {"SETTINGS/WEATHER.JSON", PROGS .. "/other/Weather/weather.json"},   
+ {"SETTINGS/weather.json", PROGS .. "/other/Weather/weather.json"},   
 }
 
 -- For russian build, add russian-only files.

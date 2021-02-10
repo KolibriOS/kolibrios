@@ -45,6 +45,7 @@ unsigned WINDOW_W = 230;
 #define IMAGE_URL "openweathermap.org/img/w/%s.png"
   
 Image *blend=NULL;
+const char *config_name = "/sys/Settings/weather.json";
 
 unsigned char char_size=1;
 uint64_t AutoUpdateTime = 0;
@@ -228,12 +229,12 @@ void RedrawGUI() // Перересовываем интерфейс
 
 void get_config(char **City, char **Token, char **Units) // Загружаем конфиг 
 {
-    FILE *config_j = fopen("/sys/Settings/weather.json", "rb"); 
+    FILE *config_j = fopen(config_name, "rb"); 
     if(config_j==NULL){
         notify_show("'Configuration file not found!' -E");
         exit(0);
     }
-    size_t size = _ksys_get_filesize("weather.json"); // Получаем размер файла
+    size_t size = _ksys_get_filesize((char*)config_name); // Получаем размер файла
     char *config_buff = safe_malloc(size+1);
     if(size != fread(config_buff, sizeof(char), size, config_j)){
         notify_show("'The configuration file was not fully read!' -E");
