@@ -228,7 +228,7 @@ void RedrawGUI() // Перересовываем интерфейс
 
 void get_config(char **City, char **Token, char **Units) // Загружаем конфиг 
 {
-    FILE *config_j = fopen("weather.json", "rb"); 
+    FILE *config_j = fopen("/sys/Settings/weather.json", "rb"); 
     if(config_j==NULL){
         notify_show("'Configuration file not found!' -E");
         exit(0);
