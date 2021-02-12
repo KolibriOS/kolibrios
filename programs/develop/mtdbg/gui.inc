@@ -133,6 +133,8 @@ start:
         ; initialize process heap
         mcall   68, 11
 
+        call	init_cmd_hist_buffer
+
         push    eax
         fstcw   word [esp]
         pop     eax
@@ -210,7 +212,7 @@ waitevent:
         pop     edx
         mov     edx, [btn2_tab+edx*4]
         mov     edi, COLOR_BG_NORMAL
-        mov     ecx, ((FONT and 11b) shl 28 or ((FONT_MULTIPLIER - 1) and 111b) shl 24 or COLOR_TXT_NORMAL or 0x40000000)
+        mov     ecx, ((FONT) shl 28 or ((FONT_MULTIPLIER - 1) and 111b) shl 24 or COLOR_TXT_NORMAL or 0x40000000)
         mov     esi, 7
         mov     ebx, [registers_x_pos_dd]
         add     ebx, 4*10000h+REGISTERS_Y_POS
@@ -251,6 +253,7 @@ keypressed:
         jz      F7
         cmp     ah, 0x42
         jz      F8
+        mov	[cmd_hist_buffer.tmp_line_flag], 0
         cmp     [cmdline_len], CMD_WIDTH
         jae     waitevent
         push    eax
@@ -269,14 +272,17 @@ keypressed:
         call    draw_cmdline_end
         inc     [cmdline_pos]
         call    draw_cursor
+
         jmp     waitevent
 
     .backspace:
+	mov	[cmd_hist_buffer.tmp_line_flag], 0
         cmp     [cmdline_pos], 0
         jz      waitevent
         dec     [cmdline_pos]
 
     .delchar:
+	mov	[cmd_hist_buffer.tmp_line_flag], 0
         call    clear_cmdline_end
         mov     edi, [cmdline_pos]
         dec     [cmdline_len]
@@ -324,9 +330,71 @@ keypressed:
         mov     [cmdline_pos], eax
         call    draw_cursor
 
-    .up:
-    .down:
-        jmp     waitevent
+	.up:
+		xor	edx, edx
+		jmp	.hist
+
+	.down:
+		xor	edx, edx
+		inc	edx
+
+	.hist:
+		cmp	[cmd_hist_buffer.tmp_line_flag], 1
+		je	@f
+		mov	eax, cmdline
+		mov	ecx, [cmdline_len]
+		mov	byte [eax + ecx], 0
+		call	add_cmd_hist_tmp_line
+
+	@@:
+		test	edx, edx
+		jnz	.hist.next
+		cmp	[cmd_hist_buffer.n_flag], 0
+		jne	@f
+		call	get_cmd_hist_line
+		inc	[cmd_hist_buffer.n_flag]
+		jmp	.hist.cp_line
+
+	@@:
+		call	prev_cmd_hist_line
+		jc	waitevent
+		call	get_cmd_hist_line
+		inc	[cmd_hist_buffer.n_flag]
+		jmp	.hist.cp_line
+
+	.hist.next:
+		cmp	[cmd_hist_buffer.n_flag], 0
+		je	waitevent
+
+		call	next_cmd_hist_line
+		call	get_cmd_hist_line
+		jnc	.hist.cp_line
+		call	get_cmd_hist_tmp_line
+		mov	[cmd_hist_buffer.tmp_line_flag], 0
+		mov	[cmd_hist_buffer.n_flag], 0
+
+	.hist.cp_line:
+
+		mov	esi, eax
+		mov	edi, cmdline
+		xor	ecx, ecx
+
+	@@:
+		inc	ecx
+		lodsb
+		stosb
+		test	al, al
+		jnz	@b
+
+		dec	ecx
+		mov	[cmdline_pos], 0
+		call    clear_cmdline_end
+		mov	[cmdline_len], ecx
+		mov	[cmdline_pos], ecx
+		call	draw_cmdline
+		call    draw_cursor
+
+		jmp     waitevent
 
         ; We also trying to execute previous command, if empty command_line
     .enter:
@@ -346,6 +414,11 @@ keypressed:
 
     .exec:
         mov     byte [esi+ecx], 0
+
+        mov	eax, esi
+        call	add_cmd_hist_line
+        mov	[cmd_hist_buffer.n_flag], 0
+
         and     [cmdline_pos], 0
         push    esi
         call    clear_cmdline_end
@@ -438,6 +511,8 @@ z1:
 ;                            Cmdline handling
 
 clear_cmdline_end:
+	pusha
+
         mov     ebx, [cmdline_pos]
         mov     ecx, [cmdline_len]
         sub     ecx, ebx
@@ -452,6 +527,8 @@ clear_cmdline_end:
         mov     edx, COLOR_BG_NORMAL
         ; draw container rectangle/box for cmdline
         mcall   13
+
+        popa
         ret
 
 draw_cmdline:
@@ -466,7 +543,7 @@ draw_cmdline_end:
         mov     esi, [cmdline_len]
         sub     esi, ebx
 
-        mov     ecx, (FONT and 11b) shl 28 or ((FONT_MULTIPLIER - 1) and 111b) shl 24 or COLOR_TXT_NORMAL
+        mov     ecx, (FONT) shl 28 or ((FONT_MULTIPLIER - 1) and 111b) shl 24 or COLOR_TXT_NORMAL
         lea     edx, [cmdline+ebx]
         imul    ebx, FONT_X_SIZE
         add     ebx, CMD_X_POS
@@ -587,7 +664,7 @@ draw_messages:
         mov     edx, messages
         push    MSG_WIDTH
         pop     esi
-        mov     ecx, (FONT and 11b) shl 28 or ((FONT_MULTIPLIER - 1) and 111b) shl 24 or COLOR_TXT_NORMAL
+        mov     ecx, (FONT) shl 28 or ((FONT_MULTIPLIER - 1) and 111b) shl 24 or COLOR_TXT_NORMAL
         mov     ebx, MSG_X_POS*10000h
         mov     bx, word[messages_y_pos_dd+4]
 
@@ -605,6 +682,8 @@ draw_messages:
 
 ; TODO: make it cursor.draw and cursor.hide ???
 draw_cursor:
+	pusha
+
         mov     ecx, [cmdline_y_pos_dd+2]
         add     cx, CMD_Y_SIZE-1
         mov     ebx, [cmdline_pos]
@@ -613,9 +692,11 @@ draw_cursor:
         mov     edx, ebx
         shl     ebx, 16
         or      ebx, edx
-        mov     edx, (FONT and 11b) shl 28 or ((FONT_MULTIPLIER - 1) and 111b) shl 24 or COLOR_TXT_NORMAL
+        mov     edx, (FONT) shl 28 or ((FONT_MULTIPLIER - 1) and 111b) shl 24 or COLOR_TXT_NORMAL
         ; draw line
         mcall   38
+
+        popa
         ret
 
 hide_cursor:
@@ -633,7 +714,7 @@ hide_cursor:
         cmp     ebx, [cmdline_len]
         jae     .ret
         ; setting up text color scheme and attributes
-        mov     ecx, (FONT and 11b) shl 28 or ((FONT_MULTIPLIER - 1) and 111b) shl 24 or COLOR_TXT_NORMAL
+        mov     ecx, (FONT) shl 28 or ((FONT_MULTIPLIER - 1) and 111b) shl 24 or COLOR_TXT_NORMAL
         lea     edx, [cmdline+ebx]
         imul    ebx, FONT_X_SIZE
         add     ebx, CMD_X_POS
@@ -686,7 +767,7 @@ draw_title:
         mov     al, 4
         mov     ebx, TITLE_X_POS*10000h+TITLE_Y_POS
         ; setting up text color scheme and attributes
-        mov     ecx, (FONT and 11b) shl 28 or ((FONT_MULTIPLIER - 1) and 111b) shl 24 or COLOR_TXT_NORMAL
+        mov     ecx, (FONT) shl 28 or ((FONT_MULTIPLIER - 1) and 111b) shl 24 or COLOR_TXT_NORMAL
         mov     edx, NoPrgLoaded_str
         cmp     [debuggee_pid], 0
         jz      @f
@@ -710,7 +791,7 @@ draw_title:
 
     @@:
         ; draw line with COLOR_LINE (in edx) in one case
-        ; and draw text string with color (FONT and 11b) shl 28 or ((FONT_MULTIPLIER - 1) and 111b) shl 24 or COLOR_TXT_NORMAL (in ecx) in another
+        ; and draw text string with color (FONT) shl 28 or ((FONT_MULTIPLIER - 1) and 111b) shl 24 or COLOR_TXT_NORMAL (in ecx) in another
         mcall
         ret
 
@@ -742,16 +823,16 @@ draw_register:
 
         mov     eax, [esi]
 
-        mov     ecx, ((FONT and 11b) shl 28 or ((FONT_MULTIPLIER - 1) and 111b) shl 24 or COLOR_TXT_INACTIVE or 0x40000000)
+        mov     ecx, ((FONT) shl 28 or ((FONT_MULTIPLIER - 1) and 111b) shl 24 or COLOR_TXT_INACTIVE or 0x40000000)
         cmp     [debuggee_pid], 0
         jz      .cd
         cmp     [bSuspended], 0
         jz      .cd
 
-        mov     ecx, ((FONT and 11b) shl 28 or ((FONT_MULTIPLIER - 1) and 111b) shl 24 or COLOR_TXT_NORMAL or 0x40000000)
+        mov     ecx, ((FONT) shl 28 or ((FONT_MULTIPLIER - 1) and 111b) shl 24 or COLOR_TXT_NORMAL or 0x40000000)
         cmp     eax, dword [esi+oldcontext-context]
         je      .cd
-        mov     ecx, ((FONT and 11b) shl 28 or ((FONT_MULTIPLIER - 1) and 111b) shl 24 or COLOR_TXT_CHANGED or 0x40000000)
+        mov     ecx, ((FONT) shl 28 or ((FONT_MULTIPLIER - 1) and 111b) shl 24 or COLOR_TXT_CHANGED or 0x40000000)
 .cd:
         push    eax                       ;store reg value
 
@@ -1025,13 +1106,13 @@ draw_fpu_register_2:
 
 .display:
 
-        mov     ecx, ((FONT and 11b) shl 28 or ((FONT_MULTIPLIER - 1) and 111b) shl 24 or COLOR_TXT_INACTIVE or 0x40000000)
+        mov     ecx, ((FONT) shl 28 or ((FONT_MULTIPLIER - 1) and 111b) shl 24 or COLOR_TXT_INACTIVE or 0x40000000)
         cmp     [debuggee_pid], 0
         jz      .do_label
         cmp     [bSuspended], 0
         jz      .do_label
 
-        mov     ecx, ((FONT and 11b) shl 28 or ((FONT_MULTIPLIER - 1) and 111b) shl 24 or COLOR_TXT_NORMAL or 0x40000000)
+        mov     ecx, ((FONT) shl 28 or ((FONT_MULTIPLIER - 1) and 111b) shl 24 or COLOR_TXT_NORMAL or 0x40000000)
 
         mov     eax, dword [_st0+ebp]
         cmp     eax, dword [_st0+(oldcontext-context)+ebp]
@@ -1046,7 +1127,7 @@ draw_fpu_register_2:
         je      .do_label
 
 .scol:
-        mov     ecx, ((FONT and 11b) shl 28 or ((FONT_MULTIPLIER - 1) and 111b) shl 24 or COLOR_TXT_CHANGED or 0x40000000)
+        mov     ecx, ((FONT) shl 28 or ((FONT_MULTIPLIER - 1) and 111b) shl 24 or COLOR_TXT_CHANGED or 0x40000000)
 
 .do_label:
         ; draw a text string in the window
@@ -1091,13 +1172,13 @@ draw_mmx_register_2:
         stosb
         call    .hex_2_str
 
-        mov     ecx, ((FONT and 11b) shl 28 or ((FONT_MULTIPLIER - 1) and 111b) shl 24 or COLOR_TXT_INACTIVE or 0x40000000)
+        mov     ecx, ((FONT) shl 28 or ((FONT_MULTIPLIER - 1) and 111b) shl 24 or COLOR_TXT_INACTIVE or 0x40000000)
         cmp     [debuggee_pid], 0
         jz      .cd
         cmp     [bSuspended], 0
         jz      .cd
 
-        mov     ecx, ((FONT and 11b) shl 28 or ((FONT_MULTIPLIER - 1) and 111b) shl 24 or COLOR_TXT_NORMAL or 0x40000000)
+        mov     ecx, ((FONT) shl 28 or ((FONT_MULTIPLIER - 1) and 111b) shl 24 or COLOR_TXT_NORMAL or 0x40000000)
 
         mov     eax, dword [_mm0+ebp]
         cmp     eax, dword [_mm0+(oldcontext-context)+ebp]
@@ -1108,7 +1189,7 @@ draw_mmx_register_2:
         je     .cd
 
 .scol:
-        mov     ecx, ((FONT and 11b) shl 28 or ((FONT_MULTIPLIER - 1) and 111b) shl 24 or COLOR_TXT_CHANGED or 0x40000000)
+        mov     ecx, ((FONT) shl 28 or ((FONT_MULTIPLIER - 1) and 111b) shl 24 or COLOR_TXT_CHANGED or 0x40000000)
 .cd:
         ; draw a text string in the window
 
@@ -1200,20 +1281,20 @@ draw_flag:
         and     byte [edx], not 20h
 
     .onoff:
-        mov     ecx, ((FONT and 11b) shl 28 or ((FONT_MULTIPLIER - 1) and 111b) shl 24 or COLOR_TXT_INACTIVE or 0x40000000)
+        mov     ecx, ((FONT) shl 28 or ((FONT_MULTIPLIER - 1) and 111b) shl 24 or COLOR_TXT_INACTIVE or 0x40000000)
         cmp     [debuggee_pid], 0
         jz      .doit
         cmp     [bSuspended], 0
         jz      .doit
 
-        mov     ecx, ((FONT and 11b) shl 28 or ((FONT_MULTIPLIER - 1) and 111b) shl 24 or COLOR_TXT_NORMAL or 0x40000000)
+        mov     ecx, ((FONT) shl 28 or ((FONT_MULTIPLIER - 1) and 111b) shl 24 or COLOR_TXT_NORMAL or 0x40000000)
         bt      [_eflags], edi
         lahf
         bt      dword [_eflags + oldcontext - context], edi
         rcl     ah, 1
         test    ah, 3
         jp      .doit
-        mov     ecx, ((FONT and 11b) shl 28 or ((FONT_MULTIPLIER - 1) and 111b) shl 24 or COLOR_TXT_CHANGED or 0x40000000)
+        mov     ecx, ((FONT) shl 28 or ((FONT_MULTIPLIER - 1) and 111b) shl 24 or COLOR_TXT_CHANGED or 0x40000000)
 
     .doit:
         mov     ah, 0
@@ -1230,11 +1311,11 @@ draw_flag:
 ; Also show current register set (common + MMX, SSE or AVX)
 draw_reg_title:
         mov     edi, COLOR_BG_NORMAL
-        mov     ecx, ((FONT and 11b) shl 28 or ((FONT_MULTIPLIER - 1) and 111b) shl 24 or COLOR_TXT_NORMAL or 0x40000000)
+        mov     ecx, ((FONT) shl 28 or ((FONT_MULTIPLIER - 1) and 111b) shl 24 or COLOR_TXT_NORMAL or 0x40000000)
         mov     esi, 7
         cmp     [reg_mode], REG_MODE_CPU
         jz      @f
-        mov     ecx, ((FONT and 11b) shl 28 or ((FONT_MULTIPLIER - 1) and 111b) shl 24 or COLOR_TXT_INACTIVE or 0x40000000)
+        mov     ecx, ((FONT) shl 28 or ((FONT_MULTIPLIER - 1) and 111b) shl 24 or COLOR_TXT_INACTIVE or 0x40000000)
     @@:
         movzx   edx, [fpu_mode]
         mov     edx, [btn2_tab+edx*4]
@@ -1246,7 +1327,7 @@ draw_reg_title:
 
         cmp     [reg_mode], REG_MODE_SSE
         jz      @f
-        mov     ecx, ((FONT and 11b) shl 28 or ((FONT_MULTIPLIER - 1) and 111b) shl 24 or COLOR_TXT_INACTIVE or 0x40000000)
+        mov     ecx, ((FONT) shl 28 or ((FONT_MULTIPLIER - 1) and 111b) shl 24 or COLOR_TXT_INACTIVE or 0x40000000)
     @@:
         mov     edx, aSSE
         ; draw a text string in the window
@@ -1256,7 +1337,7 @@ draw_reg_title:
 
         cmp     [reg_mode], REG_MODE_AVX
         jz      @f
-        mov     ecx, ((FONT and 11b) shl 28 or ((FONT_MULTIPLIER - 1) and 111b) shl 24 or COLOR_TXT_INACTIVE or 0x40000000)
+        mov     ecx, ((FONT) shl 28 or ((FONT_MULTIPLIER - 1) and 111b) shl 24 or COLOR_TXT_INACTIVE or 0x40000000)
     @@:
         mov     edx, aAVX
         ; draw a text string in the window
@@ -1324,12 +1405,12 @@ draw_main_registers:
   .fpu:
         call    draw_fpu_regs
     @@:
-        mov     ecx, (FONT and 11b) shl 28 or ((FONT_MULTIPLIER - 1) and 111b) shl 24 or COLOR_TXT_INACTIVE
+        mov     ecx, (0 and 11b) shl 28 or ((FONT_MULTIPLIER - 1) and 111b) shl 24 or COLOR_TXT_INACTIVE
         cmp     [debuggee_pid], 0
         jz      @f
         cmp     [bSuspended], 0
         jz      @f
-        mov     ecx, (FONT and 11b) shl 28 or ((FONT_MULTIPLIER - 1) and 111b) shl 24 or COLOR_TXT_NORMAL
+        mov     ecx, (0 and 11b) shl 28 or ((FONT_MULTIPLIER - 1) and 111b) shl 24 or COLOR_TXT_NORMAL
     @@:
         mov     edx, aColon
         xor     esi, esi
@@ -1404,12 +1485,12 @@ draw_dump:
         mov     edx, DATA_X_POS*10000h + DUMP_Y_POS
         mov     ecx, [dumppos]
         mov     edi, COLOR_BG_NORMAL
-        mov     esi, ((FONT and 11b) shl 28 or ((FONT_MULTIPLIER - 1) and 111b) shl 24 or COLOR_TXT_INACTIVE or 0x40000000)
+        mov     esi, ((FONT) shl 28 or ((FONT_MULTIPLIER - 1) and 111b) shl 24 or COLOR_TXT_INACTIVE or 0x40000000)
         cmp     [debuggee_pid], 0
         jz      @f
         cmp     [bSuspended], 0
         jz      @f
-        mov     esi, ((FONT and 11b) shl 28 or ((FONT_MULTIPLIER - 1) and 111b) shl 24 or COLOR_TXT_NORMAL or 0x40000000)
+        mov     esi, ((FONT) shl 28 or ((FONT_MULTIPLIER - 1) and 111b) shl 24 or COLOR_TXT_NORMAL or 0x40000000)
     @@:
         ; draw a number in the window
         mcall   47
@@ -1541,7 +1622,7 @@ draw_disasm:
         push    ebx
         lea     ecx, [ebx+DISASM_Y_POS-1]
         shl     ecx, 16
-        mov     cl, 11
+        mov     cl, FONT_Y_SIZE+TEXT_Y_CLEARANCE
         ; setting up background color for disassembled text
         mov     edx, COLOR_BG_NORMAL
         ; draw container rectangle/box with color COLOR_BG_NORMAL (was 0xFFFFFF - white)
@@ -1562,26 +1643,26 @@ draw_disasm:
         sub     esi, edx
         ; normal color
         ; was 0x40000000
-        mov     ecx, ((FONT and 11b) shl 28 or ((FONT_MULTIPLIER - 1) and 111b) shl 24 or COLOR_TXT_LABEL or 0x40000000)
+        mov     ecx, ((FONT) shl 28 or ((FONT_MULTIPLIER - 1) and 111b) shl 24 or COLOR_TXT_LABEL or 0x40000000)
         mov     al, 4
         ; draw a text string in the window with color COLOR_TXT_NORMAL in ecx
         mcall
         mov     byte [esi+edx-1], 0
-        lea     esi, [esi*3]
-        movzx   ecx, bx
-        shr     ebx, 16
-        lea     ebx, [ebx+esi*2]
-        shl     ecx, 16
-        mov     cl, 10
-        imul    ebx, 10001h
-        sub     bx, DATA_X_POS
-        sub     bx, word[data_x_size_dd+4]
-        neg     bx
-        mov     al, 13
-        ; copy color value from edi
-        mov     edx, edi
-        ; draw container rectangle/box for disassembled text, color in edx
-        mcall
+;         lea     esi, [esi*3]
+;         movzx   ecx, bx
+;         shr     ebx, 16
+;         lea     ebx, [ebx+esi*2]
+;         shl     ecx, 16
+;         mov     cl, 10
+;         imul    ebx, 10001h
+;         sub     bx, DATA_X_POS
+;         sub     bx, word[data_x_size_dd+4]
+;         neg     bx
+;         mov     al, 13
+;         copy color value from edi
+;         mov     edx, edi
+;         draw container rectangle/box for disassembled text, color in edx
+;         mcall
         inc     [disasm_cur_str]
         mov     eax, [disasm_height_dd]
         cmp     [disasm_cur_str], eax
@@ -1593,7 +1674,7 @@ draw_disasm:
         pop     ebp
         jc      .loopend
         mov     edx, COLOR_BG_NORMAL
-        mov     esi, (FONT and 11b) shl 28 or ((FONT_MULTIPLIER - 1) and 111b) shl 24 or COLOR_TXT_NORMAL
+        mov     esi, (FONT) shl 28 or ((FONT_MULTIPLIER - 1) and 111b) shl 24 or COLOR_TXT_NORMAL
         mov     ebx, DATA_X_POS*10000h
         add     ebx, [data_x_size_dd+4]
         mov     ecx, [disasm_cur_str]
@@ -1605,14 +1686,14 @@ draw_disasm:
         popad
         jnz     .nobp
         mov     edx, COLOR_BG_BREAKPOINT
-        mov     esi, (FONT and 11b) shl 28 or ((FONT_MULTIPLIER - 1) and 111b) shl 24 or COLOR_TXT_BREAKPOINT
+        mov     esi, (FONT) shl 28 or ((FONT_MULTIPLIER - 1) and 111b) shl 24 or COLOR_TXT_BREAKPOINT
     .nobp:
 
         mov     eax, [_eip]
         cmp     eax, ebp
         jnz     .notcurrent
         mov     edx, COLOR_BG_SELECTED
-        mov     esi, (FONT and 11b) shl 28 or ((FONT_MULTIPLIER - 1) and 111b) shl 24 or COLOR_TXT_SELECTED
+        mov     esi, (FONT) shl 28 or ((FONT_MULTIPLIER - 1) and 111b) shl 24 or COLOR_TXT_SELECTED
     .notcurrent:
         push    esi     ; Save color value for disassembled text
 
@@ -1640,11 +1721,11 @@ draw_disasm:
         sub     ecx, [disasm_start_pos]
         add     ecx, disasm_buffer
 
-        mov     esi, (FONT and 11b) shl 28 or ((FONT_MULTIPLIER - 1) and 111b) shl 24 or COLOR_TXT_HEX
+        mov     esi, (FONT) shl 28 or ((FONT_MULTIPLIER - 1) and 111b) shl 24 or COLOR_TXT_HEX
         mov     eax, [_eip]
         cmp     eax, ebp
         jnz     @f
-        mov     esi, (FONT and 11b) shl 28 or ((FONT_MULTIPLIER - 1) and 111b) shl 24 or COLOR_TXT_SELECTED
+        mov     esi, (FONT) shl 28 or ((FONT_MULTIPLIER - 1) and 111b) shl 24 or COLOR_TXT_SELECTED
   @@:
     .drawhex:
         ; draw a number in the window, color in esi
@@ -1936,4 +2017,3 @@ draw_window:
         ret
 
 ; vim: ft=fasm tabstop=4
-

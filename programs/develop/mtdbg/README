@@ -17,7 +17,7 @@ Also long term goals:
 6. Improve disassembly engine
 7. Split out context handling and kernel interface
 8. Split out commands handler and tables in cmd.inc
-8. Restrurize and refactor data section
+8. Restructurize and refactor data section
 9. Add disassembler listing export into file
 10. Record trace log
 11. Improve FPU/MMX/SSE/AVX debugging

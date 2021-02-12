@@ -1853,6 +1853,11 @@ include 'symbols.inc'
 
 include 'disasm.inc'
 
+;-----------------------------------------------------------------------------
+;                        Include command history functions
+
+	include	"cmd_hist.inc"
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; DATA ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -2483,6 +2488,15 @@ disasm_y_size_dd        dd ?, ?
 messages_y_pos_dd       dd ?, ?
 cmdline_y_pos_dd        dd ?, ?
 registers_y_size_dd     dd ?, ?
+
+cmd_hist_buffer:
+	.ptr			dd	?
+	.size			dd	?
+	.last_node_offset	dd	?
+	.new_node_offset	dd	?
+	.cur_node_offset	dd	?
+	.tmp_line_flag		db	?
+	.n_flag			db	?
 
 i_param         rb 256
 
