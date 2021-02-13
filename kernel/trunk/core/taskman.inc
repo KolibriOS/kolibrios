@@ -82,8 +82,8 @@ proc fs_execute
     locals
         cmdline         rd  1
         flags           rd  1
-        slot            rd  1
-        slot_base       rd  1
+        slot            rd  1  ; number of new thread slot
+        slot_base       rd  1  ; base address of it
 ; app header data
         hdr_cmdline     rd  1
         hdr_path        rd  1
@@ -112,13 +112,13 @@ proc fs_execute
         mov     [file_base], eax
         mov     [file_size], ebx
         lea     ebx, [hdr_cmdline]
-        call    test_app_header
+        call    test_app_header  ; fill our app header data locals with values from given application header (if its correct)
         mov     esi, -0x1F
         test    eax, eax
         jz      .err_hdr
 
         call    lock_application_table
-        call    alloc_thread_slot
+        call    alloc_thread_slot   ; create a slot for new thread
         mov     esi, -0x20  ; too many processes
         test    eax, eax
         jz      .err_0
@@ -132,7 +132,7 @@ proc fs_execute
         xor     eax, eax
         cld
         rep stosd
-; write application name
+; write application name ( APPDATA.appname )
         stdcall strrchr, [path_string], '/'
         lea     esi, [eax+1]    ; -> name without path
         mov     ecx, 11
@@ -155,24 +155,33 @@ proc fs_execute
         call    _strnlen
         cmp     eax, 256
         jb      @f
+; if cmdline length >= 256 then increase needed memory size by this length
         lea     ebx, [eax+1]
         add     [hdr_emem], ebx
 @@:
         mov     [cmdline_size], eax
-        stdcall create_process, [hdr_emem]
+        stdcall create_process, [hdr_emem]  ; create a new process
         mov     esi, -30    ; no memory
         test    eax, eax
         jz      .err_hdr
 
+; add new process to the list
         mov     ebx, [sys_proc+LHEAD.prev]
         __list_add eax, ebx, sys_proc
+; fill the structure fields:
         mov     ebx, [hdr_emem]
         mov     [eax+PROC.mem_used], ebx
+
+; write that main thread of app belongs to new process
         mov     ebx, [slot_base]
         mov     [ebx+APPDATA.process], eax
+
+; initialize the thread list of process: at this moment it consists only of one main thread
         lea     edx, [ebx+APPDATA.list]
         lea     ecx, [eax+PROC.thr_list]
         list_add_tail edx, ecx
+
+; allocate space and copy app header data locals and cmdline string there, put pointer to exec_params of new thread
         mov     eax, [cmdline_size]
         add     eax, sizeof.APP_HDR
         stdcall kernel_alloc, eax
@@ -184,9 +193,10 @@ proc fs_execute
         mov     ecx, [cmdline_size]
         mov     esi, [cmdline]
         rep movsb
+; set other parameters of application
         lea     eax, [hdr_cmdline]
         stdcall set_app_params , [slot], eax, [flags]
-        mov     eax, [process_number]   ;set result
+        mov     eax, [process_number]   ; return process number
         call    unlock_application_table
         ret
 
