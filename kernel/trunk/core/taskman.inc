@@ -82,7 +82,7 @@ proc fs_execute
     locals
         cmdline         rd  1
         flags           rd  1
-        slot            rd  1  ; number of new thread slot
+        slot            rd  1  ; index of new thread slot
         slot_base       rd  1  ; base address of it
 ; app header data
         hdr_cmdline     rd  1
@@ -112,7 +112,7 @@ proc fs_execute
         mov     [file_base], eax
         mov     [file_size], ebx
         lea     ebx, [hdr_cmdline]
-        call    test_app_header  ; fill our app header data locals with values from given application header (if its correct)
+        call    test_app_header  ; fill our app header data locals with values from header of given program (if its correct)
         mov     esi, -0x1F
         test    eax, eax
         jz      .err_hdr
@@ -846,6 +846,8 @@ common_app_entry:
         push    esi
         test    edi, edi
         jz      @f
+        stdcall is_region_userspace, edi, [ebp+APP_HDR.filename_size]
+        jz      @f
         mov     al, '/'
         stosb
         rep movsb
@@ -871,6 +873,10 @@ common_app_entry:
 @@:
         mov     [APP_HEADER_01_.i_param], edi
 .copy_cmdline:
+        inc     ecx  ; keep in mind about 0 in the end
+        stdcall is_region_userspace, edi, ecx
+        jz      .check_tls_header
+        dec     ecx
         rep movsb
         mov     byte [edi], 0
 .check_tls_header:
