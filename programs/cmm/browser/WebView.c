@@ -238,6 +238,7 @@ void main()
 					}
 					LoadInternalPage(http.content_pointer, http.content_received);
 					free(http.content_pointer);
+					http.hfree();
 				}
 				else if (http_get_type==IMG) {
 					_IMG_RES:
@@ -247,9 +248,9 @@ void main()
 						cache.add(cur_img_url, 0, 0, IMG, NULL);
 					}
 					free(http.content_pointer);
+					http.hfree();
 					GetImg(false);
 				}
-				http.hfree();
 			}
 			break;
 		default:
