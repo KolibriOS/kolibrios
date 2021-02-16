@@ -11,7 +11,6 @@
 #include "wl_atmos.h"
 #include <SDL_syswm.h>
 
-
 /*
 =============================================================================
 
@@ -25,7 +24,7 @@
 */
 
 extern byte signon[];
-
+extern void kolibri_set_win_center();
 /*
 =============================================================================
 
@@ -1231,9 +1230,10 @@ static void InitGame()
 #if defined(GP2X_940)
     GP2X_MemoryInit();
 #endif
-
+    
     SignonScreen ();
-
+    kolibri_set_win_center();
+    
 #if defined _WIN32
     if(!fullscreen)
     {
@@ -1950,13 +1950,9 @@ int main (int argc, char *argv[])
 #else
     CheckParameters(argc, argv);
 #endif
-
     CheckForEpisodes();
-
     InitGame();
-
     DemoLoop();
-
     Quit("Demo loop exited???");
     return 1;
 }
