@@ -553,13 +553,14 @@ static inline
 pos_t max_screen_size()
 {
 	pos_t size;
+    pos_t size_tmp;
     __asm__ __volatile__(
     "int $0x40"
-    :"=a"(size)
+    :"=a"(size_tmp)
     :"a"(14));
-    
-      
-     return size;
+    size.x = size_tmp.y;
+    size.y = size_tmp.x; 
+    return size;
 };
 
 static inline void get_system_colors(struct kolibri_system_colors *color_table)
