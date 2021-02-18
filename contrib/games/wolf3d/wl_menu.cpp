@@ -3484,7 +3484,7 @@ DrawHalfStep (int x, int y)
     VWB_DrawPic (x, y, C_CURSOR1PIC);
     VW_UpdateScreen ();
     SD_PlaySound (MOVEGUN1SND);
-    SDL_Delay (8 * 100 / 7);
+    SDL_Delay(1);  //Fixed too long delay in the menu 
 }
 
 
