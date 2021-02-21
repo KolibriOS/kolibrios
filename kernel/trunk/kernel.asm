@@ -2439,6 +2439,8 @@ sysfn_getdiskinfo:      ; 18.11 = get disk info table
         dec     ecx
         jnz     .exit
 .small_table:
+        stdcall is_region_userspace, edx, DRIVE_DATA_SIZE
+        jz      .exit
         mov     edi, edx
         mov     esi, DRIVE_DATA
         mov     ecx, DRIVE_DATA_SIZE ;10
@@ -5348,6 +5350,12 @@ syscall_getarea:
      ; ecx - size x, edx - size y
 
         mov     ebp, edx
+        lea     ebp, [ebp*3]
+        imul    ebp, esi
+        stdcall is_region_userspace, edi, ebp
+        jz      .exit
+
+        mov     ebp, edx
         dec     ebp
         lea     ebp, [ebp*3]
 
@@ -5386,6 +5394,8 @@ align 4
         dec     ebx
         dec     edx
         jnz     .start_y
+        
+.exit:
         popad
         ret
 ;-----------------------------------------------------------------------------
