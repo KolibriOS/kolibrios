@@ -5,7 +5,7 @@ include "__lib__.inc"
 fun      equ msgbox_reinit
 fun_str  equ 'mb_reinit'
 
-section '.text'
+section '.imp.@.'
 
 fun_name db fun_str, 0
 

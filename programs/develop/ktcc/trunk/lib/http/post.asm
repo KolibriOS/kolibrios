@@ -5,7 +5,7 @@ include "__lib__.inc"
 fun      equ http_post
 fun_str  equ 'post'
 
-section '.text'
+section '.imp.@.'
 
 fun_name db fun_str, 0
 

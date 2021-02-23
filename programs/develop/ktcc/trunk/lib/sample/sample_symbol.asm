@@ -5,7 +5,7 @@ include "__lib__.inc"
 fun      equ sample_symbol
 fun_str  equ 'sample_symbol'
 
-section '.text'
+section '.imp.@.'
 
 fun_name db fun_str, 0
 
