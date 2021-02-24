@@ -1,5 +1,5 @@
 // Includes //
-#include <kos32sys.h>
+#include <sys/kos.h>
 #include <string.h>
 #include <stdlib.h>
 #include <stdio.h>
@@ -7,19 +7,6 @@
 
 #include <kolibri_libimg.h>
 // #include "mp3.h"
-
-
-// C-- event defines //
-#define evReDraw  1
-#define evKey     2
-#define evButton  3
-#define evExit    4
-#define evDesktop 5
-#define evMouse   6
-#define evIPC     7
-#define evNetwork 8
-#define evDebug   9
-
 
 // Code //
 #define button_color 0xbbbbbb
@@ -41,8 +28,8 @@ short victory = 0;
 
 // Load pictures //
 char temp_path[4096];
-char* HORIZONTAL_IMAGE;
-char* VERTICAL_IMAGE;
+Image* HORIZONTAL_IMAGE;
+Image* VERTICAL_IMAGE;
 
 char* load_file_inmem(char* fname, int32_t* read_sz)
 {
@@ -70,8 +57,8 @@ char* load_file_inmem(char* fname, int32_t* read_sz)
 
 void load_pictures() {
 		const int icon_rgb_field_size = button_size*button_size;
-		char *image_data,
-			 *filedata;
+		Image *image_data;
+		char *filedata;
 		
 		strcpy(temp_path, "h.png");
 
@@ -99,24 +86,24 @@ void load_pictures() {
 
 
 // GUI functions //
-void redraw_buttons() {
+void RedrawButtons() {
 		for (int j = 5, x = 0; x<field_size; j+=button_size, x++)
 				for (int i = 15, y = 0; y<field_size; i+=button_size, y++)
 				{
 					// 0x50 mean button without drawing, but with border when press
 					// ((y+1)*10)+x+1 mean button id
-					define_button(65536 * i + (button_size), 65536 * j + (button_size), (0x50 << 24) | ((y+1)*10)+x+1, 0);
+					kos_DrawButton(i, j, button_size, button_size, (0x50 << 24) | ((y+1)*10)+x+1, 0);
 					
-					if (field[x][y]) draw_bitmap(VERTICAL_IMAGE, i, j, button_size, button_size);
-					else draw_bitmap(HORIZONTAL_IMAGE, i, j, button_size, button_size);
+					if (field[x][y]) kos_DrawBitmap(VERTICAL_IMAGE, i, j, button_size, button_size);
+					else kos_DrawBitmap(HORIZONTAL_IMAGE, i, j, button_size, button_size);
 				}
 }
 
 void draw_game_window(){
-		BeginDraw(); 
-		DrawWindow(215, 100, 220, 220, title, button_color, 0x34);
-		redraw_buttons();
-		EndDraw();
+		kos_BeginDraw(); 
+		kos_DrawWindow(215, 100, 220, 220, title, button_color, 0x34);
+		RedrawButtons();
+		kos_EndDraw();
 }
 
 
@@ -142,22 +129,20 @@ void SetUp() {
 
 // Need refactoring:
 void draw_victory_window() {
-		BeginDraw(); 
-		DrawWindow(215,100,220, 220,title,button_color,0x34);
+		kos_BeginDraw(); 
+		kos_DrawWindow(215,100,220, 220,title,button_color,0x34);
 		
 		draw_text_sysNEW("Ну вы, и", 10, 10, strlen("Ну вы, и"), 0xB1, 0x000000);
 		draw_text_sysNEW("медвежатник,", 10, 50, strlen("Ну вы, и медвежатник,"), 0xB1, 0x000000);
 		draw_text_sysNEW("Шеф!", 12, 90, strlen("Шеф!"), 0xB1, 0x000000);
 		
-		define_button(65536 * ((220/2)-(50)) + 140, 65536 * 140 + 25+12, BUTTON_RESTART, 0x9A9A9A);
+		kos_DrawButton(((220/2)-(50)), 140, 140, 25+12, BUTTON_RESTART, 0x9A9A9A);
 		draw_text_sysNEW("Заново", 80, 145, strlen("Заново"), 0xB1, 0x000000);
-		EndDraw();
+		kos_EndDraw();
 }
 
-
-
 void Button() {
-		int id = get_os_button();
+		int id = kos_GetButtonID();
 		if (id == 1) exit(0); else
 		if (id == BUTTON_RESTART) {
 			SetUp();
@@ -178,12 +163,12 @@ void Button() {
 				
 			if (field[y][x]) field[y][x] = 0; else field[y][x] = 1;
 			
-			redraw_buttons();
+			RedrawButtons();
 		}
 }
 
 
-int fridge_opened() {
+int FridgeOpened() {
 		int fr_op = 0;
 		for (int y = 0; y<field_size; y++)
 				for (int x = 0; x<field_size; x++)
@@ -201,29 +186,23 @@ int main()
 		
 		if (kolibri_libimg_init() == -1) 
 		{
-			printf("Can not load libimg.obj!\n");
+			printf("Can not load libimg!\n");
 			exit(1);
 		}
 		
 		load_pictures();
 		
-		draw_game_window();
 		while(1)
 		{
-			switch(get_os_event())
+			switch(kos_WaitForEvent())
 			{
 				case evButton:
 					Button();
-					if (fridge_opened()) {
+					if (FridgeOpened()) {
 						victory = 1;
 						draw_victory_window();
 					}
 					break;
-			  
-				case evKey:
-					get_key();
-					break;
-				 
 				case evReDraw:
 					if (!victory) draw_game_window();
 					else draw_victory_window();
