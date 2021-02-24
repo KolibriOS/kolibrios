@@ -1,15 +1,18 @@
 ////////////////////////////////////////////
-//  Copyright (C) 2021 maxcodehack, GPLv2 //
 //           KolibriOS Syscalls           //
 //               sys/kos.h                //
+// Based on kos32sys and other wrappers   //
 //                                        //
 // Syscalls scheme: kos_XxxYyy            //
-//				(e.g. kos_DrawWindow)     //
+//              (e.g. kos_DrawWindow)     //
 ////////////////////////////////////////////
+
+// Some code was written by maxcodehack
 
 #include <stdint.h>
 #include <string.h>
 
+/*********************** Types *************************/
 typedef unsigned int color_t;
 
 // Struct for App running
@@ -29,43 +32,43 @@ char		*p21;
 // Blitter struct
 struct blit_call
 {
-    int dstx;
-    int dsty;
-    int w;
-    int h;
+	int dstx;
+	int dsty;
+	int w;
+	int h;
  
-    int srcx;
-    int srcy;
-    int srcw;
-    int srch;
+	int srcx;
+	int srcy;
+	int srcw;
+	int srch;
  
-    void *bitmap;
-    int   stride;
+	void *bitmap;
+	int   stride;
 };
 
 // Process info for sysfn 9
 #pragma pack(push, 1)
 struct proc_info
 {
-        unsigned long cpu_usage;
-        unsigned short pos_in_stack;
-        unsigned short slot;
-        unsigned short reserved;
-        char name[12];
-        unsigned long address;
-        unsigned long memory_usage;
-        unsigned long ID;
-        unsigned long left,top;
-        unsigned long width,height;
-        unsigned short thread_state;
-        unsigned short reserved2;
-        unsigned long cleft, ctop, cwidth, cheight;
-        unsigned char window_state;
-        unsigned char reserved3[1024-71];
+		unsigned long cpu_usage;
+		unsigned short pos_in_stack;
+		unsigned short slot;
+		unsigned short reserved;
+		char name[12];
+		unsigned long address;
+		unsigned long memory_usage;
+		unsigned long ID;
+		unsigned long left,top;
+		unsigned long width,height;
+		unsigned short thread_state;
+		unsigned short reserved2;
+		unsigned long cleft, ctop, cwidth, cheight;
+		unsigned char window_state;
+		unsigned char reserved3[1024-71];
 };
 #pragma pack(pop)
 
-// Color struct for sysfn ?
+// Color struct for sysfn 48
 struct kolibri_system_colors {
   color_t frame_area;
   color_t grab_bar;
@@ -81,76 +84,93 @@ struct kolibri_system_colors {
 
 typedef union __attribute__((packed))
 {
-    uint32_t val;
-    struct
-    {
-        short  x;
-        short  y;
-    };
+	uint32_t val;
+	struct
+	{
+		short  x;
+		short  y;
+	};
 } pos_t;
 
 
-/// Window Syscalls:
+/*********************** Window Syscalls *************************/
 // Start drawing
 static inline void kos_BeginDraw(void)
 {
-    __asm__ __volatile__(
-    "int $0x40" ::"a"(12),"b"(1));
+	__asm__ __volatile__(
+	"int $0x40" ::"a"(12),"b"(1));
 };
 
 // End drawing
 static inline void kos_EndDraw(void)
 {
-    __asm__ __volatile__(
-    "int $0x40" ::"a"(12),"b"(2));
+	__asm__ __volatile__(
+	"int $0x40" ::"a"(12),"b"(2));
 };
 
 // Draw window
 static inline void kos_DrawWindow(int x, int y, int w, int h, const char *title,
-                       color_t bgcolor, uint32_t style)
+					   color_t bgcolor, uint32_t style)
 {
-    __asm__ __volatile__(
-    "int $0x40"
-    ::"a"(0),
-     "b"((x << 16) | ((w-1) & 0xFFFF)),
-     "c"((y << 16) | ((h-1) & 0xFFFF)),
-     "d"((style << 24) | (bgcolor & 0xFFFFFF)),
-     "D"(title),
-     "S"(0) : "memory");
+	__asm__ __volatile__(
+	"int $0x40"
+	::"a"(0),
+	 "b"((x << 16) | ((w-1) & 0xFFFF)),
+	 "c"((y << 16) | ((h-1) & 0xFFFF)),
+	 "d"((style << 24) | (bgcolor & 0xFFFFFF)),
+	 "D"(title),
+	 "S"(0) : "memory");
+};
+
+// Set window layer behaviour
+#define ZPOS_DESKTOP     -2
+#define ZPOS_ALWAYS_BACK -1
+#define ZPOS_NORMAL      0
+#define ZPOS_ALWAYS_TOP  1
+
+static inline void kos_SetWindowLayerBehaviour(int zpos)
+{
+	__asm__ __volatile__(
+	"int $0x40"
+	::"a"(18),
+	 "b"(25),
+	 "c"(2),
+	 "d"(-1),
+	 "S"(zpos) : "memory");
 };
 
 // Change window size
 #define OLD -1
 static inline void kos_ChangeWindow(int new_x, int new_y, int new_w, int new_h)
 {
-    __asm__ __volatile__(
-        "int $0x40"
-        ::"a"(67), "b"(new_x), "c"(new_y), "d"(new_w),"S"(new_h)
-    );
+	__asm__ __volatile__(
+		"int $0x40"
+		::"a"(67), "b"(new_x), "c"(new_y), "d"(new_w),"S"(new_h)
+	);
 }
 
-/// Other GUI functions:
+/*********************** Other GUI functions *************************/
 // Draw text
 static inline void kos_DrawText(int x, int y, const char *text, color_t color)
 {
-    __asm__ __volatile__(
-    "int $0x40"
-    ::"a"(4),"d"(text),
-      "b"((x << 16) | y),
-      "S"(strlen(text)),"c"(color)
-     :"memory");
+	__asm__ __volatile__(
+	"int $0x40"
+	::"a"(4),"d"(text),
+	  "b"((x << 16) | y),
+	  "S"(strlen(text)),"c"(color)
+	 :"memory");
 }
 
 // Draw button
 static inline void kos_DrawButton(int x, int y, int w, int h, int id, color_t color)
 {
-    __asm__ __volatile__(
-    "int $0x40"
-    ::"a"(8),
-      "b"(x * 65536 + w),
-      "c"(y * 65536 + h),
-      "d"(id),
-      "S"(color));
+	__asm__ __volatile__(
+	"int $0x40"
+	::"a"(8),
+	  "b"(x * 65536 + w),
+	  "c"(y * 65536 + h),
+	  "d"(id),
+	  "S"(color));
 };
 
 // Draw button with text
@@ -167,21 +187,21 @@ void kos_DrawButtonWithText(int x, int y, int w, int h, int id, color_t color, c
 // Draw line
 static inline void kos_DrawLine(int x_start, int y_start, int x_end, int y_end, color_t color)
 {
-    __asm__ __volatile__(
-    "int $0x40"
-    ::"a"(38), "d"(color),
-      "b"((x_start << 16) | x_end),
-      "c"((y_start << 16) | y_end));
+	__asm__ __volatile__(
+	"int $0x40"
+	::"a"(38), "d"(color),
+	  "b"((x_start << 16) | x_end),
+	  "c"((y_start << 16) | y_end));
 }
 
 // Draw bar
 static inline void kos_DrawBar(int x, int y, int w, int h, color_t color)
 {
-    __asm__ __volatile__(
-    "int $0x40"
-    ::"a"(13), "d"(color),
-      "b"((x << 16) | w),
-      "c"((y << 16) | h));
+	__asm__ __volatile__(
+	"int $0x40"
+	::"a"(13), "d"(color),
+	  "b"((x << 16) | w),
+	  "c"((y << 16) | h));
 }
 
 // Put one pixel
@@ -196,28 +216,61 @@ void kos_PutPixel(int x, int y, color_t color) {
 // Draw bitmap image
 static inline void kos_DrawBitmap(void *bitmap, int x, int y, int w, int h)
 {
-    __asm__ __volatile__(
-    "int $0x40"
-    ::"a"(7), "b"(bitmap),
-      "c"((w << 16) | h),
-      "d"((x << 16) | y));
+	__asm__ __volatile__(
+	"int $0x40"
+	::"a"(7), "b"(bitmap),
+	  "c"((w << 16) | h),
+	  "d"((x << 16) | y));
 }
 
+// Blitter 
+static inline void Blit(void *bitmap, int dst_x, int dst_y,
+						int src_x, int src_y, int w, int h,
+						int src_w, int src_h, int stride)
+{
+	volatile struct blit_call bc;
 
-/// Skin:
+	bc.dstx = dst_x;
+	bc.dsty = dst_y;
+	bc.w    = w;
+	bc.h    = h;
+	bc.srcx = src_x;
+	bc.srcy = src_y;
+	bc.srcw = src_w;
+	bc.srch = src_h;
+	bc.stride = stride;
+	bc.bitmap = bitmap;
+
+	__asm__ __volatile__(
+	"int $0x40"
+	::"a"(73),"b"(0),"c"(&bc.dstx));
+};
+
+// Get screen part as image
+static inline void kos_ScreenShot(char* image, int x, int y, int w, int h)
+{
+	__asm__ __volatile__(
+	"int $0x40"
+	::"a"(36),
+	 "b"(image),
+	 "c"(w*65536+h),
+	 "d"(x*65536+y) : "memory");
+};
+
+/*********************** Skin *************************/
 // Return skin height
 static inline uint32_t kos_SkinHeight(void)
 {
-    uint32_t height;
+	uint32_t height;
  
-    __asm__ __volatile__(
-    "int $0x40 \n\t"
-    :"=a"(height)
-    :"a"(48),"b"(4));
-    return height;
+	__asm__ __volatile__(
+	"int $0x40 \n\t"
+	:"=a"(height)
+	:"a"(48),"b"(4));
+	return height;
 };
 
-/// Mouse:
+/*********************** Mouse *************************/
 // Get mouse position
 #define POS_SCREEN 0
 #define POS_WINDOW 1
@@ -225,77 +278,77 @@ static inline uint32_t kos_SkinHeight(void)
 static inline
 pos_t kos_GetMousePos(int origin)
 {
-    pos_t val;
+	pos_t val;
  
-    __asm__ __volatile__(
-    "int $0x40 \n\t"
-    "rol $16, %%eax"
-    :"=a"(val)
-    :"a"(37),"b"(origin));
-    return val;
+	__asm__ __volatile__(
+	"int $0x40 \n\t"
+	"rol $16, %%eax"
+	:"=a"(val)
+	:"a"(37),"b"(origin));
+	return val;
 }
 
 // Get mouse buttons
 static inline
 uint32_t kos_GetMouseButtons(void)
 {
-    uint32_t val;
+	uint32_t val;
  
-    __asm__ __volatile__(
-    "int $0x40"
-    :"=a"(val)
-    :"a"(37),"b"(2));
-    return val;
+	__asm__ __volatile__(
+	"int $0x40"
+	:"=a"(val)
+	:"a"(37),"b"(2));
+	return val;
 };
 
 // Get mouse wheels
 static inline
 uint32_t kos_GetMouseWheels(void)
 {
-    uint32_t val;
+	uint32_t val;
  
-    __asm__ __volatile__(
-    "int $0x40 \n\t"
-    :"=a"(val)
-    :"a"(37),"b"(7));
-    return val;
+	__asm__ __volatile__(
+	"int $0x40 \n\t"
+	:"=a"(val)
+	:"a"(37),"b"(7));
+	return val;
 };
 
 // Load cursor
 static inline uint32_t kos_LoadCursor(void *path, uint32_t flags)
 {
-    uint32_t  val;
-    __asm__ __volatile__(
-    "int $0x40"
-    :"=a"(val)
-    :"a"(37), "b"(4), "c"(path), "d"(flags));
-    return val;
+	uint32_t  val;
+	__asm__ __volatile__(
+	"int $0x40"
+	:"=a"(val)
+	:"a"(37), "b"(4), "c"(path), "d"(flags));
+	return val;
 }
 
 // Set cursor
 static inline uint32_t kos_SetCursor(uint32_t cursor)
 {
-    uint32_t  old;
-    __asm__ __volatile__(
-    "int $0x40"
-    :"=a"(old)
-    :"a"(37), "b"(5), "c"(cursor));
-    return old;
+	uint32_t  old;
+	__asm__ __volatile__(
+	"int $0x40"
+	:"=a"(old)
+	:"a"(37), "b"(5), "c"(cursor));
+	return old;
 };
 
 // Destroy cursor
 static inline int kos_DestroyCursor(uint32_t cursor)
 {
-    int ret;
-    __asm__ __volatile__(
-    "int $0x40"
-    :"=a"(ret)
-    :"a"(37), "b"(6), "c"(cursor)
-    :"memory");
-    return ret;
+	int ret;
+	__asm__ __volatile__(
+	"int $0x40"
+	:"=a"(ret)
+	:"a"(37), "b"(6), "c"(cursor)
+	:"memory");
+	return ret;
 };
 
-/// OS Events:
+/*********************** OS Events *************************/
 #define evReDraw  1
 #define evKey     2
 #define evButton  3
@@ -309,35 +362,35 @@ static inline int kos_DestroyCursor(uint32_t cursor)
 static inline
 uint32_t kos_WaitForEventTimeout(uint32_t time)
 {
-    uint32_t val;
-    __asm__ __volatile__(
-    "int $0x40"
-    :"=a"(val)
-    :"a"(23), "b"(time));
-    return val;
+	uint32_t val;
+	__asm__ __volatile__(
+	"int $0x40"
+	:"=a"(val)
+	:"a"(23), "b"(time));
+	return val;
 };
  
 static inline uint32_t kos_CheckForEvent(void)
 {
-    uint32_t val;
-    __asm__ __volatile__(
-    "int $0x40"
-    :"=a"(val)
-    :"a"(11));
-    return val;
+	uint32_t val;
+	__asm__ __volatile__(
+	"int $0x40"
+	:"=a"(val)
+	:"a"(11));
+	return val;
 };
  
 static inline uint32_t kos_WaitForEvent(void)
 {
-    uint32_t val;
-    __asm__ __volatile__(
-    "int $0x40"
-    :"=a"(val)
-    :"a"(10));
-    return val;
+	uint32_t val;
+	__asm__ __volatile__(
+	"int $0x40"
+	:"=a"(val)
+	:"a"(10));
+	return val;
 };
 
-/// Eventmask:
+/*********************** Eventmask *************************/
 #define EVM_REDRAW        1
 #define EVM_KEY           2
 #define EVM_BUTTON        4
@@ -353,16 +406,16 @@ static inline uint32_t kos_WaitForEvent(void)
  
 static inline uint32_t kos_SetMaskForEvents(uint32_t event_mask)
 {
-  uint32_t  old_event_mask;
-    __asm__ __volatile__(
-    "int $0x40"
-    :"=a"(old_event_mask)
-    :"a"(40),"b"(event_mask));
- 
-    return old_event_mask;
+	uint32_t  old_event_mask;
+	__asm__ __volatile__(
+	"int $0x40"
+	:"=a"(old_event_mask)
+	:"a"(40),"b"(event_mask));
+
+	return old_event_mask;
 };
 
-/// Other:
+/*********************** Other *************************/
 // Get key
 int kos_GetKey()
 {
@@ -375,21 +428,21 @@ int kos_GetKey()
 static inline
 uint32_t kos_GetButtonID(void)
 {
-    uint32_t val;
-    __asm__ __volatile__(
-    "int $0x40"
-    :"=a"(val)
-    :"a"(17));
-    return val>>8;
+	uint32_t val;
+	__asm__ __volatile__(
+	"int $0x40"
+	:"=a"(val)
+	:"a"(17));
+	return val>>8;
 };
 
 // Sleep..
 static inline void kos_Delay(uint32_t time)
 {
-    __asm__ __volatile__(
-    "int $0x40"
-    ::"a"(5), "b"(time)
-    :"memory");
+	__asm__ __volatile__(
+	"int $0x40"
+	::"a"(5), "b"(time)
+	:"memory");
 };
 
 // Get screen size
@@ -417,34 +470,11 @@ static inline void kos_GetSystemColors(struct kolibri_system_colors *color_table
 // SysFn 9
 static inline void kos_ProcessInfo(char *info)
 {
-    __asm__ __volatile__(
-    "int $0x40"
-    :
-    :"a"(9), "b"(info), "c"(-1)
-    :"memory");
-};
-
-// Blitter 
-static inline void Blit(void *bitmap, int dst_x, int dst_y,
-                        int src_x, int src_y, int w, int h,
-                        int src_w, int src_h, int stride)
-{
-    volatile struct blit_call bc;
- 
-    bc.dstx = dst_x;
-    bc.dsty = dst_y;
-    bc.w    = w;
-    bc.h    = h;
-    bc.srcx = src_x;
-    bc.srcy = src_y;
-    bc.srcw = src_w;
-    bc.srch = src_h;
-    bc.stride = stride;
-    bc.bitmap = bitmap;
- 
-    __asm__ __volatile__(
-    "int $0x40"
-    ::"a"(73),"b"(0),"c"(&bc.dstx));
+	__asm__ __volatile__(
+	"int $0x40"
+	:
+	:"a"(9), "b"(info), "c"(-1)
+	:"memory");
 };
 
 void kos_RunApp(char* app, char* param)
