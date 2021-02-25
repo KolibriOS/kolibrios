@@ -1,0 +1,22 @@
+CC = kos32-gcc
+LD = kos32-ld
+
+SDK_DIR = $(abspath ../../../contrib/sdk)
+
+CFLAGS = -c -fno-ident -O2 -fomit-frame-pointer -fno-ident -U__WIN32__ -U_Win32 -U_WIN32 -U__MINGW32__ -UWIN32 -Dunix
+LDFLAGS = -static -S -nostdlib -T $(SDK_DIR)/sources/newlib/app.lds --image-base 0
+
+INCLUDES = -I $(SDK_DIR)/sources/newlib/libc/include -I $(SDK_DIR)/sources/zlib
+LIBPATH = -L $(SDK_DIR)/lib -L /home/autobuild/tools/win32/mingw32/lib
+
+OBJECTS = minizip.o zip.o ioapi.o kos_dir.o
+
+default: $(OBJECTS)
+	kos32-ld $(LDFLAGS) $(LIBPATH) --subsystem console -o minizip $(OBJECTS) -lgcc -lc.dll -lz
+	objcopy minizip -O binary
+
+%.o : %.c Makefile
+	$(CC) $(CFLAGS) $(INCLUDES) -o $@ $<
+
+clean:
+	rm *.o

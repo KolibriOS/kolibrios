@@ -12,8 +12,8 @@ LIBPATH = -L $(SDK_DIR)/lib -L /home/autobuild/tools/win32/mingw32/lib
 OBJECTS = miniunz.o unzip.o ioapi.o kos_dir.o
 
 default: $(OBJECTS)
-	kos32-ld $(LDFLAGS) $(LIBPATH) --subsystem console -o unz $(OBJECTS) -lgcc -lc.dll -lz
-	objcopy unz -O binary
+	kos32-ld $(LDFLAGS) $(LIBPATH) --subsystem console -o miniunz $(OBJECTS) -lgcc -lc.dll -lz
+	objcopy miniunz -O binary
 
 %.o : %.c Makefile
 	$(CC) $(CFLAGS) $(INCLUDES) -o $@ $<
