@@ -12,7 +12,7 @@ OBJECTS =  $(patsubst %.c, %.o, $(SRC))
 default: $(patsubst %.c,%.o,$(SRC))
 	ar rcs libopenjpeg.a *.o
 	rm *.o
-	mv libopenjpeg.a ../lib
+	mv libopenjpeg.a ../../lib
 
 %.o : %.c Makefile $(SRC)
 	$(CC) $(CFLAGS) $(INCLUDES) -o $@ $<

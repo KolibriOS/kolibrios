@@ -12,7 +12,7 @@ OBJECTS =  $(patsubst %.c, %.o, $(SRC))
 default: $(patsubst %.c,%.o,$(SRC))
 	ar rcs libjbig2dec.a *.o
 	rm *.o
-	mv libjbig2dec.a ../lib
+	mv libjbig2dec.a ../../lib
 
 %.o : %.c Makefile $(SRC)
 	$(CC) $(CFLAGS) -DHAVE_CONFIG_H $(INCLUDES) -o $@ $<

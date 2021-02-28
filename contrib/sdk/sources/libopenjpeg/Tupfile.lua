@@ -9,4 +9,4 @@ CFLAGS = CFLAGS .. " -std=c99 -U__WIN32__ -U_Win32 -U_WIN32 -U__MINGW32__ -UWIN3
 INCLUDES = INCLUDES .. " -I ."
 
 compile_gcc{"bio.c", "cio.c", "dwt.c", "event.c", "image.c", "j2k.c", "j2k_lib.c", "jp2.c", "jpt.c", "lrintf.c", "mct.c", "mqc.c", "openjpeg.c", "pi.c", "raw.c", "t1.c", "t1_generate_luts.c", "t2.c", "tcd.c", "tgt.c"}
-tup.rule(OBJS, "kos32-ar rcs %o %f", {"../lib/libopenjpeg.a", "<../lib/libopenjpeg>"})
+tup.rule(OBJS, "kos32-ar rcs %o %f", {"../../lib/libopenjpeg.a", "<../../lib/libopenjpeg>"})
