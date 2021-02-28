@@ -217,10 +217,22 @@ static void build(ObjectIr *ir) {
 			if (!epep_get_section_header_by_index(epep, &sh, id.sec_id)) {
 				ERROR_EPEP(epep);
 			}
-			char *buf = malloc(sh.SizeOfRawData);
-			if (!epep_get_section_contents(epep, &sh, buf)) {
-				ERROR_EPEP(epep);
+
+			// If the section contains uninitialized data (BSS)
+			// it should be filled by zeroes
+			// Yes, current implementation emits BSS sections too
+			// cause KOS has no idea they should be allocated automatically
+			// cause FASM has no idea they should be generated without contents
+			// cause Tomasz Grysztar didn't care
+			char *buf = calloc(sh.SizeOfRawData, 1);
+
+			// Othervice it should be filled by its contents from source object
+			if (!(sh.Characteristics & 0x00000080)) {
+				if (!epep_get_section_contents(epep, &sh, buf)) {
+					ERROR_EPEP(epep);
+				}
 			}
+
 			fwrite(buf, 1, sh.SizeOfRawData, out);
 		}
 		printf("Done.\n");
