@@ -571,4 +571,5 @@ static ObjectIr parse_objects(int argc, char **argv) {
 int main(int argc, char **argv) {
 	ObjectIr ir = parse_objects(argc, argv);
 	build(&ir);
+	return 0;
 }
