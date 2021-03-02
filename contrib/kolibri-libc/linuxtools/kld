@@ -1,0 +1,24 @@
+#!/bin/bash
+
+# Copyright maxcodehack, 2021
+# ld options for build for KolibriOS
+
+# We start w/o param?
+if [ -z "$*" ]
+then
+	echo "kld: no input files"
+	exit 1
+fi
+
+# KLIBC variable exists?
+if [ -z "$KLIBC" ]
+then
+	echo "kld: KLIBC variable not set"
+	exit 1
+fi
+
+# LD Flags for KolibriOS
+FLAGS="-m elf_i386 -nostdlib"
+
+# And, execute ld:
+ld $FLAGS -L $KLIBC/bin/lib -T $KLIBC/tests/static.lds $KLIBC/bin/lib/crt0.o $*

@@ -1,0 +1,16 @@
+CC = ../linuxtools/kgcc
+LD = ../linuxtools/kld
+
+SRC = $(NAME).c
+
+.PHONY: all
+
+all: $(NAME)
+
+$(NAME): $(SRC)
+	$(CC) -s -Os $(SRC)
+	$(LD) $(NAME).o -o $(NAME) -lc
+	../bin/kpack --nologo $(NAME)
+
+clean:
+	rm $(NAME).o $(NAME)

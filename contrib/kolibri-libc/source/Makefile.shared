@@ -1,0 +1,3 @@
+all:
+	$(MAKE) clean
+	env CC=kos32-gcc CPP=kos32-cpp AS=kos32-as $(MAKE) shared
