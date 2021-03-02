@@ -97,7 +97,7 @@ int main()
             }
             break;
         case KSYS_EVENT_MOUSE:
-            mouse_pos = _ksys_get_mouse_pos(0); // window relative
+            mouse_pos = _ksys_get_mouse_pos(KSYS_MOUSE_WINDOW_POS); // window relative
             mouse_button = _ksys_get_mouse_eventstate();
             debug_printf("mouse ev (%d,%d)%x\n", mouse_pos.x, mouse_pos.y, mouse_button);
             if (mouse_button & (1<<24)) // double click
