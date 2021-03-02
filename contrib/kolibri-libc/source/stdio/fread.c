@@ -11,7 +11,7 @@ size_t fread(void *restrict ptr, size_t size, size_t nmemb, FILE *restrict strea
 			break;
 		}
 
-		ptr[i] = c;
+		*(char*)(ptr+i) = c;
 
 		bytes_read++;
 	}

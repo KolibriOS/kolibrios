@@ -5,8 +5,7 @@ size_t fwrite(const void *restrict ptr, size_t size, size_t nmemb, FILE *restric
 	unsigned bytes_count = size * nmemb;
 
 	for (size_t i = 0; i < bytes_count; i++) {
-		char c = ptr[i];
-
+		char c = *(char*)(ptr+i);
 		if (fputc(c, stream) != c) {
 			break;
 		}
