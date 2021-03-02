@@ -1,9 +1,9 @@
 AR = ar -rcs
-CLINK = ../bin/clink
-KPACK = ../bin/kpack
+CLINK = ../linuxtools/clink
+KPACK = kpack
 
 INCLUDE = include
-LIB_DIR = ../bin/lib
+LIB_DIR = ../lib
 
 LIBC.A = $(LIB_DIR)/libc.a
 LIBC.OBJ = $(LIB_DIR)/libc.obj

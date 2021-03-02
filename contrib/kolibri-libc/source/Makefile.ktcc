@@ -1,0 +1,5 @@
+KTCC=../../../programs/develop/ktcc/trunk/bin/kos32-tcc
+
+all:
+	make clean
+	env CC=$(KTCC) make
