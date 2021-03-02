@@ -10,6 +10,19 @@ extern "C" {
 #define asm_inline __asm__ __volatile__
 #define not_optimized __attribute__((optimize("O0")))
 
+#define _KOS_FS_ERR_SUCCESS 0  // Success
+#define _KOS_FS_ERR_1       1  // Base and/or partition of a hard disk is not defined (fn21.7 & fn21.8)
+#define _KOS_FS_ERR_2       2  // Function is not supported for the given file system
+#define _KOS_FS_ERR_3       3  // Unknown file system
+#define _KOS_FS_ERR_4       4  // Reserved, is never returned in the current implementation
+#define _KOS_FS_ERR_5       5  // File not found
+#define _KOS_FS_ERR_EOF     6  // End of file, EOF
+#define _KOS_FS_ERR_7       7  // Pointer lies outside of application memory
+#define _KOS_FS_ERR_8       8  // Disk is full
+#define _KOS_FS_ERR_9       9  // FAT table is destroyed
+#define _KOS_FS_ERR_10      10 // Access denied
+#define _KOS_FS_ERR_11      11 // Device error
+
 typedef struct {
     unsigned char blue;
     unsigned char green;
