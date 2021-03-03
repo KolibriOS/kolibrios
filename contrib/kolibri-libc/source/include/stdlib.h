@@ -14,7 +14,7 @@
 extern int  _FUNC(atoi)(const char *s);
 extern long _FUNC(atol)(const char *);
 extern long long _FUNC(atoll)(const char *);
-//char* itoa)(int n, char* s);
+extern void _FUNC(itoa)(int n, char* s);
 
 extern int _FUNC(abs)(int);
 extern long _FUNC(labs)(long);

@@ -189,15 +189,19 @@ enum KSYS_MOUSE_POS{
     KSYS_MOUSE_WINDOW_POS = 1
 };
 
+enum KSYS_SHM_MODE{
+    KSYS_SHM_OPEN = 0x00,
+    KSYS_SHM_OPEN_ALWAYS = 0x04,
+    KSYS_SHM_CREATE = 0x08,
+    KSYS_SHM_READ = 0x00,
+    KSYS_SHM_WRITE = 0x01,
+};
+
 static inline 
 int _ksys_strcmp(const char * s1, const char * s2 )
 {
-    while ((*s1) && (*s1 == *s2)){
-        ++s1;
-        ++s2;
-    }
-
-    return ( *( unsigned char * )s1 - * ( unsigned char * )s2 );
+    while ((*s1) && (*s1 == *s2)){ ++s1; ++s2; }
+    return(*(unsigned char*)s1 - *(unsigned char *)s2);
 }
 
 // Functions for working with the graphical interface
@@ -360,6 +364,7 @@ ksys_pos_t _ksys_get_mouse_pos(int origin)
         "rol $16, %%eax"
         :"=a"(val)
         :"a"(37),"b"(origin)
+        :"memory"
     );
     return val;
 }
@@ -918,7 +923,8 @@ int not_optimized _ksys_file_rename(const char *name, const char *new_name)
 
 
 static inline
-int not_optimized _ksys_exec(char *app_name, char *args){
+int not_optimized _ksys_exec(char *app_name, char *args)
+{
     ksys70_t file_op;
     file_op.p00 = 7;
     file_op.p04dw = 0;
@@ -931,6 +937,30 @@ int not_optimized _ksys_exec(char *app_name, char *args){
         :"a"(70), "b"(&file_op)
     );
     return val;
+}
+
+/* Working with a named shared memory area. */
+
+static inline
+int _ksys_shm_open(char *name, int mode, int size, char **new_shm)
+{
+    int error;
+    asm_inline(
+        "int $0x40"
+        :"=a"(*new_shm), "=d"(error)
+        :"a"(68), "b"(22), "c"(name), "d"(size), "S"(mode)
+    );
+    return error;
+}
+
+ 
+static inline
+void _ksys_shm_close(char *shm_name)
+{
+    asm_inline(
+        "int $0x40":
+        :"a"(68), "b"(23), "c"(shm_name)
+    );
 }
 
 #endif // _KSYS_H_

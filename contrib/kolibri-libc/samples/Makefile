@@ -1,18 +1,22 @@
 KGCC = ../linuxtools/kgcc
 KLD = ../linuxtools/kld
 KPACK = kpack
-KTCC=../../../programs/develop/ktcc/trunk/bin/kos32-tcc
-KTCC_FLAGS = -nostdlib -I$(KLIBC)/source/include -L$(KLIBC)/lib $(KLIBC)/lib/crt0.o
+KTCC=../../../programs/develop/ktcc/trunk/bin/kos32-tcc 
+KTCC_FLAGS = -nostdlib -stack=1048576 -I$(KLIBC)/source/include -L$(KLIBC)/lib $(KLIBC)/lib/crt0.o 
+
+ifndef NAME
+NAME = basic_gui
+endif
 
 static_kgcc:
-	$(KGCC) basic_gui.c
-	$(KLD) basic_gui.o -o basic_gui -lc 
-	$(KPACK) basic_gui
+	$(KGCC) $(NAME).c
+	$(KLD) $(NAME).o -o $(NAME) -lc
+	$(KPACK) $(NAME)
 
 static_tcc:
-	$(KTCC) $(KTCC_FLAGS) basic_gui.c -o basic_gui -lc
-	$(KPACK) basic_gui
+	$(KTCC) $(KTCC_FLAGS) $(NAME).c -o $(NAME) -lc
+	$(KPACK) $(NAME)
 
 dynamic_tcc:
-	$(KTCC) $(KTCC_FLAGS) -D_DYNAMIC basic_gui.c -o basic_gui_dyn -lc.obj
-	$(KPACK) basic_gui_dyn
+	$(KTCC) $(KTCC_FLAGS) -D_DYNAMIC $(NAME).c -o $(NAME)_dyn  -lc.obj
+	$(KPACK) $(NAME)_dyn
