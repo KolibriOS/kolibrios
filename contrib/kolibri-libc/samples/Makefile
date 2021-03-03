@@ -17,6 +17,11 @@ static_tcc:
 	$(KTCC) $(KTCC_FLAGS) $(NAME).c -o $(NAME) -lc
 	$(KPACK) $(NAME)
 
+dynamic_kgcc:
+	$(KGCC) -D_DYNAMIC $(NAME).c
+	$(KLD) $(NAME).o -o $(NAME) -lc.obj
+	$(KPACK) $(NAME)
+
 dynamic_tcc:
 	$(KTCC) $(KTCC_FLAGS) -D_DYNAMIC $(NAME).c -o $(NAME)_dyn  -lc.obj
 	$(KPACK) $(NAME)_dyn

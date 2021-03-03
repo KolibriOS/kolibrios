@@ -2,10 +2,14 @@
 #include <ksys.h>
 #include <stdio.h>
 
-int main()
+int main(int argc, char**argv)
 {   
     char string[256];
     shell_cls();
+    shell_printf("Number of arguments %d\n",argc);
+    for(int i=0; i<argc; i++){
+        shell_printf("argv[%d]=%s\n", i, argv[i]);
+    }
     shell_puts("This is a test console application for Shell\n\r");
     shell_puts("Type a string (255 symbols max): ");
     shell_gets(string);

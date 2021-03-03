@@ -1,6 +1,7 @@
 #include <ksys.h>
 #include <string.h>
 #include <stdlib.h>
+#include "shell.h"
 
 char __shell_shm_name[32]; 
 char*__shell_shm=NULL;
@@ -21,7 +22,7 @@ int __shell_shm_init()
 
     itoa(PID, __shell_shm_name);
     strcat(__shell_shm_name, "-SHELL");
-    return _ksys_shm_open(__shell_shm_name,  KSYS_SHM_OPEN_ALWAYS | KSYS_SHM_WRITE, 1024*16, &__shell_shm);
+    return _ksys_shm_open(__shell_shm_name,  KSYS_SHM_OPEN_ALWAYS | KSYS_SHM_WRITE, SHELL_SHM_MAX, &__shell_shm);
 }
 
 int __shell_init()

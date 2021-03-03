@@ -5,6 +5,7 @@
 #include <time.h>
 #include <sys/dirent.h>
 #include <ksys.h>
+#include <shell_api.h>
 
 ksys_coff_etable_t EXPORTS[] = {
     {"abs", abs},
@@ -53,6 +54,7 @@ ksys_coff_etable_t EXPORTS[] = {
     {"getchar", getchar},
     {"gets", gets},
     {"hypot", hypot},
+    {"itoa", itoa},
     {"labs", labs},
     {"ldexp", ldexp},
     {"ldiv", ldiv},
@@ -84,6 +86,13 @@ ksys_coff_etable_t EXPORTS[] = {
     {"rewind", rewind},
     {"rewinddir", rewinddir},
     {"seekdir", seekdir},
+    {"shell_printf", shell_printf},
+    {"shell_puts", shell_puts},
+    {"shell_putc", shell_putc},
+    {"shell_getc", shell_getc},
+    {"shell_gets", shell_gets},
+    {"shell_cls", shell_cls},
+    {"shell_exit", shell_exit},
     {"setbuf", setbuf},
     {"setvbuf", setvbuf},
     {"sin", sin},

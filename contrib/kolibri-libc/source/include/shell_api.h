@@ -3,6 +3,7 @@
 
 #include <stddef.h>
 
+extern void _FUNC(shell_printf)(const char* format, ...); 
 extern void _FUNC(shell_puts)(const char *s);
 extern void _FUNC(shell_putc)(char c);
 extern char _FUNC(shell_getc)();

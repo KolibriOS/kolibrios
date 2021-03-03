@@ -47,7 +47,7 @@ clean:
 
 shared: $(cfiles) $(asmfiles)
 	$(CLINK) $^
-	#$(KPACK) a.out.obj
+	$(KPACK) a.out.obj
 	mv a.out.obj $(LIBC.OBJ)
 
 test:

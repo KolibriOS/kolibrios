@@ -44,6 +44,7 @@ fwrite
 getchar
 gets
 hypot
+itoa
 labs
 ldexp
 ldiv
@@ -75,6 +76,13 @@ rename
 rewind
 rewinddir
 seekdir
+shell_printf
+shell_puts
+shell_putc
+shell_getc
+shell_gets
+shell_cls
+shell_exit
 setbuf
 setvbuf
 sin
