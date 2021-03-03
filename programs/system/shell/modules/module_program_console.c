@@ -7,6 +7,7 @@ int program_console(int pid)
 
 char name[32];
 char *buffer;
+char *buf1k;
 int result;
 int i;
 char command;
@@ -17,7 +18,7 @@ itoa(pid, name);
 strcat(name, "-SHELL");
 
 buffer = NULL;
-
+buf1k = NULL;
 
 for (i = 0; i < 30;  i++)
 	{
@@ -41,7 +42,6 @@ for (i = 0; i < 30;  i++)
 	
 		switch (command)
 			{
-			
 			case SC_EXIT:
 				*buffer = SC_OK;
 				is_end = 1;
@@ -64,8 +64,8 @@ for (i = 0; i < 30;  i++)
 			case SC_PUTS:
 				printf("%s", buffer+1 );
 				*buffer = SC_OK;
-				break;				
-
+				break;
+                    
 			case SC_GETC:
 				*(buffer+1) = (char) getch() ;
 				*buffer = SC_OK;
@@ -75,7 +75,15 @@ for (i = 0; i < 30;  i++)
 				gets(buffer+1, size-2);
 				*buffer = SC_OK;
 				break;	
-				
+        
+			case SC_GET_PID:
+				buf1k=malloc(1024);
+				kol_process_info(-1, buf1k);
+                memcpy(buffer+1, buf1k+30, sizeof(unsigned));
+				*buffer = SC_OK;
+				free(buf1k);
+				break;
+                
 			default:
 				#if LANG_ENG
 					printf ("  Error in console application.\n\r");
