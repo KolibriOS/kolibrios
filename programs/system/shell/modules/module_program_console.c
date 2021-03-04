@@ -76,12 +76,16 @@ for (i = 0; i < 30;  i++)
 				*buffer = SC_OK;
 				break;	
         
-			case SC_GET_PID:
+			case SC_PID:
 				buf1k=malloc(1024);
 				kol_process_info(-1, buf1k);
-                memcpy(buffer+1, buf1k+30, sizeof(unsigned));
+				memcpy(buffer+1, buf1k+30, sizeof(unsigned));
 				*buffer = SC_OK;
 				free(buf1k);
+				break;
+                
+			case SC_PING:
+				*buffer = SC_OK;
 				break;
                 
 			default:

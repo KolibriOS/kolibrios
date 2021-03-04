@@ -19,7 +19,7 @@ for (i = 1;;i++)
 	{
 	n = kol_process_info(i, buf1k);
 	memcpy(&PID, buf1k+30 ,sizeof(unsigned));
-    STATE = *(buf1k+50);
+	STATE = *(buf1k+50);
 	if (9 != STATE)
 		{
 		if (!sel || 0 == strnicmp(param, buf1k+10, 10))

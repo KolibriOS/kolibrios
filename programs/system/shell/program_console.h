@@ -6,4 +6,5 @@
 #define SC_GETC		4
 #define SC_GETS		5
 #define SC_CLS		6
-#define SC_GET_PID  7
+#define SC_PID		7
+#define SC_PING		8
