@@ -2,6 +2,7 @@
 #include <string.h>
 #include <stdlib.h>
 #include "shell.h"
+#include <shell_api.h>
 
 char __shell_shm_name[32]; 
 char*__shell_shm=NULL;
@@ -25,14 +26,17 @@ int __shell_shm_init()
     return _ksys_shm_open(__shell_shm_name,  KSYS_SHM_OPEN_ALWAYS | KSYS_SHM_WRITE, SHELL_SHM_MAX, &__shell_shm);
 }
 
-int __shell_init()
+void __shell_init()
 {
-    if(__shell_is_init){
-        return 0;
+    if(!__shell_is_init){
+        if(__shell_shm_init()){
+        debug_printf("SHELL problems detected!\n");
+        _ksys_exit();
+        }
+
+        if(!shell_ping()){
+        debug_printf("No SHELL found!\n");
+        _ksys_exit();
+        }
     }
-    if(__shell_shm_init()){
-        debug_printf("Shell problems detected!\n");
-        return -1;
-    }
-    return 0;
 }

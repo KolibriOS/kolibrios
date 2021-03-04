@@ -4,6 +4,7 @@
 
 int main(int argc, char**argv)
 {   
+    debug_printf("%u\n", shell_get_pid());
     char string[256];
     shell_cls();
     shell_printf("Number of arguments %d\n",argc);
