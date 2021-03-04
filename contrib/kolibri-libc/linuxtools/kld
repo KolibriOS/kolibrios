@@ -21,4 +21,4 @@ fi
 FLAGS="-m elf_i386 -nostdlib"
 
 # And, execute ld:
-ld $FLAGS -L $KLIBC/lib -T $KLIBC/static.lds $KLIBC/lib/crt0.o $*
+ld $FLAGS -L$KLIBC/lib -T$KLIBC/static.lds $KLIBC/lib/crt0.o $*

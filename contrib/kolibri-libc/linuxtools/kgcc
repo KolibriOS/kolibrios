@@ -19,6 +19,7 @@ fi
 
 # GCC Flags for KolibriOS
 FLAGS="-c -m32 -nostdinc -fno-common -fno-builtin -fno-leading-underscore -fno-pie -fno-stack-protector -fno-stack-check -mpreferred-stack-boundary=2"
+KOS_PLATFORM="-Ulinux -U__linux -U__linux__ -U__gnu_linux__ -U__unix__ -U__unix -Uunix -Dkolibri -D__kolibri -D__kolibri__"
 
 # And, execute gcc:
-gcc $FLAGS -I $KLIBC/source/include $*
+gcc $FLAGS $KOS_PLATFORM -I$KLIBC/source/include $*
