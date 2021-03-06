@@ -7,6 +7,8 @@ SC_PUTS = 3
 SC_GETC = 4
 SC_GETS = 5
 SC_CLS	= 6
+SC_PID = 7
+SC_PING = 8
 
 SHM_WRITE =  0x01
 SHM_OPEN_ALWAYS = 0x04
@@ -21,6 +23,7 @@ sc_process dd 0
 
 ;============================
 
+if used _sc_pid2name
 align 4
 _sc_pid2name:
 
@@ -67,9 +70,11 @@ mov edi, sc_name
  pop esp
 
  ret
+end if
 
 ;============================
 
+if used _sc_init
 align 4
 ; void __stdcall sc_init();
 _sc_init:
@@ -116,9 +121,11 @@ _sc_init:
  pop esp
 
  ret
+end if
 
 ;============================
 
+if used _sc_puts
 align 4
 ; void __stdcall sc_puts(char *str);
 _sc_puts:
@@ -155,9 +162,11 @@ _sc_puts:
  pop ebx
  pop esp
  ret 4
+end if
 
 ;============================
 
+if used _sc_exit
 align 4
 ; void __stdcall sc_exit();
 _sc_exit:
@@ -187,10 +196,12 @@ _sc_exit:
  pop esp
  pop ebx
  ret
+end if
 
 
 ;============================
 
+if used _sc_gets
 align 4
 ; void __stdcall sc_gets(char *str);
 _sc_gets:
@@ -229,6 +240,61 @@ _sc_gets:
  pop ebx
  pop esp
  ret 4
+end if
 
 ;============================
 
+if used _sc_pid
+_sc_pid:
+;int __stdcall sc_pid (void);
+	push	ebx ecx
+
+	mov	ecx, [sc_buffer]
+	mov	byte [ecx], SC_PID
+
+@@:
+	mov	eax, 5
+	mov	ebx, 5
+	int	0x40
+
+	cmp	byte [ecx], 0
+	je	@f
+	call	_sc_ping
+	test	eax, eax
+	jnz	.err
+
+@@:
+	mov	eax, [ecx+1]
+	pop	ecx ebx
+	ret
+
+.err:
+	pop	ecx ebx
+	xor	eax, eax
+	dec	eax
+	ret
+end if
+
+;============================
+
+if used _sc_ping
+_sc_ping:
+;int __stdcall sc_ping (void);
+	push	ebx ecx
+
+	mov	ecx, [sc_buffer]
+	mov	byte [ecx], SC_PING
+
+	mov	eax, 5
+	mov	ebx, 200
+	int	0x40
+
+	xor	eax, eax
+	cmp	byte [ecx], 0
+	je	@f
+	dec	eax
+
+@@:
+	pop	ecx ebx
+	ret
+end if
