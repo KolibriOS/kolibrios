@@ -83,6 +83,8 @@ shell_getc
 shell_gets
 shell_cls
 shell_exit
+shell_get_pid
+shell_ping
 setbuf
 setvbuf
 sin
