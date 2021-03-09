@@ -28,7 +28,7 @@ RM = rm -rf
 MKDIR_P = mkdir -p
 endif
 
-all: mk_export $(cfiles) $(asmfiles) $(LIB_DIR) $(LIBC.A)
+all: $(cfiles) $(asmfiles) $(LIB_DIR) $(LIBC.A)
 	fasm crt/crt0.asm $(LIB_DIR)/crt0.o
 
 $(LIBC.A): $(cfiles) $(asmfiles)
@@ -43,18 +43,13 @@ $(asmfiles):
 	$(RM) $*.sx
 
 clean:
-	$(RM) $(cfiles) $(asmfiles)
+	$(RM) $(cfiles) $(asmfiles) exports/exports.c
 	$(RM) $(LIBNAME)
 
-mk_export:
-	$(MKEXP) ../loader/symbols.txt exports/exports.c
-	
-	
 shared: $(cfiles) $(asmfiles)
 	$(CLINK) $^
 	$(KPACK) a.out.obj
 	mv a.out.obj $(LIBC.OBJ)
-
 	
 test:
 	make -C ../test -f Makefile.tcc

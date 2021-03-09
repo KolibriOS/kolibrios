@@ -1,3 +1,9 @@
+MKEXP=../linuxtools/mkexp
+
 all:
 	$(MAKE) clean
+	$(MKEXP) ../loader/symbols.txt exports/exports.c
 	env CC=i686-w64-mingw32-gcc CPP=i686-w64-mingw32-cpp AS=i686-w64-mingw32-as $(MAKE) shared
+
+install:
+	cp ../lib/libc.obj ~/.kex/root/RD/1/LIB
