@@ -25,19 +25,18 @@ int main(int argc, char** argv) {
 			"#include <stdlib.h>\n" \
 			"#include <time.h>\n" \
 			"#include <sys/dirent.h>\n" \
+			"#include <shell_api.h>\n" \
 			"#include <ksys.h>\n\n" \
 			"ksys_coff_etable_t EXPORTS[] = {\n");
 	
 	// Generate
 	char symbol[256];
 	while(fscanf(input, "%s", symbol) != EOF) {
-		strcat(buf, "\t{");
-		strcat(buf, symbol);
-		strcat(buf, ", \"");
-		strcat(buf, symbol);
-		strcat(buf, "\"},\n");
+		char temp[256];
+		sprintf(temp, "{\"%s\", %s},\n", symbol, symbol);
+		strcat(buf, temp);
 	}
-	strcat(buf, "\t0\n};");
+	strcat(buf, "NULL,\n};");
 	fclose(input);
 	
 	// Output generated
