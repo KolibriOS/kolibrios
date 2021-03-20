@@ -1,0 +1,26 @@
+CC = kos32-gcc
+LD = kos32-ld
+KPACK = kpack
+
+SDK_DIR = $(abspath ../../sdk)
+
+CFLAGS = -c -fno-ident -O2 -fomit-frame-pointer -fno-ident -U__WIN32__ -U_Win32 -U_WIN32 -U__MINGW32__ -UWIN32 -DSDL -D_KOLIBRI -DUSE_ASM
+LDFLAGS = -static -S -nostdlib -T $(SDK_DIR)/sources/newlib/app.lds --image-base 0 --subsystem native --stack 0x200000
+
+INCLUDES = -I $(SDK_DIR)/sources/newlib/libc/include -I. -I$(SDK_DIR)/sources/SDL-1.2.2_newlib/include -I $(SDK_DIR)/sources/zlib
+LIBPATH = -L $(SDK_DIR)/lib -L /home/autobuild/tools/win32/mingw32/lib
+
+C_SRC = chase.c cl_demo.c cl_input.c cl_main.c cl_parse.c cl_tent.c cmd.c common.c console.c crc.c cvar.c d_edge.c d_init.c d_modech.c d_part.c d_polyse.c d_scan.c d_sky.c d_sprite.c d_surf.c draw.c host.c host_cmd.c keys.c mathlib.c menu.c model.c net_loop.c net_main.c net_vcr.c pr_cmds.c pr_edict.c pr_exec.c r_aclip.c r_alias.c r_bsp.c r_draw.c r_edge.c r_efrag.c r_light.c r_main.c r_misc.c r_part.c r_sky.c r_sprite.c r_surf.c sbar.c screen.c snd_dma.c snd_mem.c snd_mix.c sv_main.c sv_move.c sv_phys.c sv_user.c view.c wad.c world.c zone.c sys_sdl.c vid_sdl.c cd_null.c snd_sdl.c net_none.c
+
+ASM_SRC = d_draw.S d_draw16.S d_parta.S d_polysa.S d_scana.S d_spr8.S d_varsa.S math.S r_aclipa.S r_aliasa.S r_drawa.S r_edgea.S r_varsa.S snd_mixa.S surf8.S surf16.S sys_wina.S worlda.S
+
+default:
+	$(CC) $(CFLAGS) $(INCLUDES) $(C_SRC) $(ASM_SRC)
+	$(LD) $(LDFLAGS) $(LIBPATH) -o sdlquake *.o -lSDLn -lsound -lgcc -lc.dll 
+	strip -S sdlquake
+	objcopy sdlquake -O binary
+	$(KPACK) sdlquake
+	
+clean:
+	rm *.o
+
