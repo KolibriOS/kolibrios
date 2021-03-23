@@ -1115,6 +1115,7 @@ SD_Shutdown(void)
     free(DigiList);
 
     SD_Started = false;
+    Mix_CloseAudio();
 }
 
 ///////////////////////////////////////////////////////////////////////////
