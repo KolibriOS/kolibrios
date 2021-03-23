@@ -8,7 +8,7 @@
 #ifndef __ID_SD__
 #define __ID_SD__
 
-#define alOut(n,b) YM3812Write(oplChip, n, b)
+#define alOut(n,b) YM3812Write(0, n, b)
 
 #define TickBase        70      // 70Hz per tick - used as a base for timer 0
 
@@ -107,7 +107,7 @@ typedef struct
     fixed globalsoundx, globalsoundy;
 } globalsoundpos;
 
-extern int channelSoundPos[];
+extern globalsoundpos channelSoundPos[];
 
 // Global variables
 extern  boolean         AdLibPresent,

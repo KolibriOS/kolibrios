@@ -1210,11 +1210,12 @@ static void InitGame()
 #if defined _WIN32
     putenv("SDL_VIDEODRIVER=directx");
 #endif
-    if(SDL_Init(SDL_INIT_VIDEO /*| SDL_INIT_AUDIO | SDL_INIT_JOYSTICK*/) < 0)
+    if(SDL_Init(SDL_INIT_VIDEO) < 0)
     {
         printf("Unable to init SDL: %s\n", SDL_GetError());
         exit(1);
     }
+    SDL_AudioInit(NULL);
     atexit(SDL_Quit);
 
     int numJoysticks = SDL_NumJoysticks();
@@ -1232,8 +1233,10 @@ static void InitGame()
 #endif
     
     SignonScreen ();
+#ifdef _KOLIBRI
     kolibri_set_win_center();
-    
+#endif    
+
 #if defined _WIN32
     if(!fullscreen)
     {
@@ -1886,6 +1889,9 @@ void CheckParameters(int argc, char *argv[])
         printf(
             "Wolf4SDL v1.7 ($Revision$)\n"
             "Ported by Chaos-Software (http://www.chaos-software.de.vu)\n"
+        #ifdef _KOLIBRI
+            "Ported for KolibriOS by 'turbocat2001' and 'maxcodehack'\n"
+        #endif
             "Original Wolfenstein 3D by id Software\n\n"
             "Usage: Wolf4SDL [options]\n"
             "Options:\n"
@@ -1896,8 +1902,10 @@ void CheckParameters(int argc, char *argv[])
             " --normal               Sets the difficulty to normal for tedlevel\n"
             " --hard                 Sets the difficulty to hard for tedlevel\n"
             " --nowait               Skips intro screens\n"
+            #ifndef _KOLIBRI
             " --windowed[-mouse]     Starts the game in a window [and grabs mouse]\n"
             " --res <width> <height> Sets the screen resolution\n"
+            #endif
             "                        (must be multiple of 320x200 or 320x240)\n"
             " --resf <w> <h>         Sets any screen resolution >= 320x200\n"
             "                        (which may result in graphic errors)\n"
@@ -1907,9 +1915,11 @@ void CheckParameters(int argc, char *argv[])
             " --nodblbuf             Don't use SDL's double buffering\n"
             " --extravbls <vbls>     Sets a delay after each frame, which may help to\n"
             "                        reduce flickering (unit is currently 8 ms, default: 0)\n"
+            #ifndef _KOLIBRI
             " --joystick <index>     Use the index-th joystick if available\n"
             "                        (-1 to disable joystick, default: 0)\n"
             " --joystickhat <index>  Enables movement with the given coolie hat\n"
+            #endif
             " --samplerate <rate>    Sets the sound sample rate (given in Hz, default: %i)\n"
             " --audiobuffer <size>   Sets the size of the audio buffer (-> sound latency)\n"
             "                        (given in bytes, default: 2048 / (44100 / samplerate))\n"

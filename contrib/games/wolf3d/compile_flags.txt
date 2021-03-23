@@ -1,0 +1,4 @@
+-I 
+../../sdk/sources/SDL-1.2.2_newlib/include
+../../sdk/sources/newlib/libc/include 
+.

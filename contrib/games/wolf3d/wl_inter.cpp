@@ -2,7 +2,7 @@
 
 #include "wl_def.h"
 #pragma hdrstop
-
+#define itoa ltoa
 LRstruct LevelRatios[LRpack];
 int32_t lastBreathTime = 0;
 
