@@ -1115,7 +1115,9 @@ SD_Shutdown(void)
     free(DigiList);
 
     SD_Started = false;
+    #ifdef _KOLIBRI
     Mix_CloseAudio();
+    #endif
 }
 
 ///////////////////////////////////////////////////////////////////////////
