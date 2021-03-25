@@ -719,8 +719,8 @@ tup.append_table(extra_files, {
  {"kolibrios/games/quake/", "../contrib/other/sdlquake-1.0.9/sdlquake"},
  {"kolibrios/games/fridge/", PROGS .. "/games/fridge/fridge"},
  {"kolibrios/games/", PROGS .. "/games/checkers/trunk/checkers"},
- {"kolibrios/games/wolf3d, ../contrib/games/wolf3d/bin/wolf3d"},
- {"kolibrios/games/wolf3d, ../contrib/games/wolf3d/bin/*.wl6"},
+ {"kolibrios/games/wolf3d/, ../contrib/games/wolf3d/bin/wolf3d"},
+ {"kolibrios/games/wolf3d/, common/games/wolf3d/*wl6"},
 })
 -- For russian build, add russian-only programs.
 if build_type == "rus" then tup.append_table(extra_files, {
