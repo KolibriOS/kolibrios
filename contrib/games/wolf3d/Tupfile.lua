@@ -26,4 +26,4 @@ compile_gcc{
     "SDL_mixer/effects_internal.c", "SDL_mixer/effect_position.c",
 }
 
-link_gcc("bin/wolf3d")
+link_gcc("wolf3d")
