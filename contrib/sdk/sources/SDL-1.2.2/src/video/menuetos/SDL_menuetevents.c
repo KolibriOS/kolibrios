@@ -225,16 +225,16 @@ void MenuetOS_PumpEvents(_THIS)
      if ((__tmp^oldmousestate)&1) {
      if(__tmp&1)
      {
-      SDL_PrivateMouseButton(SDL_PRESSED,SDL_BUTTON_LMASK,0,0);
+      SDL_PrivateMouseButton(SDL_PRESSED,SDL_BUTTON_LEFT,0,0);
      } else {
-     SDL_PrivateMouseButton(SDL_RELEASED,SDL_BUTTON_LMASK,0,0);
+     SDL_PrivateMouseButton(SDL_RELEASED,SDL_BUTTON_LEFT,0,0);
      } }
      if ((__tmp^oldmousestate)&2) {
      if(__tmp&2)
      {
-      SDL_PrivateMouseButton(SDL_PRESSED,SDL_BUTTON_RMASK,0,0);
+      SDL_PrivateMouseButton(SDL_PRESSED,SDL_BUTTON_RIGHT,0,0);
      } else {
-     SDL_PrivateMouseButton(SDL_RELEASED,SDL_BUTTON_RMASK,0,0);
+     SDL_PrivateMouseButton(SDL_RELEASED,SDL_BUTTON_RIGHT,0,0);
      } }
      oldmousestate = __tmp;
     }

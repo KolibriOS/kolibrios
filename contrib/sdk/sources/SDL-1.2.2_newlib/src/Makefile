@@ -1,7 +1,8 @@
 CC = kos32-gcc
 AR = kos32-ar
-LD = kos32-ld
- 
+
+LIBNAME=libSDLn.a
+
 SDK_DIR:= $(abspath ../../..)
  
 endian_OBJS = endian/SDL_endian.o
@@ -38,22 +39,18 @@ CFLAGS = -c -O2 -D_REENTRANT -I../include -I SYSCALL/include -I. -DPACKAGE=\"SDL
         -DNO_SIGNAL_H -DDISABLE_STDIO -DNEED_SDL_GETENV -DENABLE_FILE -UDISABLE_FILE \
         -D__KOLIBRIOS__ -DDEBUG_VIDEO -UWIN32 -U_Win32 -U_WIN32 -U__MINGW32__ \
         -I../../newlib/libc/include/
- 
- 
-LDFLAGS = -shared -s -T../../newlib/libc/app.lds -nostdlib --image-base 0 -L /home/autobuild/tools/win32/mingw32/lib -lgcc -lz -ldll -lc.dll
- 
-ARFLAGS = crs
 
-all: libSDL.a
+all: $(LIBNAME)
  
-install: libSDL.a
-	mv -f libSDL.a $(SDK_DIR)/lib  
+install: $(LIBNAME)
+	mv -f $(LIBNAME) $(SDK_DIR)/lib  
  
-libSDL.a: $(OBJS)
-	$(AR) $(ARFLAGS) libSDL.a $(OBJS) SYSCALL/src/os.o
+$(LIBNAME): $(OBJS)
+	$(MAKE) -C SYSCALL/src
+	$(AR) -crs $(LIBNAME) $(OBJS) SYSCALL/src/os.o
  
 %.o : %.asm Makefile
-	nasm -f coff $< $
+	nasm -f coff $<
  
 %.o : %.c Makefile
 	$(CC) $(CFLAGS) -o $@ $<
