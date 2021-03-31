@@ -3989,11 +3989,14 @@ void
 CheckForEpisodes (void)
 {
     struct stat statbuf;
-/*
+
     // On Linux like systems, the configdir defaults to $HOME/.wolf4sdl
-#if !defined(_WIN32) && !defined(_arch_dreamcast)
+    #if !defined(_WIN32) && !defined(_arch_dreamcast)
     if(configdir[0] == 0)
     {
+    #ifdef _KOLIBRI
+        strcpy(configdir, "/tmp0/1/wolf4sdl");
+    #else    
         // Set config location to home directory for multi-user support
         char *homedir = getenv("HOME");
         if(homedir == NULL)
@@ -4006,8 +4009,9 @@ CheckForEpisodes (void)
             Quit("Your $HOME directory path is too long. It cannot be used for saving games.");
         }
         snprintf(configdir, sizeof(configdir), "%s" WOLFDIR, homedir);
+    #endif
     }
-#endif*/
+#endif
 
     if(configdir[0] != 0)
     {

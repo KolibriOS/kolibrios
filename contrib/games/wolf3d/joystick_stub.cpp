@@ -1,5 +1,5 @@
 /// JOYSTICK STUB FOR Wolfenstein 3D port to KolibriOS
-/// Ported by maxcodehack
+/// Ported by maxcodehack and turbocat2001
 
 /* Set up for C function definitions, even when using C++ */
 #ifdef __cplusplus
@@ -146,9 +146,6 @@ typedef struct _SDL_Joystick SDL_Joystick;
  * Close a joystick previously opened with SDL_JoystickOpen()
  */
   void    SDL_JoystickClose(SDL_Joystick *joystick){};
-
-
-bool mkdir(const char* dir){};
 
 /* Ends C function definitions when using C++ */
 #ifdef __cplusplus

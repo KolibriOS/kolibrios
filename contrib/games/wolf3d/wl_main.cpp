@@ -1887,7 +1887,7 @@ void CheckParameters(int argc, char *argv[])
     {
         if(hasError) printf("\n");
         printf(
-            "Wolf4SDL v1.7 ($Revision$)\n"
+            "Wolf4SDL v1.7\n"
             "Ported by Chaos-Software (http://www.chaos-software.de.vu)\n"
         #ifdef _KOLIBRI
             "Ported for KolibriOS by 'turbocat2001' and 'maxcodehack'\n"
@@ -1902,10 +1902,10 @@ void CheckParameters(int argc, char *argv[])
             " --normal               Sets the difficulty to normal for tedlevel\n"
             " --hard                 Sets the difficulty to hard for tedlevel\n"
             " --nowait               Skips intro screens\n"
-            #ifndef _KOLIBRI
+        #ifndef _KOLIBRI
             " --windowed[-mouse]     Starts the game in a window [and grabs mouse]\n"
             " --res <width> <height> Sets the screen resolution\n"
-            #endif
+        #endif
             "                        (must be multiple of 320x200 or 320x240)\n"
             " --resf <w> <h>         Sets any screen resolution >= 320x200\n"
             "                        (which may result in graphic errors)\n"
@@ -1915,11 +1915,11 @@ void CheckParameters(int argc, char *argv[])
             " --nodblbuf             Don't use SDL's double buffering\n"
             " --extravbls <vbls>     Sets a delay after each frame, which may help to\n"
             "                        reduce flickering (unit is currently 8 ms, default: 0)\n"
-            #ifndef _KOLIBRI
+        #ifndef _KOLIBRI
             " --joystick <index>     Use the index-th joystick if available\n"
             "                        (-1 to disable joystick, default: 0)\n"
             " --joystickhat <index>  Enables movement with the given coolie hat\n"
-            #endif
+        #endif
             " --samplerate <rate>    Sets the sound sample rate (given in Hz, default: %i)\n"
             " --audiobuffer <size>   Sets the size of the audio buffer (-> sound latency)\n"
             "                        (given in bytes, default: 2048 / (44100 / samplerate))\n"
@@ -1928,6 +1928,10 @@ void CheckParameters(int argc, char *argv[])
             " --configdir <dir>      Directory where config file and save games are stored\n"
 #if defined(_arch_dreamcast) || defined(_WIN32)
             "                        (default: current directory)\n"
+#endif
+
+#ifdef _KOLIBRI
+            "                        (default: /tmp0/1/wolf4sdl)\n"
 #else
             "                        (default: $HOME/.wolf4sdl)\n"
 #endif
