@@ -352,6 +352,23 @@ void _ksys_get_colors(ksys_colors_table_t *color_table)
     );
 }
 
+/* Functions for working with a screen. */
+
+static inline
+ksys_pos_t _ksys_screen_size()
+{
+	ksys_pos_t size;
+    ksys_pos_t size_tmp;
+    asm_inline(
+        "int $0x40"
+        :"=a"(size_tmp)
+        :"a"(14)
+    );
+    size.x = size_tmp.y;
+    size.y = size_tmp.x; 
+    return size;
+}
+
 
 /* Functions for working with a mouse and cursors. */
 
@@ -925,18 +942,21 @@ int not_optimized _ksys_file_rename(const char *name, const char *new_name)
 static inline
 int not_optimized _ksys_exec(char *app_name, char *args)
 {
-    ksys70_t file_op;
-    file_op.p00 = 7;
-    file_op.p04dw = 0;
-    file_op.p08dw = (unsigned)args;
-    file_op.p21 = app_name;
-    register int val;
-    asm_inline(
-        "int $0x40"
-        :"=a"(val)
-        :"a"(70), "b"(&file_op)
-    );
-    return val;
+    ksys70_t file_opt;
+    file_opt.p00 = 7;
+    file_opt.p04dw = 0;
+    file_opt.p08dw = (unsigned)args;
+    file_opt.p21 = app_name;
+    return _ksys_work_files(&file_opt);
+}
+
+static inline
+int _ksys_mkdir(const char *path)
+{
+    ksys70_t dir_opt;
+    dir_opt.p00 = 9;
+    dir_opt.p21 = path;
+    return _ksys_work_files(&dir_opt);
 }
 
 /* Working with a named shared memory area. */
@@ -962,5 +982,9 @@ void _ksys_shm_close(char *shm_name)
         :"a"(68), "b"(23), "c"(shm_name)
     );
 }
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif // _KSYS_H_
