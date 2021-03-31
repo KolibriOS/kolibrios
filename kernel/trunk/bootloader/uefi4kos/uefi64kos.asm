@@ -23,6 +23,7 @@ GOP_BUFFER_SIZE = 0x100
 LIP_BUFFER_SIZE = 0x100
 FILE_BUFFER_SIZE = 0x1000
 
+KERNEL_TRAMPOLINE = 0x8f80      ; just before BOOT_LO
 KERNEL_BASE  =  0x10000
 RAMDISK_BASE = 0x100000
 MAX_FILE_SIZE = 0x10000000
@@ -818,7 +819,14 @@ main:
         mov     ecx, 0x17
         rep movsb
 
-        lgdt    [cs:GDTR]
+        ; kernel trampoline
+        mov     rsi, kernel_trampoline
+        mov     rdi, KERNEL_TRAMPOLINE
+        mov     ecx, kernel_trampoline.size
+        rep movsb
+
+        mov     rax, GDTR
+        lgdt    [cs:rax]
 
         mov     ax, DATA_32_SELECTOR
         mov     ds, ax
@@ -828,29 +836,10 @@ main:
         mov     ss, ax
 
         push    CODE_32_SELECTOR
-        lea     rax, [.next]
+        mov     rax, KERNEL_TRAMPOLINE
         push    rax
         retf
-use32
-align 16
-.next:
-        mov     eax, cr0
-        and     eax, not CR0_PG
-        mov     cr0, eax
 
-        mov     ecx, MSR_AMD_EFER
-        rdmsr
-        btr     eax, 8                  ; LME
-        wrmsr
-
-        mov     eax, cr4
-        and     eax, not CR4_PAE
-        mov     cr4, eax
-
-        push    KERNEL_BASE
-        retn
-
-use64
 .error:
         mov     rbx, [efi_table]
         mov     rbx, [rbx+EFI_SYSTEM_TABLE.ConOut]
@@ -1086,7 +1075,25 @@ clearbuf:
         pop     rdi rsi rdx rcx rbx rax
         ret
 
-section '.rodata' data readable
+use32
+kernel_trampoline:
+org KERNEL_TRAMPOLINE
+        mov     eax, cr0
+        and     eax, not CR0_PG
+        mov     cr0, eax
+
+        mov     ecx, MSR_AMD_EFER
+        rdmsr
+        btr     eax, 8                  ; LME
+        wrmsr
+
+        mov     eax, cr4
+        and     eax, not CR4_PAE
+        mov     cr4, eax
+
+        push    KERNEL_BASE
+        retn
+
 align 16
 GDTR:
         dw 4*8-1
@@ -1097,7 +1104,10 @@ GDT:
         dw 0FFFFh,0,9A00h,0CFh          ; 32-bit code
         dw 0FFFFh,0,9200h,0CFh          ; flat data
         dw 0FFFFh,0,9A00h,0AFh          ; 64-bit code
+assert $ < BOOT_LO
+kernel_trampoline.size = $ - KERNEL_TRAMPOLINE
 
+section '.rodata' data readable
 gopuuid         db EFI_GRAPHICS_OUTPUT_PROTOCOL_GUID
 lipuuid         db EFI_LOADED_IMAGE_PROTOCOL_GUID
 sfspguid        db EFI_SIMPLE_FILE_SYSTEM_PROTOCOL_GUID
