@@ -951,7 +951,7 @@ int not_optimized _ksys_exec(char *app_name, char *args)
 }
 
 static inline
-int _ksys_mkdir(const char *path)
+int not_optimized _ksys_mkdir(const char *path)
 {
     ksys70_t dir_opt;
     dir_opt.p00 = 9;
