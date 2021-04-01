@@ -51,6 +51,7 @@ int cmd_exit(char arg[]);
 int cmd_memory(char arg[]);
 int cmd_help(char cmd[]);
 int cmd_kill(char process[]);
+int cmd_pkill(char process_name[]);
 int cmd_ls(char dir[]);
 int cmd_mkdir(char dir[]);
 int cmd_more(char file[]);

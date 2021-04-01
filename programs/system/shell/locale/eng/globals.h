@@ -15,6 +15,7 @@ const command_t COMMANDS[]=
 	{"help",    "  Gives help on commands. Usage:\n\r    help ;it lists all builtins\n\r    help <command> ;help on command\n\r", &cmd_help},
 	{"history", "  Lists used commands\n\r", &cmd_history},	
 	{"kill",    "  Stops a running process. Usage:\n\r    kill <PID of process>\n\r    kill all\n\r", &cmd_kill},
+	{"pkill",   "  Kills all processes by name. Usage:\n\r    pkill <process_name>\n\r", &cmd_pkill},
 	{"ls",      "  Lists the files in a directory. Usage:\n\r    ls ;lists the files in current directory\n\r    ls <directory> ;lists the files at specified folder\n\r    ls -1 ;lists the files in a single column\n\r", &cmd_ls},
 	{"mkdir",   "  Makes directory. Usage:\n\r    mkdir <folder name> ;creates the folder in working directory\n\r    mkdir <path><folder name> ;create folder by specified path\n\r", &cmd_mkdir},
 	{"more",    "  Displays a file data to the screen. Usage:\n\r    more <file name>\n\r", &cmd_more},
