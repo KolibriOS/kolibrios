@@ -355,7 +355,7 @@ void _ksys_get_colors(ksys_colors_table_t *color_table)
 /* Functions for working with a screen. */
 
 static inline
-ksys_pos_t _ksys_screen_size()
+ksys_pos_t not_optimized _ksys_screen_size()
 {
 	ksys_pos_t size;
     ksys_pos_t size_tmp;
