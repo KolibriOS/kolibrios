@@ -384,6 +384,10 @@ void moncontrol(int x)
 
 int main (int c, char **v)
 {
+    #ifdef _KOLIBRI
+        #include "kolibri.h"
+        _ksys_setcwd(dirname(v[0]));
+    #endif
 
 	double		time, oldtime, newtime;
 	quakeparms_t parms;

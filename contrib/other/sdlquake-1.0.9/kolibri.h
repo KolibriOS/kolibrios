@@ -1,3 +1,6 @@
+#ifndef _KOLIBRI_H_
+#define _KOLIBRI_H_
+
 #include <string.h>
 #include <stdlib.h>
 
@@ -47,4 +50,13 @@ char *dirname (char *path)
        found and so a static and constant string is required.  */
     path = (char *) dot;
   return path;
-} 
+}
+
+
+void _ksys_setcwd(char* dir){
+    __asm__ __volatile__ (
+        "int $0x40"
+        ::"a"(30), "b"(1), "c"(dir)
+    );
+};
+#endif

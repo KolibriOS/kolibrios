@@ -834,11 +834,6 @@ Host_Init
 */
 void Host_Init (quakeparms_t *parms)
 {
-    #ifdef _KOLIBRI
-    #include "dirname.c"
-    parms->basedir=dirname(parms->argv[0]);
-    #endif
-    
 	if (standard_quake)
 		minimum_memory = MINIMUM_MEMORY;
 	else
