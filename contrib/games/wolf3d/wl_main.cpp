@@ -25,6 +25,8 @@
 
 extern byte signon[];
 extern void kolibri_set_win_center();
+extern char* dirname(char* path);
+extern void setcwd(char* path);
 /*
 =============================================================================
 
@@ -1959,6 +1961,10 @@ void CheckParameters(int argc, char *argv[])
 
 int main (int argc, char *argv[])
 {
+#ifdef _KOLIBRI
+    setcwd(dirname(argv[0]));
+#endif
+
 #if defined(_arch_dreamcast)
     DC_Init();
 #else
