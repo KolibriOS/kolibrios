@@ -793,6 +793,7 @@ int not_optimized _ksys_process_info(ksys_proc_table_t* table, int pid)
         "int $0x40"
         :"=a"(val)
         :"a"(9), "b"(table), "c"(pid)
+        :"memory"
     );
     return val;
 }
