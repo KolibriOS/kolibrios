@@ -419,7 +419,7 @@ tup.append_table(img_files, {
  {"3D/FREE3D04", PROGS .. "/demos/free3d04/trunk/free3d04"},
  {"3D/GEARS", PROGS .. "/develop/libraries/TinyGL/asm_fork/examples/gears"},
  {"3D/RAY", PROGS .. "/demos/ray/ray"},
- {"3D/VIEW3DS", PROGS .. "/demos/3DS/VIEW3DS"},
+ {"3D/VIEW3DS", PROGS .. "/demos/view3ds/view3ds"},
  {"DEMOS/BCDCLK", PROGS .. "/demos/bcdclk/trunk/bcdclk"},
  {"DEMOS/CIRCLE", PROGS .. "/develop/examples/circle/trunk/circle"},
  {"DEMOS/COLORREF", PROGS .. "/demos/colorref/trunk/colorref"},

@@ -1,4 +1,4 @@
-   ; DATA AREA  ************************************
+                   ; DATA AREA  ************************************
 
         i3              dw      3
         i12             dd      12
@@ -7,7 +7,6 @@
         dot_max         dd      1.0      ; dot product max and min
         dot_min         dd      0.0
         env_const       dd      1.05
-        correct_tex     dw      255
         tex_x_div2      dw      TEX_X  / 2
         tex_y_div2      dw      TEX_Y  / 2
         xobs            dw      0 ;SIZE_X / 2 ;200 ;observer  = camera
@@ -26,6 +25,12 @@
         vect_x        dw SIZE_X / 2
         vect_y        dw SIZE_Y / 2
         vect_z        dw 0
+                size_y_var:
+        yres_var                dw SIZE_Y
+
+        size_x_var:
+        xres_var                dw SIZE_X
+
         angle_x       dw 0
         angle_y       dw 0
         angle_z       dw 0
@@ -52,8 +57,6 @@
         screen_ptr              dd 0
         Zbuffer_ptr             dd 0
         vertices_index_ptr      dd 0
-
-
         vertex_edit_no    dw 0
         edit_start_x:
                           dw 0
@@ -62,6 +65,7 @@
                           dw 0
         edit_end_y        dw 0
         mouse_state           dd 0
+
 
         menu:
                db 2                ; button number  = index
@@ -73,7 +77,7 @@
                db 3
                db 'shd. model'
             if Ext >= SSE3
-               db 14
+ max_dr_flg    db 15
             else
                db 12
             end if
@@ -267,6 +271,7 @@ flags:             ; flags description
     db 'grdl'
     db 'rphg'
     db 'glas'
+    db 'ptex'
  spd_f:
     db 'idle'
     db 'full'
@@ -338,24 +343,24 @@ base_vector:
       if Ext=SSE3
         db   ' (SSE3)'
       end if
-        db   ' 0.071',0
+        db   ' 0.072',0
     labellen:
         STRdata db '-1        '
 
     all_lights_size dw lightsend-lights
 
 
-        file_info:
-                dd      0
-                dd      0
-                dd      0
-         fsize  dd      0 ;180000 ; sizeof(workarea)
-         fptr   dd      0 ;workarea
-        file_name:
-                db      '/rd/1/3d/house.3ds',0
-         ;      db      '/tmp0/1/ant.3ds',0
-
-      rb 256
+;        file_info:
+;                dd      0
+;                dd      0
+;                dd      0
+;         fsize  dd      0 ;180000 ; sizeof(workarea)
+;         fptr   dd      0 ;workarea
+;        file_name:
+;                db      '/rd/1/3d/house.3ds',0
+;         ;      db      '/tmp0/1/ant.3ds',0
+;
+;      rb 256
 
 ;=============================================
 lights:
@@ -410,9 +415,29 @@ align 16
     zero_hgst_dd:
            dd -1, -1, -1, 0
     mask_255f:
+    correct_texf:
            times 4 dd 255.0
     the_zero:
            times 4 dd 0.0
+    tex_m2:
+           times 4 dd 510.0
+    the_one:
+           times 4 dd 1.0
+     aprox  dd 0.0001
+
+
+        file_info:
+                dd      0
+                dd      0
+                dd      0
+         fsize  dd      0 ;180000 ; sizeof(workarea)
+         fptr   dd      0 ;workarea
+        file_name:
+                db      '/rd/1/3d/house.3ds',0
+         ;      db      '/tmp0/1/ant.3ds',0
+
+      rb 256
+
 
 I_END:
 SourceFile:
@@ -444,11 +469,11 @@ align 8
         triangles_count_var     dd ?
         points_count_var        dd ?
 
-        size_y_var:
-        yres_var                dw ?
+;        size_y_var:
+;        yres_var                dw ?
 
-        size_x_var:
-        xres_var                dw ?
+;        size_x_var:
+;        xres_var                dw ?
         x_start:
                                 dw ?
         y_start:
@@ -460,8 +485,8 @@ align 8
         point_index2        dd ?   ;  }  don't change order
         point_index3        dd ?   ;-/
         temp_col            dw ?
-        temp1               dd ?
-        temp2               dd ?
+        temp1               dd ?   ; > dont change
+        temp2               dd ?   ; >  order
         high                dd ?
         rand_seed           dw ?
 align 8

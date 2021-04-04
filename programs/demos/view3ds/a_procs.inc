@@ -19,53 +19,21 @@ do_sinus:
    cld
    rep     stosd
    pop     edi
-;   movzx   eax,[sinus_flag]
-;   mov     edx,10
-;   mul     edx
-;   mov     [sin_amplitude],eax
-;   mov     [sin_frq],eax
    fninit
-;if Ext = SSE2
-;   movups  xmm1,[const0123]   ; xmm1 - init values
-;   mov     eax,0x000000ff
-;   movd    xmm2,eax
-;   shufps  xmm2,xmm2,0        ; xmm2 - mask value
-;   mov     eax,4
-;   movd    xmm3,eax
-;   shufps  xmm3,xmm3,0
  .again:
-if  0
-   fild    dword .x
-   fidiv   [sin_frq]
-   fsin
-   fimul   [sin_amplitude]
-   fiadd   dword .y
-   fistp   dword .new_y
-else
    fild    dword .x
    fmul    [sin_frq]
    fistp   dword .temp
    mov     eax, .temp
-;   mov     bx, [angle_x]
-;   add     bx, [angle_y]
-;   movzx   ebx,bx
-;   shr     ebx,1       ; change phase
-;   add     eax,ebx
-
 
    and     eax, 0x000000ff
 
-;   cdq
- ;  mul     [sin_frq]
-;   and      eax,0x000000ff
-;   and     ax,0x00ff
-;   cwde
 
    fld     dword [sin_tab+eax*4]
    fimul   dword [sin_amplitude]
    fiadd   dword .y
    fistp   dword .new_y
-end if
+
    mov     eax,.new_y
    or      eax,eax
    jl      .skip
@@ -276,109 +244,7 @@ end if
 
 ret
 
-;align 16
-; emboss_bias:
-;    dw 128, 128, 128, 128, 128, 128, 128, 128
 
-if 0  ; old emb proc
-
- ;  emboss -  after drawing all,
- ;  transfer screen buffer into bump map
- ;  and draw two bump triangles
- ; *************************************
-        mov     esi,screen
-        mov     edi,bumpmap2
-        mov     ecx,TEXTURE_SIZE/3
-        cld
-if  Ext=NON
-        xor     eax,eax
-        xor     bh,bh
-        xor     dh,dh
-      @@:
-        lodsb
-        movzx   bx,al
-        lodsb
-        movzx   dx,al
-        lodsb
-        add     ax,bx
-        add     ax,dx
-      ;  cwd
-      ;  div     [i3]
- ;;       push    ax
- ;;       pop     bx
- ;;       shr     bx,3
- ;;       shr     ax,2
- ;;       add     ax,bx
-
-        lea      eax,[eax*5]
-        shr      ax,4
-
-        stosb
-        loop    @b
-else
-        emms
-        pxor          mm1,mm1
-        mov           ebx,0x0000ffff
-      @@:
-        movd          mm0,[esi]
-        punpcklbw     mm0,mm1
-        movq          mm2,mm0
-        psrlq         mm2,16
-        movq          mm3,mm0
-        psrlq         mm3,32
-        paddw         mm0,mm2
-        paddw         mm0,mm3
-
-
-        movd          eax,mm0
-        and           eax,ebx
-        lea           eax,[eax*5]
-        shr           ax,4
-        stosb
-        add           esi,3
-        loop          @b
-
-end if
-        push    ebp
-
-        push    dword 0          ; env coords
-        push    word 0
-        push    word SIZE_X
-        push    word SIZE_Y
-        push    dword 0
-        push    dword 0          ; bump coords
-        push    word SIZE_X
-        push    word SIZE_Y
-        push    word 0
-        mov     eax,SIZE_Y
-        mov     ebx,SIZE_X*65536+0
-        xor     ecx,ecx
-        mov     edx,bumpmap2
-        mov     esi,envmap
-        mov     edi,screen
-        call    bump_triangle
-
-        push    dword SIZE_X shl 16 + SIZE_Y       ; env coords
-        push    word 0
-        push    word SIZE_X
-        push    word SIZE_Y
-        push    word 0
-        push    dword SIZE_X shl 16 + SIZE_Y        ; bump coords
-        push    word 0
-        push    word SIZE_X
-        push    word SIZE_Y
-        push    word 0
-        mov     eax,SIZE_Y
-        mov     ebx,SIZE_X * 65536+0
-        mov     ecx,SIZE_X shl 16 + SIZE_Y
-        mov     edx,bumpmap2
-        mov     esi,envmap
-        mov     edi,screen
-        call    bump_triangle
-
-        pop     ebp
-ret
-end if
 ;********************************EMBOSS DONE*******************************
 
 

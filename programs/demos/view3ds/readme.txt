@@ -1,12 +1,14 @@
-View3ds 0.071 - tiny viewer to .3ds and .asc files with several graphics
+View3ds 0.072 - tiny viewer to .3ds and .asc files with several graphics
                 effects implementation.
 
-
 What's new?
-1. New displaying model - glass -  it's two pass rendering. First pass calculates
-   Z position of all front pixels, second render image with adding reflective
-   component of light only for front pixels. Transparent effect by adding with saturation.
-2. I removed bug with performing generation object after choosing 'emboss' option.
+1. New displaying model - texturing with bilinear filtering and transparency
+    simultanusly. Note that filtering is done only inside polygon. To better 
+    quality of image there is a need to use floats coordinates of texture to pass
+    as arguments to single triangle rendering proc.
+2. Optimizations.
+3. SSE3 version runs correct on SSE2 cpus, but real phong, glass and 
+    transparented texturing with filtering rendering models are disabled.
 
 Buttons description:
 1.  rotary: choosing rotary axle: x, y, x+y.
@@ -15,7 +17,8 @@ Buttons description:
     pos (position shading depend), dots (app draws only points - nodes of object),
     txgrd (texture mapping + smooth shading),  2tex (texture mapping + spherical
     environment mapping), bmap (bump + texture mapping),  cenv (cubic environment
-    mapping), grdl (Gouraud lines - edges only), rphg (real Phong).
+    mapping), grdl (Gouraud lines - edges only), rphg (real Phong), glas (glass effect),
+    ptex (real Phong + texturing + transparency).
 3.  speed: idle, full.
 4,5. zoom in, out: no comment.
 6.  catmull: disabled
@@ -40,4 +43,4 @@ Buttons description:
     is released apply current position. You may also decrease whole handlers count by enable culling (using
     appropriate button) - some back handlers become hidden.
 
-                         Maciej Guba             VIII 2020
+                         Maciej Guba             III 2021

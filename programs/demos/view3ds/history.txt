@@ -1,6 +1,12 @@
 
-View3ds 0.070 - VII 2020
+View3ds 0.071 - VIII 2020
+1. New displaying model - glass -  it's two pass rendering. First pass calculates
+   Z position of all front pixels, second render image with adding reflective
+   component of light only for front pixels. Transparent effect by adding with saturation.
+2. I removed bug with performing generation object after choosing 'emboss' option.
+-----------------------------------------------------------------------------------
 
+View3ds 0.070 - VII 2020
 1. Some keys support by Leency.
 2. New displaying model - real Phong - real not fake normal vector interpolation,
    normalising it and calculating  dot product (one for each light).
