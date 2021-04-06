@@ -28,7 +28,9 @@ typedef struct {
     unsigned char green;
     unsigned char red;
 }rgb_t;
- 
+
+typedef unsigned int ksys_color_t; 
+
 #pragma pack(push,1)
 typedef union{
     unsigned val;
@@ -118,8 +120,6 @@ typedef struct {
   unsigned char window_state;//+70
   char reserved3[1024-71];   //+71
 }ksys_proc_table_t;
-
-typedef unsigned int ksys_color_t;
 
 typedef struct{
     ksys_color_t frame_area;
@@ -786,7 +786,7 @@ int _ksys_get_thread_slot(int tid){
 }
 
 static inline 
-int not_optimized _ksys_process_info(ksys_proc_table_t* table, int pid)
+int _ksys_process_info(ksys_proc_table_t* table, int pid)
 {
     int val;
     asm_inline(
