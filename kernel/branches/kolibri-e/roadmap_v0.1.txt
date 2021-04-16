@@ -1,0 +1,24 @@
+﻿roadmap
+kolibri e 0.1
+
+- к выполнению
+/ в процессе
++ выполнено
+
+Задачи:
+- зачистить дистрибутив от демок и прочих экзотических программ
+- написать подробную документацию с гайдом на русском языке
+- починить меню и скин
+- добавить SDK
+
+____________________________________________________________
+
+- for implementation
+/ in the process
++ completed
+
+Tasks:
+- clean the distribution kit from demos and other exotic programs
+- write detailed documentation with a guide in Russian
+- fix the menu and skin
+- add SDK
