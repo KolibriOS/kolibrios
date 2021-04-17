@@ -881,7 +881,7 @@ common_app_entry:
         mov     byte [edi], 0
 .check_tls_header:
         cmp     word [6], '02'
-        jne     .cleanup
+        jne     .try_load_dll ;.cleanup
         call    init_heap
         stdcall user_alloc, 4096
         mov     edx, [current_slot]
@@ -891,7 +891,58 @@ common_app_entry:
         mov     [tls_data_l+4], al
         mov     [tls_data_l+7], ah
         mov     dx, app_tls
-        mov     fs, dx
+        mov     fs, dx       
+; { Patch by Coldy, For DLL autoload 
+;   if APP_HEADER.version = 2 => lib/load dll.obj & change eip to APP_START_THUNK)
+.try_load_dll:
+; TODO: It;s app, not thread?
+           
+; Test app header version (
+        mov     ecx, dword[ebp+APP_HDR.img_base]
+        ;DEBUGF 1, "K : ecx = %d\n", [ecx+8]
+        cmp     dword[ecx+8], 2
+        jne     .cleanup
+        DEBUGF 1, 'K : App header version 2\n'
+        ;DEBUGF 1, "K : DLL.OBJ path: %s\n", dll_lib_path
+        stdcall load_library, dll_lib_path, 0
+        ;DEBUGF 1, "K : DLL.OBJ exp ptr: %x\n", eax
+        
+        ;test eax, eax
+        ;jnz @f
+        cmp     eax, 0
+        jne     @f
+; Something went wrong 
+        stdcall free_kernel_space, [ebp+APP_HDR.img_base]
+        stdcall kernel_free, ebp
+        DEBUGF 1, 'K : DLL.OBJ not found! Terminate application!'
+        mov     ebx, dll_error_msg
+        mov     ebp, notifyapp
+        call    fs_execute_from_sysdir_param
+; Terminate process 
+        call    sys_end
+        
+@@:       
+        ; Find base of DLL.OBJ
+        ;mov     ebx, eax
+        ;cdq
+        ;mov     ecx, 0x00000400
+        ;div     ecx
+        ;sub     ebx, edx
+        sub     eax, 4
+        mov     eax, [eax]   
+        ;DEBUGF 1, "K : DLL.OBJ base ptr: %x\n", eax
+        
+; load_library don't map coff header,
+; so we may change entry point for app APP_START_THUNK
+; to base of DLL.OBJ
+        
+;.change_eip:
+        mov     ecx, [current_slot]
+        mov     ecx, [ecx+APPDATA.pl0_stack]
+        ;DEBUGF 1, "K : EIP = %x\n", ebx
+        mov     [ecx+REG_EIP], eax
+        
+; } End patch by Coldy, For DLL autoload
 .cleanup:
         stdcall free_kernel_space, [ebp+APP_HDR.img_base]
         stdcall kernel_free, ebp

@@ -177,7 +177,10 @@ kernel_file_load:
         db      '/sys/KERNEL.MNT',0
 
 dev_data_path  db '/RD/1/DRIVERS/DEVICES.DAT',0
-
+; { Patch by Coldy, For DLL autoload
+dll_lib_path  db '/RD/1/LIB/DLL.OBJ',0
+dll_error_msg db '"DLL.OBJ not found!\nTerminate application!" -dE',0   
+; } End patch by Coldy, For DLL autoload
 align 4
 
 shmem_list:
