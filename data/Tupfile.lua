@@ -1,4 +1,4 @@
-﻿-- Do nothing unless explicitly requested in tup.config.
+-- Do nothing unless explicitly requested in tup.config.
 build_type = tup.getconfig('BUILD_TYPE')
 if build_type == "" then
   return
@@ -477,6 +477,7 @@ tup.append_table(img_files, {
  {"LIB/BUF2D.OBJ", PROGS .. "/develop/libraries/buf2d/trunk/buf2d.obj"},
  {"LIB/CONSOLE.OBJ", PROGS .. "/develop/libraries/console_coff/console.obj"},
  {"LIB/CNV_PNG.OBJ", PROGS .. "/media/zsea/plugins/png/cnv_png.obj"},
+ {"LIB/DLL.OBJ", PROGS .. "/develop/libraries/dll/dll.obj"},
  {"LIB/HTTP.OBJ", PROGS .. "/develop/libraries/http/http.obj"},
  {"LIB/LIBGFX.OBJ", PROGS .. "/develop/libraries/libs-dev/libgfx/libgfx.obj"},
  {"LIB/LIBIMG.OBJ", PROGS .. "/develop/libraries/libs-dev/libimg/libimg.obj"},
