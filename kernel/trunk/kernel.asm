@@ -5420,6 +5420,14 @@ syscall_putarea_backgr:
         mov     esi, ecx
 ; ecx - size x, edx - size y
         mov     ebp, edx
+        
+        lea     ebp, [ebp*4]
+        imul    ebp, esi
+        stdcall is_region_userspace, edi, ebp
+        jz      .exit
+ 
+        mov     ebp, edx
+
         dec     ebp
         shl     ebp, 2
 
@@ -5477,6 +5485,7 @@ align 4
         dec     edx
         jnz     .start_y
 
+.exit:
         popad
         ret
 ;-----------------------------------------------------------------------------
