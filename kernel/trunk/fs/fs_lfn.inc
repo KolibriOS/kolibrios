@@ -458,6 +458,14 @@ sys_current_directory:  ; sysfunction 30
 
 .get:
 ; in: ecx -> buffer, edx = length, eax = encoding
+        stdcall is_region_userspace, ecx, edx
+        jnz     @f
+
+        ; if illegal buffer given
+        xor     edx, edx
+        jmp     .ret
+@@:
+
         mov     esi, edi
         inc     esi
         mov     edi, ecx
