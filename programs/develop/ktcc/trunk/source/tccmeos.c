@@ -319,14 +319,13 @@ int tcc_output_me(TCCState* s1,const char *filename)
 	return 0;
 }
 
-#ifndef _WIN32
+#if !defined(_WIN32) && !defined(TCC_TARGET_MEOS_LINUX)
 
 static inline int get_current_folder(char* buf, int bufsize){
     register int val;
     asm volatile ("int $0x40":"=a"(val):"a"(30), "b"(2), "c"(buf), "d"(bufsize));
     return val;
 }
-
 
 char *getcwd(char *buf, size_t size)
 {
