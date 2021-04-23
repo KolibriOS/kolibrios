@@ -5,7 +5,7 @@ include "__lib__.inc"
 fun      equ http_free
 fun_str  equ 'free'
 
-section '.imp.@.'
+section '.text'
 
 fun_name db fun_str, 0
 

@@ -41,7 +41,6 @@ typedef struct {
 	meos_section_info* code_sections;
 	meos_section_info* data_sections;
 	meos_section_info* bss_sections;
-	meos_section_info* imp_sections; // Pointers to imported libraries and functions
 } me_info;
 
 int tcc_output_dbgme(const char *filename, me_info* me);
@@ -61,11 +60,6 @@ meos_section_info* findsection(me_info* me,int num)
 			return si;
 	}
 	for (si=me->bss_sections;si;si=si->next)
-	{
-		if (si->sec_num==num)
-			return si;
-	}
-	for (si=me->imp_sections;si;si=si->next)
 	{
 		if (si->sec_num==num)
 			return si;
@@ -168,16 +162,6 @@ void assign_addresses(me_info* me)
 			me->bss_sections=si;
 			continue;
 		}
-		if (strcmp(".imp.@.",s->name)==0)
-		{
-			si=tcc_malloc(sizeof(meos_section_info));
-			si->data=s->data;
-			si->data_size=s->data_offset;
-			si->next=me->imp_sections;
-			si->sec_num=i;
-			me->imp_sections=si;
-			continue;
-		}
 	}
 	int addr;
 	addr=sizeof(IMAGE_MEOS_FILE_HEADER);
@@ -187,11 +171,6 @@ void assign_addresses(me_info* me)
 		addr+=si->data_size;
 	}
 	for (si=me->data_sections;si;si=si->next)
-	{
-		si->sh_addr=addr;
-		addr+=si->data_size;
-	}
-	for (si=me->imp_sections;si;si=si->next)
 	{
 		si->sh_addr=addr;
 		addr+=si->data_size;
@@ -290,13 +269,6 @@ int tcc_output_me(TCCState* s1,const char *filename)
 		fwrite(si->data,1,si->data_size,f);
 	for (si=me.data_sections;si;si=si->next)
 		fwrite(si->data,1,si->data_size,f);
-	// IMPORTANT: Write ".imp.@." sections at the very end!
-	// BSS sections don't count, they should not be in the file at all
-	// Cause MENUET header filled assuming that file size does not include BSS
-	// We just emit it for smaller entrophia, sometimes
-	// it makes the kex file being packed better
-	for (si=me.imp_sections;si;si=si->next)
-		fwrite(si->data,1,si->data_size,f);
 	if (!s1->nobss)
 	{
 		for (si=me.bss_sections;si;si=si->next)
@@ -326,6 +298,7 @@ static inline int get_current_folder(char* buf, int bufsize){
     asm volatile ("int $0x40":"=a"(val):"a"(30), "b"(2), "c"(buf), "d"(bufsize));
     return val;
 }
+
 
 char *getcwd(char *buf, size_t size)
 {

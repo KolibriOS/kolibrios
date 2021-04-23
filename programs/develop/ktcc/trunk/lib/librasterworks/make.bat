@@ -1,8 +1,7 @@
 fasm __lib__.asm
-fasm charsFit.asm
-fasm cntUTF-8.asm
-fasm drawText.asm
-fasm strWidth.asm
-kos32-ar -ru librasterworks.a *.o
+fasm mb_create.asm 
+fasm mb_reinit.asm  
+fasm mb_setfunctions.asm
+kos32-ar -ru libmsgbox.a *.o
 del *.o
 pause

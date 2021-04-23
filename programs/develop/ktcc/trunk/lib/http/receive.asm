@@ -5,7 +5,7 @@ include "__lib__.inc"
 fun      equ http_receive
 fun_str  equ 'receive'
 
-section '.imp.@.'
+section '.text'
 
 fun_name db fun_str, 0
 

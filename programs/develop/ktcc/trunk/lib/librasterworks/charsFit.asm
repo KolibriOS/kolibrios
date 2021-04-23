@@ -5,7 +5,7 @@ include "__lib__.inc"
 fun      equ charsFit
 fun_str  equ 'charsFit'
 
-section '.imp.@.'
+section '.text'
 
 fun_name db fun_str, 0
 

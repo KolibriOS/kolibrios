@@ -5,7 +5,7 @@ include "__lib__.inc"
 fun      equ msgbox_create
 fun_str  equ 'mb_create'
 
-section '.imp.@.'
+section '.text'
 
 fun_name db fun_str, 0
 

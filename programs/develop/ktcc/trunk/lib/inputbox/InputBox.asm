@@ -5,7 +5,7 @@ include "__lib__.inc"
 fun      equ InputBox
 fun_str  equ 'InputBox'
 
-section '.imp.@.'
+section '.text'
 
 fun_name db fun_str, 0
 
