@@ -168,7 +168,7 @@ iglobal
       dd syscall_move_window     ; 67-Window move or resize
       dd f68                     ; 68-Some internal services
       dd sys_debug_services      ; 69-Debug
-      dd file_system_lfn         ; 70-Common file system interface, version 2
+      dd syscall_file_system_lfn         ; 70-Common file system interface, version 2
       dd syscall_window_settings ; 71-Window settings
       dd sys_sendwindowmsg       ; 72-Send window message
       dd blit_32                 ; 73-blitter;
@@ -178,7 +178,7 @@ iglobal
       dd sys_posix               ; posix support
       dd undefined_syscall       ; 78-free
       dd undefined_syscall       ; 79-free
-      dd fileSystemUnicode       ; 80-File system interface for different encodings
+      dd syscall_fileSystemUnicode       ; 80-File system interface for different encodings
 
         times 255 - ( ($-servetable2) /4 )  dd undefined_syscall
       dd sys_end                 ; -1-end application

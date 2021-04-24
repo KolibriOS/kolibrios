@@ -385,7 +385,12 @@ proc get_fileinfo stdcall, file_name:dword, info:dword
 
         mov     eax, 70
         lea     ebx, [cmd]
-        int     0x40
+        pushad
+        cld
+        call    protect_from_terminate
+        call    file_system_lfn
+        call    unprotect_from_terminate
+        popad
         ret
 endp
 
