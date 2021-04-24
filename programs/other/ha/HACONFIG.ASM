@@ -37,7 +37,7 @@ dd START
 dd I_END
 dd MEM
 dd STACKTOP
-dd 0, 0
+dd 0, sys_path
 
 ; Начало области кода
 include 'lang.inc'       ;поддержка языков при компиляции
@@ -1667,7 +1667,7 @@ but_open_dlg:
 align 4
 OpenDialog_data:
 .type                   dd 0 ;0 - открыть, 1 - сохранить, 2 - выбрать директорию
-.procinfo               dd procinfo
+.procinfo               dd pi
 .com_area_name          dd communication_area_name ;+8
 .com_area               dd 0           ;+12
 .opendir_path           dd plugin_path ;+16
@@ -1778,8 +1778,7 @@ plugin_path:   rb 4096
 openfile_path: rb 4096
 filename_area: rb 256
 rb 1024
-procinfo process_information
-pi rb 1024
+pi process_information
 
 keyscan: rb 1
 keystr:
