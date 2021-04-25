@@ -772,10 +772,16 @@ edit_box.draw_bg_eax:
 ;----------------------------------------------------------
 ;--- процедура получения количества символов в текущей ширине компонента
 ;----------------------------------------------------------
+align 4
 edit_box.get_n:
 	mov	eax,ed_width
 	sub	eax,4
 	xor	edx,edx
+	cmp word ed_char_width,0
+	jne @f
+	xor eax,eax
+	ret
+	@@:
 	div	word ed_char_width
 	ret
 
