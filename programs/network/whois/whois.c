@@ -4,14 +4,15 @@ The main code is taken from the site:
 https://www.binarytides.com/whois-client-code-in-c-with-linux-sockets/
 */
 
+#include <errno.h>
+int errno;
+
+#include <sys/ksys.h>
 #include <stdio.h>
-#include <conio.h>	
 #include <string.h>	
 #include <stdlib.h>	
-#include <net/socket.h>	
-#include <net/network.h>
-
-#define stdout (FILE*)0
+#include <sys/socket.h>	
+#include <clayer/network.h>
 
 FILE *out=stdout;
 
@@ -21,23 +22,6 @@ FILE *out=stderr;
 
 #define EXIT_SUCCESS 0
 #define EXIT_FAILURE 1
-#define perror(STR) debug_printf(STR);
-
-int unix_fprintf(FILE* file, const char* format, ...)
-{
-    va_list	arg;
-    va_start (arg, format);
-    if(file==stdout){
-		return vprintf(format, arg);
-	}else if(file==stderr){
-		char log_board[300];
-		vsnprintf(log_board, sizeof log_board, format, arg);
-        debug_out_str(log_board);
-		return 0;
-	}else{
-		return vfprintf(file, format, arg);
-	}
-}
 
 void show_help()
 {
@@ -53,11 +37,6 @@ int whois_query(char * , char * , char **);
 char *str_replace(char *search , char *replace , char *subject );
 char* str_copy(char*);
 
-void start_console()
-{
-	con_init_console_dll();
-	con_set_title("Whois");
-}
 
 int main(int argc , char *argv[])
 {	
@@ -66,7 +45,6 @@ int main(int argc , char *argv[])
 	int f_flag=0;
 
 	if(argc==2){
-		start_console();
 		domain=strdup(argv[1]);
 	}
 
@@ -77,11 +55,12 @@ int main(int argc , char *argv[])
 			exit(0);
 		}
 	}else{
-		start_console();
 		show_help();
 		exit(0);
 	}
-
+	if(out==stdout){
+		con_set_title("Whois");
+	}
 	get_whois_data(domain , &data);
 	exit(0);
 }
@@ -100,23 +79,23 @@ int get_whois_data(char *domain , char **data)
 
 	//get the extension , com , org , edu
 	dt = strdup(domain);
+
 	if(dt == NULL){
-		unix_fprintf(out, "strdup failed");
+		fprintf(out, "strdup failed");
 	}
 	pch = (char*)strtok(dt , ".");
 	while(pch != NULL){
 		strcpy(ext , pch);
 		pch = strtok(NULL , ".");
 	}
-	
 	// This will tell the whois server for the particular TLD like com , org
 	if( whois_query("whois.iana.org" , ext , &response) == EXIT_FAILURE){
-		unix_fprintf(out, "Whois query failed");
+		fprintf(out, "Whois query failed");
         return 1;
 	}
-	unix_fprintf(out, "\n\nResponse is:\n\n");
-	unix_fprintf(out, "%s", response);
-	
+	fprintf(out, "\n\nResponse is:\n\n");
+	fprintf(out, "%s", response);
+
 	// Now analysze the response
 	pch = strtok(response , "\n");
 	while(pch != NULL){
@@ -131,17 +110,18 @@ int get_whois_data(char *domain , char **data)
 	}
 	// Now we have the TLD whois server in wch , query again
 	//This will provide minimal whois information along with the parent whois server of the specific domain :)
+	wch = strdup(wch);
 	free(response);
     //This should not be necessary , but segmentation fault without this , why ?
 	response = NULL;
 	if(wch != NULL){
-		unix_fprintf(out, "\nTLD Whois server is : %s" , wch);
-        if( whois_query(wch , domain , &response) == EXIT_FAILURE){
-			unix_fprintf(out, "Whois query failed\n");
+		fprintf(out,"\nTLD Whois server is : %s" , wch);
+		if( whois_query(wch , domain , &response) == EXIT_FAILURE){
+			fprintf(out, "Whois query failed\n");
             return EXIT_FAILURE;
 		}
 	}else{
-		unix_fprintf(out, "\nTLD whois server for %s not found\n" , ext);
+		fprintf(out, "\nTLD whois server for %s not found\n" , ext);
 		return EXIT_SUCCESS;
 	}
 	
@@ -166,19 +146,19 @@ int get_whois_data(char *domain , char **data)
 		// Now we have the registrar whois server , this has the direct full information of the particular domain
 		// so lets query again
 		
-		unix_fprintf(out, "\nRegistrar Whois server is : %s" , wch);
+		fprintf(out, "\nRegistrar Whois server is : %s" , wch);
 		
 		if( whois_query(wch , domain , &response) == EXIT_FAILURE ){
-			unix_fprintf(out, "Whois query failed");
+			fprintf(out, "Whois query failed");
 		}else{
-            unix_fprintf(out, "\n%s" , response);
+            fprintf(out, "\n%s" , response);
         }
 	}
 	/*
         otherwise echo the output from the previous whois result
     */
 	else{
-		unix_fprintf(out, "%s" , response_2);
+		fprintf(out, "%s" , response_2);
 	}	
 	return 0;
 }
@@ -196,31 +176,30 @@ int whois_query(char *server , char *query , char **response)
 	sock = socket(AF_INET4 , SOCK_STREAM , IPPROTO_TCP);
      
     //Prepare connection structures :)
-    memset( &dest , 0 , sizeof(dest) );
-    dest.sin_family = AF_INET;
-    
+    memset(&dest , 0 , sizeof(dest) );
+	dest.sin_family = AF_INET;
     server = str_copy(server);
+	
     server[strcspn(server, "\r\n")] = '\0';
-    
-	unix_fprintf(out, "\nResolving: %s ...\n" , server);
-	if( hostname_to_ip(server , ip) == EXIT_FAILURE ){
-        unix_fprintf(out, "Failed\n");
+	fprintf(out, "\nResolving: %s ...\n" , server);
+	if(hostname_to_ip(server , ip) == EXIT_FAILURE ){
+        fprintf(out, "Failed\n");
         return EXIT_FAILURE;
 	}
 	
-	unix_fprintf(out, "Found ip: %s \n" , ip);    
-	
+	fprintf(out, "Found ip: %s \n" , ip);    
     dest.sin_addr = inet_addr(ip);
 	dest.sin_port = PORT(WHOIS_PORT);
 
-	//Now connect to remote server
+;	//Now connect to remote server
 	if(connect(sock , (const struct sockaddr*) &dest , sizeof(dest)) < 0){
 		perror("connect failed");
+		perror(strerror(errno));
         return EXIT_FAILURE;
 	}
-	
+
 	//Now send some data or message
-	unix_fprintf(out, "\nQuerying for: %s ...\n" , query);
+	fprintf(out, "\nQuerying for: %s ...\n" , query);
 	sprintf(message , "%s\r\n" , query);
 	if( send(sock , message , strlen(message) , 0) < 0){
 		perror("send failed");
@@ -231,15 +210,14 @@ int whois_query(char *server , char *query , char **response)
 	while((read_size = recv(sock, buffer, sizeof(buffer), 0))){
 		*response = realloc(*response , read_size + total_size);
 		if(*response == NULL){
-			unix_fprintf(out, "realloc failed");
+			fprintf(out, "realloc failed");
             return EXIT_FAILURE;
 		}
 		memcpy(*response + total_size , buffer , read_size);
 		total_size += read_size;
 	}
 	
-	unix_fprintf(out, "Done\n");
-	//fflush(stdout);
+	fprintf(out, "Done\n");
 	
 	*response = realloc(*response , total_size + 1);
 	*(*response + total_size) = '\0';
