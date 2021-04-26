@@ -690,7 +690,7 @@ end -- tup.getconfig('NO_MSVC') ~= 'full'
 if tup.getconfig('NO_TCC') ~= 'full' then
 tup.append_table(img_files, {
  {"NETWORK/WHOIS", PROGS .. "/network/whois/whois"},
- {"NETWORK/WEATHER", PROGS .. "/other/Weather/weather"},
+-- {"NETWORK/WEATHER", PROGS .. "/other/Weather/weather"},
 })
 tup.append_table(extra_files, {
  {"kolibrios/utils/thashview", PROGS .. "/other/TinyHashView/thashview"},
