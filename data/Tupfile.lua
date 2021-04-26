@@ -42,6 +42,7 @@ img_files = {
  {"LIB/KMENU.OBJ", "common/lib/kmenu.obj"},
  {"LIB/NETCODE.OBJ", "common/lib/netcode.obj"},
  {"LIB/PIXLIB.OBJ", "common/lib/pixlib.obj"},
+ {"LIB/LIBC.OBJ", "common/lib/libc.obj"}, 
  {"MEDIA/IMGF/IMGF", "common/media/ImgF/ImgF"},
  {"MEDIA/IMGF/CEDG.OBJ", "common/media/ImgF/cEdg.obj"},
  {"MEDIA/IMGF/DITHER.OBJ", "common/media/ImgF/dither.obj"},
