@@ -1,5 +1,5 @@
 #define MEMSIZE 1024 * 40
-//Copyright 2020 by Leency
+//Copyright 2020 - 2021 by Leency
 #include "../lib/gui.h"
 #include "../lib/random.h"
 #include "../lib/obj/box_lib.h"
@@ -181,21 +181,31 @@ void MonitorProgress()
 			StartDownloading();
 			return;
 		}
-		SaveFile();
+		SaveFile(0);
 		if (exit_param) ExitProcess();
 		StopDownloading();
 		DrawWindow();
 	}
 }
 
-void SaveFile()
+void SaveFile(int attempt)
 {
-	int i;
+	int i, fi=0;
 	char notify_message[4296];
 	char file_name[URL_SIZE+96];
 
 	strcpy(#filepath, #save_dir);
 	chrcat(#filepath, '/');
+
+	if (attempt > 9) {
+		notify("'Too many saving attempts' -E");
+		return;
+	}
+
+	if (attempt > 0) { 
+		chrcat(#filepath, attempt+'0'); 
+		chrcat(#filepath, '_'); 
+	}
 
 	//Content-Disposition: attachment; filename="RealFootball_2018_Nokia_5800_EN_IGP_EU_TS_101.zip"
 	if (http.header_field("content-disposition", #file_name, sizeof(file_name))) {
@@ -213,6 +223,11 @@ void SaveFile()
 	}
 	
 	for (i=0; i<strlen(#filepath); i++) if(filepath[i]==':')||(filepath[i]=='?')filepath[i]='-';
+
+	while (file_exists(#filepath)) {
+		SaveFile(attempt+1);
+		return;
+	} 
 
 	if (CreateFile(http.content_received, http.content_pointer, #filepath)==0) {
 		miniprintf(#notify_message, FILE_SAVED_AS, #filepath);
