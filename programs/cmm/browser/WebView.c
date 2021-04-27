@@ -238,7 +238,6 @@ void main()
 					}
 					LoadInternalPage(http.content_pointer, http.content_received);
 					free(http.content_pointer);
-					http.hfree();
 				}
 				else if (http_get_type==IMG) {
 					_IMG_RES:
@@ -247,8 +246,8 @@ void main()
 					} else {
 						cache.add(cur_img_url, 0, 0, IMG, NULL);
 					}
-					free(http.content_pointer);
 					http.hfree();
+					free(http.content_pointer);
 					GetImg(false);
 				}
 			}
@@ -726,6 +725,7 @@ void LoadInternalPage(dword _bufdata, _in_bufsize){
 		} else {
 			WB1.DrawPage();
 		}
+		http.hfree();
 		if (WB1.img_url.count) { GetImg(true); DrawOmnibox(); }
 	}
 }

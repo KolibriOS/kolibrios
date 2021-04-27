@@ -115,6 +115,7 @@ bool _http::stop()
 {
 	if (transfer)
 	{
+		/*
 		EAX = transfer;
 		EAX = EAX.http_msg.content_ptr;         // get pointer to data
 		$push   EAX                                                     // save it on the stack
@@ -122,6 +123,8 @@ bool _http::stop()
 		$pop    EAX                                                     
 		free(EAX);                                              // free data
 		transfer=0;
+		*/
+		hfree();
 		return true;    
 	}
 	return false;
