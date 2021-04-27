@@ -7,7 +7,7 @@ FASM=fasm
 CFLAGS =  -c -nostdinc -I../include -DGNUC -D_KOLIBRI_LIBC_OBJ -Os -fno-common -fno-builtin -fno-leading-underscore -fno-pie
 
 SRC=libc.c
-LIB=libc.obj
+LIB=../lib/libc.obj
 
 all:
 	$(MAKE) -C ../linuxtools/src

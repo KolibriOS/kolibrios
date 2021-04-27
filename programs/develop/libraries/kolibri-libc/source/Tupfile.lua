@@ -10,7 +10,4 @@ tup.rule("../linuxtools/src/LoaderGen.c", "gcc %f -o %o" , "../linuxtools/Loader
 
 tup.rule({"symbols.txt",extra_inputs = {"../linuxtools/ExportGen"}}, "../linuxtools/ExportGen %f %o" , "exports/exports.c")
 
-tup.rule({"libc.c",extra_inputs = {"exports/exports.c"}} , "kos32-gcc" .. CFLAGS .. INCLUDES .. " -o %o %f " .. tup.getconfig("KPACK_CMD"), "../lib/libc.obj")
-
-
- 
+tup.rule({"libc.c",extra_inputs = {"exports/exports.c"}} , "kos32-gcc" .. CFLAGS .. INCLUDES .. " -o %o %f " .. tup.getconfig("KPACK_CMD"), "libc.obj")
