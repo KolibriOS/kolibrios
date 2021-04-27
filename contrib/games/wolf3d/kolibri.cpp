@@ -1,7 +1,123 @@
 #include <stdlib.h>
 #include <sys/stat.h>
-#include "../../kolibri-libc/source/include/ksys.h"
 #include <string.h>
+
+#define asm_inline __asm__ __volatile__
+
+#pragma pack(push,1)
+typedef union{
+    unsigned val;
+    struct{
+        short  x;
+        short  y;
+    };
+}ksys_pos_t;
+
+typedef union ksys_oskey_t{
+    unsigned val;
+    struct{
+        unsigned char state;
+        unsigned char code;
+        unsigned char ctrl_key;
+    };
+}ksys_oskey_t;
+
+typedef struct{
+  unsigned     handle;
+  unsigned     io_code;
+  unsigned     *input;
+  int          inp_size;
+  void         *output;
+  int          out_size;
+}ksys_ioctl_t;
+
+typedef struct{
+    void *data;
+    size_t size;
+}ksys_ufile_t;
+
+
+typedef struct{
+    unsigned            p00;
+    union{
+        uint64_t        p04; 
+        struct {
+            unsigned    p04dw;
+            unsigned    p08dw;
+        };
+    };
+    unsigned            p12;
+    union {
+        unsigned        p16;
+        const char     *new_name;
+        void           *bdfe;
+        void           *buf16;
+        const void     *cbuf16;
+    };
+    char                p20;
+    const char         *p21;
+}ksys70_t;
+
+typedef struct {
+  int cpu_usage;             //+0
+  int window_pos_info;       //+4
+  short int reserved1;       //+8
+  char name[12];             //+10
+  int memstart;              //+22
+  int memused;               //+26
+  int pid;                   //+30
+  int winx_start;            //+34
+  int winy_start;            //+38
+  int winx_size;             //+42
+  int winy_size;             //+46
+  short int slot_info;       //+50
+  short int reserved2;       //+52
+  int clientx;               //+54
+  int clienty;               //+58
+  int clientwidth;           //+62
+  int clientheight;          //+66
+  unsigned char window_state;//+70
+  char reserved3[1024-71];   //+71
+}ksys_proc_table_t;
+
+#pragma pack(pop)
+
+static inline 
+int _ksys_process_info(ksys_proc_table_t* table, int pid)
+{
+    int val;
+    asm_inline(
+        "int $0x40"
+        :"=a"(val)
+        :"a"(9), "b"(table), "c"(pid)
+        :"memory"
+    );
+    return val;
+}
+
+static inline
+void _ksys_change_window(int new_x, int new_y, int new_w, int new_h)
+{
+    asm_inline(
+        "int $0x40"
+        ::"a"(67), "b"(new_x), "c"(new_y), "d"(new_w),"S"(new_h)
+    );
+}
+
+static inline
+ksys_pos_t _ksys_screen_size()
+{
+	ksys_pos_t size;
+    ksys_pos_t size_tmp;
+    asm_inline(
+        "int $0x40"
+        :"=a"(size_tmp)
+        :"a"(14)
+    );
+    size.x = size_tmp.y;
+    size.y = size_tmp.x; 
+    return size;
+}
 
 void *memrchr(const void *m, int c, size_t n)
 {
@@ -23,9 +139,19 @@ void kolibri_set_win_center()
     free(info);
 }
 
-int mkdir(const char * path, unsigned)
+int mkdir(const char *path, unsigned v)
 {
-   return _ksys_mkdir(path);
+    int status;
+    ksys70_t dir_opt;
+    dir_opt.p00 = 9;
+    dir_opt.p21 = path;
+    asm_inline(
+        "int $0x40"
+        :"=a"(status)
+        :"a"(70), "b"(&dir_opt)
+        :"memory"
+    );
+    return status;
 }
 
 char *dirname (char *path)
@@ -77,5 +203,8 @@ char *dirname (char *path)
 }
 
 void setcwd(char* path){
-    _ksys_setcwd(path);
+    asm_inline(
+        "int $0x40"
+        ::"a"(30), "b"(1), "c"(path)
+    );
 }
