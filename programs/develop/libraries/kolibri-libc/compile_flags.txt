@@ -1,0 +1,5 @@
+-D
+_KOLIBRI_LIBC_OBJ
+-I
+include
+

@@ -1,0 +1,8 @@
+*.swp
+lib/libc.obj
+lib/libc.obj.a
+lib/crt0.o
+*.o
+tests/argtest
+source/make.bat
+/samples/*.kex
