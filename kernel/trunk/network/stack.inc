@@ -760,7 +760,12 @@ sys_network:
         ret
 
   .get_dev_name:
-        mov     esi, [eax + NET_DEVICE.name]
+; { Patch by Coldy, sanity check
+        mov     ebx, eax ; eax will used for is_region_userspace return 
+        stdcall is_region_userspace, ecx, 64
+        jz      .bad_buffer      
+        mov     esi, [ebx + NET_DEVICE.name] ;mov     esi, [eax + NET_DEVICE.name]
+; } End patch by Coldy, sanity check
         mov     edi, ecx
 
         mov     ecx, 64/4 ; max length
@@ -822,6 +827,7 @@ sys_network:
 
 
   .doesnt_exist:
+  .bad_buffer: ; Sanity check failed, exit
         mov     dword[esp+32], -1
         ret
 
