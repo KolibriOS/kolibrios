@@ -49,15 +49,6 @@ typedef union ksys_oskey_t{
 }ksys_oskey_t;
 
 typedef struct{
-  unsigned     handle;
-  unsigned     io_code;
-  unsigned     *input;
-  int          inp_size;
-  void         *output;
-  int          out_size;
-}ksys_ioctl_t;
-
-typedef struct{
     void *data;
     size_t size;
 }ksys_ufile_t;
@@ -151,6 +142,17 @@ typedef struct {
     char* func_name;
     void* func_ptr;
 }ksys_coff_etable_t;
+
+typedef void* ksys_drv_hand_t;
+
+typedef struct{
+    ksys_drv_hand_t handler;
+    unsigned func_num;
+    void* in_data_ptr;
+    unsigned in_data_size;
+    void* out_data_ptr;
+    unsigned out_data_size;
+}ksys_drv_ctl_t;
 
 #pragma pack(pop)
 
@@ -997,6 +999,33 @@ void _ksys_shm_close(char *shm_name)
         "int $0x40":
         :"a"(68), "b"(23), "c"(shm_name)
     );
+}
+
+/* Driver functions */
+
+static inline
+ksys_drv_hand_t _ksys_load_driver(char *driver_name)
+{
+    ksys_drv_hand_t driver_h;
+    asm_inline(
+        "int $0x40"
+        :"=a"(driver_h)
+        :"a"(68), "b"(16), "c"(driver_name)
+    );
+    return driver_h;
+}
+
+static inline
+unsigned _ksys_work_driver(ksys_drv_ctl_t *ioctl)
+{
+    unsigned status;
+    asm_inline(
+        "int $0x40"
+        :"=a"(status)
+        :"a"(68), "b"(17), "c"(ioctl)
+        :"memory"
+    );
+    return status;
 }
 
 #ifdef __cplusplus

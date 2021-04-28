@@ -1,5 +1,5 @@
 
-KTCC=../linuxtools/kos32-tcc
+KTCC=../../../ktcc/trunk/bin/kos32-tcc
 KPACK = kpack
 CFLAGS = -I../include 
 LDFLAGS = -nostdlib -L../lib ../lib/crt0.o
@@ -11,6 +11,7 @@ math_test.kex \
 string_test.kex \
 whois.kex  \
 file_io.kex \
+tmpdisk_work.kex
 
 
 all: $(BIN)
