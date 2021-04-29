@@ -1,4 +1,3 @@
-#include "linux/kernel.h"
 #include <ddk.h>
 #include <syscall.h>
 
@@ -16,6 +15,6 @@ static int __stdcall service_proc(ioctl_t *my_ctl){
 }
 
 unsigned drvEntry(int action, char *cmdline){
-    printk("Driver c_drv.dll loaded!\n");
+    SysMsgBoardStr("Driver c_drv.dll loaded!\n");
     return RegService("c_drv", service_proc);
 }
