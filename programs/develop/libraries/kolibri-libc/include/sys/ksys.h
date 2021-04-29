@@ -143,7 +143,7 @@ typedef struct {
     void* func_ptr;
 }ksys_coff_etable_t;
 
-typedef void* ksys_drv_hand_t;
+typedef unsigned ksys_drv_hand_t;
 
 typedef struct{
     ksys_drv_hand_t handler;
@@ -1011,6 +1011,17 @@ ksys_drv_hand_t _ksys_load_driver(char *driver_name)
         "int $0x40"
         :"=a"(driver_h)
         :"a"(68), "b"(16), "c"(driver_name)
+    );
+    return driver_h;
+}
+
+ksys_drv_hand_t _ksys_load_pe_driver(char *driver_path, char *cmd_line)
+{
+    ksys_drv_hand_t driver_h;
+    asm_inline(
+        "int $0x40"
+        :"=a"(driver_h)
+        :"a"(68), "b"(21), "c"(driver_path), "d"(cmd_line)
     );
     return driver_h;
 }
