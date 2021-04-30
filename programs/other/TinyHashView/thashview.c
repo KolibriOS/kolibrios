@@ -1,9 +1,9 @@
 /* Copyright (C) 2019-2021 Logaev Maxim (turbocat2001), GPLv2 */
 
+#include <sys/ksys.h>
 #include <stdio.h>
 #include <stdbool.h>
 #include <stdlib.h>
-#include <kos32sys1.h>
 #include <string.h>
 #include <cryptal/md5.h>
 #include <cryptal/sha1.h>
@@ -17,8 +17,9 @@
 #define WINDOW_W 665
 #define VERSION "%s - thashview 2.6.1"
 #define EDIT_TEXT_SIZE 0x10000000
+#define DATA(type, addr, offset) *((type*)((uint8_t*)addr+offset))
 
-struct kolibri_system_colors sys_color_table;
+ksys_colors_table_t sys_color_table;
 
 char hash_str_md5[MAX_HASH_LEN]=   "Click the 'MD5:' button to show the md5-checksum!"; //Вывод MD5
 char hash_str_sha1[MAX_HASH_LEN]=  "Click the 'SHA1:' button to show the sha1-checksum!"; //Вывод SHA1
@@ -54,7 +55,7 @@ enum BUTTONS // Кнопки в интрефейсе
 
 void notify_show(char *text)
 {
-   start_app("/sys/@notify", text);
+   _ksys_exec("/sys/@notify", text);
 }
 
 void* safe_malloc(size_t size) // Безопасный malloc. Показывает уведомление об ошибке и закрывает программу если память не была выделена
@@ -160,51 +161,51 @@ void sprint_hash(BYTE *hash, char* hash_str, int hash_size) //Преобрауем двоичны
 void redraw_window() //Рисуем окно
 {
     sprintf(title,VERSION, filename); // Устанавливаем заголовок окна
-    pos_t win_pos = get_mouse_pos(0); // Получаем координаты курсора
-    begin_draw(); //Начинаем рисование интерфейса )
-    sys_create_window(win_pos.x, win_pos.y, WINDOW_W, 150, title, sys_color_table.work_area, 0x14); // Создаём окно.
-
+    ksys_pos_t win_pos = _ksys_get_mouse_pos(KSYS_MOUSE_SCREEN_POS); // Получаем координаты курсора
+    _ksys_start_draw(); //Начинаем рисование интерфейса )
+    _ksys_create_window(win_pos.x, win_pos.y, WINDOW_W, 150, title, sys_color_table.work_area, 0x14); // Создаём окно.
     edit_box_draw(&hash_edit_box); // Рисуем edit_box
 
-    define_button(X_W(10,60), Y_H(30,20), BTN_MD5, GREEN); // Определяем кнопку md5
-    define_button(X_W(10,60), Y_H(60,20), BTN_SHA1, GREEN);// Определяем кнопку sha1
-    define_button(X_W(10,60), Y_H(90,20), BTN_SHA256, GREEN);// Определяем кнопку sha256
+    _ksys_define_button(10, 30, 60, 20, BTN_MD5, GREEN); // Определяем кнопку md5
+    _ksys_define_button(10, 60, 60, 20, BTN_SHA1, GREEN);// Определяем кнопку sha1
+    _ksys_define_button(10, 90, 60, 20, BTN_SHA256, GREEN);// Определяем кнопку sha256
 
-    draw_text_sys("MD5:", 15, 34, 0,   0x90000000 | sys_color_table.work_button_text); // Пищем текст на кнопках
-    draw_text_sys("SHA1:", 15, 64, 0,  0x90000000 | sys_color_table.work_button_text);
-    draw_text_sys("SHA256:", 15,94, 0, 0x90000000 | sys_color_table.work_button_text);
+    _ksys_draw_text("MD5:", 15, 34, 0,   0x90000000 | sys_color_table.work_button_text); // Пищем текст на кнопках
+    _ksys_draw_text("SHA1:", 15, 64, 0,  0x90000000 | sys_color_table.work_button_text);
+    _ksys_draw_text("SHA256:", 15,94, 0, 0x90000000 | sys_color_table.work_button_text);
 
-    draw_text_sys(hash_str_md5, 80, 34, 0, 0x90000000 | sys_color_table.work_text); // Выводим контрольные суммы в окно
-    draw_text_sys(hash_str_sha1, 80, 64, 0, 0x90000000 | sys_color_table.work_text);
-    draw_text_sys(hash_str_sha256, 80, 94, 0, 0x90000000| sys_color_table.work_text);
+    _ksys_draw_text(hash_str_md5, 80, 34, 0, 0x90000000 | sys_color_table.work_text); // Выводим контрольные суммы в окно
+    _ksys_draw_text(hash_str_sha1, 80, 64, 0, 0x90000000 | sys_color_table.work_text);
+    _ksys_draw_text(hash_str_sha256, 80, 94, 0, 0x90000000| sys_color_table.work_text);
 
-    define_button(X_W(610,42), Y_H(30, 20), BTN_COPY_MD5, sys_color_table.work_button); // Определяем кнопки для копирования
-    define_button(X_W(610,42), Y_H(60, 20), BTN_COPY_SHA1, sys_color_table.work_button);
-    define_button(X_W(610,42), Y_H(90, 20), BTN_COPY_SHA256, sys_color_table.work_button);
+    
+    _ksys_define_button(610, 30, 42, 20, BTN_COPY_MD5, sys_color_table.work_button); // Определяем кнопки для копирования
+    _ksys_define_button(610, 60, 42, 20, BTN_COPY_MD5, sys_color_table.work_button);
+    _ksys_define_button(610, 90, 42, 20, BTN_COPY_MD5, sys_color_table.work_button);
 
-    draw_text_sys("Copy", 615, 34, 0,   0x90000000 | sys_color_table.work_button_text); // Пишем copy на всех кнопках для копирования
-    draw_text_sys("Copy", 615, 64, 0,  0x90000000 | sys_color_table.work_button_text);
-    draw_text_sys("Copy", 615, 94, 0, 0x90000000 | sys_color_table.work_button_text);
+    _ksys_draw_text("Copy", 615, 34, 0,   0x90000000 | sys_color_table.work_button_text); // Пишем copy на всех кнопках для копирования
+    _ksys_draw_text("Copy", 615, 64, 0,  0x90000000 | sys_color_table.work_button_text);
+    _ksys_draw_text("Copy", 615, 94, 0, 0x90000000 | sys_color_table.work_button_text);
 
-    define_button(X_W(592,60), Y_H(120,20), BTN_CMP, GREEN); // Определяем кнопку для сравнения контольных сумм
-    draw_text_sys("Compare", 595, 124 , 0,0x90000000 | sys_color_table.work_button_text); // Пишем текс на кнопке.
-    define_button(X_W(540, 45), Y_H(120,20), BTN_PASTE, sys_color_table.work_button); //Кнопка для вставки (неработает)
-    draw_text_sys("Paste", 543, 124 , 0,0x90000000 | sys_color_table.work_button_text); // Текст paste на кнопке
-    end_draw();
+    _ksys_define_button(592, 120, 60, 20, BTN_CMP, GREEN); // Определяем кнопку для сравнения контольных сумм
+    _ksys_draw_text("Compare", 595, 124 , 0,0x90000000 | sys_color_table.work_button_text); // Пишем текс на кнопке.
+    _ksys_define_button(540, 120, 45, 20, BTN_PASTE, sys_color_table.work_button); //Кнопка для вставки (неработает)
+    _ksys_draw_text("Paste", 543, 124 , 0,0x90000000 | sys_color_table.work_button_text); // Текст paste на кнопке
+    _ksys_end_draw();
 }
 
 void paste_to_edit_buffer()    // Вставить из буффера обмена
 {
     char *temp_buff=NULL;
-    if(kol_clip_num()>0){
-        temp_buff=kol_clip_get(kol_clip_num()-1);
+    if(_ksys_clip_num()>0){
+        temp_buff=_ksys_clip_get(_ksys_clip_num()-1);
         memset(edit_box_buff,0,MAX_HASH_LEN);
-        if(DATA(int, temp_buff,0)>0 && DATA(int,temp_buff,4)==CLIP_TEXT && DATA(int,temp_buff,8)==CLIP_CP866){
+        if(DATA(int, temp_buff,0)>0 && DATA(int,temp_buff,4)==KSYS_CLIP_TEXT && DATA(int,temp_buff,8)==KSYS_CLIP_CP866){
             strncpy(edit_box_buff,temp_buff+12, MAX_HASH_LEN-1);
             edit_box_set_text(&hash_edit_box,edit_box_buff);
             notify_show("'Pasted from clipboard!' -I");
             hash_edit_box.text_color = BLACK;
-            user_free(temp_buff);
+            free(temp_buff);
         }
     }
 }
@@ -218,10 +219,10 @@ void copy_to_clipboard(char *text) // Копировать в буфер обмена
     {
         char *temp_buffer=safe_malloc(MAX_HASH_LEN+12); // Выделяем память для времнного буфера
         memset(temp_buffer, 0, MAX_HASH_LEN);   // Зануляем буфер
-        DATA(char,temp_buffer,4)=CLIP_TEXT;     // Устанавливаем TEXT для буфера(Смещение 4 байта)
-        DATA(char,temp_buffer,8)=CLIP_CP866;    // Устанавливаем кодировку CP866(Смещение 8 байт)
+        DATA(char,temp_buffer,4)=KSYS_CLIP_TEXT;     // Устанавливаем TEXT для буфера(Смещение 4 байта)
+        DATA(char,temp_buffer,8)=KSYS_CLIP_CP866;    // Устанавливаем кодировку CP866(Смещение 8 байт)
         strncpy(temp_buffer+12, text, MAX_HASH_LEN-1); // Копируем данные из text во временный буфер(Смещение 12 байт)
-        kol_clip_set(strlen(text)+12, temp_buffer); // Выполняем системный вызов и перемещаем данные из временного буфера в буфер обмена
+        _ksys_clip_set(strlen(text)+12, temp_buffer); // Выполняем системный вызов и перемещаем данные из временного буфера в буфер обмена
         notify_show("'Copied to clipboard!' -I");   
         free(temp_buffer); // Освобожаем временный буфер.
     }
@@ -296,36 +297,35 @@ int main(int argc, char** argv)
         notify_show("'File not found!' -E");
         exit(0);
     }
-
-    if(GetScreenSize()/65536<WINDOW_W){
+    if(_ksys_screen_size().x<WINDOW_W){
         notify_show("'Low screen resolution! Program will not display correctrly!' -W");
     }
 
     int gui_event; // Переменная для хранения события
     uint32_t pressed_button = 0; // Код нажатой кнопки в окне
 
-    get_system_colors(&sys_color_table);
+    _ksys_get_system_colors(&sys_color_table);
     hash_edit_box.shift_color=sys_color_table.work_button;
 
-    set_event_mask(0xC0000027);// Устанавливаем маску событий
+    _ksys_set_event_mask(0xC0000027);// Устанавливаем маску событий
     do // Цикл обработки событий
     {
-        gui_event = get_os_event(); // Получаем событие
+        gui_event = _ksys_get_event(); // Получаем событие
         switch(gui_event){ // Обрабатываем события
-            case KOLIBRI_EVENT_NONE:
+            case KSYS_EVENT_NONE:
                 break;
-            case KOLIBRI_EVENT_REDRAW:
+            case KSYS_EVENT_REDRAW:
                 redraw_window();
                 break;
-            case KOLIBRI_EVENT_MOUSE:
+            case KSYS_EVENT_MOUSE:
                 edit_box_mouse(&hash_edit_box);
                 break;        
-            case KOLIBRI_EVENT_KEY:
+            case KSYS_EVENT_KEY:
                 hash_edit_box.text_color = BLACK;
-                edit_box_key(&hash_edit_box,get_key().val);
+                edit_box_key(&hash_edit_box, _ksys_get_key().val);
                 break;
-            case KOLIBRI_EVENT_BUTTON: // Событие обработки кнопок
-                pressed_button = get_os_button(); // Получение кода нажатой кнопки.
+            case KSYS_EVENT_BUTTON: // Событие обработки кнопок
+                pressed_button = _ksys_get_button(); // Получение кода нажатой кнопки.
                 switch (pressed_button){ // Проверка какая кнопка была нажата
                     case BTN_MD5:
                         print_pending_calc(hash_str_md5);
