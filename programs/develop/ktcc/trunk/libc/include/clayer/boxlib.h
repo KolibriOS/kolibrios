@@ -3,6 +3,8 @@
 #ifndef KOLIBRI_BOXLIB_H
 #define KOLIBRI_BOXLIB_H
 
+typedef unsigned color_t;
+
 extern int kolibri_boxlib_init(void);
 
 /*  flags meaning */
