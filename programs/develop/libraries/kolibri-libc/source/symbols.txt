@@ -69,6 +69,7 @@ memmove
 memset
 strncat
 strchr
+strcat
 strcmp
 strcoll
 strcpy

@@ -11,7 +11,8 @@ math_test.kex \
 string_test.kex \
 whois.kex  \
 file_io.kex \
-tmpdisk_work.kex
+tmpdisk_work.kex \
+exp_drv_work.kex 
 
 
 all: $(BIN)

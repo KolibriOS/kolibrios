@@ -349,7 +349,7 @@ unsigned _ksys_get_skin_height()
 }
 
 static inline 
-void _ksys_get_colors(ksys_colors_table_t *color_table)
+void _ksys_get_system_colors(ksys_colors_table_t *color_table)
 {
     asm_inline(
        "int $0x40"
@@ -1015,6 +1015,7 @@ ksys_drv_hand_t _ksys_load_driver(char *driver_name)
     return driver_h;
 }
 
+static inline
 ksys_drv_hand_t _ksys_load_pe_driver(char *driver_path, char *cmd_line)
 {
     ksys_drv_hand_t driver_h;
