@@ -10,8 +10,8 @@
 format MS COFF
 public @EXPORT as 'EXPORTS'
 
-include '../../proc32.inc'
-include '../../macros.inc'
+include '../../../proc32.inc'
+include '../../../macros.inc'
 
 section '.flat' code readable align 16
 
