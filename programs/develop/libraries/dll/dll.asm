@@ -10,19 +10,21 @@
 format MS COFF
 public @EXPORT as 'EXPORTS'
 
-include '../../../proc32.inc'
-include '../../../macros.inc'
+include '../../proc32.inc'
+include '../../macros.inc'
 
 section '.flat' code readable align 16
 
-app_version	  equ word[8]
+app_version       equ word[8]
 i_table_min_size  =   1
 
-APP_START_THUNK:
+sizeof.kx_header  =   8
+
+APP_STARTUP_THUNK:
     ; First make shure that app 
     ; have header version 2.0 or more
     cmp app_version,2
-    jl .denied
+    jl .denied            ; App with app_version < 2 shouldn't be here 
     
     ; Then make shure that we first
     mov eax, @EXPORT
@@ -30,45 +32,71 @@ APP_START_THUNK:
     je .denied
     
     ; Don't allow second time
-    mov dword[eax-4],0	
+    mov dword[eax-4],0  
     
    ; Early app initialization
+
+;{ Test KX header
+   ;xor  eax, eax
+   mov	esi,0x24
+   lodsw
+   cmp ax, 'KX'
+   jne @f ; Not KX
+   lodsw
+   cmp ax, 0
+   jne @f ; Bad magic
+   lodsw
    
-   ; Test import table	
-   mov	eax, [0x24] ; i_table_ptr
+   bt ax, 6 ; Have import?
+   jnc .app_start 
+;}
+   
+   ; Test import table (use legacy style)  
+   mov  eax, [sizeof.kx_header + 0x24] ; i_table_ptr
    test eax, eax
-   jz  @f
+   jz  .app_start           ; i_table_ptr = 0 ?
+   ;js      .error
    mov esi, [0x10] 
    cmp esi, eax
-   jbe @f	    ; i_table_ptr >= img_size ?
+   jbe @f           ; i_table_ptr >= img_size ?
    mov ebx, eax
    add ebx, i_table_min_size 
    cmp esi, ebx
-   jbe @f	    ; i_table_ptr + i_table_min_size >= img_size ?
+   jb @f           ; i_table_ptr + i_table_min_size > img_size ?
    
-   ; Link app import table with DLL's exoport table	  
+   ; Link app/dependent libs import tables with libs export table
+   ; TODO: need revision of the exists lib format and dll.Load (for libs import binds)
+           
    stdcall dll.Load,eax 
-   test eax, eax
-   jnz	@f   
+   test	eax, eax
+   jnz	.import_error
+.app_start:   
    ; Start of app code
-   mov	eax, [0x0C]
-   ; TODO: test start_ptr + min_code_size < img_size	
+   mov  eax, [0x0C]
+   ; TODO: test start_ptr + min_code_size < img_size    
    call eax
 @@:
    mov eax, -1
    int 0x40
+.import_error:
+  ; Run @NOTIFY and tell user then error occured
+  ; BOARD will contaits details
+  jmp @b
 .denied:
-   ret
-; } APP_START_THUNK
+    ; Kolibri has no ability kill app if this enter from no from main thread
+    ; So just alert and return
+    ;DEBUGF	1, 'APP_STARTUP_THUNK@dll.obj: App twice/with app_version < 2 has entered!\n'
+    ret  
+; } APP_STARTUP_THUNK
 
 
 ; WARNING! This code must be after app initialization thunk!
-include '../../../dll.inc'
+include '../../dll.inc'
 align 4
 ;dd 0xdeadbeef
-dd APP_START_THUNK
+dd APP_STARTUP_THUNK
 @EXPORT:
-export				    \
-    dll.Load,		'dll_load',  \
-    dll.Link,		'dll_link',  \
+export                              \
+    dll.Load,           'dll_load',  \
+    dll.Link,           'dll_link',  \
     dll.GetProcAddress, 'dll_sym' ;
