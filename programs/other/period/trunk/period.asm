@@ -23,17 +23,17 @@ macro strtbl name,[string]
 
 use32
 
- org	0x0
- db	'MENUET01'    ; стандартный 8-байтовый заголовок для исполняемых файлов MeOS
- dd	0x01	      ; версия заголовка
- dd	START	      ; указатель на начало исполняемого кода
- dd	I_END	      ; размер образа
- dd	I_END+0x1000   ; требуемая память для приложения
- dd	I_END+0x1000   ; указатель на начала стека
- dd	0x0 , 0x0     ; I_Param , I_Icon
+ org    0x0
+ db     'MENUET01'    ; стандартный 8-байтовый заголовок для исполняемых файлов MeOS
+ dd     0x01          ; версия заголовка
+ dd     START         ; указатель на начало исполняемого кода
+ dd     I_END         ; размер образа
+ dd     I_END+0x1000   ; требуемая память для приложения
+ dd     I_END+0x1000   ; указатель на начала стека
+ dd     0x0 , 0x0     ; I_Param , I_Icon
 
 ;ГЛОБАЛЬНЫЕ ПЕРЕМЕННЫЕ И КОНСТАНТЫ
-re_ID  dd  0x00000001	;для хранения номера текущего выводимого элемента
+re_ID  dd  0x00000001   ;для хранения номера текущего выводимого элемента
 
 START:
 
@@ -46,7 +46,7 @@ START:
 red:
       call draw_window
 
-still:		      ;основной цикл программы
+still:                ;основной цикл программы
       push 10   ;ожидание события
       pop  eax
       mcall
@@ -57,502 +57,502 @@ still:		      ;основной цикл программы
       jne  button
 
 key:
-	mov  al,2
-	mcall
-	jmp  still
+        mov  al,2
+        mcall
+        jmp  still
 
 button:
-	mov  al,17   ;получаем ID нажатой кнопки
-	mcall
-	shr  eax,8    ; eax=24-битный ButtonID
+        mov  al,17   ;получаем ID нажатой кнопки
+        mcall
+        shr  eax,8    ; eax=24-битный ButtonID
 
-	cmp  eax,1    ;нажата ли "Закрыть" [x]
-	jne  noclose
-	or   eax,-1
-	mcall
+        cmp  eax,1    ;нажата ли "Закрыть" [x]
+        jne  noclose
+        or   eax,-1
+        mcall
 
 noclose:
       cmp eax,200
       jne no_H
       mov eax,1
 no_H: 
-	mov [re_ID],eax
+        mov [re_ID],eax
 ;; <mistifi(ator>
-	call draw_text
+        call draw_text
 ;; </mistifi(ator>
-	jmp still
+        jmp still
 
 draw_window:
-	
+        
         mov  eax,12   ;begin drawing
-	xor  ebx,ebx
-	inc  ebx
-	mcall
-				       ; DRAW WINDOW
-	xor  eax,eax
-	mov  ebx,50*65536+555  ;x
-	mov  ecx,30*65536+455  ;y
+        xor  ebx,ebx
+        inc  ebx
+        mcall
+                                       ; DRAW WINDOW
+        xor  eax,eax
+        mov  ebx,50*65536+555  ;x
+        mov  ecx,30*65536+455  ;y
       mov  edx,[sc.work]
-	or   edx,0x34000000    ;style
-	mov  edi,caption
-	mcall
+        or   edx,0x34000000    ;style
+        mov  edi,caption
+        mcall
 
 text_in_window:
-	mov  eax,4	     ;вывод текста
-	mov  ecx,0x80000000  ;asciiz, ЦВЕТ !!!
+        mov  eax,4           ;вывод текста
+        mov  ecx,0x80000000  ;asciiz, ЦВЕТ !!!
 
-	mov  ebx,40*65536+200	      ;лантаноиды
-	mov  edx,Lantanoid_text
-	mcall
+        mov  ebx,40*65536+200         ;лантаноиды
+        mov  edx,Lantanoid_text
+        mcall
 
-	add  ebx,20		       ;актиноиды
-	mov  edx,Actinoid_text
-	mcall
+        add  ebx,20                    ;актиноиды
+        mov  edx,Actinoid_text
+        mcall
 
-	mov  ebx,150*65536+255
-	mov  edx,number
-	mcall
+        mov  ebx,150*65536+255
+        mov  edx,number
+        mcall
 
-	add  ebx,15
-	mov  edx,name
-	mcall
+        add  ebx,15
+        mov  edx,name
+        mcall
 
-	add ebx,15
-	mov edx,eng_name
-	mcall
+        add ebx,15
+        mov edx,eng_name
+        mcall
 
-	add ebx,15
-	mov edx,Atomic_massa
-	mcall
+        add ebx,15
+        mov edx,Atomic_massa
+        mcall
 
-	add ebx,15
-	mov edx,density
-	mcall
+        add ebx,15
+        mov edx,density
+        mcall
 
-	add ebx,15
-	mov edx,Step_okisl
-	mcall
+        add ebx,15
+        mov edx,Step_okisl
+        mcall
 
-	add ebx,15
-	mov edx,Electrootr
-	mcall
+        add ebx,15
+        mov edx,Electrootr
+        mcall
 
-	add ebx,15
-	mov edx,T_pl
-	mcall
+        add ebx,15
+        mov edx,T_pl
+        mcall
 
-	add ebx,15
-	mov edx,T_kip
-	mcall
+        add ebx,15
+        mov edx,T_kip
+        mcall
 
-	add ebx,15
-	mov edx,Raspr
-	mcall
+        add ebx,15
+        mov edx,Raspr
+        mcall
 
-	add ebx,15
-	mov edx,Otkrytie
-	mcall
+        add ebx,15
+        mov edx,Otkrytie
+        mcall
 
-	; ВЫВОД НОМЕРОВ ПЕРИОДОВ
-	mov ebx,30*65536+43
-	mov edx,Period_text  ;1
-	mcall
+        ; ВЫВОД НОМЕРОВ ПЕРИОДОВ
+        mov ebx,30*65536+43
+        mov edx,Period_text  ;1
+        mcall
 
-	call @f 	     ;2
-	call @f 	     ;3
-	call @f 	     ;4
-	call @f 	     ;5
-	call @f 	     ;6
-	call @f 	     ;7
-	jmp  Table
+        call @f              ;2
+        call @f              ;3
+        call @f              ;4
+        call @f              ;5
+        call @f              ;6
+        call @f              ;7
+        jmp  Table
 
       @@:
-	add ebx,20
-	add edx,4   ;т.к. строка = 4 байтам(с нулём)
-	mcall
+        add ebx,20
+        add edx,4   ;т.к. строка = 4 байтам(с нулём)
+        mcall
        ret
 
-Table:		       ;Отрисовка таблицы в виде конопочек
-	table_row_1:
-			shl eax,1
-			mov  ebx,50*65536+25
-			mov  ecx,35*65536+20
-			mov  edx,200
-			mov  esi,0xE19123
-			mcall
-		He_:
-			mov  ebx,491*65536+25
-			mov  esi,0x0f0c314
-			mov  edx,2
-			mcall
-	table_row_2:
-		Li:
-		      mov  ebx,50*65536+25
-			mov  ecx,56*65536+20
-			mov  esi,0xE19123
-			inc edx
-			mcall
-		Be:
-			mov  ebx,76*65536+25
-			inc edx
-			mcall
-		B_:
-			mov  ebx,361*65536+25
-			inc edx
-			mov esi,0x0f0c314
-			mcall
-			mov edi,4
-		table_row_2_loop:
-			add ebx,26*65536
-			inc edx
-			mcall
-			dec edi
-			jns table_row_2_loop
-	table_row_3:
-		Na:
-		       mov  ebx,50*65536+25
-			mov  ecx,77*65536+20
-			mov  esi,0xE19123
-			inc edx
-			mcall
+Table:                 ;Отрисовка таблицы в виде конопочек
+        table_row_1:
+                        shl eax,1
+                        mov  ebx,50*65536+25
+                        mov  ecx,35*65536+20
+                        mov  edx,200
+                        mov  esi,0xE19123
+                        mcall
+                He_:
+                        mov  ebx,491*65536+25
+                        mov  esi,0x0f0c314
+                        mov  edx,2
+                        mcall
+        table_row_2:
+                Li:
+                      mov  ebx,50*65536+25
+                        mov  ecx,56*65536+20
+                        mov  esi,0xE19123
+                        inc edx
+                        mcall
+                Be:
+                        mov  ebx,76*65536+25
+                        inc edx
+                        mcall
+                B_:
+                        mov  ebx,361*65536+25
+                        inc edx
+                        mov esi,0x0f0c314
+                        mcall
+                        mov edi,4
+                table_row_2_loop:
+                        add ebx,26*65536
+                        inc edx
+                        mcall
+                        dec edi
+                        jns table_row_2_loop
+        table_row_3:
+                Na:
+                       mov  ebx,50*65536+25
+                        mov  ecx,77*65536+20
+                        mov  esi,0xE19123
+                        inc edx
+                        mcall
 
-			mov  ebx,76*65536+25
-			inc edx
-			mcall
+                        mov  ebx,76*65536+25
+                        inc edx
+                        mcall
 
-			mov  ebx,361*65536+25
-			inc edx
-			mov esi,0x0f0c314
-			mcall
-			mov edi,4
-		table_row_3_loop:
-			add ebx,26*65536
-			inc edx
-			mcall
-			dec edi
-			jns table_row_3_loop
+                        mov  ebx,361*65536+25
+                        inc edx
+                        mov esi,0x0f0c314
+                        mcall
+                        mov edi,4
+                table_row_3_loop:
+                        add ebx,26*65536
+                        inc edx
+                        mcall
+                        dec edi
+                        jns table_row_3_loop
 
-	Table_row_4:
-		K_:
-		       mov  ebx,50*65536+25
-			mov  ecx,98*65536+20
-			mov  esi,0xE19123
-			inc edx
-			mcall
-		Ca:
-		       mov  ebx,76*65536+25
-			inc edx
-			mcall
-		Sc:
-			mov  ebx,102*65536+25
-			inc edx
-			mov  esi,0x559beb
-			mcall
-			mov edi,8
-		Table_row_4_loop1:
-			add ebx,26*65536
-			inc edx
-			mcall
-			dec edi
-			jns Table_row_4_loop1
+        Table_row_4:
+                K_:
+                       mov  ebx,50*65536+25
+                        mov  ecx,98*65536+20
+                        mov  esi,0xE19123
+                        inc edx
+                        mcall
+                Ca:
+                       mov  ebx,76*65536+25
+                        inc edx
+                        mcall
+                Sc:
+                        mov  ebx,102*65536+25
+                        inc edx
+                        mov  esi,0x559beb
+                        mcall
+                        mov edi,8
+                Table_row_4_loop1:
+                        add ebx,26*65536
+                        inc edx
+                        mcall
+                        dec edi
+                        jns Table_row_4_loop1
 
-			mov  ebx,361*65536+25
-			inc edx
-			mov esi,0x0f0c314
-			mcall
-			mov edi,4
-		table_row_4_loop2:
-			add ebx,26*65536
-			inc edx
-			mcall
-			dec edi
-			jns table_row_4_loop2
+                        mov  ebx,361*65536+25
+                        inc edx
+                        mov esi,0x0f0c314
+                        mcall
+                        mov edi,4
+                table_row_4_loop2:
+                        add ebx,26*65536
+                        inc edx
+                        mcall
+                        dec edi
+                        jns table_row_4_loop2
 
-	 Table_row_5:
-		Rb_:
-		       mov  ebx,50*65536+25
-			mov  ecx,119*65536+20
-			mov  esi,0xE19123
-			inc edx
-			mcall
-		Sr_:
-		       mov  ebx,76*65536+25
-			inc edx
-			mcall
-		Y_:
-			mov  ebx,102*65536+25
-			inc edx
-			mov  esi,0x559beb
-			mcall
-			mov edi,8
-		Table_row_5_loop1:
-			add ebx,26*65536
-			inc edx
-			mcall
-			dec edi
-			jns Table_row_5_loop1
+         Table_row_5:
+                Rb_:
+                       mov  ebx,50*65536+25
+                        mov  ecx,119*65536+20
+                        mov  esi,0xE19123
+                        inc edx
+                        mcall
+                Sr_:
+                       mov  ebx,76*65536+25
+                        inc edx
+                        mcall
+                Y_:
+                        mov  ebx,102*65536+25
+                        inc edx
+                        mov  esi,0x559beb
+                        mcall
+                        mov edi,8
+                Table_row_5_loop1:
+                        add ebx,26*65536
+                        inc edx
+                        mcall
+                        dec edi
+                        jns Table_row_5_loop1
 
-			mov  ebx,361*65536+25
-			inc edx
-			mov esi,0x0f0c314
-			mcall
-			mov edi,4
-		table_row_5_loop2:
-			add ebx,26*65536
-			inc edx
-			mcall
-			dec edi
-			jns table_row_5_loop2
+                        mov  ebx,361*65536+25
+                        inc edx
+                        mov esi,0x0f0c314
+                        mcall
+                        mov edi,4
+                table_row_5_loop2:
+                        add ebx,26*65536
+                        inc edx
+                        mcall
+                        dec edi
+                        jns table_row_5_loop2
 
-	 Table_row_6:
-		Cs_:
-		       mov  ebx,50*65536+25
-			mov  ecx,140*65536+20
-			mov  esi,0xE19123
-			inc edx
-			mcall
-		Ba_:
-		       mov  ebx,76*65536+25
-			inc edx
-			mcall
-		La_:
-			mov  ebx,102*65536+25
-			inc edx
-			mov  esi,0x559beb
-			mcall
-			mov edx,71
-			mov edi,8
-		Table_row_6_loop1:
-			add ebx,26*65536
-			inc edx
-			mcall
-			dec edi
-			jns Table_row_6_loop1
+         Table_row_6:
+                Cs_:
+                       mov  ebx,50*65536+25
+                        mov  ecx,140*65536+20
+                        mov  esi,0xE19123
+                        inc edx
+                        mcall
+                Ba_:
+                       mov  ebx,76*65536+25
+                        inc edx
+                        mcall
+                La_:
+                        mov  ebx,102*65536+25
+                        inc edx
+                        mov  esi,0x559beb
+                        mcall
+                        mov edx,71
+                        mov edi,8
+                Table_row_6_loop1:
+                        add ebx,26*65536
+                        inc edx
+                        mcall
+                        dec edi
+                        jns Table_row_6_loop1
 
-			mov  ebx,361*65536+25
-			inc edx
-			mov esi,0x0f0c314
-			mcall
-			mov edi,4
-		table_row_6_loop2:
-			add ebx,26*65536
-			inc edx
-			mcall
-			dec edi
-			jns table_row_6_loop2
+                        mov  ebx,361*65536+25
+                        inc edx
+                        mov esi,0x0f0c314
+                        mcall
+                        mov edi,4
+                table_row_6_loop2:
+                        add ebx,26*65536
+                        inc edx
+                        mcall
+                        dec edi
+                        jns table_row_6_loop2
 
-	 Table_row_7:
-		Fr_:
-		       mov  ebx,50*65536+25
-			mov  ecx,161*65536+20
-			mov  esi,0xE19123
-			inc edx
-			mcall
-		Ra_:
-		       mov  ebx,76*65536+25
-			inc edx
-			mcall
-		Ac_:
-			mov  ebx,102*65536+25
-			inc edx
-			mov  esi,0x559beb
-			mcall
-			mov edx,103
-			mov edi,8
-		Table_row_7_loop1:
-			add ebx,26*65536
-			inc edx
-			mcall
-			dec edi
-			jns Table_row_7_loop1
+         Table_row_7:
+                Fr_:
+                       mov  ebx,50*65536+25
+                        mov  ecx,161*65536+20
+                        mov  esi,0xE19123
+                        inc edx
+                        mcall
+                Ra_:
+                       mov  ebx,76*65536+25
+                        inc edx
+                        mcall
+                Ac_:
+                        mov  ebx,102*65536+25
+                        inc edx
+                        mov  esi,0x559beb
+                        mcall
+                        mov edx,103
+                        mov edi,8
+                Table_row_7_loop1:
+                        add ebx,26*65536
+                        inc edx
+                        mcall
+                        dec edi
+                        jns Table_row_7_loop1
 
-			mov  ebx,361*65536+25
-			inc edx
-			mov esi,0x0f0c314
-			mcall
-			mov edi,2
-		table_row_7_loop2:
-			add ebx,26*65536
-			inc edx
-			mcall
-			dec edi
-			jns table_row_7_loop2
+                        mov  ebx,361*65536+25
+                        inc edx
+                        mov esi,0x0f0c314
+                        mcall
+                        mov edi,4
+                table_row_7_loop2:
+                        add ebx,26*65536
+                        inc edx
+                        mcall
+                        dec edi
+                        jns table_row_7_loop2
 
-	row_1:
-		Cerium_:
-			mov  ebx,102*65536+25
-			mov  ecx,190*65536+20
-			mov  edx,58
-			mov  esi,0x73beeb
-			mcall
-			mov edi,12
+        row_1:
+                Cerium_:
+                        mov  ebx,102*65536+25
+                        mov  ecx,190*65536+20
+                        mov  edx,58
+                        mov  esi,0x73beeb
+                        mcall
+                        mov edi,12
 
-		row_1_loop:
-			add ebx,26*65536
-			inc edx
-			mcall
-			dec edi
-			jns row_1_loop
-	row_2:
-		dgfsfHe_:
-			mov  ebx,102*65536+25
-			mov  ecx,211*65536+20
-			mov  edx,90
-			mcall
-			mov edi,12
-		row_2_loop:
+                row_1_loop:
+                        add ebx,26*65536
+                        inc edx
+                        mcall
+                        dec edi
+                        jns row_1_loop
+        row_2:
+                dgfsfHe_:
+                        mov  ebx,102*65536+25
+                        mov  ecx,211*65536+20
+                        mov  edx,90
+                        mcall
+                        mov edi,12
+                row_2_loop:
 
-			add ebx,26*65536
-			inc edx
-			mcall
-			dec edi
-			jns row_2_loop
+                        add ebx,26*65536
+                        inc edx
+                        mcall
+                        dec edi
+                        jns row_2_loop
 
 text_on_buttons:
-	text_row1:
-		;H
-			shr eax,1
-			mov ebx,62*65536+43
-			mov ecx,0x00000000
-			mov edx,Symbols
-			mov esi,3
-			mcall
-		;Ne
-			mov ebx,500*65536+43
-			add edx,3
-			mcall
-	text_row2_1:
-			mov ebx,60*65536+63
-			add edx,3
-			mcall
+        text_row1:
+                ;H
+                        shr eax,1
+                        mov ebx,62*65536+43
+                        mov ecx,0x00000000
+                        mov edx,Symbols
+                        mov esi,3
+                        mcall
+                ;Ne
+                        mov ebx,500*65536+43
+                        add edx,3
+                        mcall
+        text_row2_1:
+                        mov ebx,60*65536+63
+                        add edx,3
+                        mcall
 
-			mov ebx,85*65536+63
-			add edx,3
-			mcall
-	text_row2_2:
-			mov ebx,374*65536+63
-			add edx,3
-			mcall
-			mov edi,4
+                        mov ebx,85*65536+63
+                        add edx,3
+                        mcall
+        text_row2_2:
+                        mov ebx,374*65536+63
+                        add edx,3
+                        mcall
+                        mov edi,4
 
-	text_row2_2_loop:
-			add ebx,25*65536
-			add edx,3
-			mcall
+        text_row2_2_loop:
+                        add ebx,25*65536
+                        add edx,3
+                        mcall
 
-			dec edi
-			jns text_row2_2_loop
-	text_row3_1:
-			mov ebx,60*65536+83
-			add edx,3
-			mcall
+                        dec edi
+                        jns text_row2_2_loop
+        text_row3_1:
+                        mov ebx,60*65536+83
+                        add edx,3
+                        mcall
 
-			mov ebx,85*65536+83
-			add edx,3
-			mcall
-	text_row3_2:
-			mov ebx,374*65536+83
-			add edx,3
-			mcall
-			mov edi,4
-	text_row3_2_loop:
-			add ebx,25*65536
-			add edx,3
-			mcall
+                        mov ebx,85*65536+83
+                        add edx,3
+                        mcall
+        text_row3_2:
+                        mov ebx,374*65536+83
+                        add edx,3
+                        mcall
+                        mov edi,4
+        text_row3_2_loop:
+                        add ebx,25*65536
+                        add edx,3
+                        mcall
 
-			dec edi
-			jns text_row3_2_loop
-	text_row4:
-			mov ebx,60*65536+104
-			add edx,3
-			mcall
-			mov edi,16
-	text_row4_loop:
-			add ebx,26*65536
-			add edx,3
-			mcall
+                        dec edi
+                        jns text_row3_2_loop
+        text_row4:
+                        mov ebx,60*65536+104
+                        add edx,3
+                        mcall
+                        mov edi,16
+        text_row4_loop:
+                        add ebx,26*65536
+                        add edx,3
+                        mcall
 
-			dec edi
-			jns text_row4_loop
-	text_row5:
-			mov ebx,60*65536+125
-			add edx,3
-			mcall
-			mov edi,16
-	text_row5_loop:
-			add ebx,26*65536
-			add edx,3
-			mcall
+                        dec edi
+                        jns text_row4_loop
+        text_row5:
+                        mov ebx,60*65536+125
+                        add edx,3
+                        mcall
+                        mov edi,16
+        text_row5_loop:
+                        add ebx,26*65536
+                        add edx,3
+                        mcall
 
-			dec edi
-			jns text_row5_loop
-	text_row6:
-			mov ebx,60*65536+146
-			add edx,3
-			mcall
-			mov edi,16
-	text_row6_loop:
-			add ebx,26*65536
-			add edx,3
-			mcall
-			dec edi
-			jns text_row6_loop
-	text_row7:
-			mov ebx,60*65536+167
-			add edx,3
-			mcall
-			mov edi,9
-	text_row7_loop:
-			add ebx,26*65536
-			add edx,3
-			mcall
+                        dec edi
+                        jns text_row5_loop
+        text_row6:
+                        mov ebx,60*65536+146
+                        add edx,3
+                        mcall
+                        mov edi,16
+        text_row6_loop:
+                        add ebx,26*65536
+                        add edx,3
+                        mcall
+                        dec edi
+                        jns text_row6_loop
+        text_row7:
+                        mov ebx,60*65536+167
+                        add edx,3
+                        mcall
+                        mov edi,11          ;9
+        text_row7_loop:
+                        add ebx,26*65536
+                        add edx,3
+                        mcall
 
-			dec edi
-			jns text_row7_loop
-			mov edi,4
-	text_row7_loop2:
-			add ebx,24*65536
-			add edx,3
-			mcall
-			dec edi
-			jns text_row7_loop2
+                        dec edi
+                        jns text_row7_loop
+                        mov edi,4
+        text_row7_loop2:
+                        add ebx,26*65536
+                        add edx,3
+                        mcall
+                        dec edi
+                        jns text_row7_loop2
 
-	text_row8:
-			mov ebx,111*65536+197
-			add edx,3
-			mcall
-			mov edi,12
+        text_row8:
+                        mov ebx,111*65536+197
+                        add edx,3
+                        mcall
+                        mov edi,12
 
-	text_row8_loop:
-			add ebx,26*65536
-			add edx,3
-			mcall
+        text_row8_loop:
+                        add ebx,26*65536
+                        add edx,3
+                        mcall
 
-			dec edi
-			jns text_row8_loop
+                        dec edi
+                        jns text_row8_loop
 
-	text_row9:
-			mov ebx,111*65536+217
-			add edx,3
-			mcall
-			mov edi,12
+        text_row9:
+                        mov ebx,111*65536+217
+                        add edx,3
+                        mcall
+                        mov edi,12
 
-	text_row9_loop:
-			add ebx,26*65536
-			add edx,3
-			mcall
+        text_row9_loop:
+                        add ebx,26*65536
+                        add edx,3
+                        mcall
 
-			dec edi
-			jns text_row9_loop
+                        dec edi
+                        jns text_row9_loop
 
 ;; <mistifi(ator> - короче выносим в отдельную процедуру
-	call draw_text
+        call draw_text
 ;; </mistifi(ator>
 
   finish:
-	mov eax,12  ;end drawing
-	mov ebx,2
-	mcall
+        mov eax,12  ;end drawing
+        mov ebx,2
+        mcall
 ret
 
 draw_text:
@@ -570,103 +570,103 @@ draw_text:
    ;11 вывод имён первооткрывателей [optmzd-mem]
 
 ;; <mistifi(ator> - закраска, что-бы не было наложения при прорисовке текста
-	mov eax,13
-	mov ebx,320*65536+210
-	mov ecx,255*65536+(15*11)
-	mov edx,[sc.work]
-	mcall
+        mov eax,13
+        mov ebx,320*65536+210
+        mov ecx,255*65536+(15*11)
+        mov edx,[sc.work]
+        mcall
 ;; </mistifi(ator>
   
 
   push edi  ; чтобы оптимизировать изменения ebx
 
-	; 1 вывод порядкового номера [optmzd-mem]
-	mov ebx,0x30000         ;выводить 3 цифры
-	mov ecx,[re_ID]
-	mov edx,320*65536+255
-	xor esi,esi
-	mov eax,47
-	mcall
+        ; 1 вывод порядкового номера [optmzd-mem]
+        mov ebx,0x30000         ;выводить 3 цифры
+        mov ecx,[re_ID]
+        mov edx,320*65536+255
+        xor esi,esi
+        mov eax,47
+        mcall
 
 ;ВНИМАНИЕ! ЗДЕСЬ ЗАДАЁТСЯ ЦВЕТ ВСЕГО ОСТАЛЬНОГО ТЕКСТА! [сделано для сокращения кода на 20 байт :)))]
-	mov ecx,[sc.work_text]  ; ЦВЕТ
+        mov ecx,[sc.work_text]  ; ЦВЕТ
       or  ecx,0x80000000      ; asciiz
-	mov eax,4  ; эта функция вызывается 10 раз! так что запишем 1 раз
+        mov eax,4  ; эта функция вызывается 10 раз! так что запишем 1 раз
 
-	; 2 вывод РУССКОЕ НАЗВАНИЕ [optmzd-mem]
-	mov edi,Rus_nazv	 ;указатель на начало массива указателей ;)
-	mov ebx,320*65536+255    ;здесь вносятся координаты, дальше будет лишь add ebx,15
-	call out_asciiz_item
+        ; 2 вывод РУССКОЕ НАЗВАНИЕ [optmzd-mem]
+        mov edi,Rus_nazv         ;указатель на начало массива указателей ;)
+        mov ebx,320*65536+255    ;здесь вносятся координаты, дальше будет лишь add ebx,15
+        call out_asciiz_item
 
-	xor ecx,ecx   ;color
-	; 3 вывод английского названия [optmzd-spd]
-	mov edx,Elements
-	mov edi,[re_ID]
-	dec edi
-	mov esi,12	 ;длина строки
-	imul edi,esi	 ;считаем указатель на нужную строку
-	add edx,edi
-	add ebx,15	 ; увеличиваем y-координату текста на 15 пикселей
-	mcall
+        xor ecx,ecx   ;color
+        ; 3 вывод английского названия [optmzd-spd]
+        mov edx,Elements
+        mov edi,[re_ID]
+        dec edi
+        mov esi,12       ;длина строки
+        imul edi,esi     ;считаем указатель на нужную строку
+        add edx,edi
+        add ebx,15       ; увеличиваем y-координату текста на 15 пикселей
+        mcall
 
-	; 4 вывод атомной массы [optmzd-spd]
-	mov edx,MassNo
-	mov edi,[re_ID]
-	dec edi
-	mov esi,7	 ;длина строки
-	imul edi,esi	 ;считаем указатель на нужную строку
-	add edx,edi
-	add ebx,15
-	mcall
+        ; 4 вывод атомной массы [optmzd-spd]
+        mov edx,MassNo
+        mov edi,[re_ID]
+        dec edi
+        mov esi,7        ;длина строки
+        imul edi,esi     ;считаем указатель на нужную строку
+        add edx,edi
+        add ebx,15
+        mcall
 
-	mov  ecx,0x80000000  ;asciiz, ЦВЕТ !!!
-	; 5 вывод ПЛОТНОСТЬ [optmzd-mem]
-	mov edi,Plotnost
-	call out_asciiz_item
+        mov  ecx,0x80000000  ;asciiz, ЦВЕТ !!!
+        ; 5 вывод ПЛОТНОСТЬ [optmzd-mem]
+        mov edi,Plotnost
+        call out_asciiz_item
 
-	; 6 вывод СТЕПЕНЬ ОКИСЛЕНИЯ [optmzd-mem]
-	mov edi,Step_ok
-	call out_asciiz_item
+        ; 6 вывод СТЕПЕНЬ ОКИСЛЕНИЯ [optmzd-mem]
+        mov edi,Step_ok
+        call out_asciiz_item
 
-	xor ecx,ecx  ;color
-	; 7 вывод ЭЛЕКТРООТРИЦАТЕЛЬНОСТЬ [optmzd-spd]
-	mov edx,Electr
-	mov edi,[re_ID]
-	dec edi
-	mov esi,4	 ;длина строки
-	shl edi,2
-	add edx,edi
-	add ebx,15
-	mcall
+        xor ecx,ecx  ;color
+        ; 7 вывод ЭЛЕКТРООТРИЦАТЕЛЬНОСТЬ [optmzd-spd]
+        mov edx,Electr
+        mov edi,[re_ID]
+        dec edi
+        mov esi,4        ;длина строки
+        shl edi,2
+        add edx,edi
+        add ebx,15
+        mcall
 
-	mov  ecx,0x80000000  ;asciiz, ЦВЕТ !!!
-	; 8 вывод ТЕМПЕРАТУРА ПЛАВЛЕНИЯ [optmzd-mem]
-	mov edi,T_plavl
-	call out_asciiz_item
+        mov  ecx,0x80000000  ;asciiz, ЦВЕТ !!!
+        ; 8 вывод ТЕМПЕРАТУРА ПЛАВЛЕНИЯ [optmzd-mem]
+        mov edi,T_plavl
+        call out_asciiz_item
 
-	; 9 вывод ТЕМПЕРАТУРА КИПЕНИЯ [optmzd-mem]
-	mov edi,T_kipen
-	call out_asciiz_item
+        ; 9 вывод ТЕМПЕРАТУРА КИПЕНИЯ [optmzd-mem]
+        mov edi,T_kipen
+        call out_asciiz_item
 
-	;10 вывод РАСПРЕДЕЛЕНИЕ В ЗЕМНОЙ КОРЕ [optmzd-mem]
-	mov edi,Rasprostr
-	call out_asciiz_item
+        ;10 вывод РАСПРЕДЕЛЕНИЕ В ЗЕМНОЙ КОРЕ [optmzd-mem]
+        mov edi,Rasprostr
+        call out_asciiz_item
 
-	;11 вывод имён первооткрывателей [optmzd-mem]
-	mov edi,First_Explore
-	call out_asciiz_item
+        ;11 вывод имён первооткрывателей [optmzd-mem]
+        mov edi,First_Explore
+        call out_asciiz_item
 
   pop edi   ; он был сохранён в начале :)
   ret
 
 ;функция выполняет набор действий для вывода информации
 out_asciiz_item:
-	mov edx,[re_ID]
-	dec edx
-	shl edx,2		 ;умножить на 4 (размер указателя)
-	mov edx,[edx+edi]	 ;указатель на строку в edx
-	add ebx,15
-	mcall
+        mov edx,[re_ID]
+        dec edx
+        shl edx,2                ;умножить на 4 (размер указателя)
+        mov edx,[edx+edi]        ;указатель на строку в edx
+        add ebx,15
+        mcall
 ret
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -675,18 +675,18 @@ ret
 ;;                                      ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;---- begin ---- Данные для ГЛАВНОГО окна --------------------------
-caption 	  db  'Периодическая система Д.И.Менделеева by navanax & Johnny_B',0
+caption           db  'Периодическая система Д.И.Менделеева by navanax & Johnny_B',0
 density           db  'Плотность',0
-Atomic_massa	  db  'Атомная масса',0
-name    	  db  'Название',0
-eng_name	  db  'Англ. название',0
-T_pl		  db  'Температура пл.',0
-T_kip		  db  'Температура кип.',0
-Electrootr	  db  'Электроотрицательность',0
-Raspr		  db  'Распределение в земн. коре',0
-Step_okisl	  db  'Степень окисления',0
-Otkrytie	  db  'Открытие',0
-number  	  db  'Порядковый номер',0
+Atomic_massa      db  'Атомная масса',0
+name              db  'Название',0
+eng_name          db  'Англ. название',0
+T_pl              db  'Температура пл.',0
+T_kip             db  'Температура кип.',0
+Electrootr        db  'Электроотрицательность',0
+Raspr             db  'Распределение в земн. коре',0
+Step_okisl        db  'Степень окисления',0
+Otkrytie          db  'Открытие',0
+number            db  'Порядковый номер',0
 Period_text:
  db '  I',0
  db ' II',0
@@ -708,7 +708,7 @@ Actinoid_text  db ' Актиноиды',0
 ;чтобы не было выхода за его пределы
 
 ;Английское название
-Elements:	     ;116 элементов
+Elements:            ;116 элементов
 db 'Hydrogen    '    ; 1
 db 'Helium      '
 db 'Lithium     '
@@ -825,6 +825,8 @@ db 'Nihonium    '
 db 'Flerovium   '
 db 'Moscovium   '
 db 'Livermorium '  ;116
+db 'Tennessine  '
+db 'Oganesson   '
 
 
 ;---------------------------------
@@ -918,6 +920,10 @@ db 'Nh '
 db 'Fi '
 db 'Mc '
 db 'Lv '
+;
+db 'Ts '
+db 'Og '
+;
 db 'Ce '
 db 'Pr '
 db 'Nd '
@@ -948,8 +954,8 @@ db 'No '
 db 'Lr '
 
 ;АТОМНАЯ МАССА
-MassNo: 	 ;116 элементов
-db '1.00794'	 ; 1
+MassNo:          ;116 элементов
+db '1.00794'     ; 1
 db '4.0026 '
 db '6.941  '
 db '9.01218'
@@ -958,7 +964,7 @@ db '12.0107'
 db '14.0067'
 db '15.9994'
 db '18.9984'
-db '20.179 '	 ; 10
+db '20.179 '     ; 10
 db '22.9898'
 db '24.305 '
 db '26.9815'
@@ -968,7 +974,7 @@ db '32.066 '
 db '35.453 '
 db '39.948 '
 db '39.0983'
-db '40.078 '	 ; 20
+db '40.078 '     ; 20
 db '44.9559'
 db '47.88  '
 db '50.9415'
@@ -978,7 +984,7 @@ db '55.847 '
 db '58.9332'
 db '58.6934'
 db '63.546 '
-db '65.39  '	 ; 30
+db '65.39  '     ; 30
 db '69.723 '
 db '72.61  '
 db '74.922 '
@@ -988,7 +994,7 @@ db '83.80  '
 db '85.47  '
 db '87.62  '
 db '88.906 '
-db '91.224 '	 ; 40
+db '91.224 '     ; 40
 db '92.906 '
 db '95.94  '
 db '(98)   '
@@ -998,7 +1004,7 @@ db '106.42 '
 db '107.868'
 db '112.41 '
 db '114.82 '
-db '118.71 '	 ; 50
+db '118.71 '     ; 50
 db '121.75 '
 db '127.60 '
 db '126.90 '
@@ -1008,7 +1014,7 @@ db '137.33 '
 db '138.91 '
 db '140.12 '
 db '140.91 '
-db '144.24 '	 ; 60
+db '144.24 '     ; 60
 db '(147)  '
 db '150.36 '
 db '151.96 '
@@ -1018,7 +1024,7 @@ db '162.50 '
 db '164.93 '
 db '167.26 '
 db '168.93 '
-db '173.04 '	 ; 70
+db '173.04 '     ; 70
 db '174.97 '
 db '178.49 '
 db '180.95 '
@@ -1028,7 +1034,7 @@ db '190.2  '
 db '192.22 '
 db '195.08 '
 db '196.97 '
-db '200.59 '	 ; 80
+db '200.59 '     ; 80
 db '204.38 '
 db '207.19 '
 db '208.98 '
@@ -1038,7 +1044,7 @@ db '(222)  '
 db '(223)  '
 db '(226)  '
 db '(227)  '
-db '232.04 '	 ; 90
+db '232.04 '     ; 90
 db '(231)  '
 db '238.029'
 db '(237)  '
@@ -1048,7 +1054,7 @@ db '(247)  '
 db '(247)  '
 db '(251)  '
 db '(254)  '
-db '(257)  '	 ; 100
+db '(257)  '     ; 100
 db '(258)  '
 db '(259)  '
 db '(262)  ' ;103
@@ -1058,13 +1064,16 @@ db '(266)  '
 db '(264)  '
 db '(269)  '
 db '(268)  '
-db '(271)  '	 ; 110
+db '(271)  '     ; 110
 db '(272)  '
 db '(285)  '
 db '(284)  '
 db '(289)  '
 db '(288)  '
-db '(292)  '	 ;116
+db '(292)  '     ;116
+;
+db '294,210'
+db '294,214'
 
 
 ;-----------------------
@@ -1090,7 +1099,7 @@ db '2,60'
 db '2,83'
 db '3,20'
 db '0,91'
-db '1,04'	  ; 20
+db '1,04'         ; 20
 db '1,20'
 db '1,32'
 db '1,45'
@@ -1110,7 +1119,7 @@ db '2,94'
 db '0,89'
 db '0,99'
 db '1,11'
-db '1,22'	;40
+db '1,22'       ;40
 db '1,6 '
 db '2,16'
 db '1,9 '
@@ -1187,6 +1196,9 @@ db '??? '
 db '??? '
 db '??? '
 db '??? '     ; 116
+db '??? '
+dd '??? '
+
 
 ;-----------------------
 
@@ -1211,7 +1223,7 @@ strtbl T_plavl, \
 "-101,03", \
 "-189,34", \
 "63,51", \
-"842", \	   ;20
+"842", \           ;20
 "1541", \
 "1658", \
 "1920", \
@@ -1231,7 +1243,7 @@ strtbl T_plavl, \
 "39,3", \
 "768", \
 "1528", \
-"1855", \	   ;40
+"1855", \          ;40
 "2470", \
 "2620", \
 "2250", \
@@ -1271,7 +1283,7 @@ strtbl T_plavl, \
 "2443", \
 "1772", \
 "1064,43", \
-"-38,862", \	;80
+"-38,862", \    ;80
 "303,6", \
 "327,502", \
 "271,44", \
@@ -1307,8 +1319,9 @@ strtbl T_plavl, \
 "???", \
 "???", \
 "???", \
-"???"	     ; 116
-
+"???", \        ; 116
+"???", \
+"???"
 
 
 ;-----------------------
@@ -1334,7 +1347,7 @@ strtbl T_kipen, \
 "-34,1", \
 "-185,86", \
 "760", \
-"1495", \	  ;20
+"1495", \         ;20
 "2850", \
 "3260", \
 "3450", \
@@ -1354,7 +1367,7 @@ strtbl T_kipen, \
 "696", \
 "1390", \
 "3320", \
-"4340", \	   ;40
+"4340", \          ;40
 "4927", \
 "4630", \
 "4630", \
@@ -1424,18 +1437,20 @@ strtbl T_kipen, \
 "???", \
 "???", \
 "???", \
-"???", \	; 110
+"???", \        ; 110
 "???", \
 "???", \
 "???", \
 "???", \
 "???", \
-"???"		  ; 116
+"???", \             ; 116
+"345 - 230", \
+"80 (+-30)"
 
 
 ;Русское название           ; 116 элементов
 strtbl Rus_nazv, \
-"Водород", \		    ;1
+"Водород", \                ;1
 "Гелий", \
 "Литий", \
 "Бериллий", \
@@ -1444,7 +1459,7 @@ strtbl Rus_nazv, \
 "Азот", \
 "Кислород", \
 "Фтор", \
-"Неон", \		   ;10
+"Неон", \                  ;10
 "Натрий", \
 "Магний", \
 "Алюминий", \
@@ -1464,7 +1479,7 @@ strtbl Rus_nazv, \
 "Кобальт", \
 "Никель", \
 "Медь", \
-"Цинк", \		   ;30
+"Цинк", \                  ;30
 "Галлий", \
 "Германий", \
 "Мышьяк", \
@@ -1484,7 +1499,7 @@ strtbl Rus_nazv, \
 "Серебро", \
 "Кадмий", \
 "Индий", \
-"Олово", \		    ;50
+"Олово", \                  ;50
 "Сурьма", \
 "Теллур", \
 "Йод", \
@@ -1504,7 +1519,7 @@ strtbl Rus_nazv, \
 "Гольмий", \
 "Эрбий", \
 "Тулий", \
-"Иттербий", \		       ;70
+"Иттербий", \                  ;70
 "Лютеций", \
 "Гафний", \
 "Тантал", \
@@ -1527,7 +1542,7 @@ strtbl Rus_nazv, \
 "Торий",\
 "Протактиний",\
 "Уран",\
-"Нептуний", \		       ;90
+"Нептуний", \                  ;90
 "Плутоний", \
 "Америций", \
 "Кюрий", \
@@ -1547,10 +1562,12 @@ strtbl Rus_nazv, \
 "Дармштадтий", \ ;110
 "Рентгений", \ 
 "Коперниций", \
-"Нихоний", \	    
+"Нихоний", \        
 "Флеровий", \
 "Московий", \
-"Ливерморий"		    ;116
+"Ливерморий", \                ;116
+"Теннессин", \
+"Оганесон"
 
 
 ;Первооткрыватели              ; 116 элементов
@@ -1670,12 +1687,14 @@ strtbl First_Explore, \
 "не открыт",\
 "Учёные России, 1998",\
 "не открыт",\
-"Ю.Ц.Оганессян, В.К.Утенков, 2000"
+"Ю.Ц.Оганессян, В.К.Утенков, 2000", \
+"ОИЯИ в г.Дубна", \
+"ОИЯИ и Ливерморская лаборатория"
 
 
 ; Плотность        116 элементов
 strtbl Plotnost, \
-"-", \		     ; 1
+"-", \               ; 1
 "-", \
 "535", \
 "1848", \
@@ -1685,7 +1704,7 @@ strtbl Plotnost, \
 "-", \
 "-", \
 "0,90035 г/л", \
-"968", \	       ; 10
+"968", \               ; 10
 "1738", \
 "2700", \
 "2330", \
@@ -1695,7 +1714,7 @@ strtbl Plotnost, \
 "1,7837 г/л", \
 "856", \
 "1550", \
-"2985", \		; 20
+"2985", \               ; 20
 "4507", \
 "6110", \
 "7140", \
@@ -1705,7 +1724,7 @@ strtbl Plotnost, \
 "8908", \
 "8920", \
 "7140", \
-"5904", \		; 30
+"5904", \               ; 30
 "5323", \
 "5727", \
 "4819", \
@@ -1715,7 +1734,7 @@ strtbl Plotnost, \
 "2630", \
 "4472", \
 "6511", \
-"8570", \		; 40
+"8570", \               ; 40
 "10280", \
 "11500", \
 "12370", \
@@ -1725,7 +1744,7 @@ strtbl Plotnost, \
 "8650", \
 "7310", \
 "7310", \
-"6697", \		; 50
+"6697", \               ; 50
 "6240", \
 "4940", \
 "5,851 г/л", \
@@ -1735,7 +1754,7 @@ strtbl Plotnost, \
 "6689", \
 "6640", \
 "6800", \
-"7264", \		; 60
+"7264", \               ; 60
 "7353", \
 "5244", \
 "7901", \
@@ -1745,7 +1764,7 @@ strtbl Plotnost, \
 "9066", \
 "9321", \
 "6570", \
-"9841", \		; 70
+"9841", \               ; 70
 "13310", \
 "16650", \
 "19250", \
@@ -1755,7 +1774,7 @@ strtbl Plotnost, \
 "21090", \
 "19300", \
 "-", \
-"11850", \		 ; 80
+"11850", \               ; 80
 "11340", \
 "9780", \
 "9196", \
@@ -1765,7 +1784,7 @@ strtbl Plotnost, \
 "5000", \
 "10070", \
 "11724", \
-"15370", \		 ; 90
+"15370", \               ; 90
 "19050", \
 "20450", \
 "19816", \
@@ -1775,7 +1794,7 @@ strtbl Plotnost, \
 "15100", \
 "-", \
 "-", \
-"-", \		     ; 100
+"-", \               ; 100
 "-", \
 "-", \
 "-", \
@@ -1785,18 +1804,20 @@ strtbl Plotnost, \
 "-", \
 "-", \
 "-", \
-"-", \		     ; 110
+"-", \               ; 110
 "-", \
 "-", \
 "-", \
 "-", \
 "-", \
-"-"		     ; 116
+"-", \                  ; 116
+"-", \
+"4,9 - 5,1 "
 
 
 ;РАСПРОСТРАНЕНИЕ В ЗЕМНОЙ КОРЕ            116 элементов
 strtbl Rasprostr, \
-"0,14 %", \		  ; 1
+"0,14 %", \               ; 1
 "менее 0,0015 %", \
 "0,0030 %", \
 "0,0006 %", \
@@ -1805,7 +1826,7 @@ strtbl Rasprostr, \
 "0,0046 %", \
 "46,60 %", \
 "0,070 %", \
-"0,00007 г/т", \	       ; 10
+"0,00007 г/т", \               ; 10
 "2,83 %", \
 "2,09 %", \
 "8,13 %", \
@@ -1815,7 +1836,7 @@ strtbl Rasprostr, \
 "0,020 %", \
 "0,000004 %", \
 "2,59 %", \
-"3,63 %", \		  ; 20
+"3,63 %", \               ; 20
 "0,001 %", \
 "0,57 %", \
 "0,0110 %", \
@@ -1825,7 +1846,7 @@ strtbl Rasprostr, \
 "0,0023 %", \
 "0,0080 %", \
 "0,0045 %", \
-"0,0065 %", \		    ; 30
+"0,0065 %", \               ; 30
 "0,0015 %", \
 "0,00015 %", \
 "0,00017 %", \
@@ -1835,7 +1856,7 @@ strtbl Rasprostr, \
 "0,0120 %", \
 "???", \
 "0,0040 %", \
-"0,0160 %", \		    ; 40
+"0,0160 %", \               ; 40
 "0,0024 %", \
 "0,0003 %", \
 "-", \
@@ -1846,7 +1867,7 @@ strtbl Rasprostr, \
 "0,0000135 %", \
 "0,00001 %", \
 "0,008 %", \
-"0,00005 %", \		     ; 50
+"0,00005 %", \               ; 50
 "0,000001 %", \
 "0,00004 %", \
 "0,000039 % (в атмосфере)", \
@@ -1856,7 +1877,7 @@ strtbl Rasprostr, \
 "0,007 %", \
 "0,0007 %", \
 "0,0025 %", \
-"-", \		     ; 60
+"-", \               ; 60
 "0,0007 %", \
 "0,00013 %", \
 "0,00054 %", \
@@ -1866,7 +1887,7 @@ strtbl Rasprostr, \
 "0,00033 %", \
 "0,000027 %", \
 "0,000033 %", \
-"0,00008 %", \		     ; 70
+"0,00008 %", \               ; 70
 "0,0003 - 0,0004 %", \
 "0,00025 %", \
 "0,0001 %", \
@@ -1876,7 +1897,7 @@ strtbl Rasprostr, \
 "0,0000005 %", \
 "0,00000043 %", \
 "0,000007 %", \
-"0,0003 %", \		    ; 80
+"0,0003 %", \               ; 80
 "0,0015 %", \
 "0,00002 %", \
 "0,00000000000002 %", \
@@ -1886,7 +1907,7 @@ strtbl Rasprostr, \
 "0,0000000001 %", \
 "0,0000000006 %", \
 "0,0008 %", \
-"-", \		     ; 90
+"-", \               ; 90
 "0,0003 %", \
 "-", \
 "-", \
@@ -1896,7 +1917,7 @@ strtbl Rasprostr, \
 "-", \
 "-", \
 "-", \
-"-", \		     ; 100
+"-", \               ; 100
 "-", \
 "-", \
 "-", \
@@ -1906,17 +1927,19 @@ strtbl Rasprostr, \
 "-", \
 "-", \
 "-", \
-"-", \		     ; 110
+"-", \               ; 110
 "-", \
 "-", \
 "-", \
 "-", \
-"-"		  ; 116
+"-", \               ; 116
+"-", \
+"-"
 
 
 ; степень окисления   116 элементов
 strtbl Step_ok, \
-"+1 -1", \		     ; 1
+"+1 -1", \                   ; 1
 "-", \
 "+1", \
 "+2 (+1)", \
@@ -1925,7 +1948,7 @@ strtbl Step_ok, \
 "от +5 до -3 ", \
 "+4 -4", \
 "-1", \
-"-", \			 ; 10
+"-", \                   ; 10
 "+1", \
 "+2 (+1)", \
 "+3 (+1 +2)", \
@@ -1935,7 +1958,7 @@ strtbl Step_ok, \
 "-1 +1 +3 +5 +7", \
 "-", \
 "+1", \
-"+2 (+1)", \		       ; 20
+"+2 (+1)", \                   ; 20
 "+3 (+1 +2)", \
 "+4 +2 +3", \
 "от +2 до +5", \
@@ -1945,7 +1968,7 @@ strtbl Step_ok, \
 "+2 +3 (+1 +4 +5)", \
 "+2 (+1 +3 +4)", \
 "+1 +2 (+3 +4)", \
-"+2", \ 		  ; 30
+"+2", \                   ; 30
 "+1 +3", \
 "+4 +3 +2 +1", \
 "+5 +3 -3", \
@@ -1955,7 +1978,7 @@ strtbl Step_ok, \
 "+1", \
 "+2 (+1)", \
 "+3", \
-"+4 (+1 +2 +3)", \		     ; 40
+"+4 (+1 +2 +3)", \                   ; 40
 "+5 (+1 +2 +3 +4)", \
 "от +2 до +6", \
 "от -1 до +7", \
@@ -1965,7 +1988,7 @@ strtbl Step_ok, \
 "+1 +2 +3", \
 "+2 (+1)", \
 "+3 (+1)", \
-"+2 +4", \		     ; 50
+"+2 +4", \                   ; 50
 "+3 +5 (-3)", \
 "-2 +6 +4 (+2)", \
 "-1 +1 +3 +5 +7", \
@@ -1975,7 +1998,7 @@ strtbl Step_ok, \
 "+3", \
 "+3 (+4)", \
 "+4 +3 (+2)", \
-"+4 +3 (+2)", \ 		  ; 60
+"+4 +3 (+2)", \                   ; 60
 "+3", \
 "+2 +3 (+2)", \
 "+3 +2", \
@@ -1985,7 +2008,7 @@ strtbl Step_ok, \
 "+3 (+2)", \
 "+3 (+1)", \
 "+3 +2 (+4)", \
-"+2 +3", \		     ; 70
+"+2 +3", \                   ; 70
 "+3", \
 "+4 (+3 +2)", \
 "+5 (+2 +3 +4)", \
@@ -1995,7 +2018,7 @@ strtbl Step_ok, \
 "+4 +3 +1 +2 +6", \
 "+4 +3 +2 (+5 +6)", \
 "+1 +3 (+5)", \
-"+2 +1", \		     ; 80
+"+2 +1", \                   ; 80
 "+1 +3", \
 "+1 +4 +2", \
 "+3 +5 -3 (+1 +2)", \
@@ -2005,7 +2028,7 @@ strtbl Step_ok, \
 "+1", \
 "+2", \
 "+3", \
-"+4 (+2 +3)", \ 		  ; 90
+"+4 (+2 +3)", \                   ; 90
 "+4 +5 (+3)", \
 "от +2 до +6", \
 "+3 +4 +5 (+6 +7)", \
@@ -2015,7 +2038,7 @@ strtbl Step_ok, \
 "+3 (+4)", \
 "+2 +3 (+4)", \
 "+2 +3", \
-"+2 +3", \		     ; 100
+"+2 +3", \                   ; 100
 "+1 +2 +3", \
 "+2 +3", \
 "+3", \
@@ -2025,12 +2048,14 @@ strtbl Step_ok, \
 "-", \
 "-", \
 "-", \
-"-", \			 ; 110
+"-", \                   ; 110
 "-", \
 "-", \
 "-", \
 "-", \
 "-", \
-"-"		      ; 116
+"-", \                   ; 116
+"-", \
+"-1, 0, +1, +2, +4, +6"
 I_END:
 sc   system_colors
