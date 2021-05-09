@@ -129,6 +129,10 @@ dd  .setSkinUnicode
         jnae    @f
         mov     edx, 192 ; max size
 @@:
+        stdcall is_region_userspace, esi, edx    ;
+        jnz     @f                               ;
+        ret                                      ;
+@@:
         mov     edi, common_colours
         mov     ecx, edx
         rep movsb
