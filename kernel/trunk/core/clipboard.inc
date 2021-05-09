@@ -49,6 +49,15 @@ align 4
 .2:
         dec     ebx  ; 2 - Write the data to the clipboard
         jnz     .3
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+        stdcall is_region_userspace, edx, ecx
+        jnz     @f
+        mov     eax, -1
+        jmp     .exit_1
+@@:
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 ; check the lock
         mov     ebx, clipboard_write_lock
         xor     eax, eax
