@@ -3,8 +3,11 @@
 #include <limits.h>
 
 char* test_string1 = "Hello world!";
+int a, b;
 
 int main(int argc, char** argv){
+    sscanf("43 53","%d %d",&a, &b);
+    printf("(43 53) = (%d %d)\n", a, b);
     printf("Hello world! = %s\n", test_string1);
     printf("345.358980 = %f\n", 345.35898);
     printf("345 = %d\n", (int)345.35898);

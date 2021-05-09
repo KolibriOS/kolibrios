@@ -37,7 +37,7 @@ int main(){
     tmpdisk_add.disk_size = TMPDISK_SIZE*1024*1024/512;
     tmpdisk_add.disk_id = 5;
     
-    ksys_drv_ctl_t ioctl;
+    ksys_ioctl_t ioctl;
     ioctl.func_num = DEV_ADD_DISK;
     ioctl.handler = tmpdisk_drv;
     ioctl.in_data_ptr = &tmpdisk_add;

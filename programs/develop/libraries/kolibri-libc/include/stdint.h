@@ -23,6 +23,10 @@
 #define INT64_MIN       (-9223372036854775807LL-1LL)
 #define INT64_MAX        (9223372036854775807LL)
 #define UINT64_MAX      (18446744073709551615ULL)
+#else
+#define INT64_MAX       0x7fffffffffffffffLL
+#define INT64_MIN       (-INT64_MAX - 1LL)
+#define UINT64_MAX      (__CONCAT(INT64_MAX, U) * 2ULL + 1ULL) 
 #endif
 
 #endif /* _STDINT_H_*/

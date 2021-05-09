@@ -29,13 +29,16 @@ extern void* _FUNC(memccpy)(void *restrict dest, const void *restrict src, int c
    area pointed to by s1. If the two areas overlap, behaviour is undefined.
    Returns the value of s1.
 */
-extern void* _FUNC(memcpy)(void* s1, const void* s2, size_t n);
 
-/* Copy a number of n characters from the memory area pointed to by s2 to the
-   area pointed to by s1. The two areas may overlap.
-   Returns the value of s1.
-*/
+#ifdef __TINYC__
+extern void* memcpy(void* s1, const void* s2, size_t n);
+extern void* memset(void* s, int c, size_t n);
 extern void* memmove(void* s1, const void* s2, size_t n);
+#else
+extern void* _FUNC(memcpy)(void* s1, const void* s2, size_t n);
+extern void* _FUNC(memset)(void* s, int c, size_t n);
+extern void* _FUNC(memmove)(void* s1, const void* s2, size_t n);
+#endif
 
 /* Copy the character array s2 (including terminating '\0' byte) into the
    character array s1.
@@ -159,14 +162,6 @@ extern char* _FUNC(strstr)(const char * s1, const char * s2);
    WARNING: This function uses static storage, and as such is not reentrant.
 */
 extern char* _FUNC(strtok)(char* s1, const char* s2);
-
-/* Miscellaneous functions */
-
-/* Write the character c (interpreted as unsigned char) to the first n
-   characters of the memory area pointed to by s.
-   Returns s.
-*/
-extern void* _FUNC(memset)(void* s, int c, size_t n);
 
 /* Map an error number to a (locale-specific) error message string. Error
    numbers are typically errno values, but any number is mapped to a message.

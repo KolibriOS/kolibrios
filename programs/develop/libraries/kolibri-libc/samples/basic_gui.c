@@ -64,7 +64,7 @@ int main()
     ksys_pos_t mouse_pos;
     strcpy(statusbar, "Program running...Double click on TEXT for details");
 
-    _ksys_get_colors(&sys_color_table);
+    _ksys_get_system_colors(&sys_color_table);
     _ksys_set_event_mask(0xC0000027); // mouse events only when focused window and mouse inside
 
     do{

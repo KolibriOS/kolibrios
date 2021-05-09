@@ -107,11 +107,12 @@ extern int    _FUNC(putchar)(int);
 extern int    _FUNC(puts)(const char *);
 extern int    _FUNC(scanf)(const char *restrict, ...);
 extern char*  _FUNC(gets)(char *str);
-//extern int    _FUNC(ungetc)(int, FILE *);
+extern int    _FUNC(ungetc)(int, FILE *);
 extern int    _FUNC(vfprintf)(FILE *restrict, const char *restrict, va_list);
 extern int    _FUNC(vfscanf)(FILE *restrict, const char *restrict, va_list);
 extern int    _FUNC(vprintf)(const char *restrict, va_list);
 extern int    _FUNC(vscanf)(const char *restrict, va_list);
+extern int    _FUNC(sscanf)(const char*, const char *restrict, ...);
 extern int    _FUNC(vsscanf)(const char *, const char*, va_list);
 
 extern int    _FUNC(remove)(const char *);

@@ -13,13 +13,28 @@ todo:
 -radix point always '.', no LOCALEs
 */
 
+
 #include <stdio.h>
 #include <ctype.h>
 #include <math.h>
 #include <stdarg.h>
-#include "format_scan.h"
 
-static int __try_parse_real(long double *real, int ch, const void *src, void *save, virtual_getc vgetc, virtual_ungetc vungetc)
+typedef int (*virtual_getc)(void *sp, const void *obj);
+typedef void (*virtual_ungetc)(void *sp, int c, const void *obj);
+
+enum flags_t
+{
+        flag_unsigned   = 0x02,
+        flag_register   = 0x04,
+        flag_plus       = 0x08,
+        flag_left_just  = 0x10,
+        flag_lead_zeros = 0x20,
+        flag_space_plus = 0x40,
+        flag_hash_sign  = 0x80,
+        flag_point      = 0x100
+};
+
+int     try_parse_real(long double *real, int ch, const void *src, void *save, virtual_getc vgetc, virtual_ungetc vungetc)
 // returns 1 if OK, -1 == EOF, -2 parse broken
 {
     int sign = 1, have_digits = 0;
@@ -133,12 +148,12 @@ static int __try_parse_real(long double *real, int ch, const void *src, void *sa
         }
     }
     div *= sign;
-    *real *= pow(10,div);
+    *real *= pow(10, div);
 
     return 1;
 }
 
-static int __try_parse_int(long long *digit, int ch, const void *src, void *save, virtual_getc vgetc, virtual_ungetc vungetc)
+int     try_parse_int(long long *digit, int ch, const void *src, void *save, virtual_getc vgetc, virtual_ungetc vungetc)
 {
     int sign = 1, base = 10, have_digits = 0;
 
@@ -208,20 +223,20 @@ static int __try_parse_int(long long *digit, int ch, const void *src, void *save
 
 
 
-int _format_scan(const void *src, const char *fmt, va_list argp, virtual_getc vgetc, virtual_ungetc vungetc)
+int format_scan(const void *src, const char *fmt, va_list argp, virtual_getc vgetc, virtual_ungetc vungetc)
 {
-    int         i;
-    int         length;
-    int         fmt1, fmt2;  // width, precision
-    size_t      pos, posc;
-    const char  *fmtc;  // first point to %, fmtc points to specifier
-    int         ch;
-    int         format_flag;
-    int         flag_long;        // 2 = long double or long long int or wchar
-    int         *point_to_n = NULL, nread = 0;
-    int         flags;  // parsed flags
-    int         save = 0;
-    char        *arg_str;
+    int                     i;
+    int                     length;
+    int                     fmt1, fmt2;  // width, precision
+    size_t                  pos, posc;
+    const char            *fmtc;  // first point to %, fmtc points to specifier
+    int                    ch;
+    int                     format_flag;
+    int                     flag_long;        // 2 = long double or long long int or wchar
+    int                    *point_to_n = NULL, nread = 0;
+    int                     flags;  // parsed flags
+    int                     save = 0;
+    char                *arg_str;
     int	        *arg_int;
     long        *arg_long;
     long long	*arg_longlong;
@@ -363,7 +378,7 @@ int _format_scan(const void *src, const char *fmt, va_list argp, virtual_getc vg
             break;
         case 's':
             arg_str = va_arg(argp, char*);
-            if (fmt1 == 0) length = STDIO_MAX_MEM;   // max string scan 4096
+            if (fmt1 == 0) length = 4095;   // max string scan 4096
             else length = fmt1;
             for (i = 0; i < length; i++)
             {
@@ -375,7 +390,7 @@ int _format_scan(const void *src, const char *fmt, va_list argp, virtual_getc vg
             break;
         case 'd':   case 'i':   case 'u':
         case 'o':   case 'p':   case 'x':
-            i = __try_parse_int(&digit, ch, src, &save, vgetc, vungetc);
+            i = try_parse_int(&digit, ch, src, &save, vgetc, vungetc);
             if (i < 0) goto exit_me;
 
             if (flag_long == 0) { arg_int = va_arg(argp, int*); *arg_int = (int)digit; } else
@@ -385,7 +400,7 @@ int _format_scan(const void *src, const char *fmt, va_list argp, virtual_getc vg
         case 'a':   case 'A':   case 'f':   case 'F':
         case 'e':   case 'E':
         case 'g':   case 'G':
-            i = __try_parse_real(&real, ch, src, &save, vgetc, vungetc);
+            i = try_parse_real(&real, ch, src, &save, vgetc, vungetc);
             if (i < 0) goto exit_me;
 
             if (flag_long == 0) { arg_float = va_arg(argp, float*); *arg_float = (float)real; } else

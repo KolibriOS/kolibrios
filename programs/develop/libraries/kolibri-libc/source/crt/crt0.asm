@@ -4,11 +4,10 @@ public start
 public start as '_start'
 ;extrn mf_init
 extrn main
-;include 'debug2.inc'
-include 'proc32.inc'
-include 'macros.inc'
-include 'dll.inc'
-__DEBUG__=0
+include '../../../../../proc32.inc'
+include '../../../../../macros.inc'
+include '../../../../../dll.inc'
+;include '../../../../../debug.inc'
 
 ;start_:
 virtual at 0
@@ -151,9 +150,12 @@ load_imports:
     mov dword[ebx], eax
     jmp .handle_next_import
 .done:
+    ;DEBUGF 1, "Library: %s not loaded!\n", esi
+    ;mcall -1
     ret
 .fail:
     ret
+ 
 ;==============================
 
 ;==============================
@@ -200,38 +202,7 @@ load_library:
 .fail:
     mov eax, 0
     ret
-    
-; ==== memmove for tcc ======
 
-proc memmove c, to:dword,from:dword,count:dword
-
-    push esi
-    push edi
-	mov ecx,[count]
-	test ecx,ecx
-	jz no_copy_block_
-		mov esi,[from]
-		mov edi,[to]
-		cmp esi, edi
-		je no_copy_block_
-		jg copy_
-            add	esi, ecx
-            add	edi, ecx
-            dec	esi
-            dec	edi
-            std
-copy_:
-		rep movsb
-        cld
-no_copy_block_:
-
-    pop edi
-    pop esi
-    mov eax,[to]
-	ret
-endp
-    
-    
 ;==============================
 
 lib_init_str db 'lib_init', 0
@@ -239,7 +210,6 @@ lib_init_str db 'lib_init', 0
 public argc as '__argc'
 public params as '__argv'
 public path as '__path'
-public memmove
 
 section '.bss' 
 buf_len = 0x400
@@ -249,5 +219,3 @@ argv	 rd max_parameters
 path	 rb buf_len 
 params	 rb buf_len 
 
-;section '.data'
-;include_debug_strings ; ALWAYS present in data section

@@ -19,9 +19,10 @@ all:
 	$(KPACK) $(LIB)
 	../linuxtools/LoaderGen symbols.txt ../loader
 	../linuxtools/LoaderBuild ../loader
+	$(MAKE) -C libtcc
 	rm -rf exports
 install:
 	cp -f ../lib/libc.obj ~/.kex/root/RD/1/LIB
 
 clean:
-	rm ../lib/libc.obj
+	rm ../lib/*

@@ -152,7 +152,7 @@ typedef struct{
     unsigned in_data_size;
     void* out_data_ptr;
     unsigned out_data_size;
-}ksys_drv_ctl_t;
+}ksys_ioctl_t;
 
 #pragma pack(pop)
 
@@ -1028,7 +1028,7 @@ ksys_drv_hand_t _ksys_load_pe_driver(char *driver_path, char *cmd_line)
 }
 
 static inline
-unsigned _ksys_work_driver(ksys_drv_ctl_t *ioctl)
+unsigned _ksys_work_driver(ksys_ioctl_t *ioctl)
 {
     unsigned status;
     asm_inline(
