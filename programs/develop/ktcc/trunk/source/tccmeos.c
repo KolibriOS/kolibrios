@@ -260,7 +260,10 @@ int tcc_output_me(TCCState* s1,const char *filename)
 	me.header.params= tcc_find_symbol_me(&me,"__argv"); // <--
 	me.header.argv= tcc_find_symbol_me(&me,"__path"); // <--
 
-	f=fopen(filename,"wb");
+	if((f=fopen(filename,"wb"))==NULL){
+		tcc_error("could not create '%s': %s", filename, strerror(errno));
+	}
+
     for (i=0;i<8;i++)
         me.header.magic[i]=me_magic[i];
 	fwrite(&me.header,1,sizeof(IMAGE_MEOS_FILE_HEADER),f);
