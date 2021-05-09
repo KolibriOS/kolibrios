@@ -4441,6 +4441,15 @@ sys_putimage_palette:
 ; esi = number of bits per pixel, must be 8, 24 or 32
 ; edi = pointer to palette
 ; ebp = row delta
+; check pointer
+        push    ecx
+        mov     ax, cx
+        shr     ecx, 16
+        imul    eax, ecx
+        stdcall is_region_userspace, ebx, eax
+        pop     ecx
+        jz      sys_putimage.exit
+
         mov     eax, [CURRENT_TASK]
         shl     eax, 8
         add     dx, word [eax+SLOT_BASE+APPDATA.wnd_clientbox.top]
@@ -5193,6 +5202,9 @@ align 4
 
 syscall_writetext:                      ; WriteText
 
+        stdcall is_region_userspace, edx, esi
+        jz      .err
+
         mov     eax, [TASK_BASE]
         mov     ebp, [eax-twdw+WDATA.box.left]
         push    esi
@@ -5209,9 +5221,16 @@ align 4
 @@:
         mov     eax, edi
         test    ecx, 0x08000000  ; redirect the output to the user area
-        jnz     dtext
+        jnz     @f
         xor     edi, edi
         jmp     dtext
+
+@@:     ;  check pointer
+        stdcall is_region_userspace, edi, 0
+        jz      .err
+        jmp     dtext
+.err:
+        ret
 
 align 4
 
