@@ -1409,6 +1409,19 @@ sys_outport:
         ret
 
 display_number:
+; add check pointers
+        test    bl, bl
+        jz      @f
+        stdcall is_region_userspace, ecx, 1
+        jnz     @f
+        ret
+@@:
+        test    esi, 0x08000000
+        jz      @f
+        stdcall is_region_userspace, edi, 1
+        jnz     @f
+        ret
+@@:
 ;It is not optimization
         mov     eax, ebx
         mov     ebx, ecx
