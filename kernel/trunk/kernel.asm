@@ -2829,6 +2829,11 @@ align 4
 nosb4:
         cmp     ebx, 5                     ; BLOCK MOVE TO BGR
         jnz     nosb5
+
+; add check pointer
+        stdcall is_region_userspace, ecx, esi
+        jz      .fin
+
         cmp     [img_background], static_background_data
         jnz     @f
         test    edx, edx
@@ -4385,6 +4390,16 @@ bgrstr:
 ;-----------------------------------------------------------------------------
 align 4
 syscall_putimage:                       ; PutImage
+; add check pointer
+        push    ecx
+        mov     ax, cx
+        shr     ecx, 16
+        imul    eax, ecx
+        lea     eax, [eax*3]
+        stdcall is_region_userspace, ebx, eax
+        pop     ecx
+        jz      sys_putimage.exit
+
 sys_putimage:
         test    ecx, 0x80008000
         jnz     .exit
