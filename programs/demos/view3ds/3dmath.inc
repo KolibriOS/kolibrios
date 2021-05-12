@@ -198,24 +198,7 @@ ret
 ;---------------------------- edi - pointer to vector -----
 ;----------------------- out : none
 normalize_vector:
-if Ext = SSE2 | Ext = SSE | Ext = SSE3
-        movups  xmm0,[edi]
-        andps   xmm0,[zero_hgst_dd]
-        movups  xmm1,xmm0
-        mulps   xmm0,xmm0
-        movhlps xmm2,xmm0
-        addps   xmm0,xmm2
-        movaps  xmm2,xmm0
-        shufps  xmm2,xmm2,11100001b
-        addps   xmm0,xmm2
-        shufps  xmm0,xmm0,0
-        rsqrtps xmm0,xmm0
-        mulps   xmm0,xmm1
-        movlps  [edi],xmm0
-        movhlps xmm0,xmm0
-        movss   [edi+8],xmm0
-end if
-if 0 ; Ext >= SSE3
+if Ext >= SSE3
         movups  xmm0,[edi]
         andps   xmm0,[zero_hgst_dd]
         movups  xmm1,xmm0
@@ -227,8 +210,7 @@ if 0 ; Ext >= SSE3
         movlps  [edi],xmm0
         movhlps xmm0,xmm0
         movss   [edi+8],xmm0
-end if
-if Ext < SSE
+else
 
         fninit
         fld     dword [edi+vec_x]

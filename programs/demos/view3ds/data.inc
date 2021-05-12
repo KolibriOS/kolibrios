@@ -1,12 +1,15 @@
                    ; DATA AREA  ************************************
 
         i3              dw      3
+        i6              dd      6
         i12             dd      12
+        i36             dd      36
         i256            dw      256
         i255d           dd      255
         dot_max         dd      1.0      ; dot product max and min
         dot_min         dd      0.0
         env_const       dd      1.05
+        correct_tex     dw      255
         tex_x_div2      dw      TEX_X  / 2
         tex_y_div2      dw      TEX_Y  / 2
         xobs            dw      0 ;SIZE_X / 2 ;200 ;observer  = camera
@@ -54,6 +57,7 @@
         points_ptr              dd 0
         points_rotated_ptr      dd 0
         points_translated_ptr   dd 0
+        edges_ptr               dd 0
         screen_ptr              dd 0
         Zbuffer_ptr             dd 0
         vertices_index_ptr      dd 0
@@ -64,6 +68,9 @@
         edit_end_x:
                           dw 0
         edit_end_y        dw 0
+        x_start:          dw 20
+        y_start:          dw 20
+
         mouse_state           dd 0
 
 
@@ -343,9 +350,19 @@ base_vector:
       if Ext=SSE3
         db   ' (SSE3)'
       end if
-        db   ' 0.072',0
+        db   ' 0.073',0
     labellen:
         STRdata db '-1        '
+     lab_vert:
+        db 'Vertices count: '
+     lab_vert_end:
+     lab_tr:
+        db 'Faces count:    '
+     lab_tr_end:
+     lab_ed:
+        db 'Edges count:    '
+     lab_ed_end:
+
 
     all_lights_size dw lightsend-lights
 
@@ -410,6 +427,8 @@ lightsend:
 
 
 align 16
+    abs_mask:
+           dd 0x7fffffff, 0x7fffffff, 0x7fffffff, 0x7fffffff
     emboss_bias:
            dw 128, 128, 128, 128, 128, 128, 128, 128
     zero_hgst_dd:
@@ -434,7 +453,7 @@ align 16
          fptr   dd      0 ;workarea
         file_name:
                 db      '/rd/1/3d/house.3ds',0
-         ;      db      '/tmp0/1/ant.3ds',0
+             ;  db      '/tmp0/1/ant.3ds',0
 
       rb 256
 
@@ -465,21 +484,9 @@ align 8
         col3    dd      ?
         scale   dd      ? ; help scale variable
 
-   ;==
-        triangles_count_var     dd ?
-        points_count_var        dd ?
-
-;        size_y_var:
-;        yres_var                dw ?
-
-;        size_x_var:
-;        xres_var                dw ?
-        x_start:
-                                dw ?
-        y_start:
-                                dw ?
-
-   ;===
+        points_count_var        dd ?  ;
+        triangles_count_var     dd ?  ; dont change order
+        edges_count             dd ?  ;
 
         point_index1        dd ?   ;-\
         point_index2        dd ?   ;  }  don't change order

@@ -60,24 +60,23 @@ calc_one_col:
 ;        stack - other parameters
 ; out - eax - 0x00rrggbb
 .dot_prd   equ dword[ebp+4]           ; dot product   - cos x  - not now
-.min_col_r equ [ebp+8]            ; minimum color - ambient
+.min_col_r equ word[ebp+8]            ; minimum color - ambient
 .min_col_g equ word[ebp+10]
 .min_col_b equ word[ebp+12]
-.max_col_r equ [ebp+14]           ; maximum color - specular
+.max_col_r equ word[ebp+14]           ; maximum color - specular
 .max_col_g equ word[ebp+16]
 .max_col_b equ word[ebp+18]
-.org_col_r equ [ebp+20]           ; orginal color - diffuse
+.org_col_r equ word[ebp+20]           ; orginal color - diffuse
 .org_col_g equ word[ebp+22]
 .org_col_b equ word[ebp+24]
 .n         equ word[ebp+26]           ; shines - not implemented
 .temp      equ word[ebp-2]
-.color_sum_r equ [ebp-6]
-.color_sum_g equ [ebp-10]
-.color_sum_b equ [ebp-14]
+.color_sum_r equ dword[ebp-6]
+.color_sum_g equ dword[ebp-10]
+.color_sum_b equ dword[ebp-14]
 ; color = ambient+cos(x)*diffuse+(cos(x)^n)*specular
          mov     ebp,esp
          sub     esp,14
-
 
          mov      ax,.min_col_r
          add      ax,.max_col_r
@@ -96,37 +95,7 @@ calc_one_col:
          add      ax,.org_col_b
          cwde
          mov      .color_sum_b,eax
-if 0
 
-
-         movq       xmm0,.min_col_r
-         movq       xmm1,.max_col_r
-         movq       xmm2,.org_col_r
-         packuswb   xmm0,[the_zero]
-         packuswb   xmm1,[the_zero]
-         packuswb   xmm2,[the_zero]
-         punpcklbw  xmm0,xmm1
-         punpcklbw  xmm2,[the_zero]
-         packusdw   xmm2,[the_zero]
-         cvtdq2ps   xmm0,xmm0
-         cvtdq2ps   xmm1,xmm1
-         cvtdq2ps   xmm2,xmm2
-         haddps     xmm0,xmm0
-         haddps     xmm1,xmm1
-         haddps     xmm2,xmm2
-         haddps     xmm0,xmm0
-         haddps     xmm1,xmm1
-         haddps     xmm2,xmm2
-
-         cvtss2si   eax,xmm0
-         cvtss2si   ebx,xmm1
-         cvtss2si   ecx,xmm2
-         mov        .color_sum_r,eax
-         mov        .color_sum_g,ebx
-         mov        .color_sum_b,ecx
-
-
-end if
 
 ;         fld     .dot_prd
        ;  fild    .n
@@ -154,7 +123,7 @@ end if
          faddp                 ; st0=first piece of col, st1=dot_pr^n..
          fiadd   .min_col_b
          fimul   .max_col_b
-         fidiv   dword .color_sum_b
+         fidiv   .color_sum_b
          fistp   .temp
          movzx   eax,.temp
          shl     eax,16
@@ -166,19 +135,19 @@ end if
          faddp
          fiadd   .min_col_g
          fimul   .max_col_g
-         fidiv   dword .color_sum_g
+         fidiv   .color_sum_g
          fistp   .temp
          mov     ax,.temp
          mov     ah,al
          shl     eax,8
 
-         fimul   word .max_col_r
-         fild    word .org_col_r
+         fimul   .max_col_r
+         fild    .org_col_r
          fmulp   st2,st
          faddp
-         fiadd   word .min_col_r
-         fimul   word .max_col_r
-         fidiv   dword .color_sum_r
+         fiadd   .min_col_r
+         fimul   .max_col_r
+         fidiv   .color_sum_r
          fistp   .temp
          mov     ax,.temp          ;eax -  0xbbgg00rr
      ;   mov     ah,al

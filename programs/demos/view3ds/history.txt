@@ -1,4 +1,14 @@
 
+View3ds 0.072 - march 2021
+1. New displaying model - texturing with bilinear filtering and transparency
+    simultanusly. Note that filtering is done only inside polygon. To better 
+    quality of image there is a need to use floats coordinates of texture to pass
+    as arguments to single triangle rendering proc.
+2. Optimizations.
+3. SSE3 version runs correct on SSE2 cpus, but real phong, glass and 
+    transparented texturing with filtering rendering models are disabled.
+-----------------------------------------------------------------------------------
+
 View3ds 0.071 - VIII 2020
 1. New displaying model - glass -  it's two pass rendering. First pass calculates
    Z position of all front pixels, second render image with adding reflective

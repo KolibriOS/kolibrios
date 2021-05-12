@@ -1,3 +1,227 @@
+;===============================================================
+do_edges_list:
+    push    ebp
+    mov     ebp,esp
+    sub     esp,32
+
+    .ed_cnt   equ [ebp-4]
+    .edd_ptr  equ [ebp-8]
+    .counter  equ [ebp-12]
+
+
+    mov     ebx,[edges_ptr]
+    mov     eax,[triangles_ptr]
+    mov     ecx,[triangles_count_var]
+  @@:
+    movdqu  xmm0,[eax]
+    movq    [ebx],xmm0
+    pshufd  xmm0,xmm0,11001001b
+    movq    [ebx+8],xmm0
+    pshufd  xmm0,xmm0,11001001b
+    movq    [ebx+16],xmm0
+    add     ebx,24
+    add     eax,12
+    loop    @b
+
+
+    mov     ebx,[edges_ptr]
+    mov     ecx,[triangles_count_var]
+    lea     ecx,[ecx*3]
+  .mxd:
+    mov     eax,[ebx]
+    cmp     eax,[ebx+4]
+    jl      @f
+    movq    xmm0,[ebx]
+    pshufd  xmm0,xmm0,11100001b
+    movq    [ebx],xmm0
+  @@:
+    add     ebx,8
+    loop    .mxd
+
+
+   ; insert sort
+   mov    ebx,[edges_ptr]
+   mov    ecx,[triangles_count_var]
+   lea    ecx,[ecx*3]
+
+   mov    esi,ecx
+   shl    esi,3
+   add    esi,ebx
+
+ .ccc:
+   mov    eax,[ebx+8]
+   cmp    eax,[ebx]
+   jge    .g
+   movq   xmm0,[ebx+8]
+   push   ebx
+ .c:
+   cmp    ebx,esi
+   jge    .done
+   cmp    ebx,[edges_ptr]
+   jl     .done
+   cmp    eax,[ebx]
+   jge    .done
+   movq   xmm7,[ebx]
+   movq   [ebx+8],xmm7
+   sub    ebx,8
+   jnz    .c
+   add    ebx,8
+ .done:
+   movq   [ebx+8],xmm0
+ .p:
+   pop    ebx
+ .g:
+   add    ebx,8
+   dec    ecx
+   cmp    ecx,1
+   jnz    .ccc
+
+
+  ; insert sort again
+   mov    ebx,[edges_ptr]
+   mov    ecx,[triangles_count_var]
+   lea    ecx,[ecx*3]
+   mov    esi,ecx
+   shl    esi,3
+   add    esi,ebx
+
+ .count:
+   push   ecx
+   push   ebx
+   xor    ecx,ecx
+   mov    eax,[ebx]          ; count
+ .aa:
+   inc    ecx
+   add    ebx,8
+   cmp    ebx,esi
+   jge    .br         ; break
+   cmp    eax,[ebx]
+   je     .aa
+   mov    .counter,ecx
+   pop    ebx
+   mov    edi,ebx
+   sub    edi,8
+   mov    edx,[ebx+8]
+ .ccc2:
+
+   cmp    ebx,esi
+   jbe    @f
+   add    esp,4
+   jmp    .ff
+ @@:
+   mov    eax,[ebx+12]
+   mov    edx,[ebx+8]
+   cmp    eax,[ebx+4]
+   jge    .gg2
+   movq   xmm0,[ebx+8]
+   push   ebx
+ .c2:
+   cmp    eax,[ebx+4]
+   jge    .done2
+   movq   xmm7,[ebx]
+   movq   [ebx+8],xmm7
+
+   sub    ebx,8
+   cmp    ebx,edi
+   jz     @f
+   cmp    [ebx+8],edx
+   jz     .c2
+ @@:
+ .done2:
+   add    ebx,8
+   movq   [ebx],xmm0
+
+ .p2:
+   pop    ebx
+ .gg2:
+   add    ebx,8
+   dec    ecx
+   cmp    ecx,1
+   jnz    .ccc2
+
+   pop    ecx
+   sub    ecx,.counter
+   add    ebx,8
+   ja     .count
+
+   jmp    .ff
+ .br: ;break
+   add   esp,8
+ .ff:
+
+   ; count edges
+   mov    ecx,0
+   mov    edx,[triangles_count_var]
+   lea    edx,[edx*3]
+   mov    ebx,[edges_ptr]
+;   mov    esi,edx
+;   shl    esi,3
+;   add    esi,[edges_ptr]
+ .nx:
+   movq    xmm0,[ebx]
+   add     ebx,8
+;   cmp     ebx,esi
+;   jae     @f
+   movq    xmm1,[ebx]
+; @@:
+   pcmpeqd xmm0,xmm1
+   pmovmskb eax,xmm0
+   and     eax,0xff
+   cmp     eax,0xff
+   jz      @f
+   inc     ecx
+  @@:
+   dec     edx
+   jnz     .nx
+
+
+    mov     .ed_cnt,ecx
+    lea     ecx,[ecx*3]
+    shl     ecx,2
+    add     ecx,65536
+    mov     ebx,12
+    mov     eax,68
+    mov     edx,.edd_ptr
+    int     0x40                   ;  -> allocate memory to triangles
+    mov     .edd_ptr, eax   ;  -> eax = pointer to allocated mem
+
+
+
+   mov      ebx,[edges_ptr]
+   mov      ecx,[triangles_count_var]
+   lea      ecx,[ecx*3]
+  .seek:
+   movq     xmm0,[ebx]
+   movq     xmm1,[ebx+8]
+   pcmpeqd  xmm1,xmm0
+   pmovmskb edx,xmm1
+   and      edx,0xff
+   cmp      edx,0xff
+   je       @f
+   movq     [eax],xmm0
+   add      eax,8
+ @@:
+   add      ebx,8
+   loop     .seek
+
+   mov       eax,68
+   mov       ebx,13
+   mov       ecx,[edges_ptr]
+   int       0x40          ; release old edges ptr
+
+
+   mov      eax,.edd_ptr
+   mov      ecx,.ed_cnt
+   mov      [edges_ptr],eax
+   mov      [edges_count],ecx
+
+   mov      esp,ebp
+   pop      ebp
+ret
+
+;=======================
+
+
 do_sinus:
    .x      equ  [ebp-8]
    .y      equ  [ebp-12]
@@ -19,21 +243,53 @@ do_sinus:
    cld
    rep     stosd
    pop     edi
+;   movzx   eax,[sinus_flag]
+;   mov     edx,10
+;   mul     edx
+;   mov     [sin_amplitude],eax
+;   mov     [sin_frq],eax
    fninit
+;if Ext = SSE2
+;   movups  xmm1,[const0123]   ; xmm1 - init values
+;   mov     eax,0x000000ff
+;   movd    xmm2,eax
+;   shufps  xmm2,xmm2,0        ; xmm2 - mask value
+;   mov     eax,4
+;   movd    xmm3,eax
+;   shufps  xmm3,xmm3,0
  .again:
+if  0
+   fild    dword .x
+   fidiv   [sin_frq]
+   fsin
+   fimul   [sin_amplitude]
+   fiadd   dword .y
+   fistp   dword .new_y
+else
    fild    dword .x
    fmul    [sin_frq]
    fistp   dword .temp
    mov     eax, .temp
+;   mov     bx, [angle_x]
+;   add     bx, [angle_y]
+;   movzx   ebx,bx
+;   shr     ebx,1       ; change phase
+;   add     eax,ebx
+
 
    and     eax, 0x000000ff
 
+;   cdq
+ ;  mul     [sin_frq]
+;   and      eax,0x000000ff
+;   and     ax,0x00ff
+;   cwde
 
    fld     dword [sin_tab+eax*4]
    fimul   dword [sin_amplitude]
    fiadd   dword .y
    fistp   dword .new_y
-
+end if
    mov     eax,.new_y
    or      eax,eax
    jl      .skip
@@ -244,7 +500,109 @@ end if
 
 ret
 
+;align 16
+; emboss_bias:
+;    dw 128, 128, 128, 128, 128, 128, 128, 128
 
+if 0  ; old emb proc
+
+ ;  emboss -  after drawing all,
+ ;  transfer screen buffer into bump map
+ ;  and draw two bump triangles
+ ; *************************************
+        mov     esi,screen
+        mov     edi,bumpmap2
+        mov     ecx,TEXTURE_SIZE/3
+        cld
+if  Ext=NON
+        xor     eax,eax
+        xor     bh,bh
+        xor     dh,dh
+      @@:
+        lodsb
+        movzx   bx,al
+        lodsb
+        movzx   dx,al
+        lodsb
+        add     ax,bx
+        add     ax,dx
+      ;  cwd
+      ;  div     [i3]
+ ;;       push    ax
+ ;;       pop     bx
+ ;;       shr     bx,3
+ ;;       shr     ax,2
+ ;;       add     ax,bx
+
+        lea      eax,[eax*5]
+        shr      ax,4
+
+        stosb
+        loop    @b
+else
+        emms
+        pxor          mm1,mm1
+        mov           ebx,0x0000ffff
+      @@:
+        movd          mm0,[esi]
+        punpcklbw     mm0,mm1
+        movq          mm2,mm0
+        psrlq         mm2,16
+        movq          mm3,mm0
+        psrlq         mm3,32
+        paddw         mm0,mm2
+        paddw         mm0,mm3
+
+
+        movd          eax,mm0
+        and           eax,ebx
+        lea           eax,[eax*5]
+        shr           ax,4
+        stosb
+        add           esi,3
+        loop          @b
+
+end if
+        push    ebp
+
+        push    dword 0          ; env coords
+        push    word 0
+        push    word SIZE_X
+        push    word SIZE_Y
+        push    dword 0
+        push    dword 0          ; bump coords
+        push    word SIZE_X
+        push    word SIZE_Y
+        push    word 0
+        mov     eax,SIZE_Y
+        mov     ebx,SIZE_X*65536+0
+        xor     ecx,ecx
+        mov     edx,bumpmap2
+        mov     esi,envmap
+        mov     edi,screen
+        call    bump_triangle
+
+        push    dword SIZE_X shl 16 + SIZE_Y       ; env coords
+        push    word 0
+        push    word SIZE_X
+        push    word SIZE_Y
+        push    word 0
+        push    dword SIZE_X shl 16 + SIZE_Y        ; bump coords
+        push    word 0
+        push    word SIZE_X
+        push    word SIZE_Y
+        push    word 0
+        mov     eax,SIZE_Y
+        mov     ebx,SIZE_X * 65536+0
+        mov     ecx,SIZE_X shl 16 + SIZE_Y
+        mov     edx,bumpmap2
+        mov     esi,envmap
+        mov     edi,screen
+        call    bump_triangle
+
+        pop     ebp
+ret
+end if
 ;********************************EMBOSS DONE*******************************
 
 

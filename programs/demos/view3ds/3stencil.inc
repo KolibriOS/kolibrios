@@ -312,9 +312,11 @@ stencil_line:
      sub        ecx,.x1
      movss      xmm2,.z1   ; cz
    .ccalc:
-   ;  movss     xmm1,xmm2
-     comiss   xmm2,dword[esi]
-     jg        @f
+     movss     xmm1,xmm2
+     cmpltss   xmm1,dword[esi]
+     movd      eax,xmm1
+     cmp       eax,-1
+     jnz        @f
      movss     dword[esi],xmm2
     @@:
      add       esi,4
