@@ -91,7 +91,7 @@ APP_STARTUP_THUNK:
 
 
 ; WARNING! This code must be after app initialization thunk!
-include '../../dll.inc'
+include '../../../dll.inc'
 align 4
 ;dd 0xdeadbeef
 dd APP_STARTUP_THUNK
