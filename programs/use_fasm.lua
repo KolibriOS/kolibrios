@@ -8,7 +8,8 @@ function add_include(dir)
   end
   if tup.getconfig("TUP_PLATFORM") == "win32"
     then env_prefix = "set INCLUDE=$(INCLUDES)&&"
-    else env_prefix = "INCLUDE='$(INCLUDES)' "
+--    else env_prefix = "INCLUDE='$(INCLUDES)' "
+    else env_prefix = "INCLUDE='" .. INCLUDES .. "' "
   end
   FASM = env_prefix .. FASM_DEFAULT
 end

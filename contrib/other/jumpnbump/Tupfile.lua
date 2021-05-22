@@ -7,11 +7,11 @@ tup.include(HELPERDIR .. "/use_sdl_newlib.lua")
 SDK_DIR = "../../sdk"
 
 CFLAGS = CFLAGS .. " -Dstricmp=strcasecmp -DZLIB_SUPPORT -Dstrnicmp=strncasecmp -DUSE_SDL -DNDEBUG -U__WIN32__ -U_Win32 -U_WIN32 -U__MINGW32__ -UWIN32"
-INCLUDES = INCLUDES .. " -I. -I $(SDK_DIR)/sources/zlib"
+INCLUDES = INCLUDES .. " -I. -I " .. SDK_DIR .. "/sources/zlib"
 LDFLAGS = LDFLAGS .. " -Lsdl --subsystem native"
 LIBS = "-ls -lz " .. LIBS
 
-table.insert(LIBDEPS, "$(SDK_DIR)/lib/<libz>")
+table.insert(LIBDEPS, SDK_DIR .. "/lib/<libz>")
 table.insert(LIBDEPS, "sdl/<libs>")
 
 compile_gcc{"filter.c", "fireworks.c", "main.c", "menu.c", "stub.c"}
