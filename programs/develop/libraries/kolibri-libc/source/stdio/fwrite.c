@@ -9,7 +9,7 @@ size_t fwrite(const void *restrict ptr, size_t size, size_t nmemb, FILE *restric
 	unsigned bytes_count = size * nmemb;
 	
 	if(!stream){
-		errno = EINVAL;
+		errno = EBADF;
 		return 0;
 	}
 	
@@ -25,7 +25,7 @@ size_t fwrite(const void *restrict ptr, size_t size, size_t nmemb, FILE *restric
 		}
 	}
 	else{
-		if(stream->mode != _STDIO_F_R){
+		if(stream->mode != _FILEMODE_R){
 			unsigned status = _ksys_file_write_file(stream->name, stream->position, bytes_count, ptr, &bytes_written);
 			if (status != KSYS_FS_ERR_SUCCESS) {
             	errno = EIO;

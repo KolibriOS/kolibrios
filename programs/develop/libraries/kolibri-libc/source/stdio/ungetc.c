@@ -11,12 +11,12 @@ int ungetc(int c, FILE* file)
         return EOF;
     }
 
-	if (file->mode != _STDIO_F_R){
+	if (file->mode != _FILEMODE_R){
         errno = EACCES;
         return EOF;
     }
 
-	if (file->position > file->start_size || file->position == 0 || c == EOF || file->__ungetc_emu_buff != EOF)
+	if (file->position == 0 || c == EOF)
 	{
 	    errno = EOF;
 		return EOF;

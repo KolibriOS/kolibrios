@@ -47,23 +47,17 @@ extern void _FUNC(debug_printf)(const char* format, ...);
 
 typedef size_t fpos_t;
 
-#define _STDIO_F_R 1 << 0 // Read
-#define _STDIO_F_W 1 << 1 // Write
-#define _STDIO_F_A 1 << 2 // Append
-#define _STDIO_F_X 1 << 3 // eXclusive
-#define _STDIO_F_B 1 << 4 // Binary
+#define _FILEMODE_R 1 << 0 // Read
+#define _FILEMODE_W 1 << 1 // Write
+#define _FILEMODE_A 1 << 2 // Append
 
 typedef struct FILE_s {
     char *name;
     fpos_t position;
     int error;
     int eof;
-    int kind; // 0 - undiefned, 1 - text, 2 - binary
-    int orientation; // 0 - undiefned, 1 - byte, 2 - wide
-    int mode; // flags _STDIO_F_*
-    int append_offset; // do not seek before this point ("a" mode)
+    int mode; // flags _FILEMODE_*
     int __ungetc_emu_buff; // Uses __ungetc_emu (temporary solution!)
-    int start_size;
 } FILE;
 
 #define _IOFBF 0
@@ -99,7 +93,7 @@ extern size_t _FUNC(fread)(void *restrict, size_t size, size_t count, FILE *rest
 extern int    _FUNC(fscanf)(FILE *restrict, const char *restrict, ...);
 extern size_t _FUNC(fwrite)(const void *restrict, size_t size, size_t count, FILE *restrict);
 extern int    _FUNC(getc)(FILE *);
-#define       getc _FUNC(fgetc)
+#define        getc() _FUNC(fgetc)(stdin)
 extern int    _FUNC(getchar)(void);
 extern int    _FUNC(printf)(const char *restrict, ...);
 extern int    _FUNC(putc)(int, FILE *);

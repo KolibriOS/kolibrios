@@ -1,4 +1,6 @@
 #include "ctype/is.c"
+#include "ctype/tolower.c" 
+#include "ctype/toupper.c"
 
 #include "sys/rewinddir.c"
 #include "sys/readdir.c"
@@ -49,6 +51,7 @@
 #include "stdio/rewind.c"
 #include "stdio/vfprintf.c"
 #include "stdio/fprintf.c"
+#include "stdio/ungetc.c"
 
 #include "string/strerror.c"
 #include "string/strxfrm.c"

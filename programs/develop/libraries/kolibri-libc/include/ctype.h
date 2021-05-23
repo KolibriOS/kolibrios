@@ -6,6 +6,8 @@
 ** dependable answers.
 */
 
+#include <stddef.h>
+
 #define __ALNUM     1
 #define __ALPHA     2
 #define __CNTRL     4
@@ -39,7 +41,7 @@ extern unsigned short *__is;
 #define isascii(c) (!((c)&(~0x7f)))
 #define toascii(c) ((c)&0x7f)
 
-extern unsigned char tolower(unsigned char c);
-extern unsigned char toupper(unsigned char c);
+extern int _FUNC(tolower)(int c);
+extern int _FUNC(toupper)(int c);
 
 #endif

@@ -8,20 +8,24 @@ size_t fread(void *restrict ptr, size_t size, size_t nmemb, FILE *restrict strea
 	unsigned bytes_count = size * nmemb;
 	
 	if(!stream){
-		errno = EINVAL;
+		errno = EBADF;
 		return 0;
 	}
 	
 	if(stream==stdin){
 		__con_init();
-		__con_gets((char*)ptr, bytes_count);
+		__con_gets((char*)ptr, bytes_count+1);
 		return nmemb;
 	}
 
 	else{
-		if(stream->mode != _STDIO_F_W){
+		if(stream->mode & _FILEMODE_R){
+			if(!stream->__ungetc_emu_buff){
+				((char*) ptr)[0]=(char)stream->__ungetc_emu_buff;
+				//debug_printf("Ungetc: %x\n", ((char*) ptr)[0]);
+			}
 			unsigned status = _ksys_file_read_file(stream->name, stream->position, bytes_count, ptr , &bytes_read);
-			if (status != KSYS_FS_ERR_SUCCESS) {
+			if (status) {
             	errno = EIO;
             	stream->error = errno;
 				return 0;

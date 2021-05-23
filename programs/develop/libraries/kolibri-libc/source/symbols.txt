@@ -40,6 +40,7 @@ vprintf
 vfscanf
 vsnprintf
 vsscanf
+ungetc
 !____STDLIB____
 abs
 atoi
@@ -125,5 +126,7 @@ longjmp
 setjmp
 !____CTYPE____
 __is
+tolower
+toupper
 !___CONIO___
 con_set_title

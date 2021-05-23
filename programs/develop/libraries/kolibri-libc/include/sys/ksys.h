@@ -884,7 +884,12 @@ int _ksys_file_read_file(const char *name, unsigned long long offset, unsigned s
     k.p21 = name;
     int status;
     unsigned bytes_read_v;
-    _ksys_work_files(&k);
+    asm_inline(
+        "int $0x40"
+        :"=a"(status), "=b"(bytes_read_v)
+        :"a"(70), "b"(&k)
+        :"memory"
+    );
     if (!status) {
         *bytes_read = bytes_read_v;
     }

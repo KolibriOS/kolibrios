@@ -12,7 +12,7 @@
 typedef unsigned ino_t;
 
 struct dirent{
-   ino_t    d_ino;   //File serial number. 
+   ino_t    d_ino;               //File serial number. 
    char     d_name[PATH_MAX];   // Name of entry. 
    unsigned d_type;
 };
