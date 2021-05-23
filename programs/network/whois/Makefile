@@ -9,7 +9,7 @@ KPACK=kpack
 SRC=whois.c
 CFLAGS= -I$(KLIBC_DIR)/include
 LFLAGS= -nostdlib -L $(KLIBC_DIR)/lib $(KLIBC_DIR)/lib/crt0.o
-LIBS = -lnetwork -lc.obj
+LIBS = -ltcc -lnetwork -lc.obj
 
 all:
 	$(KTCC) $(CFLAGS) $(LFLAGS) $(SRC) $(LIBS) -o $(NAME)
