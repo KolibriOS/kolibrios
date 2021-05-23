@@ -1,17 +1,19 @@
 ; draw main window
 align 4
 proc draw_main_window stdcall
+        DEBUGF  DBG_INFO, "draw_main_window() start\n"
         mcall   12, 1       ; notify about draw beginning
         mcall   48, 3, sys_colors, sizeof.system_colors
         
         mov     edx, [sys_colors.work]         ; background color
         or      edx, 0x74000000                ; window type
         ; DEBUGF  DBG_INFO, "mainwindow w, h  = %u, %u", GFX_COLS*GFX_PIX_SIZE + 8, GFX_ROWS*GFX_PIX_SIZE + 28
-        mcall   0, <50, GFX_COLS*GFX_PIX_SIZE + 8>, <50, GFX_ROWS*GFX_PIX_SIZE + 28>, , , main_window_title ; 
+        mcall   0, <50, GFX_COLS*GFX_PIX_SIZE + 9>, <50, GFX_ROWS*GFX_PIX_SIZE + 28>, , , main_window_title ; 
 
         stdcall draw_screen
 
         mcall   12, 2                  ; notify about draw ending
+        DEBUGF  DBG_INFO, "draw_main_window() end\n"
         ret
 endp
 

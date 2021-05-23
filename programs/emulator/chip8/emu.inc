@@ -103,7 +103,7 @@ proc chip8_emulatecycle stdcall
         movzx   bx, byte [memory + 1 + ecx]
         or      ax, bx
         mov     word [opcode], ax
-        ; DEBUGF  DBG_INFO, "opcode = 0x%x, ax = 0x%x\n", [opcode]:4, ax
+        DEBUGF  DBG_INFO, "opcode = 0x%x, ax = 0x%x\n", [opcode]:4, ax
 
         shr     ax, 8
         and     ax, 0x000F
@@ -483,8 +483,8 @@ proc chip8_emulatecycle stdcall
 
         .sw5_case_A1: ; skip next instruction if key V[X] is NOT pressed
             movzx   ecx, byte [x]
-            movzx   eax, byte [V + ecx]
-            mov     bl, byte [key + eax]
+            movzx   edx, byte [V + ecx]
+            mov     bl, byte [key + edx]
             mov     ax, 4
             cmp     bl, 1
             jne     .sw5_case_A1_endcheck
