@@ -8,7 +8,7 @@
     
     {
         "Celsius": false,                                   // Enabled fahrenheit (Optional)
-        "Location": "Berlin",                               // City Berlin 
+        "Location": "Berlin",                               // city Berlin 
         "Token": "19ffa14b3dc0e238175829461d1788b8",        // OpenWeatherMap token
         "Lang": "ru",                                       // Language (Optional)
         "AutoUpdate": 5                                     // In minutes. 0 - disabled (Optional)
@@ -21,12 +21,11 @@
 #include <time.h>
 #include <stdbool.h>
 #include "json/json.h"
-#include <kos32sys1.h>
-#include <kolibrisys.h>
+#include <sys/ksys.h>
 #include <clayer/http.h>
 #include <clayer/libimg.h>
 
-#define VERSION  "Weather 1.5"
+#define VERSION  "Weather 1.6e"
 
 enum BUTTONS{
     BTN_QUIT = 1,
@@ -48,7 +47,7 @@ Image *blend=NULL;
 const char *config_name = "/sys/Settings/weather.json";
 
 unsigned char char_size=1;
-uint64_t AutoUpdateTime = 0;
+uint64_t auto_update_time = 0;
 
 char *wind_speed_str, *pressure_str, *visibility_str, *humidity_str, *update_str, *wind_deg_str;
         
@@ -59,13 +58,13 @@ char full_url_image[256];
 
 char temp_char='K';
 
-struct kolibri_system_colors sys_color_table;
+ksys_colors_table_t sys_color_table;
 
-pos_t win_pos; 
+ksys_pos_t win_pos; 
 
 #pragma pack(push,1)
 struct open_weather_data{
-    char    City[100];
+    char    city[100];
     int     wind_speed;
     int     wind_deg;
     int     pressure;
@@ -78,9 +77,8 @@ struct open_weather_data{
 }myw;
 #pragma pack(pop)
 
-void notify_show(char *text)
-{
-   start_app("/sys/@notify", text);
+void notify_show(char *text){
+    _ksys_exec("/sys/@notify", text);
 }
 
 void* safe_malloc(size_t size)
@@ -94,14 +92,14 @@ void* safe_malloc(size_t size)
     }
 }
 
-void draw_format_text_sys(int x, int y, color_t color, const char *format_str, ... ) // Форматированный вывод в окно
+void draw_format_text_sys(int x, int y, ksys_color_t color, const char *format_str, ... ) // Форматированный вывод в окно
 {
     char tmp_buff[100];
     va_list ap;
     va_start (ap, format_str);
     vsnprintf(tmp_buff, sizeof tmp_buff ,format_str, ap);
     va_end(ap);
-    draw_text_sys(tmp_buff, x, y , 0, color);
+    _ksys_draw_text(tmp_buff, x, y , 0, color);
 }
 
 void find_and_set(json_value *value, struct open_weather_data* weather) // Ищем значения в json и заполняем структуру "myw"
@@ -119,9 +117,9 @@ void find_and_set(json_value *value, struct open_weather_data* weather) // Ищ�
         }
         if(!strcmp(JSON_OBJ(i).name, "name")){
             if(!strcmp(&JSON_OBJ(i).value->u.string.ptr[JSON_OBJ(i).value->u.string.length-3], "’")){
-                strncpy(weather->City, JSON_OBJ(i).value->u.string.ptr, JSON_OBJ(i).value->u.string.length-3);
+                strncpy(weather->city, JSON_OBJ(i).value->u.string.ptr, JSON_OBJ(i).value->u.string.length-3);
             }else{
-                strcpy(weather->City, JSON_OBJ(i).value->u.string.ptr);
+                strcpy(weather->city, JSON_OBJ(i).value->u.string.ptr);
             }
         }
         if(!strcmp(JSON_OBJ(i).name, "weather")){
@@ -152,9 +150,9 @@ void find_and_set(json_value *value, struct open_weather_data* weather) // Ищ�
     }
 }
 
-http_msg* get_json(char *City, char *Token, char* Units)
+http_msg* get_json(char *city, char *Token, char* Units)
 {
-    sprintf(full_url, API, City, Token, Units, lang);
+    sprintf(full_url, API, city, Token, Units, lang);
     http_msg *h = http_get(full_url, 0,  HTTP_FLAG_BLOCK, "");
     http_long_receive(h);
     if (h->status == OK || h->status == 404) {
@@ -194,19 +192,19 @@ void get_image() // Функция загрузки изображения
     }
 }
 
-void RedrawGUI() // Перересовываем интерфейс
+void redraw_gui() // Перересовываем интерфейс
 {
-    begin_draw();   // Начинам прорисовку
+    _ksys_start_draw();   // Начинам прорисовку
 
-    int new_win_w = (strlen(myw.City)/char_size+10)*(UTF8_W+char_size-1); // Если название города не влезает в окно
+    int new_win_w = (strlen(myw.city)/char_size+12)*(UTF8_W+char_size-1); // Если название города не влезает в окно
     if(new_win_w<WINDOW_W){
         new_win_w=WINDOW_W;
     }
     // Рисуем окно
-    sys_create_window(win_pos.x, win_pos.y, new_win_w, START_YPOS+220, VERSION, sys_color_table.work_area, 0x14);
+    _ksys_create_window(win_pos.x, win_pos.y, new_win_w, START_YPOS+220, VERSION, sys_color_table.work_area, 0x14);
     // Выводим жирным шрифтом название локации и временной зоны
-    draw_format_text_sys(20, START_YPOS, 0xB0000000 | sys_color_table.work_text, "%s (UTC%+d)", myw.City, myw.timezone);
-    draw_format_text_sys(21, START_YPOS, 0xB0000000 | sys_color_table.work_text, "%s (UTC%+d)", myw.City, myw.timezone);
+    draw_format_text_sys(20, START_YPOS, 0xB0000000 | sys_color_table.work_text, "%s (UTC%+d)", myw.city, myw.timezone);
+    draw_format_text_sys(21, START_YPOS, 0xB0000000 | sys_color_table.work_text, "%s (UTC%+d)", myw.city, myw.timezone);
     // Выводим изображение
     img_draw(blend, 10, START_YPOS+30, 64,64,0,0);
     // Выводим жирным шрифтом название локации и временной зоны
@@ -222,38 +220,33 @@ void RedrawGUI() // Перересовываем интерфейс
     draw_format_text_sys(20, START_YPOS+140, 0xb0000000 | sys_color_table.work_text, wind_deg_str, myw.wind_deg);
     draw_format_text_sys(20, START_YPOS+160, 0xb0000000 | sys_color_table.work_text, visibility_str, myw.visibility);
     // Определяем кнопку
-    define_button(X_W(new_win_w/2-60,120), Y_H(START_YPOS+180,30), BTN_UPDATE, sys_color_table.work_button);
-    draw_text_sys(update_str, (new_win_w/2)-(UTF8_W*strlen(update_str)/2/char_size), START_YPOS+190, 0, 0xb0000000 | sys_color_table.work_button_text);
-    end_draw();
+    _ksys_define_button(new_win_w/2-60, START_YPOS+180, 120, 30, BTN_UPDATE, sys_color_table.work_button);
+    _ksys_draw_text(update_str, (new_win_w/2)-(UTF8_W*strlen(update_str)/2/char_size), START_YPOS+190, 0, 0xb0000000 | sys_color_table.work_button_text);
+    _ksys_end_draw();
 }
 
-void get_config(char **City, char **Token, char **Units) // Загружаем конфиг 
+void get_config(char **city, char **token, char **units) // Загружаем конфиг 
 {
-    FILE *config_j = fopen(config_name, "rb"); 
-    if(config_j==NULL){
+    ksys_ufile_t config_j = _ksys_load_file(config_name);
+    if(!config_j.size){
         notify_show("'Configuration file not found!' -E");
         exit(0);
     }
-    size_t size = _ksys_get_filesize((char*)config_name); // Получаем размер файла
-    char *config_buff = safe_malloc(size+1);
-    if(size != fread(config_buff, sizeof(char), size, config_j)){
-        notify_show("'The configuration file was not fully read!' -E");
-        exit(0);    
-    }
-    json_value* value =json_parse (config_buff, size); // Парсим конфиг
+
+    json_value* value =json_parse (config_j.data, config_j.size); // Парсим конфиг
     for(int i=0; i<value->u.object.length; i++){
         if(!strcmp(JSON_OBJ(i).name, "Location") && JSON_OBJ(i).value->type==json_string){   
-            *City = JSON_OBJ(i).value->u.string.ptr;  // Получаем название города
+            *city = JSON_OBJ(i).value->u.string.ptr;  // Получаем название города
         }
         else if(!strcmp(JSON_OBJ(i).name, "Token") && JSON_OBJ(i).value->type==json_string){
-            *Token = JSON_OBJ(i).value->u.string.ptr; // Получаем токен
+            *token = JSON_OBJ(i).value->u.string.ptr; // Получаем токен
         }
         else if(!strcmp(JSON_OBJ(i).name, "Celsius") && JSON_OBJ(i).value->type==json_boolean){
             if(JSON_OBJ(i).value->u.boolean){
-                *Units = "metric";
+                *units = "metric";
                 temp_char = 'C';
             }else{
-                *Units = "imperial";
+                *units = "imperial";
                 temp_char = 'F';
             }
         }
@@ -261,25 +254,24 @@ void get_config(char **City, char **Token, char **Units) // Загружаем �
             strncpy(lang, JSON_OBJ(i).value->u.string.ptr,2); // Получаем язык
         }
         else if(!strcmp(JSON_OBJ(i).name, "AutoUpdate") && JSON_OBJ(i).value->type==json_integer){
-            AutoUpdateTime = JSON_OBJ(i).value->u.integer; // Получаем время автообновлений данных
+            auto_update_time = JSON_OBJ(i).value->u.integer; // Получаем время автообновлений данных
         }
     }
-    if(*City==NULL || *Token ==NULL){
+    if(*city==NULL || *token ==NULL){
          notify_show("'Invalid config!' -E");
          exit(0);
     }
-    free(config_buff);
-    fclose(config_j);
+    free(config_j.data);
 }
 
-void Update(char* city, char* token, char* units) // Обновление данных
+void update(char* city, char* token, char* units) // Обновление данных
 {
     if(blend!=NULL){
         img_destroy(blend); // Уничтожение картинику с прозрачностью
         blend = NULL;
     }
     memset(&myw, 0, sizeof myw); // Обнуляем структуру
-    strcpy(myw.City,"None"); 
+    strcpy(myw.city,"None"); 
     strcpy(myw.weath_desc,"unknown");
     http_msg *json_file = get_json(city, token, units); // Получаем данные о погоде в формате json 
     if(json_file != NULL){
@@ -325,42 +317,42 @@ void set_lang()
 
 int main()
 {
-    win_pos = get_mouse_pos(0); // Получаем позицию курсора
+    win_pos = _ksys_get_mouse_pos(KSYS_MOUSE_SCREEN_POS); // Получаем позицию курсора
 
     if(!kolibri_libimg_init()){ // Загружаем libimg.obj
         notify_show("Libimg.obj not loaded!' -E");  
         exit(0);
     }
-    get_system_colors(&sys_color_table); // Получаем таблица цветов
+    _ksys_get_system_colors(&sys_color_table); // Получаем таблица цветов
 
-    char *City=NULL, *Token=NULL, *Units=NULL; // Указатели на токен, название города, систему мер
+    char *city=NULL, *token=NULL, *units=NULL; // Указатели на токен, название города, систему мер
 
-    get_config(&City, &Token, &Units); // Загружаем конфиг
+    get_config(&city, &token, &units); // Загружаем конфиг
     set_lang();  // Установить язык приложения
-    Update(City, Token, Units);
+    update(city, token, units);
 
     uint32_t (*event)();
 
-    if(AutoUpdateTime<=0){ 
-        event = get_os_event;
+    if(auto_update_time<=0){ 
+        event = _ksys_get_event;
     }else{ 
-        event = wait_for_event;
+        event = _ksys_wait_event;
     }
     
     while(1){
-        switch(event(6000*AutoUpdateTime)){ // Получаем системное событие
-            case KOLIBRI_EVENT_NONE:        // Нет события
-                Update(City, Token, Units);
+        switch(event(6000*auto_update_time)){ // Получаем системное событие
+            case KSYS_EVENT_NONE:        // Нет события
+                update(city, token, units);
                 debug_printf("Weather: Update\n");
                 break;
-            case KOLIBRI_EVENT_REDRAW:      // Событие перерисовки
-                RedrawGUI();
+            case KSYS_EVENT_REDRAW:      // Событие перерисовки
+                redraw_gui();
                 break;        
-            case KOLIBRI_EVENT_BUTTON:      // Событие кнопок
-                switch (get_os_button()){
+            case KSYS_EVENT_BUTTON:      // Событие кнопок
+                switch (_ksys_get_button()){
                     case BTN_UPDATE:
-                        Update(City, Token, Units);
-                        RedrawGUI();
+                        update(city, token, units);
+                        redraw_gui();
                         break;
                     case BTN_QUIT:          // Кнопка выхода
                         exit(0);
