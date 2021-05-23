@@ -10,7 +10,7 @@ SRC=thashview.c
 
 CFLAGS= -I$(KLIBC_DIR)/include -I$(KTCC_DIR)/libc/include
 LFLAGS= -nobss -nostdlib -L $(KLIBC_DIR)/lib $(KLIBC_DIR)/lib/crt0.o
-LIBS = -lbox -ldialog -lcryptal -lc.obj
+LIBS = -ltcc -ldialog -lcryptal -lbox -lc.obj
 
 all:
 	$(KTCC) $(CFLAGS) $(SRC) $(LFLAGS) $(LIBS) -o $(NAME)
