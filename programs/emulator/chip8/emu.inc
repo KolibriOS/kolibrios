@@ -16,7 +16,7 @@ proc chip8_init stdcall
         stdcall _memset, key, 0, KEY_SIZE
         ;DEBUGF  DBG_INFO, "ESP = %x\n", esp
 
-        mcall   66, 1 ; set scancode keyboard mode
+        mcall   66, 1, 0 ; set ASCII keyboard mode
 
         xor     ecx, ecx
 @@:

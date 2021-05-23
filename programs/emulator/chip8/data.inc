@@ -45,6 +45,8 @@
         sys_colors system_colors
         main_window_title db 'CHIP-8 Emulator',0
 
+        imgbuf_ptr  dd ? ; pointer to in-memory image buffer
+
 ;=========================================
 align 16
 _i_end:

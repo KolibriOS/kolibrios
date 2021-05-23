@@ -16,7 +16,15 @@ KEY_SIZE = 16
 GFX_ROWS = 32
 GFX_COLS = 64
 GFX_SIZE = GFX_ROWS * GFX_COLS
-GFX_PIX_SIZE = 10
+GFX_PIX_SIZE = 10 ; gfx cell size in pixels
+
+COLOR_BACK = 0x000000
+COLOR_CELL = 0xade8f4 ;0xFFFFFF
+
+IMGBUF_WIDTH = GFX_COLS * GFX_PIX_SIZE ; width in pixels
+IMGBUF_HEIGHT = GFX_ROWS * GFX_PIX_SIZE ; height in pixels
+IMGBUF_SIZE = IMGBUF_WIDTH * IMGBUF_HEIGHT * 3 + 16 ; size in bytes for in-memory image buffer
+
 CLOCK_RATE = 1 ; in 10^-2 seconds
 
 

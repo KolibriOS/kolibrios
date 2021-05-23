@@ -18,6 +18,9 @@ include 'constants.inc'
 ; application's entry point
 align 4
 start:
+        mcall   68, 11
+        mcall   68, 12, IMGBUF_SIZE
+        mov     dword [imgbuf_ptr], eax
 
         stdcall chip8_init ; initialize
 
@@ -46,7 +49,7 @@ start:
         ; mov     byte [gfx + 64*2 + 3], 1
 
 .event_loop:
-        mcall   23, CLOCK_RATE ; wait for event with CLOCK_RATE timeout
+        mcall   23, CLOCK_RATE ; wait for event with CLOCK_RATE timeout 
         ;DEBUGF  DBG_INFO, "evenp loop iter i\n"
 
         cmp     eax, 1

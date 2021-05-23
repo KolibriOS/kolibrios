@@ -37,31 +37,88 @@ proc draw_screen stdcall
         div     ecx ; eax = row index, edx = col index
         mov     dword [row_ind], eax
         mov     dword [col_ind], edx
-        mov     dword [color], 0x80FFFFFF ; white
+        mov     dword [color], COLOR_CELL ; white
         cmp     byte [esi + gfx], 0 ; check if cell is 0 or not 0
         jne     @f
-        mov     dword [color], 0x80000000 ;  black
+        mov     dword [color], COLOR_BACK ;  black
     @@:
         mov     ebx, dword [col_ind]
-        imul    ebx, GFX_PIX_SIZE
-        ;add     ebx, WINDOW_BORDER
-        shl     ebx, 16
-        add     ebx, GFX_PIX_SIZE
-
+        imul    ebx, GFX_PIX_SIZE ; now ebx - x coord of rect
         mov     ecx, dword [row_ind]
-        imul    ecx, GFX_PIX_SIZE
-        ;add     ecx, WINDOW_BORDER
-        shl     ecx, 16
-        add     ecx, GFX_PIX_SIZE
-
-        mov     eax, 13
+        imul    ecx, GFX_PIX_SIZE ; now ecx - y coord of rect
         mov     edx, dword [color]
-        int     0x40
+        stdcall imgbuf_draw_rect, ebx, ecx, edx
 
         inc     esi
         jmp     .loop1
 
 .loop1_end:
+        stdcall imgbuf_send_to_window 
         popad
+        ret
+endp
+
+; copy imgbuf contents to the emulator window
+align 4
+proc imgbuf_send_to_window stdcall
+        DEBUGF  DBG_INFO, "sending to window...\n"
+        push    eax ebx ecx edx
+        mov     eax, 7
+        mov     ebx, dword [imgbuf_ptr]
+        mov     ecx, IMGBUF_WIDTH
+        shl     ecx, 16
+        add     ecx, IMGBUF_HEIGHT
+        xor     edx, edx
+        int     0x40
+        pop     edx ecx ebx eax
+        ret
+endp
+
+
+; in internal buffer draw rect filled with given color at position (rect_x, rect_y) within window
+align 4
+proc imgbuf_draw_rect stdcall, rect_x: dword, rect_y: dword, rect_color: dword
+        DEBUGF  DBG_INFO, "imgbuf_draw_rect(%u, %u, %x)\n", [rect_x], [rect_y], [rect_color]
+        push    eax ebx ecx edx esi edi ebp
+
+        mov     ebx, dword [rect_y]
+        imul    ebx, IMGBUF_WIDTH
+        add     ebx, dword [rect_x] ; now ebx - index of first pixel of rect
+
+        mov     edi, dword [imgbuf_ptr]
+        mov     ebp, dword [rect_color]
+
+        xor     ecx, ecx
+.for_i:
+        cmp     ecx, GFX_PIX_SIZE
+        jae     .ret
+
+        xor     edx, edx
+.for_j:
+        cmp     edx, GFX_PIX_SIZE
+        jae     .for_j_end
+
+        mov     esi, edx
+
+        add     edx, ebx
+        mov     eax, ecx
+        imul    eax, IMGBUF_WIDTH
+        add     edx, eax ; now edx is index of edx'th pixel of ecx'th row of rect
+
+        lea     edx, [edx*3]
+        add     edx, edi
+        
+        mov     dword [edx], ebp ; put color to pixel
+
+        mov     edx, esi
+        inc     edx
+        jmp     .for_j
+.for_j_end:
+
+        inc     ecx
+        jmp     .for_i
+
+.ret:
+        pop     ebp edi esi edx ecx ebx eax
         ret
 endp
