@@ -86,7 +86,7 @@ Screen keyboard       |zkey
 #10 **** DATA PROCESSING
 Calculator            |calc
 Tinypad               |tinypad
-TextEdit              |develop/t_edit
+CodeEdit              |develop/cedit
 Table processor       |table
 Graph builder         |graph
 Hex editor            |develop/heed

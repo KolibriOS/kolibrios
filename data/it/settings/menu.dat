@@ -94,7 +94,7 @@ Salva immagine RD     |rdsave
 #11 **** DATA PROCESSING
 Calcolatrice          |calc
 Tinypad               |tinypad
-TextEdit              |develop/t_edit
+CodeEdit              |develop/cedit
 Table Processor       |table
 Graph builder         |graph
 Hex-Editor            |develop/heed

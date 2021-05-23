@@ -83,7 +83,7 @@ Eolite               |File Managers/Eolite
 #10 ==Офис
 Калькулятор          |calc
 Редактор Tinypad     |tinypad
-Редактор TextEdit    |develop/t_edit
+Редактор CodeEdit    |develop/cedit
 Табличный процессор  |table
 Построение графиков  |graph
 Просмотр RTF         |rtfread

@@ -94,7 +94,7 @@ Guardar im gen RD     |rdsave
 #11 **** PROCESO DE DATOS
 Calculadora           |calc
 Tinypad               |tinypad
-TextEdit              |develop/t_edit
+CodeEdit              |develop/cedit
 Procesador de tablas  |table
 Generador de gr ficas |graph
 Hex-Editor            |develop/heed

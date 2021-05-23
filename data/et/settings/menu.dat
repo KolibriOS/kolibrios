@@ -93,7 +93,7 @@ Salvesta RD tõmmis    |rdsave
 #11 **** DATA PROCESSING ****
 Kalkulaator           |calc
 Teksti redaktor       |tinypad
-TextEdit              |develop/t_edit
+CodeEdit              |develop/cedit
 Tabelarvutus          |table
 Graph builder         |graph
 Hex-Editor            |develop/heed
