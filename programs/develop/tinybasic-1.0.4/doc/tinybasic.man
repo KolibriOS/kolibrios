@@ -1,0 +1,185 @@
+.TH TINYBASIC 1
+.SH NAME
+tinybasic \- Tiny BASIC interpreter and compiler
+.SH SYNOPSIS
+.B tinybasic
+[ \fBoptions\fR ]
+.IR program-file
+.SH DESCRIPTION
+.B Tinybasic
+is an implementation of the Tiny BASIC language.
+It conforms to the specification by Dennis Allison, published in People's Computer Company Vol.4 No.2 and reprinted in Dr. Dobb's Journal, January 1976.
+.PP
+The package provides both an interpreter and a compiler in the same executable. 
+Both of these tools are non-interactive, and load their input from a source file written in a text editor.
+No interactive interpreter is provided.
+.PP
+.B Tinybasic
+provides a few additional features. Comments with the \fBREM\fR statement were not part of the original specification, but are allowed here. There is support for optional line numbers, and a configurable upper limit for them. Because not all lines need a number, this manual will refer to them as \'line labels.\' Where the phrase \'line number\' appears, it will refer to the actual line count in the source file, as a text editor would show.
+.SH OPTIONS
+.TP
+.BR \-g " " \fIlimit\fR ", " \-\-gosub-limit\=\fIlimit\fR
+Specifies the maximum depth of subroutine calls for the interpreter. Calling subroutinnes within subroutines to a level deeper than this will result in the "Too many GOSUBs" runtime error. This does not affect compiled code.
+.TP
+.BR \-n " " \fIvalue\fR ", " \-\-line\-numbers\=\fIvalue\fR
+Determines the handling of line labels. An argument of \fBm\fR or \fBmandatory\fR causes \fBtinybasic\fR to require a line label for every program line, in ascending order. An argument of \fBi\fR or \fBimplied\fR causes \fBtinybasic\fR to supply labels internally for each line that lacks them; care must be taken when labelling lines so that there is room for a sequence of numbers between one line label and the next. An argument of \fBo\fR or \fBoptional\fR makes line labels completely optional; those that are supplied need not be in ascending order.
+.TP
+.BR \-N " " \fIlimit\fR ", " \-\-line\-number\-limit=\fIlimit\fR
+Specifies the largest line label allowed in the BASIC program. The default is 32767, which is the highest value that \fBtinybasic\fR supports. The original Tiny BASIC had a limit of 255.
+.TP
+.BR \-o " " \fIcomment-option\fR ", " \-\-comments=\fIcomment-option\fR
+Enables or disables support for comments and blank lines in programs.
+\fIComment-options\fR can be \fBe\fR or \fBenabled\fR to support comments and blank lines, which is the default setting.
+It can be \fBd\fR or \fBdisabled\fR to disable support for comments, as per the original Tiny BASIC specification.
+.TP
+.BR \-O " " [\fIoutput-type\fR] ", " \-\-output[=\fIoutput-type\fR]
+Specifies compilation or translation instead of interpretation, and what type of output is desired.
+If the option is supplied without an \fIoutput\-type\fR, then the default is \fBlst\fR.
+If the option is absent altogether, then the program will be interpreted rather than compiled or translated.
+Current \fIoutput\-type\fRs supported are \fBlst\fR for a formatted listing, \fBc\fR for a C program ready to compile, or \fBexe\fR.
+Where the output type is \fBlst\fR or \fBc\fR the output filename is the same as the input filename, with an added extension the same as .\fIoutput\-type\fR.
+Where the output type is \fBexe\fR, the output file is dependent on the input filename and the \fBTBEXE\fR (see the section on Compilation).
+.SH PROGRAM FORMAT
+Programs are text files loaded in on invoking \fBtinybasic\fR.
+Each line of the file consists of an optional line label, a command keyword, and the command's parameters, if it has any.
+Lines may be blank, or the command keyword may be REM, which denotes that the rest of the program line is a comment.
+.PP
+That describes a program written using \fBtinybasic\fR's additional features.
+In a traditional Tiny BASIC program each line has a mandatory line label, a command keyword which may \fInot\fR be \fBREM\fR, and the command's parameters.
+The original Tiny BASIC specification did not provide for comments or blank lines, and the line labels were required by the language's interactive line editor.
+.SH COMMANDS
+.TP
+.BR \fBLET\fR " " \fIvariable\fR = \fIexpression\fR
+Assigns a value, the result of \fIexpression\fR, to a variable, \fIvariable\fR. \fIVariable\fR must be a single letter, A..Z.
+\fIExpression\fR must evaluate to an integer in the range -32768 to 32767.
+.TP
+.BR \fBIF\fR " " \fIcondition\fR " " \fBTHEN\fR " " \fIstatement\fR
+Conditional execution.
+If \fIcondition\fR is true, then \fIstatement\fR is executed.
+\fIStatement\fR can be another \fBIF\fR, allowing conditions to be chained, effectively mimicking an AND operator.
+.TP
+.BR \fBGOTO\fR " " \fIexpression\fR
+Transfer execution to another part of the program.
+\fIExpression\fR is evaluated, and program execution continues at the line marked with the corresponding label.
+.TP
+.BR \fBGOSUB\fR " " \fIexpression\fR
+Calls a subroutine.
+\fIExpression\fR is evaluated, and program execution transfers to the line marked with the corresponding label.
+The position of the \fBGOSUB\fR is remembered so that a \fBRETURN\fR can bring program execution back to the statement following the \fBGOSUB\fR.
+.TP
+.BR \fBRETURN\fR
+Return from a subroutine.
+Program execution returns to the statement following the \fBGOSUB\fR which called the present subroutine.
+.TP
+.BR \fBEND\fR
+Terminates program execution.
+.TP
+.BR \fBPRINT\fR " " \fIoutput-list\fR
+Produces output to the console.
+\fIOutput-list\fR is a list of items separated by commas.
+Each item can be either a string literal enclosed in double quotation marks, or a numeric expression.
+An end of line sequence is output after all the values, so that the next \fBPRINT\fR statement will put its output on a new line.
+.TP
+.BR \fBINPUT\fR " " \fIvariable-list\fR
+Asks for input from the console.
+\fIVariable-list\fR is a list of variable names.
+For each variable given, a question mark is output and the value typed by the user is stored in that variable. \fBTinybasic\fR allows multiple values to be typed by the user on one line, each separated by any non-numeric character.
+.TP
+.BR \fBREM\fR " " \fIcomment-text\fR
+Provides space for free-format comment text in the program.
+Comments have no effect on the execution of a program, and exist only to provide human-readable information to the programmer.
+Use of this command will raise an error if support for comments is disabled (see the \fB-o\fR/\fB--comment\fR option above).
+.SH EXPRESSIONS
+Expressions in Tiny BASIC are purely arithmetic expressions, involving integers only.
+The four basic arithmetic operators are supported: multiplication (\fB*\fR), division (\fB/\fR), addition (\fB+\fR) and subtraction (\fB-\fR).
+Unary operators for positive (\fB+\fR) and negative (\fB-\fR) are supported, as are parentheses for affecting the order of operations.
+.PP
+Standard operator precedence evaluates parentheses first, then unary signs, then multiplication and division, with addition and subtraction last.
+.SH CONDITIONS
+The relational operators are \fB=\fR, \fB>\fR, \fB<\fR, \fB<>\fR or \fB><\fR, \fB>=\fR, and \fB<=\fR.
+They are not supported within arithmetic expressions, but can only be used as conditions in \fBIF\fR statements in the form:
+.BR \fIexpression\fR " " \fIrelational-operator\fR " " \fIexpression\fR
+.SH COMPILATION
+\fBTinybasic\fR is capable of compiling programs into executables with the help of a C compiler.
+To use this facility, the \fBTBEXE\fR environment variable must be set before invoking \fBtinybasic\fR.
+The variable should contain the command that compiles a C program into an executable, and may contain the following tokens:
+.PP
+\fB$(SOURCE)\fR: the C source filename is substituted here.
+.br
+\fB$(TARGET)\fR: a target filename is substituted here.
+.TP
+The C source filename will be the same as the BASIC filename but with the extension \fB.c\fR added. The target filename is the BASIC source filename with the \fB.bas\fR extension removed; if the BASIC source filename has no extension, then \fB.out\fR is added to prevent the source being overwritten by the executable. If your operating system requires an extension like \fB.exe\fR for its executables, then you need to add it explicitly (i.e. \fB$(TARGET).exe\fR) - unless the compiler adds that itself. As an example, the file \fBtest.bas\fR could be compiled on a Unix system with the following commands:
+.PP
+$ TBEXE='gcc -o $(TARGET) $(SOURCE)'
+.br
+$ tinybasic -Oexe test.bas
+.TP
+This would produce the executable file \fBtest\fR, and as a side effect, the C source file \fBtest.bas.c\fR.
+.SH ERROR MESSAGES
+Program error messages can be in one of two forms:
+.PP
+Parse error: \fIdescription\fR, line \fIline-number\fR, label \fIline-label\fR
+.br
+Run-time error: \fIdescription\fR, label \fIline-label\fR
+.TP
+Parse errors are those that are detected before the program starts. Run-time errors are those that cannot be detected until the program is running. If a parse error is detected on a line without a label, then the label section is omitted from the error message. The error messages and their meanings are as follows.
+.TP
+.SS Invalid line number
+One of the following has occurred: (i) a line label is missing when line numbers are mandatory; (ii) a line label is lower than the previous one when line numbers are mandatory or implied.
+.TP
+.SS Unrecognised command
+The command keyword is not recognised. Note that \fBREM\fR will not be recognised when comments are disabled, and will produce this error.
+.TP
+.SS Invalid variable
+In a \fBLET\fR or \fBINPUT\fR statement, something other than a letter from \fBA\fR to \fBZ\fR was supplied when a variable name was expected.
+.TP
+.SS Invalid assignment
+The \fB=\fR sign was missing from a \fBLET\fR statement.
+.TP
+.SS Invalid expression
+An expression in this line is invalid. It is possibly lacking an operator, variable or value where one is expected.
+.TP
+.SS Missing )
+An expression contains a left parenthesis and no corresponding right parenthesis.
+.TP
+.SS Invalid PRINT output
+Something is wrong with the output list in a \fBPRINT\fR statement. It could be: (i) completely missing, (ii) missing a separator between two items, or (iii) missing an item between two separators or at the start or end of the list.
+.TP
+.SS Invalid operator
+An unrecognised operator was encountered in an expression or a condition.
+.TP
+.SS THEN expected
+The mandatory \fBTHEN\fR keyword is missing from its expected place in an \fBIF\fR statement.
+.TP
+.SS Unexpected parameter
+A parameter was given to a command that should not have one, such as \fBEND\fR or \fBRETURN\fR.
+.TP
+.SS RETURN without GOSUB
+A \fBRETURN\fR was encountered without having executed a \fBGOSUB\fR. This commonly occurs when a programmer forgets to put an \fBEND\fR or a \fBGOTO\fR before a subroutine, and allows execution to blunder into it.
+.TP
+.SS Divide by zero
+The divisor in an expression was \fB0\fR. If dividing by a variable or an expression, it is advisable to check beforehand that it cannot be zero. An intentional division by zero is not the most graceful way to stop a program.
+.TP
+.SS Overflow
+When given as a parse error, there is a value in the program that is outside the range of \fB-32768\fR to \fB32767\fR. When given as a runtime error, an expression in the program or an input from the user has produced a result outside this range.
+.TP
+.SS Too Many GOSUBs
+Subroutines were called to a level deeper than the \fBGOSUB\fR limit allows. Often encountered because of runaway recursion, or because an incorrect label was given in a \fBGOSUB\fR statement causing a subroutine to unintentionally call itself.
+.SH VERSION INFORMATION
+This manual page documents \fBtinybasic\fR, version 1.0.4.
+.SH AUTHORS
+Tiny BASIC was originally designed by Dennis Allison. This implementation was written by Damian Gareth Walker.
+.SH EXAMPLE
+This program prints out all of the numbers in the Fibonnaci series between 0 and 1000.
+.PP
+.nf
+.ft B
+		LET A=0
+		LET B=1
+		PRINT A
+	100	PRINT B
+		LET B=A+B
+		LET A=B-A
+		IF B<=1000 THEN GOTO 100
+		END
+.ft R

@@ -1,0 +1,61 @@
+<line> ::=
+	<number> <statement> <EOL> | <statement> <EOL>
+ 
+<statement> ::=
+	"REM" <printable-characters> |
+	"PRINT" <output-list> |
+	"IF" <expression> <relational-operator> <expression> "THEN" <statement> |
+	"GOTO" <expression> |
+	"INPUT" <variable-list> |
+	"LET" <variable> "=" <expression> |
+	"GOSUB" <expression> |
+	"RETURN" |
+	"END"
+
+<printable-characters> ::=
+	<printable-character> | <printable-character> <printable-characters>
+
+<printable-character> ::=
+	" " .. "~"
+
+<output-list> ::=
+	<output-term> | <output-term> "," <output-list>
+
+<output-term> ::=
+	<string> | <expression>
+
+<variable-list> ::=
+	<variable> | <variable> "," <variable-list>
+
+<expression> ::=
+	<term> |
+	<expression> "+" <expression> |
+	<expression> "-" <expression>
+
+<term> ::=
+	<factor> |
+	<term> "*" <term> |
+	<term> "/" <term>
+
+factor ::=
+	"-" <factor> |
+	"+" <factor> |
+	<variable> |
+	<number> |
+	"(" <expression> ")"
+
+<variable> ::=
+	"A" .. "Z"
+
+<number> ::=
+	<digit> | <digit> <number>
+
+<digit> ::=
+	"0" .. "9"
+
+<relational-operator> ::=
+	"<" | "=" | ">" | "<=" | "<>" | ">="
+
+<string> ::=
+	'"' <printable-characters> '"'
+

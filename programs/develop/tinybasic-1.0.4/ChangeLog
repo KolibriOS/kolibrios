@@ -1,0 +1,7 @@
+TinyBASIC 1.0.1
+
+  * 'Cannot open file' error now refers to the correct argument.
+
+TinyBASIC 1.0.0
+
+  * Initial release
