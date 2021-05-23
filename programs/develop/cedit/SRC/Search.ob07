@@ -1,0 +1,123 @@
+﻿(*
+    Copyright 2021 Anton Krotov
+
+    This file is part of CEdit.
+
+    CEdit is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    CEdit is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with CEdit. If not, see <http://www.gnu.org/licenses/>.
+*)
+
+MODULE Search;
+
+IMPORT
+    CB := Clipboard, List, Utils, SYSTEM;
+
+
+TYPE
+
+    tBuffer* = CB.tBuffer;
+
+    IdxTable* = ARRAY 65536, 2 OF INTEGER;
+
+    tPos* = POINTER TO RECORD (List.tItem)
+        pos*: INTEGER
+    END;
+
+
+PROCEDURE index* (text: tBuffer; VAR table: IdxTable; cs: BOOLEAN): tBuffer;
+VAR
+    pChar, cnt, i: INTEGER;
+    c: WCHAR;
+    res: tBuffer;
+BEGIN
+    pChar := text.dataPtr;
+    cnt := CB.bufSize(text) DIV 2;
+
+    FOR i := 0 TO 65535 DO
+        table[i, 1] := 0
+    END;
+
+    i := cnt;
+    WHILE i > 0 DO
+        SYSTEM.GET(pChar, c);
+        IF ~cs & Utils.cap(c) THEN
+            SYSTEM.PUT(pChar, c)
+        END;
+        INC(table[ORD(c), 1]);
+        INC(pChar, 2);
+        DEC(i)
+    END;
+
+    res := CB.create(cnt * SYSTEM.SIZE(INTEGER));
+
+    table[0, 0] := res.dataPtr;
+    FOR i := 1 TO 65535 DO
+        table[i, 0] := table[i - 1, 0] + table[i - 1, 1] * SYSTEM.SIZE(INTEGER)
+    END;
+
+    pChar := text.dataPtr;
+    i := 0;
+    WHILE i < cnt DO
+        SYSTEM.GET(pChar, c);
+        SYSTEM.PUT(table[ORD(c), 0], i);
+        INC(table[ORD(c), 0], SYSTEM.SIZE(INTEGER));
+        INC(pChar, 2);
+        INC(i)
+    END;
+
+    FOR i := 0 TO 65535 DO
+        DEC(table[i, 0], table[i, 1] * SYSTEM.SIZE(INTEGER))
+    END
+
+    RETURN res
+END index;
+
+
+PROCEDURE find* (text: tBuffer; table: IdxTable; s: ARRAY OF WCHAR; whole: BOOLEAN; list: List.tList);
+VAR
+    k, pos, n, x, prev_item_pos: INTEGER;
+    item: tPos;
+    c1, c2: WCHAR;
+    flag: BOOLEAN;
+BEGIN
+    n := LENGTH(s);
+    k := table[ORD(s[0]), 1];
+    pos := table[ORD(s[0]), 0];
+    prev_item_pos := 0;
+    WHILE k > 0 DO
+        SYSTEM.GET(pos, x);
+        IF Utils.streq(text.dataPtr + x*2, SYSTEM.ADR(s[0]), n) THEN
+            flag := whole;
+            IF flag THEN
+                IF x > 0 THEN
+                    SYSTEM.GET(text.dataPtr + (x - 1)*2, c1);
+                ELSE
+                    c1 := 0X
+                END;
+                SYSTEM.GET(text.dataPtr + (x + n)*2, c2);
+                flag := Utils.isLetter(c1) OR Utils.isLetter(c2) OR Utils.isDigit(c1) OR Utils.isDigit(c2) OR (c1 = "_") OR (c2 = "_")
+            END;
+            IF ~flag & (x >= prev_item_pos) THEN
+                prev_item_pos := x + n;
+                NEW(item);
+                item.pos := x;
+                List.append(list, item)
+            END
+        END;
+        INC(pos, SYSTEM.SIZE(INTEGER));
+        DEC(k)
+    END
+END find;
+
+
+END Search.

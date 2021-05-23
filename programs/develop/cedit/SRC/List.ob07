@@ -1,0 +1,227 @@
+﻿(*
+    Copyright 2021 Anton Krotov
+
+    This file is part of CEdit.
+
+    CEdit is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    CEdit is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with CEdit. If not, see <http://www.gnu.org/licenses/>.
+*)
+
+MODULE List;
+
+TYPE
+
+    tItem* = POINTER TO RECORD
+        prev*, next*: tItem
+    END;
+
+    tList* = POINTER TO RECORD
+        first*, last*: tItem;
+        count*: INTEGER
+    END;
+
+    PmovInt = PROCEDURE (VAR v: INTEGER; x: INTEGER);
+    PmovPtr = PROCEDURE (VAR v: tItem; x: tItem);
+
+
+VAR
+
+    _movInt: PmovInt;
+    _movPtr: PmovPtr;
+
+
+PROCEDURE create* (list: tList): tList;
+BEGIN
+    IF list = NIL THEN
+        NEW(list)
+    END;
+    list.first := NIL;
+    list.last  := NIL;
+    list.count := 0
+    RETURN list
+END create;
+
+
+PROCEDURE getItem* (list: tList; idx: INTEGER): tItem;
+VAR
+    item: tItem;
+BEGIN
+    IF idx < 0 THEN
+        item := NIL
+    ELSE
+        item := list.first;
+        WHILE (idx > 0) & (item # NIL) DO
+            item := item.next;
+            DEC(idx)
+        END
+    END
+    RETURN item
+END getItem;
+
+
+PROCEDURE delete* (list: tList; item: tItem);
+VAR
+    prev, next: tItem;
+BEGIN
+    prev := item.prev;
+    next := item.next;
+    IF prev # NIL THEN
+        prev.next := next;
+        IF next # NIL THEN
+            next.prev := prev
+        ELSE
+            list.last := prev
+        END
+    ELSE
+        list.first := next;
+        IF next # NIL THEN
+           next.prev := NIL
+        ELSE
+           list.last := NIL
+        END
+    END;
+    DEC(list.count)
+END delete;
+
+
+PROCEDURE movInt (VAR v: INTEGER; x: INTEGER);
+BEGIN
+    _movInt(v, x);
+    v := x
+END movInt;
+
+
+PROCEDURE movPtr (VAR v: tItem; x: tItem);
+BEGIN
+    _movPtr(v, x);
+    v := x
+END movPtr;
+
+
+PROCEDURE _delete* (list: tList; item: tItem);
+VAR
+    prev, next: tItem;
+BEGIN
+    prev := item.prev;
+    next := item.next;
+    IF prev # NIL THEN
+        movPtr(prev.next, next);
+        IF next # NIL THEN
+            movPtr(next.prev, prev)
+        ELSE
+            movPtr(list.last, prev)
+        END
+    ELSE
+        movPtr(list.first, next);
+        IF next # NIL THEN
+           movPtr(next.prev, NIL)
+        ELSE
+           movPtr(list.last, NIL)
+        END
+    END;
+    movInt(list.count, list.count - 1)
+END _delete;
+
+
+PROCEDURE _append* (list: tList; item: tItem);
+BEGIN
+    movPtr(item.prev, list.last);
+    IF list.last # NIL THEN
+        movPtr(list.last.next, item)
+    ELSE
+        movPtr(list.first, item)
+    END;
+    movPtr(list.last, item);
+    movPtr(item.next, NIL);
+    movInt(list.count, list.count + 1)
+END _append;
+
+
+PROCEDURE _insert* (list: tList; item, newItem: tItem);
+VAR
+    next: tItem;
+BEGIN
+    next := item.next;
+    IF next # NIL THEN
+        movPtr(next.prev, newItem);
+        movPtr(newItem.next, next);
+        movPtr(item.next, newItem);
+        movPtr(newItem.prev, item);
+        movInt(list.count, list.count + 1)
+    ELSE
+        _append(list, newItem)
+    END
+END _insert;
+
+
+PROCEDURE append* (list: tList; item: tItem);
+BEGIN
+    item.prev := list.last;
+    IF list.last # NIL THEN
+        list.last.next := item
+    ELSE
+        list.first := item
+    END;
+    list.last := item;
+    item.next := NIL;
+    INC(list.count)
+END append;
+
+
+PROCEDURE insert* (list: tList; item, newItem: tItem);
+VAR
+    next: tItem;
+BEGIN
+    next := item.next;
+    IF next # NIL THEN
+        next.prev := newItem;
+        newItem.next := next;
+        item.next := newItem;
+        newItem.prev := item;
+        INC(list.count)
+    ELSE
+        append(list, newItem)
+    END
+END insert;
+
+
+PROCEDURE pop* (list: tList): tItem;
+VAR
+    res: tItem;
+BEGIN
+    IF list.count # 0 THEN
+        res := list.last;
+        list.last := res.prev;
+        DEC(list.count);
+        IF list.count # 0 THEN
+            list.last.next := NIL
+        ELSE
+            list.first := NIL
+        END;
+        res.prev := NIL;
+        res.next := NIL
+    ELSE
+        res := NIL
+    END
+    RETURN res
+END pop;
+
+
+PROCEDURE init* (movInt: PmovInt; movPtr: PmovPtr);
+BEGIN
+    _movInt := movInt;
+    _movPtr := movPtr
+END init;
+
+
+END List.

@@ -1,0 +1,352 @@
+﻿(*
+    Copyright 2021 Anton Krotov
+
+    This file is part of CEdit.
+
+    CEdit is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    CEdit is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with CEdit. If not, see <http://www.gnu.org/licenses/>.
+*)
+
+MODULE Utils;
+
+IMPORT SYSTEM;
+
+CONST
+
+    SPACE* = 20X;
+    SLASH* = "/";
+
+    OS* = "KOS";
+
+
+PROCEDURE streq* (s1, s2: INTEGER; n: INTEGER): BOOLEAN;
+VAR
+    c1, c2: WCHAR;
+BEGIN
+    WHILE n > 0 DO
+        SYSTEM.GET(s1, c1);
+        SYSTEM.GET(s2, c2);
+        INC(s1, 2);
+        INC(s2, 2);
+        IF c1 = c2 THEN
+            DEC(n)
+        ELSE
+            n := 0
+        END
+    END
+    RETURN c1 = c2
+END streq;
+
+
+PROCEDURE append* (VAR s1: ARRAY OF WCHAR; s2: ARRAY OF WCHAR);
+VAR
+    n1, n2, i, j: INTEGER;
+BEGIN
+    n1 := LENGTH(s1);
+    n2 := LENGTH(s2);
+
+    ASSERT(n1 + n2 < LEN(s1));
+
+    i := 0;
+    j := n1;
+    WHILE i < n2 DO
+        s1[j] := s2[i];
+        INC(i);
+        INC(j)
+    END;
+
+    s1[j] := 0X
+END append;
+
+
+PROCEDURE append8* (VAR s1: ARRAY OF CHAR; s2: ARRAY OF CHAR);
+VAR
+    n1, n2, i, j: INTEGER;
+BEGIN
+    n1 := LENGTH(s1);
+    n2 := LENGTH(s2);
+
+    ASSERT(n1 + n2 < LEN(s1));
+
+    i := 0;
+    j := n1;
+    WHILE i < n2 DO
+        s1[j] := s2[i];
+        INC(i);
+        INC(j)
+    END;
+
+    s1[j] := 0X
+END append8;
+
+
+PROCEDURE reverse* (VAR s: ARRAY OF WCHAR);
+VAR
+    ch: WCHAR;
+    i, j: INTEGER;
+BEGIN
+    i := 0;
+    j := LENGTH(s) - 1;
+    WHILE i < j DO
+        ch := s[i];
+        s[i] := s[j];
+        s[j] := ch;
+        INC(i);
+        DEC(j)
+    END
+END reverse;
+
+
+PROCEDURE reverse8* (VAR s: ARRAY OF CHAR);
+VAR
+    ch: CHAR;
+    i, j: INTEGER;
+BEGIN
+    i := 0;
+    j := LENGTH(s) - 1;
+    WHILE i < j DO
+        ch := s[i];
+        s[i] := s[j];
+        s[j] := ch;
+        INC(i);
+        DEC(j)
+    END
+END reverse8;
+
+
+PROCEDURE int2str* (val: INTEGER; VAR s: ARRAY OF WCHAR);
+VAR
+    i: INTEGER;
+BEGIN
+    i := 0;
+    REPEAT
+        s[i] := WCHR(ORD("0") + val MOD 10);
+        INC(i);
+        val := val DIV 10
+    UNTIL val = 0;
+    s[i] := 0X;
+    reverse(s)
+END int2str;
+
+
+PROCEDURE isDigit* (ch: WCHAR): BOOLEAN;
+    RETURN ("0" <= ch) & (ch <= "9")
+END isDigit;
+
+
+PROCEDURE isHex* (ch: WCHAR): BOOLEAN;
+    RETURN ("0" <= ch) & (ch <= "9") OR ("A" <= ch) & (ch <= "F")
+END isHex;
+
+
+PROCEDURE isLetter* (ch: WCHAR): BOOLEAN;
+    RETURN ("a" <= ch) & (ch <= "z") OR ("A" <= ch) & (ch <= "Z")
+END isLetter;
+
+
+PROCEDURE cap* (VAR ch: WCHAR): BOOLEAN;
+VAR
+    res: BOOLEAN;
+BEGIN
+    IF ("a" <= ch) & (ch <= "z") THEN
+        ch := WCHR(ORD(ch) - (ORD("z") - ORD("Z")));
+        res := TRUE
+    ELSIF (430H <= ORD(ch)) & (ORD(ch) <= 44FH) THEN
+        ch := WCHR(ORD(ch) - 20H);
+        res := TRUE
+    ELSIF (450H <= ORD(ch)) & (ORD(ch) <= 45FH) THEN
+        ch := WCHR(ORD(ch) - 50H);
+        res := TRUE
+    ELSIF ch = 491X THEN
+        ch := 490X;
+        res := TRUE
+    ELSE
+        res := FALSE
+    END
+    RETURN res
+END cap;
+
+
+PROCEDURE cap8 (VAR ch: CHAR): BOOLEAN;
+VAR
+    res: BOOLEAN;
+BEGIN
+    IF ("a" <= ch) & (ch <= "z") THEN
+        ch := CHR(ORD(ch) - (ORD("z") - ORD("Z")));
+        res := TRUE
+    ELSE
+        res := FALSE
+    END
+    RETURN res
+END cap8;
+
+
+PROCEDURE upcase* (VAR s: ARRAY OF CHAR);
+VAR
+    i: INTEGER;
+BEGIN
+    i := LENGTH(s) - 1;
+    WHILE i >= 0 DO
+        IF cap8(s[i]) THEN
+        END;
+        DEC(i)
+    END;
+END upcase;
+
+
+PROCEDURE upcase16* (VAR s: ARRAY OF WCHAR);
+VAR
+    i: INTEGER;
+BEGIN
+    i := LENGTH(s) - 1;
+    WHILE i >= 0 DO
+        IF cap(s[i]) THEN
+        END;
+        DEC(i)
+    END
+END upcase16;
+
+
+PROCEDURE low* (VAR ch: WCHAR): BOOLEAN;
+VAR
+    res: BOOLEAN;
+BEGIN
+    IF ("A" <= ch) & (ch <= "Z") THEN
+        ch := WCHR(ORD(ch) + (ORD("z") - ORD("Z")));
+        res := TRUE
+    ELSIF (410H <= ORD(ch)) & (ORD(ch) <= 42FH) THEN
+        ch := WCHR(ORD(ch) + 20H);
+        res := TRUE
+    ELSIF (400H <= ORD(ch)) & (ORD(ch) <= 40FH) THEN
+        ch := WCHR(ORD(ch) + 50H);
+        res := TRUE
+    ELSIF ch = 490X THEN
+        ch := 491X;
+        res := TRUE
+    ELSE
+        res := FALSE
+    END
+    RETURN res
+END low;
+
+
+PROCEDURE str2int* (s: ARRAY OF WCHAR; VAR val: INTEGER): BOOLEAN;
+VAR
+    i, temp: INTEGER;
+    res, neg: BOOLEAN;
+BEGIN
+    temp := 0;
+    res := TRUE;
+    neg := FALSE;
+    i := 0;
+    WHILE (s[i] # 0X) & (s[i] = SPACE) DO
+        INC(i)
+    END;
+
+    IF s[i] = "-" THEN
+        INC(i);
+        neg := TRUE
+    ELSIF s[i] = "+" THEN
+        INC(i)
+    END;
+
+    IF isDigit(s[i]) THEN
+        REPEAT
+            temp := temp * 10;
+            temp := temp + (ORD(s[i]) - ORD("0"));
+            INC(i)
+        UNTIL ~isDigit(s[i]);
+        IF neg THEN
+            temp := -temp
+        END;
+        val := temp
+    ELSE
+        res := FALSE
+    END
+
+    RETURN res
+END str2int;
+
+
+PROCEDURE getFileName* (path: ARRAY OF CHAR; VAR name: ARRAY OF CHAR; ch: CHAR);
+VAR
+    i, j: INTEGER;
+BEGIN
+    j := 0;
+    i := LENGTH(path) - 1;
+    WHILE (i >= 0) & (path[i] # ch) DO
+        name[j] := path[i];
+        DEC(i);
+        INC(j)
+    END;
+    name[j] := 0X;
+    reverse8(name)
+END getFileName;
+
+
+PROCEDURE getPath* (fname: ARRAY OF CHAR; VAR path: ARRAY OF CHAR);
+VAR
+    i, j: INTEGER;
+BEGIN
+    j := 0;
+    i := LENGTH(fname) - 1;
+    WHILE (i >= 0) & (fname[i] # SLASH) DO
+        DEC(i)
+    END;
+    path := fname;
+    path[i] := 0X
+END getPath;
+
+
+PROCEDURE lg10* (n: INTEGER): INTEGER;
+VAR
+    res: INTEGER;
+BEGIN
+    res := 0;
+    WHILE n >= 10 DO
+        n := n DIV 10;
+        INC(res)
+    END
+    RETURN res
+END lg10;
+
+
+PROCEDURE sgn* (x: INTEGER): INTEGER;
+BEGIN
+    IF x > 0 THEN
+        x := 1
+    ELSIF x < 0 THEN
+        x := -1
+    ELSE
+        x := 0
+    END
+    RETURN x
+END sgn;
+
+
+PROCEDURE ptr2str* (ptr: INTEGER; VAR s: ARRAY OF CHAR);
+VAR
+    i, n: INTEGER;
+BEGIN
+    i := -1;
+    n := LEN(s) - 1;
+    REPEAT
+        INC(i);
+        SYSTEM.GET(ptr, s[i]);
+        INC(ptr)
+    UNTIL (i = n) OR (s[i] = 0X);
+    s[i] := 0X
+END ptr2str;
+
+
+END Utils.

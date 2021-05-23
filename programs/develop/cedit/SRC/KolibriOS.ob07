@@ -1,0 +1,301 @@
+﻿(*
+    Copyright 2021 Anton Krotov
+
+    This file is part of CEdit.
+
+    CEdit is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    CEdit is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with CEdit. If not, see <http://www.gnu.org/licenses/>.
+*)
+
+MODULE KolibriOS;
+
+IMPORT
+    KOSAPI, SYSTEM;
+
+CONST
+    winColor* = 0EEEEEEH;
+    fontWidth* = 8;
+    fontHeight* = 16;
+
+
+PROCEDURE GetCommandLine* (): INTEGER;
+    RETURN KOSAPI.GetCommandLine()
+END GetCommandLine;
+
+
+PROCEDURE GetName* (): INTEGER;
+    RETURN KOSAPI.GetName()
+END GetName;
+
+
+PROCEDURE CreateWindow* (x, y, w, h, color, style, hcolor, hstyle: INTEGER; htext: ARRAY OF CHAR);
+BEGIN
+    KOSAPI.sysfunc6(0, x * 65536 + w, y * 65536 + h, color + LSL(style, 24), hcolor + LSL(hstyle, 24), SYSTEM.ADR(htext[0]))
+END CreateWindow;
+
+
+PROCEDURE BeginDraw*;
+BEGIN
+    KOSAPI.sysfunc2(12, 1)
+END BeginDraw;
+
+
+PROCEDURE EndDraw*;
+BEGIN
+    KOSAPI.sysfunc2(12, 2)
+END EndDraw;
+
+
+PROCEDURE WaitForEvent* (): INTEGER;
+    RETURN KOSAPI.sysfunc1(10)
+END WaitForEvent;
+
+
+PROCEDURE ThreadInfo (offsa, offsb: INTEGER; VAR a, b: INTEGER);
+VAR
+    buffer: ARRAY 1024 OF BYTE;
+BEGIN
+    KOSAPI.sysfunc3(9, SYSTEM.ADR(buffer[0]), -1);
+    SYSTEM.GET32(SYSTEM.ADR(buffer[0]) + offsa, a);
+    SYSTEM.GET32(SYSTEM.ADR(buffer[0]) + offsb, b);
+END ThreadInfo;
+
+
+PROCEDURE WinSize* (VAR width, height: INTEGER);
+BEGIN
+    ThreadInfo(42, 46, width, height)
+END WinSize;
+
+
+PROCEDURE WinPos* (VAR x, y: INTEGER);
+BEGIN
+    ThreadInfo(34, 38, x, y)
+END WinPos;
+
+
+PROCEDURE ClientSize* (VAR width, height: INTEGER);
+BEGIN
+    ThreadInfo(62, 66, width, height)
+END ClientSize;
+
+
+PROCEDURE ClientPos* (VAR x, y: INTEGER);
+BEGIN
+    ThreadInfo(54, 58, x, y)
+END ClientPos;
+
+
+PROCEDURE ThreadID* (): INTEGER;
+VAR
+    id: INTEGER;
+BEGIN
+    ThreadInfo(30, 30, id, id)
+    RETURN id
+END ThreadID;
+
+
+PROCEDURE RolledUp* (): BOOLEAN;
+VAR
+    buffer: ARRAY 1024 OF BYTE;
+BEGIN
+    KOSAPI.sysfunc3(9, SYSTEM.ADR(buffer[0]), -1)
+    RETURN ODD(LSR(buffer[70], 2))
+END RolledUp;
+
+
+PROCEDURE SetWinSize* (width, height: INTEGER);
+BEGIN
+    KOSAPI.sysfunc5(67, -1, -1, width, height)
+END SetWinSize;
+
+
+PROCEDURE DrawText* (x, y, color: INTEGER; text: ARRAY OF WCHAR);
+BEGIN
+    KOSAPI.sysfunc6(4, x * 65536 + y, color + LSL(0A0H, 24), SYSTEM.ADR(text[0]), 0, 0)
+END DrawText;
+
+
+PROCEDURE DrawText69* (x, y, color: INTEGER; text: ARRAY OF CHAR);
+BEGIN
+    KOSAPI.sysfunc6(4, x * 65536 + y, color + LSL(080H, 24), SYSTEM.ADR(text[0]), 0, 0)
+END DrawText69;
+
+
+PROCEDURE DrawText866* (x, y, color: INTEGER; text: ARRAY OF CHAR);
+BEGIN
+    KOSAPI.sysfunc6(4, x * 65536 + y, color + LSL(0D0H, 24), SYSTEM.ADR(text[0]), 0, winColor)
+END DrawText866;
+
+
+PROCEDURE MousePos* (VAR x, y: INTEGER);
+VAR
+    res: INTEGER;
+BEGIN
+    res := KOSAPI.sysfunc2(37, 0);
+    y := res MOD 65536;
+    x := res DIV 65536
+END MousePos;
+
+
+PROCEDURE CreateButton* (id, Left, Top, Width, Height, Color: INTEGER; Caption: ARRAY OF WCHAR);
+VAR
+    x, y: INTEGER;
+BEGIN
+    KOSAPI.sysfunc5(8, LSL(Left, 16) + Width, LSL(Top, 16) + Height, id, Color);
+    x := Left + (Width - fontWidth * LENGTH(Caption)) DIV 2;
+    y := Top + (Height - fontHeight) DIV 2 + 1;
+    DrawText(x, y, 0, Caption)
+END CreateButton;
+
+
+PROCEDURE DeleteButton* (id: INTEGER);
+BEGIN
+    KOSAPI.sysfunc5(8, 0, 0, id + 80000000H, 0)
+END DeleteButton;
+
+
+PROCEDURE GetTickCount* (): INTEGER;
+    RETURN KOSAPI.sysfunc2(26, 9)
+END GetTickCount;
+
+
+PROCEDURE Pause* (time: INTEGER);
+BEGIN
+    KOSAPI.sysfunc2(5, time)
+END Pause;
+
+
+PROCEDURE ButtonCode* (): INTEGER;
+VAR
+    res: INTEGER;
+BEGIN
+    res := KOSAPI.sysfunc1(17);
+    IF res MOD 256 = 0 THEN
+        res := LSR(res, 8)
+    ELSE
+        res := 0
+    END
+    RETURN res
+END ButtonCode;
+
+
+PROCEDURE Exit*;
+BEGIN
+    KOSAPI.sysfunc1(-1)
+END Exit;
+
+
+PROCEDURE ExitID* (tid: INTEGER);
+BEGIN
+    KOSAPI.sysfunc3(18, 18, tid)
+END ExitID;
+
+
+PROCEDURE CreateThread* (proc: INTEGER; stack: ARRAY OF INTEGER): INTEGER;
+    RETURN KOSAPI.sysfunc4(51, 1, proc, SYSTEM.ADR(stack[LEN(stack) - 2]))
+END CreateThread;
+
+
+PROCEDURE Run* (program, param: ARRAY OF CHAR);
+TYPE
+
+    info_struct = RECORD
+        subfunc : INTEGER;
+        flags   : INTEGER;
+        param   : INTEGER;
+        rsrvd1  : INTEGER;
+        rsrvd2  : INTEGER;
+        fname   : ARRAY 1024 OF CHAR
+    END;
+
+VAR
+    info: info_struct;
+
+BEGIN
+    info.subfunc := 7;
+    info.flags   := 0;
+    info.param   := SYSTEM.ADR(param[0]);
+    info.rsrvd1  := 0;
+    info.rsrvd2  := 0;
+    COPY(program, info.fname);
+    KOSAPI.sysfunc2(70, SYSTEM.ADR(info))
+END Run;
+
+
+PROCEDURE DrawRect* (x, y, width, height, color: INTEGER);
+BEGIN
+    KOSAPI.sysfunc4(13, x*65536 + width, y*65536 + height, color)
+END DrawRect;
+
+
+PROCEDURE DrawLine* (x1, y1, x2, y2: INTEGER; color: INTEGER);
+BEGIN
+    KOSAPI.sysfunc4(38, x1*65536 + x2, y1*65536 + y2, color)
+END DrawLine;
+
+
+PROCEDURE DrawImage* (data, sizeX, sizeY, x, y: INTEGER);
+BEGIN
+    KOSAPI.sysfunc4(7, data, sizeX*65536 + sizeY, x*65536 + y)
+END DrawImage;
+
+
+PROCEDURE SetEventsMask* (mask: SET);
+BEGIN
+    KOSAPI.sysfunc2(40, ORD(mask))
+END SetEventsMask;
+
+
+PROCEDURE SkinHeight* (): INTEGER;
+    RETURN KOSAPI.sysfunc2(48, 4)
+END SkinHeight;
+
+
+PROCEDURE GetKey* (): INTEGER;
+    RETURN KOSAPI.sysfunc1(2)
+END GetKey;
+
+
+PROCEDURE MouseState* (): SET;
+    RETURN BITS(KOSAPI.sysfunc2(37, 3))
+END MouseState;
+
+
+PROCEDURE Scroll* (): INTEGER;
+    RETURN ASR(LSL(KOSAPI.sysfunc2(37, 7), 16), 16)
+END Scroll;
+
+
+PROCEDURE GetControlKeys* (): SET;
+    RETURN BITS(KOSAPI.sysfunc2(66, 3))
+END GetControlKeys;
+
+
+PROCEDURE malloc* (size: INTEGER): INTEGER;
+    RETURN KOSAPI.malloc(size)
+END malloc;
+
+
+PROCEDURE SetIPC* (buffer: ARRAY OF INTEGER);
+BEGIN
+    KOSAPI.sysfunc4(60, 1, SYSTEM.ADR(buffer[0]), LEN(buffer)*SYSTEM.SIZE(INTEGER));
+END SetIPC;
+
+
+PROCEDURE SendIPC* (tid, msg: INTEGER);
+BEGIN
+    KOSAPI.sysfunc5(60, 2, tid, SYSTEM.ADR(msg), SYSTEM.SIZE(INTEGER))
+END SendIPC;
+
+
+END KolibriOS.

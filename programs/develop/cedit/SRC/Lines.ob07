@@ -1,0 +1,421 @@
+﻿(*
+    Copyright 2021 Anton Krotov
+
+    This file is part of CEdit.
+
+    CEdit is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    CEdit is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with CEdit. If not, see <http://www.gnu.org/licenses/>.
+*)
+
+MODULE Lines;
+
+IMPORT
+    List, SYSTEM, API, Utils;
+
+CONST
+    WCHAR_SIZE = 2;
+    SPACE = 20X;
+
+TYPE
+
+    tLine* = POINTER TO RECORD (List.tItem)
+        ptr: INTEGER;
+        length*: INTEGER;
+        modified*, saved*, temp: BOOLEAN;
+        cin*, cout*, pos*: INTEGER
+    END;
+
+    PmovInt = PROCEDURE (VAR v: INTEGER; x: INTEGER);
+    PmovBool = PROCEDURE (VAR v: BOOLEAN; x: BOOLEAN);
+    PmovPtr = PROCEDURE (VAR v: List.tItem; x: List.tItem);
+(*
+    PTypedPtr = PROCEDURE (p: List.tItem);
+    PUntypedPtr = PROCEDURE (p: INTEGER);
+*)
+
+VAR
+
+    _movInt: PmovInt;
+    _movBool: PmovBool;
+    _movPtr: PmovPtr;
+(*    _typedPtr: PTypedPtr;
+    _untypedPtr: PUntypedPtr;*)
+
+    maxLength*: INTEGER;
+
+
+PROCEDURE movInt (VAR v: INTEGER; x: INTEGER);
+BEGIN
+    _movInt(v, x)
+END movInt;
+
+
+PROCEDURE movBool (VAR v: BOOLEAN; x: BOOLEAN);
+BEGIN
+    _movBool(v, x)
+END movBool;
+
+
+PROCEDURE movPtr (VAR v: List.tItem; x: List.tItem);
+BEGIN
+    _movPtr(v, x)
+END movPtr;
+
+
+PROCEDURE malloc (size: INTEGER): INTEGER;
+VAR
+    ptr: INTEGER;
+BEGIN
+    IF size > maxLength THEN
+        maxLength := size
+    END;
+    size := size*WCHAR_SIZE + 4;
+    INC(size, (-size) MOD 32);
+    ptr := API._NEW(size)
+    RETURN ptr
+END malloc;
+
+
+PROCEDURE free (line: tLine; newPtr: INTEGER);
+BEGIN
+    IF line.ptr # 0 THEN
+        IF line.temp THEN
+            line.ptr := API._DISPOSE(line.ptr)
+        ELSE
+            line.ptr := 0
+        END
+    END;
+    IF ~line.temp THEN
+        movInt(line.ptr, newPtr);
+(*        IF newPtr # 0 THEN
+            _untypedPtr(newPtr)
+        END*)
+    END;
+    line.ptr := newPtr
+END free;
+
+
+PROCEDURE create* (temp: BOOLEAN): tLine;
+VAR
+    line: tLine;
+BEGIN
+    NEW(line);
+    ASSERT(line # NIL);
+(*    IF ~temp THEN
+        _typedPtr(line)
+    END;*)
+    line.next := NIL;
+    line.prev := NIL;
+    IF ~temp THEN
+        movPtr(line.next, NIL);
+        movPtr(line.prev, NIL)
+    END;
+    line.ptr := malloc(1);
+    ASSERT(line.ptr # 0);
+    IF ~temp THEN
+        (*_untypedPtr(line.ptr);*)
+        movInt(line.ptr, line.ptr)
+    END;
+    SYSTEM.PUT16(line.ptr, 0);
+    line.length := 0;
+    IF ~temp THEN
+        movInt(line.length, 0)
+    END;
+    line.temp := temp;
+    line.modified := FALSE;
+    line.saved := FALSE;
+    IF ~temp THEN
+        movBool(line.modified, FALSE);
+        movBool(line.saved, FALSE)
+    END;
+    line.cin := 0;
+    line.cout := 0;
+    line.pos := 0
+    RETURN line
+END create;
+
+
+PROCEDURE destroy* (VAR line: tLine);
+BEGIN
+    IF line.temp THEN
+        free(line, 0);
+        DISPOSE(line)
+    ELSE
+        line := NIL
+    END
+END destroy;
+
+
+PROCEDURE modify* (line: tLine);
+BEGIN
+    IF ~line.temp THEN
+        movBool(line.modified, TRUE);
+        movBool(line.saved, FALSE)
+    END;
+    line.modified := TRUE;
+    line.saved := FALSE
+END modify;
+
+
+PROCEDURE save* (line: tLine);
+BEGIN
+    IF ~line.temp THEN
+        movBool(line.saved, TRUE);
+        movBool(line.modified, FALSE)
+    END;
+    line.modified := FALSE;
+    line.saved := TRUE
+END save;
+
+
+PROCEDURE getChar* (line: tLine; i: INTEGER): WCHAR;
+VAR
+    c: WCHAR;
+BEGIN
+    SYSTEM.GET(line.ptr + i*WCHAR_SIZE, c)
+    RETURN c
+END getChar;
+
+
+PROCEDURE trimLength* (line: tLine): INTEGER;
+VAR
+    i: INTEGER;
+BEGIN
+    i := line.length - 1;
+    WHILE (i >= 0) & (getChar(line, i) = SPACE) DO
+        DEC(i)
+    END
+    RETURN i + 1
+END trimLength;
+
+
+PROCEDURE getPChar* (line: tLine; i: INTEGER): INTEGER;
+    RETURN line.ptr + i*WCHAR_SIZE
+END getPChar;
+
+
+PROCEDURE setChar* (line: tLine; i: INTEGER; c: WCHAR);
+BEGIN
+    SYSTEM.PUT(line.ptr + i*WCHAR_SIZE, c)
+END setChar;
+
+
+PROCEDURE concat* (line: tLine; s: ARRAY OF WCHAR);
+VAR
+    Len: INTEGER;
+    ptr: INTEGER;
+BEGIN
+    Len := LENGTH(s);
+    ptr := malloc(line.length + Len + 1);
+    ASSERT(ptr # 0);
+    SYSTEM.MOVE(line.ptr, ptr, line.length*WCHAR_SIZE);
+    SYSTEM.MOVE(SYSTEM.ADR(s[0]), ptr + line.length*WCHAR_SIZE, Len*WCHAR_SIZE);
+    SYSTEM.PUT16(ptr + (line.length + Len)*WCHAR_SIZE, 0);
+    IF ~line.temp THEN
+        movInt(line.length, line.length + Len)
+    END;
+    INC(line.length, Len);
+    free(line, ptr)
+END concat;
+
+
+PROCEDURE delChar* (line: tLine; pos: INTEGER);
+VAR
+    ptr: INTEGER;
+BEGIN
+    IF pos < line.length THEN
+        ptr := malloc(line.length);
+        ASSERT(ptr # 0);
+        IF ~line.temp THEN
+            movInt(line.length, line.length - 1)
+        END;
+        DEC(line.length);
+        SYSTEM.MOVE(line.ptr, ptr, pos*WCHAR_SIZE);
+        SYSTEM.MOVE(line.ptr + pos*WCHAR_SIZE + WCHAR_SIZE, ptr + pos*WCHAR_SIZE, (line.length - pos)*WCHAR_SIZE);
+        SYSTEM.PUT16(ptr + line.length*WCHAR_SIZE, 0);
+        free(line, ptr)
+    END
+END delChar;
+
+
+PROCEDURE insert* (line: tLine; pos: INTEGER; c: WCHAR);
+VAR
+    ptr: INTEGER;
+BEGIN
+    ptr := malloc(line.length + 2);
+    ASSERT(ptr # 0);
+    SYSTEM.MOVE(line.ptr, ptr, pos*WCHAR_SIZE);
+    SYSTEM.PUT(ptr + pos*WCHAR_SIZE, c);
+    SYSTEM.MOVE(line.ptr + pos*WCHAR_SIZE, ptr + pos*WCHAR_SIZE + WCHAR_SIZE, (line.length - pos)*WCHAR_SIZE);
+    IF ~line.temp THEN
+        movInt(line.length, line.length + 1)
+    END;
+    INC(line.length);
+    SYSTEM.PUT16(ptr + line.length*WCHAR_SIZE, 0);
+    free(line, ptr)
+END insert;
+
+
+PROCEDURE insert2* (line1: tLine; pos: INTEGER; line2: tLine);
+VAR
+    ptr: INTEGER;
+BEGIN
+    IF line2.length > 0 THEN
+        ptr := malloc(line1.length + line2.length + 1);
+        ASSERT(ptr # 0);
+        SYSTEM.MOVE(line1.ptr, ptr, pos*WCHAR_SIZE);
+        SYSTEM.MOVE(line2.ptr, ptr + pos*WCHAR_SIZE, line2.length*WCHAR_SIZE);
+        SYSTEM.MOVE(line1.ptr + pos*WCHAR_SIZE, ptr + (pos + line2.length)*WCHAR_SIZE, (line1.length - pos)*WCHAR_SIZE);
+        SYSTEM.PUT16(ptr + (line1.length + line2.length)*WCHAR_SIZE, 0);
+        IF ~line1.temp THEN
+            movInt(line1.length, line1.length + line2.length)
+        END;
+        IF ~line2.temp THEN
+            movInt(line2.length, 0)
+        END;
+        INC(line1.length, line2.length);
+        line2.length := 0;
+        free(line1, ptr);
+        free(line2, 0)
+    END
+END insert2;
+
+
+PROCEDURE insert3* (line: tLine; pos, n: INTEGER);
+VAR
+    ptr: INTEGER;
+BEGIN
+    IF n > 0 THEN
+        ptr := malloc(line.length + n + 1);
+        ASSERT(ptr # 0);
+        SYSTEM.MOVE(line.ptr, ptr, pos*WCHAR_SIZE);
+        SYSTEM.MOVE(line.ptr + pos*WCHAR_SIZE, ptr + (pos + n)*WCHAR_SIZE, (line.length - pos)*WCHAR_SIZE);
+        SYSTEM.PUT16(ptr + (line.length + n)*WCHAR_SIZE, 0);
+        IF ~line.temp THEN
+            movInt(line.length, line.length + n)
+        END;
+        INC(line.length, n);
+        free(line, ptr)
+    END
+END insert3;
+
+
+PROCEDURE delCharN* (line: tLine; pos, n: INTEGER);
+VAR
+    ptr: INTEGER;
+BEGIN
+    IF n > 0 THEN
+        ptr := malloc(line.length - n + 1);
+        ASSERT(ptr # 0);
+        SYSTEM.MOVE(line.ptr, ptr, pos*WCHAR_SIZE);
+        SYSTEM.MOVE(line.ptr + (pos + n)*WCHAR_SIZE, ptr + pos*WCHAR_SIZE, (line.length - pos - n)*WCHAR_SIZE);
+        SYSTEM.PUT16(ptr + (line.length - n)*WCHAR_SIZE, 0);
+        IF ~line.temp THEN
+            movInt(line.length, line.length - n)
+        END;
+        DEC(line.length, n);
+        free(line, ptr)
+    END
+END delCharN;
+
+
+PROCEDURE wrap* (line, nextLine: tLine; pos: INTEGER);
+VAR
+    ptr1, ptr2: INTEGER;
+    n: INTEGER;
+BEGIN
+    ptr1 := malloc(pos + 1);
+    ASSERT(ptr1 # 0);
+    n := line.length - pos;
+    ptr2 := malloc(n + 1);
+    ASSERT(ptr2 # 0);
+    SYSTEM.MOVE(line.ptr, ptr1, pos*WCHAR_SIZE);
+    SYSTEM.PUT16(ptr1 + pos*WCHAR_SIZE, 0);
+    SYSTEM.MOVE(line.ptr + pos*WCHAR_SIZE, ptr2, n*WCHAR_SIZE);
+    SYSTEM.PUT16(ptr2 + n*WCHAR_SIZE, 0);
+    IF ~line.temp THEN
+        movInt(line.length, pos)
+    END;
+    IF ~nextLine.temp THEN
+        movInt(nextLine.length, n)
+    END;
+    line.length := pos;
+    nextLine.length := n;
+    free(line, ptr1);
+    free(nextLine, ptr2)
+END wrap;
+
+
+PROCEDURE copy* (line: tLine);
+VAR
+    ptr: INTEGER;
+BEGIN
+    ptr := malloc(line.length + 1);
+    ASSERT(ptr # 0);
+    SYSTEM.MOVE(line.ptr, ptr, line.length*WCHAR_SIZE);
+    SYSTEM.PUT16(ptr + line.length*WCHAR_SIZE, 0);
+    free(line, ptr)
+END copy;
+
+
+PROCEDURE chCase* (line: tLine; pos1, pos2: INTEGER; upper: BOOLEAN): BOOLEAN;
+VAR
+    i: INTEGER;
+    modified: BOOLEAN;
+    c: WCHAR;
+    func: PROCEDURE (VAR c: WCHAR): BOOLEAN;
+BEGIN
+    modified := FALSE;
+    IF upper THEN
+        func := Utils.cap
+    ELSE
+        func := Utils.low
+    END;
+    i := pos2;
+    WHILE i >= pos1 DO
+        c := getChar(line, i);
+        IF func(c) THEN
+            modified := TRUE
+        END;
+        DEC(i)
+    END;
+
+    IF modified THEN
+        copy(line);
+        i := pos2;
+        WHILE i >= pos1 DO
+            c := getChar(line, i);
+            IF func(c) THEN
+                setChar(line, i, c)
+            END;
+            DEC(i)
+        END;
+        modify(line)
+    END
+    RETURN modified
+END chCase;
+
+
+PROCEDURE init* (movInt: PmovInt; movPtr: PmovPtr; movBool: PmovBool(*; typedPtr: PTypedPtr; untypedPtr: PUntypedPtr*));
+BEGIN
+    _movInt := movInt;
+    _movPtr := movPtr;
+    _movBool := movBool;
+(*    _typedPtr := typedPtr;
+    _untypedPtr := untypedPtr;*)
+END init;
+
+
+BEGIN
+    maxLength := 64
+END Lines.

@@ -1,0 +1,357 @@
+﻿(*
+    Copyright 2021 Anton Krotov
+
+    This file is part of CEdit.
+
+    CEdit is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    CEdit is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with CEdit. If not, see <http://www.gnu.org/licenses/>.
+*)
+
+MODULE Menu;
+
+IMPORT
+    SYSTEM, G := Graph, List, K := KolibriOS;
+
+CONST
+    fontHeight = 20;
+    fontWidth = 8;
+
+    RIGHT = 16;
+    LEFT = 16;
+    TOP = 1;
+
+    backColor = 0F0F0F0H;
+    foreColor = 0;
+    selBackColor = 091C9F7H;
+    selForeColor = 0;
+    disBackColor = backColor;
+    disForeColor = 808080H;
+    disSelBackColor = 0E4E4E4H;
+    disSelForeColor = disForeColor;
+
+
+TYPE
+    tItem* = POINTER TO RECORD (List.tItem)
+        id*, check: INTEGER;
+        text: ARRAY 32 OF WCHAR;
+        enabled, delim: BOOLEAN
+    END;
+
+    tMenu* = POINTER TO RECORD
+        (*stack: POINTER TO RECORD stk: ARRAY 250000 OF INTEGER END;*)
+        tid*: INTEGER;
+        winX, winY, width*, height*: INTEGER;
+        selItem, cliItem: INTEGER;
+
+        font: G.tFont;
+        canvas: G.tCanvas;
+
+        items: List.tList;
+        click: PROCEDURE (menu: tMenu; id: INTEGER);
+        key: PROCEDURE (menu: tMenu; key: INTEGER): BOOLEAN
+    END;
+
+    tClick = PROCEDURE (menu: tMenu; id: INTEGER);
+    tKey = PROCEDURE (menu: tMenu; key: INTEGER): BOOLEAN;
+
+VAR
+    lastTID*: INTEGER;
+    stack: ARRAY 250000 OF INTEGER;
+
+
+PROCEDURE exit (m: tMenu);
+BEGIN
+    m.tid := 0;
+    K.Exit
+END exit;
+
+
+PROCEDURE repaint (m: tMenu);
+VAR
+    y, i: INTEGER;
+    item: tItem;
+    BkColor, TextColor: INTEGER;
+    canvas: G.tCanvas;
+
+BEGIN
+    canvas := m.canvas;
+    G.SetColor(canvas, backColor);
+    G.clear(canvas);
+    G.SetColor(canvas, ORD((-BITS(backColor))*{0..23}) );
+    G.Rect(canvas, 0, 0, m.width, m.height);
+    y := TOP;
+    i := 0;
+    item := m.items.first(tItem);
+    WHILE item # NIL DO
+        IF item.enabled THEN
+            IF i # m.selItem THEN
+                BkColor := backColor;
+                TextColor := foreColor
+            ELSE
+                BkColor := selBackColor;
+                TextColor := selForeColor
+            END
+        ELSE
+            IF i # m.selItem THEN
+                BkColor := disBackColor;
+                TextColor := disForeColor
+            ELSE
+                BkColor := disSelBackColor;
+                TextColor := disSelForeColor
+            END
+        END;
+        G.SetColor(canvas, BkColor);
+        G.FillRect(canvas, 1, y, m.width - 1, y + fontHeight - 4);
+        G.SetTextColor(canvas, TextColor);
+        G.SetBkColor(canvas, BkColor);
+        G.TextOut2(canvas, LEFT, y + (fontHeight - 16) DIV 2 - 2, item.text, LENGTH(item.text));
+
+        IF item.check = 1 THEN
+            G.SetColor(canvas, TextColor);
+            G.DLine(canvas, 4, 7, y + (fontHeight - 16) DIV 2 + 5, -1);
+            G.DLine(canvas, 4, 7, y + (fontHeight - 16) DIV 2 + 6, -1);
+            G.DLine(canvas, 7, 12, y + (fontHeight - 16) DIV 2 + 8, 1);
+            G.DLine(canvas, 7, 12, y + (fontHeight - 16) DIV 2 + 9, 1);
+        ELSIF item.check = 2 THEN
+            G.SetColor(canvas, TextColor);
+            G.FillRect(canvas, 6, y + fontHeight DIV 2 - 4, 10, y + fontHeight DIV 2)
+        END;
+
+        INC(y, fontHeight);
+        IF item.delim THEN
+            G.SetColor(canvas, ORD((-BITS(backColor))*{0..23}));
+            G.HLine(canvas, y - 2, 1, m.width - 1)
+        END;
+        INC(i);
+        item := item.next(tItem)
+    END;
+    G.DrawCanvas(canvas, 0, 0)
+END repaint;
+
+
+PROCEDURE draw_window (m: tMenu);
+BEGIN
+    K.BeginDraw;
+    K.CreateWindow(m.winX, m.winY, m.width, m.height, 0, 61H, 0, 1, "");
+    repaint(m);
+    K.EndDraw
+END draw_window;
+
+
+PROCEDURE mouse (m: tMenu; VAR x, y: INTEGER);
+VAR
+    mouseX, mouseY: INTEGER;
+BEGIN
+    K.MousePos(mouseX, mouseY);
+    x := mouseX - m.winX;
+    y := mouseY - m.winY;
+END mouse;
+
+
+PROCEDURE click (m: tMenu; i: INTEGER);
+VAR
+    item: List.tItem;
+BEGIN
+    item := List.getItem(m.items, i);
+    IF item(tItem).enabled THEN
+        m.click(m, item(tItem).id);
+        exit(m)
+    END
+END click;
+
+
+PROCEDURE [stdcall] window (m: tMenu);
+VAR
+    x, y: INTEGER;
+    key: INTEGER;
+    msState: SET;
+BEGIN
+    m.selItem := -1;
+    m.cliItem := -1;
+    K.SetEventsMask({0, 1, 5});
+    WHILE TRUE DO
+        CASE K.WaitForEvent() OF
+        |1:
+            draw_window(m)
+        |2:
+            key := K.GetKey();
+            IF key DIV 65536 = 72 THEN
+                DEC(m.selItem);
+                IF m.selItem < 0 THEN
+                    m.selItem := 0
+                END
+            ELSIF key DIV 65536 = 80 THEN
+                INC(m.selItem);
+                IF m.selItem >= m.items.count THEN
+                    m.selItem := m.items.count - 1
+                END
+            ELSIF key DIV 65536 = 28 THEN
+                IF m.selItem >= 0 THEN
+                    click(m, m.selItem)
+                END;
+                m.cliItem := -1
+            ELSE
+                IF m.key(m, key) THEN
+                    exit(m)
+                END
+            END;
+            repaint(m)
+        |6:
+            msState := K.MouseState();
+            mouse(m, x, y);
+            IF (0 <= x) & (x < m.width) & (0 <= y) & (y < m.height) THEN
+                m.selItem := (y - TOP) DIV fontHeight;
+                IF 8 IN msState THEN
+                    m.cliItem := (y - TOP) DIV fontHeight
+                END;
+                IF 16 IN msState THEN
+                    IF m.cliItem = m.selItem THEN
+                        click(m, m.cliItem)
+                    END;
+                    m.cliItem := -1
+                END
+            ELSE
+                m.cliItem := -1;
+                IF {8, 9, 10} * msState # {} THEN
+                    exit(m)
+                END
+            END;
+            repaint(m)
+        END
+    END
+END window;
+
+
+PROCEDURE AddMenuItem* (items: List.tList; id: INTEGER; s: ARRAY OF WCHAR);
+VAR
+    item: tItem;
+BEGIN
+    NEW(item);
+    item.id := id;
+    item.text := s;
+    item.enabled := TRUE;
+    item.delim := FALSE;
+    List.append(items, item);
+END AddMenuItem;
+
+
+PROCEDURE delimiter* (items: List.tList);
+BEGIN
+    items.last(tItem).delim := TRUE
+END delimiter;
+
+
+PROCEDURE getItem (m: tMenu; id: INTEGER): tItem;
+VAR
+    item: tItem;
+BEGIN
+    item := m.items.first(tItem);
+    WHILE (item # NIL) & (item.id # id) DO
+        item := item.next(tItem)
+    END
+    RETURN item
+END getItem;
+
+
+PROCEDURE setEnabled* (m: tMenu; id: INTEGER; value: BOOLEAN);
+VAR
+    item: tItem;
+BEGIN
+    item := getItem(m, id);
+    IF item # NIL THEN
+        item.enabled := value
+    END
+END setEnabled;
+
+
+PROCEDURE setCheck* (m: tMenu; id: INTEGER; value: INTEGER);
+VAR
+    item: tItem;
+BEGIN
+    item := getItem(m, id);
+    IF item # NIL THEN
+        item.check := value
+    END
+END setCheck;
+
+
+PROCEDURE isEnabled* (m: tMenu; id: INTEGER): BOOLEAN;
+VAR
+    item: tItem;
+BEGIN
+    item := getItem(m, id)
+    RETURN (item # NIL) & item.enabled
+END isEnabled;
+
+
+PROCEDURE opened* (m: tMenu): BOOLEAN;
+    RETURN m.tid # 0
+END opened;
+
+
+PROCEDURE open* (m: tMenu; x, y: INTEGER);
+BEGIN
+    IF m.tid = 0 THEN
+        m.winX := x;
+        m.winY := y;
+(*        DISPOSE(m.stack);
+        NEW(m.stack);
+        SYSTEM.PUT(SYSTEM.ADR(m.stack.stk[LEN(m.stack.stk) - 1]), m);
+        lastTID := K.CreateThread(SYSTEM.ADR(window), m.stack.stk);*)
+        SYSTEM.PUT(SYSTEM.ADR(stack[LEN(stack) - 1]), m);
+        lastTID := K.CreateThread(SYSTEM.ADR(window), stack);
+        m.tid := lastTID
+    END
+END open;
+
+
+PROCEDURE close* (m: tMenu);
+BEGIN
+    IF m.tid # 0 THEN
+        K.ExitID(m.tid);
+        (*DISPOSE(m.stack);*)
+        m.tid := 0
+    END
+END close;
+
+
+PROCEDURE create* (items: List.tList; click: tClick; key: tKey): tMenu;
+VAR
+    m: tMenu;
+    maxLength: INTEGER;
+    item: tItem;
+BEGIN
+    NEW(m);
+    m.tid := 0;
+    m.items  := items;
+    m.click := click;
+    m.key := key;
+    maxLength := 0;
+    item := items.first(tItem);
+    WHILE item # NIL DO
+        maxLength := MAX(maxLength, LENGTH(item.text));
+        item := item.next(tItem)
+    END;
+    m.width  := maxLength*fontWidth + LEFT + RIGHT;
+    m.height := items.count*fontHeight - 2;
+    m.font := G.CreateFont(1, "", {});
+    m.canvas := G.CreateCanvas(m.width + 1, m.height + 1);
+    (*m.stack := NIL;*)
+    G.SetFont(m.canvas, m.font);
+    RETURN m
+END create;
+
+
+BEGIN
+    lastTID := 0
+END Menu.

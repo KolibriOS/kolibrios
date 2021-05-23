@@ -1,0 +1,169 @@
+﻿(*
+    Copyright 2021 Anton Krotov
+
+    This file is part of CEdit.
+
+    CEdit is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    CEdit is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with CEdit. If not, see <http://www.gnu.org/licenses/>.
+*)
+
+MODULE Clipboard;
+
+IMPORT SYSTEM, K := KOSAPI, E := Encodings, Lines;
+
+CONST
+    TTEXT = 0;
+    lenEOL* = 2;
+
+TYPE
+    tBuffer* = POINTER TO RECORD
+        dataPtr*: INTEGER;
+        pos: INTEGER
+    END;
+
+
+PROCEDURE free (ptr: INTEGER);
+BEGIN
+    ptr := K.free(ptr)
+END free;
+
+
+PROCEDURE bufSize* (buffer: tBuffer): INTEGER;
+    RETURN buffer.pos - buffer.dataPtr
+END bufSize;
+
+
+PROCEDURE put* (buffer: tBuffer);
+VAR
+    a, cnt, size: INTEGER;
+    ptr, pchar: INTEGER;
+    wch: WCHAR;
+BEGIN
+    cnt := bufSize(buffer) DIV 2;
+    size := cnt + 12;
+    a := K.malloc(size);
+    ASSERT(a # 0);
+    SYSTEM.PUT32(a, size);
+    SYSTEM.PUT32(a + 4, TTEXT);
+    SYSTEM.PUT32(a + 8, 1);
+    pchar := a + 12;
+    ptr := buffer.dataPtr;
+    WHILE cnt > 0 DO
+        SYSTEM.GET(ptr, wch);
+        SYSTEM.PUT(pchar, CHR(E.UNI[ORD(wch), E.CP866] MOD 256));
+        INC(pchar);
+        INC(ptr, 2);
+        DEC(cnt)
+    END;
+    K.sysfunc2(54, 3);
+    K.sysfunc4(54, 2, size, a)
+END put;
+
+
+PROCEDURE create* (bufSize: INTEGER): tBuffer;
+VAR
+    res: tBuffer;
+BEGIN
+    NEW(res);
+    res.dataPtr := K.malloc(bufSize*SYSTEM.SIZE(WCHAR) + 4096);
+    ASSERT(res.dataPtr # 0);
+    res.pos := res.dataPtr
+    RETURN res
+END create;
+
+
+PROCEDURE destroy* (VAR buffer: tBuffer);
+BEGIN
+    IF buffer # NIL THEN
+        IF buffer.dataPtr # 0 THEN
+            free(buffer.dataPtr)
+        END;
+        DISPOSE(buffer)
+    END
+END destroy;
+
+
+PROCEDURE append* (buffer: tBuffer; line: Lines.tLine; first, last: INTEGER);
+VAR
+    strSize: INTEGER;
+BEGIN
+    strSize := (last - first + 1)*SYSTEM.SIZE(WCHAR);
+    IF strSize > 0 THEN
+        SYSTEM.MOVE(Lines.getPChar(line, first), buffer.pos, strSize);
+        INC(buffer.pos, strSize)
+    END
+END append;
+
+
+PROCEDURE appends* (buffer: tBuffer; s: ARRAY OF WCHAR; first, last: INTEGER);
+VAR
+    strSize: INTEGER;
+BEGIN
+    strSize := (last - first + 1)*SYSTEM.SIZE(WCHAR);
+    IF strSize > 0 THEN
+        SYSTEM.MOVE(SYSTEM.ADR(s[first]), buffer.pos, strSize);
+        INC(buffer.pos, strSize)
+    END
+END appends;
+
+
+PROCEDURE eol* (buffer: tBuffer);
+VAR
+    s: ARRAY 2 OF WCHAR;
+BEGIN
+    s[0] := 0DX; s[1] := 0AX;
+    appends(buffer, s, 0, 1)
+END eol;
+
+
+PROCEDURE eot* (buffer: tBuffer);
+END eot;
+
+
+PROCEDURE available* (): BOOLEAN;
+VAR
+    ptr: INTEGER;
+    n, size, typ, x: INTEGER;
+    res: BOOLEAN;
+BEGIN
+    res := FALSE;
+    n := K.sysfunc2(54, 0);
+    IF n > 0 THEN
+        ptr := K.sysfunc3(54, 1, n - 1);
+        SYSTEM.GET32(ptr, size);
+        SYSTEM.GET32(ptr + 4, typ);
+        SYSTEM.GET(ptr + 8, x);
+        res := (typ = TTEXT) & (x = 1);
+        free(ptr)
+    END
+    RETURN res
+END available;
+
+
+PROCEDURE get* (VAR cnt: INTEGER): INTEGER;
+VAR
+    ptr: INTEGER;
+BEGIN
+    ptr := 0;
+    cnt := 0;
+    IF available() THEN
+        ptr := K.sysfunc3(54, 1, K.sysfunc2(54, 0) - 1);
+        SYSTEM.GET32(ptr, cnt);
+        DEC(cnt, 12);
+        INC(ptr, 12)
+    END
+    RETURN ptr
+END get;
+
+
+END Clipboard.

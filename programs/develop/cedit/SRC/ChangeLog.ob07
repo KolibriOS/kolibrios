@@ -1,0 +1,188 @@
+﻿(*
+    Copyright 2021 Anton Krotov
+
+    This file is part of CEdit.
+
+    CEdit is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    CEdit is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with CEdit. If not, see <http://www.gnu.org/licenses/>.
+*)
+
+MODULE ChangeLog;
+
+IMPORT List, Lines, (*API,*) SYSTEM;
+
+TYPE
+    tIntItem = POINTER TO RECORD (List.tItem)
+        adr, val: INTEGER
+    END;
+
+    tBoolItem = POINTER TO RECORD (List.tItem)
+        adr: INTEGER; val: BOOLEAN
+    END;
+(*
+    tUntypedPtr = POINTER TO RECORD (List.tItem)
+        p: INTEGER
+    END;
+
+    tTypedPtr = POINTER TO RECORD (List.tItem)
+        p: List.tItem
+    END;
+*)
+    tGuard* = POINTER TO RECORD (List.tItem)
+
+    END;
+
+
+VAR
+    Log*: List.tList;
+    guard: tGuard;
+    isLast: BOOLEAN;
+
+
+PROCEDURE isLastGuard* (guard: tGuard): BOOLEAN;
+VAR
+    item: List.tItem;
+    res: BOOLEAN;
+BEGIN
+    IF guard # NIL THEN
+        item := Log.last;
+        WHILE ~(item IS tGuard) DO
+            item := item.prev
+        END;
+        res := guard = item
+    ELSE
+        res := TRUE
+    END
+    RETURN res
+END isLastGuard;
+
+
+PROCEDURE isFirstGuard* (guard: tGuard): BOOLEAN;
+VAR
+    item: List.tItem;
+BEGIN
+    ASSERT(guard # NIL);
+    item := Log.first;
+    WHILE ~(item IS tGuard) DO
+        item := item.next
+    END
+    RETURN guard = item
+END isFirstGuard;
+
+
+PROCEDURE setGuard* (_guard: tGuard);
+BEGIN
+    guard := _guard;
+    isLast := isLastGuard(_guard)
+END setGuard;
+
+
+PROCEDURE redo* (item: List.tItem);
+BEGIN
+    IF item IS tIntItem THEN
+        SYSTEM.PUT(item(tIntItem).adr, item(tIntItem).val)
+    ELSIF item IS tBoolItem THEN
+        SYSTEM.PUT(item(tBoolItem).adr, item(tBoolItem).val)
+    END
+END redo;
+
+
+PROCEDURE clear (guard: tGuard);
+VAR
+    item: List.tItem;
+    (*res: INTEGER;*)
+BEGIN
+    isLast := TRUE;
+    REPEAT
+        item := List.pop(Log);
+        IF item # guard THEN
+        (*
+            IF item IS tUntypedPtr THEN
+                res := API._DISPOSE(item(tUntypedPtr).p)
+            ELSIF item IS tTypedPtr THEN
+                DISPOSE(item(tTypedPtr).p)
+            END;*)
+            DISPOSE(item)
+        END
+    UNTIL item = guard;
+    List.append(Log, item)
+END clear;
+
+
+PROCEDURE changeWord (adrV, adrX: INTEGER);
+VAR
+    item: tIntItem;
+BEGIN
+    NEW(item);
+    item.adr := adrV;
+    SYSTEM.GET(adrX, item.val);
+    IF ~isLast THEN
+        clear(guard)
+    END;
+    List.append(Log, item)
+END changeWord;
+
+
+PROCEDURE changeBool (VAR v: BOOLEAN; x: BOOLEAN);
+VAR
+    item: tBoolItem;
+BEGIN
+    NEW(item);
+    item.adr := SYSTEM.ADR(v);
+    item.val := x;
+    IF ~isLast THEN
+        clear(guard)
+    END;
+    List.append(Log, item)
+END changeBool;
+
+
+PROCEDURE changeInt (VAR v: INTEGER; x: INTEGER);
+BEGIN
+    changeWord(SYSTEM.ADR(v), SYSTEM.ADR(x))
+END changeInt;
+
+
+PROCEDURE changePtr (VAR v: List.tItem; x: List.tItem);
+BEGIN
+    changeWord(SYSTEM.ADR(v), SYSTEM.ADR(x))
+END changePtr;
+
+(*
+PROCEDURE typedPtr (p: List.tItem);
+VAR
+    item: tTypedPtr;
+BEGIN
+    NEW(item);
+    item.p := p;
+    List.append(Log, item)
+END typedPtr;
+
+
+PROCEDURE untypedPtr (p: INTEGER);
+VAR
+    item: tUntypedPtr;
+BEGIN
+    NEW(item);
+    item.p := p;
+    List.append(Log, item)
+END untypedPtr;
+*)
+
+BEGIN
+    guard := NIL;
+    isLast := TRUE;
+    List.init(changeInt, changePtr);
+    Lines.init(changeInt, changePtr, changeBool(*, typedPtr, untypedPtr*));
+    Log := List.create(NIL)
+END ChangeLog.

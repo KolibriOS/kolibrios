@@ -1,0 +1,379 @@
+﻿(*
+    Copyright 2021 Anton Krotov
+
+    This file is part of CEdit.
+
+    CEdit is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    CEdit is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with CEdit. If not, see <http://www.gnu.org/licenses/>.
+*)
+
+MODULE Languages;
+
+IMPORT Lines;
+
+
+CONST
+
+    langNone* = 0; langC* = 1; langOberon* = 2; langPascal* = 3;
+    langFasm* = 4; langLua* = 5; langIni* = 6;
+
+TYPE
+
+    tLine = Lines.tLine;
+
+    tKeyWords = RECORD
+        words: ARRAY 200, 32 OF WCHAR; cnt: INTEGER
+    END;
+
+    procGetStr = PROCEDURE (secName, keyName: ARRAY OF CHAR; VAR s: ARRAY OF CHAR);
+
+
+VAR
+
+    oberonKW, cKW, pascalKW, luaKW, iniKW, fasmKW: ARRAY 3 OF tKeyWords;
+
+
+PROCEDURE checkKW (s: ARRAY OF WCHAR; KW: tKeyWords): BOOLEAN;
+VAR
+    i: INTEGER;
+BEGIN
+    i := KW.cnt - 1;
+    WHILE (i >= 0) & (s # KW.words[i]) DO
+        DEC(i)
+    END
+    RETURN i >= 0
+END checkKW;
+
+
+PROCEDURE isKey* (s: ARRAY OF WCHAR; lang, kwSet: INTEGER): BOOLEAN;
+VAR
+    res: BOOLEAN;
+BEGIN
+    res := FALSE;
+    CASE lang OF
+    |langC:      res := checkKW(s, cKW[kwSet - 1])
+    |langOberon: res := checkKW(s, oberonKW[kwSet - 1])
+    |langPascal: res := checkKW(s, pascalKW[kwSet - 1])
+    |langLua:    res := checkKW(s, luaKW[kwSet - 1])
+    |langIni:    res := checkKW(s, iniKW[kwSet - 1])
+    |langFasm:   res := checkKW(s, fasmKW[kwSet - 1])
+    END
+    RETURN res
+END isKey;
+
+
+PROCEDURE SkipString* (line: tLine; VAR pos: INTEGER; n: INTEGER);
+VAR
+    quot: WCHAR;
+BEGIN
+    quot := Lines.getChar(line, pos);
+    REPEAT
+        INC(pos)
+    UNTIL (pos > n) OR (Lines.getChar(line, pos) = quot)
+END SkipString;
+
+
+PROCEDURE C (line: tLine; VAR depth, cond, pos: INTEGER; n: INTEGER);
+VAR
+    c: WCHAR;
+BEGIN
+    c := Lines.getChar(line, pos);
+    IF depth = 0 THEN
+        IF c = "/" THEN
+            IF cond = 0 THEN
+                cond := 1
+            ELSE
+                cond := 0;
+                pos := n
+            END
+        ELSIF (c = "*") & (cond = 1) THEN
+            depth := 1;
+            cond := 0
+        ELSIF (c = "'") OR (c = '"') THEN
+            SkipString(line, pos, n);
+            cond := 0
+        ELSE
+            cond := 0
+        END
+    ELSIF depth = 1 THEN
+        IF c = "*" THEN
+            cond := 1
+        ELSIF (c = "/") & (cond = 1) THEN
+            cond := 0;
+            depth := 0
+        ELSE
+            cond := 0
+        END
+    END
+END C;
+
+
+PROCEDURE getChar (line: tLine; i: INTEGER): WCHAR;
+VAR
+    res: WCHAR;
+BEGIN
+    IF i >= line.length THEN
+        res := 0X
+    ELSE
+        res := Lines.getChar(line, i)
+    END
+    RETURN res
+END getChar;
+
+
+PROCEDURE LuaLong* (line: tLine; pos: INTEGER): INTEGER;
+VAR
+    res: INTEGER;
+BEGIN
+    res := -1;
+    IF getChar(line, pos) = "[" THEN
+        INC(pos);
+        WHILE getChar(line, pos) = "=" DO
+            INC(res);
+            INC(pos)
+        END;
+        IF getChar(line, pos) = "[" THEN
+            INC(res)
+        ELSE
+            res := -1
+        END
+    END
+    RETURN res
+END LuaLong;
+
+
+PROCEDURE Lua (line: tLine; VAR depth, cond, pos: INTEGER; n: INTEGER);
+VAR
+    c: WCHAR;
+    k: INTEGER;
+BEGIN
+    c := Lines.getChar(line, pos);
+    IF depth = 0 THEN
+        IF c = "-" THEN
+            IF cond = 0 THEN
+                cond := 1
+            ELSE
+                cond := 0;
+                k := LuaLong(line, pos + 1);
+                IF k >= 0 THEN
+                    depth := k*2 + 1
+                ELSE
+                    pos := n
+                END
+            END
+        ELSIF c = "[" THEN
+            cond := 0;
+            k := LuaLong(line, pos);
+            IF k >= 0 THEN
+                depth := (k + 1)*2
+            END
+        ELSIF (c = "'") OR (c = '"') THEN
+            SkipString(line, pos, n);
+            cond := 0
+        ELSE
+            cond := 0
+        END
+    ELSIF depth > 0 THEN
+        IF (cond = 0) & (c = "]") THEN
+            cond := 1
+        ELSIF (cond >= 1) & (c = "=") THEN
+            INC(cond)
+        ELSIF (cond >= 1) & (c = "]") & (cond*2 - depth MOD 2 = depth) THEN
+            depth := 0;
+            cond := 0
+        ELSE
+            cond := 0
+        END
+    END
+END Lua;
+
+
+PROCEDURE Pascal (line: tLine; VAR depth, cond, pos: INTEGER; n: INTEGER);
+VAR
+    c: WCHAR;
+BEGIN
+    c := Lines.getChar(line, pos);
+    IF depth = 0 THEN
+        IF c = "(" THEN
+            cond := 1
+        ELSIF c = "/" THEN
+            IF cond = 2 THEN
+                cond := 0;
+                pos := n
+            ELSE
+                cond := 2
+            END
+        ELSIF (c = "*") & (cond = 1) THEN
+            depth := 2;
+            cond := 0
+        ELSIF c = "'" THEN
+            SkipString(line, pos, n);
+            cond := 0
+        ELSIF c = "{" THEN
+            IF Lines.getChar(line, pos + 1) = "$" THEN
+                depth := 3
+            ELSE
+                depth := 1
+            END;
+            cond := 0
+        ELSE
+            cond := 0
+        END
+    ELSIF depth IN {1, 3} THEN
+        IF c = "}" THEN
+            depth := 0
+        END
+    ELSIF depth = 2 THEN
+        IF c = "*" THEN
+            cond := 1
+        ELSIF (c = ")") & (cond = 1) THEN
+            depth := 0;
+            cond := 0
+        ELSE
+            cond := 0
+        END
+    END
+END Pascal;
+
+
+PROCEDURE Oberon (line: tLine; VAR depth, cond, pos: INTEGER; n: INTEGER);
+VAR
+    c: WCHAR;
+BEGIN
+    c := Lines.getChar(line, pos);
+    IF (depth = 0) & (c = "/") THEN
+        IF cond = 3 THEN
+            cond := 0;
+            pos := n
+        ELSE
+            cond := 3
+        END
+    ELSIF (depth = 0) & ((c = "'") OR (c = '"')) THEN
+        SkipString(line, pos, n);
+        cond := 0
+    ELSIF c = "(" THEN
+        cond := 1
+    ELSIF c = "*" THEN
+        IF cond = 1 THEN
+            INC(depth);
+            cond := 0
+        ELSE
+            cond := 2
+        END
+    ELSIF c = ")" THEN
+        IF cond = 2 THEN
+            IF depth > 0 THEN
+                DEC(depth)
+            END
+        END;
+        cond := 0
+    ELSE
+        cond := 0
+    END;
+END Oberon;
+
+
+PROCEDURE Ini (line: tLine; VAR depth, cond, pos: INTEGER; n: INTEGER);
+VAR
+    c: WCHAR;
+BEGIN
+    cond := 0;
+    c := Lines.getChar(line, pos);
+    IF depth = 0 THEN
+        IF c = ";" THEN
+            pos := n
+        ELSIF c = '"' THEN
+            SkipString(line, pos, n)
+        ELSIF c = "[" THEN
+            depth := 1
+        END
+    ELSIF depth = 1 THEN
+        IF c = "]" THEN
+            depth := 0
+        END
+    END
+END Ini;
+
+
+PROCEDURE comments* (line: tLine; VAR depth, cond, pos: INTEGER; n: INTEGER; lang: INTEGER);
+BEGIN
+    CASE lang OF
+    |langNone:
+    |langFasm:
+    |langC:       C(line, depth, cond, pos, n)
+    |langOberon:  Oberon(line, depth, cond, pos, n)
+    |langPascal:  Pascal(line, depth, cond, pos, n)
+    |langLua:     Lua(line, depth, cond, pos, n)
+    |langIni:     Ini(line, depth, cond, pos, n)
+    END
+END comments;
+
+
+PROCEDURE EnterKW (s: ARRAY OF CHAR; VAR KW: tKeyWords);
+CONST
+    SPACE = 20X; CR = 0DX; LF = 0AX; TAB = 9X; COMMA = ",";
+VAR
+    i, j, k: INTEGER;
+
+    PROCEDURE delim (c: CHAR): BOOLEAN;
+        RETURN (c = COMMA) OR (c = SPACE) OR (c = CR) OR (c = LF) OR (c = TAB)
+    END delim;
+
+BEGIN
+    k := KW.cnt;
+    i := 0;
+    REPEAT
+        j := 0;
+        WHILE (s[i] # 0X) & ~delim(s[i]) DO
+            KW.words[k, j] := WCHR(ORD(s[i]));
+            INC(i);
+            INC(j)
+        END;
+        KW.words[k, j] := 0X;
+        INC(k);
+        WHILE delim(s[i]) DO
+            INC(i)
+        END
+    UNTIL s[i] = 0X;
+    KW.cnt := k
+END EnterKW;
+
+
+PROCEDURE loadKW (VAR KW: ARRAY OF tKeyWords; getStr: procGetStr; lang: ARRAY OF CHAR);
+VAR
+    s: ARRAY 16*1024 OF CHAR;
+    key: ARRAY 4 OF CHAR;
+    i: INTEGER;
+BEGIN
+    key := "KW1";
+    FOR i := 0 TO 2 DO
+        KW[i].cnt := 0;
+        key[2] := CHR(ORD("1") + i);
+        getStr(lang, key, s);
+        EnterKW(s, KW[i])
+    END;
+END loadKW;
+
+
+PROCEDURE init* (getStr: procGetStr);
+BEGIN
+    loadKW(oberonKW, getStr, "lang_Oberon");
+    loadKW(cKW,      getStr, "lang_C");
+    loadKW(pascalKW, getStr, "lang_Pascal");
+    loadKW(luaKW,    getStr, "lang_Lua");
+    loadKW(iniKW,    getStr, "lang_Ini");
+    loadKW(fasmKW,   getStr, "lang_Fasm");
+END init;
+
+
+END Languages.

@@ -1,0 +1,1658 @@
+﻿(*
+    Copyright 2021 Anton Krotov
+
+    This file is part of CEdit.
+
+    CEdit is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    CEdit is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with CEdit. If not, see <http://www.gnu.org/licenses/>.
+*)
+
+MODULE CEdit;
+
+IMPORT
+    SYSTEM, OpenDlg, K := KolibriOS,
+    U := Utils, Lines, Menu, List,
+    G := Graph, T := Text, E := Encodings,
+    CB := Clipboard, Languages,
+    ChangeLog, Scroll,
+    RW, Ini, box_lib, LibImg;
+
+CONST
+    header = "CEdit (20-may-2021)";
+
+    ShellFilter = "";(* "SH|"; *)
+    EditFilter = "SH|ASM|TXT|INC|OB07|C|CPP|H|PAS|PP|LUA|INI";
+
+    fontWidth = K.fontWidth;
+    fontHeight = K.fontHeight;
+    scrollWidth = 22;
+
+    btnClose = 1;
+    btnNew = 20;
+    btnOpen = 21;
+    btnSave = 22;
+    btnSearch = 23;
+    btnUndo = 24;
+    btnRedo = 25;
+    btnUpper = 26;
+    btnLower = 27;
+    btnBuild = 28;
+    btnRun = 29;
+    btnUp = 30;
+    btnDown = 31;
+    btnLeft = 32;
+    btnRight = 33;
+    btnYes = 40;
+    btnNo = 41;
+    btnFindEdit = 50;
+    btnReplaceEdit = 51;
+    btnGotoEdit = 52;
+    btnFindNext = 60;
+    btnReplace = 61;
+    btnReplaceAll = 62;
+    btnGoto = 63;
+    btnCloseFind = 64;
+
+    btnFile = 70;
+    btnEdit = 71;
+    btnEncoding = 72;
+    btnView = 73;
+    btnSyntax = 74;
+    btnProgram = 75;
+    btnTools = 76;
+
+    MainMenuHeight = fontHeight + 7;
+
+    btnColor = 0CCCCCCH;
+    btnHeight = 25;
+    btnWidth = 75;
+    btnTop = MainMenuHeight + 3;
+    toolBtnSize = 24;
+    toolbarDelim = 7;
+
+    TOP = btnTop + toolBtnSize + 7;
+    RIGHT = scrollWidth - 2;
+    BOTTOM = scrollWidth + 25;
+
+    winColor = K.winColor; minWinWidth = 635; minWinHeight = 542;
+
+    toolbarColor = 0DFDFDFH;
+
+    SEARCH_PADDING = 10;
+    searchLeft = 10;
+    EditBox_Width = 180;
+    EDITBOX_MAXCHARS = 500;
+
+    menuFileX = searchLeft;
+    menuEditX = menuFileX + 4*fontWidth + 2 + 7;
+    menuEncodingX = menuEditX + 4*fontWidth + 2 + 7;
+    menuViewX = menuEncodingX + 8*fontWidth + 2 + 7;
+    menuSyntaxX = menuViewX + 4*fontWidth + 2 + 7;
+    menuProgramX = menuSyntaxX + 6*fontWidth + 2 + 7;
+    menuToolsX = menuProgramX + 7*fontWidth + 2 + 7;
+
+    menuCut = 1;
+    menuCopy = 2;
+    menuPaste = 3;
+    menuDelete = 4;
+    menuSelectAll = 5;
+
+    menuUndo = 6;
+    menuRedo = 7;
+
+    menuSearch = 8;
+    menuGoto = 9;
+
+    menuNew = 10;
+    menuOpen = 11;
+    menuSave = 12;
+    menuSaveAs = 13;
+    menuFolder = 14;
+    menuExit = 15;
+
+    menuNumbers = 20;
+    (*menuSettings = 21;*)
+    menuColors = 1000;
+    menuMaxColors = menuColors + Ini.MAX_SECTIONS - 1;
+
+    menuNone = 30;
+    menuC = 31;
+    menuFasm = 32;
+    menuIni = 33;
+    menuLua = 34;
+    menuOberon = 35;
+    menuPascal = 36;
+
+    menuBuild = 50;
+    menuBuildScript = 51;
+    menuRun = 52;
+    menuRunScript = 53;
+    menuDebug = 54;
+    menuDebugScript = 55;
+
+    menuUTF8BOM = 60;
+    menuUTF8 = 61;
+    menuCP866 = 62;
+    menuWin1251 = 63;
+
+    menuPipet = 70;
+    menuSysFunc = 71;
+
+VAR
+    canvas: G.tCanvas;
+    font: G.tFont;
+    text: T.tText;
+    winWidth, winHeight: INTEGER;
+    shift: SET;
+    AppPath, runScript, buildScript, debugScript: RW.tFileName;
+    OD: OpenDlg.Dialog;
+    confirm, notFound, search, modified: BOOLEAN;
+
+    leftButton, VScroll, HScroll: BOOLEAN;
+    vScroll, hScroll: Scroll.tScroll;
+    LEFT: INTEGER;
+
+    FindEdit, ReplaceEdit, GotoEdit: box_lib.edit_box;
+    CS, WH, BKW: box_lib.checkbox;
+
+    new_searchText, searchText, replaceText, gotoText: T.tString;
+    cs, whole: BOOLEAN;
+
+    replaced: INTEGER;
+
+    mainTID: INTEGER;
+
+    context, menuFile, menuEdit, menuEncoding, menuView, menuSyntax, menuProgram, menuTools: Menu.tMenu;
+
+    icons: INTEGER;
+    grayIcons: INTEGER;
+
+    IPC: ARRAY 64 OF INTEGER;
+
+
+PROCEDURE WritePos (y: INTEGER);
+VAR
+    s1, s2: ARRAY 32 OF WCHAR;
+    line, col: INTEGER;
+BEGIN
+    T.getPos(text, col, line);
+    U.int2str(line, s1);
+    U.int2str(col, s2);
+    U.append(s1, ": ");
+    U.append(s1, s2);
+    K.DrawText(LEFT, y, 0, s1)
+END WritePos;
+
+
+PROCEDURE EditBox_Focus (edit: box_lib.edit_box): BOOLEAN;
+    RETURN 1 IN BITS(edit.flags)
+END EditBox_Focus;
+
+
+PROCEDURE EditBox_SetFocus (edit: box_lib.edit_box; value: BOOLEAN);
+BEGIN
+    IF value THEN
+        edit.flags := ORD(BITS(edit.flags) + {1})
+    ELSE
+        edit.flags := ORD(BITS(edit.flags) - {1})
+    END;
+(*    IF value THEN
+        edit.color := 0FFFFFFH
+    ELSE
+        edit.color := 0D0D0D0H
+    END;*)
+    IF search THEN
+        box_lib.edit_box_draw(edit)
+    END
+END EditBox_SetFocus;
+
+
+PROCEDURE Rect (left, top, right, bottom, color: INTEGER);
+BEGIN
+    K.DrawLine(left, top, right, top, color);
+    K.DrawLine(left, bottom, right, bottom, color);
+    K.DrawLine(left, top, left, bottom, color);
+    K.DrawLine(right, top, right, bottom, color);
+END Rect;
+
+
+PROCEDURE Message (s: ARRAY OF WCHAR);
+CONST
+    minWidth = 30;
+    height = 40;
+    borderColor = 808080H;
+VAR
+    top, left, right, bottom, x, y, width: INTEGER;
+BEGIN
+    width := minWidth + LENGTH(s)*fontWidth;
+    left := (canvas.width - width) DIV 2 + LEFT;
+    top := (canvas.height - height) DIV 2 + TOP;
+    bottom := top + height - 1;
+    right := left + width - 1;
+    x := minWidth DIV 2 + left;
+    y := (height - fontHeight) DIV 2 + top;
+    K.DrawRect(left, top, width, height, winColor);
+    Rect(left, top, right, bottom, borderColor);
+    K.DrawText(x, y, 0, s);
+END Message;
+
+
+PROCEDURE NotFound;
+BEGIN
+    IF notFound THEN
+        Message("not found");
+        notFound := FALSE;
+        EditBox_SetFocus(FindEdit, TRUE);
+        EditBox_SetFocus(ReplaceEdit, FALSE);
+        EditBox_SetFocus(GotoEdit, FALSE)
+    END
+END NotFound;
+
+
+PROCEDURE Replaced;
+VAR
+    s, s1: ARRAY 32 OF WCHAR;
+BEGIN
+    IF replaced # 0 THEN
+        s := "replaced: ";
+        U.int2str(replaced, s1);
+        U.append(s, s1);
+        Message(s);
+        replaced := 0;
+        EditBox_SetFocus(FindEdit, TRUE);
+        EditBox_SetFocus(ReplaceEdit, FALSE);
+        EditBox_SetFocus(GotoEdit, FALSE)
+    END
+END Replaced;
+
+
+PROCEDURE icons16 (icons, n, x, y: INTEGER);
+VAR
+    sizeX, sizeY, data: INTEGER;
+BEGIN
+    LibImg.GetInf(icons, sizeX, sizeY, data);
+    K.DrawImage(data + 16*16*3*n, 16, 16, x, y)
+END icons16;
+
+
+PROCEDURE toolbarIcons;
+CONST
+    iconPad = (toolBtnSize - 16) DIV 2;
+VAR
+    x, color: INTEGER;
+BEGIN
+    x := searchLeft + (toolBtnSize + 5)*2;
+    IF text.modified THEN
+        icons16(icons, 5, x + iconPad, btnTop + iconPad)
+    ELSE
+        icons16(grayIcons, 5, x + iconPad, btnTop + iconPad)
+    END;
+
+    IF text.edition # NIL THEN
+        x := searchLeft + (toolBtnSize + 5)*4 + toolbarDelim*2;
+        IF ChangeLog.isFirstGuard(text.edition) THEN
+            icons16(grayIcons, 37, x + iconPad, btnTop + iconPad)
+        ELSE
+            icons16(icons, 37, x + iconPad, btnTop + iconPad)
+        END;
+
+        x := searchLeft + (toolBtnSize + 5)*5 + toolbarDelim*2;
+        IF ChangeLog.isLastGuard(text.edition) THEN
+            icons16(grayIcons, 36, x + iconPad, btnTop + iconPad)
+        ELSE
+            icons16(icons, 36, x + iconPad, btnTop + iconPad)
+        END
+(*    ELSE
+        x := searchLeft + (toolBtnSize + 5)*4;
+        icons16(grayIcons, 37, x + iconPad, btnTop + iconPad);
+        x := searchLeft + (toolBtnSize + 5)*5;
+        icons16(grayIcons, 36, x + iconPad, btnTop + iconPad)*)
+    END;
+
+    IF T.selected(text) THEN
+        color := 00000FFH
+    ELSE
+        color := 0808080H
+    END;
+
+    x := searchLeft + (toolBtnSize + 5)*6 + toolbarDelim*3;
+    K.DrawRect(x, btnTop, toolBtnSize, toolBtnSize, toolbarColor);
+    K.DrawText69(x + (toolBtnSize - 12) DIV 2, btnTop + (toolBtnSize - 9) DIV 2 + 2, color, "AB");
+    INC(x, toolBtnSize + 5);
+    K.DrawRect(x, btnTop, toolBtnSize, toolBtnSize, toolbarColor);
+    K.DrawText69(x + (toolBtnSize - 12) DIV 2, btnTop + (toolBtnSize - 9) DIV 2 + 2, color, "ab");
+
+    x := searchLeft + (toolBtnSize + 5)*8 + toolbarDelim*4;
+    IF buildScript # "" THEN
+        icons16(icons, 54, x + iconPad, btnTop + iconPad)
+    ELSE
+        icons16(grayIcons, 54, x + iconPad, btnTop + iconPad)
+    END;
+    INC(x, toolBtnSize + 5);
+    IF runScript # "" THEN
+        icons16(icons, 53, x + iconPad, btnTop + iconPad)
+    ELSE
+        icons16(grayIcons, 53, x + iconPad, btnTop + iconPad)
+    END
+END toolbarIcons;
+
+
+PROCEDURE WriteModified (x, y: INTEGER);
+BEGIN
+    modified := text.modified;
+    K.DrawRect(x, TOP + canvas.height + scrollWidth - 1, 9*fontWidth, BOTTOM - scrollWidth + 1, winColor);
+    IF modified THEN
+        K.DrawText866(x, y, 0, "modified")
+    END
+END WriteModified;
+
+
+PROCEDURE repaint;
+VAR
+    width, height, scrollX, scrollY, y: INTEGER;
+BEGIN
+    IF text # NIL THEN
+        IF confirm THEN
+            K.DeleteButton(btnYes);
+            K.DeleteButton(btnNo);
+            confirm := FALSE
+        END;
+        T.draw(text);
+        K.ClientSize(width, height);
+        y := height - (BOTTOM - scrollWidth) + (BOTTOM - scrollWidth - 16) DIV 2;
+        K.DrawRect(LEFT, TOP + canvas.height + scrollWidth - 1, 16*fontWidth, BOTTOM - scrollWidth + 1, winColor);
+        WritePos(y);
+
+        IF modified # text.modified THEN
+            WriteModified(width - 9*fontWidth, y)
+        END;
+
+        T.getScroll(text, scrollX, scrollY);
+        vScroll.value := scrollY; vScroll.maxVal := text.count - 1;
+        hScroll.value := scrollX; hScroll.maxVal := Lines.maxLength;
+        Scroll.draw(vScroll, LEFT + canvas.width - 1, TOP + scrollWidth - 1);
+        Scroll.draw(hScroll, LEFT + scrollWidth, TOP + canvas.height - 1);
+
+        G.DrawCanvas(canvas, LEFT, TOP);
+        NotFound;
+        Replaced;
+        toolbarIcons
+    END
+END repaint;
+
+
+PROCEDURE resize;
+VAR
+    cliWidth, cliHeight: INTEGER;
+BEGIN
+    K.WinSize(winWidth, winHeight);
+    IF winWidth < minWinWidth THEN
+        winWidth := minWinWidth
+    END;
+    IF winHeight < minWinHeight THEN
+        winHeight := minWinHeight
+    END;
+    K.SetWinSize(winWidth, winHeight);
+    K.WinSize(winWidth, winHeight);
+    K.ClientSize(cliWidth, cliHeight);
+    G.destroy(canvas);
+    canvas := G.CreateCanvas(cliWidth - (LEFT + RIGHT + 1), cliHeight - (TOP + BOTTOM));
+    G.SetFont(canvas, font);
+    T.setCanvas(canvas);
+    T.resize(canvas.width, canvas.height);
+    Scroll.resize(vScroll, vScroll.xSize, canvas.height - scrollWidth*2 + 1);
+    Scroll.resize(hScroll, canvas.width - scrollWidth*2, hScroll.ySize);
+END resize;
+
+
+PROCEDURE SearchPanel (left, top: INTEGER);
+VAR
+    y, right, bottom, color: INTEGER;
+BEGIN
+    right := left + EditBox_Width + SEARCH_PADDING*2;
+    bottom := top + 395 + btnHeight + SEARCH_PADDING;
+    color := T.colors.border;
+    Rect(left, top, right, bottom, color);
+    K.CreateButton(btnCloseFind, right - 20, top, 20, 20, 0EF999FH, "");
+    K.DrawLine(right - 14, top + 5, right - 5, top + 14, 0FFFFFFH);
+    K.DrawLine(right - 15, top + 5, right - 5, top + 15, 0FFFFFFH);
+    K.DrawLine(right - 15, top + 6, right - 6, top + 15, 0FFFFFFH);
+    K.DrawLine(right - 15, top + 14, right - 6, top + 5, 0FFFFFFH);
+    K.DrawLine(right - 15, top + 15, right - 5, top + 5, 0FFFFFFH);
+    K.DrawLine(right - 14, top + 15, right - 5, top + 6, 0FFFFFFH);
+
+    INC(top, 15);
+    INC(left, SEARCH_PADDING);
+    K.DrawText866(left, top, 0, "find");
+    K.DrawText866(left, top + 55, 0, "replace with");
+    K.CreateButton(btnFindEdit + ORD({30}), left, top + 20, EditBox_Width, fontHeight + 5, 0, "");
+    K.CreateButton(btnReplaceEdit + ORD({30}), left, top + 75, EditBox_Width, fontHeight + 5, 0, "");
+    K.DrawText866(left, top + 330, 0, "go to line");
+    K.CreateButton(btnGotoEdit + ORD({30}), left, top + 350, EditBox_Width, fontHeight + 5, 0, "");
+    BKW.top_s := BKW.top_s MOD 65536 + (top + 110) * 65536;
+    CS.top_s := CS.top_s MOD 65536 + (top + 140) * 65536;
+    WH.top_s := WH.top_s MOD 65536 + (top + 170) * 65536;
+    BKW.left_s := BKW.left_s MOD 65536 + left * 65536;
+    CS.left_s := CS.left_s MOD 65536 + left * 65536;
+    WH.left_s := WH.left_s MOD 65536 + left * 65536;
+    FindEdit.top := top + 20;
+    ReplaceEdit.top := top + 75;
+    GotoEdit.top := top + 350;
+    FindEdit.left := left;
+    ReplaceEdit.left := left;
+    GotoEdit.left := left;
+    box_lib.edit_box_draw(FindEdit);
+    box_lib.edit_box_draw(ReplaceEdit);
+    box_lib.edit_box_draw(GotoEdit);
+    box_lib.check_box_draw2(BKW); K.DrawText866(left + 20, top + 110, 0, "backward");
+    box_lib.check_box_draw2(CS); K.DrawText866(left + 20, top + 140, 0, "match case");
+    box_lib.check_box_draw2(WH); K.DrawText866(left + 20, top + 170, 0, "whole word");
+    y := top + 200;
+    K.CreateButton(btnFindNext, left, y, btnWidth, btnHeight, btnColor, "next"); INC(y, btnHeight + 10);
+    K.CreateButton(btnReplace, left, y, btnWidth, btnHeight, btnColor, "replace"); INC(y, btnHeight + 10);
+    K.CreateButton(btnReplaceAll, left, y, btnWidth + 5*fontWidth - 2, btnHeight, btnColor, "replace all");
+    K.CreateButton(btnGoto, left, top + 380, btnWidth, btnHeight, btnColor, "go");
+END SearchPanel;
+
+
+PROCEDURE gray (icons: INTEGER);
+VAR
+    sizeX, sizeY, data, x, y: INTEGER;
+    b, g, r, gr: BYTE;
+BEGIN
+    LibImg.GetInf(icons, sizeX, sizeY, data);
+    FOR y := 0 TO sizeY - 1 DO
+        FOR x := 0 TO sizeX - 1 DO
+            SYSTEM.GET8(data, b);
+            SYSTEM.GET8(data + 1, g);
+            SYSTEM.GET8(data + 2, r);
+            gr := (r + g + b) DIV 3;
+            SYSTEM.PUT8(data, gr);
+            SYSTEM.PUT8(data + 1, gr);
+            SYSTEM.PUT8(data + 2, gr);
+            INC(data, 3);
+        END
+    END
+END gray;
+
+
+PROCEDURE iconsBackColor (icons: INTEGER);
+VAR
+    sizeX, sizeY, data, x, y: INTEGER;
+    b, g, r: BYTE;
+BEGIN
+    LibImg.GetInf(icons, sizeX, sizeY, data);
+    FOR y := 0 TO sizeY - 1 DO
+        FOR x := 0 TO sizeX - 1 DO
+            SYSTEM.GET8(data, b);
+            SYSTEM.GET8(data + 1, g);
+            SYSTEM.GET8(data + 2, r);
+            IF b + g + r = 765 THEN
+                b := toolbarColor MOD 256;
+                g := toolbarColor DIV 256 MOD 256;
+                r := toolbarColor DIV 65536 MOD 256
+            END;
+            SYSTEM.PUT8(data, b);
+            SYSTEM.PUT8(data + 1, g);
+            SYSTEM.PUT8(data + 2, r);
+            INC(data, 3);
+        END
+    END
+END iconsBackColor;
+
+
+PROCEDURE draw_window;
+CONST
+    selMenuColor = 0CCE8FFH;
+    iconPad = (toolBtnSize - 16) DIV 2;
+VAR
+    width, height, x, y: INTEGER;
+
+
+    PROCEDURE drawToolbarBtn (id, x: INTEGER);
+    BEGIN
+        K.DrawRect(x, btnTop, toolBtnSize, toolBtnSize, toolbarColor);
+        K.DrawLine(x, btnTop + toolBtnSize, x + toolBtnSize, btnTop + toolBtnSize, 0808080H);
+        K.DrawLine(x + toolBtnSize, btnTop, x + toolBtnSize, btnTop + toolBtnSize, 0808080H);
+        K.CreateButton(id + ORD({30}), x, btnTop, toolBtnSize, toolBtnSize, btnColor, "");
+    END drawToolbarBtn;
+
+
+    PROCEDURE drawMainMenu (menu: Menu.tMenu; x: INTEGER; btn: INTEGER; caption: ARRAY OF WCHAR);
+    VAR
+        menuColor, n: INTEGER;
+    BEGIN
+        IF menu.tid # 0 THEN
+            menuColor := selMenuColor
+        ELSE
+            menuColor := winColor
+        END;
+        n := LENGTH(caption);
+        K.DrawRect(x, 0, n*fontWidth + 2, MainMenuHeight, menuColor);
+        K.CreateButton(btn + ORD({30}), x, 0, n*fontWidth + 2, MainMenuHeight, btnColor, caption);
+    END drawMainMenu;
+
+
+BEGIN
+    K.BeginDraw;
+    K.CreateWindow(50 + K.GetTickCount() MOD 128, 50 + K.GetTickCount() MOD 128, winWidth, winHeight, winColor, 73H, 0, 0, header);
+    IF (text # NIL) & ~K.RolledUp() THEN
+        confirm := FALSE;
+        K.ClientSize(width, height);
+
+        K.DrawRect(0, 0, width, TOP, winColor);
+        K.DrawRect(0, 0, LEFT, height, winColor);
+        K.DrawRect(LEFT + canvas.width - 1, TOP + canvas.height - 1, scrollWidth, scrollWidth, winColor);
+
+        drawMainMenu(menuFile, menuFileX, btnFile, "file");
+        drawMainMenu(menuEdit, menuEditX, btnEdit, "edit");
+        drawMainMenu(menuEncoding, menuEncodingX, btnEncoding, "encoding");
+        drawMainMenu(menuView, menuViewX, btnView, "view");
+        drawMainMenu(menuSyntax, menuSyntaxX, btnSyntax, "syntax");
+        drawMainMenu(menuProgram, menuProgramX, btnProgram, "program");
+        drawMainMenu(menuTools, menuToolsX, btnTools, "tools");
+
+        x := searchLeft;
+
+        drawToolbarBtn(btnNew, x);
+        icons16(icons, 2, x + iconPad, btnTop + iconPad);
+        INC(x, toolBtnSize + 5);
+
+        drawToolbarBtn(btnOpen, x);
+        icons16(icons, 0, x + iconPad, btnTop + iconPad);
+        INC(x, toolBtnSize + 5);
+
+        drawToolbarBtn(btnSave, x);
+        INC(x, toolBtnSize + 5 + toolbarDelim);
+
+        drawToolbarBtn(btnSearch, x);
+        icons16(icons, 49, x + iconPad, btnTop + iconPad);
+        INC(x, toolBtnSize + 5 + toolbarDelim);
+
+        drawToolbarBtn(btnUndo, x);
+        INC(x, toolBtnSize + 5);
+
+        drawToolbarBtn(btnRedo, x);
+        INC(x, toolBtnSize + 5 + toolbarDelim);
+
+        drawToolbarBtn(btnUpper, x);
+        K.DrawText69(x + (toolBtnSize - 12) DIV 2, btnTop + (toolBtnSize - 9) DIV 2 + 2, 0, "AB");
+        INC(x, toolBtnSize + 5);
+
+        drawToolbarBtn(btnLower, x);
+        K.DrawText69(x + (toolBtnSize - 12) DIV 2, btnTop + (toolBtnSize - 9) DIV 2 + 2, 0, "ab");
+        INC(x, toolBtnSize + 5 + toolbarDelim);
+
+        drawToolbarBtn(btnBuild, x);
+        icons16(icons, 54, x + iconPad, btnTop + iconPad);
+        INC(x, toolBtnSize + 5);
+
+        drawToolbarBtn(btnRun, x);
+        icons16(icons, 53, x + iconPad, btnTop + iconPad);
+        INC(x, toolBtnSize + 5);
+
+        K.CreateButton(btnUp, LEFT + canvas.width - 1, TOP, scrollWidth - 1, scrollWidth, btnColor, 0X);
+        K.DrawText69(LEFT + canvas.width - 1 + (scrollWidth - 6) DIV 2, TOP + (scrollWidth - 9) DIV 2, 0, 18X);
+        K.CreateButton(btnDown, LEFT + canvas.width - 1, TOP + canvas.height - scrollWidth - 1, scrollWidth - 1, scrollWidth, btnColor, 0X);
+        K.DrawText69(LEFT + canvas.width - 1 + (scrollWidth - 6) DIV 2, TOP + canvas.height - scrollWidth + (scrollWidth - 9) DIV 2, 0, 19X);
+
+        K.CreateButton(btnLeft, LEFT, TOP + canvas.height - 1, scrollWidth, scrollWidth - 1, btnColor, 0X);
+        K.DrawText69(LEFT + (scrollWidth - 6) DIV 2, TOP + canvas.height - 1 + (scrollWidth - 9) DIV 2 + 1, 0, 1BX);
+        K.CreateButton(btnRight, LEFT + canvas.width - scrollWidth - 1, TOP + canvas.height - 1, scrollWidth, scrollWidth - 1, btnColor, 0X);
+        K.DrawText69(LEFT + canvas.width - scrollWidth - 1 + (scrollWidth - 6) DIV 2, TOP + canvas.height - 1 + (scrollWidth - 9) DIV 2 + 1, 0, 1AX);
+
+        y := (btnHeight - fontHeight) DIV 2 + btnTop;
+        CASE text.enc OF
+        |E.UTF8:    K.DrawText866(width -  6*fontWidth, y, 0, "UTF-8")
+        |E.UTF8BOM: K.DrawText866(width - 10*fontWidth, y, 0, "UTF-8-BOM")
+        |E.CP866:   K.DrawText866(width -  6*fontWidth, y, 0, "CP866")
+        |E.W1251:   K.DrawText866(width - 13*fontWidth, y, 0, "Windows-1251")
+        END;
+        IF search THEN
+            SearchPanel(searchLeft, TOP)
+        END;
+
+        y := height - (BOTTOM - scrollWidth) + (BOTTOM - scrollWidth - 16) DIV 2;
+        K.DrawRect(LEFT + 16*fontWidth, TOP + canvas.height + scrollWidth - 1, width - LEFT - 25*fontWidth, BOTTOM - scrollWidth + 1, winColor);
+        K.DrawText866(LEFT + 16*fontWidth, y, 0, text.fileName);
+        WriteModified(width - 9*fontWidth, y);
+        repaint
+    END;
+    K.EndDraw
+END draw_window;
+
+
+PROCEDURE mouse (VAR x, y: INTEGER);
+VAR
+    mouseX, mouseY,
+    cliX, cliY,
+    winX, winY: INTEGER;
+BEGIN
+    K.MousePos(mouseX, mouseY);
+    K.WinPos(winX, winY);
+    K.ClientPos(cliX, cliY);
+    x := mouseX - winX - cliX - LEFT;
+    y := mouseY - winY - cliY - TOP;
+END mouse;
+
+
+PROCEDURE getKBState;
+VAR
+    kbState: SET;
+BEGIN
+    kbState := K.GetControlKeys();
+    IF {0, 1} * kbState # {} THEN
+        INCL(shift, T.SHIFT)
+    ELSE
+        EXCL(shift, T.SHIFT)
+    END;
+
+    IF {2, 3} * kbState # {} THEN
+        INCL(shift, T.CTRL)
+    ELSE
+        EXCL(shift, T.CTRL)
+    END
+END getKBState;
+
+
+PROCEDURE OpenFile (VAR FileName: RW.tFileName; filter: ARRAY OF CHAR);
+BEGIN
+    OpenDlg.SetFilter(OD, filter);
+    OpenDlg.Show(OD, 500, 400);
+    WHILE OD.status = 2 DO
+        K.Pause(30)
+    END;
+    IF OD.status = 1 THEN
+        COPY(OD.FilePath, FileName)
+    ELSE
+        FileName := ""
+    END
+END OpenFile;
+
+
+PROCEDURE error (s: RW.tFileName);
+BEGIN
+    K.Run("/rd/1/@notify", s)
+END error;
+
+
+PROCEDURE saveAs;
+VAR
+    fileName: RW.tFileName;
+    ext: ARRAY 8 OF CHAR;
+BEGIN
+    OD._type := OpenDlg.tsave;
+    U.getFileName(text.fileName, OD.FileName, U.SLASH);
+    IF OD.FileName = "" THEN
+        OD.FileName := "NewFile.";
+        CASE text.lang OF
+        |Languages.langNone:   ext := "txt"
+        |Languages.langC:      ext := "c"
+        |Languages.langFasm:   ext := "asm"
+        |Languages.langIni:    ext := "ini"
+        |Languages.langLua:    ext := "lua"
+        |Languages.langOberon: ext := "ob07"
+        |Languages.langPascal: ext := "pas"
+        END;
+        U.append8(OD.FileName, ext)
+    END;
+    OpenFile(fileName, EditFilter);
+    IF fileName # "" THEN
+        IF T.save(text, fileName, text.enc, RW.EOL_CRLF) THEN
+            T.setName(text, fileName)
+        ELSE
+            error("'cedit: error saving file' -E")
+        END
+    END
+END saveAs;
+
+
+PROCEDURE save;
+BEGIN
+    IF text.modified THEN
+        IF text.fileName # "" THEN
+            IF ~T.save(text, text.fileName, text.enc, RW.EOL_CRLF) THEN
+                error("'cedit: error saving file' -E")
+            END
+        ELSE
+            saveAs
+        END
+    END
+END save;
+
+
+PROCEDURE SelfRun (file: ARRAY OF CHAR);
+BEGIN
+    K.Run(AppPath, file)
+END SelfRun;
+
+
+PROCEDURE open;
+VAR
+    fileName: RW.tFileName;
+BEGIN
+    OD._type := OpenDlg.topen;
+    OpenFile(fileName, EditFilter);
+    IF fileName # "" THEN
+        SelfRun(fileName)
+    END
+END open;
+
+
+PROCEDURE Confirm;
+CONST
+    width  = btnWidth*2 + 30;
+    height = btnHeight*2 + 20;
+    lineColor = 808080H;
+VAR
+    left, top, right, bottom: INTEGER;
+BEGIN
+    draw_window;
+    confirm := TRUE;
+    left := (canvas.width - width) DIV 2 + LEFT;
+    top := (canvas.height - height) DIV 2 + TOP;
+    right := left + width - 1;
+    bottom := top + height - 1;
+    K.DrawRect(left, top, width, height, winColor);
+    Rect(left, top, right, bottom, lineColor);
+    K.DrawText866(left + (width - 10*fontWidth) DIV 2, top + 10, 0, "save file?");
+    K.CreateButton(btnYes, left + 10, top + 35, btnWidth, btnHeight, btnColor, "yes");
+    K.CreateButton(btnNo, left + 20 + btnWidth, top + 35, btnWidth, btnHeight, btnColor, "no");
+END Confirm;
+
+
+PROCEDURE createEdit (left, top: INTEGER): box_lib.edit_box;
+VAR
+    edit, EditBox0: box_lib.edit_box;
+BEGIN
+    NEW(EditBox0);
+    EditBox0.text := K.malloc(EDITBOX_MAXCHARS + 2);
+    ASSERT(EditBox0.text # 0);
+    edit := box_lib.kolibri_new_edit_box(left, top, EditBox_Width, EDITBOX_MAXCHARS, EditBox0);
+    edit.flags := 4002H;
+    edit.text_color := 30000000H;
+    EditBox_SetFocus(edit, FALSE)
+    RETURN edit
+END createEdit;
+
+
+PROCEDURE createSearchForm;
+BEGIN
+    FindEdit := createEdit(searchLeft, TOP + 20);
+    ReplaceEdit := createEdit(searchLeft, TOP + 20 + 55);
+    GotoEdit := createEdit(searchLeft, TOP + 20 + 330);
+    GotoEdit.flags := ORD(BITS(GotoEdit.flags) + BITS(8000H));
+    BKW := box_lib.kolibri_new_check_box(searchLeft, TOP + 90 + 20, 16, 16, "", 8*fontWidth + 4);
+    CS := box_lib.kolibri_new_check_box(searchLeft, TOP + 120 + 20, 16, 16, "", 10*fontWidth + 4);
+    WH := box_lib.kolibri_new_check_box(searchLeft, TOP + 150 + 20, 16, 16, "", 10*fontWidth + 4);
+END createSearchForm;
+
+
+PROCEDURE EditBox_GetValue (edit: box_lib.edit_box; VAR s: ARRAY OF WCHAR);
+VAR
+    str: ARRAY EDITBOX_MAXCHARS + 1 OF CHAR;
+    i: INTEGER;
+BEGIN
+    box_lib.edit_box_get_value(edit, str);
+    i := 0;
+    WHILE str[i] # 0X DO
+        s[i] := WCHR(E.cp866[ORD(str[i])]);
+        INC(i)
+    END;
+    s[i] := 0X
+END EditBox_GetValue;
+
+
+PROCEDURE Search;
+BEGIN
+    search := ~search;
+    IF search THEN
+        LEFT := searchLeft + EditBox_Width + SEARCH_PADDING*3;
+        IF T.search(text, searchText, cs, whole) THEN END
+    ELSE
+        LEFT := searchLeft;
+        IF T.search(text, "", FALSE, FALSE) THEN END
+    END;
+    EditBox_SetFocus(FindEdit, search);
+    EditBox_SetFocus(ReplaceEdit, FALSE);
+    EditBox_SetFocus(GotoEdit, FALSE);
+    resize;
+    draw_window
+END Search;
+
+
+PROCEDURE click (x, y: INTEGER): INTEGER;
+VAR
+    scrollX, scrollY: INTEGER;
+BEGIN
+    IF (0 <= x) & (x < canvas.width) & (0 <= y) & (y < canvas.height) THEN
+        leftButton := TRUE;
+        EditBox_SetFocus(FindEdit, FALSE);
+        EditBox_SetFocus(ReplaceEdit, FALSE);
+        EditBox_SetFocus(GotoEdit, FALSE);
+        IF ~(T.SHIFT IN shift) THEN
+            T.resetSelect(text)
+        END;
+        T.mouse(text, x, y);
+        repaint
+    ELSIF (canvas.width < x) & (x < canvas.width + scrollWidth) & (scrollWidth < y) & (y < canvas.height - scrollWidth) THEN
+        VScroll := TRUE;
+        DEC(x, canvas.width);
+        DEC(y, scrollWidth);
+        Scroll.mouse(vScroll, x, y);
+        T.getScroll(text, scrollX, scrollY);
+        T.scroll(text, 0, vScroll.value - scrollY);
+        repaint
+    ELSIF (scrollWidth < x) & (x < canvas.width - scrollWidth) & (canvas.height < y) & (y < canvas.height + scrollWidth) THEN
+        HScroll := TRUE;
+        DEC(x, scrollWidth);
+        DEC(y, canvas.height);
+        Scroll.mouse(hScroll, x, y);
+        T.getScroll(text, scrollX, scrollY);
+        T.scroll(text, hScroll.value - scrollX, 0);
+        repaint
+    END
+    RETURN K.GetTickCount()
+END click;
+
+
+PROCEDURE LeftButtonUp;
+BEGIN
+    leftButton := FALSE;
+    VScroll := FALSE;
+    HScroll := FALSE;
+    Scroll.MouseUp(vScroll);
+    Scroll.MouseUp(hScroll);
+END LeftButtonUp;
+
+
+PROCEDURE close;
+BEGIN
+    IF text.modified THEN
+        Confirm
+    ELSE
+        K.Exit
+    END
+END close;
+
+
+PROCEDURE MenuItemClick (menu: Menu.tMenu; id: INTEGER);
+BEGIN
+    K.SendIPC(mainTID, id)
+END MenuItemClick;
+
+
+PROCEDURE goto;
+VAR
+    gotoVal: INTEGER;
+BEGIN
+    EditBox_GetValue(GotoEdit, gotoText);
+    IF U.str2int(gotoText, gotoVal) & T.goto(text, gotoVal) THEN END
+END goto;
+
+
+PROCEDURE Script (script: ARRAY OF CHAR);
+BEGIN
+    IF script # "" THEN
+        K.Run("/rd/1/@open", script)
+    END
+END Script;
+
+
+PROCEDURE receiveIPC;
+BEGIN
+    IF IPC[0] # Menu.lastTID THEN
+        IPC[2] := 0
+    END;
+    CASE IPC[2] OF
+    |0:
+    |menuCut:       T.key(text, ORD("X"), {T.CTRL})
+    |menuCopy:      T.key(text, ORD("C"), {T.CTRL})
+    |menuPaste:     T.key(text, ORD("V"), {T.CTRL})
+    |menuDelete:    T.key(text, 46, {})
+    |menuSelectAll: T.key(text, ORD("A"), {T.CTRL})
+
+    |menuNew:
+        SelfRun("")
+    |menuOpen:
+        open
+    |menuSave:
+        save;
+        repaint
+    |menuSaveAs:
+        saveAs;
+        repaint
+    |menuFolder:
+        K.Run("/rd/1/File Managers/Eolite", text.fileName)
+    |menuExit:
+        close
+    |menuUndo:
+        T.undo(text);
+        repaint
+    |menuRedo:
+        T.redo(text);
+        repaint
+    |menuSearch:
+        IF ~search THEN
+            Search
+        END;
+        EditBox_SetFocus(FindEdit, TRUE);
+        EditBox_SetFocus(ReplaceEdit, FALSE);
+        EditBox_SetFocus(GotoEdit, FALSE)
+    |menuGoto:
+        IF ~search THEN
+            Search
+        END;
+        EditBox_SetFocus(GotoEdit, TRUE);
+        EditBox_SetFocus(FindEdit, FALSE);
+        EditBox_SetFocus(ReplaceEdit, FALSE)
+    |menuNumbers:
+        T.toggleNumbers(text)
+    |menuNone:
+        T.setLang(text, Languages.langNone)
+    |menuC:
+        T.setLang(text, Languages.langC)
+    |menuFasm:
+        T.setLang(text, Languages.langFasm)
+    |menuIni:
+        T.setLang(text, Languages.langIni)
+    |menuLua:
+        T.setLang(text, Languages.langLua)
+    |menuOberon:
+        T.setLang(text, Languages.langOberon)
+    |menuPascal:
+        T.setLang(text, Languages.langPascal)
+    |menuBuild:
+        Script(buildScript)
+    |menuBuildScript:
+        OpenFile(buildScript, ShellFilter)
+    |menuRun:
+        Script(runScript)
+    |menuRunScript:
+        OpenFile(runScript, ShellFilter)
+    |menuDebug:
+        Script(debugScript)
+    |menuDebugScript:
+        OpenFile(debugScript, ShellFilter)
+    |menuUTF8BOM:
+        text.enc := E.UTF8BOM
+    |menuUTF8:
+        text.enc := E.UTF8
+    |menuCP866:
+        text.enc := E.CP866
+    |menuWin1251:
+        text.enc := E.W1251
+    |menuPipet:
+        K.Run("/rd/1/develop/pipet", "")
+    |menuSysFunc:
+        K.Run("/rd/1/docpack", "f")
+    |menuColors..menuMaxColors:
+        Ini.selectSection(IPC[2] - menuColors)
+    END;
+    IPC[0] := 0;
+    IPC[1] := 0
+END receiveIPC;
+
+
+PROCEDURE MenuKeyDown (menu: Menu.tMenu; key: INTEGER): BOOLEAN;
+VAR
+    menuItem: INTEGER;
+BEGIN
+    menuItem := -1;
+    getKBState;
+    IF (T.CTRL IN shift) THEN
+        CASE key DIV 65536 OF
+        |21: menuItem := menuRedo
+        |30: menuItem := menuSelectAll
+        |33: menuItem := menuSearch
+        |34: menuItem := menuGoto
+        |44: menuItem := menuUndo
+        |45: menuItem := menuCut
+        |46: menuItem := menuCopy
+        |47: menuItem := menuPaste
+        |24: menuItem := menuOpen
+        |31: menuItem := menuSave
+        |49: menuItem := menuNew
+        |67: menuItem := menuBuild
+        ELSE
+        END
+    ELSE
+        IF key DIV 65536 = 83 THEN
+            menuItem := menuDelete
+        ELSIF key DIV 65536 = 67 THEN
+            menuItem := menuRun
+        END
+    END;
+    IF menuItem # -1 THEN
+        IF Menu.isEnabled(menu, menuItem) THEN
+            MenuItemClick(menu, menuItem)
+        ELSE
+            menuItem := -1
+        END
+    END
+    RETURN menuItem # -1
+END MenuKeyDown;
+
+
+PROCEDURE CreateContextMenu (): Menu.tMenu;
+VAR
+    menu: List.tList;
+BEGIN
+    menu := List.create(NIL);
+    Menu.AddMenuItem(menu, menuUndo,      "undo         ctrl-Z");
+    Menu.AddMenuItem(menu, menuRedo,      "redo         ctrl-Y");
+    Menu.delimiter(menu);
+    Menu.AddMenuItem(menu, menuCut,       "cut          ctrl-X");
+    Menu.AddMenuItem(menu, menuCopy,      "copy         ctrl-C");
+    Menu.AddMenuItem(menu, menuPaste,     "paste        ctrl-V");
+    Menu.AddMenuItem(menu, menuDelete,    "delete");
+    Menu.delimiter(menu);
+    Menu.AddMenuItem(menu, menuSelectAll, "select all   ctrl-A");
+    RETURN Menu.create(menu, MenuItemClick, MenuKeyDown)
+END CreateContextMenu;
+
+
+PROCEDURE CreateMenuFile (): Menu.tMenu;
+VAR
+    menu: List.tList;
+BEGIN
+    menu := List.create(NIL);
+    Menu.AddMenuItem(menu, menuNew,    "new       ctrl-N");
+    Menu.AddMenuItem(menu, menuOpen,   "open      ctrl-O");
+    Menu.AddMenuItem(menu, menuSave,   "save      ctrl-S");
+    Menu.AddMenuItem(menu, menuSaveAs, "save as");
+    Menu.AddMenuItem(menu, menuFolder, "folder");
+    Menu.delimiter(menu);
+    Menu.AddMenuItem(menu, menuExit,   "exit");
+    RETURN Menu.create(menu, MenuItemClick, MenuKeyDown)
+END CreateMenuFile;
+
+
+PROCEDURE CreateMenuEdit (): Menu.tMenu;
+VAR
+    menu: List.tList;
+BEGIN
+    menu := List.create(NIL);
+    Menu.AddMenuItem(menu, menuUndo,      "undo          ctrl-Z");
+    Menu.AddMenuItem(menu, menuRedo,      "redo          ctrl-Y");
+    Menu.delimiter(menu);
+    Menu.AddMenuItem(menu, menuSearch,    "search        ctrl-F");
+    Menu.AddMenuItem(menu, menuGoto,      "go to line    ctrl-G");
+    Menu.delimiter(menu);
+    Menu.AddMenuItem(menu, menuCut,       "cut           ctrl-X");
+    Menu.AddMenuItem(menu, menuCopy,      "copy          ctrl-C");
+    Menu.AddMenuItem(menu, menuPaste,     "paste         ctrl-V");
+    Menu.AddMenuItem(menu, menuDelete,    "delete");
+    Menu.delimiter(menu);
+    Menu.AddMenuItem(menu, menuSelectAll, "select all    ctrl-A");
+    RETURN Menu.create(menu, MenuItemClick, MenuKeyDown)
+END CreateMenuEdit;
+
+
+PROCEDURE CreateMenuEncoding (): Menu.tMenu;
+VAR
+    menu: List.tList;
+BEGIN
+    menu := List.create(NIL);
+    Menu.AddMenuItem(menu, menuUTF8BOM, "UTF-8-BOM");
+    Menu.AddMenuItem(menu, menuUTF8,    "UTF-8");
+    Menu.AddMenuItem(menu, menuCP866,   "CP866");
+    Menu.AddMenuItem(menu, menuWin1251, "Windows-1251");
+    RETURN Menu.create(menu, MenuItemClick, MenuKeyDown)
+END CreateMenuEncoding;
+
+
+PROCEDURE CreateMenuView (): Menu.tMenu;
+VAR
+    menu: List.tList;
+    colors: Ini.tSection;
+    idx: INTEGER;
+BEGIN
+    menu := List.create(NIL);
+    Menu.AddMenuItem(menu, menuNumbers,  "line numbers");
+    Menu.delimiter(menu);
+    (*Menu.AddMenuItem(menu, menuSettings, "settings");*)
+
+    colors := Ini.sections.first(Ini.tSection);
+    idx := menuColors;
+    WHILE colors # NIL DO
+        Menu.AddMenuItem(menu, idx, colors.name);
+        INC(idx);
+        colors := colors.next(Ini.tSection)
+    END;
+
+    RETURN Menu.create(menu, MenuItemClick, MenuKeyDown)
+END CreateMenuView;
+
+
+PROCEDURE CreateMenuSyntax (): Menu.tMenu;
+VAR
+    menu: List.tList;
+BEGIN
+    menu := List.create(NIL);
+    Menu.AddMenuItem(menu, menuC,      "C");
+    Menu.AddMenuItem(menu, menuFasm,   "Fasm");
+    Menu.AddMenuItem(menu, menuIni,    "Ini");
+    Menu.AddMenuItem(menu, menuLua,    "Lua");
+    Menu.AddMenuItem(menu, menuOberon, "Oberon");
+    Menu.AddMenuItem(menu, menuPascal, "Pascal");
+    Menu.delimiter(menu);
+    Menu.AddMenuItem(menu, menuNone,   "none");
+    RETURN Menu.create(menu, MenuItemClick, MenuKeyDown)
+END CreateMenuSyntax;
+
+
+PROCEDURE CreateMenuProgram (): Menu.tMenu;
+VAR
+    menu: List.tList;
+BEGIN
+    menu := List.create(NIL);
+    Menu.AddMenuItem(menu, menuBuild,       "build    ctrl+F9");
+    Menu.AddMenuItem(menu, menuBuildScript, "script");
+    Menu.delimiter(menu);
+    Menu.AddMenuItem(menu, menuRun,         "run           F9");
+    Menu.AddMenuItem(menu, menuRunScript,   "script");
+    Menu.delimiter(menu);
+    Menu.AddMenuItem(menu, menuDebug,       "debug");
+    Menu.AddMenuItem(menu, menuDebugScript, "script");
+    RETURN Menu.create(menu, MenuItemClick, MenuKeyDown)
+END CreateMenuProgram;
+
+
+PROCEDURE CreateMenuTools (): Menu.tMenu;
+VAR
+    menu: List.tList;
+BEGIN
+    menu := List.create(NIL);
+    Menu.AddMenuItem(menu, menuPipet,   "pipet");
+    Menu.AddMenuItem(menu, menuSysFunc, "system functions");
+    RETURN Menu.create(menu, MenuItemClick, MenuKeyDown)
+END CreateMenuTools;
+
+
+PROCEDURE CanvasToScreen (VAR x, y: INTEGER);
+VAR
+    cliX, cliY,
+    winX, winY: INTEGER;
+BEGIN
+    K.WinPos(winX, winY);
+    K.ClientPos(cliX, cliY);
+    x := x + winX + cliX + LEFT;
+    y := y + winY + cliY + TOP;
+END CanvasToScreen;
+
+
+PROCEDURE ShowMenu (menu: Menu.tMenu);
+VAR
+    winX, winY, cliX, cliY, x, y, i: INTEGER;
+    selected: BOOLEAN;
+BEGIN
+    IF menu # context THEN
+        K.WinPos(winX, winY);
+        K.ClientPos(cliX, cliY);
+        x := winX + cliX;
+        y := MainMenuHeight + winY + cliY
+    ELSE
+        mouse(x, y);
+        IF ~((0 <= x) & (x < canvas.width) & (0 <= y) & (y < canvas.height)) THEN
+            menu := NIL
+        END
+    END;
+
+    IF menu = menuFile THEN
+        Menu.setEnabled(menu, menuSave, text.modified);
+        Menu.setEnabled(menu, menuFolder, text.fileName # "");
+        INC(x, menuFileX)
+    ELSIF (menu = menuEdit) OR (menu = context) THEN
+        Menu.setEnabled(menu, menuUndo, ~ChangeLog.isFirstGuard(text.edition));
+        Menu.setEnabled(menu, menuRedo, ~ChangeLog.isLastGuard(text.edition));
+        selected := T.selected(text);
+        Menu.setEnabled(menu, menuCut, selected);
+        Menu.setEnabled(menu, menuCopy, selected);
+        Menu.setEnabled(menu, menuDelete, selected);
+        Menu.setEnabled(menu, menuPaste, CB.available());
+        IF menu = menuEdit THEN
+            INC(x, menuEditX)
+        ELSE
+            IF y + menu.height >= canvas.height THEN
+                DEC(y, menu.height)
+            END;
+            IF x + menu.width >= canvas.width THEN
+                DEC(x, menu.width)
+            END;
+            CanvasToScreen(x, y)
+        END
+    ELSIF menu = menuEncoding THEN
+        Menu.setCheck(menu, menuUTF8BOM, ORD(text.enc = E.UTF8BOM)*2);
+        Menu.setCheck(menu, menuUTF8,    ORD(text.enc = E.UTF8)*2);
+        Menu.setCheck(menu, menuCP866,   ORD(text.enc = E.CP866)*2);
+        Menu.setCheck(menu, menuWin1251, ORD(text.enc = E.W1251)*2);
+        INC(x, menuEncodingX)
+    ELSIF menu = menuView THEN
+        (*Menu.setEnabled(menu, menuSettings, FALSE);*)
+        Menu.setCheck(menu, menuNumbers, ORD(text.numbers));
+        FOR i := 0 TO Ini.sections.count - 1 DO
+            Menu.setCheck(menu, menuColors + i, ORD(Ini.curSectionNum = i)*2)
+        END;
+        INC(x, menuViewX)
+    ELSIF menu = menuSyntax THEN
+        Menu.setCheck(menu, menuNone,   ORD(text.lang = Languages.langNone)*2);
+        Menu.setCheck(menu, menuC,      ORD(text.lang = Languages.langC)*2);
+        Menu.setCheck(menu, menuFasm,   ORD(text.lang = Languages.langFasm)*2);
+        Menu.setCheck(menu, menuIni,    ORD(text.lang = Languages.langIni)*2);
+        Menu.setCheck(menu, menuLua,    ORD(text.lang = Languages.langLua)*2);
+        Menu.setCheck(menu, menuOberon, ORD(text.lang = Languages.langOberon)*2);
+        Menu.setCheck(menu, menuPascal, ORD(text.lang = Languages.langPascal)*2);
+        INC(x, menuSyntaxX)
+    ELSIF menu = menuProgram THEN
+        Menu.setEnabled(menu, menuBuild, buildScript # "");
+        Menu.setEnabled(menu, menuDebug, debugScript # "");
+        Menu.setEnabled(menu, menuRun, runScript # "");
+        INC(x, menuProgramX)
+    ELSIF menu = menuTools THEN
+        INC(x, menuToolsX)
+    END;
+
+    IF menu # NIL THEN
+        IF Menu.opened(menu) THEN
+            Menu.close(menu)
+        END;
+        Menu.open(menu, x, y)
+    END
+END ShowMenu;
+
+
+PROCEDURE main;
+VAR
+    width, height, x, y, scrollX, scrollY: INTEGER;
+    key: INTEGER;
+    msState: SET;
+    scroll: INTEGER;
+    err: INTEGER;
+    fileName, filePath: RW.tFileName;
+    resized: BOOLEAN;
+    firstClickX, firstClickY, time: INTEGER;
+BEGIN
+    modified := FALSE;
+    mainTID := K.ThreadID();
+    K.SetIPC(IPC);
+    U.ptr2str(K.GetName(), AppPath);
+    U.getPath(AppPath, fileName);
+    U.append8(fileName, "/Icons16.png");
+    icons := LibImg.LoadFromFile(fileName, 16, y);
+    grayIcons := LibImg.LoadFromFile(fileName, 16, y);
+    gray(grayIcons);
+    iconsBackColor(icons);
+    iconsBackColor(grayIcons);
+    Ini.load(AppPath);
+    K.SetEventsMask({0, 1, 2, 5, 6, 31});
+    LeftButtonUp;
+    resized := FALSE;
+    shift := {};
+    winWidth := minWinWidth;
+    winHeight := minWinHeight;
+    LEFT := 10;
+    canvas := G.CreateCanvas(winWidth - (LEFT + RIGHT + 10), winHeight - (TOP + BOTTOM + 4) - K.SkinHeight());
+    font := G.CreateFont(1, "", {});
+    G.SetFont(canvas, font);
+    T.init(NIL);
+    T.setCanvas(canvas);
+    U.ptr2str(K.GetCommandLine(), fileName);
+    context := CreateContextMenu();
+    menuFile := CreateMenuFile();
+    menuEdit := CreateMenuEdit();
+    menuEncoding := CreateMenuEncoding();
+    menuView := CreateMenuView();
+    menuSyntax := CreateMenuSyntax();
+    menuProgram := CreateMenuProgram();
+    menuTools := CreateMenuTools();
+    IF fileName = "" THEN
+        text := T.New();
+        filePath := "/rd/1"
+    ELSE
+        text := T.open(fileName, err);
+        IF text = NIL THEN
+            error("'cedit: error opening file' -E");
+            K.Exit
+        ELSE
+            U.getPath(fileName, filePath)
+        END
+    END;
+    OD := OpenDlg.Create(draw_window, OpenDlg.topen, filePath, "");
+
+    vScroll := Scroll.create(scrollWidth, canvas.height - scrollWidth*2 + 1, 0A0A0A0H, winColor);
+    hScroll := Scroll.create(canvas.width - scrollWidth*2, scrollWidth, 0A0A0A0H, winColor);
+    T.resize(canvas.width, canvas.height);
+    T.SetPos(text, 0, 0);
+    confirm := FALSE;
+    notFound := FALSE;
+    search := FALSE;
+    createSearchForm;
+    new_searchText := "";
+    searchText := "";
+    cs := FALSE;
+    whole := FALSE;
+    replaced := 0;
+    draw_window;
+    repaint;
+    buildScript := "";
+    runScript := "";
+    debugScript := "";
+    WHILE TRUE DO
+        CASE K.WaitForEvent() OF
+        |1:
+            IF ~K.RolledUp() THEN
+                K.WinSize(width, height);
+                IF (width # winWidth) OR (height # winHeight) THEN
+                    resize;
+                    resized := TRUE
+                END;
+                K.SetEventsMask({0, 1, 2, 5, 6, 31})
+            ELSE
+                K.SetEventsMask({0, 30, 31})
+            END;
+            draw_window
+        |2:
+            key := K.GetKey();
+            getKBState;
+            IF key DIV 65536 = 61 THEN (* F3 *)
+                key := -1;
+                IF search & (searchText # "") THEN
+                    notFound := ~T.findNext(text, box_lib.check_box_get_value(BKW))
+                END
+            ELSIF key DIV 65536 = 67 THEN (* F9 *)
+                key := -1;
+                IF T.CTRL IN shift THEN
+                    Script(buildScript)
+                ELSE
+                    Script(runScript)
+                END
+            ELSIF (key DIV 65536 = 55) & (key DIV 256 MOD 256 = 52) THEN
+                key := -1 (* PrtScn *)
+            ELSIF (T.CTRL IN shift) & (key DIV 65536 = 33) THEN
+                key := -1;
+                IF ~search THEN
+                    Search
+                END;
+                EditBox_SetFocus(FindEdit, TRUE);
+                EditBox_SetFocus(ReplaceEdit, FALSE);
+                EditBox_SetFocus(GotoEdit, FALSE);
+            ELSIF (T.CTRL IN shift) & (key DIV 65536 = 34) THEN
+                key := -1;
+                IF ~search THEN
+                    Search
+                END;
+                EditBox_SetFocus(GotoEdit, TRUE);
+                EditBox_SetFocus(FindEdit, FALSE);
+                EditBox_SetFocus(ReplaceEdit, FALSE)
+            END;
+            IF (key # -1) & EditBox_Focus(FindEdit) THEN
+                box_lib.edit_box_key(FindEdit, key);
+                EditBox_GetValue(FindEdit, new_searchText);
+                IF new_searchText # searchText THEN
+                    searchText := new_searchText;
+                    notFound := ~T.search(text, searchText, cs, whole)
+                END
+            ELSIF (key # -1) & EditBox_Focus(ReplaceEdit) THEN
+                box_lib.edit_box_key(ReplaceEdit, key);
+                EditBox_GetValue(ReplaceEdit, replaceText)
+            ELSIF (key # -1) & EditBox_Focus(GotoEdit) THEN
+                IF (key DIV 256) MOD 256 = 13 THEN
+                    goto
+                ELSE
+                    box_lib.edit_box_key(GotoEdit, key)
+                END
+            ELSIF key # -1 THEN
+                CASE key DIV 65536 OF
+                |73: key := 33
+                |81: key := 34
+                |71: key := 36
+                |79: key := 35
+                |72: key := 38
+                |80: key := 40
+                |75: key := 37
+                |77: key := 39
+                |82: key := -1 (* insert *)
+                |83: key := 46
+                |59, 60, 62..66, 68, 87, 88: key := -1 (* F1, F2, F4..F8, F10, F11, F12 *)
+                ELSE
+                    IF (T.CTRL IN shift) THEN
+                        CASE key DIV 65536 OF
+                        |21: T.redo(text);
+                             key := -1
+                        |22: key := ORD("U")
+                        |24: key := -1;
+                             open
+                        |30: key := ORD("A")
+                        |31: key := -1;
+                             save
+                        |38: key := ORD("L")
+                        |44: T.undo(text);
+                             key := -1
+                        |45: key := ORD("X")
+                        |46: key := ORD("C")
+                        |47: key := ORD("V")
+                        |49: key := -1;
+                             SelfRun("")
+                        ELSE
+                            key := -1
+                        END
+                    ELSE
+                        T.input(text, E.cp866[key DIV 256 MOD 256]);
+                        key := -1
+                    END
+                END;
+                IF key # -1 THEN
+                    T.key(text, key, shift)
+                END
+            END;
+            repaint
+        |3:
+            CASE K.ButtonCode() OF
+            |0:
+
+            |btnFile:
+                ShowMenu(menuFile)
+            |btnEdit:
+                ShowMenu(menuEdit)
+            |btnEncoding:
+                ShowMenu(menuEncoding)
+            |btnView:
+                ShowMenu(menuView)
+            |btnSyntax:
+                ShowMenu(menuSyntax)
+            |btnProgram:
+                ShowMenu(menuProgram)
+            |btnTools:
+                ShowMenu(menuTools)
+            |btnNo:
+                K.Exit
+            |btnYes:
+                save;
+                IF ~text.modified THEN
+                    K.Exit
+                END;
+                repaint
+            |btnClose:
+                close
+            |btnNew:
+                SelfRun("")
+            |btnOpen:
+                open
+            |btnSave:
+                save;
+                repaint
+            |btnSearch:
+                IF ~search THEN
+                    Search
+                END
+            |btnCloseFind:
+                Search
+            |btnUndo:
+                T.undo(text);
+                repaint
+            |btnRedo:
+                T.redo(text);
+                repaint
+            |btnUpper:
+                T.chCase(text, TRUE);
+                repaint
+            |btnLower:
+                T.chCase(text, FALSE);
+                repaint
+            |btnBuild:
+                Script(buildScript)
+            |btnRun:
+                Script(runScript)
+            |btnUp:
+                T.scroll(text, 0, -1);
+                repaint
+            |btnDown:
+                T.scroll(text, 0, 1);
+                repaint
+            |btnLeft:
+                T.scroll(text, -1, 0);
+                repaint
+            |btnRight:
+                T.scroll(text, 1, 0);
+                repaint
+            |btnFindEdit:
+                EditBox_SetFocus(FindEdit, TRUE);
+                EditBox_SetFocus(ReplaceEdit, FALSE);
+                EditBox_SetFocus(GotoEdit, FALSE)
+            |btnReplaceEdit:
+                EditBox_SetFocus(ReplaceEdit, TRUE);
+                EditBox_SetFocus(FindEdit, FALSE);
+                EditBox_SetFocus(GotoEdit, FALSE)
+            |btnGotoEdit:
+                EditBox_SetFocus(GotoEdit, TRUE);
+                EditBox_SetFocus(FindEdit, FALSE);
+                EditBox_SetFocus(ReplaceEdit, FALSE)
+            |btnFindNext:
+                IF searchText # "" THEN
+                    notFound := ~T.findNext(text, box_lib.check_box_get_value(BKW));
+                    repaint
+                END
+            |btnReplace:
+                T.replace(text, replaceText, LENGTH(searchText));
+                repaint
+            |btnReplaceAll:
+                notFound := ~T.search(text, searchText, cs, whole);
+                IF ~notFound THEN
+                    replaced := T.replaceAll(text, replaceText, LENGTH(searchText));
+                END;
+                repaint
+            |btnGoto:
+                goto;
+                repaint
+            END
+        |6:
+            Menu.close(menuFile);
+            Menu.close(menuEdit);
+            Menu.close(menuEncoding);
+            Menu.close(menuView);
+            Menu.close(menuSyntax);
+            Menu.close(menuProgram);
+            Menu.close(menuTools);
+            Menu.close(context);
+            IF ~resized THEN
+                getKBState;
+                msState := K.MouseState();
+                IF ~(0 IN msState) OR (16 IN msState) THEN
+                    LeftButtonUp
+                END;
+                scroll := K.Scroll();
+                IF scroll # 0 THEN
+                    T.scroll(text, 0, scroll*3);
+                    repaint
+                END;
+                IF leftButton THEN
+                    IF K.GetTickCount() - time > 9 THEN
+                        mouse(x, y);
+                        T.mouse(text, x, y);
+                        repaint
+                    END
+                END;
+                IF VScroll THEN
+                    mouse(x, y);
+                    Scroll.mouse(vScroll, x, y - scrollWidth);
+                    T.getScroll(text, scrollX, scrollY);
+                    T.scroll(text, 0, vScroll.value - scrollY);
+                    repaint
+                END;
+                IF HScroll THEN
+                    mouse(x, y);
+                    Scroll.mouse(hScroll, x - scrollWidth, y);
+                    T.getScroll(text, scrollX, scrollY);
+                    T.scroll(text, hScroll.value - scrollX, 0);
+                    repaint
+                END;
+                IF (8 IN msState) & ~(24 IN msState) THEN
+                    mouse(firstClickX, firstClickY);
+                    time := click(firstClickX, firstClickY)
+                END;
+                IF 9 IN msState THEN
+                    ShowMenu(context)
+                END;
+                IF 24 IN msState THEN
+                    mouse(x, y);
+                    IF (ABS(x - firstClickX) < 5) & (ABS(y - firstClickY) < 5) THEN
+                        VScroll := FALSE;
+                        HScroll := FALSE;
+                        IF (0 <= x) & (x < canvas.width) & (0 <= y) & (y < canvas.height) THEN
+                            leftButton := FALSE;
+                            T.selectWord(text);
+                            repaint
+                        END
+                    ELSE
+                        firstClickX := x;
+                        firstClickY := y;
+                        time := click(firstClickX, firstClickY)
+                    END
+                END
+            END;
+            IF search THEN
+                IF EditBox_Focus(FindEdit) THEN
+                    box_lib.edit_box_mouse(FindEdit)
+                END;
+                IF EditBox_Focus(ReplaceEdit) THEN
+                    box_lib.edit_box_mouse(ReplaceEdit)
+                END;
+                IF EditBox_Focus(GotoEdit) THEN
+                    box_lib.edit_box_mouse(GotoEdit)
+                END;
+                box_lib.check_box_mouse2(CS);
+                box_lib.check_box_mouse2(WH);
+                box_lib.check_box_mouse2(BKW);
+                IF box_lib.check_box_get_value(CS) # cs THEN
+                    cs := ~cs;
+                    notFound := ~T.search(text, searchText, cs, whole);
+                    repaint
+                END;
+                IF box_lib.check_box_get_value(WH) # whole THEN
+                    whole := ~whole;
+                    notFound := ~T.search(text, searchText, cs, whole);
+                    repaint
+                END
+            END;
+            resized := FALSE
+        |7: receiveIPC
+        ELSE
+        END
+    END
+END main;
+
+
+BEGIN
+    main
+END CEdit.

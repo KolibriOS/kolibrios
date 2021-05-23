@@ -1,0 +1,143 @@
+﻿(*
+    Copyright 2021 Anton Krotov
+
+    This file is part of CEdit.
+
+    CEdit is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    CEdit is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with CEdit. If not, see <http://www.gnu.org/licenses/>.
+*)
+
+MODULE Scroll;
+
+IMPORT G := Graph;
+
+TYPE
+
+    tScroll* = POINTER TO RECORD
+        vertical, mouse: BOOLEAN;
+        canvas: G.tCanvas;
+        xSize*, ySize*, pos, mousePos: INTEGER;
+        color, bkColor: INTEGER;
+        value*, maxVal*: INTEGER
+    END;
+
+
+PROCEDURE draw* (scroll: tScroll; x, y: INTEGER);
+VAR
+    pos, a, b: INTEGER;
+    canvas: G.tCanvas;
+BEGIN
+    IF scroll.vertical THEN
+        a := scroll.ySize;
+        b := scroll.xSize
+    ELSE
+        a := scroll.xSize;
+        b := scroll.ySize
+    END;
+    IF scroll.maxVal > 0 THEN
+        pos := (a - b)*scroll.value DIV scroll.maxVal
+    ELSE
+        pos := 0
+    END;
+    canvas := scroll.canvas;
+    G.SetColor(canvas, scroll.bkColor);
+    G.clear(canvas);
+    G.SetColor(canvas, 0808080H);
+    G.Rect(canvas, 0, 0, scroll.xSize - 1, scroll.ySize - 1);
+    G.SetColor(canvas, scroll.color);
+    DEC(b, 2);
+    IF scroll.vertical THEN
+        G.FillRect(canvas, 1, pos + 1, b, pos + b);
+        G.SetColor(canvas, 0404040H);
+        G.HLine(canvas, pos + 1 + b DIV 2, 4, b - 4);
+        G.HLine(canvas, pos + 1 + b DIV 2 - 3, 6, b - 6);
+        G.HLine(canvas, pos + 1 + b DIV 2 + 3, 6, b - 6);
+    ELSE
+        G.FillRect(canvas, pos + 1, 1, pos + b, b);
+        G.SetColor(canvas, 0404040H);
+        G.VLine(canvas, pos + b DIV 2, 4, b - 4);
+        G.VLine(canvas, pos + b DIV 2 - 3, 6, b - 6);
+        G.VLine(canvas, pos + b DIV 2 + 3, 6, b - 6);
+    END;
+    scroll.pos := pos;
+    G.DrawCanvas(canvas, x, y);
+END draw;
+
+
+PROCEDURE create* (xSize, ySize: INTEGER; color, bkColor: INTEGER): tScroll;
+VAR
+    scroll: tScroll;
+BEGIN
+    NEW(scroll);
+    scroll.xSize := xSize;
+    scroll.ySize := ySize;
+    scroll.vertical := xSize < ySize;
+    scroll.maxVal := 30;
+    scroll.value := 0;
+    scroll.mouse := FALSE;
+    scroll.bkColor := bkColor;
+    scroll.color := color;
+    scroll.canvas := G.CreateCanvas(xSize, ySize)
+    RETURN scroll
+END create;
+
+
+PROCEDURE resize* (scroll: tScroll; xSize, ySize: INTEGER);
+BEGIN
+    scroll.xSize := xSize;
+    scroll.ySize := ySize;
+    scroll.vertical := xSize < ySize;
+    G.destroy(scroll.canvas);
+    scroll.canvas := G.CreateCanvas(xSize, ySize);
+END resize;
+
+
+PROCEDURE mouse* (scroll: tScroll; x, y: INTEGER);
+VAR
+    pos, b: INTEGER;
+BEGIN
+    IF scroll.vertical THEN
+        pos := y - 1;
+        b := scroll.xSize - 2
+    ELSE
+        pos := x - 1;
+        b := scroll.ySize - 2
+    END;
+    IF ~scroll.mouse THEN
+        scroll.mouse := TRUE;
+        IF (scroll.pos <= pos) & (pos <= scroll.pos + b - 1) THEN
+            scroll.mousePos := pos - scroll.pos
+        ELSE
+            scroll.mousePos := b DIV 2;
+            scroll.value := (pos - scroll.mousePos)*scroll.maxVal DIV ABS(scroll.xSize - scroll.ySize)
+        END
+    ELSE
+        scroll.value := (pos - scroll.mousePos)*scroll.maxVal DIV ABS(scroll.xSize - scroll.ySize)
+    END;
+    IF scroll.value < 0 THEN
+        scroll.value := 0
+    ELSIF scroll.value > scroll.maxVal THEN
+        scroll.value := scroll.maxVal
+    END
+END mouse;
+
+
+PROCEDURE MouseUp* (scroll: tScroll);
+BEGIN
+    IF scroll # NIL THEN
+        scroll.mouse := FALSE
+    END
+END MouseUp;
+
+
+END Scroll.

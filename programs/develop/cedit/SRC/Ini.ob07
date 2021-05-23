@@ -1,0 +1,182 @@
+﻿(*
+    Copyright 2021 Anton Krotov
+
+    This file is part of CEdit.
+
+    CEdit is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    CEdit is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with CEdit. If not, see <http://www.gnu.org/licenses/>.
+*)
+
+MODULE Ini;
+
+IMPORT
+
+    KOSAPI, SYSTEM, RW, Text, Utils, File, List, Languages;
+
+
+CONST
+
+    fileName = "cedit.ini";
+
+    MAX_LEN = 32;
+    MAX_SECTIONS* = 10;
+
+
+TYPE
+
+    tString = ARRAY 128 OF CHAR;
+
+    tSectionName = ARRAY MAX_LEN OF WCHAR;
+    tASCIISectionName = ARRAY MAX_LEN OF CHAR;
+
+    tSection* = POINTER TO RECORD (List.tItem)
+        name*: tSectionName
+    END;
+
+
+VAR
+
+    get_color: PROCEDURE [stdcall] (f_name: RW.tFileName; sec_name: tASCIISectionName; key_name: tString; def_val: INTEGER): INTEGER;
+    get_str: PROCEDURE [stdcall] (f_name, sec_name, key_name, buffer, buf_len, def_val: INTEGER): INTEGER;
+    enum_sections: PROCEDURE [stdcall] (f_name: RW.tFileName; callback: INTEGER);
+
+    IniFileName: RW.tFileName;
+    sections*: List.tList;
+
+    curSection*: tASCIISectionName;
+    curSectionNum*: INTEGER;
+
+
+PROCEDURE getColor (key: tString; def: INTEGER): INTEGER;
+    RETURN get_color(IniFileName, curSection, key, def)
+END getColor;
+
+
+PROCEDURE getStr* (secName, keyName: ARRAY OF CHAR; VAR s: ARRAY OF CHAR);
+BEGIN
+    IF get_str(SYSTEM.ADR(IniFileName[0]), SYSTEM.ADR(secName[0]), SYSTEM.ADR(keyName[0]), SYSTEM.ADR(s[0]), LEN(s) - 1, SYSTEM.SADR("")) = -1 THEN
+        s[0] := 0X
+    END
+END getStr;
+
+
+PROCEDURE [stdcall] section_callback (fileName, sectionName: RW.tFileName): INTEGER;
+VAR
+    section: tSection;
+    name: tSectionName;
+    i: INTEGER;
+BEGIN
+    IF sections.count < MAX_SECTIONS THEN
+        i := 0;
+        WHILE (i < MAX_LEN - 1) & (sectionName[i] # 0X) DO
+            name[i] := WCHR(ORD(sectionName[i]));
+            INC(i)
+        END;
+        name[i] := 0X
+    END;
+    IF Utils.streq(SYSTEM.ADR(name[0]), SYSTEM.WSADR("color_"), 6) THEN
+        Utils.reverse(name);
+        name[LENGTH(name) - 6] := 0X;
+        Utils.reverse(name);
+        NEW(section);
+        section.name := name;
+        List.append(sections, section)
+    END
+    RETURN 1
+END section_callback;
+
+
+PROCEDURE selectSection* (idx: INTEGER);
+VAR
+    i: INTEGER;
+    item: List.tItem;
+    section: tSection;
+
+    text, back, seltext, selback, modified, saved, curline, numtext, numback,
+    comment, string, num, delim, key1, key2, key3: INTEGER;
+BEGIN
+    IF (0 <= idx) & (idx < sections.count) THEN
+        curSectionNum := idx;
+        item := List.getItem(sections, idx);
+        section := item(tSection);
+        i := 0;
+        WHILE section.name[i] # 0X DO
+            curSection[i] := CHR(ORD(section.name[i]));
+            INC(i)
+        END;
+        curSection[i] := 0X;
+        Utils.reverse8(curSection);
+        Utils.append8(curSection, "_roloc");
+        Utils.reverse8(curSection)
+    ELSE
+        curSection := ""
+    END;
+
+    text     := getColor("text",     0000000H);
+    back     := getColor("back",     0FFFFFFH);
+    seltext  := getColor("seltext",  0FFFFFFH);
+    selback  := getColor("selback",  00000FFH);
+    modified := getColor("modified", 0E8E800H);
+    saved    := getColor("saved",    000D000H);
+    curline  := getColor("curline",  0FFFFC8H);
+    numtext  := getColor("numtext",  0000000H);
+    numback  := getColor("numback",  0E6E6E6H);
+
+    comment  := getColor("comment",  0800080H);
+    string   := getColor("string",   0008000H);
+    num      := getColor("num",      0800000H);
+    delim    := getColor("delim",    0000080H);
+    key1     := getColor("key1",     0000080H);
+    key2     := getColor("key2",     0008080H);
+    key3     := getColor("key3",     0008080H);
+
+    Text.setColors(text, back, seltext, selback, modified, saved, curline, numtext, numback,
+        comment, string, num, delim, key1, key2, key3, 808080H);
+END selectSection;
+
+
+PROCEDURE load* (path: RW.tFileName);
+VAR
+    Lib: INTEGER;
+
+    PROCEDURE GetProc(Lib, v: INTEGER; name: ARRAY OF CHAR);
+    VAR
+        a: INTEGER;
+    BEGIN
+        a := KOSAPI.GetProcAdr(name, Lib);
+        ASSERT(a # 0);
+        SYSTEM.PUT(v, a)
+    END GetProc;
+
+BEGIN
+    sections := List.create(NIL);
+    IF File.Exists("/rd/1/settings/cedit.ini") THEN
+        IniFileName := "/rd/1/settings/cedit.ini"
+    ELSE
+        Utils.getPath(path, IniFileName);
+        Utils.append8(IniFileName, Utils.SLASH);
+        Utils.append8(IniFileName, fileName);
+    END;
+
+    Lib := KOSAPI.LoadLib("/rd/1/Lib/Libini.obj");
+    GetProc(Lib, SYSTEM.ADR(get_color), "ini_get_color");
+    GetProc(Lib, SYSTEM.ADR(get_str), "ini_get_str");
+    GetProc(Lib, SYSTEM.ADR(enum_sections), "ini_enum_sections");
+
+    enum_sections(IniFileName, SYSTEM.ADR(section_callback));
+    Languages.init(getStr);
+    selectSection(0);
+END load;
+
+
+END Ini.

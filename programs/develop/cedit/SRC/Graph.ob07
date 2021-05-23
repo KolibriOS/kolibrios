@@ -1,0 +1,280 @@
+﻿(*
+    Copyright 2021 Anton Krotov
+
+    This file is part of CEdit.
+
+    CEdit is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    CEdit is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with CEdit. If not, see <http://www.gnu.org/licenses/>.
+*)
+
+MODULE Graph;
+
+IMPORT SYSTEM, K := KOSAPI;
+
+CONST
+
+    modeCOPY = 0;
+    modeNOT  = 1;
+    modeXOR  = 2;
+
+TYPE
+
+    tFont* = POINTER TO RECORD
+        handle*: INTEGER;
+        height*: INTEGER;
+        width*:  INTEGER;
+        size:    INTEGER;
+        name*:   ARRAY 256 OF WCHAR
+    END;
+
+    tCanvas* = POINTER TO RECORD
+        bitmap: INTEGER;
+        width*, height*: INTEGER;
+        color, backColor, textColor: INTEGER;
+        font*: tFont;
+        mode: INTEGER
+    END;
+
+
+PROCEDURE DrawCanvas* (canvas: tCanvas; x, y: INTEGER);
+BEGIN
+    K.sysfunc7(65, canvas.bitmap, canvas.width*65536 + canvas.height, x*65536 + y, 32, 0, 0);
+END DrawCanvas;
+
+
+PROCEDURE SetColor* (canvas: tCanvas; color: INTEGER);
+BEGIN
+    canvas.color := color
+END SetColor;
+
+
+PROCEDURE SetTextColor* (canvas: tCanvas; color: INTEGER);
+BEGIN
+    canvas.textColor := color
+END SetTextColor;
+
+
+PROCEDURE SetBkColor* (canvas: tCanvas; color: INTEGER);
+BEGIN
+    canvas.backColor := color
+END SetBkColor;
+
+
+PROCEDURE CreateFont* (height: INTEGER; name: ARRAY OF WCHAR; attr: SET): tFont;
+VAR
+    font: tFont;
+BEGIN
+    NEW(font);
+    font.size := MAX(MIN(height, 8), 1);
+    font.width := font.size*8;
+    font.height := font.size*16;
+    DEC(font.size);
+    font.name := name
+    RETURN font
+END CreateFont;
+
+
+PROCEDURE SetFont* (canvas: tCanvas; font: tFont);
+BEGIN
+    canvas.font := font
+END SetFont;
+
+
+PROCEDURE HLine* (canvas: tCanvas; y, x1, x2: INTEGER);
+VAR
+    X1, X2, i: INTEGER;
+    ptr: INTEGER;
+    color: INTEGER;
+BEGIN
+    X1 := MAX(MIN(x1, x2), 0);
+    X2 := MIN(MAX(x1, x2), canvas.width - 1);
+    IF (0 <= y) & (y < canvas.height) THEN
+        color := canvas.color;
+        ptr := canvas.bitmap + y*canvas.width*4 + X1*4;
+        FOR i := X1 TO X2 DO
+            SYSTEM.PUT32(ptr, color);
+            INC(ptr, 4)
+        END
+    END
+END HLine;
+
+
+PROCEDURE VLine* (canvas: tCanvas; x, y1, y2: INTEGER);
+VAR
+    Y1, Y2, i: INTEGER;
+    ptr: INTEGER;
+    color: INTEGER;
+BEGIN
+    Y1 := MAX(MIN(y1, y2), 0);
+    Y2 := MIN(MAX(y1, y2), canvas.height - 1);
+    IF (0 <= x) & (x < canvas.width) THEN
+        color := canvas.color;
+        ptr := canvas.bitmap + Y1*canvas.width*4 + x*4;
+        FOR i := Y1 TO Y2 DO
+            IF canvas.mode = modeNOT THEN
+                SYSTEM.GET32(ptr, color);
+                color := ORD(-BITS(color)*{0..23})
+            ELSIF canvas.mode = modeXOR THEN
+                SYSTEM.GET32(ptr, color);
+                color := ORD((BITS(color)/BITS(canvas.color))*{0..23})
+            END;
+            SYSTEM.PUT32(ptr, color);
+            INC(ptr, canvas.width*4)
+        END
+    END
+END VLine;
+
+
+PROCEDURE notVLine* (canvas: tCanvas; x, y1, y2: INTEGER);
+BEGIN
+    IF (0 <= y1) & (y1 < canvas.height) & (0 <= y2) & (y2 < canvas.height) THEN
+        canvas.mode := modeNOT;
+        VLine(canvas, x, y1, y2);
+        canvas.mode := modeCOPY
+    END
+END notVLine;
+
+
+PROCEDURE xorVLine* (canvas: tCanvas; x, y1, y2: INTEGER);
+BEGIN
+    IF (0 <= y1) & (y1 < canvas.height) & (0 <= y2) & (y2 < canvas.height) THEN
+        canvas.mode := modeXOR;
+        SetColor(canvas, 0FF0000H);
+        VLine(canvas, x, y1, y2);
+        canvas.mode := modeCOPY
+    END
+END xorVLine;
+
+
+PROCEDURE DLine* (canvas: tCanvas; x1, x2, y: INTEGER; k: INTEGER);
+VAR
+    ptr: INTEGER;
+    color: INTEGER;
+    d: INTEGER;
+BEGIN
+    color := canvas.color;
+    ptr := canvas.bitmap + y*canvas.width*4 + x1*4;
+    IF k = -1 THEN
+        d := canvas.width*4 + 4
+    ELSIF k = 1 THEN
+        d := 4 - canvas.width*4
+    END;
+    WHILE x1 <= x2 DO
+        SYSTEM.PUT32(ptr, color);
+        INC(ptr, d);
+        INC(x1)
+    END
+END DLine;
+
+
+PROCEDURE FillRect* (canvas: tCanvas; left, top, right, bottom: INTEGER);
+VAR
+    y: INTEGER;
+BEGIN
+    FOR y := top TO bottom DO
+        HLine(canvas, y, left, right)
+    END
+END FillRect;
+
+
+PROCEDURE Rect* (canvas: tCanvas; left, top, right, bottom: INTEGER);
+BEGIN
+    HLine(canvas, top, left, right);
+    HLine(canvas, bottom, left, right);
+    VLine(canvas, left, top, bottom);
+    VLine(canvas, right, top, bottom)
+END Rect;
+
+
+PROCEDURE clear* (canvas: tCanvas);
+VAR
+    ptr, ptr2, w, i: INTEGER;
+BEGIN
+    HLine(canvas, 0, 0, canvas.width - 1);
+    w := canvas.width*4;
+    ptr := canvas.bitmap;
+    ptr2 := ptr;
+    i := canvas.height - 1;
+    WHILE i > 0 DO
+        INC(ptr2, w);
+        SYSTEM.MOVE(ptr, ptr2, w);
+        DEC(i)
+    END
+END clear;
+
+
+PROCEDURE TextOut* (canvas: tCanvas; x, y: INTEGER; text: INTEGER; n: INTEGER);
+CONST
+    WCHAR_SIZE = 2;
+VAR
+    color, i: INTEGER;
+BEGIN
+    IF (0 <= y) & (y <= canvas.height - canvas.font.height - 1) THEN
+        IF x < 0 THEN
+            i := -(x DIV canvas.font.width);
+            INC(x, i*canvas.font.width);
+            DEC(n, i)
+        ELSE
+            i := 0
+        END;
+        IF n > 0 THEN
+            n := MAX(MIN(n, (canvas.width - x) DIV canvas.font.width), 0);
+            color := canvas.color;
+            canvas.color := canvas.backColor;
+            FillRect(canvas, x, y, x + n*canvas.font.width, y + canvas.font.height);
+            canvas.color := color;
+(*            WHILE n > 0 DO
+                K.sysfunc6(4, x*65536 + y, LSL(28H + canvas.font.size, 24) + canvas.textColor, text + i*WCHAR_SIZE, 1, canvas.bitmap - 8);
+                INC(x, canvas.font.width);
+                INC(i);
+                DEC(n)
+            END*)
+            K.sysfunc6(4, x*65536 + y, LSL(28H + canvas.font.size, 24) + canvas.textColor, text + i*WCHAR_SIZE, n, canvas.bitmap - 8)
+        END
+    END
+END TextOut;
+
+
+PROCEDURE TextOut2* (canvas: tCanvas; x, y: INTEGER; text: ARRAY OF WCHAR; n: INTEGER);
+BEGIN
+    TextOut(canvas, x, y, SYSTEM.ADR(text[0]), n)
+END TextOut2;
+
+
+PROCEDURE CreateCanvas* (width, height: INTEGER): tCanvas;
+VAR
+    canvas: tCanvas;
+BEGIN
+    NEW(canvas);
+    canvas.bitmap := K.malloc(width*height*4 + 8);
+    ASSERT(canvas.bitmap # 0);
+    SYSTEM.PUT32(canvas.bitmap, width);
+    SYSTEM.PUT32(canvas.bitmap + 4, height);
+    INC(canvas.bitmap, 8);
+    canvas.width := width;
+    canvas.height := height;
+    canvas.mode := modeCOPY
+    RETURN canvas
+END CreateCanvas;
+
+
+PROCEDURE destroy* (VAR canvas: tCanvas);
+BEGIN
+    IF canvas # NIL THEN
+        canvas.bitmap := K.free(canvas.bitmap);
+        DISPOSE(canvas)
+    END
+END destroy;
+
+
+END Graph.
