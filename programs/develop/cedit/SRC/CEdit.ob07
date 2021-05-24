@@ -28,7 +28,7 @@ IMPORT
     RW, Ini, box_lib, LibImg;
 
 CONST
-    header = "CEdit (20-may-2021)";
+    header = "CEdit (24-may-2021)";
 
     ShellFilter = "";(* "SH|"; *)
     EditFilter = "SH|ASM|TXT|INC|OB07|C|CPP|H|PAS|PP|LUA|INI";
@@ -1287,10 +1287,10 @@ BEGIN
     mainTID := K.ThreadID();
     K.SetIPC(IPC);
     U.ptr2str(K.GetName(), AppPath);
-    U.getPath(AppPath, fileName);
-    U.append8(fileName, "/Icons16.png");
-    icons := LibImg.LoadFromFile(fileName, 16, y);
-    grayIcons := LibImg.LoadFromFile(fileName, 16, y);
+(*    U.getPath(AppPath, fileName);
+    U.append8(fileName, "/Icons16.png");*)
+    icons := LibImg.LoadFromFile("/rd/1/Icons16.png", 16, y);
+    grayIcons := LibImg.LoadFromFile("/rd/1/Icons16.png", 16, y);
     gray(grayIcons);
     iconsBackColor(icons);
     iconsBackColor(grayIcons);
