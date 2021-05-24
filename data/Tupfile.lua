@@ -595,6 +595,7 @@ tup.append_table(extra_files, {
  {"kolibrios/media/zsea/plugins/rotate.obj", PROGS .. "/media/zsea/plugins/rotate/rotate.obj"},
  {"kolibrios/media/zsea/plugins/scaling.obj", PROGS .. "/media/zsea/plugins/scaling/scaling.obj"},
  {"kolibrios/utils/calcplus", PROGS .. "/other/calcplus/calcplus"},
+ {"kolibrios/utils/t_edit", PROGS .. "/other/t_edit/t_edit"},
 })
 -- For russian build, add russian-only programs.
 if build_type == "rus" then tup.append_table(img_files, {
