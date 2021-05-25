@@ -37,4 +37,7 @@ extern long int _FUNC(strtol)(const char* str, char** endptr, int base);
 
 extern void  _FUNC(exit)(int status);
 
+extern void _FUNC(srand)(unsigned s);
+extern int  _FUNC(rand)(void);
+
 #endif

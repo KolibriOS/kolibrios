@@ -1,3 +1,9 @@
+#include <libc_version.h>
+
+unsigned _libc_get_version(){
+    return _LIBC_VERSION;
+}
+
 #include "ctype/is.c"
 #include "ctype/tolower.c" 
 #include "ctype/toupper.c"
@@ -99,6 +105,7 @@
 #include "stdlib/itoa.c"
 #include "stdlib/time.c"
 #include "stdlib/strtol.c"
+#include "stdlib/rand.c"
 
 #include "math/acosh.c"
 #include "math/asinh.c"
@@ -109,7 +116,6 @@
 #include "math/ldexp.c"
 #include "math/sinh.c"
 #include "math/tanh.c"
-
 
 __asm__(
     ".include \"math/acos.s\"\n\t"
@@ -136,5 +142,4 @@ __asm__(
 );
 
 #include "stdlib/___chkstk_ms.c"
-
 #include "exports/exports.c"

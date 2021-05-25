@@ -62,6 +62,8 @@ mktime
 realloc
 strtol
 time
+srand
+rand
 !____STRING____
 memcpy
 memchr
@@ -130,3 +132,5 @@ tolower
 toupper
 !___CONIO___
 con_set_title
+!___LIBC_VERSION___
+_libc_get_version
