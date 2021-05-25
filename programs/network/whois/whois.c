@@ -13,6 +13,7 @@ int errno;
 #include <stdlib.h>	
 #include <sys/socket.h>	
 #include <clayer/network.h>
+#include <conio.h>
 
 FILE *out=stdout;
 
@@ -59,7 +60,7 @@ int main(int argc , char *argv[])
 		exit(0);
 	}
 	if(out==stdout){
-		con_set_title("Whois");
+		con_init_opt(-1,-1,-1,-1, "Whois");
 	}
 	get_whois_data(domain , &data);
 	exit(0);
