@@ -3,8 +3,12 @@
 #include <stdlib.h>
 #include <string.h>
 #include <time.h>
-#include <kos32sys1.h>
+#include <sys/ksys.h>
 #include <clayer/boxlib.h>
+
+#define DATA(type, addr, offset) *((type*)((uint8_t*)addr+offset))
+#define X_W(X, W) ((X<<16)+W)
+#define Y_H X_W
 
 #define WINDOW_WIDTH 400
 #define WINDOW_HEIGHT 180
@@ -13,9 +17,9 @@
 #define FONT_SIZE_DEFAULT 0x10000000
 #define CHECKBOX_ENABLED 2
 
-const char WINDOW_TITLE[] = "PasswordGen v0.1";
+const char WINDOW_TITLE[] = "PasswordGen v0.2";
 
-struct kolibri_system_colors sys_color_table;
+ksys_colors_table_t sys_color_table;
 const color_t DRAWTEXT_FLAG_DEFAULT = 0x90000000;
 
 edit_box *edit_box_password_len;
@@ -64,7 +68,7 @@ void generate_password_internal(char *dst, int length, int flag_az, int flag_AZ,
     if (flag_09) { strcat(resulting_char_set, char_set_09); }
     if (flag_spec_char) { strcat(resulting_char_set, char_set_spec_char); }
     resulting_char_set_len = strlen(resulting_char_set);
-    //printf("resulting_char_set = %s\n", resulting_char_set
+    //debug_printf("resulting_char_set = %s\n", resulting_char_set
     for (i = 0; i < length; i++) {
         dst[i] = resulting_char_set[rand() % resulting_char_set_len];
     }
@@ -72,7 +76,7 @@ void generate_password_internal(char *dst, int length, int flag_az, int flag_AZ,
 }
 
 void notify_show(char *text) {
-   start_app("/sys/@notify", text);
+   _ksys_exec("/sys/@notify", text);
 }
 
 void* safe_malloc(size_t size) {
@@ -88,10 +92,10 @@ void* safe_malloc(size_t size) {
 void copy_to_clipboard(char *text) {
     char *temp_buffer = safe_malloc(EDIT_BOX_PASSWORD_GENERATED_MAXLEN + 12);
     memset(temp_buffer, 0, EDIT_BOX_PASSWORD_GENERATED_MAXLEN);
-    DATA(char,temp_buffer,4) = 0; /* TEXT */
-    DATA(char,temp_buffer,8) = 1; /* CP866 */
+    DATA(char,temp_buffer,4) = KSYS_CLIP_TEXT;  /* TEXT */
+    DATA(char,temp_buffer,8) = KSYS_CLIP_CP866; /* CP866 */
     strncpy(temp_buffer+12, text, EDIT_BOX_PASSWORD_GENERATED_MAXLEN - 1);
-    kol_clip_set(strlen(text) + 12, temp_buffer);
+    _ksys_clip_set(strlen(text) + 12, temp_buffer);
     notify_show("'Copied to clipboard!' -I");
     free(temp_buffer);
 }
@@ -136,15 +140,15 @@ check_box* create_check_box(unsigned int left_s, unsigned int top_s, unsigned in
 /* ---------------------------------------------------------- */
 
 void redraw_window() {
-    pos_t win_pos = get_mouse_pos(0); 
-    begin_draw();
-    sys_create_window(win_pos.x, win_pos.y, WINDOW_WIDTH, WINDOW_HEIGHT, WINDOW_TITLE, sys_color_table.work_area, 0x14);
+    ksys_pos_t win_pos = _ksys_get_mouse_pos(KSYS_MOUSE_SCREEN_POS); 
+    _ksys_start_draw();
+    _ksys_create_window(win_pos.x, win_pos.y, WINDOW_WIDTH, WINDOW_HEIGHT, WINDOW_TITLE, sys_color_table.work_area, 0x14);
 
     edit_box_draw(edit_box_password_len);
 
-    draw_text_sys("Password length: ", 15, 34 + 5, 0, DRAWTEXT_FLAG_DEFAULT | sys_color_table.work_text);
-    draw_text_sys("Characters: ", 15, 68, 0, DRAWTEXT_FLAG_DEFAULT | sys_color_table.work_text);
-    draw_text_sys("Generated password: ", 15, 102 + 5, 0, DRAWTEXT_FLAG_DEFAULT | sys_color_table.work_text);
+    _ksys_draw_text("Password length: ", 15, 34 + 5, 0, DRAWTEXT_FLAG_DEFAULT | sys_color_table.work_text);
+    _ksys_draw_text("Characters: ", 15, 68, 0, DRAWTEXT_FLAG_DEFAULT | sys_color_table.work_text);
+    _ksys_draw_text("Generated password: ", 15, 102 + 5, 0, DRAWTEXT_FLAG_DEFAULT | sys_color_table.work_text);
 
     check_box_draw2(check_box_az);
     check_box_draw2(check_box_AZ);
@@ -153,13 +157,13 @@ void redraw_window() {
 
     edit_box_draw(edit_box_password_generated);
 
-    define_button(X_W(170,100), Y_H(136,30), BTN_GENERATE, sys_color_table.work_button);
-    draw_text_sys("Generate!", 182, 136 + 7, 0, DRAWTEXT_FLAG_DEFAULT | sys_color_table.work_button_text);
+    _ksys_define_button(170, 136, 100, 30, BTN_GENERATE, sys_color_table.work_button);
+    _ksys_draw_text("Generate!", 182, 136 + 7, 0, DRAWTEXT_FLAG_DEFAULT | sys_color_table.work_button_text);
 
-    define_button(X_W(370 - 60, 60), Y_H(136,30), BTN_COPY, sys_color_table.work_button);
-    draw_text_sys("Copy", 370 - 60 + 15, 136 + 7, 0, DRAWTEXT_FLAG_DEFAULT | sys_color_table.work_button_text);
+    _ksys_define_button(370-60, 136, 60, 30, BTN_COPY, sys_color_table.work_button);
+    _ksys_draw_text("Copy", 370 - 60 + 15, 136 + 7, 0, DRAWTEXT_FLAG_DEFAULT | sys_color_table.work_button_text);
 
-    end_draw();
+    _ksys_end_draw();
 }
 
 /* create and initialize components */ 
@@ -207,21 +211,21 @@ int main(int argc, const char *argv[]) {
 
     srand(time(0)*2/3); /* seeding the pseudo random number generator*/
     kolibri_boxlib_init();
-    get_system_colors(&sys_color_table);
-    set_event_mask(0xC0000027);
+    _ksys_get_system_colors(&sys_color_table);
+    _ksys_set_event_mask(0xC0000027);
     create_components(); /* create and init some visual components */
 
     do
     {
-        gui_event = get_os_event();
+        gui_event = _ksys_get_event();
         switch(gui_event)
         {
-        case KOLIBRI_EVENT_NONE:
+        case KSYS_EVENT_NONE:
             break;
-        case KOLIBRI_EVENT_REDRAW:
+        case KSYS_EVENT_REDRAW:
             redraw_window();
             break;
-        case KOLIBRI_EVENT_MOUSE:
+        case KSYS_EVENT_MOUSE:
             edit_box_mouse(edit_box_password_len);
             check_box_mouse2(check_box_az);
             check_box_mouse2(check_box_AZ);
@@ -229,13 +233,13 @@ int main(int argc, const char *argv[]) {
             check_box_mouse2(check_box_spec_char);
             edit_box_mouse(edit_box_password_generated);
             break;        
-        case KOLIBRI_EVENT_KEY:
-            keyval = get_key().val;
+        case KSYS_EVENT_KEY:
+            keyval = _ksys_get_key().val;
             edit_box_key(edit_box_password_len, keyval);
             edit_box_key(edit_box_password_generated, keyval);
             break;
-        case KOLIBRI_EVENT_BUTTON: 
-            pressed_button = get_os_button(); 
+        case KSYS_EVENT_BUTTON: 
+            pressed_button = _ksys_get_button(); 
             switch (pressed_button) 
             {
                 case BTN_GENERATE:
@@ -249,10 +253,10 @@ int main(int argc, const char *argv[]) {
                     break;
 
                 case BTN_QUIT:
-                    exit(0);
+                    return 0;
                     break;
             }
         }
     } while(1);
-    exit(0);
+    return 0;
 }
