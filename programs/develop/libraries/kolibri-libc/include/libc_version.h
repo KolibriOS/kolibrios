@@ -3,7 +3,7 @@
 
 #include <stddef.h>
 
-#define  _LIBC_VERSION 8743
+#define  _LIBC_VERSION 8745
 
 extern unsigned _FUNC(_libc_get_version)();
 
