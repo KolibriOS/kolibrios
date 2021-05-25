@@ -18,9 +18,9 @@ int vprintf ( const char * format, va_list arg )
     errno = ENOMEM;
     return errno;
   }
-  __con_init();
+  con_init();
   len = vsnprintf(s, STDIO_MAX_MEM, format, arg);
-  __con_write_string(s, len);
+  con_write_string(s, len);
   free(s);
   return(len);
 }

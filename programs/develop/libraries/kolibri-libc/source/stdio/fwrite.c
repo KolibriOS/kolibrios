@@ -3,7 +3,6 @@
 #include <sys/ksys.h>
 #include <errno.h>
 
-
 size_t fwrite(const void *restrict ptr, size_t size, size_t nmemb, FILE *restrict stream) {
 	unsigned bytes_written = 0;
 	unsigned bytes_count = size * nmemb;
@@ -14,8 +13,8 @@ size_t fwrite(const void *restrict ptr, size_t size, size_t nmemb, FILE *restric
 	}
 	
 	if(stream==stdout){
-		__con_init();
-		__con_write_string((char*)ptr, bytes_count);
+		con_init();
+		con_write_string((char*)ptr, bytes_count);
 		return nmemb;
 	}
 	else if(stream==stderr){

@@ -13,8 +13,8 @@ size_t fread(void *restrict ptr, size_t size, size_t nmemb, FILE *restrict strea
 	}
 	
 	if(stream==stdin){
-		__con_init();
-		__con_gets((char*)ptr, bytes_count+1);
+		con_init();
+		con_gets((char*)ptr, bytes_count+1);
 		return nmemb;
 	}
 

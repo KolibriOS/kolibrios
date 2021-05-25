@@ -96,8 +96,7 @@ extern int    _FUNC(getc)(FILE *);
 #define        getc() _FUNC(fgetc)(stdin)
 extern int    _FUNC(getchar)(void);
 extern int    _FUNC(printf)(const char *restrict, ...);
-extern int    _FUNC(putc)(int, FILE *);
-extern int    _FUNC(putchar)(int);
+#define        putc(ch) _FUNC(fputc)(ch, stdout) 
 extern int    _FUNC(puts)(const char *);
 extern int    _FUNC(scanf)(const char *restrict, ...);
 extern char*  _FUNC(gets)(char *str);
@@ -135,7 +134,5 @@ extern void   _FUNC(perror)(const char *);
 extern size_t _FUNC(fread)(void *restrict, size_t, size_t, FILE *restrict);
 
 extern int    _FUNC(getchar)(void);
-
-extern void   _FUNC(con_set_title)(const char*);
 
 #endif  // _STDIO_H_

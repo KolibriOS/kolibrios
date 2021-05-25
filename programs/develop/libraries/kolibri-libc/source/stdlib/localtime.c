@@ -15,7 +15,7 @@ struct tm * localtime (const time_t * timer)
     int bcd_year = (kos_date & 0xFF);
     buffertime.tm_mday = ((bcd_day & 0xF0)>>4)*10 + (bcd_day & 0x0F);
     buffertime.tm_mon = ((bcd_mon & 0xF0)>>4)*10 + (bcd_mon & 0x0F) - 1;
-    buffertime.tm_year = ((bcd_year & 0xF0)>>4)*10 + (bcd_year & 0x0F) + 100;
+    buffertime.tm_year = ((bcd_year & 0xF0)>>4)*10 + (bcd_year & 0x0F);
    
     buffertime.tm_wday = buffertime.tm_yday = buffertime.tm_isdst = -1; /* temporary */
    

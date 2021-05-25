@@ -14,6 +14,7 @@ unsigned _libc_get_version(){
 #include "sys/opendir.c"
 #include "sys/telldir.c"
 #include "sys/closedir.c"
+#include "sys/dir.c"
 
 #include "stdio/clearerr.c"
 #include "stdio/gets.c"
