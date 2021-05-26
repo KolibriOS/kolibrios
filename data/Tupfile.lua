@@ -174,9 +174,6 @@ extra_files = {
  {"kolibrios/develop/fpc/", "common/develop/fpc/*"},
  {"kolibrios/develop/fpc/examples/", PROGS .. "/develop/fp/examples/src/*"},
  {"kolibrios/develop/fpc/examples/build.sh", "common/develop/fpc/build.sh"},
- {"kolibrios/develop/lua/lua", "../contrib/other/lua-5.2.0/lua"},
- {"kolibrios/develop/lua/calc.lua", "../contrib/other/lua-5.2.0/calc.lua"},
- {"kolibrios/develop/lua/console.lua", "../contrib/other/lua-5.2.0/console.lua"},
  {"kolibrios/develop/oberon07/", PROGS .. "/develop/oberon07/*"},
  {"kolibrios/develop/oberon07/Docs/", PROGS .. "/develop/oberon07/Docs/*"},
  {"kolibrios/develop/oberon07/Lib/KolibriOS/", PROGS .. "/develop/oberon07/Lib/KolibriOS/*"},
@@ -261,7 +258,6 @@ extra_files = {
  {"kolibrios/lib/libpng16.dll", "common/lib/libpng16.dll"},
  {"kolibrios/lib/libva.dll", "common/lib/libva.dll"},
  {"kolibrios/lib/libz.dll", "common/lib/libz.dll"},
- {"kolibrios/lib/libc.dll", "../contrib/sdk/bin/libc.dll", group = "../contrib/sdk/lib/<libc.dll.a>"},
  {"kolibrios/lib/osmesa.dll", "common/lib/osmesa.dll"},
  {"kolibrios/lib/pixlib-gl.dll", "common/lib/pixlib-gl.dll"},
  {"kolibrios/lib/pixman-1.dll", "common/lib/pixman-1.dll"},
@@ -729,6 +725,10 @@ tup.append_table(extra_files, {
  {"kolibrios/games/", PROGS .. "/games/checkers/trunk/checkers"},
  {"kolibrios/games/wolf3d/", "../contrib/games/wolf3d/wolf3d"},
  {"kolibrios/games/wolf3d/", "common/games/wolf3d/*"},
+ {"kolibrios/develop/lua/lua", "../contrib/other/lua-5.2.0/lua"},
+ {"kolibrios/develop/lua/calc.lua", "../contrib/other/lua-5.2.0/calc.lua"},
+ {"kolibrios/develop/lua/console.lua", "../contrib/other/lua-5.2.0/console.lua"},
+ {"kolibrios/lib/libc.dll", "../contrib/sdk/bin/libc.dll", group = "../contrib/sdk/lib/<libc.dll.a>"},
 })
 -- For russian build, add russian-only programs.
 if build_type == "rus" then tup.append_table(extra_files, {
