@@ -16,7 +16,7 @@
 //                                                   //
 //===================================================//
 
-:struct f70{
+:struct F70{
 	dword	func;
 	dword	param1;
 	dword	param2;
@@ -24,7 +24,7 @@
 	dword	param4;
 	char	rezerv;
 	dword	name;
-};
+} f70;
 
 :struct BDVK {
 	dword	readonly:1, hidden:1, system:1, volume_label:1, isfolder:1, notarchived:1, :0;
@@ -43,141 +43,146 @@
 
 
 
-:f70 getinfo_file_70;
 :dword GetFileInfo(dword file_path, bdvk_struct)
 {    
-    getinfo_file_70.func = 5;
-    getinfo_file_70.param1 = 
-    getinfo_file_70.param2 = 
-    getinfo_file_70.param3 = 0;
-    getinfo_file_70.param4 = bdvk_struct;
-    getinfo_file_70.rezerv = 0;
-    getinfo_file_70.name = file_path;
+    f70.func = 5;
+    f70.param1 = 
+    f70.param2 = 
+    f70.param3 = 0;
+    f70.param4 = bdvk_struct;
+    f70.rezerv = 0;
+    f70.name = file_path;
     $mov eax,70
-    $mov ebx,#getinfo_file_70.func
+    $mov ebx,#f70.func
     $int 0x40
 }
 
-:f70 setinfo_file_70;
 :dword SetFileInfo(dword file_path, bdvk_struct)
 {    
-    setinfo_file_70.func = 6;
-    setinfo_file_70.param1 = 
-    setinfo_file_70.param2 = 
-    setinfo_file_70.param3 = 0;
-    setinfo_file_70.param4 = bdvk_struct;
-    setinfo_file_70.rezerv = 0;
-    setinfo_file_70.name = file_path;
+    f70.func = 6;
+    f70.param1 = 
+    f70.param2 = 
+    f70.param3 = 0;
+    f70.param4 = bdvk_struct;
+    f70.rezerv = 0;
+    f70.name = file_path;
     $mov eax,70
-    $mov ebx,#setinfo_file_70.func
+    $mov ebx,#f70.func
     $int 0x40
 }
 
-:f70 run_file_70;
 :signed int RunProgram(dword run_path, run_param)
 {	
-    run_file_70.func = 7;
-    run_file_70.param1 = 
-    run_file_70.param3 = 
-    run_file_70.param4 = 
-    run_file_70.rezerv = 0;
-    run_file_70.param2 = run_param;
-    run_file_70.name = run_path;
+    f70.func = 7;
+    f70.param1 = 
+    f70.param3 = 
+    f70.param4 = 
+    f70.rezerv = 0;
+    f70.param2 = run_param;
+    f70.name = run_path;
     $mov eax,70
-    $mov ebx,#run_file_70.func
+    $mov ebx,#f70.func
     $int 0x40
 }
 
-:f70 create_dir_70;
 :int CreateDir(dword new_folder_path)
 {
-	create_dir_70.func = 9;
-	create_dir_70.param1 = 
-	create_dir_70.param2 = 
-	create_dir_70.param3 = 
-	create_dir_70.param4 = 
-	create_dir_70.rezerv = 0;
-	create_dir_70.name = new_folder_path;
+	f70.func = 9;
+	f70.param1 = 
+	f70.param2 = 
+	f70.param3 = 
+	f70.param4 = 
+	f70.rezerv = 0;
+	f70.name = new_folder_path;
 	$mov eax,70
-	$mov ebx,#create_dir_70.func
+	$mov ebx,#f70.func
 	$int 0x40
 }
 
-:f70 del_file_70;	
 :int DeleteFile(dword del_file_path)
 {    
-	del_file_70.func = 8;
-	del_file_70.param1 = 
-	del_file_70.param2 = 
-	del_file_70.param3 = 
-	del_file_70.param4 = 
-	del_file_70.rezerv = 0;
-	del_file_70.name = del_file_path;
+	f70.func = 8;
+	f70.param1 = 
+	f70.param2 = 
+	f70.param3 = 
+	f70.param4 = 
+	f70.rezerv = 0;
+	f70.name = del_file_path;
 	$mov eax,70
-	$mov ebx,#del_file_70.func
+	$mov ebx,#f70.func
 	$int 0x40
 }
 
-:f70 read_file_70; 
 :int ReadFile(dword offset, data_size, buffer, file_path)
 {
-	read_file_70.func = 0;
-	read_file_70.param1 = offset;
-	read_file_70.param2 = 0;
-	read_file_70.param3 = data_size;
-	read_file_70.param4 = buffer;
-	read_file_70.rezerv = 0;
-	read_file_70.name = file_path;
+	f70.func = 0;
+	f70.param1 = offset;
+	f70.param2 = 0;
+	f70.param3 = data_size;
+	f70.param4 = buffer;
+	f70.rezerv = 0;
+	f70.name = file_path;
 	$mov eax,70
-	$mov ebx,#read_file_70.func
+	$mov ebx,#f70.func
 	$int 0x40
 }
 
-:f70 write_file_70; 
 :int CreateFile(dword data_size, buffer, file_path)
 {
-	write_file_70.func = 2;
-	write_file_70.param1 = 0;
-	write_file_70.param2 = 0;
-	write_file_70.param3 = data_size;
-	write_file_70.param4 = buffer;
-	write_file_70.rezerv = 0;
-	write_file_70.name = file_path;
+	f70.func = 2;
+	f70.param1 = 0;
+	f70.param2 = 0;
+	f70.param3 = data_size;
+	f70.param4 = buffer;
+	f70.rezerv = 0;
+	f70.name = file_path;
 	$mov eax,70
-	$mov ebx,#write_file_70.func
+	$mov ebx,#f70.func
 	$int 0x40
 }
 
   ////////////////////////////////////////
  //     WriteInFileThatAlredyExists    //
 ////////////////////////////////////////
-:f70 write_file_offset_70; 
 :int WriteFile(dword offset, data_size, buffer, file_path)
 {
-	write_file_offset_70.func = 3;
-	write_file_offset_70.param1 = offset;
-	write_file_offset_70.param2 = 0;
-	write_file_offset_70.param3 = data_size;
-	write_file_offset_70.param4 = buffer;
-	write_file_offset_70.rezerv = 0;
-	write_file_offset_70.name = file_path;
+	f70.func = 3;
+	f70.param1 = offset;
+	f70.param2 = 0;
+	f70.param3 = data_size;
+	f70.param4 = buffer;
+	f70.rezerv = 0;
+	f70.name = file_path;
 	$mov eax,70
-	$mov ebx,#write_file_offset_70.func
+	$mov ebx,#f70.func
 	$int 0x40
 }
 
-:f70 read_dir_70;
+:int RenameMove(dword path_to, path_from)
+{
+	f70.func = 10;
+	f70.param1 = 
+	f70.param2 = 
+	f70.param3 = 0;
+	f70.param4 = path_to;
+	f70.rezerv = 0;
+	f70.name = path_from;
+	$mov eax,70
+	$mov ebx,#f70.func
+	$int 0x40
+}
+
 :int ReadDir(dword file_count, read_buffer, dir_path)
 {
-	read_dir_70.func = 1;
-	read_dir_70.param1 = 
-	read_dir_70.param2 = 
-	read_dir_70.rezerv = 0;
-	read_dir_70.param3 = file_count;
-	read_dir_70.param4 = read_buffer;
-	read_dir_70.name = dir_path;
+	f70.func = 1;
+	f70.param1 = 
+	f70.param2 = 
+	f70.rezerv = 0;
+	f70.param3 = file_count;
+	f70.param4 = read_buffer;
+	f70.name = dir_path;
 	$mov eax,70
-	$mov ebx,#read_dir_70.func
+	$mov ebx,#f70.func
 	$int 0x40
 }
 

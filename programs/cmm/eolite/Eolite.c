@@ -1,10 +1,10 @@
-//Leency, Veliant, Punk_Joker, PavelYakov & KolibriOS Team 2008-2020
+//Leency, Veliant, Punk_Joker, PavelYakov & KolibriOS Team 2008-2021
 //GNU GPL license.
 
 // 70.5 - get volume info and label
 
-#define TITLE "Eolite File Manager 4.49"
-#define ABOUT_TITLE "EOLITE 4.49"
+#define TITLE "Eolite File Manager 4.5"
+#define ABOUT_TITLE "EOLITE 4.5"
 
 #ifndef AUTOBUILD
 #include "lang.h--"
@@ -1021,15 +1021,16 @@ void ShowOpenWithDialog()
 void NewElement()
 {
 	BDVK element_info;
-	byte del_rezult, copy_rezult, info_result;
+	byte del_result, copy_result, info_result;
 
 	sprintf(#temp,"%s/%s",#path,new_file_ed.text);
 	info_result = GetFileInfo(#temp, #element_info);
 	switch(new_element_active)
 	{
 		case CREATE_FILE:
-			if (info_result==5)
-			{
+			if (info_result!=5) {
+				notify(FS_ITEM_ALREADY_EXISTS);
+			} else {
 				CreateFile(0, 0, #temp);
 				if (EAX)
 				{
@@ -1037,14 +1038,11 @@ void NewElement()
 					else Write_Error(EAX);
 				}
 			}
-			else
-			{
-				notify(FS_ITEM_ALREADY_EXISTS);
-			}
 			break;
 		case CREATE_FOLDER:
-			if (info_result==5)
-			{
+			if (info_result!=5) {
+				notify(FS_ITEM_ALREADY_EXISTS);
+			} else {
 				CreateDir(#temp);
 				if (EAX)
 				{
@@ -1052,42 +1050,25 @@ void NewElement()
 					else Write_Error(EAX);
 				}
 			}
-			else
-			{
-				notify(FS_ITEM_ALREADY_EXISTS);
-			}
 			break;
 		case RENAME_ITEM:
-			if (info_result==5)
-			{
-				if (itdir)
-				{
-					//rename only empty folders
-					if (del_rezult = DeleteFile(#file_path))
-					{
-						Write_Error(del_rezult);
-						return;
-					}
-					if (CreateDir(#temp)) CreateDir(#file_path);
-					Open_Dir(#path,WITH_REDRAW);
-					SelectFileByName(new_file_ed.text);
-				}
-				else
-				{
-					if (copy_rezult = CopyFile(#file_path,#temp))
-					{
-						Write_Error(copy_rezult);
-					}
-					else
-					{
-						DeleteFile(#file_path);
-						SelectFileByName(new_file_ed.text);
-					}
-				}
-			}
-			else
-			{
+			if (info_result!=5) {
 				notify(FS_ITEM_ALREADY_EXISTS);
+			} else {
+				(RenameMove(new_file_ed.text, #file_path))
+				{
+					if (itdir) {
+						notify("'Error renaming folder' -E");
+						return;
+					} else {
+						if (copy_result = CopyFile(#file_path,#temp)) {
+							Write_Error(copy_result);
+						} else {
+							DeleteFile(#file_path);
+							SelectFileByName(new_file_ed.text);
+						}
+					}
+				}
 			}
 	}
 	Open_Dir(#path,WITH_REDRAW);
