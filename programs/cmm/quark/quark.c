@@ -10,7 +10,7 @@
 		4. selection
 */
 
-#define MEMSIZE 60*1024
+#define MEMSIZE 50*1024
 
 //===================================================//
 //                                                   //
@@ -182,9 +182,6 @@ void HandleKeyEvent()
 
 	switch (key_scancode)
 	{
-		case SCAN_CODE_F1:
-			EventShowInfo();
-			return;
 		case SCAN_CODE_ESC:
 			search.hide();
 			return;
@@ -206,9 +203,9 @@ void HandleKeyEvent()
 		switch (key_scancode)
 		{
 			case SCAN_CODE_KEY_A: EventSelectAllText();    return;
-			case SCAN_CODE_KEY_X: EventCut();              return;
 			case SCAN_CODE_KEY_C: EventCopy();             return;
-			case SCAN_CODE_KEY_V: EventPaste();            return;
+			//case SCAN_CODE_KEY_X: EventCut();              return;
+			//case SCAN_CODE_KEY_V: EventPaste();            return;
 			case SCAN_CODE_UP:    EventMagnifyPlus();      return;
 			case SCAN_CODE_DOWN:  EventMagnifyMinus();     return;
 			case SCAN_CODE_TAB:   EventShowCharsetsList(); return;
@@ -219,7 +216,7 @@ void HandleKeyEvent()
 	if (key_modifier & KEY_LSHIFT) || (key_modifier & KEY_RSHIFT) {
 		selection.set_start();
 	} else {
-		EventInsertCharIntoText();
+		//EventInsertCharIntoText();
 		selection.cancel();
 	}
 
@@ -302,31 +299,12 @@ bool EventSearchPrevious()
 	}
 }
 
-void EventNewFile()
-{
-	RunProgram(#program_path, "-new");
-}
-
 void EventOpenDialog()
 {
 	OpenDialog_start stdcall (#o_dialog);
 	if (o_dialog.status) {
 		LoadFile(#openfile_path);
 		ParseAndPaint();
-	}
-}
-
-void EventSave()
-{
-	int res;
-	char backy_param[4096];
-	io.dir.make("/tmp0/1/quark_backups");
-	sprintf(#backy_param, "%s -o /tmp0/1/quark_backups", #file_path);
-	RunProgram("/sys/develop/backy", #backy_param);
-	if (! WriteFile(0, textbuf.len, textbuf.p, #file_path) ) {
-		notify(FILE_SAVED_WELL);
-	} else {
-		notify(FILE_NOT_SAVED);
 	}
 }
 
@@ -364,14 +342,14 @@ void EventShowCharsetsList()
 void EventShowReopenMenu()
 {
 	menu_id = REOPEN_IN_APP;
-	open_lmenu(reopenin_mx + 23, 29, MENU_TOP_RIGHT, NULL,
-		"Tinypad\nTextEdit\nWebView\nFB2Read\nHexView\nOther");
+	open_lmenu(reopenin_mx, 29, MENU_TOP_LEFT, NULL,
+		"Tinypad\nCodeEdit\nWebView\nFB2Read\nHexView\nOther");
 }
 
 void EventShowThemesList()
 {
 	menu_id = COLOR_SCHEME;
-	open_lmenu(theme_mx + 23, 29, MENU_TOP_RIGHT,
+	open_lmenu(theme_mx, 29, MENU_TOP_LEFT,
 		curcol_scheme+1, #color_scheme_names);
 }
 
@@ -395,11 +373,6 @@ void EventSetColorScheme(dword _setn)
 	if (list.count) ParseAndPaint();
 }
 
-
-void EventShowInfo() {
-	notify(#about);
-}
-
 void EventChangeCharset(dword id)
 {
 	if (file_path[0]=='\0') return;
@@ -415,7 +388,7 @@ void EventOpenFileInOtherApp(dword _id)
 	byte open_param[4096];
 	switch(_id) {
 		case 0: app = "/sys/tinypad"; break;
-		case 1: app = "/sys/develop/t_edit"; break;
+		case 1: app = "/sys/develop/cedit"; break;
 		case 2: app = "/sys/network/webview"; break;
 		case 3: app = "/sys/fb2read"; break;
 		case 4: app = "/sys/develop/heed"; break;
@@ -451,6 +424,7 @@ void EventClickSearch()
 	}
 }
 
+/*
 void EventInsertCharIntoText()
 {
 	dword i;
@@ -503,27 +477,14 @@ void EventInsertCharIntoText()
 			DrawPage();
 	}
 }
-
-void EventOpenSysfuncs()
-{
-	if (RunProgram("/sys/docpack", "f") <= 0) {
-		notify("'Can not open SysFunctions because\n/rd/1/docpack is not found!'E");
-	}
-}
-
-void EventOpenPipet()
-{
-	RunProgram("/sys/develop/pipet", NULL);
-}
+*/
 
 void EventRbmMenuClick(dword id)
 {
 	switch(id) {
-		case 0: EventCut(); break;
-		case 1: EventCopy(); break;
-		case 2: EventPaste(); break;
-		case 3: EventRevealInFolder(); break;
-		case 4: EventCopyFilePath(); break;
+		case 0: EventCopy(); break;
+		case 1: EventRevealInFolder(); break;
+		case 2: EventCopyFilePath(); break;
 	}
 }
 
@@ -561,6 +522,7 @@ void EventCopy()
 	DrawStatusBar(#copy_status_text);
 }
 
+/*
 void EventCut()
 {
 	if (!selection.is_active()) {
@@ -592,6 +554,7 @@ void EventDeleteSelectedText()
 	list.cur_y = math.min(selection.start_y, selection.end_y);
 	selection.cancel();
 }
+*/
 
 void EventRevealInFolder()
 {
@@ -669,19 +632,13 @@ void DrawToolbar()
 	DrawBar(0, TOOLBAR_H - 1, Form.cwidth, 1, sc.work_graph);
 
 	x.set(-GAP_S+8);
-	TopBarBt(#EventNewFile,        ECTRL+SCAN_CODE_KEY_N, 2,  x.inc(GAP_S), false);
 	TopBarBt(#EventOpenDialog,     ECTRL+SCAN_CODE_KEY_O, 0,  x.inc(GAP_S), false);
-	TopBarBt(#EventSave,           ECTRL+SCAN_CODE_KEY_S, 5,  x.inc(GAP_S), false);
 	TopBarBt(#EventShowFileInfo,   ECTRL+SCAN_CODE_KEY_I, 10, x.inc(GAP_S), false);
 	TopBarBt(#EventMagnifyMinus,   ECTRL+SCAN_CODE_MINUS, 33, x.inc(GAP_B),   false);
 	TopBarBt(#EventMagnifyPlus,    ECTRL+SCAN_CODE_PLUS,  32, x.inc(GAP_S), false);
 	TopBarBt(#EventClickSearch,    ECTRL+SCAN_CODE_KEY_F, 49, x.inc(GAP_B),   search.visible);  search_mx = EAX;
-	x.set(Form.cwidth-4);
-	TopBarBt(#EventShowInfo,       NULL,                  -1, x.inc(-GAP_S), false); burger_mx = EAX;
-	TopBarBt(#EventShowThemesList, NULL,                  40, x.inc(-GAP_B), thema); theme_mx = EAX;
-	TopBarBt(#EventShowReopenMenu, ECTRL+SCAN_CODE_KEY_E, 16, x.inc(-GAP_S), reopa); reopenin_mx = EAX;
-	TopBarBt(#EventOpenSysfuncs,   NULL,                  18, x.inc(-GAP_S), false);
-	TopBarBt(#EventOpenPipet,      NULL,                  39, x.inc(-GAP_S), false);
+	TopBarBt(#EventShowThemesList, NULL,                  40, x.inc(GAP_B), thema); theme_mx = EAX;
+	TopBarBt(#EventShowReopenMenu, ECTRL+SCAN_CODE_KEY_E, 16, x.inc(GAP_S), reopa); reopenin_mx = EAX;
 }
 
 void DrawStatusBar(dword _in_text)

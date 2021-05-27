@@ -8,15 +8,9 @@ char short_app_name[] = "Quark";
 
 #ifdef LANG_RUS
 
-char intro[] = "Это простой просмотрщик и редактор текста.
-Попробуйте открыть текстовый файл.";
+char intro[] = " Quark - это простой просмотрщик текста.
+Попробуйте открыть текстовый файл.
 
-char copied_chars[] = "%i символов скопировано";
-char chars_selected[] = "%i символов выделено";
-
-char about[] = "Quark Text v0.95
-Автор: Кирилл Липатов aka Leency
-Сайт: http://aspero.pro
 
 Горячие клавиши:
 Ctrl+O - открыть файл
@@ -25,20 +19,16 @@ Ctrl+Плюс - увеличить шрифт
 Ctrl+Минус - уменьшить шрифт
 Ctrl+Tab - выбрать кодировку текста
 Ctrl+E - открыть файл в другой программе
-
-Поиск:
 Ctrl+F - открыть панель поиска
-F3 - искать далее
-Esc - скрыть панель поиска";
+F3 - искать далее";
+
+char copied_chars[] = "%i символов скопировано";
+char chars_selected[] = "%i символов выделено";
 
 char color_scheme_names[] = "Творожек\nКосмос   ";
-?define FILE_SAVED_WELL "'Файл успешно сохранен'O"
-?define FILE_NOT_SAVED "'Ошибка при сохранении файла!'E"
 
 char rmb_menu[] =
-"Вырезать|Ctrl+X
-Копировать|Ctrl+C
-Вставить|Ctrl+V
+"Копировать|Ctrl+C
 -
 Открыть в папке
 Копировать путь файла";
@@ -48,15 +38,8 @@ char rmb_menu[] =
 
 #else
 
-char intro[] = "Quark is a simple text viewer and editor.
-Try to open some text file.";
-
-char copied_chars[] = "%i characters copied";
-char chars_selected[] = "%i characters selected";
-
-char about[] = "Quark Text v0.95
-Author: Kiril Lipatov aka Leency
-Website: http://aspero.pro
+char intro[] = " Quark is a simple text viewer.
+Try to open some text file.
 
 Hotkeys:
 Ctrl+O - open file
@@ -65,20 +48,16 @@ Ctrl+Plus - bigger font
 Ctrl+Down - smaller font
 Ctrl+Tab - select charset
 Ctrl+E - reopen current file in another app
-
-Search:
 Ctrl+F - open search
-F3 - search next
-Esc - hide search bar";
+F3 - search next";
+
+char copied_chars[] = "%i characters copied";
+char chars_selected[] = "%i characters selected";
 
 char color_scheme_names[] = "Dairy\nCosmos   ";
-?define FILE_SAVED_WELL "'File saved'O"
-?define FILE_NOT_SAVED "'Error saving file!'E"
 
 char rmb_menu[] =
-"Cut|Ctrl+X
-Copy|Ctrl+C
-Paste|Ctrl+V
+"Copy|Ctrl+C
 -
 Reveal in folder
 Copy file path";
@@ -106,7 +85,7 @@ struct THEME
 } theme;
 
 char default_dir[] = "/rd/1";
-od_filter filter2 = { 37, "TXT\0INI\0ASM\0HTM\0HTML\0C\0H\0C--\0H--\0CPP\0\0" };
+od_filter filter2 = { 0, "" };
 
 CANVAS canvas;
 
