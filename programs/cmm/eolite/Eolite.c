@@ -1055,7 +1055,7 @@ void NewElement()
 			if (info_result!=5) {
 				notify(FS_ITEM_ALREADY_EXISTS);
 			} else {
-				(RenameMove(new_file_ed.text, #file_path))
+				if (RenameMove(new_file_ed.text, #file_path))
 				{
 					if (itdir) {
 						notify("'Error renaming folder' -E");
