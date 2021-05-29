@@ -33,8 +33,6 @@ CANVAS_PADDING    = 5
 ;-----------------------------------------------------------------------------
 
 START:
-        mcall   SF_SYSTEM, SSF_MOUSE_SETTINGS, SSSF_SET_SPEED, 5
-        mcall   SF_SYSTEM, SSF_MOUSE_SETTINGS, SSSF_SET_SPEEDUP, 5
         mcall   SF_SYS_MISC, SSF_HEAP_INIT
         mcall   SF_KEYBOARD, SSF_SET_INPUT_MODE, 1  ; set kbd mode to scancodes
         mcall   SF_SET_EVENTS_MASK, EVM_REDRAW or EVM_KEY or EVM_BUTTON or \
