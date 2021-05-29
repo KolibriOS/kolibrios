@@ -1,4 +1,4 @@
-#define MEMSIZE 1024 * 50
+#define MEMSIZE 1024 * 40
 #include "../lib/kolibri.h" 
 #include "../lib/strings.h" 
 #include "../lib/mem.h" 
@@ -42,7 +42,6 @@ enum {
 #define SETTINGS_Y PD+PD+30+10
 
 char save_path[4096];
-char open_dir[4096];
 
 more_less_box delay = { 1, 0, SETTINGS_Y, T_DELAY };
 edit_box edit_save = {260,PD,SETTINGS_Y+50,0xffffff,0x94AECE,0xFFFfff,0xffffff,
@@ -57,11 +56,11 @@ opendialog open_folder_dialog =
   #communication_area_name,
   0,
   0, //dword opendir_path,
-  #open_dir, //dword dir_default_path,
+  #save_path, //dword dir_default_path,
   #open_dialog_path,
   #DrawWindow,
   0,
-  #open_dir, //dword openfile_path,
+  #save_path, //dword openfile_path,
   0, //dword filename_area,
   0, //dword filter_area,
   420,
@@ -86,8 +85,7 @@ void main()
 
 	init_libraries();
 
-	strcpy(#save_path, "/tmp0/1");
-	EditBox_UpdateText(#edit_save, 0);
+	edit_box_set_text stdcall (#edit_save, "/tmp0/1");	
 
 	@SetEventMask(EVM_REDRAW+EVM_KEY+EVM_BUTTON+EVM_MOUSE+EVM_MOUSE_FILTER);
 	loop() switch(@WaitEvent())
@@ -99,7 +97,7 @@ void main()
 	case evButton:
 		id = @GetButtonID();
 		switch(id){
-			case CLOSE_BTN: ExitProcess();
+			case CLOSE_BTN: @ExitProcess();
 			case BTN_MAKE_SCREENSHOT: EventTakeScreenshot(); break;
 			case BTN_SETTINGS: EventClickSettings(); break;
 			case BTN_CHOOSE_SAVING_PATH: EventChooseSavePath(); break;
@@ -108,7 +106,7 @@ void main()
 		break;
 
 	case evKey:
-		GetKey();
+		@GetKey();
 		edit_box_key stdcall (#edit_save);
 		EAX >>= 16;
 		if (SCAN_CODE_ENTER == AL) EventTakeScreenshot();
@@ -142,8 +140,7 @@ void EventChooseSavePath()
 {
 	OpenDialog_start stdcall (#open_folder_dialog);
 	if (open_folder_dialog.status) {
-		strcpy(#save_path, open_folder_dialog.opendir_path);
-		EditBox_UpdateText(#edit_save, 0);		
+		edit_box_set_text stdcall (#edit_save, #save_path);	
 	}
 }
 
@@ -151,7 +148,7 @@ void EventChooseSavePath()
 void EventClickSettings()
 {
 	show_settings ^= 1;
-	MoveSize(OLD, OLD, show_settings*75 + 270, 
+	@MoveSize(OLD, OLD, show_settings*75 + 270, 
 		show_settings*110 + skin_height + PD+PD+30);
 }
 
