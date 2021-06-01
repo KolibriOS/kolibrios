@@ -1,10 +1,15 @@
 CC = kos32-gcc
 AR = kos32-ar
+LD = kos32-ld
+STRIP = kos32-strip
 
-LIBNAME=libSDLn.a
+LIBNAME=libSDL
 
 SDK_DIR:= $(abspath ../../..)
- 
+
+LDFLAGS+= -shared -s -T dll.lds --entry _DllStartup --image-base=0 --out-implib $(LIBNAME).dll.a 
+LDFLAGS+= -L/home/max/autobuild/tools/win32/mingw32/lib
+
 endian_OBJS = endian/SDL_endian.o
 file_OBJS = file/SDL_rwops.o
 
@@ -40,15 +45,20 @@ CFLAGS = -c -O2 -D_REENTRANT -I../include -I SYSCALL/include -I. -DPACKAGE=\"SDL
         -D__KOLIBRIOS__ -DDEBUG_VIDEO -UWIN32 -U_Win32 -U_WIN32 -U__MINGW32__ \
         -I../../newlib/libc/include/
 
-all: $(LIBNAME)
- 
+all: $(LIBNAME).dll $(LIBNAME).a 
+
 install: $(LIBNAME)
 	mv -f $(LIBNAME) $(SDK_DIR)/lib  
  
-$(LIBNAME): $(OBJS)
+$(LIBNAME).a: $(OBJS)
 	$(MAKE) -C SYSCALL/src
-	$(AR) -crs $(LIBNAME) $(OBJS) SYSCALL/src/os.o
- 
+	$(AR) -crs $(LIBNAME).a $(OBJS) SYSCALL/src/os.o
+
+$(LIBNAME).dll: libSDL.def $(OBJS)
+	$(LD) $(LDFLAGS) -o $@  libSDL.def $(OBJS) SYSCALL/src/os.o $(LIBS) -ldll -lsound -lc.dll
+	$(STRIP) $@
+
+	
 %.o : %.asm Makefile
 	nasm -f coff $<
  
