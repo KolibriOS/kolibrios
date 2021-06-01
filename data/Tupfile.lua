@@ -698,6 +698,7 @@ tup.append_table(extra_files, {
  {"kolibrios/develop/TinyBasic/", PROGS .. "/develop/tinybasic/TBuserMan.txt"},
  {"kolibrios/utils/teatool", PROGS .. "/other/TEAtool/teatool"},
  {"kolibrios/utils/passwordgen", PROGS .. "/other/PasswordGen/passwordgen"},
+ {"kolibrios/utils/kruler", PROGS .. "/other/kruler/kruler"},
  {"kolibrios/media/qr_tool", PROGS .. "/media/qr_tool/qr_tool"},
  {"kolibrios/utils/weather", PROGS .. "/other/Weather/weather"},
 })
