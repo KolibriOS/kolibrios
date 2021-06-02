@@ -507,3 +507,14 @@ EXPORTS
     y1f
     yn
     ynf
+    alphasort
+    opendir
+    closedir
+    readdir
+    rewinddir
+    seekdir
+    telldir
+    scandir
+    mkdir
+    rmdir
+    chdir

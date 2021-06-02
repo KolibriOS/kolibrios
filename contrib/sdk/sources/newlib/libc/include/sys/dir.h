@@ -7,4 +7,8 @@
 
 #define direct dirent
 
+extern int chdir(char* dir);
+extern int rmdir(const char* dir);
+extern int mkdir(const char* dir, unsigned fake_mode);
+
 #endif /*_SYS_DIR_H_*/

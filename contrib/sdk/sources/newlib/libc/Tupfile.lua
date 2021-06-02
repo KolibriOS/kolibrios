@@ -454,6 +454,17 @@ STDIO_SRCS = {
   "wsetup.c"
 }
 
+DIRENT_SRCS = { 
+		"dir.c",
+		"closedir.c",
+		"opendir.c",
+		"readdir.c",
+		"rewinddir.c",
+		"seekdir.c",
+		"telldir.c",
+		"scandir.c",
+		"alphasort.c",
+}
 
 MATH_SRCS = {
   "e_acos.c", "e_acosh.c", "e_asin.c", "e_atan2.c", "e_atanh.c", "e_cosh.c", "e_exp.c", "e_fmod.c",
@@ -506,6 +517,7 @@ LIB_SRCS += CORE_SRCS
 LIB_SRCS += prepend("stdio/", STDIO_SRCS)
 LIB_SRCS += prepend("string/", STRING_SRCS)
 LIB_SRCS += prepend("stdlib/", STDLIB_SRCS)
+LIB_SRCS += prepend("dirent/", DIRENT_SRCS)
 LIB_SRCS += prepend("math/", MATH_SRCS)
 
 ALL_OBJS = {}

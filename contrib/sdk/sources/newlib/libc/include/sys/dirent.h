@@ -8,24 +8,33 @@
 extern "C" {
 #endif
 
-struct dirent {
-  char d_namlen;
-  char d_name[256];
+#define DT_DIR 16
+#define DT_REG 0
+
+#include <limits.h>
+#include <sys/types.h>  
+ 
+struct dirent{
+   ino_t    d_ino;
+   unsigned d_type;
+   char     d_name[256];
 };
+ 
+typedef struct{
+    struct dirent* objs;
+    ino_t pos;
+    ino_t num_objs;  
+}DIR;
+ 
+extern int  closedir(DIR *dir);
+extern DIR* opendir(const char *path);
+extern struct dirent* readdir(DIR *);
+extern void rewinddir(DIR *dir);
+extern void seekdir(DIR *dir, unsigned pos);
+extern unsigned telldir(DIR *dir);
 
-typedef struct
-{
-//    struct systree_info2 fileinfo;
-    struct dirent entry;
-//    __u8 bdfeheader[0x20];
-//    struct bdfe_item bdfebase;
-//    __u8 bdfename[264];
-} DIR;
-
-int     closedir(DIR *dirp);
-DIR *       opendir(const char *_dirname);
-struct dirent * readdir(DIR *_dirp);
-void      rewinddir(DIR *_dirp);
+extern int scandir(const char *path, struct dirent ***res, int (*sel)(const struct dirent *), int (*cmp)(const struct dirent **, const struct dirent **));
+extern int alphasort(const struct dirent **a, const struct dirent **b);
 
 #ifdef __cplusplus
 }
