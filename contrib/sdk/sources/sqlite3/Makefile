@@ -1,0 +1,41 @@
+LIBRARY= libsqlite3
+
+CC = kos32-gcc
+AR = kos32-ar
+LD = kos32-ld
+STRIP = kos32-strip
+
+INSTALLDIR ?= /home/autobuild/tools/win32/lib
+
+CFLAGS = -U__MINGW32__ -UWIN32 -UWindows -U_WINDOWS -U_WIN32 -U__WIN32__ -U_WIN32 -DPACKAGE_NAME=\"sqlite\" -DPACKAGE_TARNAME=\"sqlite\" -DPACKAGE_VERSION=\"3.36.0\" -DPACKAGE_STRING=\"sqlite\ 3.36.0\" -DPACKAGE_BUGREPORT=\"http://www.sqlite.org\" -DPACKAGE_URL=\"\" -DPACKAGE=\"sqlite\" -DVERSION=\"3.36.0\" -DSTDC_HEADERS=1 -DHAVE_SYS_TYPES_H=1 -DHAVE_SYS_STAT_H=1 -DHAVE_STDLIB_H=1 -DHAVE_STRING_H=1 -DHAVE_MEMORY_H=1 -DHAVE_STRINGS_H=1 -DHAVE_INTTYPES_H=1 -DHAVE_STDINT_H=1 -DHAVE_UNISTD_H=0 -DHAVE_DLFCN_H=1 -DLT_OBJDIR=\".libs/\" -DHAVE_FDATASYNC=1 -DHAVE_USLEEP=1 -DHAVE_LOCALTIME_R=1 -DHAVE_GMTIME_R=1 -DHAVE_DECL_STRERROR_R=1 -DHAVE_STRERROR_R=1 -DHAVE_EDITLINE_READLINE_H=1 -DHAVE_EDITLINE=1 -DHAVE_ZLIB_H=1 -I. -D_REENTRANT=1 -DSQLITE_THREADSAFE=0 -DSQLITE_ENABLE_MATH_FUNCTIONS -DSQLITE_ENABLE_FTS4 -DSQLITE_ENABLE_FTS5 -DSQLITE_ENABLE_JSON1 -DSQLITE_ENABLE_RTREE -DSQLITE_ENABLE_GEOPOLY -DSQLITE_HAVE_ZLIB=1 -DSQLITE_OS_OTHER=1 -USQLITE_OS_WIN_H -c -O2 -fomit-frame-pointer 
+
+LDFLAGS=$(LDFLAGS_CMD)
+LDFLAGS+= -shared -s -T dll.lds --entry _DllStartup --image-base=0
+LDFLAGS+=  --out-implib $(LIBRARY).dll.a
+ARFLAGS:= crs
+INCLUDES= -I. -I../newlib/libc/include
+LIBS:=  -ldll -lgcc -lc.dll
+
+SOURCES = sqlite3.c stub.c 
+OBJECTS =  $(patsubst %.c, %.o, $(SOURCES))
+
+all:$(LIBRARY).a $(LIBRARY).dll
+
+$(LIBRARY).a: $(OBJECTS) Makefile
+	$(AR) $(ARFLAGS) $(LIBRARY).a $(OBJECTS)
+	mv -f $(LIBRARY).a $(INSTALLDIR)
+
+$(LIBRARY).dll: sqlite3.def $(OBJECTS) Makefile
+	$(LD) $(LDFLAGS) -o $@  sqlite3.def $(OBJECTS) $(LIBS)
+	$(STRIP) $@
+	#mv -f $(LIBRARY).dll.a $(INSTALLDIR)
+
+
+%.o : %.c Makefile
+	$(CC) $(CFLAGS) $(DEFINES) $(INCLUDES) -o $@ $<
+
+sqlite3_shell:
+	$(CC) $(CFLAGS) $(DEFINES) $(INCLUDES) shell.c
+	
+clean: 
+	-rm -f *.o 
