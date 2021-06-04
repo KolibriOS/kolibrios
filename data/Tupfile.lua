@@ -445,6 +445,7 @@ tup.append_table(img_files, {
  {"DEVELOP/BOARD", PROGS .. "/system/board/trunk/board"},
  {"DEVELOP/CEDIT", PROGS .. "/develop/cedit/CEDIT"},
  {"DEVELOP/COBJ", PROGS .. "/develop/cObj/trunk/cObj"},
+ {"DEVELOP/ENTROPYVIEW", PROGS .. "/develop/entropyview/entropyview"},
  {"DEVELOP/FASM", PROGS .. "/develop/fasm/1.73/fasm"},
  {"DEVELOP/H2D2B", PROGS .. "/develop/h2d2b/trunk/h2d2b"},
  {"DEVELOP/HEED", PROGS .. "/develop/heed/trunk/heed"},
