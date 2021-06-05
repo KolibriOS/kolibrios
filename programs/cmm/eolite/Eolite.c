@@ -3,8 +3,8 @@
 
 // 70.5 - get volume info and label
 
-#define TITLE "Eolite File Manager 4.6"
-#define ABOUT_TITLE "EOLITE 4.6"
+#define TITLE "Eolite File Manager 4.61"
+#define ABOUT_TITLE "EOLITE 4.61"
 
 #ifndef AUTOBUILD
 #include "lang.h--"
@@ -218,14 +218,14 @@ void main()
 	dword id;
 	int old_cur_y;
 
+	load_libraries();
+	SetAppColors();
+
 	handle_param();
 	ESBYTE[0] = NULL;
 
 	rand_n = random(80);
 
-	load_libraries();	
-
-	SetAppColors();
 	LoadIniSettings();
 	SystemDiscs.Get();
 
