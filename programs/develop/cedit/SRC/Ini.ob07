@@ -21,7 +21,7 @@ MODULE Ini;
 
 IMPORT
 
-    KOSAPI, SYSTEM, RW, Text, Utils, File, List, Languages;
+    KOSAPI, SYSTEM, RW, Text, Utils, File, List, Languages, KolibriOS;
 
 
 CONST
@@ -141,7 +141,7 @@ BEGIN
     key3     := getColor("key3",     0008080H);
 
     Text.setColors(text, back, seltext, selback, modified, saved, curline, numtext, numback,
-        comment, string, num, delim, key1, key2, key3, 808080H);
+        comment, string, num, delim, key1, key2, key3);
 END selectSection;
 
 

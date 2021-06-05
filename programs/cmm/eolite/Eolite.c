@@ -3,8 +3,8 @@
 
 // 70.5 - get volume info and label
 
-#define TITLE "Eolite File Manager 4.5"
-#define ABOUT_TITLE "EOLITE 4.5"
+#define TITLE "Eolite File Manager 4.51"
+#define ABOUT_TITLE "EOLITE 4.51"
 
 #ifndef AUTOBUILD
 #include "lang.h--"
@@ -276,7 +276,7 @@ void main()
 					if (getElementSelectedFlag(files.cur_y) == false) selected_count = 0; //on redraw selection would be flashed, see [L001] 
 					EventShowListMenu();
 				}
-				break;
+				//break;
 			}
 
 			if (mouse.x>=files.x+files.w) && (mouse.x<=files.x+files.w+16) && (mouse.y>files.y-17) && (mouse.y<files.y)
@@ -740,7 +740,7 @@ void Line_ReDraw(dword bgcol, filenum){
 		  file_name_off,
 		  file_size=0,
 		  y=filenum*files.item_h+files.y,
-		  icon_y = files.item_h-icon_size/2+1+y;
+		  icon_y = files.item_h-icon_size/2+y;
 		  BDVK file;
 		  char full_path[4096];
 	char label_file_name[4096];

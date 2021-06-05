@@ -23,9 +23,29 @@ IMPORT
     KOSAPI, SYSTEM;
 
 CONST
+(*
     winColor* = 0EEEEEEH;
+    textColor* = 0000000H;
+    btnColor* = 0CCCCCCH;
+    btnTextColor* = 0000000H;
+    toolbarColor* = 0DFDFDFH;
+    scrollColor* = 0A0A0A0H;
+    scrollBkColor* = winColor;
+    borderColor* = 0808080H;
+    selMenuColor* = 0CCE8FFH;
+    shadowColor* = 0808080H;
+    caseColor* = 00000FFH;
+    disCaseColor* = 0808080H;
+*)
     fontWidth* = 8;
     fontHeight* = 16;
+
+VAR
+
+    winColor*, textColor*, btnColor*, btnTextColor*,
+    toolbarColor*, scrollColor*, scrollBkColor*,
+    borderColor*, selMenuColor*, shadowColor*,
+    caseColor*, disCaseColor*: INTEGER;
 
 
 PROCEDURE GetCommandLine* (): INTEGER;
@@ -154,7 +174,7 @@ BEGIN
     KOSAPI.sysfunc5(8, LSL(Left, 16) + Width, LSL(Top, 16) + Height, id, Color);
     x := Left + (Width - fontWidth * LENGTH(Caption)) DIV 2;
     y := Top + (Height - fontHeight) DIV 2 + 1;
-    DrawText(x, y, 0, Caption)
+    DrawText(x, y, btnTextColor, Caption)
 END CreateButton;
 
 
@@ -296,6 +316,43 @@ PROCEDURE SendIPC* (tid, msg: INTEGER);
 BEGIN
     KOSAPI.sysfunc5(60, 2, tid, SYSTEM.ADR(msg), SYSTEM.SIZE(INTEGER))
 END SendIPC;
+
+
+PROCEDURE PutPixel* (x, y, color: INTEGER);
+BEGIN
+    KOSAPI.sysfunc4(1, x, y, color)
+END PutPixel;
+
+
+PROCEDURE GetSystemColors*;
+VAR
+    buf: ARRAY 10 OF INTEGER;
+BEGIN
+(*    winColor := 0EEEEEEH;
+    textColor := 0000000H;
+    btnColor := 0CCCCCCH;
+    btnTextColor := 0000000H;
+    scrollColor := 0A0A0A0H;
+    scrollBkColor := winColor;
+    borderColor := 0808080H;
+    *)
+    selMenuColor := 0CCE8FFH;
+    toolbarColor := 0DFDFDFH;
+    shadowColor := 0808080H;
+    caseColor := 00000FFH;
+    disCaseColor := 0808080H;
+
+    ASSERT(LEN(buf) >= 10);
+    KOSAPI.sysfunc4(48, 3, SYSTEM.ADR(buf[0]), 40);
+
+    winColor := buf[5];
+    textColor := buf[8];
+    btnColor := buf[6];
+    btnTextColor := buf[7];
+    scrollColor := btnColor;
+    scrollBkColor := winColor;
+    borderColor := buf[9];
+END GetSystemColors;
 
 
 END KolibriOS.

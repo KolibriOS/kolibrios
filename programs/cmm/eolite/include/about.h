@@ -42,8 +42,7 @@ void about_dialog()
 				about_x = -strlen(ABOUT_TITLE)*18+about_form.cwidth/2;
 				WriteTextB(about_x+2,107,0x82,0xD49CD2,ABOUT_TITLE);
 				WriteTextB(about_x,105,0x82,0x9D129D,ABOUT_TITLE);
-				DrawRectangle3D(0,154,about_form.cwidth,1,sc.work_dark,sc.work_light);
-				WriteTextLines(7,163,0x90,sc.work_text,"KolibriOS File Manager\nAuthors: Leency, Veliant\nPunk_Joker, Pavelyakov\n2008 - 2020",20);
+				WriteTextLines(73,163,0x90,sc.work_text,"    By Leency\nand KolibriOS Team\n    2008-2021",20);
 				#ifdef LANG_RUS
 				DrawStandartCaptButton(60,about_form.cheight-38,11,"История разработки");
 				#endif

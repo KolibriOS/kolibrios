@@ -48,7 +48,6 @@ TYPE
     END;
 
     tMenu* = POINTER TO RECORD
-        (*stack: POINTER TO RECORD stk: ARRAY 250000 OF INTEGER END;*)
         tid*: INTEGER;
         winX, winY, width*, height*: INTEGER;
         selItem, cliItem: INTEGER;
@@ -163,7 +162,7 @@ VAR
     item: List.tItem;
 BEGIN
     item := List.getItem(m.items, i);
-    IF item(tItem).enabled THEN
+    IF (item # NIL) & item(tItem).enabled THEN
         m.click(m, item(tItem).id);
         exit(m)
     END
@@ -304,10 +303,6 @@ BEGIN
     IF m.tid = 0 THEN
         m.winX := x;
         m.winY := y;
-(*        DISPOSE(m.stack);
-        NEW(m.stack);
-        SYSTEM.PUT(SYSTEM.ADR(m.stack.stk[LEN(m.stack.stk) - 1]), m);
-        lastTID := K.CreateThread(SYSTEM.ADR(window), m.stack.stk);*)
         SYSTEM.PUT(SYSTEM.ADR(stack[LEN(stack) - 1]), m);
         lastTID := K.CreateThread(SYSTEM.ADR(window), stack);
         m.tid := lastTID
@@ -319,7 +314,6 @@ PROCEDURE close* (m: tMenu);
 BEGIN
     IF m.tid # 0 THEN
         K.ExitID(m.tid);
-        (*DISPOSE(m.stack);*)
         m.tid := 0
     END
 END close;
@@ -346,7 +340,6 @@ BEGIN
     m.height := items.count*fontHeight - 2;
     m.font := G.CreateFont(1, "", {});
     m.canvas := G.CreateCanvas(m.width + 1, m.height + 1);
-    (*m.stack := NIL;*)
     G.SetFont(m.canvas, m.font);
     RETURN m
 END create;

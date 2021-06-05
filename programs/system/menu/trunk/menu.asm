@@ -22,7 +22,7 @@
 ;******************************************************************************
   BTN_HEIGHT         = 26
   BTN_WIDTH          = 178
-  TXT_Y              = (BTN_HEIGHT)/2-6
+  TXT_Y              = (BTN_HEIGHT)/2-7
   FONT_TYPE          = 0x90000000
 
   PANEL_HEIGHT       = 20

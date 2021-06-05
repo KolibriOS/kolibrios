@@ -19,7 +19,7 @@
 
 MODULE Scroll;
 
-IMPORT G := Graph;
+IMPORT G := Graph, K := KolibriOS;
 
 TYPE
 
@@ -27,7 +27,6 @@ TYPE
         vertical, mouse: BOOLEAN;
         canvas: G.tCanvas;
         xSize*, ySize*, pos, mousePos: INTEGER;
-        color, bkColor: INTEGER;
         value*, maxVal*: INTEGER
     END;
 
@@ -50,21 +49,25 @@ BEGIN
         pos := 0
     END;
     canvas := scroll.canvas;
-    G.SetColor(canvas, scroll.bkColor);
+    G.SetColor(canvas, K.scrollBkColor);
     G.clear(canvas);
-    G.SetColor(canvas, 0808080H);
+    G.SetColor(canvas, K.borderColor);
     G.Rect(canvas, 0, 0, scroll.xSize - 1, scroll.ySize - 1);
-    G.SetColor(canvas, scroll.color);
+    G.SetColor(canvas, K.scrollColor);
     DEC(b, 2);
     IF scroll.vertical THEN
         G.FillRect(canvas, 1, pos + 1, b, pos + b);
-        G.SetColor(canvas, 0404040H);
+        G.SetColor(canvas, K.borderColor);
+        G.Rect(canvas, 0, pos, b + 2, pos + b + 1);
+        G.SetColor(canvas, K.btnTextColor);
         G.HLine(canvas, pos + 1 + b DIV 2, 4, b - 4);
         G.HLine(canvas, pos + 1 + b DIV 2 - 3, 6, b - 6);
         G.HLine(canvas, pos + 1 + b DIV 2 + 3, 6, b - 6);
     ELSE
         G.FillRect(canvas, pos + 1, 1, pos + b, b);
-        G.SetColor(canvas, 0404040H);
+        G.SetColor(canvas, K.borderColor);
+        G.Rect(canvas, pos, 0, pos + b + 1, b + 2);
+        G.SetColor(canvas, K.btnTextColor);
         G.VLine(canvas, pos + b DIV 2, 4, b - 4);
         G.VLine(canvas, pos + b DIV 2 - 3, 6, b - 6);
         G.VLine(canvas, pos + b DIV 2 + 3, 6, b - 6);
@@ -74,7 +77,7 @@ BEGIN
 END draw;
 
 
-PROCEDURE create* (xSize, ySize: INTEGER; color, bkColor: INTEGER): tScroll;
+PROCEDURE create* (xSize, ySize: INTEGER): tScroll;
 VAR
     scroll: tScroll;
 BEGIN
@@ -85,8 +88,6 @@ BEGIN
     scroll.maxVal := 30;
     scroll.value := 0;
     scroll.mouse := FALSE;
-    scroll.bkColor := bkColor;
-    scroll.color := color;
     scroll.canvas := G.CreateCanvas(xSize, ySize)
     RETURN scroll
 END create;

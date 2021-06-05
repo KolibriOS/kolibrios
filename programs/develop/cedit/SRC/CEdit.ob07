@@ -20,17 +20,17 @@
 MODULE CEdit;
 
 IMPORT
-    SYSTEM, OpenDlg, K := KolibriOS,
+    OpenDlg, K := KolibriOS,
     U := Utils, Lines, Menu, List,
     G := Graph, T := Text, E := Encodings,
     CB := Clipboard, Languages,
     ChangeLog, Scroll,
-    RW, Ini, box_lib, LibImg;
+    RW, Ini, box_lib, Icons;
 
 CONST
-    header = "CEdit (24-may-2021)";
+    header = "CEdit (03-jun-2021)";
 
-    ShellFilter = "";(* "SH|"; *)
+    ShellFilter = "";
     EditFilter = "SH|ASM|TXT|INC|OB07|C|CPP|H|PAS|PP|LUA|INI";
 
     fontWidth = K.fontWidth;
@@ -73,7 +73,6 @@ CONST
 
     MainMenuHeight = fontHeight + 7;
 
-    btnColor = 0CCCCCCH;
     btnHeight = 25;
     btnWidth = 75;
     btnTop = MainMenuHeight + 3;
@@ -84,9 +83,7 @@ CONST
     RIGHT = scrollWidth - 2;
     BOTTOM = scrollWidth + 25;
 
-    winColor = K.winColor; minWinWidth = 635; minWinHeight = 542;
-
-    toolbarColor = 0DFDFDFH;
+    minWinWidth = 635; minWinHeight = 542;
 
     SEARCH_PADDING = 10;
     searchLeft = 10;
@@ -121,7 +118,6 @@ CONST
     menuExit = 15;
 
     menuNumbers = 20;
-    (*menuSettings = 21;*)
     menuColors = 1000;
     menuMaxColors = menuColors + Ini.MAX_SECTIONS - 1;
 
@@ -147,6 +143,7 @@ CONST
 
     menuPipet = 70;
     menuSysFunc = 71;
+
 
 VAR
     canvas: G.tCanvas;
@@ -190,7 +187,7 @@ BEGIN
     U.int2str(col, s2);
     U.append(s1, ": ");
     U.append(s1, s2);
-    K.DrawText(LEFT, y, 0, s1)
+    K.DrawText(LEFT, y, K.textColor, s1)
 END WritePos;
 
 
@@ -206,11 +203,6 @@ BEGIN
     ELSE
         edit.flags := ORD(BITS(edit.flags) - {1})
     END;
-(*    IF value THEN
-        edit.color := 0FFFFFFH
-    ELSE
-        edit.color := 0D0D0D0H
-    END;*)
     IF search THEN
         box_lib.edit_box_draw(edit)
     END
@@ -241,9 +233,9 @@ BEGIN
     right := left + width - 1;
     x := minWidth DIV 2 + left;
     y := (height - fontHeight) DIV 2 + top;
-    K.DrawRect(left, top, width, height, winColor);
+    K.DrawRect(left, top, width, height, K.winColor);
     Rect(left, top, right, bottom, borderColor);
-    K.DrawText(x, y, 0, s);
+    K.DrawText(x, y, K.textColor, s);
 END Message;
 
 
@@ -276,15 +268,6 @@ BEGIN
 END Replaced;
 
 
-PROCEDURE icons16 (icons, n, x, y: INTEGER);
-VAR
-    sizeX, sizeY, data: INTEGER;
-BEGIN
-    LibImg.GetInf(icons, sizeX, sizeY, data);
-    K.DrawImage(data + 16*16*3*n, 16, 16, x, y)
-END icons16;
-
-
 PROCEDURE toolbarIcons;
 CONST
     iconPad = (toolBtnSize - 16) DIV 2;
@@ -293,56 +276,51 @@ VAR
 BEGIN
     x := searchLeft + (toolBtnSize + 5)*2;
     IF text.modified THEN
-        icons16(icons, 5, x + iconPad, btnTop + iconPad)
+        Icons.draw(icons, 5, x + iconPad, btnTop + iconPad)
     ELSE
-        icons16(grayIcons, 5, x + iconPad, btnTop + iconPad)
+        Icons.draw(grayIcons, 5, x + iconPad, btnTop + iconPad)
     END;
 
     IF text.edition # NIL THEN
         x := searchLeft + (toolBtnSize + 5)*4 + toolbarDelim*2;
         IF ChangeLog.isFirstGuard(text.edition) THEN
-            icons16(grayIcons, 37, x + iconPad, btnTop + iconPad)
+            Icons.draw(grayIcons, 37, x + iconPad, btnTop + iconPad)
         ELSE
-            icons16(icons, 37, x + iconPad, btnTop + iconPad)
+            Icons.draw(icons, 37, x + iconPad, btnTop + iconPad)
         END;
 
         x := searchLeft + (toolBtnSize + 5)*5 + toolbarDelim*2;
         IF ChangeLog.isLastGuard(text.edition) THEN
-            icons16(grayIcons, 36, x + iconPad, btnTop + iconPad)
+            Icons.draw(grayIcons, 36, x + iconPad, btnTop + iconPad)
         ELSE
-            icons16(icons, 36, x + iconPad, btnTop + iconPad)
+            Icons.draw(icons, 36, x + iconPad, btnTop + iconPad)
         END
-(*    ELSE
-        x := searchLeft + (toolBtnSize + 5)*4;
-        icons16(grayIcons, 37, x + iconPad, btnTop + iconPad);
-        x := searchLeft + (toolBtnSize + 5)*5;
-        icons16(grayIcons, 36, x + iconPad, btnTop + iconPad)*)
     END;
 
     IF T.selected(text) THEN
-        color := 00000FFH
+        color := K.caseColor
     ELSE
-        color := 0808080H
+        color := K.disCaseColor
     END;
 
     x := searchLeft + (toolBtnSize + 5)*6 + toolbarDelim*3;
-    K.DrawRect(x, btnTop, toolBtnSize, toolBtnSize, toolbarColor);
+    K.DrawRect(x, btnTop, toolBtnSize, toolBtnSize, K.toolbarColor);
     K.DrawText69(x + (toolBtnSize - 12) DIV 2, btnTop + (toolBtnSize - 9) DIV 2 + 2, color, "AB");
     INC(x, toolBtnSize + 5);
-    K.DrawRect(x, btnTop, toolBtnSize, toolBtnSize, toolbarColor);
+    K.DrawRect(x, btnTop, toolBtnSize, toolBtnSize, K.toolbarColor);
     K.DrawText69(x + (toolBtnSize - 12) DIV 2, btnTop + (toolBtnSize - 9) DIV 2 + 2, color, "ab");
 
     x := searchLeft + (toolBtnSize + 5)*8 + toolbarDelim*4;
     IF buildScript # "" THEN
-        icons16(icons, 54, x + iconPad, btnTop + iconPad)
+        Icons.draw(icons, 54, x + iconPad, btnTop + iconPad)
     ELSE
-        icons16(grayIcons, 54, x + iconPad, btnTop + iconPad)
+        Icons.draw(grayIcons, 54, x + iconPad, btnTop + iconPad)
     END;
     INC(x, toolBtnSize + 5);
     IF runScript # "" THEN
-        icons16(icons, 53, x + iconPad, btnTop + iconPad)
+        Icons.draw(icons, 53, x + iconPad, btnTop + iconPad)
     ELSE
-        icons16(grayIcons, 53, x + iconPad, btnTop + iconPad)
+        Icons.draw(grayIcons, 53, x + iconPad, btnTop + iconPad)
     END
 END toolbarIcons;
 
@@ -350,9 +328,9 @@ END toolbarIcons;
 PROCEDURE WriteModified (x, y: INTEGER);
 BEGIN
     modified := text.modified;
-    K.DrawRect(x, TOP + canvas.height + scrollWidth - 1, 9*fontWidth, BOTTOM - scrollWidth + 1, winColor);
+    K.DrawRect(x, TOP + canvas.height + scrollWidth - 1, 9*fontWidth, BOTTOM - scrollWidth + 1, K.winColor);
     IF modified THEN
-        K.DrawText866(x, y, 0, "modified")
+        K.DrawText866(x, y, K.textColor, "modified")
     END
 END WriteModified;
 
@@ -370,7 +348,7 @@ BEGIN
         T.draw(text);
         K.ClientSize(width, height);
         y := height - (BOTTOM - scrollWidth) + (BOTTOM - scrollWidth - 16) DIV 2;
-        K.DrawRect(LEFT, TOP + canvas.height + scrollWidth - 1, 16*fontWidth, BOTTOM - scrollWidth + 1, winColor);
+        K.DrawRect(LEFT, TOP + canvas.height + scrollWidth - 1, 16*fontWidth, BOTTOM - scrollWidth + 1, K.winColor);
         WritePos(y);
 
         IF modified # text.modified THEN
@@ -421,7 +399,7 @@ VAR
 BEGIN
     right := left + EditBox_Width + SEARCH_PADDING*2;
     bottom := top + 395 + btnHeight + SEARCH_PADDING;
-    color := T.colors.border;
+    color := K.borderColor;
     Rect(left, top, right, bottom, color);
     K.CreateButton(btnCloseFind, right - 20, top, 20, 20, 0EF999FH, "");
     K.DrawLine(right - 14, top + 5, right - 5, top + 14, 0FFFFFFH);
@@ -433,11 +411,11 @@ BEGIN
 
     INC(top, 15);
     INC(left, SEARCH_PADDING);
-    K.DrawText866(left, top, 0, "find");
-    K.DrawText866(left, top + 55, 0, "replace with");
+    K.DrawText866(left, top, K.textColor, "find");
+    K.DrawText866(left, top + 55, K.textColor, "replace with");
     K.CreateButton(btnFindEdit + ORD({30}), left, top + 20, EditBox_Width, fontHeight + 5, 0, "");
     K.CreateButton(btnReplaceEdit + ORD({30}), left, top + 75, EditBox_Width, fontHeight + 5, 0, "");
-    K.DrawText866(left, top + 330, 0, "go to line");
+    K.DrawText866(left, top + 330, K.textColor, "go to line");
     K.CreateButton(btnGotoEdit + ORD({30}), left, top + 350, EditBox_Width, fontHeight + 5, 0, "");
     BKW.top_s := BKW.top_s MOD 65536 + (top + 110) * 65536;
     CS.top_s := CS.top_s MOD 65536 + (top + 140) * 65536;
@@ -454,66 +432,19 @@ BEGIN
     box_lib.edit_box_draw(FindEdit);
     box_lib.edit_box_draw(ReplaceEdit);
     box_lib.edit_box_draw(GotoEdit);
-    box_lib.check_box_draw2(BKW); K.DrawText866(left + 20, top + 110, 0, "backward");
-    box_lib.check_box_draw2(CS); K.DrawText866(left + 20, top + 140, 0, "match case");
-    box_lib.check_box_draw2(WH); K.DrawText866(left + 20, top + 170, 0, "whole word");
+    box_lib.check_box_draw2(BKW); K.DrawText866(left + 20, top + 110, K.textColor, "backward");
+    box_lib.check_box_draw2(CS); K.DrawText866(left + 20, top + 140, K.textColor, "match case");
+    box_lib.check_box_draw2(WH); K.DrawText866(left + 20, top + 170, K.textColor, "whole word");
     y := top + 200;
-    K.CreateButton(btnFindNext, left, y, btnWidth, btnHeight, btnColor, "next"); INC(y, btnHeight + 10);
-    K.CreateButton(btnReplace, left, y, btnWidth, btnHeight, btnColor, "replace"); INC(y, btnHeight + 10);
-    K.CreateButton(btnReplaceAll, left, y, btnWidth + 5*fontWidth - 2, btnHeight, btnColor, "replace all");
-    K.CreateButton(btnGoto, left, top + 380, btnWidth, btnHeight, btnColor, "go");
+    K.CreateButton(btnFindNext, left, y, btnWidth, btnHeight, K.btnColor, "next"); INC(y, btnHeight + 10);
+    K.CreateButton(btnReplace, left, y, btnWidth, btnHeight, K.btnColor, "replace"); INC(y, btnHeight + 10);
+    K.CreateButton(btnReplaceAll, left, y, btnWidth + 5*fontWidth - 2, btnHeight, K.btnColor, "replace all");
+    K.CreateButton(btnGoto, left, top + 380, btnWidth, btnHeight, K.btnColor, "go");
 END SearchPanel;
-
-
-PROCEDURE gray (icons: INTEGER);
-VAR
-    sizeX, sizeY, data, x, y: INTEGER;
-    b, g, r, gr: BYTE;
-BEGIN
-    LibImg.GetInf(icons, sizeX, sizeY, data);
-    FOR y := 0 TO sizeY - 1 DO
-        FOR x := 0 TO sizeX - 1 DO
-            SYSTEM.GET8(data, b);
-            SYSTEM.GET8(data + 1, g);
-            SYSTEM.GET8(data + 2, r);
-            gr := (r + g + b) DIV 3;
-            SYSTEM.PUT8(data, gr);
-            SYSTEM.PUT8(data + 1, gr);
-            SYSTEM.PUT8(data + 2, gr);
-            INC(data, 3);
-        END
-    END
-END gray;
-
-
-PROCEDURE iconsBackColor (icons: INTEGER);
-VAR
-    sizeX, sizeY, data, x, y: INTEGER;
-    b, g, r: BYTE;
-BEGIN
-    LibImg.GetInf(icons, sizeX, sizeY, data);
-    FOR y := 0 TO sizeY - 1 DO
-        FOR x := 0 TO sizeX - 1 DO
-            SYSTEM.GET8(data, b);
-            SYSTEM.GET8(data + 1, g);
-            SYSTEM.GET8(data + 2, r);
-            IF b + g + r = 765 THEN
-                b := toolbarColor MOD 256;
-                g := toolbarColor DIV 256 MOD 256;
-                r := toolbarColor DIV 65536 MOD 256
-            END;
-            SYSTEM.PUT8(data, b);
-            SYSTEM.PUT8(data + 1, g);
-            SYSTEM.PUT8(data + 2, r);
-            INC(data, 3);
-        END
-    END
-END iconsBackColor;
 
 
 PROCEDURE draw_window;
 CONST
-    selMenuColor = 0CCE8FFH;
     iconPad = (toolBtnSize - 16) DIV 2;
 VAR
     width, height, x, y: INTEGER;
@@ -521,10 +452,10 @@ VAR
 
     PROCEDURE drawToolbarBtn (id, x: INTEGER);
     BEGIN
-        K.DrawRect(x, btnTop, toolBtnSize, toolBtnSize, toolbarColor);
-        K.DrawLine(x, btnTop + toolBtnSize, x + toolBtnSize, btnTop + toolBtnSize, 0808080H);
-        K.DrawLine(x + toolBtnSize, btnTop, x + toolBtnSize, btnTop + toolBtnSize, 0808080H);
-        K.CreateButton(id + ORD({30}), x, btnTop, toolBtnSize, toolBtnSize, btnColor, "");
+        K.DrawRect(x, btnTop, toolBtnSize, toolBtnSize, K.toolbarColor);
+        K.DrawLine(x, btnTop + toolBtnSize, x + toolBtnSize, btnTop + toolBtnSize, K.shadowColor);
+        K.DrawLine(x + toolBtnSize, btnTop, x + toolBtnSize, btnTop + toolBtnSize, K.shadowColor);
+        K.CreateButton(id + ORD({30}), x, btnTop, toolBtnSize, toolBtnSize, K.btnColor, "");
     END drawToolbarBtn;
 
 
@@ -533,26 +464,27 @@ VAR
         menuColor, n: INTEGER;
     BEGIN
         IF menu.tid # 0 THEN
-            menuColor := selMenuColor
+            menuColor := K.selMenuColor
         ELSE
-            menuColor := winColor
+            menuColor := K.winColor
         END;
         n := LENGTH(caption);
         K.DrawRect(x, 0, n*fontWidth + 2, MainMenuHeight, menuColor);
-        K.CreateButton(btn + ORD({30}), x, 0, n*fontWidth + 2, MainMenuHeight, btnColor, caption);
+        K.CreateButton(btn + ORD({30}), x, 0, n*fontWidth + 2, MainMenuHeight, K.btnColor, "");
+        K.DrawText(x + 1, (MainMenuHeight - fontHeight) DIV 2 + 1, K.textColor, caption)
     END drawMainMenu;
 
 
 BEGIN
     K.BeginDraw;
-    K.CreateWindow(50 + K.GetTickCount() MOD 128, 50 + K.GetTickCount() MOD 128, winWidth, winHeight, winColor, 73H, 0, 0, header);
+    K.CreateWindow(50 + K.GetTickCount() MOD 128, 50 + K.GetTickCount() MOD 128, winWidth, winHeight, K.winColor, 73H, 0, 0, header);
     IF (text # NIL) & ~K.RolledUp() THEN
         confirm := FALSE;
         K.ClientSize(width, height);
 
-        K.DrawRect(0, 0, width, TOP, winColor);
-        K.DrawRect(0, 0, LEFT, height, winColor);
-        K.DrawRect(LEFT + canvas.width - 1, TOP + canvas.height - 1, scrollWidth, scrollWidth, winColor);
+        K.DrawRect(0, 0, width, TOP, K.winColor);
+        K.DrawRect(0, 0, LEFT, height, K.winColor);
+        K.DrawRect(LEFT + canvas.width - 1, TOP + canvas.height - 1, scrollWidth, scrollWidth, K.winColor);
 
         drawMainMenu(menuFile, menuFileX, btnFile, "file");
         drawMainMenu(menuEdit, menuEditX, btnEdit, "edit");
@@ -565,18 +497,18 @@ BEGIN
         x := searchLeft;
 
         drawToolbarBtn(btnNew, x);
-        icons16(icons, 2, x + iconPad, btnTop + iconPad);
+        Icons.draw(icons, 2, x + iconPad, btnTop + iconPad);
         INC(x, toolBtnSize + 5);
 
         drawToolbarBtn(btnOpen, x);
-        icons16(icons, 0, x + iconPad, btnTop + iconPad);
+        Icons.draw(icons, 0, x + iconPad, btnTop + iconPad);
         INC(x, toolBtnSize + 5);
 
         drawToolbarBtn(btnSave, x);
         INC(x, toolBtnSize + 5 + toolbarDelim);
 
         drawToolbarBtn(btnSearch, x);
-        icons16(icons, 49, x + iconPad, btnTop + iconPad);
+        Icons.draw(icons, 49, x + iconPad, btnTop + iconPad);
         INC(x, toolBtnSize + 5 + toolbarDelim);
 
         drawToolbarBtn(btnUndo, x);
@@ -586,45 +518,46 @@ BEGIN
         INC(x, toolBtnSize + 5 + toolbarDelim);
 
         drawToolbarBtn(btnUpper, x);
-        K.DrawText69(x + (toolBtnSize - 12) DIV 2, btnTop + (toolBtnSize - 9) DIV 2 + 2, 0, "AB");
         INC(x, toolBtnSize + 5);
 
         drawToolbarBtn(btnLower, x);
-        K.DrawText69(x + (toolBtnSize - 12) DIV 2, btnTop + (toolBtnSize - 9) DIV 2 + 2, 0, "ab");
         INC(x, toolBtnSize + 5 + toolbarDelim);
 
         drawToolbarBtn(btnBuild, x);
-        icons16(icons, 54, x + iconPad, btnTop + iconPad);
+        Icons.draw(icons, 54, x + iconPad, btnTop + iconPad);
         INC(x, toolBtnSize + 5);
 
         drawToolbarBtn(btnRun, x);
-        icons16(icons, 53, x + iconPad, btnTop + iconPad);
+        Icons.draw(icons, 53, x + iconPad, btnTop + iconPad);
         INC(x, toolBtnSize + 5);
 
-        K.CreateButton(btnUp, LEFT + canvas.width - 1, TOP, scrollWidth - 1, scrollWidth, btnColor, 0X);
-        K.DrawText69(LEFT + canvas.width - 1 + (scrollWidth - 6) DIV 2, TOP + (scrollWidth - 9) DIV 2, 0, 18X);
-        K.CreateButton(btnDown, LEFT + canvas.width - 1, TOP + canvas.height - scrollWidth - 1, scrollWidth - 1, scrollWidth, btnColor, 0X);
-        K.DrawText69(LEFT + canvas.width - 1 + (scrollWidth - 6) DIV 2, TOP + canvas.height - scrollWidth + (scrollWidth - 9) DIV 2, 0, 19X);
+        K.CreateButton(btnUp, LEFT + canvas.width - 1, TOP, scrollWidth - 1, scrollWidth, K.btnColor, 0X);
+        K.DrawText69(LEFT + canvas.width - 1 + (scrollWidth - 6) DIV 2, TOP + (scrollWidth - 9) DIV 2, K.btnTextColor, 18X);
+        K.CreateButton(btnDown, LEFT + canvas.width - 1, TOP + canvas.height - scrollWidth - 1, scrollWidth - 1, scrollWidth, K.btnColor, 0X);
+        K.DrawText69(LEFT + canvas.width - 1 + (scrollWidth - 6) DIV 2, TOP + canvas.height - scrollWidth + (scrollWidth - 9) DIV 2, K.btnTextColor, 19X);
 
-        K.CreateButton(btnLeft, LEFT, TOP + canvas.height - 1, scrollWidth, scrollWidth - 1, btnColor, 0X);
-        K.DrawText69(LEFT + (scrollWidth - 6) DIV 2, TOP + canvas.height - 1 + (scrollWidth - 9) DIV 2 + 1, 0, 1BX);
-        K.CreateButton(btnRight, LEFT + canvas.width - scrollWidth - 1, TOP + canvas.height - 1, scrollWidth, scrollWidth - 1, btnColor, 0X);
-        K.DrawText69(LEFT + canvas.width - scrollWidth - 1 + (scrollWidth - 6) DIV 2, TOP + canvas.height - 1 + (scrollWidth - 9) DIV 2 + 1, 0, 1AX);
+        K.CreateButton(btnLeft, LEFT, TOP + canvas.height - 1, scrollWidth, scrollWidth - 1, K.btnColor, 0X);
+        K.DrawText69(LEFT + (scrollWidth - 6) DIV 2, TOP + canvas.height - 1 + (scrollWidth - 9) DIV 2 + 1, K.btnTextColor, 1BX);
+        K.CreateButton(btnRight, LEFT + canvas.width - scrollWidth - 1, TOP + canvas.height - 1, scrollWidth, scrollWidth - 1, K.btnColor, 0X);
+        K.DrawText69(LEFT + canvas.width - scrollWidth - 1 + (scrollWidth - 6) DIV 2, TOP + canvas.height - 1 + (scrollWidth - 9) DIV 2 + 1, K.btnTextColor, 1AX);
+
+        K.PutPixel(LEFT + canvas.width + scrollWidth - 2, TOP, K.winColor);
+        K.PutPixel(LEFT, TOP + canvas.height + scrollWidth - 2, K.winColor);
 
         y := (btnHeight - fontHeight) DIV 2 + btnTop;
         CASE text.enc OF
-        |E.UTF8:    K.DrawText866(width -  6*fontWidth, y, 0, "UTF-8")
-        |E.UTF8BOM: K.DrawText866(width - 10*fontWidth, y, 0, "UTF-8-BOM")
-        |E.CP866:   K.DrawText866(width -  6*fontWidth, y, 0, "CP866")
-        |E.W1251:   K.DrawText866(width - 13*fontWidth, y, 0, "Windows-1251")
+        |E.UTF8:    K.DrawText866(width -  6*fontWidth, y, K.textColor, "UTF-8")
+        |E.UTF8BOM: K.DrawText866(width - 10*fontWidth, y, K.textColor, "UTF-8-BOM")
+        |E.CP866:   K.DrawText866(width -  6*fontWidth, y, K.textColor, "CP866")
+        |E.W1251:   K.DrawText866(width - 13*fontWidth, y, K.textColor, "Windows-1251")
         END;
         IF search THEN
             SearchPanel(searchLeft, TOP)
         END;
 
         y := height - (BOTTOM - scrollWidth) + (BOTTOM - scrollWidth - 16) DIV 2;
-        K.DrawRect(LEFT + 16*fontWidth, TOP + canvas.height + scrollWidth - 1, width - LEFT - 25*fontWidth, BOTTOM - scrollWidth + 1, winColor);
-        K.DrawText866(LEFT + 16*fontWidth, y, 0, text.fileName);
+        K.DrawRect(LEFT + 16*fontWidth, TOP + canvas.height + scrollWidth - 1, width - LEFT - 25*fontWidth, BOTTOM - scrollWidth + 1, K.winColor);
+        K.DrawText866(LEFT + 16*fontWidth, y, K.textColor, text.fileName);
         WriteModified(width - 9*fontWidth, y);
         repaint
     END;
@@ -763,11 +696,11 @@ BEGIN
     top := (canvas.height - height) DIV 2 + TOP;
     right := left + width - 1;
     bottom := top + height - 1;
-    K.DrawRect(left, top, width, height, winColor);
+    K.DrawRect(left, top, width, height, K.winColor);
     Rect(left, top, right, bottom, lineColor);
-    K.DrawText866(left + (width - 10*fontWidth) DIV 2, top + 10, 0, "save file?");
-    K.CreateButton(btnYes, left + 10, top + 35, btnWidth, btnHeight, btnColor, "yes");
-    K.CreateButton(btnNo, left + 20 + btnWidth, top + 35, btnWidth, btnHeight, btnColor, "no");
+    K.DrawText866(left + (width - 10*fontWidth) DIV 2, top + 10, K.textColor, "save file?");
+    K.CreateButton(btnYes, left + 10, top + 35, btnWidth, btnHeight, K.btnColor, "yes");
+    K.CreateButton(btnNo, left + 20 + btnWidth, top + 35, btnWidth, btnHeight, K.btnColor, "no");
 END Confirm;
 
 
@@ -1119,9 +1052,8 @@ VAR
     idx: INTEGER;
 BEGIN
     menu := List.create(NIL);
-    Menu.AddMenuItem(menu, menuNumbers,  "line numbers");
+    Menu.AddMenuItem(menu, menuNumbers, "line numbers");
     Menu.delimiter(menu);
-    (*Menu.AddMenuItem(menu, menuSettings, "settings");*)
 
     colors := Ini.sections.first(Ini.tSection);
     idx := menuColors;
@@ -1239,7 +1171,6 @@ BEGIN
         Menu.setCheck(menu, menuWin1251, ORD(text.enc = E.W1251)*2);
         INC(x, menuEncodingX)
     ELSIF menu = menuView THEN
-        (*Menu.setEnabled(menu, menuSettings, FALSE);*)
         Menu.setCheck(menu, menuNumbers, ORD(text.numbers));
         FOR i := 0 TO Ini.sections.count - 1 DO
             Menu.setCheck(menu, menuColors + i, ORD(Ini.curSectionNum = i)*2)
@@ -1280,20 +1211,16 @@ VAR
     scroll: INTEGER;
     err: INTEGER;
     fileName, filePath: RW.tFileName;
+    cliWidth, cliHeight: INTEGER;
     resized: BOOLEAN;
     firstClickX, firstClickY, time: INTEGER;
 BEGIN
+    K.GetSystemColors;
+    Icons.get(icons, grayIcons);
     modified := FALSE;
     mainTID := K.ThreadID();
     K.SetIPC(IPC);
     U.ptr2str(K.GetName(), AppPath);
-(*    U.getPath(AppPath, fileName);
-    U.append8(fileName, "/Icons16.png");*)
-    icons := LibImg.LoadFromFile("/rd/1/Icons16.png", 16, y);
-    grayIcons := LibImg.LoadFromFile("/rd/1/Icons16.png", 16, y);
-    gray(grayIcons);
-    iconsBackColor(icons);
-    iconsBackColor(grayIcons);
     Ini.load(AppPath);
     K.SetEventsMask({0, 1, 2, 5, 6, 31});
     LeftButtonUp;
@@ -1301,6 +1228,8 @@ BEGIN
     shift := {};
     winWidth := minWinWidth;
     winHeight := minWinHeight;
+    cliWidth := winWidth;
+    cliHeight := winHeight;
     LEFT := 10;
     canvas := G.CreateCanvas(winWidth - (LEFT + RIGHT + 10), winHeight - (TOP + BOTTOM + 4) - K.SkinHeight());
     font := G.CreateFont(1, "", {});
@@ -1330,8 +1259,8 @@ BEGIN
     END;
     OD := OpenDlg.Create(draw_window, OpenDlg.topen, filePath, "");
 
-    vScroll := Scroll.create(scrollWidth, canvas.height - scrollWidth*2 + 1, 0A0A0A0H, winColor);
-    hScroll := Scroll.create(canvas.width - scrollWidth*2, scrollWidth, 0A0A0A0H, winColor);
+    vScroll := Scroll.create(scrollWidth, canvas.height - scrollWidth*2 + 1);
+    hScroll := Scroll.create(canvas.width - scrollWidth*2, scrollWidth);
     T.resize(canvas.width, canvas.height);
     T.SetPos(text, 0, 0);
     confirm := FALSE;
@@ -1351,9 +1280,13 @@ BEGIN
     WHILE TRUE DO
         CASE K.WaitForEvent() OF
         |1:
+            K.GetSystemColors;
+            Icons.get(icons, grayIcons);
             IF ~K.RolledUp() THEN
-                K.WinSize(width, height);
-                IF (width # winWidth) OR (height # winHeight) THEN
+                K.ClientSize(width, height);
+                IF (width # cliWidth) OR (height # cliHeight) THEN
+                    cliWidth := width;
+                    cliHeight := height;
                     resize;
                     resized := TRUE
                 END;

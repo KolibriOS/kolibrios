@@ -319,7 +319,7 @@ BEGIN
 END comments;
 
 
-PROCEDURE EnterKW (s: ARRAY OF CHAR; VAR KW: tKeyWords);
+PROCEDURE EnterKW (s: ARRAY OF CHAR; VAR KW: tKeyWords; CPrep: BOOLEAN);
 CONST
     SPACE = 20X; CR = 0DX; LF = 0AX; TAB = 9X; COMMA = ",";
 VAR
@@ -333,7 +333,8 @@ BEGIN
     k := KW.cnt;
     i := 0;
     REPEAT
-        j := 0;
+        KW.words[k, 0] := "#";
+        j := ORD(CPrep);
         WHILE (s[i] # 0X) & ~delim(s[i]) DO
             KW.words[k, j] := WCHR(ORD(s[i]));
             INC(i);
@@ -360,8 +361,8 @@ BEGIN
         KW[i].cnt := 0;
         key[2] := CHR(ORD("1") + i);
         getStr(lang, key, s);
-        EnterKW(s, KW[i])
-    END;
+        EnterKW(s, KW[i], (lang = "lang_C") & (i = 1))
+    END
 END loadKW;
 
 

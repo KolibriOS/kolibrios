@@ -26,6 +26,7 @@ IMPORT
     RW, Search,
     E := Encodings,
     CB := Clipboard,
+    K := KolibriOS,
     ChangeLog,
     Lang := Languages;
 
@@ -91,7 +92,7 @@ VAR
     ShowCursor: PROCEDURE;
 
     colors*: RECORD
-                text, back, seltext, selback, modified, saved, curline, numtext, numback, border*: INTEGER;
+                text, back, seltext, selback, modified, saved, curline, numtext, numback: INTEGER;
                 comment, string, num, delim, key1, key2, key3: INTEGER
              END;
     canvas: G.tCanvas;
@@ -766,7 +767,7 @@ BEGIN
         ELSIF lang = Lang.langIni THEN
 
         IF depth = 0 THEN
-            IF c = ";" THEN
+            IF (c = ";") OR (c = "#") THEN
                 PrintLex(text, line, i, n, y, colors.comment, backColor);
                 i := n
             ELSIF c = '"' THEN
@@ -1851,7 +1852,7 @@ BEGIN
     IF drawCursor THEN
         cursor(text)
     END;
-    G.SetColor(canvas, colors.border);
+    G.SetColor(canvas, K.borderColor);
     G.Rect(canvas, 0, 0, size.X - 1, size.Y - 1);
 END draw;
 
@@ -1890,7 +1891,7 @@ END create;
 
 
 PROCEDURE setColors* (text, back, seltext, selback, modified, saved, curline, numtext, numback,
-                        comment, string, num, delim, key1, key2, key3, border: INTEGER);
+                        comment, string, num, delim, key1, key2, key3: INTEGER);
 BEGIN
     colors.text := text;
     colors.back := back;
@@ -1908,7 +1909,6 @@ BEGIN
     colors.key1 := key1;
     colors.key2 := key2;
     colors.key3 := key3;
-    colors.border := border;
 END setColors;
 
 

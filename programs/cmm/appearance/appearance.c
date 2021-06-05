@@ -284,7 +284,7 @@ void Sort_by_Name(int a, b) // for the first call: a = 0, b = sizeof(mas) - 1
 
 void SelectList_DrawLine(dword i)
 {
-	int yyy, list_last;
+	int yyy;
 
 	cur = select_list.first + i;
 	strcpy(#temp_filename, io.dir.position(files_mas[cur]));

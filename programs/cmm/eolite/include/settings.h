@@ -166,7 +166,7 @@ void LoadIniSettings()
 	Form.left   = ini.GetInt("WinX", 200); 
 	Form.top    = ini.GetInt("WinY", 50); 
 	Form.width  = ini.GetInt("WinW", 550); 
-	Form.height = ini.GetInt("WinH", 506); 
+	Form.height = ini.GetInt("WinH", 503); 
 	ini.GetString("DefaultPath", #path, 4096, "/rd/1");
 	ini.GetString("DefaultPath", #path_start, 4096, "/rd/1");
 	path_start_ed.size = path_start_ed.pos = strlen(#path_start);
