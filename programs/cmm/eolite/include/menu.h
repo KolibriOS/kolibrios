@@ -26,7 +26,8 @@ char burger_menu_items[] =
 "Новое окно|Ctrl+N
 Открыть консоль|Ctrl+G
 Обновить папку|F5
-О программе|F1";
+Настройки|F10
+О программе";
 
 #elif LANG_EST
 char file_actions[]= 
@@ -55,7 +56,8 @@ char burger_menu_items[] =
 "New window|Ctrl+N
 Open console here|Ctrl+G
 Vфrskenda|F5
-About|F1";
+Settings|F10
+About";
 
 #else
 char file_actions[]= 
@@ -84,7 +86,8 @@ char burger_menu_items[] =
 "New window|Ctrl+N
 Open console here|Ctrl+G
 Refresh folder|F5
-About|F1";
+Settings|F10
+About";
 #endif
 
 
@@ -119,7 +122,8 @@ void EventMenuClick(dword _id)
 		case 1: EventOpenNewEolite(); break;
 		case 2: EventOpenConsoleHere(); break;
 		case 3: EventRefreshDisksAndFolders(); break;
-		case 4: FnProcess(1); break;		
+		case 4: FnProcess(10); break;
+		case 5: FnProcess(1); break;		
 	}
 	active_menu = NULL;
 }

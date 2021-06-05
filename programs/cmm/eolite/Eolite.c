@@ -3,8 +3,8 @@
 
 // 70.5 - get volume info and label
 
-#define TITLE "Eolite File Manager 4.51"
-#define ABOUT_TITLE "EOLITE 4.51"
+#define TITLE "Eolite File Manager 4.6"
+#define ABOUT_TITLE "EOLITE 4.6"
 
 #ifndef AUTOBUILD
 #include "lang.h--"
@@ -28,6 +28,7 @@
 #include "../lib/obj/libimg.h"
 
 #include "../lib/patterns/history.h"
+#include "../lib/patterns/toolbar_button.h"
 
 #include "imgs/images.h"
 
@@ -73,6 +74,8 @@ struct Eolite_colors
 	dword odd_line;
 } col;
 dword waves_pal[256];
+
+bool efm = false;
 
 int toolbar_buttons_x[7]={9,46,85,134,167,203};
 
@@ -163,31 +166,51 @@ void handle_param()
 	//-p <path> : just show file/folder properties dialog
 	//-d <path> : delete file/folder
 	//-v : paste files/folder from clipboard
-	if (param) && (param[0]=='-') switch (param[1]) 
+	dword p = #param;
+	if (param[0]=='/') && (param[1]=='E') && (param[2]=='F') && (param[3]=='M') {
+		efm = true;
+		p += 4;
+		if (param[4]==' ') p++;
+	}
+
+	if (ESBYTE[p]=='\0') return;
+
+	if (ESBYTE[p]=='-') switch (ESBYTE[p+1]) 
 	{
 		case 'p':
-			strcpy(#file_path, #param + 3);
+			strcpy(#file_path, p + 3);
 			itdir = dir_exists(#file_path);
-			strcpy(#file_name, #param + strrchr(#param, '/'));
-			param[strrchr(#param, '/')-1] = '\0';
-			strcpy(#path, #param + 3);
+			strcpy(#file_name, p + strrchr(p, '/'));
+			ESBYTE[strrchr(p, '/')+p-1] = '\0';
+			strcpy(#path, p + 3);
 			properties_dialog();
 			ExitProcess();
-			return;
 		case 'd':
-			strcpy(#file_path, #param + 3);
+			strcpy(#file_path, p + 3);
 			itdir = dir_exists(#file_path);
 			DisplayOperationForm(DELETE_FLAG);
 			DeleteSingleElement();
 			ExitProcess();
-			return;
 		case 'v':
-			cut_active = param[2] - '0';
-			strcpy(#path, #param + 4);
+			cut_active = ESBYTE[p+2] - '0';
+			strcpy(#path, p + 4);
 			PasteThread();
 			ExitProcess();
-			return;
 	}
+
+	if (ESBYTE[strlen(p)+p-1]=='/') ESBYTE[strlen(p)+p-1]=NULL; //no "/" at the end
+
+	if (dir_exists(p)) {
+		strcpy(#path, p);
+	} else {
+		if (file_exists(p)) {
+			ESBYTE[strrchr(p, '/')+p-1] = '\0';
+			strcpy(#path, p);
+			SelectFileByName(p+strlen(p)+1);
+		} else {
+			notify(T_NOTIFY_APP_PARAM_WRONG);
+		}
+	}	
 }
 
 void main() 
@@ -195,35 +218,17 @@ void main()
 	dword id;
 	int old_cur_y;
 
+	handle_param();
+	ESBYTE[0] = NULL;
+
 	rand_n = random(80);
 
-	load_libraries();
-	
+	load_libraries();	
+
 	SetAppColors();
 	LoadIniSettings();
 	SystemDiscs.Get();
 
-	handle_param();
-
-	ESBYTE[0] = NULL;
-
-	if (param)
-	{
-		if (strlen(#param)>1) && (param[strlen(#param)-1]=='/') param[strlen(#param)-1]=NULL; //no "/" at the end
-
-		if (dir_exists(#param)) {
-			strcpy(#path, #param);
-		} else {
-			if (file_exists(#param)) {
-				param[strrchr(#param, '/')-1] = '\0';
-				strcpy(#path, #param);
-				SelectFileByName(#param+strlen(#param)+1);
-			} else {
-				notify(T_NOTIFY_APP_PARAM_WRONG);
-			}
-		}
-	}
-	
 	Open_Dir(#path,ONLY_OPEN);
 	strcpy(#inactive_path, #path);
 	llist_copy(#files_inactive, #files);
@@ -307,7 +312,7 @@ void main()
 
 			//Scrooll
 			if (mouse.x>=files.x+files.w) && (mouse.x<=files.x+files.w+18) && (mouse.y>files.y) && (mouse.y<files.y+files.h-18) && (mouse.lkm) && (!scroll_used) {scroll_used=true; Scroll();}
-			if (scroll_used) && (mouse.up) { scroll_used=false; Scroll(); }
+			if (scroll_used) && (!mouse.key&MOUSE_LEFT) { scroll_used=false; Scroll(); }
 			
 			if (scroll_used)
 			{
@@ -525,7 +530,7 @@ void main()
 							DrawStatusBar();
 							List_ReDraw();
 							break;
-					case SCAN_CODE_F1...SCAN_CODE_F10:
+					case SCAN_CODE_F2...SCAN_CODE_F10:
 							FnProcess(key_scancode-58);
 							break; 
 					default:
@@ -560,26 +565,42 @@ void main()
 void draw_window()
 {
 	dword i;
+	incn x;
 	if (show_status_bar.checked) status_bar_h = STATUS_BAR_H; else status_bar_h = 0;
 	DefineAndDrawWindow(Form.left+rand_n,Form.top+rand_n,Form.width,Form.height,0x73,NULL,TITLE,0);
 	GetProcessInfo(#Form, SelfInfo);
 	if (Form.status_window>2) return;
 	if (Form.height < 350) { MoveSize(OLD,OLD,OLD,350); return; }
-	if (!two_panels.checked) && (Form.width < 480) { MoveSize(OLD,OLD,480,OLD); return; }
-	if ( two_panels.checked) && (Form.width < 573) { MoveSize(OLD,OLD,573,OLD); return; }
 	GetProcessInfo(#Form, SelfInfo);
 	SetAppColors();
-	ESDWORD[#toolbar_pal] = sc.work;
-	ESDWORD[#toolbar_pal+4] = MixColors(0, sc.work, 35);
-	PutPaletteImage(#toolbar, 246, 34, 0, 0, 8, #toolbar_pal);
-	DrawBar(127, 8, 1, 25, sc.work_graph);
-	for (i=0; i<3; i++) DefineHiddenButton(toolbar_buttons_x[i]+2,7,31-5,29-5,21+i);
-	for (i=3; i<6; i++) DefineHiddenButton(toolbar_buttons_x[i],  5,31,  29,  21+i);
-	DrawBar(246,0, Form.cwidth - 246, 34, sc.work);
-	DrawDot(Form.cwidth-17,12);
-	DrawDot(Form.cwidth-17,12+6);
-	DrawDot(Form.cwidth-17,12+12);
-	DefineHiddenButton(Form.cwidth-24,7,20,25,51+BT_NOFRAME); //dots
+	if (two_panels.checked) {
+		if (Form.width < 573) { MoveSize(OLD,OLD,573,OLD); return; }
+		DrawBar(0, 0, Form.cwidth, 34, sc.work);
+		#define PAD 7
+		#define GAP_S 26+5
+		#define GAP_B 26+14
+		x.set(-GAP_S+8);
+		DrawTopPanelButton(21, x.inc(GAP_S), PAD, 30, false);
+		DrawTopPanelButton(22, x.inc(GAP_S), PAD, 31, false);
+		DrawTopPanelButton(23, x.inc(GAP_B), PAD, 01, false);
+		DrawTopPanelButton(24, x.inc(GAP_B), PAD, 55, false);
+		DrawTopPanelButton(25, x.inc(GAP_S), PAD, 20, false);
+		DrawTopPanelButton(26, x.inc(GAP_S), PAD, 56, false);
+		DrawTopPanelButton(51, Form.cwidth-GAP_S-PAD, PAD, -1, false); //burger menu
+	} else {
+		if (Form.width < 480) { MoveSize(OLD,OLD,480,OLD); return; }
+		ESDWORD[#toolbar_pal] = sc.work;
+		ESDWORD[#toolbar_pal+4] = MixColors(0, sc.work, 35);
+		PutPaletteImage(#toolbar, 246, 34, 0, 0, 8, #toolbar_pal);		
+		for (i=0; i<3; i++) DefineHiddenButton(toolbar_buttons_x[i]+2,7,31-5,29-5,21+i);
+		for (i=3; i<6; i++) DefineHiddenButton(toolbar_buttons_x[i],  5,31,  29,  21+i);
+		DrawBar(127, 8, 1, 25, sc.work_graph);
+		DrawBar(246,0, Form.cwidth - 246, 34, sc.work);
+		DrawDot(Form.cwidth-17,12);
+		DrawDot(Form.cwidth-17,12+6);
+		DrawDot(Form.cwidth-17,12+12);
+		DefineHiddenButton(Form.cwidth-24,7,20,25,51+BT_NOFRAME); //dots
+	}
 	//main rectangles
 	DrawRectangle(1,40,Form.cwidth-3,Form.cheight - 42-status_bar_h,sc.work_graph);
 	DrawRectangle(0,39,Form.cwidth-1,-show_status_bar.checked*status_bar_h + Form.cheight - 40,col.work_gradient[4]); //bg
@@ -597,7 +618,7 @@ void DrawList()
 	word sorting_arrow_x;
 	dword sorting_arrow_t = "\x19";
 	if (sort_desc) sorting_arrow_t = "\x18";
-	DrawFlatButtonSmall(files.x, files.y-17,     files.w - 141,16,31,T_FILE);
+	DrawFlatButtonSmall(files.x - efm,           files.y-17,files.w-141+efm,16,31,T_FILE);
 	DrawFlatButtonSmall(files.x + files.w - 141, files.y-17,73,16,32,T_TYPE);
 	DrawFlatButtonSmall(files.x + files.w -  68, files.y-17,68,16,33,T_SIZE);
 	DrawFlatButtonSmall(files.x + files.w,       files.y-17,16,16, 0,"\x18");

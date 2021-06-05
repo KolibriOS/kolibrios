@@ -174,8 +174,6 @@ void _SystemDiscs::Draw()
 	if (two_panels.checked)
 	{
 		DrawBar(draw_x, draw_y, Form.cwidth - draw_x - 2, DEV_H_HOR, 0xFFFFFF);
-		DefineButton(Form.cwidth - 23, draw_y+2, 17,16, 60+BT_HIDE, 0xCCCccc);
-		_PutImage(Form.cwidth - 21, draw_y+4, 14,13, 2*14*13*3+#factions);
 		files.y = draw_y + DEV_H_HOR + 17;
 	} else {
 		DrawBar(draw_x+6, draw_y, 18, 1, 0xFFFfff);

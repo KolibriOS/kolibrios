@@ -28,6 +28,7 @@ img_files = {
  {"UNIMG", PROGS .. "/fs/unimg/unimg"},
  {"3D/HOUSE.3DS", "common/3d/house.3ds"},
  {"File Managers/ICONS.INI", "common/File Managers/icons.ini"},
+ {"File Managers/EFM", "common/File Managers/efm"},
  {"File Managers/KFM.INI", "common/File Managers/kfm.ini"},
  {"File Managers/FNAV/ABOUT.TXT", "common/File Managers/fNav/About.txt"},
  {"File Managers/FNAV/FNAV", "common/File Managers/fNav/fNav.kex"},

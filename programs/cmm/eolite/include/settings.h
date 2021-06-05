@@ -3,7 +3,6 @@
 	?define TITLE_SETT "Настройки"
 	?define SHOW_DEVICE_CLASS "Выводить названия класса устройств"
 	?define SHOW_STATUS_BAR "Показывать статус бар"
-	?define NOTIFY_COPY_END "Уведомлять о завершении копирования"
 	?define SHOW_BREADCRUMBS "Использовать 'хлебные крошки'"
 	?define BIG_ICONS "Использовать большие иконки"
 	?define USE_TWO_PANELS "Две панели"
@@ -18,7 +17,6 @@
 	?define TITLE_SETT "Settings"
 	?define SHOW_DEVICE_CLASS "Show device class name"
 	?define SHOW_STATUS_BAR "Show status bar"
-	?define NOTIFY_COPY_END "Notify when copying finished"
 	?define SHOW_BREADCRUMBS "Show breadcrumbs"
 	?define BIG_ICONS "Big icons in list"
 	?define USE_TWO_PANELS "Two panels"
@@ -39,7 +37,6 @@ more_less_box font_size   = { NULL, 9, 22, FONT_SIZE_LABEL };
 more_less_box line_height = { NULL, 16, 64, LIST_LINE_HEIGHT };
 checkbox show_dev_name    = { SHOW_DEVICE_CLASS };
 checkbox show_status_bar  = { SHOW_STATUS_BAR };
-checkbox info_after_copy  = { NOTIFY_COPY_END };
 checkbox show_breadcrumb  = { SHOW_BREADCRUMBS };
 checkbox big_icons        = { BIG_ICONS };
 checkbox two_panels       = { USE_TWO_PANELS };
@@ -50,7 +47,7 @@ void settings_dialog()
 {   
 	proc_info Settings;
 	int id;
-	active_settings=1;
+	active_settings = true;
 	font_size.value = kfont.size.pt;
 	line_height.value = files.item_h;
 	SetEventMask(0x27);
@@ -66,7 +63,7 @@ void settings_dialog()
 				if (1==id) { ExitSettings(); break; }
 				else if (id==5)
 				{
-					RunProgram("/sys/tinypad", "/sys/settings/assoc.ini");
+					RunProgram("/sys/@open", "/sys/settings/assoc.ini");
 					break;
 				}
 				else if (id==6)
@@ -83,7 +80,6 @@ void settings_dialog()
 					break;
 				}
 				show_dev_name.click(id);
-				info_after_copy.click(id);
 				two_panels.click(id);
 				show_breadcrumb.click(id);
 				show_status_bar.click(id);
@@ -108,7 +104,7 @@ void settings_dialog()
 				
 			case evReDraw:
 				DefineAndDrawWindow(Form.cwidth-300/2+Form.left, Form.cheight-292/2+Form.top, 400, 
-					435+skin_height,0x34,sc.work,TITLE_SETT,0);
+					365+skin_height,0x34,sc.work,TITLE_SETT,0);
 				GetProcessInfo(#Settings, SelfInfo);
 				DrawSettingsCheckBoxes();
 		}
@@ -117,7 +113,7 @@ void settings_dialog()
 
 void ExitSettings()
 {
-	active_settings = 0;
+	active_settings = false;
 	settings_window = 0;
 	cmd_free = 4;
 	ExitProcess();
@@ -130,10 +126,9 @@ void DrawSettingsCheckBoxes()
 	y.n = 0;
 	show_dev_name.draw(x, y.inc(14));
 	show_status_bar.draw(x, y.inc(25));
-	info_after_copy.draw(x, y.inc(25));
 	show_breadcrumb.draw(x, y.inc(25));
 	big_icons.draw(x, y.inc(25));
-	two_panels.draw(x, y.inc(25));
+	//two_panels.draw(x, y.inc(25));
 	colored_lines.draw(x, y.inc(25));
 	font_size.draw(x, y.inc(31));
 	line_height.draw(x, y.inc(31));
@@ -152,21 +147,21 @@ void DrawSettingsCheckBoxes()
 void LoadIniSettings()
 {
 	ini.path = GetIni(#eolite_ini_path, "app.ini");
-	ini.section = "Eolite";
+	if (efm) ini.section = "EFM"; else ini.section = "Eolite";
+	two_panels.checked = efm;
 
 	files.SetFont(6, 9, 10000000b);
 	show_dev_name.checked   = ini.GetInt("ShowDeviceName", true); 
 	show_status_bar.checked = ini.GetInt("ShowStatusBar", true); 
-	info_after_copy.checked = ini.GetInt("InfoAfterCopy", false); 
 	big_icons.checked       = ini.GetInt("BigIcons", false); BigIconsSwitch();
-	two_panels.checked      = ini.GetInt("TwoPanels", false); 
+	//two_panels.checked      = ini.GetInt("TwoPanels", false); 
 	colored_lines.checked   = ini.GetInt("ColoredLines", false); 
 	kfont.size.pt   = ini.GetInt("FontSize", 13); 
 	files.item_h    = ini.GetInt("LineHeight", 19);
-	Form.left   = ini.GetInt("WinX", 200); 
-	Form.top    = ini.GetInt("WinY", 50); 
-	Form.width  = ini.GetInt("WinW", 550); 
-	Form.height = ini.GetInt("WinH", 503); 
+	Form.left   = ini.GetInt("WinX", 100); 
+	Form.top    = ini.GetInt("WinY", 30); 
+	Form.width  = ini.GetInt("WinW", efm*170+550); 
+	Form.height = ini.GetInt("WinH", efm*116+503); 
 	ini.GetString("DefaultPath", #path, 4096, "/rd/1");
 	ini.GetString("DefaultPath", #path_start, 4096, "/rd/1");
 	path_start_ed.size = path_start_ed.pos = strlen(#path_start);
@@ -182,16 +177,17 @@ void SaveIniSettings()
 {
 	ini.SetInt("ShowDeviceName", show_dev_name.checked);
 	ini.SetInt("ShowStatusBar", show_status_bar.checked);
-	ini.SetInt("InfoAfterCopy", info_after_copy.checked);
 	ini.SetInt("BigIcons", big_icons.checked);
-	ini.SetInt("TwoPanels", two_panels.checked);
+	//ini.SetInt("TwoPanels", two_panels.checked);
 	ini.SetInt("ColoredLines", colored_lines.checked);
 	ini.SetInt("FontSize", kfont.size.pt);
 	ini.SetInt("LineHeight", files.item_h);
-	ini.SetInt("WinX", Form.left);
-	ini.SetInt("WinY", Form.top);
-	ini.SetInt("WinW", Form.width);
-	ini.SetInt("WinH", Form.height);
+	if (Form.status_window<=2) {
+		ini.SetInt("WinX", Form.left);
+		ini.SetInt("WinY", Form.top);
+		ini.SetInt("WinW", Form.width);
+		ini.SetInt("WinH", Form.height);		
+	}
 }
 
 

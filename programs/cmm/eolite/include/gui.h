@@ -10,15 +10,15 @@ void Scroll() {
 
 	if (files.count<=0)
 	{
-		sc_slider_y = sc_y;
-		sc_slider_h = sc_h - 1;
+		sc_slider_y = sc_y - 1;
+		sc_slider_h = sc_h + 1;
 	}
 	else
 	{
-		sc_slider_y = files.first * sc_h / files.count + sc_y;
-		sc_slider_h = sc_h * files.visible - files.visible / files.count;
-		if (sc_slider_h < 20) sc_slider_h = 20; //minimal scroll width
-		if (sc_slider_h > sc_h-sc_slider_y+56) || (files.first+files.visible>=files.count) sc_slider_y= sc_y + sc_h - sc_slider_h - 1; //для большого списка 
+		sc_slider_y = files.first * sc_h / files.count + sc_y - 1;
+		sc_slider_h = sc_h * files.visible - files.visible / files.count + 2;
+		if (sc_slider_h < 20) sc_slider_h = 20; //minimal scroll height
+		if (sc_slider_h > sc_h-sc_slider_y+56) || (files.first+files.visible>=files.count) sc_slider_y= sc_y + sc_h - sc_slider_h; //для большого списка 
 	}
 	//slider
 	DrawRectangle(sc_x,sc_slider_y,16,sc_slider_h,sc.work_graph);
@@ -72,8 +72,8 @@ void DrawEolitePopup(dword b1_text, b2_text)
 	int but_x;
 	int popin_x = files.w - popin_w / 2 + files.x ;
 	DrawPopup(popin_x, 160, popin_w, 95, 1, sc.work, sc.work_graph);
-	but_x = DrawStandartCaptButton(popin_x+23, 215, POPUP_BTN1, b1_text);
-	DrawStandartCaptButton(popin_x+23 + but_x, 215, POPUP_BTN2, b2_text);
+	DrawCaptButton(popin_x+23+000, 215, 100, 26, POPUP_BTN1, sc.button, sc.button_text, b1_text);
+	DrawCaptButton(popin_x+23+114, 215, 100, 26, POPUP_BTN2, sc.button, sc.button_text, b2_text);
 }
 
 void DrawDot(dword x,y) {
