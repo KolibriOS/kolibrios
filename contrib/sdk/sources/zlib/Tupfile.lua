@@ -3,7 +3,7 @@ HELPERDIR = (tup.getconfig("HELPERDIR") == "") and "../../../../programs" or tup
 tup.include(HELPERDIR .. "/use_gcc.lua")
 tup.include(HELPERDIR .. "/use_newlib.lua")
 
-LDFLAGS = " -shared -s -T dll.lds --entry _DllStartup --image-base=0 --out-implib ../../lib/libz.dll.a -L/../../lib "
+LDFLAGS = " -shared -s -T dll.lds --entry _DllStartup --image-base=0 --out-implib ../../lib/libz.dll.a -L../../lib "
 
 CFLAGS = CFLAGS .. " -DHAVE_UNISTD_H -U_Win32 -U_WIN32 -U__MINGW32__"
 
