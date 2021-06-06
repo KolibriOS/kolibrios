@@ -115,6 +115,21 @@ BEGIN
 END ClientPos;
 
 
+PROCEDURE ScreenSize* (VAR width, height: INTEGER);
+VAR
+    eax, ebx: INTEGER;
+    right, left, top, bottom: INTEGER;
+BEGIN
+    eax := KOSAPI.sysfunc22(48, 5, ebx);
+    left := LSR(eax, 16);
+    right := eax MOD 65536;
+    top := LSR(ebx, 16);
+    bottom := ebx MOD 65536;
+    width := right - left + 1;
+    height := bottom - top + 1
+END ScreenSize;
+
+
 PROCEDURE ThreadID* (): INTEGER;
 VAR
     id: INTEGER;

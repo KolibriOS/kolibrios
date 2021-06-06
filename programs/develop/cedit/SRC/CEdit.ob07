@@ -28,7 +28,7 @@ IMPORT
     RW, Ini, box_lib, Icons;
 
 CONST
-    header = "CEdit (03-jun-2021)";
+    header = "CEdit (06-jun-2021)";
 
     ShellFilter = "";
     EditFilter = "SH|ASM|TXT|INC|OB07|C|CPP|H|PAS|PP|LUA|INI";
@@ -118,6 +118,7 @@ CONST
     menuExit = 15;
 
     menuNumbers = 20;
+    menuFontSize = 21;
     menuColors = 1000;
     menuMaxColors = menuColors + Ini.MAX_SECTIONS - 1;
 
@@ -147,7 +148,7 @@ CONST
 
 VAR
     canvas: G.tCanvas;
-    font: G.tFont;
+    font, font1, font2: G.tFont;
     text: T.tText;
     winWidth, winHeight: INTEGER;
     shift: SET;
@@ -461,23 +462,25 @@ VAR
 
     PROCEDURE drawMainMenu (menu: Menu.tMenu; x: INTEGER; btn: INTEGER; caption: ARRAY OF WCHAR);
     VAR
-        menuColor, n: INTEGER;
+        menuColor, textColor, n: INTEGER;
     BEGIN
         IF menu.tid # 0 THEN
-            menuColor := K.selMenuColor
+            menuColor := K.textColor;
+            textColor := K.winColor
         ELSE
-            menuColor := K.winColor
+            menuColor := K.winColor;
+            textColor := K.textColor
         END;
         n := LENGTH(caption);
         K.DrawRect(x, 0, n*fontWidth + 2, MainMenuHeight, menuColor);
         K.CreateButton(btn + ORD({30}), x, 0, n*fontWidth + 2, MainMenuHeight, K.btnColor, "");
-        K.DrawText(x + 1, (MainMenuHeight - fontHeight) DIV 2 + 1, K.textColor, caption)
+        K.DrawText(x + 1, (MainMenuHeight - fontHeight) DIV 2 + 1, textColor, caption)
     END drawMainMenu;
 
 
 BEGIN
     K.BeginDraw;
-    K.CreateWindow(50 + K.GetTickCount() MOD 128, 50 + K.GetTickCount() MOD 128, winWidth, winHeight, K.winColor, 73H, 0, 0, header);
+    K.CreateWindow(30 + K.GetTickCount() MOD 128, 30 + K.GetTickCount() MOD 128, winWidth, winHeight, K.winColor, 73H, 0, 0, header);
     IF (text # NIL) & ~K.RolledUp() THEN
         confirm := FALSE;
         K.ClientSize(width, height);
@@ -891,6 +894,13 @@ BEGIN
         EditBox_SetFocus(ReplaceEdit, FALSE)
     |menuNumbers:
         T.toggleNumbers(text)
+    |menuFontSize:
+        IF font = font1 THEN
+            font := font2
+        ELSE
+            font := font1
+        END;
+        resize
     |menuNone:
         T.setLang(text, Languages.langNone)
     |menuC:
@@ -1053,6 +1063,7 @@ VAR
 BEGIN
     menu := List.create(NIL);
     Menu.AddMenuItem(menu, menuNumbers, "line numbers");
+    Menu.AddMenuItem(menu, menuFontSize, "x2");
     Menu.delimiter(menu);
 
     colors := Ini.sections.first(Ini.tSection);
@@ -1171,7 +1182,8 @@ BEGIN
         Menu.setCheck(menu, menuWin1251, ORD(text.enc = E.W1251)*2);
         INC(x, menuEncodingX)
     ELSIF menu = menuView THEN
-        Menu.setCheck(menu, menuNumbers, ORD(text.numbers));
+        Menu.setCheck(menu, menuNumbers,  ORD(text.numbers));
+        Menu.setCheck(menu, menuFontSize, ORD(font = font2));
         FOR i := 0 TO Ini.sections.count - 1 DO
             Menu.setCheck(menu, menuColors + i, ORD(Ini.curSectionNum = i)*2)
         END;
@@ -1205,7 +1217,7 @@ END ShowMenu;
 
 PROCEDURE main;
 VAR
-    width, height, x, y, scrollX, scrollY: INTEGER;
+    width, height, x, y, scrollX, scrollY, i: INTEGER;
     key: INTEGER;
     msState: SET;
     scroll: INTEGER;
@@ -1226,13 +1238,18 @@ BEGIN
     LeftButtonUp;
     resized := FALSE;
     shift := {};
-    winWidth := minWinWidth;
-    winHeight := minWinHeight;
+    K.ScreenSize(winWidth, winHeight);
+    winWidth := (winWidth * 80) DIV 100 - (128 + 30);
+    winHeight := winHeight - (128 + 30);
+    winWidth := MAX(winWidth, minWinWidth);
+    winHeight := MAX(winHeight, minWinHeight);
     cliWidth := winWidth;
     cliHeight := winHeight;
     LEFT := 10;
     canvas := G.CreateCanvas(winWidth - (LEFT + RIGHT + 10), winHeight - (TOP + BOTTOM + 4) - K.SkinHeight());
-    font := G.CreateFont(1, "", {});
+    font1 := G.CreateFont(1, "", {});
+    font2 := G.CreateFont(2, "", {});
+    font := font1;
     G.SetFont(canvas, font);
     T.init(NIL);
     T.setCanvas(canvas);
@@ -1280,28 +1297,35 @@ BEGIN
     WHILE TRUE DO
         CASE K.WaitForEvent() OF
         |1:
-            K.GetSystemColors;
-            Icons.get(icons, grayIcons);
-            IF ~K.RolledUp() THEN
-                K.ClientSize(width, height);
-                IF (width # cliWidth) OR (height # cliHeight) THEN
-                    cliWidth := width;
-                    cliHeight := height;
-                    resize;
-                    resized := TRUE
+            FOR i := 0 TO 1 DO
+                K.GetSystemColors;
+                Icons.get(icons, grayIcons);
+                IF ~K.RolledUp() THEN
+                    K.ClientSize(width, height);
+                    IF (width # cliWidth) OR (height # cliHeight) THEN
+                        cliWidth := width;
+                        cliHeight := height;
+                        resize;
+                        resized := TRUE;
+                    END;
+                    K.SetEventsMask({0, 1, 2, 5, 6, 31})
+                ELSE
+                    K.SetEventsMask({0, 30, 31})
                 END;
-                K.SetEventsMask({0, 1, 2, 5, 6, 31})
-            ELSE
-                K.SetEventsMask({0, 30, 31})
-            END;
-            draw_window
+                draw_window
+            END
+
         |2:
             key := K.GetKey();
             getKBState;
             IF key DIV 65536 = 61 THEN (* F3 *)
                 key := -1;
                 IF search & (searchText # "") THEN
-                    notFound := ~T.findNext(text, box_lib.check_box_get_value(BKW))
+                    IF T.SHIFT IN shift THEN
+                        notFound := ~T.findNext(text, ~box_lib.check_box_get_value(BKW))
+                    ELSE
+                        notFound := ~T.findNext(text, box_lib.check_box_get_value(BKW))
+                    END
                 END
             ELSIF key DIV 65536 = 67 THEN (* F9 *)
                 key := -1;
@@ -1309,6 +1333,11 @@ BEGIN
                     Script(buildScript)
                 ELSE
                     Script(runScript)
+                END
+            ELSIF key DIV 65536 = 1 THEN
+                key := -1; (* Esc *)
+                IF search THEN
+                    Search
                 END
             ELSIF (key DIV 65536 = 55) & (key DIV 256 MOD 256 = 52) THEN
                 key := -1 (* PrtScn *)
