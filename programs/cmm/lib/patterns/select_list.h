@@ -37,14 +37,20 @@ signed SelectList_ProcessMouse()
 	{
 		select_list.first = scroll1.position;
 		SelectList_Draw();
+		return true;
 	}
 	
-	if (mouse.vert) && (select_list.MouseScroll(mouse.vert)) SelectList_Draw();
+	if (mouse.vert) && (select_list.MouseScroll(mouse.vert)) {
+		SelectList_Draw();
+		return true;
+	}
 
 	if (mouse.up) && (mouse.lkm) 
 		if (select_list.ProcessMouse(mouse.x, mouse.y)) {
 			SelectList_LineChanged();
+			return true;
 		}
+	return false;
 }
 
 void SelectList_DrawBorder() {

@@ -131,8 +131,8 @@ void _SystemDiscs::Draw()
 	
 	for (i=0; i<30; i++) DeleteButton(100+i);
 
-	if ( two_panels.checked) { draw_y = 41; draw_x =  2; }
-	if (!two_panels.checked) { draw_y = 74; draw_x = 17; }
+	if (two_panels.checked) { draw_y = 41; draw_x =  2; }
+	                   else { draw_y = 74; draw_x = 17; }
 
 	for (i=0;i<list.count;i++)
 	{

@@ -155,7 +155,7 @@ void LoadIniSettings()
 	show_status_bar.checked = ini.GetInt("ShowStatusBar", true); 
 	big_icons.checked       = ini.GetInt("BigIcons", false); BigIconsSwitch();
 	//two_panels.checked      = ini.GetInt("TwoPanels", false); 
-	colored_lines.checked   = ini.GetInt("ColoredLines", false); 
+	colored_lines.checked   = ini.GetInt("ColoredLines", efm); 
 	kfont.size.pt   = ini.GetInt("FontSize", 13); 
 	files.item_h    = ini.GetInt("LineHeight", 19);
 	Form.left   = ini.GetInt("WinX", 100); 
@@ -255,10 +255,10 @@ void SetAppColors()
 		col.list_text_hidden = 0xA6A6B7;
 		col.list_vert_line = 0xDDD7CF;
 		col.lpanel  = 0x00699C;
-		col.selec = col.selec_active = 0x94AECE;
+		col.selec = col.selec_active = 0x92B1D9;
 		col.selec_text = 0x000000;
 		col.slider_bg_big = 0xCDCFCF;
-		col.odd_line = 0xF1F1F1;
+		col.odd_line = 0xF4F5F5;
 		for (i=0; blue_hl_pal[i]!=0; i++) waves_pal[i] = blue_hl_pal[i];
 	}
 	col.selec_inactive = MixColors(0xBBBbbb, col.list_bg, 65);

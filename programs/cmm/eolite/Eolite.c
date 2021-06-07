@@ -3,8 +3,8 @@
 
 // 70.5 - get volume info and label
 
-#define TITLE "Eolite File Manager 4.61"
-#define ABOUT_TITLE "EOLITE 4.61"
+#define TITLE "Eolite File Manager 4.65"
+#define ABOUT_TITLE "EOLITE 4.65"
 
 #ifndef AUTOBUILD
 #include "lang.h--"
@@ -167,11 +167,13 @@ void handle_param()
 	//-d <path> : delete file/folder
 	//-v : paste files/folder from clipboard
 	dword p = #param;
-	if (param[0]=='/') && (param[1]=='E') && (param[2]=='F') && (param[3]=='M') {
+	if (param[0]=='\\') && (param[1]=='E') && (param[2]=='F') && (param[3]=='M') {
 		efm = true;
 		p += 4;
 		if (param[4]==' ') p++;
 	}
+
+	LoadIniSettings();
 
 	if (ESBYTE[p]=='\0') return;
 
@@ -198,7 +200,9 @@ void handle_param()
 			ExitProcess();
 	}
 
-	if (ESBYTE[strlen(p)+p-1]=='/') ESBYTE[strlen(p)+p-1]=NULL; //no "/" at the end
+	ESBYTE[0] = NULL;
+
+	if (param[strlen(#param)-1]=='/') ESBYTE[strlen(#param)-1]=NULL; //no "/" at the end
 
 	if (dir_exists(p)) {
 		strcpy(#path, p);
@@ -206,7 +210,7 @@ void handle_param()
 		if (file_exists(p)) {
 			ESBYTE[strrchr(p, '/')+p-1] = '\0';
 			strcpy(#path, p);
-			SelectFileByName(p+strlen(p)+1);
+			SelectFileByName(p+strlen(#path)+1);
 		} else {
 			notify(T_NOTIFY_APP_PARAM_WRONG);
 		}
@@ -222,11 +226,8 @@ void main()
 	SetAppColors();
 
 	handle_param();
-	ESBYTE[0] = NULL;
-
 	rand_n = random(80);
 
-	LoadIniSettings();
 	SystemDiscs.Get();
 
 	Open_Dir(#path,ONLY_OPEN);
@@ -659,7 +660,7 @@ void DrawFilePanels()
 	}
 	else
 	{
-		SystemDiscs.Get();
+		//SystemDiscs.Get();
 		llist_copy(#files, #files_inactive);
 		strcpy(#path, #inactive_path);
 		col.selec = col.selec_inactive;
@@ -702,6 +703,7 @@ void List_ReDraw()
 	int all_lines_h;
 	dword j;
 	static int old_cur_y, old_first;
+	dword separator_color;
 
 	files.CheckDoesValuesOkey(); //prevent some shit
 
@@ -729,8 +731,9 @@ void List_ReDraw()
 	//in the bottom
 	all_lines_h = j * files.item_h;
 	DrawBar(files.x,all_lines_h + files.y,files.w,files.h - all_lines_h, col.list_bg);
-	DrawBar(files.x+files.w-141,all_lines_h + files.y,1,files.h - all_lines_h,col.list_vert_line);
-	DrawBar(files.x+files.w-68,all_lines_h + files.y,1,files.h - all_lines_h,col.list_vert_line);
+	if (colored_lines.checked) separator_color = col.list_bg; else separator_color = col.list_vert_line;
+	DrawBar(files.x+files.w-141,all_lines_h + files.y,1,files.h - all_lines_h, separator_color);
+	DrawBar(files.x+files.w-68,all_lines_h + files.y,1,files.h - all_lines_h, separator_color);
 	Scroll();
 
 	if (del_active) Del_Form();
@@ -764,13 +767,22 @@ void Line_ReDraw(dword bgcol, filenum){
 		  icon_y = files.item_h-icon_size/2+y;
 		  BDVK file;
 		  char full_path[4096];
+		  dword separator_color;
 	char label_file_name[4096];
 	if (filenum==-1) return;
+
 	DrawBar(files.x,y,4,files.item_h,bgcol);
 	DrawBar(files.x+4,y,icon_size,icon_y-y,bgcol);
 	if (files.item_h>icon_size) DrawBar(files.x+4,icon_y+icon_size-1,icon_size,y+files.item_h-icon_y-icon_size+1,bgcol);
-	if (colored_lines.checked) && (bgcol!=col.selec) && (filenum%2) bgcol=col.odd_line;
+	if (colored_lines.checked) {
+		if (bgcol!=col.selec) && (filenum%2) bgcol=col.odd_line;
+		separator_color = bgcol;
+	} else {
+		separator_color = col.list_vert_line;
+	}
 	DrawBar(files.x+icon_size+4,y,files.w-icon_size-4,files.item_h,bgcol);
+	DrawBar(files.x+files.w-141,y,1,files.item_h, separator_color);
+	DrawBar(files.x+files.w-68,y,1,files.item_h, separator_color);
 
 	file_offet = items.get(filenum+files.first)*304 + buf+32;
 	attr = ESDWORD[file_offet];
@@ -797,7 +809,6 @@ void Line_ReDraw(dword bgcol, filenum){
 	}
 	if (file_size) WriteText(7-strlen(file_size)*6+files.x+files.w-58, 
 			files.text_y+y+1, files.font_type, col.list_gb_text, file_size);
-	DrawIconByExtension(#full_path, ext1, files.x+4, icon_y, bgcol);
 
 	if (TestBit(attr, 1)) || (TestBit(attr, 2)) text_col=col.list_text_hidden; //system or hiden?
 	if (bgcol==col.selec)
@@ -838,8 +849,8 @@ void Line_ReDraw(dword bgcol, filenum){
 		kfont.WriteIntoWindow(files.x + icon_size+7, files.item_h - kfont.height / 2 + y, 
 			bgcol, text_col, kfont.size.pt, #label_file_name);
 	}
-	DrawBar(files.x+files.w-141,y,1,files.item_h,col.list_vert_line); //gray line 1
-	DrawBar(files.x+files.w-68,y,1,files.item_h,col.list_vert_line); //gray line 2
+	if (bgcol == col.selec_inactive) DrawWideRectangle(files.x+2, y, files.w-4, files.item_h, 2, 0x92B1D9);
+	DrawIconByExtension(#full_path, ext1, files.x+4, icon_y, bgcol);
 }
 
 
@@ -1137,9 +1148,7 @@ void FnProcess(byte N)
 			if (two_panels.checked)
 			{
 				DrawFilePanels();
-			}
-			else 
-			{
+			} else {
 				Tip(56, T_DEVICES, 55, "-");
 				Open_Dir(#path,WITH_REDRAW);
 				pause(10);
