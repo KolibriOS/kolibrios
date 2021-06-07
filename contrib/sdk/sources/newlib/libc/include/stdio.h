@@ -146,11 +146,18 @@ typedef _fpos64_t fpos64_t;
 
 #define	stdin	(_REENT->_stdin)
 #define	stdout	(_REENT->_stdout)
-#define	stderr	(_REENT->_stderr)
+
+#ifndef _NO_STDERR
+  #define	stderr	(_REENT->_stderr)
+#else
+  #define stderr stdout
+#endif
 
 #define _stdin_r(x)	((x)->_stdin)
 #define _stdout_r(x)	((x)->_stdout)
 #define _stderr_r(x)	((x)->_stderr)
+
+
 
 /*
  * Functions defined in ANSI C standard.

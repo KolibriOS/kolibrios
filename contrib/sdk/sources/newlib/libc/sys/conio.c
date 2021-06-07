@@ -1,6 +1,9 @@
 #include <_ansi.h>
+#include <stdio.h>
 #include <sys/unistd.h>
 #include "io.h"
+#include <string.h>
+ 
 
 void load_libconsole();
 void     __stdcall con_init(unsigned w_w, unsigned w_h, unsigned s_w, unsigned s_h, const char* t);
@@ -10,6 +13,7 @@ unsigned __stdcall con_set_flags(unsigned new_flags);
 void     __stdcall con_cls(void);
 void     __stdcall con_write_string(const char* string, unsigned length);
 short    __stdcall con_getch2(void);
+char*    __stdcall con_gets(char*, unsigned);
 
 int __gui_mode;
 
@@ -17,15 +21,18 @@ static int console_read(const char *path, void *buff,
            size_t offset, size_t count, size_t *done)
 {
     char *p = buff;
-    int   cnt = 0;
+    /*int   cnt = 0;
     short c;
-    char  ch;
+    char  ch;*/
+    con_gets(p, count+1);
+    *done = strlen(p);
 
 //   __asm__ volatile("int3");
-
+/*
     do
     {
         c = con_getch2();
+        printf("%d\n",(char)c);
         ch = (char)c;
         if(ch != 0)
         {
@@ -34,11 +41,10 @@ static int console_read(const char *path, void *buff,
             cnt++;
         }
     }while(ch != 0x0D);
-
     *done = cnt;
+*/
     return 0;
 }
-
 
 static int console_write(const char *path, const void *buff,
                  size_t offset, size_t count, size_t *writes)
