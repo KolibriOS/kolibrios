@@ -100,6 +100,7 @@ struct libimg_image
     void load();
     void convert_into();
     void replace_color();
+    void replace_2colors();
     void set_vars();
     void draw();
 };
@@ -136,7 +137,22 @@ struct libimg_image
 :void libimg_image::replace_color(dword old_color, new_color)
 {
     EDX =  w * h * 4 + imgsrc;
-    for (ESI = imgsrc; ESI < EDX; ESI += 4) if (DSDWORD[ESI]==old_color) DSDWORD[ESI] = new_color;
+    ESI = old_color;
+    ECX = new_color;
+    FOR (EDI = imgsrc; EDI < EDX; EDI += 4) IF (DSDWORD[EDI]==ESI) DSDWORD[EDI] = ECX;
+}
+
+:void libimg_image::replace_2colors(dword old_color1, new_color1, old_color2, new_color2)
+{
+    EDX =  w * h * 4 + imgsrc;
+    ESI = old_color1;
+    ECX = new_color1;
+    EBX = old_color2;
+    EAX = new_color2;
+    FOR (EDI = imgsrc; EDI < EDX; EDI += 4) {
+        IF (DSDWORD[EDI]==ESI) DSDWORD[EDI] = ECX;
+        ELSE IF (DSDWORD[EDI]==EBX) DSDWORD[EDI] = EAX;
+    }
 }
 
 :void libimg_image::draw(dword _x, _y, _w, _h, _xoff, _yoff)

@@ -225,8 +225,12 @@ void main()
 	load_libraries();
 	SetAppColors();
 
+	ESBYTE[0] = NULL;
+
 	handle_param();
 	rand_n = random(80);
+
+	ESBYTE[0] = NULL;
 
 	SystemDiscs.Get();
 
@@ -531,7 +535,7 @@ void main()
 							DrawStatusBar();
 							List_ReDraw();
 							break;
-					case SCAN_CODE_F2...SCAN_CODE_F10:
+					case SCAN_CODE_F1...SCAN_CODE_F10:
 							FnProcess(key_scancode-58);
 							break; 
 					default:
@@ -1122,27 +1126,31 @@ void NewElement_Form(byte crt, dword strng)
 	DrawEditBox(#new_file_ed);
 }
 
+void EventShowAbout()
+{
+	if (!active_about) {
+		about_stak = malloc(4096);
+		about_thread_id = CreateThread(#about_dialog,about_stak+4092);
+	} else {
+		ActivateWindow(GetProcessSlot(about_thread_id));
+	}
+}
+
 void FnProcess(byte N)
 {
 	switch(N)
 	{
 		case 1:
-			if (!active_about) {
-				about_stak = malloc(4096);
-				about_thread_id = CreateThread(#about_dialog,about_stak+4092);
-				break;
-			} else {
-				ActivateWindow(GetProcessSlot(about_thread_id));
-			}
+			EventShowProperties();
 			break;
 		case 2:
 			if (files.count) NewElement_Form(RENAME_ITEM, #file_name);
 			break;
 		case 3:
-			if (files.count) && (!itdir) RunProgram("/sys/tinypad", #file_path);
+			if (files.count) && (!itdir) RunProgram("/sys/quark", #file_path);
 			break;
 		case 4:
-			if (files.count) && (!itdir) RunProgram("/sys/develop/heed", #file_path);
+			if (files.count) && (!itdir) RunProgram("/sys/develop/cedit", #file_path);
 			break;
 		case 5: //refresh cur dir & devs
 			if (two_panels.checked)
@@ -1158,13 +1166,16 @@ void FnProcess(byte N)
 			}
 			break;
 		case 6:
-			NewElement_Form(CREATE_FOLDER, T_NEW_FOLDER);
+			//Move
 			break;
 		case 7:
-			NewElement_Form(CREATE_FILE, T_NEW_FILE);
+			NewElement_Form(CREATE_FOLDER, T_NEW_FOLDER);
 			break;
 		case 8:
-			EventShowProperties();
+			Del_Form();
+			break;
+		case 9:
+			NewElement_Form(CREATE_FILE, T_NEW_FILE);
 			break;
 		case 10: //F10
 			if (!active_settings) 

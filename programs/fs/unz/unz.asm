@@ -774,11 +774,12 @@ fsRunNotifyOK:
 
 
 edtPack     edit_box (WIN_W-100-60),100,10,0FFFFFFh,0xff,0x80ff,0h,0x90000000,\
-            255, fInp, 0,0,0,0
+            1024, fInp, 0,0,0,0
 edtUnpPath  edit_box (WIN_W-100-60),100,35,0FFFFFFh,0xff,0x80ff,0h,0x90000000,\
-            255, pathOut, 0,0,0,0
-edtPassword edit_box 200,56,70,0FFFFFFh,0xff,0x80ff,0h,0x90000000,255,\
-		password, 0,0,0,0
+            1024, pathOut, 0,0,0,0
+edtPassword edit_box 200, 56, 40, 0FFFFFFh,0xff,0x80ff,0h,0x90000000,\
+            255, password, 0, ed_focus+ed_always_focus ;+ed_pass
+
 endEdits:
 
 

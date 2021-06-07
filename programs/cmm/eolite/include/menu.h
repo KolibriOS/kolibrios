@@ -10,7 +10,7 @@ char file_actions[]=
 -
 Переименовать      |F2
 Удалить            |Del
-Свойства           |F8";
+Свойства           |F1";
 char folder_actions[]=
 "Открыть       |Enter
 -
@@ -19,7 +19,7 @@ char folder_actions[]=
 Вставить       |Crl+V
 -
 Удалить        |Del
-Свойства       |F8";
+Свойства       |F1";
 char empty_folder_actions[]=
 "Вставить      |Crl+V";
 char burger_menu_items[] = 
@@ -40,7 +40,7 @@ Aseta          |Crl+V
 -
 Nimeta №mber   |F2
 Kustuta        |Del
-Properties     |F8";
+Properties     |F1";
 char folder_actions[]=
 "Ava           |Enter
 -
@@ -49,7 +49,7 @@ Lїika          |Crl+X
 Aseta          |Crl+V
 -
 Kustuta        |Del
-Properties     |F8";
+Properties     |F1";
 char empty_folder_actions[]=
 "Aseta         |Crl+V";
 char burger_menu_items[] = 
@@ -70,7 +70,7 @@ Paste         |Crl+V
 -
 Rename        |F2
 Delete        |Del
-Properties    |F8";
+Properties    |F1";
 char folder_actions[]=
 "Open        |Enter 
 -
@@ -108,7 +108,7 @@ void EventMenuClick(dword _id)
 		case 5: EventPaste(); break;
 		case 6: FnProcess(2); break;
 		case 7: Del_Form(); break;
-		case 8: FnProcess(8); break;
+		case 8: FnProcess(1); break;
 	}
 	if (active_menu == MENU_DIR) switch(_id) {
 		case 1: EventOpen(0); break;
@@ -116,14 +116,14 @@ void EventMenuClick(dword _id)
 		case 3: EventCopy(CUT); break;
 		case 4: EventPaste(); break;
 		case 5: Del_Form(); break;
-		case 6: FnProcess(8); break;
+		case 6: FnProcess(1); break;
 	}
 	if (active_menu == MENU_BURGER) switch(_id) {
 		case 1: EventOpenNewEolite(); break;
 		case 2: EventOpenConsoleHere(); break;
 		case 3: EventRefreshDisksAndFolders(); break;
 		case 4: FnProcess(10); break;
-		case 5: FnProcess(1); break;		
+		case 5: EventShowAbout(); break;		
 	}
 	active_menu = NULL;
 }

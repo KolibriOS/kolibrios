@@ -202,22 +202,31 @@ void Write_Error(int error_number)
 
 void LoadIcons()
 {
-	//ICONS16.PNG
-	icons16_default.load("/sys/icons16.png");
-	icons16_selected.load("/sys/icons16.png");
-	icons16_selected.replace_color(0xffFFFfff, col.selec);
-	icons16_selected.replace_color(0xffCACBD6, MixColors(col.selec, 0, 200));
-	if (col.list_bg!=0xFFFfff) {
-		icons16_default.replace_color(0xffFFFfff, col.list_bg);
-		icons16_default.replace_color(0xffCACBD6, MixColors(col.list_bg, 0, 200));		
-	}
-	//ICONS32.PNG
-	if (big_icons.checked) {
+	dword selected_shadow = MixColors(col.selec, 0, 200);
+	dword non_white_shadow = MixColors(col.list_bg, 0, 200);
+	if (big_icons.checked) 
+	{
 		icons32_default.load("/sys/icons32.png");
 		icons32_selected.load("/sys/icons32.png");
+		//FUUUUUU... the next ugly code may replace the previous line
+		//we are copying raw data without loading and unpycking PNG
+		//memmov(icons32_selected.imgsrc, icons32_default.imgsrc, icons32_default.h*32*4);
+		//EDI = icons32_selected.image;
+		//ESDWORD[EDI+04] = 32;
+		//ESDWORD[EDI+08] = icons32_default.h;
+		//ESDWORD[EDI+20] = IMAGE_BPP32;
+		//ESDWORD[EDI+24] = icons32_selected.imgsrc;
 		icons32_default.replace_color(0x00000000, col.list_bg);
-		icons32_selected.replace_color(0x00000000, col.selec);		
+		icons32_selected.replace_color(0x00000000, col.selec);
+	} else {
+		icons16_default.load("/sys/icons16.png");
+		icons16_selected.load("/sys/icons16.png");
+		icons16_selected.replace_2colors(0xffFFFfff, col.selec, 0xffCACBD6, selected_shadow);
+		if (col.list_bg!=0xFFFfff) {
+			icons16_selected.replace_2colors(0xffFFFfff, col.list_bg, 0xffCACBD6, non_white_shadow);
+		}
 	}
+
 }
 
 void SetAppColors()
