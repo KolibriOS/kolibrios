@@ -205,6 +205,7 @@ extra_files = {
  {"kolibrios/emul/kwine/kwine", PROGS .. "/emulator/kwine/bin/kwine"},
  {"kolibrios/emul/kwine/lib/", PROGS .. "/emulator/kwine/bin/lib/*"},
  {"kolibrios/emul/uarm/", "common/emul/uarm/*"},
+ {"kolibrios/emul/zsnes/", "common/emul/zsnes/*"},
  {"kolibrios/demos/ak47.lif", "common/demos/ak47.lif"},
  {"kolibrios/demos/life2", "common/demos/life2"},
  {"kolibrios/demos/relay.lif", "common/demos/relay.lif"},
