@@ -132,10 +132,10 @@ FSPEED speed of FS    |fspeed
 Lente di ingrandimento|magnify
 Tastiera da schermo   |zkey
 #18 **** EMUL
-DOSBox DOS Emulator   |/kolibrios/emul/DosBox/dosbox
+DOSBox                |/kolibrios/emul/DosBox/dosbox
 e80 (ZX Spectrum)     |/kolibrios/emul/e80/e80
 FCE Ultra - NES       |/kolibrios/emul/fceu/fceu
 Gameboy Color         |/kolibrios/emul/gameboy
-ScummVM (adventure)   |/kolibrios/emul/scummvm
-ZSNES Super Nintendo  |/kolibrios/emul/zsnes
+ScummVM               |/kolibrios/emul/scummvm
+ZSNES Super Nintendo  |/kolibrios/emul/zsnes/zsnes
 ##

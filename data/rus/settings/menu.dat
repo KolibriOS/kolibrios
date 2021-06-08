@@ -61,7 +61,7 @@ SCAN-коды            |develop/scancode
 DOSBox               |/kolibrios/emul/DosBox/dosbox
 e80 (ZX Spectrum)    |/kolibrios/emul/e80/e80
 FCE Ultra - NES      |/kolibrios/emul/fceu/fceu
-ZSNES Super Nintendo |/kolibrios/emul/zsnes
+ZSNES Super Nintendo |/kolibrios/emul/zsnes/zsnes
 ScummVM              |/kolibrios/emul/scummvm
 #7 ==Система
 Файловые менеджеры > |@8

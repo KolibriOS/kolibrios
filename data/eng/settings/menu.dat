@@ -56,12 +56,12 @@ Character table       |develop/ASCIIVju
 Key ASCII-codes       |develop/keyascii
 Key SCAN-codes        |develop/scancode
 #6 **** EMUL
-DOSBox* (DOS PC)      |/kolibrios/emul/DosBox/dosbox
+DOSBox*               |/kolibrios/emul/DosBox/dosbox
 e80* (ZX Spectrum)    |/kolibrios/emul/e80/e80
 FCE Ultra* (NES)      |/kolibrios/emul/fceu/fceu
 Gameboy Color*        |/kolibrios/emul/gameboy
-ScummVM* (adventure)  |/kolibrios/emul/scummvm
-ZSNES* (super Nintendo)   //kolibrios/emul/zsnes
+ScummVM*              |/kolibrios/emul/scummvm
+ZSNES* Super Nintendo |/kolibrios/emul/zsnes/zsnes
 #7 **** SYSTEM
 File Management    >  |@8
 Accessibility      >  |@9

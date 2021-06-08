@@ -135,6 +135,6 @@ Teclado en pantalla   |zkey
 DOSBox                |/kolibrios/emul/DosBox/dosbox
 e80 (ZX Spectrum)     |/kolibrios/emul/e80/e80
 FCE Ultra - NES       |/kolibrios/emul/fceu/fceu
-ZSNES Super Nintendo  |/kolibrios/emul/zsnes
+ZSNES Super Nintendo  |/kolibrios/emul/zsnes/zsnes
 ScummVM (adventure)   |/kolibrios/emul/scummvm
 ##

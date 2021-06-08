@@ -1,0 +1,2 @@
+You may just copy zsnes into folder with ROMs and run it.
+zsnes could not open files as params.
