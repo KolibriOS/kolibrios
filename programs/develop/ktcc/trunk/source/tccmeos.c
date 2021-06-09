@@ -18,6 +18,8 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
+int undef_sym_flag=0;
+
 typedef struct {
 	char magic[8];
 	int version;
@@ -101,8 +103,9 @@ void build_reloc(me_info* me)
 			ss=findsection(me,sect);
 			if (ss==0)
 			{
-            	const char *sym_name = strtab_section->data + esym->st_name;
-    			tcc_error_noabort("undefined symbol '%s'", sym_name);
+                const char *sym_name = strtab_section->data + esym->st_name;
+    			undef_sym_flag=1;
+                tcc_error_noabort("undefined symbol '%s'", sym_name);
 				continue;
 			}
 			if (rel->r_offset>s->data_size)
@@ -252,7 +255,11 @@ int tcc_output_me(TCCState* s1,const char *filename)
 	me.s1=s1;
 	relocate_common_syms();
 	assign_addresses(&me);
-
+    
+    if(undef_sym_flag){
+       tcc_error("Linker error!");
+    }
+    
 	if (s1->do_debug)
 		tcc_output_dbgme(filename, &me);
 
