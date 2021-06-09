@@ -15,7 +15,7 @@
 #define FALSE 0;
 #define MAX_HASH_LEN 65 // Максимальная длина строки
 #define WINDOW_W 665
-#define VERSION "%s - thashview 2.6.1"
+#define VERSION "%s - thashview 2.6.2"
 #define EDIT_TEXT_SIZE 0x10000000
 #define DATA(type, addr, offset) *((type*)((uint8_t*)addr+offset))
 
@@ -180,8 +180,8 @@ void redraw_window() //Рисуем окно
 
     
     _ksys_define_button(610, 30, 42, 20, BTN_COPY_MD5, sys_color_table.work_button); // Определяем кнопки для копирования
-    _ksys_define_button(610, 60, 42, 20, BTN_COPY_MD5, sys_color_table.work_button);
-    _ksys_define_button(610, 90, 42, 20, BTN_COPY_MD5, sys_color_table.work_button);
+    _ksys_define_button(610, 60, 42, 20, BTN_COPY_SHA1, sys_color_table.work_button);
+    _ksys_define_button(610, 90, 42, 20, BTN_COPY_SHA256, sys_color_table.work_button);
 
     _ksys_draw_text("Copy", 615, 34, 0,   0x90000000 | sys_color_table.work_button_text); // Пишем copy на всех кнопках для копирования
     _ksys_draw_text("Copy", 615, 64, 0,  0x90000000 | sys_color_table.work_button_text);
@@ -368,5 +368,5 @@ int main(int argc, char** argv)
                 break; 
         }
     }while(1);
-    exit(0);
+    return 0;
 }
