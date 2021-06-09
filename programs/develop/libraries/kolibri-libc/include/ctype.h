@@ -20,7 +20,7 @@
 #define __UPPER   512
 #define __XDIGIT 1024
 
-#ifdef _KOLIBRI_LIBC_OBJ 
+#ifdef _BUILD_LIBC 
 extern unsigned short __is[129];
 #else
 extern unsigned short *__is;

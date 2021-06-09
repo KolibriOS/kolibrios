@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <errno.h>
 
 #define READ_MAX 255
 
@@ -28,6 +29,7 @@ int main(int argc, char **argv)
   fputs(test_str1+i,f);
   char null_term = '\0';
   fwrite(&null_term, sizeof(char), 1, f);
+  printf("Error: %s\n",strerror(errno));
   fclose(f);
 
   //copy from testfile.txt to copyfile.txt

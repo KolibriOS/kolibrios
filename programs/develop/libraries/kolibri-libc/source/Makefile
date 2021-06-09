@@ -5,7 +5,7 @@ endif
 KPACK=kpack
 FASM=fasm 
 
-CFLAGS =  -c -nostdinc -I../include -DGNUC -D_KOLIBRI_LIBC_OBJ -Os -fno-common -fno-builtin -fno-leading-underscore -fno-pie
+CFLAGS =  -c -nostdinc -I../include -DGNUC -D_BUILD_LIBC -fno-common -Os -fno-builtin -fno-leading-underscore -fno-pie
 
 SRC=libc.c
 LIB=../lib/libc.obj

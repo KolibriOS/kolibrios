@@ -1,5 +1,5 @@
 -D
-_KOLIBRI_LIBC_OBJ
+_BUILD_LIBC
 -I
 include
 

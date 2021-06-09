@@ -1,9 +1,3 @@
-#include <libc_version.h>
-
-unsigned _libc_get_version(){
-    return _LIBC_VERSION;
-}
-
 #include "ctype/is.c"
 #include "ctype/tolower.c" 
 #include "ctype/toupper.c"
@@ -15,6 +9,7 @@ unsigned _libc_get_version(){
 #include "sys/telldir.c"
 #include "sys/closedir.c"
 #include "sys/dir.c"
+#include "sys/socket.c"
 
 #include "stdio/clearerr.c"
 #include "stdio/gets.c"
@@ -93,18 +88,14 @@ unsigned _libc_get_version(){
 #include "stdlib/free.c"
 #include "stdlib/llabs.c"
 #include "stdlib/exit.c"
-#include "stdlib/mktime.c"
 #include "stdlib/atoi.c"
-#include "stdlib/localtime.c"
 #include "stdlib/labs.c"
-#include "stdlib/difftime.c"
 #include "stdlib/realloc.c"
 #include "stdlib/ldiv.c"
 #include "stdlib/abs.c"
 #include "stdlib/div.c"
 #include "stdlib/atol.c"
 #include "stdlib/itoa.c"
-#include "stdlib/time.c"
 #include "stdlib/strtol.c"
 #include "stdlib/rand.c"
 
@@ -117,6 +108,12 @@ unsigned _libc_get_version(){
 #include "math/ldexp.c"
 #include "math/sinh.c"
 #include "math/tanh.c"
+
+#include "time/difftime.c"
+#include "time/localtime.c"
+#include "time/mktime.c"
+#include "time/time.c"
+#include "time/asctime.c"
 
 __asm__(
     ".include \"math/acos.s\"\n\t"
@@ -134,7 +131,8 @@ __asm__(
     ".include \"math/modfl.s\"\n\t"
     ".include \"math/pow.s\"\n\t"
     ".include \"math/pow2.s\"\n\t"
-    ".include \"math/pow10.s\"\n\t"   
+    ".include \"math/pow10.s\"\n\t"
+    ".include \"math/sqrt.s\"\n\t"
 );
 
 __asm__(
@@ -142,5 +140,6 @@ __asm__(
     ".include \"setjmp/setjmp.s\""
 );
 
+#include "libtcc/libtcc1.c"
 #include "stdlib/___chkstk_ms.c"
 #include "exports/exports.c"

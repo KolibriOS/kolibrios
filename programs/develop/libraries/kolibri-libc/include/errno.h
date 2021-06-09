@@ -7,7 +7,13 @@
 extern "C" {
 #endif
 
-extern int errno;
+#ifdef _BUILD_LIBC
+extern int _errno;
+#define errno _errno 
+#else
+extern int* _errno;
+#define errno *_errno
+#endif
 
 #define EPERM 1 /* Operation not permitted */
 #define ENOENT 2 /* No such file or directory */

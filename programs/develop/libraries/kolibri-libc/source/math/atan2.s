@@ -30,7 +30,7 @@ doit:
 	fpatan
 	ret
 isanan:
-	movl	$1, errno
+	movl	$1, _errno
 	fstp	%st(0)
 	fstp	%st(0)
 	fldl	nan

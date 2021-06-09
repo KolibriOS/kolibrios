@@ -3,7 +3,7 @@
 #include <string.h>
 #include <errno.h>
 
-int errno;
+int _errno;
 
 char* strerror(int err)
 {
