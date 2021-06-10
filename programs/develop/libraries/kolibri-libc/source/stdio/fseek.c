@@ -14,4 +14,5 @@ int fseek(FILE *stream, long int offset, int whence) {
 	    stream->position = info.size + offset;
 	}
 	stream->eof = 0;
+    return 0;
 }
