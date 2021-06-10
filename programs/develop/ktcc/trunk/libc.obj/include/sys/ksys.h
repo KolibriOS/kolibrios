@@ -200,6 +200,21 @@ enum KSYS_SHM_MODE{
     KSYS_SHM_WRITE = 0x01,
 };
 
+enum KSYS_EVENT_MASK{
+    KSYS_EVM_REDRAW = 1,
+    KSYS_EVM_KEY    = 2,
+    KSYS_EVM_BUTTON = 4,
+    KSYS_EVM_EXIT   = 8,
+    KSYS_EVM_BACKGROUND = 16,
+    KSYS_EVM_MOUSE      = 32,
+    KSYS_EVM_IPC        = 64,
+    KSYS_EVM_STACK      = 128,
+    KSYS_EVM_DEBUG      = 256,
+    KSYS_EVM_STACK2     = 512,
+    KSYS_EVM_MOUSE_FILTER  = 0x80000000,
+    KSYS_EVM_CURSOR_FILTER = 0x40000000,
+};
+
 static inline 
 int _ksys_strcmp(const char * s1, const char * s2 )
 {
