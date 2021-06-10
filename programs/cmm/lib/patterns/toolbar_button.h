@@ -23,7 +23,8 @@ unsigned int DrawTopPanelButton(dword _button_id, _x, _y, signed int _icon_n, bo
 		DrawBar(_x+6, _y+5, 16, 16, semi_white);
 		for (i=0; i<=2; i++) DrawBar(_x+6, i*5+_y+7, 15, 3, sc.work_graph);
 	} else {
-		img_draw stdcall(top_icons.image, _x+6, _y+5+pressed, 16, 16, 0, _icon_n*16);
+		i = TSZE - top_icons.w / 2; //icon pos
+		img_draw stdcall(top_icons.image, _x+i+2, _y+i+1+pressed, top_icons.w, top_icons.w, 0, _icon_n*top_icons.w);
 	}
 
 	if (!pressed) {

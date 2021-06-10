@@ -3,8 +3,8 @@
 
 // 70.5 - get volume info and label
 
-#define TITLE "Eolite File Manager 4.65"
-#define ABOUT_TITLE "EOLITE 4.65"
+#define TITLE "Eolite File Manager 4.66"
+#define ABOUT_TITLE "EOLITE 4.66"
 
 #ifndef AUTOBUILD
 #include "lang.h--"
@@ -831,7 +831,7 @@ void Line_ReDraw(dword bgcol, filenum){
 	{
 		if (Form.width>=480)
 		{
-			FileShow.start_x = files.x + 23;
+			FileShow.start_x = files.x + icon_size + 7;
 			FileShow.font_color = text_col;
 			FileShow.area_size_x = files.w - 164;
 			FileShow.text_pointer = file_name_off;

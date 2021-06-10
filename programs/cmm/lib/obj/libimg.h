@@ -271,7 +271,7 @@ struct libimg_image
             if (DSDWORD[ESI]==0xffCACBD6) DSDWORD[ESI] = bgshadow;
         }
     }
-    img_draw stdcall(pure_img16, x, y, 16, 16, 0, icon_n*16);
+    img_draw stdcall(pure_img16, x, y, ESDWORD[EAX+4], ESDWORD[EAX+4], 0, icon_n*ESDWORD[EAX+4]);
 }
 
 #endif

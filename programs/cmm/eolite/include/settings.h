@@ -291,10 +291,10 @@ void BigFontsChange()
 void BigIconsSwitch()
 {
 	if (big_icons.checked) {
-		icon_size=32; 
+		icon_size = 32; 
 		LoadIcons();
 	} else {
-		icon_size=16; 
+		icon_size = icons16_default.w; 
 	}
 	BigFontsChange();
 }
