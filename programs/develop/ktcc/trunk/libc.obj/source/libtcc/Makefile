@@ -1,12 +1,11 @@
-KTCC_DIR=../../../../ktcc/trunk
+KTCC=kos32-tcc
 
-KTCC=$(KTCC_DIR)/bin/kos32-tcc
 FASM=fasm
 
 OBJ= memcpy.o  memmove.o  memset.o  libtcc1.o
 
 all: $(OBJ)
-	ar -crs ../../lib/libtcc.a $(OBJ)
+	ar -crs ../../../bin/lib/libtcc.a $(OBJ)
 	rm -f *.o
 
 %.o : %.c

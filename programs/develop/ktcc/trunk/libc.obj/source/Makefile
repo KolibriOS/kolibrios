@@ -8,13 +8,13 @@ FASM=fasm
 CFLAGS =  -c -nostdinc -I../include -DGNUC -D_BUILD_LIBC -fno-common -Os -fno-builtin -fno-leading-underscore -fno-pie
 
 SRC=libc.c
-LIB=../lib/libc.obj
+LIB=libc.obj
 
 all:
 	$(MAKE) -C ../linuxtools/src
-	mkdir -p exports ../lib
+	mkdir -p exports
 	../linuxtools/ExportGen symbols.txt exports/exports.c
-	$(FASM) crt/crt0.asm ../lib/crt0.o
+	$(FASM) crt/crt0.asm ../../bin/lib/crt0.o
 	$(GCC) $(CFLAGS) $(SRC) -o $(LIB)
 	$(KPACK) $(LIB)
 	../linuxtools/LoaderGen symbols.txt ../loader
@@ -25,4 +25,4 @@ install:
 	cp -f ../lib/libc.obj ~/.kex/root/RD/1/LIB
 
 clean:
-	rm ../lib/*
+	rm ../../bin/lib/libc.obj.a ../../bin/lib/libtcc.a

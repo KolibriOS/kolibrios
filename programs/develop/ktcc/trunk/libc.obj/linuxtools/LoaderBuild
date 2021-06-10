@@ -19,6 +19,6 @@ do
 done
 
 echo "Create libc.obj.a library..."
-ar -rsc ../lib/libc.obj.a *.o
+ar -rsc ../../bin/lib/libc.obj.a *.o
 rm -f *.asm *.o
 echo "Done!"
