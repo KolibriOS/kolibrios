@@ -1,54 +1,29 @@
 ;   Простой пример программы для KolibriOS
 ;   озвучивает код нажатой клавиши
 ;
-;   Компилировать FASM'ом
-;        Можно открыть example.asm через программу FASM (её ярлык есть
-;        на рабочем столе)
-;        А можно просто нажать F9 в Tinypad'е. Лог компиляции
-;        отображается на доске отладки (программа BOARD)
-;
-;   Что важно знать при программировании под Колибри:
-;        Номер функции помещается в регистр eax.
-;        Вызов системной функции осуществляется командой "int 0x40".
-;        Все регистры, кроме явно указанных в возвращаемом значении,
-;        включая регистр флагов eflags, сохраняются.
-;
-;    Пример:
-;        mov eax, 1    ;Функция 1 - поставить точку в окне
-;                      ;список сисфункций см. в DOCPACK - sysfuncr.txt
-;        mov ebx, 10   ; координата x=10
-;        mov ecx, 20   ; координата y=10
-;        mov edx, 0xFFFfff ;цвет точки
-;        int 0x40      ;вызвать функцию
-;
-;    Тоже самое с использованием макроса:
-;        mcall 1, 10, 20, 0xFFFfff
 ;---------------------------------------------------------------------
 
-  use32 	     ; включить 32-битный режим ассемблера
-  org	 0	     ; адресация с нуля
+  use32
+  org    0
 
-  db	 'MENUET01'  ; 8-байтный идентификатор MenuetOS
-  dd	 1	     ; версия заголовка (всегда 1)
-  dd	 START	     ; адрес первой команды
-  dd	 I_END	     ; размер программы
-  dd	 MEM	     ; количество памяти
-  dd	 STACKTOP    ; адрес вершины стэка
-  dd	 0	     ; адрес буфера для параметров
-  dd	 0	     ; зарезервировано
+  db     'MENUET01'
+  dd     1
+  dd     START
+  dd     I_END
+  dd     MEM
+  dd     STACKTOP
+  dd     0
+  dd     0
 
 include "lang.inc"
-include "../../macros.inc" ; макросы облегчают жизнь ассемблерщиков!
+include "../../macros.inc"
 
-;---------------------------------------------------------------------
-;---  НАЧАЛО ПРОГРАММЫ  ----------------------------------------------
-;---------------------------------------------------------------------
 
 START:
 
-red:			; перерисовать окно
+red:                    ; перерисовать окно
 
-    call draw_window	; вызываем процедуру отрисовки окна
+    call draw_window    ; вызываем процедуру отрисовки окна
 
 ;---------------------------------------------------------------------
 ;---  ЦИКЛ ОБРАБОТКИ СОБЫТИЙ  ----------------------------------------
@@ -59,529 +34,529 @@ still:
     mov eax, 10
     int 0x40
 
-    cmp  eax,2		; нажата клавиша ?
-    je	 key		; если да - на key
-    cmp  eax,3		; нажата кнопка ?
-    je	 button 	; если да - на button
-    cmp  eax,1		; перерисовать окно ?
-    je	 red		; если да - на метку red
+    cmp  eax,2          ; нажата клавиша ?
+    je   key            ; если да - на key
+    cmp  eax,3          ; нажата кнопка ?
+    je   button         ; если да - на button
+    cmp  eax,1          ; перерисовать окно ?
+    je   red            ; если да - на метку red
 
-    jmp  still		; если другое событие - в начало цикла
+    jmp  still          ; если другое событие - в начало цикла
 
 
 
 ;---------------------------------------------------------------------
 
 
-  key:			; нажата клавиша на клавиатуре
-    mcall 2		; функция 2 - считать код символа (в ah)
+  key:                  ; нажата клавиша на клавиатуре
+    mcall 2             ; функция 2 - считать код символа (в ah)
 
 
-	cmp   ah, 0x41	      ; A - if Caps Lock ON
-	jnz   @f
-	jmp   _07
+        cmp   ah, 0x41        ; A - if Caps Lock ON
+        jnz   @f
+        jmp   _07
     @@:
-	cmp   ah, 0x5a	      ; Z
-	jnz   @f
-	jmp   _08
+        cmp   ah, 0x5a        ; Z
+        jnz   @f
+        jmp   _08
     @@:
-	cmp   ah, 0x53	      ; S
-	jnz   @f
-	jmp   _09
+        cmp   ah, 0x53        ; S
+        jnz   @f
+        jmp   _09
     @@:
-	cmp   ah, 0x58	      ; X
-	jnz   @f
-	jmp   _0a
+        cmp   ah, 0x58        ; X
+        jnz   @f
+        jmp   _0a
     @@:
-	cmp   ah, 0x44	      ; D
-	jnz   @f
-	jmp   _0b
+        cmp   ah, 0x44        ; D
+        jnz   @f
+        jmp   _0b
     @@:
-	cmp   ah, 0x43	      ; C
-	jnz   @f
-	jmp   _0c
+        cmp   ah, 0x43        ; C
+        jnz   @f
+        jmp   _0c
     @@:
-	cmp   ah, 0x56	      ; V
-	jnz   @f
+        cmp   ah, 0x56        ; V
+        jnz   @f
    _01:
-	mov   ah, 0x01
-	jmp   p
+        mov   ah, 0x01
+        jmp   p
     @@:
-	cmp   ah, 0x47	      ; G
-	jnz   @f
+        cmp   ah, 0x47        ; G
+        jnz   @f
    _02:
-	mov   ah, 0x02
-	jmp   p
+        mov   ah, 0x02
+        jmp   p
     @@:
-	cmp   ah, 0x42	      ; B
-	jnz   @f
+        cmp   ah, 0x42        ; B
+        jnz   @f
    _03:
-	mov   ah, 0x03
-	jmp   p
+        mov   ah, 0x03
+        jmp   p
     @@:
-	cmp   ah, 0x48	      ; H
-	jnz   @f
+        cmp   ah, 0x48        ; H
+        jnz   @f
    _04:
-	mov   ah, 0x04
-	jmp   p
+        mov   ah, 0x04
+        jmp   p
     @@:
-	cmp   ah, 0x4e	      ; N
-	jnz   @f
+        cmp   ah, 0x4e        ; N
+        jnz   @f
    _05:
-	mov   ah, 0x05
-	jmp   p
+        mov   ah, 0x05
+        jmp   p
     @@:
-	cmp   ah, 0x4d	      ; M
-	jnz   @f
+        cmp   ah, 0x4d        ; M
+        jnz   @f
    _06:
-	mov   ah, 0x06
-	jmp   p
+        mov   ah, 0x06
+        jmp   p
     @@:
-	cmp   ah, 0x4b	      ; K
-	jnz   @f
+        cmp   ah, 0x4b        ; K
+        jnz   @f
    _07:
-	mov   ah, 0x07
-	jmp   p
+        mov   ah, 0x07
+        jmp   p
     @@:
-	cmp   ah, 0x3c	      ; <
-	jnz   @f
+        cmp   ah, 0x3c        ; <
+        jnz   @f
    _08:
-	mov   ah, 0x08
-	jmp   p
+        mov   ah, 0x08
+        jmp   p
     @@:
-	cmp   ah, 0x4c	      ; L
-	jnz   @f
+        cmp   ah, 0x4c        ; L
+        jnz   @f
    _09:
-	mov   ah, 0x09
-	jmp   p
+        mov   ah, 0x09
+        jmp   p
     @@:
-	cmp   ah, 0x3e	      ; >
-	jnz   @f
+        cmp   ah, 0x3e        ; >
+        jnz   @f
    _0a:
-	mov   ah, 0x0a
-	jmp   p
+        mov   ah, 0x0a
+        jmp   p
     @@:
-	cmp   ah, 0x3a	      ; :
-	jnz   @f
+        cmp   ah, 0x3a        ; :
+        jnz   @f
    _0b:
-	mov   ah, 0x0b
-	jmp   p
+        mov   ah, 0x0b
+        jmp   p
     @@:
-	cmp   ah, 0x3f	      ; ?
-	jnz   @f
+        cmp   ah, 0x3f        ; ?
+        jnz   @f
    _0c:
-	mov   ah, 0x0c
-	jmp   p
+        mov   ah, 0x0c
+        jmp   p
     @@:
-	cmp   ah, 0x22	      ; "
-	jnz   @f
-	jmp   _11
+        cmp   ah, 0x22        ; "
+        jnz   @f
+        jmp   _11
     @@:
-	cmp   ah, 0x21	      ; key !-------
-	jnz   @f
-	jmp   _0c
+        cmp   ah, 0x21        ; key !-------
+        jnz   @f
+        jmp   _0c
     @@:
-	cmp   ah, 0x51	      ; key Q
-	jnz   @f
+        cmp   ah, 0x51        ; key Q
+        jnz   @f
    _11:
-	mov   ah, 0x11
-	jmp   p
+        mov   ah, 0x11
+        jmp   p
     @@:
-	cmp   ah, 0x40	      ; key @
-	jnz   @f
+        cmp   ah, 0x40        ; key @
+        jnz   @f
    _12:
-	mov   ah, 0x12
-	jmp   p
+        mov   ah, 0x12
+        jmp   p
     @@:
-	cmp   ah, 0x57	      ; key W
-	jnz   @f
+        cmp   ah, 0x57        ; key W
+        jnz   @f
    _13:
-	mov   ah, 0x13
-	jmp   p
+        mov   ah, 0x13
+        jmp   p
     @@:
-	cmp   ah, 0x23	      ; key #
-	jnz   @f
+        cmp   ah, 0x23        ; key #
+        jnz   @f
    _14:
-	mov   ah, 0x14
-	jmp   p
+        mov   ah, 0x14
+        jmp   p
     @@:
-	cmp   ah, 0x45	      ; key E
-	jnz   @f
+        cmp   ah, 0x45        ; key E
+        jnz   @f
    _15:
-	mov   ah, 0x15
-	jmp   p
+        mov   ah, 0x15
+        jmp   p
     @@:
-	cmp   ah, 0x52	      ; key R
-	jnz   @f
+        cmp   ah, 0x52        ; key R
+        jnz   @f
    _16:
-	mov   ah, 0x16
-	jmp   p
+        mov   ah, 0x16
+        jmp   p
     @@:
-	cmp   ah, 0x25	      ; key %
-	jnz   @f
-	jmp   _17
+        cmp   ah, 0x25        ; key %
+        jnz   @f
+        jmp   _17
     @@:
-	cmp   ah, 0x54	      ; key T
-	jnz   @f
-	jmp   _18
+        cmp   ah, 0x54        ; key T
+        jnz   @f
+        jmp   _18
     @@:
-	cmp   ah, 0x5e	      ; key ^
-	jnz   @f
-	jmp   _19
+        cmp   ah, 0x5e        ; key ^
+        jnz   @f
+        jmp   _19
     @@:
-	cmp   ah, 0x59	      ; key Y
-	jnz   @f
-	jmp   _1a
+        cmp   ah, 0x59        ; key Y
+        jnz   @f
+        jmp   _1a
     @@:
-	cmp   ah, 0x26	      ; key &
-	jnz   @f
-	jmp   _1b
+        cmp   ah, 0x26        ; key &
+        jnz   @f
+        jmp   _1b
     @@:
-	cmp   ah, 0x55	      ; key U
-	jnz   @f
-	jmp   _1c
+        cmp   ah, 0x55        ; key U
+        jnz   @f
+        jmp   _1c
     @@:
-	cmp   ah, 0x49	      ; key I
-	jnz   @f
-	jmp   _21
+        cmp   ah, 0x49        ; key I
+        jnz   @f
+        jmp   _21
     @@:
-	cmp   ah, 0x28	      ; key (
-	jnz   @f
-	jmp   _22
+        cmp   ah, 0x28        ; key (
+        jnz   @f
+        jmp   _22
     @@:
-	cmp   ah, 0x4f	      ; key O
-	jnz   @f
-	jmp   _23
+        cmp   ah, 0x4f        ; key O
+        jnz   @f
+        jmp   _23
     @@:
-	cmp   ah, 0x29	      ; key )
-	jnz   @f
-	jmp   _24
+        cmp   ah, 0x29        ; key )
+        jnz   @f
+        jmp   _24
     @@:
-	cmp   ah, 0x50	      ; key P
-	jnz   @f
-	jmp   _25
+        cmp   ah, 0x50        ; key P
+        jnz   @f
+        jmp   _25
     @@:
-	cmp   ah, 0x7b	      ; key {
-	jnz   @f
-	jmp   _26
+        cmp   ah, 0x7b        ; key {
+        jnz   @f
+        jmp   _26
     @@:
-	cmp   ah, 0x2b	      ; key +
-	jnz   @f
-	jmp   _27
+        cmp   ah, 0x2b        ; key +
+        jnz   @f
+        jmp   _27
     @@:
-	cmp   ah, 0x7d	      ; key }
-	jnz   @f
-	jmp   _28
+        cmp   ah, 0x7d        ; key }
+        jnz   @f
+        jmp   _28
     @@:
-	cmp   ah, 0x7c	      ; key |
-	jnz   @f
-	jmp   _29
+        cmp   ah, 0x7c        ; key |
+        jnz   @f
+        jmp   _29
     @@:
-	cmp   ah, 0x61	      ; a - if Caps Lock OFF
-	jnz   @f
+        cmp   ah, 0x61        ; a - if Caps Lock OFF
+        jnz   @f
    _17:
-	mov   ah, 0x17
-	jmp   p
+        mov   ah, 0x17
+        jmp   p
     @@:
-	cmp   ah, 0x7a	      ; z
-	jnz   @f
+        cmp   ah, 0x7a        ; z
+        jnz   @f
    _18:
-	mov   ah, 0x18
-	jmp   p
+        mov   ah, 0x18
+        jmp   p
     @@:
-	cmp   ah, 0x73	      ; s
-	jnz   @f
+        cmp   ah, 0x73        ; s
+        jnz   @f
    _19:
-	mov   ah, 0x19
-	jmp   p
+        mov   ah, 0x19
+        jmp   p
     @@:
-	cmp   ah, 0x78	      ; x
-	jnz   @f
+        cmp   ah, 0x78        ; x
+        jnz   @f
    _1a:
-	mov   ah, 0x1a
-	jmp   p
+        mov   ah, 0x1a
+        jmp   p
     @@:
-	cmp   ah, 0x64	      ; d
-	jnz   @f
+        cmp   ah, 0x64        ; d
+        jnz   @f
    _1b:
-	mov   ah, 0x1b
-	jmp   p
+        mov   ah, 0x1b
+        jmp   p
     @@:
-	cmp   ah, 0x63	      ; c
-	jnz   @f
+        cmp   ah, 0x63        ; c
+        jnz   @f
    _1c:
-	mov   ah, 0x1c
-	jmp   p
+        mov   ah, 0x1c
+        jmp   p
     @@:
-	cmp   ah, 0x76	      ; v
-	jnz   @f
+        cmp   ah, 0x76        ; v
+        jnz   @f
    _21:
-	mov   ah, 0x21
-	jmp   p
+        mov   ah, 0x21
+        jmp   p
     @@:
-	cmp   ah, 0x67	      ; g
-	jnz   @f
+        cmp   ah, 0x67        ; g
+        jnz   @f
    _22:
-	mov   ah, 0x22
-	jmp   p
+        mov   ah, 0x22
+        jmp   p
     @@:
-	cmp   ah, 0x62	      ; b
-	jnz   @f
+        cmp   ah, 0x62        ; b
+        jnz   @f
    _23:
-	mov   ah, 0x23
-	jmp   p
+        mov   ah, 0x23
+        jmp   p
     @@:
-	cmp   ah, 0x68	      ; h
-	jnz   @f
+        cmp   ah, 0x68        ; h
+        jnz   @f
    _24:
-	mov   ah, 0x24
-	jmp   p
+        mov   ah, 0x24
+        jmp   p
     @@:
-	cmp   ah, 0x6e	      ; n
-	jnz   @f
+        cmp   ah, 0x6e        ; n
+        jnz   @f
    _25:
-	mov   ah, 0x25
-	jmp   p
+        mov   ah, 0x25
+        jmp   p
     @@:
-	cmp   ah, 0x6d	      ; m
-	jnz   @f
+        cmp   ah, 0x6d        ; m
+        jnz   @f
    _26:
-	mov   ah, 0x26
-	jmp   p
+        mov   ah, 0x26
+        jmp   p
     @@:
-	cmp   ah, 0x6b	      ; k
-	jnz   @f
+        cmp   ah, 0x6b        ; k
+        jnz   @f
    _27:
-	mov   ah, 0x27
-	jmp   p
+        mov   ah, 0x27
+        jmp   p
     @@:
-	cmp   ah, 0x2c	      ; ,
-	jnz   @f
+        cmp   ah, 0x2c        ; ,
+        jnz   @f
    _28:
-	mov   ah, 0x28
-	jmp   p
+        mov   ah, 0x28
+        jmp   p
     @@:
-	cmp   ah, 0x6c	      ; l
-	jnz   @f
+        cmp   ah, 0x6c        ; l
+        jnz   @f
    _29:
-	mov   ah, 0x29
-	jmp   p
+        mov   ah, 0x29
+        jmp   p
     @@:
-	cmp   ah, 0x2e	      ; .
-	jnz   @f
+        cmp   ah, 0x2e        ; .
+        jnz   @f
    _2a:
-	mov   ah, 0x2a
-	jmp   p
+        mov   ah, 0x2a
+        jmp   p
     @@:
-	cmp   ah, 0x3b	      ; ;
-	jnz   @f
+        cmp   ah, 0x3b        ; ;
+        jnz   @f
    _2b:
-	mov   ah, 0x2b
-	jmp   p
+        mov   ah, 0x2b
+        jmp   p
     @@:
-	cmp   ah, 0x2f	      ; /
-	jnz   @f
+        cmp   ah, 0x2f        ; /
+        jnz   @f
    _2c:
-	mov   ah, 0x2c
-	jmp   p
+        mov   ah, 0x2c
+        jmp   p
     @@:
-	cmp   ah, 0x27	      ; '
-	jnz   @f
+        cmp   ah, 0x27        ; '
+        jnz   @f
   _31:
-	mov   ah, 0x31
-	jmp   p
+        mov   ah, 0x31
+        jmp   p
     @@:
-	cmp   ah, 0x60	      ; key `
-	jnz   @f
-	jmp   _2c
+        cmp   ah, 0x60        ; key `
+        jnz   @f
+        jmp   _2c
     @@:
-	cmp   ah, 0x09	      ; key tab
-	jnz   @f
-	jmp   _31
+        cmp   ah, 0x09        ; key tab
+        jnz   @f
+        jmp   _31
     @@:
-	cmp   ah, 0x31	      ; key 1
-	jnz   @f
+        cmp   ah, 0x31        ; key 1
+        jnz   @f
   _32:
-	mov   ah, 0x32
-	jmp   p
+        mov   ah, 0x32
+        jmp   p
     @@:
-	cmp   ah, 0x71	      ; key q
-	jnz   @f
+        cmp   ah, 0x71        ; key q
+        jnz   @f
   _33:
-	mov   ah, 0x33
-	jmp   p
+        mov   ah, 0x33
+        jmp   p
     @@:
-	cmp   ah, 0x32	      ; key 2
-	jnz   @f
+        cmp   ah, 0x32        ; key 2
+        jnz   @f
   _34:
-	mov   ah, 0x34
-	jmp   p
+        mov   ah, 0x34
+        jmp   p
     @@:
-	cmp   ah, 0x77	      ; key w
-	jnz   @f
+        cmp   ah, 0x77        ; key w
+        jnz   @f
   _35:
-	mov   ah, 0x35
-	jmp   p
+        mov   ah, 0x35
+        jmp   p
     @@:
-	cmp   ah, 0x65	      ; key e
-	jnz   @f
+        cmp   ah, 0x65        ; key e
+        jnz   @f
   _36:
-	mov   ah, 0x36
-	jmp   p
+        mov   ah, 0x36
+        jmp   p
     @@:
-	cmp   ah, 0x34	      ; key 4
-	jnz   @f
+        cmp   ah, 0x34        ; key 4
+        jnz   @f
   _37:
-	mov   ah, 0x37
-	jmp   p
+        mov   ah, 0x37
+        jmp   p
     @@:
-	cmp   ah, 0x72	      ; key r
-	jnz   @f
+        cmp   ah, 0x72        ; key r
+        jnz   @f
   _38:
-	mov   ah, 0x38
-	jmp   p
+        mov   ah, 0x38
+        jmp   p
     @@:
-	cmp   ah, 0x35	      ; key 5
-	jnz   @f
+        cmp   ah, 0x35        ; key 5
+        jnz   @f
   _39:
-	mov   ah, 0x39
-	jmp   p
+        mov   ah, 0x39
+        jmp   p
     @@:
-	cmp   ah, 0x74	      ; key t
-	jnz   @f
+        cmp   ah, 0x74        ; key t
+        jnz   @f
   _3a:
-	mov   ah, 0x3a
-	jmp   p
+        mov   ah, 0x3a
+        jmp   p
     @@:
-	cmp   ah, 0x36	      ; key 6
-	jnz   @f
+        cmp   ah, 0x36        ; key 6
+        jnz   @f
   _3b:
-	mov   ah, 0x3b
-	jmp   p
+        mov   ah, 0x3b
+        jmp   p
     @@:
-	cmp   ah, 0x79	      ; key y
-	jnz   @f
+        cmp   ah, 0x79        ; key y
+        jnz   @f
   _3c:
-	mov   ah, 0x3c
-	jmp   p
+        mov   ah, 0x3c
+        jmp   p
     @@:
-	cmp   ah, 0x75	      ; key u
-	jnz   @f
+        cmp   ah, 0x75        ; key u
+        jnz   @f
   _41:
-	mov   ah, 0x41
-	jmp   p
+        mov   ah, 0x41
+        jmp   p
     @@:
-	cmp   ah, 0x38	      ; key 8
-	jnz   @f
-	mov   ah, 0x42
-	jmp   p
+        cmp   ah, 0x38        ; key 8
+        jnz   @f
+        mov   ah, 0x42
+        jmp   p
     @@:
-	cmp   ah, 0x69	      ; key i
-	jnz   @f
-	mov   ah, 0x43
-	jmp   p
+        cmp   ah, 0x69        ; key i
+        jnz   @f
+        mov   ah, 0x43
+        jmp   p
     @@:
-	cmp   ah, 0x39	      ; key 9
-	jnz   @f
-	mov   ah, 0x44
-	jmp   p
+        cmp   ah, 0x39        ; key 9
+        jnz   @f
+        mov   ah, 0x44
+        jmp   p
     @@:
-	cmp   ah, 0x6f	      ; key o
-	jnz   @f
-	mov   ah, 0x45
-	jmp   p
+        cmp   ah, 0x6f        ; key o
+        jnz   @f
+        mov   ah, 0x45
+        jmp   p
     @@:
-	cmp   ah, 0x70	      ; key p
-	jnz   @f
-	mov   ah, 0x46
-	jmp   p
+        cmp   ah, 0x70        ; key p
+        jnz   @f
+        mov   ah, 0x46
+        jmp   p
     @@:
-	cmp   ah, 0x2d	      ; key -
-	jnz   @f
-	mov   ah, 0x47
-	jmp   p
+        cmp   ah, 0x2d        ; key -
+        jnz   @f
+        mov   ah, 0x47
+        jmp   p
     @@:
-	cmp   ah, 0x5b	      ; key [
-	jnz   @f
-	mov   ah, 0x48
-	jmp   p
+        cmp   ah, 0x5b        ; key [
+        jnz   @f
+        mov   ah, 0x48
+        jmp   p
     @@:
-	cmp   ah, 0x3d	      ; key =
-	jnz   @f
-	mov   ah, 0x49
-	jmp   p
+        cmp   ah, 0x3d        ; key =
+        jnz   @f
+        mov   ah, 0x49
+        jmp   p
     @@:
-	cmp   ah, 0x5d	      ; key ]
-	jnz   @f
-	mov   ah, 0x4a
-	jmp   p
+        cmp   ah, 0x5d        ; key ]
+        jnz   @f
+        mov   ah, 0x4a
+        jmp   p
     @@:
-	cmp   ah, 0x5c	      ; key \
-	jnz   @f
-	mov   ah, 0x4b
-	jmp   p
+        cmp   ah, 0x5c        ; key \
+        jnz   @f
+        mov   ah, 0x4b
+        jmp   p
     @@:
-	cmp   ah, 0x08	      ; key backspace
-	jnz   @f
-	mov   ah, 0x4c
-	jmp   p
+        cmp   ah, 0x08        ; key backspace
+        jnz   @f
+        mov   ah, 0x4c
+        jmp   p
     @@:
-	cmp   ah, 0x0d	      ; key enter
-	jnz   @f
-	mov   ah, 0x51
-	jmp   p
+        cmp   ah, 0x0d        ; key enter
+        jnz   @f
+        mov   ah, 0x51
+        jmp   p
     @@:
-	cmp   ah, 0x66	      ; key f
-	jnz   @f
-	mov   ah, 0x01
-	jmp   p
+        cmp   ah, 0x66        ; key f
+        jnz   @f
+        mov   ah, 0x01
+        jmp   p
     @@:
-	cmp   ah, 0x6a	      ; key j
-	jnz   @f
-	mov   ah, 0x05
-	jmp   p
+        cmp   ah, 0x6a        ; key j
+        jnz   @f
+        mov   ah, 0x05
+        jmp   p
     @@:
-	cmp   ah, 0x33	      ; key 3
-	jnz   @f
-	mov   ah, 0x08
-	jmp   p
+        cmp   ah, 0x33        ; key 3
+        jnz   @f
+        mov   ah, 0x08
+        jmp   p
     @@:
-	cmp   ah, 0x37	      ; key 7
-	jnz   @f
-	jmp   _11
+        cmp   ah, 0x37        ; key 7
+        jnz   @f
+        jmp   _11
     @@:
-	cmp   ah, 0x30	      ; key 0
-	jnz   @f
-	jmp   _15
+        cmp   ah, 0x30        ; key 0
+        jnz   @f
+        jmp   _15
     @@:
-	cmp   ah, 0xb4	      ; key home
-	jnz   @f
-	mov   ah, 0x10
-	jmp   p
+        cmp   ah, 0xb4        ; key home
+        jnz   @f
+        mov   ah, 0x10
+        jmp   p
     @@:
-	cmp   ah, 0xb5	      ; key end
-	jnz   @f
+        cmp   ah, 0xb5        ; key end
+        jnz   @f
    _70:
-	mov   ah, 0xfc
-	jmp   p
+        mov   ah, 0xfc
+        jmp   p
     @@:
-	cmp   ah, 0xb8	      ; key Page Up
-	jnz   @f
-	mov   ah, 0x20
-	jmp   p
+        cmp   ah, 0xb8        ; key Page Up
+        jnz   @f
+        mov   ah, 0x20
+        jmp   p
     @@:
-	cmp   ah, 0xb7	      ; key Page Down
-	jnz   @f
-	jmp   _70
+        cmp   ah, 0xb7        ; key Page Down
+        jnz   @f
+        jmp   _70
     @@:
-	cmp   ah, 0xff	      ; key F12
-	jnz   @f
-	mov   ah, 0x00
-	jmp   p
+        cmp   ah, 0xff        ; key F12
+        jnz   @f
+        mov   ah, 0x00
+        jmp   p
     @@:
-	cmp   ah, 0xb6	      ; key Del
-	jnz   @f
-	jmp   _70
+        cmp   ah, 0xb6        ; key Del
+        jnz   @f
+        jmp   _70
     @@:
 
   p:
@@ -598,219 +573,219 @@ still:
     ; или коротко:
     ;mcall 55, , , , Music
 
-    jmp  still		; вернуться к началу цикла
+    jmp  still          ; вернуться к началу цикла
 
 
 ;---------------------------------------------------------------------
 
   button:
-    mcall 17		; 17 - получить идентификатор нажатой кнопки
+    mcall 17            ; 17 - получить идентификатор нажатой кнопки
 
-	cmp  ah, 0xa1	    ; button 1
-	jnz  @f
-	jmp  _01
+        cmp  ah, 0xa1       ; button 1
+        jnz  @f
+        jmp  _01
     @@:
-	cmp  ah, 0x02	    ; button 2
-	jnz  @f
-	jmp  _02
+        cmp  ah, 0x02       ; button 2
+        jnz  @f
+        jmp  _02
     @@:
-	cmp  ah, 0x03	    ; button 3
-	jnz  @f
-	jmp  _03
+        cmp  ah, 0x03       ; button 3
+        jnz  @f
+        jmp  _03
     @@:
-	cmp  ah, 0x04
-	jnz  @f
-	jmp  _04
+        cmp  ah, 0x04
+        jnz  @f
+        jmp  _04
     @@:
-	cmp  ah, 0x05
-	jnz  @f
-	jmp  _05
+        cmp  ah, 0x05
+        jnz  @f
+        jmp  _05
     @@:
-	cmp  ah, 0x06
-	jnz  @f
-	jmp  _06
+        cmp  ah, 0x06
+        jnz  @f
+        jmp  _06
     @@:
-	cmp  ah, 0x07
-	jnz  @f
-	jmp  _07
+        cmp  ah, 0x07
+        jnz  @f
+        jmp  _07
     @@:
-	cmp  ah, 0x08	    ; button 8
-	jnz  @f
-	jmp  _08
+        cmp  ah, 0x08       ; button 8
+        jnz  @f
+        jmp  _08
     @@:
-	cmp  ah, 0x09
-	jnz  @f
-	jmp  _09
+        cmp  ah, 0x09
+        jnz  @f
+        jmp  _09
     @@:
-	cmp  ah, 0x0a	    ; button 10
-	jnz  @f
-	jmp  _0a
+        cmp  ah, 0x0a       ; button 10
+        jnz  @f
+        jmp  _0a
     @@:
-	cmp  ah, 0x0b
-	jnz  @f
-	jmp  _0b
+        cmp  ah, 0x0b
+        jnz  @f
+        jmp  _0b
     @@:
-	cmp  ah, 0x0c	    ; button 12
-	jnz  @f
-	jmp  _0c
-    @@:
-
-	cmp  ah, 0x11
-	jnz  @f
-	jmp  _11
-    @@:
-	cmp  ah, 0x12
-	jnz  @f
-	jmp  _12
-    @@:
-	cmp  ah, 0x13
-	jnz  @f
-	jmp  _13
-    @@:
-	cmp  ah, 0x14
-	jnz  @f
-	jmp  _14
-    @@:
-	cmp  ah, 0x15
-	jnz  @f
-	jmp  _15
-    @@:
-	cmp  ah, 0x16
-	jnz  @f
-	jmp  _16
-    @@:
-	cmp  ah, 0x17
-	jnz  @f
-	jmp  _17
-    @@:
-	cmp  ah, 0x18
-	jnz  @f
-	jmp  _18
-    @@:
-	cmp  ah, 0x19
-	jnz  @f
-	jmp  _19
-    @@:
-	cmp  ah, 0x1a
-	jnz  @f
-	jmp  _1a
-    @@:
-	cmp  ah, 0x1b
-	jnz  @f
-	jmp  _1b
-    @@:
-	cmp  ah, 0x1c
-	jnz  @f
-	jmp  _1c
+        cmp  ah, 0x0c       ; button 12
+        jnz  @f
+        jmp  _0c
     @@:
 
-	cmp  ah, 0x21	    ; button 1
-	jnz  @f
-	jmp  _21
+        cmp  ah, 0x11
+        jnz  @f
+        jmp  _11
     @@:
-	cmp  ah, 0x22
-	jnz  @f
-	jmp  _22
+        cmp  ah, 0x12
+        jnz  @f
+        jmp  _12
     @@:
-	cmp  ah, 0x23	    ; button 3
-	jnz  @f
-	jmp  _23
+        cmp  ah, 0x13
+        jnz  @f
+        jmp  _13
     @@:
-	cmp  ah, 0x24
-	jnz  @f
-	jmp  _24
+        cmp  ah, 0x14
+        jnz  @f
+        jmp  _14
     @@:
-	cmp  ah, 0x25	    ; button 5
-	jnz  @f
-	jmp  _25
+        cmp  ah, 0x15
+        jnz  @f
+        jmp  _15
     @@:
-	cmp  ah, 0x26
-	jnz  @f
-	jmp  _26
+        cmp  ah, 0x16
+        jnz  @f
+        jmp  _16
     @@:
-	cmp  ah, 0x27	    ; button 7
-	jnz  @f
-	jmp  _27
+        cmp  ah, 0x17
+        jnz  @f
+        jmp  _17
     @@:
-	cmp  ah, 0x28
-	jnz  @f
-	jmp  _28
+        cmp  ah, 0x18
+        jnz  @f
+        jmp  _18
     @@:
-	cmp  ah, 0x29	    ; button 9
-	jnz  @f
-	jmp  _29
+        cmp  ah, 0x19
+        jnz  @f
+        jmp  _19
     @@:
-	cmp  ah, 0x2a
-	jnz  @f
-	jmp  _2a
+        cmp  ah, 0x1a
+        jnz  @f
+        jmp  _1a
     @@:
-	cmp  ah, 0x2b	    ; button 11
-	jnz  @f
-	jmp  _2b
+        cmp  ah, 0x1b
+        jnz  @f
+        jmp  _1b
     @@:
-	cmp  ah, 0x2c
-	jnz  @f
-	jmp  _2c
-    @@:
-	cmp  ah, 0x31
-	jnz  @f
-	jmp  _31
-
-    @@:
-	cmp  ah, 0x32
-	jnz  @f
-	jmp  _32
-    @@:
-	cmp  ah, 0x33
-	jnz  @f
-	jmp  _33
-    @@:
-	cmp  ah, 0x34
-	jnz  @f
-	jmp  _34
-    @@:
-	cmp  ah, 0x35
-	jnz  @f
-	jmp  _35
-    @@:
-	cmp  ah, 0x36
-	jnz  @f
-	jmp  _36
-    @@:
-	cmp  ah, 0x37
-	jnz  @f
-	jmp  _37
-    @@:
-	cmp  ah, 0x38
-	jnz  @f
-	jmp  _38
-    @@:
-	cmp  ah, 0x39
-	jnz  @f
-	jmp  _39
-    @@:
-	cmp  ah, 0x3a
-	jnz  @f
-	jmp  _3a
-    @@:
-	cmp  ah, 0x3b
-	jnz  @f
-	jmp  _3b
-    @@:
-	cmp  ah, 0x3c
-	jnz  @f
-	jmp  _3c
-    @@:
-	cmp  ah, 0x41
-	jnz  @f
-	jmp  _41
+        cmp  ah, 0x1c
+        jnz  @f
+        jmp  _1c
     @@:
 
-    cmp   ah, 1 	; если НЕ нажата кнопка с номером 1,
-    jne   still 	;  вернуться
+        cmp  ah, 0x21       ; button 1
+        jnz  @f
+        jmp  _21
+    @@:
+        cmp  ah, 0x22
+        jnz  @f
+        jmp  _22
+    @@:
+        cmp  ah, 0x23       ; button 3
+        jnz  @f
+        jmp  _23
+    @@:
+        cmp  ah, 0x24
+        jnz  @f
+        jmp  _24
+    @@:
+        cmp  ah, 0x25       ; button 5
+        jnz  @f
+        jmp  _25
+    @@:
+        cmp  ah, 0x26
+        jnz  @f
+        jmp  _26
+    @@:
+        cmp  ah, 0x27       ; button 7
+        jnz  @f
+        jmp  _27
+    @@:
+        cmp  ah, 0x28
+        jnz  @f
+        jmp  _28
+    @@:
+        cmp  ah, 0x29       ; button 9
+        jnz  @f
+        jmp  _29
+    @@:
+        cmp  ah, 0x2a
+        jnz  @f
+        jmp  _2a
+    @@:
+        cmp  ah, 0x2b       ; button 11
+        jnz  @f
+        jmp  _2b
+    @@:
+        cmp  ah, 0x2c
+        jnz  @f
+        jmp  _2c
+    @@:
+        cmp  ah, 0x31
+        jnz  @f
+        jmp  _31
+
+    @@:
+        cmp  ah, 0x32
+        jnz  @f
+        jmp  _32
+    @@:
+        cmp  ah, 0x33
+        jnz  @f
+        jmp  _33
+    @@:
+        cmp  ah, 0x34
+        jnz  @f
+        jmp  _34
+    @@:
+        cmp  ah, 0x35
+        jnz  @f
+        jmp  _35
+    @@:
+        cmp  ah, 0x36
+        jnz  @f
+        jmp  _36
+    @@:
+        cmp  ah, 0x37
+        jnz  @f
+        jmp  _37
+    @@:
+        cmp  ah, 0x38
+        jnz  @f
+        jmp  _38
+    @@:
+        cmp  ah, 0x39
+        jnz  @f
+        jmp  _39
+    @@:
+        cmp  ah, 0x3a
+        jnz  @f
+        jmp  _3a
+    @@:
+        cmp  ah, 0x3b
+        jnz  @f
+        jmp  _3b
+    @@:
+        cmp  ah, 0x3c
+        jnz  @f
+        jmp  _3c
+    @@:
+        cmp  ah, 0x41
+        jnz  @f
+        jmp  _41
+    @@:
+
+    cmp   ah, 1         ; если НЕ нажата кнопка с номером 1,
+    jne   still         ;  вернуться
 
   .exit:
-    mcall -1		; иначе конец программы
+    mcall -1            ; иначе конец программы
 
 
 ;---------------------------------------------------------------------
@@ -827,21 +802,11 @@ draw_window:
 
     mcall 48, 3, sc,sizeof.system_colors
 
-    ; далее: сначала длинный вариант (закомментированный)
-    ; затем короткий аналог с использованием макросов
 
-;   mov  eax,0                   ; функция 0: определить окно
-;   mov  ebx,200*65536+300       ; [x старт] *65536 + [x размер]
-;   mov  ecx,200*65536+150       ; [y старт] *65536 + [y размер]
-;   mov  edx, [sc.work]          ; цвет фона
-;   or   edx, 0x33000000         ; и тип окна 3
-;   mov  edi,header              ; ЗАГОЛОВОК ОКНА
-;   int  0x40
-
-    mov   edx, [sc.work]	 ; цвет фона
-    or	  edx, 0x33000000	 ; и тип окна 3
+    mov   edx, [sc.work]         ; цвет фона
+    or    edx, 0x33000000        ; и тип окна 3
     mcall 0, <20,WHITE_W*15+9>, <200,250>, , ,caption
-	
+        
     mcall 8,  <WHITE_W*0,WHITE_W>, <0,100>, 0x21, 0xff7a74
     mcall 8,  <WHITE_W*1,WHITE_W>, <0,100>, 0x23, 0x907040
     mcall 8,  <WHITE_W*2,WHITE_W>, <0,100>, 0x25, 0xa08050
@@ -898,8 +863,8 @@ draw_window:
 
 
     ; вывод текстовой строки
-    mov   ecx, [sc.work_text]	 ; цвет фона
-    or	  ecx, 0x90000000	 ; и тип строки
+    mov   ecx, [sc.work_text]    ; цвет фона
+    or    ecx, 0x90000000        ; и тип строки
     mcall 4, <50, 205>, , message
     mcall 4, <10, 235>, , message1
     mcall 4, <10, 260>, , message2
@@ -907,9 +872,9 @@ draw_window:
     mcall 4, <10, 310>, , message4
     mcall 4, <16, 185>, , t_notes
 
-    mcall 12, 2 		 ; функция 12.2, закончили рисовать
+    mcall 12, 2                  ; функция 12.2, закончили рисовать
 
-    ret 			 ; выходим из процедуры
+    ret
 
 
 ;---------------------------------------------------------------------
@@ -945,17 +910,8 @@ end if
 
 ;---------------------------------------------------------------------
 
-I_END:			; метка конца программы
-  rb 4096		; память для стека
+I_END:
+  rb 4096
 align 16
-STACKTOP:		; метка вершины стека (при заполнении стек
-			; растет в сторону уменьшения адресов, потому
-			; память для него в коде программы встречается
-			; раньше чем его вершина)
-MEM:			; метка указывающая на конец программы плюс
-			; размер используемой ею оперативной памяти
-; Адрес метки MEM всегда должен быть больше чем адрес метки I_END.
-; Метка STACKTOP должна располагается после метки I_END и перед меткой
-;   MEM. STACKTOP может находится и перед I_END, но это не правильно.
-; Имена меток могут быть с любыми названиями, главное соблюдать
-;   правильный порядок их расположения.
+STACKTOP:
+MEM:
