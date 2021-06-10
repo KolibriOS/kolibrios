@@ -1719,8 +1719,8 @@ LIBTCCAPI int tcc_set_output_type(TCCState *s, int output_type)
 #elif defined(TCC_TARGET_MEOS)
     if (s->output_type != TCC_OUTPUT_OBJ && !s->nostdlib)
     {
-        tcc_add_crt(s,"start.o");
-//        tcc_add_library(s,"ck"); // adding libck.a dont work, because need to be added last
+        tcc_add_crt(s,"crt0.o");
+        //tcc_add_library(s,"lc.obj"); // adding libck.a dont work, because need to be added last
     }
 #else
     /* add libc crt1/crti objects */
