@@ -1,8 +1,9 @@
 if tup.getconfig("NO_TCC") ~= "" then return end
 
-TCC="../../develop/ktcc/trunk/bin/kos32-tcc"
+TCC="kos32-tcc"
 
 CFLAGS  = "-I../../develop/ktcc/trunk/libc.obj/include"
+LDFAGS  = "-nostdlib -L../../develop/ktcc/trunk/bin/lib ../../develop/ktcc/trunk/bin/lib/crt0.o"
 
 LIBS = "-ltcc -lnetwork -lc.obj"
 
