@@ -181,11 +181,12 @@ extra_files = {
  {"kolibrios/develop/oberon07/Samples/", PROGS .. "/develop/oberon07/Samples/*"},
  {"kolibrios/develop/oberon07/tools/", PROGS .. "/develop/oberon07/tools/*"},
  {"kolibrios/develop/tcc/", PROGS ..  "/develop/ktcc/trunk/*"},
- {"kolibrios/develop/tcc/", PROGS ..  "/develop/ktcc/trunk/bin/tcc"},
+-- {"kolibrios/develop/tcc/", PROGS ..  "/develop/ktcc/trunk/bin/tcc"},
  {"kolibrios/develop/tcc/lib/", PROGS ..  "/develop/ktcc/trunk/bin/lib/*"},
  {"kolibrios/develop/tcc/include/", PROGS ..  "/develop/ktcc/trunk/libc.obj/include/*"},
  {"kolibrios/develop/tcc/include/clayer/", PROGS ..  "/develop/ktcc/trunk/libc.obj/include/clayer/*"},
  {"kolibrios/develop/tcc/include/cryptal/", PROGS .. "/develop/ktcc/trunk/libc.obj/include/cryptal/*"},
+ {"kolibrios/develop/tcc/include/sys/", PROGS .. "/develop/ktcc/trunk/libc.obj/include/sys/*"},
 -- {"kolibrios/develop/tcc/include/net/", PROGS ..  "/develop/ktcc/trunk/libc/include/net/*"},
 -- {"kolibrios/develop/tcc/include/tinygl/", PROGS ..  "/develop/ktcc/trunk/libc.obj/include/tinygl/*"},
 -- {"kolibrios/develop/tcc/samples/", PROGS ..  "/develop/ktcc/trunk/samples/*.c"},
@@ -736,6 +737,7 @@ tup.append_table(extra_files, {
  {"kolibrios/lib/libc.dll", "../contrib/sdk/bin/libc.dll", group = "../contrib/sdk/lib/<libc.dll.a>"},
  {"kolibrios/utils/minizip/minizip", PROGS .. "/fs/minizip/minizip"},
  {"kolibrios/utils/minizip/miniunz", PROGS .. "/fs/minizip/miniunz"},
+ {"kolibrios/develop/tcc/tcc", PROGS .. "/develop/ktcc/trunk/source/tcc"},
 })
 -- For russian build, add russian-only programs.
 if build_type == "rus" then tup.append_table(extra_files, {
