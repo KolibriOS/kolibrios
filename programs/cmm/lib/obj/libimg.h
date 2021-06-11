@@ -254,10 +254,11 @@ struct libimg_image
     img_draw stdcall(pure_img32, x, y, 32, 32, 0, icon_n*32);
 }
 
-:void DrawIcon16(dword x,y, _bg, icon_n) {
+:int DrawIcon16(dword x,y, _bg, icon_n) {
     static dword bg;
     static dword pure_img16;
     dword bgshadow;
+    int size;
     if (!pure_img16) || (bg!=_bg) {
         bg = _bg;
         bgshadow = MixColors(bg, 0, 220);
@@ -271,7 +272,9 @@ struct libimg_image
             if (DSDWORD[ESI]==0xffCACBD6) DSDWORD[ESI] = bgshadow;
         }
     }
-    img_draw stdcall(pure_img16, x, y, ESDWORD[EAX+4], ESDWORD[EAX+4], 0, icon_n*ESDWORD[EAX+4]);
+    size = ESDWORD[pure_img16+4]; //get image width
+    img_draw stdcall(pure_img16, x, y, size, size, 0, icon_n*size);
+    return size;
 }
 
 #endif

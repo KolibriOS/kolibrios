@@ -244,6 +244,7 @@ extra_files = {
  {"kolibrios/drivers/i915/", "common/drivers/i915/*"},
  {"kolibrios/drivers/test/", "common/drivers/test/*"},
  {"kolibrios/drivers/vmware/", "common/drivers/vmware/*"},
+ {"kolibrios/KolibriNext/", "common/KolibriNext/*"},
  {"kolibrios/KolibriNext/settings/", "common/KolibriNext/settings/*"},
  {"kolibrios/lib/avcodec-56.dll", "common/lib/avcodec-56.dll"},
  {"kolibrios/lib/avdevice-56.dll", "common/lib/avdevice-56.dll"},

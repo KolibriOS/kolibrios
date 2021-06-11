@@ -3,8 +3,8 @@
 
 // 70.5 - get volume info and label
 
-#define TITLE "Eolite File Manager 4.66"
-#define ABOUT_TITLE "EOLITE 4.66"
+#define TITLE "Eolite File Manager 4.70"
+#define ABOUT_TITLE "EOLITE 4.70"
 
 #ifndef AUTOBUILD
 #include "lang.h--"
@@ -794,7 +794,6 @@ void Line_ReDraw(dword bgcol, filenum){
 	file.sizelo   = ESDWORD[file_offet+32];
 	file.sizehi   = ESDWORD[file_offet+36];
 	file_name_off = file_offet+40;
-	sprintf(#full_path,"%s/%s",#path,file_name_off);
 
 	if (! TestBit(attr, 4) ) //file or folder?
 	{	
@@ -854,6 +853,8 @@ void Line_ReDraw(dword bgcol, filenum){
 			bgcol, text_col, kfont.size.pt, #label_file_name);
 	}
 	if (bgcol == col.selec_inactive) DrawWideRectangle(files.x+2, y, files.w-4, files.item_h, 2, 0x92B1D9);
+
+	sprintf(#full_path,"%s/%s",#path,file_name_off);
 	DrawIconByExtension(#full_path, ext1, files.x+4, icon_y, bgcol);
 }
 

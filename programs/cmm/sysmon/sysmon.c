@@ -299,8 +299,8 @@ void MonitorTmp()
 
 void DrawIconWithText(dword _x, _y, _icon, _title)
 {
-	DrawIcon16(_x, _y, sc.work, _icon);
-	WriteTextWithBg(_x+ICONGAP, _y, 0xD0, sc.work_text, _title, sc.work);
+	int size = DrawIcon16(_x, _y, sc.work, _icon);
+	WriteTextWithBg(_x+ICONGAP, _y + size - 16, 0xD0, sc.work_text, _title, sc.work);
 }
 
 dword GetCpuLoad(dword max_h)
