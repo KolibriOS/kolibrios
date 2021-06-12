@@ -116,6 +116,7 @@ void EventInstall()
 {
 	ini_set_int stdcall ("/sys/settings/taskbar.ini", "Flags", "Attachment", 0);
 	copyf("/kolibrios/KolibriNext/settings", "/sys/settings");
+	copyf("/kolibrios/KolibriNext", "/sys");
 
 	RestartProcessByName("/sys/@icon", MULTIPLE);
 	RestartProcessByName("/sys/@taskbar", SINGLE);

@@ -669,7 +669,7 @@ tup.append_table(extra_files, {
  {"kolibrios/drivers/drvinst.kex", PROGS .. "/cmm/drvinst/drvinst.com"},
  {"kolibrios/games/pig/pigex", PROGS .. "/cmm/examples/pigex.com"},
  {"kolibrios/games/the_bus/the_bus", PROGS .. "/cmm/the_bus/the_bus.com"},
- {"kolibrios/KolibriNext/install.kex", PROGS .. "/cmm/installer/install.com"},
+ {"kolibrios/KolibriNext/install.kex", PROGS .. "/cmm/misc/install.com"},
  {"kolibrios/utils/appearance", PROGS .. "/cmm/appearance/appearance.com"},
  {"kolibrios/utils/dicty.kex", PROGS .. "/cmm/dicty/dicty.com"},
  {"kolibrios/utils/notes", PROGS .. "/cmm/notes/notes.com"},
