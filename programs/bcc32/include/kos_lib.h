@@ -1,16 +1,13 @@
-#ifndef __KOLIBRI_LIB_H_INCLUDED_
-#define __KOLIBRI_LIB_H_INCLUDED_
 
-// Kolibri interface.
+unsigned int strlen(const char *str);
+char *strcpy(char *dest, const char *src);
+void *memcpy(void *dest, const void *src, unsigned int n);
+void *memset(void *s, char c, unsigned int n);
+int strcmp(const char *str1, const char *str2);
+char *strchr(const char *str, int ch);
+char *strstr(const char *str1, const char *str2);
 
-namespace Kolibri   // All kolibri functions, types and data are nested in the (Kolibri) namespace.
-{
-	unsigned int StrLen(const char *str);
-	char *StrCopy(char *dest, const char *src);
-	void *MemCopy(void *dest, const void *src, unsigned int n);
-	void *MemSet(void *s, char c, unsigned int n);
-
-	double Floor(double x);
-}
-
-#endif  // __KOLIBRI_LIB_H_INCLUDED_
+double floor(double x);
+const char *DoubleToStr(double x, unsigned short digits = 5, bool crop_0 = false);
+double StrToDouble(char *str);
+long StrToInt(char *str);

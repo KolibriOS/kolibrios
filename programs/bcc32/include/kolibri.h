@@ -121,10 +121,11 @@ namespace Kolibri   // All kolibri functions, types and data are nested in the (
 	void DebugPutChar(char c);   // Put the character to the debug board.
 	void DebugPutString(const char *s);   // Put the string to the debug board.
 	int GetKey();   // Return key pressed by user or -1 if no key was pressed.
-	int GetMouseButton();   // Return buttons pressed: 0 - no buttons, 1 - left button, 2 - right button, 3 - both buttons.
 	void GetMousePosition(short &x, short &y, bool absolute = false);
 			// Write mouse position to (x) and (y): absolute if (absolute) is true and relative the window otherwise.
 	void GetMousePosPicture(short &x, short &y);
+	int GetMouseButton();   // Return buttons pressed: bit 0 - left button, bit 1 - right button...
+	void GetMouseScrollData(short &x, short &y);
 
 	int GetThreadNumber();   // Return the number of threads currently executing.
 	bool WasThreadCreated();   // Return true if there was created at least one thread except the main thred.

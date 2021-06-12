@@ -1030,21 +1030,34 @@ proc @Kolibri@GetKey$qv
 endp
 
 align 4
+proc @Kolibri@GetMousePosition$qrst1o uses ebx
+  mov  eax,SF_MOUSE_GET
+  xor  ebx,ebx ;SSF_SCREEN_POSITION
+  cmp  byte [esp+16],0
+  jnz  @f
+  inc  ebx ;SSF_WINDOW_POSITION
+@@:
+  int  0x40
+  mov  ecx,[esp+12]
+  mov  word [ecx],ax
+  mov  ecx,[esp+8]
+  shr  eax,16
+  mov  word [ecx],ax
+  ret
+endp
+
+align 4
 proc @Kolibri@GetMouseButton$qv uses ebx
   mov  eax,SF_MOUSE_GET
-  mov  ebx,SSF_BUTTON
+  mov  ebx,SSF_BUTTON_EXT
   int  0x40
   ret
 endp
 
 align 4
-proc @Kolibri@GetMousePosition$qrst1o uses ebx
+proc @Kolibri@GetMouseScrollData$qrst1 uses ebx
   mov  eax,SF_MOUSE_GET
-  xor  ebx,ebx ;SSF_SCREEN_POSITION
-  cmp  byte [esp+16],0
-  jnz  .get_mouse_pos_absolute
-  inc  ebx
-.get_mouse_pos_absolute:
+  mov  ebx,SSF_SCROLL_DATA
   int  0x40
   mov  ecx,[esp+12]
   mov  word [ecx],ax

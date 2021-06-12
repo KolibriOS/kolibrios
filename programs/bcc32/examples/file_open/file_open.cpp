@@ -49,7 +49,7 @@ void KolibriOnPaint(void)
 void KolibriOnButton(long id, TThreadData /*th*/)
 {
 	FileInfoBlock* file;
-	long int k;
+	unsigned long int k;
 
 	switch(id){
 	case 2:

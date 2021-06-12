@@ -1,12 +1,12 @@
-;/***
 
 KolibriHeapInit = @Kolibri@HeapInit$qv
-
 KolibriHeapAlloc = @Kolibri@Alloc$qul
-
 KolibriHeapReAlloc = @Kolibri@ReAlloc$qpvul
-
 KolibriHeapFree = @Kolibri@Free$qpv
+
+@$bnwa$qui equ @Kolibri@Alloc$qul ;new variable
+@$bnew$qui equ @Kolibri@Alloc$qul ;new struct or class
+@$bdele$qpv equ @Kolibri@Free$qpv ;delete
 
 align 4
 proc @Kolibri@HeapInit$qv uses ebx
@@ -43,5 +43,3 @@ proc @Kolibri@Free$qpv uses ebx
   int  0x40
   ret
 endp
-
-;/**/
