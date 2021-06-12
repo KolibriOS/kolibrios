@@ -3,8 +3,8 @@
 
 // 70.5 - get volume info and label
 
-#define TITLE "Eolite File Manager 4.70"
-#define ABOUT_TITLE "EOLITE 4.70"
+#define TITLE "Eolite File Manager 4.80"
+#define ABOUT_TITLE "EOLITE 4.80"
 
 #ifndef AUTOBUILD
 #include "lang.h--"
@@ -655,6 +655,8 @@ void DrawStatusBar()
 void DrawFilePanels()
 {
 	int files_y;
+	int w2 = -Form.cwidth-1/2+Form.cwidth;
+	int h2;
 	if (!two_panels.checked)
 	{
 		DrawDeviceAndActionsLeftPanel();
@@ -670,31 +672,32 @@ void DrawFilePanels()
 		col.selec = col.selec_inactive;
 		SystemDiscs.Draw();
 		files_y = files.y;
+		h2 = Form.cheight-files_y-2 - status_bar_h;
 
 		if (active_panel==1)
 		{
 			llist_copy(#files, #files_inactive);
 			strcpy(#path, #inactive_path);
 			col.selec = col.selec_inactive; //this is a bad code: need to use some var to set inactive panel for DrawList();
-			files.SetSizes(Form.cwidth/2, files_y, Form.cwidth/2 -17, Form.cheight-files_y-2 - status_bar_h, files.item_h);
+			files.SetSizes(Form.cwidth/2, files_y, w2-17, h2, files.item_h);
 			DrawList();
 			Open_Dir(#path,WITH_REDRAW);
 			llist_copy(#files, #files_active);
 			strcpy(#path, #active_path);
 			col.selec = col.selec_active;
-			files.SetSizes(2, files_y, Form.cwidth/2-2-17, Form.cheight-files_y-2 - status_bar_h, files.item_h);
+			files.SetSizes(2, files_y, Form.cwidth/2-2-17, h2, files.item_h);
 			DrawList();
 			Open_Dir(#path,WITH_REDRAW);
 		}
 		if (active_panel==2)
 		{
-			files.SetSizes(2, files_y, Form.cwidth/2-2-17, Form.cheight-files_y-2 - status_bar_h, files.item_h);
+			files.SetSizes(2, files_y, Form.cwidth/2-2-17, h2, files.item_h);
 			DrawList();
 			Open_Dir(#path,WITH_REDRAW);
 			llist_copy(#files, #files_active);
 			strcpy(#path, #active_path);
 			col.selec = col.selec_active;
-			files.SetSizes(Form.cwidth/2, files_y, Form.cwidth/2 -17, Form.cheight-files_y-2 - status_bar_h, files.item_h);
+			files.SetSizes(Form.cwidth/2, files_y, w2 -17, h2, files.item_h);
 			DrawList();
 			Open_Dir(#path,WITH_REDRAW);
 		}

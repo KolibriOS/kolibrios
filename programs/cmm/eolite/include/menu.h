@@ -79,7 +79,7 @@ Cut          |Crl+X
 Paste        |Crl+V
 -
 Delete       |Del
-Properties   |F8";
+Properties   |F1";
 char empty_folder_actions[]=
 "Paste        |Crl+V";
 char burger_menu_items[] = 

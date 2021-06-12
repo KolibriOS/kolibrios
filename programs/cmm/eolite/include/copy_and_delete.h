@@ -109,7 +109,7 @@ void EventCopy(bool _cut_active)
 void PasteThread()
 {
 	char copy_rezult;
-	int j;
+	int j, i, slash_count=0;
 	int paste_elements_count = 0;
 	dword buf;
 	dword path_offset;
@@ -125,6 +125,25 @@ void PasteThread()
 		DisplayOperationForm(COPY_FLAG);	
 	} 
 
+	if (cut_active) {
+		for (j = 0; j < paste_elements_count; j++) {
+			sprintf(#copy_to, "%s/%s", #path, path_offset+strrchr(path_offset,'/'));
+			slash_count = 0;
+			for (i=0; i<=10; i++) {
+				if (copy_to[i]=='/') slash_count++;
+				if (slash_count==3) break;
+			}
+			if (strncmp(#copy_to, path_offset, i)!=0) goto _DIFFERENT_DRIVES;
+			RenameMove(#copy_to+i, path_offset);
+			if (EAX!=0) goto _DIFFERENT_DRIVES;
+			path_offset += strlen(path_offset) + 1;
+		}
+		cut_active=false;
+		DialogExit();
+	}
+
+_DIFFERENT_DRIVES:
+	path_offset = buf + 10;
 	for (j = 0; j < paste_elements_count; j++) {
 		copy_bar.max += GetFilesCount(path_offset);
 		path_offset += strlen(path_offset) + 1;

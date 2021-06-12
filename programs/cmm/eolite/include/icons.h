@@ -21,8 +21,6 @@ void DrawIconByExtension(dword file_path, extension, xx, yy, fairing_color)
 		default_icon=2;
 	}
 
-	//KolibriNext
-	/*
 	if (chrnum(file_path, '/')==2) {
 		if (ESBYTE[file_path+1]=='/') ext[0] = ESBYTE[file_path+2];
 			else ext[0] = ESBYTE[file_path+1];
@@ -34,9 +32,7 @@ void DrawIconByExtension(dword file_path, extension, xx, yy, fairing_color)
 			icons_ini.section = "drives16";
 			icon_n = icons_ini.GetInt(#ext, 50);
 		}
-	} else 
-	*/
-	if (extension) {
+	} else if (extension) {
 		strcpy(#ext, extension);
 		strlwr(#ext);
 		icon_n = icons_ini.GetInt(#ext, default_icon);

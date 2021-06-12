@@ -155,13 +155,13 @@ void LoadIniSettings()
 	show_status_bar.checked = ini.GetInt("ShowStatusBar", true); 
 	big_icons.checked       = ini.GetInt("BigIcons", false); BigIconsSwitch();
 	//two_panels.checked      = ini.GetInt("TwoPanels", false); 
-	colored_lines.checked   = ini.GetInt("ColoredLines", efm); 
+	colored_lines.checked   = ini.GetInt("ColoredLines", true); 
 	kfont.size.pt   = ini.GetInt("FontSize", 13); 
 	files.item_h    = ini.GetInt("LineHeight", 19);
 	Form.left   = ini.GetInt("WinX", 100); 
 	Form.top    = ini.GetInt("WinY", 30); 
 	Form.width  = ini.GetInt("WinW", efm*170+550); 
-	Form.height = ini.GetInt("WinH", efm*116+503); 
+	Form.height = ini.GetInt("WinH", efm*100+517); 
 	ini.GetString("DefaultPath", #path, 4096, "/rd/1");
 	ini.GetString("DefaultPath", #path_start, 4096, "/rd/1");
 	path_start_ed.size = path_start_ed.pos = strlen(#path_start);
