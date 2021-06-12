@@ -19,4 +19,4 @@ end
 LIBS = "-ltcc -lc.obj"
 COMMAND=string.format("%s %s %s %s %s", TCC, CFLAGS, LDFLAGS , "%f -o %o",  LIBS)
 
-tup.rule({"shell.c", "system/kolibri.c"}, extra_inputs = {"lang.h"}, COMMAND .. tup.getconfig("KPACK_CMD"), "shell")
+tup.rule({"shell.c", "system/kolibri.c", extra_inputs = {"lang.h"}}, COMMAND .. tup.getconfig("KPACK_CMD"), "shell")
