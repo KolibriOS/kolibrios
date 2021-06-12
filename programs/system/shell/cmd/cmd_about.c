@@ -1,10 +1,6 @@
 
-int cmd_about(char param[])
-{
-
-char message[] = {"Shell %s\n\r"};
-
-printf(message, SHELL_VERSION); 
-return TRUE;
+int cmd_about(char param[]) {
+    printf(CMD_ABOUT_MSG, SHELL_VERSION); 
+    return TRUE;
 }
 

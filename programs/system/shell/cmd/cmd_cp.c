@@ -19,11 +19,7 @@ int cmd_cp(char param[])
 
     if (argc != 2)
     {
-        #if LANG_ENG
-            printf("  cp <file_in> <file_out>\n\r");
-        #elif LANG_RUS
-            printf("  cp <источник> <результат>\n\r");
-        #endif
+        printf(CMD_CP_USAGE);
         parameters_free(argc, argv);
         return TRUE;
     }

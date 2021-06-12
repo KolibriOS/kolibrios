@@ -8,7 +8,6 @@ void dir_truncate(char dir[]);
 int iswhite(char c);
 void trim(char string[]);
 void execute();
-void kol_main();
 
 int executable_run(char cmd[], char args[]);
 

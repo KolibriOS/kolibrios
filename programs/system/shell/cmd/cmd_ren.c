@@ -1,6 +1,5 @@
 
-int cmd_ren(char param[])
-{
+int cmd_ren(char param[]) {
 	char* argv[100];
     int argc;
     /*
@@ -9,19 +8,14 @@ int cmd_ren(char param[])
     */
 
     argc = parameters_prepare(param, argv);
-    if (argc != 2)
-    {
-        #if LANG_ENG
-            printf("  ren <file> <new_name>\n\r");
-        #elif LANG_RUS
-            printf("  ren <файл> <новое_имя>\n\r");
-        #endif
+    if (argc != 2) {
+        printf(CMD_REN_USAGE);
         parameters_free(argc, argv);
         return TRUE;
     }
-    char *x;
-    if (x = strrchr(argv[1], '/') != 0) // argv[1] must be file name, not path
-    {
+    //char *x;
+    // argv[1] must be file name, not path 
+    if (strrchr(argv[1], '/') != NULL) {
     	//printf("%d %s", x, argv[1]);
     	return FALSE;
     }

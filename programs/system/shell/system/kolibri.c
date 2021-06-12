@@ -354,13 +354,13 @@ asm volatile ("int $0x40"::"a"(18), "b"(14));
 
 
 
-void kol_screen_get_size(unsigned *w, unsigned *h)
+/*void kol_screen_get_size(unsigned *w, unsigned *h)
 {
 unsigned size;
 asm volatile ("int $0x40":"=a"(size):"a"(14));
 *w = size / 65536;
 *h = size % 65536;
-}
+}*/
 
 
 
@@ -422,7 +422,7 @@ void kol_buffer_close(char name[])
 asm volatile ("int $0x40"::"a"(68), "b"(23), "c"(name));
 }
 
-int kol_clip_num()
+/*int kol_clip_num()
 {
 asm volatile ("int $0x40"::"a"(54), "b"(0));
 }
@@ -435,7 +435,7 @@ asm volatile ("int $0x40"::"a"(54), "b"(1), "c"(n));
 int kol_clip_set(int n, char buffer[])
 {
 asm volatile ("int $0x40"::"a"(54), "b"(2), "c"(n), "d"(buffer));
-}
+}*/
 
 void set_cwd(const char* cwd)
 {

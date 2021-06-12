@@ -14,6 +14,7 @@ const command_t COMMANDS[]=
 	{"free",    "  Displays total, free and used memory\n\r", &cmd_memory},
 	{"help",    "  Gives help on commands. Usage:\n\r    help ;it lists all builtins\n\r    help <command> ;help on command\n\r", &cmd_help},
 	{"history", "  Lists used commands\n\r", &cmd_history},	
+	{"kfetch",  "  Prints logo and information about system.\n\r", &cmd_kfetch},
 	{"kill",    "  Stops a running process. Usage:\n\r    kill <PID of process>\n\r    kill all\n\r", &cmd_kill},
 	{"pkill",   "  Kills all processes by name. Usage:\n\r    pkill <process_name>\n\r", &cmd_pkill},
 	{"ls",      "  Lists the files in a directory. Usage:\n\r    ls ;lists the files in current directory\n\r    ls <directory> ;lists the files at specified folder\n\r    ls -1 ;lists the files in a single column\n\r", &cmd_ls},
@@ -32,3 +33,35 @@ const command_t COMMANDS[]=
 	{"waitfor", "  Stops console waiting while process finish. Usage:\n\r    waitfor ;waiting previous started executable LASTPID\n\r    waitfor <PID>;awaiting PID finish\n\r", &cmd_waitfor},
 };
 
+#define CMD_ABOUT_MSG "Shell %s\n\r"
+#define CMD_CD_USAGE "  cd <directory>\n\r"
+#define CMD_CP_USAGE "  cp <file_in> <file_out>\n\r"
+#define CMD_DATE_DATE_FMT "  Date [dd.mm.yy]: %x%x.%x%x.%x%x"
+#define CMD_DATE_TIME_FMT "\n\r  Time [hh:mm:ss]: %x%x:%x%x:%x%x\n\r"
+#define CMD_FREE_FMT "  Total [kB / MB / %%]:  %-7d / %-5d / 100\n\r   Free [kB / MB / %%]:  %-7d / %-5d / %d\n\r   Used [kB / MB / %%]:  %-7d / %-5d / %d\n\r"
+#define CMD_HELP_AVAIL "  %d commands available:\n\r"
+#define CMD_HELP_CMD_NOT_FOUND "  Command \'%s\' not found.\n\r"
+
+#define CMD_KILL_USAGE "  kill <PID>\n\r"
+#define CMD_MKDIR_USAGE "  mkdir <directory>\n\r"
+#define CMD_MORE_USAGE "  more <filename>\n\r"
+#define CMD_MV_USAGE "  mv <file_in> <file_out>\n\r"
+
+#define CMD_PKILL_HELP      "  pkill <process_name>\n\r"
+#define CMD_PKILL_KILL      "  PID: %u - killed\n"
+#define CMD_PKILL_NOT_KILL  "  PID: %u - not killed\n"
+#define CMD_PKILL_NOT_FOUND "  No processes with this name were found!\n"
+
+#define CMD_REN_USAGE "  ren <file> <new_name>\n\r"
+#define CMD_RM_USAGE "  rm <filename>\n\r"
+#define CMD_RMDIR_USAGE "  rmdir <directory>\n\r"
+#define CMD_SLEEP_USAGE "    sleep <time in the 1/100 of second>\n\r"
+#define CMD_TOUCH_USAGE "  touch <filename>\n\r"
+#define CMD_UPTIME_FMT "  Uptime: %d day(s), %d:%d:%d.%d\n\r"
+#define CMD_VER_FMT1 "  KolibriOS v%d.%d.%d.%d. Kernel SVN-rev.: %d\n\r"
+#define CMD_WAITFOR_FMT "  Awaing finish PID %d\n\r"
+#define EXEC_STARTED_FMT "  '%s' started. PID = %d\n\r"
+#define EXEC_SCRIPT_ERROR_FMT "Error in '%s' : script must start with #SHS line\n\r"
+#define UNKNOWN_CMD_ERROR "  Error!\n\r"
+#define CON_APP_ERROR "  Error in console application.\n\r"
+#define FILE_NOT_FOUND_ERROR "  File '%s' not found.\n\r"

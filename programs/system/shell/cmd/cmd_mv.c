@@ -24,11 +24,7 @@ int cmd_mv(char param[])
 
     if (argc != 2)
     {
-        #if LANG_ENG
-            printf("  mv <file_in> <file_out>\n\r");
-        #elif LANG_RUS
-            printf("  mv <источник> <результат>\n\r");
-        #endif
+        printf(CMD_MV_USAGE);
         parameters_free(argc, argv);
         return TRUE;
     }

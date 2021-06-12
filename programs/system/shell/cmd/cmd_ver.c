@@ -1,45 +1,31 @@
 
-int cmd_ver(char param[])
-{
+void get_str_kernel_version(char *str, const char *fmt) {
+    char *kvbuf;
+    char *vA, *vB, *vC, *vD;
+    unsigned *Rev;
 
-if (!strcmp(param, "kernel"))
-	{
-	char		*kvbuf;
-	char		*vA, *vB, *vC, *vD;
-	unsigned	*Rev;
+    kvbuf = malloc(16);
+    kol_get_kernel_ver(kvbuf);
+    vA = kvbuf+0;
+    vB = kvbuf+1;
+    vC = kvbuf+2;
+    vD = kvbuf+3;
+    Rev = (unsigned*)(kvbuf + 5);
 
-	kvbuf = malloc(16);
-	kol_get_kernel_ver(kvbuf);
-	vA = kvbuf+0;
-	vB = kvbuf+1;
-	vC = kvbuf+2;
-	vD = kvbuf+3;
-	Rev = (unsigned*)(kvbuf + 5);
+    sprintf (str, fmt, *vA, *vB, *vC, *vD, *Rev);
 
-	#if LANG_ENG
-		printf ("  KolibriOS v%d.%d.%d.%d. Kernel SVN-rev.: %d\n\r", *vA, *vB, *vC, *vD, *Rev);
-	#elif LANG_RUS
-		printf ("  KolibriOS v%d.%d.%d.%d. SVN-рев. ядра: %d\n\r", *vA, *vB, *vC, *vD, *Rev);
-	#endif
+    free(kvbuf);
+}
 
-	free(kvbuf);
+void get_str_cpu_info(char *str) {
+    unsigned a, b, c, d;
 
-        return TRUE;
-	}
-
-if (!strcmp(param, "cpu"))
-   {
-   unsigned a, b, c, d;
-   char str[13];
-
-   str[12] = '\0';
-
-   asm ("cpuid" :
-		"=a" (a),
-        "=b" (b),
-        "=c" (c),
-        "=d" (d):
-	"a"(0));
+    asm ("cpuid" :
+                    "=a" (a),
+            "=b" (b),
+            "=c" (c),
+            "=d" (d):
+            "a"(0));
 
     str[0] = (b&0x000000ff)	>> 0;
     str[1] = (b&0x0000ff00)	>> 8;
@@ -55,13 +41,24 @@ if (!strcmp(param, "cpu"))
     str[9] = (c&0x0000ff00)	>> 8;
     str[10] = (c&0x00ff0000)	>> 16;
     str[11] = (c&0xff000000)	>> 24;
+    str[12] = '\0';
+}
 
-    printf("%s\n\r", str);
+int cmd_ver(char param[]) {
+    if (!strcmp(param, "kernel")) {
+        get_str_kernel_version(tmpstr, CMD_VER_FMT1);
+        printf(tmpstr);
+        return TRUE;
+    }
+
+    if (!strcmp(param, "cpu")) {
+        char str[13];
+        get_str_cpu_info(str);
+        printf("%s\n\r", str);
+        return TRUE;
+    }
+
+    printf ("  Shell v%s\n\r", SHELL_VERSION);
     return TRUE;
-   }
-
-
-printf ("  Shell v%s\n\r", SHELL_VERSION);
-return TRUE;
 }
 

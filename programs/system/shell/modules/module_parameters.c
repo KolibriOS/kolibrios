@@ -1,63 +1,53 @@
 
-/// ===========================================================
+int parameters_prepare(char *param, char* argv[]) {
+     int i, param_len;
+     int argc = 1;
+     int quote = 0;
+     int argv_len;
 
-int parameters_prepare(char *param, char* argv[])
-{
+     param_len = strlen(param);
+     if ( param_len == 0 )
+     return 0;
 
-int i, param_len;
-int argc = 1;
-int quote = 0;
-int argv_len;
+     argv[0] = (char*) malloc(4096);
 
-param_len = strlen(param);
-if ( param_len == 0 )
-   return 0;
+     argv_len = 0;
+     for (i = 0; i < param_len; i++) {
+          switch (param[i]) {
+          case '\\':
+               if (param[i+1]!='\0') {
+                    switch(param[i+1]) {
 
-argv[0] = (char*) malloc(4096);
+                    case 'n':
+                         argv[argc-1][argv_len] = '\n';
+                         argv_len++;
+                         i++;
+                         break;
 
-argv_len = 0;
-for (i = 0; i < param_len; i++)
-    {
-    switch (param[i])
-           {
+                    case 't':
+                         argv[argc-1][argv_len] = '\t';
+                         argv_len++;
+                         i++;
 
-           case '\\':
-                if (param[i+1]!='\0')
-                   {
-                    switch(param[i+1])
-                        {
+                    case '\\':
+                    case '\'':
+                    case '"':
+                    case '?':
+                         argv[argc-1][argv_len] = param[i+1];
+                         argv_len++;
+                         i++;
+                         break;
 
-                        case 'n':
-                             argv[argc-1][argv_len] = '\n';
-                             argv_len++;
-                             i++;
-                             break;
+                    default:
+                         i++;
+                    };
+               }
+               break;
 
-                        case 't':
-                             argv[argc-1][argv_len] = '\t';
-                             argv_len++;
-                             i++;
-
-                        case '\\':
-                        case '\'':
-                        case '"':
-                        case '?':
-                             argv[argc-1][argv_len] = param[i+1];
-                             argv_len++;
-                             i++;
-                             break;
-
-                        default:
-                             i++;
-                        };
-                   }
-                break;
-
-           case '"':
-                if (quote == 0)
+          case '"':
+               if (quote == 0)
                     quote = 1;
-                else
-                    {
+               else {
                     quote = 0;
                     argv[argc-1][argv_len] = '\0';
                     argc++;
@@ -65,62 +55,46 @@ for (i = 0; i < param_len; i++)
                     argv[argc-1][argv_len] = '\0';
                     argv_len = 0;
                     }
-                break;
+               break;
 
-           case 9:
-           case 32:
-                if (quote == 0)
-                   {
-                   if ( ( param[i+1] != 32) || ( param[i+1] != 9) )
-                      {
-                      if (argv_len != 0)
-                         {
-                         argv[argc-1][argv_len] = '\0';
-                         argc++;
-                         argv[argc-1] = (char*) malloc(4096);
-                         argv[argc-1][argv_len] = '\0';
-                         argv_len = 0;
+          case 9:
+          case 32:
+               if (quote == 0) {
+                    if ( ( param[i+1] != 32) || ( param[i+1] != 9) ) {
+                         if (argv_len != 0) {
+                              argv[argc-1][argv_len] = '\0';
+                              argc++;
+                              argv[argc-1] = (char*) malloc(4096);
+                              argv[argc-1][argv_len] = '\0';
+                              argv_len = 0;
                          }
-                      }
-                   }
-                   else
-                    {
+                    }
+               } else {
                     argv[argc-1][argv_len] = param[i];
                     argv_len++;
-                    }
+               }
+               break;
+          default:
+               argv[argc-1][argv_len] = param[i];
+               argv_len++;
+               break;
 
-                   break;
+          }; // switch end
+     } // for end
 
-           default:
-                   argv[argc-1][argv_len] = param[i];
-                   argv_len++;
-                   break;
+     argv[argc-1][argv_len] = '\0';
 
-           };
-    }
+     if ( strlen(argv[argc-1]) == 0 ) {
+          free(argv[argc-1]);
+          argc--;
+     }
 
-argv[argc-1][argv_len] = '\0';
-
-if ( strlen(argv[argc-1]) == 0 )
-   {
-   free(argv[argc-1]);
-   argc--;
-   }
-
-return argc;
+     return argc;
 }
 
-/// ===========================================================
 
-void parameters_free(int argc, char* argv[])
-{
-
-int i;
-
-for (i = 0; i < argc; i++)
-    free(argv[i]);
-
+void parameters_free(int argc, char* argv[]) {
+     int i;
+     for (i = 0; i < argc; i++) free(argv[i]);
 }
-
-/// ===========================================================
 

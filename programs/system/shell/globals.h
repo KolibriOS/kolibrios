@@ -1,8 +1,9 @@
 
-#define SHELL_VERSION "0.8.1"
+#define SHELL_VERSION "0.8.2"
 
-extern char	PATH[256];
-extern char	PARAM[256];
+char	cmdline[256];
+
+char    tmpstr[64];
 
 char		title[64];
 char		cur_dir[FILENAME_MAX];
@@ -67,6 +68,7 @@ int cmd_shutdown(char arg[]);
 int cmd_uptime(char param[]);
 int cmd_killall(char process_name[]);
 int cmd_history(char arg[]);
+int cmd_kfetch(char param[]);
 int cmd_cp(char param[]);
 int cmd_mv(char param[]);
 int cmd_ren(char param[]);
