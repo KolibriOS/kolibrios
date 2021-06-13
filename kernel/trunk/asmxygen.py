@@ -1,12 +1,31 @@
 import re
 import os
+import argparse
 
 # Parameters
+# Path to doxygen folder to make doxygen files in: -o <path>
 doxygen_src_path = 'docs/doxygen'
-link_root = "http://websvn.kolibrios.org/filedetails.php?repname=Kolibri+OS&path=/kernel/trunk"
-clean_generated_stuff = False # Remove generated doxygen files if True
+# Remove generated doxygen files: --clean
+clean_generated_stuff = False
+# Dump all defined symbols: --dump
 dump_symbols = False
+# Print symbol stats: --stats
 print_stats = False
+
+# Constants
+link_root = "http://websvn.kolibrios.org/filedetails.php?repname=Kolibri+OS&path=/kernel/trunk"
+
+# Parse arguments
+parser = argparse.ArgumentParser()
+parser.add_argument("-o", help="Doxygen output folder")
+parser.add_argument("--clean", help="Remove generated files", action="store_true")
+parser.add_argument("--dump", help="Dump all defined symbols", action="store_true")
+parser.add_argument("--stats", help="Print symbol stats", action="store_true")
+args = parser.parse_args()
+doxygen_src_path = args.o if args.o else 'docs/doxygen'
+clean_generated_stuff = args.clean
+dump_symbols = args.dump
+print_stats = args.stats
 
 # kernel_structure["filename"] = {
 #   [ [],    # [0] Variables - [ line, name ]
