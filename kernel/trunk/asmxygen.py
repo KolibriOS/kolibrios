@@ -240,6 +240,26 @@ def write_label(source, line, name, brief = "Undocumented"):
 	             f"void {name}();\n\n")
 	write_something(source, something)
 
+def write_macro(source, line, name, brief = "Undocumented"):
+	name = name.replace(".", "_")
+	something = (f"/**\n" +
+	             f" * @def {name}\n" +
+	             f" * @brief {brief}\n" +
+	             f" * @par Source\n" +
+	             f" * <a href='{link_root}/{source}#line-{line}'>{source}:{line}</a>\n" +
+	             f" */\n#define {name}\n\n")
+	write_something(source, something)
+
+def write_structure(source, line, name, brief = "Undocumented"):
+	name = name.replace(".", "_")
+	something = (f"/**\n" +
+	             f" * @struct {name}\n" +
+	             f" * @brief {brief}\n" +
+	             f" * @par Source\n" +
+	             f" * <a href='{link_root}/{source}#line-{line}'>{source}:{line}</a>\n" +
+	             f" */\nstruct {name}" + " {};\n\n")
+	write_something(source, something)
+
 i = 1
 for source in kernel_structure:
 	# Print progress: current/total
@@ -254,4 +274,10 @@ for source in kernel_structure:
 	if len(kernel_structure[source][LABELS]) > 0:
 		for label in kernel_structure[source][LABELS]:
 			write_label(source, label[0], label[1])
+	if len(kernel_structure[source][MACROS]) > 0:
+		for macro in kernel_structure[source][MACROS]:
+			write_macro(source, macro[0], macro[1])
+	if len(kernel_structure[source][STRUCTURES]) > 0:
+		for structure in kernel_structure[source][STRUCTURES]:
+			write_structure(source, structure[0], structure[1])
 	i += 1
