@@ -230,6 +230,16 @@ def write_procedure(source, line, name, brief = "Undocumented"):
 	             f"void {name}();\n\n")
 	write_something(source, something)
 
+def write_label(source, line, name, brief = "Undocumented"):
+	name = name.replace(".", "_")
+	something = (f"/**\n" +
+	             f" * @brief {brief}\n" +
+	             f" * @par Source\n" +
+	             f" * <a href='{link_root}/{source}#line-{line}'>{source}:{line}</a>\n" +
+	             f" */\n" +
+	             f"void {name}();\n\n")
+	write_something(source, something)
+
 i = 1
 for source in kernel_structure:
 	# Print progress: current/total
@@ -241,4 +251,7 @@ for source in kernel_structure:
 	if len(kernel_structure[source][PROCEDURES]) > 0:
 		for procedure in kernel_structure[source][PROCEDURES]:
 			write_procedure(source, procedure[0], procedure[1])
+	if len(kernel_structure[source][LABELS]) > 0:
+		for label in kernel_structure[source][LABELS]:
+			write_label(source, label[0], label[1])
 	i += 1
