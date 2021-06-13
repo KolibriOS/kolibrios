@@ -43,7 +43,7 @@ kernel_structure = {}
 def get_declarations(asm_file_contents, asm_file_name):
 	kernel_structure[asm_file_name] = [ [], [], [], [], [] ]
 
-	variable_pattern = re.compile(r'^\s*([\w\.]+)\s+d[bwdq] .*')
+	variable_pattern = re.compile(r'^\s*([\w\.]+)\s+d([bwdq])\s+([^;]*)\s*([;].*)?')
 	macro_pattern = re.compile(r'^\s*macro\s+([\w]+).*')
 	proc_pattern = re.compile(r'^\s*proc\s+([\w\.]+).*')
 	label_pattern = re.compile(r'^(?!;)\s*([\w\.]+):.*')
@@ -56,9 +56,19 @@ def get_declarations(asm_file_contents, asm_file_name):
 
 		match = variable_pattern.findall(line)
 		if len(match) > 0:
-			var_name = match[0]
-			#print(f"Variable '{var_name}' at {line_idx + 1}")
-			kernel_structure[asm_file_name][VARIABLES].append([ line_idx + 1, var_name ])
+			(var_name, var_type, var_init, var_comm) = match[0]
+			if var_comm == "":
+				var_comm = "Undocumented"
+			else:
+				var_comm = var_comm[1:].lstrip()
+				if (len(var_comm) == 0):
+					var_comm = "!!! EMPTY_COMMENT"
+				if var_comm[0].islower(): var_comm = "!!! LOWERCASE COMMENT " + var_comm
+			if var_type == "b": var_type = "byte"
+			if var_type == "w": var_type = "word"
+			if var_type == "d": var_type = "dword"
+			if var_type == "q": var_type = "qword"
+			kernel_structure[asm_file_name][VARIABLES].append([ line_idx + 1, var_name, var_type, var_init, var_comm ])
 			line_idx += 1
 			continue
 
@@ -108,7 +118,8 @@ def get_declarations(asm_file_contents, asm_file_name):
 		line_idx += 1
 
 def handle_file(handled_files, asm_file_name, subdir = "."):
-	print(f"Handling {asm_file_name}")
+	if dump_symbols:
+		print(f"Handling {asm_file_name}")
 	handled_files.append(asm_file_name)
 	try:
 		asm_file_contents = open(asm_file_name, "r", encoding="utf-8").read()
@@ -170,6 +181,7 @@ if print_stats:
 		macro_count += len(kernel_structure[source][MACROS])
 		struct_count += len(kernel_structure[source][STRUCTURES])
 
+	print(f"File count: {len(kernel_structure)}")
 	print(f"Variable count: {var_count}")
 	print(f"Procedures count: {proc_count}")
 	print(f"Global labels count: {label_count}")
@@ -180,8 +192,7 @@ print(f"Writing doumented sources to {doxygen_src_path}")
 
 created_files = []
 
-def write_variable(source, line, name, type = "int", brief = "Undocumented",
-	               init = None):
+def write_variable(source, line, name, type, init, brief):
 	source = source.replace("./", "")
 	full_path = doxygen_src_path + '/' + source
 	# Remove the file on first access if it was created by previous generation
@@ -202,11 +213,7 @@ def write_variable(source, line, name, type = "int", brief = "Undocumented",
 	f.write(f" * @par Source\n")
 	f.write(f" * <a href='{link_root}/{source}#line-{line}'>{source}:{line}</a>\n")
 	f.write(f" */\n")
-	if init == None:
-		set_init = ""
-	else:
-		set_init = f" = {init}"
-	f.write(f"{type} {name}{set_init};\n\n")
+	f.write(f"{type} {name};\n\n")
 	f.close()
 
 i = 1
@@ -216,5 +223,5 @@ for source in kernel_structure:
 	# Write variables doxygen of the source file
 	if len(kernel_structure[source][VARIABLES]) > 0:
 		for variable in kernel_structure[source][VARIABLES]:
-			write_variable(source, variable[0], variable[1])
+			write_variable(source, variable[0], variable[1], variable[2], variable[3], variable[4])
 	i += 1
