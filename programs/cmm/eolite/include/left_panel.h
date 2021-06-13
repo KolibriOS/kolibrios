@@ -3,8 +3,8 @@
 	?define T_DEVICES "Устройства"
 	?define T_ACTIONS "Действия"
 	char *actions[] = {
-		57, "Новый файл", "F9",
-		56, "Новая папка", "F7",
+		59, "Новый файл", "F9",
+		57, "Новая папка", "F7",
 		60, "Настройки", "F10",
 		0,0,0
 	};
@@ -21,8 +21,8 @@
 	?define T_DEVICES "Devices"
 	?define T_ACTIONS "Actions"
 	char *actions[] = {
-		57, "New file", "F9",
-		56, "New folder", "F7",
+		59, "New file", "F9",
+		57, "New folder", "F7",
 		60, "Settings", "F10",
 		0,0,0
 	};
