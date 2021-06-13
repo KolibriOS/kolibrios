@@ -511,48 +511,6 @@ pid_to_slot:
         pop     ebx
         ret
 
-check_region:
-;input:
-;  esi - start of buffer
-;  edx - size of buffer
-;result:
-;  eax = 1 region lays in app memory
-;  eax = 0 region don't lays in app memory
-
-        mov     eax, 1
-        ret
-if 0
-        mov     eax, [CURRENT_TASK]
-;     jmp  check_process_region
-;-----------------------------------------------------------------------------
-;check_process_region:
-;input:
-;  eax - slot
-;  esi - start of buffer
-;  edx - size of buffer
-;result:
-;  eax = 1 region lays in app memory
-;  eax = 0 region don't lays in app memory
-
-        test    edx, edx
-        jle     .ok
-        shl     eax, 5
-        cmp     word [CURRENT_TASK+eax+0xa], 0
-        jnz     .failed
-        shl     eax, 3
-        mov     eax, [SLOT_BASE+eax+0xb8]
-        test    eax, eax
-        jz      .failed
-
-        mov     eax, 1
-        ret
-.ok:
-        mov     eax, 1
-        ret
-.failed:
-        xor     eax, eax
-        ret
-end if
 
 align 4
 proc read_process_memory

@@ -152,12 +152,6 @@ debug_getcontext:
         inc     ebx                 ; 1 - get sse context
                                   ; TODO legacy 32-bit FPU/MMX context
 .std_ctx:
-;        push    ecx
-;        mov     ecx, esi
-        call    check_region
-;        pop     ecx
-        dec     eax
-        jnz     .ret
         call    get_debuggee_slot
         jc      .ret
 
@@ -233,12 +227,7 @@ debug_setcontext:
 ; destroys eax,ecx,edx,esi,edi
         cmp     edx, 28h
         jnz     .ret
-;        push    ebx
-;        mov     ebx, edx
-        call    check_region
-;        pop     ebx
-        dec     eax
-        jnz     .ret
+
         call    get_debuggee_slot
         jc      .stiret
 ;        mov     esi, edx
@@ -363,12 +352,6 @@ debug_read_process_memory:
 ; esi=address in debuggee
 ; out: [esp+36]=sizeof(read)
 ; destroys all
-;        push    ebx
-;        mov     ebx, esi
-        call    check_region
-;        pop     ebx
-        dec     eax
-        jnz     .err
         call    get_debuggee_slot
         jc      .err
         shr     eax, 5
@@ -389,12 +372,6 @@ debug_write_process_memory:
 ; esi=address in debuggee
 ; out: [esp+36]=sizeof(write)
 ; destroys all
-;        push    ebx
-;        mov     ebx, esi
-        call    check_region
-;        pop     ebx
-        dec     eax
-        jnz     debug_read_process_memory.err
         call    get_debuggee_slot
         jc      debug_read_process_memory.err
         shr     eax, 5
