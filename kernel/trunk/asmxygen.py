@@ -1,29 +1,12 @@
-import os
-from glob import glob
-
-"""
-# Collect all .inc files
-kernel_files = [y for x in os.walk(".") for y in glob(os.path.join(x[0], '*.inc'))]
-
-to_remove = []
-for i in range(len(kernel_files)):
-	inc = kernel_files[i]
-	# Remove files that aren't a part of the kernel
-	if "bootloader" in inc or "sec_loader" in inc:
-		to_remove.append(i)
-
-for i in range(len(to_remove) - 1, -1, -1):
-	kernel_files.pop(to_remove[i])
-
-# Add main kernel file
-kernel_files.append("kernel.asm")
-
-# Add main kernel file
-# TODO: Rename the file so it won't be an exception
-kernel_files.append("fs/xfs.asm")
-"""
-
 import re
+import os
+
+# Parameters
+doxygen_src_path = 'docs/doxygen'
+link_root = "http://websvn.kolibrios.org/filedetails.php?repname=Kolibri+OS&path=/kernel/trunk"
+clean_generated_stuff = True # Remove generated doxygen files if True
+dump_symbols = False
+print_stats = False
 
 # kernel_structure["filename"] = {
 #   [ [],    # [0] Variables - [ line, name ]
@@ -63,7 +46,6 @@ def get_declarations(asm_file_contents, asm_file_name):
 		match = macro_pattern.findall(line)
 		if len(match) > 0:
 			macro_name = match[0]
-			#print(f"Macro '{macro_name}' at {line_idx + 1}")
 			kernel_structure[asm_file_name][MACROS].append([ line_idx + 1, macro_name ])
 			end_of_macro = False
 			while not end_of_macro:
@@ -79,7 +61,6 @@ def get_declarations(asm_file_contents, asm_file_name):
 		match = proc_pattern.findall(line)
 		if len(match) > 0:
 			proc_name = match[0]
-			#print(f"Procedure '{proc_name}' at {line_idx + 1}")
 			kernel_structure[asm_file_name][PROCEDURES].append([ line_idx + 1, proc_name ])
 			line_idx += 1
 			continue
@@ -89,7 +70,6 @@ def get_declarations(asm_file_contents, asm_file_name):
 			label_name = match[0]
 			# Don't count local labels
 			if label_name[0] != '.':
-				#print(f"Label '{label_name}' at {line_idx + 1}")
 				kernel_structure[asm_file_name][LABELS].append([ line_idx + 1, label_name ])
 				line_idx += 1
 				continue
@@ -97,7 +77,6 @@ def get_declarations(asm_file_contents, asm_file_name):
 		match = struct_pattern.findall(line)
 		if len(match) > 0:
 			struct_name = match[0]
-			#print(f"Structure '{struct_name}' at {line_idx + 1}")
 			kernel_structure[asm_file_name][STRUCTURES].append([ line_idx + 1, struct_name ])
 			end_of_struct = False
 			while not end_of_struct:
@@ -109,7 +88,7 @@ def get_declarations(asm_file_contents, asm_file_name):
 
 		line_idx += 1
 
-def get_includes(handled_files, asm_file_name, subdir = "."):
+def handle_file(handled_files, asm_file_name, subdir = "."):
 	print(f"Handling {asm_file_name}")
 	handled_files.append(asm_file_name)
 	try:
@@ -126,55 +105,97 @@ def get_includes(handled_files, asm_file_name, subdir = "."):
 		full_path = subdir + '/' + include;
 		if full_path not in handled_files:
 			new_subdir = full_path.rsplit('/', 1)[0]
-			get_includes(handled_files, full_path, new_subdir)
+			handle_file(handled_files, full_path, new_subdir)
 	return handled_files
 
 kernel_files = []
 
-get_includes(kernel_files, "./kernel.asm");
+handle_file(kernel_files, "./kernel.asm");
 
+if dump_symbols:
+	for source in kernel_structure:
+		print(f"File: {source}")
+		if len(kernel_structure[source][VARIABLES]) > 0:
+			print(" Variables:")
+			for variable in kernel_structure[source][VARIABLES]:
+				print(f"  {variable[0]}: {variable[1]}")
+		if len(kernel_structure[source][PROCEDURES]) > 0:
+			print(" Procedures:")
+			for procedure in kernel_structure[source][PROCEDURES]:
+				print(f"  {procedure[0]}: {procedure[1]}")
+		if len(kernel_structure[source][LABELS]) > 0:
+			print(" Global labels:")
+			for label in kernel_structure[source][LABELS]:
+				print(f"  {label[0]}: {label[1]}")
+		if len(kernel_structure[source][MACROS]) > 0:
+			print(" Macroses:")
+			for macro in kernel_structure[source][MACROS]:
+				print(f"  {macro[0]}: {macro[1]}")
+		if len(kernel_structure[source][STRUCTURES]) > 0:
+			print(" Structures:")
+			for struct in kernel_structure[source][STRUCTURES]:
+				print(f"  {struct[0]}: {struct[1]}")
+
+if print_stats:
+	# Collect stats
+	var_count = 0
+	proc_count = 0
+	label_count = 0
+	macro_count = 0
+	struct_count = 0
+
+	for source in kernel_structure:
+		var_count += len(kernel_structure[source][VARIABLES])
+		proc_count += len(kernel_structure[source][PROCEDURES])
+		label_count += len(kernel_structure[source][LABELS])
+		macro_count += len(kernel_structure[source][MACROS])
+		struct_count += len(kernel_structure[source][STRUCTURES])
+
+	print(f"Variable count: {var_count}")
+	print(f"Procedures count: {proc_count}")
+	print(f"Global labels count: {label_count}")
+	print(f"Macroses count: {macro_count}")
+	print(f"Structures count: {struct_count}")
+
+print(f"Writing doumented sources to {doxygen_src_path}")
+
+created_files = []
+
+def write_variable(source, line, name, type = "int", brief = "Undocumented",
+	               init = None):
+	source = source.replace("./", "")
+	full_path = doxygen_src_path + '/' + source
+	# Remove the file on first access if it was created by previous generation
+	if full_path not in created_files:
+		if os.path.isfile(full_path):
+			os.remove(full_path)
+		created_files.append(full_path)
+	# Only remove the file on 'clean_generated_stuff' flag (removed above, just return)
+	if clean_generated_stuff: return
+	# Create directories need for the file
+	os.makedirs(os.path.dirname(full_path), exist_ok=True)
+	name = name.replace(".", "_")
+	f = open(full_path, "a")
+	f.write(f"/**\n")
+	f.write(f" * @brief {brief}\n")
+	f.write(f" * @par Initial value\n")
+	f.write(f" * {init}\n")
+	f.write(f" * @par Source\n")
+	f.write(f" * <a href='{link_root}/{source}#line-{line}'>{source}:{line}</a>\n")
+	f.write(f" */\n")
+	if init == None:
+		set_init = ""
+	else:
+		set_init = f" = {init}"
+	f.write(f"{type} {name}{set_init};\n\n")
+	f.close()
+
+i = 1
 for source in kernel_structure:
-	print(f"File: {source}")
+	# Print progress: current/total
+	print(f"{i}/{len(kernel_structure)} Writing {source}")
+	# Write variables doxygen of the source file
 	if len(kernel_structure[source][VARIABLES]) > 0:
-		print(" Variables:")
 		for variable in kernel_structure[source][VARIABLES]:
-			print(f"  {variable[0]}: {variable[1]}")
-	if len(kernel_structure[source][PROCEDURES]) > 0:
-		print(" Procedures:")
-		for procedure in kernel_structure[source][PROCEDURES]:
-			print(f"  {procedure[0]}: {procedure[1]}")
-	if len(kernel_structure[source][LABELS]) > 0:
-		print(" Global labels:")
-		for label in kernel_structure[source][LABELS]:
-			print(f"  {label[0]}: {label[1]}")
-	if len(kernel_structure[source][MACROS]) > 0:
-		print(" Macroses:")
-		for macro in kernel_structure[source][MACROS]:
-			print(f"  {macro[0]}: {macro[1]}")
-	if len(kernel_structure[source][STRUCTURES]) > 0:
-		print(" Structures:")
-		for struct in kernel_structure[source][STRUCTURES]:
-			print(f"  {struct[0]}: {struct[1]}")
-
-# Collect stats
-var_count = 0
-proc_count = 0
-label_count = 0
-macro_count = 0
-struct_count = 0
-
-for source in kernel_structure:
-	var_count += len(kernel_structure[source][VARIABLES])
-	proc_count += len(kernel_structure[source][PROCEDURES])
-	label_count += len(kernel_structure[source][LABELS])
-	macro_count += len(kernel_structure[source][MACROS])
-	struct_count += len(kernel_structure[source][STRUCTURES])
-
-print(f"Variable count: {var_count}")
-print(f"Procedures count: {proc_count}")
-print(f"Global labels count: {label_count}")
-print(f"Macroses count: {macro_count}")
-print(f"Structures count: {struct_count}")
-
-#for kernel_file in kernel_files:
-#	print(kernel_file)
+			write_variable(source, variable[0], variable[1])
+	i += 1
