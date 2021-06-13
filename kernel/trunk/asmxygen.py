@@ -4,7 +4,7 @@ import os
 # Parameters
 doxygen_src_path = 'docs/doxygen'
 link_root = "http://websvn.kolibrios.org/filedetails.php?repname=Kolibri+OS&path=/kernel/trunk"
-clean_generated_stuff = True # Remove generated doxygen files if True
+clean_generated_stuff = False # Remove generated doxygen files if True
 dump_symbols = False
 print_stats = False
 
