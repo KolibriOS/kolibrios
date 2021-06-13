@@ -66,7 +66,7 @@ import  mtar,   \
         mtar_read_header, 'mtar_read_header', \
         mtar_write_data, 'mtar_write_data', \
         mtar_finalize, 'mtar_finalize', \
-        mtar_close, 'mtar_finalize'
+        mtar_close, 'mtar_close'
 
 import  libc,   \
         printf, 'printf'

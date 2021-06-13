@@ -70,8 +70,8 @@ void ProcessButtonClick(int id)
 	if (id==BTN_EXIT) { StopDownloading(); ExitProcess(); }
 	if (id==BTN_START) StartDownloading();
 	if (id==BTN_STOP) StopDownloading();
-	if (id==BTN_DIR) RunProgram("/sys/File managers/Eolite", #filepath);
-	if (id==BTN_RUN) RunProgram("/sys/@open", #filepath);
+	if (id==BTN_DIR) { RunProgram("/sys/File managers/Eolite", #filepath); ExitProcess(); }
+	if (id==BTN_RUN) { RunProgram("/sys/@open", #filepath); ExitProcess(); }
 }
 
 void ProcessKeyPress()
@@ -234,10 +234,32 @@ void SaveFile(int attempt)
 	} else {
 		miniprintf(#notify_message, FILE_NOT_SAVED, #filepath);
 	}
-	
+
 	if (!exit_param) notify(#notify_message);
+
+	if (!strcmpi(#filepath+strlen(#filepath)-4, ".zip"))
+	|| (!strcmpi(#filepath+strlen(#filepath)-3, ".7z")) {
+		Unarchive(#filepath);
+	}
+
 	if (open_file) ProcessButtonClick(BTN_RUN);
 	if (autoclose.checked) ExitProcess();
+}
+
+void Unarchive(dword _arc)
+{
+	char folder_name[4096];
+	strcpy(#folder_name, "/tmp0/1/Downloads/");
+	strcpy(#folder_name, #filepath+strrchr(#filepath, '/'));
+	folder_name[strlen(#folder_name)-4] = '\0';
+	CreateDir(#folder_name);
+
+	strcpy(#param, "-o \"");
+	strcat(#param, #folder_name);
+	strcat(#param, "\" -h \"");
+	strcat(#param, #filepath);
+	chrcat(#param, '\"');
+	RunProgram("/sys/unz", #param);	
 }
 
 

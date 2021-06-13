@@ -62,7 +62,7 @@ import  mtar,   \
         mtar_write_file_header, 'mtar_write_file_header', \
         mtar_write_data, 'mtar_write_data', \
         mtar_finalize, 'mtar_finalize', \
-        mtar_close, 'mtar_finalize'
+        mtar_close, 'mtar_close'
 
 IM_END:
 align   4

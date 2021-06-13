@@ -122,10 +122,10 @@ void main()
 dword GetFreeSpaceOfRamdisk()
 {
 	dword rdempty = malloc(1440*1024);
-	CreateFile(0, 1440*1024, rdempty, "/rd/1/rdempty");
+	CreateFile(0, 1440*1024, rdempty, "/sys/rdempty");
 	free(rdempty);
-	rdempty = get_file_size("/rd/1/rdempty");
-	DeleteFile("/rd/1/rdempty");
+	rdempty = get_file_size("/sys/rdempty");
+	DeleteFile("/sys/rdempty");
 	return rdempty;
 }
 
@@ -184,7 +184,7 @@ void EventDownloadComplete()
 	} else {
 		copyf("/sys", #backup);
 		copyf(#latest, "/sys");
-		if (keep_settings.checked) copyf(#backup_settings, "/rd/1/settings");
+		if (keep_settings.checked) copyf(#backup_settings, "/sys/settings");
 		if (restart_apps.checked) RestartAllProcess();
 		install_complete = true;		
 	}

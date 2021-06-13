@@ -41,6 +41,6 @@ struct opendialog
 };
 
 char communication_area_name[] = "FFFFFFFF_open_dialog";
-char open_dialog_path[] = "/rd/1/File managers/opendial";
+char open_dialog_path[] = "/sys/File managers/opendial";
 
 #endif

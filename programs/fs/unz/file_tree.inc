@@ -131,13 +131,13 @@ fiTree		dd 1
 
 
 imgFree:
- file 'free.raw'
+; file 'pic/free.raw'
 imgOk:
- file 'ok.raw'
+; file 'pic/ok.raw'
 imgMinus:
- file 'minus.raw'
+; file 'pic/minus.raw'
 imgPlus:
- file 'plus.raw'
+; file 'pic/plus.raw'
 i_end:
 
 readFolder dd rdFoldforTree	;функция, которой читается папка
