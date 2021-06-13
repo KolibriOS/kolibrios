@@ -41,6 +41,7 @@ STRUCTURES = 4
 kernel_structure = {}
 
 def get_declarations(asm_file_contents, asm_file_name):
+	asm_file_name = asm_file_name.replace("./", "")
 	kernel_structure[asm_file_name] = [ [], [], [], [], [] ]
 
 	variable_pattern = re.compile(r'^\s*([\w\.]+)\s+d([bwdq])\s+([^;]*)\s*([;].*)?')
@@ -192,8 +193,7 @@ print(f"Writing doumented sources to {doxygen_src_path}")
 
 created_files = []
 
-def write_variable(source, line, name, type, init, brief):
-	source = source.replace("./", "")
+def write_something(source, somehing):
 	full_path = doxygen_src_path + '/' + source
 	# Remove the file on first access if it was created by previous generation
 	if full_path not in created_files:
@@ -204,17 +204,31 @@ def write_variable(source, line, name, type, init, brief):
 	if clean_generated_stuff: return
 	# Create directories need for the file
 	os.makedirs(os.path.dirname(full_path), exist_ok=True)
-	name = name.replace(".", "_")
 	f = open(full_path, "a")
-	f.write(f"/**\n")
-	f.write(f" * @brief {brief}\n")
-	f.write(f" * @par Initial value\n")
-	f.write(f" * {init}\n")
-	f.write(f" * @par Source\n")
-	f.write(f" * <a href='{link_root}/{source}#line-{line}'>{source}:{line}</a>\n")
-	f.write(f" */\n")
-	f.write(f"{type} {name};\n\n")
+	f.write(somehing)
 	f.close()
+
+def write_variable(source, line, name, type, init, brief):
+	name = name.replace(".", "_")
+	something = (f"/**\n" +
+	             f" * @brief {brief}\n" +
+	             f" * @par Initial value\n" +
+	             f" * {init}\n" +
+	             f" * @par Source\n" +
+	             f" * <a href='{link_root}/{source}#line-{line}'>{source}:{line}</a>\n" +
+	             f" */\n" +
+	             f"{type} {name};\n\n")
+	write_something(source, something)
+
+def write_procedure(source, line, name, brief = "Undocumented"):
+	name = name.replace(".", "_")
+	something = (f"/**\n" +
+	             f" * @brief {brief}\n" +
+	             f" * @par Source\n" +
+	             f" * <a href='{link_root}/{source}#line-{line}'>{source}:{line}</a>\n" +
+	             f" */\n" +
+	             f"void {name}();\n\n")
+	write_something(source, something)
 
 i = 1
 for source in kernel_structure:
@@ -224,4 +238,7 @@ for source in kernel_structure:
 	if len(kernel_structure[source][VARIABLES]) > 0:
 		for variable in kernel_structure[source][VARIABLES]:
 			write_variable(source, variable[0], variable[1], variable[2], variable[3], variable[4])
+	if len(kernel_structure[source][PROCEDURES]) > 0:
+		for procedure in kernel_structure[source][PROCEDURES]:
+			write_procedure(source, procedure[0], procedure[1])
 	i += 1
