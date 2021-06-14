@@ -25,7 +25,7 @@ char empty_folder_actions[]=
 char burger_menu_items[] = 
 "Новое окно|Ctrl+N
 Открыть консоль|Ctrl+G
-Обновить папку|F5
+Обновить папку|Ctrl+R
 Настройки|F10
 О программе";
 
@@ -55,7 +55,7 @@ char empty_folder_actions[]=
 char burger_menu_items[] = 
 "New window|Ctrl+N
 Open console here|Ctrl+G
-Vфrskenda|F5
+Vфrskenda|Ctrl+R
 Settings|F10
 About";
 
@@ -85,7 +85,7 @@ char empty_folder_actions[]=
 char burger_menu_items[] = 
 "New window|Ctrl+N
 Open console here|Ctrl+G
-Refresh folder|F5
+Refresh folder|Ctrl+R
 Settings|F10
 About";
 #endif
@@ -98,14 +98,14 @@ bool active_menu = false;
 void EventMenuClick(dword _id)
 {
 	if (active_menu == MENU_NO_FILE) switch(_id) {
-		case 1: EventPaste(); break;
+		case 1: EventPaste(#path); break;
 	}
 	if (active_menu == MENU_FILE) switch(_id) {
 		case 1: EventOpen(0); break;
 		case 2: ShowOpenWithDialog(); break;
 		case 3: EventCopy(NOCUT); break;
 		case 4: EventCopy(CUT); break;
-		case 5: EventPaste(); break;
+		case 5: EventPaste(#path); break;
 		case 6: FnProcess(2); break;
 		case 7: Del_Form(); break;
 		case 8: FnProcess(1); break;
@@ -114,7 +114,7 @@ void EventMenuClick(dword _id)
 		case 1: EventOpen(0); break;
 		case 2: EventCopy(NOCUT); break;
 		case 3: EventCopy(CUT); break;
-		case 4: EventPaste(); break;
+		case 4: EventPaste(#path); break;
 		case 5: Del_Form(); break;
 		case 6: FnProcess(1); break;
 	}

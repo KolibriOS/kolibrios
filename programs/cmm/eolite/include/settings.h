@@ -5,7 +5,6 @@
 	?define SHOW_STATUS_BAR "Показывать статус бар"
 	?define SHOW_BREADCRUMBS "Использовать 'хлебные крошки'"
 	?define BIG_ICONS "Использовать большие иконки"
-	?define USE_TWO_PANELS "Две панели"
 	?define COLORED_LINES "Подсвечивать четные линии в списке"
 	?define FONT_SIZE_LABEL "Размер шрифта"
 	?define LIST_LINE_HEIGHT "Высота строки в списке"
@@ -19,7 +18,6 @@
 	?define SHOW_STATUS_BAR "Show status bar"
 	?define SHOW_BREADCRUMBS "Show breadcrumbs"
 	?define BIG_ICONS "Big icons in list"
-	?define USE_TWO_PANELS "Two panels"
 	?define COLORED_LINES "Highlight even lines in list"
 	?define FONT_SIZE_LABEL "Font size"
 	?define LIST_LINE_HEIGHT "List line height"
@@ -39,7 +37,6 @@ checkbox show_dev_name    = { SHOW_DEVICE_CLASS };
 checkbox show_status_bar  = { SHOW_STATUS_BAR };
 checkbox show_breadcrumb  = { SHOW_BREADCRUMBS };
 checkbox big_icons        = { BIG_ICONS };
-checkbox two_panels       = { USE_TWO_PANELS };
 checkbox colored_lines    = { COLORED_LINES };
 
 
@@ -80,7 +77,6 @@ void settings_dialog()
 					break;
 				}
 				show_dev_name.click(id);
-				two_panels.click(id);
 				show_breadcrumb.click(id);
 				show_status_bar.click(id);
 				colored_lines.click(id);
@@ -128,7 +124,6 @@ void DrawSettingsCheckBoxes()
 	show_status_bar.draw(x, y.inc(25));
 	show_breadcrumb.draw(x, y.inc(25));
 	big_icons.draw(x, y.inc(25));
-	//two_panels.draw(x, y.inc(25));
 	colored_lines.draw(x, y.inc(25));
 	font_size.draw(x, y.inc(31));
 	line_height.draw(x, y.inc(31));
@@ -148,13 +143,11 @@ void LoadIniSettings()
 {
 	ini.path = GetIni(#eolite_ini_path, "app.ini");
 	if (efm) ini.section = "EFM"; else ini.section = "Eolite";
-	two_panels.checked = efm;
 
 	files.SetFont(6, 9, 10000000b);
 	show_dev_name.checked   = ini.GetInt("ShowDeviceName", true); 
 	show_status_bar.checked = ini.GetInt("ShowStatusBar", true); 
 	big_icons.checked       = ini.GetInt("BigIcons", false); BigIconsSwitch();
-	//two_panels.checked      = ini.GetInt("TwoPanels", false); 
 	colored_lines.checked   = ini.GetInt("ColoredLines", true); 
 	kfont.size.pt   = ini.GetInt("FontSize", 13); 
 	files.item_h    = ini.GetInt("LineHeight", 19);
@@ -178,7 +171,6 @@ void SaveIniSettings()
 	ini.SetInt("ShowDeviceName", show_dev_name.checked);
 	ini.SetInt("ShowStatusBar", show_status_bar.checked);
 	ini.SetInt("BigIcons", big_icons.checked);
-	//ini.SetInt("TwoPanels", two_panels.checked);
 	ini.SetInt("ColoredLines", colored_lines.checked);
 	ini.SetInt("FontSize", kfont.size.pt);
 	ini.SetInt("LineHeight", files.item_h);

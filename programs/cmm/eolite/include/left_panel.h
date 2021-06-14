@@ -43,11 +43,13 @@ struct _SystemDiscs
 	int dev_num;
 	void Get();
 	void Draw();
+	void DrawSelect();
+	void DrawOptions();
 	void Click();
 } SystemDiscs=0;
 
 #define DEV_H 17
-#define DEV_H_HOR 21
+#define DEV_H_HOR 20
 
 void GetDiskIconAndName(char disk_first_letter, dword dev_icon, disc_name)
 {
@@ -124,37 +126,32 @@ void _SystemDiscs::Get()
 	free(devbuf);
 }
 
+#define DDW 120
+
 void _SystemDiscs::Draw()
 {    
-	char dev_name[15], disc_name[100], i, dev_icon, is_active, name_len;
+	char dev_name[15], disc_name[100], i, dev_icon, is_active=0, name_len;
 	int draw_y, draw_x;
 	
 	for (i=0; i<30; i++) DeleteButton(100+i);
 
-	if (two_panels.checked) { draw_y = 41; draw_x =  2; }
-	                   else { draw_y = 74; draw_x = 17; }
-
-	for (i=0;i<list.count;i++)
-	{
-		strcpy(#dev_name, list.get(i));
-		GetDiskIconAndName(dev_name[1], #dev_icon, #disc_name);
-		if (strstr(#path, #dev_name)-#path==0) is_active=true; else is_active=false;
-		if (two_panels.checked)
-		{
-			name_len = strlen(#dev_name)-1*8;
-			DrawBar(draw_x, draw_y, name_len + 31, DEV_H_HOR, 0xFFFFFF);
-			DefineButton(draw_x+2, draw_y, name_len + 27, DEV_H_HOR-1, 100+i+BT_HIDE,0xFFFFFF);
-			_PutImage(draw_x + 5, draw_y+2, 18,17, is_active*7+dev_icon*17*18*3+#devices);
-			WriteText(draw_x + 24, draw_y+3, 10110000b, 0, #dev_name+1);
-			draw_x += name_len + 31;
-			if (draw_x>=Form.cwidth-100) && (Form.cwidth) {
-				DrawBar(draw_x, draw_y, Form.cwidth - draw_x - 2, DEV_H_HOR, 0xFFFFFF);
-				draw_x = 2;
-				draw_y += DEV_H_HOR;
-			}
+	if (efm) { 
+		if (active_panel==1) {
+			DrawSelect(Form.cwidth/2-DDW, 10, #path, KFM_DEV_DROPDOWN_1);
+			DrawSelect(Form.cwidth-DDW-2, 10, #inactive_path, KFM_DEV_DROPDOWN_2);
+		} else {
+			DrawSelect(Form.cwidth/2-DDW, 10, #inactive_path, KFM_DEV_DROPDOWN_1);
+			DrawSelect(Form.cwidth-DDW-2, 10, #path, KFM_DEV_DROPDOWN_2);		
 		}
-		else
-		{
+		files.y = 40 + 17;
+	} else { 
+		draw_y = 74; 
+		draw_x = 17; 
+		for (i=0;i<list.count;i++) {
+			strcpy(#dev_name, list.get(i));
+			GetDiskIconAndName(dev_name[1], #dev_icon, #disc_name);
+			if (strstr(#path, #dev_name)!=0) is_active=true; else is_active=false;
+
 			DrawBar(draw_x,draw_y,6,DEV_H+1,0xFFFFFF);
 			DrawBar(draw_x+6+18,draw_y,160-6-18,DEV_H+1,0xFFFFFF);
 			DefineButton(draw_x,draw_y,159,16,100+i+BT_HIDE,0xFFFFFF);
@@ -163,20 +160,65 @@ void _SystemDiscs::Draw()
 				strcat(#disc_name, #dev_name);
 				if (is_active) WriteText(draw_x+30,draw_y+5,0x80,0x555555,#disc_name);
 				WriteText(draw_x+29,draw_y+5,0x80,0,#disc_name);
+				//if (is_active) kfont.bold = true;
+				//kfont.WriteIntoWindow(draw_x + 29, draw_y+2, 0xFFFfff, 0x000000, kfont.size.pt, #disc_name);
+				//kfont.bold = false;
 			} else {
 				if (is_active) WriteText(draw_x+30,draw_y+5,0x80,0x555555,#dev_name);
 				WriteText(draw_x+29,draw_y+5,0x80,0,#dev_name);
 			}
 			_PutImage(draw_x+6,draw_y, 18,17, is_active*7+dev_icon*17*18*3+#devices);
-			draw_y += DEV_H;
+			draw_y += DEV_H;			
 		}
-	}
-	if (two_panels.checked)
-	{
-		DrawBar(draw_x, draw_y, Form.cwidth - draw_x - 2, DEV_H_HOR, 0xFFFFFF);
-		files.y = draw_y + DEV_H_HOR + 17;
-	} else {
 		DrawBar(draw_x+6, draw_y, 18, 1, 0xFFFfff);
+	}
+}
+
+void _SystemDiscs::DrawSelect(int draw_x, draw_y, path1, btid)
+{
+	char dev_name[15], disc_name[100], i, dev_icon, is_active=0;
+	if (ESBYTE[path1+1]=='\0') {
+		strcpy(#dev_name, "/root");
+		dev_icon = 0;
+	} else if (chrnum(path1, '/')==1) {
+		strcpy(#dev_name, path1);
+		GetDiskIconAndName(dev_name[1], #dev_icon, #disc_name);
+	} else for (i=0;i<list.count;i++) {
+		strcpy(#dev_name, list.get(i));
+		GetDiskIconAndName(dev_name[1], #dev_icon, #disc_name);
+		if (strstr(path1, #dev_name)-path1==0) break;
+	}
+	DrawRectangle(draw_x-1, draw_y-1, DDW+2-DEV_H_HOR, DEV_H_HOR+1, sc.work_graph);
+	DrawBar(draw_x, draw_y, DDW+1-DEV_H_HOR, DEV_H_HOR, 0xFFFFFF);
+	_PutImage(draw_x + 5, draw_y+2, 18,17, is_active*7+dev_icon*17*18*3+#devices);
+	kfont.WriteIntoWindow(draw_x + 24, draw_y+2, 0xFFFfff, 0x000000, kfont.size.pt, #dev_name+1);
+	UnsafeDefineButton(draw_x, draw_y, DDW-1, DEV_H_HOR-1, btid+1+BT_HIDE,0xFFFFFF);
+	DrawFlatButtonSmall(draw_x+DDW-DEV_H_HOR+1, draw_y-1, DEV_H_HOR-1, DEV_H_HOR+1, btid, "\x19");
+
+	draw_x += DDW + 1;
+	//DrawBar(draw_x, draw_y, Form.cwidth - draw_x - 2, DEV_H_HOR, sc.work);
+}
+
+void _SystemDiscs::DrawOptions(int draw_x, draw_y)
+{
+	char dev_name[15], disc_name[100], i, dev_icon, is_active=0;
+		
+	for (i=0; i<30; i++) DeleteButton(100+i);
+
+	DrawPopup(draw_x, draw_y, DDW, list.count*DEV_H_HOR, 1, -1, sc.work_graph);
+
+	for (i=0;i<list.count;i++) {
+		strcpy(#dev_name, list.get(i));
+		GetDiskIconAndName(dev_name[1], #dev_icon, #disc_name);
+		if (strstr(#path, #dev_name)!=0) is_active=true; else is_active=false;
+
+		DrawBar(draw_x, draw_y, DDW, DEV_H_HOR, 0xFFFFFF);
+		DefineButton(draw_x, draw_y, DDW, DEV_H_HOR-1, 100+i+BT_HIDE,0xFFFFFF);
+		_PutImage(draw_x + 5, draw_y+2, 18,17, is_active*7+dev_icon*17*18*3+#devices);
+		if (is_active) kfont.bold = true;
+		kfont.WriteIntoWindow(draw_x + 24, draw_y+2, 0xFFFfff, 0x000000, kfont.size.pt, #dev_name+1);
+		kfont.bold = false;
+		draw_y += DEV_H_HOR;
 	}
 }
 

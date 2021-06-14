@@ -85,7 +85,8 @@ K. Bus disconnected   |kbd
 HDD info              |hdd_info
 #10  **** WORK WITH FILES ****
 KFAR                  |File Managers/kfar
-KFM                   |File Managers/kfm
+KFM2                  |File Managers/kfm2
+fNav                  |File Managers/fNav/fNav
 Eolite                |File Managers/Eolite
 Virtual disks         |tmpdisk
 SHELL konsool         |shell

@@ -58,3 +58,6 @@
 ?define T_ABOUT "About"
 ?define T_USE_SHIFT_ENTER "'Use Shift+Enter to open all selected files.' -I"
 #endif
+
+?define T_KFM_FUNC "F1 Info | F2 Rename | F3 View | F4 Edit | F5 Copy | F6 Move | F7 Folder | F8 Delete | F9 File | F10 Settings"
+//?define T_KFM_FUNC "F1 Инфо | F2 Переим. | F3 Просм. | F4 Редакт. | F5 Копировать | F6 Переместить | F7 Папка | F8 Удалить | F9 Файл | F10 Настройки"

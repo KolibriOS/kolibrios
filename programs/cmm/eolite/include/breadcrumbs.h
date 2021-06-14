@@ -2,6 +2,14 @@
 PathShow_data PathShow = {0, 17,250, 6, 250, 0, 0, 0x0, 0xFFFfff, #path, #temp, 0};
 void DrawPathBar()
 {
+	if (efm) {
+		return;
+	}
+	if (show_breadcrumb.checked) {
+		DrawBreadCrumbs(); 
+		return;
+	}
+
 	PathShow.start_x = -efm*22 + 250;
 	
 	PathShow.area_size_x = Form.cwidth-300;

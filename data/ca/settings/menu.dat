@@ -85,7 +85,7 @@ Informació de HDD         /sys/hdd_info
 #10  **** ARCHIUS ****
 KFAR                      /sys/File Managers/kfar
 fNav                      /sys/File Managers/fNav/fNav
-KFM                       /sys/File Managers/kfm
+KFM2                      /sys/File Managers/kfm2
 Eolite                    /sys/File Managers/Eolite
 Virtual disks             /sys/tmpdisk
 SHELL                     /sys/shell

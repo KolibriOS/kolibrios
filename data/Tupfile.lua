@@ -27,7 +27,7 @@ img_files = {
  {"NOTIFY3.PNG", "common/notify3.png"},
  {"UNIMG", PROGS .. "/fs/unimg/unimg"},
  {"3D/HOUSE.3DS", "common/3d/house.3ds"},
- {"File Managers/EFM", "common/File Managers/efm"},
+ {"File Managers/KFM2", "common/File Managers/kfm2"},
  {"File Managers/ICONS.INI", "common/File Managers/icons.ini"},
  {"File Managers/KFM.INI", "common/File Managers/kfm.ini"},
  {"File Managers/FNAV/ABOUT.TXT", "common/File Managers/fNav/About.txt"},
