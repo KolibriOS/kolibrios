@@ -39,6 +39,8 @@ draw_gui:
         mov     edx, serverstr
         mov     esi, userstr-serverstr
         mcall   4                               ; "server" text
+		
+		mcall   4, <70, 45>, 0 shl 24 + 0x666666, port_notice, port_notice_e - port_notice
 
         invoke  edit_box_draw, URLbox           ; Server textbox
 
@@ -51,7 +53,7 @@ draw_gui:
         mov     esi, 0xCCCCCC
         mcall   8                               ; Cancel button
 
-        mov     ebx, 240 shl 16 + 62
+        mov     ebx, 260 shl 16 + 62
 		mov     ecx, TEXT_ECX
         mov     edx, cancelstr
         mov     esi, okstr-cancelstr

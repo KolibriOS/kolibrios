@@ -552,6 +552,9 @@ import  archiver,\
 name                    db "VNC viewer "
 .dash                   db 0, " "
 
+port_notice             db "Example: 192.168.0.3:5900"
+port_notice_e:
+
 I_END:
 
 servername              rb 64+1
