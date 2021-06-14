@@ -223,7 +223,7 @@ void LoadIcons()
 		icons16_selected.load("/sys/icons16.png");
 		icons16_selected.replace_2colors(0xffFFFfff, col.selec, 0xffCACBD6, selected_shadow);
 		if (col.list_bg!=0xFFFfff) {
-			icons16_selected.replace_2colors(0xffFFFfff, col.list_bg, 0xffCACBD6, non_white_shadow);
+			icons16_default.replace_2colors(0xffFFFfff, col.list_bg, 0xffCACBD6, non_white_shadow);
 		}
 	}
 

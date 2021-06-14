@@ -85,11 +85,3 @@ void DrawDot(dword x,y) {
 	PutPixel(x,y+3,col_pxl);
 	PutPixel(x+3,y+3,col_pxl);
 }
-
-void DrawCaptButtonSmallText(dword x,y,w,h,id,color_b, color_t,text)
-{
-	dword tx = -strlen(text)*6+w/2+x;
-	dword ty = h/2-3+y;
-	DefineButton(x,y,w,h,id,color_b);
-	WriteText(tx,ty,0x80,color_t,text);
-}
