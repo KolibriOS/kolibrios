@@ -28,7 +28,7 @@ IMPORT
     RW, Ini, box_lib, Icons;
 
 CONST
-    header = "CEdit (06-jun-2021)";
+    header = "CEdit (14-jun-2021)";
 
     ShellFilter = "";
     EditFilter = "SH|ASM|TXT|INC|OB07|C|CPP|H|PAS|PP|LUA|INI";
@@ -271,7 +271,7 @@ END Replaced;
 
 PROCEDURE toolbarIcons;
 CONST
-    iconPad = (toolBtnSize - 16) DIV 2;
+    iconPad = (toolBtnSize - Icons.SIZE) DIV 2;
 VAR
     x, color: INTEGER;
 BEGIN
@@ -446,7 +446,7 @@ END SearchPanel;
 
 PROCEDURE draw_window;
 CONST
-    iconPad = (toolBtnSize - 16) DIV 2;
+    iconPad = (toolBtnSize - Icons.SIZE) DIV 2;
 VAR
     width, height, x, y: INTEGER;
 
@@ -1318,6 +1318,16 @@ BEGIN
         |2:
             key := K.GetKey();
             getKBState;
+            IF confirm THEN
+                IF key DIV 65536 = 28 THEN (* Enter *)
+                    save;
+                    IF ~text.modified THEN
+                        K.Exit
+                    END;
+                    repaint
+                END;
+                key := -1
+            END;
             IF key DIV 65536 = 61 THEN (* F3 *)
                 key := -1;
                 IF search & (searchText # "") THEN
@@ -1334,8 +1344,8 @@ BEGIN
                 ELSE
                     Script(runScript)
                 END
-            ELSIF key DIV 65536 = 1 THEN
-                key := -1; (* Esc *)
+            ELSIF key DIV 65536 = 1 THEN (* Esc *)
+                key := -1;
                 IF search THEN
                     Search
                 END
