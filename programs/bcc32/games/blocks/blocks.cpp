@@ -368,6 +368,36 @@ void __stdcall DrawWindow()
 	}
 }
 
+bool OpenModel(char* f_path)
+{
+	FileInfoBlock* file;
+	unsigned long int k;
+
+	file = FileOpen(f_path);
+	if (!file){
+		SetWindowCaption("Error open file ...");
+		return false;
+	}
+	k = FileGetLength(file);
+	if (k > 0){
+		if(f_data) delete f_data;
+		f_data = new unsigned char[k];
+		if (f_data){
+			if (FileRead(file, f_data, k) != k){
+				delete f_data; f_data = 0;
+			}
+			else{
+				init_model();
+				draw_3d();
+				SetWindowCaption(ofd.openfile_path);
+				Redraw(1);
+			}
+		}
+	}
+	FileClose(file);
+	return (bool)f_data;
+}
+
 bool KolibriOnStart(TStartData &kos_start, TThreadData /*th*/)
 {
 	kos_start.Left = 10;
@@ -408,8 +438,12 @@ bool KolibriOnStart(TStartData &kos_start, TThreadData /*th*/)
 		glClearColor(0.2,0.2,0.2,0.0);
 		glEnable(GL_NORMALIZE);
 		//draw_3d();
-		return init_block();
-	} else return false;
+		if(init_block()){
+			if(CommandLine[0]) OpenModel(CommandLine);
+			return true;
+		}
+	}
+	return false;
 }
 
 void KolibriOnPaint(void)
@@ -423,37 +457,11 @@ void KolibriOnPaint(void)
 
 void KolibriOnButton(long id, TThreadData /*th*/)
 {
-	FileInfoBlock* file;
-	unsigned long int k;
-
 	switch(id){
 	case 2:
 		ofd.type = 0; // 0 - open
 		OpenDialog_Start(&ofd);
-		if(ofd.status==1){
-			file = FileOpen(ofd.openfile_path);
-			if (!file){
-				SetWindowCaption("Error open file ...");
-				break;
-			}
-			k = FileGetLength(file);
-			if (k > 0){
-				if(f_data) delete f_data;
-				f_data = new unsigned char[k];
-				if (f_data){
-					if (FileRead(file, f_data, k) != k){
-						delete f_data; f_data = 0;
-					}
-					else{
-						init_model();
-						draw_3d();
-						SetWindowCaption(ofd.openfile_path);
-						Redraw(1);
-					}
-				}
-			}
-			FileClose(file);
-		}
+		if(ofd.status==1) OpenModel(ofd.openfile_path);
 		//break;
 	};
 }
