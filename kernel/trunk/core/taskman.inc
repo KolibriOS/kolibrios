@@ -484,15 +484,19 @@ pid_to_slot:
         push    ebx
         push    ecx
         mov     ebx, [TASK_COUNT]
-        shl     ebx, 5
+        shl     ebx, 5 ; ebx *= 32 (32 is size of TASKDATA struct)
+        ; add 2*32 cause:
+        ; 0x80003000 - 0x80003020 isnt a task actually
+        ; skip first process in the task table
         mov     ecx, 2*32
 
 .loop:
-;ecx=offset of current process info entry
-;ebx=maximum permitted offset
-        cmp     byte [CURRENT_TASK+ecx+0xa], 9
+;ecx = offset of current process info entry
+;ebx = maximum permitted offset
+        ; state 9 means "not used"
+        cmp     byte [TASK_TABLE+ecx+TASKDATA.state], 9
         jz      .endloop ;skip empty slots
-        cmp     [CURRENT_TASK+ecx+0x4], eax;check PID
+        cmp     [TASK_TABLE+ecx+TASKDATA.pid], eax;check PID
         jz      .pid_found
 .endloop:
         add     ecx, 32

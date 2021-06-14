@@ -219,6 +219,7 @@ OS_BASE             = 0x80000000
 
 window_data         = OS_BASE + 0x0001000
 
+TASK_TABLE          = OS_BASE + 0x0003000
 CURRENT_TASK        = OS_BASE + 0x0003000
 TASK_COUNT          = OS_BASE + 0x0003004
 TASK_BASE           = OS_BASE + 0x0003010
