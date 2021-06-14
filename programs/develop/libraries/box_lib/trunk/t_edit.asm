@@ -762,13 +762,12 @@ proc ted_init_syntax_file, edit:dword
 
 	;init: ted_colors_text_count, ted_key_words_count, ...
 	mov ted_colors_text_count,1
-	mov ted_key_words_count,0
 	mov ted_help_text_f1,0
 	mov ted_help_id,-1 ;идентификатор слова для справки
 
 	mov eax,edi ;сохраняем значение edi
 	mov esi,ted_syntax_file
-	add edi,ted_offs_count_colors
+	add edi,ted_offs_count_colors ;edi = &ted_key_words_count
 	mov ecx,9
 	rep movsd
 	mov edi,eax ;востанавливаем значение edi
@@ -783,6 +782,8 @@ proc ted_init_syntax_file, edit:dword
 	mov ted_key_words_data,eax
 
 	mov ecx,ted_key_words_count ;init: ted_arr_key_pos (first key positions)
+	or ecx,ecx
+	jz .no_words
 	xor eax,eax
 	@@:
 		ColToIndexOffset eax,edx
@@ -795,6 +796,7 @@ proc ted_init_syntax_file, edit:dword
 		.no_ch_key:
 		inc eax
 	loop @b
+	.no_words:
 
 	;init: ted_help_text_f1
 	mov ecx,ted_key_words_count ;количество ключевых слов

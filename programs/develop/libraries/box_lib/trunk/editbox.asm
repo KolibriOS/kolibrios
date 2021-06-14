@@ -984,7 +984,6 @@ edit_box_key.sh_n:
 edit_box_key.sh_n1:
 	call	edit_box.check_offset
 	call	edit_box.get_n
-	mov	edx,eax ;size of ed_box
 	mov	ecx,ed_offset
 	add	eax,ecx ;eax = w_off= ed_offset+width
 	mov	edx,eax ;save
@@ -1223,8 +1222,7 @@ edit_box_key.clear_bg:
 	jb	@f
 	mov	eax,ed_pos
 	sub	ebx,eax
-	mov	ecx,ed_offset
-	sub	eax,ecx
+	sub	eax,ed_offset
 	jmp	edit_box_key.nxt
 
 @@:	mov	ebx,ed_pos
@@ -1232,8 +1230,7 @@ edit_box_key.clear_bg:
 	sub	eax,ebx
 	mov	ebx,eax ;It is not optimal
 	pop	eax	;ed_pos
-	mov	ecx,ed_offset
-	sub	eax,ecx
+	sub	eax,ed_offset
 edit_box_key.nxt:
 	mov	ebp,eax  ;проверка на выход закрашиваемой области за пределы длины
 	add	ebp,ebx

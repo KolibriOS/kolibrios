@@ -96,10 +96,15 @@ mov	ebp,lib0
 	mov dword[tree1.data_img],eax
 ;------------------------------------------------------------------------------
 	copy_path fn_syntax_dir,sys_path,file_name,0 ;берем путь к папке с файлами синтаксиса
+	xor eax,eax
+	mov ecx,4096
+	mov edi,file_name
+	repnz scasb
+	mov byte[edi-2],al ;убираем '/' в конце имени папки (нужно для чтения с CD)
 	mcall SF_FILE,tree_file_struct
 
-	cmp ebx,0
-	jle .end_dir_init
+	or ebx,ebx
+	jz .end_dir_init
 		mov eax,dir_mem+32+40
 		mov ecx,ebx
 		@@:
