@@ -44,12 +44,6 @@ include '../../proc32.inc'
 include '../../develop/libraries/box_lib/trunk/box_lib.mac'
 include '../../dll.inc'
 ;include '../../debug.inc'
-
-
-;include 'include/macros.inc'
-;include 'include/proc32.inc'
-;include 'include/box_lib.mac'
-;include 'include/dll.inc'
 include 'debug.inc'
 
 version equ '0.70'
@@ -182,10 +176,6 @@ start:
 	mov	dword[edtUnpPath.size], eax
 	mov	dword[edtUnpPath.pos], eax
 
-;--------
-;       call    file_tree_Init
-
-
 ;main loop --------------------
 wm_redraw:
 	call winRedraw
@@ -247,7 +237,6 @@ wm_mouse:
 	jne	still
 	stdcall [edit_box_mouse],edtPack
 	stdcall [edit_box_mouse],edtUnpPath
-;       stdcall file_tree_Mouse
 	jmp	still
 
 exit:
@@ -297,8 +286,6 @@ else
 end if
 	mcall 4, <(WIN_W-47),12>, , strDots
 	mcall 4, <(WIN_W-47),37>, , strDots	
-
-;       call file_tree_Draw
 
 	mcall 12, 2
 	ret
