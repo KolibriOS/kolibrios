@@ -1,0 +1,288 @@
+﻿(*
+    BSD 2-Clause License
+
+    Copyright (c) 2016, 2018, 2020-2021 Anton Krotov
+    All rights reserved.
+*)
+
+MODULE Out;
+
+IMPORT HOST, SYSTEM;
+
+
+PROCEDURE Char* (c: CHAR);
+BEGIN
+    HOST.OutChar(c)
+END Char;
+
+
+PROCEDURE String* (s: ARRAY OF CHAR);
+VAR
+    i, n: INTEGER;
+
+BEGIN
+    n := LENGTH(s) - 1;
+    FOR i := 0 TO n DO
+        Char(s[i])
+    END
+END String;
+
+
+PROCEDURE Int* (x, width: INTEGER);
+VAR
+    i, a: INTEGER;
+    str: ARRAY 21 OF CHAR;
+
+BEGIN
+    IF x = ROR(1, 1) THEN
+        str := "-9223372036854775808";
+        DEC(width, 20)
+    ELSE
+        i := 0;
+        IF x < 0 THEN
+            x := -x;
+            i := 1;
+            str[0] := "-"
+        END;
+
+        a := x;
+        REPEAT
+            INC(i);
+            a := a DIV 10
+        UNTIL a = 0;
+
+        str[i] := 0X;
+        DEC(width, i);
+
+        REPEAT
+            DEC(i);
+            str[i] := CHR(x MOD 10 + ORD("0"));
+            x := x DIV 10
+        UNTIL x = 0
+    END;
+
+    WHILE width > 0 DO
+        Char(20X);
+        DEC(width)
+    END;
+
+    String(str)
+END Int;
+
+
+PROCEDURE IsNan (x: REAL): BOOLEAN;
+CONST
+    INF  = LSR(ASR(ROR(1, 1), 10), 1);
+    NINF = ASR(ASR(ROR(1, 1), 10), 1);
+
+VAR
+    a: INTEGER;
+
+BEGIN
+    SYSTEM.GET(SYSTEM.ADR(x), a)
+    RETURN (a > INF) OR (a < 0) & (a > NINF)
+END IsNan;
+
+
+PROCEDURE Inf (x: REAL; width: INTEGER);
+VAR
+    s: ARRAY 5 OF CHAR;
+
+BEGIN
+    DEC(width, 4);
+    IF IsNan(x) THEN
+        s := " Nan"
+    ELSIF x = SYSTEM.INF() THEN
+        s := "+Inf"
+    ELSIF x = -SYSTEM.INF() THEN
+        s := "-Inf"
+    END;
+
+    WHILE width > 0 DO
+        Char(20X);
+        DEC(width)
+    END;
+
+    String(s)
+END Inf;
+
+
+PROCEDURE Ln*;
+BEGIN
+    Char(0DX);
+    Char(0AX)
+END Ln;
+
+
+PROCEDURE unpk10 (VAR x: REAL; VAR n: INTEGER);
+VAR
+    a, b: REAL;
+
+BEGIN
+    ASSERT(x > 0.0);
+    n := 0;
+    WHILE x < 1.0 DO
+        x := x * 10.0;
+        DEC(n)
+    END;
+
+    a := 10.0;
+    b := 1.0;
+
+    WHILE a <= x DO
+        b := a;
+        a := a * 10.0;
+        INC(n)
+    END;
+    x := x / b
+END unpk10;
+
+
+PROCEDURE _Real (x: REAL; width: INTEGER);
+VAR
+    n, k, p: INTEGER;
+
+BEGIN
+    p := MIN(MAX(width - 8, 1), 15);
+
+    width := width - p - 8;
+    WHILE width > 0 DO
+        Char(20X);
+        DEC(width)
+    END;
+
+    IF x < 0.0 THEN
+        Char("-");
+        x := -x
+    ELSE
+        Char(20X)
+    END;
+
+    unpk10(x, n);
+
+    k := FLOOR(x);
+    Char(CHR(k + 30H));
+    Char(".");
+
+    WHILE p > 0 DO
+        x := (x - FLT(k)) * 10.0;
+        k := FLOOR(x);
+        Char(CHR(k + 30H));
+        DEC(p)
+    END;
+
+    Char("E");
+    IF n >= 0 THEN
+        Char("+")
+    ELSE
+        Char("-")
+    END;
+    n := ABS(n);
+    Char(CHR(n DIV 100 + 30H)); n := n MOD 100;
+    Char(CHR(n DIV 10 + 30H));
+    Char(CHR(n MOD 10 + 30H))
+END _Real;
+
+
+PROCEDURE Real* (x: REAL; width: INTEGER);
+BEGIN
+    IF IsNan(x) OR (ABS(x) = SYSTEM.INF()) THEN
+        Inf(x, width)
+    ELSIF x = 0.0 THEN
+        WHILE width > 23 DO
+            Char(20X);
+            DEC(width)
+        END;
+        DEC(width, 9);
+        String(" 0.0");
+        WHILE width > 0 DO
+            Char("0");
+            DEC(width)
+        END;
+        String("E+000")
+    ELSE
+        _Real(x, width)
+    END
+END Real;
+
+
+PROCEDURE _FixReal (x: REAL; width, p: INTEGER);
+VAR
+    n, k: INTEGER;
+    minus: BOOLEAN;
+
+BEGIN
+    minus := x < 0.0;
+    IF minus THEN
+        x := -x
+    END;
+
+    unpk10(x, n);
+
+    DEC(width, 3 + MAX(p, 0) + MAX(n, 0));
+    WHILE width > 0 DO
+        Char(20X);
+        DEC(width)
+    END;
+
+    IF minus THEN
+        Char("-")
+    ELSE
+        Char(20X)
+    END;
+
+    IF n < 0 THEN
+        INC(n);
+        Char("0");
+        Char(".");
+        WHILE (n < 0) & (p > 0) DO
+            Char("0");
+            INC(n);
+            DEC(p)
+        END
+    ELSE
+        WHILE n >= 0 DO
+            k := FLOOR(x);
+            Char(CHR(k + 30H));
+            x := (x - FLT(k)) * 10.0;
+            DEC(n)
+        END;
+        Char(".")
+    END;
+
+    WHILE p > 0 DO
+        k := FLOOR(x);
+        Char(CHR(k + 30H));
+        x := (x - FLT(k)) * 10.0;
+        DEC(p)
+    END
+
+END _FixReal;
+
+
+PROCEDURE FixReal* (x: REAL; width, p: INTEGER);
+BEGIN
+    IF IsNan(x) OR (ABS(x) = SYSTEM.INF()) THEN
+        Inf(x, width)
+    ELSIF x = 0.0 THEN
+        DEC(width, 3 + MAX(p, 0));
+        WHILE width > 0 DO
+            Char(20X);
+            DEC(width)
+        END;
+        String(" 0.");
+        WHILE p > 0 DO
+            Char("0");
+            DEC(p)
+        END
+    ELSE
+        _FixReal(x, width, p)
+    END
+END FixReal;
+
+
+PROCEDURE Open*;
+END Open;
+
+
+END Out.

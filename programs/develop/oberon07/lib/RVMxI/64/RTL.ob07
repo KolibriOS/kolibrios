@@ -1,0 +1,432 @@
+﻿(*
+    BSD 2-Clause License
+
+    Copyright (c) 2019-2021, Anton Krotov
+    All rights reserved.
+*)
+
+MODULE RTL;
+
+IMPORT SYSTEM, Trap;
+
+
+CONST
+
+    bit_depth = 64;
+    maxint = ROR(-2, 1);
+    minint = ROR(1, 1);
+
+    WORD = bit_depth DIV 8;
+    MAX_SET = bit_depth - 1;
+
+
+VAR
+
+    Heap, Types, TypesCount: INTEGER;
+
+
+PROCEDURE _error* (modnum, _module, err, line: INTEGER);
+BEGIN
+    Trap.trap(modnum, _module, err, line)
+END _error;
+
+
+PROCEDURE syscall1 (fn, p1: INTEGER): INTEGER;
+BEGIN
+    Trap.syscall(SYSTEM.ADR(fn))
+    RETURN fn
+END syscall1;
+
+
+PROCEDURE syscall2 (fn, p1, p2: INTEGER): INTEGER;
+BEGIN
+    Trap.syscall(SYSTEM.ADR(fn))
+    RETURN fn
+END syscall2;
+
+
+PROCEDURE syscall3 (fn, p1, p2, p3: INTEGER): INTEGER;
+BEGIN
+    Trap.syscall(SYSTEM.ADR(fn))
+    RETURN fn
+END syscall3;
+
+
+PROCEDURE _fmul* (b, a: INTEGER): INTEGER;
+    RETURN syscall2(100, b, a)
+END _fmul;
+
+
+PROCEDURE _fdiv* (b, a: INTEGER): INTEGER;
+    RETURN syscall2(101, b, a)
+END _fdiv;
+
+
+PROCEDURE _fdivi* (b, a: INTEGER): INTEGER;
+    RETURN syscall2(101, a, b)
+END _fdivi;
+
+
+PROCEDURE _fadd* (b, a: INTEGER): INTEGER;
+    RETURN syscall2(102, b, a)
+END _fadd;
+
+
+PROCEDURE _fsub* (b, a: INTEGER): INTEGER;
+    RETURN syscall2(103, b, a)
+END _fsub;
+
+
+PROCEDURE _fsubi* (b, a: INTEGER): INTEGER;
+    RETURN syscall2(103, a, b)
+END _fsubi;
+
+
+PROCEDURE _fcmp* (op, b, a: INTEGER): BOOLEAN;
+    RETURN syscall3(104, op, b, a) # 0
+END _fcmp;
+
+
+PROCEDURE _floor* (x: INTEGER): INTEGER;
+    RETURN syscall1(105, x)
+END _floor;
+
+
+PROCEDURE _flt* (x: INTEGER): INTEGER;
+    RETURN syscall1(106, x)
+END _flt;
+
+
+PROCEDURE _pack* (n: INTEGER; VAR x: SET);
+BEGIN
+    n := LSL((LSR(ORD(x), 52) MOD 2048 + n) MOD 2048, 52);
+    x := x - {52..62} + BITS(n)
+END _pack;
+
+
+PROCEDURE _unpk* (VAR n: INTEGER; VAR x: SET);
+BEGIN
+    n := LSR(ORD(x), 52) MOD 2048 - 1023;
+    x := x - {62} + {52..61}
+END _unpk;
+
+
+PROCEDURE _rot* (VAR A: ARRAY OF INTEGER);
+VAR
+    i, n, k: INTEGER;
+
+BEGIN
+    k := LEN(A) - 1;
+    n := A[0];
+    i := 0;
+    WHILE i < k DO
+        A[i] := A[i + 1];
+        INC(i)
+    END;
+    A[k] := n
+END _rot;
+
+
+PROCEDURE _set* (b, a: INTEGER): INTEGER;
+BEGIN
+    IF (a <= b) & (a <= MAX_SET) & (b >= 0) THEN
+        IF b > MAX_SET THEN
+            b := MAX_SET
+        END;
+        IF a < 0 THEN
+            a := 0
+        END;
+        a := LSR(ASR(minint, b - a), MAX_SET - b)
+    ELSE
+        a := 0
+    END
+
+    RETURN a
+END _set;
+
+
+PROCEDURE _set1* (a: INTEGER): INTEGER;
+BEGIN
+    IF ASR(a, 6) = 0 THEN
+        a := LSL(1, a)
+    ELSE
+        a := 0
+    END
+    RETURN a
+END _set1;
+
+
+PROCEDURE _length* (len, str: INTEGER): INTEGER;
+VAR
+    c: CHAR;
+    res: INTEGER;
+
+BEGIN
+    res := 0;
+    REPEAT
+        SYSTEM.GET(str, c);
+        INC(str);
+        DEC(len);
+        INC(res)
+    UNTIL (len = 0) OR (c = 0X);
+
+    RETURN res - ORD(c = 0X)
+END _length;
+
+
+PROCEDURE _move* (bytes, dest, source: INTEGER);
+VAR
+    b: BYTE;
+    i: INTEGER;
+
+BEGIN
+    IF (source MOD WORD = 0) & (dest MOD WORD = 0) THEN
+        WHILE bytes >= WORD DO
+            SYSTEM.GET(source, i);
+            SYSTEM.PUT(dest, i);
+            INC(source, WORD);
+            INC(dest, WORD);
+            DEC(bytes, WORD)
+        END
+    END;
+
+    WHILE bytes > 0 DO
+        SYSTEM.GET(source, b);
+        SYSTEM.PUT8(dest, b);
+        INC(source);
+        INC(dest);
+        DEC(bytes)
+    END
+END _move;
+
+
+PROCEDURE _lengthw* (len, str: INTEGER): INTEGER;
+VAR
+    c: WCHAR;
+    res: INTEGER;
+
+BEGIN
+    res := 0;
+    REPEAT
+        SYSTEM.GET(str, c);
+        INC(str, 2);
+        DEC(len);
+        INC(res)
+    UNTIL (len = 0) OR (c = 0X);
+
+    RETURN res - ORD(c = 0X)
+END _lengthw;
+
+
+PROCEDURE strncmp (a, b, n: INTEGER): INTEGER;
+VAR
+    A, B: CHAR;
+    res: INTEGER;
+
+BEGIN
+    res := minint;
+    WHILE n > 0 DO
+        SYSTEM.GET(a, A); INC(a);
+        SYSTEM.GET(b, B); INC(b);
+        DEC(n);
+        IF A # B THEN
+            res := ORD(A) - ORD(B);
+            n := 0
+        ELSIF A = 0X THEN
+            res := 0;
+            n := 0
+        END
+    END
+    RETURN res
+END strncmp;
+
+
+PROCEDURE _strcmp* (op, len2, str2, len1, str1: INTEGER): BOOLEAN;
+VAR
+    res:  INTEGER;
+    bRes: BOOLEAN;
+    c:    CHAR;
+
+BEGIN
+    res := strncmp(str1, str2, MIN(len1, len2));
+    IF res = minint THEN
+        IF len1 > len2 THEN
+            SYSTEM.GET(str1 + len2, c);
+            res := ORD(c)
+        ELSIF len1 < len2 THEN
+            SYSTEM.GET(str2 + len1, c);
+            res := -ORD(c)
+        ELSE
+            res := 0
+        END
+    END;
+
+    CASE op OF
+    |0: bRes := res =  0
+    |1: bRes := res #  0
+    |2: bRes := res <  0
+    |3: bRes := res <= 0
+    |4: bRes := res >  0
+    |5: bRes := res >= 0
+    END
+
+    RETURN bRes
+END _strcmp;
+
+
+PROCEDURE strncmpw (a, b, n: INTEGER): INTEGER;
+VAR
+    A, B: WCHAR;
+    res:  INTEGER;
+
+BEGIN
+    res := minint;
+    WHILE n > 0 DO
+        SYSTEM.GET(a, A); INC(a, 2);
+        SYSTEM.GET(b, B); INC(b, 2);
+        DEC(n);
+        IF A # B THEN
+            res := ORD(A) - ORD(B);
+            n := 0
+        ELSIF A = 0X THEN
+            res := 0;
+            n := 0
+        END
+    END
+    RETURN res
+END strncmpw;
+
+
+PROCEDURE _strcmpw* (op, len2, str2, len1, str1: INTEGER): BOOLEAN;
+VAR
+    res:  INTEGER;
+    bRes: BOOLEAN;
+    c:    WCHAR;
+
+BEGIN
+    res := strncmpw(str1, str2, MIN(len1, len2));
+    IF res = minint THEN
+        IF len1 > len2 THEN
+            SYSTEM.GET(str1 + len2 * 2, c);
+            res := ORD(c)
+        ELSIF len1 < len2 THEN
+            SYSTEM.GET(str2 + len1 * 2, c);
+            res := -ORD(c)
+        ELSE
+            res := 0
+        END
+    END;
+
+    CASE op OF
+    |0: bRes := res =  0
+    |1: bRes := res #  0
+    |2: bRes := res <  0
+    |3: bRes := res <= 0
+    |4: bRes := res >  0
+    |5: bRes := res >= 0
+    END
+
+    RETURN bRes
+END _strcmpw;
+
+
+PROCEDURE _arrcpy* (base_size, len_dst, dst, len_src, src: INTEGER): BOOLEAN;
+VAR
+    res: BOOLEAN;
+
+BEGIN
+    IF len_src > len_dst THEN
+        res := FALSE
+    ELSE
+        _move(len_src * base_size, dst, src);
+        res := TRUE
+    END
+
+    RETURN res
+END _arrcpy;
+
+
+PROCEDURE _strcpy* (chr_size, len_src, src, len_dst, dst: INTEGER);
+BEGIN
+    _move(MIN(len_dst, len_src) * chr_size, dst, src)
+END _strcpy;
+
+
+PROCEDURE _new* (t, size: INTEGER; VAR p: INTEGER);
+VAR
+    ptr: INTEGER;
+
+BEGIN
+    ptr := Heap;
+    IF ptr + size < Trap.sp() - 128 THEN
+        INC(Heap, size);
+        p := ptr + WORD;
+        SYSTEM.PUT(ptr, t);
+        INC(ptr, WORD);
+        DEC(size, WORD);
+        WHILE size > 0 DO
+            SYSTEM.PUT(ptr, 0);
+            INC(ptr, WORD);
+            DEC(size, WORD)
+        END
+    ELSE
+        p := 0
+    END
+END _new;
+
+
+PROCEDURE _guard* (t, p: INTEGER): BOOLEAN;
+VAR
+    _type: INTEGER;
+
+BEGIN
+    SYSTEM.GET(p, p);
+    IF p # 0 THEN
+        SYSTEM.GET(p - WORD, _type);
+        WHILE (_type # t) & (_type # 0) DO
+            SYSTEM.GET(Types + _type * WORD, _type)
+        END
+    ELSE
+        _type := t
+    END
+
+    RETURN _type = t
+END _guard;
+
+
+PROCEDURE _is* (t, p: INTEGER): BOOLEAN;
+VAR
+    _type: INTEGER;
+
+BEGIN
+    _type := 0;
+    IF p # 0 THEN
+        SYSTEM.GET(p - WORD, _type);
+        WHILE (_type # t) & (_type # 0) DO
+            SYSTEM.GET(Types + _type * WORD, _type)
+        END
+    END
+
+    RETURN _type = t
+END _is;
+
+
+PROCEDURE _guardrec* (t0, t1: INTEGER): BOOLEAN;
+BEGIN
+    WHILE (t1 # t0) & (t1 # 0) DO
+        SYSTEM.GET(Types + t1 * WORD, t1)
+    END
+
+    RETURN t1 = t0
+END _guardrec;
+
+
+PROCEDURE _init* (tcount, heap, types: INTEGER);
+BEGIN
+    Heap := heap;
+    TypesCount := tcount;
+    Types := types
+END _init;
+
+
+END RTL.

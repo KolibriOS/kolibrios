@@ -1,0 +1,270 @@
+﻿
+    Экспериментальная 32/64-битная виртуальная машина RVMxI
+---------------------------------------------------------------------------------------------------
+
+Использование
+
+  Скомпилировать исполнитель/дизассемблер в .\tools\RVMxI.ob07
+  для Windows32/64 Console или Linux32/64:
+
+    Compiler.exe .\tools\RVMxI.ob07 win32con -nochk a -out RVMxI.exe
+    Compiler.exe .\tools\RVMxI.ob07 win64con -nochk a -out RVMxI.exe
+    Compiler ./tools/RVMxI.ob07 linux32exe -nochk a -out RVMxI
+    Compiler ./tools/RVMxI.ob07 linux64exe -nochk a -out RVMxI
+
+  Будет создан файл "RVMxI.exe" и/или "RVMxI".
+
+  Компилировать программу в байт-код RVMxI:
+
+    Compiler.exe program.ob07 rvm32i [-ram size] [-def host_linux]
+    Compiler.exe program.ob07 rvm64i [-ram size] [-def host_linux]
+      -ram size  --  установить размер оперативной памяти для программы в килобайтах 32768..262144
+                    (32..256 Мбайт), по умолчанию 32768 (32 Мбайт)
+      -def host_linux -- если байт-код будет исполняться на Linux (по умолчанию -- Windows)
+
+    Будет создан файл "program.bin".
+
+  Выпонить программу:
+
+    RVMxI.exe program.bin -run <параметры>
+
+  Дизассемблировать программу:
+
+    RVMxI.exe program.bin -dis program.txt
+
+    Будет создан файл "program.txt".
+---------------------------------------------------------------------------------------------------
+
+Архитектура
+
+    Регистры
+
+      Не меньше пяти 32/64-битных регистров:
+
+        R0, R1, R2   регистры общего назначения
+        BP(R3)       указатель кадра стэка
+        SP(R4)       указатель стэка (растет вниз)
+
+        R5, R6...    регистры общего назначения (опционально)
+
+      Регистра связи нет (адрес возврата передается через стэк),
+      регистр-счетчик команд (PC) -- скрытый, регистр флагов -- скрытый.
+
+      Нет вещественных регистров, операции с плавающей точкой (single (32-бит) или double (64-бит))
+      эмулируются.
+
+    Формат кадра стэка
+
+      Стэк:
+
+        меньше <- |лок. переменные|старый BP|адрес возврата|парам1|парам2|...|парамN| -> больше
+
+          (* 32 бита *)
+          адрес(парам1) = BP + 8
+          адрес(парам2) = BP + 12
+          ...
+
+          (* 64 бита *)
+          адрес(парам1) = BP + 16
+          адрес(парам2) = BP + 24
+          ...
+
+      Параметры передаются через стэк справа налево (как cdecl), результат передается через R0,
+      вызывающая процедура очищает стэк (как cdecl).
+
+---------------------------------------------------------------------------------------------------
+
+Формат "исполняемого" файла
+
+  RECORD
+
+      Text:           ARRAY i OF RECORD opcode, param1, param2: INTEGER END; (* байт-код *)
+      Types:          ARRAY t OF INTEGER; (* таблица типов-записей *)
+      Strings:        ARRAY s OF BYTE;    (* строковые литералы *)
+      offTypes:       INTEGER;            (* смещение таблицы типов-записей от начала файла (в байтах) *)
+      offStrings:     INTEGER;            (* смещение строковых литералов от начала файла (в байтах) *)
+      GlobalSize:     INTEGER;            (* размер глобальных переменных (в словах; слово = 4 байта) *)
+      HeapStackSize:  INTEGER;            (* размер области кучи/стэка (в словах; слово = 4 байта) *)
+      Reserved:       ARRAY 8 OF INTEGER  (* зарезервировано *)
+
+  END
+
+  Где:
+
+      INTEGER = INT32/INT64
+      i = offTypes DIV (3 * sizeof(INTEGER));
+      t = (offStrings - offTypes) DIV sizeof(INTEGER)
+      s = FILE_SIZE - offStrings - 12 * sizeof(INTEGER)
+---------------------------------------------------------------------------------------------------
+
+Система команд
+
+    мнемоника              опкод   парам1   парам2        действие
+
+    STOP                     0       0        0           остановить программу
+    RET                      1       0        0           возврат из процедуры (pop PC)
+    ENTER imm                2      imm       0           push BP; BP := SP; WHILE imm > 0 DO push 0; DEC(imm) END
+    NEG Rn                   3       n        0           Rn := -Rn
+    NOT Rn                   4       n        0           Rn := ORD(-BITS(Rn))
+    NOP                      5       0        0           нет операции
+    XCHG Rn, Rm              6       n        m           temp := Rn; Rn := Rm; Rm := temp
+    LDB Rn, [Rm + imm]       7   m*256 + n   imm          Rn := UInt8Ptr(Rm + imm)^
+    LDH Rn, [Rm + imm]       8   m*256 + n   imm          Rn := UInt16Ptr(Rm + imm)^
+    LDW Rn, [Rm + imm]       9   m*256 + n   imm          Rn := UInt32Ptr(Rm + imm)^
+*   PUSH Rn                 10       n        0           DEC(SP, 4); UInt32Ptr(SP)^ := Rn
+*   PUSH imm                11      imm       0           DEC(SP, 4); UInt32Ptr(SP)^ := imm
+*   POP Rn                  12       n        0           Rn := UInt32Ptr(SP)^; INC(SP, 4)
+**  PUSH Rn                 10       n        0           DEC(SP, 8); UInt64Ptr(SP)^ := Rn
+**  PUSH imm                11      imm       0           DEC(SP, 8); UInt64Ptr(SP)^ := imm
+**  POP Rn                  12       n        0           Rn := UInt64Ptr(SP)^; INC(SP, 8)
+    L#hex:                  13      hex       0           метка:
+    LEA Rn, TYPES + imm     14    n + 000H   imm          Rn := imm + address(TYPES)
+    LEA Rn, STRINGS + imm   14    n + 100H   imm          Rn := imm + address(STRINGS)
+    LEA Rn, GLOBAL + imm    14    n + 200H   imm          Rn := imm + address(GLOBAL)
+    LEA Rn, HEAP + imm      14    n + 300H   imm          Rn := imm + address(HEAP)
+    LEA Rn, STACK + imm     14    n + 400H   imm          Rn := imm + address(STACK)
+    LLA Rn, L#hex           15       n       hex          Rn := address(L#hex)
+**  LDD Rn, [Rm + imm]      16   m*256 + n   imm          Rn := UInt64Ptr(Rm + imm)^
+
+    JMP L#hex               19      hex       0           goto L#hex
+    CALL L#hex              20      hex       0           push PC; goto L#hex
+    CALL Rn                 21       n        0           push PC; goto Rn
+    MOV Rn, Rm              22       n        m           Rn := Rm
+    MOV Rn, imm             23       n       imm          Rn := imm
+    MUL Rn, Rm              24       n        m           Rn := Rn * Rm
+    MUL Rn, imm             25       n       imm          Rn := Rm * imm
+    ADD Rn, Rm              26       n        m           Rn := Rn + Rm
+    ADD Rn, imm             27       n       imm          Rn := Rn + imm
+    SUB Rn, Rm              28       n        m           Rn := Rn - Rm
+    SUB Rn, imm             29       n       imm          Rn := Rn - imm
+    DIV Rn, Rm              30       n        m           Rn := Rn DIV Rm
+    DIV Rn, imm             31       n       imm          Rn := Rn DIV imm
+    MOD Rn, Rm              32       n        m           Rn := Rn MOD Rm
+    MOD Rn, imm             33       n       imm          Rn := Rn MOD imm
+    STB [Rn + imm], Rm      34   n*256 + m   imm          UInt8Ptr(Rn + imm)^ := Rm MOD 256
+    STB [Rn], imm           35       n       imm          UInt8Ptr(Rn)^ := imm MOD 256
+    STH [Rn + imm], Rm      36   n*256 + m   imm          UInt16Ptr(Rn + imm)^ := Rm MOD 65536
+    STH [Rn], imm           37       n       imm          UInt16Ptr(Rn)^ := imm MOD 65536
+*   STW [Rn + imm], Rm      38   n*256 + m   imm          UInt32Ptr(Rn + imm)^ := Rm
+*   STW [Rn], imm           39       n       imm          UInt32Ptr(Rn)^ := imm
+**  STW [Rn + imm], Rm      38   n*256 + m   imm          UInt32Ptr(Rn + imm)^ := Rm MOD 100000000H
+**  STW [Rn], imm           39       n       imm          UInt32Ptr(Rn)^ := imm MOD 100000000H
+**  STD [Rn + imm], Rm      40   n*256 + m   imm          UInt64Ptr(Rn + imm)^ := Rm
+**  STD [Rn], imm           41       n       imm          UInt64Ptr(Rn)^ := imm
+
+    AND Rn, Rm              46       n        m           Rn := ORD(BITS(Rn) * BITS(Rm))
+    AND Rn, imm             47       n       imm          Rn := ORD(BITS(Rn) * BITS(imm))
+    OR Rn, Rm               48       n        m           Rn := ORD(BITS(Rn) + BITS(Rm))
+    OR Rn, imm              49       n       imm          Rn := ORD(BITS(Rn) + BITS(imm))
+    XOR Rn, Rm              50       n        m           Rn := ORD(BITS(Rn) / BITS(Rm))
+    XOR Rn, imm             51       n       imm          Rn := ORD(BITS(Rn) / BITS(imm))
+    ASR Rn, Rm              52       n        m           Rn := ASR(Rn, Rm)
+    ASR Rn, imm             53       n       imm          Rn := ASR(Rn, imm)
+    LSR Rn, Rm              54       n        m           Rn := LSR(Rn, Rm)
+    LSR Rn, imm             55       n       imm          Rn := LSR(Rn, imm)
+    LSL Rn, Rm              56       n        m           Rn := LSL(Rn, Rm)
+    LSL Rn, imm             57       n       imm          Rn := LSL(Rn, imm)
+    ROR Rn, Rm              58       n        m           Rn := ROR(Rn, Rm)
+    ROR Rn, imm             59       n       imm          Rn := ROR(Rn, imm)
+
+    CMP Rn, Rm              64       n        m           сравнить Rn и Rm
+    CMP Rn, imm             65       n       imm          сравнить Rn и imm
+    BIT Rn, Rm              66       n        m           Rn := ORD({Rm})
+    SYSCALL Rn              67       n        0           системный вызов; Rn содержит адрес параметров
+    JBT L#hex               68      hex       0           перейти на метку L#hex, если "ниже"
+    ADD Rn, Rm, imm         69   m*256 + n   imm          Rn := Rm + imm
+    JEQ L#hex               70      hex       0           перейти на метку L#hex, если "равно"
+    JNE L#hex               71      hex       0           перейти на метку L#hex, если "не равно"
+    JLT L#hex               72      hex       0           перейти на метку L#hex, если "меньше"
+    JGE L#hex               73      hex       0           перейти на метку L#hex, если "не меньше"
+    JGT L#hex               74      hex       0           перейти на метку L#hex, если "больше"
+    JLE L#hex               75      hex       0           перейти на метку L#hex, если "не больше"
+    SEQ Rn                  76       n        0           если "равно": Rn := 1, иначе Rn := 0
+    SNE Rn                  77       n        0           если "не равно": Rn := 1, иначе Rn := 0
+    SLT Rn                  78       n        0           если "меньше": Rn := 1, иначе Rn := 0
+    SGE Rn                  79       n        0           если "не меньше": Rn := 1, иначе Rn := 0
+    SGT Rn                  80       n        0           если "больше": Rn := 1, иначе Rn := 0
+    SLE Rn                  81       n        0           если "не больше": Rn := 1, иначе Rn := 0
+
+Команда CMP сохраняет результат сравнения в скрытом регистре, этот результат используется
+в командах перехода по условию (JEQ, JNE, JLT, JGE, JGT, JLE, JBT) а также в командах
+установки регистра по условию (SEQ, SNE, SLT, SGE, SGT, SLE).
+
+*  Команда для 32-битной виртуальной машины
+** Команда для 64-битной виртуальной машины
+
+---------------------------------------------------------------------------------------------------
+
+Общая структура программы
+
+  CODE:   (* машинный код *)
+  LEA     SP, STACK + 0x00000000 (* точка входа; инициализация регистра SP *)
+  ...
+  STOP    (* конец программы *)
+
+  TYPES:  (* таблица типов-записей *)
+  WORD 0x00000000, 0x00000000, 0x00000000, 0x00000000
+  WORD 0x00000002, 0x00000002, 0x00000002, 0x00000002
+  WORD 0x00000000, 0x00000006, 0x00000000, 0x00000000
+  WORD 0x00000002, 0x00000000, 0x0000000D, 0x0000000E
+  WORD 0x0000000C, 0x0000000E, 0x0000000C, 0x00000000
+  WORD 0x00000000, 0x0000000C, 0x0000000C, 0x00000016
+  WORD 0x00000000, 0x0000000C, 0x0000000C, 0x0000000C
+  WORD 0x00000000, 0x00000000, 0x0000000C, 0x0000000C
+  WORD 0x0000000C, 0x0000000C, 0x0000000C, 0x0000000C
+  WORD 0x0000000C, 0x0000000C, 0x00000000, 0x00000000
+  WORD 0x0000000C, 0x0000000C, 0x0000000C, 0x00000000
+  WORD 0x00000000, 0x0000000C, 0x0000002D, 0x0000002D
+  WORD 0x0000002D, 0x00000030, 0x00000030, 0x00000030
+  WORD 0x00000030, 0x0000002D, 0x00000000, 0x00000000
+  WORD 0x0000000A, 0x00000000, 0x00000002, 0x00000000
+  WORD 0x00000000, 0x00000000, 0x00000000, 0x00000000
+  WORD 0x00000000, 0x00000000, 0x00000000, 0x00000000
+  WORD 0x00000000, 0x0000000C, 0x0000000C, 0x00000000
+  WORD 0x00000000, 0x0000000C, 0x00000049, 0x00000049
+  WORD 0x00000049, 0x0000004C, 0x0000004C, 0x0000004C
+  WORD 0x00000049, 0x0000000C, 0x00000000, 0x0000000C
+  WORD 0x00000053, 0x00000053, 0x00000053, 0x00000053
+  WORD 0x0000000C, 0x00000000, 0x00000000, 0x00000000
+  WORD 0x00000006, 0x0000000C
+
+  STRINGS:  (* строковые литералы *)
+  BYTE 0x46, 0x50, 0x55, 0x00, 0x54, 0x72, 0x61, 0x70
+  BYTE 0x00, 0x0D, 0x0A, 0x00, 0x61, 0x73, 0x73, 0x65
+  BYTE 0x72, 0x74, 0x69, 0x6F, 0x6E, 0x20, 0x66, 0x61
+  BYTE 0x69, 0x6C, 0x75, 0x72, 0x65, 0x00, 0x4E, 0x49
+  BYTE 0x4C, 0x20, 0x64, 0x65, 0x72, 0x65, 0x66, 0x65
+  BYTE 0x72, 0x65, 0x6E, 0x63, 0x65, 0x00, 0x62, 0x61
+  BYTE 0x64, 0x20, 0x64, 0x69, 0x76, 0x69, 0x73, 0x6F
+  BYTE 0x72, 0x00, 0x4E, 0x49, 0x4C, 0x20, 0x70, 0x72
+  BYTE 0x6F, 0x63, 0x65, 0x64, 0x75, 0x72, 0x65, 0x20
+  BYTE 0x63, 0x61, 0x6C, 0x6C, 0x00, 0x74, 0x79, 0x70
+  BYTE 0x65, 0x20, 0x67, 0x75, 0x61, 0x72, 0x64, 0x20
+  BYTE 0x65, 0x72, 0x72, 0x6F, 0x72, 0x00, 0x69, 0x6E
+  BYTE 0x64, 0x65, 0x78, 0x20, 0x6F, 0x75, 0x74, 0x20
+  BYTE 0x6F, 0x66, 0x20, 0x72, 0x61, 0x6E, 0x67, 0x65
+  BYTE 0x00, 0x69, 0x6E, 0x76, 0x61, 0x6C, 0x69, 0x64
+  BYTE 0x20, 0x43, 0x41, 0x53, 0x45, 0x00, 0x61, 0x72
+  BYTE 0x72, 0x61, 0x79, 0x20, 0x61, 0x73, 0x73, 0x69
+  BYTE 0x67, 0x6E, 0x6D, 0x65, 0x6E, 0x74, 0x20, 0x65
+  BYTE 0x72, 0x72, 0x6F, 0x72, 0x00, 0x43, 0x48, 0x52
+  BYTE 0x20, 0x6F, 0x75, 0x74, 0x20, 0x6F, 0x66, 0x20
+  BYTE 0x72, 0x61, 0x6E, 0x67, 0x65, 0x00, 0x57, 0x43
+  BYTE 0x48, 0x52, 0x20, 0x6F, 0x75, 0x74, 0x20, 0x6F
+  BYTE 0x66, 0x20, 0x72, 0x61, 0x6E, 0x67, 0x65, 0x00
+  BYTE 0x42, 0x59, 0x54, 0x45, 0x20, 0x6F, 0x75, 0x74
+  BYTE 0x20, 0x6F, 0x66, 0x20, 0x72, 0x61, 0x6E, 0x67
+  BYTE 0x65, 0x00, 0x65, 0x72, 0x72, 0x6F, 0x72, 0x20
+  BYTE 0x28, 0x00, 0x29, 0x3A, 0x20, 0x00, 0x6D, 0x6F
+  BYTE 0x64, 0x75, 0x6C, 0x65, 0x3A, 0x20, 0x00, 0x6C
+  BYTE 0x69, 0x6E, 0x65, 0x3A, 0x20, 0x00, 0x52, 0x54
+  BYTE 0x4C, 0x00, 0x54, 0x65, 0x73, 0x74, 0x00, 0x00
+
+  GLOBAL:
+  WORDS 0x00000004 (* размер глобальных переменных в словах (слово = 4 или 8 байт) *)
+
+  HEAP:
+  WORDS 0x007FFFBF (* размер области кучи/стэка в словах (слово = 4 или 8 байт) *)
+  STACK:
+  WORDS 8 (* зарезервировано *)
+---------------------------------------------------------------------------------------------------

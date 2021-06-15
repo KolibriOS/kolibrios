@@ -1,0 +1,133 @@
+﻿(*
+    BSD 2-Clause License
+
+    Copyright (c) 2020-2021, Anton Krotov
+    All rights reserved.
+*)
+
+MODULE Trap;
+
+IMPORT SYSTEM;
+
+
+CONST
+
+    SP = 4;
+
+
+PROCEDURE [code] sp* (): INTEGER
+    22, 0, SP;  (*  MOV R0, SP  *)
+
+
+PROCEDURE [code] syscall* (ptr: INTEGER)
+    22, 0, SP,  (*  MOV      R0, SP  *)
+    27, 0, 8,   (*  ADD      R0,  8  *)
+    16, 0, 0,   (*  LDD      R0, R0  *)
+    67, 0, 0;   (*  SYSCALL  R0      *)
+
+
+PROCEDURE Char (c: CHAR);
+VAR
+    a: ARRAY 2 OF INTEGER;
+
+BEGIN
+    a[0] := 8;
+    a[1] := ORD(c);
+    syscall(SYSTEM.ADR(a[0]))
+END Char;
+
+
+PROCEDURE String (s: ARRAY OF CHAR);
+VAR
+    i: INTEGER;
+
+BEGIN
+    i := 0;
+    WHILE s[i] # 0X DO
+        Char(s[i]);
+        INC(i)
+    END
+END String;
+
+
+PROCEDURE PString (ptr: INTEGER);
+VAR
+    c: CHAR;
+
+BEGIN
+    SYSTEM.GET(ptr, c);
+    WHILE c # 0X DO
+        Char(c);
+        INC(ptr);
+        SYSTEM.GET(ptr, c)
+    END
+END PString;
+
+
+PROCEDURE Ln;
+BEGIN
+    String(0DX + 0AX)
+END Ln;
+
+
+PROCEDURE IntToStr (x: INTEGER; VAR str: ARRAY OF CHAR);
+VAR
+    i, a: INTEGER;
+
+BEGIN
+    i := 0;
+    a := x;
+    REPEAT
+        INC(i);
+        a := a DIV 10
+    UNTIL a = 0;
+
+    str[i] := 0X;
+
+    REPEAT
+        DEC(i);
+        str[i] := CHR(x MOD 10 + ORD("0"));
+        x := x DIV 10
+    UNTIL x = 0
+END IntToStr;
+
+
+PROCEDURE Int (x: INTEGER);
+VAR
+    s: ARRAY 32 OF CHAR;
+
+BEGIN
+    IntToStr(x, s);
+    String(s)
+END Int;
+
+
+PROCEDURE trap* (modnum, _module, err, line: INTEGER);
+VAR
+    s: ARRAY 32 OF CHAR;
+
+BEGIN
+    CASE err OF
+    | 1: s := "assertion failure"
+    | 2: s := "NIL dereference"
+    | 3: s := "bad divisor"
+    | 4: s := "NIL procedure call"
+    | 5: s := "type guard error"
+    | 6: s := "index out of range"
+    | 7: s := "invalid CASE"
+    | 8: s := "array assignment error"
+    | 9: s := "CHR out of range"
+    |10: s := "WCHR out of range"
+    |11: s := "BYTE out of range"
+    END;
+
+    Ln;
+    String("error ("); Int(err); String("): "); String(s); Ln;
+    String("module: "); PString(_module); Ln;
+    String("line: "); Int(line); Ln;
+
+    SYSTEM.CODE(0, 0, 0)  (*  STOP  *)
+END trap;
+
+
+END Trap.

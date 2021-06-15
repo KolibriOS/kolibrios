@@ -28,7 +28,7 @@ IMPORT
     RW, Ini, box_lib, Icons;
 
 CONST
-    header = "CEdit (14-jun-2021)";
+    header = "CEdit (15-jun-2021)";
 
     ShellFilter = "";
     EditFilter = "SH|ASM|TXT|INC|OB07|C|CPP|H|PAS|PP|LUA|INI";
@@ -78,15 +78,16 @@ CONST
     btnTop = MainMenuHeight + 3;
     toolBtnSize = 24;
     toolbarDelim = 7;
+    iconPad = (toolBtnSize - Icons.SIZE) DIV 2;
 
     TOP = btnTop + toolBtnSize + 7;
     RIGHT = scrollWidth - 2;
-    BOTTOM = scrollWidth + 25;
+    BOTTOM = scrollWidth + 18;
 
     minWinWidth = 635; minWinHeight = 542;
 
     SEARCH_PADDING = 10;
-    searchLeft = 10;
+    searchLeft = 0;
     EditBox_Width = 180;
     EDITBOX_MAXCHARS = 500;
 
@@ -270,8 +271,6 @@ END Replaced;
 
 
 PROCEDURE toolbarIcons;
-CONST
-    iconPad = (toolBtnSize - Icons.SIZE) DIV 2;
 VAR
     x, color: INTEGER;
 BEGIN
@@ -329,7 +328,7 @@ END toolbarIcons;
 PROCEDURE WriteModified (x, y: INTEGER);
 BEGIN
     modified := text.modified;
-    K.DrawRect(x, TOP + canvas.height + scrollWidth - 1, 9*fontWidth, BOTTOM - scrollWidth + 1, K.winColor);
+    K.DrawRect(x, TOP + canvas.height + scrollWidth - 1, 8*fontWidth, BOTTOM - scrollWidth + 1, K.winColor);
     IF modified THEN
         K.DrawText866(x, y, K.textColor, "modified")
     END
@@ -353,7 +352,7 @@ BEGIN
         WritePos(y);
 
         IF modified # text.modified THEN
-            WriteModified(width - 9*fontWidth, y)
+            WriteModified(width - 8*fontWidth, y)
         END;
 
         T.getScroll(text, scrollX, scrollY);
@@ -445,8 +444,6 @@ END SearchPanel;
 
 
 PROCEDURE draw_window;
-CONST
-    iconPad = (toolBtnSize - Icons.SIZE) DIV 2;
 VAR
     width, height, x, y: INTEGER;
 
@@ -527,12 +524,12 @@ BEGIN
         INC(x, toolBtnSize + 5 + toolbarDelim);
 
         drawToolbarBtn(btnBuild, x);
-        Icons.draw(icons, 54, x + iconPad, btnTop + iconPad);
         INC(x, toolBtnSize + 5);
 
         drawToolbarBtn(btnRun, x);
-        Icons.draw(icons, 53, x + iconPad, btnTop + iconPad);
         INC(x, toolBtnSize + 5);
+
+        toolbarIcons;
 
         K.CreateButton(btnUp, LEFT + canvas.width - 1, TOP, scrollWidth - 1, scrollWidth, K.btnColor, 0X);
         K.DrawText69(LEFT + canvas.width - 1 + (scrollWidth - 6) DIV 2, TOP + (scrollWidth - 9) DIV 2, K.btnTextColor, 18X);
@@ -549,19 +546,19 @@ BEGIN
 
         y := (btnHeight - fontHeight) DIV 2 + btnTop;
         CASE text.enc OF
-        |E.UTF8:    K.DrawText866(width -  6*fontWidth, y, K.textColor, "UTF-8")
-        |E.UTF8BOM: K.DrawText866(width - 10*fontWidth, y, K.textColor, "UTF-8-BOM")
-        |E.CP866:   K.DrawText866(width -  6*fontWidth, y, K.textColor, "CP866")
-        |E.W1251:   K.DrawText866(width - 13*fontWidth, y, K.textColor, "Windows-1251")
+        |E.UTF8:    K.DrawText866(width -  5*fontWidth, y, K.textColor, "UTF-8")
+        |E.UTF8BOM: K.DrawText866(width -  9*fontWidth, y, K.textColor, "UTF-8-BOM")
+        |E.CP866:   K.DrawText866(width -  5*fontWidth, y, K.textColor, "CP866")
+        |E.W1251:   K.DrawText866(width - 12*fontWidth, y, K.textColor, "Windows-1251")
         END;
         IF search THEN
             SearchPanel(searchLeft, TOP)
         END;
 
         y := height - (BOTTOM - scrollWidth) + (BOTTOM - scrollWidth - 16) DIV 2;
-        K.DrawRect(LEFT + 16*fontWidth, TOP + canvas.height + scrollWidth - 1, width - LEFT - 25*fontWidth, BOTTOM - scrollWidth + 1, K.winColor);
+        K.DrawRect(LEFT + 16*fontWidth, TOP + canvas.height + scrollWidth - 1, width - LEFT - 24*fontWidth, BOTTOM - scrollWidth + 1, K.winColor);
         K.DrawText866(LEFT + 16*fontWidth, y, K.textColor, text.fileName);
-        WriteModified(width - 9*fontWidth, y);
+        WriteModified(width - 8*fontWidth, y);
         repaint
     END;
     K.EndDraw
@@ -753,7 +750,7 @@ PROCEDURE Search;
 BEGIN
     search := ~search;
     IF search THEN
-        LEFT := searchLeft + EditBox_Width + SEARCH_PADDING*3;
+        LEFT := searchLeft + EditBox_Width + SEARCH_PADDING*2 + 5;
         IF T.search(text, searchText, cs, whole) THEN END
     ELSE
         LEFT := searchLeft;
@@ -1245,7 +1242,7 @@ BEGIN
     winHeight := MAX(winHeight, minWinHeight);
     cliWidth := winWidth;
     cliHeight := winHeight;
-    LEFT := 10;
+    LEFT := searchLeft;
     canvas := G.CreateCanvas(winWidth - (LEFT + RIGHT + 10), winHeight - (TOP + BOTTOM + 4) - K.SkinHeight());
     font1 := G.CreateFont(1, "", {});
     font2 := G.CreateFont(2, "", {});

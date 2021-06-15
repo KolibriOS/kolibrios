@@ -1,0 +1,127 @@
+(*
+    Copyright 2021 Anton Krotov
+
+    This file is part of CEdit.
+
+    CEdit is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    CEdit is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with CEdit. If not, see <http://www.gnu.org/licenses/>.
+*)
+
+MODULE Icons;
+
+IMPORT
+    LibImg, K := KolibriOS, SYSTEM;
+
+CONST
+    fileName = "/rd/1/Icons16.png";
+    SIZE* = 18;
+
+VAR
+    source: INTEGER;
+
+
+PROCEDURE copy (src, dst: INTEGER);
+VAR
+    src_sizeX, src_sizeY, dst_sizeX, dst_sizeY,
+    src_data, dst_data: INTEGER;
+BEGIN
+    LibImg.GetInf(src, src_sizeX, src_sizeY, src_data);
+    LibImg.GetInf(dst, dst_sizeX, dst_sizeY, dst_data);
+    ASSERT(src_sizeX = dst_sizeX);
+    ASSERT(src_sizeY = dst_sizeY);
+    SYSTEM.MOVE(src_data, dst_data, src_sizeX*src_sizeY*3)
+END copy;
+
+
+PROCEDURE load (): INTEGER;
+VAR
+    y: INTEGER;
+BEGIN
+    RETURN LibImg.LoadFromFile(fileName, SIZE, y)
+END load;
+
+
+PROCEDURE draw* (icons, n, x, y: INTEGER);
+VAR
+    sizeX, sizeY, data: INTEGER;
+BEGIN
+    LibImg.GetInf(icons, sizeX, sizeY, data);
+    K.DrawImage(data + SIZE*SIZE*3*n, SIZE, SIZE, x, y)
+END draw;
+
+
+PROCEDURE gray (icons: INTEGER);
+VAR
+    sizeX, sizeY, data, x, y: INTEGER;
+    b, g, r, gr: BYTE;
+BEGIN
+    LibImg.GetInf(icons, sizeX, sizeY, data);
+    FOR y := 0 TO sizeY - 1 DO
+        FOR x := 0 TO sizeX - 1 DO
+            SYSTEM.GET8(data, b);
+            SYSTEM.GET8(data + 1, g);
+            SYSTEM.GET8(data + 2, r);
+            gr := (r + g + b) DIV 3;
+            SYSTEM.PUT8(data, gr);
+            SYSTEM.PUT8(data + 1, gr);
+            SYSTEM.PUT8(data + 2, gr);
+            INC(data, 3);
+        END
+    END
+END gray;
+
+
+PROCEDURE iconsBackColor (icons: INTEGER);
+VAR
+    sizeX, sizeY, data, x, y: INTEGER;
+    b, g, r: BYTE;
+BEGIN
+    LibImg.GetInf(icons, sizeX, sizeY, data);
+    FOR y := 0 TO sizeY - 1 DO
+        FOR x := 0 TO sizeX - 1 DO
+            SYSTEM.GET8(data, b);
+            SYSTEM.GET8(data + 1, g);
+            SYSTEM.GET8(data + 2, r);
+            IF b + g + r = 765 THEN
+                b := K.toolbarColor MOD 256;
+                g := K.toolbarColor DIV 256 MOD 256;
+                r := K.toolbarColor DIV 65536 MOD 256
+            END;
+            SYSTEM.PUT8(data, b);
+            SYSTEM.PUT8(data + 1, g);
+            SYSTEM.PUT8(data + 2, r);
+            INC(data, 3);
+        END
+    END
+END iconsBackColor;
+
+
+PROCEDURE get* (VAR icons, grayIcons: INTEGER);
+BEGIN
+    IF source = 0 THEN
+        source := load();
+        icons := load();
+        grayIcons := load()
+    ELSE
+        copy(source, icons);
+        copy(source, grayIcons)
+    END;
+    gray(grayIcons);
+    iconsBackColor(icons);
+    iconsBackColor(grayIcons)
+END get;
+
+
+BEGIN
+    source := 0
+END Icons.
