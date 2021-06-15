@@ -696,6 +696,7 @@ end -- tup.getconfig('NO_MSVC') ~= 'full'
 if tup.getconfig('NO_TCC') ~= 'full' then
 tup.append_table(img_files, {
  {"NETWORK/WHOIS", PROGS .. "/network/whois/whois"},
+ {"SHELL", PROGS .. "/system/shell/shell"},
 -- {"NETWORK/WEATHER", PROGS .. "/other/Weather/weather"},
 })
 tup.append_table(extra_files, {
@@ -714,7 +715,6 @@ end -- tup.getconfig('NO_TCC') ~= 'full'
 if tup.getconfig('NO_GCC') ~= 'full' then
 tup.append_table(img_files, {
  {"GAMES/REVERSI", PROGS .. "/games/reversi/trunk/reversi"},
- {"SHELL", PROGS .. "/system/shell/shell"},
  {"LIB/LIBC.OBJ", PROGS .. "/develop/ktcc/trunk/libc.obj/source/libc.obj"},
 })
 tup.append_table(extra_files, {
