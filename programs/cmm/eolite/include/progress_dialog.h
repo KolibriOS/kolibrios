@@ -42,7 +42,6 @@ void DisplayOperationForm(int operation_flag)
 	switch(CheckEvent())
 	{
 		 case evButton:
-			notify(T_CANCEL_PASTE);
 			DialogExit();
 			break;
 			

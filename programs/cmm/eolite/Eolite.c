@@ -3,8 +3,9 @@
 
 // 70.5 - get volume info and label
 
-#define TITLE "Eolite File Manager 5 Beta"
-#define ABOUT_TITLE "EOLITE 5 Beta"
+#define ABOUT_TITLE "EOLITE 5 Beta2"
+#define TITLE_EOLITE "Eolite File Manager 5 Beta2"
+#define TITLE_KFM "Kolibri File Manager 2 Beta2";
 
 #ifndef AUTOBUILD
 #include "lang.h--"
@@ -125,7 +126,7 @@ _ini ini;
 
 char scroll_used=false;
 
-dword about_stak=0,properties_stak=0,settings_stak=0,delete_stak=0;
+dword about_stak=0,properties_stak=0,settings_stak=0;
 
 proc_info Form;
 int sc_slider_h;
@@ -199,10 +200,8 @@ void handle_param()
 			properties_dialog();
 			ExitProcess();
 		case 'd':
-			strcpy(#file_path, p + 3);
-			itdir = dir_exists(#file_path);
-			DisplayOperationForm(DELETE_FLAG);
-			DeleteSingleElement();
+			strcpy(#path, p + 3);
+			DeleteThread();
 			ExitProcess();
 		case 'v':
 			cut_active = ESBYTE[p+2] - '0';
@@ -244,7 +243,6 @@ void main()
 	ESBYTE[0] = NULL;
 
 	SystemDiscs.Get();
-
 	Open_Dir(#path,ONLY_OPEN);
 	strcpy(#inactive_path, #path);
 	llist_copy(#files_inactive, #files);
@@ -297,7 +295,6 @@ void main()
 					if (getElementSelectedFlag(files.cur_y) == false) selected_count = 0; //on redraw selection would be flashed, see [L001] 
 					EventShowListMenu();
 				}
-				//break;
 			}
 
 			if (mouse.x>=files.x+files.w) && (mouse.x<=files.x+files.w+16) && (mouse.y>files.y-17) && (mouse.y<files.y)
@@ -345,16 +342,12 @@ void main()
 			if (efm) && (mouse.y > files.y) && (mouse.down) {
 				if (mouse.x<Form.cwidth/2)
 				{
-					if (active_panel!=1)
-					{
+					if (active_panel!=1) {
 						active_panel = 1;
 						ChangeActivePanel();
 					}
-				}
-				else
-				{
-					if (active_panel!=2)
-					{
+				} else {
+					if (active_panel!=2) {
 						active_panel = 2;
 						ChangeActivePanel();
 					}
@@ -436,16 +429,13 @@ void main()
 
 			if (new_element_active) || (del_active) || (dev_popin_active_on_panel)
 			{
-				if (dev_popin_active_on_panel) {
-					if (key_scancode == SCAN_CODE_ESC) EventClosePopinForm();
-				}
+				if (key_scancode == SCAN_CODE_ESC) EventClosePopinForm();
+
 				if (del_active) {
 					if (key_scancode == SCAN_CODE_ENTER) EventDelete();
-					if (key_scancode == SCAN_CODE_ESC) EventClosePopinForm();
 				}
 				if (new_element_active) {
 					if (key_scancode == SCAN_CODE_ENTER) NewElement();
-					if (key_scancode == SCAN_CODE_ESC) EventClosePopinForm();
 					EAX = key_editbox;
 					edit_box_key stdcall (#new_file_ed);
 				}
@@ -481,18 +471,17 @@ void main()
 					case SCAN_CODE_1...SCAN_CODE_10:
 							key_scancode-=2;
 							if (key_scancode >= SystemDiscs.list.count) break;
-							if (!efm)
-							{
+							if (!efm) {
 								DrawRectangle(17,key_scancode*16+74,159,16, 0); //display click
 								pause(7);										
 							}
 							SystemDiscs.Click(key_scancode);
 							break;
 					case SCAN_CODE_KEY_X:
-							EventCopy(CUT);
+							CopyFilesListToClipboard(CUT);
 							break;						
 					case SCAN_CODE_KEY_C:
-							EventCopy(NOCUT);
+							CopyFilesListToClipboard(COPY);
 							break;
 					case SCAN_CODE_KEY_G:
 							EventOpenConsoleHere();
@@ -562,20 +551,18 @@ void main()
 					default:
 							EventSelectFileByKeyPress();
 			}                         
-		break;
+			break;
 		case evIPC:
 		case evReDraw:
 			draw_window();
 			if (CheckActiveProcess(Form.ID)) && (GetMenuClick()) break;
-			if (action_buf==OPERATION_END)
-			{
+			if (action_buf==OPERATION_END) {
 				EventRefresh();
 				action_buf=0;
 			}
-		break;
+			break;
 		default:
-			if (Form.status_window>2) break;
-			EventRefreshDisksAndFolders();
+			if (Form.status_window<=2) EventRefreshDisksAndFolders();
 	}
 	
 	if(cmd_free)
@@ -583,7 +570,6 @@ void main()
 		if(cmd_free==2) about_stak=free(about_stak);
 		else if(cmd_free==3) properties_stak=free(properties_stak);
 		else if(cmd_free==4) settings_stak=free(settings_stak);
-		else if(cmd_free==6) delete_stak=free(delete_stak);
 		cmd_free = false;
 	}
 }
@@ -594,7 +580,7 @@ void draw_window()
 	incn x;
 	dword title;
 	if (show_status_bar.checked) status_bar_h = STATUS_BAR_H; else status_bar_h = 0;
-	if (efm) title = "Kolibri File Manager 2 - BETA"; else title = TITLE;
+	if (efm) title = TITLE_KFM; else title = TITLE_EOLITE;
 	DefineAndDrawWindow(Form.left+rand_n,Form.top+rand_n,Form.width,Form.height,0x73,NULL,title,0);
 	GetProcessInfo(#Form, SelfInfo);
 	if (Form.status_window>2) return;
@@ -624,8 +610,8 @@ void draw_window()
 		ESDWORD[#toolbar_pal] = sc.work;
 		ESDWORD[#toolbar_pal+4] = MixColors(0, sc.work, 35);
 		PutPaletteImage(#toolbar, 246, 34, 0, 0, 8, #toolbar_pal);		
-		for (i=0; i<3; i++) DefineHiddenButton(toolbar_buttons_x[i]+2,7,31-5,29-5,21+i);
-		for (i=3; i<6; i++) DefineHiddenButton(toolbar_buttons_x[i],  5,31,  29,  21+i);
+		for (i=0; i<3; i++) DefineHiddenButton(toolbar_buttons_x[i]+2,7,31-5,29-5,BACK_BTN+i);
+		for (i=3; i<6; i++) DefineHiddenButton(toolbar_buttons_x[i],  5,31,  29,  BACK_BTN+i);
 		DrawBar(127, 8, 1, 25, sc.work_graph);
 		DrawBar(246,0, Form.cwidth - 246, 34, sc.work);
 		DrawDot(Form.cwidth-17,12);
@@ -1193,7 +1179,7 @@ void FnProcess(byte N)
 			break;
 		case 5:
 			if (efm) {
-				EventCopy(false);
+				CopyFilesListToClipboard(COPY);
 				EventPaste(#inactive_path);
 			} else {
 				EventRefresh();
@@ -1201,7 +1187,7 @@ void FnProcess(byte N)
 			break;
 		case 6:
 			if (efm) {
-				EventCopy(true);
+				CopyFilesListToClipboard(CUT);
 				EventPaste(#inactive_path);
 			}
 			break;
@@ -1384,16 +1370,12 @@ void EventPaste(dword _into_path) {
 }
 
 void EventDelete() 
-char line_param[4096+5];
 {
+	char line_param[4096+5];
+	CopyFilesListToClipboard(DELETE);
 	EventClosePopinForm();
-	if (!selected_count) {
-		sprintf(#line_param, "-d %s", #file_path);
-		RunProgram(#program_path, #line_param);
-	} else {
-		delete_stak = malloc(40000);
-		CreateThread(#DeleteSelectedElements,delete_stak+40000-4);
-	}
+	sprintf(#line_param, "-d %s", #file_path);
+	RunProgram(#program_path, #line_param);	
 }
 
 void EventClosePopinForm()
@@ -1402,8 +1384,6 @@ void EventClosePopinForm()
 	new_element_active = 0;
 	dev_popin_active_on_panel = 0;
 	draw_window();
-	//DeleteButton(POPUP_BTN1);
-	//DeleteButton(POPUP_BTN2);
 }
 
 void EventShowProperties()
@@ -1453,8 +1433,8 @@ void EventToolbarButtonClick(int _btid)
 		case BACK_BTN: EventHistoryGoBack(); break;
 		case FWRD_BTN: EventHistoryGoForward(); break;
 		case GOUP_BTN: Dir_Up(); break;
-		case COPY_BTN: EventCopy(CUT); break;
-		case CUT_BTN:  EventCopy(NOCUT); break;
+		case COPY_BTN: CopyFilesListToClipboard(CUT); break;
+		case CUT_BTN:  CopyFilesListToClipboard(COPY); break;
 		case PASTE_BTN:EventPaste(#path); break;		
 	}
 }

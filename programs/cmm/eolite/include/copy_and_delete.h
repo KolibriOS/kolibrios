@@ -45,9 +45,9 @@ byte copy_to[4096];
 byte copy_from[4096];
 bool cut_active = false;
 
-enum {NOCUT, CUT};
+enum {COPY, CUT, DELETE};
 
-void EventCopy(bool _cut_active)
+void CopyFilesListToClipboard(bool _cut_active)
 {
 	byte copy_t[4096];
 	dword buff_data;
@@ -58,7 +58,7 @@ void EventCopy(bool _cut_active)
 
 	if (files.count<=0) return; //no files
 
-	cut_active = _cut_active;
+	if (cut_active!=DELETE) cut_active = _cut_active;
 
 	//if no element selected by "Insert" key, then we copy current element
 	if (!selected_count) {
@@ -87,8 +87,6 @@ void EventCopy(bool _cut_active)
 		if (getElementSelectedFlag(i) == true) {
 			sprintf(copy_buf_offset,"%s/%s",#path,items.get(i)*304+buf+72);
 			copy_buf_offset += strlen(copy_buf_offset) + 1;
-
-			//setElementSelectedFlag(i, false);
 
 			if (cut_active) {
 				if (i>=files.first) && (i<files.first+files.visible)
@@ -138,7 +136,6 @@ void PasteThread()
 			if (EAX!=0) goto _DIFFERENT_DRIVES;
 			path_offset += strlen(path_offset) + 1;
 		}
-		cut_active=false;
 		DialogExit();
 	}
 
@@ -161,7 +158,7 @@ _DIFFERENT_DRIVES:
 		}
 		if (strstr(#copy_to, #copy_from))
 		{
-			notify("Copy directory into itself is a bad idea...");
+			notify("'Not possible to copy directory into itself.\nProcess terminated.' -E");
 			DialogExit();
 		}
 
@@ -173,12 +170,11 @@ _DIFFERENT_DRIVES:
 		else if (cut_active)
 		{
 			strcpy(#file_path, #copy_from);
-			Del_File2(#copy_from, 0);
+			RecursiveDelete(#copy_from, false);
 			
 		}
 		path_offset += strlen(path_offset) + 1;
 	}
-	cut_active=false;
 	DialogExit();
 }
 
@@ -190,7 +186,7 @@ _DIFFERENT_DRIVES:
 //===================================================//
 
 int del_error;
-int Del_File2(dword way, sh_progr)
+int RecursiveDelete(dword way, bool show_progress)
 {    
 	dword dirbuf, fcount, i, filename;
 	int error;
@@ -205,11 +201,11 @@ int Del_File2(dword way, sh_progr)
 			sprintf(#del_from,"%s/%s",way,filename);
 			if ( TestBit(ESDWORD[filename-40], 4) )
 			{
-				Del_File2(#del_from, 1);
+				RecursiveDelete(#del_from, true);
 			}
 			else
 			{
-				if (sh_progr) Operation_Draw_Progress(filename);
+				if (show_progress) Operation_Draw_Progress(filename);
 				if (error = DeleteFile(#del_from)) del_error = error;
 			}
 		}
@@ -217,51 +213,31 @@ int Del_File2(dword way, sh_progr)
 	if (error = DeleteFile(way)) del_error = error;
 }
 
-void DeleteSingleElement()
-{   
-	DIR_SIZE delete_dir_size;
-	del_error = NULL;
-	
-	if (itdir) { 
-		copy_bar.max = delete_dir_size.get(#file_path); 
-	} else {
-		copy_bar.max = 1;
-	}
-	
-	Del_File2(#file_path, 1);			
-
-	if (del_error) Write_Error(del_error);
-	DialogExit();
-}
-
-void DeleteSelectedElements()
-{   
-	byte del_from[4096];
-	int i;
+void DeleteThread()
+{
+	int j;
+	int elements_count = 0;
+	dword buf;
+	dword path_offset;
 
 	DisplayOperationForm(DELETE_FLAG);
-
-	if (!selected_count) { DeleteSingleElement(); return; }
 	
-	for (i=0; i<files.count; i++) 
-	{
-		if (getElementSelectedFlag(i) == true) {
-			sprintf(#del_from,"%s/%s",#path,items.get(i)*304+buf+72);
-			copy_bar.max += GetFilesCount(#del_from);
-		}
-	}	
+	buf = Clipboard__GetSlotData(Clipboard__GetSlotCount()-1);
+	Clipboard__DeleteLastSlot();
+	if (DSDWORD[buf+4] != 3) return;
+	elements_count = ESINT[buf+8];
 
-	del_error = 0;
-
-	for (i=0; i<files.count; i++) 
-	{
-		if (getElementSelectedFlag(i) == true) {
-			sprintf(#del_from,"%s/%s", #path, items.get(i)*304+buf+72);
-			Del_File2(#del_from, 1);
-		}
+	path_offset = buf + 10;
+	for (j = 0; j < elements_count; j++) {
+		copy_bar.max += GetFilesCount(path_offset);
+		path_offset += strlen(path_offset) + 1;
 	}
-
+	
+	path_offset = buf + 10;
+	for (j = 0; j < elements_count; j++) {
+		RecursiveDelete(path_offset, true);
+		path_offset += strlen(path_offset) + 1;
+	}
 	if (del_error) Write_Error(del_error);
-	cmd_free = 6;
 	DialogExit();
 }
