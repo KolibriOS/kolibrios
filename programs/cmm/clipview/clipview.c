@@ -203,7 +203,7 @@ void EventOpenAsText(int slot_id) {
 	slot_data = Clipboard__GetSlotData(slot_id);
 	cdata.size = ESDWORD[slot_data]-12;
 	cdata.content = slot_data+12;
-	if (SaveSlotContents(cdata.size, cdata.content)) RunProgram("/sys/tinypad", DEFAULT_SAVE_PATH);
+	if (SaveSlotContents(cdata.size, cdata.content)) RunProgram("/sys/develop/cedit", DEFAULT_SAVE_PATH);
 }
 
 void EventOpenAsHex(int slot_id) {
