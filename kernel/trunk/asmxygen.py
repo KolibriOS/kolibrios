@@ -67,7 +67,8 @@ class AsmLabel:
 		self.name = name
 
 class AsmMacro:
-	def __init__(self, line, name, comment, args):
+	def __init__(self, asm_file_name, line, name, comment, args):
+		self.file = asm_file_name
 		self.line = line
 		self.name = name
 		self.comment = comment
@@ -244,8 +245,6 @@ def parse_macro(asm_file_name, lines, line_idx):
 			                f"in the macro declaration:\n'{line}'")
 	if arg != '':
 		args.append(arg)
-	if len(args) > 0:
-		print(line, args)
 	# Find a comment if any
 	comment = ""
 	while curr() and curr() != ';': step()
@@ -272,7 +271,7 @@ def parse_macro(asm_file_name, lines, line_idx):
 			warnings += f"{asm_file_name}:{line_idx + 1}: Сomment sarting with lowercase\n"
 	# Build the output
 	line_span = line_idx - line_idx_orig + 1
-	result = AsmMacro(line_idx_orig, name, comment, args)
+	result = AsmMacro(asm_file_name, line_idx_orig, name, comment, args)
 	return (line_span, result)
 
 def get_declarations(asm_file_contents, asm_file_name):
