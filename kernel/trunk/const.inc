@@ -1,6 +1,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;                                                              ;;
-;; Copyright (C) KolibriOS team 2004-2017. All rights reserved. ;;
+;; Copyright (C) KolibriOS team 2004-2021. All rights reserved. ;;
 ;; Distributed under terms of the GNU General Public License    ;;
 ;;                                                              ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -505,7 +505,7 @@ struct  APPDATA
         wait_param      dd ?            ;+100  +++
         tls_base        dd ?            ;+104
                         dd ?            ;+108
-        event_filter    dd ?            ;+112
+                        dd ?            ;+112
         draw_bgr_x      dd ?            ;+116
         draw_bgr_y      dd ?            ;+120
                         dd ?            ;+124
@@ -516,7 +516,7 @@ struct  APPDATA
         saved_box       BOX             ;+144
         ipc_start       dd ?            ;+160
         ipc_size        dd ?            ;+164
-        event_mask      dd ?            ;+168
+        event_mask      dd ?            ;+168 ; mask which accumulates occurred events
         debugger_slot   dd ?            ;+172
         terminate_protection dd ?       ;+176
         keyboard_mode   db ?            ;+180
@@ -538,7 +538,7 @@ APP_OBJ_OFFSET  = 48
 APP_EV_OFFSET   = 40
 
 struct  TASKDATA
-        event_mask      dd ?
+        event_mask      dd ? ; mask which stores event types allowed for task
         pid             dd ?
                         dw ?
         state           db ?
@@ -590,6 +590,7 @@ ends
 
 label WDATA.fl_wstyle byte at WDATA.cl_workarea + 3
 
+assert sizeof.WDATA = 32
 
 struct  SYS_VARS
         bpp             dd ?

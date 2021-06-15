@@ -1,6 +1,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;                                                              ;;
-;; Copyright (C) KolibriOS team 2004-2016. All rights reserved. ;;
+;; Copyright (C) KolibriOS team 2004-2021. All rights reserved. ;;
 ;;  Distributed under terms of the GNU General Public License.  ;;
 ;;                                                              ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -484,9 +484,9 @@ pid_to_slot:
         push    ebx
         push    ecx
         mov     ebx, [TASK_COUNT]
-        shl     ebx, 5 ; ebx *= 32 (32 is size of TASKDATA struct)
+        shl     ebx, BSF sizeof.TASKDATA ; multiply by size 
         ; add 2*32 cause:
-        ; 0x80003000 - 0x80003020 isnt a task actually
+        ; [TASK_TABLE; TASK_TABLE + 32) isnt a task actually
         ; skip first process in the task table
         mov     ecx, 2*32
 
@@ -509,7 +509,7 @@ pid_to_slot:
         ret
 
 .pid_found:
-        shr     ecx, 5
+        shr     ecx, BSF sizeof.TASKDATA ; divide by size
         mov     eax, ecx ;convert offset to index of slot
         pop     ecx
         pop     ebx

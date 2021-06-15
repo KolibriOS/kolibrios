@@ -1,6 +1,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-;; Copyright (C) KolibriOS team 2004-2020. All rights reserved.
+;; Copyright (C) KolibriOS team 2004-2021. All rights reserved.
 ;; PROGRAMMING:
 ;; Ivan Poddubny
 ;; Marat Zakiyanov (Mario79)
@@ -30,6 +30,12 @@
 ;; turbanoff
 ;; Asper
 ;; art_zh
+;; dunkaist
+;; Coldy
+;; rgimad
+;; Boppan
+;; Doczom
+;; and others
 ;;
 ;; Data in this file was originally part of MenuetOS project which is
 ;; distributed under the terms of GNU GPL. It is modified and redistributed as
@@ -4045,9 +4051,6 @@ align 4
 set_app_param:
         mov     edi, [TASK_BASE]
         mov     eax, ebx
-        btr     eax, 3                           ; move MOUSE_FILTRATION
-        mov     ebx, [current_slot]              ; bit into event_filter
-        setc    byte [ebx+APPDATA.event_filter]
         xchg    eax, [edi + TASKDATA.event_mask] ; set new event mask
         mov     [esp+32], eax                    ; return old mask value
         ret

@@ -1,6 +1,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;                                                              ;;
-;; Copyright (C) KolibriOS team 2004-2020. All rights reserved. ;;
+;; Copyright (C) KolibriOS team 2004-2021. All rights reserved. ;;
 ;;  Distributed under terms of the GNU General Public License.  ;;
 ;;                                                              ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -554,7 +554,7 @@ destroy_thread:
 
         pusha   ; save window coordinates for window restoring
         cld
-        shl     esi, 5
+        shl     esi, BSF sizeof.WDATA
         add     esi, window_data
         mov     eax, [esi+WDATA.box.left]
         mov     [draw_limits.left], eax
@@ -566,16 +566,12 @@ destroy_thread:
         mov     [draw_limits.bottom], eax
 
         xor     eax, eax
-        mov     [esi+WDATA.box.left], eax
-        mov     [esi+WDATA.box.width], eax
-        mov     [esi+WDATA.box.top], eax
-        mov     [esi+WDATA.box.height], eax
-        mov     [esi+WDATA.cl_workarea], eax
-        mov     [esi+WDATA.cl_titlebar], eax
-        mov     [esi+WDATA.cl_frames], eax
-        mov     dword [esi+WDATA.z_modif], eax; clear all flags: z_modif, wstate, redraw, wdrawn
+        mov     edi, esi
+        mov     ecx, sizeof.WDATA/4
+        rep stosd
+
         lea     edi, [esi-window_data+draw_data]
-        mov     ecx, 32/4
+        mov     ecx, sizeof.WDATA/4
         rep stosd
         popa
 
