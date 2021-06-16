@@ -1919,7 +1919,7 @@ socket_notify:
 ; Socket and thread exists and socket is of non blocking type.
 ; We'll try to flag an event to the thread.
         shl     ecx, 8
-        or      [SLOT_BASE + ecx + APPDATA.event_mask], EVENT_NETWORK
+        or      [SLOT_BASE + ecx + APPDATA.occurred_events], EVENT_NETWORK
 
         DEBUGF  DEBUG_NETWORK_VERBOSE, "SOCKET_notify: poking thread %u!\n", ebx
         pop     esi ecx ebx

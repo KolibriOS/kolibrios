@@ -224,7 +224,7 @@ CURRENT_TASK        = OS_BASE + 0x0003000
 ;TASK_COUNT          = OS_BASE + 0x0003004
 TASK_BASE           = OS_BASE + 0x0003010
 TASK_DATA           = OS_BASE + 0x0003020
-TASK_EVENT          = OS_BASE + 0x0003020
+;TASK_EVENT          = OS_BASE + 0x0003020
 
 CDDataBuf           = OS_BASE + 0x0005000
 
@@ -516,7 +516,7 @@ struct  APPDATA
         saved_box       BOX             ;+144
         ipc_start       dd ?            ;+160
         ipc_size        dd ?            ;+164
-        event_mask      dd ?            ;+168 ; mask which accumulates occurred events
+        occurred_events dd ?            ;+168 ; mask which accumulates occurred events
         debugger_slot   dd ?            ;+172
         terminate_protection dd ?       ;+176
         keyboard_mode   db ?            ;+180

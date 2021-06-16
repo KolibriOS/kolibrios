@@ -942,7 +942,7 @@ proc set_app_params stdcall,slot:dword, params:dword, flags:dword
         rep movsd
 
         cmp     [thread_count], ebx
-        adc     dword [thread_count], 0   ; update number of processes
+        adc     [thread_count], 0   ; update number of processes
         shl     ebx, 8
         lea     edx, [ebx+SLOT_BASE+APP_EV_OFFSET]
         mov     [SLOT_BASE+APPDATA.fd_ev+ebx], edx

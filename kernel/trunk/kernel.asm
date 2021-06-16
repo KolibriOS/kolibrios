@@ -626,7 +626,7 @@ high_code:
         call    scheduler_add_thread
 
         mov     dword [CURRENT_TASK], 2
-        mov     dword [thread_count], 2
+        mov     [thread_count], 2
         mov     dword [current_slot], SLOT_BASE + sizeof.APPDATA*2
         mov     dword [TASK_BASE], CURRENT_TASK + sizeof.TASKDATA*2
 
@@ -3606,7 +3606,7 @@ align 4
 ;--------------------------------------
 align 4
 .set:
-        or      [edi+SLOT_BASE+APPDATA.event_mask], 100000b  ; set event 6
+        or      [edi+SLOT_BASE+APPDATA.occurred_events], 100000b  ; set event 6; TODO use constant
 ;--------------------------------------
 align 4
 .skip:
@@ -3674,7 +3674,7 @@ set_bgr_event:
         mov     [edi+SLOT_BASE+APPDATA.draw_bgr_x], eax
         mov     [edi+SLOT_BASE+APPDATA.draw_bgr_y], edx
 .common:
-        or      [edi+SLOT_BASE+APPDATA.event_mask], 10000b  ; set event 5
+        or      [edi+SLOT_BASE+APPDATA.occurred_events], 10000b  ; set event 5; TODO use constant
         loop    set_bgr_event
         pop     edi ecx
 ;--------- set event 5 stop -----------

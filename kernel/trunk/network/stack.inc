@@ -436,8 +436,8 @@ net_send_event:
         mov     edi, SLOT_BASE
         mov     ecx, [thread_count]
   .loop:
-        add     edi, 256
-        or      [edi + APPDATA.event_mask], EVENT_NETWORK2
+        add     edi, sizeof.APPDATA
+        or      [edi + APPDATA.occurred_events], EVENT_NETWORK2
         loop    .loop
         pop     ecx edi
 

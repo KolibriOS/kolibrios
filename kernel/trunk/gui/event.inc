@@ -570,7 +570,7 @@ align 4
 ;--------------------------------------
 align 4
 .FlagAutoReset: ; retvals: BgrRedraw=5, IPC=7, Stack=8, Debug=9
-        btr     [ebx+APPDATA.event_mask], eax
+        btr     [ebx+APPDATA.occurred_events], eax
         jnc     .loop
 ;--------------------------------------
 align 4

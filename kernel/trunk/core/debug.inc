@@ -450,6 +450,6 @@ debugger_notify:
 ; new debug event
         mov     eax, ebp
         shl     eax, 8
-        or      byte [SLOT_BASE+eax+APPDATA.event_mask+1], 1      ; set flag 100h
+        or      byte [SLOT_BASE+eax+APPDATA.occurred_events+1], 1      ; set flag 100h
 .ret:
         ret
