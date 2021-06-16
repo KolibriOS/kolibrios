@@ -1,6 +1,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;                                                              ;;
-;; Copyright (C) KolibriOS team 2004-2015. All rights reserved. ;;
+;; Copyright (C) KolibriOS team 2004-2021. All rights reserved. ;;
 ;; Copyright (C) MenuetOS 2000-2004 Ville Mikael Turjanmaa      ;;
 ;; Distributed under terms of the GNU General Public License    ;;
 ;;                                                              ;;
@@ -57,7 +57,7 @@ syscall_draw_window: ;///// system function 0 /////////////////////////////////
 ;--------------------------------------
 @@:
 ; type IV & V - skinned window (resizable & not)
-        mov     eax, [TASK_COUNT]
+        mov     eax, [thread_count]
         movzx   eax, word[WIN_POS + eax * 2]
         cmp     eax, [CURRENT_TASK]
         setz    al
@@ -425,7 +425,7 @@ calculatescreen: ;/////////////////////////////////////////////////////////////
 
         push    ebp
 
-        mov     ebp, [TASK_COUNT]
+        mov     ebp, [thread_count]
         cmp     ebp, 1
         jbe     .exit
 
@@ -438,7 +438,7 @@ calculatescreen: ;/////////////////////////////////////////////////////////////
 align 4
 .layout:
         mov     esi, 1          ; = num in window stack
-        mov     ebp, [TASK_COUNT]
+        mov     ebp, [thread_count]
 ;--------------------------------------
 align 4
 .next_window:
@@ -510,7 +510,7 @@ align 4
         cmp     dword[esp+10h], ZPOS_ALWAYS_TOP
         jle     .layout
 ;---------------------------------------------
-        mov     esi, [TASK_COUNT]
+        mov     esi, [thread_count]
         movzx   edi, word[WIN_POS + esi * 2]
         shl     edi, 5
         add     edi, window_data
@@ -532,7 +532,7 @@ repos_windows: ;///////////////////////////////////////////////////////////////
 ;------------------------------------------------------------------------------
 ;? <description>
 ;------------------------------------------------------------------------------
-        mov     ecx, [TASK_COUNT]
+        mov     ecx, [thread_count]
         mov     edi, window_data + sizeof.WDATA * 2
         call    force_redraw_background
         dec     ecx
@@ -913,7 +913,7 @@ waredraw: ;////////////////////////////////////////////////////////////////////
 ;? Activate window, redrawing if necessary
 ;------------------------------------------------------------------------------
         push    -1
-        mov     eax, [TASK_COUNT]
+        mov     eax, [thread_count]
         lea     eax, [WIN_POS + eax * 2]
         cmp     eax, esi
         pop     eax
@@ -930,7 +930,7 @@ waredraw: ;////////////////////////////////////////////////////////////////////
         call    window._.window_activate
 
         pushad
-        mov     edi, [TASK_COUNT]
+        mov     edi, [thread_count]
         movzx   esi, word[WIN_POS + edi * 2]
         shl     esi, 5
         add     esi, window_data
@@ -943,7 +943,7 @@ waredraw: ;////////////////////////////////////////////////////////////////////
         add     ecx, eax
         add     edx, ebx
 
-        mov     edi, [TASK_COUNT]
+        mov     edi, [thread_count]
         movzx   esi, word[WIN_POS + edi * 2]
         call    window._.set_screen
 
@@ -978,7 +978,7 @@ minimize_all_window:
         cli
         xor     edx, edx
         mov     eax, 2  ; we do not minimize the kernel thread N1
-        mov     ebx, [TASK_COUNT]
+        mov     ebx, [thread_count]
 ;--------------------------------------
 align 4
 .loop:
@@ -1105,7 +1105,7 @@ restore_minimized_window: ;////////////////////////////////////////////////////
         mov     [edi + WDATA.fl_redraw], 1
         and     [edi + WDATA.fl_wstate], not WSTATE_MINIMIZED
         mov     ebp, window._.set_screen
-        cmp     eax, [TASK_COUNT]
+        cmp     eax, [thread_count]
         jz      @f
         mov     ebp, calculatescreen
 ;--------------------------------------
@@ -1143,7 +1143,7 @@ window_check_events: ;/////////////////////////////////////////////////////////
         je      .exit
 
         ; okay, minimize or restore top-most window and exit
-        mov     eax, [TASK_COUNT]
+        mov     eax, [thread_count]
         mov     bl, 0
         xchg    [window_minimize], bl
         dec     bl
@@ -1962,9 +1962,9 @@ window._.window_activate: ;////////////////////////////////////////////////////
         push    eax ebx
 
         ; if type of current active window is 3 or 4, it must be redrawn
-        mov     ebx, [TASK_COUNT]
+        mov     ebx, [thread_count]
 
-;       DEBUGF  1, "K : TASK_COUNT (0x%x)\n", ebx
+;       DEBUGF  1, "K : thread_count (0x%x)\n", ebx
 
         movzx   ebx, word[WIN_POS + ebx * 2]
         shl     ebx, 5
@@ -1992,7 +1992,7 @@ align 4
 ;--------------------------------------
 align 4
 .next_stack_window:
-        cmp     eax, [TASK_COUNT]
+        cmp     eax, [thread_count]
         jae     .move_self_up
         inc     eax
 
@@ -2010,8 +2010,8 @@ align 4
 align 4
 .move_self_up:
         movzx   ebx, word[esi]
-        ; number of processes
-        mov     ax, [TASK_COUNT]
+        ; number of thread
+        mov     ax, word [thread_count]
         ; this is the last (and the upper)
         mov     [WIN_STACK + ebx * 2], ax
 
@@ -2020,7 +2020,7 @@ align 4
 ;--------------------------------------
 align 4
 .next_window_pos:
-        cmp     eax, [TASK_COUNT]
+        cmp     eax, [thread_count]
         jae     .reset_vars
         inc     eax
         movzx   ebx, word[WIN_STACK + eax * 2]
@@ -2056,7 +2056,7 @@ align 4
 ;--------------------------------------
 align 4
 .next_stack_window:
-        cmp     eax, [TASK_COUNT]
+        cmp     eax, [thread_count]
         jae     .move_self_down
         inc     eax
         cmp     [WIN_STACK + eax * 2], bx
@@ -2074,7 +2074,7 @@ align 4
 ;--------------------------------------
 align 4
 .next_window_pos:
-        cmp     eax, [TASK_COUNT]
+        cmp     eax, [thread_count]
         jae     .reset_vars
         inc     eax
         movzx   ebx, word[WIN_STACK + eax * 2]
@@ -2118,7 +2118,7 @@ align 4
 .next_window:
         add     esi, 2
 
-        mov     eax, [TASK_COUNT]
+        mov     eax, [thread_count]
         lea     eax, word[WIN_POS + eax * 2] ; number of the upper window
 
         cmp     esi, eax
@@ -2172,7 +2172,7 @@ window._.draw_window_caption: ;////////////////////////////////////////////////
 ;? <description>
 ;------------------------------------------------------------------------------
         xor     eax, eax
-        mov     edx, [TASK_COUNT]
+        mov     edx, [thread_count]
         movzx   edx, word[WIN_POS + edx * 2]
         cmp     edx, [CURRENT_TASK]
         jne     @f
@@ -2377,7 +2377,7 @@ window._.set_top_wnd: ;////////////////////////////////////////////////////////
         cli
 
         push    ebp
-        mov     ebp, [TASK_COUNT]
+        mov     ebp, [thread_count]
         cmp     ebp, 1
         jbe     .exit
 
@@ -2395,7 +2395,7 @@ window._.set_top_wnd: ;////////////////////////////////////////////////////////
 align 4
 .layout:
         mov     esi, 1        ; = num in window stack
-        mov     ebp, [TASK_COUNT]
+        mov     ebp, [thread_count]
 ;--------------------------------------
 align 4
 .next_window:

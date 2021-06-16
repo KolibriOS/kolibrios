@@ -629,7 +629,7 @@ destroy_thread:
 
   ; activate window
         movzx   eax, word [WIN_STACK + esi*2]
-        cmp     eax, [TASK_COUNT]
+        cmp     eax, [thread_count]
         jne     .dont_activate
         pushad
  .check_next_window:
@@ -719,7 +719,7 @@ destroy_thread:
         mov     eax, 2
         mov     ecx, SLOT_BASE+2*0x100+APPDATA.debugger_slot
 .xd0:
-        cmp     eax, [TASK_COUNT]
+        cmp     eax, [thread_count]
         ja      .xd1
         cmp     dword [ecx], esi
         jnz     @f

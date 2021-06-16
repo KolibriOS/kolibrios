@@ -1,6 +1,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;                                                              ;;
-;; Copyright (C) KolibriOS team 2004-2015. All rights reserved. ;;
+;; Copyright (C) KolibriOS team 2004-2021. All rights reserved. ;;
 ;; Copyright (C) MenuetOS 2000-2004 Ville Mikael Turjanmaa      ;;
 ;; Distributed under terms of the GNU General Public License    ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -588,7 +588,7 @@ align 4
 .Buttons:                      ; eax=2, retval Buttons=3
         cmp     byte[BTN_COUNT], 0
         je      .loop          ; empty ???
-        cmp     edx, [TASK_COUNT]
+        cmp     edx, [thread_count]
         jne     .loop          ; not Top ???
         mov     edx, [BTN_BUFF]
         shr     edx, 8
@@ -601,7 +601,7 @@ align 4
 ;--------------------------------------
 align 4
 .Keys:    ; eax==1
-        cmp     edx, [TASK_COUNT]
+        cmp     edx, [thread_count]
         jne     @f             ; not Top ???
         cmp     [KEY_COUNT], al; al==1
         jae     .result        ; not empty ???

@@ -1,6 +1,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;                                                                 ;;
-;; Copyright (C) KolibriOS team 2004-2019. All rights reserved.    ;;
+;; Copyright (C) KolibriOS team 2004-2021. All rights reserved.    ;;
 ;; Distributed under terms of the GNU General Public License       ;;
 ;;                                                                 ;;
 ;;  STACK.INC                                                      ;;
@@ -434,7 +434,7 @@ net_send_event:
 ; Send event to all applications
         push    edi ecx
         mov     edi, SLOT_BASE
-        mov     ecx, [TASK_COUNT]
+        mov     ecx, [thread_count]
   .loop:
         add     edi, 256
         or      [edi + APPDATA.event_mask], EVENT_NETWORK2

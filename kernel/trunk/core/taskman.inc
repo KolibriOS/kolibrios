@@ -281,7 +281,7 @@ alloc_thread_slot:
 ;  eax=[new_thread_slot]<>0 - ok
 ;      0 - failed.
 ;This function find least empty slot.
-;It doesn't increase [TASK_COUNT]!
+;It doesn't increase [thread_count]!
 
 
         mov     edx, thr_slot_map
@@ -483,7 +483,7 @@ pid_to_slot:
 ;Search process by PID.
         push    ebx
         push    ecx
-        mov     ebx, [TASK_COUNT]
+        mov     ebx, [thread_count]
         shl     ebx, BSF sizeof.TASKDATA ; multiply by size 
         ; add 2*32 cause:
         ; [TASK_TABLE; TASK_TABLE + 32) isnt a task actually
@@ -941,8 +941,8 @@ proc set_app_params stdcall,slot:dword, params:dword, flags:dword
         shr     ecx, 2
         rep movsd
 
-        cmp     [TASK_COUNT], ebx
-        adc     dword [TASK_COUNT], 0   ; update number of processes
+        cmp     [thread_count], ebx
+        adc     dword [thread_count], 0   ; update number of processes
         shl     ebx, 8
         lea     edx, [ebx+SLOT_BASE+APP_EV_OFFSET]
         mov     [SLOT_BASE+APPDATA.fd_ev+ebx], edx

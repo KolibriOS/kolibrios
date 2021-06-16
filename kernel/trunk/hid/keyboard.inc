@@ -1,6 +1,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;                                                              ;;
-;; Copyright (C) KolibriOS team 2004-2015. All rights reserved. ;;
+;; Copyright (C) KolibriOS team 2004-2021. All rights reserved. ;;
 ;; Copyright (C) MenuetOS 2000-2004 Ville Mikael Turjanmaa      ;;
 ;; Distributed under terms of the GNU General Public License    ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -103,7 +103,7 @@ hotkey_do_test:
 ;---------------------------------------------------------------------
 align 4
 set_keyboard_data:
-        movzx   eax, word[TASK_COUNT]; top window process
+        movzx   eax, word[thread_count]; top window process
         movzx   eax, word[WIN_POS+eax*2]
         shl     eax, 8
         mov     al, [SLOT_BASE+eax+APPDATA.keyboard_mode]
@@ -194,7 +194,7 @@ delete_keyboard:
 ;---------------------------------------------------------------------
 align 4
 irq1:
-        movzx   eax, word[TASK_COUNT]; top window process
+        movzx   eax, word[thread_count]; top window process
         movzx   eax, word[WIN_POS+eax*2]
         shl     eax, 8
         mov     al, [SLOT_BASE+eax+APPDATA.keyboard_mode]

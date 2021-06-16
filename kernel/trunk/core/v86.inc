@@ -1,6 +1,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;                                                              ;;
-;; Copyright (C) KolibriOS team 2007-2015. All rights reserved. ;;
+;; Copyright (C) KolibriOS team 2007-2021. All rights reserved. ;;
 ;; Distributed under terms of the GNU General Public License    ;;
 ;;                                                              ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -840,7 +840,7 @@ v86_irq2:
         jmp     v86_exc_c.simulate_int
 .notcurrent:
         mov     ebx, SLOT_BASE + 0x100
-        mov     ecx, [TASK_COUNT]
+        mov     ecx, [thread_count]
 .scan:
         cmp     [ebx+APPDATA.process], eax
         jnz     .cont

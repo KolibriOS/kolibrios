@@ -626,7 +626,7 @@ high_code:
         call    scheduler_add_thread
 
         mov     dword [CURRENT_TASK], 2
-        mov     dword [TASK_COUNT], 2
+        mov     dword [thread_count], 2
         mov     dword [current_slot], SLOT_BASE + sizeof.APPDATA*2
         mov     dword [TASK_BASE], CURRENT_TASK + sizeof.TASKDATA*2
 
@@ -1966,7 +1966,7 @@ dd  .loadCursorUni
         ret
 
 .msz:
-        mov     edi, [TASK_COUNT]
+        mov     edi, [thread_count]
         movzx   edi, word [WIN_POS + edi*2]
         cmp     edi, [CURRENT_TASK]
         jne     @f
@@ -2189,7 +2189,7 @@ sysfn_shutdown:          ; 18.9 = system shutdown
         jg      exit_for_anyone
         mov     [BOOT.shutdown_type], cl
 
-        mov     eax, [TASK_COUNT]
+        mov     eax, [thread_count]
         mov     [SYS_SHUTDOWN], al
         mov     [shutdown_processes], eax
         call    wakeup_osloop
@@ -2212,10 +2212,10 @@ sysfn_terminate:        ; 18.2 = TERMINATE
         push    ecx
         cmp     ecx, 2
         jb      noprocessterminate
-        mov     edx, [TASK_COUNT]
+        mov     edx, [thread_count]
         cmp     ecx, edx
         ja      noprocessterminate
-        mov     eax, [TASK_COUNT]
+        mov     eax, [thread_count]
         shl     ecx, BSF sizeof.TASKDATA
         mov     edx, [ecx+CURRENT_TASK+TASKDATA.pid]
         add     ecx, CURRENT_TASK+TASKDATA.state
@@ -2290,7 +2290,7 @@ sysfn_terminate2:
 sysfn_deactivate:         ; 18.1 = DEACTIVATE WINDOW
         cmp     ecx, 2
         jb      .nowindowdeactivate
-        cmp     ecx, [TASK_COUNT]
+        cmp     ecx, [thread_count]
         ja      .nowindowdeactivate
 
         movzx   esi, word [WIN_STACK + ecx*2]
@@ -2311,7 +2311,7 @@ sysfn_deactivate:         ; 18.1 = DEACTIVATE WINDOW
 sysfn_activate:         ; 18.3 = ACTIVATE WINDOW
         cmp     ecx, 2
         jb      .nowindowactivate
-        cmp     ecx, [TASK_COUNT]
+        cmp     ecx, [thread_count]
         ja      .nowindowactivate
 ;-------------------------------------
 @@:
@@ -2329,7 +2329,7 @@ sysfn_activate:         ; 18.3 = ACTIVATE WINDOW
         call    wakeup_osloop
 
         movzx   esi, word [WIN_STACK + ecx*2]
-        cmp     esi, [TASK_COUNT]
+        cmp     esi, [thread_count]
         je      .nowindowactivate; already active
 
         mov     edi, ecx
@@ -2355,7 +2355,7 @@ sysfn_zmodif:
         jne     @f
         mov     edx, [CURRENT_TASK]
      @@:
-        cmp     edx, [TASK_COUNT]
+        cmp     edx, [thread_count]
         ja      .fail
         cmp     edx, 1
         je      .fail
@@ -2428,7 +2428,7 @@ get_cpu_freq:
 ;------------------------------------------------------------------------------
 align 4
 sysfn_getactive:        ; 18.7 = get active window
-        mov     eax, [TASK_COUNT]
+        mov     eax, [thread_count]
         movzx   eax, word [WIN_POS + eax*2]
         mov     [esp+32], eax
         ret
@@ -3105,7 +3105,7 @@ sys_getkey:
         ; test main buffer
         mov     ebx, [CURRENT_TASK]                          ; TOP OF WINDOW STACK
         movzx   ecx, word [WIN_STACK + ebx * 2]
-        mov     edx, [TASK_COUNT]
+        mov     edx, [thread_count]
         cmp     ecx, edx
         jne     .finish
         cmp     [KEY_COUNT], byte 0
@@ -3161,7 +3161,7 @@ sys_getbutton:
         mov     ebx, [CURRENT_TASK]                         ; TOP OF WINDOW STACK
         mov     [esp + 32], dword 1
         movzx   ecx, word [WIN_STACK + ebx * 2]
-        mov     edx, [TASK_COUNT] ; less than 256 processes
+        mov     edx, [thread_count] ; less than 256 processes
         cmp     ecx, edx
         jne     .exit
         movzx   eax, byte [BTN_COUNT]
@@ -3278,7 +3278,7 @@ sys_cpuusage:
 .nofillbuf:
     ; return number of processes
 
-        mov     eax, [TASK_COUNT]
+        mov     eax, [thread_count]
         mov     [esp+32], eax
         ret
 
@@ -3567,7 +3567,7 @@ nocpustart:
         xor     edi, edi
         mov     ebx, CURRENT_TASK
 
-        mov     ecx, [TASK_COUNT]
+        mov     ecx, [thread_count]
         movzx   eax, word [WIN_POS + ecx*2]     ; active window
         shl     eax, 8
         push    eax
@@ -3641,7 +3641,7 @@ backgr:
 ;--------- set event 5 start ----------
         push    ecx edi
         xor     edi, edi
-        mov     ecx, [TASK_COUNT]
+        mov     ecx, [thread_count]
 ;--------------------------------------
 align 4
 set_bgr_event:
@@ -3733,7 +3733,7 @@ no_mark_system_shutdown:
 ;--------------------------------------
 align 4
 noshutdown:
-        mov     eax, [TASK_COUNT]           ; termination
+        mov     eax, [thread_count]           ; termination
         mov     ebx, TASK_DATA+TASKDATA.state
         mov     esi, 1
 ;--------------------------------------
@@ -3972,7 +3972,7 @@ ricino:
 not_this_task:
         pop     ecx
 
-        cmp     ecx, [TASK_COUNT]
+        cmp     ecx, [thread_count]
         jle     newdw2
 
         pop     eax
