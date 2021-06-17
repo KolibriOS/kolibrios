@@ -3,9 +3,9 @@
 
 // 70.5 - get volume info and label
 
-#define ABOUT_TITLE "EOLITE 5 Beta4"
-#define TITLE_EOLITE "Eolite File Manager 5 Beta4"
-#define TITLE_KFM "Kolibri File Manager 2 Beta4";
+#define ABOUT_TITLE "EOLITE 5 Beta5"
+#define TITLE_EOLITE "Eolite File Manager 5 Beta5"
+#define TITLE_KFM "Kolibri File Manager 2 Beta5";
 
 #ifndef AUTOBUILD
 #include "lang.h--"
@@ -59,7 +59,6 @@ enum {
 
 //OpenDir options
 enum {
-	ONLY_SHOW, 
 	WITH_REDRAW, 
 	ONLY_OPEN
 };
@@ -94,7 +93,7 @@ bool active_settings = false;
 bool _not_draw = false;
 bool dir_at_fat16 = NULL;
 
-bool dev_popin_active_on_panel=0;
+bool disk_popin_active_on_panel=0;
 
 dword about_thread_id;
 dword settings_window;
@@ -249,7 +248,7 @@ void main()
 	loop() switch(@WaitEventTimeout(80))
 	{
 		case evMouse:
-			if (del_active) || (dev_popin_active_on_panel) || (Form.status_window>2) break;
+			if (del_active) || (disk_popin_active_on_panel) || (Form.status_window>2) break;
 			if (new_element_active) 
 			{
 				edit_box_mouse stdcall(#new_file_ed);
@@ -323,7 +322,8 @@ void main()
 			}
 
 			//Scrooll
-			if (mouse.x>=files.x+files.w) && (mouse.x<=files.x+files.w+18) && (mouse.y>files.y) && (mouse.y<files.y+files.h-18) && (mouse.lkm) && (!scroll_used) {scroll_used=true; Scroll();}
+			if (mouse.x>=files.x+files.w) && (mouse.x<=files.x+files.w+18) && (mouse.y>files.y) 
+				&& (mouse.y<files.y+files.h-18) && (mouse.lkm) && (!scroll_used) {scroll_used=true; Scroll();}
 			if (scroll_used) && (!mouse.key&MOUSE_LEFT) { scroll_used=false; Scroll(); }
 			
 			if (scroll_used)
@@ -339,17 +339,10 @@ void main()
 			}
 
 			if (efm) && (mouse.y > files.y) && (mouse.down) {
-				if (mouse.x<Form.cwidth/2)
-				{
-					if (active_panel!=1) {
-						active_panel = 1;
-						ChangeActivePanel();
-					}
+				if (mouse.x<Form.cwidth/2) {
+					if (active_panel!=1) ChangeActivePanel();
 				} else {
-					if (active_panel!=2) {
-						active_panel = 2;
-						ChangeActivePanel();
-					}
+					if (active_panel!=2) ChangeActivePanel();
 				}
 			}
 			break;  
@@ -357,11 +350,17 @@ void main()
 		case evButton:
 			id = GetButtonID();
 
-			if (new_element_active) || (del_active) || (dev_popin_active_on_panel) {
+			if (id==CLOSE_BTN) {
+				KillProcess(about_thread_id);
+				SaveIniSettings();
+				ExitProcess();
+			}
+
+			if (new_element_active) || (del_active) || (disk_popin_active_on_panel) {
 				if (POPUP_BTN1==id) && (del_active) EventDelete();
 				if (POPUP_BTN1==id) && (new_element_active) NewElement();
 				if (POPUP_BTN2==id) EventClosePopinForm();
-				if (dev_popin_active_on_panel) {
+				if (disk_popin_active_on_panel) {
 					if (id>=100) && (id<=120) EventDriveClick(id);
 					else EventClosePopinForm();
 				}
@@ -370,38 +369,24 @@ void main()
 
 			switch(id) 
 			{
-				case CLOSE_BTN:
-						KillProcess(about_thread_id);
-						SaveIniSettings();
-						ExitProcess();
 				case PATH_BTN:
 						notify(COPY_PATH_STR);
 						Clipboard__CopyText(#path);
 						break;
 				case KFM_DEV_DROPDOWN_1:
 				case KFM_DEV_DROPDOWN_1+1:
-						dev_popin_active_on_panel = 1;
-						DefineHiddenButton(0,0,5000,3000,9999+BT_NOFRAME);
-						SystemDiscs.DrawOptions(Form.cwidth/2-DDW, 8+DEV_H_HOR+3);
+						EventOpenDiskPopin(1);
 						break;
 				case KFM_DEV_DROPDOWN_2:
 				case KFM_DEV_DROPDOWN_2+1:
-						dev_popin_active_on_panel = 2;
-						DefineHiddenButton(0,0,5000,3000,9999+BT_NOFRAME);
-						SystemDiscs.DrawOptions(Form.cwidth-DDW-2, 8+DEV_H_HOR+3);
+						EventOpenDiskPopin(2);
 						break;
 				case BACK_BTN...PASTE_BTN:
-						if (active_panel==2) {
-							active_panel = 1;
-							ChangeActivePanel();
-						}
+						if (active_panel==2) ChangeActivePanel();
 						EventToolbarButtonClick(id);
 						break;
 				case BACK_BTN+100...PASTE_BTN+100:
-						if (active_panel==1) {
-							active_panel = 2;
-							ChangeActivePanel();
-						}
+						if (active_panel==1) ChangeActivePanel();
 						EventToolbarButtonClick(id-100);
 						break;
 				case 31...33:
@@ -431,7 +416,7 @@ void main()
 
 			if (Form.status_window>2) break;
 
-			if (new_element_active) || (del_active) || (dev_popin_active_on_panel)
+			if (new_element_active) || (del_active) || (disk_popin_active_on_panel)
 			{
 				if (key_scancode == SCAN_CODE_ESC) EventClosePopinForm();
 
@@ -446,6 +431,11 @@ void main()
 				break;
 			}
 
+			if (key_modifier&KEY_LALT) || (key_modifier&KEY_RALT) {
+				if (key_scancode == SCAN_CODE_F1) EventOpenDiskPopin(1);
+				if (key_scancode == SCAN_CODE_F2) EventOpenDiskPopin(2);
+				break;
+			}
 			if (key_modifier&KEY_LSHIFT) || (key_modifier&KEY_RSHIFT) {
 
 				if (key_scancode == SCAN_CODE_ENTER) {
@@ -501,9 +491,6 @@ void main()
 					case SCAN_CODE_KEY_N:
 							EventOpenNewEolite();
 							break; 
-					case SCAN_CODE_KEY_M:
-							Open_Dir(#inactive_path,WITH_REDRAW);
-							break; 
 					case SCAN_CODE_KEY_R:
 							EventRefresh();
 							break;
@@ -531,9 +518,7 @@ void main()
 							break; 
 					case SCAN_CODE_TAB:
 							if (!efm) break;
-							if (active_panel==1) active_panel=2; else active_panel=1;
 							ChangeActivePanel();
-							DrawFilePanels();
 							break;
 					case SCAN_CODE_MENU:
 							mouse.x = files.x+15;
@@ -542,6 +527,11 @@ void main()
 							break;
 					case SCAN_CODE_DEL:
 							Del_Form();
+							break;
+					case SCAN_CODE_SPACE:
+							EventChooseFile(files.cur_y);
+							DrawStatusBar();
+							Line_ReDraw(col.selec, files.cur_y);
 							break;
 					case SCAN_CODE_INS:
 							EventChooseFile(files.cur_y);
@@ -567,6 +557,8 @@ void main()
 			break;
 		default:
 			if (Form.status_window<=2) EventRefreshDisksAndFolders();
+			//sprintf(#param, "/tmp0/1/%i", random(99999)); //for testing purpose
+			//CreateFile(0, 0, #param);
 	}
 	
 	if(cmd_free)
@@ -583,7 +575,11 @@ void draw_window()
 	dword i=0;
 	incn x;
 	dword title;
-	if (show_status_bar.checked) status_bar_h = STATUS_BAR_H; else status_bar_h = 0;
+	if (show_status_bar.checked) {
+		status_bar_h = STATUS_BAR_H; 
+	} else {
+		status_bar_h = 0;
+	}
 	if (efm) title = TITLE_KFM; else title = TITLE_EOLITE;
 	DefineAndDrawWindow(Form.left+rand_n,Form.top+rand_n,Form.width,Form.height,0x73,NULL,title,0);
 	GetProcessInfo(#Form, SelfInfo);
@@ -633,10 +629,10 @@ void draw_window()
 	DrawStatusBar();
 	if (!selected_count) Open_Dir(#path,ONLY_OPEN); //if there are no selected files -> refresh folder [L001] 
 	DrawFilePanels();
-	dev_popin_active_on_panel = 0;
+	disk_popin_active_on_panel = 0;
 }
 
-void DrawList() 
+void DrawButtonsAroundList() 
 {
 	word sorting_arrow_x;
 	dword sorting_arrow_t = "\x19";
@@ -686,49 +682,43 @@ void DrawFilePanels()
 	{
 		DrawDeviceAndActionsLeftPanel();
 		files.SetSizes(192, 57, Form.cwidth - 210, Form.cheight - 59 - status_bar_h, files.item_h);
-		DrawList();
-		Open_Dir(#path,ONLY_SHOW);
+		DrawButtonsAroundList();
+		List_ReDraw();
 	}
 	else
 	{
-		//SystemDiscs.Get();
 		llist_copy(#files, #files_inactive);
 		strcpy(#path, #inactive_path);
-		col.selec = col.selec_inactive;
-		SystemDiscs.Draw();
 		files_y = files.y;
 		h2 = Form.cheight-files_y-2 - status_bar_h;
+		col.selec = col.selec_inactive;  //this is a bad code: need to use some var to set inactive panel for DrawButtonsAroundList();
 
 		if (active_panel==1)
 		{
-			llist_copy(#files, #files_inactive);
-			strcpy(#path, #inactive_path);
-			col.selec = col.selec_inactive; //this is a bad code: need to use some var to set inactive panel for DrawList();
 			files.SetSizes(Form.cwidth/2, files_y, w2-17, h2, files.item_h);
-			DrawList();
+			DrawButtonsAroundList();
 			Open_Dir(#path,WITH_REDRAW);
 			llist_copy(#files, #files_active);
 			strcpy(#path, #active_path);
 			col.selec = col.selec_active;
 			files.SetSizes(2, files_y, Form.cwidth/2-2-17, h2, files.item_h);
-			DrawList();
+			DrawButtonsAroundList();
 			Open_Dir(#path,WITH_REDRAW);
 		}
 		if (active_panel==2)
 		{
 			files.SetSizes(2, files_y, Form.cwidth/2-2-17, h2, files.item_h);
-			DrawList();
+			DrawButtonsAroundList();
 			Open_Dir(#path,WITH_REDRAW);
 			llist_copy(#files, #files_active);
 			strcpy(#path, #active_path);
 			col.selec = col.selec_active;
 			files.SetSizes(Form.cwidth/2, files_y, w2 -17, h2, files.item_h);
-			DrawList();
+			DrawButtonsAroundList();
 			Open_Dir(#path,WITH_REDRAW);
 		}
 	}
 }
-
 
 void List_ReDraw()
 {
@@ -738,6 +728,7 @@ void List_ReDraw()
 	dword separator_color;
 
 	files.CheckDoesValuesOkey(); //prevent some shit
+	if (files.count < files.visible) files.visible = files.count;
 
 	if (list_full_redraw) || (old_first != files.first)
 	{
@@ -889,20 +880,19 @@ void Line_ReDraw(dword bgcol, filenum){
 
 void Open_Dir(dword dir_path, redraw){
 	int errornum;
-	if (redraw!=ONLY_SHOW)
+
+	selected_count = 0;
+	if (buf) free(buf);
+	errornum = GetDir(#buf, #files.count, dir_path, DIRS_NOROOT);
+	if (errornum)
 	{
-		selected_count = 0;
-		if (buf) free(buf);
-		errornum = GetDir(#buf, #files.count, dir_path, DIRS_NOROOT);
-		if (errornum)
-		{
-			history.add(#path);
-			EventHistoryGoBack();
-			Write_Error(errornum);
-			return;
-		}
-		if (files.count>0) && (files.cur_y-files.first==-1) files.cur_y=0;
+		history.add(#path);
+		EventHistoryGoBack();
+		Write_Error(errornum);
+		return;
 	}
+	if (files.count>0) && (files.cur_y-files.first==-1) files.cur_y=0;
+
 	if (files.count!=-1)
 	{
 		if(!_not_draw) DrawPathBar();
@@ -912,7 +902,7 @@ void Open_Dir(dword dir_path, redraw){
 		if (files.count < files.visible) files.visible = files.count;
 		if (!strncmp(dir_path, "/rd/1/",5)) || (!strncmp(dir_path, "/sys/",4)) 
 			dir_at_fat16 = true; else dir_at_fat16 = false; 
-		if (redraw!=ONLY_SHOW) Sorting();
+		Sorting();
 		list_full_redraw = true;
 		if (redraw!=ONLY_OPEN)&&(!_not_draw) {DrawStatusBar(); List_ReDraw();}
 		SetCurDir(dir_path);
@@ -1234,6 +1224,7 @@ void EventRefresh()
 
 void ChangeActivePanel()
 {
+	if (active_panel==1) active_panel=2; else active_panel=1;
 	llist_copy(#files_active, #files_inactive);
 	llist_copy(#files_inactive, #files);
 	strcpy(#active_path, #inactive_path);
@@ -1287,13 +1278,10 @@ void EventRefreshDisksAndFolders()
 	{
 		if(GetRealFileCountInFolder(#inactive_path) != files_inactive.count) {
 			ChangeActivePanel();
-			Open_Dir(#path,WITH_REDRAW);
 			ChangeActivePanel();
 		}
-		if(GetRealFileCountInFolder(#path) != files.count) Open_Dir(#path,WITH_REDRAW);
-	} else {
-		if(GetRealFileCountInFolder(#path) != files.count) Open_Dir(#path,WITH_REDRAW);
 	}
+	if(GetRealFileCountInFolder(#path) != files.count) Open_Dir(#path,WITH_REDRAW);
 }
 
 void EventSort(dword id)
@@ -1302,7 +1290,7 @@ void EventSort(dword id)
 	if (sort_type == id) sort_desc ^= 1;
 	else sort_type = id;
 	strcpy(#selected_filename, #file_name);
-	DrawList();
+	DrawButtonsAroundList();
 	Open_Dir(#path,WITH_REDRAW);
 	SelectFileByName(#selected_filename);
 }
@@ -1383,7 +1371,7 @@ void EventClosePopinForm()
 {
 	del_active = 0;
 	new_element_active = 0;
-	dev_popin_active_on_panel = 0;
+	disk_popin_active_on_panel = 0;
 	draw_window();
 }
 
@@ -1442,14 +1430,25 @@ void EventToolbarButtonClick(int _btid)
 
 void EventDriveClick(int __id)
 {
-	if (dev_popin_active_on_panel != active_panel) {
-		if (active_panel == 1) active_panel=2; else active_panel=1;
+	if (disk_popin_active_on_panel != active_panel) {
 		ChangeActivePanel();
 	}
 
 	SystemDiscs.Click(__id-100);
 	if (efm) {
 		draw_window();
+	}
+}
+
+void EventOpenDiskPopin(int panel_n)
+{
+	DefineHiddenButton(0,0,5000,3000,9999+BT_NOFRAME);
+	disk_popin_active_on_panel = panel_n;
+	SystemDiscs.Get();
+	if (disk_popin_active_on_panel==1) {
+		SystemDiscs.DrawOptions(Form.cwidth/2-DDW, 8+DEV_H_HOR+3);
+	} else {
+		SystemDiscs.DrawOptions(Form.cwidth-DDW-2, 8+DEV_H_HOR+3);
 	}
 }
 

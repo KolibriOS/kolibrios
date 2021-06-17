@@ -98,7 +98,7 @@ void _SystemDiscs::Get()
 	bool kolibrios_exists=false;
 	char dev_name[10], sys_discs[10];
 	int i1, j1, dev_num_i, dev_disc_num;
-	dword devbuf;
+	dword devbuf, diskbuf;
 
 	list.drop();
 	devbuf = malloc(10000);
@@ -107,11 +107,10 @@ void _SystemDiscs::Get()
 	for (i1=0; i1<dev_num_i; i1++)
 	{
 		sprintf(#dev_name,"/%s",i1*304+ devbuf+72);
-		Open_Dir(#dev_name, ONLY_OPEN);
-		dev_disc_num = files.count;
+		GetDir(#diskbuf, #dev_disc_num, #dev_name, DIRS_NOROOT);
 		for (j1=0; j1<dev_disc_num; j1++;)
 		{
-			sprintf(#sys_discs,"%s/%s",#dev_name,j1*304+ buf+72);
+			sprintf(#sys_discs,"%s/%s",#dev_name,j1*304+ diskbuf+72);
 			if (sys_discs[1]=='c') || (dir_exists(#sys_discs)) list.add(#sys_discs);
 		}
 		if (!strcmp(#sys_discs, "/rd/1")) 
@@ -124,6 +123,7 @@ void _SystemDiscs::Get()
 		}
 	}
 	free(devbuf);
+	free(diskbuf);
 }
 
 #define DDW 120

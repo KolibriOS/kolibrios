@@ -4,14 +4,17 @@ void DrawPathBar()
 {
 	if (efm) {
 		return;
-	}
-	if (show_breadcrumb.checked) {
-		DrawBreadCrumbs(); 
-		return;
+		PathShow.start_x = 10;
+		PathShow.start_y = Form.cheight - status_bar_h;
+	} else {
+		PathShow.start_x = 250;
+		PathShow.start_y = 17;
+		if (show_breadcrumb.checked) {
+			DrawBreadCrumbs(); 
+			return;
+		}
 	}
 
-	PathShow.start_x = -efm*22 + 250;
-	
 	PathShow.area_size_x = Form.cwidth-300;
 	DrawBar(PathShow.start_x-3, PathShow.start_y-6, PathShow.area_size_x+3, 19, col.odd_line);
 	DrawRectangle(PathShow.start_x-4,PathShow.start_y-7,PathShow.area_size_x+4,20,sc.work_graph);
