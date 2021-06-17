@@ -272,7 +272,7 @@ end virtual
         mov     [putimg.real_sy_and_abs_cy], ecx
 
 ; get process number
-        mov     ebx, [CURRENT_TASK]
+        mov     ebx, [current_slot_idx]
 
         cmp     byte [_display.bits_per_pixel], 16
         je      put_image_end_16
@@ -886,7 +886,7 @@ __sys_putpixel:
         mov     edx, [d_width_calc_area + ebx*4]
         add     edx, [_display.win_map]
         movzx   edx, byte [eax+edx]
-        cmp     edx, [CURRENT_TASK]
+        cmp     edx, [current_slot_idx]
         jne     .exit
 
   .forced:
@@ -1477,7 +1477,7 @@ end virtual
         add     edx, LFB_BASE
 
 ; get process number
-        mov     ebx, [CURRENT_TASK]  ; bl - process num
+        mov     ebx, [current_slot_idx]  ; bl - process num
         mov     esi, [drbar.real_sy]
         mov     eax, [drbar.color] ; BBGGRR00
         rol     eax, 8

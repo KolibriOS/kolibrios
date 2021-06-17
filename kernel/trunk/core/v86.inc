@@ -827,7 +827,7 @@ v86_irq:
 v86_irq2:
         mov     esi, [v86_irqhooks+edi*8]       ; get VM handle
         mov     eax, [esi+V86_machine.process]
-        mov     ecx, [CURRENT_TASK]
+        mov     ecx, [current_slot_idx]
         shl     ecx, 8
         cmp     [SLOT_BASE+ecx+APPDATA.process], eax
         jnz     .notcurrent
@@ -900,7 +900,7 @@ v86_irq2:
         call    update_counters
         lea     edi, [ebx + 0x100000000 - SLOT_BASE]
         shr     edi, 3
-        add     edi, CURRENT_TASK
+        add     edi, TASK_TABLE
         call    find_next_task.found
         call    do_change_task
         popad

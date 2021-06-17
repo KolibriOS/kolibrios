@@ -1396,9 +1396,9 @@ align 4
         mov     edx, E_ACCESS
         ja      .fail
 
-        mov     ebx, [CURRENT_TASK]
-        shl     ebx, 5
-        mov     ebx, [CURRENT_TASK + ebx + 4]
+        mov     ebx, [current_slot_idx]
+        shl     ebx, BSF sizeof.TASKDATA
+        mov     ebx, [TASK_TABLE + ebx + TASKDATA.pid]
         mov     eax, sizeof.SMAP
 
         call    create_kernel_object

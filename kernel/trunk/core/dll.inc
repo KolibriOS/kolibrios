@@ -354,7 +354,7 @@ endp
 
 align 4
 proc get_curr_task
-        mov     eax, [CURRENT_TASK]
+        mov     eax, [current_slot_idx]
         shl     eax, 8
         ret
 endp
@@ -1211,9 +1211,9 @@ proc load_library stdcall, file_name:dword, encoding:dword
         call    malloc
         test    eax, eax
         jz      .fail_and_free_user
-        mov     ebx, [CURRENT_TASK]
+        mov     ebx, [current_slot_idx]
         shl     ebx, 5
-        mov     edx, [CURRENT_TASK+ebx+TASKDATA.pid]
+        mov     edx, [TASK_TABLE+ebx+TASKDATA.pid]
         mov     [eax+HDLL.pid], edx
         push    eax
         call    init_dlls_in_thread

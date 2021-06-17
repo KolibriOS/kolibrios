@@ -56,9 +56,9 @@ reserve_cd:
 ;-----------------------------------------------------------------------------
 reserve_ok2:
         push    eax
-        mov     eax, [CURRENT_TASK]
+        mov     eax, [current_slot_idx]
         shl     eax, 5
-        mov     eax, [eax+CURRENT_TASK+TASKDATA.pid]
+        mov     eax, [eax+TASK_TABLE+TASKDATA.pid]
         mov     [cd_status], eax
         pop     eax
         sti

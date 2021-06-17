@@ -389,7 +389,7 @@ get_event_queue:
 ;info:
 ;   client testing function for get_event_ex
 ;warning:
-;  -don't use [TASK_BASE],[current_slot],[CURRENT_TASK] - it is not for your slot
+;  -don't use [TASK_BASE],[current_slot],[current_slot_idx] - it is not for your slot
 ;  -may be assumed, that interrupt are disabled
 ;  -it is not restriction for scratched registers
 ;param:
@@ -410,7 +410,7 @@ get_event_alone:
 ;info:
 ;   client testing function for wait_event
 ;warning:
-;  -don't use [TASK_BASE],[current_slot],[CURRENT_TASK] - it is not for your slot
+;  -don't use [TASK_BASE],[current_slot],[current_slot_idx] - it is not for your slot
 ;  -may be assumed, that interrupt are disabled
 ;  -it is not restriction for scratched registers
 ;param:
@@ -502,16 +502,16 @@ get_event_for_app:                                 ;; used from f10,f11,f23
 ;info:
 ;   client testing function for applications (f10,f23)
 ;warning:
-;  -don't use [TASK_BASE],[current_slot],[CURRENT_TASK] - it is not for your slot
+;  -don't use [TASK_BASE],[current_slot],[current_slot_idx] - it is not for your slot
 ;  -may be assumed, that interrupt are disabled
 ;  -it is not restriction for scratched registers
 ;param:
 ;   ebx - APPDATA address of testing slot
 ;retval:
 ;   eax - event number (=0 => no events)
-        movzx   edi, bh               ; bh  is assumed as [CURRENT_TASK]
+        movzx   edi, bh               ; bh  is assumed as [current_slot_idx]
         shl     edi, 5
-        add     edi, CURRENT_TASK     ; edi is assumed as [TASK_BASE]
+        add     edi, TASK_TABLE     ; edi is assumed as [TASK_BASE]
         mov     ecx, [edi+TASKDATA.event_mask]
         and     ecx, 0x7FFFFFFF
 ;--------------------------------------

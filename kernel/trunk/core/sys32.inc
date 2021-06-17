@@ -342,9 +342,9 @@ lock_application_table:
         mov     ecx, application_table_mutex
         call    mutex_lock
 
-        mov     eax, [CURRENT_TASK]
-        shl     eax, 5
-        add     eax, CURRENT_TASK+TASKDATA.pid
+        mov     eax, [current_slot_idx]
+        shl     eax, BSF sizeof.TASKDATA
+        add     eax, TASK_TABLE+TASKDATA.pid
         mov     eax, [eax]
 
         mov     [application_table_owner], eax
@@ -418,8 +418,8 @@ destroy_thread:
         test    edx, edx
         jnz     @F
         pop     esi
-        shl     esi, 5
-        mov     [CURRENT_TASK+esi+TASKDATA.state], 9
+        shl     esi, BSF sizeof.TASKDATA
+        mov     [TASK_TABLE+esi+TASKDATA.state], 9
         ret
 @@:
         push    edx                     ;save .process
@@ -506,8 +506,8 @@ destroy_thread:
         jb      .loop
 ; get process PID
         mov     eax, esi
-        shl     eax, 5
-        mov     eax, [eax+CURRENT_TASK+TASKDATA.pid]
+        shl     eax, BSF sizeof.TASKDATA
+        mov     eax, [eax+TASK_TABLE+TASKDATA.pid]
 ; compare current lock input with process PID
         cmp     eax, [PID_lock_input]
         jne     @f
@@ -578,12 +578,12 @@ destroy_thread:
 ; debuggee test
         pushad
         mov     edi, esi
-        shl     edi, 5
+        shl     edi, BSF sizeof.TASKDATA
         mov     eax, [SLOT_BASE+edi*8+APPDATA.debugger_slot]
         test    eax, eax
         jz      .nodebug
         movi    ecx, 8
-        push    dword [CURRENT_TASK+edi+TASKDATA.pid]; PID
+        push    dword [TASK_TABLE+edi+TASKDATA.pid]; PID
         push    2
         call    debugger_notify
         pop     ecx
@@ -638,8 +638,8 @@ destroy_thread:
         jbe     .nothing_to_activate
         lea     esi, [WIN_POS+eax*2]
         movzx   edi, word [esi]              ; edi = process
-        shl     edi, 5
-        cmp     [CURRENT_TASK + edi + TASKDATA.state], byte 9 ; skip dead slots
+        shl     edi, BSF sizeof.TASKDATA
+        cmp     [TASK_TABLE + edi + TASKDATA.state], byte 9 ; skip dead slots
         je      .check_next_window
         add     edi, window_data
 ; \begin{diamond}[19.09.2006]
@@ -653,8 +653,8 @@ destroy_thread:
  .dont_activate:
 
         push    esi     ; remove hd1 & cd & flp reservation
-        shl     esi, 5
-        mov     esi, [esi+CURRENT_TASK+TASKDATA.pid]
+        shl     esi, BSF sizeof.TASKDATA
+        mov     esi, [esi+TASK_TABLE+TASKDATA.pid]
         cmp     [cd_status], esi
         jnz     @f
         call    free_cd_channel
@@ -669,8 +669,8 @@ destroy_thread:
 
         pusha                 ; remove all port reservations
         mov     edx, esi
-        shl     edx, 5
-        add     edx, CURRENT_TASK
+        shl     edx, BSF sizeof.TASKDATA
+        add     edx, TASK_TABLE
         mov     edx, [edx+TASKDATA.pid]
 
   rmpr0:
@@ -713,8 +713,8 @@ destroy_thread:
 
         popa
         mov     edi, esi ; do not run this process slot
-        shl     edi, 5
-        mov     [edi+CURRENT_TASK + TASKDATA.state], byte 9
+        shl     edi, BSF sizeof.TASKDATA
+        mov     [edi+TASK_TABLE + TASKDATA.state], byte 9
 ; debugger test - terminate all debuggees
         mov     eax, 2
         mov     ecx, SLOT_BASE+2*0x100+APPDATA.debugger_slot

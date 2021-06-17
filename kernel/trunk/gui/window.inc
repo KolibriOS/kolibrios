@@ -59,7 +59,7 @@ syscall_draw_window: ;///// system function 0 /////////////////////////////////
 ; type IV & V - skinned window (resizable & not)
         mov     eax, [thread_count]
         movzx   eax, word[WIN_POS + eax * 2]
-        cmp     eax, [CURRENT_TASK]
+        cmp     eax, [current_slot_idx]
         setz    al
         movzx   eax, al
         push    eax
@@ -312,7 +312,7 @@ syscall_move_window: ;///// system function 67 ////////////////////////////////
 ;------------------------------------------------------------------------------
 ;? <description>
 ;------------------------------------------------------------------------------
-        mov     edi, [CURRENT_TASK]
+        mov     edi, [current_slot_idx]
         shl     edi, 5
         add     edi, window_data
 
@@ -367,7 +367,7 @@ align 4
 ;------------------------------------------------------------------------------
 syscall_window_settings: ;///// system function 71 ////////////////////////////
 ;------------------------------------------------------------------------------
-        mov     edi, [CURRENT_TASK]
+        mov     edi, [current_slot_idx]
         shl     edi, 5
         or      [edi + window_data + WDATA.fl_wstyle], WSTYLE_HASCAPTION
         cmp     ebx, 2
@@ -445,7 +445,7 @@ align 4
         movzx   edi, word[WIN_POS + esi * 2]
         shl     edi, 5                  ;size of TASKDATA and WDATA = 32 bytes
 
-        cmp     [CURRENT_TASK + edi + TASKDATA.state], TSTATE_FREE
+        cmp     byte [TASK_TABLE + edi + TASKDATA.state], TSTATE_FREE
         je      .skip_window
 
         add     edi, window_data
@@ -985,7 +985,7 @@ align 4
         movzx   edi, word[WIN_POS + eax * 2]
         shl     edi, 5
 ; it is a unused slot?
-        cmp     dword [edi+CURRENT_TASK+TASKDATA.state], 9
+        cmp     byte [edi+TASK_TABLE+TASKDATA.state], TSTATE_FREE
         je      @f
 ; it is a hidden thread?
         lea     esi, [edi*8+SLOT_BASE+APPDATA.app_name]
@@ -1552,7 +1552,7 @@ window._.sys_set_window: ;/////////////////////////////////////////////////////
 ;------------------------------------------------------------------------------
 ;< edx = pointer to WDATA struct
 ;------------------------------------------------------------------------------
-        mov     eax, [CURRENT_TASK]
+        mov     eax, [current_slot_idx]
         shl     eax, 5
         add     eax, window_data
 ; save window colors
@@ -1611,7 +1611,7 @@ align 4
 
         pop     edi ecx
 
-        mov     esi, [CURRENT_TASK]
+        mov     esi, [current_slot_idx]
         movzx   esi, word[WIN_STACK + esi * 2]
         lea     esi, [WIN_POS + esi * 2]
         call    waredraw
@@ -2125,8 +2125,8 @@ align 4
         ja      .exit.no_redraw
 
         movzx   edx, word[esi]
-        shl     edx, 5
-        cmp     [CURRENT_TASK + edx + TASKDATA.state], TSTATE_FREE
+        shl     edx, 5 ; size of TASKDATA and WDATA is 32 bytes
+        cmp     byte [TASK_TABLE + edx + TASKDATA.state], TSTATE_FREE
         je      .next_window
 
         mov     eax, [edi + WDATA.box.top]
@@ -2174,13 +2174,13 @@ window._.draw_window_caption: ;////////////////////////////////////////////////
         xor     eax, eax
         mov     edx, [thread_count]
         movzx   edx, word[WIN_POS + edx * 2]
-        cmp     edx, [CURRENT_TASK]
+        cmp     edx, [current_slot_idx]
         jne     @f
         inc     eax
 ;--------------------------------------
 align 4
 @@:
-        mov     edx, [CURRENT_TASK]
+        mov     edx, [current_slot_idx]
         shl     edx, 5
         add     edx, window_data
         movzx   ebx, [edx + WDATA.fl_wstyle]
@@ -2216,7 +2216,7 @@ align 4
 ;--------------------------------------
 align 4
 .2:
-        mov     edi, [CURRENT_TASK]
+        mov     edi, [current_slot_idx]
         shl     edi, 5
         test    [edi + window_data + WDATA.fl_wstyle], WSTYLE_HASCAPTION
         jz      .exit
@@ -2402,7 +2402,7 @@ align 4
         movzx   edi, word[WIN_POS + esi * 2]
         shl     edi, 5                  ;size of TASKDATA and WDATA = 32 bytes
 
-        cmp     [CURRENT_TASK + edi + TASKDATA.state], TSTATE_FREE
+        cmp     byte [TASK_TABLE + edi + TASKDATA.state], TSTATE_FREE
         je      .skip_window
 
         add     edi, window_data

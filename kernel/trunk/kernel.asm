@@ -625,10 +625,10 @@ high_code:
         xor     ecx, ecx
         call    scheduler_add_thread
 
-        mov     dword [CURRENT_TASK], 2
+        mov     dword [current_slot_idx], 2
         mov     [thread_count], 2
         mov     dword [current_slot], SLOT_BASE + sizeof.APPDATA*2
-        mov     dword [TASK_BASE], CURRENT_TASK + sizeof.TASKDATA*2
+        mov     dword [TASK_BASE], TASK_TABLE + sizeof.TASKDATA*2
 
 ; Move other CPUs to deep sleep, if it is useful
 uglobal
@@ -1177,7 +1177,7 @@ proc setup_os_slot
 
         mov     eax, edx
         shr     eax, 3
-        add     eax, CURRENT_TASK - (SLOT_BASE shr 3)
+        add     eax, TASK_TABLE - (SLOT_BASE shr 3)
         mov     [eax+TASKDATA.wnd_number], dh
         mov     byte [eax+TASKDATA.pid], dh
 
@@ -1600,7 +1600,7 @@ draw_num_text:
 ; add window start x & y
         mov     ecx, [TASK_BASE]
 
-        mov     edi, [CURRENT_TASK]
+        mov     edi, [current_slot_idx]
         shl     edi, 8
 
         mov     eax, [ecx-twdw+WDATA.box.left]
@@ -1910,7 +1910,7 @@ dd  .loadCursorUni
         shl     ebx, 16
         mov     bx, word [esi-twdw+WDATA.box.top]
         sub     eax, ebx
-        mov     edi, [CURRENT_TASK]
+        mov     edi, [current_slot_idx]
         shl     edi, 8
         sub     ax, word[edi+SLOT_BASE+APPDATA.wnd_clientbox.top]
         rol     eax, 16
@@ -1968,7 +1968,7 @@ dd  .loadCursorUni
 .msz:
         mov     edi, [thread_count]
         movzx   edi, word [WIN_POS + edi*2]
-        cmp     edi, [CURRENT_TASK]
+        cmp     edi, [current_slot_idx]
         jne     @f
         mov     ax, [MOUSE_SCROLL_H]
         shl     eax, 16
@@ -2217,17 +2217,17 @@ sysfn_terminate:        ; 18.2 = TERMINATE
         ja      noprocessterminate
         mov     eax, [thread_count]
         shl     ecx, BSF sizeof.TASKDATA
-        mov     edx, [ecx+CURRENT_TASK+TASKDATA.pid]
-        add     ecx, CURRENT_TASK+TASKDATA.state
+        mov     edx, [ecx+TASK_TABLE+TASKDATA.pid]
+        add     ecx, TASK_TABLE+TASKDATA.state
         cmp     byte [ecx], TSTATE_FREE
         jz      noprocessterminate
         push    eax
-        lea     eax, [(ecx-(CURRENT_TASK and 1FFFFFFFh)-TASKDATA.state)*8+SLOT_BASE]
+        lea     eax, [(ecx-(TASK_TABLE and 1FFFFFFFh)-TASKDATA.state)*8+SLOT_BASE]
         call    is_kernel_thread
         pop     eax
         jz      noprocessterminate
         push    ecx edx
-        lea     edx, [(ecx-(CURRENT_TASK and 1FFFFFFFh)-TASKDATA.state)*8+SLOT_BASE]
+        lea     edx, [(ecx-(TASK_TABLE and 1FFFFFFFh)-TASKDATA.state)*8+SLOT_BASE]
         call    request_terminate
         pop     edx ecx
         test    eax, eax
@@ -2353,7 +2353,7 @@ sysfn_zmodif:
 
         cmp     edx, -1
         jne     @f
-        mov     edx, [CURRENT_TASK]
+        mov     edx, [current_slot_idx]
      @@:
         cmp     edx, [thread_count]
         ja      .fail
@@ -2363,7 +2363,7 @@ sysfn_zmodif:
         mov     eax, edx
         shl     edx, 5
 
-        cmp     [edx + CURRENT_TASK + TASKDATA.state], 9
+        cmp     [edx + TASK_TABLE + TASKDATA.state], 9
         je      .fail
 
         cmp     ecx, 1
@@ -2408,7 +2408,7 @@ sysfn_zmodif:
 
 ;------------------------------------------------------------------------------
 sysfn_getidletime:              ; 18.4 = GET IDLETIME
-        mov     eax, [CURRENT_TASK+32+TASKDATA.cpu_usage]
+        mov     eax, [TASK_TABLE+32+TASKDATA.cpu_usage]
         mov     [esp+32], eax
         ret
 ;------------------------------------------------------------------------------
@@ -2875,7 +2875,7 @@ align 4
 ;--------------------------------------
 align 4
 @@:
-        mov     eax, [CURRENT_TASK]
+        mov     eax, [current_slot_idx]
         mov     [bgrlockpid], eax
         cmp     [img_background], static_background_data
         jz      .nomem
@@ -2923,7 +2923,7 @@ nosb6:
         jnz     nosb7
         cmp     [bgrlock], 0
         jz      .err
-        mov     eax, [CURRENT_TASK]
+        mov     eax, [current_slot_idx]
         cmp     [bgrlockpid], eax
         jnz     .err
         mov     eax, ecx
@@ -3103,7 +3103,7 @@ align 4
 sys_getkey:
         mov     [esp + 32], dword 1
         ; test main buffer
-        mov     ebx, [CURRENT_TASK]                          ; TOP OF WINDOW STACK
+        mov     ebx, [current_slot_idx]                          ; TOP OF WINDOW STACK
         movzx   ecx, word [WIN_STACK + ebx * 2]
         mov     edx, [thread_count]
         cmp     ecx, edx
@@ -3158,7 +3158,7 @@ align 4
 ;------------------------------------------------------------------------------
 align 4
 sys_getbutton:
-        mov     ebx, [CURRENT_TASK]                         ; TOP OF WINDOW STACK
+        mov     ebx, [current_slot_idx]                         ; TOP OF WINDOW STACK
         mov     [esp + 32], dword 1
         movzx   ecx, word [WIN_STACK + ebx * 2]
         mov     edx, [thread_count] ; less than 256 processes
@@ -3195,7 +3195,7 @@ sys_cpuusage:
 
         cmp     ecx, -1 ; who am I ?
         jne     .no_who_am_i
-        mov     ecx, [CURRENT_TASK]
+        mov     ecx, [current_slot_idx]
   .no_who_am_i:
         cmp     ecx, max_processes
         ja      .nofillbuf
@@ -3211,7 +3211,7 @@ sys_cpuusage:
         shl     ecx, 5
 
 ; +0: dword: memory usage
-        mov     eax, [ecx+CURRENT_TASK+TASKDATA.cpu_usage]
+        mov     eax, [ecx+TASK_TABLE+TASKDATA.cpu_usage]
         mov     [ebx], eax
 ; +10: 11 bytes: name of the process
         push    ecx
@@ -3238,7 +3238,7 @@ sys_cpuusage:
         stosd
 
 ; +30: PID/TID
-        mov     eax, [ecx+CURRENT_TASK+TASKDATA.pid]
+        mov     eax, [ecx+TASK_TABLE+TASKDATA.pid]
         stosd
 
     ; window position and size
@@ -3250,7 +3250,7 @@ sys_cpuusage:
         movsd
 
     ; Process state (+50)
-        mov     eax, dword [ecx+CURRENT_TASK+TASKDATA.state]
+        movzx   eax, byte [ecx+TASK_TABLE+TASKDATA.state]
         stosd
 
     ; Window client area box
@@ -3265,7 +3265,7 @@ sys_cpuusage:
         stosb
 
     ; Event mask (+71)
-        mov     EAX, dword [ECX+CURRENT_TASK+TASKDATA.event_mask]
+        mov     EAX, dword [ECX+TASK_TABLE+TASKDATA.event_mask]
         stosd
 
     ; Keyboard mode (+75)
@@ -3364,7 +3364,7 @@ sys_redrawstat:
         cmp     ebx, 1
         jne     no_widgets_away
         ; buttons away
-        mov     ecx, [CURRENT_TASK]
+        mov     ecx, [current_slot_idx]
   sys_newba2:
         mov     edi, [BTN_ADDR]
         cmp     [edi], dword 0  ; empty button list ?
@@ -3402,7 +3402,7 @@ sys_redrawstat:
         jnz     srl1
 
         mov     edx, [TASK_BASE]      ; return whole screen draw area for this app
-        add     edx, draw_data - CURRENT_TASK
+        add     edx, draw_data - TASK_TABLE
         mov     [edx + RECT.left], 0
         mov     [edx + RECT.top], 0
         mov     eax, [_display.width]
@@ -3565,7 +3565,7 @@ nocpustart:
         mov     [mouse_active], 0
 
         xor     edi, edi
-        mov     ebx, CURRENT_TASK
+        mov     ebx, TASK_TABLE
 
         mov     ecx, [thread_count]
         movzx   eax, word [WIN_POS + ecx*2]     ; active window
@@ -3707,7 +3707,7 @@ markz:
         push    ecx edx
         cmp     [edx+TASKDATA.state], TSTATE_FREE
         jz      .nokill
-        lea     edx, [(edx-(CURRENT_TASK and 1FFFFFFFh))*8+SLOT_BASE]
+        lea     edx, [(edx-(TASK_TABLE and 1FFFFFFFh))*8+SLOT_BASE]
         cmp     [edx+APPDATA.process], sys_proc
         jz      .nokill
         call    request_terminate
@@ -4453,7 +4453,7 @@ sys_putimage_palette:
         pop     ecx
         jz      sys_putimage.exit
 
-        mov     eax, [CURRENT_TASK]
+        mov     eax, [current_slot_idx]
         shl     eax, 8
         add     dx, word [eax+SLOT_BASE+APPDATA.wnd_clientbox.top]
         rol     edx, 16
@@ -5015,7 +5015,7 @@ sys_process_def:
         cmp     ebx, 7
         jae     .not_support    ;if >=8 then or eax,-1
 
-        mov     edi, [CURRENT_TASK]
+        mov     edi, [current_slot_idx]
         jmp     dword [f66call+ebx*4]
 
 .not_support:
@@ -5112,9 +5112,9 @@ align 4
         test    eax, eax
         jnz     @f
 ; get current PID
-        mov     eax, [CURRENT_TASK]
+        mov     eax, [current_slot_idx]
         shl     eax, 5
-        mov     eax, [eax+CURRENT_TASK+TASKDATA.pid]
+        mov     eax, [eax+TASK_TABLE+TASKDATA.pid]
 ; set current PID for lock input
         mov     [PID_lock_input], eax
 @@:
@@ -5127,9 +5127,9 @@ align 4
         test    eax, eax
         jz      @f
 ; get current PID
-        mov     ebx, [CURRENT_TASK]
+        mov     ebx, [current_slot_idx]
         shl     ebx, 5
-        mov     ebx, [ebx+CURRENT_TASK+TASKDATA.pid]
+        mov     ebx, [ebx+TASK_TABLE+TASKDATA.pid]
 ; compare current lock input with current PID
         cmp     ebx, eax
         jne     @f

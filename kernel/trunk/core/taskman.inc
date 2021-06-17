@@ -494,7 +494,7 @@ pid_to_slot:
 ;ecx = offset of current process info entry
 ;ebx = maximum permitted offset
         ; state 9 means "not used"
-        cmp     byte [TASK_TABLE+ecx+TASKDATA.state], 9
+        cmp     byte [TASK_TABLE+ecx+TASKDATA.state], TSTATE_FREE
         jz      .endloop ;skip empty slots
         cmp     [TASK_TABLE+ecx+TASKDATA.pid], eax;check PID
         jz      .pid_found
@@ -970,7 +970,7 @@ proc set_app_params stdcall,slot:dword, params:dword, flags:dword
         rep movsd
 
         shr     ebx, 3
-        mov     dword [CURRENT_TASK+ebx+0x10], 0
+        mov     dword [TASK_TABLE+ebx+TASKDATA.mem_start], 0
 
         mov     ebx, [slot]
         mov     eax, ebx
@@ -980,7 +980,7 @@ proc set_app_params stdcall,slot:dword, params:dword, flags:dword
 ; set window state to 'normal' (non-minimized/maximized/rolled-up) state
         mov     [ebx+window_data+WDATA.fl_wstate], WSTATE_NORMAL
         mov     [ebx+window_data+WDATA.fl_redraw], 1
-        add     ebx, CURRENT_TASK     ;ebx - pointer to information about process
+        add     ebx, TASK_TABLE     ;ebx - pointer to information about process
         mov     [ebx+TASKDATA.wnd_number], al;set window number on screen = process slot
 
         mov     [ebx+TASKDATA.event_mask], dword 1+2+4;set default event flags (see 40 function)
@@ -1039,10 +1039,10 @@ proc set_app_params stdcall,slot:dword, params:dword, flags:dword
 ; set if debuggee
         test    byte [flags], 1
         jz      .no_debug
-        mov     eax, [CURRENT_TASK]
+        mov     eax, [current_slot_idx]
         mov     [SLOT_BASE+ebx*8+APPDATA.debugger_slot], eax
 .no_debug:
-        mov     [CURRENT_TASK+ebx+TASKDATA.state], dl
+        mov     [TASK_TABLE+ebx+TASKDATA.state], dl
         lea     edx, [SLOT_BASE+ebx*8]
         call    scheduler_add_thread
         ret

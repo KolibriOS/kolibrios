@@ -49,7 +49,7 @@ endg
 
 ; This internal function acquires the lock for the global list.
 lock_timer_list:
-        mov     edx, [CURRENT_TASK]
+        mov     edx, [current_slot_idx]
 @@:
         xor     eax, eax
         lock cmpxchg [timer_list_owner], edx

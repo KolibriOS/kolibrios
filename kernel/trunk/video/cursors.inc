@@ -422,9 +422,9 @@ align 4
         push    esi
         push    edi
 
-        mov     eax, [CURRENT_TASK]
+        mov     eax, [current_slot_idx]
         shl     eax, 5
-        mov     eax, [CURRENT_TASK+eax+4]
+        mov     eax, [TASK_TABLE+eax+4]
         mov     ebx, [src]
         mov     ecx, [flags]
         call    create_cursor    ;eax, ebx, ecx
@@ -459,9 +459,9 @@ proc delete_cursor stdcall, hcursor:dword
         cmp     [esi+CURSOR.magic], 'CURS'
         jne     .fail
 
-        mov     ebx, [CURRENT_TASK]
+        mov     ebx, [current_slot_idx]
         shl     ebx, 5
-        mov     ebx, [CURRENT_TASK+ebx+4]
+        mov     ebx, [TASK_TABLE+ebx+4]
         cmp     ebx, [esi+CURSOR.pid]
         jne     .fail
 

@@ -168,7 +168,7 @@ fpu_save:
         mov     edi, eax
 
         mov     ecx, [fpu_owner]
-        mov     esi, [CURRENT_TASK]
+        mov     esi, [current_slot_idx]
         cmp     ecx, esi
         jne     .save
 
@@ -216,7 +216,7 @@ avx_save:
         mov     edi, eax
 
         mov     ecx, [fpu_owner]
-        mov     esi, [CURRENT_TASK]
+        mov     esi, [current_slot_idx]
         cmp     ecx, esi
         jne     .save
 
@@ -276,7 +276,7 @@ fpu_restore:
         cli
 
         mov     ecx, [fpu_owner]
-        mov     eax, [CURRENT_TASK]
+        mov     eax, [current_slot_idx]
         cmp     ecx, eax
         jne     .copy
 
@@ -318,7 +318,7 @@ avx_restore:
         cli
 
         mov     ecx, [fpu_owner]
-        mov     eax, [CURRENT_TASK]
+        mov     eax, [current_slot_idx]
         cmp     ecx, eax
         jne     .copy
 
@@ -372,7 +372,7 @@ except_7:                  ;#NM exception handler
         mov     es, ax
 
         mov     ebx, [fpu_owner]
-        cmp     ebx, [CURRENT_TASK]
+        cmp     ebx, [current_slot_idx]
         je      .exit
 
         shl     ebx, 8
@@ -383,7 +383,7 @@ except_7:                  ;#NM exception handler
         mov     eax, [xsave_eax]
         mov     edx, [xsave_edx]
         xsave   [ecx]
-        mov     ebx, [CURRENT_TASK]
+        mov     ebx, [current_slot_idx]
         mov     [fpu_owner], ebx
         shl     ebx, 8
         mov     ecx, [ebx+SLOT_BASE+APPDATA.fpu_state]
@@ -396,7 +396,7 @@ except_7:                  ;#NM exception handler
         jnc     .no_SSE
 
         fxsave  [eax]
-        mov     ebx, [CURRENT_TASK]
+        mov     ebx, [current_slot_idx]
         mov     [fpu_owner], ebx
         shl     ebx, 8
         mov     eax, [ebx+SLOT_BASE+APPDATA.fpu_state]
@@ -406,7 +406,7 @@ except_7:                  ;#NM exception handler
 
 .no_SSE:
         fnsave  [eax]
-        mov     ebx, [CURRENT_TASK]
+        mov     ebx, [current_slot_idx]
         mov     [fpu_owner], ebx
         shl     ebx, 8
         mov     eax, [ebx+SLOT_BASE+APPDATA.fpu_state]

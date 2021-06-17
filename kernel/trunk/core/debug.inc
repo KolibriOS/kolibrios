@@ -48,7 +48,7 @@ get_debuggee_slot:
         jz      .ret_bad
         shl     eax, 5
         push    ebx
-        mov     ebx, [CURRENT_TASK]
+        mov     ebx, [current_slot_idx]
         cmp     [SLOT_BASE+eax*8+APPDATA.debugger_slot], ebx
         pop     ebx
         jnz     .ret_bad
@@ -92,14 +92,14 @@ debug_suspend:
         call    get_debuggee_slot
         jc      .ret
 ; } End patch
-        mov     cl, [CURRENT_TASK+eax+TASKDATA.state] ; process state
+        mov     cl, [TASK_TABLE+eax+TASKDATA.state] ; process state
         test    cl, cl
         jz      .1
         cmp     cl, 5
         jnz     .ret
         mov     cl, 2
 .2:
-        mov     [CURRENT_TASK+eax+TASKDATA.state], cl
+        mov     [TASK_TABLE+eax+TASKDATA.state], cl
 .ret:
         sti
         ret
@@ -108,14 +108,14 @@ debug_suspend:
         jmp     .2
 
 do_resume:
-        mov     cl, [CURRENT_TASK+eax+TASKDATA.state]
+        mov     cl, [TASK_TABLE+eax+TASKDATA.state]
         cmp     cl, 1
         jz      .1
         cmp     cl, 2
         jnz     .ret
         mov     cl, 5
 .2:
-        mov     [CURRENT_TASK+eax+TASKDATA.state], cl
+        mov     [TASK_TABLE+eax+TASKDATA.state], cl
 .ret:
         ret
 .1:
@@ -416,7 +416,7 @@ debugger_notify:
         pop     ecx
         pop     ecx
         pop     ecx
-        cmp     dword [CURRENT_TASK], 1
+        cmp     dword [current_slot_idx], 1
         jnz     .notos
         cmp     [timer_ticks], edi
         jae     .ret

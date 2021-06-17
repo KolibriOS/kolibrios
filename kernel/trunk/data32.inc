@@ -438,7 +438,8 @@ default_io_map      dd  ?
 LFBSize             dd  ?
 
 current_process     dd  ?
-current_slot        dd  ?   ; i.e. cureent thread
+current_slot        dd  ?   ; pointer to APPDATA of current thread
+current_slot_idx    dd  ?   ; index of current thread slot
 thread_count        dd  ?
 
 ; device addresses

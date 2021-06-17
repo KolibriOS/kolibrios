@@ -395,7 +395,7 @@ _noinside2:
         shl     eax, 4
         add     eax, edi
 
-        mov     bx, [CURRENT_TASK]
+        mov     bx, word [current_slot_idx]
         mov     [eax], bx
         mov     word [eax+2], 1     ; button id
         xor     ebx, ebx
@@ -426,7 +426,7 @@ _noinside2:
         shl     eax, 4
         add     eax, edi
 
-        mov     bx, [CURRENT_TASK]
+        mov     bx, word [current_slot_idx]
         mov     [eax], bx
         mov     word [eax+2], -1    ; button id
         xor     ebx, ebx

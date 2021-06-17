@@ -93,7 +93,7 @@ do_change_task:
 ;param:
 ;   ebx = address of the APPDATA for incoming task (new)
 ;warning:
-;   [CURRENT_TASK] and [TASK_BASE] must be changed before (e.g. in find_next_task)
+;   [current_slot_idx] and [TASK_BASE] must be changed before (e.g. in find_next_task)
 ;   [current_slot] is the outcoming (old), and set here to a new value (ebx)
 ;scratched: eax,ecx,esi
         mov     esi, ebx
@@ -140,7 +140,7 @@ do_change_task:
         mov     eax, [xsave_eax]
         mov     edx, [xsave_edx]
         xsave   [ecx]
-        mov     ecx, [CURRENT_TASK]
+        mov     ecx, [current_slot_idx]
         mov     [fpu_owner], ecx
         mov     ecx, [current_slot]
         mov     ecx, [ecx+APPDATA.fpu_state]
@@ -261,7 +261,7 @@ SCHEDULE_HIGHER_PRIORITY = 1
 ;   edi = address of the TASKDATA for the selected task
 ;   ZF  = 1  if the task is the same
 ;warning:
-;   [CURRENT_TASK] = bh , [TASK_BASE] = edi -- as result
+;   [current_slot_idx] = bh , [TASK_BASE] = edi -- as result
 ;   [current_slot] is not set to new value (ebx)!!!
 ;scratched: eax,ecx
 proc find_next_task
@@ -288,7 +288,7 @@ proc find_next_task
         mov     ebx, [ebx+APPDATA.in_schedule.next]
         mov     edi, ebx
         shr     edi, 3
-        add     edi, CURRENT_TASK - (SLOT_BASE shr 3)
+        add     edi, TASK_TABLE - (SLOT_BASE shr 3)
         mov     al, [edi+TASKDATA.state]
         test    al, al
         jz      .task_found     ; state == 0
@@ -328,7 +328,7 @@ proc find_next_task
 .found:
         ; the line below assumes APPDATA is 256 bytes long and SLOT_BASE is
         ; aligned on 0x10000
-        mov     [CURRENT_TASK], bh
+        mov     byte [current_slot_idx], bh
         mov     [TASK_BASE], edi
         rdtsc   ;call  _rdtsc
         mov     [edi+TASKDATA.counter_add], eax; for next using update_counters

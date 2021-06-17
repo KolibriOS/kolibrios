@@ -75,7 +75,7 @@ syscall_button: ;////////////// system function 8 //////////////
         add     edi, eax
 ; NOTE: this code doesn't rely on SYS_BUTTON struct,
 ; please revise it, if you change something.
-        mov     ax, [CURRENT_TASK]
+        mov     ax, word [current_slot_idx]
         stosw
         mov     ax, dx
         stosw               ; button id number: bits 0-15
@@ -226,7 +226,7 @@ syscall_button: ;////////////// system function 8 //////////////
         add     esi, -sizeof.SYS_BUTTON
 
         ; does it belong to our process?
-        mov     ax, [CURRENT_TASK]
+        mov     ax, word [current_slot_idx]
         cmp     ax, [esi + SYS_BUTTON.pslot]
         jne     .next_button
 

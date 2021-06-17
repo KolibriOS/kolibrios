@@ -316,7 +316,7 @@ end virtual
 
         lea     edi, [edi+ebx*4]
 
-        mov     ebx, [CURRENT_TASK]
+        mov     ebx, [current_slot_idx]
 ; check for hardware cursor
         cmp     [_display.select_cursor], select_cursor
         je      .core_32.software_cursor
@@ -410,7 +410,7 @@ align 4
 
         lea     ebx, [ebx+ebx*2]
         lea     edi, [LFB_BASE+edi+ebx]
-        mov     ebx, [CURRENT_TASK]
+        mov     ebx, [current_slot_idx]
 
 align 4
 .outer24:
@@ -475,7 +475,7 @@ align 4
 
 .core_16:
         lea     edi, [LFB_BASE+edi+ebx*2]
-        mov     ebx, [CURRENT_TASK]
+        mov     ebx, [current_slot_idx]
 
   .outer16:
         mov     [esp+.extra_var1], edi
