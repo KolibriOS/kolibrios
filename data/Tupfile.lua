@@ -68,7 +68,7 @@ img_files = {
  {"SETTINGS/NETWORK.INI", "common/settings/network.ini"},
  {"SETTINGS/SYSTEM.INI", "common/settings/system.ini"},
  {"SETTINGS/TASKBAR.INI", "common/settings/taskbar.ini"},
- {"SETTINGS/weather.json", PROGS .. "/other/Weather/weather.json"},   
+ {"SETTINGS/weather.json", PROGS .. "/other/Weather/weather.json"},
 }
 
 -- For russian build, add russian-only files.
@@ -78,7 +78,7 @@ if build_type == "rus" then tup.append_table(img_files, {
  {"GAMES/BASEKURS.KLA", build_type .. "/games/basekurs.kla"},
  {"File Managers/KFAR.INI", build_type .. "/File Managers/kfar.ini"},
  {"File Managers/KFM_KEYS.TXT", PROGS .. "/fs/kfm/trunk/docs/russian/dos_kolibri/kfm_keys.txt"},
- {"GAMES/DESCENT", build_type .. "/games/descent"}, 
+ {"GAMES/DESCENT", build_type .. "/games/descent"},
  {"SETTINGS/.shell", PROGS .. "/system/shell/bin/rus/.shell"},
  {"SETTINGS/GAMES.INI", "rus/settings/games.ini"},
  {"SETTINGS/MYKEY.INI", PROGS .. "/system/MyKey/trunk/mykey.ini"},
@@ -86,9 +86,9 @@ if build_type == "rus" then tup.append_table(img_files, {
 }) elseif build_type == "eng" then tup.append_table(img_files, {
  {"EXAMPLE.ASM", PROGS .. "/develop/examples/example/trunk/example.asm"},
  {"DEVELOP/BACKY", PROGS .. "/develop/backy/Backy"},
- {"File Managers/KFAR.INI", "common/File Managers/kfar.ini"}, 
+ {"File Managers/KFAR.INI", "common/File Managers/kfar.ini"},
  {"File Managers/KFM_KEYS.TXT", PROGS .. "/fs/kfm/trunk/docs/english/kfm_keys.txt"},
- {"GAMES/DESCENT", "common/games/descent"}, 
+ {"GAMES/DESCENT", "common/games/descent"},
  {"SETTINGS/.shell", PROGS .. "/system/shell/bin/eng/.shell"},
  {"SETTINGS/GAMES.INI", "common/settings/games.ini"},
  {"SETTINGS/MYKEY.INI", PROGS .. "/system/MyKey/trunk/mykey.ini"},
@@ -96,9 +96,9 @@ if build_type == "rus" then tup.append_table(img_files, {
 }) elseif build_type == "sp" then tup.append_table(img_files, {
  {"EXAMPLE.ASM", PROGS .. "/develop/examples/example/trunk/example.asm"},
  {"DEVELOP/BACKY", PROGS .. "/develop/backy/Backy"},
- {"File Managers/KFAR.INI", "common/File Managers/kfar.ini"}, 
+ {"File Managers/KFAR.INI", "common/File Managers/kfar.ini"},
  {"File Managers/KFM_KEYS.TXT", PROGS .. "/fs/kfm/trunk/docs/english/kfm_keys.txt"},
- {"GAMES/DESCENT", "common/games/descent"}, 
+ {"GAMES/DESCENT", "common/games/descent"},
  {"SETTINGS/.shell", PROGS .. "/system/shell/bin/eng/.shell"},
  {"SETTINGS/GAMES.INI", "common/settings/games.ini"},
  {"SETTINGS/MYKEY.INI", PROGS .. "/system/MyKey/trunk/mykey.ini"},
@@ -108,7 +108,7 @@ if build_type == "rus" then tup.append_table(img_files, {
  {"DEVELOP/BACKY", PROGS .. "/develop/backy/Backy"},
  {"File Managers/KFAR.INI", "common/File Managers/kfar.ini"},
  {"File Managers/KFM_KEYS.TXT", PROGS .. "/fs/kfm/trunk/docs/english/kfm_keys.txt"},
- {"GAMES/DESCENT", "common/games/descent"}, 
+ {"GAMES/DESCENT", "common/games/descent"},
  {"SETTINGS/.shell", PROGS .. "/system/shell/bin/eng/.shell"},
  {"SETTINGS/MYKEY.INI", PROGS .. "/system/MyKey/trunk/mykey_it.ini"},
  {"SETTINGS/GAMES.INI", "common/settings/games.ini"},
@@ -118,7 +118,7 @@ if build_type == "rus" then tup.append_table(img_files, {
  {"DEVELOP/BACKY", PROGS .. "/develop/backy/Backy"},
  {"File Managers/KFM_KEYS.TXT", PROGS .. "/fs/kfm/trunk/docs/english/kfm_keys.txt"},
  {"File Managers/KFAR.INI", "common/File Managers/kfar.ini"},
- {"GAMES/DESCENT", "common/games/descent"}, 
+ {"GAMES/DESCENT", "common/games/descent"},
  {"SETTINGS/.shell", PROGS .. "/system/shell/bin/eng/.shell"},
  {"SETTINGS/GAMES.INI", "common/settings/games.ini"},
  {"SETTINGS/MYKEY.INI", PROGS .. "/system/MyKey/trunk/mykey.ini"},
@@ -179,7 +179,6 @@ extra_files = {
  {"kolibrios/develop/oberon07/doc/", PROGS .. "/develop/oberon07/doc/*"},
  {"kolibrios/develop/oberon07/lib/KolibriOS/", PROGS .. "/develop/oberon07/lib/KolibriOS/*"},
  {"kolibrios/develop/oberon07/samples/", PROGS .. "/develop/oberon07/samples/*"},
- {"kolibrios/develop/oberon07/tools/", PROGS .. "/develop/oberon07/tools/*"},
  {"kolibrios/develop/tcc/", PROGS ..  "/develop/ktcc/trunk/*"},
 -- {"kolibrios/develop/tcc/", PROGS ..  "/develop/ktcc/trunk/bin/tcc"},
  {"kolibrios/develop/tcc/lib/", PROGS ..  "/develop/ktcc/trunk/bin/lib/*"},
@@ -226,7 +225,7 @@ extra_files = {
  {"kolibrios/games/lrl/", "common/games/lrl/*"},
  {"kolibrios/games/mun/data/", "common/games/mun/data/*"},
  {"kolibrios/games/mun/libc.dll", "common/games/mun/libc.dll"},
- {"kolibrios/games/mun/mun", "common/games/mun/mun"}, 
+ {"kolibrios/games/mun/mun", "common/games/mun/mun"},
  {"kolibrios/games/pig/", "common/games/pig/*"},
  {"kolibrios/games/soko/", "common/games/soko/*"},
  {"kolibrios/games/fridge/", "common/games/fridge/*"},
@@ -330,7 +329,7 @@ if build_type == "rus" then tup.append_table(extra_files, {
  {"kolibrios/games/WHOWTBAM/", build_type .. "/games/whowtbam"},
  {"kolibrios/games/WHOWTBAM/", build_type .. "/games/appdata.dat"},
  {"kolibrios/media/zsea/zsea_keys.txt", PROGS .. "/media/zsea/Docs/zSea_keys_rus.txt"},
- {"kolibrios/res/guide/", build_type .. "/docs/guide/*"}, 
+ {"kolibrios/res/guide/", build_type .. "/docs/guide/*"},
 }) else tup.append_table(extra_files, {
  {"Docs/config.txt", build_type .. "/docs/CONFIG.TXT"},
  {"Docs/copying.txt", build_type .. "/docs/COPYING.TXT"},
@@ -709,7 +708,7 @@ tup.append_table(extra_files, {
  {"kolibrios/media/qr_tool", PROGS .. "/media/qr_tool/qr_tool"},
  {"kolibrios/utils/weather", PROGS .. "/other/Weather/weather"},
 })
-end -- tup.getconfig('NO_TCC') ~= 'full' 
+end -- tup.getconfig('NO_TCC') ~= 'full'
 
 -- Programs that require GCC to compile.
 if tup.getconfig('NO_GCC') ~= 'full' then
