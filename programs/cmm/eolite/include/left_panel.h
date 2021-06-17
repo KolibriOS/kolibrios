@@ -130,7 +130,7 @@ void _SystemDiscs::Get()
 
 void _SystemDiscs::Draw()
 {    
-	char dev_name[15], disc_name[100], i, dev_icon, is_active=0, name_len;
+	char dev_name[15], disc_name[100], i, dev_icon, is_active=0;
 	int draw_y, draw_x;
 	
 	for (i=0; i<30; i++) DeleteButton(100+i);
@@ -192,7 +192,7 @@ void _SystemDiscs::DrawSelect(int draw_x, draw_y, path1, btid)
 	DrawBar(draw_x, draw_y, DDW+1-DEV_H_HOR, DEV_H_HOR, 0xFFFFFF);
 	_PutImage(draw_x + 5, draw_y+2, 18,17, is_active*7+dev_icon*17*18*3+#devices);
 	kfont.WriteIntoWindow(draw_x + 24, draw_y+2, 0xFFFfff, 0x000000, kfont.size.pt, #dev_name+1);
-	UnsafeDefineButton(draw_x, draw_y, DDW-1, DEV_H_HOR-1, btid+1+BT_HIDE,0xFFFFFF);
+	DefineButton(draw_x, draw_y, DDW-1, DEV_H_HOR-1, btid+1+BT_HIDE,0xFFFFFF);
 	DrawFlatButtonSmall(draw_x+DDW-DEV_H_HOR+1, draw_y-1, DEV_H_HOR-1, DEV_H_HOR+1, btid, "\x19");
 
 	draw_x += DDW + 1;
@@ -285,7 +285,6 @@ void DrawLeftPanelBg()
 	int actions_y = SystemDiscs.list.count*DEV_H;
 	int start_y = actions_y+159;
 	int area_h;
-	int i;
 	DrawBar(2,41,190,15,waves_pal[0]);		      //above devices block
 	DrawBar(17,actions_y+75,160,15,waves_pal[0]); //below devices block
 	PutShadow(17,actions_y+75,160,1,1,3);

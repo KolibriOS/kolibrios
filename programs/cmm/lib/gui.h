@@ -137,7 +137,7 @@
 
 :void DrawEditBox(dword edit_box_pointer)
 {
-	dword x,y,w,h,bg,t;
+	dword x,y,w,h,bg;
 	ESI = edit_box_pointer;
 	x = ESI.edit_box.left;
 	y = ESI.edit_box.top;

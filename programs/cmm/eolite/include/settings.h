@@ -158,11 +158,9 @@ void LoadIniSettings()
 	ini.GetString("DefaultPath", #path, 4096, "/rd/1");
 	ini.GetString("DefaultPath", #path_start, 4096, "/rd/1");
 	path_start_ed.size = path_start_ed.pos = strlen(#path_start);
-
-	ini_get_str stdcall ("/sys/SETTINGS/SYSTEM.INI", "system", "font file",#temp,4096,DEFAULT_FONT);
-	kfont.init(#temp);
+	kfont.init(DEFAULT_FONT);
 	ini_get_str stdcall ("/sys/SETTINGS/SYSTEM.INI", "system", "font smoothing",#temp,4096,"on");
-	if(!strcmp(#temp,"off")) kfont.smooth = false; else kfont.smooth = true;
+	if(streq(#temp,"off")) kfont.smooth = false; else kfont.smooth = true;
 }
 
 

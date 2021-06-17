@@ -102,7 +102,6 @@ struct collection
 };
 
 :void collection::increase_data_size() {
-	int filled_size;
 	if (realloc_size<4096) realloc_size = 4096;
 	if (!data_size) {
 		data_size = realloc_size;

@@ -69,7 +69,6 @@ void DrawFilledBar(dword x, y, w, h)
 int popin_w=260;
 void DrawEolitePopup(dword b1_text, b2_text)
 {
-	int but_x;
 	int popin_x = files.w - popin_w / 2 + files.x ;
 	DrawPopup(popin_x, 160, popin_w, 95, 1, sc.work, sc.work_graph);
 	DrawCaptButton(popin_x+23+000, 215, 100, 26, POPUP_BTN1, sc.button, sc.button_text, b1_text);

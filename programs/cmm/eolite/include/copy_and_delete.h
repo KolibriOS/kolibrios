@@ -24,7 +24,6 @@ int getElementSelectedFlag(dword n) {
 
 dword GetFilesCount(dword _in_path)
 {
-	int j;
 	BDVK file_info_count;
 	DIR_SIZE paste_dir_size;
 

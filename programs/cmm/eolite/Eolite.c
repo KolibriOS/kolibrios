@@ -3,9 +3,9 @@
 
 // 70.5 - get volume info and label
 
-#define ABOUT_TITLE "EOLITE 5 Beta2"
-#define TITLE_EOLITE "Eolite File Manager 5 Beta2"
-#define TITLE_KFM "Kolibri File Manager 2 Beta2";
+#define ABOUT_TITLE "EOLITE 5 Beta3"
+#define TITLE_EOLITE "Eolite File Manager 5 Beta3"
+#define TITLE_KFM "Kolibri File Manager 2 Beta3";
 
 #ifndef AUTOBUILD
 #include "lang.h--"
@@ -92,7 +92,6 @@ int toolbar_buttons_x[7]={9,46,85,134,167,203};
 bool active_about = false;
 bool active_settings = false;
 bool _not_draw = false;
-bool exif_load = false;
 bool dir_at_fat16 = NULL;
 
 bool dev_popin_active_on_panel=0;
@@ -146,7 +145,7 @@ libimg_image icons32_selected;
 #define STATUS_BAR_H 16;
 int status_bar_h = 0;
 
-int icon_size = 16;
+int icon_size = 18;
 
 edit_box new_file_ed = {200,213,180,0xFFFFFF,0x94AECE,0xFFFFFF,0xFFFFFF,0x10000000,
 	248,#new_element_name,0,ed_focus+ed_always_focus,6,0};
@@ -362,7 +361,10 @@ void main()
 				if (POPUP_BTN1==id) && (del_active) EventDelete();
 				if (POPUP_BTN1==id) && (new_element_active) NewElement();
 				if (POPUP_BTN2==id) EventClosePopinForm();
-				if (dev_popin_active_on_panel) EventDriveClick(id);
+				if (dev_popin_active_on_panel) {
+					if (id>=100) && (id<=120) EventDriveClick(id);
+					else EventClosePopinForm();
+				}
 				break;					
 			}
 
@@ -379,11 +381,13 @@ void main()
 				case KFM_DEV_DROPDOWN_1:
 				case KFM_DEV_DROPDOWN_1+1:
 						dev_popin_active_on_panel = 1;
+						DefineHiddenButton(0,0,5000,3000,9999+BT_NOFRAME);
 						SystemDiscs.DrawOptions(Form.cwidth/2-DDW, 8+DEV_H_HOR+3);
 						break;
 				case KFM_DEV_DROPDOWN_2:
 				case KFM_DEV_DROPDOWN_2+1:
 						dev_popin_active_on_panel = 2;
+						DefineHiddenButton(0,0,5000,3000,9999+BT_NOFRAME);
 						SystemDiscs.DrawOptions(Form.cwidth-DDW-2, 8+DEV_H_HOR+3);
 						break;
 				case BACK_BTN...PASTE_BTN:
@@ -884,7 +888,7 @@ void Line_ReDraw(dword bgcol, filenum){
 
 
 void Open_Dir(dword dir_path, redraw){
-	int errornum, maxcount, i;
+	int errornum;
 	if (redraw!=ONLY_SHOW)
 	{
 		selected_count = 0;
@@ -906,7 +910,7 @@ void Open_Dir(dword dir_path, redraw){
 		SystemDiscs.Draw();
 		files.visible = files.h / files.item_h;
 		if (files.count < files.visible) files.visible = files.count;
-		if (!strncmp(dir_path, "/rd/1/",5)) 
+		if (!strncmp(dir_path, "/rd/1/",5)) || (!strncmp(dir_path, "/sys/",4)) 
 			dir_at_fat16 = true; else dir_at_fat16 = false; 
 		if (redraw!=ONLY_SHOW) Sorting();
 		list_full_redraw = true;
@@ -924,7 +928,6 @@ inline Sorting()
 {
 	dword d=0, f=1;
 	int j=0;
-	dword tmp;
 	dword file_off;
 
 	items.drop();
@@ -1030,7 +1033,6 @@ void Dir_Up()
 void EventOpenSelected()
 {
 	int i;
-	dword file_off;
 	for (i=0; i<files.count; i++) if (getElementSelectedFlag(i)) { 
 		EDX = items.get(i)*304 + buf+32;
 		if (TestBit(ESDWORD[EDX], 4)) continue; //is foder
@@ -1082,7 +1084,7 @@ void ShowOpenWithDialog()
 void NewElement()
 {
 	BDVK element_info;
-	byte del_result, copy_result, info_result;
+	byte copy_result, info_result;
 
 	sprintf(#temp,"%s/%s",#path,new_file_ed.text);
 	info_result = GetFileInfo(#temp, #element_info);

@@ -31,7 +31,7 @@ void DrawBreadCrumbs()
  char PathShow_path[4096];
  block btn;
  int i;
- unsigned text_line, area_w;
+ unsigned text_line;
  {
 	strcat(#PathShow_path, #path);
 	for (i=0; i<50; i++) DeleteButton(i+BREADCRUMB_ID);
@@ -45,7 +45,7 @@ void DrawBreadCrumbs()
 	}
 	breadCrumb.add(i+1);
 	btn.set_size(246,10,NULL,20);
-	area_w = Form.cwidth - btn.x - 20;
+	//area_w = Form.cwidth - btn.x - 20;
 	for (i=0; i<breadCrumb.count-1; i++)
 	{
 		text_line = breadCrumb.get(i) + #PathShow_path;

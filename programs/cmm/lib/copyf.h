@@ -34,8 +34,7 @@
 :int CopyFile(dword copy_from3, copy_in3)
 {
 	BDVK CopyFile_atr;
-	dword error, cbuf;
-	dword block;
+	dword error;
 
 	if (error = GetFileInfo(copy_from3, #CopyFile_atr))
 	{

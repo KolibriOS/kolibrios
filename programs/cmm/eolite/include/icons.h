@@ -21,7 +21,7 @@ void DrawIconByExtension(dword file_path, extension, xx, yy, fairing_color)
 		default_icon=2;
 	}
 
-	if (ESBYTE[file_path+1]!='k') && (chrnum(file_path, '/')==2) {
+	if (ESBYTE[file_path+1]!='k') && (ESBYTE[file_path+1]!='s') && (chrnum(file_path, '/')==2) {
 		if (ESBYTE[file_path+1]=='/') ext[0] = ESBYTE[file_path+2];
 			else ext[0] = ESBYTE[file_path+1];
 		ext[1] = '\0';
