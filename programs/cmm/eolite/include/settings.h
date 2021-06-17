@@ -118,24 +118,26 @@ void ExitSettings()
 void DrawSettingsCheckBoxes()
 {
 	incn y;
-	int x=11, frx=26, but_x;
+	int but_x;
+	#define FRX 26
+	#define XXX 11
 	y.n = 0;
-	show_dev_name.draw(x, y.inc(14));
-	show_status_bar.draw(x, y.inc(25));
-	show_breadcrumb.draw(x, y.inc(25));
-	big_icons.draw(x, y.inc(25));
-	colored_lines.draw(x, y.inc(25));
-	font_size.draw(x, y.inc(31));
-	line_height.draw(x, y.inc(31));
+	show_dev_name.draw(XXX, y.inc(14));
+	show_status_bar.draw(XXX, y.inc(25));
+	show_breadcrumb.draw(XXX, y.inc(25));
+	big_icons.draw(XXX, y.inc(25));
+	colored_lines.draw(XXX, y.inc(25));
+	font_size.draw(XXX, y.inc(31));
+	line_height.draw(XXX, y.inc(31));
 	
-	DrawFrame(x, y.inc(37), 340, 95, START_PATH);
+	DrawFrame(XXX, y.inc(37), 340, 95, START_PATH);
 	// START_PATH {
-	DrawEditBoxPos(frx, y.inc(21), #path_start_ed);
-	but_x = DrawStandartCaptButton(frx, y.inc(34), 6, SAVE_PATH_AS_DEFAULT);
-	DrawStandartCaptButton(frx+but_x, y.inc(0), 7, SAVE_START_PATH_AS_DEFAULT);
+	DrawEditBoxPos(FRX, y.inc(21), #path_start_ed);
+	but_x = DrawStandartCaptButton(FRX, y.inc(34), 6, SAVE_PATH_AS_DEFAULT);
+	DrawStandartCaptButton(FRX+but_x, y.inc(0), 7, SAVE_START_PATH_AS_DEFAULT);
 	// } START_PATH
 
-	DrawStandartCaptButton(x, y.inc(52), 5, EDIT_FILE_ASSOCIATIONS);
+	DrawStandartCaptButton(XXX, y.inc(52), 5, EDIT_FILE_ASSOCIATIONS);
 }
 
 

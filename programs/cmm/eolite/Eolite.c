@@ -3,9 +3,9 @@
 
 // 70.5 - get volume info and label
 
-#define ABOUT_TITLE "EOLITE 5 Beta3"
-#define TITLE_EOLITE "Eolite File Manager 5 Beta3"
-#define TITLE_KFM "Kolibri File Manager 2 Beta3";
+#define ABOUT_TITLE "EOLITE 5 Beta4"
+#define TITLE_EOLITE "Eolite File Manager 5 Beta4"
+#define TITLE_KFM "Kolibri File Manager 2 Beta4";
 
 #ifndef AUTOBUILD
 #include "lang.h--"
@@ -1260,7 +1260,6 @@ void EventSelectFileByKeyPress()
 dword GetDeviceSizeLabel(dword path)
 {
 	BDVK bdvk;
-	char cdname[8];
 	if (ESBYTE[path+1] == '/') path++;
 	if (ESBYTE[path+1] == 'c') && (ESBYTE[path+2] == 'd')
 		&& (ESBYTE[path+4] == 0) return 0;

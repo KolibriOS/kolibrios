@@ -26,12 +26,8 @@
 
 #include "../lib/patterns/rgb.h"
 
-
 #define DEFAULT_FONT "/sys/fonts/Tahoma.kf"
-
-#ifndef KFONT_BPP
 #define KFONT_BPP 4
-#endif
 
 int kfont_char_width[255];
 
@@ -295,14 +291,12 @@ inline fastcall dword b32(EAX) { return DSDWORD[EAX]; }
 
 :void KFONT::ShowBuffer(dword _x, _y)
 {
-	if (4==KFONT_BPP) PutPaletteImage(raw, size.width, size.height, _x, _y, 32, 0);
-	//if (1==KFONT_BPP) PutPaletteImage(raw, size.width, size.height, _x, _y, 8, #palette);
+	PutPaletteImage(raw, size.width, size.height, _x, _y, 32, 0);
 }
 
 :void KFONT::ShowBufferPart(dword _x, _y, _w, _h, _buf_offset)
 {
-	if (4==KFONT_BPP) PutPaletteImage(_buf_offset * KFONT_BPP + raw, _w, _h, _x, _y, 32, 0);
-	//if (1==KFONT_BPP) PutPaletteImage(_buf_offset * KFONT_BPP + raw, _w, _h, _x, _y, 8, #palette);
+	PutPaletteImage(_buf_offset * KFONT_BPP + raw, _w, _h, _x, _y, 32, 0);
 }
 
 #endif

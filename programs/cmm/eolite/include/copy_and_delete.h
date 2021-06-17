@@ -57,7 +57,7 @@ void CopyFilesListToClipboard(bool _cut_active)
 
 	if (files.count<=0) return; //no files
 
-	if (cut_active!=DELETE) cut_active = _cut_active;
+	if (_cut_active!=DELETE) cut_active = _cut_active;
 
 	//if no element selected by "Insert" key, then we copy current element
 	if (!selected_count) {
