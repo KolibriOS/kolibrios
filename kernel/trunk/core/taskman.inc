@@ -493,13 +493,12 @@ pid_to_slot:
 .loop:
 ;ecx = offset of current process info entry
 ;ebx = maximum permitted offset
-        ; state 9 means "not used"
-        cmp     byte [TASK_TABLE+ecx+TASKDATA.state], TSTATE_FREE
+        cmp     [TASK_TABLE+ecx+TASKDATA.state], TSTATE_FREE
         jz      .endloop ;skip empty slots
         cmp     [TASK_TABLE+ecx+TASKDATA.pid], eax;check PID
         jz      .pid_found
 .endloop:
-        add     ecx, 32
+        add     ecx, sizeof.TASKDATA
         cmp     ecx, ebx
         jle     .loop
 
@@ -895,7 +894,7 @@ common_app_entry:
         cmp     [ebx+APPDATA.debugger_slot], 0
         je      .exit
         mov     eax, [TASK_BASE]
-        mov     [eax+TASKDATA.state], 1
+        mov     [eax+TASKDATA.state], TSTATE_RUN_SUSPENDED
         call    change_task
 .exit:
         popad
@@ -987,7 +986,7 @@ proc set_app_params stdcall,slot:dword, params:dword, flags:dword
 
         inc     dword [process_number]
         mov     eax, [process_number]
-        mov     [ebx+4], eax    ;set PID
+        mov     [ebx+TASKDATA.pid], eax    ;set PID
 
 ;set draw data to full screen
         xor     eax, eax

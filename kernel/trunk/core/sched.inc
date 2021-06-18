@@ -309,7 +309,7 @@ proc find_next_task
         xor     eax, eax
 @@:
         mov     [ebx+APPDATA.wait_param], eax  ; retval for wait
-        mov     [edi+TASKDATA.state], 0
+        mov     [edi+TASKDATA.state], TSTATE_RUNNING
 .task_found:
         mov     [scheduler_current+ecx*4], ebx
 ; If we have selected a thread with higher priority

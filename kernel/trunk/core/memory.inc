@@ -1008,7 +1008,7 @@ proc sys_ipc_send stdcall, PID:dword, msg_addr:dword, msg_size:dword
 
         mov     dword [edi+4], ebx
         mov     eax, [TASK_BASE]
-        mov     eax, [eax+0x04]        ;eax - our PID
+        mov     eax, [eax+TASKDATA.pid]        ;eax - our PID
         add     edi, edx
         mov     [edi], eax
         mov     ecx, [msg_size]

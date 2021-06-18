@@ -48,7 +48,7 @@ mutex_lock:
         dec     eax
         jz      @F
 
-        mov     [edx+TASKDATA.state], 1
+        mov     [edx+TASKDATA.state], TSTATE_RUN_SUSPENDED
         call    change_task
         jmp     .forever
 @@:
@@ -80,7 +80,7 @@ mutex_unlock:
         je      @F
 
         mov     eax, [eax+MUTEX_WAITER.task]
-        mov     [eax+TASKDATA.state], 0
+        mov     [eax+TASKDATA.state], TSTATE_RUNNING
 @@:
         popfd
         ret
@@ -114,7 +114,7 @@ down_read:
         mov     eax, [TASK_BASE]
         mov     [esp+MUTEX_WAITER.task], eax
         mov     [esp+MUTEX_WAITER.type], RWSEM_WAITING_FOR_READ
-        mov     [eax+TASKDATA.state], 1
+        mov     [eax+TASKDATA.state], TSTATE_RUN_SUSPENDED
 
         list_add_tail esp, ecx      ;esp= new waiter, ecx= list head
 
@@ -141,7 +141,7 @@ down_write:
         mov     edx, [TASK_BASE]
         mov     [esp+MUTEX_WAITER.task], edx
         mov     [esp+MUTEX_WAITER.type], RWSEM_WAITING_FOR_WRITE
-        mov     [edx+TASKDATA.state], 1
+        mov     [edx+TASKDATA.state], TSTATE_RUN_SUSPENDED
 
         list_add_tail esp, ecx      ;esp= new waiter, ecx= list head
 
@@ -152,7 +152,7 @@ down_write:
         test    eax, [ecx+RWSEM.count]
         jz      @F
 
-        mov     [edx+TASKDATA.state], 1
+        mov     [edx+TASKDATA.state], TSTATE_RUN_SUSPENDED
         call    change_task
         jmp     .forever
 @@:
@@ -178,7 +178,7 @@ up_read:
         je      @F
 
         mov     eax, [eax+MUTEX_WAITER.task]
-        mov     [eax+TASKDATA.state], 0
+        mov     [eax+TASKDATA.state], TSTATE_RUNNING
 @@:
         popfd
         ret
@@ -202,7 +202,7 @@ up_write:
         jnz     .wake
 
         mov     eax, [eax+MUTEX_WAITER.task]
-        mov     [eax+TASKDATA.state], 0
+        mov     [eax+TASKDATA.state], TSTATE_RUNNING
 .done:
         popfd
         ret
@@ -220,7 +220,7 @@ up_write:
         mov     ebx, [eax+MUTEX_WAITER.list.next]
         list_del eax
         mov     edx, [eax+MUTEX_WAITER.task]
-        mov     [edx+TASKDATA.state], 0
+        mov     [edx+TASKDATA.state], TSTATE_RUNNING
         inc     esi
         cmp     edi, ebx
         je      .wake_done

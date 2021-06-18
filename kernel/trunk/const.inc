@@ -479,6 +479,8 @@ struct  BOX
         height  dd ?
 ends
 
+; Fields, marked as R now not used, but will be used soon,
+; when legacy TASKDATA structure will be deleted
 struct  APPDATA
         app_name        rb 11
                         rb 5
@@ -504,21 +506,21 @@ struct  APPDATA
         wait_test       dd ?            ;+96   +++
         wait_param      dd ?            ;+100  +++
         tls_base        dd ?            ;+104
-        event_mask      dd ?            ;+108  ; stores event types allowed for task
-        tid             dd ?            ;+112  ; thread id
+        event_mask      dd ?            ;+108  ; R stores event types allowed for task
+        tid             dd ?            ;+112  ; R thread id
         draw_bgr_x      dd ?            ;+116
         draw_bgr_y      dd ?            ;+120
-        state           db ?            ;+124  ; thread state
+        state           db ?            ;+124  ; R thread state
                         db ?            ;+125
                         dw ?            ;+126
         wnd_shape       dd ?            ;+128
         wnd_shape_scale dd ?            ;+132
-        mem_start       dd ?            ;+136 ;;
-        counter_sum     dd ?            ;+140 ;;
+        mem_start       dd ?            ;+136  ; R
+        counter_sum     dd ?            ;+140  ; R
         saved_box       BOX             ;+144
         ipc_start       dd ?            ;+160
         ipc_size        dd ?            ;+164
-        occurred_events dd ?            ;+168 ; mask which accumulates occurred events
+        occurred_events dd ?            ;+168  ; mask which accumulates occurred events
         debugger_slot   dd ?            ;+172
         terminate_protection dd ?       ;+176
         keyboard_mode   db ?            ;+180
@@ -531,8 +533,8 @@ struct  APPDATA
         wnd_clientbox   BOX             ;+216
         priority        dd ?            ;+232
         in_schedule     LHEAD           ;+236
-        counter_add     dd ?            ;+244 ;;
-        cpu_usage       dd ?            ;+248 ;;
+        counter_add     dd ?            ;+244  ; R
+        cpu_usage       dd ?            ;+248  ; R
                         dd ?            ;+252
 ends
 
@@ -557,6 +559,7 @@ struct  TASKDATA
         cpu_usage       dd ? ;+28
 ends
 
+; Thread states:
 TSTATE_RUNNING        = 0
 TSTATE_RUN_SUSPENDED  = 1
 TSTATE_WAIT_SUSPENDED = 2
@@ -565,7 +568,7 @@ TSTATE_TERMINATING    = 4
 TSTATE_WAITING        = 5
 TSTATE_FREE           = 9
 
-; constants definition
+; Window constants:
 WSTATE_NORMAL    = 00000000b
 WSTATE_MAXIMIZED = 00000001b
 WSTATE_MINIMIZED = 00000010b
@@ -581,7 +584,8 @@ ZPOS_DESKTOP            = -2
 ZPOS_ALWAYS_BACK        = -1
 ZPOS_NORMAL             = 0
 ZPOS_ALWAYS_TOP         = 1     ;ZPOS_ALWAYS_TOP is always last and has max number!
-; structures definition
+
+; Window structure:
 struct  WDATA
         box             BOX
         cl_workarea     dd ?

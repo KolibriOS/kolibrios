@@ -152,7 +152,7 @@ exc_c:                            ; exceptions (all but 7th - #NM)
 ; not debuggee => say error and terminate
         call    show_error_parameters
         sti
-        mov     [edx + TASKDATA.state], byte 4 ; terminate
+        mov     [edx + TASKDATA.state], TSTATE_TERMINATING ; terminate
         call    wakeup_osloop
         call    change_task
 ; If we're here, then the main OS thread has crashed before initializing IDLE thread.
@@ -187,7 +187,7 @@ exc_c:                            ; exceptions (all but 7th - #NM)
         call    debugger_notify ;; only ONE using, inline ??? SEE: core/debug.inc
         add     esp, 12
         mov     edx, [TASK_BASE]
-        mov     byte [edx+TASKDATA.state], 1 ; suspended
+        mov     [edx+TASKDATA.state], TSTATE_RUN_SUSPENDED ; suspended
         call    change_task     ; SEE: core/shed.inc
         restore_ring3_context
         iretd
@@ -419,7 +419,7 @@ destroy_thread:
         jnz     @F
         pop     esi
         shl     esi, BSF sizeof.TASKDATA
-        mov     [TASK_TABLE+esi+TASKDATA.state], 9
+        mov     [TASK_TABLE+esi+TASKDATA.state], TSTATE_FREE
         ret
 @@:
         push    edx                     ;save .process
@@ -639,7 +639,7 @@ destroy_thread:
         lea     esi, [WIN_POS+eax*2]
         movzx   edi, word [esi]              ; edi = process
         shl     edi, BSF sizeof.TASKDATA
-        cmp     [TASK_TABLE + edi + TASKDATA.state], byte 9 ; skip dead slots
+        cmp     [TASK_TABLE + edi + TASKDATA.state], TSTATE_FREE ; skip free slots
         je      .check_next_window
         add     edi, window_data
 ; \begin{diamond}[19.09.2006]
@@ -714,7 +714,7 @@ destroy_thread:
         popa
         mov     edi, esi ; do not run this process slot
         shl     edi, BSF sizeof.TASKDATA
-        mov     [edi+TASK_TABLE + TASKDATA.state], byte 9
+        mov     [edi+TASK_TABLE + TASKDATA.state], TSTATE_FREE
 ; debugger test - terminate all debuggees
         mov     eax, 2
         mov     ecx, SLOT_BASE+2*0x100+APPDATA.debugger_slot
