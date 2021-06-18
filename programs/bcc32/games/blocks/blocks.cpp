@@ -5,6 +5,7 @@
 #include <load_lib.h>
 #include <l_proc_lib.h>
 #include <l_tinygl.h>
+#include <l_box_lib.h>
 
 using namespace Kolibri;
 
@@ -38,7 +39,7 @@ struct ColorList{
 	long int color;
 };
 
-const long C_COUNT_MAX = 32;
+const long C_COUNT_MAX = 27;
 ColorList c_list[C_COUNT_MAX];
 long c_count = 0;
 
@@ -69,6 +70,11 @@ float mat_specular[] = {0.3, 0.3, 0.3, 1.0}; //Цвет блика
 float mat_shininess = 3.0; //Размер блика (обратная пропорция)
 float white_light[] = {1.0, 1.0, 1.0, 1.0}; //Цвет и интенсивность освещения, генерируемого источником
 float lmodel_ambient[] = {0.3, 0.3, 0.3, 1.0}; //Параметры фонового освещения
+
+const long TOOLBAR_H = 29;
+char str1[] = "Show active level";
+check_box check1 = { {16,280,20,4}, 8, 0xffffff, 0x808080, 0xffffff, str1, ch_flag_middle };
+scrollbar sb_tcr = { 200,70,19,4, 16, 1, 20,1,0, 0x808080, 0xffffff, 0x0};
 
 void SetLight()
 {
@@ -149,10 +155,13 @@ void draw_3d()
 				glRotatef(model_list[i].r_x, 1.0,0.0,0.0);
 				glRotatef(model_list[i].r_y, 0.0,1.0,0.0);
 				glRotatef(model_list[i].r_z, 0.0,0.0,1.0);
+				if((check1.flags&ch_flag_en && model_list[i].t_cr==sb_tcr.position)||
+				(!(check1.flags&ch_flag_en) && model_list[i].t_cr<=sb_tcr.position)){
 				glColor3ub((model_list[i].color>>16)&255,
 					(model_list[i].color>> 8)&255,
 					model_list[i].color&255);
 				glCallList(model_list[i].id_l);
+				}
 			}
 			while(pu_cou){
 				pu_cou--;
@@ -242,7 +251,7 @@ bool init_block(){
 
 bool init_model()
 {
-	long i, n;
+	long i, n, max_time=0;
 	char *ft = strstr(f_data, "const");
 	char *fe; //end ']'
 	char *fp; //perv ','
@@ -301,6 +310,7 @@ bool init_model()
 		ft=strchr(ft, ',')+1;
 		ft[-1]=0;
 		model_list[i].t_cr=StrToInt(fp);
+		if(model_list[i].t_cr>max_time) max_time=model_list[i].t_cr;
 
 		fp=ft;
 		ft=strchr(ft, ',')+1;
@@ -349,6 +359,8 @@ bool init_model()
 	scale_o = .5/trans_z;
 	angle_x = 135.0;
 	angle_z = -45.0;
+	sb_tcr.max_area = max_time+1;
+	sb_tcr.position = max_time;
 
 	return true;
 }
@@ -404,7 +416,7 @@ bool KolibriOnStart(TStartData &kos_start, TThreadData /*th*/)
 	kos_start.Top = 40;
 	kos_start.Width = 640;
 	kos_start.Height = 480;
-	kos_start.WinData.WindowColor = 0xFFFFFF;
+	kos_start.WinData.WindowColor = 0x333333;
 	kos_start.WinData.WindowType = 0x33; // 0x34 - fixed, 0x33 - not fixed
 	kos_start.WinData.Title = header;
 
@@ -427,17 +439,22 @@ bool KolibriOnStart(TStartData &kos_start, TThreadData /*th*/)
 		ofd.y_start = 10;
 		OpenDialog_Init(&ofd);
 	} else return false;
+	if(LoadLibrary("box_lib.obj", library_path, "/sys/lib/box_lib.obj", &import_box_lib))
+	{
+		check_box_init(&check1);
+		sb_tcr.ar_offset=1;
+	} else return false;
 	if(LoadLibrary("tinygl.obj", library_path, "/sys/lib/tinygl.obj", &import_tinygl))
 	{
-		kosglMakeCurrent(0,0,kos_start.Width,kos_start.Height,&ctx1);
-		rat_h = kos_start.Height;
+		long h = kos_start.Height-TOOLBAR_H;
+		kosglMakeCurrent(0,TOOLBAR_H,kos_start.Width,h,&ctx1);
+		rat_h = h;
 		rat_h /= kos_start.Width;
 		angle_dwm = kos_start.Width/180.0;
-		angle_dhm = kos_start.Height/180.0;
+		angle_dhm = h/180.0;
 		glEnable(GL_DEPTH_TEST);
 		glClearColor(0.2,0.2,0.2,0.0);
 		glEnable(GL_NORMALIZE);
-		//draw_3d();
 		if(init_block()){
 			if(CommandLine[0]) OpenModel(CommandLine);
 			return true;
@@ -451,8 +468,12 @@ void KolibriOnPaint(void)
 	kosglSwapBuffers();
 
 	// If button have ID 1, this is close button
-	DrawButton(2,0xf0f0f0, 10,10,50,20);
-	DrawText(20,16,0,"Open");
+	DrawButton(2,0xf0f0f0, 10,4,50,19);
+	DrawText(20,10,0,"Open");
+	DrawText(10,TOOLBAR_H+3,(1<<24)|0xffffff,DoubleToStr(sb_tcr.position,0,true));
+	sb_tcr.all_redraw=1;
+	scrollbar_h_draw(&sb_tcr);
+	check_box_draw(&check1);
 }
 
 void KolibriOnButton(long id, TThreadData /*th*/)
@@ -495,9 +516,19 @@ void KolibriOnKeyPress(TThreadData /*th*/)
 
 void KolibriOnMouse(TThreadData /*th*/)
 {
-	int m = GetMouseButton();
 	short m_x_old, m_y_old;
 
+	long f, m = sb_tcr.position;
+	f = check1.flags;
+	scrollbar_h_mouse(&sb_tcr);
+	check_box_mouse(&check1);
+	if(sb_tcr.position!=m || check1.flags!=f){		
+		draw_3d();
+		Invalidate();
+		return;
+	}
+
+	m = GetMouseButton();
 	if(m&1 && mouse_drag){
 		//mouse l. but. move
 		m_x_old = mouse_x;
@@ -520,7 +551,7 @@ void KolibriOnMouse(TThreadData /*th*/)
 	if(m&0x100){
 		//mouse l. but. press
 		GetMousePosPicture(mouse_x, mouse_y);
-		if(mouse_x>0 && mouse_y>0) mouse_drag=true;
+		if(mouse_x>0 && mouse_y>TOOLBAR_H) mouse_drag=true;
 	}
 
 	GetMouseScrollData(m_x_old, m_y_old);
@@ -541,6 +572,7 @@ void KolibriOnSize(int window_rect[], TThreadData /*th*/)
 	unsigned short int width, height;
 	GetClientSize(width, height);
 	if(!width || !height) return;
+	height-=TOOLBAR_H;
 	if(width<100) width=100;
 	if(height<80) height=80;
 	rat_h = (float)height / (float)width;

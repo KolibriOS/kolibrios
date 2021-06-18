@@ -71,6 +71,14 @@ struct check_box
 	long size_of_str;
 };
 
+struct scrollbar
+{
+	short x_size, x_pos, y_size, y_pos;
+	long btn_height, type, max_area, cur_area, position, bg_color, front_color, line_color, redraw;
+	short delta, delta2, r_size_x, r_start_x, r_size_y, r_start_y;
+	long m_pos, m_pos_2, m_keys, run_size, position2, work_size, all_redraw, ar_offset;
+};
+
 //
 // box_lib - import table
 //
@@ -92,10 +100,10 @@ void (__stdcall* check_box_mouse)(check_box* check) = (void (__stdcall*)(check_b
 //void (__stdcall* option_box_mouse)(...) = (void (__stdcall*)(...))&"option_box_mouse";
 //&"version_op";
 
-//void (__stdcall* scrollbar_v_draw)(...) = (void (__stdcall*)(...))&"scrollbar_v_draw";
-//void (__stdcall* scrollbar_v_mouse)(...) = (void (__stdcall*)(...))&"scrollbar_v_mouse";
-//void (__stdcall* scrollbar_h_draw)(...) = (void (__stdcall*)(...))&"scrollbar_h_draw";
-//void (__stdcall* scrollbar_h_mouse)(...) = (void (__stdcall*)(...))&"scrollbar_h_mouse";
+void (__stdcall* scrollbar_v_draw)(scrollbar* scroll) = (void (__stdcall*)(scrollbar*))&"scrollbar_v_draw";
+void (__stdcall* scrollbar_v_mouse)(scrollbar* scroll) = (void (__stdcall*)(scrollbar*))&"scrollbar_v_mouse";
+void (__stdcall* scrollbar_h_draw)(scrollbar* scroll) = (void (__stdcall*)(scrollbar*))&"scrollbar_h_draw";
+void (__stdcall* scrollbar_h_mouse)(scrollbar* scroll) = (void (__stdcall*)(scrollbar*))&"scrollbar_h_mouse";
 //&"version_scrollbar";
 
 //void (__stdcall* dbutton_draw)(...) = (void (__stdcall*)(...))&"dbutton_draw";
