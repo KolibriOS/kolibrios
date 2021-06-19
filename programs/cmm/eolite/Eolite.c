@@ -333,7 +333,7 @@ void main()
 				break;
 			}
 
-			if (efm) && (mouse.y > files.y) && (mouse.down) {
+			if (efm) && (mouse.y > files.y) && (mouse.y < files.y + files.h) && (mouse.down) {
 				if (mouse.x<Form.cwidth/2) {
 					if (active_panel!=1) ChangeActivePanel();
 				} else {
