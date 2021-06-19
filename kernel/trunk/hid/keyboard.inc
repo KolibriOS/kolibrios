@@ -8,21 +8,21 @@
 $Revision$
 
 
-VKEY_LSHIFT   = 0000000000000001b
-VKEY_RSHIFT   = 0000000000000010b
-VKEY_LCONTROL = 0000000000000100b
-VKEY_RCONTROL = 0000000000001000b
-VKEY_LALT     = 0000000000010000b
-VKEY_RALT     = 0000000000100000b
-VKEY_CAPSLOCK = 0000000001000000b
-VKEY_NUMLOCK  = 0000000010000000b
-VKEY_SCRLOCK  = 0000000100000000b
-VKEY_LWIN     = 0000001000000000b
-VKEY_RWIN     = 0000010000000000b
+VKEY_LSHIFT   = 00000000_00000001b
+VKEY_RSHIFT   = 00000000_00000010b
+VKEY_LCONTROL = 00000000_00000100b
+VKEY_RCONTROL = 00000000_00001000b
+VKEY_LALT     = 00000000_00010000b
+VKEY_RALT     = 00000000_00100000b
+VKEY_CAPSLOCK = 00000000_01000000b
+VKEY_NUMLOCK  = 00000000_10000000b
+VKEY_SCRLOCK  = 00000001_00000000b
+VKEY_LWIN     = 00000010_00000000b
+VKEY_RWIN     = 00000100_00000000b
 
-VKEY_SHIFT    = 0000000000000011b
-VKEY_CONTROL  = 0000000000001100b
-VKEY_ALT      = 0000000000110000b
+VKEY_SHIFT    = VKEY_LSHIFT + VKEY_RSHIFT
+VKEY_CONTROL  = VKEY_LCONTROL + VKEY_RCONTROL
+VKEY_ALT      = VKEY_LALT + VKEY_RALT
 
 uglobal
   align 4
@@ -196,7 +196,7 @@ align 4
 irq1:
         movzx   eax, word[thread_count]; top window process
         movzx   eax, word[WIN_POS+eax*2]
-        shl     eax, 8
+        shl     eax, BSF sizeof.APPDATA
         mov     al, [SLOT_BASE+eax+APPDATA.keyboard_mode]
         mov     [keyboard_mode], al
         
@@ -510,7 +510,7 @@ send_scancode:
         inc     eax
         mov     [KEY_COUNT], al
 ; store ascii or scancode
-        mov     [KEY_COUNT+eax], bl ; actually KEY_BUFF + EAX - 1
+        mov     [KEY_BUFF+eax-1], bl
 ; store original scancode
         add     eax, 120+2
         push    ecx
@@ -519,7 +519,7 @@ send_scancode:
 
         xor     ch, ch
 @@:
-        mov     [KEY_COUNT+eax], ch ; actually KEY_BUFF + EAX - 1
+        mov     [KEY_BUFF+eax-1], ch
         pop     ecx
         sub     eax, 120+2
 .exit.irq1:
@@ -572,18 +572,7 @@ check_lights_state:
 .nothing:
         ret
 ;---------------------------------------------------------------------
-numlock_map:
-    db   0x37   ;Num 7
-    db   0x38   ;Num 8
-    db   0x39   ;Num 9
-    db   0x2D   ;Num -
-    db   0x34   ;Num 4
-    db   0x35   ;Num 5
-    db   0x36   ;Num 6
-    db   0x2B   ;Num +
-    db   0x31   ;Num 1
-    db   0x32   ;Num 2
-    db   0x33   ;Num 3
-    db   0x30   ;Num 0
-    db   0x2E   ;Num .
+iglobal
+numlock_map db '789-456+1230.'
+endg
 ;---------------------------------------------------------------------
