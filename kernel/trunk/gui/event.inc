@@ -281,7 +281,7 @@ Wait_events_ex:
         mov     eax, [timer_ticks]
         mov     [esi+APPDATA.wait_begin], eax
         mov     eax, [TASK_BASE]
-        mov     [eax+TASKDATA.state], 5
+        mov     [eax+TASKDATA.state], TSTATE_WAITING
         call    change_task
         mov     eax, [esi+APPDATA.wait_param]
 ;--------------------------------------

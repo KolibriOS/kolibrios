@@ -133,7 +133,7 @@ align 4
         list_add_tail esp, esi      ;esp= new waiter, esi= list head
         mov     eax, edx
 .again:
-        mov     [ebx+TASKDATA.state], 1
+        mov     [ebx+TASKDATA.state], TSTATE_RUN_SUSPENDED
         call    change_task
 
         lock cmpxchg [ecx], edx
@@ -180,7 +180,7 @@ align 4
         mov     eax, [timer_ticks]
         mov     [ebx+APPDATA.wait_begin], eax
         mov     eax, [TASK_BASE]
-        mov     [eax+TASKDATA.state], 5
+        mov     [eax+TASKDATA.state], TSTATE_WAITING
 
         mov     [esp+MUTEX_WAITER.task], eax
         lea     esi, [ebp+FUTEX.wait_list]
@@ -232,7 +232,7 @@ align 4
         je      .done
 
         mov     eax, [esi+MUTEX_WAITER.task]
-        mov     [eax+TASKDATA.state], 0
+        mov     [eax+TASKDATA.state], TSTATE_RUNNING
 
         mov     esi, [esi+MUTEX_WAITER.list.next]
         inc     ecx

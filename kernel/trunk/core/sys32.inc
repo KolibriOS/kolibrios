@@ -152,7 +152,7 @@ exc_c:                            ; exceptions (all but 7th - #NM)
 ; not debuggee => say error and terminate
         call    show_error_parameters
         sti
-        mov     [edx + TASKDATA.state], TSTATE_TERMINATING ; terminate
+        mov     [edx + TASKDATA.state], TSTATE_TERMINATING
         call    wakeup_osloop
         call    change_task
 ; If we're here, then the main OS thread has crashed before initializing IDLE thread.
@@ -187,7 +187,7 @@ exc_c:                            ; exceptions (all but 7th - #NM)
         call    debugger_notify ;; only ONE using, inline ??? SEE: core/debug.inc
         add     esp, 12
         mov     edx, [TASK_BASE]
-        mov     [edx+TASKDATA.state], TSTATE_RUN_SUSPENDED ; suspended
+        mov     [edx+TASKDATA.state], TSTATE_RUN_SUSPENDED
         call    change_task     ; SEE: core/shed.inc
         restore_ring3_context
         iretd

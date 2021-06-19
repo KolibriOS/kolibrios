@@ -2363,7 +2363,7 @@ sysfn_zmodif:
         mov     eax, edx
         shl     edx, 5
 
-        cmp     [edx + TASK_TABLE + TASKDATA.state], 9
+        cmp     [edx + TASK_TABLE + TASKDATA.state], TSTATE_FREE
         je      .fail
 
         cmp     ecx, 1
@@ -3606,7 +3606,7 @@ align 4
 ;--------------------------------------
 align 4
 .set:
-        or      [edi+SLOT_BASE+APPDATA.occurred_events], 100000b  ; set event 6; TODO use constant
+        or      [edi+SLOT_BASE+APPDATA.occurred_events], EVENT_MOUSE
 ;--------------------------------------
 align 4
 .skip:
@@ -3674,7 +3674,7 @@ set_bgr_event:
         mov     [edi+SLOT_BASE+APPDATA.draw_bgr_x], eax
         mov     [edi+SLOT_BASE+APPDATA.draw_bgr_y], edx
 .common:
-        or      [edi+SLOT_BASE+APPDATA.occurred_events], 10000b  ; set event 5; TODO use constant
+        or      [edi+SLOT_BASE+APPDATA.occurred_events], EVENT_BACKGROUND
         loop    set_bgr_event
         pop     edi ecx
 ;--------- set event 5 stop -----------

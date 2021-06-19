@@ -1042,8 +1042,8 @@ proc sys_ipc_send stdcall, PID:dword, msg_addr:dword, msg_size:dword
         invlpg  [edx]
 
         mov     eax, [dst_slot]
-        shl     eax, 8
-        or      [eax+SLOT_BASE+0xA8], dword 0x40
+        shl     eax, BSF sizeof.APPDATA
+        or      [eax+SLOT_BASE+APPDATA.occurred_events], EVENT_IPC
         push    0
         jmp     .ret
 .no_pid:

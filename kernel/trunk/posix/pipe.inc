@@ -181,7 +181,7 @@ pipe_read:
         je      @F
 
         mov     ecx, [ecx+MUTEX_WAITER.task]
-        mov     [ecx+TASKDATA.state], 0         ;activate writer task
+        mov     [ecx+TASKDATA.state], TSTATE_RUNNING         ;activate writer task
 @@:
         cmp     [ebp+PIPE.count], 0
         je      @F
@@ -191,7 +191,7 @@ pipe_read:
         je      @F
 
         mov     eax, [eax+MUTEX_WAITER.task]
-        mov     [eax+TASKDATA.state], 0         ;activate reader task
+        mov     [eax+TASKDATA.state], TSTATE_RUNNING         ;activate reader task
 @@:
         lea     ecx, [ebp+PIPE.pipe_lock]
         call    mutex_unlock
@@ -211,7 +211,7 @@ pipe_read:
         lea     ecx, [ebp+PIPE.pipe_lock]
         call    mutex_unlock
 
-        mov     [ebx+TASKDATA.state], 1
+        mov     [ebx+TASKDATA.state], TSTATE_RUN_SUSPENDED
         call    change_task
 
         lea     ecx, [ebp+PIPE.pipe_lock]
@@ -276,7 +276,7 @@ pipe_write:
         je      @F
 
         mov     eax, [eax+MUTEX_WAITER.task]
-        mov     [eax+TASKDATA.state], 0         ;activate reader task
+        mov     [eax+TASKDATA.state], TSTATE_RUNNING         ;activate reader task
 @@:
         cmp     [ebp+PIPE.count], 4096
         je      @F
@@ -286,7 +286,7 @@ pipe_write:
         je      @F
 
         mov     ecx, [eax+MUTEX_WAITER.task]
-        mov     [ecx+TASKDATA.state], 0         ;activate writer task
+        mov     [ecx+TASKDATA.state], TSTATE_RUNNING         ;activate writer task
 @@:
         popfd
 
@@ -314,7 +314,7 @@ pipe_write:
         lea     ecx, [ebp+PIPE.pipe_lock]
         call    mutex_unlock
 
-        mov     [ecx+TASKDATA.state], 1
+        mov     [ecx+TASKDATA.state], TSTATE_RUN_SUSPENDED
         call    change_task
 
         lea     ecx, [ebp+PIPE.pipe_lock]

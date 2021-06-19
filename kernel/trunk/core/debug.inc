@@ -449,7 +449,7 @@ debugger_notify:
         call    write_process_memory
 ; new debug event
         mov     eax, ebp
-        shl     eax, 8
-        or      byte [SLOT_BASE+eax+APPDATA.occurred_events+1], 1      ; set flag 100h
+        shl     eax, BSF sizeof.APPDATA
+        or      [SLOT_BASE+eax+APPDATA.occurred_events], EVENT_DEBUG
 .ret:
         ret
