@@ -154,8 +154,8 @@ void CorrectLastItem()
 
 inline ProcessKeys()
 {
-	key_scancode = @GetKeyScancode();
-	switch(key_scancode) 
+	@GetKeyScancode();
+	switch(AL) 
 	{
 		case SCAN_CODE_ESC:
 			exit();
@@ -184,7 +184,7 @@ inline ProcessKeys()
 			break;			
 
 		default:
-			if (menu1.ProcessKey(key_scancode)) draw_list();
+			if (menu1.ProcessKey(AL)) draw_list();
 	}
 }
 

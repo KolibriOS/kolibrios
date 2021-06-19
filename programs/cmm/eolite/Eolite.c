@@ -3,15 +3,10 @@
 
 // 70.5 - get volume info and label
 
-#define ABOUT_TITLE "EOLITE 5 Beta5"
-#define TITLE_EOLITE "Eolite File Manager 5 Beta5"
-#define TITLE_KFM "Kolibri File Manager 2 Beta5";
+#define ABOUT_TITLE "EOLITE 5 Beta6"
+#define TITLE_EOLITE "Eolite File Manager 5 Beta6"
+#define TITLE_KFM "Kolibri File Manager 2 Beta6";
 
-#ifndef AUTOBUILD
-#include "lang.h--"
-#endif
-
-//libraries
 #define MEMSIZE 1024 * 250
 #include "../lib/clipboard.h"
 #include "../lib/strings.h"
@@ -47,7 +42,8 @@ enum {
 	GOUP_BTN,
 	COPY_BTN,
 	CUT_BTN,
-	PASTE_BTN
+	PASTE_BTN,
+	KFM_FUNC_ID = 450
 };
 
 //NewElement options
@@ -141,8 +137,7 @@ libimg_image icons16_selected;
 libimg_image icons32_default;
 libimg_image icons32_selected;
 
-#define STATUS_BAR_H 16;
-int status_bar_h = 0;
+int status_bar_h;
 
 int icon_size = 18;
 
@@ -407,6 +402,9 @@ void main()
 				case BREADCRUMB_ID...360:
 					ClickOnBreadCrumb(id-BREADCRUMB_ID);
 					break;
+				case KFM_FUNC_ID...KFM_FUNC_ID+10:
+					FnProcess(id-KFM_FUNC_ID);
+					break;
 			}
 			break;
 			
@@ -576,7 +574,10 @@ void draw_window()
 	incn x;
 	dword title;
 	if (show_status_bar.checked) {
-		status_bar_h = STATUS_BAR_H; 
+		#define STBAR_EOLITE_H 16;
+		#define STBAR_KFM_H 21;
+		if (efm) status_bar_h = STBAR_KFM_H;
+		else status_bar_h = STBAR_EOLITE_H;
 	} else {
 		status_bar_h = 0;
 	}
@@ -650,6 +651,19 @@ void DrawButtonsAroundList()
 	if (efm) && (files.x<5) DrawBar(files.x+files.w+16,files.y,1,files.h,sc.work_graph);	
 }
 
+void DrawFuncButtonsInKfm()
+{
+	int i, x=0, len, min_w=0, padding;
+	for (i=0; i<10; i++) min_w += strlen(kfm_func[i])*6 + 2;
+	padding = Form.cwidth - min_w + 4 / 10;
+	for (i=0; i<10; i++) {
+		len = strlen(kfm_func[i])*6 + padding;
+		if (i==9) len = Form.cwidth - x - 3;
+		DrawFlatButtonSmall(x+1, Form.cheight - 19, len, 16, i+KFM_FUNC_ID+1, kfm_func[i]);
+		x += len + 2;
+	}
+}
+
 void DrawStatusBar()
 {
 	char status_bar_str[80];
@@ -657,7 +671,7 @@ void DrawStatusBar()
 
 	if (efm) { 
 		DrawBar(0, Form.cheight - status_bar_h, Form.cwidth,  status_bar_h, sc.work);
-		WriteTextCenter(0,Form.cheight - 12, Form.cwidth,sc.work_text,T_KFM_FUNC);
+		DrawFuncButtonsInKfm();
 		return;
 	}
 
