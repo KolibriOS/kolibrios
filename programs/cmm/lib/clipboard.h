@@ -6,11 +6,6 @@
 #include "../lib/kolibri.h"
 #endif
 
-
-#ifndef INCLUDE_FILESYSTEM_H
-#include "../lib/fs.h"
-#endif
-
 //===================================================//
 //                                                   //
 //       Kolibri Clipboard System Functions          //
