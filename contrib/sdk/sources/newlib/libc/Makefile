@@ -325,7 +325,8 @@ STRING_SRCS= \
 			wmemcmp.c		\
 			wmemcpy.c		\
 			wmemmove.c		\
-			wmemset.c
+			wmemset.c		\
+			dirname.c		
 
 
 STDIO_SRCS=					\
@@ -600,8 +601,8 @@ $(NAME).dll: $(LIB_OBJS) $(SRC_DEP) Makefile
 
 install: libc.dll libc.dll.a libdll.a
 	mv -f libc.dll $(SDK_DIR)/bin
-	mv -f libc.dll.a $(INSTALLDIR)
-	mv -f libdll.a $(INSTALLDIR)
+	mv -f libc.dll.a $(INSTALLDIR)/lib
+	mv -f libdll.a $(INSTALLDIR)/lib
 
 libdll.a: $(LIBDLL_OBJS) Makefile
 	$(AR) $(ARFLAGS) libdll.a $(LIBDLL_OBJS)

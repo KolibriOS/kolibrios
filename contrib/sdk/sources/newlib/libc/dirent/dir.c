@@ -14,3 +14,13 @@ int chdir(char* dir){
     _ksys_setcwd(dir);
     return 0;
 }
+
+char *getcwd(char *buf, unsigned size){
+    if(!buf){
+       if((buf = malloc(size))==NULL){
+           return NULL;
+       }
+    }
+    _ksys_getcwd(buf, size);
+    return(buf);
+}

@@ -518,3 +518,5 @@ EXPORTS
     mkdir
     rmdir
     chdir
+    dirname
+    getcwd

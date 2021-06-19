@@ -107,4 +107,14 @@ int _ksys_free(void *mem)
     return val;
 }
 
+static inline
+int _ksys_getcwd(char* buf, int bufsize){
+    register int val;
+    asm_inline(
+        "int $0x40"
+        :"=a"(val):"a"(30), "b"(2), "c"(buf), "d"(bufsize)
+    );
+    return val;
+}
+
 #endif
