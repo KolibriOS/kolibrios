@@ -306,7 +306,8 @@ STRING_SRCS = {
   "wmemcmp.c",
   "wmemcpy.c",
   "wmemmove.c",
-  "wmemset.c"
+  "wmemset.c",
+  "dirname.c"
 }
 
 STDIO_SRCS = {
