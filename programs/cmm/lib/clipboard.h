@@ -71,7 +71,7 @@ dword buff_data;
 	strcpy(buff_data+12, _text);
 
 	Clipboard__SetSlotData(size_buf, buff_data);
-	if (EAX!=0) notify("'Error while copying to clipboard!'E");
+	//if (EAX!=0) notify("'Error while copying to clipboard!'E");
 
 	buff_data = free(buff_data);
 }
