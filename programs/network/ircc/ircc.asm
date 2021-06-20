@@ -1,6 +1,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;                                                                 ;;
-;; Copyright (C) KolibriOS team 2004-2020. All rights reserved.    ;;
+;; Copyright (C) KolibriOS team 2004-2021. All rights reserved.    ;;
 ;; Distributed under terms of the GNU General Public License       ;;
 ;;                                                                 ;;
 ;;  IRC client for KolibriOS                                       ;;
@@ -13,7 +13,7 @@
 ;;                                                                 ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-version equ '0.32'
+version equ '0.33'
 
 ; connection status
 STATUS_DISCONNECTED     = 0
@@ -601,7 +601,7 @@ edit1   edit_box  0, 0, 0, 0xffffff, 0x6f9480, 0, 0, 0x000000, USERCMD_MAX_SIZE,
 scroll1 scrollbar SCROLLBAR_WIDTH, 0, 0, TOP_Y, SCROLLBAR_WIDTH, 0, 0, 0, 0, 0, 0, 1
 scroll2 scrollbar SCROLLBAR_WIDTH, 0, 0, TOP_Y, SCROLLBAR_WIDTH, 0, 0, 0, 0, 0, 0, 1
 
-input_text      db '/server chat.freenode.net', 0
+input_text      db '/server irc.libera.chat', 0
                 rb MAX_COMMAND_LEN
 
 I_END:
