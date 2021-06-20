@@ -1,6 +1,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;                                                                  ;;
-;; Copyright (C) KolibriOS team 2004-2015. All rights reserved.     ;;
+;; Copyright (C) KolibriOS team 2004-2021. All rights reserved.     ;;
 ;; Distributed under terms of the GNU General Public License        ;;
 ;;                                                                  ;;
 ;;  AMD PCnet driver for KolibriOS                                  ;;
@@ -21,13 +21,17 @@ entry START
         COMPATIBLE_API          = 0x0100
         API_VERSION             = (COMPATIBLE_API shl 16) + CURRENT_API
 
-        MAX_DEVICES             = 16
+; configureable area
 
-        __DEBUG__               = 1
-        __DEBUG_LEVEL__         = 2             ; 1 = verbose, 2 = errors only
+        MAX_DEVICES             = 16    ; Maximum number of devices this driver may handle
 
-        TX_RING_SIZE            = 4
-        RX_RING_SIZE            = 4
+        __DEBUG__               = 1     ; 1 = on, 0 = off
+        __DEBUG_LEVEL__         = 2     ; 1 = verbose, 2 = errors only
+
+        TX_RING_SIZE            = 32    ; Number of packets in send ring buffer
+        RX_RING_SIZE            = 32    ; Number of packets in receive ring buffer
+
+; end configureable area
 
 section '.flat' readable writable executable
 
@@ -37,6 +41,15 @@ include '../proc32.inc'
 include '../fdo.inc'
 include '../netdrv.inc'
 
+if (bsr TX_RING_SIZE)>(bsf TX_RING_SIZE)
+  display 'TX_RING_SIZE must be a power of two'
+  err
+end if
+
+if (bsr RX_RING_SIZE)>(bsf RX_RING_SIZE)
+  display 'RX_RING_SIZE must be a power of two'
+  err
+end if
 
         PORT_AUI                = 0x00
         PORT_10BT               = 0x01
@@ -49,14 +62,8 @@ include '../netdrv.inc'
 
         DMA_MASK                = 0xffffffff
 
-        LOG_TX_BUFFERS          = 2             ; FIXME
-        LOG_RX_BUFFERS          = 2
-
-        TX_RING_MOD_MASK        = (TX_RING_SIZE-1)
-        TX_RING_LEN_BITS        = (LOG_TX_BUFFERS shl 12)
-
-        RX_RING_MOD_MASK        = (RX_RING_SIZE-1)
-        RX_RING_LEN_BITS        = (LOG_RX_BUFFERS shl 4)
+        TX_RING_LEN_BITS        = ((bsf TX_RING_SIZE) shl 12)
+        RX_RING_LEN_BITS        = ((bsf RX_RING_SIZE) shl 4)
 
         PKT_BUF_SZ              = 1544
 
@@ -281,11 +288,9 @@ include '../netdrv.inc'
         MAX_PHYS                = 32
 
 
-struct  device          ETH_DEVICE
-
-        rb 0x100-($ and 0xff)   ; align 256
-
 ; Pcnet configuration structure
+struct  pcnet_init_block
+
         mode            dw ?
         tlen_rlen       dw ?
         phys_addr       dp ?
@@ -293,19 +298,24 @@ struct  device          ETH_DEVICE
         filter          dq ?
         rx_ring_phys    dd ?
         tx_ring_phys    dd ?
-; end of pcnet config struct
+ends
+
+
+struct  device          ETH_DEVICE
 
         rb 0x100-($ and 0xff)   ; align 256
+        init_block      pcnet_init_block
 
+        rb 0x100-($ and 0xff)   ; align 256
         rx_ring         rb RX_RING_SIZE * sizeof.descriptor
 
         rb 0x100-($ and 0xff)   ; align 256
-
         tx_ring         rb TX_RING_SIZE * sizeof.descriptor
 
-        cur_rx          db ?
-        cur_tx          db ?
-        last_tx         db ?
+        cur_rx          dd ?
+        cur_tx          dd ?
+        last_tx         dd ?
+
         options         dd ?
         full_duplex     db ?
         chip_version    dw ?
@@ -321,6 +331,8 @@ struct  device          ETH_DEVICE
         pci_dev         dd ?
 
         phy             dw ?
+
+        rb 0x100-($ and 0xff)   ; align 256
 
         read_csr        dd ?
         write_csr       dd ?
@@ -693,11 +705,11 @@ probe:
         invoke  PciWrite32, [ebx + device.pci_bus], [ebx + device.pci_dev], PCI_header00.command, eax
 
         mov     [ebx + device.options], PORT_ASEL
-        mov     [ebx + device.mode], MODE_RXD + MODE_TXD     ; disable receive and transmit
-        mov     [ebx + device.tlen_rlen], (TX_RING_LEN_BITS or RX_RING_LEN_BITS)
+        mov     [ebx + device.init_block.mode], MODE_RXD + MODE_TXD     ; disable receive and transmit
+        mov     [ebx + device.init_block.tlen_rlen], (TX_RING_LEN_BITS or RX_RING_LEN_BITS)
 
-        mov     dword[ebx + device.filter], 0
-        mov     dword[ebx + device.filter+4], 0
+        mov     dword[ebx + device.init_block.filter], 0
+        mov     dword[ebx + device.init_block.filter+4], 0
 
 align 4
 reset:
@@ -803,9 +815,9 @@ reset:
         mov     eax, [ebx + device.options]
         and     eax, PORT_PORTSEL
         shl     eax, 7
-        mov     [ebx + device.mode], ax
-        mov     dword [ebx + device.filter], -1
-        mov     dword [ebx + device.filter+4], -1
+        mov     [ebx + device.init_block.mode], ax
+        mov     dword [ebx + device.init_block.filter], -1
+        mov     dword [ebx + device.init_block.filter+4], -1
 
 
 
@@ -860,7 +872,7 @@ reset:
         call    read_mac
 
         lea     esi, [ebx + device.mac]
-        lea     edi, [ebx + device.phys_addr]
+        lea     edi, [ebx + device.init_block.phys_addr]
         movsd
         movsw
 
@@ -868,21 +880,21 @@ reset:
         test    eax, eax
         jnz     .fail
 
-        mov     edx, [ebx + device.io_addr]   ; init ring destroys edx
+        mov     edx, [ebx + device.io_addr]     ; init ring destroys edx
 
-        lea     eax, [ebx + device.mode]
+        lea     eax, [ebx + device.init_block]
         invoke  GetPhysAddr
         push    eax
         and     eax, 0xffff
-        mov     ecx, 1
+        mov     ecx, CSR_IAB0
         call    [ebx + device.write_csr]
         pop     eax
         shr     eax, 16
-        mov     ecx, 2
+        mov     ecx, CSR_IAB1
         call    [ebx + device.write_csr]
 
-        mov     ecx, 4
-        mov     eax, 0x0915
+        mov     ecx, CSR_TFEAT
+        mov     eax, 0x0915                     ; Auto TX PAD ?
         call    [ebx + device.write_csr]
 
 ; Set the interrupt mask
@@ -934,7 +946,7 @@ init_ring:
         lea     edi, [ebx + device.rx_ring]
         mov     eax, edi
         invoke  GetPhysAddr
-        mov     [ebx + device.rx_ring_phys], eax
+        mov     [ebx + device.init_block.rx_ring_phys], eax
         mov     ecx, RX_RING_SIZE
   .rx_init:
         push    ecx
@@ -947,8 +959,8 @@ init_ring:
         add     eax, NET_BUFF.data
         mov     [edi + descriptor.base], eax
         mov     [edi + descriptor.length], - PKT_BUF_SZ
-        mov     [edi + descriptor.status], RXSTAT_OWN
         mov     dword[edi + descriptor.msg_length], 0    ; also clears misc field
+        mov     [edi + descriptor.status], RXSTAT_OWN
         add     edi, sizeof.descriptor
         dec     ecx
         jnz     .rx_init
@@ -956,7 +968,7 @@ init_ring:
         lea     edi, [ebx + device.tx_ring]
         mov     eax, edi
         invoke  GetPhysAddr
-        mov     [ebx + device.tx_ring_phys], eax
+        mov     [ebx + device.init_block.tx_ring_phys], eax
         mov     ecx, TX_RING_SIZE
   .tx_init:
         mov     [edi + descriptor.status], 0
@@ -964,7 +976,7 @@ init_ring:
         dec     ecx
         jnz     .tx_init
 
-        mov     [ebx + device.tlen_rlen], (TX_RING_LEN_BITS or RX_RING_LEN_BITS)
+        mov     [ebx + device.init_block.tlen_rlen], (TX_RING_LEN_BITS or RX_RING_LEN_BITS)
 
         mov     [ebx + device.cur_tx], 0
         mov     [ebx + device.last_tx], 0
@@ -1010,7 +1022,7 @@ proc transmit stdcall bufferptr
 
 ; check descriptor
         lea     edi, [ebx + device.tx_ring]
-        movzx   ecx, [ebx + device.cur_tx]
+        mov     ecx, [ebx + device.cur_tx]
         shl     ecx, 4
         add     edi, ecx
 
@@ -1036,7 +1048,7 @@ proc transmit stdcall bufferptr
         or      eax, CSR_TX
         call    [ebx + device.write_csr]
 
-; get next descriptor 0, 1, 2, 3, 0, 1, 2, 3, 0, 1, ...
+; get next descriptor
         inc     [ebx + device.cur_tx]
         and     [ebx + device.cur_tx], TX_RING_SIZE - 1
 
@@ -1110,7 +1122,7 @@ int_handler:
         push    ebx
   .rx_loop:
         pop     ebx
-        movzx   eax, [ebx + device.cur_rx]
+        mov     eax, [ebx + device.cur_rx]
         shl     eax, 4
         lea     edi, [ebx + device.rx_ring]
         add     edi, eax                        ; edi now points to current rx ring entry
@@ -1177,7 +1189,7 @@ int_handler:
 
   .tx_loop:
         lea     edi, [ebx + device.tx_ring]
-        movzx   eax, [ebx + device.last_tx]
+        mov     eax, [ebx + device.last_tx]
         shl     eax, 4
         add     edi, eax
 
