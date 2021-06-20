@@ -178,13 +178,21 @@ struct  NET_DEVICE
         reset           dd ?    ;
         transmit        dd ?    ;
 
-        bytes_tx        dq ?    ; Statistics, updated by the driver
-        bytes_rx        dq ?    ;
-        packets_tx      dd ?    ;
-        packets_rx      dd ?    ;
-
         link_state      dd ?    ; link state (0 = no link)
         hwacc           dd ?    ; bitmask stating enabled HW accelerations (offload engines)
+
+        bytes_tx        dq ?    ; Statistics, updated by the driver
+        bytes_rx        dq ?    ;
+
+        packets_tx      dd ?    ;
+        packets_tx_err  dd ?    ; CRC errors, too long or too short frames
+        packets_tx_drop dd ?    ;
+        packets_tx_ovr  dd ?    ; FIFO overrun
+
+        packets_rx      dd ?    ;
+        packets_rx_err  dd ?    ; CRC errors, too long or too short frames
+        packets_rx_drop dd ?    ;
+        packets_rx_ovr  dd ?    ; FIFO overrun
 
 ends
 
@@ -410,8 +418,8 @@ proc net_buff_free stdcall, buffer
 
         spin_lock_irqsave
 
-        sub     [net_buffs_free.current], 4
-        mov     eax, [net_buffs_free.current]
+        sub     [net_buffs_free.current], 4             ; move pointer backwards
+        mov     eax, [net_buffs_free.current]           ; place free'd buffer pointer on the list
         push    [buffer]
         pop     dword[eax]
 

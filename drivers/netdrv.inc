@@ -111,13 +111,21 @@ struct  NET_DEVICE
         reset           dd ?    ;
         transmit        dd ?    ;
 
+        state           dd ?    ; link state (0 = no link)
+        hwacc           dd ?    ; bitmask stating enabled HW accelerations (offload engines)
+
         bytes_tx        dq ?    ; Statistics, updated by the driver
         bytes_rx        dq ?    ;
-        packets_tx      dd ?    ;
-        packets_rx      dd ?    ;
 
-        state           dd ?    ; link state (0 = no link)
-        hwacc           dd ?    ; bitmask stating enabled HW accelerations
+        packets_tx      dd ?    ;
+        packets_tx_err  dd ?    ; CRC errors, too long or too short frames
+        packets_tx_drop dd ?    ;
+        packets_tx_ovr  dd ?    ; FIFO overrun
+
+        packets_rx      dd ?    ;
+        packets_rx_err  dd ?    ; CRC errors, too long or too short frames
+        packets_rx_drop dd ?    ;
+        packets_rx_ovr  dd ?    ; FIFO overrun
 
 ends
 
