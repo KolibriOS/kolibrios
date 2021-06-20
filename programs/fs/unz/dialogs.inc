@@ -108,9 +108,9 @@ endp
 proc DialogBox dlgInfo:dword
 	pushad
 	mov	ebx,[dlgInfo]
-	mov	eax,[ebx+19*4]
-	mov	[forpassword],eax
-	mov	byte[eax], 0
+	mov	ebx,[ebx+25*4]
+	add	ebx, 12	; password_ansi
+	mov	[edtPassword+9*4], ebx	; text
 	mov	[stateDlg], 0
 	mcall	51,1,threadDialogBox,stackDlg
 
@@ -133,8 +133,6 @@ endp
 proc threadDialogBox
 
 	mcall	40, 100111b+0C000000h
-	mov	eax,[forpassword]
-	mov	[edtPassword+4*9],eax
 	xor	eax,eax
 	mov	dword[edtPassword.size], eax
 	mov	dword[edtPassword.pos], eax
