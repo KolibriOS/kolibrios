@@ -63,14 +63,34 @@ void DrawFlatButtonSmall(dword x,y,width,height,id,text)
 	WriteText(-strlen(text)*6+width/2+x+1,height/2+y-3,0x80,sc.work_text,text);
 }
 
+void DrawFuncButton(dword x,y,width,id,text)
+{
+	#define FW 17
+	#define FH 16
+	if (skin_is_dark()) {
+		DrawFlatButtonSmall(x,y,width,FH,id,text);
+		return;
+	}
+	DrawRectangle(x,y,width,FH,sc.work_graph);
+	DrawRectangle3D(x+1,y+1,width-2,FH-2, sc.work_light, sc.work_dark);
+	PutPixel(x+width-1, y+1, sc.work_dark);
+	DrawBar(x+2, y+2, FW, FH-3, 0x6060FF);
+	DrawBar(x+2+FW, y+2, width-3-FW, FH-3, 0x00AA00);
+	DefineHiddenButton(x+1,y+1,width-2,FH-2,id);
+	WriteText(-strlen(text)*6+width/2+x+2,FH/2+y-2,0x80,0x444444,text);
+	$sub ebx, 1 <<16 + 1
+	$add ecx, 0xFFFfff-0x444444
+	$int 64
+}
+
 void DrawFilledBar(dword x, y, w, h)
 { int i; for (i=0; i<h; i++) DrawBar(x, y+h-i-1, w, 1, col.work_gradient[i]); }
 
-int popin_w=260;
 void DrawEolitePopup(dword b1_text, b2_text)
 {
-	int popin_x = files.w - popin_w / 2 + files.x ;
-	DrawPopup(popin_x, 160, popin_w, 95, 1, sc.work, sc.work_graph);
+	#define POPIN_W 260
+	int popin_x = files.w - POPIN_W / 2 + files.x ;
+	DrawPopup(popin_x, 160, POPIN_W, 95, 1, sc.work, sc.work_graph);
 	DrawCaptButton(popin_x+23+000, 215, 100, 26, POPUP_BTN1, sc.button, sc.button_text, b1_text);
 	DrawCaptButton(popin_x+23+114, 215, 100, 26, POPUP_BTN2, sc.button, sc.button_text, b2_text);
 }

@@ -36,7 +36,7 @@ char *kfm_func = {
 	"F7 Папка",
 	"F8 Удалить",
 	"F9 Файл",
-	"F10 Настройки"
+	"F0 Настройки"
 }
 #else
 ?define T_FILE "File"
@@ -77,7 +77,7 @@ char *kfm_func = {
 	"F7 Folder",
 	"F8 Delete",
 	"F9 File",
-	"F10 Settings"
+	"F0 Settings"
 }
 #endif
 

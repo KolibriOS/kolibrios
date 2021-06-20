@@ -58,17 +58,17 @@ char aFrame_draw[] = "frame_draw";
 struct PathShow_data
 {
 dword type;
-word start_y,
-	start_x,
-	font_w,    // 6 - for font 0, 8 - for font 1
-	area_size_x;
-dword font_number,  // 0 - monospace, 1 - variable
-	background_flag,
-	font_color,
-	background_color,
-	text_pointer,
-	work_area_pointer,
-	temp_text_length;
+word  start_y;
+word  start_x;
+word  font_w;       // 6 - for font 0, 8 - for font 1
+word  area_size_x;
+dword font_number;  // 0 - monospace, 1 - variable
+dword background_flag;
+dword font_color;
+dword background_color;
+dword text_pointer;
+dword work_area_pointer;
+dword temp_text_length;
 };
 /*
 char temp[128];
