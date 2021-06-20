@@ -15,6 +15,7 @@ skinlist = {
 "Leency/Florence/Florence.skn",
 "Leency/HydrogenOS/HydrogenOS.skn",
 "Leency/Luna/Luna.skn",
+"Leency/Oasis/Oasis.skn",
 "Leency/ObsidianOS/ObsidianOS.skn",
 "Leency/Octo_flat/Octo_flat.skn",
 "Leency/Shkvorka/Shkvorka.skn",
