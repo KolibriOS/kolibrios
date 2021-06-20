@@ -1016,9 +1016,9 @@ proc transmit stdcall bufferptr
         [eax+13]:2,[eax+12]:2
 
         cmp     [esi + NET_BUFF.length], 1514
-        ja      .fail
+        ja      .error
         cmp     [esi + NET_BUFF.length], 60
-        jb      .fail
+        jb      .error
 
 ; check descriptor
         lea     edi, [ebx + device.tx_ring]
@@ -1027,7 +1027,7 @@ proc transmit stdcall bufferptr
         add     edi, ecx
 
         test    [edi + descriptor.status], TXCTL_OWN
-        jnz     .fail
+        jnz     .overrun
 ; descriptor is free, use it
         mov     [edi + descriptor.virtual], esi
         mov     eax, esi
@@ -1058,14 +1058,24 @@ proc transmit stdcall bufferptr
         add     dword[ebx + device.bytes_tx], eax
         adc     dword[ebx + device.bytes_tx + 4], 0
 
-  .finish:
         popf
         xor     eax, eax
         ret
 
-  .fail:
-        DEBUGF  2, "Send failed\n"
+  .error:
+        DEBUGF  2, "TX packet error\n"
+        inc     [ebx + device.packets_tx_err]
         invoke  NetFree, [bufferptr]
+
+        popf
+        or      eax, -1
+        ret
+
+  .overrun:
+        DEBUGF  2, "TX overrun\n"
+        inc     [ebx + device.packets_tx_ovr]
+        invoke  NetFree, [bufferptr]
+
         popf
         or      eax, -1
         ret
@@ -1122,6 +1132,7 @@ int_handler:
         push    ebx
   .rx_loop:
         pop     ebx
+        push    ebx
         mov     eax, [ebx + device.cur_rx]
         shl     eax, 4
         lea     edi, [ebx + device.rx_ring]
@@ -1131,21 +1142,18 @@ int_handler:
         DEBUGF  1,"RX packet status: %x\n", eax:4
 
         test    ax, RXSTAT_OWN                  ; If this bit is set, the controller OWN's the packet, if not, we do
-        jnz     .not_receive
-
+        jnz     .rx_done
+; Both Start of packet and End of packet bits should be set, we dont support multi frame packets
         test    ax, RXSTAT_ENP
-        jz      .not_receive
-
+        jz      .rx_drop
         test    ax, RXSTAT_STP
-        jz      .not_receive
+        jz      .rx_drop
 
         movzx   ecx, [edi + descriptor.msg_length]      ; get packet length in ecx
         sub     ecx, 4                                  ; We dont need the CRC
         DEBUGF  1,"Got %u bytes\n", ecx
 
 ; Set pointers for ETH_input
-        push    ebx
-
         push    .rx_loop                                ; return address
         mov     eax, [edi + descriptor.virtual]
         push    eax                                     ; packet address
@@ -1161,7 +1169,7 @@ int_handler:
 ; now allocate a new buffer
         invoke  NetAlloc, PKT_BUF_SZ+NET_BUFF.data      ; Allocate a buffer for the next packet
         test    eax, eax
-        jz      .out_of_mem
+        jz      .rx_overrun
         mov     [edi + descriptor.virtual], eax         ; set virtual address
         invoke  GetPhysAddr
         add     eax, NET_BUFF.data
@@ -1173,13 +1181,25 @@ int_handler:
 
         jmp     [EthInput]
 
-  .out_of_mem:
-        DEBUGF  2,"Out of memory!\n"
+  .rx_overrun:
+        add     esp, 4+4
+        DEBUGF  2,"RX FIFO overrun\n"
+        inc     [ebx + device.packets_rx_ovr]
+        jmp     .rx_next
+
+  .rx_drop:
+        DEBUGF  2,"Dropping incoming packet\n"
+        inc     [ebx + device.packets_rx_drop]
+
+  .rx_next:
+        mov     [edi + descriptor.status], RXSTAT_OWN   ; give it back to PCnet controller
 
         inc     [ebx + device.cur_rx]                   ; set next receive descriptor
         and     [ebx + device.cur_rx], RX_RING_SIZE - 1
+        jmp     .rx_loop
 
-        jmp     [EthInput]
+  .rx_done:
+        pop     ebx
 
   .not_receive:
         pop     ax
