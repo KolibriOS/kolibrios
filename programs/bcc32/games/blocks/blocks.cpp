@@ -15,7 +15,7 @@ char library_path[2048];
 OpenDialog_data ofd;
 unsigned char procinfo[1024];
 char plugin_path[4096], openfile_path[4096], filename_area[256];
-od_filter filter1 = { 7, "JS\0\0" };
+od_filter filter1 = { 7, "BJS\0\0" };
 
 namespace Kolibri{
 	char CurrentDirectoryPath[2048];
@@ -39,7 +39,8 @@ struct ColorList{
 	long int color;
 };
 
-const long C_COUNT_MAX = 27;
+const long C_COUNT_MAX = 32;
+const long TOOLBAR_H = 29;
 ColorList c_list[C_COUNT_MAX];
 long c_count = 0;
 
@@ -71,7 +72,6 @@ float mat_shininess = 3.0; //Размер блика (обратная проп�
 float white_light[] = {1.0, 1.0, 1.0, 1.0}; //Цвет и интенсивность освещения, генерируемого источником
 float lmodel_ambient[] = {0.3, 0.3, 0.3, 1.0}; //Параметры фонового освещения
 
-const long TOOLBAR_H = 29;
 char str1[] = "Show active level";
 check_box check1 = { {16,280,20,4}, 8, 0xffffff, 0x808080, 0xffffff, str1, ch_flag_middle };
 scrollbar sb_tcr = { 200,70,19,4, 16, 1, 20,1,0, 0x808080, 0xffffff, 0x0};
@@ -572,6 +572,7 @@ void KolibriOnSize(int window_rect[], TThreadData /*th*/)
 	unsigned short int width, height;
 	GetClientSize(width, height);
 	if(!width || !height) return;
+	width--;
 	height-=TOOLBAR_H;
 	if(width<100) width=100;
 	if(height<80) height=80;
