@@ -239,6 +239,7 @@ extra_files = {
  {"kolibrios/grafx2/", "common/media/grafx2/*"},
  {"kolibrios/drivers/drvinf.ini", "common/drivers/drvinf.ini"},
  {"kolibrios/drivers/ahci/", "common/drivers/ahci/*"},
+ {"kolibrios/drivers/acpi/", "common/drivers/acpi/*"},
  {"kolibrios/drivers/atikms/", "common/drivers/atikms/*"},
  {"kolibrios/drivers/i915/", "common/drivers/i915/*"},
  {"kolibrios/drivers/test/", "common/drivers/test/*"},
