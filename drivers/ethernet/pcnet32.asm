@@ -332,6 +332,8 @@ struct  device          ETH_DEVICE
 
         phy             dw ?
 
+        link_timer      dd ?
+
         rb 0x100-($ and 0xff)   ; align 256
 
         read_csr        dd ?
@@ -525,6 +527,12 @@ endp
 
 align 4
 unload:
+
+        cmp     [ebx + device.link_timer], 0
+        je      @f
+        invoke  CancelTimerHS, [ebx + device.link_timer]
+  @@:
+
         ; TODO: (in this particular order)
         ;
         ; - Stop the device
@@ -714,6 +722,12 @@ probe:
 align 4
 reset:
 
+; Stop link check timer if it was already running
+        cmp     [ebx + device.link_timer], 0
+        je      @f
+        invoke  CancelTimerHS, [ebx + device.link_timer]
+  @@:
+
 ; attach int handler
 
         movzx   eax, [ebx + device.irq_line]
@@ -834,14 +848,14 @@ reset:
         cmp     ax, 0xffff
         je      .next
 
-        DEBUGF  1, "0x%x\n", ax
+        DEBUGF  1, "PHY ID1: 0x%x\n", ax
 
         mov     ecx, MII_PHYSID2
         call    mdio_read
         cmp     ax, 0xffff
         je      .next
 
-        DEBUGF  1, "0x%x\n", ax
+        DEBUGF  1, "PHY ID2: 0x%x\n", ax
 
         jmp     .got_phy
 
@@ -924,13 +938,17 @@ reset:
         mov     eax, CSR_START + CSR_INTEN
         call    [ebx + device.write_csr]
 
-; Set the mtu, kernel will be able to send now
+; Set the MTU
         mov     [ebx + device.mtu], 1514
 
-; get link status
         mov     [ebx + device.state], ETH_LINK_UNKNOWN
-
-        call    check_media
+; Start media check timer
+        cmp     [ebx + device.mii], 0
+        je      @f
+        mov     [ebx + device.state], ETH_LINK_DOWN
+        invoke  TimerHS, 0, 50, check_media_mii, ebx
+        mov     [ebx + device.link_timer], eax
+  @@:
 
         DEBUGF  1,"reset complete\n"
         xor     eax, eax
@@ -1004,8 +1022,7 @@ init_ring:
 
 proc transmit stdcall bufferptr
 
-        pushf
-        cli
+        spin_lock_irqsave
 
         mov     esi, [bufferptr]
         DEBUGF  1,"Transmitting packet, buffer:%x, size:%u\n", [bufferptr], [esi + NET_BUFF.length]
@@ -1058,7 +1075,7 @@ proc transmit stdcall bufferptr
         add     dword[ebx + device.bytes_tx], eax
         adc     dword[ebx + device.bytes_tx + 4], 0
 
-        popf
+        spin_unlock_irqrestore
         xor     eax, eax
         ret
 
@@ -1067,7 +1084,7 @@ proc transmit stdcall bufferptr
         inc     [ebx + device.packets_tx_err]
         invoke  NetFree, [bufferptr]
 
-        popf
+        spin_unlock_irqrestore
         or      eax, -1
         ret
 
@@ -1076,7 +1093,7 @@ proc transmit stdcall bufferptr
         inc     [ebx + device.packets_tx_ovr]
         invoke  NetFree, [bufferptr]
 
-        popf
+        spin_unlock_irqrestore
         or      eax, -1
         ret
 
@@ -1560,22 +1577,81 @@ mdio_write:
         ret
 
 
-align 4
-check_media:
 
-        DEBUGF  1, "check_media\n"
 
-        test    [ebx + device.mii], 1
-        jnz     mii_link_ok
+proc check_media_mii stdcall dev:dword
 
-        mov     ecx, BCR_LED0
-        call    [ebx + device.read_bcr]
-        cmp     eax, 0xc0
+        spin_lock_irqsave
 
-        DEBUGF  2, "link status=0x%x\n", ax
+        mov     ebx, [dev]
+        mov     edx, [ebx + device.io_addr]
 
+        mov     ecx, MII_BMSR
+        call    mdio_read
+
+        mov     ecx, MII_BMSR
+        call    mdio_read
+
+        mov     ecx, eax
+        and     eax, BMSR_LSTATUS
+        shr     eax, 2
+        cmp     eax, [ebx + device.state]
+        jne     .changed
+
+        spin_unlock_irqrestore
         ret
 
+  .changed:
+        test    eax, eax
+        jz      .update
+
+        test    ecx, BMSR_ANEGCOMPLETE
+        jz      .update
+
+        mov     ecx, MII_ADVERTISE
+        call    mdio_read
+        mov     esi, eax
+
+        mov     ecx, MII_LPA
+        call    mdio_read
+        and     eax, esi
+
+        test    eax, LPA_100FULL
+        jz      @f
+        mov     eax, ETH_LINK_100M or ETH_LINK_FD
+        jmp     .update
+  @@:
+
+        test    eax, LPA_100HALF
+        jz      @f
+        mov     eax, ETH_LINK_100M
+        jmp     .update
+  @@:
+
+        test    eax, LPA_10FULL
+        jz      @f
+        mov     eax, ETH_LINK_10M or ETH_LINK_FD
+        jmp     .update
+  @@:
+
+        test    eax, LPA_10HALF
+        jz      @f
+        mov     eax, ETH_LINK_10M
+        jmp     .update
+  @@:
+
+        mov     eax, ETH_LINK_UNKNOWN
+
+  .update:
+        mov     [ebx + device.state], eax
+        invoke  NetLinkChanged
+
+
+        spin_unlock_irqrestore
+        ret
+
+
+endp
 
 
 ; End of code
