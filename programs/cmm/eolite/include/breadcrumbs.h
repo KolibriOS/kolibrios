@@ -1,20 +1,26 @@
 
-PathShow_data PathShow = {0, 17,250, 6, 250, 0, 0, 0x0, 0xFFFfff, #path, #temp, 0};
+//===================================================//
+//                                                   //
+//                      PATH                         //
+//                                                   //
+//===================================================//
+
+char work_area_pointer[1024];
+PathShow_data PathShow = {0, 17,250, 6, 250, 0, 0, 0x000000, 0xFFFFCC, #path, #work_area_pointer, 0};
 void DrawPathBar()
 {
 	if (efm) {
+		DrawPathBarKfm();
 		return;
-		PathShow.start_x = 10;
-		PathShow.start_y = Form.cheight - status_bar_h;
-	} else {
-		PathShow.start_x = 250;
-		PathShow.start_y = 17;
-		if (show_breadcrumb.checked) {
-			DrawBreadCrumbs(); 
-			return;
-		}
 	}
 
+	if (show_breadcrumb.checked) {
+		DrawBreadCrumbs(); 
+		return;
+	}
+
+	PathShow.start_x = 250;
+	PathShow.start_y = 17;
 	PathShow.area_size_x = Form.cwidth-300;
 	DrawBar(PathShow.start_x-3, PathShow.start_y-6, PathShow.area_size_x+3, 19, col.odd_line);
 	DrawRectangle(PathShow.start_x-4,PathShow.start_y-7,PathShow.area_size_x+4,20,sc.work_graph);
@@ -23,11 +29,58 @@ void DrawPathBar()
 
 	DrawFlatButtonSmall(PathShow.start_x+PathShow.area_size_x,PathShow.start_y-7,18,20, 61, "\26");
 
-	PathShow.background_color = col.odd_line;
 	PathShow.font_color = col.list_gb_text;
 	PathShow_prepare stdcall(#PathShow);
 	PathShow_draw stdcall(#PathShow);
 }
+
+void DrawPathBarKfm()
+{
+	dword bgc;
+	int i=0;
+	if (!Form.cwidth) return;
+
+	if (skin_is_dark()) {
+		bgc = col.odd_line;
+		PathShow.font_color = col.list_gb_text;
+	} else {
+		bgc = 0xFFFFCC; 
+		PathShow.font_color = 0x222222;
+	}
+	if (active_panel==1) PathShow.text_pointer = #path; else PathShow.text_pointer = #inactive_path;
+	PathShow.start_x = 4;
+	PathShow.area_size_x = Form.cwidth/2-8;
+	PathShow.start_y = Form.cheight - status_bar_h+2;
+
+	_DRAW_BAR:
+	DrawBar(PathShow.start_x-2,PathShow.start_y-3,PathShow.area_size_x+5,14,bgc);
+	DrawRectangle(PathShow.start_x-3,PathShow.start_y-4,PathShow.area_size_x+6,15,sc.work_graph);
+	PathShow_prepare stdcall(#PathShow);
+	PathShow_draw stdcall(#PathShow);
+	i++;
+	if (i<2) {
+		if (active_panel==1) PathShow.text_pointer = #inactive_path; else PathShow.text_pointer = #path;
+		PathShow.start_x = Form.cwidth/2 + 2;
+		PathShow.area_size_x = Form.cwidth - PathShow.start_x - 5;
+		goto _DRAW_BAR;
+	}
+
+	DrawBar(0,PathShow.start_y-2,1,15,sc.work);
+	DrawBar(Form.cwidth-1,PathShow.start_y-2,1,15,sc.work);
+	DrawBar(1,PathShow.start_y+12,Form.cwidth-2,1,sc.work_light);
+}
+
+void DrawPathBarKfm_Line()
+{
+
+}
+
+
+//===================================================//
+//                                                   //
+//                   BREADCRUMBS                     //
+//                                                   //
+//===================================================//
 
 void DrawBreadCrumbs()
  collection_int breadCrumb=0;
@@ -39,7 +92,7 @@ void DrawBreadCrumbs()
 	strcat(#PathShow_path, #path);
 	for (i=0; i<50; i++) DeleteButton(i+BREADCRUMB_ID);
 	breadCrumb.drop();
-	for (i=0; PathShow_path[i]; i++) 
+	for (i=0; (PathShow_path[i]) && (i<sizeof(PathShow_path)-1); i++) 
 	{
 		if (PathShow_path[i]=='/') {
 			PathShow_path[i] = NULL;

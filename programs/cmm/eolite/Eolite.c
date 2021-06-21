@@ -3,9 +3,9 @@
 
 // 70.5 - get volume info and label
 
-#define ABOUT_TITLE "EOLITE 5 Beta6"
-#define TITLE_EOLITE "Eolite File Manager 5 Beta6"
-#define TITLE_KFM "Kolibri File Manager 2 Beta6";
+#define ABOUT_TITLE "EOLITE 5 Beta7"
+#define TITLE_EOLITE "Eolite File Manager 5 Beta7"
+#define TITLE_KFM "Kolibri File Manager 2 Beta7";
 
 #define MEMSIZE 1024 * 250
 #include "../lib/clipboard.h"
@@ -575,7 +575,7 @@ void draw_window()
 	dword title;
 	if (show_status_bar.checked) {
 		#define STBAR_EOLITE_H 16;
-		#define STBAR_KFM_H 21;
+		#define STBAR_KFM_H 21+16;
 		if (efm) status_bar_h = STBAR_KFM_H;
 		else status_bar_h = STBAR_EOLITE_H;
 	} else {
@@ -659,7 +659,7 @@ void DrawFuncButtonsInKfm()
 	for (i=0; i<10; i++) {
 		len = strlen(kfm_func[i])*6 + padding;
 		if (i==9) len = Form.cwidth - x - 3;
-		DrawFlatButtonSmall(x+1, Form.cheight - 19, len, 16, i+KFM_FUNC_ID+1, kfm_func[i]);
+		DrawFuncButton(x+1, Form.cheight - 19, len, i+KFM_FUNC_ID+1, kfm_func[i]);
 		x += len + 2;
 	}
 }
@@ -670,8 +670,9 @@ void DrawStatusBar()
 	int go_up_folder_exists=0;
 
 	if (efm) { 
-		DrawBar(0, Form.cheight - status_bar_h, Form.cwidth,  status_bar_h, sc.work);
+		DrawBar(0, Form.cheight - status_bar_h+15, Form.cwidth,  status_bar_h-15, sc.work);
 		DrawFuncButtonsInKfm();
+		DrawPathBar();
 		return;
 	}
 
