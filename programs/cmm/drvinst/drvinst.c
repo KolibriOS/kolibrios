@@ -61,7 +61,7 @@ collection ini_sections=0;
 
 char drvinf_path[4096] = "/kolibrios/drivers/drvinf.ini";
 char cur_version[64];
-char cur_type[12];
+int  cur_icon;
 char cur_description[1024];
 char cur_readme_path[4096];
 char cur_install_path[4096];
@@ -137,10 +137,9 @@ void Draw_IntroWindow()
 
 void Draw_DriverListWindow()
 {
-	int PADDING = 12;
+	#define PADDING 12
 	int right_frame_x = Form.cwidth*46/100;
 	int readme_w = 0;
-	int icon_n = 38;
 	//LEFT FRAME
 	SelectList_Init(PADDING, 
 		PADDING, 
@@ -152,8 +151,7 @@ void Draw_DriverListWindow()
 	//RIGHT FRAME
 	GetCurrentSectionData();
 	DrawBar(right_frame_x, PADDING+3, Form.cwidth - right_frame_x - PADDING, 80, sc.work);
-	if (streq(#cur_type, "disk")) icon_n = 50;
-	DrawIcon32(right_frame_x, PADDING, sc.work, icon_n);	
+	DrawIcon32(right_frame_x, PADDING, sc.work, cur_icon);	
 	WriteTextB(right_frame_x+44, PADDING+3, 0x81, sc.work_text, ini_sections.get(select_list.cur_y));
 	WriteText(right_frame_x+44, PADDING+23, 0x80, sc.work_text, #cur_version);
 	if(cur_readme_path[0]) readme_w = DrawStandartCaptButton(right_frame_x, PADDING+45, BUTTON_ID_README, T_README);
@@ -190,7 +188,7 @@ void GetCurrentSectionData()
 {
 	dword section_name = ini_sections.get(select_list.cur_y);
 	ini_get_str stdcall (#drvinf_path, section_name, "ver", #cur_version, sizeof(cur_version), 0);
-	ini_get_str stdcall (#drvinf_path, section_name, "type", #cur_type, sizeof(cur_type), 0);
+	ini_get_int stdcall (#drvinf_path, section_name, "icon", 38); cur_icon = EAX;
 	ini_get_str stdcall (#drvinf_path, section_name, #description_name, #cur_description, sizeof(cur_description), 0);
 	ini_get_str stdcall (#drvinf_path, section_name, "readme", #cur_readme_path, sizeof(cur_readme_path), 0);
 	ini_get_str stdcall (#drvinf_path, section_name, "install", #cur_install_path, sizeof(cur_install_path), 0);
@@ -241,7 +239,7 @@ void Event_RunInstall()
 	result = io.run(#cur_install_path, NULL);
 	if (result) notify(T_DRIVER_INSTALLARION_STARTED);
 	pause(300);
-	if (streq(#cur_type, "video")) {
+	if (cur_icon == 61) {
 		RestartProcessByName("/sys/@taskbar", SINGLE);
 		RestartProcessByName("/sys/@docky", SINGLE);	
 		RestartProcessByName("/sys/@icon", MULTIPLE);	

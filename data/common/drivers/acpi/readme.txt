@@ -1,14 +1,26 @@
-ВНИМАНИЕ! Простой запуск программы "acpi" из папки drivers/acpi ничего не даст.
-Установка делается в ручном режиме, о чём дальше.
+================================ ENG ================================
 
+Current driver installation is semi-manual. 
+To turn on APIC you have to:
+
+1) Run Installer (install.kex)
+2) Wait 3 seconds and get sure that there is a message about succesfull
+   file generation /rd/1/drivers/devices.dat
+3) Make kernel restart (MENU -> END -> HOME key)
+4) Check that kernel and drivers are working well.
+5) Save kolibri.img. Now each time you boot APIC would be turned on automatically.
+
+================================ RUS ================================
+
+Установка драйвера делается в частично ручном режиме, о чём дальше.
 Чтобы включить APIC надо:
-1) Очистить 120 Кб на рамдиске /rd/1
-2) Скопировать файлы нумератор устройств (acpi и acpi.dll из папки /kolibrios/drivers/acpi/) в /rd/1/drivers
-3) Запустить /rd/1/drivers/acpi
-4) Убедиться, что папке /rd/1/drivers присутсвует файл devices.dat
-5) Сделать рестарт ядра
-6) Проверить работу ядра и драйверов
-7) Удалить нумератор устройств и сохранить образ. Теперь APIC будет включаться при каждой загрузке ядра.
+
+1) Запустить установщик (install.kex)
+2) Подождать 3 секунды и убедиться, что показалось сообщение
+   об успешной генерации /rd/1/drivers/devices.dat
+3) Сделать рестарт ядра (Меню -> Завершение работы -> Ядро)
+4) Проверить работу ядра и драйверов
+5) Сохранить образ. Теперь APIC будет включаться при каждой загрузке ядра.
 
 Детали реализации.
 
