@@ -3,9 +3,9 @@
 
 // 70.5 - get volume info and label
 
-#define ABOUT_TITLE "EOLITE 5 Beta7"
-#define TITLE_EOLITE "Eolite File Manager 5 Beta7"
-#define TITLE_KFM "Kolibri File Manager 2 Beta7";
+#define ABOUT_TITLE "EOLITE 5 Beta8"
+#define TITLE_EOLITE "Eolite File Manager 5 Beta8"
+#define TITLE_KFM "Kolibri File Manager 2 Beta8";
 
 #define MEMSIZE 1024 * 250
 #include "../lib/clipboard.h"
@@ -333,7 +333,7 @@ void main()
 				break;
 			}
 
-			if (efm) && (mouse.y > files.y) && (mouse.y < files.y + files.h) && (mouse.down) {
+			if (efm) && (mouse.y < files.y + files.h) && (mouse.down) {
 				if (mouse.x<Form.cwidth/2) {
 					if (active_panel!=1) ChangeActivePanel();
 				} else {
@@ -490,7 +490,7 @@ void main()
 							EventOpenNewEolite();
 							break; 
 					case SCAN_CODE_KEY_R:
-							EventRefresh();
+							EventRefreshDisksAndFolders();
 							break;
 					case SCAN_CODE_ENTER:
 							if (!itdir) ShowOpenWithDialog();
@@ -713,6 +713,7 @@ void DrawFilePanels()
 			files.SetSizes(Form.cwidth/2, files_y, w2-17, h2, files.item_h);
 			DrawButtonsAroundList();
 			Open_Dir(#path,WITH_REDRAW);
+			files_inactive.count = files.count;
 			llist_copy(#files, #files_active);
 			strcpy(#path, #active_path);
 			col.selec = col.selec_active;
@@ -725,6 +726,7 @@ void DrawFilePanels()
 			files.SetSizes(2, files_y, Form.cwidth/2-2-17, h2, files.item_h);
 			DrawButtonsAroundList();
 			Open_Dir(#path,WITH_REDRAW);
+			files_inactive.count = files.count;
 			llist_copy(#files, #files_active);
 			strcpy(#path, #active_path);
 			col.selec = col.selec_active;
@@ -1189,7 +1191,7 @@ void FnProcess(byte N)
 				CopyFilesListToClipboard(COPY);
 				EventPaste(#inactive_path);
 			} else {
-				EventRefresh();
+				EventRefreshDisksAndFolders();
 			}
 			break;
 		case 6:
@@ -1231,8 +1233,6 @@ void EventRefresh()
 		Tip(56, T_DEVICES, 55, "-");
 		Open_Dir(#path,WITH_REDRAW);
 		pause(10);
-		SystemDiscs.Get();
-		Open_Dir(#path,WITH_REDRAW);
 		DrawDeviceAndActionsLeftPanel();				
 	}
 }
@@ -1287,16 +1287,14 @@ int GetRealFileCountInFolder(dword folder_path)
 void EventRefreshDisksAndFolders()
 {
 	if(GetRealFileCountInFolder("/")+dir_exists("/kolibrios") != SystemDiscs.dev_num) {
+		SystemDiscs.Get();
 		EventRefresh();
-	}
-	if(efm)
-	{
-		if(GetRealFileCountInFolder(#inactive_path) != files_inactive.count) {
-			ChangeActivePanel();
-			ChangeActivePanel();
+	} else {
+		if(GetRealFileCountInFolder(#path) != files.count) EventRefresh();
+		else if(efm) && (GetRealFileCountInFolder(#inactive_path) != files_inactive.count) {
+			EventRefresh();
 		}
 	}
-	if(GetRealFileCountInFolder(#path) != files.count) Open_Dir(#path,WITH_REDRAW);
 }
 
 void EventSort(dword id)
@@ -1459,7 +1457,6 @@ void EventOpenDiskPopin(int panel_n)
 {
 	DefineHiddenButton(0,0,5000,3000,9999+BT_NOFRAME);
 	disk_popin_active_on_panel = panel_n;
-	SystemDiscs.Get();
 	if (disk_popin_active_on_panel==1) {
 		SystemDiscs.DrawOptions(Form.cwidth/2-DDW, 8+DEV_H_HOR+3);
 	} else {
