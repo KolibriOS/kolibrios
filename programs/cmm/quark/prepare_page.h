@@ -9,8 +9,6 @@ void Parse()
 {
 dword ptr;
 int line_end;
-dword line_length = 0;
-dword line_start = textbuf.p;
 
 	list.count=0;
 	selection.cancel();
@@ -21,21 +19,24 @@ dword line_start = textbuf.p;
 
 	for (ptr = textbuf.p;    ptr < textbuf.p + textbuf.len;    ptr++)
 	{
-		line_length += list.font_w;
-		if (line_length + 30 >= list.w) || (ESBYTE[ptr] == '\n')
+		if (ptr - lines.get_last() * list.font_w + 16 >= list.w)
 		{
-			//if (ESBYTE[ptr+1] == '\r') ptr++;
-			
 			//searching a 'white' for a normal word-break
-			for(line_end = ptr; line_end != line_start; line_end--)
-			{
-				if (__isWhite(ESBYTE[line_end])) { ptr=line_end+1; break; }
+			for(line_end = ptr; line_end != lines.get_last(); line_end--) 			{
+				if (__isWhite(ESBYTE[line_end])) { 
+					ptr = line_end + 1; 
+					break;
+				}
 			}
-			line_length = ptr - line_start * list.font_w;
 			list.count++;
 			lines.add(ptr);
-			line_start = ptr;
-			line_length = 0;
+		} else if (ESBYTE[ptr] == '\x0D') {
+			if (ESBYTE[ptr+1] == '\x0A') ptr++;
+			list.count++;
+			lines.add(ptr+1);
+		} else if (ESBYTE[ptr] == '\x0A') {
+			list.count++;
+			lines.add(ptr+1);
 		}
 	}
 	lines.add(ptr);
