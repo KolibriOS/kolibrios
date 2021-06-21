@@ -178,7 +178,7 @@ iglobal
       dd sys_posix               ; posix support
       dd undefined_syscall       ; 78-free
       dd undefined_syscall       ; 79-free
-      dd syscall_fileSystemUnicode       ; 80-File system interface for different encodings
+      dd fileSystemUnicode       ; 80-File system interface for different encodings
 
         times 255 - ( ($-servetable2) /4 )  dd undefined_syscall
       dd sys_end                 ; -1-end application

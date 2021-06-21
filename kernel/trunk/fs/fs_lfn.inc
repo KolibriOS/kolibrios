@@ -90,21 +90,22 @@ image_of_ebx EQU esp+20
 ;         ret
 ; endp
 
-syscall_fileSystemUnicode:
-; in: ebx -> f.80 parameter structure
-        stdcall file_system_is_operation_safe, ebx
-        jnz     @f
+; syscall_fileSystemUnicode: ; with user pointer correctness checking
+; ; in: ebx -> f.80 parameter structure
+;         stdcall file_system_is_operation_safe, ebx
+;         jnz     @f
 
-        DEBUGF  1, "sysfn80 addr error\n"
-        mov     dword [image_of_eax], ERROR_MEMORY_POINTER
-        ret
-@@:
-        jmp     fileSystemUnicode
+;         DEBUGF  1, "sysfn80 addr error\n"
+;         mov     dword [image_of_eax], ERROR_MEMORY_POINTER
+;         ret
+; @@:
+;         jmp     fileSystemUnicode
 
 ; temporarily commented out cause acpi driver (drivers/devman) uses sysfn70 via 0x40
 ; so because drivers it kernel space, pointer checking fails
 ; TODO solution: add filesystem functions without pointer checking to kernel exports
 ; and make the driver use them, not int 0x40
+; syscall_fileSystemUnicode commented out for the same reason
 ; syscall_file_system_lfn: ; with user pointer correctness checking
 ; ; in: ebx -> f.70 parameter structure
 ;         stdcall file_system_is_operation_safe, ebx
