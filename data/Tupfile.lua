@@ -160,7 +160,7 @@ extra_files = {
  {"kolibrios/3D/info3ds/TOOLBAR.PNG", PROGS .. "/develop/info3ds/toolbar.png"},
  {"kolibrios/3D/info3ds/FONT8X9.BMP", PROGS .. "/fs/kfar/trunk/font8x9.bmp"},
  {"kolibrios/3D/blocks/", PROGS .. "/bcc32/games/blocks/bin/*"},
- {"kolibrios/3D/blocks/models", PROGS .. "/bcc32/games/blocks/models/*"},
+ {"kolibrios/3D/blocks/models/", PROGS .. "/bcc32/games/blocks/models/*"},
  {"kolibrios/3D/md2view/", "common/3d/md2view/*"},
  {"kolibrios/3D/md2view/md2_model/", "common/3d/md2view/md2_model/*"},
  {"kolibrios/3D/voxel_editor/VOX_EDITOR.INI", PROGS .. "/media/voxel_editor/trunk/vox_editor.ini"},
