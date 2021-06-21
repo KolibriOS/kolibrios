@@ -150,7 +150,7 @@ void _SystemDiscs::Draw()
 		for (i=0;i<list.count;i++) {
 			strcpy(#dev_name, list.get(i));
 			GetDiskIconAndName(dev_name[1], #dev_icon, #disc_name);
-			if (strstr(#path, #dev_name)!=0) is_active=true; else is_active=false;
+			if (strstr(#path, #dev_name)==#path) is_active=true; else is_active=false;
 
 			DrawBar(draw_x,draw_y,6,DEV_H+1,0xFFFFFF);
 			DrawBar(draw_x+6+18,draw_y,160-6-18,DEV_H+1,0xFFFFFF);
