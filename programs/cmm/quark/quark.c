@@ -725,5 +725,5 @@ void SetFontSize(char _size)
 	list.horisontal_selelection = true;
 	list.SetSizes(0, TOOLBAR_H, Form.cwidth-scroll.size_x-1,
 		Form.cheight - TOOLBAR_H - calc(search.visible * SEARCH_H) - STATUSBAR_H /*- TAB_H*/,
-		math.round(list.font_h * 1.4));
+		math.round(list.font_h * 1.3));
 }
