@@ -1,4 +1,4 @@
-include "..\..\..\develop\info3ds\info_fun_float.inc"
+include "..\..\develop\info3ds\info_fun_float.inc"
 
 align 4
 proc @DoubleToStr$qduso uses esi edi
@@ -291,4 +291,11 @@ proc @floor$qd
   add  esp,2
 .floor_end:
   ret
+endp
+
+align 4
+proc @MessageBox$qpc
+	mov eax,[esp+4]
+	notify_window_run eax
+	ret
 endp

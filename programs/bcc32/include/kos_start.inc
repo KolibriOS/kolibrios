@@ -17,11 +17,11 @@ else
   dd 0
 end if
 
-include "..\..\..\KOSfuncs.inc"
-include "..\..\..\proc32.inc"
-include "..\..\..\macros.inc"
-include "..\..\..\dll.inc"
-include "..\..\..\load_lib.mac"
+include "..\..\KOSfuncs.inc"
+include "..\..\proc32.inc"
+include "..\..\macros.inc"
+include "..\..\dll.inc"
+include "..\..\load_lib.mac"
 
 ptr equ
 offset equ
@@ -32,24 +32,6 @@ PTR equ
 OFFSET equ
 SHORT equ
 TBYTE equ TWORD
-
-macro movsb a,b
-{
-  if a eq & b eq
-    movsb
-  else
-    movsx a,b
-  end if
-}
-  
-macro movsw a,b
-{
-  if a eq & b eq
-    movsw
-  else
-    movsx a,b
-  end if
-}
 
 macro segment name {}
 

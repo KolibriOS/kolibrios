@@ -48,7 +48,8 @@ struct ModelList{
 	char* name;
 	long int color, t_cr;
 	float x,y,z, r_x,r_y,r_z;
-	long int level, id_l;
+	unsigned long level;
+	long int id_l;
 };
 
 ModelList* model_list = 0;
@@ -73,8 +74,8 @@ float white_light[] = {1.0, 1.0, 1.0, 1.0}; //Цвет и интенсивнос
 float lmodel_ambient[] = {0.3, 0.3, 0.3, 1.0}; //Параметры фонового освещения
 
 char str1[] = "Show active level";
-check_box check1 = { {16,280,20,4}, 8, 0xffffff, 0x808080, 0xffffff, str1, ch_flag_middle };
-scrollbar sb_tcr = { 200,70,19,4, 16, 1, 20,1,0, 0x808080, 0xffffff, 0x0};
+check_box check1 = { {16,310,20,4}, 8, 0xffffff, 0x808080, 0xffffff, str1, ch_flag_middle };
+scrollbar sb_tcr = { 200,100,19,4, 16, 1, 20,1,0, 0x808080, 0xffffff, 0x0};
 
 void SetLight()
 {
@@ -195,9 +196,14 @@ bool init_block(){
 	FileInfoBlock* file;
 	unsigned long int k;
 
-	file = FileOpen("block.bin");
+	k = strlen(CurrentDirectoryPath);
+	while(CurrentDirectoryPath[k] != '\\' && CurrentDirectoryPath[k] != '/' && k) {k--;};
+	memcpy(library_path,CurrentDirectoryPath,k);
+	strcpy(library_path+k,"block.bin");
+
+	file = FileOpen(library_path);
 	if (!file){
-		//SetWindowCaption("Error open file 'block.bin'");
+		MessageBox("Error open file 'block.bin', file not found");
 		return false;
 	}
 	k = FileGetLength(file);
@@ -218,9 +224,14 @@ bool init_block(){
 				f_data = 0;
 			}
 		}
+		FileClose(file);
+	} 
+	else {
+		MessageBox("Error open file 'block.bin', file length == 0");
+		FileClose(file);
+		return false;
 	}
-	FileClose(file);
-	
+
 	if (b_data){
 		unsigned long i=0, n=0;
 		b_count=0;
@@ -245,7 +256,10 @@ bool init_block(){
 			compile_list(&b_list[n]);
 			n++;
 		};
-	}	
+	}
+	else {
+		MessageBox("Error open file 'block.bin', can't unpack file");
+	}
 	return (bool)b_data;
 }
 
@@ -470,7 +484,8 @@ void KolibriOnPaint(void)
 	// If button have ID 1, this is close button
 	DrawButton(2,0xf0f0f0, 10,4,50,19);
 	DrawText(20,10,0,"Open");
-	DrawText(10,TOOLBAR_H+3,(1<<24)|0xffffff,DoubleToStr(sb_tcr.position,0,true));
+	DrawRect(70,7, 24,18, 0x333333);
+	DrawText(70,7,(1<<24)|0xffffff,DoubleToStr(sb_tcr.position,0,true));
 	sb_tcr.all_redraw=1;
 	scrollbar_h_draw(&sb_tcr);
 	check_box_draw(&check1);
@@ -567,7 +582,7 @@ void KolibriOnMouse(TThreadData /*th*/)
 	}
 }
 
-void KolibriOnSize(int window_rect[], TThreadData /*th*/)
+void KolibriOnSize(int [], TThreadData /*th*/)
 {
 	unsigned short int width, height;
 	GetClientSize(width, height);

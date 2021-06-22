@@ -11,3 +11,5 @@ double floor(double x);
 const char *DoubleToStr(double x, unsigned short digits = 5, bool crop_0 = false);
 double StrToDouble(char *str);
 long StrToInt(char *str);
+
+void MessageBox(char *str);
