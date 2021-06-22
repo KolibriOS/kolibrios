@@ -27,16 +27,16 @@
 ?define T_ABOUT "О программе"
 ?define T_USE_SHIFT_ENTER "'Используйте Shift+Enter чтобы открыть все выделенные файлы.' -I"
 char *kfm_func = {
-	"F1 Инфо",
-	"F2 Переим.",
-	"F3 Просм.",
-	"F4 Редакт.",
-	"F5 Копировать",
-	"F6 Переместить",
-	"F7 Папка",
-	"F8 Удалить",
-	"F9 Файл",
-	"F0 Настройки"
+	"Инфо",
+	"Переимен.",
+	"Просмотр",
+	"Редакт.",
+	"Копировать",
+	"Переместить",
+	"Папка",
+	"Удалить",
+	"Файл",
+	" Настройки"
 }
 #else
 ?define T_FILE "File"
@@ -68,16 +68,16 @@ char *kfm_func = {
 ?define T_ABOUT "About"
 ?define T_USE_SHIFT_ENTER "'Use Shift+Enter to open all selected files.' -I"
 char *kfm_func = {
-	"F1 Info",
-	"F2 Rename",
-	"F3 View",
-	"F4 Edit",
-	"F5 Copy",
-	"F6 Move",
-	"F7 Folder",
-	"F8 Delete",
-	"F9 File",
-	"F0 Settings"
+	"Info",
+	"Rename",
+	"View",
+	"Edit",
+	"Copy",
+	"Move",
+	"Folder",
+	"Delete",
+	"File",
+	" Settings"
 }
 #endif
 

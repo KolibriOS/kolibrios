@@ -3,9 +3,9 @@
 
 // 70.5 - get volume info and label
 
-#define ABOUT_TITLE "EOLITE 5 RC2"
-#define TITLE_EOLITE "Eolite File Manager 5 RC2"
-#define TITLE_KFM "Kolibri File Manager 2 RC2";
+#define ABOUT_TITLE "EOLITE 5 RC3"
+#define TITLE_EOLITE "Eolite File Manager 5 RC3"
+#define TITLE_KFM "Kolibri File Manager 2 RC3";
 
 #define MEMSIZE 1024 * 250
 #include "../lib/clipboard.h"
@@ -654,12 +654,12 @@ void DrawButtonsAroundList()
 void DrawFuncButtonsInKfm()
 {
 	int i, x=0, len, min_w=0, padding;
-	for (i=0; i<10; i++) min_w += strlen(kfm_func[i])*6 + 2;
+	for (i=0; i<10; i++) min_w += strlen(kfm_func[i])+2*6 + 2;
 	padding = Form.cwidth - min_w + 4 / 10;
 	for (i=0; i<10; i++) {
-		len = strlen(kfm_func[i])*6 + padding;
+		len = strlen(kfm_func[i])+2*6 + padding;
 		if (i==9) len = Form.cwidth - x - 3;
-		DrawFuncButton(x+1, Form.cheight - 19, len, i+KFM_FUNC_ID+1, kfm_func[i]);
+		DrawFuncButton(x+1, Form.cheight - 19, len, i+KFM_FUNC_ID+1, i+1, kfm_func[i]);
 		x += len + 2;
 	}
 }

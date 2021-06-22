@@ -63,21 +63,26 @@ void DrawFlatButtonSmall(dword x,y,width,height,id,text)
 	WriteText(-strlen(text)*6+width/2+x+1,height/2+y-3,0x80,sc.work_text,text);
 }
 
-void DrawFuncButton(dword x,y,width,id,text)
+void DrawFuncButton(dword x,y,width,id,number,text)
 {
-	#define FW 17
+	#define FW 12
 	#define FH 16
+	int numw = calc(number/10)*6+FW;
 	if (skin_is_dark()) {
 		DrawFlatButtonSmall(x,y,width,FH,id,text);
 		return;
 	}
 	DrawRectangle(x,y,width,FH,sc.work_graph);
-	DrawRectangle3D(x+1,y+1,width-2,FH-2, sc.work_light, sc.work_dark);
+	DrawRectangle3D(x+1,y+1,width-2,FH-2, 0x97D194, 0x00A100);
 	PutPixel(x+width-1, y+1, sc.work_dark);
-	DrawBar(x+2, y+2, FW, FH-3, 0x6060FF);
-	DrawBar(x+2+FW, y+2, width-3-FW, FH-3, 0x00AA00);
+	DrawBar(x+2, y+2, numw, FH-2, 0x6060FF);
+	WriteText(x+6,FH/2+y-2,0x80,0x444444,itoa(number));
+	$sub ebx, 1 <<16 + 1
+	$add ecx, 0xFFFfff-0x444444
+	$int 64
+	DrawBar(x+2+numw, y+2, width-3-numw, FH-3, 0x00AA00);
 	DefineHiddenButton(x+1,y+1,width-2,FH-2,id);
-	WriteText(-strlen(text)*6+width/2+x+2,FH/2+y-2,0x80,0x444444,text);
+	WriteText(-strlen(text)*6+width/2+x+8,FH/2+y-2,0x80,0x444444,text);
 	$sub ebx, 1 <<16 + 1
 	$add ecx, 0xFFFfff-0x444444
 	$int 64
