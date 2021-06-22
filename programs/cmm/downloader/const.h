@@ -13,7 +13,7 @@
 	#define FILE_SAVED_AS "'Менеджер загрузок\nФайл сохранен как %s' -Dt"
 	#define FILE_NOT_SAVED "'Менеджер загрузок\nОшибка! Файл не может быть сохранен как\n%s' -Et"
 	#define KB_RECEIVED "Идет скачивание... %s получено"
-	#define T_ERROR_STARTING_DOWNLOAD "'Невозможно начать скачивание.\nПожалуйста, проверьте введенный путь и соединение с Интернетом.' -E"
+	#define T_ERROR_STARTING_DOWNLOAD "'Невозможно начать скачивание.\nПроверьте введенный путь и соединение с Интернетом.' -E"
 	#define T_AUTOCLOSE "Автозакрытие"
 	char accept_language[]= "Accept-Language: ru\n";
 #else
@@ -25,7 +25,7 @@
 	#define FILE_SAVED_AS "'Download manager\nFile saved as %s' -Dt"
 	#define FILE_NOT_SAVED "'Download manager\nError! Can\96t save file as %s' -Et"
 	#define KB_RECEIVED "Downloading... %s received"
-	#define T_ERROR_STARTING_DOWNLOAD "'Error while starting download process.\nPlease, check entered path and Internet connection.' -E"
+	#define T_ERROR_STARTING_DOWNLOAD "'Error while starting download process.\nCheck entered path and Internet connection.' -E"
 	#define T_AUTOCLOSE "Autoclose"
 	char accept_language[]= "Accept-Language: en\n";
 #endif

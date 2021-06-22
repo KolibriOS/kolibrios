@@ -200,6 +200,7 @@ syscall_button: ;////////////// system function 8 //////////////
         add     ecx, ebp
         dec     eax
         inc     ebx
+        dec     edx     ; avoid lines overflow
         call    vline   ; right dark line
 @@:
         pop     ecx ebx
