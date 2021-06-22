@@ -199,6 +199,10 @@ bool init_block(){
 	k = strlen(CurrentDirectoryPath);
 	while(CurrentDirectoryPath[k] != '\\' && CurrentDirectoryPath[k] != '/' && k) {k--;};
 	memcpy(library_path,CurrentDirectoryPath,k);
+	if(library_path[k-1] != '/'){
+		library_path[k] = '/';
+		k++;
+	}
 	strcpy(library_path+k,"block.bin");
 
 	file = FileOpen(library_path);
