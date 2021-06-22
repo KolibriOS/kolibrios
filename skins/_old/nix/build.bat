@@ -1,0 +1,1 @@
+fasm nix_small.asm default.skn

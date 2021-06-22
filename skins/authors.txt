@@ -6,10 +6,7 @@ Black_lace              Rock_maniak_forever
 blackskin               Aqwas
 Blacky                  maxcodehack
 Blended                 Aqwas
-Brick                   Rock_maniak_forever
-BrownLustre             Rock_maniak_forever
 cherry                  Aqwas
-Circles                 Rock_maniak_forever
 CodeOpusC               mike.dld
 Crystal                 Aqwas
 Cyclops                 Rock_maniak_forever
@@ -19,8 +16,6 @@ dark_night              Aqwas
 Devil_Skins             Rock_maniak_forever
 Eyes                    Rock_maniak_forever
 falloutskn              G@K
-Fever                   Rock_maniak_forever
-Flowers                 Rock_maniak_forever
 Flyght                  Rock_maniak_forever
 glass                   Aqwas
 Glass_Lite              Rock_maniak_forever
@@ -43,10 +38,6 @@ MetalGearArrows         Rock_maniak_forever
 mist                    Aqwas
 mursky                  dunkaist, Mario
 mygrey                  trolly
-myskin1                 trolly
-myskin2                 trolly
-myskin3                 trolly
-myskin4                 trolly
 MyTango                 Veliant
 Nature                  Rock_maniak_forever
 neutral                 Aqwas
@@ -54,13 +45,9 @@ night                   Aqwas
 nix                     Sorcerer
 Nova_skins              Rock_maniak_forever
 OpusOs_Blue             Veliant
-Orange_aureole          Rock_maniak_forever
-Orange_Silence          Rock_maniak_forever
 Organics                Rock_maniak_forever
 plum                    Aqwas
-Rednex                  Rock_maniak_forever
 RoboTech                Rock_maniak_forever
-Russia                  Mario79
 Sad_grey                Aqwas
 SashSkinPack_1_1        Sash
 sea                     Aqwas
@@ -77,10 +64,9 @@ testtest                dunkaist
 tinynjoy                Sorcerer
 USSR                    Rock_maniak_forever
 USSR_2                  Rock_maniak_forever
-Victory_1945            Rock_maniak_forever
 Vista                   nillsoft
 WIN311                  Veliant
 winflat                 mistif(ator
 WindowsXP               Rock_maniak_forever
 WinXP_Standart          Mario79
-zRiver                  Rock_maniak_forever
+

@@ -1,14 +1,11 @@
-struc system_colors
- {
-  .null1       dd 0x000000
-  .null2       dd 0x006393
-  .dark        dd 0xD1CFC7
-  .light       dd 0xF2F2F0
-  .grab_text   dd 0xFFFFFF
-  .work        dd 0xE3E2DD
-  .button      dd 0x7794CA
-  .button_text dd 0xFFFfff
-  .work_text   dd 0x000000
-  .graph       dd 0x6380B1
- }
-struct system_colors
+;SYSTEM COLORS (.DTP) - COMPILE WITH FASM
+frame            	dd 0xCACACA
+grab             	dd 0xE8E8E8
+grab_button      	dd 0xCCCCCC
+grab_button_text 	dd 0xF7F5F5
+grab_text        	dd 0x000000
+work             	dd 0xE8E8E8
+work_button      	dd 0xD5CFD8
+work_button_text 	dd 0x000000
+work_text        	dd 0x000000
+work_graph       	dd 0xAAAAAA
