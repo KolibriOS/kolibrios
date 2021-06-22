@@ -669,6 +669,7 @@ tup.append_table(img_files, {
 })
 tup.append_table(extra_files, {
  {"kolibrios/drivers/drvinst.kex", PROGS .. "/cmm/drvinst/drvinst.com"},
+ {"kolibrios/drivers/acpi/install.kex", PROGS .. "/cmm/misc/acpi_install.com"},
  {"kolibrios/games/pig/pigex", PROGS .. "/cmm/examples/pigex.com"},
  {"kolibrios/games/the_bus/the_bus", PROGS .. "/cmm/the_bus/the_bus.com"},
  {"kolibrios/KolibriNext/install.kex", PROGS .. "/cmm/misc/install.com"},
