@@ -827,20 +827,21 @@ proc ted_on_open_file
 		;если файл пустой
 		stdcall ted_clear,edi,1 ;чистим всю память
 		jmp .end_opn
+align 4
 	@@:
 	stdcall ted_clear,edi,0 ;чистим не всю память, потому что ниже будем ее заполнять новыми даными
 
-	;когда символ завершения строки только 10 (без 13)
-	mov edx,ted_tex
-	mov ecx,ebx
-	@@:
-		cmp byte[edx],13
-		je .no_10 ;если найден символ 13, то 10-е игнорируем
-		inc edx
-		loop @b
 	mov edx,ted_tex
 	mov ecx,ebx
 	.s_10:
+		cmp word[edx],0xa0d ;пропускаем 10-й символ если перед ним стоит 13-й
+		jne @f
+			dec ecx
+			jz .no_10
+			dec ecx
+			jz .no_10
+			add edx,2
+		@@:
 		cmp byte[edx],10
 		jne @f
 			mov byte[edx],13 ;меняем 10-й символ конца строки
@@ -873,6 +874,7 @@ proc ted_on_open_file
 		dec edx
 		sub eax,sizeof.symbol
 		jmp @b
+align 4
 	@@:
 	pop ebx
 	mov dword[eax+symbol.perv],0 ; first sumbol 'perv=0'
@@ -901,6 +903,7 @@ proc ted_on_open_file
 			mov dword[edx+symbol.tc],0
 			mov dword[edx+symbol.td],0
 		jmp @b
+align 4
 	.end_opn:
 
 	call ted_get_num_lines
