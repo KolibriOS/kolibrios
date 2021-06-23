@@ -17,6 +17,10 @@ char*    __stdcall con_gets(char*, unsigned);
 
 int __gui_mode;
 
+void con_init_opt(unsigned w_w, unsigned w_h, unsigned s_w, unsigned s_h, const char* t){
+    con_init(w_w, w_h, s_w, s_h, t);
+}
+
 static int console_read(const char *path, void *buff,
            size_t offset, size_t count, size_t *done)
 {
