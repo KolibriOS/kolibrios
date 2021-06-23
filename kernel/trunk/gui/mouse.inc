@@ -371,6 +371,7 @@ mouse._.move_handler:
         cmp     eax, [_display.width]
         jl      @f
         sub     eax, [_display.width]
+        inc     eax
         sub     [mouse.active_sys_window.new_box.left], eax
     @@:
         mov     eax, [mouse.active_sys_window.new_box.top]
@@ -383,6 +384,7 @@ mouse._.move_handler:
         cmp     eax, [_display.height]
         jl      .call_window_handler
         sub     eax, [_display.height]
+        inc     eax
         sub     [mouse.active_sys_window.new_box.top], eax
         jmp     .call_window_handler
 

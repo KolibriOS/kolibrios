@@ -1686,7 +1686,8 @@ align 4
 align 4
 .fix_width_high:
         mov     ecx, esi
-        mov     [edi + WDATA.box.width], esi
+        dec     ecx
+        mov     [edi + WDATA.box.width], ecx
         jmp     .check_left
 ;--------------------------------------
 align 4
@@ -1699,13 +1700,15 @@ align 4
 .fix_left_high:
         mov     eax, esi
         sub     eax, ecx
+        dec     eax
         mov     [edi + WDATA.box.left], eax
         jmp     .check_height
 ;--------------------------------------
 align 4
 .fix_height_high:
         mov     edx, esi
-        mov     [edi + WDATA.box.height], esi
+        dec     edx
+        mov     [edi + WDATA.box.height], edx
         jmp     .check_top
 ;--------------------------------------
 align 4
@@ -1718,6 +1721,7 @@ align 4
 .fix_top_high:
         mov     ebx, esi
         sub     ebx, edx
+        dec     ebx
         mov     [edi + WDATA.box.top], ebx
         jmp     .exit
 ;------------------------------------------------------------------------------
