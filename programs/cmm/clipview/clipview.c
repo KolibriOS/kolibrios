@@ -50,7 +50,7 @@ struct LIST {
 
 void main()
 {   
-	mem_init();
+	@mem_init();
 	@SetEventMask(EVM_REDRAW + EVM_BUTTON);
 	loop() switch(@WaitEventTimeout(10))
 	{
@@ -103,7 +103,6 @@ void DrawWindowContent()
 	list.w = Form.cwidth-GAP-GAP; 
 	list.h = Form.cheight-PANEL_BOTTOM_H-LIST_Y-GAP;
 	list.visible = list.h / LINE_H;
-	if (list.first > list.count) list.first = list.count - list.visible;
 
 	DrawBar(0,0, Form.cwidth, PANEL_TOP_H, sc.work);
 	DrawBar(0,Form.cheight-PANEL_BOTTOM_H, Form.cwidth, PANEL_BOTTOM_H, sc.work);
@@ -162,18 +161,20 @@ void SelectList_DrawLine(dword i)
 	WriteText(GAP+140, yyy+TEXT_Y, 0x90, 0x000000, data_type[slot_data_type_number]);
 	WriteText(GAP+list.w - 88, yyy+TEXT_Y, 0x90, 0x006597, "TEXT  HEX");
 	DefineButton(GAP+list.w - 98, yyy, 50, LINE_H, 100+i+BT_HIDE, NULL);
-	DefineButton(GAP+list.w - 95 + 51, yyy, 40, LINE_H, 300+i+BT_HIDE, NULL);
+	$add edx, 200
+	$add ebx, 52 << 16 - 10 //BT_HEX
+	$int 64
 
 	ESI = list.w - 345 / 8;
 	if (cdata.size - cdata.content_offset < ESI) ESI = cdata.size - cdata.content_offset;
 	WriteText(GAP+236, yyy+TEXT_Y, 0x30, 0x000000, cdata.content);
 }
 
-int SaveSlotContents(dword size, off) {
-	if (! CreateFile(size, off, DEFAULT_SAVE_PATH))	{
+int SaveSlotContents() {
+	if (! CreateFile(cdata.size, cdata.content, DEFAULT_SAVE_PATH))	{
 		return true;
 	} else {
-		notify("'Can not create /tmp0/1/clipview.tmp\nPreview function is not available.' -E");
+		notify("'Can not create /tmp0/1/clipview.tmp' -E");
 	 	return false;
 	}
 }
@@ -183,6 +184,8 @@ void ClipViewSelectListDraw()
 	int i, list_last;
 
 	list.count = Clipboard__GetSlotCount();
+	if (list.first >= list.count) list.first = list.count - list.visible;
+	if (list.first < 0) list.first = 0;
 
 	if (list.count > list.visible) list_last = list.visible; else list_last = list.count;
 
@@ -201,8 +204,9 @@ void ClipViewSelectListDraw()
 		WriteText(Form.cwidth-84-GAP+10, list.h + LIST_Y + 14, 0x90, sc.button_text, "<      >");
 		$add ebx, 28 << 16
 		$mov edx, #param;
-		$mov edi, sc.work_text
+		$mov edi, sc.work
 		$add ecx, 0x40 << 24
+		$add ecx, sc.work_text
 		$int 64
 	}
 }
@@ -249,14 +253,14 @@ void EventOpenAsText(int slot_id) {
 	slot_data = Clipboard__GetSlotData(slot_id);
 	cdata.size = ESDWORD[slot_data]-12;
 	cdata.content = slot_data+12;
-	if (SaveSlotContents(cdata.size, cdata.content)) RunProgram("/sys/develop/cedit", DEFAULT_SAVE_PATH);
+	if (SaveSlotContents()) RunProgram("/sys/develop/cedit", DEFAULT_SAVE_PATH);
 }
 
 void EventOpenAsHex(int slot_id) {
 	slot_data = Clipboard__GetSlotData(slot_id);
 	cdata.size = ESDWORD[slot_data];
 	cdata.content = slot_data;
-	if (SaveSlotContents(cdata.size, cdata.content)) RunProgram("/sys/develop/heed", DEFAULT_SAVE_PATH);
+	if (SaveSlotContents()) RunProgram("/sys/develop/heed", DEFAULT_SAVE_PATH);
 }
 
 stop:
