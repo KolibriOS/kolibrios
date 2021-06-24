@@ -149,7 +149,7 @@ void main()
 			//DrawTopPanelButton(BTN_ID_MENU, Form.cwidth-GAP-3, GAP, -1, burger_active);
 
 			SelectList_Init(GAP, WIN_CONTENT_Y, PROCESS_LIST_W, 
-				Form.cheight-BOTPANEL_H-WIN_CONTENT_Y, false);
+				Form.cheight-BOTPANEL_H-WIN_CONTENT_Y);
 			SelectList_DrawBorder();
 
 			DrawBar(select_list.x-2, select_list.y+select_list.h+2, 

@@ -208,8 +208,7 @@ void DrawWindowContent()
 		tabs.x+TAB_PADDING,
 		tabs.y+TAB_HEIGHT+TAB_PADDING, 
 		list_w, 
-		Form.cheight-LP-LP - TAB_PADDING - TAB_PADDING - TAB_HEIGHT, 
-		false
+		Form.cheight-LP-LP - TAB_PADDING - TAB_PADDING - TAB_HEIGHT
 		);
 	select_list.cur_y = id;
 

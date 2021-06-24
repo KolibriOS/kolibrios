@@ -141,11 +141,9 @@ void Draw_DriverListWindow()
 	int right_frame_x = Form.cwidth*46/100;
 	int readme_w = 0;
 	//LEFT FRAME
-	SelectList_Init(PADDING, 
-		PADDING, 
+	SelectList_Init(PADDING, PADDING, 
 		right_frame_x - PADDING - PADDING - 8 - scroll1.size_x, 
-		Form.cheight - PADDING - PADDING, 
-		false);
+		Form.cheight - PADDING - PADDING);
 	SelectList_Draw();
 	SelectList_DrawBorder();
 	//RIGHT FRAME

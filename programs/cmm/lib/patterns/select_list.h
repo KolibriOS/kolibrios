@@ -3,9 +3,8 @@ scroll_bar scroll1 = { 18,200,398, 44,18,0,115,15,0,0xeeeeee,0xD2CED0,0x555555,0
 
 ?define T_SELECT_LIST_NO_DATA "No data to show"
 
-void SelectList_Init(dword _x, _y, _w, _h, _no_selection)
+void SelectList_Init(dword _x, _y, _w, _h)
 {
-	select_list.no_selection = _no_selection;
 	select_list.SetFont(8, 14, 0x90);
 	select_list.SetSizes(_x, _y, _w, _h, 20);
 }
@@ -20,12 +19,11 @@ void SelectList_Draw()
 
 	for (i=0; i<list_last; i++;)
 	{
-		DrawBar(select_list.x,i*select_list.item_h+select_list.y,select_list.w, select_list.item_h, 0xFFFfff);
 		SelectList_DrawLine(i); //NEED TO BE IMPLEMENTED IN APP
 	}
 	DrawBar(select_list.x,i*select_list.item_h+select_list.y, select_list.w, -i*select_list.item_h+ select_list.h, 0xFFFfff);
-	if (!select_list.count) WriteText(-strlen(T_SELECT_LIST_NO_DATA)*select_list.font_w + select_list.w / 2 + select_list.x + 1, 
-		select_list.h / 2 - 8 + select_list.y, select_list.font_type, 0x999999, T_SELECT_LIST_NO_DATA);
+	if (!select_list.count) WriteText(-15*8 + select_list.w / 2 + select_list.x + 1, 
+		select_list.h / 2 - 8 + select_list.y, 0x90, 0x999999, T_SELECT_LIST_NO_DATA);
 	SelectList_DrawScroller();
 }
 

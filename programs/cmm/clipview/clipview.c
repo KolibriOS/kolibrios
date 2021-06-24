@@ -1,17 +1,11 @@
-#ifndef AUTOBUILD
-	?include "lang.h--"
-#endif
+#define ENTRY_POINT #main
 
 #define MEMSIZE 4096*20
-#include "..\lib\mem.h"
+
 #include "..\lib\strings.h"
-#include "..\lib\list_box.h"
 #include "..\lib\clipboard.h"
 #include "..\lib\gui.h"
-#include "..\lib\obj\box_lib.h"
-
-#include "..\lib\patterns\select_list.h"
-
+#include "..\lib\fs.h"
 
 //===================================================//
 //                                                   //
@@ -19,27 +13,34 @@
 //                                                   //
 //===================================================//
 
-?define WINDOW_HEADER "Clipboard Viewer"
-?define T_DELETE_LAST_SLOT "Delete last slot"
-?define T_DELETE_ALL_SLOTS "Delete all slots"
-?define T_RESET_BUFFER_LOCK "Reset the lock buffer"
 ?define T_COLUMNS_TITLE "# | Data size | Data type | Contents"
 ?define T_COLUMN_VIEW "| View"
-?define T_VIEW_OPTIONS "TEXT  HEX"
 ?define DEFAULT_SAVE_PATH "/tmp0/1/clipview.tmp"
 char *data_type[] = { "Text", "Image", "RAW", "Unknown" };
 
 enum {
-	BT_DELETE_LAST_SLOT = 10,
-	BT_DELETE_ALL_SLOTS,
-	BT_UNLOCK
+	BT_DELETE_LAST = 10,
+	BT_DELETE_ALL,
+	BT_UNLOCK,
+	BT_LIST_LEFT,
+	BT_LIST_RIGHT
 };
 
-#define PANEL_TOP_H 20
-#define PANEL_BOTTOM_H 30
-#define LIST_PADDING 12
+#define PANEL_BOTTOM_H 35
+#define GAP 5
+#define LIST_Y 32
+#define PANEL_TOP_H LIST_Y-2
+#define LINE_H 20
+#define TEXT_Y LINE_H - 14 / 2
 
 proc_info Form;
+
+struct LIST {
+	int w,h;
+	int count;
+	int first;
+	int visible;
+} list = 0;
 
 //===================================================//
 //                                                   //
@@ -49,66 +50,77 @@ proc_info Form;
 
 void main()
 {   
-	int id;
-	@SetEventMask(EVM_REDRAW + EVM_KEY + EVM_BUTTON + EVM_MOUSE + EVM_MOUSE_FILTER);
-	#define NO_DLL_INIT
-	load_dll(boxlib, #box_lib_init,0);
+	mem_init();
+	@SetEventMask(EVM_REDRAW + EVM_BUTTON);
 	loop() switch(@WaitEventTimeout(10))
 	{
-	  	case evMouse:
-			SelectList_ProcessMouse();
-	  		break;
-
 		case evButton:
-			id = @GetButtonID();
-			if (id==1) ExitProcess();
-			if (id==BT_DELETE_LAST_SLOT) EventDeleteLastSlot();
-			if (id==BT_DELETE_ALL_SLOTS) EventDeleteAllSlots();
-			if (id==BT_UNLOCK) EventResetBufferLock();
-			if (id>=100) && (id<300) EventOpenAsText(id-100);
-			if (id>=300) EventOpenAsHex(id-300);
-			break;
-	  
-		case evKey:
-			if (select_list.ProcessKey(@GetKeyScancode())) {
-				ClipViewSelectListDraw();
+			@GetButtonID();
+			switch(EAX) {
+				case 1: 
+					ExitProcess(); 
+				case BT_DELETE_LAST:
+					EventDeleteLastSlot();
+					break;
+				case BT_DELETE_ALL:
+					EventDeleteAllSlots();
+					break;
+				case BT_UNLOCK:
+					EventResetBufferLock();
+					break;
+				case BT_LIST_LEFT:
+					list.first -= list.visible;
+					if (list.first <= 0) list.first = 0;
+					ClipViewSelectListDraw();
+					break;
+				case BT_LIST_RIGHT:
+					if (list.first + list.visible < list.count) list.first += list.visible;
+					ClipViewSelectListDraw();
+					break;
+				default:
+					if (EAX>=300) EventOpenAsHex(EAX-300);
+					else EventOpenAsText(EAX-100);
 			}
 			break;
 		 
 		case evReDraw:
 			sc.get();			
-			DefineAndDrawWindow(screen.width-700/2,80,700,454+skin_height,0x73,0xE4DFE1,WINDOW_HEADER,0);
+			DefineAndDrawWindow(GetScreenWidth()-600/2,80,600,400,0x73,NULL,"Clipboard Viewer",NULL);
 			GetProcessInfo(#Form, SelfInfo);
 			IF (Form.status_window>=2) break;
 			IF (Form.height < 200) { MoveSize(OLD,OLD,OLD,200); break; }
 			IF (Form.width  < 570) { MoveSize(OLD,OLD,570,OLD); break; }
-			SelectList_Init(
-				LIST_PADDING, 
-				LIST_PADDING+PANEL_TOP_H, 
-				Form.cwidth-LIST_PADDING-LIST_PADDING-scroll1.size_x, 
-				Form.cheight-PANEL_BOTTOM_H-PANEL_TOP_H-LIST_PADDING-LIST_PADDING,
-				true
-				);
 		 	DrawWindowContent();
 		 	break;
 
 		default:
-			if (Clipboard__GetSlotCount() > select_list.count) ClipViewSelectListDraw();
-			break;
+			if (Clipboard__GetSlotCount() > list.count) ClipViewSelectListDraw();
    }
 }
 
 void DrawWindowContent()
 {
-	int button_x = select_list.x;
+	list.w = Form.cwidth-GAP-GAP; 
+	list.h = Form.cheight-PANEL_BOTTOM_H-LIST_Y-GAP;
+	list.visible = list.h / LINE_H;
+	if (list.first > list.count) list.first = list.count - list.visible;
+
 	DrawBar(0,0, Form.cwidth, PANEL_TOP_H, sc.work);
 	DrawBar(0,Form.cheight-PANEL_BOTTOM_H, Form.cwidth, PANEL_BOTTOM_H, sc.work);
-	DrawWideRectangle(select_list.x-LIST_PADDING, select_list.y-LIST_PADDING, LIST_PADDING*2+select_list.w+scroll1.size_x, LIST_PADDING*2+select_list.h, LIST_PADDING-2, sc.work);
-	button_x += DrawStandartCaptButton(button_x, select_list.y + select_list.h + 8, BT_DELETE_LAST_SLOT, T_DELETE_LAST_SLOT);
-	button_x += DrawStandartCaptButton(button_x, select_list.y + select_list.h + 8, BT_DELETE_ALL_SLOTS, T_DELETE_ALL_SLOTS);
-	button_x += DrawStandartCaptButton(button_x, select_list.y + select_list.h + 8, BT_UNLOCK, T_RESET_BUFFER_LOCK);
-	WriteText(select_list.x+12, select_list.y - 23, 0x90, sc.work_text, T_COLUMNS_TITLE);
-	WriteText(select_list.x+select_list.w - 88-14, select_list.y - 23, 0x90, sc.work_text, T_COLUMN_VIEW);
+	DrawWideRectangle(GAP-GAP, LIST_Y-GAP, GAP*2+list.w, GAP*2+list.h, GAP-2, sc.work);
+
+	DefineButton(GAP, list.h + LIST_Y + 8, 110, 25, BT_DELETE_LAST, sc.button);
+	$inc edx
+	$add ebx, 130 << 16    //BT_DELETE_ALL
+	$int 64
+	$inc edx
+	$add ebx, 130 << 16    //BT_UNLOCK
+	$int 64
+
+	WriteText(GAP+10, LIST_Y + list.h + 14, 0x90, sc.button_text, "Delete last      Delete all        Unlock");
+
+	WriteText(GAP+12, LIST_Y - 23, 0x90, sc.work_text, T_COLUMNS_TITLE);
+	WriteText(GAP+list.w - 88-14, LIST_Y - 23, 0x90, sc.work_text, T_COLUMN_VIEW);
  	ClipViewSelectListDraw();
  	SelectList_DrawBorder();
 }
@@ -125,10 +137,16 @@ struct clipboard_data
 
 void SelectList_DrawLine(dword i)
 {
-	int yyy, length, slot_data_type_number;
-	dword line_text[2048];
+	int yyy, slot_data_type_number;
 
-	slot_data = Clipboard__GetSlotData(select_list.first + i);
+	yyy = i*LINE_H+LIST_Y;
+	DrawBar(GAP, yyy, list.w, LINE_H, -i%2 * 0x0E0E0E + 0xF1F1f1);
+
+	if (list.first + i >= list.count) {
+		return;
+	}
+
+	slot_data = Clipboard__GetSlotData(list.first + i);
 	cdata.size = ESDWORD[slot_data];
 	cdata.type = ESDWORD[slot_data+4];
 	if (cdata.type==SLOT_DATA_TYPE_TEXT) || (cdata.type==SLOT_DATA_TYPE_TEXT_BLOCK)
@@ -137,22 +155,18 @@ void SelectList_DrawLine(dword i)
 		cdata.content_offset = 8;
 	cdata.content = slot_data + cdata.content_offset; 
 
-	yyy = i*select_list.item_h+select_list.y;
-	DrawBar(select_list.x+1, yyy, select_list.w-1, select_list.item_h, -i%2 * 0x0E0E0E + 0xF1F1f1);
-	WriteText(select_list.x+12, yyy+select_list.text_y, 0x90, 0x000000, itoa(select_list.first + i));
+	WriteText(GAP+12, yyy+TEXT_Y, 0x90, 0x000000, itoa(list.first + i));
 	EDX = ConvertSizeToKb(cdata.size);
-	WriteText(select_list.x+44, yyy+select_list.text_y, 0x90, 0x000000, EDX);
+	WriteText(GAP+44, yyy+TEXT_Y, 0x90, 0x000000, EDX);
 	slot_data_type_number = cdata.type;
-	WriteText(select_list.x+140, yyy+select_list.text_y, 0x90, 0x000000, data_type[slot_data_type_number]);
-	WriteText(select_list.x+select_list.w - 88, yyy+select_list.text_y, 0x90, 0x006597, T_VIEW_OPTIONS);
-	DefineButton(select_list.x+select_list.w - 95, yyy, 50, select_list.item_h, 100+i+BT_HIDE, NULL);
-	DefineButton(select_list.x+select_list.w - 95 + 51, yyy, 40, select_list.item_h, 300+i+BT_HIDE, NULL);
+	WriteText(GAP+140, yyy+TEXT_Y, 0x90, 0x000000, data_type[slot_data_type_number]);
+	WriteText(GAP+list.w - 88, yyy+TEXT_Y, 0x90, 0x006597, "TEXT  HEX");
+	DefineButton(GAP+list.w - 98, yyy, 50, LINE_H, 100+i+BT_HIDE, NULL);
+	DefineButton(GAP+list.w - 95 + 51, yyy, 40, LINE_H, 300+i+BT_HIDE, NULL);
 
-	length = select_list.w-236 - 95 / select_list.font_w - 2;
-	if (cdata.size - cdata.content_offset < length) length = cdata.size - cdata.content_offset;
-	strlcpy(#line_text, cdata.content, length);
-	replace_char(#line_text, 0, 31, length); // 31 is a dot
-	WriteText(select_list.x+236, yyy+select_list.text_y, 0x90, 0x000000, #line_text);
+	ESI = list.w - 345 / 8;
+	if (cdata.size - cdata.content_offset < ESI) ESI = cdata.size - cdata.content_offset;
+	WriteText(GAP+236, yyy+TEXT_Y, 0x30, 0x000000, cdata.content);
 }
 
 int SaveSlotContents(dword size, off) {
@@ -164,13 +178,42 @@ int SaveSlotContents(dword size, off) {
 	}
 }
 
-void ClipViewSelectListDraw() {
-	select_list.count = Clipboard__GetSlotCount();
-	SelectList_Draw();
+void ClipViewSelectListDraw()
+{
+	int i, list_last;
+
+	list.count = Clipboard__GetSlotCount();
+
+	if (list.count > list.visible) list_last = list.visible; else list_last = list.count;
+
+	for (i=0; i<list_last; i++;) SelectList_DrawLine(i); 
+
+	DrawBar(GAP,i*LINE_H+LIST_Y, list.w, -i*LINE_H+ list.h, 0xFFFfff);
+	if (!list.count) WriteText(list.w / 2 + GAP - 60, 
+		list.h / 2 - 8 + LIST_Y, 0x90, 0x999999, "No data to show");
+
+	if (list.count > list.visible) {
+		param[0] = list.first / list.visible + '0';
+		DefineButton(Form.cwidth-84-GAP, list.h + LIST_Y + 8, 25, 25, BT_LIST_LEFT, sc.button); //BT_LEFT
+		$inc edx
+		$add ebx, 57 << 16 //BT_RIGHT
+		$int 64
+		WriteText(Form.cwidth-84-GAP+10, list.h + LIST_Y + 14, 0x90, sc.button_text, "<      >");
+		$add ebx, 28 << 16
+		$mov edx, #param;
+		$mov edi, sc.work_text
+		$add ecx, 0x40 << 24
+		$int 64
+	}
 }
 
-void SelectList_LineChanged() {
-	return;
+void SelectList_DrawBorder() {
+	DrawRectangle3D(GAP-2, LIST_Y-2,
+		list.w+3, list.h+3, 
+		sc.work_dark, sc.work_light);
+	DrawRectangle3D(GAP-1, LIST_Y-1, 
+		list.w+1, list.h+1, 
+		sc.work_graph, sc.work_graph);
 }
 
 //===================================================//
@@ -182,21 +225,24 @@ void SelectList_LineChanged() {
 void EventDeleteLastSlot()
 {
 	int i;
-	for (i=0; i<select_list.visible; i++;) DeleteButton(select_list.first + i + 100);
-	for (i=0; i<select_list.visible; i++;) DeleteButton(select_list.first + i + 300);
+	for (i=0; i<list.visible; i++;) {
+		DeleteButton(list.first + i + 100);
+		$add edx, 200
+		$int 64
+	}
 	Clipboard__DeleteLastSlot();
-	ClipViewSelectListDraw();
+	DrawWindowContent();
 }
 
 void EventDeleteAllSlots()
 {
 	while (Clipboard__GetSlotCount()) Clipboard__DeleteLastSlot();
-	ClipViewSelectListDraw();
+	DrawWindowContent();
 }
 
 void EventResetBufferLock() {
 	Clipboard__ResetBlockingBuffer();
-	ClipViewSelectListDraw();
+	DrawWindowContent();
 }
 
 void EventOpenAsText(int slot_id) {

@@ -146,7 +146,7 @@ void LoadIniSettings()
 	ini.path = GetIni(#eolite_ini_path, "app.ini");
 	if (efm) ini.section = "EFM"; else ini.section = "Eolite";
 
-	files.SetFont(6, 9, 10000000b);
+	files.SetFont(8, 14, 10000000b);
 	show_dev_name.checked   = ini.GetInt("ShowDeviceName", true); 
 	show_status_bar.checked = ini.GetInt("ShowStatusBar", true); 
 	big_icons.checked       = ini.GetInt("BigIcons", false); BigIconsSwitch();
