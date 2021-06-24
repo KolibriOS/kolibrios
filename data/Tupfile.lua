@@ -740,9 +740,11 @@ tup.append_table(extra_files, {
  {"kolibrios/develop/lua/calc.lua", "../contrib/other/lua-5.2.0/calc.lua"},
  {"kolibrios/develop/lua/console.lua", "../contrib/other/lua-5.2.0/console.lua"},
  {"kolibrios/lib/libc.dll", "../contrib/sdk/bin/libc.dll", group = "../contrib/sdk/lib/<libc.dll.a>"},
+ {"kolibrios/lib/sqlite3.dll", "../contrib/sdk/bin/sqlite3.dll", group = "../contrib/sdk/lib/<libsqlite3.dll.a>"},
  {"kolibrios/utils/minizip/minizip", PROGS .. "/fs/minizip/minizip"},
  {"kolibrios/utils/minizip/miniunz", PROGS .. "/fs/minizip/miniunz"},
  {"kolibrios/develop/tcc/tcc", PROGS .. "/develop/ktcc/trunk/source/tcc"},
+ {"kolibrios/develop/sqlite3/sqlite3", "../contrib/sdk/sources/sqlite3/shell/sqlite3"},
 })
 -- For russian build, add russian-only programs.
 if build_type == "rus" then tup.append_table(extra_files, {
