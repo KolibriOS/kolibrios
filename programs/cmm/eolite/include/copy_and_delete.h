@@ -89,7 +89,7 @@ void CopyFilesListToClipboard(bool _cut_active)
 
 			if (cut_active) {
 				if (i>=files.first) && (i<files.first+files.visible)
-					PutShadow(files.x+4,i-files.first*files.item_h+files.y,icons16_default,files.item_h,1,-3);
+					PutShadow(files.x+4,i-files.first*files.item_h+files.y,icons16_default.w,files.item_h,1,-3);
 			}
 		}
 	}
