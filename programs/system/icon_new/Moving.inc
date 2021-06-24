@@ -68,25 +68,8 @@ proc DrawIconToArea  ;предназначен для иконок размером = 32x32
 	repne	scasb
 	repne	scasb
 	repne	scasb
-	mov	al,[edi]
-	cmp	al,'9'
-	ja	.PathToIcon
-	cmp	al,'/'
-	jne	.GetIconInd
-   .PathToIcon:
-	mov	al,30h		 ;заглушка!!!!!!!!!!!!!
-	mov	byte[edi+1],0
-   .GetIconInd:
-;int3
-	sub	al,30h
-	cmp	byte[edi+1],0
-	je	@f
-	shl	eax,1
-	lea	eax,[eax*4+eax]
-	xor	edx,edx
-	mov	dl,[edi+1]
-	sub	dl,30h
-	add	eax,edx
+	stdcall strToInt,edi
+
      @@:	     ;eax=num icon
 	cmp	eax,[icon_count]
 	jb	@f
