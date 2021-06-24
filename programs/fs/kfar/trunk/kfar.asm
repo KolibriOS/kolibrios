@@ -15,6 +15,7 @@ max_width = 255
 min_height = 8
 max_height = 255
 
+include '../../../KOSfuncs.inc'
 include 'lang.inc'
 include 'font.inc'
 include 'sort.inc'
@@ -30,7 +31,10 @@ cursor_normal_size = (font_height*15+50)/100
 cursor_big_size = font_height
 
 start:
-        mov     edi, identical_table
+        mov     eax,SF_SET_EVENTS_MASK
+		mov     ebx,(11b shl 30) or 100111b
+		int     0x40
+		mov     edi, identical_table
         mov     ecx, 0x100
         xor     eax, eax
 @@:
@@ -108,16 +112,16 @@ start:
         stosd
         stosd
         stosb
-        push    68
+        push    SF_SYS_MISC
         pop     eax
-        push    11
+        push    SSF_HEAP_INIT
         pop     ebx
         int     0x40
         call    init_console
         call    draw_window
-        push    66
+        push    SF_KEYBOARD
         pop     eax
-        push    1
+        push    SSF_SET_INPUT_MODE
         pop     ebx
         mov     ecx, ebx
         int     40h     ; set keyboard mode to scancodes
@@ -392,6 +396,8 @@ event:
         jz      redraw
         dec     eax
         jz      key
+        sub     eax,4
+        jz      mouse
 ; button - we have only one button, close
 exit:
 ; close all screens
@@ -492,7 +498,7 @@ get_event:
         mov     ebx, [idle_interval]
         cmp     ebx, -1
         jz      .infinite
-        push    23
+        push    SF_WAIT_EVENT_TIMEOUT
         pop     eax
         int     40h
         pop     ebx
@@ -507,7 +513,7 @@ get_event:
         jmp     get_event
 .infinite:
         pop     ebx
-        push    10
+        push    SF_WAIT_EVENT
         pop     eax
         int     40h
 .ret:
@@ -515,8 +521,8 @@ get_event:
 
 redraw:
 ; query kbd state from OS
-        mov     al, 66
-        push    3
+        mov     al, SF_KEYBOARD
+        push    SSF_GET_CONTROL_KEYS
         pop     ebx
         int     0x40
         and     eax, 0x3F
@@ -525,7 +531,7 @@ redraw:
         jz      @f
         call    draw_keybar
 @@:
-        mov     al, 9
+        mov     al, SF_THREAD_INFO
         mov     ebx, procinfo
         or      ecx, -1
         int     40h
@@ -535,15 +541,15 @@ redraw:
         sub     eax, [skinh]
         cmp     eax, 5
         ja      @f
-        mov     al, 12
-        push    1
+        mov     al, SF_REDRAW
+        push    SSF_BEGIN_DRAW
         pop     ebx
         int     0x40
         xor     eax, eax
 ; ebx, ecx, edi are ignored by function 0 after first redraw
         mov     edx, 0x53000000
         int     0x40
-        mov     al, 12
+        mov     al, SF_REDRAW
         inc     ebx
         int     0x40
         jmp     event
@@ -608,7 +614,7 @@ redraw:
         test    byte [ebx+70], 1
         jnz     @f
 .resize:
-        push    67
+        push    SF_CHANGE_WINDOW
         pop     eax
         or      ebx, -1
         or      ecx, -1
@@ -646,9 +652,9 @@ alt_f9:
         or      [saved_height], -1
         jmp     redraw.resize
 @@:
-        push    48
+        push    SF_STYLE_SETTINGS
         pop     eax
-        push    5
+        push    SSF_GET_SCREEN_AREA
         pop     ebx
         int     0x40
         push    eax
@@ -681,12 +687,12 @@ alt_f9:
         imul    esi, font_height
         add     esi, [skinh]
         add     esi, 4
-        push    67
+        push    SF_CHANGE_WINDOW
         pop     eax
         int     0x40
         jmp     redraw.resize_draw
 key:
-        mov     al, 2
+        mov     al, SF_GET_KEY
         int     40h
         test    al, al
         jnz     event
@@ -773,6 +779,42 @@ key:
         and     [ctrlstate], not 0x20
         jmp     .keybar
 
+align 16
+mouse:
+        mov     eax,SF_MOUSE_GET
+        mov     ebx,SSF_BUTTON_EXT
+        int     0x40
+        bt      eax,8
+        jnc     event
+
+        mov     eax,SF_MOUSE_GET
+        mov     ebx,SSF_WINDOW_POSITION
+        int     0x40
+		cmp     ax, word[skinh]
+		jl      event
+		shr     eax,16
+        mov     ebx, [cur_width]
+        imul    ebx, font_width/2
+		add     ebx, 5 ;window border
+		cmp     eax,ebx
+		jg      @f
+		cmp     [active_panel], panel1_data
+		je      event
+		jmp     .tab
+@@:
+		cmp     [active_panel], panel2_data
+		je      event
+.tab:
+        xor     [active_panel], panel1_data xor panel2_data
+        call    draw_cmdbar
+        mov     ebp, [active_panel]
+        xor     ebp, panel1_data xor panel2_data
+        call    draw_panel
+        mov     ebp, [active_panel]
+        call    draw_panel
+        jmp     event
+
+align 16
 process_ctrl_keys:
         cmp     byte [esi], 0
         jz      .done
@@ -1812,7 +1854,7 @@ panels_OnKey:
         cmp     esi, 256
         ja      .bigcmdline
 .cmdlinelenok:
-        push    70
+        push    SF_FILE
         pop     eax
         int     40h
         xor     esi, esi
@@ -1838,7 +1880,7 @@ panels_OnKey:
 @@:
         test    edx, edx
         jz      @f
-        push    5
+        push    SF_SLEEP
         pop     eax
         push    20
         pop     ebx
@@ -2073,7 +2115,7 @@ panels_OnKey:
         xor     ecx, ecx
 .drive_loop_e:
         mov     byte [tmpname+1], 0
-        push    70
+        push    SF_FILE
         pop     eax
         int     40h
         mov     ebx, dirinfo
@@ -2089,7 +2131,7 @@ panels_OnKey:
         push    [ebx+dirinfo.first-dirinfo]
         and     [ebx+dirinfo.first-dirinfo], 0
 .drive_loop_i:
-        push    70
+        push    SF_FILE
         pop     eax
         int     40h
         mov     ebx, dirinfo
@@ -2505,7 +2547,7 @@ end if
         mov     dl, [edi]
         mov     byte [edi], 0
         push    eax
-        push    70
+        push    SF_FILE
         pop     eax
         mov     ebx, attrinfo
         int     0x40
@@ -2565,7 +2607,7 @@ end if
         cmp     eax, 2
         jbe     .docopy
         mov     [attrinfo.attr], 0      ; assume zero attributes if error
-        push    70
+        push    SF_FILE
         pop     eax
         mov     ebx, attrinfo
         int     0x40
@@ -3651,13 +3693,13 @@ end if
         ret
 
 draw_window:
-        push    12
+        push    SF_REDRAW
         pop     eax
-        push    1
+        push    SSF_BEGIN_DRAW
         pop     ebx
         int     40h
-        mov     al, 48
-        mov     bl, 4
+        mov     al, SF_STYLE_SETTINGS
+        mov     bl, SSF_GET_SKIN_HEIGHT
         int     40h
         mov     [skinh], eax
         mov     ebx, [cur_width]
@@ -3670,7 +3712,7 @@ draw_window:
         mov     edx, 0x53000000
         mov     edi, header
         int     40h
-        mov     al, 13
+        mov     al, SF_DRAW_RECT
         xor     edx, edx
         cmp     [fill_width], 0
         jz      @f
@@ -3700,7 +3742,7 @@ draw_window:
 @@:
 ;        xor     ecx, ecx
 ;        call    draw_image
-        mov     al, 65
+        mov     al, SF_PUT_IMAGE_EXT
         mov     ebx, [MemForImage]
         test    ebx, ebx
         jz      @f
@@ -3715,14 +3757,14 @@ draw_window:
         xor     ebp, ebp
         int     0x40
 @@:
-        mov     al, 12
-        push    2
+        mov     al, SF_REDRAW
+        push    SSF_END_DRAW
         pop     ebx
         int     40h
         ret
 
 draw_image.nomem:
-        mov     al, 13
+        mov     al, SF_DRAW_RECT
         xor     edx, edx
         mov     ebx, [cur_width]
         imul    ebx, font_width
@@ -3731,7 +3773,7 @@ draw_image.nomem:
         mov     cx, word [cur_height]
         imul    cx, font_height
         int     40h
-        mov     al, 4
+        mov     al, SF_DRAW_TEXT
         mov     ebx, 32*65536+32
         mov     ecx, 0xFFFFFF
         mov     edx, nomem_draw
@@ -3930,7 +3972,7 @@ end if
         shr     ebp, 16
         sub     esi, ebp
         mov     ebp, esi
-        push    65
+        push    SF_PUT_IMAGE_EXT
         pop     eax
         mov     edi, console_colors
         push    8
@@ -4088,6 +4130,7 @@ draw_cmdbar:
         rep     stosw
         ret
 
+align 16
 draw_border:
         push    edi
         mov     al, 0xC9
@@ -4217,6 +4260,9 @@ GetPanelTitle_default:
         mov     byte [edi], 0
         ret     10h
 
+;input:
+; ebp - pointer to panel1 or panel2
+align 16
 draw_panel:
         mov     eax, [ebp + panel1_left - panel1_data]
         mov     edx, [ebp + panel1_top - panel1_data]
@@ -5268,7 +5314,7 @@ read_folder:
         mov     ebx, [ebx+4]
         jmp     .read
 .native:
-        push    70
+        push    SF_FILE
         pop     eax
         mov     ebx, dirinfo
         int     40h

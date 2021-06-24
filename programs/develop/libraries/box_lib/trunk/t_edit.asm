@@ -2187,8 +2187,23 @@ ted_text_colored:
 	@@:
 		call ted_text_find_sel_color
 		cmp edx,ted_tex_1
+		jg @b
+
+	xor ax,ax
+	mov edx,ted_tex
+	.cycle0:
+		call ted_iterat_next
+		cmp edx,ted_tex_1
 		jle .no_colors
-		jmp @b
+		mov al,byte[edx+1]
+		or al,al
+		jz .cycle0
+		cmp ah,al
+		jne @f
+			mov byte[edx+1],0 ;слияние рядом стоящих слов одного цвета
+		@@:
+		shl ax,8
+		jmp .cycle0
 	.no_colors:
 	pop edx eax
 	ret
