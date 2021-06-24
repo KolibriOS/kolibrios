@@ -21014,7 +21014,7 @@ int SQLITE_CDECL main(int argc, char **argv){
 int SQLITE_CDECL wmain(int argc, wchar_t **wargv){
   char **argv;
 #endif
-  con_init_opt(-1,-1,-1,-1, "SQLite3");
+//  con_init_opt(-1,-1,-1,-1, "SQLite3");
   char *zErrMsg = 0;
   ShellState data;
   const char *zInitFile = 0;
