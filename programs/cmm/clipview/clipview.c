@@ -116,7 +116,7 @@ void DrawWindowContent()
 	$add ebx, 130 << 16    //BT_UNLOCK
 	$int 64
 
-	WriteText(GAP+10, LIST_Y + list.h + 14, 0x90, sc.button_text, "Delete last      Delete all        Unlock");
+	WriteText(GAP+11, LIST_Y + list.h + 14, 0x90, sc.button_text, "Delete last      Delete all      Reset lock");
 
 	WriteText(GAP+12, LIST_Y - 23, 0x90, sc.work_text, T_COLUMNS_TITLE);
 	WriteText(GAP+list.w - 88-14, LIST_Y - 23, 0x90, sc.work_text, T_COLUMN_VIEW);
@@ -195,6 +195,8 @@ void ClipViewSelectListDraw()
 	if (!list.count) WriteText(list.w / 2 + GAP - 60, 
 		list.h / 2 - 8 + LIST_Y, 0x90, 0x999999, "No data to show");
 
+	//Show "<" and ">" buttons and a page number
+	//in case when there are items more than visible at once
 	if (list.count > list.visible) {
 		param[0] = list.first / list.visible + '0';
 		DefineButton(Form.cwidth-84-GAP, list.h + LIST_Y + 8, 25, 25, BT_LIST_LEFT, sc.button); //BT_LEFT
@@ -206,7 +208,7 @@ void ClipViewSelectListDraw()
 		$mov edx, #param;
 		$mov edi, sc.work
 		$add ecx, 0x40 << 24
-		$add ecx, sc.work_text
+		$add ecx, sc.work_text //page number
 		$int 64
 	}
 }

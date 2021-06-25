@@ -3,9 +3,9 @@
 
 // 70.5 - get volume info and label
 
-#define ABOUT_TITLE "EOLITE 5 RC3"
-#define TITLE_EOLITE "Eolite File Manager 5 RC3"
-#define TITLE_KFM "Kolibri File Manager 2 RC3";
+#define ABOUT_TITLE "EOLITE 5 RC4"
+#define TITLE_EOLITE "Eolite File Manager 5 RC4"
+#define TITLE_KFM "Kolibri File Manager 2 RC4";
 
 #define MEMSIZE 1024 * 250
 #include "../lib/clipboard.h"

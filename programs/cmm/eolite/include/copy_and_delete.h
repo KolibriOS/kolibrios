@@ -66,7 +66,7 @@ void CopyFilesListToClipboard(bool _cut_active)
 
 	if (!selected_count) return;
 	
-	size_buf = 4;
+	size_buf = 10;
 	for (i=0; i<files.count; i++) 
 	{
 		if (getElementSelectedFlag(i) == true) {
@@ -75,7 +75,6 @@ void CopyFilesListToClipboard(bool _cut_active)
 			size_buf += path_len + 1;
 		}
 	}
-	size_buf += 20;
 	buff_data = malloc(size_buf);
 	ESDWORD[buff_data] = size_buf;
 	ESDWORD[buff_data+4] = SLOT_DATA_TYPE_RAW;
