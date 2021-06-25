@@ -83,7 +83,7 @@
 		sprintf(#copy_from2,"%s/%s",from2,filename);
 		sprintf(#copy_in2,"%s/%s",in2,filename);
 
-		if ( TestBit(ESDWORD[filename-40], 4) ) //dir_exists?
+		if ( ESDWORD[filename-40] & ATR_FOLDER ) //dir_exists?
 		{
 			if ( (!strncmp(filename, ".",1)) || (!strncmp(filename, "..",2)) ) continue;
 			CopyFolder(#copy_from2, #copy_in2);

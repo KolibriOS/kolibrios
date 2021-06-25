@@ -276,7 +276,7 @@ void find_loop(dword way)
 		{
 			filename = i*304+dirbuf+72;
 			getfullpath(cur_file,way,filename);
-			if (TestBit(ESDWORD[filename-40], 4) ) folder = true; else folder = false;
+			if (ESDWORD[filename-40] & ATR_FOLDER) folder = true; else folder = false;
 
 			if (strstri(filename, #search_name)) {
 				results.add(filename, way, folder);

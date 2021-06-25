@@ -82,7 +82,7 @@ void SetPropertiesDir(dword way)
 			strcpy(cur_file, way);
 			chrcat(cur_file, '/');
 			strcat(cur_file, filename);
-			if ( TestBit(ESDWORD[filename-40], 4) )
+			if ( ESDWORD[filename-40] & ATR_FOLDER )
 			{
 				SetPropertiesDir(cur_file);
 			}
@@ -158,7 +158,7 @@ void GetSizeMoreFiles(dword way)
 		if (getElementSelectedFlag(i) == true) 
 		{
 			sprintf(#cur_file,"%s/%s",way,items.get(i)*304+buf+72);
-			if (TestBit(ESDWORD[items.get(i)*304+buf+32], 4) )
+			if (ESDWORD[items.get(i)*304+buf+32] & ATR_FOLDER )
 			{
 				more_files_count.calculate_loop(#cur_file);
 				more_files_count.folders++;

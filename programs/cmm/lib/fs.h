@@ -40,7 +40,7 @@
 	dword	sizehi;
 	char	name[518];
 };
-
+#define ATR_FOLDER 0x10
 
 
 :dword GetFileInfo(dword file_path, bdvk_struct)
@@ -480,7 +480,7 @@ int block_size=1024*1024*4; //copy by 4 MiB
 			filename = i*304+dirbuf+72;
 			sprintf(cur_file,"%s/%s",way,filename);
 			
-			if (TestBit(ESDWORD[filename-40], 4) )
+			if (ESDWORD[filename-40] & ATR_FOLDER )
 			{
 				folders++;
 				calculate_loop(cur_file);

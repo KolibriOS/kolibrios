@@ -197,12 +197,9 @@ int RecursiveDelete(dword way, bool show_progress)
 			//if (CheckEvent()==evReDraw) draw_window();
 			filename = i*304+dirbuf+72;
 			sprintf(#del_from,"%s/%s",way,filename);
-			if ( TestBit(ESDWORD[filename-40], 4) )
-			{
+			if ( ESDWORD[filename-40] & ATR_FOLDER ) {
 				RecursiveDelete(#del_from, true);
-			}
-			else
-			{
+			} else {
 				if (show_progress) Operation_Draw_Progress(filename);
 				if (error = DeleteFile(#del_from)) del_error = error;
 			}

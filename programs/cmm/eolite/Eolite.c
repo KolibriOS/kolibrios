@@ -831,7 +831,7 @@ void Line_ReDraw(dword bgcol, filenum){
 	file.sizehi   = ESDWORD[file_offet+36];
 	file_name_off = file_offet+40;
 
-	if (! TestBit(attr, 4) ) //file or folder?
+	if (! attr & ATR_FOLDER) //file or folder?
 	{	
 		ext1 = strrchr(file_name_off,'.') + file_name_off;
 		if (ext1==file_name_off) ext1 = NULL; //if no extension then show nothing
@@ -849,11 +849,11 @@ void Line_ReDraw(dword bgcol, filenum){
 	if (file_size) WriteText(7-strlen(file_size)*6+files.x+files.w-58, 
 			files.text_y+y+1, files.font_type, col.list_gb_text, file_size);
 
-	if (TestBit(attr, 1)) || (TestBit(attr, 2)) text_col=col.list_text_hidden; //system or hiden?
+	if (attr&2) || (attr&4) text_col=col.list_text_hidden; //system or hiden?
 	if (bgcol==col.selec)
 	{
 		file_name_is_8_3(file_name_off);
-		itdir = TestBit(attr, 4);
+		itdir = attr & ATR_FOLDER;
 		strcpy(#file_name, file_name_off);
 		if (!strcmp(#path,"/")) sprintf(#file_path,"%s%s",#path,file_name_off);
 			else sprintf(#file_path,"%s/%s",#path,file_name_off);
@@ -948,13 +948,10 @@ inline Sorting()
 	for (j=files.count-1, file_off=files.count-1*304+buf+32; j>=0; j--, file_off-=304;)  //files | folders
 	{
 		if (dir_at_fat16) && (file_name_is_8_3(file_off+40)) strttl(file_off+40);
-		if (TestBit(ESDWORD[file_off],4)) //directory?
-		{
+		if (ESDWORD[file_off] & ATR_FOLDER) {
 			items.set(d, j);
 			d++;
-		}
-		else
-		{
+		} else {
 			items.set(files.count-f, j);
 			f++;
 		}
@@ -1042,7 +1039,7 @@ void EventOpenSelected()
 	int i;
 	for (i=0; i<files.count; i++) if (getElementSelectedFlag(i)) { 
 		EDX = items.get(i)*304 + buf+32;
-		if (TestBit(ESDWORD[EDX], 4)) continue; //is foder
+		if (ESDWORD[EDX]&ATR_FOLDER) continue; //is foder
 		sprintf(#param,"%s/%s",#path, EDX+40);
 		RunProgram("/sys/@open", #param);
 	}

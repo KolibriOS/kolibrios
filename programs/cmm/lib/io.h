@@ -392,7 +392,7 @@
 			if(tmp==-1)return -1;
 			size_tmp += tmp;
 			i++;
-			if (TestBit(ESDWORD[filename-40], 4))count_dirs++;
+			if (ESDWORD[filename-40] & ATR_FOLDER)count_dirs++;
 			else count_files++;
 		}
 		

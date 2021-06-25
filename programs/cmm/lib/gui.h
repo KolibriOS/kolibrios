@@ -70,8 +70,7 @@
 {
 	dword tx = -strlen(text)*8+w/2+x;
 	dword ty = h/2-7+y;
-
-	if (id>0) DefineButton(x,y,w,h,id,color_b);
+	DefineButton(x,y,w,h,id,color_b);
 	WriteText(tx+1,ty+1,0x90,MixColors(color_b,0,230),text);
 	WriteText(tx,ty,0x90,color_t,text);
 }
@@ -90,7 +89,7 @@
 	unsigned darker_color = MixColors(sc.button,0,230);
 
 
-	if (id>0) DefineButton(x,y,w,h,id,sc.button);
+	DefineButton(x,y,w,h,id,sc.button);
 
 	WriteText(tx+1,ty+1,0x90,darker_color,text);
 	WriteText(tx,ty,0x90,sc.button_text,text);
