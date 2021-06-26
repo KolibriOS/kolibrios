@@ -27,6 +27,9 @@
 	?define START_PATH " Start path: "
 #endif
 
+dword eolite_ini_path[4096];
+_ini ini;
+
 char path_start[4096];
 edit_box path_start_ed = {290,50,57,0xffffff,0x94AECE,0xffffff,0xffffff,0x10000000,4098,
 	                      #path_start,0, 100000000000010b,0,0};

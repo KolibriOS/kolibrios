@@ -37,7 +37,7 @@ char *kfm_func = {
 	"Удалить",
 	"Файл",
 	" Настройки"
-}
+};
 #else
 ?define T_FILE "File"
 ?define T_TYPE "Type"
@@ -78,6 +78,36 @@ char *kfm_func = {
 	"Delete",
 	"File",
 	" Settings"
-}
+};
 #endif
 
+//Button IDs
+enum {
+	PATH_BTN = 10,
+	POPUP_BTN1 = 201,
+	POPUP_BTN2 = 202,
+	KFM_DEV_DROPDOWN_1 = 205,
+	KFM_DEV_DROPDOWN_2 = 207,
+	BREADCRUMB_ID = 300,
+
+	BACK_BTN = 400,
+	FWRD_BTN,
+	GOUP_BTN,
+	COPY_BTN,
+	CUT_BTN,
+	PASTE_BTN,
+	KFM_FUNC_ID = 450
+};
+
+//NewElement options
+enum {
+	CREATE_FILE=1, 
+	CREATE_FOLDER, 
+	RENAME_ITEM
+}; 
+
+//OpenDir options
+enum {
+	WITH_REDRAW, 
+	ONLY_OPEN
+};

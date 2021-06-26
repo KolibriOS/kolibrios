@@ -131,10 +131,7 @@ void SetProperties(int mode)
 	}
 
 	cmd_free=3;
-	_not_draw = true;
-	Open_Dir(#path,WITH_REDRAW);
-	_not_draw = false;
-	EventRedrawWindow(Form.left,Form.top);
+	Open_Dir(#path,ONLY_OPEN);
 	ExitProcess();
 }
 

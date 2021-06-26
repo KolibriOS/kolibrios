@@ -3,9 +3,9 @@
 
 // 70.5 - get volume info and label
 
-#define ABOUT_TITLE "EOLITE 5 RC5"
-#define TITLE_EOLITE "Eolite File Manager 5 RC5"
-#define TITLE_KFM "Kolibri File Manager 2 RC5";
+#define ABOUT_TITLE "EOLITE 5 Beta8"
+#define TITLE_EOLITE "Eolite File Manager 5 Beta8"
+#define TITLE_KFM "Kolibri File Manager 2 Beta8";
 
 #define MEMSIZE 1024 * 250
 #include "../lib/clipboard.h"
@@ -28,36 +28,7 @@
 
 #include "imgs/images.h"
 
-//Button IDs
-enum {
-	PATH_BTN = 10,
-	POPUP_BTN1 = 201,
-	POPUP_BTN2 = 202,
-	KFM_DEV_DROPDOWN_1 = 205,
-	KFM_DEV_DROPDOWN_2 = 207,
-	BREADCRUMB_ID = 300,
-
-	BACK_BTN = 400,
-	FWRD_BTN,
-	GOUP_BTN,
-	COPY_BTN,
-	CUT_BTN,
-	PASTE_BTN,
-	KFM_FUNC_ID = 450
-};
-
-//NewElement options
-enum {
-	CREATE_FILE=1, 
-	CREATE_FOLDER, 
-	RENAME_ITEM
-}; 
-
-//OpenDir options
-enum {
-	WITH_REDRAW, 
-	ONLY_OPEN
-};
+#include "include/const.h"
 
 _history history;
 
@@ -84,52 +55,54 @@ bool efm = false;
 
 int toolbar_buttons_x[7]={9,46,85,134,167,203};
 
-bool active_about = false;
-bool active_settings = false;
-bool _not_draw = false;
 bool dir_at_fat16 = NULL;
-
-bool disk_popin_active_on_panel=0;
 
 dword about_thread_id;
 dword settings_window;
+bool active_about = false;
+bool active_settings = false;
 
 byte del_active=0;
 byte new_element_active=0;
 
 llist files, files_active, files_inactive;
 
-byte list_full_redraw;
+bool list_full_redraw;
 
-dword buf;
-collection_int items=0;
-int selected_count;
-int count_dir;
+//Folder data
+	dword buf;
+	collection_int items=0;
+	int selected_count;
+	int folder_count;
+	//dword path;
+	char path[4096];
 
-byte path[4096];
-byte file_path[4096];
-byte file_name[256];
-byte new_element_name[256];
-byte temp[4096];
-bool itdir;
+//Sselected element data
+	byte file_path[4096];
+	byte file_name[256];
+	byte new_element_name[256];
+	byte temp[4096];
+	bool itdir;
+
+//Window data
+	proc_info Form;
+	int sc_slider_h;
+	bool scroll_used=false;
+	char sort_type=2;
+	bool sort_desc=false;
+	int status_bar_h;
+	int icon_size = 18;
+
+
+int active_panel=0;
+int disk_popin_active_on_panel=0;
+#define PANES_COUNT 2
+unsigned char location[PANES_COUNT];
 
 char active_path[4096], inactive_path[4096];
 
-dword eolite_ini_path[4096];
-_ini ini;
-
-char scroll_used=false;
-
 dword about_stak=0,properties_stak=0,settings_stak=0;
-
-proc_info Form;
-int sc_slider_h;
-int action_buf;
-int rand_n;
-
-char sort_type=2;
-bool sort_desc=false;
-int active_panel=0;
+byte cmd_free=0;
 
 libimg_image icons16_default;
 libimg_image icons16_selected;
@@ -137,15 +110,10 @@ libimg_image icons16_selected;
 libimg_image icons32_default;
 libimg_image icons32_selected;
 
-int status_bar_h;
-
-int icon_size = 18;
-
 edit_box new_file_ed = {200,213,180,0xFFFFFF,0x94AECE,0xFFFFFF,0xFFFFFF,0x10000000,
 	248,#new_element_name,0,ed_focus+ed_always_focus,6,0};
 PathShow_data FileShow = {0, 56,215, 8, 100, 1, 0, 0x0, 0xFFFfff, #file_name, #temp, 0};
-byte cmd_free=0;
-#include "include\translations.h"
+
 
 #include "include\gui.h"
 #include "include\settings.h"
@@ -159,18 +127,12 @@ byte cmd_free=0;
 #include "include\properties.h"
 #include "include\breadcrumbs.h"
 
-void load_libraries()
-{
-	load_dll(boxlib, #box_lib_init,0);
-	load_dll(libini, #lib_init,1);
-	load_dll(libimg, #libimg_init,1);
-}
-
 void handle_param()
 {
 	//-p <path> : just show file/folder properties dialog
 	//-d <path> : delete file/folder
 	//-v : paste files/folder from clipboard
+	int i;
 	dword p = #param;
 	if (param[0]=='\\') && (param[1]=='E') && (param[2]=='F') && (param[3]=='M') {
 		efm = true;
@@ -179,6 +141,12 @@ void handle_param()
 	}
 
 	LoadIniSettings();
+
+	for (i=0; i<PANES_COUNT; i++) {
+		location[i] = malloc(4096);
+		strcpy(location[i], #path_start);
+	}
+	//path = location[0];
 
 	if (ESBYTE[p]=='\0') return;
 
@@ -225,13 +193,12 @@ void main()
 	dword id;
 	int old_cur_y;
 
-	load_libraries();
+	load_dll(boxlib, #box_lib_init,0);
+	load_dll(libini, #lib_init,1);
+	load_dll(libimg, #libimg_init,1);
+
 	SetAppColors();
-
-	ESBYTE[0] = NULL;
-
 	handle_param();
-	rand_n = random(80);
 
 	ESBYTE[0] = NULL;
 
@@ -240,7 +207,7 @@ void main()
 	strcpy(#inactive_path, #path);
 	llist_copy(#files_inactive, #files);
 	SetEventMask(EVM_REDRAW+EVM_KEY+EVM_BUTTON+EVM_MOUSE+EVM_MOUSE_FILTER);
-	loop() switch(@WaitEventTimeout(80))
+	loop() switch(@WaitEventTimeout(100))
 	{
 		case evMouse:
 			if (del_active) || (disk_popin_active_on_panel) || (Form.status_window&ROLLED_UP) break;
@@ -248,7 +215,7 @@ void main()
 			{
 				edit_box_mouse stdcall(#new_file_ed);
 				break;
-			}				
+			}	
 			
 			mouse.get();
 
@@ -318,8 +285,8 @@ void main()
 
 			//Scrooll
 			if (mouse.x>=files.x+files.w) && (mouse.x<=files.x+files.w+18) && (mouse.y>files.y) 
-				&& (mouse.y<files.y+files.h-18) && (mouse.lkm) && (!scroll_used) {scroll_used=true; Scroll();}
-			if (scroll_used) && (!mouse.key&MOUSE_LEFT) { scroll_used=false; Scroll(); }
+				&& (mouse.y<files.y+files.h-18) && (mouse.lkm) && (!scroll_used) {scroll_used=true; DrawScroll(scroll_used);}
+			if (scroll_used) && (!mouse.key&MOUSE_LEFT) { scroll_used=false; DrawScroll(scroll_used); }
 			
 			if (scroll_used)
 			{
@@ -488,7 +455,7 @@ void main()
 							EventOpenNewEolite();
 							break; 
 					case SCAN_CODE_KEY_R:
-							EventRefreshDisksAndFolders();
+							EventManualFolderRefresh();
 							break;
 					case SCAN_CODE_ENTER:
 							if (!itdir) ShowOpenWithDialog();
@@ -546,15 +513,9 @@ void main()
 		case evReDraw:
 			draw_window();
 			if (CheckActiveProcess(Form.ID)) && (GetMenuClick()) break;
-			if (action_buf==OPERATION_END) {
-				EventRefresh();
-				action_buf=0;
-			}
 			break;
 		default:
-			if (Form.status_window<=2) EventRefreshDisksAndFolders();
-			//sprintf(#param, "/tmp0/1/%i", random(99999)); //for testing purpose
-			//CreateFile(0, 0, #param);
+			if (!Form.status_window&ROLLED_UP) EventRefreshDisksAndFolders();
 	}
 	
 	if(cmd_free)
@@ -571,6 +532,9 @@ void draw_window()
 	dword i=0;
 	incn x;
 	dword title;
+	static int rand_n;
+	if (rand_n) rand_n = random(80);
+
 	if (show_status_bar.checked) {
 		#define STBAR_EOLITE_H 16;
 		#define STBAR_KFM_H 21+16;
@@ -677,7 +641,7 @@ void DrawStatusBar()
 	if (!show_status_bar.checked) return;
 	if (files.count>0) && (streq(items.get(0)*304+buf+72,"..")) go_up_folder_exists=1;
 	DrawBar(0, Form.cheight - status_bar_h, Form.cwidth,  status_bar_h, sc.work);
-	sprintf(#status_bar_str, T_STATUS_EVEMENTS, count_dir-go_up_folder_exists, files.count-count_dir);
+	sprintf(#status_bar_str, T_STATUS_EVEMENTS, folder_count-go_up_folder_exists, files.count-folder_count);
 	WriteText(6,Form.cheight - 13,0x80,sc.work_text,#status_bar_str);
 	if (selected_count) {
 		sprintf(#status_bar_str, T_STATUS_SELECTED, selected_count);
@@ -772,7 +736,7 @@ void List_ReDraw()
 	if (colored_lines.checked) separator_color = col.list_bg; else separator_color = col.list_vert_line;
 	DrawBar(files.x+files.w-141,all_lines_h + files.y,1,files.h - all_lines_h, separator_color);
 	DrawBar(files.x+files.w-68,all_lines_h + files.y,1,files.h - all_lines_h, separator_color);
-	Scroll();
+	DrawScroll(scroll_used);
 
 	if (del_active) Del_Form();
 	if (new_element_active) && (col.selec != 0xCCCccc) NewElement_Form(new_element_active, #new_element_name);
@@ -891,24 +855,19 @@ void Open_Dir(dword dir_path, redraw){
 	}
 	if (files.count>0) && (files.cur_y-files.first==-1) files.cur_y=0;
 
-	if (files.count!=-1)
-	{
-		if(!_not_draw) DrawPathBar();
-		history.add(#path);
-		SystemDiscs.Draw();
-		files.visible = files.h / files.item_h;
-		if (files.count < files.visible) files.visible = files.count;
-		if (!strncmp(dir_path, "/rd/1/",5)) || (!strncmp(dir_path, "/sys/",4)) 
-			dir_at_fat16 = true; else dir_at_fat16 = false; 
-		Sorting();
-		list_full_redraw = true;
-		if (redraw!=ONLY_OPEN)&&(!_not_draw) {DrawStatusBar(); List_ReDraw();}
-		SetCurDir(dir_path);
-	}
-	if (files.count==-1) && (redraw!=ONLY_OPEN) 
-	{
-		files.KeyHome();
-		if(!_not_draw) { list_full_redraw=true; DrawStatusBar(); List_ReDraw(); }
+	history.add(#path);
+	SystemDiscs.Draw();
+	files.visible = files.h / files.item_h;
+	if (files.count < files.visible) files.visible = files.count;
+	if (!strncmp(dir_path, "/rd/1/",5)) || (!strncmp(dir_path, "/sys/",4)) 
+		dir_at_fat16 = true; else dir_at_fat16 = false; 
+	Sorting();
+	list_full_redraw = true;
+	SetCurDir(dir_path);
+	DrawPathBar();
+	if (redraw!=ONLY_OPEN) {
+		List_ReDraw();
+		DrawStatusBar(); 
 	}
 }
 
@@ -923,7 +882,7 @@ inline Sorting()
 	if (!strcmp(#path,"/")) //do not sort root folder
 	{
 		for(d=1;d<files.count;d++;) items.set(d, d);
-		count_dir = d;
+		folder_count = d;
 		return;
 	}
 	for (j=files.count-1, file_off=files.count-1*304+buf+32; j>=0; j--, file_off-=304;)  //files | folders
@@ -937,7 +896,7 @@ inline Sorting()
 			f++;
 		}
 	}
-	count_dir = d;
+	folder_count = d;
 	//sorting: files first, then folders
 	Sort_by_Name(0,d-1);
 	if (sort_type==1) Sort_by_Name(d,files.count-1);
@@ -1169,7 +1128,7 @@ void FnProcess(byte N)
 				CopyFilesListToClipboard(COPY);
 				EventPaste(#inactive_path);
 			} else {
-				EventRefreshDisksAndFolders();
+				EventManualFolderRefresh();
 			}
 			break;
 		case 6:
@@ -1199,19 +1158,6 @@ void FnProcess(byte N)
 				ActivateWindow(GetProcessSlot(settings_window));
 			}
 			break;
-	}
-}
-
-void EventRefresh()
-{
-	if (efm)
-	{
-		DrawFilePanels();
-	} else {
-		Tip(56, T_DEVICES, 55, "-");
-		Open_Dir(#path,WITH_REDRAW);
-		pause(10);
-		DrawDeviceAndActionsLeftPanel();				
 	}
 }
 
@@ -1266,15 +1212,26 @@ int GetRealFileCountInFolder(dword folder_path)
 
 void EventRefreshDisksAndFolders()
 {
-	if(GetRealFileCountInFolder("/")+dir_exists("/kolibrios") != SystemDiscs.dev_num) {
-		SystemDiscs.Get();
-		EventRefresh();
+	if(efm) {
+		if (GetRealFileCountInFolder(#inactive_path) != files_inactive.count) {
+			DrawFilePanels();
+			return;
+		}
 	} else {
-		if(GetRealFileCountInFolder(#path) != files.count) EventRefresh();
-		else if(efm) && (GetRealFileCountInFolder(#inactive_path) != files_inactive.count) {
-			EventRefresh();
+		if (GetRealFileCountInFolder("/")+dir_exists("/kolibrios") != SystemDiscs.dev_num) {
+			SystemDiscs.Get();
+			DrawDeviceAndActionsLeftPanel();
 		}
 	}
+	if(GetRealFileCountInFolder(#path) != files.count) Open_Dir(#path,WITH_REDRAW);
+}
+
+void EventManualFolderRefresh()
+{
+	Tip(56, T_DEVICES, 55, "-");
+	pause(10);
+	EventRefreshDisksAndFolders();
+	DrawDeviceAndActionsLeftPanel();
 }
 
 void EventSort(dword id)

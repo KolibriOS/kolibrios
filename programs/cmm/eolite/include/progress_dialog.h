@@ -14,7 +14,6 @@ enum {
 	COPY_FLAG, 
 	MOVE_FLAG, 
 	DELETE_FLAG, 
-	OPERATION_END
 };
 
 void DisplayOperationForm(int operation_flag)
@@ -57,7 +56,6 @@ void DisplayOperationForm(int operation_flag)
 }
 
 void DialogExit() {
-	action_buf = OPERATION_END;
 	ActivateWindow(GetProcessSlot(Form.ID));
 	ExitProcess();
 }

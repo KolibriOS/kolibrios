@@ -1,5 +1,5 @@
 
-void Scroll() {
+void DrawScroll(bool _scroll_used) {
 	dword i;
 
 	dword sc_x = files.x + files.w;
@@ -23,8 +23,10 @@ void Scroll() {
 	//slider
 	DrawRectangle(sc_x,sc_slider_y,16,sc_slider_h,sc.work_graph);
 	DrawRectangle3D(sc_x+1,sc_slider_y+1,14,sc_slider_h-2, sc.work_light , sc.work_dark);
-	if (!scroll_used) for (i=0; i<13; i++) DrawBar(sc_x + 2 + i, sc_slider_y+2, 1, sc_slider_h-3, col.work_gradient[13-i]);
-	if (scroll_used)  for (i=0; i<13; i++) DrawBar(sc_x + 2 + i, sc_slider_y+2, 1, sc_slider_h-3, col.work_gradient[i]);
+	for (i=0; i<13; i++) {
+		if (!_scroll_used) EDX = col.work_gradient[13-i]; else EDX = col.work_gradient[i];
+		DrawBar(sc_x + 2 + i, sc_slider_y+2, 1, sc_slider_h-3, EDX);
+	}
 
 	sc_center = sc_slider_h / 2 + sc_slider_y;
 
