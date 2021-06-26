@@ -3,9 +3,9 @@
 
 // 70.5 - get volume info and label
 
-#define ABOUT_TITLE "EOLITE 5 RC4"
-#define TITLE_EOLITE "Eolite File Manager 5 RC4"
-#define TITLE_KFM "Kolibri File Manager 2 RC4";
+#define ABOUT_TITLE "EOLITE 5 RC5"
+#define TITLE_EOLITE "Eolite File Manager 5 RC5"
+#define TITLE_KFM "Kolibri File Manager 2 RC5";
 
 #define MEMSIZE 1024 * 250
 #include "../lib/clipboard.h"
@@ -129,7 +129,7 @@ int rand_n;
 
 char sort_type=2;
 bool sort_desc=false;
-int active_panel=1;
+int active_panel=0;
 
 libimg_image icons16_default;
 libimg_image icons16_selected;
@@ -243,7 +243,7 @@ void main()
 	loop() switch(@WaitEventTimeout(80))
 	{
 		case evMouse:
-			if (del_active) || (disk_popin_active_on_panel) || (Form.status_window>2) break;
+			if (del_active) || (disk_popin_active_on_panel) || (Form.status_window&ROLLED_UP) break;
 			if (new_element_active) 
 			{
 				edit_box_mouse stdcall(#new_file_ed);
@@ -335,9 +335,9 @@ void main()
 
 			if (efm) && (mouse.y < files.y + files.h) && (mouse.down) {
 				if (mouse.x<Form.cwidth/2) {
-					if (active_panel!=1) ChangeActivePanel();
+					SetActivePanel(0);
 				} else {
-					if (active_panel!=2) ChangeActivePanel();
+					SetActivePanel(1);
 				}
 			}
 			break;  
@@ -370,18 +370,16 @@ void main()
 						break;
 				case KFM_DEV_DROPDOWN_1:
 				case KFM_DEV_DROPDOWN_1+1:
-						EventOpenDiskPopin(1);
-						break;
 				case KFM_DEV_DROPDOWN_2:
 				case KFM_DEV_DROPDOWN_2+1:
-						EventOpenDiskPopin(2);
+						EventOpenDiskPopin(active_panel);
 						break;
 				case BACK_BTN...PASTE_BTN:
-						if (active_panel==2) ChangeActivePanel();
+						SetActivePanel(0);
 						EventToolbarButtonClick(id);
 						break;
 				case BACK_BTN+100...PASTE_BTN+100:
-						if (active_panel==1) ChangeActivePanel();
+						SetActivePanel(1);
 						EventToolbarButtonClick(id-100);
 						break;
 				case 31...33:
@@ -412,7 +410,7 @@ void main()
 		case evKey:
 			GetKeys();
 
-			if (Form.status_window>2) break;
+			if (Form.status_window&ROLLED_UP) break;
 
 			if (new_element_active) || (del_active) || (disk_popin_active_on_panel)
 			{
@@ -516,7 +514,7 @@ void main()
 							break; 
 					case SCAN_CODE_TAB:
 							if (!efm) break;
-							ChangeActivePanel();
+							SetActivePanel(active_panel^1);
 							break;
 					case SCAN_CODE_MENU:
 							mouse.x = files.x+15;
@@ -584,7 +582,7 @@ void draw_window()
 	if (efm) title = TITLE_KFM; else title = TITLE_EOLITE;
 	DefineAndDrawWindow(Form.left+rand_n,Form.top+rand_n,Form.width,Form.height,0x73,NULL,title,0);
 	GetProcessInfo(#Form, SelfInfo);
-	if (Form.status_window>2) return;
+	if (Form.status_window&ROLLED_UP) return;
 	if (Form.height < 356) { MoveSize(OLD,OLD,OLD,356); return; }
 	GetProcessInfo(#Form, SelfInfo);
 	SetAppColors();
@@ -708,7 +706,7 @@ void DrawFilePanels()
 		h2 = Form.cheight-files_y-2 - status_bar_h;
 		col.selec = col.selec_inactive;  //this is a bad code: need to use some var to set inactive panel for DrawButtonsAroundList();
 
-		if (active_panel==1)
+		if (active_panel==0)
 		{
 			files.SetSizes(Form.cwidth/2, files_y, w2-17, h2, files.item_h);
 			DrawButtonsAroundList();
@@ -721,7 +719,7 @@ void DrawFilePanels()
 			DrawButtonsAroundList();
 			Open_Dir(#path,WITH_REDRAW);
 		}
-		if (active_panel==2)
+		if (active_panel==1)
 		{
 			files.SetSizes(2, files_y, Form.cwidth/2-2-17, h2, files.item_h);
 			DrawButtonsAroundList();
@@ -778,23 +776,6 @@ void List_ReDraw()
 
 	if (del_active) Del_Form();
 	if (new_element_active) && (col.selec != 0xCCCccc) NewElement_Form(new_element_active, #new_element_name);
-}
-
-bool file_name_is_8_3(dword name)
-{
-	int name_len = strlen(name);
-	int dot_pos = strrchr(name, '.');
-	if (name_len<=12) 
-	{
-		if (dot_pos) {
-			if (name_len - dot_pos > 3) return false;
-		}
-		else {
-			if (name_len>8) return false; 
-		}
-		return true;
-	}
-	return false;
 }
 
 void Line_ReDraw(dword bgcol, filenum){
@@ -1234,14 +1215,16 @@ void EventRefresh()
 	}
 }
 
-void ChangeActivePanel()
+void SetActivePanel(int _active)
 {
-	if (active_panel==1) active_panel=2; else active_panel=1;
-	llist_copy(#files_active, #files_inactive);
-	llist_copy(#files_inactive, #files);
-	strcpy(#active_path, #inactive_path);
-	strcpy(#inactive_path, #path);
-	DrawFilePanels();
+	if (active_panel != _active) {	
+		active_panel = _active;
+		llist_copy(#files_active, #files_inactive);
+		llist_copy(#files_inactive, #files);
+		strcpy(#active_path, #inactive_path);
+		strcpy(#inactive_path, #path);
+		DrawFilePanels();
+	}
 }
 
 void EventSelectFileByKeyPress()
@@ -1440,10 +1423,6 @@ void EventToolbarButtonClick(int _btid)
 
 void EventDriveClick(int __id)
 {
-	if (disk_popin_active_on_panel != active_panel) {
-		ChangeActivePanel();
-	}
-
 	SystemDiscs.Click(__id-100);
 	if (efm) {
 		draw_window();
@@ -1453,10 +1432,11 @@ void EventDriveClick(int __id)
 void EventOpenDiskPopin(int panel_n)
 {
 	DefineHiddenButton(0,0,5000,3000,9999+BT_NOFRAME);
-	disk_popin_active_on_panel = panel_n;
-	if (disk_popin_active_on_panel==1) {
+	if (panel_n==0) {
+		disk_popin_active_on_panel = 1;
 		SystemDiscs.DrawOptions(Form.cwidth/2-DDW, 8+DEV_H_HOR+3);
 	} else {
+		disk_popin_active_on_panel = 2;
 		SystemDiscs.DrawOptions(Form.cwidth-DDW-2, 8+DEV_H_HOR+3);
 	}
 }

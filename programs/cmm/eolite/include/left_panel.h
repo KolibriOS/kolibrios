@@ -136,7 +136,7 @@ void _SystemDiscs::Draw()
 	for (i=0; i<30; i++) DeleteButton(100+i);
 
 	if (efm) { 
-		if (active_panel==1) {
+		if (active_panel==0) {
 			DrawSelect(Form.cwidth/2-DDW, 10, #path, KFM_DEV_DROPDOWN_1);
 			DrawSelect(Form.cwidth-DDW-2, 10, #inactive_path, KFM_DEV_DROPDOWN_2);
 		} else {

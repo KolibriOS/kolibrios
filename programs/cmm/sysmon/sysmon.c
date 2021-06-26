@@ -137,7 +137,7 @@ void main()
 			sc.get();
 			DefineAndDrawWindow(screen.width/2 - 350, 100, 700, 490, 0x33, sc.work, T_APP_TITLE,0);
 			GetProcessInfo(#Form, SelfInfo);
-			if (Form.status_window>2) break;
+			if (Form.status_window&ROLLED_UP) break;
 			if (Form.width  < RIGHT_X+370) { MoveSize(OLD,OLD,RIGHT_X+370,OLD); break; }
 			if (Form.height < 420) { MoveSize(OLD,OLD,OLD,420); break; }
 			right_w = Form.cwidth - RIGHT_X - GAP;

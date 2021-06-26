@@ -644,7 +644,7 @@ void DrawToolbar()
 void DrawStatusBar(dword _in_text)
 {
 	static char status_text[64];
-	if (Form.status_window>2) return;
+	if (Form.status_window&ROLLED_UP) return;
 	if (_in_text) strncpy(#status_text, _in_text, sizeof(status_text));
 	DrawBar(0,Form.cheight - STATUSBAR_H, Form.cwidth,1, sc.work_graph);
 	DrawBar(0,Form.cheight - STATUSBAR_H+1, Form.cwidth,STATUSBAR_H-1, sc.work);
@@ -664,7 +664,7 @@ void draw_window()
 	DefineAndDrawWindow(Form.left,Form.top,Form.width,Form.height,0x73,0,#title,0);
 	GetProcessInfo(#Form, SelfInfo);
 	sc.get();
-	if (Form.status_window>2) return;
+	if (Form.status_window&ROLLED_UP) return;
 	if (Form.width  < 450) { MoveSize(OLD,OLD,450,OLD); return; }
 	if (Form.height < 200) { MoveSize(OLD,OLD,OLD,200); return; }
 

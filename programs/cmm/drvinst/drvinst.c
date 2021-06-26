@@ -211,7 +211,7 @@ void Event_DrawWindow()
 	sc.get();
 	DefineAndDrawWindow(215, 100, 600, 400, 0x33, sc.work, WINDOW_TITLE,0);
 	GetProcessInfo(#Form, SelfInfo);
-	if (Form.status_window>2) return;
+	if (Form.status_window&ROLLED_UP) return;
 	if (Form.width  < 450) { MoveSize(OLD,OLD,450,OLD); return; }
 	if (Form.height < 250) { MoveSize(OLD,OLD,OLD,250); return; }
 	if (window_step == WINDOW_STEP_INTRO) Draw_IntroWindow();

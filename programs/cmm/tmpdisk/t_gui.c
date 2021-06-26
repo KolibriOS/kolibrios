@@ -145,7 +145,7 @@ void Main_Window()
 			sc.get();
 			DefineAndDrawWindow(170,150,405,290,0x74,sc.work,"Virtual Disk Manager 0.69",0);
 			GetProcessInfo(#Form, SelfInfo);
-			if (Form.status_window>2) break;
+			if (Form.status_window&ROLLED_UP) break;
 
 			DrawBar(0,0,  Form.cwidth,TOPPANELH, sc.work);
 			DrawBar(0,TOPPANELH, Form.cwidth,1,  sc.work_graph);

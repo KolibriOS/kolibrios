@@ -254,7 +254,7 @@ void DrawPlayList()
 void draw_window() {
 	GetProcessInfo(#Form, SelfInfo);
 	DrawTopPanel();
-	IF (Form.status_window>=2) return;
+	IF (Form.status_window&ROLLED_UP) return;
 	if (window_mode == WINDOW_MODE_NORMAL)
 	{
 		DrawPlayList();

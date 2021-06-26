@@ -125,7 +125,7 @@ int DefineWindow(dword wtitle) {
 	DefineAndDrawWindow(GetScreenWidth()-WIN_W/2,GetScreenHeight()-WIN_H/2, WIN_W, WIN_H, 0x73,sc.work, 0,0); 
 	DrawTitle(wtitle);
 	GetProcessInfo(#Form, SelfInfo);
-	if (Form.status_window>2) return 0; //rolled_up
+	if (Form.status_window&ROLLED_UP) return 0; //rolled_up
 	if (Form.width < WIN_MIN_W) MoveSize(OLD,OLD,WIN_MIN_W,OLD);
 	if (Form.height < WIN_MIN_H) MoveSize(OLD,OLD,OLD,WIN_MIN_H);
 	return 1;

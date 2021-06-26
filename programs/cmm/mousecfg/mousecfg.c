@@ -103,7 +103,7 @@ void main() {
 				sc.get();
 				DefineAndDrawWindow(430, 150, 424, 343+skin_height,0x34,sc.work,WINDOW_TITLE,0);
 				GetProcessInfo(#Form, SelfInfo);
-				if (Form.status_window>2) break;
+				if (Form.status_window&ROLLED_UP) break;
 				mouse_frame.w = - FRAME_X * 2 + Form.cwidth;
 				DefineButton(FRAME_X, FRAME_Y, mouse_frame.w, 
 					mouse_frame.h, 99+BT_NOFRAME, 0xF0F2F3); //needed to handle mouse_up and refresh mouse image

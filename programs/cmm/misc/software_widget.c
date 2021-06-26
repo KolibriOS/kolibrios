@@ -104,7 +104,7 @@ void main()
 			SetAppColors();
 			DefineAndDrawWindow(screen.width-window_width/2,screen.height-window_height/2,window_width,window_height,0x74,sc.work,"",0);
 			GetProcessInfo(#Form, SelfInfo);
-			if (Form.status_window>2) { 
+			if (Form.status_window&ROLLED_UP) { 
 				DrawTitle(#window_title);
 				break;
 			}

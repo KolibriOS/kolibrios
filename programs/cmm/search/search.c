@@ -164,7 +164,7 @@ void draw_window()
 	sc.get();			
 	DefineAndDrawWindow(screen.width-600/2,100,640,600+skin_height,0x73,sc.work,T_WINDOW_HEADER,0);
 	GetProcessInfo(#Form, SelfInfo);
-	IF (Form.status_window>=2) return;
+	IF (Form.status_window&ROLLED_UP) return;
 	if (Form.width  < 270) { MoveSize(OLD,OLD,270,OLD); return; }
 	if (Form.height < 200) { MoveSize(OLD,OLD,OLD,200); return; }
 	SelectList_Init( 0, TOOLBAR_H, 

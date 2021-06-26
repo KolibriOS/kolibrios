@@ -47,7 +47,7 @@ void DrawPathBarKfm()
 		bgc = 0xFFFFCC; 
 		PathShow.font_color = 0x222222;
 	}
-	if (active_panel==1) PathShow.text_pointer = #path; else PathShow.text_pointer = #inactive_path;
+	if (active_panel==0) PathShow.text_pointer = #path; else PathShow.text_pointer = #inactive_path;
 	PathShow.start_x = 4;
 	PathShow.area_size_x = Form.cwidth/2-8;
 	PathShow.start_y = Form.cheight - status_bar_h+2;
@@ -59,7 +59,7 @@ void DrawPathBarKfm()
 	PathShow_draw stdcall(#PathShow);
 	i++;
 	if (i<2) {
-		if (active_panel==1) PathShow.text_pointer = #inactive_path; else PathShow.text_pointer = #path;
+		if (active_panel==0) PathShow.text_pointer = #inactive_path; else PathShow.text_pointer = #path;
 		PathShow.start_x = Form.cwidth/2 + 2;
 		PathShow.area_size_x = Form.cwidth - PathShow.start_x - 5;
 		goto _DRAW_BAR;

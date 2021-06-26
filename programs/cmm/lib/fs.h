@@ -331,6 +331,25 @@ char readbuf[32];
 	ExitProcess();
 }
 
+:bool file_name_is_8_3(dword name)
+{
+	strlen(name);
+	if (EAX>12) return false;
+	$push eax
+	strrchr(name, '.');
+	$pop ebx
+
+	//EAX = dot pos
+	//EBX = name length
+
+	if (EAX) {
+		if (EBX-EAX>3) return false;
+	} else {
+		if (EBX>8) return false; 
+	}
+	return true;
+}
+
 //===================================================//
 //                                                   //
 //                   Convert Size                    //

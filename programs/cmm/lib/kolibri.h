@@ -384,6 +384,7 @@ inline fastcall int TestBit( EAX, CL)
 
 //------------------------------------------------------------------------------
 
+#define ROLLED_UP 0x04
 :void DefineAndDrawWindow(dword _x, _y, _w, _h, _window_type, _bgcolor, _title, _flags)
 {
 	EAX = 12;              // function 12:tell os about windowdraw
@@ -397,7 +398,6 @@ inline fastcall int TestBit( EAX, CL)
 	EDI = _title;
 	ESI = _flags;
 	$int 0x40
-
 
 	EAX = 12;              // function 12:tell os about windowdraw
 	EBX = 2;

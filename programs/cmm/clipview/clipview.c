@@ -87,7 +87,7 @@ void main()
 			sc.get();			
 			DefineAndDrawWindow(GetScreenWidth()-600/2,80,600,400,0x73,NULL,"Clipboard Viewer",NULL);
 			GetProcessInfo(#Form, SelfInfo);
-			IF (Form.status_window>=2) break;
+			IF (Form.status_window&ROLLED_UP) break;
 			IF (Form.height < 200) { MoveSize(OLD,OLD,OLD,200); break; }
 			IF (Form.width  < 570) { MoveSize(OLD,OLD,570,OLD); break; }
 		 	DrawWindowContent();

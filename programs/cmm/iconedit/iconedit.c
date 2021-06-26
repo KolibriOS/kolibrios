@@ -373,7 +373,7 @@ void DrawWindow()
 	sc.get();
 	DefineAndDrawWindow(115+random(100), 50+random(100), 700, 540, 0x73, NULL, T_TITLE, 0);
 	GetProcessInfo(#Form, SelfInfo);
-	if (Form.status_window>2) return;
+	if (Form.status_window&ROLLED_UP) return;
 	if (Form.width  < 560) { MoveSize(OLD,OLD,560,OLD); return; }
 	if (Form.height < 430) { MoveSize(OLD,OLD,OLD,430); return; }
 	button.init(40);

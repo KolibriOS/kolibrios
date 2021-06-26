@@ -96,7 +96,7 @@ void main()
 			sc.get();
 			DefineAndDrawWindow(215,120,500,350,0x73,sc.work,WINDOW_TITLE,0);
 			GetProcessInfo(#Form, SelfInfo);
-			if (Form.status_window>2) break;
+			if (Form.status_window&ROLLED_UP) break;
 			if (Form.height<140) { MoveSize(OLD,OLD,OLD,140); break; }
 			if (Form.width<400) { MoveSize(OLD,OLD,400,OLD); break; }
 			DrawBar(0, 0, Form.cwidth, TOPH, sc.work); //top bg

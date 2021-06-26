@@ -185,7 +185,7 @@ void draw_window()
 	sc.get();
 	DefineAndDrawWindow(screen.width-600/2,80,630,504+skin_height,0x34,sc.work,WINDOW_HEADER,0);
 	GetProcessInfo(#Form, SelfInfo);
-	IF (Form.status_window>=2) return;
+	IF (Form.status_window&ROLLED_UP) return;
 	DrawWindowContent();
 }
 
