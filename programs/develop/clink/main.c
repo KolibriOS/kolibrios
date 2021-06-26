@@ -1,6 +1,3 @@
-// TODO: Substract section's RVA from external and static defined symbol's value
-// TODO: Substract section's RVA from relocations
-
 #include <stdlib.h>
 #include <stdio.h>
 #include <stdint.h>
@@ -9,6 +6,42 @@
 
 #define EPEP_INST
 #include "epep/epep.h"
+
+const char *epep_errors[] = {
+	"EPEP_ERR_SUCCESS",
+	"EPEP_ERR_DATA_DIRECTORY_INDEX_IS_INVALID",
+	"EPEP_ERR_SECTION_HEADER_INDEX_IS_INVALID",
+	"EPEP_ERR_SYMBOL_INDEX_IS_INVALID",
+	"EPEP_ERR_NOT_AN_OBJECT",
+	"EPEP_ERR_ADDRESS_IS_OUT_OF_SECTION_RAW_DATA",
+	"EPEP_ERR_OUTPUT_CAPACITY_IS_ZERO",
+	"EPEP_ERR_OUTPUT_IS_NULL",
+	"EPEP_ERR_ADDRESS_IS_OUT_OF_ANY_SECTION",
+	"EPEP_ERR_EXPORT_ADDRESS_TABLE_ENTRY_NAME_NOT_FOUND",
+	"EPEP_ERR_NO_BASE_RELOCATION_TABLE",
+	"EPEP_ERR_BASE_RELOCATION_IS_ALREADY_END",
+	"EPEP_ERR_INVALID_DATA_DIRECTORY_OFFSET",
+	"EPEP_ERR_INVALID_SECTION_HEADER_OFFSET",
+	"EPEP_ERR_INVALID_SECTION_DATA_OFFSET",
+	"EPEP_ERR_INVALID_STRING_TABLE_SIZE_OFFSET",
+	"EPEP_ERR_INVALID_SYMBOL_OFFSET",
+	"EPEP_ERR_INVALID_IMPORT_DIRECTORY_OFFSET",
+	"EPEP_ERR_INVALID_IMPORT_DIRECTORY_NAME_OFFSET",
+	"EPEP_ERR_INVALID_LOOKUP_OFFSET",
+	"EPEP_ERR_INVALID_LOOKUP_NAME_OFFSET",
+	"EPEP_ERR_INVALID_EXPORT_TABLE_OFFSET",
+	"EPEP_ERR_INVALID_DLL_NAME_OFFSET",
+	"EPEP_ERR_INVALID_EXPORT_NAME_POINTER_OFFSET",
+	"EPEP_ERR_INVALID_ORDINAL_TABLE_OFFSET",
+	"EPEP_ERR_INVALID_EXPORT_NAME_OFFSET",
+	"EPEP_ERR_INVALID_EXPORT_ADDRESS_OFFSET",
+	"EPEP_ERR_INVALID_FORWARDER_OFFSET",
+	"EPEP_ERR_INVALID_BASE_RELOCATION_BLOCK_OFFSET",
+	"EPEP_ERR_INVALID_NEXT_BASE_RELOCATION_BLOCK_OFFSET",
+	"EPEP_ERR_INVALID_BASE_RELOCATION_BLOCK_BASE_RELOCATION_OFFSET",
+	"EPEP_ERR_INVALID_SECTION_RELOCATION_OFFSET",
+	"EPEP_ERR_INVALID_LINENUMBER_OFFSET",
+};
 
 typedef char *pchar;
 
@@ -79,8 +112,8 @@ typedef struct {
 #define CVEC_TYPE EpepCoffSymbol
 #include "cvec/cvec.h"
 
-#define ERROR_EPEP(epep) printf("Error: epep returned %u at "__FILE__":%u", \
-                                (epep)->error_code, __LINE__); exit(-1)
+#define ERROR_EPEP(epep) printf("Error: epep returned %u (%s) at "__FILE__":%u", \
+                                (epep)->error_code, epep_errors[(epep)->error_code], __LINE__); exit(-1)
 
 #define ERROR_CDICT(cdict) printf("Error: cdict returned %u at "__FILE__":%u", \
                                   (cdict)->error_code, __LINE__); exit(-1);

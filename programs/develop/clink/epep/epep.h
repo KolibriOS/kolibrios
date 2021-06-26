@@ -12,6 +12,7 @@
 #define EPEP_READER FILE *
 #define EPEP_READER_GET(preader) getc(*preader)
 #define EPEP_READER_SEEK(preader, offset) fseek(*preader, offset, SEEK_SET)
+#define EPEP_READER_SEEK_END(preader, offset) fseek(*preader, offset, SEEK_END)
 #define EPEP_READER_TELL(preader) ftell(*preader)
 #define EPEP_READER_GET_BLOCK(preader, size, buf) fread(buf, 1, size, *preader);
 #endif
@@ -39,6 +40,27 @@ typedef enum {
 	EPEP_ERR_EXPORT_ADDRESS_TABLE_ENTRY_NAME_NOT_FOUND,
 	EPEP_ERR_NO_BASE_RELOCATION_TABLE,
 	EPEP_ERR_BASE_RELOCATION_IS_ALREADY_END,
+	EPEP_ERR_INVALID_DATA_DIRECTORY_OFFSET,
+	EPEP_ERR_INVALID_SECTION_HEADER_OFFSET,
+	EPEP_ERR_INVALID_SECTION_DATA_OFFSET,
+	EPEP_ERR_INVALID_STRING_TABLE_SIZE_OFFSET,
+	EPEP_ERR_INVALID_SYMBOL_OFFSET,
+	EPEP_ERR_INVALID_IMPORT_DIRECTORY_OFFSET,
+	EPEP_ERR_INVALID_IMPORT_DIRECTORY_NAME_OFFSET,
+	EPEP_ERR_INVALID_LOOKUP_OFFSET,
+	EPEP_ERR_INVALID_LOOKUP_NAME_OFFSET,
+	EPEP_ERR_INVALID_EXPORT_TABLE_OFFSET,
+	EPEP_ERR_INVALID_DLL_NAME_OFFSET,
+	EPEP_ERR_INVALID_EXPORT_NAME_POINTER_OFFSET,
+	EPEP_ERR_INVALID_ORDINAL_TABLE_OFFSET,
+	EPEP_ERR_INVALID_EXPORT_NAME_OFFSET,
+	EPEP_ERR_INVALID_EXPORT_ADDRESS_OFFSET,
+	EPEP_ERR_INVALID_FORWARDER_OFFSET,
+	EPEP_ERR_INVALID_BASE_RELOCATION_BLOCK_OFFSET,
+	EPEP_ERR_INVALID_NEXT_BASE_RELOCATION_BLOCK_OFFSET,
+	EPEP_ERR_INVALID_BASE_RELOCATION_BLOCK_BASE_RELOCATION_OFFSET,
+	EPEP_ERR_INVALID_SECTION_RELOCATION_OFFSET,
+	EPEP_ERR_INVALID_LINENUMBER_OFFSET,
 } EpepError;
 
 //
@@ -49,6 +71,7 @@ typedef struct {
 	EPEP_READER reader;
 	EpepKind kind;
 	EpepError error_code;
+	size_t file_size;
 	size_t signature_offset_offset;
 	size_t signature_offset;
 	size_t first_data_directory_offset;
@@ -364,6 +387,11 @@ static int epep_seek(Epep *epep, size_t offset) {
 	return 1;
 }
 
+static int epep_seek_end(Epep *epep, size_t offset) {
+	EPEP_READER_SEEK_END(&epep->reader, offset);
+	return 1;
+}
+
 static int epep_read_block(Epep *epep, size_t size, void *block) {
 	EPEP_READER_GET_BLOCK(&epep->reader, size, block);
 	return 1;
@@ -407,6 +435,10 @@ static uint64_t epep_read_ptr(Epep *epep) {
 	return is_pe32(epep) ? epep_read_u32(epep) : epep_read_u64(epep);
 }
 
+static int epep_valid_offset(Epep *epep, size_t offset, size_t size) {
+	return (offset + size) <= epep->file_size;
+}
+
 //
 // Generic
 //
@@ -415,14 +447,13 @@ int epep_init(Epep *epep, EPEP_READER reader) {
 	*epep = (Epep){ 0 };
 	epep->kind = EPEP_IMAGE;
 	epep->reader = reader;
+	epep_seek_end(epep, 0);
+	epep->file_size = EPEP_READER_TELL(&epep->reader);
+	epep_seek(epep, 0);
 	epep->error_code = EPEP_ERR_SUCCESS;
 	epep->signature_offset_offset = 0x3c;
 	epep_seek(epep, epep->signature_offset_offset);
-	epep->signature_offset = 0;
-	epep->signature_offset |= epep_read_u8(epep);
-	epep->signature_offset |= epep_read_u8(epep) << 8;
-	epep->signature_offset |= epep_read_u8(epep) << 16;
-	epep->signature_offset |= epep_read_u8(epep) << 24;
+	epep->signature_offset = epep_read_u32(epep);
 	epep_seek(epep, epep->signature_offset);
 	char signature_buf[4];
 	signature_buf[0] = epep_read_u8(epep);
@@ -508,7 +539,12 @@ int epep_get_data_directory_by_index(Epep *epep, EpepImageDataDirectory *idd, si
 		epep->error_code = EPEP_ERR_DATA_DIRECTORY_INDEX_IS_INVALID;
 		return 0;
 	}
-	epep_seek(epep, epep->first_data_directory_offset + sizeof(EpepImageDataDirectory) * index);
+	size_t offset = epep->first_data_directory_offset + sizeof(EpepImageDataDirectory) * index;
+	if (!epep_valid_offset(epep, offset, sizeof(EpepImageDataDirectory))) {
+		epep->error_code = EPEP_ERR_INVALID_DATA_DIRECTORY_OFFSET;
+		return 0;
+	}
+	epep_seek(epep, offset);
 	idd->VirtualAddress = epep_read_u32(epep);
 	idd->Size = epep_read_u32(epep);
 	return 1;
@@ -523,7 +559,12 @@ int epep_get_section_header_by_index(Epep *epep, EpepSectionHeader *sh, size_t i
 		epep->error_code = EPEP_ERR_SECTION_HEADER_INDEX_IS_INVALID;
 		return 0;
 	}
-	epep_seek(epep, epep->first_section_header_offset + sizeof(EpepSectionHeader) * index);
+	size_t offset = epep->first_section_header_offset + sizeof(EpepSectionHeader) * index;
+	if (!epep_valid_offset(epep, offset, sizeof(EpepSectionHeader))) {
+		epep->error_code = EPEP_ERR_INVALID_SECTION_HEADER_OFFSET;
+		return 0;
+	}
+	epep_seek(epep, offset);
 	for (int i = 0; i < 8; i++) {
 		sh->Name[i] = epep_read_u8(epep);
 	}
@@ -553,8 +594,13 @@ int epep_get_section_header_by_rva(Epep *epep, EpepSectionHeader *sh, size_t add
 }
 
 int epep_get_section_contents(Epep *epep, EpepSectionHeader *sh, void *buf) {
+	size_t offset = sh->PointerToRawData;
 	size_t size_of_raw_data = sh->SizeOfRawData;
-	epep_seek(epep, sh->PointerToRawData);
+	if (!epep_valid_offset(epep, offset, size_of_raw_data)) {
+		epep->error_code = EPEP_ERR_INVALID_SECTION_DATA_OFFSET;
+		return 0;
+	}
+	epep_seek(epep, offset);
 	epep_read_block(epep, size_of_raw_data, buf);
 	return 1;
 }
@@ -564,7 +610,12 @@ int epep_get_section_contents(Epep *epep, EpepSectionHeader *sh, void *buf) {
 //
 
 int epep_get_string_table_size(Epep *epep, size_t *size) {
-	epep_seek(epep, epep->coffFileHeader.PointerToSymbolTable + 18 * epep->coffFileHeader.NumberOfSymbols);
+	size_t offset = epep->coffFileHeader.PointerToSymbolTable + 18 * epep->coffFileHeader.NumberOfSymbols;
+	if (!epep_valid_offset(epep, offset, sizeof(uint32_t))) {
+		epep->error_code = EPEP_ERR_INVALID_STRING_TABLE_SIZE_OFFSET;
+		return 0;
+	}
+	epep_seek(epep, offset);
 	*size = epep_read_u32(epep);
 	return 1;
 }
@@ -592,7 +643,12 @@ int epep_get_symbol_by_index(Epep *epep, EpepCoffSymbol *sym, size_t index) {
 		epep->error_code = EPEP_ERR_SYMBOL_INDEX_IS_INVALID;
 		return 0;
 	}
-	epep_seek(epep, epep->coffFileHeader.PointerToSymbolTable + 18 * index);
+	size_t offset = epep->coffFileHeader.PointerToSymbolTable + 18 * index;
+	if (!epep_valid_offset(epep, offset, 18)) {
+		epep->error_code = EPEP_ERR_INVALID_SYMBOL_OFFSET;
+		return 0;
+	}
+	epep_seek(epep, offset);
 	for (size_t i = 0; i < 18; i++) {
 		sym->auxFile.FileName[i] = epep_read_u8(epep);
 	}
@@ -631,7 +687,12 @@ int epep_get_import_directory_by_index(Epep *epep, EpepImportDirectory *import_d
 			return 0;
 		}
 	}
-	epep_seek(epep, epep->import_table_offset + index * sizeof(*import_directory));
+	size_t offset = epep->import_table_offset + index * sizeof(*import_directory);
+	if (!epep_valid_offset(epep, offset, sizeof(*import_directory))) {
+		epep->error_code = EPEP_ERR_INVALID_IMPORT_DIRECTORY_OFFSET;
+		return 0;
+	}
+	epep_seek(epep, offset);
 	epep_read_block(epep, sizeof(*import_directory), import_directory);
 	return 1;
 }
@@ -640,6 +701,10 @@ int epep_get_import_directory_name_s(Epep *epep, EpepImportDirectory *import_dir
 	size_t name_rva = import_directory->NameRva;
 	size_t name_offset = 0;
 	if (!epep_get_file_offset_by_rva(epep, &name_offset, name_rva)) {
+		return 0;
+	}
+	if (!epep_valid_offset(epep, name_offset, 0)) {
+		epep->error_code = EPEP_ERR_INVALID_IMPORT_DIRECTORY_NAME_OFFSET;
 		return 0;
 	}
 	epep_seek(epep, name_offset);
@@ -654,6 +719,10 @@ int epep_get_import_directory_lookup_by_index(Epep *epep, EpepImportDirectory *i
 	}
 	size_t size_of_lookup = is_pe32(epep) ? 4 : 8;
 	size_t lookup_offset = first_lookup_offset + size_of_lookup * index;
+	if (!epep_valid_offset(epep, lookup_offset, size_of_lookup)) {
+		epep->error_code = EPEP_ERR_INVALID_LOOKUP_OFFSET;
+		return 0;
+	}
 	epep_seek(epep, lookup_offset);
 	epep_read_block(epep, size_of_lookup, lookup);
 	return 1;
@@ -680,6 +749,10 @@ int epep_get_lookup_name_s(Epep *epep, size_t lookup, char *name, size_t name_ma
 	}
 	// skip 2 bytes (Name Table :: Hint)
 	name_offset += 2;
+	if (!epep_valid_offset(epep, name_offset, 0)) {
+		epep->error_code = EPEP_ERR_INVALID_LOOKUP_NAME_OFFSET;
+		return 0;
+	}
 	epep_seek(epep, name_offset);
 	epep_read_block(epep, name_max, name);
 	return 1;
@@ -717,6 +790,10 @@ int epep_read_export_directory(Epep *epep) {
 			return 0;
 		}
 	}
+	if (!epep_valid_offset(epep, epep->export_table_offset, sizeof(epep->export_directory))) {
+		epep->error_code = EPEP_ERR_INVALID_EXPORT_TABLE_OFFSET;
+		return 0;
+	}
 	epep_seek(epep, epep->export_table_offset);
 	epep_read_block(epep, sizeof(epep->export_directory), &epep->export_directory);
 	return 1;
@@ -725,6 +802,10 @@ int epep_read_export_directory(Epep *epep) {
 int epep_get_dll_name_s(Epep *epep, char *name, size_t name_max) {
 	size_t offset = 0;
 	if (!epep_get_file_offset_by_rva(epep, &offset, epep->export_directory.NameRva)) {
+		return 0;
+	}
+	if (!epep_valid_offset(epep, offset, 0)) {
+		epep->error_code = EPEP_ERR_INVALID_DLL_NAME_OFFSET;
 		return 0;
 	}
 	epep_seek(epep, offset);
@@ -738,7 +819,12 @@ int epep_get_export_name_pointer_by_index(Epep *epep, size_t *name_rva, size_t i
 	if (!epep_get_file_offset_by_rva(epep, &name_pointer_table_offset, name_pointer_table_rva)) {
 		return 0;
 	}
-	epep_seek(epep, name_pointer_table_offset + sizeof(uint32_t) * index);
+	size_t offset = name_pointer_table_offset + sizeof(uint32_t) * index;
+	if (!epep_valid_offset(epep, offset, sizeof(uint32_t))) {
+		epep->error_code = EPEP_ERR_INVALID_EXPORT_NAME_POINTER_OFFSET;
+		return 0;
+	}
+	epep_seek(epep, offset);
 	*name_rva = epep_read_u32(epep);	
 	return 1;
 }
@@ -746,6 +832,10 @@ int epep_get_export_name_pointer_by_index(Epep *epep, size_t *name_rva, size_t i
 int epep_get_export_name_s_by_index(Epep *epep, char *name, size_t name_max, size_t index) {
 	size_t ordinal_table_offset = 0;
 	if (!epep_get_file_offset_by_rva(epep, &ordinal_table_offset, epep->export_directory.OrdinalTableRva)) {
+		return 0;
+	}
+	if (!epep_valid_offset(epep, ordinal_table_offset, 0)) {
+		epep->error_code = EPEP_ERR_INVALID_ORDINAL_TABLE_OFFSET;
 		return 0;
 	}
 	epep_seek(epep, ordinal_table_offset);
@@ -758,6 +848,10 @@ int epep_get_export_name_s_by_index(Epep *epep, char *name, size_t name_max, siz
 			}
 			size_t name_offset = 0;
 			if (!epep_get_file_offset_by_rva(epep, &name_offset, name_rva)) {
+				return 0;
+			}
+			if (!epep_valid_offset(epep, name_offset, 0)) {
+				epep->error_code = EPEP_ERR_INVALID_EXPORT_NAME_OFFSET;
 				return 0;
 			}
 			epep_seek(epep, name_offset);
@@ -775,7 +869,12 @@ int epep_get_export_address_by_index(Epep *epep, EpepExportAddress *export_addre
 		return 0;
 	}
 	EPEP_ASSERT(sizeof(EpepExportAddress) == sizeof(uint32_t));
-	epep_seek(epep, export_address_table_offset + sizeof(EpepExportAddress) * index);
+	size_t offset = export_address_table_offset + sizeof(EpepExportAddress) * index;
+	if (!epep_valid_offset(epep, offset, sizeof(*export_address))) {
+		epep->error_code = EPEP_ERR_INVALID_EXPORT_ADDRESS_OFFSET;
+		return 0;
+	}
+	epep_seek(epep, offset);
 	epep_read_block(epep, sizeof(*export_address), export_address);
 	return 1;
 }
@@ -783,6 +882,10 @@ int epep_get_export_address_by_index(Epep *epep, EpepExportAddress *export_addre
 int epep_get_export_address_forwarder_s(Epep *epep, EpepExportAddress *export_address, char *forwarder, size_t forwarder_max) {
 	size_t forwarder_offset = 0;
 	if (!epep_get_file_offset_by_rva(epep, &forwarder_offset, export_address->ForwarderRva)) {
+		return 0;
+	}
+	if (!epep_valid_offset(epep, forwarder_offset, 0)) {
+		epep->error_code = EPEP_ERR_INVALID_FORWARDER_OFFSET;
 		return 0;
 	}
 	epep_seek(epep, forwarder_offset);
@@ -838,6 +941,10 @@ int epep_get_first_base_relocation_block(Epep *epep, EpepBaseRelocationBlock *br
 		epep->error_code = EPEP_ERR_NO_BASE_RELOCATION_TABLE;
 		return 0;
 	}
+	if (!epep_valid_offset(epep, epep->base_relocation_table_offset, 0)) {
+		epep->error_code = EPEP_ERR_INVALID_BASE_RELOCATION_BLOCK_OFFSET;
+		return 0;
+	}
 	if (!epep_seek(epep, epep->base_relocation_table_offset)) {
 		return 0;
 	}
@@ -857,6 +964,10 @@ int epep_get_next_base_relocation_block(Epep *epep, EpepBaseRelocationBlock *it)
 		*it = (EpepBaseRelocationBlock){ 0 };
 		return 1;
 	}
+	if (!epep_valid_offset(epep, it->offset, 0)) {
+		epep->error_code = EPEP_ERR_INVALID_NEXT_BASE_RELOCATION_BLOCK_OFFSET;
+		return 0;
+	}
 	if (!epep_seek(epep, it->offset)) {
 		return 0;
 	}
@@ -866,7 +977,12 @@ int epep_get_next_base_relocation_block(Epep *epep, EpepBaseRelocationBlock *it)
 }
 
 int epep_get_base_relocation_block_base_relocation_by_index(Epep *epep, EpepBaseRelocationBlock *brb, EpepBaseRelocation *br, size_t index) {
-	if (!epep_seek(epep, brb->offset + 8 + sizeof(EpepBaseRelocation) * index)) {
+	size_t offset = brb->offset + 8 + sizeof(EpepBaseRelocation) * index;
+	if (!epep_valid_offset(epep, offset, sizeof(EpepBaseRelocation))) {
+		epep->error_code = EPEP_ERR_INVALID_BASE_RELOCATION_BLOCK_BASE_RELOCATION_OFFSET;
+		return 0;
+	}
+	if (!epep_seek(epep, offset)) {
 		return 0;
 	}
 	br->u16 = epep_read_u16(epep);
@@ -878,8 +994,12 @@ int epep_get_base_relocation_block_base_relocation_by_index(Epep *epep, EpepBase
 //
 
 int epep_get_section_relocation_by_index(Epep *epep, EpepSectionHeader *sh, EpepCoffRelocation *rel, size_t index) {
-	size_t relocationsOffset = sh->PointerToRelocations;
-	epep_seek(epep, relocationsOffset + 10 * index);
+	size_t offset = sh->PointerToRelocations + 10 * index;
+	if (!epep_valid_offset(epep, offset, 10)) {
+		epep->error_code = EPEP_ERR_INVALID_SECTION_RELOCATION_OFFSET;
+		return 0;
+	}
+	epep_seek(epep, offset);
 	epep_read_block(epep, 10, rel);
 	return 1;
 }
@@ -889,8 +1009,12 @@ int epep_get_section_relocation_by_index(Epep *epep, EpepSectionHeader *sh, Epep
 //
 
 int epep_get_section_line_number_by_index(Epep *epep, EpepSectionHeader *sh, EpepCoffLinenumber *ln, size_t index) {
-	size_t LinenumbersOffset = sh->PointerToLinenumbers;
-	epep_seek(epep, LinenumbersOffset + 6 * index);
+	size_t offset = sh->PointerToLinenumbers + 6 * index;
+	if (!epep_valid_offset(epep, offset, 6)) {
+		epep->error_code = EPEP_ERR_INVALID_LINENUMBER_OFFSET;
+		return 0;
+	}
+	epep_seek(epep, offset);
 	epep_read_block(epep, 6, ln);
 	return 1;
 }
