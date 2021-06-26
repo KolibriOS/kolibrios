@@ -1038,6 +1038,8 @@ proc draw_window
         xor     eax, eax
         mov     edx, -1
         mov     esi, -1
+        cmp     [procinfo.wnd_state], 0x04
+        je      .min_size_ok
         cmp     [procinfo.box.width], MIN_WINDOW_WIDTH
         ja      @f
         mov     edx, MIN_WINDOW_WIDTH
