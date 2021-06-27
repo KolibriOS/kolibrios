@@ -28,7 +28,6 @@ img_files = {
  {"UNIMG", PROGS .. "/fs/unimg/unimg"},
  {"3D/HOUSE.3DS", "common/3d/house.3ds"},
  {"File Managers/ICONS.INI", "common/File Managers/icons.ini"},
- {"File Managers/KFM.INI", "common/File Managers/kfm.ini"},
  {"File Managers/FNAV/ABOUT.TXT", "common/File Managers/fNav/About.txt"},
  {"File Managers/FNAV/FNAV", "common/File Managers/fNav/fNav.kex"},
  {"File Managers/FNAV/FNAV.EXT", "common/File Managers/fNav/fnav.ext"},
@@ -76,7 +75,6 @@ if build_type == "rus" then tup.append_table(img_files, {
  {"DEVELOP/BACKY", PROGS .. "/develop/backy/Backy_ru"},
  {"GAMES/BASEKURS.KLA", build_type .. "/games/basekurs.kla"},
  {"File Managers/KFAR.INI", build_type .. "/File Managers/kfar.ini"},
- {"File Managers/KFM_KEYS.TXT", PROGS .. "/fs/kfm/trunk/docs/russian/dos_kolibri/kfm_keys.txt"},
  {"GAMES/DESCENT", build_type .. "/games/descent"},
  {"SETTINGS/.shell", PROGS .. "/system/shell/bin/rus/.shell"},
  {"SETTINGS/GAMES.INI", "rus/settings/games.ini"},
@@ -86,7 +84,6 @@ if build_type == "rus" then tup.append_table(img_files, {
  {"EXAMPLE.ASM", PROGS .. "/develop/examples/example/trunk/example.asm"},
  {"DEVELOP/BACKY", PROGS .. "/develop/backy/Backy"},
  {"File Managers/KFAR.INI", "common/File Managers/kfar.ini"},
- {"File Managers/KFM_KEYS.TXT", PROGS .. "/fs/kfm/trunk/docs/english/kfm_keys.txt"},
  {"GAMES/DESCENT", "common/games/descent"},
  {"SETTINGS/.shell", PROGS .. "/system/shell/bin/eng/.shell"},
  {"SETTINGS/GAMES.INI", "common/settings/games.ini"},
@@ -96,7 +93,6 @@ if build_type == "rus" then tup.append_table(img_files, {
  {"EXAMPLE.ASM", PROGS .. "/develop/examples/example/trunk/example.asm"},
  {"DEVELOP/BACKY", PROGS .. "/develop/backy/Backy"},
  {"File Managers/KFAR.INI", "common/File Managers/kfar.ini"},
- {"File Managers/KFM_KEYS.TXT", PROGS .. "/fs/kfm/trunk/docs/english/kfm_keys.txt"},
  {"GAMES/DESCENT", "common/games/descent"},
  {"SETTINGS/.shell", PROGS .. "/system/shell/bin/eng/.shell"},
  {"SETTINGS/GAMES.INI", "common/settings/games.ini"},
@@ -106,7 +102,6 @@ if build_type == "rus" then tup.append_table(img_files, {
  {"EXAMPLE.ASM", PROGS .. "/develop/examples/example/trunk/example.asm"},
  {"DEVELOP/BACKY", PROGS .. "/develop/backy/Backy"},
  {"File Managers/KFAR.INI", "common/File Managers/kfar.ini"},
- {"File Managers/KFM_KEYS.TXT", PROGS .. "/fs/kfm/trunk/docs/english/kfm_keys.txt"},
  {"GAMES/DESCENT", "common/games/descent"},
  {"SETTINGS/.shell", PROGS .. "/system/shell/bin/eng/.shell"},
  {"SETTINGS/MYKEY.INI", PROGS .. "/system/MyKey/trunk/mykey_it.ini"},
@@ -115,7 +110,6 @@ if build_type == "rus" then tup.append_table(img_files, {
 }) else tup.append_table(img_files, {
  {"EXAMPLE.ASM", PROGS .. "/develop/examples/example/trunk/example.asm"},
  {"DEVELOP/BACKY", PROGS .. "/develop/backy/Backy"},
- {"File Managers/KFM_KEYS.TXT", PROGS .. "/fs/kfm/trunk/docs/english/kfm_keys.txt"},
  {"File Managers/KFAR.INI", "common/File Managers/kfar.ini"},
  {"GAMES/DESCENT", "common/games/descent"},
  {"SETTINGS/.shell", PROGS .. "/system/shell/bin/eng/.shell"},
@@ -302,6 +296,10 @@ extra_files = {
  {"kolibrios/utils/info/DEFAULT.SYN", PROGS .. "/other/t_edit/info/default.syn"},
  {"kolibrios/utils/info/HTML.SYN", PROGS .. "/other/t_edit/info/html.syn"},
  {"kolibrios/utils/info/INI.SYN", PROGS .. "/other/t_edit/info/ini_files.syn"},
+ {"kolibrios/utils/kfm/kfm.ini", "common/File Managers/kfm.ini"},
+ {"kolibrios/utils/kfm/kfm_keys_eng.txt", PROGS .. "/fs/kfm/trunk/docs/english/kfm_keys.txt"},
+ {"kolibrios/utils/kfm/kfm_keys_rus.txt", PROGS .. "/fs/kfm/trunk/docs/russian/dos_kolibri/kfm_keys.txt"},
+
  }
 if build_type == "rus" then tup.append_table(extra_files, {
  {"Docs/cp866/config.txt", build_type .. "/docs/CONFIG.TXT"},
@@ -462,7 +460,6 @@ tup.append_table(img_files, {
  {"DEVELOP/EXAMPLES/THREAD", PROGS .. "/develop/examples/thread/trunk/thread"},
  {"DEVELOP/EXAMPLES/USE_MB", PROGS .. "/demos/use_mb/use_mb"},
  {"File Managers/KFAR", PROGS .. "/fs/kfar/trunk/kfar"},
- {"File Managers/KFM", PROGS .. "/fs/kfm/trunk/kfm"},
  {"File Managers/OPENDIAL", PROGS .. "/fs/opendial/opendial"},
  {"GAMES/15", PROGS .. "/games/15/trunk/15"},
  {"GAMES/FREECELL", PROGS .. "/games/freecell/freecell"},
@@ -599,6 +596,7 @@ tup.append_table(extra_files, {
  {"kolibrios/media/zsea/plugins/rotate.obj", PROGS .. "/media/zsea/plugins/rotate/rotate.obj"},
  {"kolibrios/media/zsea/plugins/scaling.obj", PROGS .. "/media/zsea/plugins/scaling/scaling.obj"},
  {"kolibrios/utils/calcplus", PROGS .. "/other/calcplus/calcplus"},
+ {"kolibrios/utils/kfm/kfm", PROGS .. "/fs/kfm/trunk/kfm"},
  {"kolibrios/utils/t_edit", PROGS .. "/other/t_edit/t_edit"},
 })
 -- For russian build, add russian-only programs.

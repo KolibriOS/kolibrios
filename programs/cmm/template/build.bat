@@ -1,5 +1,5 @@
-@del t
-@c-- t.c
+@del *.
+@For /R %%i In (*.c) Do c-- "%%i"
+@rename *.com *.
 @pause
-@rename t.com t
 @del warning.txt
