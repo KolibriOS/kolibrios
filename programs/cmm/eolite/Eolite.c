@@ -1,11 +1,17 @@
 //Leency, Veliant, Punk_Joker, PavelYakov & KolibriOS Team 2008-2021
 //GNU GPL license.
 
-// 70.5 - get volume info and label
+/*
+TODO:
+- fix a kfm2 bug with selected files on window deactivation
+- click on a path bar opens edit
+- click to show breadcrumbs
+- 70.5 - get volume info and label
+*/
 
-#define ABOUT_TITLE "EOLITE 5 Beta10"
-#define TITLE_EOLITE "Eolite File Manager 5 Beta10"
-#define TITLE_KFM "Kolibri File Manager 2 Beta10";
+#define ABOUT_TITLE "EOLITE 5 Beta11"
+#define TITLE_EOLITE "Eolite File Manager 5 Beta11"
+#define TITLE_KFM "Kolibri File Manager 2 Beta11";
 
 #define MEMSIZE 1024 * 250
 #include "../lib/clipboard.h"
@@ -24,10 +30,8 @@
 #include "../lib/obj/libimg.h"
 
 #include "../lib/patterns/history.h"
-#include "../lib/patterns/toolbar_button.h"
 
 #include "imgs/images.h"
-
 #include "include/const.h"
 
 _history history;
@@ -55,13 +59,6 @@ bool efm = false;
 
 int toolbar_buttons_x[7]={9,46,85,134,167,203};
 
-bool dir_at_fat16 = NULL;
-
-dword about_thread_id;
-dword settings_window;
-bool active_about = false;
-bool active_settings = false;
-
 byte del_active=0;
 byte new_element_active=0;
 
@@ -75,6 +72,7 @@ bool list_full_redraw;
 	int selected_count;
 	int folder_count;
 	dword path;
+	bool dir_at_fat16 = NULL;
 
 //Sselected element data
 	byte file_path[4096];
@@ -92,13 +90,19 @@ bool list_full_redraw;
 	int status_bar_h;
 	int icon_size = 18;
 
-int active_panel=0;
-int disk_popin_active_on_panel=0;
-#define PANES_COUNT 2
-dword location[PANES_COUNT];
+//Threads data
+	dword about_thread_id;
+	dword settings_window;
+	bool active_about = false;
+	bool active_settings = false;
+	dword about_stak=0,properties_stak=0,settings_stak=0;
+	byte cmd_free=0;
 
-dword about_stak=0,properties_stak=0,settings_stak=0;
-byte cmd_free=0;
+//Multipanes
+	int active_panel=0;
+	int disk_popin_active_on_panel=0;
+	#define PANES_COUNT 2
+	dword location[PANES_COUNT];
 
 libimg_image icons16_default;
 libimg_image icons16_selected;
@@ -327,12 +331,7 @@ void main()
 						EventOpenDiskPopin(active_panel);
 						break;
 				case BACK_BTN...PASTE_BTN:
-						SetActivePanel(0);
 						EventToolbarButtonClick(id);
-						break;
-				case BACK_BTN+100...PASTE_BTN+100:
-						SetActivePanel(1);
-						EventToolbarButtonClick(id-100);
 						break;
 				case 31...33:
 						EventSort(id-30);
@@ -521,8 +520,8 @@ void draw_window()
 	if (rand_n) rand_n = random(80);
 
 	if (show_status_bar.checked) {
-		#define STBAR_EOLITE_H 16;
-		#define STBAR_KFM_H 21+16;
+		#define STBAR_EOLITE_H 16
+		#define STBAR_KFM_H 21
 		if (efm) status_bar_h = STBAR_KFM_H;
 		else status_bar_h = STBAR_EOLITE_H;
 	} else {
@@ -537,7 +536,12 @@ void draw_window()
 	SetAppColors();
 	if (efm) {
 		if (screen.width > 693) && (Form.width < 693) { MoveSize(OLD,OLD,693,OLD); return; }
-		DrawBar(0, 0, Form.cwidth, 34, sc.work);
+		DrawBar(0, 4, Form.cwidth, SELECTY-5, sc.work);
+		DrawBar(0, SELECTY+KFM2_DEVH+1, Form.cwidth, 3, sc.work);
+		DrawBar(0, SELECTY-1, 1, KFM2_DEVH+2, sc.work);
+		DrawBar(Form.cwidth-1, SELECTY-1, 1, KFM2_DEVH+2, sc.work);
+		DrawBar(Form.cwidth/2-16, SELECTY-1, 16, KFM2_DEVH+2, sc.work);
+		/*
 		#define PAD 7
 		#define GAP_S 26+5
 		#define GAP_B 26+14
@@ -553,6 +557,7 @@ void draw_window()
 			i+=100;
 		}
 		//DrawTopPanelButton(51, Form.cwidth-GAP_S-PAD, PAD, -1, false); //burger menu
+		*/
 	} else {
 		if (Form.width < 480) { MoveSize(OLD,OLD,480,OLD); return; }
 		ESDWORD[#toolbar_pal] = sc.work;
@@ -574,7 +579,9 @@ void draw_window()
 	for (i=0; i<6; i++) DrawBar(0, 5-i, Form.cwidth, 1, MixColors(sc.work_light, sc.work, i*10));
 	llist_copy(#files_active, #files);
 	DrawStatusBar();
-	if (!selected_count) Open_Dir(path,ONLY_OPEN); //if there are no selected files -> refresh folder [L001] 
+	if (!selected_count) {
+		Open_Dir(path,ONLY_OPEN); //if there are no selected files -> refresh folder [L001] 
+	}
 	DrawFilePanels();
 	disk_popin_active_on_panel = 0;
 }
@@ -619,23 +626,21 @@ void DrawStatusBar()
 	int go_up_folder_exists=0;
 
 	if (efm) { 
-		DrawBar(0, Form.cheight - status_bar_h+15, Form.cwidth,  3, sc.work);
+		DrawBar(0, Form.cheight - status_bar_h, Form.cwidth, 2, sc.work);
 		DrawBar(0, Form.cheight - 2, Form.cwidth,  2, sc.work);
 		DrawBar(Form.cwidth-1, Form.cheight - 19, 1,  17, sc.work);
 		DrawFuncButtonsInKfm();
-		DrawPathBar();
-		return;
-	}
-
-	if (!show_status_bar.checked) return;
-	if (files.count>0) && (streq(items.get(0)*304+buf+72,"..")) go_up_folder_exists=1;
-	DrawBar(0, Form.cheight - status_bar_h, Form.cwidth,  status_bar_h, sc.work);
-	sprintf(#status_bar_str, T_STATUS_EVEMENTS, folder_count-go_up_folder_exists, files.count-folder_count);
-	WriteText(6,Form.cheight - 13,0x80,sc.work_text,#status_bar_str);
-	if (selected_count) {
-		sprintf(#status_bar_str, T_STATUS_SELECTED, selected_count);
-		WriteText(Form.cwidth - calc(strlen(#status_bar_str)*6)-6,Form.cheight - 13,
-			0x80,sc.work_text,#status_bar_str);
+	} else {
+		if (!show_status_bar.checked) return;
+		if (files.count>0) && (streq(items.get(0)*304+buf+72,"..")) go_up_folder_exists=1;
+		DrawBar(0, Form.cheight - status_bar_h, Form.cwidth,  status_bar_h, sc.work);
+		sprintf(#status_bar_str, T_STATUS_EVEMENTS, folder_count-go_up_folder_exists, files.count-folder_count);
+		WriteText(6,Form.cheight - 13,0x80,sc.work_text,#status_bar_str);
+		if (selected_count) {
+			sprintf(#status_bar_str, T_STATUS_SELECTED, selected_count);
+			WriteText(Form.cwidth - calc(strlen(#status_bar_str)*6)-6,Form.cheight - 13,
+				0x80,sc.work_text,#status_bar_str);
+		}
 	}
 }
 
@@ -650,9 +655,13 @@ void DrawFilePanels()
 		files.SetSizes(192, 57, Form.cwidth - 210, Form.cheight - 59 - status_bar_h, files.item_h);
 		DrawButtonsAroundList();
 		List_ReDraw();
+		DrawPathBar();
 	}
 	else
 	{
+		llist_copy(#files_active, #files);
+		llist_copy(#files, #files_inactive);
+
 		if (!active_panel) {
 			files.SetSizes(Form.cwidth/2, files_y, w2-17, h2, files.item_h);
 		} else {
@@ -662,8 +671,9 @@ void DrawFilePanels()
 		files_inactive.x = files.x;
 		DrawButtonsAroundList();
 		path = location[active_panel^1];
-		Open_Dir(location[active_panel^1],WITH_REDRAW);
-		llist_copy(#files_inactive, #files);
+		Open_Dir(path,WITH_REDRAW);
+		if (!selected_count) files_inactive.count = files.count;
+		llist_copy(#files, #files_active);
 
 		if (!active_panel) {
 			files.SetSizes(2, files_y, Form.cwidth/2-2-17, h2, files.item_h);
@@ -673,7 +683,7 @@ void DrawFilePanels()
 
 		DrawButtonsAroundList();
 		path = location[active_panel];
-		Open_Dir(location[active_panel],WITH_REDRAW);
+		Open_Dir(path,WITH_REDRAW);
 	}
 }
 
@@ -828,8 +838,7 @@ void Open_Dir(dword dir_path, redraw){
 
 	selected_count = 0;
 	if (buf) free(buf);
-	errornum = GetDir(#buf, #files.count, dir_path, DIRS_NOROOT);
-	if (errornum)
+	if (errornum = GetDir(#buf, #files.count, dir_path, DIRS_NOROOT))
 	{
 		history.add(path);
 		EventHistoryGoBack();
@@ -846,11 +855,11 @@ void Open_Dir(dword dir_path, redraw){
 	Sorting();
 	list_full_redraw = true;
 	SetCurDir(dir_path);
-	DrawPathBar();
 	if (redraw!=ONLY_OPEN) {
 		history.add(path);
 		List_ReDraw();
-		DrawStatusBar(); 
+		DrawStatusBar();
+		DrawPathBar();
 	}
 }
 
@@ -955,6 +964,7 @@ void Dir_Up()
 	strcpy(#old_folder_name, path+iii);
 	if (iii>1) ESBYTE[path+iii-1]=NULL; else ESBYTE[path+iii]=NULL;
 	SelectFileByName(#old_folder_name);
+	if(efm)DrawPathBarKfm();
 }
 
 void EventOpenSelected()
@@ -1369,10 +1379,10 @@ void EventOpenDiskPopin(int panel_n)
 	DefineHiddenButton(0,0,5000,3000,9999+BT_NOFRAME);
 	if (panel_n==0) {
 		disk_popin_active_on_panel = 1;
-		SystemDiscs.DrawOptions(Form.cwidth/2-DDW);
+		SystemDiscs.DrawOptions(1);
 	} else {
 		disk_popin_active_on_panel = 2;
-		SystemDiscs.DrawOptions(Form.cwidth-DDW-2);
+		SystemDiscs.DrawOptions(Form.cwidth/2-1);
 	}
 }
 

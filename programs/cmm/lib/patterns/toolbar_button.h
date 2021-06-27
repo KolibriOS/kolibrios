@@ -1,5 +1,5 @@
 
-unsigned int DrawTopPanelButton(dword _button_id, _x, _y, signed int _icon_n, bool pressed)
+:unsigned int DrawTopPanelButton(dword _button_id, _x, _y, signed int _icon_n, bool pressed)
 {
 	#define TSZE 25
 	static libimg_image top_icons;

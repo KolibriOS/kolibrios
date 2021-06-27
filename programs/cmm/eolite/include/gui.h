@@ -171,9 +171,13 @@ void DrawPathBar()
 {
 	if (efm) {
 		DrawPathBarKfm();
-		return;
+	} else {
+		DrawPathEolite();
 	}
+}
 
+void DrawPathEolite()
+{
 	if (show_breadcrumb.checked) {
 		DrawBreadCrumbs(); 
 		return;
@@ -188,7 +192,7 @@ void DrawPathBar()
 	DefineHiddenButton(PathShow.start_x-4+1,PathShow.start_y-7+1,PathShow.area_size_x+4-2,20-2,PATH_BTN);
 	DrawBar(PathShow.start_x-4, PathShow.start_y+14, PathShow.area_size_x+5+18, 1, sc.work_light);
 
-	DrawFlatButtonSmall(PathShow.start_x+PathShow.area_size_x,PathShow.start_y-7,18,20, 61, "\26");
+	DrawFlatButtonSmall(PathShow.start_x+PathShow.area_size_x,PathShow.start_y-7,18,20, 61, "\x19");
 
 	PathShow.font_color = col.list_gb_text;
 	PathShow_prepare stdcall(#PathShow);
@@ -197,36 +201,31 @@ void DrawPathBar()
 
 void DrawPathBarKfm()
 {
-	dword bgc;
+	dword back_color, text_color;
+	int draw_x, draw_w;
 	int i=0;
 	if (!Form.cwidth) return;
 
 	if (skin_is_dark()) {
-		bgc = col.odd_line;
-		PathShow.font_color = col.list_gb_text;
+		back_color = col.odd_line;
+		text_color = col.list_gb_text;
 	} else {
-		bgc = 0xFFFFCC; 
-		PathShow.font_color = 0x222222;
+		back_color = 0xFFFFCC; 
+		text_color = 0x222222;
 	}
-	PathShow.start_y = Form.cheight - status_bar_h+2;
-
-	PathShow.start_x = 4;
-	PathShow.area_size_x = Form.cwidth/2-8;
+	draw_x = 3 + DDW;
+	draw_w = Form.cwidth/2 - draw_x - 17;
 	do {
-		DrawBar(PathShow.start_x-2,PathShow.start_y-3,PathShow.area_size_x+5,14,bgc);
-		DrawRectangle(PathShow.start_x-3,PathShow.start_y-4,PathShow.area_size_x+6,15,sc.work_graph);
-		PathShow.text_pointer = location[i];
-		PathShow_prepare stdcall(#PathShow);
-		PathShow_draw stdcall(#PathShow);
-		
-		PathShow.start_x = Form.cwidth/2 + 2;
-		PathShow.area_size_x = Form.cwidth - PathShow.start_x - 5;		
+		DrawBar(draw_x, SELECTY-1, draw_w-KFM2_DEVH+1, 1, sc.work_graph);
+		DrawBar(draw_x, SELECTY,   draw_w-KFM2_DEVH+1, KFM2_DEVH, back_color);
+		DrawBar(draw_x, SELECTY+KFM2_DEVH, draw_w-KFM2_DEVH+1, 1, sc.work_graph);
+		kfont.WriteIntoWindow(draw_x + 3, math.max(KFM2_DEVH-kfont.height/2+SELECTY,0), 
+			back_color, text_color, kfont.size.pt, location[i]+strrchr(location[i], '/'));
+		DrawFlatButtonSmall(draw_x+draw_w-KFM2_DEVH+1, SELECTY-1, KFM2_DEVH-1, KFM2_DEVH+1, 576+i, "\x19");
+		draw_x = Form.cwidth/2 + DDW + 1;
+		draw_w = Form.cwidth - draw_x - 2;
 		i++;
 	} while (i<2);
-
-	DrawBar(0,PathShow.start_y-2,1,15,sc.work);
-	DrawBar(Form.cwidth-1,PathShow.start_y-2,1,15,sc.work);
-	DrawBar(1,PathShow.start_y+12,Form.cwidth-2,1,sc.work_light);
 }
 
 //===================================================//
@@ -262,8 +261,6 @@ void DrawBreadCrumbs()
 		DrawBreadcrumbButton(btn.x, btn.y, btn.w, btn.h, i+BREADCRUMB_ID, text_line);
 		btn.x += btn.w;
 	}
-	//DrawFavButton(btn.x);
-	//btn.x+=20;
 	btn.x++;
 	DrawBar(btn.x,btn.y-1,Form.cwidth-btn.x-25,btn.h+3,sc.work);
 }

@@ -4,7 +4,7 @@
 //                                                   //
 //===================================================//
 #ifdef LANG_RUS
-#define T_FILE "Файл"
+#define T_FILE "Имя"
 #define T_TYPE "Тип"
 #define T_SIZE "Размер"
 #define T_NEW_FOLDER "Новая папка"
@@ -68,7 +68,7 @@ char *actions[] = {
 //                                                   //
 //===================================================//
 #else
-#define T_FILE "File"
+#define T_FILE "Name"
 #define T_TYPE "Type"
 #define T_SIZE "Size"
 #define T_NEW_FOLDER "New folder"
@@ -180,5 +180,6 @@ char *devinfo = {
 };
 
 #define DEV_H 17
-#define DDW 120
+#define DDW 110
 #define KFM2_DEVH 20
+#define SELECTY 10

@@ -64,8 +64,8 @@ void _SystemDiscs::Draw()
 	int draw_y, draw_x;
 	
 	if (efm) { 
-		DrawSelect(Form.cwidth/2-DDW, KFM_DEV_DROPDOWN_1, location[0]);
-		DrawSelect(Form.cwidth-DDW-2, KFM_DEV_DROPDOWN_2, location[sizeof(dword)]);
+		DrawSelect(2, KFM_DEV_DROPDOWN_1, location[0]);
+		DrawSelect(Form.cwidth/2, KFM_DEV_DROPDOWN_2, location[sizeof(dword)]);
 		files.y = 40 + 17;
 	} else { 
 		Tip(56, T_DEVICES, 55, "=");
@@ -97,14 +97,13 @@ void _SystemDiscs::Draw()
 			draw_y += DEV_H;			
 		}
 		DrawBar(draw_x+6, draw_y, 18, 1, 0xFFFfff);
-		ActionsDraw(SystemDiscs.list.count*DEV_H+108);
-		DrawLeftPanelBg(SystemDiscs.list.count*DEV_H);
+		ActionsDraw(list.count*DEV_H+108);
+		DrawLeftPanelBg(list.count*DEV_H);
 	}
 }
 
 void _SystemDiscs::DrawSelect(int draw_x, btid, dword _path)
 {
-	#define SELECTY 10
 	char dev_name[15], disc_name[100], i, dev_icon;
 
 	if (ESBYTE[_path+1]=='\0') {

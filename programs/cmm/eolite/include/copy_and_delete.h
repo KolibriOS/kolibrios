@@ -107,13 +107,13 @@ void PasteThread()
 	char copy_rezult;
 	int j, i, slash_count=0;
 	int paste_elements_count = 0;
-	dword buf;
+	dword clipbuf;
 	dword path_offset;
 	
-	buf = Clipboard__GetSlotData(Clipboard__GetSlotCount()-1);
-	if (DSDWORD[buf+4] != 3) return;
-	paste_elements_count = ESINT[buf+8];
-	path_offset = buf + 10;
+	clipbuf = Clipboard__GetSlotData(Clipboard__GetSlotCount()-1);
+	if (DSDWORD[clipbuf+4] != 3) return;
+	paste_elements_count = ESINT[clipbuf+8];
+	path_offset = clipbuf + 10;
 
 	if (cut_active) {
 		DisplayOperationForm(MOVE_FLAG);
@@ -138,13 +138,13 @@ void PasteThread()
 	}
 
 _DIFFERENT_DRIVES:
-	path_offset = buf + 10;
+	path_offset = clipbuf + 10;
 	for (j = 0; j < paste_elements_count; j++) {
 		copy_bar.max += GetFilesCount(path_offset);
 		path_offset += strlen(path_offset) + 1;
 	}
 	
-	path_offset = buf + 10;
+	path_offset = clipbuf + 10;
 	for (j = 0; j < paste_elements_count; j++) {
 		strcpy(#copy_from, path_offset);
 		if (!copy_from) DialogExit();
@@ -212,23 +212,23 @@ void DeleteThread()
 {
 	int j;
 	int elements_count = 0;
-	dword buf;
+	dword clipbuf;
 	dword path_offset;
 
 	DisplayOperationForm(DELETE_FLAG);
 	
-	buf = Clipboard__GetSlotData(Clipboard__GetSlotCount()-1);
+	clipbuf = Clipboard__GetSlotData(Clipboard__GetSlotCount()-1);
 	Clipboard__DeleteLastSlot();
-	if (DSDWORD[buf+4] != 3) return;
-	elements_count = ESINT[buf+8];
+	if (DSDWORD[clipbuf+4] != 3) return;
+	elements_count = ESINT[clipbuf+8];
 
-	path_offset = buf + 10;
+	path_offset = clipbuf + 10;
 	for (j = 0; j < elements_count; j++) {
 		copy_bar.max += GetFilesCount(path_offset);
 		path_offset += strlen(path_offset) + 1;
 	}
 	
-	path_offset = buf + 10;
+	path_offset = clipbuf + 10;
 	for (j = 0; j < elements_count; j++) {
 		RecursiveDelete(path_offset, true);
 		path_offset += strlen(path_offset) + 1;
