@@ -115,7 +115,7 @@ void SetProperties(int mode)
 			{
 				if (getElementSelectedFlag(i) == true) 
 				{
-					sprintf(#pcur_file,"%s/%s",#path,items.get(i)*304+buf+72);
+					sprintf(#pcur_file,"%s/%s",path,items.get(i)*304+buf+72);
 					SetPropertiesFile(#pcur_file, #file_info_general);
 					if (SET_PROPERTIES_ALL_SUBFOLDER == mode) {
 						if (dir_exists(#pcur_file)) SetPropertiesDir(#pcur_file);
@@ -131,7 +131,7 @@ void SetProperties(int mode)
 	}
 
 	cmd_free=3;
-	Open_Dir(#path,ONLY_OPEN);
+	Open_Dir(path,ONLY_OPEN);
 	ExitProcess();
 }
 
@@ -177,7 +177,7 @@ void properties_dialog()
 	if (selected_count)
 	{
 		more_files_count.get(NULL);
-		GetSizeMoreFiles(#path);
+		GetSizeMoreFiles(path);
 		ch_read_only.checked = 0;
 		ch_hidden.checked = 0;
 		ch_system.checked = 0;
@@ -191,7 +191,7 @@ void properties_dialog()
 		ch_hidden.checked = file_info_general.hidden;
 		ch_system.checked = file_info_general.system;
 	}
-	edit_box_set_text stdcall (#path_to_file_ed, #path);
+	edit_box_set_text stdcall (#path_to_file_ed, path);
 	
 	SetEventMask(EVM_REDRAW + EVM_KEY + EVM_BUTTON + EVM_MOUSE + EVM_MOUSE_FILTER);
 	loop() switch(WaitEvent())
@@ -293,7 +293,7 @@ void DrawPropertiesWindow()
 		if ( file_info_general.isfolder )
 				PropertiesDrawIcon(NULL, "<DIR>");
 		else {
-			sprintf(#temp_path,"%s/%s",#path,#file_name2);
+			sprintf(#temp_path,"%s/%s",path,#file_name2);
 			ext1 = strrchr(#file_name2,'.');
 			if (ext1) ext1 += #file_name2;
 			PropertiesDrawIcon(#temp_path, ext1);

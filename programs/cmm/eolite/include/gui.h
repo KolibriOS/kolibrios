@@ -12,13 +12,15 @@ void DrawScroll(bool _scroll_used) {
 	{
 		sc_slider_y = sc_y - 1;
 		sc_slider_h = sc_h + 1;
-	}
-	else
-	{
+	} else {
 		sc_slider_y = files.first * sc_h / files.count + sc_y - 1;
 		sc_slider_h = sc_h * files.visible - files.visible / files.count + 2;
-		if (sc_slider_h < 20) sc_slider_h = 20; //minimal scroll height
-		if (sc_slider_h > sc_h-sc_slider_y+56) || (files.first+files.visible>=files.count) sc_slider_y= sc_y + sc_h - sc_slider_h; //для большого списка 
+		if (sc_slider_h < 20) {
+			sc_slider_h = 20; //set minimal scroll height
+		}
+		if (sc_slider_h > sc_h-sc_slider_y+56) || (files.first+files.visible>=files.count) {
+			sc_slider_y= sc_y + sc_h - sc_slider_h; //fix for the very long list
+		}
 	}
 	//slider
 	DrawRectangle(sc_x,sc_slider_y,16,sc_slider_h,sc.work_graph);

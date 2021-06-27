@@ -6,7 +6,7 @@
 //===================================================//
 
 char work_area_pointer[1024];
-PathShow_data PathShow = {0, 17,250, 6, 250, 0, 0, 0x000000, 0xFFFFCC, #path, #work_area_pointer, 0};
+PathShow_data PathShow = {0, 17,250, 6, 250, 0, 0, 0x000000, 0xFFFFCC, NULL, #work_area_pointer, 0};
 void DrawPathBar()
 {
 	if (efm) {
@@ -19,6 +19,7 @@ void DrawPathBar()
 		return;
 	}
 
+	PathShow.text_pointer = location[0];
 	PathShow.start_x = 250;
 	PathShow.start_y = 17;
 	PathShow.area_size_x = Form.cwidth-300;
@@ -47,34 +48,26 @@ void DrawPathBarKfm()
 		bgc = 0xFFFFCC; 
 		PathShow.font_color = 0x222222;
 	}
-	if (active_panel==0) PathShow.text_pointer = #path; else PathShow.text_pointer = #inactive_path;
-	PathShow.start_x = 4;
-	PathShow.area_size_x = Form.cwidth/2-8;
 	PathShow.start_y = Form.cheight - status_bar_h+2;
 
-	_DRAW_BAR:
-	DrawBar(PathShow.start_x-2,PathShow.start_y-3,PathShow.area_size_x+5,14,bgc);
-	DrawRectangle(PathShow.start_x-3,PathShow.start_y-4,PathShow.area_size_x+6,15,sc.work_graph);
-	PathShow_prepare stdcall(#PathShow);
-	PathShow_draw stdcall(#PathShow);
-	i++;
-	if (i<2) {
-		if (active_panel==0) PathShow.text_pointer = #inactive_path; else PathShow.text_pointer = #path;
+	PathShow.start_x = 4;
+	PathShow.area_size_x = Form.cwidth/2-8;
+	do {
+		DrawBar(PathShow.start_x-2,PathShow.start_y-3,PathShow.area_size_x+5,14,bgc);
+		DrawRectangle(PathShow.start_x-3,PathShow.start_y-4,PathShow.area_size_x+6,15,sc.work_graph);
+		PathShow.text_pointer = location[i];
+		PathShow_prepare stdcall(#PathShow);
+		PathShow_draw stdcall(#PathShow);
+		
 		PathShow.start_x = Form.cwidth/2 + 2;
-		PathShow.area_size_x = Form.cwidth - PathShow.start_x - 5;
-		goto _DRAW_BAR;
-	}
+		PathShow.area_size_x = Form.cwidth - PathShow.start_x - 5;		
+		i++;
+	} while (i<2);
 
 	DrawBar(0,PathShow.start_y-2,1,15,sc.work);
 	DrawBar(Form.cwidth-1,PathShow.start_y-2,1,15,sc.work);
 	DrawBar(1,PathShow.start_y+12,Form.cwidth-2,1,sc.work_light);
 }
-
-void DrawPathBarKfm_Line()
-{
-
-}
-
 
 //===================================================//
 //                                                   //
@@ -89,7 +82,7 @@ void DrawBreadCrumbs()
  int i;
  unsigned text_line;
  {
-	strcat(#PathShow_path, #path);
+	strcat(#PathShow_path, path);
 	for (i=0; i<50; i++) DeleteButton(i+BREADCRUMB_ID);
 	breadCrumb.drop();
 	for (i=0; (PathShow_path[i]) && (i<sizeof(PathShow_path)-1); i++) 
@@ -118,12 +111,12 @@ void DrawBreadCrumbs()
 
 void ClickOnBreadCrumb(unsigned clickid)
 {
-	int i, slashpos = #path;
+	int i, slashpos = path;
 	for (i=0; i!=clickid+2; i++) {
 		slashpos=strchr(slashpos,'/')+1;
 	}
 	ESBYTE[slashpos-1] = NULL;
-	Open_Dir(#path,WITH_REDRAW);
+	Open_Dir(path,WITH_REDRAW);
 }
 
 

@@ -11,4 +11,5 @@ tup.rule("notify.c", "c-- /D=AUTOBUILD /D=$(C_LANG) %f" .. tup.getconfig("KPACK_
 tup.rule("osupdate.c", "c-- /D=AUTOBUILD /D=$(C_LANG) %f" .. tup.getconfig("KPACK_CMD"), "osupdate.com")
 tup.rule("pipet.c", "c-- /D=AUTOBUILD /D=$(C_LANG) %f" .. tup.getconfig("KPACK_CMD"), "pipet.com")
 tup.rule("software_widget.c", "c-- /D=AUTOBUILD /D=$(C_LANG) %f" .. tup.getconfig("KPACK_CMD"), "software_widget.com")
+tup.rule("kfm2.c", "c-- %f" .. tup.getconfig("KPACK_CMD"), "kfm2.com")
 

@@ -18,7 +18,7 @@
 	#define ENTRY_POINT #______INIT______
 #endif
 
-char   os_name[8]   = {'M','E','N','U','E','T','0','1'};
+char   os_name[]    = "MENUET01"n;
 dword  os_version   = 0x00000001;
 dword  start_addr   = ENTRY_POINT;
 dword  final_addr   = #______STOP______+32;

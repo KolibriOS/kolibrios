@@ -53,17 +53,17 @@
 :void DrawWideRectangle(dword x,y,w,h,boder,color1)
 {
 	DrawBar(x, y, w, boder, color1);
-	DrawBar(x, y+h-boder, w, boder, color1);
-	DrawBar(x, y+boder, boder, h-boder-boder, color1);
-	DrawBar(x+w-boder, y+boder, boder, h-boder-boder, color1);
+	DrawBar(x, y+h-boder, w, boder, EDX);
+	DrawBar(x, y+boder, boder, h-boder-boder, EDX);
+	DrawBar(x+w-boder, y+boder, boder, h-boder-boder, EDX);
 }
 
 :void DrawRectangle3D(dword x,y,w,h,color1,color2)
 {
 	DrawBar(x,y,w+1,1,color1);
-	DrawBar(x,y+1,1,h-1,color1);
+	DrawBar(x,y+1,1,h-1,EDX);
 	DrawBar(x+w,y+1,1,h,color2);
-	DrawBar(x,y+h,w,1,color2);
+	DrawBar(x,y+h,w,1,EDX);
 }
 
 :void DrawCaptButton(dword x,y,w,h,id,color_b, color_t,text)
@@ -220,7 +220,7 @@
 {
 	DrawRectangle(x,y,w,h,col_border);
 	DrawBar(x+1,y+1,w-1,1,0xFFFfff);
-	DrawBar(x+1,y+2,1,h-2,0xFFFfff);
+	DrawBar(x+1,y+2,1,h-2,EDX);
 	if (col_work!=-1) DrawBar(x+2,y+2,w-2,h-2,col_work);
 	DrawPopupShadow(x,y,w,h-1,skinned);
 }
@@ -289,9 +289,9 @@
 	DrawBar(x+w+1,  y+2,   1, h-2, right);
 
 	PutPixel(x,     y,     dots);
-	PutPixel(x+w+1, y+h+1, dots);
-	PutPixel(x,     y+h+1, dots);
-	PutPixel(x+w+1, y,     dots);
+	PutPixel(x+w+1, y+h+1, EDX);
+	PutPixel(x,     y+h+1, EDX);
+	PutPixel(x+w+1, y,     EDX);
 	
 	PutPixel(x,     y+h, dark);
 	PutPixel(x+w+1, y+1, light);
@@ -300,15 +300,13 @@
 
 :bool skin_is_dark()
 {
-	dword gray;
-	dword color_image = #sc.work;
+	ESI = #sc.work;
 
-	gray = DSBYTE[color_image]*DSBYTE[color_image];
-	gray += DSBYTE[color_image+1]*DSBYTE[color_image+1];
-	gray += DSBYTE[color_image+2]*DSBYTE[color_image+2];
-	gray = sqrt(gray) / 3;
+	EDI = DSBYTE[ESI]*DSBYTE[ESI];
+	EDI += DSBYTE[ESI+1]*DSBYTE[ESI+1];
+	EDI += DSBYTE[ESI+2]*DSBYTE[ESI+2];
 
-	if (gray < 65) {
+	if (sqrt(EDI) / 3 < 65) {
 		return true; 
 	} else {
 		return false;

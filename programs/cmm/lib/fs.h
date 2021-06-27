@@ -40,7 +40,12 @@
 	dword	sizehi;
 	char	name[518];
 };
+#define ATR_READONLY 1
+#define ATR_HIDDEN 2
+#define ATR_SYSTEM 4
+#define ATR_VOL_LABEL 8
 #define ATR_FOLDER 0x10
+#define ATR_NONARH 0x20
 
 
 :dword GetFileInfo(dword file_path, bdvk_struct)
@@ -203,7 +208,7 @@ inline fastcall void GetCurDir( ECX, EDX)
 	$int 0x40
 }
 
-void read_file(dword path1, buf, size)
+:void read_file(dword path1, buf, size)
 {
 	EAX = 68;
 	EBX = 27;

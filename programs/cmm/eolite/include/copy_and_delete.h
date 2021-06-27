@@ -70,7 +70,7 @@ void CopyFilesListToClipboard(bool _cut_active)
 	for (i=0; i<files.count; i++) 
 	{
 		if (getElementSelectedFlag(i) == true) {
-			sprintf(#copy_t,"%s/%s",#path,items.get(i)*304+buf+72);
+			sprintf(#copy_t,"%s/%s",path,items.get(i)*304+buf+72);
 			path_len = strlen(#copy_t);
 			size_buf += path_len + 1;
 		}
@@ -83,7 +83,7 @@ void CopyFilesListToClipboard(bool _cut_active)
 	for (i=0; i<files.count; i++) 
 	{
 		if (getElementSelectedFlag(i) == true) {
-			sprintf(copy_buf_offset,"%s/%s",#path,items.get(i)*304+buf+72);
+			sprintf(copy_buf_offset,"%s/%s",path,items.get(i)*304+buf+72);
 			copy_buf_offset += strlen(copy_buf_offset) + 1;
 
 			if (cut_active) {
@@ -123,7 +123,7 @@ void PasteThread()
 
 	if (cut_active) {
 		for (j = 0; j < paste_elements_count; j++) {
-			sprintf(#copy_to, "%s/%s", #path, path_offset+strrchr(path_offset,'/'));
+			sprintf(#copy_to, "%s/%s", path, path_offset+strrchr(path_offset,'/'));
 			slash_count = 0;
 			for (i=0; i<=10; i++) {
 				if (copy_to[i]=='/') slash_count++;
@@ -148,11 +148,11 @@ _DIFFERENT_DRIVES:
 	for (j = 0; j < paste_elements_count; j++) {
 		strcpy(#copy_from, path_offset);
 		if (!copy_from) DialogExit();
-		sprintf(#copy_to, "%s/%s", #path, #copy_from+strrchr(#copy_from,'/'));
+		sprintf(#copy_to, "%s/%s", path, #copy_from+strrchr(#copy_from,'/'));
 		if (streq(#copy_from,#copy_to))
 		{
 			if (cut_active) continue;
-			sprintf(#copy_to, "%s/NEW_%s", #path, #copy_from+strrchr(#copy_from,'/'));
+			sprintf(#copy_to, "%s/NEW_%s", path, #copy_from+strrchr(#copy_from,'/'));
 		}
 		if (strstr(#copy_to, #copy_from))
 		{

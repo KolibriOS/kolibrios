@@ -68,9 +68,9 @@ void settings_dialog()
 				}
 				else if (id==6)
 				{
-					strcpy(#path_start,#path);
+					strcpy(#path_start,path);
 					path_start_ed.size = path_start_ed.pos = strlen(#path_start);
-					ini.SetString("DefaultPath", #path, strlen(#path));
+					ini.SetString("DefaultPath", path, strlen(path));
 					edit_box_draw stdcall (#path_start_ed);
 					break;
 				}
@@ -103,7 +103,7 @@ void settings_dialog()
 				
 			case evReDraw:
 				DefineAndDrawWindow(Form.cwidth-300/2+Form.left, Form.cheight-292/2+Form.top, 400, 
-					365+skin_height,0x34,sc.work,TITLE_SETT,0);
+					-efm*62+365+skin_height,0x34,sc.work,TITLE_SETT,0);
 				GetProcessInfo(#Settings, SelfInfo);
 				DrawSettingsCheckBoxes();
 		}
@@ -125,9 +125,11 @@ void DrawSettingsCheckBoxes()
 	#define FRX 26
 	#define XXX 11
 	y.n = 0;
-	show_dev_name.draw(XXX, y.inc(14));
-	show_status_bar.draw(XXX, y.inc(25));
-	show_breadcrumb.draw(XXX, y.inc(25));
+	if (!efm) {
+		show_dev_name.draw(XXX, y.inc(14));
+		show_status_bar.draw(XXX, y.inc(25));
+		show_breadcrumb.draw(XXX, y.inc(25));
+	}
 	big_icons.draw(XXX, y.inc(25));
 	colored_lines.draw(XXX, y.inc(25));
 	font_size.draw(XXX, y.inc(31));
@@ -160,7 +162,6 @@ void LoadIniSettings()
 	Form.top    = ini.GetInt("WinY", 30); 
 	Form.width  = ini.GetInt("WinW", efm*170+550); 
 	Form.height = ini.GetInt("WinH", efm*100+517); 
-	ini.GetString("DefaultPath", #path, 4096, "/rd/1");
 	ini.GetString("DefaultPath", #path_start, 4096, "/rd/1");
 	path_start_ed.size = path_start_ed.pos = strlen(#path_start);
 	kfont.init(DEFAULT_FONT);
