@@ -1,9 +1,9 @@
-#ifdef LANG_RUS
 //===================================================//
 //                                                   //
 //                     CYRILLIC                      //
 //                                                   //
 //===================================================//
+#ifdef LANG_RUS
 #define T_FILE "Файл"
 #define T_TYPE "Тип"
 #define T_SIZE "Размер"
@@ -62,12 +62,12 @@ char *actions[] = {
 #define T_USB  "USB диск "
 #define T_RAM  "RAM диск "
 #define T_UNC  "Неизвестно "
-#else
 //===================================================//
 //                                                   //
 //                      ENGLISH                      //
 //                                                   //
 //===================================================//
+#else
 #define T_FILE "File"
 #define T_TYPE "Type"
 #define T_SIZE "Size"
@@ -135,19 +135,6 @@ char *actions[] = {
 //                                                   //
 //===================================================//
 
-char *devinfo = {
-	"r", 0, T_SYS,
-	"k", 1, T_PROG,
-	"f", 2, T_FD,
-	"c", 3, T_CD,
-	"h", 4, T_HD,
-	"b", 4, T_HD,
-	"s", 4, T_SATA,
-	"t", 5, T_RAM,
-	"u", 6, T_USB,
-	0
-};
-
 //Button IDs
 enum {
 	PATH_BTN = 10,
@@ -178,3 +165,20 @@ enum {
 	WITH_REDRAW, 
 	ONLY_OPEN
 };
+
+char *devinfo = {
+	"r", 0, T_SYS,
+	"k", 1, T_PROG,
+	"f", 2, T_FD,
+	"c", 3, T_CD,
+	"h", 4, T_HD,
+	"b", 4, T_HD,
+	"s", 4, T_SATA,
+	"t", 5, T_RAM,
+	"u", 6, T_USB,
+	0
+};
+
+#define DEV_H 17
+#define DDW 120
+#define KFM2_DEVH 20

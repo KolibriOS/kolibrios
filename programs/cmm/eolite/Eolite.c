@@ -3,9 +3,9 @@
 
 // 70.5 - get volume info and label
 
-#define ABOUT_TITLE "EOLITE 5 Beta9"
-#define TITLE_EOLITE "Eolite File Manager 5 Beta9"
-#define TITLE_KFM "Kolibri File Manager 2 Beta9";
+#define ABOUT_TITLE "EOLITE 5 Beta10"
+#define TITLE_EOLITE "Eolite File Manager 5 Beta10"
+#define TITLE_KFM "Kolibri File Manager 2 Beta10";
 
 #define MEMSIZE 1024 * 250
 #include "../lib/clipboard.h"
@@ -110,9 +110,8 @@ edit_box new_file_ed = {200,213,180,0xFFFFFF,0x94AECE,0xFFFFFF,0xFFFFFF,0x100000
 	248,#new_element_name,0,ed_focus+ed_always_focus,6,0};
 PathShow_data FileShow = {0, 56,215, 8, 100, 1, 0, 0x0, 0xFFFfff, #file_name, #temp, 0};
 
-
-#include "include\gui.h"
 #include "include\settings.h"
+#include "include\gui.h"
 #include "include\progress_dialog.h"
 #include "include\copy_and_delete.h"
 #include "include\sorting.h"
@@ -121,7 +120,6 @@ PathShow_data FileShow = {0, 56,215, 8, 100, 1, 0, 0x0, 0xFFFfff, #file_name, #t
 #include "include\menu.h"
 #include "include\about.h"
 #include "include\properties.h"
-#include "include\breadcrumbs.h"
 
 void handle_param()
 {
@@ -648,41 +646,34 @@ void DrawFilePanels()
 	int h2 = Form.cheight-files_y-2 - status_bar_h;
 	if (!efm)
 	{
-		DrawDeviceAndActionsLeftPanel();
+		SystemDiscs.Draw();
 		files.SetSizes(192, 57, Form.cwidth - 210, Form.cheight - 59 - status_bar_h, files.item_h);
 		DrawButtonsAroundList();
 		List_ReDraw();
 	}
 	else
 	{
-		llist_copy(#files_active, #files);
-		llist_copy(#files, #files_inactive);
-		path = location[active_panel^1];
-
-		if (active_panel==0)
-		{
+		if (!active_panel) {
 			files.SetSizes(Form.cwidth/2, files_y, w2-17, h2, files.item_h);
-			DrawButtonsAroundList();
-			Open_Dir(path,WITH_REDRAW);
-			files_inactive.count = files.count;
-			llist_copy(#files, #files_active);
-			path = location[active_panel];
+		} else {
 			files.SetSizes(2, files_y, Form.cwidth/2-2-17, h2, files.item_h);
-			DrawButtonsAroundList();
-			Open_Dir(path,WITH_REDRAW);
 		}
-		if (active_panel==1)
-		{
+
+		files_inactive.x = files.x;
+		DrawButtonsAroundList();
+		path = location[active_panel^1];
+		Open_Dir(location[active_panel^1],WITH_REDRAW);
+		llist_copy(#files_inactive, #files);
+
+		if (!active_panel) {
 			files.SetSizes(2, files_y, Form.cwidth/2-2-17, h2, files.item_h);
-			DrawButtonsAroundList();
-			Open_Dir(path,WITH_REDRAW);
-			files_inactive.count = files.count;
-			llist_copy(#files, #files_active);
-			path = location[active_panel];
+		} else {
 			files.SetSizes(Form.cwidth/2, files_y, w2 -17, h2, files.item_h);
-			DrawButtonsAroundList();
-			Open_Dir(path,WITH_REDRAW);
 		}
+
+		DrawButtonsAroundList();
+		path = location[active_panel];
+		Open_Dir(location[active_panel],WITH_REDRAW);
 	}
 }
 
@@ -1208,7 +1199,7 @@ void EventRefreshDisksAndFolders()
 	} else {
 		if (GetRealFileCountInFolder("/")+dir_exists("/kolibrios") != SystemDiscs.dev_num) {
 			SystemDiscs.Get();
-			DrawDeviceAndActionsLeftPanel();
+			SystemDiscs.Draw();
 		}
 	}
 	if(GetRealFileCountInFolder(path) != files.count) Open_Dir(path,WITH_REDRAW);
@@ -1218,8 +1209,7 @@ void EventManualFolderRefresh()
 {
 	Tip(56, T_DEVICES, 55, "-");
 	pause(10);
-	EventRefreshDisksAndFolders();
-	DrawDeviceAndActionsLeftPanel();
+	DrawFilePanels();
 }
 
 void EventSort(dword id)
