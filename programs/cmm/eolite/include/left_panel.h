@@ -7,7 +7,6 @@ struct _SystemDiscs
 	void Draw();
 	void DrawSelect();
 	void DrawOptions();
-	void Click();
 } SystemDiscs=0;
 
 void _SystemDiscs::Get()
@@ -149,10 +148,4 @@ void _SystemDiscs::DrawOptions(int draw_x)
 	}
 }
 
-void _SystemDiscs::Click(int n)
-{
-	strcpy(path, list.get(n));
-	files.KeyHome();
-	Open_Dir(path,WITH_REDRAW);	
-}
 

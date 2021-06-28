@@ -131,7 +131,7 @@ void SetProperties(int mode)
 	}
 
 	cmd_free=3;
-	Open_Dir(path,ONLY_OPEN);
+	OpenDir(ONLY_OPEN);
 	ExitProcess();
 }
 
