@@ -1,10 +1,6 @@
-@del lang.h--
-@echo #define LANG_ENG 1 >lang.h--
-
-@del app_plus
-cls
-@c-- app_plus.c
-@rename app_plus.com app_plus
+@c-- /D=LANG=ENG app_plus.c
+@del *.
+@rename *.com *.
 @del warning.txt
-@del lang.h--
 @pause
+

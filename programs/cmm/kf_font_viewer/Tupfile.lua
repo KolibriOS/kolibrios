@@ -3,4 +3,4 @@ if tup.getconfig("LANG") == "ru"
 then C_LANG = "LANG_RUS"
 else C_LANG = "LANG_ENG" -- this includes default case without config
 end
-tup.rule("font_viewer.c", "c-- /D=AUTOBUILD /D=$(C_LANG) %f" .. tup.getconfig("KPACK_CMD"), "font_viewer.com")
+tup.rule("font_viewer.c", "c-- /D=$(C_LANG) %f" .. tup.getconfig("KPACK_CMD"), "font_viewer.com")

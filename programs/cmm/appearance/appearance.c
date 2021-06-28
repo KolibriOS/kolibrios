@@ -1,10 +1,6 @@
 //11.03.12 - start!
 //ver 2.31
 
-#ifndef AUTOBUILD
-	?include "lang.h--"
-#endif
-
 #define MEMSIZE 200*1024
 #include "../lib/mem.h"
 #include "../lib/strings.h"

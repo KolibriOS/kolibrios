@@ -1,8 +1,6 @@
 @echo off
 
-echo #define LANG_ENG 1 >lang.h--
-
-For /R %%i In (*.c) Do c-- "%%i"
+For /R %%i In (*.c) Do c-- /D=LANG_ENG "%%i"
 
 mkdir bin
 del bin\*.* /Q
@@ -14,6 +12,5 @@ rename software_widget syspanel
 cd ..
 
 del warning.txt
-del lang.h--
 
 pause

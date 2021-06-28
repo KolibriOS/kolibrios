@@ -9,10 +9,6 @@
 
 #include "../lib/patterns/restart_process.h"
 
-#ifndef AUTOBUILD
-#include "lang.h--"
-#endif
-
 char logo[] = "
 лллл   лллл лллллллллл лллл   лллл ллллллллллл
  лллл   лл   ллл         ллл ллл   лл  ллл  лл

@@ -1,10 +1,6 @@
 //Copyright 2007-2020 by Veliant & Leency
 //Asper, lev, Lrz, Barsuk, Nable, hidnplayr...
 
-#ifndef AUTOBUILD
-	#include "lang.h--"
-#endif
-
 //===================================================//
 //                                                   //
 //                       LIB                         //

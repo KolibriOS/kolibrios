@@ -6,10 +6,6 @@
 
 #define MEMSIZE 4096*30
 
-#ifndef AUTOBUILD
-#include "lang.h--"
-#endif
-
 //===================================================//
 //                                                   //
 //                       LIB                         //

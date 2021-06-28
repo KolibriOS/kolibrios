@@ -1,4 +1,4 @@
-#define MAX_LINE_CHARS 256
+#define MAX_LINE_CHARS 128
 
 #define CHBOX 12
 #define CHECKBOX_ID 50
@@ -35,7 +35,7 @@ void NOTE_LINE::Delete()
 
 struct NOTES : llist {
 	char txt_path[4096];
-	char txt_data[MAX_LINE_CHARS*LINES_COUNT];
+	char txt_data[MAX_LINE_CHARS+4*LINES_COUNT+30];
 	bool txt_file_exists;
 
 	NOTE_LINE lines[LINES_COUNT]; 

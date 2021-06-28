@@ -1,9 +1,5 @@
 // Mouse Configuration Utility ver 1.62
 
-#ifndef AUTOBUILD
-#include "lang.h--"
-#endif
-
 #define MEMSIZE 4096*11
 
 #include "..\lib\strings.h" 

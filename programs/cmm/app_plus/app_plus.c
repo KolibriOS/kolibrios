@@ -8,10 +8,6 @@
 #include "..\lib\patterns\restart_process.h"
 #include "added_sysdir.c"
 
-#ifndef AUTOBUILD
-#include "lang.h--"
-#endif
-
 //===================================================//
 //                                                   //
 //                       DATA                        //

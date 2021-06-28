@@ -1,6 +1,6 @@
 @del *.kex
 
-For /R %%i In (*.c) Do c-- "%%i"
+For /R %%i In (*.c) Do c-- /D=LANG_ENG "%%i"
 
 @rename *.com *.kex
 @mkdir bin

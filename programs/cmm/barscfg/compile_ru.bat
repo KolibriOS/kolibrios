@@ -1,10 +1,6 @@
-@del lang.h--
-@echo #define LANG_RUS 1 >lang.h--
-
-@del barscfg
-cls
-@c-- barscfg.c
+@c-- /D=LANG_RUS barscfg.c
 @pause
-@rename barscfg.com barscfg
+@del barscfg
+@rename *.com *.
 @del warning.txt
-@del lang.h--
+

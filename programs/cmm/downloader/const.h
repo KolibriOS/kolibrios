@@ -1,9 +1,5 @@
 //Copyright 2020 by Leency
 
-#ifndef AUTOBUILD
-	#include "lang.h--"
-#endif
-
 #ifdef LANG_RUS
 	#define DL_WINDOW_HEADER "Менеджер загрузок"
 	#define T_DOWNLOAD "Скачать"

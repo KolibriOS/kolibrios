@@ -8,10 +8,6 @@
 #include "../lib/obj/box_lib.h"
 #include "../lib/obj/proc_lib.h"
 
-#ifndef AUTOBUILD
-	#include "lang.h--"
-#endif
-
 /* === TRANSLATIONS === */
 
 #ifdef LANG_RUS

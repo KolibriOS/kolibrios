@@ -1,9 +1,5 @@
-@del lang.h--
-@echo #define LANG_RUS 1 >lang.h--
-
-@C-- appearance.c
-@del appearance
-@rename appearance.com appearance
+@c-- /D=LANG_RUS appearance.c
+@del *.
+@rename *.com *.
 @del warning.txt
-@del lang.h--
 @pause

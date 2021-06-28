@@ -1,7 +1,3 @@
-#ifndef AUTOBUILD
-#include "lang.h--"
-#endif
-
 #define MEMSIZE 0x23E80
 #include "..\lib\kolibri.h" 
 #include "..\lib\strings.h" 

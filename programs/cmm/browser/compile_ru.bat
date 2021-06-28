@@ -1,10 +1,6 @@
-@del lang.h--
-@echo #define LANG_RUS 1 >lang.h--
-
-@c-- WebView.c
+@c-- /D=LANG_RUS WebView.c
 @del WebView
 @rename WebView.com WebView
 @del warning.txt
-@del lang.h--
 
 if not exist WebView ( @pause )

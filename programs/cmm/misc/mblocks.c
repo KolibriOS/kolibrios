@@ -12,10 +12,6 @@
 
 #include "..\lib\obj\libimg.h"
 
-#ifndef AUTOBUILD
-#include "lang.h--"
-#endif
-
 #define BTN_CLOSED 0
 #define BTN_PRESSED 1
 #define BTN_OPEN 2

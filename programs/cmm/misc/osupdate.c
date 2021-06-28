@@ -10,10 +10,6 @@
 
 #include "../lib/patterns/restart_process.h"
 
-#ifndef AUTOBUILD
-#include "lang.h--"
-#endif
-
 bool install_complete = false;
 _http http;
 

@@ -1,6 +1,8 @@
 // Notes v1.1
 
-#define MEMSIZE 0xDAE80
+#define MEMSIZE 1024*40
+#define ENTRY_POINT #main
+
 #include "..\lib\kolibri.h" 
 
 #include "..\lib\obj\box_lib.h"
@@ -12,10 +14,6 @@
 //                       DATA                        //
 //                                                   //
 //===================================================//
-
-#ifndef AUTOBUILD
-	#include "lang.h--"
-#endif
 
 #ifdef LANG_RUS
 	?define WINDOW_CAPTION "Заметки"
@@ -39,18 +37,19 @@ unsigned char edge[sizeof(file "img/edge.raw")]= FROM "img/edge.raw"; //292x6
 #define DELETE_BTN 4;
 #define DELETE_W sizeof(DELETE_TEXT)+2*6
 
-proc_info Form;
-
 #include "engine.h"
 #include "ini.h"
+	
+proc_info Form;
 
-edit_box notebox = {NULL,NULL,NULL,COL_BG_ACTIVE,0x94AECE,COL_BG_ACTIVE,0xffffff,0,
-	MAX_LINE_CHARS-1,NULL,0,ed_always_focus+ed_focus};
+edit_box notebox = {WIN_W-RED_LINE_X-6,RED_LINE_X+5,RED_LINE_X,
+	COL_BG_ACTIVE, 0x94AECE,COL_BG_ACTIVE,0xffffff,0, 
+	MAX_LINE_CHARS-1, NULL,0,ed_always_focus+ed_focus};
 dword lists[] = { 0xEAEAEA, 0xCDCDCD, 0xF0F0F0, 0xD8D8D8, 0 };
 
 bool delete_active = false;
 bool window_dragable = true;
-block delBtn;
+block delBtn = { WIN_W-DELETE_W-1, NULL, DELETE_W, RED_LINE_X};
 
 //===================================================//
 //                                                   //
@@ -61,7 +60,6 @@ block delBtn;
 void main()
 {   
 	bool first_redraw=true;
-	dword cur_line_offset;
 	load_dll(boxlib, #box_lib_init,0);
 
 	if (GetCpuFrequency()/1000000>=1000) window_dragable=true; else window_dragable=false;
@@ -70,7 +68,6 @@ void main()
 
 	@SetEventMask(EVM_REDRAW + EVM_KEY + EVM_BUTTON + EVM_MOUSE + EVM_MOUSE_FILTER);
 	LoadIniSettings();
-
 	loop() switch(@WaitEvent())
 	{
 		case evMouse:
@@ -115,7 +112,7 @@ void main()
 			break;
 	 
 		case evKey:
-			GetKeys();
+			@GetKeys();
 			if (key_modifier&KEY_LCTRL) || (key_modifier&KEY_RCTRL)
 			{
 				if (key_scancode == SCAN_CODE_SPACE)
@@ -184,19 +181,6 @@ void draw_window()
 	EventListRedraw();
 }
 
-void DrawEditBoxN()
-{
-	notebox.width = notes.w-notes.x-8;
-	notebox.left = notes.x+5;
-	notebox.offset = notebox.shift = notebox.shift_old = 0;
-	notebox.cl_curs_x = notebox.cl_curs_y = 0;
-	notebox.size = strlen(notebox.text);
-	notebox.flags = ed_always_focus+ed_focus;
-	if (notebox.pos > notebox.size) notebox.pos = notebox.size;
-	notebox.top = notes.cur_y*notes.item_h+4+notes.y;
-	edit_box_draw stdcall(#notebox);	
-}
-
 //===================================================//
 //                                                   //
 //                     EVENTS                        //
@@ -209,7 +193,13 @@ void EventActivateLine(int line_n)
 	notes.cur_y = line_n;
 	notebox.text = notes.DrawLine(notes.cur_y, notes.item_h);
 	EventListRedraw();
-	DrawEditBoxN();
+
+	notebox.size = strlen(notebox.text);
+	notebox.offset = notebox.shift = notebox.shift_old = 0;
+	notebox.cl_curs_x = notebox.cl_curs_y = 0;
+	if (notebox.pos > notebox.size) notebox.pos = notebox.size;
+	notebox.top = notes.cur_y*notes.item_h+4+notes.y;
+	edit_box_draw stdcall(#notebox);
 }
 
 void EventExitApp()
@@ -222,7 +212,7 @@ void EventExitApp()
 void EventDrawDeleteButton()
 {
 	notes.DrawLine(notes.cur_y, notes.item_h);
-	delBtn.set_size(WIN_W-DELETE_W-1, notes.cur_y*notes.item_h+notes.y, DELETE_W, notes.item_h-1);
+	delBtn.y = notes.cur_y*notes.item_h+notes.y;
 	DefineButton(delBtn.x, delBtn.y, delBtn.w, delBtn.h, DELETE_BTN, 0xFF0000);
 	WriteText(delBtn.x+10, delBtn.h/2-3 + delBtn.y, 0x80, 0xFFFfff, DELETE_TEXT);
 	notebox.top=-20;

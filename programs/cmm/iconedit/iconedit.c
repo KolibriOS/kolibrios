@@ -21,10 +21,6 @@
 
 #include "colors_mas.h"
 
-#ifndef AUTOBUILD
-#include "lang.h--"
-#endif
-
 //===================================================//
 //                                                   //
 //                       DATA                        //
