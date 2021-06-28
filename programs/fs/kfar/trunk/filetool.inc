@@ -3,7 +3,7 @@ delete_file_worker:
 ; out: eax=0 - OK, eax=1 - retry, eax=2 - skip, eax=-1 - cancel,
 ;      PF, ZF, CF and SF set accordingly to 'cmp eax,2' (or 'cmp al,2')
         push    ebx
-        push    70
+        push    SF_FILE
         pop     eax
         mov     ebx, delinfo
         int     0x40
@@ -51,7 +51,7 @@ delete_file:
 ; out: CF and ZF not set <=> cancel job ("ja cancel_label")
         pushad
         mov     [del_dir_stack_ptr], del_dir_stack
-        lea     esi, [ebp + panel1_dir - panel1_data]
+        lea     esi, [ebp + PanelData.dir]
         mov     edi, execdata
 @@:
         lodsb
@@ -99,7 +99,7 @@ delete_file:
         mov     [ebx+dirinfo.size-dirinfo], del_dir_query_size
         mov     [ebx+dirinfo.dirdata-dirinfo], del_dir_query_area
         mov     [ebx+dirinfo.name-dirinfo], execdata
-        push    70
+        push    SF_FILE
         pop     eax
         int     0x40
 ; if we get read error, the best available action is try to delete directory itself
@@ -214,7 +214,7 @@ makedir:
 ; create directory with name from CopyDestEditBuf+12
 ; destroys eax
         push    ebx
-        push    70
+        push    SF_FILE
         pop     eax
         mov     ebx, mkdirinfo
         int     0x40
@@ -352,7 +352,7 @@ copy_file_worker2:
         mov     ebx, eax
         jmp     .copyreadok
 .native:
-        push    70
+        push    SF_FILE
         pop     eax
         int     0x40
         test    eax, eax
@@ -390,7 +390,7 @@ copy_file_worker2:
         jnz     .copydone
 .copywrite:
         mov     ebx, writeinfo
-        push    70
+        push    SF_FILE
         pop     eax
         int     0x40
         test    eax, eax
@@ -472,7 +472,7 @@ copy_file_worker2:
         mov     ebx, attrinfo
         mov     [ebx+attrinfo.name-attrinfo], CopyDestEditBuf+12
         inc     dword [ebx]
-        push    70
+        push    SF_FILE
         pop     eax
         push    ebx
         int     0x40
@@ -520,7 +520,7 @@ copy_file_worker2:
         mov     ebx, delinfo
         push    dword [ebx+21]
         mov     dword [ebx+21], edi
-        push    70
+        push    SF_FILE
         pop     eax
         int     0x40
 ; ignore errors
@@ -537,7 +537,7 @@ copy_file:
         pushad
         mov     [copy_dir_stack_ptr], copy_dir_stack
         mov     [bNeedRestoreName], 0
-        lea     esi, [ebp + panel1_dir - panel1_data]
+        lea     esi, [ebp + PanelData.dir]
         mov     edi, execdata
 @@:
         lodsb
@@ -674,7 +674,7 @@ copy_file:
         mov     ebx, dword [copy_dir_query_area+4]
         jmp     @f
 .readfolder_native:
-        push    70
+        push    SF_FILE
         pop     eax
         int     0x40
 @@:
@@ -1325,7 +1325,7 @@ filesearch_OnKey:
         test    al, al
         jnz     @b
         mov     esi, ecx
-        lea     edi, [ebp + panel1_dir - panel1_data]
+        lea     edi, [ebp + PanelData.dir]
         push    esi edi
         call    strcmpi
         pop     edi esi
@@ -1335,11 +1335,11 @@ filesearch_OnKey:
         stosb
         test    al, al
         jnz     @b
-        and     [ebp + panel1_start - panel1_data], 0
-        and     [ebp + panel1_index - panel1_data], 0
+        and     [ebp + PanelData.start], 0
+        and     [ebp + PanelData.index], 0
 .goto.samedir:
         push    @f
-        push    [ebp + panel1_index - panel1_data]
+        push    [ebp + PanelData.index]
         jmp     panels_OnKey.ctrl_r.doread
 @@:
         pop     ebp
@@ -1353,7 +1353,7 @@ filesearch_OnKey:
         jmp     panels_OnKey.alt_f7.reinit
 .query:
         mov     esi, [active_panel]
-        cmp     [esi + panel1_hPlugin - panel1_data], 0
+        cmp     [esi + PanelData.hPlugin], 0
         jz      @f
         push    aCannotSearchOnPlugin
         mov     eax, esp
@@ -1365,14 +1365,14 @@ filesearch_OnKey:
         pop     eax
         jmp     .exit
 @@:
-        add     esi, panel1_dir - panel1_data
+        add     esi, PanelData.dir
         lea     edi, [ebp+filesearch_data.curdir]
 @@:
         lodsb
         stosb
         test    al, al
         jnz     @b
-        push    51
+        push    SF_CREATE_THREAD
         pop     eax
         push    1
         pop     ebx
@@ -1393,9 +1393,9 @@ filesearch_OnKey:
         mov     [ebp+filesearch_data.updating], 0
         mov     [ebp+filesearch_data.datachanged], 0
         xchg    eax, ecx
-        push    18
+        push    SF_SYSTEM
         pop     eax
-        push    21
+        push    SSF_GET_THREAD_SLOT
         pop     ebx
         int     40h
         mov     [ebp+filesearch_data.slot], eax
@@ -1532,14 +1532,14 @@ filesearch_wait_thread:
         jecxz   .secondary_thread_exited
 @@:
         mov     ebx, procinfo
-        push    9
+        push    SF_THREAD_INFO
         pop     eax
         int     40h
         cmp     word [ebx+50], 9
         jz      .secondary_thread_exited
         cmp     dword [ebx+30], edx
         jnz     .secondary_thread_exited
-        push    5
+        push    SF_SLEEP
         pop     eax
         push    1
         pop     ebx
@@ -1639,7 +1639,7 @@ filesearch_thread:
         mov     dword [ebx+12], search_dir_query_size
         lea     eax, [ebp+filesearch_data.dir_area]
         mov     [ebx+16], eax
-        push    70
+        push    SF_FILE
         pop     eax
         int     40h
         test    eax, eax
@@ -1862,7 +1862,7 @@ filesearch_thread:
         ret
 @@:
         push    eax ebx
-        push    5
+        push    SF_SLEEP
         pop     eax
         push    1
         pop     ebx
@@ -1886,7 +1886,7 @@ filesearch_test_file:
 .loop:
 .read_retry:
 	call	filesearch_thread.check_stop
-        push    70
+        push    SF_FILE
         pop     eax
         lea     ebx, [ebp+filesearch_data.fs.func]
         int     40h
@@ -2029,7 +2029,7 @@ open:
         stosd
         lea     eax, [ecx+_FILE.attr]
         stosd
-        push    70
+        push    SF_FILE
         pop     eax
         int     0x40
         test    eax, eax
@@ -2042,7 +2042,7 @@ open:
 .truncate:
         lea     ebx, [ecx+_FILE.fileinfo]
         mov     byte [ebx], 2
-        push    70
+        push    SF_FILE
         pop     eax
         int     0x40
         test    eax, eax
@@ -2288,7 +2288,7 @@ read:
 @@:
         ret
 .native:
-        push    70
+        push    SF_FILE
         pop     eax
         int     0x40
         test    eax, eax

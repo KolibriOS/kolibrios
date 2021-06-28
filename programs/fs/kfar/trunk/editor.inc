@@ -63,7 +63,7 @@ edit_block_header:
 end virtual
 
 edit_file:
-	mov	eax, [ebp + panel1_files - panel1_data]
+	mov	eax, [ebp + PanelData.files]
 	mov	ecx, [eax+ecx*4]
 	test	byte [ecx], 10h
 	jz	.file
@@ -107,7 +107,7 @@ edit_file:
 	pop	eax
 	ret
 .memok:
-	lea	esi, [ebp + panel1_dir - panel1_data]
+	lea	esi, [ebp + PanelData.dir]
 	push	eax
 	push	ecx
 	mov	ecx, eax
@@ -123,14 +123,14 @@ edit_file:
 	mov	[ebp + editor_data.memsize], ebx
 	mov	al, [EditEOLStyle]
 	mov	[ebp + editor_data.eol], al
-	mov	eax, dword [esi + panel1_hPlugin - panel1_dir]
+	mov	eax, dword [esi + panel1.hPlugin - panel1.dir]
 	mov	[ebp + editor_data.hPlugin], eax
 	test	eax, eax
 	jz	.nocopyhostname
 	lea	edi, [ebp + editor_data.hostname]
 	push	esi
-	mov	eax, dword [esi + panel1_parents - panel1_dir]
-	mov	esi, dword [esi + panel1_parents_sz - panel1_dir]
+	mov	eax, dword [esi + panel1.parents - panel1.dir]
+	mov	esi, dword [esi + panel1.parents_sz - panel1.dir]
 	add	esi, eax
 @@:
 	dec	esi
@@ -145,7 +145,7 @@ edit_file:
 	jnz	@b
 	pop	esi
 .nocopyhostname:
-	mov	eax, dword [esi + panel1_hFile - panel1_dir]
+	mov	eax, dword [esi + panel1.hFile - panel1.dir]
 	mov	[ebp + editor_data.hFile], eax
 	mov	[ebp + editor_data.encoding], encodings.cp866
 	xor	eax, eax

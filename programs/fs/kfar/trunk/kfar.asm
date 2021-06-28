@@ -16,6 +16,7 @@ min_height = 8
 max_height = 255
 
 include '../../../KOSfuncs.inc'
+include '../../../macros.inc'
 include 'lang.inc'
 include 'font.inc'
 include 'sort.inc'
@@ -26,6 +27,36 @@ include 'viewer.inc'
 include 'editor.inc'
 include 'tools.inc'
 include 'filetool.inc'
+
+struct PanelData
+left     dd      ?
+top      dd      ?
+width    dd      ?
+height   dd      ?
+index    dd      ?
+start    dd      ?
+colsz    dd      ?
+colst    dd      ?
+sortmode db      ?
+                rb      3
+nfa      dd      ?
+numfiles dd      ?
+files    dd      ?
+hPlugin  dd      ?
+hFile    dd      ?
+parents          dd      ?
+parents_sz       dd      ?
+parents_alloc    dd      ?
+colmode          dd      ?
+colwidths        rd      16+1
+total_num        dd      ?
+total_size       dq      ?
+selected_num     dd      ?
+selected_size    dq      ?
+;plugin_info:
+plugin_flags     dd      ?
+dir      rb      1024
+ends
 
 cursor_normal_size = (font_height*15+50)/100
 cursor_big_size = font_height
@@ -126,31 +157,31 @@ start:
         mov     ecx, ebx
         int     40h     ; set keyboard mode to scancodes
         mov     eax, 200
-        mov     [panel1_nfa], eax
-        mov     [panel2_nfa], eax
+        mov     [panel1.nfa], eax
+        mov     [panel2.nfa], eax
         mov     ecx, 200*4 + 32 + 200*304
         call    pgalloc
-        mov     [panel1_files], eax
+        mov     [panel1.files], eax
         call    pgalloc
-        mov     [panel2_files], eax
+        mov     [panel2.files], eax
         test    eax, eax
         jz      exit
         xor     eax, eax
-        cmp     [panel1_files], eax
+        cmp     [panel1.files], eax
         jz      exit
-        mov     [panel1_hPlugin], eax
-        mov     [panel1_parents], eax
-        mov     [panel1_parents_sz], eax
-        mov     [panel1_parents_alloc], eax
-        mov     [panel2_hPlugin], eax
-        mov     [panel2_parents], eax
-        mov     [panel2_parents_sz], eax
-        mov     [panel2_parents_alloc], eax
-        mov     [panel1_sortmode], al   ; sort by name
-        mov     [panel2_sortmode], al
+        mov     [panel1.hPlugin], eax
+        mov     [panel1.parents], eax
+        mov     [panel1.parents_sz], eax
+        mov     [panel1.parents_alloc], eax
+        mov     [panel2.hPlugin], eax
+        mov     [panel2.parents], eax
+        mov     [panel2.parents_sz], eax
+        mov     [panel2.parents_alloc], eax
+        mov     [panel1.sortmode], al   ; sort by name
+        mov     [panel2.sortmode], al
         mov     al, 2                   ; "средний" формат
-        mov     [panel1_colmode], eax
-        mov     [panel2_colmode], eax
+        mov     [panel1.colmode], eax
+        mov     [panel2.colmode], eax
         mov     [num_screens], 1
         mov     ecx, 0x1000
         call    pgalloc
@@ -195,7 +226,7 @@ start:
         jb      @f
         cmp     eax, 4
         ja      @f
-        mov     [panel1_colmode], eax
+        mov     [panel1.colmode], eax
 @@:
         push    2
         push    aRightViewMode
@@ -206,7 +237,7 @@ start:
         jb      @f
         cmp     eax, 4
         ja      @f
-        mov     [panel2_colmode], eax
+        mov     [panel2.colmode], eax
 @@:
         push    0
         push    aLeftSortMode
@@ -215,7 +246,7 @@ start:
         call    [ini.get_int]
         cmp     eax, 14
         jae     @f
-        mov     [panel1_sortmode], al
+        mov     [panel1.sortmode], al
 @@:
         push    0
         push    aRightSortMode
@@ -224,7 +255,7 @@ start:
         call    [ini.get_int]
         cmp     eax, 14
         jae     @f
-        mov     [panel2_sortmode], al
+        mov     [panel2.sortmode], al
 @@:
         push    nullstr
         push    512
@@ -365,14 +396,14 @@ start:
         shr     eax, 12
         mov     [EditDataSize], eax
         mov     esi, def_left_dir
-        mov     edi, panel1_dir
+        mov     edi, panel1.dir
 @@:
         lodsb
         stosb
         test    al, al
         jnz     @b
         mov     esi, def_right_dir
-        mov     edi, panel2_dir
+        mov     edi, panel2.dir
 @@:
         lodsb
         stosb
@@ -381,12 +412,12 @@ start:
         call    draw_keybar
         call    draw_cmdbar
         mov     [prev_dir], 0
-        mov     ebp, panel1_data
+        mov     ebp, panel1
         call    calc_colwidths
         call    read_folder
         call    draw_panel
         mov     [bSilentFolderMode], 1
-        mov     ebp, panel2_data
+        mov     ebp, panel2
         call    calc_colwidths
         call    read_folder
         call    draw_panel
@@ -427,23 +458,23 @@ exit:
 .unload_done:
         cmp     [ini.set_int], aIniSetInt
         jz      .nosave
-        push    [panel1_colmode]
+        push    [panel1.colmode]
         push    aLeftViewMode
         push    aPanels
         push    app_path
         call    [ini.set_int]
-        push    [panel2_colmode]
+        push    [panel2.colmode]
         push    aRightViewMode
         push    aPanels
         push    app_path
         call    [ini.set_int]
-        movzx   eax, [panel1_sortmode]
+        movzx   eax, [panel1.sortmode]
         push    eax
         push    aLeftSortMode
         push    aPanels
         push    app_path
         call    [ini.set_int]
-        movzx   eax, [panel2_sortmode]
+        movzx   eax, [panel2.sortmode]
         push    eax
         push    aRightSortMode
         push    aPanels
@@ -451,9 +482,9 @@ exit:
         call    [ini.set_int]
 .nosave:
 if CHECK_FOR_LEAKS
-        mov     ecx, [panel1_files]
+        mov     ecx, [panel1.files]
         call    pgfree
-        mov     ecx, [panel2_files]
+        mov     ecx, [panel2.files]
         call    pgfree
         mov     ecx, [screens]
         call    pgfree
@@ -477,9 +508,9 @@ if CHECK_FOR_LEAKS
         call    pgfree
         mov     ecx, [plugins]
         call    pgfree
-        mov     ecx, [panel1_parents]
+        mov     ecx, [panel1.parents]
         call    pgfree
-        mov     ecx, [panel2_parents]
+        mov     ecx, [panel2.parents]
         call    pgfree
 .nofreefs:
         mov     eax, [numallocatedregions]
@@ -781,7 +812,9 @@ key:
 
 align 16
 mouse:
-        mov     eax,SF_MOUSE_GET
+        cmp     dword[num_screens],1
+		jg      event
+		mov     eax,SF_MOUSE_GET
         mov     ebx,SSF_BUTTON_EXT
         int     0x40
         bt      eax,8
@@ -792,26 +825,70 @@ mouse:
         int     0x40
 		cmp     ax, word[skinh]
 		jl      event
-		shr     eax,16
+		sub     ax, word[skinh]
+		xor     dx,dx
+		mov     bx, font_height
+		div     bx
+		movzx   edx,ax
+		dec     edx ;верхняя рамка
+		dec     edx ;заголовки
+		shr     eax,16		
+
+        cmp     edx, 0
+		jl      .no_ch_pos
+		mov     ebx, [cur_height]
+		sub     ebx, 7
+		cmp     edx, ebx
+		jge     .no_ch_pos
+		
+		push    edx eax
+        mov     ecx, [cur_width]
+        imul    ecx, font_width/4
+		xor     dx,dx
+		sub     ax, 5 ;window border
+		div     cx
+		bt      ax, 0
+		jnc     @f
+		add     [esp+4], ebx ;если 2-й столбец
+@@:
+		pop     eax ;edx in stack
+		jmp @f
+.no_ch_pos:
+		push    -1 ;edx = -1 - no change position
+@@:
+
         mov     ebx, [cur_width]
         imul    ebx, font_width/2
 		add     ebx, 5 ;window border
 		cmp     eax,ebx
 		jg      @f
-		cmp     [active_panel], panel1_data
-		je      event
+		cmp     [active_panel], panel1
+		je      .move
 		jmp     .tab
 @@:
-		cmp     [active_panel], panel2_data
-		je      event
+		cmp     [active_panel], panel2
+		je      .move
 .tab:
-        xor     [active_panel], panel1_data xor panel2_data
+        xor     [active_panel], panel1 xor panel2
         call    draw_cmdbar
         mov     ebp, [active_panel]
-        xor     ebp, panel1_data xor panel2_data
+        xor     ebp, panel1 xor panel2
         call    draw_panel
+.move:
         mov     ebp, [active_panel]
-        call    draw_panel
+		pop     edx
+		mov     eax, [ebp + PanelData.numfiles]
+		add     edx, [ebp + PanelData.start] ;число прокрученых файлов
+		dec     eax
+		cmp     edx, eax
+		jle     @f
+		mov     edx, eax
+@@:
+        cmp     edx, 0
+		jl      @f
+		mov     [ebp + PanelData.index], edx
+@@:
+		call    draw_panel
         jmp     event
 
 align 16
@@ -1322,9 +1399,9 @@ panels_OnKey:
         call    HideDialogBox
 @@:
         mov     ebp, [active_panel]
-        mov     ecx, [ebp + panel1_index - panel1_data]
-        mov     edx, [ebp + panel1_start - panel1_data]
-        mov     ebx, [ebp + panel1_colst - panel1_data]
+        mov     ecx, [ebp + PanelData.index]
+        mov     edx, [ebp + PanelData.start]
+        mov     ebx, [ebp + PanelData.colst]
         add     ebx, edx
         mov     esi, panels_ctrlkeys
         call    process_ctrl_keys
@@ -1416,7 +1493,7 @@ panels_OnKey:
         and     dword [quick_search_buf + 4], 0
 @@:
         mov     ebx, QuickSearchDlg
-        mov     eax, [ebp + panel1_left - panel1_data]
+        mov     eax, [ebp + PanelData.left]
         add     eax, 10
         mov     edx, [cur_width]
         sub     edx, 21
@@ -1425,8 +1502,8 @@ panels_OnKey:
         mov     eax, edx
 @@:
         mov     [ebx + dlgtemplate.x], eax
-        mov     eax, [ebp + panel1_top - panel1_data]
-        add     eax, [ebp + panel1_height - panel1_data]
+        mov     eax, [ebp + PanelData.top]
+        add     eax, [ebp + PanelData.height]
         mov     edx, [cur_height]
         sub     edx, 2
         cmp     eax, edx
@@ -1445,17 +1522,17 @@ panels_OnKey:
 .up:
         jecxz   .ret
         dec     ecx
-        mov     [ebp + panel1_index - panel1_data], ecx
+        mov     [ebp + PanelData.index], ecx
         cmp     ecx, edx
         jae     .done_redraw
-        mov     [ebp + panel1_start - panel1_data], ecx
+        mov     [ebp + PanelData.start], ecx
 .done_redraw:
 ;        call    draw_panel
 ;        ret
         jmp     draw_panel
 .insert:
         lea     eax, [ecx*4]
-        add     eax, [ebp + panel1_files - panel1_data]
+        add     eax, [ebp + PanelData.files]
         mov     eax, [eax]
         cmp     word [eax+40], '..'
         jnz     @f
@@ -1467,42 +1544,42 @@ panels_OnKey:
         test    byte [eax+303], 1
         mov     eax, [eax+36]
         jnz     .insert.increase
-        sub     dword [ebp + panel1_selected_size - panel1_data], edx
-        sbb     dword [ebp + panel1_selected_size+4 - panel1_data], eax
-        dec     [ebp + panel1_selected_num - panel1_data]
+        sub     dword [ebp + PanelData.selected_size], edx
+        sbb     dword [ebp + PanelData.selected_size+4], eax
+        dec     [ebp + PanelData.selected_num]
         jmp     .insert.down
 .insert.increase:
-        add     dword [ebp + panel1_selected_size - panel1_data], edx
-        adc     dword [ebp + panel1_selected_size+4 - panel1_data], eax
-        inc     [ebp + panel1_selected_num - panel1_data]
+        add     dword [ebp + PanelData.selected_size], edx
+        adc     dword [ebp + PanelData.selected_size+4], eax
+        inc     [ebp + PanelData.selected_num]
 .insert.down:
         inc     ecx
-        cmp     ecx, [ebp + panel1_numfiles - panel1_data]
+        cmp     ecx, [ebp + PanelData.numfiles]
         jae     .done_redraw
         jmp     @f
 .down:
         inc     ecx
-        cmp     ecx, [ebp + panel1_numfiles - panel1_data]
+        cmp     ecx, [ebp + PanelData.numfiles]
         jae     .ret
 @@:
-        mov     [ebp + panel1_index - panel1_data], ecx
+        mov     [ebp + PanelData.index], ecx
         cmp     ecx, ebx
         jb      .done_redraw
-        sub     ecx, [ebp + panel1_colst - panel1_data]
+        sub     ecx, [ebp + PanelData.colst]
         inc     ecx
-        mov     [ebp + panel1_start - panel1_data], ecx
+        mov     [ebp + PanelData.start], ecx
         jmp     .done_redraw
 .left:
         test    ecx, ecx
         jnz     @f
         ret
 @@:
-        mov     eax, [ebp + panel1_colsz - panel1_data]
+        mov     eax, [ebp + PanelData.colsz]
         sub     ecx, eax
         jae     @f
         xor     ecx, ecx
 @@:
-        mov     [ebp + panel1_index - panel1_data], ecx
+        mov     [ebp + PanelData.index], ecx
 .finalize_left:
         cmp     ecx, edx
         jae     .done_redraw
@@ -1510,10 +1587,10 @@ panels_OnKey:
         jae     @f
         xor     edx, edx
 @@:
-        mov     [ebp + panel1_start - panel1_data], edx
+        mov     [ebp + PanelData.start], edx
         jmp     .done_redraw
 .pgup:
-        mov     eax, [ebp + panel1_colst - panel1_data]
+        mov     eax, [ebp + PanelData.colst]
         dec     eax
         jnz     @f
         inc     eax
@@ -1526,67 +1603,67 @@ panels_OnKey:
         jae     @f
         xor     ecx, ecx
 @@:
-        mov     [ebp + panel1_index - panel1_data], ecx
+        mov     [ebp + PanelData.index], ecx
         dec     ecx
         jmp     .finalize_left
 .right:
-        mov     eax, [ebp + panel1_colsz - panel1_data]
+        mov     eax, [ebp + PanelData.colsz]
         add     ecx, eax
-        cmp     ecx, [ebp + panel1_numfiles - panel1_data]
+        cmp     ecx, [ebp + PanelData.numfiles]
         jb      @f
-        mov     ecx, [ebp + panel1_numfiles - panel1_data]
+        mov     ecx, [ebp + PanelData.numfiles]
         dec     ecx
 @@:
-        mov     [ebp + panel1_index - panel1_data], ecx
+        mov     [ebp + PanelData.index], ecx
 .finalize_right:
         cmp     ecx, ebx
         jb      .done_redraw
         add     ebx, eax
-        cmp     ebx, [ebp + panel1_numfiles - panel1_data]
+        cmp     ebx, [ebp + PanelData.numfiles]
         jbe     @f
-        mov     ebx, [ebp + panel1_numfiles - panel1_data]
+        mov     ebx, [ebp + PanelData.numfiles]
 @@:
-        sub     ebx, [ebp + panel1_colst - panel1_data]
+        sub     ebx, [ebp + PanelData.colst]
         jae     @f
         xor     ebx, ebx
 @@:
-        mov     [ebp + panel1_start - panel1_data], ebx
+        mov     [ebp + PanelData.start], ebx
         jmp     .done_redraw
 .pgdn:
-        mov     eax, [ebp + panel1_colst - panel1_data]
+        mov     eax, [ebp + PanelData.colst]
         dec     eax
         jnz     @f
         inc     eax
 @@:
         add     ecx, eax
-        cmp     ecx, [ebp + panel1_numfiles - panel1_data]
+        cmp     ecx, [ebp + PanelData.numfiles]
         jb      @f
-        mov     ecx, [ebp + panel1_numfiles - panel1_data]
+        mov     ecx, [ebp + PanelData.numfiles]
         dec     ecx
 @@:
-        mov     [ebp + panel1_index - panel1_data], ecx
+        mov     [ebp + PanelData.index], ecx
         inc     ecx
         jmp     .finalize_right
 .tab:
-        xor     [active_panel], panel1_data xor panel2_data
+        xor     [active_panel], panel1 xor panel2
         call    draw_cmdbar
         call    draw_panel
         mov     ebp, [active_panel]
         jmp     .done_redraw
 .home:
-        and     [ebp + panel1_start - panel1_data], 0
-        and     [ebp + panel1_index - panel1_data], 0
+        and     [ebp + PanelData.start], 0
+        and     [ebp + PanelData.index], 0
         jmp     .done_redraw
 .end:
-        mov     eax, [ebp + panel1_numfiles - panel1_data]
+        mov     eax, [ebp + PanelData.numfiles]
         dec     eax
-        mov     [ebp + panel1_index - panel1_data], eax
+        mov     [ebp + PanelData.index], eax
         inc     eax
-        sub     eax, [ebp + panel1_colst - panel1_data]
+        sub     eax, [ebp + PanelData.colst]
         jae     @f
         xor     eax, eax
 @@:
-        mov     [ebp + panel1_start - panel1_data], eax
+        mov     [ebp + PanelData.start], eax
         jmp     .done_redraw
 .enter:
         cmp     [bQuickSearchMode], 0
@@ -1597,10 +1674,10 @@ panels_OnKey:
         test    byte [ecx], 10h
         jnz     .enter_folder
 ; todo: add <Enter> handling on plugin panel
-        cmp     [ebp + panel1_hPlugin - panel1_data], 0
+        cmp     [ebp + PanelData.hPlugin], 0
         jnz     .ret
 ; generate full file name
-        lea     esi, [ebp + panel1_dir - panel1_data]
+        lea     esi, [ebp + PanelData.dir]
         mov     edi, execdata
 @@:
         lodsb
@@ -1660,8 +1737,8 @@ panels_OnKey:
         js      .plugdone
         pushad
         push    execdata
-        push    [ebp+panel1_hFile-panel1_data]
-        push    [ebp+panel1_hPlugin-panel1_data]
+        push    [ebp+ PanelData.hFile]
+        push    [ebp+ PanelData.hPlugin]
         push    edi
         push    filedata_buffer
         call    get_curfile_folder_entry
@@ -1687,12 +1764,12 @@ panels_OnKey:
         jnz     @b
         sub     esi, execdata-9
 ; allocate esi bytes in buffer 'parents'
-        mov     ecx, [ebp + panel1_parents_sz - panel1_data]
+        mov     ecx, [ebp + PanelData.parents_sz]
         add     ecx, esi
-        cmp     ecx, [ebp + panel1_parents_alloc - panel1_data]
+        cmp     ecx, [ebp + PanelData.parents_alloc]
         jbe     .enter.norealloc
         push    edx
-        mov     edx, [ebp + panel1_parents - panel1_data]
+        mov     edx, [ebp + PanelData.parents]
         call    xpgrealloc
         pop     edx
         test    eax, eax
@@ -1701,34 +1778,34 @@ panels_OnKey:
         call    [edx+PluginInfo.ClosePlugin]
         ret
 @@:
-        mov     [ebp + panel1_parents - panel1_data], eax
+        mov     [ebp + PanelData.parents], eax
 .enter.norealloc:
-        mov     [ebp + panel1_parents_sz - panel1_data], ecx
+        mov     [ebp + PanelData.parents_sz], ecx
 ; save current state to the end of buffer
         sub     ecx, esi
-        add     ecx, [ebp + panel1_parents - panel1_data]
-        xchg    edx, [ebp + panel1_hPlugin - panel1_data]
+        add     ecx, [ebp + PanelData.parents]
+        xchg    edx, [ebp + PanelData.hPlugin]
         mov     [ecx], edx
-        xchg    edi, [ebp + panel1_hFile - panel1_data]
+        xchg    edi, [ebp + PanelData.hFile]
         mov     [ecx+4], edi
         mov     byte [ecx+8], 0
         lea     edi, [ecx+9]
         lea     ecx, [esi-9]
         mov     esi, execdata
         rep     movsb
-        mov     word [ebp + panel1_dir - panel1_data], '/'
-        mov     eax, [ebp + panel1_hPlugin - panel1_data]
-        lea     ebx, [ebp + panel1_plugin_info - panel1_data]
+        mov     word [ebp + PanelData.dir], '/'
+        mov     eax, [ebp + PanelData.hPlugin]
+        lea     ebx, [ebp + PanelData.plugin_flags] ;plugin_info
         and     dword [ebx], 0
         push    ebp
         push    ebx
-        push    [ebp + panel1_hFile - panel1_data]
+        push    [ebp + PanelData.hFile]
         call    [eax+PluginInfo.GetOpenPluginInfo]
         pop     ebp
         call    get_curfile_folder_entry
         mov     esi, ecx
         mov     edi, left_dotdot_entry
-        cmp     ebp, panel1_data
+        cmp     ebp, panel1
         jz      @f
         add     edi, right_dotdot_entry-left_dotdot_entry
 @@:
@@ -1773,7 +1850,7 @@ panels_OnKey:
         mov     [execptr], execdata
         and     [execparams], 0
 .dorun:
-        lea     esi, [ebp + panel1_dir - panel1_data]
+        lea     esi, [ebp + PanelData.dir]
         mov     edi, execdata
 @@:
         lodsb
@@ -1915,7 +1992,7 @@ panels_OnKey:
         jmp     .l2
 .bigfoldername2:
         mov     esi, prev_dir
-        lea     edi, [ebp + panel1_dir - panel1_data]
+        lea     edi, [ebp + PanelData.dir]
 @@:
         lodsb
         stosb
@@ -1932,7 +2009,7 @@ panels_OnKey:
         jz      .dotdot
 @@:
         push    esi
-        lea     esi, [ebp + panel1_dir - panel1_data]
+        lea     esi, [ebp + PanelData.dir]
         mov     edi, prev_dir
 @@:
         lodsb
@@ -1940,7 +2017,7 @@ panels_OnKey:
         test    al, al
         jnz     @b
         lea     edi, [esi-1]
-        lea     edx, [ebp + panel1_dir - panel1_data + 1024]
+        lea     edx, [ebp + PanelData.dir + 1024]
         cmp     esi, edx
         pop     esi
         jae     .bigfoldername
@@ -1955,21 +2032,21 @@ panels_OnKey:
         stosb
         test    al, al
         jnz     @b
-        mov     eax, [ebp + panel1_hPlugin - panel1_data]
+        mov     eax, [ebp + PanelData.hPlugin]
         test    eax, eax
         jz      .reread
         push    ebp
-        lea     esi, [ebp + panel1_dir - panel1_data]
+        lea     esi, [ebp + PanelData.dir]
         push    esi
         add     ecx, 40
         push    ecx
-        push    [ebp + panel1_hFile - panel1_data]
+        push    [ebp + PanelData.hFile]
         call    [eax+PluginInfo.SetFolder]
         pop     ebp
         test    al, al
         jnz     .reread
         mov     esi, prev_dir
-        lea     edi, [ebp + panel1_dir - panel1_data]
+        lea     edi, [ebp + PanelData.dir]
 @@:
         lodsb
         stosb
@@ -1983,10 +2060,10 @@ panels_OnKey:
         call    draw_cmdbar
         jmp     .done_redraw
 .dotdot:
-        lea     edi, [ebp + panel1_dir - panel1_data]
+        lea     edi, [ebp + PanelData.dir]
         cmp     word [edi], '/'
         jnz     .dotdot_noroot
-        cmp     [ebp + panel1_hPlugin - panel1_data], 0
+        cmp     [ebp + PanelData.hPlugin], 0
         jz      .retd
         call    close_plugin_panel
         jmp     .dotdot
@@ -2008,14 +2085,14 @@ panels_OnKey:
         push    dword [edi]
         mov     byte [edi], 0
         push    edi
-        mov     eax, [ebp + panel1_hPlugin - panel1_data]
+        mov     eax, [ebp + PanelData.hPlugin]
         test    eax, eax
         jz      .dotdot_native
         push    ebp
-        lea     esi, [ebp + panel1_dir - panel1_data]
+        lea     esi, [ebp + PanelData.dir]
         push    esi
         push    aDotDot
-        push    [ebp + panel1_hFile - panel1_data]
+        push    [ebp + PanelData.hFile]
         call    [eax+PluginInfo.SetFolder]
         pop     ebp
         test    al, al
@@ -2032,8 +2109,8 @@ panels_OnKey:
         jnz     @f
         inc     edi
 @@:
-        mov     edx, [ebp + panel1_files - panel1_data]
-        mov     ecx, [ebp + panel1_numfiles - panel1_data]
+        mov     edx, [ebp + PanelData.files]
+        mov     ecx, [ebp + PanelData.numfiles]
 .scanloop:
         mov     esi, [edx]
         add     esi, 40
@@ -2052,13 +2129,13 @@ panels_OnKey:
         loop    .scanloop
         jmp     .scandone
 .scanfound:
-        sub     edx, [ebp + panel1_files - panel1_data]
+        sub     edx, [ebp + PanelData.files]
         shr     edx, 2
-        mov     [ebp + panel1_index - panel1_data], edx
-        sub     edx, [ebp + panel1_colst - panel1_data]
+        mov     [ebp + PanelData.index], edx
+        sub     edx, [ebp + PanelData.colst]
         jb      .scandone
         inc     edx
-        mov     [ebp + panel1_start - panel1_data], edx
+        mov     [ebp + PanelData.start], edx
 .scandone:
         pop     edi
         mov     byte [edi], 0
@@ -2066,17 +2143,17 @@ panels_OnKey:
 .ctrl_f39:
         sub     al, 0x3D
         add     al, al
-        mov     ah, [ebp + panel1_sortmode - panel1_data]
+        mov     ah, [ebp + PanelData.sortmode]
         and     ah, 0xFE
         cmp     al, ah
         jnz     @f
-        and     [ebp + panel1_sortmode - panel1_data], 1
-        or      al, [ebp + panel1_sortmode - panel1_data]
+        and     [ebp + PanelData.sortmode], 1
+        or      al, [ebp + PanelData.sortmode]
         xor     al, 1
 @@:
-        mov     [ebp + panel1_sortmode - panel1_data], al
-        mov     eax, [ebp + panel1_index - panel1_data]
-        mov     ecx, [ebp + panel1_files - panel1_data]
+        mov     [ebp + PanelData.sortmode], al
+        mov     eax, [ebp + PanelData.index]
+        mov     ecx, [ebp + PanelData.files]
         push    dword [ecx+eax*4]
         push    ecx
         call    sort_files
@@ -2086,24 +2163,24 @@ panels_OnKey:
         repnz   scasd
         not     ecx
         dec     ecx
-        mov     [ebp + panel1_index - panel1_data], ecx
-        sub     ecx, [ebp + panel1_start - panel1_data]
+        mov     [ebp + PanelData.index], ecx
+        sub     ecx, [ebp + PanelData.start]
         jb      .less_start
-        sub     ecx, [ebp + panel1_colst - panel1_data]
+        sub     ecx, [ebp + PanelData.colst]
         jae     .gr_end
 @@:     jmp     .done_redraw
 .less_start:
-        add     [ebp + panel1_start - panel1_data], ecx
+        add     [ebp + PanelData.start], ecx
         jmp     @b
 .gr_end:
         inc     ecx
-        add     [ebp + panel1_start - panel1_data], ecx
+        add     [ebp + PanelData.start], ecx
         jmp     @b
 .alt_f12:
-        mov     ebp, panel1_data
+        mov     ebp, panel1
         cmp     al, 0x3B
         jz      @f
-        mov     ebp, panel2_data
+        mov     ebp, panel2
 @@:
 ; get drives list
         mov     ebx, dirinfo
@@ -2189,10 +2266,10 @@ panels_OnKey:
         jmp     @b
 @@:
         mov     ecx, edx
-        lea     edi, [ebp + panel1_dir - panel1_data]
-        cmp     [ebp + panel1_hPlugin - panel1_data], 0
+        lea     edi, [ebp + PanelData.dir]
+        cmp     [ebp + PanelData.hPlugin], 0
         jz      .find_cur_drive_loop
-        mov     edi, [ebp + panel1_parents - panel1_data]
+        mov     edi, [ebp + PanelData.parents]
         add     edi, 8
 .find_cur_drive_loop:
         push    edi
@@ -2218,15 +2295,15 @@ panels_OnKey:
         push    1
         push    aDrive
         push    ecx
-        mov     eax, [ebp + panel1_height - panel1_data]
+        mov     eax, [ebp + PanelData.height]
         sub     eax, 2
         jae     @f
         add     eax, 2
 @@:
         push    eax
-        push    [ebp + panel1_width - panel1_data]
-        push    [ebp + panel1_top - panel1_data]
-        push    [ebp + panel1_left - panel1_data]
+        push    [ebp + PanelData.width]
+        push    [ebp + PanelData.top]
+        push    [ebp + PanelData.left]
         call    menu_centered_in
         cmp     eax, -1
         jnz     @f
@@ -2238,7 +2315,7 @@ panels_OnKey:
         push    edx
         call    close_plugin_panels
         pop     edx
-        lea     edi, [ebp + panel1_dir - panel1_data]
+        lea     edi, [ebp + PanelData.dir]
         push    edi
         mov     esi, edi
         mov     edi, prev_dir
@@ -2258,12 +2335,12 @@ panels_OnKey:
         jmp     .done_redraw
 .shift_f5:
 ; todo: copy to plugin panel
-        cmp     [ebp + panel1_hPlugin - panel1_data], 0
+        cmp     [ebp + PanelData.hPlugin], 0
         jz      @f
         ret
 @@:
         mov     esi, ebp
-        cmp     [ebp + panel1_selected_num - panel1_data], 0
+        cmp     [ebp + PanelData.selected_num], 0
         jnz     .f5_2
         call    get_curfile_folder_entry
         lea     esi, [ecx+40]
@@ -2283,12 +2360,12 @@ panels_OnKey:
 .f5:
 ; todo: copy to plugin panel
         mov     esi, ebp
-        xor     esi, panel1_data xor panel2_data
-        cmp     [esi + panel1_hPlugin - panel1_data], 0
+        xor     esi, panel1 xor panel2
+        cmp     [esi + PanelData.hPlugin], 0
         jz      .f5_2
         ret
 .f5_2:
-        add     esi, panel1_dir - panel1_data
+        add     esi, PanelData.dir
         mov     edi, CopyDestEditBuf
         mov     eax, CopyDestEditBuf.length
         stosd
@@ -2308,12 +2385,12 @@ panels_OnKey:
         mov     al, '/'
         stosb
 .f5_common:
-        mov     eax, [ebp + panel1_hPlugin - panel1_data]
+        mov     eax, [ebp + PanelData.hPlugin]
         mov     [source_hModule], eax
-        mov     eax, [ebp + panel1_hFile - panel1_data]
+        mov     eax, [ebp + PanelData.hFile]
         mov     [source_hPlugin], eax
         mov     eax, left_dotdot_entry
-        cmp     ebp, panel1_data
+        cmp     ebp, panel1
         jz      @f
         add     eax, right_dotdot_entry-left_dotdot_entry
 @@:
@@ -2330,7 +2407,7 @@ panels_OnKey:
         stosb
         jmp     @b
 @@:
-        mov     eax, [ebp + panel1_selected_num - panel1_data]
+        mov     eax, [ebp + PanelData.selected_num]
         test    eax, eax
         jz      .f5_noselected1
         mov     ebx, eax
@@ -2461,7 +2538,7 @@ end if
         jz      .copy_absolute_path
         push    esi
         push    edi
-        lea     edi, [ebp + panel1_dir - panel1_data]
+        lea     edi, [ebp + PanelData.dir]
         or      ecx, -1
         xor     eax, eax
         repnz   scasb
@@ -2484,7 +2561,7 @@ end if
         rep     movsb
         cld
         pop     edi
-        lea     esi, [ebp + panel1_dir - panel1_data]
+        lea     esi, [ebp + PanelData.dir]
         push    edi
         mov     ecx, edx
         rep     movsb
@@ -2495,10 +2572,10 @@ end if
 ; Последний из элементов может быть как файлом, так и папкой;
 ; форсируем папку в случае, если хотя бы один из источников является папкой
         xor     edx, edx
-        cmp     [ebp + panel1_selected_num - panel1_data], 0
+        cmp     [ebp + PanelData.selected_num], 0
         jz      .f5_noselected2
-        mov     ecx, [ebp + panel1_numfiles - panel1_data]
-        mov     edi, [ebp + panel1_files - panel1_data]
+        mov     ecx, [ebp + PanelData.numfiles]
+        mov     edi, [ebp + PanelData.files]
 .scanselected2:
         mov     eax, [edi]
         add     edi, 4
@@ -2620,7 +2697,7 @@ end if
         jz      @f
         cmp     [bEndSlash], 0
         jnz     @f
-        cmp     [ebp + panel1_selected_num - panel1_data], 0
+        cmp     [ebp + PanelData.selected_num], 0
         jnz     @f
         test    byte [eax], 10h
         jz      @f
@@ -2631,20 +2708,20 @@ end if
         mov     [copy_bSkipAll], 0
         mov     [copy_bSkipAll2], 0
         mov     [copy_bSkipAll3], 0
-        test    [ebp + panel1_plugin_flags - panel1_data], 2
+        test    [ebp + PanelData.plugin_flags], 2
         jnz     .copy_GetFiles
-        cmp     [ebp + panel1_selected_num - panel1_data], 0
+        cmp     [ebp + PanelData.selected_num], 0
         jnz     .f5_selected3
         call    copy_file
 .copydone:
         push    ebp
         call    .ctrl_r
         pop     ebp
-        xor     ebp, panel1_data xor panel2_data
+        xor     ebp, panel1 xor panel2
         jmp     .ctrl_r
 .f5_selected3:
-        mov     ecx, [ebp + panel1_numfiles - panel1_data]
-        mov     esi, [ebp + panel1_files - panel1_data]
+        mov     ecx, [ebp + PanelData.numfiles]
+        mov     esi, [ebp + PanelData.files]
 .f5_selected_copyloop:
         lodsd
         test    byte [eax+303], 1
@@ -2666,7 +2743,7 @@ end if
 .f5_multiple_cancel:
         jmp     .copydone
 .copy_GetFiles:
-        mov     ecx, [ebp + panel1_selected_num - panel1_data]
+        mov     ecx, [ebp + PanelData.selected_num]
         cmp     ecx, 1
         adc     ecx, 0
         shl     ecx, 2
@@ -2681,14 +2758,14 @@ end if
         push    eax             ; items
         shr     ecx, 2
         push    ecx             ; NumItems
-        push    [ebp + panel1_hFile - panel1_data]
+        push    [ebp + PanelData.hFile]
         mov     edi, eax
         call    get_curfile_folder_entry
         mov     [edi], ecx
-        cmp     [ebp + panel1_selected_num - panel1_data], 0
+        cmp     [ebp + PanelData.selected_num], 0
         jz      .cgf1
-        mov     esi, [ebp + panel1_files - panel1_data]
-        mov     ecx, [ebp + panel1_numfiles - panel1_data]
+        mov     esi, [ebp + PanelData.files]
+        mov     ecx, [ebp + PanelData.numfiles]
 .cgf0:
         lodsd
         test    byte [eax+303], 1
@@ -2697,18 +2774,18 @@ end if
 @@:
         loop    .cgf0
 .cgf1:
-        mov     eax, [ebp + panel1_hPlugin - panel1_data]
+        mov     eax, [ebp + PanelData.hPlugin]
         call    [eax+PluginInfo.GetFiles]
         pop     ecx ebp
         call    pgfree
         jmp     .copydone
 
 .f3:
-        mov     eax, [ebp + panel1_files - panel1_data]
+        mov     eax, [ebp + PanelData.files]
         mov     ecx, [eax+ecx*4]
         test    byte [ecx], 10h
         jnz     .ret2
-        lea     esi, [ebp + panel1_dir - panel1_data]
+        lea     esi, [ebp + PanelData.dir]
         xor     eax, eax
         call    view_file
 .ret2:
@@ -2719,7 +2796,7 @@ end if
 .f8_has_selected:
         mov     edi, saved_file_name+511
         mov     byte [edi], 0
-        mov     eax, [ebp + panel1_selected_num - panel1_data]
+        mov     eax, [ebp + PanelData.selected_num]
 if lang eq ru
         cmp     eax, 1
         jz      @f
@@ -2767,9 +2844,9 @@ end if
         test    eax, eax
         jnz     .ret2
         mov     [del_bSkipAll], 0
-        mov     ecx, [ebp + panel1_numfiles - panel1_data]
+        mov     ecx, [ebp + PanelData.numfiles]
         jecxz   .ret2
-        mov     esi, [ebp + panel1_files - panel1_data]
+        mov     esi, [ebp + PanelData.files]
 .f8_loop:
         lodsd
         test    byte [eax+303], 1
@@ -2782,11 +2859,11 @@ end if
         jmp     .copydone
 .f8:
 ; todo: delete files from plugin panel
-        cmp     [ebp + panel1_hPlugin - panel1_data], 0
+        cmp     [ebp + PanelData.hPlugin], 0
         jz      @f
         ret
 @@:
-        cmp     [ebp + panel1_selected_num - panel1_data], 0
+        cmp     [ebp + PanelData.selected_num], 0
         jnz     .f8_has_selected
         call    get_curfile_folder_entry
         cmp     word [ecx+40], '..'
@@ -2837,7 +2914,7 @@ end if
 ; Rescan panel
 ;       call    read_folder
 ;       jmp     .done_redraw
-        mov     eax, [ebp + panel1_index - panel1_data]
+        mov     eax, [ebp + PanelData.index]
         push    eax
         call    get_curfile_name
         mov     esi, ecx
@@ -2848,55 +2925,55 @@ end if
         test    al, al
         jnz     @b
 .ctrl_r.doread:
-        push    [ebp + panel1_start - panel1_data]
+        push    [ebp + PanelData.start]
         call    read_folder
-        pop     [ebp + panel1_start - panel1_data]
-        pop     [ebp + panel1_index - panel1_data]
+        pop     [ebp + PanelData.start]
+        pop     [ebp + PanelData.index]
         or      eax, -1
 @@:
         inc     eax
-        cmp     eax, [ebp + panel1_numfiles - panel1_data]
+        cmp     eax, [ebp + PanelData.numfiles]
         jae     .ctrl_r.notfound
-        mov     ecx, [ebp + panel1_files - panel1_data]
+        mov     ecx, [ebp + PanelData.files]
         mov     esi, [ecx+eax*4]
         add     esi, 40
         mov     edi, saved_file_name
         call    strcmpi
         jnz     @b
 .ctrl_r.found:
-        mov     [ebp + panel1_index - panel1_data], eax
+        mov     [ebp + PanelData.index], eax
 .ctrl_r.notfound:
-        mov     eax, [ebp + panel1_numfiles - panel1_data]
+        mov     eax, [ebp + PanelData.numfiles]
         dec     eax
-        cmp     [ebp + panel1_index - panel1_data], eax
+        cmp     [ebp + PanelData.index], eax
         jbe     @f
-        mov     [ebp + panel1_index - panel1_data], eax
+        mov     [ebp + PanelData.index], eax
 @@:
-        mov     eax, [ebp + panel1_index - panel1_data]
-        cmp     [ebp + panel1_start - panel1_data], eax
+        mov     eax, [ebp + PanelData.index]
+        cmp     [ebp + PanelData.start], eax
         jbe     @f
-        mov     [ebp + panel1_start - panel1_data], eax
+        mov     [ebp + PanelData.start], eax
 @@:
         inc     eax
-        sub     eax, [ebp + panel1_colst - panel1_data]
+        sub     eax, [ebp + PanelData.colst]
         jae     @f
         xor     eax, eax
 @@:
-        cmp     [ebp + panel1_start - panel1_data], eax
+        cmp     [ebp + PanelData.start], eax
         jae     @f
-        mov     [ebp + panel1_start - panel1_data], eax
+        mov     [ebp + PanelData.start], eax
 @@:
-        mov     eax, [ebp + panel1_numfiles - panel1_data]
-        sub     eax, [ebp + panel1_colst - panel1_data]
+        mov     eax, [ebp + PanelData.numfiles]
+        sub     eax, [ebp + PanelData.colst]
         jbe     @f
-        cmp     [ebp + panel1_start - panel1_data], eax
+        cmp     [ebp + PanelData.start], eax
         jbe     @f
-        mov     [ebp + panel1_start - panel1_data], eax
+        mov     [ebp + PanelData.start], eax
 @@:
         jmp     .done_redraw
 .menu:
 ; todo: context menu for plugin panel
-        cmp     [ebp + panel1_hPlugin - panel1_data], 0
+        cmp     [ebp + PanelData.hPlugin], 0
         jz      @f
         ret
 @@:
@@ -3122,7 +3199,7 @@ end if
         cmp     byte [esi], '/'
         jz      .mkdir_absolute_path
         push    esi
-        lea     edi, [ebp + panel1_dir - panel1_data]
+        lea     edi, [ebp + PanelData.dir]
         or      ecx, -1
         xor     eax, eax
         repnz   scasb
@@ -3151,7 +3228,7 @@ end if
         rep     movsb
         cld
         pop     edi
-        lea     esi, [ebp + panel1_dir - panel1_data]
+        lea     esi, [ebp + PanelData.dir]
         push    edi
         mov     ecx, edx
         rep     movsb
@@ -3164,7 +3241,7 @@ end if
         jmp     .copydone
 .change_mode:
         dec     eax
-        mov     [ebp + panel1_colmode - panel1_data], eax
+        mov     [ebp + PanelData.colmode], eax
         call    calc_colwidths
         jmp     draw_panel
 .quick_jump:
@@ -3180,7 +3257,7 @@ end if
 @@:
         push    eax
         call    close_plugin_panels
-        lea     esi, [ebp + panel1_dir - panel1_data]
+        lea     esi, [ebp + PanelData.dir]
         push    esi
         mov     edi, prev_dir
 @@:
@@ -3228,8 +3305,8 @@ end if
         test    al, al
         jnz     @b
 @@:
-        mov     ecx, [ebp + panel1_numfiles - panel1_data]
-        mov     ebx, [ebp + panel1_files - panel1_data]
+        mov     ecx, [ebp + PanelData.numfiles]
+        mov     ebx, [ebp + PanelData.files]
         jecxz   .noselect
         mov     eax, [ebx]
         cmp     word [eax+40], '..'
@@ -3261,19 +3338,19 @@ end if
         test    byte [esi+303], 1
         jz      @f
         and     byte [esi+303], not 1
-        sub     dword [ebp + panel1_selected_size - panel1_data], eax
+        sub     dword [ebp + PanelData.selected_size], eax
         mov     eax, [esi+36]
-        sbb     dword [ebp + panel1_selected_size+4 - panel1_data], eax
-        dec     dword [ebp + panel1_selected_num - panel1_data]
+        sbb     dword [ebp + PanelData.selected_size+4], eax
+        dec     dword [ebp + PanelData.selected_num]
         jmp     @f
 .doselect:
         test    byte [esi+303], 1
         jnz     @f
         or      byte [esi+303], 1
-        add     dword [ebp + panel1_selected_size - panel1_data], eax
+        add     dword [ebp + PanelData.selected_size], eax
         mov     eax, [esi+36]
-        adc     dword [ebp + panel1_selected_size+4 - panel1_data], eax
-        inc     dword [ebp + panel1_selected_num - panel1_data]
+        adc     dword [ebp + PanelData.selected_size+4], eax
+        inc     dword [ebp + PanelData.selected_num]
 @@:
         add     ebx, 4
         dec     ecx
@@ -3281,8 +3358,8 @@ end if
         pop     eax
         jmp     .done_redraw
 .greyasterisk:
-        mov     ecx, [ebp + panel1_numfiles - panel1_data]
-        mov     esi, [ebp + panel1_files - panel1_data]
+        mov     ecx, [ebp + PanelData.numfiles]
+        mov     esi, [ebp + PanelData.files]
         jecxz   .galoopdone
 .galoop:
         lodsd
@@ -3295,16 +3372,16 @@ end if
         mov     edx, [eax+32]
         test    byte [eax+303], 1
         jz      .gadel
-        add     dword [ebp + panel1_selected_size - panel1_data], edx
+        add     dword [ebp + PanelData.selected_size], edx
         mov     edx, [eax+36]
-        adc     dword [ebp + panel1_selected_size+4 - panel1_data], edx
-        inc     dword [ebp + panel1_selected_num - panel1_data]
+        adc     dword [ebp + PanelData.selected_size+4], edx
+        inc     dword [ebp + PanelData.selected_num]
         jmp     .gacont
 .gadel:
-        sub     dword [ebp + panel1_selected_size - panel1_data], edx
+        sub     dword [ebp + PanelData.selected_size], edx
         mov     edx, [eax+36]
-        sbb     dword [ebp + panel1_selected_size+4 - panel1_data], edx
-        dec     dword [ebp + panel1_selected_num - panel1_data]
+        sbb     dword [ebp + PanelData.selected_size+4], edx
+        dec     dword [ebp + PanelData.selected_num]
 .gacont:
         loop    .galoop
 .galoopdone:
@@ -3313,20 +3390,20 @@ end if
 @@:
         call    close_plugin_panel
 close_plugin_panels:
-        cmp     [ebp + panel1_hPlugin - panel1_data], 0
+        cmp     [ebp + PanelData.hPlugin], 0
         jnz     @b
         ret
 
 close_plugin_panel:
 ; close plugin and restore old directory
-        mov     esi, [ebp + panel1_parents - panel1_data]
-        add     esi, [ebp + panel1_parents_sz - panel1_data]
+        mov     esi, [ebp + PanelData.parents]
+        add     esi, [ebp + PanelData.parents_sz]
 @@:
         dec     esi
         cmp     byte [esi-1], 0
         jnz     @b
         push    esi
-        lea     edi, [ebp + panel1_dir - panel1_data]
+        lea     edi, [ebp + PanelData.dir]
 @@:
         lodsb
         stosb
@@ -3336,19 +3413,19 @@ close_plugin_panel:
         sub     esi, 9
         mov     edx, [esi]      ; hPlugin
         mov     ebx, [esi+4]    ; hFile
-        sub     esi, [ebp + panel1_parents - panel1_data]
-        mov     [ebp + panel1_parents_sz - panel1_data], esi
-        xchg    edx, [ebp + panel1_hPlugin - panel1_data]
-        xchg    ebx, [ebp + panel1_hFile - panel1_data]
+        sub     esi, [ebp + PanelData.parents]
+        mov     [ebp + PanelData.parents_sz], esi
+        xchg    edx, [ebp + PanelData.hPlugin]
+        xchg    ebx, [ebp + PanelData.hFile]
         push    edx ebx
-        lea     ebx, [ebp + panel1_plugin_info - panel1_data]
+        lea     ebx, [ebp + PanelData.plugin_flags] ;plugin_info
         and     dword [ebx], 0
-        mov     eax, [ebp + panel1_hPlugin - panel1_data]
+        mov     eax, [ebp + PanelData.hPlugin]
         test    eax, eax
         jz      @f
         push    ebp
         push    ebx
-        push    [ebp + panel1_hFile - panel1_data]
+        push    [ebp + PanelData.hFile]
         call    [eax+PluginInfo.GetOpenPluginInfo]
         pop     ebp
 @@:
@@ -3375,25 +3452,25 @@ close_handle_if_unused:
 
 panels_IsHandleUsed:
 ; edx=hPlugin, ebx=hFile
-        mov     ebp, panel1_data
+        mov     ebp, panel1
         call    .1
         jz      .ret
-        mov     ebp, panel2_data
+        mov     ebp, panel2
 
 .1:
-        cmp     edx, [ebp+panel1_hPlugin-panel1_data]
+        cmp     edx, [ebp+ PanelData.hPlugin]
         jnz     @f
-        cmp     ebx, [ebp+panel1_hFile-panel1_data]
+        cmp     ebx, [ebp+ PanelData.hFile]
         jz      .ret
 @@:
-        mov     esi, [ebp + panel1_parents_sz - panel1_data]
+        mov     esi, [ebp + PanelData.parents_sz]
         test    esi, esi
         jnz     @f
         inc     esi
 .ret:
         ret
 @@:
-        add     esi, [ebp + panel1_parents - panel1_data]
+        add     esi, [ebp + PanelData.parents]
 @@:
         dec     esi
         cmp     byte [esi-1], 0
@@ -3404,16 +3481,16 @@ panels_IsHandleUsed:
         mov     ebx, [esi+4]    ; hFile
         jz      .ret
 .no:
-        cmp     esi, [ebp + panel1_parents - panel1_data]
+        cmp     esi, [ebp + PanelData.parents]
         jnz     @b
         inc     esi
         ret
 
 panels_OnExit:
 ; close plugin panels
-        mov     ebp, panel1_data
+        mov     ebp, panel1
         call    close_plugin_panels
-        mov     ebp, panel2_data
+        mov     ebp, panel2
         call    close_plugin_panels
         ret
 
@@ -3421,10 +3498,10 @@ panels_OnRedraw:
         or      [cursor_x], -1
         or      [cursor_y], -1
         call    draw_cmdbar
-        mov     ebp, panel1_data
+        mov     ebp, panel1
         call    calc_colwidths
         call    draw_panel
-        mov     ebp, panel2_data
+        mov     ebp, panel2
         call    calc_colwidths
         call    draw_panel
         ret
@@ -3445,28 +3522,28 @@ init_console:
         mov     edi, eax
         mov     ax, 0720h
         rep     stosw
-        mov     [panel1_left], ecx
-        mov     [panel1_top], ecx
-        mov     [panel2_top], ecx
+        mov     [panel1.left], ecx
+        mov     [panel1.top], ecx
+        mov     [panel2.top], ecx
         mov     eax, [cur_width]
         inc     eax
         shr     eax, 1
-        mov     [panel1_width], eax
-        mov     [panel2_left], eax
+        mov     [panel1.width], eax
+        mov     [panel2.left], eax
         sub     eax, [cur_width]
         neg     eax
-        mov     [panel2_width], eax
+        mov     [panel2.width], eax
         mov     eax, [cur_height]
         dec     eax
         dec     eax
-        mov     [panel1_height], eax
-        mov     [panel2_height], eax
+        mov     [panel1.height], eax
+        mov     [panel2.height], eax
         ret
 
 get_curfile_folder_entry:
-        mov     ecx, [ebp + panel1_index - panel1_data]
+        mov     ecx, [ebp + PanelData.index]
         shl     ecx, 2
-        add     ecx, [ebp + panel1_files - panel1_data]
+        add     ecx, [ebp + PanelData.files]
         mov     ecx, [ecx]
         ret
 get_curfile_name:
@@ -3475,13 +3552,13 @@ get_curfile_name:
         ret
 
 quick_find:
-        cmp     [ebp + panel1_numfiles - panel1_data], 0
+        cmp     [ebp + PanelData.numfiles], 0
         jz      .nof
-        mov     ecx, [ebp + panel1_index - panel1_data]
+        mov     ecx, [ebp + PanelData.index]
 .scanloop:
         mov     edi, ecx
         shl     edi, 2
-        add     edi, [ebp + panel1_files - panel1_data]
+        add     edi, [ebp + PanelData.files]
         mov     edi, [edi]
         add     edi, 40
         mov     esi, quick_search_buf + 12
@@ -3495,27 +3572,27 @@ quick_find:
         jmp     @b
 .no:
         inc     ecx
-        cmp     ecx, [ebp + panel1_numfiles - panel1_data]
+        cmp     ecx, [ebp + PanelData.numfiles]
         jb      @f
         xor     ecx, ecx
 @@:
-        cmp     ecx, [ebp + panel1_index - panel1_data]
+        cmp     ecx, [ebp + PanelData.index]
         jnz     .scanloop
 .nof:
         stc
         ret
 .ok:
-        cmp     ecx, [ebp + panel1_index - panel1_data]
+        cmp     ecx, [ebp + PanelData.index]
         jz      .ret
-        mov     [ebp + panel1_index - panel1_data], ecx
-        mov     eax, [ebp + panel1_height - panel1_data]
+        mov     [ebp + PanelData.index], ecx
+        mov     eax, [ebp + PanelData.height]
         shr     eax, 1
         sub     ecx, eax
         jae     @f
         xor     ecx, ecx
 @@:
-        mov     eax, [ebp + panel1_numfiles - panel1_data]
-        sub     eax, [ebp + panel1_colst - panel1_data]
+        mov     eax, [ebp + PanelData.numfiles]
+        sub     eax, [ebp + PanelData.colst]
         jnc     @f
         xor     eax, eax
         xor     ecx, ecx
@@ -3524,33 +3601,33 @@ quick_find:
         jb      @f
         mov     ecx, eax
 @@:
-        mov     [ebp + panel1_start - panel1_data], ecx
+        mov     [ebp + PanelData.start], ecx
         call    draw_panel
 .ret:
         clc
         ret
 
 quick_find_next:
-        cmp     [ebp + panel1_numfiles - panel1_data], 0
+        cmp     [ebp + PanelData.numfiles], 0
         jz      quick_find.nof
-        mov     ecx, [ebp + panel1_index - panel1_data]
+        mov     ecx, [ebp + PanelData.index]
         jmp     quick_find.no
 
 quick_find_prev:
-        cmp     [ebp + panel1_numfiles - panel1_data], 0
+        cmp     [ebp + PanelData.numfiles], 0
         jz      quick_find.nof
-        mov     ecx, [ebp + panel1_index - panel1_data]
+        mov     ecx, [ebp + PanelData.index]
 .scanloop:
         dec     ecx
         jns     @f
-        mov     ecx, [ebp + panel1_numfiles - panel1_data]
+        mov     ecx, [ebp + PanelData.numfiles]
         dec     ecx
 @@:
-        cmp     ecx, [ebp + panel1_index - panel1_data]
+        cmp     ecx, [ebp + PanelData.index]
         jz      quick_find.nof
         mov     edi, ecx
         shl     edi, 2
-        add     edi, [ebp + panel1_files - panel1_data]
+        add     edi, [ebp + PanelData.files]
         mov     edi, [edi]
         add     edi, 40
         mov     esi, quick_search_buf + 12
@@ -3585,10 +3662,10 @@ end if
         mov     ebp, [active_panel]
         push    3
         pop     edx
-        cmp     [ebp + panel1_hPlugin - panel1_data], 0
+        cmp     [ebp + PanelData.hPlugin], 0
         jz      .native
-        mov     esi, [ebp + panel1_parents - panel1_data]
-        add     esi, [ebp + panel1_parents_sz - panel1_data]
+        mov     esi, [ebp + PanelData.parents]
+        add     esi, [ebp + PanelData.parents_sz]
 @@:
         dec     esi
         cmp     byte [esi-1], 0
@@ -3609,14 +3686,14 @@ end if
         sub     [esp+4], edi
         add     [esp], edi
         pop     edi ecx
-        lea     esi, [ebp + panel1_dir - panel1_data]
+        lea     esi, [ebp + PanelData.dir]
         cmp     byte [esi+1], 0
         jnz     @f
         inc     esi
 @@:
         jmp     .main
 .native:
-        lea     esi, [ebp + panel1_dir - panel1_data]
+        lea     esi, [ebp + PanelData.dir]
 @@:
         lodsb
         stosb
@@ -3644,9 +3721,9 @@ end if
         sub     ebx, [esp]
         dec     esi
         push    esi
-        mov     esi, [ebp + panel1_index - panel1_data]
+        mov     esi, [ebp + PanelData.index]
         shl     esi, 2
-        add     esi, [ebp + panel1_files - panel1_data]
+        add     esi, [ebp + PanelData.files]
         mov     esi, [esi]
         add     esi, 40
         push    esi
@@ -3993,6 +4070,9 @@ get_console_ptr:
         pop     edx
         ret
 
+;description:
+; draw keys F1-F10
+align 16
 draw_keybar:
         pushad
         xor     eax, eax
@@ -4107,7 +4187,7 @@ draw_keybar:
 
 draw_cmdbar:
         mov     esi, [active_panel]
-        add     esi, panel1_dir - panel1_data
+        add     esi, PanelData.dir
         xor     eax, eax
         mov     edx, [cur_height]
         dec     edx
@@ -4170,7 +4250,7 @@ draw_border:
 
 calc_colwidths:
 ; in: ebp->panel data
-        imul    esi, [ebp + panel1_colmode - panel1_data], PanelMode.size
+        imul    esi, [ebp + PanelData.colmode], PanelMode.size
         add     esi, colmodes
         lodsd
         mov     ecx, eax
@@ -4186,10 +4266,10 @@ calc_colwidths:
         adc     ebx, 0
         loop    .loop
         pop     esi ecx
-        lea     edi, [ebp + panel1_colwidths - panel1_data]
+        lea     edi, [ebp + PanelData.colwidths]
         test    ebx, ebx
         jz      .loop2
-        mov     eax, [ebp + panel1_width - panel1_data]
+        mov     eax, [ebp + PanelData.width]
         dec     eax
         dec     eax
         sub     eax, edx
@@ -4264,18 +4344,18 @@ GetPanelTitle_default:
 ; ebp - pointer to panel1 or panel2
 align 16
 draw_panel:
-        mov     eax, [ebp + panel1_left - panel1_data]
-        mov     edx, [ebp + panel1_top - panel1_data]
+        mov     eax, [ebp + PanelData.left]
+        mov     edx, [ebp + PanelData.top]
         call    get_console_ptr
 ; draw border
         mov     ah, [panel_border_color]
-        mov     ebx, [ebp + panel1_width - panel1_data]
-        mov     edx, [ebp + panel1_height - panel1_data]
+        mov     ebx, [ebp + PanelData.width]
+        mov     edx, [ebp + PanelData.height]
         call    draw_border
         push    eax
-        mov     eax, [ebp + panel1_left - panel1_data]
-        mov     edx, [ebp + panel1_top - panel1_data]
-        add     edx, [ebp + panel1_height - panel1_data]
+        mov     eax, [ebp + PanelData.left]
+        mov     edx, [ebp + PanelData.top]
+        add     edx, [ebp + PanelData.height]
         sub     edx, 3
         call    get_console_ptr
         pop     eax
@@ -4287,24 +4367,24 @@ draw_panel:
         mov     al, 0xB6
         stosw
 
-        imul    esi, [ebp + panel1_colmode - panel1_data], PanelMode.size
+        imul    esi, [ebp + PanelData.colmode], PanelMode.size
         add     esi, colmodes
         lodsd
         mov     ecx, eax        ; number of columns
-        lea     ebx, [ebp + panel1_colwidths - panel1_data]
-        mov     eax, [ebp + panel1_left - panel1_data]
+        lea     ebx, [ebp + PanelData.colwidths]
+        mov     eax, [ebp + PanelData.left]
         inc     eax
         mov     [column_left], eax
-        mov     eax, [ebp + panel1_top - panel1_data]
+        mov     eax, [ebp + PanelData.top]
         inc     eax
         mov     [column_top], eax
-        mov     eax, [ebp + panel1_height - panel1_data]
+        mov     eax, [ebp + PanelData.height]
         sub     eax, 4
         mov     [column_height], eax
         dec     eax
-        mov     [ebp + panel1_colsz - panel1_data], eax
-        and     [ebp + panel1_colst - panel1_data], 0
-        mov     eax, [ebp + panel1_start - panel1_data]
+        mov     [ebp + PanelData.colsz], eax
+        and     [ebp + PanelData.colst], 0
+        mov     eax, [ebp + PanelData.start]
         mov     [column_index], eax
         mov     [last_column_index], eax
 .columns_loop:
@@ -4315,7 +4395,7 @@ draw_panel:
         cmp     ecx, 1
         jz      .skip_right_border
         add     eax, [column_left]
-        mov     edx, [ebp + panel1_top - panel1_data]
+        mov     edx, [ebp + PanelData.top]
         call    get_console_ptr
         mov     ah, [panel_header_color]
         mov     al, 0xD1
@@ -4386,27 +4466,27 @@ draw_panel:
         dec     ecx
         jnz     .columns_loop
 ; Заголовок панели (текущая папка)
-        lea     esi, [ebp + panel1_dir - panel1_data]
-        mov     eax, [ebp + panel1_hPlugin - panel1_data]
+        lea     esi, [ebp + PanelData.dir]
+        mov     eax, [ebp + PanelData.hPlugin]
         test    eax, eax
         jz      .native
         push    ebp
         push    esi
-        mov     esi, [ebp + panel1_parents - panel1_data]
-        add     esi, [ebp + panel1_parents_sz - panel1_data]
+        mov     esi, [ebp + PanelData.parents]
+        add     esi, [ebp + PanelData.parents_sz]
 @@:
         dec     esi
         cmp     byte [esi-1], 0
         jnz     @b
         push    esi
         push    execdata
-        push    [ebp + panel1_hFile - panel1_data]
+        push    [ebp + PanelData.hFile]
         call    [eax+PluginInfo.GetPanelTitle]
         pop     ebp
         mov     esi, execdata
 .native:
         mov     edi, cur_header
-        mov     ecx, [ebp + panel1_width - panel1_data]
+        mov     ecx, [ebp + PanelData.width]
         sub     ecx, 6
         cmp     byte [esi], '/'
         jnz     .copy_rest
@@ -4445,8 +4525,8 @@ draw_panel:
         test    al, al
         jnz     @b
 .header_created:
-        mov     edx, [ebp + panel1_top - panel1_data]
-        mov     eax, [ebp + panel1_left - panel1_data]
+        mov     edx, [ebp + PanelData.top]
+        mov     eax, [ebp + PanelData.left]
         shr     ecx, 1
         lea     eax, [eax+ecx+3]
         call    get_console_ptr
@@ -4467,22 +4547,22 @@ draw_panel:
 @@:
         mov     al, ' '
         stosw
-        mov     edx, [ebp + panel1_top - panel1_data]
+        mov     edx, [ebp + PanelData.top]
         inc     edx
-        mov     eax, [ebp + panel1_left - panel1_data]
+        mov     eax, [ebp + PanelData.left]
         inc     eax
         call    get_console_ptr
-        movzx   eax, [ebp + panel1_sortmode - panel1_data]
+        movzx   eax, [ebp + PanelData.sortmode]
         mov     al, [compare_names+eax]
         stosb
-        mov     eax, [ebp + panel1_selected_num - panel1_data]
+        mov     eax, [ebp + PanelData.selected_num]
         test    eax, eax
         jz      .skip_selected_info
 ; Информация о выделенных файлах
-        push    dword [ebp + panel1_selected_size+4 - panel1_data]
-        push    dword [ebp + panel1_selected_size - panel1_data]
+        push    dword [ebp + PanelData.selected_size+4]
+        push    dword [ebp + PanelData.selected_size]
         call    fill_total_info
-        mov     eax, [ebp + panel1_width - panel1_data]
+        mov     eax, [ebp + PanelData.width]
         sub     eax, 2
         cmp     ecx, eax
         jbe     @f
@@ -4496,9 +4576,9 @@ draw_panel:
         sub     eax, ecx
         shr     eax, 1
         inc     eax
-        add     eax, [ebp + panel1_left - panel1_data]
-        mov     edx, [ebp + panel1_top - panel1_data]
-        add     edx, [ebp + panel1_height - panel1_data]
+        add     eax, [ebp + PanelData.left]
+        mov     edx, [ebp + PanelData.top]
+        add     edx, [ebp + PanelData.height]
         sub     edx, 3
         call    get_console_ptr
         mov     ah, [panel_numselected_color]
@@ -4508,11 +4588,11 @@ draw_panel:
         loop    @b
 .skip_selected_info:
 ; Информация об общем числе и размере файлов панели
-        mov     eax, [ebp + panel1_total_num - panel1_data]
-        push    dword [ebp + panel1_total_size+4 - panel1_data]
-        push    dword [ebp + panel1_total_size - panel1_data]
+        mov     eax, [ebp + PanelData.total_num]
+        push    dword [ebp + PanelData.total_size+4]
+        push    dword [ebp + PanelData.total_size]
         call    fill_total_info
-        mov     eax, [ebp + panel1_width - panel1_data]
+        mov     eax, [ebp + PanelData.width]
         sub     eax, 2
         cmp     ecx, eax
         jbe     @f
@@ -4523,9 +4603,9 @@ draw_panel:
         sub     eax, ecx
         shr     eax, 1
         inc     eax
-        add     eax, [ebp + panel1_left - panel1_data]
-        add     edx, [ebp + panel1_top - panel1_data]
-        add     edx, [ebp + panel1_height - panel1_data]
+        add     eax, [ebp + PanelData.left]
+        add     edx, [ebp + PanelData.top]
+        add     edx, [ebp + PanelData.height]
         dec     edx
         mov     esi, edi
         call    get_console_ptr
@@ -4534,24 +4614,24 @@ draw_panel:
         lodsb
         stosw
         loop    @b
-        cmp     [ebp + panel1_numfiles - panel1_data], 0
+        cmp     [ebp + PanelData.numfiles], 0
         jz      .skip_curinfo
 ; Информация о текущем файле
-        mov     ebx, [ebp + panel1_index - panel1_data]
-        mov     eax, [ebp + panel1_files - panel1_data]
+        mov     ebx, [ebp + PanelData.index]
+        mov     eax, [ebp + PanelData.files]
         mov     ebx, [eax+ebx*4]
-        mov     eax, [ebp + panel1_left - panel1_data]
-        add     eax, [ebp + panel1_width - panel1_data]
+        mov     eax, [ebp + PanelData.left]
+        add     eax, [ebp + PanelData.width]
         dec     eax
-        mov     edx, [ebp + panel1_top - panel1_data]
-        add     edx, [ebp + panel1_height - panel1_data]
+        mov     edx, [ebp + PanelData.top]
+        add     edx, [ebp + PanelData.height]
         dec     edx
         dec     edx
         call    get_console_ptr
-        mov     ecx, [ebp + panel1_width - panel1_data]
+        mov     ecx, [ebp + PanelData.width]
         dec     ecx
         dec     ecx
-        cmp     [ebp + panel1_colmode - panel1_data], 3
+        cmp     [ebp + PanelData.colmode], 3
         jz      .show_curname
 ; Время модификации
         sub     edi, 5*2
@@ -4808,7 +4888,7 @@ get_file_color:
         mov     ah, [esi + 6]
         cmp     ebp, [active_panel]
         jnz     @f
-        cmp     ecx, [ebp + panel1_index - panel1_data]
+        cmp     ecx, [ebp + PanelData.index]
         jnz     @f
         mov     ah, [esi + 7]
 @@:
@@ -4817,7 +4897,7 @@ get_file_color:
         mov     ah, [esi + 4]
         cmp     ebp, [active_panel]
         jnz     @f
-        cmp     ecx, [ebp + panel1_index - panel1_data]
+        cmp     ecx, [ebp + PanelData.index]
         jnz     @f
         mov     ah, [esi + 5]
 @@:
@@ -4826,7 +4906,7 @@ get_file_color:
 draw_name_column:
         mov     eax, [column_index]
         mov     [last_column_index], eax
-        mov     edx, [ebp + panel1_numfiles - panel1_data]
+        mov     edx, [ebp + PanelData.numfiles]
         mov     ecx, [column_height]
         dec     ecx
 .l:
@@ -4834,7 +4914,7 @@ draw_name_column:
         jae     .ret
         push    ecx
         mov     ecx, [column_index]
-        mov     esi, [ebp + panel1_files - panel1_data]
+        mov     esi, [ebp + PanelData.files]
         mov     esi, [esi+ecx*4]
         mov     ebx, [esi]
         call    get_file_color
@@ -4855,7 +4935,7 @@ draw_name_column:
 @@:
         test    bl, 10h
         jnz     .noalignext
-        mov     ebx, [ebp + panel1_colmode - panel1_data]
+        mov     ebx, [ebp + PanelData.colmode]
 ; sizeof(PanelMode) = 40
         lea     ebx, [ebx+ebx*4]
         cmp     [colmodes+ebx*8+PanelMode.bAlignExtensions], 0
@@ -4917,9 +4997,9 @@ draw_name_column:
         dec     ecx
         jnz     .l
 .ret:
-        mov     eax, [ebp + panel1_colsz - panel1_data]
-        add     [ebp + panel1_colst - panel1_data], eax
-        cmp     ebp, panel1_data
+        mov     eax, [ebp + PanelData.colsz]
+        add     [ebp + PanelData.colst], eax
+        cmp     ebp, panel1
         jnz     .ret2
 ; Число экранов
 ; calculate number of viewer and editor screens
@@ -4995,13 +5075,13 @@ draw_size_column:
         dec     ecx
         push    [last_column_index]
 .l:
-        mov     edx, [ebp + panel1_numfiles - panel1_data]
+        mov     edx, [ebp + PanelData.numfiles]
         cmp     [last_column_index], edx
         jae     .ret
         push    ecx
         push    edi
         mov     ecx, [last_column_index]
-        mov     esi, [ebp + panel1_files - panel1_data]
+        mov     esi, [ebp + PanelData.files]
         mov     esi, [esi+ecx*4]
         call    get_file_color
         mov     ecx, [column_width]
@@ -5134,13 +5214,13 @@ draw_date_column:
         dec     ecx
         push    [last_column_index]
 .l:
-        mov     edx, [ebp + panel1_numfiles - panel1_data]
+        mov     edx, [ebp + PanelData.numfiles]
         cmp     [last_column_index], edx
         jae     .ret
         push    ecx
         push    edi
         mov     ecx, [last_column_index]
-        mov     esi, [ebp + panel1_files - panel1_data]
+        mov     esi, [ebp + PanelData.files]
         mov     esi, [esi+ecx*4]
         call    get_file_color
         mov     bh, ah
@@ -5200,13 +5280,13 @@ draw_time_column:
         dec     ecx
         push    [last_column_index]
 .l:
-        mov     edx, [ebp + panel1_numfiles - panel1_data]
+        mov     edx, [ebp + PanelData.numfiles]
         cmp     [last_column_index], edx
         jae     .ret
         push    ecx
         push    edi
         mov     ecx, [last_column_index]
-        mov     esi, [ebp + panel1_files - panel1_data]
+        mov     esi, [ebp + PanelData.files]
         mov     esi, [esi+ecx*4]
         call    get_file_color
         mov     bh, ah
@@ -5280,26 +5360,26 @@ draw_time_column:
 ;        ret
 
 read_folder:
-        mov     eax, [ebp + panel1_nfa - panel1_data]
+        mov     eax, [ebp + PanelData.nfa]
         mov     [dirinfo.size], eax
         shl     eax, 2
-        add     eax, [ebp + panel1_files - panel1_data]
+        add     eax, [ebp + PanelData.files]
         mov     [dirinfo.dirdata], eax
-        lea     eax, [ebp + panel1_dir - panel1_data]
+        lea     eax, [ebp + PanelData.dir]
         mov     [dirinfo.name], eax
         xor     eax, eax
-        mov     [ebp + panel1_total_num - panel1_data], eax
-        mov     dword [ebp + panel1_total_size - panel1_data], eax
-        mov     dword [ebp + panel1_total_size+4 - panel1_data], eax
-        mov     [ebp + panel1_selected_num - panel1_data], eax
-        mov     dword [ebp + panel1_selected_size - panel1_data], eax
-        mov     dword [ebp + panel1_selected_size+4 - panel1_data], eax
+        mov     [ebp + PanelData.total_num], eax
+        mov     dword [ebp + PanelData.total_size], eax
+        mov     dword [ebp + PanelData.total_size+4], eax
+        mov     [ebp + PanelData.selected_num], eax
+        mov     dword [ebp + PanelData.selected_size], eax
+        mov     dword [ebp + PanelData.selected_size+4], eax
 .retry:
-        mov     eax, [ebp + panel1_hPlugin - panel1_data]
+        mov     eax, [ebp + PanelData.hPlugin]
         test    eax, eax
         jz      .native
         mov     ecx, [dirinfo.size]
-        test    [ebp + panel1_plugin_flags - panel1_data], 1
+        test    [ebp + PanelData.plugin_flags], 1
         jz      @f
         dec     ecx     ; reserve one entry for '..'
 @@:
@@ -5307,7 +5387,7 @@ read_folder:
         push    [dirinfo.dirdata]
         push    ecx
         push    0
-        push    [ebp + panel1_hFile - panel1_data]
+        push    [ebp + PanelData.hFile]
         call    [eax + PluginInfo.ReadFolder]
         pop     ebp
         mov     ebx, [dirinfo.dirdata]
@@ -5344,12 +5424,12 @@ read_folder:
         jz      .retry
 .dont_notify:
 ; If not on plugin panel, try to return to previous directory
-        cmp     [ebp + panel1_hPlugin - panel1_data], 0
+        cmp     [ebp + PanelData.hPlugin], 0
         jnz     @f
         mov     esi, prev_dir
         cmp     byte [esi], 0
         jz      @f
-        lea     edi, [ebp + panel1_dir - panel1_data]
+        lea     edi, [ebp + PanelData.dir]
         mov     ecx, 1024/4
         rep     movsd
         mov     byte [prev_dir], 0
@@ -5369,7 +5449,7 @@ read_folder:
         lea     edi, [esi-1]
         jmp     .up1
 .up1done:
-        cmp     [ebp + panel1_hPlugin - panel1_data], 0
+        cmp     [ebp + PanelData.hPlugin], 0
         jz      .4
         cmp     edx, 1
         ja      .up
@@ -5407,9 +5487,9 @@ read_folder:
         jmp     read_folder
 .nosetrd:
 ; Даже рамдиск не прочитался. Значит, не судьба...
-        and     dword [ebp + panel1_numfiles - panel1_data], 0
-        and     dword [ebp + panel1_index - panel1_data], 0
-        and     dword [ebp + panel1_start - panel1_data], 0
+        and     dword [ebp + PanelData.numfiles], 0
+        and     dword [ebp + PanelData.index], 0
+        and     dword [ebp + PanelData.start], 0
         mov     [bSilentFolderMode], 0  ; leave silent mode
         ret
 .ok:
@@ -5417,7 +5497,7 @@ read_folder:
         cmp     [eax+8], ebx
         jz      .readdone
         push    dword [eax+8]
-        mov     ecx, [ebp + panel1_files - panel1_data]
+        mov     ecx, [ebp + PanelData.files]
         call    pgfree
         pop     ecx
         add     ecx, 0xF
@@ -5431,17 +5511,17 @@ read_folder:
         pop     eax
         jmp     .readdone
 .succ1:
-        mov     [ebp + panel1_files - panel1_data], eax
-        pop     [ebp + panel1_nfa - panel1_data]
+        mov     [ebp + PanelData.files], eax
+        pop     [ebp + PanelData.nfa]
         mov     [prev_dir], 0
         jmp     read_folder
 .readdone:
         xor     edx, edx
-        mov     [ebp + panel1_start - panel1_data], edx
-        mov     [ebp + panel1_index - panel1_data], edx
-        mov     [ebp + panel1_start - panel1_data], edx
-        mov     edi, [ebp + panel1_files - panel1_data]
-        mov     eax, [ebp + panel1_nfa - panel1_data]
+        mov     [ebp + PanelData.start], edx
+        mov     [ebp + PanelData.index], edx
+        mov     [ebp + PanelData.start], edx
+        mov     edi, [ebp + PanelData.files]
+        mov     eax, [ebp + PanelData.nfa]
         lea     eax, [edi + eax*4 + 32]
         mov     ecx, [eax-32+4]
         test    ecx, ecx
@@ -5462,7 +5542,7 @@ read_folder:
         mov     edx, eax
         push    edi
 @@:
-        cmp     edi, [ebp + panel1_files - panel1_data]
+        cmp     edi, [ebp + PanelData.files]
         jbe     @f
         push    dword [edi-4]
         pop     dword [edi]
@@ -5478,11 +5558,11 @@ read_folder:
         xor     ebx, ebx
         test    byte [eax], 10h
         setz    bl
-        add     [ebp + panel1_total_num - panel1_data], ebx
+        add     [ebp + PanelData.total_num], ebx
         mov     ebx, dword [eax+32]
-        add     dword [ebp + panel1_total_size - panel1_data], ebx
+        add     dword [ebp + PanelData.total_size], ebx
         mov     ebx, dword [eax+36]
-        adc     dword [ebp + panel1_total_size+4 - panel1_data], ebx
+        adc     dword [ebp + PanelData.total_size+4], ebx
 .dotdot:
 ; подсветка
 ;        call    insert_last_dot
@@ -5494,22 +5574,22 @@ read_folder:
         jnz     .ptrinit
 .loopdone:
         push    edi
-        sub     edi, [ebp + panel1_files - panel1_data]
+        sub     edi, [ebp + PanelData.files]
         shr     edi, 2
-        mov     [ebp + panel1_numfiles - panel1_data], edi
+        mov     [ebp + PanelData.numfiles], edi
         pop     edi
         test    edx, edx
         jnz     @f
-        test    [ebp + panel1_plugin_flags - panel1_data], 1
+        test    [ebp + PanelData.plugin_flags], 1
         jz      @f
-        mov     ecx, [ebp + panel1_numfiles - panel1_data]
-        inc     [ebp + panel1_numfiles - panel1_data]
+        mov     ecx, [ebp + PanelData.numfiles]
+        inc     [ebp + PanelData.numfiles]
         lea     esi, [edi-4]
         std
         rep     movsd
         cld
         mov     eax, left_dotdot_entry
-        cmp     ebp, panel1_data
+        cmp     ebp, panel1
         jz      .zq
         add     eax, right_dotdot_entry-left_dotdot_entry
 .zq:
@@ -5518,11 +5598,11 @@ read_folder:
 @@:
 ; Сортировка
 sort_files:
-        movzx   eax, [ebp + panel1_sortmode - panel1_data]
+        movzx   eax, [ebp + PanelData.sortmode]
         mov     ebx, [compare_fns + eax*4]
 .mode:
-        mov     edx, [ebp + panel1_files - panel1_data]
-        mov     ecx, [ebp + panel1_numfiles - panel1_data]
+        mov     edx, [ebp + PanelData.files]
+        mov     ecx, [ebp + PanelData.numfiles]
         jecxz   .skip
         mov     eax, [edx]
         cmp     word [eax+40], '..'
@@ -7140,7 +7220,7 @@ cur_width       dd      80
 cur_height      dd      25
 saved_width     dd      -1
 saved_height    dd      -1
-fill_width      dd      0
+fill_width      dd      0 ;остаток от деления ширины окна на ширину шрифта
 fill_height     dd      0
 max_width = 256
 max_height = 256
@@ -7154,7 +7234,7 @@ old_cursor_pos  dd      -1
 
 idle_interval   dd      -1
 
-active_panel    dd      panel1_data
+active_panel    dd      panel1
 
 associations    dd      0
 associations_size dd    1               ; terminating zero
@@ -8642,63 +8722,9 @@ execdataend:
         align   4
 attrinfo.attr   rb      40
 
-panel1_data:
-panel1_left     dd      ?
-panel1_top      dd      ?
-panel1_width    dd      ?
-panel1_height   dd      ?
-panel1_index    dd      ?
-panel1_start    dd      ?
-panel1_colsz    dd      ?
-panel1_colst    dd      ?
-panel1_sortmode db      ?
-                rb      3
-panel1_nfa      dd      ?
-panel1_numfiles dd      ?
-panel1_files    dd      ?
-panel1_hPlugin  dd      ?
-panel1_hFile    dd      ?
-panel1_parents          dd      ?
-panel1_parents_sz       dd      ?
-panel1_parents_alloc    dd      ?
-panel1_colmode          dd      ?
-panel1_colwidths        rd      16+1
-panel1_total_num        dd      ?
-panel1_total_size       dq      ?
-panel1_selected_num     dd      ?
-panel1_selected_size    dq      ?
-panel1_plugin_info:
-panel1_plugin_flags     dd      ?
-panel1_dir      rb      1024
+panel1 PanelData
 
-panel2_data:
-panel2_left     dd      ?
-panel2_top      dd      ?
-panel2_width    dd      ?
-panel2_height   dd      ?
-panel2_index    dd      ?
-panel2_start    dd      ?
-panel2_colsz    dd      ?
-panel2_colst    dd      ?
-panel2_sortmode db      ?
-                rb      3
-panel2_nfa      dd      ?
-panel2_numfiles dd      ?
-panel2_files    dd      ?
-panel2_hPlugin  dd      ?
-panel2_hFile    dd      ?
-panel2_parents          dd      ?
-panel2_parents_sz       dd      ?
-panel2_parents_alloc    dd      ?
-panel2_colmode          dd      ?
-panel2_colwidths        rd      16+1
-panel2_total_num        dd      ?
-panel2_total_size       dq      ?
-panel2_selected_num     dd      ?
-panel2_selected_size    dq      ?
-panel2_plugin_info:
-panel2_plugin_flags     dd      ?
-panel2_dir      rb      1024
+panel2 PanelData
 
 ;console_data    rb      max_width*max_height*2
 
