@@ -123,7 +123,7 @@
 	"Ошибка #32: слишком много процессов", 0};
 #else
 	unsigned char *ERROR_TEXT[]={
-	"Code #0 - No error, compleated successfully",
+	"Code #0 - No error",
 	"Error #1 - Base or partition of a hard disk is not defined",
 	"Error #2 - Function isn't supported for this file system",
 	"Error #3 - Unknown file system",

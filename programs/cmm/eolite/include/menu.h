@@ -11,15 +11,6 @@ char file_actions[]=
 Переименовать      |F2
 Удалить            |Del
 Свойства           |F1";
-char folder_actions[]=
-"Открыть       |Enter
--
-Копировать     |Crl+C
-Вырезать       |Crl+X
-Вставить       |Crl+V
--
-Удалить        |Del
-Свойства       |F1";
 char empty_folder_actions[]=
 "Вставить      |Crl+V";
 char burger_menu_items[] = 
@@ -39,15 +30,6 @@ Lїika          |Crl+X
 Aseta          |Crl+V
 -
 Nimeta №mber   |F2
-Kustuta        |Del
-Properties     |F1";
-char folder_actions[]=
-"Ava           |Enter
--
-Kopeeri        |Crl+C
-Lїika          |Crl+X
-Aseta          |Crl+V
--
 Kustuta        |Del
 Properties     |F1";
 char empty_folder_actions[]=
@@ -71,15 +53,6 @@ Paste         |Crl+V
 Rename        |F2
 Delete        |Del
 Properties    |F1";
-char folder_actions[]=
-"Open        |Enter 
--
-Copy         |Crl+C
-Cut          |Crl+X
-Paste        |Crl+V
--
-Delete       |Del
-Properties   |F1";
 char empty_folder_actions[]=
 "Paste        |Crl+V";
 char burger_menu_items[] = 
@@ -91,7 +64,7 @@ About";
 #endif
 
 
-enum { MENU_DIR=1, MENU_FILE, MENU_NO_FILE, MENU_BURGER };
+enum { MENU_FILE=1, MENU_NO_FILE, MENU_BURGER };
 
 bool active_menu = false;
 
@@ -107,16 +80,8 @@ void EventMenuClick(dword _id)
 		case 4: CopyFilesListToClipboard(CUT); break;
 		case 5: EventPaste(#path); break;
 		case 6: FnProcess(2); break;
-		case 7: Del_Form(); break;
+		case 7: ShowPopinForm(POPIN_DELETE); break;
 		case 8: FnProcess(1); break;
-	}
-	if (active_menu == MENU_DIR) switch(_id) {
-		case 1: EventOpen(0); break;
-		case 2: CopyFilesListToClipboard(COPY); break;
-		case 3: CopyFilesListToClipboard(CUT); break;
-		case 4: EventPaste(#path); break;
-		case 5: Del_Form(); break;
-		case 6: FnProcess(1); break;
 	}
 	if (active_menu == MENU_BURGER) switch(_id) {
 		case 1: EventOpenNewEolite(); break;
@@ -137,9 +102,6 @@ void EventShowListMenu()
 	if (!files.count) {
 		text = #empty_folder_actions;
 		active_menu = MENU_NO_FILE;
-	} else if (itdir) {
-		text = #folder_actions;
-		active_menu = MENU_DIR;
 	} else {
 		text = #file_actions;
 		active_menu = MENU_FILE;

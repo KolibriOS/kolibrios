@@ -121,8 +121,8 @@ void _SystemDiscs::DrawSelect(int draw_x, btid, dword _path)
 	DrawBar(draw_x, SELECTY, DDW+1-KFM2_DEVH, KFM2_DEVH, 0xFFFFFF);
 	_PutImage(draw_x + 5, SELECTY+2, 18,17, dev_icon*17*18*3+#devices);
 	kfont.WriteIntoWindow(draw_x + 24, math.max(KFM2_DEVH-kfont.height/2+SELECTY,0), 0xFFFfff, 0x000000, kfont.size.pt, #dev_name+1);
-	DefineHiddenButton(draw_x, SELECTY, DDW-1, KFM2_DEVH-1, btid+1);
-	DrawFlatButtonSmall(draw_x+DDW-KFM2_DEVH+1, SELECTY-1, KFM2_DEVH-1, KFM2_DEVH+1, btid, "\x19");
+	DefineHiddenButton(draw_x, SELECTY, DDW-1, KFM2_DEVH-1, btid);
+	DrawFlatButtonSmall(draw_x+DDW-KFM2_DEVH+1, SELECTY-1, KFM2_DEVH-1, KFM2_DEVH+1, NULL, "\x19");
 }
 
 void _SystemDiscs::DrawOptions(int draw_x)

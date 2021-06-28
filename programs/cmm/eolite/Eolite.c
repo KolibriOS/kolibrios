@@ -2,16 +2,18 @@
 //GNU GPL license.
 
 /*
-TODO:
+BUGS:
 - fix a kfm2 bug with selected files on window deactivation
-- click on a path bar opens edit
-- click to show breadcrumbs
+- back button broken
+- bug with going to wrong path (related to prior issue?)
+TODO:
 - 70.5 - get volume info and label
+- click on a path bar dropdown opens breadcrumbs
 */
 
-#define ABOUT_TITLE "EOLITE 5 Beta11"
-#define TITLE_EOLITE "Eolite File Manager 5 Beta11"
-#define TITLE_KFM "Kolibri File Manager 2 Beta11";
+#define ABOUT_TITLE "EOLITE 5 Beta12"
+#define TITLE_EOLITE "Eolite File Manager 5 Beta12"
+#define TITLE_KFM "Kolibri File Manager 2 Beta12";
 
 #define MEMSIZE 1024 * 250
 #include "../lib/clipboard.h"
@@ -34,11 +36,9 @@ TODO:
 #include "imgs/images.h"
 #include "include/const.h"
 
-_history history;
-
 struct Eolite_colors
 {
-	bool  def;
+	bool  skin_is_dark;
 	dword lpanel;
 	dword list_vert_line; //vertical line between columns in list
 	dword selec;
@@ -55,16 +55,9 @@ struct Eolite_colors
 } col;
 dword waves_pal[256];
 
-bool efm = false;
-
-int toolbar_buttons_x[7]={9,46,85,134,167,203};
-
-byte del_active=0;
-byte new_element_active=0;
-
-llist files, files_active, files_inactive;
-
-bool list_full_redraw;
+//Global data
+	bool efm = false;
+	_history history;
 
 //Folder data
 	dword buf;
@@ -74,10 +67,9 @@ bool list_full_redraw;
 	dword path;
 	bool dir_at_fat16 = NULL;
 
-//Sselected element data
+//Selected element data
 	byte file_path[4096];
 	byte file_name[256];
-	byte new_element_name[256];
 	byte temp[4096];
 	bool itdir;
 
@@ -89,6 +81,8 @@ bool list_full_redraw;
 	bool sort_desc=false;
 	int status_bar_h;
 	int icon_size = 18;
+	char active_popin = NULL;
+	bool list_full_redraw;
 
 //Threads data
 	dword about_thread_id;
@@ -103,15 +97,17 @@ bool list_full_redraw;
 	int disk_popin_active_on_panel=0;
 	#define PANES_COUNT 2
 	dword location[PANES_COUNT];
+	llist files, files_active, files_inactive;
 
 libimg_image icons16_default;
 libimg_image icons16_selected;
-
 libimg_image icons32_default;
 libimg_image icons32_selected;
 
-edit_box new_file_ed = {200,213,180,0xFFFFFF,0x94AECE,0xFFFFFF,0xFFFFFF,0x10000000,
-	248,#new_element_name,0,ed_focus+ed_always_focus,6,0};
+byte popin_string[4096];
+edit_box popin_text = {200,213,180,0xFFFFFF,0x94AECE,0xFFFFFF,0xFFFFFF,0x10000000,
+	248,#popin_string,0,ed_focus+ed_always_focus,6,0};
+
 PathShow_data FileShow = {0, 56,215, 8, 100, 1, 0, 0x0, 0xFFFfff, #file_name, #temp, 0};
 
 #include "include\settings.h"
@@ -199,12 +195,12 @@ void main()
 	loop() switch(@WaitEventTimeout(100))
 	{
 		case evMouse:
-			if (del_active) || (disk_popin_active_on_panel) || (Form.status_window&ROLLED_UP) break;
-			if (new_element_active) 
-			{
-				edit_box_mouse stdcall(#new_file_ed);
+			if (Form.status_window&ROLLED_UP) break;
+
+			if (active_popin) {
+				if (popin_string[0]!=-1) edit_box_mouse stdcall(#popin_text);
 				break;
-			}	
+			}
 			
 			mouse.get();
 
@@ -301,37 +297,41 @@ void main()
 		case evButton:
 			id = GetButtonID();
 
-			if (id==CLOSE_BTN) {
+			if (CLOSE_BTN == id) {
 				KillProcess(about_thread_id);
 				SaveIniSettings();
 				ExitProcess();
 			}
 
-			if (new_element_active) || (del_active) || (disk_popin_active_on_panel) {
-				if (POPUP_BTN1==id) && (del_active) EventDelete();
-				if (POPUP_BTN1==id) && (new_element_active) NewElement();
+			if (active_popin) {
+				if (POPIN_DISK==active_popin) {
+					if (id>=100) && (id<=120) {
+						active_popin = NULL;
+						EventDriveClick(id);
+					}
+					EventClosePopinForm();                                //POPIN_DISK create close btn with POPUP_BTN2
+					break; }
 				if (POPUP_BTN2==id) EventClosePopinForm();
-				if (disk_popin_active_on_panel) {
-					if (id>=100) && (id<=120) EventDriveClick(id);
-					else EventClosePopinForm();
-				}
+				if (POPUP_BTN1==id) EventPopinClickOkay();
 				break;					
 			}
 
 			switch(id) 
 			{
-				case PATH_BTN:
-						notify(COPY_PATH_STR);
-						Clipboard__CopyText(path);
-						break;
 				case KFM_DEV_DROPDOWN_1:
-				case KFM_DEV_DROPDOWN_1+1:
 				case KFM_DEV_DROPDOWN_2:
-				case KFM_DEV_DROPDOWN_2+1:
-						EventOpenDiskPopin(active_panel);
+						ShowPopinForm(POPIN_DISK);
 						break;
 				case BACK_BTN...PASTE_BTN:
 						EventToolbarButtonClick(id);
+						break;
+				case BTN_PATH:
+				case BTN_PATH+1:
+						ShowPopinForm(POPIN_PATH);
+						break;
+				case BTN_BREADCRUMB:
+				case BTN_BREADCRUMB+1:
+						ShowPopinForm(POPIN_BREADCR);
 						break;
 				case 31...33:
 						EventSort(id-30);
@@ -342,18 +342,15 @@ void main()
 				case 52...60: //Actions
 						FnProcess(id-50);
 						break;
-				case 61: // Set path as default
-						SetDefaultPath(path);
-						break;
 				case 100...120:
-					EventDriveClick(id);
-					break;
+						EventDriveClick(id);
+						break;
 				case BREADCRUMB_ID...360:
-					ClickOnBreadCrumb(id-BREADCRUMB_ID);
-					break;
+						ClickOnBreadCrumb(id-BREADCRUMB_ID);
+						break;
 				case KFM_FUNC_ID...KFM_FUNC_ID+10:
-					FnProcess(id-KFM_FUNC_ID);
-					break;
+						FnProcess(id-KFM_FUNC_ID);
+						break;
 			}
 			break;
 			
@@ -363,26 +360,25 @@ void main()
 
 			if (Form.status_window&ROLLED_UP) break;
 
-			if (new_element_active) || (del_active) || (disk_popin_active_on_panel)
+			if (active_popin)
 			{
 				if (key_scancode == SCAN_CODE_ESC) EventClosePopinForm();
 
-				if (del_active) {
-					if (key_scancode == SCAN_CODE_ENTER) EventDelete();
-				}
-				if (new_element_active) {
-					if (key_scancode == SCAN_CODE_ENTER) NewElement();
-					EAX = key_editbox;
-					edit_box_key stdcall (#new_file_ed);
+				if (POPIN_DISK == active_popin) {
+					if (key_scancode >= SCAN_CODE_1) 
+						&& (key_scancode >= SCAN_CODE_10) {
+							EventDriveClick(key_scancode-1+100);
+						}
+				} else {
+					if (key_scancode == SCAN_CODE_ENTER) EventPopinClickOkay();
+					if (popin_string[0] != -1) {
+						EAX = key_editbox;
+						edit_box_key stdcall (#popin_text);
+					}					
 				}
 				break;
 			}
 
-			if (key_modifier&KEY_LALT) || (key_modifier&KEY_RALT) {
-				if (key_scancode == SCAN_CODE_F1) EventOpenDiskPopin(1);
-				if (key_scancode == SCAN_CODE_F2) EventOpenDiskPopin(2);
-				break;
-			}
 			if (key_modifier&KEY_LSHIFT) || (key_modifier&KEY_RSHIFT) {
 
 				if (key_scancode == SCAN_CODE_ENTER) {
@@ -409,7 +405,13 @@ void main()
 					case SCAN_CODE_F1...SCAN_CODE_F3:
 							EventSort(key_scancode - 58);
 							break;
-					case SCAN_CODE_1...SCAN_CODE_10:
+					case SCAN_CODE_1...SCAN_CODE_2:
+							if (efm) {
+								active_panel = key_scancode - SCAN_CODE_1;
+								ShowPopinForm(POPIN_DISK);
+								break;
+							}
+					case SCAN_CODE_3...SCAN_CODE_10:
 							key_scancode-=2;
 							if (key_scancode >= SystemDiscs.list.count) break;
 							if (!efm) {
@@ -473,7 +475,7 @@ void main()
 							EventShowListMenu();
 							break;
 					case SCAN_CODE_DEL:
-							Del_Form();
+							ShowPopinForm(POPIN_DELETE);
 							break;
 					case SCAN_CODE_SPACE:
 							EventChooseFile(files.cur_y);
@@ -540,7 +542,7 @@ void draw_window()
 		DrawBar(0, SELECTY+KFM2_DEVH+1, Form.cwidth, 3, sc.work);
 		DrawBar(0, SELECTY-1, 1, KFM2_DEVH+2, sc.work);
 		DrawBar(Form.cwidth-1, SELECTY-1, 1, KFM2_DEVH+2, sc.work);
-		DrawBar(Form.cwidth/2-16, SELECTY-1, 16, KFM2_DEVH+2, sc.work);
+		DrawBar(Form.cwidth/2-16, SELECTY-1, 15, KFM2_DEVH+2, sc.work);
 		/*
 		#define PAD 7
 		#define GAP_S 26+5
@@ -726,8 +728,9 @@ void List_ReDraw()
 	DrawBar(files.x+files.w-68,all_lines_h + files.y,1,files.h - all_lines_h, separator_color);
 	DrawScroll(scroll_used);
 
-	if (del_active) Del_Form();
-	if (new_element_active) && (col.selec != 0xCCCccc) NewElement_Form(new_element_active, #new_element_name);
+	if (files.x!=files_inactive.x) {
+		if (active_popin) ShowPopinForm(active_popin);
+	}
 }
 
 void Line_ReDraw(dword bgcol, filenum){
@@ -751,7 +754,7 @@ void Line_ReDraw(dword bgcol, filenum){
 
 	DrawBar(files.x,y,4,files.item_h,bgcol);
 	DrawBar(files.x+4,y,icon_size,icon_y-y,bgcol);
-	if (files.item_h>icon_size) DrawBar(files.x+4,icon_y+icon_size-1,icon_size,y+files.item_h-icon_y-icon_size+1,bgcol);
+	if (files.item_h>icon_size) DrawBar(files.x+4,icon_y+icon_size,icon_size,y+files.item_h-icon_y-icon_size,bgcol);
 	if (colored_lines.checked) {
 		if (bgcol!=col.selec) && (filenum%2) bgcol=col.odd_line;
 		separator_color = bgcol;
@@ -829,7 +832,7 @@ void Line_ReDraw(dword bgcol, filenum){
 			bgcol, text_col, kfont.size.pt, #label_file_name);
 	}
 	DrawIconByExtension(#full_path, ext1, files.x+4, icon_y, bgcol);
-	if (current_inactive) DrawWideRectangle(files.x+2, y, files.w-4, files.item_h, 2, col.selec_active);
+	if (current_inactive) DrawWideRectangle(files.x+2, y, files.w-4, files.item_h, 2, col.selec);
 }
 
 
@@ -906,39 +909,6 @@ inline Sorting()
 		for(d--; d>0; d--;) if (!strncmp(items.get(d)*304+buf+72,"..",2)) {items.swap(d,0); break;}
 }
 
-
-void Del_Form()
-{
-	byte f_count[128];
-	int dform_x = files.w - 220 / 2 + files.x;
-	if (!selected_count) && (!strncmp(#file_name,"..",2)) return;
-	else
-	{
-		if (!files.count) return;
-		DrawEolitePopup(T_YES, T_NO);
-		WriteText(-strlen(T_DELETE_FILE)*3+110+dform_x,175,0x80,sc.work_text,T_DELETE_FILE);
-		if (selected_count)
-		{
-			sprintf(#f_count,"%s%d%s",DEL_MORE_FILES_1,selected_count,DEL_MORE_FILES_2);
-			WriteText(-strlen(#f_count)*3+110+dform_x,190,0x80,sc.work_text,#f_count);
-		}
-		else
-		{
-			if (strlen(#file_name)<28) 
-			{
-				WriteText(strlen(#file_name)*3+110+dform_x+2,190,0x80,sc.work_text,"?");
-				WriteText(-strlen(#file_name)*3+110+dform_x,190,0x80,sc.work_text,#file_name);
-			}
-			else
-			{
-				WriteText(164+dform_x,190,0x80,0,"...?");
-				ESI = 24;
-				WriteText(dform_x+20,190,0,0,#file_name);
-			}
-		}		
-		del_active=1;
-	}
-}
 
 void SelectFileByName(dword that_file)
 {
@@ -1018,76 +988,123 @@ void ShowOpenWithDialog()
 	RunProgram("/sys/@open", #open_param);
 }
 
-void NewElement()
+bool EventCreateAndRename()
 {
-	BDVK element_info;
-	byte copy_result, info_result;
-
-	sprintf(#temp,"%s/%s",path,new_file_ed.text);
-	info_result = GetFileInfo(#temp, #element_info);
-	switch(new_element_active)
+	sprintf(#temp,"%s/%s",path,popin_text.text);
+	if (file_exists(#temp)) {
+		notify(FS_ITEM_ALREADY_EXISTS);
+		return false;
+	}
+	switch(active_popin) 
 	{
-		case CREATE_FILE:
-			if (info_result!=5) {
-				notify(FS_ITEM_ALREADY_EXISTS);
-			} else {
-				CreateFile(0, 0, #temp);
-				if (EAX)
-				{
-					if (EAX==5) notify(NOT_CREATE_FILE);
-					else Write_Error(EAX);
-				}
-			}
-			break;
-		case CREATE_FOLDER:
-			if (info_result!=5) {
-				notify(FS_ITEM_ALREADY_EXISTS);
-			} else {
-				CreateDir(#temp);
-				if (EAX)
-				{
-					if (EAX==5) notify(NOT_CREATE_FOLDER);
-					else Write_Error(EAX);
-				}
-			}
-			break;
-		case RENAME_ITEM:
-			if (info_result!=5) {
-				notify(FS_ITEM_ALREADY_EXISTS);
-			} else {
-				if (RenameMove(new_file_ed.text, #file_path))
+		case POPIN_NEW_FILE:
+				if (CreateFile(0, 0, #temp)) goto __FAIL;
+				break;
+		case POPIN_NEW_FOLDER:
+				if (CreateDir(#temp)) goto __FAIL;
+				break;
+		case POPIN_RENAME:
+				if (RenameMove(popin_text.text, #file_path))
 				{
 					if (itdir) {
-						notify("'Error renaming folder' -E");
-						return;
+						goto __FAIL;
 					} else {
-						if (copy_result = CopyFile(#file_path,#temp)) {
-							Write_Error(copy_result);
+						if (CopyFile(#file_path,#temp)) {
+							goto __FAIL;
 						} else {
 							DeleteFile(#file_path);
-							SelectFileByName(new_file_ed.text);
 						}
 					}
 				}
-			}
 	}
 	Open_Dir(path,WITH_REDRAW);
-	SelectFileByName(new_file_ed.text);
+	SelectFileByName(popin_text.text);
+	return true;
+	__FAIL:
+	Write_Error(EAX);
+	return false;	
+}
+
+void EventPopinClickOkay()
+{
+	switch(active_popin) {
+		case POPIN_PATH:
+			strcpy(path, #popin_string);
+			Open_Dir(path, WITH_REDRAW);
+			break;
+		case POPIN_DELETE:
+			CopyFilesListToClipboard(DELETE);
+			EventClosePopinForm();
+			sprintf(#param, "-d %s", #file_path);
+			RunProgram(#program_path, #param);
+			break;	
+		case POPIN_RENAME:
+		case POPIN_NEW_FILE:
+		case POPIN_NEW_FOLDER:
+			if (!EventCreateAndRename()) return;
+	}
 	EventClosePopinForm();
 }
 
-void NewElement_Form(byte crt, dword strng)
+void EventClosePopinForm()
 {
-	int dform_x=files.w-220/2+files.x;
-	if (!new_element_active)
-	{
-		new_element_active = crt;
-		edit_box_set_text stdcall (#new_file_ed, strng);
+	active_popin = NULL;
+	draw_window();
+}
+
+void ShowPopinForm(byte _popin_type)
+{
+	int popinx;
+	popin_string[0] = -1;
+	switch(_popin_type) {
+		case POPIN_PATH:
+				edit_box_set_text stdcall (#popin_text, path);
+				DrawEolitePopup(T_GOPATH, T_CANCEL);
+				break;
+		case POPIN_NEW_FILE:
+				edit_box_set_text stdcall (#popin_text, T_NEW_FILE);
+				DrawEolitePopup(T_CREATE, T_CANCEL);
+				break;
+		case POPIN_NEW_FOLDER:
+				edit_box_set_text stdcall (#popin_text, T_NEW_FOLDER);
+				DrawEolitePopup(T_CREATE, T_CANCEL);
+				break;
+		case POPIN_RENAME:
+				edit_box_set_text stdcall (#popin_text, #file_name);
+				DrawEolitePopup(T_RENAME, T_CANCEL);
+				break;
+		case POPIN_DELETE:
+				if (!files.count) return;
+				if (!selected_count) && (!strncmp(#file_name,"..",2)) return;
+				popinx = DrawEolitePopup(T_YES, T_NO);
+				WriteTextCenter(popinx, 178, POPIN_W, sc.work_text, T_DELETE_FILE);
+				if (selected_count) {
+					sprintf(#param,"%s%d%s",DEL_MORE_FILES_1,selected_count,DEL_MORE_FILES_2);
+				} else {
+					if (strlen(#file_name)<28) {
+						sprintf(#param,"%s ?",#file_name);
+					} else {
+						strncpy(#param, #file_name, POPIN_W-20/6-4);
+						strcat(#param, "...?");
+					}
+				}
+				WriteTextCenter(popinx, 192, POPIN_W, sc.work_text, #param);
+				break;
+		case POPIN_DISK:
+				DefineHiddenButton(0,0,5000,3000,9999+BT_NOFRAME);
+				if (active_panel==0) {
+					SystemDiscs.DrawOptions(1);
+				} else {
+					SystemDiscs.DrawOptions(Form.cwidth/2-1);
+				}
+				break;
+		case POPIN_BREADCR:
+				notify("'Not implemented yet' C");
+				return;
+				//DrawBreadCrumbs();
+				break;
 	}
-	if (new_element_active==3) DrawEolitePopup(T_RENAME, T_CANCEL);
-	else DrawEolitePopup(T_CREATE, T_CANCEL);
-	new_file_ed.left = dform_x+10;
-	DrawEditBox(#new_file_ed);
+	active_popin = _popin_type;
 }
 
 void EventShowAbout()
@@ -1108,7 +1125,7 @@ void FnProcess(byte N)
 			EventShowProperties();
 			break;
 		case 2:
-			if (files.count) NewElement_Form(RENAME_ITEM, #file_name);
+			if (files.count) ShowPopinForm(POPIN_RENAME);
 			break;
 		case 3:
 			if (files.count) && (!itdir) RunProgram("/sys/quark", #file_path);
@@ -1131,13 +1148,13 @@ void FnProcess(byte N)
 			}
 			break;
 		case 7:
-			NewElement_Form(CREATE_FOLDER, T_NEW_FOLDER);
+			ShowPopinForm(POPIN_NEW_FOLDER);
 			break;
 		case 8:
-			Del_Form();
+			ShowPopinForm(POPIN_DELETE);
 			break;
 		case 9:
-			NewElement_Form(CREATE_FILE, T_NEW_FILE);
+			ShowPopinForm(POPIN_NEW_FILE);
 			break;
 		case 10: //F10
 			if (active_settings) {
@@ -1296,23 +1313,6 @@ void EventPaste(dword _into_path) {
 	EventClosePopinForm();
 }
 
-void EventDelete() 
-{
-	char line_param[4096+5];
-	CopyFilesListToClipboard(DELETE);
-	EventClosePopinForm();
-	sprintf(#line_param, "-d %s", #file_path);
-	RunProgram(#program_path, #line_param);	
-}
-
-void EventClosePopinForm()
-{
-	del_active = 0;
-	new_element_active = 0;
-	disk_popin_active_on_panel = 0;
-	draw_window();
-}
-
 void EventShowProperties()
 char line_param[4096+5];
 {
@@ -1368,22 +1368,10 @@ void EventToolbarButtonClick(int _btid)
 
 void EventDriveClick(int __id)
 {
-	SystemDiscs.Click(__id-100);
 	if (efm) {
 		draw_window();
 	}
-}
-
-void EventOpenDiskPopin(int panel_n)
-{
-	DefineHiddenButton(0,0,5000,3000,9999+BT_NOFRAME);
-	if (panel_n==0) {
-		disk_popin_active_on_panel = 1;
-		SystemDiscs.DrawOptions(1);
-	} else {
-		disk_popin_active_on_panel = 2;
-		SystemDiscs.DrawOptions(Form.cwidth/2-1);
-	}
+	SystemDiscs.Click(__id-100);
 }
 
 stop:

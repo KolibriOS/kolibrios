@@ -15,9 +15,8 @@
 #define T_CANCEL "Отмена"
 #define T_CREATE "Создать"
 #define T_RENAME "Переназвать"
+#define T_GOPATH "Перейти"
 #define FS_ITEM_ALREADY_EXISTS "'Элемент с таким именем уже существует' -E"
-#define NOT_CREATE_FOLDER "'Не удалось создать папку.' -E"
-#define NOT_CREATE_FILE "'Не удалось создать файл.' -E"
 #define T_NOTIFY_APP_PARAM_WRONG "'Параметр для запуска Eolite не верен: папка не существует!' -E"
 #define T_COPY_WINDOW_TITLE "Копирую..."
 #define T_MOVE_WINDOW_TITLE "Перемещаю..."
@@ -79,10 +78,9 @@ char *actions[] = {
 #define T_CANCEL "Cancel"
 #define T_CREATE "Create"
 #define T_RENAME "Rename"
+#define T_GOPATH "Go to"
 #define FS_ITEM_ALREADY_EXISTS "'An item with that name already exists' -E"
 #define WAIT_DELETING_FOLDER "Deleting folder. Please, wait..."
-#define NOT_CREATE_FOLDER "'Folder can not be created.' -E"
-#define NOT_CREATE_FILE "'File can not be created.' -E"
 #define T_NOTIFY_APP_PARAM_WRONG "'Eolite param is wrong: directory does not exist!' -E"
 #define T_COPY_WINDOW_TITLE "Copying..."
 #define T_MOVE_WINDOW_TITLE "Moving..."
@@ -137,11 +135,12 @@ char *actions[] = {
 
 //Button IDs
 enum {
-	PATH_BTN = 10,
 	POPUP_BTN1 = 201,
 	POPUP_BTN2 = 202,
 	KFM_DEV_DROPDOWN_1 = 205,
 	KFM_DEV_DROPDOWN_2 = 207,
+	BTN_PATH = 210,
+	BTN_BREADCRUMB = 214,
 	BREADCRUMB_ID = 300,
 
 	BACK_BTN = 400,
@@ -153,18 +152,23 @@ enum {
 	KFM_FUNC_ID = 450
 };
 
-//NewElement options
-enum {
-	CREATE_FILE=1, 
-	CREATE_FOLDER, 
-	RENAME_ITEM
-}; 
-
 //OpenDir options
 enum {
 	WITH_REDRAW, 
 	ONLY_OPEN
 };
+
+//OpenDir options
+enum {
+	POPIN_PATH=1,
+	POPIN_NEW_FILE,
+	POPIN_NEW_FOLDER,
+	POPIN_RENAME,
+	POPIN_DELETE,
+	POPIN_DISK,
+	POPIN_BREADCR
+};
+
 
 char *devinfo = {
 	"r", 0, T_SYS,
@@ -183,3 +187,6 @@ char *devinfo = {
 #define DDW 110
 #define KFM2_DEVH 20
 #define SELECTY 10
+#define POPIN_W 260
+
+int toolbar_buttons_x[7]={9,46,85,134,167,203};

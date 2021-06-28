@@ -3,7 +3,6 @@
 	?define TITLE_SETT "Настройки"
 	?define SHOW_DEVICE_CLASS "Выводить названия класса устройств"
 	?define SHOW_STATUS_BAR "Показывать статус бар"
-	?define SHOW_BREADCRUMBS "Использовать 'хлебные крошки'"
 	?define BIG_ICONS "Использовать большие иконки"
 	?define COLORED_LINES "Подсвечивать четные линии в списке"
 	?define FONT_SIZE_LABEL "Размер шрифта"
@@ -16,7 +15,6 @@
 	?define TITLE_SETT "Settings"
 	?define SHOW_DEVICE_CLASS "Show device class name"
 	?define SHOW_STATUS_BAR "Show status bar"
-	?define SHOW_BREADCRUMBS "Show breadcrumbs"
 	?define BIG_ICONS "Big icons in list"
 	?define COLORED_LINES "Highlight even lines in list"
 	?define FONT_SIZE_LABEL "Font size"
@@ -38,7 +36,6 @@ more_less_box font_size   = { NULL, 9, 22, FONT_SIZE_LABEL };
 more_less_box line_height = { NULL, 16, 64, LIST_LINE_HEIGHT };
 checkbox show_dev_name    = { SHOW_DEVICE_CLASS };
 checkbox show_status_bar  = { SHOW_STATUS_BAR };
-checkbox show_breadcrumb  = { SHOW_BREADCRUMBS };
 checkbox big_icons        = { BIG_ICONS };
 checkbox colored_lines    = { COLORED_LINES };
 
@@ -80,7 +77,6 @@ void settings_dialog()
 					break;
 				}
 				show_dev_name.click(id);
-				show_breadcrumb.click(id);
 				show_status_bar.click(id);
 				colored_lines.click(id);
 				if (font_size.click(id)) { 
@@ -103,7 +99,7 @@ void settings_dialog()
 				
 			case evReDraw:
 				DefineAndDrawWindow(Form.cwidth-300/2+Form.left, Form.cheight-292/2+Form.top, 400, 
-					-efm*62+365+skin_height,0x34,sc.work,TITLE_SETT,0);
+					-efm*42+345+skin_height,0x34,sc.work,TITLE_SETT,0);
 				GetProcessInfo(#Settings, SelfInfo);
 				DrawSettingsCheckBoxes();
 		}
@@ -128,7 +124,6 @@ void DrawSettingsCheckBoxes()
 	if (!efm) {
 		show_dev_name.draw(XXX, y.inc(14));
 		show_status_bar.draw(XXX, y.inc(25));
-		show_breadcrumb.draw(XXX, y.inc(25));
 	}
 	big_icons.draw(XXX, y.inc(25));
 	colored_lines.draw(XXX, y.inc(25));
@@ -238,7 +233,7 @@ void SetAppColors()
 	if (skin_is_dark()) 
 	{
 		//use dark colors
-		col.def = false;
+		col.skin_is_dark = true;
 		col.list_bg = sc.work;
 		col.list_gb_text = sc.work_text;
 		col.list_text_hidden = 0xA6A6B7;
@@ -254,7 +249,7 @@ void SetAppColors()
 	else 
 	{
 		//use light colors
-		col.def = true;
+		col.skin_is_dark = false;
 		col.list_bg = 0xFFFfff;
 		col.list_gb_text = 0x000000;
 		col.list_text_hidden = 0xA6A6B7;
