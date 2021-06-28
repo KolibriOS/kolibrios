@@ -1483,8 +1483,13 @@ class AsmStruct(AsmElement):
 		doxycomment += self.comment
 		if '@brief' not in doxycomment:
 			doxycomment = '@brief ' + doxycomment
+		doxycomment += '\n'
 		# Build declaration
-		declaration = f"struct {self.name}" + " {};"
+		declaration = f"struct {self.name}" + " {\n"
+		for member in self.members:
+			if type(member) == AsmVariable:
+				declaration += f'\t{member.type} {member.name}; /**< {member.comment} */\n'
+		declaration += '};'
 		# Emit this
 		super().emit(dest, doxycomment, declaration)
 
