@@ -38,9 +38,11 @@ unsigned char edge[sizeof(file "img/edge.raw")]= FROM "img/edge.raw"; //292x6
 #define DELETE_W sizeof(DELETE_TEXT)+2*6
 
 #include "engine.h"
+
+proc_info Form;
+
 #include "ini.h"
 	
-proc_info Form;
 
 edit_box notebox = {WIN_W-RED_LINE_X-6,RED_LINE_X+5,RED_LINE_X,
 	COL_BG_ACTIVE, 0x94AECE,COL_BG_ACTIVE,0xffffff,0, 

@@ -6,10 +6,6 @@ D O N K E Y
 Copyright (C) 2008 O.Bogomaz
 */
 
-#ifndef AUTOBUILD
-#include "lang.h--"
-#endif
-
 #define MEMSIZE 1024 * 60;
 
 #include "..\lib\kolibri.h"
