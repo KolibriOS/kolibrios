@@ -273,6 +273,8 @@ static void build(ObjectIr *ir) {
 	printf("}\n");
 
 	// COFF Relocations
+	char **undefined_symbols = cvec_pchar_new(8);
+
 	printf("Writing COFF Relocations {\n");
 	for (size_t sec_i = 0; sec_i < cvec_pchar_size(&ir->section_names_set); sec_i++) {
 		char *name = ir->section_names_set[sec_i];
@@ -335,8 +337,7 @@ static void build(ObjectIr *ir) {
 					Symbol old_sym = cdict_CStr_Symbol_get_v(&ir->symtab, name);
 
 					if (old_sym.name == NULL) {
-						printf("Internal error: Symbol of %s relocation not found", name);
-						exit(-1);
+						add_name_to_set(strdup(name), &undefined_symbols);
 					}
 
 					rel.SymbolTableIndex = old_sym.index;
@@ -349,6 +350,14 @@ static void build(ObjectIr *ir) {
 		printf(" }\n");
 	}
 	printf("}\n");
+
+	if (cvec_pchar_size(&undefined_symbols) > 0) {
+		printf("Undefined symbols found, aborting\nUndefined:\n");
+		for (int i = 0; i < cvec_pchar_size(&undefined_symbols); i++) {
+			printf("%s\n", undefined_symbols[i]);
+		}
+		exit(-1);
+	}
 
 	// Symbols Table
 	printf("Writing symbols {\n");
