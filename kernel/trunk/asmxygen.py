@@ -1,6 +1,11 @@
 import re
 import os
 import argparse
+import sys
+
+""" TODO:
+    - Add methods to dump stuff to file
+"""
 
 # Parameters
 # Path to doxygen folder to make doxygen files in: -o <path>
@@ -16,6 +21,1138 @@ enable_warnings = True
 
 # Constants
 link_root = "http://websvn.kolibrios.org/filedetails.php?repname=Kolibri+OS&path=/kernel/trunk"
+
+# fasm keywords
+keywords = [
+	# Generic keywords
+	"align",
+	"equ",
+	"org",
+	"while",
+	"load",
+	"store",
+	"times",
+	"repeat",
+	"virtual",
+	"display",
+	"err",
+	"assert",
+	"if",
+	# Instructions
+	"aaa",
+	"aad",
+	"aam",
+	"aas",
+	"adc",
+	"adcx",
+	"add",
+	"addpd",
+	"addps",
+	"addsd",
+	"addss",
+	"addsubpd",
+	"addsubps",
+	"adox",
+	"aesdec",
+	"aesdeclast",
+	"aesenc",
+	"aesenclast",
+	"aesimc",
+	"aeskeygenassist",
+	"and",
+	"andn",
+	"andnpd",
+	"andnps",
+	"andpd",
+	"andps",
+	"arpl",
+	"bextr",
+	"blendpd",
+	"blendps",
+	"blendvpd",
+	"blendvps",
+	"blsi",
+	"blsmsk",
+	"blsr",
+	"bndcl",
+	"bndcn",
+	"bndcu",
+	"bndldx",
+	"bndmk",
+	"bndmov",
+	"bndstx",
+	"bound",
+	"bsf",
+	"bsr",
+	"bswap",
+	"bt",
+	"btc",
+	"btr",
+	"bts",
+	"bzhi",
+	"call",
+	"cbw",
+	"cdq",
+	"cdqe",
+	"clac",
+	"clc",
+	"cld",
+	"cldemote",
+	"clflush",
+	"clflushopt",
+	"cli",
+	"clts",
+	"clwb",
+	"cmc",
+	"cmova",
+	"cmovae",
+	"cmovb",
+	"cmovbe",
+	"cmovc",
+	"cmove",
+	"cmovg",
+	"cmovge",
+	"cmovl",
+	"cmovle",
+	"cmovna",
+	"cmovnae",
+	"cmovnb",
+	"cmovnbe",
+	"cmovnc",
+	"cmovne",
+	"cmovng",
+	"cmovnge",
+	"cmovnl",
+	"cmovnle",
+	"cmovno",
+	"cmovnp",
+	"cmovns",
+	"cmovnz",
+	"cmovo",
+	"cmovp",
+	"cmovpe",
+	"cmovpo",
+	"cmovs",
+	"cmovz",
+	"cmp",
+	"cmppd",
+	"cmpps",
+	"cmps",
+	"cmpsb",
+	"cmpsd",
+	"cmpsd",
+	"cmpsq",
+	"cmpss",
+	"cmpsw",
+	"cmpxchg",
+	"cmpxchg16b",
+	"cmpxchg8b",
+	"comisd",
+	"comiss",
+	"cpuid",
+	"cqo",
+	"crc32",
+	"cvtdq2pd",
+	"cvtdq2ps",
+	"cvtpd2dq",
+	"cvtpd2pi",
+	"cvtpd2ps",
+	"cvtpi2pd",
+	"cvtpi2ps",
+	"cvtps2dq",
+	"cvtps2pd",
+	"cvtps2pi",
+	"cvtsd2si",
+	"cvtsd2ss",
+	"cvtsi2sd",
+	"cvtsi2ss",
+	"cvtss2sd",
+	"cvtss2si",
+	"cvttpd2dq",
+	"cvttpd2pi",
+	"cvttps2dq",
+	"cvttps2pi",
+	"cvttsd2si",
+	"cvttss2si",
+	"cwd",
+	"cwde",
+	"daa",
+	"das",
+	"dec",
+	"div",
+	"divpd",
+	"divps",
+	"divsd",
+	"divss",
+	"dppd",
+	"dpps",
+	"emms",
+	"enter",
+	"extractps",
+	"f2xm1",
+	"fabs",
+	"fadd",
+	"faddp",
+	"fbld",
+	"fbstp",
+	"fchs",
+	"fclex",
+	"fcmova",
+	"fcmovae",
+	"fcmovb",
+	"fcmovbe",
+	"fcmovc",
+	"fcmove",
+	"fcmovg",
+	"fcmovge",
+	"fcmovl",
+	"fcmovle",
+	"fcmovna",
+	"fcmovnae",
+	"fcmovnb",
+	"fcmovnbe",
+	"fcmovnc",
+	"fcmovne",
+	"fcmovng",
+	"fcmovnge",
+	"fcmovnl",
+	"fcmovnle",
+	"fcmovno",
+	"fcmovnp",
+	"fcmovns",
+	"fcmovnz",
+	"fcmovo",
+	"fcmovp",
+	"fcmovpe",
+	"fcmovpo",
+	"fcmovs",
+	"fcmovz",
+	"fcom",
+	"fcomi",
+	"fcomip",
+	"fcomp",
+	"fcompp",
+	"fcos",
+	"fdecstp",
+	"fdiv",
+	"fdivp",
+	"fdivr",
+	"fdivrp",
+	"ffree",
+	"fiadd",
+	"ficom",
+	"ficomp",
+	"fidiv",
+	"fidivr",
+	"fild",
+	"fimul",
+	"fincstp",
+	"finit",
+	"fist",
+	"fistp",
+	"fisttp",
+	"fisub",
+	"fisubr",
+	"fld",
+	"fld1",
+	"fldcw",
+	"fldenv",
+	"fldl2e",
+	"fldl2t",
+	"fldlg2",
+	"fldln2",
+	"fldpi",
+	"fldz",
+	"fmul",
+	"fmulp",
+	"fnclex",
+	"fninit",
+	"fnop",
+	"fnsave",
+	"fnstcw",
+	"fnstenv",
+	"fnstsw",
+	"fpatan",
+	"fprem",
+	"fprem1",
+	"fptan",
+	"frndint",
+	"frstor",
+	"fsave",
+	"fscale",
+	"fsin",
+	"fsincos",
+	"fsqrt",
+	"fst",
+	"fstcw",
+	"fstenv",
+	"fstp",
+	"fstsw",
+	"fsub",
+	"fsubp",
+	"fsubr",
+	"fsubrp",
+	"ftst",
+	"fucom",
+	"fucomi",
+	"fucomip",
+	"fucomp",
+	"fucompp",
+	"fwait",
+	"fxam",
+	"fxch",
+	"fxrstor",
+	"fxsave",
+	"fxtract",
+	"fyl2x",
+	"fyl2xp1",
+	"gf2p8affineinvqb",
+	"gf2p8affineqb",
+	"gf2p8mulb",
+	"haddpd",
+	"haddps",
+	"hlt",
+	"hsubpd",
+	"hsubps",
+	"idiv",
+	"imul",
+	"in",
+	"inc",
+	"ins",
+	"insb",
+	"insd",
+	"insertps",
+	"insw",
+	"int",
+	"int1",
+	"int3",
+	"into",
+	"invd",
+	"invlpg",
+	"invpcid",
+	"iret",
+	"iretd",
+	"jmp",
+	"ja",
+	"jae",
+	"jb",
+	"jbe",
+	"jc",
+	"jcxz",
+	"jecxz",
+	"je",
+	"jg",
+	"jge",
+	"jl",
+	"jle",
+	"jna",
+	"jnae",
+	"jnb",
+	"jnbe",
+	"jnc",
+	"jne",
+	"jng",
+	"jnge",
+	"jnl",
+	"jnle",
+	"jno",
+	"jnp",
+	"jns",
+	"jnz",
+	"jo",
+	"jp",
+	"jpe",
+	"jpo",
+	"js",
+	"jz",
+	"kaddb",
+	"kaddd",
+	"kaddq",
+	"kaddw",
+	"kandb",
+	"kandd",
+	"kandnb",
+	"kandnd",
+	"kandnq",
+	"kandnw",
+	"kandq",
+	"kandw",
+	"kmovb",
+	"kmovd",
+	"kmovq",
+	"kmovw",
+	"knotb",
+	"knotd",
+	"knotq",
+	"knotw",
+	"korb",
+	"kord",
+	"korq",
+	"kortestb",
+	"kortestd",
+	"kortestq",
+	"kortestw",
+	"korw",
+	"kshiftlb",
+	"kshiftld",
+	"kshiftlq",
+	"kshiftlw",
+	"kshiftrb",
+	"kshiftrd",
+	"kshiftrq",
+	"kshiftrw",
+	"ktestb",
+	"ktestd",
+	"ktestq",
+	"ktestw",
+	"kunpckbw",
+	"kunpckdq",
+	"kunpckwd",
+	"kxnorb",
+	"kxnord",
+	"kxnorq",
+	"kxnorw",
+	"kxorb",
+	"kxord",
+	"kxorq",
+	"kxorw",
+	"lahf",
+	"lar",
+	"lddqu",
+	"ldmxcsr",
+	"lds",
+	"lea",
+	"leave",
+	"les",
+	"lfence",
+	"lfs",
+	"lgdt",
+	"lgs",
+	"lidt",
+	"lldt",
+	"lmsw",
+	"lock",
+	"lods",
+	"lodsb",
+	"lodsd",
+	"lodsq",
+	"lodsw",
+	"loop",
+	"loopa",
+	"loopae",
+	"loopb",
+	"loopbe",
+	"loopc",
+	"loope",
+	"loopg",
+	"loopge",
+	"loopl",
+	"loople",
+	"loopna",
+	"loopnae",
+	"loopnb",
+	"loopnbe",
+	"loopnc",
+	"loopne",
+	"loopng",
+	"loopnge",
+	"loopnl",
+	"loopnle",
+	"loopno",
+	"loopnp",
+	"loopns",
+	"loopnz",
+	"loopo",
+	"loopp",
+	"looppe",
+	"looppo",
+	"loops",
+	"loopz",
+	"lsl",
+	"lss",
+	"ltr",
+	"lzcnt",
+	"maskmovdqu",
+	"maskmovq",
+	"maxpd",
+	"maxps",
+	"maxsd",
+	"maxss",
+	"mfence",
+	"minpd",
+	"minps",
+	"minsd",
+	"minss",
+	"monitor",
+	"mov",
+	"movapd",
+	"movaps",
+	"movbe",
+	"movd",
+	"movddup",
+	"movdir64b",
+	"movdiri",
+	"movdq2q",
+	"movdqa",
+	"movdqu",
+	"movhlps",
+	"movhpd",
+	"movhps",
+	"movlhps",
+	"movlpd",
+	"movlps",
+	"movmskpd",
+	"movmskps",
+	"movntdq",
+	"movntdqa",
+	"movnti",
+	"movntpd",
+	"movntps",
+	"movntq",
+	"movq",
+	"movq",
+	"movq2dq",
+	"movs",
+	"movsb",
+	"movsd",
+	"movsd",
+	"movshdup",
+	"movsldup",
+	"movsq",
+	"movss",
+	"movsw",
+	"movsx",
+	"movsxd",
+	"movupd",
+	"movups",
+	"movzx",
+	"mpsadbw",
+	"mul",
+	"mulpd",
+	"mulps",
+	"mulsd",
+	"mulss",
+	"mulx",
+	"mwait",
+	"neg",
+	"nop",
+	"not",
+	"or",
+	"orpd",
+	"orps",
+	"out",
+	"outs",
+	"outsb",
+	"outsd",
+	"outsw",
+	"pabsb",
+	"pabsd",
+	"pabsq",
+	"pabsw",
+	"packssdw",
+	"packsswb",
+	"packusdw",
+	"packuswb",
+	"paddb",
+	"paddd",
+	"paddq",
+	"paddsb",
+	"paddsw",
+	"paddusb",
+	"paddusw",
+	"paddw",
+	"palignr",
+	"pand",
+	"pandn",
+	"pause",
+	"pavgb",
+	"pavgw",
+	"pblendvb",
+	"pblendw",
+	"pclmulqdq",
+	"pcmpeqb",
+	"pcmpeqd",
+	"pcmpeqq",
+	"pcmpeqw",
+	"pcmpestri",
+	"pcmpestrm",
+	"pcmpgtb",
+	"pcmpgtd",
+	"pcmpgtq",
+	"pcmpgtw",
+	"pcmpistri",
+	"pcmpistrm",
+	"pdep",
+	"pext",
+	"pextrb",
+	"pextrd",
+	"pextrq",
+	"pextrw",
+	"phaddd",
+	"phaddsw",
+	"phaddw",
+	"phminposuw",
+	"phsubd",
+	"phsubsw",
+	"phsubw",
+	"pinsrb",
+	"pinsrd",
+	"pinsrq",
+	"pinsrw",
+	"pmaddubsw",
+	"pmaddwd",
+	"pmaxsb",
+	"pmaxsd",
+	"pmaxsq",
+	"pmaxsw",
+	"pmaxub",
+	"pmaxud",
+	"pmaxuq",
+	"pmaxuw",
+	"pminsb",
+	"pminsd",
+	"pminsq",
+	"pminsw",
+	"pminub",
+	"pminud",
+	"pminuq",
+	"pminuw",
+	"pmovmskb",
+	"pmovsx",
+	"pmovzx",
+	"pmuldq",
+	"pmulhrsw",
+	"pmulhuw",
+	"pmulhw",
+	"pmulld",
+	"pmullq",
+	"pmullw",
+	"pmuludq",
+	"pop",
+	"popa",
+	"popad",
+	"popcnt",
+	"popf",
+	"popfd",
+	"popfq",
+	"por",
+	"prefetchw",
+	"prefetchh",
+	"psadbw",
+	"pshufb",
+	"pshufd",
+	"pshufhw",
+	"pshuflw",
+	"pshufw",
+	"psignb",
+	"psignd",
+	"psignw",
+	"pslld",
+	"pslldq",
+	"psllq",
+	"psllw",
+	"psrad",
+	"psraq",
+	"psraw",
+	"psrld",
+	"psrldq",
+	"psrlq",
+	"psrlw",
+	"psubb",
+	"psubd",
+	"psubq",
+	"psubsb",
+	"psubsw",
+	"psubusb",
+	"psubusw",
+	"psubw",
+	"ptest",
+	"ptwrite",
+	"punpckhbw",
+	"punpckhdq",
+	"punpckhqdq",
+	"punpckhwd",
+	"punpcklbw",
+	"punpckldq",
+	"punpcklqdq",
+	"punpcklwd",
+	"push",
+	"pushw",
+	"pushd",
+	"pusha",
+	"pushad",
+	"pushf",
+	"pushfd",
+	"pushfq",
+	"pxor",
+	"rcl",
+	"rcpps",
+	"rcpss",
+	"rcr",
+	"rdfsbase",
+	"rdgsbase",
+	"rdmsr",
+	"rdpid",
+	"rdpkru",
+	"rdpmc",
+	"rdrand",
+	"rdseed",
+	"rdtsc",
+	"rdtscp",
+	"rep",
+	"repe",
+	"repne",
+	"repnz",
+	"repz",
+	"ret",
+	"rol",
+	"ror",
+	"rorx",
+	"roundpd",
+	"roundps",
+	"roundsd",
+	"roundss",
+	"rsm",
+	"rsqrtps",
+	"rsqrtss",
+	"sahf",
+	"sal",
+	"sar",
+	"sarx",
+	"sbb",
+	"scas",
+	"scasb",
+	"scasd",
+	"scasw",
+	"seta",
+	"setae",
+	"setb",
+	"setbe",
+	"setc",
+	"sete",
+	"setg",
+	"setge",
+	"setl",
+	"setle",
+	"setna",
+	"setnae",
+	"setnb",
+	"setnbe",
+	"setnc",
+	"setne",
+	"setng",
+	"setnge",
+	"setnl",
+	"setnle",
+	"setno",
+	"setnp",
+	"setns",
+	"setnz",
+	"seto",
+	"setp",
+	"setpe",
+	"setpo",
+	"sets",
+	"setz",
+	"sfence",
+	"sgdt",
+	"sha1msg1",
+	"sha1msg2",
+	"sha1nexte",
+	"sha1rnds4",
+	"sha256msg1",
+	"sha256msg2",
+	"sha256rnds2",
+	"shl",
+	"shld",
+	"shlx",
+	"shr",
+	"shrd",
+	"shrx",
+	"shufpd",
+	"shufps",
+	"sidt",
+	"sldt",
+	"smsw",
+	"sqrtpd",
+	"sqrtps",
+	"sqrtsd",
+	"sqrtss",
+	"stac",
+	"stc",
+	"std",
+	"sti",
+	"stmxcsr",
+	"stos",
+	"stosb",
+	"stosd",
+	"stosq",
+	"stosw",
+	"str",
+	"sub",
+	"subpd",
+	"subps",
+	"subsd",
+	"subss",
+	"swapgs",
+	"syscall",
+	"sysenter",
+	"sysexit",
+	"sysret",
+	"test",
+	"tpause",
+	"tzcnt",
+	"ucomisd",
+	"ucomiss",
+	"ud",
+	"umonitor",
+	"umwait",
+	"unpckhpd",
+	"unpckhps",
+	"unpcklpd",
+	"unpcklps",
+	"valignd",
+	"valignq",
+	"vblendmpd",
+	"vblendmps",
+	"vbroadcast",
+	"vcompresspd",
+	"vcompressps",
+	"vcvtpd2qq",
+	"vcvtpd2udq",
+	"vcvtpd2uqq",
+	"vcvtph2ps",
+	"vcvtps2ph",
+	"vcvtps2qq",
+	"vcvtps2udq",
+	"vcvtps2uqq",
+	"vcvtqq2pd",
+	"vcvtqq2ps",
+	"vcvtsd2usi",
+	"vcvtss2usi",
+	"vcvttpd2qq",
+	"vcvttpd2udq",
+	"vcvttpd2uqq",
+	"vcvttps2qq",
+	"vcvttps2udq",
+	"vcvttps2uqq",
+	"vcvttsd2usi",
+	"vcvttss2usi",
+	"vcvtudq2pd",
+	"vcvtudq2ps",
+	"vcvtuqq2pd",
+	"vcvtuqq2ps",
+	"vcvtusi2sd",
+	"vcvtusi2ss",
+	"vdbpsadbw",
+	"verr",
+	"verw",
+	"vexpandpd",
+	"vexpandps",
+	"vextractf128",
+	"vextractf32x4",
+	"vextractf32x8",
+	"vextractf64x2",
+	"vextractf64x4",
+	"vextracti128",
+	"vextracti32x4",
+	"vextracti32x8",
+	"vextracti64x2",
+	"vextracti64x4",
+	"vfixupimmpd",
+	"vfixupimmps",
+	"vfixupimmsd",
+	"vfixupimmss",
+	"vfmadd132pd",
+	"vfmadd132ps",
+	"vfmadd132sd",
+	"vfmadd132ss",
+	"vfmadd213pd",
+	"vfmadd213ps",
+	"vfmadd213sd",
+	"vfmadd213ss",
+	"vfmadd231pd",
+	"vfmadd231ps",
+	"vfmadd231sd",
+	"vfmadd231ss",
+	"vfmaddsub132pd",
+	"vfmaddsub132ps",
+	"vfmaddsub213pd",
+	"vfmaddsub213ps",
+	"vfmaddsub231pd",
+	"vfmaddsub231ps",
+	"vfmsub132pd",
+	"vfmsub132ps",
+	"vfmsub132sd",
+	"vfmsub132ss",
+	"vfmsub213pd",
+	"vfmsub213ps",
+	"vfmsub213sd",
+	"vfmsub213ss",
+	"vfmsub231pd",
+	"vfmsub231ps",
+	"vfmsub231sd",
+	"vfmsub231ss",
+	"vfmsubadd132pd",
+	"vfmsubadd132ps",
+	"vfmsubadd213pd",
+	"vfmsubadd213ps",
+	"vfmsubadd231pd",
+	"vfmsubadd231ps",
+	"vfnmadd132pd",
+	"vfnmadd132ps",
+	"vfnmadd132sd",
+	"vfnmadd132ss",
+	"vfnmadd213pd",
+	"vfnmadd213ps",
+	"vfnmadd213sd",
+	"vfnmadd213ss",
+	"vfnmadd231pd",
+	"vfnmadd231ps",
+	"vfnmadd231sd",
+	"vfnmadd231ss",
+	"vfnmsub132pd",
+	"vfnmsub132ps",
+	"vfnmsub132sd",
+	"vfnmsub132ss",
+	"vfnmsub213pd",
+	"vfnmsub213ps",
+	"vfnmsub213sd",
+	"vfnmsub213ss",
+	"vfnmsub231pd",
+	"vfnmsub231ps",
+	"vfnmsub231sd",
+	"vfnmsub231ss",
+	"vfpclasspd",
+	"vfpclassps",
+	"vfpclasssd",
+	"vfpclassss",
+	"vgatherdpd",
+	"vgatherdpd",
+	"vgatherdps",
+	"vgatherdps",
+	"vgatherqpd",
+	"vgatherqpd",
+	"vgatherqps",
+	"vgatherqps",
+	"vgetexppd",
+	"vgetexpps",
+	"vgetexpsd",
+	"vgetexpss",
+	"vgetmantpd",
+	"vgetmantps",
+	"vgetmantsd",
+	"vgetmantss",
+	"vinsertf128",
+	"vinsertf32x4",
+	"vinsertf32x8",
+	"vinsertf64x2",
+	"vinsertf64x4",
+	"vinserti128",
+	"vinserti32x4",
+	"vinserti32x8",
+	"vinserti64x2",
+	"vinserti64x4",
+	"vmaskmov",
+	"vmovdqa32",
+	"vmovdqa64",
+	"vmovdqu16",
+	"vmovdqu32",
+	"vmovdqu64",
+	"vmovdqu8",
+	"vpblendd",
+	"vpblendmb",
+	"vpblendmd",
+	"vpblendmq",
+	"vpblendmw",
+	"vpbroadcast",
+	"vpbroadcastb",
+	"vpbroadcastd",
+	"vpbroadcastm",
+	"vpbroadcastq",
+	"vpbroadcastw",
+	"vpcmpb",
+	"vpcmpd",
+	"vpcmpq",
+	"vpcmpub",
+	"vpcmpud",
+	"vpcmpuq",
+	"vpcmpuw",
+	"vpcmpw",
+	"vpcompressd",
+	"vpcompressq",
+	"vpconflictd",
+	"vpconflictq",
+	"vperm2f128",
+	"vperm2i128",
+	"vpermb",
+	"vpermd",
+	"vpermi2b",
+	"vpermi2d",
+	"vpermi2pd",
+	"vpermi2ps",
+	"vpermi2q",
+	"vpermi2w",
+	"vpermilpd",
+	"vpermilps",
+	"vpermpd",
+	"vpermps",
+	"vpermq",
+	"vpermt2b",
+	"vpermt2d",
+	"vpermt2pd",
+	"vpermt2ps",
+	"vpermt2q",
+	"vpermt2w",
+	"vpermw",
+	"vpexpandd",
+	"vpexpandq",
+	"vpgatherdd",
+	"vpgatherdd",
+	"vpgatherdq",
+	"vpgatherdq",
+	"vpgatherqd",
+	"vpgatherqd",
+	"vpgatherqq",
+	"vpgatherqq",
+	"vplzcntd",
+	"vplzcntq",
+	"vpmadd52huq",
+	"vpmadd52luq",
+	"vpmaskmov",
+	"vpmovb2m",
+	"vpmovd2m",
+	"vpmovdb",
+	"vpmovdw",
+	"vpmovm2b",
+	"vpmovm2d",
+	"vpmovm2q",
+	"vpmovm2w",
+	"vpmovq2m",
+	"vpmovqb",
+	"vpmovqd",
+	"vpmovqw",
+	"vpmovsdb",
+	"vpmovsdw",
+	"vpmovsqb",
+	"vpmovsqd",
+	"vpmovsqw",
+	"vpmovswb",
+	"vpmovusdb",
+	"vpmovusdw",
+	"vpmovusqb",
+	"vpmovusqd",
+	"vpmovusqw",
+	"vpmovuswb",
+	"vpmovw2m",
+	"vpmovwb",
+	"vpmultishiftqb",
+	"vprold",
+	"vprolq",
+	"vprolvd",
+	"vprolvq",
+	"vprord",
+	"vprorq",
+	"vprorvd",
+	"vprorvq",
+	"vpscatterdd",
+	"vpscatterdq",
+	"vpscatterqd",
+	"vpscatterqq",
+	"vpsllvd",
+	"vpsllvq",
+	"vpsllvw",
+	"vpsravd",
+	"vpsravq",
+	"vpsravw",
+	"vpsrlvd",
+	"vpsrlvq",
+	"vpsrlvw",
+	"vpternlogd",
+	"vpternlogq",
+	"vptestmb",
+	"vptestmd",
+	"vptestmq",
+	"vptestmw",
+	"vptestnmb",
+	"vptestnmd",
+	"vptestnmq",
+	"vptestnmw",
+	"vrangepd",
+	"vrangeps",
+	"vrangesd",
+	"vrangess",
+	"vrcp14pd",
+	"vrcp14ps",
+	"vrcp14sd",
+	"vrcp14ss",
+	"vreducepd",
+	"vreduceps",
+	"vreducesd",
+	"vreducess",
+	"vrndscalepd",
+	"vrndscaleps",
+	"vrndscalesd",
+	"vrndscaless",
+	"vrsqrt14pd",
+	"vrsqrt14ps",
+	"vrsqrt14sd",
+	"vrsqrt14ss",
+	"vscalefpd",
+	"vscalefps",
+	"vscalefsd",
+	"vscalefss",
+	"vscatterdpd",
+	"vscatterdps",
+	"vscatterqpd",
+	"vscatterqps",
+	"vshuff32x4",
+	"vshuff64x2",
+	"vshufi32x4",
+	"vshufi64x2",
+	"vtestpd",
+	"vtestps",
+	"vzeroall",
+	"vzeroupper",
+	"wait",
+	"wbinvd",
+	"wrfsbase",
+	"wrgsbase",
+	"wrmsr",
+	"wrpkru",
+	"xabort",
+	"xacquire",
+	"xadd",
+	"xbegin",
+	"xchg",
+	"xend",
+	"xgetbv",
+	"xlat",
+	"xlatb",
+	"xor",
+	"xorpd",
+	"xorps",
+	"xrelease",
+	"xrstor",
+	"xrstors",
+	"xsave",
+	"xsavec",
+	"xsaveopt",
+	"xsaves",
+	"xsetbv",
+	"xtest"
+]
+
+fasm_types = [
+	"db", "rb",
+	"dw", "rw",
+	"dd", "rd",
+	"dp", "rp",
+	"df", "rf",
+	"dq", "rq",
+	"dt", "rt",
+	"du",
+]
 
 # Warning list
 warnings = ""
@@ -34,323 +1171,656 @@ dump_symbols = args.dump
 print_stats = args.stats
 enable_warnings = not args.nowarn
 
-# kernel_structure["filename"] = {
-#   [ [],    # [0] Variables - [ line, name ]
-#     [],    # [1] Macros - [ line, name ]
-#     [],    # [2] Procedures - [ line, name ]
-#     [],    # [3] Labels - [ line, name ]
-#     [] ] } # [4] Structures - [ line, name ]
-VARIABLES = 0
-MACROS = 1
-PROCEDURES = 2
-LABELS = 3
-STRUCTURES = 4
-kernel_structure = {}
+# Variables, functions, labels, macros, structure types
+elements = []
+# Names of macroses
+macro_names = []
+# Names of structs
+struct_names = []
+# Equated constant names (name = value)
+equated_constant_names = []
+# Literally equated constant names (name equ value)
+equ_names = []
 
-class AsmVariable:
-	def __init__(self, line, name, type, init, comment, line_span):
-		self.line = line
-		self.name = name
-		self.type = type
-		self.init = init
-		self.comment = comment # Comment after the definition (a dd 0 ; Comment)
-		self.line_span = line_span # How much .asm lines its definition takes
+class LegacyAsmReader:
+	def __init__(self, file):
+		self.file = file
+		self.lines = open(file, "r", encoding="utf-8").readlines()
+		self.line_idx = 0
+		self.i = 0
 
-class AsmFunction:
-	def __init__(self, line, name):
-		self.line = line
-		self.name = name
+	def curr(self):
+		try: return self.lines[self.line_idx][self.i]
+		except: return ''
 
-class AsmLabel:
-	def __init__(self, line, name):
-		self.line = line
-		self.name = name
+	def step(self):
+		c = self.curr()
+		self.i += 1
+		# Wrap the line if '\\' followed by whitespaces and/or comment
+		while self.curr() == '\\':
+			i_of_backslash = self.i
+			self.i += 1
+			while self.curr().isspace():
+				self.i += 1
+			if self.curr() == ';' or self.curr() == '':
+				self.line_idx += 1
+				self.i = 0
+			else:
+				# There's something other than a comment after the backslash
+				# So don't interpret the backslash as a line wrap
+				self.i = i_of_backslash
+				break
+		return c
 
-class AsmMacro:
-	def __init__(self, asm_file_name, line, name, comment, args):
-		self.file = asm_file_name
-		self.line = line
+	def nextline(self):
+		c = self.curr()
+		while c != '':
+			c = self.step()
+		self.line_idx += 1
+		self.i = 0
+
+	def no_lines(self):
+		if self.line_idx >= len(self.lines):
+			return True
+		return False
+
+	def location(self):	
+		return f"{self.file}:{self.line_idx + 1}"
+
+	def skip_spaces(self):
+		while self.curr().isspace():
+			self.step()
+
+class AsmReaderRecognizingStrings(LegacyAsmReader):
+	def __init__(self, file):
+		super().__init__(file)
+		self.in_string = None
+		self.should_recognize_strings = True
+
+	def step(self):
+		c = super().step()
+		if self.should_recognize_strings and (c == '"' or c == "'"):
+			# If just now we was at the double or single quotation mark
+			# and we aren't in a string yet
+			# then say "we are in a string openned with this quotation mark now"
+			if self.in_string == None:
+				self.in_string = c
+			# If just now we was at the double or single quotation mark
+			# and we are in the string entered with the same quotation mark
+			# then say "we aren't in a string anymore"
+			elif self.in_string == c:
+				self.in_string = None
+		return c
+
+class AsmReaderReadingComments(AsmReaderRecognizingStrings):
+	def __init__(self, file):
+		super().__init__(file)
+		self.status = dict()
+		self.status_reset()
+		self.comment = ''
+
+	def status_reset(self):
+		# If the line has non-comment code
+		self.status['has_code'] = False
+		# If the line has a comment at the end
+		self.status['has_comment'] = False
+		# Let it recognize strings further, we are definitely out of a comment
+		self.should_recognize_strings = True
+
+	def status_set_has_comment(self):
+		self.status['has_comment'] = True
+		# Don't let it recognize strings cause we are in a comment now
+		self.should_recognize_strings = False
+
+	def status_set_has_code(self):
+		self.status['has_code'] = True
+
+	def status_has_comment(self):
+		return self.status['has_comment']
+
+	def status_has_code(self):
+		return self.status['has_code']
+
+	def update_status(self):
+		# If we aren't in a comment and we aren't in a string - say we are now in a comment if ';' met
+		if not self.status_has_comment() and not self.in_string and self.curr() == ';':
+			self.status_set_has_comment()
+		# Else if we are in a comment - collect the comment
+		elif self.status_has_comment():
+			self.comment += self.curr()
+		# Else if there's some non-whitespace character out of a comment
+		# then the line has code
+		elif not self.status_has_comment() and not self.curr().isspace():
+			self.status_set_has_code()
+
+	def step(self):
+		# Get to the next character
+		c = super().step()
+		# Update status of the line according to the next character
+		self.update_status()
+		return c
+
+	def nextline(self):
+		super().nextline()
+		# If the line we leave was not a comment-only line
+		# then forget the collected comment
+		# Otherwise the collected comment should be complemented by comment from next line in step()
+		if self.status_has_code():
+			self.comment = ''
+		# Reset the line status (now it's the status of the new line)
+		self.status_reset()
+		# Set new status for this line according to the first character in the line
+		self.update_status()
+
+	def get_comment(self):
+		return self.comment
+
+class AsmReader(AsmReaderReadingComments):
+	def __init__(self, file):
+		super().__init__(file)
+
+created_files = []
+
+class AsmElement:
+	def __init__(self, location, name, comment):
+		self.location = location
+		self.file = self.location.split(':')[0].replace('\\', '/')
+		self.line = self.location.split(':')[1]
 		self.name = name
 		self.comment = comment
+
+	def dump(self):
+		print(f"{self.comment}")
+		print(f"{self.location}: {self.name}")
+
+	def emit(self, dest, doxycomment = '', declaration = ''):
+		global warnings
+		# Redefine default declaration
+		if declaration == '':
+			declaration = f'#define {self.name}'
+		# Check doxycomment
+		if not doxycomment.endswith('\n'):
+			doxycomment += '\n'
+		if doxycomment.split('@brief ')[1][0].islower():
+			warnings += f"{self.location}: Brief comment starting from lowercase\n"
+		# Build contents to emit
+		contents = ''
+		contents += '/**\n'
+		contents += doxycomment
+		contents += (f"@par Source\n" +
+		             f"<a href='{link_root}/{self.file}#line-{self.line}'>{self.file}:{self.line}</a>\n")
+		contents += '*/\n'
+		contents += declaration
+		contents += '\n\n'
+		# Get path to file to emit this
+		full_path = dest + '/' + self.file
+		# Remove the file on first access if it was created by previous generation
+		if full_path not in created_files:
+			if os.path.isfile(full_path):
+				os.remove(full_path)
+			created_files.append(full_path)
+		# Only remove the file on 'clean_generated_stuff' flag (removed above, just return)
+		if clean_generated_stuff:
+			return
+		# Create directories need for the file
+		os.makedirs(os.path.dirname(full_path), exist_ok=True)
+		f = open(full_path, "a")
+		contents = ''.join([i if ord(i) < 128 else '?' for i in contents])
+		f.write(contents)
+		f.close()
+
+class AsmVariable(AsmElement):
+	def __init__(self, location, name, comment, type, init):
+		super().__init__(location, name, comment)
+		self.type = type
+		self.init = init
+
+	def dump(self):
+		super().dump()
+		print(f"Variable")
+
+	def emit(self, dest):
+		# Build doxycomment specific for the variable
+		doxycomment = ''
+		doxycomment += self.comment
+		if '@brief' not in doxycomment:
+			doxycomment = '@brief ' + doxycomment
+		doxycomment += (f"@par Initial value\n" +
+		                f"{self.init}\n")
+		# Build the declaration
+		name = self.name.replace(".", "_")
+		var_type = self.type.replace(".", "_")
+		declaration = f"{var_type} {name};"
+		# Emit this
+		super().emit(dest, doxycomment, declaration)
+
+class AsmFunction(AsmElement):
+	def __init__(self, location, name, comment):
+		super().__init__(location, name, comment)
+
+	def dump(self):
+		super().dump()
+		print(f"Function")
+
+	def emit(self, dest):
+		# Build doxycomment specific for the variable
+		doxycomment = ''
+		doxycomment += self.comment
+		if '@brief' not in doxycomment:
+			doxycomment = '@brief ' + doxycomment
+		# Build the declaration
+		name = self.name.replace(".", "_")
+		declaration = f"void {name}();"
+		# Emit this
+		super().emit(dest, doxycomment, declaration)
+
+class AsmLabel(AsmElement):
+	def __init__(self, location, name, comment):
+		super().__init__(location, name, comment)
+
+	def dump(self):
+		super().dump()
+		print(f"Label")
+
+	def emit(self, dest):
+		# Build doxycomment specific for the variable
+		doxycomment = ''
+		doxycomment += self.comment
+		if '@brief' not in doxycomment:
+			doxycomment = '@brief ' + doxycomment
+		# Build the declaration
+		name = self.name.replace(".", "_")
+		declaration = f"label {name};"
+		# Emit this
+		super().emit(dest, doxycomment, declaration)
+
+class AsmMacro(AsmElement):
+	def __init__(self, location, name, comment, args):
+		super().__init__(location, name, comment)
 		self.args = args
 
-class AsmStruct:
-	def __init__(self, line, name):
-		self.line = line
+	def dump(self):
+		super().dump()
+		print(f"Macro")
+		print(f"Parameters: {self.args}")
+
+	def emit(self, dest):
+		# Construct arg list without '['s, ']'s and '*'s
+		args = [arg for arg in self.args if arg not in "[]*"]
+		# Construct C-like arg list
+		arg_list = ""
+		if len(args) > 0:
+			arg_list += '('
+			argc = 0
+			for arg in args:
+				if argc != 0:
+					arg_list += ", "
+				arg_list += arg
+				argc += 1
+			arg_list += ')'
+		# Build doxycomment
+		doxycomment = ''
+		doxycomment += self.comment
+		if '@brief' not in doxycomment:
+			doxycomment = '@brief ' + doxycomment
+		# Build declaration
+		declaration = f"#define {self.name}{arg_list}"
+		# Emit this
+		super().emit(dest, doxycomment, declaration)
+
+class AsmStruct(AsmElement):
+	def __init__(self, location, name, comment, members):
+		super().__init__(location, name, comment)
+		self.members = members
+
+	def dump(self):
+		super().dump()
+		print(f"Struct")
+
+	def emit(self, dest):
+		# Build doxycomment
+		doxycomment = ''
+		doxycomment += self.comment
+		if '@brief' not in doxycomment:
+			doxycomment = '@brief ' + doxycomment
+		# Build declaration
+		declaration = f"struct {self.name}" + " {};"
+		# Emit this
+		super().emit(dest, doxycomment, declaration)
+
+class AsmUnion(AsmElement):
+	def __init__(self, location, name, comment, members):
+		super().__init__(location, name, comment)
+		self.members = members
+
+	def dump(self):
+		super().dump()
+		print(f"Union")
+
+	def emit(self, dest):
+		# Build doxycomment
+		doxycomment = ''
+		doxycomment += self.comment
+		if '@brief' not in doxycomment:
+			doxycomment = '@brief ' + doxycomment
+		# Build declaration
+		declaration = f"union {self.name}" + " {};"
+		# Emit this
+		super().emit(dest, doxycomment, declaration)
+
+class VariableNameIsMacroName:
+	def __init__(self, name):
 		self.name = name
 
-def parse_variable(asm_file_name, lines, line_idx):
-	global warnings
-
-	def curr():
-		try: return line[i]
-		except: return ''
-
-	# Returns current and then increments current index
-	def step():
-		nonlocal i
-		c = curr()
-		i += 1
-		return c
-
-	line = lines[line_idx]
-	i = 0
-	# Skip first spaces
-	while curr().isspace(): step()
-	# Get name
-	name = ""
-	while curr().isalnum() or curr() == '_' or curr() == '.': name += step()
-	# Skip spaces after variable name
-	while curr().isspace(): step()
-	# Get type specifier (db, dd, etc.)
-	type = ""
-	while curr().isalnum() or curr() == '_': type += step()
-	# Skip spaces after type specifier
-	while curr().isspace(): step()
-	# Get initial value (everything up to end of the line or comment)
-	init = ""
-	while curr() and curr() != ';': init += step()
-	# Get comment
-	comment = ""
-	if curr() == ';':
-		step() # Skip ';'
-		while curr(): comment += step()
-	# Process type
-	if type == "db": type = "byte"
-	elif type == "dw": type = "word"
-	elif type == "dd": type = "dword"
-	elif type == "dq": type = "qword"
-	else: raise Exception(f"Unexpected type: '{type}' (i = {i})")
-	# Process comment
-	if comment == "": comment = "Undocumented"
-	else:
-		comment = comment.lstrip()
-		if (len(comment) == 0):
-			comment = "!!! EMPTY_COMMENT"
-			warnings += f"{asm_file_name}:{line_idx + 1}: Empty comment in\n"
-		if comment[0].islower():
-			warnings += f"{asm_file_name}:{line_idx + 1}: Сomment sarting with lowercase\n"
-	# Build the result
-	result = AsmVariable(line_idx + 1, name, type, init, comment, 1)
-	return (1, result)
-
 def is_id(c):
-	return c.isprintable() and c not in "+-/*=<>()[]{}:,|&~#`'\" \n\r\t\v"
+	return c.isprintable() and c not in "+-/*=<>()[]{};:,|&~#`'\" \n\r\t\v"
 
-def get_comment_begin(line):
-	result = len(line)
-	in_str = False
-	for i in range(len(line)):
-		if in_str:
-			if line[i] == in_str: in_str = False
-			i += 1
-		elif line[i] == '\'' or line[i] == '\"':
-			in_str = line[i]
-			i += 1
-		elif line[i] == ';':
-			result = i
-			break
-		else:
-			i += 1
-	return result
+def is_starts_as_id(s):
+	return not s[0].isdigit()
 
-def get_comment(line):
-	return line[get_comment_begin(line):]
+def parse_after_macro(r):
+	location = r.location()
 
-def remove_comment(line):
-	return line[0:get_comment_begin(line)]
-
-def insert_comment(line, comment):
-	comment_begin = get_comment_begin(line)
-	line_left = line[:get_comment_begin(line)]
-	line_right = line[get_comment_begin(line):]
-	return line_left + comment + line_right
-
-def has_line_wrap(line):
-	if remove_comment(line).rstrip()[-1] == '\\':
-		return True
-	return False
-
-def remove_line_wrap(line):
-	if remove_comment(line).rstrip()[-1] == '\\':
-		return remove_comment(line).rstrip()[:-1]
-	return line
-
-def parse_macro(asm_file_name, lines, line_idx):
-	line_idx_orig = line_idx
-	global warnings
-
-	def curr():
-		try: return line[i]
-		except: return ''
-
-	# Returns current and then increments current index
-	def step():
-		nonlocal i
-		c = curr()
-		i += 1
-		return c
-
-	line = lines[line_idx]
-	# Handle line wraps ('\' at the end)
-	while has_line_wrap(line):
-		next_line = lines[line_idx + 1]
-		prev_line_comment = get_comment(line)
-		line = remove_line_wrap(line) + insert_comment(next_line, prev_line_comment)
-		line_idx += 1
-
-	i = 0
-	# Skip first spaces
-	while curr().isspace(): step()
-	# Read "macro" keyword
-	keyword = ""
-	while is_id(curr()): keyword += step()
-	if keyword != "macro": raise Exception(f"Not a macro: {line}")
-	# Skip spaces after "macro"
-	while curr().isspace(): step()
+	# Skip spaces after the "macro" keyword
+	r.skip_spaces()
 	# Read macro name
 	name = ""
-	while curr() and not curr().isspace(): name += step()
+	while is_id(r.curr()) or r.curr() == '#':
+		name += r.step()
 	# Skip spaces after macro name
-	while curr().isspace(): step()
+	r.skip_spaces()
 	# Find all arguments
 	args = []
 	arg = ''
-	while curr() and curr() != ';' and curr() != '{':
+	while r.curr() and r.curr() != ';' and r.curr() != '{':
 		# Collect identifier
-		if is_id(curr()):
-			arg += step()
+		if is_id(r.curr()):
+			arg += r.step()
 		# Save the collected identifier
-		elif curr() == ',':
+		elif r.curr() == ',':
 			args.append(arg)
 			arg = ''
-			step()
+			r.step()
 		# Just push the '['
-		elif curr() == '[':
-			args.append(step())
+		elif r.curr() == '[':
+			args.append(r.step())
 		# Just push the identifier and get ']' ready to be pushed on next comma
-		elif curr() == ']':
+		elif r.curr() == ']':
 			args.append(arg)
-			arg = step()
+			arg = r.step()
 		# Just push the identifier and get '*' ready to be pushed on next comma
-		elif curr() == '*':
+		elif r.curr() == '*':
 			args.append(arg)
-			arg = step()
+			arg = r.step()
 		# Just skip whitespaces
-		elif curr().isspace():
-			step()
+		elif r.curr().isspace():
+			r.step()
 		# Something unexpected
 		else:
-			raise Exception(f"Unexpected symbol '{curr()}' at index #{i} " + 
-			                f"in the macro declaration:\n'{line}'")
+			raise Exception(f"Unexpected symbol '{r.curr()}' at index #{r.i} " + 
+			                f"in the macro declaration at {location} " +
+			                f"(line: {r.lines[r.line_idx]})\n''")
+	# Append the last argument
 	if arg != '':
 		args.append(arg)
-	# Find a comment if any
-	comment = ""
-	while curr() and curr() != ';': step()
-	if curr() == ';':
-		step()
-		while curr(): comment += step()
+	# Skip t spaces after the argument list
+	r.skip_spaces()
+	# Get a comment if it is: read till the end of the line and get the comment from the reader
+	while r.curr() != '':
+		r.step()
+	comment = r.comment
 	# Find end of the macro
-	end_of_macro = False
-	while not end_of_macro:
-		line = lines[line_idx]
-		rbraces = re.finditer('}', line)
-		for rbrace_match in rbraces:
-			rbrace_idx = rbrace_match.start()
-			if line[rbrace_idx - 1] != '\\':
-				end_of_macro = True
-		line_idx += 1
-	# Process comment
-	if comment != "":
-		comment = comment.lstrip()
-		if (len(comment) == 0):
-			comment = "!!! EMPTY_COMMENT"
-			warnings += f"{asm_file_name}:{line_idx + 1}: Empty comment in\n"
-		if comment[0].islower():
-			warnings += f"{asm_file_name}:{line_idx + 1}: Сomment sarting with lowercase\n"
+	prev = ''
+	while True:
+		if r.curr() == '}' and prev != '\\':
+			break
+		elif r.curr() == '':
+			prev = ''
+			r.nextline()
+			continue
+		prev = r.step()
 	# Build the output
-	line_span = line_idx - line_idx_orig + 1
-	result = AsmMacro(asm_file_name, line_idx_orig, name, comment, args)
-	return (line_span, result)
+	return AsmMacro(location, name, comment, args)
+
+def parse_variable(r, first_word = None):
+	global warnings
+	location = r.location()
+
+	# Skip spaces before variable name
+	r.skip_spaces()
+	# Get variable name
+	name = ""
+	# Read it if it was not supplied
+	if first_word == None:
+		while is_id(r.curr()):
+			name += r.step()
+	# Or use the supplied one instead
+	else:
+		name = first_word
+	# Check the name
+	# If it's 0 len, that means threr's something else than an identifier at the beginning
+	if len(name) == 0:
+		return None
+	# If it starts from digit or othervice illegally it's illegal
+	if not is_starts_as_id(name):
+		return None
+	# If it's a keyword, that's not a variable declaration
+	if name in keywords:
+		return None
+	# If it's a macro name, that's not a variable declaration
+	if name in macro_names:
+		return VariableNameIsMacroName(name)
+	# If it's a datatype or a structure name that's not a variable declaration: that's just a data
+	# don't document just a data for now
+	if name in struct_names or name in fasm_types:
+		return None
+	# Skip spaces before type name
+	r.skip_spaces()
+	# Read type name
+	var_type = ""
+	while is_id(r.curr()):
+		var_type += r.step()
+	# Check the type name
+	if len(var_type) == 0:
+		# If there's no type identifier after the name
+		# maybe the name is something meaningful for the next parser
+		# return it
+		return name
+	# If it starts from digit or othervice illegally it's illegal
+	if not is_starts_as_id(var_type):
+		return None
+	# If it's a keyword, that's not a variable declaration
+	# return the two words of the lexical structure
+	if var_type in keywords:
+		return (name, var_type)
+	# Skip spaces before the value
+	r.skip_spaces()
+	# Read the value until the comment or end of the line
+	value = ""
+	while r.curr() != ';' and r.curr() != '' and r.curr() != '\n':
+		value += r.step()
+	# Skip spaces after the value
+	r.skip_spaces()
+	# Read a comment if any
+	comment = ''
+	if r.curr() == ';':
+		# Skip the ';'
+		r.step()
+		# Read the comment
+		while r.curr() != '':
+			comment += r.step()
+	# Postprocess type
+	return AsmVariable(location, name, r.comment, var_type, value)
+
+def parse_after_struct(r, as_union = True):
+	global warnings
+	location = r.location()
+
+	# Skip spaces after "struct" keyword
+	r.skip_spaces()
+	# Read struct name
+	name = ""
+	while is_id(r.curr()):
+		name += r.step()
+	# Read till end of the line and get the comment from the reader
+	while r.curr() != '':
+		r.step()
+	comment = r.comment
+	# Get to the next line to parse struct members
+	r.nextline()
+	# Parse struct members
+	members = []
+	while True:
+		r.skip_spaces()
+		var = parse_variable(r)
+		if type(var) == AsmVariable:
+			members.append(var)
+		elif type(var) == str:
+			if var == 'union':
+				# Parse the union as a struct
+				union = parse_after_struct(r, as_union = True)
+				members.append(union)
+				# Skip the ends of the union
+				r.nextline()
+			elif r.curr() == ':':
+				warnings += f"{r.location()}: Skept the label in the struct\n"
+			else:
+				raise Exception(f"Garbage in struct member at {location} (got '{var}' identifier)")
+		elif type(var) == VariableNameIsMacroName:
+			if var.name == 'ends':
+				break
+		r.nextline()
+	# Return the result
+	if as_union:
+		return AsmStruct(location, name, comment, members)
+	else:
+		return AsmUnion(location, name, comment, members)
 
 def get_declarations(asm_file_contents, asm_file_name):
-	asm_file_name = asm_file_name.replace("./", "")
-	kernel_structure[asm_file_name] = [ [], [], [], [], [] ]
+	cwd = os.path.abspath(os.path.dirname(sys.argv[0]))
+	asm_file_name = os.path.realpath(asm_file_name)
+	asm_file_name = asm_file_name[len(cwd) + 1:]
 
-	variable_pattern = re.compile(r'^\s*[\w\.]+\s+d[bwdq]\s+.*')
-	macro_pattern = re.compile(r'^\s*macro\s+([\w]+).*')
-	proc_pattern = re.compile(r'^\s*proc\s+([\w\.]+).*')
-	label_pattern = re.compile(r'^(?!;)\s*([\w\.]+):.*')
-	struct_pattern = re.compile(r'^\s*struct\s+([\w]+).*')
+	r = AsmReader(asm_file_name)
 
-	line_idx = 0
-	lines = asm_file_contents.splitlines()
-	while line_idx < len(lines):
-		line = lines[line_idx]
-
-		if variable_pattern.match(line):
-			(skip_lines, var) = parse_variable(asm_file_name, lines, line_idx)
-			kernel_structure[asm_file_name][VARIABLES].append(var)
-			line_idx += skip_lines
+	while not r.no_lines():
+		# Skip leading spaces
+		r.skip_spaces()
+		# Skip the line if it's starting with a comment
+		if r.curr() == ';':
+			r.nextline()
 			continue
-
-		match = macro_pattern.findall(line)
-		if len(match) > 0:
-			(skip_lines, macro) = parse_macro(asm_file_name, lines, line_idx)
-			kernel_structure[asm_file_name][MACROS].append(macro)
-			line_idx += skip_lines
-			continue
-
-		match = proc_pattern.findall(line)
-		if len(match) > 0:
-			proc_name = match[0]
-			kernel_structure[asm_file_name][PROCEDURES].append(AsmFunction(line_idx + 1, proc_name))
-			line_idx += 1
-			continue
-
-		match = label_pattern.findall(line)
-		if len(match) > 0:
-			label_name = match[0]
-			# Don't count local labels
-			if label_name[0] != '.':
-				kernel_structure[asm_file_name][LABELS].append(AsmLabel(line_idx + 1, label_name))
-				line_idx += 1
-				continue
-
-		match = struct_pattern.findall(line)
-		if len(match) > 0:
-			struct_name = match[0]
-			kernel_structure[asm_file_name][STRUCTURES].append(AsmStruct(line_idx + 1, struct_name))
-			end_of_struct = False
-			while not end_of_struct:
-				line = lines[line_idx]
-				if re.match(r"^ends$", line) != None:
-					end_of_struct = True
-				line_idx += 1
-			continue
-
-		line_idx += 1
+		# Get first word
+		first_word = ""
+		while is_id(r.curr()):
+			first_word += r.step()
+		# Match macro declaration
+		if first_word == "macro":
+			macro = parse_after_macro(r)
+			elements.append(macro)
+			macro_names.append(macro.name)
+		# Match structure declaration
+		elif first_word == "struct":
+			struct = parse_after_struct(r)
+			elements.append(struct)
+			struct_names.append(struct.name)
+		# Match function definition
+		elif first_word == "proc":
+			# Skip spaces after "proc"
+			r.skip_spaces()
+			# Get proc name
+			name = ""
+			while is_id(r.curr()):
+				name += r.step()
+			# Get to the end of the line to get the comment from the reader
+			while r.curr() != '':
+				r.step()
+			comment = r.get_comment()
+			# Create the function
+			elements.append(AsmFunction(r.location(), name, comment))
+		elif first_word == 'format':
+			# Skip the format directive
+			pass
+		elif first_word == 'include':
+			# Skip the include directive
+			pass
+		elif first_word == 'if':
+			# Skip the conditional directive
+			pass
+		elif first_word == 'repeat':
+			# Skip the repeat directive
+			pass
+		elif first_word == 'purge':
+			while True:
+				# Skip spaces after the 'purge' keyword or after the comma what separated the previous macro name
+				r.skip_spaces()
+				# Get the purged macro name
+				name = ''
+				while is_id(r.curr()):
+					name += r.step()
+				# Remove the purged macro from the macro names list
+				try:
+					macro_names.remove(name)
+				except:
+					pass
+				# Skip spaces after the name
+				r.skip_spaces()
+				# If it's comma (',') after then that's not the last purged macro, continue purging
+				if r.curr() == ',':
+					r.step()
+					continue
+				# Here we purged all the macros should be purged
+				break
+		# Match label or a variable
+		elif len(first_word) != 0:
+			# Skip spaces after the identifier
+			r.skip_spaces()
+			# Match a variable
+			var = parse_variable(r, first_word)
+			if type(var) == AsmVariable:
+				elements.append(var)
+			# If it wasn't a variable but there was an identifier
+			# Maybe that's a label and the identifier is the label name
+			# The parse_variable returns the first found or supplied identifier
+			# In this case it returns the first_word which is supplied
+			# If it didn't match a type identifier after the word
+			elif type(var) == str:
+				name = var
+				# Match label beginning (':' after name)
+				if r.curr() == ':':
+					# Get to the end of the line and get the coment from the reader
+					while r.curr() != '':
+						r.step()
+					comment = r.comment
+					# Only handle non-local labels
+					if name[0] != '.' and name != "@@" and name != "$Revision":
+						elements.append(AsmLabel(r.location(), name, comment))
+				elif r.curr() == '=':
+					# Add the equated constant (name = value) to equated constants list
+					equated_constant_names.append(first_word)
+			elif type(var) == tuple:
+				(word_one, word_two) = var
+				if word_two == 'equ':
+					# Add the name to equ names list
+					equ_names.append(word_one)
+		r.nextline()
 
 def handle_file(handled_files, asm_file_name, subdir = "."):
-	if dump_symbols:
-		print(f"Handling {asm_file_name}")
+	print(f"Parsing {asm_file_name}")
 	handled_files.append(asm_file_name)
 	try:
 		asm_file_contents = open(asm_file_name, "r", encoding="utf-8").read()
 	except:
 		return
-	get_declarations(asm_file_contents, asm_file_name)
-	include_directive_pattern_1 = re.compile(r'include "(.*)"')
-	include_directive_pattern_2 = re.compile(r'include \'(.*)\'')
-	includes = include_directive_pattern_1.findall(asm_file_contents)
-	includes += include_directive_pattern_2.findall(asm_file_contents)
+	include_directive_pattern = re.compile(r'include (["\'])(.*)\1')
+	includes = include_directive_pattern.findall(asm_file_contents)
 	for include in includes:
-		include = include.replace('\\', '/');
+		include = include[1].replace('\\', '/');
 		full_path = subdir + '/' + include;
 		if full_path not in handled_files:
 			new_subdir = full_path.rsplit('/', 1)[0]
 			handle_file(handled_files, full_path, new_subdir)
+	get_declarations(asm_file_contents, asm_file_name)
 	return handled_files
 
 kernel_files = []
@@ -358,163 +1828,18 @@ kernel_files = []
 handle_file(kernel_files, "./kernel.asm");
 
 if dump_symbols:
-	for source in kernel_structure:
-		print(f"File: {source}")
-		if len(kernel_structure[source][VARIABLES]) > 0:
-			print(" Variables:")
-			for variable in kernel_structure[source][VARIABLES]:
-				print(f"  {variable.line}: {variable.name}")
-		if len(kernel_structure[source][PROCEDURES]) > 0:
-			print(" Procedures:")
-			for procedure in kernel_structure[source][PROCEDURES]:
-				print(f"  {procedure.line}: {procedure.name}")
-		if len(kernel_structure[source][LABELS]) > 0:
-			print(" Global labels:")
-			for label in kernel_structure[source][LABELS]:
-				print(f"  {label.line}: {label.name}")
-		if len(kernel_structure[source][MACROS]) > 0:
-			print(" Macroses:")
-			for macro in kernel_structure[source][MACROS]:
-				print(f"  {macro.line}: {macro.name}")
-		if len(kernel_structure[source][STRUCTURES]) > 0:
-			print(" Structures:")
-			for struct in kernel_structure[source][STRUCTURES]:
-				print(f"  {struct.line}: {struct.name}")
+	for asm_element in elements:
+		asm_element.dump()
 
 if print_stats:
-	# Collect stats
-	var_count = 0
-	proc_count = 0
-	label_count = 0
-	macro_count = 0
-	struct_count = 0
-
-	for source in kernel_structure:
-		var_count += len(kernel_structure[source][VARIABLES])
-		proc_count += len(kernel_structure[source][PROCEDURES])
-		label_count += len(kernel_structure[source][LABELS])
-		macro_count += len(kernel_structure[source][MACROS])
-		struct_count += len(kernel_structure[source][STRUCTURES])
-
-	print(f"File count: {len(kernel_structure)}")
-	print(f"Variable count: {var_count}")
-	print(f"Procedures count: {proc_count}")
-	print(f"Global labels count: {label_count}")
-	print(f"Macroses count: {macro_count}")
-	print(f"Structures count: {struct_count}")
+	print("--stats is not nimplmented")
 
 print(f"Writing doumented sources to {doxygen_src_path}")
 
-created_files = []
-
-def write_something(source, somehing):
-	full_path = doxygen_src_path + '/' + source
-	# Remove the file on first access if it was created by previous generation
-	if full_path not in created_files:
-		if os.path.isfile(full_path):
-			os.remove(full_path)
-		created_files.append(full_path)
-	# Only remove the file on 'clean_generated_stuff' flag (removed above, just return)
-	if clean_generated_stuff: return
-	# Create directories need for the file
-	os.makedirs(os.path.dirname(full_path), exist_ok=True)
-	f = open(full_path, "a")
-	f.write(somehing)
-	f.close()
-
-def write_variable(source, variable):
-	line = variable.line
-	type = variable.type
-	init = variable.init
-	brief = variable.comment
-	name = variable.name.replace(".", "_")
-	something = (f"/**\n" +
-	             f" * @brief {brief}\n" +
-	             f" * @par Initial value\n" +
-	             f" * {init}\n" +
-	             f" * @par Source\n" +
-	             f" * <a href='{link_root}/{source}#line-{line}'>{source}:{line}</a>\n" +
-	             f" */\n" +
-	             f"{type} {name};\n\n")
-	write_something(source, something)
-
-def write_procedure(source, line, name, brief = "Undocumented"):
-	name = name.replace(".", "_")
-	something = (f"/**\n" +
-	             f" * @brief {brief}\n" +
-	             f" * @par Source\n" +
-	             f" * <a href='{link_root}/{source}#line-{line}'>{source}:{line}</a>\n" +
-	             f" */\n" +
-	             f"void {name}();\n\n")
-	write_something(source, something)
-
-def write_label(source, line, name, brief = "Undocumented"):
-	name = name.replace(".", "_")
-	something = (f"/**\n" +
-	             f" * @brief {brief}\n" +
-	             f" * @par Source\n" +
-	             f" * <a href='{link_root}/{source}#line-{line}'>{source}:{line}</a>\n" +
-	             f" */\n" +
-	             f"void {name}();\n\n")
-	write_something(source, something)
-
-def write_macro(source, macro):
-	if macro.comment == "": brief = "Undocumented"
-	else: brief = macro.comment
-	line = macro.line
-	name = macro.name.replace(".", "_").replace("@", "_")
-	# Construct arg list without '['s, ']'s and '*'s
-	args = [arg for arg in macro.args if arg not in "[]*"]
-	# Construct C-like arg list
-	arg_list = ""
-	if len(args) > 0:
-		arg_list += '('
-		argc = 0
-		for arg in args:
-			if argc != 0:
-				arg_list += ", "
-			arg_list += arg
-			argc += 1
-		arg_list += ')'
-
-	something = (f"/**\n" +
-	             f" * @def {name}\n" +
-	             f" * @brief {brief}\n" +
-	             f" * @par Source\n" +
-	             f" * <a href='{link_root}/{source}#line-{line}'>{source}:{line}</a>\n" +
-	             f" */\n#define {name}{arg_list}\n\n")
-	write_something(source, something)
-
-def write_structure(source, line, name, brief = "Undocumented"):
-	name = name.replace(".", "_")
-	something = (f"/**\n" +
-	             f" * @struct {name}\n" +
-	             f" * @brief {brief}\n" +
-	             f" * @par Source\n" +
-	             f" * <a href='{link_root}/{source}#line-{line}'>{source}:{line}</a>\n" +
-	             f" */\nstruct {name}" + " {};\n\n")
-	write_something(source, something)
-
-i = 1
-for source in kernel_structure:
-	# Print progress: current/total
-	print(f"{i}/{len(kernel_structure)} Writing {source}")
-	# Write variables doxygen of the source file
-	if len(kernel_structure[source][VARIABLES]) > 0:
-		for variable in kernel_structure[source][VARIABLES]:
-			write_variable(source, variable)
-	if len(kernel_structure[source][PROCEDURES]) > 0:
-		for procedure in kernel_structure[source][PROCEDURES]:
-			write_procedure(source, procedure.line, procedure.name)
-	if len(kernel_structure[source][LABELS]) > 0:
-		for label in kernel_structure[source][LABELS]:
-			write_label(source, label.line, label.name)
-	if len(kernel_structure[source][MACROS]) > 0:
-		for macro in kernel_structure[source][MACROS]:
-			write_macro(source, macro)
-	if len(kernel_structure[source][STRUCTURES]) > 0:
-		for structure in kernel_structure[source][STRUCTURES]:
-			write_structure(source, structure.line, structure.name)
+i = 0
+for element in elements:
+	print(f"[{i + 1}/{len(elements)}] Emitting {element.name} from {element.location}")
+	element.emit(doxygen_src_path)
 	i += 1
 
 if enable_warnings:
