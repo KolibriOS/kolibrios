@@ -4,7 +4,11 @@ import argparse
 import sys
 
 """ TODO:
-    - Add methods to dump stuff to file
+	- Implement function parsing
+    - Check if file was doxygenerated already (only handle changed and not doxygenerated files)
+    - Optimize name and var_type checking
+    - Translate dict in AsmReaderReadingComments into just a set of fields
+    - Remove get_comment method from AsmReaderReadingComments
 """
 
 # Parameters
@@ -1315,7 +1319,18 @@ class AsmReaderReadingComments(AsmReaderRecognizingStrings):
 	def get_comment(self):
 		return self.comment
 
-class AsmReader(AsmReaderReadingComments):
+class AsmReaderFetchingIdentifiers(AsmReaderReadingComments):
+	def __init__(self, file):
+		super().__init__(file)
+
+	def fetch_identifier(self):
+		self.skip_spaces()
+		result = ''
+		while is_id(self.curr()):
+			result += self.step()
+		return result
+
+class AsmReader(AsmReaderFetchingIdentifiers):
 	def __init__(self, file):
 		super().__init__(file)
 
@@ -1395,8 +1410,11 @@ class AsmVariable(AsmElement):
 		super().emit(dest, doxycomment, declaration)
 
 class AsmFunction(AsmElement):
-	def __init__(self, location, name, comment):
+	def __init__(self, location, name, comment, calling_convention, args, used_regs):
 		super().__init__(location, name, comment)
+		self.calling_convention = calling_convention
+		self.args = args
+		self.used_regs = used_regs
 
 	def dump(self):
 		super().dump()
@@ -1408,9 +1426,19 @@ class AsmFunction(AsmElement):
 		doxycomment += self.comment
 		if '@brief' not in doxycomment:
 			doxycomment = '@brief ' + doxycomment
+		# Build the arg list for declaration
+		arg_list = '('
+		if len(self.args) > 0:
+			argc = 0
+			for arg in self.args:
+				if argc != 0:
+					arg_list += ", "
+				arg_list += f"{arg[1]} {arg[0]}"
+				argc += 1
+		arg_list += ')'
 		# Build the declaration
 		name = self.name.replace(".", "_")
-		declaration = f"void {name}();"
+		declaration = f"void {name}{arg_list};"
 		# Emit this
 		super().emit(dest, doxycomment, declaration)
 
@@ -1696,6 +1724,63 @@ def parse_after_struct(r, as_union = True):
 	else:
 		return AsmUnion(location, name, comment, members)
 
+def parse_after_proc(r):
+	# Get proc name
+	name = r.fetch_identifier()
+	# Next identifier after the proc name
+	identifier = r.fetch_identifier()
+	# Check if the id is 'stdcall' or 'c' (calling convention specifier)
+	# and if so - save the convention and lookup the next identifier
+	calling_convention = ''
+	if identifier == 'stdcall' or identifier == 'c':
+		calling_convention = identifier
+		# If next is a comma, just skip it
+		if r.curr() == ',':
+			r.step()
+		# Read the next identifier
+		identifier = r.fetch_identifier()
+	# Check if the id is 'uses' (used register list specifier)
+	# and if so save the used register list
+	used_regs = []
+	if identifier == 'uses':
+		# Read the registers
+		while True:
+			reg_name = r.fetch_identifier()
+			if reg_name != '':
+				used_regs.append(reg_name)
+			else:
+				break
+		# If next is a comma, just skip it
+		if r.curr() == ',':
+			r.step()
+		# Read the next identifier
+		identifier = r.fetch_identifier()
+	# Check if there are argument identifiers
+	args = []
+	while identifier != '':
+		arg_name = identifier
+		arg_type = 'arg_t'
+		# Skip spaces after argument name
+		r.skip_spaces()
+		# If there's a ':' after the name - the next identifier is type
+		if r.curr() == ':':
+			r.step()
+			arg_type = r.fetch_identifier()
+		# If there's a comma - there's one more argument
+		# else no arguments anymore
+		if r.curr() == ',':
+			r.step()
+			identifier = r.fetch_identifier()
+		else:
+			identifier = ''
+		args.append((arg_name, arg_type))
+	# Get to the end of the line and get a comment from the reader
+	while r.curr() != '':
+		r.step()
+	comment = r.get_comment()
+	# Build the element
+	return AsmFunction(r.location(), name, comment, calling_convention, args, used_regs)
+
 def get_declarations(asm_file_contents, asm_file_name):
 	cwd = os.path.abspath(os.path.dirname(sys.argv[0]))
 	asm_file_name = os.path.realpath(asm_file_name)
@@ -1726,18 +1811,8 @@ def get_declarations(asm_file_contents, asm_file_name):
 			struct_names.append(struct.name)
 		# Match function definition
 		elif first_word == "proc":
-			# Skip spaces after "proc"
-			r.skip_spaces()
-			# Get proc name
-			name = ""
-			while is_id(r.curr()):
-				name += r.step()
-			# Get to the end of the line to get the comment from the reader
-			while r.curr() != '':
-				r.step()
-			comment = r.get_comment()
-			# Create the function
-			elements.append(AsmFunction(r.location(), name, comment))
+			proc = parse_after_proc(r)
+			elements.append(proc)
 		elif first_word == 'format':
 			# Skip the format directive
 			pass
