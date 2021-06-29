@@ -42,7 +42,10 @@ macro ccall proc,[arg]
         add     esp, size@ccall
     end if }
 
-macro cinvoke proc,[arg]                ; indirectly call CDECL procedure
+; @brief Indirectly call CDECL procedure
+; @param proc Callee name
+; @param arg Arguments to pass
+macro cinvoke proc,[arg]
  { common
     size@ccall = 0
     if ~ arg eq
