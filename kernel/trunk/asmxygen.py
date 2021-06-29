@@ -1373,9 +1373,6 @@ class AsmElement:
 			if os.path.isfile(full_path):
 				os.remove(full_path)
 			created_files.append(full_path)
-		# Only remove the file on 'clean_generated_stuff' flag (removed above, just return)
-		if clean_generated_stuff:
-			return
 		# Create directories need for the file
 		os.makedirs(os.path.dirname(full_path), exist_ok=True)
 		f = open(full_path, "a")
@@ -1896,7 +1893,12 @@ def handle_file(handled_files, asm_file_name, subdir = "."):
 	asm_file_name = asm_file_name[len(cwd) + 1:]
 	# If it's lang.inc - skip it
 	if asm_file_name == 'lang.inc':
-		return handled_files
+		return
+	# If the file was handled in this execution before - skip it
+	if asm_file_name in handled_files:
+		return
+	# Say that the file was handled in this execution
+	handled_files.append(asm_file_name)
 	# Check if the file should be parsed (if it was modified or wasn't parsed yet)
 	should_get_declarations = True
 	if not it_neds_to_be_parsed(asm_file_name):
@@ -1904,8 +1906,6 @@ def handle_file(handled_files, asm_file_name, subdir = "."):
 		should_get_declarations = False
 	else:
 		print(f"Parsing {asm_file_name}")
-	# Say that the file was handled (maybe not parsed, but we know about the file)
-	handled_files.append(asm_file_name)
 	# Read the source
 	asm_file_contents = open(asm_file_name, "r", encoding="utf-8").read()
 	# Find includes, fix their paths and handle em recoursively
@@ -1916,14 +1916,11 @@ def handle_file(handled_files, asm_file_name, subdir = "."):
 		# If the path isn't valid, maybe that's not relative path
 		if not os.path.isfile(full_path):
 			full_path = include
-		if full_path not in handled_files:
-			new_subdir = full_path.rsplit('/', 1)[0]
-			handle_file(handled_files, full_path, new_subdir)
+		new_subdir = full_path.rsplit('/', 1)[0]
+		handle_file(handled_files, full_path, new_subdir)
 	# Only collect declarations from the file if it wasn't parsed before
 	if should_get_declarations:
 		get_declarations(asm_file_contents, asm_file_name)
-	# Finish him
-	return handled_files
 
 kernel_files = []
 
@@ -1936,13 +1933,22 @@ if dump_symbols:
 if print_stats:
 	print("--stats is not nimplmented")
 
-print(f"Writing doumented sources to {doxygen_src_path}")
+if clean_generated_stuff:
+	kernel_files_set = set(kernel_files)
+	for file in kernel_files:
+		doxygen_file = f"{doxygen_src_path}/{file}"
+		if (os.path.isfile(doxygen_file)):
+			print(f"Removing {file}... ", end = '')
+			os.remove(doxygen_file)
+			print("Done.")
+else:
+	print(f"Writing doumented sources to {doxygen_src_path}")
 
-i = 0
-for element in elements:
-	print(f"[{i + 1}/{len(elements)}] Emitting {element.name} from {element.location}")
-	element.emit(doxygen_src_path)
-	i += 1
+	i = 0
+	for element in elements:
+		print(f"[{i + 1}/{len(elements)}] Emitting {element.name} from {element.location}")
+		element.emit(doxygen_src_path)
+		i += 1
 
 if enable_warnings:
 	open('asmxygen.txt', "w", encoding = "utf-8").write(warnings)
