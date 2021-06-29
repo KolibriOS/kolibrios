@@ -1963,9 +1963,6 @@ if dump_symbols:
 	for asm_element in elements:
 		asm_element.dump()
 
-if print_stats:
-	print("--stats is not nimplmented")
-
 if clean_generated_stuff:
 	kernel_files_set = set(kernel_files)
 	for file in kernel_files:
@@ -1982,6 +1979,33 @@ elif not noemit:
 		print(f"[{i + 1}/{len(elements)}] Emitting {element.name} from {element.location}")
 		element.emit(doxygen_src_path)
 		i += 1
+
+if print_stats:
+	var_count = 0
+	mac_count = 0
+	lab_count = 0
+	fun_count = 0
+	uni_count = 0
+	str_count = 0
+	for element in elements:
+		if type(element) == AsmVariable:
+			var_count += 1
+		elif type(element) == AsmMacro:
+			mac_count += 1
+		elif type(element) == AsmLabel:
+			lab_count += 1
+		elif type(element) == AsmFunction:
+			fun_count += 1
+		elif type(element) == AsmUnion:
+			uni_count += 1
+		elif type(element) == AsmStruct:
+			str_count += 1
+	print(f'Parsed variable count: {var_count}')
+	print(f'Parsed macro count: {mac_count}')
+	print(f'Parsed label count: {lab_count}')
+	print(f'Parsed function count: {fun_count}')
+	print(f'Parsed union type count: {uni_count}')
+	print(f'Parsed structure type count: {str_count}')
 
 if enable_warnings:
 	open('asmxygen.txt', "w", encoding = "utf-8").write(warnings)
