@@ -1357,11 +1357,16 @@ created_files = []
 
 class AsmElement:
 	def __init__(self, location, name, comment):
+		global warnings
+
 		self.location = location
 		self.file = self.location.split(':')[0].replace('\\', '/')
 		self.line = self.location.split(':')[1]
 		self.name = name
 		self.comment = comment
+
+		if self.comment == '':
+			warnings += f'{self.location}: Undocumented element\n'
 
 	def dump(self):
 		print(f"{self.comment}")
