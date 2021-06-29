@@ -13,7 +13,10 @@ macro stdcall proc,[arg]
     end if
         call    proc }
 
-macro invoke proc,[arg]                 ; indirectly call STDCALL procedure
+; @brief Indirectly call STDCALL procedure
+; @param proc Callee name
+; @param arg Arguments to pass
+macro invoke proc,[arg]
  { common
     if ~ arg eq
    reverse
