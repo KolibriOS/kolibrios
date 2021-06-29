@@ -171,15 +171,16 @@ enum {
 
 
 char *devinfo = {
-	"r", 0, T_SYS,
-	"k", 1, T_PROG,
-	"f", 2, T_FD,
-	"c", 3, T_CD,
-	"h", 4, T_HD,
-	"b", 4, T_HD,
-	"s", 4, T_SATA,
-	"t", 5, T_RAM,
-	"u", 6, T_USB,
+	"sy", 0, T_SYS,
+	"rd", 0, T_SYS,
+	"ko", 1, T_PROG,
+	"fd", 2, T_FD,
+	"cd", 3, T_CD,
+	"hd", 4, T_HD,
+	"bd", 4, T_HD,
+	"sd", 4, T_SATA,
+	"tm", 5, T_RAM,
+	"us", 6, T_USB,
 	0
 };
 

@@ -11,30 +11,37 @@ struct _SystemDiscs
 
 void _SystemDiscs::Get()
 {
-	bool kolibrios_exists=false;
 	char dev_name[10], sys_discs[10];
-	int i1, j1, dev_num_i, dev_disc_num;
+	int i1, j1, dev_disc_num, real_dev_num;
 	dword devbuf, diskbuf;
 
 	list.drop();
 	devbuf = malloc(10000);
 	ReadDir(19, devbuf, "/");
-	dev_num = dev_num_i = EBX;
-	for (i1=0; i1<dev_num_i; i1++)
+	dev_num = real_dev_num = EBX;
+
+	list.add("/sys");
+	dev_num++;
+
+	if (dir_exists("/kolibrios")) {
+		//need to check that /sys != /kolibrios
+		list.add("/kolibrios");
+		dev_num++;
+	}
+
+	for (i1=0; i1<real_dev_num; i1++)
 	{
 		sprintf(#dev_name,"/%s",i1*304+ devbuf+72);
 		GetDir(#diskbuf, #dev_disc_num, #dev_name, DIRS_NOROOT);
 		for (j1=0; j1<dev_disc_num; j1++;)
 		{
 			sprintf(#sys_discs,"%s/%s",#dev_name,j1*304+ diskbuf+72);
-			if (sys_discs[1]=='c') || (dir_exists(#sys_discs)) list.add(#sys_discs);
-		}
-		if (!strcmp(#sys_discs, "/rd/1")) 
-		{
-			if (dir_exists("/kolibrios")) && (!kolibrios_exists) {
-				kolibrios_exists=true;
-				list.add("/kolibrios");
-				dev_num++;
+			if (sys_discs[1]=='r') {
+				dev_num--;
+				continue;
+			}
+			if (sys_discs[1]=='c') || (sys_discs[1]=='f') || (dir_exists(#sys_discs)) {
+				list.add(#sys_discs);
 			}
 		}
 	}
@@ -42,11 +49,11 @@ void _SystemDiscs::Get()
 	free(diskbuf);
 }
 
-void GetDiskIconAndName(char disk_first_letter, dword dev_icon, dword disc_name)
+void GetDiskIconAndName(dword dev_name, dev_icon, disc_name)
 {
 	int i;
 	for (i=0; devinfo[i]!=0; i+=3) {
-		if (disk_first_letter == ESBYTE[devinfo[i]]) {
+		if (!strncmp(dev_name+1, devinfo[i], 2)) {
 			ESBYTE[dev_icon] = devinfo[i+1];
 			strcpy(disc_name, devinfo[i+2]);
 			return;
@@ -74,7 +81,7 @@ void _SystemDiscs::Draw()
 		draw_x = 17; 
 		for (i=0;i<list.count;i++) {
 			strcpy(#dev_name, list.get(i));
-			GetDiskIconAndName(dev_name[1], #dev_icon, #disc_name);
+			GetDiskIconAndName(#dev_name, #dev_icon, #disc_name);
 			if (strstr(path, #dev_name)==path) is_active=true; else is_active=false;
 
 			DrawBar(draw_x,draw_y,6,DEV_H+1,0xFFFFFF);
@@ -110,10 +117,10 @@ void _SystemDiscs::DrawSelect(int draw_x, btid, dword _path)
 		dev_icon = 0;
 	} else if (chrnum(_path, '/')==1) {
 		strcpy(#dev_name, _path);
-		GetDiskIconAndName(dev_name[1], #dev_icon, #disc_name);
+		GetDiskIconAndName(#dev_name, #dev_icon, #disc_name);
 	} else for (i=0;i<list.count;i++) {
 		strcpy(#dev_name, list.get(i));
-		GetDiskIconAndName(dev_name[1], #dev_icon, #disc_name);
+		GetDiskIconAndName(#dev_name, #dev_icon, #disc_name);
 		if (strstr(_path, #dev_name)-_path==0) break;
 	}
 	DrawRectangle(draw_x-1, SELECTY-1, DDW+2-KFM2_DEVH, KFM2_DEVH+1, sc.work_graph);
@@ -135,7 +142,7 @@ void _SystemDiscs::DrawOptions(int draw_x)
 
 	for (i=0;i<list.count;i++) {
 		strcpy(#dev_name, list.get(i));
-		GetDiskIconAndName(dev_name[1], #dev_icon, #disc_name);
+		GetDiskIconAndName(#dev_name, #dev_icon, #disc_name);
 		if (strstr(path, #dev_name)!=0) is_active=true; else is_active=false;
 
 		DrawBar(draw_x, optionsy, DDW, KFM2_DEVH, 0xFFFFFF);

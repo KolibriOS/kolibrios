@@ -9,8 +9,8 @@ TODO:
 */
 
 #define ABOUT_TITLE "EOLITE 5 RC6"
-#define TITLE_EOLITE "Eolite File Manager 5 RC6"
-#define TITLE_KFM "Kolibri File Manager 2 RC6";
+#define TITLE_EOLITE "Eolite File Manager 5 RC7"
+#define TITLE_KFM "Kolibri File Manager 2 RC7";
 
 #define MEMSIZE 1024 * 250
 #include "../lib/clipboard.h"
@@ -59,6 +59,7 @@ dword waves_pal[256];
 //Folder data
 	dword buf, buf_inactive;
 	collection_int items=0;
+	collection_int selected=0;
 	int selected_count;
 	int folder_count;
 	dword path;
@@ -775,7 +776,8 @@ void Line_ReDraw(dword bgcol, filenum){
 			ext1="<DIR>";
 			WriteTextCenter(files.x+files.w-140, files.text_y+y+1, 72, col.list_gb_text, ext1);
 		}
-		if (chrnum(path, '/')==1) && (streq(path, "/kolibrios")==false) file_size = GetDeviceSize(#full_path);
+		if (chrnum(path, '/')==1) && (streq(path, "/kolibrios")==false) 
+		&& (streq(path, "/sys")==false) file_size = GetDeviceSize(#full_path);
 	}
 	else
 	{
@@ -929,7 +931,7 @@ void Dir_Up()
 	strcpy(#old_folder_name, path+iii);
 	if (iii>1) ESBYTE[path+iii-1]=NULL; else ESBYTE[path+iii]=NULL;
 	SelectFileByName(#old_folder_name);
-	if(efm)DrawPathBarKfm();
+	DrawPathBar();
 }
 
 void EventOpenSelected()

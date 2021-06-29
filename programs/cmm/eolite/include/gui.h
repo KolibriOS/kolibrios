@@ -230,7 +230,7 @@ void DrawPathBarKfm()
 void DrawBreadCrumbs()
  collection_int breadCrumb=0;
  char PathShow_path[4096];
- int btnx;
+ int btnx, btnw;
  int i;
  {
 	breadCrumb.drop();
@@ -247,13 +247,18 @@ void DrawBreadCrumbs()
 	}
 	breadCrumb.add(i+1);
 
-	if (!efm) btnx = 250-4;
-	else btnx = Form.cwidth/2-2*active_panel + DDW + 2;
+	if (!efm) {
+		btnx = 250-4;
+		btnw = Form.cwidth-278;
+	} else {
+		btnx = Form.cwidth/2-2*active_panel + DDW + 2;
+		btnw = 35*active_panel + Form.cwidth/2 - 17 - DDW - 2;
+	}
 
 	for (i=0; i<breadCrumb.count-1; i++) {
 		EDI = breadCrumb.get(i) + #PathShow_path;
 		DrawFlatButtonSmall(btnx, KFM2_DEVH-1*i+SELECTY+KFM2_DEVH, 
-			250, KFM2_DEVH, i+BREADCRUMB_ID, EDI);
+			btnw, KFM2_DEVH, i+BREADCRUMB_ID, EDI);
 	}
 }
 
