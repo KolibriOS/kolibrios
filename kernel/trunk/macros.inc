@@ -66,11 +66,14 @@ macro diff10 title,l1,l2
 include 'kglobals.inc'
 
 ; \begin{diamond}[29.09.2006]
-; may be useful for kernel debugging
+
+; @brief May be useful for kernel debugging
 ; example 1:
 ;       dbgstr 'Hello, World!'
 ; example 2:
 ;       dbgstr 'Hello, World!', save_flags
+; @param string Output string
+; @param f Put here anything if you gonna save flags
 macro dbgstr string*, f
 {
 local a
