@@ -68,7 +68,8 @@ macro cinvoke proc,[arg]
 ;        `proc name uses eax ebx ecx, param0, param1`\n
 ;        If you need to specify both calling convention and used registers
 ;        put calling convention first and then `uses` statement like this:\n
-;        `proc name stdcall uses ebx ecx edx, param0, param1`
+;        `proc name stdcall uses ebx ecx edx, param0, param1`\n
+;        The defined procedure should be ended using `endp` macro.
 ; @param args Name of the procedure and a comma-separated argument list.
 ;             Type of any parameter may be specified by semicolon after its
 ;             name like this:\n
@@ -255,6 +256,7 @@ macro initlocal@proc name,def
     position@initlocal = position@initlocal + current@initlocal
    end while }
 
+; @brief Mark the end of a procedure created by `proc` macro
 macro endp
  { purge ret,locals,endl
    finish@proc
