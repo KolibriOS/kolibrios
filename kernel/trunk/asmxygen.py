@@ -3,10 +3,6 @@ import os
 import argparse
 import sys
 
-""" TODO:
-    - Optimize name and var_type checking
-"""
-
 # Parameters
 # Path to doxygen folder to make doxygen files in: -o <path>
 doxygen_src_path = 'docs/doxygen'
@@ -1154,6 +1150,48 @@ fasm_types = [
 	"du",
 ]
 
+# Dict where an identifier is assicoated with a string
+# The string contains characters specifying flags
+# Available flags:
+#  k - Keyword
+#  m - Macro name
+#  t - fasm data Type name (db, rq, etc.)
+#  s - Struct type name
+#  e - equated constant (name equ value)
+#  = - set constants (name = value)
+ID_KIND_KEYWORD = 'k'
+ID_KIND_MACRO_NAME = 'm'
+ID_KIND_FASM_TYPE = 't'
+ID_KIND_STRUCT_NAME = 's'
+ID_KIND_EQUATED_CONSTANT = 'e'
+ID_KIND_SET_CONSTANT = '='
+id2kind = {}
+
+# Add kind flag to identifier in id2kind
+def id_add_kind(identifier, kind):
+	if identifier not in id2kind:
+		id2kind[identifier] = ''
+	id2kind[identifier] += kind
+
+# Remove kind flag of identifier in id2kind
+def id_remove_kind(identifier, kind):
+	if identifier in id2kind:
+		if kind in id2kind[identifier]:
+			id2kind[identifier] = id2kind[identifier].replace(kind, '')
+
+# Get kind of an identifier
+def id_get_kind(identifier):
+	if identifier in id2kind:
+		return id2kind[identifier]
+	else:
+		return ''
+
+for keyword in keywords:
+	id_add_kind(keyword, ID_KIND_KEYWORD)
+
+for fasm_type in fasm_types:
+	id_add_kind(fasm_type, ID_KIND_FASM_TYPE)
+
 # Warning list
 warnings = ""
 
@@ -1164,23 +1202,17 @@ parser.add_argument("--clean", help="Remove generated files", action="store_true
 parser.add_argument("--dump", help="Dump all defined symbols", action="store_true")
 parser.add_argument("--stats", help="Print symbol stats", action="store_true")
 parser.add_argument("--nowarn", help="Do not write warnings file", action="store_true")
+parser.add_argument("--noemit", help="Do not emit doxygen files (for testing)", action="store_true")
 args = parser.parse_args()
 doxygen_src_path = args.o if args.o else 'docs/doxygen'
 clean_generated_stuff = args.clean
 dump_symbols = args.dump
 print_stats = args.stats
 enable_warnings = not args.nowarn
+noemit = args.noemit
 
 # Variables, functions, labels, macros, structure types
 elements = []
-# Names of macroses
-macro_names = []
-# Names of structs
-struct_names = []
-# Equated constant names (name = value)
-equated_constant_names = []
-# Literally equated constant names (name equ value)
-equ_names = []
 
 class LegacyAsmReader:
 	def __init__(self, file):
@@ -1621,15 +1653,17 @@ def parse_variable(r, first_word = None):
 	# If it starts from digit or othervice illegally it's illegal
 	if not is_starts_as_id(name):
 		return None
+	# Get kind of the identifier from id2kind table
+	kind = id_get_kind(name)
 	# If it's a keyword, that's not a variable declaration
-	if name in keywords:
+	if ID_KIND_KEYWORD in kind:
 		return None
 	# If it's a macro name, that's not a variable declaration
-	if name in macro_names:
+	if ID_KIND_MACRO_NAME in kind:
 		return VariableNameIsMacroName(name)
 	# If it's a datatype or a structure name that's not a variable declaration: that's just a data
 	# don't document just a data for now
-	if name in struct_names or name in fasm_types:
+	if ID_KIND_STRUCT_NAME in kind or ID_KIND_FASM_TYPE in kind:
 		return None
 	# Skip spaces before type name
 	r.skip_spaces()
@@ -1646,9 +1680,11 @@ def parse_variable(r, first_word = None):
 	# If it starts from digit or othervice illegally it's illegal
 	if not is_starts_as_id(var_type):
 		return None
+	# Get kind of type identifier
+	type_kind = id_get_kind(var_type)
 	# If it's a keyword, that's not a variable declaration
 	# return the two words of the lexical structure
-	if var_type in keywords:
+	if ID_KIND_KEYWORD in type_kind:
 		return (name, var_type)
 	# Skip spaces before the value
 	r.skip_spaces()
@@ -1783,12 +1819,12 @@ def get_declarations(asm_file_contents, asm_file_name):
 		if first_word == "macro":
 			macro = parse_after_macro(r)
 			elements.append(macro)
-			macro_names.append(macro.name)
+			id_add_kind(macro.name, ID_KIND_MACRO_NAME)
 		# Match structure declaration
 		elif first_word == "struct":
 			struct = parse_after_struct(r)
 			elements.append(struct)
-			struct_names.append(struct.name)
+			id_add_kind(struct.name, ID_KIND_STRUCT_NAME)
 		# Match function definition
 		elif first_word == "proc":
 			proc = parse_after_proc(r)
@@ -1815,7 +1851,7 @@ def get_declarations(asm_file_contents, asm_file_name):
 					name += r.step()
 				# Remove the purged macro from the macro names list
 				try:
-					macro_names.remove(name)
+					id_remove_kind(name, ID_KIND_MACRO_NAME)
 				except:
 					pass
 				# Skip spaces after the name
@@ -1851,13 +1887,13 @@ def get_declarations(asm_file_contents, asm_file_name):
 					if name[0] != '.' and name != "@@" and name != "$Revision":
 						elements.append(AsmLabel(r.location(), name, comment))
 				elif r.curr() == '=':
-					# Add the equated constant (name = value) to equated constants list
-					equated_constant_names.append(first_word)
+					# Save the identifier as a set constant
+					id_add_kind(first_word, ID_KIND_SET_CONSTANT)
 			elif type(var) == tuple:
 				(word_one, word_two) = var
 				if word_two == 'equ':
-					# Add the name to equ names list
-					equ_names.append(word_one)
+					# Save the identifier as an equated constant
+					id_add_kind(word_one, ID_KIND_EQUATED_CONSTANT)
 		r.nextline()
 
 def it_neds_to_be_parsed(source_file):
@@ -1929,7 +1965,7 @@ if clean_generated_stuff:
 			print(f"Removing {file}... ", end = '')
 			os.remove(doxygen_file)
 			print("Done.")
-else:
+elif not noemit:
 	print(f"Writing doumented sources to {doxygen_src_path}")
 
 	i = 0
