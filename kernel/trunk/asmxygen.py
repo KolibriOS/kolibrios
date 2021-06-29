@@ -1646,15 +1646,10 @@ def parse_variable(r, first_word = None):
 		value += r.step()
 	# Skip spaces after the value
 	r.skip_spaces()
-	# Read a comment if any
-	comment = ''
-	if r.curr() == ';':
-		# Skip the ';'
+	# Read till end of the line to get a comment from the reader
+	while r.curr() != '':
 		r.step()
-		# Read the comment
-		while r.curr() != '':
-			comment += r.step()
-	# Postprocess type
+	# Build the result
 	return AsmVariable(location, name, r.comment, var_type, value)
 
 def parse_after_struct(r, as_union = True):
