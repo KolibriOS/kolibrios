@@ -1893,7 +1893,7 @@ def handle_file(handled_files, asm_file_name, subdir = "."):
 		print(f"Skipping {asm_file_name} (already newest)")
 		should_get_declarations = False
 	else:
-		print(f"Parsing {asm_file_name}")
+		print(f"Handling {asm_file_name}")
 	# Read the source
 	asm_file_contents = open(asm_file_name, "r", encoding="utf-8").read()
 	# Find includes, fix their paths and handle em recoursively
@@ -1907,7 +1907,7 @@ def handle_file(handled_files, asm_file_name, subdir = "."):
 		new_subdir = full_path.rsplit('/', 1)[0]
 		handle_file(handled_files, full_path, new_subdir)
 	# Only collect declarations from the file if it wasn't parsed before
-	if should_get_declarations:
+	if should_get_declarations and not clean_generated_stuff:
 		get_declarations(asm_file_contents, asm_file_name)
 
 kernel_files = []
