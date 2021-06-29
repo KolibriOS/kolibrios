@@ -1368,6 +1368,10 @@ class AsmElement:
 		print(f"{self.location}: {self.name}")
 
 	def emit(self, dest, doxycomment = '', declaration = ''):
+		# Do not emit anything if the symbol is marked as hidden in its comment
+		if '@dont_give_a_doxygen' in self.comment:
+			return
+
 		global warnings
 		# Redefine default declaration
 		if declaration == '':
