@@ -5747,14 +5747,13 @@ undefined_syscall:                      ; Undefined system call
         mov     [esp + 32], dword -1
         ret
 
-; check if given memory region lays in lower 2gb (userspace memory) or not
 align 4
+; @brief Check if given memory region lays in lower 2gb (userspace memory) or not
+; @param base Base address of region
+; @param len Lenght of region
+; @return ZF = 1 if region in userspace memory,
+;         ZF = 0 otherwise
 proc is_region_userspace stdcall, base:dword, len:dword
-; in:
-;      base = base address of region
-;      len = lenght of region
-; out: ZF = 1 if region in userspace memory
-;      ZF = 0 otherwise
         push    eax ebx
         mov     eax, [base]
 
