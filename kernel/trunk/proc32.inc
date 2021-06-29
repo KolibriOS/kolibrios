@@ -80,6 +80,7 @@ macro proc [args]
 
 prologue@proc equ prologuedef
 
+; @dont_give_a_doxygen
 macro prologuedef procname,flag,parmbytes,localbytes,reglist
  { local loc
    loc = (localbytes+3) and (not 3)
@@ -96,6 +97,7 @@ macro prologuedef procname,flag,parmbytes,localbytes,reglist
 
 epilogue@proc equ epiloguedef
 
+; @dont_give_a_doxygen
 macro epiloguedef procname,flag,parmbytes,localbytes,reglist
  { irps reg, reglist \{ reverse pop reg \}
    if parmbytes | localbytes
@@ -109,6 +111,7 @@ macro epiloguedef procname,flag,parmbytes,localbytes,reglist
 
 close@proc equ
 
+; @dont_give_a_doxygen
 macro define@proc name,statement
  { local params,flag,regs,parmbytes,localbytes,current
    if used name
@@ -167,6 +170,7 @@ macro define@proc name,statement
       match close:reglist, close@proc:<regs> \\{ close name,flag,parmbytes,localbytes,reglist \\}
       end if \} }
 
+; @dont_give_a_doxygen
 macro defargs@proc [arg]
  { common
     if ~ arg eq
@@ -196,8 +200,10 @@ macro defargs@proc [arg]
    common
     end if }
 
+; @dont_give_a_doxygen
 macro deflocal@proc name,def,[val] { name def val }
 
+; @dont_give_a_doxygen
 macro deflocal@proc name,def,[val]
  { common
     match vars, all@vars \{ all@vars equ all@vars, \}
@@ -218,6 +224,7 @@ macro deflocal@proc name,def,[val]
 
 struc label type { label . type }
 
+; @dont_give_a_doxygen
 macro initlocal@proc name,def
  { virtual at name
     def
