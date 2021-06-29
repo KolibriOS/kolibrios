@@ -1,7 +1,10 @@
 
 ; Macroinstructions for defining and calling procedures
 
-macro stdcall proc,[arg]                ; directly call STDCALL procedure
+; @brief Directly call STDCALL procedure
+; @param proc Callee name
+; @param arg Arguments to pass
+macro stdcall proc,[arg]
  { common
     if ~ arg eq
    reverse
