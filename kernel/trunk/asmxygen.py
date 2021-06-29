@@ -4,11 +4,10 @@ import argparse
 import sys
 
 """ TODO:
-	- Implement function parsing
-    - Check if file was doxygenerated already (only handle changed and not doxygenerated files)
     - Optimize name and var_type checking
     - Translate dict in AsmReaderReadingComments into just a set of fields
     - Remove get_comment method from AsmReaderReadingComments
+    - Check if we should return handled_files from handle_file
 """
 
 # Parameters
@@ -1782,10 +1781,6 @@ def parse_after_proc(r):
 	return AsmFunction(r.location(), name, comment, calling_convention, args, used_regs)
 
 def get_declarations(asm_file_contents, asm_file_name):
-	cwd = os.path.abspath(os.path.dirname(sys.argv[0]))
-	asm_file_name = os.path.realpath(asm_file_name)
-	asm_file_name = asm_file_name[len(cwd) + 1:]
-
 	r = AsmReader(asm_file_name)
 
 	while not r.no_lines():
@@ -1880,22 +1875,54 @@ def get_declarations(asm_file_contents, asm_file_name):
 					equ_names.append(word_one)
 		r.nextline()
 
+def it_neds_to_be_parsed(source_file):
+	dest = doxygen_src_path + '/' + source_file
+	# If there's no the doxygen file it should be compiled to
+	# then yes, we should compile it to doxygen
+	if not os.path.isfile(dest):
+		return True
+	source_change_time = os.path.getmtime(source_file)
+	dest_change_file = os.path.getmtime(dest)
+	# If the source is newer than the doxygen it was compiled to
+	# then the source should be recompiled (existing doxygen is old)
+	if source_change_time > dest_change_file:
+		return True
+	return False
+
 def handle_file(handled_files, asm_file_name, subdir = "."):
-	print(f"Parsing {asm_file_name}")
+	# Canonicalize the file path and get it relative to cwd
+	cwd = os.path.abspath(os.path.dirname(sys.argv[0]))
+	asm_file_name = os.path.realpath(asm_file_name)
+	asm_file_name = asm_file_name[len(cwd) + 1:]
+	# If it's lang.inc - skip it
+	if asm_file_name == 'lang.inc':
+		return handled_files
+	# Check if the file should be parsed (if it was modified or wasn't parsed yet)
+	should_get_declarations = True
+	if not it_neds_to_be_parsed(asm_file_name):
+		print(f"Skipping {asm_file_name} (already newest)")
+		should_get_declarations = False
+	else:
+		print(f"Parsing {asm_file_name}")
+	# Say that the file was handled (maybe not parsed, but we know about the file)
 	handled_files.append(asm_file_name)
-	try:
-		asm_file_contents = open(asm_file_name, "r", encoding="utf-8").read()
-	except:
-		return
-	include_directive_pattern = re.compile(r'include (["\'])(.*)\1')
-	includes = include_directive_pattern.findall(asm_file_contents)
+	# Read the source
+	asm_file_contents = open(asm_file_name, "r", encoding="utf-8").read()
+	# Find includes, fix their paths and handle em recoursively
+	includes = re.findall(r'^include (["\'])(.*)\1', asm_file_contents, flags=re.MULTILINE)
 	for include in includes:
 		include = include[1].replace('\\', '/');
 		full_path = subdir + '/' + include;
+		# If the path isn't valid, maybe that's not relative path
+		if not os.path.isfile(full_path):
+			full_path = include
 		if full_path not in handled_files:
 			new_subdir = full_path.rsplit('/', 1)[0]
 			handle_file(handled_files, full_path, new_subdir)
-	get_declarations(asm_file_contents, asm_file_name)
+	# Only collect declarations from the file if it wasn't parsed before
+	if should_get_declarations:
+		get_declarations(asm_file_contents, asm_file_name)
+	# Finish him
 	return handled_files
 
 kernel_files = []
