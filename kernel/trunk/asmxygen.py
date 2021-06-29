@@ -6,7 +6,6 @@ import sys
 """ TODO:
     - Optimize name and var_type checking
     - Translate dict in AsmReaderReadingComments into just a set of fields
-    - Remove get_comment method from AsmReaderReadingComments
     - Check if we should return handled_files from handle_file
 """
 
@@ -1315,9 +1314,6 @@ class AsmReaderReadingComments(AsmReaderRecognizingStrings):
 		# Set new status for this line according to the first character in the line
 		self.update_status()
 
-	def get_comment(self):
-		return self.comment
-
 class AsmReaderFetchingIdentifiers(AsmReaderReadingComments):
 	def __init__(self, file):
 		super().__init__(file)
@@ -1773,7 +1769,7 @@ def parse_after_proc(r):
 	# Get to the end of the line and get a comment from the reader
 	while r.curr() != '':
 		r.step()
-	comment = r.get_comment()
+	comment = r.comment
 	# Build the element
 	return AsmFunction(r.location(), name, comment, calling_convention, args, used_regs)
 
