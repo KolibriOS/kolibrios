@@ -59,7 +59,21 @@ macro cinvoke proc,[arg]
         add     esp, size@ccall
     end if }
 
-macro proc [args]                       ; define procedure
+; @brief Define a procedure.\n
+;        Calling convention for the procedure may be defined before parameter
+;        list using `stdcall` or `c` word like this:\n
+;        `proc name stdcall, param0, param1`\n
+;        List of registers used in the procedure may be specified before
+;        parameter list using `uses` word like this:\n
+;        `proc name uses eax ebx ecx, param0, param1`\n
+;        If you need to specify both calling convention and used registers
+;        put calling convention first and then `uses` statement like this:\n
+;        `proc name stdcall uses ebx ecx edx, param0, param1`
+; @param args Name of the procedure and a comma-separated argument list.
+;             Type of any parameter may be specified by semicolon after its
+;             name like this:\n
+;             `proc name param0:dword, param1:qword`.
+macro proc [args]
  { common
     match name params, args>
     \{ define@proc name,<params \} }
