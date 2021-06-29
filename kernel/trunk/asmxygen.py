@@ -5,8 +5,6 @@ import sys
 
 """ TODO:
     - Optimize name and var_type checking
-    - Translate dict in AsmReaderReadingComments into just a set of fields
-    - Check if we should return handled_files from handle_file
 """
 
 # Parameters
@@ -1263,36 +1261,30 @@ class AsmReaderReadingComments(AsmReaderRecognizingStrings):
 
 	def status_reset(self):
 		# If the line has non-comment code
-		self.status['has_code'] = False
+		self.status_has_code = False
 		# If the line has a comment at the end
-		self.status['has_comment'] = False
+		self.status_has_comment = False
 		# Let it recognize strings further, we are definitely out of a comment
 		self.should_recognize_strings = True
 
 	def status_set_has_comment(self):
-		self.status['has_comment'] = True
+		self.status_has_comment = True
 		# Don't let it recognize strings cause we are in a comment now
 		self.should_recognize_strings = False
 
 	def status_set_has_code(self):
-		self.status['has_code'] = True
-
-	def status_has_comment(self):
-		return self.status['has_comment']
-
-	def status_has_code(self):
-		return self.status['has_code']
+		self.status_has_code = True
 
 	def update_status(self):
 		# If we aren't in a comment and we aren't in a string - say we are now in a comment if ';' met
-		if not self.status_has_comment() and not self.in_string and self.curr() == ';':
+		if not self.status_has_comment and not self.in_string and self.curr() == ';':
 			self.status_set_has_comment()
 		# Else if we are in a comment - collect the comment
-		elif self.status_has_comment():
+		elif self.status_has_comment:
 			self.comment += self.curr()
 		# Else if there's some non-whitespace character out of a comment
 		# then the line has code
-		elif not self.status_has_comment() and not self.curr().isspace():
+		elif not self.status_has_comment and not self.curr().isspace():
 			self.status_set_has_code()
 
 	def step(self):
@@ -1307,7 +1299,7 @@ class AsmReaderReadingComments(AsmReaderRecognizingStrings):
 		# If the line we leave was not a comment-only line
 		# then forget the collected comment
 		# Otherwise the collected comment should be complemented by comment from next line in step()
-		if self.status_has_code():
+		if self.status_has_code:
 			self.comment = ''
 		# Reset the line status (now it's the status of the new line)
 		self.status_reset()
