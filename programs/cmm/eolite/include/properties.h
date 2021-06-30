@@ -1,45 +1,3 @@
-#ifdef LANG_RUS
-	?define WINDOW_TITLE_PROPERTIES "Свойства"
-	?define T_CLOSE "Закрыть"
-	?define T_APPLY "Применить"
-	?define QUEST_1 "Применить ко всем вложенным"
-	?define QUEST_2 "файлам и папкам?"
-	?define PR_T_NAME "Имя:"
-	?define PR_T_DEST "Расположение:"
-	?define PR_T_SIZE "Размер:"
-	?define CREATED_OPENED_MODIFIED "Создан:\nОткрыт:\nИзменен:"
-	?define SET_6 "Файлов: "
-	?define SET_7 " Папок: "
-	?define PR_T_CONTAINS "Содержит: "
-	?define FLAGS " Аттрибуты "
-	?define PR_T_HIDDEN "Скрытый"
-	?define PR_T_SYSTEM "Системный"
-	?define PR_T_ONLY_READ "Только чтение"
-	?define SET_BYTE_LANG "байт"
-#else // Apply to all subfolders
-	?define WINDOW_TITLE_PROPERTIES "Properties"
-	?define T_CLOSE "Close"
-	?define T_APPLY "Apply"
-	?define QUEST_1 "Apply to all subfolders"
-	?define QUEST_2 "files and Folders?"
-	?define PR_T_NAME "Name:"
-	?define PR_T_DEST "Destination:"
-	?define PR_T_SIZE "Size:"
-	?define CREATED_OPENED_MODIFIED "Created:\nOpened:\nModified:"
-	?define SET_6 "Files: "
-	?define SET_7 " Folders: "
-	?define PR_T_CONTAINS "Contains: "
-	?define FLAGS " Attributes "
-	?define PR_T_HIDDEN "Hidden"
-	?define PR_T_SYSTEM "System"
-	?define PR_T_ONLY_READ "Read-only"
-	?define SET_BYTE_LANG "byte"
-#endif
-
-#define B_SETINGS_APPLY_SUBFOLDER 301
-#define B_SETINGS_APPLY_NO_SUBFOLDER 302
-#define B_APPLY 11
-#define B_CLOSE 12
 
 char path_to_file[4096];
 char file_name2[4096];
@@ -109,7 +67,7 @@ void SetProperties(int mode)
 	if (SET_PROPERTIES_ALL_SUBFOLDER == mode)
 	|| (SET_PROPERTIES_NO_SUBFOLDER == mode)
 	{
-		if (selected_count)
+		if (getSelectedCount())
 		{
 			for (i=0; i<files.count; i++) 
 			{
@@ -174,7 +132,7 @@ void properties_dialog()
 {
 	int id;
 	
-	if (selected_count)
+	if (getSelectedCount())
 	{
 		more_files_count.get(NULL);
 		GetSizeMoreFiles(path);
@@ -280,7 +238,7 @@ void DrawPropertiesWindow()
 
 	WriteText(10, 97, 0x90, sc.work_text, PR_T_SIZE);
 	
-	if (selected_count)
+	if (getSelectedCount())
 	{
 		PropertiesDrawIcon(NULL, "<lot>");
 		sprintf(#folder_info,"%s%d%s%d",SET_6,more_files_count.files,SET_7,more_files_count.folders);
@@ -334,7 +292,7 @@ void PropertiesDrawIcon(dword file_path, extension)
 
 void EventApplyProperties()
 {
-	if (selected_count) || (itdir) {
+	if (getSelectedCount()) || (itdir) {
 		ShowConfirmQuestionPopin();
 	} else {
 		SetProperties(SET_PROPERTIES_SINGLE_FILE);

@@ -1,30 +1,4 @@
 
-#ifdef LANG_RUS
-	?define TITLE_SETT "Настройки"
-	?define SHOW_DEVICE_CLASS "Выводить названия класса устройств"
-	?define SHOW_STATUS_BAR "Показывать статус бар"
-	?define BIG_ICONS "Использовать большие иконки"
-	?define COLORED_LINES "Подсвечивать четные линии в списке"
-	?define FONT_SIZE_LABEL "Размер шрифта"
-	?define LIST_LINE_HEIGHT "Высота строки в списке"
-	?define SAVE_PATH_AS_DEFAULT "Текущий путь"
-	?define SAVE_START_PATH_AS_DEFAULT "Введенный путь"
-	?define EDIT_FILE_ASSOCIATIONS "Редактировать ассоциации файлов"
-	?define START_PATH " Стартовый путь: "
-#else
-	?define TITLE_SETT "Settings"
-	?define SHOW_DEVICE_CLASS "Show device class name"
-	?define SHOW_STATUS_BAR "Show status bar"
-	?define BIG_ICONS "Big icons in list"
-	?define COLORED_LINES "Highlight even lines in list"
-	?define FONT_SIZE_LABEL "Font size"
-	?define LIST_LINE_HEIGHT "List line height"
-	?define SAVE_PATH_AS_DEFAULT "Current path"
-	?define SAVE_START_PATH_AS_DEFAULT "Typed path"
-	?define EDIT_FILE_ASSOCIATIONS "Edit file associations"
-	?define START_PATH " Start path: "
-#endif
-
 dword eolite_ini_path[4096];
 _ini ini;
 

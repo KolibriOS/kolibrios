@@ -3,14 +3,14 @@
 
 /*
 BUGS:
-- fix a kfm2 bug with selected files on window deactivation
+- F1 in KFM (move Properties to an external app)
 TODO:
 - 70.5 - get volume info and label
 */
 
-#define ABOUT_TITLE "EOLITE 5 RC6"
-#define TITLE_EOLITE "Eolite File Manager 5 RC7"
-#define TITLE_KFM "Kolibri File Manager 2 RC7";
+#define ABOUT_TITLE "EOLITE 5 Gold"
+#define TITLE_EOLITE "Eolite File Manager 5 Gold"
+#define TITLE_KFM "Kolibri File Manager 2 Gold";
 
 #define MEMSIZE 1024 * 250
 #include "../lib/clipboard.h"
@@ -59,8 +59,6 @@ dword waves_pal[256];
 //Folder data
 	dword buf, buf_inactive;
 	collection_int items=0;
-	collection_int selected=0;
-	int selected_count;
 	int folder_count;
 	dword path;
 	bool dir_at_fat16 = NULL;
@@ -95,6 +93,8 @@ dword waves_pal[256];
 	#define PANES_COUNT 2
 	dword location[PANES_COUNT];
 	llist files, files_active, files_inactive;
+	collection_int selected0, selected1;
+	dword selected_count[PANES_COUNT]=0;
 
 libimg_image icons16_default;
 libimg_image icons16_selected;
@@ -125,7 +125,12 @@ void handle_param()
 	//-v : paste files/folder from clipboard
 	int i;
 	dword p = #param;
-	if (streq(#program_path+strrchr(#program_path,'/'), "KFM")) efm = true;
+	if (streq(#program_path+strrchr(#program_path,'/'), "KFM")) {
+		efm = true;
+		//now we need to restore the original app name
+		//without this external operations down won't work
+		strcpy(#program_path+strrchr(#program_path,'/'), "EOLITE");
+	}
 
 	LoadIniSettings();
 
@@ -234,7 +239,7 @@ void main()
 				if (mouse.key&MOUSE_RIGHT) && (mouse.up)
 				{
 					if (files.ProcessMouse(mouse.x, mouse.y)) List_ReDraw();
-					if (getElementSelectedFlag(files.cur_y) == false) selected_count = 0; //on redraw selection would be flashed, see [L001] 
+					if (getElementSelectedFlag(files.cur_y) == false) unselectAll(); //on redraw selection would be flashed, see [L001] 
 					EventShowListMenu();
 				}
 			}
@@ -579,7 +584,7 @@ void draw_window()
 	for (i=0; i<6; i++) DrawBar(0, 5-i, Form.cwidth, 1, MixColors(sc.work_light, sc.work, i*10));
 	llist_copy(#files_active, #files);
 	DrawStatusBar();
-	if (!selected_count) {
+	if (!getSelectedCount()) {
 		OpenDir(ONLY_OPEN); //if there are no selected files -> refresh folder [L001] 
 	}
 	DrawFilePanels();
@@ -639,8 +644,8 @@ void DrawStatusBar()
 		DrawBar(0, Form.cheight - status_bar_h, Form.cwidth,  status_bar_h, sc.work);
 		sprintf(#status_bar_str, T_STATUS_EVEMENTS, folder_count-go_up_folder_exists, files.count-folder_count);
 		WriteText(6,Form.cheight - 13,0x80,sc.work_text,#status_bar_str);
-		if (selected_count) {
-			sprintf(#status_bar_str, T_STATUS_SELECTED, selected_count);
+		if (getSelectedCount()) {
+			sprintf(#status_bar_str, T_STATUS_SELECTED, getSelectedCount());
 			WriteText(Form.cwidth - calc(strlen(#status_bar_str)*6)-6,Form.cheight - 13,
 				0x80,sc.work_text,#status_bar_str);
 		}
@@ -674,8 +679,10 @@ void DrawFilePanels()
 		files_inactive.x = files.x;
 		DrawButtonsAroundList();
 		path = location[active_panel^1];
-		OpenDir(WITH_REDRAW);
-		if (!selected_count) files_inactive.count = files.count;
+		active_panel ^= 1;
+		OpenDir2(WITH_REDRAW);
+		active_panel ^= 1;
+		if (!getSelectedCount()) files_inactive.count = files.count;
 		llist_copy(#files, #files_active);
 
 		if (!active_panel) {
@@ -686,9 +693,57 @@ void DrawFilePanels()
 
 		DrawButtonsAroundList();
 		path = location[active_panel];
-		OpenDir(WITH_REDRAW);
+		OpenDir2(WITH_REDRAW);
 	}
 }
+
+void OpenDir2(char redraw){
+	if (buf) free(buf);
+	if (GetDir(#buf, #files.count, path, DIRS_NOROOT)) {
+		Write_Error(EAX);
+		history.add(path);
+		EventHistoryGoBack();
+		return;
+	}
+	SetCurDir(path);
+	if (files.count>0) && (files.cur_y-files.first==-1) files.cur_y=0;
+	files.visible = math.min(files.h / files.item_h, files.count);
+	if (!strncmp(path, "/rd/1",5)) || (!strncmp(path, "/sys/",4)) 
+		dir_at_fat16 = true; else dir_at_fat16 = false; 
+	Sorting();
+	SystemDiscs.Draw();
+	list_full_redraw = true;
+	List_ReDraw();
+	DrawPathBar();
+}
+
+
+void OpenDir(char redraw){
+	int errornum;
+	unselectAll();
+	if (buf) free(buf);
+	if (errornum = GetDir(#buf, #files.count, path, DIRS_NOROOT)) {
+		history.add(path);
+		EventHistoryGoBack();
+		Write_Error(errornum);
+		return;
+	}
+	if (files.count>0) && (files.cur_y-files.first==-1) files.cur_y=0;
+	history.add(path);
+	SystemDiscs.Draw();
+	files.visible = math.min(files.h / files.item_h, files.count);
+	if (!strncmp(path, "/rd/1",5)) || (!strncmp(path, "/sys/",4)) 
+		dir_at_fat16 = true; else dir_at_fat16 = false; 
+	Sorting();
+	list_full_redraw = true;
+	SetCurDir(path);
+	if (redraw!=ONLY_OPEN) {
+		List_ReDraw();
+		DrawStatusBar();
+		DrawPathBar();
+	}
+}
+
 
 void List_ReDraw()
 {
@@ -764,7 +819,6 @@ void Line_ReDraw(dword bgcol, filenum){
 
 	ESI = items.get(filenum+files.first)*304 + buf+32;
 	attr = ESDWORD[ESI];
-	file.selected = ESBYTE[ESI+7];
 	file.sizelo   = ESDWORD[ESI+32];
 	file.sizehi   = ESDWORD[ESI+36];
 	file_name_off = ESI+40;
@@ -801,7 +855,7 @@ void Line_ReDraw(dword bgcol, filenum){
 			text_col=MixColors(col.selec_text, col.list_text_hidden, 65); 
 		} else text_col=col.selec_text;
 	}
-	if (file.selected) text_col=0xFF0000;
+	if (getElementSelectedFlag(filenum+files.first)) text_col=0xFF0000;
 	if (kfont.size.pt==9) || (!kfont.font)
 	{
 		if (Form.width>=480)
@@ -831,36 +885,6 @@ void Line_ReDraw(dword bgcol, filenum){
 	}
 	DrawIconByExtension(#full_path, ext1, files.x+4, icon_y, bgcol);
 	if (current_inactive) DrawWideRectangle(files.x+2, y, files.w-4, files.item_h, 2, col.selec);
-}
-
-
-void OpenDir(char redraw){
-	int errornum;
-
-	selected_count = 0;
-	if (buf) free(buf);
-	if (errornum = GetDir(#buf, #files.count, path, DIRS_NOROOT))
-	{
-		history.add(path);
-		EventHistoryGoBack();
-		Write_Error(errornum);
-		return;
-	}
-	if (files.count>0) && (files.cur_y-files.first==-1) files.cur_y=0;
-
-	history.add(path);
-	SystemDiscs.Draw();
-	files.visible = math.min(files.h / files.item_h, files.count);
-	if (!strncmp(path, "/rd/1",5)) || (!strncmp(path, "/sys/",4)) 
-		dir_at_fat16 = true; else dir_at_fat16 = false; 
-	Sorting();
-	list_full_redraw = true;
-	SetCurDir(path);
-	if (redraw!=ONLY_OPEN) {
-		List_ReDraw();
-		DrawStatusBar();
-		DrawPathBar();
-	}
 }
 
 inline Sorting()
@@ -947,7 +971,7 @@ void EventOpenSelected()
 
 void EventOpen(byte _new_window)
 {
-	if (selected_count) && (!itdir) notify(T_USE_SHIFT_ENTER);
+	if (getSelectedCount()) && (!itdir) notify(T_USE_SHIFT_ENTER);
 	if (_new_window)
 	{
 		if (streq(#file_name,"..")) return;
@@ -1083,11 +1107,11 @@ void ShowPopinForm(byte _popin_type)
 				break;
 		case POPIN_DELETE:
 				if (!files.count) return;
-				if (!selected_count) && (!strncmp(#file_name,"..",2)) return;
+				if (!getSelectedCount()) && (!strncmp(#file_name,"..",2)) return;
 				popinx = DrawEolitePopup(T_YES, T_NO);
 				WriteTextCenter(popinx, 178, POPIN_W, sc.work_text, T_DELETE_FILE);
-				if (selected_count) {
-					sprintf(#param,"%s%d%s",DEL_MORE_FILES_1,selected_count,DEL_MORE_FILES_2);
+				if (getSelectedCount()) {
+					sprintf(#param,"%s%d%s",DEL_MORE_FILES_1,getSelectedCount(),DEL_MORE_FILES_2);
 				} else {
 					if (strlen(#file_name)<28) {
 						sprintf(#param,"%s ?",#file_name);
@@ -1314,7 +1338,7 @@ void EventPaste(dword _into_path) {
 void EventShowProperties()
 char line_param[4096+5];
 {
-	if (!selected_count) {
+	if (!getSelectedCount()) {
 		sprintf(#line_param, "-p %s", #file_path);
 		RunProgram(#program_path, #line_param);
 	} else {

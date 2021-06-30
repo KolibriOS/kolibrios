@@ -1,25 +1,41 @@
 
 //===================================================//
 //                                                   //
-//                   MASS ACTIONS                    //
+//                     SELECTION                     //
 //                                                   //
 //===================================================//
 
-void setElementSelectedFlag(dword n, int state) {
-	dword selected_offset = items.get(n)*304 + buf+32 + 7;
-	ESBYTE[selected_offset] = state;
-	if (n==0) && (strncmp(items.get(n)*304+buf+72,"..",2)==0) {
-		ESBYTE[selected_offset] = false; //do not selec ".." directory
-		return;
+void unselectAll() {
+	selected_count[active_panel] = 0;
+	if (active_panel) {
+		selected0.drop();
+	} else {
+		selected1.drop();
 	}
-	if (state==true) selected_count++;
-	if (state==false) selected_count--;
-	if (selected_count<0) selected_count=0;
+}
+
+dword getSelectedCount() {
+	return selected_count[active_panel];
+}
+
+void setElementSelectedFlag(dword n, int state) {
+	if (n==0) && (strncmp(items.get(n)*304+buf+72,"..",2)==0) return;
+	if (active_panel) {
+		selected0.set(n, state);
+	} else {
+		selected1.set(n, state);
+	}
+	if (state==true) selected_count[active_panel]++;
+	if (state==false) selected_count[active_panel]--;
+	//if (selected_count[active_panel]<0) selected_count[active_panel]=0;
 }
 
 int getElementSelectedFlag(dword n) {
-	dword selected_offset = items.get(n)*304 + buf+32 + 7;
-	return ESBYTE[selected_offset];
+	if (active_panel) {
+		return selected0.get(n);
+	} else {
+		return selected1.get(n);
+	}
 }
 
 dword GetFilesCount(dword _in_path)
@@ -60,11 +76,11 @@ void CopyFilesListToClipboard(bool _cut_active)
 	if (_cut_active!=DELETE) cut_active = _cut_active;
 
 	//if no element selected by "Insert" key, then we copy current element
-	if (!selected_count) {
+	if (!getSelectedCount()) {
 		setElementSelectedFlag(files.cur_y, true);
 	}
 
-	if (!selected_count) return;
+	if (!getSelectedCount()) return;
 	
 	size_buf = 10;
 	for (i=0; i<files.count; i++) 
@@ -78,7 +94,7 @@ void CopyFilesListToClipboard(bool _cut_active)
 	buff_data = malloc(size_buf);
 	ESDWORD[buff_data] = size_buf;
 	ESDWORD[buff_data+4] = SLOT_DATA_TYPE_RAW;
-	ESINT[buff_data+8] = selected_count;
+	ESINT[buff_data+8] = getSelectedCount();
 	copy_buf_offset = buff_data + 10;
 	for (i=0; i<files.count; i++) 
 	{
@@ -96,7 +112,7 @@ void CopyFilesListToClipboard(bool _cut_active)
 		pause(20);
 		List_ReDraw();
 	}
-	if (selected_count==1) setElementSelectedFlag(files.cur_y, false);
+	if (getSelectedCount()==1) setElementSelectedFlag(files.cur_y, false);
 	Clipboard__SetSlotData(size_buf, buff_data);
 	free(buff_data);
 }

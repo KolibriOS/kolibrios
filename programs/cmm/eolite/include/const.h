@@ -54,13 +54,44 @@ char *actions[] = {
 };
 #define T_PROG "Программы "
 #define T_SYS  "Система "
-#define T_CD   "CD-ROM "
+#define T_CD   "CD-Rom "
 #define T_FD   "Дискета "
 #define T_HD   "Жесткий диск "
 #define T_SATA "SATA диск "
 #define T_USB  "USB диск "
 #define T_RAM  "RAM диск "
 #define T_UNC  "Неизвестно "
+
+#define WINDOW_TITLE_PROPERTIES "Свойства"
+#define T_CLOSE "Закрыть"
+#define T_APPLY "Применить"
+#define QUEST_1 "Применить ко всем вложенным"
+#define QUEST_2 "файлам и папкам?"
+#define PR_T_NAME "Имя:"
+#define PR_T_DEST "Расположение:"
+#define PR_T_SIZE "Размер:"
+#define CREATED_OPENED_MODIFIED "Создан:\nОткрыт:\nИзменен:"
+#define SET_6 "Файлов: "
+#define SET_7 " Папок: "
+#define PR_T_CONTAINS "Содержит: "
+#define FLAGS " Аттрибуты "
+#define PR_T_HIDDEN "Скрытый"
+#define PR_T_SYSTEM "Системный"
+#define PR_T_ONLY_READ "Только чтение"
+#define SET_BYTE_LANG "байт"
+
+#define TITLE_SETT "Настройки"
+#define SHOW_DEVICE_CLASS "Выводить названия класса устройств"
+#define SHOW_STATUS_BAR "Показывать статус бар"
+#define BIG_ICONS "Использовать большие иконки"
+#define COLORED_LINES "Подсвечивать четные линии в списке"
+#define FONT_SIZE_LABEL "Размер шрифта"
+#define LIST_LINE_HEIGHT "Высота строки в списке"
+#define SAVE_PATH_AS_DEFAULT "Текущий путь"
+#define SAVE_START_PATH_AS_DEFAULT "Введенный путь"
+#define EDIT_FILE_ASSOCIATIONS "Редактировать ассоциации файлов"
+#define START_PATH " Стартовый путь: "
+
 //===================================================//
 //                                                   //
 //                      ENGLISH                      //
@@ -118,13 +149,44 @@ char *actions[] = {
 };
 #define T_PROG "Programs "
 #define T_SYS  "System "
-#define T_CD   "CD-ROM "
+#define T_CD   "CD-Rom "
 #define T_FD   "Floppy disk "
 #define T_HD   "Hard disk "
 #define T_SATA "SATA disk "
 #define T_USB  "USB disk "
 #define T_RAM  "RAM disk "
 #define T_UNC  "Unknown "
+
+#define WINDOW_TITLE_PROPERTIES "Properties"
+#define T_CLOSE "Close"
+#define T_APPLY "Apply"
+#define QUEST_1 "Apply to all subfolders"
+#define QUEST_2 "files and Folders?"
+#define PR_T_NAME "Name:"
+#define PR_T_DEST "Destination:"
+#define PR_T_SIZE "Size:"
+#define CREATED_OPENED_MODIFIED "Created:\nOpened:\nModified:"
+#define SET_6 "Files: "
+#define SET_7 " Folders: "
+#define PR_T_CONTAINS "Contains: "
+#define FLAGS " Attributes "
+#define PR_T_HIDDEN "Hidden"
+#define PR_T_SYSTEM "System"
+#define PR_T_ONLY_READ "Read-only"
+#define SET_BYTE_LANG "byte"
+
+#define TITLE_SETT "Settings"
+#define SHOW_DEVICE_CLASS "Show device class name"
+#define SHOW_STATUS_BAR "Show status bar"
+#define BIG_ICONS "Big icons in list"
+#define COLORED_LINES "Highlight even lines in list"
+#define FONT_SIZE_LABEL "Font size"
+#define LIST_LINE_HEIGHT "List line height"
+#define SAVE_PATH_AS_DEFAULT "Current path"
+#define SAVE_START_PATH_AS_DEFAULT "Typed path"
+#define EDIT_FILE_ASSOCIATIONS "Edit file associations"
+#define START_PATH " Start path: "
+
 #endif
 
 //===================================================//
@@ -151,6 +213,11 @@ enum {
 	PASTE_BTN,
 	KFM_FUNC_ID = 450
 };
+
+#define B_SETINGS_APPLY_SUBFOLDER 301
+#define B_SETINGS_APPLY_NO_SUBFOLDER 302
+#define B_APPLY 11
+#define B_CLOSE 12
 
 //OpenDir options
 enum {
