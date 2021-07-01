@@ -63,9 +63,9 @@ cursor_big_size = font_height
 
 start:
         mov     eax,SF_SET_EVENTS_MASK
-		mov     ebx,(11b shl 30) or 100111b
-		int     0x40
-		mov     edi, identical_table
+        mov     ebx,(11b shl 30) or 100111b
+        int     0x40
+        mov     edi, identical_table
         mov     ecx, 0x100
         xor     eax, eax
 @@:
@@ -521,9 +521,10 @@ if CHECK_FOR_LEAKS
         jmp     $
 @@:
 end if
-        or      eax, -1
+        or      eax, SF_TERMINATE_PROCESS
         int     40h
 
+align 16
 get_event:
         push    ebx
         mov     ebx, [idle_interval]
@@ -812,12 +813,12 @@ key:
 
 align 16
 mouse:
-        cmp     dword[num_screens],1
+		cmp     dword[active_screen],0
 		jg      event
 		mov     eax,SF_MOUSE_GET
         mov     ebx,SSF_BUTTON_EXT
         int     0x40
-        bt      eax,8
+        bt      eax,8 ;left but. down
         jnc     event
 
         mov     eax,SF_MOUSE_GET
@@ -837,13 +838,21 @@ mouse:
         cmp     edx, 0
 		jl      .no_ch_pos
 		mov     ebx, [cur_height]
-		sub     ebx, 7
+		sub     ebx, 3
+		cmp     edx, ebx
+		je      .on_panel
+		sub     ebx, 7-3
 		cmp     edx, ebx
 		jge     .no_ch_pos
 		
 		push    edx eax
         mov     ecx, [cur_width]
+if font_width & 3
+        imul    ecx, font_width
+		shr     ecx, 2
+else
         imul    ecx, font_width/4
+end if
 		xor     dx,dx
 		sub     ax, 5 ;window border
 		div     cx
@@ -890,6 +899,79 @@ mouse:
 @@:
 		call    draw_panel
         jmp     event
+.on_panel:
+        call    get_keybar_ind
+		lea     eax, [panels_mouse+4*eax]
+		cmp     dword[eax], 0
+		je      event
+        mov     ebp, [active_panel]
+        mov     ecx, [ebp + PanelData.index]
+		call    dword[eax]
+@@:
+		jmp     event
+
+;input:
+; eax - coord x
+;output:
+; eax - key bar index (0 to 35) if press F1 index = 0
+align 16
+get_keybar_ind:
+        push    ebx ecx edx esi edi
+        xor     edx, edx
+		mov     ebx, font_width
+		sub     eax, 5 ;border
+		div     ebx
+		mov     edi, eax
+
+		xor     esi, esi
+        test    [ctrlstate], 3
+        jz      @f
+        inc     esi
+@@:
+        test    [ctrlstate], 0xC
+        jz      @f
+        or      si, 2
+@@:
+        test    [ctrlstate], 0x30
+        jz      @f
+        or      si, 4
+@@:
+        imul    esi, 12 ;число кнопок F1-F12
+        xor     ecx, ecx
+        inc     ecx
+        mov     ebx, 6
+        mov     eax, [cur_width]
+        sub     eax, 11+9+3*2+6
+        cmp     eax, 7*11
+        jl      @f
+        cdq
+        mov     bl, 11
+        div     ebx
+        mov     ebx, eax
+@@:
+        xor     edx, edx
+.l:
+        add     edx, 7
+        cmp     ecx, 10
+        jb      @f
+        inc     edx
+@@:
+        cmp     edx, edi
+		ja      .ret
+        cmp     edx, [cur_width]
+        ja      .ret
+        cmp     ecx, 12
+        jz      .ret
+        lea     edx, [edx+ebx-6]
+        inc     edx
+        cmp     edx, [cur_width]
+        ja      .ret
+        inc     ecx
+        jmp     .l
+.ret:
+		lea     eax, [esi+ecx-1]
+        pop     edi esi edx ecx ebx   
+        ret
 
 align 16
 process_ctrl_keys:
@@ -4071,7 +4153,7 @@ get_console_ptr:
         ret
 
 ;description:
-; draw keys F1-F10
+; draw keys F1-F12
 align 16
 draw_keybar:
         pushad
@@ -4088,7 +4170,7 @@ draw_keybar:
         jz      @f
         or      al, 4
 @@:
-        imul    eax, 6*12
+        imul    eax, 6*12 ;длина текста * число кнопок F1-F12
         mov     esi, [active_screen_keybar]
         add     esi, eax
         xor     ecx, ecx
@@ -4108,7 +4190,7 @@ draw_keybar:
         div     ebx
         mov     ebx, eax
 @@:
-        xor     edx, edx
+        xor     edx, edx ;для контроля выхода за пределы панели
 .l:
         add     edx, 7
         cmp     cl, 10
@@ -4175,8 +4257,8 @@ draw_keybar:
         shr     ecx, 1
         mov     al, ' '
         mov     ah, [keybar_name_color]
-        rep     stosw
-.done:
+        rep     stosw ;закраска конца панели под цвет кнопки
+
         cmp     [bDisplayQuickSearch], 0
         jz      @f
         push    QuickSearchDlg
@@ -4185,6 +4267,7 @@ draw_keybar:
         popad
         ret
 
+align 16
 draw_cmdbar:
         mov     esi, [active_panel]
         add     esi, PanelData.dir
@@ -7427,6 +7510,38 @@ scan2ascii:
         db      'qwertyuiop[]',0,0,'as'
         db      'dfghjkl;',27h,'`',0,'\zxcv'
         db      'bnm,./',0,0,0,' ',0,0,0,0,0,0
+
+align 4
+panels_mouse:
+        dd 0 ;f1
+        dd 0 ;f2
+        dd panels_OnKey.f3
+        dd panels_OnKey.f4
+        dd panels_OnKey.f5
+        dd 0 ;f6
+        dd panels_OnKey.f7
+        dd panels_OnKey.f8
+        dd 0,0,0 ;f9-f11
+        dd F12
+; Shift
+        rd 4
+        dd panels_OnKey.shift_f5
+        rd 7
+; Ctrl
+        rd 12
+; Ctrl+Shift
+        rd 12
+; Alt
+        rd 6
+        dd panels_OnKey.alt_f7
+        rd 4
+        dd panels_OnKey.alt_f12
+; Alt+Shift
+        rd 12
+; Alt+Ctrl
+        rd 12
+; Alt+Ctrl+Shift
+        rd 12
 
 ; Клавишные сочетания
 ; db scancode, reserved

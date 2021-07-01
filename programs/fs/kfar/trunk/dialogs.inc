@@ -41,19 +41,21 @@ GenericBox:
 ; message loop
 .event:
 ;        call    get_event
-        push    10
+        push    SF_WAIT_EVENT
         pop     eax
         int     40h
         dec     eax
         jz      .redraw
         dec     eax
         jz      .key
+        sub     eax,4
+        jz      .event ;todo: mouse
         jmp     exit
 .redraw:
         call    draw_window
         jmp     .event
 .key:
-        mov     al, 2
+        mov     al, SF_GET_KEY
         int     40h
         shr     eax, 8
         cmp     al, 0xE0
@@ -944,7 +946,7 @@ MenuDlgProc:
         jnz     @f
         movzx   ecx, byte [eax+11]
         sub     ecx, '0'
-        push    24
+        push    SF_CD
         pop     eax
         mov     ebx, edx
         int     40h
@@ -1091,9 +1093,9 @@ get_ascii_char:
         xor     ecx, ecx
         cmp     al, 1
         sbb     ecx, -2
-        push    26
+        push    SF_SYSTEM_GET
         pop     eax
-        push    2
+        push    SSF_KEYBOARD_LAYOUT
         pop     ebx
         mov     edx, layout
         int     0x40
