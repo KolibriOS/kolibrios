@@ -1894,7 +1894,11 @@ def get_declarations(asm_file_contents, asm_file_name):
 					comment = r.comment
 					# Only handle non-local labels
 					if name[0] != '.' and name != "@@" and name != "$Revision":
-						elements.append(AsmLabel(r.location(), name, comment))
+						if '@return' in comment or '@param' in comment:
+							element = AsmFunction(r.location(), name, comment, '', [], [])
+						else:
+							element = AsmLabel(r.location(), name, comment)
+						elements.append(element)
 				elif r.curr() == '=':
 					# Save the identifier as a set constant
 					id_add_kind(first_word, ID_KIND_SET_CONSTANT)
