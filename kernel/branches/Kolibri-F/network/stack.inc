@@ -720,7 +720,7 @@ checksum_2:
 ;                                                                 ;
 ;-----------------------------------------------------------------;
 align 4
-sys_network:
+syscall_network:
 
         cmp     bl, 255
         jne     @f
@@ -847,7 +847,7 @@ sys_network:
 ;                                                                 ;
 ;-----------------------------------------------------------------;
 align 4
-sys_protocols:
+syscall_protocols:
         cmp     bh, NET_DEVICES_MAX             ; Check if device number exists
         jae     .doesnt_exist
 

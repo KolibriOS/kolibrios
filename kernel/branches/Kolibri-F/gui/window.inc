@@ -69,7 +69,7 @@ syscall_draw_window: ;///// system function 0 /////////////////////////////////
 .exit:
         ret
 ;------------------------------------------------------------------------------
-syscall_display_settings: ;///// system function 48 ///////////////////////////
+syscall_window_styles: ;///// system function 48 ///////////////////////////
 ;------------------------------------------------------------------------------
         cmp     ebx, 13
         ja      .ret
@@ -1008,8 +1008,8 @@ align 4
         jz      @f
 
         push    edx
-        call    syscall_display_settings.calculateScreen
-        call    syscall_display_settings.redrawScreen
+        call    syscall_window_styles.calculateScreen
+        call    syscall_window_styles.redrawScreen
         pop     edx
 ;--------------------------------------
 align 4

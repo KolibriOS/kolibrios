@@ -98,89 +98,89 @@ iglobal
   align 4
   servetable2:
 
-      dd syscall_draw_window     ; 0-DrawWindow
-      dd syscall_setpixel        ; 1-SetPixel
-      dd sys_getkey              ; 2-GetKey
-      dd sys_clock               ; 3-GetTime
-      dd syscall_writetext       ; 4-WriteText
-      dd delay_hs_unprotected    ; 5-DelayHs
-      dd undefined_syscall       ; 6-deprecated OpenRamdiskFile
-      dd syscall_putimage        ; 7-PutImage
-      dd syscall_button          ; 8-DefineButton
-      dd sys_cpuusage            ; 9-GetProcessInfo
-      dd sys_waitforevent        ; 10-WaitForEvent
-      dd sys_getevent            ; 11-CheckForEvent
-      dd sys_redrawstat          ; 12-BeginDraw and EndDraw
-      dd syscall_drawrect        ; 13-DrawRect
-      dd syscall_getscreensize   ; 14-GetScreenSize
-      dd sys_background          ; 15-bgr
-      dd sys_cachetodiskette     ; 16-FlushFloppyCache
-      dd sys_getbutton           ; 17-GetButton
-      dd sys_system              ; 18-System Services
-      dd paleholder              ; 19-reserved
-      dd sys_midi                ; 20-ResetMidi and OutputMidi
-      dd sys_setup               ; 21-SetMidiBase,SetKeymap,SetShiftKeymap,.
-      dd sys_settime             ; 22-setting date,time,clock and alarm-clock
-      dd sys_wait_event_timeout  ; 23-TimeOutWaitForEvent
-      dd syscall_cdaudio         ; 24-PlayCdTrack,StopCd and GetCdPlaylist
-      dd syscall_putarea_backgr  ; 25-Put Area to background
-      dd sys_getsetup            ; 26-GetMidiBase,GetKeymap,GetShiftKeymap,.
-      dd undefined_syscall       ; 27-reserved
-      dd undefined_syscall       ; 28-reserved
-      dd sys_date                ; 29-GetDate
-      dd sys_current_directory   ; 30-Get/SetCurrentDirectory
-      dd undefined_syscall       ; 31-reserved
-      dd undefined_syscall       ; 32-reserved
-      dd undefined_syscall       ; 33-reserved
-      dd syscall_getpixel_WinMap ; 34-GetPixel WinMap
-      dd syscall_getpixel        ; 35-GetPixel
-      dd syscall_getarea         ; 36-GetArea
-      dd readmousepos            ; 37-GetMousePosition_ScreenRelative,.
-      dd syscall_drawline        ; 38-DrawLine
-      dd sys_getbackground       ; 39-GetBackgroundSize,ReadBgrData,.
-      dd set_app_param           ; 40-WantEvents
-      dd undefined_syscall       ; 41- deprecated GetIrqOwner
-      dd undefined_syscall       ; 42- deprecated ReadIrqData
-      dd sys_outport             ; 43-SendDeviceData
-      dd undefined_syscall       ; 44- deprecated ProgramIrqs
-      dd undefined_syscall       ; 45- deprecated ReserveIrq and FreeIrq
-      dd syscall_reserveportarea ; 46-ReservePortArea and FreePortArea
-      dd display_number          ; 47-WriteNum
-      dd syscall_display_settings ; 48-SetRedrawType and SetButtonType
-      dd sys_apm                 ; 49-Advanced Power Management (APM)
-      dd syscall_set_window_shape ; 50-Window shape & scale
-      dd syscall_threads         ; 51-Threads
-      dd undefined_syscall       ; 52- deprecated Stack driver status
-      dd undefined_syscall       ; 53- deprecated Socket interface
-      dd sys_clipboard           ; 54-Custom clipboard
-      dd sound_interface         ; 55-Sound interface
-      dd undefined_syscall       ; 56-reserved
-      dd sys_pcibios             ; 57-PCI BIOS32
-      dd undefined_syscall       ; 58-deprecated Common file system interface
-      dd undefined_syscall       ; 59-reserved
-      dd sys_IPC                 ; 60-Inter Process Communication
-      dd sys_gs                  ; 61-Direct graphics access
-      dd pci_api                 ; 62-PCI functions
-      dd sys_msg_board           ; 63-System message board
-      dd sys_resize_app_memory   ; 64-Resize application memory usage
-      dd sys_putimage_palette    ; 65-PutImagePalette
-      dd sys_process_def         ; 66-Process definitions - keyboard
-      dd syscall_move_window     ; 67-Window move or resize
-      dd f68                     ; 68-Some internal services
-      dd sys_debug_services      ; 69-Debug
-      dd file_system_lfn         ; 70-Common file system interface, version 2
-      dd syscall_window_settings ; 71-Window settings
-      dd sys_sendwindowmsg       ; 72-Send window message
-      dd blit_32                 ; 73-blitter;
-      dd sys_network             ; 74-reserved for new stack
-      dd sys_socket              ; 75-reserved for new stack
-      dd sys_protocols           ; 76-reserved for new stack
-      dd sys_posix               ; posix support
-      dd undefined_syscall       ; 78-free
-      dd undefined_syscall       ; 79-free
-      dd fileSystemUnicode       ; 80-File system interface for different encodings
+      dd syscall_draw_window            ;  0 - define and draw the window;
+      dd syscall_setpixel               ;  1 - put pixel in the window;
+      dd syscall_getkey                 ;  2 - get the code of the pressed key;
+      dd syscall_clock                  ;  3 - get system time;
+      dd syscall_writetext              ;  4 - draw text string;
+      dd syscall_delay_hs_unprotected   ;  5 - delay;
+      dd syscall_undefined              ;  6 - system call undefined;
+      dd syscall_putimage               ;  7 - draw image in the window;
+      dd syscall_button                 ;  8 - define/delete the button;
+      dd syscall_thread_info            ;  9 - information on execution thread;
+      dd syscall_waitforevent           ; 10 - wait for event;
+      dd syscall_checkforevent          ; 11 - check for event, no wait;
+      dd syscall_redrawstat             ; 12 - begin/end window redraw;
+      dd syscall_drawrect               ; 13 - draw a rectangle in the window;
+      dd syscall_getscreensize          ; 14 - get screen size;
+      dd syscall_background             ; 15 - working with the background;
+      dd syscall_cachetodiskette        ; 16 - save ramdisk on a floppy;
+      dd syscall_getbutton              ; 17 - get the identifier of the pressed button;
+      dd syscall_system                 ; 18 - system services;
+      dd syscall_undefined              ; 19 - system call undefined;
+      dd syscall_midi                   ; 20 - reset MIDI and output MIDI;
+      dd syscall_setup                  ; 21 - setting system parameters;
+      dd syscall_settime                ; 22 - setting date, time, clock and alarm-clock;
+      dd syscall_wait_event_timeout     ; 23 - wait for event with timeout;
+      dd syscall_cdaudio                ; 24 - work with a CD player;
+      dd syscall_putarea_backgr         ; 25 - put area to background;
+      dd syscall_getsetup               ; 26 - get system parameters;
+      dd syscall_undefined              ; 27 - system call undefined;
+      dd syscall_undefined              ; 28 - system call undefined;
+      dd syscall_date                   ; 29 - get date;
+      dd syscall_current_directory      ; 30 - get/set current directory;
+      dd syscall_undefined              ; 31 - system call undefined;
+      dd syscall_undefined              ; 32 - system call undefined;
+      dd syscall_undefined              ; 33 - system call undefined;
+      dd syscall_getpixel_WinMap        ; 34 - find out who the screen point belongs to;
+      dd syscall_getpixel               ; 35 - read the color of the pixel on the screen;
+      dd syscall_getarea                ; 36 - read the screen area;
+      dd syscall_get_mouse_pos          ; 37 - work with the mouse;
+      dd syscall_drawline               ; 38 - draw a line;
+      dd syscall_getbackground          ; 39 - get background info;
+      dd syscall_set_eventmask          ; 40 - set event mask;
+      dd syscall_undefined              ; 41 - system call undefined;
+      dd syscall_undefined              ; 42 - system call undefined;
+      dd syscall_outport                ; 43 - input / output to the port;
+      dd syscall_undefined              ; 44 - system call undefined;
+      dd syscall_undefined              ; 45 - system call undefined;
+      dd syscall_reserveportarea        ; 46 - reserve port area and free port area;
+      dd syscall_putnumber              ; 47 - print a number to the window;
+      dd syscall_window_styles          ; 48 - window display styles;
+      dd syscall_apm                    ; 49 - Advanced Power Management (APM);
+      dd syscall_set_window_shape       ; 50 - window shape & scale;
+      dd syscall_threads                ; 51 - threads;
+      dd syscall_undefined              ; 52 - system call undefined;
+      dd syscall_undefined              ; 53 - system call undefined;
+      dd syscall_clipboard              ; 54 - working with the clipboard;
+      dd syscall_sound_interface        ; 55 - sound interface;
+      dd syscall_undefined              ; 56 - system call undefined;
+      dd syscall_pcibios                ; 57 - PCI BIOS32;
+      dd syscall_undefined              ; 58 - system call undefined; 
+      dd syscall_undefined              ; 59 - system call undefined;
+      dd syscall_IPC                    ; 60 - Inter Process Communication(IPC);
+      dd syscall_dga                    ; 61 - direct graphics access;
+      dd syscall_pci_api                ; 62 - PCI functions;
+      dd syscall_msg_board              ; 63 - system message board;
+      dd syscall_resize_app_memory      ; 64 - resize application memory usage;
+      dd syscall_putimage_palette       ; 65 - display an image with a palette in the window;
+      dd syscall_process_def            ; 66 - process definitions - keyboard;
+      dd syscall_move_window            ; 67 - window move or resize;
+      dd syscall_some_intrenal_services ; 68 - some internal services;
+      dd syscall_debug_services         ; 69 - debug services;
+      dd syscall_file_system_lfn        ; 70 - file system interface;
+      dd syscall_window_settings        ; 71 - window settings;
+      dd syscall_send_window_msg        ; 72 - send window message;
+      dd syscall_blit_32                ; 73 - graphic blitter;
+      dd syscall_network                ; 74 - work with network devices;
+      dd syscall_socket                 ; 75 - work with network sockets;
+      dd syscall_protocols              ; 76 - network options and statistics;
+      dd syscall_posix_subsystem        ; 77 - POSIX subsystem;
+      dd syscall_undefined              ; 78 - system call undefined;
+      dd syscall_undefined              ; 79 - system call undefined;
+      dd syscall_fs_diff_encodings      ; 80 - file system interface for different encodings;
 
-        times 255 - ( ($-servetable2) /4 )  dd undefined_syscall
-      dd sys_end                 ; -1-end application
+        times 255 - ( ($-servetable2) /4 )  dd syscall_undefined
+      dd syscall_end                    ; -1-end application
 
 endg

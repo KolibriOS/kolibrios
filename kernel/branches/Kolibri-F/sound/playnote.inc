@@ -19,7 +19,7 @@
 $Revision$
 
 align 4
-sound_interface:
+syscall_sound_interface:
 
         cmp     eax, ebx                        ; this is subfunction #55 ?
         jne     retFunc55                       ; if no then return.

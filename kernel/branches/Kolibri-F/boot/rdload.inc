@@ -97,7 +97,7 @@ endg
 read_image:
         mov     ebx, read_image_fsinfo
         pushad
-        call    file_system_lfn_protected
+        call    syscall_file_system_lfn_protected
         popad
         ret
 

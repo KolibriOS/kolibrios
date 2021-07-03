@@ -10,7 +10,7 @@ $Revision$
 
 ;------------------------------------------------------------------------------
 align 4
-sys_clipboard:
+syscall_clipboard:
         xor     eax, eax
         dec     eax
 ; check availability of main list

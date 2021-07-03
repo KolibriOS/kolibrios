@@ -23,7 +23,7 @@ $Revision$
 _esp equ esp
 
 macro put_board {
-        call    sys_msg_board
+        call    syscall_msg_board
 }
 
 macro debug_func name {

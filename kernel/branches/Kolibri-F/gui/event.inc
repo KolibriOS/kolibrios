@@ -326,7 +326,7 @@ wait_event_timeout:
         ret
 ;-----------------------------------------------------------------------------
 align 4
-get_event_ex:                                      ;; f68:14
+get_event_ex:                                      ;; syscall_some_intrenal_services:14
 ;info:
 ;   Waiting for any event in the EventList of the current slot
 ;   Code event data - copied to application memory (indirectly by edi)
@@ -431,7 +431,7 @@ align 4
         ret
 ;-----------------------------------------------------------------------------
 align 4
-sys_sendwindowmsg:                                 ;; f72
+syscall_send_window_msg:                                ;; f72
         dec     ebx
         jnz     .ret ;subfunction==1 ?
         pushfd
@@ -475,7 +475,7 @@ align 4
         ret
 ;-----------------------------------------------------------------------------
 align 4
-sys_getevent:                                      ;; f11
+syscall_checkforevent:                                      ;; f11
         mov     ebx, [current_slot]  ;now this is a question, what where to put......
         pushfd  ; this is a consequence of the general concept: let the test function have
         cli     ; the right to hope to disable interrupts, as when called from shed
@@ -485,11 +485,11 @@ sys_getevent:                                      ;; f11
         ret
 ;-----------------------------------------------------------------------------
 align 4
-sys_waitforevent:                                  ;; f10
+syscall_waitforevent:                                  ;; f10
         or      ebx, -1; infinite timeout
 ;--------------------------------------
 align 4
-sys_wait_event_timeout:                            ;; f23
+syscall_wait_event_timeout:                            ;; f23
         call    unprotect_from_terminate
         mov     edx, get_event_for_app; wait_test
         call    Wait_events_ex        ; ebx - timeout

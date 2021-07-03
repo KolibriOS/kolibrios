@@ -1357,7 +1357,7 @@ set_variables:
 
 align 4
 ;input  eax=43,bl-byte of output, ecx - number of port
-sys_outport:
+syscall_outport:
 
         mov     edi, ecx   ; separate flag for read / write
         and     ecx, 65535
@@ -1414,7 +1414,7 @@ sys_outport:
         mov     [esp+20], eax
         ret
 
-display_number:
+syscall_putnumber:
 ; add check pointers
         test    bl, bl
         jz      @f
@@ -1624,7 +1624,7 @@ midi_base dw 0
 endg
 ;-----------------------------------------------------------------------------
 align 4
-sys_setup:
+syscall_setup:
 ;  1 = roland mpu midi base , base io address
 ;  2 = keyboard   1, base kaybap 2, shift keymap, 9 country 1eng 2fi 3ger 4rus
 ;  3 = not used
@@ -1731,7 +1731,7 @@ sys_setup:
         ret
 ;-----------------------------------------------------------------------------
 align 4
-sys_getsetup:
+syscall_getsetup:
 ;  1 = roland mpu midi base , base io address
 ;  2 = keyboard   1, base kaybap 2, shift keymap, 9 country 1eng 2fi 3ger 4rus
 ;  3 = not used
@@ -1867,7 +1867,7 @@ get_timer_ticks:
         mov     eax, [timer_ticks]
         ret
 ;-----------------------------------------------------------------------------
-readmousepos:
+syscall_get_mouse_pos:
 ; eax=0 screen relative
 ; eax=1 window relative
 ; eax=2 buttons pressed
@@ -2021,7 +2021,7 @@ put_mpu_out:
 
 align 4
 
-sys_midi:
+syscall_midi:
         cmp     [mididp], 0
         jnz     sm0
         mov     [esp+36], dword 1
@@ -2079,7 +2079,7 @@ detect_devices:
 ;!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
         ret
 
-sys_end:
+syscall_end:
 ;--------------------------------------
         cmp     [_display.select_cursor], 0
         je      @f
@@ -2174,7 +2174,7 @@ sys_system_table:
 sysfn_num = ($ - sys_system_table)/4
 endg
 ;------------------------------------------------------------------------------
-sys_system:
+syscall_system:
         dec     ebx
         cmp     ebx, sysfn_num
         jae     @f
@@ -2303,8 +2303,8 @@ sysfn_deactivate:         ; 18.1 = DEACTIVATE WINDOW
         movzx   esi, word [WIN_STACK + ecx * 2]
         lea     esi, [WIN_POS + esi * 2]
         call    window._.window_deactivate
-        call    syscall_display_settings.calculateScreen
-        call    syscall_display_settings.redrawScreen
+        call    syscall_window_styles.calculateScreen
+        call    syscall_window_styles.redrawScreen
 .nowindowdeactivate:
         ret
 ;------------------------------------------------------------------------------
@@ -2672,7 +2672,7 @@ version_end:
 endg
 ;------------------------------------------------------------------------------
 align 4
-sys_cachetodiskette:
+syscall_cachetodiskette:
         cmp     ebx, 1
         jb      .no_floppy_save
         cmp     ebx, 2
@@ -2692,7 +2692,7 @@ bgrlock db 0
 endg
 ;------------------------------------------------------------------------------
 align 4
-sys_background:
+syscall_background:
         cmp     ebx, 1                     ; BACKGROUND SIZE
         jnz     nosb1
         test    ecx, ecx
@@ -3045,7 +3045,7 @@ force_redraw_background:
         ret
 ;------------------------------------------------------------------------------
 align 4
-sys_getbackground:
+syscall_getbackground:
 ;    cmp   eax,1                                  ; SIZE
         dec     ebx
         jnz     nogb1
@@ -3100,7 +3100,7 @@ nogb4:
         ret
 ;------------------------------------------------------------------------------
 align 4
-sys_getkey:
+syscall_getkey:
         mov     [esp + 32], dword 1
         ; test main buffer
         mov     ebx, [current_slot_idx]                          ; TOP OF WINDOW STACK
@@ -3157,7 +3157,7 @@ align 4
         jmp     .ret_eax
 ;------------------------------------------------------------------------------
 align 4
-sys_getbutton:
+syscall_getbutton:
         mov     ebx, [current_slot_idx]                         ; TOP OF WINDOW STACK
         mov     [esp + 32], dword 1
         movzx   ecx, word [WIN_STACK + ebx * 2]
@@ -3177,7 +3177,7 @@ align 4
         ret
 ;------------------------------------------------------------------------------
 align 4
-sys_cpuusage:
+syscall_thread_info:
 
 ;  RETURN:
 ;
@@ -3287,7 +3287,7 @@ sys_cpuusage:
         ret   
 
 align 4
-sys_clock:
+syscall_clock:
         cli
   ; Mikhail Lisovin  xx Jan 2005
   @@:
@@ -3325,7 +3325,7 @@ sys_clock:
 
 align 4
 
-sys_date:
+syscall_date:
 
         cli
   @@:
@@ -3360,7 +3360,7 @@ sys_date:
 
 ; redraw status
 
-sys_redrawstat:
+syscall_redrawstat:
         cmp     ebx, 1
         jne     no_widgets_away
         ; buttons away
@@ -3776,7 +3776,7 @@ redrawscreen:
         push    eax
 
 ;;;         mov   ebx,2
-;;;         call  delay_hs
+;;;         call  sys_delay_hs
 
          ;mov   ecx,0               ; redraw flags for apps
         xor     ecx, ecx
@@ -4048,7 +4048,7 @@ delay_ms:     ; delay in 1/1000 sec
         ret
 ;-----------------------------------------------------------------------------
 align 4
-set_app_param:
+syscall_set_eventmask:
         mov     edi, [TASK_BASE]
         mov     eax, ebx
         xchg    eax, [edi + TASKDATA.event_mask] ; set new event mask
@@ -4057,16 +4057,16 @@ set_app_param:
 ;-----------------------------------------------------------------------------
 
 ; this is for syscall
-proc delay_hs_unprotected
+proc syscall_delay_hs_unprotected
         call    unprotect_from_terminate
-        call    delay_hs
+        call    sys_delay_hs
         call    protect_from_terminate
         ret
 endp
 
 if 1
 align 4
-delay_hs:     ; delay in 1/100 secs
+sys_delay_hs:     ; delay in 1/100 secs
 ; ebx = delay time
 
         pushad
@@ -4093,7 +4093,7 @@ delay_hs:     ; delay in 1/100 secs
 else
 
 align 4
-delay_hs:     ; delay in 1/100 secs
+sys_delay_hs:     ; delay in 1/100 secs
 ; ebx = delay time
         push    ecx
         push    edx
@@ -4437,7 +4437,7 @@ sys_putimage_bpp:
 ;        jmp     [draw_pointer]
 ;-----------------------------------------------------------------------------
 align 4
-sys_putimage_palette:
+syscall_putimage_palette:
 ; ebx = pointer to image
 ; ecx = [xsize]*65536 + [ysize]
 ; edx = [xstart]*65536 + [ystart]
@@ -4842,7 +4842,7 @@ sys_msg_board_str:
         je      @f
         mov     ebx, 1
         movzx   ecx, byte [esi]
-        call    sys_msg_board
+        call    syscall_msg_board
         inc     esi
         jmp     @b
    @@:
@@ -4884,7 +4884,7 @@ sys_msg_board_dword:
         mov     cl, al
         xor     ebx, ebx
         inc     ebx
-        call    sys_msg_board
+        call    syscall_msg_board
         pop     eax
         pop     ecx
         loop    @b
@@ -4902,7 +4902,7 @@ iglobal
 msg_board_pos   dd  42*6*65536+10 ; for printing debug output on the screen
 endg
 
-sys_msg_board:
+syscall_msg_board:
 ; ebx=1 -> write, cl = byte to write
 ; ebx=2 -> read, ecx=0 -> no data, ecx=1 -> data in al
         push    eax ebx
@@ -5000,17 +5000,17 @@ end if
 iglobal
 align 4
 f66call:
-           dd sys_process_def.1   ; 1 = set keyboard mode
-           dd sys_process_def.2   ; 2 = get keyboard mode
-           dd sys_process_def.3   ; 3 = get keyboard ctrl, alt, shift
-           dd sys_process_def.4   ; 4 = set system-wide hotkey
-           dd sys_process_def.5   ; 5 = delete installed hotkey
-           dd sys_process_def.6   ; 6 = disable input, work only hotkeys
-           dd sys_process_def.7   ; 7 = enable input, opposition to f.66.6
+           dd syscall_process_def.1   ; 1 = set keyboard mode
+           dd syscall_process_def.2   ; 2 = get keyboard mode
+           dd syscall_process_def.3   ; 3 = get keyboard ctrl, alt, shift
+           dd syscall_process_def.4   ; 4 = set system-wide hotkey
+           dd syscall_process_def.5   ; 5 = delete installed hotkey
+           dd syscall_process_def.6   ; 6 = disable input, work only hotkeys
+           dd syscall_process_def.7   ; 7 = enable input, opposition to f.66.6
 endg
 ;-----------------------------------------------------------------------------
 align 4
-sys_process_def:
+syscall_process_def:
         dec     ebx
         cmp     ebx, 7
         jae     .not_support    ;if >=8 then or eax,-1
@@ -5150,15 +5150,15 @@ endg
 iglobal
 align 4
 f61call:
-           dd sys_gs.1   ; resolution
-           dd sys_gs.2   ; bits per pixel
-           dd sys_gs.3   ; bytes per scanline
+           dd syscall_dga.1   ; resolution
+           dd syscall_dga.2   ; bits per pixel
+           dd syscall_dga.3   ; bytes per scanline
 endg
 
 
 align 4
 
-sys_gs:                         ; direct screen access
+syscall_dga:                         ; direct screen access
         dec     ebx
         cmp     ebx, 2
         ja      .not_support
@@ -5691,7 +5691,7 @@ apm_vf          dd      0
 endg
 
 align 4
-sys_apm:
+syscall_apm:
         xor     eax, eax
         cmp     word [apm_vf], ax       ; Check APM BIOS enable
         jne     @f
@@ -5743,7 +5743,7 @@ sys_apm:
 ; -----------------------------------------
 
 align 4
-undefined_syscall:                      ; Undefined system call
+syscall_undefined:                      ; Undefined system call
         mov     [esp + 32], dword -1
         ret
 

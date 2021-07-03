@@ -906,7 +906,7 @@ proc safe_map_page stdcall, slot:dword, req_access:dword, ofs:dword
         ret
 endp
 
-sys_IPC:
+syscall_IPC:
 ;input:
 ;  ebx=1 - set ipc buffer area
 ;    ecx=address of buffer
@@ -1098,15 +1098,15 @@ sysfn_meminfo:
         ret
 
 align 4
-f68:
+syscall_some_intrenal_services:
         cmp     ebx, 4
         jbe     sys_sheduler
         cmp     ebx, 11
-        jb      undefined_syscall
+        jb      syscall_undefined
         cmp     ebx, 29
-        ja      undefined_syscall
+        ja      syscall_undefined
         xor     eax, eax
-        jmp     dword [f68call+ebx*4-11*4]
+        jmp     dword [syscall_some_intrenal_servicescall+ebx*4-11*4]
 .11:
         call    init_heap
         mov     [esp+SYSCALL_STACK._eax], eax
@@ -1230,27 +1230,27 @@ f68:
         ret
 
 align 4
-f68call:   ; keep this table closer to main code
+syscall_some_intrenal_servicescall:   ; keep this table closer to main code
 
-           dd f68.11   ; init_heap
-           dd f68.12   ; user_alloc
-           dd f68.13   ; user_free
-           dd f68.14   ; get_event_ex
-           dd f68.fail ; moved to f68.24
-           dd f68.16   ; get_service
-           dd f68.17   ; call_service
-           dd f68.18   ; loadLibUnicode
-           dd f68.19   ; load_dll
-           dd f68.20   ; user_realloc
-           dd f68.21   ; load_driver
-           dd f68.22   ; shmem_open
-           dd f68.23   ; shmem_close
-           dd f68.24   ; set exception handler
-           dd f68.25   ; unmask exception
-           dd f68.26   ; user_unmap
-           dd f68.27   ; load_file_umode
-           dd f68.28   ; loadFileUnicode
-           dd f68.29   ; user_ring
+           dd syscall_some_intrenal_services.11   ; init_heap
+           dd syscall_some_intrenal_services.12   ; user_alloc
+           dd syscall_some_intrenal_services.13   ; user_free
+           dd syscall_some_intrenal_services.14   ; get_event_ex
+           dd syscall_some_intrenal_services.fail ; moved to syscall_some_intrenal_services.24
+           dd syscall_some_intrenal_services.16   ; get_service
+           dd syscall_some_intrenal_services.17   ; call_service
+           dd syscall_some_intrenal_services.18   ; loadLibUnicode
+           dd syscall_some_intrenal_services.19   ; load_dll
+           dd syscall_some_intrenal_services.20   ; user_realloc
+           dd syscall_some_intrenal_services.21   ; load_driver
+           dd syscall_some_intrenal_services.22   ; shmem_open
+           dd syscall_some_intrenal_services.23   ; shmem_close
+           dd syscall_some_intrenal_services.24   ; set exception handler
+           dd syscall_some_intrenal_services.25   ; unmask exception
+           dd syscall_some_intrenal_services.26   ; user_unmap
+           dd syscall_some_intrenal_services.27   ; load_file_umode
+           dd syscall_some_intrenal_services.28   ; loadFileUnicode
+           dd syscall_some_intrenal_services.29   ; user_ring
 
 align 4
 proc load_pe_driver stdcall, file:dword, cmdline:dword

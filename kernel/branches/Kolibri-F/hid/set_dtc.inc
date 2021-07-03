@@ -16,7 +16,7 @@ $Revision$
 ; ebx =2 - set day of week ecx- 1-7
 ; ebx =3 - set alarm-clock ecx - 00SSMMHH
 ; out: 0 -Ok 1 -wrong format 2 -battery low
-sys_settime:
+syscall_settime:
       
         cli
         mov     al, 0x0d

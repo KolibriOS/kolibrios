@@ -245,7 +245,7 @@ macro   socket_init {
 ;                                                                 ;
 ;-----------------------------------------------------------------;
 align 4
-sys_socket:
+syscall_socket:
 
         mov     dword[esp+20], 0        ; Set error code to 0
 

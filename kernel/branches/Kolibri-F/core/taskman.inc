@@ -873,8 +873,8 @@ common_app_entry:
         mov     ebx, dll_error_msg
         mov     ebp, notifyapp
         call    fs_execute_from_sysdir_param
-; Terminate process (TODO: Need jump to .cleanup after sys_end ?) 
-        call    sys_end
+; Terminate process (TODO: Need jump to .cleanup after syscall_end ?) 
+        call    syscall_end
         
 @@:       
 ; Find APP_STARTUP_THUNK in DLL.OBJ

@@ -685,7 +685,7 @@ v86_exc_c:
 if DEBUG_SHOW_IO
         mov     edx, ebx
         mov     ebx, 200
-        call    delay_hs
+        call    sys_delay_hs
         mov     esi, [esp+v86_regs.size+10h+4]
         mov     eax, [esi+V86_machine.iopm]
 @@:

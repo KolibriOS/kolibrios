@@ -75,11 +75,11 @@ __exports:
           user_free,             'UserFree',           \      ; stdcall
           unmap_pages,           'UnmapPages',         \      ; eax, ecx
           sys_msg_board_str,     'SysMsgBoardStr',     \
-          sys_msg_board,         'SysMsgBoard',        \
+          syscall_msg_board,         'SysMsgBoard',        \
           get_clock_ns,          'GetClockNs',         \      ;retval edx:eax 64-bit value
           get_timer_ticks,       'GetTimerTicks',      \
           get_stack_base,        'GetStackBase',       \
-          delay_hs,              'Delay',              \      ; ebx
+          sys_delay_hs,              'Delay',              \      ; ebx
           set_mouse_data,        'SetMouseData',       \      ;
           set_keyboard_data,     'SetKeyboardData',    \      ; gcc fastcall
           register_keyboard,     'RegKeyboard',        \

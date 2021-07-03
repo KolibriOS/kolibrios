@@ -367,7 +367,7 @@ unlock_application_table:
 
 ; sysfn 64 implementation
 align 4
-sys_resize_app_memory:
+syscall_resize_app_memory:
 ; in:   eax = 64 - function number
 ;       ebx = 1 - number of its only subfunction
 ;       ecx = new amount of memory
@@ -727,7 +727,7 @@ destroy_thread:
         pushad
         xchg    eax, ecx
         mov     ebx, 2
-        call    sys_system
+        call    syscall_system
         popad
 @@:
         inc     eax
@@ -813,7 +813,7 @@ proc unprotect_from_terminate
         lock dec [edx+APPDATA.terminate_protection]
 ; If the result of decrement is zero, somebody has requested termination,
 ; but at that moment we were inside a critical area; terminate now.
-        jz      sys_end
+        jz      syscall_end
 ; Otherwise, return to the caller.
         ret
 endp

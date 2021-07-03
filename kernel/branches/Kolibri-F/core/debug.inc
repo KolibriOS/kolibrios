@@ -9,15 +9,15 @@ $Revision$
 
 
 ; diamond, 2006
-sys_debug_services:
+syscall_debug_services:
         cmp     ebx, 9
         ja      @f
-        jmp     dword [sys_debug_services_table+ebx*4]
+        jmp     dword [syscall_debug_service_services_table+ebx*4]
 @@:
         ret
 iglobal
 align 4
-sys_debug_services_table:
+syscall_debug_service_services_table:
         dd      debug_set_event_data
         dd      debug_getcontext
         dd      debug_setcontext

@@ -69,7 +69,7 @@ yes_shutdown_param:
 ; load kernel.mnt to _CLEAN_ZONE
         mov     ebx, kernel_file_load
         pushad
-        call    file_system_lfn
+        call    syscall_file_system_lfn
         popad
 @@:
         mov     esi, OS_BASE+restart_code_start ; move kernel re-starter to 0x5000:0

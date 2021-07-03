@@ -47,17 +47,17 @@ sys_posix_call:
         dd sys_futex        ;5     reserved
         dd sys_futex        ;6     reserved
         dd sys_futex        ;7     reserved
-        dd sys_posix.fail   ;8     sys_open
-        dd sys_posix.fail   ;9     sys_close
+        dd syscall_posix_subsystem.fail   ;8     sys_open
+        dd syscall_posix_subsystem.fail   ;9     sys_close
         dd sys_read         ;10    read()
         dd sys_write        ;11    write()
-        dd sys_posix.fail   ;12    sys_dup3
+        dd syscall_posix_subsystem.fail   ;12    sys_dup3
         dd sys_pipe2        ;13
 .end:
 endg
 
 align 4
-sys_posix:
+syscall_posix_subsystem:
         cmp     ebx, (sys_posix_call.end-sys_posix_call)/4
         jae     .fail
 

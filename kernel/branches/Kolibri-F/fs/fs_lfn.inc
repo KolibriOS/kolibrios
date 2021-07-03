@@ -90,7 +90,7 @@ image_of_ebx EQU esp+20
 ;         ret
 ; endp
 
-; syscall_fileSystemUnicode: ; with user pointer correctness checking
+; syscall_syscall_fs_diff_encodings: ; with user pointer correctness checking
 ; ; in: ebx -> f.80 parameter structure
 ;         stdcall file_system_is_operation_safe, ebx
 ;         jnz     @f
@@ -99,13 +99,13 @@ image_of_ebx EQU esp+20
 ;         mov     dword [image_of_eax], ERROR_MEMORY_POINTER
 ;         ret
 ; @@:
-;         jmp     fileSystemUnicode
+;         jmp     syscall_fs_diff_encodings
 
 ; temporarily commented out cause acpi driver (drivers/devman) uses sysfn70 via 0x40
 ; so because drivers it kernel space, pointer checking fails
 ; TODO solution: add filesystem functions without pointer checking to kernel exports
 ; and make the driver use them, not int 0x40
-; syscall_fileSystemUnicode commented out for the same reason
+; syscall_syscall_fs_diff_encodings commented out for the same reason
 ; syscall_file_system_lfn: ; with user pointer correctness checking
 ; ; in: ebx -> f.70 parameter structure
 ;         stdcall file_system_is_operation_safe, ebx
@@ -115,28 +115,28 @@ image_of_ebx EQU esp+20
 ;         mov     dword [image_of_eax], ERROR_MEMORY_POINTER
 ;         ret
 ; @@:
-;         jmp     file_system_lfn
+;         jmp     syscall_file_system_lfn
 
 
 ; System function 70
 
-file_system_lfn_protected:
+syscall_file_system_lfn_protected:
         pushad
         call    protect_from_terminate
-        call    file_system_lfn
+        call    syscall_file_system_lfn
         call    unprotect_from_terminate
         popad
         mov     [image_of_eax], eax
         mov     [image_of_ebx], ebx
         ret
 
-fileSystemUnicode:
+syscall_fs_diff_encodings:
 ; in: ebx -> f.80 parameter structure
         mov     edi, [ebx+20]
         mov     esi, [ebx+24]
         jmp     @f
 
-file_system_lfn:
+syscall_file_system_lfn:
 ; in: ebx -> f.70 parameter structure
         xor     edi, edi
         lea     esi, [ebx+20]
@@ -512,7 +512,7 @@ uglobal
 addDirSeal db  ?
 endg
 
-sys_current_directory:  ; sysfunction 30
+syscall_current_directory:  ; sysfunction 30
         mov     eax, [current_slot]
         mov     edi, [eax+APPDATA.cur_dir]
         xor     eax, eax

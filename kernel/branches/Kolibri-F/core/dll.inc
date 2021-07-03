@@ -388,7 +388,7 @@ proc get_fileinfo stdcall, file_name:dword, info:dword
         pushad
         cld
         call    protect_from_terminate
-        call    file_system_lfn
+        call    syscall_file_system_lfn
         call    unprotect_from_terminate
         popad
         ret
@@ -423,7 +423,7 @@ proc read_file stdcall,file_name:dword, buffer:dword, off:dword,\
 
         pushad
         lea     ebx, [cmd]
-        call    file_system_lfn_protected
+        call    syscall_file_system_lfn_protected
         popad
         ret
 endp

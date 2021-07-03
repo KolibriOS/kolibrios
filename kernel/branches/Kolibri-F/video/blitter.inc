@@ -197,7 +197,7 @@ purge .dy1
         ret
 
 align 4
-blit_32:
+syscall_blit_32:
         push    ebp
         push    edi
         push    esi

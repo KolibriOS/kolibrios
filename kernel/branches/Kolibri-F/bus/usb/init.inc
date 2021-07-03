@@ -205,7 +205,7 @@ proc usb_thread_proc
 ; If failed, set [usb_event] to -1 and terminate myself.
         dbgstr 'cannot create event for USB thread'
         or      [usb_event], -1
-        jmp     sys_end
+        jmp     syscall_end
 @@:
         mov     [usb_event], eax
         push    -1              ; initial timeout: infinite

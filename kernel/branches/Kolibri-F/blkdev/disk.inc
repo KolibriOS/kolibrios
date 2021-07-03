@@ -1291,15 +1291,15 @@ default_fs_functions:
         dd      0       ; no user functions
 endg
 
-; This function is called from file_system_lfn.
+; This function is called from syscall_file_system_lfn.
 ; This handler gets the control each time when fn 70 is called
 ; with unknown item of root subdirectory.
 ; in: esi = ebp -> path string
-; out: if the handler processes path, it must not return in file_system_lfn,
+; out: if the handler processes path, it must not return in syscall_file_system_lfn,
 ;      but instead pop return address and return directly to the caller
 ;      otherwise simply return
 dyndisk_handler:
-        push    ebx edi         ; save registers used in file_system_lfn
+        push    ebx edi         ; save registers used in syscall_file_system_lfn
 ; 1. Acquire the mutex.
         mov     ecx, disk_list_mutex
         call    mutex_lock
@@ -1340,7 +1340,7 @@ dyndisk_handler:
 ; 3. Release the mutex.
         call    mutex_unlock
 ; 4. Return normally.
-        pop     edi ebx         ; restore registers used in file_system_lfn
+        pop     edi ebx         ; restore registers used in syscall_file_system_lfn
         ret
 ; part of 2d: the name matches partially, but we must check that this is full
 ; equality.
@@ -1383,7 +1383,7 @@ dyndisk_handler:
         jz      @f
         mov     esi, fs_dyndisk_next
 @@: ; Let the procedure from fs_lfn.inc do the job.
-        jmp     file_system_lfn.maindir_noesi
+        jmp     syscall_file_system_lfn.maindir_noesi
 
 .root:
         pop     ecx edx
@@ -1547,7 +1547,7 @@ dyndisk_handler:
         jmp     @b
 
 ; This is a callback for enumerating partitions called from
-; file_system_lfn.maindir in the case of inserted media.
+; syscall_file_system_lfn.maindir in the case of inserted media.
 ; It just increments eax until DISK.NumPartitions reached and then
 ; cleans up.
 fs_dyndisk_next:
@@ -1567,7 +1567,7 @@ fs_dyndisk_next:
         ret
 
 ; This is a callback for enumerating partitions called from
-; file_system_lfn.maindir in the case of missing media.
+; syscall_file_system_lfn.maindir in the case of missing media.
 ; In this case we create one pseudo-partition.
 fs_dyndisk_next_nomedia:
         cmp     eax, 1
@@ -1584,7 +1584,7 @@ fs_dyndisk_next_nomedia:
         stc
         ret
 
-; This function is called from file_system_lfn.
+; This function is called from syscall_file_system_lfn.
 ; This handler is called when virtual root is enumerated
 ; and must return all items which can be handled by this.
 ; It is called several times, first time with eax=0
@@ -1592,7 +1592,7 @@ fs_dyndisk_next_nomedia:
 ; out: eax = 0 => no more items
 ;      eax != 0 => buffer pointed to by edi contains name of item
 dyndisk_enum_root:
-        push    edx             ; save register used in file_system_lfn
+        push    edx             ; save register used in syscall_file_system_lfn
         mov     ecx, disk_list_mutex    ; it will be useful
 ; 1. If this is the first call, acquire the mutex and initialize.
         test    eax, eax
@@ -1615,11 +1615,11 @@ dyndisk_enum_root:
         jnz     @b
         pop     esi eax
 ; 5. Return with eax = item.
-        pop     edx             ; restore register used in file_system_lfn
+        pop     edx             ; restore register used in syscall_file_system_lfn
         ret
 .last:
 ; 6. Release the mutex and return with eax = 0.
         call    mutex_unlock
         xor     eax, eax
-        pop     edx             ; restore register used in file_system_lfn
+        pop     edx             ; restore register used in syscall_file_system_lfn
         ret

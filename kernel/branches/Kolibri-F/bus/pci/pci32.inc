@@ -56,7 +56,7 @@ endg
 
 align 4
 
-pci_api:
+syscall_pci_api:
 
 ;cross
         mov     eax, ebx
@@ -499,7 +499,7 @@ pci_emu_dat:
 endg
 ;-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
 align 4
-sys_pcibios:
+syscall_pcibios:
         cmp     [pci_access_enabled], 1
         jne     .unsupported_func
         cmp     [pci_bios_entry], 0
