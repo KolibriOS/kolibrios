@@ -8,7 +8,7 @@ TODO: scroll
 {
 	dword write_start;
 	dword buf_end;
-	int line_h = 15;
+	#define LINE_H 17
 	int label_length_max;
 	int write_length;
 	bool end_found;
@@ -19,9 +19,9 @@ TODO: scroll
 
 	loop() 
 	{
-		if (bg_col!=-1) DrawBar(x, y, w+1, line_h, bg_col);
+		if (bg_col!=-1) DrawBar(x, y, w+1, LINE_H, bg_col);
 		end_found = false;
-		write_length = strchr(write_start, '\n') - write_start; //search normal line break
+		write_length = strchr(write_start, '\n') - write_start +1; //search normal line break
 		if (write_length > label_length_max) || (write_length<=0) //check its position: exceeds maximum line length or not found
 		{ 
 			if (buf_end - write_start < label_length_max) //check does current line the last
@@ -46,9 +46,9 @@ TODO: scroll
 		// 	WriteTextB(-write_start+buf_start+editpos * 8 + x - 5 +1, y, 0x90, 0xFF0000, "|");
 		// }
 		write_start += write_length + 1;
-		y += line_h;
+		y += LINE_H;
 		if (write_start >= buf_end) break;
 	}
-	if (bg_col!=-1) DrawBar(x,y,w+1,h-y+line_h-4,bg_col);
-	return y+line_h;
+	if (bg_col!=-1) DrawBar(x,y,w+1,h-y+LINE_H-4,bg_col);
+	return y+LINE_H;
 }

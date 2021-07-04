@@ -20,6 +20,7 @@ ShowHistory()
 		strcat(history_pointer, "</a><br>");
 	}
 
+	/*
 	strcat(history_pointer, "<br><b>Cached images</b><br>");
 	for (i=1; i<cache.url.count; i++) if (cache.type.get(i) == IMG)
 	{
@@ -28,6 +29,7 @@ ShowHistory()
 		strcat(history_pointer, cache.url.get(i));
 		strcat(history_pointer, "'><br>");
 	}
+	*/
 
 	LoadInternalPage(history_pointer, strlen(history_pointer));
 	free(history_pointer);

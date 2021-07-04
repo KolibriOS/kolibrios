@@ -156,8 +156,6 @@ load_libraries	l_libs_start,end_l_libs
 align 4
 red:
 	call	draw_window
-	;mov     ah,0
-	;jmp     button.history_click
 ;---------------------------------------------------------------------
 align 4
 still:
@@ -198,7 +196,7 @@ button:
 
 	sub	ah,30
 	
-.history_click: 
+	;click on a colors History 
 	movzx	eax,ah
 	shl	eax,2
 	add	eax,[communication_area]
@@ -656,7 +654,7 @@ popad
 endp
 ;---------------------------------------------------------------------
 ;input:
-; buf - pointer hexadecimal string
+; buf - pointer to a hexadecimal string
 ;output:
 ; eax - number
 align 4
@@ -665,7 +663,7 @@ proc conv_str_to_int uses ebx ecx esi, buf:dword
 	xor ebx,ebx
 	mov esi,[buf]
 
-	.cycle_16:     ;считывание 16-ричных цифр
+	.cycle_16:
 		mov bl,byte[esi]
 		cmp bl,'0'
 		jl @f
@@ -674,13 +672,13 @@ proc conv_str_to_int uses ebx ecx esi, buf:dword
 		cmp bl,'9'
 		jle .us1
 			cmp bl,'A'
-			jl @f ;отсеиваем символы >'9' и <'A'
+			jl @f ;skip the chars not in between '9' and 'A'
 		.us1: ;составное условие
 		cmp bl,'F'
 		jle .us2
 			cmp bl,'a'
-			jl @f ;отсеиваем символы >'F' и <'a'
-			sub bl,32 ;переводим символы в верхний регистр, для упрощения их последущей обработки
+			jl @f ;skip the chars not in between 'F' and 'a'
+			sub bl,32 ;convert symbols to uppercase for convenience
 		.us2: ;составное условие
 			sub bl,'0'
 			cmp bl,9
@@ -692,7 +690,7 @@ proc conv_str_to_int uses ebx ecx esi, buf:dword
 			inc esi
 			jmp .cycle_16
 	@@:
-	cmp ecx,0 ;если число отрицательное
+	cmp ecx,0 ;if the number is negative
 	jne @f
 		sub ecx,eax
 		mov eax,ecx

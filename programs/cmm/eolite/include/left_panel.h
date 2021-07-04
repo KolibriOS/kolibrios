@@ -136,7 +136,7 @@ void _SystemDiscs::DrawOptions(int draw_x)
 	int optionsy = SELECTY+KFM2_DEVH+1;
 	char dev_name[15], disc_name[100], i, dev_icon, is_active=0;
 		
-	for (i=0; i<30; i++) DeleteButton(100+i);
+	SystemDiscs.Get();
 
 	DrawPopup(draw_x, optionsy, DDW, list.count*KFM2_DEVH, 1, -1, sc.work_graph);
 

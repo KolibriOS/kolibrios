@@ -28,7 +28,6 @@ _http http;
 #define T_EXIT "Выход"
 #define IMG_URL "http://builds.kolibrios.org/rus/data/data/kolibri.img"
 #define KS "Сохранить настройки"
-#define RA "Перезапустить все программы"
 #else
 #define T_WINDOW_TITLE "KolibriOS Online Updater"
 #define T_TITLE_H1 "ONLINE UPDATE"
@@ -40,20 +39,18 @@ Note that all changes on RAM-disk will be lost.";
 #define T_EXIT "Exit"
 #define IMG_URL "http://builds.kolibrios.org/eng/data/data/kolibri.img"
 #define KS "Keep settings folder"
-#define RA "Restart all apps"
 #endif
 char accept_language[]="en"; //not used, necessary for http.get()
 void Operation_Draw_Progress(dword f) {} //not used, necessary for copyf()
 
 checkbox keep_settings = { KS, true };
-checkbox restart_apps = { RA, true };
 
 void main()
 {
 	int btn;
 	sensor progress;
 	load_dll(libimg, #libimg_init,1);
-	load_dll(libHTTP,   #http_lib_init,1);
+	load_dll(libHTTP, #http_lib_init,1);
 	@SetEventMask(EVM_REDRAW + EVM_KEY + EVM_BUTTON + EVM_STACK);
 	loop() switch(@WaitEventTimeout(300))
 	{
@@ -62,7 +59,6 @@ void main()
 			if (btn<=2) ExitProcess();
 			if (btn==9) goto _INSTALL; 
 			keep_settings.click(btn);
-			restart_apps.click(btn);
 			break;
 
 		case evKey:
@@ -90,7 +86,6 @@ void main()
 					if (http.transfer<=0) {
 						DrawCaptButton(WINW-110/2, WINH-70, 110, 28, 9, 0x0092D8, 0xFFFfff, T_INSTALL);
 						keep_settings.draw(30, WINH - 210);
-						restart_apps.draw(30, WINH - 185);
 					}
 			} else {
 					DrawIcon32(WINW-32/2, 140, sc.work, 49);
@@ -181,7 +176,6 @@ void EventDownloadComplete()
 		copyf("/sys", #backup);
 		copyf(#latest, "/sys");
 		if (keep_settings.checked) copyf(#backup_settings, "/sys/settings");
-		if (restart_apps.checked) RestartAllProcess();
 		install_complete = true;		
 	}
 }

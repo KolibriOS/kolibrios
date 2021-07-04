@@ -8,9 +8,9 @@ TODO:
 - 70.5 - get volume info and label
 */
 
-#define ABOUT_TITLE "EOLITE 5.01 Gold"
-#define TITLE_EOLITE "Eolite File Manager 5.01 Gold"
-#define TITLE_KFM "Kolibri File Manager 2.01 Gold";
+#define ABOUT_TITLE "EOLITE 5.02 Gold"
+#define TITLE_EOLITE "Eolite File Manager 5.02 Gold"
+#define TITLE_KFM "Kolibri File Manager 2.02 Gold";
 
 #define MEMSIZE 1024 * 250
 #include "../lib/clipboard.h"
