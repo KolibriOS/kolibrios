@@ -160,6 +160,7 @@ smpt              rd 16
 endg
 
 align 4
+; @returns ACPI Root System Description Pointer
 acpi_get_root_ptr:
         mov     eax, [acpi_rsdp_base]
         ret
