@@ -8,9 +8,9 @@ TODO:
 - 70.5 - get volume info and label
 */
 
-#define ABOUT_TITLE "EOLITE 5 Gold"
-#define TITLE_EOLITE "Eolite File Manager 5 Gold"
-#define TITLE_KFM "Kolibri File Manager 2 Gold";
+#define ABOUT_TITLE "EOLITE 5.01 Gold"
+#define TITLE_EOLITE "Eolite File Manager 5.01 Gold"
+#define TITLE_KFM "Kolibri File Manager 2.01 Gold";
 
 #define MEMSIZE 1024 * 250
 #include "../lib/clipboard.h"
@@ -1066,7 +1066,7 @@ void EventPopinClickOkay()
 			break;
 		case POPIN_DELETE:
 			CopyFilesListToClipboard(DELETE);
-			EventClosePopinForm();
+			EventChooseAllFiles(false);
 			sprintf(#param, "-d %s", #file_path);
 			RunProgram(#program_path, #param);
 			break;	
@@ -1175,6 +1175,7 @@ void FnProcess(byte N)
 		case 6:
 			if (efm) {
 				CopyFilesListToClipboard(CUT);
+				EventChooseAllFiles(false);
 				EventPaste(location[active_panel^1]);
 			}
 			break;

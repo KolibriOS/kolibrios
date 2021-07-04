@@ -26,8 +26,7 @@ void setElementSelectedFlag(dword n, int state) {
 		selected1.set(n, state);
 	}
 	if (state==true) selected_count[active_panel]++;
-	if (state==false) selected_count[active_panel]--;
-	//if (selected_count[active_panel]<0) selected_count[active_panel]=0;
+	if (state==false) && (selected_count[active_panel]>0) selected_count[active_panel]--;
 }
 
 int getElementSelectedFlag(dword n) {
