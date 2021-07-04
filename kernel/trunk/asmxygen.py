@@ -2,6 +2,7 @@ import re
 import os
 import argparse
 import sys
+import pickle
 
 # Parameters
 # Path to doxygen folder to make doxygen files in: -o <path>
@@ -1359,6 +1360,8 @@ class AsmElement:
 	def __init__(self, location, name, comment):
 		global warnings
 
+		# If the element was constructed during this execution then the element is new
+		self.new = True
 		self.location = location
 		self.file = self.location.split(':')[0].replace('\\', '/')
 		self.line = self.location.split(':')[1]
@@ -1910,6 +1913,11 @@ def get_declarations(asm_file_contents, asm_file_name):
 		r.nextline()
 
 def it_neds_to_be_parsed(source_file):
+	# If there's no symbols file saved - parse it anyway
+	# cause we need to create the symbols file and use it
+	# if we gonna generate proper doxygen
+	if not os.path.isfile('asmxygen.elements.pickle'):
+		return True
 	dest = doxygen_src_path + '/' + source_file
 	# If there's no the doxygen file it should be compiled to
 	# then yes, we should compile it to doxygen
@@ -1924,6 +1932,7 @@ def it_neds_to_be_parsed(source_file):
 	return False
 
 def handle_file(handled_files, asm_file_name, subdir = "."):
+	global elements
 	# Canonicalize the file path and get it relative to cwd
 	cwd = os.path.abspath(os.path.dirname(sys.argv[0]))
 	asm_file_name = os.path.realpath(asm_file_name)
@@ -1943,6 +1952,15 @@ def handle_file(handled_files, asm_file_name, subdir = "."):
 		should_get_declarations = False
 	else:
 		print(f"Handling {asm_file_name}")
+		# Remove elements parsed from this file before if any
+		elements_to_remove = [x for x in elements if x.location.split(':')[0] == asm_file_name]
+		elements = [x for x in elements if x.location.split(':')[0] != asm_file_name]
+		# Forget types of identifiers of names of the removed elements
+		for element in elements_to_remove:
+			if type(element) == AsmStruct:
+				id_remove_kind(element.name, ID_KIND_STRUCT_NAME)
+			elif type(element) == AsmMacro:
+				id_remove_kind(element.name, ID_KIND_MACRO_NAME)
 	# Read the source
 	asm_file_contents = open(asm_file_name, "r", encoding="utf-8").read()
 	# Find includes, fix their paths and handle em recoursively
@@ -1960,6 +1978,11 @@ def handle_file(handled_files, asm_file_name, subdir = "."):
 		get_declarations(asm_file_contents, asm_file_name)
 
 kernel_files = []
+
+# Load remembered list of symbols
+if os.path.isfile('asmxygen.elements.pickle'):
+	print('Reading existing dump of symbols')
+	(elements, id2kind) = pickle.load(open('asmxygen.elements.pickle', 'rb'))
 
 handle_file(kernel_files, "./kernel.asm");
 
@@ -1979,10 +2002,18 @@ elif not noemit:
 	print(f"Writing doumented sources to {doxygen_src_path}")
 
 	i = 0
-	for element in elements:
-		print(f"[{i + 1}/{len(elements)}] Emitting {element.name} from {element.location}")
+	new_elements = [x for x in elements if x.new]
+	for element in new_elements:
+		print(f"[{i + 1}/{len(new_elements)}] Emitting {element.name} from {element.location}")
 		element.emit(doxygen_src_path)
 		i += 1
+
+	print(f"Writing dump of symbols to asmxygen.elements.pickle")
+
+	# Now when the new elements already was written, there's no new elements anymore
+	for element in elements:
+		element.new = False
+	pickle.dump((elements, id2kind), open('asmxygen.elements.pickle', 'wb'))
 
 if print_stats:
 	var_count = 0
