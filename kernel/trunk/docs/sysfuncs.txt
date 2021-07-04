@@ -2298,7 +2298,7 @@ Remarks:
   * (left,top) are coordinates of the left upper corner,
     (right,bottom) are coordinates of the right lower one.
     Thus the size of working area on x axis can be calculated by
-    formula right-left+1, on y axis - by formula bottom-right+1.
+    formula right-left+1, on y axis - by formula bottom-top+1.
   * See also function 14,
     to get sizes of all screen.
   * There is a pair function to set working area - subfunction 6.
