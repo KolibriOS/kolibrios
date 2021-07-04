@@ -28,7 +28,6 @@ skinlist = {
 "_old/black-glass/black-glass_light/black-glass_light.skn",
 "_old/blackskin/blackskin.skn",
 "_old/Black_lace/2.Black_lace/Black_lace.skn",
-"_old/Blended/Blended.skn",
 "_old/CodeOpusC/Opus_D.skn",
 "_old/Cyclops/1.Cyclops/1.Cyclops.skn",
 "_old/dark_night/dark_night.skn",
