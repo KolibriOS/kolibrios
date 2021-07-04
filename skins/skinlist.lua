@@ -24,7 +24,6 @@ skinlist = {
 "loggy/loggy.skn",
 "night/night.skn",
 "_old/5imple Alpha/2.5imple Alpha/Simple Alpha.skn",
-"_old/5imple Alpha/3.5imple Alpha/3.5imple Alpha.skn",
 "_old/black-glass/black-glass/black-glass.skn",
 "_old/black-glass/black-glass_light/black-glass_light.skn",
 "_old/blackskin/blackskin.skn",
