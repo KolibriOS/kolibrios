@@ -1,75 +1,75 @@
 ;-----------------------------------------------------------------------------
 text:
 if lang eq ru
-	db ' UNUSED1                        '
-	db ' UNUSED2                        '
-	db ' 3D ’…Œ€Ÿ ‘’€              '
-	db ' 3D ‘‚…’‹€Ÿ ‘’€             '
-	db ' ‡€ƒ‹‚Š Š€                 '
-	db ' €—€Ÿ ‹€‘’œ                '
-	db ' ŠŠ€ ‚ €—…‰ ‹€‘’ˆ       '
-	db ' ’…Š‘’ € ŠŠ…                '
-	db ' ’…Š‘’ ‚ €—…‰ ‹€‘’ˆ        '
-	db ' ƒ€”ˆŠ€ ‚ €—…‰ ‹€‘’ˆ      '
+	db ' Unused1                        '
+	db ' Unused2                        '
+	db ' 3d â¥¬­ ï áâ®à®­               '
+	db ' 3d á¢¥â« ï áâ®à®­              '
+	db ' ‡ £®«®¢®ª ®ª­                  '
+	db ' ”®­ ®ª­                        '
+	db ' Š­®¯ª                          '
+	db ' ’¥ªáâ ­  ª­®¯ª¥                '
+	db ' ’¥ªáâ ¢ ®ª­¥                   '
+	db ' ƒà ä¨ª  ¢ ®ª­¥                 '
 	db 'x'
 else if lang eq et
-	db ' UNUSED1                        '
-	db ' UNUSED2                        '
-	db ' WORK 3D DARK                   '
-	db ' WORK 3D LIGHT                  '
-	db ' AKNA PEALKIRI                  '
-	db ' AKNA TÖÖPIIRKOND               '
-	db ' AKNA TÖÖPIIRKONNA NUPP         '
-	db ' AKNA TÖÖPIIRKONNA NUPPU TEKST  '
-	db ' AKNA TÖÖPIIRKONNA TEKST        '
-	db ' AKNA TÖÖPIIRKONNA GRAAFIKA     '
+	db ' Unused1                        '
+	db ' Unused2                        '
+	db ' 3d dark                        '
+	db ' 3d light                       '
+	db ' Akna pealkiri                  '
+	db ' Akna tööpiirkond               '
+	db ' Akna tööpiirkonna nupp         '
+	db ' Akna tööpiirkonna nuppu tekst  '
+	db ' Akna tööpiirkonna tekst        '
+	db ' Akna tööpiirkonna graafika     '
 	db 'x'
 else
-	db ' UNUSED1                        '
-	db ' UNUSED2                        '
-	db ' WORK 3D DARK                   '
-	db ' WORK 3D LIGHT                  '
-	db ' WINDOW TITLE                   '
-	db ' WORK AREA BACKGROUND           '
-	db ' WORK AREA BUTTON               '
-	db ' WORK AREA BUTTON TEXT          '
-	db ' WORK AREA TEXT                 '
-	db ' WORK AREA GRAPH                '
+	db ' Unused1                        '
+	db ' Unused2                        '
+	db ' 3d dark                        '
+	db ' 3d light                       '
+	db ' Window title                   '
+	db ' Window background              '
+	db ' Button                         '
+	db ' Button text                    '
+	db ' Window text                    '
+	db ' Window graph                   '
 	db 'x'
 end if
 ;-----------------------------------------------------------------------------
 if lang eq ru
-	sz t1,'‡€ƒ“‡ˆ’œ  ‘•€ˆ’œ                                   ˆŒ…ˆ’œ'
+	sz t1,'‡€ƒ“‡ˆ’œ  ‘•€ˆ’œ                                       ˆŒ…ˆ’œ'
 else if lang eq et
-	sz t1,'  LAADI     SALVESTA                                    KINNITA'
+	sz t1,'  LAADI     SALVESTA                                        KINNITA'
 else
-	sz t1,'  LOAD        SAVE                                       APPLY'
+	sz t1,'  LOAD       SAVE                                            APPLY'
 end if
 ;-----------------------------------------------------------------------------
 if lang eq ru
-	sz t2,'‡€ƒ“‡ˆ’œ                3D   ‹‘Šˆ…                  ˆŒ…ˆ’œ'
+	sz t2,'‡€ƒ“‡ˆ’œ                3D   ‹‘Šˆ…                      ˆŒ…ˆ’œ'
 else if lang eq et
-	sz t2,'  LAADI                  3D    LAME                     KINNITA'
+	sz t2,'  LAADI                  3D    LAME                         KINNITA'
 else
-	sz t2,'  LOAD                   3D    FLAT                      APPLY'
+	sz t2,'  LOAD                   3D    FLAT                          APPLY'
 end if
 ;-----------------------------------------------------------------------------
 select_dtp_text:
 if lang eq ru
-	db ' ‚› –‚…’‚ƒ ”Œ‹…ˆŸ: ',0
+	db ' ‚ë¡®à æ¢¥â®¢®£® ®ä®à¬«¥­¨ï: ',0
 else if lang eq et
-	db ' VALIK VARVISKEEME: ',0
+	db ' Valik varviskeeme: ',0
 else
-	db ' CHOICE OF COLOR SCHEMES: ',0
+	db ' Choice of color schemes: ',0
 end if
 ;-----------------------------------------------------------------------------
 select_skin_text:
 if lang eq ru
-	db ' ‚› ˜Š“Šˆ: ',0
+	db ' ‚ë¡®à áª¨­ : ',0
 else if lang eq et
-	db ' VALIK NAHAD: ',0
+	db ' Valik nahad: ',0
 else
-	db ' CHOICE OF SKINS: ',0
+	db ' Choice of skins: ',0
 end if
 ;-----------------------------------------------------------------------------
 if lang eq ru
@@ -255,10 +255,10 @@ sz_Frame_draw		db 'frame_draw',0
 ;---------------------------------------------------------------------
 PathShow_data_1:
 .type			dd 0	;+0
-.start_y		dw frame_1.y+10	;+4
-.start_x		dw frame_1.x+7	;+6
+.start_y		dw frame_1.y+19	;+4
+.start_x		dw frame_1.x+15	;+6
 .font_size_x		dw 6	;+8	; 6 - for font 0, 8 - for font 1
-.area_size_x		dw frame_1.width-20	;+10
+.area_size_x		dw frame_1.w-28	;+10
 .font_number		dd 0	;+12	; 0 - monospace, 1 - variable
 .background_flag	dd 0	;+16
 .font_color		dd 0x0	;+20
@@ -269,10 +269,10 @@ PathShow_data_1:
 ;---------------------------------------------------------------------
 PathShow_data_2:
 .type			dd 0	;+0
-.start_y		dw frame_2.y+10	;+4
-.start_x		dw frame_2.x+7	;+6
+.start_y		dw frame_2.y+19	;+4
+.start_x		dw frame_2.x+15	;+6
 .font_size_x		dw 6	;+8	; 6 - for font 0, 8 - for font 1
-.area_size_x		dw frame_2.width-20	;+10
+.area_size_x		dw frame_2.w-28	;+10
 .font_number		dd 0	;+12	; 0 - monospace, 1 - variable
 .background_flag	dd 0	;+16
 .font_color		dd 0x0	;+20
@@ -389,8 +389,8 @@ frame_data:
 .draw_text_flag		dd 1 ;+20
 .text_pointer		dd 0 ;+24
 .text_position		dd 0 ;+28
-.font_number		dd 0 ;+32
-.font_size_y		dd 9 ;+36
+.font_number		dd 1 ;+32
+.font_size_y		dd 14 ;+36
 .font_color		dd 0x0 ;+40
 .font_backgr_color	dd 0xffffff ;+44
 ;---------------------------------------------------------------------

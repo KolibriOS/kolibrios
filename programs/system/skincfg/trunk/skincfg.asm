@@ -68,7 +68,7 @@ struct SKIN_BUTTONS
     left   dw ?
     top    dw ?
   size:
-    width  dw ?
+    w  dw ?
     height dw ?
 ends
 ;--------------------------------------
@@ -80,15 +80,19 @@ ends
 ;--------------------------------------
 frame_1:
   .x      = 5
-  .y      = 220
-  .width  = 420
-  .height = 50
+  .y      = area.y + area.height + 20
+  .w  = area.w + 217
+  .height = 65
 ;--------------------------------------  
 frame_2:
-  .x      = 5
-  .y      = 280
-  .width  = 420
-  .height = 50
+  .x      = frame_1.x
+  .y      = frame_1.y + frame_1.height + 20
+  .w  = frame_1.w
+  .height = frame_1.height
+;---------------------------------------------------------------------
+win:
+  .w = frame_2.w + frame_2.x + frame_2.x + 9
+  .h = frame_2.y + frame_2.height + 10
 ;---------------------------------------------------------------------
 START:		; start of execution
 ;---------------------------------------------------------------------
@@ -394,29 +398,30 @@ save_file:
 	ret
 ;---------------------------------------------------------------------
 draw_button_row:
-	mov	edx,0x60000000 + 31		; BUTTON ROW
-	mov	ebx,220*65536+14
-	mov	ecx,10*65536+14
+	mov	edx,0x40000000 + 31		; BUTTON ROW
+	mov	ebx,(area.w+18)*65536+29
+	mov	ecx,9*65536+15
 	mov	eax,8
 ;-----------------------------------
 .newb:
 	mcall
-	add	ecx,20*65536
+	add	ecx,22*65536
 	inc	edx
-	cmp	edx,0x60000000 + 40
+	cmp	edx,0x40000000 + 40
 	jbe	.newb
 	ret
 ;---------------------------------------------------------------------
 draw_button_row_of_texts:
-	mov	ebx,240*65536+13	; ROW OF TEXTS
+	mov	ebx,(area.w+49)*65536+9	; ROW OF TEXTS
 	mov	ecx,[w_work_text]
+	add ecx,0x10000000
 	mov	edx,text
 	mov	esi,32
 	mov	eax,4
 ;-----------------------------------
 .newline:
 	mcall
-	add	ebx,20
+	add	ebx,22
 	add	edx,32
 	cmp	[edx],byte 'x'
 	jne	.newline
@@ -425,7 +430,7 @@ draw_button_row_of_texts:
 draw_colours:
 	pusha
 	mov	esi,color_table
-	mov	ebx,220*65536+14
+	mov	ebx,(area.w+19)*65536+28
 	mov	ecx,10*65536+14
 	mov	eax,13
 	mov	[frame_data.draw_text_flag],dword 0
@@ -449,7 +454,7 @@ newcol:
 
 	pop	ecx ebx
 
-	add	ecx,20*65536
+	add	ecx,22*65536
 	add	esi,4
 	cmp	esi,color_table+4*9
 	jbe	newcol
@@ -459,8 +464,8 @@ newcol:
 ;----------------------------------------------------------------------
 draw_PathShow:
 	pusha
-	mcall	13,<frame_1.x+5,frame_1.width-15>,<frame_1.y+7,15>,0xffffff
-	mcall	13,<frame_2.x+5,frame_2.width-15>,<frame_2.y+7,15>,0xffffff
+	mcall	13,<frame_1.x+10,frame_1.w-25>,<frame_1.y+16,15>,0xffffff
+	mcall	13,<frame_2.x+10,frame_2.w-25>,<frame_2.y+16,15>,0xffffff
 ; draw for PathShow
 	push	dword PathShow_data_1
 	call	[PathShow_draw]
@@ -484,9 +489,9 @@ draw_window:
 	xor	esi,esi
 	mov	edx,[w_work]	; color of work area RRGGBB,8->color
 	or	edx,0x34000000
-	mov	ecx,50 shl 16 + 346
+	mov	ecx,50 shl 16 + win.h
 	add	ecx,[current_skin_high]
-	mcall	,<110,440>,,,,title
+	mcall	,<110, win.w>,,,,title
 
 	mcall	9,procinfo,-1
 	
@@ -508,20 +513,20 @@ draw_window:
 ;-----------------------------------
 ; select color DTP frame
 ; LOAD BUTTON	; button 12
-	mcall	8,<frame_1.x+10,load_w>,<frame_1.y+25,18>,12,[w_work_button]
+	mcall	8,<frame_1.x+10,load_w>,<frame_1.y+38,18>,12,[w_work_button]
 ; SAVE BUTTON
 	add	ebx,(load_w+2)*65536-load_w+save_w
 	inc	edx
 	mcall		; button 13
 ; APPLY BUTTON
-	mov	ebx,(frame_1.x + frame_1.width - apply_w - 15)*65536+apply_w
+	mov	ebx,(frame_1.x + frame_1.w - apply_w - 15)*65536+apply_w
 	mcall	8,,,16	; button 17
 ; select color DTP button text
-	mcall	4,<frame_1.x+16,frame_1.y+31>,[w_work_button_text],t1,t1.size
+	mcall	4,<frame_1.x+16,frame_1.y+44>,[w_work_button_text],t1,t1.size
 ;-----------------------------------	
 ; select skin frame	
 ; LOAD SKIN BUTTON	; button 17
-	mcall	8,<frame_2.x+10,load_w>,<frame_2.y+25,18>,17,[w_work_button]
+	mcall	8,<frame_2.x+10,load_w>,<frame_2.y+38,18>,17,[w_work_button]
 ; 3D
 	mov	ebx,(frame_2.x+155)*65536+34
 	mcall	,,,14	; button 14
@@ -530,16 +535,16 @@ draw_window:
 	inc	edx
 	mcall		; button 15
 ; APPLY SKIN BUTTON
-	mov	ebx,(frame_2.x + frame_2.width - apply_w -15)*65536+apply_w
+	mov	ebx,(frame_2.x + frame_2.w - apply_w -15)*65536+apply_w
 	mcall	,,,18		; button 18
 ; select skin button text
-	mcall	4,<frame_2.x+16,frame_2.y+31>,[w_work_button_text],t2,t2.size
+	mcall	4,<frame_2.x+16,frame_2.y+44>,[w_work_button_text],t2,t2.size
 ;-----------------------------------		
 	call	draw_button_row
 	call	draw_button_row_of_texts
 	call	draw_colours
 ;-----------------------------------
-	mov	[frame_data.x],dword frame_1.x shl 16+frame_1.width
+	mov	[frame_data.x],dword frame_1.x shl 16+frame_1.w
 	mov	[frame_data.y],dword frame_1.y shl 16+frame_1.height
 	mov	[frame_data.text_pointer],dword select_dtp_text
 	mov	eax,[w_work]
@@ -551,7 +556,7 @@ draw_window:
 	push	dword frame_data
 	call	[Frame_draw]
 ;-----------------------------------
-	mov	[frame_data.x],dword frame_2.x shl 16+frame_2.width
+	mov	[frame_data.x],dword frame_2.x shl 16+frame_2.w
 	mov	[frame_data.y],dword frame_2.y shl 16+frame_2.height
 	mov	[frame_data.text_pointer],dword select_skin_text
 
