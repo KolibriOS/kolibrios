@@ -1,6 +1,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;                                                                 ;;
-;; Copyright (C) KolibriOS team 2004-2018. All rights reserved.    ;;
+;; Copyright (C) KolibriOS team 2004-2021. All rights reserved.    ;;
 ;; Distributed under terms of the GNU General Public License       ;;
 ;;                                                                 ;;
 ;;  RTL8169 driver for KolibriOS                                   ;;
@@ -25,13 +25,17 @@ entry START
         COMPATIBLE_API          = 0x0100
         API_VERSION             = (COMPATIBLE_API shl 16) + CURRENT_API
 
-        MAX_DEVICES             = 16
+; configureable area
 
-        __DEBUG__               = 1
+        MAX_DEVICES             = 16    ; Maximum number of devices this driver may handle
+
+        __DEBUG__               = 1     ; 1 = on, 0 = off
         __DEBUG_LEVEL__         = 2     ; 1 = verbose, 2 = errors only
 
-        NUM_TX_DESC             = 4
-        NUM_RX_DESC             = 4
+        NUM_TX_DESC             = 32    ; Number of packets in send ring buffer
+        NUM_RX_DESC             = 32    ; Number of packets in receive ring buffer
+
+; end configureable area
 
 section '.flat' readable writable executable
 
@@ -40,6 +44,16 @@ include '../struct.inc'
 include '../macros.inc'
 include '../fdo.inc'
 include '../netdrv.inc'
+
+if (bsr NUM_TX_DESC)>(bsf NUM_TX_DESC)
+  display 'NUM_TX_DESC must be a power of two'
+  err
+end if
+
+if (bsr NUM_RX_DESC)>(bsf NUM_RX_DESC)
+  display 'NUM_RX_DESC must be a power of two'
+  err
+end if
 
         REG_MAC0                = 0x0 ; Ethernet hardware address
         REG_MAR0                = 0x8 ; Multicast filter
@@ -90,10 +104,12 @@ include '../netdrv.inc'
         ISB_RxOK                = 0x01
 
         ; RxStatusDesc
-        SD_RxRES                = 0x00200000
-        SD_RxCRC                = 0x00080000
-        SD_RxRUNT               = 0x00100000
-        SD_RxRWT                = 0x00400000
+        SD_RxBOVF               = (1 shl 24)
+        SD_RxFOVF               = (1 shl 23)
+        SD_RxRWT                = (1 shl 22)
+        SD_RxRES                = (1 shl 21)
+        SD_RxRUNT               = (1 shl 20)
+        SD_RxCRC                = (1 shl 19)
 
         ; ChipCmdBits
         CMD_Reset               = 0x10
@@ -1030,9 +1046,9 @@ proc transmit stdcall bufferptr
         [eax+13]:2,[eax+12]:2
 
         cmp     [esi + NET_BUFF.length], 1514
-        ja      .fail
+        ja      .error
         cmp     [esi + NET_BUFF.length], 60
-        jb      .fail
+        jb      .error
 
 ;----------------------------------
 ; Find currentTX descriptor address
@@ -1047,7 +1063,7 @@ proc transmit stdcall bufferptr
 ; Check if the descriptor is in use
 
         test    [esi + tx_desc.status], DSB_OWNbit
-        jnz     .desc
+        jnz     .overrun
 
 ;---------------------------
 ; Program the packet pointer
@@ -1095,11 +1111,20 @@ proc transmit stdcall bufferptr
         xor     eax, eax
         ret
 
-  .desc:
-        DEBUGF  2,"Descriptor is still in use!\n"
-  .fail:
-        DEBUGF  2,"Transmit failed\n"
+  .error:
+        DEBUGF  2, "TX packet error\n"
+        inc     [ebx + device.packets_tx_err]
         invoke  NetFree, [bufferptr]
+
+        popf
+        or      eax, -1
+        ret
+
+  .overrun:
+        DEBUGF  2, "TX overrun\n"
+        inc     [ebx + device.packets_tx_ovr]
+        invoke  NetFree, [bufferptr]
+
         popf
         or      eax, -1
         ret
@@ -1168,11 +1193,12 @@ int_handler:
         DEBUGF  1,"RxDesc.status = 0x%x\n", [esi + rx_desc.status]
         mov     ecx, [esi + rx_desc.status]
         test    ecx, DSB_OWNbit
-        jnz     .rx_return
+        jnz     .rx_done
 
         DEBUGF  1,"cur_rx = %u\n", [ebx + device.cur_rx]
+
         test    ecx, SD_RxRES
-        jnz     .rx_reuse
+        jnz     .rx_error
 
         push    ebx
         push    .rx_loop
@@ -1198,7 +1224,7 @@ int_handler:
         mov     [esi + rx_desc.status], 0
         invoke  NetAlloc, RX_BUF_SIZE+NET_BUFF.data
         test    eax, eax
-        jz      .no_more_buffers
+        jz      .rx_overrun
         mov     [esi + rx_desc.buf_soft_addr], eax
         invoke  GetPhysAddr
         add     eax, NET_BUFF.data
@@ -1214,7 +1240,6 @@ int_handler:
     @@:
         mov     [esi + rx_desc.status], eax
 
-  .no_more_buffers:
 ;--------------
 ; Update rx ptr
 
@@ -1223,7 +1248,27 @@ int_handler:
 
         jmp     [EthInput]
 
-  .rx_reuse:
+  .rx_overrun:
+        DEBUGF  2,"RX FIFO overrun\n"
+        inc     [ebx + device.packets_rx_ovr]
+        jmp     .rx_next
+
+  .rx_error:
+        inc     [ebx + device.packets_rx_err]
+        test    ecx, SD_RxRWT or SD_RxRUNT
+        jz      @f
+        DEBUGF  2,"RX length error"
+  @@:
+        test    ecx, SD_RxCRC
+        jz      @f
+        DEBUGF  2,"RX CRC error"
+  @@:
+        test    ecx, SD_RxFOVF
+        jz      @f
+        DEBUGF  2,"RX FIFO error"
+  @@:
+
+  .rx_next:
         mov     eax, DSB_OWNbit or RX_BUF_SIZE
         cmp     [ebx + device.cur_rx], NUM_RX_DESC - 1
         jne     @f
@@ -1233,7 +1278,7 @@ int_handler:
         push    ebx
         jmp     .rx_loop
 
-  .rx_return:
+  .rx_done:
         pop     ax
   .no_rx:
 
