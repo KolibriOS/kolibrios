@@ -18,7 +18,7 @@ create_palette:
 	mov	edx,[offset_y]
 ;-------------------------------------------
 	xor	ecx,ecx
-	mov	eax,[tone_color]
+	mov	eax,0xFF0000 ;there was [tone_area] which seems to be a bug
 ;-------------------------------------------
 align 4
 @@:

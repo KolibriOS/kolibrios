@@ -109,7 +109,8 @@ y_minimal_size equ 250
 START:
 	mcall	SF_SYS_MISC,SSF_HEAP_INIT
 	;mcall	SF_KEYBOARD,SSF_SET_INPUT_MODE,1
-	mcall	SF_SET_EVENTS_MASK,0x27
+	mcall	SF_SET_EVENTS_MASK,EVM_REDRAW+EVM_KEY+\
+	        EVM_BUTTON+EVM_MOUSE+EVM_MOUSE_FILTER
 ;--------------------------------------
 load_libraries	l_libs_start,end_l_libs
 	test	eax,eax
@@ -125,9 +126,13 @@ load_libraries	l_libs_start,end_l_libs
 	mov	[palette_SIZE_Y],eax
 	mov	[tone_SIZE_X],eax
 	mov	[tone_SIZE_Y],eax
-	mov	eax,0xff0000
-	mov	[tone_color],eax
+	
+	;set the last used color as a current one
+	mov	eax,[communication_area]
+	add	eax,28
+	mov	eax,[eax]
 	mov	[selected_color],eax
+	mov	[tone_color],eax
 	call	prepare_scrollbars_position_from_color
 ;--------------------------------------
 	mov	ecx,[palette_SIZE_Y]
@@ -151,6 +156,8 @@ load_libraries	l_libs_start,end_l_libs
 align 4
 red:
 	call	draw_window
+	;mov     ah,0
+	;jmp     button.history_click
 ;---------------------------------------------------------------------
 align 4
 still:
@@ -190,6 +197,8 @@ button:
 	ja	@f
 
 	sub	ah,30
+	
+.history_click: 
 	movzx	eax,ah
 	shl	eax,2
 	add	eax,[communication_area]
@@ -302,7 +311,7 @@ clear_colors_history:
 	add	edi,28
 	mov	ecx,10
 	cld
-	mov	eax,0xffffff
+	mov	eax,0x06BEEE
 	rep	stosd
 @@:
 	ret
@@ -412,8 +421,13 @@ prepare_color_from_scrollbars_position:
 align 4
 key:
 	mcall	SF_GET_KEY
+	
 	test word[edit1.flags],10b ;ed_focus
-	je still
+	jne @f
+	cmp	ah,027	; Esc
+	je	button.exit
+	jmp still
+@@:
 	stdcall [edit_box_key], edit1
 	stdcall conv_str_to_int, [edit1.text]
 	cmp [selected_color],eax
@@ -465,8 +479,8 @@ align 4
 align 4
 draw_selected_color:
 	mcall	SF_DRAW_RECT,<c_start_x,c_size_x>,<c_start_y,c_size_y>,[selected_color]
-	stdcall hex_in_str, sz_0x+2,[selected_color],6
-	mov byte[sz_0x+8],0
+	stdcall hex_in_str, sz_0x,[selected_color],6
+	mov byte[sz_0x+6],0
 	stdcall [edit_box_set_text],edit1,sz_0x
 	stdcall [edit_box_draw],edit1
 	ret
@@ -642,51 +656,16 @@ popad
 endp
 ;---------------------------------------------------------------------
 ;input:
-; buf - указатель на строку, число должно быть в 10 или 16 ричном виде
+; buf - pointer hexadecimal string
 ;output:
-; eax - число
+; eax - number
 align 4
 proc conv_str_to_int uses ebx ecx esi, buf:dword
 	xor eax,eax
 	xor ebx,ebx
 	mov esi,[buf]
 
-	;на случай если перед числом находятся пробелы
-	@@:
-	cmp byte[esi],' '
-	jne @f
-		inc esi
-		jmp @b
-	@@:
-
-	;определение отрицательных чисел
-	xor ecx,ecx
-	inc ecx
-	cmp byte[esi],'-'
-	jne @f
-		dec ecx
-		inc esi
-	@@:
-
-	cmp word[esi],'0x'
-	je .load_digit_16
-
-	.load_digit_10: ;считывание 10-тичных цифр
-		mov bl,byte[esi]
-		cmp bl,'0'
-		jl @f
-		cmp bl,'9'
-		jg @f
-			sub bl,'0'
-			imul eax,10
-			add eax,ebx
-			inc esi
-			jmp .load_digit_10
-	jmp @f
-
-	.load_digit_16: ;считывание 16-ричных цифр
-		add esi,2
-	.cycle_16:
+	.cycle_16:     ;считывание 16-ричных цифр
 		mov bl,byte[esi]
 		cmp bl,'0'
 		jl @f

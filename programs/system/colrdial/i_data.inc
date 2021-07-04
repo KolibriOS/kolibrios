@@ -241,8 +241,8 @@ frame_data:
 .font_backgr_color	dd 0xEEEeee ;+44
 ;---------------------------------------------------------------------
 mouse_dd dd edit1
-edit1 edit_box ed_size_x, c_start_x+c_size_x+10, c_start_y, 0xffffff, 0xa0a0a0, 0xff, 0, 0, 8, string1, mouse_dd, 0
-sz_0x db '0x______',0,0
-string1 rb 10
+edit1 edit_box ed_size_x, c_start_x+c_size_x+5, c_start_y, 0xffffff, 0xa0a0a0, 0xff, 0, 0x10000000, 6, string1, mouse_dd, 0
+sz_0x db '______',0,0
+string1 rb 8
 ;---------------------------------------------------------------------
 OK_Cancel db 'OK              Cancel',0
