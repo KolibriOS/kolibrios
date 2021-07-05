@@ -1,92 +1,201 @@
+System requirements
+-------------------
+
 Minimal system requirements for KolibriOS:
 * CPU: Pentium, AMD 5x86 or Cyrix 5x86 without MMX with frequency 100 MHz
-* RAM: 8 Mb
-* Videocard: supporting VGA (640*480*16 mode) or Vesa
+* RAM: 8 MB
+* Videocard: supporting VGA (640x480x16 mode) or Vesa
 * Keyboard: AT
 * Mouse: COM, PS/2 or USB
 
 The system can boot from any of following devices:
-- Floppy 3.5
-- IDE HDD LBA
-- CD/DVD
-- USB Flash
+* BIOS mode
+  - Floppy 3.5
+  - IDE HDD LBA
+  - CD/DVD
+  - USB Flash
+* UEFI mode
+  - HDD
+  - USB Flash
 
-I. Install to floppy.
-  1) Insert clean floppy without bad sectors to drive.
-  2) Write to it kolibri.img image with any available methods:
-    a) (if you have already loaded Kolibri by any method) run the program
-       rdsave and select the variant corresponding to floppy
-    b) (for DOS and Windows) run subjoined install.bat
-    c) with program WinImage or its analogue (e.g. DiskExplorer)
-    d) (for Linux) set "executable" attribute to subjoined script install.sh
-       and run it
-Now you can boot from floppy (keep it in drive, reboot, set in BIOS option
-of floppy booting).
 
-II. Install to hard disk.
-There exists several loaders from hard disk. All are oriented on DOS and
-Windows users. Also standard Linux-loader GRUB can be used. All methods work
-with file kolibri.img. If you already have old version of Kolibri installed,
-simply replace kolibri.img to new. If you have booted from LiveCD, which
-does not contain the file kolibri.img, Kolibri can create it independently,
-to do this, run the program rdsave, enter the file name for saving and select
-the corresponding variant. Of course, in this case Kolibri must be able to
-write to file system of selected partitions, currently this means that
-only FAT volumes are ok.
-1) Most of all features has the loader mtldr (author - Diamond) - works with
-   DOS/Win95/98/NT/2k/XP/Vista, supports FAT32 and NTFS, has installator, can
-   be installed to any folder on disk.
-   To install, simply run file HD_load\mtldr_install.exe and select image file.
-   Apropos, by this way you can install several images. There is also
-   variant of install by hand - for those who want to know what installator
-   does: directions in HD_load\mtldr
-2) There is also the loader MeOSLoad (author - Trans, expanded by Mario79) -
-   works with DOS/Win95/98, supports FAT32, it is placed with the instruction
-   to the folder HD_load\MeOSLoad.
-3) Moreover, there exist a program which allow load Kolibri directly from
-   Windows 95/98/Me (of course, unloading it) - 9x2klbr (author - Diamond),
-   supports FAT32 and NTFS.
-4) Usage of the loader GRUB. Place the file 'memdisk' to the folder 'boot'
-   or to the partition used for Kolibri.
-   a) For GRUB2, in the folder /etc/grub.d add to one of files next lines:
+Installation: BIOS mode
+-----------------------
 
-menuentry 'KolibriOS' {
-      linux16 (hd[Hard disk number],[partition number])[path]/memdisk
-      initrd16 (hd[Hard disk number],[partition number])[path]/kolibri.img
-      }
+### Install to floppy
 
-      example:
+* Insert clean floppy without bad sectors to drive.
+* Write to it `kolibri.img` image with any available methods:
 
-menuentry 'KolibriOS' {
-      linux16 (hd0,msdos1)/boot/memdisk
-      initrd16 (hd0,msdos1)/boot/kolibri.img
-      }
+  * (if you have already loaded KolibriOS by any method) run the program
+    `rdsave` and select the variant corresponding to floppy;
 
-      then, run in terminal 'sudo update-grub'.
+  * (for DOS and Windows) run subjoined install.bat;
 
-   b) For old GRUB, add to the configuration file 'menu.lst' next lines:
+  * with program WinImage or its analogue (e.g. DiskExplorer);
 
-      title KolibriOS
-      kernel (hd[Hard disk number],[partition number])[path]/memdisk
-      initrd (hd[Hard disk number],[partition number])[path]/kolibri.img
+  * (for Linux) set "executable" attribute to subjoined script install.sh
+    and run it.
 
-      Remember that numeration in GRUB starts from 0. Example:
+Now you can boot from floppy (keep it in drive, reboot, set in BIOS option of
+floppy booting).
 
-      title KolibriOS
-      kernel (hd0,0)/boot/memdisk
-      initrd (hd0,3)/kolibri/kolibri.img
 
-III. Install to USB-Flash-drive.
-The special loader for FAT32-volumes has been written, it and its installer
-to flash drive can be found in the folder HD_load\USB_Boot.
-For not-FAT32 drives you may use article placed in the folder
-HD_load\USB_Boot_old.
+### Install to hard disk
 
-IV. Install to CD and DVD.
-There exists special LiveCD-version of Kolibri, which contains
-in addition to standard things some "heavy" (in Kolibri standards) programs:
-the ported emulator DosBox, games "Fixed Rate Pig" and "sokoban".
-You can also create bootable CD or DVD on the base of kolibri.img, adding
-anything what you want, in the mode of floppy emulation.
-The appropriate actions are determined by used CD/DVD write program
-(focus on words such as "boot floppy emulation").
+There exist several loaders from hard disk. All are oriented on DOS and Windows
+users. Also standard Linux-loader GRUB can be used. All methods work with file
+`kolibri.img`. If you already have old version of KolibriOS installed, simply
+replace `kolibri.img` to the new one. If you have booted from LiveCD, which does
+not contain the file `kolibri.img`, KolibriOS can create it independently. To do
+this, run the program `rdsave`, enter the file name for saving and select the
+corresponding variant. Of course, in this case KolibriOS must be able to write
+to file system of selected partitions. Currently this means that only FAT and
+EXT2 volumes are ok.
+
+* Most of all features has the loader mtldr (author - Diamond) - works with
+  DOS/Win95/98/NT/2k/XP/Vista, supports FAT32 and NTFS, has installer, can be
+  installed to any folder on disk.
+
+  To install, simply run file HD_load\mtldr_install.exe and select image file.
+  Apropos, by this way you can install several images. There is also variant of
+  install by hand - for those who want to know what installer does: directions
+  in `HD_load\mtldr`.
+
+* There is also the loader MeOSLoad (author - Trans, expanded by Mario79) -
+  works with DOS/Win95/98, supports FAT32. It is placed with the instruction
+  to the folder `HD_load\MeOSLoad`.
+
+* Moreover, there exists a program which allows to load KolibriOS directly from
+  Windows 95/98/Me (of course, unloading it) - `9x2klbr` (author - Diamond),
+  supports FAT32 and NTFS.
+
+* Usage of the loader GRUB. Place the file `memdisk` to the folder `boot`
+  or to the partition used for KolibriOS.
+
+  a) For GRUB2, in the folder `/etc/grub.d` add to one of files next lines:
+
+  ```
+  menuentry 'KolibriOS' {
+          linux16 (hd[Hard disk number],[partition number])[path]/memdisk
+          initrd16 (hd[Hard disk number],[partition number])[path]/kolibri.img
+  }
+  ```
+  example:
+
+  ```
+  menuentry 'KolibriOS' {
+          linux16 (hd0,msdos1)/boot/memdisk
+          initrd16 (hd0,msdos1)/boot/kolibri.img
+  }
+  ```
+  then, run in terminal `sudo update-grub`.
+
+  b) For old GRUB, add to the configuration file `menu.lst` next lines:
+
+  ```
+  title KolibriOS
+  kernel (hd[Hard disk number],[partition number])[path]/memdisk
+  initrd (hd[Hard disk number],[partition number])[path]/kolibri.img
+  ```
+  Remember that numeration in GRUB starts from 0. Example:
+
+  ```
+  title KolibriOS
+  kernel (hd0,0)/boot/memdisk
+  initrd (hd0,3)/kolibri/kolibri.img
+  ```
+
+
+### Install to USB flash drive
+
+The special loader for FAT32-volumes has been written. It and its installer to
+flash drive can be found in the directory `HD_load\USB_Boot`.
+
+For not-FAT32 drives you may use article placed in the directory
+`HD_load\USB_Boot_old`.
+
+
+### Install to CD and DVD
+
+There exists special LiveCD-version of KolibriOS, which contains in addition to
+standard things some 'heavy' (in KolibriOS standards) programs: the ported
+emulator DosBox, games 'Fixed Rate Pig' and 'sokoban'.
+
+You can also create bootable CD or DVD on the base of `kolibri.img`, adding
+anything what you want, in the mode of floppy emulation. The appropriate actions
+are determined by used CD/DVD write program (focus on words such as 'boot floppy
+emulation').
+
+
+Installation: UEFI mode
+-----------------------
+
+UEFI support is still in beta. Be ready to face issues and report them.
+
+### Install to hard disk
+
+* To boot KolibriOS from HDD these four files are needed:
+
+  * `uefi4kos`: UEFI-specific loader for KolibriOS, shipped as `bootx64.efi` and
+    `bootia32.efi` binaries. Choose one of these `boot*.efi` images to match the
+    architecture of your machine's UEFI firmware. Use `bootx64.efi` if unsure.
+  * `kolibri.img`: a RAM disk image.
+  * `kolibri.krn`: KolibriOS kernel compiled without BIOS-related legacy stuff.
+  * `kolibri.ini`: a configuration file. It is used to e.g. set screen
+    resolution.
+
+
+* If you have any UEFI-aware OS installed on your HDD, then there already is a
+  so called EFI system partition (ESP) on it. If your HDD is not partitioned
+  yet, you have to first create a GUID partition table (GPT) on it and then
+  create mentioned EFI system partition formatted as FAT32.
+
+* Make a directory `/efi/kolibrios` on the ESP.
+
+* Copy all the `kolibri.???` files mentioned above to that directory.
+
+* If KolibriOS is the only OS to be loaded from that HDD, make a directory
+  `/efi/boot` and copy the chosen `boot*.efi` loader there.
+
+* If there is some other OS already installed on the HDD, put `boot*.efi` file
+  to `/efi/kolibrios` directory and then setup the boot loader of the installed
+  OS to boot KolibriOS.
+
+  For example, for GRUB2 (nowadays also known as just GRUB, not GRUB1 or
+  GRUB-legacy) follow these three steps:
+
+  1. Append file `/etc/grub.d/42_custom` with a new menu entry.
+
+     ```
+     menuentry "KolibriOS" {
+             insmod part_gpt
+             insmod fat
+             insmod chain
+             chainloader /EFI/kolibrios/bootx64.efi
+     }
+     ```
+
+  2. Locate GRUB config file in your system, namely `grub.cfg`. It might be in
+     `/boot/grub/`.
+
+  3. Update `grub.cfg` with a command like below.
+     ```
+     sudo grub-mkconfig -o /boot/grub/grub.cfg
+     ```
+
+
+### Install to USB flash drive
+
+* If you prefer to keep all the data on the USB drive, follow the
+  steps above for hard disks.
+
+* If, instead, you are okay to lose all the data on the USB drive, use
+  `kolibri.raw` image. It is ready to be directly written to the flash drive.
+
+  Linux users can write the image with standard utilities `cat` or `dd`.
+
+  Windows users can use [Rawwrite32] or [Rufus].
+
+[Rawwrite32]: https://www.netbsd.org/~martin/rawrite32/
+[Rufus]: https://rufus.ie
