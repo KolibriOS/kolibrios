@@ -14,7 +14,6 @@
 //===================================================//
 
 ?define T_COLUMNS_TITLE "#    Size      Type        Contents"
-?define T_COLUMN_VIEW "View"
 ?define DEFAULT_SAVE_PATH "/tmp0/1/clipview.tmp"
 char *data_type[] = { "Text", "Image", "RAW", "Unknown" };
 
@@ -119,7 +118,6 @@ void DrawWindowContent()
 	WriteText(GAP+11, LIST_Y + list.h + 14, 0x90, sc.button_text, "Delete last      Delete all      Reset lock");
 
 	WriteText(GAP+18, LIST_Y - 23, 0x90, sc.work_text, T_COLUMNS_TITLE);
-	WriteText(GAP+list.w - 70, LIST_Y - 23, 0x90, sc.work_text, T_COLUMN_VIEW);
  	ClipViewSelectListDraw();
  	SelectList_DrawBorder();
 }
