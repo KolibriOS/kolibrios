@@ -622,7 +622,7 @@ tup.append_table(img_files, {
  {"LOD", PROGS .. "/fs/lod/lod"},
  {"TIMER", PROGS .. "/other/Timer/timer"},
  {"TINFO", PROGS .. "/system/tinfo/tinfo"},
- {"DEVELOP/MSTATE", PROGS .. "/develop/mstate/mstate"}
+ {"DEVELOP/MSTATE", PROGS .. "/develop/mstate/mstate"},
  {"DEVELOP/GENFILES", PROGS .. "/testing/genfiles/GenFiles"},
  {"GAMES/C4", PROGS .. "/games/c4/trunk/c4"},
  {"MEDIA/FILLSCR", PROGS .. "/media/FillScr/fillscr"},
