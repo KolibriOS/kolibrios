@@ -14,12 +14,13 @@ whois.kex  \
 file_io.kex \
 tmpdisk_work.kex \
 consoleio.kex \
+assert_test.kex \
 fasm/sprintf_test.kex \
 clayer/rasterworks.kex \
 clayer/libimg.kex \
 clayer/dialog.kex \
 clayer/msgbox.kex \
-clayer/boxlib.kex
+clayer/boxlib.kex \
 
 LIBS= -ltcc -ldialog -lrasterworks -limg -lbox -lmsgbox -lnetwork -lc.obj
 

@@ -22,7 +22,7 @@ all:
 	$(MAKE) -C libtcc
 	rm -rf exports
 install:
-	cp -f ../lib/libc.obj ~/.kex/root/RD/1/LIB
+	cp -f libc.obj ~/.kex/root/RD/1/LIB
 
 clean:
 	rm ../../bin/lib/libc.obj.a ../../bin/lib/libtcc.a

@@ -40,4 +40,7 @@ extern void  _FUNC(exit)(int status);
 extern void _FUNC(srand)(unsigned s);
 extern int  _FUNC(rand)(void);
 
+extern void _FUNC(__assert_fail)(const char *expr, const char *file, int line, const char *func);
+extern void _FUNC(qsort)(void *base0, size_t n, size_t size, int (*compar)(const void *, const void *));
+
 #endif
