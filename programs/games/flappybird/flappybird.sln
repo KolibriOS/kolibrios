@@ -1,0 +1,20 @@
+﻿Microsoft Visual Studio Solution File, Format Version 11.00
+# Visual Studio 2010
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "flappybird", "flappybird.vcxproj", "{0556BA3E-9447-4000-8613-91AD1CD750D7}"
+	ProjectSection(ProjectDependencies) = postProject
+		{0D291390-1953-4E1F-BBE2-57F12AFF3214} = {0D291390-1953-4E1F-BBE2-57F12AFF3214}
+	EndProjectSection
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "smalllibc", "smalllibc\smalllibc.vcxproj", "{0D291390-1953-4E1F-BBE2-57F12AFF3214}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Release|Win32 = Release|Win32
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{0556BA3E-9447-4000-8613-91AD1CD750D7}.Release|Win32.ActiveCfg = Release|Win32
+		{0556BA3E-9447-4000-8613-91AD1CD750D7}.Release|Win32.Build.0 = Release|Win32
+		{0D291390-1953-4E1F-BBE2-57F12AFF3214}.Release|Win32.ActiveCfg = Release|Win32
+		{0D291390-1953-4E1F-BBE2-57F12AFF3214}.Release|Win32.Build.0 = Release|Win32
+	EndGlobalSection
+EndGlobal
