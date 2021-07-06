@@ -210,6 +210,12 @@ BEGIN
 END setChar;
 
 
+PROCEDURE move* (src, dst: tLine);
+BEGIN
+    SYSTEM.MOVE(src.ptr, dst.ptr, (MIN(src.length, dst.length) + 1)*WCHAR_SIZE)
+END move;
+
+
 PROCEDURE concat* (line: tLine; s: ARRAY OF WCHAR);
 VAR
     Len: INTEGER;

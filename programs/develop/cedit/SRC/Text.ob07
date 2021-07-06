@@ -1506,6 +1506,83 @@ BEGIN
 END delLine;
 
 
+PROCEDURE dupLine (text: tText);
+VAR
+    newLine, curLine: tLine;
+BEGIN
+    curLine := text.curLine;
+    newLine := Lines.create(FALSE);
+    Lines.modify(newLine);
+    modify(text);
+    Lines.insert3(newLine, 0, curLine.length);
+    List._insert(text, curLine, newLine);
+    Lines.move(curLine, newLine)
+END dupLine;
+
+
+PROCEDURE exchange (text: tText; first, second: tLine);
+BEGIN
+    List._exchange(text, first, second);
+    Lines.modify(text.curLine);
+    modify(text);
+    UpDown(text, 0)
+END exchange;
+
+
+PROCEDURE upLine (text: tText);
+BEGIN
+    IF text.cursor.Y > 0 THEN
+        DEC(text.cursor.Y);
+        exchange(text, text.curLine.prev(tLine), text.curLine)
+    END
+END upLine;
+
+
+PROCEDURE downLine (text: tText);
+BEGIN
+    IF text.cursor.Y < text.count - 1 THEN
+        INC(text.cursor.Y);
+        exchange(text, text.curLine, text.curLine.next(tLine))
+    END
+END downLine;
+
+
+PROCEDURE isWordChar (c: WCHAR): BOOLEAN;
+    RETURN U.isLetter(c) OR U.isDigit(c) OR (c = "_")
+END isWordChar;
+
+
+PROCEDURE wordSel* (text: tText);
+VAR
+    n, i, x1, x2: INTEGER;
+    selBeg, selEnd: tPoint;
+    str: tString;
+    curLine: tLine;
+BEGIN
+    curLine := text.curLine;
+    IF selected(text) & (text.cursor.Y = text.select.Y) THEN
+        getSelect(text, selBeg, selEnd);
+        x1 := selBeg.X;
+        x2 := selEnd.X;
+        n := getString(curLine, x1, x2 - x1, str);
+    ELSE
+        str := ""
+    END;
+    IF str # "" THEN
+        i := 0;
+        WHILE (i < n) & isWordChar(str[i]) DO
+            INC(i)
+        END;
+        IF (i # n) OR
+            ((x1 > 0) & isWordChar(getChar(curLine, x1 - 1))) OR
+            ((x2 < curLine.length) & isWordChar(getChar(curLine, x2))) THEN
+            str := ""
+        END
+    END;
+    IF search(text, str, TRUE, TRUE) THEN END
+END wordSel;
+
+
 PROCEDURE key* (text: tText; code: INTEGER; shift: SET);
 BEGIN
     IF SHIFT IN shift THEN
@@ -1550,7 +1627,11 @@ BEGIN
             SetPos(text, text.cursor.X - 1, text.cursor.Y)
         END
     |38:
-        UpDown(text, -1)
+        IF CTRL IN shift THEN
+            upLine(text)
+        ELSE
+            UpDown(text, -1)
+        END
     |39:
         IF (text.cursor.X = text.curLine.length) & (text.curLine.next # NIL) THEN
             SetPos(text, 0, text.cursor.Y + 1)
@@ -1558,10 +1639,17 @@ BEGIN
             SetPos(text, text.cursor.X + 1, text.cursor.Y)
         END
     |40:
-        UpDown(text, 1)
-
-    |46: delete(text); ShowCursor; drawCursor := TRUE
-
+        IF CTRL IN shift THEN
+            downLine(text)
+        ELSE
+            UpDown(text, 1)
+        END
+    |46:
+        IF CTRL IN shift THEN
+            delLine(text)
+        ELSE
+            delete(text); ShowCursor; drawCursor := TRUE
+        END
     |ORD("C"):
         IF CTRL IN shift THEN
             IF selected(text) THEN
@@ -1592,6 +1680,10 @@ BEGIN
         IF CTRL IN shift THEN
             changeCase(text, code = ORD("U"))
         END
+    |ORD("D"):
+        IF CTRL IN shift THEN
+            dupLine(text)
+        END
     ELSE
     END
 END key;
@@ -1612,11 +1704,6 @@ PROCEDURE selectWord* (text: tText);
 VAR
     cursorX, x1, x2: INTEGER;
     line: tLine;
-
-    PROCEDURE isWordChar (c: WCHAR): BOOLEAN;
-        RETURN U.isLetter(c) OR U.isDigit(c) OR (c = "_")
-    END isWordChar;
-
 BEGIN
     resetSelect(text);
     cursorX := text.cursor.X;

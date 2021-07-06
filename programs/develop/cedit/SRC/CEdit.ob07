@@ -28,7 +28,7 @@ IMPORT
     RW, Ini, box_lib, Icons;
 
 CONST
-    header = "CEdit (15-jun-2021)";
+    header = "CEdit (06-jul-2021)";
 
     ShellFilter = "";
     EditFilter = "SH|ASM|TXT|INC|OB07|C|CPP|H|PAS|PP|LUA|INI";
@@ -344,6 +344,9 @@ BEGIN
             K.DeleteButton(btnYes);
             K.DeleteButton(btnNo);
             confirm := FALSE
+        END;
+        IF ~search THEN
+            T.wordSel(text)
         END;
         T.draw(text);
         K.ClientSize(width, height);
@@ -1286,11 +1289,11 @@ BEGIN
     cs := FALSE;
     whole := FALSE;
     replaced := 0;
+    Ini.getStr("paths", "build", buildScript);
+    Ini.getStr("paths", "run",   runScript);
+    Ini.getStr("paths", "debug", debugScript);
     draw_window;
     repaint;
-    buildScript := "";
-    runScript := "";
-    debugScript := "";
     WHILE TRUE DO
         CASE K.WaitForEvent() OF
         |1:
@@ -1405,6 +1408,7 @@ BEGIN
                         |30: key := ORD("A")
                         |31: key := -1;
                              save
+                        |32: key := ORD("D")
                         |38: key := ORD("L")
                         |44: T.undo(text);
                              key := -1
