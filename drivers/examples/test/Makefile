@@ -1,7 +1,7 @@
 
-KTCC=../../../programs/develop/ktcc/trunk/bin/kos32-tcc
+KTCC=kos32-tcc
 KPACK = kpack
-KLIBC =  ../../../programs/develop/libraries/kolibri-libc
+KLIBC =  ../../../programs/develop/ktcc/trunk/libc.obj
 CFLAGS = -I $(KLIBC)/include 
 LDFLAGS = -nostdlib -L$(KLIBC)/lib $(KLIBC)/lib/crt0.o
 

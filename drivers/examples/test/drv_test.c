@@ -43,7 +43,7 @@ int main(int argc, char** argv){
     add_struct.a = 43;
     add_struct.b = 532;
     
-    ksys_drv_ctl_t ioctl;
+    ksys_ioctl_t ioctl;
     ioctl.func_num = DRV_ADD_FUNC;
     ioctl.handler = drv;
     ioctl.in_data_ptr = &add_struct;
