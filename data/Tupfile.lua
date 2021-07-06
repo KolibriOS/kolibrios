@@ -166,6 +166,10 @@ extra_files = {
  {"kolibrios/3D/TEST_GLU1", PROGS .. "/develop/libraries/TinyGL/asm_fork/examples/test_glu1"},
  {"kolibrios/3D/TEST_GLU2", PROGS .. "/develop/libraries/TinyGL/asm_fork/examples/test_glu2"},
  {"kolibrios/3D/TEXT_2.PNG", PROGS .. "/develop/libraries/TinyGL/asm_fork/examples/text_2.png"},
+ {"kolibrios/demos/ak47.lif", "common/demos/ak47.lif"},
+ {"kolibrios/demos/life2", "common/demos/life2"},
+ {"kolibrios/demos/relay.lif", "common/demos/relay.lif"},
+ {"kolibrios/demos/rpento.lif", "common/demos/rpento.lif"},
  {"kolibrios/develop/c--/", PROGS .. "/cmm/c--/*"},
  {"kolibrios/develop/fpc/", "common/develop/fpc/*"},
  {"kolibrios/develop/fpc/examples/", PROGS .. "/develop/fp/examples/src/*"},
@@ -188,6 +192,7 @@ extra_files = {
  {"kolibrios/develop/tcc/samples/clayer/", PROGS ..  "/develop/ktcc/trunk/libc.obj/samples/clayer/*"},
 -- {"kolibrios/develop/tcc/samples/net/", PROGS ..  "/develop/ktcc/trunk/samples/net/*"},
 -- {"kolibrios/develop/tcc/samples/tinygl/", PROGS ..  "/develop/ktcc/trunk/samples/tinygl/*"},
+ {"kolibrios/develop/utils/SPEDump", PROGS .. "/develop/SPEDump/SPEDump.kex"},
  {"kolibrios/emul/", "common/emul/*"},
  {"kolibrios/emul/dosbox/", "common/emul/DosBox/*"},
  {"kolibrios/emul/e80/readme.txt", PROGS .. "/emulator/e80/trunk/readme.txt"},
@@ -201,10 +206,6 @@ extra_files = {
  {"kolibrios/emul/kwine/lib/", PROGS .. "/emulator/kwine/bin/lib/*"},
  {"kolibrios/emul/uarm/", "common/emul/uarm/*"},
  {"kolibrios/emul/zsnes/", "common/emul/zsnes/*"},
- {"kolibrios/demos/ak47.lif", "common/demos/ak47.lif"},
- {"kolibrios/demos/life2", "common/demos/life2"},
- {"kolibrios/demos/relay.lif", "common/demos/relay.lif"},
- {"kolibrios/demos/rpento.lif", "common/demos/rpento.lif"},
  {"kolibrios/games/BabyPainter", "common/games/BabyPainter"},
  {"kolibrios/games/bomber/ackack.bmp", PROGS .. "/games/bomber/ackack.bmp"},
  {"kolibrios/games/bomber/bomb.bmp", PROGS .. "/games/bomber/bomb.bmp"},
@@ -621,12 +622,12 @@ tup.append_table(img_files, {
  {"LOD", PROGS .. "/fs/lod/lod"},
  {"TIMER", PROGS .. "/other/Timer/timer"},
  {"TINFO", PROGS .. "/system/tinfo/tinfo"},
- {"DEVELOP/MSTATE", PROGS .. "/develop/mstate/mstate"},
+ {"DEVELOP/MSTATE", PROGS .. "/develop/mstate/mstate"}
+ {"DEVELOP/GENFILES", PROGS .. "/testing/genfiles/GenFiles"},,
  {"GAMES/C4", PROGS .. "/games/c4/trunk/c4"},
  {"MEDIA/FILLSCR", PROGS .. "/media/FillScr/fillscr"},
 })
 tup.append_table(extra_files, {
- {"kolibrios/develop/utils/GenFiles", PROGS .. "/testing/genfiles/GenFiles"},
 })
 end -- tup.getconfig('NO_NASM') ~= 'full'
 
