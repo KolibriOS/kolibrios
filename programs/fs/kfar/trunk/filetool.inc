@@ -977,8 +977,8 @@ filesearch_data:
 .list.head              dd      ?
 .list.curitem           dd      ?
 .list.end               dd      ?
-.query_dlgdata          rb      filesearch_query_template.size
-.search_dlgdata         rb      filesearch_search_template.size
+.query_dlgdata          rb      sizeof.FileSearch_QueryTemplate
+.search_dlgdata         rb      sizeof.FileSearch_SearchTemplate
 .mask.maxlen            dd      ?
 .mask.pos               dd      ?
 .mask.start             dd      ?
@@ -1013,36 +1013,36 @@ panels_OnKey.alt_f7:
         ret
 @@:
         mov     [ebp+filesearch_data.prev_screen_vtable], panels_vtable
-        mov     ecx, (filesearch_query_template.size + filesearch_search_template.size) / 4
+        mov     ecx, (sizeof.FileSearch_QueryTemplate + sizeof.FileSearch_SearchTemplate) / 4
         mov     esi, filesearch_query_template
         lea     edi, [ebp+filesearch_data.query_dlgdata]
         rep     movsd
         lea     eax, [ebp+filesearch_data.string.maxlen]
         xor     ebx, ebx
-        mov     dword [ebp+filesearch_data.query_dlgdata+filesearch_query_template.editptr2-filesearch_query_template], eax
+        mov     dword [ebp+filesearch_data.query_dlgdata+FileSearch_QueryTemplate.edit2.text], eax
         mov     dword [eax], 253
         mov     [eax+4], ebx
         mov     [eax+8], ebx
         mov     [eax+12], bl
         sub     eax, filesearch_data.string - filesearch_data.mask
-        mov     dword [ebp+filesearch_data.query_dlgdata+filesearch_query_template.editptr1-filesearch_query_template], eax
+        mov     dword [ebp+filesearch_data.query_dlgdata+FileSearch_QueryTemplate.edit1.text], eax
         mov     dword [eax], 511
         mov     [eax+8], ebx
         inc     ebx
         mov     word [eax+12], '*'
         mov     [eax+4], ebx
-        mov     eax, [find_in_file_dlgdata.flags_case]
+        mov     eax, [find_in_file_dlgdata.case.flags]
         and     al, 10h
         or      al, 8
-        mov     dword [ebp+filesearch_data.query_dlgdata+filesearch_query_template.flags_case-filesearch_query_template], eax
-        mov     eax, [find_in_file_dlgdata.flags_whole]
+        mov     dword [ebp+filesearch_data.query_dlgdata+FileSearch_QueryTemplate.case.flags], eax
+        mov     eax, [find_in_file_dlgdata.whole.flags]
         and     al, 10h
         or      al, 8
-        mov     dword [ebp+filesearch_data.query_dlgdata+filesearch_query_template.flags_whole-filesearch_query_template], eax
+        mov     dword [ebp+filesearch_data.query_dlgdata+FileSearch_QueryTemplate.whole.flags], eax
         lea     edi, [ebp+filesearch_data.caption]
         mov     dword [ebp+dlgtemplate.title+filesearch_data.search_dlgdata], edi
         lea     eax, [ebp+filesearch_data.list.curitemptr]
-        mov     dword [ebp+filesearch_data.search_dlgdata+filesearch_search_template.data1-filesearch_search_template], eax
+        mov     dword [ebp+filesearch_data.search_dlgdata+FileSearch_SearchTemplate.list1.text], eax
 .reinit:
         xor     ebx, ebx
         or      [ebp+filesearch_data.tid], -1
@@ -1081,18 +1081,18 @@ filesearch_OnRedraw:
         mov     [ebx + dlgtemplate.width], eax
         dec     eax
         dec     eax
-        mov     [ebx - filesearch_query_template + filesearch_query_template.width2], eax
-        mov     [ebx - filesearch_query_template + filesearch_query_template.width3], eax
+        mov     [ebx + FileSearch_QueryTemplate.edit1.x2], eax
+        mov     [ebx + FileSearch_QueryTemplate.edit2.x2], eax
         shr     eax, 1
         dec     eax
         dec     eax
-        mov     [ebx - filesearch_query_template + filesearch_query_template.search_x2], eax
+        mov     [ebx + FileSearch_QueryTemplate.search.x2], eax
         sub     eax, aSearchBLength-1
-        mov     [ebx - filesearch_query_template + filesearch_query_template.search_x1], eax
+        mov     [ebx + FileSearch_QueryTemplate.search.x1], eax
         add     eax, aSearchBLength+3
-        mov     [ebx - filesearch_query_template + filesearch_query_template.cnl_x1], eax
+        mov     [ebx + FileSearch_QueryTemplate.cnl.x1], eax
         add     eax, aCancelBLength-1
-        mov     [ebx - filesearch_query_template + filesearch_query_template.cnl_x2], eax
+        mov     [ebx + FileSearch_QueryTemplate.cnl.x2], eax
         mov     eax, [cur_height]
         sub     eax, [ebx + dlgtemplate.height]
         shr     eax, 1
@@ -1121,11 +1121,11 @@ filesearch_OnRedraw:
         shr     edx, 1
         mov     [ebx + dlgtemplate.x], edx
         dec     eax
-        mov     [ebx + filesearch_search_template.width1 - filesearch_search_template], eax
-        mov     [ebx + filesearch_search_template.width4 - filesearch_search_template], eax
+        mov     [ebx + FileSearch_SearchTemplate.list1.x2], eax
+        mov     [ebx + FileSearch_SearchTemplate.lbl2.x2], eax
         cmp     [ebp + filesearch_data.slot], 0
         jnz     @f
-        mov     [ebx + filesearch_search_template.width3 - filesearch_search_template], eax
+        mov     [ebx + FileSearch_SearchTemplate.lbl1.x2], eax
 @@:
         sub     eax, aNewSearchLen + aGotoLen + aViewLen + aCancelB2Length - 1
         cdq
@@ -1135,21 +1135,21 @@ filesearch_OnRedraw:
         sar     edx, 1
         add     edx, eax
         inc     eax
-        mov     [ebx + filesearch_search_template.btn1x1 - filesearch_search_template], edx
+        mov     [ebx + FileSearch_SearchTemplate.btn1.x1], edx
         add     edx, aNewSearchLen-1
-        mov     [ebx + filesearch_search_template.btn1x2 - filesearch_search_template], edx
+        mov     [ebx + FileSearch_SearchTemplate.btn1.x2], edx
         add     edx, eax
-        mov     [ebx + filesearch_search_template.btn2x1 - filesearch_search_template], edx
+        mov     [ebx + FileSearch_SearchTemplate.btn2.x1], edx
         add     edx, aGotoLen-1
-        mov     [ebx + filesearch_search_template.btn2x2 - filesearch_search_template], edx
+        mov     [ebx + FileSearch_SearchTemplate.btn2.x2], edx
         add     edx, eax
-        mov     [ebx + filesearch_search_template.btn3x1 - filesearch_search_template], edx
+        mov     [ebx + FileSearch_SearchTemplate.btn3.x1], edx
         add     edx, aViewLen-1
-        mov     [ebx + filesearch_search_template.btn3x2 - filesearch_search_template], edx
+        mov     [ebx + FileSearch_SearchTemplate.btn3.x2], edx
         add     edx, eax
-        mov     [ebx + filesearch_search_template.btn4x1 - filesearch_search_template], edx
+        mov     [ebx + FileSearch_SearchTemplate.btn4.x1], edx
         add     edx, aCancelB2Length-1
-        mov     [ebx + filesearch_search_template.btn4x2 - filesearch_search_template], edx
+        mov     [ebx + FileSearch_SearchTemplate.btn4.x2], edx
         mov     eax, [cur_height]
         mov     edx, eax
         sub     eax, 8
@@ -1162,19 +1162,19 @@ filesearch_OnRedraw:
         shr     edx, 1
         mov     [ebx + dlgtemplate.y], edx
         dec     eax
-        mov     [ebx + filesearch_search_template.btn1y - filesearch_search_template], eax
-        mov     [ebx + filesearch_search_template.btn2y - filesearch_search_template], eax
-        mov     [ebx + filesearch_search_template.btn3y - filesearch_search_template], eax
-        mov     [ebx + filesearch_search_template.btn4y - filesearch_search_template], eax
+        mov     [ebx + FileSearch_SearchTemplate.btn1.y1], eax
+        mov     [ebx + FileSearch_SearchTemplate.btn2.y1], eax
+        mov     [ebx + FileSearch_SearchTemplate.btn3.y1], eax
+        mov     [ebx + FileSearch_SearchTemplate.btn4.y1], eax
         dec     eax
-        mov     [ebx + filesearch_search_template.y5 - filesearch_search_template], eax
+        mov     [ebx + FileSearch_SearchTemplate.lin2.y1], eax
         dec     eax
-        mov     [ebx + filesearch_search_template.y3 - filesearch_search_template], eax
-        mov     [ebx + filesearch_search_template.y4 - filesearch_search_template], eax
+        mov     [ebx + FileSearch_SearchTemplate.lbl1.y1], eax
+        mov     [ebx + FileSearch_SearchTemplate.lbl2.y1], eax
         dec     eax
-        mov     [ebx + filesearch_search_template.y2 - filesearch_search_template], eax
+        mov     [ebx + FileSearch_SearchTemplate.lin1.y1], eax
         dec     eax
-        mov     [ebx + filesearch_search_template.height1 - filesearch_search_template], eax
+        mov     [ebx + FileSearch_SearchTemplate.list1.y2], eax
 .dlg_prepared:
         call    draw_dialog_shadow
         push    ebx
@@ -1267,13 +1267,13 @@ filesearch_OnKey:
         cmp     eax, -1
         jz      .esc
         sub     eax, ebp
-        cmp     eax, filesearch_data.query_dlgdata+filesearch_query_template.search_btn-filesearch_query_template
+        cmp     eax, filesearch_data.query_dlgdata+FileSearch_QueryTemplate.search
         jz      .query
-        cmp     eax, filesearch_data.search_dlgdata+filesearch_search_template.btn1-filesearch_search_template
+        cmp     eax, filesearch_data.search_dlgdata+FileSearch_SearchTemplate.btn1
         jz      .newsearch
-        cmp     eax, filesearch_data.search_dlgdata+filesearch_search_template.btn2-filesearch_search_template
+        cmp     eax, filesearch_data.search_dlgdata+FileSearch_SearchTemplate.btn2
         jz      .goto
-        cmp     eax, filesearch_data.search_dlgdata+filesearch_search_template.btn3-filesearch_search_template
+        cmp     eax, filesearch_data.search_dlgdata+FileSearch_SearchTemplate.btn3
         jz      .view
 .esc:
         cmp     dword [ebp+filesearch_data.slot], 0
@@ -1417,7 +1417,7 @@ filesearch_OnKey:
         test    al, al
         jnz     @b
         lea     edi, [ebp+filesearch_data.statusstr]
-        mov     dword [ebp+filesearch_data.search_dlgdata+filesearch_search_template.data3-filesearch_search_template], edi
+        mov     dword [ebp+filesearch_data.search_dlgdata+FileSearch_SearchTemplate.lbl1.text], edi
         mov     esi, aSearchingIn
 @@:
         lodsb
@@ -1451,12 +1451,12 @@ filesearch_OnKey:
         stosb
         test    al, al
         jnz     @b
-        sub     edi, dword [ebp+filesearch_data.search_dlgdata+filesearch_search_template.data3-filesearch_search_template]
-        mov     dword [ebp+filesearch_data.search_dlgdata+filesearch_search_template.width3-filesearch_search_template], edi
+        sub     edi, dword [ebp +filesearch_data.search_dlgdata +FileSearch_SearchTemplate.lbl1.text]
+        mov     dword [ebp+filesearch_data.search_dlgdata+FileSearch_SearchTemplate.lbl1.x2], edi
         inc     edi
-        mov     dword [ebp+filesearch_data.search_dlgdata+filesearch_search_template.x4-filesearch_search_template], edi
+        mov     dword [ebp+filesearch_data.search_dlgdata+FileSearch_SearchTemplate.lbl2.x1], edi
         lea     eax, [ebp+filesearch_data.curdir]
-        mov     dword [ebp+filesearch_data.search_dlgdata+filesearch_search_template.data4-filesearch_search_template], eax
+        mov     dword [ebp+filesearch_data.search_dlgdata+FileSearch_SearchTemplate.lbl2.text], eax
         call    filesearch_set_dlgflags         ; use it? I think, yes
         cmp     [ebp+filesearch_data.slot], 0
         jnz     @f
@@ -1469,8 +1469,8 @@ filesearch_done:
         jnz     @f
         or      [idle_interval], -1
 @@:
-        and     dword [ebp+filesearch_data.search_dlgdata+filesearch_search_template.data4-filesearch_search_template], 0
-        mov     edi, dword [ebp+filesearch_data.search_dlgdata+filesearch_search_template.data3-filesearch_search_template]
+        and     dword [ebp+filesearch_data.search_dlgdata+FileSearch_SearchTemplate.lbl2.text], 0
+        mov     edi, dword [ebp+filesearch_data.search_dlgdata+FileSearch_SearchTemplate.lbl1.text]
         mov     esi, aSearchDone
 @@:
         lodsb
@@ -1560,14 +1560,14 @@ filesearch_IsHandleUsed:
         ret
 
 filesearch_set_dlgflags:
-        mov     eax, dword [ebp+filesearch_data.query_dlgdata+filesearch_query_template.flags_case-filesearch_query_template]
+        mov     eax, dword [ebp+filesearch_data.query_dlgdata+FileSearch_QueryTemplate.case.flags]
         and     al, 10h
         or      al, 8
-        mov     [find_in_file_dlgdata.flags_case], eax
-        mov     eax, dword [ebp+filesearch_data.query_dlgdata+filesearch_query_template.flags_whole-filesearch_query_template]
+        mov     [find_in_file_dlgdata.case.flags], eax
+        mov     eax, dword [ebp+filesearch_data.query_dlgdata+FileSearch_QueryTemplate.whole.flags]
         and     al, 10h
         or      al, 8
-        mov     [find_in_file_dlgdata.flags_whole], eax
+        mov     [find_in_file_dlgdata.whole.flags], eax
         lea     esi, [ebp+filesearch_data.string]
         mov     edi, SearchString
         and     dword [edi-4], 0
@@ -1608,11 +1608,11 @@ filesearch_thread:
         cmp     byte [ebx], dl
         jz      .noprepare
         mov     esi, tolower_table
-        test    byte [ebp+filesearch_data.query_dlgdata+filesearch_query_template.flags_case-filesearch_query_template], 10h
+        test    byte [ebp+filesearch_data.query_dlgdata+FileSearch_QueryTemplate.case.flags], 10h
         jz      @f
         mov     esi, identical_table
 @@:
-        test    byte [ebp+filesearch_data.query_dlgdata+filesearch_query_template.flags_whole-filesearch_query_template], 10h
+        test    byte [ebp+filesearch_data.query_dlgdata+FileSearch_QueryTemplate.whole.flags], 10h
         setnz   al
         push    eax
         push    ecx     ; force cp866
@@ -1880,7 +1880,7 @@ filesearch_test_file:
         mov     [ebx+8], eax
         mov     dword [ebx+12], search_filebuf_size
         mov     edi, edx
-        test    byte [ebp+filesearch_data.query_dlgdata+filesearch_query_template.flags_whole-filesearch_query_template], 10h
+        test    byte [ebp+filesearch_data.query_dlgdata+FileSearch_QueryTemplate.whole.flags], 10h
         jz      .loop
         add     edi, 256
 .loop:
@@ -1949,7 +1949,7 @@ filesearch_test_file:
 	cmp	ebx, search_filebuf_size
 	jz	.loop
 ; EOF, last chance for whole-words-only search
-	test	byte [ebp+filesearch_data.query_dlgdata+filesearch_query_template.flags_whole-filesearch_query_template], 10h
+	test	byte [ebp+filesearch_data.query_dlgdata+FileSearch_QueryTemplate.whole.flags], 10h
 	jz	.ret_failed
 	movzx	edi, byte [edi+' ']
 	cmp	edi, ecx

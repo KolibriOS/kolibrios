@@ -1657,12 +1657,12 @@ viewer_OnKey:
         call    viewer_seek
         call    viewer_skip_unicode_marker
         mov     esi, tolower_table
-        test    [find_in_file_dlgdata.flags_case], 10h
+        test    [find_in_file_dlgdata.case.flags], 10h
         jz      @f
         mov     esi, identical_table
 @@:
         mov     ebx, SearchString
- 	test	[find_in_file_dlgdata.flags_whole], 10h
+ 	test	[find_in_file_dlgdata.whole.flags], 10h
 	setnz	al
 	push	eax
         push    dword [ebp+viewer_data.encoding]
@@ -1684,7 +1684,7 @@ viewer_OnKey:
         lea     ebx, [ebp+viewer_data.buf]
         add     ebx, [ebp+viewer_data.buf_size]
 @@:
-        test    [find_in_file_dlgdata.flags_whole], 10h
+        test    [find_in_file_dlgdata.whole.flags], 10h
         jz      .search_loop
         cmp     dword [ebp+viewer_data.buf_start], 0
         jnz     @f
@@ -1732,7 +1732,7 @@ viewer_OnKey:
         jmp     .search_loop
 .f7.notfoundt:
 ; last chance - if we are looking for a whole word, EOF is ok for last symbol
-        test    [find_in_file_dlgdata.flags_whole], 10h
+        test    [find_in_file_dlgdata.whole.flags], 10h
         jz      .f7.notfound
         movzx   edi, byte [edi+' ']
         inc     esi
@@ -1759,7 +1759,7 @@ viewer_OnKey:
         jnz     @f
         inc     edx
 @@:
-        test    [find_in_file_dlgdata.flags_whole], 10h
+        test    [find_in_file_dlgdata.whole.flags], 10h
         jz      @f
         sub     dword [ebp+viewer_data.selected_len], 2
         sbb     dword [ebp+viewer_data.selected_len+4], 0

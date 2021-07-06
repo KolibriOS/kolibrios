@@ -658,7 +658,7 @@ endp
 ;output:
 ; eax - number
 align 4
-proc conv_str_to_int uses ebx ecx esi, buf:dword
+proc conv_str_to_int uses ebx esi, buf:dword
 	xor eax,eax
 	xor ebx,ebx
 	mov esi,[buf]
@@ -689,11 +689,6 @@ proc conv_str_to_int uses ebx ecx esi, buf:dword
 			add eax,ebx
 			inc esi
 			jmp .cycle_16
-	@@:
-	cmp ecx,0 ;if the number is negative
-	jne @f
-		sub ecx,eax
-		mov eax,ecx
 	@@:
 	ret
 endp

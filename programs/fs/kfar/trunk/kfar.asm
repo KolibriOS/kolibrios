@@ -61,6 +61,7 @@ ends
 cursor_normal_size = (font_height*15+50)/100
 cursor_big_size = font_height
 
+align 4
 start:
         mov     eax,SF_SET_EVENTS_MASK
         mov     ebx,(11b shl 30) or 100111b
@@ -813,9 +814,9 @@ key:
 
 align 16
 mouse:
-		cmp     dword[active_screen],0
-		jg      event
-		mov     eax,SF_MOUSE_GET
+        cmp     dword[active_screen],0
+        jg      event
+        mov     eax,SF_MOUSE_GET
         mov     ebx,SSF_BUTTON_EXT
         int     0x40
         bt      eax,8 ;left but. down
@@ -849,34 +850,34 @@ mouse:
         mov     ecx, [cur_width]
 if font_width & 3
         imul    ecx, font_width
-		shr     ecx, 2
+        shr     ecx, 2
 else
         imul    ecx, font_width/4
 end if
-		xor     dx,dx
-		sub     ax, 5 ;window border
-		div     cx
-		bt      ax, 0
-		jnc     @f
-		add     [esp+4], ebx ;если 2-й столбец
+        xor     dx,dx
+        sub     ax, 5 ;window border
+        div     cx
+        bt      ax, 0
+        jnc     @f
+        add     [esp+4], ebx ;если 2-й столбец
 @@:
-		pop     eax ;edx in stack
-		jmp @f
+        pop     eax ;edx in stack
+        jmp @f
 .no_ch_pos:
-		push    -1 ;edx = -1 - no change position
+        push    -1 ;edx = -1 - no change position
 @@:
 
         mov     ebx, [cur_width]
         imul    ebx, font_width/2
-		add     ebx, 5 ;window border
-		cmp     eax,ebx
-		jg      @f
-		cmp     [active_panel], panel1
-		je      .move
-		jmp     .tab
+        add     ebx, 5 ;window border
+        cmp     eax,ebx
+        jg      @f
+        cmp     [active_panel], panel1
+        je      .move
+        jmp     .tab
 @@:
-		cmp     [active_panel], panel2
-		je      .move
+        cmp     [active_panel], panel2
+        je      .move
 .tab:
         xor     [active_panel], panel1 xor panel2
         call    draw_cmdbar
@@ -885,45 +886,45 @@ end if
         call    draw_panel
 .move:
         mov     ebp, [active_panel]
-		pop     edx
-		mov     eax, [ebp + PanelData.numfiles]
-		add     edx, [ebp + PanelData.start] ;число прокрученых файлов
-		dec     eax
-		cmp     edx, eax
-		jle     @f
-		mov     edx, eax
+        pop     edx
+        mov     eax, [ebp + PanelData.numfiles]
+        add     edx, [ebp + PanelData.start] ;число прокрученых файлов
+        dec     eax
+        cmp     edx, eax
+        jle     @f
+        mov     edx, eax
 @@:
         cmp     edx, 0
-		jl      @f
-		mov     [ebp + PanelData.index], edx
+        jl      @f
+        mov     [ebp + PanelData.index], edx
 @@:
-		call    draw_panel
+        call    draw_panel
         jmp     event
 .on_panel:
         call    get_keybar_ind
-		lea     eax, [panels_mouse+4*eax]
-		cmp     dword[eax], 0
-		je      event
+        lea     eax, [panels_mouse+4*eax]
+        cmp     dword[eax], 0
+        je      event
         mov     ebp, [active_panel]
         mov     ecx, [ebp + PanelData.index]
-		call    dword[eax]
+        call    dword[eax]
 @@:
-		jmp     event
+        jmp     event
 
 ;input:
 ; eax - coord x
 ;output:
-; eax - key bar index (0 to 35) if press F1 index = 0
+; eax - key bar index (0 to 95) if press F1 index = 0
 align 16
 get_keybar_ind:
         push    ebx ecx edx esi edi
         xor     edx, edx
-		mov     ebx, font_width
-		sub     eax, 5 ;border
-		div     ebx
-		mov     edi, eax
+        mov     ebx, font_width
+        sub     eax, 5 ;border
+        div     ebx
+        mov     edi, eax
 
-		xor     esi, esi
+        xor     esi, esi
         test    [ctrlstate], 3
         jz      @f
         inc     esi
@@ -2533,6 +2534,7 @@ else
 @@:
 end if
         jmp     .f5_selected1
+
 .f5_noselected1:
         mov     al, '"'
         stosb
@@ -2577,24 +2579,24 @@ end if
         mov     [ebx + dlgtemplate.width], eax
         dec     eax
         dec     eax
-        mov     [ebx - copy_dlgdata + copy_dlgdata.width2], eax
-        mov     [ebx - copy_dlgdata + copy_dlgdata.width3], eax
+        mov     [ebx - copy_dlgdata + copy_dlgdata.lcopy.x2], eax
+        mov     [ebx - copy_dlgdata + copy_dlgdata.ename.x2], eax
         shr     eax, 1
         dec     eax
         dec     eax
-        mov     [ebx - copy_dlgdata + copy_dlgdata.copy_x2], eax
+        mov     [ebx - copy_dlgdata + copy_dlgdata.copy.x2], eax
         sub     eax, aCopyLength-1
-        mov     [ebx - copy_dlgdata + copy_dlgdata.copy_x1], eax
+        mov     [ebx - copy_dlgdata + copy_dlgdata.copy.x1], eax
         add     eax, aCopyLength+3
-        mov     [ebx - copy_dlgdata + copy_dlgdata.cnl_x1], eax
+        mov     [ebx - copy_dlgdata + copy_dlgdata.cnl.x1], eax
         add     eax, aCancelBLength - 1
-        mov     [ebx - copy_dlgdata + copy_dlgdata.cnl_x2], eax
-        mov     byte [ebx - copy_dlgdata + copy_dlgdata.flags0], 0xC
-        and     byte [ebx - copy_dlgdata + copy_dlgdata.flags1], not 4
-        and     byte [ebx - copy_dlgdata + copy_dlgdata.flags2], not 4
+        mov     [ebx - copy_dlgdata + copy_dlgdata.cnl.x2], eax
+        mov     byte [ebx - copy_dlgdata + copy_dlgdata.ename.flags], 0xC
+        and     byte [ebx - copy_dlgdata + copy_dlgdata.copy.flags], not 4
+        and     byte [ebx - copy_dlgdata + copy_dlgdata.cnl.flags], not 4
         push    ebx
         call    DialogBox
-        cmp     eax, copy_dlgdata.copy_btn
+        cmp     eax, copy_dlgdata.copy
         jnz     .ret2
 ; Копируем
         mov     esi, CopyDestEditBuf+12
@@ -3257,23 +3259,23 @@ end if
         mov     [ebx + dlgtemplate.width], eax
         dec     eax
         dec     eax
-        mov     [ebx - mkdir_dlgdata + mkdir_dlgdata.width2], eax
+        mov     [ebx + MkDir_Dlgdata.dnam.x2], eax
         shr     eax, 1
         dec     eax
         dec     eax
-        mov     [ebx - mkdir_dlgdata + mkdir_dlgdata.cont_x2], eax
+        mov     [ebx + MkDir_Dlgdata.cont.x2], eax
         sub     eax, a_ContinueLength-1
-        mov     [ebx - mkdir_dlgdata + mkdir_dlgdata.cont_x1], eax
+        mov     [ebx + MkDir_Dlgdata.cont.x1], eax
         add     eax, a_ContinueLength+3
-        mov     [ebx - mkdir_dlgdata + mkdir_dlgdata.cnl_x1], eax
+        mov     [ebx + MkDir_Dlgdata.cnl.x1], eax
         add     eax, aCancelBLength - 1
-        mov     [ebx - mkdir_dlgdata + mkdir_dlgdata.cnl_x2], eax
-        mov     byte [ebx - mkdir_dlgdata + mkdir_dlgdata.flags0], 0xC
-        and     byte [ebx - mkdir_dlgdata + mkdir_dlgdata.flags1], not 4
-        and     byte [ebx - mkdir_dlgdata + mkdir_dlgdata.flags2], not 4
+        mov     [ebx + MkDir_Dlgdata.cnl.x2], eax
+        mov     byte [ebx + MkDir_Dlgdata.dnam.flags], 0xC
+        and     byte [ebx + MkDir_Dlgdata.cont.flags], not 4
+        and     byte [ebx + MkDir_Dlgdata.cnl.flags], not 4
         push    ebx
         call    DialogBox
-        cmp     eax, mkdir_dlgdata.cont_btn
+        cmp     eax, mkdir_dlgdata.cont
         jnz     .ret2
         mov     esi, CopyDestEditBuf+12
         cmp     byte [esi], 0
@@ -3364,7 +3366,7 @@ end if
 @@:
         mov     eax, mark_dlgdata
         mov     [eax+mark_dlgdata.title-mark_dlgdata], ecx
-        mov     [eax+mark_dlgdata.flags-mark_dlgdata], 0xC
+        mov     [eax+mark_dlgdata.edit.flags-mark_dlgdata], 0xC
         mov     edi, enter_string_buf+12
         mov     dword [edi-12], 512
         mov     dword [edi-8], 1
@@ -3941,6 +3943,7 @@ draw_image.nomem:
         int     40h
         ret
 
+align 16
 draw_image:
         mov     [bMemForImageValidData], byte 1
         cmp     [MemForImage], 0
@@ -7946,15 +7949,9 @@ nomem_dlgdata:
         dd      0
         dd      2
 ; строка "No memory"
-        dd      1
-        dd      1,0,10,0
-        dd      aNoMemory
-        dd      1
+        DlgLbl  ,1,0,10,0,aNoMemory,1
 ; кнопка "Ok"
-        dd      2
-        dd      4,1,7,1
-        dd      aOk
-        dd      0xD
+        DlgBtn  ,4,1,7,1,aOk,0xD
 
 ; диалог копирования
 copy_dlgdata:
@@ -7975,42 +7972,19 @@ copy_dlgdata:
         dd      0
         dd      4
 ; строка 'Копировать "%s" в:'
-        dd      1
-        dd      1,0
-.width2 dd      ?
-        dd      0
-        dd      CopySourceTextBuf
-        dd      0
+.lcopy  DlgLbl  ,1,0,,0,CopySourceTextBuf,0
 ; поле редактирования с именем файла/папки назначения
-        dd      3
-        dd      1,1
-.width3 dd      ?
-        dd      1
-        dd      CopyDestEditBuf
-.flags0 dd      0
+.ename  DlgEdit ,1,1,,1,CopyDestEditBuf,0
 ; кнопка "копировать"
-.copy_btn:
-        dd      2
-.copy_x1 dd     ?
-        dd      3
-.copy_x2 dd     ?
-        dd      3
-        dd      aCopy
-.flags1 dd      18h
+.copy   DlgBtn  ,,3,,3,aCopy,18h
 ; кнопка "отменить"
-        dd      2
-.cnl_x1 dd      ?
-        dd      3
-.cnl_x2 dd      ?
-        dd      3
-        dd      aCancelB
-.flags2 dd      8
+.cnl    DlgBtn  ,,3,,3,aCancelB,8
 
-mkdir_dlgdata:
+struct MkDir_Dlgdata
         dd      1
         dd      -1, -1
-.width  dd      ?
-.height dd      4
+width   dd      ?
+height  dd      4
         dd      4, 2
         dd      aMkDirCaption
         dd      ?, ?
@@ -8018,34 +7992,16 @@ mkdir_dlgdata:
         dd      0
         dd      4
 ; Строка "Создать папку"
-        dd      1
-        dd      1,0,aMkDirLen,0
-        dd      aMkDir
-        dd      0
+        DlgLbl  ,1,0,aMkDirLen,0,aMkDir,0
 ; поле редактирования с именем создаваемой папки
-        dd      3
-        dd      1,1
-.width2 dd      ?
-        dd      1
-        dd      CopyDestEditBuf
-.flags0 dd      0xC
+dnam    DlgEdit ,1,1,,1,CopyDestEditBuf,0xC
 ; кнопка "Продолжить"
-.cont_btn:
-        dd      2
-.cont_x1 dd     ?
-        dd      3
-.cont_x2 dd     ?
-        dd      3
-        dd      a_Continue
-.flags1 dd      18h
+cont    DlgBtn  ,,3,,3,a_Continue,18h
 ; кнопка "отменить"
-        dd      2
-.cnl_x1 dd      ?
-        dd      3
-.cnl_x2 dd      ?
-        dd      3
-        dd      aCancelB
-.flags2 dd      8
+cnl     DlgBtn  ,,3,,3,aCancelB,8
+ends
+
+mkdir_dlgdata MkDir_Dlgdata
 
 ; диалог выделения/снятия
 mark_dlgdata:
@@ -8058,10 +8014,7 @@ mark_dlgdata:
         dd      0, 0
         dd      1
 ; поле редактирования
-        dd      3
-        dd      1, 0, 35, 0
-        dd      enter_string_buf
-.flags  dd      ?
+.edit   DlgEdit ,1, 0, 35, 0, enter_string_buf,
 
 ; диалог быстрого поиска в панели (Alt+буквы)
 QuickSearchDlg:
@@ -8075,84 +8028,47 @@ QuickSearchDlg:
         dd      0, 0
         dd      1
 ; поле редактирования
-        dd      3
-        dd      1, 0, 18, 0
-        dd      quick_search_buf
-        dd      1Ch
+        DlgEdit ,1, 0, 18, 0, quick_search_buf, 1Ch
 
 ; диалог поиска в файле для просмотрщика и редактора
-find_in_file_dlgdata:
+struct FindInFileDlgdata
         dd      1
-.x      dd      -1
-.y      dd      -1
-.width  dd      ?
-.height dd      7
+x       dd      -1
+y       dd      -1
+width   dd      ?
+height  dd      7
         dd      4, 2
         dd      aSearch
         dd      ?, ?
         dd      0, 0
         dd      8
 ; Строка "Искать"
-        dd      1
-        dd      1,0,aSearchForLen,0
-        dd      aSearchFor
-        dd      0
+        DlgLbl  ,1,0,aSearchForLen,0,aSearchFor,0
 ; поле редактирования с текстом для поиска
-        dd      3
-        dd      1,1
-.width2 dd      ?
-        dd      1
-        dd      SearchStringEditBuf
-.flags0 dd      0xC
+efind   DlgEdit ,1,1,,1,SearchStringEditBuf,0xC
 ; горизонтальный разделитель
-        dd      4
-        dd      -1,2
-        dd      -1,2
-        dd      0
-        dd      0
+        DlgLine ,-1,2,-1,2
 ; флажок "Учитывать регистр"
-        dd      5
-        dd      1,3
-        dd      -1,3
-        dd      aCaseSensitive
-.flags_case dd  18h     ; default: search is case sensitive
+case    DlgCheck,1,3,-1,3,aCaseSensitive,18h     ; default: search is case sensitive
 ; флажок "Только целые слова"
-        dd      5
-        dd      1,4
-        dd      -1,4
-        dd      aWholeWords
-.flags_whole dd 8       ; default: do NOT search whole words only
+whole   DlgCheck,1,4,-1,4,aWholeWords,8       ; default: do NOT search whole words only
 ; горизонтальный разделитель
-        dd      4
-        dd      -1,5
-        dd      -1,5
-        dd      0
-        dd      0
+        DlgLine ,-1,5,-1,5
 ; кнопка "Искать"
-.search_btn:
-        dd      2
-.search_x1 dd   ?
-        dd      6
-.search_x2 dd   ?
-        dd      6
-        dd      aSearchB
-.flags1 dd      18h
+search  DlgBtn ,,6,,6,aSearchB,18h
 ; кнопка "отменить"
-        dd      2
-.cnl_x1 dd      ?
-        dd      6
-.cnl_x2 dd      ?
-        dd      6
-        dd      aCancelB
-.flags2 dd      8
+cnl     DlgBtn ,,6,,6,aCancelB,8
+ends
+
+find_in_file_dlgdata FindInFileDlgdata
 
 ; первый диалог поиска в файлах (запрос)
-filesearch_query_template:
+struct FileSearch_QueryTemplate
         dd      1
-.x      dd      ?
-.y      dd      ?
-.width  dd      ?
-.height dd      9
+x       dd      ?
+y       dd      ?
+width   dd      ?
+height  dd      9
         dd      4, 2
         dd      aFileSearch
         dd      ?
@@ -8160,156 +8076,60 @@ filesearch_query_template:
         dd      0, 0
         dd      10
 ; строка-приглашение для ввода маски
-        dd      1
-        dd      1,0,aFileMasksLen,0
-        dd      aFileMasks
-        dd      0
+        DlgLbl  ,1,0,aFileMasksLen,0,aFileMasks,0
 ; поле ввода для маски
-        dd      3
-        dd      1, 1
-.width2 dd      ?
-        dd      1
-.editptr1 dd    ?
-        dd      0xC
+edit1   DlgEdit ,1,1,,1,,0xC
 ; строка-приглашение для текста поиска
-        dd      1
-        dd      1,2,aContainingTextLen,2
-        dd      aContainingText
-        dd      0
+        DlgLbl  ,1,2,aContainingTextLen,2,aContainingText,0
 ; поле ввода для текста поиска
-        dd      3
-        dd      1, 3
-.width3 dd      ?
-        dd      3
-.editptr2 dd    ?
-        dd      8
+edit2   DlgEdit ,1,3,,3,,8
 ; горизонтальный разделитель
-        dd      4
-        dd      -1,4
-        dd      -1,4
-        dd      0
-        dd      0
+        DlgLine ,-1,4,-1,4
 ; флажок "Учитывать регистр"
-        dd      5
-        dd      1,5
-        dd      -1,5
-        dd      aCaseSensitive
-.flags_case dd  ?       ; will be initialized from find_in_file_dlgdata
+case    DlgCheck,1,5,-1,5,aCaseSensitive,       ; will be initialized from find_in_file_dlgdata
 ; флажок "Только целые слова"
-        dd      5
-        dd      1,6
-        dd      -1,6
-        dd      aWholeWords
-.flags_whole dd ?       ; will be initialized from find_in_file_dlgdata
+whole   DlgCheck,1,6,-1,6,aWholeWords,       ; will be initialized from find_in_file_dlgdata
 ; горизонтальный разделитель
-        dd      4
-        dd      -1,7
-        dd      -1,7
-        dd      0
-        dd      0
+        DlgLine ,-1,7,-1,7
 ; кнопка "Искать"
-.search_btn:
-        dd      2
-.search_x1 dd   ?
-        dd      8
-.search_x2 dd   ?
-        dd      8
-        dd      aSearchB
-        dd      18h
+search  DlgBtn  ,,8,,8,aSearchB,18h
 ; кнопка "отменить"
-        dd      2
-.cnl_x1 dd      ?
-        dd      8
-.cnl_x2 dd      ?
-        dd      8
-        dd      aCancelB
-        dd      8
-.size = $ - filesearch_query_template
+cnl     DlgBtn  ,,8,,8,aCancelB,8
+ends
+
+filesearch_query_template FileSearch_QueryTemplate
 
 ; второй диалог поиска в файлах (сканирование)
-filesearch_search_template:
+struct FileSearch_SearchTemplate
         dd      1
-.x      dd      ?
-.y      dd      ?
-.width  dd      ?
-.height dd      ?
+x       dd      ?
+y       dd      ?
+width   dd      ?
+height  dd      ?
         dd      4, 2
-.caption dd     ?
+caption dd      ?
         dd      ?
         dd      0
         dd      0, 0
         dd      9
 ; список найденных файлов
-        dd      6
-        dd      0, 0
-.width1 dd      ?
-.height1 dd     ?
-.data1  dd      ?
-        dd      0
+list1   DlgList ,0,0,,,,0
 ; горизонтальный разделитель
-        dd      4
-        dd      -1
-.y2     dd      ?
-        dd      -1
-        dd      ?
-        dd      0, 0
+lin1    DlgLine ,-1,,-1,
 ; строка "Поиск <string> в:" либо "Поиск закончен..."
-        dd      1
-        dd      1
-.y3     dd      ?
-.width3 dd      ?
-        dd      ?
-.data3  dd      ?
-        dd      0
+lbl1    DlgLbl  ,1
 ; строка с текущей папкой
-        dd      1
-.x4     dd      ?
-.y4     dd      ?
-.width4 dd      ?
-        dd      ?
-.data4  dd      ?
-        dd      0
+lbl2    DlgLbl
 ; горизонтальный разделитель
-        dd      4
-        dd      -1
-.y5     dd      ?
-        dd      -1
-        dd      ?
-        dd      0, 0
+lin2    DlgLine ,-1,,-1,
 ; кнопки
-.btn1:
-        dd      2
-.btn1x1 dd      ?
-.btn1y  dd      ?
-.btn1x2 dd      ?
-        dd      ?
-        dd      aNewSearch
-        dd      8
-.btn2:
-        dd      2
-.btn2x1 dd      ?
-.btn2y  dd      ?
-.btn2x2 dd      ?
-        dd      ?
-        dd      aGoto
-        dd      1Ch
-.btn3:
-        dd      2
-.btn3x1 dd      ?
-.btn3y  dd      ?
-.btn3x2 dd      ?
-        dd      ?
-        dd      aView
-        dd      8
-.btn4:
-        dd      2
-.btn4x1 dd      ?
-.btn4y  dd      ?
-.btn4x2 dd      ?
-        dd      ?
-        dd      aCancelB2
-        dd      8
-.size = $ - filesearch_search_template
+btn1    DlgBtn  ,,,,,aNewSearch,8
+btn2    DlgBtn  ,,,,,aGoto,1Ch
+btn3    DlgBtn  ,,,,,aView,8
+btn4    DlgBtn  ,,,,,aCancelB2,8
+ends
+
+filesearch_search_template FileSearch_SearchTemplate
 
 RetryOrCancelBtn:
         dd      aRetry
