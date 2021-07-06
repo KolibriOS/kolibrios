@@ -368,7 +368,7 @@ char readbuf[32];
   if (bytes>=1073741824) strlcpy(#size_nm, "Gb",2);
   else if (bytes>=1048576) strlcpy(#size_nm, "Mb",2);
   else if (bytes>=1024) strlcpy(#size_nm, "Kb",2);
-  else strlcpy(#size_nm, "b ",2);
+  else strlcpy(#size_nm, "B ",2);
   while (bytes>1023) bytes >>= 10;
   sprintf(#ConvertSize_size_prefix,"%d %s",bytes,#size_nm);
   return #ConvertSize_size_prefix;
@@ -393,12 +393,12 @@ char readbuf[32];
 	{
 		kb_line = itoa(bytes / 1024);
 		strcpy(#size, kb_line);
-		strcat(#size, " Kb");		
+		strcat(#size, " Kb");
 	}
 	else {
 		kb_line = itoa(bytes);
 		strcpy(#size, kb_line);
-		strcat(#size, " b");
+		strcat(#size, " B");
 	}
 
 	return #size;

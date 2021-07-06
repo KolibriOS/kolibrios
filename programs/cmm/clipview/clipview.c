@@ -13,8 +13,8 @@
 //                                                   //
 //===================================================//
 
-?define T_COLUMNS_TITLE "# | Data size | Data type | Contents"
-?define T_COLUMN_VIEW "| View"
+?define T_COLUMNS_TITLE "#    Size      Type        Contents"
+?define T_COLUMN_VIEW "View"
 ?define DEFAULT_SAVE_PATH "/tmp0/1/clipview.tmp"
 char *data_type[] = { "Text", "Image", "RAW", "Unknown" };
 
@@ -118,8 +118,8 @@ void DrawWindowContent()
 
 	WriteText(GAP+11, LIST_Y + list.h + 14, 0x90, sc.button_text, "Delete last      Delete all      Reset lock");
 
-	WriteText(GAP+12, LIST_Y - 23, 0x90, sc.work_text, T_COLUMNS_TITLE);
-	WriteText(GAP+list.w - 88-14, LIST_Y - 23, 0x90, sc.work_text, T_COLUMN_VIEW);
+	WriteText(GAP+18, LIST_Y - 23, 0x90, sc.work_text, T_COLUMNS_TITLE);
+	WriteText(GAP+list.w - 70, LIST_Y - 23, 0x90, sc.work_text, T_COLUMN_VIEW);
  	ClipViewSelectListDraw();
  	SelectList_DrawBorder();
 }
@@ -154,12 +154,12 @@ void SelectList_DrawLine(dword i)
 		cdata.content_offset = 8;
 	cdata.content = slot_data + cdata.content_offset; 
 
-	WriteText(GAP+12, yyy+TEXT_Y, 0x90, 0x000000, itoa(list.first + i));
+	WriteText(list.first+i/10^1*8+GAP+12, yyy+TEXT_Y, 0x90, 0x000000, itoa(list.first + i));
 	EDX = ConvertSizeToKb(cdata.size);
-	WriteText(GAP+44, yyy+TEXT_Y, 0x90, 0x000000, EDX);
+	WriteText(GAP+44+16, yyy+TEXT_Y, 0x90, 0x000000, EDX);
 	slot_data_type_number = cdata.type;
 	WriteText(GAP+140, yyy+TEXT_Y, 0x90, 0x000000, data_type[slot_data_type_number]);
-	WriteText(GAP+list.w - 88, yyy+TEXT_Y, 0x90, 0x006597, "TEXT  HEX");
+	WriteTextB(GAP+list.w - 88, yyy+TEXT_Y, 0x90, 0x006597, "TEXT  HEX");
 	DefineButton(GAP+list.w - 98, yyy, 50, LINE_H, 100+i+BT_HIDE, NULL);
 	$add edx, 200
 	$add ebx, 52 << 16 - 10 //BT_HEX
@@ -199,6 +199,7 @@ void ClipViewSelectListDraw()
 	//in case when there are items more than visible at once
 	if (list.count > list.visible) {
 		param[0] = list.first / list.visible + '0';
+		param[1] = '\0';
 		DefineButton(Form.cwidth-84-GAP, list.h + LIST_Y + 8, 25, 25, BT_LIST_LEFT, sc.button); //BT_LEFT
 		$inc edx
 		$add ebx, 57 << 16 //BT_RIGHT
@@ -207,7 +208,7 @@ void ClipViewSelectListDraw()
 		$add ebx, 28 << 16
 		$mov edx, #param;
 		$mov edi, sc.work
-		$add ecx, 0x40 << 24
+		$mov ecx, 11010000b << 24
 		$add ecx, sc.work_text //page number
 		$int 64
 	}
