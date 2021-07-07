@@ -814,6 +814,13 @@ include 'detect/dev_fd.inc'
 ;-----------------------------------------------------------------------------
 include 'detect/init_ata.inc'
 ;-----------------------------------------------------------------------------
+; initialisation AHCI code
+;-----------------------------------------------------------------------------
+jmp ahci_code_end
+include 'blkdev/ahci.inc'
+ahci_code_end:
+call init_ahci
+;-----------------------------------------------------------------------------
 if 0
         mov     ax, [BOOT.sys_disk]
         cmp     ax, 'r1'; if using not ram disk, then load librares and parameters {SPraid.simba}
