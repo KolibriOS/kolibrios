@@ -1,6 +1,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;                                                              ;;
-;; Copyright (C) KolibriOS team 2004-2016. All rights reserved. ;;
+;; Copyright (C) KolibriOS team 2004-2021. All rights reserved. ;;
 ;; Distributed under terms of the GNU General Public License    ;;
 ;;                                                              ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -4589,6 +4589,84 @@ Returned value:
 ---------------------- Constants for registers: ----------------------
   eax - SF_NETWORK_GET (74)
    bl - SSF_LINK_STATUS (10)
+======================================================================
+==== Function 74, Subfunction 11, Get TX error packets counter. ======
+======================================================================
+Parameters:
+  * eax = 74 - function number
+  * bl = 11 - subfunction number
+  * bh = device number
+Returned value:
+  * eax = Number of erroneous packets received since device start, -1 on error
+
+---------------------- Constants for registers: ----------------------
+  eax - SF_NETWORK_GET (74)
+   bl - SSF_TX_PACKET_ERROR_COUNT (11)   
+======================================================================
+=== Function 74, Subfunction 12, Get TX dropped packets counter. =====
+======================================================================
+Parameters:
+  * eax = 74 - function number
+  * bl = 12 - subfunction number
+  * bh = device number
+Returned value:
+  * eax = Number of dropped packets since device start, -1 on error
+
+---------------------- Constants for registers: ----------------------
+  eax - SF_NETWORK_GET (74)
+   bl - SSF_TX_PACKET_DROP_COUNT (12)    
+======================================================================
+==== Function 74, Subfunction 13, Get TX missed packets counter. =====
+======================================================================
+Parameters:
+  * eax = 74 - function number
+  * bl = 13 - subfunction number
+  * bh = device number
+Returned value:
+  * eax = Number of missed packets since device start, -1 on error
+
+---------------------- Constants for registers: ----------------------
+  eax - SF_NETWORK_GET (74)
+   bl - SSF_TX_PACKET_MISS_COUNT (13)    
+   ======================================================================
+==== Function 74, Subfunction 14, Get RX error packets counter. ======
+======================================================================
+Parameters:
+  * eax = 74 - function number
+  * bl = 14 - subfunction number
+  * bh = device number
+Returned value:
+  * eax = Number of erroneous packets received since device start, -1 on error
+
+---------------------- Constants for registers: ----------------------
+  eax - SF_NETWORK_GET (74)
+   bl - SSF_RX_PACKET_ERROR_COUNT (14)   
+======================================================================
+=== Function 74, Subfunction 15, Get RX dropped packets counter. =====
+======================================================================
+Parameters:
+  * eax = 74 - function number
+  * bl = 15 - subfunction number
+  * bh = device number
+Returned value:
+  * eax = Number of dropped packets since device start, -1 on error
+
+---------------------- Constants for registers: ----------------------
+  eax - SF_NETWORK_GET (74)
+   bl - SSF_RX_PACKET_DROP_COUNT (12)    
+======================================================================
+==== Function 74, Subfunction 16, Get RX missed packets counter. =====
+======================================================================
+Parameters:
+  * eax = 74 - function number
+  * bl = 16 - subfunction number
+  * bh = device number
+Returned value:
+  * eax = Number of missed packets since device start, -1 on error
+
+---------------------- Constants for registers: ----------------------
+  eax - SF_NETWORK_GET (74)
+   bl - SSF_RX_PACKET_MISS_COUNT (16)  
 ======================================================================
 ============== Function 75, Subfunction 0, Open socket. ==============
 ======================================================================

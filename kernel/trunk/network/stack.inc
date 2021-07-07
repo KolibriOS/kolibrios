@@ -30,6 +30,7 @@ endg
 
 DEBUG_NETWORK_ERROR     = 1
 DEBUG_NETWORK_VERBOSE   = 0
+NETWORK_SANITY_CHECKS   = 1
 
 NET_DEVICES_MAX         = 16
 NET_BUFFERS             = 512
@@ -262,8 +263,13 @@ align 4
         net_device_count        dd ?
         net_device_list         rd NET_DEVICES_MAX
 
-        net_buffs_free          rd NET_BUFFERS
-        .current                dd ?
+        net_buffs_free          rd NET_BUFFERS  ; list of pointers to actual net buffs
+        .current                dd ?            ; pointer to current element in net_buffs_free list
+
+if defined NETWORK_SANITY_CHECKS
+        net_buffs_low           dd ?            ; actual net buff mem region start
+        net_buffs_high          dd ?            ; actual net buff mem region stop
+end if
 
 endg
 
@@ -284,6 +290,10 @@ stack_init:
         test    eax, eax
         jz      .fail
 
+if defined NETWORK_SANITY_CHECKS
+        mov     [net_buffs_low], eax
+end if
+
         mov     edi, net_buffs_free
         mov     ecx, NET_BUFFERS
         cld
@@ -292,6 +302,11 @@ stack_init:
         add     eax, NET_BUFFER_SIZE
         dec     ecx
         jnz     .loop
+
+if defined NETWORK_SANITY_CHECKS
+        sub     eax, NET_BUFFER_SIZE
+        mov     [net_buffs_high], eax
+end if
 
         mov     eax, net_buffs_free
         stosd
@@ -394,6 +409,16 @@ proc net_buff_alloc stdcall, buffersize
 
         spin_unlock_irqrestore
 
+if defined NETWORK_SANITY_CHECKS
+        cmp     eax, [net_buffs_low]
+        cmp     eax, [net_buffs_low]
+        jb      .assert_mbuff
+        cmp     eax, [net_buffs_high]
+        ja      .assert_mbuff
+        test    eax, 0x7ff
+        jnz     .assert_mbuff
+end if
+
         DEBUGF  DEBUG_NETWORK_VERBOSE, "net_buff_alloc: 0x%x\n", eax
         ret
 
@@ -408,6 +433,15 @@ proc net_buff_alloc stdcall, buffersize
         xor     eax, eax
         DEBUGF  DEBUG_NETWORK_ERROR, "net_buff_alloc: too large!\n"
         ret
+
+if defined NETWORK_SANITY_CHECKS
+  .assert_mbuff:
+        DEBUGF  DEBUG_NETWORK_ERROR, "net_buff_alloc: invalid buffer 0x%x\n", eax
+        DEBUGF  DEBUG_NETWORK_ERROR, "net_buff_alloc: caller=0x%x\n", [esp+4]
+        xor     eax, eax
+        ret
+end if
+
 endp
 
 
@@ -415,6 +449,16 @@ align 4
 proc net_buff_free stdcall, buffer
 
         DEBUGF  DEBUG_NETWORK_VERBOSE, "net_buff_free: 0x%x\n", [buffer]
+
+if defined NETWORK_SANITY_CHECKS
+        mov     eax, [buffer]
+        cmp     eax, [net_buffs_low]
+        jb      .assert_mbuff
+        cmp     eax, [net_buffs_high]
+        ja      .assert_mbuff
+        test    eax, 0x7ff
+        jnz     .assert_mbuff
+end if
 
         spin_lock_irqsave
 
@@ -426,6 +470,15 @@ proc net_buff_free stdcall, buffer
         spin_unlock_irqrestore
 
         ret
+
+if defined NETWORK_SANITY_CHECKS
+  .assert_mbuff:
+        DEBUGF  DEBUG_NETWORK_ERROR, "net_buff_free: invalid buffer 0x%x\n", eax
+        DEBUGF  DEBUG_NETWORK_ERROR, "net_buff_free: caller=0x%x\n", [esp+4]
+        xor     eax, eax
+        ret
+end if
+
 endp
 
 
@@ -748,18 +801,25 @@ sys_network:
         jmp     dword [.table + 4*ebx]
 
   .table:
-        dd      .get_type               ; 0
-        dd      .get_dev_name           ; 1
-        dd      .reset                  ; 2
-        dd      .stop                   ; 3
-        dd      .get_ptr                ; 4
-        dd      .get_drv_name           ; 5
+        dd      .get_type               ;  0
+        dd      .get_dev_name           ;  1
+        dd      .reset                  ;  2
+        dd      .stop                   ;  3
+        dd      .get_ptr                ;  4
+        dd      .get_drv_name           ;  5
 
-        dd      .packets_tx             ; 6
-        dd      .packets_rx             ; 7
-        dd      .bytes_tx               ; 8
-        dd      .bytes_rx               ; 9
+        dd      .packets_tx             ;  6
+        dd      .packets_rx             ;  7
+        dd      .bytes_tx               ;  8
+        dd      .bytes_rx               ;  9
         dd      .state                  ; 10
+        dd      .packets_tx_err         ; 11
+        dd      .packets_tx_drop        ; 12
+        dd      .packets_tx_ovr         ; 13
+        dd      .packets_rx_err         ; 14
+        dd      .packets_rx_drop        ; 15
+        dd      .packets_rx_ovr         ; 16
+
   .number = ($ - .table) / 4 - 1
 
   .get_type:
@@ -768,12 +828,10 @@ sys_network:
         ret
 
   .get_dev_name:
-; { Patch by Coldy, sanity check
-        mov     ebx, eax ; eax will used for is_region_userspace return 
+        mov     ebx, eax
         stdcall is_region_userspace, ecx, 64
         jz      .bad_buffer      
-        mov     esi, [ebx + NET_DEVICE.name] ;mov     esi, [eax + NET_DEVICE.name]
-; } End patch by Coldy, sanity check
+        mov     esi, [ebx + NET_DEVICE.name]
         mov     edi, ecx
 
         mov     ecx, 64/4 ; max length
@@ -825,6 +883,36 @@ sys_network:
         mov     ebx, dword[eax + NET_DEVICE.bytes_rx + 4]
         mov     [esp+20], ebx
         mov     eax, dword[eax + NET_DEVICE.bytes_rx]
+        mov     [esp+32], eax
+        ret
+
+  .packets_tx_err:
+        mov     eax, [eax + NET_DEVICE.packets_tx_err]
+        mov     [esp+32], eax
+        ret
+
+  .packets_tx_drop:
+        mov     eax, [eax + NET_DEVICE.packets_tx_drop]
+        mov     [esp+32], eax
+        ret
+
+  .packets_tx_ovr:
+        mov     eax, [eax + NET_DEVICE.packets_tx_ovr]
+        mov     [esp+32], eax
+        ret
+
+  .packets_rx_err:
+        mov     eax, [eax + NET_DEVICE.packets_rx_err]
+        mov     [esp+32], eax
+        ret
+
+  .packets_rx_drop:
+        mov     eax, [eax + NET_DEVICE.packets_rx_drop]
+        mov     [esp+32], eax
+        ret
+
+  .packets_rx_ovr:
+        mov     eax, [eax + NET_DEVICE.packets_rx_ovr]
         mov     [esp+32], eax
         ret
 

@@ -1,6 +1,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;                                                                 ;;
-;; Copyright (C) KolibriOS team 2010-2018. All rights reserved.    ;;
+;; Copyright (C) KolibriOS team 2010-2021. All rights reserved.    ;;
 ;; Distributed under terms of the GNU General Public License       ;;
 ;;                                                                 ;;
 ;;  netstat.asm - Network Status Tool for KolibriOS                ;;
@@ -144,6 +144,23 @@ redraw:
         cmp     [mode], 101
         jne     .no_eth
 
+        mcall   4, 212 shl 16 + 35, 0x80000000, str_err
+        add     ebx, 18
+        mov     edx, str_dropped
+        mcall
+        add     ebx, 18
+        mov     edx, str_missed
+        mcall
+        add     ebx, 18
+        mov     edx, str_err
+        mcall
+        add     ebx, 18
+        mov     edx, str_dropped
+        mcall
+        add     ebx, 18
+        mov     edx, str_missed
+        mcall
+
         mcall   4, 8 shl 16 + 35, 0x80000000, str_packets_tx
         add     ebx, 18
         mov     edx, str_packets_rx
@@ -177,7 +194,7 @@ redraw:
         push    eax
         push    bx
 
-        mov     edx, 134 shl 16 + 35 + 7*18
+        mov     edx, 115 shl 16 + 35 + 7*18
         call    draw_mac
         jmp     end_of_draw
 
@@ -224,7 +241,7 @@ redraw:
         mcall   76
         push    eax
 
-        mov     edx, 134 shl 16 + 35 + 2*18
+        mov     edx, 115 shl 16 + 35 + 2*18
         call    draw_ip
 
         add     edx, 18
@@ -280,7 +297,7 @@ redraw:
         mcall
 
         add     ebx, 18
-        mov     edx, str_dumped
+        mov     edx, str_dropped
         mcall
 
         add     ebx, 18
@@ -305,9 +322,42 @@ draw_stats:
         pop     ebx
         push    eax
         inc     bl
-        cmp     bl, 10
+        cmp     bl, 16
         jbe     @r
 
+; rx ovr
+        mov     ebx, 0x000a0000
+        pop     ecx
+        mov     edx, 320 shl 16 + 35 + 5*18
+        mov     esi, 0x40000000
+        mcall   47
+
+; rx drop
+        sub     edx, 18
+        pop     ecx
+        mcall
+
+; rx err
+        sub     edx, 18
+        pop     ecx
+        mcall
+
+; tx ovr
+        sub     edx, 18
+        pop     ecx
+        mcall
+
+; tx drop
+        sub     edx, 18
+        pop     ecx
+        mcall
+
+; tx err
+        sub     edx, 18
+        pop     ecx
+        mcall
+
+; Calculate speed
         pop     ecx
 
         push    [time]
@@ -376,19 +426,19 @@ draw_stats:
         mov     edx, str_unknown
 
   .print_link:
-        mov     ebx, 134 shl 16 + 35 + 6*18
+        mov     ebx, 115 shl 16 + 35 + 6*18
         mov     ecx, 0xc0000000
         mov     edi, 0x00f3f3f3
         mcall   4
 
-; speed tx
+; speed rx
         mov     ebx, 0x000a0000
         pop     ecx
-        mov     edx, 134 shl 16 + 35 + 5*18
+        mov     edx, 115 shl 16 + 35 + 5*18
         mov     esi, 0x40000000
         mcall   47
 
-; speed rx
+; speed tx
         sub     edx, 18
         pop     ecx
         mcall
@@ -437,7 +487,7 @@ not_101:
 
         mov     ebx, 0x000a0000
         pop     ecx
-        mov     edx, 134 shl 16 + 35 + 18
+        mov     edx, 115 shl 16 + 35 + 18
         mov     esi, 0x40000000
         mov     edi, 0x00F3F3F3
         mcall   47
@@ -481,7 +531,7 @@ not_102:
 
         mov     ebx, 0x000a0000
         pop     ecx
-        mov     edx, 134 shl 16 + 35 + 3*18
+        mov     edx, 115 shl 16 + 35 + 3*18
         mov     esi, 0x40000000
         mov     edi, 0x00F3F3F3
         mcall   47
@@ -598,7 +648,7 @@ not_103:
 
         mov     ebx, 0x000a0000
         pop     ecx
-        mov     edx, 134 shl 16 + 35 + 18
+        mov     edx, 115 shl 16 + 35 + 18
         mov     esi, 0x40000000
         mov     edi, 0x00F3F3F3
         mcall   47
@@ -629,7 +679,7 @@ not_104:
 
         mov     ebx, 0x000a0000
         pop     ecx
-        mov     edx, 134 shl 16 + 35 + 18
+        mov     edx, 115 shl 16 + 35 + 18
         mov     esi, 0x40000000
         mov     edi, 0x00F3F3F3
         mcall   47
@@ -678,7 +728,7 @@ not_105:
 
         mov     ebx, 0x000a0000
         pop     ecx
-        mov     edx, 134 shl 16 + 35 + 18*4
+        mov     edx, 115 shl 16 + 35 + 18*4
         mov     esi, 0x40000000
         mov     edi, 0x00F3F3F3
         mcall   47
@@ -945,7 +995,8 @@ str_gateway     db 'Standard gateway:       .   .   .', 0
 str_arp         db 'ARP entrys:', 0
 str_conflicts   db 'ARP conflicts:', 0
 str_missed      db 'Packets missed:', 0
-str_dumped      db 'Packets dumped:', 0
+str_dropped     db 'Packets dropped:', 0
+str_err         db 'Packet errors:', 0
 str_queued      db 'Packets queued:', 0
 str_link        db 'Link state:', 0
 str_speed_tx    db 'Upload (kb/s):', 0
