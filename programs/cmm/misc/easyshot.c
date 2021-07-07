@@ -11,17 +11,23 @@
 /* === TRANSLATIONS === */
 
 #ifdef LANG_RUS
-	?define T_TAKE_SCREENSHOT "Сделать скриншот"
+	?define T_SCREENSHOT "Скриншот"
+	?define T_READY "Готов."
+	?define T_RECORD "Запись"
+	?define T_STOP "Остановить запись"
 	?define T_SETTINGS "Настройки"
 	?define T_EDITBOX_FRAME "Путь сохранения скриншота"
 	?define T_DELAY "Задержка в секундах"
-	?define T_NO_DIR "'Папка не существует!' -E"
+	?define T_NO_DIR "Папка для сохранения не существует!"
 #else
-	?define T_TAKE_SCREENSHOT "Take a screenshot"
+	?define T_SCREENSHOT "Screenshot"
+	?define T_READY "Ready."
+	?define T_RECORD "Record"
+	?define T_STOP "Stop recording"
 	?define T_SETTINGS "Settings"
 	?define T_EDITBOX_FRAME "Save path"
 	?define T_DELAY "Delay in seconds"
-	?define T_NO_DIR "'Directory does not exists!' -E"
+	?define T_NO_DIR "Saving directory does not exists!"
 #endif
 
 /* === DATA === */	
@@ -29,13 +35,16 @@
 proc_info Form;
 
 enum {
-	BTN_MAKE_SCREENSHOT=10,
+	BTN_SCREENSHOT=10,
+	BTN_RECORD,
 	BTN_SETTINGS,
 	BTN_CHOOSE_SAVING_PATH
 };
 
+bool recording=false;
+
 #define PD 18 //padding
-#define SETTINGS_Y PD+PD+30+10
+#define SETTINGS_Y PD+PD+60+10
 
 char save_path[4096];
 
@@ -79,12 +88,13 @@ void main()
 {	
 	int id;
 
+	I_Param = T_READY;
 	init_libraries();
 
 	edit_box_set_text stdcall (#edit_save, "/tmp0/1");	
 
 	@SetEventMask(EVM_REDRAW+EVM_KEY+EVM_BUTTON+EVM_MOUSE+EVM_MOUSE_FILTER);
-	loop() switch(@WaitEvent())
+	loop() switch(@WaitEventTimeout(delay.value*100))
 	{
 	case evMouse:
 		edit_box_mouse stdcall (#edit_save);
@@ -94,9 +104,10 @@ void main()
 		id = @GetButtonID();
 		switch(id){
 			case CLOSE_BTN: @ExitProcess();
-			case BTN_MAKE_SCREENSHOT: EventTakeScreenshot(); break;
-			case BTN_SETTINGS: EventClickSettings(); break;
-			case BTN_CHOOSE_SAVING_PATH: EventChooseSavePath(); break;
+			case BTN_SCREENSHOT: EventScreenshotClick(); break;
+			case BTN_RECORD: EventRecordingClick(); break;
+			case BTN_SETTINGS: EventSettingsClick(); break;
+			case BTN_CHOOSE_SAVING_PATH: EventChooseSavePathClick(); break;
 			default: delay.click(id);
 		}
 		break;
@@ -105,77 +116,124 @@ void main()
 		@GetKey();
 		edit_box_key stdcall (#edit_save);
 		EAX >>= 16;
-		if (SCAN_CODE_ENTER == AL) EventTakeScreenshot();
-		if (SCAN_CODE_ESC == AL) ExitProcess();
+		if (SCAN_CODE_ENTER == AL) EventScreenshotClick();
+		else if (SCAN_CODE_ESC == AL) ExitProcess();
 		break;
      
 	case evReDraw:
 		DrawWindow();
+
+	default:
+		if (recording) MakeScreenshot();
 	}
 }
 
 
 void DrawWindow()
 {
-	int i;
+	unsigned i;
 
 	sc.get();
-	DefineAndDrawWindow(screen.width-400, screen.height/3, 270, 
-		skin_height + 30+PD+PD, 0x34, sc.work, "EasyShot",0);
+	DefineAndDrawWindow(screen.width-400, screen.height/3, 280, 
+		skin_height + 50+PD+PD, 0x34, sc.work, "EasyShot",0);
 	GetProcessInfo(#Form, SelfInfo);
 
-	DrawCaptButton(PD, PD, 170, 28, BTN_MAKE_SCREENSHOT, 0x0090B8, 0xFFFfff, T_TAKE_SCREENSHOT);
-	DefineButton(PD+170+20, PD, 35, 28, BTN_SETTINGS, sc.button);
-	for (i=0; i<=2; i++) DrawBar(PD+170+30, i*5+PD+9, 15, 2, sc.button_text);
+	if (!recording) {
+		DrawCaptButton(PD, PD, 101, 28, BTN_SCREENSHOT, 
+			0x0090B8, 0xFFFfff, T_SCREENSHOT);
+		DrawCaptButton(PD+105, PD, 75, 28, BTN_RECORD, 
+			0x0090B8, 0xFFFfff, T_RECORD);
+	} else {
+		DrawCaptButton(PD, PD, 96+80+4, 28, BTN_RECORD, 
+			0xC75C54, 0xFFFfff, T_STOP);
+	}
+	DefineButton(PD+200, PD, 35, 28, BTN_SETTINGS, sc.button);
+	for (i=0; i<=2; i++) DrawBar(PD+210, i*5+PD+9, 15, 2, sc.button_text);
+	DrawStatusBar(I_Param);	
+
 	delay.draw(PD, SETTINGS_Y);
-	DrawFileBox(#edit_save, T_EDITBOX_FRAME, BTN_CHOOSE_SAVING_PATH);	
+	DrawFileBox(#edit_save, T_EDITBOX_FRAME, BTN_CHOOSE_SAVING_PATH);
+
 }
 
+void DrawStatusBar(char *s)
+{
+	I_Param = s; 
+	WriteTextWithBg(PD, 35+PD, 0xD0, sc.work_text, I_Param, sc.work_light);
+}
 
-void EventChooseSavePath()
+dword ScreenshotBuf()
+{
+	static dword screenshot;
+	if (!screenshot) screenshot = malloc(screen.width * screen.height * 3);	
+	return screenshot;
+}
+
+bool GetSavingPath()
+{
+	int i=0;
+	char save_file_name[4096];
+	do {
+		i++;
+		//sprintf(, "%s/screen_%i.png", #save_path, i);
+		strcpy(#save_file_name, #save_path);
+		if (save_file_name[strlen(#save_file_name)-1]!='/') chrcat(#save_file_name, '/');
+		strcat(#save_file_name, "scr_");
+		strcat(#save_file_name, itoa(i));
+		strcat(#save_file_name, ".png");
+	} while (file_exists(#save_file_name));
+
+	if (!dir_exists(#save_path)) {
+		DrawStatusBar(T_NO_DIR);
+		return NULL;
+	}
+	return #save_file_name;
+}
+
+void MakeScreenshot() 
+{
+	if (I_Path = GetSavingPath()) {
+		CopyScreen(ScreenshotBuf(), 0, 0, screen.width, screen.height);
+		I_Param = save_image(ScreenshotBuf(), screen.width, screen.height, I_Path);
+		if (!I_Param) I_Param = I_Path;
+		DrawStatusBar(I_Param);
+	} else {
+		recording = false;
+		DrawWindow();
+	}
+}
+
+//===================================================//
+//                                                   //
+//                      EVENTS                       //
+//                                                   //
+//===================================================//
+
+void EventScreenshotClick()
+{
+	MinimizeWindow();
+	pause(delay.value*100);
+	MakeScreenshot();
+	ActivateWindow(GetProcessSlot(Form.ID));
+}
+
+void EventRecordingClick()
+{
+	recording ^= 1;
+	DrawWindow();
+}
+
+void EventSettingsClick()
+{
+	show_settings ^= 1;
+	@MoveSize(OLD, OLD, show_settings*65 + 280, 
+		show_settings*110 + skin_height + PD+PD+50);
+}
+
+void EventChooseSavePathClick()
 {
 	OpenDialog_start stdcall (#open_folder_dialog);
 	if (open_folder_dialog.status) {
 		edit_box_set_text stdcall (#edit_save, #save_path);	
 	}
 }
-
-
-void EventClickSettings()
-{
-	show_settings ^= 1;
-	@MoveSize(OLD, OLD, show_settings*75 + 270, 
-		show_settings*110 + skin_height + PD+PD+30);
-}
-
-
-void EventTakeScreenshot() 
-{
-	int i=0;
-	char save_file_name[4096];
-	static dword screenshot;
-
-	if (!screenshot) screenshot = malloc(screen.width * screen.height * 3);
-
-	do {
-		i++;
-		//sprintf(, "%s/screen_%i.png", #save_path, i);
-		strcpy(#save_file_name, #save_path);
-		if (save_file_name[strlen(#save_file_name)-1]!='/') chrcat(#save_file_name, '/');
-		strcat(#save_file_name, "screen_");
-		strcat(#save_file_name, itoa(i));
-		strcat(#save_file_name, ".png");
-	} while (file_exists(#save_file_name));
-
-	if (!dir_exists(#save_path)) {
-		notify(T_NO_DIR);
-		return;
-	}
-
-	MinimizeWindow(); 
-	pause(delay.value*100);
-	CopyScreen(screenshot, 0, 0, screen.width, screen.height);
-	save_image(screenshot, screen.width, screen.height, #save_file_name);
-	ActivateWindow(GetProcessSlot(Form.ID));
-}
-
