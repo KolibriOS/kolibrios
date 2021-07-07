@@ -160,8 +160,7 @@ _ActionsHistory actionsHistory;
 //                                                   //
 //===================================================//
 
-libimg_image top_icons;
-libimg_image left_icons;
+libimg_image icons16;
 
 void main()
 {
@@ -171,22 +170,18 @@ void main()
 	load_dll(libimg, #libimg_init, 1);
 	load_dll(boxlib, #box_lib_init,0);
 
-	top_icons.load("/sys/icons16.png");
-	left_icons.load("/sys/icons16.png");
-	leftbar_w = left_icons.w + 16;
+	icons16.load("/sys/icons16.png");
+	leftbar_w = icons16.w + 16;
 
 	sc.get();
 	bg_dark = skin_is_dark();
 
 	semi_white = MixColors(sc.work, 0xFFFfff, bg_dark*90 + 96);
-	top_icons.replace_color(0xffFFFfff, semi_white);
-	top_icons.replace_color(0xffCACBD6, MixColors(semi_white, 0, 220));
-
-	left_icons.replace_color(0xffFFFfff, sc.work);
-	left_icons.replace_color(0xffCACBD6, MixColors(sc.work, 0, 200));
+	icons16.replace_color(0xffFFFfff, sc.work);
+	icons16.replace_color(0xffCACBD6, MixColors(sc.work, 0, 200));
 
 	//fix line and rectandle color for dark skins
-	if (bg_dark) left_icons.replace_color(0xff545454, 0xffD3D3D4);
+	if (bg_dark) icons16.replace_color(0xff545454, 0xffD3D3D4);
 
 	EventSetActiveColor(1, color1);
 
@@ -303,15 +298,10 @@ void main()
 
 void DrawTopPanelButton1(dword _event, _hotkey, _x, _icon_n)
 {
-	DrawWideRectangle(_x, 4, 22, 22, 3, semi_white);
-	PutPixel(_x,4,sc.work);
-	PutPixel(_x,4+21,sc.work);
-	PutPixel(_x+21,4,sc.work);
-	PutPixel(_x+21,4+21,sc.work);
-	DefineHiddenButton(_x, 4, 21, 21, button.add(_event));
-	img_draw stdcall(top_icons.image, -top_icons.w+16/2+_x+3, -top_icons.w+16/2+7, left_icons.w, 
-		left_icons.w, 0, _icon_n*left_icons.w);
-	//DrawTopPanelButton(button.add(_event), _x, 5, _icon_n, false);
+	#define ISIZE 18
+	#define YPOS 6
+	DefineHiddenButton(_x-4, YPOS-4, ISIZE+7, ISIZE+7, button.add(_event));
+	img_draw stdcall(icons16.image, _x, YPOS, ISIZE, ISIZE, 0, _icon_n*ISIZE);
 	if (_hotkey) key.add_n(_hotkey, _event);
 }
 
@@ -333,10 +323,10 @@ int DrawFlatPanelButton(dword _id, _x, _y, _text)
 void DrawLeftPanelButton(dword _event, _hotkey, _y, _icon_n)
 {
 	int x = 5;
-	DrawRectangle(x, _y, left_icons.w + 5, left_icons.w + 5, sc.work);
-	DefineHiddenButton(x, _y, left_icons.w + 5, left_icons.w + 5, button.add(_event));
-	img_draw stdcall(left_icons.image, x+3, _y+3, left_icons.w, 
-		left_icons.w, 0, _icon_n*left_icons.w);
+	DrawRectangle(x, _y, icons16.w + 5, icons16.w + 5, sc.work);
+	DefineHiddenButton(x, _y, icons16.w + 5, icons16.w + 5, button.add(_event));
+	img_draw stdcall(icons16.image, x+3, _y+3, icons16.w, 
+		icons16.w, 0, _icon_n*icons16.w);
 	key.add_n(_hotkey, _event);
 }
 void DrawStatusBar()
@@ -361,8 +351,8 @@ void DrawWindow()
 {
 	#define GAPH 27
 	#define GAPV 28
-	#define GAP_S 26+5
-	#define GAP_B 26+18
+	#define GAP_S 24+7
+	#define GAP_B 24+20
 	#define BLOCK_SPACE 10
 	incn tx;
 	incn ty;
@@ -380,7 +370,7 @@ void DrawWindow()
 	DrawBar(0, 0, Form.cwidth, TOPBAR_H-1, sc.work);
 	DrawBar(0, TOPBAR_H-1, Form.cwidth, 1, sc.work_graph);
 
-	DrawTopPanelButton1(#EventCreateNewIcon,  ECTRL + SCAN_CODE_KEY_N, tx.set(5),    2);
+	DrawTopPanelButton1(#EventCreateNewIcon,  ECTRL + SCAN_CODE_KEY_N, tx.set(7),    2);
 	DrawTopPanelButton1(#EventOpenIcon,       ECTRL + SCAN_CODE_KEY_O, tx.inc(GAP_S), 0);
 	DrawTopPanelButton1(#EventSaveIconToFile, ECTRL + SCAN_CODE_KEY_S, tx.inc(GAP_S), 5);
 	DrawTopPanelButton1(#EventMoveLeft,       ECTRL + SCAN_CODE_LEFT,  tx.inc(GAP_B), 30);
@@ -429,8 +419,8 @@ void DrawWindow()
 
 void DrawLeftPanelSelection()
 {
-	if (previousTool!=-1) DrawRectangle3D(5, previousTool*GAPV+right_bar.y-2, left_icons.w+5, left_icons.w+5, sc.work, sc.work);
-	DrawRectangle3D(5, currentTool*GAPV+right_bar.y-2, left_icons.w+5, left_icons.w+5, 0x333333, 0x777777);
+	if (previousTool!=-1) DrawRectangle3D(5, previousTool*GAPV+right_bar.y-2, icons16.w+5, icons16.w+5, sc.work, sc.work);
+	DrawRectangle3D(5, currentTool*GAPV+right_bar.y-2, icons16.w+5, icons16.w+5, 0x333333, 0x777777);
 }
 
 void DrawEditArea()
@@ -439,7 +429,7 @@ void DrawEditArea()
 	int top_side;
 	int left_side;
 
-	wrapper.x = left_icons.w + 16;
+	wrapper.x = icons16.w + 16;
 	wrapper.w = Form.cwidth - right_bar.w - 10 - wrapper.x;
 	wrapper.h = Form.cheight - TOPBAR_H - 35;
 
@@ -665,17 +655,26 @@ void EventOpenIcon()
 	RunProgram("/sys/lod", sprintf(#param, "*png* %s",#program_path));
 }
 
+#ifdef LANG_RUS
+#define TEXT_FILE_SAVED_AS "'Файл сохранен как %s' -O"
+#else
+#define TEXT_FILE_SAVED_AS "'File saved as %s' -O"
+#endif
 void EventSaveIconToFile()
 {
 	int i=0;
 	char save_file_name[4096];
 	char save_path_stable[4096];
+	char save_success_message[4096+200];
 	strcpy(#save_path_stable, "/tmp0/1");
 	do {
 		i++;
-		sprintf(#save_file_name, "%s/saved_icon_%i.png", #save_path_stable, i);
+		sprintf(#save_file_name, "%s/icon_%i.png", #save_path_stable, i);
 	} while (file_exists(#save_file_name));
 	save_image(image.get_image(), image.columns, image.rows, #save_file_name);
+
+	sprintf(#save_success_message, TEXT_FILE_SAVED_AS, #save_file_name);
+	notify(#save_success_message);
 }
 
 void EventCleanCanvas()

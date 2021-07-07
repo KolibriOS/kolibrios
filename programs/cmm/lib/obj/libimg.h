@@ -187,22 +187,16 @@ struct libimg_image
     return EAX;
 }
 
-#ifdef LANG_RUS
-#define TEXT_FILE_SAVED_AS "'Файл сохранен как "
-#else
-#define TEXT_FILE_SAVED_AS "'File saved as "
-#endif
-:void save_image(dword _image_pointer, _w, _h, _path)
+:dword save_image(dword _image_pointer, _w, _h, _path)
 {
-    char save_success_message[4096+200];
     dword encoded_data=0;
     dword encoded_size=0;
     dword image_ptr = 0;
     
     image_ptr = create_image(IMAGE_BPP24, _w, _h);
 
-    if (image_ptr == 0) {
-        notify("'Error saving file, probably not enought memory!' -E");
+    if (!image_ptr) {
+        return "Error creating image!";
     }
     else {
         EDI = image_ptr;
@@ -212,18 +206,15 @@ struct libimg_image
 
         img_destroy stdcall(image_ptr);
 
-        if(encoded_data == 0) {
-            notify("'Error saving file, incorrect data!' -E");
+        if(!encoded_data) {
+            return "Error encoding image!";
         }
         else {
-            if (CreateFile(encoded_size, encoded_data, _path) == 0) {
-                strcpy(#save_success_message, TEXT_FILE_SAVED_AS);
-                strcat(#save_success_message, _path);
-                strcat(#save_success_message, "' -O");
-                notify(#save_success_message);
+            if (!CreateFile(encoded_size, encoded_data, _path)) {
+                return 0;
             }
             else {
-                notify("'Error saving image file!\nNot enough space? Path wrong?\nFile system is not writable?..' -E");
+                return "'Error saving image file!\nNot enough space? Path wrong?\nFile system is not writable?..' -E";
             }
         }
     }
