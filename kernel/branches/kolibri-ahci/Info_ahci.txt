@@ -1,0 +1,12 @@
+https://wiki.osdev.org/AHCI
+
+Specification - https://www.intel.com/content/dam/www/public/us/en/documents/technical-specifications/serial-ata-ahci-spec-rev1-3-1.pdf
+
+https://wiki.osdev.org/PCI
+
+https://github.com/dbittman/seakernel/tree/master/drivers/ahci
+
+https://github.com/ZenithOS/ZenithOS/blob/master/src/Kernel/BlkDev/DiskAHCI.CC
+
+https://github.com/BrownieOS/xOS/blob/master/kernel/blkdev/ahci.asm
+
