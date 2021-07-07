@@ -35,6 +35,7 @@ img_files = {
  {"File Managers/FNAV/FNAV_CUR.PNG", "common/File Managers/fNav/fnav_cur.png"},
  {"File Managers/FNAV/FNAV_FNT.PNG", "common/File Managers/fNav/fnav_fnt.png"},
  {"File Managers/FNAV/FNAV_ICN.PNG", "common/File Managers/fNav/fnav_icn.png"},
+ {"GAMES/FLPYBIRD", PROGS .. "/games/flappybird/Release/flappybird"},
  {"FONTS/TAHOMA.KF", "common/fonts/tahoma.kf"},
  {"LIB/ICONV.OBJ", "common/lib/iconv.obj"},
  {"LIB/KMENU.OBJ", "common/lib/kmenu.obj"},
