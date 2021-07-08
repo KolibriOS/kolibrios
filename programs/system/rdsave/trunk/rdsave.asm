@@ -338,9 +338,13 @@ draw_window:
 	mcall  48,3,sc,sizeof.system_colors
 	mcall	12,1
 
-	mov	edx,[sc.work]
-	or	edx,0x34000000
-	mcall	0,<200,400>,<200,130>, , ,title
+	mcall  48,4
+	mov ecx,200*65536+111
+	add ecx,eax
+
+	mov edx,[sc.work]
+	or  edx,0x34000000
+	mcall	0,<200,400>,, , ,title
 
 ;buttons
 	mcall	8,<198,70>,<68,20>,1,[sc.work_button]

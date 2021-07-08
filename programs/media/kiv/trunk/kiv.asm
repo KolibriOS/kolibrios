@@ -1235,11 +1235,11 @@ proc draw_toolbar uses ebx esi edi
         mcall
         mov     ebx, [toolbar_abs_left]
         add     ebx, [toolbar.width]
-        sub     ebx, 25*5+10
+        sub     ebx, 25*4+10
         shl     ebx, 16
         add     ebx, [toolbar_abs_left]
         add     ebx, [toolbar.width]
-        sub     ebx, 25*5+10
+        sub     ebx, 25*4+10
         mcall
 
         mov     ebx, [toolbar_abs_left]
@@ -1261,7 +1261,7 @@ proc draw_toolbar uses ebx esi edi
         mcall    , , , 'scl'+40000000h
         mov     ebx, [toolbar_abs_left]
         add     ebx, [toolbar.width]
-        sub     ebx, 25*5+10
+        sub     ebx, 25*4+10
         add     ebx, 5
         shl     ebx, 16
         mov     bl, 21
@@ -1296,7 +1296,7 @@ proc draw_toolbar uses ebx esi edi
         call    draw_scale_button
         mov     edx, [client_abs_left]
         add     edx, [client.width]
-        sub     edx, 25*5+4
+        sub     edx, 25*4+4
         shl     edx, 16
         add     edx, [client_abs_top]
         add     edx, 5
@@ -1304,11 +1304,9 @@ proc draw_toolbar uses ebx esi edi
         add     edx, 25*65536
         mcall   , buttons+flipvertbtn*20
         add     edx, 30*65536
-        mcall   , buttons+rotcwbtn*20
-        add     edx, 25*65536
         mcall   , buttons+rotccwbtn*20
         add     edx, 25*65536
-        mcall   , buttons+rot180btn*20
+        mcall   , buttons+rotcwbtn*20
 
 .quit:
         ret
@@ -1624,9 +1622,11 @@ endp
 
 
 ; fills window_header with window title
-; window title is generated as '[k/n] <filename> - Kolibri Image Viewer'
+; window title is generated as '[k/n] <filename> (WxH) - Kolibri Image Viewer'
 ; n = total files in dir
 ; k = current file index
+; W = current image width
+; H = current image height
 proc generate_window_header
         push    eax ebx esi edi
         mov     esi, [last_name_component]
@@ -1661,6 +1661,23 @@ proc generate_window_header
         pop     edi esi ebx eax
         ret
 @@:
+        ; add size
+        mov     word[edi], ' ('
+        add     edi, 2
+
+        mov     ebx, [orig_image]
+        mov     eax, [ebx+Image.Width]
+        call    bin2dec
+
+        mov     byte[edi], 'x'
+        inc     edi
+
+        mov     eax, [ebx+Image.Height]
+        call    bin2dec
+
+        mov     byte[edi], ')'
+        inc     edi
+
         mov     esi, s_header
 @@:
         lodsb
