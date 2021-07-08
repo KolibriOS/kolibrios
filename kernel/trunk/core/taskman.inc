@@ -79,6 +79,7 @@ fs_execute_from_sysdir_param:
 ; @param ecx Commandline
 ; @param ebx Absolute file path
 ; @param eax String length
+; @returns Negated error code or new process number
 proc fs_execute
     locals
         cmdline         rd  1
