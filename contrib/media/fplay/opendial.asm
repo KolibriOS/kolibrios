@@ -83,12 +83,15 @@ _get_moviefile:
 
         push    od
         call    [opendialog_start]
+        cmp     [od.status], 1
+        jne     .fail
 
         popad
         mov     eax, [od.openfile_path]; selected filePath
 
         ret
 .fail:
+        popad
         xor     eax, eax
         ret
 
