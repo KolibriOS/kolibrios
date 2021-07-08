@@ -55,7 +55,7 @@ $(NAME): $(OBJECTS) Makefile
 
 
 clean: 
-	-rm -f *.o 
+	-rm -f $(OBJECTS)
 
 
 
