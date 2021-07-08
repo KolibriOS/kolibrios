@@ -74,11 +74,12 @@ fs_execute_from_sysdir_param:
         call    getFullPath
         pop     ecx ebx
         xor     edx, edx
+; @brief Executes a program
+; @param edx Flags
+; @param ecx Commandline
+; @param ebx Absolute file path
+; @param eax String length
 proc fs_execute
-; edx = flags
-; ecx -> cmdline
-; ebx -> absolute file path
-; eax = string length
     locals
         cmdline         rd  1
         flags           rd  1
