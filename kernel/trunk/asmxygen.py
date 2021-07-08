@@ -1454,6 +1454,24 @@ class AsmFunction(AsmElement):
 		doxycomment += self.comment
 		if '@brief' not in doxycomment:
 			doxycomment = '@brief ' + doxycomment
+		# If there was no arguments, maybe that's just a label
+		# then parse parameters from its comment
+		if len(self.args) == 0 and '@param' in self.comment:
+			i = 0
+			while '@param' in self.comment[i:]:
+				i = self.comment.index('@param', i)
+				# Skip '@param'
+				i += len('@param')
+				# Skip spaces after '@param'
+				while self.comment[i].isspace():
+					i += 1
+				# Get the parameter name
+				name = ''
+				while is_id(self.comment[i]):
+					name += self.comment[i]
+					i += 1
+				# Save the parameter
+				self.args.append((name, 'arg_t'))
 		# Build the arg list for declaration
 		arg_list = '('
 		if len(self.args) > 0:
