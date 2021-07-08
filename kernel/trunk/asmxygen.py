@@ -1372,8 +1372,8 @@ class AsmElement:
 			warnings += f'{self.location}: Undocumented element\n'
 
 	def dump(self):
+		print(f"\n{self.location}: {self.name}")
 		print(f"{self.comment}")
-		print(f"{self.location}: {self.name}")
 
 	def emit(self, dest, doxycomment = '', declaration = ''):
 		# Do not emit anything if the symbol is marked as hidden in its comment
@@ -1420,7 +1420,7 @@ class AsmVariable(AsmElement):
 
 	def dump(self):
 		super().dump()
-		print(f"Variable")
+		print(f"(Variable)\n---")
 
 	def emit(self, dest):
 		# Build doxycomment specific for the variable
@@ -1446,7 +1446,7 @@ class AsmFunction(AsmElement):
 
 	def dump(self):
 		super().dump()
-		print(f"Function")
+		print(f"(Function)\n---")
 
 	def emit(self, dest):
 		# Build doxycomment specific for the variable
@@ -1494,7 +1494,7 @@ class AsmLabel(AsmElement):
 
 	def dump(self):
 		super().dump()
-		print(f"Label")
+		print(f"(Label)\n---")
 
 	def emit(self, dest):
 		# Build doxycomment specific for the variable
@@ -1515,8 +1515,7 @@ class AsmMacro(AsmElement):
 
 	def dump(self):
 		super().dump()
-		print(f"Macro")
-		print(f"Parameters: {self.args}")
+		print(f"(Macro)\n---")
 
 	def emit(self, dest):
 		# Construct arg list without '['s, ']'s and '*'s
@@ -1549,7 +1548,7 @@ class AsmStruct(AsmElement):
 
 	def dump(self):
 		super().dump()
-		print(f"Struct")
+		print(f"(Struct)\n---")
 
 	def emit(self, dest):
 		# Build doxycomment
@@ -1574,7 +1573,7 @@ class AsmUnion(AsmElement):
 
 	def dump(self):
 		super().dump()
-		print(f"Union")
+		print(f"(Union)\n---")
 
 	def emit(self, dest):
 		# Build doxycomment
