@@ -110,11 +110,9 @@ init_ahci:
         DEBUGF  1, "K: found AHCI controller, (class, subcl, progif) = %x, bus = %x, device = %x, function = %x\n", eax, ebx, ecx, edx
         
         ; get BAR5 value, it is physical address 
-        mov     ah, [esi + PCIDEV.bus]
-        mov     al, 2 ; read dword
-        mov     bh, [esi + PCIDEV.devfn]
-        mov     bl, PCI_REG_BAR5
-        call    pci_read_reg
+        movzx   eax, [esi + PCIDEV.bus]
+        movzx   ebx, [esi + PCIDEV.devfn]
+        stdcall pci_read32, eax, ebx, PCI_REG_BAR5
         DEBUGF  1, "K: AHCI controller BAR5 = %x\n", eax
 
         ; Map BAR5 to virtual memory
@@ -124,48 +122,38 @@ init_ahci:
 
         ; Enable dma bus mastering, memory space access, clear the "disable interrupts" bit
         ; Usually, it is already done before us
-        mov     ah, [esi + PCIDEV.bus]
-        mov     al, 2 ; read dword
-        mov     bh, [esi + PCIDEV.devfn]
-        mov     bl, PCI_REG_STATUS_COMMAND
-        call    pci_read_reg
+        movzx   ebx, [esi + PCIDEV.bus]
+        movzx   ebp, [esi + PCIDEV.devfn]
+        stdcall pci_read32, ebx, ebp, PCI_REG_STATUS_COMMAND
         DEBUGF  1, "K: AHCI: pci_status_command = %x\nEnabling interrupts, DMA bus mastering and memory space access\n", eax
         or      eax, 0x06 ; pci.command |= 0x06 (dma bus mastering + memory space access)
         btr     eax, 10 ; clear the "disable interrupts" bit
         DEBUGF  1, "K: AHCI: pci_status_command = %x\n", eax
-        mov     ecx, eax
-        mov     ah, [esi + PCIDEV.bus]
-        mov     al, 2 ; write dword
-        mov     bh, [esi + PCIDEV.devfn]
-        mov     bl, PCI_REG_STATUS_COMMAND
-        call    pci_write_reg
+        stdcall pci_write32, ebx, ebp, PCI_REG_STATUS_COMMAND, eax
 
         ; ; Print some register values to debug board
         ; mov     esi, [ahci_controller + AHCI_DATA.abar]
-        ; mov     ebx, [esi + HBA_MEM.capability]
-        ; mov     ecx, [esi + HBA_MEM.global_host_control]
-        ; mov     edx, [esi + HBA_MEM.version]
-        ; DEBUGF  1, "K: AHCI: HBA.cap = %x, HBA.ghc = %x, HBA_MEM.version = %x\n", ebx, ecx, edx
+        ; DEBUGF  1, "K: AHCI: HBA.cap = %x, HBA.ghc = %x, HBA_MEM.version = %x\n", [esi + HBA_MEM.capability], [esi + HBA_MEM.global_host_control], [esi + HBA_MEM.version]
 
         ;-------------------------------------------------------
         ; Request BIOS/OS ownership handoff, if supported. (TODO check correctness)
         mov     esi, [ahci_controller + AHCI_DATA.abar]
         ;mov     ebx, [esi + HBA_MEM.capability2]
         ;DEBUGF  1, "K: AHCI: HBA_MEM.cap2 = %x\n", ebx
-        bt      dword [esi + HBA_MEM.capability2], bit_AHCI_HBA_CAP2_BOH
+        bt      [esi + HBA_MEM.capability2], bit_AHCI_HBA_CAP2_BOH
         jnc     .end_handoff
         DEBUGF  1, "K: AHCI: requesting AHCI ownership change...\n"
-        bts     dword [esi + HBA_MEM.bohc], bit_AHCI_HBA_BOHC_OOS
+        bts     [esi + HBA_MEM.bohc], bit_AHCI_HBA_BOHC_OOS
 
 .wait_not_bos:
-        bt      dword [esi + HBA_MEM.bohc], bit_AHCI_HBA_BOHC_BOS
+        bt      [esi + HBA_MEM.bohc], bit_AHCI_HBA_BOHC_BOS
         jc      .wait_not_bos
 
         mov     ebx, 3
         call    delay_hs
 
         ; if Bios Busy is still set after 30 mS, wait 2 seconds.
-        bt      dword [esi + HBA_MEM.bohc], bit_AHCI_HBA_BOHC_BB
+        bt      [esi + HBA_MEM.bohc], bit_AHCI_HBA_BOHC_BB
         jnc     @f
 
         mov     ebx, 200
@@ -177,30 +165,21 @@ init_ahci:
         ;-------------------------------------------------------
 
         ; enable the AHCI and reset it
-        bts     dword [esi + HBA_MEM.global_host_control], bit_AHCI_HBA_GHC_AHCI_ENABLE
-        bts     dword [esi + HBA_MEM.global_host_control], bit_AHCI_HBA_GHC_RESET
+        bts     [esi + HBA_MEM.global_host_control], bit_AHCI_HBA_GHC_AHCI_ENABLE
+        bts     [esi + HBA_MEM.global_host_control], bit_AHCI_HBA_GHC_RESET
 
         ; wait for reset to complete
 .wait_reset:
-        bt      dword [esi + HBA_MEM.global_host_control], bit_AHCI_HBA_GHC_RESET
+        bt      [esi + HBA_MEM.global_host_control], bit_AHCI_HBA_GHC_RESET
         jc      .wait_reset
 
         ; enable the AHCI and interrupts
-        bts     dword [esi + HBA_MEM.global_host_control], bit_AHCI_HBA_GHC_AHCI_ENABLE
-        bts     dword [esi + HBA_MEM.global_host_control], bit_AHCI_HBA_GHC_INTERRUPT_ENABLE
+        bts     [esi + HBA_MEM.global_host_control], bit_AHCI_HBA_GHC_AHCI_ENABLE
+        bts     [esi + HBA_MEM.global_host_control], bit_AHCI_HBA_GHC_INTERRUPT_ENABLE
         mov     ebx, 2
         call    delay_hs
-        mov     ebx, [esi + HBA_MEM.capability]
-        mov     ecx, [esi + HBA_MEM.capability2]
-        mov     edx, [esi + HBA_MEM.version]
-        mov     edi, [esi + HBA_MEM.global_host_control]
         
-        DEBUGF  1, "K: AHCI: caps: %x %x, ver: %x, ghc: %x\n", ebx, ecx, edx, edi
+        DEBUGF  1, "K: AHCI: caps: %x %x, ver: %x, ghc: %x\n", [esi + HBA_MEM.capability], [esi + HBA_MEM.capability2], [esi + HBA_MEM.version], [esi + HBA_MEM.global_host_control]
 
         ret
-
-
-
-
-
 
