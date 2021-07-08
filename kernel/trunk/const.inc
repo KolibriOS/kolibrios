@@ -19,9 +19,9 @@ G32     =  10000000b      ; page gran
 
 ;;;;;;;;;;; task manager errors ;;;;;;;;;;
 
-ERROR_OUT_OF_MEMORY      = 30 ; 0x1E
-ERROR_NOT_A_EXECUTABLE   = 31 ; 0x1F
-ERROR_TOO_MANY_PROCESSES = 32 ; 0x20
+TASKMAN_ERROR_OUT_OF_MEMORY      = 30 ; 0x1E
+TASKMAN_ERROR_NOT_A_EXECUTABLE   = 31 ; 0x1F
+TASKMAN_ERROR_TOO_MANY_PROCESSES = 32 ; 0x20
 
 ;;;;;;;;;;;;cpu_caps flags;;;;;;;;;;;;;;;;
 
