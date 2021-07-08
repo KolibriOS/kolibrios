@@ -93,6 +93,7 @@ macro ends
    match any, sub@struct \{ fields@struct equ fields@struct> \}
    restore sub@struct }
 
+; @dont_give_a_doxygen
 macro make@struct name,[field,type,def]
  { common
     local define
@@ -105,6 +106,7 @@ macro make@struct name,[field,type,def]
    common
     match fields, define \{ define@struct fields \} }
 
+; @dont_give_a_doxygen
 macro define@struct name,[field,type,def]
  { common
     virtual
@@ -157,6 +159,7 @@ macro define@struct name,[field,type,def]
                            end if \\\\}
    common \\\} \\} \} }
 
+; @dont_give_a_doxygen
 macro enable@substruct
  { macro make@substruct substruct,parent,name,[field,type,def]
     \{ \common
@@ -172,8 +175,10 @@ macro enable@substruct
        \common
         match fields, define \\{ define@\#substruct fields \\} \} }
 
+; @dont_give_a_doxygen
 enable@substruct
 
+; @dont_give_a_doxygen
 macro define@union parent,name,[field,type,def]
  { common
     virtual at parent#.#name
@@ -213,6 +218,7 @@ macro define@union parent,name,[field,type,def]
     macro name [value] \{ \common \local ..anonymous
                           ..anonymous name value \} }
 
+; @dont_give_a_doxygen
 macro define@substruct parent,name,[field,type,def]
  { common
     virtual at parent#.#name
