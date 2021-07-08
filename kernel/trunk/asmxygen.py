@@ -2004,8 +2004,11 @@ if os.path.isfile('asmxygen.elements.pickle'):
 handle_file(kernel_files, "./kernel.asm");
 
 if dump_symbols:
+	stdout = sys.stdout
+	sys.stdout = open('asmxygen.dump.txt', 'w', encoding = 'utf-8')
 	for asm_element in elements:
 		asm_element.dump()
+	sys.stdout = stdout
 
 if clean_generated_stuff:
 	kernel_files_set = set(kernel_files)
