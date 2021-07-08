@@ -8,7 +8,13 @@
 $Revision$
 
 
-; void __stdcall unpack(void* packed_data, void* unpacked_data); 
+; @brief Unpack LZMA-compressed data. C-style declaration of the function.
+;
+; ```void __stdcall unpack(void* packed_data, void* unpacked_data);```
+;
+; @param packed_data Data to unpack
+; @param unpacked_data Buffer to hold unpacked data
+; @returns Nothing
 unpack:
         pushad
         mov     esi, [esp+32+4]
