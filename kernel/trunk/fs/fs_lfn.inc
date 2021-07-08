@@ -19,7 +19,6 @@ ERROR_DISK_FULL      = 8
 ERROR_FS_FAIL        = 9
 ERROR_ACCESS_DENIED  = 10
 ERROR_DEVICE         = 11
-ERROR_OUT_OF_MEMORY  = 12
 
 maxPathLength = 1000h
 

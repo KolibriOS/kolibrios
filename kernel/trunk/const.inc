@@ -17,6 +17,11 @@ cpl3    =  11111010b      ; code read dpl3
 D32     =  01000000b      ; 32bit segment
 G32     =  10000000b      ; page gran
 
+;;;;;;;;;;; task manager errors ;;;;;;;;;;
+
+ERROR_OUT_OF_MEMORY      = 30 ; 0x1E
+ERROR_NOT_A_EXECUTABLE   = 31 ; 0x1F
+ERROR_TOO_MANY_PROCESSES = 32 ; 0x20
 
 ;;;;;;;;;;;;cpu_caps flags;;;;;;;;;;;;;;;;
 
