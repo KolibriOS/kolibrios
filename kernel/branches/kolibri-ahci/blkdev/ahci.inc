@@ -10,12 +10,19 @@ $Revision$
 PCI_REG_STATUS_COMMAND = 0x0004
 PCI_REG_BAR5 = 0x0024
 
-AHCI_BOHCf_BOS  = 0        ; BIOS-Owned Semaphore (BIOS owns controller)
-AHCI_BOHCf_OOS  = 1        ; OS-Owned Semaphore (OS owns controller)
-AHCI_BOHCf_BB   = 4        ; BIOS Busy (polling bit while BIOS cleans up 
+; bit_ prefix means that its index of bit
+; format: bit_AHCI_STR_REG_BIT
+bit_AHCI_HBA_CAP2_BOH   = 0        ; Supports BIOS/OS Handoff
 
-AHCI_CAP2_BOH = 0          ; number of bit in BOH which shows Supports BIOS/OS Handoff
+bit_AHCI_HBA_BOHC_BOS  = 0         ; BIOS-Owned Semaphore (BIOS owns controller)
+bit_AHCI_HBA_BOHC_OOS  = 1         ; OS-Owned Semaphore (OS owns controller)
+bit_AHCI_HBA_BOHC_BB   = 4         ; BIOS Busy (polling bit while BIOS cleans up 
 
+bit_AHCI_HBA_GHC_AHCI_ENABLE      = 31  ; Enable AHCI mode
+bit_AHCI_HBA_GHC_RESET            = 0   ; Reset HBA
+bit_AHCI_HBA_GHC_INTERRUPT_ENABLE = 1   ; Enable interrupts from the HBA 
+
+AHCI_MAX_PORTS = 32        ;
 HBA_MEMORY_SIZE = 0x1100
 
 struct AHCI_DATA
@@ -39,7 +46,7 @@ struct HBA_MEM
         bohc                  dd ?                    ; 0x28, BIOS/OS handoff control and status
         reserved              rb (0xA0-0x2C)          ; 0x2C - 0x9F, Reserved
         vendor                rb (0x100-0xA0)         ; 0xA0 - 0xFF, Vendor specific 
-        ports                 rb (sizeof.HBA_PORT*32) ; 0x100 - 0x10FF, Port control registers, max 32
+        ports                 rb (sizeof.HBA_PORT*AHCI_MAX_PORTS) ; 0x100 - 0x10FF, Port control registers, max AHCI_MAX_PORTS
 ends
 
 ; Port Control registers
@@ -102,6 +109,7 @@ init_ahci:
         and     edx, 00000111b ; get only 3 lowest bits (function code)
         DEBUGF  1, "K: found AHCI controller, (class, subcl, progif) = %x, bus = %x, device = %x, function = %x\n", eax, ebx, ecx, edx
         
+        ; get BAR5 value, it is physical address 
         mov     ah, [esi + PCIDEV.bus]
         mov     al, 2 ; read dword
         mov     bh, [esi + PCIDEV.devfn]
@@ -109,10 +117,13 @@ init_ahci:
         call    pci_read_reg
         DEBUGF  1, "K: AHCI controller BAR5 = %x\n", eax
 
+        ; Map BAR5 to virtual memory
         stdcall map_io_mem, eax, HBA_MEMORY_SIZE, PG_SWR + PG_NOCACHE
         mov     [ahci_controller + AHCI_DATA.abar], eax
         DEBUGF  1, "K: AHCI controller BAR5 mapped to virtual addr %x\n", eax
 
+        ; Enable dma bus mastering, memory space access, clear the "disable interrupts" bit
+        ; Usually, it is already done before us
         mov     ah, [esi + PCIDEV.bus]
         mov     al, 2 ; read dword
         mov     bh, [esi + PCIDEV.devfn]
@@ -129,57 +140,62 @@ init_ahci:
         mov     bl, PCI_REG_STATUS_COMMAND
         call    pci_write_reg
 
-        mov     eax, [ahci_controller + AHCI_DATA.abar]
-        mov     ebx, [eax + HBA_MEM.capability]
-        mov     ecx, [eax + HBA_MEM.global_host_control]
-        mov     edx, [eax + HBA_MEM.version]
-        DEBUGF  1, "K: AHCI: HBA.cap = %x, HBA.ghc = %x, HBA_MEM.version = %x\n", ebx, ecx, edx
+        ; ; Print some register values to debug board
+        ; mov     esi, [ahci_controller + AHCI_DATA.abar]
+        ; mov     ebx, [esi + HBA_MEM.capability]
+        ; mov     ecx, [esi + HBA_MEM.global_host_control]
+        ; mov     edx, [esi + HBA_MEM.version]
+        ; DEBUGF  1, "K: AHCI: HBA.cap = %x, HBA.ghc = %x, HBA_MEM.version = %x\n", ebx, ecx, edx
 
-        ; //Transferring ownership from BIOS if supported.
-	; if (Bt(&hba->caps_ext, AHCI_CAPSEXTf_BOH))
-	; {
-	; 	Bts(&hba->bohc, AHCI_BOHCf_OOS);
-	; 	"AHCI: Transferring ownership from BIOS\n";
-
-	; 	while (Bt(&hba->bohc, AHCI_BOHCf_BOS));
-
-	; 	Sleep(25);
-	; 	if (Bt(&hba->bohc, AHCI_BOHCf_BB)) //if Bios Busy is still set after 25 mS, wait 2 seconds.
-	; 		Sleep(2000);
-	; }
-
-        ; Transferring ownership from BIOS if supported. (TODO check)
-        mov     eax, [ahci_controller + AHCI_DATA.abar]
-        mov     ebx, [eax + HBA_MEM.capability2]
-        DEBUGF  1, "K: AHCI: HBA_MEM.cap2 = %x\n", ebx
-        bt      dword [eax + HBA_MEM.capability2], AHCI_CAP2_BOH
+        ;-------------------------------------------------------
+        ; Request BIOS/OS ownership handoff, if supported. (TODO check correctness)
+        mov     esi, [ahci_controller + AHCI_DATA.abar]
+        ;mov     ebx, [esi + HBA_MEM.capability2]
+        ;DEBUGF  1, "K: AHCI: HBA_MEM.cap2 = %x\n", ebx
+        bt      dword [esi + HBA_MEM.capability2], bit_AHCI_HBA_CAP2_BOH
         jnc     .end_handoff
-        DEBUGF  1, "K: AHCI: Transferring ownership from BIOS...\n"
-        bts     dword [eax + HBA_MEM.bohc], AHCI_BOHCf_OOS
+        DEBUGF  1, "K: AHCI: requesting AHCI ownership change...\n"
+        bts     dword [esi + HBA_MEM.bohc], bit_AHCI_HBA_BOHC_OOS
 
 .wait_not_bos:
-        bt      dword [eax + HBA_MEM.bohc], AHCI_BOHCf_BOS
+        bt      dword [esi + HBA_MEM.bohc], bit_AHCI_HBA_BOHC_BOS
         jc      .wait_not_bos
 
         mov     ebx, 3
         call    delay_hs
 
-        ; if Bios Busy is still set after 25 mS, wait 2 seconds.
-        bt      dword [eax + HBA_MEM.bohc], AHCI_BOHCf_BB
+        ; if Bios Busy is still set after 30 mS, wait 2 seconds.
+        bt      dword [esi + HBA_MEM.bohc], bit_AHCI_HBA_BOHC_BB
         jnc     @f
 
         mov     ebx, 200
         call    delay_hs
 @@:
-        DEBUGF  1, "K: AHCI: Done.\n"
+        DEBUGF  1, "K: AHCI: ownership change completed.\n"
 
 .end_handoff:
+        ;-------------------------------------------------------
 
-        ;; TODO: Reset controller ?
+        ; enable the AHCI and reset it
+        bts     dword [esi + HBA_MEM.global_host_control], bit_AHCI_HBA_GHC_AHCI_ENABLE
+        bts     dword [esi + HBA_MEM.global_host_control], bit_AHCI_HBA_GHC_RESET
 
-        ;; TODO enble AHCI ? (see https://github.com/ZenithOS/ZenithOS/blob/4ea8b133613ab95a8b53ed543d8e63525a21954e/src/Kernel/BlkDev/DiskAHCI.CC#L719)
+        ; wait for reset to complete
+.wait_reset:
+        bt      dword [esi + HBA_MEM.global_host_control], bit_AHCI_HBA_GHC_RESET
+        jc      .wait_reset
 
-        ;; TODO: find drives (see https://github.com/ZenithOS/ZenithOS/blob/4ea8b133613ab95a8b53ed543d8e63525a21954e/src/Kernel/BlkDev/DiskAHCI.CC#L742)
+        ; enable the AHCI and interrupts
+        bts     dword [esi + HBA_MEM.global_host_control], bit_AHCI_HBA_GHC_AHCI_ENABLE
+        bts     dword [esi + HBA_MEM.global_host_control], bit_AHCI_HBA_GHC_INTERRUPT_ENABLE
+        mov     ebx, 2
+        call    delay_hs
+        mov     ebx, [esi + HBA_MEM.capability]
+        mov     ecx, [esi + HBA_MEM.capability2]
+        mov     edx, [esi + HBA_MEM.version]
+        mov     edi, [esi + HBA_MEM.global_host_control]
+        
+        DEBUGF  1, "K: AHCI: caps: %x %x, ver: %x, ghc: %x\n", ebx, ecx, edx, edi
 
         ret
 
