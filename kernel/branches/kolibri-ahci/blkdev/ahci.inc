@@ -22,11 +22,14 @@ bit_AHCI_HBA_GHC_AHCI_ENABLE      = 31  ; Enable AHCI mode
 bit_AHCI_HBA_GHC_RESET            = 0   ; Reset HBA
 bit_AHCI_HBA_GHC_INTERRUPT_ENABLE = 1   ; Enable interrupts from the HBA 
 
+AHCI_HBA_PxSSTS_DET         = 0xF
+AHCI_HBA_PORT_IPM_ACTIVE    = 1
+AHCI_HBA_PxSSTS_DET_PRESENT = 3
+
 AHCI_MAX_PORTS = 32        ;
 HBA_MEMORY_SIZE = 0x1100
 
 struct AHCI_DATA
-        ;;
         abar    dd ?       ; pointer to HBA Memory (BAR5) mapped to virtual kernelspace memory
         pcidev  dd ?       ; pointer to corresponding PCIDEV structure
 ends
@@ -110,15 +113,26 @@ init_ahci:
         DEBUGF  1, "K: found AHCI controller, (class, subcl, progif) = %x, bus = %x, device = %x, function = %x\n", eax, ebx, ecx, edx
         
         ; get BAR5 value, it is physical address 
-        movzx   eax, [esi + PCIDEV.bus]
-        movzx   ebx, [esi + PCIDEV.devfn]
-        stdcall pci_read32, eax, ebx, PCI_REG_BAR5
-        DEBUGF  1, "K: AHCI controller BAR5 = %x\n", eax
+        movzx   ebx, [esi + PCIDEV.bus]
+        movzx   ebp, [esi + PCIDEV.devfn]
+        stdcall pci_read32, ebx, ebp, PCI_REG_BAR5
+        DEBUGF  1, "K: AHCI controller MMIO = %x\n", eax
+        mov     edi, eax
 
-        ; Map BAR5 to virtual memory
-        stdcall map_io_mem, eax, HBA_MEMORY_SIZE, PG_SWR + PG_NOCACHE
+        ; get the size of MMIO region
+        stdcall pci_write32, ebx, ebp, PCI_REG_BAR5, 0xFFFFFFFF
+        stdcall pci_read32, ebx, ebp, PCI_REG_BAR5
+        not     eax
+        inc     eax
+        DEBUGF  1, "K: AHCI: MMIO region size = 0x%x bytes\n", eax
+
+        ; Map MMIO region to virtual memory
+        stdcall map_io_mem, edi, eax, PG_SWR + PG_NOCACHE
         mov     [ahci_controller + AHCI_DATA.abar], eax
         DEBUGF  1, "K: AHCI controller BAR5 mapped to virtual addr %x\n", eax
+
+        ; Restore the original BAR5 value
+        stdcall pci_write32, ebx, ebp, PCI_REG_BAR5, edi
 
         ; Enable dma bus mastering, memory space access, clear the "disable interrupts" bit
         ; Usually, it is already done before us
@@ -179,7 +193,53 @@ init_ahci:
         mov     ebx, 2
         call    delay_hs
         
-        DEBUGF  1, "K: AHCI: caps: %x %x, ver: %x, ghc: %x\n", [esi + HBA_MEM.capability], [esi + HBA_MEM.capability2], [esi + HBA_MEM.version], [esi + HBA_MEM.global_host_control]
+        DEBUGF  1, "K: AHCI: caps: %x %x, ver: %x, ghc: %x, pi: %x\n", [esi + HBA_MEM.capability], [esi + HBA_MEM.capability2], [esi + HBA_MEM.version], [esi + HBA_MEM.global_host_control], [esi + HBA_MEM.port_implemented]
+
+        ; TODO:
+        ; calculate irq line
+        ; ahciHBA->ghc |= AHCI_GHC_IE;
+        ; IDT::RegisterInterruptHandler(irq, InterruptHandler);
+	; ahciHBA->is = 0xffffffff;
+
+        xor     ebx, ebx
+.detect_drives:
+        cmp     ebx, AHCI_MAX_PORTS
+        jae     .end_detect_drives
+
+        ; if port with index ebx is not implemented then go to next
+        mov     ecx, [esi + HBA_MEM.port_implemented]
+        bt      ecx, ebx
+        jnc     .continue_detect_drives
+
+        mov     edi, ebx
+        shl     edi, BSF sizeof.HBA_PORT
+        add     edi, HBA_MEM.ports
+        add     edi, esi
+        ; now edi - base of HBA_MEM.ports[ebx]
+
+        DEBUGF  1, "K: AHCI: port %d, ssts = %x\n", ebx, [edi + HBA_PORT.sata_status]
+
+        mov     ecx, [edi + HBA_PORT.sata_status]
+        shr     ecx, 8
+        and     ecx, 0x0F
+        cmp     ecx, AHCI_HBA_PORT_IPM_ACTIVE
+        jne     .continue_detect_drives
+
+        mov     ecx, [edi + HBA_PORT.sata_status]
+        and     ecx, AHCI_HBA_PxSSTS_DET
+        cmp     ecx, AHCI_HBA_PxSSTS_DET_PRESENT
+        jne    .continue_detect_drives
+
+        DEBUGF 1, "K: AHCI: found drive at port %d, signature = %x\n", ebx, [edi + HBA_PORT.signature]    
+
+.continue_detect_drives:
+        inc     ebx
+        jmp     .detect_drives
+
+        ; TODO: why signatures of found disks are 0xFFFFFFFF ?
+
+.end_detect_drives:
+        
 
         ret
 
