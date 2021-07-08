@@ -151,85 +151,93 @@ align 4
         mov     eax,SF_MOUSE_GET
         mov     ebx,SSF_WINDOW_POSITION
         int     0x40
-		cmp     ax, word[skinh]
-		jl      .event
-		sub     ax, word[skinh]
-		xor     dx,dx
-		mov     bx, font_height
-		div     bx
-		movzx   edx,ax
-		shr     eax,16
+        cmp     ax, word[skinh]
+        jl      .event
+        sub     ax, word[skinh]
+        xor     dx,dx
+        mov     bx, font_height
+        div     bx
+        movzx   edx,ax
+        shr     eax,16
         sub     eax, 5 ;window border
 
-		push    edx
-		xor     dx,dx
-		mov     bx, font_width
-		div     bx
-		movzx   eax,ax
-		pop     edx
+        push    edx
+        xor     dx,dx
+        mov     bx, font_width
+        div     bx
+        movzx   eax,ax
+        pop     edx
 
         mov     ebx, [esp+24h+8] ;DLGTEMPLATE* dlg
-		cmp     edx, [ebx+dlgtemplate.y]
-		jl      .event
-		cmp     eax, [ebx+dlgtemplate.x]
-		jl      .event
-		sub     edx, [ebx+dlgtemplate.y]
-		sub     eax, [ebx+dlgtemplate.x]
-		cmp     edx, [ebx+dlgtemplate.height]
-		jge     .event
-		cmp     eax, [ebx+dlgtemplate.width]
-		jge     .event
+        cmp     dword[ebx+dlgtemplate.size], 0
+        jne     .event ;если диалоговое окно не стандартное (список значений)
+        cmp     edx, [ebx+dlgtemplate.y]
+        jl      .event
+        cmp     eax, [ebx+dlgtemplate.x]
+        jl      .event
+        sub     edx, [ebx+dlgtemplate.y]
+        sub     eax, [ebx+dlgtemplate.x]
+        cmp     edx, [ebx+dlgtemplate.height]
+        jge     .event
+        cmp     eax, [ebx+dlgtemplate.width]
+        jge     .event
 
         add     ebx, dlgtemplate.size+12
         mov     ecx, [ebx-4]
-		or      ecx, ecx
-		jz      .event
+        or      ecx, ecx
+        jz      .event
 
         push    ebx ecx
 .m_loop:
-		cmp     [ebx+dlgitemtemplate.type], 2 ;button
-		je      .m_comp
-		cmp     [ebx+dlgitemtemplate.type], 3 ;edit
-		je      .m_comp
-		;cmp     [ebx+dlgitemtemplate.type], 5 ;check
-		;je      .m_comp
-		jmp     .m_next
+        cmp     [ebx+dlgitemtemplate.type], 2 ;button
+        je      .m_comp
+        cmp     [ebx+dlgitemtemplate.type], 3 ;edit
+        je      .m_comp
+        ;cmp     [ebx+dlgitemtemplate.type], 5 ;check
+        ;je      .m_comp
+        jmp     .m_next
 align 4
 .m_comp:
-		cmp     [ebx+dlgitemtemplate.x1], eax
-		jg      .m_next
-		cmp     [ebx+dlgitemtemplate.y1], edx
-		jg      .m_next
-		cmp     [ebx+dlgitemtemplate.x2], eax
-		jl      .m_next
-		cmp     [ebx+dlgitemtemplate.y2], edx
-		jl      .m_next
-		
-		mov     eax, [ebx+dlgitemtemplate.flags]
-		and     eax, 4
-		jnz     .m_old_focus
-		mov     eax, ebx
-		jmp     .m_new_focus
+        cmp     [ebx+dlgitemtemplate.x1], eax
+        jg      .m_next
+        cmp     [ebx+dlgitemtemplate.y1], edx
+        jg      .m_next
+        cmp     [ebx+dlgitemtemplate.x2], eax
+        jl      .m_next
+        cmp     [ebx+dlgitemtemplate.y2], edx
+        jl      .m_next
+
+        cmp     [ebx+dlgitemtemplate.type], 2 ;button
+        jne      @f
+        mov     [esp+28+8], ebx ;save to eax
+        pop     ecx ebx
+        jmp     .exit
+@@:
+        mov     eax, [ebx+dlgitemtemplate.flags]
+        and     eax, 4
+        jnz     .m_old_focus
+        mov     eax, ebx
+        jmp     .m_new_focus
 align 4
 .m_next:
-		add     ebx, sizeof.DlgBtn
-		loop    .m_loop
+        add     ebx, sizeof.DlgBtn
+        loop    .m_loop
 .m_old_focus:
-		pop     ecx ebx
-		jmp     .event
+        pop     ecx ebx
+        jmp     .event
 align 4
 .m_new_focus:
-		pop     ecx ebx
+        pop     ecx ebx
         call    DlgClearFocus
-		or      dword[eax+dlgitemtemplate.flags], 4
+        or      dword[eax+dlgitemtemplate.flags], 4
 
-		sub     ebx, dlgtemplate.size+12
+        sub     ebx, dlgtemplate.size+12
         push    ebp
-		mov     ebp, ebx
+        mov     ebp, ebx
         call    ManagerDlgProc.dodraw
         pop     ebp
         call    draw_image
-		jmp     .event
+        jmp     .event
 align 4
 .exit:
         popad
@@ -253,10 +261,10 @@ DlgClearFocus:
         push    ebx ecx
 @@:
         and     byte [ebx+dlgitemtemplate.flags], not 4
-		add     ebx, sizeof.DlgBtn
-		loop    @b
-		pop     ecx ebx
-		ret
+        add     ebx, sizeof.DlgBtn
+        loop    @b
+        pop     ecx ebx
+        ret
 
 ; int __stdcall ShowGenericBox(DLGTEMPLATE* dlg, void* DlgProc);
 align 16
@@ -438,6 +446,7 @@ draw_dialog_shadow:
         ret
 
 ; void __stdcall DrawGenericBox(DLGDATA* dlg, void* DlgProc)
+align 16
 DrawGenericBox:
         pushad
         mov     ebx, [esp+24h]
@@ -720,6 +729,7 @@ restore_console_data:
 
 ; int __stdcall menu(void* variants, const char* title, unsigned flags);
 ; variants указывает на текущий элемент в двусвязном линейном списке
+align 16
 menu:
         pop     eax
         push    [cur_height]
@@ -734,11 +744,11 @@ menu_centered_in:
         pushad
         mov     ecx, 60
 ; 40 bytes for dlgtemplate + additional:
-; +40: dd cur_variant
-; +44: dd num_variants
-; +48: dd begin_variant
-; +52: dd end_variant
-; +56: dd cur_variant_idx
+; +40: dd cur_variant   - [???]
+; +44: dd num_variants  - сколько элементов влазит в окно
+; +48: dd begin_variant - [dd ..,..,???]
+; +52: dd end_variant   - [dd ..,..,???]
+; +56: dd cur_variant_idx - ???
         call    xpgalloc
         test    eax, eax
         jnz     @f
@@ -749,7 +759,7 @@ menu_centered_in:
 @@:
         mov     ebx, eax
         mov     eax, 1
-        test    byte [esp+20h+28], 1
+        test    byte [esp+20h+28], 1 ;unsigned flags
         jz      @f
         mov     al, 3
 @@:
@@ -760,7 +770,7 @@ menu_centered_in:
 ; Находим ширину и высоту окна
         xor     eax, eax
         xor     ecx, ecx
-        mov     esi, [esp+20h+20]
+        mov     esi, [esp+20h+20] ;void* variants
         mov     [ebx+40], esi
         mov     dword [ebx+56], eax
 @@:
@@ -889,6 +899,7 @@ menu_centered_in:
         popad
         ret     28
 
+align 16
 MenuDlgProc:
         mov     eax, [esp+8]
         cmp     al, 1

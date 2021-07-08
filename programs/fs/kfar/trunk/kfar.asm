@@ -819,34 +819,39 @@ mouse:
         mov     eax,SF_MOUSE_GET
         mov     ebx,SSF_BUTTON_EXT
         int     0x40
+        mov     byte[mousestate], 1
+        bt      eax,24 ;left but. double click
+        jc      @f
+        mov     byte[mousestate], 0
         bt      eax,8 ;left but. down
-        jnc     event
-
+        jc      @f
+        jmp     event
+@@:
         mov     eax,SF_MOUSE_GET
         mov     ebx,SSF_WINDOW_POSITION
         int     0x40
-		cmp     ax, word[skinh]
-		jl      event
-		sub     ax, word[skinh]
-		xor     dx,dx
-		mov     bx, font_height
-		div     bx
-		movzx   edx,ax
-		dec     edx ;верхняя рамка
-		dec     edx ;заголовки
-		shr     eax,16		
+        cmp     ax, word[skinh]
+        jl      event
+        sub     ax, word[skinh]
+        xor     dx,dx
+        mov     bx, font_height
+        div     bx
+        movzx   edx,ax
+        dec     edx ;верхняя рамка
+        dec     edx ;заголовки
+        shr     eax,16
 
         cmp     edx, 0
-		jl      .no_ch_pos
-		mov     ebx, [cur_height]
-		sub     ebx, 3
-		cmp     edx, ebx
-		je      .on_panel
-		sub     ebx, 7-3
-		cmp     edx, ebx
-		jge     .no_ch_pos
-		
-		push    edx eax
+        jl      .no_ch_pos
+        mov     ebx, [cur_height]
+        sub     ebx, 3
+        cmp     edx, ebx
+        je      .on_panel
+        sub     ebx, 7-3
+        cmp     edx, ebx
+        jge     .no_ch_pos
+
+        push    edx eax
         mov     ecx, [cur_width]
 if font_width & 3
         imul    ecx, font_width
@@ -897,9 +902,14 @@ end if
         cmp     edx, 0
         jl      @f
         mov     [ebp + PanelData.index], edx
+        cmp     byte[mousestate], 0
+        je      @f
+        call    panels_OnKey.enter
+        jmp     event
 @@:
         call    draw_panel
         jmp     event
+align 4
 .on_panel:
         call    get_keybar_ind
         lea     eax, [panels_mouse+4*eax]
@@ -908,7 +918,6 @@ end if
         mov     ebp, [active_panel]
         mov     ecx, [ebp + PanelData.index]
         call    dword[eax]
-@@:
         jmp     event
 
 ;input:
@@ -958,7 +967,7 @@ get_keybar_ind:
         inc     edx
 @@:
         cmp     edx, edi
-		ja      .ret
+        ja      .ret
         cmp     edx, [cur_width]
         ja      .ret
         cmp     ecx, 12
@@ -970,8 +979,16 @@ get_keybar_ind:
         inc     ecx
         jmp     .l
 .ret:
-		lea     eax, [esi+ecx-1]
+        lea     eax, [esi+ecx-1]
         pop     edi esi edx ecx ebx   
+        ret
+
+align 4
+OnMouse_ctrl_f39:
+        sub     eax, panels_mouse.ctrl+8
+        shr     eax, 2
+        add     eax, 0x3D
+        call    panels_OnKey.ctrl_f39
         ret
 
 align 16
@@ -1106,6 +1123,7 @@ enum_associations_callback:
         xor     eax, eax
         ret     16
 
+align 4
 enum_plugins_callback:
 ; LongBool __stdcall callback(f_name,sec_name,key_name,key_value);
 ; [esp+4] = f_name, [esp+8] = sec_name, [esp+12] = key_name, [esp+16] = key_value
@@ -3478,6 +3496,7 @@ close_plugin_panels:
         jnz     @b
         ret
 
+align 4
 close_plugin_panel:
 ; close plugin and restore old directory
         mov     esi, [ebp + PanelData.parents]
@@ -3515,6 +3534,7 @@ close_plugin_panel:
 @@:
         pop     ebx edx
 
+align 4
 close_handle_if_unused:
 ; edx=hPlugin, ebx=hFile
         push    ebp
@@ -3534,6 +3554,7 @@ close_handle_if_unused:
         pop     ebp
         ret
 
+align 4
 panels_IsHandleUsed:
 ; edx=hPlugin, ebx=hFile
         mov     ebp, panel1
@@ -3570,6 +3591,7 @@ panels_IsHandleUsed:
         inc     esi
         ret
 
+align 4
 panels_OnExit:
 ; close plugin panels
         mov     ebp, panel1
@@ -3578,6 +3600,7 @@ panels_OnExit:
         call    close_plugin_panels
         ret
 
+align 4
 panels_OnRedraw:
         or      [cursor_x], -1
         or      [cursor_y], -1
@@ -3590,6 +3613,7 @@ panels_OnRedraw:
         call    draw_panel
         ret
 
+align 4
 init_console:
         mov     ecx, [console_data_ptr]
         call    pgfree
@@ -3624,12 +3648,15 @@ init_console:
         mov     [panel2.height], eax
         ret
 
+align 4
 get_curfile_folder_entry:
         mov     ecx, [ebp + PanelData.index]
         shl     ecx, 2
         add     ecx, [ebp + PanelData.files]
         mov     ecx, [ecx]
         ret
+
+align 4
 get_curfile_name:
         call    get_curfile_folder_entry
         add     ecx, 40
@@ -4970,6 +4997,7 @@ end if
         sub     ecx, edi
         ret     8
 
+align 4
 get_file_color:
         mov     ah, [esi + 6]
         cmp     ebp, [active_panel]
@@ -4989,6 +5017,7 @@ get_file_color:
 @@:
         ret
 
+align 4
 draw_name_column:
         mov     eax, [column_index]
         mov     [last_column_index], eax
@@ -5151,6 +5180,7 @@ draw_name_column:
 draw_empty_column:
         ret
 
+align 4
 draw_size_column:
         add     edi, [column_width]
         add     edi, [column_width]
@@ -5295,6 +5325,7 @@ end if
         cld
         ret
 
+align 4
 draw_date_column:
         mov     ecx, [column_height]
         dec     ecx
@@ -5361,6 +5392,7 @@ draw_date_column:
         cld
         ret
 
+align 4
 draw_time_column:
         mov     ecx, [column_height]
         dec     ecx
@@ -5445,6 +5477,7 @@ draw_time_column:
 ;@@:     pop     esi
 ;        ret
 
+align 4
 read_folder:
         mov     eax, [ebp + PanelData.nfa]
         mov     [dirinfo.size], eax
@@ -7530,8 +7563,12 @@ panels_mouse:
         rd 4
         dd panels_OnKey.shift_f5
         rd 7
-; Ctrl
-        rd 12
+.ctrl:
+        rd 2
+repeat 9-3+1
+        dd OnMouse_ctrl_f39
+end repeat
+        rd 3
 ; Ctrl+Shift
         rd 12
 ; Alt
@@ -7929,6 +7966,8 @@ FolderShortcuts dd      0,0,0,0,0,0,0,0,0,0
 
 bWasE0          db      0
 ctrlstate       db      0
+mousestate      db      0
+align 4
 MemForImage     dd      0
 restore_semicolon dd    0
 bForHex         db      0
