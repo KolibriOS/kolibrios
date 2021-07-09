@@ -812,7 +812,7 @@ common_app_entry:
         test    edi, edi
         jz      @f
         stdcall is_region_userspace, edi, [ebp+APP_HDR.filename_size]
-        jz      @f
+        jnz     @f
         mov     al, '/'
         stosb
         rep movsb
@@ -840,7 +840,7 @@ common_app_entry:
 .copy_cmdline:
         inc     ecx  ; keep in mind about 0 in the end
         stdcall is_region_userspace, edi, ecx
-        jz      .check_tls_header
+        jnz     .check_tls_header
         dec     ecx
         rep movsb
         mov     byte [edi], 0

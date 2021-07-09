@@ -130,7 +130,7 @@ dd  .setSkinUnicode
         mov     edx, 192 ; max size
 @@:
         stdcall is_region_userspace, esi, edx    ;
-        jnz     @f                               ;
+        jz      @f                               ;
         ret                                      ;
 @@:
         mov     edi, common_colours
@@ -147,7 +147,7 @@ dd  .setSkinUnicode
         mov     edx, 192 ; max size
 @@:
         stdcall is_region_userspace, edi, edx
-        jnz     @f
+        jz      @f
         ret
 @@:
         mov     esi, common_colours

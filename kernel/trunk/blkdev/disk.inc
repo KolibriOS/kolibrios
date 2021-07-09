@@ -1310,7 +1310,7 @@ proc default_fs_get_file_info uses edi
         mov     ebx, [ebx+f70s5arg.buf]
         stdcall is_region_userspace, ebx, ecx
         movi    eax, ERROR_MEMORY_POINTER
-        jz      .done
+        jnz     .done
         mov     edi, ebx
         xor     eax, eax
         rep stosb

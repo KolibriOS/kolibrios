@@ -92,7 +92,7 @@ image_of_ebx EQU esp+20
 ; syscall_fileSystemUnicode: ; with user pointer correctness checking
 ; ; in: ebx -> f.80 parameter structure
 ;         stdcall file_system_is_operation_safe, ebx
-;         jnz     @f
+;         jz      @f
 
 ;         DEBUGF  1, "sysfn80 addr error\n"
 ;         mov     dword [image_of_eax], ERROR_MEMORY_POINTER
@@ -108,7 +108,7 @@ image_of_ebx EQU esp+20
 ; syscall_file_system_lfn: ; with user pointer correctness checking
 ; ; in: ebx -> f.70 parameter structure
 ;         stdcall file_system_is_operation_safe, ebx
-;         jnz     @f
+;         jz      @f
 
 ;         DEBUGF  1, "sysfn70 addr error\n"
 ;         mov     dword [image_of_eax], ERROR_MEMORY_POINTER
@@ -550,7 +550,7 @@ sys_current_directory:  ; sysfunction 30
 .get:
 ; in: ecx -> buffer, edx = length, eax = encoding
         stdcall is_region_userspace, ecx, edx
-        jnz     @f
+        jz      @f
 
         ; if illegal buffer given
         xor     edx, edx

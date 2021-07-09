@@ -1419,13 +1419,13 @@ display_number:
         test    bl, bl
         jz      @f
         stdcall is_region_userspace, ecx, 1
-        jnz     @f
+        jz      @f
         ret
 @@:
         test    esi, 0x08000000
         jz      @f
         stdcall is_region_userspace, edi, 1
-        jnz     @f
+        jz      @f
         ret
 @@:
 ;It is not optimization
@@ -1767,7 +1767,7 @@ sys_getsetup:
 
         ; if given memory address belongs to kernel then error
         stdcall is_region_userspace, ebx, 128
-        jz      .addr_error
+        jnz     .addr_error
 
         mov     eax, keymap
         mov     ecx, 128
@@ -1780,7 +1780,7 @@ sys_getsetup:
         jnz     .alt
 
         stdcall is_region_userspace, ebx, 128
-        jz      .addr_error
+        jnz     .addr_error
 
         mov     eax, keymap_shift
         mov     ecx, 128
@@ -1793,7 +1793,7 @@ sys_getsetup:
         jne     .country
 
         stdcall is_region_userspace, ebx, 128
-        jz      .addr_error
+        jnz     .addr_error
 
         mov     eax, keymap_alt
         mov     ecx, 128
@@ -2459,7 +2459,7 @@ sysfn_getdiskinfo:      ; 18.11 = get disk info table
         jnz     .exit
 .small_table:
         stdcall is_region_userspace, edx, DRIVE_DATA_SIZE
-        jz      .exit
+        jnz     .exit
         mov     edi, edx
         mov     esi, DRIVE_DATA
         mov     ecx, DRIVE_DATA_SIZE ;10
@@ -2475,7 +2475,7 @@ sysfn_lastkey:          ; 18.12 = return 0 (backward compatibility)
 sysfn_getversion:       ; 18.13 = get kernel ID and version
         ; if given memory address belongs to kernel then error
         stdcall is_region_userspace, ecx, version_end-version_inf
-        jz      .addr_error
+        jnz     .addr_error
 
         mov     edi, ecx
         mov     esi, version_inf
@@ -2838,7 +2838,7 @@ nosb4:
 
 ; add check pointer
         stdcall is_region_userspace, ecx, esi
-        jz      .fin
+        jnz     .fin
 
         cmp     [img_background], static_background_data
         jnz     @f
@@ -3191,7 +3191,7 @@ sys_cpuusage:
 ;
         ; if given memory address belongs to kernel then error
         stdcall is_region_userspace, ebx, 0x4C
-        jz      .addr_error
+        jnz     .addr_error
 
         cmp     ecx, -1 ; who am I ?
         jne     .no_who_am_i
@@ -4401,7 +4401,7 @@ syscall_putimage:                       ; PutImage
         lea     eax, [eax*3]
         stdcall is_region_userspace, ebx, eax
         pop     ecx
-        jz      sys_putimage.exit
+        jnz     sys_putimage.exit
 
 sys_putimage:
         test    ecx, 0x80008000
@@ -4451,7 +4451,7 @@ sys_putimage_palette:
         imul    eax, ecx
         stdcall is_region_userspace, ebx, eax
         pop     ecx
-        jz      sys_putimage.exit
+        jnz     sys_putimage.exit
 
         mov     eax, [current_slot_idx]
         shl     eax, 8
@@ -5206,7 +5206,7 @@ align 4
 syscall_writetext:                      ; WriteText
 
         stdcall is_region_userspace, edx, esi
-        jz      .err
+        jnz     .err
 
         mov     eax, [TASK_BASE]
         mov     ebp, [eax-twdw+WDATA.box.left]
@@ -5230,7 +5230,7 @@ align 4
 
 @@:     ;  check pointer
         stdcall is_region_userspace, edi, 0
-        jz      .err
+        jnz     .err
         jmp     dtext
 .err:
         ret
@@ -5403,7 +5403,7 @@ syscall_getarea:
         lea     ebp, [ebp*3]
         imul    ebp, esi
         stdcall is_region_userspace, edi, ebp
-        jz      .exit
+        jnz     .exit
 
         mov     ebp, edx
         dec     ebp
@@ -5474,7 +5474,7 @@ syscall_putarea_backgr:
         lea     ebp, [ebp*4]
         imul    ebp, esi
         stdcall is_region_userspace, edi, ebp
-        jz      .exit
+        jnz     .exit
  
         mov     ebp, edx
 
@@ -5754,23 +5754,20 @@ align 4
 ; @return ZF = 1 if region in userspace memory,
 ;         ZF = 0 otherwise
 proc is_region_userspace stdcall, base:dword, len:dword
-        push    eax ebx
+        push    eax
         mov     eax, [base]
 
-        cmp     eax, OS_BASE
-        ja      @f
+        cmp     eax, OS_BASE-1
+        ja      @f              ; zf
 
         add     eax, [len]
+        jc      @f              ; zf
         cmp     eax, OS_BASE
-        ja      @f
+        ja      @f              ; zf
 
-        mov     eax, 1
-        jmp     .ret
+        cmp     eax, eax        ; ZF
 @@:
-        xor     eax, eax
-.ret:
-        test    eax, eax
-        pop     ebx eax
+        pop     eax
         ret 
 endp
 

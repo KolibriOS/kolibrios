@@ -52,7 +52,7 @@ align 4
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
         stdcall is_region_userspace, edx, ecx
-        jnz     @f
+        jz      @f
         mov     eax, -1
         jmp     .exit_1
 @@:

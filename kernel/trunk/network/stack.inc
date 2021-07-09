@@ -830,7 +830,7 @@ sys_network:
   .get_dev_name:
         mov     ebx, eax
         stdcall is_region_userspace, ecx, 64
-        jz      .bad_buffer      
+        jnz     .bad_buffer
         mov     esi, [ebx + NET_DEVICE.name]
         mov     edi, ecx
 
