@@ -1288,8 +1288,47 @@ iglobal
 align 4
 default_fs_functions:
         dd      free
-        dd      0       ; no user functions
+        dd      (default_fs_functions_end - default_fs_functions - 4) / 4
+        dd      0
+        dd      0
+        dd      0
+        dd      0
+        dd      0
+        dd      default_fs_get_file_info
+default_fs_functions_end:
 endg
+
+proc default_fs_get_file_info uses edi
+        movi    eax, ERROR_UNSUPPORTED_FS
+        cmp     byte[esi], 0
+        jnz     .done
+        movi    ecx, 40 ; len of BDFE without filename
+        cmp     [ebx+f70s5arg.xflags], 0
+        jz      @f
+        add     ecx, 2  ; volume label requested, space for utf16 terminator
+@@:
+        mov     ebx, [ebx+f70s5arg.buf]
+        stdcall is_region_userspace, ebx, ecx
+        movi    eax, ERROR_MEMORY_POINTER
+        jz      .done
+        mov     edi, ebx
+        xor     eax, eax
+        rep stosb
+        mov     [ebx+bdfe.attr], 0x10   ; directory flag
+        mov     word[ebx+bdfe.name], 0  ; word because of possible utf16
+        mov     eax, dword[ebp+PARTITION.Length+DQ.lo]
+        mov     edx, dword[ebp+PARTITION.Length+DQ.hi]
+        mov     ecx, [ebp+PARTITION.Disk]
+        mov     ecx, [ecx+DISK.MediaInfo.SectorSize]
+        bsf     ecx, ecx
+        shld    edx, eax, cl
+        shl     eax, cl
+        mov     [ebx+bdfe.size.lo], eax
+        mov     [ebx+bdfe.size.hi], edx
+        xor     eax, eax
+.done:
+        ret
+endp
 
 ; This function is called from file_system_lfn.
 ; This handler gets the control each time when fn 70 is called
@@ -1476,6 +1515,8 @@ dyndisk_handler:
         mov     ecx, [ebx]
         cmp     [edi+4], ecx
         jbe     .unsupported
+        cmp     dword[edi+8+ecx*4], 0   ; user function not implemented
+        jz      .unsupported
         pushd   edx ebp eax [edi+8+ecx*4]
         cmp     ecx, 10
         jnz     .callFS
