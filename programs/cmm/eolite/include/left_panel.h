@@ -33,7 +33,7 @@ void _SystemDiscs::Get()
 	{
 		sprintf(#dev_name,"/%s",i1*304+ devbuf+72);
 		GetDir(#diskbuf, #dev_disc_num, #dev_name, DIRS_NOROOT);
-		for (j1=0; j1<dev_disc_num; j1++;)
+		if (!EAX) for (j1=0; j1<dev_disc_num; j1++;)
 		{
 			sprintf(#sys_discs,"%s/%s",#dev_name,j1*304+ diskbuf+72);
 			if (sys_discs[1]=='r') {

@@ -8,9 +8,9 @@ TODO:
 - 70.5 - get volume info and label
 */
 
-#define ABOUT_TITLE "EOLITE 5.02 Gold"
-#define TITLE_EOLITE "Eolite File Manager 5.02 Gold"
-#define TITLE_KFM "Kolibri File Manager 2.02 Gold";
+#define ABOUT_TITLE "EOLITE 5.03 Gold"
+#define TITLE_EOLITE "Eolite File Manager 5.03 Gold"
+#define TITLE_KFM "Kolibri File Manager 2.03 Gold";
 
 #define MEMSIZE 1024 * 250
 #include "../lib/clipboard.h"
@@ -1233,8 +1233,11 @@ dword GetDeviceSize(dword p)
 	if (ESBYTE[p+1] == '/') p++;
 	if (ESBYTE[p+1] == 'c') && (ESBYTE[p+2] == 'd')
 		&& (ESBYTE[p+4] == 0) return 0;
-	GetFileInfo(p, #bdvk);
-	return ConvertSize64(bdvk.sizelo, bdvk.sizehi);
+	if (GetFileInfo(p, #bdvk)) {
+		return 0;
+	} else {
+		ConvertSize64(bdvk.sizelo, bdvk.sizehi);
+	}
 }
 
 int GetRealFileCountInFolder(dword folder_path)

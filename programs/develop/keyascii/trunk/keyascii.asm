@@ -18,7 +18,7 @@ include 'lang.inc'
 include '..\..\..\macros.inc'
 
 START:                          ; start of execution
-  red: 
+  red:
      call draw_window
 
 still:
@@ -63,48 +63,47 @@ still:
 
 draw_window:
 ; function 12:tell os about windowdraw ; 1, start of draw
-	mcall	12,1
+    mcall   12,1
 
                                    ; DRAW WINDOW
-	mov	eax,0                     ; function 0 : define and draw window
-	mov	ebx,100*65536+270         ; [x start] *65536 + [x size]
-	mov	ecx,100*65536+100          ; [y start] *65536 + [y size]
-	mov	edx,0x34ffffff            ; color of work area RRGGBB,8->color gl
-	mov	edi,title
-	mcall
+    mov eax,0                     ; function 0 : define and draw window
+    mov ebx,200*65536+250         ; [x start] *65536 + [x size]
+    mov ecx,200*65536+106          ; [y start] *65536 + [y size]
+    mov edx,0x34ffffff            ; color of work area RRGGBB,8->color gl
+    mov edi,title
+    mcall
 
 ; function 4 : write text to window
-	xor	ecx,ecx
-	mcall	4,<33,8>,,text1,6
-	mcall	,<85,8>,,text2,9
-	mcall	,<8,28>,,tdec,4
-	add	ebx,23
-	mcall	,,,thex
+    mcall   4,<55,8>,0x10000000,text1,5
+    mcall   ,<130,8>,,text2,9
+    mcall   ,<8,30>,,tdec,4
+    add ebx,23
+    mcall   ,,,thex
 
-	movzx  ecx,byte [keyid]
-	mcall	47,0x30000,,<40,28>,0x224466
-	add	edx,23
-	mov	bh,1
-	mcall
+    movzx  ecx,byte [keyid]
+    mcall   47,0x30000,,<55,30>,0x10224466
+    add edx,23
+    mov bh,1
+    mcall
 
-	mov	bh,0
-	movzx	ecx,byte [scan_keyid]
-	mcall	,,,<100,28>
-	add	edx,23
-	mov	bh,1
-	mcall
+    mov bh,0
+    movzx   ecx,byte [scan_keyid]
+    mcall   ,,,<130,30>
+    add edx,23
+    mov bh,1
+    mcall
 
 ; function 12:tell os about windowdraw ; 2, end of draw
-	mcall	12,2
-	ret
+    mcall   12,2
+    ret
 
 
 ; DATA AREA
- text1: db 'ASCII:'
- text2: db 'SCANCODE:'
+ text1: db 'ASCII'
+ text2: db 'SCANCODE'
  tdec: db 'DEC:'
  thex: db 'HEX:'
- title: db 'KEYBOARD ASCIICODES-PRESS ANY KEY',0
+ title: db 'Keyboard ASCII codes',0
 I_END:
  keyid: rb 1
  scan_keyid: rb 1
