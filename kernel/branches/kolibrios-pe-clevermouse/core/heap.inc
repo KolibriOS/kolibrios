@@ -23,8 +23,13 @@ MEM_BLOCK_FREE      = 0x04
 MEM_BLOCK_USED      = 0x08
 MEM_BLOCK_DONT_FREE = 0x10
 
+LAZY_ALLOC_PAGE = 2
+LAZY_ALLOC_UNREADABLE = 20h
+LAZY_ALLOC_UNWRITABLE = 40h
+
 macro calc_index op
-{          shr op, 12
+{
+        shr     op, 12
         dec     op
         cmp     op, 63
         jna     @f
@@ -561,35 +566,42 @@ proc init_heap
         sub     eax, PAGE_SIZE
         ret
 @@:
-        lea     ecx, [ebx + PROC.heap_lock]
-        call    mutex_init
 
-        mov     esi, [ebx + PROC.mem_used]
-        add     esi, 4095
-        and     esi, not 4095
-        mov     [ebx + PROC.mem_used], esi
+        mov     edx, [ebx+PROC.mem_used]
+        add     edx, 4095
+        and     edx, not 4095
+        mov     [ebx+PROC.mem_used], edx
         mov     eax, HEAP_TOP
-        mov     [ebx + PROC.heap_base], esi
-        mov     [ebx + PROC.heap_top], eax
+        mov     [ebx+PROC.heap_base], edx
+        mov     [ebx+PROC.heap_top], eax
 
-        sub     eax, esi
-        shr     esi, 10
+        sub     eax, edx
+        shr     edx, 10
         mov     ecx, eax
         sub     eax, PAGE_SIZE
         or      ecx, MEM_BLOCK_FREE
-        mov     [page_tabs + esi], ecx
+        mov     [page_tabs + edx], ecx
         ret
 endp
 
 align 4
-proc user_alloc stdcall, alloc_size:dword
+proc user_alloc ;stdcall, alloc_size:dword
+        mov     ecx, [current_process]
+        add     ecx, PROC.heap_lock
+        call    mutex_lock
+        stdcall user_alloc_nolock, [esp+4]
+        push    eax
+        mov     ecx, [current_process]
+        add     ecx, PROC.heap_lock
+        call    mutex_unlock
+        pop     eax
+        ret     4
+endp
 
+proc user_alloc_nolock stdcall, alloc_size:dword
         push    ebx esi edi
 
         mov     ebx, [current_process]
-        lea     ecx, [ebx + PROC.heap_lock]
-        call    mutex_lock
-
         mov     ecx, [alloc_size]
         add     ecx, (4095 + PAGE_SIZE)
         and     ecx, not 4095
@@ -628,15 +640,6 @@ proc user_alloc stdcall, alloc_size:dword
         jnz     @B
   .no:
 
-        mov     edx, [current_process]
-        mov     ebx, [alloc_size]
-        add     ebx, 0xFFF
-        and     ebx, not 0xFFF
-        add     [edx + PROC.mem_used], ebx
-
-        lea     ecx, [edx + PROC.heap_lock]
-        call    mutex_unlock
-
         lea     eax, [esi + 4096]
 
         pop     edi
@@ -652,9 +655,6 @@ proc user_alloc stdcall, alloc_size:dword
         add     esi, eax
         jmp     .scan
 .m_exit:
-        mov     ecx, [current_process]
-        lea     ecx, [ecx + PROC.heap_lock]
-        call    mutex_unlock
 
         xor     eax, eax
         pop     edi
@@ -664,15 +664,25 @@ proc user_alloc stdcall, alloc_size:dword
 endp
 
 align 4
-proc user_alloc_at stdcall, address:dword, alloc_size:dword
+proc user_alloc_at ;stdcall, address:dword, alloc_size:dword
+        mov     ecx, [current_process]
+        add     ecx, PROC.heap_lock
+        call    mutex_lock
+        stdcall user_alloc_at_nolock, [esp+8], [esp+8]
+        push    eax
+        mov     ecx, [current_process]
+        add     ecx, PROC.heap_lock
+        call    mutex_unlock
+        pop     eax
+        ret     8
+endp
 
+proc user_alloc_at_nolock stdcall, address:dword, alloc_size:dword
         push    ebx
         push    esi
         push    edi
 
         mov     ebx, [current_process]
-        lea     ecx, [ebx + PROC.heap_lock]
-        call    mutex_lock
 
         mov     edx, [address]
         and     edx, not 0xFFF
@@ -697,9 +707,6 @@ proc user_alloc_at stdcall, address:dword, alloc_size:dword
         mov     esi, ecx
         jmp     .scan
 .error:
-        mov     ecx, [current_process]
-        lea     ecx, [ecx + PROC.heap_lock]
-        call    mutex_unlock
 
         xor     eax, eax
         pop     edi
@@ -751,16 +758,7 @@ proc user_alloc_at stdcall, address:dword, alloc_size:dword
         or      cl, MEM_BLOCK_FREE
         mov     [page_tabs + ebx*4], ecx
 
-  .nothird:
-        mov     edx, [current_process]
-        mov     ebx, [alloc_size]
-        add     ebx, 0xFFF
-        and     ebx, not 0xFFF
-        add     [edx + PROC.mem_used], ebx
-
-        lea     ecx, [edx + PROC.heap_lock]
-        call    mutex_unlock
-
+.nothird:
         mov     eax, [address]
 
         pop     edi
@@ -775,8 +773,6 @@ proc user_free stdcall, base:dword
         push    esi
 
         mov     esi, [base]
-        test    esi, esi
-        jz      .fail
 
         push    ebx
 
@@ -786,11 +782,17 @@ proc user_free stdcall, base:dword
 
         xor     ebx, ebx
         shr     esi, 12
+        jz      .cantfree
         mov     eax, [page_tabs + (esi-1)*4]
         test    al, MEM_BLOCK_USED
         jz      .cantfree
         test    al, MEM_BLOCK_DONT_FREE
         jnz     .cantfree
+
+        push    0
+virtual at esp
+.num_released_pages dd ?
+end virtual
 
         and     eax, not 4095
         mov     ecx, eax
@@ -800,35 +802,33 @@ proc user_free stdcall, base:dword
         mov     ebx, ecx
         shr     ecx, 12
         jz      .released
-  .release:
-        xor     eax, eax
-        xchg    eax, [page_tabs + esi*4]
-        test    al, 1
-        jz      @F
-        test    eax, PG_SHARED
-        jnz     @F
-        call    free_page
+.release:
+        mov     edx, [page_tabs+esi*4]
+        mov     dword [page_tabs+esi*4], 0
         mov     eax, esi
         shl     eax, 12
         invlpg  [eax]
-  @@:
+        test    dl, 1
+        jz      @F
+        inc     [.num_released_pages]
+        test    edx, PG_SHARED
+        jnz     @f
+        mov     eax, edx
+        call    free_page
+@@:
         inc     esi
         dec     ecx
         jnz     .release
 
- .released:
-        push    edi
+.released:
 
+        pop     eax ; .num_released_pages
+        shl     eax, 12
         mov     edx, [current_process]
         lea     ecx, [edx + PROC.heap_lock]
-        mov     esi, dword [edx + PROC.heap_base]
-        mov     edi, dword [edx + PROC.heap_top]
-        sub     ebx, [edx + PROC.mem_used]
-        neg     ebx
-        mov     [edx + PROC.mem_used], ebx
+        sub     [edx + PROC.mem_used], eax
         call    user_normalize
-        pop     edi
- .exit:
+.exit:
         call    mutex_unlock
 
         xor     eax, eax
@@ -850,18 +850,21 @@ endp
 
 align 4
 proc user_unmap stdcall, base:dword, offset:dword, size:dword
+        mov     ecx, [current_process]
+        add     ecx, PROC.heap_lock
+        call    mutex_lock
 
         push    ebx
 
         mov     ebx, [base]             ; must be valid pointer
-        test    ebx, ebx
-        jz      .error
 
         mov     edx, [offset]           ; check offset
         add     edx, ebx                ; must be below 2Gb app limit
+        jc      .error
         js      .error
 
         shr     ebx, 12                 ; chek block attributes
+        jz      .error
         lea     ebx, [page_tabs + ebx*4]
         mov     eax, [ebx-4]            ; block attributes
         test    al, MEM_BLOCK_USED
@@ -887,36 +890,63 @@ proc user_unmap stdcall, base:dword, offset:dword, size:dword
         and     ebx, not 4095           ; is it required ?
         add     ebx, [base]
 
-  .unmap:
+        push    0
+virtual at esp
+.num_released_pages dd ?
+end virtual
+
+.unmap:
         mov     eax, [edx]              ; get page addres
         test    al, 1                   ; page mapped ?
-        jz      @F
+        jz      .next
         test    eax, PG_SHARED          ; page shared ?
-        jnz     @F
-        mov     dword[edx], MEM_BLOCK_RESERVED
+        jnz     .next
+        inc     [.num_released_pages]
+        mov     dword [edx], LAZY_ALLOC_PAGE
                                         ; mark page as reserved
+        test    eax, PG_READ
+        jnz     @f
+        or      dword [edx], LAZY_ALLOC_UNREADABLE
+@@:
+        test    eax, PG_WRITE
+        jnz     @f
+        or      dword [edx], LAZY_ALLOC_UNWRITABLE
+@@:
         invlpg  [ebx]                   ; when we start using
         call    free_page               ; empty c-o-w page instead this ?
-  @@:
-        add     ebx, 4096       ; PAGESIZE?
+.next:
+        add     ebx, 4096
         add     edx, 4
         dec     ecx
         jnz     .unmap
 
+        pop     eax ; .num_released_pages
         pop     ebx
-        or      al, 1                   ; return non zero on success
+        shl     eax, 12
+        mov     ecx, [current_process]
+        sub     [ecx+PROC.mem_used], eax
+        push    eax
+        add     ecx, PROC.heap_lock
+        call    mutex_unlock
+        pop     eax                     ; return number of released bytes
         ret
 .error:
         pop     ebx
+        mov     ecx, [current_process]
+        add     ecx, PROC.heap_lock
+        call    mutex_unlock
         xor     eax, eax                ; something wrong
+        dec     eax
         ret
 endp
 
 align 4
-user_normalize:
-; in: esi=heap_base, edi=heap_top
+proc user_normalize uses esi edi
+; in: edx->PROC
 ; out: eax=0 <=> OK
-; destroys: ebx,edx,esi,edi
+; destroys: ebx,edx
+        mov     esi, dword [edx+PROC.heap_base]
+        mov     edi, dword [edx+PROC.heap_top]
         shr     esi, 12
         shr     edi, 12
 @@:
@@ -959,6 +989,7 @@ user_normalize:
 .err:
         xor     eax, eax
         ret
+endp
 
 user_realloc:
 ; in: eax = pointer, ebx = new size
@@ -1004,37 +1035,43 @@ user_realloc:
         cmp     edx, ebx
         jb      .realloc_add
 ; release part of allocated memory
+        push    edx
+        push    0
+virtual at esp
+.num_released_pages dd ?
+end virtual
 .loop:
         cmp     edx, ebx
         jz      .release_done
         dec     edx
-        xor     eax, eax
-        xchg    eax, [page_tabs + edx*4]
-        test    al, 1
-        jz      .loop
-        call    free_page
+        push    dword [page_tabs + edx*4]
+        mov     dword [page_tabs + edx*4], 0
         mov     eax, edx
         shl     eax, 12
         invlpg  [eax]
+        pop     eax
+        test    al, 1
+        jz      .loop
+        inc     [.num_released_pages]
+        test    eax, PG_SHARED
+        jnz     .loop
+        call    free_page
         jmp     .loop
 .release_done:
+        pop     eax ; .num_released_pages
+        mov     edx, [current_process]
+        shl     eax, 12
+        sub     [edx+PROC.mem_used], eax
+        pop     edx
         sub     ebx, ecx
         cmp     ebx, 1
         jnz     .nofreeall
         mov     eax, [page_tabs + ecx*4]
         and     eax, not 0xFFF
-        mov     edx, [current_process]
-        mov     ebx, [edx + PROC.mem_used]
-        sub     ebx, eax
-        add     ebx, 0x1000
         or      al, MEM_BLOCK_FREE
         mov     [page_tabs + ecx*4], eax
-        push    esi edi
-        mov     esi, [edx + PROC.heap_base]
-        mov     edi, [edx + PROC.heap_top]
-        mov     [edx + PROC.mem_used], ebx
+        mov     edx, [current_process]
         call    user_normalize
-        pop     edi esi
         jmp     .ret0   ; all freed
 .nofreeall:
         sub     edx, ecx
@@ -1043,13 +1080,6 @@ user_realloc:
         xchg    [page_tabs + ecx*4], ebx
         shr     ebx, 12
         sub     ebx, edx
-        push    ebx ecx edx
-        mov     edx, [current_process]
-        shl     ebx, 12
-        sub     ebx, [edx + PROC.mem_used]
-        neg     ebx
-        mov     [edx + PROC.mem_used], ebx
-        pop     edx ecx ebx
         lea     eax, [ecx + 1]
         shl     eax, 12
         push    eax
@@ -1119,9 +1149,6 @@ user_realloc:
         cld
         rep stosd
         pop     edi
-        mov     edx, [current_process]
-        shl     ebx, 12
-        add     [edx + PROC.mem_used], ebx
 
         mov     ecx, [current_process]
         lea     ecx, [ecx + PROC.heap_lock]
@@ -1195,11 +1222,6 @@ user_realloc:
         dec     edx
         jnz     @b
 .no:
-        push    ebx
-        mov     edx, [current_process]
-        shl     ebx, 12
-        add     [edx + PROC.mem_used], ebx
-        pop     ebx
 @@:
         mov     dword [page_tabs + esi*4], MEM_BLOCK_RESERVED
         inc     esi
@@ -1218,24 +1240,47 @@ user_realloc:
 
 
 ; param
-;  eax= shm_map object
+;  edi= shm_map object
+;  [esp+4] = process
 
-align 4
-destroy_smap:
-
-        pushfd
-        cli
-
+proc destroy_smap ;stdcall, process:dword
         push    esi
-        push    edi
+        mov     esi, [edi+SMAP.parent]
+        cmp     [edi+SMAP.type], SMAP_TYPE_SMEM
+        jz      .smem
+        mov     ecx, [esp+8]
+        add     ecx, PROC.heap_lock
+        call    mutex_lock
+        stdcall release_pemap, [esp+8]
+        mov     ecx, [esp+8]
+        add     ecx, PROC.heap_lock
+        call    mutex_unlock
+        sub     ecx, PROC.heap_lock
+        cmp     ecx, [current_process]
+        jnz     @f
+        stdcall user_free, [edi+SMAP.base]
+@@:
+        call    dereference_pe
+        jmp     .common
+.smem:
+        mov     eax, [current_process]
+        cmp     [esp+8], eax
+        jnz     @f
+        stdcall user_free, [edi+SMAP.base]
+@@:
+        call    dereference_smem
+.common:
+        mov     eax, edi
+        call    free
+        pop     esi
+        ret     4
+endp
 
-        mov     edi, eax
-        mov     esi, [eax + SMAP.parent]
-        test    esi, esi
-        jz      .done
-
-        lock dec [esi + SMEM.refcount]
-        jnz     .done
+proc dereference_smem
+        mov     ecx, shmem_list_mutex
+        call    mutex_lock
+        dec     [esi+SMEM.refcount]
+        jnz     mutex_unlock
 
         mov     ecx, [esi + SMEM.bk]
         mov     edx, [esi + SMEM.fd]
@@ -1243,18 +1288,14 @@ destroy_smap:
         mov     [ecx + SMEM.fd], edx
         mov     [edx + SMEM.bk], ecx
 
+        mov     ecx, shmem_list_mutex
+        call    mutex_unlock
+
         stdcall kernel_free, [esi + SMEM.base]
         mov     eax, esi
         call    free
-.done:
-        mov     eax, edi
-        call    destroy_kernel_object
-
-        pop     edi
-        pop     esi
-        popfd
-
         ret
+endp
 
 E_NOTFOUND      =  5
 E_ACCESS        = 10
@@ -1273,22 +1314,16 @@ SHM_CREATE      = 2 shl 2
 SHM_OPEN_MASK   = 3 shl 2
 
 align 4
-proc shmem_open stdcall name:dword, size:dword, access:dword
+proc shmem_open stdcall uses ebx esi edi, name:dword, size:dword, access:dword
         locals
            action         dd ?
            owner_access   dd ?
            mapped         dd ?
+           edx_ret        dd ?
         endl
-
-        push    ebx
-        push    esi
-        push    edi
 
         mov     [mapped], 0
         mov     [owner_access], 0
-
-        pushfd                         ;mutex required
-        cli
 
         mov     eax, [access]
         and     eax, SHM_OPEN_MASK
@@ -1296,8 +1331,11 @@ proc shmem_open stdcall name:dword, size:dword, access:dword
 
         mov     ebx, [name]
         test    ebx, ebx
-        mov     edx, E_PARAM
-        jz      .fail
+        mov     [edx_ret], E_PARAM
+        jz      .exit
+
+        mov     ecx, shmem_list_mutex
+        call    mutex_lock
 
         mov     esi, [shmem_list.fd]
 align 4
@@ -1316,22 +1354,22 @@ align 4
 .not_found:
         mov     eax, [action]
 
+        mov     [edx_ret], E_NOTFOUND
         cmp     eax, SHM_OPEN
-        mov     edx, E_NOTFOUND
-        je      .fail
+        je      .exit_unlock
 
+        mov     [edx_ret], E_PARAM
         cmp     eax, SHM_CREATE
-        mov     edx, E_PARAM
         je      .create_shm
 
         cmp     eax, SHM_OPEN_ALWAYS
-        jne     .fail
+        jne     .exit_unlock
 
 .create_shm:
 
         mov     ecx, [size]
         test    ecx, ecx
-        jz      .fail
+        jz      .exit_unlock
 
         add     ecx, 4095
         and     ecx, -4096
@@ -1341,13 +1379,11 @@ align 4
         call    malloc
         test    eax, eax
         mov     esi, eax
-        mov     edx, E_NOMEM
-        jz      .fail
+        mov     [edx_ret], E_NOMEM
+        jz      .exit_unlock
 
         stdcall kernel_alloc, [size]
         test    eax, eax
-        mov     [mapped], eax
-        mov     edx, E_NOMEM
         jz      .cleanup
 
         mov     ecx, [size]
@@ -1376,16 +1412,16 @@ align 4
 .found:
         mov     eax, [action]
 
+        mov     [edx_ret], E_ACCESS
         cmp     eax, SHM_CREATE
-        mov     edx, E_ACCESS
-        je      .exit
+        je      .exit_unlock
 
+        mov     [edx_ret], E_PARAM
         cmp     eax, SHM_OPEN
-        mov     edx, E_PARAM
         je      .create_map
 
         cmp     eax, SHM_OPEN_ALWAYS
-        jne     .fail
+        jne     .exit_unlock
 
 .create_map:
 
@@ -1393,129 +1429,148 @@ align 4
         and     eax, SHM_ACCESS_MASK
         cmp     eax, [esi + SMEM.access]
         mov     [access], eax
-        mov     edx, E_ACCESS
-        ja      .fail
+        mov     [edx_ret], E_ACCESS
+        ja      .exit_unlock
 
-        mov     ebx, [current_slot_idx]
-        shl     ebx, BSF sizeof.TASKDATA
-        mov     ebx, [TASK_TABLE + ebx + TASKDATA.pid]
+        inc     [esi+SMEM.refcount]
+        mov     ecx, shmem_list_mutex
+        call    mutex_unlock
+
         mov     eax, sizeof.SMAP
-
-        call    create_kernel_object
+        call    malloc
         test    eax, eax
         mov     edi, eax
-        mov     edx, E_NOMEM
-        jz      .fail
-
-        inc     [esi + SMEM.refcount]
-
-        mov     [edi + SMAP.magic], 'SMAP'
-        mov     [edi + SMAP.destroy], destroy_smap
-        mov     [edi + SMAP.parent], esi
-        mov     [edi + SMAP.base], 0
-
-        stdcall user_alloc, [esi + SMEM.size]
-        test    eax, eax
-        mov     [mapped], eax
-        mov     edx, E_NOMEM
+        mov     [edx_ret], E_NOMEM
         jz      .cleanup2
 
+        mov     [edi+SMAP.type], SMAP_TYPE_SMEM
+        mov     [edi + SMAP.parent], esi
+        mov     ecx, [current_process]
+        add     ecx, PROC.heap_lock
+        call    mutex_lock
+
+        stdcall user_alloc_nolock, [esi+SMEM.size]
+        test    eax, eax
+        mov     [mapped], eax
+        jz      .cleanup3
+
         mov     [edi + SMAP.base], eax
+        mov     ecx, [current_process]
+        mov     edx, [ecx+PROC.smap_list+SMAP.bk]
+        add     ecx, PROC.smap_list
+        mov     [edi+SMAP.fd], ecx
+        mov     [edi+SMAP.bk], edx
+        mov     [ecx+SMAP.bk], edi
+        mov     [edx+SMAP.fd], edi
 
         mov     ecx, [esi + SMEM.size]
-        mov     [size], ecx
+        mov     [edi + SMAP.size], ecx
+        mov     [edx_ret], ecx
 
         shr     ecx, 12
         shr     eax, 10
 
         mov     esi, [esi + SMEM.base]
         shr     esi, 10
-        lea     edi, [page_tabs + eax]
-        add     esi, page_tabs
 
+        xor     ebx, ebx
         mov     edx, [access]
         or      edx, [owner_access]
         shl     edx, 1
         or      edx, PG_SHARED + PG_UR
 @@:
-        lodsd
-        and     eax, 0xFFFFF000
-        or      eax, edx
-        stosd
-        loop    @B
+        mov     edi, [page_tabs+esi+ebx*4]
+        and     edi, 0xFFFFF000
+        or      edi, edx
+        mov     [page_tabs+eax+ebx*4], edi
+        inc     ebx
+        dec     ecx
+        jnz     @B
 
-        xor     edx, edx
+        mov     ecx, [current_process]
+        shl     ebx, 12
+        add     [ecx+PROC.mem_used], ebx
+        add     ecx, PROC.heap_lock
+        call    mutex_unlock
 
         cmp     [owner_access], 0
-        jne     .fail
-.exit:
-        mov     edx, [size]
-.fail:
-        mov     eax, [mapped]
+        jz      .exit
+        mov     [edx_ret], 0
 
-        popfd
-        pop     edi
-        pop     esi
-        pop     ebx
+.exit:
+        mov     eax, [mapped]
+        mov     edx, [edx_ret]
         ret
 .cleanup:
-        mov     [size], edx
         mov     eax, esi
         call    free
+.exit_unlock:
+        mov     ecx, shmem_list_mutex
+        call    mutex_unlock
         jmp     .exit
 
-.cleanup2:
-        mov     [size], edx
+.cleanup3:
+        mov     ecx, [current_process]
+        add     ecx, PROC.heap_lock
+        call    mutex_unlock
         mov     eax, edi
-        call    destroy_smap
+        call    free
+.cleanup2:
+        call    dereference_smem
         jmp     .exit
 endp
 
 align 4
 proc shmem_close stdcall, name:dword
 
-        mov     eax, [name]
-        test    eax, eax
+        cmp     [name], 0
         jz      .fail
 
         push    esi
         push    edi
-        pushfd
-        cli
 
-        mov     esi, [current_slot]
-        add     esi, APP_OBJ_OFFSET
+        mov     ecx, [current_process]
+        lea     edi, [ecx+PROC.smap_list]
+        add     ecx, PROC.heap_lock
+        call    mutex_lock
+        mov     esi, edi
+
 .next:
-        mov     eax, [esi + APPOBJ.fd]
-        test    eax, eax
-        jz      @F
+        mov     edi, [edi+SMAP.fd]
+        cmp     edi, esi
+        je      .notfound
 
-        cmp     eax, esi
-        mov     esi, eax
-        je      @F
-
-        cmp     [eax + SMAP.magic], 'SMAP'
+        cmp     [edi + SMAP.type], SMAP_TYPE_SMEM
         jne     .next
 
-        mov     edi, [eax + SMAP.parent]
-        test    edi, edi
-        jz      .next
+        mov     eax, [edi + SMAP.parent]
+        add     eax, SMEM.name
 
-        lea     edi, [edi + SMEM.name]
-        stdcall strncmp, [name], edi, 32
+        stdcall strncmp, [name], eax, 32
         test    eax, eax
         jne     .next
 
-        stdcall user_free, [esi + SMAP.base]
+        mov     eax, [edi+SMAP.fd]
+        mov     edx, [edi+SMAP.bk]
+        mov     [eax+SMAP.bk], edx
+        mov     [edx+SMAP.fd], eax
 
-        mov     eax, esi
-        call    [esi + APPOBJ.destroy]
-@@:
-        popfd
+        mov     ecx, [current_process]
+        add     ecx, PROC.heap_lock
+        call    mutex_unlock
+
+        stdcall destroy_smap, [current_process]
+
+.exit:
         pop     edi
         pop     esi
 .fail:
         ret
+.notfound:
+        mov     ecx, [current_process]
+        add     ecx, PROC.heap_lock
+        call    mutex_unlock
+        jmp     .exit
 endp
 
 

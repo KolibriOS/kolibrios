@@ -440,11 +440,11 @@ ends
 struct  PROC
         list            LHEAD
         thr_list        LHEAD
+        smap_list       LHEAD
         heap_lock       MUTEX
         heap_base       rd 1
         heap_top        rd 1
         mem_used        rd 1
-        dlls_list_ptr   rd 1
         pdt_0_phys      rd 1
         pdt_1_phys      rd 1
         io_map_0        rd 1
@@ -651,37 +651,16 @@ struct  SMEM
         name            rb 32   ;+24
 ends
 
-struct  SMAP            APPOBJ
-        base            dd ?   ;mapped base
-        parent          dd ?   ;SMEM
-ends
-
-struct  DLLDESCR
-        bk              dd ?
-        fd              dd ?    ;+4
-        data            dd ?    ;+8
-        size            dd ?    ;+12
-        timestamp       dq ?
-        refcount        dd ?
-        defaultbase     dd ?
-        coff_hdr        dd ?
-        symbols_ptr     dd ?
-        symbols_num     dd ?
-        symbols_lim     dd ?
-        exports         dd ?   ;export table
-        name            rb 260
-ends
-
-struct  HDLL
-        fd              dd ?   ;next object in list
-        bk              dd ?   ;prev object in list
-        pid             dd ?   ;owner id
-
+struct  SMAP
+        fd              dd ?   ;next in mmapped list
+        bk              dd ?   ;prev in mmapped list
         base            dd ?   ;mapped base
         size            dd ?   ;mapped size
-        refcount        dd ?   ;reference counter for this process and this lib
-        parent          dd ?   ;DLLDESCR
+        type            dd ?   ;SMAP_TYPE_SMEM or SMAP_TYPE_PE
+        parent          dd ?   ;SMEM or PEDESCR
 ends
+SMAP_TYPE_SMEM = 1
+SMAP_TYPE_PE = 2
 
 struct DQ
         lo dd ?
@@ -810,6 +789,55 @@ struct  PCIDEV
         owner           dd ? ; pointer to SRV or 0
 ends
 
+struct  PEDESCR
+        bk              dd ?
+        fd              dd ?
+        size            dd ?    ; in pages
+        timestamp       dq ?
+        refcount        dd ?
+        defaultbase     dd ?
+        name            dd ?
+        entry           dd ?
+        stacksize       dd ?
+        page_array_lock MUTEX
+; After those fields the array follows, one dword per every of [size] pages.
+; The value of every field has 3 parts:
+; - upper 20 bits are page number or zero;
+; - next 4 bits are access rights shareable/executable/readable/writable
+;   in the same order as IMAGE_SCN_MEM_xxx shifted appropriately;
+; - lower 8 bits are reference counter.
+; The exact meaning depends on page type.
+; * For a page with data in non-shareable section
+;   which has at least one unmodified copy:
+;   - upper 20 bits are page number for unmodified copy,
+;   - reference counter = number of unmodified copies is nonzero up to 0xFF.
+;   If reference counter reaches 0xFF, it becomes locked at this value.
+;   If reference counter reaches zero, the last copy changes ownership
+;   to the last process,
+;   and the page is converted to the following state.
+; * For a page with data in non-shareable section
+;   with no unmodified copies:
+;   - all fields are reset to zero.
+;   The original content is lost; map_pe_usermode would reload from file.
+; * For a page with zeroes in non-shareable section:
+;   - upper 20 bits are zero,
+;   - lower 8 bits are 0xFF.
+; * For a page in shareable section with data or with zeroes:
+;   - upper 20 bits are page number for all copies,
+;   - lower 8 bits are reference counter from 1 to 0xFF.
+;   Reference counter does not actually matter here,
+;   it equals [refcount] unless 0xFF was once reached,
+;   but is kept for consistency.
+ends
+
+struct  SHARED_LOCKED_PAGE
+        fd              dd ?
+        bk              dd ?
+        address         dd ?
+        parent          dd ?
+        offs            dd ?
+ends
+
 struct  IDE_DATA
         ProgrammingInterface dd ?
         Interrupt            dw ?
@@ -933,6 +961,19 @@ struct  COFF_SECTION
         NumLinenum      dw ?
         Characteristics dd ?
 ends
+IMAGE_SCN_MEM_SHARED  = 10000000h
+IMAGE_SCN_MEM_EXECUTE = 20000000h
+IMAGE_SCN_MEM_READ    = 40000000h
+IMAGE_SCN_MEM_WRITE   = 80000000h
+
+struct  STRIPPED_PE_SECTION
+        Name            rb 8
+        VirtualSize     dd ?
+        VirtualAddress  dd ?
+        SizeOfRawData   dd ?
+        PtrRawData      dd ?
+        Characteristics dd ?
+ends
 
 struct  COFF_RELOC
         VirtualAddress  dd ?
@@ -970,6 +1011,62 @@ STRIPPED_PE_SIGNATURE = 0x4503 ; 'PE' xor 'S'
 SPE_DIRECTORY_IMPORT    = 0
 SPE_DIRECTORY_EXPORT    = 1
 SPE_DIRECTORY_BASERELOC = 2
+
+struct IMAGE_DATA_DIRECTORY
+        VirtualAddress dd  ?
+        isize          dd  ?
+ends
+
+struct IMAGE_OPTIONAL_HEADER32
+        Magic                   dw  ?
+        MajorLinkerVersion      db  ?
+        MinorLinkerVersion      db  ?
+        SizeOfCode              dd  ?
+        SizeOfInitializedData   dd  ?
+        SizeOfUninitializedData dd  ?
+        AddressOfEntryPoint     dd  ?
+        BaseOfCode              dd  ?
+        BaseOfData              dd  ?
+        ImageBase               dd  ?
+        SectionAlignment        dd  ?
+        FileAlignment           dd  ?
+        MajorOperatingSystemVersion     dw  ?
+        MinorOperatingSystemVersion     dw  ?
+        MajorImageVersion       dw  ?
+        MinorImageVersion       dw  ?
+        MajorSubsystemVersion   dw  ?
+        MinorSubsystemVersion   dw  ?
+        Win32VersionValue       dd  ?
+        SizeOfImage             dd  ?
+        SizeOfHeaders           dd  ?
+        CheckSum                dd  ?
+        Subsystem               dw  ?
+        DllCharacteristics      dw  ?
+        SizeOfStackReserve      dd  ?
+        SizeOfStackCommit       dd  ?
+        SizeOfHeapReserve       dd  ?
+        SizeOfHeapCommit        dd  ?
+        LoaderFlags             dd  ?
+        NumberOfDirectories     dd  ?
+        DataDirectory           IMAGE_DATA_DIRECTORY ?
+        Directories             rb  sizeof.IMAGE_DATA_DIRECTORY*15
+ends
+
+struct IMAGE_FILE_HEADER
+        Machine                 dw ?
+        NumberOfSections        dw ?
+        TimeDateStamp           dd ?
+        PointerToSymbolTable    dd ?
+        NumberOfSymbols         dd ?
+        SizeOfOptionalHeader    dw ?
+        Characteristics         dw ?
+ends
+
+struct IMAGE_NT_HEADERS
+        Signature       dd ?
+        FileHeader      IMAGE_FILE_HEADER
+        OptionalHeader  IMAGE_OPTIONAL_HEADER32
+ends
 
 struct  IOCTL
         handle          dd ?

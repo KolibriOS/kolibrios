@@ -42,10 +42,30 @@ struct  APP_HDR
         filename_size   rd 1
         cmdline_size    rd 1
         path_string     rd 1
+        pedescr         rd 1
 ends
 
+; Pointer to this structure is passed as the third argument
+; to usermode PE loader by the kernel.
+struct kernel_init_data
+version         dw      ?
+flags           dw      ?
+syscall_method  dd      ?
+; either one of SYSCALL_METHOD_xxx or pointer to procedure
+exe_base        dd      ?
+stack_base      dd      ?
+stack_size      dd      ?
+exe_path        dd      ?
+command_line    dd      ?
+environment     dd      ?
+ends
+SYSCALL_METHOD_I40 = 1
+SYSCALL_METHOD_SYSENTER = 2
+SYSCALL_METHOD_SYSCALL = 3
+
 macro _clear_ op
-{  mov ecx, op/4
+{
+        mov     ecx, op/4
         xor     eax, eax
         cld
         rep stosd
@@ -98,30 +118,41 @@ proc fs_execute
         filename_size   rd  1
         cmdline_size    rd  1
         path_string     rd  1
+        pedescr         rd  1
     endl
 
         mov     [flags], edx
         mov     [cmdline], ecx
         mov     [path_string], ebx
         mov     [filename_size], eax
-        mov     esi, -ERROR_FILE_NOT_FOUND
+        mov     edi, -ERROR_FILE_NOT_FOUND
         test    eax, eax
         jz      .err_file
         stdcall load_file, ebx
         test    eax, eax
         jz      .err_file
-
+        stdcall load_file_maybe_pe, [path_string]
+        mov     [pedescr], esi
         mov     [file_base], eax
         mov     [file_size], ebx
+
+        test    esi, esi
+        jnz     .file_ok
+
+        mov     edi, eax
+        cmp     eax, -0x1000
+        ja      .err_file
+
         lea     ebx, [hdr_cmdline]
         call    test_app_header  ; fill our app header data locals with values from header of given program (if its correct)
-        mov     esi, -TASKMAN_ERROR_NOT_A_EXECUTABLE
+        mov     edi, -TASKMAN_ERROR_NOT_A_EXECUTABLE
         test    eax, eax
         jz      .err_hdr
 
+.file_ok:
         call    lock_application_table
         call    alloc_thread_slot   ; create a slot for new thread
-        mov     esi, -TASKMAN_ERROR_TOO_MANY_PROCESSES
+        mov     edi, -TASKMAN_ERROR_TOO_MANY_PROCESSES
         test    eax, eax
         jz      .err_0
 
@@ -162,8 +193,15 @@ proc fs_execute
         add     [hdr_emem], ebx
 @@:
         mov     [cmdline_size], eax
+        xor     eax, eax
+        cmp     [pedescr], eax
+        jz      @f
+        mov     [hdr_eip], eax
+        mov     [hdr_esp], eax
+        mov     [hdr_emem], eax
+@@:
         stdcall create_process, [hdr_emem]  ; create a new process
-        mov     esi, -TASKMAN_ERROR_OUT_OF_MEMORY
+        mov     edi, -TASKMAN_ERROR_OUT_OF_MEMORY
         test    eax, eax
         jz      .err_hdr
 
@@ -203,12 +241,17 @@ proc fs_execute
         ret
 
 .err_0:
+        mov     esi, [pedescr]
+        test    esi, esi
+        jz      @f
+        call    dereference_pe
+@@:
         call    unlock_application_table
 .err_hdr:
         stdcall kernel_free, [file_base]
 .err_file:
         stdcall kernel_free, [path_string]
-        mov     eax, esi
+        mov     eax, edi
         ret
 endp
 
@@ -330,13 +373,18 @@ proc create_process stdcall, app_size:dword
         jz      .fail
         mov     [process], eax
 
-        lea     edi, [eax+PROC.heap_lock]
-        mov     ecx, (PROC.ht_free-PROC.heap_lock)/4
+        lea     edi, [eax+PROC.heap_base]
 
         list_init eax
         add     eax, PROC.thr_list
         list_init eax
+        add     eax, PROC.smap_list - PROC.thr_list
+        list_init eax
 
+        lea     ecx, [eax+PROC.heap_lock-PROC.smap_list]
+        call    mutex_init
+
+        mov     ecx, (PROC.ht_free-PROC.heap_base)/4
         xor     eax, eax
         cld
         rep stosd
@@ -370,6 +418,8 @@ proc create_process stdcall, app_size:dword
 
         lea     edx, [edi-4096]
         mov     esi, [app_tabs]
+        test    esi, esi
+        jz      .no_page_dirs
 
 .alloc_page_dir:
         call    alloc_page
@@ -388,6 +438,7 @@ proc create_process stdcall, app_size:dword
         dec     esi
         jnz     .alloc_page_dir
 
+.no_page_dirs:
         stdcall map_page, [tmp_task_ptab], 0, PG_UNMAP
         mov     eax, [process]
 
@@ -397,7 +448,7 @@ proc create_process stdcall, app_size:dword
         ret
 .fail:
         mov     ecx, [process]
-        jcxz    @F
+        jecxz   @F
 
         call    destroy_process
 @@:
@@ -418,8 +469,6 @@ proc destroy_page_table stdcall, pg_tab:dword
 .free:
         mov     eax, [esi]
         test    eax, 1
-        jz      .next
-        test    eax, 2
         jz      .next
         test    eax, 1 shl 9
         jnz     .next                     ;skip shared pages
@@ -446,8 +495,16 @@ align 4
         mov     esi, ecx
         list_del esi
 
-        mov     esi, [esi+PROC.dlls_list_ptr]
-        call    destroy_all_hdlls
+        lea     ebx, [esi+PROC.smap_list]
+        mov     edi, [esi+PROC.smap_list+SMAP.fd]
+.smap_list_destroy:
+        cmp     edi, ebx
+        jz      .smap_list_done
+        push    [edi+SMAP.fd]
+        stdcall destroy_smap, [esp+4]
+        pop     edi
+        jmp     .smap_list_destroy
+.smap_list_done:
 
         mov     esi, [esp]
         add     esi, PROC.pdt_0
@@ -532,6 +589,7 @@ proc read_process_memory
          r_count    dd ?
          offset dd ?
          tmp_r_cnt  dd ?
+         mapped_size dd ?
        endl
 
         mov     [slot], eax
@@ -541,6 +599,8 @@ proc read_process_memory
         mov     [offset], esi
 
         pushad
+        mov     ecx, proc_mem_mutex
+        call    mutex_lock
 .read_mem:
         mov     edx, [offset]
         mov     ebx, [tmp_r_cnt]
@@ -560,13 +620,14 @@ proc read_process_memory
 
         push    ecx
         stdcall map_memEx, [proc_mem_map], \
-                [slot], ebx, ecx, PG_READ
+                [slot], ebx, ecx, PG_READ, [proc_mem_tab]
+        mov     [mapped_size], eax
         pop     ecx
 
         mov     esi, [offset]
         and     esi, 0xfff
         sub     eax, esi
-        jbe     .ret
+        jbe     .ret_unmap
         cmp     ecx, eax
         jbe     @f
         mov     ecx, eax
@@ -574,17 +635,26 @@ proc read_process_memory
 @@:
         add     esi, [proc_mem_map]
         mov     edi, [buff]
-        mov     edx, ecx
+        push    ecx
         rep movsb
-        add     [r_count], edx
+        stdcall unmap_memEx, [proc_mem_map], \
+                [slot], ebx, [mapped_size], [proc_mem_tab]
+        pop     ecx
+        add     [r_count], ecx
 
-        add     [offset], edx
-        sub     [tmp_r_cnt], edx
+        add     [offset], ecx
+        sub     [tmp_r_cnt], ecx
         jnz     .read_mem
 .ret:
+        mov     ecx, proc_mem_mutex
+        call    mutex_unlock
         popad
         mov     eax, [r_count]
         ret
+.ret_unmap:
+        stdcall unmap_memEx, [proc_mem_map], \
+                [slot], ebx, [mapped_size], [proc_mem_tab]
+        jmp     .ret
 endp
 
 align 4
@@ -603,6 +673,7 @@ proc write_process_memory
          w_count    dd ?
          offset dd ?
          tmp_w_cnt  dd ?
+         mapped_size dd ?
        endl
 
         mov     [slot], eax
@@ -612,7 +683,9 @@ proc write_process_memory
         mov     [offset], esi
 
         pushad
-.read_mem:
+        mov     ecx, proc_mem_mutex
+        call    mutex_lock
+.write_mem:
         mov     edx, [offset]
         mov     ebx, [tmp_w_cnt]
 
@@ -630,13 +703,14 @@ proc write_process_memory
         mov     ebx, [offset]
         push    ecx
         stdcall map_memEx, [proc_mem_map], \
-                [slot], ebx, ecx, PG_SWR
+                [slot], ebx, ecx, PG_SWR, [proc_mem_tab]
+        mov     [mapped_size], eax
         pop     ecx
 
         mov     edi, [offset]
         and     edi, 0xfff
         sub     eax, edi
-        jbe     .ret
+        jbe     .ret_unmap
         cmp     ecx, eax
         jbe     @f
         mov     ecx, eax
@@ -644,17 +718,25 @@ proc write_process_memory
 @@:
         add     edi, [proc_mem_map]
         mov     esi, [buff]
-        mov     edx, ecx
+        push    ecx
         rep movsb
+        stdcall unmap_memEx, [proc_mem_map], \
+                [slot], ebx, [mapped_size], [proc_mem_tab]
+        pop     ecx
 
-        add     [w_count], edx
-        add     [offset], edx
-        sub     [tmp_w_cnt], edx
-        jnz     .read_mem
+        add     [w_count], ecx
+        add     [offset], ecx
+        sub     [tmp_w_cnt], ecx
+        jnz     .write_mem
 .ret:
+        mov     ecx, proc_mem_mutex
+        call    mutex_unlock
         popad
         mov     eax, [w_count]
         ret
+.ret_unmap:
+        stdcall unmap_memEx, [proc_mem_map], [slot], ebx, [mapped_size], [proc_mem_tab]
+        jmp     .ret
 endp
 
 ;ebx = 1 - kernel thread
@@ -799,6 +881,76 @@ common_app_entry:
         jz      .exit
 ; APPDATA.exec_params have first thread only,
 ; so second and next threads don't get here (they jump to .exit) 
+        cmp     [ebp+APP_HDR.pedescr], 0
+        jz      .init_legacy_app
+; init PE application
+        mov     eax, [current_process]
+        mov     [eax+PROC.mem_used], 0xF000 ; leave first 64K as unallocatable
+        call    init_heap
+        mov     eax, [current_process]
+        mov     [eax+PROC.mem_used], 0
+        stdcall map_pe_usermode, [ebp+APP_HDR.pedescr],\
+                [ebp+APP_HDR.img_base], [ebp+APP_HDR.img_size]
+        cmp     eax, -0x1000
+        ja      .failed
+        push    eax
+        stdcall load_file_maybe_pe, pe_loader_usermode
+        test    esi, esi
+        jz      .pe_loader_notfound
+        mov     edx, [esi+PEDESCR.entry]
+        mov     [esp+4+20h], edx
+        stdcall map_pe_usermode, esi, eax, ebx
+        cmp     eax, -0x1000
+        ja      .pe_loader_failed
+        add     [esp+4+20h], eax
+        push    eax
+        mov     eax, [ebp+APP_HDR.filename_size]
+        add     eax, [ebp+APP_HDR.cmdline_size]
+        add     eax, sizeof.kernel_init_data + 2
+        stdcall user_alloc, eax
+        test    eax, eax
+        jz      .failed
+        mov     ebx, eax
+        mov     dword [eax+kernel_init_data.version], 1 + (0 shl 16) ; version, flags
+        mov     [eax+kernel_init_data.syscall_method], SYSCALL_METHOD_I40
+        lea     edi, [eax+sizeof.kernel_init_data]
+        mov     [eax+kernel_init_data.exe_path], edi
+        mov     esi, [ebp+APP_HDR.path_string]
+        mov     ecx, [ebp+APP_HDR.filename_size]
+        rep movsb
+        mov     byte [edi], 0
+        inc     edi
+        mov     [eax+kernel_init_data.command_line], edi
+        lea     esi, [ebp+sizeof.APP_HDR]
+        mov     ecx, [ebp+APP_HDR.cmdline_size]
+        rep movsb
+        mov     byte [edi], 0
+        mov     ecx, [ebp+APP_HDR.pedescr]
+        mov     ecx, [ecx+PEDESCR.stacksize]
+        mov     [eax+kernel_init_data.stack_size], ecx
+        stdcall user_alloc, ecx
+        test    eax, eax
+        jz      .failed
+        mov     [ebx+kernel_init_data.stack_base], eax
+        add     eax, [ebx+kernel_init_data.stack_size]
+        sub     eax, 16
+        pop     dword [eax+4]
+        pop     [ebx+kernel_init_data.exe_base]
+        mov     dword [eax+8], 1 ; DLL_PROCESS_ATTACH
+        mov     dword [eax+12], ebx
+        mov     [esp+2Ch], eax
+        jmp     .common_tls
+.pe_loader_notfound:
+        cmp     eax, -0x1000
+        ja      .pe_loader_failed
+        stdcall kernel_free, eax
+.pe_loader_failed:
+        dbgstr 'Failed to load kolibri.dll'
+.failed:
+        stdcall kernel_free, [ebp+APP_HDR.path_string]
+        jmp     sys_end
+.init_legacy_app:
+; init MENUETxx application
         stdcall map_process_image, [ebp+APP_HDR._emem],\
                 [ebp+APP_HDR.img_base], [ebp+APP_HDR.img_size]
         mov     esi, [ebp+APP_HDR.path_string]
@@ -846,8 +998,9 @@ common_app_entry:
         mov     byte [edi], 0
 .check_tls_header:
         cmp     word [6], '02'
-        jne     .try_load_dll ;.cleanup
+        jne     .try_load_dll ;.common
         call    init_heap
+.common_tls:
         stdcall user_alloc, 4096
         mov     edx, [current_slot]
         mov     [edx+APPDATA.tls_base], eax
@@ -862,7 +1015,7 @@ common_app_entry:
 ; Test app header version 
         mov     ecx, dword[ebp+APP_HDR.img_base]
         cmp     dword[ecx+8], 2
-        jne     .cleanup
+        jne     .common
 ;if APP_HEADER.version = 2 => load lib/dll.obj & change eip to APP_STARTUP_THUNK
         DEBUGF 1, 'K : App header version 2\n'
         stdcall load_library, dll_lib_path, 0
@@ -877,19 +1030,21 @@ common_app_entry:
         call    fs_execute_from_sysdir_param
 ; Terminate process (TODO: Need jump to .cleanup after sys_end ?) 
         call    sys_end
-        
+
 @@:       
 ; Find APP_STARTUP_THUNK in DLL.OBJ
         sub     eax, 4
         mov     eax, [eax]
-        
+
 ;.change_eip:
         mov     ecx, [current_slot]
         mov     ecx, [ecx+APPDATA.pl0_stack]
         mov     [ecx+REG_EIP], eax
         
 ; } End patch by Coldy, For DLL autoload
-.cleanup:
+        mov     fs, dx
+
+.common:
         stdcall free_kernel_space, [ebp+APP_HDR.img_base]
         stdcall kernel_free, ebp
         mov     ebx, [current_slot]

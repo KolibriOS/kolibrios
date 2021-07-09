@@ -307,7 +307,7 @@ show_error_parameters:
                                   ; incorrect address in the program
 
         mov     eax, [page_tabs+ebx*4]
-        test    eax, 2
+        test    eax, 1
         jz      .fail             ; address not reserved for use. error
 
         pop     ebx

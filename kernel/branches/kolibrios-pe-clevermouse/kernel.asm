@@ -322,6 +322,17 @@ high_code:
         mov     ecx, application_table_mutex
         call    mutex_init
 
+        mov     ecx, shmem_list_mutex
+        call    mutex_init
+        mov     ecx, pe_list_mutex
+        call    mutex_init
+        mov     ecx, shared_locked_mutex
+        call    mutex_init
+        mov     ecx, proc_mem_mutex
+        call    mutex_init
+        mov     ecx, ipc_mutex
+        call    mutex_init
+
         mov     ecx, ide_mutex
         call    mutex_init
         mov     ecx, ide_channel1_mutex
@@ -512,6 +523,9 @@ high_code:
 
         add     eax, ebx
         mov     [ipc_ptab], eax
+
+        add     eax, ebx
+        mov     [zero_page_tab], eax
 
         stdcall kernel_alloc, (unpack.LZMA_BASE_SIZE+(unpack.LZMA_LIT_SIZE shl \
                 (unpack.lc+unpack.lp)))*4
@@ -2879,40 +2893,39 @@ align 4
         mov     [bgrlockpid], eax
         cmp     [img_background], static_background_data
         jz      .nomem
-        stdcall user_alloc, [mem_BACKGROUND]
+        mov     ecx, [current_process]
+        add     ecx, PROC.heap_lock
+        call    mutex_lock
+        stdcall user_alloc_nolock, [mem_BACKGROUND]
         mov     [esp+32], eax
         test    eax, eax
-        jz      .nomem
+        jz      .nomem_unlock
         mov     ebx, eax
         shr     ebx, 12
-        or      dword [page_tabs+(ebx-1)*4], MEM_BLOCK_DONT_FREE
         mov     esi, [img_background]
         shr     esi, 12
         mov     ecx, [mem_BACKGROUND]
         add     ecx, 0xFFF
         shr     ecx, 12
-;--------------------------------------
-align 4
 .z:
-        mov     eax, [page_tabs+ebx*4]
-        test    al, 1
-        jz      @f
-        call    free_page
-;--------------------------------------
-align 4
-@@:
         mov     eax, [page_tabs+esi*4]
-        or      al, PG_UWR
+        or      eax, PG_UWR+PG_SHARED
         mov     [page_tabs+ebx*4], eax
         mov     eax, ebx
         shl     eax, 12
         invlpg  [eax]
         inc     ebx
         inc     esi
-        loop    .z
+        dec     ecx
+        jnz     .z
+        mov     ecx, [current_process]
+        add     ecx, PROC.heap_lock
+        call    mutex_unlock
         ret
-;--------------------------------------
-align 4
+.nomem_unlock:
+        mov     ecx, [current_process]
+        add     ecx, PROC.heap_lock
+        call    mutex_unlock
 .nomem:
         and     [bgrlockpid], 0
         mov     [bgrlock], 0
@@ -2926,30 +2939,7 @@ nosb6:
         mov     eax, [current_slot_idx]
         cmp     [bgrlockpid], eax
         jnz     .err
-        mov     eax, ecx
-        mov     ebx, ecx
-        shr     eax, 12
-        mov     ecx, [page_tabs+(eax-1)*4]
-        test    cl, MEM_BLOCK_USED or MEM_BLOCK_DONT_FREE
-        jz      .err
-        jnp     .err
-        push    eax
-        shr     ecx, 12
-        dec     ecx
-;--------------------------------------
-align 4
-@@:
-        and     dword [page_tabs+eax*4], 0
-        mov     edx, eax
-        shl     edx, 12
-        push    eax
-        invlpg  [edx]
-        pop     eax
-        inc     eax
-        loop    @b
-        pop     eax
-        and     dword [page_tabs+(eax-1)*4], not MEM_BLOCK_DONT_FREE
-        stdcall user_free, ebx
+        stdcall user_free, ecx
         mov     [esp+32], eax
         and     [bgrlockpid], 0
         mov     [bgrlock], 0
@@ -4923,6 +4913,14 @@ if defined debug_com_base
         mov     al, bl
         out     dx, al
         pop     ax dx
+end if
+
+if 0
+        push    eax edx
+        mov     al, bl
+        mov     dx, 0x402
+        out     dx, al
+        pop     edx eax
 end if
 
         mov     [msg_board_data+ecx], bl

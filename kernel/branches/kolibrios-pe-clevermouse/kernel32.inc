@@ -15,6 +15,7 @@ include "core/fpu.inc"          ; all fpu/sse support
 include "core/memory.inc"
 include "core/mtrr.inc"
 include "core/heap.inc"
+include "core/peuser.inc"
 include "core/malloc.inc"       ; small kernel heap
 include "core/taskman.inc"
 include "core/dll.inc"

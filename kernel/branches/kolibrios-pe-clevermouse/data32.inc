@@ -181,23 +181,25 @@ dev_data_path  db '/RD/1/DRIVERS/DEVICES.DAT',0
 dll_lib_path  db '/RD/1/LIB/DLL.OBJ',0
 dll_error_msg db '"DLL.OBJ not found!\nTerminate application!" -dE',0   
 ; } End patch by Coldy, For DLL autoload
+pe_loader_usermode db '/rd/1/lib/kolibri.dll',0
+
 align 4
 
 shmem_list:
  .bk           dd shmem_list
  .fd           dd shmem_list
 
-dll_list:
- .bk           dd dll_list
- .fd           dd dll_list
+pe_list:
+ .bk           dd pe_list
+ .fd           dd pe_list
 
 pcidev_list:
  .bk           dd pcidev_list
  .fd           dd pcidev_list
 
-MAX_DEFAULT_DLL_ADDR = 0x80000000
-MIN_DEFAULT_DLL_ADDR = 0x70000000
-dll_cur_addr   dd MIN_DEFAULT_DLL_ADDR
+shared_locked_list:
+               dd shared_locked_list
+               dd shared_locked_list
 
 ; supported videomodes
 
@@ -399,6 +401,12 @@ os_stack_seg        dd  ?
 srv.fd              dd  ?
 srv.bk              dd  ?
 
+shmem_list_mutex    MUTEX
+pe_list_mutex       MUTEX
+shared_locked_mutex MUTEX
+proc_mem_mutex      MUTEX
+ipc_mutex           MUTEX
+
 LFBAddress          dd  ?
 
 PUTPIXEL            dd  ?
@@ -432,6 +440,7 @@ proc_mem_pdir       dd  ?
 proc_mem_tab        dd  ?
 
 tmp_task_ptab       dd  ?
+zero_page_tab       dd  ?
 
 default_io_map      dd  ?
 

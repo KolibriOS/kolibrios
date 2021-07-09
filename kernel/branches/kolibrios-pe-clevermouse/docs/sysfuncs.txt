@@ -3645,6 +3645,68 @@ Remarks:
 ---------------------- Constants for registers: ----------------------
   eax - SF_SYS_MISC (68)
   ebx - SSF_MEM_ALLOC_RING (29)  
+======================================================================
+============ Function 68, subfunction 30 - load PE-file ==============
+======================================================================
+Parameters:
+  * eax = 68 - function number
+  * ebx = 30 - subfunction number
+  * ecx = pointer to the string with path to file,
+    rules of path forming can be found in function 70 description.
+Returned value:
+  * eax > 0xFFFFF000 - error, -eax = error code
+  * eax <= 0xFFFFF000 - pointer to the loaded file
+Remarks:
+  * This function is to be called only by system loader from
+    kolibri.dll; the file loaded is not ready yet, it requires further
+    configuration. Use dlopen() from kolibri.dll instead of this
+    function.
+======================================================================
+=========== Function 68, subfunction 31 - unload PE-file =============
+======================================================================
+Parameters:
+  * eax = 68 - function number
+  * ebx = 31 - subfunction number
+  * ecx = pointer to the loaded file
+Returned value:
+  * eax = 0 - success
+  * eax = -1 - provided address does not correspond to any loaded file
+Remarks:
+  * This function is to be called only by system loader from
+    kolibri.dll. Use dlclose() from kolibri.dll instead of this
+    function.
+======================================================================
+===== Function 68, subfunction 32 - modify memory access rights ======
+======================================================================
+Parameters:
+  * eax = 68 - function number
+  * ebx = 32 - subfunction number
+  * ecx = new access rights: zero or more of the following bits:
+    * PROT_READ = 1 - allow reading
+    * PROT_WRITE = 2 - allow writing
+    * PROT_EXEC = 4 - allow execution
+  * edx = pointer to begin of memory region
+  * esi = size of memory region in bytes
+Returned value:
+  * eax = -1 - error
+  * else eax = old access rights
+Remarks:
+  * The function modifies access rights to whole pages (4096 bytes).
+  * The function modifies access rights to all the pages intersecting
+    provided memory region.
+  * It is considered an error if a memory region returned by function
+    68.22 is passed to this function.
+  * If any part of the passed memory region is incorrect, then the
+    function returns an error. However it is not guaranteed that
+    access rights of the correct part have been changed.
+  * If there was no error, the function returns old access rights of
+    the first provided page.
+  * Current implementation does not support execution access rights
+    without reading rights. Therefore bit PROT_EXEC is ignored on
+    entering the function, and becomes a copy of PROT_READ at exit.
+---------------------- Constants for registers: ----------------------
+  eax - SF_SYS_MISC (68)
+  ebx - SSF_MPROTECT (32)
 
 ======================================================================
 ====================== Function 69 - debugging. ======================
