@@ -35,8 +35,8 @@ struct ScreenSize
 class Bird
 {
 public:
-	static const int sizeX = 17;
-	static const int sizeY = 12;
+	static const int sizeX = 19;
+	static const int sizeY = 20;
 	static const int x = 100;
 	int prev_y;
 	int y;
@@ -91,19 +91,28 @@ public:
 
 	void draw()
 	{
+		//cleanup
+		int pixels = (WINDOW_WIDTH - (BORDER_LEFT + BORDER_RIGHT - 1)) - (x + width + 2);
+		if (pixels >= -1)
+		{
+			pixels = (pixels == -1) ? 1 : 2;
+			kos_DrawBar(x + width, gapY - headHeight, pixels, headHeight, 0x00FFFF);
+			kos_DrawBar(x + width, gapY + gapHeight, pixels, headHeight, 0x00FFFF);
+		}
+
 		int offset = x >= 0 ? 0 : -x;
 		int trim = x + width >= WINDOW_WIDTH - (BORDER_LEFT + BORDER_RIGHT - 1) ? WINDOW_WIDTH - x - width - (BORDER_LEFT + BORDER_RIGHT - 1) : 0;
-		int trimHead = x + width + 2 >= WINDOW_WIDTH - (BORDER_LEFT + BORDER_RIGHT - 1) ? WINDOW_WIDTH - x - width - 2 - (BORDER_LEFT + BORDER_RIGHT - 1) : 0;
+		int trimHead = x + width >= WINDOW_WIDTH - (BORDER_LEFT + BORDER_RIGHT - 1) ? WINDOW_WIDTH - x - width - (BORDER_LEFT + BORDER_RIGHT - 1) : 0;
 
 		//top
 		for (int y = 0; y < gapY - headHeight; ++y)
 			kos_PutImage(tubeBodyImage + offset, width - offset + trim, 1, x + offset, y);
 		//head top
 		for (int y = gapY - headHeight; y < gapY; ++y)
-			kos_PutImage(tubeHeadImage + (width + 2) * (y - (gapY - headHeight)) + offset, (width + 2) - offset + trimHead, 1, x + offset, y);
+			kos_PutImage(tubeHeadImage + width * (y - (gapY - headHeight)) + offset, width - offset + trimHead, 1, x + offset, y);
 		//head down
 		for (int y = gapY + gapHeight; y < gapY + gapHeight + headHeight; ++y)
-			kos_PutImage(tubeHeadImage + (width + 2) * (y - (gapY + gapHeight)) + offset, (width + 2) - offset + trimHead, 1, x + offset, y);
+			kos_PutImage(tubeHeadImage + width * (y - (gapY + gapHeight)) + offset, width - offset + trimHead, 1, x + offset, y);
 		//down
 		for (int y = gapY + gapHeight + headHeight; y < WINDOW_HEIGHT - (BORDER_TOP + BORDER_DOWN - 1); ++y)
 			kos_PutImage(tubeBodyImage + offset, width - offset + trim, 1, x + offset, y);
@@ -334,19 +343,15 @@ void kos_Main()
 
 void drawGameWindow()
 {
-	kos_WindowRedrawStatus(1);
 	kos_DefineAndDrawWindow(windowX, windowY, WINDOW_WIDTH, WINDOW_HEIGHT, 0x33, 0x00FFFF, 0, 0, (Dword)HEADER_STRING);
 	bird.draw();
 	for (int i = 0; i < tubeNumber; ++i)
 		tubes[i].draw();
 	kos_WriteTextToWindow(10, 10, 0x81, 0x000000, scoreString, 0);
 	kos_WriteTextToWindow(10, 30, 0x81, 0x000000, CONTROL_STRING, 0);
-	kos_WindowRedrawStatus(2);
 }
 void redrawGameWindow()
 {
-	kos_WindowRedrawStatus(1);
-
 	//cleaning the screen
 	if (scoreChanged)
 		kos_DrawBar(80, 10, 50, 15, 0x00FFFF);
@@ -361,17 +366,14 @@ void redrawGameWindow()
 
 	kos_WriteTextToWindow(10, 10, 0x81, 0x000000, scoreString, 0);
 	kos_WriteTextToWindow(10, 30, 0x81, 0x000000, CONTROL_STRING, 0);
-	kos_WindowRedrawStatus(2);
 }
 
 void drawGameoverWindow()
 {
-	kos_WindowRedrawStatus(1);
 	kos_DefineAndDrawWindow(windowX, windowY, WINDOW_WIDTH, WINDOW_HEIGHT, 0x33, 0x000000, 0, 0, (Dword)HEADER_STRING);
 	kos_WriteTextToWindow(125, 50, 0x82, 0xFFFFFF, GAMEOVER_STRING, 0);
 	kos_WriteTextToWindow(135, 100, 0x81, 0xFFFFFF, scoreString, 0);
 	kos_WriteTextToWindow(50, 150, 0x81, 0xFFFFFF, ANY_KEY_STRING, 0);
-	kos_WindowRedrawStatus(2);
 }
 
 void WriteBorderedText(Word x, Word y, Byte fontType, Dword textColor, const char *textPtr, Dword textLen, Dword borderColor, int borderSize)
@@ -385,7 +387,6 @@ void WriteBorderedText(Word x, Word y, Byte fontType, Dword textColor, const cha
 
 void drawMenuWindow()
 {
-	kos_WindowRedrawStatus(1);
 	kos_DefineAndDrawWindow(windowX, windowY, WINDOW_WIDTH, WINDOW_HEIGHT, 0x33, 0x00FFFF, 0, 0, (Dword)HEADER_STRING);
 	
 	WriteBorderedText(85, 40, 0x4, 0xFFFFFF, HEADER_STRING, 6, 0x000000, 2);
@@ -393,7 +394,7 @@ void drawMenuWindow()
 
 	RGB* pos = &tubeHeadImage[0];
 	for (int x = 100 - 1; x >= 100 - Tube::headHeight; --x)
-		for (int y = 170; y < 170 + Tube::width + 2; ++y)
+		for (int y = 170; y < 170 + Tube::width; ++y)
 		{
 			kos_PutPixel(x, y, (pos->r << 16) + (pos->g << 8) + (pos->b));	//first tube
 			kos_PutPixel(x, y+100, (pos->r << 16) + (pos->g << 8) + (pos->b)); //second tube
@@ -409,13 +410,12 @@ void drawMenuWindow()
 	for (int x = 100; x < WINDOW_WIDTH - (BORDER_LEFT + BORDER_RIGHT - 1); ++x)
 		kos_PutImage(tubeBodyImage, 1, Tube::width, x, 270);
 	WriteBorderedText(140, 285, 0x82, 0x000000, SLOW_STRING, 0, 0xFFFFFF, 1);
-
-	kos_WindowRedrawStatus(2);
 }
 
 inline bool checkCollision(Tube tube)
 {
-	return ((tube.x <= (bird.x + bird.sizeX) && tube.x + tube.width >= bird.x) && (bird.y <= tube.gapY || bird.y + bird.sizeY >= tube.gapY + tube.gapHeight));
+	return ((tube.x <= (bird.x + bird.sizeX) && tube.x + tube.width >= bird.x)
+		&& (bird.y <= tube.gapY || bird.y + bird.sizeY >= tube.gapY + tube.gapHeight));
 }
 
 inline bool checkAddScore(Tube tube)

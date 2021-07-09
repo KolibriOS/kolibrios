@@ -75,7 +75,7 @@ draw_window:
 
 ; function 4 : write text to window
     mcall   4,<55,8>,0x10000000,text1,5
-    mcall   ,<130,8>,,text2,9
+    mcall   ,<130,8>,,text2,8
     mcall   ,<8,30>,,tdec,4
     add ebx,23
     mcall   ,,,thex
