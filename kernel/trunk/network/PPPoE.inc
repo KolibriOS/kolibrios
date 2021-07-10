@@ -1,6 +1,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;                                                              ;;
-;; Copyright (C) KolibriOS team 2012-2019. All rights reserved. ;;
+;; Copyright (C) KolibriOS team 2012-2021. All rights reserved. ;;
 ;; Distributed under terms of the GNU General Public License    ;;
 ;;                                                              ;;
 ;;  PPPoE.INC                                                   ;;
@@ -141,38 +141,41 @@ pppoe_discovery_output:
         DEBUGF  DEBUG_NETWORK_VERBOSE, "PPPoE_discovery_output: device=%x\n", ebx
 
 ; Create packet.
-        push    ecx esi
-;;;; FIXME        stdcall kernel_alloc, 1500
-        pop     esi ecx
+        stdcall net_buff_alloc, 1514 + NET_BUFF.data
         test    eax, eax
         jz      .bad
 
+; Net buffer header
+        mov     [eax + NET_BUFF.type], NET_BUFF_ETH
+        mov     [eax + NET_BUFF.device], ebx
+        mov     [eax + NET_BUFF.offset], NET_BUFF.data
+
+; Packet data
         mov     edx, ecx
-        mov     edi, eax
+        lea     edi, [eax + NET_BUFF.data]
         rep movsb
 
-        cmp     edx, 60         ; Min ETH size
+; Packet size
+        cmp     edx, 60
         ja      @f
         mov     edx, 60
-       @@:
+  @@:
+        mov     [eax + NET_BUFF.length], edx
 
-        push    edx eax         ; size and packet ptr for driver send proc
-
-; Overwrite source MAC and protocol type
-        lea     edi, [eax + ETH_header.SrcMAC]
+; Overwrite ETH source MAC with our own
         lea     esi, [ebx + ETH_DEVICE.mac]
+        lea     edi, [eax + NET_BUFF.data + ETH_header.SrcMAC]
         movsd
         movsw
-        cmp     word[edi], ETHER_PROTO_PPP_SESSION      ; Allow only PPP_discovery, or LCP
+
+; Allow only PPP_discovery, or LCP
+        cmp     word[edi], ETHER_PROTO_PPP_SESSION
         je      @f
-        mov     ax, ETHER_PROTO_PPP_DISCOVERY
-        stosw
+        mov     word[edi], ETHER_PROTO_PPP_DISCOVERY
        @@:
 
 ; And send the packet
-        call    [ebx + NET_DEVICE.transmit]
-
-        xor     eax, eax
+        stdcall [ebx + NET_DEVICE.transmit], eax
         ret
 
   .bad:

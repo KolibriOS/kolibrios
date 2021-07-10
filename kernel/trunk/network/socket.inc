@@ -332,8 +332,8 @@ socket_open:
         cmp     ecx, AF_PPP
         jne     .no_ppp
 
-        cmp     esi, PPP_PROTO_ETHERNET
-        je      .pppoe
+;        cmp     esi, PPP_PROTO_ETHERNET
+;        je      .pppoe
 
   .no_ppp:
   .unsupported:
@@ -404,15 +404,15 @@ align 4
         mov     [eax + SOCKET.connect_proc], ipv4_connect
         ret
 
-align 4
-  .pppoe:
-        push    eax
-        init_queue (eax + SOCKET_QUEUE_LOCATION)        ; Set up data receiving queue
-        pop     eax
-
-        mov     [eax + SOCKET.snd_proc], socket_send_pppoe
-        mov     [eax + SOCKET.rcv_proc], socket_receive_dgram
-        ret
+;align 4
+;  .pppoe:
+;        push    eax
+;        init_queue (eax + SOCKET_QUEUE_LOCATION)        ; Set up data receiving queue
+;        pop     eax
+;
+;        mov     [eax + SOCKET.snd_proc], socket_send_pppoe
+;        mov     [eax + SOCKET.rcv_proc], socket_receive_dgram
+;        ret
 
 
 ;-----------------------------------------------------------------;
@@ -774,7 +774,7 @@ socket_close:
 ;                                                                 ;
 ;   IN: ecx = socket number                                       ;
 ;       edx = addr to application buffer                          ;
-;       edx = length of application buffer                        ;
+;       esi = length of application buffer                        ;
 ;       edi = flags                                               ;
 ;                                                                 ;
 ;  OUT: eax = number of bytes copied                              ;
@@ -791,6 +791,9 @@ socket_receive:
         call    socket_num_to_ptr
         test    eax, eax
         jz      .invalid
+
+        stdcall is_region_userspace, edx, esi
+        jnz     .invalid
 
   .loop:
         push    edi
@@ -998,6 +1001,9 @@ socket_send:
         test    eax, eax
         jz      .invalid
 
+        stdcall is_region_userspace, edx, esi
+        jnz     .invalid
+
         mov     ecx, esi
         mov     esi, edx
 
@@ -1080,23 +1086,23 @@ socket_send_icmp:
         ret
 
 
-align 4
-socket_send_pppoe:
-
-        DEBUGF  DEBUG_NETWORK_VERBOSE, "SOCKET_send: PPPoE\n"
-
-        mov     [esp+32], ecx
-        mov     ebx, [eax + SOCKET.device]
-
-        call    pppoe_discovery_output  ; FIXME: errorcodes
-        cmp     eax, -1
-        je      .error
-        ret
-
-  .error:
-        mov     dword[esp+32], -1
-        mov     dword[esp+20], EMSGSIZE
-        ret
+;align 4
+;socket_send_pppoe:
+;
+;        DEBUGF  DEBUG_NETWORK_VERBOSE, "SOCKET_send: PPPoE\n"
+;
+;        mov     [esp+32], ecx
+;        mov     ebx, [eax + SOCKET.device]
+;
+;        call    pppoe_discovery_output  ; FIXME: errorcodes
+;        cmp     eax, -1
+;        je      .error
+;        ret
+;
+;  .error:
+;        mov     dword[esp+32], -1
+;        mov     dword[esp+20], EMSGSIZE
+;        ret
 
 
 
@@ -1382,6 +1388,9 @@ socket_debug:
         call    socket_num_to_ptr
         test    eax, eax
         jz      .invalid
+
+        stdcall is_region_userspace, edi, SOCKET_STRUCT_SIZE
+        jnz     .invalid
 
         mov     esi, eax
         mov     ecx, SOCKET_STRUCT_SIZE/4

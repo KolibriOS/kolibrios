@@ -243,11 +243,11 @@ include "queue.inc"
 include "loopback.inc"
 include "ethernet.inc"
 
-include "PPPoE.inc"
+;include "PPPoE.inc"
 
 include "ARP.inc"
 include "IPv4.inc"
-include "IPv6.inc"
+;include "IPv6.inc"
 
 include "icmp.inc"
 include "udp.inc"
@@ -319,7 +319,7 @@ end if
 
         eth_init
 
-        pppoe_init
+;        pppoe_init
 
         ipv4_init
 ;        ipv6_init
@@ -828,10 +828,9 @@ sys_network:
         ret
 
   .get_dev_name:
-        mov     ebx, eax
         stdcall is_region_userspace, ecx, 64
         jnz     .bad_buffer
-        mov     esi, [ebx + NET_DEVICE.name]
+        mov     esi, [eax + NET_DEVICE.name]
         mov     edi, ecx
 
         mov     ecx, 64/4 ; max length
@@ -968,11 +967,11 @@ sys_protocols:
         cmp     ax, API_ARP
         je      arp_api
 
-        cmp     ax, API_PPPOE
-        je      pppoe_api
+;        cmp     ax, API_PPPOE
+;        je      pppoe_api
 
-        cmp     ax, API_IPv6
-        je      ipv6_api
+;        cmp     ax, API_IPv6
+;        je      ipv6_api
 
         add     esp, 4                           ; if we reached here, no function was called, so we need to balance stack
 
