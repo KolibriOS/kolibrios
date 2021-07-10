@@ -1,0 +1,215 @@
+(*
+    Copyright 2021 Anton Krotov
+
+    This file is part of CEdit.
+
+    CEdit is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    CEdit is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with CEdit. If not, see <http://www.gnu.org/licenses/>.
+*)
+
+MODULE Tabs;
+
+IMPORT List, K := KolibriOS, RW;
+
+CONST
+
+    btnID* = 100;
+    tabHeight* = 22;
+    curTabHeight = 26;
+
+
+TYPE
+
+    tItem = POINTER TO RECORD (List.tItem)
+
+        val: RW.tFileName
+
+    END;
+
+    tTabs* = POINTER TO RECORD
+
+        strings: List.tList;
+        first, current: INTEGER;
+        width, height: INTEGER;
+        x, y: INTEGER
+
+    END;
+
+
+PROCEDURE drawTab (t: tTabs; id, x, y, width, height: INTEGER; s: ARRAY OF CHAR);
+VAR
+    x2, y2: INTEGER;
+BEGIN
+    IF id = t.current THEN
+        INC(height, curTabHeight - tabHeight);
+        DEC(y, curTabHeight - tabHeight)
+    END;
+    x2 := x + width - 1;
+    y2 := y + height - 1;
+    K.DrawRect(x, y, width, height, K.winColor);
+    K.DrawLine(x, y, x2, y, K.borderColor);
+    K.DrawLine(x2, y, x2, y2, K.borderColor);
+    K.DrawLine(x2, y2, x, y2, K.borderColor);
+    K.DrawLine(x, y2, x, y, K.borderColor);
+    K.DrawText866bk(x + K.fontWidth, y + (height - K.fontHeight) DIV 2, K.textColor, K.winColor, s);
+    K.CreateButton(id + ORD({30}) + btnID, x, y - 1, width, height - 1, K.winColor, "");
+END drawTab;
+
+
+PROCEDURE tabWidth (tab: tItem): INTEGER;
+    RETURN (LENGTH(tab.val) + 2)*K.fontWidth
+END tabWidth;
+
+
+PROCEDURE Width (t: tTabs; pos, n: INTEGER): INTEGER;
+VAR
+    res, i: INTEGER;
+    item: List.tItem;
+BEGIN
+    res := 0;
+    i := pos;
+    item := List.getItem(t.strings, i);
+    WHILE (item # NIL) & (i <= n) DO
+        INC(res, tabWidth(item(tItem)));
+        item := item.next;
+        INC(i)
+    END
+    RETURN res
+END Width;
+
+
+PROCEDURE draw* (t: tTabs);
+CONST
+    scrWidth = 10;
+VAR
+    x, y, xmax, n, width: INTEGER;
+    item: List.tItem;
+BEGIN
+    y := t.y;
+    x := t.x;
+    K.DrawRect(x, y - (curTabHeight - tabHeight), t.width + 2*scrWidth, t.height + (curTabHeight - tabHeight), K.winColor);
+    IF Width(t, 0, t.strings.count - 1) > t.width THEN
+        INC(x, 2*scrWidth);
+        K.CreateButton(btnID - 1, t.x, t.y, scrWidth, t.height - 1, K.btnColor, "<");
+        K.CreateButton(btnID - 2, t.x + scrWidth, t.y, scrWidth, t.height - 1, K.btnColor, ">")
+    ELSE
+        t.first := 0
+    END;
+    xmax := x + t.width - 1;
+
+    n := t.strings.count - 1;
+    WHILE (n >= 0) & (Width(t, n, t.strings.count - 1) <= t.width) DO
+        DEC(n)
+    END;
+    IF n < 0 THEN
+        n := 0
+    ELSE
+        INC(n)
+    END;
+    IF n < t.first THEN
+        t.first := n
+    END;
+
+    K.DrawRect(x, y, t.width, t.height, K.winColor);
+    item := List.getItem(t.strings, t.first);
+    n := t.first;
+    WHILE (item # NIL) & (x <= xmax) DO
+        width := tabWidth(item(tItem));
+        IF x + width - 1 <= xmax THEN
+            drawTab(t, n, x, y, width, t.height, item(tItem).val)
+        END;
+        INC(n);
+        INC(x, width);
+        item := item.next
+    END
+END draw;
+
+
+PROCEDURE add* (t: tTabs; s: ARRAY OF CHAR);
+VAR
+    item: tItem;
+BEGIN
+    NEW(item);
+    item.val := s;
+    List.append(t.strings, item);
+END add;
+
+
+PROCEDURE rename* (t: tTabs; n: INTEGER; s: ARRAY OF CHAR);
+VAR
+    item: List.tItem;
+BEGIN
+    item := List.getItem(t.strings, n);
+    item(tItem).val := s
+END rename;
+
+
+PROCEDURE delete* (t: tTabs; n: INTEGER);
+VAR
+    item: List.tItem;
+BEGIN
+    item := List.getItem(t.strings, n);
+    List.delete(t.strings, item)
+END delete;
+
+
+PROCEDURE scroll* (t: tTabs; n: INTEGER);
+VAR
+    pos: INTEGER;
+BEGIN
+    pos := t.first + n;
+    IF pos < 0 THEN
+        pos := 0
+    ELSIF pos >= t.strings.count THEN
+        pos := t.strings.count - 1
+    END;
+    t.first := pos
+END scroll;
+
+
+PROCEDURE switch* (t: tTabs; n: INTEGER);
+BEGIN
+    IF (0 <= n) & (n < t.strings.count) THEN
+        t.current := n;
+        IF n < t.first THEN
+            t.first := 0
+        END;
+        WHILE Width(t, t.first, n) > t.width DO
+            INC(t.first)
+        END
+    END
+END switch;
+
+
+PROCEDURE setArea* (t: tTabs; x, y, width, height: INTEGER);
+BEGIN
+    t.x := x;
+    t.y := y;
+    t.width := width;
+    t.height := height
+END setArea;
+
+
+PROCEDURE create* (): tTabs;
+VAR
+    res: tTabs;
+BEGIN
+    NEW(res);
+    res.strings := List.create(NIL);
+    res.current := 0;
+    res.first := 0
+    RETURN res
+END create;
+
+
+END Tabs.

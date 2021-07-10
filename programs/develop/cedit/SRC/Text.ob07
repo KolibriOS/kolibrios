@@ -80,7 +80,9 @@ TYPE
         foundList: List.tList;
         idxData: Search.tBuffer;
         foundSel: INTEGER;
-        searchText: tString
+        searchText: tString;
+        chLog*: ChangeLog.tLog;
+        maxLength*: INTEGER
     END;
 
     tProcedure = PROCEDURE;
@@ -393,7 +395,7 @@ BEGIN
             ELSIF (c = "'") OR (c = '"') THEN
                 String(text, line, i, y, backColor)
             ELSIF (U.isLetter(c) OR (c = "_")) THEN
-                ident(text, i, i, y, line, backColor, FALSE)
+                ident(text, i, i, y, line, backColor, Lang.isCS(lang))
             ELSIF isFASMdelim(c) THEN
                 PrintLex(text, line, i, i, y, colors.delim, backColor)
             ELSIF U.isDigit(c) THEN
@@ -438,7 +440,7 @@ BEGIN
                 String(text, line, i, y, backColor);
                 cond := 0
             ELSIF (U.isLetter(c) OR (c = "_")) THEN
-                ident(text, i, i - ORD((i > 0) & (getChar(line, i - 1) = "#")), y, line, backColor, TRUE);
+                ident(text, i, i - ORD((i > 0) & (getChar(line, i - 1) = "#")), y, line, backColor, Lang.isCS(lang));
                 cond := 0
             ELSIF U.isDigit(c) THEN
                 k := i;
@@ -557,7 +559,7 @@ BEGIN
             PrintLex(text, line, k, i, y, color, backColor);
             cond := 0
         ELSIF (depth = 0) & (U.isLetter(c) OR (c = "_")) THEN
-            ident(text, i, i, y, line, backColor, TRUE);
+            ident(text, i, i, y, line, backColor, Lang.isCS(lang));
             cond := 0
         ELSIF c = "(" THEN
             cond := 1
@@ -645,7 +647,7 @@ BEGIN
                 PrintLex(text, line, k, i, y, colors.num, backColor);
                 cond := 0
             ELSIF U.isLetter(c) OR (c = "_") THEN
-                ident(text, i, i, y, line, backColor, TRUE);
+                ident(text, i, i, y, line, backColor, Lang.isCS(lang));
                 cond := 0
             ELSE
                 cond := 0
@@ -744,7 +746,7 @@ BEGIN
                 PrintLex(text, line, k, i, y, colors.num, backColor);
                 cond := 0
             ELSIF (U.isLetter(c) OR (c = "_")) THEN
-                ident(text, i, i, y, line, backColor, FALSE);
+                ident(text, i, i, y, line, backColor, Lang.isCS(lang));
                 cond := 0
             ELSE
                 cond := 0
@@ -786,7 +788,7 @@ BEGIN
                 DEC(i);
                 PrintLex(text, line, k, i, y, colors.num, backColor)
             ELSIF (U.isLetter(c) OR (c = "_")) THEN
-                ident(text, i, i, y, line, backColor, TRUE)
+                ident(text, i, i, y, line, backColor, Lang.isCS(lang))
             END
         ELSIF depth = 1 THEN
             IF c = "]" THEN
@@ -1179,7 +1181,7 @@ PROCEDURE scroll* (text: tText; h, v: INTEGER);
 BEGIN
     INC(text.scroll.X, h);
     INC(text.scroll.Y, v);
-    text.scroll.X := MIN(MAX(text.scroll.X, 0), Lines.maxLength);
+    text.scroll.X := MIN(MAX(text.scroll.X, 0), text.maxLength);
     text.scroll.Y := MIN(MAX(text.scroll.Y, 0), text.count - 1)
 END scroll;
 
@@ -1264,7 +1266,7 @@ BEGIN
         text.modified := TRUE
     END;
 
-    item := ChangeLog.Log.first;
+    item := ChangeLog.CL.Log.first;
     WHILE item # guard DO
         ChangeLog.redo(item);
         item := item.next
@@ -1579,7 +1581,7 @@ BEGIN
             str := ""
         END
     END;
-    IF search(text, str, TRUE, TRUE) THEN END
+    IF search(text, str, Lang.isCS(text.lang), TRUE) THEN END
 END wordSel;
 
 
@@ -1809,7 +1811,7 @@ BEGIN
     END;
     IF text.guard THEN
         NEW(guard);
-        List.append(ChangeLog.Log, guard);
+        List.append(ChangeLog.CL.Log, guard);
         text.edition := guard;
         text.guard := FALSE;
     ELSE
@@ -1944,11 +1946,20 @@ BEGIN
 END draw;
 
 
+PROCEDURE switch* (text: tText);
+BEGIN
+    ChangeLog.set(text.chLog);
+    Lines.setMaxLength(text.maxLength)
+END switch;
+
+
 PROCEDURE create (fileName: RW.tFileName): tText;
 VAR
     text: tText;
 BEGIN
     NEW(text);
+    text.maxLength := 64;
+    text.chLog := ChangeLog.create(text.maxLength);
     NEW(text.cursor);
     NEW(text.select2);
     text.cursor.X := 0;

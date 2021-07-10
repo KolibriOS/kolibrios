@@ -51,7 +51,7 @@ VAR
 (*    _typedPtr: PTypedPtr;
     _untypedPtr: PUntypedPtr;*)
 
-    maxLength*: INTEGER;
+    pMaxLength: INTEGER;
 
 
 PROCEDURE movInt (VAR v: INTEGER; x: INTEGER);
@@ -75,9 +75,12 @@ END movPtr;
 PROCEDURE malloc (size: INTEGER): INTEGER;
 VAR
     ptr: INTEGER;
+    maxLength: INTEGER;
 BEGIN
+    ASSERT(pMaxLength # 0);
+    SYSTEM.GET(pMaxLength, maxLength);
     IF size > maxLength THEN
-        maxLength := size
+        SYSTEM.PUT(pMaxLength, size)
     END;
     size := size*WCHAR_SIZE + 4;
     INC(size, (-size) MOD 32);
@@ -422,6 +425,12 @@ BEGIN
 END init;
 
 
+PROCEDURE setMaxLength* (VAR maxLength: INTEGER);
 BEGIN
-    maxLength := 64
+    pMaxLength := SYSTEM.ADR(maxLength)
+END setMaxLength;
+
+
+BEGIN
+    pMaxLength := 0
 END Lines.

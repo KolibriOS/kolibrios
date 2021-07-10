@@ -25,10 +25,10 @@ IMPORT
     G := Graph, T := Text, E := Encodings,
     CB := Clipboard, Languages,
     ChangeLog, Scroll,
-    RW, Ini, box_lib, Icons;
+    RW, Ini, box_lib, Icons, Tabs;
 
 CONST
-    header = "CEdit (06-jul-2021)";
+    header = "CEdit (10-jul-2021)";
 
     ShellFilter = "";
     EditFilter = "SH|ASM|TXT|INC|OB07|C|CPP|H|PAS|PP|LUA|INI";
@@ -80,7 +80,7 @@ CONST
     toolbarDelim = 7;
     iconPad = (toolBtnSize - Icons.SIZE) DIV 2;
 
-    TOP = btnTop + toolBtnSize + 7;
+    TOP = btnTop + toolBtnSize + 10 + Tabs.tabHeight;
     RIGHT = scrollWidth - 2;
     BOTTOM = scrollWidth + 18;
 
@@ -115,8 +115,10 @@ CONST
     menuOpen = 11;
     menuSave = 12;
     menuSaveAs = 13;
-    menuFolder = 14;
-    menuExit = 15;
+    menuSaveAll = 14;
+    menuFolder = 15;
+    menuClose = 16;
+    menuExit = 17;
 
     menuNumbers = 20;
     menuFontSize = 21;
@@ -146,17 +148,25 @@ CONST
     menuPipet = 70;
     menuSysFunc = 71;
 
+    maxTexts = 32;
+
 
 VAR
     canvas: G.tCanvas;
     font, font1, font2: G.tFont;
+
+    tabs: Tabs.tTabs;
     text: T.tText;
+    texts: ARRAY maxTexts OF T.tText;
+    textsCount, curText: INTEGER;
+
     winWidth, winHeight: INTEGER;
     shift: SET;
     AppPath, runScript, buildScript, debugScript: RW.tFileName;
     OD: OpenDlg.Dialog;
     confirm, notFound, search, modified: BOOLEAN;
 
+    switch: BOOLEAN;
     leftButton, VScroll, HScroll: BOOLEAN;
     vScroll, hScroll: Scroll.tScroll;
     LEFT: INTEGER;
@@ -335,6 +345,26 @@ BEGIN
 END WriteModified;
 
 
+PROCEDURE DrawState (text: T.tText; width, height: INTEGER);
+VAR
+    y: INTEGER;
+BEGIN
+    y := (btnHeight - fontHeight) DIV 2 + btnTop;
+    K.DrawRect(width - 12*fontWidth, y, 12*fontWidth, fontHeight, K.winColor);
+    CASE text.enc OF
+    |E.UTF8:    K.DrawText866(width -  5*fontWidth, y, K.textColor, "UTF-8")
+    |E.UTF8BOM: K.DrawText866(width -  9*fontWidth, y, K.textColor, "UTF-8-BOM")
+    |E.CP866:   K.DrawText866(width -  5*fontWidth, y, K.textColor, "CP866")
+    |E.W1251:   K.DrawText866(width - 12*fontWidth, y, K.textColor, "Windows-1251")
+    END;
+
+    y := height - (BOTTOM - scrollWidth) + (BOTTOM - scrollWidth - 16) DIV 2;
+    K.DrawRect(LEFT + 16*fontWidth, TOP + canvas.height + scrollWidth - 1, width - LEFT - 24*fontWidth, BOTTOM - scrollWidth + 1, K.winColor);
+    K.DrawText866(LEFT + 16*fontWidth, y, K.textColor, text.fileName);
+    WriteModified(width - 8*fontWidth, y)
+END DrawState;
+
+
 PROCEDURE repaint;
 VAR
     width, height, scrollX, scrollY, y: INTEGER;
@@ -348,8 +378,14 @@ BEGIN
         IF ~search THEN
             T.wordSel(text)
         END;
-        T.draw(text);
         K.ClientSize(width, height);
+        IF switch THEN
+            DrawState(text, width, height);
+            Tabs.draw(tabs);
+            IF search & T.search(text, searchText, cs, whole) THEN END;
+            switch := FALSE
+        END;
+        T.draw(text);
         y := height - (BOTTOM - scrollWidth) + (BOTTOM - scrollWidth - 16) DIV 2;
         K.DrawRect(LEFT, TOP + canvas.height + scrollWidth - 1, 16*fontWidth, BOTTOM - scrollWidth + 1, K.winColor);
         WritePos(y);
@@ -360,7 +396,7 @@ BEGIN
 
         T.getScroll(text, scrollX, scrollY);
         vScroll.value := scrollY; vScroll.maxVal := text.count - 1;
-        hScroll.value := scrollX; hScroll.maxVal := Lines.maxLength;
+        hScroll.value := scrollX; hScroll.maxVal := text.maxLength;
         Scroll.draw(vScroll, LEFT + canvas.width - 1, TOP + scrollWidth - 1);
         Scroll.draw(hScroll, LEFT + scrollWidth, TOP + canvas.height - 1);
 
@@ -388,6 +424,7 @@ BEGIN
     K.ClientSize(cliWidth, cliHeight);
     G.destroy(canvas);
     canvas := G.CreateCanvas(cliWidth - (LEFT + RIGHT + 1), cliHeight - (TOP + BOTTOM));
+    Tabs.setArea(tabs, LEFT, TOP - Tabs.tabHeight, cliWidth - (LEFT + RIGHT + 1), Tabs.tabHeight);
     G.SetFont(canvas, font);
     T.setCanvas(canvas);
     T.resize(canvas.width, canvas.height);
@@ -448,7 +485,7 @@ END SearchPanel;
 
 PROCEDURE draw_window;
 VAR
-    width, height, x, y: INTEGER;
+    width, height, x: INTEGER;
 
 
     PROCEDURE drawToolbarBtn (id, x: INTEGER);
@@ -547,21 +584,11 @@ BEGIN
         K.PutPixel(LEFT + canvas.width + scrollWidth - 2, TOP, K.winColor);
         K.PutPixel(LEFT, TOP + canvas.height + scrollWidth - 2, K.winColor);
 
-        y := (btnHeight - fontHeight) DIV 2 + btnTop;
-        CASE text.enc OF
-        |E.UTF8:    K.DrawText866(width -  5*fontWidth, y, K.textColor, "UTF-8")
-        |E.UTF8BOM: K.DrawText866(width -  9*fontWidth, y, K.textColor, "UTF-8-BOM")
-        |E.CP866:   K.DrawText866(width -  5*fontWidth, y, K.textColor, "CP866")
-        |E.W1251:   K.DrawText866(width - 12*fontWidth, y, K.textColor, "Windows-1251")
-        END;
+        DrawState(text, width, height);
         IF search THEN
             SearchPanel(searchLeft, TOP)
         END;
-
-        y := height - (BOTTOM - scrollWidth) + (BOTTOM - scrollWidth - 16) DIV 2;
-        K.DrawRect(LEFT + 16*fontWidth, TOP + canvas.height + scrollWidth - 1, width - LEFT - 24*fontWidth, BOTTOM - scrollWidth + 1, K.winColor);
-        K.DrawText866(LEFT + 16*fontWidth, y, K.textColor, text.fileName);
-        WriteModified(width - 8*fontWidth, y);
+        Tabs.draw(tabs);
         repaint
     END;
     K.EndDraw
@@ -622,9 +649,20 @@ BEGIN
 END error;
 
 
-PROCEDURE saveAs;
+PROCEDURE saveError (name: RW.tFileName);
 VAR
-    fileName: RW.tFileName;
+    s: RW.tFileName;
+BEGIN
+    s := "'cedit: error saving file ";
+    U.append8(s, name);
+    U.append8(s, "' -E");
+    error(s)
+END saveError;
+
+
+PROCEDURE saveAs (text: T.tText);
+VAR
+    fileName, name: RW.tFileName;
     ext: ARRAY 8 OF CHAR;
 BEGIN
     OD._type := OpenDlg.tsave;
@@ -645,44 +683,86 @@ BEGIN
     OpenFile(fileName, EditFilter);
     IF fileName # "" THEN
         IF T.save(text, fileName, text.enc, RW.EOL_CRLF) THEN
-            T.setName(text, fileName)
+            T.setName(text, fileName);
+            U.getFileName(fileName, name, U.SLASH);
+            Tabs.rename(tabs, curText, name)
         ELSE
-            error("'cedit: error saving file' -E")
+            saveError(fileName)
         END
     END
 END saveAs;
 
 
-PROCEDURE save;
+PROCEDURE getIdx (text: T.tText): INTEGER;
+VAR
+    i: INTEGER;
+BEGIN
+    i := 0;
+    WHILE texts[i] # text DO
+        INC(i)
+    END
+    RETURN i
+END getIdx;
+
+
+PROCEDURE Switch (txt: T.tText);
+BEGIN
+    Tabs.switch(tabs, curText);
+    text := txt;
+    T.switch(txt);
+    switch := TRUE
+END Switch;
+
+
+PROCEDURE save (text: T.tText);
 BEGIN
     IF text.modified THEN
         IF text.fileName # "" THEN
             IF ~T.save(text, text.fileName, text.enc, RW.EOL_CRLF) THEN
-                error("'cedit: error saving file' -E")
+                saveError(text.fileName)
             END
         ELSE
-            saveAs
+            curText := getIdx(text);
+            Switch(text);
+            saveAs(text)
         END
     END
 END save;
 
 
-PROCEDURE SelfRun (file: ARRAY OF CHAR);
-BEGIN
-    K.Run(AppPath, file)
-END SelfRun;
-
-
-PROCEDURE open;
+PROCEDURE saveAll;
 VAR
-    fileName: RW.tFileName;
+    i: INTEGER;
 BEGIN
-    OD._type := OpenDlg.topen;
-    OpenFile(fileName, EditFilter);
-    IF fileName # "" THEN
-        SelfRun(fileName)
-    END
-END open;
+    i := textsCount - 1;
+    WHILE i >= 0 DO
+        IF texts[i].modified THEN
+            save(texts[i])
+        END;
+        DEC(i)
+    END;
+END saveAll;
+
+
+PROCEDURE insert (pos: INTEGER; txt: T.tText);
+VAR
+    i: INTEGER;
+    name: RW.tFileName;
+BEGIN
+    FOR i := textsCount - 1 TO pos BY -1 DO
+        texts[i + 1] := texts[i]
+    END;
+    texts[pos] := txt;
+    INC(textsCount);
+    curText := pos;
+    IF txt.fileName = "" THEN
+        name := "new"
+    ELSE
+        U.getFileName(txt.fileName, name, U.SLASH)
+    END;
+    Tabs.add(tabs, name);
+    Switch(txt)
+END insert;
 
 
 PROCEDURE Confirm;
@@ -705,6 +785,104 @@ BEGIN
     K.CreateButton(btnYes, left + 10, top + 35, btnWidth, btnHeight, K.btnColor, "yes");
     K.CreateButton(btnNo, left + 20 + btnWidth, top + 35, btnWidth, btnHeight, K.btnColor, "no");
 END Confirm;
+
+
+PROCEDURE closeFile (conf: BOOLEAN);
+VAR
+    i: INTEGER;
+BEGIN
+    IF text.modified & conf THEN
+        Confirm
+    ELSE
+        Tabs.delete(tabs, curText);
+        FOR i := curText + 1 TO textsCount - 1 DO
+            texts[i - 1] := texts[i]
+        END;
+        DEC(textsCount);
+        IF curText = textsCount THEN
+            DEC(curText)
+        END;
+        IF curText >= 0 THEN
+            Switch(texts[curText])
+        ELSE
+            K.Exit
+        END;
+        draw_window
+    END
+END closeFile;
+
+
+PROCEDURE NewFile;
+VAR
+    nov: T.tText;
+BEGIN
+    IF textsCount < maxTexts THEN
+        nov := T.New();
+        T.SetPos(nov, 0, 0);
+        insert(textsCount, nov)
+    ELSE
+        error("'cedit: too many files' -E")
+    END
+END NewFile;
+
+
+PROCEDURE getFileNum (fileName: RW.tFileName): INTEGER;
+VAR
+    i: INTEGER;
+
+    PROCEDURE nameEq (name1, name2: RW.tFileName): BOOLEAN;
+    VAR
+        n1, n2: RW.tFileName;
+    BEGIN
+        n1 := name1;
+        n2 := name2;
+        U.upcase(n1);
+        U.upcase(n2)
+        RETURN n1 = n2
+    END nameEq;
+
+BEGIN
+    i := 0;
+    WHILE (i < textsCount) & ~nameEq(texts[i].fileName, fileName) DO
+        INC(i)
+    END;
+    IF i = textsCount THEN
+        i := -1
+    END
+    RETURN i
+END getFileNum;
+
+
+PROCEDURE open;
+VAR
+    fileName: RW.tFileName;
+    nov: T.tText;
+    err, n: INTEGER;
+BEGIN
+    IF textsCount < maxTexts THEN
+        OD._type := OpenDlg.topen;
+        OpenFile(fileName, EditFilter);
+        IF fileName # "" THEN
+            n := getFileNum(fileName);
+            IF n = -1 THEN
+                nov := T.open(fileName, err);
+                IF nov = NIL THEN
+                    error("'cedit: error opening file' -E")
+                ELSE
+                    insert(textsCount, nov);
+                    T.SetPos(nov, 0, 0)
+                END
+            ELSE
+                curText := n;
+                Tabs.switch(tabs, n);
+                Switch(texts[n]);
+                draw_window
+            END
+        END
+    ELSE
+        error("'cedit: too many files' -E")
+    END
+END open;
 
 
 PROCEDURE createEdit (left, top: INTEGER): box_lib.edit_box;
@@ -813,11 +991,18 @@ END LeftButtonUp;
 
 
 PROCEDURE close;
+VAR
+    cont: BOOLEAN;
 BEGIN
-    IF text.modified THEN
-        Confirm
-    ELSE
-        K.Exit
+    cont := TRUE;
+    WHILE (textsCount > 0) & cont DO
+        IF text.modified THEN
+            Confirm;
+            cont := FALSE
+        ELSE
+            closeFile(FALSE);
+            repaint
+        END
     END
 END close;
 
@@ -859,15 +1044,20 @@ BEGIN
     |menuSelectAll: T.key(text, ORD("A"), {T.CTRL})
 
     |menuNew:
-        SelfRun("")
+        NewFile
     |menuOpen:
         open
     |menuSave:
-        save;
+        save(text);
         repaint
     |menuSaveAs:
-        saveAs;
+        saveAs(text);
         repaint
+    |menuSaveAll:
+        saveAll;
+        repaint
+    |menuClose:
+        closeFile(TRUE)
     |menuFolder:
         K.Run("/rd/1/File Managers/Eolite", text.fileName)
     |menuExit:
@@ -1010,13 +1200,16 @@ VAR
     menu: List.tList;
 BEGIN
     menu := List.create(NIL);
-    Menu.AddMenuItem(menu, menuNew,    "new       ctrl-N");
-    Menu.AddMenuItem(menu, menuOpen,   "open      ctrl-O");
-    Menu.AddMenuItem(menu, menuSave,   "save      ctrl-S");
-    Menu.AddMenuItem(menu, menuSaveAs, "save as");
-    Menu.AddMenuItem(menu, menuFolder, "folder");
+    Menu.AddMenuItem(menu, menuNew,     "new         ctrl-N");
+    Menu.AddMenuItem(menu, menuOpen,    "open        ctrl-O");
+    Menu.AddMenuItem(menu, menuSave,    "save        ctrl-S");
+    Menu.AddMenuItem(menu, menuSaveAs,  "save as");
+    Menu.AddMenuItem(menu, menuSaveAll, "save all");
+    Menu.AddMenuItem(menu, menuFolder,  "folder");
     Menu.delimiter(menu);
-    Menu.AddMenuItem(menu, menuExit,   "exit");
+    Menu.AddMenuItem(menu, menuClose,   "close");
+    Menu.delimiter(menu);
+    Menu.AddMenuItem(menu, menuExit,    "exit");
     RETURN Menu.create(menu, MenuItemClick, MenuKeyDown)
 END CreateMenuFile;
 
@@ -1155,6 +1348,11 @@ BEGIN
     IF menu = menuFile THEN
         Menu.setEnabled(menu, menuSave, text.modified);
         Menu.setEnabled(menu, menuFolder, text.fileName # "");
+        i := 0;
+        WHILE (i < textsCount) & ~texts[i].modified DO
+            INC(i)
+        END;
+        Menu.setEnabled(menu, menuSaveAll, i < textsCount);
         INC(x, menuFileX)
     ELSIF (menu = menuEdit) OR (menu = context) THEN
         Menu.setEnabled(menu, menuUndo, ~ChangeLog.isFirstGuard(text.edition));
@@ -1218,7 +1416,7 @@ END ShowMenu;
 PROCEDURE main;
 VAR
     width, height, x, y, scrollX, scrollY, i: INTEGER;
-    key: INTEGER;
+    key, btn: INTEGER;
     msState: SET;
     scroll: INTEGER;
     err: INTEGER;
@@ -1230,6 +1428,9 @@ BEGIN
     K.GetSystemColors;
     Icons.get(icons, grayIcons);
     modified := FALSE;
+    switch := FALSE;
+    textsCount := 0;
+    curText := 0;
     mainTID := K.ThreadID();
     K.SetIPC(IPC);
     U.ptr2str(K.GetName(), AppPath);
@@ -1239,7 +1440,7 @@ BEGIN
     resized := FALSE;
     shift := {};
     K.ScreenSize(winWidth, winHeight);
-    winWidth := (winWidth * 80) DIV 100 - (128 + 30);
+    winWidth := (winWidth*80) DIV 100 - (128 + 30);
     winHeight := winHeight - (128 + 30);
     winWidth := MAX(winWidth, minWinWidth);
     winHeight := MAX(winHeight, minWinHeight);
@@ -1247,6 +1448,8 @@ BEGIN
     cliHeight := winHeight;
     LEFT := searchLeft;
     canvas := G.CreateCanvas(winWidth - (LEFT + RIGHT + 10), winHeight - (TOP + BOTTOM + 4) - K.SkinHeight());
+    tabs := Tabs.create();
+    Tabs.setArea(tabs, LEFT, TOP - Tabs.tabHeight, canvas.width, Tabs.tabHeight);
     font1 := G.CreateFont(1, "", {});
     font2 := G.CreateFont(2, "", {});
     font := font1;
@@ -1275,6 +1478,7 @@ BEGIN
         END
     END;
     OD := OpenDlg.Create(draw_window, OpenDlg.topen, filePath, "");
+    insert(0, text);
 
     vScroll := Scroll.create(scrollWidth, canvas.height - scrollWidth*2 + 1);
     hScroll := Scroll.create(canvas.width - scrollWidth*2, scrollWidth);
@@ -1320,9 +1524,9 @@ BEGIN
             getKBState;
             IF confirm THEN
                 IF key DIV 65536 = 28 THEN (* Enter *)
-                    save;
+                    save(text);
                     IF ~text.modified THEN
-                        K.Exit
+                        closeFile(FALSE)
                     END;
                     repaint
                 END;
@@ -1407,7 +1611,7 @@ BEGIN
                              open
                         |30: key := ORD("A")
                         |31: key := -1;
-                             save
+                             save(text)
                         |32: key := ORD("D")
                         |38: key := ORD("L")
                         |44: T.undo(text);
@@ -1416,7 +1620,7 @@ BEGIN
                         |46: key := ORD("C")
                         |47: key := ORD("V")
                         |49: key := -1;
-                             SelfRun("")
+                             NewFile
                         ELSE
                             key := -1
                         END
@@ -1431,7 +1635,17 @@ BEGIN
             END;
             repaint
         |3:
-            CASE K.ButtonCode() OF
+            btn := K.ButtonCode();
+            CASE btn OF
+            |Tabs.btnID .. Tabs.btnID + maxTexts - 1:
+                DEC(btn, Tabs.btnID);
+                curText := btn;
+                Tabs.switch(tabs, btn);
+                Switch(texts[btn]);
+                draw_window
+            |Tabs.btnID - 1: Tabs.scroll(tabs, -1); switch := TRUE; repaint
+            |Tabs.btnID - 2: Tabs.scroll(tabs, +1); switch := TRUE; repaint
+
             |0:
 
             |btnFile:
@@ -1449,21 +1663,23 @@ BEGIN
             |btnTools:
                 ShowMenu(menuTools)
             |btnNo:
-                K.Exit
+                closeFile(FALSE);
+                repaint
             |btnYes:
-                save;
+                save(text);
                 IF ~text.modified THEN
-                    K.Exit
+                    closeFile(FALSE)
                 END;
                 repaint
             |btnClose:
                 close
             |btnNew:
-                SelfRun("")
+                NewFile;
+                repaint
             |btnOpen:
                 open
             |btnSave:
-                save;
+                save(text);
                 repaint
             |btnSearch:
                 IF ~search THEN

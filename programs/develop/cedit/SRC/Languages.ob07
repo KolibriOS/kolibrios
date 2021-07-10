@@ -27,6 +27,8 @@ CONST
     langNone* = 0; langC* = 1; langOberon* = 2; langPascal* = 3;
     langFasm* = 4; langLua* = 5; langIni* = 6;
 
+    csLang = {langNone, langC, langOberon, langLua, langIni};
+
 TYPE
 
     tLine = Lines.tLine;
@@ -41,6 +43,11 @@ TYPE
 VAR
 
     oberonKW, cKW, pascalKW, luaKW, iniKW, fasmKW: ARRAY 3 OF tKeyWords;
+
+
+PROCEDURE isCS* (lang: INTEGER): BOOLEAN;
+    RETURN lang IN csLang
+END isCS;
 
 
 PROCEDURE checkKW (s: ARRAY OF WCHAR; KW: tKeyWords): BOOLEAN;

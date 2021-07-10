@@ -42,11 +42,15 @@ TYPE
 
     END;
 
+    tLog* = POINTER TO RECORD
+        Log*: List.tList;
+        guard: tGuard;
+        isLast: BOOLEAN
+    END;
+
 
 VAR
-    Log*: List.tList;
-    guard: tGuard;
-    isLast: BOOLEAN;
+    CL*: tLog;
 
 
 PROCEDURE isLastGuard* (guard: tGuard): BOOLEAN;
@@ -55,7 +59,7 @@ VAR
     res: BOOLEAN;
 BEGIN
     IF guard # NIL THEN
-        item := Log.last;
+        item := CL.Log.last;
         WHILE ~(item IS tGuard) DO
             item := item.prev
         END;
@@ -72,7 +76,7 @@ VAR
     item: List.tItem;
 BEGIN
     ASSERT(guard # NIL);
-    item := Log.first;
+    item := CL.Log.first;
     WHILE ~(item IS tGuard) DO
         item := item.next
     END
@@ -82,8 +86,8 @@ END isFirstGuard;
 
 PROCEDURE setGuard* (_guard: tGuard);
 BEGIN
-    guard := _guard;
-    isLast := isLastGuard(_guard)
+    CL.guard := _guard;
+    CL.isLast := isLastGuard(_guard)
 END setGuard;
 
 
@@ -102,9 +106,9 @@ VAR
     item: List.tItem;
     (*res: INTEGER;*)
 BEGIN
-    isLast := TRUE;
+    CL.isLast := TRUE;
     REPEAT
-        item := List.pop(Log);
+        item := List.pop(CL.Log);
         IF item # guard THEN
         (*
             IF item IS tUntypedPtr THEN
@@ -115,7 +119,7 @@ BEGIN
             DISPOSE(item)
         END
     UNTIL item = guard;
-    List.append(Log, item)
+    List.append(CL.Log, item)
 END clear;
 
 
@@ -126,10 +130,10 @@ BEGIN
     NEW(item);
     item.adr := adrV;
     SYSTEM.GET(adrX, item.val);
-    IF ~isLast THEN
-        clear(guard)
+    IF ~CL.isLast THEN
+        clear(CL.guard)
     END;
-    List.append(Log, item)
+    List.append(CL.Log, item)
 END changeWord;
 
 
@@ -140,10 +144,10 @@ BEGIN
     NEW(item);
     item.adr := SYSTEM.ADR(v);
     item.val := x;
-    IF ~isLast THEN
-        clear(guard)
+    IF ~CL.isLast THEN
+        clear(CL.guard)
     END;
-    List.append(Log, item)
+    List.append(CL.Log, item)
 END changeBool;
 
 
@@ -179,10 +183,27 @@ BEGIN
 END untypedPtr;
 *)
 
+PROCEDURE set* (_CL: tLog);
 BEGIN
-    guard := NIL;
-    isLast := TRUE;
+    CL := _CL
+END set;
+
+
+PROCEDURE create* (VAR maxLength: INTEGER): tLog;
+VAR
+    newLog: tLog;
+BEGIN
+    NEW(newLog);
+    newLog.guard := NIL;
+    newLog.isLast := TRUE;
+    newLog.Log := List.create(NIL);
+    CL := newLog;
+    Lines.setMaxLength(maxLength)
+    RETURN newLog
+END create;
+
+
+BEGIN
     List.init(changeInt, changePtr);
-    Lines.init(changeInt, changePtr, changeBool(*, typedPtr, untypedPtr*));
-    Log := List.create(NIL)
+    Lines.init(changeInt, changePtr, changeBool(*, typedPtr, untypedPtr*))
 END ChangeLog.
