@@ -168,6 +168,9 @@ ud_user_message db 'Error: unsupported processor instruction',0
 mtrr_user_message db '"There is a problem with MTRR configuration.\nPerformance can be low" -dW',0
 end if
 
+except_notify_fstr  db "'%s (pid %d): %s!' -E", 0 ; String format to write to notify exception message
+except_notify_msg   rb 64                         ; The message displayed by notify when an application exception occurs
+
 kernel_file_load:
 ; load kernel.mnt to _CLEAN_ZONE
         dd      0       ; subfunction

@@ -75,7 +75,6 @@ iglobal
     msg_sel_ker   db "kernel", 0
     msg_sel_app   db "application", 0
   end if
-
 endg
 
 macro save_ring3_context {
@@ -228,6 +227,15 @@ show_error_parameters:
         mov     bl, 0x09
   .l1:
         mov     eax, [msg_fault_sel+ebx*4 - 0x08*4]
+
+        ; Notify show exeption message
+        pushad
+        ccall   LIBC_SPRINTF, except_notify_msg, except_notify_fstr, [current_slot], [edx+TASKDATA.pid], eax
+        mov     ebx, except_notify_msg       ; exception message for @notify  
+        mov     ebp, notifyapp               ; @notify bin file path
+        call    fs_execute_from_sysdir_param ; Execute a @notify to display an exception
+        popad 
+
         DEBUGF  1, "K : %s\n", eax
         mov     eax, [reg_cs3+4]
         mov     edi, msg_sel_app
@@ -334,7 +342,6 @@ show_error_parameters:
   restore  reg_ebp
   restore  reg_esi
   restore  reg_edi
-
 
 align 4
 lock_application_table:
