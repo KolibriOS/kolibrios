@@ -123,6 +123,9 @@ __exports:
           usb_get_param,         'USBGetParam',        \
           usb_hc_func,           'USBHCFunc',          \
 \
+          file_system_lfn_protected, 'FS_Service',     \      ; The intrakernel function of working with the file system is exported.
+\                                                             ; Duplicates system call 70.
+\
           net_add_device,        'NetRegDev',          \
           net_remove_device,     'NetUnRegDev',        \
           net_ptr_to_num,        'NetPtrToNum',        \
@@ -136,6 +139,7 @@ __exports:
           acpi_get_root_ptr,     'AcpiGetRootPtr',     \
 \
           0,                     'LFBAddress' ; must be the last one
+
 load kernel_exports_count dword from __exports + 24
 load kernel_exports_addresses dword from __exports + 28
 exp_lfb = OS_BASE + kernel_exports_addresses + (kernel_exports_count - 1) * 4 - 4
