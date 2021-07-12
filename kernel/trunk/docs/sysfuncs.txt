@@ -2230,18 +2230,19 @@ Returned value:
   * function does not return value
 Format of the color table:
 each item is dword-value for color 0x00RRGGBB
-  * +0: dword: frames - color of frame
-  * +4: dword: grab - color of header
-  * +8: dword: grab_button - color of button on header bar
-  * +12 = +0xC: dword: grab_button_text - color of text on button
-    on header bar
+  * +0: dword: none - reserved
+  * +4: dword: none - reserved
+  * +8: dword: work_dark - dark color of working area 
+    used to give a user 3D-like feelings about interface elements
+  * +12 = +0xC: dword: work_light - light color of working area 
+    used to give a user 3D-like feelings about interface elements
   * +16 = +0x10: dword: grab_text - color of text on header
   * +20 = +0x14: dword: work - color of working area
-  * +24 = +0x18: dword: work_button - color of button in working area
-  * +28 = +0x1C: dword: work_button_text - color of text on button
+  * +24 = +0x18: dword: button - color of button in working area
+  * +28 = +0x1C: dword: button_text - color of text on button
     in working area
   * +32 = +0x20: dword: work_text - color of text in working area
-  * +36 = +0x24: dword: work_graph - color of graphics in working area
+  * +36 = +0x24: dword: graph - color of graphics in working area
 Remarks:
   * Structure of the color table is described in the standard
     include file 'macros.inc' as 'system_colors'; for example,
