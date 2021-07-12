@@ -83,6 +83,8 @@
     .global _WaitEvent
     .global _WaitEventTimeout
 
+    .global _FS_Service
+
     .def  _AcpiGetRootPtr;  .scl  2;  .type 32; .endef
 
     .def  _AllocKernelSpace;  .scl  2;  .type 32; .endef
@@ -164,7 +166,9 @@
 
     .def  _WaitEvent;         .scl  2;  .type 32; .endef
     .def  _WaitEventTimeout;  .scl  2;  .type 32; .endef
-
+    
+    .def _FS_Service;         .scl  2;  .type 32; .endef
+    
 _AcpiGetRootPtr:
 
 _AllocKernelSpace:
@@ -243,6 +247,8 @@ _UserAlloc:
 _UserFree:
 _WaitEvent:
 _WaitEventTimeout:
+
+_FS_Service:
 
         ret
 
@@ -326,4 +332,4 @@ _WaitEventTimeout:
 
         .ascii " -export:WaitEvent"            # stdcall
         .ascii " -export:WaitEventTimeout"     # stdcall
-
+        .ascii " -export:FS_Service"           # watch system call 70

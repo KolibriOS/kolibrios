@@ -6,6 +6,8 @@
 typedef u32 addr_t;
 typedef u32 count_t;
 
+#pragma pack(push, 1)
+
 typedef struct
 {
   int width;
@@ -24,7 +26,30 @@ struct kos32_pdev
     u8  bus;
     u8  reserved[2];
     u32 owner;
-} __attribute__((packed));
+};
+
+typedef struct {
+    unsigned            p00;
+    union{
+        uint64_t        p04;
+        struct {
+            unsigned    p04dw;
+            unsigned    p08dw;
+        };
+    };
+    unsigned            p12;
+    union {
+        unsigned        p16;
+        const char     *new_name;
+        void           *bdfe;
+        void           *buf16;
+        const void     *cbuf16;
+    };
+    char                p20;
+    const char         *p21;
+}ksys70_t;
+
+#pragma pack(pop)
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -507,7 +532,17 @@ static inline void *vzalloc(unsigned long size)
    return mem;
 };
 
-
 static inline int power_supply_is_system_supplied(void) { return -1; };
 
+static inline int FS_Service(ksys70_t *k, int* err){
+    int status;
+    __asm__ __volatile__(
+     "call *__imp__FS_Service"
+     :"=a" (status), "=b" (*err) 
+     :"b" (k)
+     :"memory"
+    );
+    __asm__ __volatile__ ("":::"ebx","ecx","edx","esi","edi");
+    return status;
+}
 #endif

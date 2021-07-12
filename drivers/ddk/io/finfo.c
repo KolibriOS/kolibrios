@@ -1,5 +1,6 @@
+#include <syscall.h>
 
-#pragma pack(push, 1)
+#pragma pack(push,1)
 typedef struct
 {
   char sec;
@@ -52,31 +53,16 @@ typedef struct
   unsigned    size;
   unsigned    size_high;
 } FILEINFO;
-
 #pragma pack(pop)
 
-
-int get_fileinfo(const char *path,FILEINFO *info)
+int get_fileinfo(const char *path, FILEINFO *info)
 {
-   int retval;
-   int tmp;
+   ksys70_t k;
+   int err;
+   k.p00 = 5;
+   k.bdfe = info;
+   k.p20 = 0;
+   k.p21 = path;
+   return FS_Service(&k, err);
+}
 
-   asm __volatile__
-      (
-       "pushl $0 \n\t"
-       "pushl $0 \n\t"
-       "movl %2, 1(%%esp) \n\t"
-       "pushl %%ebx \n\t"
-       "pushl $0 \n\t"
-       "pushl $0 \n\t"
-       "pushl $0 \n\t"
-       "pushl $5 \n\t"
-       "movl %%esp, %%ebx \n\t"
-       "movl $70, %%eax \n\t"
-       "int $0x40 \n\t"
-       "addl $28, %%esp \n\t"
-       :"=a" (retval),"=b"(tmp)
-       :"r" (path), "b" (info)
-       );
-   return retval;
-};

@@ -1,22 +1,13 @@
+#include <syscall.h>
 
 int set_file_size(const char *path, unsigned size)
 {
-     int retval;
-     int tmp;
-     __asm__ __volatile__(
-     "pushl $0 \n\t"
-     "pushl $0 \n\t"
-     "movl %2, 1(%%esp) \n\t"
-     "pushl $0 \n\t"
-     "pushl $0 \n\t"
-     "pushl $0 \n\t"
-     "pushl %%ebx \n\t"
-     "push $4 \n\t"
-     "movl %%esp, %%ebx \n\t"
-     "movl $70, %%eax \n\t"
-     "int $0x40 \n\t"
-     "addl $28, %%esp \n\t"
-     :"=a" (retval), "=b"(tmp)
-     :"r" (path), "b" (size));
-     return retval;
-};
+     ksys70_t k;
+     int err;
+     k.p00 = 4;
+     k.p04dw = size;
+     k.p08dw = 0;
+     k.p20   = 0;
+     k.p21   = path;
+     return FS_Service(&k, &err);
+}
