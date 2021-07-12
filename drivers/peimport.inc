@@ -64,9 +64,9 @@ import core,\
               ReservePortArea,\
               Boot_Log,\
 \
-          MutexInit,\
-          MutexLock,\
-          MutexUnlock,\
+              MutexInit,\
+              MutexLock,\
+              MutexUnlock,\
 \
               PciApi,\
               PciRead32,\
@@ -159,5 +159,8 @@ import core,\
               NetAlloc,\
               NetFree,\
 \
-              GetPCIList
+              GetPCIList, \
+\
+              FS_Service
+
 end data

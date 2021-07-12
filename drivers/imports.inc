@@ -108,4 +108,6 @@ kernel_export \
               NetFree,\
               EthInput,\
 \
-              GetPCIList
+              GetPCIList, \
+\
+              FS_Service
