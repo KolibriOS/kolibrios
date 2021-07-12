@@ -1,9 +1,6 @@
 
 SECTION .text
 
-[GLOBAL __start]
-extern go.kernel.Load
-
 global go.os.Sleep
 global go.os.Event
 global go.os.GetButtonID
@@ -18,10 +15,7 @@ global go.os.DrawBar
 global go.os.DebugOutHex
 global go.os.DebugOutChar
 global go.os.DebugOutStr
-
-__start:
-  call  go.kernel.Load
-  ret
+global go.os.WriteText2
 
 go.os.Sleep:
     push ebp
@@ -35,12 +29,8 @@ go.os.Sleep:
 
 
 go.os.Event:
-	push ebp
-    mov ebp,esp
 	mov eax, 10
 	int 0x40
-	mov esp,ebp
-    pop ebp
 	ret
 
 go.os.GetButtonID:
@@ -56,12 +46,8 @@ go.os.GetButtonID:
   ret
 
 go.os.Exit:
-    push ebp
-    mov ebp,esp
 	mov eax, -1
 	int 0x40
-    mov esp,ebp
-    pop ebp
     ret
 
 go.os.Redraw:
@@ -95,42 +81,66 @@ go.os.Window:
     ret
 
 go.os.WriteText:
+    push ebp
+    mov ebp,esp
     mov eax,4
-    mov ebx,[esp+4]
+    mov ebx,[ebp+8]
     shl ebx,16
-    mov bx,[esp+8]
-    mov ecx,[esp+12]
-    mov edx,[esp+16]
-    mov esi,[esp+20]
+    mov bx,[ebp+12]
+    mov ecx,[ebp+16]
+    mov edx,[ebp+20]
+    mov esi,[ebp+24]
     int 0x40
+    mov esp,ebp
+    pop ebp
     ret
 
-go.os.DrawLine:  
-    push ebx
-    mov ebx,[esp+8]
+go.os.WriteText2:
+    push ebp
+    mov ebp,esp
+    mov eax,47
+    mov ebx,[ebp+8]
     shl ebx,16
-    mov bx,[esp+16]
-    mov ecx,[esp+12]
+    mov ecx,[ebp+12]
+    mov edx,[ebp+20]
+    shl edx,16
+    add edx, [ebp+24]
+    mov esi,[ebp+28]
+    int 0x40
+    mov esp,ebp
+    pop ebp
+    ret
+
+go.os.DrawLine:
+    push ebp
+    mov ebp,esp
+    mov ebx,[ebp+8]
+    shl ebx,16
+    mov bx,[ebp+16]
+    mov ecx,[ebp+12]
     shl ecx,16
-    mov cx,[esp+20]
-    mov edx,[esp+24]
+    mov cx,[ebp+20]
+    mov edx,[ebp+24]
     mov eax,38
     int 0x40
-    pop ebx
+    mov esp,ebp
+    pop ebp
     ret
 
 go.os.DrawBar:
-    push  ebx
+    push ebp
+    mov ebp,esp
     mov   eax,13
-    mov   ebx,[esp+8]
+    mov   ebx,[ebp+8]
     shl   ebx,16
-    mov   bx,[esp+16]
-    mov   ecx,[esp+12]
+    mov   bx,[ebp+16]
+    mov   ecx,[ebp+12]
     shl   ecx,16
-    mov   cx,[esp+20]
-    mov   edx,[esp+24]
+    mov   cx,[ebp+20]
+    mov   edx,[ebp+24]
     int   0x40
-    pop   ebx
+    mov esp,ebp
+    pop ebp
     ret
 
 go.os.GetTime:
@@ -138,7 +148,7 @@ go.os.GetTime:
     int 0x40
     ret
 
-go.os.DebugOutHex: 
+go.os.DebugOutHex:
     mov eax, [esp+4]
     mov   edx, 8
     .new_char:
@@ -155,7 +165,7 @@ go.os.DebugOutHex:
     jnz   .new_char
     ret
 
-go.os.DebugOutChar:        
+go.os.DebugOutChar:
    mov al, [esp+4]
    pushf
    pushad
@@ -182,20 +192,20 @@ go.os.DebugOutStr:
    ret
 
 go.os.CreateButton:
-  push  ebx
-  push  esi
-  mov   ebx,[esp+12]
-  shl   ebx,16
-  mov   bx,[esp+20]
-  mov   ecx,[esp+16]
-  shl   ecx,16
-  mov   cx,[esp+24]
-  mov   edx,[esp+28]
-  mov   esi,[esp+32]
-  mov   eax,8
+  push  ebp
+  mov   ebp,esp
+  mov   eax, 8
+  mov ebx, [ebp+8]
+  shl ebx, 16
+  mov bx, [ebp+16]
+  mov ecx, [ebp+12]
+  shl ecx, 16
+  mov cx, [ebp+20]
+  mov edx, [ebp+24]
+  mov esi, [ebp+28]
   int   0x40
-  pop   esi 
-  pop   ebx
+  mov   esp,ebp
+  pop   ebp
   ret
 
 SECTION .data
