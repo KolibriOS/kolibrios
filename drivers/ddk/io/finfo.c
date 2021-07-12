@@ -63,6 +63,6 @@ int get_fileinfo(const char *path, FILEINFO *info)
    k.bdfe = info;
    k.p20 = 0;
    k.p21 = path;
-   return FS_Service(&k, err);
+   return FS_Service(&k, &err);
 }
 
