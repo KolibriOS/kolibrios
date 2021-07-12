@@ -1,6 +1,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;                                                                 ;;
-;; Copyright (C) KolibriOS team 2004-2019. All rights reserved.    ;;
+;; Copyright (C) KolibriOS team 2004-2021. All rights reserved.    ;;
 ;; Distributed under terms of the GNU General Public License       ;;
 ;;                                                                 ;;
 ;;  loopback.inc                                                   ;;
@@ -21,23 +21,31 @@ align 4
 
 LOOPBACK_DEVICE:
 
-        .device_type    dd NET_DEVICE_LOOPBACK
-        .mtu            dd 4096
-        .name           dd .namestr
+        .device_type     dd NET_DEVICE_LOOPBACK
+        .mtu             dd NET_BUFFER_SIZE - NET_BUFF.data
+        .name            dd .namestr
 
-        .unload         dd loop_dummy
-        .reset          dd loop_dummy
-        .transmit       dd loop_input
+        .unload          dd loop_dummy
+        .reset           dd loop_dummy
+        .transmit        dd loop_input
 
-        .bytes_tx       dq 0
-        .bytes_rx       dq 0
-        .packets_tx     dd 0
-        .packets_rx     dd 0
+        .link_state      dd -1
+        .hwacc           dd NET_HWACC_TCP_IPv4_IN + NET_HWACC_TCP_IPv4_OUT
 
-        .link_state     dd -1
-        .hwacc          dd NET_HWACC_TCP_IPv4_IN + NET_HWACC_TCP_IPv4_OUT
+        .bytes_tx        dq ?
+        .bytes_rx        dq ?
 
-        .namestr        db 'loopback', 0
+        .packets_tx      dd ?
+        .packets_tx_err  dd ?
+        .packets_tx_drop dd ?
+        .packets_tx_ovr  dd ?
+
+        .packets_rx      dd ?
+        .packets_rx_err  dd ?
+        .packets_rx_drop dd ?
+        .packets_rx_ovr  dd ?
+
+        .namestr         db 'loopback', 0
 
 endg
 
