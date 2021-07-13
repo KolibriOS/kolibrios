@@ -677,7 +677,7 @@ tup.append_table(extra_files, {
  {"kolibrios/utils/appearance", PROGS .. "/cmm/appearance/appearance.com"},
  {"kolibrios/utils/dicty.kex", PROGS .. "/cmm/dicty/dicty.com"},
  {"kolibrios/utils/notes", PROGS .. "/cmm/notes/notes.com"},
- {"kolibrios/utils/osupdate", PROGS .. "/cmm/misc/osupdate"},
+ {"kolibrios/utils/osupdate", PROGS .. "/cmm/misc/osupdate.com"},
 })
 end -- tup.getconfig('NO_CMM') ~= 'full'
 
