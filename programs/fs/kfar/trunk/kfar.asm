@@ -984,11 +984,19 @@ get_keybar_ind:
         ret
 
 align 4
-OnMouse_ctrl_f39:
+OnMouse_ctrl_f3_9:
         sub     eax, panels_mouse.ctrl+8
         shr     eax, 2
         add     eax, 0x3D
-        call    panels_OnKey.ctrl_f39
+        call    panels_OnKey.ctrl_f3_9
+        ret
+
+align 4
+OnMouse_alt_f1_2:
+        sub     eax, panels_mouse.alt
+        shr     eax, 2
+        add     eax, 0x3B
+        call    panels_OnKey.alt_f1_2
         ret
 
 align 16
@@ -2241,7 +2249,7 @@ panels_OnKey:
         pop     edi
         mov     byte [edi], 0
         jmp     .done_cmdbar
-.ctrl_f39:
+.ctrl_f3_9:
         sub     al, 0x3D
         add     al, al
         mov     ah, [ebp + PanelData.sortmode]
@@ -2277,7 +2285,7 @@ panels_OnKey:
         inc     ecx
         add     [ebp + PanelData.start], ecx
         jmp     @b
-.alt_f12:
+.alt_f1_2:
         mov     ebp, panel1
         cmp     al, 0x3B
         jz      @f
@@ -7566,16 +7574,17 @@ panels_mouse:
 .ctrl:
         rd 2
 repeat 9-3+1
-        dd OnMouse_ctrl_f39
+        dd OnMouse_ctrl_f3_9
 end repeat
         rd 3
 ; Ctrl+Shift
         rd 12
-; Alt
-        rd 6
-        dd panels_OnKey.alt_f7
+.alt:
+        dd OnMouse_alt_f1_2
+        dd OnMouse_alt_f1_2
         rd 4
-        dd panels_OnKey.alt_f12
+        dd panels_OnKey.alt_f7
+        rd 5
 ; Alt+Shift
         rd 12
 ; Alt+Ctrl
@@ -7636,12 +7645,12 @@ panels_ctrlkeys:
         dd      panels_OnKey.menu
 repeat 9-3+1
         dw      0x3D+%-1, 0x10
-        dd      panels_OnKey.ctrl_f39
+        dd      panels_OnKey.ctrl_f3_9
 end repeat
         dw      0x3B, 0x100
-        dd      panels_OnKey.alt_f12
+        dd      panels_OnKey.alt_f1_2
         dw      0x3C, 0x100
-        dd      panels_OnKey.alt_f12
+        dd      panels_OnKey.alt_f1_2
         dw      0x58, 0
         dd      F12
         dw      0x13, 0x10

@@ -49,7 +49,7 @@ GenericBox:
         jz      .redraw
         dec     eax
         jz      .key
-        sub     eax,4
+        sub     eax, 4
         jz      .mouse
         jmp     exit
 .redraw:
@@ -145,9 +145,11 @@ align 4
         mov     eax,SF_MOUSE_GET
         mov     ebx,SSF_BUTTON_EXT
         int     0x40
+        mov     byte[mousestate], 1
         bt      eax,8 ;left but. down
-        jnc     .event
-
+        jc      @f
+        mov     byte[mousestate], 0
+@@:
         mov     eax,SF_MOUSE_GET
         mov     ebx,SSF_WINDOW_POSITION
         int     0x40
@@ -169,8 +171,6 @@ align 4
         pop     edx
 
         mov     ebx, [esp+24h+8] ;DLGTEMPLATE* dlg
-        cmp     dword[ebx+dlgtemplate.size], 0
-        jne     .event ;если диалоговое окно не стандартное (список значений)
         cmp     edx, [ebx+dlgtemplate.y]
         jl      .event
         cmp     eax, [ebx+dlgtemplate.x]
@@ -181,7 +181,32 @@ align 4
         jge     .event
         cmp     eax, [ebx+dlgtemplate.width]
         jge     .event
-
+        cmp     dword[ebx+dlgtemplate.size], 0
+        je      .m_menu_end
+        ;если диалоговое окно не стандартное (список значений)
+        cmp     edx, [ebx+44]
+        jl      @f
+        mov     edx, [ebx+44]
+        dec     edx
+@@:
+        mov     ecx, [ebx+48]
+        mov     ecx, [ecx]    ;берем указатель на listitem[1]
+        sub     ecx, [ebx+48] ;ecx - размер одного listitem
+        mov     [ebx+56], edx
+        imul    edx, ecx
+        add     edx, [ebx+48]
+        mov     [ebx+40], edx
+        cmp     byte[mousestate], 1
+        jne     @f
+        mov     [esp+28], edx ;save to eax
+        jmp     .exit
+@@:
+        call    MenuDlgProc.dodraw
+        call    draw_image
+        jmp     .event
+.m_menu_end:
+        cmp     byte[mousestate], 1
+        jne     .event
         add     ebx, dlgtemplate.size+12
         mov     ecx, [ebx-4]
         or      ecx, ecx
@@ -193,8 +218,8 @@ align 4
         je      .m_comp
         cmp     [ebx+dlgitemtemplate.type], 3 ;edit
         je      .m_comp
-        ;cmp     [ebx+dlgitemtemplate.type], 5 ;check
-        ;je      .m_comp
+        cmp     [ebx+dlgitemtemplate.type], 5 ;check
+        je      .m_comp
         jmp     .m_next
 align 4
 .m_comp:
@@ -212,6 +237,12 @@ align 4
         mov     [esp+28+8], ebx ;save to eax
         pop     ecx ebx
         jmp     .exit
+@@:
+        cmp     [ebx+dlgitemtemplate.type], 5 ;check
+        jne     @f
+        xor     [ebx+dlgitemtemplate.flags], 10h
+        mov     eax, ebx
+        jmp     .m_new_focus
 @@:
         mov     eax, [ebx+dlgitemtemplate.flags]
         and     eax, 4
@@ -744,11 +775,11 @@ menu_centered_in:
         pushad
         mov     ecx, 60
 ; 40 bytes for dlgtemplate + additional:
-; +40: dd cur_variant   - [???]
-; +44: dd num_variants  - сколько элементов влазит в окно
-; +48: dd begin_variant - [dd ..,..,???]
-; +52: dd end_variant   - [dd ..,..,???]
-; +56: dd cur_variant_idx - ???
+; +40: dd cur_variant   - указатель на массив listitem[num_variants]
+; +44: dd num_variants  - сколько элементов в списке
+; +48: dd begin_variant - указатель на listitem[0]
+; +52: dd end_variant   - указатель на listitem[num_variants-1]
+; +56: dd cur_variant_idx - индекс выбранного элемента от 0 до num_variants-1
         call    xpgalloc
         test    eax, eax
         jnz     @f
@@ -1358,11 +1389,16 @@ ManagerDlgProc:
         jz      .draw
         dec     eax
         jz      .key
+        ;sub     eax, 4
+        ;jz      .mouse
         xor     eax, eax
         ret     16
 .draw:
         call    .dodraw
         ret     16
+;.mouse:
+        ;todo
+        ;ret     16
 .key:
 ; find item with focus
         add     ebx, dlgtemplate.size+12
@@ -1824,9 +1860,12 @@ draw_checkbox:
 @@:
         lodsb
         test    al, al
-        jz      .ret
+        jz      .correct
         stosw
         loop    @b
+		ret
+.correct:
+		sub     [ebx+dlgitemtemplate.x2], ecx
 .ret:
         ret
 
