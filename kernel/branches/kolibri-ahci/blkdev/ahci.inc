@@ -22,6 +22,11 @@ bit_AHCI_HBA_GHC_AHCI_ENABLE      = 31  ; Enable AHCI mode
 bit_AHCI_HBA_GHC_RESET            = 0   ; Reset HBA
 bit_AHCI_HBA_GHC_INTERRUPT_ENABLE = 1   ; Enable interrupts from the HBA 
 
+bit_AHCI_HBA_PxCMD_ST    = 0
+bit_AHCI_HBA_PxCMD_FRE   = 4
+bit_AHCI_HBA_PxCMD_FR    = 14
+bit_AHCI_HBA_PxCMD_CR    = 15
+
 AHCI_HBA_PxSSTS_DET         = 0xF
 AHCI_HBA_PORT_IPM_ACTIVE    = 1
 AHCI_HBA_PxSSTS_DET_PRESENT = 3
@@ -374,4 +379,36 @@ init_ahci:
         
 
         ret
+; -------------------------------------------------
+
+; TODO: implement function port_rebase
+
+; Start command engine
+; in: eax - address of HBA_PORT structure
+start_cmd:
+.wait_cr: ; Wait until CR (bit15) is cleared
+        bt      [eax + HBA_PORT.command], bit_AHCI_HBA_PxCMD_CR
+        jc      .wait_cr
+ 
+        ; Set FRE (bit4) and ST (bit0)
+        bts     [eax + HBA_PORT.command], bit_AHCI_HBA_PxCMD_FRE
+        bts     [eax + HBA_PORT.command], bit_AHCI_HBA_PxCMD_ST
+        
+        ret
+
+; Stop command engine
+; in: eax - address of HBA_PORT structure
+stop_cmd:
+        btr     [eax + HBA_PORT.command], bit_AHCI_HBA_PxCMD_ST ; Clear ST (bit0)
+        btr     [eax + HBA_PORT.command], bit_AHCI_HBA_PxCMD_FRE ; Clear FRE (bit4)
+.wait_fr_cr: ; Wait until FR (bit14), CR (bit15) are cleared
+        bt      [eax + HBA_PORT.command], bit_AHCI_HBA_PxCMD_FR
+        jc      .wait_fr_cr
+        bt      [eax + HBA_PORT.command], bit_AHCI_HBA_PxCMD_CR
+        jc      .wait_fr_cr
+
+        ret
+
+
+
 
