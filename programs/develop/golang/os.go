@@ -12,18 +12,23 @@ const (
     EVENT_DEBUG = 9    /* Debug subsystem event */
     EVENT_IRQBEGIN = 16
 )
+
 func Sleep(uint32)
 func GetTime()(time uint32)
-func Event()(uint32)
+func Event()(int)
 func GetButtonID()(id int)
-func CreateButton(x uint32, y uint32, xsize uint32, ysize uint32, id uint32, color uint32)
+func CreateButton(x int, y int, xsize int, ysize int, id int, color uint32)
 func Exit()
-func Redraw(uint32)
-func Window(y uint32, x uint32, w uint32,h uint32, title string)
-func WriteText(x uint32 ,y uint32 , color uint32, text string)
-func WriteText2(uint32 ,string ,uint32, uint32,uint32)
-func DrawLine(x1 uint32, y1 uint32, x2 uint32, y2 uint32, color uint32)(uint32)
+func Redraw(int)
+func Window(y int, x int, w int,h int, title string)
+func WriteText(x int ,y int , color uint32, text string)
+func WriteText2(int ,int ,int, uint32,uint32)
+func DrawLine(x1 int, y1 int, x2 int, y2 int, color uint32)(uint32)
 func DrawBar(x int, y int, xsize int, ysize int, color uint32)
 func DebugOutHex(uint32)
 func DebugOutChar(byte)
 func DebugOutStr(string)
+
+func Pointer2byteSlice(ptr uint32) *[]byte __asm__("__unsafe_get_addr")
+
+//func Pointer2uint32(ptr interface{}) uint32 __asm__("__unsafe_get_addr")
