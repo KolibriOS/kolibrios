@@ -71,14 +71,14 @@ bool active_menu = false;
 void EventMenuClick(dword _id)
 {
 	if (active_menu == MENU_NO_FILE) switch(_id) {
-		case 1: EventPaste(#path); break;
+		case 1: EventPaste(path); break;
 	}
 	if (active_menu == MENU_FILE) switch(_id) {
 		case 1: EventOpen(0); break;
 		case 2: ShowOpenWithDialog(); break;
 		case 3: CopyFilesListToClipboard(COPY); break;
 		case 4: CopyFilesListToClipboard(CUT); break;
-		case 5: EventPaste(#path); break;
+		case 5: EventPaste(path); break;
 		case 6: FnProcess(2); break;
 		case 7: ShowPopinForm(POPIN_DELETE); break;
 		case 8: FnProcess(1); break;
