@@ -27,7 +27,17 @@ AHCI_HBA_PORT_IPM_ACTIVE    = 1
 AHCI_HBA_PxSSTS_DET_PRESENT = 3
 
 AHCI_MAX_PORTS = 32        ;
-HBA_MEMORY_SIZE = 0x1100
+;HBA_MEMORY_SIZE = 0x1100
+
+; Frame Information Structure Types
+FIS_TYPE_REG_H2D    = 0x27 ; Register FIS - host to device
+FIS_TYPE_REG_D2H    = 0x34 ; Register FIS - device to host
+FIS_TYPE_DMA_ACT    = 0x39 ; DMA activate FIS - device to host
+FIS_TYPE_DMA_SETUP  = 0x41 ; DMA setup FIS - bidirectional
+FIS_TYPE_DATA       = 0x46 ; Data FIS - bidirectional
+FIS_TYPE_BIST       = 0x58 ; BIST activate FIS - bidirectional
+FIS_TYPE_PIO_SETUP  = 0x5F ; PIO setup FIS - device to host
+FIS_TYPE_DEV_BITS   = 0xA1 ; Set device bits FIS - device to host
 
 struct AHCI_DATA
         abar    dd ?       ; pointer to HBA Memory (BAR5) mapped to virtual kernelspace memory
@@ -36,16 +46,16 @@ ends
 
 ; Generic Host Control registers
 struct HBA_MEM
-        capability            dd ?                    ; 0x00
-        global_host_control   dd ?                    ; 0x04
-        interrupt_status      dd ?                    ; 0x08
-        port_implemented      dd ?                    ; 0x0C
-        version               dd ?                    ; 0x10
+        cap                   dd ?                    ; 0x00, Host capabilities
+        ghc                   dd ?                    ; 0x04, Global host control
+        is                    dd ?                    ; 0x08, Interrupt status
+        pi                    dd ?                    ; 0x0C, Port implemented
+        version               dd ?                    ; 0x10, Version
         ccc_ctl               dd ?                    ; 0x14, Command completion coalescing control
         ccc_pts               dd ?                    ; 0x18, Command completion coalescing ports
         em_loc                dd ?                    ; 0x1C, Enclosure management location
         em_ctl                dd ?                    ; 0x20, Enclosure management control
-        capability2           dd ?                    ; 0x24, Host capabilities extended
+        cap2                  dd ?                    ; 0x24, Host capabilities extended
         bohc                  dd ?                    ; 0x28, BIOS/OS handoff control and status
         reserved              rb (0xA0-0x2C)          ; 0x2C - 0x9F, Reserved
         vendor                rb (0x100-0xA0)         ; 0xA0 - 0xFF, Vendor specific 
@@ -54,33 +64,155 @@ ends
 
 ; Port Control registers
 struct HBA_PORT
-	command_list_base_l      dd ?                 ; 0x00, command list base address, 1K-byte aligned
-	command_list_base_h      dd ?                 ; 0x04, command list base address upper 32 bits, used on 64 bit systems
-	fis_base_l               dd ?                 ; 0x08, FIS base address, 256-byte aligned
-	fis_base_h               dd ?                 ; 0x0C, FIS base address upper 32 bits, used on 64 bit systems
-	interrupt_status         dd ?                 ; 0x10
-	interrupt_enable         dd ?                 ; 0x14
-	command                  dd ?                 ; 0x18, command and status
-	reserved0                dd ?                 ; 0x1C
-	task_file_data           dd ?                 ; 0x20
-	signature                dd ?                 ; 0x24
-	sata_status              dd ?                 ; 0x28, SATA status (SCR0:SStatus)
-	sata_control             dd ?                 ; 0x2C, SATA control (SCR2:SControl)
-	sata_error               dd ?                 ; 0x30, SATA error (SCR1:SError)
-	sata_active              dd ?                 ; 0x34, SATA active (SCR3:SActive)
-	command_issue            dd ?                 ; 0x38
-	sata_notification        dd ?                 ; 0x3C, SATA notification (SCR4:SNotification)
-	fis_based_switch_control dd ?                 ; 0x40
-	reserved1                rd 11                ; 0x44 - 0x6F
-	vendor                   rd 4                 ; 0x70 - 0x7F, vendor specific
+        command_list_base_l      dd ?                 ; 0x00, command list base address, 1K-byte aligned
+        command_list_base_h      dd ?                 ; 0x04, command list base address upper 32 bits, used on 64 bit systems
+        fis_base_l               dd ?                 ; 0x08, FIS base address, 256-byte aligned
+        fis_base_h               dd ?                 ; 0x0C, FIS base address upper 32 bits, used on 64 bit systems
+        interrupt_status         dd ?                 ; 0x10
+        interrupt_enable         dd ?                 ; 0x14
+        command                  dd ?                 ; 0x18, command and status
+        reserved0                dd ?                 ; 0x1C
+        task_file_data           dd ?                 ; 0x20
+        signature                dd ?                 ; 0x24
+        sata_status              dd ?                 ; 0x28, SATA status (SCR0:SStatus)
+        sata_control             dd ?                 ; 0x2C, SATA control (SCR2:SControl)
+        sata_error               dd ?                 ; 0x30, SATA error (SCR1:SError)
+        sata_active              dd ?                 ; 0x34, SATA active (SCR3:SActive)
+        command_issue            dd ?                 ; 0x38
+        sata_notification        dd ?                 ; 0x3C, SATA notification (SCR4:SNotification)
+        fis_based_switch_control dd ?                 ; 0x40
+        reserved1                rd 11                ; 0x44 - 0x6F
+        vendor                   rd 4                 ; 0x70 - 0x7F, vendor specific
 ends
 
+; Register FIS – Host to Device
+struct FIS_REG_H2D
+        fis_type      db ?       ; FIS_TYPE_REG_H2D
+        _flags        db ?       ; 0bCRRRPPPP, C - 1: Command, 0: Control
+                                 ; R - Reserved, P - Port multiplier
+ 
+        command       db ?       ; Command register
+        featurel      db ?       ; Feature register, 7:0
+ 
+        lba0          db ?       ; LBA low register, 7:0
+        lba1          db ?       ; LBA mid register, 15:8
+        lba2          db ?       ; LBA high register, 23:16
+        device        db ?       ; Device register
+ 
+        lba3          db ?       ; LBA register, 31:24
+        lba4          db ?       ; LBA register, 39:32
+        lba5          db ?       ; LBA register, 47:40
+        featureh      db ?       ; Feature register, 15:8
+ 
+        countl        db ?       ; Count register, 7:0
+        counth        db ?       ; Count register, 15:8
+        icc           db ?       ; Isochronous command completion
+        control       db ?       ; Control register
+ 
+        rsv1          rb 4       ; Reserved
+ends
+
+; Register FIS – Device to Host
+struct FIS_REG_D2H
+    fis_type      db ?           ; FIS_TYPE_REG_D2H
+ 
+    _flags        db ?           ; 0bRIRPPPP, P - Port multiplier, R - Reserved
+                                 ; I - Interrupt bit
+ 
+    status        db ?           ; Status register
+    error         db ?           ; Error register
+ 
+    lba0          db ?           ; LBA low register, 7:0
+    lba1          db ?           ; LBA mid register, 15:8
+    lba2          db ?           ; LBA high register, 23:16
+    device        db ?           ; Device register
+ 
+    lba3          db ?           ; LBA register, 31:24
+    lba4          db ?           ; LBA register, 39:32
+    lba5          db ?           ; LBA register, 47:40
+    rsv2          db ?           ; Reserved
+ 
+    countl        db ?           ; Count register, 7:0
+    counth        db ?           ; Count register, 15:8
+    rsv3          rb 2           ; Reserved
+ 
+    rsv4          rb 4           ; Reserved
+ends
+
+; Data FIS – Bidirectional
+struct FIS_DATA
+    fis_type      db ?           ; FIS_TYPE_DATA
+    _flags        db ?           ; 0bRRRRPPPP, R - Reserved, P - Port multiplier
+    rsv1          rb 2           ; Reserved
+    ; DWORD 1 ~ N (?)
+    data          rd 1           ; Payload
+ends
+
+; PIO Setup – Device to Host
+struct FIS_PIO_SETUP
+    fis_type      db ?           ; FIS_TYPE_PIO_SETUP
+ 
+    _flags        db ?           ; 0bRIDRPPPP, P - Port multiplier, R - Reserved
+                                 ; I - Interrupt bit, D - Data transfer direction, 1 - device to host
+ 
+    status        db ?           ; Status register
+    error         db ?           ; Error register
+ 
+    lba0          db ?           ; LBA low register, 7:0
+    lba1          db ?           ; LBA mid register, 15:8
+    lba2          db ?           ; LBA high register, 23:16
+    device        db ?           ; Device register
+ 
+    lba3          db ?           ; LBA register, 31:24
+    lba4          db ?           ; LBA register, 39:32
+    lba5          db ?           ; LBA register, 47:40
+    rsv2          db ?           ; Reserved
+ 
+    countl        db ?           ; Count register, 7:0
+    counth        db ?           ; Count register, 15:8
+    rsv3          db ?           ; Reserved
+    e_status      db ?           ; New value of status register
+ 
+    tc            dw ?           ; Transfer count
+    rsv4          rb 2           ; Reserved
+ends
+
+; DMA Setup – Device to Host
+struct FIS_DMA_SETUP
+    fis_type      db ?           ; FIS_TYPE_DMA_SETUP
+    _flags        db ?           ; 0bAIDRPPPP, A - Auto-activate. Specifies if DMA Activate FIS is needed,
+                                 ; I - Interrupt bit, D - Data transfer direction, 1 - device to host,
+                                 ; R - Reserved, P - Port multiplier
+
+    rsved         rb 2           ; Reserved
+    DMAbufferID   dq ?           ; DMA Buffer Identifier.
+                                 ; Used to Identify DMA buffer in host memory.
+                                 ; SATA Spec says host specific and not in Spec.
+                                 ; Trying AHCI spec might work.
+
+    TransferCount dd ?           ; Number of bytes to transfer. Bit 0 must be 0
+    resvd         dd ?           ; Reserved
+ends
+
+; Set device bits FIS - device to host
+struct FIS_DEV_BITS
+    fis_type      db ?           ; FIS_TYPE_DEV_BITS
+    _flags        db ?           ; 0bNIRRPPPP, N - Notification, I - Interrupt,
+                                 ; R - Reserved, P - Port multiplier
+    
+    status        db ?           ; Status register
+    error         db ?           ; Error register
+    
+    protocol      dd ?           ; Protocol
+ends
+
+; --------------------------------------------------
 uglobal
 align 4
         ahci_controller AHCI_DATA
 endg
 
-
+; -----------------------------------------------------------------------
 ; detect ahci controller and initialize
 align 4
 init_ahci:
@@ -147,14 +279,14 @@ init_ahci:
 
         ; ; Print some register values to debug board
         ; mov     esi, [ahci_controller + AHCI_DATA.abar]
-        ; DEBUGF  1, "K: AHCI: HBA.cap = %x, HBA.ghc = %x, HBA_MEM.version = %x\n", [esi + HBA_MEM.capability], [esi + HBA_MEM.global_host_control], [esi + HBA_MEM.version]
+        ; DEBUGF  1, "K: AHCI: HBA.cap = %x, HBA.ghc = %x, HBA_MEM.version = %x\n", [esi + HBA_MEM.cap], [esi + HBA_MEM.ghc], [esi + HBA_MEM.version]
 
         ;-------------------------------------------------------
         ; Request BIOS/OS ownership handoff, if supported. (TODO check correctness)
         mov     esi, [ahci_controller + AHCI_DATA.abar]
-        ;mov     ebx, [esi + HBA_MEM.capability2]
+        ;mov     ebx, [esi + HBA_MEM.cap2]
         ;DEBUGF  1, "K: AHCI: HBA_MEM.cap2 = %x\n", ebx
-        bt      [esi + HBA_MEM.capability2], bit_AHCI_HBA_CAP2_BOH
+        bt      [esi + HBA_MEM.cap2], bit_AHCI_HBA_CAP2_BOH
         jnc     .end_handoff
         DEBUGF  1, "K: AHCI: requesting AHCI ownership change...\n"
         bts     [esi + HBA_MEM.bohc], bit_AHCI_HBA_BOHC_OOS
@@ -179,27 +311,27 @@ init_ahci:
         ;-------------------------------------------------------
 
         ; enable the AHCI and reset it
-        bts     [esi + HBA_MEM.global_host_control], bit_AHCI_HBA_GHC_AHCI_ENABLE
-        bts     [esi + HBA_MEM.global_host_control], bit_AHCI_HBA_GHC_RESET
+        bts     [esi + HBA_MEM.ghc], bit_AHCI_HBA_GHC_AHCI_ENABLE
+        bts     [esi + HBA_MEM.ghc], bit_AHCI_HBA_GHC_RESET
 
         ; wait for reset to complete
 .wait_reset:
-        bt      [esi + HBA_MEM.global_host_control], bit_AHCI_HBA_GHC_RESET
+        bt      [esi + HBA_MEM.ghc], bit_AHCI_HBA_GHC_RESET
         jc      .wait_reset
 
         ; enable the AHCI and interrupts
-        bts     [esi + HBA_MEM.global_host_control], bit_AHCI_HBA_GHC_AHCI_ENABLE
-        bts     [esi + HBA_MEM.global_host_control], bit_AHCI_HBA_GHC_INTERRUPT_ENABLE
+        bts     [esi + HBA_MEM.ghc], bit_AHCI_HBA_GHC_AHCI_ENABLE
+        bts     [esi + HBA_MEM.ghc], bit_AHCI_HBA_GHC_INTERRUPT_ENABLE
         mov     ebx, 2
         call    delay_hs
         
-        DEBUGF  1, "K: AHCI: caps: %x %x, ver: %x, ghc: %x, pi: %x\n", [esi + HBA_MEM.capability], [esi + HBA_MEM.capability2], [esi + HBA_MEM.version], [esi + HBA_MEM.global_host_control], [esi + HBA_MEM.port_implemented]
+        DEBUGF  1, "K: AHCI: caps: %x %x, ver: %x, ghc: %x, pi: %x\n", [esi + HBA_MEM.cap], [esi + HBA_MEM.cap2], [esi + HBA_MEM.version], [esi + HBA_MEM.ghc], [esi + HBA_MEM.pi]
 
         ; TODO:
         ; calculate irq line
         ; ahciHBA->ghc |= AHCI_GHC_IE;
         ; IDT::RegisterInterruptHandler(irq, InterruptHandler);
-	; ahciHBA->is = 0xffffffff;
+        ; ahciHBA->is = 0xffffffff;
 
         xor     ebx, ebx
 .detect_drives:
@@ -207,7 +339,7 @@ init_ahci:
         jae     .end_detect_drives
 
         ; if port with index ebx is not implemented then go to next
-        mov     ecx, [esi + HBA_MEM.port_implemented]
+        mov     ecx, [esi + HBA_MEM.pi]
         bt      ecx, ebx
         jnc     .continue_detect_drives
 
@@ -236,7 +368,7 @@ init_ahci:
         inc     ebx
         jmp     .detect_drives
 
-        ; TODO: why signatures of found disks are 0xFFFFFFFF ?
+        
 
 .end_detect_drives:
         
