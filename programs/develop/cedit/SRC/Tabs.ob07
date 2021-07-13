@@ -1,4 +1,4 @@
-(*
+﻿(*
     Copyright 2021 Anton Krotov
 
     This file is part of CEdit.
@@ -26,6 +26,7 @@ CONST
     btnID* = 100;
     tabHeight* = 22;
     curTabHeight = 26;
+    scrWidth = 10;
 
 
 TYPE
@@ -48,21 +49,29 @@ TYPE
 
 PROCEDURE drawTab (t: tTabs; id, x, y, width, height: INTEGER; s: ARRAY OF CHAR);
 VAR
-    x2, y2: INTEGER;
+    x2, y2, color: INTEGER;
 BEGIN
     IF id = t.current THEN
         INC(height, curTabHeight - tabHeight);
-        DEC(y, curTabHeight - tabHeight)
+        DEC(y, curTabHeight - tabHeight);
+        (*color := K.lightColor
+    ELSE
+        color := K.darkColor*)
     END;
+    color := K.winColor;
+    DEC(x); INC(width);
     x2 := x + width - 1;
     y2 := y + height - 1;
-    K.DrawRect(x, y, width, height, K.winColor);
+
+    K.DrawRect(x, y, width, height,color);
     K.DrawLine(x, y, x2, y, K.borderColor);
     K.DrawLine(x2, y, x2, y2, K.borderColor);
-    K.DrawLine(x2, y2, x, y2, K.borderColor);
+    IF id # t.current THEN
+        K.DrawLine(x2 - 1, y2, x, y2, K.borderColor);
+    END;
     K.DrawLine(x, y2, x, y, K.borderColor);
-    K.DrawText866bk(x + K.fontWidth, y + (height - K.fontHeight) DIV 2, K.textColor, K.winColor, s);
-    K.CreateButton(id + ORD({30}) + btnID, x, y - 1, width, height - 1, K.winColor, "");
+    K.DrawText866bk(x + K.fontWidth, y + (height - K.fontHeight) DIV 2, K.textColor, color, s);
+    K.CreateButton(id + ORD({30}) + btnID, x, y - 1, width, height - 1, color, "");
 END drawTab;
 
 
@@ -89,21 +98,22 @@ END Width;
 
 
 PROCEDURE draw* (t: tTabs);
-CONST
-    scrWidth = 10;
 VAR
     x, y, xmax, n, width: INTEGER;
     item: List.tItem;
+    scroll: BOOLEAN;
 BEGIN
     y := t.y;
     x := t.x;
-    K.DrawRect(x, y - (curTabHeight - tabHeight), t.width + 2*scrWidth, t.height + (curTabHeight - tabHeight), K.winColor);
+    K.DrawRect(x, y - (curTabHeight - tabHeight), t.width + 2*scrWidth, t.height + (curTabHeight - tabHeight) - 1, K.winColor);
     IF Width(t, 0, t.strings.count - 1) > t.width THEN
         INC(x, 2*scrWidth);
         K.CreateButton(btnID - 1, t.x, t.y, scrWidth, t.height - 1, K.btnColor, "<");
-        K.CreateButton(btnID - 2, t.x + scrWidth, t.y, scrWidth, t.height - 1, K.btnColor, ">")
+        K.CreateButton(btnID - 2, t.x + scrWidth, t.y, scrWidth, t.height - 1, K.btnColor, ">");
+        scroll := TRUE
     ELSE
-        t.first := 0
+        t.first := 0;
+        scroll := FALSE
     END;
     xmax := x + t.width - 1;
 
@@ -120,13 +130,14 @@ BEGIN
         t.first := n
     END;
 
-    K.DrawRect(x, y, t.width, t.height, K.winColor);
+    K.DrawRect(x, y, t.width, t.height - 1, K.winColor);
+    K.DrawLine(x, y + tabHeight - 1, x + t.width - 1 + 2*scrWidth*(1 - ORD(scroll)), y + tabHeight - 1, K.borderColor);
     item := List.getItem(t.strings, t.first);
     n := t.first;
     WHILE (item # NIL) & (x <= xmax) DO
         width := tabWidth(item(tItem));
         IF x + width - 1 <= xmax THEN
-            drawTab(t, n, x, y, width, t.height, item(tItem).val)
+            drawTab(t, n, x + 1, y, width, t.height, item(tItem).val)
         END;
         INC(n);
         INC(x, width);
@@ -195,7 +206,7 @@ PROCEDURE setArea* (t: tTabs; x, y, width, height: INTEGER);
 BEGIN
     t.x := x;
     t.y := y;
-    t.width := width;
+    t.width := width - 2*scrWidth;
     t.height := height
 END setArea;
 

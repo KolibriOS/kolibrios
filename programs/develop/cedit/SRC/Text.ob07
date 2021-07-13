@@ -41,7 +41,7 @@ CONST
 
     mark_width = 2;
     pad_left = mark_width + 3;
-    pad_top = 1;
+    pad_top = 0;
     inter = 2;
 
 
@@ -1422,6 +1422,36 @@ BEGIN
 END goto;
 
 
+PROCEDURE toggleLabel* (text: tText);
+BEGIN
+    text.curLine.label := ~text.curLine.label
+END toggleLabel;
+
+
+PROCEDURE gotoLabel* (text: tText; frw: BOOLEAN);
+VAR
+    line: tLine;
+    n: INTEGER;
+BEGIN
+    n := text.cursor.Y;
+    line := text.curLine;
+    IF frw THEN
+        REPEAT
+            line := line.next(tLine);
+            INC(n)
+        UNTIL (line = NIL) OR line.label
+    ELSE
+        REPEAT
+            line := line.prev(tLine);
+            DEC(n)
+        UNTIL (line = NIL) OR line.label
+    END;
+    IF line # NIL THEN
+        IF goto(text, n + 1) THEN END
+    END
+END gotoLabel;
+
+
 PROCEDURE changeCase (text: tText; upper: BOOLEAN);
 VAR
     i: INTEGER;
@@ -1826,13 +1856,13 @@ BEGIN
 
     G.SetColor(canvas, colors.back);
     G.clear(canvas);
+    wNum := charWidth;
     IF text.numbers THEN
         numWidth := U.lg10(text.count) + 2;
-        wNum := charWidth;
         xNum := numWidth*wNum - wNum DIV 2;
         setPadding(numWidth*wNum + pad_left, padding.top);
     ELSE
-        setPadding(pad_left, padding.top)
+        setPadding(pad_left + wNum*2, padding.top)
     END;
     getSelect(text, selBeg, selEnd);
     y := padding.top + inter DIV 2;
@@ -1868,25 +1898,33 @@ BEGIN
         INC(n);
         INC(cnt)
     END;
-    IF text.numbers THEN
-        G.SetColor(canvas, colors.numback);
-        G.FillRect(canvas, 0, 0, padding.left - pad_left (*+ 1*), size.Y - 1);
-        SetColor(colors.numtext, colors.numback);
-        y := padding.top + inter DIV 2;
-        n := MIN(text.scroll.Y + textsize.Y + 1, text.count);
-        FOR i := text.scroll.Y + 1 TO n DO
-            IF (i MOD 10 = 0) OR (i - 1 = text.cursor.Y) THEN
+    G.SetColor(canvas, colors.numback);
+    G.FillRect(canvas, 0, 0, padding.left - pad_left (*+ 1*), size.Y - 1);
+    line := firstLine;
+    SetColor(colors.numtext, colors.numback);
+    y := padding.top + inter DIV 2;
+    n := MIN(text.scroll.Y + textsize.Y + 1, text.count);
+    FOR i := text.scroll.Y + 1 TO n DO
+        IF text.numbers THEN
+            IF (i MOD 10 = 0) OR (i - 1 = text.cursor.Y) OR line.label THEN
                 U.int2str(i, s);
-                G.TextOut2(canvas, (numWidth - U.lg10(i) - 1)*wNum - wNum DIV 2, y, s, LENGTH(s));
+                G.TextOut2(canvas, (numWidth - U.lg10(i) - 1)*wNum - wNum DIV 2, y, s, LENGTH(s))
             ELSIF i MOD 5 = 0 THEN
                 G.SetColor(canvas, colors.numtext);
                 G.HLine(canvas, y - inter DIV 2 + charHeight DIV 2, xNum - wNum, xNum)
             ELSE
                 G.SetColor(canvas, colors.numtext);
                 G.HLine(canvas, y - inter DIV 2 + charHeight DIV 2, xNum - wNum DIV 2, xNum)
-            END;
-            INC(y, charHeight)
-        END
+            END
+        END;
+        IF line.label THEN
+            FOR x := wNum DIV 2 TO (padding.left - pad_left) - wNum DIV 2 DO
+                G.notVLine(canvas, x, y, y + charHeight - inter);
+                G.xorVLine(canvas, x, y, y + charHeight - inter)
+            END
+        END;
+        NextLine(line);
+        INC(y, charHeight)
     END;
 
     IF text.searchText # "" THEN
@@ -1942,7 +1980,9 @@ BEGIN
         cursor(text)
     END;
     G.SetColor(canvas, K.borderColor);
-    G.Rect(canvas, 0, 0, size.X - 1, size.Y - 1);
+    G.HLine(canvas, size.Y - 1, 0, size.X - 1);
+    G.VLine(canvas, 0, 0, size.Y - 1);
+    G.VLine(canvas, size.X - 1, 0, size.Y - 1)
 END draw;
 
 

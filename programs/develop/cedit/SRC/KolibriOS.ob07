@@ -30,7 +30,7 @@ VAR
 
     winColor*, textColor*, btnColor*, btnTextColor*,
     toolbarColor*, scrollColor*, scrollBkColor*,
-    borderColor*, shadowColor*,
+    borderColor*, shadowColor*, (*darkColor*, lightColor*,*)
     caseColor*, disCaseColor*: INTEGER;
 
 
@@ -202,13 +202,17 @@ BEGIN
 END Pause;
 
 
-PROCEDURE ButtonCode* (): INTEGER;
+PROCEDURE ButtonCode* (VAR middle: BOOLEAN): INTEGER;
 VAR
     res: INTEGER;
 BEGIN
+    middle := FALSE;
     res := KOSAPI.sysfunc1(17);
     IF res MOD 256 = 0 THEN
         res := LSR(res, 8)
+    ELSIF res MOD 256 = 4 THEN
+        res := LSR(res, 8);
+        middle := TRUE
     ELSE
         res := 0
     END
@@ -343,6 +347,8 @@ BEGIN
     ASSERT(LEN(buf) >= 10);
     KOSAPI.sysfunc4(48, 3, SYSTEM.ADR(buf[0]), 40);
 
+(*    darkColor := buf[2];
+    lightColor := buf[3];*)
     winColor := buf[5];
     textColor := buf[8];
     btnColor := buf[6];

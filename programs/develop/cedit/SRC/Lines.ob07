@@ -31,7 +31,7 @@ TYPE
     tLine* = POINTER TO RECORD (List.tItem)
         ptr: INTEGER;
         length*: INTEGER;
-        modified*, saved*, temp: BOOLEAN;
+        modified*, saved*, temp, label*: BOOLEAN;
         cin*, cout*, pos*: INTEGER
     END;
 
@@ -113,6 +113,7 @@ VAR
     line: tLine;
 BEGIN
     NEW(line);
+    line.label := FALSE;
     ASSERT(line # NIL);
 (*    IF ~temp THEN
         _typedPtr(line)

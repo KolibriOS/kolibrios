@@ -28,7 +28,7 @@ IMPORT
     RW, Ini, box_lib, Icons, Tabs;
 
 CONST
-    header = "CEdit (10-jul-2021)";
+    header = "CEdit (12-jul-2021)";
 
     ShellFilter = "";
     EditFilter = "SH|ASM|TXT|INC|OB07|C|CPP|H|PAS|PP|LUA|INI";
@@ -428,7 +428,7 @@ BEGIN
     G.SetFont(canvas, font);
     T.setCanvas(canvas);
     T.resize(canvas.width, canvas.height);
-    Scroll.resize(vScroll, vScroll.xSize, canvas.height - scrollWidth*2 + 1);
+    Scroll.resize(vScroll, vScroll.xSize, canvas.height - scrollWidth*2 + 2);
     Scroll.resize(hScroll, canvas.width - scrollWidth*2, hScroll.ySize);
 END resize;
 
@@ -437,6 +437,7 @@ PROCEDURE SearchPanel (left, top: INTEGER);
 VAR
     y, right, bottom, color: INTEGER;
 BEGIN
+    DEC(top, Tabs.tabHeight);
     right := left + EditBox_Width + SEARCH_PADDING*2;
     bottom := top + 395 + btnHeight + SEARCH_PADDING;
     color := K.borderColor;
@@ -571,7 +572,7 @@ BEGIN
 
         toolbarIcons;
 
-        K.CreateButton(btnUp, LEFT + canvas.width - 1, TOP, scrollWidth - 1, scrollWidth, K.btnColor, 0X);
+        K.CreateButton(btnUp, LEFT + canvas.width - 1, TOP - 1, scrollWidth - 1, scrollWidth, K.btnColor, 0X);
         K.DrawText69(LEFT + canvas.width - 1 + (scrollWidth - 6) DIV 2, TOP + (scrollWidth - 9) DIV 2, K.btnTextColor, 18X);
         K.CreateButton(btnDown, LEFT + canvas.width - 1, TOP + canvas.height - scrollWidth - 1, scrollWidth - 1, scrollWidth, K.btnColor, 0X);
         K.DrawText69(LEFT + canvas.width - 1 + (scrollWidth - 6) DIV 2, TOP + canvas.height - scrollWidth + (scrollWidth - 9) DIV 2, K.btnTextColor, 19X);
@@ -581,7 +582,7 @@ BEGIN
         K.CreateButton(btnRight, LEFT + canvas.width - scrollWidth - 1, TOP + canvas.height - 1, scrollWidth, scrollWidth - 1, K.btnColor, 0X);
         K.DrawText69(LEFT + canvas.width - scrollWidth - 1 + (scrollWidth - 6) DIV 2, TOP + canvas.height - 1 + (scrollWidth - 9) DIV 2 + 1, K.btnTextColor, 1AX);
 
-        K.PutPixel(LEFT + canvas.width + scrollWidth - 2, TOP, K.winColor);
+        K.PutPixel(LEFT + canvas.width + scrollWidth - 2, TOP - 1, K.winColor);
         K.PutPixel(LEFT, TOP + canvas.height + scrollWidth - 2, K.winColor);
 
         DrawState(text, width, height);
@@ -787,19 +788,19 @@ BEGIN
 END Confirm;
 
 
-PROCEDURE closeFile (conf: BOOLEAN);
+PROCEDURE closeFile (conf: BOOLEAN; n: INTEGER);
 VAR
     i: INTEGER;
 BEGIN
     IF text.modified & conf THEN
         Confirm
     ELSE
-        Tabs.delete(tabs, curText);
-        FOR i := curText + 1 TO textsCount - 1 DO
+        Tabs.delete(tabs, n);
+        FOR i := n + 1 TO textsCount - 1 DO
             texts[i - 1] := texts[i]
         END;
         DEC(textsCount);
-        IF curText = textsCount THEN
+        IF (curText = textsCount) OR (n < curText) THEN
             DEC(curText)
         END;
         IF curText >= 0 THEN
@@ -1000,7 +1001,7 @@ BEGIN
             Confirm;
             cont := FALSE
         ELSE
-            closeFile(FALSE);
+            closeFile(FALSE, curText);
             repaint
         END
     END
@@ -1057,7 +1058,7 @@ BEGIN
         saveAll;
         repaint
     |menuClose:
-        closeFile(TRUE)
+        closeFile(TRUE, curText)
     |menuFolder:
         K.Run("/rd/1/File Managers/Eolite", text.fileName)
     |menuExit:
@@ -1145,6 +1146,7 @@ BEGIN
     getKBState;
     IF (T.CTRL IN shift) THEN
         CASE key DIV 65536 OF
+        |17: menuItem := menuClose
         |21: menuItem := menuRedo
         |30: menuItem := menuSelectAll
         |33: menuItem := menuSearch
@@ -1207,7 +1209,7 @@ BEGIN
     Menu.AddMenuItem(menu, menuSaveAll, "save all");
     Menu.AddMenuItem(menu, menuFolder,  "folder");
     Menu.delimiter(menu);
-    Menu.AddMenuItem(menu, menuClose,   "close");
+    Menu.AddMenuItem(menu, menuClose,   "close       ctrl-W");
     Menu.delimiter(menu);
     Menu.AddMenuItem(menu, menuExit,    "exit");
     RETURN Menu.create(menu, MenuItemClick, MenuKeyDown)
@@ -1422,7 +1424,7 @@ VAR
     err: INTEGER;
     fileName, filePath: RW.tFileName;
     cliWidth, cliHeight: INTEGER;
-    resized: BOOLEAN;
+    resized, middle: BOOLEAN;
     firstClickX, firstClickY, time: INTEGER;
 BEGIN
     K.GetSystemColors;
@@ -1480,7 +1482,7 @@ BEGIN
     OD := OpenDlg.Create(draw_window, OpenDlg.topen, filePath, "");
     insert(0, text);
 
-    vScroll := Scroll.create(scrollWidth, canvas.height - scrollWidth*2 + 1);
+    vScroll := Scroll.create(scrollWidth, canvas.height - scrollWidth*2 + 2);
     hScroll := Scroll.create(canvas.width - scrollWidth*2, scrollWidth);
     T.resize(canvas.width, canvas.height);
     T.SetPos(text, 0, 0);
@@ -1526,7 +1528,7 @@ BEGIN
                 IF key DIV 65536 = 28 THEN (* Enter *)
                     save(text);
                     IF ~text.modified THEN
-                        closeFile(FALSE)
+                        closeFile(FALSE, curText)
                     END;
                     repaint
                 END;
@@ -1540,6 +1542,13 @@ BEGIN
                     ELSE
                         notFound := ~T.findNext(text, box_lib.check_box_get_value(BKW))
                     END
+                END
+            ELSIF key DIV 65536 = 60 THEN (* F2 *)
+                key := -1;
+                IF T.CTRL IN shift THEN
+                    T.toggleLabel(text)
+                ELSE
+                    T.gotoLabel(text, ~(T.SHIFT IN shift))
                 END
             ELSIF key DIV 65536 = 67 THEN (* F9 *)
                 key := -1;
@@ -1555,6 +1564,12 @@ BEGIN
                 END
             ELSIF (key DIV 65536 = 55) & (key DIV 256 MOD 256 = 52) THEN
                 key := -1 (* PrtScn *)
+            ELSIF (T.CTRL IN shift) & (key DIV 65536 = 15) THEN (* ctrl+Tab *)
+                key := -1;
+                curText := (curText + 1) MOD textsCount;
+                Tabs.switch(tabs, curText);
+                Switch(texts[curText]);
+                draw_window
             ELSIF (T.CTRL IN shift) & (key DIV 65536 = 33) THEN
                 key := -1;
                 IF ~search THEN
@@ -1562,7 +1577,7 @@ BEGIN
                 END;
                 EditBox_SetFocus(FindEdit, TRUE);
                 EditBox_SetFocus(ReplaceEdit, FALSE);
-                EditBox_SetFocus(GotoEdit, FALSE);
+                EditBox_SetFocus(GotoEdit, FALSE)
             ELSIF (T.CTRL IN shift) & (key DIV 65536 = 34) THEN
                 key := -1;
                 IF ~search THEN
@@ -1604,6 +1619,8 @@ BEGIN
                 ELSE
                     IF (T.CTRL IN shift) THEN
                         CASE key DIV 65536 OF
+                        |17: closeFile(TRUE, curText);
+                             key := -2
                         |21: T.redo(text);
                              key := -1
                         |22: key := ORD("U")
@@ -1629,20 +1646,38 @@ BEGIN
                         key := -1
                     END
                 END;
-                IF key # -1 THEN
+                IF key >= 0 THEN
                     T.key(text, key, shift)
                 END
             END;
-            repaint
+            IF key # -2 THEN
+                repaint
+            END
         |3:
-            btn := K.ButtonCode();
-            CASE btn OF
-            |Tabs.btnID .. Tabs.btnID + maxTexts - 1:
+            btn := K.ButtonCode(middle);
+            IF (Tabs.btnID <= btn) & (btn <= Tabs.btnID + maxTexts - 1) THEN
                 DEC(btn, Tabs.btnID);
-                curText := btn;
-                Tabs.switch(tabs, btn);
-                Switch(texts[btn]);
-                draw_window
+                IF middle THEN
+                    IF texts[btn].modified THEN
+                        curText := btn;
+                        Tabs.switch(tabs, btn);
+                        Switch(texts[btn]);
+                        draw_window;
+                    END;
+                    closeFile(TRUE, btn)
+                ELSE
+                    curText := btn;
+                    Tabs.switch(tabs, btn);
+                    Switch(texts[btn]);
+                    draw_window
+                END;
+                btn := 0
+            ELSE
+                IF middle THEN
+                    btn := 0
+                END
+            END;
+            CASE btn OF
             |Tabs.btnID - 1: Tabs.scroll(tabs, -1); switch := TRUE; repaint
             |Tabs.btnID - 2: Tabs.scroll(tabs, +1); switch := TRUE; repaint
 
@@ -1663,12 +1698,12 @@ BEGIN
             |btnTools:
                 ShowMenu(menuTools)
             |btnNo:
-                closeFile(FALSE);
+                closeFile(FALSE, curText);
                 repaint
             |btnYes:
                 save(text);
                 IF ~text.modified THEN
-                    closeFile(FALSE)
+                    closeFile(FALSE, curText)
                 END;
                 repaint
             |btnClose:
