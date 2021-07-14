@@ -26,18 +26,19 @@
 	dd IM_END	; size of image
 	dd I_END	; memory for app
 	dd stacktop	; esp
-	dd 0	; I_Param
+	dd file_name	; I_Param
 	dd path		; APPLICATION PATH
 ;-----------------------------------------------------------------------------
 include 'lang.inc'	;language support
+include '../../../KOSfuncs.inc'
 include '../../../macros.inc'
-include	'../../../develop/libraries/box_lib/load_lib.mac'
+include	'../../../load_lib.mac'
 ;-----------------------------------------------------------------------------
 @use_library	; load_lib macro
 ;-----------------------------------------------------------------------------
 START:
-	mcall	68,11
-	mcall	66,1,1
+	mcall	SF_SYS_MISC,SSF_HEAP_INIT
+	mcall	SF_KEYBOARD,SSF_SET_INPUT_MODE,1
 ;-----------------------------------------------------------------------------
 load_libraries l_libs_start,end_l_libs
 ;-----------------------------------------------------------------------------
@@ -49,12 +50,13 @@ load_libraries l_libs_start,end_l_libs
 	mov	esi,start_temp_file_name
 	call	copy_file_name_path
 ;-----------------------------------------------------------------------------
-	mcall	68,12,4096*4 ; 16 Kb - I hope this will be enough for store of data
+	mcall	SF_SYS_MISC,SSF_MEM_ALLOC,4096*4 ; 16 Kb - I hope this will be enough for store of data
 	mov	[store_text_area_start],eax
 ;-----------------------------------------------------------------------------
 	call draw_window
+align 4
 still:
-	mcall	10			; wait here for event
+	mcall	SF_WAIT_EVENT
 	dec	eax			; redraw request ?
 	jz	red
 	dec	eax			; key in buffer ?
@@ -63,6 +65,7 @@ still:
 	jz	button
 	jmp	still
 ;-----------------------------------------------------------------------------
+align 4
 red:					; redraw
 	call	get_window_param
 	mov	eax, [Proc_Info.box.left]; store the window coordinates into the Form Structure
@@ -76,8 +79,9 @@ red:					; redraw
 	call	draw_window		; go redraw window now
 	jmp	still
 ;-----------------------------------------------------------------------------
+align 4
 key:					; key
-	mcall	2			; just read it and ignore
+	mcall	SF_GET_KEY
 	cmp	[extended_key],1
 	je	.extended_key
 	test	al, al
@@ -100,14 +104,15 @@ key:					; key
 	je	call_OpenDialog
 	jmp	still
 ;-----------------------------------------------------------------------------
+align 4
 button: 				; button
-	mcall	17			; get id
+	mcall	SF_GET_BUTTON
 	cmp	ah,2
 	je	call_OpenDialog
 	cmp	ah, 1			; button id = 1 ?
 	jne	still
 .exit:
-	mcall	-1			; close this program
+	mcall	SF_TERMINATE_PROCESS
 ;-----------------------------------------------------------------------------
 call_OpenDialog:
 	mov	[OpenDialog_data.type],1	; Save
@@ -168,17 +173,18 @@ prepare_text_area:
 	ret
 ;-----------------------------------------------------------------------------
 get_window_param:
-	mcall	9, Proc_Info, -1	; window redraw requested so get
+	mcall	SF_THREAD_INFO, Proc_Info, -1	; window redraw requested so get
 					; new window coordinates and size
 	ret
 ;-----------------------------------------------------------------------------
+align 4
 draw_window:
 	call	prepare_text_area
 
 	mov	byte [total], 0
-	mcall	12, 1			; start of draw
+	mcall	SF_REDRAW, SSF_BEGIN_DRAW
 	; DRAW WINDOW
-	mcall	0,dword [Form],dword [Form + 4],0x13ffffff,0x805080d0,title
+	mcall	SF_CREATE_WINDOW,dword [Form],dword [Form + 4],0x13ffffff,0x805080d0,title
 
 	call	get_window_param
 
@@ -186,11 +192,11 @@ draw_window:
 	test	eax,100b
 	jne	.end
 
-	mcall	8,<450,100>,<25,25>,2,0xC0C0C0
+	mcall	SF_DEFINE_BUTTON,<450,100>,<25,25>,2,0xC0C0C0
 	shr	ecx,16
 	mov	bx,cx
 	add	ebx,13 shl 16+4
-	mcall	4,,0x80000000,text_save_button
+	mcall	SF_DRAW_TEXT,,0x80000000,text_save_button
 	add	bx,11
 	mcall	,,,text_save_button.1
 	; Insert horizontal bars  in list area
@@ -243,7 +249,7 @@ draw_window:
 	jne	@b
 	; Quantity of devices...
 	movzx	ecx, byte [total]	; number to draw
-	mcall	47, 0x00020000,,150 * 65536 + 65, 0x224466
+	mcall	SF_DRAW_NUMBER, 0x00020000,,150 * 65536 + 65, 0x224466
 
 	mov	ebx,ecx
 	mov	ecx,2
@@ -264,7 +270,7 @@ draw_window:
 	call	Try_MMIO
 @@:
 .end:
-	mcall	12, 2			; end of draw
+	mcall	SF_REDRAW, SSF_END_DRAW
 	ret
 ;-----------------------------------------------------------------------------
 store_data:
@@ -274,14 +280,14 @@ store_data:
 	sub	ebx,eax
 	inc	ebx
 	mov	[fileinfo.size],ebx
-	mcall	70,fileinfo
+	mcall	SF_FILE,fileinfo
 	ret
 ;-----------------------------------------------------------------------------
 ;* Gets the PCI Version and Last Bus
 Get_PCI_Info:
-	mcall	62, 0
+	mcall	SF_PCI, 0
 	mov	word [PCI_Version], ax
-	mcall	62, 1
+	mcall	SF_PCI, 1
 	mov	byte [PCI_LastBus], al
 	;----------------------------------------------------------
 	;* Get all devices on PCI Bus
@@ -298,7 +304,7 @@ Start_Enum:
 	mov	bh, byte [V_Bus]	; bus of pci device
 	mov	ch, byte [V_Dev]	; device number/function
 	mov	cl, 0			; offset to device/vendor id
-	mcall	62			; get ID's
+	mcall	SF_PCI			; get ID's
 
 	cmp	ax, 0			; Vendor ID should not be 0 or 0xFFFF
 	je	nextDev 		; check next device if nothing exists here
@@ -313,31 +319,31 @@ Start_Enum:
 	mov	bh, byte [V_Bus]	; Bus #
 	mov	ch, byte [V_Dev]	; Device # on bus
 	mov	cl, 0x08		; Register to read (Get Revision)
-	mcall	62			; Read it
+	mcall	SF_PCI			; Read it
 
 	mov	byte [PCI_Rev], al	; Save it
 	mov	cl, 0x0b		; Register to read (Get class)
-	mcall	62			; Read it
+	mcall	SF_PCI			; Read it
 
 	mov	byte [PCI_Class], al	; Save it
 	mov	cl, 0x0a		; Register to read (Get Subclass)
-	mcall	62			; Read it
+	mcall	SF_PCI			; Read it
 	mov	byte [PCI_SubClass], al; Save it
 ; by Mario79 august 2006
 	mov	cl, 0x09		; Register to read (Get Interface)
-	mcall	62			; Read it
+	mcall	SF_PCI			; Read it
 
 	mov  [PCI_Interface], al	; Save it
 ;
 ; by Ghost april 2007
 	mov	cl, 0x3c		; Register to read (Get IRQ)
 @@:
-	mcall	62			; Read it
+	mcall	SF_PCI			; Read it
 
 	mov	[PCI_IRQ], al		; Save it
 ; by CleverMouse juny 2011
 	mov	cl, 0x0e
-	mcall	62
+	mcall	SF_PCI
 
 	push	eax
 	inc	byte [total]		; one more device found
@@ -375,7 +381,7 @@ Print_New_Device:
 	jz	no_ummio_here
 	mov 	ch, byte [V_Bus]
 	mov 	cl, byte [V_Dev]
-	mcall	62, 11		; detect uMMIO
+	mcall	SF_PCI, 11		; detect uMMIO
 
 	and	ax,0x7fff
 	inc 	ax			; -1 returned?
@@ -406,7 +412,7 @@ Print_New_Device:
 
 no_ummio_here:
 	movzx	ecx,word [PCI_Vendor]	; Pointer to number to be written
-	mcall	47, 0x00040100		; Write Vendor ID
+	mcall	SF_DRAW_NUMBER, 0x00040100		; Write Vendor ID
 
 	call	store_4_digits
 
@@ -507,7 +513,7 @@ no_ummio_here:
 
 .find:
 	mov	edx, [edx - 4]
-	mcall	4,, 0x80000000		; lets print the vendor Name
+	mcall	SF_DRAW_TEXT,, 0x80000000		; lets print the vendor Name
 
 	mov	[store_text_size],42
 	call	store_text
@@ -547,7 +553,7 @@ no_ummio_here:
 @@:
 	and	ebx, 0x0000FFFF 	; clear X position
 	or	ebx, 0x24E0000		; set X position to 590 pixels
-	mcall	4,, 0x80000000,, 32	; draw the text
+	mcall	SF_DRAW_TEXT,, 0x80000000,, 32	; draw the text
 
 	mov	[store_text_size],0
 	call	store_text
@@ -568,7 +574,7 @@ Try_MMIO:
 	mov	bh, [MMIO_BAR]
 	or	bx, 12			; function 12
 	mov	ecx, 4096		; =1 page to map
-	mcall	62
+	mcall	SF_PCI
 
 	mov	[MMIO_Map], eax 	; store MMIO lin.addr.
 	mov	ecx, 0x80990022 	; print color : red
@@ -579,7 +585,7 @@ Try_MMIO:
 	mov	[bar_um+3], bh
 	mov	ebx, [gr_pos]
 	mov	edx, bar_um
-	mcall	4
+	mcall	SF_DRAW_TEXT
 
 	jmp	mmio_next_bar
 @@:
@@ -588,7 +594,7 @@ Try_MMIO:
 	mov	[bar_io+3], bh
 	mov	ebx, [gr_pos]
 	mov	edx, bar_io
-	mcall	4
+	mcall	SF_DRAW_TEXT
 
 	jmp	mmio_next_bar
 @@:
@@ -597,14 +603,14 @@ Try_MMIO:
 	mov	[bar_ram+3], bh
 	mov	ebx, [gr_pos]
 	mov	edx, bar_ram
-	mcall	4
+	mcall	SF_DRAW_TEXT
 
 	jmp	mmio_dump
 ;-----------------------------------------------------------------------------
 @@:
 	mov	ebx, [gr_pos]
 	mov	edx, bar_rom
-	mcall	4
+	mcall	SF_DRAW_TEXT
 
 mmio_dump:
 	mov	edx, [MMIO_Map]
@@ -612,10 +618,10 @@ mmio_dump:
 	mov	ecx, 0x099		; dump color : blue
 	add	ebx, 10
 	mov	[gr_pos], ebx
-	mcall	4
+	mcall	SF_DRAW_TEXT
 
 	mov	ecx, [MMIO_Map] 	; release the tried page
-	mcall	62,13
+	mcall	SF_PCI,13
 
 mmio_next_bar:
 	mov	bh, [MMIO_BAR]
@@ -670,7 +676,7 @@ store_text:
 store_NA:
 	pusha
 	mov	ebx,edx
-	mcall	4,,0x80000000,text_NA
+	mcall	SF_DRAW_TEXT,,0x80000000,text_NA
 	mov	edi,[store_text_area_end]
 	mov	ax,[edx]
 	mov	[edi+1],ax
@@ -781,17 +787,10 @@ text_NA:
 ;---------------------------------------------------------------------
 system_dir_ProcLib	db '/sys/lib/proc_lib.obj',0
 
-err_message_found_lib2	db 'proc_lib.obj - Not found!',0
-
-err_message_import2	db 'proc_lib.obj - Wrong import!',0
-
-head_f_i:
-head_f_l	db 'error',0
 ;---------------------------------------------------------------------
 l_libs_start:
 
-library02  l_libs system_dir_ProcLib+9, path, library_path, system_dir_ProcLib, \
-err_message_found_lib2, head_f_l, ProcLib_import, err_message_import2, head_f_i
+library02  l_libs system_dir_ProcLib+9, library_path, system_dir_ProcLib, ProcLib_import
 
 end_l_libs:
 ;---------------------------------------------------------------------

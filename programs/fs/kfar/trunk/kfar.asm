@@ -814,8 +814,6 @@ key:
 
 align 16
 mouse:
-        cmp     dword[active_screen],0
-        jg      event
         mov     eax,SF_MOUSE_GET
         mov     ebx,SSF_BUTTON_EXT
         int     0x40
@@ -833,21 +831,23 @@ mouse:
         cmp     ax, word[skinh]
         jl      event
         sub     ax, word[skinh]
-        xor     dx,dx
+        xor     dx, dx
         mov     bx, font_height
         div     bx
         movzx   edx,ax
-        dec     edx ;верхняя рамка
-        dec     edx ;заголовки
         shr     eax,16
 
-        cmp     edx, 0
-        jl      .no_ch_pos
         mov     ebx, [cur_height]
-        sub     ebx, 3
+        dec     ebx
         cmp     edx, ebx
         je      .on_panel
-        sub     ebx, 7-3
+        cmp     dword[active_screen],0
+        jg      event ;.on_edit
+        cmp     edx, 2
+        jl      .no_ch_pos
+        dec     edx ;верхняя рамка
+        dec     edx ;заголовки
+        sub     ebx, 7-1
         cmp     edx, ebx
         jge     .no_ch_pos
 
@@ -859,7 +859,7 @@ if font_width & 3
 else
         imul    ecx, font_width/4
 end if
-        xor     dx,dx
+        xor     dx, dx
         sub     ax, 5 ;window border
         div     cx
         bt      ax, 0
@@ -912,13 +912,57 @@ end if
 align 4
 .on_panel:
         call    get_keybar_ind
-        lea     eax, [panels_mouse+4*eax]
+        lea     eax, [mouse_panels+4*eax]
+        cmp     [active_screen_keybar], keybar_viewer
+        jne     @f
+        add     eax, mouse_viewer-mouse_panels
+@@:
+        cmp     [active_screen_keybar], keybar_editor
+        jne     @f
+        add     eax, mouse_editor-mouse_panels
+@@:
         cmp     dword[eax], 0
         je      event
+
+        mov     ebx, [active_screen]
+        mov     ebp, [screens]
+        mov     ebp, [ebp+ebx*8+4]
+
+        cmp     dword[active_screen],0
+        jne     @f
         mov     ebp, [active_panel]
         mov     ecx, [ebp + PanelData.index]
-        call    dword[eax]
+@@:
+        push    dword[eax]
+        sub     eax, mouse_panels
+        shr     eax, 2
+        xor     edx, edx
+        mov     ebx, 12
+        div     ebx
+        lea     eax, [edx+0x3B] ;eax - код клавиши F1...F12
+        pop     ebx
+        call    ebx
         jmp     event
+if 0 ;not work insert text
+align 4
+.on_edit:
+        cmp     [active_screen_keybar], keybar_editor
+        jne     event
+        cmp     edx, 1
+        jl      event
+        push    edx
+        xor     edx, edx
+        mov     ebx, font_width
+        div     ebx
+        pop     edx
+        mov     ebx, [active_screen]
+        mov     ebp, [screens]
+        mov     ebp, [ebp+ebx*8+4]
+        mov     [ebp + editor_data.cursor_x], eax
+        mov     [ebp + editor_data.cursor_y], edx
+        call    editor_OnRedraw
+        jmp     event
+end if
 
 ;input:
 ; eax - coord x
@@ -981,22 +1025,6 @@ get_keybar_ind:
 .ret:
         lea     eax, [esi+ecx-1]
         pop     edi esi edx ecx ebx   
-        ret
-
-align 4
-OnMouse_ctrl_f3_9:
-        sub     eax, panels_mouse.ctrl+8
-        shr     eax, 2
-        add     eax, 0x3D
-        call    panels_OnKey.ctrl_f3_9
-        ret
-
-align 4
-OnMouse_alt_f1_2:
-        sub     eax, panels_mouse.alt
-        shr     eax, 2
-        add     eax, 0x3B
-        call    panels_OnKey.alt_f1_2
         ret
 
 align 16
@@ -5744,6 +5772,7 @@ sort_files:
         mov     [bSilentFolderMode], 0  ; leave silent mode
         ret
 
+align 4
 highlight_init:
         pushad
         mov     ebp, eax
@@ -5812,6 +5841,7 @@ highlight_init:
         popad
         ret
 
+align 4
 compare_name:
         test    byte [esi], 10h
         jnz     .1dir
@@ -5853,6 +5883,7 @@ compare_name_rev:
         stc
         ret
 
+align 4
 strcmpi:
         push    eax
 @@:
@@ -5866,6 +5897,7 @@ strcmpi:
         pop     eax
         ret
 
+align 4
 compare_ext:
         test    byte [esi], 10h
         jnz     .1dir
@@ -5897,6 +5929,7 @@ compare_ext:
         stc
         ret
 
+align 4
 compare_ext_rev:
         test    byte [esi], 10h
         jnz     .1dir
@@ -5928,6 +5961,7 @@ compare_ext_rev:
         stc
         ret
 
+align 4
 seek_ext:
         push    eax
         xor     eax, eax
@@ -5947,6 +5981,7 @@ seek_ext:
         pop     eax
         ret
 
+align 4
 compare_modified:
         test    byte [esi], 10h
         jnz     .1dir
@@ -5979,6 +6014,7 @@ compare_modified:
         stc
         ret
 
+align 4
 compare_modified_rev:
         test    byte [esi], 10h
         jnz     .1dir
@@ -6012,6 +6048,7 @@ compare_modified_rev:
         stc
         ret
 
+align 4
 compare_size:
         test    byte [esi], 10h
         jnz     .1dir
@@ -6044,6 +6081,7 @@ compare_size:
         stc
         ret
 
+align 4
 compare_size_rev:
         test    byte [esi], 10h
         jnz     .1dir
@@ -6077,6 +6115,7 @@ compare_size_rev:
         stc
         ret
 
+align 4
 compare_unordered:
         cmp     esi, edi
         ret
@@ -6084,6 +6123,7 @@ compare_unordered_rev:
         cmp     edi, esi
         ret
 
+align 4
 compare_created:
         test    byte [esi], 10h
         jnz     .1dir
@@ -6116,6 +6156,7 @@ compare_created:
         stc
         ret
 
+align 4
 compare_created_rev:
         test    byte [esi], 10h
         jnz     .1dir
@@ -6149,6 +6190,7 @@ compare_created_rev:
         stc
         ret
 
+align 4
 compare_accessed:
         test    byte [esi], 10h
         jnz     .1dir
@@ -6181,6 +6223,7 @@ compare_accessed:
         stc
         ret
 
+align 4
 compare_accessed_rev:
         test    byte [esi], 10h
         jnz     .1dir
@@ -6214,6 +6257,7 @@ compare_accessed_rev:
         stc
         ret
 
+align 4
 ReadFolder_default:
         mov     eax, 2
         ret     10h
@@ -7555,8 +7599,9 @@ scan2ascii:
         db      'dfghjkl;',27h,'`',0,'\zxcv'
         db      'bnm,./',0,0,0,' ',0,0,0,0,0,0
 
+;таблицы функций: mouse_panels, mouse_viewer и mouse_editor должны быть рядом друг с другом
 align 4
-panels_mouse:
+mouse_panels:
         dd 0 ;f1
         dd 0 ;f2
         dd panels_OnKey.f3
@@ -7565,7 +7610,9 @@ panels_mouse:
         dd 0 ;f6
         dd panels_OnKey.f7
         dd panels_OnKey.f8
-        dd 0,0,0 ;f9-f11
+        dd 0
+        dd exit ;f10
+        dd 0
         dd F12
 ; Shift
         rd 4
@@ -7574,17 +7621,72 @@ panels_mouse:
 .ctrl:
         rd 2
 repeat 9-3+1
-        dd OnMouse_ctrl_f3_9
+        dd panels_OnKey.ctrl_f3_9
 end repeat
         rd 3
 ; Ctrl+Shift
         rd 12
 .alt:
-        dd OnMouse_alt_f1_2
-        dd OnMouse_alt_f1_2
+        dd panels_OnKey.alt_f1_2
+        dd panels_OnKey.alt_f1_2
         rd 4
         dd panels_OnKey.alt_f7
         rd 5
+; Alt+Shift
+        rd 12
+; Alt+Ctrl
+        rd 12
+; Alt+Ctrl+Shift
+        rd 12
+
+mouse_viewer:
+        rd 1
+        dd viewer_OnKey.f2
+        dd viewer_OnKey.exit ;f3
+        dd viewer_OnKey.f4
+        rd 2
+        dd viewer_OnKey.f7
+        dd viewer_OnKey.f8
+        rd 1
+        dd viewer_OnKey.exit ;f10
+        rd 1
+        dd F12
+; Shift
+        rd 6
+        dd viewer_OnKey.shift_f7
+        rd 5
+; Ctrl
+        rd 12
+; Ctrl+Shift
+        rd 12
+; Alt
+        rd 12
+; Alt+Shift
+        rd 12
+; Alt+Ctrl
+        rd 12
+; Alt+Ctrl+Shift
+        rd 12
+
+mouse_editor:
+        rd 1
+        dd      editor_OnKey.f2
+        rd 4
+        dd      editor_OnKey.f7
+        rd 2
+        dd      editor_OnKey.exit_confirm ;f10
+        rd 1
+        dd F12
+; Shift
+        rd 6
+        dd editor_OnKey.shift_f7
+        rd 5
+; Ctrl
+        rd 12
+; Ctrl+Shift
+        rd 12
+; Alt
+        rd 12
 ; Alt+Shift
         rd 12
 ; Alt+Ctrl
