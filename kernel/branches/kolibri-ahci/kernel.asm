@@ -819,7 +819,7 @@ include 'detect/init_ata.inc'
 jmp ahci_code_end
 include 'blkdev/ahci.inc'
 ahci_code_end:
-call init_ahci
+call ahci_init
 ;-----------------------------------------------------------------------------
 if 0
         mov     ax, [BOOT.sys_disk]

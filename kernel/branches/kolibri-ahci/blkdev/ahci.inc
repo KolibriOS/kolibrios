@@ -90,6 +90,29 @@ struct HBA_PORT
         vendor                   rd 4                 ; 0x70 - 0x7F, vendor specific
 ends
 
+; Command header structure
+struct HBA_CMD_HDR
+    _flags1       db ? ; 0bPWACCCCC, P - Prefetchable, W - Write (1: H2D, 0: D2H)
+                       ; A - ATAPI, C - Command FIS length in DWORDS, 2 ~ 16
+    
+    _flags2       db ? ; 0bPPPPRCB(Re), P - Port multiplier port, R - Reserved,
+                       ; C - Clear busy upon R_OK, B - BIST, Re - Reset
+    
+    prdtl         dw ? ; Physical region descriptor table length in entries
+    prdbc         dd ? ; Physical region descriptor byte count transferred
+    ctba          dd ? ; Command table descriptor base address
+    ctbau         dd ? ; Command table descriptor base address upper 32 bits
+    rsv1          rd 4 ; Reserved
+ends
+
+; Contains virtual mappings for port phys memory regions
+struct PORT_DATA
+    clb           dd ? ; Command list base
+    fb            dd ? ; FIS base
+    ctba_arr      rd 32 ; ctba_arr[0] = clb[0].ctba, ... and so on.
+    port          dd ? ; address of correspoding HBA_PORT structure
+ends
+
 ; Register FIS – Host to Device
 struct FIS_REG_H2D
         fis_type      db ?       ; FIS_TYPE_REG_H2D
@@ -215,12 +238,13 @@ ends
 uglobal
 align 4
         ahci_controller AHCI_DATA
+        port_data_arr   rb (sizeof.PORT_DATA*AHCI_MAX_PORTS)
 endg
 
 ; -----------------------------------------------------------------------
 ; detect ahci controller and initialize
 align 4
-init_ahci:
+ahci_init:
         mov     ecx, ahci_controller
         mov     esi, pcidev_list
 .find_ahci_ctr:
@@ -365,9 +389,14 @@ init_ahci:
         mov     ecx, [edi + HBA_PORT.sata_status]
         and     ecx, AHCI_HBA_PxSSTS_DET
         cmp     ecx, AHCI_HBA_PxSSTS_DET_PRESENT
-        jne    .continue_detect_drives
+        jne     .continue_detect_drives
 
-        DEBUGF 1, "K: AHCI: found drive at port %d, signature = %x\n", ebx, [edi + HBA_PORT.signature]    
+        DEBUGF  1, "K: AHCI: found drive at port %d, signature = %x\n", ebx, [edi + HBA_PORT.signature]  
+
+        mov     ecx, ebx
+        shl     ecx, BSF sizeof.PORT_DATA
+        add     ecx, port_data_arr
+        stdcall ahci_port_rebase, edi, ebx, ecx
 
 .continue_detect_drives:
         inc     ebx
@@ -381,11 +410,9 @@ init_ahci:
         ret
 ; -------------------------------------------------
 
-; TODO: implement function port_rebase
-
 ; Start command engine
 ; in: eax - address of HBA_PORT structure
-start_cmd:
+ahci_start_cmd:
 .wait_cr: ; Wait until CR (bit15) is cleared
         bt      [eax + HBA_PORT.command], bit_AHCI_HBA_PxCMD_CR
         jc      .wait_cr
@@ -393,12 +420,12 @@ start_cmd:
         ; Set FRE (bit4) and ST (bit0)
         bts     [eax + HBA_PORT.command], bit_AHCI_HBA_PxCMD_FRE
         bts     [eax + HBA_PORT.command], bit_AHCI_HBA_PxCMD_ST
-        
+        ; maybe here call ahci flush cmd ? TODO (see seakernel)
         ret
 
 ; Stop command engine
 ; in: eax - address of HBA_PORT structure
-stop_cmd:
+ahci_stop_cmd:
         btr     [eax + HBA_PORT.command], bit_AHCI_HBA_PxCMD_ST ; Clear ST (bit0)
         btr     [eax + HBA_PORT.command], bit_AHCI_HBA_PxCMD_FRE ; Clear FRE (bit4)
 .wait_fr_cr: ; Wait until FR (bit14), CR (bit15) are cleared
@@ -409,6 +436,149 @@ stop_cmd:
 
         ret
 
+; The commands may not take effect until the command
+; register is read again by software, because reasons.
+; in: eax - address of HBA_PORT structure
+; out: eax - command register value
+ahci_flush_cmd:
+        mov     eax, [eax + HBA_PORT.command]
+        ret
+
+; Send command to port
+; in: eax - address of HBA_PORT structure
+;     ebx - index of command slot
+ahci_send_cmd:
+        push    ecx
+        mov     [eax + HBA_PORT.interrupt_status], 0xFFFFFFFF
+        
+        mov     cl, bl
+        mov     [eax + HBA_PORT.command_issue], 1
+        shl     [eax + HBA_PORT.command_issue], cl
+
+        call    ahci_flush_cmd
+        pop     ecx
+        ret
+
+; ---------------------------------------------------------------------------
+; TODO: check correctness
+; in: port - address of HBA_PORT structure
+;     portno - port index (0..31)
+;     pdata - address of PORT_DATA structure
+proc ahci_port_rebase stdcall, port: dword, portno: dword, pdata: dword
+        locals
+            phys_page1  dd ?
+            virt_page1  dd ?
+            phys_page23 dd ?
+            virt_page23 dd ?
+            tmp         dd ?
+        endl
+
+        pushad
+
+        DEBUGF  1, "Rebasing port %u\n", [portno]
+
+        mov     eax, [port]
+        call    ahci_stop_cmd
+
+        ; Command list entry size = 32
+        ; Command list entry maxim count = 32
+        ; Command list maxim size = 32*32 = 1K per port
+        call    alloc_page
+        mov     [phys_page1], eax
+
+        stdcall map_io_mem, eax, 4096, PG_NOCACHE + PG_SWR  ; map to virt memory so we can work with it
+        mov     [virt_page1], eax
+
+        mov     esi, [port]
+        mov     ebx, [phys_page1]
+        mov     [esi + HBA_PORT.command_list_base_l], ebx ; set the command list base
+        mov     [esi + HBA_PORT.command_list_base_h], 0  ; zero upper 32 bits of addr cause we are 32 bit os 
+
+        mov     edi, [pdata]
+        mov     ebx, [virt_page1]
+        mov     [edi + PORT_DATA.clb], ebx ; set pdata->clb
+
+        mov     eax, [port]
+        mov     [edi + PORT_DATA.port], eax ; set pdata->port
+
+        stdcall _memset, ebx, 0, 1024 ; zero out the command list
+        
+        ; FIS entry size = 256 bytes per port
+        mov     eax, [phys_page1]
+        add     eax, 1024
+        mov     [esi + HBA_PORT.fis_base_l], eax
+        mov     [esi + HBA_PORT.fis_base_h], 0
+
+        mov     eax, [virt_page1]
+        add     eax, 1024
+        mov     [edi + PORT_DATA.fb], eax ; set pdata->fb 
+        stdcall _memset, eax, 0, 256 ; zero out
+        
+        stdcall alloc_pages, 2
+        mov     [phys_page23], eax
+        stdcall map_io_mem, eax, 2*4096, PG_NOCACHE + PG_SWR
+        mov     [virt_page23], eax
+
+        ; Command table size = 256*32 = 8K per port
+        mov     edx, [edi + PORT_DATA.clb] ; cmdheader array base
+        xor     ecx, ecx
+
+.for1:
+        cmp     ecx, 32
+        jae     .for1_end
+
+        mov     ebx, ecx
+        shl     ebx, BSF sizeof.HBA_CMD_HDR
+        add     ebx, edx ; ebx = cmdheader[ecx]
+
+        mov     [ebx + HBA_CMD_HDR.prdtl], 8 ; 8 prdt entries per command table
+
+        ; 256 bytes per command table, 64+16+48+16*8
+
+        push    edx
+        
+        ; cmdheader[ecx].ctba = phys_page23 + ecx*256
+        mov     [ebx + HBA_CMD_HDR.ctba], ecx
+        shl     [ebx + HBA_CMD_HDR.ctba], BSF 256 ; *= 256
+        mov     eax, [ebx + HBA_CMD_HDR.ctba]
+        mov     edx, [phys_page23]
+        add     [ebx + HBA_CMD_HDR.ctba], edx
+
+        add     eax, [virt_page23]
+        mov     [tmp], eax  ; tmp = virt_page23 + ecx*256
+        mov     eax, ecx
+        shl     eax, BSF 4  ; *= 4
+        add     eax, PORT_DATA.ctba_arr
+        add     eax, edi    ; eax = pdata->ctba_arr[ecx]
+        mov     edx, [tmp]
+        mov     [eax], edx  ; pdata->ctba_arr[ecx] = virt_page23 + ecx*256
+
+        pop     edx
+
+        mov     [ebx + HBA_CMD_HDR.ctbau], 0
+        stdcall _memset, [eax], 0, 256 ; zero out
+
+        inc     ecx
+        jmp     .for1
+.for1_end:
+        
+        mov     eax, [port]
+        call    ahci_start_cmd
+
+        DEBUGF  1, "End rebasing port %u\n", [portno]
+        popad
+        ret    
+endp
 
 
 
+proc _memset stdcall, dest:dword, val:byte, cnt:dword ; doesnt clobber any registers
+        ;DEBUGF  DBG_INFO, "memset(%x, %u, %u)\n", [dest], [val], [cnt]
+        push    eax ecx edi
+        mov     edi, dword [dest]
+        mov     al,  byte [val]
+        mov     ecx, dword [cnt]
+        rep     stosb   
+        pop     edi ecx eax
+        ret 
+endp
