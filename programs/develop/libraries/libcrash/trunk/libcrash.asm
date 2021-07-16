@@ -19,11 +19,11 @@ format MS COFF
 
 public @EXPORT as 'EXPORTS'
 
-include 'struct.inc'
-include 'proc32.inc'
-include 'macros.inc'
-include 'config.inc'
-include 'kglobals.inc'
+include '../../../../struct.inc'
+include '../../../../proc32.inc'
+include '../../../../macros.inc'
+include '../../../../config.inc'
+include '../../../../kglobals.inc'
 
 purge section,mov,add,sub
 section '.flat' code readable align 16
