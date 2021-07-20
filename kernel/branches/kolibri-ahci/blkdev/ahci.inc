@@ -105,6 +105,22 @@ struct HBA_CMD_HDR
     rsv1          rd 4 ; Reserved
 ends
 
+struct HBA_PRDT_ENTRY
+    dba           dd ?  ; Data base address
+    dbau          dd ?  ; Data base address upper 32 bits
+    rsv0          dd ?  ; Reserved
+    _flags        dd ?  ; 0bIR..RD..D, I (1 bit) - Interrupt on completion,
+                        ; R (9 bits) - Reserved, D (22 bits) - Byte count, 4M max
+ends
+
+struct HBA_CMD_TBL
+    cfis          rb 64 ; 0x00, Command FIS
+    acmd          rb 16 ; 0x40, ATAPI command, 12 or 16 bytes
+    rsv           rb 48 ; 0x50, Reserved
+    prdt_entry    HBA_PRDT_ENTRY  ; 0x80, Physical region descriptor table entries, 0 ~ 65535
+                        ; so, this structure is variable-length
+ends
+
 ; Contains virtual mappings for port phys memory regions
 struct PORT_DATA
     clb           dd ? ; Command list base
@@ -232,6 +248,23 @@ struct FIS_DEV_BITS
     error         db ?           ; Error register
     
     protocol      dd ?           ; Protocol
+ends
+
+struct HBA_FIS
+    dsfis         FIS_DMA_SETUP  ; 0x00, DMA Setup FIS
+    pad0          rb 4           ; 
+
+    psfis         FIS_PIO_SETUP  ; 0x20, PIO Setup FIS
+    pad1          rb 12          ;
+
+    rfis          FIS_REG_D2H    ; 0x40, Register - Device to Host FIS
+    pad2          rb 4           ;
+
+    sdbfis        FIS_DEV_BITS   ; 0x58, Set Device Bit FIS
+
+    ufis          rb 64          ; 0x60
+
+    rsv           rb (0x100 - 0xA0) ; 0xA0
 ends
 
 ; --------------------------------------------------
@@ -546,10 +579,7 @@ proc ahci_port_rebase stdcall, port: dword, portno: dword, pdata: dword
 
         add     eax, [virt_page23]
         mov     [tmp], eax  ; tmp = virt_page23 + ecx*256
-        mov     eax, ecx
-        shl     eax, BSF 4  ; *= 4
-        add     eax, PORT_DATA.ctba_arr
-        add     eax, edi    ; eax = pdata->ctba_arr[ecx]
+        lea     eax, [ecx*4 + edi + PORT_DATA.ctba_arr] ; eax = pdata->ctba_arr[ecx]
         mov     edx, [tmp]
         mov     [eax], edx  ; pdata->ctba_arr[ecx] = virt_page23 + ecx*256
 
@@ -570,6 +600,43 @@ proc ahci_port_rebase stdcall, port: dword, portno: dword, pdata: dword
         ret    
 endp
 
+; ----------------------------------------------------------- ; TODO check
+; Find a free command list slot
+; in: eax - address of HBA_PORT structure
+; out: eax - if not found -1, else slot index
+ahci_find_cmdslot:
+        push    ebx ecx edx esi
+        ; If not set in SACT and CI, the slot is free
+        mov     ebx, [eax + HBA_PORT.sata_active]
+        or      ebx, [eax + HBA_PORT.command_issue] ; ebx = slots
+
+        mov     esi, [ahci_controller + AHCI_DATA.abar]
+        mov     edx, [esi + HBA_MEM.cap]
+        shr     edx, 8
+        and     edx, 0xf
+        DEBUGF  1, "Number of Command Slots on each port = %u\n", edx
+        xor     ecx, ecx
+.for1:
+        cmp     ecx, edx
+        jae     .for1_end
+
+        ; if ((slots&1) == 0) return i;
+        bt      ebx, 0
+        jc      .cont1
+
+        mov     eax, ecx
+        jmp     .ret
+
+.cont1:
+        shr     ebx, 1
+        inc     ecx
+        jmp     .for1
+.for1_end:
+        DEBUGF  1, "Cannot find free command list entry\n"
+        mov     eax, -1
+.ret:
+        pop     esi edx ecx ebx
+        ret
 
 
 proc _memset stdcall, dest:dword, val:byte, cnt:dword ; doesnt clobber any registers
@@ -578,7 +645,7 @@ proc _memset stdcall, dest:dword, val:byte, cnt:dword ; doesnt clobber any regis
         mov     edi, dword [dest]
         mov     al,  byte [val]
         mov     ecx, dword [cnt]
-        rep     stosb   
+        rep stosb   
         pop     edi ecx eax
         ret 
 endp
