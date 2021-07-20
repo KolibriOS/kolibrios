@@ -1,6 +1,6 @@
 ;    ssh.asm - SSH client for KolibriOS
 ;
-;    Copyright (C) 2015-2017 Jeffrey Amelynck
+;    Copyright (C) 2015-2021 Jeffrey Amelynck
 ;
 ;    This program is free software: you can redistribute it and/or modify
 ;    it under the terms of the GNU General Public License as published by
@@ -18,7 +18,7 @@
 format binary as ""
 
 __DEBUG__       = 1
-__DEBUG_LEVEL__ = 2             ; 1: Extreme debugging, 2: Debugging, 3: Errors only
+__DEBUG_LEVEL__ = 3             ; 1: Everything, including sinsitive information, 2: Debugging, 3: Errors only
 
 BUFFERSIZE      = 4096
 MAX_BITS        = 8192
@@ -57,6 +57,10 @@ include 'aes256.inc'
 include 'aes256-ctr.inc'
 include 'aes256-cbc.inc'
 
+include 'blowfish.inc'
+include 'blowfish-ctr.inc'
+include 'blowfish-cbc.inc'
+
 include 'hmac_sha256.inc'
 include 'hmac_sha1.inc'
 include 'hmac_md5.inc'
@@ -83,13 +87,13 @@ if __DEBUG_LEVEL__ <= 1
   .next_dword:
         lodsd
         bswap   eax
-        DEBUGF  1,'%x',eax
+        DEBUGF  1,'%x', eax
         loop    .next_dword
         DEBUGF  1,'\n'
 
         popad
-        ret
 end if
+        ret
 endp
 
 struct  ssh_connection
@@ -113,6 +117,9 @@ struct  ssh_connection
         tx_crypt_ctx_ptr        dd ?
         rx_crypt_blocksize      dd ?
         tx_crypt_blocksize      dd ?
+
+        rx_padsize              dd ?    ; = Max(8, rx_crypt_blocksize)
+        tx_padsize              dd ?    ; = Max(8, tx_crypt_blocksize)
 
 ; Message authentication
 
@@ -256,7 +263,6 @@ resolve:
         test    eax, eax
         jnz     dns_error
 
-        invoke  con_cls
         invoke  con_write_asciiz, str3
         invoke  con_write_asciiz, con.hostname
 
@@ -276,7 +282,6 @@ resolve:
         invoke  con_write_asciiz, str9
 
         mcall   40, EVM_STACK + EVM_KEY
-        invoke  con_cls
 
 ; Create socket
         mcall   socket, AF_INET4, SOCK_STREAM, 0
@@ -330,6 +335,8 @@ resolve:
         mov     [con.tx_mac_proc], 0
         mov     [con.rx_mac_length], 0
         mov     [con.tx_mac_length], 0
+        mov     [con.rx_padsize], 8                     ; minimum padsize
+        mov     [con.tx_padsize], 8
 
         DEBUGF  2, "Sending KEX init\n"
         mov     edi, ssh_kex.cookie
@@ -409,7 +416,7 @@ resolve:
         lodsb
         DEBUGF  1, "KEX First Packet Follows: %u\n", al
 
-        ; TODO: parse this structure and init procedures accordingly
+; TODO: parse this structure and init procedures accordingly
 
 ; HASH: string I_S, the payload of the servers's SSH_MSG_KEXINIT
         mov     eax, dword[con.rx_buffer+ssh_packet_header.packet_length]
@@ -423,6 +430,8 @@ resolve:
 
 ; Exchange keys with the server
 
+; TODO: host verification
+
         stdcall dh_gex
         test    eax, eax
         jnz     exit
@@ -431,19 +440,21 @@ resolve:
 
         DEBUGF  2, "SSH: Setting encryption keys\n"
 
-        stdcall aes256_cbc_init, con.rx_iv
+        stdcall aes256_ctr_init, con.rx_iv
         mov     [con.rx_crypt_ctx_ptr], eax
 
-        stdcall aes256_set_decrypt_key, eax, con.rx_enc_key
-        mov     [con.rx_crypt_proc], aes256_cbc_decrypt
+        stdcall aes256_set_encrypt_key, eax, con.rx_enc_key
+        mov     [con.rx_crypt_proc], aes256_ctr_crypt
         mov     [con.rx_crypt_blocksize], AES256_BLOCKSIZE
+        mov     [con.rx_padsize], AES256_BLOCKSIZE
 
-        stdcall aes256_cbc_init, con.tx_iv
+        stdcall aes256_ctr_init, con.tx_iv
         mov     [con.tx_crypt_ctx_ptr], eax
 
         stdcall aes256_set_encrypt_key, eax, con.tx_enc_key
-        mov     [con.tx_crypt_proc], aes256_cbc_encrypt
+        mov     [con.tx_crypt_proc], aes256_ctr_crypt
         mov     [con.tx_crypt_blocksize], AES256_BLOCKSIZE
+        mov     [con.tx_padsize], AES256_BLOCKSIZE
 
         stdcall hmac_sha256_setkey, con.rx_mac_ctx, con.rx_int_key, SHA256_HASH_SIZE
         mov     [con.rx_mac_proc], hmac_sha256
@@ -465,7 +476,7 @@ resolve:
 
 ; << Check for service acceptance
 
-        stdcall ssh_recv_packet, con, 0
+        stdcall ssh_msg_handler, con, 0
         cmp     eax, -1
         je      socket_err
 
@@ -474,23 +485,93 @@ resolve:
 
 ; >> Request user authentication
 
-; TODO: Request username from the user
-;        invoke  con_write_asciiz, str12
-;        invoke  con_gets, username, 256
-;        test    eax, eax
-;        jz      done
-
-; TODO: implement password authentication
-
         DEBUGF  2, "SSH: User authentication\n"
 
-        stdcall ssh_send_packet, con, ssh_request_userauth, ssh_request_userauth.length, 0
+        mcall   68, 12, 1024    ; FIXME
+        test    eax, eax
+        jz      done            ; FIXME
+        mov     edi, eax
+        mov     ebx, eax
+        mov     byte[edi], SSH_MSG_USERAUTH_REQUEST
+        inc     edi
+
+        ; Get username
+        add     edi, 4
+        invoke  con_write_asciiz, str12
+        invoke  con_gets, edi, 256      ; FIXME
+        test    eax, eax
+        jz      done            ; FIXME
+
+        mov     edx, eax
+        mov     ecx, 256
+        xor     al, al
+        repne   scasb
+
+        dec     edi             ; \0
+        dec     edi             ; \n
+        push    edi
+        sub     edi, edx
+        bswap   edi
+        mov     [edx-4], edi
+        pop     edi
+
+        mov     dword[edi], 0x0e000000  ; 14 Bswapped
+        mov     dword[edi+4], "ssh-"
+        mov     dword[edi+8], "conn"
+        mov     dword[edi+12], "ecti"
+        mov     word[edi+16], "on"
+        add     edi, 18
+
+        mov     dword[edi], 0x08000000  ; 8 Bswapped
+        mov     dword[edi+4], "pass"
+        mov     dword[edi+8], "word"
+
+        mov     byte[edi+12], 0         ; bool
+        add     edi, 13
+
+        ; Get password
+        add     edi, 4
+        invoke  con_write_asciiz, str13
+        push    eax
+        invoke  con_gets, edi, 256      ; FIXME
+        test    eax, eax
+        jz      done            ; FIXME
+
+        mov     edx, eax
+        mov     ecx, 256
+        xor     al, al
+        repne scasb
+
+        dec     edi             ; \0
+        dec     edi             ; \n
+        push    edi
+        sub     edi, edx
+        bswap   edi
+        mov     [edx-4], edi
+        pop     edi
+        sub     edi, ebx
+
+        push    ebx
+        stdcall ssh_send_packet, con, ebx, edi, 0
+
+        ; Clear used buffer and free
+        pop     edx
+        mov     edi, edx
+        push    eax
+        mov     ecx, 1024/4     ; FIXME
+        xor     eax, eax
+        rep stosd
+        mcall   68, 13, edx
+        pop     eax
+
         cmp     eax, -1
         je      socket_err
 
+        invoke  con_write_asciiz, str14
+
 ; << Check for userauth acceptance
 
-        stdcall ssh_recv_packet, con, 0
+        stdcall ssh_msg_handler, con, 0
         cmp     eax, -1
         je      socket_err
 
@@ -507,7 +588,7 @@ resolve:
 
 ; << Check for channel open confirmation
 
-        stdcall ssh_recv_packet, con, 0
+        stdcall ssh_msg_handler, con, 0
         cmp     eax, -1
         je      socket_err
 
@@ -524,7 +605,7 @@ resolve:
 
 ; << Check for channel request confirmation
 
-        stdcall ssh_recv_packet, con, 0
+        stdcall ssh_msg_handler, con, 0
         cmp     eax, -1
         je      socket_err
 
@@ -541,7 +622,9 @@ resolve:
 
 ; << Check for channel request confirmation (FIXME: this may not be first packet!)
 
-;        stdcall ssh_recv_packet, con, 0
+; TODO
+;
+;        stdcall ssh_msg_handler, con, 0
 ;        cmp     eax, -1
 ;        je      socket_err
 
@@ -560,7 +643,7 @@ mainloop:
         test    eax, 0x200                      ; con window closed?
         jnz     exit
 
-        stdcall ssh_recv_packet, con, 0
+        stdcall ssh_msg_handler, con, 0
         cmp     eax, 0
         jbe     closed
 
@@ -593,6 +676,9 @@ mainloop:
 
 
 proto_err:
+        mov     eax, con.rx_buffer
+        int3
+
         DEBUGF  3, "SSH: protocol error\n"
         invoke  con_write_asciiz, str7
         jmp     prompt
@@ -628,17 +714,53 @@ thread:
   .loop:
         invoke  con_getch2
         mov     [ssh_channel_data+9], al
-        stdcall ssh_send_packet, con, ssh_channel_data, ssh_channel_data.length, 0
+        stdcall ssh_send_packet, con, ssh_channel_data, ssh_channel_data.length, MSG_DONTWAIT
 
         invoke  con_get_flags
         test    eax, 0x200                      ; con window closed?
         jz      .loop
         mcall   -1
 
+
+; Handle common messages and return from specific ones
+proc ssh_msg_handler, con, flags
+
+  .recv:
+        stdcall ssh_recv_packet, [con], [flags]
+        cmp     eax, -1
+        je      .ret
+
+        cmp     [con.rx_buffer.message_code], SSH_MSG_DISCONNECT
+        je      .disc
+        cmp     [con.rx_buffer.message_code], SSH_MSG_IGNORE
+        je      .ign
+        cmp     [con.rx_buffer.message_code], SSH_MSG_DEBUG
+        je      .dbg
+        cmp     [con.rx_buffer.message_code], SSH_MSG_GLOBAL_REQUEST
+        je      .glob
+
+  .ret:
+        ret
+
+  .disc:
+        mov     eax, -1
+        ret
+
+  .ign:
+        jmp     .recv
+
+  .dbg:
+  .glob:
+        ; TODO
+
+        jmp     .recv
+
+endp
+
 ; data
 title   db      'Secure Shell',0
 str1    db      'SSH client for KolibriOS',10,10,\
-                'Please enter URL of SSH server (host:port)',10,10,0
+                'Please enter URL of SSH server (hostname:port)',10,10,0
 str2    db      '> ',0
 str3    db      'Connecting to ',0
 str4    db      10,0
@@ -649,12 +771,14 @@ str8    db      ' (',0
 str9    db      ')',10,0
 str10   db      'Invalid hostname.',10,10,0
 str11   db      10,'Remote host closed the connection.',10,10,0
-str12   db      'Enter username: ',0
+str12   db      'Login as: ',0
+str13   db      'Password: ', 27, '[?25l', 27, '[30;40m', 0
+str14   db      10, 27, '[?25h', 27, '[0m', 0
 
 ssh_ident_ha:
         dd_n (ssh_ident.length-2)
 ssh_ident:
-        db "SSH-2.0-KolibriOS_SSH_0.02",13,10
+        db "SSH-2.0-KolibriOS_SSH_0.03",13,10
   .length = $ - ssh_ident
 
 ssh_kex:
@@ -669,10 +793,10 @@ ssh_kex:
         db "ssh-rsa"                    ;,ssh-dss
   .encryption_algorithms_client_to_server:
         dd_n .encryption_algorithms_server_to_client - .encryption_algorithms_client_to_server - 4
-        db "aes256-cbc"                 ;,aes256-ctr,aes256-cbc,rijndael-cbc@lysator.liu.se,aes192-ctr,aes192-cbc,aes128-ctr,aes128-cbc,blowfish-ctr,blowfish-cbc,3des-ctr,3des-cbc,arcfour256,arcfour128"
+        db "aes256-ctr"                 ;,aes256-cbc,aes256-cbc,rijndael-cbc@lysator.liu.se,aes192-ctr,aes192-cbc,aes128-ctr,aes128-cbc,blowfish-ctr,blowfish-cbc,3des-ctr,3des-cbc,arcfour256,arcfour128"
   .encryption_algorithms_server_to_client:
         dd_n .mac_algorithms_client_to_server - .encryption_algorithms_server_to_client - 4
-        db "aes256-cbc"                 ;,aes256-ctr,aes256-cbc,rijndael-cbc@lysator.liu.se,aes192-ctr,aes192-cbc,aes128-ctr,aes128-cbc,blowfish-ctr,blowfish-cbc,3des-ctr,3des-cbc,arcfour256,arcfour128"
+        db "aes256-ctr"                 ;,aes256-cbc,aes256-cbc,rijndael-cbc@lysator.liu.se,aes192-ctr,aes192-cbc,aes128-ctr,aes128-cbc,blowfish-ctr,blowfish-cbc,3des-ctr,3des-cbc,arcfour256,arcfour128"
   .mac_algorithms_client_to_server:
         dd_n .mac_algorithms_server_to_client - .mac_algorithms_client_to_server - 4
         db "hmac-sha2-256"              ;,hmac-sha1,hmac-sha1-96,hmac-md5"
@@ -700,9 +824,9 @@ ssh_kex:
 
 ssh_gex_req:
         db SSH_MSG_KEX_DH_GEX_REQUEST
-        dd_n 8192/4                      ; DH GEX min
-        dd_n 8192/2                      ; DH GEX number of bits
-        dd_n 8192                        ; DH GEX Max
+        dd_n 4096/4                      ; DH GEX min
+        dd_n 4096/2                      ; DH GEX number of bits
+        dd_n 4096                        ; DH GEX Max
   .length = $ - ssh_gex_req
 
 
@@ -720,14 +844,15 @@ ssh_request_service:
 
 ssh_request_userauth:
         db SSH_MSG_USERAUTH_REQUEST
-        dd_n 12
-        dd_n 8
-        db "username"                   ; user name in ISO-10646 UTF-8 encoding [RFC3629]
+        dd_n 9
+        db "user123"                    ; user name in ISO-10646 UTF-8 encoding [RFC3629]
         dd_n 14
         db "ssh-connection"             ; service name in US-ASCII
-        dd_n 4
-        db "none"                       ; method name in US-ASCII
-; Other options: publickey, password, hostbased
+        dd_n 8
+        db "password"                   ; method name in US-ASCII: none, publickey, password, hostbased
+        db 0                            ; bool: false
+        dd_n 14
+        db "pass123"
   .length = $ - ssh_request_userauth
 
 
@@ -796,7 +921,8 @@ import  console, \
         con_getch2, 'con_getch2', \
         con_set_cursor_pos, 'con_set_cursor_pos', \
         con_write_string, 'con_write_string', \
-        con_get_flags,  'con_get_flags'
+        con_get_flags,  'con_get_flags', \
+        con_set_flags,  'con_set_flags'
 
 import  libcrash, \
         sha256_init, 'sha256_init', \

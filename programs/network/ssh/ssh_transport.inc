@@ -1,6 +1,6 @@
 ;    ssh_transport.inc - SSH transport layer
 ;
-;    Copyright (C) 2016 Jeffrey Amelynck
+;    Copyright (C) 2016-2021 Jeffrey Amelynck
 ;
 ;    This program is free software: you can redistribute it and/or modify
 ;    it under the terms of the GNU General Public License as published by
@@ -29,6 +29,7 @@ proc ssh_recv_packet connection, flags
 
 locals
         data_length     dd ?    ; Total length of packet without MAC
+        socket_error    dd ?
 endl
 
         DEBUGF  2, "> "
@@ -39,6 +40,7 @@ endl
         lea     edx, [ebx+ssh_connection.rx_buffer]
         mov     edi, [flags]
         mcall   recv
+        mov     [socket_error], ebx
         DEBUGF  1, "chunk = %u ", eax
         mov     ebx, [connection]
         cmp     eax, [ebx+ssh_connection.rx_crypt_blocksize]
@@ -145,11 +147,13 @@ endl
   .fail:
         DEBUGF  3, "ssh_recv_packet failed!\n"
         mov     eax, -1
+        mov     ebx, [socket_error]
         ret
 
   .mac_failed:
         DEBUGF  3, "ssh_recv_packet MAC failed!\n"
-        mov     eax, -1
+        mov     eax, -2
+        mov     ebx, [socket_error]
         ret
 
 endp
@@ -168,14 +172,14 @@ endl
         lea     edx, [eax+4]            ; total packet size (without padding and MAC)
         mov     [packet_size], edx
         mov     ecx, [connection]
-        mov     ebx, [ecx+ssh_connection.tx_crypt_blocksize]
+        mov     ebx, [ecx+ssh_connection.tx_padsize]
         dec     ebx
         and     edx, ebx
         neg     edx
-        add     edx, [ecx+ssh_connection.tx_crypt_blocksize]
+        add     edx, [ecx+ssh_connection.tx_padsize]
         cmp     edx, 4                  ; minimum padding size
         jae     @f
-        add     edx, [ecx+ssh_connection.tx_crypt_blocksize]
+        add     edx, [ecx+ssh_connection.tx_padsize]
   @@:
         DEBUGF  1, "padding %u bytes ", edx
         add     [packet_size], edx

@@ -1,6 +1,6 @@
 ;    mpint.inc - Multi precision integer procedures
 ;
-;    Copyright (C) 2015-2017 Jeffrey Amelynck
+;    Copyright (C) 2015-2021 Jeffrey Amelynck
 ;
 ;    This program is free software: you can redistribute it and/or modify
 ;    it under the terms of the GNU General Public License as published by
@@ -19,7 +19,6 @@
 ;
 ; These procedures work only with positive integers.
 ; For compatibility reasons, the highest bit must always be 0.
-; However, leading 0 bytes MUST at all other times be omitted.
 ;
 ; You have been warned!
 
@@ -27,16 +26,18 @@ MPINT_MAX_LEN = MAX_BITS/8
 
 
 ;;===========================================================================;;
-proc mpint_to_little_endian uses esi edi ecx ;///////////////////////////////;;
+proc mpint_to_little_endian uses esi edi ecx, dst, src ;/////////////////////;;
 ;;---------------------------------------------------------------------------;;
 ;? Convert big endian MPINT to little endian MPINT.                          ;;
 ;;---------------------------------------------------------------------------;;
-;> esi = pointer to big endian MPINT                                         ;;
-;> edi = pointer to buffer for little endian MPINT                           ;;
+;> src = pointer to big endian MPINT                                         ;;
+;> dst = pointer to buffer for little endian MPINT                           ;;
 ;;---------------------------------------------------------------------------;;
 ;< eax = MPINT number length                                                 ;;
 ;;===========================================================================;;
 
+        mov     esi, [src]
+        mov     edi, [dst]
 ; Load length dword
         lodsd
 ; Convert to little endian
@@ -47,7 +48,6 @@ proc mpint_to_little_endian uses esi edi ecx ;///////////////////////////////;;
 ; Copy data, convert to little endian meanwhile
         push    eax
         add     esi, eax
-        push    esi
         dec     esi
         mov     ecx, eax
         std
@@ -57,24 +57,27 @@ proc mpint_to_little_endian uses esi edi ecx ;///////////////////////////////;;
         inc     edi
         dec     ecx
         jnz     @r
+
         cld
-        pop     esi eax
+        pop     eax
   .zero:
         ret
 
 endp
 
 ;;===========================================================================;;
-proc mpint_to_big_endian uses esi edi ecx ;//////////////////////////////////;;
+proc mpint_to_big_endian uses esi edi ecx, dst, src ;////////////////////////;;
 ;;---------------------------------------------------------------------------;;
 ;? Convert little endian MPINT to big endian MPINT.                          ;;
 ;;---------------------------------------------------------------------------;;
-;> esi = pointer to little endian MPINT                                      ;;
-;> edi = pointer to buffer for big endian MPINT                              ;;
+;> src = pointer to little endian MPINT                                      ;;
+;> dst = pointer to buffer for big endian MPINT                              ;;
 ;;---------------------------------------------------------------------------;;
 ;< eax = MPINT number length                                                 ;;
 ;;===========================================================================;;
 
+        mov     esi, [src]
+        mov     edi, [dst]
 ; Load length dword
         lodsd
         test    eax, eax
@@ -138,37 +141,80 @@ proc mpint_print uses ecx esi eax, src ;/////////////////////////////////////;;
 endp
 
 ;;===========================================================================;;
-proc mpint_hob uses edi ecx eax, dst ;///////////////////////////////////////;;
+proc mpint_bits uses esi ecx, dst ;//////////////////////////////////////////;;
 ;;---------------------------------------------------------------------------;;
-;? Return an index number giving the position of the highest order bit.      ;;
+;? Count the number of bits in the MPINT                                     ;;
 ;;---------------------------------------------------------------------------;;
-;> src = pointer to little endian MPINT                                      ;;
+;> dst = pointer to little endian MPINT                                      ;;
 ;;---------------------------------------------------------------------------;;
-;< eax = highest order bit number                                            ;;
+;< eax = highest order bit number + 1                                        ;;
 ;;===========================================================================;;
 
-        mov     edi, [dst]
-        lodsd
-        dec     eax                     ; total length minus one
-        mov     cl, [edi+eax]           ; load the highest order byte
-        shl     eax, 3                  ; multiply eax by 8 to get nr of bits
+        DEBUGF  1, "mpint_bits(0x%x): ", [dst]
 
+        mov     esi, [dst]
+        mov     eax, [esi]
+        test    eax, eax
+        jz      .zero
+        add     esi, 4-1
+; Find highest order byte
+  .byteloop:
+        cmp     byte[esi+eax], 0
+        jne     .nz
+        dec     eax
+        jnz     .byteloop
+  .zero:
+        DEBUGF  1, "%u\n", eax
+        ret
+  .nz:
+        mov     cl, byte[esi+eax]
+; multiply (eax - 1) by 8 to get nr of bits before this byte
+        dec     eax
+        shl     eax, 3
 ; Now shift bits of the highest order byte right, until the byte reaches zero, counting bits meanwhile
-        test    cl, cl
-        jz      .end
-  @@:
+  .bitloop:
         inc     eax
         shr     cl, 1
-        jnz     @r
-  .end:
+        jnz     .bitloop
+        DEBUGF  1, "%u\n", eax
+        ret
+
+endp
+
+
+;;===========================================================================;;
+proc mpint_bytes uses esi, dst ;/////////////////////////////////////////////;;
+;;---------------------------------------------------------------------------;;
+;? Count the number of bytes in the MPINT                                    ;;
+;;---------------------------------------------------------------------------;;
+;> dst = pointer to little endian MPINT                                      ;;
+;;---------------------------------------------------------------------------;;
+;< eax = highest order byte number + 1                                       ;;
+;;===========================================================================;;
+
+        DEBUGF  1, "mpint_bytes(0x%x): ", [dst]
+
+        mov     esi, [dst]
+        mov     eax, [esi]
+        test    eax, eax
+        jz      .done
+        add     esi, 4-1
+; Find highest order byte
+  .byteloop:
+        cmp     byte[esi+eax], 0
+        jne     .done
+        dec     eax
+        jnz     .byteloop
+  .done:
+        DEBUGF  1, "%u\n", eax
         ret
 
 endp
 
 ;;===========================================================================;;
-proc mpint_cmp uses esi edi ecx eax, dst, src ;//////////////////////////////;;
+proc mpint_cmp uses esi edi ecx eax, src, dst ;//////////////////////////////;;
 ;;---------------------------------------------------------------------------;;
-;? Compare two mpints.                                                       ;;
+;? Compare two MPINTS.                                                       ;;
 ;;---------------------------------------------------------------------------;;
 ;> dst = pointer to little endian MPINT                                      ;;
 ;> src = pointer to little endian MPINT                                      ;;
@@ -176,27 +222,38 @@ proc mpint_cmp uses esi edi ecx eax, dst, src ;//////////////////////////////;;
 ;< flags are set as for single precision CMP instruction                     ;;
 ;;===========================================================================;;
 
-; First, check if number of significant bytes is the same
-; If not, number with more bytes is bigger
+        DEBUGF  1, "mpint_cmp(0x%x, 0x%x)\n", [dst], [src]
+
+; First, check the size of both numbers
+        stdcall mpint_bytes, [dst]
+        mov     ecx, eax
+        stdcall mpint_bytes, [src]
+; If one number has more bytes, it is bigger
+        cmp     eax, ecx
+        jne     .got_answer
+; If both numbers have 0 bytes, they are equal
+        test    ecx, ecx
+        jz      .got_answer
+; Numbers have equal amount of bytes
+; Start comparing from the MSB towards the LSB
         mov     esi, [src]
         mov     edi, [dst]
-        mov     ecx, [esi]
-        cmp     ecx, [edi]
-        jne     .got_answer
-
-; Numbers have equal amount of bytes, compare starting from the high order byte
-        add     edi, ecx
         add     esi, ecx
+        add     edi, ecx
+        add     esi, 4
+        add     edi, 4
         std
+; If remaining bytes is not divisible by 4, compare only one byte at a time
   .do_byte:
-        test    ecx, 11b
+        test    ecx, 1b
         jz      .do_dword
         dec     esi
         dec     edi
-        cmpsb
+        mov     al, byte[esi]
+        cmp     al, byte[edi]
         jne     .got_answer
         dec     ecx
-        jmp     .do_byte
+; Remaining bytes is divisable by 4, compare dwords
   .do_dword:
         shr     ecx, 2
         jz      .got_answer
@@ -212,13 +269,15 @@ endp
 ;;===========================================================================;;
 proc mpint_mov uses esi edi ecx, dst, src ;//////////////////////////////////;;
 ;;---------------------------------------------------------------------------;;
-;? Copy mpint.                                                               ;;
+;? Copy MPINT.                                                               ;;
 ;;---------------------------------------------------------------------------;;
 ;> dst = pointer to buffer for little endian MPINT                           ;;
 ;> src = pointer to little endian MPINT                                      ;;
 ;;---------------------------------------------------------------------------;;
 ;< dst = src                                                                 ;;
 ;;===========================================================================;;
+
+        DEBUGF  1, "mpint_mov(0x%x, 0x%x)\n", [dst], [src]
 
         mov     esi, [src]
         mov     edi, [dst]
@@ -246,6 +305,8 @@ proc mpint_shl1 uses esi ecx, dst ;//////////////////////////////////////////;;
 ;;---------------------------------------------------------------------------;;
 ;< dst = dst SHL 1                                                           ;;
 ;;===========================================================================;;
+
+        DEBUGF  1, "mpint_shl1(0x%x)\n", [dst]
 
         mov     esi, [dst]
         mov     ecx, [esi]
@@ -288,24 +349,20 @@ proc mpint_shr1 uses edi ecx, dst ;//////////////////////////////////////////;;
 ;< dst = dst SHR 1                                                           ;;
 ;;===========================================================================;;
 
+        DEBUGF  1, "mpint_shr1(0x%x)\n", [dst]
+
         mov     edi, [dst]
         mov     ecx, [edi]
         test    ecx, ecx
         jz      .done
 
 ; Do the highest order byte first
+        add     edi, 4-1
+        add     edi, ecx
+        shr     byte[edi], 1
         dec     ecx
-        shr     byte[edi+ecx+3], 1
-; Was it 0? If so, we must decrement total length
-        jnz     @f
-        jc      @f
-        mov     [edi], ecx
-  @@:
-        test    ecx, ecx
         jz      .done
 ; Now do the trailing bytes
-        add     edi, 4
-        add     edi, ecx
   @@:
         dec     edi
         rcr     byte[edi], 1
@@ -327,11 +384,20 @@ proc mpint_shl uses eax ebx ecx edx esi edi, dst, shift ;////////////////////;;
 ;< -                                                                         ;;
 ;;===========================================================================;;
 
+        DEBUGF  1, "mpint_shl(0x%x, %u)\n", [dst], [shift]
+
+; Calculate new size
+        stdcall mpint_bits, [dst]
+        add     eax, [shift]
+        shr     eax, 3
+        cmp     eax, MPINT_MAX_LEN
+        jae     .overflow     ;;
+        inc     eax
+        mov     esi, [dst]
+        mov     [esi], eax
+
         mov     ecx, [shift]
         shr     ecx, 3                  ; 8 bits in one byte
-        cmp     ecx, MPINT_MAX_LEN
-        jge     .zero
-        mov     esi, [dst]
         add     esi, MPINT_MAX_LEN+4-4
         mov     edi, esi
         and     ecx, not 11b
@@ -354,7 +420,7 @@ proc mpint_shl uses eax ebx ecx edx esi edi, dst, shift ;////////////////////;;
         shl     eax, cl
         stosd
 
-        ; fill the lsb bytes with zeros
+        ; fill the LSBs with zeros
         pop     ecx
         test    ecx, ecx
         jz      @f
@@ -367,6 +433,10 @@ proc mpint_shl uses eax ebx ecx edx esi edi, dst, shift ;////////////////////;;
   .zero:
         mov     eax, [dst]
         mov     dword[eax], 0
+        ret
+
+  .overflow:
+        int3
         ret
 
 endp
@@ -383,14 +453,25 @@ proc mpint_shlmov uses eax ebx ecx edx esi edi, dst, src, shift ;////////////;;
 ;< dst = src SHL shift                                                       ;;
 ;;===========================================================================;;
 
-        mov     ecx, [shift]
-        shr     ecx, 3                  ; 8 bits in one byte
-        cmp     ecx, MPINT_MAX_LEN
-        jge     .zero
+        DEBUGF  1, "mpint_shlmov(0x%x, 0x%x, %u)\n", [dst], [src], [shift]
+
+        stdcall mpint_bits, [src]
+        test    eax, eax
+        jz      .zero
+        add     eax, [shift]
+        shr     eax, 3
+        inc     eax
+        mov     edi, [dst]
+        mov     [edi], eax
+
+        cmp     eax, MPINT_MAX_LEN
+        jae     .overflow        ;;;;
+
         mov     esi, [src]
         add     esi, MPINT_MAX_LEN+4-4
-        mov     edi, [dst]
         add     edi, MPINT_MAX_LEN+4-4
+        mov     ecx, [shift]
+        shr     ecx, 3                  ; 8 bits in one byte
         and     ecx, not 11b
         sub     esi, ecx
         mov     edx, MPINT_MAX_LEN/4-1
@@ -426,6 +507,10 @@ proc mpint_shlmov uses eax ebx ecx edx esi edi, dst, src, shift ;////////////;;
         mov     dword[eax], 0
         ret
 
+  .overflow:
+        int3
+        ret
+
 endp
 
 ;;===========================================================================;;
@@ -439,19 +524,21 @@ proc mpint_add uses esi edi ecx eax, dst, src ;//////////////////////////////;;
 ;< dst = dst + src                                                           ;;
 ;;===========================================================================;;
 
+        DEBUGF  1, "mpint_add(0x%x, 0x%x)\n", [dst], [src]
+
         mov     esi, [src]
         mov     edi, [dst]
-        mov     ecx, [esi]      ; source number length
-        sub     ecx, [dst]
-        jbe     .length_ok
-; Length of the destination is currently smaller then the source, pad with 0 bytes
-        add     edi, [edi]
-        add     edi, 4
-        mov     al, 0
-        rep stosb
+        stdcall mpint_bytes, esi
+        mov     ecx, eax
+        stdcall mpint_bytes, edi
+        cmp     ecx, eax
+        jb      .grow_src
+        ja      .grow_dst
+        test    ecx, ecx
+        jz      .done
+
   .length_ok:
-        mov     ecx, [esi]
-        mov     edi, [dst]
+        push    ecx
         add     esi, 4
         add     edi, 4
 ; Add the first byte
@@ -467,9 +554,11 @@ proc mpint_add uses esi edi ecx eax, dst, src ;//////////////////////////////;;
         dec     ecx
         jnz     @r
   .done:
+
 ; check if highest bit OR carry flag is set
 ; if so, add a byte if we have the buffer space
 ; TODO: check if we have the buffer space
+        pop     ecx
         jc      .carry
         cmp     byte[edi], 0x80
         jnz     .high_bit_set
@@ -477,20 +566,31 @@ proc mpint_add uses esi edi ecx eax, dst, src ;//////////////////////////////;;
         ret
 
   .carry:
-        inc     edi
-        mov     byte[edi], 1
         mov     eax, [dst]
+        cmp     [eax], ecx
+        ja      @f
         inc     dword[eax]
-
+  @@:
+        mov     byte[edi+1], 1
         ret
 
   .high_bit_set:
-        inc     edi
-        mov     byte[edi], 0
         mov     eax, [dst]
+        cmp     [eax], ecx
+        ja      @f
         inc     dword[eax]
-
+  @@:
+        mov     byte[edi+1], 0
         ret
+
+  .grow_dst:
+        stdcall mpint_grow, edi, ecx
+        jmp     .length_ok
+
+  .grow_src:
+        mov     ecx, eax
+        stdcall mpint_grow, esi, ecx
+        jmp     .length_ok
 
 endp
 
@@ -505,12 +605,20 @@ proc mpint_sub uses eax esi edi ecx, dst, src ;//////////////////////////////;;
 ;< dst = dst - src                                                           ;;
 ;;===========================================================================;;
 
+        DEBUGF  1, "mpint_sub(0x%x, 0x%x)\n", [dst], [src]
+
         mov     esi, [src]
         mov     edi, [dst]
-        mov     ecx, [esi]      ; destination number length
-        cmp     ecx, [edi]
-        ja      .overflow
+        stdcall mpint_bytes, esi
+        mov     ecx, eax
+        stdcall mpint_bytes, edi
+        cmp     ecx, eax
+        jb      .grow_src
+        ja      .grow_dst
+        test    ecx, ecx
+        jz      .done
 
+  .length_ok:
         add     esi, 4
         add     edi, 4
 ; Subtract the first byte
@@ -526,7 +634,6 @@ proc mpint_sub uses eax esi edi ecx, dst, src ;//////////////////////////////;;
         dec     ecx
         jnz     @r
   .done:
-        stdcall mpint_shrink, [dst]
         ret
 
   .overflow:
@@ -534,32 +641,83 @@ proc mpint_sub uses eax esi edi ecx, dst, src ;//////////////////////////////;;
         stc
         ret
 
+  .grow_dst:
+        stdcall mpint_grow, edi, ecx
+        jmp     .length_ok
+
+  .grow_src:
+        mov     ecx, eax
+        stdcall mpint_grow, esi, ecx
+        jmp     .length_ok
+
 endp
 
 
 ;;===========================================================================;;
-proc mpint_shrink uses eax edi ecx, dst ;////////////////////////////////////;;
+proc mpint_shrink uses eax edi, dst ;////////////////////////////////////////;;
 ;;---------------------------------------------------------------------------;;
-;? Get rid of leading zeroes on a little endian MPINT.                       ;;
+;? Get rid of unnescessary leading zeroes on a little endian MPINT.          ;;
 ;;---------------------------------------------------------------------------;;
 ;> src = pointer to little endian MPINT                                      ;;
 ;;---------------------------------------------------------------------------;;
 ;<                                                                           ;;
 ;;===========================================================================;;
 
-        mov     edi, [dst]
-        lodsd
-        std
-        mov     ecx, eax
-        dec     eax             ; total length minus one
-        add     edi, eax
-        xor     al, al
-        repe cmpsb
-        inc     ecx
-        mov     edi, [dst]
-        mov     [edi], ecx
-        cld
+        DEBUGF  1, "mpint_shrink(0x%x)\n", [dst]
 
+;        mov     edi, [dst]
+;        lodsd
+;        std
+;        mov     ecx, eax
+;        dec     eax             ; total length minus one
+;        add     edi, eax
+;        xor     al, al
+;        repe cmpsb
+;        inc     ecx
+;        mov     edi, [dst]
+;        mov     [edi], ecx
+;        cld
+
+        stdcall mpint_bits, [dst]
+        shr     eax, 3
+        inc     eax
+        mov     edi, [dst]
+        mov     [edi], eax
+
+        ret
+
+endp
+
+
+;;===========================================================================;;
+proc mpint_grow uses eax edi ecx, dst, length ;//////////////////////////////;;
+;;---------------------------------------------------------------------------;;
+;? Add leading zeroes on a little endian MPINT.                              ;;
+;;---------------------------------------------------------------------------;;
+;> src = pointer to little endian MPINT                                      ;;
+;> length = total length of the new MPINT in bytes                           ;;
+;;---------------------------------------------------------------------------;;
+;<                                                                           ;;
+;;===========================================================================;;
+
+        DEBUGF  1, "mpint_grow(0x%x, %u): ", [dst], [length]
+
+        mov     edi, [dst]
+        mov     eax, [edi]
+        mov     ecx, [length]
+        sub     ecx, eax
+        jbe     .dontgrow
+        lea     edi, [edi + 4 + eax]
+        xor     al, al
+        rep stosb
+        mov     eax, [length]
+        mov     edi, [dst]
+        mov     [edi], eax
+        DEBUGF  1, "ok\n"
+        ret
+
+  .dontgrow:
+        DEBUGF  1, "already large enough!\n"
         ret
 
 endp
@@ -567,7 +725,7 @@ endp
 ;;===========================================================================;;
 proc mpint_mul uses esi edi ecx ebx eax, dst, A, B ;/////////////////////////;;
 ;;---------------------------------------------------------------------------;;
-;? Multiply to little endian MPINTS and store them in a new one.             ;;
+;? Multiply two little endian MPINTS and store them in a third one.          ;;
 ;;---------------------------------------------------------------------------;;
 ;> A = pointer to little endian MPINT                                        ;;
 ;> B = pointer to little endian MPINT                                        ;;
@@ -576,27 +734,21 @@ proc mpint_mul uses esi edi ecx ebx eax, dst, A, B ;/////////////////////////;;
 ;< dst = A * B                                                               ;;
 ;;===========================================================================;;
 
+        DEBUGF  1, "mpint_mul(0x%x, 0x%x, 0x%x)\n", [dst], [A], [B]
+
         ; Set result to zero
         mov     eax, [dst]
         mov     dword[eax], 0
 
-        ; first, find the byte in A containing the highest order bit
         mov     edi, [A]
-        mov     eax, [edi]
+        stdcall mpint_bytes, edi
         test    eax, eax
         jz      .zero
+        add     edi, 4-1
         add     edi, eax
-        mov     al, [edi+1]
-        mov     esi, edi
-        mov     bl, 8
-  @@:
-        shl     al, 1
-        jc      .first_hit
-        dec     bl
-        jnz     @r
-
-        ; Then, starting from this byte, iterate through the bits in A,
-        ; starting from the highest order bit down to the lowest order bit.
+        mov     ecx, eax
+; Iterate through the bits in A,
+; starting from the highest order bit down to the lowest order bit.
   .next_byte:
         mov     al, [edi]
         dec     edi
@@ -605,7 +757,6 @@ proc mpint_mul uses esi edi ecx ebx eax, dst, A, B ;/////////////////////////;;
         stdcall mpint_shl1, [dst]
         shl     al, 1
         jnc     .zero_bit
-  .first_hit:
         stdcall mpint_add, [dst], [B]
   .zero_bit:
         dec     bl
@@ -628,42 +779,39 @@ proc mpint_mod uses eax ebx ecx, dst, mod ;//////////////////////////////////;;
 ;< dst = dst MOD mod                                                         ;;
 ;;===========================================================================;;
 
+        DEBUGF  1, "mpint_mod(0x%x, 0x%x)\n", [dst], [mod]
+
 locals
         mpint_tmp       rb MPINT_MAX_LEN+4
 endl
 
-        ; if mod is zero, return
-        mov     eax, [mod]
-        cmp     dword[eax], 0
-        je      .zero
-
-        stdcall mpint_cmp, eax, [dst]
-        jb      .done                           ; if dst < mod, dst = dst
-        je      .zero                           ; if dst == mod, dst = 0
-
-        lea     ebx, [mpint_tmp]
+        stdcall mpint_cmp, [mod], [dst]
+        ja      .done                           ; if mod > dst, dst = dst    ;;;;;;;
+        je      .zero                           ; if mod == dst, dst = 0
 
         ; left shift mod until the high order bits of mod and dst are aligned
-        stdcall mpint_hob, [dst]
+
+        stdcall mpint_bits, [dst]
         mov     ecx, eax
-        stdcall mpint_hob, [mod]
+        stdcall mpint_bits, [mod]
+        test    eax, eax
+        jz      .zero                           ; if mod is zero, return
         sub     ecx, eax
+        lea     ebx, [mpint_tmp]
         stdcall mpint_shlmov, ebx, [mod], ecx
         inc     ecx
 
         ; For every bit in dst (starting from the high order bit):
-  .loop:
-        ;   determine if dst is bigger than mpint_tmp
-        stdcall mpint_cmp, [dst], ebx
-        ja      @f
-        ;   if so, subtract mpint_tmp from dst
-        stdcall mpint_sub, [dst], ebx
+  .bitloop:
+        stdcall mpint_cmp, [dst], ebx           ; If dst > mpint_tmp
+        jb      @f                                                       ;;;;;;;;
+        stdcall mpint_sub, [dst], ebx           ; dst = dst - mpint_tmp
   @@:
         dec     ecx
         jz      .done
-        ;   shift mpint_tmp right by 1
-        stdcall mpint_shr1, ebx
-        jmp     .loop
+
+        stdcall mpint_shr1, ebx                 ; mpint = mpint >> 1
+        jmp     .bitloop
 
   .zero:
         mov     eax, [dst]
@@ -686,19 +834,25 @@ proc mpint_modexp uses edi eax ebx ecx edx, dst, base, exp, mod ;////////////;;
 ;< dst = base ** exp MOD mod                                                 ;;
 ;;===========================================================================;;
 
+        ;DEBUGF  1, "mpint_modexp(0x%x, 0x%x, 0x%x, 0x%x)\n", [dst], [base], [exp], [mod]
+
 locals
         mpint_tmp       rb MPINT_MAX_LEN+4
 endl
 
         ; If mod is zero, return
-        mov     eax, [mod]
-        cmp     dword[eax], 0
-        je      .mod_zero
+        stdcall mpint_bits, [mod]
+        test    eax, eax
+        jz      .mod_zero
 
-        ; Find the highest order byte in exponent
+        ; Find highest order byte in exponent
+        stdcall mpint_bytes, [exp]
+        test    eax, eax
+        jz      .exp_zero
+        mov     ecx, eax
         mov     edi, [exp]
-        mov     ecx, [edi]
         lea     edi, [edi + 4 + ecx - 1]
+
         ; Find the highest order bit in this byte
         mov     al, [edi]
         test    al, al
@@ -709,7 +863,9 @@ endl
         shl     al, 1
         jnc     @r
 
+        ; Make pointer to tmp mpint for convenient access
         lea     edx, [mpint_tmp]
+
         ; Initialise result to base, to take care of the highest order bit
         stdcall mpint_mov, [dst], [base]
         dec     bl
@@ -737,6 +893,7 @@ endl
         mov     bl, 8
         jmp     .bit_loop
   .done:
+        ;stdcall mpint_print, [dst]
         ret
 
   .mod_zero:

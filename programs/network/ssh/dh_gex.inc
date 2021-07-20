@@ -1,6 +1,6 @@
 ;    dh_gex.inc - Diffie Hellman Group exchange
 ;
-;    Copyright (C) 2015-2016 Jeffrey Amelynck
+;    Copyright (C) 2015-2021 Jeffrey Amelynck
 ;
 ;    This program is free software: you can redistribute it and/or modify
 ;    it under the terms of the GNU General Public License as published by
@@ -22,6 +22,10 @@
 
 proc dh_gex
 
+locals
+        dh_f_big        dd ?
+endl
+
 ;----------------------------------------------
 ; >> Send Diffie-Hellman Group Exchange Request
 
@@ -42,14 +46,16 @@ proc dh_gex
         DEBUGF  2, "Received GEX group\n"
 
         mov     esi, con.rx_buffer+sizeof.ssh_packet_header
-        mov     edi, con.dh_p
         DEBUGF  1, "DH modulus (p): "
-        call    mpint_to_little_endian
+        stdcall mpint_to_little_endian, con.dh_p, esi
+        add     esi, 4
+        add     esi, eax
         stdcall mpint_print, con.dh_p
 
         DEBUGF  1, "DH base (g): "
-        mov     edi, con.dh_g
-        call    mpint_to_little_endian
+        stdcall mpint_to_little_endian, con.dh_g, esi
+        add     esi, 4
+        add     esi, eax
         stdcall mpint_print, con.dh_g
 
 ;-------------------------------------------
@@ -74,18 +80,12 @@ proc dh_gex
         inc     dword[con.dh_x]
   @@:
 
-; Fill remaining bytes with zeros       ; TO BE REMOVED ?
-if ((MAX_BITS-DH_PRIVATE_KEY_SIZE) > 0)
-        mov     ecx, (MAX_BITS-DH_PRIVATE_KEY_SIZE)/8/4
-        xor     eax, eax
-        rep stosd
-end if
-
         DEBUGF  1, "DH x: "
         stdcall mpint_print, con.dh_x
 
 ; Compute e = g^x mod p
         stdcall mpint_modexp, con.dh_e, con.dh_g, con.dh_x, con.dh_p
+        stdcall mpint_shrink, con.dh_e
 
         DEBUGF  1, "DH e: "
         stdcall mpint_print, con.dh_e
@@ -94,8 +94,7 @@ end if
         mov     edi, con.tx_buffer.message_code
         mov     al, SSH_MSG_KEX_DH_GEX_INIT
         stosb
-        mov     esi, con.dh_e
-        call    mpint_to_big_endian
+        stdcall mpint_to_big_endian, edi, con.dh_e
 
         DEBUGF  2, "Sending GEX init\n"
         mov     ecx, dword[con.tx_buffer.message_code+1]
@@ -124,7 +123,7 @@ end if
         bswap   edx
         add     edx, 4
         lea     ebx, [esi+edx]
-        push    ebx
+        mov     [dh_f_big], ebx
         invoke  sha256_update, con.temp_ctx, esi, edx
 
 ;--------------------------------------------------------------------------
@@ -135,17 +134,15 @@ end if
 
 ;----------------------------
 ; HASH: mpint p, safe prime
-        mov     esi, con.dh_p
-        mov     edi, con.mpint_tmp
-        call    mpint_to_big_endian
+        stdcall mpint_shrink, con.dh_p
+        stdcall mpint_to_big_endian, con.mpint_tmp, con.dh_p
         lea     edx, [eax+4]
         invoke  sha256_update, con.temp_ctx, con.mpint_tmp, edx
 
 ;----------------------------------------
 ; HASH: mpint g, generator for subgroup
-        mov     esi, con.dh_g
-        mov     edi, con.mpint_tmp
-        call    mpint_to_big_endian
+        stdcall mpint_shrink, con.dh_g
+        stdcall mpint_to_big_endian, con.mpint_tmp, con.dh_g
         lea     edx, [eax+4]
         invoke  sha256_update, con.temp_ctx, con.mpint_tmp, edx
 
@@ -159,36 +156,33 @@ end if
 
 ;---------------------------------------------------
 ; HASH: mpint f, exchange value sent by the server
-        mov     esi, [esp]
+        mov     esi, [dh_f_big]
         mov     edx, [esi]
         bswap   edx
         add     edx, 4
         invoke  sha256_update, con.temp_ctx, esi, edx
-        pop     esi
 
-        mov     edi, con.dh_f
-        call    mpint_to_little_endian
-
+        stdcall mpint_to_little_endian, con.dh_f, [dh_f_big]
+        mov     esi, [dh_f_big]
+        add     esi, eax
+        add     esi, 4
         DEBUGF  1, "DH f: "
         stdcall mpint_print, con.dh_f
 
-        mov     edi, con.dh_signature
-        call    mpint_to_little_endian
-
+        stdcall mpint_to_little_endian, con.dh_signature, esi
         DEBUGF  1, "DH signature: "
         stdcall mpint_print, con.dh_signature
 
 ;--------------------------------------
 ; Calculate shared secret K = f^x mod p
         stdcall mpint_modexp, con.rx_buffer, con.dh_f, con.dh_x, con.dh_p
+        stdcall mpint_shrink, con.rx_buffer
 
         DEBUGF  1, "DH K: "
         stdcall mpint_print, con.rx_buffer
 
 ; We always need it in big endian order, so store it as such.
-        mov     edi, con.dh_K
-        mov     esi, con.rx_buffer
-        call    mpint_to_big_endian
+        stdcall mpint_to_big_endian, con.dh_K, con.rx_buffer
         mov     [con.dh_K_length], eax
 
 ;-----------------------------------
@@ -231,7 +225,7 @@ end if
 
         mov     esi, con.k_h_ctx
         mov     edi, con.temp_ctx
-        mov     ecx, sizeof.crash_ctx
+        mov     ecx, sizeof.crash_ctx/4
         rep movsd
         mov     [con.session_id_prefix], 'A'
         invoke  sha256_update, con.temp_ctx, con.session_id_prefix, 32+1
@@ -250,7 +244,7 @@ end if
         mov     esi, con.k_h_ctx
         mov     edi, con.temp_ctx
         mov     ecx, sizeof.crash_ctx/4
-        rep     movsd
+        rep movsd
         inc     [con.session_id_prefix]
         invoke  sha256_update, con.temp_ctx, con.session_id_prefix, 32+1
         invoke  sha256_final, con.temp_ctx
@@ -267,8 +261,8 @@ end if
 
         mov     esi, con.k_h_ctx
         mov     edi, con.temp_ctx
-        mov     ecx, sizeof.crash_ctx
-        rep     movsd
+        mov     ecx, sizeof.crash_ctx/4
+        rep movsd
         inc     [con.session_id_prefix]
         invoke  sha256_update, con.temp_ctx, con.session_id_prefix, 32+1
         invoke  sha256_final, con.temp_ctx
@@ -286,7 +280,7 @@ end if
         mov     esi, con.k_h_ctx
         mov     edi, con.temp_ctx
         mov     ecx, sizeof.crash_ctx/4
-        rep     movsd
+        rep movsd
         inc     [con.session_id_prefix]
         invoke  sha256_update, con.temp_ctx, con.session_id_prefix, 32+1
         invoke  sha256_final, con.temp_ctx
@@ -304,7 +298,7 @@ end if
         mov     esi, con.k_h_ctx
         mov     edi, con.temp_ctx
         mov     ecx, sizeof.crash_ctx/4
-        rep     movsd
+        rep movsd
         inc     [con.session_id_prefix]
         invoke  sha256_update, con.temp_ctx, con.session_id_prefix, 32+1
         invoke  sha256_final, con.temp_ctx
@@ -322,7 +316,7 @@ end if
         mov     esi, con.k_h_ctx
         mov     edi, con.temp_ctx
         mov     ecx, sizeof.crash_ctx/4
-        rep     movsd
+        rep movsd
         inc     [con.session_id_prefix]
         invoke  sha256_update, con.temp_ctx, con.session_id_prefix, 32+1
         invoke  sha256_final, con.temp_ctx

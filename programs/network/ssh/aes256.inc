@@ -635,7 +635,7 @@ endl
         ret
 endp
 
-proc aes256_decrypt _key, _in, _out
+proc aes256_decrypt _ctx, _in, _out
 locals
         s       rd 4
         t       rd 4
@@ -646,7 +646,7 @@ endl
         DEBUGF  1,'input  : '
         stdcall dump_hex, [_in], 4
 
-        mov     ebx, [_key]
+        mov     ebx, [_ctx]
         mov     esi, [_in]
         lea     edi, [s]
 
