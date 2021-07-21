@@ -27,6 +27,8 @@ bit_AHCI_HBA_PxCMD_FRE   = 4
 bit_AHCI_HBA_PxCMD_FR    = 14
 bit_AHCI_HBA_PxCMD_CR    = 15
 
+bit_AHCI_H2D_FLAG_CMD    = 7
+
 AHCI_HBA_PxSSTS_DET         = 0xF
 AHCI_HBA_PORT_IPM_ACTIVE    = 1
 AHCI_HBA_PxSSTS_DET_PRESENT = 3
@@ -90,7 +92,7 @@ struct HBA_PORT
         vendor                   rd 4                 ; 0x70 - 0x7F, vendor specific
 ends
 
-; Command header structure
+; Command header structure, size = 32 bytes
 struct HBA_CMD_HDR
     _flags1       db ? ; 0bPWACCCCC, P - Prefetchable, W - Write (1: H2D, 0: D2H)
                        ; A - ATAPI, C - Command FIS length in DWORDS, 2 ~ 16
@@ -105,6 +107,7 @@ struct HBA_CMD_HDR
                   rd 4 ; Reserved
 ends
 
+; Physical region descriptor table entry, size = 16 bytes
 struct HBA_PRDT_ENTRY
     dba           dd ?  ; Data base address
     dbau          dd ?  ; Data base address upper 32 bits
@@ -127,6 +130,7 @@ struct PORT_DATA
     fb            dd ? ; FIS base
     ctba_arr      rd 32 ; ctba_arr[0] = clb[0].ctba, ... and so on.
     port          dd ? ; address of correspoding HBA_PORT structure
+    portno        dd ? ; port index, 0..31
 ends
 
 ; Register FIS – Host to Device
@@ -408,7 +412,7 @@ ahci_init:
         jnc     .continue_detect_drives
 
         mov     edi, ebx
-        shl     edi, BSF sizeof.HBA_PORT
+        imul    edi, sizeof.HBA_PORT
         add     edi, HBA_MEM.ports
         add     edi, esi
         ; now edi - base of HBA_MEM.ports[ebx]
@@ -429,9 +433,11 @@ ahci_init:
         DEBUGF  1, "K: AHCI: found drive at port %d, signature = %x\n", ebx, [edi + HBA_PORT.signature]  
 
         mov     ecx, ebx
-        shl     ecx, BSF sizeof.PORT_DATA
+        imul    ecx, sizeof.PORT_DATA
         add     ecx, port_data_arr
         stdcall ahci_port_rebase, edi, ebx, ecx
+
+        stdcall ahci_port_identify, ecx
 
 .continue_detect_drives:
         inc     ebx
@@ -444,6 +450,105 @@ ahci_init:
 
         ret
 ; -------------------------------------------------
+
+modelstr  rb 42
+; Identify drive on port ; TODO check
+; in: pdata - address of PORT_DATA structure
+proc ahci_port_identify stdcall, pdata: dword
+        locals
+            cmdslot dd ?
+            cmdheader dd ?
+            cmdtable  dd ?
+            buf_phys  dd ?
+            buf_virt  dd ?
+        endl
+
+        pushad
+        
+        mov     esi, [pdata] ; esi - address of PORT_DATA struct of port
+        mov     edi, [esi + PORT_DATA.port] ; edi - address of HBA_PORT struct of port
+
+        mov     eax, edi
+        call    ahci_find_cmdslot
+
+        cmp     eax, -1
+        jne      .cmdslot_found
+
+        DEBUGF  1, "No free cmdslot on port %u\n", [esi + PORT_DATA.portno]
+
+.cmdslot_found:
+        mov     [cmdslot], eax
+        DEBUGF  1, "Found free cmdslot %u on port %u\n", [cmdslot], [esi + PORT_DATA.portno]
+
+        shl     eax, BSF sizeof.HBA_CMD_HDR
+        add     eax, [esi + PORT_DATA.clb]
+        mov     [cmdheader], eax ; address of virtual mapping of command header
+        mov     eax, [cmdslot]
+        mov     eax, [esi + eax*4 + PORT_DATA.ctba_arr]
+        mov     [cmdtable], eax ; address of virtual mapping of command table of command header
+
+        stdcall _memset, eax, 0, sizeof.HBA_CMD_TBL
+
+        call    alloc_page
+        mov     [buf_phys], eax
+
+        stdcall map_io_mem, eax, 4096, PG_NOCACHE + PG_SWR  ; map to virt memory so we can work with it
+        mov     [buf_virt], eax
+
+        mov     eax, [cmdtable]
+        mov     ebx, [buf_phys]
+        mov     dword [eax + HBA_CMD_TBL.prdt_entry + HBA_PRDT_ENTRY.dba], ebx
+        mov     dword [eax + HBA_CMD_TBL.prdt_entry + HBA_PRDT_ENTRY.dbau], 0
+        mov     dword [eax + HBA_CMD_TBL.prdt_entry + HBA_PRDT_ENTRY._flags], 512 - 1 ; why -1 ?
+        mov     eax, [cmdheader]
+        mov     [eax + HBA_CMD_HDR.prdtl], 1
+
+        mov     eax, [cmdtable]
+        mov     byte [eax + HBA_CMD_TBL.cfis + FIS_REG_H2D.fis_type], FIS_TYPE_REG_H2D
+        movzx   ebx, byte [eax + HBA_CMD_TBL.cfis + FIS_REG_H2D._flags]
+        bts     ebx, bit_AHCI_H2D_FLAG_CMD ; Set Command bit in H2D FIS.
+        mov     byte [eax + HBA_CMD_TBL.cfis + FIS_REG_H2D._flags], bl
+        ; if (port->signature == AHCI_PxSIG_ATAPI) cmd_fis->command = ATA_IDENTIFY_PACKET;
+        ; else cmd_fis->command = ATA_IDENTIFY;
+        mov     byte [eax + HBA_CMD_TBL.cfis + FIS_REG_H2D.command], 0xEC ;ATA_IDENTIFY ; 
+        mov     byte [eax + HBA_CMD_TBL.cfis + FIS_REG_H2D.device], 0
+
+        ; TODO Wait on previous command to complete. AHCIPortWait(bd->port_num, tS + 2);
+        mov     ebx, 20 ;;;
+        call    delay_hs ;;;
+
+        mov     eax, [cmdslot]
+        bts     [edi + HBA_PORT.command_issue], eax ; Issue the command
+
+        ; TODO AHCIPortCmdWait(bd->port_num, cmd_slot);
+        mov     ebx, 20 ;;;
+        call    delay_hs ;;;
+
+        mov     esi, [buf_virt]
+        add     esi, 27*2
+        mov     edi, modelstr
+        mov     ecx, ((46-27)+1)*2
+        cld
+        rep movsb
+        mov     byte [edi], 0
+        
+        xor     ecx, ecx
+.reverse1:
+        cmp     ecx, ((46-27)+1)*2
+        jae     .reverse1_end
+        mov     bl, byte [modelstr + ecx]
+        mov     dl, byte [modelstr + ecx + 1]
+        mov     byte [modelstr + ecx], dl
+        mov     byte [modelstr + ecx + 1], bl
+        add     ecx, 2
+        jmp     .reverse1
+.reverse1_end:
+        DEBUGF  1, "Ident data of port: model = %s\n", modelstr
+
+.ret:
+        popad
+        ret
+endp
 
 ; Start command engine
 ; in: eax - address of HBA_PORT structure
@@ -535,6 +640,8 @@ proc ahci_port_rebase stdcall, port: dword, portno: dword, pdata: dword
 
         mov     eax, [port]
         mov     [edi + PORT_DATA.port], eax ; set pdata->port
+        mov     eax, [portno]               ; set pdata->portno
+        mov     [edi + PORT_DATA.portno], eax
 
         stdcall _memset, ebx, 0, 1024 ; zero out the command list
         
