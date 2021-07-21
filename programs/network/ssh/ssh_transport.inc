@@ -24,6 +24,12 @@ struct  ssh_packet_header
         message_code    db ?    ; First byte of payload
 ends
 
+proc padding_zero
+
+        xor     eax, eax
+        ret
+
+endp
 
 proc ssh_recv_packet connection, flags
 
@@ -127,14 +133,10 @@ endl
         repe cmpsd
         jne     .mac_failed
   .mac_complete:
-        inc     byte[ebx+ssh_connection.rx_seq+3]               ; Update sequence counter
-        jnc     @f
-        inc     byte[ebx+ssh_connection.rx_seq+2]
-        jnc     @f
-        inc     byte[ebx+ssh_connection.rx_seq+1]
-        jnc     @f
-        inc     byte[ebx+ssh_connection.rx_seq+0]
-  @@:
+        add     byte[ebx+ssh_connection.rx_seq+3], 1            ; Update sequence counter
+        adc     byte[ebx+ssh_connection.rx_seq+2], 0
+        adc     byte[ebx+ssh_connection.rx_seq+1], 0
+        adc     byte[ebx+ssh_connection.rx_seq+0], 0
 
 ; Return useful data length to the caller via eax register
   .got_all_data:
@@ -166,56 +168,63 @@ locals
 endl
         DEBUGF  2, "< "
 
-; Pad the packet with random data
+; Check how many bytes we should pad
         mov     eax, [payload_size]
         inc     eax                     ; padding length byte
         lea     edx, [eax+4]            ; total packet size (without padding and MAC)
         mov     [packet_size], edx
+
         mov     ecx, [connection]
-        mov     ebx, [ecx+ssh_connection.tx_padsize]
+        mov     ebx, [ecx+ssh_connection.tx_pad_size]
         dec     ebx
         and     edx, ebx
         neg     edx
-        add     edx, [ecx+ssh_connection.tx_padsize]
-        cmp     edx, 4                  ; minimum padding size
-        jae     @f
-        add     edx, [ecx+ssh_connection.tx_padsize]
-  @@:
+        add     edx, [ecx+ssh_connection.tx_pad_size]
+        add     edx, [ecx+ssh_connection.tx_pad_size]
         DEBUGF  1, "padding %u bytes ", edx
-        add     [packet_size], edx
+        add     [packet_size], edx      ; total packet size with padding
 
+; Start building the packet
+; First comes the packet length, in network byte order ofcourse.
         add     eax, edx
         DEBUGF  1, "total size: %u ", eax
         bswap   eax
         lea     edi, [ecx+ssh_connection.tx_buffer]
-        stosd                           ; packet_length
+        stosd
+; Then the padding length
         mov     al, dl
-        stosb                           ; padding_length
+        stosb
+; And the actual payload bytes
         mov     esi, [buf]
         mov     ecx, [payload_size]
         rep movsb
 
-        mov     ebx, edx
+; Append the packet with #edx padding bytes.
+; Since we must pad at least 8 bytes, we can always use DWORD writes.
+; First do an (unaligned) write exactly following the data
+        dec     edx
         mov     esi, edx
+        shr     esi, 2          ; number dwords
+        mov     ebx, edx
         and     ebx, 3
-        jz      @f
-        call    MBRandom
+        inc     ebx             ; number bytes in first write (1-4)
+        mov     edx, [connection]
+        call    [edx+ssh_connection.tx_pad_proc]
         mov     dword[edi], eax
         add     edi, ebx
+; Then, do as many aligned writes as nescessary
+        mov     ebx, [connection]
   @@:
-
-        shr     esi, 2
-  @@:
-        call    MBRandom
+        call    [ebx+ssh_connection.tx_pad_proc]
         stosd
         dec     esi
         jnz     @r
 
-; Message authentication
+; Append the packet with Message Authentication Code
         mov     edx, [connection]
         cmp     [edx+ssh_connection.tx_mac_proc], 0
         je      .mac_complete
-;        DEBUGF  1, "MAC sequence number: 0x%x\n", [edx+ssh_connection.tx_seq]
+        DEBUGF  1, "MAC sequence number: 0x%x\n", [edx+ssh_connection.tx_seq]
         lea     esi, [edx+ssh_connection.tx_seq]
         mov     ecx, [packet_size]
         add     ecx, 4                                          ; Sequence number length
@@ -229,16 +238,12 @@ endl
         shr     ecx, 2
         rep movsd
   .mac_complete:
-        inc     byte[edx+ssh_connection.tx_seq+3]               ; Update sequence counter
-        jnc     @f
-        inc     byte[edx+ssh_connection.tx_seq+2]
-        jnc     @f
-        inc     byte[edx+ssh_connection.tx_seq+1]
-        jnc     @f
-        inc     byte[edx+ssh_connection.tx_seq+0]
-  @@:
+        add     byte[edx+ssh_connection.tx_seq+3], 1            ; Update sequence counter
+        adc     byte[edx+ssh_connection.tx_seq+2], 0
+        adc     byte[edx+ssh_connection.tx_seq+1], 0
+        adc     byte[edx+ssh_connection.tx_seq+0], 0
 
-; Encrypt data
+; Now, encrypt everything but MAC
         cmp     [edx+ssh_connection.tx_crypt_proc], 0
         je      .encrypt_complete
         lea     esi, [edx+ssh_connection.tx_buffer]

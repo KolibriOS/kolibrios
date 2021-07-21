@@ -51,6 +51,7 @@ include 'ssh_transport.inc'
 include 'dh_gex.inc'
 
 include 'mpint.inc'
+include 'seed.inc'
 include 'random.inc'
 
 include 'aes256.inc'
@@ -118,8 +119,11 @@ struct  ssh_connection
         rx_crypt_blocksize      dd ?
         tx_crypt_blocksize      dd ?
 
-        rx_padsize              dd ?    ; = Max(8, rx_crypt_blocksize)
-        tx_padsize              dd ?    ; = Max(8, tx_crypt_blocksize)
+; Padding
+
+;        rx_padsize              dd ?    ; = Max(8, rx_crypt_blocksize)
+        tx_pad_size             dd ?    ; = Max(8, tx_crypt_blocksize)
+        tx_pad_proc             dd ?
 
 ; Message authentication
 
@@ -189,6 +193,7 @@ start:
         jnz     exit
 
         DEBUGF  2, "SSH: Init PRNG\n"
+        call    create_seed
         call    init_random
 
         DEBUGF  2, "SSH: Init Console\n"
@@ -335,8 +340,9 @@ resolve:
         mov     [con.tx_mac_proc], 0
         mov     [con.rx_mac_length], 0
         mov     [con.tx_mac_length], 0
-        mov     [con.rx_padsize], 8                     ; minimum padsize
-        mov     [con.tx_padsize], 8
+;        mov     [con.rx_padsize], 8                     ; minimum padsize
+        mov     [con.tx_pad_size], 8
+        mov     [con.tx_pad_proc], padding_zero
 
         DEBUGF  2, "Sending KEX init\n"
         mov     edi, ssh_kex.cookie
@@ -436,7 +442,7 @@ resolve:
         test    eax, eax
         jnz     exit
 
-; Set keys
+; Set keys and initialize transport subroutines
 
         DEBUGF  2, "SSH: Setting encryption keys\n"
 
@@ -446,7 +452,7 @@ resolve:
         stdcall aes256_set_encrypt_key, eax, con.rx_enc_key
         mov     [con.rx_crypt_proc], aes256_ctr_crypt
         mov     [con.rx_crypt_blocksize], AES256_BLOCKSIZE
-        mov     [con.rx_padsize], AES256_BLOCKSIZE
+;        mov     [con.rx_pad_size], AES256_BLOCKSIZE
 
         stdcall aes256_ctr_init, con.tx_iv
         mov     [con.tx_crypt_ctx_ptr], eax
@@ -454,7 +460,9 @@ resolve:
         stdcall aes256_set_encrypt_key, eax, con.tx_enc_key
         mov     [con.tx_crypt_proc], aes256_ctr_crypt
         mov     [con.tx_crypt_blocksize], AES256_BLOCKSIZE
-        mov     [con.tx_padsize], AES256_BLOCKSIZE
+
+        mov     [con.tx_pad_size], AES256_BLOCKSIZE
+        mov     [con.tx_pad_proc], MBRandom
 
         stdcall hmac_sha256_setkey, con.rx_mac_ctx, con.rx_int_key, SHA256_HASH_SIZE
         mov     [con.rx_mac_proc], hmac_sha256
@@ -463,6 +471,10 @@ resolve:
         stdcall hmac_sha256_setkey, con.tx_mac_ctx, con.tx_int_key, SHA256_HASH_SIZE
         mov     [con.tx_mac_proc], hmac_sha256
         mov     [con.tx_mac_length], SHA256_HASH_SIZE
+
+; Re-seed RNG for padding bytes
+        call    create_seed
+        call    init_random
 
 ; TODO: erase all keys from memory and free the memory
 
@@ -778,7 +790,7 @@ str14   db      10, 27, '[?25h', 27, '[0m', 0
 ssh_ident_ha:
         dd_n (ssh_ident.length-2)
 ssh_ident:
-        db "SSH-2.0-KolibriOS_SSH_0.03",13,10
+        db "SSH-2.0-KolibriOS_SSH_0.04",13,10
   .length = $ - ssh_ident
 
 ssh_kex:

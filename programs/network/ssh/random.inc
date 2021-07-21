@@ -36,7 +36,6 @@ endg
 
 proc init_random
 
-        mcall   26, 10                  ; seed
         xor     ecx, ecx
         ; make random numbers and put them into buffer
   @@:
