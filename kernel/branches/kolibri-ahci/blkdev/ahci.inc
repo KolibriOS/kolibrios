@@ -62,8 +62,8 @@ struct HBA_MEM
         em_ctl                dd ?                    ; 0x20, Enclosure management control
         cap2                  dd ?                    ; 0x24, Host capabilities extended
         bohc                  dd ?                    ; 0x28, BIOS/OS handoff control and status
-        reserved              rb (0xA0-0x2C)          ; 0x2C - 0x9F, Reserved
-        vendor                rb (0x100-0xA0)         ; 0xA0 - 0xFF, Vendor specific 
+        reserved              rb (0xA0-HBA_MEM.reserved)        ; 0x2C - 0x9F, Reserved
+        vendor                rb (0x100-HBA_MEM.vendor)         ; 0xA0 - 0xFF, Vendor specific 
         ports                 rb (sizeof.HBA_PORT*AHCI_MAX_PORTS) ; 0x100 - 0x10FF, Port control registers, max AHCI_MAX_PORTS
 ends
 
@@ -102,13 +102,13 @@ struct HBA_CMD_HDR
     prdbc         dd ? ; Physical region descriptor byte count transferred
     ctba          dd ? ; Command table descriptor base address
     ctbau         dd ? ; Command table descriptor base address upper 32 bits
-    rsv1          rd 4 ; Reserved
+                  rd 4 ; Reserved
 ends
 
 struct HBA_PRDT_ENTRY
     dba           dd ?  ; Data base address
     dbau          dd ?  ; Data base address upper 32 bits
-    rsv0          dd ?  ; Reserved
+                  dd ?  ; Reserved
     _flags        dd ?  ; 0bIR..RD..D, I (1 bit) - Interrupt on completion,
                         ; R (9 bits) - Reserved, D (22 bits) - Byte count, 4M max
 ends
@@ -116,7 +116,7 @@ ends
 struct HBA_CMD_TBL
     cfis          rb 64 ; 0x00, Command FIS
     acmd          rb 16 ; 0x40, ATAPI command, 12 or 16 bytes
-    rsv           rb 48 ; 0x50, Reserved
+                  rb 48 ; 0x50, Reserved
     prdt_entry    HBA_PRDT_ENTRY  ; 0x80, Physical region descriptor table entries, 0 ~ 65535
                         ; so, this structure is variable-length
 ends
@@ -153,7 +153,7 @@ struct FIS_REG_H2D
         icc           db ?       ; Isochronous command completion
         control       db ?       ; Control register
  
-        rsv1          rb 4       ; Reserved
+                      rb 4       ; Reserved
 ends
 
 ; Register FIS – Device to Host
@@ -174,20 +174,20 @@ struct FIS_REG_D2H
     lba3          db ?           ; LBA register, 31:24
     lba4          db ?           ; LBA register, 39:32
     lba5          db ?           ; LBA register, 47:40
-    rsv2          db ?           ; Reserved
+                  db ?           ; Reserved
  
     countl        db ?           ; Count register, 7:0
     counth        db ?           ; Count register, 15:8
-    rsv3          rb 2           ; Reserved
+                  rb 2           ; Reserved
  
-    rsv4          rb 4           ; Reserved
+                  rb 4           ; Reserved
 ends
 
 ; Data FIS – Bidirectional
 struct FIS_DATA
     fis_type      db ?           ; FIS_TYPE_DATA
     _flags        db ?           ; 0bRRRRPPPP, R - Reserved, P - Port multiplier
-    rsv1          rb 2           ; Reserved
+                  rb 2           ; Reserved
     ; DWORD 1 ~ N (?)
     data          rd 1           ; Payload
 ends
@@ -210,15 +210,15 @@ struct FIS_PIO_SETUP
     lba3          db ?           ; LBA register, 31:24
     lba4          db ?           ; LBA register, 39:32
     lba5          db ?           ; LBA register, 47:40
-    rsv2          db ?           ; Reserved
+                  db ?           ; Reserved
  
     countl        db ?           ; Count register, 7:0
     counth        db ?           ; Count register, 15:8
-    rsv3          db ?           ; Reserved
+                  db ?           ; Reserved
     e_status      db ?           ; New value of status register
  
     tc            dw ?           ; Transfer count
-    rsv4          rb 2           ; Reserved
+                  rb 2           ; Reserved
 ends
 
 ; DMA Setup – Device to Host
@@ -228,14 +228,16 @@ struct FIS_DMA_SETUP
                                  ; I - Interrupt bit, D - Data transfer direction, 1 - device to host,
                                  ; R - Reserved, P - Port multiplier
 
-    rsved         rb 2           ; Reserved
+                  rb 2           ; Reserved
     DMAbufferID   dq ?           ; DMA Buffer Identifier.
                                  ; Used to Identify DMA buffer in host memory.
                                  ; SATA Spec says host specific and not in Spec.
                                  ; Trying AHCI spec might work.
 
+                  dd ?           ; Reserved
+    DMAbufOffset  dd ?           ; Byte offset into buffer. First 2 bits must be 0
     TransferCount dd ?           ; Number of bytes to transfer. Bit 0 must be 0
-    resvd         dd ?           ; Reserved
+                  dd ?           ; Reserved
 ends
 
 ; Set device bits FIS - device to host
@@ -252,19 +254,19 @@ ends
 
 struct HBA_FIS
     dsfis         FIS_DMA_SETUP  ; 0x00, DMA Setup FIS
-    pad0          rb 4           ; 
+                  rb 4           ; padding
 
     psfis         FIS_PIO_SETUP  ; 0x20, PIO Setup FIS
-    pad1          rb 12          ;
+                  rb 12          ; padding
 
     rfis          FIS_REG_D2H    ; 0x40, Register - Device to Host FIS
-    pad2          rb 4           ;
+                  rb 4           ; padding
 
     sdbfis        FIS_DEV_BITS   ; 0x58, Set Device Bit FIS
 
     ufis          rb 64          ; 0x60
 
-    rsv           rb (0x100 - 0xA0) ; 0xA0
+                  rb (0x100 - 0xA0) ; 0xA0, Reserved
 ends
 
 ; --------------------------------------------------
