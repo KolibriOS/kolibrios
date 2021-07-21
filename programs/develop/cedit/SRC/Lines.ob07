@@ -46,7 +46,7 @@ TYPE
 VAR
 
     _movInt: PmovInt;
-    _movBool: PmovBool;
+    _movBool, _movBool2: PmovBool;
     _movPtr: PmovPtr;
 (*    _typedPtr: PTypedPtr;
     _untypedPtr: PUntypedPtr;*)
@@ -64,6 +64,12 @@ PROCEDURE movBool (VAR v: BOOLEAN; x: BOOLEAN);
 BEGIN
     _movBool(v, x)
 END movBool;
+
+
+PROCEDURE movBool2 (VAR v: BOOLEAN; x: BOOLEAN);
+BEGIN
+    _movBool2(v, x)
+END movBool2;
 
 
 PROCEDURE movPtr (VAR v: List.tItem; x: List.tItem);
@@ -174,8 +180,8 @@ END modify;
 PROCEDURE save* (line: tLine);
 BEGIN
     IF ~line.temp THEN
-        movBool(line.saved, TRUE);
-        movBool(line.modified, FALSE)
+        movBool2(line.saved, TRUE);
+        movBool2(line.modified, FALSE)
     END;
     line.modified := FALSE;
     line.saved := TRUE
@@ -416,11 +422,12 @@ BEGIN
 END chCase;
 
 
-PROCEDURE init* (movInt: PmovInt; movPtr: PmovPtr; movBool: PmovBool(*; typedPtr: PTypedPtr; untypedPtr: PUntypedPtr*));
+PROCEDURE init* (movInt: PmovInt; movPtr: PmovPtr; movBool, movBool2: PmovBool(*; typedPtr: PTypedPtr; untypedPtr: PUntypedPtr*));
 BEGIN
     _movInt := movInt;
     _movPtr := movPtr;
     _movBool := movBool;
+    _movBool2 := movBool2;
 (*    _typedPtr := typedPtr;
     _untypedPtr := untypedPtr;*)
 END init;

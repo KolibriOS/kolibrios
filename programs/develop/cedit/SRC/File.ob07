@@ -265,6 +265,36 @@ BEGIN
 END Create;
 
 
+PROCEDURE Copy* (From, To: ARRAY OF CHAR): BOOLEAN;
+VAR
+    buf, size: INTEGER;
+    outFile: FS;
+    res: BOOLEAN;
+BEGIN
+    res := FALSE;
+    size := FileSize(From);
+    IF size > 0 THEN
+        buf := Load(From, size)
+    ELSE
+        buf := -1;
+        size := 0
+    END;
+    IF buf # 0 THEN
+        outFile := Create(To);
+        IF outFile # NIL THEN
+            IF size # 0 THEN
+                res := Write(outFile, buf, size) = size
+            END;
+            Close(outFile)
+        END;
+        IF size # 0 THEN
+            buf := KOSAPI.free(buf)
+        END
+    END
+    RETURN res
+END Copy;
+
+
 PROCEDURE DirExists* (FName: ARRAY OF CHAR): BOOLEAN;
 VAR
     fd: rFD;

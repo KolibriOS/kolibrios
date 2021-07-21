@@ -71,7 +71,7 @@ BEGIN
     END;
     K.DrawLine(x, y2, x, y, K.borderColor);
     K.DrawText866bk(x + K.fontWidth, y + (height - K.fontHeight) DIV 2, K.textColor, color, s);
-    K.CreateButton(id + ORD({30}) + btnID, x, y - 1, width, height - 1, color, "");
+    K.CreateButton(id + ORD({30}) + btnID, x + 1, y - 1, width - 1, height - 1, color, "");
 END drawTab;
 
 

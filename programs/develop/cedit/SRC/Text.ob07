@@ -27,7 +27,7 @@ IMPORT
     E := Encodings,
     CB := Clipboard,
     K := KolibriOS,
-    ChangeLog,
+    ChangeLog, File,
     Lang := Languages;
 
 
@@ -36,8 +36,6 @@ CONST
     SPACE = 20X;
     TAB = RW.TAB_SIZE;
     lenEOL = CB.lenEOL;
-
-    SHIFT* = 0; CTRL* = 1;
 
     mark_width = 2;
     pad_left = mark_width + 3;
@@ -1187,20 +1185,19 @@ END scroll;
 
 
 PROCEDURE save* (text: tText; name: RW.tFileName; enc, nl: INTEGER): BOOLEAN;
+CONST
+    tempFile = "/tmp0/1/cedit~.tmp";
 VAR
     line: tLine;
     file: RW.tOutput;
     res: BOOLEAN;
     Len: INTEGER;
-(*    item: List.tItem;*)
 BEGIN
+    ChangeLog.setGuard(text.edition);
     res := TRUE;
-    file := RW.create(name, enc, nl);
+    file := RW.create(tempFile, enc, nl);
     IF file # NIL THEN
-(*        IF ChangeLog.Log.last IS ChangeLog.tGuard THEN
-            item := List.pop(ChangeLog.Log);
-            DISPOSE(item)
-        END;*)
+        ChangeLog.delSaved;
         line := text.first(tLine);
         WHILE (line # NIL) & res DO
             Len := Lines.trimLength(line);
@@ -1219,14 +1216,21 @@ BEGIN
         END;
         IF ~RW.close(file) THEN
             res := FALSE
-        END;
-        IF res THEN
-            text.modified := FALSE
         END
     ELSE
         res := FALSE
     END;
-    text.guard := TRUE
+    IF res THEN
+        res := File.Copy(tempFile, name);
+        IF res THEN
+            text.modified := FALSE;
+            ChangeLog.save(text.edition);
+            IF File.Delete(tempFile) THEN END
+        END
+    END;
+    IF ~res THEN
+        ChangeLog.delCurSaved
+    END
     RETURN res
 END save;
 
@@ -1262,8 +1266,7 @@ BEGIN
 
     IF item # NIL THEN
         guard := item(tGuard);
-        text.edition := guard;
-        text.modified := TRUE
+        text.edition := guard
     END;
 
     item := ChangeLog.CL.Log.first;
@@ -1272,7 +1275,8 @@ BEGIN
         item := item.next
     END;
     redoGuard(text, guard);
-    ChangeLog.setGuard(guard)
+    ChangeLog.setGuard(guard);
+    text.modified := ~guard.saved
 END undo;
 
 
@@ -1291,7 +1295,8 @@ BEGIN
         guard := item(tGuard);
         redoGuard(text, guard)
     END;
-    ChangeLog.setGuard(guard)
+    ChangeLog.setGuard(guard);
+    text.modified := ~guard.saved
 END redo;
 
 
@@ -1432,19 +1437,42 @@ PROCEDURE gotoLabel* (text: tText; frw: BOOLEAN);
 VAR
     line: tLine;
     n: INTEGER;
+
+    PROCEDURE search (VAR line: tLine; VAR n: INTEGER; frw: BOOLEAN);
+    BEGIN
+        IF frw THEN
+            WHILE (line # NIL) & ~line.label DO
+                NextLine(line);
+                INC(n)
+            END
+        ELSE
+            WHILE (line # NIL) & ~line.label DO
+                PrevLine(line);
+                DEC(n)
+            END
+        END
+    END search;
+
 BEGIN
     n := text.cursor.Y;
     line := text.curLine;
     IF frw THEN
-        REPEAT
-            line := line.next(tLine);
-            INC(n)
-        UNTIL (line = NIL) OR line.label
+        NextLine(line);
+        INC(n)
     ELSE
-        REPEAT
-            line := line.prev(tLine);
-            DEC(n)
-        UNTIL (line = NIL) OR line.label
+        PrevLine(line);
+        DEC(n)
+    END;
+    search(line, n, frw);
+    IF line = NIL THEN
+        IF frw THEN
+            n := 0;
+            line := text.first(tLine)
+        ELSE
+            n := text.count - 1;
+            line := text.last(tLine)
+        END;
+        search(line, n, frw)
     END;
     IF line # NIL THEN
         IF goto(text, n + 1) THEN END
@@ -1615,9 +1643,9 @@ BEGIN
 END wordSel;
 
 
-PROCEDURE key* (text: tText; code: INTEGER; shift: SET);
+PROCEDURE key* (text: tText; code: INTEGER; shift, ctrl: BOOLEAN);
 BEGIN
-    IF SHIFT IN shift THEN
+    IF shift THEN
         setSelect(text)
     ELSE
         IF (33 <= code) & (code <= 40) THEN
@@ -1627,27 +1655,27 @@ BEGIN
 
     CASE code OF
     |33:
-        IF CTRL IN shift THEN
+        IF ctrl THEN
             UpDown(text, text.scroll.Y - text.cursor.Y)
         ELSE
             text.scroll.Y := MAX(text.scroll.Y - textsize.Y, 0);
             UpDown(text, -textsize.Y)
         END
     |34:
-        IF CTRL IN shift THEN
+        IF ctrl THEN
             UpDown(text, MIN(text.scroll.Y + textsize.Y - 1, text.count - 1) - text.cursor.Y)
         ELSE
             text.scroll.Y := MIN(text.scroll.Y + textsize.Y, text.count - 1);
             UpDown(text, textsize.Y)
         END
     |35:
-        IF CTRL IN shift THEN
+        IF ctrl THEN
             SetPos(text, text.last(tLine).length, text.count - 1)
         ELSE
             SetPos(text, text.curLine.length, text.cursor.Y)
         END
     |36:
-        IF CTRL IN shift THEN
+        IF ctrl THEN
             SetPos(text, 0, 0)
         ELSE
             SetPos(text, 0, text.cursor.Y)
@@ -1659,7 +1687,7 @@ BEGIN
             SetPos(text, text.cursor.X - 1, text.cursor.Y)
         END
     |38:
-        IF CTRL IN shift THEN
+        IF ctrl THEN
             upLine(text)
         ELSE
             UpDown(text, -1)
@@ -1671,49 +1699,49 @@ BEGIN
             SetPos(text, text.cursor.X + 1, text.cursor.Y)
         END
     |40:
-        IF CTRL IN shift THEN
+        IF ctrl THEN
             downLine(text)
         ELSE
             UpDown(text, 1)
         END
     |46:
-        IF CTRL IN shift THEN
+        IF ctrl THEN
             delLine(text)
         ELSE
             delete(text); ShowCursor; drawCursor := TRUE
         END
     |ORD("C"):
-        IF CTRL IN shift THEN
+        IF ctrl THEN
             IF selected(text) THEN
                 copy(text)
             END
         END
     |ORD("X"):
-        IF CTRL IN shift THEN
+        IF ctrl THEN
             IF selected(text) THEN
                 copy(text);
                 delSelect(text)
             END
         END
     |ORD("V"):
-        IF CTRL IN shift THEN
+        IF ctrl THEN
             IF CB.available() THEN
                 paste(text)
             END
         END
     |ORD("A"):
-        IF CTRL IN shift THEN
+        IF ctrl THEN
             text.select2.X := 0;
             text.select2.Y := 0;
             text.select := text.select2;
             SetPos(text, text.last(tLine).length, text.count - 1)
         END
     |ORD("L"), ORD("U"):
-        IF CTRL IN shift THEN
+        IF ctrl THEN
             changeCase(text, code = ORD("U"))
         END
     |ORD("D"):
-        IF CTRL IN shift THEN
+        IF ctrl THEN
             dupLine(text)
         END
     ELSE
@@ -1842,8 +1870,9 @@ BEGIN
     IF text.guard THEN
         NEW(guard);
         List.append(ChangeLog.CL.Log, guard);
+        guard.saved := ChangeLog.isFirstGuard(guard);
         text.edition := guard;
-        text.guard := FALSE;
+        text.guard := FALSE
     ELSE
         guard := text.edition
     END;

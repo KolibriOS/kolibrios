@@ -27,7 +27,7 @@ CONST
     langNone* = 0; langC* = 1; langOberon* = 2; langPascal* = 3;
     langFasm* = 4; langLua* = 5; langIni* = 6;
 
-    csLang = {langNone, langC, langOberon, langLua, langIni};
+    csLang = {langC, langOberon, langLua, langIni};
 
 TYPE
 

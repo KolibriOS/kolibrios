@@ -27,7 +27,7 @@ TYPE
     END;
 
     tBoolItem = POINTER TO RECORD (List.tItem)
-        adr: INTEGER; val: BOOLEAN
+        adr: INTEGER; val: BOOLEAN; save: BOOLEAN
     END;
 (*
     tUntypedPtr = POINTER TO RECORD (List.tItem)
@@ -39,7 +39,7 @@ TYPE
     END;
 *)
     tGuard* = POINTER TO RECORD (List.tItem)
-
+        saved*: BOOLEAN
     END;
 
     tLog* = POINTER TO RECORD
@@ -123,6 +123,21 @@ BEGIN
 END clear;
 
 
+PROCEDURE save* (guard: tGuard);
+VAR
+    item: List.tItem;
+BEGIN
+    item := CL.Log.first;
+    WHILE item # NIL DO
+        IF item IS tGuard THEN
+            item(tGuard).saved := FALSE
+        END;
+        item := item.next
+    END;
+    guard.saved := TRUE
+END save;
+
+
 PROCEDURE changeWord (adrV, adrX: INTEGER);
 VAR
     item: tIntItem;
@@ -144,11 +159,87 @@ BEGIN
     NEW(item);
     item.adr := SYSTEM.ADR(v);
     item.val := x;
+    item.save := FALSE;
     IF ~CL.isLast THEN
         clear(CL.guard)
     END;
     List.append(CL.Log, item)
 END changeBool;
+
+
+PROCEDURE delSaved*;
+VAR
+    boolItem: tBoolItem;
+    cur: List.tItem;
+    del: BOOLEAN;
+BEGIN
+    cur := CL.guard.next;
+    WHILE cur # NIL DO
+        IF cur IS tBoolItem THEN
+            boolItem := cur(tBoolItem);
+            del := boolItem.save
+        ELSE
+            del := FALSE
+        END;
+        cur := cur.next;
+        IF del THEN
+            List.delete(CL.Log, boolItem);
+            DISPOSE(boolItem)
+        END
+    END
+END delSaved;
+
+
+PROCEDURE delCurSaved*;
+VAR
+    boolItem: tBoolItem;
+    cur: List.tItem;
+    del: BOOLEAN;
+BEGIN
+    cur := CL.guard.prev;
+    WHILE (cur # NIL) & ~(cur IS tGuard) DO
+        IF cur IS tBoolItem THEN
+            boolItem := cur(tBoolItem);
+            del := boolItem.save
+        ELSE
+            del := FALSE
+        END;
+        cur := cur.prev;
+        IF del THEN
+            SYSTEM.PUT(boolItem.adr, ~boolItem.val);
+            List.delete(CL.Log, boolItem);
+            DISPOSE(boolItem)
+        END
+    END
+END delCurSaved;
+
+
+PROCEDURE changeBool2 (VAR v: BOOLEAN; x: BOOLEAN);
+VAR
+    item, boolItem: tBoolItem;
+    cur: List.tItem;
+    del: BOOLEAN;
+BEGIN
+    NEW(item);
+    item.adr := SYSTEM.ADR(v);
+    item.val := x;
+    item.save := TRUE;
+    cur := CL.guard.prev;
+    WHILE cur # NIL DO
+        IF cur IS tBoolItem THEN
+            boolItem := cur(tBoolItem);
+            del := boolItem.save & (boolItem.adr = SYSTEM.ADR(v)) & (boolItem.val = x)
+        ELSE
+            del := FALSE
+        END;
+        cur := cur.prev;
+        IF del THEN
+            List.delete(CL.Log, boolItem);
+            DISPOSE(boolItem)
+        END
+    END;
+    List.insert(CL.Log, CL.guard.prev, item)
+END changeBool2;
 
 
 PROCEDURE changeInt (VAR v: INTEGER; x: INTEGER);
@@ -205,5 +296,5 @@ END create;
 
 BEGIN
     List.init(changeInt, changePtr);
-    Lines.init(changeInt, changePtr, changeBool(*, typedPtr, untypedPtr*))
+    Lines.init(changeInt, changePtr, changeBool, changeBool2(*, typedPtr, untypedPtr*))
 END ChangeLog.

@@ -29,6 +29,7 @@ TYPE
 
 VAR
     cpW1251*, cp866*: CP;
+    names*: ARRAY 4, 16 OF WCHAR;
     UNI*: ARRAY 65536, 2 OF INTEGER;
 
 
@@ -121,6 +122,10 @@ END setUNI;
 
 
 BEGIN
+    names[CP866]   := "CP866";
+    names[W1251]   := "Windows-1251";
+    names[UTF8]    := "UTF-8";
+    names[UTF8BOM] := "UTF-8-BOM";
     InitW1251(cpW1251);
     InitCP866(cp866);
     setUNI

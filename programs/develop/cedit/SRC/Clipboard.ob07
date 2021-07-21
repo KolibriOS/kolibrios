@@ -118,11 +118,8 @@ END appends;
 
 
 PROCEDURE eol* (buffer: tBuffer);
-VAR
-    s: ARRAY 2 OF WCHAR;
 BEGIN
-    s[0] := 0DX; s[1] := 0AX;
-    appends(buffer, s, 0, 1)
+    appends(buffer, 0DX + 0AX, 0, 1)
 END eol;
 
 
