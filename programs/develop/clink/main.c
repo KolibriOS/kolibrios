@@ -368,7 +368,9 @@ static void build(ObjectIr *ir) {
 
 		if (sym.sym.symbol.SectionNumber == 0xffff ||
 			sym.sym.symbol.SectionNumber == 0xfffe ||
-			(sym.sym.symbol.StorageClass != 2 && sym.sym.symbol.StorageClass != 3)) {
+			(sym.sym.symbol.StorageClass != 2 &&  // Not an external symbol
+			 sym.sym.symbol.StorageClass != 3 &&  // Not a static symbol
+			 sym.sym.symbol.StorageClass != 6)) { // Not a label
 			fwrite(&sym.sym.symbol, 1, 18, out);
 		} else {
 			size_t sec_name_max = 1024;
@@ -415,7 +417,7 @@ static void build(ObjectIr *ir) {
 			sym.sym.symbol.Value += section_offset;
 
 			if (strlen(sym.name) <= 8) {
-				strcpy(sym.sym.symbol.ShortName, sym.name);
+				memcpy(sym.sym.symbol.ShortName, sym.name, 8);
 			} else {
 				sym.sym.symbol.Zeroes = 0;
 				sym.sym.symbol.Offset = strtab_add(&strtab, name);
@@ -595,6 +597,18 @@ static ObjectIr parse_objects(int argc, char **argv) {
 			printf("   Characteristics:           %08x\n", sh.Characteristics);
 			printf("   Offset in the big section: %u\n", objects[i].section_offsets[sec_i]);
 			printf("  }\n");
+
+			if (sh.VirtualAddress != 0) {
+				printf("\n\n\n\n");
+				for (int i = 0; i < 42; i++) {
+					printf("!!!");
+				}
+				printf("\n\n\n\n\nWARNING: Handling of section with Virtual Address another that 0 is not implemented\n\n\n\n\n");
+				for (int i = 0; i < 42; i++) {
+					printf("!!!");
+				}
+				printf("\n\n\n\n");
+			}
 		}
 		printf(" }\n");
 		printf("}\n");
