@@ -1,0 +1,1514 @@
+format coff
+use32
+
+public @EXPORT as 'EXPORTS'
+
+section '.text'
+
+include '../../../../proc32.inc'
+include '../../../../macros.inc'
+include '../../../../debug-fdo.inc'
+include '../../../../dll.inc'
+
+extrn mbedtls_aes_crypt_cbc
+extrn mbedtls_aes_crypt_cfb128
+extrn mbedtls_aes_crypt_cfb8
+extrn mbedtls_aes_crypt_ctr
+extrn mbedtls_aes_crypt_ecb
+extrn mbedtls_aes_crypt_ofb
+extrn mbedtls_aes_crypt_xts
+extrn mbedtls_aes_decrypt
+extrn mbedtls_aes_encrypt
+extrn mbedtls_aes_free
+extrn mbedtls_aes_init
+extrn mbedtls_aes_self_test
+extrn mbedtls_aes_setkey_dec
+extrn mbedtls_aes_setkey_enc
+extrn mbedtls_aes_xts_free
+extrn mbedtls_aes_xts_init
+extrn mbedtls_aes_xts_setkey_dec
+extrn mbedtls_aes_xts_setkey_enc
+extrn mbedtls_arc4_crypt
+extrn mbedtls_arc4_free
+extrn mbedtls_arc4_init
+extrn mbedtls_arc4_self_test
+extrn mbedtls_arc4_setup
+extrn mbedtls_asn1_find_named_data
+extrn mbedtls_asn1_free_named_data
+extrn mbedtls_asn1_free_named_data_list
+extrn mbedtls_asn1_get_alg
+extrn mbedtls_asn1_get_alg_null
+extrn mbedtls_asn1_get_bitstring
+extrn mbedtls_asn1_get_bitstring_null
+extrn mbedtls_asn1_get_bool
+extrn mbedtls_asn1_get_int
+extrn mbedtls_asn1_get_len
+extrn mbedtls_asn1_get_mpi
+extrn mbedtls_asn1_get_sequence_of
+extrn mbedtls_asn1_get_tag
+extrn mbedtls_asn1_store_named_data
+extrn mbedtls_asn1_write_algorithm_identifier
+extrn mbedtls_asn1_write_bitstring
+extrn mbedtls_asn1_write_bool
+extrn mbedtls_asn1_write_ia5_string
+extrn mbedtls_asn1_write_int
+extrn mbedtls_asn1_write_len
+extrn mbedtls_asn1_write_mpi
+extrn mbedtls_asn1_write_null
+extrn mbedtls_asn1_write_octet_string
+extrn mbedtls_asn1_write_oid
+extrn mbedtls_asn1_write_printable_string
+extrn mbedtls_asn1_write_raw_buffer
+extrn mbedtls_asn1_write_tag
+extrn mbedtls_asn1_write_tagged_string
+extrn mbedtls_asn1_write_utf8_string
+extrn mbedtls_base64_decode
+extrn mbedtls_base64_encode
+extrn mbedtls_base64_self_test
+extrn mbedtls_blowfish_crypt_cbc
+extrn mbedtls_blowfish_crypt_cfb64
+extrn mbedtls_blowfish_crypt_ctr
+extrn mbedtls_blowfish_crypt_ecb
+extrn mbedtls_blowfish_free
+extrn mbedtls_blowfish_init
+extrn mbedtls_blowfish_setkey
+extrn mbedtls_camellia_crypt_cbc
+extrn mbedtls_camellia_crypt_cfb128
+extrn mbedtls_camellia_crypt_ctr
+extrn mbedtls_camellia_crypt_ecb
+extrn mbedtls_camellia_free
+extrn mbedtls_camellia_init
+extrn mbedtls_camellia_self_test
+extrn mbedtls_camellia_setkey_dec
+extrn mbedtls_camellia_setkey_enc
+extrn mbedtls_ccm_auth_decrypt
+extrn mbedtls_ccm_encrypt_and_tag
+extrn mbedtls_ccm_free
+extrn mbedtls_ccm_init
+extrn mbedtls_ccm_self_test
+extrn mbedtls_ccm_setkey
+extrn mbedtls_ccm_star_auth_decrypt
+extrn mbedtls_ccm_star_encrypt_and_tag
+extrn mbedtls_chacha20_crypt
+extrn mbedtls_chacha20_free
+extrn mbedtls_chacha20_init
+extrn mbedtls_chacha20_self_test
+extrn mbedtls_chacha20_setkey
+extrn mbedtls_chacha20_starts
+extrn mbedtls_chacha20_update
+extrn mbedtls_chachapoly_auth_decrypt
+extrn mbedtls_chachapoly_encrypt_and_tag
+extrn mbedtls_chachapoly_finish
+extrn mbedtls_chachapoly_free
+extrn mbedtls_chachapoly_init
+extrn mbedtls_chachapoly_self_test
+extrn mbedtls_chachapoly_setkey
+extrn mbedtls_chachapoly_starts
+extrn mbedtls_chachapoly_update
+extrn mbedtls_chachapoly_update_aad
+extrn mbedtls_cipher_auth_decrypt
+extrn mbedtls_cipher_auth_encrypt
+extrn mbedtls_cipher_check_tag
+extrn mbedtls_cipher_crypt
+extrn mbedtls_cipher_finish
+extrn mbedtls_cipher_free
+extrn mbedtls_cipher_info_from_string
+extrn mbedtls_cipher_info_from_type
+extrn mbedtls_cipher_info_from_values
+extrn mbedtls_cipher_init
+extrn mbedtls_cipher_list
+extrn mbedtls_cipher_reset
+extrn mbedtls_cipher_set_iv
+extrn mbedtls_cipher_setkey
+extrn mbedtls_cipher_set_padding_mode
+extrn mbedtls_cipher_setup
+extrn mbedtls_cipher_update
+extrn mbedtls_cipher_update_ad
+extrn mbedtls_cipher_write_tag
+extrn mbedtls_ctr_drbg_free
+extrn mbedtls_ctr_drbg_init
+extrn mbedtls_ctr_drbg_random
+extrn mbedtls_ctr_drbg_random_with_add
+extrn mbedtls_ctr_drbg_reseed
+extrn mbedtls_ctr_drbg_seed
+extrn mbedtls_ctr_drbg_seed_entropy_len
+extrn mbedtls_ctr_drbg_self_test
+extrn mbedtls_ctr_drbg_set_entropy_len
+extrn mbedtls_ctr_drbg_set_prediction_resistance
+extrn mbedtls_ctr_drbg_set_reseed_interval
+extrn mbedtls_ctr_drbg_update
+extrn mbedtls_ctr_drbg_update_ret
+extrn mbedtls_debug_print_buf
+extrn mbedtls_debug_print_crt
+extrn mbedtls_debug_print_ecp
+extrn mbedtls_debug_printf_ecdh
+extrn mbedtls_debug_print_mpi
+extrn mbedtls_debug_print_msg
+extrn mbedtls_debug_print_ret
+extrn mbedtls_debug_set_threshold
+extrn mbedtls_des3_crypt_cbc
+extrn mbedtls_des3_crypt_ecb
+extrn mbedtls_des3_free
+extrn mbedtls_des3_init
+extrn mbedtls_des3_set2key_dec
+extrn mbedtls_des3_set2key_enc
+extrn mbedtls_des3_set3key_dec
+extrn mbedtls_des3_set3key_enc
+extrn mbedtls_des_crypt_cbc
+extrn mbedtls_des_crypt_ecb
+extrn mbedtls_des_free
+extrn mbedtls_des_init
+extrn mbedtls_des_key_check_key_parity
+extrn mbedtls_des_key_check_weak
+extrn mbedtls_des_key_set_parity
+extrn mbedtls_des_self_test
+extrn mbedtls_des_setkey
+extrn mbedtls_des_setkey_dec
+extrn mbedtls_des_setkey_enc
+extrn mbedtls_dhm_calc_secret
+extrn mbedtls_dhm_free
+extrn mbedtls_dhm_init
+extrn mbedtls_dhm_make_params
+extrn mbedtls_dhm_make_public
+extrn mbedtls_dhm_parse_dhm
+extrn mbedtls_dhm_read_params
+extrn mbedtls_dhm_read_public
+extrn mbedtls_dhm_self_test
+extrn mbedtls_dhm_set_group
+extrn mbedtls_ecdh_calc_secret
+extrn mbedtls_ecdh_compute_shared
+extrn mbedtls_ecdh_free
+extrn mbedtls_ecdh_gen_public
+extrn mbedtls_ecdh_get_params
+extrn mbedtls_ecdh_init
+extrn mbedtls_ecdh_make_params
+extrn mbedtls_ecdh_make_public
+extrn mbedtls_ecdh_read_params
+extrn mbedtls_ecdh_read_public
+extrn mbedtls_ecdh_setup
+extrn mbedtls_ecdsa_free
+extrn mbedtls_ecdsa_from_keypair
+extrn mbedtls_ecdsa_genkey
+extrn mbedtls_ecdsa_init
+extrn mbedtls_ecdsa_read_signature
+extrn mbedtls_ecdsa_read_signature_restartable
+extrn mbedtls_ecdsa_sign
+extrn mbedtls_ecdsa_sign_det
+extrn mbedtls_ecdsa_sign_det_ext
+extrn mbedtls_ecdsa_verify
+extrn mbedtls_ecdsa_write_signature
+extrn mbedtls_ecdsa_write_signature_det
+extrn mbedtls_ecdsa_write_signature_restartable
+extrn mbedtls_ecp_check_privkey
+extrn mbedtls_ecp_check_pubkey
+extrn mbedtls_ecp_check_pub_priv
+extrn mbedtls_ecp_copy
+extrn mbedtls_ecp_curve_info_from_grp_id
+extrn mbedtls_ecp_curve_info_from_name
+extrn mbedtls_ecp_curve_info_from_tls_id
+extrn mbedtls_ecp_curve_list
+extrn mbedtls_ecp_gen_key
+extrn mbedtls_ecp_gen_keypair
+extrn mbedtls_ecp_gen_keypair_base
+extrn mbedtls_ecp_gen_privkey
+extrn mbedtls_ecp_group_copy
+extrn mbedtls_ecp_group_free
+extrn mbedtls_ecp_group_init
+extrn mbedtls_ecp_group_load
+extrn mbedtls_ecp_grp_id_list
+extrn mbedtls_ecp_is_zero
+extrn mbedtls_ecp_keypair_free
+extrn mbedtls_ecp_keypair_init
+extrn mbedtls_ecp_mul
+extrn mbedtls_ecp_muladd
+extrn mbedtls_ecp_muladd_restartable
+extrn mbedtls_ecp_mul_restartable
+extrn mbedtls_ecp_point_cmp
+extrn mbedtls_ecp_point_free
+extrn mbedtls_ecp_point_init
+extrn mbedtls_ecp_point_read_binary
+extrn mbedtls_ecp_point_read_string
+extrn mbedtls_ecp_point_write_binary
+extrn mbedtls_ecp_self_test
+extrn mbedtls_ecp_set_zero
+extrn mbedtls_ecp_tls_read_group
+extrn mbedtls_ecp_tls_read_group_id
+extrn mbedtls_ecp_tls_read_point
+extrn mbedtls_ecp_tls_write_group
+extrn mbedtls_ecp_tls_write_point
+extrn mbedtls_entropy_add_source
+extrn mbedtls_entropy_free
+extrn mbedtls_entropy_func
+extrn mbedtls_entropy_gather
+extrn mbedtls_entropy_init
+extrn mbedtls_entropy_self_test
+extrn mbedtls_entropy_update_manual
+extrn mbedtls_gcm_auth_decrypt
+extrn mbedtls_gcm_crypt_and_tag
+extrn mbedtls_gcm_finish
+extrn mbedtls_gcm_free
+extrn mbedtls_gcm_init
+extrn mbedtls_gcm_self_test
+extrn mbedtls_gcm_setkey
+extrn mbedtls_gcm_starts
+extrn mbedtls_gcm_update
+extrn mbedtls_hkdf
+extrn mbedtls_hkdf_expand
+extrn mbedtls_hkdf_extract
+extrn mbedtls_hmac_drbg_free
+extrn mbedtls_hmac_drbg_init
+extrn mbedtls_hmac_drbg_random
+extrn mbedtls_hmac_drbg_random_with_add
+extrn mbedtls_hmac_drbg_reseed
+extrn mbedtls_hmac_drbg_seed
+extrn mbedtls_hmac_drbg_seed_buf
+extrn mbedtls_hmac_drbg_self_test
+extrn mbedtls_hmac_drbg_set_entropy_len
+extrn mbedtls_hmac_drbg_set_prediction_resistance
+extrn mbedtls_hmac_drbg_set_reseed_interval
+extrn mbedtls_hmac_drbg_update
+extrn mbedtls_hmac_drbg_update_ret
+extrn mbedtls_init
+extrn mbedtls_internal_aes_decrypt
+extrn mbedtls_internal_aes_encrypt
+extrn mbedtls_internal_md5_process
+extrn mbedtls_internal_ripemd160_process
+extrn mbedtls_internal_sha1_process
+extrn mbedtls_internal_sha256_process
+extrn mbedtls_internal_sha512_process
+extrn mbedtls_md
+extrn mbedtls_md5
+extrn mbedtls_md5_clone
+extrn mbedtls_md5_finish
+extrn mbedtls_md5_finish_ret
+extrn mbedtls_md5_free
+extrn mbedtls_md5_init
+extrn mbedtls_md5_process
+extrn mbedtls_md5_ret
+extrn mbedtls_md5_self_test
+extrn mbedtls_md5_starts
+extrn mbedtls_md5_starts_ret
+extrn mbedtls_md5_update
+extrn mbedtls_md5_update_ret
+extrn mbedtls_md_clone
+extrn mbedtls_md_finish
+extrn mbedtls_md_free
+extrn mbedtls_md_get_name
+extrn mbedtls_md_get_size
+extrn mbedtls_md_get_type
+extrn mbedtls_md_hmac
+extrn mbedtls_md_hmac_finish
+extrn mbedtls_md_hmac_reset
+extrn mbedtls_md_hmac_starts
+extrn mbedtls_md_hmac_update
+extrn mbedtls_md_info_from_string
+extrn mbedtls_md_info_from_type
+extrn mbedtls_md_init
+extrn mbedtls_md_init_ctx
+extrn mbedtls_md_list
+extrn mbedtls_md_process
+extrn mbedtls_md_setup
+extrn mbedtls_md_starts
+extrn mbedtls_md_update
+extrn mbedtls_mpi_add_abs
+extrn mbedtls_mpi_add_int
+extrn mbedtls_mpi_add_mpi
+extrn mbedtls_mpi_bitlen
+extrn mbedtls_mpi_cmp_abs
+extrn mbedtls_mpi_cmp_int
+extrn mbedtls_mpi_cmp_mpi
+extrn mbedtls_mpi_copy
+extrn mbedtls_mpi_div_int
+extrn mbedtls_mpi_div_mpi
+extrn mbedtls_mpi_exp_mod
+extrn mbedtls_mpi_fill_random
+extrn mbedtls_mpi_free
+extrn mbedtls_mpi_gcd
+extrn mbedtls_mpi_gen_prime
+extrn mbedtls_mpi_get_bit
+extrn mbedtls_mpi_grow
+extrn mbedtls_mpi_init
+extrn mbedtls_mpi_inv_mod
+extrn mbedtls_mpi_is_prime
+extrn mbedtls_mpi_is_prime_ext
+extrn mbedtls_mpi_lsb
+extrn mbedtls_mpi_lset
+extrn mbedtls_mpi_lt_mpi_ct
+extrn mbedtls_mpi_mod_int
+extrn mbedtls_mpi_mod_mpi
+extrn mbedtls_mpi_mul_int
+extrn mbedtls_mpi_mul_mpi
+extrn mbedtls_mpi_read_binary
+extrn mbedtls_mpi_read_string
+extrn mbedtls_mpi_safe_cond_assign
+extrn mbedtls_mpi_safe_cond_swap
+extrn mbedtls_mpi_self_test
+extrn mbedtls_mpi_set_bit
+extrn mbedtls_mpi_shift_l
+extrn mbedtls_mpi_shift_r
+extrn mbedtls_mpi_shrink
+extrn mbedtls_mpi_size
+extrn mbedtls_mpi_sub_abs
+extrn mbedtls_mpi_sub_int
+extrn mbedtls_mpi_sub_mpi
+extrn mbedtls_mpi_swap
+extrn mbedtls_mpi_write_binary
+extrn mbedtls_mpi_write_string
+extrn mbedtls_net_connect
+extrn mbedtls_net_free
+extrn mbedtls_net_init
+extrn mbedtls_net_recv
+extrn mbedtls_net_send
+extrn mbedtls_oid_get_attr_short_name
+extrn mbedtls_oid_get_cipher_alg
+extrn mbedtls_oid_get_ec_grp
+extrn mbedtls_oid_get_extended_key_usage
+extrn mbedtls_oid_get_md_alg
+extrn mbedtls_oid_get_md_hmac
+extrn mbedtls_oid_get_numeric_string
+extrn mbedtls_oid_get_oid_by_ec_grp
+extrn mbedtls_oid_get_oid_by_md
+extrn mbedtls_oid_get_oid_by_pk_alg
+extrn mbedtls_oid_get_oid_by_sig_alg
+extrn mbedtls_oid_get_pk_alg
+extrn mbedtls_oid_get_pkcs12_pbe_alg
+extrn mbedtls_oid_get_sig_alg
+extrn mbedtls_oid_get_sig_alg_desc
+extrn mbedtls_oid_get_x509_ext_type
+extrn mbedtls_padlock_has_support
+extrn mbedtls_padlock_xcryptcbc
+extrn mbedtls_padlock_xcryptecb
+extrn mbedtls_pem_free
+extrn mbedtls_pem_init
+extrn mbedtls_pem_read_buffer
+extrn mbedtls_pem_write_buffer
+extrn mbedtls_pk_can_do
+extrn mbedtls_pk_check_pair
+extrn mbedtls_pkcs12_derivation
+extrn mbedtls_pkcs12_pbe
+extrn mbedtls_pkcs12_pbe_sha1_rc4_128
+extrn mbedtls_pkcs5_pbes2
+extrn mbedtls_pkcs5_pbkdf2_hmac
+extrn mbedtls_pkcs5_self_test
+extrn mbedtls_pk_debug
+extrn mbedtls_pk_decrypt
+extrn mbedtls_pk_encrypt
+extrn mbedtls_pk_free
+extrn mbedtls_pk_get_bitlen
+extrn mbedtls_pk_get_name
+extrn mbedtls_pk_get_type
+extrn mbedtls_pk_info_from_type
+extrn mbedtls_pk_init
+extrn mbedtls_pk_parse_key
+extrn mbedtls_pk_parse_public_key
+extrn mbedtls_pk_parse_subpubkey
+extrn mbedtls_pk_setup
+extrn mbedtls_pk_setup_rsa_alt
+extrn mbedtls_pk_sign
+extrn mbedtls_pk_sign_restartable
+extrn mbedtls_pk_verify
+extrn mbedtls_pk_verify_ext
+extrn mbedtls_pk_verify_restartable
+extrn mbedtls_pk_write_key_der
+extrn mbedtls_pk_write_key_pem
+extrn mbedtls_pk_write_pubkey
+extrn mbedtls_pk_write_pubkey_der
+extrn mbedtls_pk_write_pubkey_pem
+extrn mbedtls_platform_gmtime_r
+extrn mbedtls_platform_setup
+extrn mbedtls_platform_teardown
+extrn mbedtls_platform_zeroize
+extrn mbedtls_poly1305_finish
+extrn mbedtls_poly1305_free
+extrn mbedtls_poly1305_init
+extrn mbedtls_poly1305_mac
+extrn mbedtls_poly1305_self_test
+extrn mbedtls_poly1305_starts
+extrn mbedtls_poly1305_update
+extrn mbedtls_ripemd160
+extrn mbedtls_ripemd160_clone
+extrn mbedtls_ripemd160_finish
+extrn mbedtls_ripemd160_finish_ret
+extrn mbedtls_ripemd160_free
+extrn mbedtls_ripemd160_init
+extrn mbedtls_ripemd160_process
+extrn mbedtls_ripemd160_ret
+extrn mbedtls_ripemd160_self_test
+extrn mbedtls_ripemd160_starts
+extrn mbedtls_ripemd160_starts_ret
+extrn mbedtls_ripemd160_update
+extrn mbedtls_ripemd160_update_ret
+extrn mbedtls_rsa_check_privkey
+extrn mbedtls_rsa_check_pubkey
+extrn mbedtls_rsa_check_pub_priv
+extrn mbedtls_rsa_complete
+extrn mbedtls_rsa_copy
+extrn mbedtls_rsa_deduce_crt
+extrn mbedtls_rsa_deduce_primes
+extrn mbedtls_rsa_deduce_private_exponent
+extrn mbedtls_rsa_export
+extrn mbedtls_rsa_export_crt
+extrn mbedtls_rsa_export_raw
+extrn mbedtls_rsa_free
+extrn mbedtls_rsa_gen_key
+extrn mbedtls_rsa_get_len
+extrn mbedtls_rsa_import
+extrn mbedtls_rsa_import_raw
+extrn mbedtls_rsa_init
+extrn mbedtls_rsa_pkcs1_decrypt
+extrn mbedtls_rsa_pkcs1_encrypt
+extrn mbedtls_rsa_pkcs1_sign
+extrn mbedtls_rsa_pkcs1_verify
+extrn mbedtls_rsa_private
+extrn mbedtls_rsa_public
+extrn mbedtls_rsa_rsaes_oaep_decrypt
+extrn mbedtls_rsa_rsaes_oaep_encrypt
+extrn mbedtls_rsa_rsaes_pkcs1_v15_decrypt
+extrn mbedtls_rsa_rsaes_pkcs1_v15_encrypt
+extrn mbedtls_rsa_rsassa_pkcs1_v15_sign
+extrn mbedtls_rsa_rsassa_pkcs1_v15_verify
+extrn mbedtls_rsa_rsassa_pss_sign
+extrn mbedtls_rsa_rsassa_pss_verify
+extrn mbedtls_rsa_rsassa_pss_verify_ext
+extrn mbedtls_rsa_self_test
+extrn mbedtls_rsa_set_padding
+extrn mbedtls_rsa_validate_crt
+extrn mbedtls_rsa_validate_params
+extrn mbedtls_sha1
+extrn mbedtls_sha1_clone
+extrn mbedtls_sha1_finish
+extrn mbedtls_sha1_finish_ret
+extrn mbedtls_sha1_free
+extrn mbedtls_sha1_init
+extrn mbedtls_sha1_process
+extrn mbedtls_sha1_ret
+extrn mbedtls_sha1_self_test
+extrn mbedtls_sha1_starts
+extrn mbedtls_sha1_starts_ret
+extrn mbedtls_sha1_update
+extrn mbedtls_sha1_update_ret
+extrn mbedtls_sha256
+extrn mbedtls_sha256_clone
+extrn mbedtls_sha256_finish
+extrn mbedtls_sha256_finish_ret
+extrn mbedtls_sha256_free
+extrn mbedtls_sha256_init
+extrn mbedtls_sha256_process
+extrn mbedtls_sha256_ret
+extrn mbedtls_sha256_self_test
+extrn mbedtls_sha256_starts
+extrn mbedtls_sha256_starts_ret
+extrn mbedtls_sha256_update
+extrn mbedtls_sha256_update_ret
+extrn mbedtls_sha512
+extrn mbedtls_sha512_clone
+extrn mbedtls_sha512_finish
+extrn mbedtls_sha512_finish_ret
+extrn mbedtls_sha512_free
+extrn mbedtls_sha512_init
+extrn mbedtls_sha512_process
+extrn mbedtls_sha512_ret
+extrn mbedtls_sha512_self_test
+extrn mbedtls_sha512_starts
+extrn mbedtls_sha512_starts_ret
+extrn mbedtls_sha512_update
+extrn mbedtls_sha512_update_ret
+extrn mbedtls_ssl_cache_free
+extrn mbedtls_ssl_cache_get
+extrn mbedtls_ssl_cache_init
+extrn mbedtls_ssl_cache_set
+extrn mbedtls_ssl_cache_set_max_entries
+extrn mbedtls_ssl_cache_set_timeout
+extrn mbedtls_ssl_check_cert_usage
+extrn mbedtls_ssl_check_curve
+extrn mbedtls_ssl_check_pending
+extrn mbedtls_ssl_check_sig_hash
+extrn mbedtls_ssl_ciphersuite_from_id
+extrn mbedtls_ssl_ciphersuite_from_string
+extrn mbedtls_ssl_ciphersuite_uses_ec
+extrn mbedtls_ssl_ciphersuite_uses_psk
+extrn mbedtls_ssl_close_notify
+extrn mbedtls_ssl_conf_alpn_protocols
+extrn mbedtls_ssl_conf_arc4_support
+extrn mbedtls_ssl_conf_authmode
+extrn mbedtls_ssl_conf_ca_chain
+extrn mbedtls_ssl_conf_cbc_record_splitting
+extrn mbedtls_ssl_conf_cert_profile
+extrn mbedtls_ssl_conf_cert_req_ca_list
+extrn mbedtls_ssl_conf_ciphersuites
+extrn mbedtls_ssl_conf_ciphersuites_for_version
+extrn mbedtls_ssl_conf_curves
+extrn mbedtls_ssl_conf_dbg
+extrn mbedtls_ssl_conf_dhm_min_bitlen
+extrn mbedtls_ssl_conf_dh_param
+extrn mbedtls_ssl_conf_dh_param_bin
+extrn mbedtls_ssl_conf_dh_param_ctx
+extrn mbedtls_ssl_conf_dtls_anti_replay
+extrn mbedtls_ssl_conf_dtls_badmac_limit
+extrn mbedtls_ssl_conf_dtls_cookies
+extrn mbedtls_ssl_conf_encrypt_then_mac
+extrn mbedtls_ssl_conf_endpoint
+extrn mbedtls_ssl_conf_export_keys_cb
+extrn mbedtls_ssl_conf_extended_master_secret
+extrn mbedtls_ssl_conf_fallback
+extrn mbedtls_ssl_conf_handshake_timeout
+extrn mbedtls_ssl_config_defaults
+extrn mbedtls_ssl_config_free
+extrn mbedtls_ssl_config_init
+extrn mbedtls_ssl_conf_legacy_renegotiation
+extrn mbedtls_ssl_conf_max_frag_len
+extrn mbedtls_ssl_conf_max_version
+extrn mbedtls_ssl_conf_min_version
+extrn mbedtls_ssl_conf_own_cert
+extrn mbedtls_ssl_conf_psk
+extrn mbedtls_ssl_conf_psk_cb
+extrn mbedtls_ssl_conf_read_timeout
+extrn mbedtls_ssl_conf_renegotiation
+extrn mbedtls_ssl_conf_renegotiation_enforced
+extrn mbedtls_ssl_conf_renegotiation_period
+extrn mbedtls_ssl_conf_rng
+extrn mbedtls_ssl_conf_session_cache
+extrn mbedtls_ssl_conf_session_tickets
+extrn mbedtls_ssl_conf_session_tickets_cb
+extrn mbedtls_ssl_conf_sig_hashes
+extrn mbedtls_ssl_conf_sni
+extrn mbedtls_ssl_conf_transport
+extrn mbedtls_ssl_conf_truncated_hmac
+extrn mbedtls_ssl_conf_verify
+extrn mbedtls_ssl_cookie_check
+extrn mbedtls_ssl_cookie_free
+extrn mbedtls_ssl_cookie_init
+extrn mbedtls_ssl_cookie_set_timeout
+extrn mbedtls_ssl_cookie_setup
+extrn mbedtls_ssl_cookie_write
+extrn mbedtls_ssl_derive_keys
+extrn mbedtls_ssl_dtls_replay_check
+extrn mbedtls_ssl_dtls_replay_update
+extrn mbedtls_ssl_fetch_input
+extrn mbedtls_ssl_flight_transmit
+extrn mbedtls_ssl_flush_output
+extrn mbedtls_ssl_free
+extrn mbedtls_ssl_get_alpn_protocol
+extrn mbedtls_ssl_get_bytes_avail
+extrn mbedtls_ssl_get_ciphersuite
+extrn mbedtls_ssl_get_ciphersuite_id
+extrn mbedtls_ssl_get_ciphersuite_name
+extrn mbedtls_ssl_get_ciphersuite_sig_alg
+extrn mbedtls_ssl_get_ciphersuite_sig_pk_alg
+extrn mbedtls_ssl_get_key_exchange_md_ssl_tls
+extrn mbedtls_ssl_get_key_exchange_md_tls1_2
+extrn mbedtls_ssl_get_max_frag_len
+extrn mbedtls_ssl_get_max_out_record_payload
+extrn mbedtls_ssl_get_peer_cert
+extrn mbedtls_ssl_get_record_expansion
+extrn mbedtls_ssl_get_session
+extrn mbedtls_ssl_get_verify_result
+extrn mbedtls_ssl_get_version
+extrn mbedtls_ssl_handle_message_type
+extrn mbedtls_ssl_handshake
+extrn mbedtls_ssl_handshake_client_step
+extrn mbedtls_ssl_handshake_free
+extrn mbedtls_ssl_handshake_server_step
+extrn mbedtls_ssl_handshake_step
+extrn mbedtls_ssl_handshake_wrapup
+extrn mbedtls_ssl_hash_from_md_alg
+extrn mbedtls_ssl_init
+extrn mbedtls_ssl_list_ciphersuites
+extrn mbedtls_ssl_md_alg_from_hash
+extrn mbedtls_ssl_optimize_checksum
+extrn mbedtls_ssl_parse_certificate
+extrn mbedtls_ssl_parse_change_cipher_spec
+extrn mbedtls_ssl_parse_finished
+extrn mbedtls_ssl_pk_alg_from_sig
+extrn mbedtls_ssl_prepare_handshake_record
+extrn mbedtls_ssl_psk_derive_premaster
+extrn mbedtls_ssl_read
+extrn mbedtls_ssl_read_record
+extrn mbedtls_ssl_read_version
+extrn mbedtls_ssl_recv_flight_completed
+extrn mbedtls_ssl_renegotiate
+extrn mbedtls_ssl_resend
+extrn mbedtls_ssl_reset_checksum
+extrn mbedtls_ssl_send_alert_message
+extrn mbedtls_ssl_send_fatal_handshake_failure
+extrn mbedtls_ssl_send_flight_completed
+extrn mbedtls_ssl_session_free
+extrn mbedtls_ssl_session_init
+extrn mbedtls_ssl_session_reset
+extrn mbedtls_ssl_set_bio
+extrn mbedtls_ssl_set_calc_verify_md
+extrn mbedtls_ssl_set_client_transport_id
+extrn mbedtls_ssl_set_datagram_packing
+extrn mbedtls_ssl_set_hostname
+extrn mbedtls_ssl_set_hs_authmode
+extrn mbedtls_ssl_set_hs_ca_chain
+extrn mbedtls_ssl_set_hs_own_cert
+extrn mbedtls_ssl_set_hs_psk
+extrn mbedtls_ssl_set_mtu
+extrn mbedtls_ssl_set_session
+extrn mbedtls_ssl_set_timer_cb
+extrn mbedtls_ssl_setup
+extrn mbedtls_ssl_sig_from_pk
+extrn mbedtls_ssl_sig_from_pk_alg
+extrn mbedtls_ssl_sig_hash_set_add
+extrn mbedtls_ssl_sig_hash_set_const_hash
+extrn mbedtls_ssl_sig_hash_set_find
+extrn mbedtls_ssl_ticket_free
+extrn mbedtls_ssl_ticket_init
+extrn mbedtls_ssl_ticket_parse
+extrn mbedtls_ssl_ticket_setup
+extrn mbedtls_ssl_ticket_write
+extrn mbedtls_ssl_transform_free
+extrn mbedtls_ssl_update_handshake_status
+extrn mbedtls_ssl_write
+extrn mbedtls_ssl_write_certificate
+extrn mbedtls_ssl_write_change_cipher_spec
+extrn mbedtls_ssl_write_finished
+extrn mbedtls_ssl_write_handshake_msg
+extrn mbedtls_ssl_write_record
+extrn mbedtls_ssl_write_version
+extrn mbedtls_strerror
+extrn mbedtls_sysfn_14_poll
+extrn mbedtls_sysfn_18_4_poll
+extrn mbedtls_sysfn_26_9_poll
+extrn mbedtls_sysfn_37_0_poll
+extrn mbedtls_sysfn_3_poll
+extrn mbedtls_sysfn_66_3_poll
+extrn mbedtls_sysfn_68_0_poll
+extrn mbedtls_version_check_feature
+extrn mbedtls_version_get_number
+extrn mbedtls_version_get_string
+extrn mbedtls_version_get_string_full
+extrn mbedtls_x509_crl_free
+extrn mbedtls_x509_crl_info
+extrn mbedtls_x509_crl_init
+extrn mbedtls_x509_crl_parse
+extrn mbedtls_x509_crl_parse_der
+extrn mbedtls_x509_crt_check_extended_key_usage
+extrn mbedtls_x509_crt_check_key_usage
+extrn mbedtls_x509_crt_free
+extrn mbedtls_x509_crt_info
+extrn mbedtls_x509_crt_init
+extrn mbedtls_x509_crt_is_revoked
+extrn mbedtls_x509_crt_parse
+extrn mbedtls_x509_crt_parse_der
+extrn mbedtls_x509_crt_verify
+extrn mbedtls_x509_crt_verify_info
+extrn mbedtls_x509_crt_verify_restartable
+extrn mbedtls_x509_crt_verify_with_profile
+extrn mbedtls_x509_csr_free
+extrn mbedtls_x509_csr_info
+extrn mbedtls_x509_csr_init
+extrn mbedtls_x509_csr_parse
+extrn mbedtls_x509_csr_parse_der
+extrn mbedtls_x509_dn_gets
+extrn mbedtls_x509_get_alg
+extrn mbedtls_x509_get_alg_null
+extrn mbedtls_x509_get_ext
+extrn mbedtls_x509_get_name
+extrn mbedtls_x509_get_rsassa_pss_params
+extrn mbedtls_x509_get_serial
+extrn mbedtls_x509_get_sig
+extrn mbedtls_x509_get_sig_alg
+extrn mbedtls_x509_get_time
+extrn mbedtls_x509_key_size_helper
+extrn mbedtls_x509_self_test
+extrn mbedtls_x509_serial_gets
+extrn mbedtls_x509_set_extension
+extrn mbedtls_x509_sig_alg_gets
+extrn mbedtls_x509_string_to_names
+extrn mbedtls_x509_time_is_future
+extrn mbedtls_x509_time_is_past
+extrn mbedtls_x509write_crt_der
+extrn mbedtls_x509write_crt_free
+extrn mbedtls_x509write_crt_init
+extrn mbedtls_x509write_crt_pem
+extrn mbedtls_x509write_crt_set_authority_key_identifier
+extrn mbedtls_x509write_crt_set_basic_constraints
+extrn mbedtls_x509write_crt_set_extension
+extrn mbedtls_x509write_crt_set_issuer_key
+extrn mbedtls_x509write_crt_set_issuer_name
+extrn mbedtls_x509write_crt_set_key_usage
+extrn mbedtls_x509write_crt_set_md_alg
+extrn mbedtls_x509write_crt_set_ns_cert_type
+extrn mbedtls_x509write_crt_set_serial
+extrn mbedtls_x509write_crt_set_subject_key
+extrn mbedtls_x509write_crt_set_subject_key_identifier
+extrn mbedtls_x509write_crt_set_subject_name
+extrn mbedtls_x509write_crt_set_validity
+extrn mbedtls_x509write_crt_set_version
+extrn mbedtls_x509write_csr_der
+extrn mbedtls_x509write_csr_free
+extrn mbedtls_x509write_csr_init
+extrn mbedtls_x509write_csr_pem
+extrn mbedtls_x509write_csr_set_extension
+extrn mbedtls_x509write_csr_set_key
+extrn mbedtls_x509write_csr_set_key_usage
+extrn mbedtls_x509write_csr_set_md_alg
+extrn mbedtls_x509write_csr_set_ns_cert_type
+extrn mbedtls_x509write_csr_set_subject_name
+extrn mbedtls_x509_write_extensions
+extrn mbedtls_x509_write_names
+extrn mbedtls_x509_write_sig
+extrn mbedtls_xtea_crypt_cbc
+extrn mbedtls_xtea_crypt_ecb
+extrn mbedtls_xtea_free
+extrn mbedtls_xtea_init
+extrn mbedtls_xtea_self_test
+extrn mbedtls_xtea_setup
+extrn mbedtls_test_cas_pem
+extrn mbedtls_test_cas_pem_len
+
+section '.data'
+
+align 4
+@EXPORT:
+export \
+mbedtls_aes_crypt_cbc ,'mbedtls_aes_crypt_cbc',\
+mbedtls_aes_crypt_cfb128,'mbedtls_aes_crypt_cfb128',\
+mbedtls_aes_crypt_cfb8,'mbedtls_aes_crypt_cfb8',\
+mbedtls_aes_crypt_ctr,'mbedtls_aes_crypt_ctr',\
+mbedtls_aes_crypt_ecb,'mbedtls_aes_crypt_ecb',\
+mbedtls_aes_crypt_ofb,'mbedtls_aes_crypt_ofb',\
+mbedtls_aes_crypt_xts,'mbedtls_aes_crypt_xts',\
+mbedtls_aes_decrypt,'mbedtls_aes_decrypt',\
+mbedtls_aes_encrypt,'mbedtls_aes_encrypt',\
+mbedtls_aes_free,'mbedtls_aes_free',\
+mbedtls_aes_init,'mbedtls_aes_init',\
+mbedtls_aes_self_test,'mbedtls_aes_self_test',\
+mbedtls_aes_setkey_dec,'mbedtls_aes_setkey_dec',\
+mbedtls_aes_setkey_enc,'mbedtls_aes_setkey_enc',\
+mbedtls_aes_xts_free,'mbedtls_aes_xts_free',\
+mbedtls_aes_xts_init,'mbedtls_aes_xts_init',\
+mbedtls_aes_xts_setkey_dec,'mbedtls_aes_xts_setkey_dec',\
+mbedtls_aes_xts_setkey_enc,'mbedtls_aes_xts_setkey_enc',\
+mbedtls_arc4_crypt,'mbedtls_arc4_crypt',\
+mbedtls_arc4_free,'mbedtls_arc4_free',\
+mbedtls_arc4_init,'mbedtls_arc4_init',\
+mbedtls_arc4_self_test,'mbedtls_arc4_self_test',\
+mbedtls_arc4_setup,'mbedtls_arc4_setup',\
+mbedtls_asn1_find_named_data,'mbedtls_asn1_find_named_data',\
+mbedtls_asn1_free_named_data,'mbedtls_asn1_free_named_data',\
+mbedtls_asn1_free_named_data_list,'mbedtls_asn1_free_named_data_list',\
+mbedtls_asn1_get_alg,'mbedtls_asn1_get_alg',\
+mbedtls_asn1_get_alg_null,'mbedtls_asn1_get_alg_null',\
+mbedtls_asn1_get_bitstring,'mbedtls_asn1_get_bitstring',\
+mbedtls_asn1_get_bitstring_null,'mbedtls_asn1_get_bitstring_null',\
+mbedtls_asn1_get_bool,'mbedtls_asn1_get_bool',\
+mbedtls_asn1_get_int,'mbedtls_asn1_get_int',\
+mbedtls_asn1_get_len,'mbedtls_asn1_get_len',\
+mbedtls_asn1_get_mpi,'mbedtls_asn1_get_mpi',\
+mbedtls_asn1_get_sequence_of,'mbedtls_asn1_get_sequence_of',\
+mbedtls_asn1_get_tag,'mbedtls_asn1_get_tag',\
+mbedtls_asn1_store_named_data,'mbedtls_asn1_store_named_data',\
+mbedtls_asn1_write_algorithm_identifier,'mbedtls_asn1_write_algorithm_identifier',\
+mbedtls_asn1_write_bitstring,'mbedtls_asn1_write_bitstring',\
+mbedtls_asn1_write_bool,'mbedtls_asn1_write_bool',\
+mbedtls_asn1_write_ia5_string,'mbedtls_asn1_write_ia5_string',\
+mbedtls_asn1_write_int,'mbedtls_asn1_write_int',\
+mbedtls_asn1_write_len,'mbedtls_asn1_write_len',\
+mbedtls_asn1_write_mpi,'mbedtls_asn1_write_mpi',\
+mbedtls_asn1_write_null,'mbedtls_asn1_write_null',\
+mbedtls_asn1_write_octet_string,'mbedtls_asn1_write_octet_string',\
+mbedtls_asn1_write_oid,'mbedtls_asn1_write_oid',\
+mbedtls_asn1_write_printable_string,'mbedtls_asn1_write_printable_string',\
+mbedtls_asn1_write_raw_buffer,'mbedtls_asn1_write_raw_buffer',\
+mbedtls_asn1_write_tag,'mbedtls_asn1_write_tag',\
+mbedtls_asn1_write_tagged_string,'mbedtls_asn1_write_tagged_string',\
+mbedtls_asn1_write_utf8_string,'mbedtls_asn1_write_utf8_string',\
+mbedtls_base64_decode,'mbedtls_base64_decode',\
+mbedtls_base64_encode,'mbedtls_base64_encode',\
+mbedtls_base64_self_test,'mbedtls_base64_self_test',\
+mbedtls_blowfish_crypt_cbc,'mbedtls_blowfish_crypt_cbc',\
+mbedtls_blowfish_crypt_cfb64,'mbedtls_blowfish_crypt_cfb64',\
+mbedtls_blowfish_crypt_ctr,'mbedtls_blowfish_crypt_ctr',\
+mbedtls_blowfish_crypt_ecb,'mbedtls_blowfish_crypt_ecb',\
+mbedtls_blowfish_free,'mbedtls_blowfish_free',\
+mbedtls_blowfish_init,'mbedtls_blowfish_init',\
+mbedtls_blowfish_setkey,'mbedtls_blowfish_setkey',\
+mbedtls_camellia_crypt_cbc,'mbedtls_camellia_crypt_cbc',\
+mbedtls_camellia_crypt_cfb128,'mbedtls_camellia_crypt_cfb128',\
+mbedtls_camellia_crypt_ctr,'mbedtls_camellia_crypt_ctr',\
+mbedtls_camellia_crypt_ecb,'mbedtls_camellia_crypt_ecb',\
+mbedtls_camellia_free,'mbedtls_camellia_free',\
+mbedtls_camellia_init,'mbedtls_camellia_init',\
+mbedtls_camellia_self_test,'mbedtls_camellia_self_test',\
+mbedtls_camellia_setkey_dec,'mbedtls_camellia_setkey_dec',\
+mbedtls_camellia_setkey_enc,'mbedtls_camellia_setkey_enc',\
+mbedtls_ccm_auth_decrypt,'mbedtls_ccm_auth_decrypt',\
+mbedtls_ccm_encrypt_and_tag,'mbedtls_ccm_encrypt_and_tag',\
+mbedtls_ccm_free,'mbedtls_ccm_free',\
+mbedtls_ccm_init,'mbedtls_ccm_init',\
+mbedtls_ccm_self_test,'mbedtls_ccm_self_test',\
+mbedtls_ccm_setkey,'mbedtls_ccm_setkey',\
+mbedtls_ccm_star_auth_decrypt,'mbedtls_ccm_star_auth_decrypt',\
+mbedtls_ccm_star_encrypt_and_tag,'mbedtls_ccm_star_encrypt_and_tag',\
+mbedtls_chacha20_crypt,'mbedtls_chacha20_crypt',\
+mbedtls_chacha20_free,'mbedtls_chacha20_free',\
+mbedtls_chacha20_init,'mbedtls_chacha20_init',\
+mbedtls_chacha20_self_test,'mbedtls_chacha20_self_test',\
+mbedtls_chacha20_setkey,'mbedtls_chacha20_setkey',\
+mbedtls_chacha20_starts,'mbedtls_chacha20_starts',\
+mbedtls_chacha20_update,'mbedtls_chacha20_update',\
+mbedtls_chachapoly_auth_decrypt,'mbedtls_chachapoly_auth_decrypt',\
+mbedtls_chachapoly_encrypt_and_tag,'mbedtls_chachapoly_encrypt_and_tag',\
+mbedtls_chachapoly_finish,'mbedtls_chachapoly_finish',\
+mbedtls_chachapoly_free,'mbedtls_chachapoly_free',\
+mbedtls_chachapoly_init,'mbedtls_chachapoly_init',\
+mbedtls_chachapoly_self_test,'mbedtls_chachapoly_self_test',\
+mbedtls_chachapoly_setkey,'mbedtls_chachapoly_setkey',\
+mbedtls_chachapoly_starts,'mbedtls_chachapoly_starts',\
+mbedtls_chachapoly_update,'mbedtls_chachapoly_update',\
+mbedtls_chachapoly_update_aad,'mbedtls_chachapoly_update_aad',\
+mbedtls_cipher_auth_decrypt,'mbedtls_cipher_auth_decrypt',\
+mbedtls_cipher_auth_encrypt,'mbedtls_cipher_auth_encrypt',\
+mbedtls_cipher_check_tag,'mbedtls_cipher_check_tag',\
+mbedtls_cipher_crypt,'mbedtls_cipher_crypt',\
+mbedtls_cipher_finish,'mbedtls_cipher_finish',\
+mbedtls_cipher_free,'mbedtls_cipher_free',\
+mbedtls_cipher_info_from_string,'mbedtls_cipher_info_from_string',\
+mbedtls_cipher_info_from_type,'mbedtls_cipher_info_from_type',\
+mbedtls_cipher_info_from_values,'mbedtls_cipher_info_from_values',\
+mbedtls_cipher_init,'mbedtls_cipher_init',\
+mbedtls_cipher_list,'mbedtls_cipher_list',\
+mbedtls_cipher_reset,'mbedtls_cipher_reset',\
+mbedtls_cipher_set_iv,'mbedtls_cipher_set_iv',\
+mbedtls_cipher_setkey,'mbedtls_cipher_setkey',\
+mbedtls_cipher_set_padding_mode,'mbedtls_cipher_set_padding_mode',\
+mbedtls_cipher_setup,'mbedtls_cipher_setup',\
+mbedtls_cipher_update,'mbedtls_cipher_update',\
+mbedtls_cipher_update_ad,'mbedtls_cipher_update_ad',\
+mbedtls_cipher_write_tag,'mbedtls_cipher_write_tag',\
+mbedtls_ctr_drbg_free,'mbedtls_ctr_drbg_free',\
+mbedtls_ctr_drbg_init,'mbedtls_ctr_drbg_init',\
+mbedtls_ctr_drbg_random,'mbedtls_ctr_drbg_random',\
+mbedtls_ctr_drbg_random_with_add,'mbedtls_ctr_drbg_random_with_add',\
+mbedtls_ctr_drbg_reseed,'mbedtls_ctr_drbg_reseed',\
+mbedtls_ctr_drbg_seed,'mbedtls_ctr_drbg_seed',\
+mbedtls_ctr_drbg_seed_entropy_len,'mbedtls_ctr_drbg_seed_entropy_len',\
+mbedtls_ctr_drbg_self_test,'mbedtls_ctr_drbg_self_test',\
+mbedtls_ctr_drbg_set_entropy_len,'mbedtls_ctr_drbg_set_entropy_len',\
+mbedtls_ctr_drbg_set_prediction_resistance,'mbedtls_ctr_drbg_set_prediction_resistance',\
+mbedtls_ctr_drbg_set_reseed_interval,'mbedtls_ctr_drbg_set_reseed_interval',\
+mbedtls_ctr_drbg_update,'mbedtls_ctr_drbg_update',\
+mbedtls_ctr_drbg_update_ret,'mbedtls_ctr_drbg_update_ret',\
+mbedtls_debug_print_buf,'mbedtls_debug_print_buf',\
+mbedtls_debug_print_crt,'mbedtls_debug_print_crt',\
+mbedtls_debug_print_ecp,'mbedtls_debug_print_ecp',\
+mbedtls_debug_printf_ecdh,'mbedtls_debug_printf_ecdh',\
+mbedtls_debug_print_mpi,'mbedtls_debug_print_mpi',\
+mbedtls_debug_print_msg,'mbedtls_debug_print_msg',\
+mbedtls_debug_print_ret,'mbedtls_debug_print_ret',\
+mbedtls_debug_set_threshold,'mbedtls_debug_set_threshold',\
+mbedtls_des3_crypt_cbc,'mbedtls_des3_crypt_cbc',\
+mbedtls_des3_crypt_ecb,'mbedtls_des3_crypt_ecb',\
+mbedtls_des3_free,'mbedtls_des3_free',\
+mbedtls_des3_init,'mbedtls_des3_init',\
+mbedtls_des3_set2key_dec,'mbedtls_des3_set2key_dec',\
+mbedtls_des3_set2key_enc,'mbedtls_des3_set2key_enc',\
+mbedtls_des3_set3key_dec,'mbedtls_des3_set3key_dec',\
+mbedtls_des3_set3key_enc,'mbedtls_des3_set3key_enc',\
+mbedtls_des_crypt_cbc,'mbedtls_des_crypt_cbc',\
+mbedtls_des_crypt_ecb,'mbedtls_des_crypt_ecb',\
+mbedtls_des_free,'mbedtls_des_free',\
+mbedtls_des_init,'mbedtls_des_init',\
+mbedtls_des_key_check_key_parity,'mbedtls_des_key_check_key_parity',\
+mbedtls_des_key_check_weak,'mbedtls_des_key_check_weak',\
+mbedtls_des_key_set_parity,'mbedtls_des_key_set_parity',\
+mbedtls_des_self_test,'mbedtls_des_self_test',\
+mbedtls_des_setkey,'mbedtls_des_setkey',\
+mbedtls_des_setkey_dec,'mbedtls_des_setkey_dec',\
+mbedtls_des_setkey_enc,'mbedtls_des_setkey_enc',\
+mbedtls_dhm_calc_secret,'mbedtls_dhm_calc_secret',\
+mbedtls_dhm_free,'mbedtls_dhm_free',\
+mbedtls_dhm_init,'mbedtls_dhm_init',\
+mbedtls_dhm_make_params,'mbedtls_dhm_make_params',\
+mbedtls_dhm_make_public,'mbedtls_dhm_make_public',\
+mbedtls_dhm_parse_dhm,'mbedtls_dhm_parse_dhm',\
+mbedtls_dhm_read_params,'mbedtls_dhm_read_params',\
+mbedtls_dhm_read_public,'mbedtls_dhm_read_public',\
+mbedtls_dhm_self_test,'mbedtls_dhm_self_test',\
+mbedtls_dhm_set_group,'mbedtls_dhm_set_group',\
+mbedtls_ecdh_calc_secret,'mbedtls_ecdh_calc_secret',\
+mbedtls_ecdh_compute_shared,'mbedtls_ecdh_compute_shared',\
+mbedtls_ecdh_free,'mbedtls_ecdh_free',\
+mbedtls_ecdh_gen_public,'mbedtls_ecdh_gen_public',\
+mbedtls_ecdh_get_params,'mbedtls_ecdh_get_params',\
+mbedtls_ecdh_init,'mbedtls_ecdh_init',\
+mbedtls_ecdh_make_params,'mbedtls_ecdh_make_params',\
+mbedtls_ecdh_make_public,'mbedtls_ecdh_make_public',\
+mbedtls_ecdh_read_params,'mbedtls_ecdh_read_params',\
+mbedtls_ecdh_read_public,'mbedtls_ecdh_read_public',\
+mbedtls_ecdh_setup,'mbedtls_ecdh_setup',\
+mbedtls_ecdsa_free,'mbedtls_ecdsa_free',\
+mbedtls_ecdsa_from_keypair,'mbedtls_ecdsa_from_keypair',\
+mbedtls_ecdsa_genkey,'mbedtls_ecdsa_genkey',\
+mbedtls_ecdsa_init,'mbedtls_ecdsa_init',\
+mbedtls_ecdsa_read_signature,'mbedtls_ecdsa_read_signature',\
+mbedtls_ecdsa_read_signature_restartable,'mbedtls_ecdsa_read_signature_restartable',\
+mbedtls_ecdsa_sign,'mbedtls_ecdsa_sign',\
+mbedtls_ecdsa_sign_det,'mbedtls_ecdsa_sign_det',\
+mbedtls_ecdsa_sign_det_ext,'mbedtls_ecdsa_sign_det_ext',\
+mbedtls_ecdsa_verify,'mbedtls_ecdsa_verify',\
+mbedtls_ecdsa_write_signature,'mbedtls_ecdsa_write_signature',\
+mbedtls_ecdsa_write_signature_det,'mbedtls_ecdsa_write_signature_det',\
+mbedtls_ecdsa_write_signature_restartable,'mbedtls_ecdsa_write_signature_restartable',\
+mbedtls_ecp_check_privkey,'mbedtls_ecp_check_privkey',\
+mbedtls_ecp_check_pubkey,'mbedtls_ecp_check_pubkey',\
+mbedtls_ecp_check_pub_priv,'mbedtls_ecp_check_pub_priv',\
+mbedtls_ecp_copy,'mbedtls_ecp_copy',\
+mbedtls_ecp_curve_info_from_grp_id,'mbedtls_ecp_curve_info_from_grp_id',\
+mbedtls_ecp_curve_info_from_name,'mbedtls_ecp_curve_info_from_name',\
+mbedtls_ecp_curve_info_from_tls_id,'mbedtls_ecp_curve_info_from_tls_id',\
+mbedtls_ecp_curve_list,'mbedtls_ecp_curve_list',\
+mbedtls_ecp_gen_key,'mbedtls_ecp_gen_key',\
+mbedtls_ecp_gen_keypair,'mbedtls_ecp_gen_keypair',\
+mbedtls_ecp_gen_keypair_base,'mbedtls_ecp_gen_keypair_base',\
+mbedtls_ecp_gen_privkey,'mbedtls_ecp_gen_privkey',\
+mbedtls_ecp_group_copy,'mbedtls_ecp_group_copy',\
+mbedtls_ecp_group_free,'mbedtls_ecp_group_free',\
+mbedtls_ecp_group_init,'mbedtls_ecp_group_init',\
+mbedtls_ecp_group_load,'mbedtls_ecp_group_load',\
+mbedtls_ecp_grp_id_list,'mbedtls_ecp_grp_id_list',\
+mbedtls_ecp_is_zero,'mbedtls_ecp_is_zero',\
+mbedtls_ecp_keypair_free,'mbedtls_ecp_keypair_free',\
+mbedtls_ecp_keypair_init,'mbedtls_ecp_keypair_init',\
+mbedtls_ecp_mul,'mbedtls_ecp_mul',\
+mbedtls_ecp_muladd,'mbedtls_ecp_muladd',\
+mbedtls_ecp_muladd_restartable,'mbedtls_ecp_muladd_restartable',\
+mbedtls_ecp_mul_restartable,'mbedtls_ecp_mul_restartable',\
+mbedtls_ecp_point_cmp,'mbedtls_ecp_point_cmp',\
+mbedtls_ecp_point_free,'mbedtls_ecp_point_free',\
+mbedtls_ecp_point_init,'mbedtls_ecp_point_init',\
+mbedtls_ecp_point_read_binary,'mbedtls_ecp_point_read_binary',\
+mbedtls_ecp_point_read_string,'mbedtls_ecp_point_read_string',\
+mbedtls_ecp_point_write_binary,'mbedtls_ecp_point_write_binary',\
+mbedtls_ecp_self_test,'mbedtls_ecp_self_test',\
+mbedtls_ecp_set_zero,'mbedtls_ecp_set_zero',\
+mbedtls_ecp_tls_read_group,'mbedtls_ecp_tls_read_group',\
+mbedtls_ecp_tls_read_group_id,'mbedtls_ecp_tls_read_group_id',\
+mbedtls_ecp_tls_read_point,'mbedtls_ecp_tls_read_point',\
+mbedtls_ecp_tls_write_group,'mbedtls_ecp_tls_write_group',\
+mbedtls_ecp_tls_write_point,'mbedtls_ecp_tls_write_point',\
+mbedtls_entropy_add_source,'mbedtls_entropy_add_source',\
+mbedtls_entropy_free,'mbedtls_entropy_free',\
+mbedtls_entropy_func,'mbedtls_entropy_func',\
+mbedtls_entropy_gather,'mbedtls_entropy_gather',\
+mbedtls_entropy_init,'mbedtls_entropy_init',\
+mbedtls_entropy_self_test,'mbedtls_entropy_self_test',\
+mbedtls_entropy_update_manual,'mbedtls_entropy_update_manual',\
+mbedtls_gcm_auth_decrypt,'mbedtls_gcm_auth_decrypt',\
+mbedtls_gcm_crypt_and_tag,'mbedtls_gcm_crypt_and_tag',\
+mbedtls_gcm_finish,'mbedtls_gcm_finish',\
+mbedtls_gcm_free,'mbedtls_gcm_free',\
+mbedtls_gcm_init,'mbedtls_gcm_init',\
+mbedtls_gcm_self_test,'mbedtls_gcm_self_test',\
+mbedtls_gcm_setkey,'mbedtls_gcm_setkey',\
+mbedtls_gcm_starts,'mbedtls_gcm_starts',\
+mbedtls_gcm_update,'mbedtls_gcm_update',\
+mbedtls_hkdf,'mbedtls_hkdf',\
+mbedtls_hkdf_expand,'mbedtls_hkdf_expand',\
+mbedtls_hkdf_extract,'mbedtls_hkdf_extract',\
+mbedtls_hmac_drbg_free,'mbedtls_hmac_drbg_free',\
+mbedtls_hmac_drbg_init,'mbedtls_hmac_drbg_init',\
+mbedtls_hmac_drbg_random,'mbedtls_hmac_drbg_random',\
+mbedtls_hmac_drbg_random_with_add,'mbedtls_hmac_drbg_random_with_add',\
+mbedtls_hmac_drbg_reseed,'mbedtls_hmac_drbg_reseed',\
+mbedtls_hmac_drbg_seed,'mbedtls_hmac_drbg_seed',\
+mbedtls_hmac_drbg_seed_buf,'mbedtls_hmac_drbg_seed_buf',\
+mbedtls_hmac_drbg_self_test,'mbedtls_hmac_drbg_self_test',\
+mbedtls_hmac_drbg_set_entropy_len,'mbedtls_hmac_drbg_set_entropy_len',\
+mbedtls_hmac_drbg_set_prediction_resistance,'mbedtls_hmac_drbg_set_prediction_resistance',\
+mbedtls_hmac_drbg_set_reseed_interval,'mbedtls_hmac_drbg_set_reseed_interval',\
+mbedtls_hmac_drbg_update,'mbedtls_hmac_drbg_update',\
+mbedtls_hmac_drbg_update_ret,'mbedtls_hmac_drbg_update_ret',\
+mbedtls_init,'mbedtls_init',\
+mbedtls_internal_aes_decrypt,'mbedtls_internal_aes_decrypt',\
+mbedtls_internal_aes_encrypt,'mbedtls_internal_aes_encrypt',\
+mbedtls_internal_md5_process,'mbedtls_internal_md5_process',\
+mbedtls_internal_ripemd160_process,'mbedtls_internal_ripemd160_process',\
+mbedtls_internal_sha1_process,'mbedtls_internal_sha1_process',\
+mbedtls_internal_sha256_process,'mbedtls_internal_sha256_process',\
+mbedtls_internal_sha512_process,'mbedtls_internal_sha512_process',\
+mbedtls_md,'mbedtls_md',\
+mbedtls_md5,'mbedtls_md5',\
+mbedtls_md5_clone,'mbedtls_md5_clone',\
+mbedtls_md5_finish,'mbedtls_md5_finish',\
+mbedtls_md5_finish_ret,'mbedtls_md5_finish_ret',\
+mbedtls_md5_free,'mbedtls_md5_free',\
+mbedtls_md5_init,'mbedtls_md5_init',\
+mbedtls_md5_process,'mbedtls_md5_process',\
+mbedtls_md5_ret,'mbedtls_md5_ret',\
+mbedtls_md5_self_test,'mbedtls_md5_self_test',\
+mbedtls_md5_starts,'mbedtls_md5_starts',\
+mbedtls_md5_starts_ret,'mbedtls_md5_starts_ret',\
+mbedtls_md5_update,'mbedtls_md5_update',\
+mbedtls_md5_update_ret,'mbedtls_md5_update_ret',\
+mbedtls_md_clone,'mbedtls_md_clone',\
+mbedtls_md_finish,'mbedtls_md_finish',\
+mbedtls_md_free,'mbedtls_md_free',\
+mbedtls_md_get_name,'mbedtls_md_get_name',\
+mbedtls_md_get_size,'mbedtls_md_get_size',\
+mbedtls_md_get_type,'mbedtls_md_get_type',\
+mbedtls_md_hmac,'mbedtls_md_hmac',\
+mbedtls_md_hmac_finish,'mbedtls_md_hmac_finish',\
+mbedtls_md_hmac_reset,'mbedtls_md_hmac_reset',\
+mbedtls_md_hmac_starts,'mbedtls_md_hmac_starts',\
+mbedtls_md_hmac_update,'mbedtls_md_hmac_update',\
+mbedtls_md_info_from_string,'mbedtls_md_info_from_string',\
+mbedtls_md_info_from_type,'mbedtls_md_info_from_type',\
+mbedtls_md_init,'mbedtls_md_init',\
+mbedtls_md_init_ctx,'mbedtls_md_init_ctx',\
+mbedtls_md_list,'mbedtls_md_list',\
+mbedtls_md_process,'mbedtls_md_process',\
+mbedtls_md_setup,'mbedtls_md_setup',\
+mbedtls_md_starts,'mbedtls_md_starts',\
+mbedtls_md_update,'mbedtls_md_update',\
+mbedtls_mpi_add_abs,'mbedtls_mpi_add_abs',\
+mbedtls_mpi_add_int,'mbedtls_mpi_add_int',\
+mbedtls_mpi_add_mpi,'mbedtls_mpi_add_mpi',\
+mbedtls_mpi_bitlen,'mbedtls_mpi_bitlen',\
+mbedtls_mpi_cmp_abs,'mbedtls_mpi_cmp_abs',\
+mbedtls_mpi_cmp_int,'mbedtls_mpi_cmp_int',\
+mbedtls_mpi_cmp_mpi,'mbedtls_mpi_cmp_mpi',\
+mbedtls_mpi_copy,'mbedtls_mpi_copy',\
+mbedtls_mpi_div_int,'mbedtls_mpi_div_int',\
+mbedtls_mpi_div_mpi,'mbedtls_mpi_div_mpi',\
+mbedtls_mpi_exp_mod,'mbedtls_mpi_exp_mod',\
+mbedtls_mpi_fill_random,'mbedtls_mpi_fill_random',\
+mbedtls_mpi_free,'mbedtls_mpi_free',\
+mbedtls_mpi_gcd,'mbedtls_mpi_gcd',\
+mbedtls_mpi_gen_prime,'mbedtls_mpi_gen_prime',\
+mbedtls_mpi_get_bit,'mbedtls_mpi_get_bit',\
+mbedtls_mpi_grow,'mbedtls_mpi_grow',\
+mbedtls_mpi_init,'mbedtls_mpi_init',\
+mbedtls_mpi_inv_mod,'mbedtls_mpi_inv_mod',\
+mbedtls_mpi_is_prime,'mbedtls_mpi_is_prime',\
+mbedtls_mpi_is_prime_ext,'mbedtls_mpi_is_prime_ext',\
+mbedtls_mpi_lsb,'mbedtls_mpi_lsb',\
+mbedtls_mpi_lset,'mbedtls_mpi_lset',\
+mbedtls_mpi_lt_mpi_ct,'mbedtls_mpi_lt_mpi_ct',\
+mbedtls_mpi_mod_int,'mbedtls_mpi_mod_int',\
+mbedtls_mpi_mod_mpi,'mbedtls_mpi_mod_mpi',\
+mbedtls_mpi_mul_int,'mbedtls_mpi_mul_int',\
+mbedtls_mpi_mul_mpi,'mbedtls_mpi_mul_mpi',\
+mbedtls_mpi_read_binary,'mbedtls_mpi_read_binary',\
+mbedtls_mpi_read_string,'mbedtls_mpi_read_string',\
+mbedtls_mpi_safe_cond_assign,'mbedtls_mpi_safe_cond_assign',\
+mbedtls_mpi_safe_cond_swap,'mbedtls_mpi_safe_cond_swap',\
+mbedtls_mpi_self_test,'mbedtls_mpi_self_test',\
+mbedtls_mpi_set_bit,'mbedtls_mpi_set_bit',\
+mbedtls_mpi_shift_l,'mbedtls_mpi_shift_l',\
+mbedtls_mpi_shift_r,'mbedtls_mpi_shift_r',\
+mbedtls_mpi_shrink,'mbedtls_mpi_shrink',\
+mbedtls_mpi_size,'mbedtls_mpi_size',\
+mbedtls_mpi_sub_abs,'mbedtls_mpi_sub_abs',\
+mbedtls_mpi_sub_int,'mbedtls_mpi_sub_int',\
+mbedtls_mpi_sub_mpi,'mbedtls_mpi_sub_mpi',\
+mbedtls_mpi_swap,'mbedtls_mpi_swap',\
+mbedtls_mpi_write_binary,'mbedtls_mpi_write_binary',\
+mbedtls_mpi_write_string,'mbedtls_mpi_write_string',\
+mbedtls_net_connect,'mbedtls_net_connect',\
+mbedtls_net_free,'mbedtls_net_free',\
+mbedtls_net_init,'mbedtls_net_init',\
+mbedtls_net_recv,'mbedtls_net_recv',\
+mbedtls_net_send,'mbedtls_net_send',\
+mbedtls_oid_get_attr_short_name,'mbedtls_oid_get_attr_short_name',\
+mbedtls_oid_get_cipher_alg,'mbedtls_oid_get_cipher_alg',\
+mbedtls_oid_get_ec_grp,'mbedtls_oid_get_ec_grp',\
+mbedtls_oid_get_extended_key_usage,'mbedtls_oid_get_extended_key_usage',\
+mbedtls_oid_get_md_alg,'mbedtls_oid_get_md_alg',\
+mbedtls_oid_get_md_hmac,'mbedtls_oid_get_md_hmac',\
+mbedtls_oid_get_numeric_string,'mbedtls_oid_get_numeric_string',\
+mbedtls_oid_get_oid_by_ec_grp,'mbedtls_oid_get_oid_by_ec_grp',\
+mbedtls_oid_get_oid_by_md,'mbedtls_oid_get_oid_by_md',\
+mbedtls_oid_get_oid_by_pk_alg,'mbedtls_oid_get_oid_by_pk_alg',\
+mbedtls_oid_get_oid_by_sig_alg,'mbedtls_oid_get_oid_by_sig_alg',\
+mbedtls_oid_get_pk_alg,'mbedtls_oid_get_pk_alg',\
+mbedtls_oid_get_pkcs12_pbe_alg,'mbedtls_oid_get_pkcs12_pbe_alg',\
+mbedtls_oid_get_sig_alg,'mbedtls_oid_get_sig_alg',\
+mbedtls_oid_get_sig_alg_desc,'mbedtls_oid_get_sig_alg_desc',\
+mbedtls_oid_get_x509_ext_type,'mbedtls_oid_get_x509_ext_type',\
+mbedtls_padlock_has_support,'mbedtls_padlock_has_support',\
+mbedtls_padlock_xcryptcbc,'mbedtls_padlock_xcryptcbc',\
+mbedtls_padlock_xcryptecb,'mbedtls_padlock_xcryptecb',\
+mbedtls_pem_free,'mbedtls_pem_free',\
+mbedtls_pem_init,'mbedtls_pem_init',\
+mbedtls_pem_read_buffer,'mbedtls_pem_read_buffer',\
+mbedtls_pem_write_buffer,'mbedtls_pem_write_buffer',\
+mbedtls_pk_can_do,'mbedtls_pk_can_do',\
+mbedtls_pk_check_pair,'mbedtls_pk_check_pair',\
+mbedtls_pkcs12_derivation,'mbedtls_pkcs12_derivation',\
+mbedtls_pkcs12_pbe,'mbedtls_pkcs12_pbe',\
+mbedtls_pkcs12_pbe_sha1_rc4_128,'mbedtls_pkcs12_pbe_sha1_rc4_128',\
+mbedtls_pkcs5_pbes2,'mbedtls_pkcs5_pbes2',\
+mbedtls_pkcs5_pbkdf2_hmac,'mbedtls_pkcs5_pbkdf2_hmac',\
+mbedtls_pkcs5_self_test,'mbedtls_pkcs5_self_test',\
+mbedtls_pk_debug,'mbedtls_pk_debug',\
+mbedtls_pk_decrypt,'mbedtls_pk_decrypt',\
+mbedtls_pk_encrypt,'mbedtls_pk_encrypt',\
+mbedtls_pk_free,'mbedtls_pk_free',\
+mbedtls_pk_get_bitlen,'mbedtls_pk_get_bitlen',\
+mbedtls_pk_get_name,'mbedtls_pk_get_name',\
+mbedtls_pk_get_type,'mbedtls_pk_get_type',\
+mbedtls_pk_info_from_type,'mbedtls_pk_info_from_type',\
+mbedtls_pk_init,'mbedtls_pk_init',\
+mbedtls_pk_parse_key,'mbedtls_pk_parse_key',\
+mbedtls_pk_parse_public_key,'mbedtls_pk_parse_public_key',\
+mbedtls_pk_parse_subpubkey,'mbedtls_pk_parse_subpubkey',\
+mbedtls_pk_setup,'mbedtls_pk_setup',\
+mbedtls_pk_setup_rsa_alt,'mbedtls_pk_setup_rsa_alt',\
+mbedtls_pk_sign,'mbedtls_pk_sign',\
+mbedtls_pk_sign_restartable,'mbedtls_pk_sign_restartable',\
+mbedtls_pk_verify,'mbedtls_pk_verify',\
+mbedtls_pk_verify_ext,'mbedtls_pk_verify_ext',\
+mbedtls_pk_verify_restartable,'mbedtls_pk_verify_restartable',\
+mbedtls_pk_write_key_der,'mbedtls_pk_write_key_der',\
+mbedtls_pk_write_key_pem,'mbedtls_pk_write_key_pem',\
+mbedtls_pk_write_pubkey,'mbedtls_pk_write_pubkey',\
+mbedtls_pk_write_pubkey_der,'mbedtls_pk_write_pubkey_der',\
+mbedtls_pk_write_pubkey_pem,'mbedtls_pk_write_pubkey_pem',\
+mbedtls_platform_gmtime_r,'mbedtls_platform_gmtime_r',\
+mbedtls_platform_setup,'mbedtls_platform_setup',\
+mbedtls_platform_teardown,'mbedtls_platform_teardown',\
+mbedtls_platform_zeroize,'mbedtls_platform_zeroize',\
+mbedtls_poly1305_finish,'mbedtls_poly1305_finish',\
+mbedtls_poly1305_free,'mbedtls_poly1305_free',\
+mbedtls_poly1305_init,'mbedtls_poly1305_init',\
+mbedtls_poly1305_mac,'mbedtls_poly1305_mac',\
+mbedtls_poly1305_self_test,'mbedtls_poly1305_self_test',\
+mbedtls_poly1305_starts,'mbedtls_poly1305_starts',\
+mbedtls_poly1305_update,'mbedtls_poly1305_update',\
+mbedtls_ripemd160,'mbedtls_ripemd160',\
+mbedtls_ripemd160_clone,'mbedtls_ripemd160_clone',\
+mbedtls_ripemd160_finish,'mbedtls_ripemd160_finish',\
+mbedtls_ripemd160_finish_ret,'mbedtls_ripemd160_finish_ret',\
+mbedtls_ripemd160_free,'mbedtls_ripemd160_free',\
+mbedtls_ripemd160_init,'mbedtls_ripemd160_init',\
+mbedtls_ripemd160_process,'mbedtls_ripemd160_process',\
+mbedtls_ripemd160_ret,'mbedtls_ripemd160_ret',\
+mbedtls_ripemd160_self_test,'mbedtls_ripemd160_self_test',\
+mbedtls_ripemd160_starts,'mbedtls_ripemd160_starts',\
+mbedtls_ripemd160_starts_ret,'mbedtls_ripemd160_starts_ret',\
+mbedtls_ripemd160_update,'mbedtls_ripemd160_update',\
+mbedtls_ripemd160_update_ret,'mbedtls_ripemd160_update_ret',\
+mbedtls_rsa_check_privkey,'mbedtls_rsa_check_privkey',\
+mbedtls_rsa_check_pubkey,'mbedtls_rsa_check_pubkey',\
+mbedtls_rsa_check_pub_priv,'mbedtls_rsa_check_pub_priv',\
+mbedtls_rsa_complete,'mbedtls_rsa_complete',\
+mbedtls_rsa_copy,'mbedtls_rsa_copy',\
+mbedtls_rsa_deduce_crt,'mbedtls_rsa_deduce_crt',\
+mbedtls_rsa_deduce_primes,'mbedtls_rsa_deduce_primes',\
+mbedtls_rsa_deduce_private_exponent,'mbedtls_rsa_deduce_private_exponent',\
+mbedtls_rsa_export,'mbedtls_rsa_export',\
+mbedtls_rsa_export_crt,'mbedtls_rsa_export_crt',\
+mbedtls_rsa_export_raw,'mbedtls_rsa_export_raw',\
+mbedtls_rsa_free,'mbedtls_rsa_free',\
+mbedtls_rsa_gen_key,'mbedtls_rsa_gen_key',\
+mbedtls_rsa_get_len,'mbedtls_rsa_get_len',\
+mbedtls_rsa_import,'mbedtls_rsa_import',\
+mbedtls_rsa_import_raw,'mbedtls_rsa_import_raw',\
+mbedtls_rsa_init,'mbedtls_rsa_init',\
+mbedtls_rsa_pkcs1_decrypt,'mbedtls_rsa_pkcs1_decrypt',\
+mbedtls_rsa_pkcs1_encrypt,'mbedtls_rsa_pkcs1_encrypt',\
+mbedtls_rsa_pkcs1_sign,'mbedtls_rsa_pkcs1_sign',\
+mbedtls_rsa_pkcs1_verify,'mbedtls_rsa_pkcs1_verify',\
+mbedtls_rsa_private,'mbedtls_rsa_private',\
+mbedtls_rsa_public,'mbedtls_rsa_public',\
+mbedtls_rsa_rsaes_oaep_decrypt,'mbedtls_rsa_rsaes_oaep_decrypt',\
+mbedtls_rsa_rsaes_oaep_encrypt,'mbedtls_rsa_rsaes_oaep_encrypt',\
+mbedtls_rsa_rsaes_pkcs1_v15_decrypt,'mbedtls_rsa_rsaes_pkcs1_v15_decrypt',\
+mbedtls_rsa_rsaes_pkcs1_v15_encrypt,'mbedtls_rsa_rsaes_pkcs1_v15_encrypt',\
+mbedtls_rsa_rsassa_pkcs1_v15_sign,'mbedtls_rsa_rsassa_pkcs1_v15_sign',\
+mbedtls_rsa_rsassa_pkcs1_v15_verify,'mbedtls_rsa_rsassa_pkcs1_v15_verify',\
+mbedtls_rsa_rsassa_pss_sign,'mbedtls_rsa_rsassa_pss_sign',\
+mbedtls_rsa_rsassa_pss_verify,'mbedtls_rsa_rsassa_pss_verify',\
+mbedtls_rsa_rsassa_pss_verify_ext,'mbedtls_rsa_rsassa_pss_verify_ext',\
+mbedtls_rsa_self_test,'mbedtls_rsa_self_test',\
+mbedtls_rsa_set_padding,'mbedtls_rsa_set_padding',\
+mbedtls_rsa_validate_crt,'mbedtls_rsa_validate_crt',\
+mbedtls_rsa_validate_params,'mbedtls_rsa_validate_params',\
+mbedtls_sha1,'mbedtls_sha1',\
+mbedtls_sha1_clone,'mbedtls_sha1_clone',\
+mbedtls_sha1_finish,'mbedtls_sha1_finish',\
+mbedtls_sha1_finish_ret,'mbedtls_sha1_finish_ret',\
+mbedtls_sha1_free,'mbedtls_sha1_free',\
+mbedtls_sha1_init,'mbedtls_sha1_init',\
+mbedtls_sha1_process,'mbedtls_sha1_process',\
+mbedtls_sha1_ret,'mbedtls_sha1_ret',\
+mbedtls_sha1_self_test,'mbedtls_sha1_self_test',\
+mbedtls_sha1_starts,'mbedtls_sha1_starts',\
+mbedtls_sha1_starts_ret,'mbedtls_sha1_starts_ret',\
+mbedtls_sha1_update,'mbedtls_sha1_update',\
+mbedtls_sha1_update_ret,'mbedtls_sha1_update_ret',\
+mbedtls_sha256,'mbedtls_sha256',\
+mbedtls_sha256_clone,'mbedtls_sha256_clone',\
+mbedtls_sha256_finish,'mbedtls_sha256_finish',\
+mbedtls_sha256_finish_ret,'mbedtls_sha256_finish_ret',\
+mbedtls_sha256_free,'mbedtls_sha256_free',\
+mbedtls_sha256_init,'mbedtls_sha256_init',\
+mbedtls_sha256_process,'mbedtls_sha256_process',\
+mbedtls_sha256_ret,'mbedtls_sha256_ret',\
+mbedtls_sha256_self_test,'mbedtls_sha256_self_test',\
+mbedtls_sha256_starts,'mbedtls_sha256_starts',\
+mbedtls_sha256_starts_ret,'mbedtls_sha256_starts_ret',\
+mbedtls_sha256_update,'mbedtls_sha256_update',\
+mbedtls_sha256_update_ret,'mbedtls_sha256_update_ret',\
+mbedtls_sha512,'mbedtls_sha512',\
+mbedtls_sha512_clone,'mbedtls_sha512_clone',\
+mbedtls_sha512_finish,'mbedtls_sha512_finish',\
+mbedtls_sha512_finish_ret,'mbedtls_sha512_finish_ret',\
+mbedtls_sha512_free,'mbedtls_sha512_free',\
+mbedtls_sha512_init,'mbedtls_sha512_init',\
+mbedtls_sha512_process,'mbedtls_sha512_process',\
+mbedtls_sha512_ret,'mbedtls_sha512_ret',\
+mbedtls_sha512_self_test,'mbedtls_sha512_self_test',\
+mbedtls_sha512_starts,'mbedtls_sha512_starts',\
+mbedtls_sha512_starts_ret,'mbedtls_sha512_starts_ret',\
+mbedtls_sha512_update,'mbedtls_sha512_update',\
+mbedtls_sha512_update_ret,'mbedtls_sha512_update_ret',\
+mbedtls_ssl_cache_free,'mbedtls_ssl_cache_free',\
+mbedtls_ssl_cache_get,'mbedtls_ssl_cache_get',\
+mbedtls_ssl_cache_init,'mbedtls_ssl_cache_init',\
+mbedtls_ssl_cache_set,'mbedtls_ssl_cache_set',\
+mbedtls_ssl_cache_set_max_entries,'mbedtls_ssl_cache_set_max_entries',\
+mbedtls_ssl_cache_set_timeout,'mbedtls_ssl_cache_set_timeout',\
+mbedtls_ssl_check_cert_usage,'mbedtls_ssl_check_cert_usage',\
+mbedtls_ssl_check_curve,'mbedtls_ssl_check_curve',\
+mbedtls_ssl_check_pending,'mbedtls_ssl_check_pending',\
+mbedtls_ssl_check_sig_hash,'mbedtls_ssl_check_sig_hash',\
+mbedtls_ssl_ciphersuite_from_id,'mbedtls_ssl_ciphersuite_from_id',\
+mbedtls_ssl_ciphersuite_from_string,'mbedtls_ssl_ciphersuite_from_string',\
+mbedtls_ssl_ciphersuite_uses_ec,'mbedtls_ssl_ciphersuite_uses_ec',\
+mbedtls_ssl_ciphersuite_uses_psk,'mbedtls_ssl_ciphersuite_uses_psk',\
+mbedtls_ssl_close_notify,'mbedtls_ssl_close_notify',\
+mbedtls_ssl_conf_alpn_protocols,'mbedtls_ssl_conf_alpn_protocols',\
+mbedtls_ssl_conf_arc4_support,'mbedtls_ssl_conf_arc4_support',\
+mbedtls_ssl_conf_authmode,'mbedtls_ssl_conf_authmode',\
+mbedtls_ssl_conf_ca_chain,'mbedtls_ssl_conf_ca_chain',\
+mbedtls_ssl_conf_cbc_record_splitting,'mbedtls_ssl_conf_cbc_record_splitting',\
+mbedtls_ssl_conf_cert_profile,'mbedtls_ssl_conf_cert_profile',\
+mbedtls_ssl_conf_cert_req_ca_list,'mbedtls_ssl_conf_cert_req_ca_list',\
+mbedtls_ssl_conf_ciphersuites,'mbedtls_ssl_conf_ciphersuites',\
+mbedtls_ssl_conf_ciphersuites_for_version,'mbedtls_ssl_conf_ciphersuites_for_version',\
+mbedtls_ssl_conf_curves,'mbedtls_ssl_conf_curves',\
+mbedtls_ssl_conf_dbg,'mbedtls_ssl_conf_dbg',\
+mbedtls_ssl_conf_dhm_min_bitlen,'mbedtls_ssl_conf_dhm_min_bitlen',\
+mbedtls_ssl_conf_dh_param,'mbedtls_ssl_conf_dh_param',\
+mbedtls_ssl_conf_dh_param_bin,'mbedtls_ssl_conf_dh_param_bin',\
+mbedtls_ssl_conf_dh_param_ctx,'mbedtls_ssl_conf_dh_param_ctx',\
+mbedtls_ssl_conf_dtls_anti_replay,'mbedtls_ssl_conf_dtls_anti_replay',\
+mbedtls_ssl_conf_dtls_badmac_limit,'mbedtls_ssl_conf_dtls_badmac_limit',\
+mbedtls_ssl_conf_dtls_cookies,'mbedtls_ssl_conf_dtls_cookies',\
+mbedtls_ssl_conf_encrypt_then_mac,'mbedtls_ssl_conf_encrypt_then_mac',\
+mbedtls_ssl_conf_endpoint,'mbedtls_ssl_conf_endpoint',\
+mbedtls_ssl_conf_export_keys_cb,'mbedtls_ssl_conf_export_keys_cb',\
+mbedtls_ssl_conf_extended_master_secret,'mbedtls_ssl_conf_extended_master_secret',\
+mbedtls_ssl_conf_fallback,'mbedtls_ssl_conf_fallback',\
+mbedtls_ssl_conf_handshake_timeout,'mbedtls_ssl_conf_handshake_timeout',\
+mbedtls_ssl_config_defaults,'mbedtls_ssl_config_defaults',\
+mbedtls_ssl_config_free,'mbedtls_ssl_config_free',\
+mbedtls_ssl_config_init,'mbedtls_ssl_config_init',\
+mbedtls_ssl_conf_legacy_renegotiation,'mbedtls_ssl_conf_legacy_renegotiation',\
+mbedtls_ssl_conf_max_frag_len,'mbedtls_ssl_conf_max_frag_len',\
+mbedtls_ssl_conf_max_version,'mbedtls_ssl_conf_max_version',\
+mbedtls_ssl_conf_min_version,'mbedtls_ssl_conf_min_version',\
+mbedtls_ssl_conf_own_cert,'mbedtls_ssl_conf_own_cert',\
+mbedtls_ssl_conf_psk,'mbedtls_ssl_conf_psk',\
+mbedtls_ssl_conf_psk_cb,'mbedtls_ssl_conf_psk_cb',\
+mbedtls_ssl_conf_read_timeout,'mbedtls_ssl_conf_read_timeout',\
+mbedtls_ssl_conf_renegotiation,'mbedtls_ssl_conf_renegotiation',\
+mbedtls_ssl_conf_renegotiation_enforced,'mbedtls_ssl_conf_renegotiation_enforced',\
+mbedtls_ssl_conf_renegotiation_period,'mbedtls_ssl_conf_renegotiation_period',\
+mbedtls_ssl_conf_rng,'mbedtls_ssl_conf_rng',\
+mbedtls_ssl_conf_session_cache,'mbedtls_ssl_conf_session_cache',\
+mbedtls_ssl_conf_session_tickets,'mbedtls_ssl_conf_session_tickets',\
+mbedtls_ssl_conf_session_tickets_cb,'mbedtls_ssl_conf_session_tickets_cb',\
+mbedtls_ssl_conf_sig_hashes,'mbedtls_ssl_conf_sig_hashes',\
+mbedtls_ssl_conf_sni,'mbedtls_ssl_conf_sni',\
+mbedtls_ssl_conf_transport,'mbedtls_ssl_conf_transport',\
+mbedtls_ssl_conf_truncated_hmac,'mbedtls_ssl_conf_truncated_hmac',\
+mbedtls_ssl_conf_verify,'mbedtls_ssl_conf_verify',\
+mbedtls_ssl_cookie_check,'mbedtls_ssl_cookie_check',\
+mbedtls_ssl_cookie_free,'mbedtls_ssl_cookie_free',\
+mbedtls_ssl_cookie_init,'mbedtls_ssl_cookie_init',\
+mbedtls_ssl_cookie_set_timeout,'mbedtls_ssl_cookie_set_timeout',\
+mbedtls_ssl_cookie_setup,'mbedtls_ssl_cookie_setup',\
+mbedtls_ssl_cookie_write,'mbedtls_ssl_cookie_write',\
+mbedtls_ssl_derive_keys,'mbedtls_ssl_derive_keys',\
+mbedtls_ssl_dtls_replay_check,'mbedtls_ssl_dtls_replay_check',\
+mbedtls_ssl_dtls_replay_update,'mbedtls_ssl_dtls_replay_update',\
+mbedtls_ssl_fetch_input,'mbedtls_ssl_fetch_input',\
+mbedtls_ssl_flight_transmit,'mbedtls_ssl_flight_transmit',\
+mbedtls_ssl_flush_output,'mbedtls_ssl_flush_output',\
+mbedtls_ssl_free,'mbedtls_ssl_free',\
+mbedtls_ssl_get_alpn_protocol,'mbedtls_ssl_get_alpn_protocol',\
+mbedtls_ssl_get_bytes_avail,'mbedtls_ssl_get_bytes_avail',\
+mbedtls_ssl_get_ciphersuite,'mbedtls_ssl_get_ciphersuite',\
+mbedtls_ssl_get_ciphersuite_id,'mbedtls_ssl_get_ciphersuite_id',\
+mbedtls_ssl_get_ciphersuite_name,'mbedtls_ssl_get_ciphersuite_name',\
+mbedtls_ssl_get_ciphersuite_sig_alg,'mbedtls_ssl_get_ciphersuite_sig_alg',\
+mbedtls_ssl_get_ciphersuite_sig_pk_alg,'mbedtls_ssl_get_ciphersuite_sig_pk_alg',\
+mbedtls_ssl_get_key_exchange_md_ssl_tls,'mbedtls_ssl_get_key_exchange_md_ssl_tls',\
+mbedtls_ssl_get_key_exchange_md_tls1_2,'mbedtls_ssl_get_key_exchange_md_tls1_2',\
+mbedtls_ssl_get_max_frag_len,'mbedtls_ssl_get_max_frag_len',\
+mbedtls_ssl_get_max_out_record_payload,'mbedtls_ssl_get_max_out_record_payload',\
+mbedtls_ssl_get_peer_cert,'mbedtls_ssl_get_peer_cert',\
+mbedtls_ssl_get_record_expansion,'mbedtls_ssl_get_record_expansion',\
+mbedtls_ssl_get_session,'mbedtls_ssl_get_session',\
+mbedtls_ssl_get_verify_result,'mbedtls_ssl_get_verify_result',\
+mbedtls_ssl_get_version,'mbedtls_ssl_get_version',\
+mbedtls_ssl_handle_message_type,'mbedtls_ssl_handle_message_type',\
+mbedtls_ssl_handshake,'mbedtls_ssl_handshake',\
+mbedtls_ssl_handshake_client_step,'mbedtls_ssl_handshake_client_step',\
+mbedtls_ssl_handshake_free,'mbedtls_ssl_handshake_free',\
+mbedtls_ssl_handshake_server_step,'mbedtls_ssl_handshake_server_step',\
+mbedtls_ssl_handshake_step,'mbedtls_ssl_handshake_step',\
+mbedtls_ssl_handshake_wrapup,'mbedtls_ssl_handshake_wrapup',\
+mbedtls_ssl_hash_from_md_alg,'mbedtls_ssl_hash_from_md_alg',\
+mbedtls_ssl_init,'mbedtls_ssl_init',\
+mbedtls_ssl_list_ciphersuites,'mbedtls_ssl_list_ciphersuites',\
+mbedtls_ssl_md_alg_from_hash,'mbedtls_ssl_md_alg_from_hash',\
+mbedtls_ssl_optimize_checksum,'mbedtls_ssl_optimize_checksum',\
+mbedtls_ssl_parse_certificate,'mbedtls_ssl_parse_certificate',\
+mbedtls_ssl_parse_change_cipher_spec,'mbedtls_ssl_parse_change_cipher_spec',\
+mbedtls_ssl_parse_finished,'mbedtls_ssl_parse_finished',\
+mbedtls_ssl_pk_alg_from_sig,'mbedtls_ssl_pk_alg_from_sig',\
+mbedtls_ssl_prepare_handshake_record,'mbedtls_ssl_prepare_handshake_record',\
+mbedtls_ssl_psk_derive_premaster,'mbedtls_ssl_psk_derive_premaster',\
+mbedtls_ssl_read,'mbedtls_ssl_read',\
+mbedtls_ssl_read_record,'mbedtls_ssl_read_record',\
+mbedtls_ssl_read_version,'mbedtls_ssl_read_version',\
+mbedtls_ssl_recv_flight_completed,'mbedtls_ssl_recv_flight_completed',\
+mbedtls_ssl_renegotiate,'mbedtls_ssl_renegotiate',\
+mbedtls_ssl_resend,'mbedtls_ssl_resend',\
+mbedtls_ssl_reset_checksum,'mbedtls_ssl_reset_checksum',\
+mbedtls_ssl_send_alert_message,'mbedtls_ssl_send_alert_message',\
+mbedtls_ssl_send_fatal_handshake_failure,'mbedtls_ssl_send_fatal_handshake_failure',\
+mbedtls_ssl_send_flight_completed,'mbedtls_ssl_send_flight_completed',\
+mbedtls_ssl_session_free,'mbedtls_ssl_session_free',\
+mbedtls_ssl_session_init,'mbedtls_ssl_session_init',\
+mbedtls_ssl_session_reset,'mbedtls_ssl_session_reset',\
+mbedtls_ssl_set_bio,'mbedtls_ssl_set_bio',\
+mbedtls_ssl_set_calc_verify_md,'mbedtls_ssl_set_calc_verify_md',\
+mbedtls_ssl_set_client_transport_id,'mbedtls_ssl_set_client_transport_id',\
+mbedtls_ssl_set_datagram_packing,'mbedtls_ssl_set_datagram_packing',\
+mbedtls_ssl_set_hostname,'mbedtls_ssl_set_hostname',\
+mbedtls_ssl_set_hs_authmode,'mbedtls_ssl_set_hs_authmode',\
+mbedtls_ssl_set_hs_ca_chain,'mbedtls_ssl_set_hs_ca_chain',\
+mbedtls_ssl_set_hs_own_cert,'mbedtls_ssl_set_hs_own_cert',\
+mbedtls_ssl_set_hs_psk,'mbedtls_ssl_set_hs_psk',\
+mbedtls_ssl_set_mtu,'mbedtls_ssl_set_mtu',\
+mbedtls_ssl_set_session,'mbedtls_ssl_set_session',\
+mbedtls_ssl_set_timer_cb,'mbedtls_ssl_set_timer_cb',\
+mbedtls_ssl_setup,'mbedtls_ssl_setup',\
+mbedtls_ssl_sig_from_pk,'mbedtls_ssl_sig_from_pk',\
+mbedtls_ssl_sig_from_pk_alg,'mbedtls_ssl_sig_from_pk_alg',\
+mbedtls_ssl_sig_hash_set_add,'mbedtls_ssl_sig_hash_set_add',\
+mbedtls_ssl_sig_hash_set_const_hash,'mbedtls_ssl_sig_hash_set_const_hash',\
+mbedtls_ssl_sig_hash_set_find,'mbedtls_ssl_sig_hash_set_find',\
+mbedtls_ssl_ticket_free,'mbedtls_ssl_ticket_free',\
+mbedtls_ssl_ticket_init,'mbedtls_ssl_ticket_init',\
+mbedtls_ssl_ticket_parse,'mbedtls_ssl_ticket_parse',\
+mbedtls_ssl_ticket_setup,'mbedtls_ssl_ticket_setup',\
+mbedtls_ssl_ticket_write,'mbedtls_ssl_ticket_write',\
+mbedtls_ssl_transform_free,'mbedtls_ssl_transform_free',\
+mbedtls_ssl_update_handshake_status,'mbedtls_ssl_update_handshake_status',\
+mbedtls_ssl_write,'mbedtls_ssl_write',\
+mbedtls_ssl_write_certificate,'mbedtls_ssl_write_certificate',\
+mbedtls_ssl_write_change_cipher_spec,'mbedtls_ssl_write_change_cipher_spec',\
+mbedtls_ssl_write_finished,'mbedtls_ssl_write_finished',\
+mbedtls_ssl_write_handshake_msg,'mbedtls_ssl_write_handshake_msg',\
+mbedtls_ssl_write_record,'mbedtls_ssl_write_record',\
+mbedtls_ssl_write_version,'mbedtls_ssl_write_version',\
+mbedtls_strerror,'mbedtls_strerror',\
+mbedtls_sysfn_14_poll,'mbedtls_sysfn_14_poll',\
+mbedtls_sysfn_18_4_poll,'mbedtls_sysfn_18_4_poll',\
+mbedtls_sysfn_26_9_poll,'mbedtls_sysfn_26_9_poll',\
+mbedtls_sysfn_37_0_poll,'mbedtls_sysfn_37_0_poll',\
+mbedtls_sysfn_3_poll,'mbedtls_sysfn_3_poll',\
+mbedtls_sysfn_66_3_poll,'mbedtls_sysfn_66_3_poll',\
+mbedtls_sysfn_68_0_poll,'mbedtls_sysfn_68_0_poll',\
+mbedtls_version_check_feature,'mbedtls_version_check_feature',\
+mbedtls_version_get_number,'mbedtls_version_get_number',\
+mbedtls_version_get_string,'mbedtls_version_get_string',\
+mbedtls_version_get_string_full,'mbedtls_version_get_string_full',\
+mbedtls_x509_crl_free,'mbedtls_x509_crl_free',\
+mbedtls_x509_crl_info,'mbedtls_x509_crl_info',\
+mbedtls_x509_crl_init,'mbedtls_x509_crl_init',\
+mbedtls_x509_crl_parse,'mbedtls_x509_crl_parse',\
+mbedtls_x509_crl_parse_der,'mbedtls_x509_crl_parse_der',\
+mbedtls_x509_crt_check_extended_key_usage,'mbedtls_x509_crt_check_extended_key_usage',\
+mbedtls_x509_crt_check_key_usage,'mbedtls_x509_crt_check_key_usage',\
+mbedtls_x509_crt_free,'mbedtls_x509_crt_free',\
+mbedtls_x509_crt_info,'mbedtls_x509_crt_info',\
+mbedtls_x509_crt_init,'mbedtls_x509_crt_init',\
+mbedtls_x509_crt_is_revoked,'mbedtls_x509_crt_is_revoked',\
+mbedtls_x509_crt_parse,'mbedtls_x509_crt_parse',\
+mbedtls_x509_crt_parse_der,'mbedtls_x509_crt_parse_der',\
+mbedtls_x509_crt_verify,'mbedtls_x509_crt_verify',\
+mbedtls_x509_crt_verify_info,'mbedtls_x509_crt_verify_info',\
+mbedtls_x509_crt_verify_restartable,'mbedtls_x509_crt_verify_restartable',\
+mbedtls_x509_crt_verify_with_profile,'mbedtls_x509_crt_verify_with_profile',\
+mbedtls_x509_csr_free,'mbedtls_x509_csr_free',\
+mbedtls_x509_csr_info,'mbedtls_x509_csr_info',\
+mbedtls_x509_csr_init,'mbedtls_x509_csr_init',\
+mbedtls_x509_csr_parse,'mbedtls_x509_csr_parse',\
+mbedtls_x509_csr_parse_der,'mbedtls_x509_csr_parse_der',\
+mbedtls_x509_dn_gets,'mbedtls_x509_dn_gets',\
+mbedtls_x509_get_alg,'mbedtls_x509_get_alg',\
+mbedtls_x509_get_alg_null,'mbedtls_x509_get_alg_null',\
+mbedtls_x509_get_ext,'mbedtls_x509_get_ext',\
+mbedtls_x509_get_name,'mbedtls_x509_get_name',\
+mbedtls_x509_get_rsassa_pss_params,'mbedtls_x509_get_rsassa_pss_params',\
+mbedtls_x509_get_serial,'mbedtls_x509_get_serial',\
+mbedtls_x509_get_sig,'mbedtls_x509_get_sig',\
+mbedtls_x509_get_sig_alg,'mbedtls_x509_get_sig_alg',\
+mbedtls_x509_get_time,'mbedtls_x509_get_time',\
+mbedtls_x509_key_size_helper,'mbedtls_x509_key_size_helper',\
+mbedtls_x509_self_test,'mbedtls_x509_self_test',\
+mbedtls_x509_serial_gets,'mbedtls_x509_serial_gets',\
+mbedtls_x509_set_extension,'mbedtls_x509_set_extension',\
+mbedtls_x509_sig_alg_gets,'mbedtls_x509_sig_alg_gets',\
+mbedtls_x509_string_to_names,'mbedtls_x509_string_to_names',\
+mbedtls_x509_time_is_future,'mbedtls_x509_time_is_future',\
+mbedtls_x509_time_is_past,'mbedtls_x509_time_is_past',\
+mbedtls_x509write_crt_der,'mbedtls_x509write_crt_der',\
+mbedtls_x509write_crt_free,'mbedtls_x509write_crt_free',\
+mbedtls_x509write_crt_init,'mbedtls_x509write_crt_init',\
+mbedtls_x509write_crt_pem,'mbedtls_x509write_crt_pem',\
+mbedtls_x509write_crt_set_authority_key_identifier,'mbedtls_x509write_crt_set_authority_key_identifier',\
+mbedtls_x509write_crt_set_basic_constraints,'mbedtls_x509write_crt_set_basic_constraints',\
+mbedtls_x509write_crt_set_extension,'mbedtls_x509write_crt_set_extension',\
+mbedtls_x509write_crt_set_issuer_key,'mbedtls_x509write_crt_set_issuer_key',\
+mbedtls_x509write_crt_set_issuer_name,'mbedtls_x509write_crt_set_issuer_name',\
+mbedtls_x509write_crt_set_key_usage,'mbedtls_x509write_crt_set_key_usage',\
+mbedtls_x509write_crt_set_md_alg,'mbedtls_x509write_crt_set_md_alg',\
+mbedtls_x509write_crt_set_ns_cert_type,'mbedtls_x509write_crt_set_ns_cert_type',\
+mbedtls_x509write_crt_set_serial,'mbedtls_x509write_crt_set_serial',\
+mbedtls_x509write_crt_set_subject_key,'mbedtls_x509write_crt_set_subject_key',\
+mbedtls_x509write_crt_set_subject_key_identifier,'mbedtls_x509write_crt_set_subject_key_identifier',\
+mbedtls_x509write_crt_set_subject_name,'mbedtls_x509write_crt_set_subject_name',\
+mbedtls_x509write_crt_set_validity,'mbedtls_x509write_crt_set_validity',\
+mbedtls_x509write_crt_set_version,'mbedtls_x509write_crt_set_version',\
+mbedtls_x509write_csr_der,'mbedtls_x509write_csr_der',\
+mbedtls_x509write_csr_free,'mbedtls_x509write_csr_free',\
+mbedtls_x509write_csr_init,'mbedtls_x509write_csr_init',\
+mbedtls_x509write_csr_pem,'mbedtls_x509write_csr_pem',\
+mbedtls_x509write_csr_set_extension,'mbedtls_x509write_csr_set_extension',\
+mbedtls_x509write_csr_set_key,'mbedtls_x509write_csr_set_key',\
+mbedtls_x509write_csr_set_key_usage,'mbedtls_x509write_csr_set_key_usage',\
+mbedtls_x509write_csr_set_md_alg,'mbedtls_x509write_csr_set_md_alg',\
+mbedtls_x509write_csr_set_ns_cert_type,'mbedtls_x509write_csr_set_ns_cert_type',\
+mbedtls_x509write_csr_set_subject_name,'mbedtls_x509write_csr_set_subject_name',\
+mbedtls_x509_write_extensions,'mbedtls_x509_write_extensions',\
+mbedtls_x509_write_names,'mbedtls_x509_write_names',\
+mbedtls_x509_write_sig,'mbedtls_x509_write_sig',\
+mbedtls_xtea_crypt_cbc,'mbedtls_xtea_crypt_cbc',\
+mbedtls_xtea_crypt_ecb,'mbedtls_xtea_crypt_ecb',\
+mbedtls_xtea_free,'mbedtls_xtea_free',\
+mbedtls_xtea_init,'mbedtls_xtea_init',\
+mbedtls_xtea_self_test,'mbedtls_xtea_self_test',\
+mbedtls_xtea_setup,'mbedtls_xtea_setup', \
+mbedtls_test_cas_pem, 'mbedtls_test_cas_pem', \
+mbedtls_test_cas_pem_len, 'mbedtls_test_cas_pem_len'

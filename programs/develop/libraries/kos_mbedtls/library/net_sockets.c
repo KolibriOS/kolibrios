@@ -44,9 +44,9 @@
 
 #include <string.h>
 
-#include "kosnet/socket.h"
-#include "kosnet/network.h"
-/*#include <sys/socket.h>
+#include <sys/socket.h>
+#include <clayer/network.h>
+/*
 #include <netinet/in.h>
 #include <arpa/inet.h>
 #include <sys/time.h>
@@ -68,15 +68,17 @@
  */
 static int net_prepare( void )
 {
-	load_network_obj();
+	//load_network_obj();
     return( 0 );
 }
+
 
 /*
  * Initialize a context
  */
 void mbedtls_net_init( mbedtls_net_context *ctx )
 {
+    //printf("snprintf=%p\n", printf);
     ctx->fd = -1;
 }
 
@@ -119,7 +121,7 @@ int mbedtls_net_connect( mbedtls_net_context *ctx, const char *host,
             break;
         }
 
-        closesocket( ctx->fd );
+        close( ctx->fd );
         ret = MBEDTLS_ERR_NET_CONNECT_FAILED;
     }
 
@@ -205,7 +207,7 @@ void mbedtls_net_free( mbedtls_net_context *ctx )
         return;
 
     //shutdown( ctx->fd, 2 );
-    closesocket( ctx->fd );
+    close( ctx->fd );
 
     ctx->fd = -1;
 }

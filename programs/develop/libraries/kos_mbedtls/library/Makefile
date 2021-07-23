@@ -1,28 +1,12 @@
-# Also see "include/mbedtls/config.h"
-
-NEWLIB_INCLUDES=D:\KOSSDK\newlib\libc\include
-KOSNET_INCLUDES=../kosnet/include
-
 CC = kos32-gcc
-AR = kos32-ar
+FASM = fasm
+CLINK= ../../../clink/clink
 
-CFLAGS	?= -O2
-WARNING_CFLAGS ?=  -Wall -W -Wdeclaration-after-statement
-LDFLAGS ?=
+KLIBC_DIR = ../../../ktcc/trunk/libc.obj
 
-LOCAL_CFLAGS = $(WARNING_CFLAGS) -I $(NEWLIB_INCLUDES) -I../include -I $(KOSNET_INCLUDES) -D_FILE_OFFSET_BITS=64
-LOCAL_LDFLAGS =
+CFLAGS =  -c -nostdinc -I../include -DGNUC -fno-common -Os -fno-delete-null-pointer-checks  -fno-ident -fno-builtin -fno-leading-underscore -D__TINYC__ -D_FILE_OFFSET_BITS=64
 
-ifdef DEBUG
-LOCAL_CFLAGS += -g3
-endif
-
-# Set AR_DASH= (empty string) to use an ar implementation that does not accept
-# the - prefix for command line options (e.g. llvm-ar)
-AR_DASH ?= -
-
-ARFLAGS = $(AR_DASH)src
-
+INCLUDES = -I../include -I.. -I$(KLIBC_DIR)/include
 
 OBJS_CRYPTO=	aes.o		aesni.o		arc4.o		\
 		aria.o		asn1parse.o	asn1write.o	\
@@ -55,38 +39,27 @@ OBJS_TLS=	debug.o		net_sockets.o		\
 		ssl_cache.o	ssl_ciphersuites.o	\
 		ssl_cli.o	ssl_cookie.o		\
 		ssl_srv.o	ssl_ticket.o		\
-		ssl_tls.o
+		ssl_tls.o 	
+		
+OBJS_OTHER =    libtcc/libtcc1.o libtcc/memmove.o \
+		libtcc/memset.o libtcc/memcpy.o   \
+		libtcc/___chkstk_ms.o	\
+		mbedtls_init.o \
+		export.o
+		
+all: $(OBJS_CRYPTO) $(OBJS_TLS) $(OBJS_X509) $(OBJS_OTHER)
+	ar -crs libmbedtls.a $(OBJS_CRYPTO) $(OBJS_TLS) $(OBJS_X509) $(OBJS_OTHER)
+	$(CLINK) $(OBJS_CRYPTO) $(OBJS_TLS) $(OBJS_X509) $(OBJS_OTHER) > clink.log
+	mv -f a.out.obj mbedtls.obj
+	strip  --strip-unneeded -x mbedtls.obj
+	kpack mbedtls.obj
+	cp -f mbedtls.obj /home/max/.kex/root/RD/1/LIB
 
-.SILENT:
+%.o : %.c Makefile
+	$(CC) -c $(CFLAGS) $(INCLUDES) -o $@ $<
+	 
+%.o : %.asm Makefile
+	$(FASM) $< $@ 
 
-.PHONY: all static clean
-
-all: static
-
-static: libmbedcrypto.a libmbedx509.a libmbedtls.a
-
-# tls
-libmbedtls.a: $(OBJS_TLS)
-	echo "  AR    $@"
-	$(AR) $(ARFLAGS) $@ $(OBJS_TLS)
-
-# x509
-libmbedx509.a: $(OBJS_X509)
-	echo "  AR    $@"
-	$(AR) $(ARFLAGS) $@ $(OBJS_X509)
-
-# crypto
-libmbedcrypto.a: $(OBJS_CRYPTO)
-	echo "  AR    $@"
-	$(AR) $(ARFLAGS) $@ $(OBJS_CRYPTO)
-
-.c.o:
-	echo "  CC    $<"
-	$(CC) $(LOCAL_CFLAGS) $(CFLAGS) -c $<
-
-clean:
-ifndef WINDOWS
-	rm -f *.o libmbed*
-else
-	del /Q /F *.o libmbed*
-endif
+clean: 
+	rm -f $(OBJS_CRYPTO) $(OBJS_TLS) $(OBJS_X509) $(OBJS_LIBC) $(OBJS_OTHER)

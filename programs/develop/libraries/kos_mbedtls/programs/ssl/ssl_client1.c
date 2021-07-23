@@ -20,16 +20,17 @@
  *
  *  This file is part of mbed TLS (https://tls.mbed.org)
  */
-
 #if !defined(MBEDTLS_CONFIG_FILE)
 #include "mbedtls/config.h"
 #else
 #include MBEDTLS_CONFIG_FILE
 #endif
 
-#if defined(MBEDTLS_PLATFORM_C)
-#include "mbedtls/platform.h"
-#else
+#include <sys/ksys.h>
+
+//#if defined(MBEDTLS_PLATFORM_C)
+//#include "mbedtls/platform.h"
+//#else
 #include <stdio.h>
 #include <stdlib.h>
 #define mbedtls_time            time
@@ -37,16 +38,16 @@
 #define mbedtls_fprintf         fprintf
 #define mbedtls_printf          printf
 #define mbedtls_exit            exit
-#define MBEDTLS_EXIT_SUCCESS    EXIT_SUCCESS
-#define MBEDTLS_EXIT_FAILURE    EXIT_FAILURE
-#endif /* MBEDTLS_PLATFORM_C */
+#define MBEDTLS_EXIT_SUCCESS    0
+#define MBEDTLS_EXIT_FAILURE    -1
+//#endif /* MBEDTLS_PLATFORM_C */
 
-#if !defined(MBEDTLS_BIGNUM_C) || !defined(MBEDTLS_ENTROPY_C) ||  \
+//#if !defined(MBEDTLS_BIGNUM_C) || !defined(MBEDTLS_ENTROPY_C) ||  \
     !defined(MBEDTLS_SSL_TLS_C) || !defined(MBEDTLS_SSL_CLI_C) || \
     !defined(MBEDTLS_NET_C) || !defined(MBEDTLS_RSA_C) ||         \
     !defined(MBEDTLS_CERTS_C) || !defined(MBEDTLS_PEM_PARSE_C) || \
     !defined(MBEDTLS_CTR_DRBG_C) || !defined(MBEDTLS_X509_CRT_PARSE_C)
-int main( void )
+/*int main( void )
 {
     mbedtls_printf("MBEDTLS_BIGNUM_C and/or MBEDTLS_ENTROPY_C and/or "
            "MBEDTLS_SSL_TLS_C and/or MBEDTLS_SSL_CLI_C and/or "
@@ -55,7 +56,7 @@ int main( void )
            "not defined.\n");
     return( 0 );
 }
-#else
+//#else*/
 
 #include "mbedtls/net_sockets.h"
 #include "mbedtls/debug.h"
@@ -70,12 +71,21 @@ int main( void )
 //#define SERVER_PORT "443"
 //#define SERVER_NAME "wikipedia.org"
 //#define GET_REQUEST "GET / HTTP/1.0\r\n\r\n"
-char SERVER_PORT[16];
-char SERVER_NAME[128];
-char GET_REQUEST[512];
+static char SERVER_PORT[16];
+static char SERVER_NAME[128];
+static char GET_REQUEST[512];
 
 #define DEBUG_LEVEL 1
 
+extern int *_mbedtls_test_cas_pem_len;
+extern char* _mbedtls_test_cas_pem;
+
+#define mbedtls_test_cas_pem_len *_mbedtls_test_cas_pem_len
+#define mbedtls_test_cas_pem _mbedtls_test_cas_pem
+
+//gmtime(time_t t){puts("gmtime stub");};
+
+//int load_network_obj(){return networklib_init();}
 
 static void my_debug( void *ctx, int level,
                       const char *file, int line,
@@ -90,11 +100,21 @@ static void my_debug( void *ctx, int level,
 
 int main( void )
 {
+    if(mbedtls_load()){
+        printf("mbedtls.obj not load!\n");
+        return -1;
+    }
+    if(mbedtls_init()){
+        puts("mbedtls.obj not init!");
+        return -1;
+    }
+    
 	puts("Enter SERVER_NAME : ");
 	gets(SERVER_NAME);
 	puts("Enter SERVER_PORT : ");
 	gets(SERVER_PORT);
 	sprintf(GET_REQUEST, "GET / HTTP/1.1\r\nHost: %s\r\n\r\n", SERVER_NAME);
+    //puts(GET_REQUEST);
 
     int ret = 1, len;
     int exit_code = MBEDTLS_EXIT_FAILURE;
@@ -102,7 +122,6 @@ int main( void )
     uint32_t flags;
     unsigned char buf[1024];
     const char *pers = "ssl_client1";
-
     mbedtls_entropy_context entropy;
     mbedtls_ctr_drbg_context ctr_drbg;
     mbedtls_ssl_context ssl;
@@ -110,7 +129,7 @@ int main( void )
     mbedtls_x509_crt cacert;
 
 #if defined(MBEDTLS_DEBUG_C)
-    mbedtls_debug_set_threshold( DEBUG_LEVEL );
+   // mbedtls_debug_set_threshold( DEBUG_LEVEL );
 #endif
 
     /*
@@ -121,10 +140,8 @@ int main( void )
     mbedtls_ssl_config_init( &conf );
     mbedtls_x509_crt_init( &cacert );
     mbedtls_ctr_drbg_init( &ctr_drbg );
-
     mbedtls_printf( "\n  . Seeding the random number generator..." );
     //fflush( stdout );
-
     mbedtls_entropy_init( &entropy );
     if( ( ret = mbedtls_ctr_drbg_seed( &ctr_drbg, mbedtls_entropy_func, &entropy,
                                (const unsigned char *) pers,
@@ -133,15 +150,15 @@ int main( void )
         mbedtls_printf( " failed\n  ! mbedtls_ctr_drbg_seed returned %d\n", ret );
         goto exit;
     }
-
+    
     mbedtls_printf( " ok\n" );
-
+     
     /*
      * 0. Initialize certificates
-     */
+     */;
     mbedtls_printf( "  . Loading the CA root certificate ..." );
     //fflush( stdout );
-
+   
     ret = mbedtls_x509_crt_parse( &cacert, (const unsigned char *) mbedtls_test_cas_pem,
                           mbedtls_test_cas_pem_len );
     if( ret < 0 )
@@ -151,7 +168,7 @@ int main( void )
     }
 
     mbedtls_printf( " ok (%d skipped)\n", ret );
-
+   
     /*
      * 1. Start the connection
      */
@@ -204,7 +221,6 @@ int main( void )
     }
 
     mbedtls_ssl_set_bio( &ssl, &server_fd, mbedtls_net_send, mbedtls_net_recv, NULL );
-
     /*
      * 4. Handshake
      */
@@ -301,15 +317,14 @@ int main( void )
     exit_code = MBEDTLS_EXIT_SUCCESS;
 
 exit:
-
-#ifdef MBEDTLS_ERROR_C
+//#ifdef MBEDTLS_ERROR_C
     if( exit_code != MBEDTLS_EXIT_SUCCESS )
     {
-        char error_buf[100];
+        static char error_buf[100];
         mbedtls_strerror( ret, error_buf, 100 );
         mbedtls_printf("Last error was: %d - %s\n\n", ret, error_buf );
     }
-#endif
+//#endif
 
     mbedtls_net_free( &server_fd );
 
@@ -322,7 +337,7 @@ exit:
 
     return( exit_code );
 }
-#endif /* MBEDTLS_BIGNUM_C && MBEDTLS_ENTROPY_C && MBEDTLS_SSL_TLS_C &&
+/*#endif MBEDTLS_BIGNUM_C && MBEDTLS_ENTROPY_C && MBEDTLS_SSL_TLS_C &&
           MBEDTLS_SSL_CLI_C && MBEDTLS_NET_C && MBEDTLS_RSA_C &&
           MBEDTLS_CERTS_C && MBEDTLS_PEM_PARSE_C && MBEDTLS_CTR_DRBG_C &&
           MBEDTLS_X509_CRT_PARSE_C */
