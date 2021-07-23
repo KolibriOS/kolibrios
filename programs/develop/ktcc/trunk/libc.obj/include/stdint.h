@@ -29,4 +29,6 @@
 #define UINT64_MAX      (__CONCAT(INT64_MAX, U) * 2ULL + 1ULL) 
 #endif
 
+#define SIZE_MAX         UINT32_MAX
+
 #endif /* _STDINT_H_*/
