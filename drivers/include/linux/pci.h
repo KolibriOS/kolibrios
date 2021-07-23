@@ -917,6 +917,8 @@ int pci_generic_config_write32(struct pci_bus *bus, unsigned int devfn,
 
 struct pci_ops *pci_bus_set_ops(struct pci_bus *bus, struct pci_ops *ops);
 
+
+#if 0
 static inline int pci_read_config_byte(const struct pci_dev *dev, int where, u8 *val)
 {
 	*val = PciRead8(dev->busnr, dev->devfn, where);
@@ -949,6 +951,55 @@ static inline int pci_write_config_dword(const struct pci_dev *dev, int where,
 	PciWrite32(dev->busnr, dev->devfn, where, val);
 	return 1;
 }
+#endif
+
+static inline int pci_read_config_byte(struct pci_dev *dev, int where, u8 *val)
+{
+    *val = PciRead8(dev->busnr, dev->devfn, where);
+    return 0;
+}
+
+static inline int pci_read_config_word(struct pci_dev *dev, int where, u16 *val)
+{
+
+    if ( where & 1)
+        return PCIBIOS_BAD_REGISTER_NUMBER;
+    *val = PciRead16(dev->busnr, dev->devfn, where);
+    return 0;
+}
+
+static inline int pci_read_config_dword(struct pci_dev *dev, int where, u32 *val)
+{
+
+    if ( where & 3)
+        return PCIBIOS_BAD_REGISTER_NUMBER;
+    *val = PciRead32(dev->busnr, dev->devfn, where);
+    return 0;
+}
+
+static inline int pci_write_config_byte(struct pci_dev *dev, int where, u8 val)
+{
+    PciWrite8(dev->busnr, dev->devfn, where, val);
+    return 0;
+};
+
+static inline int pci_write_config_word(struct pci_dev *dev, int where, u16 val)
+{
+    if ( where & 1)
+        return PCIBIOS_BAD_REGISTER_NUMBER;
+    PciWrite16(dev->busnr, dev->devfn, where, val);
+    return 0;
+}
+
+static inline int pci_write_config_dword(struct pci_dev *dev, int where,
+                     u32 val)
+{
+    if ( where & 3)
+        return PCIBIOS_BAD_REGISTER_NUMBER;
+    PciWrite32(dev->busnr, dev->devfn, where, val);
+    return 0;
+}
+
 
 int pcie_capability_read_word(struct pci_dev *dev, int pos, u16 *val);
 int pcie_capability_read_dword(struct pci_dev *dev, int pos, u32 *val);
@@ -1436,11 +1487,11 @@ static inline int pci_has_flag(int flag) { return 0; }
 				_PCI_NOP(o, dword, u32 x)
 _PCI_NOP_ALL(read, *)
 _PCI_NOP_ALL(write,)
-
+/*
 static inline struct pci_dev *pci_get_device(unsigned int vendor,
 					     unsigned int device,
 					     struct pci_dev *from)
-{ return NULL; }
+{ return NULL; }*/
 
 static inline struct pci_dev *pci_get_subsys(unsigned int vendor,
 					     unsigned int device,

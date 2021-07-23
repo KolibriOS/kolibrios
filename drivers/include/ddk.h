@@ -8,6 +8,7 @@
 #include <linux/spinlock.h>
 #include <linux/mutex.h>
 #include <linux/rwsem.h>
+//#include <stdint.h>
 
 #define OS_BASE             0x80000000
 
@@ -26,8 +27,8 @@
 
 typedef struct
 {
-  u32      handle;
-  u32      io_code;
+  u32        handle;
+  u32        io_code;
   void       *input;
   int        inp_size;
   void       *output;

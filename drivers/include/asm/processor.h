@@ -18,6 +18,7 @@ struct vm86;
 #include <asm/pgtable_types.h>
 #include <asm/percpu.h>
 #include <asm/msr.h>
+#include <asm/msr-index.h>
 #include <asm/desc_defs.h>
 #include <asm/nops.h>
 #include <asm/special_insns.h>
@@ -145,7 +146,7 @@ struct cpuinfo_x86 {
 #define X86_VENDOR_TRANSMETA	7
 #define X86_VENDOR_NSC		8
 #define X86_VENDOR_NUM		9
-
+#define X86_VENDOR_HYGON	9
 #define X86_VENDOR_UNKNOWN	0xff
 
 /*
@@ -162,7 +163,7 @@ extern __u32			cpu_caps_set[NCAPINTS];
 DECLARE_PER_CPU_READ_MOSTLY(struct cpuinfo_x86, cpu_info);
 #define cpu_data(cpu)		per_cpu(cpu_info, cpu)
 #else
-#define cpu_info		boot_cpu_data
+#define cpu_info		    boot_cpu_data
 #define cpu_data(cpu)		boot_cpu_data
 #endif
 
