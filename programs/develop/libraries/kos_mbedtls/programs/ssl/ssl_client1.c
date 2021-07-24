@@ -68,12 +68,14 @@
 
 #include <string.h>
 
-//#define SERVER_PORT "443"
-//#define SERVER_NAME "wikipedia.org"
-//#define GET_REQUEST "GET / HTTP/1.0\r\n\r\n"
-static char SERVER_PORT[16];
-static char SERVER_NAME[128];
-static char GET_REQUEST[512];
+#define SERVER_NAME_SIZE    255
+#define SERVER_PORT_SIZE    16
+#define REQUEST_URL_SIZE    STDIO_MAX_MEM-SERVER_NAME_SIZE-32
+
+static char server_port[SERVER_PORT_SIZE];
+static char server_name[SERVER_NAME_SIZE];
+static char request_url[REQUEST_URL_SIZE];
+static char get_request[STDIO_MAX_MEM];
 
 #define DEBUG_LEVEL 1
 
@@ -98,6 +100,21 @@ static void my_debug( void *ctx, int level,
     printf("%s:%04d: %s", file, line, str );
 }
 
+char* safe_gets(char *str, size_t n){
+    char* ret = fgets(str, n, stdin);
+    if(ret){
+         size_t str_len = strlen(str);
+         if(str[str_len-1]=='\n'){
+            str[str_len-1]= '\0';
+         }
+         return str;
+    }
+    return NULL;
+}
+
+extern int mbedtls_load();
+extern int mbedtls_init();
+
 int main( void )
 {
     if(mbedtls_load()){
@@ -109,18 +126,22 @@ int main( void )
         return -1;
     }
     
-	puts("Enter SERVER_NAME : ");
-	gets(SERVER_NAME);
-	puts("Enter SERVER_PORT : ");
-	gets(SERVER_PORT);
-	sprintf(GET_REQUEST, "GET / HTTP/1.1\r\nHost: %s\r\n\r\n", SERVER_NAME);
-    //puts(GET_REQUEST);
+    puts("Enter server name : ");
+    safe_gets(server_name, SERVER_NAME_SIZE);
 
+    puts("Enter request_url : ");
+    safe_gets(request_url, REQUEST_URL_SIZE);
+    
+    puts("Enter server port : ");
+    safe_gets(server_port, SERVER_PORT_SIZE);
+    
+    sprintf(get_request, "GET %s HTTP/1.1\r\nHost: %s\r\n\r\n", request_url, server_name);
+    //puts(get_request);
     int ret = 1, len;
     int exit_code = MBEDTLS_EXIT_FAILURE;
     mbedtls_net_context server_fd;
     uint32_t flags;
-    unsigned char buf[1024];
+    unsigned char buf[STDIO_MAX_MEM];
     const char *pers = "ssl_client1";
     mbedtls_entropy_context entropy;
     mbedtls_ctr_drbg_context ctr_drbg;
@@ -172,11 +193,11 @@ int main( void )
     /*
      * 1. Start the connection
      */
-    mbedtls_printf( "  . Connecting to tcp/%s/%s...", SERVER_NAME, SERVER_PORT );
+    mbedtls_printf( "  . Connecting to tcp/%s/%s...", server_name, server_port );
     //fflush( stdout );
 
-    if( ( ret = mbedtls_net_connect( &server_fd, SERVER_NAME,
-                                         SERVER_PORT, MBEDTLS_NET_PROTO_TCP ) ) != 0 )
+    if( ( ret = mbedtls_net_connect( &server_fd, server_name,
+                                         server_port, MBEDTLS_NET_PROTO_TCP ) ) != 0 )
     {
         mbedtls_printf( " failed\n  ! mbedtls_net_connect returned %d\n\n", ret );
         goto exit;
@@ -214,7 +235,7 @@ int main( void )
         goto exit;
     }
 
-    if( ( ret = mbedtls_ssl_set_hostname( &ssl, SERVER_NAME ) ) != 0 )
+    if( ( ret = mbedtls_ssl_set_hostname( &ssl, server_name ) ) != 0 )
     {
         mbedtls_printf( " failed\n  ! mbedtls_ssl_set_hostname returned %d\n\n", ret );
         goto exit;
@@ -263,7 +284,7 @@ int main( void )
     mbedtls_printf( "  > Write to server:" );
     //fflush( stdout );
 
-    len = sprintf( (char *) buf, GET_REQUEST );
+    len = sprintf( (char *) buf, get_request );
 
     while( ( ret = mbedtls_ssl_write( &ssl, buf, len ) ) <= 0 )
     {
