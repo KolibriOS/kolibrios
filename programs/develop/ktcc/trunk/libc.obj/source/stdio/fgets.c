@@ -11,13 +11,7 @@ char *fgets(char *str, int n, FILE *stream)
         return NULL;
     }
     
-    while (i<n-1){
-        sym_code = fgetc(stream);
-        if(sym_code =='\n' || sym_code == EOF){ break; }
-        str[i]=(char)sym_code;
-        i++;
-    }
-    
+    i = fread(str, n-1, sizeof(char), stream);
     if(i<1){ return NULL; }
     return str;
 }

@@ -2,11 +2,6 @@
 #include <stdio.h>
 #include <ctype.h>
 
-#define LONG_MIN (-2147483647L-1)
-#define LONG_MAX (2147483647L)
-#define ULONG_MAX (4294967295UL)
-
-
 int getdigit(char ch, int base)
 {
 	if (isdigit(ch)) ch-= '0';

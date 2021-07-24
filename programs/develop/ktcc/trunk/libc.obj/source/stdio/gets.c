@@ -11,6 +11,10 @@ char *gets(char* str)
         errno = EIO;
         return NULL;
     }
-    str[strlen(str)-1]='\0';
+    
+    int str_len = strlen(str);
+    if(str[str_len-1]=='\n'){
+        str[str_len-1]='\0';
+    }
     return str;
 }
