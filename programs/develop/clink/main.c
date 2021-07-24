@@ -164,8 +164,8 @@ static void add_name_to_set(char *sym_name, char ***set) {
 	cvec_pchar_push_back(set, sym_name);
 }
 
-static void build(ObjectIr *ir) {
-	FILE *out = fopen("a.out.obj", "wb");
+static void build(ObjectIr *ir, const char *outname) {
+	FILE *out = fopen(outname, "wb");
 	char *strtab = cvec_char_new(1024);
 	size_t size_of_sections = 0;
 	size_t number_of_relocations = 0;
@@ -624,8 +624,30 @@ static ObjectIr parse_objects(int argc, char **argv) {
 	return ir;
 }
 
+int first_arg(int argc, char **argv, const char *arg) {
+	return argc >= 2 && !strcmp(argv[1], arg);
+}
+
 int main(int argc, char **argv) {
+	const char *outname = "a.out.obj";
+
+	if (argc >= 3 && !strcmp(argv[1], "-o")) {
+		outname = argv[2];
+		argv += 2;
+		argc -= 2;
+	} else if (first_arg(argc, argv, "-h")
+		|| first_arg(argc, argv, "-help")
+		|| first_arg(argc, argv, "--help")
+		|| argc == 1) {
+		printf("Usage cases:\n");
+		printf("  %s [-o outname] object files list\n", argv[0]);
+		printf("    Link COFF files into one, optionally set name of output\n");
+		printf("  %s [-h|-help|--help]\n", argv[0]);
+		printf("    Output this help\n");
+		return 0;
+	}
+
 	ObjectIr ir = parse_objects(argc, argv);
-	build(&ir);
+	build(&ir, outname);
 	return 0;
 }
