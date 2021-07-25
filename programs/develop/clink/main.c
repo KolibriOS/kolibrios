@@ -634,10 +634,6 @@ static ObjectIr parse_objects(int argc, char **argv) {
 	return ir;
 }
 
-int first_arg(int argc, char **argv, const char *arg) {
-	return argc >= 2 && !strcmp(argv[1], arg);
-}
-
 int arg_got_flag(int argc, char **argv, ...) {
 	char *arg_names[8];
 	int arg_name_c = 0;
@@ -654,37 +650,73 @@ int arg_got_flag(int argc, char **argv, ...) {
 	va_end(ap);
 
 	for (int i = 1; i < argc; i++) {
+		// If an argumetns was handled already then it's NULL here
+		if (argv[i] == NULL) {
+			continue;
+		}
 		for (int arg_name_i = 0; arg_name_i < arg_name_c; arg_name_i++) {
 			char *arg_name = arg_names[arg_name_i];
 			if (!strcmp(argv[i], arg_name)) {
 				argv[i] = NULL; // Do not handle this argument as a input name
-				return 1;
+				return i;
 			}
 		}
 	}
 	return 0;
 }
 
-int main(int argc, char **argv) {
-	const char *outname = "a.out.obj";
+char *arg_got_param(int argc, char **argv, char *arg) {
+	int i = arg_got_flag(argc, argv, arg, 0);
+	if (i == 0) {
+		return NULL;
+	}
 
-	if (argc >= 3 && !strcmp(argv[1], "-o")) {
-		outname = argv[2];
-		argv += 2;
-		argc -= 2;
-	} else if (first_arg(argc, argv, "-h")
-		|| first_arg(argc, argv, "-help")
-		|| first_arg(argc, argv, "--help")
-		|| argc == 1) {
-		printf("Usage cases:\n");
-		printf("  %s [-o outname] object files list\n", argv[0]);
-		printf("    Link COFF files into one, optionally set name of output\n");
-		printf("  %s [-h|-help|--help]\n", argv[0]);
-		printf("    Output this help\n");
-		return 0;
+	if (i + 1 >= argc) {
+		printf("Warning: %s parameter expects a value (like %s <value>)", arg, arg);
+		return NULL;
+	}
+	char *result = argv[i + 1];
+	argv[i + 1] = NULL;
+	return result;
+}
+
+int usage(char *name, char *remark) {
+	if (remark) {
+		printf("Error: %s\n\n", remark);
+	}
+	printf("Usage: %s [option]... [object file name]...\n", name);
+	printf("  Link multiple COFF files into one\n");
+	printf("\n");
+	printf("Options:\n");
+	printf("  -o <outname>  Output into <outname>\n");
+	printf("  -v, --verbose Emit information logs\n");
+	printf("  -h, --help    Output this help and exit\n");
+	return 0;
+}
+
+int main(int argc, char **argv) {
+	if (arg_got_flag(argc, argv, "-h", "-help", "--help", 0)) {
+		return usage(argv[0], NULL);
+	}
+
+	const char *outname = arg_got_param(argc, argv, "-o");
+	if (outname == NULL) {
+		outname = "a.out.obj";
 	}
 
 	emit_logs = arg_got_flag(argc, argv, "-v", "-verbose", "--verbose", 0);
+
+	// After handling arguments there only leaven unhandled ones
+	// They should be names if inputs. But if there's no input - exit
+	int input_file_count = 0;
+	for (int i = 1; i < argc; i++) {
+		if (argv[i] != NULL) {
+			input_file_count++;
+		}
+	}
+	if (input_file_count == 0) {
+		return usage(argv[0], "No input file names supplied");
+	}
 
 	ObjectIr ir = parse_objects(argc, argv);
 	build(&ir, outname);
