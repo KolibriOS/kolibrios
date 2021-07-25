@@ -1,3 +1,4 @@
+#include <stdarg.h>
 #include <stdlib.h>
 #include <stdio.h>
 #include <stdint.h>
@@ -120,7 +121,7 @@ typedef struct {
 
 static int emit_logs;
 
-static int log_info(const char *fmt, ...) {
+static void log_info(const char *fmt, ...) {
 	if (emit_logs) {
 		va_list ap;
 		va_start(ap, fmt);
@@ -421,7 +422,7 @@ static void build(ObjectIr *ir, const char *outname) {
 			sym.sym.symbol.SectionNumber = get_section_number(&ir->section_names_set, sec_name);
 
 			if (sym.sym.symbol.SectionNumber == 0) {
-				printf("Internal error: %s section is not found in output file");
+				printf("Internal error: %s section is not found in output file", sec_name);
 				exit(-1);
 			}
 
@@ -444,8 +445,8 @@ static void build(ObjectIr *ir, const char *outname) {
 
 	// COFF String Table
 	log_info("Writing COFF String Table... ");
-	fwrite32(out, cvec_pchar_size(&strtab) + 4);
-	fwrite(strtab, 1, cvec_pchar_size(&strtab), out);
+	fwrite32(out, cvec_char_size(&strtab) + 4);
+	fwrite(strtab, 1, cvec_char_size(&strtab), out);
 	log_info("Done.\n");
 }
 
