@@ -118,6 +118,17 @@ typedef struct {
 #define ERROR_CDICT(cdict) printf("Error: cdict returned %u at "__FILE__":%u", \
                                   (cdict)->error_code, __LINE__); exit(-1);
 
+static int emit_logs;
+
+static int log_info(const char *fmt, ...) {
+	if (emit_logs) {
+		va_list ap;
+		va_start(ap, fmt);
+		vprintf(fmt, ap);
+		va_end(ap);
+	}
+}
+
 static void fwrite8(FILE *f, uint8_t b) {
 	fputc(b, f);
 }
@@ -170,7 +181,7 @@ static void build(ObjectIr *ir, const char *outname) {
 	size_t size_of_sections = 0;
 	size_t number_of_relocations = 0;
 
-	printf("Calculating all sections size and relocations count... ");
+	log_info("Calculating all sections size and relocations count... ");
 	for (size_t sec_i = 0; sec_i < cvec_pchar_size(&ir->section_names_set); sec_i++) {
 		char *name = ir->section_names_set[sec_i];
 
@@ -178,7 +189,7 @@ static void build(ObjectIr *ir, const char *outname) {
 		size_of_sections += si.size;
 		number_of_relocations += si.number_of_relocations;
 	}
-	printf("Done: %u & %u\n", size_of_sections, number_of_relocations);
+	log_info("Done: %u & %u\n", size_of_sections, number_of_relocations);
 
 	size_t fisrt_section_offset = 20 + 40 * cvec_pchar_size(&ir->section_names_set);
 	size_t offset_to_first_relocation = fisrt_section_offset + size_of_sections;
@@ -188,7 +199,7 @@ static void build(ObjectIr *ir, const char *outname) {
 	size_t PointerToSymbolTable = fisrt_section_offset + size_of_sections + number_of_relocations * 10;
 
 	// COFF Header
-	printf("Writing COFF header... ");
+	log_info("Writing COFF header... ");
 	fwrite16(out, 0x14c);                                   // Machine
 	fwrite16(out, cvec_pchar_size(&ir->section_names_set)); // NumberOfSections
 	fwrite32(out, 0);                                       // TimeDataStamp
@@ -196,16 +207,16 @@ static void build(ObjectIr *ir, const char *outname) {
 	fwrite32(out, ir->number_of_symbols);                   // NumberOfSymbols
 	fwrite16(out, 0);                                       // SizeOfOptionalHeader
 	fwrite16(out, 0);                                       // Characteristics
-	printf("Done.\n");
+	log_info("Done.\n");
 
 	// Section Headers
-	printf("Writing section headers {\n");
+	log_info("Writing section headers {\n");
 	for (size_t sec_i = 0; sec_i < cvec_pchar_size(&ir->section_names_set); sec_i++) {
 		char *name = ir->section_names_set[sec_i];
 		SectionInfo si = cdict_CStr_SectionInfo_get_v(&ir->info_per_section, name);
 
 		// Name
-		printf(" Writing %s Section Header... ", name);
+		log_info(" Writing %s Section Header... ", name);
 		if (strlen(name) <= 8) {
 			for (size_t i = 0; i < 8; i++) {
 				size_t sl = strlen(name);
@@ -230,17 +241,17 @@ static void build(ObjectIr *ir, const char *outname) {
 		fwrite16(out, si.number_of_relocations);  // NumberOfRelocations
 		fwrite16(out, 0);                         // NumberOfLinenumbers
 		fwrite32(out, si.characteristics);        // Characteristics
-		printf("Done.\n");
+		log_info("Done.\n");
 	}
-	printf("}\n");
+	log_info("}\n");
 
 	// Section data
-	printf("Writing sections {\n");
+	log_info("Writing sections {\n");
 	for (size_t sec_i = 0; sec_i < cvec_pchar_size(&ir->section_names_set); sec_i++) {
 		char *name = ir->section_names_set[sec_i];
 		SectionInfo si = cdict_CStr_SectionInfo_get_v(&ir->info_per_section, name);
 
-		printf(" Writing %s... ", name);
+		log_info(" Writing %s... ", name);
 		for (size_t i = 0; i < cvec_ObjIdSecId_size(&si.source); i++) {
 			ObjIdSecId id = cvec_ObjIdSecId_at(&si.source, i);
 			CoffObject *object = &ir->objects[id.obj_id];
@@ -268,19 +279,19 @@ static void build(ObjectIr *ir, const char *outname) {
 
 			fwrite(buf, 1, sh.SizeOfRawData, out);
 		}
-		printf("Done.\n");
+		log_info("Done.\n");
 	}
-	printf("}\n");
+	log_info("}\n");
 
 	// COFF Relocations
 	char **undefined_symbols = cvec_pchar_new(8);
 
-	printf("Writing COFF Relocations {\n");
+	log_info("Writing COFF Relocations {\n");
 	for (size_t sec_i = 0; sec_i < cvec_pchar_size(&ir->section_names_set); sec_i++) {
 		char *name = ir->section_names_set[sec_i];
 		SectionInfo si = cdict_CStr_SectionInfo_get_v(&ir->info_per_section, name);
 
-		printf(" Writing relocations of %s {\n", name);
+		log_info(" Writing relocations of %s {\n", name);
 		for (size_t i = 0; i < cvec_ObjIdSecId_size(&si.source); i++) {
 			ObjIdSecId id = cvec_ObjIdSecId_at(&si.source, i);
 			CoffObject *object = &ir->objects[id.obj_id];
@@ -306,7 +317,7 @@ static void build(ObjectIr *ir, const char *outname) {
 				if (!epep_get_section_relocation_by_index(epep, &sh, &rel, rel_i)) {
 					ERROR_EPEP(epep);
 				}
-				printf("  { %02x, %02x, %02x }", rel.VirtualAddress, rel.SymbolTableIndex, rel.Type);
+				log_info("  { %02x, %02x, %02x }", rel.VirtualAddress, rel.SymbolTableIndex, rel.Type);
 				rel.VirtualAddress += object->section_offsets[sec_i];
 				{
 					size_t index = rel.SymbolTableIndex;
@@ -341,15 +352,15 @@ static void build(ObjectIr *ir, const char *outname) {
 					}
 
 					rel.SymbolTableIndex = old_sym.index;
-					printf(" -> { %02x, %02x, %02x }: ", rel.VirtualAddress, rel.SymbolTableIndex, rel.Type);
-					printf("New relocation of %s in %s\n", name, sh.Name);
+					log_info(" -> { %02x, %02x, %02x }: ", rel.VirtualAddress, rel.SymbolTableIndex, rel.Type);
+					log_info("New relocation of %s in %s\n", name, sh.Name);
 				}
 				fwrite(&rel, 1, 10, out);
 			}
 		}
-		printf(" }\n");
+		log_info(" }\n");
 	}
-	printf("}\n");
+	log_info("}\n");
 
 	if (cvec_pchar_size(&undefined_symbols) > 0) {
 		printf("Undefined symbols found, aborting\nUndefined:\n");
@@ -360,7 +371,7 @@ static void build(ObjectIr *ir, const char *outname) {
 	}
 
 	// Symbols Table
-	printf("Writing symbols {\n");
+	log_info("Writing symbols {\n");
 	for (size_t sym_i = 0; sym_i < cvec_pchar_size(&ir->sym_name_set); sym_i++) {
 		char *name = ir->sym_name_set[sym_i];
 
@@ -403,9 +414,9 @@ static void build(ObjectIr *ir, const char *outname) {
 				sec_name[8] = '\0';
 			}
 
-			printf("%s:\n", sym.name);
-			printf(" Section:      %s\n", sec_name);
-			printf(" StorageClass: %u\n", sym.sym.symbol.StorageClass);
+			log_info("%s:\n", sym.name);
+			log_info(" Section:      %s\n", sec_name);
+			log_info(" StorageClass: %u\n", sym.sym.symbol.StorageClass);
 
 			sym.sym.symbol.SectionNumber = get_section_number(&ir->section_names_set, sec_name);
 
@@ -429,13 +440,13 @@ static void build(ObjectIr *ir, const char *outname) {
 			fwrite(&sym.auxes[aux_i].symbol, 1, 18, out);
 		}
 	}
-	printf("}\n");
+	log_info("}\n");
 
 	// COFF String Table
-	printf("Writing COFF String Table... ");
+	log_info("Writing COFF String Table... ");
 	fwrite32(out, cvec_pchar_size(&strtab) + 4);
 	fwrite(strtab, 1, cvec_pchar_size(&strtab), out);
-	printf("Done.\n");
+	log_info("Done.\n");
 }
 
 static ObjectIr parse_objects(int argc, char **argv) {
@@ -445,7 +456,13 @@ static ObjectIr parse_objects(int argc, char **argv) {
 	size_t number_of_symbols = 0;
 
 	for (int i = 1; i < argc; i++) {
-		printf("Primary parsing of %s... ", argv[i]);
+		// If one arg is NULL, that means it was a parameter and was cleared
+		// It's not a input file name
+		if (argv[i] == NULL) {
+			continue;
+		}
+
+		log_info("Primary parsing of %s... ", argv[i]);
 
 		CoffObject object = { 0 };
 		object.name = argv[i];
@@ -465,7 +482,7 @@ static ObjectIr parse_objects(int argc, char **argv) {
 
 		cvec_CoffObject_push_back(&objects, object);
 
-		printf("Done.\n");
+		log_info("Done.\n");
 	}
 
 	CDict_CStr_Symbol symtab;
@@ -481,7 +498,7 @@ static ObjectIr parse_objects(int argc, char **argv) {
 	}
 
 	for (size_t i = 0; i < cvec_CoffObject_size(&objects); i++) {
-		printf("Secondary parsing of %s {\n", objects[i].name);
+		log_info("Secondary parsing of %s {\n", objects[i].name);
 
 		Epep *epep = &(objects[i].epep);
 
@@ -496,7 +513,7 @@ static ObjectIr parse_objects(int argc, char **argv) {
 		}
 
 		// Fill symbols table
-		printf(" Symbols {\n");
+		log_info(" Symbols {\n");
 		for (size_t sym_i = 0; sym_i < epep->coffFileHeader.NumberOfSymbols; sym_i++) {
 			EpepCoffSymbol sym = { 0 };
 
@@ -547,17 +564,17 @@ static ObjectIr parse_objects(int argc, char **argv) {
 				}
 				number_of_symbols++;
 
-				printf("  Symbol #%u: %s (%u auxes, #%u)\n", sym_i, name, cvec_EpepCoffSymbol_size(&auxes), number_of_symbols - 1);
+				log_info("  Symbol #%u: %s (%u auxes, #%u)\n", sym_i, name, cvec_EpepCoffSymbol_size(&auxes), number_of_symbols - 1);
 
 				add_name_to_set(strdup(name), &sym_name_set);
 			}
 
 			sym_i += sym.symbol.NumberOfAuxSymbols;
 		}
-		printf(" }\n");
+		log_info(" }\n");
 
 		// Set section offsets and fill unique section name set
-		printf(" Sections {\n");
+		log_info(" Sections {\n");
 		for (size_t sec_i = 0; sec_i < epep->coffFileHeader.NumberOfSections; sec_i++) {
 			EpepSectionHeader sh = { 0 };
 
@@ -591,27 +608,19 @@ static ObjectIr parse_objects(int argc, char **argv) {
 			cvec_ObjIdSecId_push_back(&si.source, (ObjIdSecId){ i, sec_i });
 			cdict_CStr_SectionInfo_add_vv(&info_per_section, strdup(name), si, CDICT_REPLACE_EXIST);
 
-			printf("  Section #%llu {\n", sec_i);
-			printf("   Name:                      %s\n", name);
-			printf("   Virtual Address:           %u\n", sh.VirtualAddress);
-			printf("   Characteristics:           %08x\n", sh.Characteristics);
-			printf("   Offset in the big section: %u\n", objects[i].section_offsets[sec_i]);
-			printf("  }\n");
+			log_info("  Section #%llu {\n", sec_i);
+			log_info("   Name:                      %s\n", name);
+			log_info("   Virtual Address:           %u\n", sh.VirtualAddress);
+			log_info("   Characteristics:           %08x\n", sh.Characteristics);
+			log_info("   Offset in the big section: %u\n", objects[i].section_offsets[sec_i]);
+			log_info("  }\n");
 
 			if (sh.VirtualAddress != 0) {
-				printf("\n\n\n\n");
-				for (int i = 0; i < 42; i++) {
-					printf("!!!");
-				}
-				printf("\n\n\n\n\nWARNING: Handling of section with Virtual Address another that 0 is not implemented\n\n\n\n\n");
-				for (int i = 0; i < 42; i++) {
-					printf("!!!");
-				}
-				printf("\n\n\n\n");
+				printf("Warning: Handling of section with Virtual Address another that 0 is not implemented");
 			}
 		}
-		printf(" }\n");
-		printf("}\n");
+		log_info(" }\n");
+		log_info("}\n");
 	}
 
 	ObjectIr ir;
@@ -626,6 +635,33 @@ static ObjectIr parse_objects(int argc, char **argv) {
 
 int first_arg(int argc, char **argv, const char *arg) {
 	return argc >= 2 && !strcmp(argv[1], arg);
+}
+
+int arg_got_flag(int argc, char **argv, ...) {
+	char *arg_names[8];
+	int arg_name_c = 0;
+
+	va_list ap;
+	va_start(ap, argv);
+	for (char *arg_name = va_arg(ap, char *); arg_name; arg_name = va_arg(ap, char *)) {
+		if (arg_name_c >= 8) {
+			printf("Internal error: Too many parameter aliases passed to %s", __func__);
+			exit(-1);
+		}
+		arg_names[arg_name_c++] = arg_name;
+	}
+	va_end(ap);
+
+	for (int i = 1; i < argc; i++) {
+		for (int arg_name_i = 0; arg_name_i < arg_name_c; arg_name_i++) {
+			char *arg_name = arg_names[arg_name_i];
+			if (!strcmp(argv[i], arg_name)) {
+				argv[i] = NULL; // Do not handle this argument as a input name
+				return 1;
+			}
+		}
+	}
+	return 0;
 }
 
 int main(int argc, char **argv) {
@@ -646,6 +682,8 @@ int main(int argc, char **argv) {
 		printf("    Output this help\n");
 		return 0;
 	}
+
+	emit_logs = arg_got_flag(argc, argv, "-v", "-verbose", "--verbose", 0);
 
 	ObjectIr ir = parse_objects(argc, argv);
 	build(&ir, outname);
