@@ -100,6 +100,5 @@ compile_gcc(MBEDTLS_SRC);
 table.insert(OBJS,"mbedtls_export.o");
 table.insert(OBJS,"mbedtls_init.o");
 
-tup.rule(OBJS, HELPERDIR .. "develop/clink/clink -o %o %f" .. 
-         " && strip %o --strip-unneeded" .. tup.getconfig("KPACK_CMD"), "mbedtls.obj");
+tup.rule(OBJS, "clink -o %o %f" .. " && strip %o --strip-unneeded" .. tup.getconfig("KPACK_CMD"), "mbedtls.obj");
 
