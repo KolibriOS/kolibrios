@@ -5,7 +5,7 @@ static struct tm __buffertime;
 
 time_t time(time_t *timer){
     int kos_date, kos_time;
-    kos_date = _ksys_get_date();
+    kos_date = _ksys_get_date().val;
     kos_time = _ksys_get_clock();
    
     int bcd_day = (kos_date >> 16);

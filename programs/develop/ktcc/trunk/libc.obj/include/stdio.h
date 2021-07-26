@@ -34,7 +34,6 @@
 
 #include <stdarg.h>
 #include <stddef.h>
-#include <sys/ksys.h>
 
 extern int  _FUNC(puts)(const char *str);
 extern int  _FUNC(printf)(const char* format, ...);
