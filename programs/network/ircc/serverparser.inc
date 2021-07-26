@@ -1,6 +1,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;                                                                 ;;
-;; Copyright (C) KolibriOS team 2004-2018. All rights reserved.    ;;
+;; Copyright (C) KolibriOS team 2004-2021. All rights reserved.    ;;
 ;; Distributed under terms of the GNU General Public License       ;;
 ;;                                                                 ;;
 ;;   Written by hidnplayr@kolibrios.org                            ;;
@@ -65,7 +65,9 @@ server_commands:
 
         dd      '311 ', cmd_justprint   ; RPL_WHOISUSER
         dd      '312 ', cmd_justprint   ; RPL_WHOISSERVER
+        dd      '317 ', cmd_justprint   ; RPL_WHOISIDLE
         dd      '318 ', cmd_justprint   ; RPL_ENDOFWHOIS
+        dd      '319 ', cmd_justprint   ; RPL_WHOISCHANNELS
         dd      '322 ', cmd_322         ; RPL_LIST
         dd      '323 ', cmd_323         ; RPL_LISTEND
         dd      '324 ', cmd_justprint   ; RPL_CHANNELMODEIS
@@ -74,6 +76,7 @@ server_commands:
         dd      '330 ', cmd_justprint
         dd      '332 ', cmd_topic       ; topic
         dd      '333 ', cmd_333         ; nickname and time of topic
+        dd      '338 ', cmd_justprint   ; RPL_CHANPASSOK
         dd      '353 ', cmd_353         ; name reply
         dd      '366 ', cmd_366         ; end of names list
         dd      '372 ', cmd_justprint   ; motd
@@ -83,6 +86,7 @@ server_commands:
         dd      '432 ', cmd_justprint   ; erroneous nickname
         dd      '433 ', cmd_justprint   ; nickname already in use
         dd      '436 ', cmd_justprint   ; nickname collision
+        dd      '671 ', cmd_justprint   ; RPL_WHOISSECURE
 
         dd      'join', cmd_join
         dd      'kick', cmd_kick

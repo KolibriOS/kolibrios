@@ -1,6 +1,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;                                                                 ;;
-;; Copyright (C) KolibriOS team 2004-2016. All rights reserved.    ;;
+;; Copyright (C) KolibriOS team 2004-2021. All rights reserved.    ;;
 ;; Distributed under terms of the GNU General Public License       ;;
 ;;                                                                 ;;
 ;;   Written by hidnplayr@kolibrios.org                            ;;
@@ -175,6 +175,12 @@ print_char:
 
 
 
+;-----------------------------------------------
+; Draw text of the current window to the screen
+;
+; IN:   /
+; OUT:  /
+;-----------------------------------------------
 draw_channel_text:
 
         mov     edi, [window_active]
@@ -312,7 +318,6 @@ draw_channel_text:
         popa
 
         push    eax
-        mov     esi, [textbox_width]
   .line:
         cmp     byte[edx], 0
         je      .end_of_text
@@ -321,7 +326,6 @@ draw_channel_text:
         cmp     byte[edx], 10
         je      .newline_hard
 
-        push    esi
         cmp     byte[edx], 3                    ; escape code for mIRC colors
         jne     .no_colors
         inc     edx
@@ -339,30 +343,47 @@ draw_channel_text:
         or      ecx, 0x40000000
   .no_colors:
 
-        mov     esi, 1
-        mcall   4                               ; draw text
+;-------------------------------------------
+; Count characters until 0, 10, 13 or 3 byte
 
-        mov     esi, 1
+        push    edx
+        xor     esi, esi
+        dec     esi
+  .next_char:
+        inc     esi
+        cmp     esi, [textbox_width]
+        je      .cnt_done
         mov     al, byte[edx]
+        cmp     al, 13
+        jbe     .cnt_done
+
+        inc     edx
         test    al, 10000000b
-        jz      @f
-        mov     esi, 4
+        jz      .next_char              ; 1 byte wide
+
+        add     edx, 4
         and     al, 11111000b
         cmp     al, 11110000b
-        je      @f
-        dec     esi
+        je      .next_char              ; 4 bytes wide
+
+        dec     edx
         and     al, 11110000b
         cmp     al, 11100000b
-        je      @f
-        dec     esi
-  @@:
+        je      .next_char              ; 3 bytes wide
+        dec     edx                     ; 2 bytes wide
+        jmp     .next_char
+  .cnt_done:
+        mov     eax, edx
+        pop     edx
+        push    eax
+        mcall   4                       ; draw text
+        pop     edx                     ; next start ptr
 
-        add     ebx, FONT_WIDTH shl 16
-        add     edx, esi
-        pop     esi
-        dec     esi
-        jnz     .line
-        jmp     .line_full
+        cmp     esi, [textbox_width]
+        je      .line_full
+        imul    esi, FONT_WIDTH shl 16
+        add     ebx, esi
+        jmp     .line
 
   .newline_hard:
         mov     ecx, [colors.work_text]
