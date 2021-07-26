@@ -18,7 +18,7 @@
 format binary as ""
 
 __DEBUG__       = 1
-__DEBUG_LEVEL__ = 1
+__DEBUG_LEVEL__ = 2
 
 MAX_BITS    = 4096
 
@@ -68,7 +68,7 @@ cmptestctr = cmptestctr + 1
 
 start:
 
-        DEBUGF  1, "MPINT Test suite\n"
+        DEBUGF  3, "MPINT Test suite\n"
 
 ; First, do some checks on the compare routine
         cmptesteq mpint_0_0, mpint_0_0
@@ -216,13 +216,15 @@ endg
 
 include "tests.inc"
 
-        DEBUGF  1, "All tests completed\n"
+        DEBUGF  3, "All tests completed\n"
 
         mcall   -1
 
 IncludeIGlobals
 
 i_end:
+
+starttime dq ?
 
 mpint_tmp       rb MPINT_MAX_LEN+4
 

@@ -127,7 +127,7 @@ start:
         mov     dword[mpint_B+4], 497
         stdcall mpint_cmp, mpint_A, mpint_B
         stdcall mpint_mod, mpint_A, mpint_B
-        DEBUGF  1, "mpint_mod(936, 497)\n"
+        DEBUGF  1, "mpint_mod(1936, 497)\n"
         stdcall mpint_print, mpint_A
 
         mov     dword[mpint_A+00], 32
@@ -155,8 +155,8 @@ start:
         stdcall mpint_mul, mpint_C, mpint_B, mpint_A
         stdcall mpint_print, mpint_C
 
-        stdcall mpint_hob, mpint_C
-        DEBUGF  1, "mpint_hob(C): %u\n", eax
+        stdcall mpint_bits, mpint_C
+        DEBUGF  1, "mpint_bits(C): %u\n", eax
 
         mov     dword[mpint_A+0], 1
         mov     dword[mpint_A+4], 3
