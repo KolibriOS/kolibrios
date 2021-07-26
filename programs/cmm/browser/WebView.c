@@ -1,4 +1,4 @@
-//Copyright 2007-2020 by Veliant & Leency
+//Copyright 2007-2021 by Veliant & Leency
 //Asper, lev, Lrz, Barsuk, Nable, hidnplayr...
 
 //===================================================//
@@ -234,6 +234,7 @@ void main()
 					}
 					LoadInternalPage(http.content_pointer, http.content_received);
 					free(http.content_pointer);
+					DrawOmnibox();
 				}
 				else if (http_get_type==IMG) {
 					_IMG_RES:
@@ -426,10 +427,10 @@ void EventAllTabsClick(dword _n)
 void EventEditSource()
 {
 	if (check_is_the_adress_local(history.current())) {
-		RunProgram("/rd/1/quark", history.current());
+		RunProgram("/rd/1/develop/cedit", history.current());
 	} else {
 		CreateFile(WB1.bufsize, WB1.bufpointer, "/tmp0/1/WebView_tmp.htm");
-		if (!EAX) RunProgram("/rd/1/quark", "/tmp0/1/WebView_tmp.htm");
+		if (!EAX) RunProgram("/rd/1/develop/cedit", "/tmp0/1/WebView_tmp.htm");
 	}
 }
 

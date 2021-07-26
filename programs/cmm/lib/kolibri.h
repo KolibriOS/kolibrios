@@ -187,7 +187,7 @@ struct proc_info
 	word	status_slot,rezerv3;
 	dword	cleft,ctop,cwidth,cheight;
 	char	status_window;
-	byte    reserved[1024-71-8];
+	byte    reserved[1024-71];
 };
 
 :void GetProcessInfo(dword _process_struct_pointer, _process_id)

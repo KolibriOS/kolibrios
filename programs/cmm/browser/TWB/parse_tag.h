@@ -1,4 +1,3 @@
-
 struct _tag
 {
 	char name[32];
@@ -10,7 +9,6 @@ struct _tag
 	dword number;
 	bool is();
 	bool parse();
-	void debug_tag();
 	dword get_next_param();
 	dword get_value_of();
 	signed get_number_of();
@@ -18,11 +16,7 @@ struct _tag
 
 bool _tag::is(dword _text) 
 { 
-	if ( !strcmp(#name, _text) ) {
-		return true;
-	} else {
-		return false; 
-	}
+	return streq(#name, _text);
 }
 
 bool _tag::parse(dword _bufpos, bufend)
@@ -63,38 +57,22 @@ bool _tag::parse(dword _bufpos, bufend)
 	closepos = strchr(bufpos, '>');
 	whitepos = strchrw(bufpos, bufend-bufpos);
 
-	if (debug_mode) {
-		if (!closepos) debugln("null closepos");
-		if (!whitepos) debugln("null whitepos");
-	}
-
 	if (!whitepos) || (whitepos > closepos) {
 		//no param
 		strncpy(#name, bufpos, math.min(closepos - bufpos, sizeof(tag.name)));
-		debug_tag();
 		bufpos = closepos;
 	} else {
 		//we have param
 		while (chrlnum(whitepos, '\"', closepos - whitepos)%2) { //alt="Next>>"
-			/*
-			openpos = strchr(closepos+1, '<');
-			closepos = strchr(closepos+1, '>');
-			if (openpos) && (openpos < closepos) {
-				closepos = openpos - 1;
-				break;
-			}
-			*/
 			if (!openpos = strchr(closepos+1, '<')) break;
 			if (openpos < strchr(closepos+1, '>')) break;
 			if (!closepos = EAX) {closepos = bufend;break;}
 		}
 		strncpy(#name, bufpos, math.min(whitepos - bufpos, sizeof(tag.name)));
-		debug_tag();
 		bufpos = closepos;
 
 		params = malloc(closepos - whitepos + 1);
 		strncpy(params, whitepos, closepos - whitepos);
-		if (debug_mode) { debug("params: "); debugln(params+1); }
 		paramsend = params + closepos - whitepos;
 		while (paramsend = get_next_param(params, paramsend-1));
 		free(params);
@@ -118,16 +96,6 @@ bool _tag::parse(dword _bufpos, bufend)
 _RET:
 	ESDWORD[_bufpos] = bufpos;
 	return retok;
-}
-
-void _tag::debug_tag()
-{
-	if (debug_mode) { 
-		debugch('<'); 
-		if (!opened) debugch('/');
-		debug(#name);
-		debugln(">");
-	}
 }
 
 dword _tag::get_next_param(dword ps, pe)
@@ -189,12 +157,6 @@ dword _tag::get_next_param(dword ps, pe)
 	attributes.add(attr);
 	values.add(val);
 
-	if (debug_mode) {
-		debug("atr: "); debugln(attr);
-		debug("val: "); debugln(val);
-		debugch('\n');
-	}
-
 	if (pe==ps) return NULL;
 	return pe;
 }
@@ -213,7 +175,7 @@ dword _tag::get_value_of(dword _attr_name)
 signed _tag::get_number_of(dword _attr_name)
 {
 	if (get_value_of(_attr_name)) {
-		number = atoi(tag.value);
+		number = atoi(value);
 	} else {
 		number = 0;
 	}
