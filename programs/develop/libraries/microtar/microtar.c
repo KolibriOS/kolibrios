@@ -406,35 +406,29 @@ int mtar_finalize(mtar_t *tar) {
 
 #include <sys/ksys.h>
 
-void mtar_panic(char* func_name){
-  _ksys_debug_puts("mtar.obj: ");
-  _ksys_debug_puts(func_name);
-  _ksys_debug_puts(" = NULL!\n");
-}
-
 int mtar_init(){
-  ksys_coff_etable_t *libc = _ksys_load_coff("/sys/lib/libc.obj");
+  ksys_dll_t *libc = _ksys_dlopen("/sys/lib/libc.obj");
   if(!libc){
     _ksys_debug_puts("mtar.obj: libc.obj not loaded!");
     return 1;
   }
 
-  fread  = _ksys_get_coff_func(libc, "fread", mtar_panic);
-  fwrite = _ksys_get_coff_func(libc, "fwrite", mtar_panic);
-  fclose = _ksys_get_coff_func(libc, "fclose", mtar_panic);
-  fopen  = _ksys_get_coff_func(libc, "fopen", mtar_panic);
-  fseek  = _ksys_get_coff_func(libc, "fseek", mtar_panic);
-  ftell  = _ksys_get_coff_func(libc, "ftell", mtar_panic);
-  sprintf= _ksys_get_coff_func(libc, "sprintf", mtar_panic);
-  sscanf = _ksys_get_coff_func(libc, "sscanf", mtar_panic);
-  strcmp = _ksys_get_coff_func(libc, "strcmp", mtar_panic);
-  strchr = _ksys_get_coff_func(libc, "strchr", mtar_panic);
-  strcpy = _ksys_get_coff_func(libc, "strcpy", mtar_panic);
+  fread  = _ksys_dlsym(libc, "fread");
+  fwrite = _ksys_dlsym(libc, "fwrite");
+  fclose = _ksys_dlsym(libc, "fclose");
+  fopen  = _ksys_dlsym(libc, "fopen");
+  fseek  = _ksys_dlsym(libc, "fseek");
+  ftell  = _ksys_dlsym(libc, "ftell");
+  sprintf= _ksys_dlsym(libc, "sprintf");
+  sscanf = _ksys_dlsym(libc, "sscanf");
+  strcmp = _ksys_dlsym(libc, "strcmp");
+  strchr = _ksys_dlsym(libc, "strchr");
+  strcpy = _ksys_dlsym(libc, "strcpy");
   return 0;
 }
 
 
-ksys_coff_etable_t EXPORTS[] = {
+ksys_dll_t EXPORTS[] = {
   {"mtar_init", mtar_init},
   {"mtar_open", mtar_open},
   {"mtar_close", mtar_close},
