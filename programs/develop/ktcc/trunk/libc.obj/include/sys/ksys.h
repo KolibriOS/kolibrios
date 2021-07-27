@@ -314,6 +314,20 @@ void _ksys_delay(uint32_t time){
     );
 }
 
+/*=============== Function 7 - draw image in the window. ===============*/
+
+static inline
+void _ksys_draw_bitmap(void *bitmap, int x, int y, int w, int h)
+{
+    asm_inline(
+        "int $0x40"
+        ::"a"(7), "b"(bitmap),
+        "c"((w << 16) | h),
+        "d"((x << 16) | y)
+        :"memory"
+    );
+}
+
 /*=============== Function 8 - define/delete the button. ===============*/
 
 static inline
@@ -1404,8 +1418,6 @@ int _ksys_file_rename(const char *name, const char *new_name)
 
 /* ######### Old names of functions and structures. Do not use again! ##########*/
 
-#define ksys_coff_etable_t ksys_dll_t
-#define ksys_proc_table_t  ksys_thread_t
 #define _ksys_get_event    _ksys_wait_event
 
 #endif // _KSYS_H_

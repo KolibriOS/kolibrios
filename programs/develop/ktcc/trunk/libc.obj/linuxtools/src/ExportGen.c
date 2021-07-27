@@ -26,7 +26,7 @@ int main(int argc, char** argv) {
 			"#include <sys/ksys.h>\n\n" \
 			"#include <math.h>\n\n" \
 			"#include <setjmp.h>\n\n" \
-			"ksys_coff_etable_t EXPORTS[] = {\n");
+			"ksys_dll_t EXPORTS[] = {\n");
 	
 	// Generate
 	char symbol[256];

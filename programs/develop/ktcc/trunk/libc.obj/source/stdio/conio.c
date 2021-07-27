@@ -27,40 +27,40 @@ void  stdcall (*con_cls)();
 void  stdcall (*con_get_cursor_pos)(int* px, int* py);
 void  stdcall (*con_set_cursor_pos)(int x, int y);
 
-static void __con_panic(char* func_name)
+/*static void __con_panic(char* func_name)
 {
     debug_printf("In console.obj %s=NULL!\n", func_name);
     _ksys_exit();
-}
+}*/
 
-static void __con_lib_link(ksys_coff_etable_t *exp)
+static void __con_lib_link(ksys_dll_t *exp)
 {
-    __con_init_hidden = _ksys_get_coff_func(exp, "con_init", __con_panic);
-    con_exit          = _ksys_get_coff_func(exp, "con_exit", __con_panic);
-    con_set_title     = _ksys_get_coff_func(exp, "con_set_title", __con_panic);
-    con_write_asciiz  = _ksys_get_coff_func(exp, "con_write_asciiz", __con_panic);
-    con_write_string  = _ksys_get_coff_func(exp, "con_write_string", __con_panic);
-    con_printf        = _ksys_get_coff_func(exp, "con_printf", __con_panic);
-    con_get_flags     = _ksys_get_coff_func(exp, "con_get_flags", __con_panic);
-    con_set_flags     = _ksys_get_coff_func(exp, "con_set_flags", __con_panic);
-    con_get_font_height = _ksys_get_coff_func(exp, "con_get_font_height", __con_panic);
-    con_get_cursor_height = _ksys_get_coff_func(exp, "con_get_cursor_height", __con_panic);
-    con_set_cursor_height = _ksys_get_coff_func(exp, "con_set_cursor_height", __con_panic);
-    con_getch           = _ksys_get_coff_func(exp, "con_getch", __con_panic);
-    con_getch2          = _ksys_get_coff_func(exp, "con_getch2", __con_panic);
-    con_kbhit           = _ksys_get_coff_func(exp, "con_kbhit", __con_panic);
-    con_gets            = _ksys_get_coff_func(exp, "con_gets", __con_panic);
-    con_gets2           = _ksys_get_coff_func(exp, "con_gets2", __con_panic);
-    con_cls             = _ksys_get_coff_func(exp, "con_cls", __con_panic);
-    con_get_cursor_pos  = _ksys_get_coff_func(exp, "con_get_cursor_pos", __con_panic);
-    con_set_cursor_pos  = _ksys_get_coff_func(exp, "con_set_cursor_pos", __con_panic);
+    __con_init_hidden = _ksys_dlsym(exp, "con_init");
+    con_exit          = _ksys_dlsym(exp, "con_exit");
+    con_set_title     = _ksys_dlsym(exp, "con_set_title");
+    con_write_asciiz  = _ksys_dlsym(exp, "con_write_asciiz");
+    con_write_string  = _ksys_dlsym(exp, "con_write_string");
+    con_printf        = _ksys_dlsym(exp, "con_printf");
+    con_get_flags     = _ksys_dlsym(exp, "con_get_flags");
+    con_set_flags     = _ksys_dlsym(exp, "con_set_flags");
+    con_get_font_height = _ksys_dlsym(exp, "con_get_font_height");
+    con_get_cursor_height = _ksys_dlsym(exp, "con_get_cursor_height");
+    con_set_cursor_height = _ksys_dlsym(exp, "con_set_cursor_height");
+    con_getch           = _ksys_dlsym(exp, "con_getch");
+    con_getch2          = _ksys_dlsym(exp, "con_getch2");
+    con_kbhit           = _ksys_dlsym(exp, "con_kbhit");
+    con_gets            = _ksys_dlsym(exp, "con_gets");
+    con_gets2           = _ksys_dlsym(exp, "con_gets2");
+    con_cls             = _ksys_dlsym(exp, "con_cls");
+    con_get_cursor_pos  = _ksys_dlsym(exp, "con_get_cursor_pos");
+    con_set_cursor_pos  = _ksys_dlsym(exp, "con_set_cursor_pos");
 }
 
 int con_init_opt(dword wnd_width, dword wnd_height, dword scr_width, dword scr_height, const char* title)
 {   
     if(!__con_is_load){
-        ksys_coff_etable_t *__con_lib;
-        __con_lib = _ksys_load_coff(__con_dllname);
+        ksys_dll_t *__con_lib;
+        __con_lib = _ksys_dlopen(__con_dllname);
         if(__con_lib==NULL){
             _ksys_debug_puts("Error! Can't load console.obj lib\n");
             return 1;

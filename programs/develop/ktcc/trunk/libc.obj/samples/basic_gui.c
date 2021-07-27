@@ -7,7 +7,7 @@
 ksys_colors_table_t sys_color_table;
 
 char statusbar[255];
-ksys_proc_table_t proc_info;
+ksys_thread_t proc_info;
 char text_line[255];
 
 enum BUTTONS
@@ -29,7 +29,7 @@ void draw_window()
     _ksys_start_draw();
 	// define&draw window
     _ksys_create_window(10, 40, 600, 400, "My window", sys_color_table.work_area, 0x13);
-    _ksys_process_info(&proc_info, -1);
+    _ksys_thread_info(&proc_info, -1);
 
     win_width = proc_info.winx_size;
     win_hight = proc_info.winy_size;

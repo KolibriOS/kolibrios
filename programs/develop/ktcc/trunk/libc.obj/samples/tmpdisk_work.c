@@ -46,7 +46,7 @@ int main(){
     ioctl.out_data_size = 0;
 
     printf("Create '/tmp%u/' disk a %u Mb size...\n", tmpdisk_add.disk_id, TMPDISK_SIZE);
-    unsigned status =_ksys_work_driver(&ioctl);
+    unsigned status =_ksys_driver_control(&ioctl);
     if(status<7){
         puts(tmpdisk_res_text[status]);
     }else{
