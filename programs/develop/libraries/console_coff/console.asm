@@ -43,7 +43,7 @@ con_init:
 
         push ebx
 
-		mov [con.init_cmd],1
+                mov [con.init_cmd],1
 
         mov     ecx, 4
         mov     eax, con.wnd_width
@@ -152,24 +152,24 @@ con_set_cursor_height:
         ret     4
 
 con_init_check:
-	mov ah,[con.init_cmd]
-	test ah,ah
-	jne cmd_init_yes
+        mov ah,[con.init_cmd]
+        test ah,ah
+        jne cmd_init_yes
 
-	push con.title_init_console
-	push -1
-	push -1
-	push -1
-	push -1
+        push con.title_init_console
+        push -1
+        push -1
+        push -1
+        push -1
 
-	call con_init
+        call con_init
 
-	cmd_init_yes:
+        cmd_init_yes:
 
-	ret
+        ret
 ; void __stdcall con_write_asciiz(const char* string);
 con_write_asciiz:
-		call con_init_check
+                call con_init_check
         push    ebx esi
         or      ebx, -1
         mov     esi, [esp+12]
@@ -265,7 +265,7 @@ con.charjump:
 
 ; int __cdecl con_printf(const char* format, ...)
 con_printf:
-		call con_init_check
+                call con_init_check
         xor     eax, eax
         pushad
         call    con.get_data_ptr
@@ -755,6 +755,8 @@ con.write_special_char:
         jz      .write_esc
         cmp     al, 8
         jz      .write_bs
+        cmp     al, 7
+        jz      .bell
         cmp     al, 9
         jnz     con.write_char
 .write_tab:
@@ -789,6 +791,15 @@ con.write_special_char:
         dec     edi
 @@:
         pop     eax
+        ret
+.bell:
+        pusha
+        push    55
+        pop     eax
+        mov     ebx, eax
+        mov     esi, con.beep2
+        int     0x40
+        popa
         ret
 .write_esc:
         mov     [con_esc], 1
@@ -868,6 +879,8 @@ con.write_special_char:
         je      .dec_rst
         cmp     al, 'h'
         je      .dec_set
+        cmp     al, 'K'
+        je      .erase_in_line
         ret     ; simply skip unknown sequences
 
 .dec_rst:
@@ -896,6 +909,58 @@ con.write_special_char:
 .show_cursor:
         mov     [con.cursor_height], (15*font_height+50)/100    ; default height
         ret
+
+.erase_in_line:
+        mov     eax, [con_esc_attrs]
+        test    eax, eax
+        jz      .erase_till_end_of_line         ; <esc>[0K (or <esc>[K)
+        dec     eax
+        jz      .erase_till_start_of_line       ; <esc>[1K
+        dec     eax
+        je      .erase_current_line             ; <esc>[2K
+        ret     ; unknown sequence
+
+.erase_till_end_of_line:
+        push    edi ecx
+        mov     edi, [con.cur_y]
+        imul    edi, [con.scr_width]
+        add     edi, [con.cur_x]
+        shl     edi, 1
+        add     edi, [con.data]
+        mov     ecx, [con.scr_width]
+        sub     ecx, [con.cur_x]
+        mov     ah, byte[con_flags]
+        mov     al, ' '
+        rep     stosw
+        pop     ecx edi
+        ret
+
+.erase_till_start_of_line:
+        push    edi ecx
+        mov     edi, [con.cur_y]
+        imul    edi, [con.scr_width]
+        shl     edi, 1
+        add     edi, [con.data]
+        mov     ecx, [con.cur_y]
+        mov     ah, byte[con_flags]
+        mov     al, ' '
+        rep     stosw
+        pop     ecx edi
+        ret
+
+.erase_current_line:
+        push    edi ecx
+        mov     edi, [con.cur_y]
+        imul    edi, [con.scr_width]
+        shl     edi, 1
+        add     edi, [con.data]
+        mov     ecx, [con.scr_width]
+        mov     ah, byte[con_flags]
+        mov     al, ' '
+        rep     stosw
+        pop     ecx edi
+        ret
+
 .clear:
         mov     eax, [con_esc_attrs]
         test    eax, eax
@@ -1309,16 +1374,16 @@ end if
         ret
 
 con_exit:
-	
-		mov ah,[con.init_cmd]
-		test ah,ah
-		je .ret
+        
+                mov ah,[con.init_cmd]
+                test ah,ah
+                je .ret
 
         cmp     byte [esp+4], 0
         jz      .noexit
         mov     [con.thread_op], 1
         call    con.wake
-		
+                
         ret     4
 .noexit:
         push    esi
@@ -1387,7 +1452,7 @@ con.force_entered_char:
 
 ; int __stdcall con_getch(void);
 con_getch:
-		call con_init_check
+                call con_init_check
         call    con.force_entered_char
         test    byte [con_flags+1], 2
         jnz     con_getch_closed
@@ -1406,7 +1471,7 @@ con_getch_closed:
 
 ; int __stdcall con_getch2(void);
 con_getch2:
-		call con_init_check
+                call con_init_check
         call    con.force_entered_char
         test    byte [con_flags+1], 2
         jnz     con_getch_closed
@@ -1421,7 +1486,7 @@ con_gets:
         push    eax
 ; char* __stdcall con_gets2(con_gets2_callback callback, char* str, int n);
 con_gets2:
-		call con_init_check
+                call con_init_check
         mov     eax, [esp+8]            ; str
         pushad
         mov     esi, eax                ; str
@@ -1738,27 +1803,27 @@ con_gets2:
 
 ; void __stdcall con_cls();
 con_cls:
-		mov ah,[con.init_cmd]
-		test ah,ah
-		je cmd_init_no
-		
+                mov ah,[con.init_cmd]
+                test ah,ah
+                je cmd_init_no
+                
         push    edi
         call    con.write_special_char.cls
         pop     edi
         call    con.update_screen
-		
-		ret
-		
-		cmd_init_no:
-		
-		push con.title_init_console
-		push -1
-		push -1
-		push -1
-		push -1
-		
-		call con_init
-		
+                
+                ret
+                
+                cmd_init_no:
+                
+                push con.title_init_console
+                push -1
+                push -1
+                push -1
+                push -1
+                
+                call con_init
+                
         ret
 
 ; void __stdcall con_get_cursor_pos(int* px, int* py);
@@ -2647,7 +2712,8 @@ con.thread_err      db 'Cannot create console thread!',13,10,0
 con.nomem_err       db 'Not enough memory!',13,10,0
 con.aFinished       db ' [Finished]',0
 con.aNull           db '(null)',0
-con.beep                db      0x90, 0x3C, 0x00
+con.beep            db 0x90, 0x3C, 0x00
+con.beep2           db 0x85, 0x25, 0x85, 0x40, 0x00
 con.ipc_buf         dd 0,8,0,0
                     db 0
 
