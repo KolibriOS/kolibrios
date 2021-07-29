@@ -42,6 +42,14 @@
 #define __MIX_INTERNAL_EFFECT__
 #include "effects_internal.h"
 
+#ifdef _KOLIBRI
+    void      uSDL_Delay(unsigned int time);
+    unsigned  uSDL_GetTicks(); 
+#else
+    #define uSDL_Delay SDL_Delay
+    #define  uSDL_GetTicks SDL_GetTicks
+#endif
+
 /* Magic numbers for various audio file formats */
 #define RIFF		0x46464952		/* "RIFF" */
 #define WAVE		0x45564157		/* "WAVE" */
@@ -300,7 +308,7 @@ static void mix_channels(void *udata, Uint8 *stream, int len)
 	}
 
 	/* Mix any playing channels... */
-	sdl_ticks = SDL_GetTicks();
+	sdl_ticks =  uSDL_GetTicks();
 	for ( i=0; i<num_channels; ++i ) {
 		if( ! mix_channel[i].paused ) {
 			if ( mix_channel[i].expire > 0 && mix_channel[i].expire < sdl_ticks ) {
@@ -857,7 +865,7 @@ int Mix_PlayChannelTimed(int which, Mix_Chunk *chunk, int loops, int ticks)
 
 		/* Queue up the audio data for this channel */
 		if ( which >= 0 && which < num_channels ) {
-			Uint32 sdl_ticks = SDL_GetTicks();
+			Uint32 sdl_ticks =  uSDL_GetTicks();
 			if (Mix_Playing(which))
 				_Mix_channel_done_playing(which);
 			mix_channel[which].samples = chunk->abuf;
@@ -888,7 +896,7 @@ int Mix_ExpireChannel(int which, int ticks)
 		}
 	} else if ( which < num_channels ) {
 		SDL_LockAudio();
-		mix_channel[which].expire = (ticks>0) ? (SDL_GetTicks() + ticks) : 0;
+		mix_channel[which].expire = (ticks>0) ? ( uSDL_GetTicks() + ticks) : 0;
 		SDL_UnlockAudio();
 		++ status;
 	}
@@ -927,7 +935,7 @@ int Mix_FadeInChannelTimed(int which, Mix_Chunk *chunk, int loops, int ms, int t
 
 		/* Queue up the audio data for this channel */
 		if ( which >= 0 && which < num_channels ) {
-			Uint32 sdl_ticks = SDL_GetTicks();
+			Uint32 sdl_ticks =  uSDL_GetTicks();
 			if (Mix_Playing(which))
 				_Mix_channel_done_playing(which);
 			mix_channel[which].samples = chunk->abuf;
@@ -1046,7 +1054,7 @@ int Mix_FadeOutChannel(int which, int ms)
 				mix_channel[which].fade_volume = mix_channel[which].volume;
 				mix_channel[which].fading = MIX_FADING_OUT;
 				mix_channel[which].fade_length = ms;
-				mix_channel[which].ticks_fade = SDL_GetTicks();
+				mix_channel[which].ticks_fade =  uSDL_GetTicks();
 
 				/* only change fade_volume_reset if we're not fading. */
 				if (mix_channel[which].fading == MIX_NO_FADING) {
@@ -1151,7 +1159,7 @@ void Mix_CloseAudio(void)
 /* Pause a particular channel (or all) */
 void Mix_Pause(int which)
 {
-	Uint32 sdl_ticks = SDL_GetTicks();
+	Uint32 sdl_ticks =  uSDL_GetTicks();
 	if ( which == -1 ) {
 		int i;
 
@@ -1170,7 +1178,7 @@ void Mix_Pause(int which)
 /* Resume a paused channel */
 void Mix_Resume(int which)
 {
-	Uint32 sdl_ticks = SDL_GetTicks();
+	Uint32 sdl_ticks =  uSDL_GetTicks();
 
 	SDL_LockAudio();
 	if ( which == -1 ) {
@@ -1260,7 +1268,7 @@ int Mix_GroupCount(int tag)
 int Mix_GroupOldest(int tag)
 {
 	int chan = -1;
-	Uint32 mintime = SDL_GetTicks();
+	Uint32 mintime =  uSDL_GetTicks();
 	int i;
 	for( i=0; i < num_channels; i ++ ) {
 		if ( (mix_channel[i].tag==tag || tag==-1) && mix_channel[i].playing > 0

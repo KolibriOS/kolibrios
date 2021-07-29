@@ -1,6 +1,7 @@
 // WL_DRAW.C
 
 #include "wl_def.h"
+#include <cstdio>
 #pragma hdrstop
 
 #include "wl_cloudsky.h"
@@ -1073,12 +1074,12 @@ void CalcTics (void)
     if (lasttimecount > (int32_t) GetTimeCount())
         lasttimecount = GetTimeCount();    // if the game was paused a LONG time
 
-    uint32_t curtime = SDL_GetTicks();
+    uint32_t curtime =  uSDL_GetTicks();
     tics = (curtime * 7) / 100 - lasttimecount;
     if(!tics)
     {
         // wait until end of current tic
-        SDL_Delay(((lasttimecount + 1) * 100) / 7 - curtime);
+        uSDL_Delay(((lasttimecount + 1) * 100) / 7 - curtime);
         tics = 1;
     }
 

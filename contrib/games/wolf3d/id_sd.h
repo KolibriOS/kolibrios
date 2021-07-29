@@ -119,11 +119,17 @@ extern  SMMode          MusicMode;
 extern  int             DigiMap[];
 extern  int             DigiChannel[];
 
-#define GetTimeCount()  ((SDL_GetTicks()*7)/100)
+#ifdef _KOLIBRI
+    extern void uSDL_Delay(unsigned time);
+#else
+    #define uSDL_Delay SDL_Delay
+#endif
+
+#define GetTimeCount()  (( uSDL_GetTicks()*7)/100)
 
 inline void Delay(int wolfticks)
 {
-    if(wolfticks>0) SDL_Delay(wolfticks * 100 / 7);
+    if(wolfticks>0) uSDL_Delay(wolfticks * 100/ 7);
 }
 
 // Function prototypes

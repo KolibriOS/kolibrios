@@ -1956,7 +1956,7 @@ MouseSensitivity (int)
     DrawMouseSens ();
     do
     {
-        SDL_Delay(5);
+        uSDL_Delay(5);
         ReadAnyControl (&ci);
         switch (ci.dir)
         {
@@ -2228,7 +2228,7 @@ EnterCtrlData (int index, CustomCtrls * cust, void (*DrawRtn) (int), void (*Prin
             redraw = 0;
         }
 
-        SDL_Delay(5);
+        uSDL_Delay(5);
         ReadAnyControl (&ci);
 
         if (type == MOUSE || type == JOYSTICK)
@@ -2274,7 +2274,7 @@ EnterCtrlData (int index, CustomCtrls * cust, void (*DrawRtn) (int), void (*Prin
                     lastFlashTime = GetTimeCount();
                     VW_UpdateScreen ();
                 }
-                else SDL_Delay(5);
+                else uSDL_Delay(5);
 
                 //
                 // WHICH TYPE OF INPUT DO WE PROCESS?
@@ -2397,7 +2397,7 @@ EnterCtrlData (int index, CustomCtrls * cust, void (*DrawRtn) (int), void (*Prin
                 while (!cust->allowed[which]);
                 redraw = 1;
                 SD_PlaySound (MOVEGUN1SND);
-                while (ReadAnyControl (&ci), ci.dir != dir_None) SDL_Delay(5);
+                while (ReadAnyControl (&ci), ci.dir != dir_None) uSDL_Delay(5);
                 IN_ClearKeysDown ();
                 break;
 
@@ -2411,7 +2411,7 @@ EnterCtrlData (int index, CustomCtrls * cust, void (*DrawRtn) (int), void (*Prin
                 while (!cust->allowed[which]);
                 redraw = 1;
                 SD_PlaySound (MOVEGUN1SND);
-                while (ReadAnyControl (&ci), ci.dir != dir_None) SDL_Delay(5);
+                while (ReadAnyControl (&ci), ci.dir != dir_None) uSDL_Delay(5);
                 IN_ClearKeysDown ();
                 break;
             case dir_North:
@@ -2837,7 +2837,7 @@ CP_ChangeView (int)
     do
     {
         CheckPause ();
-        SDL_Delay(5);
+        uSDL_Delay(5);
         ReadAnyControl (&ci);
         switch (ci.dir)
         {
@@ -3284,7 +3284,7 @@ HandleMenu (CP_iteminfo * item_i, CP_itemtype * items, void (*routine) (int w))
                 routine (which);
             VW_UpdateScreen ();
         }
-        else SDL_Delay(5);
+        else uSDL_Delay(5);
 
         CheckPause ();
 
@@ -3484,7 +3484,7 @@ DrawHalfStep (int x, int y)
     VWB_DrawPic (x, y, C_CURSOR1PIC);
     VW_UpdateScreen ();
     SD_PlaySound (MOVEGUN1SND);
-    SDL_Delay(1);  //Fixed too long delay in the menu 
+    uSDL_Delay(1);  //Fixed too long delay in the menu 
 }
 
 
@@ -3526,7 +3526,7 @@ TicDelay (int count)
     int32_t startTime = GetTimeCount ();
     do
     {
-        SDL_Delay(5);
+        uSDL_Delay(5);
         ReadAnyControl (&ci);
     }
     while ((int32_t) GetTimeCount () - startTime < count && ci.dir != dir_None);
@@ -3732,7 +3732,7 @@ Confirm (const char *string)
             tick ^= 1;
             lastBlinkTime = GetTimeCount();
         }
-        else SDL_Delay(5);
+        else uSDL_Delay(5);
 
 #ifdef SPANISH
     }

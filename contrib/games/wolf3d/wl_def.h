@@ -24,6 +24,17 @@
 #	define O_BINARY 0
 #endif
 
+#ifdef _KOLIBRI
+extern "C"{
+    extern void      uSDL_Delay(unsigned int time);
+    extern unsigned  uSDL_GetTicks(); 
+}
+#else
+    #define uSDL_Delay SDL_Delay
+    #define  uSDL_GetTicks SDL_GetTicks
+#endif
+
+
 #pragma pack(1)
 
 #if defined(_arch_dreamcast)
@@ -1391,7 +1402,7 @@ static inline fixed FixedMul(fixed a, fixed b)
 #endif
 #define DEMOCOND_SDL                   (!DEMOCOND_ORIG)
 
-#define GetTicks() ((SDL_GetTicks()*7)/100)
+#define GetTicks() (( uSDL_GetTicks()*7)/100)
 
 #define ISPOINTER(x) ((((uintptr_t)(x)) & ~0xffff) != 0)
 
@@ -1483,3 +1494,5 @@ static inline longword READLONGWORD(byte *&ptr)
 #endif
 
 #endif
+
+

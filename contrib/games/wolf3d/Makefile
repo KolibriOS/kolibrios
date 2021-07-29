@@ -43,6 +43,7 @@ OBJECTS += mame/fmopl.o
 SDL_OBJ += SDL/SDL_wave.o
 SDL_OBJ += SDL/SDL_audiocvt.o
 SDL_OBJ += SDL/SDL_mixer.o
+SDL_OBJ += SDL/uSDL.o
 
 SDL_MIX_OBJ += SDL_mixer/mixer.o
 SDL_MIX_OBJ += SDL_mixer/music.o

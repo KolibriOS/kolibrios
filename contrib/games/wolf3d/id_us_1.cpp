@@ -741,7 +741,7 @@ US_LineInput(int x,int y,char *buf,const char *def,boolean escok,
 
 			cursorvis ^= true;
 		}
-		else SDL_Delay(5);
+		else uSDL_Delay(5);
 		if (cursorvis)
 			USL_XORICursor(x,y,s,cursor);
 
@@ -772,7 +772,7 @@ US_LineInput(int x,int y,char *buf,const char *def,boolean escok,
 void US_InitRndT(int randomize)
 {
     if(randomize)
-        rndindex = (SDL_GetTicks() >> 4) & 0xff;
+        rndindex = ( uSDL_GetTicks() >> 4) & 0xff;
     else
         rndindex = 0;
 }

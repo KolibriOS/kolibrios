@@ -27,6 +27,9 @@ extern byte signon[];
 extern void kolibri_set_win_center();
 extern char* dirname(char* path);
 extern void setcwd(char* path);
+extern "C"{
+    extern void uSDL_StartTicks(void);
+}
 /*
 =============================================================================
 
@@ -1126,7 +1129,7 @@ void DoJukebox(void)
 
 #ifndef SPEAR
 #ifndef UPLOAD
-    start = ((SDL_GetTicks()/10)%3)*6;
+    start = (( uSDL_GetTicks()/10)%3)*6;
 #else
     start = 0;
 #endif
@@ -1217,6 +1220,9 @@ static void InitGame()
         printf("Unable to init SDL: %s\n", SDL_GetError());
         exit(1);
     }
+#ifdef _KOLIBRI
+    uSDL_StartTicks();
+#endif
     SDL_AudioInit(NULL);
     atexit(SDL_Quit);
 
@@ -1906,8 +1912,8 @@ void CheckParameters(int argc, char *argv[])
             " --nowait               Skips intro screens\n"
         #ifndef _KOLIBRI
             " --windowed[-mouse]     Starts the game in a window [and grabs mouse]\n"
-            " --res <width> <height> Sets the screen resolution\n"
         #endif
+            " --res <width> <height> Sets the screen resolution\n"
             "                        (must be multiple of 320x200 or 320x240)\n"
             " --resf <w> <h>         Sets any screen resolution >= 320x200\n"
             "                        (which may result in graphic errors)\n"
@@ -1916,7 +1922,7 @@ void CheckParameters(int argc, char *argv[])
             "                        allowed: 8, 16, 24, 32, default: \"best\" depth)\n"
             " --nodblbuf             Don't use SDL's double buffering\n"
             " --extravbls <vbls>     Sets a delay after each frame, which may help to\n"
-            "                        reduce flickering (unit is currently 8 ms, default: 0)\n"
+            "                        reduce flickering (unit is currently 8 ms, default: 2)\n"
         #ifndef _KOLIBRI
             " --joystick <index>     Use the index-th joystick if available\n"
             "                        (-1 to disable joystick, default: 0)\n"
