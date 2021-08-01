@@ -75,6 +75,7 @@ DDK_SRC = {
 compile_gcc(DDK_SRC)
 tup.rule(OBJS, "kos32-ar -crs %o %f", "libddk.a");
 tup.rule("core.S", "kos32-as %f -o %o", "core.o");
-tup.rule("core.o", "kos32-ar -crs %o %f","libcore.a"); 
+tup.rule("core.o", "kos32-ld -shared -s --out-implib %o --output-def core.def -o core.dll %f", {"libcore.a", extra_outputs={"core.def", "core.dll"}}); 
+
 
 
