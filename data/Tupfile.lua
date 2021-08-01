@@ -746,7 +746,7 @@ tup.append_table(extra_files, {
  {"kolibrios/utils/minizip/miniunz", PROGS .. "/fs/minizip/miniunz"},
  {"kolibrios/develop/tcc/tcc", PROGS .. "/develop/ktcc/trunk/source/tcc"},
  {"kolibrios/develop/sqlite3/sqlite3", "../contrib/sdk/sources/sqlite3/shell/sqlite3"},
- {"kolibrios/drivers/sensors/k10temp.sys", PROGS .. "../drivers/sensors/k10temp/k10temp.sys"},
+ {"kolibrios/drivers/sensors/k10temp.sys", "../drivers/sensors/k10temp/k10temp.sys"},
 })
 -- For russian build, add russian-only programs.
 if build_type == "rus" then tup.append_table(extra_files, {
