@@ -13,6 +13,9 @@
  *   suggest that it provides reasonable temperature values.
  */
 
+/* Ported for Kolibri OS by turbocat (Maxim Logaeav). 2021 */
+/* Thanks: dunkaist, punk_joker, doczom. */
+
 #include <ddk.h>
 #include <syscall.h>
 #include <linux/bitops.h>
@@ -170,7 +173,7 @@ long get_raw_temp(struct k10temp_data *data)
 		temp -= 49000;
 	return temp;
 }
-
+#if 0
 const char *k10temp_temp_label[] = {
 	"Tctl",
 	"Tdie",
@@ -197,6 +200,7 @@ int k10temp_read_labels(struct device *dev,
 	}
 	return 0;
 }
+#endif
 
 int k10temp_read_temp(struct device *dev, u32 attr, int channel,
 			     long *val)
@@ -290,11 +294,11 @@ umode_t k10temp_is_visible(const void *_data,
 			if (!(reg & HTC_ENABLE))
 				return 0;
 			break;
-		case hwmon_temp_label:
-			/* Show temperature labels only on Zen CPUs */
-			if (!data->is_zen || !HAVE_TEMP(data, channel))
-				return 0;
-			break;
+//		case hwmon_temp_label:
+//			/* Show temperature labels only on Zen CPUs */
+//			if (!data->is_zen || !HAVE_TEMP(data, channel))
+//				return 0;
+//			break;
 		default:
 			return 0;
 		}
@@ -304,7 +308,7 @@ umode_t k10temp_is_visible(const void *_data,
 	}
 	return 0444;
 }
-
+#if 0
 bool has_erratum_319(struct pci_dev *pdev)
 {
 	u32 pkg_type, reg_dram_cfg;
@@ -338,6 +342,7 @@ bool has_erratum_319(struct pci_dev *pdev)
 
 	return boot_cpu_data.x86_model < 4;
 }
+#endif
 
 const struct hwmon_channel_info *k10temp_info[] = {
 	HWMON_CHANNEL_INFO(temp,
@@ -390,11 +395,11 @@ void k10temp_get_ccd_support(struct pci_dev *pdev,
 
 int k10temp_probe(struct pci_dev *pdev, const struct pci_device_id *id, struct device *hwmon_dev)
 {
-    int unreliable = has_erratum_319(pdev);
+//    int unreliable = has_erratum_319(pdev);
 	struct device *dev = &pdev->dev;
 	struct k10temp_data *data;
 	int i;
-	if (unreliable) {
+/*	if (unreliable) {
 		if (!force) {
 			dev_err(dev,"unreliable CPU thermal sensor; monitoring disabled\n");
 			return -ENODEV;
@@ -402,6 +407,7 @@ int k10temp_probe(struct pci_dev *pdev, const struct pci_device_id *id, struct d
 		dev_warn(dev,
 			 "unreliable CPU thermal sensor; check erratum 319\n");
 	}
+*/
 	data = kzalloc(sizeof(struct k10temp_data), GFP_KERNEL);
     memset(data, 0x0, sizeof(struct k10temp_data)); 
 	if (!data)
@@ -484,72 +490,87 @@ const struct pci_device_id k10temp_id_table[] = {
 	{}
 };
 
-int __stdcall service_proc(ioctl_t *my_ctl){
-    return 0;
-}
+#define K10TEMP_NA (~0)
+#define CHANEL_MAX 9
 
-void show_temp_info(struct device *dev, u32 attr, int channel, char* label){
-	long temp=0;
-	if(k10temp_is_visible(dev->driver_data, hwmon_temp, attr,  channel)){
-			k10temp_read_temp(dev, attr, channel, &temp);
-        	printk("%s = %d\n",label, temp);
-	}
-}
+#pragma pack(push, 1)
+struct{
+    int Tctl;
+    int Tdie;
+    int Tccd1;
+    int Tccd2;
+    int Tccd3;
+    int Tccd4;
+    int Tccd5;
+    int Tccd6;
+    int Tccd7;
+    int Tccd8;
+    
+    int Tmax;
+    int Tcrit;
+    int Tcrit_hyst;
+}k10temp_out;
+#pragma pack(pop)
 
+struct device k10temp_device;
 
-void show_all_info(struct device* dev){
-    const char *hwmon_label=NULL;
-    int i=0;
-	for(i=0; i<=9; i++){
-        if(k10temp_is_visible(dev->driver_data, hwmon_temp, hwmon_temp_label, i)){
-			k10temp_read_labels(dev, hwmon_temp, 0, i, &hwmon_label);
-			printk("%s:\n",hwmon_label);
-        }
-		show_temp_info(dev, hwmon_temp_input, i, "temp");
-		show_temp_info(dev, hwmon_temp_max, i,   "temp_max");
-		show_temp_info(dev, hwmon_temp_crit, i,  "temp_crit");
-		show_temp_info(dev, hwmon_temp_crit_hyst, i, "temp_crit_hyst");
+void read_temp_info(struct device *dev, u32 attr, int channel, int *val){
+    long temp=0;
+    if(k10temp_is_visible(dev->driver_data, hwmon_temp, attr,  channel)){
+        k10temp_read_temp(dev, attr, channel, &temp);
+        *val=temp;
+	}else{
+        *val=K10TEMP_NA;
     }
 }
 
+void read_all_info(struct device* dev){
+	for(int c=0; c<=CHANEL_MAX; c++){
+		read_temp_info(dev, hwmon_temp_input, c, (int*)&k10temp_out+c);
+    }
+    read_temp_info(dev, hwmon_temp_max,       0, &k10temp_out.Tmax);
+    read_temp_info(dev, hwmon_temp_crit,      0, &k10temp_out.Tcrit);
+    read_temp_info(dev, hwmon_temp_crit_hyst, 0, &k10temp_out.Tcrit_hyst);
+}
+
+int __stdcall service_proc(ioctl_t *my_ctl){
+    if(!my_ctl || !my_ctl->output){
+        return 1;
+    }
+    read_all_info(&k10temp_device);
+    if(my_ctl->out_size == sizeof(k10temp_out)){
+        memcpy(my_ctl->output, &k10temp_out, sizeof(k10temp_out));
+        return 0;
+    }
+    return 1;
+}
+
+extern void init_amd_nbs(void);
 
 uint32_t drvEntry(int action, char *cmdline){
 	if(action != 1){
         return 0;
     }
-	struct device         k10temp_device;
-    pci_dev_t             device;
-    struct pci_device_id  *k10temp_id;
+    pci_dev_t device;
+    const struct pci_device_id  *k10temp_id;
     int  err;
 
     cpu_detect(&boot_cpu_data);
 
 	err = enum_pci_devices();
     if(unlikely(err != 0)) {
-        printk("k10temp: Device enumeration failed\n");
+        printk("k10temp: Device enumeration failed!\n");
         return -1;
     }
 
     k10temp_id = find_pci_device(&device, k10temp_id_table);
-    
-    if( unlikely(k10temp_id == NULL) ){
-        printk("k10temp: Device not found\n");
+
+    if(unlikely(k10temp_id == NULL)){
+        printk("k10temp: Device not found!\n");
         return -ENODEV;
     }
-    
+
     init_amd_nbs();
-     
-	k10temp_probe(&device.pci_dev, k10temp_id, &k10temp_device);
-    long temp;
-   /* if(k10temp_is_visible(k10temp_device.driver_data, hwmon_temp, hwmon_temp_input,  0)){
-        k10temp_read_temp(&k10temp_device, hwmon_temp_input, 0, &temp);
-        printk("Temp  = %d C\n", temp);
-   }
-   // if(k10temp_is_visible(&k10temp_device.driver_data, hwmon_temp, hwmon_temp_input,  1)){
-        k10temp_read_temp(&k10temp_device, hwmon_temp_input, 1, &temp);
-        printk("Temp  = %d C\n", temp);
-   // }
-    */
-    show_all_info(&k10temp_device);
+    k10temp_probe(&device.pci_dev, k10temp_id, &k10temp_device);
     return RegService("k10temp", service_proc);
 }

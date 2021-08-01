@@ -5,7 +5,7 @@ KPACK = kpack
 DDK_TOPDIR      = ../../ddk
 DRV_INCLUDES    = ../../include
 
-INCLUDES = -I$(DRV_INCLUDES)	    \
+INCLUDES =	   -I$(DRV_INCLUDES)	    \
 		   -I$(DRV_INCLUDES)/asm 	\
 		   -I$(DRV_INCLUDES)/uapi	\
 		   -I$(DRV_INCLUDES)/drm
@@ -16,7 +16,7 @@ DEFINES = -DKOLIBRI -D__KERNEL__ -DCONFIG_X86_32 -DCONFIG_DMI -DCONFIG_TINY_RCU
 DEFINES+= -DCONFIG_X86_L1_CACHE_SHIFT=6 -DCONFIG_ARCH_HAS_CACHE_LINE_SIZE
 DEFINES+= -DCONFIG_PRINTK -DCONFIG_PCI -DCONFIG_PCI  -DCONFIG_AMD_NB -DKBUILD_MODNAME=\"k10temp\"
 
-CFLAGS= -c -O2 -march=i686 -fno-ident -msse2 -fomit-frame-pointer -fno-builtin-printf
+CFLAGS= -c -Os -march=i686 -fno-ident -msse2 -fomit-frame-pointer -fno-builtin-printf
 CFLAGS+= -mno-stack-arg-probe -mpreferred-stack-boundary=2 -mincoming-stack-boundary=2 -mno-ms-bitfields 
 
 LIBPATH = -L $(DDK_TOPDIR)
@@ -30,14 +30,14 @@ LDFLAGS = -nostdlib -shared -s --major-os-version 0 --minor-os-version 7 \
 
 OBJS = k10temp.o ../pci.o ../amd_nb.o ../cpu_detect.o
 
-all: $(OBJS) $(NAME).dll 
+all: $(OBJS) $(NAME).sys 
 
-$(NAME).dll: $(OBJS) 
+$(NAME).sys: $(OBJS) 
 	$(LD) $(LIBPATH) $(LDFLAGS) -T ../drv.lds $(OBJS) -o $@ $(NAME_OBJS) $(LIBS)
-	$(KPACK) $(NAME).dll
+	$(KPACK) $(NAME).sys
 
 %.o : %.c Makefile
 	$(CC) $(CFLAGS) $(DEFINES) $(INCLUDES) -o $@ $<  
 
 clean:
-	rm -f $(OBJS) $(NAME).dll
+	rm -f $(OBJS) $(NAME).sys
