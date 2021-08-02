@@ -79,13 +79,33 @@ otherwise, these characters will be displayed like ordinary characters. */
 		46 = cyan background
 		47 = white background
 	The following sequences appeared in version 5 of library:
-	Esc[2J - clear screen, move cursor to upper left corner
-	Esc[<number1>;<number2>H = Esc[<number1>;<number2>f -
-		move cursor to <number1>,<number2>
 	Esc[<number>A - move cursor to <number> lines up
 	Esc[<number>B - move cursor to <number> lines down
 	Esc[<number>C - move cursor to <number> positions right
 	Esc[<number>D - move cursor to <number> positions left
+	Esc[<number1>;<number2>H = Esc[<number1>;<number2>f -
+		move cursor to <number1>,<number2>	
+	Esc[2J - clear screen, move cursor to upper left corner		
+	The following sequences appeared in version 9 of library:	
+	Esc[J or Esc[0J - Erase everything below cursor
+	Esc[1J - Erase everything above cursor	
+	Esc[K - Erase in line
+	Esc[<number>L - Insert <number> lines at the cursor position
+	Esc[<number>M - Delete <number> lines at the cursor position
+	Esc[<number>P - Delete <number chars at the cursor position
+	Esc[<number>X - Erase <number chars at the cursor position
+	Esc[<number>d - Set cursor to absolute line position
+	Esc[<number1>;<number2>f - Cursor position
+	Esc[<mode>h - Set mode (see below)
+	Esc[<mode>l - Reset mode (see below)
+	The following modes are currently supported:
+		?1 - Application cursor keys
+		?25 - Show/Hide cursor
+		?1049 - Alternative screen buffer. The alternative buffer has no scrollback.
+	Esc[<number1>;<number2>r - Set scroll region from row <number1> to row <number2>
+		(Use in combination with insert/delete lines)
+	Esc]0<string>ST/BEL - Set window caption. The string is terminated with ASCII char 0x07 or 0x9C.
+	Esc]2<string>ST/BEL - Implemented identical as Esc]0.
 */
 /* signal "console closed"; appeared in version 6;
 	ignored by con_set_flags */
@@ -160,3 +180,8 @@ Set the cursor position to the specified coordinates. If any of the
 parameters beyond the relevant range (from 0 to 1 scr_width-
 for x, from 0 to 1 for scr_height-y, scr_width scr_height and were asked if
 call con_init), then the corresponding coordinate of the cursor does not change.
+
+int __stdcall con_get_input(char* buf, int buflen);
+Read as many input events as are available and fit in the receive buffer.
+Input event can be regular ASCII code from keyboard, but also escape codes for special keys.
+The support for mouse events via escape codes is not yet implemented.

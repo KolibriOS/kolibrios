@@ -10,6 +10,36 @@ section '.flat' code readable align 16
 include 'font.inc'
 include 'conscrl.inc'
 
+struc process_info
+{
+  .cpu_usage              dd ?  ; +0
+  .window_stack_position  dw ?  ; +4
+  .window_stack_value     dw ?  ; +6
+                          dw ?  ; +8
+  .process_name           rb 12 ; +10
+  .memory_start           dd ?  ; +22
+  .used_memory            dd ?  ; +26
+  .PID                    dd ?  ; +30
+  .box.x                  dd ?  ; +34
+  .box.y                  dd ?  ; +38
+  .box.width              dd ?  ; +42
+  .box.height             dd ?  ; +46
+  .slot_state             dw ?  ; +50
+                          dw ?  ; +52
+  .client_box.x           dd ?  ; +54
+  .client_box.y           dd ?  ; +58
+  .client_box.width       dd ?  ; +62
+  .client_box.height      dd ?  ; +66
+  .wnd_state              db ?  ; +70
+  rb (1024-71)
+}
+
+OP_EXIT         = 1
+OP_SET_TITLE    = 2
+OP_REDRAW       = 3
+OP_GETCH        = 4
+OP_RESIZE       = 5
+
 ;void __stdcall START(dword state);
 START:
 ; N.B. The current kernel implementation does not require
@@ -36,37 +66,53 @@ con_init:
         pop     eax
         pop     [con.wnd_width]
         pop     [con.wnd_height]
-        pop     [con.scr_width]
-        pop     [con.scr_height]
+        pop     [con.main_scr_width]
+        pop     [con.main_scr_height]
         pop     [con.title]
         push    eax
 
-        push ebx
+        push    ebx
 
-                mov [con.init_cmd],1
+        mov     [con.init_cmd],1
 
         mov     ecx, 4
         mov     eax, con.wnd_width
         mov     edx, con.def_wnd_width
-.1:
+  .1:
         cmp     dword [eax], -1
         jnz     @f
         mov     ebx, [edx]
         mov     [eax], ebx
-@@:
+  @@:
         add     eax, 4
         add     edx, 4
         loop    .1
-; allocate memory for console data & bitmap data
-        mov     eax, [con.scr_width]
-        mul     [con.scr_height]
+
+; Allocate memory for console data & bitmap data
+; First, calculate required amount of bytes
+
+; Main buffer
+        mov     eax, [con.main_scr_width]
+        mul     [con.main_scr_height]
+;       2 bytes per on-screen character (1 flags and 1 ascii)
         lea     ecx, [eax+eax]
+
+; Alternate buffer
+        mov     [con.altbuffer], ecx
+        mov     eax, [con.wnd_width]
+        mul     [con.wnd_height]
+;       2 bytes per on-screen character (1 flags and 1 ascii)
+        lea     ecx, [ecx+2*eax]
+
+; Bitmap data
         mov     eax, [con.wnd_width]
         mul     [con.wnd_height]
         imul    eax, font_width*font_height
         mov     ebx, eax
         push    ebx ecx
         add     ecx, eax
+
+; malloc
         push    68
         pop     eax
         push    12
@@ -75,19 +121,36 @@ con_init:
         pop     ecx ebx
         mov     edx, con.nomem_err
         test    eax, eax
-        jz      con.fatal
+        jz      .fatal
+
+; Set pointers to the buffers
+        mov     [con.mainbuffer], eax
+        add     [con.altbuffer], eax
+
+; Set active buffer pointer and dimensions
         mov     [con.data], eax
+
+        push    [con.main_scr_width]
+        pop     [con.scr_width]
+
+        push    [con.main_scr_height]
+        pop     [con.scr_height]
+
+; Clear text buffers
         push    edi
         mov     edi, eax
         shr     ecx, 1
         mov     ax, 0x0720
         rep     stosw
+
+; Clear bitmap buffer
         mov     ecx, ebx
         mov     [con.image], edi
         xor     eax, eax
         rep     stosb
         pop     edi
         and     byte [con_flags+1], not 2
+
 ; create console thread
         push    51
         pop     eax
@@ -98,11 +161,12 @@ con_init:
         int     0x40
         mov     edx, con.thread_err
         test    eax, eax
-        js      con.fatal
+        js      .fatal
         mov     [con.console_tid], eax
         pop     ebx
         ret
-con.fatal:
+
+  .fatal:
 ; output string to debug board and die
         mov     cl, [edx]
         test    cl, cl
@@ -113,8 +177,8 @@ con.fatal:
         inc     ebx
         int     0x40
         inc     edx
-        jmp     con.fatal
-@@:
+        jmp     .fatal
+  @@:
         or      eax, -1
         int     0x40
 
@@ -147,29 +211,30 @@ con_set_cursor_height:
         jae     @f
         xchg    eax, [con.cursor_height]
         ret     4
-@@:
+  @@:
         mov     eax, [con.cursor_height]
         ret     4
 
 con_init_check:
-        mov ah,[con.init_cmd]
-        test ah,ah
-        jne cmd_init_yes
+        mov     ah, [con.init_cmd]
+        test    ah, ah
+        jne     .yes
 
-        push con.title_init_console
-        push -1
-        push -1
-        push -1
-        push -1
+        push    con.title_init_console
+        push    -1
+        push    -1
+        push    -1
+        push    -1
 
-        call con_init
-
-        cmd_init_yes:
-
+        call    con_init
+  .yes:
         ret
+
 ; void __stdcall con_write_asciiz(const char* string);
 con_write_asciiz:
-                call con_init_check
+
+        call    con_init_check
+
         push    ebx esi
         or      ebx, -1
         mov     esi, [esp+12]
@@ -179,6 +244,7 @@ con_write_asciiz:
 
 ; void __stdcall con_write_string(const char* string, dword length);
 con_write_length:
+
         push    ebx esi
         mov     esi, [esp+12]
         mov     ebx, [esp+16]
@@ -265,29 +331,31 @@ con.charjump:
 
 ; int __cdecl con_printf(const char* format, ...)
 con_printf:
-                call con_init_check
+
+        call    con_init_check
+
         xor     eax, eax
         pushad
         call    con.get_data_ptr
         lea     ebp, [esp+20h+8]
         mov     esi, [ebp-4]
         sub     esp, 64         ; reserve space for buffer
-.loop:
+  .loop:
         xor     eax, eax
         lodsb
         test    al, al
         jz      .done
         cmp     al, '%'
         jz      .spec_begin
-.normal:
+  .normal:
         call    con.write_char_ex
         inc     dword [esp+64+28]
         jmp     .loop
-.errspec:
-.percent:
+  .errspec:
+  .percent:
         add     esp, 12
         jmp     .normal
-.spec_begin:
+  .spec_begin:
         xor     ebx, ebx
 ; bl = тип позиции:
 ; 0 = начало
@@ -307,7 +375,7 @@ con_printf:
 ; dword [esp+4] = width
         push    0
 ; byte [esp] = флаг 0/'+'/' '
-.spec:
+  .spec:
         xor     eax, eax
         lodsb
         test    al, al
@@ -319,25 +387,25 @@ con_printf:
         movzx   ecx, byte [con.charcodes + eax - ' ']
         jmp     dword[con.charjump + ecx*4]
 
-.sharp:
+  .sharp:
         test    bl, bl
         jnz     .errspec
         or      bh, 1
         jmp     .spec
-.minus:
+  .minus:
         test    bl, bl
         jnz     .errspec
         or      bh, 2
         jmp     .spec
-.plus:
-.space:
+  .plus:
+  .space:
         test    bl, bl
         jnz     .errspec
         cmp     byte [esp], '+'
         jz      .spec
         mov     byte [esp], al
         jmp     .spec
-.zero:
+  .zero:
         test    bl, bl
         jnz     .digit
         test    bh, 2
@@ -345,7 +413,7 @@ con_printf:
         or      bh, 4
         inc     ebx
         jmp     .spec
-.digit:
+  .digit:
         sub     al, '0'
         cmp     bl, 2
         ja      .precision
@@ -357,7 +425,7 @@ con_printf:
         add     eax, eax
         add     [esp+4], eax
         jmp     .spec
-.precision:
+  .precision:
         cmp     bl, 3
         jnz     .errspec
         xchg    eax, [esp+8]
@@ -365,7 +433,7 @@ con_printf:
         add     eax, eax
         add     [esp+8], eax
         jmp     .spec
-.asterisk:
+  .asterisk:
         mov     eax, [ebp]
         add     ebp, 4
         cmp     bl, 2
@@ -374,49 +442,49 @@ con_printf:
         jns     @f
         neg     eax
         or      bh, 2
-@@:
+  @@:
         mov     [esp+4], eax
         mov     bl, 3
         jmp     .spec
-.asterisk_precision:
+  .asterisk_precision:
         cmp     bl, 3
         jnz     .errspec
         mov     [esp+8], eax
         inc     ebx
         jmp     .spec
-.dot:
+  .dot:
         cmp     bl, 2
         ja      .errspec
         mov     bl, 3
         and     dword [esp+8], 0
         jmp     .spec
-.long:
+  .long:
         cmp     bl, 3
         ja      .errspec
         mov     bl, 4
         jmp     .spec
-.short:
+  .short:
         cmp     bl, 3
         ja      .errspec
         mov     bl, 4
         or      bh, 8
         jmp     .spec
-.unsigned:
-.dec:
+  .unsigned:
+  .dec:
         push    10
         jmp     .write_number
-.pointer:
+  .pointer:
         mov     dword [esp+12], 8
         or      bh, 4
         and     bh, not 8
-.hex:
+  .hex:
         push    16
         jmp     @f
-.oct:
+  .oct:
         push    8
-@@:
+  @@:
         mov     byte [esp+4], 0
-.write_number:
+  .write_number:
         pop     ecx
         push    edi
         lea     edi, [esp+16+64-1]      ; edi -> end of buffer
@@ -431,7 +499,7 @@ con_printf:
         cmp     byte [esp], 'd'
         jnz     @f
         movsx   eax, ax
-@@:
+  @@:
         xor     edx, edx
         test    eax, eax
         jns     @f
@@ -439,16 +507,16 @@ con_printf:
         jnz     @f
         inc     edx
         neg     eax
-@@:
+  @@:
         push    edx
         xor     edx, edx
 ; число в eax, основание системы счисления в ecx
-@@:
+  @@:
         cmp     dword [esp+16+8], 0
         jnz     .print_num
         test    eax, eax
         jz      .zeronum
-.print_num:
+  .print_num:
         div     ecx
         xchg    eax, edx
         cmp     al, 10
@@ -457,14 +525,14 @@ con_printf:
         cmp     byte [esp+4], 'x'
         jnz     @f
         or      al, 20h
-@@:
+  @@:
         dec     edi
         mov     [edi], al
         xor     eax, eax
         xchg    eax, edx
         test    eax, eax
         jnz     .print_num
-.zeronum:
+  .zeronum:
         push    0
         mov     edx, [esp+12]
         lea     eax, [esp+32+64-1]
@@ -475,34 +543,34 @@ con_printf:
         jae     .len_found1
         mov     eax, [esp+20+8]
         jmp     .len_found1
-.noprec1:
+  .noprec1:
         test    bh, 4
         jnz     .do_print_num
-.len_found1:
+  .len_found1:
         test    bh, 2
         jnz     .do_print_num
         cmp     byte [esp+20], 0
         jz      @f
         inc     eax
-@@:
+  @@:
         cmp     byte [esp+20], 0
         jnz     @f
         cmp     byte [esp+4], 0
         jz      @f
         inc     eax
-@@:
+  @@:
         test    bh, 1
         jz      .nosharp1
         cmp     cl, 8
         jnz     @f
         inc     eax
         jmp     .nosharp1
-@@:
+  @@:
         cmp     cl, 16
         jnz     .nosharp1
         inc     eax
         inc     eax
-.nosharp1:
+  .nosharp1:
         cmp     dword [esp+20+4], -1
         jz      .do_print_num
         sub     eax, [esp+20+4]
@@ -510,7 +578,7 @@ con_printf:
         push    ecx
         mov     ecx, eax
         mov     al, ' '
-@@:
+  @@:
         xchg    edi, [esp+20]
         call    con.write_char_ex
         inc     dword [esp+24+12+64+28]
@@ -519,16 +587,16 @@ con_printf:
         inc     ecx
         jnz     @b
         pop     ecx
-.do_print_num:
+  .do_print_num:
         mov     al, '-'
         cmp     byte [esp+4], 0
         jnz     .write_sign
         mov     al, [esp+20]
         test    al, al
         jz      .sign_written
-.write_sign:
+  .write_sign:
         call    .num_write_char
-.sign_written:
+  .sign_written:
         test    bh, 1
         jz      .nosharp2
         mov     al, '0'
@@ -538,75 +606,75 @@ con_printf:
         jnz     .nosharp2
         call    .num_write_char
         mov     al, [esp+8]
-@@:
+  @@:
         call    .num_write_char
-.nosharp2:
+  .nosharp2:
         lea     ecx, [esp+32+64-1]
         sub     ecx, edi
         cmp     dword [esp+20+8], -1
         jz      .noprec2
         sub     ecx, [esp+20+8]
         jmp     .lead_zeroes
-.noprec2:
+  .noprec2:
         test    bh, 4
         jz      .do_print_num2
         add     ecx, [esp]
         sub     ecx, [esp+20+4]
-.lead_zeroes:
+  .lead_zeroes:
         jae     .do_print_num2
-@@:
+  @@:
         mov     al, '0'
         call    .num_write_char
         inc     ecx
         jnz     @b
-.do_print_num2:
+  .do_print_num2:
         mov     al, [edi]
         test    al, al
         jz      .num_written
         call    .num_write_char
         inc     edi
         jmp     .do_print_num2
-.num_written:
+  .num_written:
         pop     ecx
         mov     edi, [esp+12]
         cmp     dword [esp+16+4], -1
         jz      .num_written2
-@@:
+  @@:
         cmp     ecx, [esp+16+4]
         jae     .num_written2
         mov     al, ' '
         call    con.write_char
         inc     ecx
         jmp     @b
-.num_written2:
+  .num_written2:
         add     esp, 16
-.spec_done:
+  .spec_done:
         add     esp, 12
         jmp     .loop
-.char:
+  .char:
         mov     ecx, [esp+4]
         cmp     ecx, -1
         jnz     @f
         inc     ecx
-@@:
+  @@:
         test    ecx, ecx
         jnz     @f
         inc     ecx
-@@:
+  @@:
         test    bh, 2
         jnz     .char_left_pad
         mov     al, ' '
         dec     ecx
         jz      .nowidth
         add     [esp+12+64+28], ecx
-@@:
+  @@:
         call    con.write_char
         loop    @b
-.nowidth:
+  .nowidth:
         mov     al, [ebp]
         add     ebp, 4
         jmp     .percent
-.char_left_pad:
+  .char_left_pad:
         mov     al, [ebp]
         add     ebp, 4
         call    con.write_char_ex
@@ -614,28 +682,28 @@ con_printf:
         dec     ecx
         jz      .nowidth2
         mov     al, ' '
-@@:
+  @@:
         call    con.write_char
         loop    @b
-.nowidth2:
+  .nowidth2:
         jmp     .spec_done
-.string:
+  .string:
         push    esi
         mov     esi, [ebp]
         test    esi, esi
         jnz     @f
         mov     esi, con.aNull
-@@:
+  @@:
         add     ebp, 4
         or      ecx, -1
-@@:
+  @@:
         inc     ecx
         cmp     byte [esi+ecx], 0
         jnz     @b
         cmp     ecx, [esp+12]
         jb      @f
         mov     ecx, [esp+12]
-@@:
+  @@:
         test    bh, 2
         jnz     .write_string
         cmp     dword [esp+8], -1
@@ -644,23 +712,23 @@ con_printf:
         sub     ecx, [esp+12]
         jae     .nospace
         mov     al, ' '
-@@:
+  @@:
         call    con.write_char
         inc     dword [esp+20+64+28]
         inc     ecx
         jnz     @b
-.nospace:
+  .nospace:
         pop     ecx
-.write_string:
+  .write_string:
         jecxz   .string_written
         add     dword [esp+16+64+28], ecx
         push    ecx
-@@:
+  @@:
         lodsb
         call    con.write_char_ex
         loop    @b
         pop     ecx
-.string_written:
+  .string_written:
         pop     esi
         test    bh, 2
         jz      .spec_done
@@ -669,17 +737,17 @@ con_printf:
         sub     ecx, [esp+4]
         jae     .spec_done
         mov     al, ' '
-@@:
+  @@:
         call    con.write_char
         inc     dword [esp+12+64+28]
         inc     ecx
         jnz     @b
         jmp     .spec_done
-.done:
+  .done:
         add     esp, 64
         popad
         jmp     con.update_screen
-.num_write_char:
+  .num_write_char:
         xchg    edi, [esp+20]
         call    con.write_char_ex
         inc     dword [esp+24+12+64+28]
@@ -693,20 +761,20 @@ con.write:
         call    con.get_data_ptr
         test    ebx, ebx
         jz      .done
-.loop:
+  .loop:
         lodsb
         cmp     ebx, -1
         jnz     @f
         test    al, al
         jz      .done
-@@:
+  @@:
         call    con.write_char_ex
-.next:
+  .next:
         cmp     ebx, -1
         jz      .loop
         dec     ebx
         jnz     .loop
-.done:
+  .done:
         pop     edi
         jmp     con.update_screen
 
@@ -730,7 +798,7 @@ con.write_char:
         jb      @f
         and     [con.cur_x], 0
         call    con.newline
-@@:
+  @@:
         mov     eax, [esp]
         stosb
         mov     al, byte [con_flags]
@@ -746,7 +814,7 @@ con.write_char:
 con.write_special_char:
         cmp     [con_esc], 0
         jnz     .esc_mode
-.normal_mode:
+  .normal_mode:
         cmp     al, 10
         jz      .write_lf
         cmp     al, 13
@@ -759,26 +827,26 @@ con.write_special_char:
         jz      .bell
         cmp     al, 9
         jnz     con.write_char
-.write_tab:
+  .write_tab:
         mov     al, ' '
         call    con.write_char
         test    [con.cur_x], 7
         jnz     .write_tab
         ret
-.write_cr:
+  .write_cr:
         and     [con.cur_x], 0
         jmp     con.get_data_ptr
-.write_lf:
+  .write_lf:
         and     [con.cur_x], 0
         jmp     con.newline
-.write_bs:
+  .write_bs:
         cmp     [con.cur_x], 0
         jz      @f
         dec     [con.cur_x]
         dec     edi
         dec     edi
         ret
-@@:
+  @@:
         push    eax
         mov     eax, [con.cur_y]
         dec     eax
@@ -789,37 +857,69 @@ con.write_special_char:
         mov     [con.cur_x], eax
         dec     edi
         dec     edi
-@@:
+  @@:
         pop     eax
         ret
-.bell:
+  .bell:
         pusha
         push    55
         pop     eax
         mov     ebx, eax
-        mov     esi, con.beep2
+        mov     esi, con.bell
         int     0x40
         popa
         ret
-.write_esc:
+  .write_esc:
         mov     [con_esc], 1
         mov     [con_esc_attr_n], 1
         and     [con_esc_attrs], 0
         ret
-.esc_mode:
+
+  .esc_mode:
         cmp     [con_sci], 0
         jnz     .esc_sci
         cmp     al, '['
-        jnz     @f
-        mov     [con_sci], 1
-        ret
-@@:
+        je      .esc_sqro
+        cmp     al, ']'
+        je      .esc_sqrc
+        cmp     al, '('
+        je      .esc_rndo
+        cmp     al, '>'
+        je      .keypm_norm
+        cmp     al, '='
+        je      .keypm_alt
+; Unrecognized escape sequence, print it to screen
         push    eax
         mov     al, 27
         call    con.write_char
         pop     eax
         jmp     con.write_char
+
+  .esc_sqro:
+        mov     [con_sci], 1
+        ret
+  .esc_sqrc:
+        mov     [con_sci], 2
+        ret
+  .esc_rndo:
+        mov     [con_sci], 4
+        ret
+
+.keypm_norm:
+; TODO: turn numlock on
+        mov     [con_esc], 0
+        ret
+
+.keypm_alt:
+; TODO: turn numlock off
+        mov     [con_esc], 0
+        ret
+
 .esc_sci:
+        cmp     [con_sci], 3
+        je      .string
+        cmp     [con_sci], 4
+        je      .g0charset
 ; this is real Esc sequence
         cmp     al, '?'         ; DEC private mode (DECSET/DECRST sequences)
         je      .questionmark
@@ -839,6 +939,42 @@ con.write_special_char:
         mov     [con_esc_attrs+(ecx-1)*4], edx
         pop     edx ecx eax
         ret
+.g0charset:
+; Designate G0 Character Set
+; Unimplemented: read and ignore.
+        mov     [con_sci], 0
+        mov     [con_esc], 0
+        ret
+.string:
+        cmp     al, 0x07        ; bell
+        je      .string_end
+        cmp     al, 0x9C        ; string terminator
+        je      .string_end
+        push    ecx
+        mov     ecx, [con_osc_strlen]
+        cmp     ecx, 255
+        jae     @f
+        mov     [con_osc_str+ecx], al
+        inc     [con_osc_strlen]
+@@:
+        pop     ecx
+        ret
+.string_end:
+        mov     [con_sci], 0
+        mov     [con_esc], 0
+        pusha
+        mov     ecx, [con_osc_strlen]
+        mov     byte[con_osc_str+ecx], 0
+        cmp     [con_esc_attrs+0], 0            ; Set Icon and Window Title
+        je      .set_title
+        cmp     [con_esc_attrs+0], 2            ; Set Window Title
+        je      .set_title
+        ret
+.set_title:
+        push    con_osc_str
+        call    con_set_title
+        popa
+        ret
 .questionmark:
         push    ecx
         mov     ecx, [con_esc_attr_n]
@@ -854,79 +990,373 @@ con.write_special_char:
 @@:
         mov     [con_esc_attr_n], eax
         and     [con_esc_attrs+(eax-1)*4], 0
+; Check for operating system command
+        cmp     [con_sci], 2
+        jne     @f
+        cmp     [con_esc_attr_n], 2
+        jne     @f
+; Next argument is string
+        mov     [con_sci], 3
+        mov     [con_osc_strlen], 0
+@@:
         pop     eax
         ret
 .not_digit:
         mov     [con_esc], 0
         mov     [con_sci], 0    ; in any case, leave Esc mode
-        cmp     al, 'J'
-        jz      .clear
-        cmp     al, 'H'
-        jz      .setcursor
-        cmp     al, 'f'
-        jz      .setcursor
-        cmp     al, 'm'
-        jz      .set_attr
+
+;        cmp     al, '@'
+;        je      .insert_chars
         cmp     al, 'A'
-        jz      .cursor_up
+        je      .cursor_up
         cmp     al, 'B'
-        jz      .cursor_down
+        je      .cursor_down
         cmp     al, 'C'
-        jz      .cursor_right
+        je      .cursor_right
         cmp     al, 'D'
-        jz      .cursor_left
-        cmp     al, 'l'
-        je      .dec_rst
-        cmp     al, 'h'
-        je      .dec_set
+        je      .cursor_left
+;        cmp     al, 'E'
+;        je      .cursor_next_line
+;        cmp     al, 'F'
+;        je      .cursor_prev_line
+;        cmp     al, 'G'
+;        je      .cursor_next_line
+;        cmp     al, 'S'
+;        je      .scroll_page_up
+;        cmp     al, 'T'
+;        je      .scroll_page_down
+        cmp     al, 'H'
+        je      .cursor_position
+        cmp     al, 'J'
+        je      .erase_in_display
         cmp     al, 'K'
         je      .erase_in_line
+        cmp     al, 'L'
+        je      .insert_lines
+        cmp     al, 'M'
+        je      .delete_lines
+        cmp     al, 'P'
+        je      .delete_chars
+        cmp     al, 'X'
+        je      .erase_chars
+
+        cmp     al, 'd'
+        je      .line_position_abs
+;        cmp     al, 'e'
+;        je      .line_position_rel
+        cmp     al, 'f'
+        je      .cursor_position
+        cmp     al, 'h'
+        je      .set_mode
+        cmp     al, 'l'
+        je      .reset_mode
+        cmp     al, 'm'
+        je      .set_attr
+        cmp     al, 'r'
+        je      .scroll_region
+;        cmp     al, 's'
+;        je      .save_cursor_pos
+;        cmp     al, 't'
+;        je      .window_manip
+;        cmp     al, 'u'
+;        je      .restore_cursor_pos
+
         ret     ; simply skip unknown sequences
 
-.dec_rst:
+.insert_lines:
+
+        push    eax ebx ecx esi
+        mov     eax, [con_esc_attrs+0]  ; amount of lines to scroll down
+        test    eax, eax
+        jnz     @f                      ; default is 1
+        inc     eax
+  @@:
+; Check that we are inside the scroll region
+        mov     ebx, [con.cur_y]
+        cmp     ebx, [con.scroll_top]
+        jb      .no_insert_lines
+        add     ebx, eax
+        cmp     ebx, [con.scroll_bot]
+        ja      .no_insert_lines
+; Move cursor to the left
+        mov     [con.cur_x], 0
+        call    con.get_data_ptr
+; Calc amount of chars in requested numer of lines
+        mov     ebx, [con.scr_width]
+        imul    ebx, eax
+; Move the lines down (in backwards order)
+        push    edi
+        mov     ecx, [con.scroll_bot]
+        sub     ecx, [con.cur_y]
+        sub     ecx, eax
+        imul    ecx, [con.scr_width]
+        lea     esi, [edi + 2*ecx - 2]
+        lea     edi, [esi + 2*ebx]
+        std
+        rep     movsw
+        cld
+        pop     edi
+; Insert empty lines
+        push    edi
+        mov     ecx, ebx
+        mov     ah, byte[con_flags]
+        mov     al, ' '
+        rep     stosw
+        pop     edi
+.no_insert_lines:
+        pop     esi ecx ebx eax
+        ret
+
+.delete_lines:
+
+        push    eax ebx ecx esi
+        mov     eax, [con_esc_attrs+0]  ; amount of lines to scroll up
+        test    eax, eax
+        jnz     @f                      ; default is 1
+        inc     eax
+  @@:
+; Check that we are inside the scroll region
+        mov     ebx, [con.cur_y]
+        cmp     ebx, [con.scroll_top]
+        jb      .no_delete_lines
+        add     ebx, eax
+        cmp     ebx, [con.scroll_bot]
+        ja      .no_delete_lines
+; Move cursor to the left
+        mov     [con.cur_x], 0
+        call    con.get_data_ptr
+; Calc amount of chars in requested numer of lines
+        mov     ebx, [con.scr_width]
+        imul    ebx, eax
+; Move the lines up
+        mov     ecx, [con.scroll_bot]
+        sub     ecx, [con.cur_y]
+        imul    ecx, [con.scr_width]
+        lea     esi, [edi + 2*ebx]
+        rep     movsw
+; Set new cursor row position
+        add     [con.cur_y], eax
+; Add empty lines till end of scroll region
+        push    edi
+        mov     ecx, ebx
+        mov     ah, byte[con_flags]
+        mov     al, ' '
+        rep     stosw
+        pop     edi
+.no_delete_lines:
+        pop     esi ecx ebx eax
+        ret
+
+.scroll_region:
+        push    eax ebx
+        cmp     [con_esc_attr_n], 2
+        jb      .no_scroll_region
+        mov     eax, [con_esc_attrs+0]  ; top
+        dec     eax
+        js      .no_scroll_region
+        cmp     eax, [con.wnd_height]
+        ja      .no_scroll_region
+
+        mov     ebx, [con_esc_attrs+4]  ; bottom
+        dec     ebx
+        js      .no_scroll_region
+        cmp     ebx, [con.wnd_height]
+        ja      .no_scroll_region
+
+        cmp     eax, ebx
+        ja      .no_scroll_region
+
+        mov     [con.scroll_top], eax
+        mov     [con.scroll_bot], ebx
+
+.no_scroll_region:
+        pop     ebx eax
+        ret
+
+.reset_mode:
         mov     eax, [con_esc_attrs]
         cmp     eax, 0xffffffff
         jne     .no_dec_rst
         mov     eax, [con_esc_attrs+4]
+        cmp     eax, 1
+        je      .dec_rst_app_cursor_keys
+;        cmp     eax, 7
+;        je      .dec_rst_wraparound
+;        cmp     eax, 12
+;        je      .dec_rst_cursor_blink
         cmp     eax, 25
-        je      .hide_cursor
+        je      .dec_rst_cursor
+;        cmp     eax, 1000
+;        je      .dec_rst_mouse
+;        cmp     eax, 1002
+;        je      .dec_rst_buttons
+;        cmp     eax, 1006
+;        je      .dec_rst_mouse_sgr
+        cmp     eax, 1049
+        je      .dec_rst_altbuff
+;        cmp     eax, 2004
+;        je      .dec_rst_brck_paste
 .no_dec_rst:
-        ret
-.hide_cursor:
-        mov     [con.cursor_height], 0
+;        cmp     eax, 2
+;        je      .rst_keyb_action_mode
+;        cmp     eax, 4
+;        je      .set_replace_mode
         ret
 
-.dec_set:
+.set_mode:
         mov     eax, [con_esc_attrs]
         cmp     eax, 0xffffffff
         jne     .no_dec_set
         mov     eax, [con_esc_attrs+4]
+        cmp     eax, 1
+        je      .dec_set_app_cursor_keys
+;        cmp     eax, 7
+;        je      .dec_set_wraparound
+;        cmp     eax, 12
+;        je      .dec_set_cursor_blink
         cmp     eax, 25
-        je      .show_cursor
+        je      .dec_set_cursor
+;        cmp     eax, 1000
+;        je      .dec_set_mouse
+;        cmp     eax, 1002
+;        je      .set_buttons
+;        cmp     eax, 1006
+;        je      .dec_rst_mouse_sgr
+        cmp     eax, 1049
+        je      .dec_set_altbuff
+;        cmp     eax, 2004
+;        je      .dec_set_brck_paste
 .no_dec_set:
+;        cmp     eax, 2
+;        je      .set_keyb_action_mode
+;        cmp     eax, 4
+;        je      .set_insert_mode
         ret
 
-.show_cursor:
+.dec_set_app_cursor_keys:
+        mov     [cursor_esc], 27 + ('O' shl 8)
+        ret
+
+.dec_rst_app_cursor_keys:
+        mov     [cursor_esc], 27 + ('[' shl 8)
+        ret
+
+.dec_set_cursor:
         mov     [con.cursor_height], (15*font_height+50)/100    ; default height
+        ret
+
+.dec_rst_cursor:
+        mov     [con.cursor_height], 0
+        ret
+
+.dec_set_altbuff:
+; Switch buffer
+        push    [con.altbuffer]
+        pop     [con.data]
+; Set new buffer size
+        push    [con.wnd_width]
+        pop     [con.scr_width]
+        push    [con.wnd_height]
+        pop     [con.scr_height]
+; Save cursor
+        push    [con.cur_x]
+        pop     [con.main_cur_x]
+        push    [con.cur_y]
+        pop     [con.main_cur_y]
+; Save window position
+        push    [con.wnd_xpos]
+        pop     [con.main_wnd_xpos]
+        push    [con.wnd_ypos]
+        pop     [con.main_wnd_ypos]
+; Clear screen
+        mov     edi, [con.altbuffer]
+        mov     eax, [con.wnd_width]
+        mul     [con.wnd_height]
+        mov     ecx, eax
+        mov     ah, byte[con_flags]
+        mov     al, ' '
+        rep     stosw
+; Reset cursor position
+        mov     [con.cur_x], 0
+        mov     [con.cur_y], 0
+; Reset window position
+        mov     [con.wnd_xpos], 0
+        mov     [con.wnd_ypos], 0
+; Get new data ptr so we can sart writing to new buffer
+        call    con.get_data_ptr
+; Finally, tell the GUI the window has been resized
+; (Redraw scrollbar and image)
+        mov     [con.thread_op], OP_RESIZE
+        jmp     con.wake
+
+.dec_rst_altbuff:
+; Switch buffer
+        push    [con.mainbuffer]
+        pop     [con.data]
+; Set new buffer size
+        push    [con.main_scr_width]
+        pop     [con.scr_width]
+        push    [con.main_scr_height]
+        pop     [con.scr_height]
+; Restore cursor
+        push    [con.main_cur_x]
+        pop     [con.cur_x]
+        push    [con.main_cur_y]
+        pop     [con.cur_y]
+; Restore window position
+        push    [con.main_wnd_xpos]
+        pop     [con.wnd_xpos]
+        push    [con.main_wnd_ypos]
+        pop     [con.wnd_ypos]
+; Get new data ptr so we can sart writing to new buffer
+        call    con.get_data_ptr
+; Finally, tell the GUI the window has been resized
+; (Redraw scrollbar and image)
+        mov     [con.thread_op], OP_RESIZE
+        jmp     con.wake
+
+.erase_chars:
+        push    edi ecx
+        mov     ecx, [con_esc_attrs]
+        test    ecx, ecx
+        jnz     @f
+        inc     ecx
+@@:
+        mov     ah, byte[con_flags]
+        mov     al, ' '
+        rep     stosw
+        pop     ecx edi
+        ; Unclear where cursor should point to now..
+        ret
+
+.delete_chars:
+        push    edi ecx
+        mov     ecx, [con_esc_attrs]
+        test    ecx, ecx
+        jnz     @f
+        inc     ecx
+@@:
+        sub     edi, 2
+        mov     ah, byte[con_flags]
+        mov     al, ' '
+        std
+        rep     stosw
+        cld
+        pop     ecx edi
         ret
 
 .erase_in_line:
         mov     eax, [con_esc_attrs]
         test    eax, eax
-        jz      .erase_till_end_of_line         ; <esc>[0K (or <esc>[K)
+        jz      .erase_after                    ; <esc>[0K (or <esc>[K)
         dec     eax
-        jz      .erase_till_start_of_line       ; <esc>[1K
+        jz      .erase_before                   ; <esc>[1K
         dec     eax
         je      .erase_current_line             ; <esc>[2K
         ret     ; unknown sequence
 
-.erase_till_end_of_line:
+.erase_after:
         push    edi ecx
-        mov     edi, [con.cur_y]
-        imul    edi, [con.scr_width]
-        add     edi, [con.cur_x]
-        shl     edi, 1
-        add     edi, [con.data]
         mov     ecx, [con.scr_width]
         sub     ecx, [con.cur_x]
         mov     ah, byte[con_flags]
@@ -935,7 +1365,7 @@ con.write_special_char:
         pop     ecx edi
         ret
 
-.erase_till_start_of_line:
+.erase_before:
         push    edi ecx
         mov     edi, [con.cur_y]
         imul    edi, [con.scr_width]
@@ -961,17 +1391,17 @@ con.write_special_char:
         pop     ecx edi
         ret
 
-.clear:
+.erase_in_display:
         mov     eax, [con_esc_attrs]
         test    eax, eax
-        jz      .clear_till_end_of_screen       ; <esc>[0J (or <esc>[J)
+        jz      .erase_below            ; <esc>[0J (or <esc>[J)
         dec     eax
-        jz      .clear_till_start_of_screen     ; <esc>[1J
+        jz      .erase_above            ; <esc>[1J
         dec     eax
-        je      .cls                            ; <esc>[2J
+        je      .erase_all              ; <esc>[2J
         ret     ; unknown sequence
 
-.clear_till_end_of_screen:
+.erase_below:
         push    edi ecx
         mov     ecx, [con.scr_width]
         imul    ecx, [con.scr_height]
@@ -992,7 +1422,7 @@ con.write_special_char:
         pop     ecx edi
         ret
 
-.clear_till_start_of_screen:
+.erase_above:
         push    edi ecx
         mov     ecx, [con.cur_y]
         imul    ecx, [con.scr_width]
@@ -1004,7 +1434,7 @@ con.write_special_char:
         pop     ecx edi
         ret
 
-.cls:   ; clear screen completely
+.erase_all:   ; clear screen completely
         push    ecx
         and     [con.cur_x], 0
         and     [con.cur_y], 0
@@ -1017,68 +1447,92 @@ con.write_special_char:
         pop     edi ecx
 .nosetcursor:
         ret
-.setcursor:
-        cmp     [con_esc_attr_n], 2
-        je      @f
-        xor     eax, eax
-        mov     [con.cur_x], eax
-        mov     [con.cur_y], eax
-        jmp     .j_get_data
-@@:
+.line_position_abs:
         mov     eax, [con_esc_attrs]
-        cmp     eax, [con.scr_width]
-        jae     @f
-        mov     [con.cur_x], eax
+        dec     eax
+        jns     @f
+        inc     eax
 @@:
-        mov     eax, [con_esc_attrs+4]
-        cmp     eax, [con.scr_height+4]
-        jae     @f
+        cmp     eax, [con.scr_height]
+        jae     .nolinepos
         mov     [con.cur_y], eax
+        jmp     con.get_data_ptr
+.nolinepos:
+        ret
+.cursor_position:
+; We always have at least one con_esc_attr, defaulting to 0
+; Coordinates however are 1-based
+; First comes Y (row) and then X (column)
+        mov     eax, [con_esc_attrs]
+        dec     eax
+        jns     @f
+        inc     eax
+@@:
+        cmp     eax, [con.scr_height]
+        jae     .no_y
+        mov     [con.cur_y], eax
+.no_y:
+        cmp     [con_esc_attr_n], 2
+        jb      .no_x
+        mov     eax, [con_esc_attrs+4]
+        dec     eax
+        jns     @f
+        inc     eax
+@@:
+        cmp     eax, [con.scr_width]
+        jae     .no_x
+        mov     [con.cur_x], eax
+.no_x:
 .j_get_data:
         jmp     con.get_data_ptr
 .cursor_up:
-        cmp     [con_esc_attr_n], 1
-        jnz     .nosetcursor
-        mov     eax, [con.cur_y]
-        sub     eax, [con_esc_attrs]
-        jnc     @f
-        xor     eax, eax
+        mov     eax, [con_esc_attrs]
+        test    eax, eax
+        jnz     @f
+        inc     eax     ; default = 1
 @@:
-        mov     [con.cur_y], eax
+        sub     [con.cur_y], eax
+        jns     .j_get_data
+        mov     [con.cur_y], 0
         jmp     .j_get_data
 .cursor_down:
-        cmp     [con_esc_attr_n], 1
-        jnz     .nosetcursor
-        mov     eax, [con.cur_y]
-        add     eax, [con_esc_attrs]
-        cmp     eax, [con.scr_height]
-        jb      @f
-        mov     eax, [con.scr_height]
-        dec     eax
+        mov     eax, [con_esc_attrs]
+        test    eax, eax
+        jnz     @f
+        inc     eax     ; default = 1
 @@:
+        add     eax, [con.cur_y]
+        cmp     eax, [con.scr_height]
+        ja      @f
+        mov     [con.cur_y], eax
+        jmp     .j_get_data
+@@:
+        mov     eax, [con.scr_height]
         mov     [con.cur_y], eax
         jmp     .j_get_data
 .cursor_right:
-        cmp     [con_esc_attr_n], 1
-        jnz     .nosetcursor
-        mov     eax, [con.cur_x]
-        add     eax, [con_esc_attrs]
-        cmp     eax, [con.scr_width]
-        jb      @f
-        mov     eax, [con.scr_width]
-        dec     eax
+        mov     eax, [con_esc_attrs]
+        test    eax, eax
+        jnz     @f
+        inc     eax     ; default = 1
 @@:
+        add     eax, [con.cur_x]
+        cmp     eax, [con.scr_width]
+        ja      @f
+        mov     [con.cur_x], eax
+        jmp     .j_get_data
+@@:
+        mov     eax, [con.scr_width]
         mov     [con.cur_x], eax
         jmp     .j_get_data
 .cursor_left:
-        cmp     [con_esc_attr_n], 1
-        jnz     .nosetcursor
-        mov     eax, [con.cur_x]
-        sub     eax, [con_esc_attrs]
-        jnc     @f
-        xor     eax, eax
+        test    eax, eax
+        jnz     @f
+        inc     eax     ; default = 1
 @@:
-        mov     [con.cur_x], eax
+        sub     [con.cur_x], eax
+        jns     .j_get_data
+        mov     [con.cur_x], 0
         jmp     .j_get_data
 .set_attr:
         push    eax ecx edx
@@ -1093,130 +1547,150 @@ con.write_special_char:
         jz      .attr_bgr_bold
         cmp     al, 7
         jz      .attr_reversed
+;        cmp     al, 8
+;        jz      .attr_invisible
+        cmp     al, 27
+        jz      .attr_normal    ; FIXME: not inverse
+;        cmp     al, 28
+;        jz      .attr_visible
 
+; Forground colors
         xor     edx, edx
-        cmp     al, 30
+        cmp     al, 30          ; Black
         jz      .attr_color
         mov     dl, 4
-        cmp     al, 31
+        cmp     al, 31          ; Red
         jz      .attr_color
         mov     dl, 2
-        cmp     al, 32
+        cmp     al, 32          ; Green
         jz      .attr_color
         mov     dl, 6
-        cmp     al, 33
+        cmp     al, 33          ; Yellow
         jz      .attr_color
         mov     dl, 1
-        cmp     al, 34
+        cmp     al, 34          ; Blue
         jz      .attr_color
         mov     dl, 5
-        cmp     al, 35
+        cmp     al, 35          ; Purple
         jz      .attr_color
         mov     dl, 3
-        cmp     al, 36
+        cmp     al, 36          ; Cyan
         jz      .attr_color
         mov     dl, 7
-        cmp     al, 37
+        cmp     al, 37          ; White
+        jz      .attr_color
+        mov     dl, 7
+        cmp     al, 39          ; Default - White
         jz      .attr_color
 
+; Background colors
         xor     edx, edx
-        cmp     al, 40
+        cmp     al, 40          ; Black
         jz      .attr_bgr_color
         mov     dl, 0x40
-        cmp     al, 41
+        cmp     al, 41          ; Red
         jz      .attr_bgr_color
         mov     dl, 0x20
-        cmp     al, 42
+        cmp     al, 42          ; Green
         jz      .attr_bgr_color
         mov     dl, 0x60
-        cmp     al, 43
+        cmp     al, 43          ; Yellow
         jz      .attr_bgr_color
         mov     dl, 0x10
-        cmp     al, 44
+        cmp     al, 44          ; Blue
         jz      .attr_bgr_color
         mov     dl, 0x50
-        cmp     al, 45
+        cmp     al, 45          ; Magenta
         jz      .attr_bgr_color
         mov     dl, 0x30
-        cmp     al, 46
+        cmp     al, 46          ; Cyan
         jz      .attr_bgr_color
         mov     dl, 0x70
-        cmp     al, 47
+        cmp     al, 47          ; White
+        jz      .attr_bgr_color
+        mov     dl, 0
+        cmp     al, 49          ; Default - Black
         jz      .attr_bgr_color
 
+; 16-color support, bright colors follow
+; Foreground colors
         mov     dl, 0x08
-        cmp     al, 90
+        cmp     al, 90          ; Black
         jz      .attr_color
         mov     dl, 4 + 8
-        cmp     al, 91
+        cmp     al, 91          ; Red
         jz      .attr_color
         mov     dl, 2 + 8
-        cmp     al, 92
+        cmp     al, 92          ; Green
         jz      .attr_color
         mov     dl, 6 + 8
-        cmp     al, 93
+        cmp     al, 93          ; Yellow
         jz      .attr_color
         mov     dl, 1 + 8
-        cmp     al, 94
+        cmp     al, 94          ; Blue
         jz      .attr_color
         mov     dl, 5 + 8
-        cmp     al, 95
+        cmp     al, 95          ; Magenta
         jz      .attr_color
         mov     dl, 3 + 8
-        cmp     al, 96
+        cmp     al, 96          ; Cyan
         jz      .attr_color
         mov     dl, 7 + 8
-        cmp     al, 97
+        cmp     al, 97          ; White
         jz      .attr_color
 
+; Background colors
         mov     dl, 0x80
-        cmp     al, 100
+        cmp     al, 100         ; Black
         jz      .attr_bgr_color
         mov     dl, 0x80 + 0x40
-        cmp     al, 101
+        cmp     al, 101         ; Red
         jz      .attr_bgr_color
         mov     dl, 0x80 + 0x20
-        cmp     al, 102
+        cmp     al, 102         ; Green
         jz      .attr_bgr_color
         mov     dl, 0x80 + 0x60
-        cmp     al, 103
+        cmp     al, 103         ; Yellow
         jz      .attr_bgr_color
         mov     dl, 0x80 + 0x10
-        cmp     al, 104
+        cmp     al, 104         ; Blue
         jz      .attr_bgr_color
         mov     dl, 0x80 + 0x50
-        cmp     al, 105
+        cmp     al, 105         ; Magenta
         jz      .attr_bgr_color
         mov     dl, 0x80 + 0x30
-        cmp     al, 106
+        cmp     al, 106         ; Cyan
         jz      .attr_bgr_color
         mov     dl, 0x80 + 0x70
-        cmp     al, 107
+        cmp     al, 107         ; White
         jnz     .attr_continue
 
 .attr_bgr_color:
         mov     eax, [con_flags]
         and     al, 0x0F
+        or      al, byte [con_flags_attr]
         or      al, dl
         mov     [con_flags], eax
         jmp     .attr_continue
 .attr_color:
         mov     eax, [con_flags]
         and     al, 0xF0
+        or      al, byte [con_flags_attr]
         or      al, dl
         mov     [con_flags], eax
         jmp     .attr_continue
 .attr_normal:
-        mov     byte [con_flags], 7
+        mov     byte [con_flags_attr], 0
+        mov     byte [con_flags], 0x07
         jmp     .attr_continue
 .attr_reversed:
         mov     byte [con_flags], 0x70
         jmp     .attr_continue
 .attr_bold:
-        or      byte [con_flags], 8
+        or      byte [con_flags_attr], 0x08
         jmp     .attr_continue
 .attr_bgr_bold:
-        or      byte [con_flags], 0x80
+        or      byte [con_flags_attr], 0x80
 .attr_continue:
         inc     ecx
         cmp     ecx, [con_esc_attr_n]
@@ -1375,13 +1849,13 @@ end if
 
 con_exit:
         
-                mov ah,[con.init_cmd]
-                test ah,ah
-                je .ret
+        mov     ah, [con.init_cmd]
+        test    ah, ah
+        je      .ret
 
         cmp     byte [esp+4], 0
         jz      .noexit
-        mov     [con.thread_op], 1
+        mov     [con.thread_op], OP_EXIT
         call    con.wake
                 
         ret     4
@@ -1414,7 +1888,7 @@ con_exit:
 con_set_title:
         mov     eax, [esp+4]
         mov     [con.title], eax
-        mov     [con.thread_op], 2
+        mov     [con.thread_op], OP_SET_TITLE
         call    con.wake
         ret     4
 
@@ -1432,7 +1906,7 @@ con_kbhit:
 con.force_entered_char:
         cmp     [con.entered_char], -1
         jnz     .ret
-        mov     [con.thread_op], 4
+        mov     [con.thread_op], OP_GETCH
         call    con.wake
         test    byte [con_flags+1], 2
         jnz     .ret
@@ -1452,7 +1926,7 @@ con.force_entered_char:
 
 ; int __stdcall con_getch(void);
 con_getch:
-                call con_init_check
+        call    con_init_check
         call    con.force_entered_char
         test    byte [con_flags+1], 2
         jnz     con_getch_closed
@@ -1471,13 +1945,201 @@ con_getch_closed:
 
 ; int __stdcall con_getch2(void);
 con_getch2:
-                call con_init_check
+        call    con_init_check
         call    con.force_entered_char
         test    byte [con_flags+1], 2
         jnz     con_getch_closed
         mov     eax, 0xFFFF
         xchg    ax, [con.entered_char]
         ret
+
+; int __stdcall con_get_input(int *bufptr, int buflen);
+con_get_input:
+        call    con_init_check
+; Wait for input available
+        call    con.force_entered_char
+        test    byte [con_flags+1], 2
+        jnz     .none
+
+        push    ebx
+        mov     ebx, [esp+12]
+  .check_more:
+; Avoid buffer overflow
+        cmp     dword[esp+8], 16
+        jl      .no_more
+; Check element available
+        cmp     [con.entered_char], 0xFFFF
+        je      .no_more
+; Get an element from the input queue
+        mov     eax, 0xFFFF
+        xchg    ax, [con.entered_char]
+; Function keys F1-F4
+        cmp     ah, 0x3B
+        jb      @f
+        cmp     ah, 0x3E
+        jbe     .f1_4
+  @@:
+; Function keys F5-F8
+        cmp     ah, 0x3F
+        jb      @f
+        je      .f5
+        cmp     ah, 0x42
+        jbe     .f6_8
+  @@:
+; Function keys F9-F12
+        cmp     ah, 0x43
+        je      .f9
+        cmp     ah, 0x44
+        je      .f10
+        cmp     ah, 0x57
+        je      .f11
+        cmp     ah, 0x58
+        je      .f12
+; Cursor keys
+        cmp     ah, 0x47
+        je      .home
+        cmp     ah, 0x48
+        je      .up
+        cmp     ah, 0x49
+        je      .pgup
+;        cmp     ah, 0x4a
+;        je      .minus
+        cmp     ah, 0x4b
+        je      .left
+        cmp     ah, 0x4c
+        je      .begin
+        cmp     ah, 0x4d
+        je      .right
+;        cmp     ah, 0x4e
+;        je      .plus
+        cmp     ah, 0x4f
+        je      .end
+        cmp     ah, 0x50
+        je      .down
+        cmp     ah, 0x51
+        je      .pgdown
+        cmp     ah, 0x52
+        je      .insert
+        cmp     ah, 0x53
+        je      .delete
+; regular ASCII
+        mov     byte[ebx], al
+        mov     eax, 1
+  .got_input:
+        and     eax, 0xff
+        sub     [esp+8], eax
+        add     ebx, eax
+        jmp     .check_more
+  .no_more:
+        mov     eax, ebx
+        sub     eax, [esp+12]
+        pop     ebx
+        ret     8
+
+  .none:
+        xor     eax, eax
+        ret     8
+
+  .f1_4:
+; F1 = SSR P, F2 = SS3 Q ..
+; SS3 = 0x8f (8bit) or 0x1b + 'O' (7-bit)
+        mov     word[ebx], 27 + ('O' shl 8)
+        add     ah, 'P' - 59
+        mov     byte[ebx+2], ah
+        mov     al, 3
+        jmp     .got_input
+  .f5:
+; CSI = 0x9b (8bit) or 0x1b + '[' (7-bit)
+        mov     byte[ebx], 27
+        mov     dword[ebx+1], '[15~'
+        mov     al, 5
+        jmp     .got_input
+  .f6_8:
+        mov     byte[ebx], 27
+        xor     al, al
+        shl     eax, 8
+        add     eax, '[17~' - (0x40 shl 16)
+        mov     dword[ebx+1], eax
+        mov     al, 5
+        jmp     .got_input
+  .f9:
+        mov     byte[ebx], 27
+        mov     dword[ebx+1], '[20~'
+        mov     al, 5
+        jmp     .got_input
+  .f10:
+        mov     byte[ebx], 27
+        mov     dword[ebx+1], '[21~'
+        mov     al, 5
+        jmp     .got_input
+  .f11:
+        mov     byte[ebx], 27
+        mov     dword[ebx+1], '[23~'
+        mov     al, 5
+        jmp     .got_input
+  .f12:
+        mov     byte[ebx], 27
+        mov     dword[ebx+1], '[24~'
+        mov     al, 5
+        jmp     .got_input
+  .up:
+        mov     eax, 'A' shl 16
+        add     eax, [cursor_esc]
+        mov     dword[ebx], eax
+        mov     al, 3
+        jmp     .got_input
+  .down:
+        mov     eax, 'B' shl 16
+        add     eax, [cursor_esc]
+        mov     dword[ebx], eax
+        mov     al, 3
+        jmp     .got_input
+  .right:
+        mov     eax, 'C' shl 16
+        add     eax, [cursor_esc]
+        mov     dword[ebx], eax
+        mov     al, 3
+        jmp     .got_input
+  .left:
+        mov     eax, 'D' shl 16
+        add     eax, [cursor_esc]
+        mov     dword[ebx], eax
+        mov     al, 3
+        jmp     .got_input
+  .home:
+        mov     eax, 'H' shl 16
+        add     eax, [cursor_esc]
+        mov     dword[ebx], eax
+        mov     al, 3
+        jmp     .got_input
+  .end:
+        mov     eax, 'F' shl 16
+        add     eax, [cursor_esc]
+        mov     dword[ebx], eax
+        mov     al, 3
+        jmp     .got_input
+  .insert:
+        mov     dword[ebx], 27 + ('[2~' shl 8)
+        mov     al, 4
+        jmp     .got_input
+  .delete:
+        mov     dword[ebx], 27 + ('[3~' shl 8)
+        mov     al, 4
+        jmp     .got_input
+  .pgup:
+        mov     dword[ebx], 27 + ('[5~' shl 8)
+        mov     al, 4
+        jmp     .got_input
+  .pgdown:
+        mov     dword[ebx], 27 + ('[6~' shl 8)
+        mov     al, 4
+        jmp     .got_input
+  .begin:
+        mov     dword[ebx], 27 + ('[E' shl 8)
+        mov     al, 3
+        jmp     .got_input
+
+
 
 ; char* __stdcall con_gets(char* str, int n);
 con_gets:
@@ -1486,7 +2148,7 @@ con_gets:
         push    eax
 ; char* __stdcall con_gets2(con_gets2_callback callback, char* str, int n);
 con_gets2:
-                call con_init_check
+        call    con_init_check
         mov     eax, [esp+8]            ; str
         pushad
         mov     esi, eax                ; str
@@ -1803,26 +2465,26 @@ con_gets2:
 
 ; void __stdcall con_cls();
 con_cls:
-                mov ah,[con.init_cmd]
-                test ah,ah
-                je cmd_init_no
+        mov     ah, [con.init_cmd]
+        test    ah, ah
+        je      cmd_init_no
                 
         push    edi
-        call    con.write_special_char.cls
+        call    con.write_special_char.erase_all
         pop     edi
         call    con.update_screen
                 
-                ret
+        ret
                 
-                cmd_init_no:
+cmd_init_no:
                 
-                push con.title_init_console
-                push -1
-                push -1
-                push -1
-                push -1
+        push    con.title_init_console
+        push    -1
+        push    -1
+        push    -1
+        push    -1
                 
-                call con_init
+        call    con_init
                 
         ret
 
@@ -1872,7 +2534,7 @@ con.update_screen:
         mov     [con.wnd_ypos], eax
 .done:
         pop     eax
-        mov     [con.thread_op], 3
+        mov     [con.thread_op], OP_REDRAW
 
 con.wake:
         pushad
@@ -2126,6 +2788,37 @@ con.ipc:
         jz      con.redraw_image
         dec     eax
         jz      con.getch
+        dec     eax
+        jz      con.resize
+        jmp     con.msg_loop
+con.resize:
+        push    48
+        pop     eax
+        push    4
+        pop     ebx
+        int     0x40
+
+        mov     edx, [con.def_wnd_x-2]
+        mov     edx, [con.wnd_width]
+        imul    edx, font_width
+        add     edx, 5+5-1
+
+        mov     esi, [con.def_wnd_y-2]
+        mov     esi, [con.wnd_height]
+        imul    esi, font_height
+        lea     esi, [eax + esi + 5-1]
+; place for scrollbar
+        mov     eax, [con.wnd_height]
+        cmp     eax, [con.scr_height]
+        jae     @f
+        add     edx, con.vscroll_width
+@@:
+        push    67
+        pop     eax
+        mov     ebx, -1
+        mov     ecx, ebx
+        int     0x40
+        call    con.draw_window
         jmp     con.msg_loop
 con.set_title:
         push    71
@@ -2406,6 +3099,7 @@ con.draw_window:
         xor     ebx, ebx
         inc     ebx
         int     0x40
+
         mov     al, 48
         mov     bl, 4
         int     0x40
@@ -2427,18 +3121,14 @@ con.draw_window:
 @@:
         xor     eax, eax
         int     0x40
-        ;Leency{
-        mov     eax,9
-        mov     ebx,process_info_buffer
-        mov     ecx,-1
+
+        mov     eax, 9
+        mov     ebx, process_info_buffer
+        mov     ecx, -1
         int     0x40
-        mov     eax,[ebx+70]
-        mov     [window_status],eax
-                test    [window_status],100b   ; window is rolled up
+        test    [process_info_buffer.wnd_state], 110b   ; window is rolled up or minimized to panel
         jnz     .exit
-        test    [window_status],10b    ; window is minimized to panel
-        jnz     .exit
-        ;}Leency - I'm in diamond code... 
+
         call    con.draw_image
 
 .exit:
@@ -2606,6 +3296,9 @@ con.extended_numlock:
         db      '1', '2', '3'
         db      '0', '.'
 
+
+cursor_esc      dd 27 + ('[' shl 8)
+
 ; В текущей реализации значения по умолчанию таковы.
 ; В будущем они, возможно, будут считываться как параметры из ini-файла console.ini.
 con.def_wnd_width   dd    80
@@ -2617,39 +3310,12 @@ con.def_wnd_y       dd    50
 
 con.init_cmd db 0
 con.title_init_console db "Console",0
-
-struc process_info
-{
-  cpu_usage               dd ?  ; +0
-  window_stack_position   dw ?  ; +4
-  window_stack_value      dw ?  ; +6
-                          dw ?  ; +8
-  process_name            rb 12 ; +10
-  memory_start            dd ?  ; +22
-  used_memory             dd ?  ; +26
-  PID                     dd ?  ; +30
-  box.x                   dd ?  ; +34
-  box.y                   dd ?  ; +38
-  box.width               dd ?  ; +42
-  box.height              dd ?  ; +46
-  slot_state              dw ?  ; +50
-                          dw ?  ; +52
-  client_box.x            dd ?  ; +54
-  client_box.y            dd ?  ; +58
-  client_box.width        dd ?  ; +62
-  client_box.height       dd ?  ; +66
-  wnd_state               db ?  ; +70
-  rb (1024-71)
-}
-process_info_buffer process_info
-window_status           rd 1
-
 con.vscroll_pt      dd    -1
 
 align 16
 EXPORTS:
         dd      szStart,                START
-        dd      szVersion,              0x00020008
+        dd      szVersion,              0x00020009
         dd      szcon_init,             con_init
         dd      szcon_write_asciiz,     con_write_asciiz
         dd      szcon_write_string,     con_write_length
@@ -2669,9 +3335,11 @@ EXPORTS:
         dd      szcon_get_cursor_pos,   con_get_cursor_pos
         dd      szcon_set_cursor_pos,   con_set_cursor_pos
         dd      szcon_set_title,        con_set_title
+        dd      szcon_get_input,        con_get_input
         dd      0
 
-con_flags       dd      7
+con_flags       dd      0x07    ; black on white
+con_flags_attr  dd      0       ; Modifiers (for example, high intensity colors)
 con.cursor_height dd    (15*font_height+50)/100
 con.input_start dd      con.input_buffer
 con.input_end   dd      con.input_buffer
@@ -2680,6 +3348,8 @@ con_esc_attr_n  dd      0
 con_esc_attrs   dd      0,0,0,0
 con_esc         db      0
 con_sci         db      0
+con_osc_str     rb      256
+con_osc_strlen  dd      0
 
 con.entered_char dw     -1
 con.bGetchRequested db  0
@@ -2707,57 +3377,69 @@ szcon_cls               db 'con_cls',0
 szcon_get_cursor_pos    db 'con_get_cursor_pos',0
 szcon_set_cursor_pos    db 'con_set_cursor_pos',0
 szcon_set_title         db 'con_set_title',0
+szcon_get_input         db 'con_get_input',0
 
 con.thread_err      db 'Cannot create console thread!',13,10,0
 con.nomem_err       db 'Not enough memory!',13,10,0
 con.aFinished       db ' [Finished]',0
 con.aNull           db '(null)',0
 con.beep            db 0x90, 0x3C, 0x00
-con.beep2           db 0x85, 0x25, 0x85, 0x40, 0x00
+con.bell            db 0x85, 0x25, 0x85, 0x40, 0x00
 con.ipc_buf         dd 0,8,0,0
                     db 0
 
 section '.data' data readable writable align 16
 
+process_info_buffer         process_info
+
 con.finished_title          rb 256
 
-con.cur_x                   rd 1
-con.cur_y                   rd 1
-con.wnd_xpos                rd 1
-con.wnd_ypos                rd 1
+con.cur_x                   dd ?        ; Active cursor column (0 based)
+con.cur_y                   dd ?        ; Active cursor row (0 based)
+con.main_cur_x              dd ?        ; Saved cursor position for main buffer
+con.main_cur_y              dd ?        ; Saved cursor position for main buffer
+con.wnd_xpos                dd ?        ; Active window position in active buffer
+con.wnd_ypos                dd ?        ; Active window position in active buffer
+con.main_wnd_xpos           dd ?        ; Saved window position for main buffer
+con.main_wnd_ypos           dd ?        ; Saved window position for main buffer
+con.scroll_top              dd ?        ; VT100 scroll region
+con.scroll_bot              dd ?        ; VT100 scroll region
 
-con.wnd_width               rd 1
-con.wnd_height              rd 1
-con.scr_width               rd 1
-con.scr_height              rd 1
-con.title                   rd 1
-con.data                    rd 1
-con.image                   rd 1
-con.console_tid             rd 1
-con.data_width              rw 1
-con.data_height             rw 1
-con.vscrollbar_size         rd 1
-con.vscrollbar_pos          rd 1
-con.up_first_time           rd 1
-con.down_first_time         rd 1
-con.scroll_up_first_time    rd 1
-con.scroll_down_first_time  rd 1
-con.bUpPressed_saved        rb 1
-con.bDownPressed_saved      rb 1
-con.bScrollingUp_saved      rb 1
-con.bScrollingDown_saved    rb 1
+con.wnd_width               dd ?        ; window width (= alt buffer width)
+con.wnd_height              dd ?        ; window height (= alt buffer height)
+con.main_scr_width          dd ?        ; main buffer width
+con.main_scr_height         dd ?        ; main buffer height
+con.scr_width               dd ?        ; active buffer width
+con.scr_height              dd ?        ; active buffer height
+con.title                   dd ?
+con.data                    dd ?        ; active buffer ptr
+con.mainbuffer              dd ?
+con.altbuffer               dd ?
+con.image                   dd ?
+con.console_tid             dd ?
+con.data_width              dw ?        ; width in pixels
+con.data_height             dw ?        ; height in pixels
+con.vscrollbar_size         dd ?
+con.vscrollbar_pos          dd ?
+con.up_first_time           dd ?
+con.down_first_time         dd ?
+con.scroll_up_first_time    dd ?
+con.scroll_down_first_time  dd ?
+con.bUpPressed_saved        db ?
+con.bDownPressed_saved      db ?
+con.bScrollingUp_saved      db ?
+con.bScrollingDown_saved    db ?
 
-con.input_buffer                rw      128
+con.input_buffer            rw 128
 con.input_buffer_end = $
 
-con.kbd_layout          rb      128
+con.kbd_layout              rb 128
 
-; 1 = exit, 2 = set title, 3 = redraw, 4 = getch
-con.thread_op               rb 1
-con.bUpPressed              rb 1
-con.bDownPressed            rb 1
-con.bScrollingUp            rb 1
-con.bScrollingDown          rb 1
+con.thread_op               db ?
+con.bUpPressed              db ?
+con.bDownPressed            db ?
+con.bScrollingUp            db ?
+con.bScrollingDown          db ?
 
 con.stack                   rb 1024
 con.stack_top = $

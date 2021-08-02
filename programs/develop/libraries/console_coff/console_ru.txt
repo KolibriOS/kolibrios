@@ -78,13 +78,34 @@ dword __stdcall con_set_flags(dword new_flags);
 		46 = бирюзовый фон
 		47 = белый фон
 	Следующие последовательности появились в версии 5 библиотеки:
-	Esc[2J - очистить экран, переместить курсор в левый верхний угол
-	Esc[<number1>;<number2>H = Esc[<number1>;<number2>f -
-		установить курсор в позицию с координатами <number1>,<number2>
 	Esc[<number>A - переместить курсор на <number> строк вверх
 	Esc[<number>B - переместить курсор на <number> строк вниз
 	Esc[<number>C - переместить курсор на <number> позиций вправо
 	Esc[<number>D - переместить курсор на <number> позиций влево
+	Esc[<number1>;<number2>H = Esc[<number1>;<number2>f -
+		установить курсор в позицию с координатами <number1>,<number2>		
+	Esc[2J - очистить экран, переместить курсор в левый верхний угол
+	Следующие последовательности появились в версии 9 библиотеки:
+	Esc[J or Esc[0J - Erase everything below cursor
+	Esc[1J - Erase everything above cursor	
+	Esc[K - Erase in line
+	Esc[<number>L - Insert <number> lines at the cursor position
+	Esc[<number>M - Delete <number> lines at the cursor position
+	Esc[<number>P - Delete <number chars at the cursor position
+	Esc[<number>X - Erase <number chars at the cursor position
+	Esc[<number>d - Set cursor to absolute line position
+	Esc[<number1>;<number2>f - Cursor position
+	Esc[<mode>h - Set mode (see below)
+	Esc[<mode>l - Reset mode (see below)
+	The following modes are currently supported:
+		?1 - Application cursor keys
+		?25 - Show/Hide cursor
+		?1049 - Alternative screen buffer. The alternative buffer has no scrollback.
+	Esc[<number1>;<number2>r - Set scroll region from row <number1> to row <number2>
+		(Use in combination with insert/delete lines)
+	Esc]0<string>ST/BEL - Set window caption. The string is terminated with ASCII char 0x07 or 0x9C.
+	Esc]2<string>ST/BEL - Implemented identical as Esc]0.
+	
 */
 /* сигнал о закрытии окна консоли; появился в версии 6 библиотеки;
 	флаг игнорируется функцией con_set_flags */
@@ -163,3 +184,8 @@ void __stdcall con_set_cursor_pos(int x, int y);
 параметров выходит за пределы соответствующего диапазона (от 0 до scr_width-1
 для x, от 0 до scr_height-1 для y, scr_width и scr_height были заданы при
 вызове con_init), то соответствующая координата курсора не меняется.
+
+int __stdcall con_get_input(char* buf, int buflen);
+Read as many input events as are available and fit in the receive buffer.
+Input event can be regular ASCII code from keyboard, but also escape codes for special keys.
+The support for mouse events via escape codes is not yet implemented.
