@@ -49,6 +49,8 @@ struct TWebBrowser {
 	char linebuf[500];
 	char redirect[URL_SIZE];
 
+	bool secondrun;
+
 	void SetStyle();
 	void RenderTextbuf();
 	void RenderLine();
@@ -109,6 +111,15 @@ void TWebBrowser::SetPageDefaults()
 	redirect = '\0';
 	list.SetFont(8, 14, 10011000b);
 	tag_table_reset();
+	is_html = true;
+	if (!strstri(bufpointer, "<body")) {
+		t_body = true;
+		if (!strstri(bufpointer, "<html")) && (!strstri(bufpointer, "<head")) 
+		&& (!strstr(bufpointer, "<?xml")) && (!strstr(bufpointer, "<xml")) {
+			style.pre = true; //show linebreaks for a plaint text
+			is_html = false;
+		}
+	} 
 }
 //============================================================================================
 void TWebBrowser::Reparse()
@@ -142,63 +153,73 @@ void TWebBrowser::ParseHtml(dword _bufpointer, _bufsize){
 	}
 
 
+	tr_col_count.drop();
+	secondrun = false;
+
+	_PARSE_START_:
+
 	SetPageDefaults();
-	is_html = true;
-	if (!strstri(bufpointer, "<body")) {
-		t_body = true;
-		if (!strstri(bufpointer, "<html")) && (!strstri(bufpointer, "<head")) 
-		&& (!strstr(bufpointer, "<?xml")) && (!strstr(bufpointer, "<xml")) {
-			style.pre = true; //show linebreaks for a plaint text
-			is_html = false;
-		}
-	} 
-	for (bufpos=bufpointer ; (bufpos < bufpointer+bufsize) && (ESBYTE[bufpos]!=0) ; bufpos++;)
+	for (bufpos=bufpointer; bufpos < bufpointer+bufsize; bufpos++;)
 	{
-		switch (ESBYTE[bufpos])
-		{
-		case 0x0a:
-			if (style.pre) {
+		if (style.pre) {
+			if (ESBYTE[bufpos] == 0x0a) {
 				RenderTextbuf();
 				NewLine();
-			} else {
-				goto _DEFAULT;
+				continue;
 			}
-			break;
-		case 0x09:
-			if (style.pre) {
+			if (ESBYTE[bufpos] == 0x09) {
 				tab_len = draw_x - left_gap / list.font_w + strlen(#linebuf) % 4;
 				if (!tab_len) tab_len = 4; else tab_len = 4 - tab_len;
 				while (tab_len) {chrcat(#linebuf,' '); tab_len--;}
-			} else {
-				goto _DEFAULT;
+				continue;
 			}
-			break;
-		case '&': //&nbsp; and so on
-			bufpos = GetUnicodeSymbol(#linebuf, sizeof(TWebBrowser.linebuf), bufpos+1, bufpointer+bufsize);
-			break;
-		case '<':
-			if (!is_html) goto _DEFAULT;
-			if (!strchr("!/?abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ", ESBYTE[bufpos+1])) goto _DEFAULT;
-			bufpos++;
-			if (tag.parse(#bufpos, bufpointer + bufsize)) {
-				RenderTextbuf();
-				$push cur_encoding
-				SetStyle();
-				$pop eax
-				// The thing is that UTF if longer than other encodings.
-				// So if encoding was changed from UTF to DOS than $bufpos position got wrong,
-				// and we have to start parse from the very beginning
-				if (EAX != cur_encoding) && (cur_encoding == CH_UTF8) {
-					ParseHtml(bufpointer, strlen(bufpointer));
-					return;
-				}
-			}
-			break;
-		default:
-			_DEFAULT:
-			AddCharToTheLine(ESBYTE[bufpos]);
 		}
+		if (ESBYTE[bufpos] == '&')	{
+			bufpos = GetUnicodeSymbol(#linebuf, sizeof(TWebBrowser.linebuf), bufpos+1, bufpointer+bufsize);
+			continue;
+		}
+		if (ESBYTE[bufpos] == '<') && (is_html) {
+			if (strchr("!/?abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ", ESBYTE[bufpos+1])) {
+				bufpos++;
+				if (tag.parse(#bufpos, bufpointer + bufsize)) {
+
+					/*
+					if (secondrun) 
+					{
+						if (streq(#tag.name, "tr")) debugln(" ");
+						if (!tag.opened) {
+							debugch('/');
+						} else {
+							debugch(' ');
+						}
+						debugln(sprintf(#param, "%s   x%i y%i %s", 
+							#tag.name, draw_x, draw_y, #linebuf));
+					}
+					//*/
+
+					RenderTextbuf();
+					$push cur_encoding
+					SetStyle();
+					$pop eax
+					// The thing is that UTF if longer than other encodings.
+					// So if encoding was changed from UTF to DOS than $bufpos position got wrong,
+					// and we have to start parse from the very beginning
+					if (EAX != cur_encoding) && (cur_encoding == CH_UTF8) {
+						ParseHtml(bufpointer, strlen(bufpointer));
+						return;
+					}
+				}
+				continue;
+			}
+		}
+		AddCharToTheLine(ESBYTE[bufpos]);
 	}
+
+	if (!secondrun) {
+		secondrun = true;
+		goto _PARSE_START_;
+	}
+
 	RenderTextbuf();
 	list.count = draw_y + style.cur_line_h;
 

@@ -50,11 +50,7 @@ void TWebBrowser::SetStyle()
 	if (tag.is("title"))      { tag_title();          return; }
 	if (tag.is("body"))       { tag_body();           return; }
 	if (tag.is("html"))       { t_html = tag.opened;  return; }
-
-	if (tag.is("table"))      { tag_table();          return; }
-	if (tag.is("tr"))         { if (tag.opened) NewLine();    return; } //temp
-	//if (tag.is("tr"))         { tag_tr();             return; }
-	//if (tag.is("td"))         { tag_td();             return; }
+	tag_table();
 }
 
 void TWebBrowser::tag_p()
@@ -198,10 +194,10 @@ void TWebBrowser::tag_li()
 
 void TWebBrowser::tag_hr()
 {
-	dword hrcol = 0x777777;
+	dword hrcol = 0x00777777;
 	if (tag.get_value_of("color")) hrcol = GetColor(tag.value);
 	if (draw_x != left_gap) NewLine();
-	canvas.DrawBar(5, style.cur_line_h / 2 + draw_y - 1, draw_w-10, 1, hrcol);
+	if (secondrun) canvas.DrawBar(5, style.cur_line_h / 2 + draw_y - 1, draw_w-10, 1, hrcol);
 	draw_x++;
 	NewLine();
 	return;
@@ -320,101 +316,89 @@ NOIMG:
 
 
 
-int tdepth;
-int col_n;
 
-struct TABLE {
-	collection_int col_w;
-	collection_int col_span;
-	collection_int row_h;
-	int row_y, next_row_y;
-	int colcount;
-} t[5];
+
+
+
+
+int tdepth;
+collection_int tr_col_count; //drop on once!
+int tr_pos, td_pos;
+int row_start_y;
+int colcount;
+dword tallest_cell_in_row;
 
 void TWebBrowser::tag_table_reset()
 {
-	int i;
 	tdepth = 0;
-	for (i=0; i<5; i++) {
-		t[i].col_w.drop();
-		t[i].row_h.drop();
-		t[i].col_span.drop();
-		t[i].row_y = 0;
-		t[i].next_row_y = 0;
-	}
+	colcount = 0;
+	tr_pos = 0;
+	td_pos = 0;
 }
 
 void TWebBrowser::tag_table()
 {
-	if (tag.opened) {
-		if (tdepth==0) {
-			t[0].next_row_y = t[0].row_y = draw_y;
-		}
-		tdepth++;
-	} else {
-		tdepth--;
-		if (tdepth==0) {
-			draw_y = math.max(draw_y + style.cur_line_h, t[0].next_row_y);
-			left_gap = BODY_MARGIN;
-			draw_w = list.w - BODY_MARGIN;
-		}
-	} 
-}
-
-:void TWebBrowser::tag_tr()
-{
-	if (tag.opened) {
-		if (tdepth>1) {
-			NewLine();
+	if (tag.is("table")) {
+		if(tag.opened) {
+			tdepth++; 
 		} else {
-			t[0].colcount = math.max(t[0].colcount, col_n);
-			col_n = 0;
-			t[0].row_y = math.max(draw_y + style.cur_line_h, t[0].next_row_y);
-			left_gap = BODY_MARGIN;
-			NewLine();	
+			if (tdepth>0) tdepth--;
+			if (tdepth==0) {
+				draw_x = left_gap = style.tag_list.level * 5 * list.font_w + BODY_MARGIN;
+				draw_w = list.w;
+				
+				draw_y = math.max(draw_y+style.cur_line_h, tallest_cell_in_row);
+				row_start_y = draw_y = tallest_cell_in_row = draw_y;
+				style.cur_line_h = list.item_h;
+			}
+		}
+	}
+	if (tdepth>1) {
+		if (tag.is("tr")) && (tag.opened) NewLine();
+		return;
+	}
+
+	if (!secondrun) {
+		if (tag.is("tr")) {
+			if (colcount) tr_col_count.set(tr_col_count.count-1, colcount);
+			colcount = 0;
+			if (tag.opened) {
+				tr_col_count.add(1);
+			}
+		}
+		if (tag.opened) && (tag.is("td")) || (tag.is("th")) {
+			colcount++;
+			//if (tag.get_number_of("colspan")) colcount += tag.number-1;
 		}		
+	} else {
+		if (tag.is("tr")) {
+			if (tag.opened) {
+				if (draw_x==left_gap) && (draw_y==BODY_MARGIN) {
+					row_start_y = tallest_cell_in_row = draw_y;
+				} else {
+					row_start_y = tallest_cell_in_row = draw_y = draw_y + style.cur_line_h;
+				}
+				style.cur_line_h = list.item_h;
+				tr_pos++;
+				td_pos = 0;
+			} else {
+				draw_x = left_gap = style.tag_list.level * 5 * list.font_w + BODY_MARGIN;
+				draw_w = list.w;
+				draw_y = tallest_cell_in_row;
+			}
+		}
+		if (tr_pos) && (tag.is("td")) || (tag.is("th"))  {
+			tallest_cell_in_row = math.max(draw_y+style.cur_line_h-list.item_h, tallest_cell_in_row);
+			style.cur_line_h = list.item_h;
+			if (tag.opened) {
+				draw_w = list.w - BODY_MARGIN - BODY_MARGIN - 23 / tr_col_count.get(tr_pos-1);
+				draw_x = left_gap = draw_w * td_pos + BODY_MARGIN;
+				//debugval(itoa(draw_x), list.w);
+				draw_y = row_start_y;
+				//canvas.WriteText(draw_x, draw_y, 10001001b, 0x0000FE, itoa(draw_x), NULL);
+				td_pos++;				
+			}
+		}
 	}
 }
 
-:void TWebBrowser::tag_td()
-{
-	if (tdepth>1) return;
-	if (tag.opened) {
-
-		t[0].next_row_y = math.max(draw_y + style.cur_line_h, t[0].next_row_y);
-		style.cur_line_h = list.item_h;
-		t[0].col_w.set(col_n, math.max(draw_x,t[0].col_w.get(col_n)) );
-		draw_x = left_gap = t[0].col_w.get(col_n);
-		draw_w = list.w - left_gap;
-		draw_y = t[0].row_y;
-		if (tag.get_number_of("width")) {
-			if (!strchr(tag.value, '%')) {
-				draw_w = tag.number;
-			} else {
-				if (tag.number < 100) {
-					draw_w = draw_w - left_gap * tag.number / 100;
-					if (draw_w > list.w - left_gap) draw_w = list.w - left_gap;
-				}
-			}
-		}
-		col_n++;
-		t[0].col_w.set(col_n, draw_x + draw_w);
-
-		if (left_gap >= list.w - list.font_w - 10) {
-			debugln("left_gap overflow");
-			draw_x = left_gap = BODY_MARGIN;
-			t[0].col_w.drop();
-			NewLine();
-			canvas.WriteText(draw_x, draw_y, 10011001b, 0xFE0000, "lgo", NULL);
-		}
-
-		if (draw_w < 0) || (draw_w >= list.w) {
-			debugln("draw_w overflow");
-			draw_x = left_gap = BODY_MARGIN;
-			draw_w = list.w - left_gap;
-			NewLine();
-			canvas.WriteText(draw_x, draw_y, 10011001b, 0x0000FE, "drwo", NULL);
-		}
-	} 
-
-}

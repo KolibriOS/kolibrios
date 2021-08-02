@@ -81,7 +81,7 @@ bool GetUnicodeSymbol(dword _line, line_size, bufpos, buf_end)
 	{
 		if (__isWhite(ESBYTE[bufpos])) {bufpos--; break;}
 		if (ESBYTE[bufpos] == ';') || (bufpos >= buf_end) break;
-		if (!strchr("ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789", ESBYTE[bufpos])) {bufpos--; break;}
+		if (!strchr("ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789#", ESBYTE[bufpos])) {bufpos--; break;}
 		special_code[i] = ESBYTE[bufpos];
 	}
 	special_code[i] = '\0';

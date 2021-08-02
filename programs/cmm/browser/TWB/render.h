@@ -21,8 +21,9 @@ void TWebBrowser::RenderLine(dword _line)
 		pw = strlen(_line) * list.font_w;
 		zoom = list.font_w / BASIC_CHAR_W;
 
+		//there is some shit happens!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 		if (pw > draw_w) {
-			draw_w = pw;
+			//draw_w = pw;
 			NewLine();
 		}
 
@@ -33,6 +34,7 @@ void TWebBrowser::RenderLine(dword _line)
 
 		style.cur_line_h = math.max(style.cur_line_h, list.item_h);
 
+		if (!secondrun) goto _SKIP_DRAW;
 		if (bg_colors.get_last() - bg_colors.get(0)) {
 			canvas.DrawBar(draw_x, draw_y, pw, list.item_h, bg_colors.get_last());
 		}
@@ -58,6 +60,7 @@ void TWebBrowser::RenderLine(dword _line)
 				links.add_text(draw_x, draw_y + list.y, pw, list.item_h - calc(zoom*2)-1, zoom);				
 			}
 		}
+		_SKIP_DRAW:
 		draw_x += pw;
 	}
 	ESBYTE[_line] = NULL;
@@ -71,13 +74,16 @@ void TWebBrowser::RenderTextbuf()
 	int len;
 
 	//Do we need a line break?
-	while (len = strlen(lbp)) && (len * list.font_w + draw_x >= draw_w) {
+              
+	while (len = strlen(lbp)) && (len * list.font_w + draw_x - left_gap >= draw_w) {
 		//Yes, we do. Lets calculate where...
-		br = strrchr(lbp, ' ');
+		br = len;
+
+		//debugln("                \\n");
 
 		//Is a new line fits in the current line?
-		if (br * list.font_w + draw_x >= draw_w) {
-			br = draw_w - draw_x /list.font_w;
+		if (br * list.font_w + draw_x - left_gap >= draw_w) {
+			br = draw_w - draw_x + left_gap /list.font_w;
 			while(br) {
 				if (ESBYTE[lbp + br]==' ') {
 					br++;
@@ -135,7 +141,7 @@ bool TWebBrowser::RenderImage(dword cur_img)
 	img_h = ESDWORD[cur_img+8];
 	img_w = ESDWORD[cur_img+4];
 
-	if (img_w + draw_x >= draw_w) NewLine();
+	if (img_w + draw_x - left_gap >= draw_w) NewLine();
 	img_y = draw_y;
 	if (img_h < list.item_h) img_y += list.item_h - img_h / 2 - 1; else img_y -= 2;
 	style.cur_line_h = math.max(style.cur_line_h, img_h);
@@ -146,22 +152,25 @@ bool TWebBrowser::RenderImage(dword cur_img)
 
 	if (img_y + img_h >= canvas.bufh) canvas.IncreaseBufSize();
 
-	if (ESDWORD[cur_img+20] != IMAGE_BPP32) {
-		img_convert stdcall(cur_img, 0, IMAGE_BPP32, 0, 0);
-		$push eax
+	if (secondrun) 
+	{	
+		if (ESDWORD[cur_img+20] != IMAGE_BPP32) {
+			img_convert stdcall(cur_img, 0, IMAGE_BPP32, 0, 0);
+			$push eax
+			img_destroy stdcall(cur_img);
+			$pop eax
+			cur_img = EAX;
+			if (!EAX) return false;
+		}
+		imgbuf[04] = canvas.bufw;
+		imgbuf[08] = canvas.bufh;
+		imgbuf[20] = IMAGE_BPP32;
+		imgbuf[24] = buf_data+8;
+		img_blend stdcall(#imgbuf, cur_img, draw_x, img_y, 0, 0, img_w, img_h);
 		img_destroy stdcall(cur_img);
-		$pop eax
-		cur_img = EAX;
-		if (!EAX) return false;
 	}
-	imgbuf[04] = canvas.bufw;
-	imgbuf[08] = canvas.bufh;
-	imgbuf[20] = IMAGE_BPP32;
-	imgbuf[24] = buf_data+8;
-	img_blend stdcall(#imgbuf, cur_img, draw_x, img_y, 0, 0, img_w, img_h);
-	img_destroy stdcall(cur_img);
 
 	draw_x += img_w;
-	if (draw_x >= draw_w) NewLine();
+	if (draw_x - left_gap >= draw_w) NewLine();
 	return true;
 }

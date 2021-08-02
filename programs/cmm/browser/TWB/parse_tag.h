@@ -1,3 +1,11 @@
+/*
+struct _DOM {
+	collection tag;
+	collection tagparam;
+	collection_int parent;
+} dom;
+*/
+
 struct _tag
 {
 	char name[32];
@@ -121,7 +129,7 @@ dword _tag::get_next_param(dword ps, pe)
 		//find VAL start and copy
 		pe = strrchr(ps, q) + ps;
 		val = pe;
-		pe--;
+		if (pe>ps) pe--;
 		ESBYTE[pe] = '\0'; 
 
 		//find ATTR end
