@@ -16,12 +16,15 @@
 ;    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 struct aes256_ctr_context aes256_context
+
         counter rb AES256_BLOCKSIZE
         output  rb AES256_BLOCKSIZE     ; counter after aes_crypt
+
 ends
 
 
 proc aes256_ctr_init _counter
+
         push    ebx esi edi
 
         mcall   68, 12, sizeof.aes256_ctr_context
@@ -34,6 +37,7 @@ proc aes256_ctr_init _counter
 
         pop     edi esi ebx
         ret
+
 endp
 
 
@@ -84,7 +88,7 @@ proc aes256_ctr_crypt _ctx, _in, _out
         bswap   ecx
         bswap   edx
 
-        inc     edx
+        adc     edx, 1
         adc     ecx, 0
         adc     ebx, 0
         adc     eax, 0

@@ -84,7 +84,7 @@ proc blowfish_ctr_crypt _ctx, _in, _out
         bswap   ecx
         bswap   edx
 
-        inc     edx
+        adc     edx, 1
         adc     ecx, 0
         adc     ebx, 0
         adc     eax, 0
