@@ -346,7 +346,6 @@ void TWebBrowser::tag_table()
 			if (tdepth==0) {
 				draw_x = left_gap = style.tag_list.level * 5 * list.font_w + BODY_MARGIN;
 				draw_w = list.w;
-				
 				draw_y = math.max(draw_y+style.cur_line_h, tallest_cell_in_row);
 				row_start_y = draw_y = tallest_cell_in_row = draw_y;
 				style.cur_line_h = list.item_h;
@@ -360,14 +359,14 @@ void TWebBrowser::tag_table()
 
 	if (!secondrun) {
 		if (tag.is("tr")) {
-			if (colcount) tr_col_count.set(tr_col_count.count-1, colcount);
-			colcount = 0;
 			if (tag.opened) {
 				tr_col_count.add(1);
 			}
+			colcount = 0;
 		}
 		if (tag.opened) && (tag.is("td")) || (tag.is("th")) {
 			colcount++;
+			if (colcount) tr_col_count.set(tr_col_count.count-1, colcount);
 			//if (tag.get_number_of("colspan")) colcount += tag.number-1;
 		}		
 	} else {
@@ -382,10 +381,10 @@ void TWebBrowser::tag_table()
 				tr_pos++;
 				td_pos = 0;
 			} else {
-				draw_x = left_gap = style.tag_list.level * 5 * list.font_w + BODY_MARGIN;
-				draw_w = list.w;
-				draw_y = tallest_cell_in_row;
+				draw_y = math.max(draw_y, tallest_cell_in_row);
 			}
+			draw_x = left_gap = style.tag_list.level * 5 * list.font_w + BODY_MARGIN;
+			draw_w = list.w;
 		}
 		if (tr_pos) && (tag.is("td")) || (tag.is("th"))  {
 			tallest_cell_in_row = math.max(draw_y+style.cur_line_h-list.item_h, tallest_cell_in_row);
