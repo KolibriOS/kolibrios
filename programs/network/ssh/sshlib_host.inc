@@ -17,8 +17,8 @@
 
 ; https://datatracker.ietf.org/doc/html/rfc4253#section-6.6
 ; https://datatracker.ietf.org/doc/html/rfc3447
-
 ; https://datatracker.ietf.org/doc/html/rfc4716
+; https://datatracker.ietf.org/doc/html/rfc8017
 
 proc sshlib_host_verify  con_ptr, str_host_key, str_signature, message, message_len
 
@@ -179,25 +179,34 @@ endl
         mov     esi, [str_signature]
         mov     ecx, [esi]
         bswap   ecx             ; TODO: check length
+
 ; Host key type (string)
         cmp     dword[esi+4], 0x07000000
-        jne     .err_signature
+        jne     .not_ssh_rsa
         cmp     dword[esi+8], 'ssh-'
-        jne     .err_signature
+        jne     .not_ssh_rsa
         cmp     dword[esi+11], '-rsa'
-        jne     .err_signature
-        add     esi, 4+4+7
-; RSA signature blob
-        stdcall mpint_to_little_endian, [mpint_s], esi
-;        cmp     eax, [k]
- ;;;       jne     .err_signature
+        je      .sha1
 
-; RSAVP1
-        stdcall mpint_modexp, [mpint_m], [mpint_s], [mpint_e], [mpint_n]
-; I2OSP
-        stdcall mpint_shrink, [mpint_m]
-        stdcall mpint_grow, [mpint_m], 256
-        stdcall mpint_to_big_endian, [EM], [mpint_m]
+  .not_ssh_rsa:
+        cmp     dword[esi+4], 0x0c000000
+        jne     .not_sha2
+        cmp     dword[esi+8], 'rsa-'
+        jne     .not_sha2
+        cmp     dword[esi+12], 'sha2'
+        jne     .not_sha2
+        cmp     dword[esi+16], '-256'
+        je      .sha2_256
+;        cmp     dword[esi+16], '-512'
+;        je      .sha2_512
+
+  .not_sha2:
+        jmp     .err_signature
+
+  .sha1:
+        DEBUGF  3, "SSH: Using RSA with SHA1 hash\n"
+        add     esi, 4+4+7
+        push    esi
 
 ; EMSA-PKCS1-v1_5
         invoke  sha1_init, [h_ctx]
@@ -209,17 +218,63 @@ endl
         stosb
         mov     al, 0x01
         stosb
-        mov     ecx, 256 - (rsa_sha1_t.len + 3 + SHA1_HASH_SIZE)
+        mov     ecx, 256 - (rsa_sha1_T.len + 3 + SHA1_HASH_SIZE)
         mov     al, 0xff
         rep stosb
         mov     al, 0x00
         stosb
-        mov     esi, rsa_sha1_t
-        mov     ecx, rsa_sha1_t.len
+        mov     esi, rsa_sha1_T
+        mov     ecx, rsa_sha1_T.len
         rep movsb
         mov     esi, [h_ctx]
         mov     ecx, SHA1_HASH_SIZE
         rep movsb
+
+        pop     esi
+        jmp     .rsa
+
+  .sha2_256:
+        DEBUGF  3, "SSH: Using RSA with SHA2-256 hash\n"
+        add     esi, 4+4+12
+        push    esi
+
+; EMSA-PKCS1-v1_5
+        invoke  sha256_init, [h_ctx]
+        invoke  sha256_update, [h_ctx], [M], [message_len]
+        invoke  sha256_final, [h_ctx]
+
+        mov     edi, [EM_accent]
+        mov     al, 0x00
+        stosb
+        mov     al, 0x01
+        stosb
+        mov     ecx, 256 - (rsa_sha256_T.len + 3 + SHA256_HASH_SIZE)
+        mov     al, 0xff
+        rep stosb
+        mov     al, 0x00
+        stosb
+        mov     esi, rsa_sha256_T
+        mov     ecx, rsa_sha256_T.len
+        rep movsb
+        mov     esi, [h_ctx]
+        mov     ecx, SHA256_HASH_SIZE
+        rep movsb
+
+        pop     esi
+        jmp     .rsa
+
+  .rsa:
+; RSA signature blob
+        stdcall mpint_to_little_endian, [mpint_s], esi
+;        cmp     eax, [k]
+ ;;;       jne     .err_signature
+
+; RSAVP1
+        stdcall mpint_modexp, [mpint_m], [mpint_s], [mpint_e], [mpint_n]
+; I2OSP
+        stdcall mpint_shrink, [mpint_m]
+        stdcall mpint_grow, [mpint_m], 256
+        stdcall mpint_to_big_endian, [EM], [mpint_m]
 
 ; Compare EM with EM_accent
         mov     esi, [EM]
@@ -322,8 +377,10 @@ iglobal
 
         known_hostsfile db '/sys/settings/known_hosts.ini', 0
         base64_table    db 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/'
-        rsa_sha1_t      db 0x30, 0x21, 0x30, 0x09, 0x06, 0x05, 0x2B, 0x0E, 0x03, 0x02, 0x1A, 0x05, 0x00, 0x04, 0x14
-        .len = $ - rsa_sha1_t
+        rsa_sha1_T      db 0x30, 0x21, 0x30, 0x09, 0x06, 0x05, 0x2B, 0x0E, 0x03, 0x02, 0x1A, 0x05, 0x00, 0x04, 0x14
+        .len = $ - rsa_sha1_T
+        rsa_sha256_T    db 0x30, 0x31, 0x30, 0x0d, 0x06, 0x09, 0x60, 0x86, 0x48, 0x01, 0x65, 0x03, 0x04, 0x02, 0x01, 0x05, 0x00, 0x04, 0x20
+        .len = $ - rsa_sha256_T
         ssh_rsa_sz      db 'ssh-rsa', 0
 
 endg

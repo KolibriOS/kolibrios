@@ -481,7 +481,7 @@ str24b  db 10, 10, "If you trust this host, press A to accept and store the (new
 ssh_ident_ha:
         dd_n (ssh_msg_ident.length-2)
 ssh_msg_ident:
-        db "SSH-2.0-KolibriOS_SSH_0.06",13,10
+        db "SSH-2.0-KolibriOS_SSH_0.07",13,10
   .length = $ - ssh_msg_ident
 
 
@@ -492,7 +492,7 @@ ssh_msg_kex:
   .kex_algorithms:
         str "diffie-hellman-group-exchange-sha256" ; diffie-hellman-group-exchange-sha1
   .server_host_key_algorithms:
-        str "ssh-rsa"                    ;,ssh-dss
+        str "rsa-sha2-256,ssh-rsa"       ;,ssh-dss
   .encryption_algorithms_client_to_server:
         str "aes256-ctr"                 ;,aes256-cbc,aes256-cbc,rijndael-cbc@lysator.liu.se,aes192-ctr,aes192-cbc,aes128-ctr,aes128-cbc,blowfish-ctr,blowfish-cbc,3des-ctr,3des-cbc,arcfour256,arcfour128"
   .encryption_algorithms_server_to_client:
