@@ -197,8 +197,8 @@ endl
         jne     .not_sha2
         cmp     dword[esi+16], '-256'
         je      .sha2_256
-;        cmp     dword[esi+16], '-512'
-;        je      .sha2_512
+        cmp     dword[esi+16], '-512'
+        je      .sha2_512
 
   .not_sha2:
         jmp     .err_signature
@@ -258,6 +258,36 @@ endl
         rep movsb
         mov     esi, [h_ctx]
         mov     ecx, SHA256_HASH_SIZE
+        rep movsb
+
+        pop     esi
+        jmp     .rsa
+
+  .sha2_512:
+        DEBUGF  3, "SSH: Using RSA with SHA2-512 hash\n"
+        add     esi, 4+4+12
+        push    esi
+
+; EMSA-PKCS1-v1_5
+        invoke  sha512_init, [h_ctx]
+        invoke  sha512_update, [h_ctx], [M], [message_len]
+        invoke  sha512_final, [h_ctx]
+
+        mov     edi, [EM_accent]
+        mov     al, 0x00
+        stosb
+        mov     al, 0x01
+        stosb
+        mov     ecx, 256 - (rsa_sha512_T.len + 3 + SHA512_HASH_SIZE)
+        mov     al, 0xff
+        rep stosb
+        mov     al, 0x00
+        stosb
+        mov     esi, rsa_sha512_T
+        mov     ecx, rsa_sha512_T.len
+        rep movsb
+        mov     esi, [h_ctx]
+        mov     ecx, SHA512_HASH_SIZE
         rep movsb
 
         pop     esi
@@ -381,6 +411,8 @@ iglobal
         .len = $ - rsa_sha1_T
         rsa_sha256_T    db 0x30, 0x31, 0x30, 0x0d, 0x06, 0x09, 0x60, 0x86, 0x48, 0x01, 0x65, 0x03, 0x04, 0x02, 0x01, 0x05, 0x00, 0x04, 0x20
         .len = $ - rsa_sha256_T
+        rsa_sha512_T    db 0x30, 0x51, 0x30, 0x0d, 0x06, 0x09, 0x60, 0x86, 0x48, 0x01, 0x65, 0x03, 0x04, 0x02, 0x03, 0x05, 0x00, 0x04, 0x40
+        .len = $ - rsa_sha512_T
         ssh_rsa_sz      db 'ssh-rsa', 0
 
 endg
