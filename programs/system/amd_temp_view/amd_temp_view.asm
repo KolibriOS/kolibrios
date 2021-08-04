@@ -344,7 +344,7 @@ error_drv:
 exit:
        mcall SF_TERMINATE_PROCESS
 ;Data_program;
-title       db ' amd temp view',0
+title       db 'AMDtemp',0
 path_drv    db '/sys/drivers/k10temp.sys',0
 Error_text  db 'Error load driver',0
 _NA         db 'N/A',0
