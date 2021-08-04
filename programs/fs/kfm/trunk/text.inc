@@ -1,4 +1,4 @@
-header_text	  db 'Kolibri File Manager v0.48b',0
+header_text       db 'Kolibri File Manager v0.48b',0
 ;---------------------------------------------------------------------
 fbutton_name:
     .f1   db '1 Help',0
@@ -9,7 +9,7 @@ fbutton_name:
     .f6   db '6 Move',0
     .f7   db '7 Dir',0
     .f8   db '8 Del',0
-    .f9   db '9',0
+    .f9   db '9 file',0
     .f10  db '10',0
     .f11  db '11',0
     .f12  db '12 Exit',0
@@ -20,7 +20,7 @@ fbutton_name_shift:
     .f3   db '3',0
     .f4   db '4',0
     .f5   db '5',0
-    .f6   db '6',0
+    .f6   db '6 ren',0
     .f7   db '7',0
     .f8   db '8',0
     .f9   db '9',0

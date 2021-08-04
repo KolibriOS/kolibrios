@@ -14,9 +14,9 @@ error_window:
 .still:
     mcall 10
     cmp   eax,1
-    je	  .red
+    je    .red
     cmp   eax,3
-    je	  .button
+    je    .button
     jmp   .still
 .button:
     mcall -1
@@ -27,7 +27,7 @@ draw_error_window:
     mcall 0,[error_window_x] ,[error_window_y], 0x03ff0000
     mcall 4,<10,30>,0x90ffffff,[error_pointer]
     mcall 4,<10,50>, ,error_type
-    mcall 47,0xa0000,[file_system_error],<140,50>,0x10ffffff
+    mcall 47,0xa0000,[file_system_error],<148,50>,0x10ffffff
     mcall 12, 2
     ret
 ;---------------------------------------------------------------------
