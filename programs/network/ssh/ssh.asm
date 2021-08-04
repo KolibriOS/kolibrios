@@ -142,7 +142,7 @@ start:
 
         DEBUGF  2, "SSH: Init Console\n"
         invoke  con_start, 1
-        invoke  con_init, 80, 25, 800, 250, title
+        invoke  con_init, 80, 25, 80, 250, title
 
         cmp     byte[params], 0
         jne     main.connect
@@ -388,8 +388,9 @@ proc sshlib_callback_hostkey_problem, con_ptr, problem_type, hostkey_sz
         invoke  con_write_asciiz, str23
 ;        jmp     .ask
   .ask:
-  ;;; TODO: print hostkey
-        invoke  con_write_asciiz, str24
+        invoke  con_write_asciiz, str24a
+        invoke  con_write_asciiz, [hostkey_sz]
+        invoke  con_write_asciiz, str24b
   .getansw:
         invoke  con_getch2
         or      al, 0x20        ; convert to lowercase
@@ -471,7 +472,8 @@ str22   db "The host key for the server was not found in the cache.", 10
 str23   db "The host key provided by the host does not match the cached one.", 10
         db "This may indicate that the remote server has been compromised!", 10, 0
 
-str24   db 10, "If you trust this host, press A to accept and store the (new) key.", 10
+str24a  db 10, "The remote host key is: ", 10, 0
+str24b  db 10, 10, "If you trust this host, press A to accept and store the (new) key.", 10
         db "Press C to connect to the host but don't store the (new) key.", 10
         db "Press X to abort.", 10, 0
 
@@ -479,7 +481,7 @@ str24   db 10, "If you trust this host, press A to accept and store the (new) ke
 ssh_ident_ha:
         dd_n (ssh_msg_ident.length-2)
 ssh_msg_ident:
-        db "SSH-2.0-KolibriOS_SSH_0.05",13,10
+        db "SSH-2.0-KolibriOS_SSH_0.06",13,10
   .length = $ - ssh_msg_ident
 
 
@@ -592,7 +594,8 @@ align 4
 
 library network, 'network.obj', \
         console, 'console.obj', \
-        libcrash, 'libcrash.obj'
+        libcrash, 'libcrash.obj', \
+        libini, 'libini.obj'
 
 import  network, \
         getaddrinfo, 'getaddrinfo', \
@@ -621,6 +624,10 @@ import  libcrash, \
         md5_init, 'md5_init', \
         md5_update, 'md5_update', \
         md5_final, 'md5_final'
+
+import  libini, \
+        ini_get_str, 'ini_get_str', \
+        ini_set_str, 'ini_set_str'
 
 IncludeIGlobals
 

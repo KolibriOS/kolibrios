@@ -18,13 +18,21 @@
 ; https://datatracker.ietf.org/doc/html/rfc4253#section-6.6
 ; https://datatracker.ietf.org/doc/html/rfc3447
 
+; https://datatracker.ietf.org/doc/html/rfc4716
+
 proc sshlib_host_verify  con_ptr, str_host_key, str_signature, message, message_len
 
 locals
-        known_key_sz rb MAX_PUBLIC_KEY_SIZE
+        current_hkb64           rb MAX_PUBLIC_KEY_SIZE*4        ; Current Host key in Base64
+        cached_hkb64            rb MAX_PUBLIC_KEY_SIZE*4        ; Cached Host key in Base64
+        key_name_sz             dd ?
+        hostname_sz             dd ?
+        current_hk64_end        dd ?
 endl
 
         mov     eax, [con_ptr]
+        lea     ebx, [eax + sshlib_connection.hostname_sz]
+        mov     [hostname_sz], ebx
         cmp     [eax+sshlib_connection.algo_hostkey], SSHLIB_HOSTKEY_RSA
         je      .rsa
         ; ..add more here
@@ -35,40 +43,65 @@ endl
         stdcall sshlib_host_verify_rsa, [str_host_key], [str_signature], [message], [message_len]
         test    eax, eax
         jnz     .err
+        mov     [key_name_sz], ssh_rsa_sz
 
   .lookup:
-;        lea     eax, [known_key_sz]
-;        mov     ebx, [con_ptr]
-;        lea     ebx, [ebx + sshlib_connection.hostname_sz]
-;        invoke  ini_get_str, known_hosts_file, ebx, ssh_rsa_sz, eax, MAX_PUBLIC_KEY_SIZE, null_sz
-;        test    eax, eax
-;        jnz     .unknown
+; Convert the current host key to base64
+        mov     esi, [str_host_key]
+        mov     ecx, [esi]
+        bswap   ecx
+        add     esi, 4
+        lea     edi, [current_hkb64]
+        call    base64_encode
+        mov     [current_hk64_end], edi
 
-; TODO: verify cached host key
-;        jne     .mismatch
+; Try to read the cached key for this host and key type
+        lea     edi, [cached_hkb64]
+        invoke  ini_get_str, known_hostsfile, [hostname_sz], [key_name_sz], edi, MAX_PUBLIC_KEY_SIZE*4, 0
+        test    eax, eax
+        jnz     .unknown
+; If the cached key is empty, return SSHLIB_HOSTKEY_PROBLEM_UNKNOWN
+        lea     esi, [cached_hkb64]
+        cmp     byte[esi], 0
+        je      .unknown
+; Else, compare it to the current one
+        lea     edi, [current_hkb64]
+        mov     ecx, MAX_PUBLIC_KEY_SIZE*4
+  .cmploop:
+        lodsb
+        scasb
+        jne     .mismatch
+        test    al, al
+        jz      .match
+        dec     ecx
+        jnz     .cmploop
+        jmp     .mismatch
 
-        jmp     .unknown        ; FIXME
-
+  .match:
         xor     eax, eax
         ret
 
   .mismatch:
-        lea     eax, [known_key_sz]
+int3
+        lea     eax, [current_hkb64]
         stdcall sshlib_callback_hostkey_problem, [con_ptr], SSHLIB_HOSTKEY_PROBLEM_MISMATCH, eax
         cmp     eax, SSHLIB_HOSTKEY_ACCEPT
         je      .store
         ret
 
   .unknown:
-        lea     eax, [known_key_sz]
+        lea     eax, [current_hkb64]
         stdcall sshlib_callback_hostkey_problem, [con_ptr], SSHLIB_HOSTKEY_PROBLEM_UNKNOWN, eax
         cmp     eax, SSHLIB_HOSTKEY_ACCEPT
         je      .store
         ret
 
   .store:
-; TODO: write to know_hosts file and fall-through
-
+        lea     esi, [current_hkb64]
+        mov     ecx, [current_hk64_end]
+        sub     ecx, esi
+        invoke  ini_set_str, known_hostsfile, [hostname_sz], [key_name_sz], esi, ecx
+        xor     eax, eax
         ret
 
   .err:
@@ -234,10 +267,64 @@ endl
 endp
 
 
+base64_encode:
+
+        xor     ebx, ebx
+  .loop:
+        lodsb
+        call    .byte
+        dec     ecx
+        jnz     .loop
+
+  .final:
+        mov     al, 0
+        test    ebx, ebx
+        jz      .f000
+        call    .byte
+        test    ebx, ebx
+        jz      .f001
+        call    .byte
+        mov     byte[edi-2], '='
+
+  .f001:
+        mov     byte[edi-1], '='
+
+  .f000:
+        mov     byte[edi], 0
+        ret
+
+  .byte:
+        inc     ebx
+        shl     edx, 8
+        mov     dl, al
+        cmp     ebx, 3
+        je      .b001
+        ret
+
+  .b001:
+        shl     edx, 8
+        inc     ebx
+
+  .b002:
+        rol     edx, 6
+        xor     eax, eax
+        xchg    al, dl
+        mov     al, [base64_table+eax]
+        stosb
+        dec     ebx
+        jnz     .b002
+        ret
+
+
+
+
 iglobal
 
+        known_hostsfile db '/sys/settings/known_hosts.ini', 0
+        base64_table    db 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/'
         rsa_sha1_t      db 0x30, 0x21, 0x30, 0x09, 0x06, 0x05, 0x2B, 0x0E, 0x03, 0x02, 0x1A, 0x05, 0x00, 0x04, 0x14
         .len = $ - rsa_sha1_t
+        ssh_rsa_sz      db 'ssh-rsa', 0
 
 endg
 
