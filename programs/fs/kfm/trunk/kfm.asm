@@ -5,14 +5,14 @@
 ;
 ; Redistribution and use in source and binary forms, with or without
 ; modification, are permitted provided that the following conditions are met:
-;	 * Redistributions of source code must retain the above copyright
-;	   notice, this list of conditions and the following disclaimer.
-;	 * Redistributions in binary form must reproduce the above copyright
-;	   notice, this list of conditions and the following disclaimer in the
-;	   documentation and/or other materials provided with the distribution.
-;	 * Neither the name of the <organization> nor the
-;	   names of its contributors may be used to endorse or promote products
-;	   derived from this software without specific prior written permission.
+;        * Redistributions of source code must retain the above copyright
+;          notice, this list of conditions and the following disclaimer.
+;        * Redistributions in binary form must reproduce the above copyright
+;          notice, this list of conditions and the following disclaimer in the
+;          documentation and/or other materials provided with the distribution.
+;        * Neither the name of the <organization> nor the
+;          names of its contributors may be used to endorse or promote products
+;          derived from this software without specific prior written permission.
 ;
 ; THIS SOFTWARE IS PROVIDED BY Marat Zakiyanov ''AS IS'' AND ANY
 ; EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
@@ -28,23 +28,23 @@
 ; KFM v0.47j 12/03/2014
 ;---------------------------------------------------------------------
 use32
-org	0x0
+org     0x0
 
-    db	  'MENUET01'
-    dd	  0x01
-    dd	  START
-    dd	  I_END
-    dd	  mem
-    dd	  stacktop
-    dd	  0x0
-    dd	  path
+    db    'MENUET01'
+    dd    0x01
+    dd    START
+    dd    I_END
+    dd    mem
+    dd    stacktop
+    dd    0x0
+    dd    path
 
 ;include   'lang.inc'
 ;include   'kglobals.inc'
 ;include   'macros.inc'
 include '../../../macros.inc'
-include '../../../config.inc'		;for nightbuild
-;include '../../../debug.inc'		;for nightbuild
+include '../../../config.inc'           ;for nightbuild
+;include '../../../debug.inc'           ;for nightbuild
 
 ;define __DEBUG__ 1
 ;define __DEBUG_LEVEL__ 1
@@ -60,10 +60,10 @@ include   'files.inc'
 STRLEN = 1024
 ;---------------------------------------------------------------------
 START:
-	mcall	9,procinfo,-1
-	mov	ecx,[ebx+30]	; PID
-	mcall	18,21
-	mov	[active_process],eax	; WINDOW SLOT
+        mcall   9,procinfo,-1
+        mov     ecx,[ebx+30]    ; PID
+        mcall   18,21
+        mov     [active_process],eax    ; WINDOW SLOT
     mov   [appl_memory],mem
     mov   ax,[select_disk_char]
     mov   [read_folder_name],ax
@@ -79,29 +79,29 @@ START:
 
     call  proc_read_left_folder
     test  eax,eax
-    jz	  @f
+    jz    @f
 
     cmp   eax,6
     jne   read_folder_error
 @@:
     call  proc_read_right_folder
     test  eax,eax
-    jz	  @f
+    jz    @f
 
     cmp   eax,6
-    je	  @f
+    je    @f
 ; if /hd read error for start then use /rd
     mov   esi,retrieved_devices_table+1
     call  copy_folder_name_1
     call  proc_read_right_folder
     test  eax,eax
-    jz	  @f
+    jz    @f
 
     cmp   eax,6
     jne   read_folder_1_error
 @@:
-	mcall 40, 0x27
-	jmp   red_1
+        mcall 40, 0x27
+        jmp   red_1
 ;---------------------------------------------------------------------
 red:
     call  get_window_param
@@ -110,12 +110,12 @@ red:
     test  [window_status],100b
     jnz   red_1
     cmp   [window_high],180
-    ja	  @f
+    ja    @f
     mov   esi,180
     mcall 67,-1,ebx,ebx
 @@:
     cmp   [window_width],495
-    ja	  red_1
+    ja    red_1
     mov   edx,495
     mcall 67,-1,ebx, ,ebx
 red_1:
@@ -127,41 +127,41 @@ still:
     call  check_active_process_for_clear_all_flags
 
     cmp   eax,1
-    je	  red
+    je    red
     cmp   eax,2
-    je	  key
+    je    key
     cmp   eax,3
-    je	  button
+    je    button
     cmp   eax,6
-    je	  mouse
+    je    mouse
     jmp   still
 ;---------------------------------------------------------------------
 check_active_process_for_clear_all_flags:
-	push	eax
-	mcall	18,7
-	cmp	[active_process],eax
-	je	.exit
-	
-	xor	eax,eax
-	cmp	[shift_flag],al
-	jne	.clear_all_flags
-	
-	cmp	[ctrl_flag],al
-	jne	.clear_all_flags
-	
-	cmp	[ctrl_flag],al
-	je	.exit
+        push    eax
+        mcall   18,7
+        cmp     [active_process],eax
+        je      .exit
+        
+        xor     eax,eax
+        cmp     [shift_flag],al
+        jne     .clear_all_flags
+        
+        cmp     [ctrl_flag],al
+        jne     .clear_all_flags
+        
+        cmp     [ctrl_flag],al
+        je      .exit
 ;--------------------------------------
 .clear_all_flags:
-	mov	[shift_flag],al
-	mov	[ctrl_flag],al
-	mov	[alt_flag],al
-	call	erase_fbutton
-	call	draw_fbutton
+        mov     [shift_flag],al
+        mov     [ctrl_flag],al
+        mov     [alt_flag],al
+        call    erase_fbutton
+        call    draw_fbutton
 ;--------------------------------------    
 .exit:
-	pop	eax
-	ret
+        pop     eax
+        ret
 ;---------------------------------------------------------------------
 get_window_param:
     mcall 9, procinfo, -1
@@ -177,17 +177,17 @@ get_window_param:
 ;---------------------------------------------------------------------
 draw_window:
     mcall 12, 1
-	xor	esi,esi
+        xor     esi,esi
     mcall 0, <20,728>, <20,460>, 0x43cccccc   ; 0x805080D0, 0x005080D0
     call  get_window_param
 
     mcall 71, 1, header_text
 
-	test	[window_status],100b	; window is rolled up
-	jnz	.exit
+        test    [window_status],100b    ; window is rolled up
+        jnz     .exit
 
-	test	[window_status],10b	; window is minimized to panel
-	jnz	.exit
+        test    [window_status],10b     ; window is minimized to panel
+        jnz     .exit
 
     ; create_dir_name
     ; start_parameter
@@ -199,12 +199,12 @@ draw_window:
     ; start_parameter
      ; start_file_data.name
       ; read_icon_file.name
-		; read_file_features.name ;path ;header
+                ; read_file_features.name ;path ;header
 
     cmp   [window_high],180
-    jb	  .exit
+    jb    .exit
     cmp   [window_width],495
-    jb	  .exit
+    jb    .exit
 
     call  draw_fbutton
     call  draw_left_panel
@@ -366,6 +366,8 @@ include   'delete.inc'
 include   'copy.inc'
 ;---------------------------------------------------------------------
 include   'creatdir.inc'
+;---------------------------------------------------------------------
+include   'creatfile.inc'
 ;---------------------------------------------------------------------
 include   'confirm.inc'
 ;---------------------------------------------------------------------

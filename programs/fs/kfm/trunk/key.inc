@@ -632,12 +632,14 @@ f_key_f5:
 f_key_f6:
 ;sort_date:
     cmp  [shift_flag],1
-    je   still
+    je   .shift
     cmp  [ctrl_flag],1
     je   .ctrl
     cmp  [alt_flag],1
     je   still
     jmp  move_file_f6
+.shift:
+    jmp  still
 .ctrl:
     cmp  [select_panel_counter],1
     je   right_sort_date
@@ -668,7 +670,7 @@ f_key_f9:
     je   still
     cmp  [alt_flag],1
     je   still
-    jmp  create_directory;create_file
+    jmp  create_new_file; create_directory;
 ;---------------------------------------------------------------------
 f_key_f12:
     cmp  [shift_flag],1
