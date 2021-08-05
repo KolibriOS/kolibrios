@@ -14,7 +14,6 @@ include '..\..\KOSfuncs.inc'
 START:
 ;;установка маска событий на получение переписовки и нажатия на кнопку
        mcall SF_SET_EVENTS_MASK,0x05
-       mcall SF_STYLE_SETTINGS,SSF_GET_COLORS,sc,sc,sizeof.system_colors
 ;load driver
        mcall SF_SYS_MISC, SSF_LOAD_DRIVER_PE, path_drv, 0
        mov dword[drv_struct.handl],eax
@@ -45,6 +44,7 @@ button:
        jmp still
 draw:
        mcall SF_REDRAW, SSF_BEGIN_DRAW
+       mcall SF_STYLE_SETTINGS,SSF_GET_COLORS,sc,sc,sizeof.system_colors
 
        mov eax,SF_CREATE_WINDOW
        mov ebx,0x00ff013f
@@ -215,7 +215,7 @@ draw:
        mov ecx,0x001d0015
        mov edx,eax;0x00000008
        mov esi,[sc.work_button]
-       int 0x40
+       mcall
 
        mov eax,SF_DRAW_TEXT;4
        mov ebx,0x000a0020
@@ -345,7 +345,7 @@ exit:
        mcall SF_TERMINATE_PROCESS
 ;Data_program;
 title       db 'AMDtemp',0
-path_drv    db '//kolibrios/drivers/sensors/k10temp.sys',0
+path_drv    db '/kolibrios/drivers/sensors/k10temp.sys',0
 Error_text  db 'Error load driver',0
 _NA         db 'N/A',0
 _dot        db '.',0
@@ -386,6 +386,7 @@ drv_data:
 .Tmax            dd -1
 .Tcrit           dd -1
 .Tcrit_hyst      dd -1
+.sizeof = $ - drv_data ;
 
 drv_struct:
 .handl          dd 0
@@ -393,7 +394,7 @@ drv_struct:
                 dd 0
                 dd 0
                 dd drv_data
-                dd 52 ; 13*4
+                dd drv_data.sizeof;52 ; 13*4
 sc      system_colors
 I_END:
    rd 256
