@@ -345,7 +345,7 @@ exit:
        mcall SF_TERMINATE_PROCESS
 ;Data_program;
 title       db 'AMDtemp',0
-path_drv    db '/sys/drivers/k10temp.sys',0
+path_drv    db '//kolibrios/drivers/sensors/k10temp.sys',0
 Error_text  db 'Error load driver',0
 _NA         db 'N/A',0
 _dot        db '.',0
