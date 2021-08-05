@@ -1,7 +1,7 @@
 key:
     mcall 2
     cmp   [extended_key],1
-    je	  .extended_key
+    je    .extended_key
     test  al, al
     jnz   still
     cmp   ah, 0xE0
@@ -18,33 +18,33 @@ key:
     jmp   still
 .no_tab:
     cmp   ah,72   ; arrow up
-    je	  key_72.1
+    je    key_72.1
     cmp   ah,80   ; arrow down
-    je	  key_80.1
+    je    key_80.1
     cmp   ah,28   ; Enter
-    je	  key_28.1
+    je    key_28.1
     cmp   ah,17   ; W
     je    set_background
     cmp   ah,19   ; R
-    je	  reload_dir_1
+    je    reload_dir_1
     cmp   ah,42
-    je	  key_shift_up
+    je    key_shift_up
     cmp   ah,54
-    je	  key_shift_up
+    je    key_shift_up
     cmp   ah,142
-    je	  exit_dir_1	; BackSpace Up
+    je    exit_dir_1    ; BackSpace Up
     cmp   ah,170
-    je	  key_shift_down
+    je    key_shift_down
     cmp   ah,182
-    je	  key_shift_down
+    je    key_shift_down
     cmp   ah,29
-    je	  key_ctrl_up.1
+    je    key_ctrl_up.1
     cmp   ah,157
-    je	  key_ctrl_down.1
+    je    key_ctrl_down.1
     cmp   ah,56
-    je	  key_alt_up.1
+    je    key_alt_up.1
     cmp   ah,184
-    je	  key_alt_down.1
+    je    key_alt_down.1
     cmp   ah,206 ; NumPad+ Up
     je    NumPad_plus_Up
     cmp   ah,202 ; NumPad- Up
@@ -54,29 +54,31 @@ key:
     cmp   ah,158
     je    symbol_a_up
     cmp   ah,59    ; down F1
-    je	  f_key_f1
+    je    f_key_f1
     cmp   ah,60    ; down F2
-    je	  f_key_f2
+    je    f_key_f2
     cmp   ah,61    ; down F3
-    je	  f_key_f3 ;sort_name
+    je    f_key_f3 ;sort_name
     cmp   ah,62    ; down F4
-    je	  f_key_f4 ;sort_type
+    je    f_key_f4 ;sort_type
     cmp   ah,63    ; down F5
-    je	  f_key_f5 ;sort_size
+    je    f_key_f5 ;sort_size
     cmp   ah,64    ; down F6
-    je	  f_key_f6 ; sort_date
+    je    f_key_f6 ; sort_date
     cmp   ah,65    ; down F7
-    je	  f_key_f7 ;
+    je    f_key_f7 ;
     cmp   ah,66    ; down F8
-    je	  f_key_f8 ; delete_file
+    je    f_key_f8 ; delete_file
+    cmp   ah,67
+    je    f_key_f9
     cmp   ah,88    ; down F12
-    je	  f_key_f12
+    je    f_key_f12
     jmp  still
 ;-------------------------------------------------------------
 .extended_key:
     mov  [extended_key],0
 key_80:
-    cmp  ah,80	; arrow down
+    cmp  ah,80  ; arrow down
     jne  key_72
 .1:
     cmp  [select_panel_counter],0
@@ -94,11 +96,11 @@ key_80:
     add  [left_start_draw_cursor_line],10
     call draw_left_panel
     mov  [drawing_panel_folder],1
-	jmp  still
+        jmp  still
 .all:
     sub  ecx,10 shl 16
     mov  edx,0xffffff
-	mcall
+        mcall
     mov  [not_clear_lines],1
     call draw_folder_data
     mov  [not_clear_lines],0
@@ -119,13 +121,13 @@ key_80:
     mov  eax,[left_folder_block]
     sub  eax,[max_panel_line]
     test eax,0x80000000
-    jz	 @f
+    jz   @f
     xor  eax,eax
 @@:
     cmp  [marked_action],0
     jne   @f
     cmp  [left_start_draw_line],eax
-    je	 still
+    je   still
 @@:
     mov  [marked_action],0
     inc  [left_start_draw_line]
@@ -150,13 +152,13 @@ key_80:
     mov  eax,[right_folder_block]
     sub  eax,[max_panel_line]
     test eax,0x80000000
-    jz	 @f
+    jz   @f
     xor  eax,eax
 @@:
     cmp  [marked_action],0
     jne  @f
     cmp  [right_start_draw_line],eax
-    je	 still
+    je   still
 @@:
     mov  [marked_action],0
     inc  [right_start_draw_line]
@@ -164,7 +166,7 @@ key_80:
     jmp  still
 ;-------------------------------------------------------------
 key_72:
-    cmp  ah,72	;arrow up
+    cmp  ah,72  ;arrow up
     jne  key_81
 .1:
     cmp  [select_panel_counter],0
@@ -172,22 +174,22 @@ key_72:
     mov  ax,[left_start_draw_cursor_line]
     add  ax,[left_panel_y.start_y]
     cmp  [left_panel_y.start_y],ax
-    je	 @f
+    je   @f
     sub  [left_start_draw_cursor_line],10
     call draw_left_panel
     mov  [drawing_panel_folder],1
-	jmp  still
+        jmp  still
 .all:    
     add  ecx,10 shl 16
     mov  edx,0xffffff
-	mcall
+        mcall
     mov  [not_clear_lines],1
     call draw_folder_data
     mov  [not_clear_lines],0
     jmp  still
 @@:
     cmp  [left_start_draw_line],0
-    je	 still
+    je   still
     dec  [left_start_draw_line]
     call draw_left_panel
     jmp  still
@@ -195,14 +197,14 @@ key_72:
     mov  ax,[right_start_draw_cursor_line]
     add  ax,[right_panel_y.start_y]
     cmp  [right_panel_y.start_y],ax
-    je	 @f
+    je   @f
     sub  [right_start_draw_cursor_line],10
     call draw_right_panel
     mov  [drawing_panel_folder],2
     jmp  still
 @@:
     cmp  [right_start_draw_line],0
-    je	 still
+    je   still
     dec  [right_start_draw_line]
     call draw_right_panel
     jmp  still
@@ -308,11 +310,11 @@ key_73:
     mov  ebx,[left_start_draw_line]
     sub  ebx,eax
     test ebx,0x8000000
-    jz	 @f
+    jz   @f
     cmp  [left_start_draw_line],0
     jne  .draw_line_1
     cmp  [left_start_draw_cursor_line],0
-    je	 still
+    je   still
     mov  [left_start_draw_cursor_line],0
 .draw_line_1:
     mov  [left_start_draw_line],0
@@ -326,11 +328,11 @@ key_73:
     mov  ebx,[right_start_draw_line]
     sub  ebx,eax
     test ebx,0x80000000
-    jz	 @f
+    jz   @f
     cmp  [right_start_draw_line],0
     jne  .draw_line_2
     cmp  [right_start_draw_cursor_line],0
-    je	 still
+    je   still
     mov  [right_start_draw_cursor_line],0
 .draw_line_2:
     mov  [right_start_draw_line],0
@@ -349,7 +351,7 @@ key_71:
     cmp  [left_start_draw_line],0
     jne   .draw_left_panel
     cmp  [left_start_draw_cursor_line],0
-    je	 still
+    je   still
 .draw_left_panel:
     mov  [left_start_draw_line],0
     mov  [left_start_draw_cursor_line],0
@@ -359,7 +361,7 @@ key_71:
     cmp  [right_start_draw_line],0
     jne   .draw_right_panel
     cmp  [right_start_draw_cursor_line],0
-    je	 still
+    je   still
 .draw_right_panel:
     mov  [right_start_draw_line],0
     mov  [right_start_draw_cursor_line],0
@@ -402,11 +404,11 @@ key_28:
     jne  key_ctrl_up
 .1:
     cmp  [shift_flag],1
-    je	 still
+    je   still
     cmp  [ctrl_flag],1
-    je	 still
+    je   still
     cmp  [alt_flag],1
-    je	 files_information
+    je   files_information
     
     mov  [open_param],0
 .2:
@@ -416,15 +418,15 @@ key_28:
     call  calculate_left_data_1
     add  esi,32
     cmp  [exit_dir],1
-    je	 .up_patch
+    je   .up_patch
     test [esi],byte 0x10
-    jz	 file_no_folder
+    jz   file_no_folder
     cmp  [open_param],0
     jne  still
     cmp  [esi+40],word 2Eh
-    je	 still
+    je   still
     cmp  [esi+40],word '..'
-    je	 .up_patch
+    je   .up_patch
     call calculate_key_28_1
     mov  [left_start_draw_cursor_line],0
     mov  [left_start_draw_line],0
@@ -437,13 +439,13 @@ key_28:
     call calculate_right_data_1
     add  esi,32
     cmp  [exit_dir],1
-    je	 .up_patch_1
+    je   .up_patch_1
     test [esi],byte 0x10
-    jz	 file_no_folder
+    jz   file_no_folder
     cmp  [esi+40],word 2Eh
-    je	 still
+    je   still
     cmp  [esi+40],word '..'
-    je	 .up_patch_1
+    je   .up_patch_1
     call calculate_key_28_1
     mov  [right_start_draw_cursor_line],0
     mov  [right_start_draw_line],0
@@ -462,7 +464,7 @@ calculate_key_28_1:
     cmp  [edi],byte 0
     jne  @r
     cmp  edi,ebp ;read_folder.name+1
-    je	 @f
+    je   @f
     mov  al,'/'
     mov [edi],al
     inc  edi
@@ -514,16 +516,16 @@ set_background:
 ;---------------------------------------------------------------------    
 reload_dir_1:
     cmp  [ctrl_flag],0
-    je	 still
+    je   still
     jmp  reload_dir
 ;---------------------------------------------------------------------
 symbol_a_up:
     cmp  [shift_flag],1
-    je	 still
+    je   still
     cmp  [ctrl_flag],1
-    je	 .ctrl
+    je   .ctrl
     cmp  [alt_flag],1
-    je	 still
+    je   still
     jmp  still
 .ctrl:
     mov  [mark_action_counter],0
@@ -531,11 +533,11 @@ symbol_a_up:
 ;---------------------------------------------------------------------
 NumPad_plus_Up:
     cmp  [shift_flag],1
-    je	 still
+    je   still
     cmp  [ctrl_flag],1
-    je	 .ctrl
+    je   .ctrl
     cmp  [alt_flag],1
-    je	 still
+    je   still
     jmp  still
 .ctrl:
     mov  [mark_action_counter],0
@@ -543,11 +545,11 @@ NumPad_plus_Up:
 ;---------------------------------------------------------------------
 NumPad_minus_Up:
     cmp  [shift_flag],1
-    je	 still
+    je   still
     cmp  [ctrl_flag],1
-    je	 .ctrl
+    je   .ctrl
     cmp  [alt_flag],1
-    je	 still
+    je   still
     jmp  still
 .ctrl:
     mov  [mark_action_counter],1
@@ -555,11 +557,11 @@ NumPad_minus_Up:
 ;---------------------------------------------------------------------
 NumPad_sneg_Up:
     cmp  [shift_flag],1
-    je	 still
+    je   still
     cmp  [ctrl_flag],1
-    je	 .ctrl
+    je   .ctrl
     cmp  [alt_flag],1
-    je	 still
+    je   still
     jmp  still
 .ctrl:
     mov  [mark_action_counter],2
@@ -568,109 +570,118 @@ NumPad_sneg_Up:
 f_key_f1:
 ;sort_name:
     cmp  [shift_flag],1
-    je	 still
+    je   still
     cmp  [ctrl_flag],1
-    je	 still
+    je   still
     cmp  [alt_flag],1
-    je	 draw_left_select_disk_menu
+    je   draw_left_select_disk_menu
     jmp  help_start
 ;---------------------------------------------------------------------
 f_key_f2:
 ;sort_name:
     cmp  [shift_flag],1
-    je	 still
+    je   still
     cmp  [ctrl_flag],1
-    je	 still
+    je   still
     cmp  [alt_flag],1
-    je	 draw_right_select_disk_menu
+    je   draw_right_select_disk_menu
     jmp  still
 ;---------------------------------------------------------------------
 f_key_f3:
 ;sort_name:
     cmp  [shift_flag],1
-    je	 still
+    je   still
     cmp  [ctrl_flag],1
-    je	 .ctrl
+    je   .ctrl
     cmp  [alt_flag],1
-    je	 still
+    je   still
     jmp  still
 .ctrl:
     cmp  [select_panel_counter],1
-    je	 right_sort_name
+    je   right_sort_name
     jmp  left_sort_name
 ;---------------------------------------------------------------------
 f_key_f4:
 ;sort_type:
     cmp  [shift_flag],1
-    je	 still
+    je   still
     cmp  [ctrl_flag],1
-    je	 .ctrl
+    je   .ctrl
     cmp  [alt_flag],1
-    je	 still
+    je   still
     jmp  open_file_f4
 .ctrl:
     cmp  [select_panel_counter],1
-    je	 right_sort_type
+    je   right_sort_type
     jmp  left_sort_type
 ;---------------------------------------------------------------------
 f_key_f5:
 ;sort_size:
     cmp  [shift_flag],1
-    je	 still
+    je   still
     cmp  [ctrl_flag],1
-    je	 .ctrl
+    je   .ctrl
     cmp  [alt_flag],1
-    je	 still
+    je   still
     jmp  copy_file_f5
 .ctrl:
     cmp  [select_panel_counter],1
-    je	 right_sort_size
+    je   right_sort_size
     jmp  left_sort_size
 ;---------------------------------------------------------------------
 f_key_f6:
 ;sort_date:
     cmp  [shift_flag],1
-    je	 still
+    je   still
     cmp  [ctrl_flag],1
-    je	 .ctrl
+    je   .ctrl
     cmp  [alt_flag],1
-    je	 still
+    je   still
     jmp  move_file_f6
 .ctrl:
     cmp  [select_panel_counter],1
-    je	 right_sort_date
+    je   right_sort_date
     jmp  left_sort_date
 ;---------------------------------------------------------------------
 f_key_f7:
     cmp  [shift_flag],1
-    je	 still
+    je   still
     cmp  [ctrl_flag],1
-    je	 still
+    je   still
     cmp  [alt_flag],1
-    je	 still
+    je   still
     jmp  create_directory
 ;---------------------------------------------------------------------
 f_key_f8:
     cmp  [shift_flag],1
-    je	 still
+    je   still
     cmp  [ctrl_flag],1
-    je	 still
+    je   still
     cmp  [alt_flag],1
-    je	 still
+    je   still
     jmp  delete_file
+;---------------------------------------------------------------------
+f_key_f9:
+    cmp  [shift_flag],1
+    je   still
+    cmp  [ctrl_flag],1
+    je   still
+    cmp  [alt_flag],1
+    je   still
+    jmp  create_directory;create_file
 ;---------------------------------------------------------------------
 f_key_f12:
     cmp  [shift_flag],1
-    je	 still
+    je   still
     cmp  [ctrl_flag],1
-    je	 still
+    je   still
     cmp  [alt_flag],1
-    je	 still
+    je   still
     jmp  exit_apl
 ;---------------------------------------------------------------------
 key_shift_up:
     cmp  [shift_flag],1
-    je	 still
+    je   still
     mov  [shift_flag],1
     jmp  key_alt_down.for_all
 ;---------------------------------------------------------------------
@@ -683,7 +694,7 @@ key_ctrl_up:
     jne   key_ctrl_down
 .1:
     cmp  [ctrl_flag],1
-    je	 still
+    je   still
     mov  [ctrl_flag],1
     jmp  key_alt_down.for_all
 ;---------------------------------------------------------------------
@@ -699,7 +710,7 @@ key_alt_up:
     jne   key_alt_down
 .1:
     cmp  [alt_flag],1
-    je	 still
+    je   still
     mov  [alt_flag],1
     jmp  key_alt_down.for_all
 ;---------------------------------------------------------------------
@@ -715,9 +726,9 @@ key_alt_down:
 ;---------------------------------------------------------------------
 key_insert:
     cmp   ah,82   ; Insert
-    je	  mark_file
+    je    mark_file
     cmp   ah,83
-    je	  f_key_f8	;delete_file
+    je    f_key_f8      ;delete_file
 key_end:
     jmp  still
 ;---------------------------------------------------------------------
