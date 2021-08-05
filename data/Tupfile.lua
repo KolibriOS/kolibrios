@@ -600,6 +600,7 @@ tup.append_table(extra_files, {
  {"kolibrios/utils/calcplus", PROGS .. "/other/calcplus/calcplus"},
  {"kolibrios/utils/kfm/kfm", PROGS .. "/fs/kfm/trunk/kfm"},
  {"kolibrios/utils/t_edit", PROGS .. "/other/t_edit/t_edit"},
+ {"kolibrios/utils/AMDtemp", PROGS .. "/system/amd_temp_view/AMDtemp"},
 })
 -- For russian build, add russian-only programs.
 if build_type == "rus" then tup.append_table(img_files, {
