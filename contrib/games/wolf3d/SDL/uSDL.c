@@ -17,13 +17,12 @@ unsigned uSDL_GetTicks(void){
         :"a"(26),"b"(9)
         :"memory"
     );
-    return (__curtime-__starttime);
+    return (__curtime-__starttime)*10;
 }
 
-void uSDL_Delay(unsigned time){
-    __asm__ __volatile__(
-        "int $0x40"
-        ::"a"(5), "b"(time/3)
-        :"memory"
-    );
-} 
+void uSDL_Delay(unsigned ms){
+  unsigned start = uSDL_GetTicks();
+  do{
+    __asm__("int $0x40" :: "a"(68),"b"(1));
+  }while (uSDL_GetTicks()-start < ms);
+}
