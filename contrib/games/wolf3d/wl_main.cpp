@@ -1965,10 +1965,13 @@ void CheckParameters(int argc, char *argv[])
 ==========================
 */
 
+extern void kolibri_set_win_max(void);
+
 int main (int argc, char *argv[])
 {
 #ifdef _KOLIBRI
     setcwd(dirname(argv[0]));
+    kolibri_set_win_max();
 #endif
 
 #if defined(_arch_dreamcast)
