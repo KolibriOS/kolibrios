@@ -128,8 +128,7 @@ locals
 
         mpint_s                 dd ?    ; rsa_signature_blob
 
-
-;        k       dd ?    ; length of RSA modulus n
+        k                       dd ?    ; Key length
 
 endl
 
@@ -173,12 +172,13 @@ endl
         add     esi, 4
 ; mpint n
         stdcall mpint_to_little_endian, [mpint_n], esi
-;        mov     [k], eax             ;; HMMMM FIXME, 0-byte..
+        and     eax, not (32-1)         ; CHECKME
+        mov     [k], eax
 
 ; Signature
         mov     esi, [str_signature]
         mov     ecx, [esi]
-        bswap   ecx             ; TODO: check length
+        bswap   ecx                     ; TODO: check length
 
 ; Host key type (string)
         cmp     dword[esi+4], 0x07000000
@@ -218,9 +218,13 @@ endl
         stosb
         mov     al, 0x01
         stosb
-        mov     ecx, 256 - (rsa_sha1_T.len + 3 + SHA1_HASH_SIZE)
+        mov     ecx, [k]
+        sub     ecx, (rsa_sha1_T.len + 3 + SHA1_HASH_SIZE)
+        jl      .err_key
+        jz      @f
         mov     al, 0xff
         rep stosb
+  @@:
         mov     al, 0x00
         stosb
         mov     esi, rsa_sha1_T
@@ -248,9 +252,13 @@ endl
         stosb
         mov     al, 0x01
         stosb
-        mov     ecx, 256 - (rsa_sha256_T.len + 3 + SHA256_HASH_SIZE)
+        mov     ecx, [k]
+        sub     ecx, (rsa_sha256_T.len + 3 + SHA256_HASH_SIZE)
+        jl      .err_key
+        jz      @f
         mov     al, 0xff
         rep stosb
+  @@:
         mov     al, 0x00
         stosb
         mov     esi, rsa_sha256_T
@@ -278,9 +286,13 @@ endl
         stosb
         mov     al, 0x01
         stosb
-        mov     ecx, 256 - (rsa_sha512_T.len + 3 + SHA512_HASH_SIZE)
+        mov     ecx, [k]
+        sub     ecx, (rsa_sha512_T.len + 3 + SHA512_HASH_SIZE)
+        jl      .err_key
+        jz      @f
         mov     al, 0xff
         rep stosb
+  @@:
         mov     al, 0x00
         stosb
         mov     esi, rsa_sha512_T
@@ -297,20 +309,21 @@ endl
 ; RSA signature blob
         stdcall mpint_to_little_endian, [mpint_s], esi
 ;        cmp     eax, [k]
- ;;;       jne     .err_signature
+;        jne     .err_signature
 
 ; RSAVP1
         stdcall mpint_modexp, [mpint_m], [mpint_s], [mpint_e], [mpint_n]
 ; I2OSP
         stdcall mpint_shrink, [mpint_m]
-        stdcall mpint_grow, [mpint_m], 256
+        stdcall mpint_grow, [mpint_m], [k]
         stdcall mpint_to_big_endian, [EM], [mpint_m]
 
 ; Compare EM with EM_accent
         mov     esi, [EM]
         add     esi, 4
         mov     edi, [EM_accent]
-        mov     ecx, 256/4
+        mov     ecx, [k]
+        shr     ecx, 2
         xor     eax, eax
   .ct_cmp_loop:
         mov     ebx, [esi]
