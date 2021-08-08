@@ -1909,6 +1909,8 @@ con_kbhit:
         jnz     @f
         mov     eax, [con.input_start]
         cmp     eax, [con.input_end]
+        jnz     @f
+        cmp     [con.entered_char], 0xffff
 @@:
         setnz   al
         movzx   eax, al
