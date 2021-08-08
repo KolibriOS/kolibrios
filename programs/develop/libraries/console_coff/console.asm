@@ -878,16 +878,27 @@ con.write_special_char:
   .esc_mode:
         cmp     [con_sci], 0
         jnz     .esc_sci
-        cmp     al, '['
+        cmp     al, '['         ; CSI - Control Sequence Introducer
         je      .esc_sqro
-        cmp     al, ']'
+        cmp     al, ']'         ; OSC - Operating System Command
         je      .esc_sqrc
-        cmp     al, '('
+        cmp     al, '('         ; Designate G0 Character Set, VT100, ISO 2022.
         je      .esc_rndo
-        cmp     al, '>'
+        cmp     al, '>'         ; Normal Keypad (DECKPNM), VT100.
         je      .keypm_norm
-        cmp     al, '='
+        cmp     al, '='         ; Application Keypad (DECKPAM).
         je      .keypm_alt
+; Control characters
+        cmp     al, 'G'
+        je      .bell
+        cmp     al, 'H'
+        je      .write_bs
+        cmp     al, 'I'
+        je      .write_tab
+        cmp     al, 'J'
+        je      .write_lf
+        cmp     al, 'M'
+        je      .write_cr
 ; Unrecognized escape sequence, print it to screen
         push    eax
         mov     al, 27
@@ -1962,10 +1973,10 @@ con_get_input:
         jnz     .none
 
         push    ebx
-        mov     ebx, [esp+12]
+        mov     ebx, [esp+8]
   .check_more:
 ; Avoid buffer overflow
-        cmp     dword[esp+8], 16
+        cmp     dword[esp+12], 16
         jl      .no_more
 ; Check element available
         cmp     [con.entered_char], 0xFFFF
@@ -2027,12 +2038,12 @@ con_get_input:
         mov     eax, 1
   .got_input:
         and     eax, 0xff
-        sub     [esp+8], eax
+        sub     [esp+12], eax
         add     ebx, eax
         jmp     .check_more
   .no_more:
         mov     eax, ebx
-        sub     eax, [esp+12]
+        sub     eax, [esp+8]
         pop     ebx
         ret     8
 
