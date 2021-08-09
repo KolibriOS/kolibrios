@@ -194,7 +194,7 @@ redraw:
         push    eax
         push    bx
 
-        mov     edx, 115 shl 16 + 35 + 7*18
+        mov     edx, 116 shl 16 + 35 + 7*18
         call    draw_mac
         jmp     end_of_draw
 
@@ -241,7 +241,7 @@ redraw:
         mcall   76
         push    eax
 
-        mov     edx, 115 shl 16 + 35 + 2*18
+        mov     edx, 116 shl 16 + 35 + 2*18
         call    draw_ip
 
         add     edx, 18
@@ -426,7 +426,7 @@ draw_stats:
         mov     edx, str_unknown
 
   .print_link:
-        mov     ebx, 115 shl 16 + 35 + 6*18
+        mov     ebx, 116 shl 16 + 35 + 6*18
         mov     ecx, 0xc0000000
         mov     edi, 0x00f3f3f3
         mcall   4
@@ -434,7 +434,7 @@ draw_stats:
 ; speed rx
         mov     ebx, 0x000a0000
         pop     ecx
-        mov     edx, 115 shl 16 + 35 + 5*18
+        mov     edx, 116 shl 16 + 35 + 5*18
         mov     esi, 0x40000000
         mcall   47
 
@@ -487,7 +487,7 @@ not_101:
 
         mov     ebx, 0x000a0000
         pop     ecx
-        mov     edx, 115 shl 16 + 35 + 18
+        mov     edx, 116 shl 16 + 35 + 18
         mov     esi, 0x40000000
         mov     edi, 0x00F3F3F3
         mcall   47
@@ -531,7 +531,7 @@ not_102:
 
         mov     ebx, 0x000a0000
         pop     ecx
-        mov     edx, 115 shl 16 + 35 + 3*18
+        mov     edx, 116 shl 16 + 35 + 3*18
         mov     esi, 0x40000000
         mov     edi, 0x00F3F3F3
         mcall   47
@@ -648,7 +648,7 @@ not_103:
 
         mov     ebx, 0x000a0000
         pop     ecx
-        mov     edx, 115 shl 16 + 35 + 18
+        mov     edx, 116 shl 16 + 35 + 18
         mov     esi, 0x40000000
         mov     edi, 0x00F3F3F3
         mcall   47
@@ -679,7 +679,7 @@ not_104:
 
         mov     ebx, 0x000a0000
         pop     ecx
-        mov     edx, 115 shl 16 + 35 + 18
+        mov     edx, 116 shl 16 + 35 + 18
         mov     esi, 0x40000000
         mov     edi, 0x00F3F3F3
         mcall   47
@@ -728,7 +728,7 @@ not_105:
 
         mov     ebx, 0x000a0000
         pop     ecx
-        mov     edx, 115 shl 16 + 35 + 18*4
+        mov     edx, 116 shl 16 + 35 + 18*4
         mov     esi, 0x40000000
         mov     edi, 0x00F3F3F3
         mcall   47
@@ -987,11 +987,11 @@ str_packets_tx  db 'Packets sent:', 0
 str_packets_rx  db 'Packets received:', 0
 str_bytes_tx    db 'Bytes sent:', 0
 str_bytes_rx    db 'Bytes received:', 0
-str_MAC         db 'MAC address:           -  -  -  -  -', 0
-str_ip          db 'IP address:             .   .   .', 0
-str_dns         db 'DNS address:            .   .   .', 0
-str_subnet      db 'Subnet mask:            .   .   .', 0
-str_gateway     db 'Standard gateway:       .   .   .', 0
+str_MAC         db 'MAC address:        -  -  -  -  -', 0
+str_ip          db 'IP address:          .   .   .', 0
+str_dns         db 'DNS address:         .   .   .', 0
+str_subnet      db 'Subnet mask:         .   .   .', 0
+str_gateway     db 'Standard gateway:    .   .   .', 0
 str_arp         db 'ARP entrys:', 0
 str_conflicts   db 'ARP conflicts:', 0
 str_missed      db 'Packets missed:', 0
