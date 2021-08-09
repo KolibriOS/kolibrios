@@ -27,6 +27,11 @@ bit_AHCI_HBA_PxCMD_FRE   = 4
 bit_AHCI_HBA_PxCMD_FR    = 14
 bit_AHCI_HBA_PxCMD_CR    = 15
 
+AHCI_HBA_PxCMD_ST    = 1 shl 0
+AHCI_HBA_PxCMD_FRE   = 1 shl 4
+AHCI_HBA_PxCMD_FR    = 1 shl 14
+AHCI_HBA_PxCMD_CR    = 1 shl 15
+
 bit_AHCI_H2D_FLAG_CMD    = 7
 
 AHCI_HBA_PxSSTS_DET         = 0xF
@@ -417,7 +422,47 @@ ahci_init:
         add     edi, esi
         ; now edi - base of HBA_MEM.ports[ebx]
 
-        DEBUGF  1, "K: AHCI: port %d, ssts = %x\n", ebx, [edi + HBA_PORT.sata_status]
+        DEBUGF  1, "K: AHCI: port %d, cmd = %x, ssts = %x\n", ebx, [edi + HBA_PORT.command], [edi + HBA_PORT.sata_status]
+
+        ; If port is not idle force it to be idle
+        mov     eax, [edi + HBA_PORT.command]
+        and     eax, (AHCI_HBA_PxCMD_ST or AHCI_HBA_PxCMD_CR or AHCI_HBA_PxCMD_FRE or AHCI_HBA_PxCMD_FR)
+        test    eax, eax
+        jz      @f
+
+        mov     eax, edi
+        DEBUGF  1, "ahci_stop_cmd..\n"
+        call    ahci_stop_cmd
+@@:
+        ; TODO: what is purpose of this block of code ?
+        ; Reset port, disable slumber and partial state
+        ; mov     [edi + HBA_PORT.sata_control], 0x301
+        ; push    ebx
+        ; mov     ebx, 5 ; wait 50 ms
+        ; call    delay_hs
+        ; pop     ebx
+        ; mov     [edi + HBA_PORT.sata_control], 0x300
+
+        ; if(abar->cap & HBA_MEM_CAP_SSS)
+        ; {
+        ; abar->ports[i].cmd |= (HBA_PxCMD_SUD | HBA_PxCMD_POD | HBA_PxCMD_ICC);
+        ; Sleep(10);
+        ; }
+        ; rewritten to:
+        bt      [esi + HBA_MEM.cap], 27 ; check Supports Staggered Spin-up bit in capabilities
+        jnc     @f
+        DEBUGF  1, "Supports Staggered Spin-up\n"
+        or      [edi + HBA_PORT.command], (0x0002 or 0x0004 or 0x10000000)
+        push    ebx
+        mov     ebx, 1 ; wait 10 ms
+        call    delay_hs
+        pop     ebx
+@@:
+        ; Clear interrupt status and error status
+        mov     [edi + HBA_PORT.sata_error], 0xFFFFFFFF
+        mov     [edi + HBA_PORT.interrupt_status], 0xFFFFFFFF
+
+        ; ------------------------------------------
 
         mov     ecx, [edi + HBA_PORT.sata_status]
         shr     ecx, 8
@@ -430,7 +475,7 @@ ahci_init:
         cmp     ecx, AHCI_HBA_PxSSTS_DET_PRESENT
         jne     .continue_detect_drives
 
-        DEBUGF  1, "K: AHCI: found drive at port %d, signature = %x\n", ebx, [edi + HBA_PORT.signature]  
+        DEBUGF  1, "K: AHCI: found drive at port %d, cmd = 0x%x, ssts = 0x%x, signature = 0x%x\n", ebx, [edi + HBA_PORT.command], [edi + HBA_PORT.sata_status], [edi + HBA_PORT.signature]  
 
         mov     ecx, ebx
         imul    ecx, sizeof.PORT_DATA
@@ -524,6 +569,23 @@ proc ahci_port_identify stdcall, pdata: dword
         mov     ebx, 20 ;;;
         call    delay_hs ;;;
 
+        DEBUGF  1, "sata_error register = 0x%x\n", [edi + HBA_PORT.sata_error]
+
+        mov     ecx, ecx
+        mov     esi, [buf_virt]
+.print_ident:
+        cmp     ecx, 512 - 1 ; why -1 ?
+        jae     .end_print_ident
+
+        mov     al, byte [esi + ecx]
+        mov     byte [modelstr], al
+        mov     byte [modelstr + 1], 0
+        DEBUGF  1, "(%s) ", modelstr
+
+        inc     ecx
+        jmp     .print_ident
+.end_print_ident:
+
         mov     esi, [buf_virt]
         add     esi, 27*2
         mov     edi, modelstr
@@ -543,7 +605,20 @@ proc ahci_port_identify stdcall, pdata: dword
         add     ecx, 2
         jmp     .reverse1
 .reverse1_end:
-        DEBUGF  1, "Ident data of port: model = %s\n", modelstr
+        DEBUGF  1, "Ident data of port: model = %s ", modelstr
+
+        ; mov    esi, [buf_virt]
+        ; mov    eax, [esi + 12] ; lower dword of sector count has 12 bytes offset
+        ; mov    edx, [esi + 12 + 4] ; higher dword of sector count
+        ; DEBUGF 1, "sector_count = 0x%x:%x ", edx, eax
+
+        ; mov    eax, [esi + 200]
+        ; mov    edx, [esi + 200 + 4]
+        ; mov    ecx, 1024*1024
+        ; div    ecx
+        ; shl    eax, 9 ; *= 512, 512 - block size
+        ; DEBUGF 1, "disk capacity = %u MiB\n", eax
+
 
 .ret:
         popad
