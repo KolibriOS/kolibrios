@@ -1,6 +1,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;                                                                 ;;
-;; Copyright (C) KolibriOS team 2010-2020. All rights reserved.    ;;
+;; Copyright (C) KolibriOS team 2010-2021. All rights reserved.    ;;
 ;; Distributed under terms of the GNU General Public License       ;;
 ;;                                                                 ;;
 ;;  ping.asm - ICMP echo client for KolibriOS                      ;;
@@ -49,14 +49,8 @@ START:
         test    eax, eax
         jnz     exit
 ; initialize console
-        push    1
-        call    [con_start]
-        push    title
-        push    250
-        push    80
-        push    25
-        push    80
-        call    [con_init]
+        invoke  con_start, 1
+        invoke  con_init, 80, 25, 80, 250, title
 ; Init identifier with our PID number
         mcall   9, thread_info, -1
         mov     eax, [thread_info.PID]
@@ -80,17 +74,13 @@ START:
         cmp     byte[params], 0
         jne     parse_param
 
-        push    str_welcome
-        call    [con_write_asciiz]
+        invoke  con_write_asciiz, str_welcome
 main:
 ; write prompt
-        push    str_prompt
-        call    [con_write_asciiz]
+        invoke  con_write_asciiz, str_prompt
 ; read string
         mov     esi, params
-        push    1024
-        push    esi
-        call    [con_gets]
+        invoke  con_gets, esi, 1024
 ; check for exit
         test    eax, eax
         jz      exit
@@ -183,18 +173,13 @@ parse_param:
   @@:
         ; implement more parameters here
   .invalid:
-        push    str13
-        call    [con_write_asciiz]
+        invoke  con_write_asciiz, str13
         jmp     main
 
   .resolve:
 ; resolve name
         push    esp     ; reserve stack place
-        push    esp     ; fourth parameter
-        push    0       ; third parameter
-        push    0       ; second parameter
-        push    params  ; first parameter
-        call    [getaddrinfo]
+        invoke  getaddrinfo, params, 0, 0, esp
         pop     esi
 ; test for error
         test    eax, eax
@@ -204,19 +189,16 @@ parse_param:
         mov     eax, [esi+addrinfo.ai_addr]
         mov     eax, [eax+sockaddr_in.sin_addr]
         mov     [sockaddr1.ip], eax
-        push    eax
-        call    [inet_ntoa]
+        invoke  inet_ntoa, eax
 ; write result
         mov     [ip_ptr], eax
 
         push    eax
 
 ; free allocated memory
-        push    esi
-        call    [freeaddrinfo]
+        invoke  freeaddrinfo, esi
 
-        push    str4
-        call    [con_write_asciiz]
+        invoke  con_write_asciiz, str4
 
         mcall   socket, AF_INET4, SOCK_RAW, IPPROTO_ICMP
         cmp     eax, -1
@@ -238,19 +220,13 @@ parse_param:
 
         mcall   40, EVM_STACK
 
-        push    str3
-        call    [con_write_asciiz]
-
-        push    [ip_ptr]
-        call    [con_write_asciiz]
-
-        push    [size]
-        push    str3b
-        call    [con_printf]
+        invoke  con_write_asciiz, str3
+        invoke  con_write_asciiz, [ip_ptr]
+        invoke  con_printf, str3b, [size]
         add     esp, 2*4
 
 mainloop:
-        call    [con_get_flags]
+        invoke  con_get_flags
         test    eax, 0x200                      ; con window closed?
         jnz     exit_now
 
@@ -361,17 +337,14 @@ mainloop:
         push    eax
         push    [recvd]
 
-        push    str7
-        call    [con_printf]
+        invoke  con_printf, str7
         add     esp, 5*4
 
         jmp     .continue
 
 
   .ttl_exceeded:
-        push    str14
-        call    [con_write_asciiz]
-
+        invoke  con_write_asciiz, str14
         jmp     .continue
 
 
@@ -379,25 +352,30 @@ mainloop:
   .miscomp:
         sub     edi, icmp_packet.data+1
         push    edi
-        push    str9
-        call    [con_printf]
+        invoke  con_printf, str9
         add     esp, 2*4
         jmp     .continue
 
 ; Invalid reply
   .invalid:
-        push    str10
-        call    [con_write_asciiz]
+        invoke  con_write_asciiz, str13
         jmp     .continue
 
 ; Timeout!
   .no_response:
-        push    str8
-        call    [con_write_asciiz]
+        invoke  con_write_asciiz, str8
 
 ; Send more ICMP packets ?
   .continue:
         inc     [icmp_packet.seq]
+
+        invoke  con_kbhit
+        test    eax, eax
+        jz      .nokey
+        invoke  con_getch2
+        cmp     ax, 0x1E03      ; Ctrl+C
+        je      .stats
+  .nokey:
 
         cmp     [count], -1
         je      .forever
@@ -427,27 +405,23 @@ mainloop:
         push    eax
         push    [stats.rx]
         push    [stats.tx]
-        push    str12
-        call    [con_printf]
+        invoke  con_printf, str12
         add     esp, 5*4
         jmp     main
 
 ; DNS error
 fail:
-        push    str5
-        call    [con_write_asciiz]
+        invoke  con_write_asciiz, str5
         jmp     main
 
 ; Socket error
 fail2:
-        push    str6
-        call    [con_write_asciiz]
+        invoke  con_write_asciiz, str6
         jmp     main
 
 ; Finally.. exit!
 exit:
-        push    1
-        call    [con_exit]
+        invoke  con_exit, 1
 exit_now:
         mcall   -1
 
@@ -487,7 +461,7 @@ title   db      'ICMP echo (ping) client',0
 str_welcome db  'Please enter the hostname or IP-address of the host you want to ping,',10
             db  'or just press enter to exit.',10,10
             db  'Options:',10
-            db  ' -t            Send packets till users abort.',10
+            db  ' -t            Send packets till users abort. (Ctrl+C))',10
             db  ' -n number     Number of requests to send.',10
             db  ' -i TTL        Time to live.',10
             db  ' -l size       Size of echo request.',10
@@ -550,7 +524,8 @@ import  console,        \
         con_cls,        'con_cls',\
         con_getch2,     'con_getch2',\
         con_set_cursor_pos, 'con_set_cursor_pos',\
-        con_get_flags,  'con_get_flags'
+        con_get_flags,  'con_get_flags',\
+        con_kbhit,      'con_kbhit'
 
 socketnum       dd ?
 

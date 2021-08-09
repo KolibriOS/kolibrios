@@ -1,6 +1,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;                                                                 ;;
-;; Copyright (C) KolibriOS team 2010-2020. All rights reserved.    ;;
+;; Copyright (C) KolibriOS team 2010-2021. All rights reserved.    ;;
 ;; Distributed under terms of the GNU General Public License       ;;
 ;;                                                                 ;;
 ;;  tracert.asm - Trace network route for KolibriOS                ;;
@@ -54,29 +54,19 @@ START:
         test    eax, eax
         jnz     exit
 ; initialize console
-        push    1
-        call    [con_start]
-        push    title
-        push    250
-        push    80
-        push    25
-        push    80
-        call    [con_init]
+        invoke  con_start, 1
+        invoke  con_init, 80, 25, 80, 250, title
 ; main loop
         cmp     byte[params], 0
         jne     parse_param
 
-        push    str_welcome
-        call    [con_write_asciiz]
+        invoke  con_write_asciiz, str_welcome
 main:
 ; write prompt
-        push    str_prompt
-        call    [con_write_asciiz]
+        invoke  con_write_asciiz, str_prompt
 ; read string
         mov     esi, params
-        push    1024
-        push    esi
-        call    [con_gets]
+        invoke  con_gets, esi, 1024
 ; check for exit
         test    eax, eax
         jz      exit
@@ -119,19 +109,14 @@ parse_param:
         lodsb
         ; implement more parameters here
   .invalid:
-        push    str13
-        call    [con_write_asciiz]
+        invoke  con_write_asciiz, str13
         jmp     main
 
   .resolve:
         DEBUGF  2, "resolve\n"
 ; resolve name
         push    esp     ; reserve stack place
-        push    esp     ; fourth parameter
-        push    0       ; third parameter
-        push    0       ; second parameter
-        push    params  ; first parameter
-        call    [getaddrinfo]
+        invoke  getaddrinfo, params, 0, 0, esp
         pop     esi
 ; test for error
         test    eax, eax
@@ -141,19 +126,16 @@ parse_param:
         mov     eax, [esi+addrinfo.ai_addr]
         mov     eax, [eax+sockaddr_in.sin_addr]
         mov     [sockaddr1.ip], eax
-        push    eax
-        call    [inet_ntoa]
+        invoke  inet_ntoa
 ; write result
         mov     [ip_ptr], eax
 
         push    eax
 
 ; free allocated memory
-        push    esi
-        call    [freeaddrinfo]
+        invoke  freeaddrinfo, esi
 
-        push    str4
-        call    [con_write_asciiz]
+        invoke  con_write_asciiz, str4
 
         mcall   socket, AF_INET4, SOCK_RAW, IPPROTO_ICMP
         cmp     eax, -1
@@ -171,14 +153,9 @@ parse_param:
 
         mcall   40, EVM_STACK
 
-        push    str3
-        call    [con_write_asciiz]
-
-        push    [ip_ptr]
-        call    [con_write_asciiz]
-
-        push    str4
-        call    [con_write_asciiz]
+        invoke  con_write_asciiz, str3
+        invoke  con_write_asciiz, [ip_ptr]
+        invoke  con_write_asciiz, str4
 
         mov     [ttl], 1
 
@@ -187,13 +164,20 @@ parse_param:
         mcall   recv, [icmp_socket], buffer_ptr, BUFFERSIZE, MSG_DONTWAIT ;; dummy read
 
 mainloop:
-        call    [con_get_flags]
+        invoke  con_get_flags
         test    eax, 0x200                      ; con window closed?
         jnz     exit_now
 
+        invoke  con_kbhit
+        test    eax, eax
+        jz      .nokey
+        invoke  con_getch2
+        cmp     ax, 0x1E03      ; Ctrl+C
+        je      main
+  .nokey:
+
         pushd   [ttl]
-        pushd   str9
-        call    [con_printf]
+        invoke  con_printf, str9
         add     esp, 2*4
 
         DEBUGF  2, "Setsockopt\n"
@@ -285,8 +269,7 @@ mainloop:
         push    edx
         push    eax
 
-        push    str1
-        call    [con_printf]
+        invoke  con_printf, str1
         add     esp, 3*4
 
         mov     ebx, [buffer_ptr + IPv4_header.SourceAddress]
@@ -305,8 +288,7 @@ mainloop:
         movzx   ebx, al
         push    ebx
 
-        push    str2
-        call    [con_printf]
+        invoke  con_printf, str2
         add     esp, 5*4
 
         ret
@@ -315,15 +297,13 @@ mainloop:
 ; Invalid reply
   .invalid:
         DEBUGF  2, "Invalid response\n"
-        push    str10
-        call    [con_write_asciiz]
+        invoke  con_write_asciiz, str10
         jmp     main    ;.continue
 
 ; Timeout!
   .timeout:
         DEBUGF  2, "Timeout\n", eax
-        push    str8
-        call    [con_write_asciiz]
+        invoke  con_write_asciiz, str8
 
 ; Send more ICMP packets ?
   .continue:
@@ -335,20 +315,17 @@ mainloop:
 
 ; DNS error
 fail:
-        push    str5
-        call    [con_write_asciiz]
+        invoke  con_write_asciiz, str5
         jmp     main
 
 ; Socket error
 fail2:
-        push    str6
-        call    [con_write_asciiz]
+        invoke  con_write_asciiz, str6
         jmp     main
 
 ; Finally.. exit!
 exit:
-        push    1
-        call    [con_exit]
+        invoke  con_exit, 1
 exit_now:
         mcall   -1
 
@@ -450,12 +427,8 @@ reverse_dns_lookup:
   @@:
         stosb
 
-        push    buffer_ptr
-        call    [con_write_asciiz]
-
-        push    str7
-        call    [con_write_asciiz]
-
+        invoke  con_write_asciiz, buffer_ptr
+        invoke  con_write_asciiz, str7
         ret
 
   .fail:
@@ -561,7 +534,8 @@ import  console,        \
         con_cls,        'con_cls',\
         con_getch2,     'con_getch2',\
         con_set_cursor_pos, 'con_set_cursor_pos',\
-        con_get_flags,  'con_get_flags'
+        con_get_flags,  'con_get_flags',\
+        con_kbhit,      'con_kbhit'
 
 import  network,        \
         getaddrinfo,    'getaddrinfo',  \
