@@ -99,10 +99,10 @@ ends
 
 ; Command header structure, size = 32 bytes
 struct HBA_CMD_HDR
-    _flags1       db ? ; 0bPWACCCCC, P - Prefetchable, W - Write (1: H2D, 0: D2H)
+    flags1       db ? ; 0bPWACCCCC, P - Prefetchable, W - Write (1: H2D, 0: D2H)
                        ; A - ATAPI, C - Command FIS length in DWORDS, 2 ~ 16
     
-    _flags2       db ? ; 0bPPPPRCB(Re), P - Port multiplier port, R - Reserved,
+    flags2       db ? ; 0bPPPPRCB(Re), P - Port multiplier port, R - Reserved,
                        ; C - Clear busy upon R_OK, B - BIST, Re - Reset
     
     prdtl         dw ? ; Physical region descriptor table length in entries
@@ -117,7 +117,7 @@ struct HBA_PRDT_ENTRY
     dba           dd ?  ; Data base address
     dbau          dd ?  ; Data base address upper 32 bits
                   dd ?  ; Reserved
-    _flags        dd ?  ; 0bIR..RD..D, I (1 bit) - Interrupt on completion,
+    flags        dd ?  ; 0bIR..RD..D, I (1 bit) - Interrupt on completion,
                         ; R (9 bits) - Reserved, D (22 bits) - Byte count, 4M max
 ends
 
@@ -141,7 +141,7 @@ ends
 ; Register FIS – Host to Device
 struct FIS_REG_H2D
         fis_type      db ?       ; FIS_TYPE_REG_H2D
-        _flags        db ?       ; 0bCRRRPPPP, C - 1: Command, 0: Control
+        flags        db ?       ; 0bCRRRPPPP, C - 1: Command, 0: Control
                                  ; R - Reserved, P - Port multiplier
  
         command       db ?       ; Command register
@@ -169,7 +169,7 @@ ends
 struct FIS_REG_D2H
     fis_type      db ?           ; FIS_TYPE_REG_D2H
  
-    _flags        db ?           ; 0bRIRPPPP, P - Port multiplier, R - Reserved
+    flags        db ?           ; 0bRIRPPPP, P - Port multiplier, R - Reserved
                                  ; I - Interrupt bit
  
     status        db ?           ; Status register
@@ -195,7 +195,7 @@ ends
 ; Data FIS – Bidirectional
 struct FIS_DATA
     fis_type      db ?           ; FIS_TYPE_DATA
-    _flags        db ?           ; 0bRRRRPPPP, R - Reserved, P - Port multiplier
+    flags        db ?           ; 0bRRRRPPPP, R - Reserved, P - Port multiplier
                   rb 2           ; Reserved
     ; DWORD 1 ~ N (?)
     data          rd 1           ; Payload
@@ -205,7 +205,7 @@ ends
 struct FIS_PIO_SETUP
     fis_type      db ?           ; FIS_TYPE_PIO_SETUP
  
-    _flags        db ?           ; 0bRIDRPPPP, P - Port multiplier, R - Reserved
+    flags        db ?           ; 0bRIDRPPPP, P - Port multiplier, R - Reserved
                                  ; I - Interrupt bit, D - Data transfer direction, 1 - device to host
  
     status        db ?           ; Status register
@@ -233,7 +233,7 @@ ends
 ; DMA Setup – Device to Host
 struct FIS_DMA_SETUP
     fis_type      db ?           ; FIS_TYPE_DMA_SETUP
-    _flags        db ?           ; 0bAIDRPPPP, A - Auto-activate. Specifies if DMA Activate FIS is needed,
+    flags        db ?           ; 0bAIDRPPPP, A - Auto-activate. Specifies if DMA Activate FIS is needed,
                                  ; I - Interrupt bit, D - Data transfer direction, 1 - device to host,
                                  ; R - Reserved, P - Port multiplier
 
@@ -252,7 +252,7 @@ ends
 ; Set device bits FIS - device to host
 struct FIS_DEV_BITS
     fis_type      db ?           ; FIS_TYPE_DEV_BITS
-    _flags        db ?           ; 0bNIRRPPPP, N - Notification, I - Interrupt,
+    flags        db ?           ; 0bNIRRPPPP, N - Notification, I - Interrupt,
                                  ; R - Reserved, P - Port multiplier
     
     status        db ?           ; Status register
@@ -544,15 +544,26 @@ proc ahci_port_identify stdcall, pdata: dword
         mov     ebx, [buf_phys]
         mov     dword [eax + HBA_CMD_TBL.prdt_entry + HBA_PRDT_ENTRY.dba], ebx
         mov     dword [eax + HBA_CMD_TBL.prdt_entry + HBA_PRDT_ENTRY.dbau], 0
-        mov     dword [eax + HBA_CMD_TBL.prdt_entry + HBA_PRDT_ENTRY._flags], 512 - 1 ; why -1 ?
+        and     [eax + HBA_CMD_TBL.prdt_entry + HBA_PRDT_ENTRY.flags], not 0x3FFFFF ; zero out lower 22 bits, they used for byte count
+        or      [eax + HBA_CMD_TBL.prdt_entry + HBA_PRDT_ENTRY.flags], 512 - 1 ; reason why -1 see in spec on this field
+        ; or      [eax + HBA_CMD_TBL.prdt_entry + HBA_PRDT_ENTRY.flags], 1 shl 31 ; enable interrupt on completion
+
         mov     eax, [cmdheader]
+        and     [eax + HBA_CMD_HDR.flags1], not 0x1F ; zero out lower 5 bits, they will be used for cfl
+        or      [eax + HBA_CMD_HDR.flags1], (sizeof.FIS_REG_H2D / 4) ; set command fis length in dwords
+        movzx   bx, [eax + HBA_CMD_HDR.flags1]
+        btr     bx, 6 ; flag W = 0
+        mov     [eax + HBA_CMD_HDR.flags1], bl
+        movzx   bx, [eax + HBA_CMD_HDR.flags2]
+        btr     bx, 2 ; flag C = 0
+        mov     [eax + HBA_CMD_HDR.flags2], bl
         mov     [eax + HBA_CMD_HDR.prdtl], 1
 
         mov     eax, [cmdtable]
         mov     byte [eax + HBA_CMD_TBL.cfis + FIS_REG_H2D.fis_type], FIS_TYPE_REG_H2D
-        movzx   ebx, byte [eax + HBA_CMD_TBL.cfis + FIS_REG_H2D._flags]
+        movzx   ebx, byte [eax + HBA_CMD_TBL.cfis + FIS_REG_H2D.flags]
         bts     ebx, bit_AHCI_H2D_FLAG_CMD ; Set Command bit in H2D FIS.
-        mov     byte [eax + HBA_CMD_TBL.cfis + FIS_REG_H2D._flags], bl
+        mov     byte [eax + HBA_CMD_TBL.cfis + FIS_REG_H2D.flags], bl
         ; if (port->signature == AHCI_PxSIG_ATAPI) cmd_fis->command = ATA_IDENTIFY_PACKET;
         ; else cmd_fis->command = ATA_IDENTIFY;
         mov     byte [eax + HBA_CMD_TBL.cfis + FIS_REG_H2D.command], 0xEC ;ATA_IDENTIFY ; 
@@ -571,20 +582,21 @@ proc ahci_port_identify stdcall, pdata: dword
 
         DEBUGF  1, "sata_error register = 0x%x\n", [edi + HBA_PORT.sata_error]
 
-        mov     ecx, ecx
-        mov     esi, [buf_virt]
-.print_ident:
-        cmp     ecx, 512 - 1 ; why -1 ?
-        jae     .end_print_ident
+;         mov     ecx, ecx
+;         mov     esi, [buf_virt]
+; .print_ident:
+;         cmp     ecx, 512 - 1 ; why -1 ?
+;         jae     .end_print_ident
 
-        mov     al, byte [esi + ecx]
-        mov     byte [modelstr], al
-        mov     byte [modelstr + 1], 0
-        DEBUGF  1, "(%s) ", modelstr
+;         mov     al, byte [esi + ecx]
+;         mov     byte [modelstr], al
+;         mov     byte [modelstr + 1], 0
+;         DEBUGF  1, "(%s) ", modelstr
 
-        inc     ecx
-        jmp     .print_ident
-.end_print_ident:
+;         inc     ecx
+;         jmp     .print_ident
+; .end_print_ident:
+        ; DEBUGF  1, "\n"
 
         mov     esi, [buf_virt]
         add     esi, 27*2
@@ -605,20 +617,7 @@ proc ahci_port_identify stdcall, pdata: dword
         add     ecx, 2
         jmp     .reverse1
 .reverse1_end:
-        DEBUGF  1, "Ident data of port: model = %s ", modelstr
-
-        ; mov    esi, [buf_virt]
-        ; mov    eax, [esi + 12] ; lower dword of sector count has 12 bytes offset
-        ; mov    edx, [esi + 12 + 4] ; higher dword of sector count
-        ; DEBUGF 1, "sector_count = 0x%x:%x ", edx, eax
-
-        ; mov    eax, [esi + 200]
-        ; mov    edx, [esi + 200 + 4]
-        ; mov    ecx, 1024*1024
-        ; div    ecx
-        ; shl    eax, 9 ; *= 512, 512 - block size
-        ; DEBUGF 1, "disk capacity = %u MiB\n", eax
-
+        DEBUGF  1, "IDENTIFICATION RESULT: MODEL = %s\n", modelstr
 
 .ret:
         popad
