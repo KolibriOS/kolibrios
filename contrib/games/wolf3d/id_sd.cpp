@@ -83,7 +83,7 @@ static  byte          **SoundTable;
         int             DigiChannel[STARTMUSIC - STARTDIGISOUNDS];
 
 //      Internal variables
-static  boolean                 SD_Started;
+boolean                         SD_Started;
 static  boolean                 nextsoundpos;
 static  soundnames              SoundNumber;
 static  soundnames              DigiNumber;

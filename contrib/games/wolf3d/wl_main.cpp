@@ -30,6 +30,7 @@ extern void setcwd(char* path);
 extern "C"{
     extern void uSDL_StartTicks(void);
 }
+extern boolean SD_Started;
 /*
 =============================================================================
 
@@ -1215,17 +1216,18 @@ static void InitGame()
 #if defined _WIN32
     putenv("SDL_VIDEODRIVER=directx");
 #endif
-    if(SDL_Init(SDL_INIT_VIDEO) < 0)
+    
+#ifdef _KOLIBRI
+    uSDL_StartTicks();
+#endif
+    
+    if(SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO) < 0)
     {
         printf("Unable to init SDL: %s\n", SDL_GetError());
         exit(1);
     }
-#ifdef _KOLIBRI
-    uSDL_StartTicks();
-#endif
-    SDL_AudioInit(NULL);
-    atexit(SDL_Quit);
 
+#if 0
     int numJoysticks = SDL_NumJoysticks();
     if(param_joystickindex && (param_joystickindex < -1 || param_joystickindex >= numJoysticks))
     {
@@ -1235,11 +1237,13 @@ static void InitGame()
             printf("The joystick index must be between -1 and %i!\n", numJoysticks - 1);
         exit(1);
     }
-
+    
+#endif
+    
 #if defined(GP2X_940)
     GP2X_MemoryInit();
 #endif
-    
+
     SignonScreen ();
 #ifdef _KOLIBRI
     kolibri_set_win_center();
@@ -1292,7 +1296,9 @@ static void InitGame()
 //
 // build some tables
 //
-    InitDigiMap ();
+    if(AdLibPresent || SoundBlasterPresent){
+        InitDigiMap ();
+    }
 
     ReadConfig ();
 
@@ -1721,6 +1727,9 @@ void CheckParameters(int argc, char *argv[])
             }
             else param_tedlevel = atoi(argv[i]);
         }
+        else IFARG("--nosound")
+            SD_Started=true;
+#ifndef _KOLIBRI 
         else IFARG("--windowed")
             fullscreen = false;
         else IFARG("--windowed-mouse")
@@ -1728,6 +1737,7 @@ void CheckParameters(int argc, char *argv[])
             fullscreen = false;
             forcegrabmouse = true;
         }
+#endif
         else IFARG("--res")
         {
             if(i + 2 >= argc)
@@ -1805,6 +1815,7 @@ void CheckParameters(int argc, char *argv[])
                 }
             }
         }
+#ifndef _KOLIBRI
         else IFARG("--joystick")
         {
             if(++i >= argc)
@@ -1833,6 +1844,7 @@ void CheckParameters(int argc, char *argv[])
             else param_samplerate = atoi(argv[i]);
             sampleRateGiven = true;
         }
+#endif
         else IFARG("--audiobuffer")
         {
             if(++i >= argc)
@@ -1904,12 +1916,14 @@ void CheckParameters(int argc, char *argv[])
             "Usage: Wolf4SDL [options]\n"
             "Options:\n"
             " --help                 This help page\n"
+            " --goobers              Run in debug mode\n"
             " --tedlevel <level>     Starts the game in the given level\n"
             " --baby                 Sets the difficulty to baby for tedlevel\n"
             " --easy                 Sets the difficulty to easy for tedlevel\n"
             " --normal               Sets the difficulty to normal for tedlevel\n"
             " --hard                 Sets the difficulty to hard for tedlevel\n"
             " --nowait               Skips intro screens\n"
+            " --nosound              Don't use sound\n"
         #ifndef _KOLIBRI
             " --windowed[-mouse]     Starts the game in a window [and grabs mouse]\n"
         #endif
@@ -1927,8 +1941,8 @@ void CheckParameters(int argc, char *argv[])
             " --joystick <index>     Use the index-th joystick if available\n"
             "                        (-1 to disable joystick, default: 0)\n"
             " --joystickhat <index>  Enables movement with the given coolie hat\n"
-        #endif
             " --samplerate <rate>    Sets the sound sample rate (given in Hz, default: %i)\n"
+        #endif
             " --audiobuffer <size>   Sets the size of the audio buffer (-> sound latency)\n"
             "                        (given in bytes, default: 2048 / (44100 / samplerate))\n"
             " --ignorenumchunks      Ignores the number of chunks in VGAHEAD.*\n"
