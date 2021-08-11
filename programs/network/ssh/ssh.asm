@@ -25,7 +25,7 @@ PACKETSIZE              = 32*1024       ; Must be at least 32K according rfc4253
 MAX_BITS                = 8192
 
 DH_PRIVATE_KEY_SIZE     = 256
-MAX_INPUT_LENGTH        = 255 ;;; WHAT WAS THIS AGAIN ?!
+MAX_INPUT_LENGTH        = 255
 MAX_USERNAME_LENGTH     = 256
 MAX_PASSWORD_LENGTH     = 256
 MAX_HOSTNAME_LENGTH     = 4096
@@ -422,11 +422,17 @@ con_in_thread:
   .loop:
 ; TODO: check if channel is still open somehow
 
-        invoke  con_get_input, ssh_msg_channel_data.data, MAX_INPUT_LENGTH
+        invoke  con_get_input, keyb_input, MAX_INPUT_LENGTH
         test    eax, eax
         jz      .no_input
 
-        lea     ecx, [eax + ssh_msg_channel_data.data - ssh_msg_channel_data]
+        mov     ecx, eax
+        mov     esi, keyb_input
+        mov     edi, ssh_msg_channel_data.data
+        call    recode_to_utf8
+
+        lea     eax, [edi - ssh_msg_channel_data.data]
+        lea     ecx, [edi - ssh_msg_channel_data]
         bswap   eax
         mov     [ssh_msg_channel_data.len], eax
         stdcall sshlib_send_packet, ssh_con, ssh_msg_channel_data, ecx, 0
@@ -481,7 +487,7 @@ str24b  db 10, 10, "If you trust this host, press A to accept and store the (new
 ssh_ident_ha:
         dd_n (ssh_msg_ident.length-2)
 ssh_msg_ident:
-        db "SSH-2.0-KolibriOS_SSH_0.08",13,10
+        db "SSH-2.0-KolibriOS_SSH_0.09",13,10
   .length = $ - ssh_msg_ident
 
 
@@ -577,7 +583,7 @@ ssh_msg_channel_data:
         db SSH_MSG_CHANNEL_DATA
         dd_n 0                          ; Sender channel
   .len  dd ?
-  .data rb MAX_INPUT_LENGTH + 1
+  .data rb 4*MAX_INPUT_LENGTH + 1
 
 
 ssh_msg_channel_window_adjust:
@@ -642,5 +648,7 @@ params          rb MAX_HOSTNAME_LENGTH
 
 ssh_con         sshlib_connection
 ssh_chan        sshlib_channel
+
+keyb_input      rb MAX_INPUT_LENGTH
 
 mem:
