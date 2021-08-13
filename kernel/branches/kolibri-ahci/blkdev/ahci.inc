@@ -10,6 +10,25 @@ $Revision$
 PCI_REG_STATUS_COMMAND = 0x0004
 PCI_REG_BAR5 = 0x0024
 
+; different SATA device signatures
+SATA_SIG_ATA	= 0x00000101	; SATA drive
+SATA_SIG_ATAPI	= 0xEB140101	; SATAPI drive
+SATA_SIG_SEMB	= 0xC33C0101	; Enclosure management bridge
+SATA_SIG_PM	= 0x96690101	; Port multiplier
+
+; Device type constants
+AHCI_DEV_NULL   = 0
+AHCI_DEV_SATA   = 1
+AHCI_DEV_SEMB   = 2
+AHCI_DEV_PM     = 3
+AHCI_DEV_SATAPI = 4
+
+; ATA commands
+ATA_IDENTIFY    = 0xEC
+
+; ATAPI commands
+ATAPI_IDENTIFY  = 0xA1
+
 ; bit_ prefix means that its index of bit
 ; format: bit_AHCI_STR_REG_BIT
 bit_AHCI_HBA_CAP2_BOH   = 0        ; Supports BIOS/OS Handoff
@@ -136,6 +155,7 @@ struct PORT_DATA
     ctba_arr      rd 32 ; ctba_arr[0] = clb[0].ctba, ... and so on.
     port          dd ? ; address of correspoding HBA_PORT structure
     portno        dd ? ; port index, 0..31
+    drive_type    db ? ; drive type
 ends
 
 ; Register FIS – Host to Device
@@ -451,7 +471,7 @@ ahci_init:
         ; rewritten to:
         bt      [esi + HBA_MEM.cap], 27 ; check Supports Staggered Spin-up bit in capabilities
         jnc     @f
-        DEBUGF  1, "Supports Staggered Spin-up\n"
+        DEBUGF  1, "Supports Staggered Spin-up, spinning up the port..\n"
         or      [edi + HBA_PORT.command], (0x0002 or 0x0004 or 0x10000000)
         push    ebx
         mov     ebx, 1 ; wait 10 ms
@@ -475,12 +495,40 @@ ahci_init:
         cmp     ecx, AHCI_HBA_PxSSTS_DET_PRESENT
         jne     .continue_detect_drives
 
-        DEBUGF  1, "K: AHCI: found drive at port %d, cmd = 0x%x, ssts = 0x%x, signature = 0x%x\n", ebx, [edi + HBA_PORT.command], [edi + HBA_PORT.sata_status], [edi + HBA_PORT.signature]  
+        ; DEBUGF  1, "K: AHCI: found drive at port %d, cmd = 0x%x, ssts = 0x%x, signature = 0x%x\n", ebx, [edi + HBA_PORT.command], [edi + HBA_PORT.sata_status], [edi + HBA_PORT.signature]  
 
         mov     ecx, ebx
         imul    ecx, sizeof.PORT_DATA
         add     ecx, port_data_arr
         stdcall ahci_port_rebase, edi, ebx, ecx
+
+        ; DEBUGF  1, "K: AHCI: After REBASING, signature = 0x%x\n", [edi + HBA_PORT.signature]
+
+.switch_sig:
+        cmp     [edi + HBA_PORT.signature], SATA_SIG_ATA
+        jne     @f
+        mov     [ecx + PORT_DATA.drive_type], AHCI_DEV_SATA
+        jmp    .end_switch_sig
+@@:
+        cmp     [edi + HBA_PORT.signature], SATA_SIG_ATAPI
+        jne     @f
+        mov     [ecx + PORT_DATA.drive_type], AHCI_DEV_SATAPI
+        jmp    .end_switch_sig
+@@:
+        cmp     [edi + HBA_PORT.signature], SATA_SIG_SEMB
+        jne     @f
+        mov     [ecx + PORT_DATA.drive_type], AHCI_DEV_SEMB
+        jmp    .end_switch_sig
+@@:
+        cmp     [edi + HBA_PORT.signature], SATA_SIG_PM
+        jne     @f
+        mov     [ecx + PORT_DATA.drive_type], AHCI_DEV_PM
+        jmp     .end_switch_sig
+@@:
+        DEBUGF  1, "Unknown device signature\n"
+.end_switch_sig:
+
+        DEBUGF  1, "K: AHCI: found drive on port %u: TYPE = %u\n", ebx, [ecx + PORT_DATA.drive_type]
 
         stdcall ahci_port_identify, ecx
 
@@ -523,7 +571,7 @@ proc ahci_port_identify stdcall, pdata: dword
 
 .cmdslot_found:
         mov     [cmdslot], eax
-        DEBUGF  1, "Found free cmdslot %u on port %u\n", [cmdslot], [esi + PORT_DATA.portno]
+        ; DEBUGF  1, "Found free cmdslot %u on port %u\n", [cmdslot], [esi + PORT_DATA.portno]
 
         shl     eax, BSF sizeof.HBA_CMD_HDR
         add     eax, [esi + PORT_DATA.clb]
@@ -564,9 +612,12 @@ proc ahci_port_identify stdcall, pdata: dword
         movzx   ebx, byte [eax + HBA_CMD_TBL.cfis + FIS_REG_H2D.flags]
         bts     ebx, bit_AHCI_H2D_FLAG_CMD ; Set Command bit in H2D FIS.
         mov     byte [eax + HBA_CMD_TBL.cfis + FIS_REG_H2D.flags], bl
-        ; if (port->signature == AHCI_PxSIG_ATAPI) cmd_fis->command = ATA_IDENTIFY_PACKET;
-        ; else cmd_fis->command = ATA_IDENTIFY;
-        mov     byte [eax + HBA_CMD_TBL.cfis + FIS_REG_H2D.command], 0xEC ;ATA_IDENTIFY ; 
+
+        mov     byte [eax + HBA_CMD_TBL.cfis + FIS_REG_H2D.command], ATA_IDENTIFY
+        cmp     [esi + PORT_DATA.drive_type], AHCI_DEV_SATAPI
+        jne     @f
+        mov     byte [eax + HBA_CMD_TBL.cfis + FIS_REG_H2D.command], ATAPI_IDENTIFY
+@@:
         mov     byte [eax + HBA_CMD_TBL.cfis + FIS_REG_H2D.device], 0
 
         ; TODO Wait on previous command to complete. AHCIPortWait(bd->port_num, tS + 2);
@@ -580,7 +631,7 @@ proc ahci_port_identify stdcall, pdata: dword
         mov     ebx, 20 ;;;
         call    delay_hs ;;;
 
-        DEBUGF  1, "sata_error register = 0x%x\n", [edi + HBA_PORT.sata_error]
+        ; DEBUGF  1, "sata_error register = 0x%x\n", [edi + HBA_PORT.sata_error]
 
 ;         mov     ecx, ecx
 ;         mov     esi, [buf_virt]
@@ -597,6 +648,8 @@ proc ahci_port_identify stdcall, pdata: dword
 ;         jmp     .print_ident
 ; .end_print_ident:
         ; DEBUGF  1, "\n"
+
+        ; DEBUGF  1, "after identification: signature = 0x%x\n", [edi + HBA_PORT.signature]
 
         mov     esi, [buf_virt]
         add     esi, 27*2
@@ -623,6 +676,7 @@ proc ahci_port_identify stdcall, pdata: dword
         popad
         ret
 endp
+
 
 ; Start command engine
 ; in: eax - address of HBA_PORT structure
@@ -797,7 +851,7 @@ ahci_find_cmdslot:
         mov     edx, [esi + HBA_MEM.cap]
         shr     edx, 8
         and     edx, 0xf
-        DEBUGF  1, "Number of Command Slots on each port = %u\n", edx
+        ; DEBUGF  1, "Number of Command Slots on each port = %u\n", edx
         xor     ecx, ecx
 .for1:
         cmp     ecx, edx
