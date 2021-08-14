@@ -525,7 +525,7 @@ ahci_init:
         DEBUGF  1, "Unknown device signature\n"
         mov     eax, AHCI_DEV_NULL
 .end_switch_sig:
-        mov     [ecx + PORT_DATA.drive_type], eax
+        mov     [ecx + PORT_DATA.drive_type], al
 
         DEBUGF  1, "K: AHCI: found drive on port %u: TYPE = %u\n", ebx, [ecx + PORT_DATA.drive_type]
 
