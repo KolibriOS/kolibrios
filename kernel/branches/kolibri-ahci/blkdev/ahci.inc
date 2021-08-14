@@ -504,29 +504,28 @@ ahci_init:
 
         ; DEBUGF  1, "K: AHCI: After REBASING, signature = 0x%x\n", [edi + HBA_PORT.signature]
 
+        ; Determine drive type by checking port signature
 .switch_sig:
         cmp     [edi + HBA_PORT.signature], SATA_SIG_ATA
-        jne     @f
-        mov     [ecx + PORT_DATA.drive_type], AHCI_DEV_SATA
-        jmp    .end_switch_sig
-@@:
+        mov     eax, AHCI_DEV_SATA
+        jz      .end_switch_sig
+
         cmp     [edi + HBA_PORT.signature], SATA_SIG_ATAPI
-        jne     @f
-        mov     [ecx + PORT_DATA.drive_type], AHCI_DEV_SATAPI
-        jmp    .end_switch_sig
-@@:
+        mov     eax, AHCI_DEV_SATAPI
+        jz      .end_switch_sig
+
         cmp     [edi + HBA_PORT.signature], SATA_SIG_SEMB
-        jne     @f
-        mov     [ecx + PORT_DATA.drive_type], AHCI_DEV_SEMB
-        jmp    .end_switch_sig
-@@:
+        mov     eax, AHCI_DEV_SEMB
+        jz      .end_switch_sig
+
         cmp     [edi + HBA_PORT.signature], SATA_SIG_PM
-        jne     @f
-        mov     [ecx + PORT_DATA.drive_type], AHCI_DEV_PM
-        jmp     .end_switch_sig
-@@:
+        mov     eax, AHCI_DEV_PM
+        jz      .end_switch_sig
+
         DEBUGF  1, "Unknown device signature\n"
+        mov     eax, AHCI_DEV_NULL
 .end_switch_sig:
+        mov     [ecx + PORT_DATA.drive_type], eax
 
         DEBUGF  1, "K: AHCI: found drive on port %u: TYPE = %u\n", ebx, [ecx + PORT_DATA.drive_type]
 
