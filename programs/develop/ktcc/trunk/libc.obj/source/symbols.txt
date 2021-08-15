@@ -46,6 +46,7 @@ abs
 atoi
 atol
 atoll
+atof
 calloc
 div
 exit

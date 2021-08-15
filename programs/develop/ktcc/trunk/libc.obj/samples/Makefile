@@ -21,6 +21,7 @@ clayer/libimg.kex \
 clayer/dialog.kex \
 clayer/msgbox.kex \
 clayer/boxlib.kex \
+thread_work.kex
 
 LIBS= -ltcc -ldialog -lrasterworks -limg -lbox -lmsgbox -lnetwork -lc.obj
 

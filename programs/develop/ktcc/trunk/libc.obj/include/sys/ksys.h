@@ -11,10 +11,10 @@
  * All wrappers must start with the "_ksys_" prefix. 
  * I consider it mandatory to place the wrappers in the correct order in the official documentation. 
  * Enjoy writing your code :)
-*/
 
-// Warning! The end of the file is the old definitions of function/structure names. 
-// They are for compatibility... Better not to use them. */
+ * Warning! The end of the file is the old definitions of function/structure names. 
+ * They are for compatibility... Better not to use them. 
+*/
  
 #ifndef _KSYS_H_
 #define _KSYS_H_
@@ -686,6 +686,8 @@ void _ksys_kill_by_pid(uint32_t PID)
     );
 }
 
+/*===================== Function 18, subfunction 21 ====================*/
+/*=====Get the slot number of the process / thread by identifier.. =====*/
 
 static inline 
 int _ksys_get_thread_slot(int PID){
@@ -962,12 +964,13 @@ uint32_t _ksys_get_skin_height(){
 /*==================== Function 51 - create thread. ====================*/
 
 static inline
-int _ksys_start_thread(void* thread_entry, void* stack_top){
+int _ksys_create_thread(void* thread_entry, void* stack_top){
     int val;
     asm_inline(
         "int $0x40"
         :"=a"(val)
         :"a"(51), "b"(1), "c"(thread_entry), "d"(stack_top)
+        :"memory"
     );
     return val;
 }
