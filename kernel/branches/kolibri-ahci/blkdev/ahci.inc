@@ -658,19 +658,18 @@ proc ahci_port_identify stdcall, pdata: dword
         rep movsb
         mov     byte [edi], 0
         
-        xor     ecx, ecx
-.reverse1:
-        cmp     ecx, ((46-27)+1)*2
-        jae     .reverse1_end
-        mov     bl, byte [modelstr + ecx]
-        mov     dl, byte [modelstr + ecx + 1]
-        mov     byte [modelstr + ecx], dl
-        mov     byte [modelstr + ecx + 1], bl
-        add     ecx, 2
-        jmp     .reverse1
-.reverse1_end:
+        stdcall swap_bytes_in_words, modelstr, (46-27)+1
         DEBUGF  1, "IDENTIFICATION RESULT: MODEL = %s\n", modelstr
 
+        mov     esi, [buf_virt]
+        mov     eax, [esi + 200]
+        mov     edx, [esi + 200 + 4]
+        DEBUGF 1, "lba48 mode sector count = 0x%x:%x\n", edx, eax
+
+        shrd    eax, edx, 11 ; i.e *512 / 1024 / 1024, 512 - sector size
+        DEBUGF  1, "disk capacity = %u MiB ", eax
+        shrd    eax, edx, 10 ; / 1024
+        DEBUGF  1, "= %u GiB\n", eax
 .ret:
         popad
         ret
@@ -727,7 +726,6 @@ ahci_send_cmd:
         ret
 
 ; ---------------------------------------------------------------------------
-; TODO: check correctness
 ; in: port - address of HBA_PORT structure
 ;     portno - port index (0..31)
 ;     pdata - address of PORT_DATA structure
@@ -884,4 +882,25 @@ proc _memset stdcall, dest:dword, val:byte, cnt:dword ; doesnt clobber any regis
         rep stosb   
         pop     edi ecx eax
         ret 
+endp
+
+; Swaps byte order in words
+; base - address of first word
+; len - how many words to swap bytes in
+; doesnt clobber any registers
+proc swap_bytes_in_words stdcall, base: dword, len: dword
+        push    eax ebx ecx
+        xor     ecx, ecx
+        mov     ebx, [base]
+.loop:
+        cmp     ecx, [len]
+        jae     .loop_end
+        mov     ax, word [ebx + ecx*2]
+        xchg    ah, al
+        mov     word [ebx + ecx*2], ax
+        inc     ecx
+        jmp     .loop
+.loop_end:
+        pop     ecx ebx eax
+        ret
 endp
