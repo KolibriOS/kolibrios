@@ -26,6 +26,10 @@ AHCI_DEV_SATAPI = 4
 ; ATA commands
 ATA_IDENTIFY    = 0xEC
 
+; ATA constants
+ATA_DEV_BUSY    = 0x80
+ATA_DEV_DRQ     = 0x08
+
 ; ATAPI commands
 ATAPI_IDENTIFY  = 0xA1
 
@@ -45,6 +49,7 @@ bit_AHCI_HBA_PxCMD_ST    = 0
 bit_AHCI_HBA_PxCMD_FRE   = 4
 bit_AHCI_HBA_PxCMD_FR    = 14
 bit_AHCI_HBA_PxCMD_CR    = 15
+bit_AHCI_HBA_PxIS_TFES   = 30
 
 AHCI_HBA_PxCMD_ST    = 1 shl 0
 AHCI_HBA_PxCMD_FRE   = 1 shl 4
@@ -59,6 +64,8 @@ AHCI_HBA_PxSSTS_DET_PRESENT = 3
 
 AHCI_MAX_PORTS = 32        ;
 ;HBA_MEMORY_SIZE = 0x1100
+
+AHCI_PORT_TIMEOUT = 1000000
 
 ; Frame Information Structure Types
 FIS_TYPE_REG_H2D    = 0x27 ; Register FIS - host to device
@@ -619,36 +626,20 @@ proc ahci_port_identify stdcall, pdata: dword
 @@:
         mov     byte [eax + HBA_CMD_TBL.cfis + FIS_REG_H2D.device], 0
 
-        ; TODO Wait on previous command to complete. AHCIPortWait(bd->port_num, tS + 2);
-        mov     ebx, 20 ;;;
-        call    delay_hs ;;;
+        ; Wait on previous command to complete, before issuing new command.
+        stdcall ahci_port_wait, edi, AHCI_PORT_TIMEOUT
+        ; DEBUGF  1, "eax = %x\n", eax
+        ; TODO check eax error value
 
         mov     eax, [cmdslot]
         bts     [edi + HBA_PORT.command_issue], eax ; Issue the command
 
-        ; TODO AHCIPortCmdWait(bd->port_num, cmd_slot);
-        mov     ebx, 20 ;;;
-        call    delay_hs ;;;
+        ; Wait for command completion
+        stdcall ahci_port_cmd_wait, edi, eax;, AHCI_PORT_CMD_TIMEOUT
+        ; DEBUGF  1, " eax = %x\n", eax
+        ; TODO check eax error value
 
         ; DEBUGF  1, "sata_error register = 0x%x\n", [edi + HBA_PORT.sata_error]
-
-;         mov     ecx, ecx
-;         mov     esi, [buf_virt]
-; .print_ident:
-;         cmp     ecx, 512 - 1 ; why -1 ?
-;         jae     .end_print_ident
-
-;         mov     al, byte [esi + ecx]
-;         mov     byte [modelstr], al
-;         mov     byte [modelstr + 1], 0
-;         DEBUGF  1, "(%s) ", modelstr
-
-;         inc     ecx
-;         jmp     .print_ident
-; .end_print_ident:
-        ; DEBUGF  1, "\n"
-
-        ; DEBUGF  1, "after identification: signature = 0x%x\n", [edi + HBA_PORT.signature]
 
         mov     esi, [buf_virt]
         add     esi, 27*2
@@ -702,28 +693,84 @@ ahci_stop_cmd:
 
         ret
 
-; The commands may not take effect until the command
-; register is read again by software, because reasons.
-; in: eax - address of HBA_PORT structure
-; out: eax - command register value
-ahci_flush_cmd:
-        mov     eax, [eax + HBA_PORT.command]
+; waits until the port is no longer busy before issuing a new command
+; in: [port] - address of HBA_PORT structure
+; [timeout] - timeout (in iterations)
+; out: eax = 0 if success, 1 if timeout expired
+proc ahci_port_wait stdcall, port: dword, timeout: dword
+        push    ebx ecx
+        mov     ebx, [port]
+        xor     ecx, ecx
+.wait:
+        cmp     ecx, [timeout]
+        jae     .wait_end
+        mov     eax, [ebx + HBA_PORT.task_file_data]
+        and     eax, ATA_DEV_BUSY or ATA_DEV_DRQ
+        test    eax, eax
+        jz      .wait_end
+        inc     ecx
+        jmp     .wait
+.wait_end:
+        xor     eax, eax
+        DEBUGF  1, "port wait counter = %u\n", ecx
+        cmp     ecx, [timeout] ; if they equal it means port is hung
+        setz    al
+        pop     ecx ebx
         ret
+endp
 
-; Send command to port
-; in: eax - address of HBA_PORT structure
-;     ebx - index of command slot
-ahci_send_cmd:
-        push    ecx
-        mov     [eax + HBA_PORT.interrupt_status], 0xFFFFFFFF
+
+; Wait for command completion
+; in: [port] - address of HBA_PORT structure
+;     [cmdslot] - number of command slot
+; out: eax = 0 if success, 1 if error
+proc ahci_port_cmd_wait stdcall, port: dword, cmdslot: dword ;, timeout: dword
+        push    ebx ecx edx
+        mov     ebx, [port]
+        mov     edx, [cmdslot]
+        xor     eax, eax
+        xor     ecx, ecx
+.wait:
+        bt      [ebx + HBA_PORT.command_issue], edx
+        jnc     .wait_end
+        bt      [ebx + HBA_PORT.interrupt_status], bit_AHCI_HBA_PxIS_TFES ; check for Task File Error
+        jc      .error
+        inc     ecx
+        jmp     .wait
+.wait_end:
+        DEBUGF  1, "port cmd wait counter = %u\n", ecx
+        bt      [ebx + HBA_PORT.interrupt_status], bit_AHCI_HBA_PxIS_TFES ; check for Task File Error
+        jc      .error
+        jmp     .ret
+.error:
+        mov     eax, 1
+.ret:
+        pop     edx ecx ebx
+        ret
+endp
+
+; ; The commands may not take effect until the command
+; ; register is read again by software, because reasons.
+; ; in: eax - address of HBA_PORT structure
+; ; out: eax - command register value
+; ahci_flush_cmd:
+;         mov     eax, [eax + HBA_PORT.command]
+;         ret
+
+; ; Send command to port
+; ; in: eax - address of HBA_PORT structure
+; ;     ebx - index of command slot
+; ahci_send_cmd:
+;         push    ecx
+;         mov     [eax + HBA_PORT.interrupt_status], 0xFFFFFFFF
         
-        mov     cl, bl
-        mov     [eax + HBA_PORT.command_issue], 1
-        shl     [eax + HBA_PORT.command_issue], cl
+;         mov     cl, bl
+;         mov     [eax + HBA_PORT.command_issue], 1
+;         shl     [eax + HBA_PORT.command_issue], cl
 
-        call    ahci_flush_cmd
-        pop     ecx
-        ret
+;         call    ahci_flush_cmd
+;         pop     ecx
+;         ret
 
 ; ---------------------------------------------------------------------------
 ; in: port - address of HBA_PORT structure
