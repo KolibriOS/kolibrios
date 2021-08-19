@@ -566,7 +566,7 @@ ahci_init:
         ; register disk in system:
         stdcall ahci_read_first_sector, ecx
 
-        push    ecx edx
+        push    ecx
         mov     eax, [hd_counter]
         xor     edx, edx
         mov     ecx, 10
@@ -582,14 +582,18 @@ ahci_init:
         add     dl, '0'
         mov     byte [hd_name + 2], dl
 .endif1:
-        pop     edx ecx
+        pop     ecx
 
         DEBUGF  1, "adding '%s'\n", hd_name
 
+        push    ecx
         stdcall disk_add, ahci_callbacks, hd_name, ecx, 0
+        pop     ecx
         test    eax, eax
         jz      .disk_add_fail
+        push    ecx
         stdcall disk_media_changed, eax, 1 ; system will scan for partitions on disk
+        pop     ecx
 
         jmp     .after_add_disk
 
