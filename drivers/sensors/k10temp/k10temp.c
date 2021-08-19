@@ -28,7 +28,9 @@
 #include <asm/processor.h>
 
 struct cpuinfo_x86	boot_cpu_data;
-bool force;
+extern void init_amd_nbs(void);
+
+#define KERNEL_SPACE    0x80000000
 
 /* CPUID function 0x80000001, ebx */
 #define CPUID_PKGTYPE_MASK	GENMASK(31, 28)
@@ -166,7 +168,6 @@ long get_raw_temp(struct k10temp_data *data)
 {
 	u32 regval;
 	long temp;
-    //printk("b30\n");
 	data->read_tempreg(data->pdev, &regval);
 	temp = (regval >> ZEN_CUR_TEMP_SHIFT) * 125;
 	if (regval & data->temp_adjust_mask)
@@ -534,18 +535,20 @@ void read_all_info(struct device* dev){
 }
 
 int __stdcall service_proc(ioctl_t *my_ctl){
-    if(!my_ctl || !my_ctl->output){
-        return 1;
+    if(!my_ctl || !my_ctl->output || (int)my_ctl->output>=KERNEL_SPACE-sizeof(k10temp_out)){
+        printk("k10temp: Bad address for writing data!\n");
+        return 0;
     }
+
     read_all_info(&k10temp_device);
+    
     if(my_ctl->out_size == sizeof(k10temp_out)){
         memcpy(my_ctl->output, &k10temp_out, sizeof(k10temp_out));
         return 0;
     }
+    printk("k10temp: Invalid buffer length!\n");
     return 1;
 }
-
-extern void init_amd_nbs(void);
 
 uint32_t drvEntry(int action, char *cmdline){
 	if(action != 1){
@@ -560,14 +563,14 @@ uint32_t drvEntry(int action, char *cmdline){
 	err = enum_pci_devices();
     if(unlikely(err != 0)) {
         printk("k10temp: Device enumeration failed!\n");
-        return -1;
+        return 0;
     }
 
     k10temp_id = find_pci_device(&device, k10temp_id_table);
 
     if(unlikely(k10temp_id == NULL)){
         printk("k10temp: Device not found!\n");
-        return -ENODEV;
+        return 0;
     }
 
     init_amd_nbs();
