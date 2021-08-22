@@ -480,7 +480,7 @@ proc transmit stdcall bufferptr
         add     dword[ebx + device.bytes_tx], eax
         adc     dword[ebx + device.bytes_tx + 4], 0
 
-        popf
+        spin_unlock_irqrestore
         xor     eax, eax
         ret
 

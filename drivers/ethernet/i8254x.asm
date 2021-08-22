@@ -1,6 +1,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;                                                                 ;;
-;; Copyright (C) KolibriOS team 2004-2018. All rights reserved.    ;;
+;; Copyright (C) KolibriOS team 2004-2021. All rights reserved.    ;;
 ;; Distributed under terms of the GNU General Public License       ;;
 ;;                                                                 ;;
 ;;  i8254x driver for KolibriOS                                    ;;
@@ -749,11 +749,10 @@ link_status:
 ;; Out: eax = 0 on success                 ;;
 ;;                                         ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
+align 16
 proc transmit stdcall bufferptr
 
-        pushf
-        cli
+        spin_lock_irqsave
 
         mov     esi, [bufferptr]
         DEBUGF  1,"Transmitting packet, buffer:%x, size:%u\n", [bufferptr], [esi + NET_BUFF.length]
@@ -801,7 +800,7 @@ proc transmit stdcall bufferptr
 
         call    clean_tx
 
-        popf
+        spin_unlock_irqrestore
         xor     eax, eax
         ret
 
@@ -810,7 +809,7 @@ proc transmit stdcall bufferptr
 
         DEBUGF  2,"Send failed\n"
         invoke  NetFree, [bufferptr]
-        popf
+        spin_unlock_irqrestore
         or      eax, -1
         ret
 
@@ -822,38 +821,24 @@ endp
 ;; Interrupt handler ;;
 ;;                   ;;
 ;;;;;;;;;;;;;;;;;;;;;;;
-
-align 4
+align 16
 int_handler:
 
         push    ebx esi edi
 
-        DEBUGF  1,"INT\n"
-;-------------------------------------------
-; Find pointer of device wich made IRQ occur
+        mov     ebx, [esp+4*4]
+        DEBUGF  1,"INT for 0x%x\n", ebx
 
-        mov     ecx, [devices]
-        test    ecx, ecx
-        jz      .nothing
-        mov     esi, device_list
-  .nextdevice:
-        mov     ebx, [esi]
+; TODO? if we are paranoid, we can check that the value from ebx is present in the current device_list
+
         mov     edi, [ebx + device.mmio_addr]
         mov     eax, [edi + REG_ICR]
+        cmp     eax, 0xffffffff         ; if so, hardware is no longer present
+        je      .nothing                ;
         test    eax, eax
-        jnz     .got_it
-  .continue:
-        add     esi, 4
-        dec     ecx
-        jnz     .nextdevice
-  .nothing:
-        pop     edi esi ebx
-        xor     eax, eax
+        jz      .nothing
 
-        ret
-
-  .got_it:
-        DEBUGF  1,"Device: %x Status: %x\n", ebx, eax
+        DEBUGF  1,"Status: %x\n", eax
 
 ;---------
 ; RX done?
@@ -943,9 +928,16 @@ int_handler:
 ;        call    clean_tx
 
   .no_tx:
+
         pop     edi esi ebx
         xor     eax, eax
         inc     eax
+        ret
+
+  .nothing:
+        pop     edi esi ebx
+        xor     eax, eax
+
         ret
 
 
