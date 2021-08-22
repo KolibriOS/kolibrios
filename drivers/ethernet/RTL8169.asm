@@ -1027,15 +1027,14 @@ write_mac:
 ;   Description
 ;      Transmits a packet of data via the ethernet card
 ;
-;   Destroyed registers
-;      eax, edx, esi, edi
+; In: pointer to device structure in ebx
+; Out: eax = 0 on success
 ;
 ;***************************************************************************
-
+align 16
 proc transmit stdcall bufferptr
 
-        pushf
-        cli
+        spin_lock_irqsave
 
         mov     esi, [bufferptr]
         DEBUGF  1,"Transmitting packet, buffer:%x, size:%u\n", [bufferptr], [esi + NET_BUFF.length]
@@ -1107,7 +1106,7 @@ proc transmit stdcall bufferptr
         add     dword [ebx + device.bytes_tx], ecx
         adc     dword [ebx + device.bytes_tx + 4], 0
 
-        popf
+        spin_unlock_irqrestore
         xor     eax, eax
         ret
 
@@ -1116,7 +1115,7 @@ proc transmit stdcall bufferptr
         inc     [ebx + device.packets_tx_err]
         invoke  NetFree, [bufferptr]
 
-        popf
+        spin_unlock_irqrestore
         or      eax, -1
         ret
 
@@ -1125,7 +1124,7 @@ proc transmit stdcall bufferptr
         inc     [ebx + device.packets_tx_ovr]
         invoke  NetFree, [bufferptr]
 
-        popf
+        spin_unlock_irqrestore
         or      eax, -1
         ret
 
@@ -1138,43 +1137,28 @@ endp
 ;; Interrupt handler ;;
 ;;                   ;;
 ;;;;;;;;;;;;;;;;;;;;;;;
-
-align 4
+align 16
 int_handler:
 
         push    ebx esi edi
 
-        DEBUGF  1,"INT\n"
+        mov     ebx, [esp+4*4]
+        DEBUGF  1,"INT for 0x%x\n", ebx
 
-; find pointer of device wich made IRQ occur
-
-        mov     ecx, [devices]
-        test    ecx, ecx
-        jz      .nothing
-        mov     esi, device_list
-  .nextdevice:
-        mov     ebx, [esi]
+; TODO? if we are paranoid, we can check that the value from ebx is present in the current device_list
 
         set_io  [ebx + device.io_addr], 0
         set_io  [ebx + device.io_addr], REG_IntrStatus
         in      ax, dx
-        out     dx, ax                                  ; ACK all interrupts
-        cmp     ax, 0xffff                              ; if so, hardware is no longer present
-        je      .nothing
         test    ax, ax
-        jnz     .got_it
-  .continue:
-        add     esi, 4
-        dec     ecx
-        jnz     .nextdevice
-  .nothing:
-        pop     edi esi ebx
-        xor     eax, eax
+        jz      .nothing
+        cmp     ax, 0xffff              ; if so, hardware is no longer present
+        je      .nothing                ;
+        test    ax, ax
+        jz      .nothing
+        out     dx, ax                  ; ACK all interrupts
 
-        ret                                             ; If no device was found, abort (The irq was probably for a device, not registered to this driver)
-
-  .got_it:
-        DEBUGF  1,"Device: %x Status: %x\n", ebx, ax
+        DEBUGF  1,"Status: %x\n", ax
 
 ;--------
 ; Receive
@@ -1323,6 +1307,12 @@ int_handler:
         pop     edi esi ebx
         xor     eax, eax
         inc     eax
+
+        ret
+
+  .nothing:
+        pop     edi esi ebx
+        xor     eax, eax
 
         ret
 
