@@ -1,6 +1,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;                                                                 ;;
-;; Copyright (C) KolibriOS team 2004-2016. All rights reserved.    ;;
+;; Copyright (C) KolibriOS team 2004-2021. All rights reserved.    ;;
 ;; Distributed under terms of the GNU General Public License       ;;
 ;;                                                                 ;;
 ;;  Realtek 8139 driver for KolibriOS                              ;;
@@ -1022,17 +1022,17 @@ link:
         test    al, 1 shl 2             ; 0 = link ok 1 = link fail
         jnz     .notconnected
 
-        mov     ecx, ETH_LINK_10M
+        mov     ecx, ETH_LINK_SPEED_10M
         test    al, 1 shl 3             ; 0 = 100 Mbps 1 = 10 Mbps
         jnz     @f
-        mov     ecx, ETH_LINK_100M
+        mov     ecx, ETH_LINK_SPEED_100M
   @@:
 
         set_io  [ebx + device.io_addr], REG_BMCR
         in      ax, dx
         test    ax, 1 shl 8             ; Duplex mode
         jz      @f
-        or      ecx, ETH_LINK_FD
+        or      ecx, ETH_LINK_FULL_DUPLEX
   @@:
 
         mov     [ebx + device.state], ecx

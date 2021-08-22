@@ -1618,25 +1618,25 @@ proc check_media_mii stdcall dev:dword
 
         test    eax, LPA_100FULL
         jz      @f
-        mov     eax, ETH_LINK_100M or ETH_LINK_FD
+        mov     eax, ETH_LINK_SPEED_100M or ETH_LINK_FULL_DUPLEX
         jmp     .update
   @@:
 
         test    eax, LPA_100HALF
         jz      @f
-        mov     eax, ETH_LINK_100M
+        mov     eax, ETH_LINK_SPEED_100M
         jmp     .update
   @@:
 
         test    eax, LPA_10FULL
         jz      @f
-        mov     eax, ETH_LINK_10M or ETH_LINK_FD
+        mov     eax, ETH_LINK_SPEED_10M or ETH_LINK_FULL_DUPLEX
         jmp     .update
   @@:
 
         test    eax, LPA_10HALF
         jz      @f
-        mov     eax, ETH_LINK_10M
+        mov     eax, ETH_LINK_SPEED_10M
         jmp     .update
   @@:
 

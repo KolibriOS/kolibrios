@@ -1,6 +1,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;                                                                 ;;
-;; Copyright (C) KolibriOS team 2004-2018. All rights reserved.    ;;
+;; Copyright (C) KolibriOS team 2004-2021. All rights reserved.    ;;
 ;; Distributed under terms of the GNU General Public License       ;;
 ;;                                                                 ;;
 ;;  FORCEDETH.INC                                                  ;;
@@ -1606,7 +1606,7 @@ update_linkspeed:
         jz      .no_gigabit
 
         DEBUGF  1,"update_linkspeed: GBit ethernet detected.\n"
-        mov     [ebx + device.state], ETH_LINK_1G
+        mov     [ebx + device.state], ETH_LINK_SPEED_1G
         mov     ecx, (LINKSPEED_FORCE or LINKSPEED_1000)
         xor     eax, eax
         inc     eax
@@ -1631,7 +1631,7 @@ update_linkspeed:
         test    eax, LPA_100FULL
         jz      @f
         DEBUGF  1,"update_linkspeed: 100 mbit full duplex\n"
-        mov     [ebx + device.state], ETH_LINK_100M + ETH_LINK_FD
+        mov     [ebx + device.state], ETH_LINK_SPEED_100M + ETH_LINK_FULL_DUPLEX
         mov     ecx, (LINKSPEED_FORCE or LINKSPEED_100)
         xor     eax, eax
         inc     eax
@@ -1641,7 +1641,7 @@ update_linkspeed:
         test    eax, LPA_100HALF
         jz      @f
         DEBUGF  1,"update_linkspeed: 100 mbit half duplex\n"
-        mov     [ebx + device.state], ETH_LINK_100M
+        mov     [ebx + device.state], ETH_LINK_SPEED_100M
         mov     ecx, (LINKSPEED_FORCE or LINKSPEED_100)
         xor     eax, eax
         jmp     set_speed
@@ -1650,7 +1650,7 @@ update_linkspeed:
         test    eax, LPA_10FULL
         jz      @f
         DEBUGF  1,"update_linkspeed: 10 mbit full duplex\n"
-        mov     [ebx + device.state], ETH_LINK_10M + ETH_LINK_FD
+        mov     [ebx + device.state], ETH_LINK_SPEED_10M + ETH_LINK_FULL_DUPLEX
         mov     ecx, (LINKSPEED_FORCE or LINKSPEED_10)
         xor     eax, eax
         inc     eax
@@ -1659,7 +1659,7 @@ update_linkspeed:
 
   .10mbit_hd:
         DEBUGF  1,"update_linkspeed: 10 mbit half duplex\n"
-        mov     [ebx + device.state], ETH_LINK_10M
+        mov     [ebx + device.state], ETH_LINK_SPEED_10M
         mov     ecx, (LINKSPEED_FORCE or LINKSPEED_10)
         xor     eax, eax
         jmp     set_speed

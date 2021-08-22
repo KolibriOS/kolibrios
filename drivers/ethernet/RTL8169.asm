@@ -1340,19 +1340,19 @@ detect_link:
         xor     ecx, ecx
         test    al, PHYS_10bps
         jz      @f
-        or      cl, ETH_LINK_10M
+        or      cl, ETH_LINK_SPEED_10M
   @@:
         test    al, PHYS_100bps
         jz      @f
-        or      cl, ETH_LINK_100M
+        or      cl, ETH_LINK_SPEED_100M
   @@:
         test    al, PHYS_1000bpsF
         jz      @f
-        or      cl, ETH_LINK_1G ;or ETH_LINK_FD
+        or      cl, ETH_LINK_SPEED_1G ;or ETH_LINK_FULL_DUPLEX
   @@:
         test    al, PHYS_FullDup
         jz      @f
-        or      cl, ETH_LINK_FD
+        or      cl, ETH_LINK_FULL_DUPLEX
   @@:
         mov     [ebx + device.state], ecx
         invoke  NetLinkChanged

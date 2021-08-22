@@ -718,21 +718,21 @@ link_status:
 
         test    eax, STATUS_FD
         jz      @f
-        or      cl, ETH_LINK_FD
+        or      cl, ETH_LINK_FULL_DUPLEX
   @@:
         shr     eax, STATUS_SPEED_SHIFT
         and     al, 3
         test    al, al
         jnz     @f
-        or      cl, ETH_LINK_10M
+        or      cl, ETH_LINK_SPEED_10M
         jmp     .ok
   @@:
         cmp     al, 1
         jne     @f
-        or      cl, ETH_LINK_100M
+        or      cl, ETH_LINK_SPEED_100M
         jmp     .ok
   @@:
-        or      cl, ETH_LINK_1G
+        or      cl, ETH_LINK_SPEED_1G
 ;        jmp     .ok
 
   .ok:

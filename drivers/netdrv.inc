@@ -43,12 +43,6 @@ include 'mii.inc'
 
         ETH_LINK_SPEED_MASK     = 1100b
 
-; Deprecated naming - dont use
-        ETH_LINK_FD     = 10b           ; full duplex flag
-        ETH_LINK_10M    = 100b          ; 10 mbit
-        ETH_LINK_100M   = 1000b         ; 100 mbit
-        ETH_LINK_1G     = 1100b         ; gigabit
-
 ; Macro to easily set i/o addresses to access device.
 ; In the beginning of a procedure (or ofter edx may have been destroyed),
 ; always use set_io with offset 0 to reset the variables.

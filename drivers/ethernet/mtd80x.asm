@@ -1,6 +1,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;                                                                 ;;
-;; Copyright (C) KolibriOS team 2004-2015. All rights reserved.    ;;
+;; Copyright (C) KolibriOS team 2004-2021. All rights reserved.    ;;
 ;; Distributed under terms of the GNU General Public License       ;;
 ;;                                                                 ;;
 ;;  MTD80x driver for KolibriOS                                    ;;
@@ -824,16 +824,16 @@ getlinktype:
         test    eax, FD
         jz      @f
         DEBUGF  1,"full duplex\n"
-        or      [ebx + device.state], ETH_LINK_FD
+        or      [ebx + device.state], ETH_LINK_FULL_DUPLEX
        @@:
         test    eax, PS10
         jnz     @f
-        DEBUGF  1,"100mbit\n"
-        or      [ebx + device.state], ETH_LINK_100M
+        DEBUGF  1,"100Mbit\n"
+        or      [ebx + device.state], ETH_LINK_SPEED_100M
         ret
        @@:
-        DEBUGF  1,"10mbit\n"
-        or      [ebx + device.state], ETH_LINK_10M
+        DEBUGF  1,"10Mbit\n"
+        or      [ebx + device.state], ETH_LINK_SPEED_10M
         ret
 
   .no_myson_phy:
