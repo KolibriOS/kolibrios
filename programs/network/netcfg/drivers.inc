@@ -242,11 +242,12 @@ dd  0x0
 
 
 db  'AR81XX', 0
-;dd  0x10911969          ; AR8161 - untested
+dd  0x10631969          ; AR8131
+dd  0x10911969          ; AR8161
+dd  0x10901969          ; AR8162
+dd  0x10A11969          ; QCA8171 (AR8171)
+dd  0x10A01969          ; QCA8172 (AR8172)
 ;dd  0xe0911969          ; E2200 - untested
-;dd  0x10901969          ; AR8162 - untested
-dd  0x10A11969          ; AR8171
-;dd  0x10A01969          ; AR8172 - untested
 dd  0x0
 
 dd  0x0 ; driverlist end

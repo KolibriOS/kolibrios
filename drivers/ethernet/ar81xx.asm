@@ -1,6 +1,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;                                                                 ;;
-;; Copyright (C) KolibriOS team 2018-2020. All rights reserved.    ;;
+;; Copyright (C) KolibriOS team 2018-2021. All rights reserved.    ;;
 ;; Distributed under terms of the GNU General Public License       ;;
 ;;                                                                 ;;
 ;;  AR81XX driver for KolibriOS                                    ;;
@@ -24,19 +24,23 @@ entry START
         COMPATIBLE_API          = 0x0100
         API_VERSION             = (COMPATIBLE_API shl 16) + CURRENT_API
 
-        MAX_DEVICES             = 16
+; configureable area
 
-        __DEBUG__               = 1
-        __DEBUG_LEVEL__         = 2
+        MAX_DEVICES             = 16    ; Maximum number of devices this driver may handle
 
-        TX_RING_SIZE            = 128             ; RING sizes must be a power of 2
-        RX_RING_SIZE            = 128
+        __DEBUG__               = 1     ; 1 = on, 0 = off
+        __DEBUG_LEVEL__         = 2     ; 1 = verbose, 2 = errors only
+
+        TX_RING_SIZE            = 128   ; Number of packets in send ring buffer
+        RX_RING_SIZE            = 128   ; Number of packets in receive ring buffer
 
         RX_BUFFER_SIZE          = 1536
 
         SMB_TIMER               = 400
-        IMT                     = 200
-        ITH_TPD                 = TX_RING_SIZE / 3
+        IMT                     = 200                   ; IRQ Modulo Timer
+        ITH_TPD                 = TX_RING_SIZE / 3      ; Interrupt Threshold TPD
+
+; end configureable area
 
 section '.flat' readable writable executable
 
@@ -48,8 +52,17 @@ include '../netdrv.inc'
 
 include 'ar81xx.inc'
 
-; Transmit Packet Descriptor
+if (bsr TX_RING_SIZE)>(bsf TX_RING_SIZE)
+  display 'TX_RING_SIZE must be a power of two'
+  err
+end if
 
+if (bsr RX_RING_SIZE)>(bsf RX_RING_SIZE)
+  display 'RX_RING_SIZE must be a power of two'
+  err
+end if
+
+; Transmit Packet Descriptor
 struct alx_tpd
         length          dw ?
         vlan_tag        dw ?
@@ -59,7 +72,6 @@ struct alx_tpd
 ends
 
 ; Receive Return Descriptor
-
 struct alx_rrd
         word0           dd ?    ; IP payload cksum + number of RFDs + start index of RFD-ring
         rss_hash        dd ?
@@ -68,12 +80,10 @@ struct alx_rrd
 ends
 
 ; Receive Free Descriptor
-
 struct alx_rfd
         addr_l          dd ?
         addr_h          dd ?
 ends
-
 
 struct  device          ETH_DEVICE
 
@@ -87,7 +97,6 @@ struct  device          ETH_DEVICE
         chip_rev        dd ?
         mmio_addr       dd ?
 
-;        dma_chnl        dd ?
         max_dma_chnl    dd ?
 
         int_mask        dd ?
@@ -107,8 +116,6 @@ struct  device          ETH_DEVICE
         rfd_ring_virt   rd RX_RING_SIZE
 
 ends
-
-
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;                        ;;
@@ -131,7 +138,6 @@ proc START c, reason:dword, cmdline:dword
         ret
 
 endp
-
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;                        ;;
@@ -188,7 +194,6 @@ proc service_proc stdcall, ioctl:dword
        @@:
         add     esi, 4
         loop    .nextdevice
-
 
 ; This device doesnt have its own eth_device structure yet, lets create one
   .firstdevice:
@@ -278,13 +283,11 @@ proc service_proc stdcall, ioctl:dword
 ;------------------------------------------------------
 endp
 
-
 ;;/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\;;
 ;;                                                                        ;;
 ;;        Actual Hardware dependent code starts here                      ;;
 ;;                                                                        ;;
 ;;/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\;;
-
 
 align 4
 unload:
@@ -299,7 +302,6 @@ unload:
         or      eax, -1
         ret
 
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 ;;  probe: enables the device (if it really is AR81XX)
@@ -311,13 +313,13 @@ probe:
         DEBUGF  1,"Probing\n"
 
 ; Make the device a bus master
-        invoke  PciRead16, [ebx + device.pci_bus], [ebx + device.pci_dev], PCI_header00.command
+        invoke  PciRead16, [ebx + device.pci_bus], [ebx + device.pci_dev], PCI_header.command
         or      al, PCI_CMD_MASTER + PCI_CMD_MMIO + PCI_CMD_PIO
         and     ax, not(PCI_CMD_INTX_DISABLE)
-        invoke  PciWrite16, [ebx + device.pci_bus], [ebx + device.pci_dev], PCI_header00.command, eax
+        invoke  PciWrite16, [ebx + device.pci_bus], [ebx + device.pci_dev], PCI_header.command, eax
 
-; get device id
-        invoke  PciRead16, [ebx + device.pci_bus], [ebx + device.pci_dev], PCI_header00.device_id
+; get device ID
+        invoke  PciRead16, [ebx + device.pci_bus], [ebx + device.pci_dev], PCI_header.device_id
         mov     [ebx + device.pci_did], ax
 
         mov     esi, chiplist
@@ -335,25 +337,42 @@ probe:
         DEBUGF  1, "Chip type = %s\n", eax
   .done:
 
-; get revision id.
-        invoke  PciRead8, [ebx + device.pci_bus], [ebx + device.pci_dev], PCI_header00.revision_id
+; get revision ID
+        invoke  PciRead8, [ebx + device.pci_bus], [ebx + device.pci_dev], PCI_header.revision_id
         and     eax, 0xff
+        DEBUGF  1,"PCI Revision: %u\n", eax
         mov     [ebx + device.pci_rev], eax
         shr     al, ALX_PCI_REVID_SHIFT
         mov     [ebx + device.chip_rev], eax
+        DEBUGF  1,"ALX Revision: %u\n", eax
 
-        DEBUGF  1,"Revision: %u\n", al
-
-;;;        call    alx_reset_pcie
+        stdcall alx_reset_pcie
 
         mov     ecx, (ALX_PMCTRL_L0S_EN or ALX_PMCTRL_L1_EN or ALX_PMCTRL_ASPM_FCEN)
-        call    alx_enable_aspm
+        stdcall alx_enable_aspm
 
-        call    alx_reset_phy
+        stdcall alx_reset_phy
 
-        call    alx_reset_mac
+        stdcall alx_reset_mac
 
-        call    alx_get_perm_macaddr
+; Setup link to put it in a known good starting state
+        stdcall alx_write_phy_reg, ALX_MII_DBG_ADDR, 0
+
+        mov     esi, [ebx + device.mmio_addr]
+        mov     eax, dword[esi + ALX_DRV]
+
+        stdcall alx_write_phy_reg, MII_ADVERTISE, ADVERTISE_CSMA or ADVERTISE_10HALF or ADVERTISE_10FULL or ADVERTISE_100HALF or ADVERTISE_100FULL or ADVERTISE_PAUSE_CAP
+
+        xor     eax, eax
+        test    [ebx + device.pci_did], 1       ;;; FIXME: is gigabit device?
+        jz      @f
+        mov     eax, ADVERTISE_1000XFULL
+  @@:
+        stdcall alx_write_phy_reg, MII_CTRL1000, eax
+
+        stdcall alx_write_phy_reg, MII_BMCR, BMCR_RESET or BMCR_ANENABLE or BMCR_ANRESTART
+
+        stdcall alx_get_perm_macaddr
 
 align 4
 reset:
@@ -362,19 +381,16 @@ reset:
 
 ; alx init_sw
 
-        call    alx_identify_hw
-
-;        mov     eax, [ebx + device.max_dma_chnl]
-;        mov     [ebx + device.dma_chnl], eax
+        stdcall alx_identify_hw
 
         mov     [ebx + device.int_mask], ALX_ISR_MISC
         mov     [ebx + device.rx_ctrl], ALX_MAC_CTRL_WOLSPED_SWEN or ALX_MAC_CTRL_MHASH_ALG_HI5B or ALX_MAC_CTRL_BRD_EN or ALX_MAC_CTRL_PCRCE or ALX_MAC_CTRL_CRCE or ALX_MAC_CTRL_RXFC_EN or ALX_MAC_CTRL_TXFC_EN or (7 shl ALX_MAC_CTRL_PRMBLEN_SHIFT)
 
-        call    alx_alloc_rings
+        stdcall alx_alloc_rings
 
-        call    alx_configure
+        stdcall alx_configure
 
-        call    alx_request_irq
+        stdcall alx_request_irq
 
 ; attach interrupt handler
 
@@ -393,34 +409,29 @@ reset:
         mov     eax, not ALX_ISR_DIS
         mov     [edi + ALX_ISR], eax
 
-        call    alx_irq_enable
+        stdcall alx_irq_enable
 
-; Set the mtu, kernel will be able to send now
+; Set the MTU, kernel will be able to send now
         mov     [ebx + device.mtu], 1514
 
-        call    alx_check_link
+        stdcall alx_check_link
 
         DEBUGF  1,"Reset ok\n"
         xor     eax, eax
         ret
-
-
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;                                         ;;
 ;; Transmit                                ;;
 ;;                                         ;;
 ;; In: pointer to device structure in ebx  ;;
+;; Out: eax = 0 on success                 ;;
 ;;                                         ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-;; alx_start_xmit
-;; alx_map_tx_skb
-
+align 16
 proc transmit stdcall bufferptr
 
-        pushf
-        cli
+        spin_lock_irqsave
 
         mov     esi, [bufferptr]
         DEBUGF  1,"Transmitting packet, buffer:%x, size:%u\n", [bufferptr], [esi + NET_BUFF.length]
@@ -431,13 +442,15 @@ proc transmit stdcall bufferptr
         [eax+13]:2,[eax+12]:2
 
         cmp     [esi + NET_BUFF.length], 1514
-        ja      .fail
+        ja      .error
         cmp     [esi + NET_BUFF.length], 60
-        jb      .fail
+        jb      .error
 
 ; Program the descriptor
         mov     edi, [ebx + device.txq_write_idx]
         DEBUGF  1, "Using TPD: %u\n", edi
+        cmp     dword[ebx + device.tpd_ring_virt + edi*4], 0
+        jne     .overrun
         mov     dword[ebx + device.tpd_ring_virt + edi*4], esi
         shl     edi, 4
         lea     edi, [ebx + device.tpd_ring + edi]
@@ -471,64 +484,55 @@ proc transmit stdcall bufferptr
         xor     eax, eax
         ret
 
-  .fail:
-        DEBUGF  2,"Send failed\n"
+  .error:
+        DEBUGF  2, "TX packet error\n"
+        inc     [ebx + device.packets_tx_err]
         invoke  NetFree, [bufferptr]
-        popf
+
+        spin_unlock_irqrestore
+        or      eax, -1
+        ret
+
+  .overrun:
+        DEBUGF  2, "TX overrun\n"
+        inc     [ebx + device.packets_tx_ovr]
+        invoke  NetFree, [bufferptr]
+
+        spin_unlock_irqrestore
         or      eax, -1
         ret
 
 endp
-
-
 
 ;;;;;;;;;;;;;;;;;;;;;;;
 ;;                   ;;
 ;; Interrupt handler ;;
 ;;                   ;;
 ;;;;;;;;;;;;;;;;;;;;;;;
-
-align 4
+align 16
 int_handler:
 
         push    ebx esi edi
 
-        DEBUGF  1,"int\n"
+        mov     ebx, [esp+4*4]
+        DEBUGF  1,"INT for 0x%x\n", ebx
 
-; Find pointer of device wich made IRQ occur
+; TODO? if we are paranoid, we can check that the value from ebx is present in the current device_list
 
-        mov     ecx, [devices]
-        test    ecx, ecx
-        jz      .nothing
-        mov     esi, device_list
-  .nextdevice:
-        mov     ebx, [esi]
         mov     edi, [ebx + device.mmio_addr]
         mov     eax, [edi + ALX_ISR]
         test    eax, eax
-        jnz     .got_it
-  .continue:
-        add     esi, 4
-        dec     ecx
-        jnz     .nextdevice
-  .nothing:
-        pop     edi esi ebx
-        xor     eax, eax
+        jz      .nothing
 
-        ret                             ; If no device was found, abort
-
-; At this point, test for all possible reasons, and handle accordingly
-
-  .got_it:
         or      eax, ALX_ISR_DIS
         mov     [edi + ALX_ISR], eax    ; ACK interrupt
-        DEBUGF  1,"Device: %x Status: %x\n", ebx, eax
+        DEBUGF  1,"Status: %x\n", eax
 
         test    eax, ALX_ISR_TX_Q0
         jz      .no_tx
         DEBUGF  1,"TX interrupt\n"
         pusha
-        call    alx_clean_tx_irq
+        stdcall alx_clean_tx_irq
         popa
   .no_tx:
 
@@ -536,7 +540,7 @@ int_handler:
         jz      .no_rx
         DEBUGF  1,"RX interrupt\n"
         pusha
-        call    alx_clean_rx_irq
+        stdcall alx_clean_rx_irq
         popa
 
   .no_rx:
@@ -545,24 +549,34 @@ int_handler:
         DEBUGF  1,"PHY interrupt\n"
         pusha
 ; TODO: queue link check and disable this interrupt cause meanwhile??
-        call    alx_check_link
+        stdcall alx_check_link
         popa
 
   .no_phy:
         mov     dword[edi + ALX_ISR], 0
         pop     edi esi ebx
+        xor     eax, eax
+        inc     eax
+
         ret
 
+  .nothing:
+        pop     edi esi ebx
+        xor     eax, eax
 
-align 16
-alx_identify_hw:
+        ret
+
+proc alx_identify_hw stdcall
+
+        cmp     [ebx + device.pci_did], ALX_DEV_ID_AR8131
+        je      .alc
 
         cmp     [ebx + device.chip_rev], ALX_REV_C0
         ja      .einval
 
         mov     [ebx + device.max_dma_chnl], 2
         cmp     [ebx + device.chip_rev], ALX_REV_B0
-        jb       @f
+        jb      @f
         mov     [ebx + device.max_dma_chnl], 4
   @@:
         xor     eax, eax
@@ -575,10 +589,64 @@ alx_identify_hw:
         dec     eax
         ret
 
+  .alc:
+        mov     [ebx + device.max_dma_chnl], 2
+        xor     eax, eax
+        ret
 
+endp
 
-align 16
-alx_clean_tx_irq:
+proc udelay stdcall microseconds
+
+; FIXME
+
+        push    esi ecx edx
+        xor     esi, esi
+        inc     esi
+        invoke  Sleep
+        pop     edx ecx esi
+
+        ret
+
+endp
+
+proc alx_reset_pcie stdcall
+
+        DEBUGF  1,"alx_reset_pcie\n"
+
+; Make the device a bus master
+        invoke  PciRead16, [ebx + device.pci_bus], [ebx + device.pci_dev], PCI_header00.command
+        or      al, PCI_CMD_MASTER or PCI_CMD_MMIO or PCI_CMD_PIO
+        and     ax, not(PCI_CMD_INTX_DISABLE)
+        invoke  PciWrite16, [ebx + device.pci_bus], [ebx + device.pci_dev], PCI_header00.command, eax
+
+; Clear any powersaving setting
+        invoke  PciWrite16, [ebx + device.pci_bus], [ebx + device.pci_dev], 0x44, 0x0000        ;; FIXME
+
+; Mask some pcie error bits
+        mov     esi, [ebx + device.mmio_addr]
+        mov     eax, [esi + ALX_UE_SVRT]
+        and     eax, not(ALX_UE_SVRT_DLPROTERR or ALX_UE_SVRT_FCPROTERR)
+        mov     [esi + ALX_UE_SVRT], eax
+
+; pclk
+        mov     eax, [esi + ALX_MASTER]
+        or      eax, ALX_MASTER_WAKEN_25M
+        and     eax, not (ALX_MASTER_PCLKSEL_SRDS)
+        cmp     [ebx + device.chip_rev], ALX_REV_A1
+        ja      @f
+        test    [ebx + device.pci_rev], ALX_PCI_REVID_WITH_CR
+        jz      @f
+        or      eax, ALX_MASTER_PCLKSEL_SRDS
+  @@:
+        mov     [esi + ALX_MASTER], eax
+
+        xor     eax, eax
+        ret
+
+endp
+
+proc alx_clean_tx_irq stdcall
 
         mov     eax, [ebx + device.txq_read_idx]
         movzx   ecx, word[edi + ALX_TPD_PRI0_CIDX]
@@ -591,6 +659,7 @@ alx_clean_tx_irq:
         push    eax ecx
         invoke  NetFree, [ebx + device.tpd_ring_virt + eax*4]
         pop     ecx eax
+        mov     [ebx + device.tpd_ring_virt + eax*4], 0
 
         inc     eax
         and     eax, TX_RING_SIZE-1
@@ -600,9 +669,9 @@ alx_clean_tx_irq:
 
         ret
 
+endp
 
-align 16
-alx_clean_rx_irq:
+proc alx_clean_rx_irq stdcall
 
         mov     ecx, [ebx + device.rxq_read_idx]
   .loop:
@@ -647,7 +716,7 @@ alx_clean_rx_irq:
         invoke  NetAlloc, RX_BUFFER_SIZE+NET_BUFF.data
         pop     edx ecx esi
         test    eax, eax
-;        jz      .out_of_mem
+        jz      .rx_overrun
         mov     [ebx + device.rfd_ring_virt + ecx], eax
         add     eax, NET_BUFF.data
         invoke  GetPhysAddr
@@ -665,6 +734,14 @@ alx_clean_rx_irq:
         and     ecx, RX_RING_SIZE-1
         jmp     .loop
 
+  .rx_overrun:
+        DEBUGF  2,"RX FIFO overrun\n"
+        inc     [ebx + device.packets_rx_ovr]
+        shr     ecx, 2
+        inc     ecx
+        and     ecx, RX_RING_SIZE-1
+        jmp     .loop
+
   .done:
         shr     ecx, 2
         mov     [ebx + device.rxq_read_idx], ecx
@@ -675,43 +752,75 @@ alx_clean_rx_irq:
 
         ret
 
+endp
 
-align 16
-; ecx = additional bit flags (ALX_PMCTRL_L0S_EN, ALX_PMCTRL_L1_EN, ALX_PMCTRL_ASPM_FCEN)
-alx_enable_aspm:
+; IN: ecx = additional bit flags (ALX_PMCTRL_L0S_EN, ALX_PMCTRL_L1_EN, ALX_PMCTRL_ASPM_FCEN)
+proc alx_enable_aspm stdcall
 
         DEBUGF  1,"alx_enable_aspm (0x%x)\n", ecx
 
         mov     esi, [ebx + device.mmio_addr]
-        mov     eax, dword[esi + ALX_PMCTRL]
 
-        and     eax, not(ALX_PMCTRL_LCKDET_TIMER_MASK shl ALX_PMCTRL_LCKDET_TIMER_SHIFT)
-        or      eax, (ALX_PMCTRL_LCKDET_TIMER_DEF shl ALX_PMCTRL_LCKDET_TIMER_SHIFT)
-
-        or      eax, (ALX_PMCTRL_RCVR_WT_1US or ALX_PMCTRL_L1_CLKSW_EN or ALX_PMCTRL_L1_SRDSRX_PWD)
-
-        and     eax, not(ALX_PMCTRL_L1REQ_TO_MASK shl ALX_PMCTRL_L1REQ_TO_SHIFT)
-        or      eax, (ALX_PMCTRL_L1REG_TO_DEF shl ALX_PMCTRL_L1REQ_TO_SHIFT)
-
-        and     eax, not(ALX_PMCTRL_L1_TIMER_MASK shl ALX_PMCTRL_L1_TIMER_SHIFT)
-        or      eax, (ALX_PMCTRL_L1_TIMER_16US shl ALX_PMCTRL_L1_TIMER_SHIFT)
-
-        and     eax, not(ALX_PMCTRL_L1_SRDS_EN  or ALX_PMCTRL_L1_SRDSPLL_EN or ALX_PMCTRL_L1_BUFSRX_EN or ALX_PMCTRL_SADLY_EN or ALX_PMCTRL_HOTRST_WTEN or ALX_PMCTRL_L0S_EN  or ALX_PMCTRL_L1_EN  or ALX_PMCTRL_ASPM_FCEN  or ALX_PMCTRL_TXL1_AFTER_L0S  or ALX_PMCTRL_RXL1_AFTER_L0S)
+        cmp     [ebx + device.pci_did], ALX_DEV_ID_AR8131
+        je      .alc_l1c
 
         cmp     [ebx + device.chip_rev], ALX_REV_A1
         ja      @f
-        test    [ebx + device.pci_rev], 1
+        test    [ebx + device.pci_rev], ALX_PCI_REVID_WITH_CR
         jz      @f
-        or      eax, ALX_PMCTRL_L1_SRDS_EN or ALX_PMCTRL_L1_SRDSPLL_EN
+        or      ecx, ALX_PMCTRL_L1_SRDS_EN or ALX_PMCTRL_L1_SRDSPLL_EN
   @@:
 
+        mov     eax, dword[esi + ALX_PMCTRL]
+        and     eax, not((ALX_PMCTRL_LCKDET_TIMER_MASK shl ALX_PMCTRL_LCKDET_TIMER_SHIFT) or \
+                         (ALX_PMCTRL_L1REQ_TO_MASK shl ALX_PMCTRL_L1REQ_TO_SHIFT) or \
+                         (ALX_PMCTRL_L1_TIMER_MASK shl ALX_PMCTRL_L1_TIMER_SHIFT) or \
+                         ALX_PMCTRL_L1_SRDS_EN or \
+                         ALX_PMCTRL_L1_SRDSPLL_EN or \
+                         ALX_PMCTRL_L1_BUFSRX_EN or \
+                         ALX_PMCTRL_SADLY_EN or \
+                         ALX_PMCTRL_HOTRST_WTEN or \
+                         ALX_PMCTRL_L0S_EN or \
+                         ALX_PMCTRL_L1_EN or \
+                         ALX_PMCTRL_ASPM_FCEN or \
+                         ALX_PMCTRL_TXL1_AFTER_L0S or \
+                         ALX_PMCTRL_RXL1_AFTER_L0S)
+        or      eax, (ALX_PMCTRL_LCKDET_TIMER_DEF shl ALX_PMCTRL_LCKDET_TIMER_SHIFT) or \
+                     (ALX_PMCTRL_RCVR_WT_1US or ALX_PMCTRL_L1_CLKSW_EN or ALX_PMCTRL_L1_SRDSRX_PWD) or \
+                     (ALX_PMCTRL_L1REG_TO_DEF shl ALX_PMCTRL_L1REQ_TO_SHIFT) or \
+                     (ALX_PMCTRL_L1_TIMER_16US shl ALX_PMCTRL_L1_TIMER_SHIFT)
         or      eax, ecx
         mov     dword[esi + ALX_PMCTRL], eax
 
         ret
 
-align 16
-alx_reset_mac:
+  .alc_l1c:
+
+        DEBUGF  1, "aspm for L1C\n"
+
+        mov     esi, [ebx + device.mmio_addr]
+        mov     eax, dword[esi + ALX_PMCTRL]
+
+        and     eax, not(ALX_PMCTRL_L0S_EN or ALX_PMCTRL_L1_EN or ALX_PMCTRL_ASPM_FCEN)
+        or      eax, (ALX_PMCTRL_LCKDET_TIMER_DEF shl ALX_PMCTRL_LCKDET_TIMER_SHIFT) ;\
+                ;     or (0 shl ALX_PMCTRL_L1_TIMER_SHIFT)
+
+        or      eax, ecx
+
+;;; FIXME if(linkon)
+
+        or      eax, (ALX_PMCTRL_L1_SRDS_EN or ALX_PMCTRL_L1_SRDSPLL_EN or ALX_PMCTRL_L1_BUFSRX_EN)
+        and     eax, not(ALX_PMCTRL_L1_SRDSRX_PWD or ALX_PMCTRL_L1_CLKSW_EN or ALX_PMCTRL_L0S_EN or ALX_PMCTRL_L1_EN)
+
+;;
+
+        mov     dword[esi + ALX_PMCTRL], eax
+
+        ret
+
+endp
+
+proc alx_reset_mac stdcall
 
         DEBUGF  1, "reset mac\n"
 
@@ -721,47 +830,52 @@ alx_reset_mac:
         mov     dword[esi + ALX_IMR], 0x0
         mov     dword[esi + ALX_ISR], ALX_ISR_DIS
 
-        call    alx_stop_mac
+        stdcall alx_stop_mac
 
 ; mac reset workaround
         mov     dword[esi + ALX_RFD_PIDX], 1
 
-; disable l0s/l1 before mac reset on some chips
+; disable l0s/l1 before MAC reset on some chips
         cmp     [ebx + device.chip_rev], ALX_REV_A1
         ja      @f
-        test    [ebx + device.pci_rev], 1       ; Card reader function? FIXME: according register definitions, this should be bit 1 ISO 0
+        test    [ebx + device.pci_rev], ALX_PCI_REVID_WITH_CR
         jz      @f
         mov     eax, [esi + ALX_PMCTRL]
         mov     edx, eax
+        test    eax, ALX_PMCTRL_L1_EN or ALX_PMCTRL_L0S_EN
+        jz      @f
         and     eax, not(ALX_PMCTRL_L1_EN or ALX_PMCTRL_L0S_EN)
         mov     [esi + ALX_PMCTRL], eax
   @@:
 
-; reset whole mac safely
+; reset whole MAC safely
         mov     eax, [esi + ALX_MASTER]
-        or      eax, ALX_MASTER_DMA_MAC_RST + ALX_MASTER_OOB_DIS
+        or      eax, ALX_MASTER_DMA_MAC_RST or ALX_MASTER_OOB_DIS
         mov     [esi + ALX_MASTER], eax
 
 ; make sure it's real idle
-        push    esi ecx edx
-        xor     esi, esi
-        inc     esi
-        invoke  Sleep           ; FIXME
-        pop     edx ecx esi
+        stdcall udelay, 10
 
-        mov     ecx, ALX_DMA_MAC_RST_TO
+        mov     ecx, ALX_DMA_MAC_RST_TO ; timeout
   .loop1:
         mov     eax, dword[esi + ALX_RFD_PIDX]
         test    eax, eax
         jz      @f
+
+        stdcall udelay, 10
+
         dec     ecx
         jnz     .loop1
         jmp     .error
   @@:
+
   .loop2:
         mov     eax, dword[esi + ALX_MASTER]
         test    eax, ALX_MASTER_DMA_MAC_RST
         jz      @f
+
+        stdcall udelay, 10
+
         dec     ecx
         jnz     .loop2
         jmp     .error
@@ -770,15 +884,14 @@ alx_reset_mac:
 ; restore l0s/l1
         cmp     [ebx + device.chip_rev], ALX_REV_A1
         ja      @f
-        test    [ebx + device.pci_rev], 1        ; Card reader function? FIXME: according register definitions, this should be bit 1 ISO 0
+        test    [ebx + device.pci_rev], ALX_PCI_REVID_WITH_CR
         jz      @f
         or      eax, ALX_MASTER_PCLKSEL_SRDS
         mov     [esi + ALX_MASTER], eax
-
         mov     [esi + ALX_PMCTRL], edx
   @@:
 
-        call    alx_reset_osc
+        stdcall alx_reset_osc
 
 ; clear Internal OSC settings, switching OSC by hw itself, disable isolate for rev A devices
 
@@ -796,16 +909,13 @@ alx_reset_mac:
   @@:
         mov     [esi + ALX_MISC], eax
 
-        push    esi
-        xor     esi, esi
-        inc     esi
-        invoke  Sleep           ;; FIXME: udelay(20);
-        pop     esi
+        stdcall udelay, 20
 
 ; driver control speed/duplex, hash-alg
         mov     eax, [ebx + device.rx_ctrl]
         mov     [esi + ALX_MAC_CTRL], eax
 
+; clk sw
         mov     eax, dword[esi + ALX_SERDES]
         or      eax, ALX_SERDES_MACCLK_SLWDWN or ALX_SERDES_PHYCLK_SLWDWN
         mov     dword[esi + ALX_SERDES], eax
@@ -820,20 +930,65 @@ alx_reset_mac:
         dec     eax
         ret
 
+endp
 
-align 16
-alx_reset_phy:
+proc alx_reset_phy stdcall
 
         DEBUGF  1, "Reset phy\n"
 
         mov     esi, [ebx + device.mmio_addr]
 
-;; TODO
+        mov     eax, dword [esi + ALX_PHY_CTRL]
+        DEBUGF 1, "read ALX_PHY_CTRL = %x\n", eax
+        and     eax, not (ALX_PHY_CTRL_DSPRST_OUT or ALX_PHY_CTRL_IDDQ or ALX_PHY_CTRL_GATE_25M or ALX_PHY_CTRL_POWER_DOWN or ALX_PHY_CTRL_CLS)
+        or      eax, ALX_PHY_CTRL_RST_ANALOG
+        or      eax, ALX_PHY_CTRL_HIB_PULSE or ALX_PHY_CTRL_HIB_EN ; assume pws is enabled
 
-; set phy interrupt mask
-        stdcall alx_read_phy_reg, 0, ALX_MII_IER
+        DEBUGF 1, "write ALX_PHY_CTRL = %x\n", eax
+        mov     [esi + ALX_PHY_CTRL], eax
+
+        stdcall udelay, 5
+
+        or      eax, ALX_PHY_CTRL_DSPRST_OUT
+        mov     [esi + ALX_PHY_CTRL], eax
+
+        stdcall udelay, 10
+
+        or      eax, ALX_PHY_CTRL_DSPRST_OUT
+        DEBUGF 1, "write ALX_PHY_CTRL = %x\n", eax
+        mov     dword [esi + ALX_PHY_CTRL], eax
+
+        stdcall udelay, 800
+
+; PHY power saving & hibernate
+        stdcall alx_write_phy_dbg, ALX_MIIDBG_LEGCYPS, ALX_LEGCYPS_DEF
+        stdcall alx_write_phy_dbg, ALX_MIIDBG_SYSMODCTRL, ALX_SYSMODCTRL_IECHOADJ_DEF
+        stdcall alx_write_phy_ext, ALX_MIIEXT_PCS, ALX_MIIEXT_VDRVBIAS, ALX_VDRVBIAS_DEF
+
+; EEE advertisement
+        mov     eax, [esi + ALX_LPI_CTRL]
+        and     eax, not (ALX_LPI_CTRL_EN)
+        mov     [esi + ALX_LPI_CTRL], eax
+        stdcall alx_write_phy_ext, ALX_MIIEXT_ANEG, ALX_MIIEXT_LOCAL_EEEADV, 0
+
+; PHY power saving
+        stdcall alx_write_phy_dbg, ALX_MIIDBG_TST10BTCFG, ALX_TST10BTCFG_DEF
+        stdcall alx_write_phy_dbg, ALX_MIIDBG_SRDSYSMOD, ALX_SRDSYSMOD_DEF
+        stdcall alx_write_phy_dbg, ALX_MIIDBG_TST100BTCFG, ALX_TST100BTCFG_DEF
+        stdcall alx_write_phy_dbg, ALX_MIIDBG_ANACTRL, ALX_ANACTRL_DEF
+        stdcall alx_read_phy_dbg, ALX_MIIDBG_GREENCFG2
+        and     eax, not ALX_GREENCFG2_GATE_DFSE_EN
+        stdcall alx_write_phy_dbg, ALX_MIIDBG_GREENCFG2, eax
+; rtl8139c, 120m issue */
+        stdcall alx_write_phy_ext, ALX_MIIEXT_ANEG, ALX_MIIEXT_NLP78, ALX_MIIEXT_NLP78_120M_DEF
+        stdcall alx_write_phy_ext, ALX_MIIEXT_ANEG, ALX_MIIEXT_S3DIG10, ALX_MIIEXT_S3DIG10_DEF
+
+; TODO: link patch ?
+
+; set PHY interrupt mask
+        stdcall alx_read_phy_reg, ALX_MII_IER
         or      eax, ALX_IER_LINK_UP or ALX_IER_LINK_DOWN
-        stdcall alx_write_phy_reg, 0, ALX_MII_IER , eax
+        stdcall alx_write_phy_reg, ALX_MII_IER , eax
 
         DEBUGF  1, "OK\n"
         xor     eax, eax
@@ -845,24 +1000,39 @@ alx_reset_phy:
         dec     eax
         ret
 
+endp
 
-;align 16
-;alx_enable_osc:
-;
-;        mov     esi, [ebx + device.mmio_addr]
-;
-;; rising edge
-;        mov     eax, dword[esi + ALX_MISC]
-;        and     eax, not ALX_MISC_INTNLOSC_OPEN
-;        mov     dword[esi + ALX_MISC], eax
-;        or      eax, ALX_MISC_INTNLOSC_OPEN
-;        mov     dword[esi + ALX_MISC], eax
-;
-;        ret
+proc alx_set_macaddr stdcall
+
+        mov     esi, [ebx + device.mmio_addr]
+
+        mov     eax, dword[ebx + device.mac+2]
+        bswap   eax
+        mov     [esi + ALX_STAD0], eax
+        mov     ax, word[ebx + device.mac]
+        xchg    al, ah
+        mov     [esi + ALX_STAD1], ax
 
 
-align 16
-alx_reset_osc:
+        ret
+endp
+
+proc alx_enable_osc stdcall
+
+        mov     esi, [ebx + device.mmio_addr]
+
+; rising edge
+        mov     eax, dword[esi + ALX_MISC]
+        and     eax, not ALX_MISC_INTNLOSC_OPEN
+        mov     dword[esi + ALX_MISC], eax
+        or      eax, ALX_MISC_INTNLOSC_OPEN
+        mov     dword[esi + ALX_MISC], eax
+
+        ret
+
+endp
+
+proc alx_reset_osc stdcall
 
         mov     esi, [ebx + device.mmio_addr]
 
@@ -876,7 +1046,7 @@ alx_reset_osc:
 ; PERST, driver need re-calibrate before enter Sleep for WoL
         mov     eax, dword[esi + ALX_MISC]
         cmp     [ebx + device.chip_rev], ALX_REV_B0
-        jb      .rev_a
+        jb      .rev_A
 
 ; restore over current protection def-val, this val could be reset by MAC-RST
         and     eax, not (ALX_MISC_PSW_OCP_MASK shl ALX_MISC_PSW_OCP_SHIFT)
@@ -894,33 +1064,26 @@ alx_reset_osc:
         or      eax, ALX_MSIC2_CALB_START
         mov     dword[esi + ALX_MSIC2], eax
 
-        push    esi ecx
-        xor     esi, esi
-        inc     esi
-        invoke  Sleep           ;; FIXME: udelay(20)
-        pop     ecx esi
+        stdcall udelay, 20
 
         ret
 
-  .rev_a:
+  .rev_A:
 
 ;  disable isolate for rev A devices
-        and     eax, not ( ALX_MISC_ISO_EN)
+        and     eax, not (ALX_MISC_ISO_EN)
         or      eax, ALX_MISC_INTNLOSC_OPEN
         mov     dword[esi + ALX_MISC], eax
         and     eax, not ALX_MISC_INTNLOSC_OPEN
         mov     dword[esi + ALX_MISC], eax
 
-        push    esi ecx
-        xor     esi, esi
-        inc     esi
-        invoke  Sleep           ;; FIXME: udelay(20)
-        pop     ecx esi
+        stdcall udelay, 20
 
         ret
 
-align 16
-alx_read_macaddr:
+endp
+
+proc alx_read_macaddr stdcall
 
         mov     esi, [ebx + device.mmio_addr]
         mov     eax, dword[esi + ALX_STAD0]
@@ -944,7 +1107,9 @@ alx_read_macaddr:
         cmp     word[ebx + device.mac + 4], 0xffff
         je      .invalid
   @@:
-; TODO: check if it's not a multicast
+        test    byte[ebx + device.mac + 5], 0x01        ; Multicast
+        jnz     .invalid
+  @@:
         xor     eax, eax
         ret
 
@@ -954,12 +1119,12 @@ alx_read_macaddr:
         inc     eax
         ret
 
+endp
 
-align 16
-alx_get_perm_macaddr:
+proc alx_get_perm_macaddr stdcall
 
 ; try to get it from register first
-        call    alx_read_macaddr
+        stdcall alx_read_macaddr
         test    eax, eax
         jz      .done
 
@@ -1001,7 +1166,7 @@ alx_get_perm_macaddr:
         jmp     .loop2
   @@:
 
-        call    alx_read_macaddr
+        stdcall alx_read_macaddr
         test    eax, eax
         jz      .done
 
@@ -1048,7 +1213,7 @@ alx_get_perm_macaddr:
         jmp     .loop4
   @@:
 
-        call    alx_read_macaddr
+        stdcall alx_read_macaddr
         test    eax, eax
         jz      .done
 
@@ -1063,8 +1228,9 @@ alx_get_perm_macaddr:
         xor     eax, eax
         ret
 
-align 16
-alx_stop_mac:
+endp
+
+proc alx_stop_mac stdcall
 
         DEBUGF  1,"alx_stop_mac\n"
 
@@ -1078,11 +1244,7 @@ alx_stop_mac:
         and     eax, not ALX_TXQ0_EN
         mov     dword[esi + ALX_TXQ0], eax
 
-        push    esi
-        xor     esi, esi
-        inc     esi
-        invoke  Sleep   ; FIME: udelay(40)
-        pop     esi
+        stdcall udelay, 40
 
         mov     eax, [ebx + device.rx_ctrl]
         and     eax, not(ALX_MAC_CTRL_TX_EN or ALX_MAC_CTRL_RX_EN)
@@ -1095,11 +1257,7 @@ alx_stop_mac:
         test    eax, ALX_MAC_STS_IDLE
         jz      .done
 
-        push    esi
-        xor     esi, esi
-        inc     esi
-        invoke  Sleep   ; FIME: udelay(10)
-        pop     esi
+        stdcall udelay, 10
 
         dec     ecx
         jnz     .loop
@@ -1114,9 +1272,9 @@ alx_stop_mac:
         xor     eax, eax
         ret
 
+endp
 
-align 16
-alx_start_mac:
+proc alx_start_mac stdcall
 
         DEBUGF  1,"alx_start_mac\n"
 
@@ -1133,32 +1291,31 @@ alx_start_mac:
         mov     eax, [ebx + device.rx_ctrl]
         or      eax, ALX_MAC_CTRL_TX_EN or ALX_MAC_CTRL_RX_EN
         and     eax, not ALX_MAC_CTRL_FULLD
-        test    [ebx + device.state], ETH_LINK_FD
-        jz      @f
+        test    [ebx + device.state], ETH_LINK_FULL_DUPLEX
+        jz      .no_fd
         or      eax, ALX_MAC_CTRL_FULLD
-  @@:
+  .no_fd:
         and     eax, not (ALX_MAC_CTRL_SPEED_MASK shl ALX_MAC_CTRL_SPEED_SHIFT)
-        test    [ebx + device.state], ETH_LINK_1G
-        jz      .10_100
+        mov     ecx, [ebx + device.state]
+        and     ecx, ETH_LINK_SPEED_MASK
+        cmp     ecx, ETH_LINK_SPEED_1G
+        jne      .10_100
         or      eax, (ALX_MAC_CTRL_SPEED_1000 shl ALX_MAC_CTRL_SPEED_SHIFT)
-
-        mov     [ebx + device.rx_ctrl], eax
-        mov     [esi + ALX_MAC_CTRL], eax
-
-        ret
+        jmp     .done
 
   .10_100:
         or      eax, (ALX_MAC_CTRL_SPEED_10_100 shl ALX_MAC_CTRL_SPEED_SHIFT)
 
+  .done:
+        DEBUGF  1,"mac ctrl=0x%x\n", eax
         mov     [ebx + device.rx_ctrl], eax
         mov     [esi + ALX_MAC_CTRL], eax
 
         ret
 
+endp
 
-
-align 16
-alx_init_ring_ptrs:
+proc alx_init_ring_ptrs stdcall
 
         DEBUGF  1,"alx_init_ring_ptrs\n"
 
@@ -1200,70 +1357,33 @@ alx_init_ring_ptrs:
 
         ret
 
+endp
 
-align 16
-alx_alloc_descriptors:
-
-        DEBUGF  1,"alx_alloc_descriptors\n"
-
-; physical tx/rx ring descriptors
-
-;        alx->descmem.size = sizeof.tx_desc * TX_RING_SIZE + sizeof.rx_desc * RX_RING_SIZE + sizeof(struct alx_rfd) * RX_RING_SIZE;
-;        alx->descmem.virt = dma_zalloc_coherent(&alx->hw.pdev->dev, alx->descmem.size, &alx->descmem.dma, GFP_KERNEL);
-;        if (!alx->descmem.virt)
-;                goto out_free;
-;
-;        alx->txq.tpd = (void *)alx->descmem.virt;
-;        alx->txq.tpd_dma = alx->descmem.dma;
-
-; alignment requirement for next block
-;        BUILD_BUG_ON(tx_desc.sizeof % 8);
-;
-;        alx->rxq.rrd = (void *)((u8 *)alx->descmem.virt + tx_desc.sizeof * TX_RING_SIZE);
-;        alx->rxq.rrd_dma = alx->descmem.dma + sizeof.tx_desc * TX_RING_SIZE;
-;
-; alignment requirement for next block
-;        BUILD_BUG_ON(rx_desc.sizeof % 8);
-;
-;        alx->rxq.rfd = (void *)((u8 *)alx->descmem.virt + sizeof.tx_desx * TX_RING_SIZE + sizeof.rx_desc * RX_RING_SIZE);
-;        alx->rxq.rfd_dma = alx->descmem.dma + sizeof.tx_desc * TX_RING_SIZE + sizeof.rx_desc * RX_RING_SIZE;
-
-        xor     eax, eax
-        ret
-
-
-align 16
-alx_alloc_rings:
+proc alx_alloc_rings stdcall
 
         DEBUGF  1,"alx_alloc_rings\n"
 
-        call    alx_alloc_descriptors
-        test    eax, eax
-        jnz     .ret_err
-
         and     [ebx + device.int_mask], not ALX_ISR_ALL_QUEUES
         or      [ebx + device.int_mask], ALX_ISR_TX_Q0 or ALX_ISR_RX_Q0
-;        netif_napi_add(alx->dev, &alx->napi, alx_poll, 64);
+        stdcall alx_reinit_rings
 
-        call    alx_reinit_rings
-  .ret_err:
         ret
 
+endp
 
-align 16
-alx_reinit_rings:
+proc alx_reinit_rings stdcall
 
         DEBUGF  1,"alx_reinit_rings\n"
 
-        call    alx_free_rx_ring
-        call    alx_init_ring_ptrs
-        call    alx_refill_rx_ring
+        stdcall alx_free_rx_ring
+        stdcall alx_init_ring_ptrs
+        stdcall alx_refill_rx_ring
 
         ret
 
+endp
 
-align 16
-alx_refill_rx_ring:
+proc alx_refill_rx_ring stdcall
 
         DEBUGF  1,"alx_refill_rx_ring\n"
 
@@ -1303,9 +1423,9 @@ alx_refill_rx_ring:
 
         ret
 
+endp
 
-align 16
-alx_free_rx_ring:
+proc alx_free_rx_ring stdcall
 
         DEBUGF  1,"alx_free_rx_ring\n"
 
@@ -1329,15 +1449,15 @@ alx_free_rx_ring:
 
         ret
 
+endp
 
-align 16
-alx_configure:
+proc alx_configure stdcall
 
         DEBUGF  1,"alx_configure\n"
 
-        call    alx_configure_basic
-        call    alx_disable_rss
-        call    __alx_set_rx_mode
+        stdcall alx_configure_basic
+        stdcall alx_disable_rss
+        call    alx_set_rx_mode
 
         mov     esi, [ebx + device.mmio_addr]
         mov     eax, [ebx + device.rx_ctrl]
@@ -1346,9 +1466,9 @@ alx_configure:
         xor     eax, eax
         ret
 
+endp
 
-align 16
-alx_irq_enable:
+proc alx_irq_enable stdcall
 
         DEBUGF  1,"alx_irq_enable\n"
 
@@ -1357,12 +1477,13 @@ alx_irq_enable:
         mov     eax, [ebx + device.int_mask]
         mov     [esi + ALX_IMR], eax
 
-        call    alx_post_write
+        stdcall alx_post_write
 
         ret
 
-align 16
-alx_irq_disable:
+endp
+
+proc alx_irq_disable stdcall
 
         DEBUGF  1,"alx_irq_disable\n"
 
@@ -1370,13 +1491,13 @@ alx_irq_disable:
         mov     dword[esi + ALX_ISR], ALX_ISR_DIS
         mov     dword[esi + ALX_IMR], 0
 
-        call    alx_post_write
+        stdcall alx_post_write
 
         ret
 
+endp
 
-align 16
-alx_post_write:
+proc alx_post_write stdcall
 
         push    eax
         mov     esi, [ebx + device.mmio_addr]
@@ -1385,20 +1506,19 @@ alx_post_write:
 
         ret
 
+endp
 
-align 16
-alx_configure_basic:
+proc alx_configure_basic stdcall
 
         DEBUGF  1,"alx_configure_basic\n"
 
         mov     esi, [ebx + device.mmio_addr]
 
-;;;        call    alx_set_macaddr
+        stdcall alx_set_macaddr
 
         mov     dword[esi + ALX_CLK_GATE], ALX_CLK_GATE_ALL
 
 ; idle timeout to switch clk_125M
-
         cmp     [ebx + device.chip_rev], ALX_REV_B0
         jb      @f
         mov     dword[esi + ALX_IDLE_DECISN_TIMER], ALX_IDLE_DECISN_TIMER_DEF
@@ -1406,13 +1526,15 @@ alx_configure_basic:
 
         mov     dword[esi + ALX_SMB_TIMER], SMB_TIMER * 500
 
+; Interrupt moderation
         mov     eax, [esi + ALX_MASTER]
         or      eax, ALX_MASTER_IRQMOD2_EN or ALX_MASTER_IRQMOD1_EN or ALX_MASTER_SYSALVTIMER_EN
         mov     [esi + ALX_MASTER], eax
 
-        mov     dword[esi + ALX_IRQ_MODU_TIMER], (IMT / 2) shl ALX_IRQ_MODU_TIMER1_SHIFT
+; Set interupt moderator timer (max interupts per second)
+        mov     dword[esi + ALX_IRQ_MODU_TIMER], ((IMT) shl ALX_IRQ_MODU_TIMER1_SHIFT) or ((IMT / 2) shl ALX_IRQ_MODU_TIMER2_SHIFT)
 
-; intr re-trig timeout
+; Interrupt re-trigger timeout
         mov     dword[esi + ALX_INT_RETRIG], ALX_INT_RETRIG_TO
 
 ; tpd threshold to trig int
@@ -1437,20 +1559,31 @@ alx_configure_basic:
         jz      @f
         or      eax, ALX_RXQ0_ASPM_THRESH_100M shl ALX_RXQ0_ASPM_THRESH_SHIFT
   @@:
-        mov     dword[esi + ALX_RXQ0], eax
+        mov     [esi + ALX_RXQ0], eax
 
-; TODO: DMA
-;        mov     eax, [esi + ALX_DMA]    ; read and ignore?
-;        mov     eax, [ebx + device.dma_chnl]
-;        dec     eax
-;        shl     eax, ALX_DMA_RCHNL_SEL_SHIFT
-;        or      eax, (ALX_DMA_RORDER_MODE_OUT shl ALX_DMA_RORDER_MODE_SHIFT) \
-;                or ALX_DMA_RREQ_PRI_DATA \
-;                or (max_payload shl ALX_DMA_RREQ_BLEN_SHIFT ) \
-;                or (ALX_DMA_WDLY_CNT_DEF shl ALX_DMA_WDLY_CNT_SHIFT ) \
-;                or (ALX_DMA_RDLY_CNT_DEF shl ALX_DMA_RDLY_CNT_SHIFT )
-;        mov     [esi + ALX_DMA], eax
+; DMA
+        max_payload equ 2               ;;;; FIXME
 
+        mov     eax, [esi + ALX_DMA]            ; Read and ignore?
+        ; Pre-B0 devices have 2 DMA channels
+        mov     eax, (ALX_DMA_RORDER_MODE_OUT shl ALX_DMA_RORDER_MODE_SHIFT) \
+                or ALX_DMA_RREQ_PRI_DATA \
+                or (max_payload shl ALX_DMA_RREQ_BLEN_SHIFT) \
+                or (ALX_DMA_WDLY_CNT_DEF shl ALX_DMA_WDLY_CNT_SHIFT ) \
+                or (ALX_DMA_RDLY_CNT_DEF shl ALX_DMA_RDLY_CNT_SHIFT ) \
+                or ((2-1) shl ALX_DMA_RCHNL_SEL_SHIFT)
+
+        cmp     [ebx + device.chip_rev], ALX_REV_B0
+        jb      @f
+        ; B0 and newer have 4 DMA channels
+        mov     eax, (ALX_DMA_RORDER_MODE_OUT shl ALX_DMA_RORDER_MODE_SHIFT) \
+                or ALX_DMA_RREQ_PRI_DATA \
+                or (max_payload shl ALX_DMA_RREQ_BLEN_SHIFT) \
+                or (ALX_DMA_WDLY_CNT_DEF shl ALX_DMA_WDLY_CNT_SHIFT ) \
+                or (ALX_DMA_RDLY_CNT_DEF shl ALX_DMA_RDLY_CNT_SHIFT ) \
+                or ((4-1) shl ALX_DMA_RCHNL_SEL_SHIFT)
+  @@:
+        mov     [esi + ALX_DMA], eax
 
 ; default multi-tx-q weights
         mov      eax, (ALX_WRR_PRI_RESTRICT_NONE shl ALX_WRR_PRI_SHIFT) \
@@ -1462,9 +1595,9 @@ alx_configure_basic:
 
         ret
 
+endp
 
-align 16
-alx_disable_rss:
+proc alx_disable_rss stdcall
 
         DEBUGF  1,"alx_disable_rss\n"
 
@@ -1476,12 +1609,15 @@ alx_disable_rss:
 
         ret
 
-align 16
-__alx_set_rx_mode:
+endp
+
+proc alx_set_rx_mode stdcall
 
         DEBUGF  1,"__alx_set_rx_mode\n"
 
         mov     esi, [ebx + device.mmio_addr]
+
+; TODO: proper multicast
 
 ;        if (!(netdev->flags & IFF_ALLMULTI)) {
 ;                netdev_for_each_mc_addr(ha, netdev)
@@ -1492,21 +1628,21 @@ __alx_set_rx_mode:
 ;        }
 
         mov     eax, [ebx + device.rx_ctrl]
-        or      eax, ALX_MAC_CTRL_PROMISC_EN or ALX_MAC_CTRL_MULTIALL_EN
+        or      eax, ALX_MAC_CTRL_PROMISC_EN or ALX_MAC_CTRL_MULTIALL_EN        ; FIXME: dont force promiscous mode..
         mov     [ebx + device.rx_ctrl], eax
         mov     dword[esi + ALX_MAC_CTRL], eax
 
         ret
 
+endp
 
-align 16
-alx_check_link:
+proc alx_check_link stdcall
 
-        call    alx_clear_phy_intr
+        stdcall alx_clear_phy_intr
 
         mov     edx, [ebx + device.state]
 
-        call    alx_get_phy_link
+        stdcall alx_get_phy_link
         cmp     eax, 0
         jl      .reset
 
@@ -1524,10 +1660,10 @@ alx_check_link:
         cmp     [ebx + device.state], ETH_LINK_DOWN
         je      .link_down
 
-        call    alx_post_phy_link
+        stdcall alx_post_phy_link
         mov     ecx, (ALX_PMCTRL_L0S_EN or ALX_PMCTRL_L1_EN or ALX_PMCTRL_ASPM_FCEN)
-        call    alx_enable_aspm
-        call    alx_start_mac
+        stdcall alx_enable_aspm
+        stdcall alx_start_mac
 
         invoke  NetLinkChanged
 
@@ -1541,36 +1677,38 @@ alx_check_link:
   .link_down:
 ; Link is now down
 
-        call    alx_reset_mac
+        stdcall alx_reset_mac
         test    eax, eax
         jnz     .reset
 
-        call    alx_irq_disable
+        stdcall alx_irq_disable
 
 ; MAC reset causes all HW settings to be lost, restore all
-        call    alx_reinit_rings
+        stdcall alx_reinit_rings
         test    eax, eax
         jnz     .reset
 
-        call    alx_configure
+        stdcall alx_configure
         mov     ecx, (ALX_PMCTRL_L1_EN or ALX_PMCTRL_ASPM_FCEN)
-        call    alx_enable_aspm
-        call    alx_post_phy_link
-        call    alx_irq_enable
+        stdcall alx_enable_aspm
+        stdcall alx_post_phy_link
+        stdcall alx_irq_enable
 
         invoke  NetLinkChanged
 
         ret
 
   .reset:
-        DEBUGF  1, "alx_schedule_reset"
-;;;        call    alx_schedule_reset
+        DEBUGF  1, "alx_schedule_reset\n"
+;;;        stdcall alx_schedule_reset
 
         ret
 
+endp
 
-align 16
-alx_post_phy_link:
+proc alx_post_phy_link stdcall
+
+        DEBUGF  1, "alx_post_phy_link\n"
 
         cmp     [ebx + device.chip_rev], ALX_REV_B0
         ja      .done
@@ -1578,10 +1716,11 @@ alx_post_phy_link:
         cmp     [ebx + device.state], ETH_LINK_UNKNOWN
         jae     @f
 
-; TODO
-;        stdcall alx_read_phy_ext, ALX_MIIEXT_AFE, ALX_MIIEXT_ANEG
-;        and     eax, not (ALX_AFE_10BT_100M_TH)
-;        stdcall alx_write_phy_ext, ALX_MIIEXT_AFE, ALX_MIIEXT_ANEG, eax
+; TODO: vendor hocus-pocus to tune the PHY according the detected cable length
+        stdcall alx_write_phy_dbg, ALX_MIIDBG_AZ_ANADECT, ALX_AZ_ANADECT_DEF
+        stdcall alx_read_phy_ext, ALX_MIIEXT_AFE, ALX_MIIEXT_ANEG
+        and     eax, not (ALX_AFE_10BT_100M_TH)
+        stdcall alx_write_phy_ext, ALX_MIIEXT_AFE, ALX_MIIEXT_ANEG, eax
 
         ret
   @@:
@@ -1590,22 +1729,23 @@ alx_post_phy_link:
 
         ret
 
+endp
 
-align 16
-alx_clear_phy_intr:
+proc alx_clear_phy_intr stdcall
 
-        stdcall alx_read_phy_reg, 0, ALX_MII_ISR
+        DEBUGF  1,"alx_clear_phy_intr\n"
+        stdcall alx_read_phy_reg, ALX_MII_ISR
 
         ret
 
+endp
 
-align 16
-alx_get_phy_link:
+proc alx_get_phy_link stdcall
 
         DEBUGF  1,"alx_get_phy_link\n"
 
-        stdcall alx_read_phy_reg, 0, MII_BMSR
-        stdcall alx_read_phy_reg, 0, MII_BMSR
+        stdcall alx_read_phy_reg, MII_BMSR
+        stdcall alx_read_phy_reg, MII_BMSR
 
         mov     [ebx + device.state], ETH_LINK_DOWN
 
@@ -1615,7 +1755,7 @@ alx_get_phy_link:
         xor     eax, eax
         ret
   @@:
-        stdcall alx_read_phy_reg, 0, ALX_MII_GIGA_PSSR
+        stdcall alx_read_phy_reg, ALX_MII_GIGA_PSSR
         test    ax, ALX_GIGA_PSSR_SPD_DPLX_RESOLVED
         jz      .wrong_speed
 
@@ -1623,29 +1763,29 @@ alx_get_phy_link:
 
         test    ax, ALX_GIGA_PSSR_DPLX
         jz      @f
-        or      [ebx + device.state], ETH_LINK_FD
+        or      [ebx + device.state], ETH_LINK_FULL_DUPLEX
         DEBUGF  1,"full duplex\n"
   @@:
 
         and     ax, ALX_GIGA_PSSR_SPEED
         cmp     ax, ALX_GIGA_PSSR_1000MBS
         jne     @f
-        or      [ebx + device.state], ETH_LINK_1G
+        or      [ebx + device.state], ETH_LINK_SPEED_1G
         DEBUGF  1,"1 gigabit\n"
         ret
 
   @@:
         cmp     ax, ALX_GIGA_PSSR_100MBS
         jne     @f
-        or      [ebx + device.state], ETH_LINK_100M
-        DEBUGF  1,"100 mbit\n"
+        or      [ebx + device.state], ETH_LINK_SPEED_100M
+        DEBUGF  1,"100 Mbit\n"
         ret
 
   @@:
         cmp     ax, ALX_GIGA_PSSR_10MBS
         jne     @f
-        or      [ebx + device.state], ETH_LINK_10M
-        DEBUGF  1,"10 mbit\n"
+        or      [ebx + device.state], ETH_LINK_SPEED_10M
+        DEBUGF  1,"10 Mbit\n"
         ret
 
   @@:
@@ -1659,15 +1799,13 @@ alx_get_phy_link:
         dec     eax
         ret
 
+endp
 
+proc alx_read_phy_reg stdcall, reg:dword
 
+; FIXME: fixed clock
 
-align 16
-proc  alx_read_phy_reg stdcall, phy_addr:dword, reg:dword
-
-; FIXME: Only internal PHY for now, fixed clock
-
-        DEBUGF  1,"PHY read, addr=0x%x reg=0x%x\n", [phy_addr]:8, [reg]:8
+        DEBUGF  1,"alx_read_phy_reg reg=0x%x\n", [reg]:4
 
         mov     esi, [ebx + device.mmio_addr]
 
@@ -1682,16 +1820,12 @@ proc  alx_read_phy_reg stdcall, phy_addr:dword, reg:dword
         test    eax, ALX_MDIO_BUSY
         jz      .ready
 
-        push    esi ecx
-        xor     esi, esi
-        inc     esi
-        invoke  Sleep           ;; FIXME: udelay(10)
-        pop     ecx esi
+        stdcall udelay, 10
 
         dec     ecx
         jnz     .loop
 
-        DEBUGF  1,"PHY read timeout!\n"
+        DEBUGF  1,"alx_read_phy_reg read timeout!\n"
         xor     eax, eax
         dec     eax
         ret
@@ -1700,21 +1834,60 @@ proc  alx_read_phy_reg stdcall, phy_addr:dword, reg:dword
 ;        shr     eax, ALX_MDIO_DATA_SHIFT
         and     eax, ALX_MDIO_DATA_MASK
 
-        DEBUGF  1,"PHY read, val=0x%x\n", eax:4
+        DEBUGF  1,"alx_read_phy_reg data=0x%x\n", eax:4
 
         ret
 
 endp
 
+proc  alx_read_phy_ext stdcall, dev:dword, reg:dword
 
+; FIXME: fixed clock
 
+        DEBUGF  1,"alx_read_phy_ext dev=0x%x reg=0x%x\n", [dev]:4, [reg]:4
 
-align 16
-proc  alx_write_phy_reg stdcall, phy_addr:dword, reg:dword, val:dword
+        mov     esi, [ebx + device.mmio_addr]
 
-; FIXME: Only internal PHY for now, fixed clock
+        mov     eax, [dev]
+        shl     eax, ALX_MDIO_EXTN_DEVAD_SHIFT
+        mov     ax, word[reg]
+;        shl     eax, ALX_MDIO_EXTN_REG_SHIFT
+        mov     dword[esi + ALX_MDIO_EXTN], eax
 
-        DEBUGF  1,"PHY write, addr=0x%x reg=0x%x, data=0x%x\n", [phy_addr]:8, [reg]:8, [val]:8
+        mov     eax, ALX_MDIO_SPRES_PRMBL or (ALX_MDIO_CLK_SEL_25MD4 shl ALX_MDIO_CLK_SEL_SHIFT) or ALX_MDIO_START or ALX_MDIO_OP_READ or ALX_MDIO_MODE_EXT
+        mov     dword[esi + ALX_MDIO], eax
+
+        mov     ecx, ALX_MDIO_MAX_AC_TO
+  .loop:
+        mov     eax, dword[esi + ALX_MDIO]
+        test    eax, ALX_MDIO_BUSY
+        jz      .ready
+
+        stdcall udelay, 10
+
+        dec     ecx
+        jnz     .loop
+
+        DEBUGF  1,"alx_read_phy_ext read timeout!\n"
+        xor     eax, eax
+        dec     eax
+        ret
+
+  .ready:
+;        shr     eax, ALX_MDIO_DATA_SHIFT
+        and     eax, ALX_MDIO_DATA_MASK
+
+        DEBUGF  1,"alx_read_phy_ext data=0x%x\n", eax:4
+
+        ret
+
+endp
+
+proc  alx_write_phy_reg stdcall, reg:dword, val:dword
+
+; FIXME: fixed clock
+
+        DEBUGF  1,"alx_write_phy_reg reg=0x%x data=0x%x\n", [reg]:4, [val]:4
 
         mov     esi, [ebx + device.mmio_addr]
 
@@ -1730,28 +1903,98 @@ proc  alx_write_phy_reg stdcall, phy_addr:dword, reg:dword, val:dword
         test    eax, ALX_MDIO_BUSY
         jz      .ready
 
-        push    esi ecx
-        xor     esi, esi
-        inc     esi
-        invoke  Sleep           ;; FIXME: udelay(10)
-        pop     ecx esi
+        stdcall udelay, 10
 
         dec     ecx
         jnz     .loop
 
-        DEBUGF  1,"PHY write timeout!\n"
+        DEBUGF  1,"alx_write_phy_reg timeout!\n"
         xor     eax, eax
         dec     eax
         ret
 
   .ready:
-        DEBUGF  1,"PHY write OK\n"
+        DEBUGF  1,"alx_write_phy_reg OK\n"
         xor     eax, eax
 
         ret
 endp
 
-align 16
+proc  alx_write_phy_dbg stdcall, reg:dword, val:dword
+
+        DEBUGF  1,"alx_write_phy_dbg\n"
+
+        stdcall alx_write_phy_reg, ALX_MII_DBG_ADDR, [reg]
+        test    eax, eax
+        jnz     @f
+        stdcall alx_write_phy_reg, ALX_MII_DBG_DATA, [val]
+
+        ret
+  @@:
+        DEBUGF  1,"alx_write_phy_dbg ERROR\n"
+
+        ret
+
+endp
+
+proc  alx_read_phy_dbg stdcall, reg:dword
+
+        DEBUGF  1,"alx_read_phy_dbg\n"
+
+        stdcall alx_write_phy_reg, ALX_MII_DBG_ADDR, [reg]
+        test    eax, eax
+        jnz     @f
+        stdcall alx_read_phy_reg, ALX_MII_DBG_DATA
+
+        ret
+  @@:
+        DEBUGF  1,"alx_read_phy_dbg ERROR\n"
+
+        ret
+
+endp
+
+proc  alx_write_phy_ext stdcall, dev:dword, reg:dword, val:dword
+
+; FIXME: fixed clock
+
+        DEBUGF  1,"alx_write_phy_ext dev=0x%x reg=0x%x, data=0x%x\n", [dev]:4, [reg]:4, [val]:4
+
+        mov     esi, [ebx + device.mmio_addr]
+
+        mov     eax, [dev]
+        shl     eax, ALX_MDIO_EXTN_DEVAD_SHIFT
+        mov     ax, word[reg]
+;        shl     eax, ALX_MDIO_EXTN_REG_SHIFT
+        mov     dword[esi + ALX_MDIO_EXTN], eax
+
+        movzx   eax, word[val]                   ; data must be in 16 lower bits :)
+        or      eax, ALX_MDIO_SPRES_PRMBL or (ALX_MDIO_CLK_SEL_25MD4 shl ALX_MDIO_CLK_SEL_SHIFT) or ALX_MDIO_START or ALX_MDIO_MODE_EXT
+        mov     dword[esi + ALX_MDIO], eax
+
+        mov     ecx, ALX_MDIO_MAX_AC_TO
+  .loop:
+        mov     eax, dword[esi + ALX_MDIO]
+        test    eax, ALX_MDIO_BUSY
+        jz      .ready
+
+        stdcall udelay, 10
+
+        dec     ecx
+        jnz     .loop
+
+        DEBUGF  1,"alx_write_phy_ext timeout!\n"
+        xor     eax, eax
+        dec     eax
+        ret
+
+  .ready:
+        DEBUGF  1,"alx_write_phy_ext OK\n"
+        xor     eax, eax
+
+        ret
+endp
+
 alx_request_irq:
 
         DEBUGF  1,"Request IRQ\n"
@@ -1763,7 +2006,6 @@ alx_request_irq:
 
         ret
 
-
 ; End of code
 
 data fixups
@@ -1772,7 +2014,6 @@ end data
 include '../peimport.inc'
 
 my_service      db 'AR81XX',0                    ; max 16 chars include zero
-
 
 chiplist:
                 dd (ALX_DEV_ID_AR8131 shl 16) or ALX_VEN_ID, ar8131_sz

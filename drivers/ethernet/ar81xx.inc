@@ -9,11 +9,8 @@ ALX_DEV_ID_AR8162                               = 0x1090
 ALX_DEV_ID_AR8171                               = 0x10A1
 ALX_DEV_ID_AR8172                               = 0x10A0
 
-; rev definition,
-; bit0: with xD support
-; bit1: with Card Reader function
-; bit(7:2): real revision
-
+ALX_PCI_REVID_WITH_XD                           = 1 shl 0
+ALX_PCI_REVID_WITH_CR                           = 1 shl 1       ; With Card Reader
 ALX_PCI_REVID_SHIFT                             = 3
 ALX_REV_A0                                      = 0
 ALX_REV_A1                                      = 1
@@ -93,8 +90,10 @@ ALX_MASTER_DMA_MAC_RST                          = (1 shl 0)
 ALX_DMA_MAC_RST_TO                              = 50
 
 ALX_IRQ_MODU_TIMER                              = 0x1408
-ALX_IRQ_MODU_TIMER1_MASK                        = 0xFFFF
+ALX_IRQ_MODU_TIMER1_MASK                        = 0x0000FFFF
 ALX_IRQ_MODU_TIMER1_SHIFT                       = 0
+ALX_IRQ_MODU_TIMER2_MASK                        = 0xFFFF0000
+ALX_IRQ_MODU_TIMER2_SHIFT                       = 16
 
 ALX_PHY_CTRL                                    = 0x140C
 ALX_PHY_CTRL_100AB_EN                           = (1 shl 17)

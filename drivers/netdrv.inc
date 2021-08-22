@@ -1,6 +1,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;                                                                 ;;
-;; Copyright (C) KolibriOS team 2004-2015. All rights reserved.    ;;
+;; Copyright (C) KolibriOS team 2004-2021. All rights reserved.    ;;
 ;; Distributed under terms of the GNU General Public License       ;;
 ;;                                                                 ;;
 ;;          GNU GENERAL PUBLIC LICENSE                             ;;
@@ -33,8 +33,17 @@ include 'mii.inc'
 
 ; Link state
 
-        ETH_LINK_DOWN   = 0             ; Link is down
-        ETH_LINK_UNKNOWN= 1b            ; There could be an active link
+        ETH_LINK_DOWN           = 0             ; Link is down
+        ETH_LINK_UNKNOWN        = 1b            ; There could be an active link
+        ETH_LINK_FULL_DUPLEX    = 10b           ; full duplex flag
+
+        ETH_LINK_SPEED_10M      = 100b          ; 10 Mbit
+        ETH_LINK_SPEED_100M     = 1000b         ; 100 Mbit
+        ETH_LINK_SPEED_1G       = 1100b         ; Gigabit
+
+        ETH_LINK_SPEED_MASK     = 1100b
+
+; Deprecated naming - dont use
         ETH_LINK_FD     = 10b           ; full duplex flag
         ETH_LINK_10M    = 100b          ; 10 mbit
         ETH_LINK_100M   = 1000b         ; 100 mbit
