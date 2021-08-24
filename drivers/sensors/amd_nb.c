@@ -14,7 +14,7 @@
 #include <linux/spinlock.h>
 #include <linux/pci_ids.h>
 #include <asm/amd_nb.h>
-#include <asm/msr.h>
+
 
 #define PCI_DEVICE_ID_AMD_17H_ROOT	0x1450
 #define PCI_DEVICE_ID_AMD_17H_M10H_ROOT	0x15d0
@@ -535,8 +535,8 @@ EXPORT_SYMBOL_GPL(amd_flush_garts);
 static void __fix_erratum_688(void *info)
 {
 #define MSR_AMD64_IC_CFG 0xC0011021
-//	msr_set_bit(MSR_AMD64_IC_CFG, 3);
-//	msr_set_bit(MSR_AMD64_IC_CFG, 14);
+    e_msr_set_bit(MSR_AMD64_IC_CFG, 3);
+    e_msr_set_bit(MSR_AMD64_IC_CFG, 14);
 }
 
 /* Apply erratum 688 fix so machines without a BIOS fix work. */

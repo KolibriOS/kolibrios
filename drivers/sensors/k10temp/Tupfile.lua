@@ -13,7 +13,7 @@ LDFLAGS = " -nostdlib -shared -s --major-os-version 0 --minor-os-version 7 --maj
 LIBS = " -lddk -lcore -lgcc "
 
 compile_gcc{ 
-    "k10temp.c",  "../pci.c",  "../amd_nb.c", "../cpu_detect.c"
+    "k10temp.c",  "../pci.c",  "../amd_nb.c", "../cpu_detect.c", "../e_msr.c" 
 }
 
 OBJS.extra_inputs = {"../../ddk/libcore.a", "../../ddk/libddk.a"}
