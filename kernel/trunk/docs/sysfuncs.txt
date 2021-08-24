@@ -3700,7 +3700,7 @@ The full list of subfunctions:
     SSF_RESUME (5), SSF_READ_MEMORY (6), SSF_WRITE_MEMORY (7),
     SSF_TERMINATE (8), SSF_DEFINE_BREAKPOINT (9)
 ======================================================================
-= Function 69, subfunction 0 - define data area fror debug messages. =
+= Function 69, subfunction 0 - define data area for debug messages. ==
 ======================================================================
 Parameters:
   * eax = 69 - function number
