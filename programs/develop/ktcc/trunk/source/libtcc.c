@@ -1174,6 +1174,10 @@ LIBTCCAPI TCCState *tcc_new(void)
 # ifdef TCC_TARGET_X86_64
     tcc_define_symbol(s, "_WIN64", NULL);
 # endif
+#elif defined(TCC_TARGET_MEOS) || defined(TCC_TARGET_MEOS_LINUX)
+    tcc_define_symbol(s, "KOLIBRI",  NULL);
+    tcc_define_symbol(s, "_KOLIBRI", NULL);
+    tcc_define_symbol(s, "_KOLIBRI_",NULL);
 #else
     tcc_define_symbol(s, "__unix__", NULL);
     tcc_define_symbol(s, "__unix", NULL);
@@ -1196,7 +1200,7 @@ LIBTCCAPI TCCState *tcc_new(void)
     tcc_define_symbol(s, "__NetBSD__", str( __NetBSD__));
 #  undef str
 # endif
-
+    
     /* TinyCC & gcc defines */
 #if defined TCC_TARGET_PE && defined TCC_TARGET_X86_64
     tcc_define_symbol(s, "__SIZE_TYPE__", "unsigned long long");
