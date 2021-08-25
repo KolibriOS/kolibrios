@@ -16,3 +16,4 @@ cp /kolibrios/develop/tcc/samples/clayer/logo.png /tmp0/1/tcc_samples/logo.png
 /kolibrios/develop/tcc/tcc clayer/libimg.c -o /tmp0/1/tcc_samples/libimg -ltcc -limg -lc.obj
 /kolibrios/develop/tcc/tcc clayer/msgbox.c -o /tmp0/1/tcc_samples/msgbox -ltcc -lmsgbox -lc.obj
 /kolibrios/develop/tcc/tcc clayer/rasterworks.c -o /tmp0/1/tcc_samples/rasterworks -ltcc -lrasterworks -lc.obj
+/kolibrios/develop/tcc/tcc thread_work.c -o /tmp0/1/tcc_samples/thread_work -ltcc -lc.obj
