@@ -12,6 +12,12 @@ size_t fread(void *restrict ptr, size_t size, size_t nmemb, FILE *restrict strea
 		return 0;
 	}
 	
+	if(size<=0 || nmemb<=0){
+		errno = EINVAL;
+		stream->error=errno;
+		return 0;
+	}
+	
 	if(stream==stdin){
 		con_init();
 		con_gets((char*)ptr, bytes_count+1);
@@ -25,14 +31,17 @@ size_t fread(void *restrict ptr, size_t size, size_t nmemb, FILE *restrict strea
 				//debug_printf("Ungetc: %x\n", ((char*) ptr)[0]);
 			}
 			unsigned status = _ksys_file_read_file(stream->name, stream->position, bytes_count, ptr , &bytes_read);
-			if (status) {
-            	errno = EIO;
-            	stream->error = errno;
-				return 0;
-        	}else {
-    			stream->position+=bytes_read;
+			if (status != KSYS_FS_ERR_SUCCESS) {
+				if(status == KSYS_FS_ERR_EOF){
+					stream->eof=1;
+				}else{
+					errno = EIO;
+					stream->error = errno;
+					return 0;
+				}
 			}
+			stream->position+=bytes_read;
 		}
 	}
-	return bytes_read;
+	return bytes_read/size;
 }
