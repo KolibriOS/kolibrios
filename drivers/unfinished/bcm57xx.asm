@@ -1,10 +1,9 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;                                                                 ;;
-;; Copyright (C) KolibriOS team 2004-2018. All rights reserved.    ;;
+;; Copyright (C) KolibriOS team 2004-2021. All rights reserved.    ;;
 ;; Distributed under terms of the GNU General Public License       ;;
 ;;                                                                 ;;
 ;;  Broadcom NetXtreme 57xx driver for KolibriOS                   ;;
-;;                                                                 ;;
 ;;                                                                 ;;
 ;;          GNU GENERAL PUBLIC LICENSE                             ;;
 ;;             Version 2, June 1991                                ;;
@@ -21,10 +20,17 @@ entry START
         COMPATIBLE_API          = 0x0100
         API_VERSION             = (COMPATIBLE_API shl 16) + CURRENT_API
 
+; configureable area
+
         MAX_DEVICES             = 16
 
         __DEBUG__               = 1
         __DEBUG_LEVEL__         = 2
+
+        TX_RING_SIZE            = 128   ; Number of packets in send ring buffer
+        RX_RING_SIZE            = 128   ; Number of packets in receive ring buffer
+
+; end configureable area
 
 section '.flat' readable writable executable
 
@@ -33,6 +39,16 @@ include '../struct.inc'
 include '../macros.inc'
 include '../fdo.inc'
 include '../netdrv.inc'
+
+if (bsr TX_RING_SIZE)>(bsf TX_RING_SIZE)
+  display 'TX_RING_SIZE must be a power of two'
+  err
+end if
+
+if (bsr RX_RING_SIZE)>(bsf RX_RING_SIZE)
+  display 'RX_RING_SIZE must be a power of two'
+  err
+end if
 
 struct  device          ETH_DEVICE
 
@@ -251,14 +267,10 @@ probe:
 
 ; Make the device a bus master
         invoke  PciRead32, [ebx + device.pci_bus], [ebx + device.pci_dev], PCI_header00.command
-        or      al, PCI_CMD_MASTER
+        or      al, PCI_CMD_MASTER + PCI_CMD_MMIO + PCI_CMD_PIO
         invoke  PciWrite32, [ebx + device.pci_bus], [ebx + device.pci_dev], PCI_header00.command, eax
 
-
         ; TODO: validate the device
-
-
-
 
 reset:
 
@@ -308,16 +320,14 @@ read_mac:
 ;;                                         ;;
 ;; Transmit                                ;;
 ;;                                         ;;
-;; In: buffer pointer in [esp+4]           ;;
-;;     size of buffer in [esp+8]           ;;
-;;     pointer to device structure in ebx  ;;
+;; In: pointer to device structure in ebx  ;;
+;; Out: eax = 0 on success                 ;;
 ;;                                         ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
+align 16
 proc transmit stdcall bufferptr, buffersize
 
-        pushf
-        cli
+        spin_lock_irqsave
 
         DEBUGF  1,"Transmitting packet, buffer:%x, size:%u\n", [bufferptr], [buffersize]
         mov     eax, [bufferptr]
@@ -327,13 +337,16 @@ proc transmit stdcall bufferptr, buffersize
         [eax+13]:2,[eax+12]:2
 
         cmp     [buffersize], 1514
-        ja      .fail
+        ja      .error
         cmp     [buffersize], 60
-        jb      .fail
+        jb      .error
 
+; Program the descriptor
 
+;        test   [something], STILL_BUSY?
+;        jnz    .overrun
 
-
+; TODO: Program the descriptor
 
 ; Update stats
         inc     [ebx + device.packets_tx]
@@ -342,14 +355,25 @@ proc transmit stdcall bufferptr, buffersize
         adc     dword[ebx + device.bytes_tx + 4], 0
 
         DEBUGF  1,"Transmit OK\n"
-        popf
+        spin_unlock_irqrestore
         xor     eax, eax
         ret
 
-  .fail:
-        DEBUGF  2,"Transmit failed\n"
-        invoke  KernelFree, [bufferptr]
-        popf
+  .error:
+        DEBUGF  2, "TX packet error\n"
+        inc     [ebx + device.packets_tx_err]
+        invoke  NetFree, [bufferptr]
+
+        spin_unlock_irqrestore
+        or      eax, -1
+        ret
+
+  .overrun:
+        DEBUGF  2, "TX overrun\n"
+        inc     [ebx + device.packets_tx_ovr]
+        invoke  NetFree, [bufferptr]
+
+        spin_unlock_irqrestore
         or      eax, -1
         ret
 
@@ -361,44 +385,34 @@ endp
 ;; Interrupt handler ;;
 ;;                   ;;
 ;;;;;;;;;;;;;;;;;;;;;;;
-
-align 4
+align 16
 int_handler:
 
         push    ebx esi edi
 
-        DEBUGF  1,"INT\n"
-;-------------------------------------------
-; Find pointer of device wich made IRQ occur
+        mov     ebx, [esp+4*4]
+        DEBUGF  1,"INT for 0x%x\n", ebx
 
-        mov     ecx, [devices]
-        test    ecx, ecx
-        jz      .nothing
-        mov     esi, device_list
-  .nextdevice:
-        mov     ebx, [esi]
+; TODO? if we are paranoid, we can check that the value from ebx is present in the current device_list
 
-;        mov     edi, [ebx + device.mmio_addr]
+        mov     edi, [ebx + device.mmio_addr]
 ;        mov     eax, [edi + REG_ICR]
         test    eax, eax
-        jnz     .got_it
-  .continue:
-        add     esi, 4
-        dec     ecx
-        jnz     .nextdevice
-  .nothing:
-        pop     edi esi ebx
-        xor     eax, eax
+        jz      .nothing
 
-        ret
+        DEBUGF  1,"Status: %x ", eax
 
-  .got_it:
-
-        DEBUGF  1,"Device: %x Status: %x ", ebx, eax
+; TODO: handle interrupts
 
         pop     edi esi ebx
         xor     eax, eax
         inc     eax
+
+        ret
+
+  .nothing:
+        pop     edi esi ebx
+        xor     eax, eax
 
         ret
 
