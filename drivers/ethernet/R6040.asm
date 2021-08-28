@@ -1,6 +1,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;                                                                 ;;
-;; Copyright (C) KolibriOS team 2004-2015. All rights reserved.    ;;
+;; Copyright (C) KolibriOS team 2004-2021. All rights reserved.    ;;
 ;; Distributed under terms of the GNU General Public License       ;;
 ;;                                                                 ;;
 ;;  R6040 driver for KolibriOS                                     ;;
@@ -14,6 +14,8 @@
 ;;             Version 2, June 1991                                ;;
 ;;                                                                 ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; TODO: test for RX-overrun
 
 format PE DLL native
 entry START
@@ -31,8 +33,8 @@ entry START
 
         TX_TIMEOUT              = 6000          ; Time before concluding the transmitter is hung, in ms
 
-        TX_RING_SIZE            = 4             ; RING sizes must be a power of 2
-        RX_RING_SIZE            = 4
+        TX_RING_SIZE            = 16            ; RING sizes must be a power of 2
+        RX_RING_SIZE            = 16
 
         RX_BUF_LEN_IDX          = 3             ; 0==8K, 1==16K, 2==32K, 3==64K
 
@@ -379,17 +381,6 @@ endp
 ;;/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\;;
 
 
-;mdio_read:
-;        stdcall phy_read, [ebx + device.io_addr], [ebx + device.phy_addr], ecx
-
-;        ret
-
-;mdio_write:
-;        stdcall phy_write, [ebx + device.io_addr], [ebx + device.phy_addr], ecx, eax
-
-;        ret
-
-
 align 4
 unload:
         ; TODO: (in this particular order)
@@ -602,7 +593,7 @@ reset:
         ;Enable RX
         mov     ax, [ebx + device.mcr0]
         or      ax, MCR0_RCVEN
-        set_io  [ebx + device.io_addr], 0
+        set_io  [ebx + device.io_addr], MCR0
         out     dx, ax
 
         ;Let TX poll the descriptors
@@ -738,13 +729,13 @@ phy_mode_chk:
 ;; Transmit                                ;;
 ;;                                         ;;
 ;; In: pointer to device structure in ebx  ;;
+;; Out: eax = 0 on success                 ;;
 ;;                                         ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
+align 16
 proc transmit stdcall bufferptr
 
-        pushf
-        cli
+        spin_lock_irqsave
 
         mov     esi, [bufferptr]
         DEBUGF  1,"Transmitting packet, buffer:%x, size:%u\n", [bufferptr], [esi + NET_BUFF.length]
@@ -755,9 +746,9 @@ proc transmit stdcall bufferptr
         [eax+13]:2,[eax+12]:2
 
         cmp     [esi + NET_BUFF.length], 1514
-        ja      .fail
+        ja      .error
         cmp     [esi + NET_BUFF.length], 60
-        jb      .fail
+        jb      .error
 
         movzx   edi, [ebx + device.cur_tx]
         shl     edi, 5
@@ -767,10 +758,7 @@ proc transmit stdcall bufferptr
         DEBUGF  1,"TX buffer status: 0x%x\n", [edi + x_head.status]:4
 
         test    [edi + x_head.status], DSC_OWNER_MAC    ; check if buffer is available
-        jnz     .wait_to_send
-
-  .do_send:
-        DEBUGF  1,"Sending now\n"
+        jnz     .overrun
 
         mov     [edi + x_head.skb_ptr], esi
         mov     eax, esi
@@ -796,32 +784,25 @@ proc transmit stdcall bufferptr
         add     dword[ebx + device.bytes_tx], eax
         adc     dword[ebx + device.bytes_tx + 4], 0
 
-        popf
+        spin_unlock_irqrestore
         xor     eax, eax
         ret
 
-  .wait_to_send:
-        DEBUGF  1,"Waiting for TX buffer\n"
-        invoke  GetTimerTicks           ; returns in eax
-        lea     edx, [eax + 100]
-  .l2:
-        mov     esi, [bufferptr]
-        test    [edi + x_head.status], DSC_OWNER_MAC
-        jz      .do_send
-        popf
-        mov     esi, 10
-        invoke  Sleep
-        invoke  GetTimerTicks
-        pushf
-        cli
-        cmp     edx, eax
-        jb      .l2
-
-        DEBUGF  2,"Send timeout\n"
-  .fail:
-        DEBUGF  2,"Send failed\n"
+  .error:
+        DEBUGF  2, "TX packet error\n"
+        inc     [ebx + device.packets_tx_err]
         invoke  NetFree, [bufferptr]
-        popf
+
+        spin_unlock_irqrestore
+        or      eax, -1
+        ret
+
+  .overrun:
+        DEBUGF  2, "TX overrun\n"
+        inc     [ebx + device.packets_tx_ovr]
+        invoke  NetFree, [bufferptr]
+
+        spin_unlock_irqrestore
         or      eax, -1
         ret
 
@@ -834,44 +815,24 @@ endp
 ;; Interrupt handler ;;
 ;;                   ;;
 ;;;;;;;;;;;;;;;;;;;;;;;
-
-align 4
+align 16
 int_handler:
 
         push    ebx esi edi
 
-        DEBUGF  1,"int\n"
+        mov     ebx, [esp+4*4]
+        DEBUGF  1,"INT for 0x%x\n", ebx
 
-; Find pointer of device wich made IRQ occur
-
-        mov     ecx, [devices]
-        test    ecx, ecx
-        jz      .nothing
-        mov     esi, device_list
-  .nextdevice:
-        mov     ebx, [esi]
+; TODO? if we are paranoid, we can check that the value from ebx is present in the current device_list
 
         set_io  [ebx + device.io_addr], 0
         set_io  [ebx + device.io_addr], MISR
         in      ax, dx
-        out     dx, ax                  ; send it back to ACK
         test    ax, ax
-        jnz     .got_it
-  .continue:
-        add     esi, 4
-        dec     ecx
-        jnz     .nextdevice
-  .nothing:
-        pop     edi esi ebx
-        xor     eax, eax
+        jz      .nothing
 
-        ret                             ; If no device was found, abort
-
-; At this point, test for all possible reasons, and handle accordingly
-
-  .got_it:
-
-        DEBUGF  1,"Device: %x Status: %x\n", ebx, ax
+        out     dx, ax                  ; ACK interrupt
+        DEBUGF  1,"Status: %x\n", ax
 
         push ax
 
@@ -934,12 +895,10 @@ int_handler:
 
         ; At last, send packet to kernel
         jmp     [EthInput]
-
-
   .no_RX:
+
         test    word[esp], TX_FINISH
         jz      .no_TX
-
   .loop_tx:
         movzx   edi, [ebx + device.last_tx]
         shl     edi, 5
@@ -961,47 +920,55 @@ int_handler:
         and     [ebx + device.last_tx], TX_RING_SIZE - 1
 
         jmp     .loop_tx
-
   .no_TX:
+
         test    word[esp], RX_NO_DESC
         jz      .no_rxdesc
 
         DEBUGF  2, "No more RX descriptors!\n"
-
   .no_rxdesc:
+
         test    word[esp], RX_FIFO_FULL
         jz      .no_rxfifo
 
         DEBUGF  2, "RX FIFO full!\n"
-
   .no_rxfifo:
+
         test    word[esp], RX_EARLY
         jz      .no_rxearly
 
         DEBUGF  2, "RX early\n"
-
   .no_rxearly:
+
         test    word[esp], TX_EARLY
         jz      .no_txearly
 
         DEBUGF  2, "TX early\n"
-
   .no_txearly:
+
         test    word[esp], EVENT_OVRFL
         jz      .no_ovrfl
 
         DEBUGF  2, "Event counter overflow!\n"
-
   .no_ovrfl:
+
         test    word[esp], LINK_CHANGED
         jz      .no_link
 
         DEBUGF  2, "Link changed\n"
-
   .no_link:
+
         pop     ax
 
         pop     edi esi ebx
+        xor     eax, eax
+        inc     eax
+
+        ret
+
+  .nothing:
+        pop     edi esi ebx
+        xor     eax, eax
 
         ret
 
