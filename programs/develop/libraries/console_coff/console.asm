@@ -2582,9 +2582,10 @@ con.thread:
 ; Поток реагирует на IPC, которое используется только для того, чтобы его можно было "разбудить"
         push    40
         pop     eax
-        push    0x67
+        push    0x80000067 ;  program dont getting events mouse, when it dont active
         pop     ebx
         int     0x40
+        xor     ebx,ebx     ;clear ebx
         mov     al, 60
         mov     bl, 1
         mov     ecx, con.ipc_buf
