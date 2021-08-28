@@ -190,15 +190,15 @@ proc detect
 
 ; Enable power
 
-        invoke  PciRead8, [bus], [devfn], 0x14                  ; get capabilities offset
-        movzx   eax, al                                         ; (A0 for TI bridges)
+        invoke  PciRead8, [bus], [devfn], PCI_header02.cap_list_offs    ; get capabilities offset
+        movzx   eax, al                                                 ; (A0 for TI bridges)
         DEBUGF  1, "Capabilities offset=0x%x\n", eax:2
-        add     al, 4                                           ; Power management control/status
-        invoke  PciWrite16, [bus], [devfn], eax, 0x0100         ; Enable PME signaling, power state=D0
+        add     al, 4                                                   ; Power management control/status
+        invoke  PciWrite16, [bus], [devfn], eax, 0x0100                 ; Enable PME signaling, power state=D0
 
 ; Enable Bus master, io space, memory space
 
-        invoke  PciWrite16, [bus], [devfn], PCI_header02.command, 0x0007
+        invoke  PciWrite16, [bus], [devfn], PCI_header02.command, PCI_CMD_PIO or PCI_CMD_MMIO or PCI_CMD_MASTER
 
 ; Write CardBus Socket/ExCA base address
 

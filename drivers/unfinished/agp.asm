@@ -1,6 +1,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;                                                                 ;;
-;; Copyright (C) KolibriOS team 2004-2015. All rights reserved.    ;;
+;; Copyright (C) KolibriOS team 2004-2021. All rights reserved.    ;;
 ;; Distributed under terms of the GNU General Public License       ;;
 ;;                                                                 ;;
 ;; simple AGP driver for KolibriOS                                 ;;
@@ -121,8 +121,8 @@ proc detect
         mov     [bus], ebx
         movzx   ebx, [eax + PCIDEV.devfn]
         mov     [devfn], ebx
-        invoke  PciRead8, [bus], [devfn], PCI_header00.prog_if
-        test    al, 1 shl 4                             ; got capabilities list?
+        invoke  PciRead16, [bus], [devfn], PCI_header00.status
+        test    ax, PCI_STATUS_CAPA                     ; got capabilities list?
         jnz     .got_capabilities_list
 
         ; TODO: Do it the old way: detect device and check with a list of known capabilities
