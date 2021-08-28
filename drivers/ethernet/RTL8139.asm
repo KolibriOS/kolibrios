@@ -15,12 +15,16 @@
 ;;                                                                 ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+; TODO: test for RX-overrun
+
 format PE DLL native
 entry START
 
         CURRENT_API             = 0x0200
         COMPATIBLE_API          = 0x0100
         API_VERSION             = (COMPATIBLE_API shl 16) + CURRENT_API
+
+; configureable area
 
         MAX_DEVICES             = 16
 
@@ -34,6 +38,8 @@ entry START
 
         __DEBUG__               = 1
         __DEBUG_LEVEL__         = 2     ; 1 = verbose, 2 = errors only
+
+; end configureable area
 
 section '.flat' readable writable executable
 
@@ -639,13 +645,13 @@ reset:
 ;; Transmit                                ;;
 ;;                                         ;;
 ;; In: pointer to device structure in ebx  ;;
+;; Out: eax = 0 on success                 ;;
 ;;                                         ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
+align 16
 proc transmit stdcall bufferptr
 
-        pushf
-        cli
+        spin_lock_irqsave
 
         mov     esi, [bufferptr]
         DEBUGF  1,"Transmitting packet, buffer:%x, size:%u\n", [bufferptr], [esi + NET_BUFF.length]
@@ -656,9 +662,9 @@ proc transmit stdcall bufferptr
         [eax+13]:2,[eax+12]:2
 
         cmp     [esi + NET_BUFF.length], 1514
-        ja      .fail
+        ja      .error
         cmp     [esi + NET_BUFF.length], 60
-        jb      .fail
+        jb      .error
 
 ; check if we own the current discriptor
         set_io  [ebx + device.io_addr], 0
@@ -668,9 +674,8 @@ proc transmit stdcall bufferptr
         add     edx, ecx
         in      eax, dx
         test    eax, (1 shl BIT_OWN)
-        jz      .wait_to_send
+        jz      .overrun
 
-  .send_packet:
 ; Set the buffer address
         set_io  [ebx + device.io_addr], REG_TSAD0
         mov     [ebx + device.TX_DESC+ecx], esi
@@ -691,37 +696,29 @@ proc transmit stdcall bufferptr
 
 ; Update stats
         inc     [ebx + device.packets_tx]
-        mov     ecx, [esi + NET_BUFF.length]
-        add     dword [ebx + device.bytes_tx], ecx
-        adc     dword [ebx + device.bytes_tx+4], 0
+        mov     eax, [esi + NET_BUFF.length]
+        add     dword[ebx + device.bytes_tx], eax
+        adc     dword[ebx + device.bytes_tx + 4], 0
 
-        DEBUGF  1, "Packet Sent!\n"
-        popf
+        spin_unlock_irqrestore
         xor     eax, eax
         ret
 
-  .wait_to_send:
-        DEBUGF  1, "Waiting for timeout\n"
-
-        push    edx
-        mov     esi, 30
-        invoke  Sleep
-        pop     edx
-
-        in      ax, dx
-        test    ax, (1 shl BIT_OWN)
-        jnz     .send_packet
-
-        pusha
-        call    reset                            ; if chip hung, reset it
-        popa
-
-        jmp     .send_packet
-
-  .fail:
-        DEBUGF  2, "transmit failed!\n"
+  .error:
+        DEBUGF  2, "TX packet error\n"
+        inc     [ebx + device.packets_tx_err]
         invoke  NetFree, [bufferptr]
-        popf
+
+        spin_unlock_irqrestore
+        or      eax, -1
+        ret
+
+  .overrun:
+        DEBUGF  2, "TX overrun\n"
+        inc     [ebx + device.packets_tx_ovr]
+        invoke  NetFree, [bufferptr]
+
+        spin_unlock_irqrestore
         or      eax, -1
         ret
 
@@ -736,41 +733,24 @@ endp
 ;; Interrupt handler ;;
 ;;                   ;;
 ;;;;;;;;;;;;;;;;;;;;;;;
-
-align 4
+align 16
 int_handler:
 
         push    ebx esi edi
 
-        DEBUGF  1, "INT\n"
+        mov     ebx, [esp+4*4]
+        DEBUGF  1,"INT for 0x%x\n", ebx
 
-; find pointer of device wich made IRQ occur
-        mov     ecx, [devices]
-        test    ecx, ecx
-        jz      .nothing
-        mov     esi, device_list
-  .nextdevice:
-        mov     ebx, [esi]
+; TODO? if we are paranoid, we can check that the value from ebx is present in the current device_list
 
         set_io  [ebx + device.io_addr], 0
         set_io  [ebx + device.io_addr], REG_ISR
         in      ax, dx                          ; Get interrupt status
-        out     dx, ax                          ; send it back to ACK
         test    ax, ax
-        jnz     .got_it
-  .continue:
-        add     esi, 4
-        dec     ecx
-        jnz     .nextdevice
-  .nothing:
-        pop     edi esi ebx
-        xor     eax, eax
+        jz      .nothing
 
-        ret                                     ; If no device was found, abort (The irq was probably for a device, not registered to this driver)
-
-  .got_it:
-
-        DEBUGF  1, "Device: %x Status: %x\n", ebx, ax
+        out     dx, ax                          ; ACK interrupt
+        DEBUGF  1, "Status: %x\n", ax
 
 ;----------------------------------------------------
 ; Received packet ok?
@@ -884,10 +864,10 @@ int_handler:
 
   .finish:
         pop     ax
+  @@:
 
 ;----------------------------------------------------
 ; Transmit ok / Transmit error
-  @@:
         test    ax, ISR_TOK + ISR_TER
         jz      @f
 
@@ -944,10 +924,10 @@ int_handler:
         sub     ecx, 4
         jae     .txdescloop
         pop     ax
+  @@:
 
 ;----------------------------------------------------
 ; Rx buffer overflow ?
-  @@:
         test    ax, ISR_RXOVW
         jz      @f
 
@@ -959,20 +939,20 @@ int_handler:
         mov     ax, ISR_FIFOOVW or ISR_RXOVW or ISR_ROK
         out     dx, ax
         pop     ax
+  @@:
 
 ;----------------------------------------------------
 ; Packet underrun?
-  @@:
         test    ax, ISR_PUN
         jz      @f
 
         DEBUGF  1, "Packet underrun or link changed!\n"
 
         call    link
+  @@:
 
 ;----------------------------------------------------
 ; Receive FIFO overflow ?
-  @@:
         test    ax, ISR_FIFOOVW
         jz      @f
 
@@ -984,24 +964,29 @@ int_handler:
         mov     ax, ISR_FIFOOVW or ISR_RXOVW or ISR_ROK
         out     dx, ax
         pop     ax
+  @@:
 
 ;----------------------------------------------------
 ; cable length changed ?
-  @@:
         test    ax, ISR_LENCHG
-        jz      .fail
+        jz      @f
 
         DEBUGF  2, "Cable length changed!\n"
 
         call    link
+  @@:
 
-  .fail:
         pop     edi esi ebx
         xor     eax, eax
         inc     eax
 
         ret
 
+  .nothing:
+        pop     edi esi ebx
+        xor     eax, eax
+
+        ret
 
 
 
