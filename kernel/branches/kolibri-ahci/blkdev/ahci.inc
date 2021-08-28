@@ -10,6 +10,8 @@ $Revision$
 PCI_REG_STATUS_COMMAND = 0x0004
 PCI_REG_BAR5 = 0x0024
 
+AHCI_DBGLVL = 0 ; debug output verbosity level. 0 - less verbose, 1 - more verbose
+
 ; different SATA device signatures
 SATA_SIG_ATA	= 0x00000101	; SATA drive
 SATA_SIG_ATAPI	= 0xEB140101	; SATAPI drive
@@ -24,8 +26,9 @@ AHCI_DEV_PM     = 3
 AHCI_DEV_SATAPI = 4
 
 ; ATA commands
-ATA_IDENTIFY        = 0xEC
-ATA_CMD_READ_DMA_EX = 0x25
+ATA_IDENTIFY         = 0xEC
+ATA_CMD_READ_DMA_EX  = 0x25
+ATA_CMD_WRITE_DMA_EX = 0x35
 
 ; ATA constants
 ATA_DEV_BUSY    = 0x80
@@ -33,6 +36,8 @@ ATA_DEV_DRQ     = 0x08
 
 ; ATAPI commands
 ATAPI_IDENTIFY  = 0xA1
+
+PRDT_MAX_ENTRIES = 16 ;65535
 
 ; bit_ prefix means that its index of bit
 ; format: bit_AHCI_STR_REG_BIT
@@ -504,7 +509,7 @@ ahci_init:
         DEBUGF  1, "Supports Staggered Spin-up, spinning up the port..\n"
         or      [edi + HBA_PORT.command], (0x0002 or 0x0004 or 0x10000000)
         push    ebx
-        mov     ebx, 1 ; wait 10 ms
+        mov     ebx, 10 ; wait 100 ms
         call    delay_hs
         pop     ebx
 @@:
@@ -750,44 +755,29 @@ proc ahci_querymedia stdcall, pdata, mediainfo
         ret
 endp
 
-; Read sectors
+; Read/write sectors
 ; return value: 0 = success, otherwise = error
-proc ahci_read stdcall pdata: dword, buffer: dword, startsector: qword, numsectors_ptr:dword
+proc ahci_rw_sectors stdcall pdata: dword, vbuf: dword, startsector: qword, numsectors: dword, is_write: dword
         locals
             cmdslot dd ?
             cmdheader dd ?
             cmdtable  dd ?
-            numsectors dd ?
-            buffer_pos dd ?
-            buffer_length dd ?
+            vbuf_orig dd ?
+            vbuf_len  dd ?
+            phys_region_start dd ?
+            new_phys_region_start dd ?
+            cur_prd   dd ?
+            cur_phys  dd ?
+            dbc       dd ?
+            cur_phys_page dd ?
+            next_phys_page dd ?
+            cur_antioffset dd ?
+            prdt_bytes_total dd ?
         endl
 
         pushad
 
-        mov     ecx, ahci_mutex
-        call    mutex_lock
-
-;         xor     ecx, ecx
-;         mov     esi, [buffer]
-; .print_data:
-;         cmp     ecx, 512
-;         jae     .end_print_data
-
-;         mov     al, byte [esi + ecx]
-;         mov     byte [tmpstr], al
-;         mov     byte [tmpstr + 1], 0
-;         DEBUGF  1, "0x%x(%s) ", al:2, tmpstr
-
-;         inc     ecx
-;         jmp     .print_data
-; .end_print_data:
-;         DEBUGF  1, "\n"
-
-        mov     eax, [numsectors_ptr]
-        mov     eax, [eax]
-        mov     [numsectors], eax
-
-        DEBUGF  1, "  ahci_read: buffer = 0x%x, startsector = 0x%x:%x, numsectors = %u\n", [buffer], [startsector], [startsector + 4], eax
+        DEBUGF  AHCI_DBGLVL, "    ahci_rw_sectors: buffer = 0x%x, startsector = 0x%x:%x, numsectors = %u, is_write = %u\n", [vbuf], [startsector], [startsector + 4], [numsectors], [is_write]:1
 
         mov     esi, [pdata] ; esi - address of PORT_DATA struct of port
         mov     edi, [esi + PORT_DATA.port] ; edi - address of HBA_PORT struct of port
@@ -796,12 +786,12 @@ proc ahci_read stdcall pdata: dword, buffer: dword, startsector: qword, numsecto
         cmp     eax, -1
         jne      .cmdslot_found
 
-        DEBUGF  1, "No free cmdslot on port %u\n", [esi + PORT_DATA.portno]
-        jmp     .ret
+        DEBUGF  AHCI_DBGLVL, "No free cmdslot on port %u\n", [esi + PORT_DATA.portno]
+        jmp     .fail
 
 .cmdslot_found:
         mov     [cmdslot], eax
-        DEBUGF  1, "Found free cmdslot %u on port %u\n", [cmdslot], [esi + PORT_DATA.portno]
+        DEBUGF  AHCI_DBGLVL, "Found free cmdslot %u on port %u\n", [cmdslot], [esi + PORT_DATA.portno]
 
         shl     eax, BSF sizeof.HBA_CMD_HDR
         add     eax, [esi + PORT_DATA.clb]
@@ -815,81 +805,140 @@ proc ahci_read stdcall pdata: dword, buffer: dword, startsector: qword, numsecto
         or      [eax + HBA_CMD_HDR.flags1], (sizeof.FIS_REG_H2D / 4) ; set command fis length in dwords
         movzx   bx, [eax + HBA_CMD_HDR.flags1]
         btr     bx, 6 ; flag W = 0
+        cmp     [is_write], 1 ; if is_write then set W flag
+        jne     @f
+        bts     bx, 6
+@@:
         mov     [eax + HBA_CMD_HDR.flags1], bl
         movzx   bx, [eax + HBA_CMD_HDR.flags2]
         btr     bx, 2 ; flag C = 0
         mov     [eax + HBA_CMD_HDR.flags2], bl
 
+        mov     eax, [vbuf]
+        mov     [vbuf_orig], eax
         mov     ebx, [numsectors]
         shl     ebx, 9 ; *= 512
-        mov     [buffer_length], ebx
-        dec     ebx
-        shr     ebx, 12 ; /= 4096
-        inc     ebx
-        mov     [eax + HBA_CMD_HDR.prdtl], bx
-        ;DEBUGF  1, "  prdtl = %u\n", [eax + HBA_CMD_HDR.prdtl]:2
+        mov     [vbuf_len], ebx
+        DEBUGF  AHCI_DBGLVL, "vbuf_len = %u bytes\n", ebx
         
-        ; zero out the command table with its prdt entries
-        dec     ebx
-        shl     ebx, BSF sizeof.HBA_PRDT_ENTRY
-        add     ebx, sizeof.HBA_CMD_TBL
-        stdcall _memset, [cmdtable], 0, ebx
-        
-        DEBUGF  1, "  prdtl = %u\n", [eax + HBA_CMD_HDR.prdtl]:2
-        ;jmp     .ret
-
-        xor     ecx, ecx
-        movzx   edx, [eax + HBA_CMD_HDR.prdtl]
-        dec     edx
-        mov     eax, [buffer]
-        mov     [buffer_pos], eax
-
-.prdt_fill:
-        cmp     ecx, edx
-        jae     .prdt_fill_end
- 
-        mov     ebx, [buffer_pos]
+        mov     ebx, [vbuf]
         and     ebx, 0xFFF
-        mov     eax, [buffer_pos]
-        call    get_pg_addr ; eax = phys addr 
+        mov     eax, [vbuf]
+        call    get_pg_addr
         add     eax, ebx
-        DEBUGF  1, "  PHYS = 0x%x\n", eax
-        mov     ebx, ecx
-        shl     ebx, BSF sizeof.HBA_PRDT_ENTRY
-        add     ebx, [cmdtable]
-        add     ebx, HBA_CMD_TBL.prdt_entry ; now ebx - address of ecx'th prdt_entry
+        mov     [phys_region_start], eax
+        mov     [prdt_bytes_total], 0
+        mov     [cur_prd], 0
+.fill_prdt:
+        cmp     [vbuf_len], 0
+        jbe     .fill_prdt_end
 
-        mov     [ebx + HBA_PRDT_ENTRY.dba], eax
-        mov     [ebx + HBA_PRDT_ENTRY.dbau], 0
-        and     [ebx + HBA_PRDT_ENTRY.flags], not 0x3FFFFF ; zero out lower 22 bits, they used for byte count
-        or      [ebx + HBA_PRDT_ENTRY.flags], 4096 - 1 ; reason why -1 see in spec on this field
-        ; or      [eax + HBA_CMD_TBL.prdt_entry + HBA_PRDT_ENTRY.flags], 1 shl 31 ; enable interrupt on completion
-        add     [buffer_pos], 4096
-        sub     [buffer_length], 4096
-
-        inc     ecx
-        jmp     .prdt_fill
-.prdt_fill_end:
-
-        mov     ebx, [buffer_pos]
+        mov     eax, [vbuf]
+        call    get_pg_addr
+        mov     [cur_phys_page], eax
+        mov     eax, [vbuf]
+        add     eax, 4096
+        call    get_pg_addr
+        mov     [next_phys_page], eax
+        mov     eax, 4096
+        mov     ebx, [vbuf]
         and     ebx, 0xFFF
-        mov     eax, [buffer_pos]
-        call    get_pg_addr ; eax = phys addr 
+        sub     eax, ebx
+        mov     [cur_antioffset], eax
+        mov     eax, [cur_phys_page]
         add     eax, ebx
-        DEBUGF  1, "  PHYS. = 0x%x\n", eax
-        DEBUGF  1, "  ecx = 0x%x\n", ecx
-        mov     ebx, ecx
-        shl     ebx, BSF sizeof.HBA_PRDT_ENTRY
-        add     ebx, [cmdtable]
-        add     ebx, HBA_CMD_TBL.prdt_entry ; now ebx - address of ecx'th prdt_entry
-        mov     [ebx + HBA_PRDT_ENTRY.dba], eax
-        mov     [ebx + HBA_PRDT_ENTRY.dbau], 0
-        and     [ebx + HBA_PRDT_ENTRY.flags], not 0x3FFFFF ; zero out lower 22 bits, they used for byte count
-        mov     eax, [buffer_length]
+        mov     [cur_phys], eax
+
+.check_if1:
+        mov     eax, [vbuf_len]
+        cmp     eax, [cur_antioffset]
+        ja      .check_if2
+
+        mov     eax, [cur_phys]
+        sub     eax, [phys_region_start]
+        add     eax, [vbuf_len]
         dec     eax
-        DEBUGF  1, " DBC. = %u\n", eax
-        or      [ebx + HBA_PRDT_ENTRY.flags], eax ; reason why -1 see in spec on this field
-        ; or      [eax + HBA_CMD_TBL.prdt_entry + HBA_PRDT_ENTRY.flags], 1 shl 31 ; enable interrupt on completion
+        mov     [dbc], eax
+        mov     eax, [next_phys_page]
+        mov     [new_phys_region_start], eax
+        jmp     .add_prd 
+
+.check_if2:
+        mov     eax, [cur_phys]
+        add     eax, [cur_antioffset]
+        cmp     eax, [next_phys_page]
+        je      .check_if3
+
+        mov     eax, [cur_phys]
+        add     eax, [cur_antioffset]
+        sub     eax, [phys_region_start]
+        dec     eax
+        mov     [dbc], eax
+        mov     eax, [next_phys_page]
+        mov     [new_phys_region_start], eax
+        jmp     .add_prd
+
+.check_if3:
+        mov     eax, [cur_phys]
+        add     eax, [cur_antioffset]
+        sub     eax, [phys_region_start]
+        cmp     eax, 4*1024*1024
+        jb      .after_ifs
+
+        mov     [dbc], 4*1024*1024 - 1
+        mov     eax, [phys_region_start]
+        add     eax, 4*1024*1024
+        jmp     .add_prd
+
+.after_ifs:
+        jmp     .step_next
+
+.add_prd:
+        mov     ebx, [cur_prd]
+        shl     ebx, BSF sizeof.HBA_PRDT_ENTRY
+        add     ebx, [cmdtable]
+        add     ebx, HBA_CMD_TBL.prdt_entry ; now ebx - address of 'th prdt_entry
+
+        DEBUGF  AHCI_DBGLVL, "Added PRDT entry: dba = 0x%x, dbc = %u\n", [phys_region_start], [dbc]
+        mov     eax, [phys_region_start]
+        mov     [ebx + HBA_PRDT_ENTRY.dba], eax
+        mov     [ebx + HBA_PRDT_ENTRY.dbau], 0
+        and     [ebx + HBA_PRDT_ENTRY.flags], not 0x3FFFFF ; zero out lower 22 bits, they used for byte count
+        mov     eax, [dbc]
+        or      [ebx + HBA_PRDT_ENTRY.flags], eax
+        
+        inc     [cur_prd]
+        mov     eax, [dbc]
+        inc     eax
+        add     [prdt_bytes_total], eax
+        mov     eax, [new_phys_region_start]
+        mov     [phys_region_start], eax
+        cmp     [cur_prd], PRDT_MAX_ENTRIES
+        jne     @f
+        jmp     .fill_prdt_end
+@@:
+        
+.step_next:
+        mov     eax, [vbuf_len]
+        cmp     eax, [cur_antioffset]
+        jbe     @f
+        mov     eax, [cur_antioffset]
+@@:
+        add     [vbuf], eax
+        sub     [vbuf_len], eax
+        jmp     .fill_prdt
+
+.fill_prdt_end:
+
+        mov     eax, [cmdheader]
+        mov     ebx, [cur_prd]
+        DEBUGF  AHCI_DBGLVL, " PRDTL = %u\n", ebx
+        mov     [eax + HBA_CMD_HDR.prdtl], bx
+
+        mov     eax, [prdt_bytes_total]
+        DEBUGF  AHCI_DBGLVL, " prdt_bytes_total = %u\n", eax
+        shr     eax, 9 ; /= 512
+        mov     [numsectors], eax
 
         mov     eax, [cmdtable]
         mov     byte [eax + HBA_CMD_TBL.cfis + FIS_REG_H2D.fis_type], FIS_TYPE_REG_H2D
@@ -898,7 +947,10 @@ proc ahci_read stdcall pdata: dword, buffer: dword, startsector: qword, numsecto
         mov     byte [eax + HBA_CMD_TBL.cfis + FIS_REG_H2D.flags], bl
 
         mov     byte [eax + HBA_CMD_TBL.cfis + FIS_REG_H2D.command], ATA_CMD_READ_DMA_EX
-
+        cmp     [is_write], 1
+        jne     @f
+        mov     byte [eax + HBA_CMD_TBL.cfis + FIS_REG_H2D.command], ATA_CMD_WRITE_DMA_EX
+@@:
         mov     ebx, dword [startsector]
         mov     byte [eax + HBA_CMD_TBL.cfis + FIS_REG_H2D.lba0], bl
         shr     ebx, 8
@@ -927,12 +979,12 @@ proc ahci_read stdcall pdata: dword, buffer: dword, startsector: qword, numsecto
         ; Wait for command completion
         stdcall ahci_port_cmd_wait, edi, eax;, AHCI_PORT_CMD_TIMEOUT
 
-        DEBUGF  1, "sata_error register = 0x%x\n", [edi + HBA_PORT.sata_error]
+        DEBUGF  AHCI_DBGLVL, "sata_error register = 0x%x\n", [edi + HBA_PORT.sata_error]
 
-        DEBUGF  1, "reading completed\n"
+        DEBUGF  AHCI_DBGLVL, "reading completed\n"
 
 ;         xor     ecx, ecx
-;         mov     esi, [buffer]
+;         mov     esi, [vbuf_orig]
 ; .print_data:
 ;         cmp     ecx, 512
 ;         jae     .end_print_data
@@ -947,15 +999,74 @@ proc ahci_read stdcall pdata: dword, buffer: dword, startsector: qword, numsecto
 ; .end_print_data:
 ;         DEBUGF  1, "\n"
 
-.ret:
-        mov     ecx, ahci_mutex
-        call    mutex_unlock
+        popad
+        ;mov     eax, [cmdheader]
+        ;mov     eax, [eax + HBA_CMD_HDR.prdbc]
+        mov     eax, [numsectors]
+        shl     eax, 9 ; *= 512
+        ret
 
+.fail:
         popad
         xor     eax, eax
         ret
 endp
 tmpstr    rb 16
+
+; Read sectors
+; return value: 0 = success, otherwise = error
+proc ahci_read stdcall pdata: dword, buffer: dword, startsector: qword, numsectors_ptr:dword
+        locals
+                numsectors dd ?
+        endl
+
+        pushad
+ 
+        mov     ecx, ahci_mutex
+        call    mutex_lock
+
+        mov     eax, [numsectors_ptr]
+        mov     eax, [eax]
+        mov     [numsectors], eax
+        DEBUGF  AHCI_DBGLVL, "  ahci_read: buffer = 0x%x, startsector = 0x%x:%x, numsectors = %u\n", [buffer], [startsector], [startsector + 4], eax
+
+        xor     ecx, ecx ; how many sectors have been read
+.read_loop:
+        cmp     ecx, [numsectors]
+        jae     .read_loop_end
+
+        ; mov     eax, [buffer]
+        ; call    get_pg_addr
+        ; DEBUGF  1, "buf phys = 0x%x\n", eax
+        ; mov     eax, [buffer]
+        ; add     eax, 4096
+        ; call    get_pg_addr
+        ; DEBUGF  1, "buf + 4096 phys = 0x%x\n", eax
+
+        mov     ebx, [numsectors]
+        sub     ebx, ecx
+        ; DEBUGF  1, "buffer = 0x%x\n", [buffer]
+        stdcall ahci_rw_sectors, [pdata], [buffer], dword [startsector], dword [startsector + 4], ebx, 0
+        ;; TODO check if eax == 0 ?
+
+        DEBUGF  AHCI_DBGLVL, "    EAX = 0x%x\n", eax
+
+        add     [buffer], eax
+        shr     eax, 9 ; /=  512
+        add     ecx, eax
+        add     dword [startsector], eax
+        adc     dword [startsector + 4], 0
+
+        jmp     .read_loop
+.read_loop_end:
+
+        mov     ecx, ahci_mutex
+        call    mutex_unlock
+ 
+        popad
+        xor     eax, eax
+        ret
+endp
 
 ; Start command engine
 ; in: eax - address of HBA_PORT structure
@@ -1002,7 +1113,7 @@ proc ahci_port_wait stdcall, port: dword, timeout: dword
         jmp     .wait
 .wait_end:
         xor     eax, eax
-        DEBUGF  1, "port wait counter = %u\n", ecx
+        DEBUGF  AHCI_DBGLVL, "port wait counter = %u\n", ecx
         cmp     ecx, [timeout] ; if they equal it means port is hung
         setz    al
         pop     ecx ebx
@@ -1028,7 +1139,7 @@ proc ahci_port_cmd_wait stdcall, port: dword, cmdslot: dword ;, timeout: dword
         inc     ecx
         jmp     .wait
 .wait_end:
-        DEBUGF  1, "port cmd wait counter = %u\n", ecx
+        DEBUGF  AHCI_DBGLVL, "port cmd wait counter = %u\n", ecx
         bt      [ebx + HBA_PORT.interrupt_status], bit_AHCI_HBA_PxIS_TFES ; check for Task File Error
         jc      .error
         jmp     .ret
@@ -1118,12 +1229,12 @@ proc ahci_port_rebase stdcall, port: dword, portno: dword, pdata: dword
         mov     [edi + PORT_DATA.fb], eax ; set pdata->fb 
         stdcall _memset, eax, 0, 256 ; zero out
         
-        stdcall alloc_pages, 2
+        stdcall alloc_pages, 32*(64 + 16 + 48 + PRDT_MAX_ENTRIES*16)/4096
         mov     [phys_page23], eax
-        stdcall map_io_mem, eax, 2*4096, PG_NOCACHE + PG_SWR
+        stdcall map_io_mem, eax, 32*(64 + 16 + 48 + PRDT_MAX_ENTRIES*16), PG_NOCACHE + PG_SWR
         mov     [virt_page23], eax
 
-        ; Command table size = 256*32 = 8K per port
+        ; Command table size = N*32 per port
         mov     edx, [edi + PORT_DATA.clb] ; cmdheader array base
         xor     ecx, ecx
 
@@ -1135,29 +1246,31 @@ proc ahci_port_rebase stdcall, port: dword, portno: dword, pdata: dword
         shl     ebx, BSF sizeof.HBA_CMD_HDR
         add     ebx, edx ; ebx = cmdheader[ecx]
 
-        mov     [ebx + HBA_CMD_HDR.prdtl], 8 ; 8 prdt entries per command table
+        mov     [ebx + HBA_CMD_HDR.prdtl], PRDT_MAX_ENTRIES ; prdt entries per command table
 
-        ; 256 bytes per command table, 64+16+48+16*8
+        ; bytes per command table = 64+16+48+PRDT_MAX_ENTRIES*16 = N
 
         push    edx
         
-        ; cmdheader[ecx].ctba = phys_page23 + ecx*256
+        ; cmdheader[ecx].ctba = phys_page23 + ecx*N
         mov     [ebx + HBA_CMD_HDR.ctba], ecx
-        shl     [ebx + HBA_CMD_HDR.ctba], BSF 256 ; *= 256
+        mov     edx, [ebx + HBA_CMD_HDR.ctba]
+        imul    edx, (64+16+48+PRDT_MAX_ENTRIES*16) ; *= N
+        mov     [ebx + HBA_CMD_HDR.ctba], edx
         mov     eax, [ebx + HBA_CMD_HDR.ctba]
         mov     edx, [phys_page23]
         add     [ebx + HBA_CMD_HDR.ctba], edx
 
         add     eax, [virt_page23]
-        mov     [tmp], eax  ; tmp = virt_page23 + ecx*256
+        mov     [tmp], eax  ; tmp = virt_page23 + ecx*N
         lea     eax, [ecx*4 + edi + PORT_DATA.ctba_arr] ; eax = pdata->ctba_arr[ecx]
         mov     edx, [tmp]
-        mov     [eax], edx  ; pdata->ctba_arr[ecx] = virt_page23 + ecx*256
+        mov     [eax], edx  ; pdata->ctba_arr[ecx] = virt_page23 + ecx*N
 
         pop     edx
 
         mov     [ebx + HBA_CMD_HDR.ctbau], 0
-        stdcall _memset, [eax], 0, 256 ; zero out
+        stdcall _memset, [eax], 0, 64+16+48+PRDT_MAX_ENTRIES*16 ; zero out
 
         inc     ecx
         jmp     .for1
