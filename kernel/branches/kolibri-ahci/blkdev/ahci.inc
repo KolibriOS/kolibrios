@@ -328,7 +328,7 @@ ahci_callbacks:
     dd  0   ; no closemedia function
     dd  ahci_querymedia
     dd  ahci_read
-    dd  0;ahci_write
+    dd  ahci_write
     dd  0   ; no flush function
     dd  0   ; use default cache size
 .end:
@@ -981,7 +981,7 @@ proc ahci_rw_sectors stdcall pdata: dword, vbuf: dword, startsector: qword, nums
 
         DEBUGF  AHCI_DBGLVL, "sata_error register = 0x%x\n", [edi + HBA_PORT.sata_error]
 
-        DEBUGF  AHCI_DBGLVL, "reading completed\n"
+        DEBUGF  AHCI_DBGLVL, "R/W completed\n"
 
 ;         xor     ecx, ecx
 ;         mov     esi, [vbuf_orig]
@@ -1059,6 +1059,52 @@ proc ahci_read stdcall pdata: dword, buffer: dword, startsector: qword, numsecto
 
         jmp     .read_loop
 .read_loop_end:
+
+        mov     ecx, ahci_mutex
+        call    mutex_unlock
+ 
+        popad
+        xor     eax, eax
+        ret
+endp
+
+; Write sectors
+; return value: 0 = success, otherwise = error
+proc ahci_write stdcall pdata: dword, buffer: dword, startsector: qword, numsectors_ptr:dword
+        locals
+                numsectors dd ?
+        endl
+
+        pushad
+ 
+        mov     ecx, ahci_mutex
+        call    mutex_lock
+
+        mov     eax, [numsectors_ptr]
+        mov     eax, [eax]
+        mov     [numsectors], eax
+        DEBUGF  AHCI_DBGLVL, "  ahci_write: buffer = 0x%x, startsector = 0x%x:%x, numsectors = %u\n", [buffer], [startsector], [startsector + 4], eax
+
+        xor     ecx, ecx ; how many sectors have been read
+.write_loop:
+        cmp     ecx, [numsectors]
+        jae     .write_loop_end
+
+        mov     ebx, [numsectors]
+        sub     ebx, ecx
+        stdcall ahci_rw_sectors, [pdata], [buffer], dword [startsector], dword [startsector + 4], ebx, 1
+        ;; TODO check if eax == 0 ?
+
+        DEBUGF  AHCI_DBGLVL, "    EAX = 0x%x\n", eax
+
+        add     [buffer], eax
+        shr     eax, 9 ; /=  512
+        add     ecx, eax
+        add     dword [startsector], eax
+        adc     dword [startsector + 4], 0
+
+        jmp     .write_loop
+.write_loop_end:
 
         mov     ecx, ahci_mutex
         call    mutex_unlock
