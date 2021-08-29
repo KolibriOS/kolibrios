@@ -24,24 +24,22 @@ size_t fread(void *restrict ptr, size_t size, size_t nmemb, FILE *restrict strea
 		return nmemb;
 	}
 
-	else{
-		if(stream->mode & _FILEMODE_R){
-			if(!stream->__ungetc_emu_buff){
-				((char*) ptr)[0]=(char)stream->__ungetc_emu_buff;
-				//debug_printf("Ungetc: %x\n", ((char*) ptr)[0]);
-			}
-			unsigned status = _ksys_file_read_file(stream->name, stream->position, bytes_count, ptr , &bytes_read);
-			if (status != KSYS_FS_ERR_SUCCESS) {
-				if(status == KSYS_FS_ERR_EOF){
-					stream->eof=1;
-				}else{
-					errno = EIO;
-					stream->error = errno;
-					return 0;
-				}
-			}
-			stream->position+=bytes_read;
+    if(stream->mode & _FILEMODE_R){
+        if(!stream->__ungetc_emu_buff){
+			((char*) ptr)[0]=(char)stream->__ungetc_emu_buff;
+			//debug_printf("Ungetc: %x\n", ((char*) ptr)[0]);
 		}
+		unsigned status = _ksys_file_read_file(stream->name, stream->position, bytes_count, ptr , &bytes_read);
+		if (status != KSYS_FS_ERR_SUCCESS) {
+			if(status == KSYS_FS_ERR_EOF){
+				stream->eof=1;
+			}else{
+				errno = EIO;
+				stream->error = errno;
+				return 0;
+			}
+		}
+		stream->position+=bytes_read;
 	}
 	return bytes_read/size;
 }

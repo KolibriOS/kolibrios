@@ -1304,16 +1304,12 @@ int _ksys_file_read_file(const char *name, unsigned long long offset, unsigned s
     k.p20 = 0;
     k.p21 = name;
     int status;
-    unsigned bytes_read_v;
     asm_inline(
         "int $0x40"
-        :"=a"(status), "=b"(bytes_read_v)
+        :"=a"(status), "=b"(*bytes_read)
         :"a"(70), "b"(&k)
         :"memory"
     );
-    if (!status) {
-        *bytes_read = bytes_read_v;
-    }
     return status;
 }
 
@@ -1343,16 +1339,12 @@ int _ksys_file_write_file(const char *name, unsigned long long offset, unsigned 
     k.p20 = 0;
     k.p21 = name;
     int status;
-    unsigned bytes_written_v;
     asm_inline(
         "int $0x40"
-        :"=a"(status), "=b"(bytes_written_v)
+        :"=a"(status), "=b"(*bytes_written)
         :"a"(70), "b"(&k)
         :"memory"
     );
-    if (!status) {
-        *bytes_written = bytes_written_v;
-    }
     return status;
 }
 
