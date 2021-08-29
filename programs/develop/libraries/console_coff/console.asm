@@ -9,30 +9,30 @@ public EXPORTS
 section '.flat' code readable align 16
 include 'font.inc'
 include 'conscrl.inc'
+include '../../../struct.inc'
 
-struc process_info
-{
-  .cpu_usage              dd ?  ; +0
-  .window_stack_position  dw ?  ; +4
-  .window_stack_value     dw ?  ; +6
-                          dw ?  ; +8
-  .process_name           rb 12 ; +10
-  .memory_start           dd ?  ; +22
-  .used_memory            dd ?  ; +26
-  .PID                    dd ?  ; +30
-  .box.x                  dd ?  ; +34
-  .box.y                  dd ?  ; +38
-  .box.width              dd ?  ; +42
-  .box.height             dd ?  ; +46
-  .slot_state             dw ?  ; +50
-                          dw ?  ; +52
-  .client_box.x           dd ?  ; +54
-  .client_box.y           dd ?  ; +58
-  .client_box.width       dd ?  ; +62
-  .client_box.height      dd ?  ; +66
-  .wnd_state              db ?  ; +70
+struct process_info
+  cpu_usage              dd ?  ; +0
+  window_stack_position  dw ?  ; +4
+  window_stack_value     dw ?  ; +6
+                         dw ?  ; +8
+  process_name           rb 12 ; +10
+  memory_start           dd ?  ; +22
+  used_memory            dd ?  ; +26
+  PID                    dd ?  ; +30
+  box.x                  dd ?  ; +34
+  box.y                  dd ?  ; +38
+  box.width              dd ?  ; +42
+  box.height             dd ?  ; +46
+  slot_state             dw ?  ; +50
+                         dw ?  ; +52
+  client_box.x           dd ?  ; +54
+  client_box.y           dd ?  ; +58
+  client_box.width       dd ?  ; +62
+  client_box.height      dd ?  ; +66
+  wnd_state              db ?  ; +70
   rb (1024-71)
-}
+ends
 
 OP_EXIT         = 1
 OP_SET_TITLE    = 2
@@ -151,7 +151,26 @@ con_init:
         pop     edi
         and     byte [con_flags+1], not 2
 
-; create console thread
+; Get parent TID
+        mov     eax, 68  ; SF_SYS_MISC
+        mov     ebx, 12  ; SSF_MEM_ALLOC
+        mov     ecx, sizeof.process_info
+        int     0x40
+
+        mov     ebx, eax
+        mov     eax, 9   ; SF_THREAD_INFO
+        mov     ecx, -1
+        int     0x40
+
+        mov     eax, [ebx+process_info.PID]
+        mov     [con.parent_tid], eax
+
+        mov     eax, 68  ; SF_SYS_MISC
+        mov     ecx, ebx
+        mov     ebx, 13  ; SSF_MEM_FREE
+        int     0x40
+
+; Create console thread
         push    51
         pop     eax
         xor     ebx, ebx
@@ -2622,11 +2641,10 @@ con.msg_loop:
         jmp     con.mouse
 con.button:
 ; we have only one button, close
-        mov     eax, 18
-        mov     ebx, 18
-        mov     ecx,[process_info_buffer+30]
-        dec     ecx
-        int     0x40 ; kill parent process
+        mov     eax, 18 ; SF_SYSTEM
+        mov     ebx, 18 ; SSF_TERMINATE_THREAD_ID
+        mov     ecx, [con.parent_tid]
+        int     0x40    ; (kill the parent thread)
 
 con.thread_exit:
         or      byte [con_flags+1], 2
@@ -3444,6 +3462,7 @@ con.bDownPressed_saved      db ?
 con.bScrollingUp_saved      db ?
 con.bScrollingDown_saved    db ?
 
+con.parent_tid              dd ?
 con.input_buffer            rw 128
 con.input_buffer_end = $
 
