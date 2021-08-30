@@ -574,6 +574,7 @@ ahci_init:
 
         push    ecx
         mov     eax, [hd_counter]
+        inc     [hd_counter]
         xor     edx, edx
         mov     ecx, 10
         div     ecx ; eax = hd_counter / 10, edx = hd_counter % 10
