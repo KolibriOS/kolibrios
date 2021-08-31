@@ -194,8 +194,9 @@ void MenuetOS_PumpEvents(_THIS)
 	key.sym = sdlkeys_shift[key.scancode];
     else
 	key.sym = sdlkeys[key.scancode];
+	key.unicode=key.sym;
     ext_code = 0;
-    if (!key.sym) break;	
+    if (!key.sym) break;
     SDL_PrivateKeyboard(code,&key);
     break;
    case 3:
