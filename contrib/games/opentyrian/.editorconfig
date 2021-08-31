@@ -1,0 +1,26 @@
+root = true
+
+[*]
+charset = utf-8
+trim_trailing_whitespace = true
+end_of_line = lf
+insert_final_newline = true
+
+[Makefile]
+indent_style = tab
+
+[*.sln]
+charset = utf-8-bom
+indent_style = tab
+end_of_line = crlf
+insert_final_newline = false
+
+[*.{vcxproj,props.template}]
+indent_style = space
+indent_size = 2
+end_of_line = crlf
+insert_final_newline = false
+
+[*.rc]
+charset = latin1
+end_of_line = crlf

@@ -1,0 +1,36 @@
+/data/
+
+opentyrian.cfg
+tyrian.cfg
+tyrian.sav
+
+# Text editor detritus
+*~
+*.swp
+
+# Make build output
+/obj/
+/src/*.gch
+/opentyrian
+
+# Windows build output
+/opentyrian.exe
+/SDL.dll
+/SDL_net.dll
+
+# Windows runtime output
+/stderr.txt
+/stdout.txt
+
+# MSVC build output and project
+/opentyrian-*.exe
+/opentyrian-*.ilk
+/opentyrian-*.pdb
+/opentyrian-*.iobj
+/opentyrian-*.ipdb
+/visualc/.vs/
+/visualc/*.props
+/visualc/*.user
+
+# Doxygen output
+/doc/doxygen/
