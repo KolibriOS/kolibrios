@@ -10,27 +10,18 @@
 ; Used with permission.
 ; 
 
-	
 BITS 32
 
-GLOBAL _ConvertX86p16_32RGB888
-GLOBAL _ConvertX86p16_32BGR888
-GLOBAL _ConvertX86p16_32RGBA888
-GLOBAL _ConvertX86p16_32BGRA888
-GLOBAL _ConvertX86p16_24RGB888
-GLOBAL _ConvertX86p16_24BGR888
-GLOBAL _ConvertX86p16_16BGR565
-GLOBAL _ConvertX86p16_16RGB555
-GLOBAL _ConvertX86p16_16BGR555
-GLOBAL _ConvertX86p16_8RGB332
+%include "common.inc"
+
+SDL_FUNC _ConvertX86p16_16BGR565
+SDL_FUNC _ConvertX86p16_16RGB555
+SDL_FUNC _ConvertX86p16_16BGR555
+SDL_FUNC _ConvertX86p16_8RGB332
 
 EXTERN _ConvertX86
-EXTERN _x86return
-
 
 SECTION .text
-
-
 
 _ConvertX86p16_16BGR565:
 
@@ -39,7 +30,7 @@ _ConvertX86p16_16BGR565:
     ja .L3
 
 
-.L1 ; short loop
+.L1: ; short loop
     mov al,[esi]
     mov ah,[esi+1]
     mov ebx,eax
@@ -56,10 +47,10 @@ _ConvertX86p16_16BGR565:
     add edi,BYTE 2
     dec ecx
     jnz .L1
-.L2
-    jmp _x86return
+.L2:
+    retn
 
-.L3 ; head
+.L3: ; head
     mov eax,edi
     and eax,BYTE 11b
     jz .L4
@@ -79,7 +70,7 @@ _ConvertX86p16_16BGR565:
     add edi,BYTE 2
     dec ecx
 
-.L4 ; save count
+.L4: ; save count
     push ecx
 
     ; unroll twice
@@ -93,8 +84,8 @@ _ConvertX86p16_16BGR565:
     neg ecx
     jmp SHORT .L6
                               
-.L5     mov [edi+ecx*4-4],eax
-.L6     mov eax,[esi+ecx*4]
+.L5:    mov [edi+ecx*4-4],eax
+.L6:    mov eax,[esi+ecx*4]
 
         mov ebx,[esi+ecx*4]
         and eax,07E007E0h         
@@ -134,8 +125,8 @@ _ConvertX86p16_16BGR565:
     add esi,BYTE 2
     add edi,BYTE 2
 
-.L7
-    jmp _x86return
+.L7:
+    retn
 
 
 
@@ -149,7 +140,7 @@ _ConvertX86p16_16RGB555:
     ja .L3
 
 
-.L1 ; short loop
+.L1: ; short loop
     mov al,[esi]
     mov ah,[esi+1]
     mov ebx,eax
@@ -163,10 +154,10 @@ _ConvertX86p16_16RGB555:
     add edi,BYTE 2
     dec ecx
     jnz .L1
-.L2
-    jmp _x86return
+.L2:
+    retn
 
-.L3 ; head
+.L3: ; head
     mov eax,edi
     and eax,BYTE 11b
     jz .L4
@@ -183,7 +174,7 @@ _ConvertX86p16_16RGB555:
     add edi,BYTE 2
     dec ecx
 
-.L4 ; save ebp
+.L4: ; save ebp
     push ebp
 
     ; save count
@@ -200,7 +191,7 @@ _ConvertX86p16_16RGB555:
     xor ebp,ebp
     sub ebp,ecx
 
-.L5     mov eax,[esi+ebp*8]        ; agi?
+.L5:    mov eax,[esi+ebp*8]        ; agi?
         mov ecx,[esi+ebp*8+4]
        
         mov ebx,eax
@@ -226,7 +217,7 @@ _ConvertX86p16_16RGB555:
 
     ; tail
     pop ecx
-.L6 and ecx,BYTE 11b
+.L6: and ecx,BYTE 11b
     jz .L7
     mov al,[esi]
     mov ah,[esi+1]
@@ -242,8 +233,8 @@ _ConvertX86p16_16RGB555:
     dec ecx
     jmp SHORT .L6
 
-.L7 pop ebp
-    jmp _x86return
+.L7: pop ebp
+    retn
 
 
 
@@ -257,7 +248,7 @@ _ConvertX86p16_16BGR555:
     ja .L3
 
 	
-.L1 ; short loop
+.L1: ; short loop
     mov al,[esi]
     mov ah,[esi+1]
     mov ebx,eax
@@ -276,10 +267,10 @@ _ConvertX86p16_16BGR555:
     add edi,BYTE 2
     dec ecx
     jnz .L1
-.L2
-    jmp _x86return
+.L2:
+    retn
 
-.L3 ; head
+.L3: ; head
     mov eax,edi
     and eax,BYTE 11b
     jz .L4
@@ -301,7 +292,7 @@ _ConvertX86p16_16BGR555:
     add edi,BYTE 2
     dec ecx
 
-.L4 ; save count
+.L4: ; save count
     push ecx
 
     ; unroll twice
@@ -315,8 +306,8 @@ _ConvertX86p16_16BGR555:
     neg ecx
     jmp SHORT .L6
                               
-.L5     mov [edi+ecx*4-4],eax
-.L6     mov eax,[esi+ecx*4]
+.L5:     mov [edi+ecx*4-4],eax
+.L6:     mov eax,[esi+ecx*4]
 
         shr eax,1
         mov ebx,[esi+ecx*4]
@@ -360,8 +351,8 @@ _ConvertX86p16_16BGR555:
     add esi,BYTE 2
     add edi,BYTE 2
 
-.L7
-    jmp _x86return
+.L7:
+    retn
 
 
 
@@ -375,7 +366,7 @@ _ConvertX86p16_8RGB332:
     ja .L3
 
 
-.L1 ; short loop
+.L1: ; short loop
     mov al,[esi+0]
     mov ah,[esi+1]
     mov ebx,eax
@@ -393,10 +384,10 @@ _ConvertX86p16_8RGB332:
     inc edi
     dec ecx
     jnz .L1
-.L2
-    jmp _x86return
+.L2:
+    retn
 
-.L3 mov eax,edi
+.L3: mov eax,edi
     and eax,BYTE 11b
     jz .L4
     mov al,[esi+0]
@@ -417,7 +408,7 @@ _ConvertX86p16_8RGB332:
     dec ecx
     jmp SHORT .L3
 
-.L4 ; save ebp
+.L4: ; save ebp
     push ebp
 
     ; save count
@@ -431,7 +422,7 @@ _ConvertX86p16_8RGB332:
     mov bl,[esi+1]
     mov dh,[esi+2]
         
-.L5     shl edx,16
+.L5:     shl edx,16
         mov bh,[esi+3]
         
         shl ebx,16
@@ -472,7 +463,7 @@ _ConvertX86p16_8RGB332:
     and ecx,BYTE 11b
     jz .L7
 
-.L6 ; tail
+.L6: ; tail
     mov al,[esi+0]
     mov ah,[esi+1]
     mov ebx,eax
@@ -491,6 +482,9 @@ _ConvertX86p16_8RGB332:
     dec ecx
     jnz .L6
 
-.L7 pop ebp
-    jmp _x86return
+.L7: pop ebp
+    retn
 
+%ifidn __OUTPUT_FORMAT__,elf32
+section .note.GNU-stack noalloc noexec nowrite progbits
+%endif

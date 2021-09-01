@@ -11,17 +11,14 @@
 
 BITS 32
 
-GLOBAL _ConvertX86
-GLOBAL _x86return
-	
-GLOBAL _Hermes_X86_CPU
+%include "common.inc"
 
+SDL_FUNC _ConvertX86
+SDL_FUNC _Hermes_X86_CPU
 
 SECTION .data
-	
 cpu_flags dd 0
-	
-		
+
 SECTION .text
 		
 ;; _ConvertX86:	 
@@ -59,9 +56,8 @@ _ConvertX86:
 y_loop:	
 	mov ecx,[ebp+4]
 
-	jmp [ebp+32]
+	call [ebp+32]
 
-_x86return:	
 	add esi,[ebp+12]
 	add edi,[ebp+28]
 	
@@ -77,9 +73,6 @@ endconvert:
 	ret		
 
 
-
-;; Hermes_X86_CPU returns the CPUID flags in eax
-	
 _Hermes_X86_CPU:
 	pushfd
 	pop eax
@@ -122,5 +115,9 @@ _Hermes_X86_CPU:
 	mov eax,[cpu_flags]
 
 .L1:	
-	xor eax,eax
 	ret
+
+
+%ifidn __OUTPUT_FORMAT__,elf32
+section .note.GNU-stack noalloc noexec nowrite progbits
+%endif

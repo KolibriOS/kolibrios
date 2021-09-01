@@ -6,7 +6,6 @@
    Please refer to the file COPYING.LIB contained in the distribution for
    licensing conditions
 */
-
 #ifndef __HERMES_HEAD_MMX__
 #define __HERMES_HEAD_MMX__
 
@@ -45,26 +44,24 @@ void ConvertMMXp32_16RGB555();
 
 /* Fix the underscore business with ELF compilers */
 
-#if defined(__ELF__) && defined(__GNUC__)
+#if (defined(__ELF__) && defined(__GNUC__)) || defined(__SUNPRO_C)
   #ifdef __cplusplus 
   extern "C" {   
   #endif
 
-  void ConvertMMX(HermesConverterInterface *) __attribute__ ((alias ("_ConvertMMX")));
-#if 0
-  void ClearMMX_32(HermesClearInterface *) __attribute__ ((alias ("_ClearMMX_32")));
-  void ClearMMX_24(HermesClearInterface *)  __attribute__ ((alias ("_ClearMMX_24")));
-  void ClearMMX_16(HermesClearInterface *)  __attribute__ ((alias ("_ClearMMX_16")));
-  void ClearMMX_8(HermesClearInterface *)  __attribute__ ((alias ("_ClearMMX_8")));
+  extern void _ConvertMMX(HermesConverterInterface *);
+  extern void _ConvertMMXpII32_24RGB888();
+  extern void _ConvertMMXpII32_16RGB565();
+  extern void _ConvertMMXpII32_16BGR565();
+  extern void _ConvertMMXpII32_16RGB555();
+  extern void _ConvertMMXpII32_16BGR555();
 
-  void ConvertMMXp32_16RGB555() __attribute__ ((alias ("_ConvertMMXp32_16RGB555")));
-#endif
-
-  void ConvertMMXpII32_24RGB888() __attribute__ ((alias ("_ConvertMMXpII32_24RGB888")));
-  void ConvertMMXpII32_16RGB565() __attribute__ ((alias ("_ConvertMMXpII32_16RGB565")));
-  void ConvertMMXpII32_16BGR565() __attribute__ ((alias ("_ConvertMMXpII32_16BGR565")));
-  void ConvertMMXpII32_16RGB555() __attribute__ ((alias ("_ConvertMMXpII32_16RGB555")));
-  void ConvertMMXpII32_16BGR555() __attribute__ ((alias ("_ConvertMMXpII32_16BGR555")));
+  #define ConvertMMX _ConvertMMX
+  #define ConvertMMXpII32_24RGB888 _ConvertMMXpII32_24RGB888
+  #define ConvertMMXpII32_16RGB565 _ConvertMMXpII32_16RGB565
+  #define ConvertMMXpII32_16BGR565 _ConvertMMXpII32_16BGR565
+  #define ConvertMMXpII32_16RGB555 _ConvertMMXpII32_16RGB555
+  #define ConvertMMXpII32_16BGR555 _ConvertMMXpII32_16BGR555
 
   #ifdef __cplusplus
   }

@@ -27,7 +27,7 @@ FOLDERS = {
 for i,v in ipairs(FOLDERS) do
   compile_gcc(v .. "*.c", v .. "%B.o")
   tup.append_table(OBJS,
-    tup.foreach_rule(v .. "*.asm", "nasm -f coff -o %o %f", v .. "%B.o")
+    tup.foreach_rule(v .. "*.asm", "nasm -i hermes -f coff -o %o %f", v .. "%B.o")
   )
 end
 tup.rule(OBJS, "kos32-ar rcs %o %f", {"../../../lib/libSDLn.a", "../../../lib/<libSDLn>"})

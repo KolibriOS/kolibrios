@@ -20,40 +20,51 @@
 
 BITS 32
 
+%include "common.inc"
 	
-GLOBAL _ConvertMMXpII32_24RGB888
-GLOBAL _ConvertMMXpII32_16RGB565
-GLOBAL _ConvertMMXpII32_16BGR565
-GLOBAL _ConvertMMXpII32_16RGB555
-GLOBAL _ConvertMMXpII32_16BGR555
+SDL_FUNC _ConvertMMXpII32_24RGB888
+SDL_FUNC _ConvertMMXpII32_16RGB565
+SDL_FUNC _ConvertMMXpII32_16BGR565
+SDL_FUNC _ConvertMMXpII32_16RGB555
+SDL_FUNC _ConvertMMXpII32_16BGR555
 
-EXTERN _mmxreturn
- 
-SECTION .data
-	
-ALIGN 8
+;; Macros for conversion routines
 
-;; Constants for conversion routines
+%macro _push_immq_mask 1
+	push dword %1
+	push dword %1
+%endmacro
 
-mmx32_rgb888_mask dd 00ffffffh,00ffffffh
+%macro load_immq 2
+	_push_immq_mask %2
+	movq %1, [esp]
+%endmacro
 
-mmx32_rgb565_b dd 000000f8h, 000000f8h
-mmx32_rgb565_g dd 0000fc00h, 0000fc00h
-mmx32_rgb565_r dd 00f80000h, 00f80000h
+%macro pand_immq 2
+	_push_immq_mask %2
+	pand %1, [esp]
+%endmacro
 
-mmx32_rgb555_rb dd 00f800f8h,00f800f8h
-mmx32_rgb555_g dd 0000f800h,0000f800h
-mmx32_rgb555_mul dd 20000008h,20000008h
-mmx32_bgr555_mul dd 00082000h,00082000h
+%define CLEANUP_IMMQ_LOADS(num) \
+	add esp, byte 8 * num
 
+%define mmx32_rgb888_mask 00ffffffh
+%define mmx32_rgb565_b 000000f8h
+%define mmx32_rgb565_g 0000fc00h
+%define mmx32_rgb565_r 00f80000h
 
-			
+%define mmx32_rgb555_rb 00f800f8h
+%define mmx32_rgb555_g 0000f800h
+%define mmx32_rgb555_mul 20000008h
+%define mmx32_bgr555_mul 00082000h
+
 SECTION .text
 
 _ConvertMMXpII32_24RGB888:
 
         ; set up mm6 as the mask, mm7 as zero
-        movq mm6, qword [mmx32_rgb888_mask]
+        load_immq mm6, mmx32_rgb888_mask
+        CLEANUP_IMMQ_LOADS(1)
         pxor mm7, mm7
 
         mov edx, ecx                    ; save ecx
@@ -108,16 +119,17 @@ _ConvertMMXpII32_24RGB888:
         dec ecx
         jnz .L3
 .L4:
-        jmp _mmxreturn
+        retn
 
 
 
 _ConvertMMXpII32_16RGB565:
 
         ; set up masks
-        movq mm5, [mmx32_rgb565_b]
-        movq mm6, [mmx32_rgb565_g]
-        movq mm7, [mmx32_rgb565_r]
+        load_immq mm5, mmx32_rgb565_b
+        load_immq mm6, mmx32_rgb565_g
+        load_immq mm7, mmx32_rgb565_r
+        CLEANUP_IMMQ_LOADS(3)
 
         mov edx, ecx
         shr ecx, 2
@@ -176,14 +188,15 @@ _ConvertMMXpII32_16RGB565:
         jnz .L3
 
 .L4:
-	jmp _mmxreturn
+	retn
 
 	
 _ConvertMMXpII32_16BGR565:
 
-        movq mm5, [mmx32_rgb565_r]
-        movq mm6, [mmx32_rgb565_g]
-        movq mm7, [mmx32_rgb565_b]
+        load_immq mm5, mmx32_rgb565_r
+        load_immq mm6, mmx32_rgb565_g
+        load_immq mm7, mmx32_rgb565_b
+        CLEANUP_IMMQ_LOADS(3)
 
         mov edx, ecx
         shr ecx, 2
@@ -245,7 +258,7 @@ _ConvertMMXpII32_16BGR565:
         jnz .L3
 
 .L4:
-        jmp _mmxreturn
+        retn
 
 _ConvertMMXpII32_16BGR555:
 
@@ -253,7 +266,7 @@ _ConvertMMXpII32_16BGR555:
         ; except it uses a different multiplier for the pmaddwd
         ; instruction.  cool huh.
 
-        movq mm7, qword [mmx32_bgr555_mul]
+        load_immq mm7, mmx32_bgr555_mul
         jmp _convert_bgr555_cheat
 
 ; This is the same as the Intel version.. they obviously went to
@@ -263,15 +276,16 @@ _ConvertMMXpII32_16BGR555:
 ; (I think) a more accurate name..
 _ConvertMMXpII32_16RGB555:
 
-        movq mm7,qword [mmx32_rgb555_mul]
+	load_immq mm7, mmx32_rgb555_mul
 _convert_bgr555_cheat:
-        movq mm6,qword [mmx32_rgb555_g]
+	load_immq mm6, mmx32_rgb555_g
+	CLEANUP_IMMQ_LOADS(2)
         
 	mov edx,ecx		           ; Save ecx 
 
-        and ecx,BYTE 0fffffff8h            ; clear lower three bits
+        and ecx,DWORD 0fffffff8h            ; clear lower three bits
 	jnz .L_OK
-        jmp .L2 
+        jmp near .L2 
 
 .L_OK:
 	
@@ -280,11 +294,13 @@ _convert_bgr555_cheat:
 	movq mm0,[esi]
 	movq mm3,mm2
 
-	pand mm3,qword [mmx32_rgb555_rb]
+	pand_immq mm3, mmx32_rgb555_rb
 	movq mm1,mm0
 
-	pand mm1,qword [mmx32_rgb555_rb]
+	pand_immq mm1, mmx32_rgb555_rb
 	pmaddwd mm3,mm7
+
+	CLEANUP_IMMQ_LOADS(2)
 
 	pmaddwd mm1,mm7
 	pand mm2,mm6
@@ -302,13 +318,13 @@ _convert_bgr555_cheat:
 	movq mm0,mm4
 	psrld mm1,6
 
-	pand mm0,qword [mmx32_rgb555_rb]
+	pand_immq mm0, mmx32_rgb555_rb
 	packssdw mm1,mm3
 
 	movq mm3,mm5
 	pmaddwd mm0,mm7
 
-	pand mm3,qword [mmx32_rgb555_rb]
+	pand_immq mm3, mmx32_rgb555_rb
 	pand mm4,mm6
 
 	movq [edi],mm1			
@@ -329,11 +345,13 @@ _convert_bgr555_cheat:
 	movq mm3,mm2
 	movq mm1,mm0
 
-	pand mm3,qword [mmx32_rgb555_rb]
+	pand_immq mm3, mmx32_rgb555_rb
 	packssdw mm5,mm4
 
-	pand mm1,qword [mmx32_rgb555_rb]
+	pand_immq mm1, mmx32_rgb555_rb
 	pand mm2,mm6
+
+	CLEANUP_IMMQ_LOADS(4)
 
 	movq [edi+8],mm5
 	pmaddwd mm3,mm7
@@ -380,7 +398,8 @@ _convert_bgr555_cheat:
 	jnz .L3	
 
 .L4:		
-	jmp _mmxreturn
+	retn
 
-
-
+%ifidn __OUTPUT_FORMAT__,elf32
+section .note.GNU-stack noalloc noexec nowrite progbits
+%endif
