@@ -284,6 +284,8 @@ BEGIN
         IF outFile # NIL THEN
             IF size # 0 THEN
                 res := Write(outFile, buf, size) = size
+            ELSE
+            	res := TRUE
             END;
             Close(outFile)
         END;

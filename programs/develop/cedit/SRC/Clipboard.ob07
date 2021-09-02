@@ -24,6 +24,7 @@ IMPORT SYSTEM, K := KOSAPI, E := Encodings, Lines;
 CONST
     TTEXT = 0;
     lenEOL* = 2;
+    TAB = 9X;
 
 TYPE
     tBuffer* = POINTER TO RECORD
@@ -53,18 +54,22 @@ BEGIN
     size := cnt + 12;
     a := K.malloc(size);
     ASSERT(a # 0);
-    SYSTEM.PUT32(a, size);
     SYSTEM.PUT32(a + 4, TTEXT);
     SYSTEM.PUT32(a + 8, 1);
     pchar := a + 12;
     ptr := buffer.dataPtr;
     WHILE cnt > 0 DO
         SYSTEM.GET(ptr, wch);
-        SYSTEM.PUT(pchar, CHR(E.UNI[ORD(wch), E.CP866] MOD 256));
-        INC(pchar);
+        IF wch # Lines.TAB1 THEN
+            SYSTEM.PUT(pchar, CHR(E.UNI[ORD(wch), E.CP866] MOD 256));
+            INC(pchar)
+        ELSE
+            DEC(size);
+        END;
         INC(ptr, 2);
         DEC(cnt)
     END;
+    SYSTEM.PUT32(a, size);
     K.sysfunc2(54, 3);
     K.sysfunc4(54, 2, size, a)
 END put;

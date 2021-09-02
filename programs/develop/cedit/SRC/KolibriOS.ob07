@@ -319,13 +319,13 @@ END malloc;
 
 PROCEDURE SetIPC* (buffer: ARRAY OF INTEGER);
 BEGIN
-    KOSAPI.sysfunc4(60, 1, SYSTEM.ADR(buffer[0]), LEN(buffer)*SYSTEM.SIZE(INTEGER));
+    KOSAPI.sysfunc4(60, 1, SYSTEM.ADR(buffer[0]), LEN(buffer)*SYSTEM.SIZE(INTEGER))
 END SetIPC;
 
 
 PROCEDURE SendIPC* (tid, msg: INTEGER);
 BEGIN
-    KOSAPI.sysfunc5(60, 2, tid, SYSTEM.ADR(msg), SYSTEM.SIZE(INTEGER))
+	KOSAPI.sysfunc5(60, 2, tid, SYSTEM.ADR(msg), SYSTEM.SIZE(INTEGER))
 END SendIPC;
 
 

@@ -21,7 +21,7 @@ MODULE Ini;
 
 IMPORT
 
-    KOSAPI, SYSTEM, RW, Text, Utils, File, List, Languages, KolibriOS;
+    KOSAPI, SYSTEM, RW, Text, Utils, File, List, Languages, KolibriOS, Lines;
 
 
 CONST
@@ -46,7 +46,7 @@ TYPE
 
 VAR
 
-    get_color: PROCEDURE [stdcall] (f_name: RW.tFileName; sec_name: tASCIISectionName; key_name: tString; def_val: INTEGER): INTEGER;
+    get_color, get_int: PROCEDURE [stdcall] (f_name: RW.tFileName; sec_name: tASCIISectionName; key_name: tString; def_val: INTEGER): INTEGER;
     get_str: PROCEDURE [stdcall] (f_name, sec_name, key_name, buffer, buf_len, def_val: INTEGER): INTEGER;
     enum_sections: PROCEDURE [stdcall] (f_name: RW.tFileName; callback: INTEGER);
 
@@ -55,6 +55,7 @@ VAR
 
     curSection*: tASCIISectionName;
     curSectionNum*: INTEGER;
+    blink*: INTEGER;
 
 
 PROCEDURE getColor (key: tString; def: INTEGER): INTEGER;
@@ -145,6 +146,21 @@ BEGIN
 END selectSection;
 
 
+PROCEDURE getSettings* (VAR build, run, debug: RW.tFileName);
+BEGIN
+	Lines.setTabs(get_int(IniFileName, "settings", "tab", 4));
+	blink := get_int(IniFileName, "settings", "blink", 70);
+	IF blink = 0 THEN
+		blink := -1
+	ELSE
+		blink := MIN(MAX(blink, 1), 1000)
+	END;
+    getStr("settings", "build", build);
+    getStr("settings", "run",   run);
+    getStr("settings", "debug", debug)
+END getSettings;
+
+
 PROCEDURE load* (path: RW.tFileName);
 VAR
     Lib: INTEGER;
@@ -160,16 +176,18 @@ VAR
 
 BEGIN
     sections := List.create(NIL);
-    IF File.Exists("/rd/1/settings/cedit.ini") THEN
-        IniFileName := "/rd/1/settings/cedit.ini"
-    ELSE
-        Utils.getPath(path, IniFileName);
-        Utils.append8(IniFileName, Utils.SLASH);
-        Utils.append8(IniFileName, fileName);
+
+    Utils.getPath(path, IniFileName);
+    Utils.append8(IniFileName, Utils.SLASH);
+    Utils.append8(IniFileName, fileName);
+
+    IF ~File.Exists(IniFileName) THEN
+    	IniFileName := "/rd/1/settings/cedit.ini"
     END;
 
     Lib := KOSAPI.LoadLib("/rd/1/Lib/Libini.obj");
     GetProc(Lib, SYSTEM.ADR(get_color), "ini_get_color");
+    GetProc(Lib, SYSTEM.ADR(get_int), "ini_get_int");
     GetProc(Lib, SYSTEM.ADR(get_str), "ini_get_str");
     GetProc(Lib, SYSTEM.ADR(enum_sections), "ini_enum_sections");
 

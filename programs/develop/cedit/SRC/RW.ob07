@@ -29,8 +29,6 @@ CONST
     CR = 0DX; LF = 0AX; TAB = 9X; SPACE = 20X;
     BOM = 0FEFFX;
 
-    TAB_SIZE* = 4;
-
     BUF_SIZE = 65536;
 
     NAME_LEN = 1024;
@@ -166,7 +164,7 @@ PROCEDURE getCharUTF16LE (file: tInput): INTEGER;
 END getCharUTF16LE;
 
 
-PROCEDURE getString* (file: tInput; line: Lines.tLine; VAR eol: BOOLEAN): INTEGER;
+PROCEDURE getString* (file: tInput; line: Lines.tLine; tabs: BOOLEAN; VAR eol: BOOLEAN): INTEGER;
 VAR
     c: WCHAR;
     i, L, k, n: INTEGER;
@@ -178,6 +176,9 @@ BEGIN
     i := ORD(file.cnt > 0) - 1;
     WHILE (file.cnt > 0) & ~eol DO
         c := WCHR(file.getChar(file) MOD 65536);
+        IF c = Lines.TAB1 THEN
+        	c := SPACE
+        END;
         IF c = CR THEN
             eol := TRUE;
             file.CR := TRUE
@@ -187,9 +188,20 @@ BEGIN
             END;
             file.CR := FALSE
         ELSIF c = TAB THEN
-            k := TAB_SIZE - i MOD TAB_SIZE;
+            k := Lines.tab - i MOD Lines.tab;
+            IF tabs THEN
+                s[i] := TAB
+            ELSE
+                s[i] := SPACE
+            END;
+            INC(i);
+            DEC(k);
             WHILE k > 0 DO
-                s[i] := SPACE;
+                IF tabs THEN
+                    s[i] := Lines.TAB1
+                ELSE
+                    s[i] := SPACE
+                END;
                 INC(i);
                 IF i = L THEN
                     Lines.concat(line, s);
@@ -354,9 +366,19 @@ END putByte;
 PROCEDURE putString* (file: tOutput; line: Lines.tLine; n: INTEGER): INTEGER;
 VAR
     i: INTEGER;
+    c: WCHAR;
+    err: BOOLEAN;
 BEGIN
     i := 0;
-    WHILE (i < n) & file.putChar(file, ORD(Lines.getChar(line, i))) DO
+    err := FALSE;
+    WHILE (i < n) & ~err DO
+        c := Lines.getChar(line, i);
+        IF c # Lines.TAB1 THEN
+            IF ~file.putChar(file, ORD(c)) THEN
+                err := TRUE;
+                DEC(i)
+            END
+        END;
         INC(i)
     END
     RETURN i

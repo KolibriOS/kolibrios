@@ -25,9 +25,9 @@ IMPORT Lines;
 CONST
 
     langNone* = 0; langC* = 1; langOberon* = 2; langPascal* = 3;
-    langFasm* = 4; langLua* = 5; langIni* = 6;
+    langFasm* = 4; langLua* = 5; langIni* = 6; langJSON* = 7;
 
-    csLang = {langC, langOberon, langLua, langIni};
+    csLang = {langC, langOberon, langLua, langIni, langJSON};
 
 TYPE
 
@@ -42,7 +42,7 @@ TYPE
 
 VAR
 
-    oberonKW, cKW, pascalKW, luaKW, iniKW, fasmKW: ARRAY 3 OF tKeyWords;
+    oberonKW, cKW, pascalKW, luaKW, iniKW, fasmKW, jsonKW: ARRAY 3 OF tKeyWords;
 
 
 PROCEDURE isCS* (lang: INTEGER): BOOLEAN;
@@ -66,14 +66,16 @@ PROCEDURE isKey* (s: ARRAY OF WCHAR; lang, kwSet: INTEGER): BOOLEAN;
 VAR
     res: BOOLEAN;
 BEGIN
+	DEC(kwSet);
     res := FALSE;
     CASE lang OF
-    |langC:      res := checkKW(s, cKW[kwSet - 1])
-    |langOberon: res := checkKW(s, oberonKW[kwSet - 1])
-    |langPascal: res := checkKW(s, pascalKW[kwSet - 1])
-    |langLua:    res := checkKW(s, luaKW[kwSet - 1])
-    |langIni:    res := checkKW(s, iniKW[kwSet - 1])
-    |langFasm:   res := checkKW(s, fasmKW[kwSet - 1])
+    |langC:      res := checkKW(s, cKW[kwSet])
+    |langOberon: res := checkKW(s, oberonKW[kwSet])
+    |langPascal: res := checkKW(s, pascalKW[kwSet])
+    |langLua:    res := checkKW(s, luaKW[kwSet])
+    |langIni:    res := checkKW(s, iniKW[kwSet])
+    |langFasm:   res := checkKW(s, fasmKW[kwSet])
+    |langJSON:   res := checkKW(s, jsonKW[kwSet])
     END
     RETURN res
 END isKey;
@@ -317,7 +319,8 @@ BEGIN
     CASE lang OF
     |langNone:
     |langFasm:
-    |langC:       C(line, depth, cond, pos, n)
+    |langC,
+     langJSON:    C(line, depth, cond, pos, n)
     |langOberon:  Oberon(line, depth, cond, pos, n)
     |langPascal:  Pascal(line, depth, cond, pos, n)
     |langLua:     Lua(line, depth, cond, pos, n)
@@ -381,6 +384,7 @@ BEGIN
     loadKW(luaKW,    getStr, "lang_Lua");
     loadKW(iniKW,    getStr, "lang_Ini");
     loadKW(fasmKW,   getStr, "lang_Fasm");
+    loadKW(jsonKW,   getStr, "lang_JSON");
 END init;
 
 

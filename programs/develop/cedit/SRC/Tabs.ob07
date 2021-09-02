@@ -26,8 +26,7 @@ CONST
     btnID* = 100;
     tabHeight* = 22;
     curTabHeight = 26;
-    scrWidth = 10;
-
+    scrWidth = 15;
 
 TYPE
 
@@ -105,7 +104,7 @@ VAR
 BEGIN
     y := t.y;
     x := t.x;
-    K.DrawRect(x, y - (curTabHeight - tabHeight), t.width + 2*scrWidth, t.height + (curTabHeight - tabHeight) - 1, K.winColor);
+    K.DrawRect(x, y - (curTabHeight - tabHeight), t.width + (2*scrWidth + 2), t.height + (curTabHeight - tabHeight) - 1, K.winColor);
     IF Width(t, 0, t.strings.count - 1) > t.width THEN
         INC(x, 2*scrWidth);
         K.CreateButton(btnID - 1, t.x, t.y, scrWidth, t.height - 1, K.btnColor, "<");

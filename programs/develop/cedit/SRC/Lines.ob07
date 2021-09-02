@@ -24,7 +24,9 @@ IMPORT
 
 CONST
     WCHAR_SIZE = 2;
-    SPACE = 20X;
+    SPACE* = 20X;
+    TAB* = 9X;
+    TAB1* = 0FFFEX;
 
 TYPE
 
@@ -51,7 +53,8 @@ VAR
 (*    _typedPtr: PTypedPtr;
     _untypedPtr: PUntypedPtr;*)
 
-    pMaxLength: INTEGER;
+    pMaxLength, tab*: INTEGER;
+    tabs*: BOOLEAN;
 
 
 PROCEDURE movInt (VAR v: INTEGER; x: INTEGER);
@@ -166,15 +169,28 @@ BEGIN
 END destroy;
 
 
-PROCEDURE modify* (line: tLine);
+PROCEDURE getChar* (line: tLine; i: INTEGER): WCHAR;
+VAR
+    c: WCHAR;
 BEGIN
-    IF ~line.temp THEN
-        movBool(line.modified, TRUE);
-        movBool(line.saved, FALSE)
-    END;
-    line.modified := TRUE;
-    line.saved := FALSE
-END modify;
+    SYSTEM.GET(line.ptr + i*WCHAR_SIZE, c)
+    RETURN c
+END getChar;
+
+
+PROCEDURE tabWidth (line: tLine; pos: INTEGER): INTEGER;
+VAR
+    n: INTEGER;
+BEGIN
+    n := pos;
+    IF getChar(line, pos) = TAB THEN
+        INC(pos);
+        WHILE getChar(line, pos) = TAB1 DO
+            INC(pos)
+        END
+    END
+    RETURN pos - n
+END tabWidth;
 
 
 PROCEDURE save* (line: tLine);
@@ -188,13 +204,9 @@ BEGIN
 END save;
 
 
-PROCEDURE getChar* (line: tLine; i: INTEGER): WCHAR;
-VAR
-    c: WCHAR;
-BEGIN
-    SYSTEM.GET(line.ptr + i*WCHAR_SIZE, c)
-    RETURN c
-END getChar;
+PROCEDURE isSpace* (c: WCHAR): BOOLEAN;
+    RETURN (c = SPACE) OR (c = TAB) OR (c = TAB1)
+END isSpace;
 
 
 PROCEDURE trimLength* (line: tLine): INTEGER;
@@ -202,7 +214,7 @@ VAR
     i: INTEGER;
 BEGIN
     i := line.length - 1;
-    WHILE (i >= 0) & (getChar(line, i) = SPACE) DO
+    WHILE (i >= 0) & isSpace(getChar(line, i)) DO
         DEC(i)
     END
     RETURN i + 1
@@ -345,6 +357,44 @@ BEGIN
 END delCharN;
 
 
+PROCEDURE fixTabs (line: tLine);
+VAR
+    i, n, k: INTEGER;
+BEGIN
+    i := 0;
+    WHILE i < line.length DO
+        n := tabWidth(line, i);
+        IF n # 0 THEN
+            k := tab - i MOD tab;
+            IF n > k THEN
+                delCharN(line, i + 1, n - k)
+            ELSIF n < k THEN
+                DEC(k, n);
+                insert3(line, i + 1, k);
+                WHILE k > 0 DO
+                    setChar(line, i + 1, TAB1);
+                    INC(i);
+                    DEC(k)
+                END
+            END
+        END;
+        INC(i)
+    END
+END fixTabs;
+
+
+PROCEDURE modify* (line: tLine);
+BEGIN
+    IF ~line.temp THEN
+        movBool(line.modified, TRUE);
+        movBool(line.saved, FALSE)
+    END;
+    line.modified := TRUE;
+    line.saved := FALSE;
+    fixTabs(line)
+END modify;
+
+
 PROCEDURE wrap* (line, nextLine: tLine; pos: INTEGER);
 VAR
     ptr1, ptr2: INTEGER;
@@ -437,6 +487,16 @@ PROCEDURE setMaxLength* (VAR maxLength: INTEGER);
 BEGIN
     pMaxLength := SYSTEM.ADR(maxLength)
 END setMaxLength;
+
+
+PROCEDURE setTabs* (_tab: INTEGER);
+BEGIN
+    IF _tab = 0 THEN
+        _tab := 4
+    END;
+    tabs := _tab > 0;
+    tab := ABS(_tab)
+END setTabs;
 
 
 BEGIN
