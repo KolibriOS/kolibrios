@@ -8,7 +8,7 @@
 MODULE Compiler;
 
 IMPORT ST := STATEMENTS, PARS, UTILS, PATHS, PROG, C := CONSOLE,
-       ERRORS, STRINGS, WRITER, MSP430, THUMB, TARGETS, SCAN;
+       ERRORS, STRINGS, WRITER, MSP430, THUMB, TARGETS, SCAN, TEXTDRV;
 
 
 CONST
@@ -29,6 +29,23 @@ VAR
     minor,
     major: INTEGER;
     checking: SET;
+
+
+    PROCEDURE getVal (VAR i: INTEGER; VAR value: INTEGER);
+    VAR
+        param: PARS.PATH;
+        val: INTEGER;
+    BEGIN
+        INC(i);
+        UTILS.GetArg(i, param);
+        IF STRINGS.StrToInt(param, val) THEN
+            value := val
+        END;
+        IF param[0] = "-" THEN
+            DEC(i)
+        END
+    END getVal;
+
 
 BEGIN
     out := "";
@@ -57,25 +74,14 @@ BEGIN
                 out := param
             END
 
+        ELSIF param = "-tab" THEN
+            getVal(i, options.tab)
+
         ELSIF param = "-ram" THEN
-            INC(i);
-            UTILS.GetArg(i, param);
-            IF STRINGS.StrToInt(param, value) THEN
-                options.ram := value
-            END;
-            IF param[0] = "-" THEN
-                DEC(i)
-            END
+            getVal(i, options.ram)
 
         ELSIF param = "-rom" THEN
-            INC(i);
-            UTILS.GetArg(i, param);
-            IF STRINGS.StrToInt(param, value) THEN
-                options.rom := value
-            END;
-            IF param[0] = "-" THEN
-                DEC(i)
-            END
+            getVal(i, options.rom)
 
         ELSIF param = "-nochk" THEN
             INC(i);
@@ -182,6 +188,7 @@ VAR
 
 BEGIN
     options.stack := 2;
+    options.tab := TEXTDRV.defTabSize;
     options.version := 65536;
     options.pic := FALSE;
     options.lower := FALSE;
@@ -237,6 +244,7 @@ BEGIN
         C.StringLn("  -ver <major.minor>    set version of program (KolibriOS DLL)"); C.Ln;
         C.StringLn("  -ram <size>           set size of RAM in bytes (MSP430) or Kbytes (STM32)"); C.Ln;
         C.StringLn("  -rom <size>           set size of ROM in bytes (MSP430) or Kbytes (STM32)"); C.Ln;
+        C.StringLn("  -tab <width>          set width for tabs"); C.Ln;
         UTILS.Exit(0)
     END;
 
@@ -285,6 +293,7 @@ BEGIN
     STRINGS.append(lib_path, UTILS.slash);
 
     keys(options, outname);
+    TEXTDRV.setTabSize(options.tab);
     IF outname = "" THEN
         outname := path;
         STRINGS.append(outname, modname);

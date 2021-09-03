@@ -71,7 +71,7 @@ TYPE
 
     OPTIONS* = RECORD
 
-        version*, stack*, ram*, rom*: INTEGER;
+        version*, stack*, ram*, rom*, tab*: INTEGER;
         pic*, lower*: BOOLEAN;
         checking*: SET
 
