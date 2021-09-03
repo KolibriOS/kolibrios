@@ -53,11 +53,10 @@ BEGIN
     IF id = t.current THEN
         INC(height, curTabHeight - tabHeight);
         DEC(y, curTabHeight - tabHeight);
-        (*color := K.lightColor
+        color := K.lightColor
     ELSE
-        color := K.darkColor*)
+        color := K.winColor
     END;
-    color := K.winColor;
     DEC(x); INC(width);
     x2 := x + width - 1;
     y2 := y + height - 1;

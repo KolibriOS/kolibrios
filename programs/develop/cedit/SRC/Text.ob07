@@ -1123,8 +1123,8 @@ BEGIN
         IF text.cursor.X > 0 THEN
             i := text.cursor.X;
             n := leadingSpaces(curLine);
+            modify(text);
             IF n < i THEN
-                modify(text);
                 move(text, -1);
                 delete(text)
             ELSE

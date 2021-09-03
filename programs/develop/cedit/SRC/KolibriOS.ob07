@@ -30,7 +30,7 @@ VAR
 
     winColor*, textColor*, btnColor*, btnTextColor*,
     toolbarColor*, scrollColor*, scrollBkColor*,
-    borderColor*, shadowColor*, (*darkColor*, lightColor*,*)
+    borderColor*, shadowColor*, darkColor*, lightColor*,
     caseColor*, disCaseColor*: INTEGER;
 
 
@@ -339,16 +339,11 @@ PROCEDURE GetSystemColors*;
 VAR
     buf: ARRAY 10 OF INTEGER;
 BEGIN
-    toolbarColor := 0DFDFDFH;
-    shadowColor := 0808080H;
-    caseColor := 00000FFH;
-    disCaseColor := 0808080H;
-
     ASSERT(LEN(buf) >= 10);
     KOSAPI.sysfunc4(48, 3, SYSTEM.ADR(buf[0]), 40);
 
-(*    darkColor := buf[2];
-    lightColor := buf[3];*)
+    darkColor := buf[2];
+    lightColor := buf[3];
     winColor := buf[5];
     textColor := buf[8];
     btnColor := buf[6];
@@ -356,6 +351,11 @@ BEGIN
     scrollColor := btnColor;
     scrollBkColor := winColor;
     borderColor := buf[9];
+
+    toolbarColor := 0DFDFDFH;
+    shadowColor := 0808080H;
+    caseColor := 00000FFH;
+    disCaseColor := 0808080H;
 END GetSystemColors;
 
 

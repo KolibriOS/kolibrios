@@ -28,7 +28,7 @@ IMPORT
     RW, Ini, box_lib, Icons, Tabs, Timer;
 
 CONST
-    header = "CEdit (02-sep-2021)";
+    header = "CEdit (03-sep-2021)";
 
     ShellFilter = "";
     EditFilter = "SH|ASM|TXT|INC|OB07|C|CPP|H|PAS|PP|LUA|INI|JSON";
@@ -185,7 +185,7 @@ VAR
     winWidth, winHeight: INTEGER;
     AppPath, runScript, buildScript, debugScript: RW.tFileName;
     OD: OpenDlg.Dialog;
-    confirm, notFound, search, searchOpened, modified: BOOLEAN;
+    confirm, notFound, menuFindClicked, search, searchOpened, modified: BOOLEAN;
 
     switch, closing: BOOLEAN;
     leftButton: BOOLEAN;
@@ -205,6 +205,8 @@ VAR
     context, menuFile, menuEdit, menuSearch, menuEncoding,
     menuView, menuSyntax, menuProgram, menuTools,
     subCurLine, subIndent, subCase, subBookmark: Menu.tMenu;
+
+    menuActive: BOOLEAN;
 
     icons: INTEGER;
     grayIcons: INTEGER;
@@ -308,7 +310,11 @@ PROCEDURE NotFound;
 BEGIN
     IF notFound THEN
         Message("not found");
-        notFound := FALSE;
+        IF menuFindClicked THEN
+        	menuFindClicked := FALSE
+        ELSE
+        	notFound := FALSE
+        END;
         SetFocus(FindEdit, TRUE)
     END
 END NotFound;
@@ -329,31 +335,40 @@ BEGIN
 END Replaced;
 
 
+PROCEDURE drawIcon (icons, idx, x: INTEGER);
+BEGIN
+	Icons.draw(icons, idx, x + iconPad, btnTop + iconPad)
+END drawIcon;
+
+
 PROCEDURE toolbarIcons;
 VAR
-    x, color: INTEGER;
+    x, color, ico: INTEGER;
 BEGIN
     x := searchLeft + (toolBtnSize + 5)*2;
     IF text.modified THEN
-        Icons.draw(icons, 5, x + iconPad, btnTop + iconPad)
+    	ico := icons
     ELSE
-        Icons.draw(grayIcons, 5, x + iconPad, btnTop + iconPad)
+    	ico := grayIcons
     END;
+    drawIcon(ico, 5, x);
 
     IF text.edition # NIL THEN
         x := searchLeft + (toolBtnSize + 5)*4 + toolbarDelim*2;
         IF ChangeLog.isFirstGuard(text.edition) THEN
-            Icons.draw(grayIcons, 37, x + iconPad, btnTop + iconPad)
+        	ico := grayIcons
         ELSE
-            Icons.draw(icons, 37, x + iconPad, btnTop + iconPad)
+        	ico := icons
         END;
+        drawIcon(ico, 37, x);
 
         x := searchLeft + (toolBtnSize + 5)*5 + toolbarDelim*2;
         IF ChangeLog.isLastGuard(text.edition) THEN
-            Icons.draw(grayIcons, 36, x + iconPad, btnTop + iconPad)
+        	ico := grayIcons
         ELSE
-            Icons.draw(icons, 36, x + iconPad, btnTop + iconPad)
-        END
+        	ico := icons
+        END;
+        drawIcon(ico, 36, x)
     END;
 
     IF T.selected(text) THEN
@@ -371,16 +386,19 @@ BEGIN
 
     x := searchLeft + (toolBtnSize + 5)*8 + toolbarDelim*4;
     IF buildScript # "" THEN
-        Icons.draw(icons, 54, x + iconPad, btnTop + iconPad)
+    	ico := icons
     ELSE
-        Icons.draw(grayIcons, 54, x + iconPad, btnTop + iconPad)
+    	ico := grayIcons
     END;
+	drawIcon(ico, 54, x);
+
     INC(x, toolBtnSize + 5);
     IF runScript # "" THEN
-        Icons.draw(icons, 53, x + iconPad, btnTop + iconPad)
+    	ico := icons
     ELSE
-        Icons.draw(grayIcons, 53, x + iconPad, btnTop + iconPad)
-    END
+    	ico := grayIcons
+    END;
+    drawIcon(ico, 53, x)
 END toolbarIcons;
 
 
@@ -596,18 +614,18 @@ BEGIN
         x := searchLeft;
 
         drawToolbarBtn(btnNew, x);
-        Icons.draw(icons, 2, x + iconPad, btnTop + iconPad);
+        drawIcon(icons, 2, x);
         INC(x, toolBtnSize + 5);
 
         drawToolbarBtn(btnOpen, x);
-        Icons.draw(icons, 0, x + iconPad, btnTop + iconPad);
+        drawIcon(icons, 0, x);
         INC(x, toolBtnSize + 5);
 
         drawToolbarBtn(btnSave, x);
         INC(x, toolBtnSize + 5 + toolbarDelim);
 
         drawToolbarBtn(btnSearch, x);
-        Icons.draw(icons, 49, x + iconPad, btnTop + iconPad);
+        drawIcon(icons, 49, x);
         INC(x, toolBtnSize + 5 + toolbarDelim);
 
         drawToolbarBtn(btnUndo, x);
@@ -1226,8 +1244,9 @@ BEGIN
         IF Menu.opened(menu) THEN
             Menu.close(menu)
         END;
-        Menu.open(menu, x, y)
-    END;
+        Menu.open(menu, x, y);
+        menuActive := TRUE
+    END
 END ShowMenu;
 
 
@@ -1238,8 +1257,8 @@ BEGIN
 	scrollIPC := FALSE;
 
     IF IPC[0] = Timer.ID THEN
-    	T.toggleCursor;
-    	repaint;
+		T.toggleCursor;
+		repaint;
     	IPC[2] := 0
     ELSIF IPC[0] = mainTID THEN
     	IF IPC[2] = Scroll.ScrollIPC THEN
@@ -1255,7 +1274,13 @@ BEGIN
 	    	ELSIF vScroll.Inc THEN
 				T.scroll(text, 0, 1)
 	    	END;
-        	repaint;
+
+    		IF menuActive THEN
+    			draw_window;
+    			menuActive := FALSE
+    		ELSE
+    			repaint
+    		END;
 
     		IF (0 IN K.MouseState()) THEN
     			WHILE (0 IN K.MouseState()) & (delay > 0) DO
@@ -1316,9 +1341,11 @@ BEGIN
         ShowSearchPanel;
         SetFocus(FindEdit, TRUE)
     |menuFindNext:
-        notFound := ~T.findNext(text, box_lib.check_box_get_value(BKW))
+        notFound := ~T.findNext(text, box_lib.check_box_get_value(BKW));
+        menuFindClicked := TRUE
     |menuFindPrev:
-        notFound := ~T.findNext(text, ~box_lib.check_box_get_value(BKW))
+        notFound := ~T.findNext(text, ~box_lib.check_box_get_value(BKW));
+        menuFindClicked := TRUE
     |menuGoto:
         ShowSearchPanel;
         SetFocus(GotoEdit, TRUE)
@@ -2112,6 +2139,8 @@ BEGIN
     T.SetPos(text, 0, 0);
     confirm := FALSE;
     notFound := FALSE;
+    menuFindClicked := FALSE;
+    menuActive := FALSE;
     search := FALSE;
     searchOpened := FALSE;
     createSearchForm;

@@ -76,7 +76,10 @@ VAR
     resetTimer: tProc;
     _open: PROCEDURE (m: tMenu; x, y: INTEGER);
     redraw*: BOOLEAN;
-
+(*
+    backColor, foreColor, selBackColor, selForeColor,
+    disBackColor, disForeColor, disSelBackColor, disSelForeColor: INTEGER;
+*)
 
 PROCEDURE isSender* (tid: INTEGER): BOOLEAN;
 VAR
@@ -107,6 +110,17 @@ VAR
     canvas: G.tCanvas;
 
 BEGIN
+(*
+    backColor := K.winColor;
+    foreColor := K.textColor;
+    selBackColor := K.btnColor;
+    selForeColor := K.btnTextColor;
+
+    disBackColor := backColor;
+    disForeColor := K.darkColor;
+    disSelBackColor := K.lightColor;
+    disSelForeColor := disForeColor;
+*)
     canvas := m.canvas;
     G.SetColor(canvas, backColor);
     G.clear(canvas);
