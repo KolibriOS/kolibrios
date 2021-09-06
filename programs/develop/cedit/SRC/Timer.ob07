@@ -61,10 +61,8 @@ BEGIN
 		IF ~paused THEN
 			DEC(cnt, step);
 			IF cnt <= 0 THEN
-				cnt := time;
-				IF time > 0 THEN
-					K.SendIPC(mainTID, ID)
-				END
+				K.SendIPC(mainTID, ID);
+				cnt := time
 			END
 		END
 	END

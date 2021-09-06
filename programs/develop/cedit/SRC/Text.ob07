@@ -75,6 +75,7 @@ TYPE
         fileName*: RW.tFileName;
         lang*: INTEGER;
         enc*: INTEGER;
+        eol*: INTEGER;
         table: Search.IdxTable;
         foundList: List.tList;
         idxData: Search.tBuffer;
@@ -1337,7 +1338,7 @@ BEGIN
 END scroll;
 
 
-PROCEDURE save* (text: tText; name: RW.tFileName; enc, nl: INTEGER): BOOLEAN;
+PROCEDURE save* (text: tText; name: RW.tFileName): BOOLEAN;
 CONST
     tempFile = "/tmp0/1/cedit~.tmp";
 VAR
@@ -1348,7 +1349,7 @@ VAR
 BEGIN
     ChangeLog.setGuard(text.edition);
     res := TRUE;
-    file := RW.create(tempFile, enc, nl);
+    file := RW.create(tempFile, text.enc, text.eol);
     IF file # NIL THEN
         ChangeLog.delSaved;
         line := text.first(tLine);
@@ -2304,34 +2305,30 @@ PROCEDURE open* (name: RW.tFileName; VAR errno: INTEGER): tText;
 VAR
     text: tText;
     file: RW.tInput;
-    n, enc: INTEGER;
-    eol: BOOLEAN;
+    n, enc, eol: INTEGER;
+    _eol: BOOLEAN;
     line: tLine;
 BEGIN
     errno := 0;
     text := NIL;
-    file := RW.load(name, enc);
+    file := RW.load(name, enc, eol);
     IF file # NIL THEN
         text := create(name);
         text.enc := enc;
+        text.eol := eol;
+        line := Lines.create(FALSE);
+        List._append(text, line);
         REPEAT
-            line := Lines.create(FALSE);
-            n := RW.getString(file, line, Lines.tabs, eol);
-            IF n >= 0 THEN
-                List._append(text, line)
-            ELSE
-                Lines.destroy(line)
+            n := RW.getString(file, line, Lines.tabs, _eol);
+            IF _eol THEN
+            	line := Lines.create(FALSE);
+            	List._append(text, line)
             END
-        UNTIL n < 0;
+        UNTIL ~_eol;
         RW.destroy(file);
-        IF n = -1 THEN
-            IF text.count = 0 THEN
-                List._append(text, Lines.create(FALSE))
-            END;
-            text.curLine := text.first(tLine);
-            SetPos(text, 0, 0);
-            resetSelect(text)
-        END
+        text.curLine := text.first(tLine);
+        SetPos(text, 0, 0);
+        resetSelect(text)
     ELSE
         errno := 1
     END;
@@ -2477,6 +2474,7 @@ BEGIN
     List._append(text, Lines.create(FALSE));
     text.curLine := text.first(tLine);
     text.enc := E.CP866;
+    text.eol := RW.EOL_CRLF;
     SetPos(text, 0, 0);
     resetSelect(text)
     RETURN text

@@ -90,7 +90,7 @@ BEGIN
 	height := scroll.height;
 	canvas := scroll.canvas;
 	G.SetColor(canvas, K.winColor);
-	G.FillRect(canvas, 0, 0, width - 1, height - 1);
+	G.clear(canvas);
 	G.SetColor(canvas, K.borderColor);
 	G.Rect(canvas, 0, 0, width - 1, height - 1);
 	IF scroll.vertical THEN

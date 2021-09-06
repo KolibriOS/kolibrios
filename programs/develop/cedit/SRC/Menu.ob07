@@ -124,7 +124,7 @@ BEGIN
     canvas := m.canvas;
     G.SetColor(canvas, backColor);
     G.clear(canvas);
-    G.SetColor(canvas, ORD((-BITS(backColor))*{0..23}) );
+    G.SetColor(canvas, foreColor);
     G.Rect(canvas, 0, 0, m.width, m.height);
     y := TOP;
     i := 0;
@@ -172,7 +172,7 @@ BEGIN
 
         INC(y, fontHeight);
         IF item.delim THEN
-            G.SetColor(canvas, ORD((-BITS(backColor))*{0..23}));
+            G.SetColor(canvas, foreColor);
             G.HLine(canvas, y - 2, 1, m.width - 1)
         END;
         INC(i);

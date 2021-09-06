@@ -28,7 +28,7 @@ IMPORT
     RW, Ini, box_lib, Icons, Tabs, Timer;
 
 CONST
-    header = "CEdit (03-sep-2021)";
+    header = "CEdit (06-sep-2021)";
 
     ShellFilter = "";
     EditFilter = "SH|ASM|TXT|INC|OB07|C|CPP|H|PAS|PP|LUA|INI|JSON";
@@ -62,10 +62,11 @@ CONST
     btnEdit = 71;
     btnMenuSearch = 72;
     btnEncoding = 73;
-    btnView = 74;
-    btnSyntax = 75;
-    btnProgram = 76;
-    btnTools = 77;
+    btnEOL = 74;
+    btnView = 75;
+    btnSyntax = 76;
+    btnProgram = 77;
+    btnTools = 78;
 
     MainMenuHeight = fontHeight + 7;
 
@@ -91,7 +92,8 @@ CONST
     menuEditX = menuFileX + 4*fontWidth + 2 + 7;
     menuSearchX = menuEditX + 4*fontWidth + 2 + 7;
     menuEncodingX = menuSearchX + 6*fontWidth + 2 + 7;
-    menuViewX = menuEncodingX + 8*fontWidth + 2 + 7;
+    menuEOLX = menuEncodingX + 8*fontWidth + 2 + 7;
+    menuViewX = menuEOLX + 3*fontWidth + 2 + 7;
     menuSyntaxX = menuViewX + 4*fontWidth + 2 + 7;
     menuProgramX = menuSyntaxX + 6*fontWidth + 2 + 7;
     menuToolsX = menuProgramX + 7*fontWidth + 2 + 7;
@@ -169,6 +171,10 @@ CONST
     menuNextBookmark = 132;
     menuPrevBookmark = 133;
 
+    menuLF = 140;
+    menuCRLF = 141;
+    menuCR = 142;
+
     maxTexts = 32;
     scrollDelay = 40;
 
@@ -203,7 +209,7 @@ VAR
     mainTID, delay: INTEGER;
 
     context, menuFile, menuEdit, menuSearch, menuEncoding,
-    menuView, menuSyntax, menuProgram, menuTools,
+    menuEOL, menuView, menuSyntax, menuProgram, menuTools,
     subCurLine, subIndent, subCase, subBookmark: Menu.tMenu;
 
     menuActive: BOOLEAN;
@@ -414,11 +420,16 @@ END WriteModified;
 
 PROCEDURE DrawState (text: T.tText; width, height: INTEGER);
 VAR
-    y: INTEGER;
+    y, w, x: INTEGER;
 BEGIN
     y := (btnHeight - fontHeight) DIV 2 + btnTop;
-    K.DrawRect(width - 16*fontWidth, y, 16*fontWidth, fontHeight, K.winColor);
-    K.DrawText(width - LENGTH(E.names[text.enc])*fontWidth, y, K.textColor, E.names[text.enc]);
+    K.DrawRect(width - 32*fontWidth, y, 32*fontWidth, fontHeight, K.winColor);
+    w := LENGTH(E.names[text.enc])*fontWidth;
+    x := width - w;
+    K.DrawText(x, y, K.textColor, E.names[text.enc]);
+    w := LENGTH(RW.eolNames[text.eol])*fontWidth;
+    DEC(x, w + 10);
+    K.DrawText(x, y, K.textColor, RW.eolNames[text.eol]);
     y := height - (BOTTOM - scrollWidth) + (BOTTOM - scrollWidth - 16) DIV 2;
     K.DrawRect(LEFT + 16*fontWidth, TOP + canvas.height + scrollWidth - 1, width - LEFT - 24*fontWidth, BOTTOM - scrollWidth + 1, K.winColor);
     K.DrawText866(LEFT + 16*fontWidth, y, K.textColor, text.fileName);
@@ -606,6 +617,7 @@ BEGIN
         drawMainMenu(menuEdit, menuEditX, btnEdit, "edit");
         drawMainMenu(menuSearch, menuSearchX, btnMenuSearch, "search");
         drawMainMenu(menuEncoding, menuEncodingX, btnEncoding, "encoding");
+        drawMainMenu(menuEOL, menuEOLX, btnEOL, "eol");
         drawMainMenu(menuView, menuViewX, btnView, "view");
         drawMainMenu(menuSyntax, menuSyntaxX, btnSyntax, "syntax");
         drawMainMenu(menuProgram, menuProgramX, btnProgram, "program");
@@ -749,7 +761,7 @@ BEGIN
     END;
     OpenFile(fileName, EditFilter);
     IF fileName # "" THEN
-        IF T.save(text, fileName, text.enc, RW.EOL_CRLF) THEN
+        IF T.save(text, fileName) THEN
             T.setName(text, fileName);
             U.getFileName(fileName, name, U.SLASH);
             Tabs.rename(tabs, curText, name)
@@ -785,7 +797,7 @@ PROCEDURE save (text: T.tText);
 BEGIN
     IF text.modified THEN
         IF text.fileName # "" THEN
-            IF ~T.save(text, text.fileName, text.enc, RW.EOL_CRLF) THEN
+            IF ~T.save(text, text.fileName) THEN
                 saveError(text.fileName)
             END
         ELSE
@@ -1089,6 +1101,7 @@ BEGIN
     Menu.close(menuEdit);
     Menu.close(menuSearch);
     Menu.close(menuEncoding);
+    Menu.close(menuEOL);
     Menu.close(menuView);
     Menu.close(menuSyntax);
     Menu.close(menuProgram);
@@ -1201,6 +1214,11 @@ BEGIN
         Menu.setCheck(menu, menuCP866,   ORD(text.enc = E.CP866)*2);
         Menu.setCheck(menu, menuWin1251, ORD(text.enc = E.W1251)*2);
         INC(x, menuEncodingX)
+    ELSIF menu = menuEOL THEN
+		Menu.setCheck(menu, menuCRLF, ORD(text.eol = RW.EOL_CRLF)*2);
+		Menu.setCheck(menu, menuLF,   ORD(text.eol = RW.EOL_LF)*2);
+		Menu.setCheck(menu, menuCR,   ORD(text.eol = RW.EOL_CR)*2);
+		INC(x, menuEOLX)
     ELSIF menu = menuView THEN
         Menu.setCheck(menu, menuNumbers,  ORD(text.numbers));
         Menu.setCheck(menu, menuFontSize, ORD(font = font2));
@@ -1400,6 +1418,12 @@ BEGIN
         text.enc := E.CP866
     |menuWin1251:
         text.enc := E.W1251
+    |menuLF:
+        text.eol := RW.EOL_LF
+    |menuCRLF:
+        text.eol := RW.EOL_CRLF
+    |menuCR:
+        text.eol := RW.EOL_CR
     |menuPipet:
         K.Run("/rd/1/develop/pipet", "")
     |menuBoard:
@@ -1563,6 +1587,18 @@ BEGIN
     Menu.AddMenuItem(menu, menuWin1251, E.names[E.W1251]);
     RETURN Menu.create(menu, MenuItemClick, MenuKeyDown)
 END CreateMenuEncoding;
+
+
+PROCEDURE CreateMenuEOL (): Menu.tMenu;
+VAR
+    menu: List.tList;
+BEGIN
+    menu := List.create(NIL);
+    Menu.AddMenuItem(menu, menuCRLF, RW.eolNames[RW.EOL_CRLF]);
+    Menu.AddMenuItem(menu, menuLF,   RW.eolNames[RW.EOL_LF]);
+    Menu.AddMenuItem(menu, menuCR,   RW.eolNames[RW.EOL_CR]);
+    RETURN Menu.create(menu, MenuItemClick, MenuKeyDown)
+END CreateMenuEOL;
 
 
 PROCEDURE CreateMenuView (): Menu.tMenu;
@@ -1851,6 +1887,8 @@ BEGIN
         ShowMenu(menuSearch)
     |btnEncoding:
         ShowMenu(menuEncoding)
+    |btnEOL:
+        ShowMenu(menuEOL)
     |btnView:
         ShowMenu(menuView)
     |btnSyntax:
@@ -2100,6 +2138,7 @@ BEGIN
     T.init(resetTimer);
     T.setCanvas(canvas);
     U.ptr2str(K.GetCommandLine(), fileName);
+
     context := CreateContextMenu();
     menuFile := CreateMenuFile();
     subCurLine := CreateMenuCurLine();
@@ -2113,6 +2152,7 @@ BEGIN
     menuSearch := CreateMenuSearch();
     subBookmark.parent := menuSearch;
     menuEncoding := CreateMenuEncoding();
+    menuEOL := CreateMenuEOL();
     menuView := CreateMenuView();
     menuSyntax := CreateMenuSyntax();
     menuProgram := CreateMenuProgram();

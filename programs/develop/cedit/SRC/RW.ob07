@@ -33,7 +33,7 @@ CONST
 
     NAME_LEN = 1024;
 
-    EOL_LF* = 0; EOL_CRLF* = 1; EOL_CR* = 2;
+    EOL_CRLF* = 0; EOL_LF* = 1; EOL_CR* = 2;
 
 
 TYPE
@@ -45,7 +45,6 @@ TYPE
     tInput* = POINTER TO RECORD
         buffer:   INTEGER;
         pos, cnt: INTEGER;
-        enc:      INTEGER;
         CR:       BOOLEAN;
         clipbrd:  BOOLEAN;
         getChar:  PROCEDURE (file: tInput): INTEGER
@@ -63,6 +62,7 @@ TYPE
 VAR
 
     eol*: ARRAY 3 OF tEOL;
+    eolNames*: ARRAY 3, 16 OF WCHAR;
 
 
 PROCEDURE getByte (file: tInput): BYTE;
@@ -296,7 +296,35 @@ BEGIN
 END detectEncoding;
 
 
-PROCEDURE load* (name: tFileName; VAR enc: INTEGER): tInput;
+PROCEDURE detectEOL (text: tInput): INTEGER;
+VAR
+	pos, cnt, c, res: INTEGER;
+BEGIN
+	res := -1;
+	pos := text.pos;
+	cnt := text.cnt;
+	WHILE (text.cnt > 0) & (res = -1) DO
+		c := text.getChar(text);
+		IF c = 10 THEN
+			res := EOL_LF
+		ELSIF c = 13 THEN
+			IF text.getChar(text) = 10 THEN
+				res := EOL_CRLF
+			ELSE
+				res := EOL_CR
+			END
+		END
+	END;
+	text.cnt := cnt;
+	text.pos := pos;
+	IF res = -1 THEN
+		res := EOL_CRLF
+	END
+	RETURN res
+END detectEOL;
+
+
+PROCEDURE load* (name: tFileName; VAR enc, eol: INTEGER): tInput;
 VAR
     res: tInput;
     fsize: INTEGER;
@@ -325,7 +353,7 @@ BEGIN
         ELSIF enc = E.W1251 THEN
             res.getChar := getCharW1251
         END;
-        res.enc := enc
+        eol := detectEOL(res)
     END
     RETURN res
 END load;
@@ -340,7 +368,6 @@ BEGIN
     res.CR := FALSE;
     res.clipbrd := TRUE;
     res.getChar := NIL;
-    res.enc := E.CP866;
     res.getChar := getCharCP866;
     res.buffer := CB.get(res.cnt);
     IF res.buffer = 0 THEN
@@ -524,7 +551,10 @@ END destroy;
 
 
 BEGIN
-    eol[EOL_LF] := LF;
     eol[EOL_CRLF] := CR + LF;
-    eol[EOL_CR] := CR
+    eol[EOL_LF] := LF;
+    eol[EOL_CR] := CR;
+    eolNames[EOL_CRLF] := "CRLF";
+    eolNames[EOL_LF] := "LF";
+    eolNames[EOL_CR] := "CR"
 END RW.
