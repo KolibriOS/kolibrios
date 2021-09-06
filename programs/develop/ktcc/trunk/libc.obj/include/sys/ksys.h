@@ -1319,9 +1319,11 @@ int _ksys_file_read_file(const char *name, unsigned long long offset, unsigned s
 static inline 
 int _ksys_file_create(const char* name){
     ksys70_t k;
-    k.p00 = 2;
-    k.p12 = 0;
-    k.p21 = name;
+    k.p00   = 2;
+    k.p04dw = 0;
+    k.p08dw = 0;
+    k.p12   = 0;
+    k.p21   = name;
     return _ksys_work_files(&k);
 }
 
@@ -1354,10 +1356,13 @@ static inline
 int _ksys_file_get_info(const char *name, ksys_bdfe_t *bdfe)
 {
     ksys70_t k;
-    k.p00 = 5;
-    k.bdfe = bdfe;
-    k.p20 = 0;
-    k.p21 = name;
+    k.p00   = 5;
+    k.p04dw = 0;
+    k.p08dw = 0;
+    k.p12   = 0;
+    k.bdfe  = bdfe;
+    k.p20   = 0;
+    k.p21   = name;
     return _ksys_work_files(&k);
 }
 
