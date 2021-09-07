@@ -23,28 +23,15 @@ IMPORT SYSTEM, K := KolibriOS, KOSAPI, Ini;
 
 VAR
 	stack: ARRAY 1024*64 OF INTEGER;
-	ID*, time, cnt: INTEGER;
-	paused: BOOLEAN;
-
-
-PROCEDURE reset*;
-BEGIN
-	cnt := time;
-	paused := FALSE
-END reset;
-
-
-PROCEDURE stop*;
-BEGIN
-	cnt := time;
-	paused := TRUE
-END stop;
+	ID*, n*, time, cnt: INTEGER;
+	enabled: BOOLEAN;
+	msg: ARRAY 3 OF INTEGER;
 
 
 PROCEDURE kill*;
 BEGIN
-	ID := 0;
-	K.ExitID(ID)
+	enabled := FALSE;
+	INC(n)
 END kill;
 
 
@@ -52,16 +39,18 @@ PROCEDURE [stdcall] main (mainTID: INTEGER);
 CONST
 	step = 5;
 BEGIN
+	msg[0] := ID;
+	msg[1] := 12;
 	WHILE TRUE DO
 		K.Pause(step);
 		IF KOSAPI.sysfunc3(18, 21, mainTID) = 0 THEN
 			ID := 0;
 			K.Exit
 		END;
-		IF ~paused THEN
+		IF enabled THEN
 			DEC(cnt, step);
 			IF cnt <= 0 THEN
-				K.SendIPC(mainTID, ID);
+				KOSAPI.sysfunc5(60, 2, mainTID, SYSTEM.ADR(msg[0]), msg[1]);
 				cnt := time
 			END
 		END
@@ -72,12 +61,20 @@ END main;
 PROCEDURE create* (mainTID: INTEGER);
 BEGIN
 	time := Ini.blink;
-	reset;
-	stack[LEN(stack) - 1] := mainTID;
-	ID := K.CreateThread(SYSTEM.ADR(main), stack)
+	cnt := time;
+	enabled := TRUE;
+	IF ID = 0 THEN
+		stack[LEN(stack) - 1] := mainTID;
+		ID := K.CreateThread(SYSTEM.ADR(main), stack)
+	ELSE
+		INC(n);
+		msg[2] := n
+	END
 END create;
 
 
 BEGIN
-	ID := 0
+	ID := 0;
+	msg[2] := 0;
+	n := 0;
 END Timer.

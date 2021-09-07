@@ -28,7 +28,7 @@ IMPORT
     RW, Ini, box_lib, Icons, Tabs, Timer;
 
 CONST
-    header = "CEdit (06-sep-2021)";
+    header = "CEdit (07-sep-2021)";
 
     ShellFilter = "";
     EditFilter = "SH|ASM|TXT|INC|OB07|C|CPP|H|PAS|PP|LUA|INI|JSON";
@@ -81,7 +81,7 @@ CONST
     RIGHT = scrollWidth - 2;
     BOTTOM = scrollWidth + 18;
 
-    minWinWidth = 635; minWinHeight = 538;
+    minWinWidth = 635; minWinHeight = 550;
 
     SEARCH_PADDING = 10;
     searchLeft = 0;
@@ -250,10 +250,10 @@ PROCEDURE resetTimer;
 BEGIN
 	IF EditBox_Focus(FindEdit) OR EditBox_Focus(ReplaceEdit) OR EditBox_Focus(GotoEdit) THEN
 		T.hideCursor;
-		Timer.stop
+		Timer.kill
 	ELSE
 		T.showCursor;
-		Timer.reset
+		Timer.create(mainTID)
 	END
 END resetTimer;
 
@@ -298,7 +298,7 @@ CONST
 VAR
     top, left, right, bottom, x, y, width: INTEGER;
 BEGIN
-	Timer.stop;
+	Timer.kill;
     width := minWidth + LENGTH(s)*fontWidth;
     left := (canvas.width - width) DIV 2 + LEFT;
     top := (canvas.height - height) DIV 2 + TOP;
@@ -411,7 +411,7 @@ END toolbarIcons;
 PROCEDURE WriteModified (x, y: INTEGER);
 BEGIN
     modified := text.modified;
-    K.DrawRect(x, TOP + canvas.height + scrollWidth - 1, 8*fontWidth, BOTTOM - scrollWidth + 1, K.winColor);
+    K.DrawRect(x, TOP + canvas.height + scrollWidth, 8*fontWidth, BOTTOM - scrollWidth + 1, K.winColor);
     IF modified THEN
         K.DrawText866(x, y, K.textColor, "modified")
     END
@@ -431,7 +431,7 @@ BEGIN
     DEC(x, w + 10);
     K.DrawText(x, y, K.textColor, RW.eolNames[text.eol]);
     y := height - (BOTTOM - scrollWidth) + (BOTTOM - scrollWidth - 16) DIV 2;
-    K.DrawRect(LEFT + 16*fontWidth, TOP + canvas.height + scrollWidth - 1, width - LEFT - 24*fontWidth, BOTTOM - scrollWidth + 1, K.winColor);
+    K.DrawRect(LEFT + 16*fontWidth, TOP + canvas.height + scrollWidth, width - LEFT - 24*fontWidth, BOTTOM - scrollWidth + 1, K.winColor);
     K.DrawText866(LEFT + 16*fontWidth, y, K.textColor, text.fileName);
     WriteModified(width - 8*fontWidth, y)
 END DrawState;
@@ -471,7 +471,7 @@ BEGIN
         END;
         T.draw(text);
         y := height - (BOTTOM - scrollWidth) + (BOTTOM - scrollWidth - 16) DIV 2;
-        K.DrawRect(LEFT, TOP + canvas.height + scrollWidth - 1, 16*fontWidth, BOTTOM - scrollWidth + 1, K.winColor);
+        K.DrawRect(LEFT, TOP + canvas.height + scrollWidth, 16*fontWidth, BOTTOM - scrollWidth + 1, K.winColor);
         WritePos(y);
 
         IF modified # text.modified THEN
@@ -479,8 +479,8 @@ BEGIN
         END;
 
         T.getScroll(text, scrollX, scrollY);
-        DrawScroll(vScroll, LEFT + canvas.width - 1, TOP - 1, scrollY, text.count - 1);
-        DrawScroll(hScroll, LEFT, TOP + canvas.height - 1, scrollX, text.maxLength);
+        DrawScroll(vScroll, LEFT + canvas.width, TOP - 1, scrollY, text.count - 1);
+        DrawScroll(hScroll, LEFT, TOP + canvas.height, scrollX, text.maxLength);
 
         G.DrawCanvas(canvas, LEFT, TOP);
         NotFound;
@@ -505,13 +505,13 @@ BEGIN
     K.WinSize(winWidth, winHeight);
     K.ClientSize(cliWidth, cliHeight);
     G.destroy(canvas);
-    canvas := G.CreateCanvas(cliWidth - (LEFT + RIGHT + 1), cliHeight - (TOP + BOTTOM));
-    Tabs.setArea(tabs, LEFT, TOP - Tabs.tabHeight, cliWidth - (LEFT + RIGHT + 1), Tabs.tabHeight);
+    canvas := G.CreateCanvas(cliWidth - (LEFT + RIGHT + 2), cliHeight - (TOP + BOTTOM + 1));
+    Tabs.setArea(tabs, LEFT, TOP - Tabs.tabHeight, cliWidth - (LEFT + RIGHT + 2), Tabs.tabHeight);
     G.SetFont(canvas, font);
     T.setCanvas(canvas);
     T.resize(canvas.width, canvas.height);
-    Scroll.resize(vScroll, vScroll.width, canvas.height + 1);
-    Scroll.resize(hScroll, canvas.width, hScroll.height);
+    Scroll.resize(vScroll, vScroll.width, canvas.height + 2);
+    Scroll.resize(hScroll, canvas.width + 1, hScroll.height);
 END resize;
 
 
@@ -611,7 +611,7 @@ BEGIN
 
         K.DrawRect(0, 0, width, TOP, K.winColor);
         K.DrawRect(0, 0, LEFT, height, K.winColor);
-        K.DrawRect(LEFT + canvas.width - 1, TOP + canvas.height - 1, scrollWidth, scrollWidth, K.winColor);
+        K.DrawRect(LEFT + canvas.width + 1, TOP + canvas.height, scrollWidth - 1, scrollWidth, K.winColor);
 
         drawMainMenu(menuFile, menuFileX, btnFile, "file");
         drawMainMenu(menuEdit, menuEditX, btnEdit, "edit");
@@ -698,9 +698,8 @@ END getKBState;
 PROCEDURE stopTimer;
 BEGIN
 	T.hideCursor;
-    Timer.stop;
-    repaint;
-    Timer.stop
+    Timer.kill;
+    repaint
 END stopTimer;
 
 
@@ -867,13 +866,6 @@ BEGIN
 END Confirm;
 
 
-PROCEDURE Exit;
-BEGIN
-	Timer.kill;
-	K.Exit
-END Exit;
-
-
 PROCEDURE closeFile (conf: BOOLEAN; n: INTEGER);
 VAR
     i: INTEGER;
@@ -892,7 +884,7 @@ BEGIN
         IF curText >= 0 THEN
             Switch(texts[curText])
         ELSE
-            Exit
+            K.Exit
         END;
         draw_window
     END
@@ -1258,7 +1250,7 @@ BEGIN
     Menu.setEnabled(subCase, menuLower, selected);
 
     IF menu # NIL THEN
-    	Timer.stop;
+    	Timer.kill;
         IF Menu.opened(menu) THEN
             Menu.close(menu)
         END;
@@ -1273,10 +1265,11 @@ VAR
 	scrollIPC: BOOLEAN;
 BEGIN
 	scrollIPC := FALSE;
-
     IF IPC[0] = Timer.ID THEN
-		T.toggleCursor;
-		repaint;
+    	IF IPC[4] = Timer.n THEN
+			T.toggleCursor;
+			repaint
+		END;
     	IPC[2] := 0
     ELSIF IPC[0] = mainTID THEN
     	IF IPC[2] = Scroll.ScrollIPC THEN
@@ -2128,7 +2121,7 @@ BEGIN
     cliWidth := winWidth;
     cliHeight := winHeight;
     LEFT := searchLeft;
-    canvas := G.CreateCanvas(winWidth - (LEFT + RIGHT + 10), winHeight - (TOP + BOTTOM + 4) - K.SkinHeight());
+    canvas := G.CreateCanvas(winWidth - (LEFT + RIGHT + 11), winHeight - (TOP + BOTTOM + 5) - K.SkinHeight());
     tabs := Tabs.create();
     Tabs.setArea(tabs, LEFT, TOP - Tabs.tabHeight, canvas.width, Tabs.tabHeight);
     font1 := G.CreateFont(1, "", {});
@@ -2166,15 +2159,15 @@ BEGIN
         text := T.open(fileName, err);
         IF text = NIL THEN
             error("'cedit: error opening file' -E");
-            Exit
+            K.Exit
         ELSE
             U.getPath(fileName, filePath)
         END
     END;
     OD := OpenDlg.Create(draw_window, OpenDlg.topen, filePath, "");
     insert(0, text);
-    Scroll.create(FALSE, canvas.width, scrollWidth, scrollWidth, scrollWidth, hScroll);
-    Scroll.create(TRUE, scrollWidth, canvas.height, scrollWidth, scrollWidth, vScroll);
+    Scroll.create(FALSE, canvas.width + 1, scrollWidth, scrollWidth, scrollWidth, hScroll);
+    Scroll.create(TRUE, scrollWidth, canvas.height + 1, scrollWidth, scrollWidth, vScroll);
     T.resize(canvas.width, canvas.height);
     T.SetPos(text, 0, 0);
     confirm := FALSE;

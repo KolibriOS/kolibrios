@@ -2202,9 +2202,7 @@ BEGIN
         cursor(text)
     END;
     G.SetColor(canvas, K.borderColor);
-    G.HLine(canvas, size.Y - 1, 0, size.X - 1);
     G.VLine(canvas, 0, 0, size.Y - 1);
-    G.VLine(canvas, size.X - 1, 0, size.Y - 1)
 END draw;
 
 

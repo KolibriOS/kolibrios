@@ -314,7 +314,7 @@ BEGIN
 	x := x - scroll.left;
 	y := y - scroll.top;
 	scroll.mouse := TRUE;
-	IF between(0, x, scroll.width - 1) & between(0, y, scroll.height - 1) THEN
+	IF between(1, x, scroll.width - 2) & between(1, y, scroll.height - 2) THEN
 		IF scroll.vertical THEN
 			c := y;
 			size := scroll.height
