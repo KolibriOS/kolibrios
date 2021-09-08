@@ -1,0 +1,119 @@
+﻿(*
+    Copyright 2021 Anton Krotov
+
+    This file is part of CEdit.
+
+    CEdit is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    CEdit is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with CEdit. If not, see <http://www.gnu.org/licenses/>.
+*)
+
+MODULE CheckBox;
+
+IMPORT G := Graph, K := KolibriOS;
+
+CONST
+	padding = 4;
+
+TYPE
+	tCheckBox* = POINTER TO RECORD
+
+		left*, top*: INTEGER;
+		width, height: INTEGER;
+		value*, mouse*: BOOLEAN;
+		text: ARRAY 32 OF WCHAR;
+		canvas: G.tCanvas
+
+	END;
+
+
+PROCEDURE mark (canvas: G.tCanvas);
+BEGIN
+    G.DLine(canvas, 2,  6,  6, -1);
+    G.DLine(canvas, 2,  6,  7, -1);
+    G.DLine(canvas, 7, 13,  9,  1);
+    G.DLine(canvas, 7, 13, 10,  1);
+END mark;
+
+
+PROCEDURE paint* (chkbox: tCheckBox);
+VAR
+	canvas: G.tCanvas;
+	fontHeight: INTEGER;
+BEGIN
+	canvas := chkbox.canvas;
+	fontHeight := canvas.font.height - 1;
+	G.SetColor(canvas, K.winColor);
+	G.clear(canvas);
+	G.SetColor(canvas, 0FFFFFFH);
+	G.FillRect(canvas, 0, 0, fontHeight, fontHeight);
+	G.SetColor(canvas, K.borderColor);
+	G.Rect(canvas, 0, 0, fontHeight, fontHeight);
+	IF chkbox.value THEN
+		G.SetColor(canvas, 0008000H);
+		mark(canvas)
+	END;
+	G.SetTextColor(canvas, K.textColor);
+	G.SetBkColor(canvas, K.winColor);
+	G.TextOut2(canvas, canvas.font.height + padding, 0, chkbox.text, LENGTH(chkbox.text));
+	G.DrawCanvas(canvas, chkbox.left, chkbox.top)
+END paint;
+
+
+PROCEDURE create* (text: ARRAY OF WCHAR): tCheckBox;
+VAR
+	res: tCheckBox;
+	font: G.tFont;
+BEGIN
+	font := G.CreateFont(1, "", {});
+	NEW(res);
+	res.left := 0;
+	res.top := 0;
+	res.value := FALSE;
+	res.mouse := FALSE;
+	COPY(text, res.text);
+	res.canvas := G.CreateCanvas(font.height + padding + LENGTH(res.text)*font.width, font.height + 1);
+	G.SetFont(res.canvas, font);
+	res.width := res.canvas.width;
+	res.height := res.canvas.height;
+	RETURN res
+END create;
+
+
+PROCEDURE between (a, b, c: INTEGER): BOOLEAN;
+	RETURN (a <= b) & (b <= c)
+END between;
+
+
+PROCEDURE MouseDown* (chkbox: tCheckBox; x, y: INTEGER);
+BEGIN
+	IF (chkbox # NIL) & ~chkbox.mouse THEN
+		DEC(x, chkbox.left);
+		DEC(y, chkbox.top);
+		chkbox.mouse := TRUE;
+		IF between(0, x, chkbox.width) & between(0, y, chkbox.height) THEN
+			chkbox.value := ~chkbox.value;
+		END;
+		paint(chkbox)
+	END
+END MouseDown;
+
+
+PROCEDURE MouseUp* (chkbox: tCheckBox);
+BEGIN
+	IF chkbox # NIL THEN
+		chkbox.mouse := FALSE
+	END
+END MouseUp;
+
+
+END CheckBox.

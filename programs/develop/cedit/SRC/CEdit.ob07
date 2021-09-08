@@ -24,11 +24,11 @@ IMPORT
     U := Utils, Lines, Menu, List,
     G := Graph, T := Text, E := Encodings,
     CB := Clipboard, Languages,
-    ChangeLog, Scroll,
+    ChangeLog, Scroll, CheckBox,
     RW, Ini, box_lib, Icons, Tabs, Timer;
 
 CONST
-    header = "CEdit (07-sep-2021)";
+    header = "CEdit (08-sep-2021)";
 
     ShellFilter = "";
     EditFilter = "SH|ASM|TXT|INC|OB07|C|CPP|H|PAS|PP|LUA|INI|JSON";
@@ -199,7 +199,7 @@ VAR
     LEFT: INTEGER;
 
     FindEdit, ReplaceEdit, GotoEdit: box_lib.edit_box;
-    CS, WH, BKW: box_lib.checkbox;
+    CS, WH, BKW: CheckBox.tCheckBox;
 
     new_searchText, searchText, replaceText, gotoText: T.tString;
     cs, whole: BOOLEAN;
@@ -481,6 +481,11 @@ BEGIN
         T.getScroll(text, scrollX, scrollY);
         DrawScroll(vScroll, LEFT + canvas.width, TOP - 1, scrollY, text.count - 1);
         DrawScroll(hScroll, LEFT, TOP + canvas.height, scrollX, text.maxLength);
+        IF search & searchOpened THEN
+	        CheckBox.paint(BKW);
+	        CheckBox.paint(CS);
+	        CheckBox.paint(WH);
+        END;
 
         G.DrawCanvas(canvas, LEFT, TOP);
         NotFound;
@@ -541,12 +546,12 @@ BEGIN
     K.DrawText866(left, top, K.textColor, "find");
     K.DrawText866(left, top + 55, K.textColor, "replace with");
     K.DrawText866(left, top + 330, K.textColor, "go to line");
-    BKW.top_s := BKW.top_s MOD 65536 + (top + 110) * 65536;
-    CS.top_s := CS.top_s MOD 65536 + (top + 140) * 65536;
-    WH.top_s := WH.top_s MOD 65536 + (top + 170) * 65536;
-    BKW.left_s := BKW.left_s MOD 65536 + left * 65536;
-    CS.left_s := CS.left_s MOD 65536 + left * 65536;
-    WH.left_s := WH.left_s MOD 65536 + left * 65536;
+    BKW.top := top + 110;
+    BKW.left := left;
+    CS.top := top + 140;
+    CS.left := left;
+    WH.top := top + 170;
+    WH.left := left;
     FindEdit.top := top + 20;
     ReplaceEdit.top := top + 75;
     GotoEdit.top := top + 350;
@@ -556,9 +561,6 @@ BEGIN
     box_lib.edit_box_draw(FindEdit);
     box_lib.edit_box_draw(ReplaceEdit);
     box_lib.edit_box_draw(GotoEdit);
-    box_lib.check_box_draw2(BKW); K.DrawText866(left + 20, top + 110, K.textColor, "backward");
-    box_lib.check_box_draw2(CS); K.DrawText866(left + 20, top + 140, K.textColor, "match case");
-    box_lib.check_box_draw2(WH); K.DrawText866(left + 20, top + 170, K.textColor, "whole word");
     y := top + 200;
     K.CreateButton(btnFindNext, left, y, btnWidth, btnHeight, K.btnColor, "next"); INC(y, btnHeight + 10);
     K.CreateButton(btnReplace, left, y, btnWidth, btnHeight, K.btnColor, "replace"); INC(y, btnHeight + 10);
@@ -992,9 +994,9 @@ BEGIN
     ReplaceEdit := createEdit(searchLeft, TOP + 20 + 55);
     GotoEdit := createEdit(searchLeft, TOP + 20 + 330);
     GotoEdit.flags := ORD(BITS(GotoEdit.flags) + BITS(8000H));
-    BKW := box_lib.kolibri_new_check_box(searchLeft, TOP + 90 + 20, 16, 16, "", 8*fontWidth + 4);
-    CS := box_lib.kolibri_new_check_box(searchLeft, TOP + 120 + 20, 16, 16, "", 10*fontWidth + 4);
-    WH := box_lib.kolibri_new_check_box(searchLeft, TOP + 150 + 20, 16, 16, "", 10*fontWidth + 4);
+    BKW := CheckBox.create("backward");
+    CS  := CheckBox.create("match case");
+    WH  := CheckBox.create("whole word");
 END createSearchForm;
 
 
@@ -1048,6 +1050,11 @@ BEGIN
         T.scroll(text, 0, vScroll.value - scrollY);
         repaint
     END;
+    IF search & searchOpened THEN
+	   	CheckBox.MouseDown(BKW, x + LEFT, y + TOP);
+	   	CheckBox.MouseDown(CS,  x + LEFT, y + TOP);
+	   	CheckBox.MouseDown(WH,  x + LEFT, y + TOP);
+   	END;
     IF (0 <= x) & (x < canvas.width) & (0 <= y) & (y < canvas.height) THEN
         leftButton := TRUE;
         SetFocus(FindEdit, FALSE);
@@ -1065,7 +1072,10 @@ PROCEDURE LeftButtonUp;
 BEGIN
     leftButton := FALSE;
     Scroll.MouseUp(hScroll);
-    Scroll.MouseUp(vScroll)
+    Scroll.MouseUp(vScroll);
+    CheckBox.MouseUp(BKW);
+    CheckBox.MouseUp(CS);
+    CheckBox.MouseUp(WH);
 END LeftButtonUp;
 
 
@@ -1201,32 +1211,32 @@ BEGIN
             CanvasToScreen(x, y)
         END
     ELSIF menu = menuEncoding THEN
-        Menu.setCheck(menu, menuUTF8BOM, ORD(text.enc = E.UTF8BOM)*2);
-        Menu.setCheck(menu, menuUTF8,    ORD(text.enc = E.UTF8)*2);
-        Menu.setCheck(menu, menuCP866,   ORD(text.enc = E.CP866)*2);
-        Menu.setCheck(menu, menuWin1251, ORD(text.enc = E.W1251)*2);
+        Menu.option(menu, menuUTF8BOM, text.enc = E.UTF8BOM);
+        Menu.option(menu, menuUTF8,    text.enc = E.UTF8);
+        Menu.option(menu, menuCP866,   text.enc = E.CP866);
+        Menu.option(menu, menuWin1251, text.enc = E.W1251);
         INC(x, menuEncodingX)
     ELSIF menu = menuEOL THEN
-		Menu.setCheck(menu, menuCRLF, ORD(text.eol = RW.EOL_CRLF)*2);
-		Menu.setCheck(menu, menuLF,   ORD(text.eol = RW.EOL_LF)*2);
-		Menu.setCheck(menu, menuCR,   ORD(text.eol = RW.EOL_CR)*2);
+		Menu.option(menu, menuCRLF, text.eol = RW.EOL_CRLF);
+		Menu.option(menu, menuLF,   text.eol = RW.EOL_LF);
+		Menu.option(menu, menuCR,   text.eol = RW.EOL_CR);
 		INC(x, menuEOLX)
     ELSIF menu = menuView THEN
-        Menu.setCheck(menu, menuNumbers,  ORD(text.numbers));
-        Menu.setCheck(menu, menuFontSize, ORD(font = font2));
+        Menu.check(menu, menuNumbers,  text.numbers);
+        Menu.check(menu, menuFontSize, font = font2);
         FOR i := 0 TO Ini.sections.count - 1 DO
-            Menu.setCheck(menu, menuColors + i, ORD(Ini.curSectionNum = i)*2)
+            Menu.option(menu, menuColors + i, Ini.curSectionNum = i)
         END;
         INC(x, menuViewX)
     ELSIF menu = menuSyntax THEN
-        Menu.setCheck(menu, menuNone,   ORD(text.lang = Languages.langNone)*2);
-        Menu.setCheck(menu, menuC,      ORD(text.lang = Languages.langC)*2);
-        Menu.setCheck(menu, menuFasm,   ORD(text.lang = Languages.langFasm)*2);
-        Menu.setCheck(menu, menuIni,    ORD(text.lang = Languages.langIni)*2);
-        Menu.setCheck(menu, menuJSON,   ORD(text.lang = Languages.langJSON)*2);
-        Menu.setCheck(menu, menuLua,    ORD(text.lang = Languages.langLua)*2);
-        Menu.setCheck(menu, menuOberon, ORD(text.lang = Languages.langOberon)*2);
-        Menu.setCheck(menu, menuPascal, ORD(text.lang = Languages.langPascal)*2);
+        Menu.option(menu, menuNone,   text.lang = Languages.langNone);
+        Menu.option(menu, menuC,      text.lang = Languages.langC);
+        Menu.option(menu, menuFasm,   text.lang = Languages.langFasm);
+        Menu.option(menu, menuIni,    text.lang = Languages.langIni);
+        Menu.option(menu, menuJSON,   text.lang = Languages.langJSON);
+        Menu.option(menu, menuLua,    text.lang = Languages.langLua);
+        Menu.option(menu, menuOberon, text.lang = Languages.langOberon);
+        Menu.option(menu, menuPascal, text.lang = Languages.langPascal);
         INC(x, menuSyntaxX)
     ELSIF menu = menuProgram THEN
         Menu.setEnabled(menu, menuBuild, buildScript # "");
@@ -1352,10 +1362,10 @@ BEGIN
         ShowSearchPanel;
         SetFocus(FindEdit, TRUE)
     |menuFindNext:
-        notFound := ~T.findNext(text, box_lib.check_box_get_value(BKW));
+        notFound := ~T.findNext(text, BKW.value);
         menuFindClicked := TRUE
     |menuFindPrev:
-        notFound := ~T.findNext(text, ~box_lib.check_box_get_value(BKW));
+        notFound := ~T.findNext(text, ~BKW.value);
         menuFindClicked := TRUE
     |menuGoto:
         ShowSearchPanel;
@@ -1731,9 +1741,9 @@ BEGIN
             key := -1;
             IF search & (searchText # "") THEN
                 IF shift THEN
-                    notFound := ~T.findNext(text, ~box_lib.check_box_get_value(BKW))
+                    notFound := ~T.findNext(text, ~BKW.value)
                 ELSE
-                    notFound := ~T.findNext(text, box_lib.check_box_get_value(BKW))
+                    notFound := ~T.findNext(text, BKW.value)
                 END
             END
         ELSIF keyCode = 60 THEN (* F2 *)
@@ -1945,7 +1955,7 @@ BEGIN
         Script(runScript)
     |btnFindNext:
         IF searchText # "" THEN
-            notFound := ~T.findNext(text, box_lib.check_box_get_value(BKW));
+            notFound := ~T.findNext(text, BKW.value);
             repaint
         END
     |btnReplace:
@@ -2033,6 +2043,11 @@ BEGIN
     		IF ~vScroll.mouse THEN
     			Scroll.MouseDown(vScroll, x + LEFT, y + TOP)
     		END;
+    		IF search & searchOpened THEN
+	    		CheckBox.MouseDown(BKW, x + LEFT, y + TOP);
+	    		CheckBox.MouseDown(CS,  x + LEFT, y + TOP);
+	    		CheckBox.MouseDown(WH,  x + LEFT, y + TOP);
+    		END;
             IF (ABS(x - firstClickX) < 5) & (ABS(y - firstClickY) < 5) THEN
                 IF (0 <= x) & (x < canvas.width) & (0 <= y) & (y < canvas.height) THEN
                     leftButton := FALSE;
@@ -2050,15 +2065,12 @@ BEGIN
         EditBox(FindEdit);
         EditBox(ReplaceEdit);
         EditBox(GotoEdit);
-        box_lib.check_box_mouse2(CS);
-        box_lib.check_box_mouse2(WH);
-        box_lib.check_box_mouse2(BKW);
-        IF box_lib.check_box_get_value(CS) # cs THEN
+        IF CS.value # cs THEN
             cs := ~cs;
             notFound := ~T.search(text, searchText, cs, whole);
             repaint
         END;
-        IF box_lib.check_box_get_value(WH) # whole THEN
+        IF WH.value # whole THEN
             whole := ~whole;
             notFound := ~T.search(text, searchText, cs, whole);
             repaint

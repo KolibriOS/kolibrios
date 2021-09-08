@@ -420,15 +420,26 @@ BEGIN
 END setEnabled;
 
 
-PROCEDURE setCheck* (m: tMenu; id: INTEGER; value: INTEGER);
+PROCEDURE check* (m: tMenu; id: INTEGER; value: BOOLEAN);
 VAR
     item: tItem;
 BEGIN
     item := getItem(m, id);
     IF item # NIL THEN
-        item.check := value
+        item.check := ORD(value)
     END
-END setCheck;
+END check;
+
+
+PROCEDURE option* (m: tMenu; id: INTEGER; value: BOOLEAN);
+VAR
+    item: tItem;
+BEGIN
+    item := getItem(m, id);
+    IF item # NIL THEN
+        item.check := ORD(value)*2
+    END
+END option;
 
 
 PROCEDURE isEnabled* (m: tMenu; id: INTEGER): BOOLEAN;
