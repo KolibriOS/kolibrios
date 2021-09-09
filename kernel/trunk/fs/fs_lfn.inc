@@ -119,6 +119,14 @@ image_of_ebx EQU esp+20
 
 ; System function 70
 
+; file_system_lfn_protected returns values not in registers, but in their images
+; on stack. Make a short wrapper to actually return values in registers.
+file_system_lfn_protected_registers:
+        pushad
+        call    file_system_lfn_protected
+        popad
+        ret
+
 file_system_lfn_protected:
         pushad
         call    protect_from_terminate

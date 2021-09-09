@@ -123,8 +123,9 @@ __exports:
           usb_get_param,         'USBGetParam',        \
           usb_hc_func,           'USBHCFunc',          \
 \
-          file_system_lfn_protected, 'FS_Service',     \      ; The intrakernel function of working with the file system is exported.
-\                                                             ; Duplicates system call 70.
+\         ; The intrakernel function of working with the file system.
+\         ; Duplicates system call 70.
+          file_system_lfn_protected_registers, 'FS_Service', \
 \
           net_add_device,        'NetRegDev',          \
           net_remove_device,     'NetUnRegDev',        \
