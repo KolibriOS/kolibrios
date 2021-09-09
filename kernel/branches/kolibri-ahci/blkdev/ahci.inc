@@ -13,10 +13,10 @@ PCI_REG_BAR5 = 0x0024
 AHCI_DBGLVL = 0 ; debug output verbosity level. 0 - less verbose, 1 - more verbose
 
 ; different SATA device signatures
-SATA_SIG_ATA	= 0x00000101	; SATA drive
-SATA_SIG_ATAPI	= 0xEB140101	; SATAPI drive
-SATA_SIG_SEMB	= 0xC33C0101	; Enclosure management bridge
-SATA_SIG_PM	= 0x96690101	; Port multiplier
+SATA_SIG_ATA    = 0x00000101    ; SATA drive
+SATA_SIG_ATAPI  = 0xEB140101    ; SATAPI drive
+SATA_SIG_SEMB   = 0xC33C0101    ; Enclosure management bridge
+SATA_SIG_PM     = 0x96690101    ; Port multiplier
 
 ; Device type constants
 AHCI_DEV_NULL   = 0
@@ -641,7 +641,7 @@ proc ahci_port_identify stdcall, pdata: dword
         call    ahci_find_cmdslot
 
         cmp     eax, -1
-        jne      .cmdslot_found
+        jne     .cmdslot_found
 
         DEBUGF  1, "No free cmdslot on port %u\n", [esi + PORT_DATA.portno]
         jmp     .ret
@@ -785,7 +785,7 @@ proc ahci_rw_sectors stdcall pdata: dword, vbuf: dword, startsector: qword, nums
         mov     eax, edi
         call    ahci_find_cmdslot
         cmp     eax, -1
-        jne      .cmdslot_found
+        jne     .cmdslot_found
 
         DEBUGF  AHCI_DBGLVL, "No free cmdslot on port %u\n", [esi + PORT_DATA.portno]
         jmp     .fail
@@ -1374,7 +1374,7 @@ proc _memset stdcall, dest:dword, val:byte, cnt:dword ; doesnt clobber any regis
         ;DEBUGF  DBG_INFO, "memset(%x, %u, %u)\n", [dest], [val], [cnt]
         push    eax ecx edi
         mov     edi, dword [dest]
-        mov     al,  byte [val]
+        mov     al, byte [val]
         mov     ecx, dword [cnt]
         rep stosb   
         pop     edi ecx eax
