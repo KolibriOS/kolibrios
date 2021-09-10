@@ -57,12 +57,14 @@ typedef struct
 
 int get_fileinfo(const char *path, FILEINFO *info)
 {
-   ksys70_t k;
-   int err;
-   k.p00 = 5;
-   k.bdfe = info;
-   k.p20 = 0;
-   k.p21 = path;
+    int err;
+    ksys70_t  k;
+    k.p00   = 5;
+    k.p04dw = 0;
+    k.p08dw = 0;
+    k.p12   = 0;
+    k.bdfe  = info;
+    k.p20   = 0;
+    k.p21   = path;
    return FS_Service(&k, &err);
 }
-
