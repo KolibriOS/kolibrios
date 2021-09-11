@@ -359,4 +359,14 @@ BEGIN
 END GetSystemColors;
 
 
+PROCEDURE getKBState* (VAR shift, ctrl: BOOLEAN);
+VAR
+    kbState: SET;
+BEGIN
+    kbState := GetControlKeys();
+    shift := {0, 1} * kbState # {};
+    ctrl := {2, 3} * kbState # {};
+END getKBState;
+
+
 END KolibriOS.

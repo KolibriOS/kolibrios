@@ -20,11 +20,13 @@
 MODULE Menu;
 
 IMPORT
-    SYSTEM, G := Graph, List, K := KolibriOS;
+    SYSTEM, G := Graph, List, K := KolibriOS, U := Utils, KOSAPI;
 
 CONST
     fontHeight = 22;
     fontWidth = 8;
+
+    MainMenuHeight* = K.fontHeight + 7;
 
     RIGHT = 16;
     LEFT = 16;
@@ -44,10 +46,17 @@ CONST
 
 TYPE
 
+	tMainItem* = POINTER TO descMainItem;
+
+    tMain* = POINTER TO RECORD (List.tList)
+    	id: INTEGER
+    END;
+
     tMenu* = POINTER TO RECORD
         tid*: INTEGER;
-        active*: BOOLEAN;
+        active*, keyboard: BOOLEAN;
         parent*, child: tMenu;
+        mainID: INTEGER;
         winX, winY, width*, height*: INTEGER;
         selItem, cliItem: INTEGER;
 
@@ -66,6 +75,13 @@ TYPE
         child: tMenu
     END;
 
+    descMainItem = RECORD (List.tItem)
+        id*, x: INTEGER;
+        text: ARRAY 32 OF WCHAR;
+        menu*: tMenu;
+        main: tMain
+    END;
+
     tClick = PROCEDURE (menu: tMenu; id: INTEGER);
     tKey = PROCEDURE (menu: tMenu; key: INTEGER): BOOLEAN;
     tProc = PROCEDURE;
@@ -75,11 +91,97 @@ VAR
     TIDs: ARRAY maxLEVEL + 1 OF INTEGER;
     resetTimer: tProc;
     _open: PROCEDURE (m: tMenu; x, y: INTEGER);
-    redraw*: BOOLEAN;
+    (*redraw*: BOOLEAN;*)
 (*
     backColor, foreColor, selBackColor, selForeColor,
     disBackColor, disForeColor, disSelBackColor, disSelForeColor: INTEGER;
 *)
+
+PROCEDURE AddMainItem* (main: tMain; text: ARRAY OF WCHAR; menu: tMenu);
+VAR
+	item, prev: tMainItem;
+BEGIN
+	NEW(item);
+	item.id := main.id + main.count;
+	COPY(text, item.text);
+	item.menu := menu;
+	item.main := main;
+	menu.mainID := item.id;
+	List.append(main, item);
+	prev := item.prev(tMainItem);
+	IF prev # NIL THEN
+		item.x := prev.x + LENGTH(prev.text)*fontWidth + 9
+	ELSE
+		item.x := 0
+	END
+END AddMainItem;
+
+
+PROCEDURE CreateMain* (id: INTEGER): tMain;
+VAR
+	res: tMain;
+	list: List.tList;
+BEGIN
+	NEW(res);
+	res.id := id;
+	list := List.create(res)
+	RETURN res
+END CreateMain;
+
+
+PROCEDURE drawMainItem (item: tMainItem);
+VAR
+    menuColor, textColor, n: INTEGER;
+BEGIN
+    IF item.menu.tid # 0 THEN
+        menuColor := K.textColor;
+        textColor := K.winColor
+    ELSE
+        menuColor := K.winColor;
+        textColor := K.textColor
+    END;
+    n := LENGTH(item.text);
+    K.DrawRect(item.x, 0, n*fontWidth + 2, MainMenuHeight, menuColor);
+    K.CreateButton(item.id + ORD({30}), item.x, 0, n*fontWidth + 2, MainMenuHeight, K.btnColor, "");
+    K.DrawText(item.x + 1, (MainMenuHeight - K.fontHeight) DIV 2 + 1, textColor, item.text)
+END drawMainItem;
+
+
+PROCEDURE DrawMain* (main: tMain);
+VAR
+	item: List.tItem;
+BEGIN
+	item := main.first;
+	WHILE item # NIL DO
+		drawMainItem(item(tMainItem));
+		item := item.next
+	END
+END DrawMain;
+
+
+PROCEDURE getMainID (m: tMenu): INTEGER;
+BEGIN
+	WHILE m.parent # NIL DO
+		m := m.parent
+	END
+	RETURN m.mainID
+END getMainID;
+
+
+PROCEDURE ClickMain* (main: tMain; btn: INTEGER): tMenu;
+VAR
+	item: List.tItem;
+	res: tMenu;
+BEGIN
+	item := List.getItem(main, btn - main.id);
+	IF item # NIL THEN
+		res := item(tMainItem).menu
+	ELSE
+		res := NIL
+	END
+	RETURN res
+END ClickMain;
+
 
 PROCEDURE isSender* (tid: INTEGER): BOOLEAN;
 VAR
@@ -95,11 +197,22 @@ END isSender;
 
 PROCEDURE exit (m: tMenu);
 BEGIN
-    m.tid := 0;
     m.active := FALSE;
-    resetTimer;
+   	resetTimer;
+    m.tid := 0;
     K.Exit
 END exit;
+
+
+PROCEDURE escape (m: tMenu);
+BEGIN
+    m.active := FALSE;
+    IF m.parent = NIL THEN
+    	resetTimer
+    END;
+    m.tid := 0;
+    K.Exit
+END escape;
 
 
 PROCEDURE repaint (m: tMenu);
@@ -202,14 +315,17 @@ END mouse;
 
 
 PROCEDURE close* (m: tMenu);
+VAR
+	temp: INTEGER;
 BEGIN
     IF (m # NIL) & (m.tid # 0) THEN
     	IF m.child # NIL THEN
     		close(m.child);
     		m.child := NIL
     	END;
-        K.ExitID(m.tid);
-        m.tid := 0;
+    	temp := m.tid;
+    	m.tid := 0;
+        K.ExitID(temp);
         m.active := FALSE
     END
 END close;
@@ -219,19 +335,28 @@ PROCEDURE click (m: tMenu; i: INTEGER);
 VAR
     item: List.tItem;
     p: tMenu;
+    id: INTEGER;
 BEGIN
-    item := List.getItem(m.items, i);
-    IF (item # NIL) & item(tItem).enabled & (item(tItem).child = NIL) THEN
-        m.click(m, item(tItem).id);
-        p := m.parent;
-       	WHILE p # NIL DO
-       		p.child := NIL;
-       		close(p);
-       		p := p.parent
-       	END;
-       	redraw := TRUE;
-       	exit(m)
-    END
+	id := -1;
+	IF i < 0 THEN
+		id := i
+	ELSE
+	    item := List.getItem(m.items, i);
+	    IF (item # NIL) & item(tItem).enabled & (item(tItem).child = NIL) THEN
+	    	id := item(tItem).id
+	    END
+    END;
+    IF id # -1 THEN
+	    m.click(m, id);
+	    p := m.parent;
+	   	WHILE p # NIL DO
+	   		p.child := NIL;
+	   		close(p);
+	   		p := p.parent
+	   	END;
+	   	(*redraw := TRUE;*)
+	   	exit(m)
+   	END
 END click;
 
 
@@ -248,68 +373,100 @@ END isActive;
 PROCEDURE closeChild (m: tMenu);
 BEGIN
 	IF m.child # NIL THEN
-		redraw := FALSE;
+		(*redraw := FALSE;*)
 		close(m.child);
 		m.child := NIL
 	END
 END closeChild;
 
 
-PROCEDURE submenu (m: tMenu);
+PROCEDURE submenu (m: tMenu; keyboard: BOOLEAN): BOOLEAN;
 VAR
 	item: List.tItem;
+	res: BOOLEAN;
 BEGIN
+	res := FALSE;
     item := List.getItem(m.items, m.selItem);
     IF (item # NIL) & item(tItem).enabled & (item(tItem).child # NIL) THEN
+    	res := TRUE;
     	IF ~opened(item(tItem).child) THEN
     		closeChild(m);
+    		item(tItem).child.keyboard := keyboard;
     		_open(item(tItem).child, m.winX + m.width - 2, m.winY + m.selItem*fontHeight);
-    		m.child := item(tItem).child
+    		m.child := item(tItem).child;
     	END
     ELSE
     	closeChild(m)
     END
+    RETURN res
 END submenu;
 
 
 PROCEDURE [stdcall] window (m: tMenu);
 VAR
     x, y: INTEGER;
-    key: INTEGER;
+    key, temp: INTEGER;
     msState: SET;
+    shift, ctrl: BOOLEAN;
 BEGIN
-    m.selItem := -1;
+    m.selItem := ORD(m.keyboard) - 1;
     m.cliItem := -1;
+    m.keyboard := FALSE;
     K.SetEventsMask({0, 1, 5});
     WHILE TRUE DO
         CASE K.WaitForEvent() OF
         |1:
             draw_window(m)
         |2:
+        	K.getKBState(shift, ctrl);
             key := K.GetKey();
-            IF key DIV 65536 = 72 THEN
-                DEC(m.selItem);
-                IF m.selItem < 0 THEN
-                    m.selItem := 0
-                END
-            ELSIF key DIV 65536 = 80 THEN
-                INC(m.selItem);
-                IF m.selItem >= m.items.count THEN
-                    m.selItem := m.items.count - 1
-                END
-            ELSIF key DIV 65536 = 28 THEN
-                IF m.selItem >= 0 THEN
-                    click(m, m.selItem)
-                END;
-                m.cliItem := -1
-            ELSIF key DIV 65536 = 77 THEN
-                submenu(m)
-            ELSIF key DIV 65536 = 75 THEN
-            	IF m.parent # NIL THEN
-                	exit(m)
+            IF ~shift & ~ ctrl THEN
+	            IF key DIV 65536 = 72 THEN
+	                DEC(m.selItem);
+	                IF m.selItem < 0 THEN
+	                    m.selItem := m.items.count - 1
+	                END
+	            ELSIF key DIV 65536 = 80 THEN
+	                INC(m.selItem);
+	                IF m.selItem >= m.items.count THEN
+	                    m.selItem := 0
+	                END
+	            ELSIF key DIV 65536 = 28 THEN
+	                IF m.selItem >= 0 THEN
+	                    click(m, m.selItem)
+	                END;
+	                m.cliItem := -1
+	            ELSIF key DIV 65536 = 77 THEN
+	                IF ~submenu(m, TRUE) THEN
+	                	click(m, -(getMainID(m) + 1))
+	                END;
+	                m.cliItem := -1
+	            ELSIF key DIV 65536 = 75 THEN
+	            	IF m.parent # NIL THEN
+	                	escape(m)
+	            	ELSE
+	            		click(m, -(getMainID(m) - 1))
+	                END;
+	                m.cliItem := -1
+	            ELSIF key DIV 65536 = 1 THEN
+	            	escape(m)
+	            ELSE
+	                IF m.key(m, key) THEN
+	                	IF m.parent # NIL THEN
+	                		temp := m.parent.tid;
+	                		m.parent.tid := 0;
+	                		K.ExitID(temp)
+	                	END;
+	                    exit(m)
+	                END
                 END
             ELSE
                 IF m.key(m, key) THEN
+                	IF m.parent # NIL THEN
+                		temp := m.parent.tid;
+                		m.parent.tid := 0;
+                		K.ExitID(temp)
+                	END;
                     exit(m)
                 END
             END;
@@ -337,7 +494,7 @@ BEGIN
                 END
             END;
             repaint(m);
-            submenu(m)
+            IF submenu(m, FALSE) THEN END
         END
     END
 END window;
@@ -361,12 +518,14 @@ VAR
 	L: INTEGER;
 BEGIN
     IF m.tid = 0 THEN
-        m.winX := x;
-        m.winY := y;
         L := level(m);
-        SYSTEM.PUT(SYSTEM.ADR(stack[L][LEN(stack[0]) - 1]), m);
-        m.tid := K.CreateThread(SYSTEM.ADR(window), stack[L]);
-        TIDs[L] := m.tid
+        IF KOSAPI.sysfunc3(18, 21, TIDs[L]) = 0 THEN
+        	m.winX := x;
+        	m.winY := y;
+	        SYSTEM.PUT(SYSTEM.ADR(stack[L][LEN(stack[0]) - 1]), m);
+    	    m.tid := K.CreateThread(SYSTEM.ADR(window), stack[L]);
+        	TIDs[L] := m.tid
+        END
     END
 END open;
 
@@ -462,6 +621,7 @@ BEGIN
     m.active := FALSE;
     m.parent := NIL;
     m.child := NIL;
+    m.mainID := 0;
     m.items  := items;
     m.click := click;
     m.key := key;
@@ -479,18 +639,18 @@ BEGIN
     RETURN m
 END create;
 
-
+(*
 PROCEDURE Redraw*;
 BEGIN
 	redraw := TRUE
 END Redraw;
-
+*)
 
 PROCEDURE init* (_resetTimer: tProc);
 VAR
 	i: INTEGER;
 BEGIN
-	Redraw;
+	(*Redraw;*)
 	resetTimer := _resetTimer;
 	_open := open;
 	FOR i := 0 TO maxLEVEL DO

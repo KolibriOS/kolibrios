@@ -25,10 +25,10 @@ IMPORT
     G := Graph, T := Text, E := Encodings,
     CB := Clipboard, Languages,
     ChangeLog, Scroll, CheckBox,
-    RW, Ini, box_lib, Icons, Tabs, Timer;
+    RW, Ini, EB := EditBox, Icons, Tabs, Timer;
 
 CONST
-    header = "CEdit (08-sep-2021)";
+    header = "CEdit (11-sep-2021)";
 
     ShellFilter = "";
     EditFilter = "SH|ASM|TXT|INC|OB07|C|CPP|H|PAS|PP|LUA|INI|JSON";
@@ -58,21 +58,11 @@ CONST
     btnCloseFind = 64;
     btnHideFind = 65;
 
-    btnFile = 70;
-    btnEdit = 71;
-    btnMenuSearch = 72;
-    btnEncoding = 73;
-    btnEOL = 74;
-    btnView = 75;
-    btnSyntax = 76;
-    btnProgram = 77;
-    btnTools = 78;
-
-    MainMenuHeight = fontHeight + 7;
+    mainMenuBtn = 70;
 
     btnHeight = 25;
     btnWidth = 75;
-    btnTop = MainMenuHeight + 3;
+    btnTop = Menu.MainMenuHeight + 3;
     toolBtnSize = 24;
     toolbarDelim = 7;
     iconPad = (toolBtnSize - Icons.SIZE) DIV 2;
@@ -89,14 +79,14 @@ CONST
     EDITBOX_MAXCHARS = 500;
 
     menuFileX = searchLeft;
-    menuEditX = menuFileX + 4*fontWidth + 2 + 7;
-    menuSearchX = menuEditX + 4*fontWidth + 2 + 7;
-    menuEncodingX = menuSearchX + 6*fontWidth + 2 + 7;
-    menuEOLX = menuEncodingX + 8*fontWidth + 2 + 7;
-    menuViewX = menuEOLX + 3*fontWidth + 2 + 7;
-    menuSyntaxX = menuViewX + 4*fontWidth + 2 + 7;
-    menuProgramX = menuSyntaxX + 6*fontWidth + 2 + 7;
-    menuToolsX = menuProgramX + 7*fontWidth + 2 + 7;
+    menuEditX = menuFileX + 4*fontWidth + 9;
+    menuSearchX = menuEditX + 4*fontWidth + 9;
+    menuEncodingX = menuSearchX + 6*fontWidth + 9;
+    menuEOLX = menuEncodingX + 8*fontWidth + 9;
+    menuViewX = menuEOLX + 3*fontWidth + 9;
+    menuSyntaxX = menuViewX + 4*fontWidth + 9;
+    menuProgramX = menuSyntaxX + 6*fontWidth + 9;
+    menuToolsX = menuProgramX + 7*fontWidth + 9;
 
     menuCut = 1;
     menuCopy = 2;
@@ -176,7 +166,6 @@ CONST
     menuCR = 142;
 
     maxTexts = 32;
-    scrollDelay = 40;
 
 
 VAR
@@ -198,7 +187,7 @@ VAR
     hScroll, vScroll: Scroll.tScroll;
     LEFT: INTEGER;
 
-    FindEdit, ReplaceEdit, GotoEdit: box_lib.edit_box;
+    FindEdit, ReplaceEdit, GotoEdit: EB.tEditBox;
     CS, WH, BKW: CheckBox.tCheckBox;
 
     new_searchText, searchText, replaceText, gotoText: T.tString;
@@ -211,6 +200,8 @@ VAR
     context, menuFile, menuEdit, menuSearch, menuEncoding,
     menuEOL, menuView, menuSyntax, menuProgram, menuTools,
     subCurLine, subIndent, subCase, subBookmark: Menu.tMenu;
+
+    mainMenu: Menu.tMain;
 
     menuActive: BOOLEAN;
 
@@ -234,7 +225,7 @@ BEGIN
 END WritePos;
 
 
-PROCEDURE EditBox_Focus (edit: box_lib.edit_box): BOOLEAN;
+PROCEDURE EditBox_Focus (edit: EB.tEditBox): BOOLEAN;
 VAR
 	res: BOOLEAN;
 BEGIN
@@ -258,7 +249,7 @@ BEGIN
 END resetTimer;
 
 
-PROCEDURE EditBox_SetFocus (edit: box_lib.edit_box; value: BOOLEAN);
+PROCEDURE EditBox_SetFocus (edit: EB.tEditBox; value: BOOLEAN);
 BEGIN
     IF value THEN
         edit.flags := ORD(BITS(edit.flags) + {1})
@@ -266,12 +257,12 @@ BEGIN
         edit.flags := ORD(BITS(edit.flags) - {1})
     END;
     IF search & searchOpened THEN
-        box_lib.edit_box_draw(edit)
+        EB.paint(edit)
     END
 END EditBox_SetFocus;
 
 
-PROCEDURE SetFocus (edit: box_lib.edit_box; value: BOOLEAN);
+PROCEDURE SetFocus (edit: EB.tEditBox; value: BOOLEAN);
 BEGIN
     EditBox_SetFocus(FindEdit, FALSE);
     EditBox_SetFocus(ReplaceEdit, FALSE);
@@ -558,9 +549,9 @@ BEGIN
     FindEdit.left := left;
     ReplaceEdit.left := left;
     GotoEdit.left := left;
-    box_lib.edit_box_draw(FindEdit);
-    box_lib.edit_box_draw(ReplaceEdit);
-    box_lib.edit_box_draw(GotoEdit);
+    EB.paint(FindEdit);
+    EB.paint(ReplaceEdit);
+    EB.paint(GotoEdit);
     y := top + 200;
     K.CreateButton(btnFindNext, left, y, btnWidth, btnHeight, K.btnColor, "next"); INC(y, btnHeight + 10);
     K.CreateButton(btnReplace, left, y, btnWidth, btnHeight, K.btnColor, "replace"); INC(y, btnHeight + 10);
@@ -583,24 +574,6 @@ VAR
     END drawToolbarBtn;
 
 
-    PROCEDURE drawMainMenu (menu: Menu.tMenu; x: INTEGER; btn: INTEGER; caption: ARRAY OF WCHAR);
-    VAR
-        menuColor, textColor, n: INTEGER;
-    BEGIN
-        IF menu.tid # 0 THEN
-            menuColor := K.textColor;
-            textColor := K.winColor
-        ELSE
-            menuColor := K.winColor;
-            textColor := K.textColor
-        END;
-        n := LENGTH(caption);
-        K.DrawRect(x, 0, n*fontWidth + 2, MainMenuHeight, menuColor);
-        K.CreateButton(btn + ORD({30}), x, 0, n*fontWidth + 2, MainMenuHeight, K.btnColor, "");
-        K.DrawText(x + 1, (MainMenuHeight - fontHeight) DIV 2 + 1, textColor, caption)
-    END drawMainMenu;
-
-
 BEGIN
     K.BeginDraw;
     K.CreateWindow(30 + K.GetTickCount() MOD 128, 30 + K.GetTickCount() MOD 128, winWidth, winHeight, K.winColor, 73H, 0, 0, header);
@@ -614,16 +587,7 @@ BEGIN
         K.DrawRect(0, 0, width, TOP, K.winColor);
         K.DrawRect(0, 0, LEFT, height, K.winColor);
         K.DrawRect(LEFT + canvas.width + 1, TOP + canvas.height, scrollWidth - 1, scrollWidth, K.winColor);
-
-        drawMainMenu(menuFile, menuFileX, btnFile, "file");
-        drawMainMenu(menuEdit, menuEditX, btnEdit, "edit");
-        drawMainMenu(menuSearch, menuSearchX, btnMenuSearch, "search");
-        drawMainMenu(menuEncoding, menuEncodingX, btnEncoding, "encoding");
-        drawMainMenu(menuEOL, menuEOLX, btnEOL, "eol");
-        drawMainMenu(menuView, menuViewX, btnView, "view");
-        drawMainMenu(menuSyntax, menuSyntaxX, btnSyntax, "syntax");
-        drawMainMenu(menuProgram, menuProgramX, btnProgram, "program");
-        drawMainMenu(menuTools, menuToolsX, btnTools, "tools");
+        Menu.DrawMain(mainMenu);
 
         x := searchLeft;
 
@@ -685,16 +649,6 @@ BEGIN
     x := mouseX - winX - cliX - LEFT;
     y := mouseY - winY - cliY - TOP;
 END mouse;
-
-
-PROCEDURE getKBState (VAR shift, ctrl: BOOLEAN);
-VAR
-    kbState: SET;
-BEGIN
-    kbState := K.GetControlKeys();
-    shift := {0, 1} * kbState # {};
-    ctrl := {2, 3} * kbState # {};
-END getKBState;
 
 
 PROCEDURE stopTimer;
@@ -973,14 +927,14 @@ BEGIN
 END open;
 
 
-PROCEDURE createEdit (left, top: INTEGER): box_lib.edit_box;
+PROCEDURE createEdit (left, top: INTEGER): EB.tEditBox;
 VAR
-    edit, EditBox0: box_lib.edit_box;
+    edit, EditBox0: EB.tEditBox;
 BEGIN
     NEW(EditBox0);
     EditBox0.text := K.malloc(EDITBOX_MAXCHARS + 2);
     ASSERT(EditBox0.text # 0);
-    edit := box_lib.kolibri_new_edit_box(left, top, EditBox_Width, EDITBOX_MAXCHARS, EditBox0);
+    edit := EB.create(left, top, EditBox_Width, EDITBOX_MAXCHARS, EditBox0);
     edit.flags := 4002H;
     edit.text_color := 30000000H;
     EditBox_SetFocus(edit, FALSE)
@@ -994,18 +948,18 @@ BEGIN
     ReplaceEdit := createEdit(searchLeft, TOP + 20 + 55);
     GotoEdit := createEdit(searchLeft, TOP + 20 + 330);
     GotoEdit.flags := ORD(BITS(GotoEdit.flags) + BITS(8000H));
-    BKW := CheckBox.create("backward");
-    CS  := CheckBox.create("match case");
-    WH  := CheckBox.create("whole word");
+    CheckBox.create("backward", BKW);
+    CheckBox.create("match case", CS);
+    CheckBox.create("whole word", WH);
 END createSearchForm;
 
 
-PROCEDURE EditBox_GetValue (edit: box_lib.edit_box; VAR s: ARRAY OF WCHAR);
+PROCEDURE EditBox_GetValue (edit: EB.tEditBox; VAR s: ARRAY OF WCHAR);
 VAR
     str: ARRAY EDITBOX_MAXCHARS + 1 OF CHAR;
     i: INTEGER;
 BEGIN
-    box_lib.edit_box_get_value(edit, str);
+    EB.getValue(edit, str);
     i := 0;
     WHILE str[i] # 0X DO
         s[i] := WCHR(E.cp866[ORD(str[i])]);
@@ -1037,19 +991,11 @@ VAR
     scrollX, scrollY: INTEGER;
     shift, ctrl: BOOLEAN;
 BEGIN
-    getKBState(shift, ctrl);
-    IF ~hScroll.mouse THEN
-    	Scroll.MouseDown(hScroll, x + LEFT, y + TOP);
-        T.getScroll(text, scrollX, scrollY);
-        T.scroll(text, hScroll.value - scrollX, 0);
-        repaint
-    END;
-    IF ~vScroll.mouse THEN
-    	Scroll.MouseDown(vScroll, x + LEFT, y + TOP);
-        T.getScroll(text, scrollX, scrollY);
-        T.scroll(text, 0, vScroll.value - scrollY);
-        repaint
-    END;
+    K.getKBState(shift, ctrl);
+	Scroll.MouseDown(hScroll, x + LEFT, y + TOP);
+	Scroll.MouseDown(vScroll, x + LEFT, y + TOP);
+    T.getScroll(text, scrollX, scrollY);
+    T.scroll(text, hScroll.value - scrollX, vScroll.value - scrollY);
     IF search & searchOpened THEN
 	   	CheckBox.MouseDown(BKW, x + LEFT, y + TOP);
 	   	CheckBox.MouseDown(CS,  x + LEFT, y + TOP);
@@ -1061,9 +1007,9 @@ BEGIN
         IF ~shift THEN
             T.resetSelect(text)
         END;
-        T.mouse(text, x, y);
-        repaint
-    END
+        T.mouse(text, x, y)
+    END;
+    repaint
     RETURN K.GetTickCount()
 END click;
 
@@ -1112,7 +1058,7 @@ BEGIN
     Menu.close(subIndent);
     Menu.close(subCase);
     Menu.close(subBookmark);
-    Menu.close(context);
+    Menu.close(context)
 END CloseMenu;
 
 
@@ -1178,9 +1124,8 @@ BEGIN
         K.WinPos(winX, winY);
         K.ClientPos(cliX, cliY);
         x := winX + cliX;
-        y := MainMenuHeight + winY + cliY
+        y := Menu.MainMenuHeight + winY + cliY
     END;
-
     selected := T.selected(text);
 
     IF menu = menuFile THEN
@@ -1273,6 +1218,7 @@ END ShowMenu;
 PROCEDURE receiveIPC;
 VAR
 	scrollIPC: BOOLEAN;
+	item: List.tItem;
 BEGIN
 	scrollIPC := FALSE;
     IF IPC[0] = Timer.ID THEN
@@ -1284,17 +1230,8 @@ BEGIN
     ELSIF IPC[0] = mainTID THEN
     	IF IPC[2] = Scroll.ScrollIPC THEN
 	    	Scroll.change(hScroll);
-	    	IF hScroll.Dec THEN
-	    		T.scroll(text, -1, 0)
-	    	ELSIF hScroll.Inc THEN
-				T.scroll(text, 1, 0)
-	    	END;
 	    	Scroll.change(vScroll);
-	    	IF vScroll.Dec THEN
-	    		T.scroll(text, 0, -1)
-	    	ELSIF vScroll.Inc THEN
-				T.scroll(text, 0, 1)
-	    	END;
+	    	T.scroll(text, ORD(hScroll.Inc) - ORD(hScroll.Dec), ORD(vScroll.Inc) - ORD(vScroll.Dec));
 
     		IF menuActive THEN
     			draw_window;
@@ -1303,7 +1240,7 @@ BEGIN
     			repaint
     		END;
 
-    		IF (0 IN K.MouseState()) THEN
+    		IF 0 IN K.MouseState() THEN
     			WHILE (0 IN K.MouseState()) & (delay > 0) DO
         			K.Pause(1);
     	    		DEC(delay)
@@ -1315,15 +1252,25 @@ BEGIN
 	        		Scroll.SendIPC;
     	    		delay := 2
         		ELSE
-        			delay := scrollDelay
+        			delay := Scroll.Delay
         		END
         	ELSE
-        		delay := scrollDelay
+        		delay := Scroll.Delay
 			END
     	END;
     	IPC[2] := 0
-    ELSIF ~Menu.isSender(IPC[0]) THEN
-   		IPC[2] := 0
+    ELSE
+    	IF ~Menu.isSender(IPC[0]) THEN
+   			IPC[2] := 0
+    	ELSE
+    		IF IPC[2] < 0 THEN
+    			item := List.getItem(mainMenu, (-IPC[2] - mainMenuBtn) MOD mainMenu.count);
+    			IF item # NIL THEN
+    				ShowMenu(item(Menu.tMainItem).menu)
+    			END;
+    			IPC[2] := 0
+    		END
+    	END
     END;
     CASE IPC[2] OF
     |0:
@@ -1465,12 +1412,13 @@ VAR
     shift, ctrl: BOOLEAN;
 BEGIN
     menuItem := -1;
-    getKBState(shift, ctrl);
+    K.getKBState(shift, ctrl);
     IF ctrl THEN
         CASE key DIV 65536 OF
         |17: menuItem := menuClose
         |21: menuItem := menuRedo
         |30: menuItem := menuSelectAll
+        |32: menuItem := menuDuplicate
         |33: menuItem := menuFind
         |34: menuItem := menuGoto
         |44: menuItem := menuUndo
@@ -1481,6 +1429,12 @@ BEGIN
         |31: menuItem := menuSave
         |49: menuItem := menuNew
         |67: menuItem := menuBuild
+        |83: menuItem := menuRemove
+        |22: menuItem := menuUpper
+        |38: menuItem := menuLower
+        |60: menuItem := menuToggleBookmark
+        |72: menuItem := menuMoveUp
+        |80: menuItem := menuMoveDown
         ELSE
         END
     ELSE
@@ -1488,6 +1442,16 @@ BEGIN
             menuItem := menuDelete
         ELSIF key DIV 65536 = 67 THEN
             menuItem := menuRun
+        ELSIF key DIV 65536 = 15 THEN
+            menuItem := menuIncInd
+        ELSIF (key DIV 65536 = 14) & shift THEN
+            menuItem := menuDecInd
+        ELSIF key DIV 65536 = 60 THEN
+        	IF shift THEN
+        		menuItem := menuPrevBookmark
+        	ELSE
+        		menuItem := menuNextBookmark
+        	END
         END
     END;
     IF menuItem # -1 THEN
@@ -1726,8 +1690,8 @@ VAR
     keyCode: INTEGER;
     shift, ctrl: BOOLEAN;
 BEGIN
+	K.getKBState(shift, ctrl);
     keyCode := key DIV 65536;
-    getKBState(shift, ctrl);
     IF confirm THEN
         IF keyCode = 28 THEN (* Enter *)
             save(text);
@@ -1760,6 +1724,9 @@ BEGIN
             ELSE
                 Script(runScript)
             END
+        ELSIF keyCode = 68 THEN (* F10 *)
+            key := -1;
+            ShowMenu(menuFile)
         ELSIF keyCode = 1 THEN (* Esc *)
             key := -1;
             IF search THEN
@@ -1783,20 +1750,20 @@ BEGIN
             SetFocus(GotoEdit, TRUE)
         ELSE
             IF EditBox_Focus(FindEdit) THEN
-                box_lib.edit_box_key(FindEdit, key);
+                EB.key(FindEdit, key);
                 EditBox_GetValue(FindEdit, new_searchText);
                 IF new_searchText # searchText THEN
                     searchText := new_searchText;
                     notFound := ~T.search(text, searchText, cs, whole)
                 END
             ELSIF EditBox_Focus(ReplaceEdit) THEN
-                box_lib.edit_box_key(ReplaceEdit, key);
+                EB.key(ReplaceEdit, key);
                 EditBox_GetValue(ReplaceEdit, replaceText)
             ELSIF EditBox_Focus(GotoEdit) THEN
                 IF (key DIV 256) MOD 256 = 13 THEN
                     goto
                 ELSE
-                    box_lib.edit_box_key(GotoEdit, key)
+                    EB.key(GotoEdit, key)
                 END
             ELSE
                 CASE keyCode OF
@@ -1858,9 +1825,10 @@ PROCEDURE BtnClick;
 VAR
     btn: INTEGER;
     middle, exit: BOOLEAN;
+    menu: Menu.tMenu;
 BEGIN
     btn := K.ButtonCode(middle);
-    IF (Tabs.btnID <= btn) & (btn <= Tabs.btnID + maxTexts - 1) THEN
+    IF U.between(Tabs.btnID, btn, Tabs.btnID + maxTexts - 1) THEN
         DEC(btn, Tabs.btnID);
         IF middle THEN
             IF texts[btn].modified THEN
@@ -1876,30 +1844,19 @@ BEGIN
             btn := 0
         END
     END;
+    IF btn # 0 THEN
+    	menu := Menu.ClickMain(mainMenu, btn);
+    	IF menu # NIL THEN
+    		ShowMenu(menu);
+    		btn := 0
+    	END
+    END;
     CASE btn OF
     |Tabs.btnID - 1: Tabs.scroll(tabs, -1); switch := TRUE; repaint
     |Tabs.btnID - 2: Tabs.scroll(tabs, +1); switch := TRUE; repaint
 
     |0:
 
-    |btnFile:
-        ShowMenu(menuFile)
-    |btnEdit:
-        ShowMenu(menuEdit)
-    |btnMenuSearch:
-        ShowMenu(menuSearch)
-    |btnEncoding:
-        ShowMenu(menuEncoding)
-    |btnEOL:
-        ShowMenu(menuEOL)
-    |btnView:
-        ShowMenu(menuView)
-    |btnSyntax:
-        ShowMenu(menuSyntax)
-    |btnProgram:
-        ShowMenu(menuProgram)
-    |btnTools:
-        ShowMenu(menuTools)
     |btnNo:
         exit := closing;
         closeFile(FALSE, curText);
@@ -1982,12 +1939,12 @@ VAR
     scroll, x, y, scrollX, scrollY: INTEGER;
 
 
-    PROCEDURE EditBox (eb: box_lib.edit_box);
+    PROCEDURE EditBox (eb: EB.tEditBox);
     VAR
         focus: BOOLEAN;
     BEGIN
         focus := EditBox_Focus(eb);
-        box_lib.edit_box_mouse(eb);
+        EB.mouse(eb);
         IF focus # EditBox_Focus(eb) THEN
             SetFocus(eb, TRUE);
             repaint
@@ -2037,12 +1994,8 @@ BEGIN
         END;
         IF 24 IN msState THEN
             mouse(x, y);
-    		IF ~hScroll.mouse THEN
-    			Scroll.MouseDown(hScroll, x + LEFT, y + TOP)
-    		END;
-    		IF ~vScroll.mouse THEN
-    			Scroll.MouseDown(vScroll, x + LEFT, y + TOP)
-    		END;
+    		Scroll.MouseDown(hScroll, x + LEFT, y + TOP);
+    		Scroll.MouseDown(vScroll, x + LEFT, y + TOP);
     		IF search & searchOpened THEN
 	    		CheckBox.MouseDown(BKW, x + LEFT, y + TOP);
 	    		CheckBox.MouseDown(CS,  x + LEFT, y + TOP);
@@ -2111,7 +2064,7 @@ VAR
     resized: BOOLEAN;
     firstClickX, firstClickY, time: INTEGER;
 BEGIN
-	delay := scrollDelay;
+	delay := Scroll.Delay;
     K.GetSystemColors;
     Icons.get(icons, grayIcons);
     modified := FALSE;
@@ -2163,6 +2116,17 @@ BEGIN
     menuProgram := CreateMenuProgram();
     menuTools := CreateMenuTools();
 
+    mainMenu := Menu.CreateMain(mainMenuBtn);
+    Menu.AddMainItem(mainMenu, "file", menuFile);
+    Menu.AddMainItem(mainMenu, "edit", menuEdit);
+    Menu.AddMainItem(mainMenu, "search", menuSearch);
+    Menu.AddMainItem(mainMenu, "encoding", menuEncoding);
+    Menu.AddMainItem(mainMenu, "eol", menuEOL);
+    Menu.AddMainItem(mainMenu, "view", menuView);
+    Menu.AddMainItem(mainMenu, "syntax", menuSyntax);
+    Menu.AddMainItem(mainMenu, "program", menuProgram);
+    Menu.AddMainItem(mainMenu, "tools", menuTools);
+
     Ini.getSettings(buildScript, runScript, debugScript);
     IF fileName = "" THEN
         text := T.New();
@@ -2200,13 +2164,13 @@ BEGIN
     Timer.create(mainTID);
     WHILE TRUE DO
         CASE K.WaitForEvent() OF
-        |1: IF Menu.redraw THEN
-        		Redraw(resized, width, height, cliWidth, cliHeight)
-        	ELSE
+        |1: (*IF Menu.redraw THEN*)
+       			Redraw(resized, width, height, cliWidth, cliHeight)
+        	(*ELSE
         		Menu.Redraw;
         		K.CreateWindow(30 + K.GetTickCount() MOD 128, 30 + K.GetTickCount() MOD 128, winWidth, winHeight, K.winColor, 73H, 0, 0, header);
         		repaint
-        	END
+        	END*)
         |2: KeyDown(K.GetKey())
         |3: BtnClick
         |6: MouseEvent(resized, firstClickX, firstClickY, time)

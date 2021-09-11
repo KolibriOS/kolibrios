@@ -1,0 +1,144 @@
+﻿(*
+    Copyright 2016, 2017, 2020, 2021 Anton Krotov
+
+    This file is part of CEdit.
+
+    CEdit is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    CEdit is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with CEdit. If not, see <http://www.gnu.org/licenses/>.
+*)
+
+MODULE EditBox;
+
+IMPORT sys := SYSTEM, KOSAPI;
+
+
+TYPE
+
+	tEditBox* = POINTER TO RECORD
+		width*,
+		left*,
+		top*,
+		color*,
+		shift_color,
+		focus_border_color,
+		blur_border_color,
+		text_color*,
+		max: INTEGER;
+		text*: INTEGER;
+		mouse_variable: tEditBox;
+		flags*,
+
+		size,
+		pos: INTEGER;
+		(* The following struct members are not used by the users of API *)
+		offset, cl_curs_x, cl_curs_y, shift, shift_old, height, char_width: INTEGER
+	END;
+
+	EditBoxKey = PROCEDURE (eb: tEditBox);
+
+
+VAR
+
+	key_proc: EditBoxKey;
+	paint    *: PROCEDURE (eb: tEditBox);
+	mouse    *: PROCEDURE (eb: tEditBox);
+	setValue *: PROCEDURE (eb: tEditBox; text: INTEGER);
+
+
+PROCEDURE _key (key: INTEGER; key_proc: EditBoxKey; text: tEditBox);
+BEGIN
+    sys.CODE(
+    08BH, 045H, 008H,   (*  mov     eax, dword [ebp +  8]  *)
+    08BH, 055H, 00CH,   (*  mov     edx, dword [ebp + 12]  *)
+    08BH, 04DH, 010H,   (*  mov     ecx, dword [ebp + 16]  *)
+    051H,               (*  push    ecx                    *)
+    0FFH, 0D2H          (*  call    edx                    *)
+    )
+END _key;
+
+
+PROCEDURE key* (text: tEditBox; key: INTEGER);
+BEGIN
+    _key(key, key_proc, text)
+END key;
+
+
+PROCEDURE getValue* (text: tEditBox; VAR str: ARRAY OF CHAR);
+VAR
+    ptr, max, i: INTEGER;
+
+BEGIN
+    ptr := text.text;
+    max := text.max;
+    ASSERT(max < LEN(str));
+    i := 0;
+    REPEAT
+        sys.GET(ptr, str[i]);
+        INC(i);
+        INC(ptr)
+    UNTIL (str[i - 1] = 0X) OR (i = max);
+    str[i] := 0X
+END getValue;
+
+
+PROCEDURE create* (tlx, tly, width, max_chars: INTEGER; editbox_interlock: tEditBox): tEditBox;
+VAR
+    new_textbox: tEditBox;
+
+BEGIN
+    NEW(new_textbox);
+
+    new_textbox.width := width;
+    new_textbox.left := tlx;
+    new_textbox.top := tly;
+    new_textbox.color := 0FFFFFFH;
+    new_textbox.shift_color := 06A9480H;
+    new_textbox.focus_border_color := 0;
+    new_textbox.blur_border_color := 06A9480H;
+    new_textbox.text_color := 0;
+    new_textbox.max := max_chars;
+    new_textbox.text := KOSAPI.malloc(max_chars + 2);
+    ASSERT(new_textbox.text # 0);
+    new_textbox.mouse_variable := editbox_interlock;
+    new_textbox.flags := 0
+
+    RETURN new_textbox
+END create;
+
+
+PROCEDURE GetProc (Lib, v: INTEGER; name: ARRAY OF CHAR);
+VAR
+	a: INTEGER;
+BEGIN
+	a := KOSAPI.GetProcAdr(name, Lib);
+	ASSERT(a # 0);
+	sys.PUT(v, a)
+END GetProc;
+
+
+PROCEDURE main;
+VAR
+	Lib: INTEGER;
+BEGIN
+	Lib := KOSAPI.LoadLib("/rd/1/lib/box_lib.obj");
+	ASSERT(Lib # 0);
+	GetProc(Lib, sys.ADR(paint),    "edit_box");
+	GetProc(Lib, sys.ADR(key_proc), "edit_box_key");
+	GetProc(Lib, sys.ADR(mouse),    "edit_box_mouse");
+	GetProc(Lib, sys.ADR(setValue), "edit_box_set_text");
+END main;
+
+
+BEGIN
+  main
+END EditBox.

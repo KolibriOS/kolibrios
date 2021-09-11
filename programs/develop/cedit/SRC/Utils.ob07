@@ -349,4 +349,9 @@ BEGIN
 END ptr2str;
 
 
+PROCEDURE between* (a, b, c: INTEGER): BOOLEAN;
+	RETURN (a <= b) & (b <= c)
+END between;
+
+
 END Utils.

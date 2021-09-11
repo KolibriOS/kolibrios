@@ -19,16 +19,17 @@
 
 MODULE Scroll;
 
-IMPORT G := Graph, K := KolibriOS;
+IMPORT G := Graph, K := KolibriOS, U := Utils;
 
 CONST
 
 	ScrollIPC* = 0;
+	Delay* = 40;
 
 TYPE
 
 	tScroll* = RECORD
-		vertical, Inc*, Dec*, mouse*: BOOLEAN;
+		vertical, Inc*, Dec*, mouse: BOOLEAN;
 		top*, left*,
 		width*, height*: INTEGER; (* read only *)
 		btnSize, sliderSize: INTEGER;
@@ -38,21 +39,24 @@ TYPE
 
 
 PROCEDURE create* (vertical: BOOLEAN; width, height: INTEGER; btnSize, sliderSize: INTEGER; VAR scroll: tScroll);
+VAR
+	res: tScroll;
 BEGIN
-	scroll.vertical := vertical;
-	scroll.Inc := FALSE;
-	scroll.Dec := FALSE;
-	scroll.Slider := -1;
-	scroll.mouse := FALSE;
-	scroll.left := 0;
-	scroll.top := 0;
-	scroll.width := width;
-	scroll.height := height;
-	scroll.btnSize := btnSize;
-	scroll.sliderSize := sliderSize;
-	scroll.pos := 0;
-	scroll.maxVal := 0;
-	scroll.canvas := G.CreateCanvas(width, height)
+	res.vertical := vertical;
+	res.Inc := FALSE;
+	res.Dec := FALSE;
+	res.Slider := -1;
+	res.mouse := FALSE;
+	res.left := 0;
+	res.top := 0;
+	res.width := width;
+	res.height := height;
+	res.btnSize := btnSize;
+	res.sliderSize := sliderSize;
+	res.pos := 0;
+	res.maxVal := 0;
+	res.canvas := G.CreateCanvas(width, height);
+	scroll := res
 END create;
 
 
@@ -296,11 +300,6 @@ BEGIN
 END MouseMove;
 
 
-PROCEDURE between (a, b, c: INTEGER): BOOLEAN;
-	RETURN (a <= b) & (b <= c)
-END between;
-
-
 PROCEDURE SendIPC*;
 BEGIN
 	K.SendIPC(K.ThreadID(), ScrollIPC)
@@ -311,34 +310,32 @@ PROCEDURE MouseDown* (VAR scroll: tScroll; x, y: INTEGER);
 VAR
 	c, size: INTEGER;
 BEGIN
-	DEC(x, scroll.left);
-	DEC(y, scroll.top);
-	scroll.mouse := TRUE;
-	IF between(1, x, scroll.width - 2) & between(1, y, scroll.height - 2) THEN
-		IF scroll.vertical THEN
-			c := y;
-			size := scroll.height
-		ELSE
-			c := x;
-			size := scroll.width
-		END;
-		IF between(scroll.btnSize + scroll.pos - 1, c, scroll.btnSize + scroll.pos + scroll.sliderSize - 1) THEN
-			scroll.pos0 := scroll.pos;
-			scroll.Slider := c
-		ELSE
-			IF between(0, c, scroll.btnSize - 1) THEN
+	IF ~scroll.mouse THEN
+		DEC(x, scroll.left);
+		DEC(y, scroll.top);
+		scroll.mouse := TRUE;
+		IF U.between(1, x, scroll.width - 2) & U.between(1, y, scroll.height - 2) THEN
+			IF scroll.vertical THEN
+				c := y;
+				size := scroll.height
+			ELSE
+				c := x;
+				size := scroll.width
+			END;
+			IF U.between(scroll.btnSize + scroll.pos - 1, c, scroll.btnSize + scroll.pos + scroll.sliderSize - 1) THEN
+				scroll.pos0 := scroll.pos;
+				scroll.Slider := c
+			ELSIF U.between(0, c, scroll.btnSize - 1) THEN
 				scroll.Dec := TRUE;
 				SendIPC
+			ELSIF U.between(size - scroll.btnSize, c, size - 1) THEN
+				scroll.Inc := TRUE;
+				SendIPC
 			ELSE
-				IF between(size - scroll.btnSize, c, size - 1) THEN
-					scroll.Inc := TRUE;
-					SendIPC
-				ELSE
-					setPos(scroll, c - scroll.btnSize - scroll.sliderSize DIV 2);
-					scroll.pos0 := scroll.pos;
-					scroll.Slider := c;
-					paint(scroll)
-				END
+				setPos(scroll, c - scroll.btnSize - scroll.sliderSize DIV 2);
+				scroll.pos0 := scroll.pos;
+				scroll.Slider := c;
+				paint(scroll)
 			END
 		END
 	END
