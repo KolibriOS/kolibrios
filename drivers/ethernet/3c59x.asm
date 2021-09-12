@@ -1,6 +1,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;                                                              ;;
-;; Copyright (C) KolibriOS team 2004-2015. All rights reserved. ;;
+;; Copyright (C) KolibriOS team 2004-2021. All rights reserved. ;;
 ;; Distributed under terms of the GNU General Public License    ;;
 ;;                                                              ;;
 ;;  3Com network driver for KolibriOS                           ;;
@@ -90,14 +90,19 @@ entry START
         COMPATIBLE_API          = 0x0100
         API_VERSION             = (COMPATIBLE_API shl 16) + CURRENT_API
 
-        MAX_DEVICES             = 16
+; configureable area
+
+        MAX_DEVICES             = 16    ; Maximum number of devices this driver may handle
+
         FORCE_FD                = 0     ; forcing full duplex mode makes sense at some cards and link types
 
-        NUM_RX_DESC             = 4     ; a power of 2 number
-        NUM_TX_DESC             = 4     ; a power of 2 number
+        NUM_RX_DESC             = 32    ; Number of receive descriptors (must be power of 2)
+        NUM_TX_DESC             = 16    ; Number of transmit descriptors (must be power of 2)
 
-        __DEBUG__               = 1
+        __DEBUG__               = 1     ; 1 = on, 0 = off
         __DEBUG_LEVEL__         = 2     ; 1 = verbose, 2 = errors only
+
+; end configureable area
 
 section '.flat' readable writable executable
 
@@ -106,6 +111,17 @@ include '../struct.inc'
 include '../macros.inc'
 include '../fdo.inc'
 include '../netdrv.inc'
+
+
+if (bsr NUM_RX_DESC)>(bsf NUM_RX_DESC)
+  display 'NUM_RX_DESC must be a power of two'
+  err
+end if
+
+if (bsr NUM_TX_DESC)>(bsf NUM_TX_DESC)
+  display 'NUM_TX_DESC must be a power of two'
+  err
+end if
 
 ; Registers
         REG_POWER_MGMT_CTRL     = 0x7c
@@ -402,11 +418,11 @@ proc service_proc stdcall, ioctl:dword
 
 ; check if the device is already listed
 
-        mov     ecx, [vortex_devices]
+        mov     ecx, [devices]
         test    ecx, ecx
-        jz      .maybeboomerang
+        jz      .firstdevice
 
-        mov     esi, vortex_list
+        mov     esi, device_list
         mov     eax, [edx + IOCTL.input]                ; get the pci bus and device numbers
         mov     ax , [eax+1]                            ;
   .nextdevice:
@@ -419,31 +435,9 @@ proc service_proc stdcall, ioctl:dword
         add     esi, 4
         loop    .nextdevice
 
-
-  .maybeboomerang:
-        mov     ecx, [boomerang_devices]
-        test    ecx, ecx
-        jz      .firstdevice
-
-        mov     esi, boomerang_list
-        mov     eax, [edx + IOCTL.input]                ; get the pci bus and device numbers
-        mov     ax, [eax+1]                             ;
-  .nextdevice2:
-        mov     ebx, [esi]
-        cmp     al, byte[ebx + device.pci_bus]
-        jne     @f
-        cmp     ah, byte[ebx + device.pci_dev]
-        je      .find_devicenum                         ; Device is already loaded, let's find it's device number
-       @@:
-        add     esi, 4
-        loop    .nextdevice2
-
-
 ; This device doesnt have its own eth_device structure yet, lets create one
   .firstdevice:
-        mov     ecx, [boomerang_devices]
-        add     ecx, [vortex_devices]
-        cmp     ecx, MAX_DEVICES                        ; First check if the driver can handle one more card
+        cmp     [devices], MAX_DEVICES                  ; First check if the driver can handle one more card
         jae     .fail
 
         allocate_and_clear ebx, sizeof.device, .fail    ; Allocate the buffer for device structure
@@ -481,14 +475,9 @@ proc service_proc stdcall, ioctl:dword
         test    eax, eax
         jnz     .err                                                    ; If an error occured, exit
 
-
-        movzx   ecx, [ebx + device.ver_id]
-        test    word [hw_versions+2+ecx*4], IS_VORTEX
-        jz      .not_vortex
-
-        mov     eax, [vortex_devices]                                   ; Add the device structure to our device list
-        mov     [vortex_list+4*eax], ebx                                ; (IRQ handler uses this list to find device)
-        inc     [vortex_devices]                                        ;
+        mov     eax, [devices]                                          ; Add the device structure to our device list
+        mov     [device_list+4*eax], ebx                                ;
+        inc     [devices]                                               ;
 
   .register:
         mov     [ebx + device.type], NET_TYPE_ETH
@@ -499,13 +488,6 @@ proc service_proc stdcall, ioctl:dword
 
         call    start_device
         ret
-
-  .not_vortex:
-        mov     eax, [boomerang_devices]                                ; Add the device structure to our device list
-        mov     [boomerang_list+4*eax], ebx                             ; (IRQ handler uses this list to find device)
-        inc     [boomerang_devices]
-
-        jmp     .register
 
 ; If the device was already loaded, find the device number and return it in eax
 
@@ -697,13 +679,19 @@ probe:
 ;       or      al, 0x14
         out     dx, ax
 ; wait for GlobalReset to complete
-        mov     ecx, 64000
+        mov     ecx, 2000
   .rsloop:
-        in      ax , dx
-        test    ah , 10000b             ; CmdInProgress
+        in      ax, dx
+        test    ah, 10000b             ; CmdInProgress
+
+        pusha
+        mov     esi, 1
+        invoke  Sleep
+        popa
+
         loopz   .rsloop
 
-        DEBUGF 1,"Waiting for nic to boot..\n"
+        DEBUGF 1,"Waiting for NIC to boot..\n"
 ; wait for 2 seconds for NIC to boot
         mov     esi, 2000               ; WTF? FIXME
         invoke  Sleep ; 2 seconds
@@ -1140,38 +1128,36 @@ try_phy:
 
         mov     al, MII_BMCR
         push    eax
-        call    mdio_read       ; returns with window #4
-        or      ah, 0x80        ; software reset
+        call    mdio_read
+        or      ax, BMCR_RESET
         mov     esi, eax
         mov     eax, [esp]
-        call    mdio_write      ; returns with window #4
+        call    mdio_write
 
 ; wait for reset to complete
         mov     esi, 2000
         invoke  Sleep           ; 2s FIXME
+
         mov     eax, [esp]
-        call    mdio_read       ; returns with window #4
-        test    ah, 0x80
+        mov     al, MII_BMCR
+        call    mdio_read
+        test    ax, BMCR_RESET
         jnz     .fail1
-        mov     eax, [esp]
 
 ; wait for a while after reset
         mov     esi, 20
         invoke  Sleep           ; 20ms
+
         mov     eax, [esp]
-        mov     al , MII_BMSR
-        call    mdio_read        ; returns with window #4
-        test    al, 1            ; extended capability supported?
+        mov     al, MII_BMSR
+        call    mdio_read
+        test    al, BMSR_ERCAP
         jz      .fail2
         DEBUGF  1,"Extended capability supported\n"
-
-; auto-neg capable?
-        test    al , 1000b
-        jz      .fail2           ; not auto-negotiation capable
+        test    al, BMSR_ANEGCAPABLE
+        jz      .fail2
         DEBUGF  1,"Auto-negotiation capable\n"
-
-; auto-neg complete?
-        test    al , 100000b
+        test    al, BMSR_ANEGCOMPLETE
         jnz     .auto_neg_ok
         DEBUGF  1,"Restarting auto-negotiation\n"
 
@@ -1180,23 +1166,25 @@ try_phy:
         mov     al, MII_ADVERTISE
         push    eax
         call    mdio_read       ; returns with window #4
-        or      ax , 1111b shl 5; advertise only 10base-T and 100base-TX
+        or      ax, ADVERTISE_10HALF or ADVERTISE_10FULL or ADVERTISE_100HALF or ADVERTISE_100FULL
         mov     esi, eax
         pop     eax
         call    mdio_write      ; returns with window #4
         mov     eax, [esp]
         call    mdio_read       ; returns with window #4
         mov     esi, eax
-        or      bh , 10010b     ; restart auto-negotiation
+        or      bx, BMCR_ANENABLE or BMCR_ANRESTART
         mov     eax, [esp]
         call    mdio_write      ; returns with window #4
         mov     esi, 4000
         invoke  Sleep  ; 4 seconds
         mov     eax, [esp]
-        mov     al , MII_BMSR
+
+        mov     al, MII_BMSR
         call    mdio_read ; returns with window #4
-        test    al , 100000b ; auto-neg complete?
+        test    al, BMSR_ANEGCOMPLETE
         jnz     .auto_neg_ok
+
         jmp     .fail3
   .auto_neg_ok:
         DEBUGF  1,"Auto-negotiation complete\n"
@@ -2137,15 +2125,14 @@ check_tx_status:
 ;;                                         ;;
 ;; Transmit (vortex)                       ;;
 ;;                                         ;;
-;; In: buffer pointer in [esp+4]           ;;
-;;     pointer to device structure in ebx  ;;
+;; In: pointer to device structure in ebx  ;;
+;; Out: eax = 0 on success                 ;;
 ;;                                         ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
+align 16
 proc vortex_transmit stdcall bufferptr
 
-        pushf
-        cli
+        spin_lock_irqsave
 
         mov     esi, [bufferptr]
         DEBUGF  1,"Transmitting packet, buffer:%x, size:%u\n", [bufferptr], [esi + NET_BUFF.length]
@@ -2156,23 +2143,23 @@ proc vortex_transmit stdcall bufferptr
         [eax+13]:2,[eax+12]:2
 
         cmp     [esi + NET_BUFF.length], 1514
-        ja      .fail
+        ja      .error
         cmp     [esi + NET_BUFF.length], 60
-        jb      .fail
+        jb      .error
 
         call    check_tx_status
 
 ; switch to register window 7
         set_io  [ebx + device.io_addr], 0
         set_io  [ebx + device.io_addr], REG_COMMAND
-        mov     ax, SELECT_REGISTER_WINDOW+7
+        mov     ax, SELECT_REGISTER_WINDOW + 7
         out     dx, ax
 
 ; check for master operation in progress
         set_io  [ebx + device.io_addr], REG_MASTER_STATUS
         in      ax, dx
         test    ah, 0x80
-        jnz     .fail ; no DMA for sending
+        jnz     .overrun ; no DMA for sending
 
 ; program frame address to be sent
         set_io  [ebx + device.io_addr], REG_MASTER_ADDRESS
@@ -2190,15 +2177,32 @@ proc vortex_transmit stdcall bufferptr
         set_io  [ebx + device.io_addr], REG_COMMAND
         mov     ax, (10100b shl 11) + 1 ; StartDMADown
         out     dx, ax
-  .finish:
-        popf
+
+; Update stats
+        inc     [ebx + device.packets_tx]
+        mov     eax, [esi + NET_BUFF.length]
+        add     dword[ebx + device.bytes_tx], eax
+        adc     dword[ebx + device.bytes_tx + 4], 0
+
+        spin_unlock_irqrestore
         xor     eax, eax
         ret
 
-  .fail:
-        DEBUGF  2,"Send failed\n"
+  .error:
+        DEBUGF  2, "TX packet error\n"
+        inc     [ebx + device.packets_tx_err]
         invoke  NetFree, [bufferptr]
-        popf
+
+        spin_unlock_irqrestore
+        or      eax, -1
+        ret
+
+  .overrun:
+        DEBUGF  2, "TX overrun\n"
+        inc     [ebx + device.packets_tx_ovr]
+        invoke  NetFree, [bufferptr]
+
+        spin_unlock_irqrestore
         or      eax, -1
         ret
 
@@ -2208,15 +2212,14 @@ endp
 ;;                                         ;;
 ;; Transmit (boomerang)                    ;;
 ;;                                         ;;
-;; In: buffer pointer in [esp+4]           ;;
-;;     pointer to device structure in ebx  ;;
+;; In: pointer to device structure in ebx  ;;
+;; Out: eax = 0 on success                 ;;
 ;;                                         ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
+align 16
 proc boomerang_transmit stdcall bufferptr
 
-        pushf
-        cli
+        spin_lock_irqsave
 
         mov     esi, [bufferptr]
         DEBUGF  1,"Transmitting packet, buffer:%x, size:%u\n", [bufferptr], [esi + NET_BUFF.length]
@@ -2227,9 +2230,9 @@ proc boomerang_transmit stdcall bufferptr
         [eax+13]:2,[eax+12]:2
 
         cmp     [esi + NET_BUFF.length], 1514
-        ja      .fail
+        ja      .error
         cmp     [esi + NET_BUFF.length], 60
-        jb      .fail
+        jb      .error
 
         call    check_tx_status                         ; Reset TX engine if needed
 
@@ -2339,14 +2342,32 @@ proc boomerang_transmit stdcall bufferptr
 
   .finish:
         mov     [ebx + device.curr_tx], edi
-        popf
+
+; Update stats
+        inc     [ebx + device.packets_tx]
+        mov     eax, [esi + NET_BUFF.length]
+        add     dword[ebx + device.bytes_tx], eax
+        adc     dword[ebx + device.bytes_tx + 4], 0
+
+        spin_unlock_irqrestore
         xor     eax, eax
         ret
 
-  .fail:
-        DEBUGF  2,"Send failed\n"
+  .error:
+        DEBUGF  2, "TX packet error\n"
+        inc     [ebx + device.packets_tx_err]
         invoke  NetFree, [bufferptr]
-        popf
+
+        spin_unlock_irqrestore
+        or      eax, -1
+        ret
+
+  .overrun:
+        DEBUGF  2, "TX overrun\n"
+        inc     [ebx + device.packets_tx_ovr]
+        invoke  NetFree, [bufferptr]
+
+        spin_unlock_irqrestore
         or      eax, -1
         ret
 
@@ -2448,23 +2469,15 @@ read_mac_eeprom:
 ;; Vortex Interrupt handler ;;
 ;;                          ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-align 4
+align 16
 int_vortex:
 
         push    ebx esi edi
 
-        DEBUGF  1,"INT\n"
+        mov     ebx, [esp+4*4]
+        DEBUGF  1,"INT for 0x%x\n", ebx
 
-; find pointer of device wich made IRQ occur
-
-        mov     ecx, [vortex_devices]
-        test    ecx, ecx
-        jz      .nothing
-        mov     esi, vortex_list
-  .nextdevice:
-        mov     ebx, [esi]
-
+; TODO? if we are paranoid, we can check that the value from ebx is present in the current device_list
 
         set_io  [ebx + device.io_addr], 0
         set_io  [ebx + device.io_addr], REG_INT_STATUS
@@ -2472,21 +2485,7 @@ int_vortex:
         and     ax, S_5_INTS
         jnz     .nothing
 
-        add     esi, 4
-
-        test    ax , ax
-        jnz     .got_it
-        loop    .nextdevice
-
-  .nothing:
-        pop     edi esi ebx
-        xor     eax, eax
-
-        ret
-
-.got_it:
-
-        DEBUGF  1,"Device: %x Status: %x\n", ebx, eax:4
+        DEBUGF  1,"Status: %x\n", eax:4
 
         test    ax, RxComplete
         jz      .noRX
@@ -2576,10 +2575,7 @@ int_vortex:
         out     dx, ax
 
   .finish:
-
-
   .noRX:
-
         test    ax, DMADone
         jz      .noDMA
 
@@ -2595,17 +2591,11 @@ int_vortex:
         out     dx, ax
 
   .nodmaclear:
-
         pop     ax
 
         DEBUGF  1, "DMA Done!\n", cx
 
-
-
   .noDMA:
-
-
-
   .ACK:
         set_io  [ebx + device.io_addr], 0
         set_io  [ebx + device.io_addr], REG_COMMAND
@@ -2613,6 +2603,14 @@ int_vortex:
         out     dx, ax
 
         pop     edi esi ebx
+        xor     eax, eax
+        inc     eax
+
+        ret
+
+  .nothing:
+        pop     edi esi ebx
+        xor     eax, eax
 
         ret
 
@@ -2624,41 +2622,24 @@ int_vortex:
 ;; Boomerang Interrupt handler ;;
 ;;                             ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-align 4
+align 16
 int_boomerang:
 
         push    ebx esi edi
 
-        DEBUGF  1,"INT\n"
+        mov     ebx, [esp+4*4]
+        DEBUGF  1,"INT for 0x%x\n", ebx
 
-; find pointer of device wich made IRQ occur
-
-        mov     ecx, [boomerang_devices]
-        test    ecx, ecx
-        jz      .nothing
-        mov     esi, boomerang_list
-  .nextdevice:
-        mov     ebx, [esi]
+; TODO? if we are paranoid, we can check that the value from ebx is present in the current device_list
 
         set_io  [ebx + device.io_addr], 0
         set_io  [ebx + device.io_addr], REG_INT_STATUS
         in      ax, dx
         test    ax, S_5_INTS
-        jnz     .got_it
-  .continue:
-        add     esi, 4
-        dec     ecx
-        jnz     .nextdevice
-  .nothing:
-        pop     edi esi ebx
-        xor     eax, eax
-
-        ret
-
+        jz      .nothing
   .got_it:
+        DEBUGF  1,"Status: %x\n", ax
 
-        DEBUGF  1,"Device: %x Status: %x\n", ebx, ax
         push    ax
 
 ; disable all INTS
@@ -2756,7 +2737,7 @@ int_boomerang:
         ;;;; FIXME: make upunstall work
 
   .noUpUnStall:
-.noRX:
+  .noRX:
         test    word[esp], DownComplete
         jz      .noTX
         DEBUGF  1, "Downcomplete!\n"
@@ -2777,7 +2758,7 @@ int_boomerang:
         dec     ecx
         jnz     .txloop
 
-.noTX:
+  .noTX:
         pop     ax
 
         set_io  [ebx + device.io_addr], 0
@@ -2796,6 +2777,14 @@ int_boomerang:
         out     dx, ax
 
         pop     edi esi ebx
+        xor     eax, eax
+        inc     eax
+
+        ret
+
+  .nothing:
+        pop     edi esi ebx
+        xor     eax, eax
 
         ret
 
@@ -2919,10 +2908,8 @@ HW_VERSIONS_SIZE = $ - hw_versions
 include_debug_strings                           ; All data wich FDO uses will be included here
 
 align 4
-vortex_devices          dd 0
-boomerang_devices       dd 0
-vortex_list             rd MAX_DEVICES
-boomerang_list          rd MAX_DEVICES
+devices         dd 0
+device_list     rd MAX_DEVICES                  ; This list contains all pointers to device structures the driver is handling
 
 
 
