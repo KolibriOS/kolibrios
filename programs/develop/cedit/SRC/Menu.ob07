@@ -20,7 +20,7 @@
 MODULE Menu;
 
 IMPORT
-    SYSTEM, G := Graph, List, K := KolibriOS, U := Utils, KOSAPI;
+    SYSTEM, G := Graph, List, K := KolibriOS, KOSAPI;
 
 CONST
     fontHeight = 22;
@@ -91,7 +91,6 @@ VAR
     TIDs: ARRAY maxLEVEL + 1 OF INTEGER;
     resetTimer: tProc;
     _open: PROCEDURE (m: tMenu; x, y: INTEGER);
-    (*redraw*: BOOLEAN;*)
 (*
     backColor, foreColor, selBackColor, selForeColor,
     disBackColor, disForeColor, disSelBackColor, disSelForeColor: INTEGER;
@@ -354,7 +353,6 @@ BEGIN
 	   		close(p);
 	   		p := p.parent
 	   	END;
-	   	(*redraw := TRUE;*)
 	   	exit(m)
    	END
 END click;
@@ -373,7 +371,6 @@ END isActive;
 PROCEDURE closeChild (m: tMenu);
 BEGIN
 	IF m.child # NIL THEN
-		(*redraw := FALSE;*)
 		close(m.child);
 		m.child := NIL
 	END
@@ -639,18 +636,11 @@ BEGIN
     RETURN m
 END create;
 
-(*
-PROCEDURE Redraw*;
-BEGIN
-	redraw := TRUE
-END Redraw;
-*)
 
 PROCEDURE init* (_resetTimer: tProc);
 VAR
 	i: INTEGER;
 BEGIN
-	(*Redraw;*)
 	resetTimer := _resetTimer;
 	_open := open;
 	FOR i := 0 TO maxLEVEL DO

@@ -24,7 +24,7 @@ IMPORT Lines;
 
 CONST
 
-    langNone* = 0; langC* = 1; langOberon* = 2; langPascal* = 3;
+    langText* = 0; langC* = 1; langOberon* = 2; langPascal* = 3;
     langFasm* = 4; langLua* = 5; langIni* = 6; langJSON* = 7;
 
     csLang = {langC, langOberon, langLua, langIni, langJSON};
@@ -317,7 +317,7 @@ END Ini;
 PROCEDURE comments* (line: tLine; VAR depth, cond, pos: INTEGER; n: INTEGER; lang: INTEGER);
 BEGIN
     CASE lang OF
-    |langNone:
+    |langText:
     |langFasm:
     |langC,
      langJSON:    C(line, depth, cond, pos, n)

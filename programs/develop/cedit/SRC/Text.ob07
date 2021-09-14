@@ -126,7 +126,7 @@ BEGIN
     ELSIF ext = "JSON" THEN
         text.lang := Lang.langJSON
     ELSE
-        text.lang := Lang.langNone
+        text.lang := Lang.langText
     END
 END setName;
 
@@ -2057,7 +2057,7 @@ VAR
     guard: tGuard;
 BEGIN
     IF text.search & search(text, text.searchText, text.cs, text.whole) THEN END;
-    IF (text.lang # Lang.langNone) & text.comments THEN
+    IF (text.lang # Lang.langText) & text.comments THEN
         Comments(text)
     END;
     IF text.guard THEN
@@ -2102,7 +2102,7 @@ BEGIN
         SetColor(colors.text, backColor);
         Len := MAX(line.length - text.scroll.X, 0);
         G.TextOut(canvas, padding.left, y, Lines.getPChar(line, text.scroll.X), MIN(Len, textsize.X + 1));
-        IF text.lang # Lang.langNone THEN
+        IF text.lang # Lang.langText THEN
             parse(text, line, y, backColor, text.lang)
         END;
         mark(line, y - inter DIV 2);
@@ -2330,7 +2330,7 @@ BEGIN
     ELSE
         errno := 1
     END;
-    IF (text # NIL) & (text.lang # Lang.langNone) THEN
+    IF (text # NIL) & (text.lang # Lang.langText) THEN
         Comments(text)
     END
     RETURN text

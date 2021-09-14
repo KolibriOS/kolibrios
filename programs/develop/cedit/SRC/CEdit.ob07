@@ -28,7 +28,7 @@ IMPORT
     RW, Ini, EB := EditBox, Icons, Tabs, Timer;
 
 CONST
-    header = "CEdit (11-sep-2021)";
+    header = "CEdit (14-sep-2021)";
 
     ShellFilter = "";
     EditFilter = "SH|ASM|TXT|INC|OB07|C|CPP|H|PAS|PP|LUA|INI|JSON";
@@ -55,8 +55,8 @@ CONST
     btnReplace = 61;
     btnReplaceAll = 62;
     btnGoto = 63;
-    btnCloseFind = 64;
-    btnHideFind = 65;
+    btnCloseSearch = 64;
+    btnHideSearch = 65;
 
     mainMenuBtn = 70;
 
@@ -82,10 +82,9 @@ CONST
     menuEditX = menuFileX + 4*fontWidth + 9;
     menuSearchX = menuEditX + 4*fontWidth + 9;
     menuEncodingX = menuSearchX + 6*fontWidth + 9;
-    menuEOLX = menuEncodingX + 8*fontWidth + 9;
-    menuViewX = menuEOLX + 3*fontWidth + 9;
-    menuSyntaxX = menuViewX + 4*fontWidth + 9;
-    menuProgramX = menuSyntaxX + 6*fontWidth + 9;
+    menuViewX = menuEncodingX + 8*fontWidth + 9;
+    menuLanguageX = menuViewX + 4*fontWidth + 9;
+    menuProgramX = menuLanguageX + 8*fontWidth + 9;
     menuToolsX = menuProgramX + 7*fontWidth + 9;
 
     menuCut = 1;
@@ -115,7 +114,7 @@ CONST
     menuColors = 1000;
     menuMaxColors = menuColors + Ini.MAX_SECTIONS - 1;
 
-    menuNone = 30;
+    menuText = 30;
     menuC = 31;
     menuFasm = 32;
     menuIni = 33;
@@ -135,6 +134,7 @@ CONST
     menuUTF8 = 61;
     menuCP866 = 62;
     menuWin1251 = 63;
+    menuEOL = 140;
 
     menuPipet = 70;
     menuBoard = 71;
@@ -161,9 +161,9 @@ CONST
     menuNextBookmark = 132;
     menuPrevBookmark = 133;
 
-    menuLF = 140;
-    menuCRLF = 141;
-    menuCR = 142;
+    menuLF = 141;
+    menuCRLF = 142;
+    menuCR = 143;
 
     maxTexts = 32;
 
@@ -198,8 +198,8 @@ VAR
     mainTID, delay: INTEGER;
 
     context, menuFile, menuEdit, menuSearch, menuEncoding,
-    menuEOL, menuView, menuSyntax, menuProgram, menuTools,
-    subCurLine, subIndent, subCase, subBookmark: Menu.tMenu;
+    menuView, menuLanguage, menuProgram, menuTools,
+    subCurLine, subIndent, subCase, subBookmark, subEOL: Menu.tMenu;
 
     mainMenu: Menu.tMain;
 
@@ -520,7 +520,7 @@ BEGIN
     bottom := top + 395 + btnHeight + SEARCH_PADDING;
     color := K.borderColor;
     Rect(left, top, right, bottom, color);
-    K.CreateButton(btnCloseFind, right - 20, top, 20, 20, 0EF999FH, "");
+    K.CreateButton(btnCloseSearch, right - 20, top, 20, 20, 0EF999FH, "");
     K.DrawLine(right - 14, top + 5, right - 5, top + 14, 0FFFFFFH);
     K.DrawLine(right - 15, top + 5, right - 5, top + 15, 0FFFFFFH);
     K.DrawLine(right - 15, top + 6, right - 6, top + 15, 0FFFFFFH);
@@ -528,7 +528,7 @@ BEGIN
     K.DrawLine(right - 15, top + 15, right - 5, top + 5, 0FFFFFFH);
     K.DrawLine(right - 14, top + 15, right - 5, top + 6, 0FFFFFFH);
 
-    K.CreateButton(btnHideFind, right - 40, top, 20, 20, K.btnColor, "");
+    K.CreateButton(btnHideSearch, right - 40, top, 20, 20, K.btnColor, "");
     K.DrawLine(right - 34, top + 14, right - 26, top + 14, K.btnTextColor);
     K.DrawLine(right - 34, top + 15, right - 26, top + 15, K.btnTextColor);
 
@@ -703,7 +703,7 @@ BEGIN
     IF OD.FileName = "" THEN
         OD.FileName := "NewFile.";
         CASE text.lang OF
-        |Languages.langNone:   ext := "txt"
+        |Languages.langText:   ext := "txt"
         |Languages.langC:      ext := "c"
         |Languages.langFasm:   ext := "asm"
         |Languages.langIni:    ext := "ini"
@@ -1045,19 +1045,19 @@ END Close;
 
 PROCEDURE CloseMenu;
 BEGIN
-    Menu.close(menuFile);
-    Menu.close(menuEdit);
-    Menu.close(menuSearch);
-    Menu.close(menuEncoding);
-    Menu.close(menuEOL);
-    Menu.close(menuView);
-    Menu.close(menuSyntax);
-    Menu.close(menuProgram);
-    Menu.close(menuTools);
+    Menu.close(subEOL);
     Menu.close(subCurLine);
     Menu.close(subIndent);
     Menu.close(subCase);
     Menu.close(subBookmark);
+    Menu.close(menuFile);
+    Menu.close(menuEdit);
+    Menu.close(menuSearch);
+    Menu.close(menuEncoding);
+    Menu.close(menuView);
+    Menu.close(menuLanguage);
+    Menu.close(menuProgram);
+    Menu.close(menuTools);
     Menu.close(context)
 END CloseMenu;
 
@@ -1161,11 +1161,6 @@ BEGIN
         Menu.option(menu, menuCP866,   text.enc = E.CP866);
         Menu.option(menu, menuWin1251, text.enc = E.W1251);
         INC(x, menuEncodingX)
-    ELSIF menu = menuEOL THEN
-		Menu.option(menu, menuCRLF, text.eol = RW.EOL_CRLF);
-		Menu.option(menu, menuLF,   text.eol = RW.EOL_LF);
-		Menu.option(menu, menuCR,   text.eol = RW.EOL_CR);
-		INC(x, menuEOLX)
     ELSIF menu = menuView THEN
         Menu.check(menu, menuNumbers,  text.numbers);
         Menu.check(menu, menuFontSize, font = font2);
@@ -1173,8 +1168,8 @@ BEGIN
             Menu.option(menu, menuColors + i, Ini.curSectionNum = i)
         END;
         INC(x, menuViewX)
-    ELSIF menu = menuSyntax THEN
-        Menu.option(menu, menuNone,   text.lang = Languages.langNone);
+    ELSIF menu = menuLanguage THEN
+        Menu.option(menu, menuText,   text.lang = Languages.langText);
         Menu.option(menu, menuC,      text.lang = Languages.langC);
         Menu.option(menu, menuFasm,   text.lang = Languages.langFasm);
         Menu.option(menu, menuIni,    text.lang = Languages.langIni);
@@ -1182,7 +1177,7 @@ BEGIN
         Menu.option(menu, menuLua,    text.lang = Languages.langLua);
         Menu.option(menu, menuOberon, text.lang = Languages.langOberon);
         Menu.option(menu, menuPascal, text.lang = Languages.langPascal);
-        INC(x, menuSyntaxX)
+        INC(x, menuLanguageX)
     ELSIF menu = menuProgram THEN
         Menu.setEnabled(menu, menuBuild, buildScript # "");
         Menu.setEnabled(menu, menuDebug, debugScript # "");
@@ -1203,6 +1198,10 @@ BEGIN
 
     Menu.setEnabled(subCase, menuUpper, selected);
     Menu.setEnabled(subCase, menuLower, selected);
+
+	Menu.option(subEOL, menuCRLF, text.eol = RW.EOL_CRLF);
+	Menu.option(subEOL, menuLF,   text.eol = RW.EOL_LF);
+	Menu.option(subEOL, menuCR,   text.eol = RW.EOL_CR);
 
     IF menu # NIL THEN
     	Timer.kill;
@@ -1332,8 +1331,8 @@ BEGIN
             font := font1
         END;
         resize
-    |menuNone:
-        T.setLang(text, Languages.langNone)
+    |menuText:
+        T.setLang(text, Languages.langText)
     |menuC:
         T.setLang(text, Languages.langC)
     |menuFasm:
@@ -1552,6 +1551,9 @@ BEGIN
     Menu.AddMenuItem(menu, menuUTF8,    E.names[E.UTF8]);
     Menu.AddMenuItem(menu, menuCP866,   E.names[E.CP866]);
     Menu.AddMenuItem(menu, menuWin1251, E.names[E.W1251]);
+    Menu.delimiter(menu);
+    Menu.AddMenuItem(menu, menuEOL,     "EOL");
+    Menu.child(menu, subEOL);
     RETURN Menu.create(menu, MenuItemClick, MenuKeyDown)
 END CreateMenuEncoding;
 
@@ -1591,7 +1593,7 @@ BEGIN
 END CreateMenuView;
 
 
-PROCEDURE CreateMenuSyntax (): Menu.tMenu;
+PROCEDURE CreateMenuLanguage (): Menu.tMenu;
 VAR
     menu: List.tList;
 BEGIN
@@ -1604,9 +1606,9 @@ BEGIN
     Menu.AddMenuItem(menu, menuOberon, "Oberon");
     Menu.AddMenuItem(menu, menuPascal, "Pascal");
     Menu.delimiter(menu);
-    Menu.AddMenuItem(menu, menuNone,   "none");
+    Menu.AddMenuItem(menu, menuText,   "Text");
     RETURN Menu.create(menu, MenuItemClick, MenuKeyDown)
-END CreateMenuSyntax;
+END CreateMenuLanguage;
 
 
 PROCEDURE CreateMenuProgram (): Menu.tMenu;
@@ -1685,6 +1687,16 @@ BEGIN
 END CreateMenuBookmark;
 
 
+PROCEDURE HideSearch;
+BEGIN
+    SetFocus(FindEdit, FALSE);
+    searchOpened := FALSE;
+    LEFT := searchLeft;
+    resize;
+    draw_window
+END HideSearch;
+
+
 PROCEDURE KeyDown (key: INTEGER);
 VAR
     keyCode: INTEGER;
@@ -1725,13 +1737,21 @@ BEGIN
                 Script(runScript)
             END
         ELSIF keyCode = 68 THEN (* F10 *)
-            key := -1;
-            ShowMenu(menuFile)
+        	IF shift THEN
+        		ShowMenu(context)
+        	ELSE
+        		ShowMenu(menuFile)
+        	END;
+            key := -1
         ELSIF keyCode = 1 THEN (* Esc *)
-            key := -1;
             IF search THEN
-                Search
-            END
+            	IF shift THEN
+            		HideSearch
+            	ELSE
+                	Search
+                END
+            END;
+            key := -1
         ELSIF (keyCode = 55) & (key DIV 256 MOD 256 = 52) THEN (* PrtScn *)
             key := -1
         ELSIF (keyCode = 14) & shift THEN (* shift+Backspace *)
@@ -1886,14 +1906,10 @@ BEGIN
         repaint
     |btnSearch:
         ShowSearchPanel
-    |btnCloseFind:
+    |btnCloseSearch:
         Search
-    |btnHideFind:
-        SetFocus(FindEdit, FALSE);
-        searchOpened := FALSE;
-        LEFT := searchLeft;
-        resize;
-        draw_window
+    |btnHideSearch:
+        HideSearch
     |btnUndo:
         T.undo(text);
         repaint
@@ -2109,10 +2125,11 @@ BEGIN
     subBookmark := CreateMenuBookmark();
     menuSearch := CreateMenuSearch();
     subBookmark.parent := menuSearch;
+    subEOL := CreateMenuEOL();
     menuEncoding := CreateMenuEncoding();
-    menuEOL := CreateMenuEOL();
+    subEOL.parent := menuEncoding;
     menuView := CreateMenuView();
-    menuSyntax := CreateMenuSyntax();
+    menuLanguage := CreateMenuLanguage();
     menuProgram := CreateMenuProgram();
     menuTools := CreateMenuTools();
 
@@ -2121,9 +2138,8 @@ BEGIN
     Menu.AddMainItem(mainMenu, "edit", menuEdit);
     Menu.AddMainItem(mainMenu, "search", menuSearch);
     Menu.AddMainItem(mainMenu, "encoding", menuEncoding);
-    Menu.AddMainItem(mainMenu, "eol", menuEOL);
     Menu.AddMainItem(mainMenu, "view", menuView);
-    Menu.AddMainItem(mainMenu, "syntax", menuSyntax);
+    Menu.AddMainItem(mainMenu, "language", menuLanguage);
     Menu.AddMainItem(mainMenu, "program", menuProgram);
     Menu.AddMainItem(mainMenu, "tools", menuTools);
 
@@ -2164,13 +2180,7 @@ BEGIN
     Timer.create(mainTID);
     WHILE TRUE DO
         CASE K.WaitForEvent() OF
-        |1: (*IF Menu.redraw THEN*)
-       			Redraw(resized, width, height, cliWidth, cliHeight)
-        	(*ELSE
-        		Menu.Redraw;
-        		K.CreateWindow(30 + K.GetTickCount() MOD 128, 30 + K.GetTickCount() MOD 128, winWidth, winHeight, K.winColor, 73H, 0, 0, header);
-        		repaint
-        	END*)
+        |1:	Redraw(resized, width, height, cliWidth, cliHeight)
         |2: KeyDown(K.GetKey())
         |3: BtnClick
         |6: MouseEvent(resized, firstClickX, firstClickY, time)
