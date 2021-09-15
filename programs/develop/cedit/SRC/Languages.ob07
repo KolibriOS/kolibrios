@@ -37,12 +37,17 @@ TYPE
         words: ARRAY 200, 32 OF WCHAR; cnt: INTEGER
     END;
 
+    tDelimiters = ARRAY 256 OF BOOLEAN;
+
     procGetStr = PROCEDURE (secName, keyName: ARRAY OF CHAR; VAR s: ARRAY OF CHAR);
 
 
 VAR
 
-    oberonKW, cKW, pascalKW, luaKW, iniKW, fasmKW, jsonKW: ARRAY 3 OF tKeyWords;
+	KW: ARRAY 8 OF ARRAY 3 OF tKeyWords;
+	Delim: ARRAY 8 OF tDelimiters;
+
+    currentLang: INTEGER;
 
 
 PROCEDURE isCS* (lang: INTEGER): BOOLEAN;
@@ -63,22 +68,21 @@ END checkKW;
 
 
 PROCEDURE isKey* (s: ARRAY OF WCHAR; lang, kwSet: INTEGER): BOOLEAN;
-VAR
-    res: BOOLEAN;
-BEGIN
-	DEC(kwSet);
-    res := FALSE;
-    CASE lang OF
-    |langC:      res := checkKW(s, cKW[kwSet])
-    |langOberon: res := checkKW(s, oberonKW[kwSet])
-    |langPascal: res := checkKW(s, pascalKW[kwSet])
-    |langLua:    res := checkKW(s, luaKW[kwSet])
-    |langIni:    res := checkKW(s, iniKW[kwSet])
-    |langFasm:   res := checkKW(s, fasmKW[kwSet])
-    |langJSON:   res := checkKW(s, jsonKW[kwSet])
-    END
-    RETURN res
+    RETURN checkKW(s, KW[lang][kwSet - 1])
 END isKey;
+
+
+PROCEDURE isDelim* (c: WCHAR): BOOLEAN;
+VAR
+	res: BOOLEAN;
+BEGIN
+	IF c <= 0FFX THEN
+		res := Delim[currentLang][ORD(c)]
+	ELSE
+		res := FALSE
+	END
+	RETURN res
+END isDelim;
 
 
 PROCEDURE SkipString* (line: tLine; VAR pos: INTEGER; n: INTEGER);
@@ -360,12 +364,21 @@ BEGIN
 END EnterKW;
 
 
-PROCEDURE loadKW (VAR KW: ARRAY OF tKeyWords; getStr: procGetStr; lang: ARRAY OF CHAR);
+PROCEDURE loadKW (VAR KW: ARRAY OF tKeyWords; VAR delim: tDelimiters; getStr: procGetStr; lang: ARRAY OF CHAR);
 VAR
     s: ARRAY 16*1024 OF CHAR;
     key: ARRAY 4 OF CHAR;
     i: INTEGER;
 BEGIN
+	FOR i := 0 TO LEN(delim) - 1 DO
+		delim[i] := FALSE
+	END;
+	getStr(lang, "delim", s);
+	i := 0;
+	WHILE s[i] # 0X DO
+		delim[ORD(s[i])] := TRUE;
+		INC(i)
+	END;
     key := "KW1";
     FOR i := 0 TO 2 DO
         KW[i].cnt := 0;
@@ -376,15 +389,23 @@ BEGIN
 END loadKW;
 
 
+PROCEDURE setCurLang* (lang: INTEGER);
+BEGIN
+	currentLang := lang
+END setCurLang;
+
+
 PROCEDURE init* (getStr: procGetStr);
 BEGIN
-    loadKW(oberonKW, getStr, "lang_Oberon");
-    loadKW(cKW,      getStr, "lang_C");
-    loadKW(pascalKW, getStr, "lang_Pascal");
-    loadKW(luaKW,    getStr, "lang_Lua");
-    loadKW(iniKW,    getStr, "lang_Ini");
-    loadKW(fasmKW,   getStr, "lang_Fasm");
-    loadKW(jsonKW,   getStr, "lang_JSON");
+	currentLang := langText;
+	loadKW(KW[langText],   Delim[langText],   getStr, "lang_Text");
+    loadKW(KW[langOberon], Delim[langOberon], getStr, "lang_Oberon");
+    loadKW(KW[langC],      Delim[langC],      getStr, "lang_C");
+    loadKW(KW[langPascal], Delim[langPascal], getStr, "lang_Pascal");
+    loadKW(KW[langLua],    Delim[langLua],    getStr, "lang_Lua");
+    loadKW(KW[langIni],    Delim[langIni],    getStr, "lang_Ini");
+    loadKW(KW[langFasm],   Delim[langFasm],   getStr, "lang_Fasm");
+    loadKW(KW[langJSON],   Delim[langJSON],   getStr, "lang_JSON");
 END init;
 
 

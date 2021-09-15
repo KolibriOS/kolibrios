@@ -127,14 +127,16 @@ BEGIN
         text.lang := Lang.langJSON
     ELSE
         text.lang := Lang.langText
-    END
+    END;
+    Lang.setCurLang(text.lang)
 END setName;
 
 
 PROCEDURE setLang* (text: tText; lang: INTEGER);
 BEGIN
     text.lang := lang;
-    text.comments := TRUE
+    text.comments := TRUE;
+    Lang.setCurLang(text.lang)
 END setLang;
 
 
@@ -293,11 +295,11 @@ VAR
     BEGIN
         SetColor(color, backColor);
         lexLen := MAX(MIN(line.length - lexStart, lexEnd - lexStart + 1), 0);
-        G.TextOut(canvas, padding.left + (lexStart - text.scroll.X) * charWidth, y, Lines.getPChar(line, lexStart), lexLen)
+        G.TextOut(canvas, padding.left + (lexStart - text.scroll.X) * charWidth, y, Lines.getPChar(line, lexStart), lexLen, color)
     END PrintLex;
 
 
-    PROCEDURE PrintComment (text: tText; line: tLine; VAR depth, i: INTEGER; y: INTEGER; backColor: INTEGER);
+    PROCEDURE PrintComment (text: tText; line: tLine; VAR depth, i: INTEGER; w, y: INTEGER; backColor: INTEGER);
     VAR
         lexStart: INTEGER;
         color: INTEGER;
@@ -311,7 +313,7 @@ VAR
         ELSE
             color := colors.comment
         END;
-        lexStart := MAX(i - 2, 0);
+        lexStart := MAX(i - w, 0);
         ProcessComments(line, depth, i, 0, line.length - 1, text.lang);
         PrintLex(text, line, lexStart, i, y, color, backColor)
     END PrintComment;
@@ -332,20 +334,6 @@ VAR
     PROCEDURE FL (c: WCHAR): BOOLEAN;
         RETURN (cap(c) = "F") OR (cap(c) = "L")
     END FL;
-
-
-    PROCEDURE isFASMdelim (c: WCHAR): BOOLEAN;
-    VAR
-        s: ARRAY 19 OF WCHAR;
-        i: INTEGER;
-    BEGIN
-        s := "{}[]<>:,()&*/|+-\#";
-        i := LEN(s) - 2;
-        WHILE (i >= 0) & (c # s[i]) DO
-            DEC(i)
-        END
-        RETURN i >= 0
-    END isFASMdelim;
 
 
     PROCEDURE ident (text: tText; VAR i: INTEGER; first, y: INTEGER; line: tLine; backColor: INTEGER; cs: BOOLEAN);
@@ -395,7 +383,7 @@ BEGIN
     n := line.length - 1;
     i := 0;
     IF (depth > 0) & (n >= 0) THEN
-        PrintComment(text, line, depth, i, y, backColor)
+        PrintComment(text, line, depth, i, 2, y, backColor)
     END;
     cond := 0;
     WHILE i <= n DO
@@ -410,8 +398,6 @@ BEGIN
                 String(text, line, i, y, backColor)
             ELSIF (U.isLetter(c) OR (c = "_")) THEN
                 ident(text, i, i, y, line, backColor, Lang.isCS(lang))
-            ELSIF isFASMdelim(c) THEN
-                PrintLex(text, line, i, i, y, colors.delim, backColor)
             ELSIF U.isDigit(c) THEN
                 hex := FALSE;
                 k := i;
@@ -448,7 +434,7 @@ BEGIN
             ELSIF (c = "*") & (cond = 1) THEN
                 depth := 1;
                 INC(i);
-                PrintComment(text, line, depth, i, y, backColor);
+                PrintComment(text, line, depth, i, 2, y, backColor);
                 cond := 0
             ELSIF U.isLetter(c) OR (c = "_") OR (c = "'") OR (c = '"') THEN
             	k := i;
@@ -591,7 +577,7 @@ BEGIN
             IF cond = 1 THEN
                 INC(depth);
                 INC(i);
-                PrintComment(text, line, depth, i, y, backColor);
+                PrintComment(text, line, depth, i, 2, y, backColor);
                 cond := 0
             ELSE
                 cond := 2
@@ -615,7 +601,7 @@ BEGIN
                     IF Lang.LuaLong(line, i + 1) >= 0 THEN
                         depth := Lang.LuaLong(line, i + 1)*2 + 1;
                         INC(i);
-                        PrintComment(text, line, depth, i, y, backColor)
+                        PrintComment(text, line, depth, i, 2, y, backColor)
                     ELSE
                         PrintLex(text, line, i - 1, n, y, colors.comment, backColor);
                         i := n
@@ -630,7 +616,7 @@ BEGIN
                 IF k >= 0 THEN
                     depth := (k + 1)*2;
                     INC(i, 2);
-                    PrintComment(text, line, depth, i, y, backColor);
+                    PrintComment(text, line, depth, i, 2, y, backColor);
                     cond := 0
                 END
             ELSIF (c = "'") OR (c = '"') THEN
@@ -698,7 +684,7 @@ BEGIN
             ELSIF (c = "*") & (cond = 1) THEN
                 depth := 2;
                 INC(i);
-                PrintComment(text, line, depth, i, y, backColor);
+                PrintComment(text, line, depth, i, 2, y, backColor);
                 cond := 0
             ELSIF c = "/" THEN
                 IF cond = 2 THEN
@@ -717,8 +703,8 @@ BEGIN
                 ELSE
                     depth := 1
                 END;
-                INC(i, 2);
-                PrintComment(text, line, depth, i, y, backColor);
+                INC(i);
+                PrintComment(text, line, depth, i, 1, y, backColor);
                 cond := 0
             ELSIF c = "#" THEN
                 k := i;
@@ -798,12 +784,10 @@ BEGIN
                 i := n
             ELSIF c = '"' THEN
                 String(text, line, i, y, backColor)
-            ELSIF c = "=" THEN
-                PrintLex(text, line, i, i, y, colors.delim, backColor)
             ELSIF c = "[" THEN
                 depth := 1;
-                INC(i, 2);
-                PrintComment(text, line, depth, i, y, backColor)
+                INC(i);
+                PrintComment(text, line, depth, i, 1, y, backColor)
             ELSIF U.isDigit(c) THEN
                 k := i;
                 WHILE U.isDigit(getChar(line, i)) DO
@@ -2014,7 +1998,7 @@ BEGIN
     x := pos*charWidth + padding.left;
     G.SetColor(canvas, colors.selback);
     G.FillRect(canvas, x - 2, y - inter DIV 2, x + 1 + Len*charWidth, y - inter DIV 2 + charHeight);
-    G.TextOut(canvas, pos*charWidth + padding.left, y, Lines.getPChar(line, firstCharIdx), Len)
+    G.TextOut(canvas, pos*charWidth + padding.left, y, Lines.getPChar(line, firstCharIdx), Len, colors.seltext)
 END drawSelect;
 
 
@@ -2101,7 +2085,7 @@ BEGIN
         END;
         SetColor(colors.text, backColor);
         Len := MAX(line.length - text.scroll.X, 0);
-        G.TextOut(canvas, padding.left, y, Lines.getPChar(line, text.scroll.X), MIN(Len, textsize.X + 1));
+        G.TextOut(canvas, padding.left, y, Lines.getPChar(line, text.scroll.X), MIN(Len, textsize.X + 1), colors.delim);
         IF text.lang # Lang.langText THEN
             parse(text, line, y, backColor, text.lang)
         END;
@@ -2242,6 +2226,8 @@ BEGIN
     text.searchText := "";
     text.foundSel := 0;
     text.CurX := -1;
+    text.lang := Lang.langText;
+    Lang.setCurLang(Lang.langText);
     setName(text, fileName);
     ASSERT(text = List.create(text))
     RETURN text
