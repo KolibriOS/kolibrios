@@ -2193,7 +2193,8 @@ END draw;
 PROCEDURE switch* (text: tText);
 BEGIN
     ChangeLog.set(text.chLog);
-    Lines.setMaxLength(text.maxLength)
+    Lines.setMaxLength(text.maxLength);
+    Lang.setCurLang(text.lang)
 END switch;
 
 
