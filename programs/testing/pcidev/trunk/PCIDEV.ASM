@@ -231,9 +231,9 @@ draw_window:
 	and	ch, 0x0f
 	add	cx, '00'
 	mov	[PCIWin + 87], cx
-	mov	cl, [PCI_LastBus]	; will only work if [PCI_LastBus] < 10
-	add	cl, '0'
-	mov	[PCIWin + 106], cl
+;	mov	cl, [PCI_LastBus]	; will only work if [PCI_LastBus] < 10
+;	add	cl, '0'
+;	mov	[PCIWin + 106], cl
 
 	mov	edx, PCIWin
 	mov	ebx, 20 * 65536 + 25	; x start, ystart of text
@@ -250,6 +250,9 @@ draw_window:
 	; Quantity of devices...
 	movzx	ecx, byte [total]	; number to draw
 	mcall	SF_DRAW_NUMBER, 0x00020000,,150 * 65536 + 65, 0x224466
+	movzx	ecx, byte [PCI_LastBus]	; number to draw
+	mcall	SF_DRAW_NUMBER, 0x00020000,,<236, 45>, 0x224466
+
 
 	mov	ebx,ecx
 	mov	ecx,2
@@ -735,7 +738,7 @@ DATA
 
 Form:	dw 800 ; window width (no more, special for 800x600)
 	dw 100 ; window x start
-	dw 620 ; window height
+	dw 748 ; window height
 	dw 20 ; window y start
 
 title	db 'PCI Device Enumerator v 2.3', 0
@@ -744,7 +747,7 @@ if lang eq it
 PCIWin mls \
 	'   Don`t forget to enable PCI Access to Applications in Setup Menu.',\
 	'',\
-	'Versione PCI = x.xx; Ultimo Bus PCI = x',\
+	'Versione PCI = x.xx; Ultimo Bus PCI =   ',\
 	'User MMIO channel = 0F.F:F ',\
 	'Numbero di unità PCI =    ',\
 	'',\
@@ -764,7 +767,7 @@ else
 PCIWin mls \
 	'   Don`t forget to enable PCI Access to Applications in Setup Menu.',\
 	'',\
-	'PCI Version  = x.xx; Last PCI Bus = x',\
+	'PCI Version  = x.xx; Last PCI Bus =   ',\
 	'User MMIO channel = 0F.F:F ',\
 	'Number of PCI units =    ',\
 	'',\
