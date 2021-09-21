@@ -19,7 +19,11 @@
 
 MODULE EditBox;
 
-IMPORT sys := SYSTEM, KOSAPI;
+IMPORT SYSTEM, KOSAPI, Encodings;
+
+CONST
+
+	MAX_LENGTH = 1024;
 
 
 TYPE
@@ -50,14 +54,14 @@ TYPE
 VAR
 
 	key_proc: EditBoxKey;
-	paint    *: PROCEDURE (eb: tEditBox);
-	mouse    *: PROCEDURE (eb: tEditBox);
-	setValue *: PROCEDURE (eb: tEditBox; text: INTEGER);
+	paint     *: PROCEDURE (eb: tEditBox);
+	mouse     *: PROCEDURE (eb: tEditBox);
+	_setValue  : PROCEDURE (eb: tEditBox; text: INTEGER);
 
 
 PROCEDURE _key (key: INTEGER; key_proc: EditBoxKey; text: tEditBox);
 BEGIN
-    sys.CODE(
+    SYSTEM.CODE(
     08BH, 045H, 008H,   (*  mov     eax, dword [ebp +  8]  *)
     08BH, 055H, 00CH,   (*  mov     edx, dword [ebp + 12]  *)
     08BH, 04DH, 010H,   (*  mov     ecx, dword [ebp + 16]  *)
@@ -83,12 +87,27 @@ BEGIN
     ASSERT(max < LEN(str));
     i := 0;
     REPEAT
-        sys.GET(ptr, str[i]);
+        SYSTEM.GET(ptr, str[i]);
         INC(i);
         INC(ptr)
     UNTIL (str[i - 1] = 0X) OR (i = max);
     str[i] := 0X
 END getValue;
+
+
+PROCEDURE setValue* (text: tEditBox; str: ARRAY OF WCHAR);
+VAR
+	i: INTEGER;
+	temp: ARRAY MAX_LENGTH OF CHAR;
+BEGIN
+	ASSERT(LENGTH(str) < LEN(temp));
+	i := 0;
+	REPEAT
+		temp[i] := CHR(Encodings.UNI[ORD(str[i]), Encodings.CP866] MOD 256);
+		INC(i)
+	UNTIL str[i - 1] = 0X;
+	_setValue(text, SYSTEM.ADR(temp[0]))
+END setValue;
 
 
 PROCEDURE create* (tlx, tly, width, max_chars: INTEGER; editbox_interlock: tEditBox): tEditBox;
@@ -122,7 +141,7 @@ VAR
 BEGIN
 	a := KOSAPI.GetProcAdr(name, Lib);
 	ASSERT(a # 0);
-	sys.PUT(v, a)
+	SYSTEM.PUT(v, a)
 END GetProc;
 
 
@@ -132,10 +151,10 @@ VAR
 BEGIN
 	Lib := KOSAPI.LoadLib("/rd/1/lib/box_lib.obj");
 	ASSERT(Lib # 0);
-	GetProc(Lib, sys.ADR(paint),    "edit_box");
-	GetProc(Lib, sys.ADR(key_proc), "edit_box_key");
-	GetProc(Lib, sys.ADR(mouse),    "edit_box_mouse");
-	GetProc(Lib, sys.ADR(setValue), "edit_box_set_text");
+	GetProc(Lib, SYSTEM.ADR(paint),     "edit_box");
+	GetProc(Lib, SYSTEM.ADR(key_proc),  "edit_box_key");
+	GetProc(Lib, SYSTEM.ADR(mouse),     "edit_box_mouse");
+	GetProc(Lib, SYSTEM.ADR(_setValue), "edit_box_set_text");
 END main;
 
 

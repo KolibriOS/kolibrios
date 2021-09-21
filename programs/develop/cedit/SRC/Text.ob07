@@ -1776,6 +1776,19 @@ PROCEDURE isWordChar (c: WCHAR): BOOLEAN;
 END isWordChar;
 
 
+PROCEDURE getSelectedText* (text: tText; VAR s: ARRAY OF WCHAR);
+VAR
+    n: INTEGER;
+    selBeg, selEnd: tPoint;
+BEGIN
+	s[0] := 0X;
+    IF selected(text) & (text.cursor.Y = text.select.Y) THEN
+        getSelect(text, selBeg, selEnd);
+        n := getString(text.curLine, selBeg.X, selEnd.X - selBeg.X, s)
+    END
+END getSelectedText;
+
+
 PROCEDURE wordSel* (text: tText);
 VAR
     n, i, x1, x2: INTEGER;

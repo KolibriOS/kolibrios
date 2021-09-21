@@ -28,7 +28,7 @@ IMPORT
     RW, Ini, EB := EditBox, Icons, Tabs, Timer;
 
 CONST
-    header = "CEdit (17-sep-2021)";
+    header = "CEdit (21-sep-2021)";
 
     ShellFilter = "";
     EditFilter = "SH|ASM|TXT|INC|OB07|C|CPP|H|PAS|PP|LUA|INI|JSON";
@@ -1087,13 +1087,39 @@ BEGIN
 END Script;
 
 
-PROCEDURE ShowSearchPanel;
+PROCEDURE ShowSearchPanel (goto: BOOLEAN);
+VAR
+	i: INTEGER;
+	flag: BOOLEAN;
 BEGIN
+	flag := FALSE;
+	IF T.selected(text) & ~goto THEN
+		T.getSelectedText(text, new_searchText);
+		IF new_searchText # "" THEN
+			i := 0;
+			WHILE (new_searchText[i] # 0X) & (new_searchText[i] # Lines.TAB) DO
+				INC(i)
+			END;
+			IF new_searchText[i] = 0X THEN
+				searchText := new_searchText;
+				EB.setValue(FindEdit, searchText);
+				notFound := ~T.search(text, searchText, cs, whole);
+				flag := TRUE
+			END
+		END
+	END;
     IF ~search THEN
         Search
     ELSIF ~searchOpened THEN
         search := FALSE;
         Search
+    END;
+    IF flag THEN
+    	SetFocus(FindEdit, FALSE)
+    ELSIF goto THEN
+   		SetFocus(GotoEdit, TRUE)
+    ELSE
+    	SetFocus(FindEdit, TRUE)
     END
 END ShowSearchPanel;
 
@@ -1305,8 +1331,7 @@ BEGIN
         T.redo(text);
         repaint
     |menuFind:
-        ShowSearchPanel;
-        SetFocus(FindEdit, TRUE)
+        ShowSearchPanel(FALSE)
     |menuFindNext:
         notFound := ~T.findNext(text, BKW.value);
         menuFindClicked := TRUE
@@ -1314,8 +1339,7 @@ BEGIN
         notFound := ~T.findNext(text, ~BKW.value);
         menuFindClicked := TRUE
     |menuGoto:
-        ShowSearchPanel;
-        SetFocus(GotoEdit, TRUE)
+        ShowSearchPanel(TRUE)
     |menuToggleBookmark:
     	T.toggleLabel(text)
     |menuNextBookmark:
@@ -1762,12 +1786,10 @@ BEGIN
             SwitchTab((curText + 1) MOD textsCount)
         ELSIF (keyCode = 33) & ctrl THEN
             key := -1;
-            ShowSearchPanel;
-            SetFocus(FindEdit, TRUE)
+            ShowSearchPanel(FALSE)
         ELSIF (keyCode = 34) & ctrl THEN
             key := -1;
-            ShowSearchPanel;
-            SetFocus(GotoEdit, TRUE)
+            ShowSearchPanel(TRUE)
         ELSE
             IF EditBox_Focus(FindEdit) THEN
                 EB.key(FindEdit, key);
@@ -1905,7 +1927,8 @@ BEGIN
         save(text);
         repaint
     |btnSearch:
-        ShowSearchPanel
+        ShowSearchPanel(FALSE);
+        repaint
     |btnCloseSearch:
         Search
     |btnHideSearch:
