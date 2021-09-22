@@ -11,6 +11,7 @@
   dd     0
 include '..\..\macros.inc'
 include '..\..\KOSfuncs.inc'
+
 START:
 ;;установка маска событий на получение переписовки и нажатия на кнопку
        mcall SF_SET_EVENTS_MASK,0x05
@@ -73,7 +74,6 @@ draw:
        mov esi,[sc.work_button]
        mcall
 ;;вывод знака на кнопку
-;;пояснение к предстоящему ужасу(пиз..ецу)
 ;;так как функция writeText не должна изменять регистры
 ;;присвоения в регистры eax и ecx происходят только 1 раз
 ;; Далее, так как текст выводится почти всегда с одинаковым
@@ -332,21 +332,13 @@ write_data:
        ret
 
 error_drv:
-       mov edx,Error_text
-       mov eax,SF_BOARD
-       mov ebx,SSF_DEBUG_WRITE
-@@:
-       mov cl,[edx]
-       mcall
-       inc edx
-       cmp cl,0
-       jnz  @b
+       mcall SF_FILE,run_notify
 exit:
        mcall SF_TERMINATE_PROCESS
 ;Data_program;
 title       db 'AMDtemp',0
 path_drv    db '/kolibrios/drivers/sensors/k10temp.sys',0
-Error_text  db 'Error load driver',0
+Error_text  db '"Error load driver\nk10temp.sys was not found or is faulty " -tdE ',0
 _NA         db 'N/A',0
 _dot        db '.',0
 _t          db 0x1d,0x00
@@ -389,12 +381,21 @@ drv_data:
 .sizeof = $ - drv_data ;
 
 drv_struct:
-.handl          dd 0
-                dd 0
-                dd 0
-                dd 0
-                dd drv_data
-                dd drv_data.sizeof;52 ; 13*4
+.handl           dd 0
+                 dd 0
+                 dd 0
+                 dd 0
+                 dd drv_data
+                 dd drv_data.sizeof;52 ; 13*4
+
+run_notify:
+                 dd 7
+                 dd 0
+                 dd Error_text
+                 dd 0
+                 dd 0
+                 db '/sys/@notify',0
+
 sc      system_colors
 I_END:
    rd 256
