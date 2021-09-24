@@ -194,7 +194,7 @@ BEGIN
 			m := (maxPos + 1) MOD scroll.maxVal;
 			pos := value*n + MIN(value, m)
 		ELSE
-			pos := value*(maxPos + 1) DIV scroll.maxVal
+			pos := FLOOR(FLT(value)*FLT(maxPos + 1)/FLT(scroll.maxVal))
 		END;
 		IF pos > maxPos THEN
 			pos := maxPos;
@@ -267,7 +267,7 @@ BEGIN
 					END
 				END
 			ELSE
-				value := scroll.maxVal*pos DIV (maxPos + 1)
+				value := FLOOR(FLT(scroll.maxVal)*FLT(pos)/FLT(maxPos + 1))
 			END
 		END
 	ELSE

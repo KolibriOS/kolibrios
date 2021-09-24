@@ -63,6 +63,7 @@ VAR
 
     eol*: ARRAY 3 OF tEOL;
     eolNames*: ARRAY 3, 16 OF WCHAR;
+    strBuf: ARRAY 1000000 OF WCHAR;
 
 
 PROCEDURE getByte (file: tInput): BYTE;
@@ -168,9 +169,8 @@ PROCEDURE getString* (file: tInput; line: Lines.tLine; tabs: BOOLEAN; VAR eol: B
 VAR
     c: WCHAR;
     i, L, k, n: INTEGER;
-    s: ARRAY 1000 OF WCHAR;
 BEGIN
-    L := LEN(s);
+    L := LEN(strBuf);
     eol := FALSE;
     n := 0;
     i := ORD(file.cnt > 0) - 1;
@@ -190,21 +190,21 @@ BEGIN
         ELSIF c = TAB THEN
             k := Lines.tab - i MOD Lines.tab;
             IF tabs THEN
-                s[i] := TAB
+                strBuf[i] := TAB
             ELSE
-                s[i] := SPACE
+                strBuf[i] := SPACE
             END;
             INC(i);
             DEC(k);
             WHILE k > 0 DO
                 IF tabs THEN
-                    s[i] := Lines.TAB1
+                    strBuf[i] := Lines.TAB1
                 ELSE
-                    s[i] := SPACE
+                    strBuf[i] := SPACE
                 END;
                 INC(i);
                 IF i = L THEN
-                    Lines.concat(line, s);
+                    Lines.concat(line, strBuf);
                     INC(n, i);
                     i := 0
                 END;
@@ -214,10 +214,10 @@ BEGIN
         ELSIF c = BOM THEN
             file.CR := FALSE
         ELSE
-            s[i] := c;
+            strBuf[i] := c;
             INC(i);
             IF i = L THEN
-                Lines.concat(line, s);
+                Lines.concat(line, strBuf);
                 INC(n, i);
                 i := 0
             END;
@@ -225,8 +225,8 @@ BEGIN
         END
     END;
     IF i >= 0 THEN
-        s[i] := 0X;
-        Lines.concat(line, s);
+        strBuf[i] := 0X;
+        Lines.concat(line, strBuf);
     END;
     INC(n, i)
     RETURN n
