@@ -28,6 +28,7 @@ _http http;
 #define T_EXIT "Выход"
 #define IMG_URL "http://builds.kolibrios.org/rus/data/data/kolibri.img"
 #define KS "Сохранить настройки"
+#define checkbox_h 190
 #else
 #define T_WINDOW_TITLE "KolibriOS Online Updater"
 #define T_TITLE_H1 "ONLINE UPDATE"
@@ -39,6 +40,7 @@ Note that all changes on RAM-disk will be lost.";
 #define T_EXIT "Exit"
 #define IMG_URL "http://builds.kolibrios.org/eng/data/data/kolibri.img"
 #define KS "Keep settings folder"
+#define checkbox_h 210
 #endif
 char accept_language[]="en"; //not used, necessary for http.get()
 void Operation_Draw_Progress(dword f) {} //not used, necessary for copyf()
@@ -85,7 +87,7 @@ void main()
 					progress.set_size(30, WINH-130, WINW-60, 20);
 					if (http.transfer<=0) {
 						DrawCaptButton(WINW-110/2, WINH-70, 110, 28, 9, 0x0092D8, 0xFFFfff, T_INSTALL);
-						keep_settings.draw(30, WINH - 210);
+						keep_settings.draw(30, WINH - checkbox_h);
 					}
 			} else {
 					DrawIcon32(WINW-32/2, 140, sc.work, 49);
