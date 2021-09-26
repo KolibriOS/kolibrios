@@ -186,6 +186,7 @@ extra_files = {
  {"kolibrios/develop/tcc/include/clayer/", PROGS ..  "/develop/ktcc/trunk/libc.obj/include/clayer/*"},
  {"kolibrios/develop/tcc/include/cryptal/", PROGS .. "/develop/ktcc/trunk/libc.obj/include/cryptal/*"},
  {"kolibrios/develop/tcc/include/sys/", PROGS .. "/develop/ktcc/trunk/libc.obj/include/sys/*"},
+ {"kolibrios/develop/tcc/include/SDL/", "../contrib/sdk/sources/SDL-1.2.2_newlib/include/*"},
 -- {"kolibrios/develop/tcc/include/net/", PROGS ..  "/develop/ktcc/trunk/libc/include/net/*"},
 -- {"kolibrios/develop/tcc/include/tinygl/", PROGS ..  "/develop/ktcc/trunk/libc.obj/include/tinygl/*"},
  {"kolibrios/develop/tcc/samples/", PROGS ..  "/develop/ktcc/trunk/libc.obj/samples/*.c"},
