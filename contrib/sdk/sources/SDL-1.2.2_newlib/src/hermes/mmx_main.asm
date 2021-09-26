@@ -12,6 +12,7 @@ BITS 32
 %include "common.inc"
 
 SDL_FUNC _ConvertMMX
+SDL_FUNC ConvertMMX
 
 SECTION .text
 		
@@ -29,7 +30,8 @@ SECTION .text
 ;;  28:	int d_add
 ;;  32:	void (*converter_function)() 
 ;;  36: int32 *lookup
-	
+
+ConvertMMX
 _ConvertMMX:
 	push ebp
 	mov ebp,esp

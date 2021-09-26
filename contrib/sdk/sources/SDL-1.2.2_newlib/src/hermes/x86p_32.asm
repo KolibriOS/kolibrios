@@ -24,6 +24,18 @@ SDL_FUNC _ConvertX86p32_16RGB555
 SDL_FUNC _ConvertX86p32_16BGR555
 SDL_FUNC _ConvertX86p32_8RGB332
 
+SDL_FUNC ConvertX86p32_32BGR888
+SDL_FUNC ConvertX86p32_32RGBA888
+SDL_FUNC ConvertX86p32_32BGRA888
+SDL_FUNC ConvertX86p32_24RGB888	
+SDL_FUNC ConvertX86p32_24BGR888
+SDL_FUNC ConvertX86p32_16RGB565
+SDL_FUNC ConvertX86p32_16BGR565
+SDL_FUNC ConvertX86p32_16RGB555
+SDL_FUNC ConvertX86p32_16BGR555
+SDL_FUNC ConvertX86p32_8RGB332
+
+
 SECTION .text
 
 ;; _Convert_*
@@ -35,6 +47,7 @@ SECTION .text
 ;;   EAX, EBX, EDX
 
 
+ConvertX86p32_32BGR888:
 _ConvertX86p32_32BGR888:
 
     ; check short
@@ -115,7 +128,7 @@ _ConvertX86p32_32BGR888:
 	
 
 	
-		
+ConvertX86p32_32RGBA888:
 _ConvertX86p32_32RGBA888:
 	
     ; check short
@@ -186,7 +199,7 @@ _ConvertX86p32_32RGBA888:
 
 	
 
-
+ConvertX86p32_32BGRA888:
 _ConvertX86p32_32BGRA888:
 
     ; check short
@@ -262,6 +275,7 @@ _ConvertX86p32_32BGRA888:
 	
 ;; 32 bit RGB 888 to 24 BIT RGB 888
 
+ConvertX86p32_24RGB888:
 _ConvertX86p32_24RGB888:
 
 	; check short
@@ -359,6 +373,7 @@ _ConvertX86p32_24RGB888:
 
 ;; 32 bit RGB 888 to 24 bit BGR 888
 
+ConvertX86p32_24BGR888:
 _ConvertX86p32_24BGR888:
 
 	; check short
@@ -458,7 +473,7 @@ _ConvertX86p32_24BGR888:
 	
 		
 ;; 32 bit RGB 888 to 16 BIT RGB 565 
-
+ConvertX86p32_16RGB565:
 _ConvertX86p32_16RGB565:
 	; check short
 	cmp ecx,BYTE 16
@@ -574,6 +589,7 @@ _ConvertX86p32_16RGB565:
 	
 ;; 32 bit RGB 888 to 16 BIT BGR 565 
 
+ConvertX86p32_16BGR565:
 _ConvertX86p32_16BGR565:
 	
 	; check short
@@ -687,7 +703,7 @@ _ConvertX86p32_16BGR565:
 	
 	
 ;; 32 BIT RGB TO 16 BIT RGB 555
-
+ConvertX86p32_16RGB555:
 _ConvertX86p32_16RGB555:
 
 	; check short
@@ -798,7 +814,7 @@ _ConvertX86p32_16RGB555:
 
 
 ;; 32 BIT RGB TO 16 BIT BGR 555
-	
+ConvertX86p32_16BGR555:
 _ConvertX86p32_16BGR555:
 	
 	; check short
@@ -916,8 +932,9 @@ _ConvertX86p32_16BGR555:
 ;; FROM 32 BIT RGB to 8 BIT RGB (rrrgggbbb)
 ;; This routine writes FOUR pixels at once (dword) and then, if they exist
 ;; the trailing three pixels
-_ConvertX86p32_8RGB332:
 
+ConvertX86p32_8RGB332:
+_ConvertX86p32_8RGB332:
 	
 .L_ALIGNED:
 	push ecx

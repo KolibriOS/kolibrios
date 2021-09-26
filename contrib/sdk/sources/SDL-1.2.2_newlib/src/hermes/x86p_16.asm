@@ -19,10 +19,18 @@ SDL_FUNC _ConvertX86p16_16RGB555
 SDL_FUNC _ConvertX86p16_16BGR555
 SDL_FUNC _ConvertX86p16_8RGB332
 
+SDL_FUNC ConvertX86p16_16BGR565
+SDL_FUNC ConvertX86p16_16RGB555
+SDL_FUNC ConvertX86p16_16BGR555
+SDL_FUNC ConvertX86p16_8RGB332
+
+
 EXTERN _ConvertX86
+EXTERN ConvertX86
 
 SECTION .text
 
+ConvertX86p16_16BGR565:
 _ConvertX86p16_16BGR565:
 
     ; check short
@@ -128,11 +136,7 @@ _ConvertX86p16_16BGR565:
 .L7:
     retn
 
-
-
-
-
-
+ConvertX86p16_16RGB555:
 _ConvertX86p16_16RGB555:
 
     ; check short
@@ -236,11 +240,7 @@ _ConvertX86p16_16RGB555:
 .L7: pop ebp
     retn
 
-
-
-
-
-
+ConvertX86p16_16BGR555:
 _ConvertX86p16_16BGR555:
 
     ; check short
@@ -358,7 +358,7 @@ _ConvertX86p16_16BGR555:
 
 
 
-
+ConvertX86p16_8RGB332:
 _ConvertX86p16_8RGB332:
 
     ; check short

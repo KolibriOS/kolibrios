@@ -16,6 +16,9 @@ BITS 32
 SDL_FUNC _ConvertX86
 SDL_FUNC _Hermes_X86_CPU
 
+SDL_FUNC ConvertX86
+SDL_FUNC Hermes_X86_CPU
+
 SECTION .data
 cpu_flags dd 0
 
@@ -35,7 +38,8 @@ SECTION .text
 ;;  28:	int d_add
 ;;  32:	void (*converter_function)() 
 ;;  36: int32 *lookup
-	
+
+ConvertX86:
 _ConvertX86:
 	push ebp
 	mov ebp,esp
@@ -72,7 +76,7 @@ y_loop:
 endconvert:	
 	ret		
 
-
+Hermes_X86_CPU:
 _Hermes_X86_CPU:
 	pushfd
 	pop eax

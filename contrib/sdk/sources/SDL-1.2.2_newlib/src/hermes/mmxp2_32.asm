@@ -28,6 +28,13 @@ SDL_FUNC _ConvertMMXpII32_16BGR565
 SDL_FUNC _ConvertMMXpII32_16RGB555
 SDL_FUNC _ConvertMMXpII32_16BGR555
 
+SDL_FUNC ConvertMMXpII32_24RGB888
+SDL_FUNC ConvertMMXpII32_16RGB565
+SDL_FUNC ConvertMMXpII32_16BGR565
+SDL_FUNC ConvertMMXpII32_16RGB555
+SDL_FUNC ConvertMMXpII32_16BGR555
+
+
 ;; Macros for conversion routines
 
 %macro _push_immq_mask 1
@@ -60,6 +67,7 @@ SDL_FUNC _ConvertMMXpII32_16BGR555
 
 SECTION .text
 
+ConvertMMXpII32_24RGB888:
 _ConvertMMXpII32_24RGB888:
 
         ; set up mm6 as the mask, mm7 as zero
@@ -122,7 +130,7 @@ _ConvertMMXpII32_24RGB888:
         retn
 
 
-
+ConvertMMXpII32_16RGB565:
 _ConvertMMXpII32_16RGB565:
 
         ; set up masks
@@ -190,7 +198,7 @@ _ConvertMMXpII32_16RGB565:
 .L4:
 	retn
 
-	
+ConvertMMXpII32_16BGR565:	
 _ConvertMMXpII32_16BGR565:
 
         load_immq mm5, mmx32_rgb565_r
@@ -260,6 +268,7 @@ _ConvertMMXpII32_16BGR565:
 .L4:
         retn
 
+ConvertMMXpII32_16BGR555:
 _ConvertMMXpII32_16BGR555:
 
         ; the 16BGR555 converter is identical to the RGB555 one,
@@ -274,6 +283,8 @@ _ConvertMMXpII32_16BGR555:
 ; would almost certainly be faster, even if only a little.
 ; I did rename 'mmx32_rgb555_add' to 'mmx32_rgb555_mul', which is
 ; (I think) a more accurate name..
+
+ConvertMMXpII32_16RGB555:
 _ConvertMMXpII32_16RGB555:
 
 	load_immq mm7, mmx32_rgb555_mul

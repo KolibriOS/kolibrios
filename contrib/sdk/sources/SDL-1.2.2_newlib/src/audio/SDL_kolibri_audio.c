@@ -1,10 +1,11 @@
 #include "SDL_audio.h"
-#include <kos32sys.h>
-#include <menuet/os.h>
+#include <SDL_kos.h>
 #include <stdlib.h>
 #include <string.h>
 #include <sound.h>
 #include <stdio.h>
+
+extern void SDL_printf(const char * fmt,...);
 
 static void GetNotify(__u32* event)
 {
@@ -143,7 +144,7 @@ static void audio_thread(void)
                 	}
                 }
                 if (bPaused)
-                        delay(5);
+                        __kos__delay100(5);
                 else
                 {
                         GetNotify(event);

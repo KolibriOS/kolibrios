@@ -26,16 +26,14 @@ static char rcsid =
 #endif
 
 #include <stdio.h>
-#include <sys/time.h>
-#include <signal.h>
-#include <unistd.h>
+#include <time.h>
 #include <string.h>
 #include <errno.h>
-#include <kos32sys.h>
 
 #include "SDL_error.h"
 #include "SDL_timer.h"
 #include "SDL_timer_c.h"
+#include "SDL_kos.h"
 
 #if _POSIX_THREAD_SYSCALL_SOFT
 #include <pthread.h>
@@ -89,7 +87,7 @@ Uint32 SDL_GetTicks (void)
 
 void SDL_Delay (Uint32 ms)
 {
- delay(ms);
+    __kos__delay100(ms);
 /*  Uint32 start = SDL_GetTicks();
   do
     __asm__("int $0x40" :: "a"(68),"b"(1));
