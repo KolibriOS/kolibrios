@@ -2,6 +2,8 @@
 #ifndef _SOUND_H_
 #define _SOUND_H_
 
+#define _stdcall __attribute__((stdcall)) 
+
 #ifdef __cplusplus
 extern "C"
 {
