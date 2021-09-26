@@ -1,4 +1,3 @@
-
 KTCC=kos32-tcc
 FASM= fasm
 KPACK = kpack
@@ -22,9 +21,10 @@ clayer/dialog.kex \
 clayer/msgbox.kex \
 clayer/boxlib.kex \
 thread_work.kex \
-sdltest.kex 
+sdltest.kex \
+shell_test.kex
 
-LIBS= -lSDL -ltcc -lsound -ldialog -lrasterworks -limg -lbox -lmsgbox -lnetwork -lc.obj
+LIBS= -lSDL -lshell -ltcc -lsound -ldialog -lrasterworks -limg -lbox -lmsgbox -lnetwork -lc.obj
 
 all: $(BIN)
 	
