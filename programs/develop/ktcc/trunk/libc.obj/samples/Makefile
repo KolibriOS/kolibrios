@@ -2,7 +2,7 @@
 KTCC=kos32-tcc
 FASM= fasm
 KPACK = kpack
-CFLAGS = -I../include 
+CFLAGS = -I../include -I../../../../../../contrib/sdk/sources/SDL-1.2.2_newlib/include
 LDFLAGS = -nostdlib -L../../bin/lib ../../bin/lib/crt0.o
 
 BIN= stdio_test.kex \
@@ -21,9 +21,10 @@ clayer/libimg.kex \
 clayer/dialog.kex \
 clayer/msgbox.kex \
 clayer/boxlib.kex \
-thread_work.kex
+thread_work.kex \
+sdltest.kex 
 
-LIBS= -ltcc -ldialog -lrasterworks -limg -lbox -lmsgbox -lnetwork -lc.obj
+LIBS= -lSDL -ltcc -lsound -ldialog -lrasterworks -limg -lbox -lmsgbox -lnetwork -lc.obj
 
 all: $(BIN)
 	

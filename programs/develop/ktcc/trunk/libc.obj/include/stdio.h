@@ -40,6 +40,7 @@ extern int  _FUNC(printf)(const char* format, ...);
 extern int  _FUNC(sprintf)(char* buffer, const char* format, ...);
 extern int  _FUNC(snprintf)(char* buffer, size_t count, const char* format, ...);
 extern int  _FUNC(vsnprintf)(char* buffer, size_t count, const char* format, va_list va);
+extern int  _FUNC(vsprintf)(char* buffer, const char* format, va_list va);
 extern int  _FUNC(vprintf)(const char* format, va_list va);
 
 extern void _FUNC(debug_printf)(const char* format, ...);

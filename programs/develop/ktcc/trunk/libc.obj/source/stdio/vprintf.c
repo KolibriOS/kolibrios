@@ -10,6 +10,11 @@
 #include <limits.h>
 //#include "format_print.h"
 
+int vsprintf (char * s, const char * format, va_list arg)
+{
+    return vsnprintf(s, STDIO_MAX_MEM, format, arg);
+}
+
 int vprintf ( const char * format, va_list arg )
 {
   int len = 0;
