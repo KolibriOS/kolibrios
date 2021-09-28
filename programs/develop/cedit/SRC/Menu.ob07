@@ -216,7 +216,7 @@ END escape;
 
 PROCEDURE repaint (m: tMenu);
 VAR
-    y, i, X, Y1, Y2: INTEGER;
+    y, i, X, Y: INTEGER;
     item: tItem;
     BkColor, TextColor: INTEGER;
     canvas: G.tCanvas;
@@ -277,9 +277,8 @@ BEGIN
 
         IF item.child # NIL THEN
             X := m.width - 9;
-            Y1 := y + (fontHeight - 16) DIV 2 + 2;
-            Y2 := Y1 + 8;
-        	G.Triangle(canvas, X, Y1, X, Y2, G.triRight)
+            Y := y + (fontHeight - 16) DIV 2 + 2;
+        	G.Triangle(canvas, X, Y, X, Y + 8, G.triRight)
         END;
 
         INC(y, fontHeight);
@@ -301,16 +300,6 @@ BEGIN
     repaint(m);
     K.EndDraw
 END draw_window;
-
-
-PROCEDURE mouse (m: tMenu; VAR x, y: INTEGER);
-VAR
-    mouseX, mouseY: INTEGER;
-BEGIN
-    K.MousePos(mouseX, mouseY);
-    x := mouseX - m.winX;
-    y := mouseY - m.winY;
-END mouse;
 
 
 PROCEDURE close* (m: tMenu);
@@ -469,8 +458,7 @@ BEGIN
             END;
             repaint(m)
         |6:
-            msState := K.MouseState();
-            mouse(m, x, y);
+        	K.mouse(msState, x, y);
             IF (0 <= x) & (x < m.width) & (0 <= y) & (y < m.height) THEN
             	m.active := TRUE;
                 m.selItem := (y - TOP) DIV fontHeight;

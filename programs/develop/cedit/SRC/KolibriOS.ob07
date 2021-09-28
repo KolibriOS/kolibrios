@@ -369,4 +369,19 @@ BEGIN
 END getKBState;
 
 
+PROCEDURE mouse* (VAR msState: SET; VAR x, y: INTEGER);
+VAR
+    mouseX, mouseY,
+    cliX, cliY,
+    winX, winY: INTEGER;
+BEGIN
+	msState := MouseState();
+    MousePos(mouseX, mouseY);
+    WinPos(winX, winY);
+    ClientPos(cliX, cliY);
+    x := mouseX - winX - cliX;
+    y := mouseY - winY - cliY
+END mouse;
+
+
 END KolibriOS.

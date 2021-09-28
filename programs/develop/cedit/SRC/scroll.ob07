@@ -24,7 +24,7 @@ IMPORT G := Graph, K := KolibriOS, U := Utils;
 CONST
 
 	ScrollIPC* = 0;
-	Delay* = 40;
+	DELAY = 40;
 
 TYPE
 
@@ -37,16 +37,29 @@ TYPE
 		canvas*: G.tCanvas
 	END;
 
+	tProcedure* = PROCEDURE;
+
+VAR
+
+	ScrollChange: tProcedure;
+	delay: INTEGER;
+
+
+PROCEDURE MouseUp (VAR scroll: tScroll);
+BEGIN
+	scroll.Slider := -1;
+	scroll.Inc := FALSE;
+	scroll.Dec := FALSE;
+	scroll.mouse := FALSE;
+END MouseUp;
+
 
 PROCEDURE create* (vertical: BOOLEAN; width, height: INTEGER; btnSize, sliderSize: INTEGER; VAR scroll: tScroll);
 VAR
 	res: tScroll;
 BEGIN
+	MouseUp(res);
 	res.vertical := vertical;
-	res.Inc := FALSE;
-	res.Dec := FALSE;
-	res.Slider := -1;
-	res.mouse := FALSE;
 	res.left := 0;
 	res.top := 0;
 	res.width := width;
@@ -279,12 +292,7 @@ BEGIN
 END setPos;
 
 
-PROCEDURE isActive* (scroll: tScroll): BOOLEAN;
-	RETURN scroll.Inc OR scroll.Dec OR (scroll.Slider # -1)
-END isActive;
-
-
-PROCEDURE MouseMove* (VAR scroll: tScroll; x, y: INTEGER);
+PROCEDURE MouseMove (VAR scroll: tScroll; x, y: INTEGER);
 VAR
 	c: INTEGER;
 BEGIN
@@ -300,13 +308,37 @@ BEGIN
 END MouseMove;
 
 
-PROCEDURE SendIPC*;
+PROCEDURE SendIPC;
 BEGIN
 	K.SendIPC(K.ThreadID(), ScrollIPC)
 END SendIPC;
 
 
-PROCEDURE MouseDown* (VAR scroll: tScroll; x, y: INTEGER);
+PROCEDURE receiveIPC* (VAR IPC: ARRAY OF INTEGER; VAR scrollIPC: BOOLEAN);
+BEGIN
+	scrollIPC := FALSE;
+	ScrollChange;
+	IF 0 IN K.MouseState() THEN
+		WHILE (0 IN K.MouseState()) & (delay > 0) DO
+			K.Pause(1);
+    		DEC(delay)
+		END;
+		IF delay = 0 THEN
+			IPC[0] := 0;
+			IPC[1] := 0;
+			scrollIPC := TRUE;
+    		SendIPC;
+    		delay := 4
+		ELSE
+			delay := DELAY
+		END
+	ELSE
+		delay := DELAY
+	END
+END receiveIPC;
+
+
+PROCEDURE MouseDown (VAR scroll: tScroll; x, y: INTEGER);
 VAR
 	c, size: INTEGER;
 BEGIN
@@ -342,16 +374,27 @@ BEGIN
 END MouseDown;
 
 
-PROCEDURE MouseUp* (VAR scroll: tScroll);
+PROCEDURE mouse* (VAR scroll: tScroll);
+VAR
+	msState: SET;
+	x, y: INTEGER;
 BEGIN
-	IF scroll.mouse THEN
-		scroll.Slider := -1;
-		scroll.Inc := FALSE;
-		scroll.Dec := FALSE;
-		scroll.mouse := FALSE;
+	K.mouse(msState, x, y);
+	IF 0 IN msState THEN
+		MouseDown(scroll, x, y);
+		MouseMove(scroll, x, y)
+	ELSIF scroll.mouse THEN
+		MouseUp(scroll);
 		paint(scroll)
 	END
-END MouseUp;
+END mouse;
+
+
+PROCEDURE init* (_ScrollChange: tProcedure);
+BEGIN
+	delay := DELAY;
+	ScrollChange := _ScrollChange
+END init;
 
 
 END Scroll.

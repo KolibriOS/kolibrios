@@ -40,7 +40,7 @@ TYPE
 		max: INTEGER;
 		text*: INTEGER;
 		mouse_variable: tEditBox;
-		flags*,
+		flags*: SET;
 
 		size,
 		pos: INTEGER;
@@ -129,7 +129,7 @@ BEGIN
     new_textbox.text := KOSAPI.malloc(max_chars + 2);
     ASSERT(new_textbox.text # 0);
     new_textbox.mouse_variable := editbox_interlock;
-    new_textbox.flags := 0
+    new_textbox.flags := {}
 
     RETURN new_textbox
 END create;
@@ -159,5 +159,5 @@ END main;
 
 
 BEGIN
-  main
+	main
 END EditBox.

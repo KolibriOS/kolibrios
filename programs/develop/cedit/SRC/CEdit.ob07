@@ -28,7 +28,7 @@ IMPORT
     RW, Ini, EB := EditBox, Icons, Tabs, Timer;
 
 CONST
-    header = "CEdit (24-sep-2021)";
+    header = "CEdit (28-sep-2021)";
 
     ShellFilter = "";
     EditFilter = "SH|ASM|TXT|INC|OB07|C|CPP|H|PAS|PP|LUA|INI|JSON";
@@ -195,7 +195,7 @@ VAR
 
     replaced: INTEGER;
 
-    mainTID, delay: INTEGER;
+    mainTID: INTEGER;
 
     context, menuFile, menuEdit, menuSearch, menuEncoding,
     menuView, menuLanguage, menuProgram, menuTools,
@@ -231,7 +231,7 @@ VAR
 BEGIN
 	res := FALSE;
 	IF edit # NIL THEN
-	    res := 1 IN BITS(edit.flags)
+	    res := 1 IN edit.flags
 	END
 	RETURN res
 END EditBox_Focus;
@@ -252,9 +252,9 @@ END resetTimer;
 PROCEDURE EditBox_SetFocus (edit: EB.tEditBox; value: BOOLEAN);
 BEGIN
     IF value THEN
-        edit.flags := ORD(BITS(edit.flags) + {1})
+    	INCL(edit.flags, 1)
     ELSE
-        edit.flags := ORD(BITS(edit.flags) - {1})
+    	EXCL(edit.flags, 1)
     END;
     IF search & searchOpened THEN
         EB.paint(edit)
@@ -411,16 +411,16 @@ END WriteModified;
 
 PROCEDURE DrawState (text: T.tText; width, height: INTEGER);
 VAR
-    y, w, x: INTEGER;
+    y: INTEGER;
+    s: ARRAY 24 OF WCHAR;
 BEGIN
     y := (btnHeight - fontHeight) DIV 2 + btnTop;
-    K.DrawRect(width - 32*fontWidth, y, 32*fontWidth, fontHeight, K.winColor);
-    w := LENGTH(E.names[text.enc])*fontWidth;
-    x := width - w;
-    K.DrawText(x, y, K.textColor, E.names[text.enc]);
-    w := LENGTH(RW.eolNames[text.eol])*fontWidth;
-    DEC(x, w + 10);
-    K.DrawText(x, y, K.textColor, RW.eolNames[text.eol]);
+    s := "";
+    U.append(s, RW.eolNames[text.eol]);
+    U.append(s, 20X);
+    U.append(s, E.names[text.enc]);
+    K.DrawRect(width - LEN(s)*fontWidth, y, LEN(s)*fontWidth, fontHeight, K.winColor);
+    K.DrawText(width - LENGTH(s)*fontWidth, y, K.textColor, s);
     y := height - (BOTTOM - scrollWidth) + (BOTTOM - scrollWidth - 16) DIV 2;
     K.DrawRect(LEFT + 16*fontWidth, TOP + canvas.height + scrollWidth, width - LEFT - 24*fontWidth, BOTTOM - scrollWidth + 1, K.winColor);
     K.DrawText866(LEFT + 16*fontWidth, y, K.textColor, text.fileName);
@@ -639,15 +639,11 @@ END draw_window;
 
 PROCEDURE mouse (VAR x, y: INTEGER);
 VAR
-    mouseX, mouseY,
-    cliX, cliY,
-    winX, winY: INTEGER;
+    msState: SET;
 BEGIN
-    K.MousePos(mouseX, mouseY);
-    K.WinPos(winX, winY);
-    K.ClientPos(cliX, cliY);
-    x := mouseX - winX - cliX - LEFT;
-    y := mouseY - winY - cliY - TOP;
+	K.mouse(msState, x, y);
+	DEC(x, LEFT);
+	DEC(y, TOP)
 END mouse;
 
 
@@ -935,7 +931,7 @@ BEGIN
     EditBox0.text := K.malloc(EDITBOX_MAXCHARS + 2);
     ASSERT(EditBox0.text # 0);
     edit := EB.create(left, top, EditBox_Width, EDITBOX_MAXCHARS, EditBox0);
-    edit.flags := 4002H;
+    edit.flags := {1, 14};
     edit.text_color := 30000000H;
     EditBox_SetFocus(edit, FALSE)
     RETURN edit
@@ -947,7 +943,7 @@ BEGIN
     FindEdit := createEdit(searchLeft, TOP + 20);
     ReplaceEdit := createEdit(searchLeft, TOP + 20 + 55);
     GotoEdit := createEdit(searchLeft, TOP + 20 + 330);
-    GotoEdit.flags := ORD(BITS(GotoEdit.flags) + BITS(8000H));
+    INCL(GotoEdit.flags, 15);
     CheckBox.create("backward", BKW);
     CheckBox.create("match case", CS);
     CheckBox.create("whole word", WH);
@@ -992,16 +988,9 @@ VAR
     shift, ctrl: BOOLEAN;
 BEGIN
     K.getKBState(shift, ctrl);
-	Scroll.MouseDown(hScroll, x + LEFT, y + TOP);
-	Scroll.MouseDown(vScroll, x + LEFT, y + TOP);
     T.getScroll(text, scrollX, scrollY);
     T.scroll(text, hScroll.value - scrollX, vScroll.value - scrollY);
-    IF search & searchOpened THEN
-	   	CheckBox.MouseDown(BKW, x + LEFT, y + TOP);
-	   	CheckBox.MouseDown(CS,  x + LEFT, y + TOP);
-	   	CheckBox.MouseDown(WH,  x + LEFT, y + TOP);
-   	END;
-    IF (0 <= x) & (x < canvas.width) & (0 <= y) & (y < canvas.height) THEN
+    IF U.between(0, x, canvas.width - 1) & U.between(0, y, canvas.height - 1) THEN
         leftButton := TRUE;
         SetFocus(FindEdit, FALSE);
         IF ~shift THEN
@@ -1012,17 +1001,6 @@ BEGIN
     repaint
     RETURN K.GetTickCount()
 END click;
-
-
-PROCEDURE LeftButtonUp;
-BEGIN
-    leftButton := FALSE;
-    Scroll.MouseUp(hScroll);
-    Scroll.MouseUp(vScroll);
-    CheckBox.MouseUp(BKW);
-    CheckBox.MouseUp(CS);
-    CheckBox.MouseUp(WH);
-END LeftButtonUp;
 
 
 PROCEDURE Close;
@@ -1143,7 +1121,7 @@ VAR
 BEGIN
     IF menu = context THEN
         mouse(x, y);
-        IF ~((0 <= x) & (x < canvas.width) & (0 <= y) & (y < canvas.height)) THEN
+        IF ~(U.between(0, x, canvas.width - 1) & U.between(0, y, canvas.height - 1)) THEN
             menu := NIL
         END
     ELSE
@@ -1240,6 +1218,17 @@ BEGIN
 END ShowMenu;
 
 
+PROCEDURE setScript (VAR script: RW.tFileName);
+VAR
+	temp: RW.tFileName;
+BEGIN
+	OpenFile(temp, ShellFilter);
+	IF temp # "" THEN
+		script := temp
+	END
+END setScript;
+
+
 PROCEDURE receiveIPC;
 VAR
 	scrollIPC: BOOLEAN;
@@ -1254,36 +1243,11 @@ BEGIN
     	IPC[2] := 0
     ELSIF IPC[0] = mainTID THEN
     	IF IPC[2] = Scroll.ScrollIPC THEN
-	    	Scroll.change(hScroll);
-	    	Scroll.change(vScroll);
-	    	T.scroll(text, ORD(hScroll.Inc) - ORD(hScroll.Dec), ORD(vScroll.Inc) - ORD(vScroll.Dec));
-
-    		IF menuActive THEN
-    			draw_window;
-    			menuActive := FALSE
-    		ELSE
-    			repaint
-    		END;
-
-    		IF 0 IN K.MouseState() THEN
-    			WHILE (0 IN K.MouseState()) & (delay > 0) DO
-        			K.Pause(1);
-    	    		DEC(delay)
-        		END;
-        		IF delay = 0 THEN
-    				IPC[0] := 0;
-					IPC[1] := 0;
-					scrollIPC := TRUE;
-	        		Scroll.SendIPC;
-    	    		delay := 2
-        		ELSE
-        			delay := Scroll.Delay
-        		END
-        	ELSE
-        		delay := Scroll.Delay
-			END
+    		Scroll.receiveIPC(IPC, scrollIPC)
     	END;
-    	IPC[2] := 0
+    	IF ~scrollIPC THEN
+    		IPC[2] := 0
+    	END
     ELSE
     	IF ~Menu.isSender(IPC[0]) THEN
    			IPC[2] := 0
@@ -1297,132 +1261,132 @@ BEGIN
     		END
     	END
     END;
-    CASE IPC[2] OF
-    |0:
-    |menuCut:       T.key(text, ORD("X"), FALSE, TRUE)
-    |menuCopy:      T.key(text, ORD("C"), FALSE, TRUE)
-    |menuPaste:     T.key(text, ORD("V"), FALSE, TRUE)
-    |menuDelete:    T.key(text,       46, FALSE, FALSE)
-    |menuSelectAll: T.key(text, ORD("A"), FALSE, TRUE)
-
-    |menuNew:
-        NewFile
-    |menuOpen:
-        open
-    |menuSave:
-        save(text);
-        repaint
-    |menuSaveAs:
-        saveAs(text);
-        repaint
-    |menuSaveAll:
-        saveAll;
-        repaint
-    |menuClose:
-        closeFile(TRUE, curText)
-    |menuFolder:
-        K.Run("/rd/1/File Managers/Eolite", text.fileName)
-    |menuExit:
-        Close
-    |menuUndo:
-        T.undo(text);
-        repaint
-    |menuRedo:
-        T.redo(text);
-        repaint
-    |menuFind:
-        ShowSearchPanel(FALSE)
-    |menuFindNext:
-        notFound := ~T.findNext(text, BKW.value);
-        menuFindClicked := TRUE
-    |menuFindPrev:
-        notFound := ~T.findNext(text, ~BKW.value);
-        menuFindClicked := TRUE
-    |menuGoto:
-        ShowSearchPanel(TRUE)
-    |menuToggleBookmark:
-    	T.toggleLabel(text)
-    |menuNextBookmark:
-    	T.gotoLabel(text, TRUE)
-    |menuPrevBookmark:
-    	T.gotoLabel(text, FALSE)
-    |menuNumbers:
-        T.toggleNumbers(text)
-    |menuFontSize:
-        IF font = font1 THEN
-            font := font2
-        ELSE
-            font := font1
-        END;
-        resize
-    |menuText:
-        T.setLang(text, Languages.langText)
-    |menuC:
-        T.setLang(text, Languages.langC)
-    |menuFasm:
-        T.setLang(text, Languages.langFasm)
-    |menuIni:
-        T.setLang(text, Languages.langIni)
-    |menuJSON:
-        T.setLang(text, Languages.langJSON)
-    |menuLua:
-        T.setLang(text, Languages.langLua)
-    |menuOberon:
-        T.setLang(text, Languages.langOberon)
-    |menuPascal:
-        T.setLang(text, Languages.langPascal)
-    |menuBuild:
-        Script(buildScript)
-    |menuBuildScript:
-        OpenFile(buildScript, ShellFilter)
-    |menuRun:
-        Script(runScript)
-    |menuRunScript:
-        OpenFile(runScript, ShellFilter)
-    |menuDebug:
-        Script(debugScript)
-    |menuDebugScript:
-        OpenFile(debugScript, ShellFilter)
-    |menuUTF8BOM:
-        text.enc := E.UTF8BOM
-    |menuUTF8:
-        text.enc := E.UTF8
-    |menuCP866:
-        text.enc := E.CP866
-    |menuWin1251:
-        text.enc := E.W1251
-    |menuLF:
-        text.eol := RW.EOL_LF
-    |menuCRLF:
-        text.eol := RW.EOL_CRLF
-    |menuCR:
-        text.eol := RW.EOL_CR
-    |menuPipet:
-        K.Run("/rd/1/develop/pipet", "")
-    |menuBoard:
-        K.Run("/rd/1/develop/board", "")
-    |menuSysFunc:
-        K.Run("/rd/1/docpack", "f")
-    |menuColors..menuMaxColors:
-        Ini.selectSection(IPC[2] - menuColors)
-    |menuMoveUp:
-    	T.upLine(text)
-    |menuMoveDown:
-    	T.downLine(text)
-    |menuDuplicate:
-    	T.dupLine(text)
-    |menuRemove:
-    	T.delLine(text)
-    |menuIncInd:
-    	T.Indent(text, TRUE)
-	|menuDecInd:
-		T.Indent(text, FALSE)
-	|menuUpper:
-		T.chCase(text, TRUE)
-	|menuLower:
-		T.chCase(text, FALSE)
-    END;
     IF ~scrollIPC THEN
+	    CASE IPC[2] OF
+	    |0:
+	    |menuCut:       T.key(text, ORD("X"), FALSE, TRUE)
+	    |menuCopy:      T.key(text, ORD("C"), FALSE, TRUE)
+	    |menuPaste:     T.key(text, ORD("V"), FALSE, TRUE)
+	    |menuDelete:    T.key(text,       46, FALSE, FALSE)
+	    |menuSelectAll: T.key(text, ORD("A"), FALSE, TRUE)
+
+	    |menuNew:
+	        NewFile
+	    |menuOpen:
+	        open
+	    |menuSave:
+	        save(text);
+	        repaint
+	    |menuSaveAs:
+	        saveAs(text);
+	        repaint
+	    |menuSaveAll:
+	        saveAll;
+	        repaint
+	    |menuClose:
+	        closeFile(TRUE, curText)
+	    |menuFolder:
+	        K.Run("/rd/1/File Managers/Eolite", text.fileName)
+	    |menuExit:
+	        Close
+	    |menuUndo:
+	        T.undo(text);
+	        repaint
+	    |menuRedo:
+	        T.redo(text);
+	        repaint
+	    |menuFind:
+	        ShowSearchPanel(FALSE)
+	    |menuFindNext:
+	        notFound := ~T.findNext(text, BKW.value);
+	        menuFindClicked := TRUE
+	    |menuFindPrev:
+	        notFound := ~T.findNext(text, ~BKW.value);
+	        menuFindClicked := TRUE
+	    |menuGoto:
+	        ShowSearchPanel(TRUE)
+	    |menuToggleBookmark:
+	    	T.toggleLabel(text)
+	    |menuNextBookmark:
+	    	T.gotoLabel(text, TRUE)
+	    |menuPrevBookmark:
+	    	T.gotoLabel(text, FALSE)
+	    |menuNumbers:
+	        T.toggleNumbers(text)
+	    |menuFontSize:
+	        IF font = font1 THEN
+	            font := font2
+	        ELSE
+	            font := font1
+	        END;
+	        resize
+	    |menuText:
+	        T.setLang(text, Languages.langText)
+	    |menuC:
+	        T.setLang(text, Languages.langC)
+	    |menuFasm:
+	        T.setLang(text, Languages.langFasm)
+	    |menuIni:
+	        T.setLang(text, Languages.langIni)
+	    |menuJSON:
+	        T.setLang(text, Languages.langJSON)
+	    |menuLua:
+	        T.setLang(text, Languages.langLua)
+	    |menuOberon:
+	        T.setLang(text, Languages.langOberon)
+	    |menuPascal:
+	        T.setLang(text, Languages.langPascal)
+	    |menuBuild:
+	        Script(buildScript)
+	    |menuBuildScript:
+	    	setScript(buildScript)
+	    |menuRun:
+	        Script(runScript)
+	    |menuRunScript:
+	    	setScript(runScript)
+	    |menuDebug:
+	        Script(debugScript)
+	    |menuDebugScript:
+	    	setScript(debugScript)
+	    |menuUTF8BOM:
+	        text.enc := E.UTF8BOM
+	    |menuUTF8:
+	        text.enc := E.UTF8
+	    |menuCP866:
+	        text.enc := E.CP866
+	    |menuWin1251:
+	        text.enc := E.W1251
+	    |menuLF:
+	        text.eol := RW.EOL_LF
+	    |menuCRLF:
+	        text.eol := RW.EOL_CRLF
+	    |menuCR:
+	        text.eol := RW.EOL_CR
+	    |menuPipet:
+	        K.Run("/rd/1/develop/pipet", "")
+	    |menuBoard:
+	        K.Run("/rd/1/develop/board", "")
+	    |menuSysFunc:
+	        K.Run("/rd/1/docpack", "f")
+	    |menuColors..menuMaxColors:
+	        Ini.selectSection(IPC[2] - menuColors)
+	    |menuMoveUp:
+	    	T.upLine(text)
+	    |menuMoveDown:
+	    	T.downLine(text)
+	    |menuDuplicate:
+	    	T.dupLine(text)
+	    |menuRemove:
+	    	T.delLine(text)
+	    |menuIncInd:
+	    	T.Indent(text, TRUE)
+		|menuDecInd:
+			T.Indent(text, FALSE)
+		|menuUpper:
+			T.chCase(text, TRUE)
+		|menuLower:
+			T.chCase(text, FALSE)
+	    END;
     	IPC[0] := 0;
     	IPC[1] := 0
     END
@@ -1820,7 +1784,7 @@ BEGIN
                 |82, 91, 219, 92, 220: key := -1 (* insert, windows *)
                 |93: ShowMenu(context); key := -1
                 |83: key := 46
-                |59, 62..66, 68, 87, 88: key := -1 (* F1, F4..F8, F10, F11, F12 *)
+                |59, 62..66, 87, 88: key := -1 (* F1, F4..F8, F11, F12 *)
                 ELSE
                     IF ctrl THEN
                         CASE keyCode OF
@@ -1996,7 +1960,7 @@ BEGIN
     IF ~resized THEN
         msState := K.MouseState();
         IF ~(0 IN msState) OR (16 IN msState) THEN
-            LeftButtonUp
+        	leftButton := FALSE
         END;
         scroll := K.Scroll();
         IF scroll # 0 THEN
@@ -2010,20 +1974,15 @@ BEGIN
                 repaint
             END
         END;
-		IF Scroll.isActive(hScroll) THEN
-			mouse(x, y);
-			Scroll.MouseMove(hScroll, x + LEFT, y + TOP);
-            T.getScroll(text, scrollX, scrollY);
-            T.scroll(text, hScroll.value - scrollX, 0);
-			repaint
-		END;
-		IF Scroll.isActive(vScroll) THEN
-			mouse(x, y);
-			Scroll.MouseMove(vScroll, x + LEFT, y + TOP);
-            T.getScroll(text, scrollX, scrollY);
-            T.scroll(text, 0, vScroll.value - scrollY);
-			repaint
-		END;
+
+		Scroll.mouse(hScroll);
+		Scroll.mouse(vScroll);
+        T.getScroll(text, scrollX, scrollY);
+        IF (hScroll.value # scrollX) OR (vScroll.value # scrollY) THEN
+			T.scroll(text, hScroll.value - scrollX, vScroll.value - scrollY);
+        	repaint
+        END;
+
         IF (8 IN msState) & ~(24 IN msState) THEN
             mouse(firstClickX, firstClickY);
             time := click(firstClickX, firstClickY)
@@ -2033,15 +1992,8 @@ BEGIN
         END;
         IF 24 IN msState THEN
             mouse(x, y);
-    		Scroll.MouseDown(hScroll, x + LEFT, y + TOP);
-    		Scroll.MouseDown(vScroll, x + LEFT, y + TOP);
-    		IF search & searchOpened THEN
-	    		CheckBox.MouseDown(BKW, x + LEFT, y + TOP);
-	    		CheckBox.MouseDown(CS,  x + LEFT, y + TOP);
-	    		CheckBox.MouseDown(WH,  x + LEFT, y + TOP);
-    		END;
-            IF (ABS(x - firstClickX) < 5) & (ABS(y - firstClickY) < 5) THEN
-                IF (0 <= x) & (x < canvas.width) & (0 <= y) & (y < canvas.height) THEN
+            IF U.between(-4, x - firstClickX, 4) & U.between(-4, y - firstClickY, 4) THEN
+                IF U.between(0, x, canvas.width - 1) & U.between(0, y, canvas.height - 1) THEN
                     leftButton := FALSE;
                     T.selectWord(text);
                     repaint
@@ -2054,16 +2006,15 @@ BEGIN
         END
     END;
     IF search & searchOpened THEN
+	    CheckBox.mouse(BKW);
+    	CheckBox.mouse(CS);
+    	CheckBox.mouse(WH);
         EditBox(FindEdit);
         EditBox(ReplaceEdit);
         EditBox(GotoEdit);
-        IF CS.value # cs THEN
-            cs := ~cs;
-            notFound := ~T.search(text, searchText, cs, whole);
-            repaint
-        END;
-        IF WH.value # whole THEN
-            whole := ~whole;
+        IF (CS.value # cs) OR (WH.value # whole) THEN
+            cs := CS.value;
+            whole := WH.value;
             notFound := ~T.search(text, searchText, cs, whole);
             repaint
         END
@@ -2095,6 +2046,20 @@ BEGIN
 END Redraw;
 
 
+PROCEDURE ScrollChange;
+BEGIN
+	Scroll.change(hScroll);
+	Scroll.change(vScroll);
+	T.scroll(text, ORD(hScroll.Inc) - ORD(hScroll.Dec), ORD(vScroll.Inc) - ORD(vScroll.Dec));
+	IF menuActive THEN
+		draw_window;
+		menuActive := FALSE
+	ELSE
+		repaint
+	END
+END ScrollChange;
+
+
 PROCEDURE main;
 VAR
     err: INTEGER;
@@ -2103,7 +2068,6 @@ VAR
     resized: BOOLEAN;
     firstClickX, firstClickY, time: INTEGER;
 BEGIN
-	delay := Scroll.Delay;
     K.GetSystemColors;
     Icons.get(icons, grayIcons);
     modified := FALSE;
@@ -2115,7 +2079,7 @@ BEGIN
     K.SetIPC(IPC);
     U.ptr2str(K.GetName(), AppPath);
     Ini.load(AppPath);
-    LeftButtonUp;
+    leftButton := FALSE;
     resized := FALSE;
     K.ScreenSize(winWidth, winHeight);
     winWidth := (winWidth*80) DIV 100 - (128 + 30);
@@ -2181,6 +2145,7 @@ BEGIN
     END;
     OD := OpenDlg.Create(draw_window, OpenDlg.topen, filePath, "");
     insert(0, text);
+    Scroll.init(ScrollChange);
     Scroll.create(FALSE, canvas.width + 1, scrollWidth, scrollWidth, scrollWidth, hScroll);
     Scroll.create(TRUE, scrollWidth, canvas.height + 1, scrollWidth, scrollWidth, vScroll);
     T.resize(canvas.width, canvas.height);

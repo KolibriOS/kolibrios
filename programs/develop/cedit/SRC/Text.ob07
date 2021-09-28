@@ -2128,12 +2128,9 @@ BEGIN
             IF (i MOD 10 = 0) OR (i - 1 = text.cursor.Y) OR line.label THEN
                 U.int2str(i, s);
                 G.TextOut2(canvas, (numWidth - U.lg10(i) - 1)*wNum - wNum DIV 2, y, s, LENGTH(s))
-            ELSIF i MOD 5 = 0 THEN
-                G.SetColor(canvas, colors.numtext);
-                G.HLine(canvas, y - inter DIV 2 + charHeight DIV 2, xNum - wNum, xNum)
             ELSE
                 G.SetColor(canvas, colors.numtext);
-                G.HLine(canvas, y - inter DIV 2 + charHeight DIV 2, xNum - wNum DIV 2, xNum)
+                G.HLine(canvas, y - inter DIV 2 + charHeight DIV 2, xNum - wNum DIV (1 + ORD(i MOD 5 # 0)), xNum)
             END
         END;
         IF line.label THEN

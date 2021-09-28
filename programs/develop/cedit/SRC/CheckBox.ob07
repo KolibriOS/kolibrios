@@ -84,26 +84,26 @@ BEGIN
 END create;
 
 
-PROCEDURE MouseDown* (VAR chkbox: tCheckBox; x, y: INTEGER);
+PROCEDURE mouse* (VAR chkbox: tCheckBox);
+VAR
+	msState: SET;
+	x, y: INTEGER;
 BEGIN
-	IF (chkbox.canvas # NIL) & ~chkbox.mouse THEN
-		DEC(x, chkbox.left);
-		DEC(y, chkbox.top);
-		chkbox.mouse := TRUE;
-		IF U.between(0, x, chkbox.width) & U.between(0, y, chkbox.height) THEN
-			chkbox.value := ~chkbox.value;
-		END;
-		paint(chkbox)
-	END
-END MouseDown;
-
-
-PROCEDURE MouseUp* (VAR chkbox: tCheckBox);
-BEGIN
-	IF chkbox.canvas # NIL THEN
+	K.mouse(msState, x, y);
+	IF 0 IN msState THEN
+		IF (chkbox.canvas # NIL) & ~chkbox.mouse THEN
+			DEC(x, chkbox.left);
+			DEC(y, chkbox.top);
+			chkbox.mouse := TRUE;
+			IF U.between(0, x, chkbox.width - 1) & U.between(0, y, chkbox.height - 1) THEN
+				chkbox.value := ~chkbox.value;
+			END;
+			paint(chkbox)
+		END
+	ELSE
 		chkbox.mouse := FALSE
 	END
-END MouseUp;
+END mouse;
 
 
 END CheckBox.
