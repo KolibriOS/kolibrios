@@ -264,8 +264,8 @@ crep:
         cmp     al, 0x6E
         jz      .prefix
 
-    .noprefix:
         pop     [disasm_cur_pos]
+    .noprefix:
         and     byte [edi-1], 0
         ret
 
@@ -328,6 +328,10 @@ crepnz:
         mov     al, ' '
         stosb
         movzx   eax, dl
+        cmp     al, 66h
+        je      c66
+        cmp     al, 67h
+        je      c67
         cmp     al, 0x6C
         jb      crep.noprefix
         cmp     al, 0x6F
