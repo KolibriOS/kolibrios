@@ -296,21 +296,23 @@ PROCEDURE MouseMove (VAR scroll: tScroll; x, y: INTEGER);
 VAR
 	c: INTEGER;
 BEGIN
-	IF scroll.Slider # -1 THEN
-		IF scroll.vertical THEN
-			c := y - scroll.top
-		ELSE
-			c := x - scroll.left
-		END;
-		setPos(scroll, scroll.pos0 + c - scroll.Slider);
-		paint(scroll)
-	END
+	IF scroll.vertical THEN
+		c := y - scroll.top
+	ELSE
+		c := x - scroll.left
+	END;
+	setPos(scroll, scroll.pos0 + c - scroll.Slider);
+	paint(scroll)
 END MouseMove;
 
 
 PROCEDURE SendIPC;
+VAR
+	msg: ARRAY 2 OF INTEGER;
 BEGIN
-	K.SendIPC(K.ThreadID(), ScrollIPC)
+	msg[0] := ScrollIPC;
+	msg[1] := 8;
+	K.SendIPC(K.ThreadID(), msg)
 END SendIPC;
 
 
@@ -342,33 +344,31 @@ PROCEDURE MouseDown (VAR scroll: tScroll; x, y: INTEGER);
 VAR
 	c, size: INTEGER;
 BEGIN
-	IF ~scroll.mouse THEN
-		DEC(x, scroll.left);
-		DEC(y, scroll.top);
-		scroll.mouse := TRUE;
-		IF U.between(1, x, scroll.width - 2) & U.between(1, y, scroll.height - 2) THEN
-			IF scroll.vertical THEN
-				c := y;
-				size := scroll.height
-			ELSE
-				c := x;
-				size := scroll.width
-			END;
-			IF U.between(scroll.btnSize + scroll.pos - 1, c, scroll.btnSize + scroll.pos + scroll.sliderSize - 1) THEN
-				scroll.pos0 := scroll.pos;
-				scroll.Slider := c
-			ELSIF U.between(0, c, scroll.btnSize - 1) THEN
-				scroll.Dec := TRUE;
-				SendIPC
-			ELSIF U.between(size - scroll.btnSize, c, size - 1) THEN
-				scroll.Inc := TRUE;
-				SendIPC
-			ELSE
-				setPos(scroll, c - scroll.btnSize - scroll.sliderSize DIV 2);
-				scroll.pos0 := scroll.pos;
-				scroll.Slider := c;
-				paint(scroll)
-			END
+	DEC(x, scroll.left);
+	DEC(y, scroll.top);
+	scroll.mouse := TRUE;
+	IF U.between(1, x, scroll.width - 2) & U.between(1, y, scroll.height - 2) THEN
+		IF scroll.vertical THEN
+			c := y;
+			size := scroll.height
+		ELSE
+			c := x;
+			size := scroll.width
+		END;
+		IF U.between(scroll.btnSize + scroll.pos - 1, c, scroll.btnSize + scroll.pos + scroll.sliderSize - 1) THEN
+			scroll.pos0 := scroll.pos;
+			scroll.Slider := c
+		ELSIF U.between(0, c, scroll.btnSize - 1) THEN
+			scroll.Dec := TRUE;
+			SendIPC
+		ELSIF U.between(size - scroll.btnSize, c, size - 1) THEN
+			scroll.Inc := TRUE;
+			SendIPC
+		ELSE
+			setPos(scroll, c - scroll.btnSize - scroll.sliderSize DIV 2);
+			scroll.pos0 := scroll.pos;
+			scroll.Slider := c;
+			paint(scroll)
 		END
 	END
 END MouseDown;
@@ -381,8 +381,11 @@ VAR
 BEGIN
 	K.mouse(msState, x, y);
 	IF 0 IN msState THEN
-		MouseDown(scroll, x, y);
-		MouseMove(scroll, x, y)
+		IF ~scroll.mouse THEN
+			MouseDown(scroll, x, y)
+		ELSIF scroll.Slider # -1 THEN
+			MouseMove(scroll, x, y)
+		END
 	ELSIF scroll.mouse THEN
 		MouseUp(scroll);
 		paint(scroll)

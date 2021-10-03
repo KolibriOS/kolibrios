@@ -28,10 +28,10 @@ IMPORT
     RW, Ini, EB := EditBox, Icons, Tabs, Timer;
 
 CONST
-    header = "CEdit (28-sep-2021)";
+    HEADER = "CEdit (03-oct-2021)";
 
     ShellFilter = "";
-    EditFilter = "SH|ASM|TXT|INC|OB07|C|CPP|H|PAS|PP|LUA|INI|JSON";
+    EditFilter = "SH|INC|TXT|ASM|OB07|C|CPP|H|PAS|PP|LUA|INI|JSON";
 
     fontWidth = K.fontWidth;
     fontHeight = K.fontHeight;
@@ -51,14 +51,14 @@ CONST
 
     btnYes = 40;
     btnNo = 41;
-    btnFindNext = 60;
-    btnReplace = 61;
-    btnReplaceAll = 62;
-    btnGoto = 63;
-    btnCloseSearch = 64;
-    btnHideSearch = 65;
+    btnFindNext = 42;
+    btnReplace = 43;
+    btnReplaceAll = 44;
+    btnGoto = 45;
+    btnCloseSearch = 46;
+    btnHideSearch = 47;
 
-    mainMenuBtn = 70;
+    mainMenuBtn = 60;
 
     btnHeight = 25;
     btnWidth = 75;
@@ -184,10 +184,10 @@ VAR
 
     switch, closing: BOOLEAN;
     leftButton: BOOLEAN;
-    hScroll, vScroll: Scroll.tScroll;
     LEFT: INTEGER;
 
     FindEdit, ReplaceEdit, GotoEdit: EB.tEditBox;
+    hScroll, vScroll: Scroll.tScroll;
     CS, WH, BKW: CheckBox.tCheckBox;
 
     new_searchText, searchText, replaceText, gotoText: T.tString;
@@ -226,14 +226,7 @@ END WritePos;
 
 
 PROCEDURE EditBox_Focus (edit: EB.tEditBox): BOOLEAN;
-VAR
-	res: BOOLEAN;
-BEGIN
-	res := FALSE;
-	IF edit # NIL THEN
-	    res := 1 IN edit.flags
-	END
-	RETURN res
+	RETURN 1 IN edit.flags
 END EditBox_Focus;
 
 
@@ -249,7 +242,7 @@ BEGIN
 END resetTimer;
 
 
-PROCEDURE EditBox_SetFocus (edit: EB.tEditBox; value: BOOLEAN);
+PROCEDURE EditBox_SetFocus (VAR edit: EB.tEditBox; value: BOOLEAN);
 BEGIN
     IF value THEN
     	INCL(edit.flags, 1)
@@ -262,7 +255,7 @@ BEGIN
 END EditBox_SetFocus;
 
 
-PROCEDURE SetFocus (edit: EB.tEditBox; value: BOOLEAN);
+PROCEDURE SetFocus (VAR edit: EB.tEditBox; value: BOOLEAN);
 BEGIN
     EditBox_SetFocus(FindEdit, FALSE);
     EditBox_SetFocus(ReplaceEdit, FALSE);
@@ -413,17 +406,21 @@ PROCEDURE DrawState (text: T.tText; width, height: INTEGER);
 VAR
     y: INTEGER;
     s: ARRAY 24 OF WCHAR;
+    header: RW.tFileName;
 BEGIN
-    y := (btnHeight - fontHeight) DIV 2 + btnTop;
     s := "";
     U.append(s, RW.eolNames[text.eol]);
-    U.append(s, 20X);
+    U.append(s, 20X + 20X);
     U.append(s, E.names[text.enc]);
-    K.DrawRect(width - LEN(s)*fontWidth, y, LEN(s)*fontWidth, fontHeight, K.winColor);
-    K.DrawText(width - LENGTH(s)*fontWidth, y, K.textColor, s);
+    header := HEADER;
+    IF text.fileName # "" THEN
+    	U.append8(header, " - ");
+    	U.append8(header, text.fileName)
+    END;
+    K.SetCaption(header);
+    K.DrawRect(LEFT + 16*fontWidth, TOP + canvas.height + scrollWidth, width - (LEFT + 16*fontWidth), BOTTOM - scrollWidth + 1, K.winColor);
     y := height - (BOTTOM - scrollWidth) + (BOTTOM - scrollWidth - 16) DIV 2;
-    K.DrawRect(LEFT + 16*fontWidth, TOP + canvas.height + scrollWidth, width - LEFT - 24*fontWidth, BOTTOM - scrollWidth + 1, K.winColor);
-    K.DrawText866(LEFT + 16*fontWidth, y, K.textColor, text.fileName);
+    K.DrawText(width - (LENGTH(s) + 10)*fontWidth, y, K.textColor, s);
     WriteModified(width - 8*fontWidth, y)
 END DrawState;
 
@@ -576,7 +573,7 @@ VAR
 
 BEGIN
     K.BeginDraw;
-    K.CreateWindow(30 + K.GetTickCount() MOD 128, 30 + K.GetTickCount() MOD 128, winWidth, winHeight, K.winColor, 73H, 0, 0, header);
+    K.CreateWindow(30 + K.GetTickCount() MOD 128, 30 + K.GetTickCount() MOD 128, winWidth, winHeight, K.winColor, 73H, 0, 0, "");
     IF (text # NIL) & ~K.RolledUp() THEN
     	IF confirm THEN
     		resetTimer
@@ -698,16 +695,7 @@ BEGIN
     U.getFileName(text.fileName, OD.FileName, U.SLASH);
     IF OD.FileName = "" THEN
         OD.FileName := "NewFile.";
-        CASE text.lang OF
-        |Languages.langText:   ext := "txt"
-        |Languages.langC:      ext := "c"
-        |Languages.langFasm:   ext := "asm"
-        |Languages.langIni:    ext := "ini"
-        |Languages.langJSON:   ext := "json"
-        |Languages.langLua:    ext := "lua"
-        |Languages.langOberon: ext := "ob07"
-        |Languages.langPascal: ext := "pas"
-        END;
+        Languages.getExt(text.lang, ext);
         U.append8(OD.FileName, ext)
     END;
     OpenFile(fileName, EditFilter);
@@ -923,26 +911,11 @@ BEGIN
 END open;
 
 
-PROCEDURE createEdit (left, top: INTEGER): EB.tEditBox;
-VAR
-    edit, EditBox0: EB.tEditBox;
-BEGIN
-    NEW(EditBox0);
-    EditBox0.text := K.malloc(EDITBOX_MAXCHARS + 2);
-    ASSERT(EditBox0.text # 0);
-    edit := EB.create(left, top, EditBox_Width, EDITBOX_MAXCHARS, EditBox0);
-    edit.flags := {1, 14};
-    edit.text_color := 30000000H;
-    EditBox_SetFocus(edit, FALSE)
-    RETURN edit
-END createEdit;
-
-
 PROCEDURE createSearchForm;
 BEGIN
-    FindEdit := createEdit(searchLeft, TOP + 20);
-    ReplaceEdit := createEdit(searchLeft, TOP + 20 + 55);
-    GotoEdit := createEdit(searchLeft, TOP + 20 + 330);
+	EB.create(searchLeft, TOP + 20, EditBox_Width, EDITBOX_MAXCHARS, FindEdit);
+	EB.create(searchLeft, TOP + 20 + 55, EditBox_Width, EDITBOX_MAXCHARS, ReplaceEdit);
+    EB.create(searchLeft, TOP + 20 + 330, EditBox_Width, EDITBOX_MAXCHARS, GotoEdit);
     INCL(GotoEdit.flags, 15);
     CheckBox.create("backward", BKW);
     CheckBox.create("match case", CS);
@@ -1041,8 +1014,12 @@ END CloseMenu;
 
 
 PROCEDURE MenuItemClick (menu: Menu.tMenu; id: INTEGER);
+VAR
+	msg: ARRAY 2 OF INTEGER;
 BEGIN
-    K.SendIPC(mainTID, id)
+	msg[0] := id;
+	msg[1] := 8;
+    K.SendIPC(mainTID, msg)
 END MenuItemClick;
 
 
@@ -1565,7 +1542,7 @@ VAR
     idx: INTEGER;
 BEGIN
     menu := List.create(NIL);
-    Menu.AddMenuItem(menu, menuNumbers, "line numbers");
+    Menu.AddMenuItem(menu, menuNumbers,  "line numbers");
     Menu.AddMenuItem(menu, menuFontSize, "x2");
     Menu.delimiter(menu);
 
@@ -1940,9 +1917,10 @@ CONST
 VAR
     msState: SET;
     scroll, x, y, scrollX, scrollY: INTEGER;
+    pos1, pos2: T.tPoint;
 
 
-    PROCEDURE EditBox (eb: EB.tEditBox);
+    PROCEDURE EditBox (VAR eb: EB.tEditBox);
     VAR
         focus: BOOLEAN;
     BEGIN
@@ -1969,9 +1947,13 @@ BEGIN
         END;
         IF leftButton THEN
             IF K.GetTickCount() - time >= DELAY THEN
+            	T.getPos(text, pos1.Y, pos1.X);
                 mouse(x, y);
                 T.mouse(text, x, y);
-                repaint
+                T.getPos(text, pos2.Y, pos2.X);
+                IF (pos1.X # pos2.X) OR (pos1.Y # pos2.Y) THEN
+                	repaint
+                END
             END
         END;
 

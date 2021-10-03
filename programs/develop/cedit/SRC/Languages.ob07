@@ -19,7 +19,7 @@
 
 MODULE Languages;
 
-IMPORT Lines;
+IMPORT Lines, Utils;
 
 
 CONST
@@ -48,6 +48,8 @@ VAR
 	Delim: ARRAY 8 OF tDelimiters;
 
     currentLang: INTEGER;
+
+    fileExt: ARRAY 11 OF RECORD ext: ARRAY 8 OF CHAR; lang: INTEGER END;
 
 
 PROCEDURE isCS* (lang: INTEGER): BOOLEAN;
@@ -395,6 +397,36 @@ BEGIN
 END setCurLang;
 
 
+PROCEDURE getLang* (ext: ARRAY OF CHAR): INTEGER;
+VAR
+	i: INTEGER;
+BEGIN
+	i := 0;
+	WHILE (i < LEN(fileExt)) & (fileExt[i].ext # ext) DO
+		INC(i)
+	END;
+	IF i < LEN(fileExt) THEN
+		i := fileExt[i].lang
+	ELSE
+		i := langText
+	END
+	RETURN i
+END getLang;
+
+
+PROCEDURE getExt* (lang: INTEGER; VAR ext: ARRAY OF CHAR);
+VAR
+	i: INTEGER;
+BEGIN
+	i := 0;
+	WHILE fileExt[i].lang # lang DO
+		INC(i)
+	END;
+	COPY(fileExt[i].ext, ext);
+	Utils.lowcase(ext)
+END getExt;
+
+
 PROCEDURE init* (getStr: procGetStr);
 BEGIN
 	currentLang := langText;
@@ -406,6 +438,18 @@ BEGIN
     loadKW(KW[langIni],    Delim[langIni],    getStr, "lang_Ini");
     loadKW(KW[langFasm],   Delim[langFasm],   getStr, "lang_Fasm");
     loadKW(KW[langJSON],   Delim[langJSON],   getStr, "lang_JSON");
+
+    fileExt[ 0].ext := "OB07"; fileExt[ 0].lang := langOberon;
+    fileExt[ 1].ext := "C";    fileExt[ 1].lang := langC;
+    fileExt[ 2].ext := "H";    fileExt[ 2].lang := langC;
+    fileExt[ 3].ext := "CPP";  fileExt[ 3].lang := langC;
+    fileExt[ 4].ext := "PAS";  fileExt[ 4].lang := langPascal;
+    fileExt[ 5].ext := "PP";   fileExt[ 5].lang := langPascal;
+    fileExt[ 6].ext := "ASM";  fileExt[ 6].lang := langFasm;
+    fileExt[ 7].ext := "LUA";  fileExt[ 7].lang := langLua;
+    fileExt[ 8].ext := "INI";  fileExt[ 8].lang := langIni;
+    fileExt[ 9].ext := "JSON"; fileExt[ 9].lang := langJSON;
+    fileExt[10].ext := "TXT";  fileExt[10].lang := langText;
 END init;
 
 

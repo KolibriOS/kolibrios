@@ -200,7 +200,7 @@ BEGIN
         IF cap8(s[i]) THEN
         END;
         DEC(i)
-    END;
+    END
 END upcase;
 
 
@@ -240,6 +240,20 @@ BEGIN
 END low;
 
 
+PROCEDURE lowcase* (VAR s: ARRAY OF CHAR);
+VAR
+    i: INTEGER;
+BEGIN
+    i := LENGTH(s) - 1;
+    WHILE i >= 0 DO
+        IF ("A" <= s[i]) & (s[i] <= "Z") THEN
+        	s[i] := CHR(ORD(s[i]) + 32)
+        END;
+        DEC(i)
+    END
+END lowcase;
+
+
 PROCEDURE str2int* (s: ARRAY OF WCHAR; VAR val: INTEGER): BOOLEAN;
 VAR
     i, temp: INTEGER;
@@ -262,8 +276,7 @@ BEGIN
 
     IF isDigit(s[i]) THEN
         REPEAT
-            temp := temp * 10;
-            temp := temp + (ORD(s[i]) - ORD("0"));
+            temp := temp*10 + ORD(s[i]) - ORD("0");
             INC(i)
         UNTIL ~isDigit(s[i]);
         IF neg THEN

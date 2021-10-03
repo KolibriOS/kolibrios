@@ -50,7 +50,7 @@ BEGIN
 		IF enabled THEN
 			DEC(cnt, step);
 			IF cnt <= 0 THEN
-				KOSAPI.sysfunc5(60, 2, mainTID, SYSTEM.ADR(msg[0]), msg[1]);
+				K.SendIPC(mainTID, msg);
 				cnt := time
 			END
 		END
