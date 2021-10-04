@@ -41,13 +41,10 @@ void uSDL_SetWinCenter(unsigned w, unsigned h){
     ksys_screen_t screen_size= _ksys_screen_size();
     int new_x = screen_size.w/2-w/2;
     int new_y = screen_size.h/2-h/2;
-    _ksys_change_window(new_x, new_y, -1, -1); 
+    _ksys_change_window(new_x, new_y, -1, -1);
 }
 
 
 void uSDL_Delay(unsigned ms){
-    unsigned start = SDL_GetTicks();
-    do{
-       asm_inline("int $0x40" :: "a"(5),"b"(1));
-    }while (SDL_GetTicks()-start < ms);
+    SDL_Delay(ms);
 }
