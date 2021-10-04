@@ -27,9 +27,7 @@ extern byte signon[];
 extern void kolibri_set_win_center();
 extern char* dirname(char* path);
 extern void setcwd(char* path);
-extern "C"{
-    extern void uSDL_StartTicks(void);
-}
+
 extern boolean SD_Started;
 /*
 =============================================================================
@@ -1216,11 +1214,7 @@ static void InitGame()
 #if defined _WIN32
     putenv("SDL_VIDEODRIVER=directx");
 #endif
-    
-#ifdef _KOLIBRI
-    uSDL_StartTicks();
-#endif
-    
+        
     if(SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO) < 0)
     {
         printf("Unable to init SDL: %s\n", SDL_GetError());

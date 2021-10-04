@@ -24,15 +24,8 @@
 #	define O_BINARY 0
 #endif
 
-#ifdef _KOLIBRI
-extern "C"{
-    extern void      uSDL_Delay(unsigned int time);
-    extern unsigned  uSDL_GetTicks(); 
-}
-#else
-    #define uSDL_Delay SDL_Delay
-    #define  uSDL_GetTicks SDL_GetTicks
-#endif
+#define uSDL_Delay SDL_Delay
+#define uSDL_GetTicks SDL_GetTicks
 
 
 #pragma pack(1)

@@ -42,13 +42,8 @@
 #define __MIX_INTERNAL_EFFECT__
 #include "effects_internal.h"
 
-#ifdef _KOLIBRI
-    void      uSDL_Delay(unsigned int time);
-    unsigned  uSDL_GetTicks(); 
-#else
-    #define uSDL_Delay SDL_Delay
-    #define  uSDL_GetTicks SDL_GetTicks
-#endif
+#define uSDL_Delay SDL_Delay
+#define uSDL_GetTicks SDL_GetTicks
 
 /* Magic numbers for various audio file formats */
 #define RIFF		0x46464952		/* "RIFF" */

@@ -70,14 +70,10 @@
 #if defined(MP3_MUSIC) || defined(MP3_MAD_MUSIC)
 static SDL_AudioSpec used_mixer;
 #endif
+unsigned  uSDL_GetTicks(); 
 
-#ifdef _KOLIBRI
-    extern void      uSDL_Delay(unsigned int time);
-    extern unsigned  uSDL_GetTicks(); 
-#else
-    #define uSDL_Delay SDL_Delay
-    #define  uSDL_GetTicks SDL_GetTicks
-#endif
+#define uSDL_Delay SDL_Delay
+#define uSDL_GetTicks SDL_GetTicks
 
 int volatile music_active = 1;
 static int volatile music_stopped = 0;
