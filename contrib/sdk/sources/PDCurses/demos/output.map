@@ -1,0 +1,1707 @@
+Archive member included to satisfy reference by file (symbol)
+
+/home/max/kolibri-svn/contrib/sdk/lib/libgcc.a(_start.o)
+                              (_start)
+/home/max/kolibri-svn/contrib/sdk/lib/libgcc.a(__main.o)
+                              xmas.o (__main)
+/home/max/kolibri-svn/contrib/sdk/lib/libgcc.a(_ctors.o)
+                              /home/max/kolibri-svn/contrib/sdk/lib/libgcc.a(__main.o) (__DTOR_LIST__)
+/home/max/kolibri-svn/contrib/sdk/lib/libgcc.a(kos32-app.o)
+                              /home/max/kolibri-svn/contrib/sdk/lib/libgcc.a(_start.o) (__crt_startup)
+/home/max/kolibri-svn/contrib/sdk/lib/libgcc.a(libc-loader.o)
+                              /home/max/kolibri-svn/contrib/sdk/lib/libgcc.a(kos32-app.o) (get_entry_point)
+/home/max/kolibri-svn/contrib/sdk/lib/libgcc.a(unwind-dw2-fde.o)
+                              /home/max/kolibri-svn/contrib/sdk/lib/libgcc.a(__main.o) (__register_frame_info)
+/home/max/kolibri-svn/contrib/sdk/lib/libgcc.a(gthr-kos32.o)
+                              /home/max/kolibri-svn/contrib/sdk/lib/libgcc.a(unwind-dw2-fde.o) (__gthr_kos32_once)
+/home/max/kolibri-svn/contrib/sdk/lib/libcurses.a(addstr.o)
+                              xmas.o (waddstr)
+/home/max/kolibri-svn/contrib/sdk/lib/libcurses.a(move.o)
+                              /home/max/kolibri-svn/contrib/sdk/lib/libcurses.a(addstr.o) (move)
+/home/max/kolibri-svn/contrib/sdk/lib/libcurses.a(attr.o)
+                              xmas.o (wattrset)
+/home/max/kolibri-svn/contrib/sdk/lib/libcurses.a(initscr.o)
+                              xmas.o (initscr)
+/home/max/kolibri-svn/contrib/sdk/lib/libcurses.a(slk.o)
+                              /home/max/kolibri-svn/contrib/sdk/lib/libcurses.a(initscr.o) (slk_noutrefresh)
+/home/max/kolibri-svn/contrib/sdk/lib/libcurses.a(inopts.o)
+                              xmas.o (noecho)
+/home/max/kolibri-svn/contrib/sdk/lib/libcurses.a(clear.o)
+                              /home/max/kolibri-svn/contrib/sdk/lib/libcurses.a(initscr.o) (wclrtobot)
+/home/max/kolibri-svn/contrib/sdk/lib/libcurses.a(touch.o)
+                              xmas.o (touchwin)
+/home/max/kolibri-svn/contrib/sdk/lib/libcurses.a(refresh.o)
+                              /home/max/kolibri-svn/contrib/sdk/lib/libcurses.a(initscr.o) (wnoutrefresh)
+/home/max/kolibri-svn/contrib/sdk/lib/libcurses.a(window.o)
+                              /home/max/kolibri-svn/contrib/sdk/lib/libcurses.a(attr.o) (PDC_sync)
+/home/max/kolibri-svn/contrib/sdk/lib/libcurses.a(overlay.o)
+                              xmas.o (overlay)
+/home/max/kolibri-svn/contrib/sdk/lib/libcurses.a(kernel.o)
+                              /home/max/kolibri-svn/contrib/sdk/lib/libcurses.a(initscr.o) (def_shell_mode)
+/home/max/kolibri-svn/contrib/sdk/lib/libcurses.a(border.o)
+                              /home/max/kolibri-svn/contrib/sdk/lib/libcurses.a(slk.o) (whline)
+/home/max/kolibri-svn/contrib/sdk/lib/libcurses.a(pad.o)
+                              /home/max/kolibri-svn/contrib/sdk/lib/libcurses.a(window.o) (subpad)
+/home/max/kolibri-svn/contrib/sdk/lib/libcurses.a(addch.o)
+                              xmas.o (waddch)
+/home/max/kolibri-svn/contrib/sdk/lib/libcurses.a(outopts.o)
+                              /home/max/kolibri-svn/contrib/sdk/lib/libcurses.a(kernel.o) (leaveok)
+/home/max/kolibri-svn/contrib/sdk/lib/libcurses.a(color.o)
+                              xmas.o (init_pair)
+/home/max/kolibri-svn/contrib/sdk/lib/libcurses.a(printw.o)
+                              /home/max/kolibri-svn/contrib/sdk/lib/libcurses.a(slk.o) (mvwprintw)
+/home/max/kolibri-svn/contrib/sdk/lib/libcurses.a(pdcgetsc.o)
+                              /home/max/kolibri-svn/contrib/sdk/lib/libcurses.a(initscr.o) (PDC_get_cursor_mode)
+/home/max/kolibri-svn/contrib/sdk/lib/libcurses.a(pdcscrn.o)
+                              /home/max/kolibri-svn/contrib/sdk/lib/libcurses.a(initscr.o) (PDC_scr_close)
+/home/max/kolibri-svn/contrib/sdk/lib/libcurses.a(pdcsetsc.o)
+                              /home/max/kolibri-svn/contrib/sdk/lib/libcurses.a(kernel.o) (PDC_curs_set)
+/home/max/kolibri-svn/contrib/sdk/lib/libcurses.a(pdcdisp.o)
+                              /home/max/kolibri-svn/contrib/sdk/lib/libcurses.a(refresh.o) (PDC_transform_line)
+/home/max/kolibri-svn/contrib/sdk/lib/libcurses.a(pdckbd.o)
+                              /home/max/kolibri-svn/contrib/sdk/lib/libcurses.a(inopts.o) (PDC_set_keyboard_binary)
+/home/max/kolibri-svn/contrib/sdk/lib/libcurses.a(pdcutil.o)
+                              /home/max/kolibri-svn/contrib/sdk/lib/libcurses.a(kernel.o) (PDC_napms)
+/home/max/kolibri-svn/contrib/sdk/lib/libcurses.a(scroll.o)
+                              /home/max/kolibri-svn/contrib/sdk/lib/libcurses.a(addch.o) (wscrl)
+/home/max/kolibri-svn/contrib/sdk/lib/libSDLn.a(SDL.o)
+                              /home/max/kolibri-svn/contrib/sdk/lib/libcurses.a(pdcscrn.o) (SDL_Init)
+/home/max/kolibri-svn/contrib/sdk/lib/libSDLn.a(SDL_error.o)
+                              /home/max/kolibri-svn/contrib/sdk/lib/libcurses.a(pdcscrn.o) (SDL_GetError)
+/home/max/kolibri-svn/contrib/sdk/lib/libSDLn.a(SDL_fatal.o)
+                              /home/max/kolibri-svn/contrib/sdk/lib/libSDLn.a(SDL.o) (SDL_InstallParachute)
+/home/max/kolibri-svn/contrib/sdk/lib/libSDLn.a(SDL_getenv.o)
+                              /home/max/kolibri-svn/contrib/sdk/lib/libSDLn.a(SDL.o) (SDL_getenv)
+/home/max/kolibri-svn/contrib/sdk/lib/libSDLn.a(SDL_kolibri_audio.o)
+                              /home/max/kolibri-svn/contrib/sdk/lib/libSDLn.a(SDL.o) (SDL_AudioInit)
+/home/max/kolibri-svn/contrib/sdk/lib/libSDLn.a(SDL_events.o)
+                              /home/max/kolibri-svn/contrib/sdk/lib/libcurses.a(pdcutil.o) (SDL_PumpEvents)
+/home/max/kolibri-svn/contrib/sdk/lib/libSDLn.a(SDL_keyboard.o)
+                              /home/max/kolibri-svn/contrib/sdk/lib/libcurses.a(pdcscrn.o) (SDL_EnableUNICODE)
+/home/max/kolibri-svn/contrib/sdk/lib/libSDLn.a(SDL_mouse.o)
+                              /home/max/kolibri-svn/contrib/sdk/lib/libSDLn.a(SDL_events.o) (SDL_MouseInit)
+/home/max/kolibri-svn/contrib/sdk/lib/libSDLn.a(SDL_quit.o)
+                              /home/max/kolibri-svn/contrib/sdk/lib/libSDLn.a(SDL_events.o) (SDL_QuitInit)
+/home/max/kolibri-svn/contrib/sdk/lib/libSDLn.a(SDL_rwops.o)
+                              /home/max/kolibri-svn/contrib/sdk/lib/libcurses.a(pdcscrn.o) (SDL_RWFromFile)
+/home/max/kolibri-svn/contrib/sdk/lib/libSDLn.a(SDL_sysmutex.o)
+                              /home/max/kolibri-svn/contrib/sdk/lib/libSDLn.a(SDL_events.o) (SDL_CreateMutex)
+/home/max/kolibri-svn/contrib/sdk/lib/libSDLn.a(SDL_syssem.o)
+                              /home/max/kolibri-svn/contrib/sdk/lib/libSDLn.a(SDL_sysmutex.o) (SDL_CreateSemaphore)
+/home/max/kolibri-svn/contrib/sdk/lib/libSDLn.a(SDL_systhread.o)
+                              /home/max/kolibri-svn/contrib/sdk/lib/libSDLn.a(SDL_events.o) (SDL_ThreadID)
+/home/max/kolibri-svn/contrib/sdk/lib/libSDLn.a(SDL_thread.o)
+                              /home/max/kolibri-svn/contrib/sdk/lib/libSDLn.a(SDL_events.o) (SDL_CreateThread)
+/home/max/kolibri-svn/contrib/sdk/lib/libSDLn.a(SDL_timer.o)
+                              /home/max/kolibri-svn/contrib/sdk/lib/libSDLn.a(SDL_events.o) (SDL_SetTimerThreaded)
+/home/max/kolibri-svn/contrib/sdk/lib/libSDLn.a(SDL_systimer.o)
+                              /home/max/kolibri-svn/contrib/sdk/lib/libSDLn.a(SDL.o) (SDL_StartTicks)
+/home/max/kolibri-svn/contrib/sdk/lib/libSDLn.a(SDL_bmp.o)
+                              /home/max/kolibri-svn/contrib/sdk/lib/libcurses.a(pdcscrn.o) (SDL_LoadBMP_RW)
+/home/max/kolibri-svn/contrib/sdk/lib/libSDLn.a(SDL_cursor.o)
+                              /home/max/kolibri-svn/contrib/sdk/lib/libcurses.a(pdckbd.o) (SDL_ShowCursor)
+/home/max/kolibri-svn/contrib/sdk/lib/libSDLn.a(SDL_pixels.o)
+                              /home/max/kolibri-svn/contrib/sdk/lib/libcurses.a(pdcscrn.o) (SDL_MapRGB)
+/home/max/kolibri-svn/contrib/sdk/lib/libSDLn.a(SDL_surface.o)
+                              /home/max/kolibri-svn/contrib/sdk/lib/libcurses.a(pdcdisp.o) (SDL_SetColorKey)
+/home/max/kolibri-svn/contrib/sdk/lib/libSDLn.a(SDL_video.o)
+                              /home/max/kolibri-svn/contrib/sdk/lib/libcurses.a(pdcscrn.o) (SDL_GetVideoInfo)
+/home/max/kolibri-svn/contrib/sdk/lib/libSDLn.a(SDL_menuetvideo.o)
+                              /home/max/kolibri-svn/contrib/sdk/lib/libSDLn.a(SDL_video.o) (mosvideo_bootstrab)
+/home/max/kolibri-svn/contrib/sdk/lib/libSDLn.a(SDL_endian.o)
+                              /home/max/kolibri-svn/contrib/sdk/lib/libSDLn.a(SDL_bmp.o) (SDL_ReadLE16)
+/home/max/kolibri-svn/contrib/sdk/lib/libSDLn.a(SDL_active.o)
+                              /home/max/kolibri-svn/contrib/sdk/lib/libSDLn.a(SDL_events.o) (SDL_AppActiveInit)
+/home/max/kolibri-svn/contrib/sdk/lib/libSDLn.a(SDL_resize.o)
+                              /home/max/kolibri-svn/contrib/sdk/lib/libSDLn.a(SDL_video.o) (SDL_PrivateResize)
+/home/max/kolibri-svn/contrib/sdk/lib/libSDLn.a(SDL_RLEaccel.o)
+                              /home/max/kolibri-svn/contrib/sdk/lib/libSDLn.a(SDL_pixels.o) (SDL_UnRLESurface)
+/home/max/kolibri-svn/contrib/sdk/lib/libSDLn.a(SDL_blit.o)
+                              /home/max/kolibri-svn/contrib/sdk/lib/libSDLn.a(SDL_pixels.o) (SDL_CalculateBlit)
+/home/max/kolibri-svn/contrib/sdk/lib/libSDLn.a(SDL_blit_0.o)
+                              /home/max/kolibri-svn/contrib/sdk/lib/libSDLn.a(SDL_blit.o) (SDL_CalculateBlit0)
+/home/max/kolibri-svn/contrib/sdk/lib/libSDLn.a(SDL_blit_1.o)
+                              /home/max/kolibri-svn/contrib/sdk/lib/libSDLn.a(SDL_blit.o) (SDL_CalculateBlit1)
+/home/max/kolibri-svn/contrib/sdk/lib/libSDLn.a(SDL_blit_N.o)
+                              /home/max/kolibri-svn/contrib/sdk/lib/libSDLn.a(SDL_blit.o) (SDL_CalculateBlitN)
+/home/max/kolibri-svn/contrib/sdk/lib/libSDLn.a(SDL_menuetevents.o)
+                              /home/max/kolibri-svn/contrib/sdk/lib/libSDLn.a(SDL_menuetvideo.o) (MenuetOS_InitOSKeymap)
+/home/max/kolibri-svn/contrib/sdk/lib/libSDLn.a(mmx_main.o)
+                              /home/max/kolibri-svn/contrib/sdk/lib/libSDLn.a(SDL_blit_N.o) (ConvertMMX)
+/home/max/kolibri-svn/contrib/sdk/lib/libSDLn.a(mmxp2_32.o)
+                              /home/max/kolibri-svn/contrib/sdk/lib/libSDLn.a(SDL_blit_N.o) (ConvertMMXpII32_16RGB565)
+/home/max/kolibri-svn/contrib/sdk/lib/libSDLn.a(x86_main.o)
+                              /home/max/kolibri-svn/contrib/sdk/lib/libSDLn.a(SDL_blit_N.o) (ConvertX86)
+/home/max/kolibri-svn/contrib/sdk/lib/libSDLn.a(x86p_16.o)
+                              /home/max/kolibri-svn/contrib/sdk/lib/libSDLn.a(SDL_blit_N.o) (ConvertX86p16_16BGR565)
+/home/max/kolibri-svn/contrib/sdk/lib/libSDLn.a(x86p_32.o)
+                              /home/max/kolibri-svn/contrib/sdk/lib/libSDLn.a(SDL_blit_N.o) (ConvertX86p32_32BGR888)
+/home/max/kolibri-svn/contrib/sdk/lib/libSDLn.a(SDL_blit_A.o)
+                              /home/max/kolibri-svn/contrib/sdk/lib/libSDLn.a(SDL_blit_N.o) (SDL_CalculateAlphaBlit)
+/home/max/kolibri-svn/contrib/sdk/lib/libsound.a(init.o)
+                              /home/max/kolibri-svn/contrib/sdk/lib/libSDLn.a(SDL_kolibri_audio.o) (InitSound@4)
+/home/max/kolibri-svn/contrib/sdk/lib/libsound.a(setbuf.o)
+                              /home/max/kolibri-svn/contrib/sdk/lib/libSDLn.a(SDL_kolibri_audio.o) (SetBuffer@16)
+/home/max/kolibri-svn/contrib/sdk/lib/libsound.a(sndgetsize.o)
+                              /home/max/kolibri-svn/contrib/sdk/lib/libSDLn.a(SDL_kolibri_audio.o) (GetBufferSize@8)
+/home/max/kolibri-svn/contrib/sdk/lib/libsound.a(stopbuf.o)
+                              /home/max/kolibri-svn/contrib/sdk/lib/libSDLn.a(SDL_kolibri_audio.o) (StopBuffer@4)
+/home/max/kolibri-svn/contrib/sdk/lib/libc.dll.a(d000840.o)
+                              /home/max/kolibri-svn/contrib/sdk/lib/libSDLn.a(SDL_error.o) (vsprintf)
+/home/max/kolibri-svn/contrib/sdk/lib/libc.dll.a(d000839.o)
+                              /home/max/kolibri-svn/contrib/sdk/lib/libcurses.a(printw.o) (vsnprintf)
+/home/max/kolibri-svn/contrib/sdk/lib/libc.dll.a(d000834.o)
+                              /home/max/kolibri-svn/contrib/sdk/lib/libSDLn.a(SDL_fatal.o) (vprintf)
+/home/max/kolibri-svn/contrib/sdk/lib/libc.dll.a(d000799.o)
+                              /home/max/kolibri-svn/contrib/sdk/lib/libgcc.a(gthr-kos32.o) (tls_free)
+/home/max/kolibri-svn/contrib/sdk/lib/libc.dll.a(d000798.o)
+                              /home/max/kolibri-svn/contrib/sdk/lib/libgcc.a(gthr-kos32.o) (tls_alloc)
+/home/max/kolibri-svn/contrib/sdk/lib/libc.dll.a(d000765.o)
+                              /home/max/kolibri-svn/contrib/sdk/lib/libSDLn.a(SDL_error.o) (strncpy)
+/home/max/kolibri-svn/contrib/sdk/lib/libc.dll.a(d000764.o)
+                              /home/max/kolibri-svn/contrib/sdk/lib/libSDLn.a(SDL_getenv.o) (strncmp)
+/home/max/kolibri-svn/contrib/sdk/lib/libc.dll.a(d000760.o)
+                              /home/max/kolibri-svn/contrib/sdk/lib/libgcc.a(unwind-dw2-fde.o) (strlen)
+/home/max/kolibri-svn/contrib/sdk/lib/libc.dll.a(d000752.o)
+                              /home/max/kolibri-svn/contrib/sdk/lib/libSDLn.a(SDL_getenv.o) (strcpy)
+/home/max/kolibri-svn/contrib/sdk/lib/libc.dll.a(d000735.o)
+                              /home/max/kolibri-svn/contrib/sdk/lib/libcurses.a(initscr.o) (sprintf)
+/home/max/kolibri-svn/contrib/sdk/lib/libc.dll.a(d000687.o)
+                              /home/max/kolibri-svn/contrib/sdk/lib/libSDLn.a(SDL_getenv.o) (realloc)
+/home/max/kolibri-svn/contrib/sdk/lib/libc.dll.a(d000635.o)
+                              /home/max/kolibri-svn/contrib/sdk/lib/libcurses.a(refresh.o) (memcpy)
+/home/max/kolibri-svn/contrib/sdk/lib/libc.dll.a(d000634.o)
+                              /home/max/kolibri-svn/contrib/sdk/lib/libSDLn.a(SDL_pixels.o) (memcmp)
+/home/max/kolibri-svn/contrib/sdk/lib/libc.dll.a(d000621.o)
+                              /home/max/kolibri-svn/contrib/sdk/lib/libgcc.a(unwind-dw2-fde.o) (malloc)
+/home/max/kolibri-svn/contrib/sdk/lib/libc.dll.a(d000519.o)
+                              /home/max/kolibri-svn/contrib/sdk/lib/libcurses.a(color.o) (getenv)
+/home/max/kolibri-svn/contrib/sdk/lib/libc.dll.a(d000502.o)
+                              /home/max/kolibri-svn/contrib/sdk/lib/libcurses.a(initscr.o) (fwrite)
+/home/max/kolibri-svn/contrib/sdk/lib/libc.dll.a(d000497.o)
+                              /home/max/kolibri-svn/contrib/sdk/lib/libSDLn.a(SDL_rwops.o) (ftell)
+/home/max/kolibri-svn/contrib/sdk/lib/libc.dll.a(d000493.o)
+                              /home/max/kolibri-svn/contrib/sdk/lib/libSDLn.a(SDL_rwops.o) (fseek)
+/home/max/kolibri-svn/contrib/sdk/lib/libc.dll.a(d000488.o)
+                              /home/max/kolibri-svn/contrib/sdk/lib/libgcc.a(unwind-dw2-fde.o) (free)
+/home/max/kolibri-svn/contrib/sdk/lib/libc.dll.a(d000486.o)
+                              /home/max/kolibri-svn/contrib/sdk/lib/libSDLn.a(SDL_rwops.o) (fread)
+/home/max/kolibri-svn/contrib/sdk/lib/libc.dll.a(d000476.o)
+                              /home/max/kolibri-svn/contrib/sdk/lib/libcurses.a(initscr.o) (fprintf)
+/home/max/kolibri-svn/contrib/sdk/lib/libc.dll.a(d000474.o)
+                              /home/max/kolibri-svn/contrib/sdk/lib/libSDLn.a(SDL_rwops.o) (fopen)
+/home/max/kolibri-svn/contrib/sdk/lib/libc.dll.a(d000431.o)
+                              /home/max/kolibri-svn/contrib/sdk/lib/libSDLn.a(SDL_rwops.o) (fclose)
+/home/max/kolibri-svn/contrib/sdk/lib/libc.dll.a(d000419.o)
+                              /home/max/kolibri-svn/contrib/sdk/lib/libcurses.a(initscr.o) (exit)
+/home/max/kolibri-svn/contrib/sdk/lib/libc.dll.a(d000368.o)
+                              /home/max/kolibri-svn/contrib/sdk/lib/libcurses.a(initscr.o) (calloc)
+/home/max/kolibri-svn/contrib/sdk/lib/libc.dll.a(d000360.o)
+                              /home/max/kolibri-svn/contrib/sdk/lib/libcurses.a(pdcscrn.o) (atoi)
+/home/max/kolibri-svn/contrib/sdk/lib/libc.dll.a(d000358.o)
+                              /home/max/kolibri-svn/contrib/sdk/lib/libgcc.a(__main.o) (atexit)
+/home/max/kolibri-svn/contrib/sdk/lib/libc.dll.a(d000334.o)
+                              /home/max/kolibri-svn/contrib/sdk/lib/libgcc.a(unwind-dw2-fde.o) (abort)
+/home/max/kolibri-svn/contrib/sdk/lib/libc.dll.a(d000000.o)
+                              /home/max/kolibri-svn/contrib/sdk/lib/libc.dll.a(d000840.o) (_head_libc_dll)
+/home/max/kolibri-svn/contrib/sdk/lib/libc.dll.a(d000903.o)
+                              /home/max/kolibri-svn/contrib/sdk/lib/libc.dll.a(d000000.o) (libc_dll_iname)
+
+Allocating common symbols
+Common symbol       size              file
+
+__DTOR_LIST__       0x8               /home/max/kolibri-svn/contrib/sdk/lib/libgcc.a(_ctors.o)
+lookdeer3           0x4               xmas.o
+bigdeer0            0x4               xmas.o
+ttytype             0x80              /home/max/kolibri-svn/contrib/sdk/lib/libcurses.a(initscr.o)
+SDL_ProcessEvents   0x20              /home/max/kolibri-svn/contrib/sdk/lib/libSDLn.a(SDL_events.o)
+bigdeer2            0x4               xmas.o
+w_holiday           0x4               xmas.o
+middeer0            0x4               xmas.o
+pdc_own_screen      0x1               /home/max/kolibri-svn/contrib/sdk/lib/libcurses.a(pdcscrn.o)
+treescrn4           0x4               xmas.o
+pdc_fwidth          0x4               /home/max/kolibri-svn/contrib/sdk/lib/libcurses.a(pdcscrn.o)
+middeer2            0x4               xmas.o
+lildeer1            0x4               xmas.o
+treescrn8           0x4               xmas.o
+bigdeer3            0x4               xmas.o
+linesripped         0x28              /home/max/kolibri-svn/contrib/sdk/lib/libcurses.a(kernel.o)
+x_pos               0x4               xmas.o
+pdc_color           0xc00             /home/max/kolibri-svn/contrib/sdk/lib/libcurses.a(pdcscrn.o)
+lildeer2            0x4               xmas.o
+lookdeer4           0x4               xmas.o
+bigdeer4            0x4               xmas.o
+middeer3            0x4               xmas.o
+__CTOR_LIST__       0x8               /home/max/kolibri-svn/contrib/sdk/lib/libgcc.a(_ctors.o)
+pdc_flastc          0x4               /home/max/kolibri-svn/contrib/sdk/lib/libcurses.a(pdcscrn.o)
+lildeer3            0x4               xmas.o
+lildeer0            0x4               xmas.o
+treescrn5           0x4               xmas.o
+y_pos               0x4               xmas.o
+treescrn2           0x4               xmas.o
+treescrn3           0x4               xmas.o
+pdc_mapped          0xc00             /home/max/kolibri-svn/contrib/sdk/lib/libcurses.a(pdcscrn.o)
+lookdeer2           0x4               xmas.o
+pdc_fthick          0x4               /home/max/kolibri-svn/contrib/sdk/lib/libcurses.a(pdcscrn.o)
+treescrn            0x4               xmas.o
+SDL_alarm_callback  0x4               /home/max/kolibri-svn/contrib/sdk/lib/libSDLn.a(SDL_timer.o)
+bigdeer1            0x4               xmas.o
+dotdeer0            0x4               xmas.o
+treescrn7           0x4               xmas.o
+middeer1            0x4               xmas.o
+SDL_KeyRepeat       0x24              /home/max/kolibri-svn/contrib/sdk/lib/libSDLn.a(SDL_keyboard.o)
+w_del_msg           0x4               xmas.o
+lookdeer0           0x4               xmas.o
+stardeer0           0x4               xmas.o
+pdc_fheight         0x4               /home/max/kolibri-svn/contrib/sdk/lib/libcurses.a(pdcscrn.o)
+treescrn6           0x4               xmas.o
+lookdeer1           0x4               xmas.o
+Mouse_status        0x14              /home/max/kolibri-svn/contrib/sdk/lib/libcurses.a(initscr.o)
+
+Discarded input sections
+
+ .drectve       0x0000000000000000      0x32c xmas.o
+ .drectve       0x0000000000000000       0x3c /home/max/kolibri-svn/contrib/sdk/lib/libgcc.a(_ctors.o)
+ .drectve       0x0000000000000000       0x38 /home/max/kolibri-svn/contrib/sdk/lib/libcurses.a(initscr.o)
+ .drectve       0x0000000000000000       0x1c /home/max/kolibri-svn/contrib/sdk/lib/libcurses.a(kernel.o)
+ .drectve       0x0000000000000000       0xa4 /home/max/kolibri-svn/contrib/sdk/lib/libcurses.a(pdcscrn.o)
+ .drectve       0x0000000000000000       0x24 /home/max/kolibri-svn/contrib/sdk/lib/libSDLn.a(SDL_events.o)
+ .drectve       0x0000000000000000       0x20 /home/max/kolibri-svn/contrib/sdk/lib/libSDLn.a(SDL_keyboard.o)
+ .drectve       0x0000000000000000       0x24 /home/max/kolibri-svn/contrib/sdk/lib/libSDLn.a(SDL_timer.o)
+
+Memory Configuration
+
+Name             Origin             Length             Attributes
+*default*        0x0000000000000000 0xffffffffffffffff
+
+Linker script and memory map
+
+                0x0000000000000000                __image_base__ = 0x0
+                0x0000000000000000                __dll__ = 0x0
+                0x0000000000000000                ___ImageBase = 0x0
+                0x0000000000001000                __section_alignment__ = 0x1000
+                0x0000000000000200                __file_alignment__ = 0x200
+                0x0000000000000004                __major_os_version__ = 0x4
+                0x0000000000000000                __minor_os_version__ = 0x0
+                0x0000000000000001                __major_image_version__ = 0x1
+                0x0000000000000000                __minor_image_version__ = 0x0
+                0x0000000000000004                __major_subsystem_version__ = 0x4
+                0x0000000000000000                __minor_subsystem_version__ = 0x0
+                0x0000000000000001                __subsystem__ = 0x1
+                0x0000000000200000                __size_of_stack_reserve__ = 0x200000
+                0x0000000000001000                __size_of_stack_commit__ = 0x1000
+                0x0000000000100000                __size_of_heap_reserve__ = 0x100000
+                0x0000000000001000                __size_of_heap_commit__ = 0x1000
+                0x0000000000000000                __loader_flags__ = 0x0
+                0x0000000000000000                __dll_characteristics__ = 0x0
+
+.text           0x0000000000000000    0x25200
+                0x0000000000000000        0x4 LONG 0x554e454d
+                0x0000000000000004        0x4 LONG 0x32305445
+                0x0000000000000008        0x4 LONG 0x1
+                0x000000000000000c        0x4 LONG 0x34 __start
+                0x0000000000000010        0x4 LONG 0x2a6ab ___iend
+                0x0000000000000014        0x4 LONG 0x3dd40 ___memsize
+                0x0000000000000018        0x4 LONG 0x3dd40 ___stacktop
+                0x000000000000001c        0x4 LONG 0x3d830 ___cmdline
+                0x0000000000000020        0x4 LONG 0x3d930 ___pgmname
+                0x0000000000000024        0x4 LONG 0x1 __subsystem__
+                0x0000000000000028        0x4 LONG 0x2e960 __idata_start
+                0x000000000000002c        0x4 LONG 0x2ec1c __idata_end
+                0x0000000000000030        0x4 LONG 0x24180 _main
+ *(.init)
+ .init          0x0000000000000034       0x84 /home/max/kolibri-svn/contrib/sdk/lib/libgcc.a(_start.o)
+                0x0000000000000034                _start
+ *(.text)
+ *fill*         0x00000000000000b8        0x8 
+ .text          0x00000000000000c0     0x2880 xmas.o
+                0x00000000000000c0                lil
+                0x0000000000000130                midtop
+                0x0000000000000180                bigtop
+                0x00000000000002b0                bigface
+                0x00000000000003b0                legs1
+                0x0000000000000440                legs2
+                0x00000000000004d0                legs3
+                0x0000000000000560                legs4
+                0x00000000000005d0                initdeer
+                0x0000000000000b50                boxit
+                0x0000000000000bd0                seas
+                0x0000000000000cc0                greet
+                0x0000000000000dd0                fromwho
+                0x0000000000000e00                del_msg
+                0x0000000000000e10                tree
+                0x0000000000001330                balls
+                0x0000000000001710                star
+                0x0000000000001760                strng1
+                0x00000000000017e0                strng2
+                0x0000000000001890                strng3
+                0x0000000000001940                strng4
+                0x0000000000001a30                strng5
+                0x0000000000001af0                blinkit
+                0x0000000000001c30                reindeer
+ .text          0x0000000000002940        0x0 /home/max/kolibri-svn/contrib/sdk/lib/libgcc.a(_start.o)
+ .text          0x0000000000002940       0xe0 /home/max/kolibri-svn/contrib/sdk/lib/libgcc.a(__main.o)
+                0x0000000000002940                __do_global_dtors
+                0x0000000000002990                __do_global_ctors
+                0x0000000000002a00                __main
+ .text          0x0000000000002a20        0x0 /home/max/kolibri-svn/contrib/sdk/lib/libgcc.a(_ctors.o)
+ .text          0x0000000000002a20       0x30 /home/max/kolibri-svn/contrib/sdk/lib/libgcc.a(kos32-app.o)
+                0x0000000000002a20                __crt_startup
+ .text          0x0000000000002a50      0x240 /home/max/kolibri-svn/contrib/sdk/lib/libgcc.a(libc-loader.o)
+                0x0000000000002a50                get_entry_point
+                0x0000000000002a60                load_libc
+ .text          0x0000000000002c90     0x13e0 /home/max/kolibri-svn/contrib/sdk/lib/libgcc.a(unwind-dw2-fde.o)
+                0x0000000000003c60                __register_frame_info_bases
+                0x0000000000003c90                __register_frame_info
+                0x0000000000003cc0                __register_frame
+                0x0000000000003d00                __register_frame_info_table_bases
+                0x0000000000003d80                __register_frame_info_table
+                0x0000000000003db0                __register_frame_table
+                0x0000000000003df0                __deregister_frame_info_bases
+                0x0000000000003ee0                __deregister_frame_info
+                0x0000000000003ef0                __deregister_frame
+                0x0000000000003f20                _Unwind_Find_FDE
+ .text          0x0000000000004070      0x350 /home/max/kolibri-svn/contrib/sdk/lib/libgcc.a(gthr-kos32.o)
+                0x0000000000004070                __gthr_kos32_once
+                0x00000000000040e0                __gthr_kos32_key_create
+                0x0000000000004110                __gthr_kos32_key_delete
+                0x0000000000004120                __gthr_kos32_getspecific
+                0x0000000000004140                __gthr_kos32_setspecific
+                0x0000000000004160                __gthr_kos32_mutex_init_function
+                0x0000000000004180                __gthr_kos32_mutex_destroy
+                0x00000000000041a0                __gthr_kos32_mutex_lock
+                0x00000000000041e0                __gthr_kos32_mutex_trylock
+                0x0000000000004210                __gthr_kos32_mutex_unlock
+                0x0000000000004240                __gthr_kos32_recursive_mutex_init_function
+                0x0000000000004270                __gthr_kos32_recursive_mutex_lock
+                0x00000000000042f0                __gthr_kos32_recursive_mutex_trylock
+                0x0000000000004350                __gthr_kos32_recursive_mutex_unlock
+                0x00000000000043a0                __gthr_kos32_recursive_mutex_destroy
+ .text          0x00000000000043c0      0x250 /home/max/kolibri-svn/contrib/sdk/lib/libcurses.a(addstr.o)
+                0x00000000000043c0                waddnstr
+                0x0000000000004430                addstr
+                0x0000000000004460                addnstr
+                0x0000000000004490                waddstr
+                0x00000000000044c0                mvaddstr
+                0x0000000000004510                mvaddnstr
+                0x0000000000004560                mvwaddstr
+                0x00000000000045b0                mvwaddnstr
+ .text          0x0000000000004610      0x110 /home/max/kolibri-svn/contrib/sdk/lib/libcurses.a(move.o)
+                0x0000000000004610                move
+                0x0000000000004660                mvcur
+                0x00000000000046d0                wmove
+ .text          0x0000000000004720      0x6b0 /home/max/kolibri-svn/contrib/sdk/lib/libcurses.a(attr.o)
+                0x0000000000004720                wattroff
+                0x0000000000004750                attroff
+                0x0000000000004780                wattron
+                0x00000000000047e0                attron
+                0x0000000000004840                wattrset
+                0x0000000000004860                attrset
+                0x0000000000004880                standend
+                0x00000000000048a0                standout
+                0x00000000000048c0                wstandend
+                0x00000000000048e0                wstandout
+                0x0000000000004900                getattrs
+                0x0000000000004920                wcolor_set
+                0x0000000000004940                color_set
+                0x0000000000004960                wattr_get
+                0x00000000000049a0                attr_get
+                0x00000000000049e0                wattr_off
+                0x0000000000004a10                attr_off
+                0x0000000000004a40                wattr_on
+                0x0000000000004aa0                attr_on
+                0x0000000000004b00                wattr_set
+                0x0000000000004b30                attr_set
+                0x0000000000004b60                wchgat
+                0x0000000000004c30                chgat
+                0x0000000000004c70                mvchgat
+                0x0000000000004ce0                mvwchgat
+                0x0000000000004d50                underend
+                0x0000000000004d70                wunderend
+                0x0000000000004d90                underscore
+                0x0000000000004db0                wunderscore
+ .text          0x0000000000004dd0      0x860 /home/max/kolibri-svn/contrib/sdk/lib/libcurses.a(initscr.o)
+                0x0000000000004dd0                initscr
+                0x00000000000052b0                endwin
+                0x00000000000052d0                isendwin
+                0x00000000000052f0                newterm
+                0x0000000000005310                set_term
+                0x0000000000005330                delscreen
+                0x0000000000005400                resize_term
+                0x00000000000055c0                is_termresized
+                0x00000000000055d0                curses_version
+                0x00000000000055e0                PDC_get_version
+                0x0000000000005610                set_tabsize
+ .text          0x0000000000005630      0xa70 /home/max/kolibri-svn/contrib/sdk/lib/libcurses.a(slk.o)
+                0x0000000000005750                slk_init
+                0x0000000000005810                slk_set
+                0x0000000000005990                slk_refresh
+                0x00000000000059d0                slk_noutrefresh
+                0x0000000000005a00                slk_label
+                0x0000000000005a50                slk_clear
+                0x0000000000005a90                slk_restore
+                0x0000000000005ad0                slk_touch
+                0x0000000000005b00                slk_attron
+                0x0000000000005b40                slk_attr_on
+                0x0000000000005b50                slk_attroff
+                0x0000000000005b90                slk_attr_off
+                0x0000000000005ba0                slk_attrset
+                0x0000000000005be0                slk_color
+                0x0000000000005c30                slk_attr_set
+                0x0000000000005c50                PDC_slk_initialize
+                0x0000000000005fb0                PDC_slk_free
+                0x0000000000006030                PDC_mouse_in_slk
+ .text          0x00000000000060a0      0x2e0 /home/max/kolibri-svn/contrib/sdk/lib/libcurses.a(inopts.o)
+                0x00000000000060a0                echo
+                0x00000000000060c0                noecho
+                0x00000000000060e0                halfdelay
+                0x0000000000006110                intrflush
+                0x0000000000006120                keypad
+                0x0000000000006140                meta
+                0x0000000000006160                nl
+                0x0000000000006180                nonl
+                0x00000000000061a0                nodelay
+                0x00000000000061c0                notimeout
+                0x00000000000061d0                raw
+                0x0000000000006210                noraw
+                0x0000000000006250                noqiflush
+                0x0000000000006260                qiflush
+                0x0000000000006270                typeahead
+                0x0000000000006280                wtimeout
+                0x00000000000062c0                timeout
+                0x0000000000006300                crmode
+                0x0000000000006320                cbreak
+                0x0000000000006330                nocrmode
+                0x0000000000006350                nocbreak
+                0x0000000000006360                is_keypad
+ .text          0x0000000000006380      0x1f0 /home/max/kolibri-svn/contrib/sdk/lib/libcurses.a(clear.o)
+                0x0000000000006380                wclrtoeol
+                0x0000000000006420                clrtoeol
+                0x0000000000006440                wclrtobot
+                0x00000000000064a0                clrtobot
+                0x00000000000064c0                werase
+                0x0000000000006500                erase
+                0x0000000000006520                wclear
+                0x0000000000006540                clear
+ .text          0x0000000000006570      0x2a0 /home/max/kolibri-svn/contrib/sdk/lib/libcurses.a(touch.o)
+                0x0000000000006570                touchwin
+                0x00000000000065c0                touchline
+                0x0000000000006620                untouchwin
+                0x0000000000006670                wtouchln
+                0x0000000000006700                is_linetouched
+                0x0000000000006730                is_wintouched
+                0x0000000000006770                touchoverlap
+ .text          0x0000000000006810      0x630 /home/max/kolibri-svn/contrib/sdk/lib/libcurses.a(refresh.o)
+                0x0000000000006810                wnoutrefresh
+                0x0000000000006a80                doupdate
+                0x0000000000006d00                wrefresh
+                0x0000000000006d70                refresh
+                0x0000000000006d90                wredrawln
+                0x0000000000006df0                redrawwin
+ .text          0x0000000000006e40      0xae0 /home/max/kolibri-svn/contrib/sdk/lib/libcurses.a(window.o)
+                0x0000000000006e40                PDC_makenew
+                0x0000000000006f50                PDC_makelines
+                0x0000000000007010                PDC_sync
+                0x0000000000007050                newwin
+                0x00000000000070e0                delwin
+                0x0000000000007170                mvwin
+                0x00000000000071d0                subwin
+                0x0000000000007320                derwin
+                0x0000000000007340                mvderwin
+                0x0000000000007410                dupwin
+                0x0000000000007590                resize_window
+                0x0000000000007820                wresize
+                0x0000000000007850                wsyncup
+                0x0000000000007880                syncok
+                0x00000000000078a0                wcursyncup
+                0x00000000000078e0                wsyncdown
+ .text          0x0000000000007920      0x3e0 /home/max/kolibri-svn/contrib/sdk/lib/libcurses.a(overlay.o)
+                0x0000000000007ab0                _copy_overlap
+                0x0000000000007bc0                overlay
+                0x0000000000007bf0                overwrite
+                0x0000000000007c20                copywin
+ .text          0x0000000000007d00      0x3f0 /home/max/kolibri-svn/contrib/sdk/lib/libcurses.a(kernel.o)
+                0x0000000000007e40                def_shell_mode
+                0x0000000000007e70                resetty
+                0x0000000000007e90                savetty
+                0x0000000000007ec0                curs_set
+                0x0000000000007f30                napms
+                0x0000000000007fd0                ripoffline
+                0x0000000000008020                draino
+                0x0000000000008030                resetterm
+                0x0000000000008060                reset_shell_mode
+                0x0000000000008070                fixterm
+                0x00000000000080a0                reset_prog_mode
+                0x00000000000080b0                saveterm
+                0x00000000000080e0                def_prog_mode
+ .text          0x00000000000080f0      0x980 /home/max/kolibri-svn/contrib/sdk/lib/libcurses.a(border.o)
+                0x00000000000080f0                wborder
+                0x00000000000085b0                border
+                0x0000000000008610                box
+                0x0000000000008660                whline
+                0x0000000000008760                hline
+                0x0000000000008790                mvhline
+                0x00000000000087e0                mvwhline
+                0x0000000000008840                wvline
+                0x0000000000008990                vline
+                0x00000000000089c0                mvvline
+                0x0000000000008a10                mvwvline
+ .text          0x0000000000008a70      0x530 /home/max/kolibri-svn/contrib/sdk/lib/libcurses.a(pad.o)
+                0x0000000000008a70                newpad
+                0x0000000000008b20                subpad
+                0x0000000000008c90                pnoutrefresh
+                0x0000000000008eb0                prefresh
+                0x0000000000008f00                pechochar
+                0x0000000000008f80                is_pad
+ .text          0x0000000000008fa0      0x560 /home/max/kolibri-svn/contrib/sdk/lib/libcurses.a(addch.o)
+                0x0000000000008fa0                waddch
+                0x0000000000009280                addch
+                0x00000000000092a0                mvaddch
+                0x00000000000092f0                mvwaddch
+                0x0000000000009340                wechochar
+                0x0000000000009380                echochar
+                0x00000000000093a0                waddrawch
+                0x00000000000093e0                addrawch
+                0x0000000000009430                mvaddrawch
+                0x0000000000009490                mvwaddrawch
+ .text          0x0000000000009500      0x180 /home/max/kolibri-svn/contrib/sdk/lib/libcurses.a(outopts.o)
+                0x0000000000009500                clearok
+                0x0000000000009520                idlok
+                0x0000000000009530                idcok
+                0x0000000000009540                immedok
+                0x0000000000009560                leaveok
+                0x00000000000095a0                setscrreg
+                0x00000000000095e0                wsetscrreg
+                0x0000000000009620                scrollok
+                0x0000000000009640                raw_output
+                0x0000000000009660                is_leaveok
+ .text          0x0000000000009680      0x620 /home/max/kolibri-svn/contrib/sdk/lib/libcurses.a(color.o)
+                0x0000000000009750                init_pair
+                0x00000000000097c0                has_colors
+                0x00000000000097e0                init_color
+                0x0000000000009880                color_content
+                0x0000000000009940                can_change_color
+                0x0000000000009950                pair_content
+                0x00000000000099a0                assume_default_colors
+                0x0000000000009a00                use_default_colors
+                0x0000000000009a30                PDC_set_line_color
+                0x0000000000009a70                PDC_init_atrtab
+                0x0000000000009af0                start_color
+                0x0000000000009b60                free_pair
+                0x0000000000009ba0                find_pair
+                0x0000000000009bf0                alloc_pair
+ .text          0x0000000000009ca0      0x160 /home/max/kolibri-svn/contrib/sdk/lib/libcurses.a(printw.o)
+                0x0000000000009ca0                vwprintw
+                0x0000000000009d00                printw
+                0x0000000000009d30                wprintw
+                0x0000000000009d60                mvprintw
+                0x0000000000009da0                mvwprintw
+                0x0000000000009df0                vw_printw
+ .text          0x0000000000009e00       0x30 /home/max/kolibri-svn/contrib/sdk/lib/libcurses.a(pdcgetsc.o)
+                0x0000000000009e00                PDC_get_cursor_mode
+                0x0000000000009e10                PDC_get_rows
+                0x0000000000009e20                PDC_get_columns
+ .text          0x0000000000009e30      0xa40 /home/max/kolibri-svn/contrib/sdk/lib/libcurses.a(pdcscrn.o)
+                0x0000000000009e70                PDC_retile
+                0x0000000000009f50                PDC_scr_close
+                0x0000000000009f60                PDC_scr_free
+                0x0000000000009f70                PDC_scr_open
+                0x000000000000a5f0                PDC_resize_screen
+                0x000000000000a6c0                PDC_reset_prog_mode
+                0x000000000000a6e0                PDC_reset_shell_mode
+                0x000000000000a700                PDC_restore_screen_mode
+                0x000000000000a710                PDC_save_screen_mode
+                0x000000000000a720                PDC_can_change_color
+                0x000000000000a730                PDC_color_content
+                0x000000000000a7b0                PDC_init_color
+ .text          0x000000000000a870      0x100 /home/max/kolibri-svn/contrib/sdk/lib/libcurses.a(pdcsetsc.o)
+                0x000000000000a870                PDC_curs_set
+                0x000000000000a8a0                PDC_set_title
+                0x000000000000a8c0                PDC_set_blink
+                0x000000000000a950                PDC_set_bold
+ .text          0x000000000000a970      0x9b0 /home/max/kolibri-svn/contrib/sdk/lib/libcurses.a(pdcdisp.o)
+                0x000000000000ab30                PDC_update_rects
+                0x000000000000ab80                _new_packet
+                0x000000000000af70                PDC_transform_line
+                0x000000000000b030                PDC_gotoyx
+                0x000000000000b1e0                PDC_blink_text
+                0x000000000000b300                PDC_doupdate
+ .text          0x000000000000b320      0x670 /home/max/kolibri-svn/contrib/sdk/lib/libcurses.a(pdckbd.o)
+                0x000000000000b320                PDC_set_keyboard_binary
+                0x000000000000b330                PDC_check_key
+                0x000000000000b350                PDC_get_key
+                0x000000000000b920                PDC_flushinp
+                0x000000000000b940                PDC_has_mouse
+                0x000000000000b950                PDC_mouse_set
+                0x000000000000b980                PDC_modifiers_set
+ .text          0x000000000000b990       0x60 /home/max/kolibri-svn/contrib/sdk/lib/libcurses.a(pdcutil.o)
+                0x000000000000b990                PDC_beep
+                0x000000000000b9a0                PDC_napms
+                0x000000000000b9e0                PDC_sysname
+ .text          0x000000000000b9f0      0x1b0 /home/max/kolibri-svn/contrib/sdk/lib/libcurses.a(scroll.o)
+                0x000000000000b9f0                wscrl
+                0x000000000000bb60                scrl
+                0x000000000000bb80                scroll
+ .text          0x000000000000bba0      0x168 /home/max/kolibri-svn/contrib/sdk/lib/libSDLn.a(SDL.o)
+                0x000000000000bba0                SDL_InitSubSystem
+                0x000000000000bc62                SDL_Init
+                0x000000000000bc8f                SDL_QuitSubSystem
+                0x000000000000bcdb                SDL_WasInit
+                0x000000000000bcef                SDL_Quit
+                0x000000000000bcff                SDL_Linked_Version
+ .text          0x000000000000bd08      0x4bc /home/max/kolibri-svn/contrib/sdk/lib/libSDLn.a(SDL_error.o)
+                0x000000000000bd08                SDL_printf
+                0x000000000000bd52                SDL_GetErrorMsgUNICODE
+                0x000000000000bfe7                SDL_GetErrorMsg
+                0x000000000000c03e                SDL_GetError
+                0x000000000000c050                SDL_SetError
+                0x000000000000c16f                SDL_ClearError
+                0x000000000000c17a                SDL_Error
+ .text          0x000000000000c1c4       0x18 /home/max/kolibri-svn/contrib/sdk/lib/libSDLn.a(SDL_fatal.o)
+                0x000000000000c1c4                SDL_printf_error
+                0x000000000000c1d9                SDL_InstallParachute
+                0x000000000000c1da                SDL_UninstallParachute
+ .text          0x000000000000c1dc      0x13c /home/max/kolibri-svn/contrib/sdk/lib/libSDLn.a(SDL_getenv.o)
+                0x000000000000c1dc                SDL_putenv
+                0x000000000000c2b8                SDL_getenv
+ .text          0x000000000000c318      0xa84 /home/max/kolibri-svn/contrib/sdk/lib/libSDLn.a(SDL_kolibri_audio.o)
+                0x000000000000c531                SDL_AudioInit
+                0x000000000000c570                SDL_AudioQuit
+                0x000000000000c571                SDL_AudioDriverName
+                0x000000000000c597                SDL_OpenAudio
+                0x000000000000ccd5                SDL_CloseAudio
+                0x000000000000cd23                SDL_PauseAudio
+                0x000000000000cd62                SDL_LockAudio
+                0x000000000000cd90                SDL_UnlockAudio
+ .text          0x000000000000cd9c      0x5f0 /home/max/kolibri-svn/contrib/sdk/lib/libSDLn.a(SDL_events.o)
+                0x000000000000ce26                SDL_Lock_EventThread
+                0x000000000000ce5b                SDL_Unlock_EventThread
+                0x000000000000ce7e                SDL_EventThreadID
+                0x000000000000ce84                SDL_StopEventLoop
+                0x000000000000cee2                SDL_StartEventLoop
+                0x000000000000cfcb                SDL_PeepEvents
+                0x000000000000d1fa                SDL_PumpEvents
+                0x000000000000d21a                SDL_PollEvent
+                0x000000000000d232                SDL_WaitEvent
+                0x000000000000d263                SDL_PushEvent
+                0x000000000000d276                SDL_SetEventFilter
+                0x000000000000d291                SDL_GetEventFilter
+                0x000000000000d297                SDL_EventState
+                0x000000000000d339                SDL_PrivateSysWMEvent
+ .text          0x000000000000d38c      0xc0c /home/max/kolibri-svn/contrib/sdk/lib/libSDLn.a(SDL_keyboard.o)
+                0x000000000000d38c                SDL_EnableUNICODE
+                0x000000000000d3a0                SDL_GetKeyState
+                0x000000000000d3b4                SDL_GetModState
+                0x000000000000d3ba                SDL_SetModState
+                0x000000000000d3c4                SDL_GetKeyName
+                0x000000000000d3e6                SDL_PrivateKeyboard
+                0x000000000000d5b5                SDL_ResetKeyboard
+                0x000000000000d5fb                SDL_CheckKeyRepeat
+                0x000000000000d5fc                SDL_EnableKeyRepeat
+                0x000000000000d643                SDL_KeyboardInit
+ .text          0x000000000000df98      0x3dc /home/max/kolibri-svn/contrib/sdk/lib/libSDLn.a(SDL_mouse.o)
+                0x000000000000dfdb                SDL_MouseInit
+                0x000000000000e009                SDL_GetMouseState
+                0x000000000000e031                SDL_GetRelativeMouseState
+                0x000000000000e06b                SDL_PrivateMouseMotion
+                0x000000000000e1fa                SDL_PrivateMouseButton
+ .text          0x000000000000e374       0x3c /home/max/kolibri-svn/contrib/sdk/lib/libSDLn.a(SDL_quit.o)
+                0x000000000000e374                SDL_QuitInit
+                0x000000000000e377                SDL_PrivateQuit
+ .text          0x000000000000e3b0      0x27c /home/max/kolibri-svn/contrib/sdk/lib/libSDLn.a(SDL_rwops.o)
+                0x000000000000e568                SDL_AllocRW
+                0x000000000000e585                SDL_RWFromFP
+                0x000000000000e5b8                SDL_RWFromFile
+                0x000000000000e5ed                SDL_RWFromMem
+                0x000000000000e625                SDL_FreeRW
+ .text          0x000000000000e62c       0x6c /home/max/kolibri-svn/contrib/sdk/lib/libSDLn.a(SDL_sysmutex.o)
+                0x000000000000e62c                SDL_CreateMutex
+                0x000000000000e66e                SDL_DestroyMutex
+                0x000000000000e691                SDL_mutexP
+                0x000000000000e694                SDL_mutexV
+ .text          0x000000000000e698       0x50 /home/max/kolibri-svn/contrib/sdk/lib/libSDLn.a(SDL_syssem.o)
+                0x000000000000e698                SDL_CreateSemaphore
+                0x000000000000e6a6                SDL_DestroySemaphore
+                0x000000000000e6a7                SDL_SemTryWait
+                0x000000000000e6b6                SDL_SemWaitTimeout
+                0x000000000000e6c5                SDL_SemWait
+                0x000000000000e6d4                SDL_SemValue
+                0x000000000000e6d7                SDL_SemPost
+ .text          0x000000000000e6e8       0x18 /home/max/kolibri-svn/contrib/sdk/lib/libSDLn.a(SDL_systhread.o)
+                0x000000000000e6e8                SDL_SYS_CreateThread
+                0x000000000000e6f7                SDL_SYS_SetupThread
+                0x000000000000e6f8                SDL_ThreadID
+                0x000000000000e6fb                SDL_SYS_WaitThread
+                0x000000000000e6fc                SDL_SYS_KillThread
+ .text          0x000000000000e700      0x300 /home/max/kolibri-svn/contrib/sdk/lib/libSDLn.a(SDL_thread.o)
+                0x000000000000e73f                SDL_ThreadsInit
+                0x000000000000e768                SDL_ThreadsQuit
+                0x000000000000e783                SDL_GetErrBuf
+                0x000000000000e7dd                SDL_RunThread
+                0x000000000000e811                SDL_CreateThread
+                0x000000000000e990                SDL_WaitThread
+                0x000000000000e9d3                SDL_GetThreadID
+                0x000000000000e9e3                SDL_KillThread
+ .text          0x000000000000ea00      0x368 /home/max/kolibri-svn/contrib/sdk/lib/libSDLn.a(SDL_timer.o)
+                0x000000000000ea06                SDL_SetTimerThreaded
+                0x000000000000ea2a                SDL_ThreadedTimerCheck
+                0x000000000000eb0f                SDL_AddTimer
+                0x000000000000ebc3                SDL_RemoveTimer
+                0x000000000000ec2b                SDL_SetTimer
+                0x000000000000ecdc                SDL_TimerInit
+                0x000000000000ed25                SDL_TimerQuit
+ .text          0x000000000000ed68       0x5c /home/max/kolibri-svn/contrib/sdk/lib/libSDLn.a(SDL_systimer.o)
+                0x000000000000ed68                SDL_StartTicks
+                0x000000000000ed7c                SDL_GetTicks
+                0x000000000000ed94                SDL_Delay
+                0x000000000000edb9                SDL_SYS_TimerInit
+                0x000000000000edbc                SDL_SYS_TimerQuit
+                0x000000000000edbd                SDL_SYS_StartTimer
+                0x000000000000edc0                SDL_SYS_StopTimer
+ .text          0x000000000000edc4      0x7ec /home/max/kolibri-svn/contrib/sdk/lib/libSDLn.a(SDL_bmp.o)
+                0x000000000000edc4                SDL_LoadBMP_RW
+                0x000000000000f23d                SDL_SaveBMP_RW
+ .text          0x000000000000f5b0      0xe5c /home/max/kolibri-svn/contrib/sdk/lib/libSDLn.a(SDL_cursor.o)
+                0x000000000000f5b0                SDL_GetCursor
+                0x000000000000f5b6                SDL_WarpMouse
+                0x000000000000f618                SDL_CursorPaletteChanged
+                0x000000000000f623                SDL_MouseRect
+                0x000000000000f6aa                SDL_DrawCursorNoLock
+                0x000000000000fcce                SDL_DrawCursor
+                0x000000000000fd44                SDL_EraseCursorNoLock
+                0x000000000000fe86                SDL_EraseCursor
+                0x000000000000fefc                SDL_SetCursor
+                0x000000000001004c                SDL_FreeCursor
+                0x00000000000100b7                SDL_CursorQuit
+                0x000000000001011d                SDL_CreateCursor
+                0x000000000001028b                SDL_CursorInit
+                0x00000000000102d7                SDL_ShowCursor
+                0x0000000000010351                SDL_MoveCursor
+                0x00000000000103dc                SDL_ResetCursor
+ .text          0x000000000001040c      0xb84 /home/max/kolibri-svn/contrib/sdk/lib/libSDLn.a(SDL_pixels.o)
+                0x000000000001046f                SDL_FreeFormat
+                0x00000000000104a0                SDL_AllocFormat
+                0x000000000001074c                SDL_DitherColors
+                0x000000000001075d                SDL_CalculatePitch
+                0x0000000000010791                SDL_FindColor
+                0x00000000000108d7                SDL_MapRGB
+                0x0000000000010931                SDL_MapRGBA
+                0x00000000000109a4                SDL_GetRGBA
+                0x0000000000010a8e                SDL_GetRGB
+                0x0000000000010b3e                SDL_ApplyGamma
+                0x0000000000010b91                SDL_InvalidateMap
+                0x0000000000010bbe                SDL_FormatChanged
+                0x0000000000010bce                SDL_ReallocFormat
+                0x0000000000010c09                SDL_MapSurface
+                0x0000000000010f0b                SDL_FreeBlitMap
+                0x0000000000010f35                SDL_AllocBlitMap
+ .text          0x0000000000010f90      0xbe0 /home/max/kolibri-svn/contrib/sdk/lib/libSDLn.a(SDL_surface.o)
+                0x0000000000011005                SDL_SetColorKey
+                0x00000000000110c8                SDL_SetAlpha
+                0x00000000000111d7                SDL_SetClipRect
+                0x000000000001122f                SDL_GetClipRect
+                0x000000000001124b                SDL_LowerBlit
+                0x00000000000112ac                SDL_UpperBlit
+                0x000000000001144c                SDL_LockSurface
+                0x000000000001149a                SDL_UnlockSurface
+                0x00000000000114dc                SDL_FillRect
+                0x00000000000116dc                SDL_FreeSurface
+                0x0000000000011780                SDL_CreateRGBSurface
+                0x0000000000011920                SDL_CreateRGBSurfaceFrom
+                0x000000000001197a                SDL_ConvertSurface
+ .text          0x0000000000011b70     0x16b8 /home/max/kolibri-svn/contrib/sdk/lib/libSDLn.a(SDL_video.o)
+                0x0000000000011ba3                SDL_VideoDriverName
+                0x0000000000011bd2                SDL_GetVideoSurface
+                0x0000000000011be5                SDL_GetVideoInfo
+                0x0000000000011bf5                SDL_ListModes
+                0x0000000000011c21                SDL_VideoModeOK
+                0x0000000000011cf1                SDL_DisplayFormat
+                0x0000000000011d38                SDL_DisplayFormatAlpha
+                0x0000000000011e23                SDL_UpdateRects
+                0x0000000000011fdf                SDL_UpdateRect
+                0x000000000001218b                SDL_Flip
+                0x0000000000012254                SDL_SetPalette
+                0x00000000000123a4                SDL_SetColors
+                0x00000000000123bf                SDL_GL_LoadLibrary
+                0x00000000000123e8                SDL_GL_GetProcAddress
+                0x000000000001241c                SDL_GL_SetAttribute
+                0x00000000000124a5                SDL_GL_GetAttribute
+                0x00000000000124d7                SDL_GL_SwapBuffers
+                0x00000000000124ed                SDL_GL_UpdateRectsLock
+                0x00000000000124ee                SDL_GL_UpdateRects
+                0x00000000000124ef                SDL_GL_Lock
+                0x00000000000124f0                SDL_GL_Unlock
+                0x00000000000124f1                SDL_WM_SetCaption
+                0x00000000000125aa                SDL_WM_GetCaption
+                0x00000000000125d6                SDL_WM_SetIcon
+                0x00000000000127c9                SDL_WM_GrabInput
+                0x000000000001280f                SDL_SetVideoMode
+                0x0000000000012de2                SDL_VideoQuit
+                0x0000000000012f16                SDL_VideoInit
+                0x000000000001315b                SDL_WM_IconifyWindow
+                0x0000000000013172                SDL_WM_ToggleFullScreen
+                0x0000000000013205                SDL_GetWMInfo
+ .text          0x0000000000013228      0x638 /home/max/kolibri-svn/contrib/sdk/lib/libSDLn.a(SDL_menuetvideo.o)
+                0x0000000000013230                MenuetOS_SetColors
+                0x0000000000013233                MenuetOS_SetCaption
+                0x00000000000132b6                KolibriOS_FreeWMCursor
+                0x00000000000132df                KolibriOS_ShowWMCursor
+                0x00000000000134d8                MenuetOS_VideoQuit
+                0x0000000000013573                KolibriOS_CheckMouseMode
+                0x0000000000013586                KolibriOS_CreateWMCursor
+                0x0000000000013689                MenuetOS_SDL_RepaintWnd
+                0x000000000001371c                MenuetOS_SetVideoMode
+                0x000000000001385d                MenuetOS_FinalQuit
+ .text          0x0000000000013860      0x184 /home/max/kolibri-svn/contrib/sdk/lib/libSDLn.a(SDL_endian.o)
+                0x0000000000013863                SDL_ReadLE16
+                0x000000000001387e                SDL_ReadBE16
+                0x000000000001389b                SDL_ReadLE32
+                0x00000000000138b5                SDL_ReadBE32
+                0x00000000000138d0                SDL_ReadLE64
+                0x00000000000138f3                SDL_ReadBE64
+                0x0000000000013924                SDL_WriteLE16
+                0x0000000000013942                SDL_WriteBE16
+                0x0000000000013962                SDL_WriteLE32
+                0x0000000000013977                SDL_WriteBE32
+                0x0000000000013999                SDL_WriteLE64
+                0x00000000000139ae                SDL_WriteBE64
+ .text          0x00000000000139e4       0xb0 /home/max/kolibri-svn/contrib/sdk/lib/libSDLn.a(SDL_active.o)
+                0x00000000000139e4                SDL_AppActiveInit
+                0x00000000000139ee                SDL_GetAppState
+                0x00000000000139f4                SDL_PrivateAppActive
+ .text          0x0000000000013a94       0xac /home/max/kolibri-svn/contrib/sdk/lib/libSDLn.a(SDL_resize.o)
+                0x0000000000013a94                SDL_PrivateResize
+ .text          0x0000000000013b40     0x3b38 /home/max/kolibri-svn/contrib/sdk/lib/libSDLn.a(SDL_RLEaccel.o)
+                0x0000000000013ff0                SDL_RLEBlit
+                0x00000000000162b2                SDL_RLEAlphaBlit
+                0x0000000000016be0                SDL_UnRLESurface
+                0x0000000000016dc1                SDL_RLESurface
+ .text          0x0000000000017678      0x4c4 /home/max/kolibri-svn/contrib/sdk/lib/libSDLn.a(SDL_blit.o)
+                0x0000000000017981                SDL_CalculateBlit
+ .text          0x0000000000017b3c      0xb68 /home/max/kolibri-svn/contrib/sdk/lib/libSDLn.a(SDL_blit_0.o)
+                0x000000000001863b                SDL_CalculateBlit0
+ .text          0x00000000000186a4     0x20a0 /home/max/kolibri-svn/contrib/sdk/lib/libSDLn.a(SDL_blit_1.o)
+                0x000000000001a6dc                SDL_CalculateBlit1
+ .text          0x000000000001a744     0x4474 /home/max/kolibri-svn/contrib/sdk/lib/libSDLn.a(SDL_blit_N.o)
+                0x000000000001ea3c                SDL_CalculateBlitN
+ .text          0x000000000001ebb8      0x290 /home/max/kolibri-svn/contrib/sdk/lib/libSDLn.a(SDL_menuetevents.o)
+                0x000000000001ebb8                MenuetOS_InitOSKeymap
+                0x000000000001ebcc                MenuetOS_PumpEvents
+ .text          0x000000000001ee48       0x2b /home/max/kolibri-svn/contrib/sdk/lib/libSDLn.a(mmx_main.o)
+                0x000000000001ee48                ConvertMMX
+                0x000000000001ee48                ConvertMMX
+ *fill*         0x000000000001ee73        0x1 
+ .text          0x000000000001ee74      0x34c /home/max/kolibri-svn/contrib/sdk/lib/libSDLn.a(mmxp2_32.o)
+                0x000000000001ee74                ConvertMMXpII32_24RGB888
+                0x000000000001ee74                ConvertMMXpII32_24RGB888
+                0x000000000001eeff                ConvertMMXpII32_16RGB565
+                0x000000000001eeff                ConvertMMXpII32_16RGB565
+                0x000000000001efb6                ConvertMMXpII32_16BGR565
+                0x000000000001efb6                ConvertMMXpII32_16BGR565
+                0x000000000001f073                ConvertMMXpII32_16BGR555
+                0x000000000001f073                ConvertMMXpII32_16BGR555
+                0x000000000001f083                ConvertMMXpII32_16RGB555
+                0x000000000001f083                ConvertMMXpII32_16RGB555
+ .text          0x000000000001f1c0       0x60 /home/max/kolibri-svn/contrib/sdk/lib/libSDLn.a(x86_main.o)
+                0x000000000001f1c0                ConvertX86
+                0x000000000001f1c0                ConvertX86
+                0x000000000001f1e9                Hermes_X86_CPU
+                0x000000000001f1e9                Hermes_X86_CPU
+ .text          0x000000000001f220      0x35d /home/max/kolibri-svn/contrib/sdk/lib/libSDLn.a(x86p_16.o)
+                0x000000000001f220                ConvertX86p16_16BGR565
+                0x000000000001f220                ConvertX86p16_16BGR565
+                0x000000000001f2e9                ConvertX86p16_16RGB555
+                0x000000000001f2e9                ConvertX86p16_16RGB555
+                0x000000000001f3a5                ConvertX86p16_16BGR555
+                0x000000000001f3a5                ConvertX86p16_16BGR555
+                0x000000000001f488                ConvertX86p16_8RGB332
+                0x000000000001f488                ConvertX86p16_8RGB332
+ *fill*         0x000000000001f57d        0x3 
+ .text          0x000000000001f580      0x622 /home/max/kolibri-svn/contrib/sdk/lib/libSDLn.a(x86p_32.o)
+                0x000000000001f580                ConvertX86p32_32BGR888
+                0x000000000001f580                ConvertX86p32_32BGR888
+                0x000000000001f5ec                ConvertX86p32_32RGBA888
+                0x000000000001f5ec                ConvertX86p32_32RGBA888
+                0x000000000001f64c                ConvertX86p32_32BGRA888
+                0x000000000001f64c                ConvertX86p32_32BGRA888
+                0x000000000001f6a6                ConvertX86p32_24RGB888
+                0x000000000001f6a6                ConvertX86p32_24RGB888
+                0x000000000001f741                ConvertX86p32_24BGR888
+                0x000000000001f741                ConvertX86p32_24BGR888
+                0x000000000001f7d9                ConvertX86p32_16RGB565
+                0x000000000001f7d9                ConvertX86p32_16RGB565
+                0x000000000001f89c                ConvertX86p32_16BGR565
+                0x000000000001f89c                ConvertX86p32_16BGR565
+                0x000000000001f967                ConvertX86p32_16RGB555
+                0x000000000001f967                ConvertX86p32_16RGB555
+                0x000000000001fa2a                ConvertX86p32_16BGR555
+                0x000000000001fa2a                ConvertX86p32_16BGR555
+                0x000000000001faf5                ConvertX86p32_8RGB332
+                0x000000000001faf5                ConvertX86p32_8RGB332
+ *fill*         0x000000000001fba2        0x2 
+ .text          0x000000000001fba4     0x433c /home/max/kolibri-svn/contrib/sdk/lib/libSDLn.a(SDL_blit_A.o)
+                0x0000000000023d2d                SDL_CalculateAlphaBlit
+ .text          0x0000000000023ee0       0xbf /home/max/kolibri-svn/contrib/sdk/lib/libsound.a(init.o)
+                0x0000000000023ee0                InitSound@4
+                0x0000000000023f44                CreateBuffer@12
+                0x0000000000023f74                DestroyBuffer@4
+ *fill*         0x0000000000023f9f        0x1 
+ .text          0x0000000000023fa0       0x57 /home/max/kolibri-svn/contrib/sdk/lib/libsound.a(setbuf.o)
+                0x0000000000023fa0                SetBuffer@16
+                0x0000000000023fcc                PlayBuffer@8
+ *fill*         0x0000000000023ff7        0x9 
+ .text          0x0000000000024000       0x64 /home/max/kolibri-svn/contrib/sdk/lib/libsound.a(sndgetsize.o)
+                0x0000000000024000                GetBufferSize@8
+                0x0000000000024030                GetBufferFree@8
+ *fill*         0x0000000000024064        0xc 
+ .text          0x0000000000024070       0x2b /home/max/kolibri-svn/contrib/sdk/lib/libsound.a(stopbuf.o)
+                0x0000000000024070                StopBuffer@4
+ *fill*         0x000000000002409b        0x1 
+ .text          0x000000000002409c        0x8 /home/max/kolibri-svn/contrib/sdk/lib/libc.dll.a(d000840.o)
+                0x000000000002409c                vsprintf
+ .text          0x00000000000240a4        0x8 /home/max/kolibri-svn/contrib/sdk/lib/libc.dll.a(d000839.o)
+                0x00000000000240a4                vsnprintf
+ .text          0x00000000000240ac        0x8 /home/max/kolibri-svn/contrib/sdk/lib/libc.dll.a(d000834.o)
+                0x00000000000240ac                vprintf
+ .text          0x00000000000240b4        0x8 /home/max/kolibri-svn/contrib/sdk/lib/libc.dll.a(d000799.o)
+                0x00000000000240b4                tls_free
+ .text          0x00000000000240bc        0x8 /home/max/kolibri-svn/contrib/sdk/lib/libc.dll.a(d000798.o)
+                0x00000000000240bc                tls_alloc
+ .text          0x00000000000240c4        0x8 /home/max/kolibri-svn/contrib/sdk/lib/libc.dll.a(d000765.o)
+                0x00000000000240c4                strncpy
+ .text          0x00000000000240cc        0x8 /home/max/kolibri-svn/contrib/sdk/lib/libc.dll.a(d000764.o)
+                0x00000000000240cc                strncmp
+ .text          0x00000000000240d4        0x8 /home/max/kolibri-svn/contrib/sdk/lib/libc.dll.a(d000760.o)
+                0x00000000000240d4                strlen
+ .text          0x00000000000240dc        0x8 /home/max/kolibri-svn/contrib/sdk/lib/libc.dll.a(d000752.o)
+                0x00000000000240dc                strcpy
+ .text          0x00000000000240e4        0x8 /home/max/kolibri-svn/contrib/sdk/lib/libc.dll.a(d000735.o)
+                0x00000000000240e4                sprintf
+ .text          0x00000000000240ec        0x8 /home/max/kolibri-svn/contrib/sdk/lib/libc.dll.a(d000687.o)
+                0x00000000000240ec                realloc
+ .text          0x00000000000240f4        0x8 /home/max/kolibri-svn/contrib/sdk/lib/libc.dll.a(d000635.o)
+                0x00000000000240f4                memcpy
+ .text          0x00000000000240fc        0x8 /home/max/kolibri-svn/contrib/sdk/lib/libc.dll.a(d000634.o)
+                0x00000000000240fc                memcmp
+ .text          0x0000000000024104        0x8 /home/max/kolibri-svn/contrib/sdk/lib/libc.dll.a(d000621.o)
+                0x0000000000024104                malloc
+ .text          0x000000000002410c        0x8 /home/max/kolibri-svn/contrib/sdk/lib/libc.dll.a(d000519.o)
+                0x000000000002410c                getenv
+ .text          0x0000000000024114        0x8 /home/max/kolibri-svn/contrib/sdk/lib/libc.dll.a(d000502.o)
+                0x0000000000024114                fwrite
+ .text          0x000000000002411c        0x8 /home/max/kolibri-svn/contrib/sdk/lib/libc.dll.a(d000497.o)
+                0x000000000002411c                ftell
+ .text          0x0000000000024124        0x8 /home/max/kolibri-svn/contrib/sdk/lib/libc.dll.a(d000493.o)
+                0x0000000000024124                fseek
+ .text          0x000000000002412c        0x8 /home/max/kolibri-svn/contrib/sdk/lib/libc.dll.a(d000488.o)
+                0x000000000002412c                free
+ .text          0x0000000000024134        0x8 /home/max/kolibri-svn/contrib/sdk/lib/libc.dll.a(d000486.o)
+                0x0000000000024134                fread
+ .text          0x000000000002413c        0x8 /home/max/kolibri-svn/contrib/sdk/lib/libc.dll.a(d000476.o)
+                0x000000000002413c                fprintf
+ .text          0x0000000000024144        0x8 /home/max/kolibri-svn/contrib/sdk/lib/libc.dll.a(d000474.o)
+                0x0000000000024144                fopen
+ .text          0x000000000002414c        0x8 /home/max/kolibri-svn/contrib/sdk/lib/libc.dll.a(d000431.o)
+                0x000000000002414c                fclose
+ .text          0x0000000000024154        0x8 /home/max/kolibri-svn/contrib/sdk/lib/libc.dll.a(d000419.o)
+                0x0000000000024154                exit
+ .text          0x000000000002415c        0x8 /home/max/kolibri-svn/contrib/sdk/lib/libc.dll.a(d000368.o)
+                0x000000000002415c                calloc
+ .text          0x0000000000024164        0x8 /home/max/kolibri-svn/contrib/sdk/lib/libc.dll.a(d000360.o)
+                0x0000000000024164                atoi
+ .text          0x000000000002416c        0x8 /home/max/kolibri-svn/contrib/sdk/lib/libc.dll.a(d000358.o)
+                0x000000000002416c                atexit
+ .text          0x0000000000024174        0x8 /home/max/kolibri-svn/contrib/sdk/lib/libc.dll.a(d000334.o)
+                0x0000000000024174                abort
+ *(SORT(.text$*))
+ *(.text.*)
+ .text.unlikely
+                0x000000000002417c        0x0 xmas.o
+ *fill*         0x000000000002417c        0x4 
+ .text.startup  0x0000000000024180      0xe80 xmas.o
+                0x0000000000024180                main
+ .text.unlikely
+                0x0000000000025000        0x0 /home/max/kolibri-svn/contrib/sdk/lib/libgcc.a(__main.o)
+ .text.unlikely
+                0x0000000000025000        0x0 /home/max/kolibri-svn/contrib/sdk/lib/libgcc.a(kos32-app.o)
+ .text.unlikely
+                0x0000000000025000        0x0 /home/max/kolibri-svn/contrib/sdk/lib/libgcc.a(libc-loader.o)
+ .text.unlikely
+                0x0000000000025000        0x0 /home/max/kolibri-svn/contrib/sdk/lib/libgcc.a(unwind-dw2-fde.o)
+ .text.unlikely
+                0x0000000000025000        0x0 /home/max/kolibri-svn/contrib/sdk/lib/libgcc.a(gthr-kos32.o)
+ .text.unlikely
+                0x0000000000025000        0x0 /home/max/kolibri-svn/contrib/sdk/lib/libcurses.a(addstr.o)
+ .text.unlikely
+                0x0000000000025000        0x0 /home/max/kolibri-svn/contrib/sdk/lib/libcurses.a(move.o)
+ .text.unlikely
+                0x0000000000025000        0x0 /home/max/kolibri-svn/contrib/sdk/lib/libcurses.a(attr.o)
+ .text.unlikely
+                0x0000000000025000        0x0 /home/max/kolibri-svn/contrib/sdk/lib/libcurses.a(initscr.o)
+ .text.unlikely
+                0x0000000000025000        0x0 /home/max/kolibri-svn/contrib/sdk/lib/libcurses.a(slk.o)
+ .text.unlikely
+                0x0000000000025000        0x0 /home/max/kolibri-svn/contrib/sdk/lib/libcurses.a(inopts.o)
+ .text.unlikely
+                0x0000000000025000        0x0 /home/max/kolibri-svn/contrib/sdk/lib/libcurses.a(clear.o)
+ .text.unlikely
+                0x0000000000025000        0x0 /home/max/kolibri-svn/contrib/sdk/lib/libcurses.a(touch.o)
+ .text.unlikely
+                0x0000000000025000        0x0 /home/max/kolibri-svn/contrib/sdk/lib/libcurses.a(refresh.o)
+ .text.unlikely
+                0x0000000000025000        0x0 /home/max/kolibri-svn/contrib/sdk/lib/libcurses.a(window.o)
+ .text.unlikely
+                0x0000000000025000        0x0 /home/max/kolibri-svn/contrib/sdk/lib/libcurses.a(overlay.o)
+ .text.unlikely
+                0x0000000000025000        0x0 /home/max/kolibri-svn/contrib/sdk/lib/libcurses.a(kernel.o)
+ .text.unlikely
+                0x0000000000025000        0x0 /home/max/kolibri-svn/contrib/sdk/lib/libcurses.a(border.o)
+ .text.unlikely
+                0x0000000000025000        0x0 /home/max/kolibri-svn/contrib/sdk/lib/libcurses.a(pad.o)
+ .text.unlikely
+                0x0000000000025000        0x0 /home/max/kolibri-svn/contrib/sdk/lib/libcurses.a(addch.o)
+ .text.unlikely
+                0x0000000000025000        0x0 /home/max/kolibri-svn/contrib/sdk/lib/libcurses.a(outopts.o)
+ .text.unlikely
+                0x0000000000025000        0x0 /home/max/kolibri-svn/contrib/sdk/lib/libcurses.a(color.o)
+ .text.unlikely
+                0x0000000000025000        0x0 /home/max/kolibri-svn/contrib/sdk/lib/libcurses.a(printw.o)
+ .text.unlikely
+                0x0000000000025000        0x0 /home/max/kolibri-svn/contrib/sdk/lib/libcurses.a(pdcgetsc.o)
+ .text.unlikely
+                0x0000000000025000        0x0 /home/max/kolibri-svn/contrib/sdk/lib/libcurses.a(pdcscrn.o)
+ .text.unlikely
+                0x0000000000025000        0x0 /home/max/kolibri-svn/contrib/sdk/lib/libcurses.a(pdcsetsc.o)
+ .text.unlikely
+                0x0000000000025000        0x0 /home/max/kolibri-svn/contrib/sdk/lib/libcurses.a(pdcdisp.o)
+ .text.unlikely
+                0x0000000000025000        0x0 /home/max/kolibri-svn/contrib/sdk/lib/libcurses.a(pdckbd.o)
+ .text.unlikely
+                0x0000000000025000        0x0 /home/max/kolibri-svn/contrib/sdk/lib/libcurses.a(pdcutil.o)
+ .text.unlikely
+                0x0000000000025000        0x0 /home/max/kolibri-svn/contrib/sdk/lib/libcurses.a(scroll.o)
+ .text.unlikely
+                0x0000000000025000        0x0 /home/max/kolibri-svn/contrib/sdk/lib/libSDLn.a(SDL.o)
+ .text.unlikely
+                0x0000000000025000        0x0 /home/max/kolibri-svn/contrib/sdk/lib/libSDLn.a(SDL_error.o)
+ .text.unlikely
+                0x0000000000025000        0x0 /home/max/kolibri-svn/contrib/sdk/lib/libSDLn.a(SDL_fatal.o)
+ .text.unlikely
+                0x0000000000025000        0x0 /home/max/kolibri-svn/contrib/sdk/lib/libSDLn.a(SDL_getenv.o)
+ .text.unlikely
+                0x0000000000025000        0x0 /home/max/kolibri-svn/contrib/sdk/lib/libSDLn.a(SDL_kolibri_audio.o)
+ .text.unlikely
+                0x0000000000025000        0x0 /home/max/kolibri-svn/contrib/sdk/lib/libSDLn.a(SDL_events.o)
+ .text.unlikely
+                0x0000000000025000        0x0 /home/max/kolibri-svn/contrib/sdk/lib/libSDLn.a(SDL_keyboard.o)
+ .text.unlikely
+                0x0000000000025000        0x0 /home/max/kolibri-svn/contrib/sdk/lib/libSDLn.a(SDL_mouse.o)
+ .text.unlikely
+                0x0000000000025000        0x0 /home/max/kolibri-svn/contrib/sdk/lib/libSDLn.a(SDL_quit.o)
+ .text.unlikely
+                0x0000000000025000        0x0 /home/max/kolibri-svn/contrib/sdk/lib/libSDLn.a(SDL_rwops.o)
+ .text.unlikely
+                0x0000000000025000        0x0 /home/max/kolibri-svn/contrib/sdk/lib/libSDLn.a(SDL_sysmutex.o)
+ .text.unlikely
+                0x0000000000025000        0x0 /home/max/kolibri-svn/contrib/sdk/lib/libSDLn.a(SDL_syssem.o)
+ .text.unlikely
+                0x0000000000025000        0x0 /home/max/kolibri-svn/contrib/sdk/lib/libSDLn.a(SDL_systhread.o)
+ .text.unlikely
+                0x0000000000025000        0x0 /home/max/kolibri-svn/contrib/sdk/lib/libSDLn.a(SDL_thread.o)
+ .text.unlikely
+                0x0000000000025000        0x0 /home/max/kolibri-svn/contrib/sdk/lib/libSDLn.a(SDL_timer.o)
+ .text.unlikely
+                0x0000000000025000        0x0 /home/max/kolibri-svn/contrib/sdk/lib/libSDLn.a(SDL_systimer.o)
+ .text.unlikely
+                0x0000000000025000        0x0 /home/max/kolibri-svn/contrib/sdk/lib/libSDLn.a(SDL_bmp.o)
+ .text.unlikely
+                0x0000000000025000        0x0 /home/max/kolibri-svn/contrib/sdk/lib/libSDLn.a(SDL_cursor.o)
+ .text.unlikely
+                0x0000000000025000        0x0 /home/max/kolibri-svn/contrib/sdk/lib/libSDLn.a(SDL_pixels.o)
+ .text.unlikely
+                0x0000000000025000        0x0 /home/max/kolibri-svn/contrib/sdk/lib/libSDLn.a(SDL_surface.o)
+ .text.unlikely
+                0x0000000000025000        0x0 /home/max/kolibri-svn/contrib/sdk/lib/libSDLn.a(SDL_video.o)
+ .text.unlikely
+                0x0000000000025000        0x0 /home/max/kolibri-svn/contrib/sdk/lib/libSDLn.a(SDL_menuetvideo.o)
+ .text.unlikely
+                0x0000000000025000        0x0 /home/max/kolibri-svn/contrib/sdk/lib/libSDLn.a(SDL_endian.o)
+ .text.unlikely
+                0x0000000000025000        0x0 /home/max/kolibri-svn/contrib/sdk/lib/libSDLn.a(SDL_active.o)
+ .text.unlikely
+                0x0000000000025000        0x0 /home/max/kolibri-svn/contrib/sdk/lib/libSDLn.a(SDL_resize.o)
+ .text.unlikely
+                0x0000000000025000        0x0 /home/max/kolibri-svn/contrib/sdk/lib/libSDLn.a(SDL_RLEaccel.o)
+ .text.unlikely
+                0x0000000000025000        0x0 /home/max/kolibri-svn/contrib/sdk/lib/libSDLn.a(SDL_blit.o)
+ .text.unlikely
+                0x0000000000025000        0x0 /home/max/kolibri-svn/contrib/sdk/lib/libSDLn.a(SDL_blit_0.o)
+ .text.unlikely
+                0x0000000000025000        0x0 /home/max/kolibri-svn/contrib/sdk/lib/libSDLn.a(SDL_blit_1.o)
+ .text.unlikely
+                0x0000000000025000        0x0 /home/max/kolibri-svn/contrib/sdk/lib/libSDLn.a(SDL_blit_N.o)
+ .text.unlikely
+                0x0000000000025000        0x0 /home/max/kolibri-svn/contrib/sdk/lib/libSDLn.a(SDL_menuetevents.o)
+ .text.unlikely
+                0x0000000000025000        0x0 /home/max/kolibri-svn/contrib/sdk/lib/libSDLn.a(SDL_blit_A.o)
+ *(.glue_7t)
+ *(.glue_7)
+                0x0000000000025000                ___CTOR_LIST__ = .
+                0x0000000000025000                __CTOR_LIST__ = .
+                0x0000000000025000        0x4 LONG 0xffffffffffffffff
+ *(.ctors)
+ *(.ctor)
+ *(SORT(.ctors.*))
+                0x0000000000025004        0x4 LONG 0x0
+                0x0000000000025008                ___DTOR_LIST__ = .
+                0x0000000000025008                __DTOR_LIST__ = .
+                0x0000000000025008        0x4 LONG 0xffffffffffffffff
+ *(.dtors)
+ *(.dtor)
+ *(SORT(.dtors.*))
+                0x000000000002500c        0x4 LONG 0x0
+ *(.fini)
+ *(.gcc_exc)
+                [!provide]                        PROVIDE (etext, .)
+ *(.gcc_except_table)
+
+.rdata          0x0000000000025010     0x4410
+ *(.rdata)
+ .rdata         0x0000000000025010      0x1b0 xmas.o
+ .rdata         0x00000000000251c0       0x18 /home/max/kolibri-svn/contrib/sdk/lib/libgcc.a(libc-loader.o)
+ .rdata         0x00000000000251d8       0x34 /home/max/kolibri-svn/contrib/sdk/lib/libgcc.a(unwind-dw2-fde.o)
+ .rdata         0x000000000002520c       0xfc /home/max/kolibri-svn/contrib/sdk/lib/libcurses.a(initscr.o)
+ .rdata         0x0000000000025308        0x4 /home/max/kolibri-svn/contrib/sdk/lib/libcurses.a(slk.o)
+ .rdata         0x000000000002530c       0x14 /home/max/kolibri-svn/contrib/sdk/lib/libcurses.a(color.o)
+ .rdata         0x0000000000025320       0xb4 /home/max/kolibri-svn/contrib/sdk/lib/libcurses.a(pdcscrn.o)
+ *fill*         0x00000000000253d4        0xc 
+ .rdata         0x00000000000253e0      0x3c0 /home/max/kolibri-svn/contrib/sdk/lib/libcurses.a(pdckbd.o)
+ .rdata         0x00000000000257a0        0x4 /home/max/kolibri-svn/contrib/sdk/lib/libcurses.a(pdcutil.o)
+ .rdata         0x00000000000257a4       0x68 /home/max/kolibri-svn/contrib/sdk/lib/libSDLn.a(SDL.o)
+ .rdata         0x000000000002580c       0x94 /home/max/kolibri-svn/contrib/sdk/lib/libSDLn.a(SDL_error.o)
+ .rdata         0x00000000000258a0      0x194 /home/max/kolibri-svn/contrib/sdk/lib/libSDLn.a(SDL_kolibri_audio.o)
+ .rdata         0x0000000000025a34       0x1c /home/max/kolibri-svn/contrib/sdk/lib/libSDLn.a(SDL_events.o)
+ .rdata         0x0000000000025a50      0x624 /home/max/kolibri-svn/contrib/sdk/lib/libSDLn.a(SDL_keyboard.o)
+ .rdata         0x0000000000026074       0x2c /home/max/kolibri-svn/contrib/sdk/lib/libSDLn.a(SDL_rwops.o)
+ .rdata         0x00000000000260a0       0x28 /home/max/kolibri-svn/contrib/sdk/lib/libSDLn.a(SDL_syssem.o)
+ .rdata         0x00000000000260c8       0x2c /home/max/kolibri-svn/contrib/sdk/lib/libSDLn.a(SDL_systhread.o)
+ .rdata         0x00000000000260f4       0xa0 /home/max/kolibri-svn/contrib/sdk/lib/libSDLn.a(SDL_timer.o)
+ .rdata         0x0000000000026194       0x9c /home/max/kolibri-svn/contrib/sdk/lib/libSDLn.a(SDL_bmp.o)
+ .rdata         0x0000000000026230       0x2c /home/max/kolibri-svn/contrib/sdk/lib/libSDLn.a(SDL_cursor.o)
+ .rdata         0x000000000002625c       0x68 /home/max/kolibri-svn/contrib/sdk/lib/libSDLn.a(SDL_surface.o)
+ .rdata         0x00000000000262c4      0x1d8 /home/max/kolibri-svn/contrib/sdk/lib/libSDLn.a(SDL_video.o)
+ .rdata         0x000000000002649c       0x50 /home/max/kolibri-svn/contrib/sdk/lib/libSDLn.a(SDL_menuetvideo.o)
+ .rdata         0x00000000000264ec       0x10 /home/max/kolibri-svn/contrib/sdk/lib/libSDLn.a(SDL_RLEaccel.o)
+ .rdata         0x00000000000264fc       0x20 /home/max/kolibri-svn/contrib/sdk/lib/libSDLn.a(SDL_blit.o)
+ .rdata         0x000000000002651c       0x28 /home/max/kolibri-svn/contrib/sdk/lib/libSDLn.a(SDL_blit_0.o)
+ .rdata         0x0000000000026544      0x140 /home/max/kolibri-svn/contrib/sdk/lib/libSDLn.a(SDL_blit_1.o)
+ *fill*         0x0000000000026684       0x1c 
+ .rdata         0x00000000000266a0     0x25a0 /home/max/kolibri-svn/contrib/sdk/lib/libSDLn.a(SDL_blit_N.o)
+ .rdata         0x0000000000028c40      0x620 /home/max/kolibri-svn/contrib/sdk/lib/libSDLn.a(SDL_menuetevents.o)
+ .rdata         0x0000000000029260       0x1c /home/max/kolibri-svn/contrib/sdk/lib/libSDLn.a(SDL_blit_A.o)
+ *(SORT(.rdata$*))
+                0x000000000002927c                ___RUNTIME_PSEUDO_RELOC_LIST__ = .
+                0x000000000002927c                __RUNTIME_PSEUDO_RELOC_LIST__ = .
+ *(.rdata_runtime_pseudo_reloc)
+                0x000000000002927c                ___RUNTIME_PSEUDO_RELOC_LIST_END__ = .
+                0x000000000002927c                __RUNTIME_PSEUDO_RELOC_LIST_END__ = .
+
+.CRT            0x0000000000029280        0x0
+                0x0000000000029280                ___crt_xc_start__ = .
+ *(SORT(.CRT$XC*))
+                0x0000000000029280                ___crt_xc_end__ = .
+                0x0000000000029280                ___crt_xi_start__ = .
+ *(SORT(.CRT$XI*))
+                0x0000000000029280                ___crt_xi_end__ = .
+                0x0000000000029280                ___crt_xl_start__ = .
+ *(SORT(.CRT$XL*))
+                0x0000000000029280                ___crt_xp_start__ = .
+ *(SORT(.CRT$XP*))
+                0x0000000000029280                ___crt_xp_end__ = .
+                0x0000000000029280                ___crt_xt_start__ = .
+ *(SORT(.CRT$XT*))
+                0x0000000000029280                ___crt_xt_end__ = .
+
+.data           0x0000000000029280     0x1600
+                [!provide]                        PROVIDE (__data_start__, .)
+ *(.data)
+ .data          0x0000000000029280        0x0 xmas.o
+ .data          0x0000000000029280        0x0 /home/max/kolibri-svn/contrib/sdk/lib/libgcc.a(_start.o)
+ .data          0x0000000000029280        0x4 /home/max/kolibri-svn/contrib/sdk/lib/libgcc.a(__main.o)
+ .data          0x0000000000029284        0x0 /home/max/kolibri-svn/contrib/sdk/lib/libgcc.a(_ctors.o)
+ .data          0x0000000000029284        0x0 /home/max/kolibri-svn/contrib/sdk/lib/libgcc.a(kos32-app.o)
+ .data          0x0000000000029284        0x0 /home/max/kolibri-svn/contrib/sdk/lib/libgcc.a(libc-loader.o)
+ .data          0x0000000000029284        0x8 /home/max/kolibri-svn/contrib/sdk/lib/libgcc.a(unwind-dw2-fde.o)
+ .data          0x000000000002928c        0x0 /home/max/kolibri-svn/contrib/sdk/lib/libgcc.a(gthr-kos32.o)
+ .data          0x000000000002928c        0x0 /home/max/kolibri-svn/contrib/sdk/lib/libcurses.a(addstr.o)
+ .data          0x000000000002928c        0x0 /home/max/kolibri-svn/contrib/sdk/lib/libcurses.a(move.o)
+ .data          0x000000000002928c        0x0 /home/max/kolibri-svn/contrib/sdk/lib/libcurses.a(attr.o)
+ .data          0x000000000002928c        0x8 /home/max/kolibri-svn/contrib/sdk/lib/libcurses.a(initscr.o)
+                0x000000000002928c                TABSIZE
+                0x0000000000029290                _curses_notice
+ .data          0x0000000000029294        0x0 /home/max/kolibri-svn/contrib/sdk/lib/libcurses.a(slk.o)
+ .data          0x0000000000029294        0x0 /home/max/kolibri-svn/contrib/sdk/lib/libcurses.a(inopts.o)
+ .data          0x0000000000029294        0x0 /home/max/kolibri-svn/contrib/sdk/lib/libcurses.a(clear.o)
+ .data          0x0000000000029294        0x0 /home/max/kolibri-svn/contrib/sdk/lib/libcurses.a(touch.o)
+ .data          0x0000000000029294        0x0 /home/max/kolibri-svn/contrib/sdk/lib/libcurses.a(refresh.o)
+ .data          0x0000000000029294        0x0 /home/max/kolibri-svn/contrib/sdk/lib/libcurses.a(window.o)
+ .data          0x0000000000029294        0x0 /home/max/kolibri-svn/contrib/sdk/lib/libcurses.a(overlay.o)
+ .data          0x0000000000029294        0x0 /home/max/kolibri-svn/contrib/sdk/lib/libcurses.a(kernel.o)
+ .data          0x0000000000029294        0x0 /home/max/kolibri-svn/contrib/sdk/lib/libcurses.a(border.o)
+ .data          0x0000000000029294        0x0 /home/max/kolibri-svn/contrib/sdk/lib/libcurses.a(pad.o)
+ .data          0x0000000000029294        0x0 /home/max/kolibri-svn/contrib/sdk/lib/libcurses.a(addch.o)
+ .data          0x0000000000029294        0x0 /home/max/kolibri-svn/contrib/sdk/lib/libcurses.a(outopts.o)
+ .data          0x0000000000029294        0x4 /home/max/kolibri-svn/contrib/sdk/lib/libcurses.a(color.o)
+                0x0000000000029294                COLOR_PAIRS
+ .data          0x0000000000029298        0x0 /home/max/kolibri-svn/contrib/sdk/lib/libcurses.a(printw.o)
+ .data          0x0000000000029298        0x0 /home/max/kolibri-svn/contrib/sdk/lib/libcurses.a(pdcgetsc.o)
+ *fill*         0x0000000000029298        0x8 
+ .data          0x00000000000292a0     0x1100 /home/max/kolibri-svn/contrib/sdk/lib/libcurses.a(pdcscrn.o)
+                0x00000000000292a0                iconbmp
+                0x0000000000029360                font437
+ .data          0x000000000002a3a0        0x0 /home/max/kolibri-svn/contrib/sdk/lib/libcurses.a(pdcsetsc.o)
+ .data          0x000000000002a3a0      0x220 /home/max/kolibri-svn/contrib/sdk/lib/libcurses.a(pdcdisp.o)
+                0x000000000002a3c0                acs_map
+ .data          0x000000000002a5c0        0x0 /home/max/kolibri-svn/contrib/sdk/lib/libcurses.a(pdckbd.o)
+ .data          0x000000000002a5c0        0x0 /home/max/kolibri-svn/contrib/sdk/lib/libcurses.a(pdcutil.o)
+ .data          0x000000000002a5c0        0x0 /home/max/kolibri-svn/contrib/sdk/lib/libcurses.a(scroll.o)
+ .data          0x000000000002a5c0        0x4 /home/max/kolibri-svn/contrib/sdk/lib/libSDLn.a(SDL.o)
+ .data          0x000000000002a5c4        0x0 /home/max/kolibri-svn/contrib/sdk/lib/libSDLn.a(SDL_error.o)
+ .data          0x000000000002a5c4        0x0 /home/max/kolibri-svn/contrib/sdk/lib/libSDLn.a(SDL_fatal.o)
+ .data          0x000000000002a5c4        0x0 /home/max/kolibri-svn/contrib/sdk/lib/libSDLn.a(SDL_getenv.o)
+ .data          0x000000000002a5c4        0x0 /home/max/kolibri-svn/contrib/sdk/lib/libSDLn.a(SDL_kolibri_audio.o)
+ .data          0x000000000002a5c4        0x0 /home/max/kolibri-svn/contrib/sdk/lib/libSDLn.a(SDL_events.o)
+ .data          0x000000000002a5c4        0x0 /home/max/kolibri-svn/contrib/sdk/lib/libSDLn.a(SDL_keyboard.o)
+ .data          0x000000000002a5c4        0x0 /home/max/kolibri-svn/contrib/sdk/lib/libSDLn.a(SDL_mouse.o)
+ .data          0x000000000002a5c4        0x0 /home/max/kolibri-svn/contrib/sdk/lib/libSDLn.a(SDL_quit.o)
+ .data          0x000000000002a5c4        0x0 /home/max/kolibri-svn/contrib/sdk/lib/libSDLn.a(SDL_rwops.o)
+ .data          0x000000000002a5c4        0x0 /home/max/kolibri-svn/contrib/sdk/lib/libSDLn.a(SDL_sysmutex.o)
+ .data          0x000000000002a5c4        0x0 /home/max/kolibri-svn/contrib/sdk/lib/libSDLn.a(SDL_syssem.o)
+ .data          0x000000000002a5c4        0x0 /home/max/kolibri-svn/contrib/sdk/lib/libSDLn.a(SDL_systhread.o)
+ .data          0x000000000002a5c4        0x0 /home/max/kolibri-svn/contrib/sdk/lib/libSDLn.a(SDL_thread.o)
+ .data          0x000000000002a5c4        0x0 /home/max/kolibri-svn/contrib/sdk/lib/libSDLn.a(SDL_timer.o)
+ .data          0x000000000002a5c4        0x0 /home/max/kolibri-svn/contrib/sdk/lib/libSDLn.a(SDL_systimer.o)
+ .data          0x000000000002a5c4        0x0 /home/max/kolibri-svn/contrib/sdk/lib/libSDLn.a(SDL_bmp.o)
+ *fill*         0x000000000002a5c4       0x1c 
+ .data          0x000000000002a5e0       0x60 /home/max/kolibri-svn/contrib/sdk/lib/libSDLn.a(SDL_cursor.o)
+ .data          0x000000000002a640        0x0 /home/max/kolibri-svn/contrib/sdk/lib/libSDLn.a(SDL_pixels.o)
+ .data          0x000000000002a640        0x0 /home/max/kolibri-svn/contrib/sdk/lib/libSDLn.a(SDL_surface.o)
+ .data          0x000000000002a640       0x20 /home/max/kolibri-svn/contrib/sdk/lib/libSDLn.a(SDL_video.o)
+ .data          0x000000000002a660       0x24 /home/max/kolibri-svn/contrib/sdk/lib/libSDLn.a(SDL_menuetvideo.o)
+                0x000000000002a660                mosvideo_bootstrab
+                0x000000000002a670                def_title
+ .data          0x000000000002a684        0x0 /home/max/kolibri-svn/contrib/sdk/lib/libSDLn.a(SDL_endian.o)
+ .data          0x000000000002a684        0x0 /home/max/kolibri-svn/contrib/sdk/lib/libSDLn.a(SDL_active.o)
+ .data          0x000000000002a684        0x0 /home/max/kolibri-svn/contrib/sdk/lib/libSDLn.a(SDL_resize.o)
+ .data          0x000000000002a684        0x0 /home/max/kolibri-svn/contrib/sdk/lib/libSDLn.a(SDL_RLEaccel.o)
+ .data          0x000000000002a684        0x0 /home/max/kolibri-svn/contrib/sdk/lib/libSDLn.a(SDL_blit.o)
+ .data          0x000000000002a684        0x0 /home/max/kolibri-svn/contrib/sdk/lib/libSDLn.a(SDL_blit_0.o)
+ .data          0x000000000002a684        0x0 /home/max/kolibri-svn/contrib/sdk/lib/libSDLn.a(SDL_blit_1.o)
+ .data          0x000000000002a684        0x0 /home/max/kolibri-svn/contrib/sdk/lib/libSDLn.a(SDL_blit_N.o)
+ .data          0x000000000002a684        0x0 /home/max/kolibri-svn/contrib/sdk/lib/libSDLn.a(SDL_menuetevents.o)
+ .data          0x000000000002a684        0x4 /home/max/kolibri-svn/contrib/sdk/lib/libSDLn.a(x86_main.o)
+ .data          0x000000000002a688        0x0 /home/max/kolibri-svn/contrib/sdk/lib/libSDLn.a(SDL_blit_A.o)
+ *fill*         0x000000000002a688        0x8 
+ .data          0x000000000002a690       0x17 /home/max/kolibri-svn/contrib/sdk/lib/libsound.a(init.o)
+                0x000000000002a690                hSound
+                0x000000000002a690                hSound
+                0x000000000002a694                hrdwSound
+                0x000000000002a694                hrdwSound
+ *(.data2)
+ *(SORT(.data$*))
+ *(.jcr)
+                0x000000000002a6a7                __CRT_MT = .
+                0x000000000002a6a7        0x4 LONG 0x1
+                [!provide]                        PROVIDE (__data_end__, .)
+ *(.data_cygwin_nocopy)
+                0x000000000002a6ab                ___iend = .
+
+.eh_frame       0x000000000002a6b0     0x4400
+                0x000000000002a6b0                PROVIDE (___EH_FRAME_BEGIN__, .)
+ *(.eh_frame*)
+ .eh_frame      0x000000000002a6b0      0x460 xmas.o
+ .eh_frame      0x000000000002ab10       0x68 /home/max/kolibri-svn/contrib/sdk/lib/libgcc.a(__main.o)
+ .eh_frame      0x000000000002ab78       0x34 /home/max/kolibri-svn/contrib/sdk/lib/libgcc.a(kos32-app.o)
+ .eh_frame      0x000000000002abac       0x6c /home/max/kolibri-svn/contrib/sdk/lib/libgcc.a(libc-loader.o)
+ .eh_frame      0x000000000002ac18      0x4f0 /home/max/kolibri-svn/contrib/sdk/lib/libgcc.a(unwind-dw2-fde.o)
+ .eh_frame      0x000000000002b108      0x230 /home/max/kolibri-svn/contrib/sdk/lib/libgcc.a(gthr-kos32.o)
+ .eh_frame      0x000000000002b338      0x284 /home/max/kolibri-svn/contrib/sdk/lib/libcurses.a(addstr.o)
+ .eh_frame      0x000000000002b5bc       0xf0 /home/max/kolibri-svn/contrib/sdk/lib/libcurses.a(move.o)
+ .eh_frame      0x000000000002b6ac      0x4b0 /home/max/kolibri-svn/contrib/sdk/lib/libcurses.a(attr.o)
+ .eh_frame      0x000000000002bb5c      0x1ac /home/max/kolibri-svn/contrib/sdk/lib/libcurses.a(initscr.o)
+ .eh_frame      0x000000000002bd08      0x404 /home/max/kolibri-svn/contrib/sdk/lib/libcurses.a(slk.o)
+ .eh_frame      0x000000000002c10c      0x194 /home/max/kolibri-svn/contrib/sdk/lib/libcurses.a(inopts.o)
+ .eh_frame      0x000000000002c2a0      0x1b0 /home/max/kolibri-svn/contrib/sdk/lib/libcurses.a(clear.o)
+ .eh_frame      0x000000000002c450      0x1b4 /home/max/kolibri-svn/contrib/sdk/lib/libcurses.a(touch.o)
+ .eh_frame      0x000000000002c604      0x1ec /home/max/kolibri-svn/contrib/sdk/lib/libcurses.a(refresh.o)
+ .eh_frame      0x000000000002c7f0      0x564 /home/max/kolibri-svn/contrib/sdk/lib/libcurses.a(window.o)
+ .eh_frame      0x000000000002cd54      0x1e8 /home/max/kolibri-svn/contrib/sdk/lib/libcurses.a(overlay.o)
+ .eh_frame      0x000000000002cf3c      0x2cc /home/max/kolibri-svn/contrib/sdk/lib/libcurses.a(kernel.o)
+ .eh_frame      0x000000000002d208      0x388 /home/max/kolibri-svn/contrib/sdk/lib/libcurses.a(border.o)
+ .eh_frame      0x000000000002d590      0x210 /home/max/kolibri-svn/contrib/sdk/lib/libcurses.a(pad.o)
+ .eh_frame      0x000000000002d7a0      0x2c0 /home/max/kolibri-svn/contrib/sdk/lib/libcurses.a(addch.o)
+ .eh_frame      0x000000000002da60      0x10c /home/max/kolibri-svn/contrib/sdk/lib/libcurses.a(outopts.o)
+ .eh_frame      0x000000000002db6c      0x434 /home/max/kolibri-svn/contrib/sdk/lib/libcurses.a(color.o)
+ .eh_frame      0x000000000002dfa0       0xf8 /home/max/kolibri-svn/contrib/sdk/lib/libcurses.a(printw.o)
+ .eh_frame      0x000000000002e098       0x44 /home/max/kolibri-svn/contrib/sdk/lib/libcurses.a(pdcgetsc.o)
+ .eh_frame      0x000000000002e0dc      0x240 /home/max/kolibri-svn/contrib/sdk/lib/libcurses.a(pdcscrn.o)
+ .eh_frame      0x000000000002e31c       0xb8 /home/max/kolibri-svn/contrib/sdk/lib/libcurses.a(pdcsetsc.o)
+ .eh_frame      0x000000000002e3d4      0x2f0 /home/max/kolibri-svn/contrib/sdk/lib/libcurses.a(pdcdisp.o)
+ .eh_frame      0x000000000002e6c4      0x16c /home/max/kolibri-svn/contrib/sdk/lib/libcurses.a(pdckbd.o)
+ .eh_frame      0x000000000002e830       0x64 /home/max/kolibri-svn/contrib/sdk/lib/libcurses.a(pdcutil.o)
+ .eh_frame      0x000000000002e894       0xc0 /home/max/kolibri-svn/contrib/sdk/lib/libcurses.a(scroll.o)
+                0x000000000002e954                ___FRAME_END__ = .
+                0x000000000002e954        0x4 LONG 0x0
+
+.idata          0x000000000002e960      0x400
+                0x000000000002e960                __idata_start = .
+ SORT(*)(.idata$2)
+ .idata$2       0x000000000002e960       0x14 /home/max/kolibri-svn/contrib/sdk/lib/libc.dll.a(d000000.o)
+                0x000000000002e960                _head_libc_dll
+ SORT(*)(.idata$3)
+                0x000000000002e974        0x4 LONG 0x0
+                0x000000000002e978        0x4 LONG 0x0
+                0x000000000002e97c        0x4 LONG 0x0
+                0x000000000002e980        0x4 LONG 0x0
+                0x000000000002e984        0x4 LONG 0x0
+ SORT(*)(.idata$4)
+ .idata$4       0x000000000002e988        0x0 /home/max/kolibri-svn/contrib/sdk/lib/libc.dll.a(d000000.o)
+ .idata$4       0x000000000002e988        0x4 /home/max/kolibri-svn/contrib/sdk/lib/libc.dll.a(d000334.o)
+ .idata$4       0x000000000002e98c        0x4 /home/max/kolibri-svn/contrib/sdk/lib/libc.dll.a(d000358.o)
+ .idata$4       0x000000000002e990        0x4 /home/max/kolibri-svn/contrib/sdk/lib/libc.dll.a(d000360.o)
+ .idata$4       0x000000000002e994        0x4 /home/max/kolibri-svn/contrib/sdk/lib/libc.dll.a(d000368.o)
+ .idata$4       0x000000000002e998        0x4 /home/max/kolibri-svn/contrib/sdk/lib/libc.dll.a(d000419.o)
+ .idata$4       0x000000000002e99c        0x4 /home/max/kolibri-svn/contrib/sdk/lib/libc.dll.a(d000431.o)
+ .idata$4       0x000000000002e9a0        0x4 /home/max/kolibri-svn/contrib/sdk/lib/libc.dll.a(d000474.o)
+ .idata$4       0x000000000002e9a4        0x4 /home/max/kolibri-svn/contrib/sdk/lib/libc.dll.a(d000476.o)
+ .idata$4       0x000000000002e9a8        0x4 /home/max/kolibri-svn/contrib/sdk/lib/libc.dll.a(d000486.o)
+ .idata$4       0x000000000002e9ac        0x4 /home/max/kolibri-svn/contrib/sdk/lib/libc.dll.a(d000488.o)
+ .idata$4       0x000000000002e9b0        0x4 /home/max/kolibri-svn/contrib/sdk/lib/libc.dll.a(d000493.o)
+ .idata$4       0x000000000002e9b4        0x4 /home/max/kolibri-svn/contrib/sdk/lib/libc.dll.a(d000497.o)
+ .idata$4       0x000000000002e9b8        0x4 /home/max/kolibri-svn/contrib/sdk/lib/libc.dll.a(d000502.o)
+ .idata$4       0x000000000002e9bc        0x4 /home/max/kolibri-svn/contrib/sdk/lib/libc.dll.a(d000519.o)
+ .idata$4       0x000000000002e9c0        0x4 /home/max/kolibri-svn/contrib/sdk/lib/libc.dll.a(d000621.o)
+ .idata$4       0x000000000002e9c4        0x4 /home/max/kolibri-svn/contrib/sdk/lib/libc.dll.a(d000634.o)
+ .idata$4       0x000000000002e9c8        0x4 /home/max/kolibri-svn/contrib/sdk/lib/libc.dll.a(d000635.o)
+ .idata$4       0x000000000002e9cc        0x4 /home/max/kolibri-svn/contrib/sdk/lib/libc.dll.a(d000687.o)
+ .idata$4       0x000000000002e9d0        0x4 /home/max/kolibri-svn/contrib/sdk/lib/libc.dll.a(d000735.o)
+ .idata$4       0x000000000002e9d4        0x4 /home/max/kolibri-svn/contrib/sdk/lib/libc.dll.a(d000752.o)
+ .idata$4       0x000000000002e9d8        0x4 /home/max/kolibri-svn/contrib/sdk/lib/libc.dll.a(d000760.o)
+ .idata$4       0x000000000002e9dc        0x4 /home/max/kolibri-svn/contrib/sdk/lib/libc.dll.a(d000764.o)
+ .idata$4       0x000000000002e9e0        0x4 /home/max/kolibri-svn/contrib/sdk/lib/libc.dll.a(d000765.o)
+ .idata$4       0x000000000002e9e4        0x4 /home/max/kolibri-svn/contrib/sdk/lib/libc.dll.a(d000798.o)
+ .idata$4       0x000000000002e9e8        0x4 /home/max/kolibri-svn/contrib/sdk/lib/libc.dll.a(d000799.o)
+ .idata$4       0x000000000002e9ec        0x4 /home/max/kolibri-svn/contrib/sdk/lib/libc.dll.a(d000834.o)
+ .idata$4       0x000000000002e9f0        0x4 /home/max/kolibri-svn/contrib/sdk/lib/libc.dll.a(d000839.o)
+ .idata$4       0x000000000002e9f4        0x4 /home/max/kolibri-svn/contrib/sdk/lib/libc.dll.a(d000840.o)
+ .idata$4       0x000000000002e9f8        0x4 /home/max/kolibri-svn/contrib/sdk/lib/libc.dll.a(d000903.o)
+ SORT(*)(.idata$5)
+ .idata$5       0x000000000002e9fc        0x0 /home/max/kolibri-svn/contrib/sdk/lib/libc.dll.a(d000000.o)
+ .idata$5       0x000000000002e9fc        0x4 /home/max/kolibri-svn/contrib/sdk/lib/libc.dll.a(d000334.o)
+                0x000000000002e9fc                _imp__abort
+ .idata$5       0x000000000002ea00        0x4 /home/max/kolibri-svn/contrib/sdk/lib/libc.dll.a(d000358.o)
+                0x000000000002ea00                _imp__atexit
+ .idata$5       0x000000000002ea04        0x4 /home/max/kolibri-svn/contrib/sdk/lib/libc.dll.a(d000360.o)
+                0x000000000002ea04                _imp__atoi
+ .idata$5       0x000000000002ea08        0x4 /home/max/kolibri-svn/contrib/sdk/lib/libc.dll.a(d000368.o)
+                0x000000000002ea08                _imp__calloc
+ .idata$5       0x000000000002ea0c        0x4 /home/max/kolibri-svn/contrib/sdk/lib/libc.dll.a(d000419.o)
+                0x000000000002ea0c                _imp__exit
+ .idata$5       0x000000000002ea10        0x4 /home/max/kolibri-svn/contrib/sdk/lib/libc.dll.a(d000431.o)
+                0x000000000002ea10                _imp__fclose
+ .idata$5       0x000000000002ea14        0x4 /home/max/kolibri-svn/contrib/sdk/lib/libc.dll.a(d000474.o)
+                0x000000000002ea14                _imp__fopen
+ .idata$5       0x000000000002ea18        0x4 /home/max/kolibri-svn/contrib/sdk/lib/libc.dll.a(d000476.o)
+                0x000000000002ea18                _imp__fprintf
+ .idata$5       0x000000000002ea1c        0x4 /home/max/kolibri-svn/contrib/sdk/lib/libc.dll.a(d000486.o)
+                0x000000000002ea1c                _imp__fread
+ .idata$5       0x000000000002ea20        0x4 /home/max/kolibri-svn/contrib/sdk/lib/libc.dll.a(d000488.o)
+                0x000000000002ea20                _imp__free
+ .idata$5       0x000000000002ea24        0x4 /home/max/kolibri-svn/contrib/sdk/lib/libc.dll.a(d000493.o)
+                0x000000000002ea24                _imp__fseek
+ .idata$5       0x000000000002ea28        0x4 /home/max/kolibri-svn/contrib/sdk/lib/libc.dll.a(d000497.o)
+                0x000000000002ea28                _imp__ftell
+ .idata$5       0x000000000002ea2c        0x4 /home/max/kolibri-svn/contrib/sdk/lib/libc.dll.a(d000502.o)
+                0x000000000002ea2c                _imp__fwrite
+ .idata$5       0x000000000002ea30        0x4 /home/max/kolibri-svn/contrib/sdk/lib/libc.dll.a(d000519.o)
+                0x000000000002ea30                _imp__getenv
+ .idata$5       0x000000000002ea34        0x4 /home/max/kolibri-svn/contrib/sdk/lib/libc.dll.a(d000621.o)
+                0x000000000002ea34                _imp__malloc
+ .idata$5       0x000000000002ea38        0x4 /home/max/kolibri-svn/contrib/sdk/lib/libc.dll.a(d000634.o)
+                0x000000000002ea38                _imp__memcmp
+ .idata$5       0x000000000002ea3c        0x4 /home/max/kolibri-svn/contrib/sdk/lib/libc.dll.a(d000635.o)
+                0x000000000002ea3c                _imp__memcpy
+ .idata$5       0x000000000002ea40        0x4 /home/max/kolibri-svn/contrib/sdk/lib/libc.dll.a(d000687.o)
+                0x000000000002ea40                _imp__realloc
+ .idata$5       0x000000000002ea44        0x4 /home/max/kolibri-svn/contrib/sdk/lib/libc.dll.a(d000735.o)
+                0x000000000002ea44                _imp__sprintf
+ .idata$5       0x000000000002ea48        0x4 /home/max/kolibri-svn/contrib/sdk/lib/libc.dll.a(d000752.o)
+                0x000000000002ea48                _imp__strcpy
+ .idata$5       0x000000000002ea4c        0x4 /home/max/kolibri-svn/contrib/sdk/lib/libc.dll.a(d000760.o)
+                0x000000000002ea4c                _imp__strlen
+ .idata$5       0x000000000002ea50        0x4 /home/max/kolibri-svn/contrib/sdk/lib/libc.dll.a(d000764.o)
+                0x000000000002ea50                _imp__strncmp
+ .idata$5       0x000000000002ea54        0x4 /home/max/kolibri-svn/contrib/sdk/lib/libc.dll.a(d000765.o)
+                0x000000000002ea54                _imp__strncpy
+ .idata$5       0x000000000002ea58        0x4 /home/max/kolibri-svn/contrib/sdk/lib/libc.dll.a(d000798.o)
+                0x000000000002ea58                _imp__tls_alloc
+ .idata$5       0x000000000002ea5c        0x4 /home/max/kolibri-svn/contrib/sdk/lib/libc.dll.a(d000799.o)
+                0x000000000002ea5c                _imp__tls_free
+ .idata$5       0x000000000002ea60        0x4 /home/max/kolibri-svn/contrib/sdk/lib/libc.dll.a(d000834.o)
+                0x000000000002ea60                _imp__vprintf
+ .idata$5       0x000000000002ea64        0x4 /home/max/kolibri-svn/contrib/sdk/lib/libc.dll.a(d000839.o)
+                0x000000000002ea64                _imp__vsnprintf
+ .idata$5       0x000000000002ea68        0x4 /home/max/kolibri-svn/contrib/sdk/lib/libc.dll.a(d000840.o)
+                0x000000000002ea68                _imp__vsprintf
+ .idata$5       0x000000000002ea6c        0x4 /home/max/kolibri-svn/contrib/sdk/lib/libc.dll.a(d000903.o)
+ SORT(*)(.idata$6)
+ .idata$6       0x000000000002ea70        0x8 /home/max/kolibri-svn/contrib/sdk/lib/libc.dll.a(d000334.o)
+ .idata$6       0x000000000002ea78        0xc /home/max/kolibri-svn/contrib/sdk/lib/libc.dll.a(d000358.o)
+ .idata$6       0x000000000002ea84        0x8 /home/max/kolibri-svn/contrib/sdk/lib/libc.dll.a(d000360.o)
+ .idata$6       0x000000000002ea8c        0xc /home/max/kolibri-svn/contrib/sdk/lib/libc.dll.a(d000368.o)
+ .idata$6       0x000000000002ea98        0x8 /home/max/kolibri-svn/contrib/sdk/lib/libc.dll.a(d000419.o)
+ .idata$6       0x000000000002eaa0        0xc /home/max/kolibri-svn/contrib/sdk/lib/libc.dll.a(d000431.o)
+ .idata$6       0x000000000002eaac        0x8 /home/max/kolibri-svn/contrib/sdk/lib/libc.dll.a(d000474.o)
+ .idata$6       0x000000000002eab4        0xc /home/max/kolibri-svn/contrib/sdk/lib/libc.dll.a(d000476.o)
+ .idata$6       0x000000000002eac0        0x8 /home/max/kolibri-svn/contrib/sdk/lib/libc.dll.a(d000486.o)
+ .idata$6       0x000000000002eac8        0x8 /home/max/kolibri-svn/contrib/sdk/lib/libc.dll.a(d000488.o)
+ .idata$6       0x000000000002ead0        0x8 /home/max/kolibri-svn/contrib/sdk/lib/libc.dll.a(d000493.o)
+ .idata$6       0x000000000002ead8        0x8 /home/max/kolibri-svn/contrib/sdk/lib/libc.dll.a(d000497.o)
+ .idata$6       0x000000000002eae0        0xc /home/max/kolibri-svn/contrib/sdk/lib/libc.dll.a(d000502.o)
+ .idata$6       0x000000000002eaec        0xc /home/max/kolibri-svn/contrib/sdk/lib/libc.dll.a(d000519.o)
+ .idata$6       0x000000000002eaf8        0xc /home/max/kolibri-svn/contrib/sdk/lib/libc.dll.a(d000621.o)
+ .idata$6       0x000000000002eb04        0xc /home/max/kolibri-svn/contrib/sdk/lib/libc.dll.a(d000634.o)
+ .idata$6       0x000000000002eb10        0xc /home/max/kolibri-svn/contrib/sdk/lib/libc.dll.a(d000635.o)
+ .idata$6       0x000000000002eb1c        0xc /home/max/kolibri-svn/contrib/sdk/lib/libc.dll.a(d000687.o)
+ .idata$6       0x000000000002eb28        0xc /home/max/kolibri-svn/contrib/sdk/lib/libc.dll.a(d000735.o)
+ .idata$6       0x000000000002eb34        0xc /home/max/kolibri-svn/contrib/sdk/lib/libc.dll.a(d000752.o)
+ .idata$6       0x000000000002eb40        0xc /home/max/kolibri-svn/contrib/sdk/lib/libc.dll.a(d000760.o)
+ .idata$6       0x000000000002eb4c        0xc /home/max/kolibri-svn/contrib/sdk/lib/libc.dll.a(d000764.o)
+ .idata$6       0x000000000002eb58        0xc /home/max/kolibri-svn/contrib/sdk/lib/libc.dll.a(d000765.o)
+ .idata$6       0x000000000002eb64        0xc /home/max/kolibri-svn/contrib/sdk/lib/libc.dll.a(d000798.o)
+ .idata$6       0x000000000002eb70        0xc /home/max/kolibri-svn/contrib/sdk/lib/libc.dll.a(d000799.o)
+ .idata$6       0x000000000002eb7c        0xc /home/max/kolibri-svn/contrib/sdk/lib/libc.dll.a(d000834.o)
+ .idata$6       0x000000000002eb88        0xc /home/max/kolibri-svn/contrib/sdk/lib/libc.dll.a(d000839.o)
+ .idata$6       0x000000000002eb94        0xc /home/max/kolibri-svn/contrib/sdk/lib/libc.dll.a(d000840.o)
+ SORT(*)(.idata$7)
+ .idata$7       0x000000000002eba0        0x4 /home/max/kolibri-svn/contrib/sdk/lib/libc.dll.a(d000334.o)
+ .idata$7       0x000000000002eba4        0x4 /home/max/kolibri-svn/contrib/sdk/lib/libc.dll.a(d000358.o)
+ .idata$7       0x000000000002eba8        0x4 /home/max/kolibri-svn/contrib/sdk/lib/libc.dll.a(d000360.o)
+ .idata$7       0x000000000002ebac        0x4 /home/max/kolibri-svn/contrib/sdk/lib/libc.dll.a(d000368.o)
+ .idata$7       0x000000000002ebb0        0x4 /home/max/kolibri-svn/contrib/sdk/lib/libc.dll.a(d000419.o)
+ .idata$7       0x000000000002ebb4        0x4 /home/max/kolibri-svn/contrib/sdk/lib/libc.dll.a(d000431.o)
+ .idata$7       0x000000000002ebb8        0x4 /home/max/kolibri-svn/contrib/sdk/lib/libc.dll.a(d000474.o)
+ .idata$7       0x000000000002ebbc        0x4 /home/max/kolibri-svn/contrib/sdk/lib/libc.dll.a(d000476.o)
+ .idata$7       0x000000000002ebc0        0x4 /home/max/kolibri-svn/contrib/sdk/lib/libc.dll.a(d000486.o)
+ .idata$7       0x000000000002ebc4        0x4 /home/max/kolibri-svn/contrib/sdk/lib/libc.dll.a(d000488.o)
+ .idata$7       0x000000000002ebc8        0x4 /home/max/kolibri-svn/contrib/sdk/lib/libc.dll.a(d000493.o)
+ .idata$7       0x000000000002ebcc        0x4 /home/max/kolibri-svn/contrib/sdk/lib/libc.dll.a(d000497.o)
+ .idata$7       0x000000000002ebd0        0x4 /home/max/kolibri-svn/contrib/sdk/lib/libc.dll.a(d000502.o)
+ .idata$7       0x000000000002ebd4        0x4 /home/max/kolibri-svn/contrib/sdk/lib/libc.dll.a(d000519.o)
+ .idata$7       0x000000000002ebd8        0x4 /home/max/kolibri-svn/contrib/sdk/lib/libc.dll.a(d000621.o)
+ .idata$7       0x000000000002ebdc        0x4 /home/max/kolibri-svn/contrib/sdk/lib/libc.dll.a(d000634.o)
+ .idata$7       0x000000000002ebe0        0x4 /home/max/kolibri-svn/contrib/sdk/lib/libc.dll.a(d000635.o)
+ .idata$7       0x000000000002ebe4        0x4 /home/max/kolibri-svn/contrib/sdk/lib/libc.dll.a(d000687.o)
+ .idata$7       0x000000000002ebe8        0x4 /home/max/kolibri-svn/contrib/sdk/lib/libc.dll.a(d000735.o)
+ .idata$7       0x000000000002ebec        0x4 /home/max/kolibri-svn/contrib/sdk/lib/libc.dll.a(d000752.o)
+ .idata$7       0x000000000002ebf0        0x4 /home/max/kolibri-svn/contrib/sdk/lib/libc.dll.a(d000760.o)
+ .idata$7       0x000000000002ebf4        0x4 /home/max/kolibri-svn/contrib/sdk/lib/libc.dll.a(d000764.o)
+ .idata$7       0x000000000002ebf8        0x4 /home/max/kolibri-svn/contrib/sdk/lib/libc.dll.a(d000765.o)
+ .idata$7       0x000000000002ebfc        0x4 /home/max/kolibri-svn/contrib/sdk/lib/libc.dll.a(d000798.o)
+ .idata$7       0x000000000002ec00        0x4 /home/max/kolibri-svn/contrib/sdk/lib/libc.dll.a(d000799.o)
+ .idata$7       0x000000000002ec04        0x4 /home/max/kolibri-svn/contrib/sdk/lib/libc.dll.a(d000834.o)
+ .idata$7       0x000000000002ec08        0x4 /home/max/kolibri-svn/contrib/sdk/lib/libc.dll.a(d000839.o)
+ .idata$7       0x000000000002ec0c        0x4 /home/max/kolibri-svn/contrib/sdk/lib/libc.dll.a(d000840.o)
+ .idata$7       0x000000000002ec10        0xc /home/max/kolibri-svn/contrib/sdk/lib/libc.dll.a(d000903.o)
+                0x000000000002ec10                libc_dll_iname
+                0x000000000002ec1c                __idata_end = .
+
+bss             0x000000000002ec20     0xf120
+ *(.bss)
+ .bss           0x000000000002ec20        0x4 xmas.o
+ .bss           0x000000000002ec24        0x0 /home/max/kolibri-svn/contrib/sdk/lib/libgcc.a(_start.o)
+ .bss           0x000000000002ec24       0x20 /home/max/kolibri-svn/contrib/sdk/lib/libgcc.a(__main.o)
+ .bss           0x000000000002ec44        0x0 /home/max/kolibri-svn/contrib/sdk/lib/libgcc.a(_ctors.o)
+ .bss           0x000000000002ec44        0x0 /home/max/kolibri-svn/contrib/sdk/lib/libgcc.a(kos32-app.o)
+ .bss           0x000000000002ec44        0x0 /home/max/kolibri-svn/contrib/sdk/lib/libgcc.a(libc-loader.o)
+ .bss           0x000000000002ec44       0x1c /home/max/kolibri-svn/contrib/sdk/lib/libgcc.a(unwind-dw2-fde.o)
+ .bss           0x000000000002ec60        0x0 /home/max/kolibri-svn/contrib/sdk/lib/libgcc.a(gthr-kos32.o)
+ .bss           0x000000000002ec60        0x0 /home/max/kolibri-svn/contrib/sdk/lib/libcurses.a(addstr.o)
+ .bss           0x000000000002ec60        0x0 /home/max/kolibri-svn/contrib/sdk/lib/libcurses.a(move.o)
+ .bss           0x000000000002ec60        0x0 /home/max/kolibri-svn/contrib/sdk/lib/libcurses.a(attr.o)
+ .bss           0x000000000002ec60       0x14 /home/max/kolibri-svn/contrib/sdk/lib/libcurses.a(initscr.o)
+                0x000000000002ec60                COLS
+                0x000000000002ec64                LINES
+                0x000000000002ec68                stdscr
+                0x000000000002ec6c                curscr
+                0x000000000002ec70                SP
+ *fill*         0x000000000002ec74        0xc 
+ .bss           0x000000000002ec80       0x40 /home/max/kolibri-svn/contrib/sdk/lib/libcurses.a(slk.o)
+ .bss           0x000000000002ecc0        0x0 /home/max/kolibri-svn/contrib/sdk/lib/libcurses.a(inopts.o)
+ .bss           0x000000000002ecc0        0x0 /home/max/kolibri-svn/contrib/sdk/lib/libcurses.a(clear.o)
+ .bss           0x000000000002ecc0        0x0 /home/max/kolibri-svn/contrib/sdk/lib/libcurses.a(touch.o)
+ .bss           0x000000000002ecc0        0x0 /home/max/kolibri-svn/contrib/sdk/lib/libcurses.a(refresh.o)
+ .bss           0x000000000002ecc0        0x0 /home/max/kolibri-svn/contrib/sdk/lib/libcurses.a(window.o)
+ .bss           0x000000000002ecc0        0x0 /home/max/kolibri-svn/contrib/sdk/lib/libcurses.a(overlay.o)
+ .bss           0x000000000002ecc0      0x220 /home/max/kolibri-svn/contrib/sdk/lib/libcurses.a(kernel.o)
+                0x000000000002ecc0                linesrippedoff
+ .bss           0x000000000002eee0        0x0 /home/max/kolibri-svn/contrib/sdk/lib/libcurses.a(border.o)
+ .bss           0x000000000002eee0       0x18 /home/max/kolibri-svn/contrib/sdk/lib/libcurses.a(pad.o)
+ .bss           0x000000000002eef8        0x0 /home/max/kolibri-svn/contrib/sdk/lib/libcurses.a(addch.o)
+ .bss           0x000000000002eef8        0x0 /home/max/kolibri-svn/contrib/sdk/lib/libcurses.a(outopts.o)
+ .bss           0x000000000002eef8        0xc /home/max/kolibri-svn/contrib/sdk/lib/libcurses.a(color.o)
+                0x000000000002eef8                COLORS
+ .bss           0x000000000002ef04        0x0 /home/max/kolibri-svn/contrib/sdk/lib/libcurses.a(printw.o)
+ .bss           0x000000000002ef04        0x0 /home/max/kolibri-svn/contrib/sdk/lib/libcurses.a(pdcgetsc.o)
+ .bss           0x000000000002ef04       0x24 /home/max/kolibri-svn/contrib/sdk/lib/libcurses.a(pdcscrn.o)
+                0x000000000002ef04                pdc_xoffset
+                0x000000000002ef08                pdc_yoffset
+                0x000000000002ef0c                pdc_swidth
+                0x000000000002ef10                pdc_sheight
+                0x000000000002ef14                pdc_tileback
+                0x000000000002ef18                pdc_back
+                0x000000000002ef1c                pdc_icon
+                0x000000000002ef20                pdc_font
+                0x000000000002ef24                pdc_screen
+ .bss           0x000000000002ef28        0x0 /home/max/kolibri-svn/contrib/sdk/lib/libcurses.a(pdcsetsc.o)
+ *fill*         0x000000000002ef28       0x18 
+ .bss           0x000000000002ef40      0x660 /home/max/kolibri-svn/contrib/sdk/lib/libcurses.a(pdcdisp.o)
+ .bss           0x000000000002f5a0       0x2c /home/max/kolibri-svn/contrib/sdk/lib/libcurses.a(pdckbd.o)
+ .bss           0x000000000002f5cc        0x0 /home/max/kolibri-svn/contrib/sdk/lib/libcurses.a(pdcutil.o)
+ .bss           0x000000000002f5cc        0x0 /home/max/kolibri-svn/contrib/sdk/lib/libcurses.a(scroll.o)
+ .bss           0x000000000002f5cc        0x8 /home/max/kolibri-svn/contrib/sdk/lib/libSDLn.a(SDL.o)
+ *fill*         0x000000000002f5d4        0xc 
+ .bss           0x000000000002f5e0      0xb20 /home/max/kolibri-svn/contrib/sdk/lib/libSDLn.a(SDL_error.o)
+ .bss           0x0000000000030100        0x0 /home/max/kolibri-svn/contrib/sdk/lib/libSDLn.a(SDL_fatal.o)
+ .bss           0x0000000000030100        0x4 /home/max/kolibri-svn/contrib/sdk/lib/libSDLn.a(SDL_getenv.o)
+ *fill*         0x0000000000030104       0x1c 
+ .bss           0x0000000000030120     0xa440 /home/max/kolibri-svn/contrib/sdk/lib/libSDLn.a(SDL_kolibri_audio.o)
+ .bss           0x000000000003a560      0xe40 /home/max/kolibri-svn/contrib/sdk/lib/libSDLn.a(SDL_events.o)
+                0x000000000003a560                SDL_EventOK
+ .bss           0x000000000003b3a0      0x6a0 /home/max/kolibri-svn/contrib/sdk/lib/libSDLn.a(SDL_keyboard.o)
+                0x000000000003b3a0                SDL_TranslateUNICODE
+ .bss           0x000000000003ba40        0xc /home/max/kolibri-svn/contrib/sdk/lib/libSDLn.a(SDL_mouse.o)
+ .bss           0x000000000003ba4c        0x0 /home/max/kolibri-svn/contrib/sdk/lib/libSDLn.a(SDL_quit.o)
+ .bss           0x000000000003ba4c        0x0 /home/max/kolibri-svn/contrib/sdk/lib/libSDLn.a(SDL_rwops.o)
+ .bss           0x000000000003ba4c        0x0 /home/max/kolibri-svn/contrib/sdk/lib/libSDLn.a(SDL_sysmutex.o)
+ .bss           0x000000000003ba4c        0x0 /home/max/kolibri-svn/contrib/sdk/lib/libSDLn.a(SDL_syssem.o)
+ .bss           0x000000000003ba4c        0x0 /home/max/kolibri-svn/contrib/sdk/lib/libSDLn.a(SDL_systhread.o)
+ *fill*         0x000000000003ba4c       0x14 
+ .bss           0x000000000003ba60      0x340 /home/max/kolibri-svn/contrib/sdk/lib/libSDLn.a(SDL_thread.o)
+                0x000000000003ba60                _creating_thread_lock
+ .bss           0x000000000003bda0       0x20 /home/max/kolibri-svn/contrib/sdk/lib/libSDLn.a(SDL_timer.o)
+                0x000000000003bda0                SDL_alarm_interval
+                0x000000000003bda4                SDL_timer_running
+                0x000000000003bda8                SDL_timer_started
+ .bss           0x000000000003bdc0        0x4 /home/max/kolibri-svn/contrib/sdk/lib/libSDLn.a(SDL_systimer.o)
+ .bss           0x000000000003bdc4        0x0 /home/max/kolibri-svn/contrib/sdk/lib/libSDLn.a(SDL_bmp.o)
+ .bss           0x000000000003bdc4       0x18 /home/max/kolibri-svn/contrib/sdk/lib/libSDLn.a(SDL_cursor.o)
+                0x000000000003bdc4                SDL_cursorlock
+                0x000000000003bdc8                SDL_cursor
+                0x000000000003bdcc                SDL_cursorstate
+ .bss           0x000000000003bddc        0x0 /home/max/kolibri-svn/contrib/sdk/lib/libSDLn.a(SDL_pixels.o)
+ .bss           0x000000000003bddc        0x0 /home/max/kolibri-svn/contrib/sdk/lib/libSDLn.a(SDL_surface.o)
+ .bss           0x000000000003bddc        0x4 /home/max/kolibri-svn/contrib/sdk/lib/libSDLn.a(SDL_video.o)
+                0x000000000003bddc                current_video
+ .bss           0x000000000003bde0       0x10 /home/max/kolibri-svn/contrib/sdk/lib/libSDLn.a(SDL_menuetvideo.o)
+ .bss           0x000000000003bdf0        0x0 /home/max/kolibri-svn/contrib/sdk/lib/libSDLn.a(SDL_endian.o)
+ .bss           0x000000000003bdf0        0x4 /home/max/kolibri-svn/contrib/sdk/lib/libSDLn.a(SDL_active.o)
+ .bss           0x000000000003bdf4        0x8 /home/max/kolibri-svn/contrib/sdk/lib/libSDLn.a(SDL_resize.o)
+ .bss           0x000000000003bdfc        0x0 /home/max/kolibri-svn/contrib/sdk/lib/libSDLn.a(SDL_RLEaccel.o)
+ .bss           0x000000000003bdfc        0x0 /home/max/kolibri-svn/contrib/sdk/lib/libSDLn.a(SDL_blit.o)
+ .bss           0x000000000003bdfc        0x0 /home/max/kolibri-svn/contrib/sdk/lib/libSDLn.a(SDL_blit_0.o)
+ .bss           0x000000000003bdfc        0x0 /home/max/kolibri-svn/contrib/sdk/lib/libSDLn.a(SDL_blit_1.o)
+ .bss           0x000000000003bdfc        0x0 /home/max/kolibri-svn/contrib/sdk/lib/libSDLn.a(SDL_blit_N.o)
+ .bss           0x000000000003bdfc        0xc /home/max/kolibri-svn/contrib/sdk/lib/libSDLn.a(SDL_menuetevents.o)
+ .bss           0x000000000003be08        0x0 /home/max/kolibri-svn/contrib/sdk/lib/libSDLn.a(SDL_blit_A.o)
+ *(COMMON)
+ COMMON         0x000000000003be08       0x80 xmas.o
+                0x000000000003be08                lookdeer3
+                0x000000000003be0c                bigdeer0
+                0x000000000003be10                bigdeer2
+                0x000000000003be14                w_holiday
+                0x000000000003be18                middeer0
+                0x000000000003be1c                treescrn4
+                0x000000000003be20                middeer2
+                0x000000000003be24                lildeer1
+                0x000000000003be28                treescrn8
+                0x000000000003be2c                bigdeer3
+                0x000000000003be30                x_pos
+                0x000000000003be34                lildeer2
+                0x000000000003be38                lookdeer4
+                0x000000000003be3c                bigdeer4
+                0x000000000003be40                middeer3
+                0x000000000003be44                lildeer3
+                0x000000000003be48                lildeer0
+                0x000000000003be4c                treescrn5
+                0x000000000003be50                y_pos
+                0x000000000003be54                treescrn2
+                0x000000000003be58                treescrn3
+                0x000000000003be5c                lookdeer2
+                0x000000000003be60                treescrn
+                0x000000000003be64                bigdeer1
+                0x000000000003be68                dotdeer0
+                0x000000000003be6c                treescrn7
+                0x000000000003be70                middeer1
+                0x000000000003be74                w_del_msg
+                0x000000000003be78                lookdeer0
+                0x000000000003be7c                stardeer0
+                0x000000000003be80                treescrn6
+                0x000000000003be84                lookdeer1
+ COMMON         0x000000000003be88       0x10 /home/max/kolibri-svn/contrib/sdk/lib/libgcc.a(_ctors.o)
+ *fill*         0x000000000003be98        0x8 
+ COMMON         0x000000000003bea0       0x94 /home/max/kolibri-svn/contrib/sdk/lib/libcurses.a(initscr.o)
+                0x000000000003bea0                ttytype
+                0x000000000003bf20                Mouse_status
+ *fill*         0x000000000003bf34        0xc 
+ COMMON         0x000000000003bf40       0x28 /home/max/kolibri-svn/contrib/sdk/lib/libcurses.a(kernel.o)
+                0x000000000003bf40                linesripped
+ *fill*         0x000000000003bf68       0x18 
+ COMMON         0x000000000003bf80     0x1848 /home/max/kolibri-svn/contrib/sdk/lib/libcurses.a(pdcscrn.o)
+                0x000000000003bf80                pdc_own_screen
+                0x000000000003bf84                pdc_fwidth
+                0x000000000003bfa0                pdc_color
+                0x000000000003cba0                pdc_flastc
+                0x000000000003cbc0                pdc_mapped
+                0x000000000003d7c0                pdc_fthick
+                0x000000000003d7c4                pdc_fheight
+ *fill*         0x000000000003d7c8       0x18 
+ COMMON         0x000000000003d7e0       0x20 /home/max/kolibri-svn/contrib/sdk/lib/libSDLn.a(SDL_events.o)
+                0x000000000003d7e0                SDL_ProcessEvents
+ COMMON         0x000000000003d800       0x24 /home/max/kolibri-svn/contrib/sdk/lib/libSDLn.a(SDL_keyboard.o)
+                0x000000000003d800                SDL_KeyRepeat
+ COMMON         0x000000000003d824        0x4 /home/max/kolibri-svn/contrib/sdk/lib/libSDLn.a(SDL_timer.o)
+                0x000000000003d824                SDL_alarm_callback
+                0x000000000003d830                . = ALIGN (0x10)
+ *fill*         0x000000000003d828        0x8 
+                0x000000000003d830                ___cmdline = .
+                0x000000000003d930                . = (. + 0x100)
+ *fill*         0x000000000003d830      0x100 
+                0x000000000003d930                ___pgmname = .
+                0x000000000003dd40                . = ((. + 0x400) + 0x10)
+ *fill*         0x000000000003d930      0x410 
+                0x000000000003dd40                ___stacktop = .
+                0x000000000003dd40                ___memsize = .
+
+/DISCARD/
+ *(.debug$S)
+ *(.debug$T)
+ *(.debug$F)
+ *(.drectve)
+ *(.note.GNU-stack)
+ *(.comment)
+ *(.debug_abbrev)
+ *(.debug_info)
+ *(.debug_line)
+ *(.debug_frame)
+ *(.debug_loc)
+ *(.debug_pubnames)
+ *(.debug_aranges)
+ *(.debug_ranges)
+LOAD xmas.o
+LOAD /home/max/kolibri-svn/contrib/sdk/lib/libgcc.a
+LOAD /home/max/kolibri-svn/contrib/sdk/lib/libcurses.a
+LOAD /home/max/kolibri-svn/contrib/sdk/lib/libSDLn.a
+LOAD /home/max/kolibri-svn/contrib/sdk/lib/libsound.a
+LOAD /home/max/kolibri-svn/contrib/sdk/lib/libc.dll.a
+OUTPUT(xmas pei-i386)
