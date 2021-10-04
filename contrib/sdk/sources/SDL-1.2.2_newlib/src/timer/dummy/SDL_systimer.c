@@ -85,13 +85,11 @@ Uint32 SDL_GetTicks (void)
 	return (curtime-starttime)*10;
 }
 
-void SDL_Delay (Uint32 ms)
-{
-    __kos__delay100(ms);
-/*  Uint32 start = SDL_GetTicks();
-  do
-    __asm__("int $0x40" :: "a"(68),"b"(1));
-  while (SDL_GetTicks()-start < ms);*/
+void SDL_Delay(unsigned ms){
+    unsigned start = SDL_GetTicks();
+    do{
+       __kos__delay100(1);
+    }while (SDL_GetTicks()-start < ms);
 }
 
 int SDL_SYS_TimerInit(void)

@@ -17,13 +17,6 @@ static int was_initialized=0;
 static int has_null_cursor=0;
 static int null_cursor;
 
-inline int get_skinh(void)
-{
-	int res;
-	__asm__ ("int $0x40" : "=a"(res) : "a"(48),"b"(4));
-	return res;
-}
-
 //#define KEEP_OBSOLETE_STYLE3
 
 #ifdef KEEP_OBSOLETE_STYLE3
@@ -33,7 +26,7 @@ static int IsStyle4Available=0;
 void MenuetOS_SDL_RepaintWnd(void)
 {
  __kos__window_redraw(1);
- __kos__define_window(1,1,vm_suf->hidden->win_size_x+9,vm_suf->hidden->win_size_y+get_skinh()+4,
+ __kos__define_window(1, 1, vm_suf->hidden->win_size_x+9,vm_suf->hidden->win_size_y+__kos__get_skinh()+4,
 #ifdef KEEP_OBSOLETE_STYLE3
  	IsStyle4Available?0x34000000:0x33000000
 #else
@@ -100,17 +93,6 @@ void MenuetOS_SetCaption(_THIS,const char * title,const char * icon)
  if(was_initialized) __asm__("int $0x40"::"a"(71),"b"(1),"c"(title));
 }
 
-void debug_board_write_byte(const char ch){
-    __asm__ __volatile__(
-        "int $0x40"
-        ::"a"(63), "b"(1), "c"(ch));
-}
-
-void debug_board_write_str(const char* str){
-    while(*str)
-        debug_board_write_byte(*str++);
-}
-
 SDL_Surface * MenuetOS_SetVideoMode(_THIS, SDL_Surface *current, int width, int height, int bpp, Uint32 flags)
 {
  int ly;
@@ -120,10 +102,10 @@ SDL_Surface * MenuetOS_SetVideoMode(_THIS, SDL_Surface *current, int width, int 
  current->w=width;
  current->h=height;
  current->pitch=width*(bpp>>3);
-
+ 
  char info[100];
  sprintf(info, "width = %d, height = %d, pitch = %d, bpp = %d\n", current->w, current->h, current->pitch, bpp);
- debug_board_write_str(info);
+ __kos__dbg_write_str(info);
  // __asm__ __volatile__("int3");
  
  current->pixels=this->hidden->__video_buffer=realloc(this->hidden->__video_buffer,
@@ -138,15 +120,18 @@ SDL_Surface * MenuetOS_SetVideoMode(_THIS, SDL_Surface *current, int width, int 
  this->hidden->win_size_x=width;
  this->hidden->win_size_y=height;
  vm_suf=this;
+
+
  if (was_initialized)
  {
-  unsigned newheight = height+get_skinh()+4;
-  unsigned newwidth = width+9;
-  __asm__("int $0x40"::"a"(67),"b"(-1),"c"(-1),"d"(newwidth),"S"(newheight));
+  unsigned newheight = height+__kos__get_skinh()+4;
+  unsigned newwidth  = width+9;
+
+  __kos__change_window(-1, -1, newwidth, newheight);
  }
  else
  {
-   __kos__set_events_mask(0x27);
+  __kos__set_events_mask(0x27);
   was_initialized=1;
   MenuetOS_SDL_RepaintWnd();
  }

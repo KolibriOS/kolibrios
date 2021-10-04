@@ -9,6 +9,7 @@ typedef unsigned char       __u8;
 typedef unsigned short      __u16;
 typedef unsigned long       __u32;
 
+#pragma pack(push)
 struct process_table_entry
 {
  __u32 cpu_usage;
@@ -27,6 +28,15 @@ struct process_table_entry
  __u8 window_state;
  __u8 reserved3[1024-71];
 };
+
+typedef union{
+    unsigned val;
+    struct{
+        short  h;
+        short  w;
+    };
+}__kos__screen_t;
+#pragma pack(pop)
 
 static inline 
 void __kos__define_window(__u16 x1,__u16 y1,__u16 xsize,__u16 ysize,
@@ -73,7 +83,7 @@ int __kos__check_for_event(void)
 static inline
 int __kos__set_events_mask(__u32 mask)
 {
-    register __u32 val;
+    __u32 val;
     asm volatile ("int $0x40":"=a"(val):"a"(40), "b"(mask));
     return val;
 }
@@ -97,6 +107,52 @@ int __kos__get_button_id()
         :"a"(17)
     );
     return val>>8;
+}
+
+
+static inline
+void __kos__change_window(int new_x, int new_y, int new_w, int new_h)
+{
+    __asm__ __volatile__(
+        "int $0x40"
+        ::"a"(67), "b"(new_x), "c"(new_y), "d"(new_w),"S"(new_h)
+    );
+}
+
+static inline
+__kos__screen_t __kos__screen_size(void)
+{
+	__kos__screen_t size;
+    __asm__ __volatile__(
+        "int $0x40"
+        :"=a"(size)
+        :"a"(14)
+        :"memory"
+    );
+    return size;
+}
+
+static inline 
+int __kos__get_skinh(void)
+{
+    int res;
+    __asm__ ("int $0x40" : "=a"(res) : "a"(48),"b"(4));
+    return res;
+}
+
+static inline
+void __kos__dbg_write_byte(const char ch){
+    __asm__ __volatile__(
+        "int $0x40"
+        ::"a"(63), "b"(1), "c"(ch)
+    );
+}
+
+static inline
+void __kos__dbg_write_str(const char* str){
+    while(*str){
+        __kos__dbg_write_byte(*str++);
+    }
 }
 
 #ifdef __cplusplus
