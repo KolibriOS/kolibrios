@@ -496,7 +496,6 @@ tup.append_table(img_files, {
  {"LIB/RASTERWORKS.OBJ", PROGS .. "/develop/libraries/fontRasterWorks(unicode)/RasterWorks.obj"},
  {"LIB/SORT.OBJ", PROGS .. "/develop/libraries/sorter/sort.obj"},
  {"LIB/TINYGL.OBJ", PROGS .. "/develop/libraries/TinyGL/asm_fork/tinygl.obj"},
- {"LIB/MTAR.OBJ", PROGS .. "/develop/libraries/microtar/mtar.obj"},
  {"MEDIA/ANIMAGE", PROGS .. "/media/animage/trunk/animage"},
  {"MEDIA/KIV", PROGS .. "/media/kiv/trunk/kiv"},
  {"MEDIA/LISTPLAY", PROGS .. "/media/listplay/trunk/listplay"},
@@ -723,6 +722,7 @@ if tup.getconfig('NO_GCC') ~= 'full' then
 tup.append_table(img_files, {
  {"GAMES/REVERSI", PROGS .. "/games/reversi/trunk/reversi"},
  {"LIB/LIBC.OBJ", PROGS .. "/develop/ktcc/trunk/libc.obj/source/libc.obj"},
+ {"LIB/MTAR.OBJ", PROGS .. "/develop/libraries/microtar/mtar.obj"},
 })
 tup.append_table(extra_files, {
 -- {"kolibrios/3D/cubeline", PROGS .. "/demos/cubeline/trunk/cubeline"},
