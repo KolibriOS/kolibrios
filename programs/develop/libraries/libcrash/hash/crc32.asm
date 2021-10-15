@@ -1,22 +1,22 @@
-;    libcrash -- cryptographic hash functions
+; libcrash -- cryptographic hash (and other) functions
 ;
-;    Copyright (C) 2012-2013,2016,2019 Ivan Baravy (dunkaist)
+; Copyright (C) <2012-2013,2016,2019,2021> Ivan Baravy
 ;
-;    This program is free software: you can redistribute it and/or modify
-;    it under the terms of the GNU General Public License as published by
-;    the Free Software Foundation, either version 3 of the License, or
-;    (at your option) any later version.
+; SPDX-License-Identifier: GPL-2.0-or-later
 ;
-;    This program is distributed in the hope that it will be useful,
-;    but WITHOUT ANY WARRANTY; without even the implied warranty of
-;    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-;    GNU General Public License for more details.
+; This program is free software: you can redistribute it and/or modify it under
+; the terms of the GNU General Public License as published by the Free Software
+; Foundation, either version 2 of the License, or (at your option) any later
+; version.
 ;
-;    You should have received a copy of the GNU General Public License
-;    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+; This program is distributed in the hope that it will be useful, but WITHOUT
+; ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+; FOR A PARTICULAR PURPOSE. See the GNU General Public License for more details.
+;
+; You should have received a copy of the GNU General Public License along with
+; this program. If not, see <http://www.gnu.org/licenses/>.
 
-
-CRC32_HASH_SIZE = 4
+CRC32_BLOCK_SIZE = 1
 
 CRC32_ALIGN = 4
 CRC32_ALIGN_MASK = CRC32_ALIGN - 1
@@ -25,21 +25,19 @@ struct ctx_crc32
         hash    rd 1
 ends
 
-if defined sizeof.crash_ctx
-  assert sizeof.crash_ctx >= sizeof.ctx_crc32
-end if
+assert sizeof.ctx_crc32 <= LIBCRASH_CTX_LEN
 
-proc crc32.init _ctx
+proc crc32.init uses ebx esi edi, _ctx
         mov     ebx, [_ctx]
         lea     edi, [ebx + ctx_crc32.hash]
         mov     esi, crc32._.hash_init
         mov     ecx, 1
-        rep     movsd
+        rep movsd
         ret
 endp
 
 
-proc crc32.update _ctx, _msg, _size
+proc crc32.update uses ebx esi edi, _ctx, _msg, _size
         mov     ebx, [_ctx]
         mov     esi, [_msg]
         lea     edi, [ebx + ctx_crc32.hash]
@@ -47,7 +45,7 @@ proc crc32.update _ctx, _msg, _size
         mov     ecx, [_size]
         jecxz   .quit
 
-    @@:
+@@:
         movzx   edx, al
         xor     dl, byte[esi]
         add     esi, 1
@@ -57,12 +55,12 @@ proc crc32.update _ctx, _msg, _size
         jnz     @b
 
         stosd
-  .quit:
+.quit:
         ret
 endp
 
 
-proc crc32.final _ctx
+proc crc32.finish uses ebx esi edi, _ctx
         mov     ebx, [_ctx]
         lea     esi, [ebx + ctx_crc32.hash]
         mov     edi, esi
@@ -75,10 +73,10 @@ endp
 
 
 proc crc32.oneshot _ctx, _data, _len
-	stdcall	crc32.init, [_ctx]
-	stdcall	crc32.update, [_ctx], [_data], [_len]
-	stdcall	crc32.final, [_ctx]
-	ret
+        stdcall crc32.init, [_ctx]
+        stdcall crc32.update, [_ctx], [_data], [_len]
+        stdcall crc32.finish, [_ctx]
+        ret
 endp
 
 

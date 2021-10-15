@@ -49,7 +49,7 @@ include '../../proc32.inc'
 include '../../dll.inc'
 include '../../debug-fdo.inc'
 include '../../network.inc'
-include '../../develop/libraries/libcrash/trunk/libcrash.inc'
+include '../../develop/libraries/libcrash/libcrash.inc'
 
 ; macros for network byte order
 macro dd_n op {
@@ -621,18 +621,18 @@ import  console, \
         con_get_input, 'con_get_input'
 
 import  libcrash, \
-        sha512_init, 'sha512_init', \
-        sha512_update, 'sha512_update', \
-        sha512_final, 'sha512_final',\
-        sha256_init, 'sha256_init', \
-        sha256_update, 'sha256_update', \
-        sha256_final, 'sha256_final',\
+        sha2_512_init, 'sha2_512_init', \
+        sha2_512_update, 'sha2_512_update', \
+        sha2_512_finish, 'sha2_512_finish',\
+        sha2_256_init, 'sha2_256_init', \
+        sha2_256_update, 'sha2_256_update', \
+        sha2_256_finish, 'sha2_256_finish',\
         sha1_init, 'sha1_init', \
         sha1_update, 'sha1_update', \
-        sha1_final, 'sha1_final', \
+        sha1_finish, 'sha1_finish', \
         md5_init, 'md5_init', \
         md5_update, 'md5_update', \
-        md5_final, 'md5_final'
+        md5_finish, 'md5_finish'
 
 import  libini, \
         ini_get_str, 'ini_get_str', \

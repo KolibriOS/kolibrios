@@ -44,7 +44,7 @@ locals
 
         K_length                dd ?
 
-        session_id_x            rb SHA256_HASH_SIZE+1
+        session_id_x            rb SHA2_256_LEN+1
 
         str_K_S                 dd ?    ; server public host key and certificates (K_S)
         mpint_f_big             dd ?    ; pointer to original
@@ -54,7 +54,7 @@ endl
 
 ; Allocate memory for temp variables
 
-        mov     ecx, 7*(MAX_BITS/8+4) + 7*SHA256_HASH_SIZE + 2*sizeof.crash_ctx
+        mov     ecx, 7*(MAX_BITS/8+4) + 7*SHA2_256_LEN + 2*LIBCRASH_CTX_LEN
         mcall   68, 12
         test    eax, eax
         jz      .err_nomem
@@ -77,31 +77,31 @@ endl
         add     eax, (MAX_BITS/8+4)
 
         mov     [k_h_ctx], eax
-        add     eax, sizeof.crash_ctx
+        add     eax, LIBCRASH_CTX_LEN
         mov     [temp_ctx], eax
-        add     eax, sizeof.crash_ctx
+        add     eax, LIBCRASH_CTX_LEN
 
         mov     [H], eax
-        add     eax, SHA256_HASH_SIZE
+        add     eax, SHA2_256_LEN
         mov     [rx_iv], eax
-        add     eax, SHA256_HASH_SIZE
+        add     eax, SHA2_256_LEN
         mov     [tx_iv], eax
-        add     eax, SHA256_HASH_SIZE
+        add     eax, SHA2_256_LEN
         mov     [rx_enc_key], eax
-        add     eax, SHA256_HASH_SIZE
+        add     eax, SHA2_256_LEN
         mov     [tx_enc_key], eax
-        add     eax, SHA256_HASH_SIZE
+        add     eax, SHA2_256_LEN
         mov     [rx_int_key], eax
-        add     eax, SHA256_HASH_SIZE
+        add     eax, SHA2_256_LEN
         mov     [tx_int_key], eax
-;        add     eax, SHA256_HASH_SIZE
+;        add     eax, SHA2_256_LEN
 
 ; Copy the partial exchange hash to our temporary one
 
         mov     esi, [con_ptr]
         lea     esi, [esi+sshlib_connection.part_ex_hash_ctx]
         mov     edi, [temp_ctx]
-        mov     ecx, sizeof.crash_ctx/4
+        mov     ecx, LIBCRASH_CTX_LEN/4
         rep movsd
 
 ;----------------------------------------------
@@ -201,27 +201,27 @@ endl
         add     edx, 4
         lea     eax, [esi+edx]
         mov     [mpint_f_big], eax
-        invoke  sha256_update, [temp_ctx], esi, edx
+        invoke  sha2_256_update, [temp_ctx], esi, edx
 
 ;--------------------------------------------------------------------------
 ; HASH: uint32 min, minimal size in bits of an acceptable group
 ;       uint32 n, preferred size in bits of the group the server will send
 ;       uint32 max, maximal size in bits of an acceptable group
-        invoke  sha256_update, [temp_ctx], ssh_msg_gex_req+sizeof.ssh_packet_header-ssh_packet_header.message_code, 12
+        invoke  sha2_256_update, [temp_ctx], ssh_msg_gex_req+sizeof.ssh_packet_header-ssh_packet_header.message_code, 12
 
 ;----------------------------
 ; HASH: mpint p, safe prime
         stdcall mpint_shrink, [mpint_p]
         stdcall mpint_to_big_endian, [mpint_tmp], [mpint_p]
         add     eax, 4
-        invoke  sha256_update, [temp_ctx], [mpint_tmp], eax
+        invoke  sha2_256_update, [temp_ctx], [mpint_tmp], eax
 
 ;----------------------------------------
 ; HASH: mpint g, generator for subgroup
         stdcall mpint_shrink, [mpint_g]
         stdcall mpint_to_big_endian, [mpint_tmp], [mpint_g]
         add     eax, 4
-        invoke  sha256_update, [temp_ctx], [mpint_tmp], eax
+        invoke  sha2_256_update, [temp_ctx], [mpint_tmp], eax
 
 ;---------------------------------------------------
 ; HASH: mpint e, exchange value sent by the client
@@ -230,7 +230,7 @@ endl
         mov     edx, [esi]
         bswap   edx
         add     edx, 4
-        invoke  sha256_update, [temp_ctx], esi, edx
+        invoke  sha2_256_update, [temp_ctx], esi, edx
 
 ;---------------------------------------------------
 ; HASH: mpint f, exchange value sent by the server
@@ -238,7 +238,7 @@ endl
         mov     edx, [esi]
         bswap   edx
         add     edx, 4
-        invoke  sha256_update, [temp_ctx], esi, edx
+        invoke  sha2_256_update, [temp_ctx], esi, edx
 
         stdcall mpint_to_little_endian, [mpint_f], [mpint_f_big]
         mov     esi, [mpint_f_big]
@@ -260,19 +260,18 @@ endl
 ;-----------------------------------
 ; HASH: mpint K, the shared secret
         add     eax, 4
-        invoke  sha256_update, [temp_ctx], [mpint_K_big], eax
+        invoke  sha2_256_update, [temp_ctx], [mpint_K_big], eax
 
 ;-------------------------------
 ; Finalize the exchange hash (H)
-        invoke  sha256_final, [temp_ctx]
+        invoke  sha2_256_finish, [temp_ctx]
         mov     esi, [temp_ctx]
-        add     esi, crash_ctx.hash
         mov     edi, [H]
-        mov     ecx, SHA256_HASH_SIZE/4
+        mov     ecx, SHA2_256_LEN/4
         rep movsd
 
         DEBUGF  1, "Exchange hash H: "
-        stdcall dump_hex, [H], SHA256_HASH_SIZE/4
+        stdcall dump_hex, [H], SHA2_256_LEN/4
 
 ;--------------------------
 ; Set or get the session id
@@ -282,20 +281,20 @@ endl
         jae     @f
 
 ; If first KEX, verify host public key
-        stdcall sshlib_host_verify, [con_ptr], [str_K_S], [str_s_of_H], [H], SHA256_HASH_SIZE
+        stdcall sshlib_host_verify, [con_ptr], [str_K_S], [str_s_of_H], [H], SHA2_256_LEN
         test    eax, eax
         jnz     .err
 
         mov     eax, [con_ptr]
         mov     esi, [H]
         lea     edi, [eax + sshlib_connection.session_id]
-        mov     ecx, SHA256_HASH_SIZE/4
+        mov     ecx, SHA2_256_LEN/4
         rep movsd
   @@:
 
         lea     esi, [eax + sshlib_connection.session_id]
         lea     edi, [session_id_x+1]
-        mov     ecx, SHA256_HASH_SIZE/4
+        mov     ecx, SHA2_256_LEN/4
         rep movsd
 
 
@@ -304,126 +303,126 @@ endl
 
 ; First, calculate partial hash of K and H so we can re-use it for every key.
 
-        invoke  sha256_init, [k_h_ctx]
+        invoke  sha2_256_init, [k_h_ctx]
 
         mov     ecx, [K_length]
         add     ecx, 4
-        invoke  sha256_update, [k_h_ctx], [mpint_K_big], ecx
-        invoke  sha256_update, [k_h_ctx], [H], SHA256_HASH_SIZE
+        invoke  sha2_256_update, [k_h_ctx], [mpint_K_big], ecx
+        invoke  sha2_256_update, [k_h_ctx], [H], SHA2_256_LEN
 
 ;---------------------------------------------------------------
 ; Initial IV client to server: HASH(K || H || "A" || session_id)
 
         mov     esi, [k_h_ctx]
         mov     edi, [temp_ctx]
-        mov     ecx, sizeof.crash_ctx/4
+        mov     ecx, LIBCRASH_CTX_LEN/4
         rep movsd
         lea     edx, [session_id_x]
         mov     byte[edx], 'A'
-        invoke  sha256_update, [temp_ctx], edx, SHA256_HASH_SIZE+1
-        invoke  sha256_final, [temp_ctx]
+        invoke  sha2_256_update, [temp_ctx], edx, SHA2_256_LEN+1
+        invoke  sha2_256_finish, [temp_ctx]
         mov     edi, [tx_iv]
         mov     esi, [temp_ctx]
-        mov     ecx, SHA256_HASH_SIZE/4
+        mov     ecx, SHA2_256_LEN/4
         rep movsd
 
         DEBUGF  1, "Remote IV: "
-        stdcall dump_hex, [tx_iv], SHA256_HASH_SIZE/4
+        stdcall dump_hex, [tx_iv], SHA2_256_LEN/4
 
 ;---------------------------------------------------------------
 ; Initial IV server to client: HASH(K || H || "B" || session_id)
 
         mov     esi, [k_h_ctx]
         mov     edi, [temp_ctx]
-        mov     ecx, sizeof.crash_ctx/4
+        mov     ecx, LIBCRASH_CTX_LEN/4
         rep movsd
         lea     edx, [session_id_x]
         mov     byte[edx], 'B'
-        invoke  sha256_update, [temp_ctx], edx, SHA256_HASH_SIZE+1
-        invoke  sha256_final, [temp_ctx]
+        invoke  sha2_256_update, [temp_ctx], edx, SHA2_256_LEN+1
+        invoke  sha2_256_finish, [temp_ctx]
         mov     edi, [rx_iv]
         mov     esi, [temp_ctx]
-        mov     ecx, SHA256_HASH_SIZE/4
+        mov     ecx, SHA2_256_LEN/4
         rep movsd
 
         DEBUGF  1, "Local IV: "
-        stdcall dump_hex, [rx_iv], SHA256_HASH_SIZE/4
+        stdcall dump_hex, [rx_iv], SHA2_256_LEN/4
 
 ;-------------------------------------------------------------------
 ; Encryption key client to server: HASH(K || H || "C" || session_id)
 
         mov     esi, [k_h_ctx]
         mov     edi, [temp_ctx]
-        mov     ecx, sizeof.crash_ctx/4
+        mov     ecx, LIBCRASH_CTX_LEN/4
         rep movsd
         lea     edx, [session_id_x]
         mov     byte[edx], 'C'
-        invoke  sha256_update, [temp_ctx], edx, SHA256_HASH_SIZE+1
-        invoke  sha256_final, [temp_ctx]
+        invoke  sha2_256_update, [temp_ctx], edx, SHA2_256_LEN+1
+        invoke  sha2_256_finish, [temp_ctx]
         mov     edi, [tx_enc_key]
         mov     esi, [temp_ctx]
-        mov     ecx, SHA256_HASH_SIZE/4
+        mov     ecx, SHA2_256_LEN/4
         rep movsd
 
         DEBUGF  1, "Remote key: "
-        stdcall dump_hex, [tx_enc_key], SHA256_HASH_SIZE/4
+        stdcall dump_hex, [tx_enc_key], SHA2_256_LEN/4
 
 ;-------------------------------------------------------------------
 ; Encryption key server to client: HASH(K || H || "D" || session_id)
 
         mov     esi, [k_h_ctx]
         mov     edi, [temp_ctx]
-        mov     ecx, sizeof.crash_ctx/4
+        mov     ecx, LIBCRASH_CTX_LEN/4
         rep movsd
         lea     edx, [session_id_x]
         mov     byte[edx], 'D'
-        invoke  sha256_update, [temp_ctx], edx, SHA256_HASH_SIZE+1
-        invoke  sha256_final, [temp_ctx]
+        invoke  sha2_256_update, [temp_ctx], edx, SHA2_256_LEN+1
+        invoke  sha2_256_finish, [temp_ctx]
         mov     edi, [rx_enc_key]
         mov     esi, [temp_ctx]
-        mov     ecx, SHA256_HASH_SIZE/4
+        mov     ecx, SHA2_256_LEN/4
         rep movsd
 
         DEBUGF  1, "Local key: "
-        stdcall dump_hex, [rx_enc_key], SHA256_HASH_SIZE/4
+        stdcall dump_hex, [rx_enc_key], SHA2_256_LEN/4
 
 ;------------------------------------------------------------------
 ; Integrity key client to server: HASH(K || H || "E" || session_id)
 
         mov     esi, [k_h_ctx]
         mov     edi, [temp_ctx]
-        mov     ecx, sizeof.crash_ctx/4
+        mov     ecx, LIBCRASH_CTX_LEN/4
         rep movsd
         lea     edx, [session_id_x]
         mov     byte[edx], 'E'
-        invoke  sha256_update, [temp_ctx], edx, SHA256_HASH_SIZE+1
-        invoke  sha256_final, [temp_ctx]
+        invoke  sha2_256_update, [temp_ctx], edx, SHA2_256_LEN+1
+        invoke  sha2_256_finish, [temp_ctx]
         mov     edi, [tx_int_key]
         mov     esi, [temp_ctx]
-        mov     ecx, SHA256_HASH_SIZE/4
+        mov     ecx, SHA2_256_LEN/4
         rep movsd
 
         DEBUGF  1, "Remote Integrity key: "
-        stdcall dump_hex, [tx_int_key], SHA256_HASH_SIZE/4
+        stdcall dump_hex, [tx_int_key], SHA2_256_LEN/4
 
 ;------------------------------------------------------------------
 ; Integrity key server to client: HASH(K || H || "F" || session_id)
 
         mov     esi, [k_h_ctx]
         mov     edi, [temp_ctx]
-        mov     ecx, sizeof.crash_ctx/4
+        mov     ecx, LIBCRASH_CTX_LEN/4
         rep movsd
         lea     edx, [session_id_x]
         mov     byte[edx], 'F'
-        invoke  sha256_update, [temp_ctx], edx, SHA256_HASH_SIZE+1
-        invoke  sha256_final, [temp_ctx]
+        invoke  sha2_256_update, [temp_ctx], edx, SHA2_256_LEN+1
+        invoke  sha2_256_finish, [temp_ctx]
         mov     edi, [rx_int_key]
         mov     esi, [temp_ctx]
-        mov     ecx, SHA256_HASH_SIZE/4
+        mov     ecx, SHA2_256_LEN/4
         rep movsd
 
         DEBUGF  1, "Local Integrity key: "
-        stdcall dump_hex, [rx_int_key] , SHA256_HASH_SIZE/4
+        stdcall dump_hex, [rx_int_key] , SHA2_256_LEN/4
 
 ;-------------------------------------
 ; << Parse Diffie-Hellman New Keys MSG
@@ -471,14 +470,14 @@ endl
         mov     [ebx + sshlib_connection.tx_pad_proc], MBRandom
 
         lea     ecx, [ebx + sshlib_connection.rx_mac_ctx]
-        stdcall hmac_sha256_setkey, ecx, [rx_int_key], SHA256_HASH_SIZE
+        stdcall hmac_sha256_setkey, ecx, [rx_int_key], SHA2_256_LEN
         mov     [ebx + sshlib_connection.rx_mac_proc], hmac_sha256
-        mov     [ebx + sshlib_connection.rx_mac_length], SHA256_HASH_SIZE
+        mov     [ebx + sshlib_connection.rx_mac_length], SHA2_256_LEN
 
         lea     ecx, [ebx + sshlib_connection.tx_mac_ctx]
-        stdcall hmac_sha256_setkey, ecx, [tx_int_key], SHA256_HASH_SIZE
+        stdcall hmac_sha256_setkey, ecx, [tx_int_key], SHA2_256_LEN
         mov     [ebx + sshlib_connection.tx_mac_proc], hmac_sha256
-        mov     [ebx + sshlib_connection.tx_mac_length], SHA256_HASH_SIZE
+        mov     [ebx + sshlib_connection.tx_mac_length], SHA2_256_LEN
 
         mov     [ebx + sshlib_connection.status], SSHLIB_CON_STAT_KEX_DONE
         xor     eax, eax
@@ -486,7 +485,7 @@ endl
   .err:
         push    eax
         xor     eax, eax
-        mov     ecx, (7*(MAX_BITS/8+4) + 7*SHA256_HASH_SIZE + 2*sizeof.crash_ctx)/4
+        mov     ecx, (7*(MAX_BITS/8+4) + 7*SHA2_256_LEN + 2*LIBCRASH_CTX_LEN)/4
         mov     edi, [mpint_tmp]
         rep stosd
 

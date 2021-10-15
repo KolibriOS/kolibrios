@@ -1,34 +1,32 @@
-;    libcrash -- cryptographic hash functions
+; libcrash -- cryptographic hash (and other) functions
 ;
-;    Copyright (C) 2012-2013,2016,2019 Ivan Baravy (dunkaist)
+; Copyright (C) <2012-2013,2016,2019,2021> Ivan Baravy
 ;
-;    This program is free software: you can redistribute it and/or modify
-;    it under the terms of the GNU General Public License as published by
-;    the Free Software Foundation, either version 3 of the License, or
-;    (at your option) any later version.
+; SPDX-License-Identifier: GPL-2.0-or-later
 ;
-;    This program is distributed in the hope that it will be useful,
-;    but WITHOUT ANY WARRANTY; without even the implied warranty of
-;    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-;    GNU General Public License for more details.
+; This program is free software: you can redistribute it and/or modify it under
+; the terms of the GNU General Public License as published by the Free Software
+; Foundation, either version 2 of the License, or (at your option) any later
+; version.
 ;
-;    You should have received a copy of the GNU General Public License
-;    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+; This program is distributed in the hope that it will be useful, but WITHOUT
+; ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+; FOR A PARTICULAR PURPOSE. See the GNU General Public License for more details.
+;
+; You should have received a copy of the GNU General Public License along with
+; this program. If not, see <http://www.gnu.org/licenses/>.
 
+SHA2_384512_BLOCK_SIZE = 128
+SHA2_384_BLOCK_SIZE    = SHA2_384512_BLOCK_SIZE
+SHA2_512_BLOCK_SIZE    = SHA2_384512_BLOCK_SIZE
 
-SHA384512_BLOCK_SIZE = 128
-SHA384_BLOCK_SIZE    = SHA384512_BLOCK_SIZE
-SHA512_BLOCK_SIZE    = SHA384512_BLOCK_SIZE
-SHA384_HASH_SIZE     = 48
-SHA512_HASH_SIZE     = 64
+SHA2_384512_INIT_SIZE  = 64
+SHA2_384512_ALIGN      = 16
+SHA2_384512_ALIGN_MASK = SHA2_384512_ALIGN - 1
 
-SHA384512_INIT_SIZE  = 64
-SHA384512_ALIGN      = 16
-SHA384512_ALIGN_MASK = SHA384512_ALIGN - 1
-
-struct ctx_sha384512
-        hash            rb SHA384512_INIT_SIZE
-        block           rb SHA384512_BLOCK_SIZE
+struct ctx_sha2_384512
+        hash            rb SHA2_384512_INIT_SIZE
+        block           rb SHA2_384512_BLOCK_SIZE
         index           rd 1
         msglen_0        rd 1
         msglen_1        rd 1
@@ -48,11 +46,9 @@ struct ctx_sha384512
         temp            rq 1
 ends
 
-if defined sizeof.crash_ctx
-  assert sizeof.crash_ctx >= sizeof.ctx_sha384512
-end if
+assert sizeof.ctx_sha2_384512 <= LIBCRASH_CTX_LEN
 
-macro sha384512._.chn x, y, z
+macro sha2_384512._.chn x, y, z
 {
         movq    mm0, [y]
         pxor    mm0, [z]
@@ -60,7 +56,7 @@ macro sha384512._.chn x, y, z
         pxor    mm0, [z]
 }
 
-macro sha384512._.maj x, y, z
+macro sha2_384512._.maj x, y, z
 {
         movq    mm0, [x]
         pxor    mm0, [y]
@@ -70,7 +66,7 @@ macro sha384512._.maj x, y, z
         pxor    mm0, mm2
 }
 
-macro sha384512._.Sigma0 x
+macro sha2_384512._.Sigma0 x
 {
         movq    mm0, x
         movq    mm2, mm0
@@ -91,7 +87,7 @@ macro sha384512._.Sigma0 x
         pxor    mm0, mm2
 }
 
-macro sha384512._.Sigma1 x
+macro sha2_384512._.Sigma1 x
 {
         movq    mm0, x
         movq    mm2, mm0
@@ -112,7 +108,7 @@ macro sha384512._.Sigma1 x
         pxor    mm0, mm2
 }
 
-macro sha384512._.sigma0 x
+macro sha2_384512._.sigma0 x
 {
         movq    mm0, x
         movq    mm2, mm0
@@ -130,7 +126,7 @@ macro sha384512._.sigma0 x
         pxor    mm0, mm2
 }
 
-macro sha384512._.sigma1 x
+macro sha2_384512._.sigma1 x
 {
         movq    mm0, x
         movq    mm2, mm0
@@ -148,14 +144,14 @@ macro sha384512._.sigma1 x
         pxor    mm0, mm2
 }
 
-macro sha384512._.recalculate_w n
+macro sha2_384512._.recalculate_w n
 {
         movq    mm3, [w + ((n-2) and 15)*8]
-        sha384512._.sigma1  mm3
+        sha2_384512._.sigma1  mm3
         paddq   mm0, [w + ((n-7) and 15)*8]
         movq    mm6, mm0
         movq    mm3, [w + ((n-15) and 15)*8]
-        sha384512._.sigma0  mm3
+        sha2_384512._.sigma0  mm3
         movq    mm2, mm6
         paddq   mm0, mm2
         movq    mm7, [w + (n)*8]
@@ -163,13 +159,13 @@ macro sha384512._.recalculate_w n
         movq    [w + (n)*8], mm7
 }
 
-macro sha384512._.round a, b, c, d, e, f, g, h, k
+macro sha2_384512._.round a, b, c, d, e, f, g, h, k
 {
         movq    mm1, [h]
         movq    mm3, [e]
-        sha384512._.Sigma1  mm3
+        sha2_384512._.Sigma1  mm3
         paddq   mm1, mm0
-        sha384512._.chn     e, f, g
+        sha2_384512._.chn     e, f, g
         paddq   mm1, mm0
         paddq   mm1, [k]
         paddq   mm1, mm5
@@ -177,15 +173,15 @@ macro sha384512._.round a, b, c, d, e, f, g, h, k
         paddq   mm7, mm1
         movq    [d], mm7
         movq    mm3, [a]
-        sha384512._.Sigma0  mm3
+        sha2_384512._.Sigma0  mm3
         paddq   mm1, mm0
-        sha384512._.maj     a, b, c
+        sha2_384512._.maj     a, b, c
         paddq   mm0, mm1
         movq    [h], mm0
 }
 
 
-macro sha384512._.round_1_16 a, b, c, d, e, f, g, h, n
+macro sha2_384512._.round_1_16 a, b, c, d, e, f, g, h, n
 {
 
         movq    mm0, [esi + (n)*8]
@@ -201,50 +197,50 @@ macro sha384512._.round_1_16 a, b, c, d, e, f, g, h, n
         movq    mm0, [temp]
         movq    [w + (n)*8], mm0
         movq    mm5, mm0
-        sha384512._.round a, b, c, d, e, f, g, h, (sha384512._.table + (n)*8)
+        sha2_384512._.round a, b, c, d, e, f, g, h, (sha2_384512._.table + (n)*8)
 }
 
-macro sha384512._.round_17_64 a, b, c, d, e, f, g, h, n, rep_num
+macro sha2_384512._.round_17_64 a, b, c, d, e, f, g, h, n, rep_num
 {
-        sha384512._.recalculate_w n
+        sha2_384512._.recalculate_w n
         movq    mm5, [w + (n)*8]
-        sha384512._.round a, b, c, d, e, f, g, h, (sha384512._.table + (n+16*rep_num)*8)
+        sha2_384512._.round a, b, c, d, e, f, g, h, (sha2_384512._.table + (n+16*rep_num)*8)
 }
 
 
-proc sha384.init _ctx
+proc sha2_384.init uses ebx esi edi, _ctx
         mov     ebx, [_ctx]
-        lea     edi, [ebx + ctx_sha384512.hash]
-        mov     esi, sha384._.hash_init
-        mov     ecx, SHA384512_INIT_SIZE/4
-        rep     movsd
+        lea     edi, [ebx + ctx_sha2_384512.hash]
+        mov     esi, sha2_384._.hash_init
+        mov     ecx, SHA2_384512_INIT_SIZE/4
+        rep movsd
         xor     eax, eax
-        mov     [ebx + ctx_sha384512.index], eax
-        mov     [ebx + ctx_sha384512.msglen_0], eax
-        mov     [ebx + ctx_sha384512.msglen_1], eax
-        mov     [ebx + ctx_sha384512.msglen_2], eax
-        mov     [ebx + ctx_sha384512.msglen_3], eax
+        mov     [ebx + ctx_sha2_384512.index], eax
+        mov     [ebx + ctx_sha2_384512.msglen_0], eax
+        mov     [ebx + ctx_sha2_384512.msglen_1], eax
+        mov     [ebx + ctx_sha2_384512.msglen_2], eax
+        mov     [ebx + ctx_sha2_384512.msglen_3], eax
         ret
 endp
 
 
-proc sha512.init _ctx
+proc sha2_512.init uses ebx esi edi, _ctx
         mov     ebx, [_ctx]
-        lea     edi, [ebx + ctx_sha384512.hash]
-        mov     esi, sha512._.hash_init
-        mov     ecx, SHA384512_INIT_SIZE/4
-        rep     movsd
+        lea     edi, [ebx + ctx_sha2_384512.hash]
+        mov     esi, sha2_512._.hash_init
+        mov     ecx, SHA2_384512_INIT_SIZE/4
+        rep movsd
         xor     eax, eax
-        mov     [ebx + ctx_sha384512.index], eax
-        mov     [ebx + ctx_sha384512.msglen_0], eax
-        mov     [ebx + ctx_sha384512.msglen_1], eax
-        mov     [ebx + ctx_sha384512.msglen_2], eax
-        mov     [ebx + ctx_sha384512.msglen_3], eax
+        mov     [ebx + ctx_sha2_384512.index], eax
+        mov     [ebx + ctx_sha2_384512.msglen_0], eax
+        mov     [ebx + ctx_sha2_384512.msglen_1], eax
+        mov     [ebx + ctx_sha2_384512.msglen_2], eax
+        mov     [ebx + ctx_sha2_384512.msglen_3], eax
         ret
 endp
 
 
-proc sha384512._.block _hash
+proc sha2_384512._.block _hash
 ;locals
 ;        w       rq 80
 ;        A       rq 1
@@ -257,16 +253,16 @@ proc sha384512._.block _hash
 ;        H       rq 1
 ;        temp    rq 1
 ;endl
-w equ ebx + ctx_sha384512.w
-A equ ebx + ctx_sha384512.A
-B equ ebx + ctx_sha384512.B
-C equ ebx + ctx_sha384512.C
-D equ ebx + ctx_sha384512.D
-E equ ebx + ctx_sha384512.E
-F equ ebx + ctx_sha384512.F
-G equ ebx + ctx_sha384512.G
-H equ ebx + ctx_sha384512.H
-temp equ ebx + ctx_sha384512.temp
+w equ ebx + ctx_sha2_384512.w
+A equ ebx + ctx_sha2_384512.A
+B equ ebx + ctx_sha2_384512.B
+C equ ebx + ctx_sha2_384512.C
+D equ ebx + ctx_sha2_384512.D
+E equ ebx + ctx_sha2_384512.E
+F equ ebx + ctx_sha2_384512.F
+G equ ebx + ctx_sha2_384512.G
+H equ ebx + ctx_sha2_384512.H
+temp equ ebx + ctx_sha2_384512.temp
 
         mov     edi, [_hash]
         movq    mm0, [edi + 0x00]
@@ -287,40 +283,40 @@ temp equ ebx + ctx_sha384512.temp
         movq    [H], mm0
 
 
-        sha384512._.round_1_16  A, B, C, D, E, F, G, H,  0
-        sha384512._.round_1_16  H, A, B, C, D, E, F, G,  1
-        sha384512._.round_1_16  G, H, A, B, C, D, E, F,  2
-        sha384512._.round_1_16  F, G, H, A, B, C, D, E,  3
-        sha384512._.round_1_16  E, F, G, H, A, B, C, D,  4
-        sha384512._.round_1_16  D, E, F, G, H, A, B, C,  5
-        sha384512._.round_1_16  C, D, E, F, G, H, A, B,  6
-        sha384512._.round_1_16  B, C, D, E, F, G, H, A,  7
-        sha384512._.round_1_16  A, B, C, D, E, F, G, H,  8
-        sha384512._.round_1_16  H, A, B, C, D, E, F, G,  9
-        sha384512._.round_1_16  G, H, A, B, C, D, E, F, 10
-        sha384512._.round_1_16  F, G, H, A, B, C, D, E, 11
-        sha384512._.round_1_16  E, F, G, H, A, B, C, D, 12
-        sha384512._.round_1_16  D, E, F, G, H, A, B, C, 13
-        sha384512._.round_1_16  C, D, E, F, G, H, A, B, 14
-        sha384512._.round_1_16  B, C, D, E, F, G, H, A, 15
+        sha2_384512._.round_1_16  A, B, C, D, E, F, G, H,  0
+        sha2_384512._.round_1_16  H, A, B, C, D, E, F, G,  1
+        sha2_384512._.round_1_16  G, H, A, B, C, D, E, F,  2
+        sha2_384512._.round_1_16  F, G, H, A, B, C, D, E,  3
+        sha2_384512._.round_1_16  E, F, G, H, A, B, C, D,  4
+        sha2_384512._.round_1_16  D, E, F, G, H, A, B, C,  5
+        sha2_384512._.round_1_16  C, D, E, F, G, H, A, B,  6
+        sha2_384512._.round_1_16  B, C, D, E, F, G, H, A,  7
+        sha2_384512._.round_1_16  A, B, C, D, E, F, G, H,  8
+        sha2_384512._.round_1_16  H, A, B, C, D, E, F, G,  9
+        sha2_384512._.round_1_16  G, H, A, B, C, D, E, F, 10
+        sha2_384512._.round_1_16  F, G, H, A, B, C, D, E, 11
+        sha2_384512._.round_1_16  E, F, G, H, A, B, C, D, 12
+        sha2_384512._.round_1_16  D, E, F, G, H, A, B, C, 13
+        sha2_384512._.round_1_16  C, D, E, F, G, H, A, B, 14
+        sha2_384512._.round_1_16  B, C, D, E, F, G, H, A, 15
 
 repeat 4
-        sha384512._.round_17_64 A, B, C, D, E, F, G, H,  0, %
-        sha384512._.round_17_64 H, A, B, C, D, E, F, G,  1, %
-        sha384512._.round_17_64 G, H, A, B, C, D, E, F,  2, %
-        sha384512._.round_17_64 F, G, H, A, B, C, D, E,  3, %
-        sha384512._.round_17_64 E, F, G, H, A, B, C, D,  4, %
-        sha384512._.round_17_64 D, E, F, G, H, A, B, C,  5, %
-        sha384512._.round_17_64 C, D, E, F, G, H, A, B,  6, %
-        sha384512._.round_17_64 B, C, D, E, F, G, H, A,  7, %
-        sha384512._.round_17_64 A, B, C, D, E, F, G, H,  8, %
-        sha384512._.round_17_64 H, A, B, C, D, E, F, G,  9, %
-        sha384512._.round_17_64 G, H, A, B, C, D, E, F, 10, %
-        sha384512._.round_17_64 F, G, H, A, B, C, D, E, 11, %
-        sha384512._.round_17_64 E, F, G, H, A, B, C, D, 12, %
-        sha384512._.round_17_64 D, E, F, G, H, A, B, C, 13, %
-        sha384512._.round_17_64 C, D, E, F, G, H, A, B, 14, %
-        sha384512._.round_17_64 B, C, D, E, F, G, H, A, 15, %
+        sha2_384512._.round_17_64 A, B, C, D, E, F, G, H,  0, %
+        sha2_384512._.round_17_64 H, A, B, C, D, E, F, G,  1, %
+        sha2_384512._.round_17_64 G, H, A, B, C, D, E, F,  2, %
+        sha2_384512._.round_17_64 F, G, H, A, B, C, D, E,  3, %
+        sha2_384512._.round_17_64 E, F, G, H, A, B, C, D,  4, %
+        sha2_384512._.round_17_64 D, E, F, G, H, A, B, C,  5, %
+        sha2_384512._.round_17_64 C, D, E, F, G, H, A, B,  6, %
+        sha2_384512._.round_17_64 B, C, D, E, F, G, H, A,  7, %
+        sha2_384512._.round_17_64 A, B, C, D, E, F, G, H,  8, %
+        sha2_384512._.round_17_64 H, A, B, C, D, E, F, G,  9, %
+        sha2_384512._.round_17_64 G, H, A, B, C, D, E, F, 10, %
+        sha2_384512._.round_17_64 F, G, H, A, B, C, D, E, 11, %
+        sha2_384512._.round_17_64 E, F, G, H, A, B, C, D, 12, %
+        sha2_384512._.round_17_64 D, E, F, G, H, A, B, C, 13, %
+        sha2_384512._.round_17_64 C, D, E, F, G, H, A, B, 14, %
+        sha2_384512._.round_17_64 B, C, D, E, F, G, H, A, 15, %
 end repeat
 
 
@@ -355,131 +351,131 @@ restore w,A,B,C,D,E,F,G,H,temp
 endp
 
 
-sha384.update = sha384512.update
-sha512.update = sha384512.update
-proc sha384512.update _ctx, _msg, _size
+sha2_384.update = sha2_384512.update
+sha2_512.update = sha2_384512.update
+proc sha2_384512.update uses ebx esi edi, _ctx, _msg, _size
         mov     ebx, [_ctx]
         mov     ecx, [_size]
-        add     [ebx + ctx_sha384512.msglen_0], ecx
-        adc     [ebx + ctx_sha384512.msglen_1], 0
-        adc     [ebx + ctx_sha384512.msglen_2], 0
-        adc     [ebx + ctx_sha384512.msglen_3], 0
+        add     [ebx + ctx_sha2_384512.msglen_0], ecx
+        adc     [ebx + ctx_sha2_384512.msglen_1], 0
+        adc     [ebx + ctx_sha2_384512.msglen_2], 0
+        adc     [ebx + ctx_sha2_384512.msglen_3], 0
 
-  .next_block:
+.next_block:
         mov     ebx, [_ctx]
         mov     esi, [_msg]
-        mov     eax, [ebx + ctx_sha384512.index]
-        and     eax, SHA384512_BLOCK_SIZE-1
+        mov     eax, [ebx + ctx_sha2_384512.index]
+        and     eax, SHA2_384512_BLOCK_SIZE-1
         jnz     .copy_to_buf
-        test    esi, SHA384512_ALIGN_MASK
+        test    esi, SHA2_384512_ALIGN_MASK
         jnz     .copy_to_buf
-  .no_copy:
+.no_copy:
         ; data is aligned, hash it in place without copying
         mov     ebx, [_ctx]
-        cmp     [_size], SHA384512_BLOCK_SIZE
+        cmp     [_size], SHA2_384512_BLOCK_SIZE
         jb      .copy_quit
-        lea     eax, [ebx + ctx_sha384512.hash]
-        stdcall sha384512._.block, eax
-        sub     [_size], SHA384512_BLOCK_SIZE
-        add     esi, SHA384512_BLOCK_SIZE           ; FIXME
+        lea     eax, [ebx + ctx_sha2_384512.hash]
+        stdcall sha2_384512._.block, eax
+        sub     [_size], SHA2_384512_BLOCK_SIZE
+        add     esi, SHA2_384512_BLOCK_SIZE           ; FIXME
         jmp     .no_copy
 
-  .copy_to_buf:
-        lea     edi, [ebx + ctx_sha384512.block]
+.copy_to_buf:
+        lea     edi, [ebx + ctx_sha2_384512.block]
         add     edi, eax
-        mov     ecx, SHA384512_BLOCK_SIZE
+        mov     ecx, SHA2_384512_BLOCK_SIZE
         sub     ecx, eax
         cmp     [_size], ecx
         jb      .copy_quit
         sub     [_size], ecx
         add     [_msg], ecx
-        add     [ebx + ctx_sha384512.index], ecx
-        rep     movsb
-        lea     eax, [ebx + ctx_sha384512.hash]
-        lea     esi, [ebx + ctx_sha384512.block]
-        stdcall sha384512._.block, eax
+        add     [ebx + ctx_sha2_384512.index], ecx
+        rep movsb
+        lea     eax, [ebx + ctx_sha2_384512.hash]
+        lea     esi, [ebx + ctx_sha2_384512.block]
+        stdcall sha2_384512._.block, eax
         jmp     .next_block
 
-  .copy_quit:
+.copy_quit:
         mov     ebx, [_ctx]
-        lea     edi, [ebx + ctx_sha384512.block]
-        mov     eax, [ebx + ctx_sha384512.index]
-        and     eax, SHA384512_BLOCK_SIZE-1
+        lea     edi, [ebx + ctx_sha2_384512.block]
+        mov     eax, [ebx + ctx_sha2_384512.index]
+        and     eax, SHA2_384512_BLOCK_SIZE-1
         add     edi, eax
         mov     ecx, [_size]
-        add     [ebx + ctx_sha384512.index], ecx
-        rep     movsb
-  .quit:
+        add     [ebx + ctx_sha2_384512.index], ecx
+        rep movsb
+.quit:
 
         ret
 endp
 
 
-sha384.final = sha384512.final
-sha512.final = sha384512.final
-proc sha384512.final _ctx
+sha2_384.finish = sha2_384512.finish
+sha2_512.finish = sha2_384512.finish
+proc sha2_384512.finish uses ebx esi edi, _ctx
         mov     ebx, [_ctx]
-        lea     edi, [ebx + ctx_sha384512.block]
-        mov     ecx, [ebx + ctx_sha384512.msglen_0]
-        and     ecx, SHA384512_BLOCK_SIZE-1
+        lea     edi, [ebx + ctx_sha2_384512.block]
+        mov     ecx, [ebx + ctx_sha2_384512.msglen_0]
+        and     ecx, SHA2_384512_BLOCK_SIZE-1
         add     edi, ecx
         mov     byte[edi], 0x80
         inc     edi
         neg     ecx
-        add     ecx, SHA384512_BLOCK_SIZE
+        add     ecx, SHA2_384512_BLOCK_SIZE
         cmp     ecx, 16
         ja      .last
 
         dec     ecx
         xor     eax, eax
-        rep     stosb
-        lea     esi, [ebx + ctx_sha384512.block]
-        lea     eax, [ebx + ctx_sha384512.hash]
-        stdcall sha384512._.block, eax
+        rep stosb
+        lea     esi, [ebx + ctx_sha2_384512.block]
+        lea     eax, [ebx + ctx_sha2_384512.hash]
+        stdcall sha2_384512._.block, eax
         mov     ebx, [_ctx]
-        lea     edi, [ebx + ctx_sha384512.block]
-        mov     ecx, SHA384512_BLOCK_SIZE+1
-  .last:
+        lea     edi, [ebx + ctx_sha2_384512.block]
+        mov     ecx, SHA2_384512_BLOCK_SIZE+1
+.last:
         dec     ecx
         sub     ecx, 16
         xor     eax, eax
-        rep     stosb
-        mov     eax, [ebx + ctx_sha384512.msglen_1]
-        shld    [ebx + ctx_sha384512.msglen_0], eax, 3
-        mov     eax, [ebx + ctx_sha384512.msglen_2]
-        shld    [ebx + ctx_sha384512.msglen_1], eax, 3
-        mov     eax, [ebx + ctx_sha384512.msglen_3]
-        shld    [ebx + ctx_sha384512.msglen_2], eax, 3
+        rep stosb
+        mov     eax, [ebx + ctx_sha2_384512.msglen_1]
+        shld    [ebx + ctx_sha2_384512.msglen_0], eax, 3
+        mov     eax, [ebx + ctx_sha2_384512.msglen_2]
+        shld    [ebx + ctx_sha2_384512.msglen_1], eax, 3
+        mov     eax, [ebx + ctx_sha2_384512.msglen_3]
+        shld    [ebx + ctx_sha2_384512.msglen_2], eax, 3
         shl     eax, 3
         bswap   eax
         mov     dword[edi + 0], eax
-        mov     eax, [ebx + ctx_sha384512.msglen_2]
+        mov     eax, [ebx + ctx_sha2_384512.msglen_2]
         bswap   eax
         mov     dword[edi + 4], eax
-        mov     eax, [ebx + ctx_sha384512.msglen_1]
+        mov     eax, [ebx + ctx_sha2_384512.msglen_1]
         bswap   eax
         mov     dword[edi + 8], eax
-        mov     eax, [ebx + ctx_sha384512.msglen_0]
+        mov     eax, [ebx + ctx_sha2_384512.msglen_0]
         bswap   eax
         mov     dword[edi + 12], eax
         mov     ebx, [_ctx]
-        lea     esi, [ebx + ctx_sha384512.block]
-        lea     eax, [ebx + ctx_sha384512.hash]
-        stdcall sha384512._.block, eax
+        lea     esi, [ebx + ctx_sha2_384512.block]
+        lea     eax, [ebx + ctx_sha2_384512.hash]
+        stdcall sha2_384512._.block, eax
 
         mov     ebx, [_ctx]
-        lea     eax, [ebx + ctx_sha384512.hash]
-        stdcall sha384512._.postprocess, ebx, eax
+        lea     eax, [ebx + ctx_sha2_384512.hash]
+        stdcall sha2_384512._.postprocess, ebx, eax
 
         ret
 endp
 
 
-proc sha384512._.postprocess _ctx, _hash
+proc sha2_384512._.postprocess _ctx, _hash
         mov     ecx, 8
         mov     esi, [_hash]
         mov     edi, esi
-    @@:
+@@:
         lodsd
         mov     ebx, eax
         lodsd
@@ -495,35 +491,35 @@ proc sha384512._.postprocess _ctx, _hash
 endp
 
 
-proc sha384.oneshot _ctx, _data, _len
-	stdcall	sha384.init, [_ctx]
-	stdcall	sha384.update, [_ctx], [_data], [_len]
-	stdcall	sha384.final, [_ctx]
-	ret
+proc sha2_384.oneshot _ctx, _data, _len
+        stdcall sha2_384.init, [_ctx]
+        stdcall sha2_384.update, [_ctx], [_data], [_len]
+        stdcall sha2_384.finish, [_ctx]
+        ret
 endp
 
 
-proc sha512.oneshot _ctx, _data, _len
-	stdcall	sha512.init, [_ctx]
-	stdcall	sha512.update, [_ctx], [_data], [_len]
-	stdcall	sha512.final, [_ctx]
-	ret
+proc sha2_512.oneshot _ctx, _data, _len
+        stdcall sha2_512.init, [_ctx]
+        stdcall sha2_512.update, [_ctx], [_data], [_len]
+        stdcall sha2_512.finish, [_ctx]
+        ret
 endp
 
 
 iglobal
-align SHA384512_ALIGN
-sha384._.hash_init      dq 0xcbbb9d5dc1059ed8, 0x629a292a367cd507,\
+align SHA2_384512_ALIGN
+sha2_384._.hash_init    dq 0xcbbb9d5dc1059ed8, 0x629a292a367cd507,\
                            0x9159015a3070dd17, 0x152fecd8f70e5939,\
                            0x67332667ffc00b31, 0x8eb44a8768581511,\
                            0xdb0c2e0d64f98fa7, 0x47b5481dbefa4fa4
 
-sha512._.hash_init      dq 0x6a09e667f3bcc908, 0xbb67ae8584caa73b,\
+sha2_512._.hash_init    dq 0x6a09e667f3bcc908, 0xbb67ae8584caa73b,\
                            0x3c6ef372fe94f82b, 0xa54ff53a5f1d36f1,\
                            0x510e527fade682d1, 0x9b05688c2b3e6c1f,\
                            0x1f83d9abfb41bd6b, 0x5be0cd19137e2179
 
-sha384512._.table       dq 0x428a2f98d728ae22, 0x7137449123ef65cd,\
+sha2_384512._.table     dq 0x428a2f98d728ae22, 0x7137449123ef65cd,\
                            0xb5c0fbcfec4d3b2f, 0xe9b5dba58189dbbc,\
                            0x3956c25bf348b538, 0x59f111f1b605d019,\
                            0x923f82a4af194f9b, 0xab1c5ed5da6d8118,\

@@ -20,10 +20,12 @@
 ; To compute HMAC over the data `text' we perform
 ; H(K XOR opad, H(K XOR ipad, text))
 
+SHA1_BLOCK_SIZE = 64
+
 struct hmac_sha1_context
-        hash            rb SHA1_HASH_SIZE
-        ipad_ctx        crash_ctx
-        opad_ctx        crash_ctx
+        hash            rb SHA1_LEN
+        ipad_ctx        rb LIBCRASH_CTX_LEN
+        opad_ctx        rb LIBCRASH_CTX_LEN
 ends
 
 ; We will precompute partial hashes of K XOR ipad and K XOR opad,

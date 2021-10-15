@@ -1,38 +1,35 @@
-;    libcrash -- cryptographic hash functions
+; libcrash -- cryptographic hash (and other) functions
 ;
-;    Copyright (C) 2012-2013,2016,2019 Ivan Baravy (dunkaist)
+; Copyright (C) <2012-2013,2016,2019,2021> Ivan Baravy
 ;
-;    This program is free software: you can redistribute it and/or modify
-;    it under the terms of the GNU General Public License as published by
-;    the Free Software Foundation, either version 3 of the License, or
-;    (at your option) any later version.
+; SPDX-License-Identifier: GPL-2.0-or-later
 ;
-;    This program is distributed in the hope that it will be useful,
-;    but WITHOUT ANY WARRANTY; without even the implied warranty of
-;    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-;    GNU General Public License for more details.
+; This program is free software: you can redistribute it and/or modify it under
+; the terms of the GNU General Public License as published by the Free Software
+; Foundation, either version 2 of the License, or (at your option) any later
+; version.
 ;
-;    You should have received a copy of the GNU General Public License
-;    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+; This program is distributed in the hope that it will be useful, but WITHOUT
+; ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+; FOR A PARTICULAR PURPOSE. See the GNU General Public License for more details.
+;
+; You should have received a copy of the GNU General Public License along with
+; this program. If not, see <http://www.gnu.org/licenses/>.
 
-
-MD5_HASH_SIZE  = 16
 MD5_BLOCK_SIZE = 64
 
 MD5_ALIGN      = 4
 MD5_ALIGN_MASK = MD5_ALIGN - 1
 
 struct ctx_md5
-        hash            rb MD5_HASH_SIZE
+        hash            rb MD5_LEN
         block           rb MD5_BLOCK_SIZE
         index           rd 1
         msglen_0        rd 1
         msglen_1        rd 1
 ends
 
-if defined sizeof.crash_ctx
-  assert sizeof.crash_ctx >= sizeof.ctx_md5
-end if
+assert sizeof.ctx_md5 <= LIBCRASH_CTX_LEN
 
 macro md5._.f b, c, d
 {
@@ -80,12 +77,12 @@ macro md5._.round func, a, b, c, d, index, shift, ac
 }
 
 
-proc md5.init _ctx
+proc md5.init uses ebx esi edi, _ctx
         mov     ebx, [_ctx]
         lea     edi, [ebx + ctx_md5.hash]
         mov     esi, md5._.hash_init
-        mov     ecx, MD5_HASH_SIZE/4
-        rep     movsd
+        mov     ecx, MD5_LEN/4
+        rep movsd
         xor     eax, eax
         mov     [ebx + ctx_md5.index], eax
         mov     [ebx + ctx_md5.msglen_0], eax
@@ -180,13 +177,13 @@ proc md5._.block _hash
 endp
 
 
-proc md5.update _ctx, _msg, _size
+proc md5.update uses ebx esi edi, _ctx, _msg, _size
         mov     ebx, [_ctx]
         mov     ecx, [_size]
         add     [ebx + ctx_md5.msglen_0], ecx
         adc     [ebx + ctx_md5.msglen_1], 0
 
-  .next_block:
+.next_block:
         mov     ebx, [_ctx]
         mov     esi, [_msg]
         mov     eax, [ebx + ctx_md5.index]
@@ -194,7 +191,7 @@ proc md5.update _ctx, _msg, _size
         jnz     .copy_to_buf
         test    esi, MD5_ALIGN_MASK
         jnz     .copy_to_buf
-  .no_copy:
+.no_copy:
         ; data is aligned, hash it in place without copying
         mov     ebx, [_ctx]
         cmp     [_size], MD5_BLOCK_SIZE
@@ -205,7 +202,7 @@ proc md5.update _ctx, _msg, _size
         add     esi, MD5_BLOCK_SIZE
         jmp     .no_copy
 
-  .copy_to_buf:
+.copy_to_buf:
         lea     edi, [ebx + ctx_md5.block]
         add     edi, eax
         mov     ecx, MD5_BLOCK_SIZE
@@ -215,13 +212,13 @@ proc md5.update _ctx, _msg, _size
         sub     [_size], ecx
         add     [_msg], ecx
         add     [ebx + ctx_md5.index], ecx
-        rep     movsb
+        rep movsb
         lea     eax, [ebx + ctx_md5.hash]
         lea     esi, [ebx + ctx_md5.block]
         stdcall md5._.block, eax
         jmp     .next_block
 
-  .copy_quit:
+.copy_quit:
         mov     ebx, [_ctx]
         lea     edi, [ebx + ctx_md5.block]
         mov     eax, [ebx + ctx_md5.index]
@@ -229,14 +226,14 @@ proc md5.update _ctx, _msg, _size
         add     edi, eax
         mov     ecx, [_size]
         add     [ebx + ctx_md5.index], ecx
-        rep     movsb
-  .quit:
+        rep movsb
+.quit:
 
         ret
 endp
 
 
-proc md5.final _ctx
+proc md5.finish uses ebx esi edi, _ctx
         mov     ebx, [_ctx]
         lea     edi, [ebx + ctx_md5.block]
         mov     ecx, [ebx + ctx_md5.msglen_0]
@@ -251,18 +248,18 @@ proc md5.final _ctx
 
         dec     ecx
         xor     eax, eax
-        rep     stosb
+        rep stosb
         lea     esi, [ebx + ctx_md5.block]
         lea     eax, [ebx + ctx_md5.hash]
         stdcall md5._.block, eax
         mov     ebx, [_ctx]
         lea     edi, [ebx + ctx_md5.block]
         mov     ecx, MD5_BLOCK_SIZE+1
-  .last:
+.last:
         dec     ecx
         sub     ecx, 8
         xor     eax, eax
-        rep     stosb
+        rep stosb
         mov     eax, [ebx + ctx_md5.msglen_0]
         mov     edx, [ebx + ctx_md5.msglen_1]
         shld    edx, eax, 3
@@ -278,10 +275,10 @@ endp
 
 
 proc md5.oneshot _ctx, _data, _len
-	stdcall	md5.init, [_ctx]
-	stdcall	md5.update, [_ctx], [_data], [_len]
-	stdcall	md5.final, [_ctx]
-	ret
+        stdcall md5.init, [_ctx]
+        stdcall md5.update, [_ctx], [_data], [_len]
+        stdcall md5.finish, [_ctx]
+        ret
 endp
 
 

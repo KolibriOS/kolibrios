@@ -134,11 +134,11 @@ endl
 
         DEBUGF  3, "SSH: Performing RSA verification\n"
 
-        mcall   68, 12, sizeof.crash_ctx + 5*(MAX_BITS/8+4)
+        mcall   68, 12, LIBCRASH_CTX_LEN + 5*(MAX_BITS/8+4)
         test    eax, eax
         jz      .err_nomem
         mov     [h_ctx], eax
-        add     eax, sizeof.crash_ctx
+        add     eax, LIBCRASH_CTX_LEN
         mov     [mpint_e], eax
         add     eax, MAX_BITS/8+4
         mov     [mpint_n], eax
@@ -211,7 +211,7 @@ endl
 ; EMSA-PKCS1-v1_5
         invoke  sha1_init, [h_ctx]
         invoke  sha1_update, [h_ctx], [M], [message_len]
-        invoke  sha1_final, [h_ctx]
+        invoke  sha1_finish, [h_ctx]
 
         mov     edi, [EM_accent]
         mov     al, 0x00
@@ -219,7 +219,7 @@ endl
         mov     al, 0x01
         stosb
         mov     ecx, [k]
-        sub     ecx, (rsa_sha1_T.len + 3 + SHA1_HASH_SIZE)
+        sub     ecx, (rsa_sha1_T.len + 3 + SHA1_LEN)
         jl      .err_key
         jz      @f
         mov     al, 0xff
@@ -231,7 +231,7 @@ endl
         mov     ecx, rsa_sha1_T.len
         rep movsb
         mov     esi, [h_ctx]
-        mov     ecx, SHA1_HASH_SIZE
+        mov     ecx, SHA1_LEN
         rep movsb
 
         pop     esi
@@ -243,9 +243,9 @@ endl
         push    esi
 
 ; EMSA-PKCS1-v1_5
-        invoke  sha256_init, [h_ctx]
-        invoke  sha256_update, [h_ctx], [M], [message_len]
-        invoke  sha256_final, [h_ctx]
+        invoke  sha2_256_init, [h_ctx]
+        invoke  sha2_256_update, [h_ctx], [M], [message_len]
+        invoke  sha2_256_finish, [h_ctx]
 
         mov     edi, [EM_accent]
         mov     al, 0x00
@@ -253,7 +253,7 @@ endl
         mov     al, 0x01
         stosb
         mov     ecx, [k]
-        sub     ecx, (rsa_sha256_T.len + 3 + SHA256_HASH_SIZE)
+        sub     ecx, (rsa_sha256_T.len + 3 + SHA2_256_LEN)
         jl      .err_key
         jz      @f
         mov     al, 0xff
@@ -265,7 +265,7 @@ endl
         mov     ecx, rsa_sha256_T.len
         rep movsb
         mov     esi, [h_ctx]
-        mov     ecx, SHA256_HASH_SIZE
+        mov     ecx, SHA2_256_LEN
         rep movsb
 
         pop     esi
@@ -277,9 +277,9 @@ endl
         push    esi
 
 ; EMSA-PKCS1-v1_5
-        invoke  sha512_init, [h_ctx]
-        invoke  sha512_update, [h_ctx], [M], [message_len]
-        invoke  sha512_final, [h_ctx]
+        invoke  sha2_512_init, [h_ctx]
+        invoke  sha2_512_update, [h_ctx], [M], [message_len]
+        invoke  sha2_512_finish, [h_ctx]
 
         mov     edi, [EM_accent]
         mov     al, 0x00
@@ -287,7 +287,7 @@ endl
         mov     al, 0x01
         stosb
         mov     ecx, [k]
-        sub     ecx, (rsa_sha512_T.len + 3 + SHA512_HASH_SIZE)
+        sub     ecx, (rsa_sha512_T.len + 3 + SHA2_512_LEN)
         jl      .err_key
         jz      @f
         mov     al, 0xff
@@ -299,7 +299,7 @@ endl
         mov     ecx, rsa_sha512_T.len
         rep movsb
         mov     esi, [h_ctx]
-        mov     ecx, SHA512_HASH_SIZE
+        mov     ecx, SHA2_512_LEN
         rep movsb
 
         pop     esi

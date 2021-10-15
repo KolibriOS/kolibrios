@@ -1,38 +1,35 @@
-;    libcrash -- cryptographic hash functions
+; libcrash -- cryptographic hash (and other) functions
 ;
-;    Copyright (C) 2012-2013,2016,2019 Ivan Baravy (dunkaist)
+; Copyright (C) <2012-2013,2016,2019,2021> Ivan Baravy
 ;
-;    This program is free software: you can redistribute it and/or modify
-;    it under the terms of the GNU General Public License as published by
-;    the Free Software Foundation, either version 3 of the License, or
-;    (at your option) any later version.
+; SPDX-License-Identifier: GPL-2.0-or-later
 ;
-;    This program is distributed in the hope that it will be useful,
-;    but WITHOUT ANY WARRANTY; without even the implied warranty of
-;    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-;    GNU General Public License for more details.
+; This program is free software: you can redistribute it and/or modify it under
+; the terms of the GNU General Public License as published by the Free Software
+; Foundation, either version 2 of the License, or (at your option) any later
+; version.
 ;
-;    You should have received a copy of the GNU General Public License
-;    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+; This program is distributed in the hope that it will be useful, but WITHOUT
+; ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+; FOR A PARTICULAR PURPOSE. See the GNU General Public License for more details.
+;
+; You should have received a copy of the GNU General Public License along with
+; this program. If not, see <http://www.gnu.org/licenses/>.
 
-
-SHA1_HASH_SIZE  = 20
 SHA1_BLOCK_SIZE = 64
 
 SHA1_ALIGN      = 4
 SHA1_ALIGN_MASK = SHA1_ALIGN - 1
 
 struct ctx_sha1
-        hash            rb SHA1_HASH_SIZE
+        hash            rb SHA1_LEN
         block           rb SHA1_BLOCK_SIZE
         index           rd 1
         msglen_0        rd 1
         msglen_1        rd 1
 ends
 
-if defined sizeof.crash_ctx
-  assert sizeof.crash_ctx >= sizeof.ctx_sha1
-end if
+assert sizeof.ctx_sha1 <= LIBCRASH_CTX_LEN
 
 proc sha1._.f
         push    ebx ecx edx
@@ -87,12 +84,12 @@ macro sha1._.round f, k, c
 }
 
 
-proc sha1.init _ctx
+proc sha1.init uses ebx esi edi, _ctx
         mov     ebx, [_ctx]
         lea     edi, [ebx + ctx_sha1.hash]
         mov     esi, sha1._.hash_init
-        mov     ecx, SHA1_HASH_SIZE/4
-        rep     movsd
+        mov     ecx, SHA1_LEN/4
+        rep movsd
         xor     eax, eax
         mov     [ebx + ctx_sha1.index], eax
         mov     [ebx + ctx_sha1.msglen_0], eax
@@ -108,7 +105,7 @@ locals
 endl
         lea     edi, [w]
         xor     ecx, ecx
-    @@:
+@@:
         mov     eax, [esi]
         add     esi, 4
         bswap   eax
@@ -117,7 +114,7 @@ endl
         add     ecx, 1
         cmp     ecx, 16
         jne     @b
-    @@:
+@@:
         mov     eax, [w + (ecx -  3)*4]
         xor     eax, [w + (ecx -  8)*4]
         xor     eax, [w + (ecx - 14)*4]
@@ -168,13 +165,13 @@ end repeat
 endp
 
 
-proc sha1.update _ctx, _msg, _size
+proc sha1.update uses ebx esi edi, _ctx, _msg, _size
         mov     ebx, [_ctx]
         mov     ecx, [_size]
         add     [ebx + ctx_sha1.msglen_0], ecx
         adc     [ebx + ctx_sha1.msglen_1], 0
 
-  .next_block:
+.next_block:
         mov     ebx, [_ctx]
         mov     esi, [_msg]
         mov     eax, [ebx + ctx_sha1.index]
@@ -182,7 +179,7 @@ proc sha1.update _ctx, _msg, _size
         jnz     .copy_to_buf
         test    esi, SHA1_ALIGN_MASK
         jnz     .copy_to_buf
-  .no_copy:
+.no_copy:
         ; data is aligned, hash it in place without copying
         mov     ebx, [_ctx]
         cmp     [_size], SHA1_BLOCK_SIZE
@@ -193,7 +190,7 @@ proc sha1.update _ctx, _msg, _size
 ;        add     esi, SHA1_BLOCK_SIZE           ; FIXME
         jmp     .no_copy
 
-  .copy_to_buf:
+.copy_to_buf:
         lea     edi, [ebx + ctx_sha1.block]
         add     edi, eax
         mov     ecx, SHA1_BLOCK_SIZE
@@ -203,13 +200,13 @@ proc sha1.update _ctx, _msg, _size
         sub     [_size], ecx
         add     [_msg], ecx
         add     [ebx + ctx_sha1.index], ecx
-        rep     movsb
+        rep movsb
         lea     eax, [ebx + ctx_sha1.hash]
         lea     esi, [ebx + ctx_sha1.block]
         stdcall sha1._.block, eax
         jmp     .next_block
 
-  .copy_quit:
+.copy_quit:
         mov     ebx, [_ctx]
         lea     edi, [ebx + ctx_sha1.block]
         mov     eax, [ebx + ctx_sha1.index]
@@ -217,14 +214,14 @@ proc sha1.update _ctx, _msg, _size
         add     edi, eax
         mov     ecx, [_size]
         add     [ebx + ctx_sha1.index], ecx
-        rep     movsb
-  .quit:
+        rep movsb
+.quit:
 
         ret
 endp
 
 
-proc sha1.final _ctx
+proc sha1.finish uses ebx esi edi, _ctx
         mov     ebx, [_ctx]
         lea     edi, [ebx + ctx_sha1.block]
         mov     ecx, [ebx + ctx_sha1.msglen_0]
@@ -239,18 +236,18 @@ proc sha1.final _ctx
 
         dec     ecx
         xor     eax, eax
-        rep     stosb
+        rep stosb
         lea     esi, [ebx + ctx_sha1.block]
         lea     eax, [ebx + ctx_sha1.hash]
         stdcall sha1._.block, eax
         mov     ebx, [_ctx]
         lea     edi, [ebx + ctx_sha1.block]
         mov     ecx, SHA1_BLOCK_SIZE+1
-  .last:
+.last:
         dec     ecx
         sub     ecx, 8
         xor     eax, eax
-        rep     stosb
+        rep stosb
         mov     eax, [ebx + ctx_sha1.msglen_0]
         mov     edx, [ebx + ctx_sha1.msglen_1]
         shld    edx, eax, 3
@@ -275,7 +272,7 @@ proc sha1._.postprocess _ctx, _hash
         mov     ecx, 5
         mov     esi, [_hash]
         mov     edi, esi
-    @@:
+@@:
         lodsd
         bswap   eax
         stosd
@@ -286,10 +283,10 @@ endp
 
 
 proc sha1.oneshot _ctx, _data, _len
-	stdcall	sha1.init, [_ctx]
-	stdcall	sha1.update, [_ctx], [_data], [_len]
-	stdcall	sha1.final, [_ctx]
-	ret
+        stdcall sha1.init, [_ctx]
+        stdcall sha1.update, [_ctx], [_data], [_len]
+        stdcall sha1.finish, [_ctx]
+        ret
 endp
 
 

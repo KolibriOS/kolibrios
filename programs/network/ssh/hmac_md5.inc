@@ -20,10 +20,12 @@
 ; To compute HMAC over the data `text' we perform
 ; H(K XOR opad, H(K XOR ipad, text))
 
+MD5_BLOCK_SIZE = 64
+
 struct hmac_md5_context
-        hash            rb MD5_HASH_SIZE
-        ipad_ctx        crash_ctx
-        opad_ctx        crash_ctx
+        hash            rb MD5_LEN
+        ipad_ctx        rb LIBCRASH_CTX_LEN
+        opad_ctx        rb LIBCRASH_CTX_LEN
 ends
 
 ; We will precompute partial hashes of K XOR ipad and K XOR opad,

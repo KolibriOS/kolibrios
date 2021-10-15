@@ -1,31 +1,26 @@
-;    libcrash -- cryptographic hash functions
+; libcrash -- cryptographic hash (and other) functions
 ;
-;    Copyright (C) 2013,2016,2019 Ivan Baravy (dunkaist)
+; Copyright (C) <2013,2016,2019,2021> Ivan Baravy
 ;
-;    This program is free software: you can redistribute it and/or modify
-;    it under the terms of the GNU General Public License as published by
-;    the Free Software Foundation, either version 3 of the License, or
-;    (at your option) any later version.
+; SPDX-License-Identifier: GPL-2.0-or-later
 ;
-;    This program is distributed in the hope that it will be useful,
-;    but WITHOUT ANY WARRANTY; without even the implied warranty of
-;    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-;    GNU General Public License for more details.
+; This program is free software: you can redistribute it and/or modify it under
+; the terms of the GNU General Public License as published by the Free Software
+; Foundation, either version 2 of the License, or (at your option) any later
+; version.
 ;
-;    You should have received a copy of the GNU General Public License
-;    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+; This program is distributed in the hope that it will be useful, but WITHOUT
+; ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+; FOR A PARTICULAR PURPOSE. See the GNU General Public License for more details.
+;
+; You should have received a copy of the GNU General Public License along with
+; this program. If not, see <http://www.gnu.org/licenses/>.
 
-
-SHA3_224_HASH_SIZE       = 28
-SHA3_256_HASH_SIZE       = 32
-SHA3_384_HASH_SIZE       = 48
-SHA3_512_HASH_SIZE       = 64
-
-SHA3_224_BLOCK_SIZE      = 144
-SHA3_256_BLOCK_SIZE      = 136
-SHA3_384_BLOCK_SIZE      = 104
-SHA3_512_BLOCK_SIZE      = 72
-SHA3MAX_BLOCK_SIZE      = SHA3_224_BLOCK_SIZE
+SHA3_224_BLOCK_SIZE = 144
+SHA3_256_BLOCK_SIZE = 136
+SHA3_384_BLOCK_SIZE = 104
+SHA3_512_BLOCK_SIZE = 72
+SHA3_MAX_BLOCK_SIZE = SHA3_224_BLOCK_SIZE
 
 SHA3_INIT_SIZE          = 200
 SHA3_ALIGN              = 16
@@ -34,8 +29,8 @@ SHA3_ALIGN_MASK         = SHA3_ALIGN-1
 struct ctx_sha3
         hash            rb SHA3_INIT_SIZE
                         rb SHA3_ALIGN - (SHA3_INIT_SIZE mod SHA3_ALIGN)
-        block           rb SHA3MAX_BLOCK_SIZE
-                        rb SHA3_ALIGN - (SHA3MAX_BLOCK_SIZE mod SHA3_ALIGN)
+        block           rb SHA3_MAX_BLOCK_SIZE
+                        rb SHA3_ALIGN - (SHA3_MAX_BLOCK_SIZE mod SHA3_ALIGN)
         index           rd 1
         block_size      rd 1
         rounds_cnt      rd 1
@@ -45,9 +40,7 @@ struct ctx_sha3
         D               rq 5
 ends
 
-if defined sizeof.crash_ctx
-  assert sizeof.crash_ctx >= sizeof.ctx_sha3
-end if
+assert sizeof.ctx_sha3 <= LIBCRASH_CTX_LEN
 
 macro sha3._.rol_xor nd, ncl, ncr
 {
@@ -166,7 +159,7 @@ proc sha3._.chi
         mov     eax, 0xffffffff
         movd    mm0, eax
         movq    mm2, mm0
-        punpckldq       mm2, mm0
+        punpckldq mm2, mm0
 
 repeat 5
         movq    mm6, [edi + 8*(0 + 5*(%-1))]
@@ -263,7 +256,7 @@ end repeat
 endp
 
 
-proc sha3._.init _ctx
+proc sha3._.init uses edi
         mov     [ebx + ctx_sha3.block_size], eax
         shr     eax, 3
         dec     eax
@@ -271,13 +264,13 @@ proc sha3._.init _ctx
         xor     eax, eax
         lea     edi, [ebx + ctx_sha3.hash]
         mov     ecx, SHA3_INIT_SIZE/4
-        rep     stosd
+        rep stosd
         mov     [ebx + ctx_sha3.index], eax
         ret
 endp
 
 
-proc sha3_224.init _ctx
+proc sha3_224.init uses ebx, _ctx
         mov     ebx, [_ctx]
         mov     eax, SHA3_224_BLOCK_SIZE
         stdcall sha3._.init
@@ -285,7 +278,7 @@ proc sha3_224.init _ctx
 endp
 
 
-proc sha3_256.init _ctx
+proc sha3_256.init uses ebx, _ctx
         mov     ebx, [_ctx]
         mov     eax, SHA3_256_BLOCK_SIZE
         stdcall sha3._.init
@@ -293,7 +286,7 @@ proc sha3_256.init _ctx
 endp
 
 
-proc sha3_384.init _ctx
+proc sha3_384.init uses ebx, _ctx
         mov     ebx, [_ctx]
         mov     eax, SHA3_384_BLOCK_SIZE
         stdcall sha3._.init
@@ -301,7 +294,7 @@ proc sha3_384.init _ctx
 endp
 
 
-proc sha3_512.init _ctx
+proc sha3_512.init uses ebx, _ctx
         mov     ebx, [_ctx]
         mov     eax, SHA3_512_BLOCK_SIZE
         stdcall sha3._.init
@@ -330,8 +323,8 @@ sha3_224.update = sha3.update
 sha3_256.update = sha3.update
 sha3_384.update = sha3.update
 sha3_512.update = sha3.update
-proc sha3.update _ctx, _msg, _size
-  .next_block:
+proc sha3.update uses ebx esi edi, _ctx, _msg, _size
+.next_block:
         mov     ebx, [_ctx]
         mov     esi, [_msg]
         mov     eax, [ebx + ctx_sha3.index]
@@ -339,7 +332,7 @@ proc sha3.update _ctx, _msg, _size
         jnz     .copy_to_buf
         test    esi, SHA3_ALIGN_MASK
         jnz     .copy_to_buf
-  .no_copy:
+.no_copy:
         ; data is aligned, hash it in place without copying
         mov     ebx, [_ctx]
         mov     eax, [ebx + ctx_sha3.block_size]
@@ -354,7 +347,7 @@ proc sha3.update _ctx, _msg, _size
         add     esi, [ebx + ctx_sha3.block_size]
         jmp     .no_copy
 
-  .copy_to_buf:
+.copy_to_buf:
         lea     edi, [ebx + ctx_sha3.block]
         add     edi, eax
         mov     ecx, [ebx + ctx_sha3.block_size]
@@ -369,52 +362,41 @@ proc sha3.update _ctx, _msg, _size
         jb      @f
         sub     [ebx + ctx_sha3.index], eax
     @@:
-        rep     movsb
+        rep movsb
         lea     eax, [ebx + ctx_sha3.hash]
         lea     esi, [ebx + ctx_sha3.block]
         stdcall sha3._.block, eax
         jmp     .next_block
 
-  .copy_quit:
+.copy_quit:
         mov     ebx, [_ctx]
         lea     edi, [ebx + ctx_sha3.block]
         mov     eax, [ebx + ctx_sha3.index]
         add     edi, eax
         mov     ecx, [_size]
         add     [ebx + ctx_sha3.index], ecx
-        rep     movsb
-  .quit:
+        rep movsb
+.quit:
         ret
 endp
 
 
-sha3_224.final = sha3.final
-sha3_256.final = sha3.final
-sha3_384.final = sha3.final
-sha3_512.final = sha3.final
-proc sha3.final _ctx
-        pushad
+sha3_224.finish = sha3.finish
+sha3_256.finish = sha3.finish
+sha3_384.finish = sha3.finish
+sha3_512.finish = sha3.finish
+proc sha3.finish uses ebx esi edi, _ctx
         mov     ebx, [_ctx]
         mov     eax, [ebx + ctx_sha3.index]
-        xor     edx, edx
         mov     ecx, [ebx + ctx_sha3.block_size]
-        div     ecx
-        sub     ecx, edx
-        ja      @f
-        add     ecx, [ebx + ctx_sha3.block_size]
-    @@:
-        add     [ebx + ctx_sha3.index], ecx
-        mov     eax, [ebx + ctx_sha3.block_size]
-        cmp     [ebx + ctx_sha3.index], eax
-        jb      @f
-        sub     [ebx + ctx_sha3.index], eax
-    @@:
-
+        sub     ecx, eax
+        lea     edi, [ebx+ctx_sha3.block]
+        add     edi, eax
         mov     byte[edi], 0x06
         inc     edi
         dec     ecx
         xor     eax, eax
-        rep     stosb
+        rep stosb
         or      byte[edi - 1], 0x80
 
         mov     ebx, [_ctx]
@@ -425,8 +407,6 @@ proc sha3.final _ctx
         mov     ebx, [_ctx]
         lea     eax, [ebx + ctx_sha3.hash]
         stdcall sha3._.postprocess, ebx, eax
-
-        popad
         ret
 endp
 
@@ -438,34 +418,34 @@ endp
 
 
 proc sha3_224.oneshot _ctx, _data, _len
-	stdcall	sha3_224.init, [_ctx]
-	stdcall	sha3.update, [_ctx], [_data], [_len]
-	stdcall	sha3.final, [_ctx]
-	ret
+        stdcall sha3_224.init, [_ctx]
+        stdcall sha3.update, [_ctx], [_data], [_len]
+        stdcall sha3.finish, [_ctx]
+        ret
 endp
 
 
 proc sha3_256.oneshot _ctx, _data, _len
-	stdcall	sha3_256.init, [_ctx]
-	stdcall	sha3.update, [_ctx], [_data], [_len]
-	stdcall	sha3.final, [_ctx]
-	ret
+        stdcall sha3_256.init, [_ctx]
+        stdcall sha3.update, [_ctx], [_data], [_len]
+        stdcall sha3.finish, [_ctx]
+        ret
 endp
 
 
 proc sha3_384.oneshot _ctx, _data, _len
-	stdcall	sha3_384.init, [_ctx]
-	stdcall	sha3.update, [_ctx], [_data], [_len]
-	stdcall	sha3.final, [_ctx]
-	ret
+        stdcall sha3_384.init, [_ctx]
+        stdcall sha3.update, [_ctx], [_data], [_len]
+        stdcall sha3.finish, [_ctx]
+        ret
 endp
 
 
 proc sha3_512.oneshot _ctx, _data, _len
-	stdcall	sha3_512.init, [_ctx]
-	stdcall	sha3.update, [_ctx], [_data], [_len]
-	stdcall	sha3.final, [_ctx]
-	ret
+        stdcall sha3_512.init, [_ctx]
+        stdcall sha3.update, [_ctx], [_data], [_len]
+        stdcall sha3.finish, [_ctx]
+        ret
 endp
 
 

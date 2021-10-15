@@ -109,9 +109,9 @@ endl
         jnz     .err_sock
 
 ; Start calculating hash
-        invoke  sha256_init, [ctx_ptr]
+        invoke  sha2_256_init, [ctx_ptr]
 ; HASH: string  V_C, the client's version string (CR and NL excluded)
-        invoke  sha256_update, [ctx_ptr], ssh_ident_ha, ssh_msg_ident.length+4-2
+        invoke  sha2_256_update, [ctx_ptr], ssh_ident_ha, ssh_msg_ident.length+4-2
 
 ; >> Send our identification string
         DEBUGF  2, "Sending ID string\n"
@@ -138,7 +138,7 @@ endl
         bswap   eax
         sub     edx, 4
         mov     dword[edx], eax
-        invoke  sha256_update, [ctx_ptr], edx, ecx
+        invoke  sha2_256_update, [ctx_ptr], edx, ecx
 
 ; >> Key Exchange init
         mov     eax, [con_ptr]
@@ -191,7 +191,7 @@ endl
         bswap   eax
         lea     esi, [esi+sshlib_connection.tx_buffer+1]
         mov     dword[esi], eax
-        invoke  sha256_update, [ctx_ptr], esi, edx
+        invoke  sha2_256_update, [ctx_ptr], esi, edx
 
 ; << Check key exchange init of server
         stdcall sshlib_recv_packet, [con_ptr], 0
@@ -269,7 +269,7 @@ endl
         bswap   eax
         lea     esi, [esi+sshlib_connection.rx_buffer+1]
         mov     dword[esi], eax
-        invoke  sha256_update, [ctx_ptr], esi, edx
+        invoke  sha2_256_update, [ctx_ptr], esi, edx
 
 ; Exchange keys with the server
 

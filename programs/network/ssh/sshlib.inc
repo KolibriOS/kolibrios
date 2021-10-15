@@ -125,8 +125,8 @@ struct  sshlib_connection
         tx_buffer               ssh_packet_header
                                 rb PACKETSIZE-sizeof.ssh_packet_header
 
-        part_ex_hash_ctx        crash_ctx
-        session_id              rb SHA256_HASH_SIZE
+        part_ex_hash_ctx        rb LIBCRASH_CTX_LEN
+        session_id              rb SHA2_256_LEN
 
         algo_kex                dd ?
         algo_hostkey            dd ?
