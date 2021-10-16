@@ -1,2 +1,2 @@
-@fasm amd_temp_view.asm AMDtemp
+@fasm AMDtemp.asm AMDtemp
 @pause
