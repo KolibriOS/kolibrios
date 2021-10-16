@@ -332,7 +332,7 @@ ahci_callbacks:
     dd  0   ; no flush function
     dd  0   ; use default cache size
 .end:
-hd_name db 'hd', 0, 0, 0
+hd_name db 'sd', 0, 0, 0
 hd_counter dd 0
 endg
 
