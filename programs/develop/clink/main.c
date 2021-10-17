@@ -1,4 +1,5 @@
 #include <stdarg.h>
+#include <stddef.h>
 #include <stdlib.h>
 #include <stdio.h>
 #include <stdint.h>
@@ -228,7 +229,7 @@ static void build(ObjectIr *ir, const char *outname) {
 
 			size_t strtab_index = strtab_add(&strtab, name);
 			char numstr[8] = { 0 };
-			sprintf(numstr, "%u", strtab_index);
+			sprintf(numstr, "%lu", strtab_index);
 			fwrite(numstr, 1, 7, out);
 		}
 		fwrite32(out, 0);                         // VirtualSize
