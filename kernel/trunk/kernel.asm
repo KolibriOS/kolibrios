@@ -3956,12 +3956,12 @@ align 4
         sub     eax, ecx
 
         dec     ecx
-        jnz     .start_x
+        jns     .start_x
 
         pop     ecx
         dec     ebx
         dec     edx
-        jnz     .start_y
+        jns     .start_y
 ;--------------------------------------
 align 4
 .not_found:
