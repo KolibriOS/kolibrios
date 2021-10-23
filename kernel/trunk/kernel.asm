@@ -5218,7 +5218,7 @@ syscall_writetext:                      ; WriteText
         mov     esi, 0
 @@:
         stdcall is_region_userspace, edx, esi
-        jnz     .err
+        jnz     .err_1
         pop     esi
 
         mov     eax, [TASK_BASE]
@@ -5245,6 +5245,8 @@ align 4
         stdcall is_region_userspace, edi, 0
         jnz     .err
         jmp     dtext
+.err_1:
+        pop     esi
 .err:
         ret
 
