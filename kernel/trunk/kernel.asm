@@ -5215,11 +5215,11 @@ syscall_writetext:                      ; WriteText
         push    esi    ;check pointer on kernel address.
         test    ecx, 0x80000000
         jz      @f
-        mov     esi, 0
+        xor     esi, esi
 @@:
         stdcall is_region_userspace, edx, esi
-        jnz     .err_1
         pop     esi
+        jnz     .err
 
         mov     eax, [TASK_BASE]
         mov     ebp, [eax-twdw+WDATA.box.left]
@@ -5245,8 +5245,6 @@ align 4
         stdcall is_region_userspace, edi, 0
         jnz     .err
         jmp     dtext
-.err_1:
-        pop     esi
 .err:
         ret
 
