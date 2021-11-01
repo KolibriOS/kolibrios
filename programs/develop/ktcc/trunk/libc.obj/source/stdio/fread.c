@@ -24,7 +24,7 @@ size_t fread(void *restrict ptr, size_t size, size_t nmemb, FILE *restrict strea
 		return nmemb;
 	}
 
-    if(stream->mode & _FILEMODE_R){
+    if(stream->mode != _FILEMODE_W && stream->mode != _FILEMODE_A){
         if(!stream->__ungetc_emu_buff){
 			((char*) ptr)[0]=(char)stream->__ungetc_emu_buff;
 			//debug_printf("Ungetc: %x\n", ((char*) ptr)[0]);

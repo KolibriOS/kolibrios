@@ -100,6 +100,7 @@
 #include "stdlib/rand.c"
 #include "stdlib/qsort.c"
 #include "stdlib/assert.c"
+#include "stdlib/strtod.c"
 #include "stdlib/atof.c"
 
 #include "math/acosh.c"

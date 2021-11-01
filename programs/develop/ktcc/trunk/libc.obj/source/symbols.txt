@@ -63,6 +63,7 @@ strtol
 srand
 rand
 qsort
+strtod
 __assert_fail
 !____STRING____
 !memcpy

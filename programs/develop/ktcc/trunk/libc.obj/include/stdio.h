@@ -47,9 +47,10 @@ extern void _FUNC(debug_printf)(const char* format, ...);
 
 typedef size_t fpos_t;
 
-#define _FILEMODE_R 1 << 0 // Read
-#define _FILEMODE_W 1 << 1 // Write
-#define _FILEMODE_A 1 << 2 // Append
+#define _FILEMODE_R     1 << 0 // Read
+#define _FILEMODE_W     1 << 1 // Write
+#define _FILEMODE_A     1 << 2 // Append
+#define _FILEMODE_PLUS  1 << 3 // Plus
 
 typedef struct FILE_s {
     char *name;
