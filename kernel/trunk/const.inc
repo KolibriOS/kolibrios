@@ -700,6 +700,13 @@ RD_LOAD_FROM_MEMORY = 3
 RD_LOAD_FROM_FORMAT = 4
 RD_LOAD_FROM_NONE   = 5
 
+struct boot_pci_data
+        access_mechanism db ?
+        last_bus         db ?
+        version          dw ?   ; bcd minor, then major
+        pm_entry         dd ?   ; physical address of protected-mode entry point
+ends
+
 struct  boot_data
         bpp             db ?    ; bits per pixel
         pitch           dw ?    ; scanline length
@@ -717,7 +724,7 @@ struct  boot_data
                                 ; LAUNCHER) after kernel is loaded
         debug_print     db ?    ; if nonzero, duplicates debug output to the screen
         dma             db ?    ; DMA write: 1=yes, 2=no
-        pci_data        rb 8
+        pci_data        boot_pci_data
                         rb 8
         shutdown_type   db ?    ; see sysfn 18.9
                         rb 15

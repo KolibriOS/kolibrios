@@ -28,6 +28,21 @@ ACCESS_SIZE.WORD      = 2
 ACCESS_SIZE.DWORD     = 3
 ACCESS_SIZE.QWORD     = 4
 
+struct ADDRESS_SPACE_RESOURCE_DESCRIPTOR
+  Type           db ?
+  Length         dw ?
+  ResourceType   db ?
+  GeneralFlags   db ?
+  SpecificFlags  db ?
+ends
+
+struct QWORD_ADDRESS_SPACE_DESCRIPTOR ADDRESS_SPACE_RESOURCE_DESCRIPTOR
+  Granularity dq ?
+  RangeMinimum dq ?
+  RangeMaximum dq ?
+  TranslationOffset dq ?
+  AddressLength dq ?
+ends
 
 struct ACPI_RSDP
     Signature   DQ ?

@@ -1,8 +1,10 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;                                                              ;;
-;; Copyright (C) KolibriOS team 2020. All rights reserved.      ;;
+;; Copyright (C) KolibriOS team 2020-2021. All rights reserved. ;;
 ;; Distributed under terms of the GNU General Public License    ;;
 ;; Version 2, or (at your option) any later version.            ;;
+;;                                                              ;;
+;; Written by Ivan Baravy                                       ;;
 ;;                                                              ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;                                                              ;;
@@ -95,6 +97,11 @@ EFI_BLOCK_IO_PROTOCOL_GUID equ 0x21,0x5b,0x4e,0x96,0x59,0x64,0xd2,0x11, \
 
 EFI_GRAPHICS_OUTPUT_PROTOCOL_GUID equ 0xde,0xa9,0x42,0x90,0xdc,0x23,0x38,0x4a, \
                                       0x96,0xfb,0x7a,0xde,0xd0,0x80,0x51,0x6a
+
+EFI_PCI_ROOT_BRIDGE_IO_PROTOCOL_GUID equ 0xBB, 0x7E, 0x70, 0x2F, \
+                                         0x1A, 0x4A, 0xd4, 0x11, \
+                                         0x9A, 0x38, 0x00, 0x90, \
+                                         0x27, 0x3F, 0xC1, 0x4D
 
 EFI_FILE_MODE_READ   = 1
 EFI_FILE_MODE_WRITE  = 2
@@ -270,3 +277,47 @@ struct EFI_GRAPHICS_OUTPUT_MODE_INFORMATION
   PixelInformation      EFI_PIXEL_BITMASK
   PixelsPerScanLine     dd ?
 ends
+
+struct PCI_ROOT_BRIDGE_IO_PROTOCOL_ACCESS
+  Read  DN ?
+  Write DN ?
+ends
+
+struct EFI_PCI_ROOT_BRIDGE_IO_PROTOCOL
+  ParentHandle          DN ? ; EFI_HANDLE
+  PollMem               DN ?
+  PollIo                DN ?
+  Mem                   PCI_ROOT_BRIDGE_IO_PROTOCOL_ACCESS
+  Io                    PCI_ROOT_BRIDGE_IO_PROTOCOL_ACCESS
+  Pci                   PCI_ROOT_BRIDGE_IO_PROTOCOL_ACCESS
+  CopyMem               DN ?
+  Map                   DN ?
+  Unmap                 DN ?
+  AllocateBuffer        DN ?
+  FreeBuffer            DN ?
+  Flush                 DN ?
+  GetAttributes         DN ?
+  SetAttributes         DN ?
+  Configuration         DN ?
+  SegmentNumber         dd ?
+ends
+
+struct EFI_QWORD_ADDRESS_SPACE_DESCRIPTOR       ; described in acpi spec
+  Type              db ?
+  Length            dw ?
+  ResourceType      db ?
+  GeneralFlags      db ?
+  SpecificFlags     db ?
+  Granularity       dq ?
+  RangeMinimum      dq ?
+  RangeMaximum      dq ?
+  TranslationOffset dq ?
+  AddressLength dq ?
+ends
+
+EFI_RESOURCE_DESCRIPTOR_TYPE.QWORD_ADDRESS_SPACE = 0x8a
+EFI_RESOURCE_DESCRIPTOR_TYPE.END_TAG = 0x79
+
+EFI_RESOURCE_TYPE.MEMORY = 0
+EFI_RESOURCE_TYPE.IO = 1
+EFI_RESOURCE_TYPE.BUS = 2

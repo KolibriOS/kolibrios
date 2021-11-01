@@ -24,15 +24,15 @@ init_pci_16:
 
         xor     ax, ax
         mov     es, ax
-        mov     byte [es:BOOT_LO.pci_data], 1;default mechanism:1
+        mov     [es:BOOT_LO.pci_data.access_mechanism], 1;default mechanism:1
         mov     ax, 0xb101
         int     0x1a
         or      ah, ah
         jnz     pci16skip
 
-        mov     [es:BOOT_LO.pci_data+1], cl;last PCI bus in system
-        mov     word[es:BOOT_LO.pci_data+2], bx
-        mov     dword[es:BOOT_LO.pci_data+4], edi
+        mov     [es:BOOT_LO.pci_data.last_bus], cl
+        mov     [es:BOOT_LO.pci_data.version], bx
+        mov     [es:BOOT_LO.pci_data.pm_entry], edi
 
 ; we have a PCI BIOS, so check which configuration mechanism(s)
 ; it supports
@@ -41,7 +41,8 @@ init_pci_16:
         jnz     pci16skip
         test    al, 2
         jz      pci16skip
-        mov     byte [es:BOOT_LO.pci_data], 2; if (al&3)==2 => mechanism 2
+        ; if (al&3)==2 => mechanism 2
+        mov     [es:BOOT_LO.pci_data.access_mechanism], 2
 
 pci16skip:
 

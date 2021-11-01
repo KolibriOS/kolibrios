@@ -1,8 +1,10 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;                                                              ;;
-;; Copyright (C) KolibriOS team 2020. All rights reserved.      ;;
+;; Copyright (C) KolibriOS team 2020-2021. All rights reserved. ;;
 ;; Distributed under terms of the GNU General Public License    ;;
 ;; Version 2, or (at your option) any later version.            ;;
+;;                                                              ;;
+;; Written by Ivan Baravy                                       ;;
 ;;                                                              ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -560,11 +562,11 @@ main:
         shl     eax, 2
         mov     [edx+BOOT_LO.pitch], ax
 
-        mov     byte[edx+BOOT_LO.pci_data+0], 1    ; PCI access mechanism
-        mov     byte[edx+BOOT_LO.pci_data+1], 8    ; last bus, don't know how to count them
-        mov     byte[edx+BOOT_LO.pci_data+2], 0x10 ; PCI version
-        mov     byte[edx+BOOT_LO.pci_data+3], 0x02
-        mov     dword[edx+BOOT_LO.pci_data+4], 0xe3
+        mov     [edx+BOOT_LO.pci_data.access_mechanism], 1
+        movzx   eax, [pci_last_bus]
+        mov     [edx+BOOT_LO.pci_data.last_bus], al
+        mov     [edx+BOOT_LO.pci_data.version], 0x0300  ; PCI 3.0
+        mov     [edx+BOOT_LO.pci_data.pm_entry], 0
 
         ; kernel
 ;        eficall BootServices, AllocatePages, EFI_RESERVED_MEMORY_TYPE, \
@@ -860,6 +862,7 @@ GDT:
 gopuuid         db EFI_GRAPHICS_OUTPUT_PROTOCOL_GUID
 lipuuid         db EFI_LOADED_IMAGE_PROTOCOL_GUID
 sfspguid        db EFI_SIMPLE_FILE_SYSTEM_PROTOCOL_GUID
+pcirbguid       db EFI_PCI_ROOT_BRIDGE_IO_PROTOCOL_GUID
 
 file_name       du "\EFI\KOLIBRIOS\KOLIBRI.INI",0
 kernel_name     du "\EFI\KOLIBRIOS\KOLIBRI.KRN",0
@@ -948,6 +951,8 @@ lip_handle      dd 0
 lip_interface   dd 0
 
 sfsp_interface  dd 0
+
+pci_last_bus db 254
 
 esp_root        dd ?
 file_handle     dd ?

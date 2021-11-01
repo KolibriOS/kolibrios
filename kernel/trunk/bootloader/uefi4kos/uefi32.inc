@@ -1,8 +1,10 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;                                                              ;;
-;; Copyright (C) KolibriOS team 2020. All rights reserved.      ;;
+;; Copyright (C) KolibriOS team 2020-2021. All rights reserved. ;;
 ;; Distributed under terms of the GNU General Public License    ;;
 ;; Version 2, or (at your option) any later version.            ;;
+;;                                                              ;;
+;; Written by Ivan Baravy                                       ;;
 ;;                                                              ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;                                                              ;;
@@ -51,8 +53,3 @@ struct EFI_LOADED_IMAGE_PROTOCOL
   ImageDataType         dd ?
   UnLoad                dd ?
 ends
-
-section '.text' code executable readable
-
-uefifunc:
-        ret
