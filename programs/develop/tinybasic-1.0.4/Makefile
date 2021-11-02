@@ -1,5 +1,5 @@
 KTCC_DIR=../ktcc/trunk
-KLIBC_DIR = ../libraries/kolibri-libc
+KLIBC_DIR = $(KTCC_DIR)/libc.obj
 
 NAME=bin/tinybas.kex
 

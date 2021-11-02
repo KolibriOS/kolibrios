@@ -20,8 +20,9 @@
 #include "generatec.h"
 
 #ifdef _KOLIBRI
+    #include <sys/ksys.h>
     #define KTCC_BIN "/kolibrios/develop/tcc/tcc"
-    #define KTCC_FLAGS "%s -o %s -lck"  
+    #define KTCC_FLAGS "-nobss %s -o %s -ltcc -lc.obj"  
 #endif
 
 /* static variables */
@@ -300,14 +301,11 @@ static void output_exe (char *command, char *basic_filename) {
 #else
   sprintf(final_command, KTCC_FLAGS, c_filename, exe_filename);
   if(!_ksys_exec(KTCC_BIN, final_command)){
-    printf(final_command);
-  }else{
     printf("Bad command: %s %s\n", KTCC_BIN, final_command);
     exit(0);
   }
 #endif
 }
-
 
 /*
  * Top Level Routine
