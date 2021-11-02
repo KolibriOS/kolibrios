@@ -82,7 +82,6 @@
 #include "string/memmove.c"
 
 #include "stdlib/calloc.c"
-#include "stdlib/lldiv.c"
 #include "stdlib/malloc.c"
 #include "stdlib/atoll.c"
 #include "stdlib/free.c"
@@ -91,9 +90,7 @@
 #include "stdlib/atoi.c"
 #include "stdlib/labs.c"
 #include "stdlib/realloc.c"
-#include "stdlib/ldiv.c"
 #include "stdlib/abs.c"
-#include "stdlib/div.c"
 #include "stdlib/atol.c"
 #include "stdlib/itoa.c"
 #include "stdlib/strtol.c"

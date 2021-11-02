@@ -20,13 +20,35 @@ extern int _FUNC(abs)(int);
 extern long _FUNC(labs)(long);
 extern long long _FUNC(llabs)(long long);
 
-typedef struct { int quot, rem; } div_t;
-typedef struct { long quot, rem; } ldiv_t;
-typedef struct { long long quot, rem; } lldiv_t;
+typedef struct { 
+    int quot;
+    int rem; 
+} div_t;
 
-extern div_t _FUNC(div)(int, int);
-extern ldiv_t _FUNC(ldiv)(long, long);
-extern lldiv_t _FUNC(lldiv)(long long, long long);
+typedef struct { 
+    long quot; 
+    long rem;
+} ldiv_t;
+
+typedef struct { 
+    long long quot; 
+    long long rem; 
+} lldiv_t;
+
+static inline
+div_t div(int num, int den) {
+	 return (div_t){ num/den, num%den };
+}
+
+static inline
+ldiv_t ldiv(long num, long den) {
+	 return (ldiv_t){ num/den, num%den };
+}
+
+static inline
+lldiv_t lldiv(long long num, long long den) {
+	 return (lldiv_t){ num/den, num%den };
+}
 
 extern void* _FUNC(malloc)(size_t size);
 extern void* _FUNC(calloc)(size_t num, size_t size);

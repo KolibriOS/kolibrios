@@ -49,14 +49,11 @@ atol
 atoll
 atof
 calloc
-div
 exit
 free
 itoa
 labs
-ldiv
 llabs
-lldiv
 malloc
 realloc
 strtol
