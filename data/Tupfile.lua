@@ -707,8 +707,9 @@ tup.append_table(img_files, {
 })
 tup.append_table(extra_files, {
  {"kolibrios/utils/thashview", PROGS .. "/other/TinyHashView/thashview"},
- {"kolibrios/develop/TinyBasic/", PROGS .. "/develop/tinybasic/TinyBasic"},
- {"kolibrios/develop/TinyBasic/", PROGS .. "/develop/tinybasic/TBuserMan.txt"},
+ {"kolibrios/develop/TinyBasic/TinyBasic", PROGS .. "/develop/tinybasic-1.0.4/tinybasic"},
+ {"kolibrios/develop/TinyBasic/bas/", PROGS .. "/develop/tinybasic-1.0.4/bas/*"},
+ {"kolibrios/develop/TinyBasic/TinyBasic.man", PROGS .. "/develop/tinybasic-1.0.4/doc/tinybasic.man"},
  {"kolibrios/utils/teatool", PROGS .. "/other/TEAtool/teatool"},
  {"kolibrios/utils/passwordgen", PROGS .. "/other/PasswordGen/passwordgen"},
  {"kolibrios/utils/kruler", PROGS .. "/other/kruler/kruler"},
