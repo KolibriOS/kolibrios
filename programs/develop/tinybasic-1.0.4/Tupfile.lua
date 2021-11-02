@@ -2,7 +2,7 @@ if tup.getconfig("NO_TCC") ~= "" then return end
 
 TCC="kos32-tcc"
 
-CFLAGS  = "-I../ktcc/trunk/libc.obj/include -I inc"
+CFLAGS  = "-D_KOLIBRI -I../ktcc/trunk/libc.obj/include -I inc"
 LDFLAGS = "-nostdlib -L../ktcc/trunk/bin/lib ../ktcc/trunk/bin/lib/crt0.o" 
 
 LIBS = "-ltcc -lc.obj"
