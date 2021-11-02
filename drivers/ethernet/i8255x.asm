@@ -1,6 +1,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;                                                                 ;;
-;; Copyright (C) KolibriOS team 2004-2017. All rights reserved.    ;;
+;; Copyright (C) KolibriOS team 2004-2021. All rights reserved.    ;;
 ;; Distributed under terms of the GNU General Public License       ;;
 ;;                                                                 ;;
 ;; i8255x (Intel eepro 100) driver for KolibriOS                   ;;
@@ -27,13 +27,17 @@ entry START
         COMPATIBLE_API          = 0x0100
         API_VERSION             = (COMPATIBLE_API shl 16) + CURRENT_API
 
-        MAX_DEVICES             = 16
+; configureable area
 
-        TX_RING_SIZE            = 16
+        MAX_DEVICES             = 16            ; Maximum number of devices this driver may handle
 
-        DEBUG                   = 1
-        __DEBUG__               = 1
+        TX_RING_SIZE            = 16            ; Number of packets in send ring buffer
+        RX_RING_SIZE            = 1             ; Number of packets in receive ring buffer
+
+        __DEBUG__               = 1             ; 1 = on, 0 = off
         __DEBUG_LEVEL__         = 2             ; 1 = verbose, 2 = errors only
+
+; end configureable area
 
 section '.flat' readable writable executable
 
@@ -42,6 +46,16 @@ include '../struct.inc'
 include '../macros.inc'
 include '../fdo.inc'
 include '../netdrv.inc'
+
+if (bsr TX_RING_SIZE)>(bsf TX_RING_SIZE)
+  display 'TX_RING_SIZE must be a power of two'
+  err
+end if
+
+if (RX_RING_SIZE)<>(1)
+  display 'RX_RING_SIZE must be 1'
+  err
+end if
 
 ; I/O registers
 REG_SCB_STATUS          = 0
@@ -64,7 +78,7 @@ EE_SK                   = 1 shl 0       ; serial clock
 EE_CS                   = 1 shl 1       ; chip select
 EE_DI                   = 1 shl 2       ; data in
 EE_DO                   = 1 shl 3       ; data out
-EE_MASK                 = EE_SK + EE_CS + EE_DI + EE_DO
+EE_MASK                 = EE_SK or EE_CS or EE_DI or EE_DO
 ; opcodes, first bit is start bit and must be 1
 EE_READ                 = 110b
 EE_WRITE                = 101b
@@ -581,7 +595,7 @@ reset:
 ;-------------------------
 ; Individual address setup
 
-        mov     [ebx + device.confcmd.command], TXFD_CMD_IA + TXFD_CMD_SUSPEND
+        mov     [ebx + device.confcmd.command], TXFD_CMD_IA or TXFD_CMD_SUSPEND
         mov     [ebx + device.confcmd.status], 0
         lea     eax, [ebx + device.tx_ring]
         invoke  GetPhysAddr
@@ -604,7 +618,7 @@ reset:
 ;-------------
 ; Configure CU
 
-        mov     [ebx + device.confcmd.command], TXFD_CMD_CFG + TXFD_CMD_SUSPEND
+        mov     [ebx + device.confcmd.command], TXFD_CMD_CFG or TXFD_CMD_SUSPEND
         mov     [ebx + device.confcmd.status], 0
         lea     eax, [ebx + device.confcmd.status]
         invoke  GetPhysAddr
@@ -704,13 +718,13 @@ init_tx_ring:
 ;; Transmit                                ;;
 ;;                                         ;;
 ;; In: pointer to device structure in ebx  ;;
+;; Out: eax = 0 on success                 ;;
 ;;                                         ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
+align 16
 proc transmit stdcall bufferptr
 
-        pushf
-        cli
+        spin_lock_irqsave
 
         mov     esi, [bufferptr]
         DEBUGF  1,"Transmitting packet, buffer:%x, size:%u\n", [bufferptr], [esi + NET_BUFF.length]
@@ -721,9 +735,9 @@ proc transmit stdcall bufferptr
         [eax+13]:2,[eax+12]:2
 
         cmp     [esi + NET_BUFF.length], 1514
-        ja      .fail
+        ja      .error
         cmp     [esi + NET_BUFF.length], 60
-        jb      .fail
+        jb      .error
 
         ; Get current TX descriptor
         mov     edi, [ebx + device.cur_tx]
@@ -733,11 +747,11 @@ proc transmit stdcall bufferptr
 
         ; Check if current descriptor is free or still in use
         cmp     [edi + txfd.status], 0
-        jne     .fail
+        jne     .overrun
 
         ; Fill in status and command values
         mov     [edi + txfd.status], 0
-        mov     [edi + txfd.command], TXFD_CMD_SUSPEND + TXFD_CMD_TX + TXFD_CMD_TX_FLEX
+        mov     [edi + txfd.command], TXFD_CMD_SUSPEND or TXFD_CMD_TX or TXFD_CMD_TX_FLEX
         mov     [edi + txfd.count], 0x01208000
 
         ; Fill in buffer address and size
@@ -768,21 +782,31 @@ proc transmit stdcall bufferptr
         add     dword[ebx + device.bytes_tx], ecx
         adc     dword[ebx + device.bytes_tx + 4], 0
 
-        ; Wait for command to complete
-        call    cmd_wait
-
         inc     [ebx + device.cur_tx]
         and     [ebx + device.cur_tx], TX_RING_SIZE - 1
 
-        DEBUGF  1,"Transmit OK\n"
-        popf
+        ; Wait for command to complete
+        call    cmd_wait
+
+        spin_unlock_irqrestore
         xor     eax, eax
         ret
 
-  .fail:
-        DEBUGF  2,"Transmit failed!\n"
+  .error:
+        DEBUGF  2, "TX packet error\n"
+        inc     [ebx + device.packets_tx_err]
         invoke  NetFree, [bufferptr]
-        popf
+
+        spin_unlock_irqrestore
+        or      eax, -1
+        ret
+
+  .overrun:
+        DEBUGF  2, "TX overrun\n"
+        inc     [ebx + device.packets_tx_ovr]
+        invoke  NetFree, [bufferptr]
+
+        spin_unlock_irqrestore
         or      eax, -1
         ret
 
@@ -794,42 +818,24 @@ endp
 ;; Interrupt handler ;;
 ;;                   ;;
 ;;;;;;;;;;;;;;;;;;;;;;;
-
-align 4
+align 16
 int_handler:
 
         push    ebx esi edi
 
-        DEBUGF  1,"INT\n"
+        mov     ebx, [esp+4*4]
+        DEBUGF  1,"INT for 0x%x\n", ebx
 
-; find pointer of device wich made IRQ occur
-
-        mov     ecx, [devices]
-        test    ecx, ecx
-        jz      .nothing
-        mov     esi, device_list
-  .nextdevice:
-        mov     ebx, [esi]
+; TODO? if we are paranoid, we can check that the value from ebx is present in the current device_list
 
 ;        set_io  [ebx + device.io_addr], 0      ; REG_SCB_STATUS = 0
         set_io  [ebx + device.io_addr], REG_SCB_STATUS
         in      ax, dx
-        out     dx, ax                          ; send it back to ACK
         test    ax, ax
-        jnz     .got_it
-  .continue:
-        add     esi, 4
-        dec     ecx
-        jnz     .nextdevice
-  .nothing:
-        pop     edi esi ebx
-        xor     eax, eax
+        jz      .nothing
+        out     dx, ax                          ; send it back to ACK
 
-        ret                                         ; If no device was found, abort (The irq was probably for a device, not registered to this driver)
-
-  .got_it:
-
-        DEBUGF  1,"Device: %x Status: %x\n", ebx, ax
+        DEBUGF  1,"Status: %x\n", ax
 
         test    ax, SCB_STATUS_FR               ; did we receive a frame?
         jz      .no_rx
@@ -958,18 +964,22 @@ int_handler:
   .no_tx:
 
         test    ax, RU_STATUS_NO_RESOURCES
-        jne     .fail
+        jz      .not_out_of_resources
 
         DEBUGF  2, "Out of resources!\n"
 
-  .fail:
+  .not_out_of_resources:
         pop     edi esi ebx
         xor     eax, eax
         inc     eax
 
         ret
 
+  .nothing:
+        pop     edi esi ebx
+        xor     eax, eax
 
+        ret
 
 
 align 4
@@ -980,9 +990,6 @@ cmd_wait:
         jnz     cmd_wait
 
         ret
-
-
-
 
 
 
