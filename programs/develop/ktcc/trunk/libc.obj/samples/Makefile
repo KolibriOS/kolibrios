@@ -22,7 +22,8 @@ clayer/msgbox.kex \
 clayer/boxlib.kex \
 thread_work.kex \
 sdltest.kex \
-shell_test.kex
+shell_test.kex \
+libc_test.kex
 
 LIBS= -lSDL -lshell -ltcc -lsound -ldialog -lrasterworks -limg -lbox -lmsgbox -lnetwork -lc.obj
 
