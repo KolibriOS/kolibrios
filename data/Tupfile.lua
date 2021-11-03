@@ -738,7 +738,7 @@ tup.append_table(extra_files, {
  {"kolibrios/games/quake/", "common/games/quake/*"}, -- not really gcc, but no sense without sdlquake
  {"kolibrios/games/quake/", "../contrib/other/sdlquake-1.0.9/sdlquake"},
  {"kolibrios/games/fridge/", PROGS .. "/games/fridge/fridge"},
- {"kolibrios/games/tyrian/", "common/games/tyrian/*"},
+ {"kolibrios/games/tyrian/", "../contrib/games/opentyrian/opentyrian"},
  {"kolibrios/games/tyrian/data/", "common/games/tyrian/data/*"},
  {"kolibrios/games/wolf3d/", "../contrib/games/wolf3d/wolf3d"},
  {"kolibrios/games/wolf3d/", "common/games/wolf3d/*"},
