@@ -228,6 +228,7 @@ struct  device          ETH_DEVICE
         rx_desc         dd ?
         cur_tx          dd ?
         last_tx         dd ?
+        link_timer      dd ?
         ee_bus_width    db ?
         irq_line        db ?
 
@@ -412,6 +413,12 @@ endp
 
 
 unload:
+
+        cmp     [ebx + device.link_timer], 0
+        je      @f
+        invoke  CancelTimerHS, [ebx + device.link_timer]
+  @@:
+
         ; TODO: (in this particular order)
         ;
         ; - Stop the device
@@ -475,6 +482,13 @@ probe:
 align 4
 reset:
 
+; Stop link check timer if it was already running
+        cmp     [ebx + device.link_timer], 0
+        je      @f
+        invoke  CancelTimerHS, [ebx + device.link_timer]
+  @@:
+
+; attach int handler
         movzx   eax, [ebx + device.irq_line]
         DEBUGF  1,"Attaching int handler to irq %x\n", eax:1
         invoke  AttachIntHandler, eax, int_handler, ebx
@@ -639,11 +653,14 @@ reset:
         out     dx, ax
         call    cmd_wait
 
-        DEBUGF  1,"Reset complete\n"
+; Start media check timer
+        mov     [ebx + device.state], ETH_LINK_DOWN
+        invoke  TimerHS, 0, 50, check_media_mii, ebx
+        mov     [ebx + device.link_timer], eax
+
         mov     [ebx + device.mtu], 1514
 
-; Set link state to unknown
-        mov     [ebx + device.state], ETH_LINK_UNKNOWN
+        DEBUGF  1,"Reset complete\n"
 
         xor     eax, eax        ; indicate that we have successfully reset the card
         ret
@@ -980,6 +997,86 @@ int_handler:
         xor     eax, eax
 
         ret
+
+
+
+align 16
+proc check_media_mii stdcall dev:dword
+
+        spin_lock_irqsave
+
+        mov     ebx, [dev]
+
+        mov     ecx, 1  ;;;
+        mov     edx, MII_BMSR
+        call    mdio_read
+
+        mov     ecx, 1  ;;;
+        mov     edx, MII_BMSR
+        call    mdio_read
+
+        mov     ecx, eax
+        and     eax, BMSR_LSTATUS
+        shr     eax, 2
+        cmp     eax, [ebx + device.state]
+        jne     .changed
+
+        spin_unlock_irqrestore
+        ret
+
+  .changed:
+        test    eax, eax
+        jz      .update
+
+        test    ecx, BMSR_ANEGCOMPLETE
+        jz      .update
+
+        mov     ecx, 1  ;;;
+        mov     edx, MII_ADVERTISE
+        call    mdio_read
+        mov     esi, eax
+
+        mov     ecx, 1  ;;;
+        mov     edx, MII_LPA
+        call    mdio_read
+        and     eax, esi
+
+        test    eax, LPA_100FULL
+        jz      @f
+        mov     eax, ETH_LINK_SPEED_100M or ETH_LINK_FULL_DUPLEX
+        jmp     .update
+  @@:
+
+        test    eax, LPA_100HALF
+        jz      @f
+        mov     eax, ETH_LINK_SPEED_100M
+        jmp     .update
+  @@:
+
+        test    eax, LPA_10FULL
+        jz      @f
+        mov     eax, ETH_LINK_SPEED_10M or ETH_LINK_FULL_DUPLEX
+        jmp     .update
+  @@:
+
+        test    eax, LPA_10HALF
+        jz      @f
+        mov     eax, ETH_LINK_SPEED_10M
+        jmp     .update
+  @@:
+
+        mov     eax, ETH_LINK_UNKNOWN
+
+  .update:
+        mov     [ebx + device.state], eax
+        invoke  NetLinkChanged
+
+
+        spin_unlock_irqrestore
+        ret
+
+
+endp
 
 
 align 4
