@@ -48,6 +48,12 @@ void main()
 		} else {
 			strcpy(#uEdit, #param);
 		}
+
+		if (streq(#param, "-test")) {
+			strcpy(#uEdit, URL_SPEED_TEST);
+			RunProgram("/sys/network/netstat", NULL);
+			notify(SPEED_TEST_INFO_MESSAGE);
+		}
 	}
 	if (uEdit[0]) StartDownloading(); else {
 		edit_box_set_text stdcall (#ed, "http://");

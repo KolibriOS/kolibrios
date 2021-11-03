@@ -6,11 +6,13 @@
 	#define T_CANCEL "Отмена"
 	#define T_OPEN_DIR "Показать в папке"
 	#define T_RUN "Открыть файл"
+	#define T_SPEED_TEST "Тест скорости"
 	#define FILE_SAVED_AS "'Менеджер загрузок\nФайл сохранен как %s' -Dt"
 	#define FILE_NOT_SAVED "'Менеджер загрузок\nОшибка! Файл не может быть сохранен как\n%s' -Et"
 	#define KB_RECEIVED "Идет скачивание... %s получено"
 	#define T_ERROR_STARTING_DOWNLOAD "'Невозможно начать скачивание.\nПроверьте введенный путь и соединение с Интернетом.' -E"
 	#define T_AUTOCLOSE "Автозакрытие"
+#define SPEED_TEST_INFO_MESSAGE "'Скорость загрузки отображается в поле Download программы Network status.'-Id"
 	char accept_language[]= "Accept-Language: ru\n";
 #else
 	#define DL_WINDOW_HEADER "Download Manager"
@@ -18,11 +20,13 @@
 	#define T_CANCEL "Cancel"
 	#define T_OPEN_DIR " Show in folder "
 	#define T_RUN "Open file"
+	#define T_SPEED_TEST "Speed test"
 	#define FILE_SAVED_AS "'Download manager\nFile saved as %s' -Dt"
 	#define FILE_NOT_SAVED "'Download manager\nError! Can\96t save file as %s' -Et"
 	#define KB_RECEIVED "Downloading... %s received"
 	#define T_ERROR_STARTING_DOWNLOAD "'Error while starting download process.\nCheck entered path and Internet connection.' -E"
 	#define T_AUTOCLOSE "Autoclose"
+	#define SPEED_TEST_INFO_MESSAGE "'Download speed is shown after `Download`\nlabel in the Network status program.'-Id"
 	char accept_language[]= "Accept-Language: en\n";
 #endif
 
@@ -32,6 +36,8 @@
 
 char save_dir[] = "/tmp0/1/Downloads";
 char dl_shared[] = "DL";
+
+#define URL_SPEED_TEST "http://speedtest.tele2.net/100MB.zip"
 
 enum { 
 	BTN_EXIT=1,
