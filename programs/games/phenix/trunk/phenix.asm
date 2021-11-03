@@ -1,1350 +1,1232 @@
 ;
-;   Phenix Dynamic Game Created by Pavlushin Evgeni for ASCL
-;
-;   100% Full relase!
-;
-;   www.waptap@mail.ru
+;   Phoenix Game. Based on ASCL Library
 ;
 
+;**********************************************************************
+   use32
+   org    0x0
+   db     'MENUET01'              ; 8 byte id
+   dd     0x01                    ; header version
+   dd     START                   ; start of code
+   dd     IM_END                  ; size of image
+   dd     I_END                   ; memory for app
+   dd     I_END                   ; esp stack position
+   dd     0x0 , 0x0               ; I_Param , I_Icon
+;**********************************************************************
 
-;******************************************************************************
-    use32
-    org    0x0
-    db     'MENUET01'              ; 8 byte id
-    dd     0x01                    ; header version
-    dd     START                   ; start of code
-    dd     IM_END                  ; size of image
-    dd     I_END                   ; memory for app
-    dd     I_END                   ; esp
-    dd     0x0 , 0x0               ; I_Param , I_Icon
+include 'lang.inc'    ; for SVN 'lang.inc'
+include '../../../macros.inc'  ; for SVN '..\..\..\macros.inc;'
+include 'ascl.inc'         ; main
+include 'ascgl.inc'        ; graphics
+include 'ascpoal.inc'      ; processing object array
+include 'ascgml.inc'       ; game library for collision detection
 
-;******************************************************************************
+; debug flags
+keyboard_debug=0     ; Set to 1 to view all keyboard keys state in game
+light_space=0        ; May used for check canvas position in window
+debug_scenario=0     ; May used for fast test of gameplay
+stack_leak_debug=0   ; Show stack size on screen
+debug_mode=1         ; Support keys:
+; A - set player hp = 10000. Make player ship undestructible
+; E - player hp / 2
+; W - view final screen after game begin
 
+screen_w equ 640
+screen_h equ 440
+;screen_w equ 1014
+;screen_h equ 739
 
-include 'lang.inc'
-include '../../../macros.inc'
-include 'ascl.inc'
-include 'ascgl.inc'
-include 'ascml.inc'
+; Define special colors
+cl_DarkRed equ 0x990000
+cl_Orange  equ 0xbbbb00
 
+; Define objects type id
+EmptyObject  equ 0
+; This numbers not possible for modify because draw_objects:
+BlueWarShip  equ 1
+GreenWarShip equ 2
+Asteroid     equ 3
+Box          equ 4
 
-showmas:
-    cmp [edi+8],dword 0
-    je  noshow
-    cmp [edi+8],dword 1
-    jne no_gun
-    mov eax,shoot
-    jmp outp
-no_gun:
-    push edi
-    random 3,ebx
-    pop edi
-    cmp ebx,0
-    jne no_star
-    mov eax,star
-    jmp outp
-no_star:
-    cmp ebx,1
-    jne no_star2
-    mov eax,star2
-    jmp outp
-no_star2:
-    mov eax,star3
-outp:
-    aimgtoimg eax,dword [edi],dword [edi+4],canvas,0x0
-noshow:
-    ret
+Laser        equ 1
+Plasma       equ 2
+StaticPlasma equ 3
 
-showobjmas:
-    cmp [edi+8],dword 0
-    je  noshow1
-    cmp [edi+4],dword 380
-    jg  noshow1
-    cmp [edi+4],dword 0
-    jl  noshow1
-    cmp [edi+8],dword 1
-    jne no_warship1
-    mov eax,warship1
-    jmp outws
-no_warship1:
-    cmp [edi+8],dword 2
-    jne no_warship2
-    mov eax,warship2
-    jmp outws
-no_warship2:
-    cmp [edi+8],dword 3
-    jne no_meteor
-    mov eax,meteor
-    jmp outws
-no_meteor:
-    cmp [edi+8],dword 4
-    jne no_box
-    mov eax,box
-    jmp outws
-no_box:
-outws:
-    aimgtoimg eax,dword [edi],dword [edi+4],canvas,0x0
-noshow1:
-    ret
-
-
-moveobjmas:
-    cmp [edi+8],dword 0
-    je  no_ws
-    mov eax,[edi+12]
-    add [edi],eax
-    mov eax,[edi+16]
-    add [edi+4],eax
-
-    cmp dword [edi],600
-    jng xok1
-    sub dword [edi],20
-    neg dword [edi+12]
-    jmp xok2
-xok1:
-    cmp dword [edi],0
-    jnl xok2
-    add dword [edi],20
-    neg dword [edi+12]
-xok2:
-    cmp dword [edi+4],400
-    jng yok
-    mov dword [edi+8],0
-    ret
-yok:
-    cmp dword [edi+8],2  ;green ship
-    jne no_grs
-    cmp dword [edi+4],100
-    jna no_grs
-    cmp dword [edi+4],103
-    jna grs
-    cmp dword [edi+4],200
-    jna no_grs
-    cmp dword [edi+4],203
-    jna  grs
-    cmp dword [edi+4],300
-    jna no_grs
-    cmp dword [edi+4],303
-    ja  no_grs
-grs:
-    neg dword [edi+12]
-    mov [temp],edi
-    findmas massive,findzero
-;in edi off to free element
-    jc  close_app
-    mov esi,edi
-    mov edi,[temp]
-    mov eax,[edi]
-    mov [esi],eax
-    mov eax,[edi+4]
-    mov [esi+4],eax
-    mov [esi+8],dword 1
-    mov [esi+12],dword 0
-    mov [esi+16],dword 10
-no_grs:
-
-    cmp dword [edi+8],1  ;blue ship
-    jne no_bls
-    cmp dword [edi+4],50
-    jna no_bls
-    cmp dword [edi+4],64
-    jna bls
-    cmp dword [edi+4],100
-    jna no_bls
-    cmp dword [edi+4],114
-    jna bls
-    cmp dword [edi+4],150
-    jna no_bls
-    cmp dword [edi+4],164
-    ja  no_bls
-bls:
-    mov [temp],edi
-    findmas massive,findzero
-    jc  close_app
-    mov esi,edi
-    mov edi,[temp]
-    mov eax,[edi]
-    mov [esi],eax
-    mov eax,[edi+4]
-    mov [esi+4],eax
-    mov [esi+8],dword 2
-    mov [esi+12],dword 0
-    mov [esi+16],dword 5
-no_bls:
-
-no_ws:
-    ret
-
-
-delfarshoot:
-    cmp [edi+4],dword 40
-    jb  del
-    cmp [edi+4],dword 400
-    ja  del
-    cmp [edi],dword 40
-    jb  del
-    cmp [edi],dword 600
-    ja  del
-    jmp nodel
-del:
-    mov [edi+8],dword 0
-nodel:
-    ret
-
-
-movemas:
-    cmp [edi+8],dword 0
-    jne no_freeel
-    ret
-no_freeel:
-    mov eax,[edi+12]
-    add [edi],eax
-    mov eax,[edi+16]
-    add [edi+4],eax
-    ret
-
-
-
-endshowmas:
-    cmp [edi+8],dword 0
-    je  noshowem
-    mov eax,star2
-    aimgtoimg eax,dword [edi],dword [edi+4],canvas,0x0
-noshowem:
-    ret
-
-
-
-endmovemas:
-    cmp [edi+8],dword 0
-    jne no_fr
-    ret
-no_fr:
-    mov eax,[edi+12]
-    add [edi],eax
-    mov eax,[edi+16]
-    add [edi+4],eax
-    ret
-
-
-findzero:
-    cmp [edi+8],dword 0
-    je  iz_zero
-    xor eax,eax
-    ret
-iz_zero:
-    mov eax,1
-    ret
-
-compobr:
-    cmp [esi+8],dword 0
-    je  no_crsh
-    cmp [edi+8],dword 0
-    je  no_crsh
-    cmp [esi+16],dword 0
-    jg  no_crsh
-
-    mov eax,[esi]
-    mov [temp],eax
-    mov eax,[esi+4]
-    mov [temp2],eax
-    mov eax,[edi]
-    mov [temp3],eax
-    mov eax,[edi+4]
-    mov [temp4],eax
-
-    pushad
-    collimg imgsize,[temp],[temp2],imgsize,[temp3],[temp4],[otv]
-    popad
-    cmp [otv],dword 0
-    je  no_crsh
-
-    cmp [edi+8],dword 2
-    jne no_grship
-    inc [gship]
-    add [score],30
-    jmp setzero
-no_grship:
-    cmp [edi+8],dword 1
-    jne no_blship
-    inc [bship]
-    add [score],20
-    jmp setzero
-no_blship:
-    cmp [edi+8],dword 3
-    jne no_metr
-    dec dword [edi+16]
-    cmp dword [edi+16],0
-    jne mok
-    mov dword [edi+16],1
-mok:
-    mov [esi+8],dword 0
-    ret
-no_metr:
-
-setzero:
-    mov [esi+8],dword 0
-    mov [edi+8],dword 0
-no_crsh:
-    ret
-
-shipobjtest:
-    cmp [edi+8],dword 0
-    je  no_obj
-    mov eax,[edi]
-    mov [temp3],eax
-    mov eax,[edi+4]
-    mov [temp4],eax
-    pushad
-    collimg imgsize,[shipx],[shipy],imgsize,[temp3],[temp4],[otv]
-    popad
-    cmp [otv],dword 0
-    je  no_obj
-    cmp [edi+8],dword 4  ;if box
-    jne no_fbox
-    add [energy],5
-    add [score],50
-    mov [edi+8],dword 0
-    inc [boxget]
-    ret
-no_fbox:
-    sub [energy],16
-    mov [edi+8],dword 0
-no_obj:
-    ret
-
-shipguntest:
-    cmp [edi+8],dword 0
-    je  no_gobj
-    cmp [edi+16],dword 0
-    jl  no_gobj
-    mov eax,[edi]
-    mov [temp3],eax
-    mov eax,[edi+4]
-    mov [temp4],eax
-    pushad
-    collimg imgsize,[shipx],[shipy],imgsize,[temp3],[temp4],[otv]
-    popad
-    cmp [otv],dword 0
-    je  no_gobj
-    sub [energy],4
-    mov [edi+8],dword 0
-no_gobj:
-    ret
-
+;**************************************************************
+;                      Start of programm
+;**************************************************************
 
 START:                          ; start of execution
 
-massize = 400
-elemsize = 20
+   max_particles = 400
+   particle_size = 20
 
-    mov [massive],dword massize
-    mov [massive+4],dword elemsize
+   mov [particles],dword max_particles
+   mov [particles+4],dword particle_size
 
-omassize = 100
-oelemsize = 20
+   max_objects = 100
+   object_size = 20
 
-    mov [objmas],dword omassize
-    mov [objmas+4],dword oelemsize
+   mov [objects],dword max_objects
+   mov [objects+4],dword object_size
 
+   keyboard_set_input_mode 1  ; 0 - ASCII; 1 - scancodes;
 
-    mov eax,66
-    mov ebx,1
-    mov ecx,1
-    mcall
+   ;giftoimg gif_file_area2,canvas
+   giftoimg gif_file_area,objects_image
 
-    mov eax,26
-    mov ebx,2
-    mov ecx,1
-    mov edx,keymap
-    mcall
+   ; load sprites
+   mov cl,9      ; cl - counter
+   xor esi,esi   ; esi = 0
+   lea edi,[ship_img]  ; address of first sprite
+load_sprite:
+   pushad
+   getimg objects_image,esi,0,32,32,edi
+   popad
+   add edi,8+32*32*3   ; incrase offest of image data
+   add esi,32          ; incrase x position
+   dec cl
+   jnz load_sprite
 
-startgame:
-    giftoimg gif_file_area2,canvas
-    giftoimg gif_file_area,img_area
-
-    getimg img_area,0,0,32,32,ship
-    getimg img_area,32,0,32,32,shoot
-    getimg img_area,64,0,32,32,warship1
-    getimg img_area,96,0,32,32,warship2
-    getimg img_area,128,0,32,32,meteor
-    getimg img_area,160,0,32,32,star
-    getimg img_area,192,0,32,32,star2
-    getimg img_area,224,0,32,32,star3
-    getimg img_area,0,32,32,32,box
-
-
-
+set_main_menu:
+   mov ebx,-1       ; at start event_mode = -1
+   lea ecx,[draw_main_window]
+   lea edx,[menu_keyboard]
+set_draw_proc:
+   ; assembler extract command ; for use only bl
+   mov [event_mode],ebx
+   mov [draw_proc],ecx
+   mov [keyboard_proc],edx
+   ; at first draw window
 main_menu:
-    call draw_logowindow
-
-stillm:
-    wtevent redm,keym,buttonm
-    jmp stillm
-redm:
-    call draw_logowindow
-    jmp stillm
-keym:
-    mov  eax,2
-    mcall
-    jmp  stillm
-buttonm:
-    mov  eax,17                 ; get id
-    mcall
-    cmp  ah,1                   ; button id=1 ?
-    je   close_app
-    cmp  ah,2                   ; button id=1 ?
-    je   start_game
-    cmp  ah,3                   ; button id=1 ?
-    je   help
-    cmp  ah,4                   ; button id=1 ?
-    je   close_app
-    jmp  stillm
-
-draw_logowindow:
-    call draw_window
-    mcall 9,proc_info,-1
-    test [proc_info+process_information.wnd_state], 0x04
-    jz   @f
-    ret
-  @@:
-    setimg 5,21,canvas
-    drawlbut 300,300,60,14,'START',2,0x990000,cl_Black
-    drawlbut 300,320,60,14,'HELP',3,0x990000,cl_Black
-    drawlbut 300,340,60,14,'EXIT',4,0x990000,cl_Black
-    ret
-
-;***********************
-; Draw help menu
-;***********************
-
-help:
-    call draw_helpwindow
-
-stillh:
-    wtevent redh,keyh,buttonh
-    jmp stillh
-redh:
-    call draw_helpwindow
-    jmp stillh
-keyh:
-    mov  eax,2
-    mcall
-    jmp  stillh
-buttonh:
-    mov  eax,17                 ; get id
-    mcall
-    cmp  ah,1                   ; button id=1 ?
-    je   close_app
-    cmp  ah,2                   ; button id=1 ?
-    je   start_game
-    cmp  ah,3                   ; button id=1 ?
-    je   help
-    cmp  ah,4                   ; button id=1 ?
-    je   close_app
-    cmp  ah,5                   ; button id=1 ?
-    je   main_menu
-    jmp  stillh
-
-draw_helpwindow:
-    call draw_window
-    mcall 9,proc_info,-1
-    test [proc_info+process_information.wnd_state], 0x04
-    jnz  stillh
-    setimg 5,21,canvas
-
-    drawfbox 40,50,580,380,cl_Grey
-
-    mov ebp,4*7
-    mov ebx,180*65536+90
-    mov edx,helptext
-    mov esi,50
-    mov ecx,cl_White
-    dec ebp
-looht:
-    mov eax,4
-    mcall
-    add edx,esi
-    add ebx,10
-    dec ebp
-    jnz looht
-
-    setimg 90,90,ship
-    setimg 90,130,shoot
-    setimg 90,170,star
-    setimg 90,210,warship1
-    setimg 90,250,warship2
-    setimg 90,290,meteor
-    setimg 90,330,box
-
-    drawlbut 500,400,80,14,'<<BACK',5,0x990000,cl_Black
-
-    jmp stillh
-
-helptext:
-    db 'Phenix                                            '
-    db 'Controls: Num1 move left, Num3 move right         '
-    db '          P-pause (use for screen shooting)       '
-    db '                                                  '
-
-    db 'Lazer cannon                                      '
-    db 'Press Num5 for shoot                              '
-    db 'Core fast, speed fast, reload slow                '
-    db '                                                  '
-
-    db 'Plazma cannon                                     '
-    db 'Press Num2 for Plazma Nuke and Num8 for shoot     '
-    db 'Core slow, speed medium, reload fast              '
-    db '                                                  '
-
-    db 'Blue warship                                      '
-    db 'Speed fast                                        '
-    db 'Attack method: plazma bomb                        '
-    db '                                                  '
-
-    db 'Green warship                                     '
-    db 'Speed slow                                        '
-    db 'Attack method: laser shoot                        '
-    db '                                                  '
-
-    db 'Meteor                                            '
-    db 'Dangeros object!                                  '
-    db 'SuperSheld                                        '
-    db '                                                  '
-
-    db 'Fly Box                                           '
-    db 'Sheld pack, sheld +5, score +30                   '
-    db 'Get for sheld level up!                           '
-    db '                                                  '
-
-start_game:
-
-;    jmp end_gm
-
-    mov [canvas],dword 640
-    mov [canvas+4],dword 440
-
-    call draw_window
-
-;Main loop wait for event with 10msec
-still:
-;    scevent red,key,button ;for full speed
-
-    timeevent 1,no_event,red,key,button
+redraw_event:     ; redraw event appears if user move, show/hide window
+   call draw_window
 no_event:
-    mcall 9,proc_info,-1
-    test [proc_info+process_information.wnd_state], 0x04
-    jnz  still
-    setimg 5,21,canvas
+   call [draw_proc]  ; no event no requre draw_window for no flickering
+if stack_leak_debug = 1
+   ; stack memory leak debug
+   lea ebp,[I_END]
+   sub ebp,esp
+   outcount ebp,10,30,cl_Green,5*65536
+end if
+menu_loop:
+   ;wait_event redraw_event,keyboard_event,button_event
+   mov eax,10   ; wait event
+   mov ebx,[event_mode]
+   cmp ebx,-1   ; ebx delay for mcall 23
+   je wait_ev
+   mov eax,23   ; time event
+wait_ev:
+   mcall
+   dec eax
+   js  no_event
+   jz  redraw_event
+   dec eax
+   jz  keyboard_event
+   dec eax
+   jz  button_event
+   jmp menu_loop  ; if unknown event, skip it
 
-    cmp [pause_on],0
-    jne still
+keyboard_event:   ; keyboard event if user press button
+   call [keyboard_proc]
+   jmp  menu_loop
+button_event:
+   window_get_button
+   cmp ah,1       ; if button id=1 (Red X of window) then close app
+   je  close_app
+   cmp ah,2       ; if button id=2 then close app
+   je  close_app
+   cmp ah,3       ; if button id=3 then start game
+   je  start_game
+   cmp ah,4       ; if button id=3 then show help menu
+   je  set_help_window  ; jmp with redraw window
+   cmp ah,5       ; if button id=5 then back to main menu
+   je  set_main_menu    ; jmp with redraw window
+   cmp ah,6
+   je  next_level  ; run next level
+   cmp ah,7
+   je  restart_lev ; restart level from gameover
+   cmp ah,9
+   je  set_game_window  ; back to game from menu
+   jmp menu_loop
 
-    cmp [energy],0
-    jl  game_over
-
-    cmp [ctime],dword 0
-    je  no_dct
-    dec dword [ctime]
-no_dct:
-
-    cmp [xtime],dword 0
-    je  no_dxt
-    dec dword [xtime]
-no_dxt:
-
-
-;
-;   Add to level new ships
-;
-    inc dword [pathtime]
-    mov ebp,[levelpart]
-    shl ebp,5
-    add ebp,levels
-    mov eax,[ebp]
-    cmp [pathtime],eax ;500
-    jne no_nextloc
-
-randobjmasx:
-    mov ebp,[levelpart]
-    shl ebp,5
-    add ebp,levels
-
-    mov  ecx,[ebp+8]
-    mov  [shiptype],2
-    mov  [xmoving],9
-    mov  [xaccel],4
-    mov  [ymoving],3
-    mov  [yaccel],2
-    call add_ships
-
-    mov  ecx,[ebp+12]
-    mov  [shiptype],1
-    mov  [xmoving],3
-    mov  [xaccel],1
-    mov  [ymoving],3
-    mov  [yaccel],6
-    call add_ships
-
-    mov  ecx,[ebp+16]
-    mov  [shiptype],3
-    mov  [xmoving],5
-    mov  [xaccel],2
-    mov  [ymoving],5
-    mov  [yaccel],2
-    call add_ships
-
-    mov  ecx,[ebp+20]
-    mov  [shiptype],4
-    mov  [xmoving],4
-    mov  [xaccel],1
-    mov  [ymoving],4
-    mov  [yaccel],1
-    call add_ships
-
-    jmp newlocend
-
-shiptype dd 0
-xmoving  dd 0
-ymoving  dd 0
-xaccel   dd 0
-yaccel   dd 0
-
-add_ships:
-looship:
-    cmp ecx,0
-    je  no_ships
-    push ecx
-    findmas objmas,findzero
-;in edi off to free element
-    jc  close_app
-    mov ebp,[shiptype]
-    mov dword [edi+8],ebp ;2 ;green ship
-; random x
-    push edi
-    random 600,eax
-    pop edi
-    mov [edi],eax
-; random y
-    push edi
-    mov ebp,[levelpart]
-    shl ebp,5
-    add ebp,levels
-    mov esi,[ebp+4] ;get max range
-    random esi,eax
-    neg eax
-    pop edi
-    mov [edi+4],eax
-; x moving
-    push edi         ;planers
-    random [xmoving],eax
-    sub eax,[xaccel];4
-    pop edi
-    mov [edi+12],eax
-; y moving
-    push edi
-    random [ymoving],eax     ;slow
-    add eax,[yaccel] ;2
-    pop edi
-    mov [edi+16],eax
-    pop ecx
-    dec ecx
-    jnz looship
-no_ships:
-    ret
-
-
-levelpart dd 0
-levels:
-;level1
-    dd 1,800,0,0,5,8,0,0     ;one at start
-    dd 500,2000,4,20,30,0,0,0
-    dd 500,2000,4,20,0,8,0,0
-    dd 500,2000,10,0,0,4,0,0
-    dd 500,4000,0,30,0,0,0,0
-    dd 400,400,0,0,10,0,0,0
-    dd 400,400,0,0,10,0,0,0
-    dd 0,0,0,0,0,0,0,0        ;end of level
-;level2
-    dd 1,16000,0,30,0,0,0,0     ;one at start
-    dd 200,8000,0,20,0,0,0,0
-    dd 200,2000,0,10,0,8,0,0
-    dd 200,4000,0,10,0,0,0,0
-    dd 0,0,0,0,0,0,0,0        ;end of level
-;level3
-    dd 1,4000,0,20,30,8,0,0     ;one at start
-    dd 400,4000,10,10,20,6,0,0
-    dd 400,4000,0,20,10,2,0,0
-    dd 400,4000,10,10,20,0,0,0
-    dd 0,-1,0,0,0,0,0,0        ;end of game
-
-
-newlocend:
-    mov [pathtime],0
-    inc [levelpart]
-    jmp no_nextloc
-
-endgame dd 0
-objects dd 0
-endtest:
-    cmp dword [edi+8],0
-    jne no_free
-    ret
-no_free:
-    mov [endgame],0
-    inc [objects]
-    ret
-
-
-no_nextloc:
-    mov [objects],0
-    mov [endgame],1
-    readmas objmas,endtest
-    cmp [endgame],1
-    jne no_end_lev ;no_nextloc
-
-    mov ebp,[levelpart]
-    shl ebp,5
-    add ebp,levels
-    mov eax,[ebp+4]
-    cmp eax,dword 0
-    je  end_lev    ;end of level
-    cmp eax,dword -1
-    je  end_gm    ;end of game
-
-no_end_lev:
-
-    cmp [num5],dword 0
-    je  no_addsh
-    cmp [ctime],dword 0
-    jne no_addsh
-    cmp [lazer],dword 0
-    je  no_addsh
-    findmas massive,findzero
-;in edi off to free element
-    jc  close_app
-    mov eax,[shipx]
-    mov [edi],eax
-    mov eax,[shipy]
-    mov [edi+4],eax
-    mov [edi+8],dword 1   ;show
-    mov [edi+12],dword 0
-    mov [edi+16],dword -12
-    mov [ctime],dword 8   ;wait for cannon
-    dec [lazer]
-no_addsh:
-
-    cmp [num8],dword 0
-    je  no_addplx
-    cmp [xtime],dword 256-16
-    jae no_addplx
-    cmp [plazma],0
-    je  no_addplx
-    findmas massive,findzero
-;in edi off to free element
-    jc  close_app
-    mov eax,[shipx]
-    mov [edi],eax
-    mov eax,[shipy]
-    mov [edi+4],eax
-    mov [edi+8],dword 2   ;show
-    add [xtime],dword 8  ;wait for cannon
-    cmp [xtime],dword 256
-    jna okx
-    mov [xtime],256
-okx:
-    mov [edi+12],dword 0  ;wait for cannon
-    mov [edi+16],dword -8  ;wait for cannon
-    dec [plazma]
-no_addplx:
-
-
-
-    cmp [num2],dword 0
-    je  no_addsh2
-    cmp [xtime],dword 0
-    jne no_addsh2
-    cmp [plazma],0
-    je  no_addsh2
-    mov eax,[shipy]
-    mov [temp3],eax
-    mov [temp2],dword 5
-loox2:
-    mov [temp],dword 10
-loox:
-    findmas massive,findzero
-;in edi off to free element
-    jc  close_app
-    random 25,eax
-    mov ebp,eax
-    sub eax,12
-    add eax,[shipx]
-    mov [edi],eax
-    shr ebp,3
-    random ebp,eax
-    neg eax
-    add eax,[temp3] ;[shipy]
-    mov [edi+4],eax
-    mov [edi+8],dword 2   ;show hstar
-    random 5,eax
-    sub eax,2
-    mov [edi+12],eax   ;show hstar
-    random 7,eax
-    sub eax,8
-    mov [edi+16],eax   ;show hstar
-    dec [temp]
-    jnz loox
-    sub [temp3],30
-    dec [temp2]
-    jnz loox2
-    mov [xtime],dword 256  ;wait for cannon
-    sub [plazma],50
-no_addsh2:
-
-
-    cmp [num1],dword 0
-    je  no_left
-    sub dword [shipx],6
-no_left:
-
-    cmp [num3],dword 0
-    je  no_right
-    add dword [shipx],6
-no_right:
-
-;ship correct
-    cmp [shipx],5
-    jnl xl_ok
-    mov [shipx],5
-xl_ok:
-    cmp [shipx],603
-    jng xr_ok
-    mov [shipx],603
-xr_ok:
-
-
-;clear scrbuf
-    mov edi,canvas+8
-    cld
-    mov ecx,640*440*3/4
-    mov eax,0
-    rep stosd
-
-    compmas objmas,massive,compobr
-
-    readmas objmas,shipobjtest
-    readmas massive,shipguntest
-
-    readmas objmas,showobjmas
-    readmas objmas,moveobjmas
-
-    readmas massive,showmas
-    readmas massive,movemas
-    readmas massive,delfarshoot
-;    findmas massive,findzero
-;in edi off to free element
-;    jc  close_app
-
-    aimgtoimg ship,[shipx],[shipy],canvas,0x0
-
-    drawfbox 150,5,64,5,0x000000
-    mov eax,[xtime]
-    sub eax,256
-    neg eax
-    shr eax,2
-    drawfbox 150,5,eax,5,0x0000ff
-
-    drawfbox 150,12,64,5,0x000000
-    mov eax,[ctime]
-    sub eax,8
-    neg eax
-    shl eax,3
-    drawfbox 150,12,eax,5,0xffff00
-
-    drawfbox 220,2,6*5+2 ,9,cl_Grey
-    outcount [plazma],221,3,cl_Blue,5*65536
-    drawfbox 220,11,6*5+2 ,9,cl_Grey
-    outcount [lazer],221,12,0xffff00,5*65536
-
-
-    drawfbox 280,6,6*5+2 ,9,cl_Grey
-    outcount [gship],281,7,cl_Green,5*65536
-    drawfbox 320,6,6*5+2 ,9,cl_Grey
-    outcount [bship],321,7,cl_Blue,5*65536
-    drawfbox 360,6,6*5+2 ,9,cl_Grey
-    outcount [boxget],361,7,0xffaa00,5*65536
-
-    drawfbox 400,2,6*5+2 ,9,cl_Grey
-    outcount [objects],401,2,0x00ff00,5*65536
-    drawfbox 400,11,6*5+2 ,9,cl_Grey
-    outcount [energy],401,12,0xff0000,5*65536
-
-    drawfbox 450,11,6*5+2 ,9,cl_Grey
-    outcount [score],451,12,0xffff00,5*65536
-
-
-    jmp  still
-
-  red:
-    call draw_window
-    jmp still
-
-  key:                          ; key
-    mov  eax,2
-    mcall                   ; read (eax=2)
-
-    shr eax,8
-    and eax,0xff
-    mov ah,al
-
-    cmp ah,153
-    jne no_pause
-    not [pause_on]
-    jmp still
-no_pause:
-
-
-    cmp ah,76
-    jne no_num5d
-    mov [num5],1
-    jmp still
-no_num5d:
-    cmp ah,204
-    jne no_num5u
-    mov [num5],0
-    jmp still
-no_num5u:
-
-    cmp ah,80
-    jne no_num2d
-    mov [num2],1
-    jmp still
-no_num2d:
-    cmp ah,208
-    jne no_num2u
-    mov [num2],0
-    jmp still
-no_num2u:
-
-    cmp ah,79 ;key_Space 85 exit
-    jne no_num1d
-    mov [num1],1
-    jmp still
-no_num1d:
-    cmp ah,207 ;key_Space 85 exit
-    jne no_num1u
-    mov [num1],0
-    jmp still
-no_num1u:
-
-    cmp ah,81 ;key_Space 85 exit
-    jne no_num3d
-    mov [num3],1
-    jmp still
-no_num3d:
-    cmp ah,209 ;key_Space 85 exit
-    jne no_num3u
-    mov [num3],0
-    jmp still
-no_num3u:
-
-    cmp ah,72  ;key_Space 85 exit
-    jne no_num8d
-    mov [num8],1
-    jmp still
-no_num8d:
-    cmp ah,200 ;key_Space 85 exit
-    jne no_num8u
-    mov [num8],0
-    jmp still
-no_num8u:
-
-    jmp  still                  ; not testing
-
-  button:                       ; button
-    mov  eax,17                 ; get id
-    mcall
-    cmp  ah,1                   ; button id=1 ?
-    jne  noclose
 close_app:
-    mov  eax,-1                 ; close this program
-    mcall
-  noclose:
-    jmp  still
+   mov  eax,-1          ; close this program
+   mcall
 
-draw_window:
-	
-    mcall 12,1 ;start window redraw
-	mcall 0, <40, 640+9>, <40, 440+26>, 0x14000000,, wtitle
-    mcall 12,2 ;end window redraw
-	;    setimg 5,22,img_area
+menu_keyboard:
+   ; nothing do
+   window_get_key
+   ret
 
-    ret
+;***********************
+;   Main screen menu
+;***********************
 
-;**********************
-;  Game Over process
-;**********************
-
-game_over:
-;    close
-    call draw_gowindow
-stillgo:
-    wtevent redgo,keygo,buttongo
-    jmp stillgo
-redgo:
-    call draw_gowindow
-    jmp stillgo
-keygo:
-    mov  eax,2
-    mcall
-    jmp  stillgo
-buttongo:
-    mov  eax,17                 ; get id
-    mcall
-    cmp  ah,1
-    je   close_app
-    cmp  ah,4
-    je   close_app
-    cmp  ah,5
-    je   main_menu
-    cmp  ah,7
-    je   restart_lev
-    jmp  stillgo
-
-restart_lev:
-    mov [pathtime],0
-
-prevpart:
-    mov ebp,[levelpart]
-    shl ebp,5
-    add ebp,levels
-    mov eax,[ebp]
-    cmp eax,dword 1
-    je  rest    ;end of level
-    dec [levelpart]
-    jmp prevpart
-
-
-rest:
-;massives reset - clear massives
-    mov edi,massive+8
-    cld
-    mov ecx,massize*elemsize/4
-    mov eax,0
-    rep stosd
-
-    mov edi,objmas+8
-    cld
-    mov ecx,omassize*oelemsize/4
-    mov eax,0
-    rep stosd
-
-;counters reset
-    mov [boxget],0
-    mov [gship],0
-    mov [bship],0
-
-;ship reset
-    mov [energy],100
-    mov [shipx],300
-    mov [shipy],400
-    mov [lazer],1000
-    mov [plazma],500
-
-
-; reset keyboard
-    mov [num1],0
-    mov [num5],0
-    mov [num3],0
-    mov [num2],0
-    mov [num8],0
-    jmp start_game
-
-draw_gowindow:
-    startwd
-    call draw_window
-    mcall 9,proc_info,-1
-    test [proc_info+process_information.wnd_state], 0x04
-    jz   @f
-    ret
-  @@:
-    drawfbox 170,160,300,120,cl_Grey
-    drawlbut 180,260,80,14,'EXIT',4,0x990000,cl_Black
-    drawlbut 280,260,80,14,'MENU',5,0x990000,cl_Black
-    drawlbut 380,260,80,14,'RESTART',7,0x990000,cl_Black
-
-    label 280,200,'  GAME OVER  ',cl_Black
-    endwd
-    ret
-
+draw_main_window:
+   draw_label 160,160,'Phoenix',cl_Red+font_size_x8
+   draw_button 3,300,320,60,14,'START',cl_DarkRed,cl_Yellow
+   draw_button 4,300,340,60,14,'HELP',cl_DarkRed,cl_Yellow
+   draw_button 2,300,360,60,14,'EXIT',cl_DarkRed,cl_Yellow
+   ret
 
 ;**********************
 ;  End level process
 ;**********************
 
-end_lev:
-;    close
-    call draw_scorewindow
-stilleg:
-    wtevent redeg,keyeg,buttoneg
-    jmp stilleg
-redeg:
-    call draw_scorewindow
-    jmp stilleg
-keyeg:
-    mov  eax,2
-    mcall
-    jmp  stilleg
-buttoneg:
-    mov  eax,17                 ; get id
-    mcall
-    cmp  ah,1
-    je   close_app
-    cmp  ah,2
-    je   next_lev
-    cmp  ah,3
-    je   help
-    cmp  ah,4
-    je   close_app
-    cmp  ah,5
-    je   main_menu
-    jmp  stilleg
+set_end_level_window_from_call:
+   add esp,4    ; remove call address from stack
+set_end_level_window:
+   lea edx,[menu_keyboard]
+   mov ebx,-1
+   lea ecx,[draw_end_level_window]
+   jmp set_draw_proc
 
-next_lev:
-    mov [pathtime],0
-    inc [levelpart]
+draw_end_level_window:
+   draw_frect 170,130,300,190,cl_Grey
+   draw_label 280,150,'LEVEL COMPLETE',cl_Black
+   draw_button 2,180,300,80,14,'EXIT',cl_DarkRed,cl_Black
+   draw_button 5,280,300,80,14,'<MENU>',cl_DarkRed,cl_Black
+   draw_button 6,380,300,80,14,'NEXT >',cl_DarkRed,cl_Black
 
-;ship reset
-    mov [energy],100
-    mov [shipx],300
-    mov [shipy],400
-    mov [lazer],1000
-    mov [plazma],500
+   draw_image 180,170,bwarship_img
+   draw_number [bships_destroyed],240,185,cl_Blue,3*65536
 
-;counters reset
-    mov [boxget],0
-    mov [gship],0
-    mov [bship],0
+   draw_image 180,210,gwarship_img
+   draw_number [gships_destroyed],240,225,cl_Green,3*65536
 
-; reset keyboard
-    mov [num1],0
-    mov [num5],0
-    mov [num3],0
-    mov [num2],0
-    mov [num8],0
-    jmp start_game
-
-draw_scorewindow:
-    call draw_window
-    mcall 9,proc_info,-1
-    test [proc_info+process_information.wnd_state], 0x04
-    jz   @f
-    ret
-  @@:
-    startwd
-    drawfbox 170,130,300,190,cl_Grey
-    drawlbut 180,300,80,14,'(X) EXIT',4,0x990000,cl_Black
-    drawlbut 280,300,80,14,'<MENU>',5,0x990000,cl_Black
-    drawlbut 380,300,80,14,'NEXT >>',2,0x990000,cl_Black
-
-    setimg 180,140,warship1
-    outcount [bship],241,151,cl_Blue,5*65536
-
-    setimg 180,180,warship2
-    outcount [gship],241,191,cl_Green,5*65536
-
-    setimg 180,220,meteor
-    setimg 180,260,box
-    outcount [boxget],241,271,0xbbbb00,5*65536
-    endwd
-    ret
-
+   draw_image 180,250,box_img
+   draw_number [boxes_taken],240,265,cl_Orange,3*65536
+   ret
 
 ;**********************
-;  End of game process
+;  Game Over process
 ;**********************
 
-end_gm:
-    mov [pathtime],0
-    call draw_window
-    label 200 ,8,'YOU WIN PRESS ANY KEY TO EXIT',cl_White+font_Big
+restart_lev:
+   mov [next_wave_timer],0  ; Reset new wave timer
+prevpart:
+   call get_wave_info_offset
+   xor eax,eax
+   mov ax,[ebp]
+   dec eax                  ; If eax = 0 then start of level finded
+   jz  reset_all_varibles_and_restart_level
+   dec [level_wave]
+   jmp prevpart
 
-stilleg2:
-;    scevent   redeg2,keyeg2,buttoneg2
-    timeevent 1,no_event2,redeg2,keyeg2,buttoneg2
+set_game_over_window_from_call:
+   add esp,4
+set_game_over_window:
+   lea edx,[menu_keyboard]
+   mov ebx,-1
+   lea ecx,[draw_game_over_window]
+   jmp set_draw_proc
 
-no_event2:
-    setimg 5,21,canvas
+draw_game_over_window:
+   draw_frect 170,160,300,120,cl_Grey
+   draw_label 292,200,'GAME OVER',cl_Black
+   draw_button 2,180,260,80,14,'EXIT',cl_DarkRed,cl_Black
+   draw_button 5,280,260,80,14,'MENU',cl_DarkRed,cl_Black
+   draw_button 7,380,260,80,14,'RESTART',cl_DarkRed,cl_Black
+   ret
 
-;clear scrbuf
-    mov edi,canvas+8
-    cld
-    mov ecx,640*440*3/4
-    mov eax,0
-    rep stosd
+;***********************
+;    Main game loop
+;***********************
 
-    aimgtoimg ship,320,220,canvas,0x0
+next_level:
+   mov [next_wave_timer],0 ; Reset next wave timer
+   inc [level_wave]        ; Next wave
+start_game:
+   ; Set canvas size before logo is showed
+   image_set_size canvas,screen_w,screen_h
 
-    readmas massive,endshowmas
-    readmas massive,endmovemas
-    readmas massive,delfarshoot
-;    findmas massive,findzero
-;in edi off to free element
-;    jc  close_app
+; Clear all, and prepeare varibles before start
+reset_all_varibles_and_restart_level:
 
-    inc [pathtime]
-    cmp [pathtime],30
-    jne no_firework
-    mov [pathtime],0
-    random 400,eax
-    mov [temp3],eax
-    random 600,eax
-    mov [temp2],eax
-    mov [temp],dword 8;10
-xloox:
-    findmas massive,findzero
-;in edi off to free element
-    jc  close_app
+   ; Clear objects arrays
+   mov eax,0
+   cld
+   mov edi,particles+8
+   mov ecx,max_particles*particle_size/4
+   rep stosd
+   mov edi,objects+8
+   mov ecx,max_objects*object_size/4
+   rep stosd
 
-    mov eax,[temp2] ;[shipx]
-    mov [edi],eax
-    mov eax,[temp3] ;[shipy]
-    mov [edi+4],eax
-    mov [edi+8],dword 2   ;show hstar
+   ; Reset keyboard state array
+   clear_buffer keymap, 128, 0
+
+   ; Reset player ship state
+   mov [player_hp],100
+   mov [shipx],screen_w/2-16 ; Player ship x start position
+   mov [shipy],screen_h-40   ; Player ship y start position
+   mov [laser_shoots],1000   ; Laser projectiles at start
+   mov [plasma_shoots],500   ; Plasma projectiles at start
+
+   ; Reset counters and gun charge values
+   xor eax,eax
+   mov [boxes_taken],eax
+   mov [gships_destroyed],eax
+   mov [bships_destroyed],eax
+   mov [laser_charge],eax
+   mov [plasma_charge],eax
+
+set_game_window:
+   lea edx,[ingame_keyboard]
+   lea ecx,[draw_game_window]
+   mov ebx,2          ; time_event ebx = 2 ms
+   jmp set_draw_proc
+
+draw_game_window:
+   draw_image 5,24,canvas
+
+   xor eax,eax               ; Use eax as zero for compare
+   cmp [pause_on],eax        ; If pause = 0 nothing do
+   je no_pause
+   ret
+no_pause:
+
+   cmp [player_hp],eax       ; If player_hp < 0 game over
+   jl  set_game_over_window_from_call
+
+   cmp [laser_charge],eax
+   je  no_dec_laser_charge
+   dec dword [laser_charge]  ; If laser_charge > 0 decrase it
+no_dec_laser_charge:
+   cmp [plasma_charge],eax
+   je  no_dec_plasma_charge
+   dec dword [plasma_charge] ; If plasma_charge > 0 decrase it
+no_dec_plasma_charge:
+
+   ; new wave test
+   inc dword [next_wave_timer]
+   call get_wave_info_offset
+   mov ax,[ebp]        ; [ebp] = time to activate string
+   cwde                ; extend ax to eax
+   cmp [next_wave_timer],eax
+   jne no_next_wave
+
+add_new_wave_of_objects:
+   mov cl,[ebp+4+0]    ; cl = count of ships
+   mov ch,GreenWarShip ; ch = type of object
+   mov ebx,0x09040302  ; ebx = [xmoving]:[xaccel]:[ymoving]:[yaccel]
+   call add_objects    ; add objects
+
+   mov cl,[ebp+4+1]    ; cl = count of ships
+   mov ch,BlueWarShip  ; ch = type of object
+   mov ebx,0x03010306  ; ebx = random ranges : x = -1..1 y = -6..-4
+   call add_objects    ; add objects
+
+   mov cl,[ebp+4+2]    ; cl = count of asteroids
+   mov ch,Asteroid     ; ch = type of object
+   mov ebx,0x05020502  ; ebx = [xmoving]:[xaccel]:[ymoving]:[yaccel]
+   call add_objects    ; add objects
+
+   mov cl,[ebp+4+3]    ; cl = count of boxes
+   mov ch,Box          ; ch = type of object
+   mov ebx,0x05020401  ; ebx = [xmoving]:[xaccel]:[ymoving]:[yaccel]
+   call add_objects    ; add objects
+
+   mov [next_wave_timer],0 ; Reset next wave timer
+   inc [level_wave]        ; Next wave
+no_next_wave:
+
+   ; Calculate all active objects on screen
+   xor eax,eax           ; Use eax as zero
+   mov [objects_num],eax
+   array_processing objects,endtest ; ar_proc not modify eax, ebx
+   xor eax,eax           ; Use eax as zero
+   cmp [objects_num],eax ; If [objects_num] != 0, level is not complete
+   jnz level_not_complete
+
+   call get_wave_info_offset
+   mov ax,[ebp+2]  ; ax = maxyrange
+   cwde            ; extend ax to eax
+   xor ebx,ebx     ; Use ebx as zero for compare
+   cmp eax,ebx     ; If [ebp+2] of level = 0, this is end of level
+   je  set_end_level_window_from_call  ; Show player score
+   dec ebx         ; Use ebx as -1 for compare
+   cmp eax,ebx
+   je  set_final_screen_window_from_call ; Show final animation
+level_not_complete:
+
+no_end_lev:
+
+; Key state processing
+   cmp byte [keymap+key_Right],0
+   je  no_key_right
+   add dword [shipx],6
+no_key_right:
+   cmp byte [keymap+key_Left],0
+   je  no_key_left
+   sub dword [shipx],6
+no_key_left:
+   cmp byte [keymap+key_Space],0
+   je  no_key_lshoot
+   call try_to_make_laser_shoot
+   ;call try_to_make_plasma_shoot
+no_key_lshoot:
+   cmp byte [keymap+key_Up],0
+   je  no_key_pshoot
+   ;call try_to_make_plasma_nuke
+   call try_to_make_plasma_shoot
+no_key_pshoot:
+   cmp byte [keymap+key_Down],0
+   je  no_key_pnuke
+   call try_to_make_plasma_nuke
+   ;call try_to_make_laser_shoot
+no_key_pnuke:
+
+; Ship position correction (clamp macro)
+   cmp [shipx],5
+   jnl @f
+   mov [shipx],5
+@@:
+   cmp [shipx],screen_w-32-5
+   jng @f
+   mov [shipx],screen_w-32-5
+@@:
+
+   mov al,7
+if light_space = 1
+   mov al,255
+end if
+   clear_buffer canvas+8,canvas_end-canvas-8,al
+
+   compmas objects,particles,objects_and_particles_hit_handling
+   ; move objects and particles
+   array_processing objects,move_objects
+   array_processing particles,move_particles
+   ; remove particles out of screen
+   array_processing particles,remove_outofscr_particles
+   ; objects and particles collision test
+   array_processing objects,player_and_objects_collision_handling
+   array_processing particles,player_and_particles_collision_handling
+   ; draw objects and particles
+   array_processing objects,draw_objects
+   array_processing particles,draw_particles
+   ; draw player ship
+   image_draw_acimage canvas,ship_img,[shipx],[shipy],cl_Black
+
+   ; Draw info indicators
+   draw_frect 150,5,64,5,cl_Black
+   mov eax,[plasma_charge]
+   sub eax,256
+   neg eax
+   shr eax,2
+   draw_frect 150,5,eax,5,cl_Cyan
+
+   draw_frect 150,12,64,5,cl_Black
+   mov eax,[laser_charge]
+   sub eax,8
+   neg eax
+   shl eax,3
+   draw_frect 150,12,eax,5,cl_Yellow
+
+   draw_frect 220,2,6*5+2 ,9,cl_Grey
+   draw_number [plasma_shoots],221,3,cl_Cyan,5*65536
+   draw_frect 220,11,6*5+2 ,9,cl_Grey
+   draw_number [laser_shoots],221,12,cl_Yellow,5*65536
+
+   draw_frect 280,6,6*5+2 ,9,cl_Grey
+   draw_number [gships_destroyed],281,7,cl_Green,5*65536
+   draw_frect 320,6,6*5+2 ,9,cl_Grey
+   draw_number [bships_destroyed],321,7,cl_Blue,5*65536
+   draw_frect 360,6,6*5+2 ,9,cl_Grey
+   draw_number [boxes_taken],361,7,0xffaa00,5*65536
+
+   ; number of objects in scene
+   draw_frect 400,2,6*5+2 ,9,cl_Grey
+   draw_number [objects_num],401,2,cl_Lime,5*65536
+
+   draw_frect 400,11,6*5+2 ,9,cl_Grey
+   draw_number [player_hp],401,12,cl_Red,5*65536
+
+   draw_frect 450,11,6*5+2 ,9,cl_Grey
+   draw_number [score],451,12,cl_Yellow,5*65536 ;+hide_zeros
+
+   ; print keyboard keys state as string for debug
+if keyboard_debug = 1
+   mov ebx,10*65536+40
+   mov edx,keymap
+   mov esi,128
+   mov ecx,cl_White
+   mov eax,4
+   mcall
+end if
+   ret
+
+; Proc for calculate active objects on screen
+; eax - empty object type = 0
+endtest:
+   xor eax,eax
+   cmp dword [edi+8],eax  ; object is empty ?
+   je  is_free
+   inc [objects_num]
+is_free:
+   ret
+
+; Proc for get offest to current level wave information
+get_wave_info_offset:
+   mov ebp,[level_wave]
+   shl ebp,3           ; ebp = ebp*8; 8 - lenght of one string in levels array
+   add ebp,levels      ; ebp = offset to string in levels array
+   ret
+
+; time_bwns - time before next wave start
+; yrmax - y random position maximum value
+macro objects_wave time_bnws, yrmax, gships, bships, asteroids, boxes{
+   dw time_bnws, yrmax
+   db gships, bships, asteroids, boxes
+}
+
+level_wave dd 0
+; this array may optimized
+levels:
+; for game not ended at start, each level must have objects set at start (1)
+   ; test pattern
+if debug_scenario = 1
+   ; two levels for debug game
+   objects_wave   1,   10,  1,  2,  4,  8   ; objset at start
+   objects_wave   0,    0,  0,  0,  0,  0
+   objects_wave   1,   10,  3,  3,  3,  3   ; objset at start
+   objects_wave   0,   -1,  0,  0,  0,  0
+else
+   ; level 1
+   objects_wave   1, 4000,  3, 10, 10,  0    ; objset at start
+   objects_wave 800, 2000,  5,  3,  5,  3
+   objects_wave 400, 2000,  3,  7,  5,  3
+   objects_wave 400,  800,  3,  5,  3,  0
+   objects_wave   0,    0,  0,  0,  0,  0    ; end of level
+   ; level 2
+   objects_wave   1, 4000, 10, 40,  0,  8    ; objset at start
+   objects_wave 400, 4000, 10, 10, 20,  6
+   objects_wave 400, 2000,  0, 20, 10,  2
+   objects_wave 400,  400, 10, 10, 20,  0
+   objects_wave   0,    0,  0,  0,  0,  0    ; end of game
+   ; level 3
+   objects_wave   1,  800,  0,  0,  5,  5   ; objset at start
+   objects_wave 500, 2000,  4, 20, 30,  0
+   objects_wave 500, 2000,  4, 20,  0,  8
+   objects_wave 500, 2000, 10,  0,  0,  4
+   objects_wave 500, 4000,  0, 30,  0,  0
+   objects_wave 400,  400,  3,  5, 15,  0
+   objects_wave 400,  400,  0,  0, 10,  0
+   objects_wave   0,   -1,  0,  0,  0,  0    ; end of level
+end if
+
+;***********************************
+;         In game keyboard
+;***********************************
+
+ingame_keyboard:
+   window_get_key  ; read key (eax=2)
+   cmp al,0
+   jne this_is_hotkey
+   ; ah - contain scan code, al = 0
+   shl eax,16
+   shr eax,24      ; equal shr eax,8 + and eax,0x0FF
+   ; eax - contain scan code
+
+   cmp al,key_P+128
+   jne not_P_key_up_scan_code
+   not [pause_on]
+not_P_key_up_scan_code:
+
+if debug_mode = 1
+   cmp al,key_E    ; player hp = player hp / 2
+   jne no_hp_test
+   shr [player_hp],1
+no_hp_test:
+   cmp al,key_A    ; player hp = 10000
+   jne no_hp_up
+   mov [player_hp],10000
+no_hp_up:
+   cmp al,key_W    ; Run final screen
+   je  set_final_screen_window_from_call
+end if
+
+   ; Keyboard array update, needs sub state
+   cmp al,01111111b
+   ja  key_released
+   mov byte [keymap+eax],'1'  ; If scan code of key down
+   jmp key_pressed
+key_released:
+   and al,01111111b
+   mov byte [keymap+eax],0    ; If scan code of key up
+key_pressed:
+this_is_hotkey:
+   ret
+
+;**********************
+; Final screen process
+;**********************
+
+set_final_screen_window_from_call:
+   add esp,4    ; Remove call address from stack
+set_final_screen_window:
+   lea edx,[menu_keyboard]
+   mov ebx,1
+   lea ecx,[draw_final_screen_window]
+   jmp set_draw_proc
+
+you_won_text: db 'YOU WON!',0
+
+draw_final_screen_window:
+   draw_image 5,24,canvas
+   logo_font_size equ 5
+   logo_x = 5+(screen_w/2)-(6*logo_font_size*8/2)
+   logo_y = screen_h/16*5
+   draw_label logo_x,logo_y,you_won_text,cl_White+((logo_font_size-1) shl 24)
+   ;image_draw_label canvas,200,8,'YOU WON!',cl_White
+   draw_button 5,(screen_w/2)-40+5,300,80,14,'BACK TO MENU',cl_DarkRed,cl_Black
+
+   clear_buffer canvas+8,canvas_end-canvas-8,7
+
+   image_draw_acimage canvas,ship_img,(screen_w/2)-16,220,cl_Black
+   array_processing particles,draw_particles
+   array_processing particles,move_particles    ; move particles
+   array_processing particles,remove_outofscr_particles     ; del_outscreen_particles
+
+try_to_make_firework:
+   inc [next_wave_timer]
+   cmp [next_wave_timer],30
+   jna no_firework
+   mov [next_wave_timer],0   ; reset firework timer before make firework
+   random screen_w-60,eax
+   mov ebx,eax
+   random screen_h-60,eax
+   mov edx,eax
+   mov ecx,8                 ; how much particles make in one fire explode
+next_star:
+   array_find particles,find_empty_object
+   jc  close_app
+   mov [edi],ebx        ; random x position
+   mov [edi+4],edx      ; random y position
+   mov [edi+8],dword 3  ; type of partice = 3. final screen particle
 rerand:
-    random 5,eax
-    sub eax,2
-    cmp eax,0
-    je  rerand
-    mov [edi+12],eax   ;show hstar
+   random 5,eax
+   sub eax,2
+   jz  rerand         ; eax = -2...2 exclude 0
+   mov [edi+12],eax   ; x velocity
 rerand2:
-    random 7,eax
-    sub eax,3
-    cmp eax,0
-    je  rerand2
-    mov [edi+16],eax   ;show hstar
-    dec [temp]
-    jnz xloox
+   random 7,eax
+   sub eax,3
+   jz  rerand2        ; eax = -3...3 exclude 0
+   mov [edi+16],eax   ; y velocity
+   dec ecx
+   jnz next_star
 no_firework:
-    jmp stilleg2
+   ret
 
-redeg2:
-    jmp end_gm ;stilleg2
-keyeg2:
-    mov  eax,2
-    mcall
-    jmp  main_menu
-buttoneg2:
-    mov  eax,17                 ; get id
-    mcall
-    jmp  stilleg2
+;***********************
+;       Help menu
+;***********************
 
+set_help_window:
+   lea edx,[menu_keyboard]
+   mov ebx,-1
+   lea ecx,[draw_help_window]
+   jmp set_draw_proc
 
+draw_help_window:
+   ; draw background and gray rectangle for label
+   ;draw_frect canvas size cl_Black
+   draw_frect 40,50,580,380,cl_Grey
 
+   ; draw labels
+   mov ebp,4*7+3  ; Set value to labels counter
+   mov ebx,180*65536+90
+   mov edx,helptext
+   mov esi,50
+   mov ecx,cl_White+(10000000b shl 24)
+draw_next_string:
+   mov eax,4
+   mcall        ; Draw label
+@@:
+   mov al,[edx] ; Loop for find next zero
+   inc edx
+   cmp al,0
+   jne @b
 
+   add ebx,10   ; Incrase y position of label
+   dec ebp      ; Decrase labels counter
+   jnz draw_next_string
 
+   ; draw images of space objects
+   mov eax,90
+   mov ecx,7
+@@:
+   mov esi,[(img_offset-4)+ecx*4]
+   pushad
+   draw_image 90,eax,esi
+   popad
+   add eax,40
+   dec ecx
+   jnz @b
+
+   draw_button 5,500,400,80,14,'< BACK',cl_DarkRed,cl_Black
+   ret
+
+; Offset to images showed in help screen in reverse sequence
+img_offset:
+dd box_img,asteroid_img,gwarship_img,bwarship_img
+dd plasma1_img,laser_img,ship_img
+
+helptext:
+   db 'Phoenix - player ship',0
+   db 'Controls:',0
+   db 'Left or Right Arrows for move ship, P - button for pause',0
+   db 0
+   db 'Laser gun',0
+   db 'Recharge fast, speed fast. Projectile speed is medium',0
+   db 'Press Space button for shoot',0
+   db 0
+   db 'Plasma gun',0
+   db 'Recharge slow, reload fast. Projectile speed is fast',0
+   db 'Press Up button for shoot or Down button for make Nuke',0
+   db 0
+   db 'Blue warship',0
+   db 'Moving speed is fast',0
+   db 'Armed with plasma bombs',0
+   db 0
+   db 'Green warship',0
+   db 'Moving speed is medium',0
+   db 'Armed with laser gun',0
+   db 0
+   db 'Asteroid',0
+   db 'Is not destructable dangeros object!',0
+   db 'Collision with asteroid damage ship to much',0
+   db 0
+   db 'Repear Box',0
+   db 'Shield pack. Shield +5, Score +30',0
+   db 'Take on board for shield level up!',0
+   db 0,0,0
+   db 'Developed by Pavlushin Evgeni 2004',0
+
+; ****************************************
+;          GLOBAL DRAW WINDOW
+; ****************************************
+
+draw_window:
+   window_begin_draw
+   mcall 0, <40, screen_w+9>, <40, screen_h+24+4>, 0x14000000,, wtitle
+   window_end_draw
+   ret
+
+; ****************************************
+;           GAME PROCEDURE AREA
+; ****************************************
+
+; Procedure for add ships to scene
+; cl - number of ships which need to add 0..255
+; ebp - offset to level string
+add_objects:
+   ; unpack values from ebx
+   xor eax,eax
+   mov al,ch
+   mov [shiptype],eax
+   mov al,bl
+   mov [yaccel],eax
+   mov al,bh
+   mov [ymoving],eax
+   shr ebx,16
+   mov al,bl
+   mov [xaccel],eax
+   mov al,bh
+   mov [xmoving],eax
+next_ship:
+   cmp cl,0
+   je  no_ships    ; if ships quantity = 0, exit from proc
+   push ecx
+   push ebp
+   ; find empty slot in space objects array
+   array_find objects,find_empty_object
+   jc  close_app
+   ; edi = offset to empty place in array
+   mov eax,[shiptype]
+   mov dword [edi+8],eax   ; store ship type
+   ; Randomize x position
+   random screen_w-32,eax
+   mov [edi],eax
+   ; Randomize y position
+   pop ebp
+   mov ax,[ebp+2]  ; get max range
+   cwde            ; extend ax to eax
+   random eax,eax
+   neg eax
+   mov [edi+4],eax
+   ; Randomize x moving
+   random [xmoving],eax
+   sub eax,[xaccel]
+   mov [edi+12],eax
+   ; Randomize y moving
+   random [ymoving],eax
+   add eax,[yaccel]
+   mov [edi+16],eax
+   pop ecx
+   dec cl
+   jnz next_ship
+no_ships:
+   ret
+
+; search empty slot in object array
+find_empty_object:
+   cmp [edi+8],dword 0  ; if object type == 0 then it empty
+   je  is_finded        ; empty object is finded set CF = 0
+; find_next
+   stc     ; CF = 1
+   ret
+is_finded:
+   clc     ; CF = 0
+   ret
+
+; Try to draw particle from particle array
+draw_particles:
+   mov ecx,[edi+8]         ; ecx - type of particle
+   cmp ecx,0               ; if type == 0 then do not draw object
+   je  return
+   mov eax,laser_img
+   cmp ecx,Laser           ; this is laser particle
+   je  draw_space_object
+   mov eax,plasma2_img
+   cmp ecx,StaticPlasma    ; particle type for final screen animation
+   je  draw_space_object
+   random 3,ebx            ; if else this is Plasma particle
+   mov eax,plasma1_img
+   dec ebx
+   jz draw_space_object
+   mov eax,plasma2_img
+   dec ebx
+   jz draw_space_object
+   mov eax,plasma3_img
+   jmp draw_space_object
+
+; Draw space objects from array
+draw_objects:
+   mov ecx,[edi+8]         ; ecx = [edi+8] - type of ship
+   cmp ecx,0               ; if type of ship == 0 then not draw it
+   je  return
+   cmp ecx,(ot_end-object_type)/4+1
+   jae return              ; if type out of range ignore it
+   mov edx,[edi+4]         ; edx = [edi+4] - y position of ship
+   cmp edx,screen_h-40
+   jg  return
+   cmp edx,0               ; do not draw object if it y position is out of screen
+   jl  return
+   mov eax,[(object_type-4)+ecx*4]   ; -4 when types starts from 1 instead 0
+draw_space_object:
+   image_draw_acimage canvas,eax,dword [edi],dword [edi+4],cl_Black
+return:
+   ret
+
+object_type: dd bwarship_img,gwarship_img,asteroid_img,box_img
+ot_end:
+
+; Update (move) particles (laser,plasma)
+move_particles:
+   xor eax,eax
+   cmp [edi+8],eax      ; Is object not empty ?
+   je this_is_empty_particle
+move_particle:
+   mov eax,[edi+12]
+   add [edi],eax        ; objectx + [edi+12]
+   mov eax,[edi+16]
+   add [edi+4],eax      ; objecty + [edi+16]
+this_is_empty_particle:
+   ret
+
+;  update (move) space objects (ships,asteroids,boxes)
+move_objects:
+   xor eax,eax
+   cmp [edi+8],eax
+   je  object_is_empty
+   ;call move_particle
+   mov eax,[edi+12]
+   add [edi],eax
+   mov eax,[edi+16]
+   add [edi+4],eax
+
+   ; Do not allow object to go out of screen from right side
+   mov eax,screen_w-32     ; eax = right side of screen
+   cmp dword [edi],eax
+   jng right_side_ok
+   mov dword [edi],eax
+   neg dword [edi+12]
+   jmp left_side_ok
+right_side_ok:
+   ; Do not allow object to go out of screen from left side
+   xor eax,eax             ; eax = 0 - left side of screen
+   cmp dword [edi],eax
+   jnl left_side_ok
+   mov dword [edi],eax
+   neg dword [edi+12]
+left_side_ok:
+   ; If object out of screen remove it
+   cmp dword [edi+4],screen_h;-40
+   jng y_ok
+   mov dword [edi+8],0     ; Delete object
+   ret
+y_ok:
+   cmp dword [edi+8],GreenWarShip  ; Object is green enemy ship?
+   jne no_grs
+   mov eax,dword [edi+4]   ; eax = y position of enemy ship
+   ; alternative way is use random for shoot
+   cmp eax,100
+   jna no_grs
+   cmp eax,103
+   jna grs
+   cmp eax,200
+   jna no_grs
+   cmp eax,203
+   jna grs
+   cmp eax,300
+   jna no_grs
+   cmp eax,303
+   ja  no_grs
+grs:
+   ; invert y moving direction and make shoot
+   neg dword [edi+12]
+   mov [temp],edi
+   array_find particles,find_empty_object
+   jc  close_app
+   mov esi,[temp]      ; edi contains address to free element
+   mov [edi+8],dword 1
+   mov [edi+12],dword 0
+   mov [edi+16],dword 10
+   jmp set_particle_position
+no_grs:
+   cmp dword [edi+8],BlueWarShip  ; object is blue enemy ship ?
+   jne no_bls
+   mov ecx,dword [edi+4]
+   cmp ecx,50
+   jna no_bls
+   cmp ecx,64
+   jna bls
+   cmp ecx,100
+   jna no_bls
+   cmp ecx,114
+   jna bls
+   cmp ecx,150
+   jna no_bls
+   cmp ecx,164
+   ja  no_bls
+bls:
+   ; drop plasma mine
+   mov [temp],edi
+   array_find particles,find_empty_object
+   jc  close_app
+   mov esi,[temp]
+   mov [edi+8],dword 2
+   mov [edi+12],dword 0
+   mov [edi+16],dword 5
+set_particle_position:
+   mov eax,[esi]
+   mov [edi],eax       ; Particle x = Ship x
+   mov eax,[esi+4]
+   mov [edi+4],eax     ; Partcle y = Ship y
+no_bls:
+object_is_empty:
+   ret
+
+; Remove particles that have gone out off screen
+remove_outofscr_particles:
+   cmp dword [edi+4],40  ; test y position
+   jl  del
+   cmp dword [edi+4],screen_h-40
+   jg  del
+   cmp dword [edi],0     ; x test used for plasma shoots
+   jl  del
+   cmp dword [edi],screen_w-32
+   jg  del
+   ret        ; do not delete
+del:
+   xor eax,eax
+   mov [edi+8],eax ; [edi+8] = 0
+not_del:
+   ret
+
+objects_and_particles_hit_handling:
+   xor eax,eax
+   cmp [esi+8],eax
+   je  no_hit
+   cmp [edi+8],eax    ; If object is empty skip crush test
+   je  no_hit
+   cmp [esi+16],eax
+   jg  no_hit
+
+   mov eax,[esi]
+   shl eax,16
+   mov ax,word [esi+4]
+   mov ebx,32*65536+32
+   mov ecx,[edi]
+   shl ecx,16
+   mov cx,word [edi+4]
+   mov edx,32*65536+32
+
+   game_collision_2d eax,ebx,ecx,edx
+   jnc no_hit
+
+   cmp dword [edi+8],GreenWarShip
+   jne not_grship
+   inc [gships_destroyed]
+   add [score],30
+   jmp remove_object_and_particle
+not_grship:
+   cmp dword [edi+8],BlueWarShip
+   jne not_blship
+   inc [bships_destroyed]
+   add [score],20
+   jmp remove_object_and_particle
+not_blship:
+   cmp dword [edi+8],Asteroid
+   jne not_asteroid
+   cmp dword [edi+16],1 ; Asteroid have minimal speed?
+   je  remove_only_particle
+   dec dword [edi+16]   ; Decrase speed of asteroid
+   jmp remove_only_particle
+not_asteroid:
+remove_object_and_particle:  ; When hit to ship or box
+   mov [edi+8],dword 0
+remove_only_particle:        ; When hit to asteroid
+   mov [esi+8],dword 0
+no_hit:
+   ret
+
+player_and_objects_collision_handling:
+   cmp [edi+8],dword 0
+   je  no_obj_cr
+
+   mov eax,[shipx]
+   shl eax,16
+   mov ax,word [shipy]
+   mov ebx,32*65536+32
+   mov ecx,[edi]
+   shl ecx,16
+   mov cx,word [edi+4]
+   mov edx,32*65536+32
+
+   game_collision_2d eax,ebx,ecx,edx
+   jnc no_obj_cr
+   cmp dword [edi+8],Box  ; if box
+   jne no_fbox
+   add [player_hp],5
+   add [score],50
+   mov [edi+8],dword 0  ; delete object
+   inc [boxes_taken]
+   ret
+no_fbox:
+   sub [player_hp],16
+   mov [edi+8],dword 0  ; delete object
+no_obj_cr:
+   ret
+
+player_and_particles_collision_handling:
+   xor eax,eax       ; use eax as zero
+   cmp [edi+8],eax   ; empty object?
+   je  no_gobj_cr
+   cmp [edi+16],eax  ; is player ?
+   jl  no_gobj_cr
+
+   mov eax,[shipx]
+   shl eax,16
+   mov ax,word [shipy]
+   mov ebx,32*65536+32
+   mov ecx,[edi]
+   shl ecx,16
+   mov cx,word [edi+4]
+   mov edx,32*65536+32
+
+   game_collision_2d eax,ebx,ecx,edx
+   jnc no_gobj_cr
+   sub [player_hp],4
+   mov [edi+8],dword 0  ; delete object
+no_gobj_cr:
+   ret
+
+;**************************
+; Player ship shoot procs
+;**************************
+
+; Try to make laser shoot
+try_to_make_laser_shoot:
+   cmp [laser_charge],dword 0
+   jne no_laser_shoot     ; laser_shoots is heat, need time for recharge
+   cmp [laser_shoots],dword 0
+   je  no_laser_shoot     ; Don't shoot when so many laser particles on screen
+   array_find particles,find_empty_object  ; edi = offset to emppty object
+   jc  close_app          ; ?
+   mov eax,[shipx]
+   mov [edi],eax           ; 0  = x position of shoot
+   mov eax,[shipy]
+   mov [edi+4],eax         ; 4  = y position of shoot
+   mov [edi+8],dword 1     ; 8  = 1 - laser type
+   mov [edi+12],dword 0    ; 12 = 0   - x speed
+   mov [edi+16],dword -12  ; 16 = -12 - y speed
+   mov [laser_charge],dword 8  ; Reset shoot timer
+   dec [laser_shoots]      ; Decrase number of laser projectiles
+no_laser_shoot:
+   ret
+
+; Try to make plasma shoot
+try_to_make_plasma_shoot:
+   cmp [plasma_charge],dword 256-16
+   jae no_plasma_shoot
+   cmp [plasma_shoots],0
+   je  no_plasma_shoot
+   array_find particles,find_empty_object
+   ; edi = off to free element
+   jc  close_app     ;?
+   mov eax,[shipx]
+   mov [edi],eax
+   mov eax,[shipy]
+   mov [edi+4],eax
+   mov [edi+8],dword 2   ; 8 = 2 - plasma
+   mov [edi+12],dword 0    ; 12 = 0   - x speed
+   mov [edi+16],dword -8   ; 16 = -8 - y speed
+   dec [plasma_shoots]     ; Decrase number of plasma projectiles
+   add [plasma_charge],dword 8
+   cmp [plasma_charge],dword 256
+   jna no_plasma_shoot
+   mov [plasma_charge],256
+no_plasma_shoot:
+   ret
+
+; Try to make plasma nuke
+try_to_make_plasma_nuke:
+   xor eax,eax     ; Use eax as zero
+   cmp [plasma_charge],eax
+   jne no_plasma_nuke
+   cmp [plasma_shoots],eax
+   je  no_plasma_nuke
+   mov eax,[shipy]
+   mov [temp3],eax
+   mov [temp2],dword 5
+loopx2:
+   mov [temp],dword 10
+loopx:
+   array_find particles,find_empty_object ; edi = offset to empty element
+   jc  close_app
+   random 25,eax
+   mov ebp,eax
+   sub ebp,12
+   add ebp,[shipx]
+   mov [edi],ebp    ; [edi] = random(0..25)-12+shipx
+   shr eax,3
+   random eax,eax
+   neg eax
+   add eax,[temp3]
+   mov [edi+4],eax
+   mov [edi+8],dword 2  ; 8 = 2 - plasma
+   random 5,eax
+   sub eax,2
+   mov [edi+12],eax
+   random 7,eax
+   sub eax,8
+   mov [edi+16],eax
+   dec [temp]
+   jnz loopx
+   sub [temp3],30     ; shipy - 30
+   dec [temp2]
+   jnz loopx2
+   mov [plasma_charge],dword 256  ; Wait for cannon
+   sub [plasma_shoots],50 ; -50 plasma bullets after nuke
+no_plasma_nuke:
+   ret
 
 ; DATA AREA
 IM_END:
-;global
+wtitle db 'Phoenix for KOS', 0
+
+score    dd 0    ; player score
+
+; Pause state, if != 0 then game on pause
 pause_on dd 0
 
-;massive
-shipx dd 300
-shipy dd 400
-
-;guns
-lazer  dd 1000
-plazma dd 500
-
-;keys
-num1 dd 0
-num5 dd 0
-num3 dd 0
-num2 dd 0
-num8 dd 0
-
-;enemy countres
-gship  dd 0
-bship  dd 0
-boxget dd 0
-
-energy dd 100
-score  dd 0
-
-;delay for cannon
-ctime dd 0
-;delay for nuke gun
-xtime dd 0
-;path time
-pathtime dd 0
-;
-temp  dd 0
-temp2 dd 0
-temp3 dd 0
-temp4 dd 0
-otv dd 0
-
-;for collimg
-imgsize:
- dd 32
- dd 32
-
-;massive:
-;dd 400  ;elements num
-;dd 20  ;size of element in bytes
-;rb 400*20
-
-keymap:
-rb 1000
-
-wtitle db 'Phenix for KolibriOS', 0
+; Frames countdown timer until start of next wave
+; If = 0 then activate to next wave
+; next_wave_timer
+next_wave_timer dd 0
 
 ;gif_file_area ~21500
-gif_file_area2:
-file 'phenix.gif'
+;gif_file_area2:
+;file 'phoenix.gif'
 gif_file_area:
-file 'star2.gif';include gif file
-img_area:
-rb 256*64*3+8
-ship:
-rb 32*32*3+8
-shoot:
-rb 32*32*3+8
-warship1:
-rb 32*32*3+8
-warship2:
-rb 32*32*3+8
-meteor:
-rb 32*32*3+8
-star:
-rb 32*32*3+8
-star2:
-rb 32*32*3+8
-star3:
-rb 32*32*3+8
-box:
-rb 32*32*3+8
+file 'objects.gif' ; Include gif file to code
 
 IncludeUGlobals
 
-massive:
-rd massize  ;elements num
-rd elemsize  ;size of element in bytes
-rb massize*elemsize
+; Window drawing function delegate (pointer)
+draw_proc rd 1
+; Keyboard processing function delegate (pointer)
+keyboard_proc rd 1
 
-objmas:
-rd omassize  ;elements num
-rd oelemsize  ;size of element in bytes
-rb omassize*oelemsize
+; Counter of objects on screen
+objects_num rd 1
+
+player_hp rd 1   ; Health points of player ship
+shipx rd 1       ; Player ship x position
+shipy rd 1       ; Player ship y position
+; guns
+laser_shoots  rd 1 ; laser bullets quantity
+plasma_shoots rd 1 ; plasma bullets quantity
+; Counters of player statistics
+gships_destroyed rd 1 ; Number of green ships destroyed by player
+bships_destroyed rd 1 ; Number of blue ships destroyed by player
+boxes_taken rd 1      ; Number of repair boxes taken by player
+; Gun recharge counters
+; 0 = fully charged
+; 256 = fully uncharged
+laser_charge  rd 1 ; Laser gun recharge counter
+plasma_charge rd 1 ; Plasma gun recharge counter
+
+; Tempory varibles
+temp  rd 1
+temp2 rd 1
+temp3 rd 1
+
+event_mode rd 1   ; if -1 wait, 0 scan, n - n delay between events
+
+; Tempory varibles for add_objects proc
+shiptype rd 1
+xmoving  rd 1
+ymoving  rd 1
+xaccel   rd 1
+yaccel   rd 1
+
+; Memory for contain not splitted image
+objects_image: rb 8+288*32*3  ;8+256*64*3
+; Images sequence extracted from objects_image
+ship_img:      rb 8+32*32*3   ; Player red space ship
+laser_img:     rb 8+32*32*3   ; Double laser beams
+bwarship_img:  rb 8+32*32*3   ; Blue enemy ship
+gwarship_img:  rb 8+32*32*3   ; Green enemy ship
+asteroid_img:  rb 8+32*32*3   ; Space asteroid
+plasma1_img:   rb 8+32*32*3   ; Plasma big flash
+plasma2_img:   rb 8+32*32*3   ; Plasma medium flash
+plasma3_img:   rb 8+32*32*3   ; Plasma small flash
+box_img:       rb 8+32*32*3   ; Repear kit box
+
+; array for storing state of keyboard keys
+keymap:        rb 128
+
+particles:
+rd max_particles   ; dword = maximum number of particle objects
+rd particle_size   ; dword = size of each particle object in bytes
+rb max_particles*particle_size
+
+objects:
+rd max_objects     ; dword = maximum number of particles
+rd object_size     ; dword = size of each object in bytes
+rb max_objects*object_size
 
 canvas:
-canvas_x:
- rd 1
-canvas_y:
- rd 1
-rb (640*440*3)+2000
+rb 8+(screen_w*screen_h*3)
+canvas_end:
 
-proc_info:
-rb 1024
+; application stack size
+align 16
+stack_max:
+  rb 2048
 I_END:
