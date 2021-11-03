@@ -104,9 +104,6 @@ bool init_scaler( unsigned int new_scaler, bool fullscreen )
 
 	if (bpp == 0)
 		return false;
-	#ifdef _KOLIBRI
-	bpp=16; // DEBUG
-#endif
 	SDL_Surface *const surface = SDL_SetVideoMode(w, h, bpp, flags);
 
 	if (surface == NULL)
@@ -146,7 +143,7 @@ bool init_scaler( unsigned int new_scaler, bool fullscreen )
 
 	if (scaler_function == NULL)
 	{
-		assert(false);
+		//assert(false);
 		return false;
 	}
 

@@ -2,7 +2,7 @@
 #define OPENTYRIAN_VERSION_H
 
 #ifndef OPENTYRIAN_VERSION
-#define OPENTYRIAN_VERSION "v2.1.???"
+#define OPENTYRIAN_VERSION "v2.1 KolibriOS"
 #endif
 
 #endif // OPENTYRIAN_VERSION_H
