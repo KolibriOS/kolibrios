@@ -730,6 +730,7 @@ tup.append_table(extra_files, {
  {"kolibrios/emul/e80/e80", PROGS .. "/emulator/e80/trunk/e80"},
  {"kolibrios/emul/uarm/", "../contrib/other/uarm/uARM"},
  {"kolibrios/games/2048", PROGS .. "/games/2048/2048"},
+ {"kolibrios/games/checkers", PROGS .. "/games/checkers/trunk/checkers"},
  {"kolibrios/games/donkey", PROGS .. "/games/donkey/donkey"},
  {"kolibrios/games/heliothryx", PROGS .. "/games/heliothryx/heliothryx"},
  {"kolibrios/games/marblematch3", PROGS .. "/games/marblematch3/marblematch3"},
@@ -737,7 +738,8 @@ tup.append_table(extra_files, {
  {"kolibrios/games/quake/", "common/games/quake/*"}, -- not really gcc, but no sense without sdlquake
  {"kolibrios/games/quake/", "../contrib/other/sdlquake-1.0.9/sdlquake"},
  {"kolibrios/games/fridge/", PROGS .. "/games/fridge/fridge"},
- {"kolibrios/games/", PROGS .. "/games/checkers/trunk/checkers"},
+ {"kolibrios/games/tyrian/", "common/games/tyrian/*"},
+ {"kolibrios/games/tyrian/data/", "common/games/tyrian/data/*"},
  {"kolibrios/games/wolf3d/", "../contrib/games/wolf3d/wolf3d"},
  {"kolibrios/games/wolf3d/", "common/games/wolf3d/*"},
  {"kolibrios/develop/lua/lua", "../contrib/other/lua-5.2.0/lua"},
