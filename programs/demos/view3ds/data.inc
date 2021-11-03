@@ -1,11 +1,14 @@
                    ; DATA AREA  ************************************
-
+      if Ext > SSE2
+        isSSE3          db      1
+      end if
         i3              dw      3
         i6              dd      6
         i12             dd      12
         i36             dd      36
         i256            dw      256
         i255d           dd      255
+        f1:
         dot_max         dd      1.0      ; dot product max and min
         dot_min         dd      0.0
         env_const       dd      1.05
@@ -25,7 +28,7 @@
         y_offset      dw SIZE_Y / 2
         z_offset      dw 0
         rsscale       dd 175.0           ; next real scale
-        vect_x        dw SIZE_X / 2
+        vect_x:        dw SIZE_X / 2
         vect_y        dw SIZE_Y / 2
         vect_z        dw 0
                 size_y_var:
@@ -110,9 +113,9 @@
                dd ?
 
                db 7
-               db 'catmull   '
+               db 'ray shadow'
                db 2
-catmull_flag   db 1
+ray_shd_flag   db 0
                dd onoff_f
 
                db 8
@@ -165,7 +168,7 @@ emboss_flag    db 0
 
                db 16
                db 'fire      '
-               db 3
+               db 2
 fire_flag      db 0
                dd blur_f
 
@@ -350,7 +353,7 @@ base_vector:
       if Ext=SSE3
         db   ' (SSE3)'
       end if
-        db   ' 0.073',0
+        db   ' 0.074',0
     labellen:
         STRdata db '-1        '
      lab_vert:
@@ -425,8 +428,43 @@ lightsend:
 
 
 
-
+;if Ext >= SSE3
 align 16
+   point_light_coords:
+              dd 50.0
+              dd 50.0
+              dd -215.0
+              dd 0.0
+
+
+              dd 815.0
+              dd 815.0
+              dd -215.0
+              dd 0.0
+
+              dd 1500.0
+              dd 1500.0
+              dd -215.0
+              dd 0.0
+if 0
+    aabb1:
+        .0              dd 1.0,1.0,1.0,0
+        .1              dd -1.0,1.0,1.0,0
+        .2              dd 1.0,-1.0,1.0,0
+        .3              dd -1.0,-1.0,1.0,0
+        .4              dd 1.0,1.0,-1.0,0
+        .5              dd -1.0,1.0,-1.0,0
+        .6              dd 1.0,-1.0,-1.0,0
+        .7              dd -1.0,-1.0,-1.0,0
+
+end if
+
+    sign_mask:
+              times 4 dd 0x80000000
+    f05xz:    dd 0, 0,   - 1.0  ,0
+
+    sign_z:
+              dd -1,-1,0x7fffffff,0
     abs_mask:
            dd 0x7fffffff, 0x7fffffff, 0x7fffffff, 0x7fffffff
     emboss_bias:
@@ -442,7 +480,11 @@ align 16
            times 4 dd 510.0
     the_one:
            times 4 dd 1.0
-     aprox  dd 0.0001
+
+     eps:  times 4 dd 0.00000
+     epsone      dd 1.0001
+     aprox       dd 0.0001
+     epsminus    dd -0.0001
 
 
         file_info:
@@ -463,22 +505,13 @@ SourceFile:
 workarea   rb 180
 EndFile   dd ?
 align 8
-        sinbeta dd      ?;+32
+        sinbeta dd      ?;
         cosbeta dd      ?
 
         xsub    dw      ?
-        zsub    dw      ?;+40
+        zsub    dw      ?
         ysub    dw      ?
 
-        xx1     dw      ?
-        yy1     dw      ?
-        zz1     dw      ?;+48    xx1 + 4
-        xx2     dw      ?
-        yy2     dw      ?
-        zz2     dw      ?      ; xx1 + 10
-        xx3     dw      ?;+56
-        yy3     dw      ?
-        zz3     dw      ?      ; xx1 + 16
         col1    dd      ?
         col2    dd      ?
         col3    dd      ?
@@ -487,13 +520,9 @@ align 8
         points_count_var        dd ?  ;
         triangles_count_var     dd ?  ; dont change order
         edges_count             dd ?  ;
+        tex_points_ptr          dd ?
 
-        point_index1        dd ?   ;-\
-        point_index2        dd ?   ;  }  don't change order
-        point_index3        dd ?   ;-/
         temp_col            dw ?
-        temp1               dd ?   ; > dont change
-        temp2               dd ?   ; >  order
         high                dd ?
         rand_seed           dw ?
 align 8
@@ -510,18 +539,14 @@ align 8
         matrix  rb 36
         cos_tab rd 360
         sin_tab rd 360
-
 align 16
+       lights_aligned:
+       lights_aligned_end = $ + 16 * 12
+                        rb 16 * 12
 
-
-    points_count = 180000/6*3
-    triangles_count = 180000 / 6  ;($-triangles)/6
-align 16
-        label trizdd dword
-        label trizdq qword
-        triangles_with_z rw triangles_count*4 + 2 ; triangles triple dw + z position
 align 16
         vectors rb 24
+
 align 16
         bumpmap         rb      TEXTURE_SIZE + 1
 align 16
@@ -535,25 +560,19 @@ align 16
 align 16
         color_map       rb      (TEXTURE_SIZE +100) * 3
 align 16
-        tex_points      rb      points_count * 4  ; bump_map  and texture coords
-                                ; each point word x, word y
-align 16
-       lights_aligned:
-       lights_aligned_end = $ + 16 * 12
-                        rb 16 * 12
+ ;       tex_points      rb      points_count * 4  ; bump_map  and texture coords
+ ;                               ; each point word x, word y
+;align 16
+;       lights_aligned:
+;       lights_aligned_end = $ + 16 * 12
+;                        rb 16 * 12
 
 
 if Ext >= SSE2
         sse_repository  rb      1024
 end if
-  ;      SourceFile:             ; source file temporally in screen area
-  ;      workarea        dd      ?
-
-    ;    screen          rb      SIZE_X * SIZE_Y * 3   ; screen buffer
-;align 16
-     ;   Z_buffer        rb      SIZE_X * SIZE_Y * 4
         procinfo:
-                        rb     1024 ; process info
+                        rb     2048 ; process info
         I_Param         rb      256
         memStack:
         rb 2000

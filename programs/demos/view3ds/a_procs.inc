@@ -1,3 +1,200 @@
+
+
+if Ext > SSE2
+ ;--------------------------------------------------------------------
+init_point_lights:
+  ;      mov       eax,1000
+  ;      cvtsi2ss  xmm1,eax
+  ;      shufps    xmm1,xmm1,11000000b
+  ;      mov       esi,lights_aligned
+  ;      mov       edi,point_light_coords
+  ;      mov       ecx,3
+  ;    @@:
+  ;      movaps    xmm0,[esi]
+  ;      addps     xmm0,[f05xz]
+  ;      mulps     xmm0,xmm1
+  ;      movaps    [edi],xmm0
+  ;      add       esi,64
+   ;     add       edi,16
+   ;     loop      @b
+      mov       ecx,3
+      mov       edi,point_light_coords
+    @@:
+      push      ecx
+      xor       ecx,ecx
+      movzx     edx,word[size_x_var]
+      call      random
+      cvtsi2ss  xmm0,eax
+      movss     [edi],xmm0
+      xor       ecx,ecx
+      movzx     edx,word[size_x_var]
+      call      random
+      cvtsi2ss  xmm0,eax
+      movss     [edi+4],xmm0
+   ;   movzx     ebx,word[size_x_var]
+   ;   shl       ebx,2
+   ;   neg       ebx
+      mov       ecx,-1900
+   ;   sub       ecx,100
+      mov       edx,-600
+      call      random
+      cvtsi2ss  xmm0,eax
+      movss     [edi+8],xmm0
+   ;   mov       dword[edi+8],-1700.0
+      mov       [edi+12],dword 0
+      add       edi,16
+      pop       ecx
+      loop      @b
+
+ret
+
+;------------------------------------------------------------------
+intersect_tri: ; Moeller-Trumbore method
+; in:
+;     xmm0 - ray direction  ; should be normalized
+;     xmm1 - ray orgin
+;     xmm2 - tri vert1
+;     xmm3 - tri vert2
+;     xmm4 - tri vert3
+;     if  eax = 1 - intersction with edge
+;        xmm6 - edge lenght
+;     if  eax = 0 - intersect with ray (classic)
+; out:
+;     eax  = 1 - intersection occured
+;     xmm0 - float lo -> hi = t, v, u, ...
+      push    ebp
+      mov     ebp,esp
+      and     ebp,-16
+      sub     esp,220
+
+       .dir    equ [ebp-16]
+       .origin equ [ebp-32]
+       .ta     equ [ebp-48]
+       .tb     equ [ebp-64]
+       .tc     equ [ebp-80]
+       .tvec   equ [ebp-96]
+       .pvec   equ [ebp-112]
+       .qvec   equ [ebp-128]
+       .e1     equ [ebp-128-16]
+       .ift    equ dword[ebp-152]
+       .invdet equ [ebp-156]
+       .det    equ [ebp-160]
+       .ed_l   equ [ebp-164]
+       .u      equ [ebp-168]
+       .v      equ [ebp-172]
+       .t      equ [ebp-176]
+       .e2     equ [ebp-192]
+
+      movaps   .dir,xmm0
+      movaps   .origin,xmm1
+      movaps   .ta,xmm2
+      movaps   .tb,xmm3
+      movaps   .tc,xmm4
+      mov      .ift,eax
+      movss    .ed_l,xmm6
+      subps    xmm3,xmm2
+      subps    xmm4,xmm2
+      andps    xmm3,[zero_hgst_dd]
+      andps    xmm4,[zero_hgst_dd]
+      movaps   .e1,xmm3
+      movaps   .e2,xmm4
+
+      lea      esi,.dir
+      lea      edi,.e2
+      lea      ebx,.pvec
+      call     cross_aligned
+
+      movaps   xmm0,.e1
+      mulps    xmm0,.pvec
+ ;     andps    xmm0,[zero_hgst_dd]
+      haddps   xmm0,xmm0
+      haddps   xmm0,xmm0
+      movss    .det,xmm0
+;      cmpnless xmm0,[eps]
+;      movd     eax,xmm0
+;      or       eax,eax
+;      jz       @f
+      comiss   xmm0,[eps]
+      jl       @f
+
+      rcpss    xmm0,.det
+      movss    .invdet,xmm0
+
+      movaps   xmm0,.origin
+      subps    xmm0,.ta
+      andps    xmm0,[zero_hgst_dd]
+      movaps   .tvec,xmm0
+
+      mulps    xmm0,.pvec
+      haddps   xmm0,xmm0
+      haddps   xmm0,xmm0
+      mulss    xmm0,.invdet
+      movss    xmm1,xmm0
+      movss    .u,xmm0
+      cmpnless xmm1,[epsone]
+      cmpnless xmm0,[epsminus]
+      pxor     xmm1,xmm0
+      movd     eax,xmm1
+      or       eax,eax
+      jz       @f
+
+      lea      esi,.tvec
+      lea      edi,.e1
+      lea      ebx,.qvec
+      call     cross_aligned
+
+      movaps   xmm0,.dir
+      mulps    xmm0,.qvec
+      haddps   xmm0,xmm0
+      haddps   xmm0,xmm0
+      mulss    xmm0,.invdet
+      movss    .v,xmm0
+      movss    xmm1,xmm0
+      addss    xmm1,.u
+      cmpnless xmm1,[epsone]
+      cmpnless xmm0,[epsminus]
+      pxor     xmm1,xmm0
+      movd     eax,xmm1
+      or       eax,eax
+      jz       @f
+
+      movaps   xmm1,.e2
+      mulps    xmm1,.qvec
+      haddps   xmm1,xmm1
+      haddps   xmm1,xmm1
+      mulss    xmm1,.invdet
+      movss    .t,xmm1
+   ;   cmpnless xmm1,[eps]
+   ;   movmskps eax,xmm1
+   ;   test     eax,1
+   ;   jz       @f
+      comiss   xmm1,[eps]
+      jl       @f
+
+      mov      eax,1
+      cmp      .ift,0
+      je       .end       ; ok intersect occured, no edge cause
+
+      movss    xmm0,.t      ; else check with edge lenght
+    ;  movss    xmm1,.t
+      cmpnless xmm0,[eps]
+      cmpnless xmm1,.ed_l
+      xorps    xmm0,xmm1
+      movd     ebx,xmm0
+      or       ebx,ebx
+      jz       @f
+
+ ;     mov      eax,1
+ ;     movaps   xmm0,.t
+      jmp      .end
+   @@:
+      xor      eax,eax
+    .end:
+      movaps   xmm0,.t
+      add      esp,220
+      pop      ebp
+ret
+end if
 ;===============================================================
 do_edges_list:
     push    ebp
@@ -223,13 +420,18 @@ ret
 
 
 do_sinus:
+;in - ax - render mode
    .x      equ  [ebp-8]
    .y      equ  [ebp-12]
    .new_y  equ  [ebp-16]
    .temp   equ  [ebp-20]
+   .dr_f   equ  word[ebp-22]
+
    push    ebp
    mov     ebp,esp
-   sub     esp,64
+   sub     esp,30
+   mov     .dr_f,ax
+
    mov     dword .x,0
    mov     dword .y,0
    mov     esi,[screen_ptr]
@@ -243,53 +445,20 @@ do_sinus:
    cld
    rep     stosd
    pop     edi
-;   movzx   eax,[sinus_flag]
-;   mov     edx,10
-;   mul     edx
-;   mov     [sin_amplitude],eax
-;   mov     [sin_frq],eax
    fninit
-;if Ext = SSE2
-;   movups  xmm1,[const0123]   ; xmm1 - init values
-;   mov     eax,0x000000ff
-;   movd    xmm2,eax
-;   shufps  xmm2,xmm2,0        ; xmm2 - mask value
-;   mov     eax,4
-;   movd    xmm3,eax
-;   shufps  xmm3,xmm3,0
  .again:
-if  0
-   fild    dword .x
-   fidiv   [sin_frq]
-   fsin
-   fimul   [sin_amplitude]
-   fiadd   dword .y
-   fistp   dword .new_y
-else
    fild    dword .x
    fmul    [sin_frq]
    fistp   dword .temp
    mov     eax, .temp
-;   mov     bx, [angle_x]
-;   add     bx, [angle_y]
-;   movzx   ebx,bx
-;   shr     ebx,1       ; change phase
-;   add     eax,ebx
-
 
    and     eax, 0x000000ff
-
-;   cdq
- ;  mul     [sin_frq]
-;   and      eax,0x000000ff
-;   and     ax,0x00ff
-;   cwde
 
    fld     dword [sin_tab+eax*4]
    fimul   dword [sin_amplitude]
    fiadd   dword .y
    fistp   dword .new_y
-end if
+
    mov     eax,.new_y
    or      eax,eax
    jl      .skip
@@ -298,20 +467,19 @@ end if
    jg      .skip
    movzx   edx,word[size_x_var]
    mul     edx
-;   shl     eax,9
    add     eax,dword .x
 
    lea     ebx,[eax*3]
-   cmp     [dr_flag],12 ; 32 bit col cause
-   jl      @f
+   cmp     .dr_f,12 ; 32 bit col cause
+   jb      @f
    add     ebx,eax
   @@:
    mov     eax,[esi]
    mov     [edi+ebx],eax
  .skip:
    add     esi,3
-   cmp     [dr_flag],12
-   jl      @f
+   cmp     .dr_f,12
+   jb      @f
    inc     esi
   @@:
    inc     dword .x
@@ -330,8 +498,8 @@ end if
    movzx   ecx,word[size_x_var]
    movzx   eax,word[size_y_var]
    imul    ecx,eax
-   cmp     [dr_flag],12
-   jge     @f
+   cmp     .dr_f,12
+   jae     @f
    lea     ecx,[ecx*3]
    shr     ecx,2
  ;  mov     ecx,SIZE_X*SIZE_Y*3/4
@@ -377,7 +545,19 @@ draw_dots:
 ret
 
 do_emboss:   ; sse2 version only
+; in ax - render model
+   push  ebp
+   mov   ebp,esp
+   sub   esp,4
+
+   .dr_mod  equ word[ebp-2]
+
+   mov    .dr_mod,ax
+
 if Ext >= SSE2
+
+
+
  movzx ecx,[bumps_deep_flag]
  inc   ecx
  call  blur_screen    ;blur n times
@@ -392,20 +572,20 @@ if Ext >= SSE2
  sub   ecx,ebx
  mov   esi,[screen_ptr]
  mov   edi,[Zbuffer_ptr]
- cmp   [dr_flag],12
+ cmp   .dr_mod,11
  jge   @f
  lea   ebx,[ebx*3]
- jmp   .f
+ jmp   .gf
 @@:
  shl   ebx,2
-.f:
+.gf:
  mov   edx,esi
  add   esi,ebx
  lea   ebx,[ebx+esi]
  pxor  xmm0,xmm0
  push  eax
 .emb:
- cmp   [dr_flag],12
+ cmp    .dr_mod ,11
  jge   @f
  movlps     xmm1,[esi+3]
  movhps     xmm1,[esi+6]
@@ -442,14 +622,7 @@ if Ext >= SSE2
  pmaxsw      xmm1,xmm7
  pmaxsw      xmm1,xmm6
 
-if 0
- movaps      xmm7,xmm3
- movaps      xmm6,xmm3
- psrlq       xmm7,2*8
- psrlq       xmm6,4*8
- pmaxsw      xmm3,xmm7
- pmaxsw      xmm3,xmm6
-end if
+
  pmaxsw      xmm1,xmm3
 
  movd        eax,xmm1
@@ -469,7 +642,7 @@ end if
  mov        eax,[eax]
  mov        [edi+4],eax
 
- cmp    [dr_flag],12
+ cmp    .dr_mod,11
  jl     @f
  add    esi,2
  add    ebx,2
@@ -487,7 +660,7 @@ end if
  pop    ecx  ;,eax
  mov    edi,[screen_ptr]
  mov    esi,[Zbuffer_ptr]
- cmp    [dr_flag],12
+ cmp    .dr_mod,11
  jge    .e
 @@:
  movsd
@@ -497,6 +670,11 @@ end if
  rep    movsd
 
 end if
+
+
+
+   mov   esp,ebp
+   pop   ebp
 
 ret
 

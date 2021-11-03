@@ -737,22 +737,33 @@ ret
 
 blur_screen:    ;blur n times  ; blur or fire
 ;in - ecx  times count
-;.counter equ dword[esp-4]
-.counter1 equ dword[esp-8]
+;     ax - render mode
+
+ .val      equ  dword[ebp-4]
+ .dr_model equ  word[ebp-6]
+ .fire     equ  dword[ebp-10]
+
 if Ext>=SSE2
          push       ebp
          mov        ebp,esp
-         push       dword 0x01010101
-         movss      xmm5,[esp]
+         sub        esp,10
+      ;   xorps      xmm5,xmm5
+      ;   or         edx,edx
+      ;   jz         @f
+         mov        .val,0x01010101
+         movss      xmm5,.val
          shufps     xmm5,xmm5,0
+      @@:
+         mov        .dr_model,ax
+
+
      .again_blur:
          push       ecx
          mov        edi,[screen_ptr]
          movzx      ecx,word[size_x_var]  ;SIZE_X*3/4
-
-         cmp         [dr_flag],12
+         cmp         .dr_model,11
          jge        @f
-         lea        ecx,[ecx*3+1]
+         lea        ecx,[ecx*3+3]
          shr        ecx,2
        @@:
 
@@ -763,11 +774,11 @@ if Ext>=SSE2
          movzx      ecx,word[size_y_var]
          sub        ecx,3
          imul       ecx,ebx
-         cmp        [dr_flag],12  ; 32 bit per pix cause
+         cmp        .dr_model,11  ; 32 bit per pix cause
          jge        @f
          lea        ecx,[ecx*3]
          shr        ecx,4
-         lea        ebx,[ebx *3]
+         lea        ebx,[ebx*3]
          jmp        .blr
        @@:
 
@@ -781,7 +792,7 @@ if Ext>=SSE2
          mov        ecx,edi
          sub        ecx,ebx
          movups     xmm1,[ecx]
-         cmp         [dr_flag],12
+         cmp        .dr_model,12
          jge        @f
          movups     xmm2,[edi-3]
          movups     xmm3,[edi+3]
@@ -802,9 +813,9 @@ if Ext>=SSE2
     end if
          xor        eax,eax
          movzx      ecx,word[size_x_var]
-         cmp        [dr_flag],12
+         cmp        .dr_model,11
          jge        @f
-         lea        ecx,[ecx*3]
+         lea        ecx,[ecx*3+3]
          shr        ecx,2
         @@:
     ;     mov        ecx,SIZE_X*3/4

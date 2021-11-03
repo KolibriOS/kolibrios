@@ -1,6 +1,6 @@
 ; Real Phong's shading implemented if flat assembler
 ; by Maciej Guba.
-; http://macgub.vxm.pl
+; http://macgub.co.pl
 
 ROUND2 equ 10
 real_phong_tri_z:

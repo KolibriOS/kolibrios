@@ -1,7 +1,7 @@
 ; Bilinear filtering, real Phongs shading and glass like parallel.
 ; Thanks to authors of 3dica tutorial.
 ; Implemented in FASM by Maciej Guba.
-; http://macgub.j.pl
+; http://macgub.co.pl
 
 ROUND2 equ 10
 

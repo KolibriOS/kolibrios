@@ -1,5 +1,5 @@
 ; Glass like rendering triangle by Maciej Guba.
-; http://macgub.hekko.pl, macgub3@wp.pl
+; http://macgub.co.pl, macgub3@wp.pl
 
 ROUND2 equ 10
 glass_tri:

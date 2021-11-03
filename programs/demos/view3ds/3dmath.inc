@@ -4,13 +4,108 @@ z3d equ 4
 vec_x equ 0
 vec_y equ 4
 vec_z equ 8
-; 3d point - triple integer word coordinate
-; vector   - triple float dword coordinate
-;----------------------in: --------------------------------
-;------------------------ esi - pointer to 1st 3d point ---
-;------------------------ edi - pointer to 2nd 3d point ---
-;------------------------ ebx - pointer to result vector --
-;---------------------- out : none ------------------------
+
+if 0  ; Ext >= SSE3
+calc_bounding_box:
+; in:
+;      xmm0  -  normal vector of ray
+;      xmm1  -  light origin
+; out:
+;      eax - axis aligned bounding boxes bit mask
+
+       .rmx     equ [ebp-36]
+       .nray    equ [ebp-64]
+       .origin  equ [ebp-80]
+       .dirfrac equ [ebp-96]
+       .nrayr   equ [ebp-112]
+       .originr equ [ebp-128]
+       .tmin    equ [ebp-132]
+       .tmax    equ [ebp-136]
+
+
+       push    ebp
+       mov     ebp,esp
+       and     ebp,-16
+       sub     esp,160
+
+       movss     xmm5,[rsscale]
+       shufps    xmm5,xmm1,0
+       movd      xmm2,[vect_x]
+       punpcklwd xmm2,[the_zero]
+       cvtdq2ps  xmm2,xmm2
+       subps     xmm1,xmm2
+       movaps    .origin,xmm1
+       mulps     xmm0,xmm5
+       movaps    .nray,xmm0
+
+       mov     esi,matrix
+       lea     edi,.rmx
+       call    reverse_mx_3x3
+
+;  in:  esi - ptr to points(normals], each point(normal) coeficient as dword
+;       edi - ptr to rotated points(normals)
+;       ebx - ptr to 3x3 (9 dwords, 36 bytes) rotation matrix
+;       ecx - number of points(normals)
+
+    ; reverse transform
+       lea    esi,.nray
+       lea    edi,.nrayr
+       lea    ebx,.rmx
+       mov    ecx,1
+       call   rotary
+
+       lea    esi,.origin
+       lea    edi,.originr
+       lea    ebx,.rmx
+       mov    ecx,1
+       call   rotary
+
+       xor      ecx,ecx
+       mov      ebx,aabb1
+       xor      eax,eax
+       rcpps    xmm7,.nrayr
+       movaps   .dirfrac,xmm7
+
+    .nx_aabb:
+       movaps   xmm5,[ebx]
+       movaps   xmm6,[ebx]
+       minps    xmm5,[the_zero]
+       maxps    xmm6,[the_zero]
+ ;  xmm5 - lb corner of AABB with minimal coordinates
+ ;  xmm6 - rt cor.   of AABB wit maximum coords
+       subps    xmm5,.originr
+       subps    xmm6,.originr
+       mulps    xmm5,.dirfrac   ; xmm5 - tx1, ty1
+       mulps    xmm6,.dirfrac   ; xmm6 - tx2, ty2
+       movaps   xmm1,xmm6
+       movaps   xmm2,xmm6
+
+
+       minps    xmm1,xmm5
+       maxps    xmm2,xmm5
+
+       movaps   xmm5,xmm1
+       movaps   xmm6,xmm2
+       shufps   xmm5,xmm5,11100001b
+       shufps   xmm6,xmm6,11100001b
+       maxss    xmm1,xmm5  ;t min
+       minss    xmm2,xmm6  ;t max
+       comiss   xmm2,xmm1
+       jb       .no_inter
+    .yes:
+       bts      eax,ecx
+     .no_inter:
+       add      ebx,16
+       inc      ecx
+       cmp      ecx,8
+       jne      .nx_aabb
+
+; out: eax - bit mask
+       add      esp,160
+       pop      ebp
+ret
+end if
+
 reverse_mx_3x3:
 ; esi - source matrix
 ; edi - desired reversed matrix
@@ -141,6 +236,13 @@ reverse_mx_3x3:
   mov  esp,ebp
   pop  ebp
 ret
+; 3d point - triple integer word coordinate
+; vector   - triple float dword coordinate
+;----------------------in: --------------------------------
+;------------------------ esi - pointer to 1st 3d point ---
+;------------------------ edi - pointer to 2nd 3d point ---
+;------------------------ ebx - pointer to result vector --
+;---------------------- out : none ------------------------
 
 make_vector_r:
    if Ext < SSE2
@@ -194,17 +296,37 @@ cross_product:
         fsubp   ;st1 ,st
         fstp    dword [ebx+vec_z]
 ret
+cross_aligned:
+      movaps  xmm0,[esi]
+      movaps  xmm1,[esi]
+      movaps  xmm2,[edi]
+      movaps  xmm3,[edi]
+      shufps  xmm0,xmm0,00001001b
+      shufps  xmm1,xmm1,00010010b
+      shufps  xmm2,xmm2,00010010b
+      shufps  xmm3,xmm3,00001001b
+      mulps   xmm0,xmm2
+      mulps   xmm1,xmm3
+      subps   xmm0,xmm1
+      movaps  [ebx],xmm0
+ret
 ;----------------------- in: ------------------------------
 ;---------------------------- edi - pointer to vector -----
 ;----------------------- out : none
 normalize_vector:
-if Ext >= SSE3
+if Ext >= SSE2
         movups  xmm0,[edi]
         andps   xmm0,[zero_hgst_dd]
         movups  xmm1,xmm0
         mulps   xmm0,xmm0
-        haddps  xmm0,xmm0
-        haddps  xmm0,xmm0
+        movhlps xmm2,xmm0
+        addps   xmm0,xmm2
+        movaps  xmm2,xmm0
+        shufps  xmm2,xmm2,11100101b
+        addps   xmm0,xmm2
+        shufps  xmm0,xmm0,0
+;        haddps  xmm0,xmm0
+;        haddps  xmm0,xmm0
         rsqrtps xmm0,xmm0
         mulps   xmm0,xmm1
         movlps  [edi],xmm0
@@ -559,7 +681,7 @@ translate_points:  ; just convert into integer; z coord still needed
    ; packsdw xmm0,xmm0
    ; movq     [edi]
     fld    dword[esi]
-    fiadd  [vect_x]
+    fiadd  word[vect_x]
     fistp  word[edi]
     fld    dword[esi+4]
     fiadd  [vect_y]
