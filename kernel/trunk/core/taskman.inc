@@ -100,6 +100,7 @@ proc fs_execute
         path_string     rd  1
     endl
 
+        and     edx, 1  ;clear flags user. TODO: add api for start apps with user flags
         mov     [flags], edx
         mov     [cmdline], ecx
         mov     [path_string], ebx
