@@ -144,10 +144,12 @@ pci_data_sel   =  pci_data_32-gdts
 ; places revision number there.
 if ~ defined UEFI
   bootbios:
-  if ~ defined extended_primary_loader
-    file 'bootbios.bin'
-  else
+  if defined extended_primary_loader
     file 'bootbios.bin.ext_loader'
+  else if defined pretest_build
+    file 'bootbios.bin.pretest'
+  else
+    file 'bootbios.bin'
   end if
   if __REV__ > 0
     cur_pos = 0

@@ -30,7 +30,14 @@ preboot_device      db  0 ; device to load ramdisk from
                           ;   1-floppy 2-harddisk 3-kernel restart
                           ;   4-format ram disk 5-don't use ramdisk
                           ; !!!! 0 - autodetect !!!!
-preboot_biosdisk    db  0 ; use V86 to access disks through BIOS (1-yes, 2-no)
+
+; use V86 to access disks through BIOS (1-yes, 2-no)
+if defined pretest_build
+  preboot_biosdisk  db  1
+else
+  preboot_biosdisk  db  0
+end if
+
 preboot_syspath     db  '/RD/1',0 ; path to /sys dir
                     rb  20-($-preboot_syspath)
 if defined extended_primary_loader

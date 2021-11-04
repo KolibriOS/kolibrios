@@ -11,7 +11,11 @@ include 'encoding.inc'
 include 'const.inc'
 
 os_code = code_l - tmp_gdt
-PREBOOT_TIMEOUT = 5   ; seconds
+if defined pretest_build
+  PREBOOT_TIMEOUT = 0 ; seconds
+else
+  PREBOOT_TIMEOUT = 5
+end if
 
 use16
                   org   0x0
