@@ -67,6 +67,9 @@ class Qemu:
         for key in keys.split():
             self.send_monitor_command(f"sendkey {key}")
 
+    def take_screenshot(self, fname):
+        self.send_monitor_command(f"screendump {fname}")
+
     def send_monitor_command(self, command):
         self.monitor_in.write(bytes(command + "\n", "utf-8"))
         self.monitor_in.flush()
