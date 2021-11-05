@@ -1,6 +1,11 @@
 //Copyright 2007-2021 by Veliant & Leency
 //Asper, lev, Lrz, Barsuk, Nable, hidnplayr...
 
+//BUGS
+//if maximize a window on image load => crash
+//issues with a long line
+//add proxy settings
+
 //===================================================//
 //                                                   //
 //                       LIB                         //
@@ -138,7 +143,7 @@ void main()
 
 			if (WB1.list.count > WB1.list.visible) {
 				scrollbar_v_mouse (#scroll_wv);
-				if (scroll_wv.delta2) {
+				if (WB1.list.first != scroll_wv.position) {
 					WB1.list.first = scroll_wv.position;
 					WB1.DrawPage();
 					break;
