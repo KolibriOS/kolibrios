@@ -74,6 +74,11 @@ class Qemu:
         self.monitor_in.write(bytes(command + "\n", "utf-8"))
         self.monitor_in.flush()
 
+    def images_diff(self, i0, i1, expect=True):
+        diff = bool(os.system(f"perceptualdiff {i0} {i1} > /dev/null"))
+        if diff != expect:
+            self.failure()
+
 def run():
     if os.path.exists("debug.log"):
         os.remove("debug.log")
