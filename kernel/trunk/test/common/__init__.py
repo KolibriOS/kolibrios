@@ -63,6 +63,6 @@ class Qemu:
 def run():
     s = f"qemu-system-i386 -nographic -L . -m 128 -drive format=raw,file=../../kolibri_test.img,index=0,if=floppy -boot a -vga vmware -net nic,model=rtl8139 -net user -soundhw ac97 -debugcon file:debug.log"
     a = shlex.split(s)
-    popen = subprocess.Popen(a, bufsize = 0, stdout = subprocess.DEVNULL, stderr = subprocess.DEVNULL, start_new_session = True)
+    popen = subprocess.Popen(a, bufsize = 0, stdout = subprocess.DEVNULL, stderr = subprocess.DEVNULL, stdin = subprocess.DEVNULL, start_new_session = True)
     return Qemu(popen)
 
