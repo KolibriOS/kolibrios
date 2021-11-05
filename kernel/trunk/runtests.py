@@ -31,12 +31,13 @@ def stage(name, command, mute = False):
     execute(command, mute = mute)
     print("Done.")
 
+# Get IMG
 if not os.path.exists("kolibri_test.img"):
     if len(sys.argv) == 1:
         execute("wget -q --show-progress http://builds.kolibrios.org/eng/data/data/kolibri.img -O kolibri_test.img")
     else:
-        builds = sys.argv[1]
-        execute(f"cp {builds}/data/data/kolibri.img kolibri_test.img")
+        builds_eng = sys.argv[1]
+        execute(f"cp {builds_eng}/data/data/kolibri.img kolibri_test.img")
 
 # Remove old kernel (may fail if we removed it before so no check here)
 os.system("mdel -i kolibri_test.img ::kernel.mnt > /dev/null")
@@ -50,12 +51,13 @@ if floppy_image_clusters - free_clusters < 500:
     execute("mdeltree -i kolibri_test.img ::DEMOS", mute = True)
     execute("mdeltree -i kolibri_test.img ::3D", mute = True)
 
-# Build kernel with debug output
-stage("Building bootbios.bin.pretest",
-      "fasm -m 65536 -dpretest_build=1 bootbios.asm bootbios.bin.pretest", mute = True)
-
-stage("Building kernel.mnt.pretest",
-      "fasm -m 65536 -dpretest_build=1 -ddebug_com_base=0xe9 kernel.asm kernel.mnt.pretest", mute = True)
+# Get test kernel
+if not os.path.exists("kernel.mnt.pretest"):
+    if len(sys.argv) == 1:
+        execute("wget -q --show-progress http://builds.kolibrios.org/eng/data/kernel/trunk/kernel.mnt.pretest -O kernel.mnt.pretest")
+    else:
+        builds_eng = sys.argv[1]
+        execute("cp {builds_eng}/data/kernel/trunk/kernel.mnt.pretest kernel.mnt.pretest", mute = True)
 
 # Put the kernel into IMG
 execute("mcopy -D o -i kolibri_test.img kernel.mnt.pretest ::kernel.mnt", mute = True)
