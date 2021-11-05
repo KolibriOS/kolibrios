@@ -44,59 +44,52 @@ E820_NVS       = 4
 E820_UNUSABLE  = 5
 E820_PMEM      = 7
 
-load_file:
-virtual at rsp+8
-  .root   dq ?
-  .name   dq ?
-  .buffer dq ?
-  .size   dq ?
-  .fatal  dq ?
-end virtual
-        mov     r10, [.root]
-        mov     r11, [.name]
+proc load_file _root, _name, _buffer, _size, _fatal
+locals
+        .status dq ?
+endl
+        mov     [_root], rcx
+        mov     [_name], rdx
+        mov     [_buffer], r8
+        mov     [_size], r9
+        mov     r10, [_root]
+        mov     r11, [_name]
         fstcall [r10+EFI_FILE_PROTOCOL.Open], r10, file_handle, \
                 r11, EFI_FILE_MODE_READ, 0
         test    eax, eax
         jz      @f
         xor     eax, eax
-        cmp     [.fatal], 1
+        cmp     [_fatal], 1
         jnz     .done
-        mov     rbx, [efi_table]
-        mov     rbx, [rbx+EFI_SYSTEM_TABLE.ConOut]
-        fstcall [rbx+EFI_SIMPLE_TEXT_OUTPUT_PROTOCOL.OutputString], rbx, \
+        mov     rcx, [rbx+EFI_SYSTEM_TABLE.ConOut]
+        fstcall [rcx+EFI_SIMPLE_TEXT_OUTPUT_PROTOCOL.OutputString], rcx, \
                 msg_error_open_file
-        mov     rbx, [efi_table]
-        mov     rbx, [rbx+EFI_SYSTEM_TABLE.ConOut]
-        mov     r10, [.name]
-        fstcall [rbx+EFI_SIMPLE_TEXT_OUTPUT_PROTOCOL.OutputString], rbx, r10
+        mov     rcx, [rbx+EFI_SYSTEM_TABLE.ConOut]
+        mov     rdx, [_name]
+        fstcall [rcx+EFI_SIMPLE_TEXT_OUTPUT_PROTOCOL.OutputString], rcx, [_name]
         jmp     $
 @@:
 
-        lea     rdx, [.size]
-        mov     r8, [.buffer]
+        lea     rdx, [_size]
+        mov     r8, [_buffer]
         mov     r10, [file_handle]
         fstcall [r10+EFI_FILE_PROTOCOL.Read], [file_handle], rdx, r8
         mov     r10, [file_handle]
         fstcall [r10+EFI_FILE_PROTOCOL.Close], [file_handle]
-        mov     rax, [.size]
+        mov     rax, [_size]
 .done:
-        push    rax
+        mov     [.status], rax
         call    clearbuf
         mov     rdi, msg
         call    num2dec
-        push    rbx
-        mov     rbx, [efi_table]
-        mov     rbx, [rbx+EFI_SYSTEM_TABLE.ConOut]
-        fstcall [rbx+EFI_SIMPLE_TEXT_OUTPUT_PROTOCOL.OutputString], rbx, \
+        mov     rcx, [rbx+EFI_SYSTEM_TABLE.ConOut]
+        fstcall [rcx+EFI_SIMPLE_TEXT_OUTPUT_PROTOCOL.OutputString], rcx, \
                 msg_file_size
-        pop     rbx
-        push    rbx
-        mov     rbx, [efi_table]
-        mov     rbx, [rbx+EFI_SYSTEM_TABLE.ConOut]
-        fstcall [rbx+EFI_SIMPLE_TEXT_OUTPUT_PROTOCOL.OutputString], rbx, msg
-        pop     rbx
-        pop     rax
-        ret     8*5
+        mov     rcx, [rbx+EFI_SYSTEM_TABLE.ConOut]
+        fstcall [rcx+EFI_SIMPLE_TEXT_OUTPUT_PROTOCOL.OutputString], rcx, msg
+        mov     rax, [.status]
+        ret
+endp
 
 skip_whitespace:
 .next_char:
@@ -279,53 +272,39 @@ cfg_opt_func_syspath:
         mov     byte[rdi], 0
         ret
 
-parse_config:
-virtual at rsp+8
-  .buffer      dq ?
-end virtual
-;        mov     rsi, [.buffer]
-        push    rbx
-        mov     rbx, [efi_table]
-        mov     rbx, [rbx+EFI_SYSTEM_TABLE.ConOut]
-        fstcall [rbx+EFI_SIMPLE_TEXT_OUTPUT_PROTOCOL.OutputString], rbx, \
+proc parse_config uses rbx rsi rdi, _buffer
+        mov     rsi, rcx
+        mov     rcx, [rbx+EFI_SYSTEM_TABLE.ConOut]
+        fstcall [rcx+EFI_SIMPLE_TEXT_OUTPUT_PROTOCOL.OutputString], rcx, \
                 msg_parsing_config
-        pop     rbx
-        mov     rsi, KERNEL_BASE
 .next_line:
         call    parse_line
         cmp     byte[rsi], 0
         jnz     .next_line
-        ret     1*8
+        ret
+endp
 
-read_options_from_config:
-        mov     rbx, [efi_table]
-        mov     rbx, [rbx+EFI_SYSTEM_TABLE.BootServices]
-        fstcall [rbx+EFI_BOOT_SERVICES.HandleProtocol], [efi_handle], lip_guid, \
-                lip_interface
+proc read_options_from_config
+        mov     r10, [rbx+EFI_SYSTEM_TABLE.BootServices]
+        fstcall [r10+EFI_BOOT_SERVICES.HandleProtocol], [efi_handle], \
+                lip_guid, lip_interface
         test    eax, eax
         jz      @f
-        push    rbx
-        mov     rbx, [efi_table]
-        mov     rbx, [rbx+EFI_SYSTEM_TABLE.ConOut]
-        fstcall [rbx+EFI_SIMPLE_TEXT_OUTPUT_PROTOCOL.OutputString], rbx, \
+        mov     rcx, [rbx+EFI_SYSTEM_TABLE.ConOut]
+        fstcall [rcx+EFI_SIMPLE_TEXT_OUTPUT_PROTOCOL.OutputString], rcx, \
                 msg_error_efi_lip_handle
-        pop     rbx
         jmp     $
 @@:
-        mov     r10, [lip_interface]
-        mov     rbx, [efi_table]
-        mov     rbx, [rbx+EFI_SYSTEM_TABLE.BootServices]
-        fstcall [rbx+EFI_BOOT_SERVICES.HandleProtocol], \
-                [r10+EFI_LOADED_IMAGE_PROTOCOL.DeviceHandle], sfsp_guid, \
+        mov     r11, [lip_interface]
+        mov     r10, [rbx+EFI_SYSTEM_TABLE.BootServices]
+        fstcall [r10+EFI_BOOT_SERVICES.HandleProtocol], \
+                [r11+EFI_LOADED_IMAGE_PROTOCOL.DeviceHandle], sfsp_guid, \
                 sfsp_interface
         test    eax, eax
         jz      @f
-        push    rbx
-        mov     rbx, [efi_table]
-        mov     rbx, [rbx+EFI_SYSTEM_TABLE.ConOut]
-        fstcall [rbx+EFI_SIMPLE_TEXT_OUTPUT_PROTOCOL.OutputString], rbx, \
+        mov     rcx, [rbx+EFI_SYSTEM_TABLE.ConOut]
+        fstcall [rcx+EFI_SIMPLE_TEXT_OUTPUT_PROTOCOL.OutputString], rcx, \
                 msg_error_lip_dev_sfsp
-        pop     rbx
         jmp     $
 @@:
         mov     r10, [sfsp_interface]
@@ -333,57 +312,46 @@ read_options_from_config:
                 [sfsp_interface], esp_root
         test    eax, eax
         jz      @f
-        push    rbx
-        mov     rbx, [efi_table]
-        mov     rbx, [rbx+EFI_SYSTEM_TABLE.ConOut]
-        fstcall [rbx+EFI_SIMPLE_TEXT_OUTPUT_PROTOCOL.OutputString], rbx, \
+        mov     rcx, [rbx+EFI_SYSTEM_TABLE.ConOut]
+        fstcall [rcx+EFI_SIMPLE_TEXT_OUTPUT_PROTOCOL.OutputString], rcx, \
                 msg_error_sfsp_openvolume
-        pop     rbx
         jmp     $
 @@:
-        push    0 ; not fatal, i.e. it's ok to not find this file
-        push    FILE_BUFFER_SIZE
-        push    KERNEL_BASE
-;        push    file_name
-        mov     rax, file_name
-        push    rax
-        push    [esp_root]
-        call    load_file
+        fstcall load_file, [esp_root], file_name, KERNEL_BASE, \
+                FILE_BUFFER_SIZE, 0     ; not fatal
 
         test    eax, eax
         jz      @f
-        push    KERNEL_BASE
-        call    parse_config
+        fstcall parse_config, KERNEL_BASE
 @@:
 
 .error:
         ret
+endp
 
-print_vmode:
-        push    rax rbx rcx rdx rsi rdi
-        mov     rbx, rcx
+proc print_vmode uses rax rbx rcx rdx rsi rdi
+        mov     r10, rcx
         call    clearbuf
-        mov     eax, [rbx+EFI_GRAPHICS_OUTPUT_MODE_INFORMATION.HorizontalResolution]
+        mov     eax, [r10+EFI_GRAPHICS_OUTPUT_MODE_INFORMATION.HorizontalResolution]
         mov     rdi, msg
         call    num2dec
-        mov     eax, [rbx+EFI_GRAPHICS_OUTPUT_MODE_INFORMATION.VerticalResolution]
+        mov     eax, [r10+EFI_GRAPHICS_OUTPUT_MODE_INFORMATION.VerticalResolution]
         mov     rdi, msg+8*2
         call    num2dec
 
-        mov     eax, [rbx+EFI_GRAPHICS_OUTPUT_MODE_INFORMATION.PixelFormat]
+        mov     eax, [r10+EFI_GRAPHICS_OUTPUT_MODE_INFORMATION.PixelFormat]
         mov     rdi, msg+16*2
         call    num2dec
 
-        mov     eax, [rbx+EFI_GRAPHICS_OUTPUT_MODE_INFORMATION.PixelsPerScanLine]
+        mov     eax, [r10+EFI_GRAPHICS_OUTPUT_MODE_INFORMATION.PixelsPerScanLine]
         mov     rdi, msg+24*2
         call    num2dec
-        mov     rbx, [efi_table]
-        mov     rbx, [rbx+EFI_SYSTEM_TABLE.ConOut]
-        fstcall [rbx+EFI_SIMPLE_TEXT_OUTPUT_PROTOCOL.OutputString], rbx, msg
-        pop     rdi rsi rdx rcx rbx rax
+        mov     rcx, [rbx+EFI_SYSTEM_TABLE.ConOut]
+        fstcall [rcx+EFI_SIMPLE_TEXT_OUTPUT_PROTOCOL.OutputString], rcx, msg
         ret
+endp
 
-find_vmode_index_by_resolution:
+proc find_vmode_index_by_resolution
         mov     [cfg_opt_used_resolution], 1
         mov     [cfg_opt_value_vmode], 0
 .next_mode:
@@ -394,7 +362,7 @@ find_vmode_index_by_resolution:
         cmp     rax, EFI_SUCCESS
         jnz     .error
         mov     rcx, [gop_info]
-        call    print_vmode
+        fstcall print_vmode
         ; PixelBlueGreenRedReserved8BitPerColor
         cmp     [rcx+EFI_GRAPHICS_OUTPUT_MODE_INFORMATION.PixelFormat], 1
         jnz     .skip_mode
@@ -416,97 +384,22 @@ find_vmode_index_by_resolution:
         mov     [cfg_opt_used_resolution], 0
         mov     [cfg_opt_value_ask_params], 1
 
-        mov     rbx, [efi_table]
-        mov     rbx, [rbx+EFI_SYSTEM_TABLE.ConOut]
-        fstcall [rbx+EFI_SIMPLE_TEXT_OUTPUT_PROTOCOL.OutputString], rbx, \
+        mov     rcx, [rbx+EFI_SYSTEM_TABLE.ConOut]
+        fstcall [rcx+EFI_SIMPLE_TEXT_OUTPUT_PROTOCOL.OutputString], rcx, \
                 msg_error_no_such_vmode
-        mov     rbx, [efi_table]
-        mov     rbx, [rbx+EFI_SYSTEM_TABLE.ConOut]
-        fstcall [rbx+EFI_SIMPLE_TEXT_OUTPUT_PROTOCOL.OutputString], rbx, \
+        mov     rcx, [rbx+EFI_SYSTEM_TABLE.ConOut]
+        fstcall [rcx+EFI_SIMPLE_TEXT_OUTPUT_PROTOCOL.OutputString], rcx, \
                 msg_error
         jmp     $
 .error:
 .done:
         ret
+endp
 
 ask_for_params:
-        ret
+        jmp     $
 
-        xor     ebx, ebx
-.next_mode:
-        call    clearbuf
-        mov     eax, ebx
-        lea     rdi, [msg]
-        call    num2dec
-
-        push    rbx
-        mov     r10, [gop_interface]
-        fstcall [r10+EFI_GRAPHICS_OUTPUT_PROTOCOL.QueryMode], [gop_interface], \
-                rbx, gop_info_size, gop_info
-        cmp     rax, EFI_SUCCESS
-        jnz     .error
-        mov     rcx, [gop_info]
-        ; PixelBlueGreenRedReserved8BitPerColor
-        cmp     [rcx+EFI_GRAPHICS_OUTPUT_MODE_INFORMATION.PixelFormat], 1
-        jnz     .skip
-        mov     eax, [rcx+EFI_GRAPHICS_OUTPUT_MODE_INFORMATION.HorizontalResolution]
-        lea     rdi, [msg+4*2]
-        call    num2dec
-        mov     eax, [rcx+EFI_GRAPHICS_OUTPUT_MODE_INFORMATION.VerticalResolution]
-        lea     rdi, [msg+9*2]
-        call    num2dec
-;        mov     eax, [rcx+EFI_GRAPHICS_OUTPUT_MODE_INFORMATION.PixelsPerScanLine]
-;        lea     rdi, [msg+14*2]
-;        call    num2dec
-.skip:
-        mov     rbx, [efi_table]
-        mov     rbx, [rbx+EFI_SYSTEM_TABLE.ConOut]
-        fstcall [rbx+EFI_SIMPLE_TEXT_OUTPUT_PROTOCOL.OutputString], rbx, msg
-        cmp     rax, EFI_SUCCESS
-        jnz     .error
-
-        pop     rbx
-        inc     rbx
-        mov     rcx, [gop_interface]
-        mov     rdx, [rcx+EFI_GRAPHICS_OUTPUT_PROTOCOL.Mode]
-        cmp     ebx, [rdx+EFI_GRAPHICS_OUTPUT_PROTOCOL_MODE.MaxMode]
-        jnz     .next_mode
-
-
-        mov     rbx, [efi_table]
-        mov     rbx, [rbx+EFI_SYSTEM_TABLE.ConIn]
-        fstcall [rbx+SIMPLE_INPUT_INTERFACE.Reset], rbx, 1
-        cmp     rax, EFI_SUCCESS
-        jnz     .error
-        xor     ecx, ecx
-    @@:
-        push    rcx
-        mov     rbx, [efi_table]
-        mov     rbx, [rbx+EFI_SYSTEM_TABLE.ConIn]
-        fstcall [rbx+SIMPLE_INPUT_INTERFACE.ReadKeyStroke], rbx, msg
-        pop     rcx
-        mov     rdx, EFI_DEVICE_ERROR
-        cmp     rax, rdx
-        jz      .error
-        mov     rdx, EFI_NOT_READY
-        cmp     rax, rdx
-        jz      @b
-;        cmp     rax, EFI_SUCCESS
-        movzx   eax, word[msg+2]
-;jmp .key_done
-        cmp     al, 0x0D
-        jz      .key_done
-        imul    ecx, 10
-        sub     eax, '0'
-        add     ecx, eax
-        jmp     @b
-.key_done:
-        mov     [cfg_opt_value_vmode], cl
-.error:
-.done:
-        ret
-
-detect_pci_config:
+proc detect_pci_config
         fstcall get_protocol_interface, pcirbiop_guid
         mov     [pcirbiop_interface], rax
         mov     r10, rax
@@ -518,18 +411,13 @@ detect_pci_config:
         movzx   eax, [pci_last_bus]
         mov     rdi, msg
         call    num2hex
-        push    rbx
-        mov     rbx, [efi_table]
-        mov     rbx, [rbx+EFI_SYSTEM_TABLE.ConOut]
-        fstcall [rbx+EFI_SIMPLE_TEXT_OUTPUT_PROTOCOL.OutputString], rbx, \
+        mov     rcx, [rbx+EFI_SYSTEM_TABLE.ConOut]
+        fstcall [rcx+EFI_SIMPLE_TEXT_OUTPUT_PROTOCOL.OutputString], rcx, \
                 msg_pci_last_bus
-        pop     rbx
-        push    rbx
-        mov     rbx, [efi_table]
-        mov     rbx, [rbx+EFI_SYSTEM_TABLE.ConOut]
-        fstcall [rbx+EFI_SIMPLE_TEXT_OUTPUT_PROTOCOL.OutputString], rbx, msg
-        pop     rbx
+        mov     rcx, [rbx+EFI_SYSTEM_TABLE.ConOut]
+        fstcall [rcx+EFI_SIMPLE_TEXT_OUTPUT_PROTOCOL.OutputString], rcx, msg
         ret
+endp
 
 proc get_last_pci_bus
         mov     rsi, [pcirbiop_resources]
@@ -553,109 +441,77 @@ endp
 proc main _efi_handle, _efi_table
         mov     [efi_handle], rcx
         mov     [efi_table], rdx
+        mov     rbx, rdx
 
-        mov     rbx, [efi_table]
-        mov     rbx, [rbx+EFI_SYSTEM_TABLE.ConOut]
-        fstcall [rbx+EFI_SIMPLE_TEXT_OUTPUT_PROTOCOL.Reset], rbx, 1
+        mov     rcx, [rbx+EFI_SYSTEM_TABLE.ConOut]
+        fstcall [rcx+EFI_SIMPLE_TEXT_OUTPUT_PROTOCOL.Reset], rcx, 1
         test    eax, eax
-        jz      @f
-        jmp     $       ; what can I do here?
-@@:
-        mov     rbx, [efi_table]
-        mov     rbx, [rbx+EFI_SYSTEM_TABLE.ConOut]
-        fstcall [rbx+EFI_SIMPLE_TEXT_OUTPUT_PROTOCOL.OutputString], rbx, \
+        jnz     $       ; what can I do here?
+        mov     rcx, [rbx+EFI_SYSTEM_TABLE.ConOut]
+        fstcall [rcx+EFI_SIMPLE_TEXT_OUTPUT_PROTOCOL.OutputString], rcx, \
                 msg_u4k_loaded
 
-        mov     rbx, [efi_table]
-        mov     rbx, [rbx+EFI_SYSTEM_TABLE.ConOut]
-        fstcall [rbx+EFI_SIMPLE_TEXT_OUTPUT_PROTOCOL.OutputString], rbx, \
+        mov     rcx, [rbx+EFI_SYSTEM_TABLE.ConOut]
+        fstcall [rcx+EFI_SIMPLE_TEXT_OUTPUT_PROTOCOL.OutputString], rcx, \
                 msg_detect_pci_config
+        fstcall detect_pci_config
 
-        call    detect_pci_config
-
-        mov     rbx, [efi_table]
-        mov     rbx, [rbx+EFI_SYSTEM_TABLE.ConOut]
-        fstcall [rbx+EFI_SIMPLE_TEXT_OUTPUT_PROTOCOL.OutputString], rbx, \
+        mov     rcx, [rbx+EFI_SYSTEM_TABLE.ConOut]
+        fstcall [rcx+EFI_SIMPLE_TEXT_OUTPUT_PROTOCOL.OutputString], rcx, \
                 msg_read_options
-        call    read_options_from_config
+        fstcall read_options_from_config
 
         ; read kernel file
-        mov     rbx, [efi_table]
-        mov     rbx, [rbx+EFI_SYSTEM_TABLE.ConOut]
-        fstcall [rbx+EFI_SIMPLE_TEXT_OUTPUT_PROTOCOL.OutputString], rbx, \
+        mov     rcx, [rbx+EFI_SYSTEM_TABLE.ConOut]
+        fstcall [rcx+EFI_SIMPLE_TEXT_OUTPUT_PROTOCOL.OutputString], rcx, \
                 msg_load_kernel
-        push    1       ; fatal
-        push    MAX_FILE_SIZE
-        push    KERNEL_BASE
-;        push    kernel_name
-        mov     rax, kernel_name
-        push    rax
-        push    [esp_root]
-        call    load_file
+        fstcall load_file, [esp_root], kernel_name, KERNEL_BASE, \
+                MAX_FILE_SIZE, 1 ; fatal
 
         ; read ramdisk image
-        mov     rbx, [efi_table]
-        mov     rbx, [rbx+EFI_SYSTEM_TABLE.ConOut]
-        fstcall [rbx+EFI_SIMPLE_TEXT_OUTPUT_PROTOCOL.OutputString], rbx, \
+        mov     rcx, [rbx+EFI_SYSTEM_TABLE.ConOut]
+        fstcall [rcx+EFI_SIMPLE_TEXT_OUTPUT_PROTOCOL.OutputString], rcx, \
                 msg_load_ramdisk
-        push    1       ; fatal
-        push    MAX_FILE_SIZE
-        push    RAMDISK_BASE
-;        push    ramdisk_name
-        mov     rax, ramdisk_name
-        push    rax
-        push    [esp_root]
-        call    load_file
+        fstcall load_file, [esp_root], ramdisk_name, RAMDISK_BASE, \
+                MAX_FILE_SIZE, 1 ; fatal
 
         ; alloc buffer for devices.dat
-        mov     rbx, [efi_table]
-        mov     rbx, [rbx+EFI_SYSTEM_TABLE.ConOut]
-        fstcall [rbx+EFI_SIMPLE_TEXT_OUTPUT_PROTOCOL.OutputString], rbx, \
+        mov     rcx, [rbx+EFI_SYSTEM_TABLE.ConOut]
+        fstcall [rcx+EFI_SIMPLE_TEXT_OUTPUT_PROTOCOL.OutputString], rcx, \
                 msg_alloc_devicesdat
-        mov     rbx, [efi_table]
-        mov     rbx, [rbx+EFI_SYSTEM_TABLE.BootServices]
-        fstcall [rbx+EFI_BOOT_SERVICES.AllocatePages], \
+        mov     r10, [rbx+EFI_SYSTEM_TABLE.BootServices]
+        fstcall [r10+EFI_BOOT_SERVICES.AllocatePages], \
                 EFI_ALLOCATE_MAX_ADDRESS, EFI_RESERVED_MEMORY_TYPE, 1, \
                 devicesdat_data
         cmp     eax, EFI_SUCCESS
         jnz     .error
 
         ; read devices.dat
-        mov     rbx, [efi_table]
-        mov     rbx, [rbx+EFI_SYSTEM_TABLE.ConOut]
-        fstcall [rbx+EFI_SIMPLE_TEXT_OUTPUT_PROTOCOL.OutputString], rbx, \
+        mov     rcx, [rbx+EFI_SYSTEM_TABLE.ConOut]
+        fstcall [rcx+EFI_SIMPLE_TEXT_OUTPUT_PROTOCOL.OutputString], rcx, \
                 msg_load_devicesdat
 
-        push    0 ; not fatal
-        push    [devicesdat_size]
-        push    [devicesdat_data]
-;        push    devicesdat_name
-        mov     rax, devicesdat_name
-        push    rax
-        push    [esp_root]
-        call    load_file
+        fstcall load_file, [esp_root], devicesdat_name, [devicesdat_data], \
+                [devicesdat_size], 0    ; not fatal
         mov     [devicesdat_size], rax
 
-        mov     rbx, [efi_table]
-        mov     rbx, [rbx+EFI_SYSTEM_TABLE.ConOut]
-        fstcall [rbx+EFI_SIMPLE_TEXT_OUTPUT_PROTOCOL.OutputString], rbx, \
+        mov     rcx, [rbx+EFI_SYSTEM_TABLE.ConOut]
+        fstcall [rcx+EFI_SIMPLE_TEXT_OUTPUT_PROTOCOL.OutputString], rcx, \
                 msg_locate_gop_interface
 
         fstcall get_protocol_interface, gop_guid
         mov     [gop_interface], rax
 
-        call    find_rsdp
+        fstcall find_rsdp
 
-        mov     rbx, [efi_table]
-        mov     rbx, [rbx+EFI_SYSTEM_TABLE.ConOut]
-        fstcall [rbx+EFI_SIMPLE_TEXT_OUTPUT_PROTOCOL.OutputString], rbx, \
+        mov     rcx, [rbx+EFI_SYSTEM_TABLE.ConOut]
+        fstcall [rcx+EFI_SIMPLE_TEXT_OUTPUT_PROTOCOL.OutputString], rcx, \
                 msg_acpi_tables_done
 
         cmp     [cfg_opt_used_resolution], 0
         jz      .not_used_resolution
-        mov     rbx, [efi_table]
-        mov     rbx, [rbx+EFI_SYSTEM_TABLE.ConOut]
-        fstcall [rbx+EFI_SIMPLE_TEXT_OUTPUT_PROTOCOL.OutputString], rbx, \
+        mov     rcx, [rbx+EFI_SYSTEM_TABLE.ConOut]
+        fstcall [rcx+EFI_SIMPLE_TEXT_OUTPUT_PROTOCOL.OutputString], rcx, \
                 msg_opt_resolution
         call    clearbuf
         xor     edx, edx
@@ -666,10 +522,9 @@ proc main _efi_handle, _efi_table
         movzx   eax, [rdx+BOOT_LO.y_res]
         mov     rdi, msg+8*2
         call    num2dec
-        mov     rbx, [efi_table]
-        mov     rbx, [rbx+EFI_SYSTEM_TABLE.ConOut]
-        fstcall [rbx+EFI_SIMPLE_TEXT_OUTPUT_PROTOCOL.OutputString], rbx, msg
-        call    find_vmode_index_by_resolution
+        mov     rcx, [rbx+EFI_SYSTEM_TABLE.ConOut]
+        fstcall [rcx+EFI_SIMPLE_TEXT_OUTPUT_PROTOCOL.OutputString], rcx, msg
+        fstcall find_vmode_index_by_resolution
 .not_used_resolution:
         cmp     [cfg_opt_used_debug_print], 0
         jz      .not_used_debug_print
@@ -691,12 +546,10 @@ proc main _efi_handle, _efi_table
         call    clearbuf
         mov     rdi, msg
         call    num2hex
-        mov     rbx, [efi_table]
-        mov     rbx, [rbx+EFI_SYSTEM_TABLE.ConOut]
-        fstcall [rbx+EFI_SIMPLE_TEXT_OUTPUT_PROTOCOL.OutputString], rbx, msg
-        mov     rbx, [efi_table]
-        mov     rbx, [rbx+EFI_SYSTEM_TABLE.ConOut]
-        fstcall [rbx+EFI_SIMPLE_TEXT_OUTPUT_PROTOCOL.OutputString], rbx, \
+        mov     rcx, [rbx+EFI_SYSTEM_TABLE.ConOut]
+        fstcall [rcx+EFI_SIMPLE_TEXT_OUTPUT_PROTOCOL.OutputString], rcx, msg
+        mov     rcx, [rbx+EFI_SYSTEM_TABLE.ConOut]
+        fstcall [rcx+EFI_SIMPLE_TEXT_OUTPUT_PROTOCOL.OutputString], rcx, \
                 msg_error
         jmp     $
 @@:
@@ -706,10 +559,10 @@ proc main _efi_handle, _efi_table
         mov     rdi, [rdx+EFI_GRAPHICS_OUTPUT_PROTOCOL_MODE.FrameBufferBase]
         mov     [fb_base], rdi
 
-        mov     ebx, [rdx+EFI_GRAPHICS_OUTPUT_PROTOCOL_MODE.Mode]
-        mov     rax, [gop_interface]
-        fstcall [rax+EFI_GRAPHICS_OUTPUT_PROTOCOL.QueryMode], [gop_interface], \
-                rbx, gop_info_size, gop_info
+        mov     edx, [rdx+EFI_GRAPHICS_OUTPUT_PROTOCOL_MODE.Mode]
+        mov     r10, [gop_interface]
+        fstcall [r10+EFI_GRAPHICS_OUTPUT_PROTOCOL.QueryMode], [gop_interface], \
+                rdx, gop_info_size, gop_info
         test    eax, eax
         jz      @f
         jmp     .error
@@ -738,46 +591,44 @@ proc main _efi_handle, _efi_table
 ;        fstcall BootServices, AllocatePages, EFI_RESERVED_MEMORY_TYPE, \
 ;                2880*512/0x1000, EFI_ALLOCATE_ADDRESS
 
-        call    calc_memmap
+        fstcall calc_memmap
 ;        fstcall dump_memmap
 
-        mov     rbx, [efi_table]
-        mov     rbx, [rbx+EFI_SYSTEM_TABLE.BootServices]
-        fstcall [rbx+EFI_BOOT_SERVICES.ExitBootServices], [efi_handle], \
+        mov     r10, [rbx+EFI_SYSTEM_TABLE.BootServices]
+        fstcall [r10+EFI_BOOT_SERVICES.ExitBootServices], [efi_handle], \
                 [memory_map_key]
-        call    halt_on_error
+        fstcall halt_on_error
 
         cli
 
         xor     edx, edx
         xor     esi, esi
-        mov     [esi+BOOT_LO.bpp], 32
-        mov     [esi+BOOT_LO.vesa_mode], dx
-        mov     [esi+BOOT_LO.bank_switch], edx
+        mov     [rsi+BOOT_LO.bpp], 32
+        mov     [rsi+BOOT_LO.vesa_mode], dx
+        mov     [rsi+BOOT_LO.bank_switch], edx
         mov     rdi, [fb_base]
-        mov     [esi+BOOT_LO.lfb], edi
+        mov     [rsi+BOOT_LO.lfb], edi
 
         movzx   eax, [cfg_opt_value_mtrr]
-        mov     [esi+BOOT_LO.mtrr], al
+        mov     [rsi+BOOT_LO.mtrr], al
 
         movzx   eax, [cfg_opt_value_launcher_start]
-        mov     [esi+BOOT_LO.launcher_start], al
+        mov     [rsi+BOOT_LO.launcher_start], al
 
         movzx   eax, [cfg_opt_value_debug_print]
-        mov     [esi+BOOT_LO.debug_print], al
+        mov     [rsi+BOOT_LO.debug_print], al
 
-        mov     [esi+BOOT_LO.dma], dl
-;        mov     qword[esi+BOOT_LO.pci_data], 0
-        mov     [esi+BOOT_LO.apm_entry], edx
-        mov     [esi+BOOT_LO.apm_version], dx
-        mov     [esi+BOOT_LO.apm_flags], dx
-        mov     [esi+BOOT_LO.apm_code_32], dx
-        mov     [esi+BOOT_LO.apm_code_16], dx
-        mov     [esi+BOOT_LO.apm_data_16], dx
-        mov     [esi+BOOT_LO.bios_hd_cnt], dl
+        mov     [rsi+BOOT_LO.dma], dl
+        mov     [rsi+BOOT_LO.apm_entry], edx
+        mov     [rsi+BOOT_LO.apm_version], dx
+        mov     [rsi+BOOT_LO.apm_flags], dx
+        mov     [rsi+BOOT_LO.apm_code_32], dx
+        mov     [rsi+BOOT_LO.apm_code_16], dx
+        mov     [rsi+BOOT_LO.apm_data_16], dx
+        mov     [rsi+BOOT_LO.bios_hd_cnt], dl
 
         movzx   eax, [cfg_opt_value_imgfrom]
-        mov     [esi+BOOT_LO.rd_load_from], al
+        mov     [rsi+BOOT_LO.rd_load_from], al
 
         mov     eax, dword[devicesdat_size]
         mov     [rdx+BOOT_LO.devicesdat_size], eax
@@ -811,121 +662,100 @@ proc main _efi_handle, _efi_table
         retf
 
 .error:
-        mov     rbx, [efi_table]
-        mov     rbx, [rbx+EFI_SYSTEM_TABLE.ConOut]
-        fstcall [rbx+EFI_SIMPLE_TEXT_OUTPUT_PROTOCOL.OutputString], rbx, \
+        mov     rcx, [rbx+EFI_SYSTEM_TABLE.ConOut]
+        fstcall [rcx+EFI_SIMPLE_TEXT_OUTPUT_PROTOCOL.OutputString], rcx, \
                 msg_error
         jmp     $
 endp
 
-halt_on_error:
+proc halt_on_error
         test    eax, eax
         jz      @f
         call    clearbuf
         mov     rdi, msg
         call    num2hex
-        mov     rbx, [efi_table]
-        mov     rbx, [rbx+EFI_SYSTEM_TABLE.ConOut]
-        fstcall [rbx+EFI_SIMPLE_TEXT_OUTPUT_PROTOCOL.OutputString], rbx, \
+        mov     rcx, [rbx+EFI_SYSTEM_TABLE.ConOut]
+        fstcall [rcx+EFI_SIMPLE_TEXT_OUTPUT_PROTOCOL.OutputString], rcx, \
                 msg_error
-        mov     rbx, [efi_table]
-        mov     rbx, [rbx+EFI_SYSTEM_TABLE.ConOut]
-        fstcall [rbx+EFI_SIMPLE_TEXT_OUTPUT_PROTOCOL.OutputString], rbx, msg
+        mov     rcx, [rbx+EFI_SYSTEM_TABLE.ConOut]
+        fstcall [rcx+EFI_SIMPLE_TEXT_OUTPUT_PROTOCOL.OutputString], rcx, msg
         jmp     $
 @@:
         ret
+endp
 
-proc get_protocol_interface uses rbx, _guid
+proc get_protocol_interface uses rsi rdi, _guid
+locals
+        .status dq ?
+endl
         mov     [_guid], rcx
         mov     [prot_handlers_buffer_size], PROTOCOL_HANDLERS_BUFFER_SIZE
-        mov     rbx, [efi_table]
-        mov     rbx, [rbx+EFI_SYSTEM_TABLE.BootServices]
-        fstcall [rbx+EFI_BOOT_SERVICES.LocateHandle], \
+        mov     r10, [rbx+EFI_SYSTEM_TABLE.BootServices]
+        fstcall [r10+EFI_BOOT_SERVICES.LocateHandle], \
                 EFI_LOCATE_SEARCH_TYPE.ByProtocol, [_guid], 0, \
                 prot_handlers_buffer_size, prot_handlers_buffer
-        mov     [status], rax
+        mov     [.status], rax
 
-        mov     rbx, [efi_table]
-        mov     rbx, [rbx+EFI_SYSTEM_TABLE.ConOut]
-        fstcall [rbx+EFI_SIMPLE_TEXT_OUTPUT_PROTOCOL.OutputString], rbx, \
+        mov     rcx, [rbx+EFI_SYSTEM_TABLE.ConOut]
+        fstcall [rcx+EFI_SIMPLE_TEXT_OUTPUT_PROTOCOL.OutputString], rcx, \
                 msg_protocol_buffer_size
         call    clearbuf
         mov     rax, [prot_handlers_buffer_size]
         mov     rdi, msg
         call    num2hex
-        mov     rbx, [efi_table]
-        mov     rbx, [rbx+EFI_SYSTEM_TABLE.ConOut]
-        fstcall [rbx+EFI_SIMPLE_TEXT_OUTPUT_PROTOCOL.OutputString], rbx, msg
+        mov     rcx, [rbx+EFI_SYSTEM_TABLE.ConOut]
+        fstcall [rcx+EFI_SIMPLE_TEXT_OUTPUT_PROTOCOL.OutputString], rcx, msg
 
-        mov     rax, [status]
+        mov     rax, [.status]
         test    eax, eax
         jz      @f
         call    clearbuf
         mov     rdi, msg
         call    num2hex
-        mov     rbx, [efi_table]
-        mov     rbx, [rbx+EFI_SYSTEM_TABLE.ConOut]
-        fstcall [rbx+EFI_SIMPLE_TEXT_OUTPUT_PROTOCOL.OutputString], rbx, \
+        mov     rcx, [rbx+EFI_SYSTEM_TABLE.ConOut]
+        fstcall [rcx+EFI_SIMPLE_TEXT_OUTPUT_PROTOCOL.OutputString], rcx, \
                 msg_error
-        mov     rbx, [efi_table]
-        mov     rbx, [rbx+EFI_SYSTEM_TABLE.ConOut]
-        fstcall [rbx+EFI_SIMPLE_TEXT_OUTPUT_PROTOCOL.OutputString], rbx, msg
+        mov     rcx, [rbx+EFI_SYSTEM_TABLE.ConOut]
+        fstcall [rcx+EFI_SIMPLE_TEXT_OUTPUT_PROTOCOL.OutputString], rcx, msg
         jmp     $
 @@:
 
-        mov     rbx, [efi_table]
-        mov     rbx, [rbx+EFI_SYSTEM_TABLE.ConOut]
-        fstcall [rbx+EFI_SIMPLE_TEXT_OUTPUT_PROTOCOL.OutputString], rbx, \
+        mov     rcx, [rbx+EFI_SYSTEM_TABLE.ConOut]
+        fstcall [rcx+EFI_SIMPLE_TEXT_OUTPUT_PROTOCOL.OutputString], rcx, \
                 msg_look_for_handler
 
-        mov     rbx, prot_handlers_buffer
+        mov     rsi, prot_handlers_buffer
 .try_next_handle:
-        mov     rax, rbx
+        mov     rax, rsi
         mov     rcx, prot_handlers_buffer
         sub     rax, rcx
         cmp     rax, [prot_handlers_buffer_size]
         jb      @f
-        push    rbx
-        mov     rbx, [efi_table]
-        mov     rbx, [rbx+EFI_SYSTEM_TABLE.ConOut]
-        fstcall [rbx+EFI_SIMPLE_TEXT_OUTPUT_PROTOCOL.OutputString], rbx, \
+        mov     rcx, [rbx+EFI_SYSTEM_TABLE.ConOut]
+        fstcall [rcx+EFI_SIMPLE_TEXT_OUTPUT_PROTOCOL.OutputString], rcx, \
                 msg_error_out_of_handlers
-        pop     rbx
-        push    rbx
-        mov     rbx, [efi_table]
-        mov     rbx, [rbx+EFI_SYSTEM_TABLE.ConOut]
-        fstcall [rbx+EFI_SIMPLE_TEXT_OUTPUT_PROTOCOL.OutputString], rbx, \
+        mov     rcx, [rbx+EFI_SYSTEM_TABLE.ConOut]
+        fstcall [rcx+EFI_SIMPLE_TEXT_OUTPUT_PROTOCOL.OutputString], rcx, \
                 msg_error
-        pop     rbx
         jmp     $
 @@:
-        push    rbx
-        mov     rbx, [efi_table]
-        mov     rbx, [rbx+EFI_SYSTEM_TABLE.ConOut]
-        fstcall [rbx+EFI_SIMPLE_TEXT_OUTPUT_PROTOCOL.OutputString], rbx, \
+        mov     rcx, [rbx+EFI_SYSTEM_TABLE.ConOut]
+        fstcall [rcx+EFI_SIMPLE_TEXT_OUTPUT_PROTOCOL.OutputString], rcx, \
                 msg_query_handler
-        pop     rbx
 
-        mov     r10, rbx
-        push    rbx
-        mov     rbx, [efi_table]
-        mov     rbx, [rbx+EFI_SYSTEM_TABLE.BootServices]
-        fstcall [rbx+EFI_BOOT_SERVICES.HandleProtocol], qword[r10], [_guid], \
+        mov     r10, [rbx+EFI_SYSTEM_TABLE.BootServices]
+        fstcall [r10+EFI_BOOT_SERVICES.HandleProtocol], qword[rsi], [_guid], \
                 prot_interface
-        pop     rbx
 ;mov rax, 0x8000_0000_0000_0003
         test    eax, eax
         jz      @f
         call    clearbuf
         mov     rdi, msg
         call    num2hex
-        push    rbx
-        mov     rbx, [efi_table]
-        mov     rbx, [rbx+EFI_SYSTEM_TABLE.ConOut]
-        fstcall [rbx+EFI_SIMPLE_TEXT_OUTPUT_PROTOCOL.OutputString], rbx, msg
-        pop     rbx
+        mov     rcx, [rbx+EFI_SYSTEM_TABLE.ConOut]
+        fstcall [rcx+EFI_SIMPLE_TEXT_OUTPUT_PROTOCOL.OutputString], rcx, msg
 
-        add     rbx, 8
+        add     rsi, 8
         jmp     .try_next_handle
 @@:
         mov     rax, [prot_interface]
@@ -933,15 +763,11 @@ proc get_protocol_interface uses rbx, _guid
 endp
 
 
-find_rsdp:
-        push    rbx
-        mov     rbx, [efi_table]
-        mov     rbx, [rbx+EFI_SYSTEM_TABLE.ConOut]
-        fstcall [rbx+EFI_SIMPLE_TEXT_OUTPUT_PROTOCOL.OutputString], rbx, \
+proc find_rsdp uses rsi rdi
+        mov     rcx, [rbx+EFI_SYSTEM_TABLE.ConOut]
+        fstcall [rcx+EFI_SIMPLE_TEXT_OUTPUT_PROTOCOL.OutputString], rcx, \
                 msg_look_for_rsdp
-        pop     rbx
 
-        mov     rbx, [efi_table]
         mov     rdi, [rbx+EFI_SYSTEM_TABLE.ConfigurationTable]
         mov     rcx, [rbx+EFI_SYSTEM_TABLE.NumberOfTableEntries]
         mov     rax, 0x11d3e4f18868e871
@@ -962,16 +788,14 @@ find_rsdp:
         jmp     .next_table
 .all_tables_done:
         ret
+endp
 
-proc dump_pci_resources
+proc dump_pci_resources uses rsi rdi
         xor     eax, eax
         mov     rsi, [pcirbiop_resources]
-        push    rbx
-        mov     rbx, [efi_table]
-        mov     rbx, [rbx+EFI_SYSTEM_TABLE.ConOut]
-        fstcall [rbx+EFI_SIMPLE_TEXT_OUTPUT_PROTOCOL.OutputString], rbx, \
+        mov     rcx, [rbx+EFI_SYSTEM_TABLE.ConOut]
+        fstcall [rcx+EFI_SIMPLE_TEXT_OUTPUT_PROTOCOL.OutputString], rcx, \
                 msg_dump_pci_resources
-        pop     rbx
 .next_resource:
         call    clearbuf
         movzx   eax, [rsi+EFI_QWORD_ADDRESS_SPACE_DESCRIPTOR.Type]
@@ -979,11 +803,8 @@ proc dump_pci_resources
         jz      .done
         mov     rdi, msg
         call    num2hex
-        push    rbx
-        mov     rbx, [efi_table]
-        mov     rbx, [rbx+EFI_SYSTEM_TABLE.ConOut]
-        fstcall [rbx+EFI_SIMPLE_TEXT_OUTPUT_PROTOCOL.OutputString], rbx, msg
-        pop     rbx
+        mov     rcx, [rbx+EFI_SYSTEM_TABLE.ConOut]
+        fstcall [rcx+EFI_SIMPLE_TEXT_OUTPUT_PROTOCOL.OutputString], rcx, msg
         call    clearbuf
         movzx   eax, [rsi+EFI_QWORD_ADDRESS_SPACE_DESCRIPTOR.ResourceType]
         mov     rdi, msg
@@ -1000,11 +821,8 @@ proc dump_pci_resources
         mov     rax, [rsi+EFI_QWORD_ADDRESS_SPACE_DESCRIPTOR.AddressLength]
         mov     rdi, msg+53*2
         call    num2hex
-        push    rbx
-        mov     rbx, [efi_table]
-        mov     rbx, [rbx+EFI_SYSTEM_TABLE.ConOut]
-        fstcall [rbx+EFI_SIMPLE_TEXT_OUTPUT_PROTOCOL.OutputString], rbx, msg
-        pop     rbx
+        mov     rcx, [rbx+EFI_SYSTEM_TABLE.ConOut]
+        fstcall [rcx+EFI_SIMPLE_TEXT_OUTPUT_PROTOCOL.OutputString], rcx, msg
         movzx   eax, [rsi+EFI_QWORD_ADDRESS_SPACE_DESCRIPTOR.Length]
         add     eax, 3
         add     rsi, rax
@@ -1013,54 +831,47 @@ proc dump_pci_resources
         ret
 endp
 
-calc_memmap:
-        mov     rbx, [efi_table]
-        mov     rbx, [rbx+EFI_SYSTEM_TABLE.BootServices]
-        fstcall [rbx+EFI_BOOT_SERVICES.AllocatePages], EFI_ALLOCATE_ANY_PAGES, \
+proc calc_memmap uses rsi rdi
+        mov     r10, [rbx+EFI_SYSTEM_TABLE.BootServices]
+        fstcall [r10+EFI_BOOT_SERVICES.AllocatePages], EFI_ALLOCATE_ANY_PAGES, \
                 EFI_RESERVED_MEMORY_TYPE, MEMORY_MAP_SIZE/0x1000, memory_map
         call    halt_on_error
 
-        mov     rbx, [efi_table]
-        mov     rbx, [rbx+EFI_SYSTEM_TABLE.BootServices]
-        fstcall [rbx+EFI_BOOT_SERVICES.GetMemoryMap], memory_map_size, \
+        mov     r10, [rbx+EFI_SYSTEM_TABLE.BootServices]
+        fstcall [r10+EFI_BOOT_SERVICES.GetMemoryMap], memory_map_size, \
                 [memory_map], memory_map_key, descriptor_size, descriptor_ver
         call    halt_on_error
 
         mov     rdi, BOOT_LO.memmap_blocks
         mov     dword[rdi-4], 0 ; memmap_block_cnt
         mov     rsi, [memory_map]
-        mov     rbx, rsi
-        add     rbx, [memory_map_size]
+        mov     r10, rsi
+        add     r10, [memory_map_size]
 .next_descr:
-        call    add_uefi_memmap
+        fstcall add_uefi_memmap
         add     rsi, [descriptor_size]
-        cmp     rsi, rbx
+        cmp     rsi, r10
         jb      .next_descr
         ret
+endp
 
-proc dump_memmap
+proc dump_memmap uses rsi rdi
         xor     eax, eax
         mov     rsi, BOOT_LO.memmap_blocks
-        mov     ebx, [rax+BOOT_LO.memmap_block_cnt]
+        mov     r12, [rax+BOOT_LO.memmap_block_cnt]
 
         call    clearbuf
         mov     eax, ebx
         mov     rdi, msg
         call    num2dec
-        push    rbx
-        mov     rbx, [efi_table]
-        mov     rbx, [rbx+EFI_SYSTEM_TABLE.ConOut]
-        fstcall [rbx+EFI_SIMPLE_TEXT_OUTPUT_PROTOCOL.OutputString], rbx, \
+        mov     rcx, [rbx+EFI_SYSTEM_TABLE.ConOut]
+        fstcall [rcx+EFI_SIMPLE_TEXT_OUTPUT_PROTOCOL.OutputString], rcx, \
                 msg_memmap
-        pop     rbx
-        push    rbx
-        mov     rbx, [efi_table]
-        mov     rbx, [rbx+EFI_SYSTEM_TABLE.ConOut]
-        fstcall [rbx+EFI_SIMPLE_TEXT_OUTPUT_PROTOCOL.OutputString], rbx, msg
-        pop     rbx
+        mov     rcx, [rbx+EFI_SYSTEM_TABLE.ConOut]
+        fstcall [rcx+EFI_SIMPLE_TEXT_OUTPUT_PROTOCOL.OutputString], rcx, msg
         call    clearbuf
 .next_mapping:
-        dec     ebx
+        dec     r12d
         js      .done
         mov     rax, rsi
         mov     rcx, BOOT_LO.memmap_blocks
@@ -1076,11 +887,8 @@ proc dump_memmap
         mov     rax, [rsi+e820entry.size]
         mov     rdi, msg+24*2
         call    num2hex
-        push    rbx
-        mov     rbx, [efi_table]
-        mov     rbx, [rbx+EFI_SYSTEM_TABLE.ConOut]
-        fstcall [rbx+EFI_SIMPLE_TEXT_OUTPUT_PROTOCOL.OutputString], rbx, msg
-        pop     rbx
+        mov     rcx, [rbx+EFI_SYSTEM_TABLE.ConOut]
+        fstcall [rcx+EFI_SIMPLE_TEXT_OUTPUT_PROTOCOL.OutputString], rcx, msg
         add     rsi, sizeof.e820entry
         jmp     .next_mapping
 .done:
@@ -1089,7 +897,7 @@ endp
 
 ; linux/arch/x86/platform/efi/efi.c
 ; do_add_efi_memmap
-add_uefi_memmap:
+proc add_uefi_memmap
         xor     eax, eax
         cmp     [rax+BOOT_LO.memmap_block_cnt], MAX_MEMMAP_BLOCKS
         jz      .done
@@ -1141,10 +949,10 @@ add_uefi_memmap:
 @@:
 .done:
         ret
-
+endp
 
 num2dec:
-        push    rax rbx rcx rdx rsi rdi
+        push    rbx rcx rdx rdi
 
         xor     ecx, ecx
         mov     ebx, 10
@@ -1162,12 +970,12 @@ num2dec:
         stosw
         loop    .next_char
 
-        pop     rdi rsi rdx rcx rbx rax
+        pop     rdi rdx rcx rbx
         ret
 
 
 num2hex:
-        push    rax rbx rcx rdx rsi rdi
+        push    rbx rcx rdx rdi
 
         xchg    rdx, rax
         mov     ecx, 16
@@ -1175,22 +983,20 @@ num2hex:
         rol     rdx, 4
         movzx   eax, dl
         and     eax, 0x0f
-        movzx   eax, byte[hex+eax]
+        movzx   eax, byte[hex_abc+eax]
         stosw
         loop    .next_tetra
 
-        pop     rdi rsi rdx rcx rbx rax
+        pop     rdi rdx rcx rbx
         ret
 
-hex db '0123456789ABCDEF'
-
 clearbuf:
-        push    rax rbx rcx rdx rsi rdi
-        mov     eax, 0x0020
+        push    rcx rdi
+        mov     eax, ' '
         mov     ecx, 79
         mov     rdi, msg
         rep stosw
-        pop     rdi rsi rdx rcx rbx rax
+        pop     rdi rcx
         ret
 
 use32
@@ -1309,16 +1115,14 @@ msg_error_out_of_handlers du "Out of handlers",13,10,0
 msg_error_open_file       du "Error: can't open file ",0
 msg_error_exit_boot_services du "Error: Exit boot services",13,10,0
 msg                       du 79 dup " ",13,10,0
+msg_debug                 du "Debug ",13,10,0
 
 section '.data' data readable writeable
 efi_handle  dq 0
 efi_table   dq 0
-;uefi_rsptmp dq 0
 
 fb_base         dq 0
 
-prot_handlers_buffer_size dq ?
-prot_interface  dq ?
 gop_interface   dq 0
 gop_info_size   dq 0
 gop_info        dq 0
@@ -1327,12 +1131,6 @@ lip_interface   dq 0
 
 sfsp_interface  dq 0
 
-esp_root        dq ?
-file_handle     dq ?
-file_buffer_size dq FILE_BUFFER_SIZE-1  ; leave the last byte for \0
-
-pcirbiop_interface dq ?
-pcirbiop_resources dq ?
 pci_last_bus db 254
 
 cfg_opt_used_resolution     db 0
@@ -1361,14 +1159,22 @@ memory_map_size dq MEMORY_MAP_SIZE
 
 efi_fs_info_id db EFI_FILE_SYSTEM_INFO_ID
 efi_fs_info_size dq sizeof.EFI_FILE_SYSTEM_INFO
-efi_fs_info EFI_FILE_SYSTEM_INFO
 
-memory_map      dq ?
-prot_handlers_buffer rq PROTOCOL_HANDLERS_BUFFER_SIZE/8
-;gop_buffer      rq PROTOCOL_HANDLERS_BUFFER_SIZE/8
-pcirbio_buffer  rq PROTOCOL_HANDLERS_BUFFER_SIZE/8
 devicesdat_data dq 0xffffffff
 devicesdat_size dq 0x1000
-status          dq ?
+
+hex_abc db '0123456789ABCDEF'
+
+section '.bss' data readable writeable discardable
+prot_handlers_buffer_size dq ?
+prot_interface  dq ?
+esp_root        dq ?
+file_handle     dq ?
+pcirbiop_interface dq ?
+pcirbiop_resources dq ?
+efi_fs_info EFI_FILE_SYSTEM_INFO
+memory_map      dq ?
+prot_handlers_buffer rq PROTOCOL_HANDLERS_BUFFER_SIZE/8
+pcirbio_buffer  rq PROTOCOL_HANDLERS_BUFFER_SIZE/8
 
 section '.reloc' fixups data discardable

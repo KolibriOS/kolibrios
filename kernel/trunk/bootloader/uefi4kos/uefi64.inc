@@ -20,34 +20,39 @@ EFIERR = 0x8000000000000000
 
 struct EFI_SYSTEM_TABLE
   Hdr                   EFI_TABLE_HEADER
-  FirmwareVendor        dq ?
+  FirmwareVendor        DN ?
   FirmwareRevision      dd ?
                         dd ?
-  ConsoleInHandle       dq ?
-  ConIn                 dq ?
-  ConsoleOutHandle      dq ?
-  ConOut                dq ?
-  StandardErrorHandle   dq ?
-  StdErr                dq ?
-  RuntimeServices       dq ?
-  BootServices          dq ?
-  NumberOfTableEntries  dq ?
-  ConfigurationTable    dq ?
+  ConsoleInHandle       DN ?
+  ConIn                 DN ?
+  ConsoleOutHandle      DN ?
+  ConOut                DN ?
+  StandardErrorHandle   DN ?
+  StdErr                DN ?
+  RuntimeServices       DN ?
+  BootServices          DN ?
+  NumberOfTableEntries  DN ?
+  ConfigurationTable    DN ?
+ends
+
+struct EFI_CONFIGURATION_TABLE
+  VendorGUID    rd 4
+  VendorTable   DN ?
 ends
 
 struct EFI_LOADED_IMAGE_PROTOCOL
   Revision              dd ?
                         dd ?
-  ParentHandle          dq ?
-  SystemTable           dq ?
-  DeviceHandle          dq ?
-  FilePath              dq ?
-  Reserved              dq ?
+  ParentHandle          DN ?
+  SystemTable           DN ?
+  DeviceHandle          DN ?
+  FilePath              DN ?
+  Reserved              DN ?
   LoadOptionsSize       dd ?
                         dd ?
-  ImageBase             dq ?
+  ImageBase             DN ?
   ImageSize             dq ?
   ImageCodeType         dd ?
   ImageDataType         dd ?
-  UnLoad                dq ?
+  UnLoad                DN ?
 ends
