@@ -19,7 +19,9 @@ class TestFailureException(Exception):
 class Qemu:
     def __init__(self, popen):
         self.popen = popen
-        self.wait() # qemu needs time to create debug.log file
+        # Qemu needs time to create debug.log file
+        while not os.path.exists("debug.log"):
+            self.wait()
 
     def wait_for_debug_log(self, needle, timeout = 1):
         needle = bytes(needle, "utf-8")
@@ -61,6 +63,7 @@ class Qemu:
         time.sleep(seconds)
 
 def run():
+    os.remove("debug.log")
     s = f"qemu-system-i386 -nographic -L . -m 128 -drive format=raw,file=../../kolibri_test.img,index=0,if=floppy -boot a -vga vmware -net nic,model=rtl8139 -net user -soundhw ac97 -debugcon file:debug.log"
     a = shlex.split(s)
     popen = subprocess.Popen(a, bufsize = 0, stdout = subprocess.DEVNULL, stderr = subprocess.DEVNULL, stdin = subprocess.DEVNULL, start_new_session = True)
