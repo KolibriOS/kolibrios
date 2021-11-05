@@ -22,16 +22,17 @@ class Qemu:
         # Qemu needs time to create debug.log file
         while not os.path.exists("debug.log"):
             self.wait()
+        self.debug = open("debug.log", "rb")
+        self.monitor_in = open("monitor.pipe.in", "wb")
 
     def wait_for_debug_log(self, needle, timeout = 1):
         needle = bytes(needle, "utf-8")
         start = timeit.default_timer()
-        stdout = open("debug.log", "rb")
         log = b""
 
         # While no timeout, read and search logs
         while timeit.default_timer() - start < timeout:
-            log += stdout.read(1)
+            log += self.debug.read(1)
             if needle in log:
                 return
 
@@ -62,9 +63,23 @@ class Qemu:
     def wait(self, seconds = 0.25):
         time.sleep(seconds)
 
+    def send_keys(self, keys):
+        for key in keys.split():
+            self.send_monitor_command(f"sendkey {key}")
+
+    def send_monitor_command(self, command):
+        self.monitor_in.write(bytes(command + "\n", "utf-8"))
+        self.monitor_in.flush()
+
 def run():
-    os.remove("debug.log")
-    s = f"qemu-system-i386 -nographic -L . -m 128 -drive format=raw,file=../../kolibri_test.img,index=0,if=floppy -boot a -vga vmware -net nic,model=rtl8139 -net user -soundhw ac97 -debugcon file:debug.log"
+    if os.path.exists("debug.log"):
+        os.remove("debug.log")
+    if os.path.exists("monitor.pipe.in"):
+        os.remove("monitor.pipe.in")
+    if os.path.exists("monitor.pipe.out"):
+        os.remove("monitor.pipe.out")
+    os.system("mkfifo monitor.pipe.in monitor.pipe.out")
+    s = f"qemu-system-i386 -nographic -monitor pipe:monitor.pipe -debugcon file:debug.log -L . -m 128 -drive format=raw,file=../../kolibri_test.img,index=0,if=floppy -boot a -vga vmware -net nic,model=rtl8139 -net user -soundhw ac97"
     a = shlex.split(s)
     popen = subprocess.Popen(a, bufsize = 0, stdout = subprocess.DEVNULL, stderr = subprocess.DEVNULL, stdin = subprocess.DEVNULL, start_new_session = True)
     return Qemu(popen)
