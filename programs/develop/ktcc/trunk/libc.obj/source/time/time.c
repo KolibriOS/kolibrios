@@ -1,9 +1,8 @@
 #include <time.h>
 #include <sys/ksys.h>
 
-static struct tm __buffertime;
-
 time_t time(time_t *timer){
+    static struct tm __buffertime;
     int kos_date, kos_time;
     kos_date = _ksys_get_date().val;
     kos_time = _ksys_get_time().val;
@@ -29,6 +28,5 @@ time_t time(time_t *timer){
     if(timer){
         *timer=ret;
     }
-    
     return ret;
 }

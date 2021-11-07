@@ -2,7 +2,7 @@
 
 time_t mktime (struct tm * timeptr)
 {
-    int utcdiff = -3;
+//  int utcdiff = -3;
     const int mon_days [] = {31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31};
     unsigned long int tyears, tdays, leaps, utc_hrs;
     int i;
@@ -17,7 +17,7 @@ time_t mktime (struct tm * timeptr)
     tdays += timeptr->tm_mday-1; // days of month passed.
     tdays = tdays + (tyears * 365) + leaps;
 
-    utc_hrs = timeptr->tm_hour + utcdiff; // for your time zone.
-    return (tdays * 86400) + (utc_hrs * 3600) + (timeptr->tm_min * 60) + timeptr->tm_sec;
+//  utc_hrs = timeptr->tm_hour + utcdiff; // for your time zone.
+    return (tdays * 86400) + (timeptr->tm_hour * 3600) + (timeptr->tm_min * 60) + timeptr->tm_sec;
 }
  
