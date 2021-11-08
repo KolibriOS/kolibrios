@@ -1,9 +1,9 @@
-// Mouse Configuration Utility ver 1.62
+// Mouse Configuration Utility ver 1.7
 
 #define MEMSIZE 4096*11
 
-#include "..\lib\strings.h" 
-#include "..\lib\mem.h" 
+#include "..\lib\strings.h"
+#include "..\lib\mem.h"
 #include "..\lib\fs.h"
 #include "..\lib\gui.h"
 #include "..\lib\obj\libini.h"
@@ -17,9 +17,9 @@
 	?define POINTER_SPEED "Делитель скорости указателя мыши"
 	?define ACCELERATION_TEXT "Чувствительность указателя мыши"
 	?define DOUBLE_CLICK_TEXT "Задержка двойного клика мышью"
-	?define MOUSE_EMULATION "Управление указателем мыши через клавиатуру"
+	?define MOUSE_EMULATION "Управление указателем мыши через клавиатуру (F1)"
+	?define COMMOUSE "Загрузить драйвер мыши для COM-порта (F2)"
 	?define MADMOUSE "Сквозные для курсора стороны экрана"
-	?define COMMOUSE "Загрузить драйвер мыши для COM-порта (F10)"
 	?define COMMOUSE_LOADED "'Драйвер для COM мыши был загружен' -O"
 	?define COMMOUSE_CAN_NOT_UNLOAD "'Остановка драйвера невозможна' -W"
 #else
@@ -29,9 +29,9 @@
 	?define POINTER_SPEED "Mouse pointer speed divider"
 	?define ACCELERATION_TEXT "Mouse pointer sensitivity"
 	?define DOUBLE_CLICK_TEXT "Mouse double click delay"
-	?define MOUSE_EMULATION "Enable mouse emulation using keyboard NumPad"
+	?define MOUSE_EMULATION "Enable mouse emulation using keyboard NumPad (F1)"
+	?define COMMOUSE "Load mouse driver for COM-port (F2)"
 	?define MADMOUSE "Through screen sides for pointer"
-	?define COMMOUSE "Load mouse driver for COM-port (F10)"
 	?define COMMOUSE_LOADED "'Driver for COM mouse loaded' -O"
 	?define COMMOUSE_CAN_NOT_UNLOAD "'Driver stop is impossible' -W"
 #endif
@@ -53,12 +53,12 @@ _ini ini_mouse = { #ini_path, "mouse" };
 void main() {
 	proc_info Form;
 	int id;
-	
+
 	load_dll(libini, #lib_init,1);
-	
+
 	LoadCfg();
 
-	SetEventMask(EVM_REDRAW+EVM_KEY+EVM_BUTTON+EVM_MOUSE+EVM_MOUSE_FILTER);	
+	SetEventMask(EVM_REDRAW+EVM_KEY+EVM_BUTTON+EVM_MOUSE+EVM_MOUSE_FILTER);
 
 	loop() switch(@WaitEvent())
 	{
@@ -68,18 +68,16 @@ void main() {
 				IF (mouse.click) || (mouse.up) DrawMouseImage(0,0,0,0);
 				break;
 
-		CASE evButton: 
+		CASE evButton:
 				id = @GetButtonID();
 				IF (1 == id) ExitApp();
 				else IF (pointer_speed.click(id)) ApplyCfg();
 				else IF (acceleration.click(id)) ApplyCfg();
 				else IF (double_click_delay.click(id)) ApplyCfg();
 				else IF (emulation.click(id)) {
-					IF (emulation.checked == true) RunProgram("/sys/mousemul", 0);
-					ELSE KillProcessByName("mousemul", SINGLE);
-					break;
+					EventClickEmulation();
 				}
-				else IF (madmouse.click(id)) {						
+				else IF (madmouse.click(id)) {
 					IF (madmouse.checked == true) RunProgram("/sys/madmouse", 0);
 					ELSE KillProcessByName("madmouse", SINGLE);
 					break;
@@ -92,16 +90,20 @@ void main() {
 		case evKey:
 				@GetKeyScancode();
 				IF (AL == SCAN_CODE_ESC) ExitApp();
-				IF (AL == SCAN_CODE_F10) EventClickComMouse();
+				IF (AL == SCAN_CODE_F1) {
+					emulation.click(emulation.id);
+					EventClickEmulation();
+				}
+				IF (AL == SCAN_CODE_F2) EventClickComMouse();
 				break;
-			
+
 		case evReDraw:
 				sc.get();
-				DefineAndDrawWindow(430, 150, 424, 343+skin_height,0x34,sc.work,WINDOW_TITLE,0);
+				DefineAndDrawWindow(430, 150, 460, 343+skin_height,0x34,sc.work,WINDOW_TITLE,0);
 				GetProcessInfo(#Form, SelfInfo);
 				if (Form.status_window&ROLLED_UP) break;
 				mouse_frame.w = - FRAME_X * 2 + Form.cwidth;
-				DefineButton(FRAME_X, FRAME_Y, mouse_frame.w, 
+				DefineButton(FRAME_X, FRAME_Y, mouse_frame.w,
 					mouse_frame.h, 99+BT_NOFRAME, 0xF0F2F3); //needed to handle mouse_up and refresh mouse image
 				WriteText(FRAME_X + 110, FRAME_Y + 25, 0x90, 0x2C343C, CHECK_MOUSE_1);
 				WriteText(FRAME_X + 110, FRAME_Y + 45, 0x90, 0x2C343C, CHECK_MOUSE_2);
@@ -145,8 +147,8 @@ void DrawControls() {
 	acceleration.draw(FRAME_X, y.inc(30));
 	double_click_delay.draw(FRAME_X, y.inc(30));
 	emulation.draw(FRAME_X, y.inc(33));
-	madmouse.draw(FRAME_X, y.inc(27));
 	com_mouse.draw(FRAME_X, y.inc(27));
+	madmouse.draw(FRAME_X, y.inc(27));
 }
 
 void LoadCfg() {
@@ -174,7 +176,7 @@ void ApplyCfg() {
 
 void EventClickComMouse()
 {
-	if (!com_mouse.checked) 
+	if (!com_mouse.checked)
 	{
 		if (RunProgram("/sys/loaddrv", "COMMOUSE")>=0) {
 			notify(COMMOUSE_LOADED);
@@ -184,6 +186,15 @@ void EventClickComMouse()
 		}
 	} else {
 		notify(COMMOUSE_CAN_NOT_UNLOAD);
+	}
+}
+
+void EventClickEmulation()
+{
+	IF (emulation.checked == true) {
+		RunProgram("/sys/mousemul", 0);
+	}	ELSE {
+		KillProcessByName("mousemul", SINGLE);
 	}
 }
 
