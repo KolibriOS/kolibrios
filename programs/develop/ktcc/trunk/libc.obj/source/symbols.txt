@@ -172,3 +172,6 @@ time
 localtime
 asctime
 difftime
+!____MISC____
+basename
+dirname

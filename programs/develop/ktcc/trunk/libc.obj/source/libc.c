@@ -116,6 +116,9 @@
 #include "time/time.c"
 #include "time/asctime.c"
 
+#include "misc/basename.c"
+#include "misc/dirname.c"
+
 __asm__(
     ".include \"math/acos.s\"\n\t"
     ".include \"math/asin.s\"\n\t"
