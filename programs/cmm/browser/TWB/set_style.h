@@ -37,6 +37,7 @@ void TWebBrowser::SetStyle()
 	if (tag.is("h4"))         { tag_h1234_caption();  return; }
 	if (tag.is("font"))       { tag_font();           return; }
 	if (tag.is("dt"))         { tag_ol_ul_dt();       return; }
+	if (tag.is("dd"))         { tag_ol_ul_dt();       return; }
 	if (tag.is("ul"))         { tag_ol_ul_dt();       return; }
 	if (tag.is("ol"))         { tag_ol_ul_dt();       return; }
 	if (tag.is("li"))         { tag_li();             return; }
@@ -164,14 +165,16 @@ void TWebBrowser::tag_code()
 void TWebBrowser::tag_ol_ul_dt()
 {
 	char type = ESBYTE[#tag.name];
-	style.tag_list.upd_level(tag.opened, type);
 	switch(type)
 	{
 		case 'd': 
+			if (ESBYTE[#tag.name+1]=='d') style.tag_list.upd_level(tag.opened, type);
+			if (ESBYTE[#tag.name+1]=='t') style.tag_list.upd_level(false, 'd');
 			if (tag.opened) NewLine(); 
 			break;
 		case 'u': 
 		case 'o': 
+			style.tag_list.upd_level(tag.opened, type);
 			if (!tag.opened) && (!style.pre) NewLine();
 	}
 }
@@ -318,11 +321,12 @@ NOIMG:
 
 
 
+struct TABLE {
+	int depth;
+	collection_int cols;
+} table;
 
 
-
-int tdepth;
-collection_int tr_col_count; //drop on once!
 int tr_pos, td_pos;
 int row_start_y;
 int colcount;
@@ -330,7 +334,7 @@ dword tallest_cell_in_row;
 
 void TWebBrowser::tag_table_reset()
 {
-	tdepth = 0;
+	table.depth = 0;
 	colcount = 0;
 	tr_pos = 0;
 	td_pos = 0;
@@ -340,10 +344,15 @@ void TWebBrowser::tag_table()
 {
 	if (tag.is("table")) {
 		if(tag.opened) {
-			tdepth++; 
+			table.depth++;
+			if (table.depth==1) {
+				colcount = 0;
+			}
 		} else {
-			if (tdepth>0) tdepth--;
-			if (tdepth==0) {
+			if (table.depth>0) {
+				table.depth--;
+			}
+			if (table.depth==0) {
 				draw_x = left_gap = style.tag_list.level * 5 * list.font_w + BODY_MARGIN;
 				draw_w = list.w;
 				draw_y = math.max(draw_y+style.cur_line_h, tallest_cell_in_row);
@@ -352,7 +361,7 @@ void TWebBrowser::tag_table()
 			}
 		}
 	}
-	if (tdepth>1) {
+	if (table.depth>1) {
 		if (tag.is("tr")) && (tag.opened) NewLine();
 		return;
 	}
@@ -360,13 +369,13 @@ void TWebBrowser::tag_table()
 	if (!secondrun) {
 		if (tag.is("tr")) {
 			if (tag.opened) {
-				tr_col_count.add(1);
+				table.cols.add(1);
 			}
 			colcount = 0;
 		}
 		if (tag.opened) && (tag.is("td")) || (tag.is("th")) {
 			colcount++;
-			if (colcount) tr_col_count.set(tr_col_count.count-1, colcount);
+			if (colcount) table.cols.set(table.cols.count-1, colcount);
 			//if (tag.get_number_of("colspan")) colcount += tag.number-1;
 		}		
 	} else {
@@ -390,7 +399,7 @@ void TWebBrowser::tag_table()
 			tallest_cell_in_row = math.max(draw_y+style.cur_line_h-list.item_h, tallest_cell_in_row);
 			style.cur_line_h = list.item_h;
 			if (tag.opened) {
-				draw_w = list.w - BODY_MARGIN - BODY_MARGIN - 23 / tr_col_count.get(tr_pos-1);
+				draw_w = list.w - BODY_MARGIN - BODY_MARGIN - 23 / table.cols.get(tr_pos-1);
 				draw_x = left_gap = draw_w * td_pos + BODY_MARGIN;
 				//debugval(itoa(draw_x), list.w);
 				draw_y = row_start_y;

@@ -153,7 +153,7 @@ void TWebBrowser::ParseHtml(dword _bufpointer, _bufsize){
 	}
 
 
-	tr_col_count.drop();
+	table.cols.drop();
 	secondrun = false;
 
 	_PARSE_START_:
