@@ -50,14 +50,12 @@ align 4
         dec     ebx  ; 2 - Write the data to the clipboard
         jnz     .3
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+; check pointer on kernel address
         stdcall is_region_userspace, edx, ecx
         jz      @f
         mov     eax, -1
         jmp     .exit_1
 @@:
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 ; check the lock
         mov     ebx, clipboard_write_lock
         xor     eax, eax
@@ -81,6 +79,8 @@ align 4
         shl     eax, 2
         add     eax, [clipboard_main_list]
         mov     [eax], edi
+        push    edi       ;save pointer to data
+        push    ecx       ;save size data
 ; copy the data into the slot
         mov     esi, edx
         mov     eax, ecx
@@ -89,6 +89,10 @@ align 4
         sub     ecx, 4
         add     esi, 4
         rep movsb ; store slot data
+;copy ecx in Dword[clipboard_main_list+clipboard_slots*4]
+        pop     ecx
+        pop     eax
+        mov     [eax], ecx
 ; increase the counter of slots
         inc     [clipboard_slots]
 ; unlock last slot
