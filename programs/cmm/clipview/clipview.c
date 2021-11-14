@@ -156,6 +156,7 @@ void SelectList_DrawLine(dword i)
 	EDX = ConvertSizeToKb(cdata.size);
 	WriteText(GAP+44+16, yyy+TEXT_Y, 0x90, 0x000000, EDX);
 	slot_data_type_number = cdata.type;
+	if (slot_data_type_number > 4) slot_data_type_number = 4;
 	WriteText(GAP+140, yyy+TEXT_Y, 0x90, 0x000000, data_type[slot_data_type_number]);
 	WriteTextB(GAP+list.w - 88, yyy+TEXT_Y, 0x90, 0x006597, "TEXT  HEX");
 	DefineButton(GAP+list.w - 98, yyy, 50, LINE_H, 100+i+BT_HIDE, NULL);
