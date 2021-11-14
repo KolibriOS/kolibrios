@@ -2164,7 +2164,7 @@ sys_system_table:
         dd      sysfn_shutdown          ; 9 = shutdown with parameter
         dd      sysfn_minimize          ; 10 = minimize window
         dd      sysfn_getdiskinfo       ; 11 = get disk subsystem info
-        dd      sysfn_lastkey           ; 12 = get last pressed key
+        dd      undefined_syscall       ; 12 = get last pressed key. function removed. sysfn_lastkey
         dd      sysfn_getversion        ; 13 = get kernel version
         dd      sysfn_waitretrace       ; 14 = wait retrace
         dd      sysfn_centermouse       ; 15 = center mouse cursor
@@ -2430,7 +2430,7 @@ get_cpu_freq:
         mov     eax, dword [cpu_freq]
         mov     edx, dword [cpu_freq+4]
         ret
-;  SAVE ramdisk to /hd/1/menuet.img
+;  SAVE ramdisk to /hd/1/kolibri.img
 ;!!!!!!!!!!!!!!!!!!!!!!!!
    include 'blkdev/rdsave.inc'
 ;!!!!!!!!!!!!!!!!!!!!!!!!
@@ -2477,9 +2477,9 @@ sysfn_getdiskinfo:      ; 18.11 = get disk info table
 .exit:
         ret
 ;------------------------------------------------------------------------------
-sysfn_lastkey:          ; 18.12 = return 0 (backward compatibility)
-        and     dword [esp+32], 0
-        ret
+;sysfn_lastkey:          ; 18.12 = return 0 (backward compatibility)
+;        and     dword [esp+32], 0
+;        ret
 ;------------------------------------------------------------------------------
 sysfn_getversion:       ; 18.13 = get kernel ID and version
         ; if given memory address belongs to kernel then error
@@ -2669,7 +2669,6 @@ sound_flag      db 0
 endg
 
 UID_NONE=0
-UID_MENUETOS=1   ;official
 UID_KOLIBRI=2    ;russian
 
 iglobal
@@ -4685,7 +4684,7 @@ putimage_init4bpp:
         add     eax, ecx
         push    ecx
         add     ecx, 1
-        add     eax, 1
+        inc     eax      ;add   eax, 1
         shr     ecx, 1
         shr     eax, 1
         sub     eax, ecx
@@ -4942,7 +4941,7 @@ end if
         mov     ecx, 0x40FFFFFF
         mov     ebx, [msg_board_pos]
         mov     edi, 1
-        mov     esi, 1
+        mov     esi, edi ;1
         call    dtext
         popa
         add     word [msg_board_pos+2], 6
