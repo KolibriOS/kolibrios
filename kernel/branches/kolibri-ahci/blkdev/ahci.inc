@@ -314,10 +314,25 @@ ends
 
 ; --------------------------------------------------
 uglobal
+
 align 4
-        ahci_controller AHCI_DATA
-        port_data_arr   rb (sizeof.PORT_DATA*AHCI_MAX_PORTS)
-        ahci_mutex      MUTEX
+
+struct SD_DATA
+        ahci_controller  AHCI_DATA
+        port_data_arr    rb (sizeof.PORT_DATA*AHCI_MAX_PORTS)
+        ahci_mutex       MUTEX
+ends
+
+sd1_data SD_DATA
+sd2_data SD_DATA
+sd3_data SD_DATA
+sd4_data SD_DATA
+sd5_data SD_DATA
+sd6_data SD_DATA
+sd7_data SD_DATA
+sd8_data SD_DATA
+
+sd_data dd ?
 endg
 
 iglobal
@@ -332,19 +347,20 @@ ahci_callbacks:
     dd  0   ; no flush function
     dd  0   ; use default cache size
 .end:
-hd_name db 'hd', 0, 0, 0
-hd_counter dd 0
+hd_name db 'sd', 0, 0, 0
+sd_counter dd 0
+controllers_counter dd 0
 endg
 
 ; -----------------------------------------------------------------------
 ; detect ahci controller and initialize
 align 4
 ahci_init:
-        mov     ecx, ahci_mutex
-        call    mutex_init
 
-        mov     ecx, ahci_controller
+        mov     ecx, sd1_data.ahci_controller
         mov     esi, pcidev_list
+        mov     [sd_data], sd1_data
+        mov     [sd_counter], 0
 .find_ahci_ctr:
         mov     esi, [esi + PCIDEV.fd]
         cmp     esi, pcidev_list
@@ -361,7 +377,15 @@ ahci_init:
         ret
 
 .ahci_ctr_found:
-        mov     [ahci_controller + AHCI_DATA.pcidev], esi
+        push    esi
+
+        mov     ecx, [sd_data]
+        add     ecx, SD_DATA.ahci_mutex
+        call    mutex_init
+
+        mov     ecx, [sd_data]
+        add     ecx, SD_DATA.ahci_controller
+        mov     [ecx + AHCI_DATA.pcidev], esi
 
         mov     eax, [esi+PCIDEV.class]
         movzx   ebx, byte [esi+PCIDEV.bus]
@@ -387,7 +411,11 @@ ahci_init:
 
         ; Map MMIO region to virtual memory
         stdcall map_io_mem, edi, eax, PG_SWR + PG_NOCACHE
-        mov     [ahci_controller + AHCI_DATA.abar], eax
+        push    ecx
+        mov     ecx, [sd_data]
+        add     ecx, SD_DATA.ahci_controller 
+        mov     [ecx + AHCI_DATA.abar], eax
+        pop     ecx
         DEBUGF  1, "K: AHCI controller BAR5 mapped to virtual addr %x\n", eax
 
         ; Restore the original BAR5 value
@@ -405,12 +433,16 @@ ahci_init:
         stdcall pci_write32, ebx, ebp, PCI_REG_STATUS_COMMAND, eax
 
         ; ; Print some register values to debug board
-        ; mov     esi, [ahci_controller + AHCI_DATA.abar]
+        ; mov     esi, [[sd_data].ahci_controller + AHCI_DATA.abar]
         ; DEBUGF  1, "K: AHCI: HBA.cap = %x, HBA.ghc = %x, HBA_MEM.version = %x\n", [esi + HBA_MEM.cap], [esi + HBA_MEM.ghc], [esi + HBA_MEM.version]
 
         ;-------------------------------------------------------
         ; Request BIOS/OS ownership handoff, if supported. (TODO check correctness)
-        mov     esi, [ahci_controller + AHCI_DATA.abar]
+        push    ecx
+        mov     ecx, [sd_data]
+        add     ecx, SD_DATA.ahci_controller
+        mov     esi, [ecx + AHCI_DATA.abar]
+        pop     ecx
         ;mov     ebx, [esi + HBA_MEM.cap2]
         ;DEBUGF  1, "K: AHCI: HBA_MEM.cap2 = %x\n", ebx
         bt      [esi + HBA_MEM.cap2], bit_AHCI_HBA_CAP2_BOH
@@ -460,7 +492,6 @@ ahci_init:
         ; IDT::RegisterInterruptHandler(irq, InterruptHandler);
         ; ahciHBA->is = 0xffffffff;
 
-        mov     [hd_counter], 0
         xor     ebx, ebx
 .detect_drives:
         cmp     ebx, AHCI_MAX_PORTS
@@ -534,7 +565,8 @@ ahci_init:
 
         mov     ecx, ebx
         imul    ecx, sizeof.PORT_DATA
-        add     ecx, port_data_arr
+        mov     ecx, [sd_data]
+        add     ecx, SD_DATA.port_data_arr
         stdcall ahci_port_rebase, edi, ebx, ecx
 
         ; DEBUGF  1, "K: AHCI: After REBASING, signature = 0x%x\n", [edi + HBA_PORT.signature]
@@ -573,11 +605,11 @@ ahci_init:
         ;stdcall ahci_read_first_sector, ecx
 
         push    ecx
-        mov     eax, [hd_counter]
-        inc     [hd_counter]
+        mov     eax, [sd_counter]
+        inc     [sd_counter]
         xor     edx, edx
         mov     ecx, 10
-        div     ecx ; eax = hd_counter / 10, edx = hd_counter % 10
+        div     ecx ; eax = sd_counter / 10, edx = sd_counter % 10
         test    eax, eax
         jz      .concat_one
         add     al, '0'
@@ -615,8 +647,12 @@ ahci_init:
         
 
 .end_detect_drives:
-        
-
+        pop     esi
+        add     [sd_data], sizeof.SD_DATA 
+        inc     [controllers_counter]       
+        cmp     [controllers_counter], 8
+        jnz     .find_ahci_ctr
+        DEBUGF  1, "AHCI: reached controllers number limit\n"
         ret
 ; -------------------------------------------------
 
@@ -1023,7 +1059,7 @@ proc ahci_read stdcall pdata: dword, buffer: dword, startsector: qword, numsecto
 
         pushad
  
-        mov     ecx, ahci_mutex
+        mov     ecx, sd1_data.ahci_mutex
         call    mutex_lock
 
         mov     eax, [numsectors_ptr]
@@ -1061,7 +1097,7 @@ proc ahci_read stdcall pdata: dword, buffer: dword, startsector: qword, numsecto
         jmp     .read_loop
 .read_loop_end:
 
-        mov     ecx, ahci_mutex
+        mov     ecx, sd1_data.ahci_mutex
         call    mutex_unlock
  
         popad
@@ -1078,7 +1114,7 @@ proc ahci_write stdcall pdata: dword, buffer: dword, startsector: qword, numsect
 
         pushad
  
-        mov     ecx, ahci_mutex
+        mov     ecx, sd1_data.ahci_mutex
         call    mutex_lock
 
         mov     eax, [numsectors_ptr]
@@ -1107,7 +1143,7 @@ proc ahci_write stdcall pdata: dword, buffer: dword, startsector: qword, numsect
         jmp     .write_loop
 .write_loop_end:
 
-        mov     ecx, ahci_mutex
+        mov     ecx, sd1_data.ahci_mutex
         call    mutex_unlock
  
         popad
@@ -1341,7 +1377,7 @@ ahci_find_cmdslot:
         mov     ebx, [eax + HBA_PORT.sata_active]
         or      ebx, [eax + HBA_PORT.command_issue] ; ebx = slots
 
-        mov     esi, [ahci_controller + AHCI_DATA.abar]
+        mov     esi, [sd1_data.ahci_controller + AHCI_DATA.abar]
         mov     edx, [esi + HBA_MEM.cap]
         shr     edx, 8
         and     edx, 0xf
