@@ -8,9 +8,9 @@ TODO:
 - 70.5 - get volume info and label
 */
 
-#define ABOUT_TITLE "EOLITE 5.04 Gold"
-#define TITLE_EOLITE "Eolite File Manager 5.04 Gold"
-#define TITLE_KFM "Kolibri File Manager 2.04 Gold";
+#define ABOUT_TITLE "EOLITE 5.05 Gold"
+#define TITLE_EOLITE "Eolite File Manager 5.05 Gold"
+#define TITLE_KFM "Kolibri File Manager 2.05 Gold";
 
 #define MEMSIZE 1024 * 250
 #include "../lib/clipboard.h"
@@ -142,7 +142,7 @@ void handle_param()
 
 	if (ESBYTE[p]=='\0') return;
 
-	if (ESBYTE[p]=='-') switch (ESBYTE[p+1]) 
+	if (ESBYTE[p]=='-') switch (ESBYTE[p+1])
 	{
 		case 'p':
 			strcpy(#file_path, p + 3);
@@ -175,10 +175,10 @@ void handle_param()
 		} else {
 			notify(T_NOTIFY_APP_PARAM_WRONG);
 		}
-	}	
+	}
 }
 
-void main() 
+void main()
 {
 	dword id;
 	int old_cur_y;
@@ -203,7 +203,7 @@ void main()
 				if (popin_string[0]!=-1) edit_box_mouse stdcall(#popin_text);
 				break;
 			}
-			
+
 			mouse.get();
 
 			ProceedMouseGestures();
@@ -239,7 +239,7 @@ void main()
 				if (mouse.key&MOUSE_RIGHT) && (mouse.up)
 				{
 					if (files.ProcessMouse(mouse.x, mouse.y)) List_ReDraw();
-					if (getElementSelectedFlag(files.cur_y) == false) unselectAll(); //on redraw selection would be flashed, see [L001] 
+					if (getElementSelectedFlag(files.cur_y) == false) unselectAll(); //on redraw selection would be flashed, see [L001]
 					EventShowListMenu();
 				}
 			}
@@ -271,10 +271,10 @@ void main()
 			}
 
 			//Scrooll
-			if (mouse.x>=files.x+files.w) && (mouse.x<=files.x+files.w+18) && (mouse.y>files.y) 
+			if (mouse.x>=files.x+files.w) && (mouse.x<=files.x+files.w+18) && (mouse.y>files.y)
 				&& (mouse.y<files.y+files.h-18) && (mouse.lkm) && (!scroll_used) {scroll_used=true; DrawScroll(scroll_used);}
 			if (scroll_used) && (!mouse.key&MOUSE_LEFT) { scroll_used=false; DrawScroll(scroll_used); }
-			
+
 			if (scroll_used)
 			{
 				if (sc_slider_h/2+files.y>mouse.y) || (mouse.y<0) || (mouse.y>4000) mouse.y=sc_slider_h/2+files.y; //anee eo?ni? iaa ieiii
@@ -294,7 +294,7 @@ void main()
 					SetActivePanel(1);
 				}
 			}
-			break;  
+			break;
 //Button pressed-----------------------------------------------------------------------------
 		case evButton:
 			id = GetButtonID();
@@ -319,10 +319,10 @@ void main()
 					ClickOnBreadCrumb(id-BREADCRUMB_ID);
 				}
 
-				break;					
+				break;
 			}
 
-			switch(id) 
+			switch(id)
 			{
 				case KFM_DEV_DROPDOWN_1:
 				case KFM_DEV_DROPDOWN_2:
@@ -356,7 +356,7 @@ void main()
 						break;
 			}
 			break;
-			
+
 //Key pressed-----------------------------------------------------------------------------
 		case evKey:
 			GetKeys();
@@ -368,7 +368,7 @@ void main()
 				if (key_scancode == SCAN_CODE_ESC) EventClosePopinForm();
 
 				if (POPIN_DISK == active_popin) {
-					if (key_scancode >= SCAN_CODE_1) 
+					if (key_scancode >= SCAN_CODE_1)
 						&& (key_scancode <= SCAN_CODE_10) {
 							EventDriveClick(key_scancode-2);
 						}
@@ -377,7 +377,7 @@ void main()
 					if (popin_string[0] != -1) {
 						EAX = key_editbox;
 						edit_box_key stdcall (#popin_text);
-					}					
+					}
 				}
 				break;
 			}
@@ -385,7 +385,7 @@ void main()
 			if (key_modifier&KEY_LSHIFT) || (key_modifier&KEY_RSHIFT) {
 
 				if (key_scancode == SCAN_CODE_ENTER) {
-					EventOpenSelected(); 
+					EventOpenSelected();
 					break;
 				}
 
@@ -419,13 +419,13 @@ void main()
 							if (key_scancode >= SystemDiscs.list.count) break;
 							if (!efm) {
 								DrawRectangle(17,key_scancode*17+74,159,17, 0); //display click
-								pause(7);										
+								pause(7);
 							}
 							EventDriveClick(key_scancode);
 							break;
 					case SCAN_CODE_KEY_X:
 							CopyFilesListToClipboard(CUT);
-							break;						
+							break;
 					case SCAN_CODE_KEY_C:
 							CopyFilesListToClipboard(COPY);
 							break;
@@ -442,7 +442,7 @@ void main()
 							break;
 					case SCAN_CODE_KEY_N:
 							EventOpenNewEolite();
-							break; 
+							break;
 					case SCAN_CODE_KEY_R:
 							EventManualFolderRefresh();
 							break;
@@ -464,10 +464,10 @@ void main()
 			{
 					case SCAN_CODE_BS:
 							Dir_Up();
-							break; 
+							break;
 					case SCAN_CODE_ENTER:
 							EventOpen(0);
-							break; 
+							break;
 					case SCAN_CODE_TAB:
 							if (!efm) break;
 							SetActivePanel(active_panel^1);
@@ -493,10 +493,10 @@ void main()
 							break;
 					case SCAN_CODE_F1...SCAN_CODE_F10:
 							FnProcess(key_scancode-58);
-							break; 
+							break;
 					default:
 							EventSelectFileByKeyPress();
-			}                         
+			}
 			break;
 		case evIPC:
 		case evReDraw:
@@ -506,7 +506,7 @@ void main()
 		default:
 			if (!Form.status_window&ROLLED_UP) EventRefreshDisksAndFolders();
 	}
-	
+
 	if(cmd_free)
 	{
 		if(cmd_free==2) about_stak=free(about_stak);
@@ -522,7 +522,7 @@ void draw_window()
 	incn x;
 	dword title;
 	static int rand_n;
-	if (rand_n) rand_n = random(80);
+	if (!rand_n) rand_n = random(80);
 
 	if (show_status_bar.checked) {
 		#define STBAR_EOLITE_H 16
@@ -567,7 +567,7 @@ void draw_window()
 		if (Form.width < 480) { MoveSize(OLD,OLD,480,OLD); return; }
 		ESDWORD[#toolbar_pal] = sc.work;
 		ESDWORD[#toolbar_pal+4] = MixColors(0, sc.work, 35);
-		PutPaletteImage(#toolbar, 246, 34, 0, 0, 8, #toolbar_pal);		
+		PutPaletteImage(#toolbar, 246, 34, 0, 0, 8, #toolbar_pal);
 		for (i=0; i<3; i++) DefineHiddenButton(toolbar_buttons_x[i]+2,7,31-5,29-5,BACK_BTN+i);
 		for (i=3; i<6; i++) DefineHiddenButton(toolbar_buttons_x[i],  5,31,  29,  BACK_BTN+i);
 		DrawBar(127, 8, 1, 25, sc.work_graph);
@@ -585,7 +585,7 @@ void draw_window()
 	llist_copy(#files_active, #files);
 	DrawStatusBar();
 	if (!getSelectedCount()) {
-		OpenDir(ONLY_OPEN); //if there are no selected files -> refresh folder [L001] 
+		OpenDir(ONLY_OPEN); //if there are no selected files -> refresh folder [L001]
 	}
 	DrawFilePanels();
 
@@ -594,7 +594,7 @@ void draw_window()
 	}
 }
 
-void DrawButtonsAroundList() 
+void DrawButtonsAroundList()
 {
 	word sorting_arrow_x;
 	dword sorting_arrow_t = "\x19";
@@ -633,7 +633,7 @@ void DrawStatusBar()
 	char status_bar_str[80];
 	int go_up_folder_exists=0;
 
-	if (efm) { 
+	if (efm) {
 		DrawBar(0, Form.cheight - status_bar_h, Form.cwidth, 2, sc.work);
 		DrawBar(0, Form.cheight - 2, Form.cwidth,  2, sc.work);
 		DrawBar(Form.cwidth-1, Form.cheight - 19, 1,  17, sc.work);
@@ -708,8 +708,8 @@ void OpenDir2(char redraw){
 	SetCurDir(path);
 	if (files.count>0) && (files.cur_y-files.first==-1) files.cur_y=0;
 	files.visible = math.min(files.h / files.item_h, files.count);
-	if (!strncmp(path, "/rd/1",5)) || (!strncmp(path, "/sys/",4)) 
-		dir_at_fat16 = true; else dir_at_fat16 = false; 
+	if (!strncmp(path, "/rd/1",5)) || (!strncmp(path, "/sys/",4))
+		dir_at_fat16 = true; else dir_at_fat16 = false;
 	Sorting();
 	SystemDiscs.Draw();
 	list_full_redraw = true;
@@ -724,7 +724,8 @@ void OpenDir(char redraw){
 	if (buf) free(buf);
 	if (errornum = GetDir(#buf, #files.count, path, DIRS_NOROOT)) {
 		history.add(path);
-		EventHistoryGoBack();
+		//EventHistoryGoBack();
+		Dir_Up();
 		Write_Error(errornum);
 		return;
 	}
@@ -732,8 +733,8 @@ void OpenDir(char redraw){
 	history.add(path);
 	SystemDiscs.Draw();
 	files.visible = math.min(files.h / files.item_h, files.count);
-	if (!strncmp(path, "/rd/1",5)) || (!strncmp(path, "/sys/",4)) 
-		dir_at_fat16 = true; else dir_at_fat16 = false; 
+	if (!strncmp(path, "/rd/1",5)) || (!strncmp(path, "/sys/",4))
+		dir_at_fat16 = true; else dir_at_fat16 = false;
 	Sorting();
 	list_full_redraw = true;
 	SetCurDir(path);
@@ -773,8 +774,8 @@ void List_ReDraw()
 	_ALL_LIST_REDRAW:
 
 	for (j=0; j<files.visible; j++) {
-		if (files.cur_y-files.first!=j) Line_ReDraw(col.list_bg, j); 
-		else Line_ReDraw(col.selec, files.cur_y-files.first);		
+		if (files.cur_y-files.first!=j) Line_ReDraw(col.list_bg, j);
+		else Line_ReDraw(col.selec, files.cur_y-files.first);
 	}
 	//in the bottom
 	all_lines_h = j * files.item_h;
@@ -825,12 +826,12 @@ void Line_ReDraw(dword bgcol, filenum){
 	sprintf(#full_path,"%s/%s",path,file_name_off);
 
 	if (attr&ATR_FOLDER)
-	{	
+	{
 		if (!strcmp(file_name_off,"..")) ext1="<up>"; else {
 			ext1="<DIR>";
 			WriteTextCenter(files.x+files.w-140, files.text_y+y+1, 72, col.list_gb_text, ext1);
 		}
-		if (chrnum(path, '/')==1) && (streq(path, "/kolibrios")==false) 
+		if (chrnum(path, '/')==1) && (streq(path, "/kolibrios")==false)
 		&& (streq(path, "/sys")==false) file_size = GetDeviceSize(#full_path);
 	}
 	else
@@ -840,7 +841,7 @@ void Line_ReDraw(dword bgcol, filenum){
 		file_size = ConvertSize64(file.sizelo, file.sizehi);
 		if (ext1) && (strlen(ext1)<9) WriteTextCenter(files.x+files.w-140, files.text_y+y+1, 72, col.list_gb_text, ext1);
 	}
-	if (file_size) WriteText(7-strlen(file_size)*6+files.x+files.w-58, 
+	if (file_size) WriteText(7-strlen(file_size)*6+files.x+files.w-58,
 			files.text_y+y+1, files.font_type, col.list_gb_text, file_size);
 
 	if (attr&ATR_HIDDEN) || (attr&ATR_SYSTEM) text_col=col.list_text_hidden;
@@ -852,7 +853,7 @@ void Line_ReDraw(dword bgcol, filenum){
 		if (streq(path,"/")) sprintf(#file_path,"%s%s",path,file_name_off);
 			else sprintf(#file_path,"%s/%s",path,file_name_off);
 		if (text_col==col.list_text_hidden) {
-			text_col=MixColors(col.selec_text, col.list_text_hidden, 65); 
+			text_col=MixColors(col.selec_text, col.list_text_hidden, 65);
 		} else text_col=col.selec_text;
 	}
 	if (getElementSelectedFlag(filenum+files.first)) text_col=0xFF0000;
@@ -867,7 +868,7 @@ void Line_ReDraw(dword bgcol, filenum){
 			FileShow.start_y = files.text_y + y - 3;
 			PathShow_prepare stdcall(#FileShow);
 			PathShow_draw stdcall(#FileShow);
-		}		
+		}
 	}
 	else
 	{
@@ -878,9 +879,9 @@ void Line_ReDraw(dword bgcol, filenum){
 			while (kfont.getsize(kfont.size.pt, #label_file_name) + 141 + 26 > files.w) {
 				ESBYTE[#label_file_name+strlen(#label_file_name)-1] = NULL;
 			}
-			strcpy(#label_file_name+strlen(#label_file_name)-2, "...");			
+			strcpy(#label_file_name+strlen(#label_file_name)-2, "...");
 		}
-		kfont.WriteIntoWindow(files.x + icon_size+7, files.item_h - kfont.height / 2 + y, 
+		kfont.WriteIntoWindow(files.x + icon_size+7, files.item_h - kfont.height / 2 + y,
 			bgcol, text_col, kfont.size.pt, #label_file_name);
 	}
 	DrawIconByExtension(#full_path, ext1, files.x+4, icon_y, bgcol);
@@ -961,7 +962,7 @@ void Dir_Up()
 void EventOpenSelected()
 {
 	int i;
-	for (i=0; i<files.count; i++) if (getElementSelectedFlag(i)) { 
+	for (i=0; i<files.count; i++) if (getElementSelectedFlag(i)) {
 		EDX = items.get(i)*304 + buf+32;
 		if (ESDWORD[EDX]&ATR_FOLDER) continue; //is foder
 		sprintf(#param,"%s/%s",path, EDX+40);
@@ -982,7 +983,7 @@ void EventOpen(byte _new_window)
 	if (!itdir)
 	{
 		if (strrchr(#file_name, '.')==0) RunProgram(#file_path, ""); else RunProgram("/sys/@open", #file_path);
-	} 
+	}
 	else
 	{
 		if (!strncmp(#file_name,"..",3)) { Dir_Up(); return; }
@@ -1028,7 +1029,7 @@ bool EventCreateAndRename()
 		notify(FS_ITEM_ALREADY_EXISTS);
 		return false;
 	}
-	switch(active_popin) 
+	switch(active_popin)
 	{
 		case POPIN_NEW_FILE:
 				if (CreateFile(0, 0, #temp)) goto __FAIL;
@@ -1054,7 +1055,7 @@ bool EventCreateAndRename()
 	return true;
 	__FAIL:
 	Write_Error(EAX);
-	return false;	
+	return false;
 }
 
 void EventPopinClickOkay()
@@ -1069,7 +1070,7 @@ void EventPopinClickOkay()
 			EventChooseAllFiles(false);
 			sprintf(#param, "-d %s", #file_path);
 			RunProgram(#program_path, #param);
-			break;	
+			break;
 		case POPIN_RENAME:
 		case POPIN_NEW_FILE:
 		case POPIN_NEW_FOLDER:
@@ -1201,7 +1202,7 @@ void FnProcess(byte N)
 
 void SetActivePanel(int _active)
 {
-	if (active_panel != _active) {	
+	if (active_panel != _active) {
 		active_panel = _active;
 		llist_copy(#files_active, #files_inactive);
 		llist_copy(#files_inactive, #files);
@@ -1313,7 +1314,7 @@ void ProceedMouseGestures()
 		dif_y = mouse.y-y_old;
 		adif_x = fabs(dif_x);
 		adif_y = fabs(dif_y);
-		
+
 		if (adif_x>adif_y) {
 			if (dif_x > 150) {
 				EventHistoryGoForward();
@@ -1365,7 +1366,7 @@ void EventChooseFilesRange(int _start, _end)
 	if (_start > _end) _start >< _end;
 	if (_end - _start > 1) list_full_redraw = true;
 	while (_start < _end) {
-		EventChooseFile(_start); 
+		EventChooseFile(_start);
 		_start++;
 	}
 	DrawStatusBar();
@@ -1388,7 +1389,7 @@ void EventToolbarButtonClick(int _btid)
 		case GOUP_BTN: Dir_Up(); break;
 		case COPY_BTN: CopyFilesListToClipboard(CUT); break;
 		case CUT_BTN:  CopyFilesListToClipboard(COPY); break;
-		case PASTE_BTN:EventPaste(path); break;		
+		case PASTE_BTN:EventPaste(path); break;
 	}
 }
 
@@ -1401,7 +1402,7 @@ void EventDriveClick(int __id)
 	}
 	strcpy(path, SystemDiscs.list.get(__id));
 	files.KeyHome();
-	OpenDir(WITH_REDRAW);	
+	OpenDir(WITH_REDRAW);
 }
 
 stop:
