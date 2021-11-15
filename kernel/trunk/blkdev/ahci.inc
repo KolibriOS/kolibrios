@@ -565,8 +565,8 @@ ahci_init:
 
         mov     ecx, ebx
         imul    ecx, sizeof.PORT_DATA
-        mov     ecx, [sd_data]
         add     ecx, SD_DATA.port_data_arr
+        add     ecx, [sd_data]
         stdcall ahci_port_rebase, edi, ebx, ecx
 
         ; DEBUGF  1, "K: AHCI: After REBASING, signature = 0x%x\n", [edi + HBA_PORT.signature]
