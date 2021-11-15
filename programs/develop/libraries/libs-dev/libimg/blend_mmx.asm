@@ -49,11 +49,12 @@ proc	xcf._.blend_rgb
 	pmullw		mm3, mm1
 	psllw		mm2, 8
 	paddw		mm3, mm2
-	pinsrw		mm3, ebx, 3
 	psrlw		mm3, 8
 	packuswb	mm3, mm0
 	movd		eax, mm3
-
+	rol		eax, 8
+	mov		al, bh
+	ror		eax, 8
 	ret
 endp
 
@@ -90,10 +91,10 @@ proc	xcf._.blend_gray
 	pmullw		mm3, mm1
 	psllw		mm2, 8
 	paddw		mm3, mm2
-	pinsrw		mm3, ebx, 1
 	psrlw		mm3, 8
 	packuswb	mm3, mm0
 	movd		eax, mm3
+	mov		ah, bh
 
 	ret
 endp
@@ -199,10 +200,12 @@ proc	xcf._.composite_rgb_00 _copy_width, _copy_height, _bottom_total_bpl, _img_t
 	pmullw		mm3, mm1
 	psllw		mm2, 8
 	paddw		mm3, mm2
-	pinsrw		mm3, ebx, 3
 	psrlw		mm3, 8
 	packuswb	mm3, mm0
 	movd		eax, mm3
+	rol		eax, 8
+	mov		al, bh
+	ror		eax, 8
 	stosd
 
 	dec		ecx
@@ -257,10 +260,10 @@ proc	xcf._.composite_gray_00 _copy_width, _copy_height, _bottom_total_bpl, _img_
 	pmullw		mm3, mm1
 	psllw		mm2, 8
 	paddw		mm3, mm2
-	pinsrw		mm3, ebx, 1
 	psrlw		mm3, 8
 	packuswb	mm3, mm0
 	movd		eax, mm3
+	mov		ah, bh
 	stosw
 
 	dec		ecx
