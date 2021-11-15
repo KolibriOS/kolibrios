@@ -165,6 +165,7 @@ struct PORT_DATA
     portno        dd ? ; port index, 0..31
     drive_type    db ? ; drive type
     sector_count  dq ? ; number of sectors
+    ctr_ptr       dd ? ; pointer to controller to which port belongs
 ends
 
 ; Register FIS – Host to Device
@@ -558,6 +559,8 @@ ahci_init:
         imul    ecx, sizeof.PORT_DATA
         add     ecx, AHCI_CTR.port_data_arr
         add     ecx, [ctr_ptr]
+        mov     eax, [ctr_ptr]
+        mov     [ecx + PORT_DATA.ctr_ptr], eax ; to which controller the port belongs
         stdcall ahci_port_rebase, edi, ebx, ecx
 
         ; DEBUGF  1, "K: AHCI: After REBASING, signature = 0x%x\n", [edi + HBA_PORT.signature]
@@ -662,10 +665,7 @@ proc ahci_port_identify stdcall, pdata: dword
         pushad
         
         mov     esi, [pdata] ; esi - address of PORT_DATA struct of port
-        mov     edi, [esi + PORT_DATA.port] ; edi - address of HBA_PORT struct of port
-
-        mov     eax, edi
-        call    ahci_find_cmdslot
+        stdcall ahci_find_cmdslot, esi
 
         cmp     eax, -1
         jne     .cmdslot_found
@@ -723,6 +723,8 @@ proc ahci_port_identify stdcall, pdata: dword
         mov     byte [eax + HBA_CMD_TBL.cfis + FIS_REG_H2D.command], ATAPI_IDENTIFY
 @@:
         mov     byte [eax + HBA_CMD_TBL.cfis + FIS_REG_H2D.device], 0
+
+        mov     edi, [esi + PORT_DATA.port] ; edi - address of HBA_PORT struct of port
 
         ; Wait on previous command to complete, before issuing new command.
         stdcall ahci_port_wait, edi, AHCI_PORT_TIMEOUT
@@ -808,9 +810,7 @@ proc ahci_rw_sectors stdcall pdata: dword, vbuf: dword, startsector: qword, nums
         DEBUGF  AHCI_DBGLVL, "    ahci_rw_sectors: buffer = 0x%x, startsector = 0x%x:%x, numsectors = %u, is_write = %u\n", [vbuf], [startsector], [startsector + 4], [numsectors], [is_write]:1
 
         mov     esi, [pdata] ; esi - address of PORT_DATA struct of port
-        mov     edi, [esi + PORT_DATA.port] ; edi - address of HBA_PORT struct of port
-        mov     eax, edi
-        call    ahci_find_cmdslot
+        stdcall ahci_find_cmdslot, esi
         cmp     eax, -1
         jne     .cmdslot_found
 
@@ -998,6 +998,8 @@ proc ahci_rw_sectors stdcall pdata: dword, vbuf: dword, startsector: qword, nums
         shr     ebx, 8
         mov     byte [eax + HBA_CMD_TBL.cfis + FIS_REG_H2D.counth], bl
 
+        mov     edi, [esi + PORT_DATA.port] ; edi - address of HBA_PORT struct of port
+
         ; Wait on previous command to complete, before issuing new command.
         stdcall ahci_port_wait, edi, AHCI_PORT_TIMEOUT
 
@@ -1050,7 +1052,9 @@ proc ahci_read stdcall pdata: dword, buffer: dword, startsector: qword, numsecto
 
         pushad
  
-        mov     ecx, ctr1_data.mutex  ; why ctr1 ? TODO: make for corresponding controller
+        mov     ecx, [pdata]
+        mov     ecx, [ecx + PORT_DATA.ctr_ptr]
+        mov     ecx, [ecx + AHCI_CTR.mutex]
         call    mutex_lock
 
         mov     eax, [numsectors_ptr]
@@ -1088,7 +1092,9 @@ proc ahci_read stdcall pdata: dword, buffer: dword, startsector: qword, numsecto
         jmp     .read_loop
 .read_loop_end:
 
-        mov     ecx, ctr1_data.mutex  ; why ctr1 ? TODO: make for corresponding controller
+        mov     ecx, [pdata]
+        mov     ecx, [ecx + PORT_DATA.ctr_ptr]
+        mov     ecx, [ecx + AHCI_CTR.mutex]
         call    mutex_unlock
  
         popad
@@ -1105,7 +1111,9 @@ proc ahci_write stdcall pdata: dword, buffer: dword, startsector: qword, numsect
 
         pushad
  
-        mov     ecx, ctr1_data.mutex  ; why ctr1 ? TODO: make for corresponding controller
+        mov     ecx, [pdata]
+        mov     ecx, [ecx + PORT_DATA.ctr_ptr]
+        mov     ecx, [ecx + AHCI_CTR.mutex]
         call    mutex_lock
 
         mov     eax, [numsectors_ptr]
@@ -1134,7 +1142,9 @@ proc ahci_write stdcall pdata: dword, buffer: dword, startsector: qword, numsect
         jmp     .write_loop
 .write_loop_end:
 
-        mov     ecx, ctr1_data.mutex  ; why ctr1 ? TODO: make for corresponding controller
+        mov     ecx, [pdata]
+        mov     ecx, [ecx + PORT_DATA.ctr_ptr]
+        mov     ecx, [ecx + AHCI_CTR.mutex]
         call    mutex_unlock
  
         popad
@@ -1251,6 +1261,8 @@ endp
 ; in: port - address of HBA_PORT structure
 ;     portno - port index (0..31)
 ;     pdata - address of PORT_DATA structure
+; out:
+;     rebases port and fills pdata with mappings
 proc ahci_port_rebase stdcall, port: dword, portno: dword, pdata: dword
         locals
             phys_page1  dd ?
@@ -1360,15 +1372,19 @@ endp
 
 ; ----------------------------------------------------------- ; TODO check
 ; Find a free command list slot
-; in: eax - address of HBA_PORT structure
+; in: pdata - address of HBA_PORT structure
 ; out: eax - if not found -1, else slot index
-ahci_find_cmdslot:
+proc ahci_find_cmdslot stdcall, pdata: dword
         push    ebx ecx edx esi
+        mov     esi, [pdata]
+        mov     eax, [esi + PORT_DATA.port]
+
         ; If not set in SACT and CI, the slot is free
         mov     ebx, [eax + HBA_PORT.sata_active]
         or      ebx, [eax + HBA_PORT.command_issue] ; ebx = slots
 
-        mov     esi, [ctr1_data.abar] ; why ctr1 ? TODO: make for corresponding controller
+        mov     esi, [esi + PORT_DATA.ctr_ptr]
+        mov     esi, [esi + AHCI_CTR.abar]
         mov     edx, [esi + HBA_MEM.cap]
         shr     edx, 8
         and     edx, 0xf
@@ -1395,6 +1411,7 @@ ahci_find_cmdslot:
 .ret:
         pop     esi edx ecx ebx
         ret
+endp
 
 
 proc _memset stdcall, dest:dword, val:byte, cnt:dword ; doesnt clobber any registers
