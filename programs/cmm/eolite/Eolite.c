@@ -5,14 +5,13 @@
 BUGS:
 - F1 in KFM (move Properties to an external app)
 TODO:
-- 70.5 - get volume info and label
 - add option Preserve all timestamps (Created, Opened, Modified)
   http://board.kolibrios.org/viewtopic.php?f=23&t=4521&p=77334#p77334
 */
 
-#define ABOUT_TITLE "EOLITE 5.06"
-#define TITLE_EOLITE "Eolite File Manager 5.06 Gold"
-#define TITLE_KFM "Kolibri File Manager 2.06 Gold";
+#define ABOUT_TITLE "EOLITE 5.1"
+#define TITLE_EOLITE "Eolite File Manager 5.1"
+#define TITLE_KFM "Kolibri File Manager 2.1";
 
 #define MEMSIZE 1024 * 250
 #include "../lib/clipboard.h"
@@ -799,6 +798,7 @@ void Line_ReDraw(dword bgcol, filenum){
 		  char full_path[4096];
 		  dword separator_color;
 		  bool current_inactive = false;
+		  char volume_label[64] = 0;
 	char label_file_name[4096];
 	if (filenum==-1) return;
 
@@ -825,6 +825,7 @@ void Line_ReDraw(dword bgcol, filenum){
 	file.sizelo   = ESI.BDVK.sizelo;
 	file.sizehi   = ESI.BDVK.sizehi;
 	file_name_off = #ESI.BDVK.name;
+	sprintf(#full_path,"%s/%s",path,file_name_off);
 
 	if (attr&ATR_FOLDER)
 	{
@@ -833,7 +834,10 @@ void Line_ReDraw(dword bgcol, filenum){
 			WriteTextCenter(files.x+files.w-140, files.text_y+y+1, 72, col.list_gb_text, ext1);
 		}
 		if (chrnum(path, '/')==1) && (streq(path, "/kolibrios")==false)
-		&& (streq(path, "/sys")==false) file_size = GetDeviceSize(#full_path);
+			&& (streq(path, "/sys")==false) {
+				file_size = GetDeviceSize(#full_path);
+				if (ESBYTE[path+1]) strlcpy(#volume_label, GetVolumeLabel(#full_path), sizeof(volume_label));
+			}
 	}
 	else
 	{
@@ -873,8 +877,9 @@ void Line_ReDraw(dword bgcol, filenum){
 	}
 	else
 	{
-		//that shit must be it a library
+		//that shit must be in a library
 		strcpy(#label_file_name, file_name_off);
+		if (volume_label) sprintf(#label_file_name, "%s [%s]", file_name_off, #volume_label);
 		if (kfont.getsize(kfont.size.pt, #label_file_name) + 141 + 26 > files.w)
 		{
 			while (kfont.getsize(kfont.size.pt, #label_file_name) + 141 + 26 > files.w) {

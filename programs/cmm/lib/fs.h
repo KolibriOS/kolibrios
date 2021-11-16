@@ -62,6 +62,23 @@
     $int 0x40
 }
 
+:dword GetVolumeLabel(dword _path)
+{
+	BDVK bdvk;
+	//if (ESBYTE[_path+1]=='k') || (ESBYTE[_path+2]=='y') return NULL;
+	f70.func = 5;
+	f70.param1 = 0;
+	f70.param2 = 1;
+	f70.param3 = 1;
+	f70.param4 = #bdvk;
+	f70.rezerv = 0;
+	f70.name = _path;
+	$mov eax,70
+	$mov ebx,#f70.func
+	$int 0x40
+	return #bdvk.name;
+}
+
 :dword SetFileInfo(dword file_path, bdvk_struct)
 {    
     f70.func = 6;

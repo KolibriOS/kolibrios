@@ -134,7 +134,8 @@ void _SystemDiscs::DrawSelect(int draw_x, btid, dword _path)
 void _SystemDiscs::DrawOptions(int draw_x)
 {
 	int optionsy = SELECTY+KFM2_DEVH+1;
-	char dev_name[15], disc_name[100], i, dev_icon, is_active=0;
+	char dev_name[15], disc_name[100], volume_label[64], label_file_name[100];
+	char i, dev_icon, is_active=0;
 		
 	SystemDiscs.Get();
 
@@ -149,7 +150,12 @@ void _SystemDiscs::DrawOptions(int draw_x)
 		DefineButton(draw_x, optionsy, DDW, KFM2_DEVH-1, 100+i+BT_HIDE,0xFFFFFF);
 		_PutImage(draw_x + 5, optionsy+2, 18,17, is_active*7+dev_icon*17*18*3+#devices);
 		if (is_active) kfont.bold = true;
-		kfont.WriteIntoWindow(draw_x + 24, optionsy+2, 0xFFFfff, 0x000000, kfont.size.pt, #dev_name+1);
+		//strncpy(#volume_label, GetVolumeLabel(#dev_name), sizeof(volume_label));
+		strcpy(#label_file_name, #dev_name);
+		//if (dev_name[1]!='k') && (dev_name[2]!='y') {
+		//	if (volume_label) sprintf(#label_file_name, "%s [%s]", #dev_name, #volume_label);
+		//} 
+		kfont.WriteIntoWindow(draw_x + 24, optionsy+2, 0xFFFfff, 0x000000, kfont.size.pt, #label_file_name+1);
 		kfont.bold = false;
 		optionsy += KFM2_DEVH;
 	}
