@@ -13,13 +13,13 @@
  * The default is to use cgibase. With relative html style
  * we generate URLs of the form "../manX/page.html".
  */
-static int relat_html_style = 0;
+//static int relat_html_style = 0;
 
 /*
  * The default is to use cgibase. With current html style
  * we generate URLs of the form "./page.html".
  */
-static int current_html_style = 0;
+static int current_html_style = 1;
 
 /*
  * Either the user is non-local (or local, but using httpd),
@@ -27,10 +27,14 @@ static int current_html_style = 0;
  * and uses lynx, and we use lynxcgi:/home/httpd/cgi-bin.
  */
 
+#if 0
+
 static char *man2htmlpath = "/cgi-bin/man/man2html"; 	/* default */
 static char *cgibase_format = "http://%s"; 		/* host.domain:port */
 static char *cgibase_ll_format = "lynxcgi:%s"; 		/* directory */
 static char *cgibase = "http://localhost";		/* default */
+
+#endif
 
 /*
  * Separator between URL and argument string.
@@ -82,6 +86,7 @@ man_page_html(char *sec, char *h) {
 		else
 			fprintf(out, "<A HREF=\"./%s.html\">%s</A>",
 			       h, h);
+#if 0
 	} else if (relat_html_style) {
 		if (!h)
 			fprintf(out, "<A HREF=\"../index.html\">"
@@ -99,8 +104,10 @@ man_page_html(char *sec, char *h) {
 		else
 			fprintf(out, "<A HREF=\"%s%s%c%s+%s\">%s</A>",
 			       cgibase, man2htmlpath, sep, sec, h, h);
+#endif
 	}
 }
+
 
 void
 ftp_html(char *f) {
