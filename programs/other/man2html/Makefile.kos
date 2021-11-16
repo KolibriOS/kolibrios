@@ -1,0 +1,15 @@
+TCC = /kolibrios/develop/tcc/tcc
+
+NAME = man2html
+
+SRC = man2html.c cgibase.c abbrev.c strdefs.c
+
+CFLAGS = -D_KOLIBRI -DNOCGI
+LIBS = -ltcc -lc.obj
+
+all:
+	$(KTCC) $(CFLAGS) $(SRC) $(LIBS) -o $(NAME)
+
+
+clean:
+	rm $(NAME)

@@ -1,0 +1,91 @@
+This directory contains the following.
+
+1. man2html
+
+This is a pure manroff -> html converter.
+No manpath search etc.
+
+Call: man2html [-l | -H host.domain:port] [filename]
+
+The contents of FILENAME (or STDIN, in case FILENAME is "-" or absent)
+are converted from man-style nroff to html, and printed on STDOUT.
+
+With "-l" URLs of the form "lynxcgi:/home/httpd/cgi-bin/..." are generated.
+With "-H host" we make URLs of the form "http://host/cgi-bin/...".
+The default is "http://localhost/cgi-bin/...".
+
+2. A collection of scripts
+
+This part is not installed by "make install" of the global Makefile.
+There are security considerations: it is very unlikely that these
+scripts (still in alpha) are secure, so for the time being they
+should only be used where security is not a major concern.
+
+If you are not afraid, or are not running a httpd, do
+"make install-scripts" in this directory.
+This does three things: install man stuff, install glimpse stuff,
+and install user interface stuff.
+
+2A. man stuff
+
+This first part (that can be done separately with "make install-man-scripts")
+puts various scripts under /home/httpd/cgi-bin and /home/httpd/cgi-aux
+in a subdirectory man.
+It will create a directory /var/man2html to hold the indices.
+(This directory should be writable by the cgi scripts;
+probably that means that the owner should be nobody.
+Choose a group and add all non-httpd users that should be
+able to write this directory to that group.)
+
+Structure of the collection of scripts:
+	man2html is the main script.
+	It uses man.aux when called without arguments.
+	It uses manwhatis when asked for an index of manpages+descriptions.
+	It uses mansec when asked for a compact index of manpages.
+	It uses mansearch when asked for a glimpse search.
+	  In its turn mansearch uses mansearch.aux when called
+	  without arguments. It uses mansearchhelp (which uses
+	  mansearchhelp.aux) when asked for help.
+
+2B. glimpse stuff
+The second part (that can be done separately with
+"make install-glimpse-stuff") installs .glimpse_filters
+in /var/man2html, in order to tell glimpse what decompressors to use.
+
+2C. user interface stuff
+The third part (that can be done separately with "make install-hman")
+installs a user interface to these scripts in /usr/bin/hman.
+Now people can say
+    alias man=/usr/bin/hman
+and have a man that uses a html browser.
+The browser is chosen via environment variables - look at the script.
+
+3. Glimpse.
+
+For the glimpse part, I quote Michael Hamilton:
+----------------------------------------------------------------------
+To use the Glimpse full text searching, you will need to install
+glimpse in /usr/bin.  Redhat rpm users can get glimpse from 
+
+ ftp://ftp.redhat.com/pub/contrib/i386/glimpse-4.0-6.i386.rpm
+
+The glimpse home ftp site is cs.arizona.edu.  N.B. glimpse is not
+freely redistributable for commercial use, I'd be very interested in a
+more liberal alternative.  Having installed glimpse, you will need to
+build a glimpse index in /var/man2html.  This doesn't take too long -
+about 3 minutes on my 486DX2/66 16MB machine.  As root do:
+
+ /usr/bin/glimpseindex -z -H /var/man2html /usr/man/man* /usr/X11R6/man/man* \
+     /usr/local/man/man* /opt/man/man*
+ chmod ugo+r /var/man2html/.glimpse*
+
+The -z option causes glimpse to apply any filters (for decompression etc)
+specified in /var/man2html/.glimpse_filters.
+
+This could be set up as a cron job in /etc/crontab, e.g. (the following
+must be all on one line):
+
+  21 04 * * 1 root /usr/bin/glimpseindex -z -H /var/man2html /usr/man/man* 
+      /usr/X11R6/man/man* /usr/local/man/man* /opt/man/man* ;
+      chmod +r /var/man2html/.glimpse*
+--------------------------------------------------------------------------
