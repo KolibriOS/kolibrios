@@ -117,7 +117,7 @@ void DrawLangButtons()
 	int y = edit1.top+3;
 	DrawBar(Form.cwidth-111, y, 100, 25, sc.work);
 	DefineButton(Form.cwidth-79, y-4, 20, 20, BTN_CHANGE_LANGUAGE, sc.button);
-	WriteText(Form.cwidth-73, y-1, 10000001b, sc.work_text, "\26");
+	WriteText(Form.cwidth-73, y-1, 10000001b, sc.button_text, "\26");
 	if (active_dict == ENG_RUS) {
 		direction = TEXT_RU2EN; 
 	} else {

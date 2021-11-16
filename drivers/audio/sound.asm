@@ -419,13 +419,13 @@ devices         dd (CTRL_ICH  shl 16)+VID_INTEL, intelac97
 
 srv_entry       dd 0
 
-intelac97       db 'INTELAC97', 0
+intelac97       db 'AC97', 0
 vt823x          db 'VT823X', 0
 sis             db 'SIS', 0
 fm801           db 'FM801', 0
 ensoniq         db 'ENSONIQ', 0
 emu10k1x        db 'EMU10K1X', 0
-intelhda        db 'INTEL_HDA', 0
+intelhda        db 'HDAUDIO', 0
 sb16            db 'SB16', 0
 
 msgInit         db 'Detecting hardware...',13,10,0
