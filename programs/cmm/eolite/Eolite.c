@@ -6,11 +6,13 @@ BUGS:
 - F1 in KFM (move Properties to an external app)
 TODO:
 - 70.5 - get volume info and label
+- add option Preserve all timestamps (Created, Opened, Modified)
+  http://board.kolibrios.org/viewtopic.php?f=23&t=4521&p=77334#p77334
 */
 
-#define ABOUT_TITLE "EOLITE 5.05 Gold"
-#define TITLE_EOLITE "Eolite File Manager 5.05 Gold"
-#define TITLE_KFM "Kolibri File Manager 2.05 Gold";
+#define ABOUT_TITLE "EOLITE 5.06"
+#define TITLE_EOLITE "Eolite File Manager 5.06 Gold"
+#define TITLE_KFM "Kolibri File Manager 2.06 Gold";
 
 #define MEMSIZE 1024 * 250
 #include "../lib/clipboard.h"
@@ -163,7 +165,7 @@ void handle_param()
 			ExitProcess();
 	}
 
-	if (param[strlen(#param)-1]=='/') ESBYTE[strlen(#param)-1]=NULL; //no "/" at the end
+	if (param[strlen(#param)-1]=='/') param[strlen(#param)-1]='\0'; //no "/" at the end
 
 	if (dir_exists(p)) {
 		strcpy(path, p);
@@ -219,20 +221,21 @@ void main()
 				//select file
 				if (mouse.key&MOUSE_LEFT) && (mouse.up)
 				{
-					GetKeyModifier();
 					old_cur_y = files.cur_y;
-					if (files.ProcessMouse(mouse.x, mouse.y)) && (!key_modifier) {
+					if (files.ProcessMouse(mouse.x, mouse.y)) {
 						List_ReDraw();
-						break;
 					}
-					if (key_modifier&KEY_LSHIFT) || (key_modifier&KEY_RSHIFT) {
-						EventChooseFilesRange(old_cur_y, files.cur_y);
+					if (!GetKeyModifier()) {
+						if (mouse.y-files.y/files.item_h+files.first==files.cur_y)
+						&& (old_cur_y==files.cur_y) {
+							EventOpen(0);
+						}
+					} else if (key_modifier&KEY_LSHIFT) || (key_modifier&KEY_RSHIFT) {
+						EventChooseFilesRange(old_cur_y, files.cur_y);						
 					} else if (key_modifier&KEY_LCTRL) || (key_modifier&KEY_RCTRL) {
 						EventChooseFile(files.cur_y);
 						DrawStatusBar();
 						List_ReDraw();
-					} else {
-						if (mouse.y - files.y / files.item_h + files.first == files.cur_y) EventOpen(0);
 					}
 				}
 				//file menu
@@ -786,6 +789,22 @@ void List_ReDraw()
 	DrawScroll(scroll_used);
 }
 
+dword GetVolumeLabel(dword _path)
+{
+	BDVK bdvk;
+	f70.func = 5;
+	f70.param1 = 0;
+	f70.param2 = 0;
+	f70.param3 = 1;
+	f70.param4 = #bdvk;
+	f70.rezerv = 0;
+	f70.name = _path;
+	$mov eax,70
+	$mov ebx,#f70.func
+	$int 0x40
+	return #bdvk.name;
+}
+
 void Line_ReDraw(dword bgcol, filenum){
 	dword text_col=col.list_gb_text,
 		  ext1, attr,
@@ -820,10 +839,17 @@ void Line_ReDraw(dword bgcol, filenum){
 
 	ESI = items.get(filenum+files.first)*304 + buf+32;
 	attr = ESDWORD[ESI];
-	file.sizelo   = ESDWORD[ESI+32];
-	file.sizehi   = ESDWORD[ESI+36];
-	file_name_off = ESI+40;
+	file.sizelo   = ESI.BDVK.sizelo;
+	file.sizehi   = ESI.BDVK.sizehi;
+	file_name_off = #ESI.BDVK.name;
+	$push esi
 	sprintf(#full_path,"%s/%s",path,file_name_off);
+	$pop esi
+	if (ESI.BDVK.volume_label) {
+		debug("volume: ");
+		debugln(#full_path);
+		file_name_off = GetFileInfo(#full_path);
+	}
 
 	if (attr&ATR_FOLDER)
 	{

@@ -178,7 +178,7 @@ void OpenTmpDisk()
 {
 	unsigned char eol_param[10];
 	if (!disk_num) return;
-	strcpy(#eol_param, "/tmp#/1/");
+	strcpy(#eol_param, "/tmp#/1");
 	eol_param[4] = disk_list[selected].Item[3];
 	RunProgram("/sys/File managers/Eolite", #eol_param);
 }
