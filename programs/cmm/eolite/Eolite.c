@@ -221,21 +221,20 @@ void main()
 				//select file
 				if (mouse.key&MOUSE_LEFT) && (mouse.up)
 				{
+					GetKeyModifier();
 					old_cur_y = files.cur_y;
-					if (files.ProcessMouse(mouse.x, mouse.y)) {
+					if (files.ProcessMouse(mouse.x, mouse.y)) && (!key_modifier) {
 						List_ReDraw();
+						break;
 					}
-					if (!GetKeyModifier()) {
-						if (mouse.y-files.y/files.item_h+files.first==files.cur_y)
-						&& (old_cur_y==files.cur_y) {
-							EventOpen(0);
-						}
-					} else if (key_modifier&KEY_LSHIFT) || (key_modifier&KEY_RSHIFT) {
-						EventChooseFilesRange(old_cur_y, files.cur_y);						
+					if (key_modifier&KEY_LSHIFT) || (key_modifier&KEY_RSHIFT) {
+						EventChooseFilesRange(old_cur_y, files.cur_y);
 					} else if (key_modifier&KEY_LCTRL) || (key_modifier&KEY_RCTRL) {
 						EventChooseFile(files.cur_y);
 						DrawStatusBar();
 						List_ReDraw();
+					} else {
+						if (mouse.y - files.y / files.item_h + files.first == files.cur_y) EventOpen(0);
 					}
 				}
 				//file menu
@@ -789,22 +788,6 @@ void List_ReDraw()
 	DrawScroll(scroll_used);
 }
 
-dword GetVolumeLabel(dword _path)
-{
-	BDVK bdvk;
-	f70.func = 5;
-	f70.param1 = 0;
-	f70.param2 = 0;
-	f70.param3 = 1;
-	f70.param4 = #bdvk;
-	f70.rezerv = 0;
-	f70.name = _path;
-	$mov eax,70
-	$mov ebx,#f70.func
-	$int 0x40
-	return #bdvk.name;
-}
-
 void Line_ReDraw(dword bgcol, filenum){
 	dword text_col=col.list_gb_text,
 		  ext1, attr,
@@ -842,14 +825,6 @@ void Line_ReDraw(dword bgcol, filenum){
 	file.sizelo   = ESI.BDVK.sizelo;
 	file.sizehi   = ESI.BDVK.sizehi;
 	file_name_off = #ESI.BDVK.name;
-	$push esi
-	sprintf(#full_path,"%s/%s",path,file_name_off);
-	$pop esi
-	if (ESI.BDVK.volume_label) {
-		debug("volume: ");
-		debugln(#full_path);
-		file_name_off = GetFileInfo(#full_path);
-	}
 
 	if (attr&ATR_FOLDER)
 	{
