@@ -141,7 +141,7 @@ iglobal
       dd set_app_param           ; 40-WantEvents
       dd undefined_syscall       ; 41- deprecated GetIrqOwner
       dd undefined_syscall       ; 42- deprecated ReadIrqData
-      dd sys_outport             ; 43-SendDeviceData
+      dd undefined_syscall       ; 43-SendDeviceData
       dd undefined_syscall       ; 44- deprecated ProgramIrqs
       dd undefined_syscall       ; 45- deprecated ReserveIrq and FreeIrq
       dd syscall_reserveportarea ; 46-ReservePortArea and FreePortArea
