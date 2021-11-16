@@ -302,7 +302,7 @@ extra_files = {
  {"kolibrios/utils/kfm/kfm.ini", "common/File Managers/kfm.ini"},
  {"kolibrios/utils/kfm/kfm_keys_eng.txt", PROGS .. "/fs/kfm/trunk/docs/english/kfm_keys.txt"},
  {"kolibrios/utils/kfm/kfm_keys_rus.txt", PROGS .. "/fs/kfm/trunk/docs/russian/dos_kolibri/kfm_keys.txt"},
- {"kolibrios/utils/man2html", PROGS .. "common/utils/MAN2HTML"},
+ {"kolibrios/utils/man2html", "common/utils/MAN2HTML"},
  }
 if build_type == "rus" then tup.append_table(extra_files, {
  {"Docs/cp866/config.txt", build_type .. "/docs/CONFIG.TXT"},
