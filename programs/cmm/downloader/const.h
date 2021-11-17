@@ -1,4 +1,4 @@
-//Copyright 2020 by Leency
+//Copyright 2021 by Leency
 
 #ifdef LANG_RUS
 	#define DL_WINDOW_HEADER "Менеджер загрузок"
@@ -9,10 +9,9 @@
 	#define T_SPEED_TEST "Тест скорости"
 	#define FILE_SAVED_AS "'Менеджер загрузок\nФайл сохранен как %s' -Dt"
 	#define FILE_NOT_SAVED "'Менеджер загрузок\nОшибка! Файл не может быть сохранен как\n%s' -Et"
-	#define KB_RECEIVED "Идет скачивание... %s получено"
+	#define KB_RECEIVED "Идет скачивание: %i.%i Mb получено (%i Kb/s)    "
 	#define T_ERROR_STARTING_DOWNLOAD "'Невозможно начать скачивание.\nПроверьте введенный путь и соединение с Интернетом.' -E"
 	#define T_AUTOCLOSE "Автозакрытие"
-#define SPEED_TEST_INFO_MESSAGE "'Скорость загрузки отображается в поле Download программы Network status.'-Id"
 	char accept_language[]= "Accept-Language: ru\n";
 #else
 	#define DL_WINDOW_HEADER "Download Manager"
@@ -23,15 +22,14 @@
 	#define T_SPEED_TEST "Speed test"
 	#define FILE_SAVED_AS "'Download manager\nFile saved as %s' -Dt"
 	#define FILE_NOT_SAVED "'Download manager\nError! Can\96t save file as %s' -Et"
-	#define KB_RECEIVED "Downloading... %s received"
+	#define KB_RECEIVED "Downloading: %i.%i Mb received (%i Kb/s)    "
 	#define T_ERROR_STARTING_DOWNLOAD "'Error while starting download process.\nCheck entered path and Internet connection.' -E"
 	#define T_AUTOCLOSE "Autoclose"
-	#define SPEED_TEST_INFO_MESSAGE "'Download speed is shown after `Download`\nlabel in the Network status program.'-Id"
 	char accept_language[]= "Accept-Language: en\n";
 #endif
 
 #define GAPX 15
-#define WIN_W 580
+#define WIN_W 540
 #define WIN_H 100
 
 char save_dir[] = "/tmp0/1/Downloads";

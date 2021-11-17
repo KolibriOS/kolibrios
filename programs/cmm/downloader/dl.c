@@ -10,6 +10,8 @@
 bool exit_param = false;
 bool open_file = false;
 
+dword speed;
+
 _http http;
 
 checkbox autoclose = { T_AUTOCLOSE, false }; 
@@ -17,7 +19,7 @@ checkbox autoclose = { T_AUTOCLOSE, false };
 char uEdit[URL_SIZE];
 char filepath[URL_SIZE+96];
 
-progress_bar pb = {0, GAPX, 58, 315, 17, 0, NULL, NULL, 0xFFFfff, 0x74DA00, NULL};
+progress_bar pb = {0, GAPX, 58, 380, 17, 0, NULL, NULL, 0xFFFfff, 0x74DA00, NULL};
 edit_box ed = {WIN_W-GAPX-GAPX,GAPX,20,0xffffff,0x94AECE,0xffffff,0xffffff,
 	0x10000000, sizeof(uEdit)-2,#uEdit,0,ed_focus,19,19};
 
@@ -51,8 +53,6 @@ void main()
 
 		if (streq(#param, "-test")) {
 			strcpy(#uEdit, URL_SPEED_TEST);
-			RunProgram("/sys/network/netstat", NULL);
-			notify(SPEED_TEST_INFO_MESSAGE);
 		}
 	}
 	if (uEdit[0]) StartDownloading(); else {
@@ -107,7 +107,7 @@ void DrawWindow()
 			DrawStandartCaptButton(GAPX+276, BUT_Y, BTN_RUN, T_RUN);  
 		}
 	} else {
-		DrawStandartCaptButton(WIN_W - 240, BUT_Y, BTN_STOP, T_CANCEL);
+		DrawStandartCaptButton(WIN_W - 120, BUT_Y, BTN_STOP, T_CANCEL);
 		DrawDownloadingProgress();
 	}
 	//ed.offset=0; //DEL?
@@ -118,6 +118,7 @@ void StartDownloading()
 {
 	char get_url[URL_SIZE+33];
 	if (http.transfer > 0) return;
+	ResetDownloadSpeed();
 	filepath = '\0';
 	if (!strncmp(#uEdit,"https:",6)) {
 		miniprintf(#get_url, "http://gate.aspero.pro/?site=%s", #uEdit);
@@ -146,6 +147,7 @@ void StartDownloading()
 void DrawDownloadingProgress()
 {
 	char bytes_received[70];
+	dword gotkb = http.content_received/1024;
 
 	EDI = http.content_received / 100;
 	if (pb.value == EDI) return;
@@ -153,9 +155,9 @@ void DrawDownloadingProgress()
 	pb.value = EDI;
 	pb.max = http.content_length / 100;
 	progressbar_draw stdcall(#pb);
-	miniprintf(#bytes_received, KB_RECEIVED, ConvertSizeToKb(http.content_received) );
+	CalculateDownloadSpeed();
+	sprintf(#bytes_received, KB_RECEIVED, gotkb/1024, gotkb%1024/103, speed);
 	WriteTextWithBg(GAPX, pb.top + 22, 0xD0, sc.work_text, #bytes_received, sc.work);
-	//CalculateSpeed();
 }
  
 void StopDownloading()
@@ -269,7 +271,6 @@ void Unarchive(dword _arc)
 }
 
 
-/*
 struct TIME
 {
 	dword old;
@@ -278,22 +279,25 @@ struct TIME
 } time = {0,0,0};
 
 dword netdata_received;
-dword speed;
 
-void CalculateSpeed()
+void ResetDownloadSpeed()
+{
+	time.old = 0;
+	netdata_received = 0;
+}
+
+void CalculateDownloadSpeed()
 {
 	time.cur = GetStartTime();
 
 	if (time.old) {
 		time.gone = time.cur - time.old;
-		if (time.gone > 200) {
-			speed = http.content_received - netdata_received / time.gone * 100;
-			debugval("speed", speed);
-			debugln(ConvertSizeToKb(speed) );
+		if (time.gone >= 200) {
+			speed = http.content_received - netdata_received / time.gone / 10;
 			time.old = time.cur;
 			netdata_received = http.content_received;
 		}
+	} else { 
+		time.old = time.cur;
 	}
-	else time.old = time.cur;
 }
-*/

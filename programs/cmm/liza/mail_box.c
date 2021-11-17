@@ -1,12 +1,11 @@
 //Leency & SoUrcerer, LGPL
 //Hidnplayer
 
-TWebBrowser WB1;
-
 #define LIST_INFO_H 59
 int status_bar_h = 15;
 
 scroll_bar scroll1 = { 17,200,210, LIST_INFO_H-3,18,0,115,15,0,0xCCCccc,0xD2CED0,0x555555,1,0,0,0,0,0,0,0,0,0,0,0,0,1,1};
+scroll_bar scroll_wv;
 
 char *listbuffer;
 char *listpointer;
@@ -17,6 +16,7 @@ int mailsize;
 
 int cur_charset;
 
+llist list;
 
 enum {
 	GET_MAIL = 20,
@@ -34,7 +34,7 @@ void MailBoxNetworkProcess() {
 	if (aim) switch(aim)
 	{
 		case SEND_NSTAT:
-				SetMailBoxStatus(NULL, "Counting mail, awaiting answer...");			
+				SetMailBoxStatus(NULL, "Counting mail, awaiting answer...");
 				request_len = GetRequest("STAT", NULL);
 				Send(socketnum, #request, request_len, 0);
 				if (EAX == 0xffffffff) { debugln("Error sending STAT. Retry..."w); break;}
@@ -44,7 +44,7 @@ void MailBoxNetworkProcess() {
 		case GET_ANSWER_NSTAT:
 				ticks = Receive(socketnum, #immbuffer, BUFFERSIZE, 0);
 				if ((ticks == 0xffffff) || (ticks < 2)) break;
-									
+
 				if (immbuffer[ticks-2]=='\n')
 				{
 					debugln(#immbuffer);
@@ -54,7 +54,7 @@ void MailBoxNetworkProcess() {
 						mail_list.count = atoi(#param);
 						free(listbuffer);
 						listbuffer = mem_Alloc(30*mail_list.count); //24* original
-						listpointer = listbuffer;	
+						listpointer = listbuffer;
 						aim = SEND_NLIST;
 						debugln("Receiving mail list...");
 					}
@@ -75,16 +75,16 @@ void MailBoxNetworkProcess() {
 
 		case GET_ANSWER_NLIST:
 				ticks = Receive(socketnum, listpointer, listbuffer + 30*mail_list.count - listpointer, MSG_DONTWAIT);
-				if (ticks == 0xffffffff) break;	
-				listpointer = listpointer + ticks;	
-				
+				if (ticks == 0xffffffff) break;
+				listpointer = listpointer + ticks;
+
 				if (listpointer - listbuffer < 5) break;
-				if (strncmp(listpointer-5,"\n.\n",5)==0)  // note that c-- assembles "\n.\n" to 0x0d, 0x0a, 0x2e, 0x0d, 0x0a	
+				if (strncmp(listpointer-5,"\n.\n",5)==0)  // note that c-- assembles "\n.\n" to 0x0d, 0x0a, 0x2e, 0x0d, 0x0a
 				{
 					aim = SEND_RETR;
 					debugln("goto SEND_RETR");
 					DrawMailBox();
-					
+
 					*listpointer='\0';
 					atr.CreateArray();
 					atr.SetSizes();
@@ -93,7 +93,6 @@ void MailBoxNetworkProcess() {
 
 		case SEND_RETR:
 				from = to = date = subj = cur_charset = NULL;
-				WB1.list.ClearList();
 				DrawMailBox();
 				request_len = GetRequest("RETR", itoa(mail_list.cur_y+1));
 				if (Send(socketnum, #request, request_len, 0) == 0xffffffff)
@@ -115,7 +114,7 @@ void MailBoxNetworkProcess() {
 				aim = GET_ANSWER_RETR;
 				debugln("goto GET_ANSWER_RETR");
 				break;
-			
+
 		case GET_ANSWER_RETR:
 				debugval("mailsize", mailsize);
 				debugval("mailstart", mailstart);
@@ -150,21 +149,20 @@ void MailBoxLoop() {
 
 	mail_list.h = Form.cheight/4;
 	mail_list.ClearList();
-	WB1.list.no_selection = true;
 	SetMailBoxStatus( NULL , NULL);
 	cur_charset = 0;
 	aim = SEND_NSTAT;
-	
+
 	goto _MB_DRAW;
 
-	loop()	
+	loop()
 	{
 		WaitEventTimeout(2);
 		switch(EAX & 0xFF)
 		{
 			case evMouse:
 				mouse.get();
-				
+
 				if (!mouse.lkm) panels_drag=0;
 				if (mouse.lkm) && (mouse.y>mail_list.y+mail_list.h-1) && (mouse.y<mail_list.y+mail_list.h+6)
 				&& (!scroll1.delta2) && (!scroll_wv.delta2) panels_drag = 1;
@@ -176,34 +174,34 @@ void MailBoxLoop() {
 					break;
 				}
 
-				links.hover(mouse.x, mouse.y);
+				//links.hover(mouse.x, mouse.y);
 
 				if (!mail_list.count) break;
 				if (!panels_drag) { scrollbar_v_mouse (#scroll1); scrollbar_v_mouse (#scroll_wv); }
-				
+
 				if (mail_list.first <> scroll1.position)
 				{
 					mail_list.first = scroll1.position;
 					DrawMailList();
 					break;
 				};
-				if (WB1.list.first <> scroll_wv.position)
+				if (list.first <> scroll_wv.position)
 				{
-					WB1.list.first = scroll_wv.position;
+					list.first = scroll_wv.position;
 					DrawLetter();
 					break;
 				};
-				
+
 				if (mail_list.y+mail_list.h + 10 > mouse.y)
 				{
 					if (mail_list.MouseScroll(mouse.vert)) DrawMailList();
 				}
 				else
 				{
-					if (WB1.list.MouseScroll(mouse.vert)) DrawLetter();
+					if (list.MouseScroll(mouse.vert)) DrawLetter();
 				}
 				if (mouse.lkm) && (mail_list.MouseOver(mouse.x, mouse.y)) && (!clicked_list) clicked_list=1;
-				if (!mouse.lkm) && (clicked_list) if (mail_list.ProcessMouse(mouse.x, mouse.y)) 
+				if (!mouse.lkm) && (clicked_list) if (mail_list.ProcessMouse(mouse.x, mouse.y))
 				{
 					clicked_list = 0;
 					if (aim) break;
@@ -211,9 +209,9 @@ void MailBoxLoop() {
 					aim = SEND_RETR;
 				}
 
-				break;				
+				break;
 			case evButton:
-				id = GetButtonID(); 
+				id = GetButtonID();
 				if (id==1) SaveAndExit();
 				if (id==GET_MAIL) aim = SEND_NSTAT;
 				if (id==SAVE_LETTER)
@@ -223,19 +221,19 @@ void MailBoxLoop() {
 					pause(10);
 					RunProgram("/sys/tinypad", "mail.txt");
 				}
-				if (id==STOP_LOADING) 
+				if (id==STOP_LOADING)
 				{
 					StopLoading();
 					DrawStatusBar();
 					DrawMailList();
 				}
-				if (id==EXIT_MAIL) 
+				if (id==EXIT_MAIL)
 				{
 					StopLoading();
 					Close(socketnum);
 					LoginBoxLoop();
 				}
-				if (id==CHANGE_CHARSET) 
+				if (id==CHANGE_CHARSET)
 				{
 					DefineButton(0,0,Form.cwidth,Form.cheight, CLOSE_CHANGE_CHARSET+BT_HIDE+BT_NOFRAME);
 					DrawRectangle(Form.cwidth-100, Form.cheight-status_bar_h- 70, 70, 82, sc.work_graph);
@@ -251,7 +249,7 @@ void MailBoxLoop() {
 				}
 				if (id==CLOSE_CHANGE_CHARSET) goto _MB_DRAW;
 
-				break;				
+				break;
 			case evKey:
 				GetKeys();
 
@@ -282,7 +280,6 @@ void DrawMailBox()
 {
 	DrawMailList();
 	DrawLetterInfo();
-	InitTWB();
 	DrawLetter();
 	DrawStatusBar();
 }
@@ -310,7 +307,7 @@ void DrawMailList() {
 	dword sel_col;
 	mail_list.visible = mail_list.h / mail_list.item_h;
 
-	for (i=30; i<150; i++) DeleteButton(i); 
+	for (i=30; i<150; i++) DeleteButton(i);
 	for (i=0; (i<mail_list.visible) && (i+mail_list.first<mail_list.count); i++)
 	{
 		on_y = i*mail_list.item_h + mail_list.y;
@@ -351,19 +348,8 @@ void DrawLetterInfo() {
 }
 
 
-void InitTWB() {
-	WB1.list.SetSizes(0, mail_list.y+mail_list.h+LIST_INFO_H+1, Form.cwidth - scroll_wv.size_x - 1, 
-		Form.cheight - mail_list.y - mail_list.h - LIST_INFO_H - 1 - status_bar_h, 12);
-	WB1.list.column_max = WB1.list.w - 30 / 6;
-	WB1.list.visible = WB1.list.h / WB1.list.item_h;
-	DrawBuf.Init(WB1.list.x, WB1.list.y, WB1.list.w, WB1.list.h);
-	WB1.list.first = WB1.list.count = 0;
-}
-
-
 void DrawLetter() {
-	WB1.ParseHtml(mdata, strlen(mdata));
-	WB1.DrawPage();
+	//DrawTextLines();
 	DrawRectangle(scroll_wv.start_x, scroll_wv.start_y, scroll_wv.size_x, scroll_wv.size_y-1, 0xFFFfff);
 }
 
@@ -387,7 +373,7 @@ void DrawStatusBar() {
 		SetMailBoxStatus(cur_st_percent, cur_st_text);
 		DrawCaptButton(240, st_y+1, 36, status_bar_h-3, STOP_LOADING, sc.button, sc.button_text,"Stop");
 	}
-	DrawCaptButton(Form.cwidth - 100, st_y+1, 70, status_bar_h-2, CHANGE_CHARSET+BT_HIDE, 
+	DrawCaptButton(Form.cwidth - 100, st_y+1, 70, status_bar_h-2, CHANGE_CHARSET+BT_HIDE,
 		sc.work, sc.work_text,cur_charset*10+#charsets);
 }
 
@@ -414,10 +400,12 @@ int GetLetterSize_(int number) {
    itoa_(#search_num+1, number);
    chrcat(#search_num, ' ');
    strcpyb(listbuffer, #mailsize1, #search_num, "\x0d");
-   return atoi(#mailsize1); 
+   return atoi(#mailsize1);
 }
 
 
+/*
 void EventClickLink() {
-	RunProgram("/sys/network/WebView", links.active_url);	
+	RunProgram("/sys/network/WebView", links.active_url);
 }
+*/

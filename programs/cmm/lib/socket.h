@@ -9,99 +9,94 @@
 #define SOCK_STREAM 1
 #define	SOCK_DGRAM 2
 
-#define AF_INET4 2 
+#define AF_INET4 2
 
 #define MSG_PEEK 0x02
 #define MSG_DONTWAIT 0x40
 
-dword errorcode;
-
-struct 	sockaddr_in
+struct 	SockAddr
 {
-        word    sin_family; 
-        word    sin_port; 
-        dword   sin_addr;
-        char    padding[8];
-};  
+  word    sin_family;
+  char    data[14];
+};
 
-inline fastcall dword Socket(ECX, EDX, ESI)
+// ecx = domain
+// edx = type
+// esi = protocol
+inline fastcall dword socket_open(ECX, EDX, ESI)
 {
-	$push	ebx
 	$mov 	eax, 75
-	$mov 	ebx, 0
+	$mov 	bl, 0
 	$int 	0x40
-	errorcode = EBX;
-	$pop	ebx
-} 
-
-inline fastcall dword Close(ECX)
-{
-	$push	ebx
-	$mov 	eax, 75
-	$mov 	ebx, 1
-	$int 	0x40
-	errorcode = EBX;
-	$pop	ebx	
 }
 
-inline fastcall dword Bind(ECX, EDX, ESI)
+// ecx = socket number
+inline fastcall dword socket_close(ECX)
 {
-	$push	ebx
 	$mov 	eax, 75
-	$mov 	ebx, 2
+	$mov 	bl, 1
 	$int 	0x40
-	errorcode = EBX;
-	$pop	ebx
 }
 
-inline fastcall dword Listen(ECX, EDX)
+// ecx = socket number
+// edx = pointer to sockaddr structure
+// esi = length of sockaddr structure
+inline fastcall dword socket_bind(ECX, EDX, ESI)
 {
-	$push	ebx
 	$mov 	eax, 75
-	$mov 	ebx, 3
+	$mov 	bl, 2
 	$int 	0x40
-	errorcode = EBX;
-	$pop	ebx
 }
 
-inline fastcall dword Connect(ECX, EDX, ESI)
+// ecx = socket number
+// edx = backlog
+inline fastcall dword socket_listen(ECX, EDX)
 {
-	$push	ebx
 	$mov 	eax, 75
-	$mov 	ebx, 4
+	$mov 	bl, 3
 	$int 	0x40
-	errorcode = EBX;
-	$pop	ebx
 }
 
-inline fastcall dword Accept(ECX, EDX, ESI)
+// ecx = socket number
+// edx = pointer to sockaddr structure
+// esi = length of sockaddr structure
+inline fastcall dword socket_connect(ECX, EDX, ESI)
 {
-	$push	ebx
 	$mov 	eax, 75
-	$mov 	ebx, 5
+	$mov 	bl, 4
 	$int 	0x40
-	errorcode = EBX;
-	$pop	ebx
 }
 
-inline fastcall dword Send(ECX, EDX, ESI, EDI)
+// ecx = socket number
+// edx = pointer to sockaddr structure
+// esi = length of sockaddr structure
+inline fastcall dword socket_accept(ECX, EDX, ESI)
 {
-	$push	ebx
 	$mov 	eax, 75
-	$mov 	ebx, 6
+	$mov 	bl, 5
 	$int 	0x40
-	errorcode = EBX;
-	$pop	ebx
 }
 
-inline fastcall dword Receive(ECX, EDX, ESI, EDI)
+// ecx = socket number
+// edx = pointer to buffer
+// esi = length of buffer
+// edi = flags
+inline fastcall dword socket_send(ECX, EDX, ESI, EDI)
 {
-	$push	ebx
 	$mov 	eax, 75
-	$mov 	ebx, 7
+	$mov 	bl, 6
 	$int 	0x40
-	errorcode = EBX;
-	$pop	ebx
+}
+
+// ecx = socket number
+// edx = pointer to buffer
+// esi = length of buffer
+// edi = flags
+inline fastcall dword socket_receive(ECX, EDX, ESI, EDI)
+{
+	$mov 	eax, 75
+	$mov 	bl, 7
+	$int 	0x40
 }
 
 #endif
