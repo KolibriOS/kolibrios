@@ -20,8 +20,8 @@ TEST_VERSION_NUMBER  equ '019a'
 ;Asper+ [
 SDO_TAG  equ 1	      ;Output stream tag id (any number except 0)
 SDO_IDX  equ 4	      ;Output stream index
-;According to "Intel® I/O Controller Hub 6 (ICH6) High Definition Audio / AC ’97 Programmer’s Reference Manual (PRM) May 2005 Document"
-;and "Intel® I/O Controller Hub 6 (ICH6) Family Datasheet" SDO0=4,
+;According to "Intelï¿½ I/O Controller Hub 6 (ICH6) High Definition Audio / AC ï¿½97 Programmerï¿½s Reference Manual (PRM) May 2005 Document"
+;and "Intelï¿½ I/O Controller Hub 6 (ICH6) Family Datasheet" SDO0=4,
 ;but according to "High Definition Audio Specification Revision 1.0a June 17, 2010" SDO0 depends on the number of SDIs.
 
 SDO_INT 	equ 1 shl SDO_IDX	;Output stream interrupt (must be power of 2)
@@ -138,6 +138,7 @@ CTRL_ATI_RV740		 equ  0xaa48
 ; AMD
 CTRL_AMD_HUDSON 	 equ  0x780d
 CTRL_AMD_RAVEN_RIDGE	 equ  0x15e3
+CTRL_AMD_MATISSE	 equ  0x1487
 ; VIA
 CTRL_VIA_VT82XX 	 equ  0x3288
 CTRL_VIA_VT61XX 	 equ  0x9140
@@ -2820,6 +2821,7 @@ devices:
 ; AMD
 	dd (CTRL_AMD_HUDSON shl 16)+VID_AMD,msg_AMD_HUDSON,		   AZX_DRIVER_GENERIC
 	dd (CTRL_AMD_RAVEN_RIDGE shl 16)+VID_AMD,msg_AMD_RAVEN_RIDGE,	   AZX_DRIVER_GENERIC
+	dd (CTRL_AMD_MATISSE shl 16)+VID_AMD,msg_AMD_MATISSE,	   AZX_DRIVER_GENERIC
 ; VIA
 	dd (CTRL_VIA_VT82XX shl 16)+VID_VIA,msg_VIA_VT82XX,		   AZX_DRIVER_VIA
 	dd (CTRL_VIA_VT61XX shl 16)+VID_VIA,msg_VIA_VT61XX,		   AZX_DRIVER_GENERIC
@@ -2917,6 +2919,7 @@ msg_ATI_RV770	     db 'RV770',      13,10,0
 msg_AMD 	     db 'AMD ',0
 msg_AMD_HUDSON	     db 'Hudson',     13,10,0
 msg_AMD_RAVEN_RIDGE  db 'RavenRidge', 13,10,0
+msg_AMD_MATISSE	     db 'Matisse',    13,10,0
 
 msg_VIA 	     db 'VIA ',0
 msg_VIA_VT82XX	     db 'VT8251/8237A',     13,10,0

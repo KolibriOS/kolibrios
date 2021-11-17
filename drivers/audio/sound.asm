@@ -144,6 +144,7 @@ CTRL_ATI_RV740           =  0xaa48
 
 CTRL_AMD_HUDSON          =  0x780d
 CTRL_AMD_RAVEN_RIDGE     =  0x15e3
+CTRL_AMD_MATISSE         =  0x1487
 
 CTRL_VIA_VT82XX          =  0x3288
 CTRL_VIA_VT61XX          =  0x9140
@@ -395,6 +396,7 @@ devices         dd (CTRL_ICH  shl 16)+VID_INTEL, intelac97
 ; AMD
                 dd (CTRL_AMD_HUDSON shl 16)+VID_AMD, intelhda
                 dd (CTRL_AMD_RAVEN_RIDGE shl 16)+VID_AMD, intelhda
+                dd (CTRL_AMD_MATISSE shl 16)+VID_AMD, intelhda
 ; VIA
                 dd (CTRL_VIA_VT82XX shl 16)+VID_VIA, intelhda
                 dd (CTRL_VIA_VT61XX shl 16)+VID_VIA, intelhda
