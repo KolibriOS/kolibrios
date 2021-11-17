@@ -45,9 +45,6 @@ E820_UNUSABLE  = 5
 E820_PMEM      = 7
 
 proc load_file _root, _name, _buffer, _size, _fatal
-locals
-        .status dq ?
-endl
         mov     [_root], rcx
         mov     [_name], rdx
         mov     [_buffer], r8
@@ -58,7 +55,7 @@ endl
                 r11, EFI_FILE_MODE_READ, 0
         test    eax, eax
         jz      @f
-        xor     eax, eax
+        mov	[_size], 0
         cmp     [_fatal], 1
         jnz     .done
         mov     rcx, [rbx+EFI_SYSTEM_TABLE.ConOut]
@@ -69,17 +66,15 @@ endl
         fstcall [rcx+EFI_SIMPLE_TEXT_OUTPUT_PROTOCOL.OutputString], rcx, [_name]
         jmp     $
 @@:
-
         lea     rdx, [_size]
         mov     r8, [_buffer]
         mov     r10, [file_handle]
         fstcall [r10+EFI_FILE_PROTOCOL.Read], [file_handle], rdx, r8
         mov     r10, [file_handle]
         fstcall [r10+EFI_FILE_PROTOCOL.Close], [file_handle]
-        mov     rax, [_size]
 .done:
-        mov     [.status], rax
         call    clearbuf
+        mov     rax, [_size]
         mov     rdi, msg
         call    num2dec
         mov     rcx, [rbx+EFI_SYSTEM_TABLE.ConOut]
@@ -87,7 +82,7 @@ endl
                 msg_file_size
         mov     rcx, [rbx+EFI_SYSTEM_TABLE.ConOut]
         fstcall [rcx+EFI_SIMPLE_TEXT_OUTPUT_PROTOCOL.OutputString], rcx, msg
-        mov     rax, [.status]
+        mov     rax, [_size]
         ret
 endp
 
@@ -302,7 +297,7 @@ proc read_options_from_config
                 sfsp_interface
         test    eax, eax
         jz      @f
-        mov     rcx, [rbx+EFI_SYSTEM_TABLE.ConOut]
+        mov    rcx, [rbx+EFI_SYSTEM_TABLE.ConOut]
         fstcall [rcx+EFI_SIMPLE_TEXT_OUTPUT_PROTOCOL.OutputString], rcx, \
                 msg_error_lip_dev_sfsp
         jmp     $
