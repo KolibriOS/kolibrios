@@ -71,6 +71,9 @@ ST_DATA struct TCCState *tcc_state;
 #ifdef TCC_TARGET_MEOS
 #include "tccmeos.c"
 #endif
+#ifdef TCC_TARGET_KX
+#include "tcckx.c"
+#endif
 #ifdef TCC_TARGET_MEOS_LINUX
 #include <libgen.h>
 #endif
@@ -1461,8 +1464,10 @@ ST_FUNC int tcc_add_file_internal(TCCState *s1, const char *filename, int flags,
     }
 #endif
 
-#if defined(TCC_TARGET_PE) ||  defined(TCC_TARGET_MEOS)
+#if defined (TCC_TARGET_PE) ||  (defined(TCC_TARGET_MEOS)  && !defined(TCC_TARGET_KX))
     ret = pe_load_file(s1, filename, fd);
+#elif defined(TCC_TARGET_KX)
+    ret = pe_load_def(s1, fd);
 #else
     /* as GNU ld, consider it is an ld script if not recognized */
     ret = tcc_load_ldscript(s1);
@@ -2125,7 +2130,9 @@ static const TCCOption tcc_options[] = {
     { "MF", TCC_OPTION_MF, TCC_OPTION_HAS_ARG },
     { "x", TCC_OPTION_x, TCC_OPTION_HAS_ARG },
     { "stack", TCC_OPTION_stack, TCC_OPTION_HAS_ARG | TCC_OPTION_NOSEP},
+#if defined(TCC_TARGET_MEOS) && !defined (TCC_TARGET_KX)
     { "nobss", TCC_OPTION_nobss, 0 },
+#endif
     { NULL, 0, 0 },
 };
 
@@ -2458,9 +2465,11 @@ ST_FUNC int tcc_parse_args1(TCCState *s, int argc, char **argv)
             s->pe_stack_size = strtoul(optarg+1, NULL, 10);
 #endif
             break;
+#if defined(TCC_TARGET_MEOS) && !defined (TCC_TARGET_KX)
         case TCC_OPTION_nobss:
             s->nobss = 1;
             break;
+#endif
         default:
             if (s->warn_unsupported) {
             unsupported_option:

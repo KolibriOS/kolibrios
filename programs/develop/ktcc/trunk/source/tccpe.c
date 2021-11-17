@@ -1564,14 +1564,18 @@ quit:
 }
 
 /* ------------------------------------------------------------- */
-#ifndef TCC_TARGET_MEOS
+#if !defined(TCC_TARGET_MEOS) || defined (TCC_TARGET_KX)
 static int pe_load_def(TCCState *s1, int fd)
 {
     int state = 0, ret = -1, dllindex = 0, ord;
     char line[400], dllname[80], *p, *x;
     FILE *fp;
 
+#ifdef TCC_TARGET_KX
+	fp = fopen(file->filename, "rb");
+#else
     fp = fdopen(dup(fd), "rb");
+#endif
     while (fgets(line, sizeof line, fp))
     {
         p = trimfront(trimback(line, strchr(line, 0)));

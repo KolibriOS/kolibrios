@@ -128,8 +128,10 @@ static void help(void)
            "  -Bdir       use 'dir' as tcc internal library and include path\n"
            "  -MD         generate target dependencies for make\n"
            "  -MF depfile put generated dependencies here\n"
+#if defined(TCC_TARGET_MEOS) && !defined (TCC_TARGET_KX)
            "For KolibriOS only:\n"
            "  -nobss      do not emit BSS section into file\n"
+#endif
            );
 }
 

@@ -43,6 +43,12 @@
 #define TCC_ASSERT(ex)
 #endif
 
+#ifdef TCC_TARGET_KX
+#ifndef TCC_TARGET_MEOS
+#define TCC_TARGET_MEOS 
+#endif
+#endif
+
 #ifndef _WIN32
 # include <unistd.h>
 # include <sys/time.h>
@@ -871,7 +877,9 @@ struct TCCState {
     int do_bench; /* option -bench */
     int gen_deps; /* option -MD  */
     char *deps_outfile; /* option -MF */
+#if defined(TCC_TARGET_MEOS) && !defined (TCC_TARGET_KX)
     int nobss; /* option -nobss, omit BSS section (KolibriOS-only) */
+#endif
     ParseArgsState *parse_args_state;
 };
 

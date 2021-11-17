@@ -2,6 +2,7 @@
  *  TCCMEOS.C - KolibriOS/MenuetOS file output for the TinyC Compiler
  *
  *  Copyright (c) 2006 Andrey Khalyavin
+ *  Copyright (c) 2021 Coldy (KX extension)
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -18,7 +19,9 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
+#ifndef TCC_TARGET_KX
 int undef_sym_flag=0;
+#endif
 
 typedef struct {
 	char magic[8];
@@ -37,13 +40,31 @@ typedef struct _meos_section_info{
 	int sec_num;
 	struct _meos_section_info* next;
 } meos_section_info;
+#ifdef TCC_TARGET_KX
+typedef struct {
+	void* data;
+	int	  data_size;
+} kx_import_table;
+#endif
 typedef struct {
 	TCCState* s1;
 	IMAGE_MEOS_FILE_HEADER header;
 	meos_section_info* code_sections;
 	meos_section_info* data_sections;
+#ifdef TCC_TARGET_KX
+	kx_import_table* imp_table;
+#endif
 	meos_section_info* bss_sections;
 } me_info;
+
+#ifdef TCC_TARGET_KX
+	void kx_init(me_info* me);
+	void kx_build_imports(me_info* me);
+	long kx_get_header_length(me_info* me);
+	void kx_write_header(me_info* me, FILE* f);
+	void kx_write_imports(me_info* me, FILE* f);
+	void kx_free(me_info* me);
+#endif
 
 int tcc_output_dbgme(const char *filename, me_info* me);
 
@@ -100,20 +121,38 @@ void build_reloc(me_info* me)
 				continue;
 			Elf32_Sym* esym = ((Elf32_Sym *)symtab_section->data)+sym;
 			int sect=esym->st_shndx;
+      int sh_addr;
 			ss=findsection(me,sect);
 			if (ss==0)
 			{
-                const char *sym_name = strtab_section->data + esym->st_name;
+        const char *sym_name = strtab_section->data + esym->st_name;
+#ifdef TCC_TARGET_KX
+				int sym_index = find_elf_sym(me->s1->dynsymtab_section, sym_name);
+				Elf32_Sym* dyn_sym;
+				if (sym_index == 0) {
+#else
     			undef_sym_flag=1;
-                tcc_error_noabort("undefined symbol '%s'", sym_name);
+#endif
+          tcc_error_noabort("undefined symbol '%s'", sym_name);
 				continue;
+#ifdef TCC_TARGET_KX
 			}
+				dyn_sym = &((ElfW(Sym) *)me->s1->dynsymtab_section->data)[sym_index];
+				sh_addr = dyn_sym->st_value;
+				if (sh_addr == 0) {
+					tcc_error_noabort("symbol '%s' has zero value", sym_name);
+					continue;
+				}
+#endif
+			}
+			else
+				sh_addr = ss->sh_addr;
 			if (rel->r_offset>s->data_size)
 				continue;
 			if (type==R_386_PC32)
-				*(int*)(rel->r_offset+s->data)+=ss->sh_addr+esym->st_value-rel->r_offset-s->sh_addr;
+				*(int*)(rel->r_offset+s->data)+=/*ss->*/sh_addr+esym->st_value-rel->r_offset-s->sh_addr;
 			else if (type==R_386_32)
-				*(int*)(rel->r_offset+s->data)+=ss->sh_addr+esym->st_value;
+				*(int*)(rel->r_offset+s->data)+=/*ss->*/sh_addr+esym->st_value;
 		}
         rel=rel_;
 		s=s->next;
@@ -168,6 +207,9 @@ void assign_addresses(me_info* me)
 	}
 	int addr;
 	addr=sizeof(IMAGE_MEOS_FILE_HEADER);
+#ifdef TCC_TARGET_KX 
+	addr += kx_get_header_length(me);
+#endif
 	for (si=me->code_sections;si;si=si->next)
 	{
 		si->sh_addr=addr;
@@ -179,6 +221,10 @@ void assign_addresses(me_info* me)
 		addr+=si->data_size;
 	}
 	me->header.image_size=addr;
+#ifdef TCC_TARGET_KX 
+	kx_build_imports(me);
+	addr = me->header.image_size;
+#endif
 	for (si=me->bss_sections;si;si=si->next)
 	{
 		si->sh_addr=addr;
@@ -253,12 +299,16 @@ int tcc_output_me(TCCState* s1,const char *filename)
     //printf("%d\n",s1->nb_sections);
 	memset(&me,0,sizeof(me));
 	me.s1=s1;
+#ifdef TCC_TARGET_KX
+	kx_init(&me);
+#endif
 	relocate_common_syms();
 	assign_addresses(&me);
-    
+#ifndef TCC_TARGET_KX    
     if(undef_sym_flag){
        tcc_error("Linker error!");
     }
+#endif
     
 	if (s1->do_debug)
 		tcc_output_dbgme(filename, &me);
@@ -274,11 +324,18 @@ int tcc_output_me(TCCState* s1,const char *filename)
     for (i=0;i<8;i++)
         me.header.magic[i]=me_magic[i];
 	fwrite(&me.header,1,sizeof(IMAGE_MEOS_FILE_HEADER),f);
+#ifdef TCC_TARGET_KX
+	kx_write_header(&me, f);
+#endif
 	meos_section_info* si;
 	for(si=me.code_sections;si;si=si->next)
 		fwrite(si->data,1,si->data_size,f);
 	for (si=me.data_sections;si;si=si->next)
 		fwrite(si->data,1,si->data_size,f);
+#ifdef TCC_TARGET_KX	
+	kx_write_imports(&me, f);
+	kx_free(&me);
+#else
 	if (!s1->nobss)
 	{
 		for (si=me.bss_sections;si;si=si->next)
@@ -297,6 +354,7 @@ int tcc_output_me(TCCState* s1,const char *filename)
         tcc_error_noabort("We lose .BSS section when linking KOS32 executable");
     }
 */
+#endif
 	fclose(f);
 	return 0;
 }
