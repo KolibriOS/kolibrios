@@ -1,5 +1,5 @@
-#include <SDL_kos.h>
-//#include <kos32sys.h>
+#include <menuet/os.h>
+#include <kos32sys.h>
 #include <stdlib.h>
 #include <stdio.h>
 #include "SDL.h"
@@ -164,7 +164,7 @@ void MenuetOS_PumpEvents(_THIS)
  static int ext_code=0;
  static __u8 old_mode=0;
  for (;;) {
-  i=__kos__check_for_event();
+  i=__menuet__check_for_event();
   switch(i)
   {
    case 0:
@@ -173,7 +173,7 @@ void MenuetOS_PumpEvents(_THIS)
     MenuetOS_SDL_RepaintWnd();
     break;
    case 2:
-    key.scancode = __kos__getkey();
+    key.scancode = __menuet__getkey();
     if (key.scancode == 0xE0 || key.scancode == 0xE1)
     {ext_code=key.scancode;break;}
     if (ext_code == 0xE1 && (key.scancode & 0x7F) == 0x1D) break;
@@ -200,7 +200,7 @@ void MenuetOS_PumpEvents(_THIS)
     SDL_PrivateKeyboard(code,&key);
     break;
    case 3:
-    if(__kos__get_button_id()==1) exit(0);
+    if(get_os_button()==1) exit(0);
     break;
    case 6: {
     int __tmp,mx,my;

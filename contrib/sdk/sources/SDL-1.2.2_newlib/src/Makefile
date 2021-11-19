@@ -51,15 +51,16 @@ install: $(LIBNAME)
 	mv -f $(LIBNAME) $(SDK_DIR)/lib  
  
 $(LIBNAME).a: $(OBJS)
-	$(AR) -crs $(LIBNAME).a $(OBJS)
+	$(MAKE) -C SYSCALL/src
+	$(AR) -crs $(LIBNAME).a $(OBJS) SYSCALL/src/os.o
 
 $(LIBNAME).dll: libSDL.def $(OBJS)
-	$(LD) $(LDFLAGS) -o $@  libSDL.def $(OBJS) $(LIBS) -ldll -lsound -lc.dll
+	$(LD) $(LDFLAGS) -o $@  libSDL.def $(OBJS) SYSCALL/src/os.o $(LIBS) -ldll -lsound -lc.dll
 	$(STRIP) $@
 
 	
 %.o : %.asm Makefile
-	nasm -Ihermes -f coff $<
+	nasm -f coff $<
  
 %.o : %.c Makefile
 	$(CC) $(CFLAGS) -o $@ $<

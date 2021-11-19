@@ -14,8 +14,8 @@ default: fire
 fire: $(OBJECTS) Makefile
 	$(CC) $(CFLAGS) $(INCLUDES) -o sdltest.o sdltest.c
 	$(CC) $(CFLAGS) $(INCLUDES) -o testbitmap.o testbitmap.c
-	$(LD) $(LDFLAGS) $(LIBPATH) --subsystem native -o sdltest sdltest.o -lgcc -lSDLn -lc.dll -lsound
-	$(LD) $(LDFLAGS) $(LIBPATH) --subsystem native -o testbitmap testbitmap.o -lgcc -lSDLn -lc.dll -lsound
+	$(LD) $(LDFLAGS) $(LIBPATH) --subsystem native -o sdltest sdltest.o -lgcc -lSDL -lc.dll -lc -lsound
+	$(LD) $(LDFLAGS) $(LIBPATH) --subsystem native -o testbitmap testbitmap.o -lgcc -lSDL -lc.dll -lc -lsound
 	kos32-strip -s sdltest -o sdltest
 	kos32-strip -s testbitmap -o testbitmap
 	objcopy testbitmap -O binary

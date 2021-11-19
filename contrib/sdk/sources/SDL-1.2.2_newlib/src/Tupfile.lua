@@ -2,7 +2,7 @@ if tup.getconfig("NO_GCC") ~= "" or tup.getconfig("NO_NASM") ~= "" then return e
 tup.include("../../../../../programs/use_gcc.lua")
 tup.include("../../../../../programs/use_newlib.lua")
 tup.include("../../../../../programs/use_sound.lua")
-INCLUDES = INCLUDES .. " -I. -I../include -Ihermes -Iaudio -Ivideo -Ievents -Ijoystick -Icdrom -Ithread -Itimer -Iendian -Ifile -Isyscall/include"
+INCLUDES = INCLUDES .. " -I. -I../include -Ihermes -Iaudio -Ivideo -Ievents -Ijoystick -Icdrom -Ithread -Itimer -Iendian -Ifile -ISYSCALL/include"
 CFLAGS = CFLAGS .. ' -D_REENTRANT -DPACKAGE=\"SDL\" -DVERSION=\"1.2.2\"'
 CFLAGS = CFLAGS .. ' -DENABLE_AUDIO -UDISABLE_AUDIO -DDISABLE_JOYSTICK'
 CFLAGS = CFLAGS .. ' -DDISABLE_CDROM -DDISABLE_THREADS -DENABLE_TIMERS'
@@ -21,12 +21,13 @@ FOLDERS = {
   "timer/dummy/",
   "video/",
   "video/menuetos/",
+  "SYSCALL/src/"
 }
 
 for i,v in ipairs(FOLDERS) do
   compile_gcc(v .. "*.c", v .. "%B.o")
   tup.append_table(OBJS,
-    tup.foreach_rule(v .. "*.asm", "nasm -i hermes -f coff -o %o %f", v .. "%B.o")
+    tup.foreach_rule(v .. "*.asm", "nasm -f coff -Ihermes -o %o %f", v .. "%B.o")
   )
 end
 tup.rule(OBJS, "kos32-ar rcs %o %f", {"../../../lib/libSDLn.a", "../../../lib/<libSDLn>"})
