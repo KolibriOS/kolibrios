@@ -3,7 +3,9 @@ dword CursorFile = FROM "TWB/pointer.cur";
 #include "..\lib\collection.h"
 
 struct PAGE_LINKS {
-	collection_int link;
+	collection link;
+	collection page_links;
+	
 	collection_int x;
 	collection_int y;
 	collection_int w;
@@ -11,7 +13,6 @@ struct PAGE_LINKS {
 	collection_int id;
 	collection_int underline_h;
 
-	collection page_links;
 	signed int active;
 	dword active_url;
 	bool hover();
