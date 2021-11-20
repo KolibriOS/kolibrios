@@ -2,10 +2,10 @@
 ;to created file colour.dtp
 ;for sets this system_colors in skin
 ;--------------------------------------
-dd 0x8795A5     ;; .frame
-dd 0xACBFD4     ;; .grab
-dd 0x8EB1D2     ;; .grab_button
-dd 0x9E0404     ;; .grab_button_text
+dd 0x8795A5     ;; .unused1
+dd 0xACBFD4     ;; .unused2
+dd 0x136CA6     ;; .dark
+dd 0xF5F8F9     ;; .light
 dd 0x040404     ;; .grab_text
 dd 0xD2D8E0     ;; .work
 dd 0x3D6D94     ;; .work_button
