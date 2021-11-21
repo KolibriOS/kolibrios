@@ -12,7 +12,7 @@
 //                                                   //
 //===================================================//
 
-#define MEMSIZE 1024 * 130
+#define MEMSIZE 1024 * 160
 #include "..\lib\gui.h"
 #include "..\lib\draw_buf.h"
 #include "..\lib\list_box.h"

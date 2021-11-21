@@ -3,8 +3,8 @@ dword CursorFile = FROM "TWB/pointer.cur";
 #include "..\lib\collection.h"
 
 struct PAGE_LINKS {
-	collection link;
-	collection page_links;
+	collection unic_links;
+	collection element_links;
 	
 	collection_int x;
 	collection_int y;
@@ -24,7 +24,7 @@ struct PAGE_LINKS {
 
 void PAGE_LINKS::add_link(dword lpath)
 {
-	page_links.add(lpath);
+	unic_links.add(lpath);
 }
 
 void PAGE_LINKS::add_text(dword _x, _y, _w, _h, _underline_h)
@@ -34,8 +34,8 @@ void PAGE_LINKS::add_text(dword _x, _y, _w, _h, _underline_h)
 	w.add(_w);
 	h.add(_h);
 	underline_h.add(_underline_h);
-	link.add(page_links.get_last());
-	id.add(page_links.count);
+	element_links.add(unic_links.get_last());
+	id.add(unic_links.count);
 }
 
 void PAGE_LINKS::clear()
@@ -45,11 +45,10 @@ void PAGE_LINKS::clear()
 	w.drop();
 	h.drop();
 	underline_h.drop();
-	link.drop();
+	element_links.drop();
+	unic_links.drop();
 	id.drop();
 
-	page_links.drop();
-	page_links.realloc_size = 4096 * 32;
 	active = -1;
 	active_url = 0;
 	CursorPointer.Restore();
@@ -90,7 +89,7 @@ bool PAGE_LINKS::hover(dword list_y, list_first)
 				draw_underline(active, list_first, list_y, link_color_default);			
 				draw_underline(i, list_first, list_y, DEFAULT_BG_COL);
 
-				active_url = link.get(i);
+				active_url = element_links.get(i);
 				active = i;
 				DrawStatusBar(active_url);
 			}

@@ -111,9 +111,7 @@ void TWebBrowser::RenderTextbuf()
 			RenderLine(lbp);
 		}
 	}
-	debugln("rnd_");
 	RenderLine(lbp);
-	debugln("_rnd");
 }
 
 void TWebBrowser::NewLine()
