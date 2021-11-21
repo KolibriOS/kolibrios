@@ -1,1 +1,0 @@
-qemu-system-i386 -fda C:\Users\rgimad\Documents\Programming_projects\KOS_IMAGES\latest_kolibri.img -boot a -m 512 -usbdevice tablet -drive file=fat:rw:.
