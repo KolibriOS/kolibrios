@@ -105,7 +105,7 @@ BEGIN
     X2 := MIN(MAX(x1, x2), canvas.width - 1);
     IF (0 <= y) & (y < canvas.height) THEN
         color := canvas.color;
-        ptr := canvas.bitmap + y*canvas.width*4 + X1*4;
+        ptr := canvas.bitmap + 4*(y*canvas.width + X1);
         FOR i := X1 TO X2 DO
             SYSTEM.PUT32(ptr, color);
             INC(ptr, 4)
@@ -124,7 +124,7 @@ BEGIN
     Y2 := MIN(MAX(y1, y2), canvas.height - 1);
     IF (0 <= x) & (x < canvas.width) THEN
         color := canvas.color;
-        ptr := canvas.bitmap + Y1*canvas.width*4 + x*4;
+        ptr := canvas.bitmap + 4*(Y1*canvas.width + x);
         FOR i := Y1 TO Y2 DO
             IF canvas.mode = modeNOT THEN
                 SYSTEM.GET32(ptr, color);
@@ -168,11 +168,11 @@ VAR
     d: INTEGER;
 BEGIN
     color := canvas.color;
-    ptr := canvas.bitmap + y*canvas.width*4 + x1*4;
+    ptr := canvas.bitmap + 4*(y*canvas.width + x1);
     IF k = -1 THEN
-        d := canvas.width*4 + 4
+        d := 4*(canvas.width + 1)
     ELSIF k = 1 THEN
-        d := 4 - canvas.width*4
+        d := 4*(1 - canvas.width)
     END;
     WHILE x1 <= x2 DO
         SYSTEM.PUT32(ptr, color);

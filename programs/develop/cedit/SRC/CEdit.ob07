@@ -28,7 +28,7 @@ IMPORT
     RW, Ini, EB := EditBox, Icons, Tabs, Timer;
 
 CONST
-    HEADER = "CEdit (03-oct-2021)";
+    HEADER = "CEdit (21-nov-2021)";
 
     ShellFilter = "";
     EditFilter = "SH|INC|TXT|ASM|OB07|C|CPP|H|PAS|PP|LUA|INI|JSON";
@@ -2010,6 +2010,7 @@ VAR
     i: INTEGER;
 BEGIN
     K.GetSystemColors;
+    Icons.get(icons, grayIcons);
     FOR i := 0 TO 1 DO
         IF ~K.RolledUp() THEN
             K.ClientSize(width, height);

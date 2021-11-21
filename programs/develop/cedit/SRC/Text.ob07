@@ -1965,17 +1965,19 @@ END selectWord;
 
 PROCEDURE cursor (text: tText);
 VAR
-    x, y, h: INTEGER;
+    x, y1, y2, scrollX, scrollY: INTEGER;
     cursor: pPoint;
 BEGIN
     cursor := text.cursor;
-    IF ~((text.scroll.Y > cursor.Y) OR (text.scroll.Y + textsize.Y <= cursor.Y) OR
-       (text.scroll.X > cursor.X) OR (text.scroll.X + textsize.X <= cursor.X)) THEN
-        x := (cursor.X - text.scroll.X)*charWidth + padding.left;
-        y := (cursor.Y - text.scroll.Y)*charHeight + 1 + padding.top;
-        h := charHeight - 2;
-        G.notVLine(canvas, x, y + inter DIV 2, y + h - inter DIV 2);
-        G.notVLine(canvas, x - 1, y + inter DIV 2, y + h - inter DIV 2)
+    scrollX := text.scroll.X;
+    scrollY := text.scroll.Y;
+    IF ~((scrollY > cursor.Y) OR (scrollY + textsize.Y <= cursor.Y) OR
+       (scrollX > cursor.X) OR (scrollX + textsize.X <= cursor.X)) THEN
+        x := (cursor.X - scrollX)*charWidth + padding.left;
+        y1 := (cursor.Y - scrollY)*charHeight + padding.top + (inter DIV 2 + 1);
+        y2 := y1 + charHeight - (inter + 2);
+        G.notVLine(canvas, x, y1, y2);
+        G.notVLine(canvas, x - 1, y1, y2)
     END
 END cursor;
 
