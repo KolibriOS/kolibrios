@@ -871,7 +871,7 @@ end
 
 -- generate tup rule for kolibri.iso
 if tup.getconfig("INSERT_REVISION_ID") ~= ""
-then volume_id = "KolibriOS r`cat .revision`"
+then volume_id = "KolibriOS r`get-current-revision`"
 else volume_id = "KolibriOS"
 end
 tup.definerule{inputs = input_deps, command =
