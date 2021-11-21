@@ -71,10 +71,12 @@ void TWebBrowser::RenderTextbuf()
 	dword lbp = #linebuf;
 	int br; //break position
 	char nul = '\0';
-	int len;
+	unsigned int len;
 
 	//Do we need a line break?
-              
+
+	if (!linebuf[0]) return;
+
 	while (len = strlen(lbp)) && (len * list.font_w + draw_x - left_gap >= draw_w) {
 		//Yes, we do. Lets calculate where...
 		br = len;
@@ -109,7 +111,9 @@ void TWebBrowser::RenderTextbuf()
 			RenderLine(lbp);
 		}
 	}
+	debugln("rnd_");
 	RenderLine(lbp);
+	debugln("_rnd");
 }
 
 void TWebBrowser::NewLine()

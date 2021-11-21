@@ -51,7 +51,10 @@ void TWebBrowser::SetStyle()
 	if (tag.is("title"))      { tag_title();          return; }
 	if (tag.is("body"))       { tag_body();           return; }
 	if (tag.is("html"))       { t_html = tag.opened;  return; }
-	tag_table();
+	if (tag.is("table"))      { tag_table();          return; }
+	if (tag.is("tr"))         { tag_table();          return; }
+	if (tag.is("th"))         { tag_table();          return; }
+	if (tag.is("td"))         { tag_table();          return; }
 }
 
 void TWebBrowser::tag_p()
@@ -320,8 +323,8 @@ NOIMG:
 
 
 
-
 struct TABLE {
+	int count;
 	int depth;
 	collection_int cols;
 } table;
@@ -335,6 +338,7 @@ dword tallest_cell_in_row;
 void TWebBrowser::tag_table_reset()
 {
 	table.depth = 0;
+	table.count = 0;
 	colcount = 0;
 	tr_pos = 0;
 	td_pos = 0;
@@ -347,11 +351,11 @@ void TWebBrowser::tag_table()
 		if (link) tag_a();
 		style.b = false;
 	}
-
 	if (tag.is("table")) {
 		if(tag.opened) {
 			table.depth++;
 			if (table.depth==1) {
+				table.count++;
 				colcount = 0;
 			}
 		} else {
@@ -379,14 +383,16 @@ void TWebBrowser::tag_table()
 			}
 			colcount = 0;
 		}
-		if (tag.opened) && (tag.is("td")) || (tag.is("th")) {
+		if (tag.opened) if (tag.is("td")) || (tag.is("th")) {
+			if (!table.cols.count) { table.cols.add(1); colcount = 0;}
 			colcount++;
 			if (colcount) table.cols.set(table.cols.count-1, colcount);
 			//if (tag.get_number_of("colspan")) colcount += tag.number-1;
-		}		
+		}
 	} else {
 		if (tag.is("tr")) {
 			if (tag.opened) {
+				_TR_FIX:
 				if (draw_x==left_gap) && (draw_y==BODY_MARGIN) {
 					row_start_y = tallest_cell_in_row = draw_y;
 				} else {
@@ -401,17 +407,54 @@ void TWebBrowser::tag_table()
 			draw_x = left_gap = style.tag_list.level * 5 * list.font_w + BODY_MARGIN;
 			draw_w = list.w;
 		}
-		if (tr_pos) && (tag.is("td")) || (tag.is("th"))  {
+		if (tag.is("td")) || (tag.is("th"))  {
+
+			if (!tr_pos) goto _TR_FIX;
+
+			/*
+			if (tag.opened) {
+				if (tag.get_value_of("bgcolor")) {
+					bg_colors.add(GetColor(tag.value));
+				} else {
+					bg_colors.add(bg_colors.get(0));
+				}
+			} */
+
 			tallest_cell_in_row = math.max(draw_y+style.cur_line_h-list.item_h, tallest_cell_in_row);
 			style.cur_line_h = list.item_h;
 			if (tag.opened) {
-				draw_w = list.w - BODY_MARGIN - BODY_MARGIN - 23 / table.cols.get(tr_pos-1);
-				draw_x = left_gap = draw_w * td_pos + BODY_MARGIN;
-				//debugval(itoa(draw_x), list.w);
+				
+				if (!td_pos) {
+					draw_x = left_gap = BODY_MARGIN;
+				} else {
+					draw_x = left_gap = left_gap + draw_w;
+				}
+
+				draw_w = list.w - BODY_MARGIN - 23 - left_gap;
+				if (EAX = table.cols.get(tr_pos-1)-td_pos) draw_w /= EAX; else {
+					draw_y = row_start_y;
+					draw_x = left_gap = BODY_MARGIN;
+				}
+				if (table.cols.get(tr_pos-1)-td_pos>1) && (tag.get_number_of("width")) {
+					if (strchr(tag.value, '%')) {
+						tag.number = list.w - BODY_MARGIN - 23 - left_gap * tag.number / 100;
+					}
+					if (tag.number < draw_w) draw_w = tag.number;
+				}
 				draw_y = row_start_y;
 				//canvas.WriteText(draw_x, draw_y, 10001001b, 0x0000FE, itoa(draw_x), NULL);
 				td_pos++;				
 			}
+		}
+	}
+	if (draw_x > list.w) {
+		draw_x = left_gap = BODY_MARGIN;
+		draw_w = list.w - BODY_MARGIN - 23 - left_gap;
+		table.depth = 0;
+		NewLine();
+		if (debug_mode) {
+			debugln("anomaly draw_x");
+			canvas.DrawBar(0, draw_y, 20, 20, 0xFF0000);
 		}
 	}
 }

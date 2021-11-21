@@ -198,6 +198,7 @@ void TWebBrowser::ParseHtml(dword _bufpointer, _bufsize){
 					//*/
 
 					RenderTextbuf();
+					if (debug_mode) { debugch('<'); if(!tag.opened)debugch('/'); debug(#tag.name); debugln(">"); }
 					$push cur_encoding
 					SetStyle();
 					$pop eax
