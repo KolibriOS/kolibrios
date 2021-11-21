@@ -44,6 +44,7 @@
 //===================================================//
 bool debug_mode = false;
 bool show_images = true;
+bool source_mode = false;
 
 _history history;
 
@@ -63,7 +64,6 @@ dword TOOLBAR_H = PADDING+TSZE+PADDING+2;
 
 _http http = 0;
 
-bool source_mode = false;
 
 progress_bar prbar;
 proc_info Form;

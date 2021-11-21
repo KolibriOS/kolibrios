@@ -200,7 +200,7 @@ void TWebBrowser::tag_hr()
 	dword hrcol = 0x00777777;
 	if (tag.get_value_of("color")) hrcol = GetColor(tag.value);
 	if (draw_x != left_gap) NewLine();
-	if (secondrun) canvas.DrawBar(5, style.cur_line_h / 2 + draw_y - 1, draw_w-10, 1, hrcol);
+	if (secondrun) canvas.DrawBar(5+left_gap, style.cur_line_h / 2 + draw_y - 1, draw_w-10, 1, hrcol);
 	draw_x++;
 	NewLine();
 	return;
@@ -342,6 +342,12 @@ void TWebBrowser::tag_table_reset()
 
 void TWebBrowser::tag_table()
 {
+	if (!tag.opened) {
+		if (style.font) tag_font();
+		if (link) tag_a();
+		style.b = false;
+	}
+
 	if (tag.is("table")) {
 		if(tag.opened) {
 			table.depth++;
