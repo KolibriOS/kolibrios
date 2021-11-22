@@ -12,6 +12,7 @@ void TWebBrowser::SetStyle()
 	if (tag.is("img"))        { tag_img();                 return; }
 	if (tag.is("div"))        { tag_div();                 return; }
 	if (tag.is("br"))         { /*draw_x++;*/NewLine();    return; }
+	if (tag.is("nav"))        { style.nav = tag.opened;    return; }
 	if (tag.is("header"))     { NewLine();                 return; }
 	if (tag.is("article"))    { NewLine();                 return; }
 	if (tag.is("footer"))     { NewLine();                 return; } 
@@ -177,6 +178,7 @@ void TWebBrowser::tag_ol_ul_dt()
 			break;
 		case 'u': 
 		case 'o': 
+			if (style.nav) && (style.tag_list.level) NewLine();
 			style.tag_list.upd_level(tag.opened, type);
 			if (!tag.opened) && (!style.pre) NewLine();
 	}
@@ -184,6 +186,7 @@ void TWebBrowser::tag_ol_ul_dt()
 
 void TWebBrowser::tag_li()
 {
+	if (style.nav) return;
 	if (tag.opened) {
 		if (!style.tag_list.level) style.tag_list.upd_level(1, 'u');
 		if (!style.pre) NewLine();

@@ -19,7 +19,8 @@ struct STYLE {
 	pre,
 	blq,
 	button,
-	image;
+	image,
+	nav, header;
 	LIST tag_list;
 	dword title;
 	dword cur_line_h;
@@ -28,8 +29,8 @@ struct STYLE {
 
 void STYLE::reset()
 {
-	b = u = s = h = blq = pre = title = false;
-	font = false;
+	b = u = s = h = font = pre = blq = 
+	title = button = image = nav = header =	false;
 	cur_line_h = NULL;
 	tag_list.reset();
 }
