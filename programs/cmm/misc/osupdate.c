@@ -172,7 +172,7 @@ void EventDownloadComplete()
 
 	space_delta = CheckFreeSpace(#latest, #combined);
 	if (space_delta<0) {
-		sprintf(#param, "'Not enought free space! You need %d Kb more.'E", -space_delta);
+		sprintf(#param, "'Not enought free space! You need %d KB more.'E", -space_delta);
 		notify(#param);
 	} else {
 		copyf("/sys", #backup);

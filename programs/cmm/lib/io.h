@@ -28,14 +28,14 @@
 #endif
 
 #ifdef LANG_RUS
-	#define __T__GB "ƒ¡"
-	#define __T__MB "Œ¡"
-	#define __T__KB "Š¡"
+	#define __T__GB "ƒ"
+	#define __T__MB "Œ"
+	#define __T__KB "Š"
 	#define __T___B ""
 #else
-	#define __T__GB "Gb"
-	#define __T__MB "Mb"
-	#define __T__KB "Kb"
+	#define __T__GB "GB"
+	#define __T__MB "MB"
+	#define __T__KB "KB"
 	#define __T___B "B"
 #endif
 

@@ -382,9 +382,9 @@ char readbuf[32];
 :dword ConvertSize(dword bytes)
 {
   byte size_nm[4];
-  if (bytes>=1073741824) strlcpy(#size_nm, "Gb",2);
-  else if (bytes>=1048576) strlcpy(#size_nm, "Mb",2);
-  else if (bytes>=1024) strlcpy(#size_nm, "Kb",2);
+  if (bytes>=1073741824) strlcpy(#size_nm, "GB",2);
+  else if (bytes>=1048576) strlcpy(#size_nm, "MB",2);
+  else if (bytes>=1024) strlcpy(#size_nm, "KB",2);
   else strlcpy(#size_nm, "B ",2);
   while (bytes>1023) bytes >>= 10;
   sprintf(#ConvertSize_size_prefix,"%d %s",bytes,#size_nm);
@@ -395,7 +395,7 @@ char readbuf[32];
 {
   if (bytes_hi > 0) {
 	if (bytes_lo>=1073741824) bytes_lo >>= 30; else bytes_lo = 0;
-	sprintf(#ConvertSize_size_prefix,"%d Gb",bytes_hi<<2 + bytes_lo);
+	sprintf(#ConvertSize_size_prefix,"%d GB",bytes_hi<<2 + bytes_lo);
 	return #ConvertSize_size_prefix;
   }
   else return ConvertSize(bytes_lo);
@@ -410,7 +410,7 @@ char readbuf[32];
 	{
 		kb_line = itoa(bytes / 1024);
 		strcpy(#size, kb_line);
-		strcat(#size, " Kb");
+		strcat(#size, " KB");
 	}
 	else {
 		kb_line = itoa(bytes);

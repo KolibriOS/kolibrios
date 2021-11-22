@@ -455,7 +455,7 @@ open_log_in_tinypad:
         dd      filename
         dd      0
         dd      0
-        db      '/sys/tinypad',0
+        db      '/sys/develop/cedit',0
 
 buffer_length   rb  3
 process_count   dd  ?

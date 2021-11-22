@@ -53,11 +53,11 @@
 	#define T_DETAILS        "Details"
 	#define T_PROC_KILL      "Terminate"
 	#define T_PROC_INFO      "Info"
-	#define T_PROC_HEADER    "Process        RAM Kb     CPU %"
+	#define T_PROC_HEADER    "Process        RAM KB     CPU %"
 	#define T_CPU_LOAD       "CPU load %i%%   "
-	#define T_RAM_USAGE      "RAM usage: %i Mb free of %i Mb"
-	#define T_RD_USAGE       "System disk usage: %i Kb free of 1.4 Mb"
-	#define T_TMP_USAGE      "TMP%i usage: %i Mb free of %i Mb"
+	#define T_RAM_USAGE      "RAM usage: %i MB free of %i MB"
+	#define T_RD_USAGE       "System disk usage: %i MB free of 1.4 MB"
+	#define T_TMP_USAGE      "TMP%i usage: %i MB free of %i MB"
 #endif
 
 enum {
