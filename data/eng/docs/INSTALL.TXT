@@ -2,16 +2,16 @@ System requirements
 -------------------
 
 Minimal system requirements for KolibriOS:
-* CPU: Pentium, AMD 5x86 or Cyrix 5x86 without MMX with frequency 100 MHz
+* CPU 5x86: Pentium, AMD or Cyrix without MMX with frequency 90 MHz
 * RAM: 8 MB
-* Videocard: supporting VGA (640x480x16 mode) or Vesa
+* Videocard: supporting VGA (640x480x16 mode) or VESA
 * Keyboard: AT
 * Mouse: COM, PS/2 or USB
 
 The system can boot from any of following devices:
 * BIOS mode
   - Floppy 3.5
-  - IDE HDD LBA
+  - HDD LBA
   - CD/DVD
   - USB Flash
 * UEFI mode
@@ -112,6 +112,9 @@ EXT2 volumes are ok.
 The special loader for FAT32-volumes has been written. It and its installer to
 flash drive can be found in the directory `HD_load\USB_Boot`.
 
+Despite the fact that the installer from the previous step is recommended, you 
+may also use Rufus https://rufus.ie to write Kolibri ISO-image on the USB flash.
+
 For not-FAT32 drives you may use article placed in the directory
 `HD_load\USB_Boot_old`.
 
@@ -120,7 +123,8 @@ For not-FAT32 drives you may use article placed in the directory
 
 There exists special LiveCD-version of KolibriOS, which contains in addition to
 standard things some 'heavy' (in KolibriOS standards) programs: the ported
-emulator DosBox, games 'Fixed Rate Pig' and 'sokoban'.
+emulator DosBox, videoplayer Fplay, PDF reader, games like Quake, DOOM, Tyrian
+and Wolfenstain3D, etc.
 
 You can also create bootable CD or DVD on the base of `kolibri.img`, adding
 anything what you want, in the mode of floppy emulation. The appropriate actions
