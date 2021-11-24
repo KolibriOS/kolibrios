@@ -37,7 +37,7 @@ img_files = {
  {"File Managers/FNAV/FNAV_ICN.PNG", "common/File Managers/fNav/fnav_icn.png"},
  {"GAMES/FLPYBIRD", PROGS .. "/games/flappybird/Release/flappybird"},
  {"FONTS/TAHOMA.KF", "common/fonts/tahoma.kf"},
- {"LIB/ICONV.OBJ", "common/lib/iconv.obj"},
+ -- {"LIB/ICONV.OBJ", "common/lib/iconv.obj"},
  {"LIB/KMENU.OBJ", "common/lib/kmenu.obj"},
  {"LIB/PIXLIB.OBJ", "common/lib/pixlib.obj"},
  {"MEDIA/IMGF/IMGF", "common/media/ImgF/ImgF"},
@@ -724,7 +724,8 @@ tup.append_table(img_files, {
  {"GAMES/REVERSI", PROGS .. "/games/reversi/trunk/reversi"},
  {"LIB/BASE64.OBJ", PROGS .. "/develop/libraries/base64/base64.obj"},
  {"LIB/LIBC.OBJ", PROGS .. "/develop/ktcc/trunk/libc.obj/source/libc.obj"},
- {"LIB/MTAR.OBJ", PROGS .. "/develop/libraries/microtar/mtar.obj"},
+ {"LIB/ICONV.OBJ", PROGS .. "/develop/libraries/iconv/iconv.obj"},
+ -- {"LIB/MTAR.OBJ", PROGS .. "/develop/libraries/microtar/mtar.obj"},
 })
 tup.append_table(extra_files, {
 -- {"kolibrios/3D/cubeline", PROGS .. "/demos/cubeline/trunk/cubeline"},
