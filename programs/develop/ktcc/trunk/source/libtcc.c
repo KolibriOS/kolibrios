@@ -1181,6 +1181,9 @@ LIBTCCAPI TCCState *tcc_new(void)
     tcc_define_symbol(s, "KOLIBRI",  NULL);
     tcc_define_symbol(s, "_KOLIBRI", NULL);
     tcc_define_symbol(s, "_KOLIBRI_",NULL);
+#ifdef TCC_TARGET_KX
+	tcc_define_symbol(s, "__KX__", NULL);
+#endif
 #else
     tcc_define_symbol(s, "__unix__", NULL);
     tcc_define_symbol(s, "__unix", NULL);

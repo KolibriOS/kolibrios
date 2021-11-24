@@ -26,10 +26,10 @@ typedef struct {
 
 static kx_header __kx_header = { 'K','X',0, 0, 0x40, 0 };
 
-  typedef struct LibraryEntry {
+typedef struct {
 	 uint32_t ImportEntry;
 	 uint32_t LibraryName;
- };
+ } LibraryEntry;
 
  /*union ImportEntry {
  uint32_t ImportStr;
@@ -43,7 +43,8 @@ static kx_header __kx_header = { 'K','X',0, 0, 0x40, 0 };
 	 ElfW(Sym) *sym;
 	 int sym_index, sym_end;
 	 sym_end = symtab_section->data_offset / sizeof(ElfW(Sym));
-	 CString *str_arr, *len_arr;
+	 CString *str_arr, *len_arr, *sym_arr;
+   char dll_len;
 	 int nlib = 0;
 	 int i;
 
@@ -51,15 +52,10 @@ static kx_header __kx_header = { 'K','X',0, 0, 0x40, 0 };
 		 return;
 
 	 str_arr = tcc_malloc(sizeof(CString) * me->s1->nb_loaded_dlls);
-	 if (str_arr == 0) {
-		 return;
-	 }
 
 	 len_arr = tcc_malloc(sizeof(CString)* me->s1->nb_loaded_dlls);
-	 if (len_arr == 0) {
-		 tcc_free(str_arr);
-		 return;
-	 }
+   
+   sym_arr = tcc_malloc(sizeof(CString)* me->s1->nb_loaded_dlls);
 
 	 for (sym_index = 1; sym_index < sym_end; ++sym_index) {
 		 sym = (ElfW(Sym) *)symtab_section->data + sym_index;
@@ -79,21 +75,30 @@ static kx_header __kx_header = { 'K','X',0, 0, 0x40, 0 };
 			 // KOS support 32 bit only
 			 Elf32_Sym* dyn_sym = &((ElfW(Sym) *)me->s1->dynsymtab_section->data)[dynsym_index];
 			 DLLReference **dllref = me->s1->loaded_dlls;
+       char* dll_name;
 			 i = dyn_sym->st_size - 1;
 			 // TCC store dll index in dyn_sym->st_size field
 			 if (dllref[i]->level != -1) {
-				 char* dll_name = dllref[i]->name;
-				 char dll_len = strlen(dll_name) + 1;
+				 dll_name = dllref[i]->name;
+				 dll_len = strlen(dll_name) + 1;
 
 				 nlib++;
 
 				 cstr_new(&str_arr[i]);
 				 cstr_new(&len_arr[i]);
+         cstr_new(&sym_arr[i]);
 
 				 cstr_ccat(&len_arr[i], dll_len);
 				 cstr_cat(&str_arr[i], dll_name, dll_len);
 				 //Mark dll as already used
 				 dllref[i]->level = -1;
+			 }
+       
+       cstr_wccat(&sym_arr[i], (int)name);
+
+			 // Export defined with prefix?
+			 if (dyn_sym->st_value == -1){
+				 name += (dll_len - 4); // skip prefix_
 			 }
 
 			 char name_len = strlen(name) + 1;
@@ -127,12 +132,12 @@ static kx_header __kx_header = { 'K','X',0, 0, 0x40, 0 };
 	 imp_sect->data_size = 0;
 	 //imp_sect->sh_addr = me->header.image_size;// +1;
 
-	long imp_data = imp_sect->data; //FIXME change to long for gcc compatible?
+	long imp_data = (long)imp_sect->data; //FIXED changed to long for gcc compatible
 
 	 // Strings
 	 i = 0;
 	 do {
-		 memcpy(imp_data, str_arr[i].data, str_arr[i].size);
+		 memcpy((void*)imp_data, str_arr[i].data, str_arr[i].size);
 		 imp_data += str_arr[i].size;
 		 imp_sect->data_size += str_arr[i].size;
 
@@ -152,22 +157,24 @@ static kx_header __kx_header = { 'K','X',0, 0, 0x40, 0 };
 		 0, SHN_ABS, __kx_import_table_sym);*/
 	 __kx_header.i_ptr = me->header.image_size + imp_sect->data_size;
 
-	 struct LibraryEntry lib;
+	 LibraryEntry lib;
 	 lib.ImportEntry = me->header.image_size + imp_sect->data_size + (nlib * 8) + 4;
 	 lib.LibraryName = me->header.image_size + 0;
 
 	 // LibraryEntry 
-	 memcpy(imp_data, &lib, sizeof(struct LibraryEntry));
+	 memcpy((void*)imp_data, &lib, sizeof(LibraryEntry));
 
 	 if (nlib > 1) {
+     int prev_sum = 0;
 		 int prev = 0;
 		 i = 1;
 		 do {
 			 lib.ImportEntry += (len_arr[prev].size - 2) * 4 + 4; //TODO: check that +4 is correct
-			 lib.LibraryName = me->header.image_size + str_arr[prev].size;
-			 imp_data += sizeof(struct LibraryEntry);
-			 imp_sect->data_size += sizeof(struct LibraryEntry);
-			 memcpy(imp_data, &lib, sizeof(struct LibraryEntry));
+			 prev_sum += str_arr[prev].size;
+			 lib.LibraryName = me->header.image_size + prev_sum; // FIXED (was BUG#10)
+			 imp_data += sizeof(LibraryEntry);
+			 imp_sect->data_size += sizeof(LibraryEntry);
+			 memcpy((void*)imp_data, &lib, sizeof(LibraryEntry));
 
 			 prev++;
 			 i++;
@@ -176,44 +183,44 @@ static kx_header __kx_header = { 'K','X',0, 0, 0x40, 0 };
 	 }
 
 	 // End of LibraryEntry
-	 imp_data += sizeof(struct LibraryEntry) + 4;
-	 imp_sect->data_size += sizeof(struct LibraryEntry) + 4;
+	 imp_data += sizeof(LibraryEntry) + 4;
+	 imp_sect->data_size += sizeof(LibraryEntry) + 4;
 
-	 char name_len;
-	 long l, nl;
+	 const char *sym_name;
+   char name_len;
+	 long len_sum;
 
-	 l = me->header.image_size;
+	 len_sum = me->header.image_size;
 	 i = 0;
 	 do {
 		 char* len_data = len_arr[i].data;
+     long* sym_data = sym_arr[i].data;
 
 		 name_len = *len_data++; // Skip library name
-		 nl = name_len;
 
 		 do {
-			 const char *name = (const char *)str_arr[i].data + nl;
+			 			 
+			 memcpy(&sym_name, sym_data++, 4);
 			 
 			 add_elf_sym(
 				 me->s1->dynsymtab_section,
 				 me->header.image_size + imp_sect->data_size,
 				 0, ELFW(ST_INFO)(STB_GLOBAL, STT_NOTYPE),
-				 0, SHN_ABS, name);
+				 0, SHN_ABS, sym_name);
 
-			 l += name_len;
-			 memcpy(imp_data, &l, 4);
+			 len_sum += name_len;
+			 memcpy((void*)imp_data, &len_sum, 4);
 
 			 imp_data += 4;
 			 imp_sect->data_size += 4;
 			 name_len = */*++*/len_data/*++*/;		//(was BUG#3)
-
-			 nl = nl + name_len;
 
 		 } while (/*name_len*/*(++len_data) > 0);
 
 		 imp_data += 4;
 		 imp_sect->data_size += 4;
 
-		 l += name_len;
+		 len_sum += name_len;
 		 i++;
 
 	 } while (i < nlib);
@@ -223,6 +230,7 @@ static kx_header __kx_header = { 'K','X',0, 0, 0x40, 0 };
 
 	 tcc_free(str_arr);
 	 tcc_free(len_arr);
+   tcc_free(sym_arr);
 
  }
 
@@ -246,14 +254,14 @@ static kx_header __kx_header = { 'K','X',0, 0, 0x40, 0 };
  }
 
  long kx_get_header_length(me_info* me) {
-	 if (me->header.version = 2)
+	 if (me->header.version == 2)
 		 return sizeof(kx_header);
 
 	 return 0;
  }
 
  void kx_write_header(me_info* me, FILE* f) {
-	 if (me->header.version = 2)
+	 if (me->header.version == 2)
 		 fwrite(&__kx_header, 1, sizeof(kx_header), f);
  }
 

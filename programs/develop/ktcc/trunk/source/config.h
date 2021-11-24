@@ -1,6 +1,7 @@
 #define TCC_VERSION "0.9.26"
 #define CONFIG_TCC_STATIC
-#define TCC_TARGET_MEOS 
+#define TCC_TARGET_KX
+//#define TCC_TARGET_MEOS 
 #define TCC_TARGET_I386
 #define ONE_SOURCE
 

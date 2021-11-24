@@ -58,6 +58,9 @@ static void display_info(TCCState *s, int what)
         " Windows"
 #elif defined TCC_TARGET_MEOS
 		" KolibriOS"
+#ifdef TCC_TARGET_KX
+    "/KX extension"
+#endif
 #else
         " Linux"
 #endif

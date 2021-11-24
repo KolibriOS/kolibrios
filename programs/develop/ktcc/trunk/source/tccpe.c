@@ -1493,7 +1493,10 @@ ST_FUNC int pe_putimport(TCCState *s1, int dllindex, const char *name, addr_t va
         dllindex, /* st_size */
         ELFW(ST_INFO)(STB_GLOBAL, STT_NOTYPE),
         0,
-        value ? SHN_ABS : SHN_UNDEF,
+#ifndef TCC_TARGET_KX
+        value ? SHN_ABS :
+#endif
+		SHN_UNDEF,
         name
         );
 }
@@ -1567,7 +1570,7 @@ quit:
 #if !defined(TCC_TARGET_MEOS) || defined (TCC_TARGET_KX)
 static int pe_load_def(TCCState *s1, int fd)
 {
-    int state = 0, ret = -1, dllindex = 0, ord;
+    int state = 0, ret = -1, dllindex = 0, ord = 0;
     char line[400], dllname[80], *p, *x;
     FILE *fp;
 
@@ -1591,6 +1594,15 @@ static int pe_load_def(TCCState *s1, int fd)
             continue;
 
         case 1:
+#ifdef TCC_TARGET_KX
+		    {
+			      char* p1 = strstr(p, "prefix");
+			      if (p1) {
+				    p[p1 - p - 1] = 0;
+				    ord = -1; // All exports used prefix
+			    }
+		    }
+#endif
             if (0 != stricmp(p, "EXPORTS"))
                 goto quit;
             ++state;
@@ -1599,10 +1611,22 @@ static int pe_load_def(TCCState *s1, int fd)
         case 2:
             dllindex = add_dllref(s1, dllname);
             ++state;
+#ifdef TCC_TARGET_KX
+			     if (ord == - 1) {
+				    char* tmp = strchr(dllname, '.');
+				    int n = tmp - dllname;
+				    dllname[n] = '_';
+				    dllname[n + 1] = 0;
+			    }
+#endif
             /* fall through */
         default:
+#ifdef TCC_TARGET_KX
+			     if ((ord == -1) && p != strstr(p, dllname))
+				    tcc_error_noabort("Wrong prefix for %s", p);
+#else
             /* get ordinal and will store in sym->st_value */
-            ord = 0;
+            //ord = 0; // ord  is assign in begining of function
             x = strchr(p, ' ');
             if (x) {
                 *x = 0, x = strrchr(x + 1, '@');
@@ -1613,6 +1637,7 @@ static int pe_load_def(TCCState *s1, int fd)
                         ord = 0;
                 }
             }
+#endif
             pe_putimport(s1, dllindex, p, ord);
             continue;
         }
