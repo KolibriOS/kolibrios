@@ -45,6 +45,9 @@ dword ChangeCharset(dword from_chs, to_chs, conv_buf)
 		if (from_chs == CH_UTF8) && (to_chs == CH_CP866) {
 			utf8rutodos(conv_buf);
 		}
+		if (from_chs == CH_CP1251) && (to_chs == CH_CP866) {
+			wintodos(conv_buf);
+		}
 	} else {
 		strcpy(conv_buf, new_buf);
 	}
