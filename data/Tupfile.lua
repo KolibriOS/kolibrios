@@ -39,7 +39,6 @@ img_files = {
  {"FONTS/TAHOMA.KF", "common/fonts/tahoma.kf"},
  {"LIB/ICONV.OBJ", "common/lib/iconv.obj"},
  {"LIB/KMENU.OBJ", "common/lib/kmenu.obj"},
- {"LIB/NETCODE.OBJ", "common/lib/netcode.obj"},
  {"LIB/PIXLIB.OBJ", "common/lib/pixlib.obj"},
  {"MEDIA/IMGF/IMGF", "common/media/ImgF/ImgF"},
  {"MEDIA/IMGF/CEDG.OBJ", "common/media/ImgF/cEdg.obj"},
@@ -486,6 +485,7 @@ tup.append_table(img_files, {
  {"LIB/CNV_PNG.OBJ", PROGS .. "/media/zsea/plugins/png/cnv_png.obj"},
  {"LIB/DLL.OBJ", PROGS .. "/develop/libraries/dll/dll.obj"},
  {"LIB/HTTP.OBJ", PROGS .. "/develop/libraries/http/http.obj"},
+ {"LIB/LIBCRASH.OBJ", PROGS .. "/develop/libraries/libcrash/libcrash.obj"},
  {"LIB/LIBGFX.OBJ", PROGS .. "/develop/libraries/libs-dev/libgfx/libgfx.obj"},
  {"LIB/LIBIMG.OBJ", PROGS .. "/develop/libraries/libs-dev/libimg/libimg.obj"},
  {"LIB/LIBINI.OBJ", PROGS .. "/develop/libraries/libs-dev/libini/libini.obj"},
@@ -722,6 +722,7 @@ end -- tup.getconfig('NO_TCC') ~= 'full'
 if tup.getconfig('NO_GCC') ~= 'full' then
 tup.append_table(img_files, {
  {"GAMES/REVERSI", PROGS .. "/games/reversi/trunk/reversi"},
+ {"LIB/BASE64.OBJ", PROGS .. "/develop/libraries/base64/base64.obj"},
  {"LIB/LIBC.OBJ", PROGS .. "/develop/ktcc/trunk/libc.obj/source/libc.obj"},
  {"LIB/MTAR.OBJ", PROGS .. "/develop/libraries/microtar/mtar.obj"},
 })

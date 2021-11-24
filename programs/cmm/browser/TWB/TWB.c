@@ -148,7 +148,7 @@ void TWebBrowser::ParseHtml(dword _bufpointer, _bufsize){
 		cur_encoding = CH_CP866;
 		if (custom_encoding != -1) {
 			cur_encoding = custom_encoding;
-			bufpointer = ChangeCharset(cur_encoding, "CP866", bufpointer);
+			bufpointer = ChangeCharset(cur_encoding, CH_CP866, bufpointer);
 			bufsize = strlen(bufpointer);
 		}
 	}
@@ -197,7 +197,6 @@ void TWebBrowser::ParseHtml(dword _bufpointer, _bufsize){
 							#tag.name, draw_x, draw_y, #linebuf));
 					}
 					//*/
-
 					RenderTextbuf();
 					if (debug_mode) { debugch('<'); if(!tag.opened)debugch('/'); debug(#tag.name); debugln(">"); }
 					$push cur_encoding
@@ -257,9 +256,9 @@ void TWebBrowser::ChangeEncoding(int _new_encoding)
 {
 	if (cur_encoding == _new_encoding) return;
 	cur_encoding = _new_encoding;
-	bufpointer = ChangeCharset(cur_encoding, "CP866", bufpointer);
+	bufpointer = ChangeCharset(cur_encoding, CH_CP866, bufpointer);
 	if (header) {
-		ChangeCharset(cur_encoding, "CP866", #header);
+		ChangeCharset(cur_encoding, CH_CP866, #header);
 		DrawTitle(#header);
 	}
 }
