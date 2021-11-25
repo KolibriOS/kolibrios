@@ -50,8 +50,12 @@ def check_tools(tools):
             not_exists.append((name, package))
     if len(not_exists) != 0:
         log("Sorry, I can't find some tools:")
-        max_name_len = len("name")
-        max_package_name_len = len("package")
+
+        header_name = "Name"
+        header_package = "Package (probably)"
+
+        max_name_len = len(header_name)
+        max_package_name_len = len(header_package)
         for name, package in not_exists:
             if len(package) > max_package_name_len:
                 max_package_name_len = len(package)
@@ -65,7 +69,7 @@ def check_tools(tools):
             log(f" +-{'-' * max_name_len}-+-{'-' * max_package_name_len}-+")
 
         draw_line()
-        draw_row("Name", "Package")
+        draw_row(header_name, header_package)
         draw_line()
         for name, package in not_exists:
             draw_row(name, package)
