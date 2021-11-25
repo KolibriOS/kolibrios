@@ -1,6 +1,5 @@
 #!/usr/bin/python3
-# Copyright 2021 KolibriOS Team
-# Copyright 2021 Nekos Team
+# Copyright 2021 Magomed Kostoev
 # Published under MIT License
 
 import os
@@ -80,7 +79,8 @@ def check_tools(tools):
 # Check available tools
 tools = (("mcopy", "mtools"),
          ("qemu-system-i386", "qemu-system-x86"),
-         ("wget", "wget"))
+         ("wget", "wget"),
+         ("fasm", "fasm"))
 check_tools(tools)
 
 # Get IMG
@@ -106,10 +106,13 @@ if floppy_image_clusters - free_clusters < 500:
 # Get test kernel
 if not os.path.exists("kernel.mnt.pretest"):
     if len(sys.argv) == 1:
-        execute("wget -q --show-progress http://builds.kolibrios.org/eng/data/kernel/trunk/kernel.mnt.pretest -O kernel.mnt.pretest")
+        with open("lang.inc", "w") as lang_inc:
+            lang_inc.write("lang fix en\n")
+        execute("fasm bootbios.asm bootbios.bin.pretest -dpretest_build=1")
+        execute("fasm -m 65536 kernel.asm kernel.mnt.pretest -dpretest_build=1 -ddebug_com_base=0xe9")
     else:
         builds_eng = sys.argv[1]
-        execute("cp {builds_eng}/data/kernel/trunk/kernel.mnt.pretest kernel.mnt.pretest", mute = True)
+        execute(f"cp {builds_eng}/data/kernel/trunk/kernel.mnt.pretest kernel.mnt.pretest", mute = True)
 
 # Put the kernel into IMG
 execute("mcopy -D o -i kolibri_test.img kernel.mnt.pretest ::kernel.mnt", mute = True)
