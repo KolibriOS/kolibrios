@@ -99,9 +99,6 @@ if __name__ == "__main__":
     with open("kolibri_test.img", "rb") as img:
         img_data = img.read()
     img = common.Floppy(img_data)
-
-    # Remove old kernel (may fail if we removed it before so no check here)
-    img.delete_path("kernel.mnt")
     
     # Remove unuseful folders
     img.delete_path("GAMES")
@@ -122,7 +119,7 @@ if __name__ == "__main__":
     # Put the kernel into IMG
     with open("kernel.mnt.pretest", "rb") as kernel_mnt_pretest:
         kernel_mnt_pretest_data = kernel_mnt_pretest.read()
-    img.add_file_path("kernel.mnt", kernel_mnt_pretest_data)
+    img.add_file_path("KERNEL.MNT", kernel_mnt_pretest_data)
     img.save("kolibri_test.img")
     
     # Collect tests from test folder (not recursively yet)

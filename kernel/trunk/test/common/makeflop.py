@@ -90,9 +90,9 @@ class Floppy:
             self.path = ""
             self.incipit = data[0]
             if self.incipit != 0x00 and self.incipit != Floppy.EMPTY:
-                filename = data[0:8].decode("ASCII")
+                filename = data[0:8].decode("cp866")
                 filename = filename.rstrip(" ")
-                extension = data[8:11].decode("ASCII")
+                extension = data[8:11].decode("cp866")
                 extension = extension.rstrip(" ")
                 self.path = filename
                 if len(extension) > 0:
