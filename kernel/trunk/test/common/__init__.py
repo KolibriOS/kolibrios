@@ -9,6 +9,7 @@ import timeit
 import time
 import shlex
 import signal
+from . makeflop import Floppy
 
 class TestTimeoutException(Exception):
     pass

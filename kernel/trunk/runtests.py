@@ -83,8 +83,7 @@ def check_tools(tools):
 
 if __name__ == "__main__":
     # Check available tools
-    tools = (("mcopy", "mtools"),
-             ("qemu-system-i386", "qemu-system-x86"),
+    tools = (("qemu-system-i386", "qemu-system-x86"),
              ("fasm", "fasm"))
     check_tools(tools)
     
@@ -96,17 +95,18 @@ if __name__ == "__main__":
             builds_eng = sys.argv[1]
             execute(f"cp {builds_eng}/data/data/kolibri.img kolibri_test.img")
     
+    # Open the IMG
+    with open("kolibri_test.img", "rb") as img:
+        img_data = img.read()
+    img = common.Floppy(img_data)
+
     # Remove old kernel (may fail if we removed it before so no check here)
-    os.system("mdel -i kolibri_test.img ::kernel.mnt > /dev/null")
+    img.delete_path("kernel.mnt")
     
-    # Check free space after kernel remove
-    free_clusters = int(subprocess.check_output("mdu -i kolibri_test.img :: -s", shell=True).split()[-1])
-    floppy_image_clusters = 2880
-    if floppy_image_clusters - free_clusters < 500:
-        # Remove unuseful files from IMG if lesser than 500 sectors
-        execute("mdeltree -i kolibri_test.img ::GAMES", mute = True)
-        execute("mdeltree -i kolibri_test.img ::DEMOS", mute = True)
-        execute("mdeltree -i kolibri_test.img ::3D", mute = True)
+    # Remove unuseful folders
+    img.delete_path("GAMES")
+    img.delete_path("DEMOS")
+    img.delete_path("3D")
     
     # Get test kernel
     if not os.path.exists("kernel.mnt.pretest"):
@@ -120,7 +120,10 @@ if __name__ == "__main__":
             execute(f"cp {builds_eng}/data/kernel/trunk/kernel.mnt.pretest kernel.mnt.pretest", mute = True)
     
     # Put the kernel into IMG
-    execute("mcopy -D o -i kolibri_test.img kernel.mnt.pretest ::kernel.mnt", mute = True)
+    with open("kernel.mnt.pretest", "rb") as kernel_mnt_pretest:
+        kernel_mnt_pretest_data = kernel_mnt_pretest.read()
+    img.add_file_path("kernel.mnt", kernel_mnt_pretest_data)
+    img.save("kolibri_test.img")
     
     # Collect tests from test folder (not recursively yet)
     for test_folder in os.listdir("test"):
