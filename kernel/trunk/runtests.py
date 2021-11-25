@@ -6,6 +6,7 @@
 import os
 import sys
 from importlib.machinery import SourceFileLoader
+from shutil import which
 import timeit
 import urllib.request
 import subprocess
@@ -30,6 +31,53 @@ def stage(name, command, mute = False):
     print(f"{name}... ", end = "")
     execute(command, mute = mute)
     print("Done.")
+
+def tool_exists(name):
+    assert(type(name) == str)
+    return which(name) != None
+
+def check_tools(tools):
+    assert(type(tools) == tuple)
+    for name_package_pair in tools:
+        assert(type(name_package_pair) == tuple)
+        assert(len(name_package_pair) == 2)
+        assert(type(name_package_pair[0]) == str)
+        assert(type(name_package_pair[1]) == str)
+    
+    not_exists = []
+    for name, package in tools:
+        if not tool_exists(name):
+            not_exists.append((name, package))
+    if len(not_exists) != 0:
+        log("Sorry, I can't find some tools:")
+        max_name_len = len("name")
+        max_package_name_len = len("package")
+        for name, package in not_exists:
+            if len(package) > max_package_name_len:
+                max_package_name_len = len(package)
+            if len(name) > max_name_len:
+                max_name_len = len(name)
+
+        def draw_row(name, package):
+            log(f" | {name.ljust(max_name_len)} | {package.ljust(max_package_name_len)} |")
+
+        def draw_line():
+            log(f" +-{'-' * max_name_len}-+-{'-' * max_package_name_len}-+")
+
+        draw_line()
+        draw_row("Name", "Package")
+        draw_line()
+        for name, package in not_exists:
+            draw_row(name, package)
+        draw_line()
+        exit()
+
+
+# Check available tools
+tools = (("mcopy", "mtools"),
+         ("qemu-system-i386", "qemu-system-x86"),
+         ("wget", "wget"))
+check_tools(tools)
 
 # Get IMG
 if not os.path.exists("kolibri_test.img"):
