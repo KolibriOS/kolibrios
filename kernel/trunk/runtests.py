@@ -4,6 +4,7 @@
 
 import os
 import sys
+import urllib
 from importlib.machinery import SourceFileLoader
 from shutil import which
 import timeit
@@ -30,6 +31,11 @@ def stage(name, command, mute = False):
     print(f"{name}... ", end = "")
     execute(command, mute = mute)
     print("Done.")
+
+def download(link, path):
+    log(f"Downloading {path}... ", end = "")
+    urllib.urlretrieve(link, path)
+    log("Done.")
 
 def tool_exists(name):
     assert(type(name) == str)
@@ -79,14 +85,13 @@ if __name__ == "__main__":
     # Check available tools
     tools = (("mcopy", "mtools"),
              ("qemu-system-i386", "qemu-system-x86"),
-             ("wget", "wget"),
              ("fasm", "fasm"))
     check_tools(tools)
     
     # Get IMG
     if not os.path.exists("kolibri_test.img"):
         if len(sys.argv) == 1:
-            execute("wget -q --show-progress http://builds.kolibrios.org/eng/data/data/kolibri.img -O kolibri_test.img")
+            download("http://builds.kolibrios.org/eng/data/data/kolibri.img", "kolibri_test.img")
         else:
             builds_eng = sys.argv[1]
             execute(f"cp {builds_eng}/data/data/kolibri.img kolibri_test.img")
