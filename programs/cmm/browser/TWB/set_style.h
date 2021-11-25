@@ -362,6 +362,8 @@ void TWebBrowser::tag_table()
 			if (table.depth==1) {
 				table.count++;
 				colcount = 0;
+				td_pos = 0;
+				row_start_y = draw_y;
 				if (tag.get_number_of("width")) {
 					if (strchr(tag.value, '%')) tag.number = list.w * tag.number / 100;
 					table.width.set(table.count, math.min(tag.number,list.w));
@@ -376,8 +378,9 @@ void TWebBrowser::tag_table()
 			if (table.depth==0) {
 				draw_x = left_gap = style.tag_list.level * 5 * list.font_w + BODY_MARGIN;
 				draw_w = list.w;
+				if (td_pos) draw_y = math.max(draw_y, tallest_cell_in_row);
 				draw_y = math.max(draw_y+style.cur_line_h, tallest_cell_in_row);
-				row_start_y = draw_y = tallest_cell_in_row = draw_y;
+				row_start_y = tallest_cell_in_row = draw_y;
 				style.cur_line_h = list.item_h;
 			}
 		}
@@ -403,6 +406,7 @@ void TWebBrowser::tag_table()
 	} else {
 		if (tag.is("tr")) {
 			if (tag.opened) {
+				if (td_pos) draw_y = math.max(draw_y, tallest_cell_in_row);
 				_TR_FIX:
 				if (draw_x==left_gap) && (draw_y==BODY_MARGIN) {
 					row_start_y = tallest_cell_in_row = draw_y;
@@ -414,6 +418,7 @@ void TWebBrowser::tag_table()
 				td_pos = 0;
 			} else {
 				draw_y = math.max(draw_y, tallest_cell_in_row);
+				td_pos = 0;
 			}
 			draw_x = left_gap = style.tag_list.level * 5 * list.font_w + BODY_MARGIN;
 			draw_w = list.w;
@@ -441,10 +446,12 @@ void TWebBrowser::tag_table()
 					draw_w = table.width.get(table.count) - BODY_MARGIN;
 				} else {
 					draw_x = left_gap = left_gap + draw_w;
-					draw_w = table.width.get(table.count) - left_gap;
+					draw_w = table.width.get(table.count) - left_gap + table.margin - BODY_MARGIN;
 				}
 
-				if (EAX = table.cols.get(tr_pos-1)-td_pos) draw_w /= EAX; else {
+				if (EAX = table.cols.get(tr_pos-1)-td_pos) {
+					draw_w /= EAX;
+				} else {
 					draw_y = row_start_y;
 					draw_x = left_gap = table.margin;
 				}
@@ -456,7 +463,8 @@ void TWebBrowser::tag_table()
 				}
 				draw_y = row_start_y;
 				//canvas.WriteText(draw_x, draw_y, 10001001b, 0x0000FE, itoa(draw_x), NULL);
-				td_pos++;				
+				//canvas.WriteText(draw_x, draw_y+20, 10001001b, 0xFF0000, itoa(draw_w), NULL);
+				td_pos++;
 			}
 		}
 	}
@@ -470,5 +478,11 @@ void TWebBrowser::tag_table()
 			canvas.DrawBar(0, draw_y, 20, 20, 0xFF0000);
 		}
 	}
+	/*
+	if (left_gap + draw_w > list.w) {
+		draw_w = list.w - left_gap;
+		if (debug_mode) debugln("anomaly draw_W");
+	}
+	*/
 }
 
