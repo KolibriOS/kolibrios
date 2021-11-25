@@ -329,7 +329,9 @@ NOIMG:
 struct TABLE {
 	int count;
 	int depth;
+	int margin;
 	collection_int cols;
+	collection_int width;
 } table;
 
 
@@ -360,6 +362,12 @@ void TWebBrowser::tag_table()
 			if (table.depth==1) {
 				table.count++;
 				colcount = 0;
+				if (tag.get_number_of("width")) {
+					if (strchr(tag.value, '%')) tag.number = list.w * tag.number / 100;
+					table.width.set(table.count, math.min(tag.number,list.w));
+				} else {
+					table.width.set(table.count, list.w);
+				}
 			}
 		} else {
 			if (table.depth>0) {
@@ -428,19 +436,21 @@ void TWebBrowser::tag_table()
 			if (tag.opened) {
 				
 				if (!td_pos) {
-					draw_x = left_gap = BODY_MARGIN;
+					table.margin = list.w - table.width.get(table.count) / 2 + BODY_MARGIN;
+					draw_x = left_gap = table.margin;
+					draw_w = table.width.get(table.count) - BODY_MARGIN;
 				} else {
 					draw_x = left_gap = left_gap + draw_w;
+					draw_w = table.width.get(table.count) - left_gap;
 				}
 
-				draw_w = list.w - BODY_MARGIN - 23 - left_gap;
 				if (EAX = table.cols.get(tr_pos-1)-td_pos) draw_w /= EAX; else {
 					draw_y = row_start_y;
-					draw_x = left_gap = BODY_MARGIN;
+					draw_x = left_gap = table.margin;
 				}
 				if (table.cols.get(tr_pos-1)-td_pos>1) && (tag.get_number_of("width")) {
 					if (strchr(tag.value, '%')) {
-						tag.number = list.w - BODY_MARGIN - 23 - left_gap * tag.number / 100;
+						tag.number = table.width.get(table.count) - table.margin - 23 - left_gap * tag.number / 100;
 					}
 					if (tag.number < draw_w) draw_w = tag.number;
 				}
@@ -450,9 +460,9 @@ void TWebBrowser::tag_table()
 			}
 		}
 	}
-	if (draw_x > list.w) {
-		draw_x = left_gap = BODY_MARGIN;
-		draw_w = list.w - BODY_MARGIN - 23 - left_gap;
+	if (draw_x > table.width.get(table.count)) {
+		draw_x = left_gap = table.margin;
+		draw_w = table.width.get(table.count) - table.margin - 23 - left_gap;
 		table.depth = 0;
 		NewLine();
 		if (debug_mode) {

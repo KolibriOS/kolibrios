@@ -343,6 +343,12 @@ void ProcessKeyEvent()
 void SetElementSizes()
 {
 	omnibox_edit.width = Form.cwidth - omnibox_edit.left - 52 - 16;
+	if (Form.cwidth - scroll_wv.size_x != WB1.list.w) {
+		//temporary fix for crash
+		//related to 'cur_img_url' var read
+		//http://board.kolibrios.org/viewtopic.php?f=1&t=1712&start=60#p77523
+		StopLoading();
+	}
 	WB1.list.SetSizes(0, TOOLBAR_H+TAB_H, Form.cwidth - scroll_wv.size_x, 
 		Form.cheight - TOOLBAR_H - STATUSBAR_H - TAB_H, BASIC_LINE_H);
 	WB1.list.wheel_size = 7 * BASIC_LINE_H;
