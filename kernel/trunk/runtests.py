@@ -34,7 +34,7 @@ def stage(name, command, mute = False):
 
 def download(link, path):
     log(f"Downloading {path}... ", end = "")
-    urllib.urlretrieve(link, path)
+    urllib.request.urlretrieve(link, path)
     log("Done.")
 
 def tool_exists(name):
