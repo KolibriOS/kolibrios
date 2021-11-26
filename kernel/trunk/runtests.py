@@ -133,6 +133,18 @@ def collect_tests():
             tests.append(test_folder_path)
     return tests
 
+def collect_umka_tests():
+    tests = []
+
+    for test_file in os.listdir("umka/test"):
+        test_file_path = f"umka/test/{test_file}"
+        if not test_file.endswith(".t"):
+            continue
+        if not os.path.isfile(test_file_path):
+            continue
+        tests.append(test_file_path)
+    return tests
+
 def run_tests_serially_thread(test, root_dir):
     test_number = 1
     for test in tests:
@@ -191,6 +203,7 @@ if __name__ == "__main__":
     prepare_test_img()
     build_umka()
     tests = collect_tests()
+    print(collect_umka_tests)
     serial_executor_thread = run_tests_serially(tests, root_dir)
     serial_executor_thread.join()
 
