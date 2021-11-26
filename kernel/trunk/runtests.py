@@ -15,6 +15,8 @@ from threading import Thread
 sys.path.append('test')
 import common
 
+enable_umka = False
+
 def log(s, end = "\n"):
     print(s, end = end, flush = True)
 
@@ -158,6 +160,26 @@ def run_tests_serially(tests, root_dir):
     thread.start()
     return thread
 
+def gcc(fin, fout):
+    command = f"gcc -m32 -std=c11 -g -O0 -D_FILE_OFFSET_BITS=64 -DNDEBUG -masm=intel -D_POSIX_C_SOURCE=200809L -Iumka -Iumka/linux -fno-pie -c {fin} -o {fout}"
+    print(command)
+    os.system(command)
+
+def build_umka():
+    if not enable_umka:
+        return
+    if os.path.exists("umka_shell"):
+        return
+    os.makedirs("umka/build", exist_ok = True)
+    sources = ["umka_shell.c", "shell.c", "trace.c", "trace_lbr.c", "vdisk.c", "vnet.c", "lodepng.c", "linux/pci.c", "linux/thread.c", "util.c"]
+    sources = [f"umka/{f}" for f in sources]
+    for source in sources:
+        gcc(source, f"{source}.o")
+    objects = " ".join([ f"{s}.o" for s in sources ])
+    os.system(f"INCLUDE=\"../../programs/develop/libraries/libcrash/hash\" fasm -dUEFI=1 -dextended_primary_loader=1 -dUMKA=1 umka/umka.asm umka/build/umka.o -s umka/build/umka.fas -m 2000000")
+    objects += (" umka/build/umka.o")
+    os.system(f"gcc -m32 -no-pie -o umka_shell -static -T umka/umka.ld {objects}")
+
 if __name__ == "__main__":
     root_dir = os.getcwd()
 
@@ -167,6 +189,7 @@ if __name__ == "__main__":
     check_tools(tools)
     
     prepare_test_img()
+    build_umka()
     tests = collect_tests()
     serial_executor_thread = run_tests_serially(tests, root_dir)
     serial_executor_thread.join()
