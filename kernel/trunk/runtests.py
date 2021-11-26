@@ -131,7 +131,7 @@ def collect_tests():
             tests.append(test_folder_path)
     return tests
 
-def run_tests_serially(tests, root_dir):
+def run_tests_serially_thread(test, root_dir):
     test_number = 1
     for test in tests:
         test_dir = f"{root_dir}/{test}"
@@ -153,6 +153,11 @@ def run_tests_serially(tests, root_dir):
     
         test_number += 1
 
+def run_tests_serially(tests, root_dir):
+    thread = Thread(target = run_tests_serially_thread, args = (tests, root_dir))
+    thread.start()
+    return thread
+
 if __name__ == "__main__":
     root_dir = os.getcwd()
 
@@ -163,4 +168,6 @@ if __name__ == "__main__":
     
     prepare_test_img()
     tests = collect_tests()
-    run_tests_serially(tests, root_dir)
+    serial_executor_thread = run_tests_serially(tests, root_dir)
+    serial_executor_thread.join()
+
