@@ -14,9 +14,6 @@ import subprocess
 sys.path.append('test')
 import common
 
-root_dir = os.getcwd()
-tests = []
-
 def log(s, end = "\n"):
     print(s, end = end, flush = True)
 
@@ -81,12 +78,8 @@ def check_tools(tools):
         draw_line()
         exit()
 
-if __name__ == "__main__":
-    # Check available tools
-    tools = (("qemu-system-i386", "qemu-system-x86"),
-             ("fasm", "fasm"))
-    check_tools(tools)
-    
+def prepare_test_img():
+    # TODO: Always recompile the kernel (after build system is done?)
     # Get IMG
     if not os.path.exists("kolibri_test.img"):
         if len(sys.argv) == 1:
@@ -99,7 +92,7 @@ if __name__ == "__main__":
     with open("kolibri_test.img", "rb") as img:
         img_data = img.read()
     img = common.Floppy(img_data)
-    
+
     # Remove unuseful folders
     img.delete_path("GAMES")
     img.delete_path("DEMOS")
@@ -121,18 +114,33 @@ if __name__ == "__main__":
         kernel_mnt_pretest_data = kernel_mnt_pretest.read()
     img.add_file_path("KERNEL.MNT", kernel_mnt_pretest_data)
     img.save("kolibri_test.img")
-    
+
+def collect_tests():
+    tests = []
+
     # Collect tests from test folder (not recursively yet)
     for test_folder in os.listdir("test"):
         test_folder_path = f"test/{test_folder}"
         test_file = f"{test_folder_path}/test.py"
-    
+
         if not os.path.isdir(test_folder_path):
             continue
-    
+
         if os.path.exists(test_file):
             tests.append(test_folder_path)
+    return tests
+
+if __name__ == "__main__":
+    root_dir = os.getcwd()
+
+    # Check available tools
+    tools = (("qemu-system-i386", "qemu-system-x86"),
+             ("fasm", "fasm"))
+    check_tools(tools)
     
+    prepare_test_img()
+    tests = collect_tests()
+   
     # Execute each test
     test_number = 1
     for test in tests:
