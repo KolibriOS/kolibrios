@@ -103,11 +103,13 @@ def run_qemu():
         qemu_directory = get_file_directory(qemu_full_path)
         flags += f"-L {qemu_directory} "
     s = f"{qemu_command} {flags}"
+    qemu_stdout = open("qemu_stdout.log", "w")
+    qemu_stderr = open("qemu_stderr.log", "w")
     if is_win32():
-        return subprocess.Popen(s, bufsize = 0, stdout = subprocess.DEVNULL, stderr = subprocess.DEVNULL, stdin = subprocess.DEVNULL, shell = True, start_new_session = True)
+        return subprocess.Popen(s, bufsize = 0, stdout = qemu_stdout, stderr = qemu_stderr, stdin = subprocess.DEVNULL, shell = True, start_new_session = True)
     else:
         a = shlex.split(s)
-        return subprocess.Popen(a, bufsize = 0, stdout = subprocess.DEVNULL, stderr = subprocess.DEVNULL, stdin = subprocess.DEVNULL, start_new_session = True)
+        return subprocess.Popen(a, bufsize = 0, stdout = qemu_stdout, stderr = qemu_stderr, stdin = subprocess.DEVNULL, start_new_session = True)
 
 def run():
     if os.path.exists("debug.log"):
