@@ -1,5 +1,4 @@
-# Copyright 2021 KolibriOS Team
-# Copyright 2021 Nekos Team
+# Copyright 2021 Magomed Kostoev
 # Published under MIT License
 
 import io
