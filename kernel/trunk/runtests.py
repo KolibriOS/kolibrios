@@ -142,7 +142,7 @@ def collect_umka_tests():
             continue
         if not os.path.isfile(test_file_path):
             continue
-        tests.append(test_file_path)
+        tests.append(test_file)
     return tests
 
 def run_tests_serially_thread(test, root_dir):
@@ -192,6 +192,15 @@ def build_umka():
     objects += (" umka/build/umka.o")
     os.system(f"gcc -m32 -no-pie -o umka_shell -static -T umka/umka.ld {objects}")
 
+def run_umka_test(test_file_path):
+    ref_log = f"{test_file_path[:-2]}.ref.log"
+    out_log = f"{test_file_path[:-2]}.out.log"
+    os.system(f"../../umka_shell < {test_file_path} > {out_log}")
+    if os.system(f"cmp {ref_log} {out_log}") != 0:
+        print(f"FAILURE: {test_file_path}\n", end = "")
+    else:
+        print(f"SUCCESS: {test_file_path}\n", end = "")
+
 if __name__ == "__main__":
     root_dir = os.getcwd()
 
@@ -203,7 +212,11 @@ if __name__ == "__main__":
     prepare_test_img()
     build_umka()
     tests = collect_tests()
-    print(collect_umka_tests)
+    umka_tests = collect_umka_tests()
     serial_executor_thread = run_tests_serially(tests, root_dir)
     serial_executor_thread.join()
+    if enable_umka:
+        os.chdir(f"{root_dir}/umka/test")
+        for umka_test in umka_tests:
+            run_umka_test(umka_test)
 
