@@ -10,6 +10,7 @@ from shutil import which
 import timeit
 import urllib.request
 import subprocess
+from threading import Thread
 
 sys.path.append('test')
 import common
@@ -130,18 +131,7 @@ def collect_tests():
             tests.append(test_folder_path)
     return tests
 
-if __name__ == "__main__":
-    root_dir = os.getcwd()
-
-    # Check available tools
-    tools = (("qemu-system-i386", "qemu-system-x86"),
-             ("fasm", "fasm"))
-    check_tools(tools)
-    
-    prepare_test_img()
-    tests = collect_tests()
-   
-    # Execute each test
+def run_tests_serially(tests, root_dir):
     test_number = 1
     for test in tests:
         test_dir = f"{root_dir}/{test}"
@@ -162,4 +152,15 @@ if __name__ == "__main__":
         os.chdir(root_dir)
     
         test_number += 1
+
+if __name__ == "__main__":
+    root_dir = os.getcwd()
+
+    # Check available tools
+    tools = (("qemu-system-i386", "qemu-system-x86"),
+             ("fasm", "fasm"))
+    check_tools(tools)
     
+    prepare_test_img()
+    tests = collect_tests()
+    run_tests_serially(tests, root_dir)
