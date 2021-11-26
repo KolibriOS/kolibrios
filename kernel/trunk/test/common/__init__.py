@@ -4,12 +4,23 @@
 
 import io
 import os
+import sys
 import subprocess
 import timeit
 import time
 import shlex
 import signal
+import shutil
 from . makeflop import Floppy
+
+def is_win32():
+    return True if sys.platform == "win32" else False
+
+def is_linux():
+    return True if sys.platform == "linux" or sys.platform == "linux2" else False
+
+def  is_osx():
+    return True if sys.platform == "darwin" else False
 
 class TestTimeoutException(Exception):
     pass
@@ -24,7 +35,6 @@ class Qemu:
         while not os.path.exists("debug.log"):
             self.wait()
         self.debug = open("debug.log", "rb")
-        self.monitor_in = open("monitor.pipe.in", "wb")
 
     def wait_for_debug_log(self, needle, timeout = 1):
         needle = bytes(needle, "utf-8")
@@ -51,7 +61,11 @@ class Qemu:
         self.timeout()
 
     def kill(self):
-        os.killpg(os.getpgid(self.popen.pid), signal.SIGTERM)
+        if is_win32():
+            # FIXME: This is shit, isn't there anything better?
+            subprocess.Popen(f"TASKKILL /F /PID {self.popen.pid} /T", stdout = subprocess.DEVNULL, stderr = subprocess.DEVNULL, stdin = subprocess.DEVNULL)
+        else:
+            os.killpg(os.getpgid(self.popen.pid), signal.SIGTERM)
 
     def failure(self):
         self.kill()
@@ -64,32 +78,41 @@ class Qemu:
     def wait(self, seconds = 0.25):
         time.sleep(seconds)
 
-    def send_keys(self, keys):
-        for key in keys.split():
-            self.send_monitor_command(f"sendkey {key}")
+def get_file_directory(path):
+    path = path.replace("\\", "/")
+    if "/" in path:
+        folder = "/".join(path.split("/")[:-1])
+        if folder == "":
+            return "/" # It was a file in the root folder
+        return folder
+    else:
+        return "." # Just a filename, let's return current folder
 
-    def take_screenshot(self, fname):
-        self.send_monitor_command(f"screendump {fname}")
-
-    def send_monitor_command(self, command):
-        self.monitor_in.write(bytes(command + "\n", "utf-8"))
-        self.monitor_in.flush()
-
-    def images_diff(self, i0, i1, expect=True):
-        diff = bool(os.system(f"perceptualdiff {i0} {i1} > /dev/null"))
-        if diff != expect:
-            self.failure()
+def run_qemu():
+    qemu_command = f"qemu-system-i386"
+    flags = ""
+    flags += "-nographic " # Makes it faster
+    flags += "-debugcon file:debug.log " # 0xe9 port output
+    flags += "-L . " # IDK why it does not work without this
+    flags += "-m 128 "
+    flags += "-drive format=raw,file=../../kolibri_test.img,index=0,if=floppy -boot a "
+    flags += "-vga vmware "
+    flags += "-net nic,model=rtl8139 -net user "
+    flags += "-soundhw ac97 "
+    if is_win32():
+        qemu_full_path = shutil.which(qemu_command)
+        qemu_directory = get_file_directory(qemu_full_path)
+        flags += f"-L {qemu_directory} "
+    s = f"{qemu_command} {flags}"
+    if is_win32():
+        return subprocess.Popen(s, bufsize = 0, stdout = subprocess.DEVNULL, stderr = subprocess.DEVNULL, stdin = subprocess.DEVNULL, shell = True, start_new_session = True)
+    else:
+        a = shlex.split(s)
+        return subprocess.Popen(a, bufsize = 0, stdout = subprocess.DEVNULL, stderr = subprocess.DEVNULL, stdin = subprocess.DEVNULL, start_new_session = True)
 
 def run():
     if os.path.exists("debug.log"):
         os.remove("debug.log")
-    if os.path.exists("monitor.pipe.in"):
-        os.remove("monitor.pipe.in")
-    if os.path.exists("monitor.pipe.out"):
-        os.remove("monitor.pipe.out")
-    os.system("mkfifo monitor.pipe.in monitor.pipe.out")
-    s = f"qemu-system-i386 -nographic -monitor pipe:monitor.pipe -debugcon file:debug.log -L . -m 128 -drive format=raw,file=../../kolibri_test.img,index=0,if=floppy -boot a -vga vmware -net nic,model=rtl8139 -net user -soundhw ac97"
-    a = shlex.split(s)
-    popen = subprocess.Popen(a, bufsize = 0, stdout = subprocess.DEVNULL, stderr = subprocess.DEVNULL, stdin = subprocess.DEVNULL, start_new_session = True)
+    popen = run_qemu()
     return Qemu(popen)
 
