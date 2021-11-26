@@ -1,0 +1,275 @@
+/> umka_init
+/> disk_add ../img/xfs_v5_files_s05k_b4k_n8k.img hd0 -c 0
+/hd0/1: xfs
+# hole begin
+# zero length
+/> read70 /hd0/1/hole_begin 0 0 -b
+status = 0 success, count = 0
+
+/> read70 /hd0/1/hole_begin 1 0 -b
+status = 0 success, count = 0
+
+/> read70 /hd0/1/hole_begin 0x3ffe 0 -b
+status = 0 success, count = 0
+
+/> read70 /hd0/1/hole_begin 0x3fff 0 -b
+status = 0 success, count = 0
+
+/> read70 /hd0/1/hole_begin 0x4000 0 -b
+status = 0 success, count = 0
+
+/> read70 /hd0/1/hole_begin 0x4001 0 -b
+status = 0 success, count = 0
+
+# one-byte length
+/> read70 /hd0/1/hole_begin 0 1 -b
+status = 0 success, count = 1
+00
+/> read70 /hd0/1/hole_begin 1 1 -b
+status = 0 success, count = 1
+00
+/> read70 /hd0/1/hole_begin 0x3ffe 1 -b
+status = 0 success, count = 1
+00
+/> read70 /hd0/1/hole_begin 0x3fff 1 -b
+status = 0 success, count = 1
+00
+/> read70 /hd0/1/hole_begin 0x4000 1 -b
+status = 0 success, count = 1
+00
+/> read70 /hd0/1/hole_begin 0x4001 1 -b
+status = 0 success, count = 1
+40
+# fixed-size block, different begin/end positions
+/> read70 /hd0/1/hole_begin 0 11 -b
+status = 0 success, count = 11
+0000000000000000000000
+/> read70 /hd0/1/hole_begin 1 11 -b
+status = 0 success, count = 11
+0000000000000000000000
+/> read70 /hd0/1/hole_begin 0x3ff4 11 -b
+status = 0 success, count = 11
+0000000000000000000000
+/> read70 /hd0/1/hole_begin 0x3ff5 11 -b
+status = 0 success, count = 11
+0000000000000000000000
+/> read70 /hd0/1/hole_begin 0x3ff6 11 -b
+status = 0 success, count = 11
+0000000000000000000000
+/> read70 /hd0/1/hole_begin 0x3ff7 11 -b
+status = 0 success, count = 11
+0000000000000000000040
+/> read70 /hd0/1/hole_begin 0x3ffe 11 -b
+status = 0 success, count = 11
+0000004002400440064008
+/> read70 /hd0/1/hole_begin 0x3fff 11 -b
+status = 0 success, count = 11
+0000400240044006400840
+/> read70 /hd0/1/hole_begin 0x4000 11 -b
+status = 0 success, count = 11
+004002400440064008400a
+/> read70 /hd0/1/hole_begin 0x4001 11 -b
+status = 0 success, count = 11
+4002400440064008400a40
+
+# hole middle
+# zero length
+/> read70 /hd0/1/hole_middle 0x7ffe 0 -b
+status = 0 success, count = 0
+
+/> read70 /hd0/1/hole_middle 0x7fff 0 -b
+status = 0 success, count = 0
+
+/> read70 /hd0/1/hole_middle 0x8000 0 -b
+status = 0 success, count = 0
+
+/> read70 /hd0/1/hole_middle 0x8001 0 -b
+status = 0 success, count = 0
+
+/> read70 /hd0/1/hole_middle 0xbffe 0 -b
+status = 0 success, count = 0
+
+/> read70 /hd0/1/hole_middle 0xbfff 0 -b
+status = 0 success, count = 0
+
+/> read70 /hd0/1/hole_middle 0xc000 0 -b
+status = 0 success, count = 0
+
+/> read70 /hd0/1/hole_middle 0xc001 0 -b
+status = 0 success, count = 0
+
+# one-byte length
+/> read70 /hd0/1/hole_middle 0x7ffe 1 -b
+status = 0 success, count = 1
+fe
+/> read70 /hd0/1/hole_middle 0x7fff 1 -b
+status = 0 success, count = 1
+7f
+/> read70 /hd0/1/hole_middle 0x8000 1 -b
+status = 0 success, count = 1
+00
+/> read70 /hd0/1/hole_middle 0x8001 1 -b
+status = 0 success, count = 1
+00
+/> read70 /hd0/1/hole_middle 0xbffe 1 -b
+status = 0 success, count = 1
+00
+/> read70 /hd0/1/hole_middle 0xbfff 1 -b
+status = 0 success, count = 1
+00
+/> read70 /hd0/1/hole_middle 0xc000 1 -b
+status = 0 success, count = 1
+00
+/> read70 /hd0/1/hole_middle 0xc001 1 -b
+status = 0 success, count = 1
+c0
+# fixed-size block, different begin/end positions
+/> read70 /hd0/1/hole_middle 0x7ff4 11 -b
+status = 0 success, count = 11
+f47ff67ff87ffa7ffc7ffe
+/> read70 /hd0/1/hole_middle 0x7ff5 11 -b
+status = 0 success, count = 11
+7ff67ff87ffa7ffc7ffe7f
+/> read70 /hd0/1/hole_middle 0x7ff6 11 -b
+status = 0 success, count = 11
+f67ff87ffa7ffc7ffe7f00
+/> read70 /hd0/1/hole_middle 0x7ff7 11 -b
+status = 0 success, count = 11
+7ff87ffa7ffc7ffe7f0000
+/> read70 /hd0/1/hole_middle 0x7ffe 11 -b
+status = 0 success, count = 11
+fe7f000000000000000000
+/> read70 /hd0/1/hole_middle 0x7fff 11 -b
+status = 0 success, count = 11
+7f00000000000000000000
+/> read70 /hd0/1/hole_middle 0x8000 11 -b
+status = 0 success, count = 11
+0000000000000000000000
+/> read70 /hd0/1/hole_middle 0x8001 11 -b
+status = 0 success, count = 11
+0000000000000000000000
+/> read70 /hd0/1/hole_middle 0xbff4 11 -b
+status = 0 success, count = 11
+0000000000000000000000
+/> read70 /hd0/1/hole_middle 0xbff5 11 -b
+status = 0 success, count = 11
+0000000000000000000000
+/> read70 /hd0/1/hole_middle 0xbff6 11 -b
+status = 0 success, count = 11
+0000000000000000000000
+/> read70 /hd0/1/hole_middle 0xbff7 11 -b
+status = 0 success, count = 11
+00000000000000000000c0
+/> read70 /hd0/1/hole_middle 0xbffe 11 -b
+status = 0 success, count = 11
+000000c002c004c006c008
+/> read70 /hd0/1/hole_middle 0xbfff 11 -b
+status = 0 success, count = 11
+0000c002c004c006c008c0
+/> read70 /hd0/1/hole_middle 0xc000 11 -b
+status = 0 success, count = 11
+00c002c004c006c008c00a
+/> read70 /hd0/1/hole_middle 0xc001 11 -b
+status = 0 success, count = 11
+c002c004c006c008c00ac0
+
+# hole end
+# zero length
+/> read70 /hd0/1/hole_end 0xbffe 0 -b
+status = 0 success, count = 0
+
+/> read70 /hd0/1/hole_end 0xbfff 0 -b
+status = 0 success, count = 0
+
+/> read70 /hd0/1/hole_end 0xc000 0 -b
+status = 0 success, count = 0
+
+/> read70 /hd0/1/hole_end 0xc001 0 -b
+status = 0 success, count = 0
+
+/> read70 /hd0/1/hole_end 0xfffe 0 -b
+status = 0 success, count = 0
+
+/> read70 /hd0/1/hole_end 0xffff 0 -b
+status = 0 success, count = 0
+
+/> read70 /hd0/1/hole_end 0x10000 0 -b
+status = 0 success, count = 0
+
+/> read70 /hd0/1/hole_end 0x10001 0 -b
+status = 0 success, count = 0
+
+# one-byte length
+/> read70 /hd0/1/hole_end 0xbffe 1 -b
+status = 0 success, count = 1
+fe
+/> read70 /hd0/1/hole_end 0xbfff 1 -b
+status = 0 success, count = 1
+bf
+/> read70 /hd0/1/hole_end 0xc000 1 -b
+status = 0 success, count = 1
+00
+/> read70 /hd0/1/hole_end 0xc001 1 -b
+status = 0 success, count = 1
+00
+/> read70 /hd0/1/hole_end 0xfffe 1 -b
+status = 0 success, count = 1
+00
+/> read70 /hd0/1/hole_end 0xffff 1 -b
+status = 0 success, count = 1
+00
+/> read70 /hd0/1/hole_end 0x10000 1 -b
+status = 6 end_of_file, count = 0
+
+/> read70 /hd0/1/hole_end 0x10001 1 -b
+status = 6 end_of_file, count = 0
+
+# fixed-size block, different begin/end positions
+/> read70 /hd0/1/hole_end 0xbff4 11 -b
+status = 0 success, count = 11
+f4bff6bff8bffabffcbffe
+/> read70 /hd0/1/hole_end 0xbff5 11 -b
+status = 0 success, count = 11
+bff6bff8bffabffcbffebf
+/> read70 /hd0/1/hole_end 0xbff6 11 -b
+status = 0 success, count = 11
+f6bff8bffabffcbffebf00
+/> read70 /hd0/1/hole_end 0xbff7 11 -b
+status = 0 success, count = 11
+bff8bffabffcbffebf0000
+/> read70 /hd0/1/hole_end 0xbffe 11 -b
+status = 0 success, count = 11
+febf000000000000000000
+/> read70 /hd0/1/hole_end 0xbfff 11 -b
+status = 0 success, count = 11
+bf00000000000000000000
+/> read70 /hd0/1/hole_end 0xc000 11 -b
+status = 0 success, count = 11
+0000000000000000000000
+/> read70 /hd0/1/hole_end 0xc001 11 -b
+status = 0 success, count = 11
+0000000000000000000000
+/> read70 /hd0/1/hole_end 0xfff4 11 -b
+status = 0 success, count = 11
+0000000000000000000000
+/> read70 /hd0/1/hole_end 0xfff5 11 -b
+status = 0 success, count = 11
+0000000000000000000000
+/> read70 /hd0/1/hole_end 0xfff6 11 -b
+status = 6 end_of_file, count = 10
+00000000000000000000
+/> read70 /hd0/1/hole_end 0xfff7 11 -b
+status = 6 end_of_file, count = 9
+000000000000000000
+/> read70 /hd0/1/hole_end 0xfffe 11 -b
+status = 6 end_of_file, count = 2
+0000
+/> read70 /hd0/1/hole_end 0xffff 11 -b
+status = 6 end_of_file, count = 1
+00
+/> read70 /hd0/1/hole_end 0x10000 11 -b
+status = 6 end_of_file, count = 0
+
+/> read70 /hd0/1/hole_end 0x10001 11 -b
+status = 6 end_of_file, count = 0
+

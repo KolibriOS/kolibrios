@@ -1,0 +1,11 @@
+/> umka_init
+/> disk_add ../img/xfs_v4_files_s05k_b4k_n8k.img hd0 -c 0
+/hd0/1: xfs
+/> stat70 /hd0/1/
+status = 0 success
+attr: ----f
+/> stat70 /hd0/1/hole_begin
+status = 0 success
+attr: -----
+size: 65536
+/> disk_del hd0

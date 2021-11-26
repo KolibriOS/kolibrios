@@ -1,0 +1,110 @@
+UMKa -- User-Mode KolibriOS developer tools
+===========================================
+
+This is a common project for a set of KolibriOS developer tools which are based
+on original KolibriOS kernel code wrapped and hacked as to run in the UNIX
+programming environment. The idea is to make userspace UNIX tools that use as
+much unchanged KolibriOS kernel source as possible to test
+architecture-independent parts of the kernel in your favorite developer
+environment.
+
+
+umka_shell
+----------
+
+is an interactive shell with commands that are wrappers around KolibriOS kernel
+syscalls and other internal functions. What works now: block layer including
+disk cache, FS, UI and graphics, scheduler, ACPI/AML interpreter,
+synchronization primitives, strings, slab allocator, events, unpacker, other
+minor functions.
+
+It can also be used for automated testing by feeding it a file of commands
+instead of typing them.
+
+Example:
+    $ umka_shell < mytest.t > mytest.out.log
+
+
+umka_fuse
+---------
+
+is like umka_shell above but commands are translated from FUSE calls, not
+entered manually or read from a file. Can *potentially* be used to run xfstests
+(cross-fs-tests) and automated tests against reference FS implementation.
+
+
+umka_os
+-------
+
+is KolibriOS kernel running main loop (osloop), scheduler and all the threads
+including network stack.
+
+
+tools
+-----
+
+mkdirrange
+
+mkfilepattern
+
+lfbviewx
+
+
+BUILD
+-----
+
+$ KOLIBRIOS=/path/to/kolibrios make
+
+/path/to/kolibrios is where you checked out 'svn co svn://kolibrios.org'.
+
+
+Architecture
+------------
+
+Kernel services are replaced with stubs, wrappers around userspace
+implementation or libc calls. Block devices are emulated with regular files.
+Framebuffer can be dumped to disk as image file.
+
+
+Testing
+-------
+
+sudo cp --parents /sys/firmware/acpi/tables/?SDT* /sys/bus/pci/devices/*/config .
+
+
+Troubleshooting
+---------------
+
+# lfbviewx
+
+Allow reading process_vm_readv syscall.
+
+    # sysctl -w kernel.yama.ptrace_scope=0
+
+# umka_os
+
+Managing tap devices.
+
+    # ip tuntap add dev tap0 mode tap
+    # ip link set tap0 address 00:11:00:00:00:00
+    # ip addr add 10.50.0.1/24 dev tap0
+    # ip link set up dev tap0
+    # ip tuntap del dev tap0 mode tap
+
+To create tap devices.
+
+    # setcap cap_net_admin+ep ../umka_os
+
+Not yet used, but may be one day.
+
+    # sysctl -w vm.mmap_min_addr=0
+
+
+Links & Acknowledgements
+------------------------
+
+[1] Filesystem in Userspace library
+    https://github.com/libfuse/libfuse
+
+[2] LodePNG by Lode Vandevenne
+    https://lodev.org/lodepng/

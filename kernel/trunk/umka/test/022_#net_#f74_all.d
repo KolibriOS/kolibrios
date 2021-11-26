@@ -1,0 +1,38 @@
+net_get_dev_count
+stack_init
+net_get_dev_count
+net_add_device
+net_get_dev_count
+net_add_device
+net_get_dev_count
+net_add_device
+net_get_dev_count
+net_get_dev_type 0
+net_get_dev_type 1
+net_get_dev_type 2
+net_get_dev_name 0
+net_get_dev_name 1
+net_get_dev_name 2
+net_dev_stop 0
+net_dev_stop 1
+net_dev_reset 0
+net_dev_reset 1
+net_get_dev 0
+net_get_dev 1
+net_get_packet_tx_count 0
+net_get_packet_tx_count 1
+net_get_packet_tx_count 2
+net_get_packet_rx_count 0
+net_get_packet_rx_count 1
+net_get_packet_rx_count 2
+
+net_get_byte_tx_count 0
+net_get_byte_tx_count 1
+net_get_byte_tx_count 2
+net_get_byte_rx_count 0
+net_get_byte_rx_count 1
+net_get_byte_rx_count 2
+
+net_get_link_status 0
+net_get_link_status 1
+net_get_link_status 2
