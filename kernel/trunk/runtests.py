@@ -142,7 +142,7 @@ def collect_umka_tests():
             continue
         if not os.path.isfile(test_file_path):
             continue
-        tests.append(test_file)
+        tests.append(test_file_path)
     return tests
 
 def run_tests_serially_thread(test, root_dir):
@@ -213,10 +213,21 @@ def build_umka():
     objects = " ".join(objects)
     os.system(f"gcc -m32 -no-pie -o umka_shell -static -T umka/umka.ld {objects}")
 
-def run_umka_test(test_file_path):
-    ref_log = f"{test_file_path[:-2]}.ref.log"
-    out_log = f"{test_file_path[:-2]}.out.log"
-    os.system(f"../../umka_shell < {test_file_path} > {out_log}")
+def create_relocated(root_dir, fname):
+    with open(fname, "rb") as f:
+        contents = f.read()
+    new_contents = contents.replace(b"../img", bytes(f"{root_dir}/umka/img", "ascii"))
+    new_contents = new_contents.replace(b"chess_image.rgb", bytes(f"{root_dir}/umka/test/chess_image.rgb", "ascii"))
+    outname = f"{fname}.o" # .o extension just to avoid indexing of the file
+    with open(outname, "wb") as f:
+        f.write(new_contents)
+    return outname
+
+def run_umka_test(root_dir, test_file_path):
+    test = create_relocated(root_dir, test_file_path)
+    ref_log = create_relocated(root_dir, f"{test_file_path[:-2]}.ref.log")
+    out_log = create_relocated(root_dir, f"{test_file_path[:-2]}.out.log")
+    os.system(f"./umka_shell < {test} > {out_log}")
     if os.system(f"cmp {ref_log} {out_log}") != 0:
         print(f"FAILURE: {test_file_path}\n", end = "")
     else:
@@ -237,7 +248,6 @@ if __name__ == "__main__":
     serial_executor_thread = run_tests_serially(tests, root_dir)
     serial_executor_thread.join()
     if enable_umka:
-        os.chdir(f"{root_dir}/umka/test")
         for umka_test in umka_tests:
-            run_umka_test(umka_test)
+            run_umka_test(root_dir, umka_test)
 
