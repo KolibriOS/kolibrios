@@ -242,7 +242,7 @@ BEGIN
 END changeBool2;
 
 
-PROCEDURE changeInt (VAR v: INTEGER; x: INTEGER);
+PROCEDURE changeInt* (VAR v: INTEGER; x: INTEGER);
 BEGIN
     changeWord(SYSTEM.ADR(v), SYSTEM.ADR(x))
 END changeInt;

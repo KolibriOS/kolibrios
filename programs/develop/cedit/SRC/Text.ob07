@@ -72,7 +72,7 @@ TYPE
         search, cs, whole: BOOLEAN;
         curLine: tLine;
         lang*: INTEGER;
-        enc*, eol*: INTEGER;
+        enc, eol: INTEGER;
         table: Search.IdxTable;
         foundList: List.tList;
         idxData: Search.tBuffer;
@@ -881,6 +881,36 @@ BEGIN
     text.search := TRUE;
     text.guard := TRUE
 END modify;
+
+
+PROCEDURE setEnc* (text: tText; enc: INTEGER);
+BEGIN
+	IF text.enc # enc THEN
+		ChangeLog.changeInt(text.enc, enc);
+		text.enc := enc;
+		modify(text)
+	END
+END setEnc;
+
+
+PROCEDURE setEol* (text: tText; eol: INTEGER);
+BEGIN
+	IF text.eol # eol THEN
+		ChangeLog.changeInt(text.eol, eol);
+		text.eol := eol;
+		modify(text)
+	END
+END setEol;
+
+
+PROCEDURE getEnc* (text: tText): INTEGER;
+	RETURN text.enc
+END getEnc;
+
+
+PROCEDURE getEol* (text: tText): INTEGER;
+	RETURN text.eol
+END getEol;
 
 
 PROCEDURE DelLine (text: tText; line: tLine);
@@ -1801,9 +1831,32 @@ BEGIN
 END wordSel;
 
 
+PROCEDURE getWordPos (line: tLine; pos: INTEGER): INTEGER;
+VAR
+	c: WCHAR;
+
+BEGIN
+	c := getChar(line, pos);
+	IF isWordChar(c) THEN
+		WHILE (pos < line.length) & isWordChar(getChar(line, pos)) DO
+			INC(pos)
+		END
+	ELSIF Lines.isSpace(c) THEN
+		WHILE (pos < line.length) & Lines.isSpace(getChar(line, pos)) DO
+			INC(pos)
+		END
+	ELSE
+		WHILE (pos < line.length) & ~Lines.isSpace(getChar(line, pos)) & ~isWordChar(getChar(line, pos)) DO
+			INC(pos)
+		END
+	END
+	RETURN pos
+END getWordPos;
+
+
 PROCEDURE key* (text: tText; code: INTEGER; shift, ctrl: BOOLEAN);
 VAR
-	n: INTEGER;
+	n, wPos: INTEGER;
 BEGIN
     IF shift THEN
         setSelect(text)
@@ -1849,7 +1902,16 @@ BEGIN
         IF (text.cursor.X = 0) & (text.curLine.prev # NIL) THEN
             SetPos(text, text.curLine.prev(tLine).length, text.cursor.Y - 1)
         ELSE
-            move(text, -1)
+        	IF ctrl THEN
+        		wPos := 0;
+        		REPEAT
+        			n := wPos;
+        			wPos := getWordPos(text.curLine, wPos)
+        		UNTIL wPos >= text.cursor.X;
+				move(text, n - text.cursor.X)
+        	ELSE
+            	move(text, -1)
+            END
         END
     |38:
         IF ctrl THEN
@@ -1861,7 +1923,11 @@ BEGIN
         IF (text.cursor.X = text.curLine.length) & (text.curLine.next # NIL) THEN
             SetPos(text, 0, text.cursor.Y + 1)
         ELSE
-            move(text, 1)
+        	IF ctrl THEN
+				move(text, getWordPos(text.curLine, text.cursor.X) - text.cursor.X)
+        	ELSE
+            	move(text, 1)
+        	END
         END
     |40:
         IF ctrl THEN
@@ -1940,7 +2006,7 @@ BEGIN
     cursorX := text.cursor.X;
     line := text.curLine;
     x1 := cursorX - 1;
-    IF (cursorX < line.length) & isWordChar(getChar(line,cursorX)) THEN
+    IF (cursorX < line.length) & isWordChar(getChar(line, cursorX)) THEN
         x2 := cursorX;
         WHILE (x2 < line.length) & isWordChar(getChar(line, x2)) DO
             INC(x2)
@@ -2292,6 +2358,8 @@ BEGIN
     file := RW.load(name, enc, eol);
     IF file # NIL THEN
         text := create(name);
+        ChangeLog.changeInt(text.enc, enc);
+        ChangeLog.changeInt(text.eol, eol);
         text.enc := enc;
         text.eol := eol;
         line := Lines.create(FALSE);
@@ -2451,6 +2519,8 @@ BEGIN
     text := create("");
     List._append(text, Lines.create(FALSE));
     text.curLine := text.first(tLine);
+    ChangeLog.changeInt(text.enc, E.CP866);
+    ChangeLog.changeInt(text.eol, RW.EOL_CRLF);
     text.enc := E.CP866;
     text.eol := RW.EOL_CRLF;
     SetPos(text, 0, 0);

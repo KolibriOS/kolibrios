@@ -28,7 +28,7 @@ IMPORT
     RW, Ini, EB := EditBox, Icons, Tabs, Timer;
 
 CONST
-    HEADER = "CEdit (21-nov-2021)";
+    HEADER = "CEdit (27-nov-2021)";
 
     ShellFilter = "";
     EditFilter = "SH|INC|TXT|ASM|OB07|C|CPP|H|PAS|PP|LUA|INI|JSON";
@@ -181,6 +181,7 @@ VAR
     AppPath, runScript, buildScript, debugScript: RW.tFileName;
     OD: OpenDlg.Dialog;
     confirm, notFound, menuFindClicked, search, searchOpened, modified: BOOLEAN;
+    eol, enc: INTEGER;
 
     switch, closing: BOOLEAN;
     leftButton: BOOLEAN;
@@ -408,10 +409,12 @@ VAR
     s: ARRAY 24 OF WCHAR;
     header: RW.tFileName;
 BEGIN
+	eol := T.getEol(text);
+	enc := T.getEnc(text);
     s := "";
-    U.append(s, RW.eolNames[text.eol]);
+    U.append(s, RW.eolNames[eol]);
     U.append(s, 20X + 20X);
-    U.append(s, E.names[text.enc]);
+    U.append(s, E.names[enc]);
     header := HEADER;
     IF text.fileName # "" THEN
     	U.append8(header, " - ");
@@ -462,7 +465,9 @@ BEGIN
         K.DrawRect(LEFT, TOP + canvas.height + scrollWidth, 16*fontWidth, BOTTOM - scrollWidth + 1, K.winColor);
         WritePos(y);
 
-        IF modified # text.modified THEN
+        IF (enc # T.getEnc(text)) OR (eol # T.getEol(text)) THEN
+        	DrawState(text, width, height)
+        ELSIF modified # text.modified THEN
             WriteModified(width - 8*fontWidth, y)
         END;
 
@@ -1137,10 +1142,10 @@ BEGIN
             CanvasToScreen(x, y)
         END
     ELSIF menu = menuEncoding THEN
-        Menu.option(menu, menuUTF8BOM, text.enc = E.UTF8BOM);
-        Menu.option(menu, menuUTF8,    text.enc = E.UTF8);
-        Menu.option(menu, menuCP866,   text.enc = E.CP866);
-        Menu.option(menu, menuWin1251, text.enc = E.W1251);
+        Menu.option(menu, menuUTF8BOM, T.getEnc(text) = E.UTF8BOM);
+        Menu.option(menu, menuUTF8,    T.getEnc(text) = E.UTF8);
+        Menu.option(menu, menuCP866,   T.getEnc(text) = E.CP866);
+        Menu.option(menu, menuWin1251, T.getEnc(text) = E.W1251);
         INC(x, menuEncodingX)
     ELSIF menu = menuView THEN
         Menu.check(menu, menuNumbers,  text.numbers);
@@ -1180,9 +1185,9 @@ BEGIN
     Menu.setEnabled(subCase, menuUpper, selected);
     Menu.setEnabled(subCase, menuLower, selected);
 
-	Menu.option(subEOL, menuCRLF, text.eol = RW.EOL_CRLF);
-	Menu.option(subEOL, menuLF,   text.eol = RW.EOL_LF);
-	Menu.option(subEOL, menuCR,   text.eol = RW.EOL_CR);
+	Menu.option(subEOL, menuCRLF, T.getEol(text) = RW.EOL_CRLF);
+	Menu.option(subEOL, menuLF,   T.getEol(text) = RW.EOL_LF);
+	Menu.option(subEOL, menuCR,   T.getEol(text) = RW.EOL_CR);
 
     IF menu # NIL THEN
     	Timer.kill;
@@ -1326,19 +1331,19 @@ BEGIN
 	    |menuDebugScript:
 	    	setScript(debugScript)
 	    |menuUTF8BOM:
-	        text.enc := E.UTF8BOM
+	    	T.setEnc(text, E.UTF8BOM)
 	    |menuUTF8:
-	        text.enc := E.UTF8
+	    	T.setEnc(text, E.UTF8)
 	    |menuCP866:
-	        text.enc := E.CP866
+	    	T.setEnc(text, E.CP866)
 	    |menuWin1251:
-	        text.enc := E.W1251
+	    	T.setEnc(text, E.W1251)
 	    |menuLF:
-	        text.eol := RW.EOL_LF
+	    	T.setEol(text, RW.EOL_LF)
 	    |menuCRLF:
-	        text.eol := RW.EOL_CRLF
+	    	T.setEol(text, RW.EOL_CRLF)
 	    |menuCR:
-	        text.eol := RW.EOL_CR
+	    	T.setEol(text, RW.EOL_CR)
 	    |menuPipet:
 	        K.Run("/rd/1/develop/pipet", "")
 	    |menuBoard:
@@ -1383,7 +1388,8 @@ BEGIN
         |21: menuItem := menuRedo
         |30: menuItem := menuSelectAll
         |32: menuItem := menuDuplicate
-        |33: menuItem := menuFind
+        |33,
+         35: menuItem := menuFind
         |34: menuItem := menuGoto
         |44: menuItem := menuUndo
         |45: menuItem := menuCut
@@ -1725,28 +1731,40 @@ BEGIN
         ELSIF (keyCode = 15) & ctrl THEN (* ctrl+Tab *)
             key := -1;
             SwitchTab((curText + 1) MOD textsCount)
-        ELSIF (keyCode = 33) & ctrl THEN
+        ELSIF ((keyCode = 33) OR (keyCode = 35)) & ctrl THEN (* ctrl+F, ctrl+H*)
             key := -1;
             ShowSearchPanel(FALSE)
-        ELSIF (keyCode = 34) & ctrl THEN
+        ELSIF (keyCode = 34) & ctrl THEN (* ctrl+G *)
             key := -1;
             ShowSearchPanel(TRUE)
         ELSE
             IF EditBox_Focus(FindEdit) THEN
-                EB.key(FindEdit, key);
-                EditBox_GetValue(FindEdit, new_searchText);
-                IF new_searchText # searchText THEN
-                    searchText := new_searchText;
-                    notFound := ~T.search(text, searchText, cs, whole)
+            	IF keyCode = 15 THEN (* Tab *)
+            		SetFocus(ReplaceEdit, TRUE)
+            	ELSE
+	                EB.key(FindEdit, key);
+	                EditBox_GetValue(FindEdit, new_searchText);
+	                IF new_searchText # searchText THEN
+	                    searchText := new_searchText;
+	                    notFound := ~T.search(text, searchText, cs, whole)
+	                END
                 END
             ELSIF EditBox_Focus(ReplaceEdit) THEN
-                EB.key(ReplaceEdit, key);
-                EditBox_GetValue(ReplaceEdit, replaceText)
+            	IF keyCode = 15 THEN (* Tab *)
+            		SetFocus(GotoEdit, TRUE)
+            	ELSE
+                	EB.key(ReplaceEdit, key);
+                	EditBox_GetValue(ReplaceEdit, replaceText)
+                END
             ELSIF EditBox_Focus(GotoEdit) THEN
-                IF (key DIV 256) MOD 256 = 13 THEN
-                    goto
-                ELSE
-                    EB.key(GotoEdit, key)
+            	IF keyCode = 15 THEN (* Tab *)
+            		SetFocus(FindEdit, TRUE)
+            	ELSE
+	                IF (key DIV 256) MOD 256 = 13 THEN
+	                    goto
+	                ELSE
+	                    EB.key(GotoEdit, key)
+	                END
                 END
             ELSE
                 CASE keyCode OF
@@ -2129,8 +2147,8 @@ BEGIN
     OD := OpenDlg.Create(draw_window, OpenDlg.topen, filePath, "");
     insert(0, text);
     Scroll.init(ScrollChange);
-    Scroll.create(FALSE, canvas.width + 1, scrollWidth, scrollWidth, scrollWidth, hScroll);
-    Scroll.create(TRUE, scrollWidth, canvas.height + 1, scrollWidth, scrollWidth, vScroll);
+    Scroll.create(FALSE, canvas.width + 1, scrollWidth, scrollWidth, scrollWidth*3 DIV 2, hScroll);
+    Scroll.create(TRUE, scrollWidth, canvas.height + 1, scrollWidth, scrollWidth*3 DIV 2, vScroll);
     T.resize(canvas.width, canvas.height);
     T.SetPos(text, 0, 0);
     confirm := FALSE;
