@@ -171,10 +171,10 @@ def run_tests_serially(tests, root_dir):
     return thread
 
 def gcc(fin, fout):
-    flags = "-m32 -std=c11 -g -O0 -masm=intel -fno-pie -w"
+    flags = "-m32 -std=c11 -g -O0 -fno-pie -w" # -masm-intel
     defines = "-D_FILE_OFFSET_BITS=64 -DNDEBUG -D_POSIX_C_SOURCE=200809L"
     include = "-Iumka -Iumka/linux"
-    command = f"gcc {flags} {defines} {include} -c {fin} -o {fout}"
+    command = f"clang {flags} {defines} {include} -c {fin} -o {fout}"
     print(command)
     os.system(command)
 
@@ -195,8 +195,6 @@ def build_umka():
     os.makedirs("umka/build/linux", exist_ok = True)
     sources = [ "umka_shell.c", 
                 "shell.c",
-                "trace.c",
-                "trace_lbr.c",
                 "vdisk.c",
                 "lodepng.c",
                 "linux/pci.c",

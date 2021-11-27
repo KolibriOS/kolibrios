@@ -448,13 +448,13 @@ static inline size_t
 umka_new_sys_threads(uint32_t flags, void (*entry)(), void *stack) {
     size_t tid;
     __asm__ __inline__ __volatile__ (
-        "push ebx;"
-        "push esi;"
-        "push edi;"
+        "push %%ebx;"
+        "push %%esi;"
+        "push %%edi;"
         "call   kos_new_sys_threads;"
-        "pop edi;"
-        "pop esi;"
-        "pop ebx"
+        "pop %%edi;"
+        "pop %%esi;"
+        "pop %%ebx"
         : "=a"(tid)
         : "b"(flags),
           "c"(entry),
@@ -876,8 +876,8 @@ umka_find_next_task(int32_t priority) {
     find_next_task_t fnt;
     __asm__ __inline__ __volatile__ (
         "call   find_next_task;"
-        "setz   al;"
-        "movzx  eax, al"
+        "setz   %%al;"
+        "movzx  %%eax, %%al"
         : "=b"(fnt.appdata),
           "=D"(fnt.taskdata),
           "=a"(fnt.same)
@@ -889,10 +889,10 @@ umka_find_next_task(int32_t priority) {
 static inline void
 umka_i40(pushad_t *regs) {
     __asm__ __inline__ __volatile__ (
-        "push   ebp;"
-        "mov    ebp, %[ebp];"
+        "push   %%ebp;"
+        "mov    %%ebp, %[ebp];"
         "call   i40;"
-        "pop    ebp"
+        "pop    %%ebp"
         : "=a"(regs->eax),
           "=b"(regs->ebx)
         : "a"(regs->eax),
@@ -1322,25 +1322,10 @@ umka_sys_set_font_size(uint32_t size) {
         : "memory");
 }
 
-static inline void
+void
 umka_sys_put_image_palette(void *image, size_t xsize, size_t ysize,
                            size_t x, size_t y, size_t bpp, void *palette,
-                           size_t row_offset) {
-    __asm__ __inline__ __volatile__ (
-        "push   ebp;"
-        "mov    ebp, %[row_offset];"
-        "call   i40;"
-        "pop    ebp"
-        :
-        : "a"(65),
-          "b"(image),
-          "c"((xsize << 16) + ysize),
-          "d"((x << 16) + y),
-          "S"(bpp),
-          "D"(palette),
-          [row_offset] "Rm"(row_offset)
-        : "memory");
-}
+                           size_t row_offset);
 
 static inline void
 umka_sys_move_window(size_t x, size_t y, ssize_t xsize, ssize_t ysize) {

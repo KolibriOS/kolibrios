@@ -11,6 +11,7 @@ UMKA_OS    = 3
 
 UMKA_MEMORY_BYTES = 256 SHL 20
 
+public umka_sys_put_image_palette
 public disk_add
 public disk_del
 public disk_list
@@ -567,6 +568,26 @@ endp
 public umka_sti
 proc umka_sti
         sti     ; macro
+        ret
+endp
+
+proc umka_sys_put_image_palette c, image, xsize, ysize, x, y, bpp, palette, row_offset
+        pushad
+        push    ebp
+        mov     eax, 65
+        mov     ebx, [image]
+        mov     ecx, [xsize]
+        shl     ecx, 16
+        or      ecx, [ysize]
+        mov     edx, [x]
+        shl     edx, 16
+        or      edx, [y]
+        mov     esi, [bpp]
+        mov     edi, [palette]
+        mov     ebp, [row_offset]
+        call    i40
+        pop     ebp
+        popad
         ret
 endp
 
