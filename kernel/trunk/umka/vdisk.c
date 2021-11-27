@@ -21,9 +21,9 @@ void *vdisk_init(const char *fname, int adjust_cache_size, size_t cache_size) {
         printf("vdisk: can't open file '%s': %s\n", fname, strerror(errno));
         return NULL;
     }
-    fseeko(f, 0, SEEK_END);
-    off_t fsize = ftello(f);
-    fseeko(f, 0, SEEK_SET);
+    fseek(f, 0, SEEK_END);
+    off_t fsize = ftell(f);
+    fseek(f, 0, SEEK_SET);
     size_t sect_size = 512;
     if (strstr(fname, "s4096") != NULL || strstr(fname, "s4k") != NULL) {
         sect_size = 4096;
@@ -51,7 +51,7 @@ vdisk_read(void *userdata, void *buffer, off_t startsector,
                size_t *numsectors) {
     COVERAGE_OFF();
     vdisk_t *vdisk = userdata;
-    fseeko(vdisk->file, startsector * vdisk->sect_size, SEEK_SET);
+    fseek(vdisk->file, startsector * vdisk->sect_size, SEEK_SET);
     fread(buffer, *numsectors * vdisk->sect_size, 1, vdisk->file);
     COVERAGE_ON();
     return ERROR_SUCCESS;
@@ -62,7 +62,7 @@ vdisk_write(void *userdata, void *buffer, off_t startsector,
                 size_t *numsectors) {
     COVERAGE_OFF();
     vdisk_t *vdisk = userdata;
-    fseeko(vdisk->file, startsector * vdisk->sect_size, SEEK_SET);
+    fseek(vdisk->file, startsector * vdisk->sect_size, SEEK_SET);
     fwrite(buffer, *numsectors * vdisk->sect_size, 1, vdisk->file);
     COVERAGE_ON();
     return ERROR_SUCCESS;

@@ -307,7 +307,7 @@ shell_ramdisk_init(int argc, char **argv) {
         return;
     }
     const char *fname = argv[1];
-    FILE *f = fopen(fname, "r");
+    FILE *f = fopen(fname, "rb");
     if (!f) {
         fprintf(fout, "[!] can't open file '%s': %s\n", fname, strerror(errno));
         return;
@@ -1093,7 +1093,7 @@ shell_put_image(int argc, char **argv) {
         fputs(usage, fout);
         return;
     }
-    FILE *f = fopen(argv[1], "r");
+    FILE *f = fopen(argv[1], "rb");
     fseek(f, 0, SEEK_END);
     size_t fsize = ftell(f);
     rewind(f);
@@ -1126,7 +1126,7 @@ shell_put_image_palette(int argc, char **argv) {
         fputs(usage, fout);
         return;
     }
-    FILE *f = fopen(argv[1], "r");
+    FILE *f = fopen(argv[1], "rb");
     fseek(f, 0, SEEK_END);
     size_t fsize = ftell(f);
     rewind(f);
@@ -1332,7 +1332,7 @@ shell_blit_bitmap(int argc, char **argv) {
         return;
     }
     const char *fname = argv[1];
-    FILE *f = fopen(fname, "r");
+    FILE *f = fopen(fname, "rb");
     if (!f) {
         fprintf(fout, "[!] can't open file '%s': %s\n", fname, strerror(errno));
         return;
@@ -1763,7 +1763,7 @@ shell_acpi_preload_table(int argc, char **argv) {
         fputs(usage, fout);
         return;
     }
-    FILE *f = fopen(argv[1], "r");
+    FILE *f = fopen(argv[1], "rb");
     if (!f) {
         fprintf(fout, "[umka] can't open file: %s\n", argv[1]);
         return;
@@ -1778,30 +1778,6 @@ shell_acpi_preload_table(int argc, char **argv) {
     kos_acpi_ssdt_base[kos_acpi_ssdt_cnt] = table;
     kos_acpi_ssdt_size[kos_acpi_ssdt_cnt] = fsize;
     kos_acpi_ssdt_cnt++;
-}
-
-static void
-shell_pci_set_path(int argc, char **argv) {
-    const char *usage = \
-        "usage: pci_set_path <path>\n"
-        "  path           where aaaa:bb:cc.d dirs are";
-    if (argc != 2) {
-        fputs(usage, fout);
-        return;
-    }
-    strcpy(pci_path, argv[1]);
-}
-
-static void
-shell_pci_get_path(int argc, char **argv) {
-    (void)argv;
-    const char *usage = \
-        "usage: pci_get_path";
-    if (argc != 1) {
-        fputs(usage, fout);
-        return;
-    }
-    fprintf(fout, "pci path: %s\n", pci_path);
 }
 
 static void
@@ -1869,7 +1845,7 @@ shell_bg_put_img(int argc, char **argv) {
         fputs(usage, fout);
         return;
     }
-    FILE *f = fopen(argv[1], "r");
+    FILE *f = fopen(argv[1], "rb");
     fseek(f, 0, SEEK_END);
     size_t fsize = ftell(f);
     rewind(f);
@@ -1949,8 +1925,6 @@ func_table_t shell_cmds[] = {
     { "ls80",                    shell_ls80 },
     { "move_window",             shell_move_window },
     { "mouse_move",              shell_mouse_move },
-    { "pci_get_path",            shell_pci_get_path },
-    { "pci_set_path",            shell_pci_set_path },
     { "process_info",            shell_process_info },
     { "put_image",               shell_put_image },
     { "put_image_palette",       shell_put_image_palette },

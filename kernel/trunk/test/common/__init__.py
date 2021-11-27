@@ -89,7 +89,8 @@ def get_file_directory(path):
 
 def run_qemu(root_dir, test_dir, debug_log):
     # Make local copy of IMG, so we will be able to run the test in parallel
-    os.remove(f"{test_dir}/kolibri_test.img") # If previous test run interrupted the file may be busy
+    if os.path.exists(f"{test_dir}/kolibri_test.img"): # If previous test run interrupted the file may be busy
+        os.remove(f"{test_dir}/kolibri_test.img")
     shutil.copyfile(f"{root_dir}/kolibri_test.img", f"{test_dir}/kolibri_test.img")
     qemu_command = f"qemu-system-i386"
     flags = ""

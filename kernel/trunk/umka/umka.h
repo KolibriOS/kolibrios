@@ -9,6 +9,12 @@
 #define BDFE_LEN_CP866 304
 #define BDFE_LEN_UNICODE 560
 
+#if defined(WIN32) || defined(_WIN32)
+    typedef size_t off_t;
+    typedef long ssize_t;
+#   define PATH_MAX 256
+#endif
+
 typedef struct {
     uint32_t left, top, right, bottom;
 } rect_t;

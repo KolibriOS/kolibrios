@@ -1,6 +1,36 @@
 ; TODO: SPDX
 
-format ELF
+if ~ defined win32
+    format ELF
+else
+    format MS COFF
+
+    macro c_public name, _alias, _argsize {
+        if ~ _argsize eq nomangle
+            if _alias eqtype 'string'
+                if _argsize eqtype 1
+                    public name as '_' # _alias # '@' # `_argsize
+                else
+                    public name as '_' # _alias
+                end if
+            else if _alias eqtype 1
+                public name as '_' # `name # '@' # `_alias
+            else
+                public name as '_' # `name
+            end if
+        else
+            public name as _alias
+        end if
+    }
+
+    macro extrn name, _argsize {
+        if _argsize eqtype 1
+            extrn '_' # `name # '@' # `_argsize as name
+        else
+            extrn '_' # `name as name
+        end if
+    }
+end if
 
 __DEBUG__ = 1
 __DEBUG_LEVEL__ = 1
@@ -11,73 +41,73 @@ UMKA_OS    = 3
 
 UMKA_MEMORY_BYTES = 256 SHL 20
 
-public umka_sys_put_image_palette
-public disk_add
-public disk_del
-public disk_list
-public disk_media_changed
+c_public umka_sys_put_image_palette
+c_public disk_add, 16
+c_public disk_del, 4
+c_public disk_list
+c_public disk_media_changed,8
 
-public xfs._.user_functions as 'xfs_user_functions'
-public ext_user_functions
-public fat_user_functions
-public ntfs_user_functions
+c_public xfs._.user_functions, 'xfs_user_functions'
+c_public ext_user_functions
+c_public fat_user_functions
+c_public ntfs_user_functions
 
-public i40
+c_public i40, 'i40', nomangle
 
-public coverage_begin
-public coverage_end
+c_public coverage_begin
+c_public coverage_end
 
-public sha3_256_oneshot as 'hash_oneshot'
-public kos_time_to_epoch
-public umka_init
+c_public sha3_256_oneshot, 'hash_oneshot'
+c_public kos_time_to_epoch
+c_public umka_init
 
-public current_process as 'kos_current_process'
-public current_slot as 'kos_current_slot'
-public current_slot_idx as 'kos_current_slot_idx'
+c_public current_process, 'kos_current_process'
+c_public current_slot, 'kos_current_slot'
+c_public current_slot_idx, 'kos_current_slot_idx'
 
-public thread_count as 'kos_thread_count'
-public TASK_TABLE as 'kos_task_table'
-public TASK_BASE as 'kos_task_base'
-public TASK_DATA as 'kos_task_data'
-public SLOT_BASE as 'kos_slot_base'
-public window_data as 'kos_window_data'
+c_public thread_count, 'kos_thread_count'
+c_public TASK_TABLE, 'kos_task_table'
+c_public TASK_BASE, 'kos_task_base'
+c_public TASK_DATA, 'kos_task_data'
+c_public SLOT_BASE, 'kos_slot_base'
+c_public window_data, 'kos_window_data'
 
-public WIN_STACK as 'kos_win_stack'
-public WIN_POS as 'kos_win_pos'
-public lfb_base as 'kos_lfb_base'
+c_public WIN_STACK, 'kos_win_stack'
+c_public WIN_POS, 'kos_win_pos'
+c_public lfb_base, 'kos_lfb_base'
 
-public RAMDISK as 'kos_ramdisk'
-public ramdisk_init as 'kos_ramdisk_init'
+c_public RAMDISK, 'kos_ramdisk'
+c_public ramdisk_init, 'kos_ramdisk_init'
 
-public acpi_ssdt_cnt as 'kos_acpi_ssdt_cnt'
-public acpi_ssdt_base as 'kos_acpi_ssdt_base'
-public acpi_ssdt_size as 'kos_acpi_ssdt_size'
+c_public acpi_ssdt_cnt, 'kos_acpi_ssdt_cnt'
+c_public acpi_ssdt_base, 'kos_acpi_ssdt_base'
+c_public acpi_ssdt_size, 'kos_acpi_ssdt_size'
 
-public stack_init as 'kos_stack_init'
-public net_add_device
+c_public stack_init, 'kos_stack_init'
+c_public net_add_device
 
-public draw_data
-public img_background
-public mem_BACKGROUND
-public sys_background
-public REDRAW_BACKGROUND as 'kos_redraw_background'
-public new_sys_threads as 'kos_new_sys_threads'
-public osloop as 'kos_osloop'
-public set_mouse_data as 'kos_set_mouse_data'
-public scheduler_current as 'kos_scheduler_current'
-public eth_input as 'kos_eth_input'
-public net_buff_alloc as 'kos_net_buff_alloc'
+c_public draw_data
+c_public img_background
+c_public mem_BACKGROUND
+c_public sys_background
+c_public REDRAW_BACKGROUND, 'kos_redraw_background'
+c_public new_sys_threads, 'kos_new_sys_threads', nomangle
+c_public osloop, 'kos_osloop'
+c_public set_mouse_data, 'kos_set_mouse_data', 20
+c_public scheduler_current, 'kos_scheduler_current'
+c_public eth_input, 'kos_eth_input'
+c_public net_buff_alloc, 'kos_net_buff_alloc'
 
-public mem_block_list
+c_public mem_block_list
 
-public acpi_dev_data as "kos_acpi_dev_data"
-public acpi_dev_size as "kos_acpi_dev_size"
-public kernel_alloc as "kos_kernel_alloc"
+c_public acpi_dev_data, "kos_acpi_dev_data"
+c_public acpi_dev_size, "kos_acpi_dev_size"
+c_public kernel_alloc, "kos_kernel_alloc"
 
-public window._.set_screen as 'kos_window_set_screen'
-public _display as 'kos_display'
+c_public window._.set_screen, 'kos_window_set_screen'
+c_public _display, 'kos_display'
 
-public BOOT as 'kos_boot'
+c_public BOOT, 'kos_boot'
 
 macro cli {
         pushfd
@@ -112,7 +142,7 @@ include 'macros.inc'
 macro diff16 msg,blah2,blah3 {
   if msg eq "end of .data segment"
 ; fasm doesn't align on 65536, but ld script does
-section '.bss.aligned65k' writeable align 65536
+section '.bss.65k' writeable align 512
 bss_base:
   end if
 }
@@ -505,7 +535,7 @@ proc umka_init c uses ebx esi edi ebp
         ret
 endp
 
-public skin_udata
+c_public skin_udata
 proc idle uses ebx esi edi
 .loop:
         mov     ecx, 10000000
@@ -517,7 +547,7 @@ proc idle uses ebx esi edi
         ret
 endp
 
-extrn pci_read
+extrn pci_read, 20
 proc pci_read_reg uses ebx esi edi
         mov     ecx, eax
         and     ecx, 3
@@ -541,6 +571,7 @@ endp
 proc sys_msg_board
         cmp     cl, 0x0d
         jz      @f
+if ~ defined win32
         pushad
         mov     eax, SYS_WRITE
         mov     ebx, STDOUT
@@ -550,6 +581,15 @@ proc sys_msg_board
         int     0x80
         pop     ecx
         popad
+else
+        extrn   putchar
+
+        pushad
+        push    ecx
+        call    putchar
+        add     esp, 4
+        popad
+end if
 @@:
         ret
 endp
@@ -559,13 +599,13 @@ proc delay_ms
         ret
 endp
 
-public umka_cli
+c_public umka_cli
 proc umka_cli
         cli     ; macro
         ret
 endp
 
-public umka_sti
+c_public umka_sti
 proc umka_sti
         sti     ; macro
         ret
@@ -593,7 +633,7 @@ endp
 
 extrn reset_procmask
 extrn get_fake_if
-public irq0
+c_public irq0
 proc irq0 c, _signo, _info, _context
         DEBUGF 2, "### irq0\n"
         pushfd
@@ -735,10 +775,10 @@ restore sys_msg_board,delay_ms
 coverage_end:
 
 ; fasm doesn't align on 65536, but ld script does
-section '.data.aligned65k' writeable align 65536
-public umka_tool
+section '.data' readable writeable align 512
+c_public umka_tool
 umka_tool dd ?
-public umka_initialized
+c_public umka_initialized
 umka_initialized dd 0
 fpu_owner dd ?
 

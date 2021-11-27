@@ -172,7 +172,7 @@ def run_tests_serially(tests, root_dir):
     return thread
 
 def gcc(fin, fout):
-    flags = "-m32 -std=c11 -g -O0 -fno-pie -w" # -masm-intel
+    flags = "-m32 -std=c11 -g -O0 -fno-pie -w"
     defines = "-D_FILE_OFFSET_BITS=64 -DNDEBUG -D_POSIX_C_SOURCE=200809L"
     include = "-Iumka -Iumka/linux"
     command = f"clang {flags} {defines} {include} -c {fin} -o {fout}"
@@ -185,8 +185,13 @@ def build_umka_asm():
     files = "umka/umka.asm umka/build/umka.o -s umka/build/umka.fas"
     memory = "-m 2000000"
     command = f"{include} fasm {flags} {files} {memory}"
-    print(command)
-    os.system(command)
+    if sys.platform != "win32":
+        print(command)
+        os.system(command)
+    else:
+        my_env = os.environ.copy()
+        my_env["INCLUDE"] = "../../programs/develop/libraries/libcrash/hash"
+        print(subprocess.check_output(f"fasm {flags} {files} {memory} -dwin32=1", shell = True, env = my_env))
 
 def build_umka():
     if not enable_umka:
@@ -194,12 +199,16 @@ def build_umka():
     if os.path.exists("umka_shell.exe"):
         return
     os.makedirs("umka/build/linux", exist_ok = True)
+    os.makedirs("umka/build/win32", exist_ok = True)
     sources = [ "umka_shell.c", 
                 "shell.c",
                 "vdisk.c",
                 "lodepng.c",
-                "linux/pci.c",
-                "linux/thread.c" ]
+                "getopt.c" ]
+    if sys.platform == "win32":
+        sources += [ "win32/pci.c", "win32/thread.c" ]
+    else:
+        sources += [ "linux/pci.c", "linux/thread.c" ]
     sources = [f"umka/{f}" for f in sources]
     objects = []
     for source in sources:
@@ -210,9 +219,16 @@ def build_umka():
     build_umka_asm()
     objects.append("umka/build/umka.o")
     objects = " ".join(objects)
-    command = f"gcc -m32 -no-pie -o umka_shell.exe -static -T umka/umka.ld {objects}"
+    if sys.platform != "win32":
+        ld_script = "-T umka/umka.ld"
+    else:
+        ld_script = ""
+    command = f"clang -m32 -fno-pie -o umka_shell.exe -static {ld_script} {objects}"
     print(command)
     os.system(command)
+    if not os.path.exists("umka_shell.exe"):
+        print("Could't compile umka_shell.exe")
+        exit()
 
 def create_relocated(root_dir, fname):
     with open(fname, "rb") as f:
@@ -227,8 +243,18 @@ def create_relocated(root_dir, fname):
 def run_umka_test(root_dir, test_file_path):
     test = create_relocated(root_dir, test_file_path)
     ref_log = create_relocated(root_dir, f"{test_file_path[:-2]}.ref.log")
-    out_log = f"{test_file_path[:-2]}.out.log.o"
-    os.system(f"./umka_shell.exe < {test} > {out_log}")
+    out_log = f"{test_file_path[:-2]}.out.log"
+    if sys.platform != "win32":
+        prefix = "./"
+    else:
+        prefix = ""
+    os.system(f"{prefix}umka_shell.exe < {test} > {out_log}")
+    if sys.platform == "win32":
+        with open(out_log, "rb") as f:
+            contents = f.read()
+        contents_no_crlf = contents.replace(b"\r\n", b"\n")
+        with open(out_log, "wb") as f:
+            f.write(contents_no_crlf)
     if not filecmp.cmp(ref_log, out_log):
         print(f"FAILURE: {test_file_path}\n", end = "")
     else:
