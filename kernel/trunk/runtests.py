@@ -190,7 +190,7 @@ def build_umka_asm():
 def build_umka():
     if not enable_umka:
         return
-    if os.path.exists("umka_shell"):
+    if os.path.exists("umka_shell.exe"):
         return
     os.makedirs("umka/build/linux", exist_ok = True)
     sources = [ "umka_shell.c", 
@@ -209,7 +209,7 @@ def build_umka():
     build_umka_asm()
     objects.append("umka/build/umka.o")
     objects = " ".join(objects)
-    command = f"gcc -m32 -no-pie -o umka_shell -static -T umka/umka.ld {objects}"
+    command = f"gcc -m32 -no-pie -o umka_shell.exe -static -T umka/umka.ld {objects}"
     print(command)
     os.system(command)
 
@@ -227,7 +227,7 @@ def run_umka_test(root_dir, test_file_path):
     test = create_relocated(root_dir, test_file_path)
     ref_log = create_relocated(root_dir, f"{test_file_path[:-2]}.ref.log")
     out_log = f"{test_file_path[:-2]}.out.log.o"
-    os.system(f"./umka_shell < {test} > {out_log}")
+    os.system(f"./umka_shell.exe < {test} > {out_log}")
     if os.system(f"cmp {ref_log} {out_log}") != 0:
         print(f"FAILURE: {test_file_path}\n", end = "")
     else:
