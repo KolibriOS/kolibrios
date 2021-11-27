@@ -192,7 +192,7 @@ def build_umka():
         return
     if os.path.exists("umka_shell"):
         return
-    os.makedirs("umka/build", exist_ok = True)
+    os.makedirs("umka/build/linux", exist_ok = True)
     sources = [ "umka_shell.c", 
                 "shell.c",
                 "trace.c",
@@ -204,11 +204,15 @@ def build_umka():
                 "linux/thread.c",
                 "util.c" ]
     sources = [f"umka/{f}" for f in sources]
+    objects = []
     for source in sources:
-        gcc(source, f"{source}.o")
-    objects = " ".join([ f"{s}.o" for s in sources ])
+        object_path = source.replace("umka/", "umka/build/")
+        object_path = f"{object_path}.o"
+        gcc(source, object_path)
+        objects.append(object_path)
     build_umka_asm()
-    objects += " umka/build/umka.o"
+    objects.append("umka/build/umka.o")
+    objects = " ".join(objects)
     os.system(f"gcc -m32 -no-pie -o umka_shell -static -T umka/umka.ld {objects}")
 
 def run_umka_test(test_file_path):
