@@ -1,8 +1,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <inttypes.h>
 #include <errno.h>
+
 #include "umka.h"
 #include "trace.h"
 #include "vdisk.h"

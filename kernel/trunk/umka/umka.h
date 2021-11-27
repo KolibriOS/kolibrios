@@ -1,9 +1,8 @@
 #ifndef UMKA_H_INCLUDED
 #define UMKA_H_INCLUDED
 
-#include <inttypes.h>
+#include <stdint.h>
 #include <stddef.h>
-#include <signal.h> // for irq0: siginfo_t
 
 #define STDCALL __attribute__((__stdcall__))
 
@@ -397,7 +396,7 @@ __attribute__((__noreturn__)) void
 kos_osloop(void);
 
 void
-irq0(int signo, siginfo_t *info, void *context);
+irq0(int signo, void *info_unused, void *context);
 
 void
 umka_init(void);

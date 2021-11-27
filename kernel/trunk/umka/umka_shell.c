@@ -16,15 +16,11 @@
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
-#include <fcntl.h>
-#include <inttypes.h>
 #include <limits.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <sys/types.h>
-#include <sys/stat.h>
-#include <unistd.h>
+
 #include "shell.h"
 #include "umka.h"
 #include "trace.h"
@@ -53,7 +49,6 @@ main(int argc, char **argv) {
 
     while (argc) {
         if (!strcmp(argv[0], "-c")) {
-            coverage = 1;
             argc -= 1;
             argv += 1;
             continue;
@@ -86,13 +81,7 @@ main(int argc, char **argv) {
         }
     }
 
-    if (coverage)
-        trace_begin();
-
-    run_test(fin, fout, 1);
-
-    if (coverage)
-        trace_end();
+    run_test(fin, fout);
 
     return 0;
 }

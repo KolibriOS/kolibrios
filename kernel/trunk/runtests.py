@@ -15,7 +15,7 @@ from threading import Thread
 sys.path.append('test')
 import common
 
-enable_umka = False
+enable_umka = True
 
 def log(s, end = "\n"):
     print(s, end = end, flush = True)
@@ -171,7 +171,7 @@ def run_tests_serially(tests, root_dir):
     return thread
 
 def gcc(fin, fout):
-    flags = "-m32 -std=c11 -g -O0 -masm=intel -fno-pie"
+    flags = "-m32 -std=c11 -g -O0 -masm=intel -fno-pie -w"
     defines = "-D_FILE_OFFSET_BITS=64 -DNDEBUG -D_POSIX_C_SOURCE=200809L"
     include = "-Iumka -Iumka/linux"
     command = f"gcc {flags} {defines} {include} -c {fin} -o {fout}"
@@ -183,7 +183,9 @@ def build_umka_asm():
     flags = "-dUEFI=1 -dextended_primary_loader=1 -dUMKA=1"
     files = "umka/umka.asm umka/build/umka.o -s umka/build/umka.fas"
     memory = "-m 2000000"
-    os.system(f"{include} fasm {flags} {files} {memory}")
+    command = f"{include} fasm {flags} {files} {memory}"
+    print(command)
+    os.system(command)
 
 def build_umka():
     if not enable_umka:
@@ -196,11 +198,9 @@ def build_umka():
                 "trace.c",
                 "trace_lbr.c",
                 "vdisk.c",
-                "vnet.c",
                 "lodepng.c",
                 "linux/pci.c",
-                "linux/thread.c",
-                "util.c" ]
+                "linux/thread.c" ]
     sources = [f"umka/{f}" for f in sources]
     objects = []
     for source in sources:
@@ -211,7 +211,9 @@ def build_umka():
     build_umka_asm()
     objects.append("umka/build/umka.o")
     objects = " ".join(objects)
-    os.system(f"gcc -m32 -no-pie -o umka_shell -static -T umka/umka.ld {objects}")
+    command = f"gcc -m32 -no-pie -o umka_shell -static -T umka/umka.ld {objects}"
+    print(command)
+    os.system(command)
 
 def create_relocated(root_dir, fname):
     with open(fname, "rb") as f:
@@ -226,7 +228,7 @@ def create_relocated(root_dir, fname):
 def run_umka_test(root_dir, test_file_path):
     test = create_relocated(root_dir, test_file_path)
     ref_log = create_relocated(root_dir, f"{test_file_path[:-2]}.ref.log")
-    out_log = create_relocated(root_dir, f"{test_file_path[:-2]}.out.log")
+    out_log = f"{test_file_path[:-2]}.out.log.o"
     os.system(f"./umka_shell < {test} > {out_log}")
     if os.system(f"cmp {ref_log} {out_log}") != 0:
         print(f"FAILURE: {test_file_path}\n", end = "")

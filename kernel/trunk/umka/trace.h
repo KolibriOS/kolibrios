@@ -5,9 +5,9 @@
 
 extern uint32_t coverage;
 
-#define COVERAGE_ON() do { trace_resume(coverage); } while (0)
+#define COVERAGE_ON() 
 
-#define COVERAGE_OFF() do { coverage = trace_pause(); } while (0)
+#define COVERAGE_OFF()
 
 void trace_begin(void);
 void trace_end(void);
