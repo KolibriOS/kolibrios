@@ -150,11 +150,10 @@ def run_tests_serially_thread(test, root_dir):
     for test in tests:
         test_dir = f"{root_dir}/{test}"
     
-        os.chdir(test_dir)
         print(f"[{test_number}/{len(tests)}] {test}... ", end = "", flush=True)
         start = timeit.default_timer()
         try:
-            SourceFileLoader("test", "test.py").load_module().run()
+            SourceFileLoader("test", f"{test_dir}/test.py").load_module().run(root_dir, test_dir)
         except common.TestTimeoutException:
             result = "TIMEOUT"
         except common.TestFailureException:
@@ -163,7 +162,6 @@ def run_tests_serially_thread(test, root_dir):
             result = "SUCCESS"
         finish = timeit.default_timer()
         print(f"{result} ({finish - start:.2f} seconds)")
-        os.chdir(root_dir)
     
         test_number += 1
 

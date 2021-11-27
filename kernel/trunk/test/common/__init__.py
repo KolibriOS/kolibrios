@@ -28,12 +28,12 @@ class TestFailureException(Exception):
     pass
 
 class Qemu:
-    def __init__(self, popen):
+    def __init__(self, popen, debug_log):
         self.popen = popen
         # Qemu needs time to create debug.log file
-        while not os.path.exists("debug.log"):
+        while not os.path.exists(debug_log):
             self.wait()
-        self.debug = open("debug.log", "rb")
+        self.debug = open(debug_log, "rb")
 
     def wait_for_debug_log(self, needle, timeout = 1):
         needle = bytes(needle, "utf-8")
@@ -87,14 +87,14 @@ def get_file_directory(path):
     else:
         return "." # Just a filename, let's return current folder
 
-def run_qemu():
+def run_qemu(root_dir, test_dir, debug_log):
     qemu_command = f"qemu-system-i386"
     flags = ""
     flags += "-nographic " # Makes it faster
-    flags += "-debugcon file:debug.log " # 0xe9 port output
+    flags += f"-debugcon file:{debug_log} " # 0xe9 port output
     flags += "-L . " # IDK why it does not work without this
     flags += "-m 128 "
-    flags += "-drive format=raw,file=../../kolibri_test.img,index=0,if=floppy -boot a "
+    flags += f"-drive format=raw,file={root_dir}/kolibri_test.img,index=0,if=floppy -boot a "
     flags += "-vga vmware "
     flags += "-net nic,model=rtl8139 -net user "
     flags += "-soundhw ac97 "
@@ -103,17 +103,18 @@ def run_qemu():
         qemu_directory = get_file_directory(qemu_full_path)
         flags += f"-L {qemu_directory} "
     s = f"{qemu_command} {flags}"
-    qemu_stdout = open("qemu_stdout.log", "w")
-    qemu_stderr = open("qemu_stderr.log", "w")
+    qemu_stdout = open(f"{test_dir}/qemu_stdout.log", "w")
+    qemu_stderr = open(f"{test_dir}/qemu_stderr.log", "w")
     if is_win32():
         return subprocess.Popen(s, bufsize = 0, stdout = qemu_stdout, stderr = qemu_stderr, stdin = subprocess.DEVNULL, shell = True, start_new_session = True)
     else:
         a = shlex.split(s)
         return subprocess.Popen(a, bufsize = 0, stdout = qemu_stdout, stderr = qemu_stderr, stdin = subprocess.DEVNULL, start_new_session = True)
 
-def run():
-    if os.path.exists("debug.log"):
-        os.remove("debug.log")
-    popen = run_qemu()
-    return Qemu(popen)
+def run(root_dir, test_dir):
+    debug_log = f"{test_dir}/debug.log"
+    if os.path.exists(debug_log):
+        os.remove(debug_log)
+    popen = run_qemu(root_dir, test_dir, debug_log)
+    return Qemu(popen, debug_log)
 
