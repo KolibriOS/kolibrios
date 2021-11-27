@@ -88,13 +88,15 @@ def get_file_directory(path):
         return "." # Just a filename, let's return current folder
 
 def run_qemu(root_dir, test_dir, debug_log):
+    # Copy IMG to make local copy, so we will be able to run the test in parallel
+    shutil.copyfile(f"{root_dir}/kolibri_test.img", f"{test_dir}/kolibri_test.img")
     qemu_command = f"qemu-system-i386"
     flags = ""
     flags += "-nographic " # Makes it faster
     flags += f"-debugcon file:{debug_log} " # 0xe9 port output
     flags += "-L . " # IDK why it does not work without this
     flags += "-m 128 "
-    flags += f"-drive format=raw,file={root_dir}/kolibri_test.img,index=0,if=floppy -boot a "
+    flags += f"-drive format=raw,file={test_dir}/kolibri_test.img,index=0,if=floppy -boot a "
     flags += "-vga vmware "
     flags += "-net nic,model=rtl8139 -net user "
     flags += "-soundhw ac97 "
