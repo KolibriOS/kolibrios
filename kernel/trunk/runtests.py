@@ -11,6 +11,7 @@ import timeit
 import urllib.request
 import subprocess
 from threading import Thread
+import filecmp
 
 sys.path.append('test')
 import common
@@ -228,7 +229,7 @@ def run_umka_test(root_dir, test_file_path):
     ref_log = create_relocated(root_dir, f"{test_file_path[:-2]}.ref.log")
     out_log = f"{test_file_path[:-2]}.out.log.o"
     os.system(f"./umka_shell.exe < {test} > {out_log}")
-    if os.system(f"cmp {ref_log} {out_log}") != 0:
+    if not filecmp.cmp(ref_log, out_log):
         print(f"FAILURE: {test_file_path}\n", end = "")
     else:
         print(f"SUCCESS: {test_file_path}\n", end = "")
