@@ -173,9 +173,19 @@ def run_tests_serially(tests, root_dir):
     return thread
 
 def gcc(fin, fout):
-    command = f"gcc -m32 -std=c11 -g -O0 -D_FILE_OFFSET_BITS=64 -DNDEBUG -masm=intel -D_POSIX_C_SOURCE=200809L -Iumka -Iumka/linux -fno-pie -c {fin} -o {fout}"
+    flags = "-m32 -std=c11 -g -O0 -masm=intel -fno-pie"
+    defines = "-D_FILE_OFFSET_BITS=64 -DNDEBUG -D_POSIX_C_SOURCE=200809L"
+    include = "-Iumka -Iumka/linux"
+    command = f"gcc {flags} {defines} {include} -c {fin} -o {fout}"
     print(command)
     os.system(command)
+
+def build_umka_asm():
+    include = "INCLUDE=\"../../programs/develop/libraries/libcrash/hash\""
+    flags = "-dUEFI=1 -dextended_primary_loader=1 -dUMKA=1"
+    files = "umka/umka.asm umka/build/umka.o -s umka/build/umka.fas"
+    memory = "-m 2000000"
+    os.system(f"{include} fasm {flags} {files} {memory}")
 
 def build_umka():
     if not enable_umka:
@@ -183,13 +193,22 @@ def build_umka():
     if os.path.exists("umka_shell"):
         return
     os.makedirs("umka/build", exist_ok = True)
-    sources = ["umka_shell.c", "shell.c", "trace.c", "trace_lbr.c", "vdisk.c", "vnet.c", "lodepng.c", "linux/pci.c", "linux/thread.c", "util.c"]
+    sources = [ "umka_shell.c", 
+                "shell.c",
+                "trace.c",
+                "trace_lbr.c",
+                "vdisk.c",
+                "vnet.c",
+                "lodepng.c",
+                "linux/pci.c",
+                "linux/thread.c",
+                "util.c" ]
     sources = [f"umka/{f}" for f in sources]
     for source in sources:
         gcc(source, f"{source}.o")
     objects = " ".join([ f"{s}.o" for s in sources ])
-    os.system(f"INCLUDE=\"../../programs/develop/libraries/libcrash/hash\" fasm -dUEFI=1 -dextended_primary_loader=1 -dUMKA=1 umka/umka.asm umka/build/umka.o -s umka/build/umka.fas -m 2000000")
-    objects += (" umka/build/umka.o")
+    build_umka_asm()
+    objects += " umka/build/umka.o"
     os.system(f"gcc -m32 -no-pie -o umka_shell -static -T umka/umka.ld {objects}")
 
 def run_umka_test(test_file_path):
