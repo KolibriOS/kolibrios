@@ -246,8 +246,8 @@ if __name__ == "__main__":
     tests = collect_tests()
     umka_tests = collect_umka_tests()
     serial_executor_thread = run_tests_serially(tests, root_dir)
-    serial_executor_thread.join()
     if enable_umka:
         for umka_test in umka_tests:
             run_umka_test(root_dir, umka_test)
+    serial_executor_thread.join()
 
