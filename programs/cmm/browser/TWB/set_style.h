@@ -87,7 +87,7 @@ void TWebBrowser::tag_font()
 		}
 	}
 	else {
-		text_colors.pop();
+		if (bg_colors.count>1) text_colors.pop();
 		if (bg_colors.count>1) bg_colors.pop(); //never pop the last color
 	}
 }

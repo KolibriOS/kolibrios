@@ -107,4 +107,4 @@ char editbox_icons[] = FROM "res/editbox_icons.raw";
 
 #define DEFAULT_URL "/sys/fonts/ru.htm"
 
-char version[]="WebView 3.66";
+char version[]="WebView 3.66-1";

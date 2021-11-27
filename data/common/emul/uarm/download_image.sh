@@ -1,2 +1,2 @@
 #SHS
-/sys/network/dl http://xvilka.me/jaunty.rel.v2.bz2
+/sys/network/dl http://store.kolibri-n.org/other/jaunty.rel.v2.bz2

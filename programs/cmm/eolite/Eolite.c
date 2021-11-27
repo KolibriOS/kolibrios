@@ -9,9 +9,9 @@ TODO:
   http://board.kolibrios.org/viewtopic.php?f=23&t=4521&p=77334#p77334
 */
 
-#define ABOUT_TITLE "EOLITE 5.1"
-#define TITLE_EOLITE "Eolite File Manager 5.1"
-#define TITLE_KFM "Kolibri File Manager 2.1";
+#define ABOUT_TITLE "EOLITE 5.11"
+#define TITLE_EOLITE "Eolite File Manager 5.11"
+#define TITLE_KFM "Kolibri File Manager 2.11";
 
 #define MEMSIZE 1024 * 250
 #include "../lib/clipboard.h"
@@ -383,22 +383,15 @@ void main()
 				break;
 			}
 
-			if (key_modifier&KEY_LSHIFT) || (key_modifier&KEY_RSHIFT) {
-
+			if (key_modifier&KEY_LSHIFT) || (key_modifier&KEY_RSHIFT) 
+			{
 				if (key_scancode == SCAN_CODE_ENTER) {
 					EventOpenSelected();
 					break;
 				}
-
 				old_cur_y = files.cur_y;
 				files.ProcessKey(key_scancode);
 				EventChooseFilesRange(old_cur_y, files.cur_y);
-				break;
-			}
-
-			if (files.ProcessKey(key_scancode))
-			{
-				List_ReDraw();
 				break;
 			}
 
@@ -459,8 +452,7 @@ void main()
 							break;
 				}
 				break;
-			}
-
+			} 
 			switch (key_scancode)
 			{
 					case SCAN_CODE_BS:
@@ -494,6 +486,14 @@ void main()
 							break;
 					case SCAN_CODE_F1...SCAN_CODE_F10:
 							FnProcess(key_scancode-58);
+							break;
+					case SCAN_CODE_DOWN:
+					case SCAN_CODE_UP:
+					case SCAN_CODE_HOME:
+					case SCAN_CODE_END:
+					case SCAN_CODE_PGUP:
+					case SCAN_CODE_PGDN:
+							if (files.ProcessKey(key_scancode)) List_ReDraw();
 							break;
 					default:
 							EventSelectFileByKeyPress();

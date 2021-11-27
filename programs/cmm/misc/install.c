@@ -121,7 +121,16 @@ void EventInstall()
 	RunProgram("/sys/media/kiv", "\\S__/kolibrios/res/Wallpapers/Free yourself.jpg");
 
 	install_complete = true;
-	draw_window();
+
+	pause(150);
+	ActivateWindow_Self();
+}
+
+void ActivateWindow_Self()
+{
+	proc_info Form;
+	GetProcessInfo(#Form, SelfInfo);
+	ActivateWindow(GetProcessSlot(Form.ID));
 }
 
 void Operation_Draw_Progress(dword filename) { }
