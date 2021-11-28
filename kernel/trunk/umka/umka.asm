@@ -4,8 +4,33 @@ if ~ defined win32
     format ELF
 else
     format MS COFF
+end if
 
-    macro c_public name, _alias, _argsize {
+macro c_public name, _alias, _argsize {
+    if ~ defined win32
+        ; Use cases:
+        ;   c_public name                       -> 'name'
+        ;   c_public name, 'qwerty'[, nomangle] -> 'qwerty'
+        ;   c_public name, 12                   -> 'name'
+        ;   c_public name, 'qwerty', 12         -> 'qwerty'
+        ;
+        if ~ _argsize eq nomangle
+            if _alias eqtype 'string'
+                public name as _alias
+            else
+                public name
+            end if
+        else
+            public name as _alias
+        end if
+    else
+        ; Use cases:
+        ;   c_public name                     -> '_name'
+        ;   c_public name, 'qwerty'           -> '_qwerty'
+        ;   c_public name, 'qwerty', nomangle -> 'qwerty'
+        ;   c_public name, 12                 -> '_name@12'
+        ;   c_public name, 'qwerty', 12       -> '_qwerty@12'
+        ;
         if ~ _argsize eq nomangle
             if _alias eqtype 'string'
                 if _argsize eqtype 1
@@ -21,16 +46,20 @@ else
         else
             public name as _alias
         end if
-    }
+    end if
+}
 
-    macro extrn name, _argsize {
+macro extrn name, _argsize {
+    if ~ defined win32
+        extrn name
+    else
         if _argsize eqtype 1
             extrn '_' # `name # '@' # `_argsize as name
         else
             extrn '_' # `name as name
         end if
-    }
-end if
+    end if
+}
 
 __DEBUG__ = 1
 __DEBUG_LEVEL__ = 1
@@ -141,8 +170,14 @@ include 'macros.inc'
 
 macro diff16 msg,blah2,blah3 {
   if msg eq "end of .data segment"
-; fasm doesn't align on 65536, but ld script does
-section '.bss.65k' writeable align 512
+
+if ~ defined win32
+    ; fasm doesn't align on 65536, but ld script does
+    section '.bss.aligned65k' writeable align 65536
+else
+    section '.bss.65k' writeable align 512
+end if
+
 bss_base:
   end if
 }
@@ -774,8 +809,13 @@ restore sys_msg_board,delay_ms
 
 coverage_end:
 
-; fasm doesn't align on 65536, but ld script does
-section '.data' readable writeable align 512
+if ~ defined win32
+    ; fasm doesn't align on 65536, but ld script does
+    section '.data.aligned65k' writeable align 65536
+else
+    section '.data' readable writeable align 512
+end if
+
 c_public umka_tool
 umka_tool dd ?
 c_public umka_initialized
