@@ -78,9 +78,11 @@ void buildpath(char *buf, const char* file)
             if (*file == 0)
                 break;
             ++file;
-            continue;
+            //continue;
+            goto __do_until_slash;
         }
         *ptr++ = '/';
+__do_until_slash:
         if (*file == '/')
             ++file;
         while (*file && *file!='/')
