@@ -453,7 +453,8 @@ void main()
 				}
 				break;
 			} 
-			switch (key_scancode)
+
+			switch (calc(key_scancode))
 			{
 					case SCAN_CODE_BS:
 							Dir_Up();
