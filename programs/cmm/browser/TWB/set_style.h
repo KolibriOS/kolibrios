@@ -150,17 +150,17 @@ void TWebBrowser::tag_meta_xml()
 	}
 	if (streq(tag.get_value_of("name"), "application")) {
 	    if (application_mode) {
-	        if (tag.get_value_of("left")) {
-                MoveSize(atoi(tag.value),-1,-1,-1);
+	        if (tag.get_number_of("left")) {
+                MoveSize(tag.number,-1,-1,-1);
             }
-            if (tag.get_value_of("top")) {
-                MoveSize(-1,atoi(tag.value),-1,-1);
+            if (tag.get_number_of("top")) {
+                MoveSize(-1,tag.number,-1,-1);
             }
-            if (tag.get_value_of("width")) {
-                MoveSize(-1,-1,atoi(tag.value),-1);
+            if (tag.get_number_of("width")) {
+                MoveSize(-1,-1,tag.number,-1);
             }
-            if (tag.get_value_of("height")) {
-                MoveSize(-1,-1,-1,atoi(tag.value));
+            if (tag.get_number_of("height")) {
+                MoveSize(-1,-1,-1,tag.number);
             }
 	    }
     }
