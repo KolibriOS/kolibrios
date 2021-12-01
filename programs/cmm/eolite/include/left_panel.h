@@ -49,17 +49,27 @@ void _SystemDiscs::Get()
 	free(diskbuf);
 }
 
-void GetDiskIconAndName(dword dev_name, dev_icon, disc_name)
+void GetDiskIconAndName(dword dev_name, icon, disc_name)
 {
 	int i;
+	dword volume_label;
 	for (i=0; devinfo[i]!=0; i+=3) {
 		if (!strncmp(dev_name+1, devinfo[i], 2)) {
-			ESBYTE[dev_icon] = devinfo[i+1];
+			ESBYTE[icon] = devinfo[i+1];
+			if (volume_label = GetVolumeLabel(dev_name)) 
+			{
+				//show label only for hard disk drives
+				if (ESBYTE[icon]==4) {
+					strncpy(disc_name, volume_label, 15);
+					chrcat(disc_name, ' ');
+					return;					
+				}
+			}
 			strcpy(disc_name, devinfo[i+2]);
 			return;
 		}
 	}
-	ESBYTE[dev_icon]=5;
+	ESBYTE[icon]=4;
 	strcpy(disc_name, T_UNC);
 }
 
@@ -89,7 +99,13 @@ void _SystemDiscs::Draw()
 			DefineHiddenButton(draw_x,draw_y,159,16,100+i);
 			if (show_dev_name.checked)
 			{
-				strcat(#disc_name, #dev_name);
+				if (dev_name[1]=='t') {
+					chrcat(#disc_name, dev_name[4]);
+				} else if (dev_name[1]=='f') {
+					//
+				} else {
+					strcat(#disc_name, #dev_name);
+				}
 				if (is_active) WriteText(draw_x+30,draw_y+5,0x80,0x555555,#disc_name);
 				WriteText(draw_x+29,draw_y+5,0x80,0,#disc_name);
 				//if (is_active) kfont.bold = true;

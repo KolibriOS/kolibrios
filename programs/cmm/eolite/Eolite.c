@@ -9,9 +9,9 @@ TODO:
   http://board.kolibrios.org/viewtopic.php?f=23&t=4521&p=77334#p77334
 */
 
-#define ABOUT_TITLE "EOLITE 5.11"
-#define TITLE_EOLITE "Eolite File Manager 5.11"
-#define TITLE_KFM "Kolibri File Manager 2.11";
+#define ABOUT_TITLE "EOLITE 5.12"
+#define TITLE_EOLITE "Eolite File Manager 5.12"
+#define TITLE_KFM "Kolibri File Manager 2.12";
 
 #define MEMSIZE 1024 * 250
 #include "../lib/clipboard.h"
@@ -662,7 +662,7 @@ void DrawFilePanels()
 	if (!efm)
 	{
 		SystemDiscs.Draw();
-		files.SetSizes(192, 57, Form.cwidth - 210, Form.cheight - 59 - status_bar_h, files.item_h);
+		files.SetSizes(SIDEBAR_W, 57, Form.cwidth - SIDEBAR_W-18, Form.cheight - 59 - status_bar_h, files.item_h);
 		DrawButtonsAroundList();
 		List_ReDraw();
 		DrawPathBar();
@@ -1128,7 +1128,7 @@ void ShowPopinForm(byte _popin_type)
 						strcat(#param, "...?");
 					}
 				}
-				WriteTextCenter(popinx, 192, POPIN_W, sc.work_text, #param);
+				WriteTextCenter(popinx, SIDEBAR_W, POPIN_W, sc.work_text, #param);
 				break;
 		case POPIN_DISK:
 				DefineHiddenButton(0,0,5000,3000,POPUP_BTN2+BT_NOFRAME);

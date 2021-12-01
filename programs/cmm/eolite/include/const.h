@@ -256,5 +256,12 @@ char *devinfo = {
 #define KFM2_DEVH 20
 #define SELECTY 10
 #define POPIN_W 260
+//Sidebar width
+#define SIDEBAR_W 192
+//Sidebar padding
+#define SBPAD 15
+//Block width inside Sidebar 
+#define SB_BLOCKX SBPAD+2
+#define SB_BLOCKW SIDEBAR_W-SBPAD-SB_BLOCKX
 
 int toolbar_buttons_x[7]={9,46,85,134,167,203};

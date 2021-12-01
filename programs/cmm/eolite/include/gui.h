@@ -114,11 +114,11 @@ void DrawFuncButton(dword x,y,width,id,number,text)
 
 void Tip(int y, dword caption, id, arrow)
 {
-	DrawBar(17,y,160,1,col.list_bg);
-	DrawBar(17,y+1,1,16,sc.work_light);
-	DrawFilledBar(18, y+1, 160-1, 16);
-	DrawBar(17,y+17,160,1,sc.work_graph);
-	WriteText(25,y+5,0x80,col.list_gb_text,caption);
+	DrawBar(SB_BLOCKX,y,SB_BLOCKW,1,col.list_bg);
+	DrawBar(SB_BLOCKX,y+1,1,16,sc.work_light);
+	DrawFilledBar(SB_BLOCKX+1, y+1, SB_BLOCKW-1, 16);
+	DrawBar(SB_BLOCKX,y+SB_BLOCKX,SB_BLOCKW,1,sc.work_graph);
+	WriteText(SB_BLOCKX+8,y+5,0x80,col.list_gb_text,caption);
 	if (id) DefineButton(159,y+1,16,16,id+BT_HIDE+BT_NOFRAME,0); //arrow button
 	WriteText(165,y+5,0x80,col.list_gb_text,arrow); //arrow
 }
@@ -129,10 +129,10 @@ void ActionsDraw(int actions_y)
 	Tip(actions_y-18, T_ACTIONS, 77, "");
 	for (i=0; actions[i*3]!=0; i++, actions_y+=DEV_H)
 	{
-		DrawBar(17,actions_y,160,DEV_H,0xFFFFFF); //белое
-		DefineButton(17,actions_y,159,DEV_H,actions[i*3]+BT_HIDE,0xE4DFE1);
+		DrawBar(SB_BLOCKX,actions_y,SB_BLOCKW,DEV_H,0xFFFFFF); //белое
+		DefineButton(SB_BLOCKX,actions_y,SB_BLOCKW-1,DEV_H,actions[i*3]+BT_HIDE,0xE4DFE1);
 		WriteText(45,actions_y+4,0x80,0,actions[i*3+1]);
-		WriteText(-strlen(actions[i*3+2])*6+170,actions_y+4,0x80,0x999999,actions[i*3+2]);
+		WriteText(-strlen(actions[i*3+2])*6+SIDEBAR_W-SBPAD-7,actions_y+4,0x80,0x999999,actions[i*3+2]);
 		_PutImage(23,actions_y+2, 14,13, i*14*13*3+#factions);
 	}
 }
@@ -141,21 +141,21 @@ void DrawLeftPanelBg(int actions_y)
 {
 	int start_y = actions_y+159;
 	int area_h;
-	DrawBar(2,41,190,15,waves_pal[0]);    //above devices block
-	DrawBar(17,actions_y+75,160,15,EDX);  //below devices block
-	DrawBar(2,56,15,actions_y+103,EDX);   //on the left
-	DrawBar(177,56,15,actions_y+103,EDX); //on the right
+	DrawBar(2,41,SIDEBAR_W-2,SBPAD,waves_pal[0]);    //above devices block
+	DrawBar(SB_BLOCKX,actions_y+75,SB_BLOCKW,SBPAD,EDX);  //below devices block
+	DrawBar(2,56,SBPAD,actions_y+103,EDX);   //on the left
+	DrawBar(SIDEBAR_W-SBPAD,56,SBPAD,actions_y+103,EDX); //on the right
 	area_h = Form.cheight-start_y-2 - status_bar_h;
 	if (area_h < 268){
 		PutPaletteImage(#blue_hl, 190, area_h, 2, start_y, 8, #waves_pal);
 	} else {
-		DrawBar(2,start_y,190, area_h-268, waves_pal[0]);
+		DrawBar(2,start_y,SIDEBAR_W-2, area_h-268, waves_pal[0]);
 		PutPaletteImage(#blue_hl, 190, 268, 2, Form.cheight-270-status_bar_h, 8, #waves_pal);
 	}
-	PutShadow(17,actions_y+75,160,1,1,3);
-	PutShadow(18,actions_y+75+1,158,1,1,1);
-	PutShadow(17,start_y,160,1,1,3);
-	PutShadow(18,start_y+1,158,1,1,1);
+	PutShadow(SB_BLOCKX,actions_y+75,SB_BLOCKW,1,1,3);
+	PutShadow(SB_BLOCKX+1,actions_y+75+1,SB_BLOCKW-2,1,1,1);
+	PutShadow(SB_BLOCKX,start_y,SB_BLOCKW,1,1,3);
+	PutShadow(SB_BLOCKX+1,start_y+1,SB_BLOCKW-2,1,1,1);
 }
 
 //===================================================//
