@@ -267,6 +267,7 @@ unsigned char pari=FALSE;
 	char *buffer;
 	
 	printf("\nSPHINX C-- Compiler   Version %d.%d%s   %s\r\n",ver1,ver2,betta,__DATE__);
+	con_set_title(compilerstr);
 		
 //	scrsize=24;
 	if(argc>1){
