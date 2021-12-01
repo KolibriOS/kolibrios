@@ -10,8 +10,10 @@ void TWebBrowser::RenderLine(dword _line)
 	if (style.title)
 	{
 		strncpy(#header, _line, sizeof(TWebBrowser.header)-1);
-		strncat(#header, " - ", sizeof(TWebBrowser.header)-1);
-		strncat(#header, #version, sizeof(TWebBrowser.header)-1);
+		if (!application_mode) {
+		    strncat(#header, " - ", sizeof(TWebBrowser.header)-1);
+        	strncat(#header, #version, sizeof(TWebBrowser.header)-1);
+		}
 	}
 	else if (t_html) && (!t_body) {
 		//
