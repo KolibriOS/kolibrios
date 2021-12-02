@@ -12,6 +12,7 @@ public _con_cls
 public _con_write_string@8
 public _con_getch2@0
 public _con_gets
+public con_set_title as '_con_set_title_ptr'
 
 section '.text' align 16
 
@@ -272,7 +273,8 @@ import  console,                            \
         con_set_cursor_pos, 'con_set_cursor_pos',\
         con_write_string, 'con_write_string',\
         con_get_flags,  'con_get_flags',    \
-        con_set_flags,  'con_set_flags'
+        con_set_flags,  'con_set_flags',    \
+        con_set_title,  'con_set_title'
 
 s_libdir:
   db '/sys/lib/'

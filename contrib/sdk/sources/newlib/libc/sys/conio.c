@@ -15,6 +15,8 @@ void     __stdcall con_write_string(const char* string, unsigned length);
 short    __stdcall con_getch2(void);
 char*    __stdcall con_gets(char*, unsigned);
 
+extern void __stdcall (*con_set_title_ptr)(char*);
+
 int __gui_mode;
 
 void con_init_opt(unsigned w_w, unsigned w_h, unsigned s_w, unsigned s_h, const char* t){
@@ -80,6 +82,7 @@ void __fini_conio()
     con_exit(0);
 }
 
-
-
-
+void con_set_title(char *title)
+{
+    con_set_title_ptr(title);
+}
