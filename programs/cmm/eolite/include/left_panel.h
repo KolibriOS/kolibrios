@@ -99,13 +99,7 @@ void _SystemDiscs::Draw()
 			DefineHiddenButton(draw_x,draw_y,159,16,100+i);
 			if (show_dev_name.checked)
 			{
-				if (dev_name[1]=='t') {
-					chrcat(#disc_name, dev_name[4]);
-				} else if (dev_name[1]=='f') {
-					if (dev_name[3]!='/') chrcat(#disc_name, dev_name[3]);
-				} else {
-					strcat(#disc_name, #dev_name);
-				}
+				strcat(#disc_name, #dev_name);
 				if (is_active) WriteText(draw_x+30,draw_y+5,0x80,0x555555,#disc_name);
 				WriteText(draw_x+29,draw_y+5,0x80,0,#disc_name);
 				//if (is_active) kfont.bold = true;
