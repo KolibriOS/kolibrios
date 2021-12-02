@@ -222,6 +222,11 @@ int MakePE();
 int MakeObj();
 void CheckUndefClassProc();
 
+#ifdef _KOS_
+extern "C"{
+    void con_set_title(char* title);
+}
+#endif
 
 void ListId(int numfirstchar,unsigned char *list,unsigned short *ofs)
 {
@@ -267,8 +272,9 @@ unsigned char pari=FALSE;
 	char *buffer;
 	
 	printf("\nSPHINX C-- Compiler   Version %d.%d%s   %s\r\n",ver1,ver2,betta,__DATE__);
-	con_set_title(compilerstr);
-		
+#ifdef _KOS_
+	con_set_title((char*)compilerstr);
+#endif
 //	scrsize=24;
 	if(argc>1){
 		_Argv=argv;// This make portable code
