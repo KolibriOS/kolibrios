@@ -56,10 +56,10 @@ void GetDiskIconAndName(dword dev_name, icon, disc_name)
 	for (i=0; devinfo[i]!=0; i+=3) {
 		if (!strncmp(dev_name+1, devinfo[i], 2)) {
 			ESBYTE[icon] = devinfo[i+1];
-			if (volume_label = GetVolumeLabel(dev_name)) 
+			if (ESBYTE[icon]==4)
 			{
 				//show label only for hard disk drives
-				if (ESBYTE[icon]==4) {
+				if (volume_label = GetVolumeLabel(dev_name)) {
 					strncpy(disc_name, volume_label, 15);
 					chrcat(disc_name, ' ');
 					return;					
@@ -102,7 +102,7 @@ void _SystemDiscs::Draw()
 				if (dev_name[1]=='t') {
 					chrcat(#disc_name, dev_name[4]);
 				} else if (dev_name[1]=='f') {
-					//
+					if (dev_name[3]!='/') chrcat(#disc_name, dev_name[3]);
 				} else {
 					strcat(#disc_name, #dev_name);
 				}

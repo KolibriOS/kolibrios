@@ -9,9 +9,9 @@ TODO:
   http://board.kolibrios.org/viewtopic.php?f=23&t=4521&p=77334#p77334
 */
 
-#define ABOUT_TITLE "EOLITE 5.12"
-#define TITLE_EOLITE "Eolite File Manager 5.12"
-#define TITLE_KFM "Kolibri File Manager 2.12";
+#define ABOUT_TITLE "EOLITE 5.14"
+#define TITLE_EOLITE "Eolite File Manager 5.14"
+#define TITLE_KFM "Kolibri File Manager 2.14";
 
 #define MEMSIZE 1024 * 250
 #include "../lib/clipboard.h"
@@ -429,9 +429,12 @@ void main()
 					case SCAN_CODE_KEY_V:
 							EventPaste(path);
 							break;
-					case SCAN_CODE_KEY_D: //set image as bg
-							strlcpy(#temp, "\\S__",4);
-							strcat(#temp, #file_path);
+					case SCAN_CODE_KEY_S: //set image as bg tile
+							sprintf(#temp, "\\S__%s",#file_path);
+							RunProgram("/sys/media/kiv", #temp);
+							break;
+					case SCAN_CODE_KEY_T: //set image as bg stretch
+							sprintf(#temp, "\\T__%s",#file_path);
 							RunProgram("/sys/media/kiv", #temp);
 							break;
 					case SCAN_CODE_KEY_N:
