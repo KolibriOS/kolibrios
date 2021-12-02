@@ -270,10 +270,12 @@ int main(int argc,char *argv[])
 int count;
 unsigned char pari=FALSE;
 	char *buffer;
-	
-	printf("\nSPHINX C-- Compiler   Version %d.%d%s   %s\r\n",ver1,ver2,betta,__DATE__);
+
+	char compiler_ver[64];
+	snprintf(compiler_ver, 64, "\nSPHINX C-- Compiler   Version %d.%d%s   %s\r\n",ver1,ver2,betta,__DATE__);
+	puts(compiler_ver);
 #ifdef _KOS_
-	con_set_title((char*)compilerstr);
+	con_set_title(compiler_ver);
 #endif
 //	scrsize=24;
 	if(argc>1){
