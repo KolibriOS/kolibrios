@@ -751,6 +751,7 @@ tup.append_table(extra_files, {
  {"kolibrios/lib/sqlite3.dll", "../contrib/sdk/bin/sqlite3.dll", group = "../contrib/sdk/lib/<libsqlite3.dll.a>"},
  {"kolibrios/utils/minizip/minizip", PROGS .. "/fs/minizip/minizip"},
  {"kolibrios/utils/minizip/miniunz", PROGS .. "/fs/minizip/miniunz"},
+ {"kolibrios/develop/c--/c--", PROGS .. "/develop/cmm/cmm"},
  {"kolibrios/develop/tcc/tcc", PROGS .. "/develop/ktcc/trunk/source/tcc"},
  {"kolibrios/develop/sqlite3/sqlite3", "../contrib/sdk/sources/sqlite3/shell/sqlite3"},
  {"kolibrios/drivers/sensors/k10temp.sys", "../drivers/sensors/k10temp/k10temp.sys"},
