@@ -578,6 +578,7 @@ tup.append_table(extra_files, {
  {"kolibrios/demos/buddhabrot", PROGS .. "/demos/buddhabrot/trunk/buddhabrot"},
  {"kolibrios/demos/life3", PROGS .. "/games/life3/trunk/life3"},
  {"kolibrios/demos/qjulia", PROGS .. "/demos/qjulia/trunk/qjulia"},
+ {"kolibrios/develop/utils/koldbg", PROGS .. "/develop/koldbg/koldbg"},
  {"kolibrios/games/Almaz", PROGS .. "/games/almaz/almaz"},
  {"kolibrios/games/arcanii", PROGS .. "/games/arcanii/trunk/arcanii"},
  {"kolibrios/games/bomber/bomber", PROGS .. "/games/bomber/bomber"},
