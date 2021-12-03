@@ -7,6 +7,7 @@ import os
 from lib.logging import log
 
 def generate_script_executing_script(script_to_execute):
+    script_to_execute = script_to_execute.replace("\\", "\\\\")
     contents = ""
     contents += "from importlib.machinery import SourceFileLoader\n"
     contents += f"SourceFileLoader('__main__', '{script_to_execute}').load_module()\n"
