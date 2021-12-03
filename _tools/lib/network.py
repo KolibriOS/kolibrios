@@ -1,4 +1,5 @@
 import urllib.request
+from .logging import log
 
 def download(link, path):
     log(f"Downloading {path}... ", end = "")
