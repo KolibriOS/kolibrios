@@ -10,6 +10,9 @@ if len(sys.argv) < 2 or sys.argv[1] != "--remove-everything":
 # Remove workspace folder
 shutil.rmtree("workspace", ignore_errors = True)
 
+# Remove tup database
+shutil.rmtree(".tup", ignore_errors = True)
+
 # TODO: Make build.py remove the stuff it built
 
 # Remove files copied from _tools/workspace

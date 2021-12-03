@@ -32,3 +32,6 @@ if __name__ == "__main__":
     tools_workspace_build_py = os.path.join(tools_workspace, "build.py")
     create_workspace_script("run.py", tools_workspace_run_py)
     create_workspace_script("build.py", tools_workspace_build_py)
+    # Initalize tup here
+    # TODO: Do anything if tup doesn't exist
+    os.system("tup init")
