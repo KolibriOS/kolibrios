@@ -105,6 +105,6 @@ char editbox_icons[] = FROM "res/editbox_icons.raw";
 #define WIN_W 850
 #define WIN_H 920
 
-#define DEFAULT_URL "/sys/fonts/ru.htm"
+#define DEFAULT_URL URL_SERVICE_HOMEPAGE
 
-char version[]="WebView 3.66-1";
+char version[]="WebView 3.66-2";
