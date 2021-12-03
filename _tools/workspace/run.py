@@ -54,9 +54,12 @@ if __name__ == "__main__":
 
     os.makedirs("workspace", exist_ok = True)
 
-    if not os.path.exists("workspace/kolibri.img"):
+    if not os.path.exists("workspace/kolibri.unmodified.img"):
         img_url = "http://builds.kolibrios.org/eng/data/data/kolibri.img"
-        download(img_url, "workspace/kolibri.img")
+        download(img_url, "workspace/kolibri.unmodified.img")
+
+    # Create a copy of IMG
+    shutil.copyfile("workspace/kolibri.unmodified.img", "workspace/kolibri.img")
 
     # Open the IMG
     with open("workspace/kolibri.img", "rb") as img:
@@ -72,10 +75,23 @@ if __name__ == "__main__":
     for file_name in program_files:
         with open(file_name, "rb") as file:
             file_data = file.read()
-        if not img.add_file_path(file_name, file_data):
+        if not img.add_file_path(file_name.upper(), file_data):
             print(f"Coudn't move {file_name} into IMG")
-    img.save("workspace/kolibri.img")
     log("Done")
 
-    # TODO: Autorun
+    # TODO: Figure out which of compiled files is a program executable and only run it
+    log("Adding program to autorun.dat", end = "")
+    lines_to_add = b""
+    for file_name in program_files:
+        lines_to_add += bytes(f"\r\n/SYS/{file_name.upper()}\t\t""\t0\t# Your program", "ascii")
+    autorun_dat = img.extract_file_path("SETTINGS\AUTORUN.DAT")
+    place_for_new_lines = autorun_dat.index(b"\r\n/SYS/@TASKBAR")# b"\r\n### Hello, ASM World! ###")
+    autorun_dat = autorun_dat[:place_for_new_lines] + lines_to_add + autorun_dat[place_for_new_lines:]
+    print(autorun_dat)
+    img.delete_path("SETTINGS\AUTORUN.DAT")
+    img.add_file_path("SETTINGS\AUTORUN.DAT", autorun_dat)
+    log("Done")
+
+    img.save("workspace/kolibri.img")
+
     run_qemu()
