@@ -1,7 +1,8 @@
 import sys
 import os
 
-path_to_tools = '..'
+path_to_tools_workspace = os.path.dirname(os.path.abspath(__file__))
+path_to_tools = os.path.dirname(path_to_tools_workspace)
 sys.path.append(path_to_tools)
 
 from lib.tupfile_parser import parse as parse_tupfile

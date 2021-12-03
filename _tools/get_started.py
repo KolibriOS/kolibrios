@@ -4,30 +4,30 @@
 
 import os
 
-def log(s, end = "\n"):
-    print(s, end = end, flush = True)
+from lib.logging import log
 
-def install_python_script(src, dst, tools):
-    log(f"Copying {src}... ", end = "")
+def generate_script_executing_script(script_to_execute):
+    contents = ""
+    contents += "from importlib.machinery import SourceFileLoader\n"
+    contents += f"SourceFileLoader('__main__', '{script_to_execute}').load_module()\n"
+    return contents
 
-    with open(src) as src_file:
-        script = src_file.read()
-    tools = tools.replace("\\", "\\\\")
-    repl_from = "path_to_tools = '..'"
-    repl_to = f"path_to_tools ='{tools}'"
-    script = script.replace(repl_from, repl_to, 1)
-    with open(dst, "w") as dst_file:
-        dst_file.write(script)
+def create_workspace_script(name, script_to_execute):
+    log(f"Installing {name}... ", end = "")
 
-    log(f"Done")
+    script_contents = generate_script_executing_script(script_to_execute)
+    with open(name, "w") as f:
+        f.write(script_contents)
+
+    log("Done")
 
 if __name__ == "__main__":
     tools_get_started_py = os.path.abspath(__file__)
     tools = os.sep.join(tools_get_started_py.split(os.sep)[:-1])
     tools_workspace = os.sep.join([tools, "workspace"])
-    # Copy scripts from _tools/workspace to current folder, but let them know
-    # where the _tools/lib is (change their value of tools variable)
-    tools_workspace_run_py = os.sep.join([tools_workspace, "run.py"])
-    tools_workspace_build_py = os.sep.join([tools_workspace, "build.py"])
-    install_python_script(tools_workspace_run_py, "run.py", tools)
-    install_python_script(tools_workspace_build_py, "build.py", tools)
+    # Create (in current directory) scripts that execute
+    # the same named scripts from _tools/workspace
+    tools_workspace_run_py = os.path.join(tools_workspace, "run.py")
+    tools_workspace_build_py = os.path.join(tools_workspace, "build.py")
+    create_workspace_script("run.py", tools_workspace_run_py)
+    create_workspace_script("build.py", tools_workspace_build_py)

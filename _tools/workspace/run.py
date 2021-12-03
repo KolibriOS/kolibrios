@@ -5,10 +5,11 @@ import shutil
 import urllib.request
 import subprocess
 
-import build
-
-path_to_tools = '..'
+path_to_tools_workspace = os.path.dirname(os.path.abspath(__file__))
+path_to_tools = os.path.dirname(path_to_tools_workspace)
 sys.path.append(path_to_tools)
+
+from workspace.build import build
 
 from lib.makeflop import Floppy
 from lib.platform import is_win32, path
@@ -50,7 +51,7 @@ def run_qemu(start_dir = "workspace"):
         return subprocess.Popen(a, bufsize = 0, stdout = qemu_stdout, stderr = qemu_stderr, stdin = subprocess.DEVNULL, start_new_session = True)
 
 if __name__ == "__main__":
-    program_files = build.build()
+    program_files = build()
 
     os.makedirs("workspace", exist_ok = True)
 
