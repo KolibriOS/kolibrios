@@ -62,7 +62,7 @@ draw_window:
 	push	dword dinamic_button_data_15
 	call	[dinamic_button_draw]
 	
-	mcall	13,<225,2>,<3,22>,0
+	mcall	13,<225,2>,<3,22>,0x677EA0 ;0x052B64
 	mcall	,<280,2>
 	mcall	,<410,2>
 	mcall	,<490,2>
