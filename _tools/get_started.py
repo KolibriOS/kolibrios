@@ -1,4 +1,4 @@
-#!/usr/bin/python3
+#!/bin/python3
 # Copyright Magomed Kostoev
 # Published under MIT license
 
