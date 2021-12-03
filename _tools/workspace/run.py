@@ -88,7 +88,6 @@ if __name__ == "__main__":
     autorun_dat = img.extract_file_path("SETTINGS\AUTORUN.DAT")
     place_for_new_lines = autorun_dat.index(b"\r\n/SYS/@TASKBAR")# b"\r\n### Hello, ASM World! ###")
     autorun_dat = autorun_dat[:place_for_new_lines] + lines_to_add + autorun_dat[place_for_new_lines:]
-    print(autorun_dat)
     img.delete_path("SETTINGS\AUTORUN.DAT")
     img.add_file_path("SETTINGS\AUTORUN.DAT", autorun_dat)
     log("Done")
