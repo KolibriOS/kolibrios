@@ -1,17 +1,17 @@
 import sys
 import os
 
-path_to_lib = '../lib'
-sys.path.append(path_to_lib)
+path_to_tools = '..'
+sys.path.append(path_to_tools)
 
-import tupfile_parser
+from lib.tupfile_parser import parse as parse_tupfile
 
 def build():
     if not os.path.exists("Tupfile.lua"):
         print("No Tupfile.lua, can't build anything")
         exit()
 
-    tup_rules = tupfile_parser.parse("Tupfile.lua")
+    tup_rules = parse_tupfile("Tupfile.lua")
     program_files = []
     for rule in tup_rules:
         # TODO: Manage source dependencies

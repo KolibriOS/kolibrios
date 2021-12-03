@@ -7,10 +7,13 @@ import subprocess
 
 import build
 
-path_to_lib = '../lib'
-sys.path.append(path_to_lib)
+path_to_tools = '..'
+sys.path.append(path_to_tools)
 
-from makeflop import Floppy
+from lib.makeflop import Floppy
+from lib.platform import is_win32, path
+from lib.logging import log
+from lib.network import download
 
 # TODO: Move into _tools/lib
 def get_file_directory(path):
@@ -22,32 +25,6 @@ def get_file_directory(path):
         return folder
     else:
         return "." # Just a filename, let's return current folder
-
-# TODO: Move into _tools/lib
-def is_win32():
-    return True if sys.platform == "win32" else False
-
-# TODO: Move into _tools/lib
-def is_linux():
-    return True if sys.platform == "linux" or sys.platform == "linux2" else False
-
-# TODO: Move into _tools/lib
-def  is_osx():
-    return True if sys.platform == "darwin" else False
-
-# TODO: Move into _tools/lib
-def log(s, end = "\n"):
-    print(s, end = end, flush = True)
-
-# TODO: Move into _tools/lib
-def download(link, path):
-    log(f"Downloading {path}... ", end = "")
-    urllib.request.urlretrieve(link, path)
-    log("Done.")
-
-# TODO: Move into _tools/lib
-def path(*args):
-    return os.sep.join(args)
 
 # TODO: Move into _tools/lib
 def run_qemu(start_dir = "workspace"):
