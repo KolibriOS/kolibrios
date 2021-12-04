@@ -11,7 +11,7 @@ sys.path.append(path_to_tools)
 
 from workspace.build import build
 
-from lib.builds import builds_get_contents
+from lib.builds import builds_get, builds_get_contents
 from lib.makeflop import Floppy
 from lib.platform import is_win32, path
 from lib.logging import log
@@ -46,10 +46,10 @@ if __name__ == "__main__":
     os.makedirs("workspace", exist_ok = True)
 
     # Create a copy of IMG
-    shutil.copyfile(tools_cache_kolibri_img, "workspace/kolibri.img")
+    kolibri_img = builds_get("eng/data/data/kolibri.img", "workspace/kolibri.img")
 
     # Open the IMG
-    with open("workspace/kolibri.img", "rb") as img:
+    with open(kolibri_img, "rb") as img:
         img_data = img.read()
     img = Floppy(img_data)
 
@@ -79,6 +79,6 @@ if __name__ == "__main__":
     img.add_file_path("SETTINGS\AUTORUN.DAT", autorun_dat)
     log("Done")
 
-    img.save("workspace/kolibri.img")
+    img.save(kolibri_img)
 
     run_qemu()

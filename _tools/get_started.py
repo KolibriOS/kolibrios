@@ -25,8 +25,6 @@ def create_workspace_script(name, script_to_execute):
     log("Done")
 
 if __name__ == "__main__":
-    # Create _tools/cache folder if not exist
-    os.makedirs(tools_cache, exist_ok = True)
     # Create (in current directory) scripts that execute
     # the same named scripts from _tools/workspace
     tools_workspace_run_py = os.path.join(tools_workspace, "run.py")
@@ -36,6 +34,3 @@ if __name__ == "__main__":
     # Initalize tup here
     # TODO: Do anything if tup doesn't exist
     os.system("tup init")
-    # Download IMG to _tools/cache
-    img_url = "http://builds.kolibrios.org/eng/data/data/kolibri.img"
-    download(img_url, tools_cache_kolibri_img, skip_exist = True)
