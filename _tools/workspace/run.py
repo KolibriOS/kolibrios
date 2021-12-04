@@ -64,7 +64,6 @@ if __name__ == "__main__":
         print(f"Coudn't move {program_name} into IMG")
     log("Done")
 
-    # TODO: Figure out which of compiled files is a program executable and only run it
     log("Adding program to autorun.dat... ", end = "")
     lines_to_add = bytes(f"\r\n/SYS/{program_name.upper()}\t\t""\t0\t# Your program", "ascii")
     autorun_dat = img.extract_file_path("SETTINGS\AUTORUN.DAT")
