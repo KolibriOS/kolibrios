@@ -11,6 +11,7 @@ sys.path.append(path_to_tools)
 
 from workspace.build import build
 
+from lib.builds import builds_get_contents
 from lib.makeflop import Floppy
 from lib.platform import is_win32, path
 from lib.logging import log
@@ -56,6 +57,11 @@ if __name__ == "__main__":
     img.delete_path("GAMES")
     img.delete_path("DEMOS")
     img.delete_path("3D")
+
+    # Insert faster kernel if need
+    if len(sys.argv) > 1 and sys.argv[1] == "--fast":
+        new_kernel = builds_get_contents("eng/data/kernel/trunk/kernel.mnt.pretest")
+        img.add_file_path("KERNEL.MNT", new_kernel)
 
     log("Moving program into kolibri image... ", end = "")
     with open(program_name, "rb") as file:
