@@ -102,12 +102,12 @@ PathShow_draw stdcall(#PathShow);
 #define ed_mouse_on_off 1111111011111111b
 
 struct edit_box{
-dword width, 
+dword width,
 	left,
-	top, 
-	color, 
-	shift_color, 
-	focus_border_color, 
+	top,
+	color,
+	shift_color,
+	focus_border_color,
 	blur_border_color,
 	text_color,
 	max,
@@ -160,33 +160,11 @@ dword width,
 
 struct scroll_bar
 {
-	word size_x,
-	start_x,
-	size_y,
-	start_y;
-	dword btn_height,
-	type,
-	max_area,
-	cur_area,
-	position,
-	bckg_col,
-	frnt_col,
-	line_col,
-	redraw;
-	word delta,
-	delta2,
-	r_size_x,
-	r_start_x,
-	r_size_y,
-	r_start_y;
-	dword m_pos,
-	m_pos_2,
-	m_keys,
-	run_size,
-	position2,
-	work_size,
-	all_redraw,
-	ar_offset;
+	word size_x, start_x, size_y, start_y;
+	dword btn_height, type, max_area, cur_area, position,
+	bckg_col, frnt_col, line_col, redraw;
+	word delta, delta2, r_size_x, r_start_x, r_size_y, r_start_y;
+	dword m_pos, m_pos_2, m_keys, run_size, position2, work_size, all_redraw, ar_offset;
 };
 
 struct progress_bar
@@ -208,18 +186,18 @@ struct progress_bar
 struct frame
 {
 	dword type;
-	word size_x; //start_x, size_x => Mario, WTF? Is this so complex to use x/y/w/h ?                  
-	word start_x;                 
-	word size_y;                  
-	word start_y;                
-	dword ext_col;            
-	dword int_col;            
+	word size_x; //start_x, size_x => Mario, WTF? Is this so complex to use x/y/w/h ?
+	word start_x;
+	word size_y;
+	word start_y;
+	dword ext_col;
+	dword int_col;
 	dword flags;  // see FR_FLAGS
-	dword text_pointer;          
+	dword text_pointer;
 	dword text_position;   //  0-up,1-bottom
 	dword font_number;     //  0-monospace,1-variable
-	dword font_size_y;           
-	dword font_color;            
+	dword font_size_y;
+	dword font_color;
 	dword font_backgr_color;
 };
 

@@ -1,7 +1,7 @@
 struct od_filter
  {
  	dword size; //size = len(#ext) + sizeof(dword)
- 	char ext[25];
+ 	char ext[90];
  };
 
 proc_info pr_inf;
@@ -11,21 +11,21 @@ char filename_area[1024];
 
 opendialog o_dialog = {
 	0,
-	#pr_inf, 
-	#communication_area_name, 
-	0, 
-	#opendir_path, 
-	#default_dir, 
+	#pr_inf,
+	#communication_area_name,
+	0,
+	#opendir_path,
+	#default_dir,
 	#open_dialog_path,
-	#draw_window, 
-	0, 
-	#openfile_path, 
-	#filename_area, 
-	#filter2, 
+	#draw_window,
+	0,
+	#openfile_path,
+	#filename_area,
+	#filter2,
 
-	420, 
-	200, 
+	420,
+	200,
 
-	320, 
+	320,
 	120
 };

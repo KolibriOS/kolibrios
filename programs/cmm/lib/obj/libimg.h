@@ -17,7 +17,7 @@
 //library
 dword libimg = #alibimg;
 char alibimg[] = "/sys/lib/libimg.obj";
-	
+
 dword libimg_init   = #alibimg_init;
 dword img_decode    = #aimg_decode;
 dword img_destroy   = #aimg_destroy;
@@ -27,12 +27,12 @@ dword img_encode    = #aimg_encode;
 dword img_convert   = #aimg_convert;
 dword img_from_file = #aimg_from_file;
 dword img_blend     = #aimg_blend;
-//dword img_resize    = #aimg_resize;
 //dword img_is_img    = #aimg_is_img;
 //dword img_to_rgb2   = #aimg_to_rgb2;
 //dword img_scale     = #aimg_scale;
-//dword img_flip      = #aimg_flip;
-//dword img_rotate    = #aimg_rotate;
+dword img_flip      = #aimg_flip;
+dword img_rotate    = #aimg_rotate;
+dword img_to_rgb    = #aimg_to_rgb;
 
 $DD 2 dup 0
 
@@ -46,12 +46,12 @@ char aimg_encode[]    = "img_encode";
 char aimg_convert[]   = "img_convert";
 char aimg_from_file[] = "img_from_file";
 char aimg_blend[]     = "img_blend";
-//char aimg_resize[]    = "img_resize";
 //char aimg_is_img[]    = "img_is_img";
 //char aimg_to_rgb2[]   = "img_to_rgb2";
 //char aimg_scale[]     = "img_scale";
-//char aimg_flip[]      = "img_flip";
-//char aimg_rotate[]    = "img_rotate";
+char aimg_flip[]      = "img_flip";
+char aimg_rotate[]    = "img_rotate";
+char aimg_to_rgb[]    = "img_to_rgb";
 
 #define LIBIMG_FORMAT_BMP       1
 #define LIBIMG_FORMAT_ICO       2
@@ -79,9 +79,18 @@ char aimg_blend[]     = "img_blend";
 #define IMAGE_BPP8g  7  // grayscale
 #define IMAGE_BPP2i  8
 #define IMAGE_BPP4i  9
-#define IMAGE_BPP8a 10  // grayscale with alpha channel; application layer only!!! 
-                        // kernel doesn't handle this image type, 
+#define IMAGE_BPP8a 10  // grayscale with alpha channel; application layer only!!!
+                        // kernel doesn't handle this image type,
                         // libimg can only create and destroy such images
+
+#define FLIP_VERTICAL   0x01
+#define FLIP_HORIZONTAL 0x02
+
+#define ROTATE_90_CW    0x01
+#define ROTATE_180      0x02
+#define ROTATE_270_CW   0x03
+#define ROTATE_90_CCW   ROTATE_270_CW
+#define ROTATE_270_CCW  ROTATE_90_CW
 
 struct libimg_image
 {
@@ -114,11 +123,12 @@ struct libimg_image
     h = ESDWORD[EDI+8];
     //next = ESDWORD[EDI+12];
     //previous = ESDWORD[EDI+16];
-    imgsrc = ESDWORD[EDI+24];       
-    //palette = ESDWORD[EDI+28];      
-    //extended = ESDWORD[EDI+32];     
-    //flags = ESDWORD[EDI+36];        
-    //delay = ESDWORD[EDI+40];    
+    type = ESDWORD[EDI+20];
+    imgsrc = ESDWORD[EDI+24];
+    //palette = ESDWORD[EDI+28];
+    //extended = ESDWORD[EDI+32];
+    //flags = ESDWORD[EDI+36];
+    //delay = ESDWORD[EDI+40];
     $pop edi
 }
 
@@ -183,7 +193,7 @@ struct libimg_image
 :dword encode_image(dword image_ptr, dword options, dword specific_options, dword* size) {
     img_encode stdcall(image_ptr, options, specific_options);
     ESDWORD[size] = ECX;
-    
+
     return EAX;
 }
 
@@ -192,7 +202,7 @@ struct libimg_image
     dword encoded_data=0;
     dword encoded_size=0;
     dword image_ptr = 0;
-    
+
     image_ptr = create_image(IMAGE_BPP24, _w, _h);
 
     if (!image_ptr) {
