@@ -17,17 +17,6 @@ from lib.logging import log
 from lib.network import download
 
 # TODO: Move into _tools/lib
-def get_file_directory(path):
-    path = path.replace("\\", "/")
-    if "/" in path:
-        folder = "/".join(path.split("/")[:-1])
-        if folder == "":
-            return "/" # It was a file in the root folder
-        return folder
-    else:
-        return "." # Just a filename, let's return current folder
-
-# TODO: Move into _tools/lib
 def run_qemu(start_dir = "workspace"):
     qemu_command = f"qemu-system-i386"
     flags = ""
@@ -39,7 +28,7 @@ def run_qemu(start_dir = "workspace"):
     flags += "-soundhw ac97 "
     if is_win32():
         qemu_full_path = shutil.which(qemu_command)
-        qemu_directory = get_file_directory(qemu_full_path)
+        qemu_directory = os.path.dirname(qemu_full_path)
         flags += f"-L {qemu_directory} "
     s = f"{qemu_command} {flags}"
     qemu_stdout = open(f"{start_dir}/qemu_stdout.log", "w")
