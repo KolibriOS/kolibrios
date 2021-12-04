@@ -58,8 +58,8 @@ if __name__ == "__main__":
     img.delete_path("DEMOS")
     img.delete_path("3D")
 
-    # Insert faster kernel if need
-    if len(sys.argv) > 1 and sys.argv[1] == "--fast":
+    # Insert faster kernel if no --compressed-kernel flag passed
+    if "--compressed-kernel" not in sys.argv:
         new_kernel = builds_get_contents("eng/data/kernel/trunk/kernel.mnt.pretest")
         img.add_file_path("KERNEL.MNT", new_kernel)
 
