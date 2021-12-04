@@ -16,8 +16,6 @@ import filecmp
 sys.path.append('test')
 import common
 
-enable_umka = True
-
 def log(s, end = "\n"):
     print(s, end = end, flush = True)
 
@@ -134,18 +132,6 @@ def collect_tests():
             tests.append(test_folder_path)
     return tests
 
-def collect_umka_tests():
-    tests = []
-
-    for test_file in os.listdir("umka/test"):
-        test_file_path = f"umka/test/{test_file}"
-        if not test_file.endswith(".t"):
-            continue
-        if not os.path.isfile(test_file_path):
-            continue
-        tests.append(test_file_path)
-    return tests
-
 def run_tests_serially_thread(test, root_dir):
     test_number = 1
     for test in tests:
@@ -171,95 +157,6 @@ def run_tests_serially(tests, root_dir):
     thread.start()
     return thread
 
-def gcc(fin, fout):
-    flags = "-m32 -std=c11 -g -O0 -fno-pie -w"
-    defines = "-D_FILE_OFFSET_BITS=64 -DNDEBUG -D_POSIX_C_SOURCE=200809L"
-    include = "-Iumka -Iumka/linux"
-    command = f"clang {flags} {defines} {include} -c {fin} -o {fout}"
-    print(command)
-    os.system(command)
-
-def build_umka_asm():
-    include = "INCLUDE=\"../../programs/develop/libraries/libcrash/hash\""
-    flags = "-dUEFI=1 -dextended_primary_loader=1 -dUMKA=1"
-    files = "umka/umka.asm umka/build/umka.o -s umka/build/umka.fas"
-    memory = "-m 2000000"
-    command = f"{include} fasm {flags} {files} {memory}"
-    if sys.platform != "win32":
-        print(command)
-        os.system(command)
-    else:
-        my_env = os.environ.copy()
-        my_env["INCLUDE"] = "../../programs/develop/libraries/libcrash/hash"
-        print(subprocess.check_output(f"fasm {flags} {files} {memory} -dwin32=1", shell = True, env = my_env))
-
-def build_umka():
-    if not enable_umka:
-        return
-    if os.path.exists("umka_shell.exe"):
-        return
-    os.makedirs("umka/build/linux", exist_ok = True)
-    os.makedirs("umka/build/win32", exist_ok = True)
-    sources = [ "umka_shell.c", 
-                "shell.c",
-                "vdisk.c",
-                "lodepng.c",
-                "getopt.c" ]
-    if sys.platform == "win32":
-        sources += [ "win32/pci.c", "win32/thread.c" ]
-    else:
-        sources += [ "linux/pci.c", "linux/thread.c" ]
-    sources = [f"umka/{f}" for f in sources]
-    objects = []
-    for source in sources:
-        object_path = source.replace("umka/", "umka/build/")
-        object_path = f"{object_path}.o"
-        gcc(source, object_path)
-        objects.append(object_path)
-    build_umka_asm()
-    objects.append("umka/build/umka.o")
-    objects = " ".join(objects)
-    if sys.platform != "win32":
-        ld_script = "-T umka/umka.ld"
-    else:
-        ld_script = ""
-    command = f"clang -m32 -fno-pie -o umka_shell.exe -static {ld_script} {objects}"
-    print(command)
-    os.system(command)
-    if not os.path.exists("umka_shell.exe"):
-        print("Could't compile umka_shell.exe")
-        exit()
-
-def create_relocated(root_dir, fname):
-    with open(fname, "rb") as f:
-        contents = f.read()
-    new_contents = contents.replace(b"../img", bytes(f"{root_dir}/umka/img", "ascii"))
-    new_contents = new_contents.replace(b"chess_image.rgb", bytes(f"{root_dir}/umka/test/chess_image.rgb", "ascii"))
-    outname = f"{fname}.o" # .o extension just to avoid indexing of the file
-    with open(outname, "wb") as f:
-        f.write(new_contents)
-    return outname
-
-def run_umka_test(root_dir, test_file_path):
-    test = create_relocated(root_dir, test_file_path)
-    ref_log = create_relocated(root_dir, f"{test_file_path[:-2]}.ref.log")
-    out_log = f"{test_file_path[:-2]}.out.log"
-    if sys.platform != "win32":
-        prefix = "./"
-    else:
-        prefix = ""
-    os.system(f"{prefix}umka_shell.exe < {test} > {out_log}")
-    if sys.platform == "win32":
-        with open(out_log, "rb") as f:
-            contents = f.read()
-        contents_no_crlf = contents.replace(b"\r\n", b"\n")
-        with open(out_log, "wb") as f:
-            f.write(contents_no_crlf)
-    if not filecmp.cmp(ref_log, out_log):
-        print(f"FAILURE: {test_file_path}\n", end = "")
-    else:
-        print(f"SUCCESS: {test_file_path}\n", end = "")
-
 if __name__ == "__main__":
     root_dir = os.getcwd()
 
@@ -269,12 +166,7 @@ if __name__ == "__main__":
     check_tools(tools)
     
     prepare_test_img()
-    build_umka()
     tests = collect_tests()
-    umka_tests = collect_umka_tests()
     serial_executor_thread = run_tests_serially(tests, root_dir)
-    if enable_umka:
-        for umka_test in umka_tests:
-            run_umka_test(root_dir, umka_test)
     serial_executor_thread.join()
 
