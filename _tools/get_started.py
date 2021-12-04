@@ -4,7 +4,9 @@
 
 import os
 
+from lib.network import download_if_not_exist
 from lib.logging import log
+from lib.constants import tools_cache, tools_cache_kolibri_img
 
 def generate_script_executing_script(script_to_execute):
     script_to_execute = script_to_execute.replace("\\", "\\\\")
@@ -35,3 +37,7 @@ if __name__ == "__main__":
     # Initalize tup here
     # TODO: Do anything if tup doesn't exist
     os.system("tup init")
+    # Download IMG to _tools/cache
+    os.makedirs(tools_cache, exist_ok = True)
+    img_url = "http://builds.kolibrios.org/eng/data/data/kolibri.img"
+    download_if_not_exist(img_url, tools_cache_kolibri_img)

@@ -15,6 +15,7 @@ from lib.makeflop import Floppy
 from lib.platform import is_win32, path
 from lib.logging import log
 from lib.network import download_if_not_exist
+from lib.constants import tools_cache_kolibri_img
 
 # TODO: Move into _tools/lib
 def run_qemu(start_dir = "workspace"):
@@ -44,11 +45,8 @@ if __name__ == "__main__":
 
     os.makedirs("workspace", exist_ok = True)
 
-    img_url = "http://builds.kolibrios.org/eng/data/data/kolibri.img"
-    download_if_not_exist(img_url, "workspace/kolibri.unmodified.img")
-
     # Create a copy of IMG
-    shutil.copyfile("workspace/kolibri.unmodified.img", "workspace/kolibri.img")
+    shutil.copyfile(tools_cache_kolibri_img, "workspace/kolibri.img")
 
     # Open the IMG
     with open("workspace/kolibri.img", "rb") as img:
