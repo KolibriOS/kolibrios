@@ -67,8 +67,8 @@ align 4
 ; Push the received ethernet packet onto the ethernet input queue.
 ;
 ;  Input:
-;    [esp + 4] = Pointer to buffer
-;    [esp + 8] = Return address (yes, really)
+;    [esp] = Pointer to buffer
+;    [esp + 4] = Return address (yes, really)
 ;
 ;  Example:
 ;    push .retaddr
