@@ -21,7 +21,8 @@ def build():
 def clean():
     output_file_list = parse_tupfile_outputs("Tupfile.lua")
     for output_file in output_file_list:
-        os.remove(output_file)
+        if os.path.exists(output_file):
+            os.remove(output_file)
 
 def main(argv):
     if len(argv) == 2 and argv[1] == "clean":
