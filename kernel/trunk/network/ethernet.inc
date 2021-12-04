@@ -62,17 +62,18 @@ macro   eth_init {
 
 }
 
-;-----------------------------------------------------------------;
-;                                                                 ;
-; eth_input: This function is called by ethernet drivers.         ;
-; Push the received ethernet packet onto the ethernet input queue.;
-;                                                                 ;
-;  IN:  [esp] = Pointer to buffer                                 ;
-;                                                                 ;
-;  OUT: /                                                         ;
-;                                                                 ;
-;-----------------------------------------------------------------;
 align 4
+; This function is called by ethernet drivers.
+; Push the received ethernet packet onto the ethernet input queue.
+;
+;  Input:
+;    [esp + 4] = Pointer to buffer
+;    [esp + 8] = Return address (yes, really)
+;
+;  Example:
+;    push .retaddr
+;    push buf_addr
+;    jmp eth_input
 eth_input:
 
         pop     eax
