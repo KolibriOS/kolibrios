@@ -3,6 +3,8 @@ import os
 import sys
 import shutil
 
+import workspace.build
+
 if len(sys.argv) < 2 or sys.argv[1] != "--remove-everything":
     print(f"Please call `{sys.argv[0]} --remove-everything` if you really want to remove all your workspace files")
     exit()
@@ -13,7 +15,8 @@ shutil.rmtree("workspace", ignore_errors = True)
 # Remove tup database
 shutil.rmtree(".tup", ignore_errors = True)
 
-# TODO: Make build.py remove the stuff it built
+# Make build.py remove the stuff it built
+workspace.build.clean()
 
 # Remove files copied from _tools/workspace
 tools = os.path.dirname(os.path.realpath(__file__))

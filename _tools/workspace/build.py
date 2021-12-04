@@ -7,13 +7,27 @@ sys.path.append(path_to_tools)
 
 from lib.tupfile_parser import parse_tupfile_outputs
 
-def build():
-    os.system("tup")
-    outputs = parse_tupfile_outputs("Tupfile.lua")
-    for name in outputs:
+def get_executable_file(output_file_list):
+    for name in output_file_list:
         if name.endswith(".inc"):
             continue
         return name
 
+def build():
+    os.system("tup")
+    output_file_list = parse_tupfile_outputs("Tupfile.lua")
+    return get_executable_file(output_file_list)
+
+def clean():
+    output_file_list = parse_tupfile_outputs("Tupfile.lua")
+    for output_file in output_file_list:
+        os.remove(output_file)
+
+def main(argv):
+    if len(argv) == 2 and argv[1] == "clean":
+        clean()
+    else:
+        build()
+
 if __name__ == "__main__":
-    build()
+    main(sys.argv)
