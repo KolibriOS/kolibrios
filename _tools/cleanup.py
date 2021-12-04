@@ -5,10 +5,6 @@ import shutil
 
 import workspace.build
 
-if len(sys.argv) < 2 or sys.argv[1] != "--remove-everything":
-    print(f"Please call `{sys.argv[0]} --remove-everything` if you really want to remove all your workspace files")
-    exit()
-
 # Remove workspace folder
 shutil.rmtree("workspace", ignore_errors = True)
 
