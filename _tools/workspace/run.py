@@ -14,7 +14,6 @@ from workspace.build import build
 from lib.makeflop import Floppy
 from lib.platform import is_win32, path
 from lib.logging import log
-from lib.network import download_if_not_exist
 from lib.constants import tools_cache_kolibri_img
 
 # TODO: Move into _tools/lib

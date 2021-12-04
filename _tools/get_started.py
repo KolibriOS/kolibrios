@@ -4,7 +4,7 @@
 
 import os
 
-from lib.network import download_if_not_exist
+from lib.network import download
 from lib.logging import log
 from lib.constants import tools_cache, tools_cache_kolibri_img
 
@@ -40,4 +40,4 @@ if __name__ == "__main__":
     # Download IMG to _tools/cache
     os.makedirs(tools_cache, exist_ok = True)
     img_url = "http://builds.kolibrios.org/eng/data/data/kolibri.img"
-    download_if_not_exist(img_url, tools_cache_kolibri_img)
+    download(img_url, tools_cache_kolibri_img, skip_exist = True)
