@@ -4,21 +4,6 @@ import argparse
 import sys
 import pickle
 
-# Parameters
-# Path to doxygen folder to make doxygen files in: -o <path>
-doxygen_src_path = 'docs/doxygen'
-# Remove generated doxygen files: --clean
-clean_generated_stuff = False
-# Dump all defined symbols: --dump
-dump_symbols = False
-# Print symbol stats: --stats
-print_stats = False
-# Do not write warnings file: --nowarn
-enable_warnings = True
-
-# Constants
-link_root = "http://websvn.kolibrios.org/filedetails.php?repname=Kolibri+OS&path=/kernel/trunk"
-
 # fasm keywords
 keywords = [
     "align", "equ", "org", "while", "load", "store", "times", "repeat", 
@@ -975,6 +960,8 @@ def handle_file(handled_files, asm_file_name, subdir = "."):
 	if should_get_declarations and not clean_generated_stuff:
 		get_declarations(asm_file_contents, asm_file_name)
 
+link_root = "http://websvn.kolibrios.org/filedetails.php?repname=Kolibri+OS&path=/kernel/trunk"
+
 # Dict where an identifier is assicoated with a string
 # The string contains characters specifying flags
 # Available flags:
@@ -1000,6 +987,18 @@ for fasm_type in fasm_types:
 
 # Warning list
 warnings = ""
+
+# Parameters
+# Path to doxygen folder to make doxygen files in: -o <path>
+doxygen_src_path = 'docs/doxygen'
+# Remove generated doxygen files: --clean
+clean_generated_stuff = False
+# Dump all defined symbols: --dump
+dump_symbols = False
+# Print symbol stats: --stats
+print_stats = False
+# Do not write warnings file: --nowarn
+enable_warnings = True
 
 # Parse arguments
 parser = argparse.ArgumentParser()
