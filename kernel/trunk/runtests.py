@@ -16,6 +16,8 @@ import filecmp
 sys.path.append('test')
 import common
 
+use_umka = False
+
 def log(s, end = "\n"):
     print(s, end = end, flush = True)
 
@@ -157,6 +159,77 @@ def run_tests_serially(tests, root_dir):
     thread.start()
     return thread
 
+def build_umka_asm(object_output_dir):
+    umka_o = f"{object_output_dir}/umka.o"
+    kolibrios_folder = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+    env = os.environ
+    env["INCLUDE"] = ""
+    env["INCLUDE"] += f"{kolibrios_folder}/kernel/trunk;"
+    env["INCLUDE"] += f"{kolibrios_folder}/programs/develop/libraries/libcrash/hash"
+    stdout = subprocess.check_output(f"fasm -dUEFI=1 -dextended_primary_loader=1 -dUMKA=1 umka/umka.asm umka/build/umka.o -s umka/build/umka.fas -m 2000000", shell = True, env = env)
+    print(stdout)
+    return umka_o
+
+def cc(src, obj, include_path):
+    command = "clang "
+    command += "-Wno-everything -std=c11 -g -O0 -fno-pie -m32 -c "
+    command += "-D_FILE_OFFSET_BITS=64 -DNDEBUG -masm=intel -D_POSIX_C_SOURCE=200809L "
+    command += f"-I {include_path} {src} -o {obj}"
+    if os.system(command) != 0:
+        exit()
+
+def link(objects):
+    command = "clang "
+    command += "-Wno-everything -no-pie -m32 -o umka_shell -static -T umka/umka.ld "
+    command += " ".join(objects)
+    if os.system(command) != 0:
+        exit()
+
+def build_umka():
+    if not use_umka:
+        return
+
+    os.makedirs("umka/build", exist_ok = True)
+
+    c_sources = [
+        "umka_shell.c",
+        "shell.c",
+        "trace.c",
+        "trace_lbr.c",
+        "vdisk.c",
+        "vnet.c",
+        "lodepng.c",
+        "linux/pci.c",
+        "linux/thread.c",
+        "util.c",
+    ]
+
+    src_obj_pairs = [ (f"umka/{source}", f"umka/{source}.o") for source in c_sources ]
+
+    for src, obj in src_obj_pairs:
+        cc(src, obj, "umka/linux")
+
+    umka_o = build_umka_asm("umka/build")
+
+    objects = [ obj for src, obj in src_obj_pairs ] + [ umka_o ]
+    link(objects)
+
+    os.chdir("umka/test")
+    for test in [ t for t in os.listdir(".") if t.endswith(".t") ]:
+        out_log = f"{test[:-2]}.out.log"
+        ref_log = f"{test[:-2]}.ref.log"
+        cmd_umka = f"../../umka_shell < {test} > {out_log}"
+        print(cmd_umka)
+        os.system(cmd_umka)
+        cmd_cmp = f"cmp {out_log} {ref_log}"
+        print(cmd_cmp)
+        if os.system(cmd_cmp) != 0:
+            print("FAILURE")
+            exit()
+    os.chdir("../../")
+    print("SUCCESS")
+    exit()
+
 if __name__ == "__main__":
     root_dir = os.getcwd()
 
@@ -166,6 +239,7 @@ if __name__ == "__main__":
     check_tools(tools)
     
     prepare_test_img()
+    build_umka()
     tests = collect_tests()
     serial_executor_thread = run_tests_serially(tests, root_dir)
     serial_executor_thread.join()
