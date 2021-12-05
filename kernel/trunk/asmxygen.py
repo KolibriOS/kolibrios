@@ -192,6 +192,9 @@ class LegacyAsmReader:
 		self.line_idx = 0
 		self.i = 0
 
+	def currline(self):
+		return self.lines[self.line_idx]
+
 	def curr(self):
 		try: return self.lines[self.line_idx][self.i]
 		except: return ''
@@ -298,12 +301,17 @@ class AsmReaderReadingComments(AsmReaderRecognizingStrings):
 		return c
 
 	def nextline(self):
+		prev_line = self.currline()
 		super().nextline()
 		# If the line we leave was not a comment-only line
 		# then forget the collected comment
 		# Otherwise the collected comment should be complemented by comment from next line in step()
 		if self.status_has_code:
-			self.comment = ''
+			# But we should preserve comment for the next line
+			# If previous line set align (cause many functions re documented
+			# right before align set, not before their labels)
+			if not prev_line.startswith("align "):
+				self.comment = ''
 		# Reset the line status (now it's the status of the new line)
 		self.status_reset()
 		# Set new status for this line according to the first character in the line
