@@ -179,23 +179,6 @@ fasm_types = [
 	"du",
 ]
 
-# Dict where an identifier is assicoated with a string
-# The string contains characters specifying flags
-# Available flags:
-#  k - Keyword
-#  m - Macro name
-#  t - fasm data Type name (db, rq, etc.)
-#  s - Struct type name
-#  e - equated constant (name equ value)
-#  = - set constants (name = value)
-ID_KIND_KEYWORD = 'k'
-ID_KIND_MACRO_NAME = 'm'
-ID_KIND_FASM_TYPE = 't'
-ID_KIND_STRUCT_NAME = 's'
-ID_KIND_EQUATED_CONSTANT = 'e'
-ID_KIND_SET_CONSTANT = '='
-id2kind = {}
-
 # Add kind flag to identifier in id2kind
 def id_add_kind(identifier, kind):
 	if identifier not in id2kind:
@@ -214,34 +197,6 @@ def id_get_kind(identifier):
 		return id2kind[identifier]
 	else:
 		return ''
-
-for keyword in keywords:
-	id_add_kind(keyword, ID_KIND_KEYWORD)
-
-for fasm_type in fasm_types:
-	id_add_kind(fasm_type, ID_KIND_FASM_TYPE)
-
-# Warning list
-warnings = ""
-
-# Parse arguments
-parser = argparse.ArgumentParser()
-parser.add_argument("-o", help="Doxygen output folder")
-parser.add_argument("--clean", help="Remove generated files", action="store_true")
-parser.add_argument("--dump", help="Dump all defined symbols", action="store_true")
-parser.add_argument("--stats", help="Print symbol stats", action="store_true")
-parser.add_argument("--nowarn", help="Do not write warnings file", action="store_true")
-parser.add_argument("--noemit", help="Do not emit doxygen files (for testing)", action="store_true")
-args = parser.parse_args()
-doxygen_src_path = args.o if args.o else 'docs/doxygen'
-clean_generated_stuff = args.clean
-dump_symbols = args.dump
-print_stats = args.stats
-enable_warnings = not args.nowarn
-noemit = args.noemit
-
-# Variables, functions, labels, macros, structure types
-elements = []
 
 class LegacyAsmReader:
 	def __init__(self, file):
@@ -381,8 +336,6 @@ class AsmReaderFetchingIdentifiers(AsmReaderReadingComments):
 class AsmReader(AsmReaderFetchingIdentifiers):
 	def __init__(self, file):
 		super().__init__(file)
-
-created_files = []
 
 class AsmElement:
 	def __init__(self, location, name, comment):
@@ -1021,6 +974,53 @@ def handle_file(handled_files, asm_file_name, subdir = "."):
 	# Only collect declarations from the file if it wasn't parsed before
 	if should_get_declarations and not clean_generated_stuff:
 		get_declarations(asm_file_contents, asm_file_name)
+
+# Dict where an identifier is assicoated with a string
+# The string contains characters specifying flags
+# Available flags:
+#  k - Keyword
+#  m - Macro name
+#  t - fasm data Type name (db, rq, etc.)
+#  s - Struct type name
+#  e - equated constant (name equ value)
+#  = - set constants (name = value)
+ID_KIND_KEYWORD = 'k'
+ID_KIND_MACRO_NAME = 'm'
+ID_KIND_FASM_TYPE = 't'
+ID_KIND_STRUCT_NAME = 's'
+ID_KIND_EQUATED_CONSTANT = 'e'
+ID_KIND_SET_CONSTANT = '='
+id2kind = {}
+
+for keyword in keywords:
+	id_add_kind(keyword, ID_KIND_KEYWORD)
+
+for fasm_type in fasm_types:
+	id_add_kind(fasm_type, ID_KIND_FASM_TYPE)
+
+# Warning list
+warnings = ""
+
+# Parse arguments
+parser = argparse.ArgumentParser()
+parser.add_argument("-o", help="Doxygen output folder")
+parser.add_argument("--clean", help="Remove generated files", action="store_true")
+parser.add_argument("--dump", help="Dump all defined symbols", action="store_true")
+parser.add_argument("--stats", help="Print symbol stats", action="store_true")
+parser.add_argument("--nowarn", help="Do not write warnings file", action="store_true")
+parser.add_argument("--noemit", help="Do not emit doxygen files (for testing)", action="store_true")
+args = parser.parse_args()
+doxygen_src_path = args.o if args.o else 'docs/doxygen'
+clean_generated_stuff = args.clean
+dump_symbols = args.dump
+print_stats = args.stats
+enable_warnings = not args.nowarn
+noemit = args.noemit
+
+# Variables, functions, labels, macros, structure types
+elements = []
+
+created_files = []
 
 kernel_files = []
 
