@@ -3,6 +3,8 @@ import os
 import argparse
 import sys
 import pickle
+import hashlib
+import difflib
 
 # fasm keywords
 keywords = [
@@ -322,6 +324,16 @@ class AsmReader(AsmReaderFetchingIdentifiers):
 	def __init__(self, file):
 		super().__init__(file)
 
+def append_file(full_path, contents):
+	if debug_mode:
+		if full_path not in output_files:
+			output_files[full_path] = ""
+		output_files[full_path] += contents
+	else:
+		f = open(full_path, "a")
+		f.write(contents)
+		f.close()
+
 class AsmElement:
 	def __init__(self, location, name, comment):
 		global warnings
@@ -373,10 +385,9 @@ class AsmElement:
 			created_files.append(full_path)
 		# Create directories need for the file
 		os.makedirs(os.path.dirname(full_path), exist_ok=True)
-		f = open(full_path, "a")
 		contents = ''.join([i if ord(i) < 128 else '?' for i in contents])
-		f.write(contents)
-		f.close()
+
+		append_file(full_path, contents)
 
 class AsmVariable(AsmElement):
 	def __init__(self, location, name, comment, type, init):
@@ -1009,6 +1020,7 @@ if __name__ == "__main__":
 	parser.add_argument("--stats", help="Print symbol stats", action="store_true")
 	parser.add_argument("--nowarn", help="Do not write warnings file", action="store_true")
 	parser.add_argument("--noemit", help="Do not emit doxygen files (for testing)", action="store_true")
+	parser.add_argument("--debug", help="Show hashes of files (for testing)", action="store_true")
 	args = parser.parse_args()
 	doxygen_src_path = args.o if args.o else 'docs/doxygen'
 	clean_generated_stuff = args.clean
@@ -1016,13 +1028,13 @@ if __name__ == "__main__":
 	print_stats = args.stats
 	enable_warnings = not args.nowarn
 	noemit = args.noemit
+	debug_mode = args.debug
 
 	# Variables, functions, labels, macros, structure types
 	elements = []
-
 	created_files = []
-
 	kernel_files = []
+	output_files = {} # If --debug then all the files are written here
 
 	# Load remembered list of symbols
 	if os.path.isfile('asmxygen.elements.pickle'):
@@ -1092,3 +1104,18 @@ if __name__ == "__main__":
 
 	if enable_warnings:
 		open('asmxygen.txt', "w", encoding = "utf-8").write(warnings)
+
+	if debug_mode:
+		hash_per_file = ""
+		for file in output_files:
+			h = hashlib.sha1(bytes(output_files[file], "ascii")).hexdigest()
+			hash_per_file += f"{file}: {h}\n"
+		if not os.path.exists("asmxygen_hash_per_file.txt"):
+			open("asmxygen_hash_per_file.txt", "w").write(hash_per_file)
+			print("NEW")
+		else:
+			reference_hash_per_file = open("asmxygen_hash_per_file.txt").read()
+			if reference_hash_per_file != hash_per_file:
+				print(''.join(difflib.ndiff(reference_hash_per_file, hash_per_file)))
+			else:
+				print("SUCCESS")
