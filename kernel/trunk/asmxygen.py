@@ -960,134 +960,135 @@ def handle_file(handled_files, asm_file_name, subdir = "."):
 	if should_get_declarations and not clean_generated_stuff:
 		get_declarations(asm_file_contents, asm_file_name)
 
-link_root = "http://websvn.kolibrios.org/filedetails.php?repname=Kolibri+OS&path=/kernel/trunk"
+if __name__ == "__main__":
+	link_root = "http://websvn.kolibrios.org/filedetails.php?repname=Kolibri+OS&path=/kernel/trunk"
 
-# Dict where an identifier is assicoated with a string
-# The string contains characters specifying flags
-# Available flags:
-#  k - Keyword
-#  m - Macro name
-#  t - fasm data Type name (db, rq, etc.)
-#  s - Struct type name
-#  e - equated constant (name equ value)
-#  = - set constants (name = value)
-ID_KIND_KEYWORD = 'k'
-ID_KIND_MACRO_NAME = 'm'
-ID_KIND_FASM_TYPE = 't'
-ID_KIND_STRUCT_NAME = 's'
-ID_KIND_EQUATED_CONSTANT = 'e'
-ID_KIND_SET_CONSTANT = '='
-id2kind = {}
+	# Dict where an identifier is assicoated with a string
+	# The string contains characters specifying flags
+	# Available flags:
+	#  k - Keyword
+	#  m - Macro name
+	#  t - fasm data Type name (db, rq, etc.)
+	#  s - Struct type name
+	#  e - equated constant (name equ value)
+	#  = - set constants (name = value)
+	ID_KIND_KEYWORD = 'k'
+	ID_KIND_MACRO_NAME = 'm'
+	ID_KIND_FASM_TYPE = 't'
+	ID_KIND_STRUCT_NAME = 's'
+	ID_KIND_EQUATED_CONSTANT = 'e'
+	ID_KIND_SET_CONSTANT = '='
+	id2kind = {}
 
-for keyword in keywords:
-	id_add_kind(keyword, ID_KIND_KEYWORD)
+	for keyword in keywords:
+		id_add_kind(keyword, ID_KIND_KEYWORD)
 
-for fasm_type in fasm_types:
-	id_add_kind(fasm_type, ID_KIND_FASM_TYPE)
+	for fasm_type in fasm_types:
+		id_add_kind(fasm_type, ID_KIND_FASM_TYPE)
 
-# Warning list
-warnings = ""
+	# Warning list
+	warnings = ""
 
-# Parameters
-# Path to doxygen folder to make doxygen files in: -o <path>
-doxygen_src_path = 'docs/doxygen'
-# Remove generated doxygen files: --clean
-clean_generated_stuff = False
-# Dump all defined symbols: --dump
-dump_symbols = False
-# Print symbol stats: --stats
-print_stats = False
-# Do not write warnings file: --nowarn
-enable_warnings = True
+	# Parameters
+	# Path to doxygen folder to make doxygen files in: -o <path>
+	doxygen_src_path = 'docs/doxygen'
+	# Remove generated doxygen files: --clean
+	clean_generated_stuff = False
+	# Dump all defined symbols: --dump
+	dump_symbols = False
+	# Print symbol stats: --stats
+	print_stats = False
+	# Do not write warnings file: --nowarn
+	enable_warnings = True
 
-# Parse arguments
-parser = argparse.ArgumentParser()
-parser.add_argument("-o", help="Doxygen output folder")
-parser.add_argument("--clean", help="Remove generated files", action="store_true")
-parser.add_argument("--dump", help="Dump all defined symbols", action="store_true")
-parser.add_argument("--stats", help="Print symbol stats", action="store_true")
-parser.add_argument("--nowarn", help="Do not write warnings file", action="store_true")
-parser.add_argument("--noemit", help="Do not emit doxygen files (for testing)", action="store_true")
-args = parser.parse_args()
-doxygen_src_path = args.o if args.o else 'docs/doxygen'
-clean_generated_stuff = args.clean
-dump_symbols = args.dump
-print_stats = args.stats
-enable_warnings = not args.nowarn
-noemit = args.noemit
+	# Parse arguments
+	parser = argparse.ArgumentParser()
+	parser.add_argument("-o", help="Doxygen output folder")
+	parser.add_argument("--clean", help="Remove generated files", action="store_true")
+	parser.add_argument("--dump", help="Dump all defined symbols", action="store_true")
+	parser.add_argument("--stats", help="Print symbol stats", action="store_true")
+	parser.add_argument("--nowarn", help="Do not write warnings file", action="store_true")
+	parser.add_argument("--noemit", help="Do not emit doxygen files (for testing)", action="store_true")
+	args = parser.parse_args()
+	doxygen_src_path = args.o if args.o else 'docs/doxygen'
+	clean_generated_stuff = args.clean
+	dump_symbols = args.dump
+	print_stats = args.stats
+	enable_warnings = not args.nowarn
+	noemit = args.noemit
 
-# Variables, functions, labels, macros, structure types
-elements = []
+	# Variables, functions, labels, macros, structure types
+	elements = []
 
-created_files = []
+	created_files = []
 
-kernel_files = []
+	kernel_files = []
 
-# Load remembered list of symbols
-if os.path.isfile('asmxygen.elements.pickle'):
-	print('Reading existing dump of symbols')
-	(elements, id2kind) = pickle.load(open('asmxygen.elements.pickle', 'rb'))
+	# Load remembered list of symbols
+	if os.path.isfile('asmxygen.elements.pickle'):
+		print('Reading existing dump of symbols')
+		(elements, id2kind) = pickle.load(open('asmxygen.elements.pickle', 'rb'))
 
-handle_file(kernel_files, "./kernel.asm");
+	handle_file(kernel_files, "./kernel.asm");
 
-if dump_symbols:
-	stdout = sys.stdout
-	sys.stdout = open('asmxygen.dump.txt', 'w', encoding = 'utf-8')
-	for asm_element in elements:
-		asm_element.dump()
-	sys.stdout = stdout
+	if dump_symbols:
+		stdout = sys.stdout
+		sys.stdout = open('asmxygen.dump.txt', 'w', encoding = 'utf-8')
+		for asm_element in elements:
+			asm_element.dump()
+		sys.stdout = stdout
 
-if clean_generated_stuff:
-	kernel_files_set = set(kernel_files)
-	for file in kernel_files:
-		doxygen_file = f"{doxygen_src_path}/{file}"
-		if (os.path.isfile(doxygen_file)):
-			print(f"Removing {file}... ", end = '')
-			os.remove(doxygen_file)
-			print("Done.")
-elif not noemit:
-	print(f"Writing doumented sources to {doxygen_src_path}")
+	if clean_generated_stuff:
+		kernel_files_set = set(kernel_files)
+		for file in kernel_files:
+			doxygen_file = f"{doxygen_src_path}/{file}"
+			if (os.path.isfile(doxygen_file)):
+				print(f"Removing {file}... ", end = '')
+				os.remove(doxygen_file)
+				print("Done.")
+	elif not noemit:
+		print(f"Writing doumented sources to {doxygen_src_path}")
 
-	i = 0
-	new_elements = [x for x in elements if x.new]
-	for element in new_elements:
-		print(f"[{i + 1}/{len(new_elements)}] Emitting {element.name} from {element.location}")
-		element.emit(doxygen_src_path)
-		i += 1
+		i = 0
+		new_elements = [x for x in elements if x.new]
+		for element in new_elements:
+			print(f"[{i + 1}/{len(new_elements)}] Emitting {element.name} from {element.location}")
+			element.emit(doxygen_src_path)
+			i += 1
 
-	print(f"Writing dump of symbols to asmxygen.elements.pickle")
+		print(f"Writing dump of symbols to asmxygen.elements.pickle")
 
-	# Now when the new elements already was written, there's no new elements anymore
-	for element in elements:
-		element.new = False
-	pickle.dump((elements, id2kind), open('asmxygen.elements.pickle', 'wb'))
+		# Now when the new elements already was written, there's no new elements anymore
+		for element in elements:
+			element.new = False
+		pickle.dump((elements, id2kind), open('asmxygen.elements.pickle', 'wb'))
 
-if print_stats:
-	var_count = 0
-	mac_count = 0
-	lab_count = 0
-	fun_count = 0
-	uni_count = 0
-	str_count = 0
-	for element in elements:
-		if type(element) == AsmVariable:
-			var_count += 1
-		elif type(element) == AsmMacro:
-			mac_count += 1
-		elif type(element) == AsmLabel:
-			lab_count += 1
-		elif type(element) == AsmFunction:
-			fun_count += 1
-		elif type(element) == AsmUnion:
-			uni_count += 1
-		elif type(element) == AsmStruct:
-			str_count += 1
-	print(f'Parsed variable count: {var_count}')
-	print(f'Parsed macro count: {mac_count}')
-	print(f'Parsed label count: {lab_count}')
-	print(f'Parsed function count: {fun_count}')
-	print(f'Parsed union type count: {uni_count}')
-	print(f'Parsed structure type count: {str_count}')
+	if print_stats:
+		var_count = 0
+		mac_count = 0
+		lab_count = 0
+		fun_count = 0
+		uni_count = 0
+		str_count = 0
+		for element in elements:
+			if type(element) == AsmVariable:
+				var_count += 1
+			elif type(element) == AsmMacro:
+				mac_count += 1
+			elif type(element) == AsmLabel:
+				lab_count += 1
+			elif type(element) == AsmFunction:
+				fun_count += 1
+			elif type(element) == AsmUnion:
+				uni_count += 1
+			elif type(element) == AsmStruct:
+				str_count += 1
+		print(f'Parsed variable count: {var_count}')
+		print(f'Parsed macro count: {mac_count}')
+		print(f'Parsed label count: {lab_count}')
+		print(f'Parsed function count: {fun_count}')
+		print(f'Parsed union type count: {uni_count}')
+		print(f'Parsed structure type count: {str_count}')
 
-if enable_warnings:
-	open('asmxygen.txt', "w", encoding = "utf-8").write(warnings)
+	if enable_warnings:
+		open('asmxygen.txt', "w", encoding = "utf-8").write(warnings)
