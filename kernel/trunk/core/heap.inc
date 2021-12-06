@@ -1478,6 +1478,7 @@ proc shmem_close stdcall, name:dword
         test    eax, eax
         jz      .fail
 
+        push    ebx ; Added
         push    esi
         push    edi
         pushfd
@@ -1485,14 +1486,16 @@ proc shmem_close stdcall, name:dword
 
         mov     esi, [current_slot]
         add     esi, APP_OBJ_OFFSET
+        mov     ebx, esi ; Fixed endless loop bug with not existing name (part 1)
 .next:
         mov     eax, [esi + APPOBJ.fd]
         test    eax, eax
         jz      @F
 
-        cmp     eax, esi
+        cmp     eax, ebx ;esi ; Fixed endless loop bug with not existing name (part 2)
+        je      @F            ; Small optimization
         mov     esi, eax
-        je      @F
+        ;je      @F
 
         cmp     [eax + SMAP.magic], 'SMAP'
         jne     .next
@@ -1514,6 +1517,7 @@ proc shmem_close stdcall, name:dword
         popfd
         pop     edi
         pop     esi
+        pop     ebx ; Added
 .fail:
         ret
 endp
