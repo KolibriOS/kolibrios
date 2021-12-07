@@ -18,29 +18,35 @@ import common
 
 use_umka = False
 
-def log(s, end = "\n"):
-    print(s, end = end, flush = True)
 
-def execute(s, mute = False):
+def log(s, end="\n"):
+    print(s, end=end, flush=True)
+
+
+def execute(s, mute=False):
     mute = ">/dev/null" if mute else ""
     code = os.system(f"{s}{mute}")
     if code:
         print(f"Command returned {code}: \"{s}\"")
         exit(-1)
 
-def stage(name, command, mute = False):
-    print(f"{name}... ", end = "")
-    execute(command, mute = mute)
+
+def stage(name, command, mute=False):
+    print(f"{name}... ", end="")
+    execute(command, mute=mute)
     print("Done.")
 
+
 def download(link, path):
-    log(f"Downloading {path}... ", end = "")
+    log(f"Downloading {path}... ", end="")
     urllib.request.urlretrieve(link, path)
     log("Done.")
 
+
 def tool_exists(name):
     assert(type(name) == str)
-    return which(name) != None
+    return which(name) is not None
+
 
 def check_tools(tools):
     assert(type(tools) == tuple)
@@ -49,7 +55,7 @@ def check_tools(tools):
         assert(len(name_package_pair) == 2)
         assert(type(name_package_pair[0]) == str)
         assert(type(name_package_pair[1]) == str)
-    
+
     not_exists = []
     for name, package in tools:
         if not tool_exists(name):
@@ -69,7 +75,8 @@ def check_tools(tools):
                 max_name_len = len(name)
 
         def draw_row(name, package):
-            log(f" | {name.ljust(max_name_len)} | {package.ljust(max_package_name_len)} |")
+            log((f" | {name.ljust(max_name_len)}" +
+                 f" | {package.ljust(max_package_name_len)} |"))
 
         def draw_line():
             log(f" +-{'-' * max_name_len}-+-{'-' * max_package_name_len}-+")
@@ -82,16 +89,18 @@ def check_tools(tools):
         draw_line()
         exit()
 
+
 def prepare_test_img():
     # TODO: Always recompile the kernel (after build system is done?)
     # Get IMG
     if not os.path.exists("kolibri_test.img"):
         if len(sys.argv) == 1:
-            download("http://builds.kolibrios.org/eng/data/data/kolibri.img", "kolibri_test.img")
+            download("http://builds.kolibrios.org/eng/data/data/kolibri.img",
+                     "kolibri_test.img")
         else:
             builds_eng = sys.argv[1]
             execute(f"cp {builds_eng}/data/data/kolibri.img kolibri_test.img")
-    
+
     # Open the IMG
     with open("kolibri_test.img", "rb") as img:
         img_data = img.read()
@@ -101,23 +110,30 @@ def prepare_test_img():
     img.delete_path("GAMES")
     img.delete_path("DEMOS")
     img.delete_path("3D")
-    
+
     # Get test kernel
     if not os.path.exists("kernel.mnt.pretest"):
         if len(sys.argv) == 1:
             with open("lang.inc", "w") as lang_inc:
                 lang_inc.write("lang fix en\n")
             execute("fasm bootbios.asm bootbios.bin.pretest -dpretest_build=1")
-            execute("fasm -m 65536 kernel.asm kernel.mnt.pretest -dpretest_build=1 -ddebug_com_base=0xe9")
+            command = "fasm "
+            command += "-dpretest_build=1 -ddebug_com_base=0xe9 "
+            command += "-m 65536 "
+            command += "kernel.asm kernel.mnt.pretest"
+            execute(command)
         else:
             builds_eng = sys.argv[1]
-            execute(f"cp {builds_eng}/data/kernel/trunk/kernel.mnt.pretest kernel.mnt.pretest", mute = True)
-    
+            kernel_mnt_pretest_subpath = "data/kernel/trunk/kernel.mnt.pretest"
+            kernel_mnt_pretest = f"{builds_eng}/{kernel_mnt_pretest_subpath}"
+            execute(f"cp {kernel_mnt_pretest} kernel.mnt.pretest", mute=True)
+
     # Put the kernel into IMG
     with open("kernel.mnt.pretest", "rb") as kernel_mnt_pretest:
         kernel_mnt_pretest_data = kernel_mnt_pretest.read()
     img.add_file_path("KERNEL.MNT", kernel_mnt_pretest_data)
     img.save("kolibri_test.img")
+
 
 def collect_tests():
     tests = []
@@ -134,15 +150,17 @@ def collect_tests():
             tests.append(test_folder_path)
     return tests
 
+
 def run_tests_serially_thread(test, root_dir):
     test_number = 1
     for test in tests:
         test_dir = f"{root_dir}/{test}"
-    
-        print(f"[{test_number}/{len(tests)}] {test}... ", end = "", flush=True)
+
+        print(f"[{test_number}/{len(tests)}] {test}... ", end="", flush=True)
         start = timeit.default_timer()
         try:
-            SourceFileLoader("test", f"{test_dir}/test.py").load_module().run(root_dir, test_dir)
+            loader = SourceFileLoader("test", f"{test_dir}/test.py")
+            loader.load_module().run(root_dir, test_dir)
         except common.TestTimeoutException:
             result = "TIMEOUT"
         except common.TestFailureException:
@@ -151,45 +169,59 @@ def run_tests_serially_thread(test, root_dir):
             result = "SUCCESS"
         finish = timeit.default_timer()
         print(f"{result} ({finish - start:.2f} seconds)")
-    
+
         test_number += 1
 
+
 def run_tests_serially(tests, root_dir):
-    thread = Thread(target = run_tests_serially_thread, args = (tests, root_dir))
+    thread = Thread(target=run_tests_serially_thread, args=(tests, root_dir))
     thread.start()
     return thread
 
+
 def build_umka_asm(object_output_dir):
     umka_o = f"{object_output_dir}/umka.o"
-    kolibrios_folder = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+    kolibri_kernel_trunk_runtests_py = os.path.abspath(__file__)
+    kolibri_kernel_trunk = os.path.dirname(kolibri_kernel_trunk_runtests_py)
+    kolibri_kernel = os.path.dirname(kolibri_kernel_trunk)
+    kolibrios_folder = os.path.dirname(kolibri_kernel)
     env = os.environ
+    libcrash = "programs/develop/libraries/libcrash/hash"
     env["INCLUDE"] = ""
     env["INCLUDE"] += f"{kolibrios_folder}/kernel/trunk;"
-    env["INCLUDE"] += f"{kolibrios_folder}/programs/develop/libraries/libcrash/hash"
-    stdout = subprocess.check_output(f"fasm -dUEFI=1 -dextended_primary_loader=1 -dUMKA=1 umka/umka.asm umka/build/umka.o -s umka/build/umka.fas -m 2000000", shell = True, env = env)
+    env["INCLUDE"] += f"{kolibrios_folder}/{libcrash}"
+    command = "fasm "
+    command += "-dUEFI=1 -dextended_primary_loader=1 -dUMKA=1 "
+    command += "umka/umka.asm umka/build/umka.o -s umka/build/umka.fas "
+    command += "-m 2000000 "
+    stdout = subprocess.check_output(command, shell=True, env=env)
     print(stdout)
     return umka_o
 
+
 def cc(src, obj, include_path):
     command = "clang "
-    command += "-Wno-everything -std=c11 -g -O0 -fno-pie -m32 -c "
-    command += "-D_FILE_OFFSET_BITS=64 -DNDEBUG -masm=intel -D_POSIX_C_SOURCE=200809L "
+    command += "-Wno-everything -std=c11 -g -O0 -fno-pie -m32 -masm=intel -c "
+    command += "-D_FILE_OFFSET_BITS=64 -DNDEBUG -D_POSIX_C_SOURCE=200809L "
     command += f"-I {include_path} {src} -o {obj}"
     if os.system(command) != 0:
         exit()
 
+
 def link(objects):
     command = "clang "
-    command += "-Wno-everything -no-pie -m32 -o umka_shell -static -T umka/umka.ld "
+    command += "-Wno-everything "
+    command += "-no-pie -m32 -o umka_shell -static -T umka/umka.ld "
     command += " ".join(objects)
     if os.system(command) != 0:
         exit()
+
 
 def build_umka():
     if not use_umka:
         return
 
-    os.makedirs("umka/build", exist_ok = True)
+    os.makedirs("umka/build", exist_ok=True)
 
     c_sources = [
         "umka_shell.c",
@@ -204,18 +236,20 @@ def build_umka():
         "util.c",
     ]
 
-    src_obj_pairs = [ (f"umka/{source}", f"umka/{source}.o") for source in c_sources ]
+    src_obj_pairs = [
+        (f"umka/{source}", f"umka/{source}.o") for source in c_sources
+    ]
 
     for src, obj in src_obj_pairs:
         cc(src, obj, "umka/linux")
 
     umka_o = build_umka_asm("umka/build")
 
-    objects = [ obj for src, obj in src_obj_pairs ] + [ umka_o ]
+    objects = [obj for src, obj in src_obj_pairs] + [umka_o]
     link(objects)
 
     os.chdir("umka/test")
-    for test in [ t for t in os.listdir(".") if t.endswith(".t") ]:
+    for test in [t for t in os.listdir(".") if t.endswith(".t")]:
         out_log = f"{test[:-2]}.out.log"
         ref_log = f"{test[:-2]}.ref.log"
         cmd_umka = f"../../umka_shell < {test} > {out_log}"
@@ -237,10 +271,9 @@ if __name__ == "__main__":
     tools = (("qemu-system-i386", "qemu-system-x86"),
              ("fasm", "fasm"))
     check_tools(tools)
-    
+
     prepare_test_img()
     build_umka()
     tests = collect_tests()
     serial_executor_thread = run_tests_serially(tests, root_dir)
     serial_executor_thread.join()
-
