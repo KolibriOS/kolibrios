@@ -8,150 +8,150 @@ import difflib
 
 # fasm keywords
 keywords = [
-    "align", "equ", "org", "while", "load", "store", "times", "repeat", 
-    "display", "err", "assert", "if", "aaa", "aad", "aam", "aas", "adc", 
-    "add", "addpd", "addps", "addsd", "addss", "addsubpd", "addsubps", "adox", 
-    "aesdeclast", "aesenc", "aesenclast", "aesimc", "aeskeygenassist", "and", 
-    "andnpd", "andnps", "andpd", "andps", "arpl", "bextr", "blendpd", 
-    "blendvpd", "blendvps", "blsi", "blsmsk", "blsr", "bndcl", "bndcn", 
-    "bndldx", "bndmk", "bndmov", "bndstx", "bound", "bsf", "bsr", "bswap", 
-    "btc", "btr", "bts", "bzhi", "call", "cbw", "cdq", "cdqe", "clac", "clc", 
-    "cldemote", "clflush", "clflushopt", "cli", "clts", "clwb", "cmc", "cmova", 
-    "cmovb", "cmovbe", "cmovc", "cmove", "cmovg", "cmovge", "cmovl", "cmovle", 
-    "cmovnae", "cmovnb", "cmovnbe", "cmovnc", "cmovne", "cmovng", "cmovnge", 
-    "cmovnle", "cmovno", "cmovnp", "cmovns", "cmovnz", "cmovo", "cmovp", 
-    "cmovpo", "cmovs", "cmovz", "cmp", "cmppd", "cmpps", "cmps", "cmpsb", 
-    "cmpsd", "cmpsq", "cmpss", "cmpsw", "cmpxchg", "cmpxchg16b", "cmpxchg8b", 
-    "comiss", "cpuid", "cqo", "crc32", "cvtdq2pd", "cvtdq2ps", "cvtpd2dq", 
-    "cvtpd2ps", "cvtpi2pd", "cvtpi2ps", "cvtps2dq", "cvtps2pd", "cvtps2pi", 
-    "cvtsd2ss", "cvtsi2sd", "cvtsi2ss", "cvtss2sd", "cvtss2si", "cvttpd2dq", 
-    "cvttps2dq", "cvttps2pi", "cvttsd2si", "cvttss2si", "cwd", "cwde", "daa", 
-    "dec", "div", "divpd", "divps", "divsd", "divss", "dppd", "dpps", "emms", 
-    "extractps", "f2xm1", "fabs", "fadd", "faddp", "fbld", "fbstp", "fchs", 
-    "fcmova", "fcmovae", "fcmovb", "fcmovbe", "fcmovc", "fcmove", "fcmovg", 
-    "fcmovl", "fcmovle", "fcmovna", "fcmovnae", "fcmovnb", "fcmovnbe", 
-    "fcmovne", "fcmovng", "fcmovnge", "fcmovnl", "fcmovnle", "fcmovno", 
-    "fcmovns", "fcmovnz", "fcmovo", "fcmovp", "fcmovpe", "fcmovpo", "fcmovs", 
-    "fcom", "fcomi", "fcomip", "fcomp", "fcompp", "fcos", "fdecstp", "fdiv", 
-    "fdivr", "fdivrp", "ffree", "fiadd", "ficom", "ficomp", "fidiv", "fidivr", 
-    "fimul", "fincstp", "finit", "fist", "fistp", "fisttp", "fisub", "fisubr", 
-    "fld1", "fldcw", "fldenv", "fldl2e", "fldl2t", "fldlg2", "fldln2", "fldpi", 
-    "fmul", "fmulp", "fnclex", "fninit", "fnop", "fnsave", "fnstcw", "fnstenv", 
-    "fpatan", "fprem", "fprem1", "fptan", "frndint", "frstor", "fsave", 
-    "fsin", "fsincos", "fsqrt", "fst", "fstcw", "fstenv", "fstp", "fstsw", 
-    "fsubp", "fsubr", "fsubrp", "ftst", "fucom", "fucomi", "fucomip", "fucomp", 
-    "fwait", "fxam", "fxch", "fxrstor", "fxsave", "fxtract", "fyl2x", 
-    "gf2p8affineinvqb", "gf2p8affineqb", "gf2p8mulb", "haddpd", "haddps", 
-    "hsubpd", "hsubps", "idiv", "imul", "in", "inc", "ins", "insb", "insd", 
-    "insw", "int", "int1", "int3", "into", "invd", "invlpg", "invpcid", "iret", 
-    "jmp", "ja", "jae", "jb", "jbe", "jc", "jcxz", "jecxz", "je", "jg", "jge", 
-    "jle", "jna", "jnae", "jnb", "jnbe", "jnc", "jne", "jng", "jnge", "jnl", 
-    "jno", "jnp", "jns", "jnz", "jo", "jp", "jpe", "jpo", "js", "jz", "kaddb", 
-    "kaddq", "kaddw", "kandb", "kandd", "kandnb", "kandnd", "kandnq", "kandnw", 
-    "kandw", "kmovb", "kmovd", "kmovq", "kmovw", "knotb", "knotd", "knotq", 
-    "korb", "kord", "korq", "kortestb", "kortestd", "kortestq", "kortestw", 
-    "kshiftlb", "kshiftld", "kshiftlq", "kshiftlw", "kshiftrb", "kshiftrd", 
-    "kshiftrw", "ktestb", "ktestd", "ktestq", "ktestw", "kunpckbw", "kunpckdq", 
-    "kxnorb", "kxnord", "kxnorq", "kxnorw", "kxorb", "kxord", "kxorq", "kxorw", 
-    "lar", "lddqu", "ldmxcsr", "lds", "lea", "leave", "les", "lfence", "lfs", 
-    "lgs", "lidt", "lldt", "lmsw", "lock", "lods", "lodsb", "lodsd", "lodsq", 
-    "loop", "loopa", "loopae", "loopb", "loopbe", "loopc", "loope", "loopg", 
-    "loopl", "loople", "loopna", "loopnae", "loopnb", "loopnbe", "loopnc", 
-    "loopng", "loopnge", "loopnl", "loopnle", "loopno", "loopnp", "loopns", 
-    "loopo", "loopp", "looppe", "looppo", "loops", "loopz", "lsl", "lss", 
-    "lzcnt", "maskmovdqu", "maskmovq", "maxpd", "maxps", "maxsd", "maxss", 
-    "minpd", "minps", "minsd", "minss", "monitor", "mov", "movapd", "movaps", 
-    "movd", "movddup", "movdir64b", "movdiri", "movdq2q", "movdqa", "movdqu", 
-    "movhpd", "movhps", "movlhps", "movlpd", "movlps", "movmskpd", "movmskps", 
-    "movntdqa", "movnti", "movntpd", "movntps", "movntq", "movq", "movq", 
-    "movs", "movsb", "movsd", "movsd", "movshdup", "movsldup", "movsq", 
-    "movsw", "movsx", "movsxd", "movupd", "movups", "movzx", "mpsadbw", "mul", 
-    "mulps", "mulsd", "mulss", "mulx", "mwait", "neg", "nop", "not", "or", 
-    "orps", "out", "outs", "outsb", "outsd", "outsw", "pabsb", "pabsd", 
-    "pabsw", "packssdw", "packsswb", "packusdw", "packuswb", "paddb", "paddd", 
-    "paddsb", "paddsw", "paddusb", "paddusw", "paddw", "palignr", "pand", 
-    "pause", "pavgb", "pavgw", "pblendvb", "pblendw", "pclmulqdq", "pcmpeqb", 
-    "pcmpeqq", "pcmpeqw", "pcmpestri", "pcmpestrm", "pcmpgtb", "pcmpgtd", 
-    "pcmpgtw", "pcmpistri", "pcmpistrm", "pdep", "pext", "pextrb", "pextrd", 
-    "pextrw", "phaddd", "phaddsw", "phaddw", "phminposuw", "phsubd", "phsubsw", 
-    "pinsrb", "pinsrd", "pinsrq", "pinsrw", "pmaddubsw", "pmaddwd", "pmaxsb", 
-    "pmaxsq", "pmaxsw", "pmaxub", "pmaxud", "pmaxuq", "pmaxuw", "pminsb", 
-    "pminsq", "pminsw", "pminub", "pminud", "pminuq", "pminuw", "pmovmskb", 
-    "pmovzx", "pmuldq", "pmulhrsw", "pmulhuw", "pmulhw", "pmulld", "pmullq", 
-    "pmuludq", "pop", "popa", "popad", "popcnt", "popf", "popfd", "popfq", 
-    "prefetchw", "prefetchh", "psadbw", "pshufb", "pshufd", "pshufhw", 
-    "pshufw", "psignb", "psignd", "psignw", "pslld", "pslldq", "psllq", 
-    "psrad", "psraq", "psraw", "psrld", "psrldq", "psrlq", "psrlw", "psubb", 
-    "psubq", "psubsb", "psubsw", "psubusb", "psubusw", "psubw", "ptest", 
-    "punpckhbw", "punpckhdq", "punpckhqdq", "punpckhwd", "punpcklbw", 
-    "punpcklqdq", "punpcklwd", "push", "pushw", "pushd", "pusha", "pushad", 
-    "pushfd", "pushfq", "pxor", "rcl", "rcpps", "rcpss", "rcr", "rdfsbase", 
-    "rdmsr", "rdpid", "rdpkru", "rdpmc", "rdrand", "rdseed", "rdtsc", "rdtscp", 
-    "repe", "repne", "repnz", "repz", "ret", "rol", "ror", "rorx", "roundpd", 
-    "roundsd", "roundss", "rsm", "rsqrtps", "rsqrtss", "sahf", "sal", "sar", 
-    "sbb", "scas", "scasb", "scasd", "scasw", "seta", "setae", "setb", "setbe", 
-    "sete", "setg", "setge", "setl", "setle", "setna", "setnae", "setnb", 
-    "setnc", "setne", "setng", "setnge", "setnl", "setnle", "setno", "setnp", 
-    "setnz", "seto", "setp", "setpe", "setpo", "sets", "setz", "sfence", 
-    "sha1msg1", "sha1msg2", "sha1nexte", "sha1rnds4", "sha256msg1", 
-    "sha256rnds2", "shl", "shld", "shlx", "shr", "shrd", "shrx", "shufpd", 
-    "sidt", "sldt", "smsw", "sqrtpd", "sqrtps", "sqrtsd", "sqrtss", "stac", 
-    "std", "sti", "stmxcsr", "stos", "stosb", "stosd", "stosq", "stosw", "str", 
-    "subpd", "subps", "subsd", "subss", "swapgs", "syscall", "sysenter", 
-    "sysret", "test", "tpause", "tzcnt", "ucomisd", "ucomiss", "ud", 
-    "umwait", "unpckhpd", "unpckhps", "unpcklpd", "unpcklps", "valignd", 
-    "vblendmpd", "vblendmps", "vbroadcast", "vcompresspd", "vcompressps", 
-    "vcvtpd2udq", "vcvtpd2uqq", "vcvtph2ps", "vcvtps2ph", "vcvtps2qq", 
-    "vcvtps2uqq", "vcvtqq2pd", "vcvtqq2ps", "vcvtsd2usi", "vcvtss2usi", 
-    "vcvttpd2udq", "vcvttpd2uqq", "vcvttps2qq", "vcvttps2udq", "vcvttps2uqq", 
-    "vcvttss2usi", "vcvtudq2pd", "vcvtudq2ps", "vcvtuqq2pd", "vcvtuqq2ps", 
-    "vcvtusi2ss", "vdbpsadbw", "verr", "verw", "vexpandpd", "vexpandps", 
-    "vextractf32x4", "vextractf32x8", "vextractf64x2", "vextractf64x4", 
-    "vextracti32x4", "vextracti32x8", "vextracti64x2", "vextracti64x4", 
-    "vfixupimmps", "vfixupimmsd", "vfixupimmss", "vfmadd132pd", "vfmadd132ps", 
-    "vfmadd132ss", "vfmadd213pd", "vfmadd213ps", "vfmadd213sd", "vfmadd213ss", 
-    "vfmadd231ps", "vfmadd231sd", "vfmadd231ss", "vfmaddsub132pd", 
-    "vfmaddsub213pd", "vfmaddsub213ps", "vfmaddsub231pd", "vfmaddsub231ps", 
-    "vfmsub132ps", "vfmsub132sd", "vfmsub132ss", "vfmsub213pd", "vfmsub213ps", 
-    "vfmsub213ss", "vfmsub231pd", "vfmsub231ps", "vfmsub231sd", "vfmsub231ss", 
-    "vfmsubadd132ps", "vfmsubadd213pd", "vfmsubadd213ps", "vfmsubadd231pd", 
-    "vfnmadd132pd", "vfnmadd132ps", "vfnmadd132sd", "vfnmadd132ss", 
-    "vfnmadd213ps", "vfnmadd213sd", "vfnmadd213ss", "vfnmadd231pd", 
-    "vfnmadd231sd", "vfnmadd231ss", "vfnmsub132pd", "vfnmsub132ps", 
-    "vfnmsub132ss", "vfnmsub213pd", "vfnmsub213ps", "vfnmsub213sd", 
-    "vfnmsub231pd", "vfnmsub231ps", "vfnmsub231sd", "vfnmsub231ss", 
-    "vfpclassps", "vfpclasssd", "vfpclassss", "vgatherdpd", "vgatherdpd", 
-    "vgatherdps", "vgatherqpd", "vgatherqpd", "vgatherqps", "vgatherqps", 
-    "vgetexpps", "vgetexpsd", "vgetexpss", "vgetmantpd", "vgetmantps", 
-    "vgetmantss", "vinsertf128", "vinsertf32x4", "vinsertf32x8", 
-    "vinsertf64x4", "vinserti128", "vinserti32x4", "vinserti32x8", 
-    "vinserti64x4", "vmaskmov", "vmovdqa32", "vmovdqa64", "vmovdqu16", 
-    "vmovdqu64", "vmovdqu8", "vpblendd", "vpblendmb", "vpblendmd", "vpblendmq", 
-    "vpbroadcast", "vpbroadcastb", "vpbroadcastd", "vpbroadcastm", 
-    "vpbroadcastw", "vpcmpb", "vpcmpd", "vpcmpq", "vpcmpub", "vpcmpud", 
-    "vpcmpuw", "vpcmpw", "vpcompressd", "vpcompressq", "vpconflictd", 
-    "vperm2f128", "vperm2i128", "vpermb", "vpermd", "vpermi2b", "vpermi2d", 
-    "vpermi2ps", "vpermi2q", "vpermi2w", "vpermilpd", "vpermilps", "vpermpd", 
-    "vpermq", "vpermt2b", "vpermt2d", "vpermt2pd", "vpermt2ps", "vpermt2q", 
-    "vpermw", "vpexpandd", "vpexpandq", "vpgatherdd", "vpgatherdd", 
-    "vpgatherdq", "vpgatherqd", "vpgatherqd", "vpgatherqq", "vpgatherqq", 
-    "vplzcntq", "vpmadd52huq", "vpmadd52luq", "vpmaskmov", "vpmovb2m", 
-    "vpmovdb", "vpmovdw", "vpmovm2b", "vpmovm2d", "vpmovm2q", "vpmovm2w", 
-    "vpmovqb", "vpmovqd", "vpmovqw", "vpmovsdb", "vpmovsdw", "vpmovsqb", 
-    "vpmovsqw", "vpmovswb", "vpmovusdb", "vpmovusdw", "vpmovusqb", "vpmovusqd", 
-    "vpmovuswb", "vpmovw2m", "vpmovwb", "vpmultishiftqb", "vprold", "vprolq", 
-    "vprolvq", "vprord", "vprorq", "vprorvd", "vprorvq", "vpscatterdd", 
-    "vpscatterqd", "vpscatterqq", "vpsllvd", "vpsllvq", "vpsllvw", "vpsravd", 
-    "vpsravw", "vpsrlvd", "vpsrlvq", "vpsrlvw", "vpternlogd", "vpternlogq", 
-    "vptestmd", "vptestmq", "vptestmw", "vptestnmb", "vptestnmd", "vptestnmq", 
-    "vrangepd", "vrangeps", "vrangesd", "vrangess", "vrcp14pd", "vrcp14ps", 
-    "vrcp14ss", "vreducepd", "vreduceps", "vreducesd", "vreducess", 
-    "vrndscaleps", "vrndscalesd", "vrndscaless", "vrsqrt14pd", "vrsqrt14ps", 
-    "vrsqrt14ss", "vscalefpd", "vscalefps", "vscalefsd", "vscalefss", 
-    "vscatterdps", "vscatterqpd", "vscatterqps", "vshuff32x4", "vshuff64x2", 
-    "vshufi64x2", "vtestpd", "vtestps", "vzeroall", "vzeroupper", "wait", 
-    "wrfsbase", "wrgsbase", "wrmsr", "wrpkru", "xabort", "xacquire", "xadd", 
-    "xchg", "xend", "xgetbv", "xlat", "xlatb", "xor", "xorpd", "xorps", 
+    "align", "equ", "org", "while", "load", "store", "times", "repeat",
+    "display", "err", "assert", "if", "aaa", "aad", "aam", "aas", "adc",
+    "add", "addpd", "addps", "addsd", "addss", "addsubpd", "addsubps", "adox",
+    "aesdeclast", "aesenc", "aesenclast", "aesimc", "aeskeygenassist", "and",
+    "andnpd", "andnps", "andpd", "andps", "arpl", "bextr", "blendpd",
+    "blendvpd", "blendvps", "blsi", "blsmsk", "blsr", "bndcl", "bndcn",
+    "bndldx", "bndmk", "bndmov", "bndstx", "bound", "bsf", "bsr", "bswap",
+    "btc", "btr", "bts", "bzhi", "call", "cbw", "cdq", "cdqe", "clac", "clc",
+    "cldemote", "clflush", "clflushopt", "cli", "clts", "clwb", "cmc", "cmova",
+    "cmovb", "cmovbe", "cmovc", "cmove", "cmovg", "cmovge", "cmovl", "cmovle",
+    "cmovnae", "cmovnb", "cmovnbe", "cmovnc", "cmovne", "cmovng", "cmovnge",
+    "cmovnle", "cmovno", "cmovnp", "cmovns", "cmovnz", "cmovo", "cmovp",
+    "cmovpo", "cmovs", "cmovz", "cmp", "cmppd", "cmpps", "cmps", "cmpsb",
+    "cmpsd", "cmpsq", "cmpss", "cmpsw", "cmpxchg", "cmpxchg16b", "cmpxchg8b",
+    "comiss", "cpuid", "cqo", "crc32", "cvtdq2pd", "cvtdq2ps", "cvtpd2dq",
+    "cvtpd2ps", "cvtpi2pd", "cvtpi2ps", "cvtps2dq", "cvtps2pd", "cvtps2pi",
+    "cvtsd2ss", "cvtsi2sd", "cvtsi2ss", "cvtss2sd", "cvtss2si", "cvttpd2dq",
+    "cvttps2dq", "cvttps2pi", "cvttsd2si", "cvttss2si", "cwd", "cwde", "daa",
+    "dec", "div", "divpd", "divps", "divsd", "divss", "dppd", "dpps", "emms",
+    "extractps", "f2xm1", "fabs", "fadd", "faddp", "fbld", "fbstp", "fchs",
+    "fcmova", "fcmovae", "fcmovb", "fcmovbe", "fcmovc", "fcmove", "fcmovg",
+    "fcmovl", "fcmovle", "fcmovna", "fcmovnae", "fcmovnb", "fcmovnbe",
+    "fcmovne", "fcmovng", "fcmovnge", "fcmovnl", "fcmovnle", "fcmovno",
+    "fcmovns", "fcmovnz", "fcmovo", "fcmovp", "fcmovpe", "fcmovpo", "fcmovs",
+    "fcom", "fcomi", "fcomip", "fcomp", "fcompp", "fcos", "fdecstp", "fdiv",
+    "fdivr", "fdivrp", "ffree", "fiadd", "ficom", "ficomp", "fidiv", "fidivr",
+    "fimul", "fincstp", "finit", "fist", "fistp", "fisttp", "fisub", "fisubr",
+    "fld1", "fldcw", "fldenv", "fldl2e", "fldl2t", "fldlg2", "fldln2", "fldpi",
+    "fmul", "fmulp", "fnclex", "fninit", "fnop", "fnsave", "fnstcw", "fnstenv",
+    "fpatan", "fprem", "fprem1", "fptan", "frndint", "frstor", "fsave",
+    "fsin", "fsincos", "fsqrt", "fst", "fstcw", "fstenv", "fstp", "fstsw",
+    "fsubp", "fsubr", "fsubrp", "ftst", "fucom", "fucomi", "fucomip", "fucomp",
+    "fwait", "fxam", "fxch", "fxrstor", "fxsave", "fxtract", "fyl2x",
+    "gf2p8affineinvqb", "gf2p8affineqb", "gf2p8mulb", "haddpd", "haddps",
+    "hsubpd", "hsubps", "idiv", "imul", "in", "inc", "ins", "insb", "insd",
+    "insw", "int", "int1", "int3", "into", "invd", "invlpg", "invpcid", "iret",
+    "jmp", "ja", "jae", "jb", "jbe", "jc", "jcxz", "jecxz", "je", "jg", "jge",
+    "jle", "jna", "jnae", "jnb", "jnbe", "jnc", "jne", "jng", "jnge", "jnl",
+    "jno", "jnp", "jns", "jnz", "jo", "jp", "jpe", "jpo", "js", "jz", "kaddb",
+    "kaddq", "kaddw", "kandb", "kandd", "kandnb", "kandnd", "kandnq", "kandnw",
+    "kandw", "kmovb", "kmovd", "kmovq", "kmovw", "knotb", "knotd", "knotq",
+    "korb", "kord", "korq", "kortestb", "kortestd", "kortestq", "kortestw",
+    "kshiftlb", "kshiftld", "kshiftlq", "kshiftlw", "kshiftrb", "kshiftrd",
+    "kshiftrw", "ktestb", "ktestd", "ktestq", "ktestw", "kunpckbw", "kunpckdq",
+    "kxnorb", "kxnord", "kxnorq", "kxnorw", "kxorb", "kxord", "kxorq", "kxorw",
+    "lar", "lddqu", "ldmxcsr", "lds", "lea", "leave", "les", "lfence", "lfs",
+    "lgs", "lidt", "lldt", "lmsw", "lock", "lods", "lodsb", "lodsd", "lodsq",
+    "loop", "loopa", "loopae", "loopb", "loopbe", "loopc", "loope", "loopg",
+    "loopl", "loople", "loopna", "loopnae", "loopnb", "loopnbe", "loopnc",
+    "loopng", "loopnge", "loopnl", "loopnle", "loopno", "loopnp", "loopns",
+    "loopo", "loopp", "looppe", "looppo", "loops", "loopz", "lsl", "lss",
+    "lzcnt", "maskmovdqu", "maskmovq", "maxpd", "maxps", "maxsd", "maxss",
+    "minpd", "minps", "minsd", "minss", "monitor", "mov", "movapd", "movaps",
+    "movd", "movddup", "movdir64b", "movdiri", "movdq2q", "movdqa", "movdqu",
+    "movhpd", "movhps", "movlhps", "movlpd", "movlps", "movmskpd", "movmskps",
+    "movntdqa", "movnti", "movntpd", "movntps", "movntq", "movq", "movq",
+    "movs", "movsb", "movsd", "movsd", "movshdup", "movsldup", "movsq",
+    "movsw", "movsx", "movsxd", "movupd", "movups", "movzx", "mpsadbw", "mul",
+    "mulps", "mulsd", "mulss", "mulx", "mwait", "neg", "nop", "not", "or",
+    "orps", "out", "outs", "outsb", "outsd", "outsw", "pabsb", "pabsd",
+    "pabsw", "packssdw", "packsswb", "packusdw", "packuswb", "paddb", "paddd",
+    "paddsb", "paddsw", "paddusb", "paddusw", "paddw", "palignr", "pand",
+    "pause", "pavgb", "pavgw", "pblendvb", "pblendw", "pclmulqdq", "pcmpeqb",
+    "pcmpeqq", "pcmpeqw", "pcmpestri", "pcmpestrm", "pcmpgtb", "pcmpgtd",
+    "pcmpgtw", "pcmpistri", "pcmpistrm", "pdep", "pext", "pextrb", "pextrd",
+    "pextrw", "phaddd", "phaddsw", "phaddw", "phminposuw", "phsubd", "phsubsw",
+    "pinsrb", "pinsrd", "pinsrq", "pinsrw", "pmaddubsw", "pmaddwd", "pmaxsb",
+    "pmaxsq", "pmaxsw", "pmaxub", "pmaxud", "pmaxuq", "pmaxuw", "pminsb",
+    "pminsq", "pminsw", "pminub", "pminud", "pminuq", "pminuw", "pmovmskb",
+    "pmovzx", "pmuldq", "pmulhrsw", "pmulhuw", "pmulhw", "pmulld", "pmullq",
+    "pmuludq", "pop", "popa", "popad", "popcnt", "popf", "popfd", "popfq",
+    "prefetchw", "prefetchh", "psadbw", "pshufb", "pshufd", "pshufhw",
+    "pshufw", "psignb", "psignd", "psignw", "pslld", "pslldq", "psllq",
+    "psrad", "psraq", "psraw", "psrld", "psrldq", "psrlq", "psrlw", "psubb",
+    "psubq", "psubsb", "psubsw", "psubusb", "psubusw", "psubw", "ptest",
+    "punpckhbw", "punpckhdq", "punpckhqdq", "punpckhwd", "punpcklbw",
+    "punpcklqdq", "punpcklwd", "push", "pushw", "pushd", "pusha", "pushad",
+    "pushfd", "pushfq", "pxor", "rcl", "rcpps", "rcpss", "rcr", "rdfsbase",
+    "rdmsr", "rdpid", "rdpkru", "rdpmc", "rdrand", "rdseed", "rdtsc", "rdtscp",
+    "repe", "repne", "repnz", "repz", "ret", "rol", "ror", "rorx", "roundpd",
+    "roundsd", "roundss", "rsm", "rsqrtps", "rsqrtss", "sahf", "sal", "sar",
+    "sbb", "scas", "scasb", "scasd", "scasw", "seta", "setae", "setb", "setbe",
+    "sete", "setg", "setge", "setl", "setle", "setna", "setnae", "setnb",
+    "setnc", "setne", "setng", "setnge", "setnl", "setnle", "setno", "setnp",
+    "setnz", "seto", "setp", "setpe", "setpo", "sets", "setz", "sfence",
+    "sha1msg1", "sha1msg2", "sha1nexte", "sha1rnds4", "sha256msg1",
+    "sha256rnds2", "shl", "shld", "shlx", "shr", "shrd", "shrx", "shufpd",
+    "sidt", "sldt", "smsw", "sqrtpd", "sqrtps", "sqrtsd", "sqrtss", "stac",
+    "std", "sti", "stmxcsr", "stos", "stosb", "stosd", "stosq", "stosw", "str",
+    "subpd", "subps", "subsd", "subss", "swapgs", "syscall", "sysenter",
+    "sysret", "test", "tpause", "tzcnt", "ucomisd", "ucomiss", "ud",
+    "umwait", "unpckhpd", "unpckhps", "unpcklpd", "unpcklps", "valignd",
+    "vblendmpd", "vblendmps", "vbroadcast", "vcompresspd", "vcompressps",
+    "vcvtpd2udq", "vcvtpd2uqq", "vcvtph2ps", "vcvtps2ph", "vcvtps2qq",
+    "vcvtps2uqq", "vcvtqq2pd", "vcvtqq2ps", "vcvtsd2usi", "vcvtss2usi",
+    "vcvttpd2udq", "vcvttpd2uqq", "vcvttps2qq", "vcvttps2udq", "vcvttps2uqq",
+    "vcvttss2usi", "vcvtudq2pd", "vcvtudq2ps", "vcvtuqq2pd", "vcvtuqq2ps",
+    "vcvtusi2ss", "vdbpsadbw", "verr", "verw", "vexpandpd", "vexpandps",
+    "vextractf32x4", "vextractf32x8", "vextractf64x2", "vextractf64x4",
+    "vextracti32x4", "vextracti32x8", "vextracti64x2", "vextracti64x4",
+    "vfixupimmps", "vfixupimmsd", "vfixupimmss", "vfmadd132pd", "vfmadd132ps",
+    "vfmadd132ss", "vfmadd213pd", "vfmadd213ps", "vfmadd213sd", "vfmadd213ss",
+    "vfmadd231ps", "vfmadd231sd", "vfmadd231ss", "vfmaddsub132pd",
+    "vfmaddsub213pd", "vfmaddsub213ps", "vfmaddsub231pd", "vfmaddsub231ps",
+    "vfmsub132ps", "vfmsub132sd", "vfmsub132ss", "vfmsub213pd", "vfmsub213ps",
+    "vfmsub213ss", "vfmsub231pd", "vfmsub231ps", "vfmsub231sd", "vfmsub231ss",
+    "vfmsubadd132ps", "vfmsubadd213pd", "vfmsubadd213ps", "vfmsubadd231pd",
+    "vfnmadd132pd", "vfnmadd132ps", "vfnmadd132sd", "vfnmadd132ss",
+    "vfnmadd213ps", "vfnmadd213sd", "vfnmadd213ss", "vfnmadd231pd",
+    "vfnmadd231sd", "vfnmadd231ss", "vfnmsub132pd", "vfnmsub132ps",
+    "vfnmsub132ss", "vfnmsub213pd", "vfnmsub213ps", "vfnmsub213sd",
+    "vfnmsub231pd", "vfnmsub231ps", "vfnmsub231sd", "vfnmsub231ss",
+    "vfpclassps", "vfpclasssd", "vfpclassss", "vgatherdpd", "vgatherdpd",
+    "vgatherdps", "vgatherqpd", "vgatherqpd", "vgatherqps", "vgatherqps",
+    "vgetexpps", "vgetexpsd", "vgetexpss", "vgetmantpd", "vgetmantps",
+    "vgetmantss", "vinsertf128", "vinsertf32x4", "vinsertf32x8",
+    "vinsertf64x4", "vinserti128", "vinserti32x4", "vinserti32x8",
+    "vinserti64x4", "vmaskmov", "vmovdqa32", "vmovdqa64", "vmovdqu16",
+    "vmovdqu64", "vmovdqu8", "vpblendd", "vpblendmb", "vpblendmd", "vpblendmq",
+    "vpbroadcast", "vpbroadcastb", "vpbroadcastd", "vpbroadcastm",
+    "vpbroadcastw", "vpcmpb", "vpcmpd", "vpcmpq", "vpcmpub", "vpcmpud",
+    "vpcmpuw", "vpcmpw", "vpcompressd", "vpcompressq", "vpconflictd",
+    "vperm2f128", "vperm2i128", "vpermb", "vpermd", "vpermi2b", "vpermi2d",
+    "vpermi2ps", "vpermi2q", "vpermi2w", "vpermilpd", "vpermilps", "vpermpd",
+    "vpermq", "vpermt2b", "vpermt2d", "vpermt2pd", "vpermt2ps", "vpermt2q",
+    "vpermw", "vpexpandd", "vpexpandq", "vpgatherdd", "vpgatherdd",
+    "vpgatherdq", "vpgatherqd", "vpgatherqd", "vpgatherqq", "vpgatherqq",
+    "vplzcntq", "vpmadd52huq", "vpmadd52luq", "vpmaskmov", "vpmovb2m",
+    "vpmovdb", "vpmovdw", "vpmovm2b", "vpmovm2d", "vpmovm2q", "vpmovm2w",
+    "vpmovqb", "vpmovqd", "vpmovqw", "vpmovsdb", "vpmovsdw", "vpmovsqb",
+    "vpmovsqw", "vpmovswb", "vpmovusdb", "vpmovusdw", "vpmovusqb", "vpmovusqd",
+    "vpmovuswb", "vpmovw2m", "vpmovwb", "vpmultishiftqb", "vprold", "vprolq",
+    "vprolvq", "vprord", "vprorq", "vprorvd", "vprorvq", "vpscatterdd",
+    "vpscatterqd", "vpscatterqq", "vpsllvd", "vpsllvq", "vpsllvw", "vpsravd",
+    "vpsravw", "vpsrlvd", "vpsrlvq", "vpsrlvw", "vpternlogd", "vpternlogq",
+    "vptestmd", "vptestmq", "vptestmw", "vptestnmb", "vptestnmd", "vptestnmq",
+    "vrangepd", "vrangeps", "vrangesd", "vrangess", "vrcp14pd", "vrcp14ps",
+    "vrcp14ss", "vreducepd", "vreduceps", "vreducesd", "vreducess",
+    "vrndscaleps", "vrndscalesd", "vrndscaless", "vrsqrt14pd", "vrsqrt14ps",
+    "vrsqrt14ss", "vscalefpd", "vscalefps", "vscalefsd", "vscalefss",
+    "vscatterdps", "vscatterqpd", "vscatterqps", "vshuff32x4", "vshuff64x2",
+    "vshufi64x2", "vtestpd", "vtestps", "vzeroall", "vzeroupper", "wait",
+    "wrfsbase", "wrgsbase", "wrmsr", "wrpkru", "xabort", "xacquire", "xadd",
+    "xchg", "xend", "xgetbv", "xlat", "xlatb", "xor", "xorpd", "xorps",
     "xrstor", "xrstors", "xsave", "xsavec", "xsaveopt", "xsaves", "xsetbv",
 ]
 
@@ -166,11 +166,13 @@ fasm_types = [
     "du",
 ]
 
+
 # Add kind flag to identifier in id2kind
 def id_add_kind(identifier, kind):
     if identifier not in id2kind:
         id2kind[identifier] = ''
     id2kind[identifier] += kind
+
 
 # Remove kind flag of identifier in id2kind
 def id_remove_kind(identifier, kind):
@@ -178,12 +180,14 @@ def id_remove_kind(identifier, kind):
         if kind in id2kind[identifier]:
             id2kind[identifier] = id2kind[identifier].replace(kind, '')
 
+
 # Get kind of an identifier
 def id_get_kind(identifier):
     if identifier in id2kind:
         return id2kind[identifier]
     else:
         return ''
+
 
 class LegacyAsmReader:
     def __init__(self, file):
@@ -196,8 +200,10 @@ class LegacyAsmReader:
         return self.lines[self.line_idx]
 
     def curr(self):
-        try: return self.lines[self.line_idx][self.i]
-        except: return ''
+        try:
+            return self.lines[self.line_idx][self.i]
+        except:
+            return ''
 
     def step(self):
         c = self.curr()
@@ -230,12 +236,13 @@ class LegacyAsmReader:
             return True
         return False
 
-    def location(self): 
+    def location(self):
         return f"{self.file}:{self.line_idx + 1}"
 
     def skip_spaces(self):
         while self.curr().isspace():
             self.step()
+
 
 class AsmReaderRecognizingStrings(LegacyAsmReader):
     def __init__(self, file):
@@ -247,9 +254,9 @@ class AsmReaderRecognizingStrings(LegacyAsmReader):
         c = super().step()
         if self.should_recognize_strings and (c == '"' or c == "'"):
             # If just now we was at the double or single quotation mark
-            # and we aren't in a string yet
-            # then say "we are in a string openned with this quotation mark now"
-            if self.in_string == None:
+            # and we aren't in a string yet then say
+            # "we are in a string openned with this quotation mark now"
+            if self.in_string is None:
                 self.in_string = c
             # If just now we was at the double or single quotation mark
             # and we are in the string entered with the same quotation mark
@@ -257,6 +264,7 @@ class AsmReaderRecognizingStrings(LegacyAsmReader):
             elif self.in_string == c:
                 self.in_string = None
         return c
+
 
 class AsmReaderReadingComments(AsmReaderRecognizingStrings):
     def __init__(self, file):
@@ -282,8 +290,11 @@ class AsmReaderReadingComments(AsmReaderRecognizingStrings):
         self.status_has_code = True
 
     def update_status(self):
-        # If we aren't in a comment and we aren't in a string - say we are now in a comment if ';' met
-        if not self.status_has_comment and not self.in_string and self.curr() == ';':
+        # If we aren't in a comment and we aren't in a string -
+        # say we are now in a comment if ';' met
+        if (not self.status_has_comment and
+            not self.in_string and
+            self.curr() == ';'):
             self.status_set_has_comment()
         # Else if we are in a comment - collect the comment
         elif self.status_has_comment:
@@ -305,7 +316,8 @@ class AsmReaderReadingComments(AsmReaderRecognizingStrings):
         super().nextline()
         # If the line we leave was not a comment-only line
         # then forget the collected comment
-        # Otherwise the collected comment should be complemented by comment from next line in step()
+        # Otherwise the collected comment should be complemented by
+        # comment from next line in step()
         if self.status_has_code:
             # But we should preserve comment for the next line
             # If previous line set align (cause many functions re documented
@@ -314,8 +326,10 @@ class AsmReaderReadingComments(AsmReaderRecognizingStrings):
                 self.comment = ''
         # Reset the line status (now it's the status of the new line)
         self.status_reset()
-        # Set new status for this line according to the first character in the line
+        # Set new status for this line according to the
+        # first character in the line
         self.update_status()
+
 
 class AsmReaderFetchingIdentifiers(AsmReaderReadingComments):
     def __init__(self, file):
@@ -328,9 +342,11 @@ class AsmReaderFetchingIdentifiers(AsmReaderReadingComments):
             result += self.step()
         return result
 
+
 class AsmReader(AsmReaderFetchingIdentifiers):
     def __init__(self, file):
         super().__init__(file)
+
 
 def append_file(full_path, contents):
     if debug_mode:
@@ -342,11 +358,13 @@ def append_file(full_path, contents):
         f.write(contents)
         f.close()
 
+
 class AsmElement:
     def __init__(self, location, name, comment):
         global warnings
 
-        # If the element was constructed during this execution then the element is new
+        # If the element was constructed during this execution then
+        # the element is new
         self.new = True
         self.location = location
         self.file = self.location.split(':')[0].replace('\\', '/')
@@ -361,7 +379,7 @@ class AsmElement:
         print(f"\n{self.location}: {self.name}")
         print(f"{self.comment}")
 
-    def emit(self, dest, doxycomment = '', declaration = ''):
+    def emit(self, dest, doxycomment='', declaration=''):
         # Do not emit anything if the symbol is marked as hidden in its comment
         if '@dont_give_a_doxygen' in self.comment:
             return
@@ -374,19 +392,22 @@ class AsmElement:
         if not doxycomment.endswith('\n'):
             doxycomment += '\n'
         if doxycomment.split('@brief ')[1][0].islower():
-            warnings += f"{self.location}: Brief comment starting from lowercase\n"
+            warnings += (f"{self.location}: Brief comment starting from " +
+                         "lowercase\n")
         # Build contents to emit
         contents = ''
         contents += '/**\n'
         contents += doxycomment
         contents += (f"@par Source\n" +
-                     f"<a href='{link_root}/{self.file}#line-{self.line}'>{self.file}:{self.line}</a>\n")
+                     f"<a href='{link_root}/{self.file}" +
+                     f"#line-{self.line}'>{self.file}:{self.line}</a>\n")
         contents += '*/\n'
         contents += declaration
         contents += '\n\n'
         # Get path to file to emit this
         full_path = dest + '/' + self.file
-        # Remove the file on first access if it was created by previous generation
+        # Remove the file on first access if it was
+        # created by previous generation
         if full_path not in created_files:
             if os.path.isfile(full_path):
                 os.remove(full_path)
@@ -396,6 +417,7 @@ class AsmElement:
         contents = ''.join([i if ord(i) < 128 else '?' for i in contents])
 
         append_file(full_path, contents)
+
 
 class AsmVariable(AsmElement):
     def __init__(self, location, name, comment, type, init):
@@ -422,8 +444,10 @@ class AsmVariable(AsmElement):
         # Emit this
         super().emit(dest, doxycomment, declaration)
 
+
 class AsmFunction(AsmElement):
-    def __init__(self, location, name, comment, calling_convention, args, used_regs):
+    def __init__(self, location, name, comment, calling_convention,
+                 args, used_regs):
         super().__init__(location, name, comment)
         self.calling_convention = calling_convention
         self.args = args
@@ -473,6 +497,7 @@ class AsmFunction(AsmElement):
         # Emit this
         super().emit(dest, doxycomment, declaration)
 
+
 class AsmLabel(AsmElement):
     def __init__(self, location, name, comment):
         super().__init__(location, name, comment)
@@ -492,6 +517,7 @@ class AsmLabel(AsmElement):
         declaration = f"label {name};"
         # Emit this
         super().emit(dest, doxycomment, declaration)
+
 
 class AsmMacro(AsmElement):
     def __init__(self, location, name, comment, args):
@@ -526,6 +552,7 @@ class AsmMacro(AsmElement):
         # Emit this
         super().emit(dest, doxycomment, declaration)
 
+
 class AsmStruct(AsmElement):
     def __init__(self, location, name, comment, members):
         super().__init__(location, name, comment)
@@ -546,10 +573,12 @@ class AsmStruct(AsmElement):
         declaration = f"struct {self.name}" + " {\n"
         for member in self.members:
             if type(member) == AsmVariable:
-                declaration += f'\t{member.type} {member.name}; /**< {member.comment} */\n'
+                declaration += (f'\t{member.type} {member.name}; ' +
+                                f'/**< {member.comment} */\n')
         declaration += '};'
         # Emit this
         super().emit(dest, doxycomment, declaration)
+
 
 class AsmUnion(AsmElement):
     def __init__(self, location, name, comment, members):
@@ -571,15 +600,19 @@ class AsmUnion(AsmElement):
         # Emit this
         super().emit(dest, doxycomment, declaration)
 
+
 class VariableNameIsMacroName:
     def __init__(self, name):
         self.name = name
 
+
 def is_id(c):
     return c.isprintable() and c not in "+-/*=<>()[]{};:,|&~#`'\" \n\r\t\v"
 
+
 def is_starts_as_id(s):
     return not s[0].isdigit()
+
 
 def parse_after_macro(r):
     location = r.location()
@@ -620,15 +653,17 @@ def parse_after_macro(r):
             r.step()
         # Something unexpected
         else:
-            raise Exception(f"Unexpected symbol '{r.curr()}' at index #{r.i} " + 
-                            f"in the macro declaration at {location} " +
+            raise Exception(f"Unexpected symbol '{r.curr()}' " +
+                            f"at index #{r.i} in the macro declaration " +
+                            f"at {location} " +
                             f"(line: {r.lines[r.line_idx]})\n''")
     # Append the last argument
     if arg != '':
         args.append(arg)
     # Skip t spaces after the argument list
     r.skip_spaces()
-    # Get a comment if it is: read till the end of the line and get the comment from the reader
+    # Get a comment if it is: read till the end of the line and
+    # get the comment from the reader
     while r.curr() != '':
         r.step()
     comment = r.comment
@@ -645,7 +680,8 @@ def parse_after_macro(r):
     # Build the output
     return AsmMacro(location, name, comment, args)
 
-def parse_variable(r, first_word = None):
+
+def parse_variable(r, first_word=None):
     global warnings
     location = r.location()
 
@@ -654,14 +690,15 @@ def parse_variable(r, first_word = None):
     # Get variable name
     name = ""
     # Read it if it was not supplied
-    if first_word == None:
+    if first_word is None:
         while is_id(r.curr()):
             name += r.step()
     # Or use the supplied one instead
     else:
         name = first_word
     # Check the name
-    # If it's 0 len, that means threr's something else than an identifier at the beginning
+    # If it's 0 len, that means threr's something else than an
+    # identifier at the beginning
     if len(name) == 0:
         return None
     # If it starts from digit or othervice illegally it's illegal
@@ -675,7 +712,8 @@ def parse_variable(r, first_word = None):
     # If it's a macro name, that's not a variable declaration
     if ID_KIND_MACRO_NAME in kind:
         return VariableNameIsMacroName(name)
-    # If it's a datatype or a structure name that's not a variable declaration: that's just a data
+    # If it's a datatype or a structure name that's not a
+    # variable declaration: that's just a data
     # don't document just a data for now
     if ID_KIND_STRUCT_NAME in kind or ID_KIND_FASM_TYPE in kind:
         return None
@@ -714,7 +752,8 @@ def parse_variable(r, first_word = None):
     # Build the result
     return AsmVariable(location, name, r.comment, var_type, value)
 
-def parse_after_struct(r, as_union = True):
+
+def parse_after_struct(r, as_union=True):
     global warnings
     location = r.location()
 
@@ -740,14 +779,15 @@ def parse_after_struct(r, as_union = True):
         elif type(var) == str:
             if var == 'union':
                 # Parse the union as a struct
-                union = parse_after_struct(r, as_union = True)
+                union = parse_after_struct(r, as_union=True)
                 members.append(union)
                 # Skip the ends of the union
                 r.nextline()
             elif r.curr() == ':':
                 warnings += f"{r.location()}: Skept the label in the struct\n"
             else:
-                raise Exception(f"Garbage in struct member at {location} (got '{var}' identifier)")
+                raise Exception(f"Garbage in struct member at {location} " +
+                                f" (got '{var}' identifier)")
         elif type(var) == VariableNameIsMacroName:
             if var.name == 'ends':
                 break
@@ -757,6 +797,7 @@ def parse_after_struct(r, as_union = True):
         return AsmStruct(location, name, comment, members)
     else:
         return AsmUnion(location, name, comment, members)
+
 
 def parse_after_proc(r):
     # Get proc name
@@ -813,7 +854,9 @@ def parse_after_proc(r):
         r.step()
     comment = r.comment
     # Build the element
-    return AsmFunction(r.location(), name, comment, calling_convention, args, used_regs)
+    return AsmFunction(r.location(), name, comment, calling_convention,
+                       args, used_regs)
+
 
 def get_declarations(asm_file_contents, asm_file_name):
     r = AsmReader(asm_file_name)
@@ -857,7 +900,8 @@ def get_declarations(asm_file_contents, asm_file_name):
             pass
         elif first_word == 'purge':
             while True:
-                # Skip spaces after the 'purge' keyword or after the comma what separated the previous macro name
+                # Skip spaces after the 'purge' keyword or after
+                # the comma what separated the previous macro name
                 r.skip_spaces()
                 # Get the purged macro name
                 name = ''
@@ -870,7 +914,8 @@ def get_declarations(asm_file_contents, asm_file_name):
                     pass
                 # Skip spaces after the name
                 r.skip_spaces()
-                # If it's comma (',') after then that's not the last purged macro, continue purging
+                # If it's comma (',') after then that's not the last purged
+                # macro, continue purging
                 if r.curr() == ',':
                     r.step()
                     continue
@@ -893,14 +938,19 @@ def get_declarations(asm_file_contents, asm_file_name):
                 name = var
                 # Match label beginning (':' after name)
                 if r.curr() == ':':
-                    # Get to the end of the line and get the coment from the reader
+                    # Get to the end of the line and
+                    # get the coment from the reader
                     while r.curr() != '':
                         r.step()
                     comment = r.comment
                     # Only handle non-local labels
                     if name[0] != '.' and name != "@@" and name != "$Revision":
+                        # Treate the label as function if there's @return or
+                        # @param in its comment. Othervice it's just a variable
+                        # with type `label` in generated doxygen C
                         if '@return' in comment or '@param' in comment:
-                            element = AsmFunction(r.location(), name, comment, '', [], [])
+                            element = AsmFunction(r.location(), name, comment,
+                                                  '', [], [])
                         else:
                             element = AsmLabel(r.location(), name, comment)
                         elements.append(element)
@@ -913,6 +963,7 @@ def get_declarations(asm_file_contents, asm_file_name):
                     # Save the identifier as an equated constant
                     id_add_kind(word_one, ID_KIND_EQUATED_CONSTANT)
         r.nextline()
+
 
 def it_neds_to_be_parsed(source_file):
     # If there's no symbols file saved - parse it anyway
@@ -933,7 +984,8 @@ def it_neds_to_be_parsed(source_file):
         return True
     return False
 
-def handle_file(handled_files, asm_file_name, subdir = "."):
+
+def handle_file(handled_files, asm_file_name, subdir="."):
     global elements
     # Canonicalize the file path and get it relative to cwd
     cwd = os.path.abspath(os.path.dirname(sys.argv[0]))
@@ -947,7 +999,8 @@ def handle_file(handled_files, asm_file_name, subdir = "."):
         return
     # Say that the file was handled in this execution
     handled_files.append(asm_file_name)
-    # Check if the file should be parsed (if it was modified or wasn't parsed yet)
+    # Check if the file should be parsed
+    # (if it was modified or wasn't parsed yet)
     should_get_declarations = True
     if not it_neds_to_be_parsed(asm_file_name):
         print(f"Skipping {asm_file_name} (already newest)")
@@ -955,8 +1008,12 @@ def handle_file(handled_files, asm_file_name, subdir = "."):
     else:
         print(f"Handling {asm_file_name}")
         # Remove elements parsed from this file before if any
-        elements_to_remove = [x for x in elements if x.location.split(':')[0] == asm_file_name]
-        elements = [x for x in elements if x.location.split(':')[0] != asm_file_name]
+        elements_to_remove = [
+            x for x in elements if x.location.split(':')[0] == asm_file_name
+        ]
+        elements = [
+            x for x in elements if x.location.split(':')[0] != asm_file_name
+        ]
         # Forget types of identifiers of names of the removed elements
         for element in elements_to_remove:
             if type(element) == AsmStruct:
@@ -966,10 +1023,11 @@ def handle_file(handled_files, asm_file_name, subdir = "."):
     # Read the source
     asm_file_contents = open(asm_file_name, "r", encoding="utf-8").read()
     # Find includes, fix their paths and handle em recoursively
-    includes = re.findall(r'^include (["\'])(.*)\1', asm_file_contents, flags=re.MULTILINE)
+    includes = re.findall(r'^include (["\'])(.*)\1', asm_file_contents,
+                          flags=re.MULTILINE)
     for include in includes:
-        include = include[1].replace('\\', '/');
-        full_path = subdir + '/' + include;
+        include = include[1].replace('\\', '/')
+        full_path = subdir + '/' + include
         # If the path isn't valid, maybe that's not relative path
         if not os.path.isfile(full_path):
             full_path = include
@@ -980,7 +1038,8 @@ def handle_file(handled_files, asm_file_name, subdir = "."):
         get_declarations(asm_file_contents, asm_file_name)
 
 if __name__ == "__main__":
-    link_root = "http://websvn.kolibrios.org/filedetails.php?repname=Kolibri+OS&path=/kernel/trunk"
+    link_root = "http://websvn.kolibrios.org/filedetails.php"
+    link_root += "?repname=Kolibri+OS&path=/kernel/trunk"
 
     # Dict where an identifier is assicoated with a string
     # The string contains characters specifying flags
@@ -1023,12 +1082,24 @@ if __name__ == "__main__":
     # Parse arguments
     parser = argparse.ArgumentParser()
     parser.add_argument("-o", help="Doxygen output folder")
-    parser.add_argument("--clean", help="Remove generated files", action="store_true")
-    parser.add_argument("--dump", help="Dump all defined symbols", action="store_true")
-    parser.add_argument("--stats", help="Print symbol stats", action="store_true")
-    parser.add_argument("--nowarn", help="Do not write warnings file", action="store_true")
-    parser.add_argument("--noemit", help="Do not emit doxygen files (for testing)", action="store_true")
-    parser.add_argument("--debug", help="Show hashes of files (for testing)", action="store_true")
+    parser.add_argument("--clean",
+                        help="Remove generated files",
+                        action="store_true")
+    parser.add_argument("--dump",
+                        help="Dump all defined symbols",
+                        action="store_true")
+    parser.add_argument("--stats",
+                        help="Print symbol stats",
+                        action="store_true")
+    parser.add_argument("--nowarn",
+                        help="Do not write warnings file",
+                        action="store_true")
+    parser.add_argument("--noemit",
+                        help="Do not emit doxygen files (for testing)",
+                        action="store_true")
+    parser.add_argument("--debug",
+                        help="Show hashes of files (for testing)",
+                        action="store_true")
     args = parser.parse_args()
     doxygen_src_path = args.o if args.o else 'docs/doxygen'
     clean_generated_stuff = args.clean
@@ -1042,18 +1113,20 @@ if __name__ == "__main__":
     elements = []
     created_files = []
     kernel_files = []
-    output_files = {} # If --debug then all the files are written here
+    output_files = {}  # If --debug then all the files are written here
 
     # Load remembered list of symbols
     if os.path.isfile('asmxygen.elements.pickle'):
         print('Reading existing dump of symbols')
-        (elements, id2kind) = pickle.load(open('asmxygen.elements.pickle', 'rb'))
+        pickle_file = open('asmxygen.elements.pickle', 'rb')
+        (elements, id2kind) = pickle.load(pickle_file)
+        pickle_file.close()
 
-    handle_file(kernel_files, "./kernel.asm");
+    handle_file(kernel_files, "./kernel.asm")
 
     if dump_symbols:
         stdout = sys.stdout
-        sys.stdout = open('asmxygen.dump.txt', 'w', encoding = 'utf-8')
+        sys.stdout = open('asmxygen.dump.txt', 'w', encoding='utf-8')
         for asm_element in elements:
             asm_element.dump()
         sys.stdout = stdout
@@ -1063,7 +1136,7 @@ if __name__ == "__main__":
         for file in kernel_files:
             doxygen_file = f"{doxygen_src_path}/{file}"
             if (os.path.isfile(doxygen_file)):
-                print(f"Removing {file}... ", end = '')
+                print(f"Removing {file}... ", end='')
                 os.remove(doxygen_file)
                 print("Done.")
     elif not noemit:
@@ -1072,16 +1145,20 @@ if __name__ == "__main__":
         i = 0
         new_elements = [x for x in elements if x.new]
         for element in new_elements:
-            print(f"[{i + 1}/{len(new_elements)}] Emitting {element.name} from {element.location}")
+            counter = f"[{i + 1}/{len(new_elements)}]"
+            print(f"{counter} Emitting {element.name} from {element.location}")
             element.emit(doxygen_src_path)
             i += 1
 
         print(f"Writing dump of symbols to asmxygen.elements.pickle")
 
-        # Now when the new elements already was written, there's no new elements anymore
+        # Now when the new elements already was written, there's no new
+        # elements anymore
         for element in elements:
             element.new = False
-        pickle.dump((elements, id2kind), open('asmxygen.elements.pickle', 'wb'))
+        pickle_file = open('asmxygen.elements.pickle', 'wb')
+        pickle.dump((elements, id2kind), pickle_file)
+        pickle_file.close()
 
     if print_stats:
         var_count = 0
@@ -1111,7 +1188,7 @@ if __name__ == "__main__":
         print(f'Parsed structure type count: {str_count}')
 
     if enable_warnings:
-        open('asmxygen.txt', "w", encoding = "utf-8").write(warnings)
+        open('asmxygen.txt', "w", encoding="utf-8").write(warnings)
 
     if debug_mode:
         hash_per_file = ""
@@ -1124,6 +1201,7 @@ if __name__ == "__main__":
         else:
             reference_hash_per_file = open("asmxygen_hash_per_file.txt").read()
             if reference_hash_per_file != hash_per_file:
-                print(''.join(difflib.ndiff(reference_hash_per_file, hash_per_file)))
+                diffs = difflib.ndiff(reference_hash_per_file, hash_per_file)
+                print(''.join(diffs))
             else:
                 print("SUCCESS")
