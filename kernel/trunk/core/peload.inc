@@ -11,6 +11,9 @@ include 'export.inc'
 
 align 4
 
+; This function load file driver and output
+;  eax = address function START in driver
+;  ebx = address for kernel_free
 proc load_PE stdcall, file_name:dword
            locals
              image  dd ?
@@ -58,6 +61,7 @@ proc load_PE stdcall, file_name:dword
 .cleanup:
         stdcall kernel_free, [image]
         mov     eax, [entry]
+        mov     ebx, [base]
         ret
 .fail:
         xor     eax, eax

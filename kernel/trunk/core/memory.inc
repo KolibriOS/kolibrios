@@ -1261,18 +1261,21 @@ proc load_pe_driver stdcall, file:dword, cmdline:dword
         jz      .fail
 
         mov     esi, eax
+        push    ebx  ;  base addres driver
         push    [cmdline]
         push    DRV_ENTRY
         call    eax
         pop     ecx
         pop     ecx
+        pop     ebx
         test    eax, eax
-        jz      .fail
+        jz      .fail_init
 
         mov     [eax+SRV.entry], esi
         pop     esi
         ret
-
+.fail_init:
+        stdcall kernel_free, ebx  ;clear memory driver
 .fail:
         xor     eax, eax
         pop     esi
