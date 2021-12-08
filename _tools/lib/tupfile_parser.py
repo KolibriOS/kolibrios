@@ -62,6 +62,20 @@ def parse_rule_output(src, ptr):
     # Now we can read the string
     return get_strnig(src, ptr)
 
+def parse_required_compiler(src, ptr):
+    # Get straignt to the first argument
+    ptr += len("tup.getconfig")
+    # Get to parenthese
+    ptr = get_to(src, ptr, "(")
+    # Get to start of the requirement string
+    ptr = get_to(src, ptr, "\"")
+    # Read the requirement string (like NO_FASM)
+    requirement_string = get_strnig(src, ptr)
+    if requirement_string.startswith("NO_"):
+        return requirement_string[len("NO_"):].lower().replace("_", "-")
+    else:
+        return None
+
 def parse_tupfile_outputs(file_name):
     outputs = []
     with open(file_name) as f:
@@ -72,3 +86,17 @@ def parse_tupfile_outputs(file_name):
         # Find the next tup.rule call
         rule_begin_index = tupfile.find("tup.rule(", rule_begin_index + len("tup.rule("))
     return outputs
+
+def parse_required_compilers(file_name):
+    compilers = []
+    with open(file_name) as f:
+        tupfile = f.read()
+    rule_begin_index = tupfile.find("tup.getconfig(")
+    while (rule_begin_index != -1):
+        required_compiler = parse_required_compiler(tupfile, rule_begin_index)
+        if required_compiler is not None:
+            compilers.append(required_compiler)
+        # Find the next tup.getconfig call
+        rule_begin_index = tupfile.find("tup.getconfig(", rule_begin_index + len("tup.getconfig"))
+    return compilers
+ 

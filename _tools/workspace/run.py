@@ -14,11 +14,13 @@ from workspace.build import build
 from lib.builds import builds_get, builds_get_contents
 from lib.makeflop import Floppy
 from lib.platform import is_win32, path
-from lib.logging import log
+from lib.logging import log, require_tools
 from lib.constants import tools_cache_kolibri_img
 
 # TODO: Move into _tools/lib
 def run_qemu(start_dir = "workspace"):
+    require_tools(("qemu-system-i386",))
+
     qemu_command = f"qemu-system-i386"
     flags = ""
     flags += "-L . " # IDK why it does not work without this
