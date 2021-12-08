@@ -32,7 +32,8 @@ TYPE
 
     tItem = POINTER TO RECORD (List.tItem)
 
-        val: RW.tFileName
+        val: RW.tFileName;
+        modified: BOOLEAN
 
     END;
 
@@ -46,7 +47,7 @@ TYPE
     END;
 
 
-PROCEDURE drawTab (t: tTabs; id, x, y, width, height: INTEGER; s: ARRAY OF CHAR);
+PROCEDURE drawTab (t: tTabs; id, x, y, width, height: INTEGER; s: ARRAY OF CHAR; modified: BOOLEAN);
 VAR
     x2, y2, color: INTEGER;
 BEGIN
@@ -68,13 +69,17 @@ BEGIN
         K.DrawLine(x2 - 1, y2, x, y2, K.borderColor);
     END;
     K.DrawLine(x, y2, x, y, K.borderColor);
-    K.DrawText866bk(x + K.fontWidth, y + (height - K.fontHeight) DIV 2, K.textColor, color, s);
+
+    K.DrawText866bk(x + K.fontWidth + K.fontWidth DIV 2, y + (height - K.fontHeight) DIV 2, K.textColor, color, s);
+    IF modified THEN
+    	K.DrawText866bk(x + K.fontWidth DIV 2, y + (height - K.fontHeight) DIV 2, K.textColor, color, "*")
+    END;
     K.CreateButton(id + ORD({30}) + btnID, x + 1, y - 1, width - 1, height - 1, color, "");
 END drawTab;
 
 
 PROCEDURE tabWidth (tab: tItem): INTEGER;
-    RETURN (LENGTH(tab.val) + 2)*K.fontWidth
+    RETURN (LENGTH(tab.val) + 3)*K.fontWidth
 END tabWidth;
 
 
@@ -135,7 +140,7 @@ BEGIN
     WHILE (item # NIL) & (x <= xmax) DO
         width := tabWidth(item(tItem));
         IF x + width - 1 <= xmax THEN
-            drawTab(t, n, x + 1, y, width, t.height, item(tItem).val)
+            drawTab(t, n, x + 1, y, width, t.height, item(tItem).val, item(tItem).modified)
         END;
         INC(n);
         INC(x, width);
@@ -150,8 +155,21 @@ VAR
 BEGIN
     NEW(item);
     item.val := s;
+    item.modified := FALSE;
     List.append(t.strings, item);
 END add;
+
+
+PROCEDURE modify* (t: tTabs; n: INTEGER; val: BOOLEAN);
+VAR
+    item: List.tItem;
+BEGIN
+	item := List.getItem(t.strings, n);
+	IF item(tItem).modified # val THEN
+		item(tItem).modified := val;
+		draw(t)
+	END
+END modify;
 
 
 PROCEDURE rename* (t: tTabs; n: INTEGER; s: ARRAY OF CHAR);

@@ -1834,7 +1834,6 @@ END wordSel;
 PROCEDURE getWordPos (line: tLine; pos: INTEGER): INTEGER;
 VAR
 	c: WCHAR;
-
 BEGIN
 	c := getChar(line, pos);
 	IF isWordChar(c) THEN

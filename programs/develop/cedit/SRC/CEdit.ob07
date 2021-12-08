@@ -28,7 +28,7 @@ IMPORT
     RW, Ini, EB := EditBox, Icons, Tabs, Timer;
 
 CONST
-    HEADER = "CEdit (27-nov-2021)";
+    HEADER = "CEdit (08-dec-2021)";
 
     ShellFilter = "";
     EditFilter = "SH|INC|TXT|ASM|OB07|C|CPP|H|PAS|PP|LUA|INI|JSON";
@@ -393,21 +393,42 @@ BEGIN
 END toolbarIcons;
 
 
-PROCEDURE WriteModified (x, y: INTEGER);
+PROCEDURE getIdx (text: T.tText): INTEGER;
+VAR
+    i: INTEGER;
+BEGIN
+    i := 0;
+    WHILE texts[i] # text DO
+        INC(i)
+    END
+    RETURN i
+END getIdx;
+
+
+PROCEDURE MarkModified;
 BEGIN
     modified := text.modified;
-    K.DrawRect(x, TOP + canvas.height + scrollWidth, 8*fontWidth, BOTTOM - scrollWidth + 1, K.winColor);
-    IF modified THEN
-        K.DrawText866(x, y, K.textColor, "modified")
-    END
-END WriteModified;
+    Tabs.modify(tabs, getIdx(text), modified)
+END MarkModified;
+
+
+PROCEDURE SetCaption (fileName: RW.tFileName);
+VAR
+	header: RW.tFileName;
+BEGIN
+    header := HEADER;
+    IF text.fileName # "" THEN
+    	U.append8(header, " - ");
+    	U.append8(header, text.fileName)
+    END;
+    K.SetCaption(header)
+END SetCaption;
 
 
 PROCEDURE DrawState (text: T.tText; width, height: INTEGER);
 VAR
     y: INTEGER;
     s: ARRAY 24 OF WCHAR;
-    header: RW.tFileName;
 BEGIN
 	eol := T.getEol(text);
 	enc := T.getEnc(text);
@@ -415,16 +436,11 @@ BEGIN
     U.append(s, RW.eolNames[eol]);
     U.append(s, 20X + 20X);
     U.append(s, E.names[enc]);
-    header := HEADER;
-    IF text.fileName # "" THEN
-    	U.append8(header, " - ");
-    	U.append8(header, text.fileName)
-    END;
-    K.SetCaption(header);
+    SetCaption(text.fileName);
     K.DrawRect(LEFT + 16*fontWidth, TOP + canvas.height + scrollWidth, width - (LEFT + 16*fontWidth), BOTTOM - scrollWidth + 1, K.winColor);
     y := height - (BOTTOM - scrollWidth) + (BOTTOM - scrollWidth - 16) DIV 2;
-    K.DrawText(width - (LENGTH(s) + 10)*fontWidth, y, K.textColor, s);
-    WriteModified(width - 8*fontWidth, y)
+    K.DrawText(width - LENGTH(s)*fontWidth, y, K.textColor, s);
+    MarkModified
 END DrawState;
 
 
@@ -468,7 +484,7 @@ BEGIN
         IF (enc # T.getEnc(text)) OR (eol # T.getEol(text)) THEN
         	DrawState(text, width, height)
         ELSIF modified # text.modified THEN
-            WriteModified(width - 8*fontWidth, y)
+            MarkModified
         END;
 
         T.getScroll(text, scrollX, scrollY);
@@ -675,8 +691,13 @@ END OpenFile;
 
 
 PROCEDURE error (s: RW.tFileName);
+VAR
+    temp: RW.tFileName;
 BEGIN
-    K.Run("/rd/1/@notify", s)
+	temp := "'CEdit: ";
+	U.append8(temp, s);
+	U.append8(temp, "' -E");
+    K.Run("/rd/1/@notify", temp)
 END error;
 
 
@@ -684,9 +705,8 @@ PROCEDURE saveError (name: RW.tFileName);
 VAR
     s: RW.tFileName;
 BEGIN
-    s := "'cedit: error saving file ";
+    s := "error saving file ";
     U.append8(s, name);
-    U.append8(s, "' -E");
     error(s)
 END saveError;
 
@@ -716,18 +736,6 @@ BEGIN
 END saveAs;
 
 
-PROCEDURE getIdx (text: T.tText): INTEGER;
-VAR
-    i: INTEGER;
-BEGIN
-    i := 0;
-    WHILE texts[i] # text DO
-        INC(i)
-    END
-    RETURN i
-END getIdx;
-
-
 PROCEDURE Switch (txt: T.tText);
 BEGIN
     Tabs.switch(tabs, curText);
@@ -748,7 +756,8 @@ BEGIN
             curText := getIdx(text);
             Switch(text);
             saveAs(text)
-        END
+        END;
+   		Tabs.modify(tabs, getIdx(text), text.modified)
     END
 END save;
 
@@ -756,14 +765,18 @@ END save;
 PROCEDURE saveAll;
 VAR
     i: INTEGER;
+    txt: T.tText;
 BEGIN
     i := textsCount - 1;
     WHILE i >= 0 DO
-        IF texts[i].modified THEN
-            save(texts[i])
+    	txt := texts[i];
+        IF txt.modified THEN
+        	T.switch(txt);
+            save(txt)
         END;
         DEC(i)
     END;
+    T.switch(text)
 END saveAll;
 
 
@@ -845,7 +858,7 @@ BEGIN
         T.SetPos(nov, 0, 0);
         insert(textsCount, nov)
     ELSE
-        error("'cedit: too many files' -E")
+        error("too many files")
     END
 END NewFile;
 
@@ -901,7 +914,7 @@ BEGIN
             IF n = -1 THEN
                 nov := T.open(fileName, err);
                 IF nov = NIL THEN
-                    error("'cedit: error opening file' -E")
+                    error("error opening file")
                 ELSE
                     insert(textsCount, nov);
                     T.SetPos(nov, 0, 0)
@@ -911,7 +924,7 @@ BEGIN
             END
         END
     ELSE
-        error("'cedit: too many files' -E")
+        error("too many files")
     END
 END open;
 
@@ -1050,9 +1063,9 @@ END Script;
 PROCEDURE ShowSearchPanel (goto: BOOLEAN);
 VAR
 	i: INTEGER;
-	flag: BOOLEAN;
+	(*flag: BOOLEAN;*)
 BEGIN
-	flag := FALSE;
+	(*flag := FALSE;*)
 	IF T.selected(text) & ~goto THEN
 		T.getSelectedText(text, new_searchText);
 		IF new_searchText # "" THEN
@@ -1064,7 +1077,7 @@ BEGIN
 				searchText := new_searchText;
 				EB.setValue(FindEdit, searchText);
 				notFound := ~T.search(text, searchText, cs, whole);
-				flag := TRUE
+				(*flag := TRUE*)
 			END
 		END
 	END;
@@ -1074,12 +1087,10 @@ BEGIN
         search := FALSE;
         Search
     END;
-    IF flag THEN
-    	SetFocus(FindEdit, FALSE)
-    ELSIF goto THEN
-   		SetFocus(GotoEdit, TRUE)
+    IF goto THEN
+    	SetFocus(GotoEdit, TRUE)
     ELSE
-    	SetFocus(FindEdit, TRUE)
+    	SetFocus(FindEdit, (*~flag*)TRUE)
     END
 END ShowSearchPanel;
 
@@ -1737,6 +1748,9 @@ BEGIN
         ELSIF (keyCode = 34) & ctrl THEN (* ctrl+G *)
             key := -1;
             ShowSearchPanel(TRUE)
+        ELSIF (keyCode = 18) & ctrl THEN (* ctrl+E *)
+            key := -1;
+            T.selectWord(text)
         ELSE
             IF EditBox_Focus(FindEdit) THEN
             	IF keyCode = 15 THEN (* Tab *)
@@ -2040,6 +2054,7 @@ BEGIN
             END;
             K.SetEventsMask({0, 1, 2, 5, 6, 31})
         ELSE
+        	SetCaption(text.fileName);
             K.SetEventsMask({0, 30, 31})
         END;
         draw_window
@@ -2138,7 +2153,7 @@ BEGIN
     ELSE
         text := T.open(fileName, err);
         IF text = NIL THEN
-            error("'cedit: error opening file' -E");
+            error("error opening file");
             K.Exit
         ELSE
             U.getPath(fileName, filePath)
