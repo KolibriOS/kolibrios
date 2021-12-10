@@ -191,11 +191,13 @@ def build_umka_asm(object_output_dir):
     env["INCLUDE"] += f"{kolibrios_folder}/kernel/trunk;"
     env["INCLUDE"] += f"{kolibrios_folder}/{libcrash}"
     command = "fasm "
+    command += "-dWIN32=1 " if sys.platform == "win32" else ""
     command += "-dUEFI=1 -dextended_primary_loader=1 -dUMKA=1 "
     command += "umka/umka.asm umka/build/umka.o -s umka/build/umka.fas "
     command += "-m 2000000 "
+    print(command)
     stdout = subprocess.check_output(command, shell=True, env=env)
-    print(stdout)
+    print(stdout.decode("ascii"))
     return umka_o
 
 
@@ -204,15 +206,21 @@ def cc(src, obj, include_path):
     command += "-Wno-everything -std=c11 -g -O0 -fno-pie -m32 -masm=intel -c "
     command += "-D_FILE_OFFSET_BITS=64 -DNDEBUG -D_POSIX_C_SOURCE=200809L "
     command += f"-I {include_path} {src} -o {obj}"
+    print(command)
     if os.system(command) != 0:
         exit()
 
 
 def link(objects):
+    if sys.platform == "linux" or sys.platform == "linux2":
+        linker_script = "-T umka/umka.ld"
+    else:
+        linker_script = "-Wl,/ALIGN:65536 -Wl,/MAP:umka.map "
     command = "clang "
     command += "-Wno-everything "
-    command += "-no-pie -m32 -o umka_shell -static -T umka/umka.ld "
+    command += f"-no-pie -m32 -o umka_shell.exe -static {linker_script} "
     command += " ".join(objects)
+    print(command)
     if os.system(command) != 0:
         exit()
 
@@ -223,6 +231,10 @@ def build_umka():
 
     os.makedirs("umka/build", exist_ok=True)
 
+    platform = "win32" if sys.platform == "win32" else "linux"
+
+    os.makedirs(f"umka/build/{platform}", exist_ok=True)
+
     c_sources = [
         "umka_shell.c",
         "shell.c",
@@ -230,14 +242,16 @@ def build_umka():
         "trace_lbr.c",
         "vdisk.c",
         "vnet.c",
+        "getopt.c",
+        "isatty.c",
         "lodepng.c",
-        "linux/pci.c",
-        "linux/thread.c",
+        f"{platform}/pci.c",
+        f"{platform}/thread.c",
         "util.c",
     ]
 
     src_obj_pairs = [
-        (f"umka/{source}", f"umka/{source}.o") for source in c_sources
+        (f"umka/{source}", f"umka/build/{source}.o") for source in c_sources
     ]
 
     for src, obj in src_obj_pairs:
@@ -252,12 +266,18 @@ def build_umka():
     for test in [t for t in os.listdir(".") if t.endswith(".t")]:
         out_log = f"{test[:-2]}.out.log"
         ref_log = f"{test[:-2]}.ref.log"
-        cmd_umka = f"../../umka_shell < {test} > {out_log}"
+        cmd_umka = f"..{os.sep}..{os.sep}umka_shell.exe < {test} > {out_log}"
         print(cmd_umka)
         os.system(cmd_umka)
-        cmd_cmp = f"cmp {out_log} {ref_log}"
-        print(cmd_cmp)
-        if os.system(cmd_cmp) != 0:
+        with open(out_log, "rb") as f:
+            crlf = bytes([0x0D, 0x0A])
+            lf = bytes([0x0A])
+            out_log_contents = f.read().replace(crlf, lf)
+        with open(out_log, "wb") as f:
+            f.write(out_log_contents)
+        with open(ref_log, "rb") as f:
+            ref_log_contents = f.read()
+        if out_log_contents != ref_log_contents:
             print("FAILURE")
             exit()
     os.chdir("../../")
