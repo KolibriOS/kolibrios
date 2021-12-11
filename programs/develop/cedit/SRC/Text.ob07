@@ -93,7 +93,7 @@ VAR
 
     colors*: RECORD
                 text, back, seltext, selback, modified, saved, curline, numtext, numback: INTEGER;
-                comment, string, num, delim, key1, key2, key3: INTEGER
+                comment, string, escape, num, delim, key1, key2, key3: INTEGER
              END;
     canvas: G.tCanvas;
     drawCursor: BOOLEAN;
@@ -351,11 +351,26 @@ VAR
 
     PROCEDURE String (text: tText; line: tLine; VAR i: INTEGER; y: INTEGER; backColor: INTEGER);
     VAR
-        k: INTEGER;
+        k, j, Start, End: INTEGER;
+        c: WCHAR;
     BEGIN
         k := i;
-        Lang.SkipString(line, i, line.length - 1);
-        PrintLex(text, line, k, i, y, colors.string, backColor)
+        Lang.SkipString(line, i, line.length - 1, text.lang);
+        PrintLex(text, line, k, i, y, colors.string, backColor);
+        IF text.lang IN Lang.escLang THEN
+	        Start := k + 1;
+	        End := i - 1;
+	        k := Start;
+	        WHILE k <= End DO
+	        	c := getChar(line, k);
+	        	IF c = "\" THEN
+	        		j := k;
+	        		Lang.SkipEsc(line, k, line.length - 1, text.lang);
+	        		PrintLex(text, line, j, k, y, colors.escape, backColor)
+	        	END;
+	        	INC(k)
+	        END
+        END
     END String;
 
 
@@ -1762,24 +1777,70 @@ BEGIN
 END exchange;
 
 
-PROCEDURE upLine* (text: tText);
+PROCEDURE upLine (text: tText);
 BEGIN
-	resetSelect(text);
-    IF text.cursor.Y > 0 THEN
-        DEC(text.cursor.Y);
-        exchange(text, text.curLine.prev(tLine), text.curLine)
-    END
+	DEC(text.cursor.Y);
+	exchange(text, text.curLine.prev(tLine), text.curLine)
 END upLine;
 
 
-PROCEDURE downLine* (text: tText);
+PROCEDURE downLine (text: tText);
 BEGIN
-	resetSelect(text);
-    IF text.cursor.Y < text.count - 1 THEN
-        INC(text.cursor.Y);
-        exchange(text, text.curLine, text.curLine.next(tLine))
-    END
+	INC(text.cursor.Y);
+	exchange(text, text.curLine, text.curLine.next(tLine))
 END downLine;
+
+
+PROCEDURE MoveLines* (text: tText; down: BOOLEAN);
+VAR
+	last: tLine;
+	selBeg, selEnd, temp: tPoint;
+	n, step: INTEGER;
+	frw: BOOLEAN;
+	moveLine: PROCEDURE (text: tText);
+BEGIN
+	getSelect(text, selBeg, selEnd);
+	IF (selBeg.Y > 0) & ~down OR (selEnd.Y < text.count - 1) & down THEN
+		IF down THEN
+			step := -2;
+			moveLine := downLine
+		ELSE
+			step := 2;
+			moveLine := upLine
+		END;
+		frw := (text.cursor.X = selEnd.X) & (text.cursor.Y = selEnd.Y);
+		IF selEnd.Y # selBeg.Y THEN
+			IF down # frw THEN
+				temp := text.cursor^;
+				SetPos(text, 0, text.select.Y);
+				setSelect(text);
+				text.select^ := temp
+			END;
+			last := getLine(text, selEnd.Y);
+			selBeg.X := 0;
+			selEnd.X := last.length;
+			n := selEnd.Y - selBeg.Y + 1;
+			WHILE n > 0 DO
+				moveLine(text);
+				SetPos(text, 0, text.cursor.Y + step);
+				DEC(n)
+			END
+		ELSE
+			moveLine(text)
+		END;
+
+		IF frw THEN
+			temp := selBeg;
+			selBeg := selEnd;
+			selEnd := temp
+		END;
+		step := step DIV 2;
+		SetPos(text, selBeg.X, selBeg.Y - step);
+		setSelect(text);
+		text.select.X := selEnd.X;
+		text.select.Y := selEnd.Y - step
+	END
+END MoveLines;
 
 
 PROCEDURE isWordChar (c: WCHAR): BOOLEAN;
@@ -1861,7 +1922,9 @@ BEGIN
         setSelect(text)
     ELSE
         IF (33 <= code) & (code <= 40) THEN
-            resetSelect(text)
+        	IF ~(((code = 38) OR (code = 40)) & ctrl) THEN
+	            resetSelect(text)
+            END
         END
     END;
 
@@ -1914,7 +1977,7 @@ BEGIN
         END
     |38:
         IF ctrl THEN
-            upLine(text)
+            MoveLines(text, FALSE)
         ELSE
             UpDown(text, -1)
         END
@@ -1930,7 +1993,7 @@ BEGIN
         END
     |40:
         IF ctrl THEN
-            downLine(text)
+            MoveLines(text, TRUE)
         ELSE
             UpDown(text, 1)
         END
@@ -2294,7 +2357,7 @@ END create;
 
 
 PROCEDURE setColors* (text, back, seltext, selback, modified, saved, curline, numtext, numback,
-                        comment, string, num, delim, key1, key2, key3: INTEGER);
+                        comment, string, escape, num, delim, key1, key2, key3: INTEGER);
 BEGIN
     colors.text := text;
     colors.back := back;
@@ -2307,6 +2370,7 @@ BEGIN
     colors.numback := numback;
     colors.comment := comment;
     colors.string  := string;
+    colors.escape  := escape;
     colors.num := num;
     colors.delim := delim;
     colors.key1 := key1;

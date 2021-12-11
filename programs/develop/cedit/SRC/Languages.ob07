@@ -28,6 +28,7 @@ CONST
     langFasm* = 4; langLua* = 5; langIni* = 6; langJSON* = 7;
 
     csLang = {langC, langOberon, langLua, langIni, langJSON};
+    escLang* = {langC, langLua, langJSON};
 
 TYPE
 
@@ -87,15 +88,96 @@ BEGIN
 END isDelim;
 
 
-PROCEDURE SkipString* (line: tLine; VAR pos: INTEGER; n: INTEGER);
+PROCEDURE SkipString* (line: tLine; VAR pos: INTEGER; n: INTEGER; lang: INTEGER);
 VAR
-    quot: WCHAR;
+    quot, cur, prev: WCHAR;
 BEGIN
     quot := Lines.getChar(line, pos);
-    REPEAT
-        INC(pos)
-    UNTIL (pos > n) OR (Lines.getChar(line, pos) = quot)
+    cur := quot;
+    prev := 0X;
+    INC(pos);
+    WHILE pos <= n DO
+    	IF lang IN escLang THEN
+    		prev := cur
+    	END;
+    	cur := Lines.getChar(line, pos);
+    	IF (cur = "\") & (prev = "\") THEN
+    		cur := 0X
+    	ELSIF (cur = quot) & (prev # "\") THEN
+    		n := 0; (* exit *)
+    		DEC(pos)
+    	END;
+    	INC(pos)
+    END
 END SkipString;
+
+
+PROCEDURE SkipEsc* (line: tLine; VAR pos: INTEGER; n: INTEGER; lang: INTEGER);
+VAR
+	c, c1: WCHAR;
+	k: INTEGER;
+BEGIN
+	IF pos < n THEN
+		c := Lines.getChar(line, pos + 1);
+		CASE lang OF
+		|langC:
+			IF Utils.inString(c, "abfnrtv\'?" + '"') THEN
+				INC(pos)
+			ELSIF Utils.isOct(c) THEN
+				k := 0;
+				REPEAT
+					INC(pos);
+					IF Utils.isOct(Lines.getChar(line, pos)) THEN
+						INC(k)
+					ELSE
+						k := 0
+					END
+				UNTIL (k = 0) OR (k = 4);
+				DEC(pos)
+			ELSIF (c = "x") OR (c = "u") OR (c = "U") THEN
+				c1 := c;
+				k := 0;
+				INC(pos);
+				REPEAT
+					INC(pos);
+					c := Lines.getChar(line, pos);
+					IF Utils.cap(c) THEN END;
+					IF Utils.isHex(c) THEN
+						INC(k)
+					ELSE
+						k := 0
+					END;
+					IF (c1 = "u") & (k = 5) OR (c1 = "U") & (k = 9) THEN
+						k := 0
+					END
+				UNTIL k = 0;
+				DEC(pos)
+			END
+		|langLua:
+			IF Utils.inString(c, "abfnrtv\'[]" + '"') THEN
+				INC(pos)
+			END
+		|langJSON:
+			IF Utils.inString(c, 'bfnrt\/"') THEN
+				INC(pos)
+			ELSIF c = "u" THEN
+				k := 0;
+				INC(pos);
+				REPEAT
+					INC(pos);
+					c := Lines.getChar(line, pos);
+					IF Utils.cap(c) THEN END;
+					IF Utils.isHex(c) THEN
+						INC(k)
+					ELSE
+						k := 0
+					END
+				UNTIL (k = 0) OR (k = 5);
+				DEC(pos)
+			END
+		END
+	END
+END SkipEsc;
 
 
 PROCEDURE C (line: tLine; VAR depth, cond, pos: INTEGER; n: INTEGER);
@@ -115,7 +197,7 @@ BEGIN
             depth := 1;
             cond := 0
         ELSIF (c = "'") OR (c = '"') THEN
-            SkipString(line, pos, n);
+            SkipString(line, pos, n, langC);
             cond := 0
         ELSE
             cond := 0
@@ -193,7 +275,7 @@ BEGIN
                 depth := (k + 1)*2
             END
         ELSIF (c = "'") OR (c = '"') THEN
-            SkipString(line, pos, n);
+            SkipString(line, pos, n, langLua);
             cond := 0
         ELSE
             cond := 0
@@ -232,7 +314,7 @@ BEGIN
             depth := 2;
             cond := 0
         ELSIF c = "'" THEN
-            SkipString(line, pos, n);
+            SkipString(line, pos, n, langPascal);
             cond := 0
         ELSIF c = "{" THEN
             IF Lines.getChar(line, pos + 1) = "$" THEN
@@ -274,7 +356,7 @@ BEGIN
             cond := 3
         END
     ELSIF (depth = 0) & ((c = "'") OR (c = '"')) THEN
-        SkipString(line, pos, n);
+        SkipString(line, pos, n, langOberon);
         cond := 0
     ELSIF c = "(" THEN
         cond := 1
@@ -308,7 +390,7 @@ BEGIN
         IF c = ";" THEN
             pos := n
         ELSIF c = '"' THEN
-            SkipString(line, pos, n)
+            SkipString(line, pos, n, langIni)
         ELSIF c = "[" THEN
             depth := 1
         END

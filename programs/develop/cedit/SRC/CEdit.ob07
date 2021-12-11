@@ -28,7 +28,7 @@ IMPORT
     RW, Ini, EB := EditBox, Icons, Tabs, Timer;
 
 CONST
-    HEADER = "CEdit (08-dec-2021)";
+    HEADER = "CEdit (11-dec-2021)";
 
     ShellFilter = "";
     EditFilter = "SH|INC|TXT|ASM|OB07|C|CPP|H|PAS|PP|LUA|INI|JSON";
@@ -1364,9 +1364,9 @@ BEGIN
 	    |menuColors..menuMaxColors:
 	        Ini.selectSection(IPC[2] - menuColors)
 	    |menuMoveUp:
-	    	T.upLine(text)
+	    	T.MoveLines(text, FALSE)
 	    |menuMoveDown:
-	    	T.downLine(text)
+			T.MoveLines(text, TRUE)
 	    |menuDuplicate:
 	    	T.dupLine(text)
 	    |menuRemove:

@@ -104,7 +104,7 @@ VAR
     section: tSection;
 
     text, back, seltext, selback, modified, saved, curline, numtext, numback,
-    comment, string, num, delim, key1, key2, key3: INTEGER;
+    comment, string, escape, num, delim, key1, key2, key3: INTEGER;
 BEGIN
     IF (0 <= idx) & (idx < sections.count) THEN
         curSectionNum := idx;
@@ -140,9 +140,10 @@ BEGIN
     key1     := getColor("key1",     0000080H);
     key2     := getColor("key2",     0008080H);
     key3     := getColor("key3",     0008080H);
+    escape   := getColor("escape",   string);
 
     Text.setColors(text, back, seltext, selback, modified, saved, curline, numtext, numback,
-        comment, string, num, delim, key1, key2, key3);
+        comment, string, escape, num, delim, key1, key2, key3);
 END selectSection;
 
 

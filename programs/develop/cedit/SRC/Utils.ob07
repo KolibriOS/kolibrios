@@ -144,6 +144,11 @@ PROCEDURE isDigit* (ch: WCHAR): BOOLEAN;
 END isDigit;
 
 
+PROCEDURE isOct* (ch: WCHAR): BOOLEAN;
+    RETURN ("0" <= ch) & (ch <= "7")
+END isOct;
+
+
 PROCEDURE isHex* (ch: WCHAR): BOOLEAN;
     RETURN ("0" <= ch) & (ch <= "9") OR ("A" <= ch) & (ch <= "F")
 END isHex;
@@ -365,6 +370,19 @@ END ptr2str;
 PROCEDURE between* (a, b, c: INTEGER): BOOLEAN;
 	RETURN (a <= b) & (b <= c)
 END between;
+
+
+PROCEDURE inString* (c: WCHAR; s: ARRAY OF WCHAR): BOOLEAN;
+VAR
+	i, L: INTEGER;
+BEGIN
+	L := LENGTH(s);
+	i := 0;
+	WHILE (i < L) & (c # s[i]) DO
+		INC(i)
+	END
+	RETURN i < L
+END inString;
 
 
 END Utils.
