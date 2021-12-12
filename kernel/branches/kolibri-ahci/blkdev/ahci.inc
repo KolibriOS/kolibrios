@@ -345,10 +345,12 @@ ahci_callbacks:
     dd  0   ; no flush function
     dd  0   ; use default cache size
 .end:
-hd_name db 'sd', 0, 0, 0
-sata_dev_counter dd 0    ; sata devices counter
-; TODO: satapi_dev_counter dd 0 ; satapi devices (optical drives) counter
-ctr_counter dd 0         ; controllers counter
+sata_dev_name      db 'sd', 0, 0, 0
+satapi_dev_name    db 'scd', 0, 0, 0
+sata_dev_counter   dd 0  ; sata devices counter
+satapi_dev_counter dd 0  ; satapi devices (optical drives) counter
+ctr_counter        dd 0  ; controllers counter
+disk_to_add_name   dd 0  ; local var for ahci_init
 endg
 
 ; -----------------------------------------------------------------------
@@ -361,7 +363,7 @@ ahci_init:
 .find_ahci_ctr:
         mov     esi, [esi + PCIDEV.fd]
         cmp     esi, pcidev_list
-        jz      .ahci_ctr_not_found
+        jz      .end_find_ahci_ctr
         mov     eax, [esi + PCIDEV.class]
         ;DEBUGF  1, "K: device class = %x\n", eax
         shr     eax, 8 ; shift right because lowest 8 bits if ProgIf field
@@ -369,8 +371,11 @@ ahci_init:
         jz      .ahci_ctr_found
         jmp     .find_ahci_ctr
 
-.ahci_ctr_not_found:
-        DEBUGF  1, "K: AHCI controller not found\n"
+.end_find_ahci_ctr:
+        cmp     [ctr_counter], 0
+        ja      @f
+        DEBUGF  1, "K: AHCI: controllers not found\n"
+@@:
         ret
 
 .ahci_ctr_found:
@@ -592,12 +597,14 @@ ahci_init:
 
         stdcall ahci_port_identify, ecx
 
+        ; register drive as disk in system if it is SATA or SATAPI:
         cmp     [ecx + PORT_DATA.drive_type], AHCI_DEV_SATA
-        jne     .after_add_disk ; skip adding disk code
-        ; register disk in system:
+        je      .disk_add_sata
+        cmp     [ecx + PORT_DATA.drive_type], AHCI_DEV_SATAPI
+        je      .disk_add_satapi
+        jne     .after_add_disk ; else skip adding disk code
         
-        ;stdcall ahci_read_first_sector, ecx
-
+.disk_add_sata:
         push    ecx
         mov     eax, [sata_dev_counter]
         inc     [sata_dev_counter]
@@ -605,22 +612,46 @@ ahci_init:
         mov     ecx, 10
         div     ecx ; eax = sata_dev_counter / 10, edx = sata_dev_counter % 10
         test    eax, eax
-        jz      .concat_one
+        jz      .concat_one_digit
         add     al, '0'
-        mov     byte [hd_name + 2], al
+        mov     byte [sata_dev_name + 2], al
         add     dl, '0'
-        mov     byte [hd_name + 3], dl
+        mov     byte [sata_dev_name + 3], dl
         jmp     .endif1
-.concat_one:
+.concat_one_digit:
         add     dl, '0'
-        mov     byte [hd_name + 2], dl
+        mov     byte [sata_dev_name + 2], dl
 .endif1:
+        mov     [disk_to_add_name], sata_dev_name
+        pop     ecx
+        jmp     .disk_add
+
+.disk_add_satapi:
+        push    ecx
+        mov     eax, [satapi_dev_counter]
+        inc     [satapi_dev_counter]
+        xor     edx, edx
+        mov     ecx, 10
+        div     ecx ; eax = satapi_dev_counter / 10, edx = satapi_dev_counter % 10
+        test    eax, eax
+        jz      .concat_one_digit2
+        add     al, '0'
+        mov     byte [satapi_dev_name + 3], al
+        add     dl, '0'
+        mov     byte [satapi_dev_name + 4], dl
+        jmp     .endif2
+.concat_one_digit2:
+        add     dl, '0'
+        mov     byte [satapi_dev_name + 3], dl
+.endif2:
+        mov     [disk_to_add_name], satapi_dev_name
         pop     ecx
 
-        DEBUGF  1, "adding '%s'\n", hd_name
+.disk_add:
+        DEBUGF  1, "adding '%s'\n", [disk_to_add_name]
 
         push    ecx
-        stdcall disk_add, ahci_callbacks, hd_name, ecx, 0
+        stdcall disk_add, ahci_callbacks, [disk_to_add_name], ecx, 0
         pop     ecx
         test    eax, eax
         jz      .disk_add_fail
@@ -637,8 +668,6 @@ ahci_init:
 .continue_detect_drives:
         inc     ebx
         jmp     .detect_drives
-
-        
 
 .end_detect_drives:
         pop     esi
@@ -717,6 +746,7 @@ proc ahci_port_identify stdcall, pdata: dword
         bts     ebx, bit_AHCI_H2D_FLAG_CMD ; Set Command bit in H2D FIS.
         mov     byte [eax + HBA_CMD_TBL.cfis + FIS_REG_H2D.flags], bl
 
+        ; Choose identify command depending on drive type
         mov     byte [eax + HBA_CMD_TBL.cfis + FIS_REG_H2D.command], ATA_IDENTIFY
         cmp     [esi + PORT_DATA.drive_type], AHCI_DEV_SATAPI
         jne     @f
@@ -740,7 +770,6 @@ proc ahci_port_identify stdcall, pdata: dword
         ; TODO check eax error value
 
         ; DEBUGF  1, "sata_error register = 0x%x\n", [edi + HBA_PORT.sata_error]
-
         mov     esi, [buf_virt]
         add     esi, 27*2
         mov     edi, modelstr
@@ -752,6 +781,11 @@ proc ahci_port_identify stdcall, pdata: dword
         stdcall swap_bytes_in_words, modelstr, (46-27)+1
         DEBUGF  1, "IDENTIFICATION RESULT: MODEL = %s\n", modelstr
 
+        mov     esi, [pdata]
+        cmp     [esi + PORT_DATA.drive_type], AHCI_DEV_SATAPI
+        je      .satapi_get_capacity
+
+.sata_get_capacity:
         mov     esi, [buf_virt]
         mov     eax, [esi + 200]
         mov     edx, [esi + 200 + 4]
@@ -765,6 +799,49 @@ proc ahci_port_identify stdcall, pdata: dword
         DEBUGF  1, "disk capacity = %u MiB ", eax
         shrd    eax, edx, 10 ; / 1024
         DEBUGF  1, "= %u GiB\n", eax
+        jmp     .end_get_capacity
+
+.satapi_get_capacity:
+        mov     eax, [cmdtable]
+        mov     ebx, [buf_phys]
+        mov     dword [eax + HBA_CMD_TBL.prdt_entry + HBA_PRDT_ENTRY.dba], ebx
+        mov     dword [eax + HBA_CMD_TBL.prdt_entry + HBA_PRDT_ENTRY.dbau], 0
+        and     [eax + HBA_CMD_TBL.prdt_entry + HBA_PRDT_ENTRY.flags], not 0x3FFFFF ; zero out lower 22 bits, they used for byte count
+        or      [eax + HBA_CMD_TBL.prdt_entry + HBA_PRDT_ENTRY.flags], 2048 - 1 ; reason why -1 see in spec on this field
+        ; or      [eax + HBA_CMD_TBL.prdt_entry + HBA_PRDT_ENTRY.flags], 1 shl 31 ; enable interrupt on completion
+
+        mov     byte [eax + HBA_CMD_TBL.cfis + FIS_REG_H2D.command], 0xA0 ; TODO: move to ATA_PACKET const
+        mov     byte [eax + HBA_CMD_TBL.acmd], 0x25 ; means: cmd_table->acmd[0] = ATAPI_READ_CAPACITY >> 8; TODO use consts. 
+
+        mov     edi, [esi + PORT_DATA.port] ; edi - address of HBA_PORT struct of port
+        ; Wait on previous command to complete, before issuing new command.
+        stdcall ahci_port_wait, edi, AHCI_PORT_TIMEOUT
+        ; DEBUGF  1, "eax = %x\n", eax
+        ; TODO check eax error value
+        mov     eax, [cmdslot]
+        bts     [edi + HBA_PORT.command_issue], eax ; Issue the command
+        ; Wait for command completion
+        stdcall ahci_port_cmd_wait, edi, eax;, AHCI_PORT_CMD_TIMEOUT
+
+        ; DEBUGF  1, ". sata_error register = 0x%x\n", [edi + HBA_PORT.sata_error]
+
+        mov     esi, [buf_virt]
+        mov     eax, [esi]
+        mov     edx, [esi + 4]
+        DEBUGF 1, "ATAPI sector count = 0x%x:%x\n", edx, eax
+
+        mov     ebx, [pdata]
+        mov     dword [ebx + PORT_DATA.sector_count], eax
+        mov     dword [ebx + PORT_DATA.sector_count + 4], edx
+
+        shrd    eax, edx, 9 ; i.e *2048 / 1024 / 1024, 2048 - sector size
+        DEBUGF  1, "ATAPI disk capacity = %u MiB ", eax
+        shrd    eax, edx, 10 ; / 1024
+        DEBUGF  1, "= %u GiB\n", eax
+
+        ; aboba
+.end_get_capacity:
+
 .ret:
         popad
         ret
@@ -775,7 +852,11 @@ proc ahci_querymedia stdcall, pdata, mediainfo
         mov     eax, [mediainfo]
         mov     edx, [pdata]
         mov     [eax + DISKMEDIAINFO.Flags], 0
-        mov     [eax + DISKMEDIAINFO.SectorSize], 512
+        mov     [eax + DISKMEDIAINFO.SectorSize], 512 ; TODO: use const
+        cmp     [edx + PORT_DATA.drive_type], AHCI_DEV_SATAPI
+        jne     @f
+        mov     [eax + DISKMEDIAINFO.SectorSize], 2048 ; TODO: use const
+@@:
         mov     ecx, dword[edx + PORT_DATA.sector_count]
         mov     dword [eax + DISKMEDIAINFO.Capacity], ecx
         mov     ecx, dword[edx + PORT_DATA.sector_count + 4]
