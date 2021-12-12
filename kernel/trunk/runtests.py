@@ -285,6 +285,9 @@ def build_umka():
 
 
 def download_umka():
+	if not use_umka:
+		return
+
 	if not os.path.exists("umka"):
 		if os.system("git clone https://github.com/KolibriOS/umka") != 0:
 			print("Couldn't clone UMKa repo")
@@ -298,6 +301,9 @@ def download_umka():
 
 
 def download_umka_imgs():
+	if not use_umka:
+		return
+
 	imgs = [
 		"fat32_test0.img",
 		"jfs.img",
