@@ -49,9 +49,9 @@ def tool_exists(name):
 
 
 def check_tools(tools):
-    assert(type(tools) == tuple)
+    assert(type(tools) == list)
     for name_package_pair in tools:
-        assert(type(name_package_pair) == tuple)
+        assert(type(name_package_pair) == list)
         assert(len(name_package_pair) == 2)
         assert(type(name_package_pair[0]) == str)
         assert(type(name_package_pair[1]) == str)
@@ -282,17 +282,55 @@ def build_umka():
             exit()
     os.chdir("../../")
     print("SUCCESS")
-    exit()
+
+
+def download_umka():
+	if not os.path.exists("umka"):
+		if os.system("git clone https://github.com/KolibriOS/umka") != 0:
+			print("Couldn't clone UMKa repo")
+			exit()
+	os.chdir("umka")
+	if os.system("git checkout trunk") != 0:
+		print("Couldn't checkout trunk branch of UMKa")
+		exit()
+	os.system("git pull")
+	os.chdir("../")
+
+
+def download_umka_imgs():
+	imgs = [
+		"fat32_test0.img",
+		"jfs.img",
+		"kolibri.img",
+		"xfs_borg_bit.img",
+		"xfs_v4_btrees_l2.img",
+		"xfs_v4_files_s05k_b4k_n8k.img",
+		"xfs_v4_ftype0_s05k_b2k_n8k_xattr.img",
+		"xfs_v4_ftype0_s05k_b2k_n8k.img",
+		"xfs_v4_ftype0_s4k_b4k_n8k.img",
+		"xfs_v4_ftype1_s05k_b2k_n8k.img",
+		"xfs_v4_unicode.img",
+		"xfs_v4_xattr.img",
+		"xfs_v5_files_s05k_b4k_n8k.img",
+		"xfs_v5_ftype1_s05k_b2k_n8k.img",
+	]
+
+	for img in imgs:
+		download(f"http://ftp.kolibrios.org/users/Boppan/img/{img}", f"umka/img/{img}")
 
 if __name__ == "__main__":
     root_dir = os.getcwd()
 
     # Check available tools
-    tools = (("qemu-system-i386", "qemu-system-x86"),
-             ("fasm", "fasm"))
+    tools = [["qemu-system-i386", "qemu-system-x86"],
+             ["fasm", "fasm"]]
+    if use_umka:
+    	tools.append(["git", "git"]);
     check_tools(tools)
 
     prepare_test_img()
+    download_umka()
+    download_umka_imgs()
     build_umka()
     tests = collect_tests()
     serial_executor_thread = run_tests_serially(tests, root_dir)
