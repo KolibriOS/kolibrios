@@ -322,7 +322,9 @@ def download_umka_imgs():
 	]
 
 	for img in imgs:
-		download(f"http://ftp.kolibrios.org/users/Boppan/img/{img}", f"umka/img/{img}")
+		if not os.path.exists(f"umka/img/{img}"):
+			download(f"http://ftp.kolibrios.org/users/Boppan/img/{img}",
+					 f"umka/img/{img}")
 
 if __name__ == "__main__":
     root_dir = os.getcwd()
