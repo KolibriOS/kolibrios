@@ -16,7 +16,7 @@ import filecmp
 sys.path.append('test')
 import common
 
-use_umka = True
+use_umka = False
 
 
 def log(s, end="\n"):
