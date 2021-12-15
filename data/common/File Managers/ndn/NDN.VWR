@@ -1,8 +1,14 @@
-; Necromancer's Dos Navigator Viewer configuration file �
-;컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴켸
-;Detailed help on the !.! expansion macros is available in the online help
-;under the topic USER MENU -> FILENAME MACROS
-;
-;Examples: pas      : bp !.!
-;          C,cpp    : bc !.!
-;*: notepad !.!
+; Alt-F3
+
+;----- DisAsembler -----
+;exe : Qview ~!.!~
+
+mp3 : tag2txt ~!.!~
+
+;---------------
+ans : ansview.exe ~!.!~
+s   : ansview.exe ~!.!~
+nfo : ansiroll.exe ~!.!~
+
+;---------------
+jar: jadgen "!:!\!.!"

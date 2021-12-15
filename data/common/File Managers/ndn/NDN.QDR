@@ -7,7 +7,17 @@
 ; "?" at first position: Only add the directory if it exists.
 ; "-" on a single line: Add a menu line to the displayed list.
 ; "*" as a separator between a path and a description string
-
+; {GUID} : identify standard folders registered with the system.
+; Doc: https://docs.microsoft.com/en-us/windows/desktop/shell/knownfolderid
+; Example:
+{B4BFCC3A-DB2C-424C-B029-7FE99A87C641} * Desktop
+{FDD39AD0-238F-46AF-ADB4-6C85480369C7} * Documents
+{374DE290-123F-4565-9164-39C4925E467B} * Downloads
+{AE50C081-EBD2-438A-8655-8A092E34987A} * Recent
+{C5ABBF53-E17F-4121-8900-86626FC2C973} * Network Shortcuts
+{52A4F021-7B75-48A9-9F6B-4B87A210BC8F} * Quick Launch
+{9E3995AB-1F9C-4F13-B827-48B24B6C7174} * User Pinned
+-
 ; Temporary directories
 ?%TMP%
 ?%TEMP%
@@ -20,6 +30,7 @@
 ?%HomeDrive%%HomePath%
 ?%APPDATA%
 ?%UserProfile%
+
 ; Language specific
 ?%UserProfile%\Eigene Dateien\
 ?%UserProfile%\My Documents\
@@ -27,3 +38,11 @@
 ; Windows 9x
 ?%WinDir%
 ?%WinBootDir%
+
+; Linux
+?/etc
+?/proc/self/
+?~
+?$HOME
+?/var/log * Logs
+?/etc/systemd/system/multi-user.target.wants * Startup

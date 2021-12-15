@@ -4,5 +4,3 @@
 ExecFilter=*.bat;*.com;*.exe;*.cmd;*.sh
 MyPictures=*.jpg;*.png;*.gif;*.tga
 MyArchives=*.rar;*.zip;*.7z
-AllFiles=*.*
-NewArchive=*.rar;*.arc;*.bsa;*.bs2;*.zip;*.arj;*.lzh;*.hyp;*.chz;*.sqz;*.zoo;*.hap;*.ice;*.pak;*.lim;*.ha ;*.uc2;*.ain;*.lha;*.tar;*.tdr;*.cab;*.ace;*.hpk;*.gz ;*.tgz;*.taz;*.z  ;*.$z ;*.j  ;*.aci;*.aic;*.777;*.acb;*.boa;*.imp;*.ufa;*.jar;*.r++;*.a++;*.7z;*.uha

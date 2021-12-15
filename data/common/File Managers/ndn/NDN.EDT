@@ -1,7 +1,139 @@
-; Necromancer's Dos Navigator Editor configuration file ³
-;ÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
-;Detailed help on the !.! expansion macros is available in the online help
-;under the topic USER MENU -> FILENAME MACROS
+; Dos Navigator Editor configuration file º
+; ÄÄÄÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍ¼
 
-pas      :bp !.!
-C,cpp    :bc !.!
+;--------------------------arhives------------------
+; ¨§¢«¥çì ¢ â¥ªãé¨© ª â «®£ / extract to current dir
+1: icomp !.! *.* -d -i
+2: icomp !.! *.* -d -i
+;pkunzip -e -o -d ~!.!
+cab:extract !.! *.*
+??_: Expand.exe !.!
+?xf: freeze -d !.! *.*
+abp: abcomp -e !.!
+acb: acb r !.!
+ace: ace x  !.!
+acl: ace x  !.!
+ain: ain x !.! *.*
+gob: UnPak.exe !.!
+zfs: UnPak.exe !.!
+zwp: UnPak.exe !.!
+wdt: UnPak.exe !.!
+ANI: fredit.exe !.!
+apm: ARJ x -y !.!
+ar: ar x !.!
+arc: pak e !.! *.*
+ark: quark x !.! *.*
+arg: arg e !.!
+ari: ppmy_d.exe !.! !.out
+arj: arj x -y !.!
+arq: arq -x !.!
+arx: arx x !.!
+asd: asd x "!.!"
+b58: boa -x !.!
+bs2: bs2 -x -P !.! *.*
+bsa: bsarc -x -R !.! *.*
+bvi: bvix !.! !.outchz: charc -E
+cod: codec -D !.! *.*
+com: hiew ~!.!~
+crf: pkunzip -e -o !.!
+dbx: dbx2mbx.exe "!.!" "!:!\"
+db: DBEDIT.EXE !.!
+doz: doz.exe -d !.! !.out
+die: diet -R -O!.out !.!
+dll: hiew ~!.!~
+dwc: dwc x !.! *.*
+eli: eli -e !.!
+eri: eri x !.!
+exe: hiew ~!.!~
+#xe: hiew ~!.!~
+exp: exp1 x !.!
+exp: exp1 x !.!
+gas: gas-down !.!
+gmp: fredit.exe !.!
+gzz: gzip -d !.!
+ha:  ha xy !.! *.*
+hap: pah3 e !.! *.*
+hpk: hpack x !.! *.*
+hyp: hyper -x !.! *.*
+ice: lhice x !.! *.*
+is3: icomp !.! *.* -d -i
+j:   jar e !.! *.*
+jar: jar e !.! *.*
+jam: unjam.com !.! !.###
+kbo: kboom11 !.! !.out /d
+lbm: fredit.exe !.!
+lha: lha x !.! *.*
+lib: icomp !.! *.* -d -i
+lim: limit e -y !.! *.*
+lz:  lz d !.! !.###
+lzh: lha x !.! *.*
+lzk: lzk x !.! !.###
+lzs: lzss d !.! !.###
+lzss: lzss d !.! !.###
+lzw: u16.exe !.!
+mar: mar e !.!
+mdz: pkunzip -e -o !.!
+npa: npack.exe !.! !.###
+nfo: ansiroll.exe ~!.!~
+pak: pak e !.! *.*
+pdz: pdz !.! !.pdf
+pks: pksmart !:!\!.!
+q:   Unpaq.exe -xd !.!
+qrk: quark x !.! *.*
+r8:  unrle8 !.!
+rar: C:\PROGRA~1\WINRAR\winrar.exe x "!.!"
+raw: raw2bmp !.! !.bmp
+rk:  rk.exe -x !.! *.*
+sac: sack.exe x !.!
+sar: sar e !.!
+sbc: sbc x !.!
+sky: sky x !.!
+sqz: sqz x !.! *.*
+tar: tar xf !.!
+tcc: Tcomp /d !.!
+tgz: TAR xf !.!
+uc2: uc E !.! *.*
+uha: uharcd.exe x !.! *.*
+ufa: ufa x !.!
+uue: C:\PROGRA~1\WINRAR\winrar.exe x "!.!"
+wsz: pkunzip -e -o -d ~!.!
+ybs: ybs -d !.!
+yc:  yac x !.!
+z:   icomp !.! *.* -d -i
+zip: C:\PROGRA~1\WINRAR\winrar.exe x "!.!"
+zmp: C:\PROGRA~1\WINRAR\winrar.exe x "!.!"
+;zip: pkunzip.exe -e -o -d ~!.!~
+zoo: zoo -e !.! *.*
+7z: C:\PROGRA~1\WINRAR\winrar.exe  x ~!.!~
+
+;7z: 7z x !.!
+
+;=====================================
+pas :c:\bp\bin\turbo !:!\!.!
+;txt :editor ~!.!~
+f++,fnt :fonted.exe ~!.!~
+txt : type !.!
+
+;html: html2txt ~!.!~
+
+pdf: pdftext.exe -eol dos "!.!" "!.txt"
+;pdf :gettext ~!.!~ "!.txt"
+chm :gettext ~!.!~ "!.txt"
+htm: gettext ~!.!~ "!.txt"
+rtf: gettext ~!.!~ "!.txt"
+wpd: gettext ~!.!~ "!.txt"
+hlp: gettext ~!.!~ "!.txt"
+php: gettext ~!.!~ "!.txt"
+ppt: gettext ~!.!~ "!.txt"
+WPD: gettext ~!.!~ "!.txt"
+xls: gettext ~!.!~ "!.txt"
+
+msg: msg2txt.exe ~!.!~
+pkt: pkt2txt.exe ~!.!~
+
+ans: ansiroll.exe ~!.!~
+s: ansiroll.exe ~!.!~
+
+doc: doc2txt.exe "!.!"
+
+mp3: qv ~!.!~

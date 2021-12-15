@@ -1,344 +1,2149 @@
-; Necromancer's Dos Navigator Extension configuration file │
-; ─────────────────────────────────────────────────────────┘
-; Syntax: {} Enter, () Shift-Enter, [] Alt-Enter/Alt-Home
-;         asm,pas or asm;pas possible as filter
-;         therefore comments only work at the first position of a string
-;         you can comment the whole block by commenting the filter
-;         ~!.!~/~!.ext Insert SFN (LFN default)
-;
-;        the keywords EDITOR or VIEWER (case insensitive) inside {}, []
-;        or () open the file in the internal viewer/editor, like [F3].
-;        Examples: asm{editor}   or   *{Viewer}
-;
-;Detailed help on the !.! expansion macros is available in the online help
-;under the topic USER MENU -> FILENAME MACROS
-; ───────────────────────── Assembler ───────────────────────────────────
-asm{    @echo off
-        echo ┌────────────────────────────────────
-        echo │ Assembling and linking COM file... █
-        echo └▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄█
-        tasm !
-        tlink /t /x !.obj
-   }
-asm(    @echo off
-        echo ┌────────────────────────────────────
-        echo │ Assembling and linking EXE file... █
-        echo └▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄█
-        tasm !
-        tlink /x !.obj
-   )
-asm[
-   >1 ~A~ssemble OMF obj file (TASM)
-        tasm ! /m2
-   >1 Assemble & link ~C~OM/binary file (TASM)
-        tasm !
-        tlink /t/x !.obj
-   >1 Assemble & link E~X~E file (TASM)
-        tasm !
-        tlink /x !.obj
-   >1 Assemble & link ~C~OM file (TASM 32-BIT)
-        tasm !
-        tlink /t/x/3 !.obj
-   >1 Assemble & link E~X~E file (TASM 32-BIT)
-        tasm !
-        tlink /x/3 !.obj
-   >1
-   >1 Assemble OMF obj file (DJASM)
-        @ECHO OFF
-        set P=F:\DJGPP\BIN\
-        set PATH=%P%;%PATH%
-        djasm !.! !.obj
-   >1 Assemble & link COM/binary file (DJASM)
-        @ECHO OFF
-        set P=F:\DJGPP\BIN\
-        set PATH=%P%;%PATH%
-        djasm !.! !.bin
-   >1 Assemble & link EXE file (DJASM)
-        @ECHO OFF
-        set P=F:\DJGPP\BIN\
-        set PATH=%P%;%PATH%
-        djasm !.! !.exe
-   >1 Assemble C header file (DJASM)
-        @ECHO OFF
-        set P=F:\DJGPP\BIN\
-        set PATH=%P%;%PATH%
-        djasm !.! !.h
-   >1
-   >1 Assemble OMF obj file (WASM)
-        @ECHO OFF
-        set P=F:\WC\BINW
-        set PATH=%P%;%PATH%
-        wasm !.!
-   >1
-   >1 Assemble OMF obj file (JWASM)
-        @ECHO OFF
-        set P=F:\JWASM
-        set PATH=%P%;%PATH%
-        jwasm -omf !.!
-   >1 Assemble COFF obj file (JWASM)
-        @ECHO OFF
-        set P=F:\JWASM
-        set PATH=%P%;%PATH%
-        jwasm -coff !.!
-   >1 Assemble ELF obj file (JWASM)
-        @ECHO OFF
-        set P=F:\JWASM
-        set PATH=%P%;%PATH%
-        jwasm -elf !.!
-   >1 Assemble COM/binary file (JWASM)
-        @ECHO OFF
-        set P=F:\JWASM
-        set PATH=%P%;%PATH%
-        jwasm -bin !.!
-   ]
-obj{    @echo off
-        echo ┌─────────────────────────────
-        echo │ Linking file as COM file... █
-        echo └▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄█
-        tlink /t/x !.obj
-   }
-obj[
-    >1 Link ~C~OM file
-        tlink /t/x !.obj
-    >1 Link E~X~E file
-        tlink /x !.obj
-    >1
-    >1 ~D~isassemble .obj (OBJCONV)
-        objconv !.! -fmasm
-    >1 D~i~sassemble .obj (WDis)
-        wdis -l=!.asm !.!
-    >1
-    >1 ~D~ump !.! to !.TXT (OBJCONV)
-        objconv !.! -d > !.TXT
-    >1 Dump !.! (TDUMP)
-        @ECHO OFF
-        set TDPATH=F:\BCC
-        set PATH=%TDPATH%\BIN
-        tdump -oc !.! > !.txt
-    >1 Dump !.! (WDUMP)
-        @ECHO OFF
-        set WDPATH=F:\OpenWatc
-        set PATH=%WDPATH%\BINW
-        wdump !.! > !w.txt
-]
-lib[
-    >1 ~E~xtract .obj from !.!
-        <= objconv !.! -fomf -lx:
-    >1 E~x~tract all .obj from !.!
-        objconv -fomf -lx !.!
-    >1
-    >1 ~D~ump !.! to !.TXT (OBJCONV)
-        objconv -d !.! > !.TXT
-    >1 Dump !.! (TDUMP)
-        @ECHO OFF
-        set TDPATH=F:\BCC
-        set PATH=%TDPATH%\BIN
-        tdump -oc !.! > !.txt
-    >1 Dump !.! (WDUMP)
-        @ECHO OFF
-        set WDPATH=F:\OpenWatc
-        set PATH=%WDPATH%\BINW
-        wdump !.! > !w.txt
-]^
+;Enter - '{' и '}'
+;Shift-Enter '(' и ')'
+;Alt-Enter - '[' и ']'.
 
-; ────────────────── Programming  Languages ───────────────────────────
-bas{    D:\langs\pb\pb.exe ~!.!~}
-c  {
-        @ECHO OFF
-        SET P=E:\BCC
-        SET PATH=%PATH%;%P%\BIN
-        bcc32 -g10 -j1 -I"%P%\include" -L"%P%\lib" !.!
-        IF NOT ERRORLEVEL 1 !.exe
-   }
-cpp{    d:\langs\bc\bin\bc.exe ~!.!~}
-prj{    d:\langs\bc\bin\bc.exe ~!.!~}
-tp (    d:\langs\bp\bin\bp.exe /c~!.!~)
-tp {    d:\langs\bp\bin\bp.exe /c~!.!~}
-pas{    bpc ~!.!~}
-pas[
-    >1 ~B~orland Pascal (Real Mode)
-        SET BPPATH=F:\BP
-        SET PATH=%BPPATH%\BIN
-        bpc -M -CD /U%BPPATH%\UNITS /R%BPPATH%\UNITS ~!.!~
-    >1 ~B~orland Pascal (Protected Mode)
-        SET BPPATH=F:\BP
-        SET PATH=%BPPATH%\BIN
-        bpc -M -CP /U%BPPATH%\UNITS /R%BPPATH%\UNITS ~!.!~
-    >1 ~B~orland Pascal (Windows)
-        SET BPPATH=F:\BP
-        SET PATH=%BPPATH%\BIN
-        bpc -M -CW /U%BPPATH%\UNITS /R%BPPATH%\UNITS ~!.!~
-    >1 ~V~irtual Pascal (D32)
-        SET VPPATH=F:\VP
-        SET PATH=%VPPATH%\BIN.W32
-        del !.exe > nul
-        vpc -M -CW:D32:DPMI32 -E. -$$SMARTLINK+ -U%VPPATH%\UNITS.D32 -L%VPPATH%\LIB.D32 !.!
-        if exist !.exe pe2le !.exe !.exe /S:%VPPATH%\BIN.D32\STUBS\DOS32A /D:(Description)
-        if exist !.exe !.exe
-    >1 ~V~irtual Pascal (W32)
-        SET VPPATH=F:\VP
-        SET PATH=%VPPATH%\BIN.W32
-        del !.exe > nul
-        vpc -B -CW:W32:WIN32 -E. -$$SMARTLINK+ -U%VPPATH%\UNITS.W32 -L%VPPATH%\LIB.W32 !.!
-        if exist !.exe !.exe
-    >1 ~V~irtual Pascal (LNX)
-        SET VPPATH=F:\VP
-        SET PATH=%VPPATH%\BIN.W32
-        vpc -B -CL:LNX:LINUX -E. -$$SMARTLINK+ -U%VPPATH%\UNITS.LNX -L%VPPATH%\LIB.LNX !.!
-        pe2elf -v !.exe
-   ]
-c,cpp [
-    >1 ~B~orland C++ 32Bit (EXE)
-        SET CPATH=F:\BCC
-        SET PATH=%CPATH%\BIN
-        bcc32 -I"%CPATH%\INCLUDE" -L"%CPATH%\LIB" !.!
-    >1 ~B~orland C++ 32Bit (DLL)
-        SET CPATH=F:\BCC
-        SET PATH=%CPATH%\BIN
-        bcc32 -tWD -I"%CPATH%\INCLUDE" -L"%CPATH%\LIB" !.!
-    >1 ~D~JGPP Gnu C/C++ 32bit
-        SET DJGPP=F:\DJGPP\DJGPP.ENV
+
+
+vib {"C:\program files\Veeam\Backup and Replication\Backup\Extract.exe" -dir "!:!\!.!"}
+vbk {"C:\program files\Veeam\Backup and Replication\Backup\Extract.exe" -dir "!:!\!.!"}
+
+c  [    >1 ~B~orland C++ 32Bit
+        bcc32 -I"e:\Bcc\include" -L"e:\Bcc\lib" !.!
+        >1 ~W~atcom C/C++ 32bit
+        wcl386 -CC -l=wdosx -i=e:\wc\h !.!
+        >1 ~G~nu C/C++ 32bit
         gcc !.! -o !.exe
-    >1 ~W~atcom C/C++ 32bit (PMODE/W)
-        SET CPATH=F:\WC
-        SET PATH=%CPATH%\BINW
-        wcl386 -CC -l=pmodew -i=%CPATH%\H !.!
-    >1 W~a~tcom C/C++ 32bit (WDOSX)
-        SET CPATH=F:\WC
-        SET PATH=%CPATH%\BINW
-        wcl386 -CC -l=wdosx -i=%CPATH%\H !.!
-    >1 ~O~pen Watcom C/C++ 32bit
-        SET CPATH=F:\OPENWATC
-        SET PATH=%CPATH%\BINW
-        wcl386 -CC -l=pmodew -i=%CPATH%\H !.!
-    >1 ~T~urbo C/C++ 16bit
-        SET CPATH=F:\TC
-        SET PATH=%CPATH%\BIN
-        tcc -I%CPATH%\INCLUDE -L%CPATH%\LIB !.!
-    >1 ~I~ntel C CodeBuilder
-        SET CPATH=F:\CB
-        SET PATH=%CPATH%\BIN
-        icc -I%CPATH%\INC !.!
-]
-jar{    @C:\Programme\Java\jre1.5.0\bin\java.exe -jar !.!}
-java{   @echo.
-        @echo ■ Compiling ■
-        @D:\PROGRA~1\JAVASD~1.4\BIN\javac.exe !.!
-        @echo ■ Running ■
-        @D:\PROGRA~1\JAVASD~1.4\BIN\java.exe !
-}
-class{  @echo.
-        @echo ■ Running ■
-        @D:\PROGRA~1\JAVASD~1.4\BIN\java.exe !
-}
-cs{
-        @ECHO OFF
-        SET P=C:\WINNT\Microsoft.NET\Framework\v2.0.50727\
-        SET PATH=%PATH%;%P%
-        %P%\csc.exe /t:exe /debug- /o+ /w:4 /unsafe- /checked+ !.!
-        if not errorlevel 1 !.exe
-  }
-tcl{ C:\tools\TCL\bin\tclsh.exe !:!\!.! }
-*make*[
-    >1 Execute make (DJGPP)
-        @ECHO OFF
-        SET P=F:\DJGPP
-        SET PATH=%P%/BIN;%PATH%
-        SET DJGPP=%P%/djgpp.env
-        MAKE.EXE -f !.!
-]
-; ───────────────────────── Executables ────────────────────────────────
-exe[
-   >1 ~D~ump !.! to !.TXT (OBJCONV)
-      objconv -d !.! > !.TXT
-   >1 Dump !.! (TDUMP)
-        @ECHO OFF
-        set TDPATH=F:\BCC
-        set PATH=%TDPATH%\BIN
-        tdump -oc !.! > !.txt
-   >1 Dump !.! (WDUMP)
-        @ECHO OFF
-        set WDPATH=F:\OpenWatc
-        set PATH=%WDPATH%\BINW
-        wdump !.! > !w.txt
-]
-
-; ───────────────────────── Archivers ──────────────────────────────────
-lst(    arj a -jm ! !!!.!
-        del !.!)
-lst{    pkzip -ex ! @!.!
-        del !.!}
-ice{    lha x !.! *.* }
-ice(    have !.!)
-arj{    arj x !.! }
-arj(    arj x !.! e:)
-zip{    pkunzip -d !.!}
-zip(    pkunzip !.! e:)
-
-; ─────────────────────────── FoxPro ───────────────────────────────────
-mpr{    foxprol !.!}
-spr{    foxprol !.!}
-pjx{    foxprol !.!}
-prg{    foxprol !.!}
-fxp{    foxprol !.!}
-
-; ──────────────────────────── SQL ─────────────────────────────────────
-sql{ C:\Oracle\Oracle10g\BIN\sqlplus.exe sql_85/sql_85 @!:!\!.! }
-
-; ──────────────────────────── TeX ─────────────────────────────────────
-tex,dtx( C:\Programme\Tex\texmf\miktex\bin\pdflatex.exe -silent !.!
-     !.pdf )
-
-tex,dtx{ C:\Programme\Tex\texmf\miktex\bin\latex.exe -silent !.!
-     !.dvi }
-
-; ────────────────────────────── Misc ──────────────────────────────────
-stm{    ..\StMod ! F}
-;bak{    del *.bak}
-sc {    paradox !.!}
-pcx{    pcxview !.! }
-;$$${    del !.!}
-pkt{    pktview !.!}
-sch{    cap !.! }
-pcb{    cad !.! }
-UUE{    E:\SYS\UTIL\UUDECODE !.!}
-
-ss{
-   @echo off
-   ren ~!.!~ ~!.EXE
-   ~!.EXE
-   ren ~!.EXE ~!.SS
-    }
-
-ans{    AnSi
-        cls
-        TYPE !.!
-   }
-
-; ~прописать букву Вашего CD-ROM драйва
-cda{
-    dss Z:!.!
-   }
-
-; ─────────────────────────── All files ────────────────────────────────
-
-; This menu starts up by Alt-Enter for all files
-*  [   >1 Convert ~!.!~ ~t~o UUE
-       < Enter number of lines
-       <=200
-       E:\SYS\UTIL\UUENCODE -s%3 !.!
-       >1 Convert ~!.!~ ~f~rom UUE
-       E:\SYS\UTIL\UUDECODE !.!
+        >1 ~T~urbo C/C++ 16bit
+        tcc -Ie:\tc\INCLUDE -Le:\tc\LIB !.!
    ]
 
-*.* (
-  @echo off
+
+dnr {res_D32.bat}
+dnl {res_D32.bat}
+db {PdxHakViewer.exe !.!}
+ozf2 {D:\Programs\OziExplorer\ozfdecode.exe !.!}
+;shift-enter arhive-menu open in windows/addition operations
+arj (
+    >1 Открыть в Windows
+IF "%OS%" == "Windows_NT" GOTO w32
+start "!:!\!.!"
+goto end
+:w32
+start "" "!:!\!.!"
+:end
+    >1
+    >1 Извлечь !.!
+    >2 ~1~ В каталог "!"
+    md !
+    @arj x !.! ! *.*
+    >2 ~2~ в текущий с каталогами
+    @arj x !.!
+    >2 ~3~ в текущий без каталогов
+    @arj e !.!
+    )
+rar (
+   >1 Открыть в Windows
+IF "%OS%" == "Windows_NT" GOTO w32
+start "!:!\!.!"
+goto end
+:w32
+start "" "!:!\!.!"
+:end
+   >1
+   >1 Извлечь !.!
+   >2 ~1~ в каталог "!"
+   md !
+   @rar x !.! *.* !
+   >2 ~2~ в текущий с каталогами
+   @rar x !.!
+   >2 ~3~ в текущий без каталогов
+   @rar e !.!
+   )
+zip(
+   >1 Открыть в Windows
+IF "%OS%" == "Windows_NT" GOTO w32
+start "!:!\!.!"
+goto end
+:w32
+start "" "!:!\!.!"
+:end
+   >1
+   >1 Извлечь !.!
+   >2 ~1~ в каталог "!"
+   md "!"
+   @pkunzip.exe -e -o -d ~!.!~ ~! *.*
+   >2 ~2~ в текущий с каталогами
+   @pkunzip -e -o -d ~!.!~
+   >2 ~3~ в текущий без каталогов
+   @pkunzip -e -o ~!.!~
+   )
+7z (
+   >1 Открыть в Windows
   IF "%OS%" == "Windows_NT" GOTO w32
   start "!:!\!.!"
   goto end
-
   :w32
   start "" "!:!\!.!"
-
   :end
+   >1
+   >1 Извлечь !.!
+   >2 ~1~ в каталог "!"
+   md ~!
+   7z x -o~! ~!.!~ *.*
+   Ren ~! !
+   >2 ~2~ в текущий с каталогами
+   7z x !.!
+   >2 ~3~ в текущий без каталогов
+   7z e !.!
+   )
+ace;acl (
+    >1 Открыть в Windows
+    IF "%OS%" == "Windows_NT" GOTO w32
+    start "!:!\!.!"
+    goto end
+    :w32
+    start "" "!:!\!.!"
+    :end
+    >1
+    >1 Извлечь !.!
+    >2 ~1~ в каталог "!"
+    md "!"
+    copy "!.!" "!"
+    cd "!"
+    CALL ace x "!.!"
+    del "!.!"
+    cd ..
+    >2 ~2~ в текущий с каталогами
+    @ace x "!.!"
+    >2 ~3~ в текущий без каталогов
+    @ace e "!.!"
+    )
+;~~~ Arhive files view // Архивные - Просмотр
+ain {@ain l !.!
+     Pause}
+acb {@acb l !.!
+     Pause}
+ace {@ace l "!.!"
+     Pause}
+acl {@ace l "!.!"
+     Pause}
+asd {@asd l !.!
+     Pause}
+arx {@arx l !.!
+     Pause}
+bix {@Bix l !.!
+     Pause}
+b58 {@boa.EXE -v !.!
+     Pause}
+lst {@pkzip -ex ! @!.!
+     Pause}
+ice {@lha p !.! *.*
+     Pause}
+arj {@arj x !.!
+     Pause}
+cod {@codec -V !.! *.*
+     Pause}
+zip {@pkunzip -v !.!
+     Pause}
+z   {@icomp -l !.!
+     Pause}
+j   {@jar l !.! *.*
+     Pause}
+q   {@Unpaq.exe -v !.!
+     Pause}
+rk  {@rk.exe -v !.!
+     Pause}
+lib {@icomp -l !.!
+     Pause}
+dwc {@dwc l !.!
+     Pause}
+arq {@arq -v !.!
+     Pause}
+hpk {@hpack t !.!
+     Pause}
+yc  {@yac l !.!
+     Pause}
+arg {@arg l !.!
+     Pause}
+oop {@oop2
+     Pause}
+sar {@sar l !.!
+     Pause}
+sbc {@sbc l !.!
+     Pause}
+eri {@eri l !.!
+     Pause}
+eli {@eli -v !.!
+     Pause}
+mar {@mar l !.!
+     Pause}
+SB  {@sbx !.!
+     Pause}
+gzz {@Gzip.exe -l !.!
+     Pause}
+uha {@uharcd.exe l !.! *.*
+     Pause}
+7z  {@7z.exe l !.!
+     pause}
+dll {@7z.exe l !.!
+     pause}
+;z{ gzip -l !.!}
+
+
+;~~~~~~~~~~~~~ [ ALT+ENTER MENU ] ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+*.wav [
+>1 Convert to !.ogg
+ >2 Quality 10 (498 Kbps)
+  oggenc.exe -q 10 "!.!"
+ >2 Quality  9 (320 Kbps)
+  oggenc.exe -q 9 "!.!"
+ >2 Quality  8 (256 Kbps)
+  oggenc.exe -q 8 "!.!"
+ >2 Quality  7 (224 Kbps)
+  oggenc.exe -q 7  "!.!"
+ >2 Quality  6 (192 Kbps)
+  oggenc.exe -q 6  "!.!"
+ >2 Quality  5 (160 Kbps)
+  oggenc.exe -q 5  "!.!"
+ >2 Quality  4 (128 Kbps)
+  oggenc.exe -q 4  "!.!"
+ >2 Quality  3 (112 Kbps)
+  oggenc.exe -q 3  "!.!"
+ >2 Quality  2 ( 96 Kbps)
+  oggenc.exe -q 2  "!.!"
+ >2 Quality  1 ( 80 Kbps)
+  oggenc.exe -q 1  "!.!"
+>1 Convert to !.mp3
+ >2 Bitrate 320 Kbps
+ lame -b 320 -m s -h -p -c --resample 44.1 -q 9 --strictly-enforce-ISO "!.!" "!.mp3"
+ >2 Bitrate 256 Kbps
+ lame -b 256 -m s -h -p -c --resample 44.1 -q 9 --strictly-enforce-ISO "!.!" "!.mp3"
+ >2 Bitrate 224 Kbps
+ lame -b 224 -m s -h -p -c --resample 44.1 -q 9 --strictly-enforce-ISO "!.!" "!.mp3"
+ >2 Bitrate 192 Kbps
+ lame -b 192 -m s -h -p -c --resample 44.1 -q 9 --strictly-enforce-ISO "!.!" "!.mp3"
+ >2 Bitrate 160 Kbps
+ lame -b 160 -m s -h -p -c --resample 44.1 -q 9 --strictly-enforce-ISO "!.!" "!.mp3"
+ >2 Bitrate 128 Kbps
+ lame -b 128 -m s -h -p -c --resample 44.1 -q 9 --strictly-enforce-ISO "!.!" "!.mp3"
+ >2 Bitrate 112 Kbps
+ lame -b 112 -m s -h -p -c --resample 44.1 -q 9 --strictly-enforce-ISO "!.!" "!.mp3"
+ >2 Bitrate 96 Kbps
+ lame -b 96 -m s -h -p -c --resample 44.1 -q 9 --strictly-enforce-ISO "!.!" "!.mp3"
+ >2 Bitrate 80 Kbps
+ lame -b 80 -m s -h -p -c --resample 44.1 -q 9 --strictly-enforce-ISO "!.!" "!.mp3"
+]
+;~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+*.* [
+ >1 antivirus
+  >2 Dr ~W~eb                 (Лаборатория Данилова)
+   >3 Проверить ..
+    >4 Проверить ~"!.!"~
+       @drweb ~!.!~ /NM /WA- /SO- /TB-
+       pause
+    >4 Проверить ~\*.*~
+       <Введите путь проверки
+       <=!:!\*.*
+       @drweb "%3" /WA- /SO-
+       pause
+    >4 Проверить выделенные
+       @drweb /@%1 /WA- /SO-
+       pause
+    >4 Проверить диск ~ !: ~
+       <Введите диск
+       <=!:\
+       @drweb %3 /WA- /SO- /AR-
+       pause
+    >4
+    >4 Мои Документы (win9x)
+       @drweb C:\МОИДОК~1\*.* /WA- /SO-
+       pause
+    >4 Почту ~Outlook~
+       @drweb C:\WINDOWS\APPLIC~1\IDENTI~1\*.* /WA- /SO-
+       pause
+    >4
+    >4 Задать путь ..
+       <Введите путь
+       <=$:$\*.*
+       @drweb %3 /WA- /SO-
+       pause
+   >3 Лечить ..
+    >4 Лечить ~"!.!"~
+       @drweb ~!.!~ /CUP /ICDP /WA- /SO-
+       pause
+    >4 Лечить ~\*.*~
+       <Введите путь
+       <=!:!\*.*
+       @drweb %3 /CUP /ICDP /WA- /SO-
+       pause
+    >4 Лечить выделенные
+       @drweb /@%1 /CUP /ICDP /WA- /SO-
+       pause
+    >4 Лечить диск ~ !: ~
+       @drweb !: /CUP /ICDP /WA- /SO-
+       pause
+    >4
+    >4 Мои Документы
+       @drweb C:\МОИДОК~1\*.* /CUP /ICDP /WA- /SO-
+       pause
+    >4 Почту ~Outlook~
+       @drweb C:\WINDOWS\APPLIC~1\IDENTI~1\*.*  /CUP /ICDP /WA- /SO-
+       pause
+    >4
+    >4 Задать путь ..
+       <Введите путь
+       <=$:$\*.*
+       @drweb %3 /CUP /ICDP /WA- /SO-
+       pause
+   >3
+   >3 Проверить диск ..
+   >4 Проверить диск ~A~:
+      @drweb A: /WA- /SO-
+      pause
+   >4 Проверить диск ~B~:
+      @drweb B: /WA- /SO-
+      pause
+   >4 Проверить диск ~C~:
+      @drweb C: /WA- /SO-
+      pause
+   >4 Проверить диск ~D~:
+      @drweb D: /WA- /SO-
+      pause
+   >4 Проверить диск ~E~:
+      @drweb E: /WA- /SO-
+      pause
+   >4 Проверить диск ~F~:
+      @drweb F: /WA- /SO-
+      pause
+   >4 Проверить диск ~G~:
+      @drweb G: /WA- /SO-
+      pause
+   >4 Проверить диск ~H~:
+      @drweb H: /WA- /SO-
+       pause
+   >4
+   >4 ~Д~ругой диск..
+      <=!:
+      @drweb %3 /WA-
+      pause
+   >3 Лечить диск ..
+   >4 Лечить диск ~A~:
+    @drweb A: /CUP /ICDP /WA- /SO-
+    pause
+   >4 Лечить диск ~B~:
+    @drweb B: /CUP /ICDP /WA- /SO-
+    pause
+  >4 Лечить диск ~C~:
+    @drweb C: /CUP /ICDP /WA- /SO-
+    pause
+   >4 Лечить диск ~D~:
+    @drweb D: /CUP /ICDP /WA- /SO-
+    pause
+   >4 Лечить диск ~E~:
+    @drweb E: /CUP /ICDP /WA- /SO-
+    pause
+   >4 Лечить диск ~F~:
+    @drweb F: /CUP /ICDP /WA- /SO-
+    pause
+   >4 Лечить диск ~G~:
+    @drweb G: /CUP /ICDP /WA- /SO-
+    pause
+   >4 Лечить диск ~H~:
+    @drweb H: /CUP /ICDP /WA- /SO-
+    pause
+   >4
+   >4 ~Д~ругой диск..
+      <Введите диск
+      <=!:
+      @drweb %3 /CUP /ICDP /WA- /SO-
+      pause
+  >3
+  >3 Ключи /?
+   >4 /ML - проверка "почтовых" файлов,
+   >4 /HA - эвристический анализ файлов, поиск неизвестных вирусов,
+   >4 /FM - диагностика файлов с внутренней структурой программных модулей,
+   >4 /AR - проверка файлов в архивах (ARJ, GZIP, RAR, TAR, ZIP,..)
+   >4 /NM - работа без поиска вирусов в памяти компьютера,
+   >4 /PR - действие по удалению вирусов с подтверждением пользователя,
+   >4 /SD - поиск и тестирование файлов в подкаталогах, начиная с текущего,
+   >4 /SO - звуковое предупреждение при нахождении вирусов,
+   >4 /TB - тестирование загрузочных секторов дисков,
+   >4 /TM - тестирование памяти,
+
+
+
+  >1 Прoводник~ ~..
+  Explorer /select, !:!\!.!
+  >1 ~O~бзор "!:!\"
+  Explorer /e, /root, "!:!\"
+  >1
+  >1 ~P~азное..
+  >2 Файлы Tips
+   >3 C:\Autoexec.bat
+    >4 @ECHO OFF
+    >4 SET BLASTER=A220 I5  D1 T4
+    >4 SET PATH=C:\;C:\NDN;C:\DOS;C:\ARHIV;C:\SEA;C:\VC;C:\DRWEB
+    >4 MODE CON CODEPAGE PREPARE=((866) ~EGA3.CPI~)
+    >4 MODE CON CODEPAGE SELECT=866
+    >4 rk.com
+    >4 REM KEYB RU,,~KEYBRD3.SYS~
+    >4 LH MSCDEX /D:MSCD000 /L:O
+
+   >3 C:\Config.sys
+    >4 BUFFERS
+    >4 FILES=40
+    >4 DOS=HIGH,UMB
+    >4 BREAK=ON
+    >4 NUMLOCK=ON
+    >4 device=himem.sys /testmem:off
+    >4 DEVICE=idecd.sys /D:MSCD000
+    >4 DEVICE=ecscdide.sys /D:MSCD000
+    >4 Device=setver.exe
+    >4 Device=display.sys con=(ega,,1)
+    >4 Device=ansi.sys
+    >4 Country=007,866,country.sys
+   >3 C:\MsDos.SYS
+    >4 ~[Options]~
+    >4 Logo=0               Показывать картинку при запуске Windows
+    >4 BootMulti=1          Разрешить загрузку предыдущей операционки
+    >4 BootGUI=1            Загружать графическую оболочку Windows
+    >4 AutoScan=1           Проверять диск ScanDisk'ом
+    >4 BootMenu=0           Показ меню при запуске
+    >4 SystemReg=0          Загружать системный реестр при загрузке
+    >4 LoadTop=1            Загрузка драйверов в верхнюю память
+    >4 DisableLog=1         Создавать файл отчета bootlog.txt
+    >4 Network=0            Поддержка сети в режиме защиты от збоев
+    >4 BootDelay=0          Задержка при старте в секундах где x количество секунд
+    >4 BootMenuDelay=0      Задержка загрузочного меню в секундах где x количество секунд
+    >4 BootWin=0            Загружать предыдущую операционку
+    >4 BootMenuDefault=0..8 Пункт загрузочного меню выбираемый по умолчанию (0-Normal и т.д. и т.п.)
+    >4 ~[Paths]~
+    >4 windir=c:\windows     Путь где обитает Windows
+    >4 winbootdir=c:\windows Место откуда грузится Windows
+    >4 HostWinBootDrv=C      Диск на который установлен Windows
+   >3 RegRestore.bat
+    >4 cd C:\Windows
+    >4 attrib -h -r -s system.dat
+    >4 attrib -h -r -s system.da0
+    >4 copy system.da0 system.dat
+    >4 attrib -h -r -s user.dat
+    >4 attrib -h -r -s user.da0
+    >4 copy user.da0 user.dat
+   >3 C:\WINDOWS\~S~YSTEM\OEMINFO.INI
+    >4 [Support Information] 
+    >4 Manufacturer=~"Производитель"~
+    >4 Model=~"Модель Компьютера"~
+    >4 [General] 
+    >4 Line1=~"Дополнительная"~
+    >4 Line2=~  "информация"~
+    >4 Line3=~ "о компьютере"~
+    >4 Line4=
+  >3 Свернуть все окна.scf
+    >4 ~[Shell]~
+    >4 Command=2
+    >4 IconFile=explorer.exe,3
+    >4 ~[Taskbar]~
+    >4 Command=ToggleDesktop
+   >2 Список
+    >3 Сохранить список..
+    <Имя файла
+    <=List.tmp
+    @Copy %1 %3 >%temp%\null
+    >3 Показать список
+    type %1
+   >2 ~T~ips..
+    >3 ~1~ Панель управления
+    md %windir%\"ГЛАВНОЕ МЕНЮ\Панель_управления.{21EC2020-3AEA-1069-A2DD-08002B30309D}"
+    >3 ~2~ Удаленный доступ к сети
+    md %windir%\"ГЛАВНОЕ МЕНЮ\Удаленный_доступ_к_сети.{992CFFA0-F557-101A-88EC-00DD010CCC48}"
+    >3 ~3~ Принтеры
+    md %windir%\"ГЛАВНОЕ МЕНЮ\Принтеры.{2227A280-3AEA-1069-A2DE-08002B30309D}"
+    >3 ~4~ Дозвон
+    md %windir%\"ГЛАВНОЕ МЕНЮ\Dial_Up.{992CFFA0-F557-101A-88EC-00DD010CCC48}"
+    >3 ~5~ Журнал интернет
+    md %windir%\"ГЛАВНОЕ МЕНЮ\Internet_History.{FF393560-C2A7-11CF-BFF4-444553540000}"
+    >3
+    >3 ~4~ Очистить папку "ДОКУМЕНТЫ"
+    DEL %windir%\RECENT\*.lnk
+    >3 ----------------------~"RegEdit:Автозапуск"~----------------------
+    >3 HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows\CurrentVersion\Run
+    >3 HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows\CurrentVersion\RunServices
+    >3 HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrenVersion\Run
+   >2 С~o~здать в !:!\
+   >3 В~x~одящие
+   md !:!~/\Inbox.{00020D75-0000-0000-C000-000000000046}
+   >3 Мус~o~рка
+   md !:!~/\Мусорка.{645FF040-5081-101B-9F08-00AA002F954E}
+   >3 Шриф~t~ы
+   md !:!~/\Шрифты.{BD84B380-8CA2-1069-AB1D-08000948F534}
+   >3 Панель уп~p~авления
+   md !:!~/\Панель_управления.{21EC2020-3AEA-1069-A2DD-08002B30309D}
+   >3 Удаленный доступ к ~s~ети
+   md !:!~/\Удаленный_доступ_к_сети.{992CFFA0-F557-101A-88EC-00DD010CCC48}
+   >3 Принт~e~ры
+   md !:!~/\Принтеры.{2227A280-3AEA-1069-A2DE-08002B30309D}
+   >3 Зво~н~ки
+   md !:!~/\Dial_Up.{992CFFA0-F557-101A-88EC-00DD010CCC48}
+   >3 Журнал интернет
+   md !:!~/\Internet_History.{FF393560-C2A7-11CF-BFF4-444553540000}
+
+   >2 GetText "!.!" => !.TXT
+   @Gettext !.! !.txt
+   >2 Digital Soung System !!%1
+   @dss !!%1
+   >2 ~W~orld ~W~ide ~W~eb ..
+    >3 ~ftp://ftp.elf.stuba.sk/pub/pc/pack~
+    >3 http://www.dn.id.ru
+    >3 ~http://www.yandex.ru~
+    >3 http://www.dn.nm.ru/archives/
+    >3 ~http://www.necromancer.newmail.ru/archives/~
+    >3 http://www.arctest.narod.ru
+    >3 ~http://www.protools.hpage.net~
+    >3 http://www.menuetos.org
+    >3 ~http://www.symon.ru~
+
+   >2 ~MMX~.Error
+    >3 Заменить В .exe B9 37 00 ~F7 F1~
+    >3                 B9 37 00 ~90 90~
+   >2 (Сброс Cmos)
+    >3 B0 2E E6 70 E6 71 C3   (DelCmos)
+
+   >1 ~C~равнить..
+     >2 ~1~ Текстовые    "!.!" и "$.$"
+     fc "!:!\!.!" "$:$\$.$"
+     >2 ~2~ Без пробелов "!.!" и "$.$"
+     fc /W "!:!\!.!" "$:$\$.$"
+     >2 ~3~ Двоичные     "!.!" и "$.$"
+     fc /B "!:!\!.!" "$:$\$.$"
+     >2
+     >2 ~4~ Текст "!.!" и "$.$" >%3
+     <Выходной файл
+     <=!:!\!.dif
+     fc "!:!\!.!" "$:$\$.$" >%3
+>1 Действия..
+>2 Дискеты ..
+   >3 Форм~а~тирование дискеты ..
+    >4 Дисковод ~A~
+     >5 ~F~ - Полное форматирование
+     @format a: /v:Garl
+     >5 ~Q~ - Быстрое форматирование
+     @format a: /v:Garl /Q
+     >5 ~C~ - Форматирование с проверкой
+     @format a: /v:Garl /C
+     >5 ~S~ - Форматирование с переносом системных файлов
+     @format a: /v:Garl /S
+    >4 Дисковод ~B~
+     >5 ~F~ - Полное форматирование
+     @format b: /v:Garl
+     >5 ~Q~ - Быстрое форматирование
+     @format b: /v:Garl /Q
+     >5 ~C~ - Форматирование с проверкой
+     @format b: /v:Garl /C
+     >5 ~S~ - Форматирование с переносом системных файлов
+     @format b: /v:Garl /S
+   >3
+   >3 Прочитать содержимое дискеты в файл
+   >4 ~A~: -> !:!\floppy.img
+   <Имя файла
+   <=!:!\floppy.img
+   @dskread.exe a %3
+   >4 ~B~: -> !:!\floppy.img
+   <Имя файла
+   <=!:!\floppy.img
+   @dskread.exe b %3
+   >3 Записать файл-образ~ !.! ~на дискету
+   >4 ~ !.! ~-> ~A~
+   @dskwrite.exe !.! a
+   >4 ~ !.! ~-> ~B~
+   @dskwrite.exe !.! b
+>2 Виртуальный диск
+    >3 Subst ~X~: !:!/
+    @SUBST X: !:!/
+    >3 Subst X: !:\!
+    @SUBST X: !:\!
+    >3
+    >3 Subst /~D~ X:
+    @SUBST /D X:
+>2 EXE-файлы
+   >3 Устранить Runtime error 200 в файле !.!
+   tppatch.exe !.!
+   >3 Распаковать UPX запакованый !.!
+   upx -d ~!.!~
+   >3 Распаковать PkLite запакованый !.!
+   Dislite -b -e !.!
+   >3 Распаковать с помощью uuc.exe !.!
+   uup.exe !.! _!.!
+
+>2 Удалить ..
+   >3 Удалить Файл ~ !.! ~
+   del !:!\!.!
+   >3
+   >3 Удалить Файлы~ *.! ~
+   del *.!
+   >3 Удалить Файлы~ !.* ~
+   del !.*
+   >3
+   >3 Удалить Каталог~ !.! ~
+   Deltree !
+@rem - - - - - - - - - - - - - - - - - - - - - -
+>1 Архив~a~торы..
+>2 ~*.ABP~ (C) 2000 v2.06  Avinesh Bangarff             01
+  >3 ~1~ Запаковать ..
+  @abcomp -c !.!
+  >3
+  >3 ~-~ Распаковать ..
+   >4 ~1~ В каталог "!"
+   md !
+   copy !.! !
+   cd !
+   @abcomp -e !.!
+   del !.!
+   cd ..
+   >4 ~2~ В текущий
+   @abcomp -e !.!
+@rem - - - - - - - - - - - - - - - - - - - - - -
+>2 ~*.ACB~ (C) 1997 v2.00c Buyanovsky & Nuserov         02
+    >3 ~1~ Запаковать
+    acb b !.acb !.!
+    >3
+    >3 ~2~ Просмотреть
+    acb l !.!
+    >3
+    >3 ~3~ Распаковать..
+    >4 ~1~ В текущий
+    @acb r !.!
+    >4 ~2~ В каталог "!"
+    md !
+    @acb r !.! !
+@rem - - - - - - - - - - - - - - - - - - - - - -
+>2 ~*.ACE~ (C) 2003 v2.5   ACE Compression Software     03
+   >3 ~5~ Уровень сжатия
+   @ace a -m5 "!.ace" "!.!"
+   >3 ~4~ Уровень сжатия
+   @ace a -m4 "!.ace" "!.!"
+   >3 ~3~ Уровень сжатия
+   @ace a -m3 "!.ace" "!.!"
+   >3 ~2~ Уровень сжатия
+   @ace a -m2 "!.ace" "!.!"
+   >3 ~1~ Уровень сжатия
+   @ace a -m1 "!.ace" "!.!"
+   >3 ~6~ Каталог
+   @ace a -m5 -r "!.ace" "!.!"
+   >3
+   >3 ~7~ Просмотреть
+   @ace l "!.!"
+   >3
+   >3 ~-~ Распаковать..
+   >4 ~1~ В каталог "!"
+   md !
+   copy "!.!" !
+   cd !
+   @ace x "!.!"
+   del "!.!"
+   cd ..
+   >4 ~2~ В текущий
+   @ace x "!.!"
+@rem - - - - - - - - - - - - - - - - - - - - - -
+>2 ~*.AIN~ (C) 1998 v2.32  Transas Marine               04
+   >3 ~4~ Уровень сжатия
+   @ain.exe a -m1 ~!.ain ~!.!~
+   >3 ~3~ Уровень сжатия
+   @ain.exe a -m2 ~!.ain ~!.!~
+   >3 ~2~ Уровень сжатия
+   @ain.exe a -m3 ~!.ain ~!.!~
+   >3 ~1~ Уровень сжатия
+   @ain.exe a -m4 ~!.ain ~!.!~
+   >3
+   >3 Распаковать..
+   >4 ~1~ В каталог "!"
+   md !
+   copy !.! !
+   cd !
+   @ain.exe x !.! *.*
+   del !.!
+   cd ..
+   >4 ~2~ В текущий
+   @ain.exe x !.! *.*
+@rem - - - - - - - - - - - - - - - - - - - - - -
+>2 ~*.AR ~ (C) 1990 vX.XX  Haruhiko Okumura             05
+   >3 ~1~ Запаковать
+   @ar a !.ar !.!
+  >3
+   >3 ~2~ Просмотреть
+   @ar l !.!
+  >3
+   >3 ~-~ Распаковать ..
+   >4 ~1~ В каталог "!"
+   md !
+   copy !.! ! >NUL
+   cd !
+   @ar x !.!
+   del !.!
+   cd ..
+   >4 ~2x~ В текущий
+   @ar x !.!
+@rem - - - - - - - - - - - - - - - - - - - - - -
+>2 ~*.ARC~ (C) 1990 v2.51  NoGate Consulting            06
+   >3 ~1~ Запаковать
+   @pak a !.arc !.!
+   >3
+   >3 Распаковать..
+   >4 ~1~ В текущий
+   @pak e !.! *.*
+   >4 ~2~ В каталог "!"
+   md !
+   @pak e !.! !
+@rem - - - - - - - - - - - - - - - - - - - - - -
+>2 ~*.ARG~ (C) 1994 v1.00  Igor Pavlov                  07
+   >3 ~1~ Запаковать
+   @arg a !.arg !.!
+   >3
+   >3 ~2~ Просмотреть
+   @arg l !.!
+   >3
+   >3 ~-~ Распаковать..
+   >4 ~1~ В каталог "!"
+   md !
+   copy !.! ! >NUL
+   cd !
+   @arg e !.! *.*
+   del !.!
+   cd ..
+   >4 ~2~ В текущий
+   @arg e !.! *.*
+@rem - - - - - - - - - - - - - - - - - - - - - -
+>2 ~*.ARI~ (C) 2001 v2.00  Eugene Shelwien              08
+   >3 ~1~ Запаковать
+   @ppmy.exe !.! !.ari
+  >3
+   >3 ~-~ Распаковать ..
+   >4 ~1~ В каталог "!"
+   <=!.unp
+   md !
+   copy !.! ! >NUL
+   cd !
+   @ppmy_d.exe !.! %3
+   del !.!
+   cd ..
+   >4 ~2~ В текущий
+   <=!.unp
+   @ppmy_d.exe !.! %3
+@rem - - - - - - - - - - - - - - - - - - - - - -
+>2 *.~A~RJ (C) 2002 v2.81a ARJ Software Inc             09
+   >3 ~4~ Уровень сжатия
+   @arj a -m4 !.arj !.!
+   >3 ~3~ Уровень сжатия
+   @arj a -m3 !.arj !.!
+   >3 ~2~ Уровень сжатия
+   @arj a -m2 !.arj !.!
+   >3 ~1~ Уровень сжатия
+   @arj a -m1 !.arj !.!
+   >3 ~0~ Уровень сжатия
+   @arj a -m0 !.arj !.!
+   >3 ~5~ Каталог "!" с подкат.
+   @arj a -r !.arj !
+  >3
+   >3 Конвертировать ..
+      >4 в "!.ZIP"
+      md ~temp~
+      @arj x !.! *.* ~temp~
+      cd ~temp~
+      @pkzip -a -p -ex ..\!.zip *.*
+      cd ..
+      deltree /y ~temp~ > nul
+  >3
+   >3 Распаковать ..
+     >4 ~1~ В каталог "!"
+     md !
+     @arj x !.! ! *.*
+     >4 ~2~ С каталогами
+     @arj x !.!
+     >4 ~3~ Без каталогов
+     @arj e !.!
+@rem - - - - - - - - - - - - - - - - - - - - - -
+>2 ~*.ARQ~ (C) 1997 v3.2   DC Micro Development         10
+   >3 Запаковать..
+     >4 Файл !.!
+     @arq -ahy !.arq !.!
+     >4 Выделенные файлы
+     @arq -ahy -f%1 !.arq
+   >3
+   >3 Распаковать ..
+     >4 В каталог "!"
+     md !
+     @arq -x !.! !
+     >4 В текущий
+     @arq -x !.!
+@rem - - - - - - - - - - - - - - - - - - - - - -
+>2 ~*.ARX~ (C) 1994 v1.0   Michael A. Kosior            11
+  >3 ~1~ Запаковать ..
+  @arx a !.arx !.!
+  >3
+  >3 ~2~ Просмотреть
+  @arx l !.!
+  >3
+  >3 ~-~ Распаковать ..
+   >4 ~1~ В каталог "!"
+   md !
+   copy !.! ! >NUL
+   cd !
+   @arx x !.!
+   del !.!
+   cd ..
+   >4 ~2~ В текущий
+   @arx x !.!
+@rem - - - - - - - - - - - - - - - - - - - - - -
+>2 ~*.ASD~ (C) 1994 v0.1.4 Tobias Svensson              12
+  >3 ~1~ Запаковать
+  @asd a "!.asd" "!.!"
+  >3
+  >3 ~2~ Просмотреть
+  @asd l !.!
+  >3
+  >3 ~-~ Распаковать ..
+   >4 ~1~ В каталог "!"
+   md !
+   copy !.! ! >NUL
+   cd !
+   @asd e !.! *.*
+   del !.!
+   cd ..
+   >4 ~2~ В текущий
+   @asd e !.! *.*
+@rem - - - - - - - - - - - - - - - - - - - - - -
+>2 *.~B~OA (C) 1998 v0.58b Ian Sutton                   13
+  >3 ~1~ Запаковать
+  @boa.exe -a ! !.!
+  >3
+  >3 ~-~ Распаковать ..
+   >4 ~1~ В каталог "!"
+   md !
+   copy !.! ! >NUL
+   cd !
+   @boa -x !.!
+   del $.$
+   cd ..
+   >4 ~2~ В текущий
+   @boa -x !.!
+@rem - - - - - - - - - - - - - - - - - - - - - -
+>2 ~*.BS2~ (C) 1992 v2.00  PhysTechSoft, Ltd            14
+   >3 Запаковать..
+     >4 ~2~ Метод сжатия
+     @bs2 -a -+ !.bs2 !.!
+     >4 ~1~ Метод сжатия
+     @bs2 -a !.bs2 !.!
+   >3
+   >3 Содержимое
+   @bs2 -l !.!
+   >3
+   >3 Распаковать..
+     >4 В каталог "!"
+     md !
+     @bs2 -x -P -O! !.!
+     >4 В текущий
+     @bs2 -x -P !.!
+@rem - - - - - - - - - - - - - - - - - - - - - -
+>2 ~*.BSA~ (C) 1992 v1.9.3 PhysTechSoft, Ltd            15
+   >3 Запаковать..
+    >4 ~2~ Метод сжатия
+     @bsarc.exe -a -+ !.bsa !.!
+    >4 ~1~ Метод сжатия
+     @bsarc.exe -a !.bsa !.!
+   >3
+   >3 Содержимое
+   @bsarc.exe -l !.!
+   >3
+   >3 Распаковать..
+     >4 В каталог "!"
+     md !
+     copy !.! ! >nul
+     cd !
+     @bsarc.exe -x !.!
+     del !.!
+     cd ..
+     >4 В текущий
+     @bsarc.exe -x !.!
+@rem - - - - - - - - - - - - - - - - - - - - - -
+>2 ~*.BVI~ (C) 1998 v1.70  Boris Vilincoff              16
+  >3 ~1~ Запаковать ..
+   >4 ~5~ Метод
+   @bvi !.! !.bvi -m5
+   >4 ~4~ Метод
+   @bvi !.! !.bvi -m4
+   >4 ~3~ Метод
+   @bvi !.! !.bvi -m3
+   >4 ~2~ Метод
+   @bvi !.! !.bvi -m2
+   >4 ~1~ Метод
+   @bvi !.! !.bvi -m1
+  >3
+  >3 ~-~ Распаковать ..
+   >4 ~1~ В каталог "!"
+   <=!.out
+   md !
+   copy !.! ! >NUL
+   cd !
+   @bvix !.! %3
+   del !.!
+   cd ..
+   >4 ~2~ В текущий
+   <=!.Out
+   @bvix !.! %3
+@rem - - - - - - - - - - - - - - - - - - - - - -
+>2 *.~C~AB (C) 1997 v1.00  Microsoft Corporation        17
+   >3 ~3~ Уровень сжатия
+   @makecab /V3 !.! !.cab
+   >3 ~2~ Уровень сжатия
+   @makecab /V2 !.! !.cab
+   >3 ~1~ Уровень сжатия
+   @makecab /V1 !.! !.cab
+   >3
+   >3 ~4~ Выделенные файлы
+   @makecab /V3 /F %1
+   >3
+   >3 ~5~ Извлечь *.*
+   @extract !.! *.*
+   >3 ~6~ Извлечь *.* в \!
+   md !
+   @extract /L ! !.! *.*
+@rem - - - - - - - - - - - - - - - - - - - - - -
+>2 ~*.CHZ~ (C) 1991 v1.3a  С.Чернивецкий, СП "Диалог"   18
+   >3 Запаковать
+   @charc -a !.chz !.!
+   >3
+   >3 Распаковать
+    >4 В Каталог "!"
+     md !
+     copy !.! ! >nul
+     cd !
+     @charc -E !.!
+     del !.!
+     cd ..
+    >4 В текущий каталог
+     @charc -E !.!
+@rem - - - - - - - - - - - - - - - - - - - - - -
+>2 ~*.COD~ (C) 1993 v3.10  CODEC                        19
+   >3 ~9~ Уровень сжатия
+   @codec -C9 !.cod !.!
+   >3 ~8~ Уровень сжатия
+   @codec -C8 !.cod !.!
+   >3 ~7~ Уровень сжатия
+   @codec -C7 !.cod !.!
+   >3 ~6~ Уровень сжатия
+   @codec -C6 !.cod !.!
+   >3 ~5~ Уровень сжатия
+   @codec -C5 !.cod !.!
+   >3 ~4~ Уровень сжатия
+   @codec -C4 !.cod !.!
+   >3 ~3~ Уровень сжатия
+   @codec -C3 !.cod !.!
+   >3 ~2~ Уровень сжатия
+   @codec -C2 !.cod !.!
+   >3 ~0~ Уровень сжатия
+   @codec -A !.cod !.!
+   >3 ~1~ Уровень сжатия
+   @codec -C1 !.cod !.!
+   >3
+   >3 Каталог
+   @codec -C9 !.cod !.! -M
+   >3
+   >3 Распаковать ..
+   >4 В каталог "!"
+     md !
+     copy !.! ! >nul
+     cd !
+     @codec -D !.! *.*
+     del !.!
+     cd ..
+   >4 В текущий каталог
+     @codec -D !.! *.*
+@rem - - - - - - - - - - - - - - - - - - - - - -
+>2 ~*.Diet~(C) 1992 v1.45f Teddy Matsumoto.             20
+  >3 ~1~ Запаковать ДАННЫЕ
+  @diet -D -O ~!.diet !:!~\~!.!~
+  >3
+  >3 Проверить~ !.! ~
+  @DIET -H !.!
+  >3
+  >3 ~-~ Распаковать ..
+   >4 ~1~ В каталог "!"
+   <=!.out
+   md !
+   copy !.! ! >NUL
+   cd !
+   @diet -R -O%3 !.!
+   del !.!
+   cd ..
+   >4 ~2~ В текущий
+   <=!.out
+   @diet -R -O%3 !.!
+@rem - - - - - - - - - - - - - - - - - - - - - -
+>2 ~*.DOZ~ (C) 1998 vX.XX  Terry A. Welch               21
+  >3 ~1~ Запаковать
+    @doz -c !.! !.doz
+  >3
+  >3 ~-~ Распаковать ..
+   >4 ~1~ В каталог "!"
+   <=!.out
+   md !
+   copy !.! ! >NUL
+   cd !
+   @doz -d !.! %3
+   del !.!
+   cd ..
+   >4 ~2~ В текущий
+   <=!.out
+   @doz -d !.! %3
+@rem - - - - - - - - - - - - - - - - - - - - - -
+>2 *.~D~WC (C) 1988 vA5.01 Dean W. Cooper               22
+   >3 Запаковать
+   @dwc a !.dwc !.!
+   >3
+   >3 Просмотр содержимого
+   @dwc -l !.!
+   >3
+   >3 Распаковать
+    >4 В Каталог "!"
+    md !
+    copy !.! ! >nul
+    cd !
+    @dwc -x !.!
+    del !.!
+    cd ..
+    >4 В текущий каталог
+    @dwc -x !.!
+@rem - - - - - - - - - - - - - - - - - - - - - -
+>2 ~*.ELI~ (C) 1990 v5750  Jule Revsin.                 23
+   >3 Запаковать
+    >4 ~1~ Файл !.!
+    @eli -a !.eli !.!
+    >4 ~2~ Выделенные
+    <=!.eli
+    @eli -a %3 @%1
+   >3
+   >3 Просмотр
+   @eli -v !.!
+   >3
+   >3 Распаковать
+    >4 В Каталог "!"
+    md !
+    @eli -e !.! !
+    >4 В текущий каталог
+    @eli -e !.!
+@rem - - - - - - - - - - - - - - - - - - - - - -
+>2 ~*.ERI~ (C) 2001 v4.19  A.Ratushnyak                 24
+   >3 ~5~ Уровень сжатия
+   @eri a -m5 !.eri !.!
+   >3 ~4~ Уровень сжатия
+   @eri a -m4 !.eri !.!
+   >3 ~3~ Уровень сжатия
+   @eri a -m3 !.eri !.!
+   >3 ~2~ Уровень сжатия
+   @eri a -m2 !.eri !.!
+   >3 ~1~ Уровень сжатия
+   @eri a -m1 !.eri !.!
+   >3 ~0~ Уровень сжатия
+   @eri a -m0 !.eri !.!
+   >3
+   >3 Содержимое
+   @eri l !.!
+   >3
+   >3 Распаковать..
+     >4 В каталог "!"
+     md !
+     copy !.! ! >nul
+     cd !
+     @eri x !.!
+     del !.!
+     cd ..
+     >4 В текущий
+     @eri x !.!
+@rem - - - - - - - - - - - - - - - - - - - - - -
+>2 ~*.EXP~ (C) 1998 v1     Made by Bulat Ziganshin      25
+  >3 ~1~ Запаковать ..
+  @exp1 a !.exp !.!
+  >3
+  >3 ~-~ Распаковать ..
+   >4 ~1~ В каталог "!"
+   md !
+   copy !.! ! >NUL
+   cd !
+   @exp1 x !.!
+   del !.!
+   cd ..
+   >4 ~2~ В текущий
+   @exp1 x !.!
+@rem - - - - - - - - - - - - - - - - - - - - - -
+>2 ~*.EXE~ (C) 1992 v2.1   Stepanyuk V. Oleg [ARS]      26
+  @ars -m !.exe !.!
+@rem - - - - - - - - - - - - - - - - - - - - - -
+>2 *.~E~XE       ( Исполняемые файлы )                  >>
+ >3 ~1~ ~U~PX    (C) Oberhumer & Molnar           ПР
+   >4 Сжать ..
+     >5 ~9~ Степень сжатия
+     @upx -9 !.!
+     >5 ~8~ Степень сжатия
+     @upx -8 !.!
+     >5 ~7~ Степень сжатия
+     @upx -7 !.!
+     >5 ~6~ Степень сжатия
+     @upx -6 !.!
+     >5 ~5~ Степень сжатия
+     @upx -5 !.!
+     >5 ~4~ Степень сжатия
+     @upx -4 !.!
+     >5 ~3~ Степень сжатия
+     @upx -3 !.!
+     >5 ~2~ Степень сжатия
+     @upx -2 !.!
+     >5 ~1~ Степень сжатия
+     @upx -1 !.!
+   >4
+   >4 Просмотреть
+   upx -l !.!
+   >4
+   >4 Распаковать !.!
+   upx -d !.!
+@rem - - - - - - - - - - - - - - - - - - - - - -
+ >3 ~2~ ~D~iet   (C) Teddy Matsumoto              ПР
+  >4 Запаковать
+  copy !.! !.old
+  @diet -X !.!
+  >4 Проверить
+  @diet -H !.!
+  >4 Распаковать
+  @diet -RA !.!
+@rem - - - - - - - - - - - - - - - - - - - - - -
+ >3 ~3~ P~k~lite (C) PKWARE Inc.                  ПР
+  >4 ~С~жать !.!
+   @pklite !.!
+  >4 ~Р~аспаковать !.!
+   @dislite.exe -b -e !.!
+@rem - - - - - - - - - - - - - - - - - - - - - -
+ >3 ~4~ ~A~VPACK (C) Andrei Volkov                ПР
+  >4 Запаковать
+  copy !.! !.old
+  @avpack.exe -E !.! !.!
+  >4 Запаковать с защитой (запускатится только на этом компе)
+  copy !.! !.old
+  @avpack.exe -R !.! !.!
+  >4 Распаковать
+  @avpack.exe -X !.! !.!
+
+@rem - - - - - - - - - - - - - - - - - - - - - -
+ >3 ~5~ ~X~E     (C) Sergey Belyakov              П-
+  copy !.! !.old
+  @xe.exe -v !.! !.!
+ >3 ~6~ ~L~ZEXE  (C) Fabrice BELLARD              П-
+  copy !.! !.old
+  @lzexe.exe !.!
+ >3 ~7~ A~X~E    (C) Sys. Enhancement Associates  П-
+  @AXE.EXE !.!
+ >3 ~8~ U~N~P    (C) Ben Castricum.               -Р
+  >4 Распаковать
+  copy !.! !.old
+  @unp.exe !.!
+  >4 Показать Info
+  @unp.exe i !.!
+ >3 ~9~ UU~P~    (C) Unibest.                     -Р
+  copy !.! !.old
+  @uup.exe !.! _!.!
+ >3 ~0~ T~S~UP   (C) Twilight Software            -Р
+  copy !.! !.old
+  @tsup.exe !.! !.#! -D255
+ >3 ~-~ ~T~RON   (C) SmileSoft Company            -Р
+  copy !.! !.old
+  @tron.exe !.!
+ >3 ~ ~ ~P~eX                                     -Р
+  @dex.exe
+@rem - - - - - - - - - - - - - - - - - - - - - -
+>2 ~*.GAS~ (C) 1993 v2.0   iNFiNiTY Licensing Corp.     27
+  >3 Запаковать
+     @gas-up !.!
+  >3
+  >3 Распаковать
+     >4 В каталог "!"
+     md !
+     copy !.! ! >nul
+     cd !
+     @gas-down.exe !.!
+     del !.!
+     cd ..
+     >4 В текущий
+     @gas-down.exe !.!
+@rem - - - - - - - - - - - - - - - - - - - - - -
+>2 ~*.GTH~ (C) 1997 v1.2   Centennial Innovations       28
+  >3 ~-~ Распаковать ..
+   >4 ~1~ В каталог "!"
+   md !
+   copy !.! ! >NUL
+   cd !
+   @xtract -extract !.!
+   del !.!
+   cd ..
+   >4 ~2~ В текущий
+   @xtract -extract !.!
+@rem - - - - - - - - - - - - - - - - - - - - - -
+>2 ~*.gZip~(C) 1993 v1.2.3 Jean-loup Gailly             29
+   >3 Запаковать
+   >4 ~9~ Уровень сжатия
+   copy !.! %temp%\!.! >nul
+   gzip -9 -S .gzz !.!
+   copy %temp%\!.! !.! >nul
+   del %temp%\!.! >nul
+   >4 ~1~ Уровень сжатия
+   copy !.! %temp%\!.! >nul
+   @gzip -1 -S .gzz !.!
+   copy %temp%\!.! !.! >nul
+   del %temp%\!.! >nul
+   >3
+   >3 Просмотреть
+   @gzip -l !.!
+   >3
+   >3 Распаковать
+   @gzip -d !.!
+@rem - - - - - - - - - - - - - - - - - - - - - -
+>2 *.~H~A  (C) 1995 v0.999 Harri Hirvola                30
+   >3 Запаковать
+     >4 ~3~ Метод сжатия
+     @ha a2 !.ha !.!
+     >4 ~2~ Метод сжатия
+     @ha a1 !.ha !.!
+     >4 ~1~ Метод сжатия
+     @ha a0 !.ha !.!
+   >3 Запаковать Выделенные
+     >4 ~3~ Метод сжати
+     @lgha a /2 !.ha @%1
+     >4 ~2~ Метод сжатия
+     @lgha a /1 !.ha @%1
+     >4 ~1~ Метод сжатия
+     @lgha a /0 !.ha @%1
+   >3
+   >3 Распаковать
+     >4 В каталог "!"
+     md !
+     copy !.! ! >nul
+     cd !
+     @ha xy !.! *.*
+     del !.!
+     cd ..
+     >4 В текущий
+     @ha xy !.! *.*
+@rem - - - - - - - - - - - - - - - - - - - - - -
+>2 ~*.HAP~ (C) 1992 v3.0   Harald Feldmann              31
+   >3 Запаковать
+     @hap3 a !.hap !.!
+   >3
+   >3 Распаковать
+     >4 В каталог "!"
+     md !
+     copy !.! ! >nul
+     cd !
+     @pah3 e !.! *.*
+     del !.!
+     cd ..
+     >4 В текущий
+     @pah3 e !.! *.*
+@rem - - - - - - - - - - - - - - - - - - - - - -
+>2 ~*.HPK~ (C) 1993 v0.79a Peter Gutmann                32
+   >3 Запаковать
+     @hpack a !.hpk !.!
+   >3
+   >3 Распаковать
+     >4 В каталог "!"
+     md !
+     copy !.! ! >nul
+     cd !
+     @hpack x !.! *.*
+     del !.!
+     cd ..
+     >4 В текущий
+     @hpack x !.! *.*
+@rem - - - - - - - - - - - - - - - - - - - - - -
+>2 ~*.HYP~ (C) 1990 v2.5   Sawatzki & Nischke           33
+   >3 Запаковать
+     @hyper -a !.hyp !.!
+   >3
+   >3 Распаковать
+     >4 В каталог "!"
+     md !
+     copy !.! ! >nul
+     cd !
+     @hyper -x !.! *.*
+     del !.!
+     cd ..
+     >4 В текущий
+     @hyper -x !.! *.*
+@rem - - - - - - - - - - - - - - - - - - - - - -
+>2 *.~I~S3 (C) 1995 v3.00  Stirling Technologies        34
+  >3 ~3~ Метод сжатия
+  @icomp !.! !.is3 -sh
+  >3 ~2~ Метод сжатия
+  @icomp !.! !.is3 -sl
+  >3 ~1~ Метод сжатия
+  @icomp !.! !.is3 -sm
+  >3 ~0~ Метод сжатия
+  @icomp !.! !.is3 -sn
+  >3
+  >3 ~4~ Все файлы \*.*
+  @icomp *.* !.is3 -sh
+  >3 ~5~ Каталог !\*.* с подкат.
+  @icomp *.* !.is3 -sh -i
+  >3
+  >3 Просмотреть
+  @icomp !.! -l
+  >3
+  >3 ~-~ Распаковать !.!
+   >4 ~1~ В каталог "!"
+   md !
+   copy !.! ! >nul
+   cd !
+   @icomp !.! *.* -d -i
+   del !.!
+   cd ..
+   >4 ~2~ В текущий каталог (вкл. подкат.)
+   @icomp !.! *.* -d -i
+   >4 ~3~ В текущий каталог (искл. подкат.)
+   @icomp !.! *.* -d
+@rem - - - - - - - - - - - - - - - - - - - - - -
+>2 *.~J~   (C) 1997 v1.02  ARJ Software                 35
+  >3 ~3~ Метод сжатия
+  @jar a -m3 !.j !.!
+  >3 ~2~ Метод сжатия
+  @jar a -m2 !.j !.!
+  >3 ~1~ Метод сжатия
+  @jar a -m1 !.j !.!
+  >3 ~4~ Метод сжатия
+  @jar a -m4 !.j !.!
+  >3 ~6~ Выделенные файлы
+  @jar a -m3 !.j !!%1
+  >3
+  >3 Просмотреть
+  @jar l !.! *.*
+  >3
+  >3 Извлечь
+   >4 ~1~ В каталог "!"
+   md !
+   @jar x !.! *.* -o!
+   >4 ~2~ В текущий
+   @jar x !.! *.*
+@rem - - - - - - - - - - - - - - - - - - - - - -
+>2 ~*.JAM~ (C) 1996 vX.XX  W. Jiang                     36
+  >3 ~1~ Запаковать ..
+  @jam.com !.! !.jam
+  >3
+  >3 ~-~ Распаковать ..
+   >4 ~1~ В каталог "!"
+   <=!.Out
+   md !
+   copy !.! ! >NUL
+   cd !
+   @unjam.com !.! %3
+   del !.!
+   cd ..
+   >4 ~2~ В текущий
+   <=!.Out
+   @unjam.com !.! %3
+@rem - - - - - - - - - - - - - - - - - - - - - -
+>2 ~*.KBO~ (C) 1992 vX.XX  Miles Pawski                 37
+  >3 ~1~ Запаковать ..
+  @kboom11 !.! !.kbo /c
+  >3
+  >3 ~-~ Распаковать ..
+   >4 ~1~ В каталог "!"
+   <=!.Out
+   md !
+   copy !.! ! >NUL
+   cd !
+   @kboom11 !.! %3 /d
+   del !.!
+   cd ..
+   >4 ~2~ В текущий
+   <=!.Out
+   @kboom11 !.! %3 /d
+
+@rem - - - - - - - - - - - - - - - - - - - - - -
+>2 ~*.LHA~ (C) 1992 v2.55b Haruyasu Yoshizaki           38
+  >3 Запаковать
+   @lha a /m !.lha !.!
+  >3
+  >3 Просмотерть
+  @lha l !.!
+  >3
+  >3 Распаковать
+   >4 В каталог "!"
+   md !
+   copy !.! ! >nul
+   cd !
+   @lha x !.! *.*
+   del !.!
+   cd ..
+   >4 В текущий
+   @lha x !.! *.*
+@rem - - - - - - - - - - - - - - - - - - - - - -
+>2 ~*.LIM~ (C) 1994 v1.2   J Y Lim                      39
+  >3 ~4~ Метод сжатия
+  @limit a -mx !.lim !.!
+  >3 ~3~ Метод сжатия
+  @limit a -ms !.lim !.!
+  >3 ~2~ Метод сжатия
+  @limit a -m1 !.lim !.!
+  >3 ~1~ Метод сжатия
+  @limit a -m0 !.lim !.!
+  >3
+  >3 Просмотреть
+  @limit l !.!
+  >3
+  >3 ~-~ Распаковать !.!
+   >4 ~1~ В каталог "!"
+   md !
+   copy !.! ! >nul
+   cd !
+   @limit e !.! *.*
+   del !.!
+   cd ..
+   >4 ~2~ В текущий
+   @limit e !.! *.*
+@rem - - - - - - - - - - - - - - - - - - - - - -
+>2 ~*.LZ~  (C) 1993 v0.26  Huffman Compression Engine   40
+   >3 Запаковать
+   @lz e !.! !.lz
+   >3
+   >3 Распаковать
+   >4 ~1~ В каталог "!"
+   md !
+   copy !.! ! >nul
+   cd !
+   <=!.Out
+   @lz d !.! %3
+   del !.!
+   cd ..
+   >4 ~2~ В текущий
+   <=!.Out
+   @lz d !.! %3
+@rem - - - - - - - - - - - - - - - - - - - - - -
+>2 ~*.LZK~ (C) 2002 v0.01b Lesnikov Nikita              41
+  >3 ~1~ Запаковать
+  @lzk A !.lzk !.!
+  >3
+  >3 ~-~ Распаковать ..
+   >4 ~1~ В каталог "!"
+   <=!.out
+   md !
+   copy !.! ! >NUL
+   cd !
+   @lzk X !.! %3
+   del !.!
+   cd ..
+   >4 ~2~ В текущий
+   <=!.out
+   @lzk X !.! %3
+@rem - - - - - - - - - - - - - - - - - - - - - -
+>2 ~*.LZSS~(C) 2000 v1.0   Jerеmy Collake               42
+   >3 Запаковать
+   @lzss c !.! !.lzss
+   >3
+   >3 Распаковать !.!
+   >4 ~1~ В каталог "!"
+   md !
+   copy !.! ! >nul
+   cd !
+   <=!.Out
+   @lzss d !.! %3
+   del !.!
+   cd ..
+   >4 ~2~ В текущий
+   <=!.Out
+   @lzss d !.! %3
+@rem - - - - - - - - - - - - - - - - - - - - - -
+>2 ~*.LZW~ (C) 1989 v1.2   Tom Horsley                  43
+   >3 ~-~ Распаковать ..
+   >4 ~1~ В каталог "!"
+   md !
+   copy !.! ! >nul
+   cd !
+   @u16.exe !.!
+   del !.!
+   cd ..
+   >4 ~2~ В текущий
+   @u16.exe !.!
+@rem - - - - - - - - - - - - - - - - - - - - - -
+>2 *.~M~AR (C) 1992 v1.0   H. Okumura R. Schiller       44
+  >3 ~1~ Запаковать
+   mar a !.mar !.!
+  >3
+  >3 ~2~ Просмотреть
+   mar l !.!
+  >3
+  >3 ~-~ Распаковать !.!
+   >4 ~1~ В каталог "!"
+   md !
+   copy !.! ! >NUL
+   cd !
+   mar e !.!
+   del !.!
+   cd ..
+   >4 ~2~ В текущий
+   mar e !.!
+@rem - - - - - - - - - - - - - - - - - - - - - -
+>2 *.~N~PA (C) 1991 v1.0   Symantec, Peter Norton       45
+   >3 Запаковать
+   @npack.exe !.! !.npa
+   >3
+   >3 Распаковать !.!
+   >4 ~1~ В каталог "!"
+   md !
+   copy !.! ! >nul
+   cd !
+   <=!.Out
+   npack.exe !.! %3
+   del !.!
+   cd ..
+   >4 ~2~ В текущий
+   <=!.Out
+   npack.exe !.! %3
+@rem - - - - - - - - - - - - - - - - - - - - - -
+>2 ~*.OWS~ (C) 1993 v0.95c Okuyashi "Wilbur" Sakinaba   46
+   >3 Записывает CRC файла
+   @ows a !.ows !.!
+   >3 Ищет файл по его CRC
+   @sunows.com !.!
+@rem - - - - - - - - - - - - - - - - - - - - - -
+>2 ~*.Q  ~ (C) 1995 v0.96  Cinematronics                47
+   >3 ~5~ Метод
+   @paq.exe -c5 !.q !.!
+   >3 ~4~ Метод
+   @paq.exe -c4 !.q !.!
+   >3 ~3~ Метод
+   @paq.exe -c3 !.q !.!
+   >3 ~2~ Метод
+   @paq.exe -c2 !.q !.!
+   >3 ~1~ Метод
+   @paq.exe -c1 !.q !.!
+   >3 Выделенные файлы
+   <=!.q
+   @paq.exe -c5 %3 @%1
+   >3
+   >3 Распаковать !.!
+   >4 ~1~ В каталог "!"
+   md !
+   copy !.! ! >nul
+   cd !
+   @Unpaq.exe -xd !.!
+   del !.!
+   cd ..
+   >4 ~2~ В текущий
+   @Unpaq.exe -xd !.!
+@rem - - - - - - - - - - - - - - - - - - - - - -
+>2 ~*.QRK~ (C) 1993 v1.0b  Роберт Кунц                  48
+   >3 Запаковать
+   @quark a !.qrk !.!
+   >3
+   >3 Распаковать !.!
+   >4 ~1~ В каталог "!"
+   md !
+   copy !.! ! >nul
+   cd !
+   @quark x !.! *.*
+   del !.!
+   cd ..
+   >4 ~2~ В текущий
+   @quark x !.! *.*
+@rem - - - - - - - - - - - - - - - - - - - - - -
+>2 ~*.R8 ~ (C) 1992 vX.XX  Shaun Case                   49
+   >3 Запаковать
+   @rle8 !.!
+   >3
+   >3 Распаковать !.!
+   >4 ~1~ В каталог "!"
+   md !
+   copy !.! ! >nul
+   cd !
+   @unrle8 !.!
+   del !.!
+   cd ..
+   >4 ~2~ В текущий
+   @unrle8 !.!
+@rem - - - - - - - - - - - - - - - - - - - - - -
+>2 *.~R~AR (C) 2002 v3.00b Eugene Roshal                50
+  >3 Запаковать
+  >4 ~5~ Метод сжатия (Max)
+  @rar a -av -m5 !.rar !.!
+  >4 ~4~ Метод сжатия
+  @rar a -av -m4 !.rar !.!
+  >4 ~3~ Метод сжатия
+  @rar a -av -m3 !.rar !.!
+  >4 ~2~ Метод сжатия
+  @rar a -av -m2 !.rar !.!
+  >4 ~1~ Метод сжатия
+  @rar a -av -m1 !.rar !.!
+  >4 ~0~ Метод сжатия (Min)
+  @rar a -av -m0 !.rar !.!
+  >4
+  >4 ~7~ Каталог "!" с подкаталогами
+  @rar a -av -m5 -r0 !.rar !.!
+  >4 ~8~ Выделенные файлы
+   <=!.rar
+   @rar a -av -m5 -r0 %3 @%1
+  >3
+  >3 Запаковать с паролем
+  >4 ~5~ Метод сжатия (Max)
+  <Введите пароль
+  @rar a -av -m5 -p%3 !.rar !.!
+  <Введите пароль
+  >4 ~4~ Метод сжатия
+  @rar a -av -m4 -p%3 !.rar !.!
+  >4 ~3~ Метод сжатия
+  <Введите пароль
+  @rar a -av -m3 -p%3 !.rar !.!
+  >4 ~2~ Метод сжатия
+  <Введите пароль
+  @rar a -av -m2 -p%3 !.rar !.!
+  >4 ~1~ Метод сжатия
+  <Введите пароль
+  @rar a -av -m1 -p%3 !.rar !.!
+  >4 ~0~ Метод сжатия (Min)
+  <Введите пароль
+  @rar a -av -m0 -p%3 !.rar !.!
+  >4
+  >4 ~7~ Каталог "!" с подкаталогами
+  <Введите пароль
+  @rar a -av -m5 -r0 -p%3 !.rar !.!
+  >4 ~8~ Выделенные файлы
+   <=!.rar
+   <Введите пароль
+   @rar a -av -m5 -r0 -p%4 %3 @%1
+  >3 Перненести в архив
+  >4 ~5~ Метод сжатия (Max)
+  @rar a -av -m5 -df !.rar !.!
+  >4 ~4~ Метод сжатия
+  @rar a -av -m4 -df !.rar !.!
+  >4 ~3~ Метод сжатия
+  @rar a -av -m3 -df !.rar !.!
+  >4 ~2~ Метод сжатия
+  @rar a -av -m2 -df !.rar !.!
+  >4 ~1~ Метод сжатия
+  @rar a -av -m1 -df !.rar !.!
+  >4 ~0~ Метод сжатия (Min)
+  @rar a -av -m0 -df !.rar !.!
+  >4
+  >4 ~7~ Каталог "!" с подкаталогами
+  @rar a -av -m5 -df -r0 !.rar !.!
+  >4 ~8~ Выделенные файлы
+   <=!.rar
+   @rar a -av -m5 -df -r0 %3 @%1
+  >3
+   >3 Список файлов в архиве
+   @rar v !.!
+  >3 Запись комментария в файл
+  <=!.s
+  @rar cw ~!.!~ %3
+  >3 Проверить (Test)
+  @rar t !.!
+  >3
+  >3 Конвертировать ..
+    >4 в "!.ARJ"
+    md ~temp~
+    rar x !.! *.* ~temp~
+    cd ~temp~
+    arj a -m3 ..\!.arj *.*
+    cd ..
+    deltree /y ~temp~ > nul
+    >4 в "!.ZIP"
+    md ~temp~
+    rar x !.! *.* ~temp~
+    cd ~temp~
+    pkzip -a -p -ex ..\!.zip *.*
+    cd ..
+    deltree /y ~temp~ > nul
+  >3
+  >3 ~-~ Распаковать !.!
+   >4 ~1~ В каталог "!"
+   md !
+   @rar x !.! *.* !
+   >4 ~2~ В текущий с каталогами
+   @rar x !.!
+   >4 ~3~ В текущий без каталогов
+   Rar e !.!
+@rem - - - - - - - - - - - - - - - - - - - - - -
+>2 ~*.RK ~ (C) 2000 v1.041 Malcolm Taylor               51
+  >3 ~3~ Метод сжатия
+  @rk.exe -a -mx !.rk !.!
+  >3 ~2~ Метод сжатия
+  @rk.exe -a -mn !.rk !.!
+  >3 ~1~ Метод сжатия
+  @rk.exe -a -mf !.rk !.!
+  >3 ~4~ Выделенные Файлы
+  <=!.rk
+  @rk.exe -a -mx %3 @%1
+   >3
+   >3 Распаковать !.!
+   >4 ~1~ В каталог "!"
+   md !
+   copy !.! ! >nul
+   cd !
+   @rk.exe -x !.! *.*
+   del !.!
+   cd ..
+   >4 ~2~ В текущий
+   @rk.exe -x !.! *.*
+
+@rem - - - - - - - - - - - - - - - - - - - - - -
+>2 ~*.SAC~ (C) 1994 v1.0   MMV Sagittarius              52
+  >3 Файл "!.!"
+  md ~temp~
+  copy !.! ~temp~ >nul
+  cd ~temp~
+  <=~!.sac
+  @sack a %3
+  cd ..
+  copy ~temp~\%3 %3 >nul
+  deltree /y ~temp~ > nul
+  >3 ~1~ Запаковать Файлы Каталога *.*
+  <=!.sac
+  @sack.exe a %3
+  >3
+  >3 ~-~ Распаковать ..
+   >4 ~1~ В каталог "!"
+   md !
+   copy !.! ! >NUL
+   cd !
+   @sack.exe x !.!
+   del !.!
+   cd ..
+   >4 ~2~ В текущий
+   @sack.exe x !.!
+@rem - - - - - - - - - - - - - - - - - - - - - -
+>2 ~*.SAR~ (C) 1993 v1.0   Streamline Design            53
+  >3 Запаковать
+  @sar a !.sar !.!
+  >3
+  >3 Просмотреть
+  @sar l !.!
+  >3
+  >3 ~-~ Распаковать ..
+   >4 ~1~ В каталог "!"
+   md !
+   copy !.! ! >NUL
+   cd !
+   @sar e !.!
+   del !.!
+   cd ..
+   >4 ~2~ В текущий
+   @sar e !.!
+@rem - - - - - - - - - - - - - - - - - - - - - -
+>2 ~*.SBC~ (C) 2002 v0.969 Sami J                       54
+  >3 ~3~ Метод Сжатия
+  @sbc c -m3 !.sbc !.!
+  >3 ~2~ Метод Сжатия
+  @sbc c -m2 !.sbc !.!
+  >3 ~1~ Метод Сжатия
+  @sbc c -m1 !.sbc !.!
+  >3
+  >3 Просмотреть
+  @sbc l !.!
+  >3
+  >3 ~-~ Распаковать ..
+   >4 ~1~ В каталог "!"
+   md !
+   copy !.! ! >NUL
+   cd !
+   @sbc x !.!
+   del !.!
+   cd ..
+   >4 ~2~ В текущий
+   @sbc x !.!
+@rem - - - - - - - - - - - - - - - - - - - - - -
+>2 ~*.SQZ~ (C) 1993 v1.083 J I Hammarberg               55
+   >3 ~5~ Метод сжатия
+   @sqz a -m4 !.sqz !.!
+   >3 ~4~ Метод сжатия
+   @sqz a -m3 !.sqz !.!
+   >3 ~3~ Метод сжатия
+   @sqz a -m2 !.sqz !.!
+   >3 ~2~ Метод сжатия
+   @sqz a -m1 !.sqz !.!
+   >3 ~1~ Метод сжатия
+   @sqz a -m0 !.sqz !.!
+   >3
+   >3 Просмотреть
+   @sqz l !.!
+   >3
+   >3 ~-~ Распаковать ..
+    >4 ~1~ В каталог "!"
+    md !
+    copy !.! ! >NUL
+    cd !
+    @sqz x !.! *.*
+    del !.!
+    cd ..
+    >4 ~2~ В текущий
+    @sqz x !.! *.*
+@rem - - - - - - - - - - - - - - - - - - - - - -
+>2 ~*.TAR~ (C) 1993 v2.2   FTP Software                 56
+>3 Create1
+  @tar cvf !.tar !.!
+>3 Create2
+   @tar cf9 !.tar !.!
+>3 Create3
+   @Tar c f 5 !.tar !.!
+@rem - - - - - - - - - - - - - - - - - - - - - -
+>2 ~*.TCC~ (C) 1990 v0.1   Toupao Chieng                57
+  >3 Запаковать
+  @Tcomp !.!
+  >3
+  >3 ~-~ Распаковать ..
+   >4 ~1~ В каталог "!"
+   md !
+   copy !.! ! >NUL
+   cd !
+   @tcomp /d !.!
+   del !.!
+   cd ..
+   >4 ~2~ В текущий
+   @tcomp /d !.!
+@rem - - - - - - - - - - - - - - - - - - - - - -
+>2 ~*.UC2~ (C) 1994 vX.XX  Ad Infinitum Programs        58
+  >3 Запаковать
+  @uc a !.uc2 !.!
+  >3
+  >3 ~-~ Распаковать ..
+   >4 ~1~ В каталог "!"
+   md !
+   copy !.! ! >NUL
+   cd !
+   @uc E !.! *.*
+   del !.!
+   cd ..
+   >4 ~2~ В текущий
+   @uc E !.! *.*
+@rem - - - - - - - - - - - - - - - - - - - - - -
+>2 *.~U~FA (C) 1998 v0.04  Igor Pavlov                  59
+  >3 ~9~ Метод сжатия (EXE)
+  @ufa a -m9 !.ufa !.!
+  >3 ~6~ Метод сжатия (SOUND)
+  @ufa a -m6 !.ufa !.!
+  >3 ~5~ Метод сжатия (TEXT)
+  @ufa a -m5 !.ufa !.!
+  >3 ~4~ Метод сжатия (BMP)
+  @ufa a -m4 !.ufa !.!
+  >3 ~3~ Метод сжатия
+  @ufa a -m3 !.ufa !.!
+  >3 ~2~ Метод сжатия
+  @ufa a -m2 !.ufa !.!
+  >3 ~1~ Метод сжатия
+  @ufa a -m1 !.ufa !.!
+  >3 ~0~ Метод сжатия
+  @ufa a -m0 !.ufa !.!
+  >3 Выделенные файлы
+  @ufa a -m9 !.ufa < %1
+  >3
+  >3 Просмотреть содержимое
+  @ufa l !.!
+  >3
+  >3 Распаковать ...
+    >4 В каталог "!"
+    md !
+    @ufa x -o! !.!
+    >4 В текущий
+    @ufa x !.!
+@rem - - - - - - - - - - - - - - - - - - - - - -
+>2 ~*.UHA~ (C) 2001 v0.4   Uwe Herklotz                 60
+  >3 Запаковать
+  >4 ~P~PM - Алгоритм Сжатия
+  @uharcd.exe a -mx !.uha !.!
+  >4 ~L~ZP - Алгоритм Сжатия
+  @uharcd.exe a -mz !.uha !.!
+  >4 ~3~ Степень сжатия
+  @uharcd.exe a -m3 !.uha !.!
+  >4 ~2~ Степень сжатия
+  @uharcd.exe a -m2 !.uha !.!
+  >4 ~1~ Степень сжатия
+  @uharcd.exe a -m1 !.uha !.!
+  >4 ~0~ Степень сжатия
+  @uharcd.exe a -m0 !.uha !.!
+  >3 Запаковать выделенные
+   <=!.UHA
+  @uharcd.exe a -m3 %3 @%1
+  >3
+  >3 Список файлов в архиве
+  @uharcd.exe l !.! *.*
+  >3
+  >3 Тестировать
+  @uharcd.exe t !.! *.*
+  >3
+  >3 ~-~ Распаковать ..
+   >4 ~1~ В каталог "!"
+   md !
+   copy !.! ! >NUL
+   cd !
+   @uharcd.exe x !.! *.*
+   del !.!
+   cd ..
+   >4 ~2~ В текущий
+   @uharcd.exe x !.! *.*
+@rem - - - - - - - - - - - - - - - - - - - - - -
+>2 ~*.YBS~ (C) 2000 v0.03e Vadim Yoockin                61
+  >3 Запаковать
+  @ybs -m4m !.ybs !.!
+  >3
+  >3 ~-~ Распаковать
+    >4 ~1~ В каталог "!"
+    md !
+    copy !.! ! >nul
+    cd !
+    @ybs -d !.!
+    del !.!
+    cd ..
+    >4 ~2~ В текущий
+    @ybs -d !.!
+@rem - - - - - - - - - - - - - - - - - - - - - -
+>2 ~*.YC ~ (C) 1995 v1.010 Alexander Shurna             62
+  >3 Запаковать
+  @yac a !.yc !.!
+  >3 Выделенные файлы
+  <=!.yc
+  yac a %3 <%1
+  >3
+  >3 Просмотреть содержимое
+  @yac l !.!
+  >3
+  >3 ~-~ Распаковать
+   >4 ~1~ В каталог "!"
+   md !
+   copy !.! ! >nul
+   cd !
+   @yac x !.!
+   del !.!
+   cd ..
+   >4 ~2~ В текущий
+   @yac x !.!
+@rem - - - - - - - - - - - - - - - - - - - - - -
+>2 *.~Z~IP (C) 1999 v2.50  PKWARE Inc.                  63
+  >3 ~4~ Лучшая
+  @pkzip -a -ex !.zip !.!
+  >3 ~3~ Нормальная
+  @pkzip -a -en !.zip !.!
+  >3 ~2~ Быстрая
+  @pkzip -a -ef !.zip !.!
+  >3 ~1~ Быстрейшая
+  @pkzip -a -es !.zip !.!
+  >3 ~0~ Без сжатия
+  @pkzip -a -e0 !.zip !.!
+  >3 ~5~ Выделенные файлы
+  @pkzip -a -ex !.zip @%1
+  >3 ~6~ !:!\! \*.*
+  @pkzip -a -p -ex !.zip !.!
+  >3
+  >3 ~\~ Конвертировать ..
+    >4 в "!.RAR"
+    md ~temp~
+    @pkunzip.exe -e -o -d ~!.! ~temp~ *.*
+    cd ~temp~
+    @rar a -m5 -r0 ..\!.rar *.*
+    cd ..
+    deltree /y ~temp~ > nul
+    >4 в "!.ARJ"
+    md ~temp~
+    @pkunzip.exe -e -o -d !.! ~temp~ *.*
+    cd ~temp~
+    @arj a -m3 ..\!.arj *.*
+    cd ..
+    deltree /y ~temp~ > nul
+  >3
+  >3 ~-~ Распаковать ..
+    >4 ~1~ В Каталог "!"
+    md "!"
+    @pkunzip.exe -e -o -d ~!.!~ ~! *.*
+    >4 ~2~ В текущий
+    @pkunzip -e -o -d ~!.!~
+@rem - - - - - - - - - - - - - - - - - - - - - -
+>2 ~*.ZPQ~ (C) 2016 v7.15  journaling archiver          64
+
+  >3 ~1~ Запаковать
+  @zpaq a !.zpq !.!
+  >3
+  >3 ~-~ Распаковать ..
+   >4 ~1~ В каталог "!"
+   md !
+   copy !.! ! >NUL
+   cd !
+   @zpaq x !.!
+   del !.!
+   cd ..
+   >4 ~2~ В текущий
+   @zpaq x !.!
+
+@rem - - - - - - - - - - - - - - - - - - - - - -
+>2 ~*.ZOO~ (C) 1991 v2.1   Rachul Dhesi                 65
+  >3 ~1~ Запаковать
+  @zoo -a !.zoo !.!
+  >3
+  >3 ~-~ Распаковать ..
+   >4 ~1~ В каталог "!"
+   md !
+   copy !.! ! >NUL
+   cd !
+   @zoo -extract !.!
+   del !.!
+   cd ..
+   >4 ~2~ В текущий
+   @zoo -extract !.!
+]
+
+
+;~~~ Misc
+rem ht* {Lynx.bat "!:!~\~!.!~" }
+smi {c:\PROGRA~1\INTERN~1\IEXPLORE.EXE !:!\!.!}
+;~~~ Языки Программирования
+pas {@TURBO !.!}
+pas (notepad !.!)
+bas {@qbasic !.!}
+
+db {dbedit.exe !.!}
+
+; asm -> obj
+asm { tasm !.! }
+; obj -> exe
+obj { tlink /x !.obj}
+; COM
+obj ( tlink /t/x !.obj)
+
+;~~~ МУЗЫКА
+;wav {dss "!.!"}
+;voc {dss "!.!"}
+;daw {dss "!.!"}
+;dav {dss "!.!"}
+;mp1;mp2;mp3 {dss "!:!\!.!"}
+;da  {dss "!:!\!.!"}
+;m3u {dsspl "!.!"}
+;mdl;dmf;ult;ams;mtm,669;nst {cp ~!.!}
+;rmi;sid;plt;wma;okt;it {cp ~!.!}
+;ptm;mxm;s3m;mod;wow;xm {cp ~!.!}
+;umx {cp ~!.!}
+;mid {
+;    @midply16.exe !:!~\~!.!~
+;    }
+
+dtf {DEL !.!}
+
+;cda {dss !:!\!.!} НЕ работает
+
+;~~~ Misc
+; FONT File
+;fnt {fntview.exe !.!}
+;f04 {fntview.exe !.!}
+;f06 {fntview.exe !.!}
+;f08 {fntview.exe !.!}
+;f11 {fntview.exe !.!}
+;f12 {fntview.exe !.!}
+;f14 {fntview.exe !.!}
+;f19 {fntview.exe !.!}
+;f32 {fntview.exe !.!}
+
+;s,txt,nfo,ans,asc {type !.!}
+dim {diskimg.exe !:!~\~!.!~}
+sqd {sqviewx.exe !.!}
+
+;+++ Изображения +++
+;oaf {@sea "!:!~\~!.!"}
+;psd {@sea "!:!~\~!.!"}
+;jpg {@sea "!:!~\~!.!"}
+;pic {@sea "!:!~\~!.!"}
+;gif {@sea "!:!~\~!.!"}
+;fli {@sea "!:!~\~!.!"}
+;pcx {@sea "!:!~\~!.!"}
+;ti  {@sea "!:!~\~!.!"}
+;tif {@sea "!:!~\~!.!"}
+;flc {@sea "!:!~\~!.!"}
+;dah {@sea "!:!~\~!.!"}
+;dal {@sea "!:!~\~!.!"}
+;bah {@sea "!:!~\~!.!"}
+;bal {@sea "!:!~\~!.!"}
+;tga {@sea "!:!~\~!.!"}
+;png {@sea "!:!~\~!.!"}
+;bmp {@sea "!:!~\~!.!"}
+;bup {@sea "!:!~\~!.!"}
+;lbm {@sea "!:!~\~!.!"}
+;cel {@sea "!:!~\~!.!"}
+;jpeg{@sea "!:!~\~!.!~"}
+;jpe {@sea "!:!~\~!.!"}
+;iff {@sea "!:!~\~!.!"}
+;cut {@sea "!:!~\~!.!"}
+;rle {@sea "!:!~\~!.!"}
+;pcd {@sea "!:!~\~!.!"}
+;+++ PLAY +++
+;avi {qv.exe -R1 -O5 -K2 ~!.!}
+;avi {qv.exe /W3,530,7,0 /O10 /Q0 !.!}
+;scm {scplayer.exe !.!}
+;bne {
+;    ren !.! !.avi
+;    qv.exe -R1 -O5 -K2 ~!.avi
+;    ren !.avi !.!
+;    }
+;mov {qv.exe -R1 -O5 -K2 ~!.!}
+;mpg {qv.exe -R1 -O5 -K2 ~!.!}
+;mpe {qv.exe -R1 -O5 -K2 ~!.!}
+;smk {playsmk.exe ~!.!}
+;raw {playraw.exe ~!.!}
+;22k {playraw.exe ~!.!}
+;tgw {playtgv.exe ~!.!}
+;asf {playtgv.exe ~!.!}
+;hsc {playhsc.exe ~!.!}
+;rss {playsh.exe ~!.!}
+;rsm {playsh.exe ~!.!}
+;mpe {plaympeg.exe !.!}
+;mpg {plaympeg.exe !.!}
+s (C:\PROGRA~1\WINRAR\winrar.exe c -z~!.!~ ~!.exe)
+
+;~~~ Хранители экрана в Дос навигаторе
+ss {testss !.!}
+;~~~ РАСПАКОВКА
+tx_ {Expand.exe !.! !.txt}
+do_ {Expand.exe !.! !.doc}
+ex_ {Expand.exe !.! !.exe}
+sy_ {Expand.exe !.! !.sys}
+dl_ {Expand.exe !.! !.dll}
+hl_ {Expand.exe !.! !.hlp}
+
+dll;ocx(
+IF "%OS%" == "Windows_NT" GOTO w32
+C:\WINDOWS\SYSTEM\REGSVR32.EXE !.!
+
+goto end
+:w32
+
+%SystemRoot%\system32\regsvr32.exe !.!
+:end
 )
+
+;~~~ Shift+Enter - Обработчик WINDOWS
+* (
+echo off
+IF "%OS%" == "Windows_NT" GOTO w32
+start "!:!\!.!"
+goto end
+:w32
+start "" "!:!\!.!"
+:end
+)
+
+; WIN 2K\xp *.* (start "" "!:!\!.!")
+
+;*.* (@echo Запускаю "!:!\!.!" - ~!.!~
+;     start /Max "!:!\!.!"  )
+
+;  Explorer /select, !:!\!.!
+*.patch {
+cd !:!\
+E:\ndn\source\tools\patch.exe !.pas -p1 --ignore-whitespace <!.!}
+
+REM* {
+REMecho off
+REMIF "%OS%" == "Windows_NT" GOTO w32
+REMstart "!:!\!.!"
+REMgoto end
+REM:w32
+REMstart "" "!:!\!.!"
+REM:end
+REM}

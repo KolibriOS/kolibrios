@@ -1,69 +1,182 @@
-; Necromancer's Dos Navigator Editor Syntax Highlight configuration file... ณ
-;ฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤู
 
-;ออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออ
-; See details on keywords in the online help
-;ออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออ
+;ออออออออออออออออออออออออออออออออออออออออออออฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤ
+; Google Earth Kml file
+FILES *.kml
+ keywords1 description
+ KeyWords2 version
+ ColorKeyWords yes
+ CommentStart ;,:,#,//,
+ BracketPairs Region /Region
 
-;ออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออ
-; HGL file
-;
-; Macros:
-;  1 FILES *.1/END
-;  2 Macro 1/Endmacro
-;ออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออ
-FILES *.HGL;
+END
+
+;ออออออออออออออออออออออออออออออออออออออออออออฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤ
+FILES LACmd.pas
+RegKeyWords Color blue LAG5
+RegKeyWords Color blue LAS5
+RegKeyWords Color blue LAT5
+RegKeyWords Color yellow LAC5
+
+END
+
+
+FILES *.xyz
+ KeyWords Color red/LIGHTRED ABC,
+ KeyWords Color GREEN/red DEF,
+ KeyWords Color BLUE/RED  GHI,
+ KeyWords Color BLACK/red JKL,
+ KeyWords Color BLACK MNO
+ KeyWords Color Yellow PQR
+
+END
+
+FILES *.dl
+ KeyWords1 DIALOG
+ RegKeyWords Color Yellow ~[^~\x5c\x21]+~
+ StringFlags 32
+ CommentStart ;
+ Commentstring ;
+END
+
+;ออออออออออออออออออออออออออออออออออออออออออออฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤ
+;1S Config file
+FILES 1CEStart.cfg
+ RegKeyWords2 \[.+\]
+ KeyWords3 CommonCfgLocation
+END
+
+;ออออออออออออออออออออออออออออออออออออออออออออฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤ
+; 1Sv77 extended module / 1‘ เฅคฏเจ๏โจฅ
+FILES *.1s
+ Keywords3 ”ใญชๆจ๏
+ keywords4 ฅเฅฌ
+ keywords6 …แซจ,ญ ็ฅ…แซจ,ฎญฅๆ…แซจ,ฎญฅๆ–จชซ ,…แซจ,ฎช ,ซ๏,’ฎฃค ,เฅเข โ์,
+ Commentstring //
+end
+
+;ออออออออออออออออออออออออออออออออออออออออออออฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤ
+;1S Config file
+FILES *.v8i
+ KeyWords1 ref,srvr,ID
+ KeyWords2 Connect
+ KeyWords3 CommonInfoBases,External,App,
+ KeyWords4 WA
+ KeyWords6 AdditionalParameters
+ KeyWords7 OrderInList,Folder,OrderInTree
+ RegKeyWords1 \[.+\]
+END
+
+;ออออออออออออออออออออออออออออออออออออออออออออฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤ
+; NDN Language/Dialog Files highlit /  แชเ แช  เฅแใเแฎข
+FILES *.htx;*.dnl;*.dnr;
+
   CommentStart ;
-  GeneralFLAGS 0
-  StringFLAGS  12
-  ColorKeyWords on
-  BracketPairs macro endmacro files end
-  KeyWords1 KeyWords1,RegKeyWords1,default,files,macro,endmacro,end,generalflags,stringflags
-  KeyWords1 octonumflags,octqnumflags,octbnumflags,autowrap,leftmargin,
-  KeyWords1 rightmargin,paragraph
-  KeyWords1 binnumflags,hexnumflags,decnumflags,commentstart,ColorKeyWords
-  KeyWords1 comment,commentstring,KeyWords,MultiLineComment,AutoBrackets
-  KeyWords1 regKeyWords,multilinestring,bracketpairs,optimalfill,tabsize
-  KeyWords1 LeftMargin,RightMargin,Paragraph,ForceNewlineAtEOF
-  KeyWords1 Highlight,H_Line,H_Row,H_Column,WrapJustify
-  KeyWords1 ForceCRLF,ForceCR,forceLF,CommentStartPos
-  KeyWords2 KeyWords2,RegKeyWords2,on,off,yes,no,color
-  KeyWords2 darkgray,lightblue,lightgreen,lightcyan,lightred,yellow,white
-  KeyWords2 lightmagenta,black,blue,green,cyan,red,magenta,brown,lightgray
-  KeyWords3 KeyWords3,RegKeyWords3
-  KeyWords3 Print,GotoXY,GotoX,GotoY,Mark,Goto
+  OptimalFill Off
+  KeyWords1 dialog,COMMAND,MenuLine,Button,MENU,StaticText,ITEM,StatusItem,MenuItem,Menubox,scrolldialog,
+  KeyWords2 topic,STATICTEXT
+  KeyWords3 RadioButtons,RadioButtonsE,CheckBoxes,CheckBoxesE,ColorGroup,ColorItem,SCROLLBAR,ListBox,ListBoxE,Label,
+  KeyWords3 MouseSCROLLBAR,IntInputLine,InputLine,CommonRect,DriveCheckBoxes,end,UpperTable,HEXLINE,ComboBox,BUTTON,CheckedComboBox,
+  KeyWords color blue  ofFramed,bfDefault,ofSecurity,ofVScrollBar
+  KeyWords4 statusdef,HELPCTX,HISTORY
+  KeyWords5 ParamText,
+  KeyWords6 SubMenu,kbNoKey,SWITCHVIEW,MULTIDIALOG,SUBGROUP,selectback,SELECTFORWARD
+  KeyWords8 STATUSLINE,ColorDialog
+
+
+;  KeyWords8 label,helpctx,
+  RegKeyWords Color White hc[^\x2c]+
+  RegKeyWords Color Yellow/Green \x2etitle[^\x27]+
+  RegKeyWords Color Lightred [a-z]+=
+  RegKeyWords Color blue [ณ-ฺ]+
+  RegKeyWords Color Lightcyan [Û-฿]+,[ฐ-ฒ]+
+  RegKeyWords Color Yellow dlg[^\x2c]+\x2c
+  RegKeyWords Color Yellow ~[^~\x5c\x21]*~
+  RegKeyWords Color Yellow [^co]kb[^\,]+
+  RegKeyWords2 \'[^~\,]+
+  RegKeyWords2 [^']+\'$
+  RegKeyWords1 cm[^\x2c']+,\x5e.
+  RegKeyWords color Green ^~,hs[a-z]+
+;  RegKeyWords Color Lightgreen \[[^\]]+\],\<[^\>]+\>
+;  RegKeyWords Color Yellow :[a-z]+
+;  RegKeyWords Color yellow/green \{([a-๏\x20]+)?
+  RegKeyWords1 [^{]+:_+
+  RegKeyWords2 \<[^\x5E\>\<\x22\x27\x3D]+\>,\[[^\x5E\]\[\x22\x27\x3D]+\],\([^\x5E\)\(\x22\x27\x3D]+\)
+;  RegKeyWords Color red \{()+:
+  RegKeyWords3 :+[a-z]+
+;  RegKeyWords Color Brown {,}
+;  RegKeyWords Color black p,H,o,a,c,x,e,K,T,3,M,
+;  GENERALFLAGS 8
+  CommentStart ;
+  Commentstring ;
+  BracketPairs RadioButtons;RadioButtonsE;CheckBoxes;CheckBoxesE;ComboBox;DIALOG;submenu;MENU;SUBGROUP;SWITCHVIEW;MULTIDIALOG;SUBGROUP;CheckBoxesE;DriveCheckBoxes;CheckedComboBox end ifdef;ifndef endif
+END
+
+;ออออออออออออออออออออออออออออออออออออออออออออฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤ
+; NDN Syntax highlite / ” ฉซ เ แชเ แชจ แจญโ ชแจแ  NDN
+;ออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออ
+FILES *.hgl
+ StringFLAGS 12
+ ColorKeyWords on
+ CommentStart ;
+
+ BracketPairs macro endmacro files end
+
+ KeyWords1 KeyWords1,RegKeyWords1,
+ KeyWords2 KeyWords2,RegKeyWords2,
+ KeyWords3 KeyWords3,RegKeyWords3,
+ KeyWords4 KeyWords4,RegKeyWords4,
+ KeyWords5 KeyWords5,RegKeyWords5,
+ KeyWords6 KeyWords6,RegKeyWords6,
+ KeyWords7 KeyWords7,RegKeyWords7,
+ KeyWords8 KeyWords8,RegKeyWords8,
+
+ KeyWords1 default,files,end,generalflags,stringflags
+ KeyWords1 octonumflags,octqnumflags,octbnumflags,leftmargin,
+ KeyWords1 rightmargin,paragraph
+ KeyWords1 binnumflags,hexnumflags,decnumflags,commentstart,ColorKeyWords
+ KeyWords1 comment,commentstring,KeyWords,MultiLineComment,
+ KeyWords1 regKeyWords,multilinestring,bracketpairs,optimalfill,tabsize
+ KeyWords1 LeftMargin,RightMargin,Paragraph,ForceNewlineAtEOF
+ KeyWords1 CommentStartPos
+ KeyWords1 IsOn,Color,bracketpairs
+ KeyWords2 On,Off,Yes,No,Autobrackets,Macro,Endmacro,
 ;warning: this commands are taken from edcom.dnr dated 22-Dec-2005
 ;some of them may not work in all versions
 ;end is not listed because it is keyword1 too
-  KeyWords3 AsciiTable,BlockDown,BlockEnd,BlockLeft,BlockPrint,BlockRead
-  KeyWords3 BlockRight,BlockStart,BlockUp,BlockWrite,BracketPair,CalcBlock
-  KeyWords3 CapBlock,CapString,CapWord,CaseBlock,CaseChar,CaseString
-  KeyWords3 CaseWord,Close,ContSearch,Copy,CopyBlock,Cut,DelBackChar
-  KeyWords3 DelBlock,DelChar,DelLine,DelToSOL,DelWordLeft,DelWordRight
-  KeyWords3 DeltoEOLN,Enter,ExecFile,FCenter,FJustify,FLeft,FRight
-  KeyWords3 FileEnd,FilePrint,FileStart,GotoLineNumber,GotoMarker1
-  KeyWords3 GotoMarker2,GotoMarker3,GotoMarker4,GotoMarker5,GotoMarker6
-  KeyWords3 GotoMarker7,GotoMarker8,GotoMarker9,HideBlock,Home
-  KeyWords3 IndentBlock,IndentOff,IndentOn,InsLine,InsertDate,InsertOff
-  KeyWords3 InsertOn,InsertTime,InsertVersion,LCenter,LJustify,LLeft
-  KeyWords3 LRight,LoadText,LowBlock,LowString,LowWord,MarkAll,MarkLine
-  KeyWords3 MarkWord,Menu,MoveBlock,MoveBlockEnd,MoveBlockStart,MoveDown
-  KeyWords3 MoveLeft,MoveRight,MoveUp,Paste,PgDn,PgUp,PlaceMarker1
-  KeyWords3 PlaceMarker2,PlaceMarker3,PlaceMarker4,PlaceMarker5
-  KeyWords3 PlaceMarker6,PlaceMarker7,PlaceMarker8,PlaceMarker9,Play0,Play1
-  KeyWords3 Play2,Play3,Play4,Play5,Play6,Play7,Play8,Play9,Redo,Replace
-  KeyWords3 RevSearch,SaveText,SaveTextAs,ScreenBottom,ScreenTop,ScrollDn
-  KeyWords3 ScrollUp,SortBlock,SortBlockRev,StartSearch,SwitchBack
-  KeyWords3 SwitchBlock,SwitchDrawMode,SwitchFill,SwitchHiColumn
-  KeyWords3 SwitchHiLine,SwitchHighLight,SwitchIndent,SwitchIns,SwitchSave
-  KeyWords3 SwitchWrap,Tab,TabBack,UnIndentBlock,Undo,UpBlock,UpString
-  KeyWords3 UpWord,WindowsCopy,WindowsCut,WindowsPaste,WordCount,WordLeft
-  KeyWords3 WordRight,SwapLines,SwapWords,SwapWordsAlt
-  KeyWords4 KeyWords4,RegKeyWords4
-  KeyWords5 KeyWords5,RegKeyWords5
-  KeyWords6 KeyWords6,RegKeyWords6
-  KeyWords7 KeyWords7,RegKeyWords7
-  KeyWords8 KeyWords8,RegKeyWords8
+ KeyWords3 AsciiTable,BlockDown,BlockEnd,BlockLeft,BlockPrint,BlockRead
+ KeyWords3 BlockRight,BlockStart,BlockUp,BlockWrite,BracketPair,CalcBlock
+ KeyWords3 CapBlock,CapString,CapWord,CaseBlock,CaseChar,CaseString
+ KeyWords3 CaseWord,Close,ContSearch,Copy,CopyBlock,Cut,DelBackChar
+ KeyWords3 DelBlock,DelChar,DelLine,DelToSOL,DelWordLeft,DelWordRight
+ KeyWords3 DeltoEOLN,Enter,ExecFile,FCenter,FJustify,FLeft,FRight
+ KeyWords3 FileEnd,FilePrint,FileStart,GotoLineNumber,
+ KeyWords3 HideBlock,Home,Redo,Replace
+ KeyWords3 IndentBlock,IndentOff,IndentOn,
+ KeyWords3 InsertOn,InsertTime,InsertVersion,LCenter,LJustify,LLeft
+ KeyWords3 LRight,LoadText,LowBlock,LowString,LowWord,MarkAll,MarkLine
+ KeyWords3 MarkWord,Menu,MoveBlock,MoveBlockEnd,MoveBlockStart,MoveDown
+ KeyWords3 MoveLeft,MoveRight,MoveUp,Paste,PgDn,PgUp,
+ KeyWords3 RevSearch,SaveText,SaveTextAs,ScreenBottom,ScreenTop,ScrollDn
+ KeyWords3 ScrollUp,SortBlock,SortBlockRev,StartSearch,SwitchBack
+ KeyWords3 SwitchBlock,SwitchDrawMode,SwitchFill,SwitchHiColumn
+ KeyWords3 SwitchHiLine,SwitchHighLight,SwitchIndent,SwitchIns,SwitchSave
+ KeyWords3 SwitchWrap,Tab,TabBack,UnIndentBlock,Undo,UpBlock,UpString
+ KeyWords3 UpWord,WindowsCopy,WindowsCut,WindowsPaste,WordCount,WordLeft
+ KeyWords3 WordRight,SwapLines,SwapWords,SwapWordsAlt
+
+ KeyWords4 Print,GotoXY,GotoX,GotoY,Mark,Goto,InsLine,InsertDate,InsertOff
+ RegKeyWords4 GotoMarker\d
+ RegKeyWords4 Play\d
+ RegKeyWords4 PlaceMarker\d,GoToMarker\d
+ KeyWords7 HIGHLIGHT,H_LINE,H_ROW,H_COLUMN,AUTOWRAP,WRAPJUSTIFY,FORCECRLF,FORCECR,FORCELF,
+
+ KeyWords Color Brown Leftmargin,Rightmargin,Paragraph,Default,optimalfill,tabsize
+ KeyWords Color Brown Octonumflags,Octqnumflags,Octbnumflags,Generalflags,Stringflags,
+ KeyWords Color Brown Binnumflags,Hexnumflags,Decnumflags,Octnumflags,
+ KeyWords Color LightCyan MultiLineComment,Comment,CommentString,CommentStart,MultiLineString,
+
+ RegKeyWords Color Yellow ((Color)|(Reg))?KeyWord(s)?
+
   Macro 1
     GoToX 0
     InsLine
@@ -82,73 +195,184 @@ FILES *.HGL;
     End
     Print #1#5#9
   EndMacro
-END
 
+END
 ;ออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออ
-; Necromancer's Dos Navigator configuration files
-;ออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออ
-FILES NDN.INI;ARCHIVER.INI
+; Necromancer's Dos Navigator configuration files / config for all arhives NDN
+FILES archiver.ini
   CommentStart ;
   GeneralFLAGS  14
-; [section] constructs
-  RegKeyWords color red \[[^\]\[]+\]
-; value= constructs
-  RegKeyWords color lightred ^\w[^=]*(?==)
+  KeyWords3 UseLFN
+  KeyWords7 ListChar
+  RegKeyWords Color LightGreen \[[^\]]+\]
+  RegKeyWords Color LightCyan (Un)?Packer
+;  RegKeyWords color lightred ^\w[^=]*(?==)
 END
 
+;ออออออออออออออออออออออออออออออออออออออออออออฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤ
+; Necromancer Dos Navigator configuration / ไ ฉซ ฏฎคแขฅโชจ ไ ฉซฎข NDN
 FILES hgroups.ini
-;warning: ndn deletes all comments from hgroups.ini
-  RegKeyWords color red ^\[group #\d\d?\]
-  RegKeyWords color lightred ^(IsDir|UseDefaultBG|Index|Color|Mask)(?==)
-END
+; RegKeywords color red ^\[group #\d\d?\]
+ KeyWords1 IsDir,Index,Mask,Group,UseDefaultBG,
+ KeyWords Color BLACK/BLACK            Color=0
+ KeyWords Color BLUE/BLACK             Color=1
+ KeyWords Color GREEN/BLACK            Color=2
+ KeyWords Color CYAN/BLACK             Color=3
+ KeyWords Color RED/BLACK              Color=4
+ KeyWords Color MAGENTA/BLACK          Color=5
+ KeyWords Color BROWN/BLACK            Color=6
+ KeyWords Color LIGHTGRAY/BLACK        Color=7
+ KeyWords Color DARKGRAY/BLACK         Color=8
+ KeyWords Color LIGHTBLUE/BLACK        Color=9
+ KeyWords Color LIGHTGREEN/BLACK       Color=10
+ KeyWords Color LIGHTCYAN/BLACK        Color=11
+ KeyWords Color LIGHTRED/BLACK         Color=12
+ KeyWords Color LIGHTMAGENTA/BLACK     Color=13
+ KeyWords Color YELLOW/BLACK           Color=14
+ KeyWords Color WHITE/BLACK            Color=15
+ KeyWords Color BLACK/BLUE             Color=16
+ KeyWords Color BLUE                   Color=17
+ KeyWords Color GREEN/BLUE             Color=18
+ KeyWords Color CYAN/BLUE              Color=19
+ KeyWords Color RED/BLUE               Color=20
+ KeyWords Color MAGENTA/BLUE           Color=21
+ KeyWords Color BROWN/BLUE             Color=22
+ KeyWords Color LIGHTGRAY/BLUE         Color=23
+ KeyWords Color DARKGRAY/BLUE          Color=24
+ KeyWords Color LIGHTBLUE/BLUE         Color=25
+ KeyWords Color LIGHTGREEN/BLUE        Color=26
+ KeyWords Color LIGHTCYAN/BLUE         Color=27
+ KeyWords Color LIGHTRED/BLUE          Color=28
+ KeyWords Color LIGHTMAGENTA/BLUE      Color=29
+ KeyWords Color YELLOW/BLUE            Color=30
+ KeyWords Color WHITE/BLUE             Color=31
+ KeyWords Color BLACK/GREEN            Color=32
+ KeyWords Color RED/GREEN            Color=36
+ KeyWords Color LightGreen/Green       Color=42
+ KeyWords Color LightCyan/Green        Color=43
+ KeyWords Color Darkgray/Red           Color=64
+ KeyWords Color White/RED              Color=79
+ KeyWords Color Cyan/Magenta           Color=83
+ KeyWords Color LightGreen/Magenta     Color=90
+ KeyWords Color black/brown            Color=96
 
+ KeyWords Color lightgreen/brown       Color=106
+ KeyWords Color Black/DARKGRAY         Color=128
+ KeyWords Color BLUE/DARKGRAY          Color=129
+ KeyWords Color Green/DARKGRAY         Color=130
+ KeyWords Color CYAN/DARKGRAY          Color=131
+ KeyWords Color RED/DARKGRAY           Color=132
+ KeyWords Color Magenta/DARKGRAY       Color=133
+ KeyWords Color Brown/DARKGRAY         Color=134
+ KeyWords Color lightgray/DARKGRAY     Color=135
+ KeyWords Color DARKGRAY/lightgray     Color=136
+ KeyWords Color LIGHTBLUE/DARKGRAY     Color=137
+ KeyWords Color LIGHTGREEN/DARKGRAY    Color=138
+ KeyWords Color Lightcyan/DARKGRAY     Color=139
+ KeyWords Color Lightred/DARKGRAY      Color=140
+ KeyWords Color LIGHTMAGENTA/DARKGRAY  Color=141
+ KeyWords Color YELLOW/DARKGRAY        Color=142
+ KeyWords Color WHITE/DARKGRAY         Color=143
+
+ KeyWords Color BLACK/lightblue        Color=144
+ KeyWords Color BLUE/lightblue         Color=145
+ KeyWords Color GREEN/lightblue        Color=146
+ KeyWords Color CYAN/lightblue         Color=147
+ KeyWords Color RED/lightblue          Color=148
+ KeyWords Color MAGENTA/lightblue      Color=149
+ KeyWords Color BROWN/lightblue        Color=150
+ KeyWords Color LIGHTGRAY/lightblue    Color=151
+ KeyWords Color DARKGRAY/lightblue     Color=152
+ KeyWords Color LIGHTBLUE/lightblue    Color=153
+ KeyWords Color LIGHTGREEN/lightblue   Color=154
+ KeyWords Color LIGHTCYAN/lightblue    Color=155
+ KeyWords Color LIGHTRED/lightblue     Color=156
+ KeyWords Color LIGHTMAGENTA/lightblue Color=157
+ KeyWords Color YELLOW/lightblue       Color=158
+ KeyWords Color WHITE/lightblue        Color=159
+
+ KeyWords Color BLACK/LIGHTGREEN       Color=160
+ KeyWords Color BLACK/LIGHTRED         Color=192
+ KeyWords Color RED/LIGHTRED           Color=196
+ KeyWords Color white/lightred         Color=207
+ KeyWords Color LIGHTCYAN/LIGHTMAGENTA Color=219
+ KeyWords Color BROWN/YELLOW           Color=230
+Commentstart ;
+end
+
+;ออออออออออออออออออออออออออออออออออออออออออออฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤ
+;Necromancer Dos Navigator configuration
 FILES ftp.ini
   CommentStart ;
   GeneralFlags 14
   RegKeyWords color white ftp://
-  RegKeyWords color lightgreen \[\d+\,\d+\,\d+\]
+  RegKeyWords color lightgreen \[\d+\,\d+\,\d+\,\d+\]
 END
 
+;ออออออออออออออออออออออออออออออออออออออออออออฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤ
+;Necromancer Dos Navigator configuration
 FILES ndn.spf
-  CommentString ;
+  CommentStart ;
   RegKeyWords color white ;\s1*(\+|\*)?,^\s*(\+|\*)
   RegKeyWords color red ^\s*\[[^\[\]\\/\*\:\?\"\<\>\.]+\]
 END
 
-FILES NDN.EXT
-  CommentStart ;
-;RegKeyWords2
-  RegKeyWords color white ^\s*([^\]\[\\/\*\:\?\"\<\>\.]+|\*\s*)(?=[\[\{\(])
-;RegKeyWords5
-  RegKeyWords color blue ~~~~,!!,\$\$
-;RegKeyWords4
-  RegKeyWords color green !\\
-  RegKeyWords color green !~\\
-  RegKeyWords color green \$\\
-  RegKeyWords color green \$~\\
-  RegKeyWords color green ~!,\.!~,\.!,!/,!~/,!:,!
-  RegKeyWords color green ~\$,\.\$~,\.\$,\$/,\$~/,\$:,\$
-;RegKeyWords3
-  RegKeyWords color red (?<=[\[\{\(])\s*>?>(?=\ ?\d+(\s|$)),~,^\s*<=?
-  RegKeyWords color red ^\s*>?>(?=\ ?\d+(\s|$))
-;RegKeyWords comment
-  RegKeyWords color cyan ^\s*rem[^\|]*,(?<=\|)\s*rem[^\|]*,^\s*::.*$
-;RegKeyWords1
-  RegKeyWords color white ^\s*@?\s*[A-Za-z]:$
-  RegKeyWords color white ^\s*@?\s*(break|call|cd|chdir|chcp|cls|command|copy|ctty|date|del|erase|dir|exit|goto|lfnfor|lock|loadhigh|lh|md|mkdir|path|pause|prompt|rd|rmdir|ren|rename|set|shift|time|truename|type|unlock|ver|verify|vol)($|\s)
-  RegKeyWords color white ^\s*@?\s*echo(\.|\s+(on|off)$)?
-  RegKeyWords color white ^\s*@?\s*if(\s+not)?\s+(exist\ |errorlevel\ |(?=.*==))
-  RegKeyWords color white ^\s*@?\s*for(?=\s+%%[^\d]\s+in\s+\([^\(\)]\)\s+do)
-;RegKeyWords2
-  RegKeyWords color lightgreen in(?=\s+\([^\(\)]*\)\s+do),(?<=\))\s+do
-  RegKeyWords color lightgreen ^\s*:.*$
-  KeyWords5 >,<,|
-;regkewords5
-  RegKeyWords color blue %%
-;regkewords3
-  RegKeyWords color red %\d,%\D[^%]*%,%
+;ออออออออออออออออออออออออออออออออออออออออออออฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤ
+; Necromancer Dos Navigator configuration FILES
+FILES *.ext;*.mnu
+ SwitchHighLight On
+ CommentStart ;,rem
+ commentstring rem
+ KeyWords1 md,cd,copy,del,delete,deldir,deltree,start,@start,attrib,
+ KeyWords1 echo,echo.,@echo,off,cls,include,high,umb,choice,@choice
+ KeyWords1 prompt,path,bat,country,devicehigh,
+ KeyWords2 echo,@echo,menufile,!,$,!.!,$.$
+ KeyWords2 dos,set,lh,config,menudefault,menuColor,numlock,lastdrive,sys,
+ KeyWords2 break,cd,del,rename,if,exist,call,buffers,FILES,errorlevel,
+ KeyWords8 F1,F2,F3,F4,F5,F6,F7,F8,F9,F10
+ KeyWords3 pause
+;regkeywords4
+  RegKeywords color green !\\
+  RegKeywords color green !~\\
+  RegKeywords color green \$\\
+  RegKeywords color green \$~\\
+  RegKeywords color green ~!,\.!~,\.!,!/,!~/,!:,!
+  RegKeywords color green ~\$,\.\$~,\.\$,\$/,\$~/,\$:,\$
+
+
+ RegKeyWords Color lightgreen %\d
+ RegKeyWords Color yellow ~[^~\x5c\x21]+~
+ RegKeyWords Color lightred >\d+
+; RegKeyWords Color lightgreen \[[^\]]+\],
+ RegKeyWords Color lightcyan (@.+[^}])
+ RegKeyWords Color Lightgreen \<[^\x5E\>\<\x22\x27\x3D]+\>,\[[^\x5E\]\[\x22\x27\x3D]+\],\([^\x5E\)\(\x22\x27\x3D]+\),\{[^\x5E\}\{\x22\x27\x3D]+\}
+; RegKeyWords Color lightcyan (\[|[a-z]*\x2E(exe|com)|\]),(@[a-z]*\x20)
+; RegKeyWords Color lightcyan ((\x20|\[?)+([a-z]+)(\.(exe|com)+\]?)),(@.+)
+; RegKeyWords2 ~[a-z]~
+END
+;ออออออออออออออออออออออออออออออออออออออออออออฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤ
+;NDN Initialization file / ” ฉซ จญจๆจ ซจง ๆจจ NDN
+
+FILES ndn.ini;
+ RegKeyWords Color Lightgreen \<[^\x5E\>\<\x22\x27\x3D]+\>,\[[^\x5E\]\[\x22\x27\x3D]+\],\([^\x5E\)\(\x22\x27\x3D]+\),\{[^\x5E\}\{\x22\x27\x3D]+\}
+ RegKeyWords Color lightmagenta QuickDir\d
+; RegKeyWords Color lightcyan \d
+ RegKeyWords Color yellow DiskCols.,\x7c,
+ RegKeyWords Color lightgreen ArchCols.
+ RegKeyWords Color green FindCols.
+ RegKeyWords Color white TempCols.,TrayOptions
+ RegKeyWords Color lightcyan ProcCols.
+ KeyWords Color lightcyan SecurityChar
+ KeyWords Color lightred Warning,Custom,DontStartWarning
+ KeyWords Color green Descriptions,DirInfo
+ KeyWords Color blue SystemMenuChar,WinExplodeDelay
+ KeyWords Color yellow TagChar
+ KeyWords Color lightmagenta QuickDirs,AutoBrackets
+ KeyWords Color BLACK ShadowX,ShadowY
+ GeneralFLAGS   14
 END
 
+;ออออออออออออออออออออออออออออออออออออออออออออฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤ
 FILES ndn.vwr;ndn.edt
   CommentStart ;
 ;RegKeyWords comment
@@ -165,74 +389,7 @@ FILES ndn.vwr;ndn.edt
   RegKeyWords color green ~!,\.!~,\.!,!/,!~/,!:,!
   RegKeyWords color green ~\$,\.\$~,\.\$,\$/,\$~/,\$:,\$
 END
-
-FILES ndn.mnu;ndn.mn2
-;comments in menu can appear only before first menu item
-;strange: there can 0 or 1 spaces between > and number
-  CommentStart ;
-;RegKeyWords5
-  RegKeyWords color blue ~~~~,!!,\$\$
-;RegKeyWords4
-  RegKeyWords color green !\\
-  RegKeyWords color green !~\\
-  RegKeyWords color green \$\\
-  RegKeyWords color green \$~\\
-  RegKeyWords color green ~!,\.!~,\.!,!/,!~/,!:,!
-  RegKeyWords color green ~\$,\.\$~,\.\$,\$/,\$~/,\$:,\$
-;RegKeyWords3
-  RegKeyWords color red ^\s*>?>(?=\ ?\d+(\s|$)),~,^\s*<=?
-  RegKeyWords color red (?<={)(nc)?menufile(?=="[^"]+"})
-;RegKeyWords comment
-  RegKeyWords color cyan ^\s*rem[^\|]*,(?<=\|)\s*rem[^\|]*,^\s*::.*$
-;RegKeyWords1
-  RegKeyWords color white ^\s*@?\s*[A-Za-z]:$
-  RegKeyWords color white ^\s*@?\s*(break|call|cd|chdir|chcp|cls|command|copy|ctty|date|del|erase|dir|exit|goto|lfnfor|lock|loadhigh|lh|md|mkdir|path|pause|prompt|rd|rmdir|ren|rename|set|shift|time|truename|type|unlock|ver|verify|vol)($|\s)
-  RegKeyWords color white ^\s*@?\s*echo(\.|\s+(on|off)$)?
-  RegKeyWords color white ^\s*@?\s*if(\s+not)?\s+(exist\ |errorlevel\ |(?=.*==))
-  RegKeyWords color white ^\s*@?\s*for(?=\s+%%[^\d]\s+in\s+\([^\(\)]\)\s+do)
-;RegKeyWords2
-  RegKeyWords color lightgreen in(?=\s+\([^\(\)]*\)\s+do),(?<=\))\s+do
-  RegKeyWords color lightgreen ^\s*:.*$
-  KeyWords5 >,<,|
-;regkewords5
-  RegKeyWords color blue %%
-;regkewords3
-  RegKeyWords color red %\d,%\D[^%]*%,%
-END
-
-FILES ndn.xrn
-  CommentStart ;
-;RegKeyWords comment
-  RegKeyWords color cyan ^\s*;.*$
-;RegKeyWords5
-  RegKeyWords color blue ~~~~,!!,\$\$
-;RegKeyWords4
-  RegKeyWords color green !\\
-  RegKeyWords color green !~\\
-  RegKeyWords color green \$\\
-  RegKeyWords color green \$~\\
-  RegKeyWords color green ~!,\.!~,\.!,!/,!~/,!:,!
-  RegKeyWords color green ~\$,\.\$~,\.\$,\$/,\$~/,\$:,\$
-;RegKeyWords3
-  RegKeyWords color red ^>[><\[\]]?(?=\s*(10|1|2|3|4|5|6|7|8|9)$),~,^\s*<=?
-;RegKeyWords comment
-  RegKeyWords color cyan ^\s*rem[^\|]*,(?<=\|)\s*rem[^\|]*,^\s*::.*$
-;RegKeyWords1
-  RegKeyWords color white ^\s*@?\s*[A-Za-z]:$
-  RegKeyWords color white ^\s*@?\s*(break|call|cd|chdir|chcp|cls|command|copy|ctty|date|del|erase|dir|exit|goto|lfnfor|lock|loadhigh|lh|md|mkdir|path|pause|prompt|rd|rmdir|ren|rename|set|shift|time|truename|type|unlock|ver|verify|vol)($|\s)
-  RegKeyWords color white ^\s*@?\s*echo(\.|\s+(on|off)$)?
-  RegKeyWords color white ^\s*@?\s*if(\s+not)?\s+(exist\ |errorlevel\ |(?=.*==))
-  RegKeyWords color white ^\s*@?\s*for(?=\s+%%[^\d]\s+in\s+\([^\(\)]\)\s+do)
-;RegKeyWords2
-  RegKeyWords color lightgreen in(?=\s+\([^\(\)]*\)\s+do),(?<=\))\s+do
-  RegKeyWords color lightgreen ^\s*:.*$
-  KeyWords5 >,<,|
-;regkewords5
-  RegKeyWords color blue %%
-;regkewords3
-  RegKeyWords color red %\d,%\D[^%]*%,%
-END
-
+;ออออออออออออออออออออออออออออออออออออออออออออฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤ
 FILES ndn.qdr
   CommentStart ;
   RegKeyWords color comment ^\s*;.*$
@@ -240,262 +397,58 @@ FILES ndn.qdr
   RegKeyWords color lightgreen [*?]
 END
 
-;ออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออ
-; NDN Language/Dialog Files
-;ออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออ
-FILES *.DNL;*.HTX
-  CommentStart ;
-  OptimalFill Off
-END
 
-FILES *.DNR
-  CommentString ;
-  OptimalFill Off
-  BracketPairs menu;submenu;dialog;colordialog end ifdef endif
-END
-
-;ออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออ
-; Include files, usually assembler but also pascal and other.
-;ออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออ
-FILES *.INC
+;ออออออออออออออออออออออออออออออออออออออออออออฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤ
+; XML
+FILES *.XML;*.bdsproj;*.vlp;<<?xml>
+  GeneralFlags 1
+  StringFlags 160
+  Keywords1 xml,version,encoding,standalone
+  Keywords2 no,yes,DOCTYPE,ELEMENT,ATTLIST
+  Comment <!-- -->
   MultiLineComment 1
-  CommentStart  $,%
-  CommentString file://,#,;
-  Comment       /* */,(* *),{ }
-END
-
-;ออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออ
-; Assembler files *.S35;*.S03;*.S01;*.S90
-;ออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออ
-FILES *.ASM;*.S??;*.A86;*.EQU;*.COD
-  CommentString ;
-  HexNumFLAGS    31
-  DecNumFLAGS    31
-  OctoNumFLAGS   31
-  BinNumFLAGS    31
-  GeneralFlags   16
-  BracketPairs macro endm proc endp
-  KeyWords1    public,extern,extrn,include,macro,endm,segment,ideal,model,ends
-  KeyWords1    proc,end,endp,title,subtitle,module,code,flat,jumps,data
-  KeyWords1    const,rcode,equ,global,name,group,assume,nojumps,locals,org
-  KeyWords1    if,ifdef,ifndef,elif,else,endif,define,undef,local,dup
-  Keywords1    p386,.386,p486,.486,p586,.586,.586p,.686p,.data,dataseg,.code
-  Keywords1    codeseg,.udata,udataseg,short,offset,near,end,struc,.xmm
-; Registers and size related
-  KeyWords3    tiny,large,ptr
-  RegKeywords3 \b[abcd][lh]\b, \b([xyz]?mm[0-7]|[xyz]mm([8-9]|[12][0-9]|3[01]))\b
-  RegKeywords3 \b[cdefgs]s\b, \b[er]?([ds]i|[bs]p|[abcd]x)\b, \b([sb]p|[sd]i)l\b
-  RegKeyWords3 \b[cdt]r[0-7]\b, \br([8-9]|1[0-5])[bwdl]?\b, \b(k|st)[0-7]\b
-  RegKeyWords3 \buse(16|32|64|avx(256|512))\b, \bbnd[0-3]\b, \b[rd][bdfpqtuw]\b
-  RegKeyWords3 \b(|[dfpqtxyz]|[dq]q)(word)|(|t)(byte)|seg[cdefgs]s\b
-; Instructions
-  RegKeywords3 \b(ad[co]x)\b, \b(aes(dec|enc)(|last))\b
-  RegKeywords3 \b(aes(imc|keygenassist))\b, \b(mul|ror|sar|shl|shr)(x)\b
-  RegKeywords3 \b(cmp(eq|le|lt|neq|nle|nlt|ord)(pd|ps|sd|ss))\b
-  RegKeywords3 \b(bl[sc](fill|i|ic|msk))\b, \b(bl(sr|cs))\b
-  RegKeywords3 \b(bnd(|cl|cn|cu|ldx|mk|mov|stx))\b, \b(b(extr|zhi))\b
-  RegKeywords3 \b(cl(ac|flushopt|wb))\b, \b(cmovp[eo])\b, \b(cmps[qs])\b
-  RegKeywords3 \b(cmpunord(pd|ps|sd|ss))\b, \b(f(init|ldenv[dw]|wait))\b
-  RegKeywords3 \b(fn(clex|disi|eni|save[dw]|stenv[dw]|)|getsec|iret(|[dqw]))\b
-  RegKeywords3 \b(frst(or[dw]|pm)|fsave(|[dw])|fst(env[dw]|sw)|fx(rstor64|save(|64)))\b
-  RegKeywords3 \b(inv(ept|pcid|vpid)|kunpck(bw|dq|wd)|llwpcb|lwp(ins|val))\b
-  RegKeywords3 \b(k(add|and|andn|mov|not|or|ortest|shiftl|shiftr|test|xnor|xor)([bdqw]))\b
-  RegKeywords3 \b(pclmul(hqhdq|hqhqdq|hqlqdq|lqhdq|lqhqdq|lqlqdq|qdq))\b
-  RegKeywords3 \b(pblend(vb|w)|(|v)mpsadbw|p(commit|dep|ext|hminposuw))\b
-  RegKeywords3 \b((rd|wr)([fg]sbase|rand|seed)|setp[eo]|sha1(msg1|msg2|nexte|rnds4))\b
-  RegKeywords3 \b(sha256(msg1|msg2|rnds2)|s(lwpcb|tac)|tz(cnt|msk)|t1mskc)\b
-  RegKeywords3 \b(xsave(|64|opt(|64))|xrstor(|64))\b,\bxsha(1|256)|xstore\b
-  RegKeywords3 \b(x(abort|acquire|begin|end|release|test))\b
-  RegKeywords3 \bvbroadcast[fi](128|32x2|32x4|32x8|64x2|64x4)\b
-  RegKeywords3 \bvbroadcast(sd|ss)|vadd(pd|ps|sd|ss|sub(pd|ps))\b
-  RegKeywords3 \bvaes(dec|declast|enc|enclast|imc|keygenassist)\b
-  RegKeywords3 \bvalign[dq]|v(and(|n)|or)(pd|ps)\b
-  RegKeywords3 \bvblend(mpd|mps|pd|ps|vpd|vps)\b
-  RegKeywords3 \bvcmpeq_(os|uq|us)(pd|ps|sd|ss)|vcmpeq(pd|ps|sd|ss)\b
-  RegKeywords3 \bvcmpfalse(|_os)(pd|ps|sd|ss)\b
-  RegKeywords3 \bvcmp[gl][et](|_oq)(pd|ps|sd|ss)\b
-  RegKeywords3 \bvcmp(neq_)(oq|os|us)(pd|ps|sd|ss)\b
-  RegKeywords3 \bvcmp(neq)(pd|ps|sd|ss)|vcomi(sd|ss)|vcompress(pd|ps)\b
-  RegKeywords3 \bvcmpn(ge|gt|le|lt)(|_uq)(pd|ps|sd|ss)\b
-  RegKeywords3 \bvcmp(|un)ord(|_s)(pd|ps|sd|ss)\b
-  RegKeywords3 \bvcmp(pd|ps|sd|ss)|vcmptrue(|_us)(pd|ps|sd|ss)\b
-  RegKeywords3 \bvcvtdq2(pd|ps)|vcvtpd2(dq|ps|qq|udq|uqq)|vcvtph2ps\b
-  RegKeywords3 \bvcvtps2(dq|pd|ph|qq|udq|uqq)|vcvtqq2(pd|ps)\b
-  RegKeywords3 \bvcvtsd2(si|ss|usi)|vcvtsi2(sd|ss)|vcvtss2(sd|si|usi)\b
-  RegKeywords3 \bvcvttpd2(dq|qq|udq|uqq)|vcvttps2(dq|qq|udq|uqq)\b
-  RegKeywords3 \bvcvtt(sd|ss)2(si|usi)|vdpp[ds]\b
-  RegKeywords3 \bvcvtu(d|q)q2(pd|ps)|vdbpsadbw\b
-  RegKeywords3 \bvcvtusi2(sd|ss)|v(div|fpclass|max|min|mul)(pd|ps|sd|ss)\b
-  RegKeywords3 \b(vexp2p|vexpandp)[ds]|vextractps\b
-  RegKeywords3 \bv(extract|insert)[fi](128|32x4|32x8|64x2|64x4)\b
-  RegKeywords3 \bv(fixupimm|getexp|getmant)(pd|ps|sd|ss)\b
-  RegKeywords3 \bvfm(add(|sub)|sub(|add))(|132|213|231)(pd|ps|sd|ss)\b
-  RegKeywords3 \bvfnm(add|sub)(|132|213|231)(pd|ps|sd|ss)\b
-  RegKeywords3 \bv(gatherp|scatterp)(f0|f1)([dq](pd|ps))\b
-  RegKeywords3 \bv(gather[dq]|maskmov)(dqu|pd|ps)|vh(add|sub)(pd|ps)\b
-  RegKeywords3 \bvld(dqu|mxcsr)|vinsertps|vmclear\b
-  RegKeywords3 \bvmov((ap[ds])|d(|dup|qa(|32|64)|qu(|16|32|64|8)))\b
-  RegKeywords3 \bvmovh(lps|pd|ps)|vmovl(hps|pd|ps)\b
-  RegKeywords3 \bvmovmsk(pd|ps)|vmovnt(dq(|a)|pd|ps)\b
-  RegKeywords3 \bvmovs(d|[hl]dup|s)|vmov(q|up[ds])|vmptr(ld|st)\b
-  RegKeywords3 \bvpabs[bdqw]|vpack[su]s(dw|wb)\b
-  RegKeywords3 \bvpadd([bdqw]|s[bw]|us[bw])|vpalignr\b
-  RegKeywords3 \bvpand(n[dq]|[dnq]|)|vpavg[bw]\b
-  RegKeywords3 \bvpblend(d|m[bdqw]|vb|w)\b
-  RegKeywords3 \bvpbroadcast([bdqw]|m(b2q|w2d))\b
-  RegKeywords3 \bvpclmul(hqhdq|hqlqdq|lqhdq|lqlqdq|qdq)\b
-  RegKeywords3 \bvpcm(ov|p([bd]|(eq|gt|l[et](|u))[bdqw]|(e|i)str[im]))\b
-  RegKeywords3 \bvpcmp((neq|nl[et])(|u)[bdqw])|vphminposuw\b
-  RegKeywords3 \bv(pcmp([qw]|(u[bdqw]))|(pcompress|pconflict)[dq])\b
-  RegKeywords3 \bvpcom((eq|false|g[et]|l[et]|neq|true)(|u)[bdqw])\b
-  RegKeywords3 \bvperm(2[fi]128|[bd]|i2([bdqw]|pd|ps)|il(|2|mo2|mz2|td2)(ps|pd))\b
-  RegKeywords3 \bvperm(pd|ps|[qw]|t2[bdqw]|t2p[ds])\b
-  RegKeywords3 \bvpexpand[dq]|vpextr[bdqw]|vpgather[dq][dq]\b
-  RegKeywords3 \bvphadd(d|sw|w[dq]|w)|vphsub(bw|dq|sw|wd|[dw])\b
-  RegKeywords3 \bvpinsr[bdqw]|vplzcnt[dq]|vpmadd(52huq|52luq|ubsw|wd)\b
-  RegKeywords3 \bvpmaskmov[dq]|vpm(ax|in)[su][bdqw]\b
-  RegKeywords3 \bvpmov(b2m|d2m|d[bw]|m2[bdqw]|mskb|q2m|q[bdw])\b
-  RegKeywords3 \bvpmov(([sz]x)(b[dqw]|dq|w[dq]))|vpsadbw\b
-  RegKeywords3 \bvpmov((s|us)(d[bw]|q[bdw]|wb)|w(2m|b))\b
-  RegKeywords3 \bvpmul(dq|h(rsw|uw|w)|l[dqw]|tishiftqb|udq)\b
-  RegKeywords3 \bvpor([dq]|)|vpperm|vpro[lr]([dq]|v[dq])\b
-  RegKeywords3 \bvpscatter[dq][dq]|vpshuf([bd]|[hl]w)|vpsign[bdw]\b
-  RegKeywords3 \bvpsll(dq|[dqw]|v[dqw])|vpsr[al]([dqw]|dq|v[dqw])\b
-  RegKeywords3 \bvpsub([bdqw]|s[bw]|us[bw])|vpternlog[dq]\b
-  RegKeywords3 \bvptest((n|)(m[bdqw])|)|vpunpck([hl](bw|dq|qdq|wd))\b
-  RegKeywords3 \bvpxor([dq]|)|v(range|(rcp|rsqrt)(14|28)|reduce)(pd|ps|sd|ss)\b
-  RegKeywords3 \bv(rndscale|round|scalef)(pd|ps|sd|ss)\b
-  RegKeywords3 \bvr(cp|sqrt)(ps|ss)|vshuf[fi](32x4|64x2)\b
-  RegKeywords3 \bvscatter[dq](pd|ps)|vshuf(pd|ps)\b
-  RegKeywords3 \bv((sqrt|sub)(pd|ps|sd|ss)|stmxcsr|)\b
-  RegKeywords3 \bv(test|xor)(pd|ps)|vunpck[hl](pd|ps)\b
-  RegKeywords3 \bvucomi(sd|ss)|(v|)zero(all|upper)\b
-;
-  RegKeywords3 \b(adc|sub|sbb|p?test|out|dec|inc?|leave|int1|int3?|lock|x?add)\b
-  RegKeywords3 \b(call|not|neg|daa|das|xchg|(cl|st)(c|d|g?i)|lea|cmc|nop)\b
-  RegKeywords3 \b(aa[amds]|arpl|bound|sar|xlatb?)\b
-  RegKeywords3 \b(bt[csr]?|bsr|bsf|[lms]fence|cmpxchg|lar|int01|rsm)\b
-  RegKeywords3 \b(setALc|sALc?|into|icebp|lddqu|cbw|cqo|cdqe?|cwde?|hlt)\b
-  RegKeywords3 \b(palignr|ver[rw]|[sl](ldt|tr|msw|gdt|idt|ahf)|ud0|ud1|ud2|umov)\b
-  RegKeywords3 \b(wbinvd|ucomiss|rdshr|rdpmc|mwait)\b
-  RegKeywords3 \b(loadall(286|386)|clts|syscall|sysret(|q)|invd|swapgs|f?emms|enter|wait)\b
-  RegKeywords3 \b(cmpxchg(8|16)b|pand|pavg(w|b|usb)|popcnt|lsl)\b
-  RegKeywords3 \b(sysenter|sysexit(|q)|bswap|wrmsr(|q)|rdtsc(|p)|rdmsr(|q)|wrshr|cpuid)\b
-  RegKeywords3 \bf(bld|ild|sin|cos|sincos|prem1?|abs|yl2x(p1)?)\b
-  RegKeywords3 \bfld(1|cw|l2e|lg2|ln2|l2t|env|pi|z)?\b
-  RegKeywords3 \bf(xsave|xrstor|divp|divrp?|idivr|pa?tan|scale|rint2)\b
-  RegKeywords3 \bfnst(cw|sw|env|dw|sg)\b, \bfucom(p?|pp|ip?)\b
-  RegKeywords3 \bf(eni|disi|ninit|setpm|incstp|richop|sqrt)\b
-  RegKeywords3 \bf(chs|tst|2xm1|stenv|bstp|decstp|mulp|clex)\b
-  RegKeywords3 \bfcom(2|ip?|pp|p5|p3|p?)\b
-  RegKeywords3 \bf(icomp?|nsave|rstor|addp|freep?|rinear|stcw)\b
-  RegKeywords3 \bf(rndint|subr|subp|isubr|subrp|xtract|nop|xam)\b
-  RegKeywords3 \bf(stp?|stp1|stp8|stp9|istp?|isttp|xch7?|xch4)\b
-  RegKeywords3 \b(lzcnt|maskmov(Q|dqu)|pause|rcp[SP]S|pandn|psraw|psrad)\b
-  RegKeywords3 \b(insertq|clflush|movhlPS|movlhPS|monitor)\b
-  RegKeywords3 \bp((i2f|f2i)[dw]|fsub|fadd|fcmpgt)\b
-  RegKeywords3 \bpf(subr|mul|rsqrt|pnacc|cmpeq|cmpge|rCPit1|rSQit1|rcp|min|max)\b
-  RegKeywords3 \b(pswapd|pfn?acc|pminub|pfrcpit2|extractPS|insertPS|PMaddUBSW)\b
-  RegKeywords3 \b(Px?or|crc32|unpck[hl]P[DS]|extrq|pmovmskB|hint_nop)\b
-  RegKeywords3 \bcvt(t?P[DS]2(pi|DQ)|SS2SD|PD2P[SQ]|PS2PD|(pi|dq)2P[DS]|t?s[ds]2si)\b
-  RegKeywords3 \bcvt(sd2s[is]|si2s[ds])\b, \bmovnt([SP][DS]|d?q|i|dqa)\b
-  RegKeywords3 \bVM(m?call|load|save|launch|resume|xoff|xon|run|read|write)\b
-  RegKeywords3 \b(x[gs]etbv|invlpga?|rsqrt[SP]S|skinit)\b
-  RegKeywords3 \bfcmovn?(be?|e|u)\b, \bloop((|n?[ez])(|[dqw]))?\b, \brepn?[ez]?\b
-  RegKeywords3 \bpunpckl(bw|wd||dq)\b, \b(ld|st)mxcsr\b
-  RegKeywords3 \bf?i?(mul|div)\b, \b(fi?)?(add|sub)\b
-  RegKeywords3 \b((if|j|set|cmov)n?([abceglopsz]|[abgl]e)|j[er]?cxz|jmpe?|jp[eo])\b
-  RegKeywords3 \bmov([sz]xd?|be|d|q|ss|(sl|sh|s?d)dup|q2dq|dq(2q|a|u)|[ahlu]p[ds])?\b
-  RegKeywords3 \b(cmp|out|lod|mov|sca|sto|in|pab)s[bwdq]?\b
-  RegKeywords3 \b(push|pop)(|[fa])(|[dqw])\b, \br[co][lr]\b, \bround[sp][ds]\b
-  RegKeywords3 \bph(add|sub)(s?w|d)\b, \bps[lr]l(w|d|d?q)\b, \b(PSADBW|PMaddWD)\b
-  RegKeywords3 \bp(add|sub)([bwdq]|u?s[bw])\b, \b((retf|ret|retn)(|[dqw]))\b
-  RegKeywords3 \bp(min|max)[su][bwd]\b, \bl[defgs]s\b, \bpsign[bwd]\b
-  RegKeywords3 \bpmov[sz]x([bwd]q|[bw]d|bw)\b, \bpshuf(b|[hl]?w|d)\b
-  RegKeywords3 \bpmul(l[wdq]|h(u|rs?)?w|u?dq)\b, \bp(ext|ins)r[bwdq]\b
-  RegKeywords3 \bpcmp([ei]Str[mi]|(gt|eq)[bwdq])\b, \bsh[rl]d?\b
-  RegKeywords3 \b(u?comi|add|sub|max|min|mul|div|sqrt)S[DS]\b
-  RegKeywords3 \bpack[su]s(wb|dw)\b, \bpunpck(h?(bw|wd|dq)|[hl]qdq)\b
-  RegKeywords3 \bprefetch(w?|wt1|t[0-2]|nta)\b, \b(andn?|x?or|cmp|div)(P[DS])?\b
-  RegKeywords3 \b(max|min|mul|dp|blendV?|h?(add|sub)|sqrt|addsub|movmsk|shuf)P[DS]\b
-  RegKeywords3 \bVF(N?Madd|NMsub|rcz)[sp][ds]\b, \bVPmadcsS?WD\b
-  RegKeywords3 \bVP(comU?|rot|sha|shl)[bwdq]\b, \bVPmacsS?(DD|DQL|DQH|WD|WW)\b
-  RegKeywords3 \bVPHaddU?(WD|WQ|DQ|B[wdq])\b, \bVFM(addSub|subAdd)P[ds]\b
-  Macro 1
+  RegKeyWords color lightred <[^/][^> ]+
+  RegKeyWords color lightred </[^> ]+>
+  RegKeyWords color red ="000"
+ Macro 1
     GoToX 0
     InsLine
-    Print ';ออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออ'^M^S
-    Print ';'^M^S
-    Print ';'^M^S
-    Print ';'^M^S
-    Print ';ออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออ'^M^S
-    Print ^X^E^E^E^E^D^D
-  EndMacro
-  Macro 2
-    GotoX 0
-    InsLine
-    Print ';'^M^S
-    Print ';'^M^S
-    Print ';'^M^S
-    Print ^X^E^G^E^E^D^D
-  EndMacro
-  Macro 3
-    GotoX 0
-    Print 'IDEAL'^M'P386'^M'MODEL TINY'^M'JUMPS'^M'CODESEG'^M'STARTUPCODE'^M^M
-    Print '        ret'^M
-    GotoX 0
-    Print 'UDATASEG'^M'DATASEG'^M'END'^M^M
-    Print ^E^E^E^E^E^E
-    GotoX 8
-  EndMacro
-  Macro 4
-    GotoX 0
-    Print 'IDEAL'^M'P386'^M'MODEL FLAT'^M'UDATASEG'^M'DATASEG'^M'CODESEG'^M'Start:'^M^M
-    Print '        mov   ax,4C00h ; Termiate the program'^M
-    GotoX 0
-    Print '        int   21h      ; with exit code 0'^M
-    GotoX 0
-    Print 'END Start'^M^M
-    Print ^E^E^E^E^E
-    GotoX 8
-  EndMacro
+    Print '<?xml version="1.0" encoding="UTF-8"?>'^M
+    Print '<>'^M^M
+    Print '</>'
+    Home
+    Print ^E^E^D
+ EndMacro
 END
 
 ;ออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออ
-; Configuration files
-;ออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออ
-FILES *.CFG;*.EVT;
-  CommentStart  ;,#,$,%
-  CommentString //
-  GeneralFLAGS   14
+; V+
+FILES *.V2
+  AutoBrackets Off
+  MultiLineComment 0
+  CommentString ;
+  GeneralFLAGS 64
+  StringFLAGS 32
+  Keywords1 auto,global,local,.program,if,not,define,.end,end,then,else
+  Keywords1 .doubles,.locations,.strings,.reals
+  Keywords2 call,type,abs,do,exit,for,to,until,case,value,of,true,false,any
+  Keywords2 and,or,return,while,enable,disable,attach,detach,$encode,getc
+  Keywords2 $mid,len,abort,execute,fopen,fclose,fcmnd,read,write,$chr,sig
+  Keywords2 tool,break,close,closei,move,moves,departs,below,ready,iostat
+  Keywords2 goto,strdif,val,wait,min,max,open,openi,trans,mod,fset,gpanel
+  Keywords2 gcolor,gtype,getevent,garc,gflood,gtexture,fdelete,speed,decompose
+  Keywords2 here,prompt,ignore,set,calibrate,react,dos,reacte,bits,accel,drive
+  BracketPairs program;case;if;for end until;while do
 END
 
-;ออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออ
-; Batch/Config.sys files
-;ออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออ
-FILES *.bat;autoexec.nt
-  CommentStart REM\ ,::
-;RegKeyWords comment
-;  RegKeyWords color cyan ^\s*rem[^\|]*,(?<=\|)\s*rem[^\|]*,^\s*::.*$
-;RegKeyWords1
-  RegKeyWords color white ^\s*@?\s*[A-Za-z]:$
-  RegKeyWords color white ^\s*@?\s*(break|call|cd|chdir|chcp|cls|command|copy|ctty|date|del|erase|dir|exit|goto|lfnfor|lock|loadhigh|lh|md|mkdir|path|pause|prompt|rd|rmdir|ren|rename|set|shift|time|truename|type|unlock|ver|verify|vol)($|\s)
-  RegKeyWords color white ^\s*@?\s*echo(\.|\s+(on|off)$)?
-  RegKeyWords color white ^\s*@?\s*if(\s+not)?\s+(exist\ |errorlevel\ |(?=.*==))
-  RegKeyWords color white ^\s*@?\s*for(?=\s+%%[^\d]\s+in\s+\([^\(\)]\)\s+do)
-;RegKeyWords2
-  RegKeyWords color lightgreen in(?=\s+\([^\(\)]*\)\s+do),(?<=\))\s+do
-  RegKeyWords color lightgreen ^\s*:.*$
-  KeyWords5 >,<,|
-;regkewords5
-  RegKeyWords color blue %%
-;regkewords3
-  RegKeyWords color red %\d,%\D[^%]*%,%
-  tabsize 8
-END
+;ออออออออออออออออออออออออออออออออออออออออออออฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤ
+; Batch FILES
+FILES config.sys;*.bat;*.col;*.cmd;*.sh;*.d
 
-FILES config.sys;config.nt;config.dos
   CommentStart ;
+  CommentString #
+  BracketPairs if fi case esac do done
+
 ;RegKeyWords comment
   RegKeyWords color cyan ^\s*(rem|;).*$
 ;RegKeyWords1
@@ -503,6 +456,7 @@ FILES config.sys;config.nt;config.dos
   RegKeyWords color white ^\s*(buffers|fcbs|files|install|stacks)(high)?\s*(?==)
   RegKeyWords color white ^\s*device(high)?(?=.*=)
   RegKeyWords color white ^\s*set(?=\s*\D.*=)
+  RegKeyWords color white [\-\._a-z0-9]+\(
   KeyWords2 on,off,high,low,umb,noumb,auto,noauto
 ;menu commands
 ;RegKeyWords1
@@ -514,24 +468,748 @@ FILES config.sys;config.nt;config.dos
 ;NT extensions
 ;RegKeyWords1
   RegKeyWords color white ^\s*(echoconfig|ntcmdpropt|dosonly|emm\s*(?==))
+
+  RegKeyWords color lightgreen \${[^\x20]+}
+  RegKeyWords color lightred \$[^\x20]+
+
+  KeyWords1 copy,echo,echo.,@echo,cls,include,xcopy,robocopy
+  KeyWords1 prompt,path,bat,com,exe,
+  KeyWords1 z,device,devicehight,tmp,temp,md,
+  KeyWords1 himem,mode,not,shift,comspec,cmdline,blaster,winbootdir,windir,
+  KeyWords1 Start,function
+  KeyWords2 %1,%2,%3,%4,%5,%6,%7,%8,%9,%10,:,goto,hight,
+  KeyWords2 dos,set,lh,config,menudefault,menuColor,numlock,lastdrive,sys,
+  KeyWords2 break,cd,rename,if,exist,call,buffers,FILES,errorlevel,fi,for,while,in,else,case,esac,then,elif,
+  KeyWords3 pause,@pause,chkerrorlevel,sudo,title,localhost
+  KeyWords4 do,done,taskkill,subst,icacls,net,ping,ls,run,find,reg
+  KeyWords6 exit,chmod,rm,unshare,cat,file,grep,umask,mv,sed,mkfs,exec,iconv,read,del,move
+  KeyWords6 daemon,killproc,wget,curl,mkdir,install,snap,make,cmake,erase
+  keywords6 shutdown,reboot,
+  keywords7 ALLUSERSPROFILE,APPDATA,ClusterLog,CommonProgramFiles,COMPUTERNAME,ComSpec,FP_NO_HOST_CHECK,HOMEDRIVE,HOMEPATH,LOGONSERVER,NUMBER_OF_PROCESSORS,OS,Path,PATHEXT,PROCESSOR_ARCHITECTURE,
+  keywords7 PROCESSOR_IDENTIFIER,PROCESSOR_LEVEL,PROCESSOR_REVISION,ProgramFiles,PROMPT,SBSSERVER,SESSIONNAME,SystemDrive,SystemRoot,TEMP,TMP,USERDNSDOMAIN,USERDOMAIN,USERNAME,USERPROFILE,windir,
+  KeyWords5 yum,dpkg,apt,apt-get
+  RegKeyWords color lightcyan \$\{([a-z0-9])+\}
+
+  RegKeyWords Color green >.*
+  CommentString REM , ::
+  KeyWords Color LightRed %COMSPEC%,%TEMP%,%winbootdir%,%windir%,nul,c:\win;
+  KeyWords Color BLUE protshell,ifs=,priority_disk_io,devinfo,libpath,basedev
+  KeyWords Color BLUE memman,os2_shell,dpath,keys,codepage
+  RegKeyWords Color LightCyan [^\x20=\;\,]*:*\x5c
+  RegKeyWords Color LightCyan [a-z_\d\-]+\.(exe|com|bat|deb)
+  RegKeyWords Color black/red \x7c
+  RegKeyWords Color Yellow -[A-Z]*\x20
+  KeyWords color Yellow server,sbserver,tsa,tsc,tsm,
+
+; Comment [ ]
+  commentstart ;
+  RegKeyWords Color  white/green ^((\x20)+)?\:[^\x20\x3a\/]+$
+   RegKeyWords Color Lightcyan (http|ftp)[a-z]?:[^\x20:>"]+,www\.[^\x20]+,[a-z_\d]+@[a-z_\d]+\x2e[a-z\d]+
+  RegKeyWords Color  black \[[^\[]*30m
+  RegKeyWords Color  LightRed \[[^\[]*31m
+  RegKeyWords Color  Green \[[^\[]*32m
+  RegKeyWords Color  Yellow \[[^\[]*33m
+  RegKeyWords Color  LightBlue \[[^\[]*34m
+  RegKeyWords Color  LightMagenta \[[^\[]*35m
+  RegKeyWords Color  LightCyan \[[^\[]*36m
+  RegKeyWords Color  White \[[^\[]*37m,\[[^\[]*1m
+  RegKeyWords Color  Lightgray/black \[[^\[]*40m
+  RegKeyWords Color  Lightgray/red \[[^\[]*41m
+  RegKeyWords Color  Lightgray/green \[[^\[]*42m
+  RegKeyWords Color  Lightgray/brown \[[^\[]*43m
+  RegKeyWords Color  Lightgray/blue \[[^\[]*44m
+  RegKeyWords Color  Lightgray/magenta \[[^\[]*45m
+  RegKeyWords Color  Lightgray/cyan \[[^\[]*46m
+  RegKeyWords Color  black \
+  RegKeyWords Color Brown        [_a-๗-\d*]+\x2e\*?(ldf)(\x20|\;|\,|$)+
+  Macro 0
+   insline
+   Print 'Start \\%USERNAME%\'
+   End
+  EndMacro
+
+
+END
+
+;ออออออออออออออออออออออออออออออออออออออออออออฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤ
+; Windows desktop File
+FILES desktop.ini
+ KeyWords1 file://Folder.htt,
+ KeyWords2 Clsid,UICLSID,InfoTip,Default,Logo,WideLogo,
+ KeyWords2 ConfirmFileOp,cdfurl,Icon,Type,Order,
+ KeyWords2 Zoom,Sort,Direct,Color,PatternId,MenuName,ToolTipText,
+ KeyWords2 HelpText,Attributes,IconIndex,Solid,Width,WebViewTemplate,NT5,
+ KeyWords Color cyan HTMLInfoTipFile
+ RegKeyWords Color lightgreen Owner,Personal[^=]*,BuyURL,PersistMoniker(Preview)?
+ RegKeyWords Color White \[[^\]]+\]
+ RegKeyWords Color lightBLUE Icon[^=]*
+ RegKeyWords Color lightmagenta LocalizedResourceName,
+ RegKeyWords Color yellow .*\.lnk
+ RegKeyWords Color yellow \<[^\>]+\>
+end
+;ออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออ
+; FORTRAN !does not support tabs in files -> fixed format!
+FILES *.F;*.FPP;*.FTN;*.FOR;*.I;*.F90;*.I90;*.F66;*.F77
+  GeneralFLAGS 80
+  StringFlags 192
+  CommentStart c,C,*
+  Keywords1 function,parameter,data,program
+  Keywords2 true,false,not,and,or,eqv,neqv,lt,le,eq,ge,gt,ne
+  Keywords2 if,goto,then,endif,elseif,else,do,continue,dowhile,enddo,cycle
+  Keywords2 exit,return,end,mod,pause,print,read,stop
+  Keywords3 integer,real,double precision,complex,logical,character,record
+  Keywords3 structure,dimension,
 END
 
 ;ออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออ
-; (Visual) Basic files
+; PERL files: GENERALFLAGS = case sensitive + C numbers
+FILES *.PL, *.PM, *.SUB;*.MU;
+  GeneralFlags 81
+  StringFlags 131
+  MultilineComment 1
+  CommentStart #
+  Comment __END__ a_unique_string_because_there_is_no_end_of_such_comment
+  Keywords1 cmp,eq,gt,lt,ne,and,not,or,xor
+  Keywords1 continue,do,else,elsif,for,foreach,goto,if,last,next,return,
+  Keywords1 unless,until,while
+  Keywords1 package,sub,require,use,x,local,my,our
+  Keywords2 __LINE__, __FILE__
+  Keywords2 abs,atan2,cos,exp,int,log,rand,sin,sqrt,srand,wantarray
+  Keywords2 pop, push, shift, splice, unshift, delete, each, exists, keys,
+  Keywords2 grep,join,map,reverse,sort,values,defined,scalar,ref,undef
+  Keywords2 seek, sysread, sysseek, syswrite, tell, truncate,
+  Keywords2 binmode, close, eof, fileno, flock, open, rename, select, unlink, utime
+  Keywords2 eval,exit,die, glob, read, readline, print, printf, warn
+  Keywords2 alarm,sleep,pos,quotemeta,split,
+  Keywords2 chomp,chop,index,lc,length,sprintf,substr,uc
+  Keywords2 localtime,gmtime,time,pack,unpack,vec,chr,ord,hex,ord
+  Keywords3 $_,@_,$!
+  KeyWords6 sudo
+  KeyWords8 yum,dpkg,apt
+  RegKeywords COLOR Blue \$\d+
+  RegKeywords COLOR Yellow \$([a-zA-Z][_a-zA-Z\d]*|_[_a-zA-Z\d]+)
+  RegKeywords COLOR LightMagenta @([a-zA-Z][_a-zA-Z\d]*|_[_a-zA-Z\d]+)
+  RegKeywords COLOR LightCyan [_a-zA-Z\d]+ *(?==>)
+  Macro 1
+    Print '#! perl -w'^M'use strict;'^M^M
+  EndMacro
+  Macro 2
+    Print 'while (<>) {'^M^M'}'^M#5#5' '
+  EndMacro
+END
+
+;ออออออออออออออออออออออออออออออออออออออออออออฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤ
+; Resurce file
+FILES *.rc
+ KeyWords1 menuitem,
+ KeyWords2 separator,popup,
+ Commentstart #
+ Commentstring #
+end
+
+;ออออออออออออออออออออออออออออออออออออออออออออฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤ
+; TempFiles
+FILES *.tmp
+ KeyWords1 DAMPRO,NAME,VERSION,SIZE,CHECK,DATE(MDY),TIME(HMS),ATTRIB
+ KeyWords1 UC2-REVISION,SERIAL
+ KeyWords2 FILE,LIST,[\],END,SPEC-SECTION
+end
+;ออออออออออออออออออออออออออออออออออออออออออออฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤ
+; Cubic Player Config File
+FILES cp.ini
+ RegKeyWords Color white \<[^\x5E\>\<\x22\x27\x3D]+\>,\[[^\x5E\]\[\x22\x27\x3D]+\],\([^\x5E\)\(\x22\x27\x3D]+\),\{[^\x5E\}\{\x22\x27\x3D]+\}
+ KeyWords2 filetype
+ CommentStart ;
+ Commentstring //
+end
+;ออออออออออออออออออออออออออออออออออออออออออออฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤ
+; HTML Documents
+FILES *.htm?;*.asx;*.htt;*.htm
+ KeyWords1 a,abbr,acronym,address,applet,area,b,base,basefont,bdo,big,blockquote,body
+ KeyWords1 br,button,caption,center,cite,code,col,colgroup,dd,del,dfn,dir,div,dl,dt,em
+ KeyWords1 fieldset,font,form,head,hr,html,i,
+ KeyWords1 input,ins,isindex,kbd,label,legend,li,link,map,menu,meta,noscript
+ KeyWords1 object,ol,optgroup,option,p,pre,q,s,samp,script,select,small,strike
+ KeyWords1 strong,style,sub,sup,table,tbody,td,textarea,tfoot,th,thead,title,tr,tt,u,ul
+ KeyWords1 middle,right,left,top,
+ KeyWords2 abbr,accept,accept-charset,accesskey,action,align,alink,alt,archive,axis
+ KeyWords2 background,bgColor,border,cellpadding,cellspacing,char,charoff,charset
+ KeyWords2 checked,cite,clear,code,codebase,codetype,Color,cols,colspan,borderColor,
+ KeyWords2 compact,content,coords,data,datetime,declare,defer,dir,disabled,enctype
+ KeyWords2 face,for,headers,height,href,hreflang,hspace,http-equiv,name
+ KeyWords2 id,ismap,label,lang,language,link,longdesc,marginheight,marginwidth,maxlength
+ KeyWords2 media,method,multiple,noresize,noshade,nowrap,object,onblur,onchange
+ KeyWords2 onclick,ondblclick,onfocus,onkeydown,onkeypress,onkeyup,onload,onmousedown
+ KeyWords2 onmousemove,onmouseout,onmouseover,onmouseup,onreset,onselect,onsubmit,onunload
+ KeyWords2 onunload,profile,prompt,readonly,readonly,rel,rev,rows,rows,rowspan,rules
+ KeyWords2 scheme,scope,selected,shape,size,span,src,standby,start,style
+ KeyWords2 summary,tabindex,target,text,title,type,usemap,valign,value,valuetype,version
+ KeyWords2 vlink,vspace,width,param,celpadding
+ KeyWords3 topMargin,leftMargin,rightMargin,event,
+ KeyWords4 _top,_self,oncontextmenu,oncopy,onselectstart
+ KeyWords4 javascript,screen,Math,document,navigator,window
+ KeyWords1 scrollbars,scrolling,scroll,
+ KeyWords6 hotlog_js,hotlog_r,hotlog_s
+ KeyWords7 write,random,escape,location,referrer,navigator,javaEnabled,
+ KeyWords7 pixelDepth,colorDepth,&nbsp,
+ KeyWords7 appName,substring,cookie,userAgent,indexOf,appVersion,<i>,</i>
+ keywords8 submit,<b>,</b>,
+ KeyWords Color blue img,imagedata
+ KeyWords Color yellow var,function,else,return,if,
+ KeyWords Color LightMagenta open,close,writeln,
+ KeyWords Color lightred quot,name=,hidden,
+ RegKeyWords Color Brown class[a-z]*,Ü
+ RegKeyWords Color lightcyan [a-z]*frame[a-z]*
+; RegKeyWords Color lightcyan [^\x2-0-z]*\x28
+ RegKeyWords Color lightgreen margin[a-z]+,h\d,
+ RegKeyWords Color Lightcyan (http|ftp)[a-z]?:[^\x20:>"]+,www\.[^\x20]+,[a-z_\d]+@[a-z_\d]+\x2e[a-z\d]+
+ ColorKeyWords yes
+
+ Commentstring //
+ Commentstart //
+ Comment <! >
+ MultiLineComment 200
+ BracketPairs <td> </td>
+
+end
+;ออออออออออออออออออออออออออออออออออออออออออออฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤ
+; JavaScript files / java source / JScript(Windows Script Host)
+FILES *.js;*.jav?
+ KeyWords1 language,if,else,var,function,return
+ KeyWords1 import,new,submit,
+ KeyWords1 void,class
+ Keywords1 break,const,continue,super,final
+ Keywords1 goto,,ret,sizeof,static,switch,abstract,private
+ Keywords1 auto,typedef,catch,extends,
+ Keywords1 exception,throws,throw,finally,
+ KeyWords2 prompt,window,alert,null,location,{window,{,},for,
+ KeyWords2 open,close,document,target,write,writeln,SaveToFile,
+ KeyWords2 onmousedown,captureevents,click,event,layers,
+ KeyWords2 button,mousedown,true,false,which,default,
+ KeyWords3 public,eof,length,case,isExists,fileSize,println,
+ KeyWords3 fromCharCode,toString,regexp
+ Keywords4 long,short,signed,double,float,union,
+ Keywords4 unsigned,struct,,StringBuffer
+ Keywords4 FileInputStream,FileOutputStream,InputStreamReader,OutputStreamReader
+ KeyWords4 String,Image,List,FileConnection,int,boolean,InputStream,DataInputStream,
+ KeyWords4 char,byte,Display,callback,
+ KeyWords5 substring,substr,
+ KeyWords7 Command,Version,
+ KeyWords8 System,protected,in,.out,err,interface,implements
+ KeyWords color Magenta package
+ KeyWords color LightRed try,while,do,
+
+//JScript
+ Keywords1 Popup,Echo,WScript,
+ KeyWords2 GetDrive,FolderExists,CreateFolder,FileExists,CreateTextFile,GetFile,FileSystem,GetFolder,
+ KeyWords6 CreateObject,Attributes,Run,type
+
+ KeyWords color Red RegWrite,RegDelete
+
+ AutoBrackets  Off
+ MultiLineComment 10
+ commentstring <!,//,
+ Commentstart //,<!,
+ Comment <!- -!>,/* */
+; GeneralFLAGS  465
+ StringFLAGS   3
+ ColorKeyWords yes
+  Macro 1
+    GoToX 0
+    InsLine
+    Print '/*****************************************************************'^M^S
+    Print ' *'^M^S
+    Print ' *'^M^S
+    Print ' *'^M^S
+    Print ' *****************************************************************/'^M^S
+    Print ^X^E^E^E^E^D^D^D
+  EndMacro
+  Macro 2
+    GotoX 0
+    InsLine
+    Print '/*'^M^S
+    Print ' *'^M^S
+    Print ' */'^M^S
+    Print ^X^E^G^E^E^D^D^D
+  EndMacro
+END
+
 ;ออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออ
+; C# files (C Sharp)
+;ออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออ
+FILES *.CS
+  AutoBrackets  On
+  MultiLineComment 1
+  CommentString //
+  Comment       /* */
+  GeneralFLAGS  465
+  StringFLAGS   3
+  OptimalFill Off
+;  TabSize 4
+  KeyWords1     break,case,const,continue,default,do,else,new,namespace
+  KeyWords1     for,goto,if,return,sizeof,static,switch,abstract,private
+  KeyWords1     void,while,public,try,catch,protected,as,base,checked,unchecked
+  KeyWords1     using,throw,finally,System,Console,interface,delegate,explicit
+  KeyWords1     extern,fixed,foreach,implicit,internal,is,lock,object,operator
+  KeyWords1     out,override,params,readonly,ref,sealed,stackalloc,typeof
+  KeyWords1     unchecked,unsafe,virtual,volatile
+  KeyWords2     byte,char,int,long,short,string,double,float,bool,uint,ulong,ushort
+  KeyWords2     struct,class,true,false,this,null,decimal,enum,event,sbyte
+  ColorKeyWords on
+  Macro 1
+    GoToX 0
+    InsLine
+    Print '/*****************************************************************'^M^S
+    Print ' *'^M^S
+    Print ' *'^M^S
+    Print ' *'^M^S
+    Print ' *****************************************************************/'^M^S
+    Print ^X^E^E^E^E^D^D^D
+  EndMacro
+  Macro 2
+    GotoX 0
+    InsLine
+    Print '/*'^M^S
+    Print ' *'^M^S
+    Print ' */'^M^S
+    Print ^X^E^G^E^E^D^D^D
+  EndMacro
+  Macro 3
+    GotoX 0
+    Print 'using System;'^M^M
+    Print 'public class main'^M'{'^M^M
+    Print '    static void Main()'^M'{'^M^M'}'^M
+    GotoX 0
+    Print '}'^M
+    Print ^E^E^E^D^D^D^D^D^D^D^D
+  EndMacro
+  Macro 4
+    GoToX 0
+    Print '/*******************************************************************************/'^M^S
+    Print '/*---- ------------------------------------------------------------------------*/'^M^S
+    Print '/*******************************************************************************/'^M^S
+    Print ^E^E^D^D^D^D^D^D^D
+    SwitchIns
+  EndMacro
+  Macro 5
+    GoToX 0
+    Print '/* --------------------------------------- */'^M^S
+    Print '/*  */'^M^S
+    Print '/* --------------------------------------- */'^M^S
+    Print ^E^E^D^D^D
+  EndMacro
+END
+
+
+;ออออออออออออออออออออออออออออออออออออออออออออฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤ
+; Style doc
+FILES *.css
+ KeyWords1 <style>,</style>,none,bold,gold,fuchsia,rgb
+ KeyWords1 arial,
+ KeyWords2 hover,Color,text-decoration,font-size,font-family,font-weight,A
+ Keywords1 A,BODY,DIV,EM,H1,H2,H3,HTML,P
+ Keywords2 link,visited,active,first-line,first-letter
+ Keywords3 font-family,font-style,font-weight,font-variant,font
+ Keywords4 bold,bolder,lighter,
+ Keywords4 italic,small-caps
+ Keywords4 xx-small,x-small,small,medium,large,x-large,xx-large,larger,smaller
+ Keywords4 normal,none,url
+ Keywords3 word-spacing,letter-spacing,text-decoration
+ Keywords4 underline,overline,line-through,blink
+ Keywords3 color,background-color,background,background-image,background-attachment,background-repeat,background-position
+ Keywords4 transparent,rgb
+ Keywords3 vertical-align
+ Keywords4 baseline,sub,super,top,text-top,middle,bottom,text-bottom,top,bottom
+ Keywords3 text-transform
+ Keywords4 capitalize,uppercase,lowercase
+ Keywords3 text-align
+ Keywords4 left,right,center,justify
+ Keywords3 text-indent,line-height
+ Keywords3 margin-top,margin-right,margin-bottom,margin-left,margin
+ Keywords3 padding-top,padding-right,padding-bottom,padding-left,,padding
+ Keywords3 border-top-width,border-right-width,border-bottom-width,border-left-width,border-width
+ Keywords4 thin,medium,thick
+ Keywords3 border-color
+ Keywords3 border-style
+ KeyWords COLOR lightcyan aqua
+ KeyWords COLOR lightmagenta fuchsia
+ KeyWords COLOR lightgreen lime
+ KeyWords COLOR red maroon
+ KeyWords COLOR blue navy
+ KeyWords COLOR brown olive
+ KeyWords COLOR magenta purple
+ KeyWords COLOR lightgray silver
+ KeyWords COLOR cyan teal
+ ColorKeywords yes
+ commentstring <!
+ Commentstart //,<!
+ Comment <! !>
+end
+;ออออออออออออออออออออออออออออออออออออออออออออฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤ
+FILES *.rnx
+ KeyWords2 var.presets,url
+ commentstring <!
+ Commentstart //,<!
+ Comment <! !>
+end
+;ออออออออออออออออออออออออออออออออออออออออออออฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤ
+FILES *.ISP;*.OBE;*.DUN
+ KeyWords Color lightmagenta Password,Name
+ RegKeyWords Color Lightgreen \<[^\x5E\>\<\x22\x27\x3D]+\>,\[[^\x5E\]\[\x22\x27\x3D]+\],\([^\x5E\)\(\x22\x27\x3D]+\),\{[^\x5E\}\{\x22\x27\x3D]+\}
+end
+;ออออออออออออออออออออออออออออออออออออออออออออฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤ
+FILES *.dsn
+ RegKeyWords Color White [a-z]*\=
+ RegKeyWords Color Lightgreen \<[^\x5E\>\<\x22\x27\x3D]+\>,\[[^\x5E\]\[\x22\x27\x3D]+\],\([^\x5E\)\(\x22\x27\x3D]+\),\{[^\x5E\}\{\x22\x27\x3D]+\}
+end
+;ออออออออออออออออออออออออออออออออออออออออออออฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤ
+; Windows ini file
+FILES win.ini
+ KeyWords Color LightMagenta  pwl,source_disk_path
+ KeyWords Color Lightred load=,run=,programs,norun,
+ KeyWords Color lightblue Wallpaper,TileWallpaper,Pattern,
+ KeyWords Color LightCyan Beep,NullPort,
+ KeyWords Color Yellow defaultempty,defaultfull,device
+ RegKeyWords Color White (\x20[a-z]*=)
+ RegKeyWords Color lightgreen \[[^\]]+\]
+ RegKeyWords Color LightCyan \dx[\d|a-e]*
+ commentstart ;
+end
+;ออออออออออออออออออออออออออออออออออออออออออออฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤ
+; Windows system file
+FILES system.ini
+ RegKeyWords Color Lightgreen \<[^\x5E\>\<\x22\x27\x3D]+\>,\[[^\x5E\]\[\x22\x27\x3D]+\],\([^\x5E\)\(\x22\x27\x3D]+\),\{[^\x5E\}\{\x22\x27\x3D]+\}
+ KeyWords Color LightMagenta shell,USER=,pwl,
+ KeyWords Color LightBlue SCRNSAVE.EXE
+ KeyWords Color white/lightred MinPagingFileSize,MaxPagingFileSize
+ RegKeyWords Color lightcyan .:\x5c.+
+ RegKeyWords Color white .+\=
+ commentstart ;
+end
+;ออออออออออออออออออออออออออออออออออออออออออออฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤ
+; Autorun / €ขโฎง ฏใแช ฎฌฏ ชโ-คจแชฎข (จ ญฅ โฎซ์ชฎ)
+FILES autorun.inf
+ RegKeyWords Color Lightred \<[^\x5E\>\<\x22\x27\x3D]+\>,\[[^\x5E\]\[\x22\x27\x3D]+\],\([^\x5E\)\(\x22\x27\x3D]+\),\{[^\x5E\}\{\x22\x27\x3D]+\}
+ RegKeyWords Color lightred autorun,Product,Buttons,Bitmaps,general,autorun,alpha,
+ RegKeyWords Color lightred CdAuto,noflag,Flag,Files,Vendor,Custom,
+ KeyWords2 icon,open,shell,readit,command,name,name2,Version,Dialog,Default,
+ KeyWords2 Title,RegistryKey,WaveFile,SetupProgram,NoProcessCaption,NoProcessTextLine1,NoProcessTextLine2,
+ KeyWords2 LabelFont,TextFont,Charset,SelectedTextColor,UnSelectedTextColor,
+ KeyWords2 SetupLabel,SetupText,CancelLabel,CancelText,16Color,256Color,
+ KeyWords2 PathKey,DirectoryKey,ProgramClass,Setup,SetupKey,SmallFont,defaulticon,
+ KeyWords6 shellexecute,Action,
+ KeyWords8 UseAutoPlay
+
+ RegKeyWords Color yellow label
+ commentstart ;
+end
+;ออออออออออออออออออออออออออออออออออออออออออออฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤ
+; DSS configuration FILES
+FILES dss.ini
+ KeyWords1 Version=,Random=,Loop=,Normalize=,Frequency=,SampleBits=,Channels=,TMV_Name=
+ KeyWords1 Source=,Format=,Device=,Port=,Mode=,SubMode=,VBEAFAccel=,ProgName=,TMV_Text=
+ KeyWords1 IRQ=,DMA1=,DMA2=,VBEAFAccel=,ShowFileInfo=,ShowFilter=,ScanFilter=,TMV_FileName=
+ KeyWords1 Main=,Frame=,FS_Name=,FS_Text=,FS_SelectedText=,FS_Unchecked=,FS_Unavailable=,Low,Mid,High
+ RegKeyWords Color Lightgreen \<[^\x5E\>\<\x22\x27\x3D]+\>,\[[^\x5E\]\[\x22\x27\x3D]+\],\([^\x5E\)\(\x22\x27\x3D]+\),\{[^\x5E\}\{\x22\x27\x3D]+\}
+ Commentstart ;
+ SwitchHighLight On
+END
+
+;;ออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออ
+;; Assembler files *.S35;*.S03;*.S01;*.S90
+;;ออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออ
+;FILES *.ASM;*.S??;*.A86;*.EQU;*.COD
+;  CommentString ;
+;  HexNumFLAGS    31
+;  DecNumFLAGS    31
+;  OctoNumFLAGS   31
+;  BinNumFLAGS    31
+;  GeneralFlags   16
+;  BracketPairs macro endm proc endp
+;  KeyWords1    public,extern,extrn,include,macro,endm,segment,ideal,model,ends
+;  KeyWords1    proc,end,endp,title,subtitle,module,code,flat,jumps,data
+;  KeyWords1    const,rcode,equ,global,name,group,assume,nojumps,locals,org
+;  KeyWords1    if,ifdef,ifndef,elif,else,endif,define,undef,local,dup
+;  Keywords1    p386,.386,p486,.486,p586,.586,.586p,.686p,.data,dataseg,.code
+;  Keywords1    codeseg,.udata,udataseg,short,offset,near,end,struc,.xmm
+;; Registers and size related
+;  KeyWords3    tiny,large,ptr
+;  RegKeywords3 \b[abcd][lh]\b, \b([xyz]?mm[0-7]|[xyz]mm([8-9]|[12][0-9]|3[01]))\b
+;  RegKeywords3 \b[cdefgs]s\b, \b[er]?([ds]i|[bs]p|[abcd]x)\b, \b([sb]p|[sd]i)l\b
+;  RegKeyWords3 \b[cdt]r[0-7]\b, \br([8-9]|1[0-5])[bwdl]?\b, \b(k|st)[0-7]\b
+;  RegKeyWords3 \buse(16|32|64|avx(256|512))\b, \bbnd[0-3]\b, \b[rd][bdfpqtuw]\b
+;  RegKeyWords3 \b(|[dfpqtxyz]|[dq]q)(word)|(|t)(byte)|seg[cdefgs]s\b
+;; Instructions
+;  RegKeywords3 \b(ad[co]x)\b, \b(aes(dec|enc)(|last))\b
+;  RegKeywords3 \b(aes(imc|keygenassist))\b, \b(mul|ror|sar|shl|shr)(x)\b
+;  RegKeywords3 \b(cmp(eq|le|lt|neq|nle|nlt|ord)(pd|ps|sd|ss))\b
+;  RegKeywords3 \b(bl[sc](fill|i|ic|msk))\b, \b(bl(sr|cs))\b
+;  RegKeywords3 \b(bnd(|cl|cn|cu|ldx|mk|mov|stx))\b, \b(b(extr|zhi))\b
+;  RegKeywords3 \b(cl(ac|flushopt|wb))\b, \b(cmovp[eo])\b, \b(cmps[qs])\b
+;  RegKeywords3 \b(cmpunord(pd|ps|sd|ss))\b, \b(f(init|ldenv[dw]|wait))\b
+;  RegKeywords3 \b(fn(clex|disi|eni|save[dw]|stenv[dw]|)|getsec|iret(|[dqw]))\b
+;  RegKeywords3 \b(frst(or[dw]|pm)|fsave(|[dw])|fst(env[dw]|sw)|fx(rstor64|save(|64)))\b
+;  RegKeywords3 \b(inv(ept|pcid|vpid)|kunpck(bw|dq|wd)|llwpcb|lwp(ins|val))\b
+;  RegKeywords3 \b(k(add|and|andn|mov|not|or|ortest|shiftl|shiftr|test|xnor|xor)([bdqw]))\b
+;  RegKeywords3 \b(pclmul(hqhdq|hqhqdq|hqlqdq|lqhdq|lqhqdq|lqlqdq|qdq))\b
+;  RegKeywords3 \b(pblend(vb|w)|(|v)mpsadbw|p(commit|dep|ext|hminposuw))\b
+;  RegKeywords3 \b((rd|wr)([fg]sbase|rand|seed)|setp[eo]|sha1(msg1|msg2|nexte|rnds4))\b
+;  RegKeywords3 \b(sha256(msg1|msg2|rnds2)|s(lwpcb|tac)|tz(cnt|msk)|t1mskc)\b
+;  RegKeywords3 \b(xsave(|64|opt(|64))|xrstor(|64))\b,\bxsha(1|256)|xstore\b
+;  RegKeywords3 \b(x(abort|acquire|begin|end|release|test))\b
+;  RegKeywords3 \bvbroadcast[fi](128|32x2|32x4|32x8|64x2|64x4)\b
+;  RegKeywords3 \bvbroadcast(sd|ss)|vadd(pd|ps|sd|ss|sub(pd|ps))\b
+;  RegKeywords3 \bvaes(dec|declast|enc|enclast|imc|keygenassist)\b
+;  RegKeywords3 \bvalign[dq]|v(and(|n)|or)(pd|ps)\b
+;  RegKeywords3 \bvblend(mpd|mps|pd|ps|vpd|vps)\b
+;  RegKeywords3 \bvcmpeq_(os|uq|us)(pd|ps|sd|ss)|vcmpeq(pd|ps|sd|ss)\b
+;  RegKeywords3 \bvcmpfalse(|_os)(pd|ps|sd|ss)\b
+;  RegKeywords3 \bvcmp[gl][et](|_oq)(pd|ps|sd|ss)\b
+;  RegKeywords3 \bvcmp(neq_)(oq|os|us)(pd|ps|sd|ss)\b
+;  RegKeywords3 \bvcmp(neq)(pd|ps|sd|ss)|vcomi(sd|ss)|vcompress(pd|ps)\b
+;  RegKeywords3 \bvcmpn(ge|gt|le|lt)(|_uq)(pd|ps|sd|ss)\b
+;  RegKeywords3 \bvcmp(|un)ord(|_s)(pd|ps|sd|ss)\b
+;  RegKeywords3 \bvcmp(pd|ps|sd|ss)|vcmptrue(|_us)(pd|ps|sd|ss)\b
+;  RegKeywords3 \bvcvtdq2(pd|ps)|vcvtpd2(dq|ps|qq|udq|uqq)|vcvtph2ps\b
+;  RegKeywords3 \bvcvtps2(dq|pd|ph|qq|udq|uqq)|vcvtqq2(pd|ps)\b
+;  RegKeywords3 \bvcvtsd2(si|ss|usi)|vcvtsi2(sd|ss)|vcvtss2(sd|si|usi)\b
+;  RegKeywords3 \bvcvttpd2(dq|qq|udq|uqq)|vcvttps2(dq|qq|udq|uqq)\b
+;  RegKeywords3 \bvcvtt(sd|ss)2(si|usi)|vdpp[ds]\b
+;  RegKeywords3 \bvcvtu(d|q)q2(pd|ps)|vdbpsadbw\b
+;  RegKeywords3 \bvcvtusi2(sd|ss)|v(div|fpclass|max|min|mul)(pd|ps|sd|ss)\b
+;  RegKeywords3 \b(vexp2p|vexpandp)[ds]|vextractps\b
+;  RegKeywords3 \bv(extract|insert)[fi](128|32x4|32x8|64x2|64x4)\b
+;  RegKeywords3 \bv(fixupimm|getexp|getmant)(pd|ps|sd|ss)\b
+;  RegKeywords3 \bvfm(add(|sub)|sub(|add))(|132|213|231)(pd|ps|sd|ss)\b
+;  RegKeywords3 \bvfnm(add|sub)(|132|213|231)(pd|ps|sd|ss)\b
+;  RegKeywords3 \bv(gatherp|scatterp)(f0|f1)([dq](pd|ps))\b
+;  RegKeywords3 \bv(gather[dq]|maskmov)(dqu|pd|ps)|vh(add|sub)(pd|ps)\b
+;  RegKeywords3 \bvld(dqu|mxcsr)|vinsertps|vmclear\b
+;  RegKeywords3 \bvmov((ap[ds])|d(|dup|qa(|32|64)|qu(|16|32|64|8)))\b
+;  RegKeywords3 \bvmovh(lps|pd|ps)|vmovl(hps|pd|ps)\b
+;  RegKeywords3 \bvmovmsk(pd|ps)|vmovnt(dq(|a)|pd|ps)\b
+;  RegKeywords3 \bvmovs(d|[hl]dup|s)|vmov(q|up[ds])|vmptr(ld|st)\b
+;  RegKeywords3 \bvpabs[bdqw]|vpack[su]s(dw|wb)\b
+;  RegKeywords3 \bvpadd([bdqw]|s[bw]|us[bw])|vpalignr\b
+;  RegKeywords3 \bvpand(n[dq]|[dnq]|)|vpavg[bw]\b
+;  RegKeywords3 \bvpblend(d|m[bdqw]|vb|w)\b
+;  RegKeywords3 \bvpbroadcast([bdqw]|m(b2q|w2d))\b
+;  RegKeywords3 \bvpclmul(hqhdq|hqlqdq|lqhdq|lqlqdq|qdq)\b
+;  RegKeywords3 \bvpcm(ov|p([bd]|(eq|gt|l[et](|u))[bdqw]|(e|i)str[im]))\b
+;  RegKeywords3 \bvpcmp((neq|nl[et])(|u)[bdqw])|vphminposuw\b
+;  RegKeywords3 \bv(pcmp([qw]|(u[bdqw]))|(pcompress|pconflict)[dq])\b
+;  RegKeywords3 \bvpcom((eq|false|g[et]|l[et]|neq|true)(|u)[bdqw])\b
+;  RegKeywords3 \bvperm(2[fi]128|[bd]|i2([bdqw]|pd|ps)|il(|2|mo2|mz2|td2)(ps|pd))\b
+;  RegKeywords3 \bvperm(pd|ps|[qw]|t2[bdqw]|t2p[ds])\b
+;  RegKeywords3 \bvpexpand[dq]|vpextr[bdqw]|vpgather[dq][dq]\b
+;  RegKeywords3 \bvphadd(d|sw|w[dq]|w)|vphsub(bw|dq|sw|wd|[dw])\b
+;  RegKeywords3 \bvpinsr[bdqw]|vplzcnt[dq]|vpmadd(52huq|52luq|ubsw|wd)\b
+;  RegKeywords3 \bvpmaskmov[dq]|vpm(ax|in)[su][bdqw]\b
+;  RegKeywords3 \bvpmov(b2m|d2m|d[bw]|m2[bdqw]|mskb|q2m|q[bdw])\b
+;  RegKeywords3 \bvpmov(([sz]x)(b[dqw]|dq|w[dq]))|vpsadbw\b
+;  RegKeywords3 \bvpmov((s|us)(d[bw]|q[bdw]|wb)|w(2m|b))\b
+;  RegKeywords3 \bvpmul(dq|h(rsw|uw|w)|l[dqw]|tishiftqb|udq)\b
+;  RegKeywords3 \bvpor([dq]|)|vpperm|vpro[lr]([dq]|v[dq])\b
+;  RegKeywords3 \bvpscatter[dq][dq]|vpshuf([bd]|[hl]w)|vpsign[bdw]\b
+;  RegKeywords3 \bvpsll(dq|[dqw]|v[dqw])|vpsr[al]([dqw]|dq|v[dqw])\b
+;  RegKeywords3 \bvpsub([bdqw]|s[bw]|us[bw])|vpternlog[dq]\b
+;  RegKeywords3 \bvptest((n|)(m[bdqw])|)|vpunpck([hl](bw|dq|qdq|wd))\b
+;  RegKeywords3 \bvpxor([dq]|)|v(range|(rcp|rsqrt)(14|28)|reduce)(pd|ps|sd|ss)\b
+;  RegKeywords3 \bv(rndscale|round|scalef)(pd|ps|sd|ss)\b
+;  RegKeywords3 \bvr(cp|sqrt)(ps|ss)|vshuf[fi](32x4|64x2)\b
+;  RegKeywords3 \bvscatter[dq](pd|ps)|vshuf(pd|ps)\b
+;  RegKeywords3 \bv((sqrt|sub)(pd|ps|sd|ss)|stmxcsr|)\b
+;  RegKeywords3 \bv(test|xor)(pd|ps)|vunpck[hl](pd|ps)\b
+;  RegKeywords3 \bvucomi(sd|ss)|(v|)zero(all|upper)\b
+;;
+;  RegKeywords3 \b(adc|sub|sbb|p?test|out|dec|inc?|leave|int1|int3?|lock|x?add)\b
+;  RegKeywords3 \b(call|not|neg|daa|das|xchg|(cl|st)(c|d|g?i)|lea|cmc|nop)\b
+;  RegKeywords3 \b(aa[amds]|arpl|bound|sar|xlatb?)\b
+;  RegKeywords3 \b(bt[csr]?|bsr|bsf|[lms]fence|cmpxchg|lar|int01|rsm)\b
+;  RegKeywords3 \b(setALc|sALc?|into|icebp|lddqu|cbw|cqo|cdqe?|cwde?|hlt)\b
+;  RegKeywords3 \b(palignr|ver[rw]|[sl](ldt|tr|msw|gdt|idt|ahf)|ud0|ud1|ud2|umov)\b
+;  RegKeywords3 \b(wbinvd|ucomiss|rdshr|rdpmc|mwait)\b
+;  RegKeywords3 \b(loadall(286|386)|clts|syscall|sysret(|q)|invd|swapgs|f?emms|enter|wait)\b
+;  RegKeywords3 \b(cmpxchg(8|16)b|pand|pavg(w|b|usb)|popcnt|lsl)\b
+;  RegKeywords3 \b(sysenter|sysexit(|q)|bswap|wrmsr(|q)|rdtsc(|p)|rdmsr(|q)|wrshr|cpuid)\b
+;  RegKeywords3 \bf(bld|ild|sin|cos|sincos|prem1?|abs|yl2x(p1)?)\b
+;  RegKeywords3 \bfld(1|cw|l2e|lg2|ln2|l2t|env|pi|z)?\b
+;  RegKeywords3 \bf(xsave|xrstor|divp|divrp?|idivr|pa?tan|scale|rint2)\b
+;  RegKeywords3 \bfnst(cw|sw|env|dw|sg)\b, \bfucom(p?|pp|ip?)\b
+;  RegKeywords3 \bf(eni|disi|ninit|setpm|incstp|richop|sqrt)\b
+;  RegKeywords3 \bf(chs|tst|2xm1|stenv|bstp|decstp|mulp|clex)\b
+;  RegKeywords3 \bfcom(2|ip?|pp|p5|p3|p?)\b
+;  RegKeywords3 \bf(icomp?|nsave|rstor|addp|freep?|rinear|stcw)\b
+;  RegKeywords3 \bf(rndint|subr|subp|isubr|subrp|xtract|nop|xam)\b
+;  RegKeywords3 \bf(stp?|stp1|stp8|stp9|istp?|isttp|xch7?|xch4)\b
+;  RegKeywords3 \b(lzcnt|maskmov(Q|dqu)|pause|rcp[SP]S|pandn|psraw|psrad)\b
+;  RegKeywords3 \b(insertq|clflush|movhlPS|movlhPS|monitor)\b
+;  RegKeywords3 \bp((i2f|f2i)[dw]|fsub|fadd|fcmpgt)\b
+;  RegKeywords3 \bpf(subr|mul|rsqrt|pnacc|cmpeq|cmpge|rCPit1|rSQit1|rcp|min|max)\b
+;  RegKeywords3 \b(pswapd|pfn?acc|pminub|pfrcpit2|extractPS|insertPS|PMaddUBSW)\b
+;  RegKeywords3 \b(Px?or|crc32|unpck[hl]P[DS]|extrq|pmovmskB|hint_nop)\b
+;  RegKeywords3 \bcvt(t?P[DS]2(pi|DQ)|SS2SD|PD2P[SQ]|PS2PD|(pi|dq)2P[DS]|t?s[ds]2si)\b
+;  RegKeywords3 \bcvt(sd2s[is]|si2s[ds])\b, \bmovnt([SP][DS]|d?q|i|dqa)\b
+;  RegKeywords3 \bVM(m?call|load|save|launch|resume|xoff|xon|run|read|write)\b
+;  RegKeywords3 \b(x[gs]etbv|invlpga?|rsqrt[SP]S|skinit)\b
+;  RegKeywords3 \bfcmovn?(be?|e|u)\b, \bloop((|n?[ez])(|[dqw]))?\b, \brepn?[ez]?\b
+;  RegKeywords3 \bpunpckl(bw|wd||dq)\b, \b(ld|st)mxcsr\b
+;  RegKeywords3 \bf?i?(mul|div)\b, \b(fi?)?(add|sub)\b
+;  RegKeywords3 \b((if|j|set|cmov)n?([abceglopsz]|[abgl]e)|j[er]?cxz|jmpe?|jp[eo])\b
+;  RegKeywords3 \bmov([sz]xd?|be|d|q|ss|(sl|sh|s?d)dup|q2dq|dq(2q|a|u)|[ahlu]p[ds])?\b
+;  RegKeywords3 \b(cmp|out|lod|mov|sca|sto|in|pab)s[bwdq]?\b
+;  RegKeywords3 \b(push|pop)(|[fa])(|[dqw])\b, \br[co][lr]\b, \bround[sp][ds]\b
+;  RegKeywords3 \bph(add|sub)(s?w|d)\b, \bps[lr]l(w|d|d?q)\b, \b(PSADBW|PMaddWD)\b
+;  RegKeywords3 \bp(add|sub)([bwdq]|u?s[bw])\b, \b((retf|ret|retn)(|[dqw]))\b
+;  RegKeywords3 \bp(min|max)[su][bwd]\b, \bl[defgs]s\b, \bpsign[bwd]\b
+;  RegKeywords3 \bpmov[sz]x([bwd]q|[bw]d|bw)\b, \bpshuf(b|[hl]?w|d)\b
+;  RegKeywords3 \bpmul(l[wdq]|h(u|rs?)?w|u?dq)\b, \bp(ext|ins)r[bwdq]\b
+;  RegKeywords3 \bpcmp([ei]Str[mi]|(gt|eq)[bwdq])\b, \bsh[rl]d?\b
+;  RegKeywords3 \b(u?comi|add|sub|max|min|mul|div|sqrt)S[DS]\b
+;  RegKeywords3 \bpack[su]s(wb|dw)\b, \bpunpck(h?(bw|wd|dq)|[hl]qdq)\b
+;  RegKeywords3 \bprefetch(w?|wt1|t[0-2]|nta)\b, \b(andn?|x?or|cmp|div)(P[DS])?\b
+;  RegKeywords3 \b(max|min|mul|dp|blendV?|h?(add|sub)|sqrt|addsub|movmsk|shuf)P[DS]\b
+;  RegKeywords3 \bVF(N?Madd|NMsub|rcz)[sp][ds]\b, \bVPmadcsS?WD\b
+;  RegKeywords3 \bVP(comU?|rot|sha|shl)[bwdq]\b, \bVPmacsS?(DD|DQL|DQH|WD|WW)\b
+;  RegKeywords3 \bVPHaddU?(WD|WQ|DQ|B[wdq])\b, \bVFM(addSub|subAdd)P[ds]\b
+;  Macro 1
+;    GoToX 0
+;    InsLine
+;    Print ';ออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออ'^M^S
+;    Print ';'^M^S
+;    Print ';'^M^S
+;    Print ';'^M^S
+;    Print ';ออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออ'^M^S
+;    Print ^X^E^E^E^E^D^D
+;  EndMacro
+;  Macro 2
+;    GotoX 0
+;    InsLine
+;    Print ';'^M^S
+;    Print ';'^M^S
+;    Print ';'^M^S
+;    Print ^X^E^G^E^E^D^D
+;  EndMacro
+;  Macro 3
+;    GotoX 0
+;    Print 'IDEAL'^M'P386'^M'MODEL TINY'^M'JUMPS'^M'CODESEG'^M'STARTUPCODE'^M^M
+;    Print '        ret'^M
+;    GotoX 0
+;    Print 'UDATASEG'^M'DATASEG'^M'END'^M^M
+;    Print ^E^E^E^E^E^E
+;    GotoX 8
+;  EndMacro
+;  Macro 4
+;    GotoX 0
+;    Print 'IDEAL'^M'P386'^M'MODEL FLAT'^M'UDATASEG'^M'DATASEG'^M'CODESEG'^M'Start:'^M^M
+;    Print '        mov   ax,4C00h ; Termiate the program'^M
+;    GotoX 0
+;    Print '        int   21h      ; with exit code 0'^M
+;    GotoX 0
+;    Print 'END Start'^M^M
+;    Print ^E^E^E^E^E
+;    GotoX 8
+;  EndMacro
+;END
+;
+
+;ออออออออออออออออออออออออออออออออออออออออออออฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤ
+;FILES *.LST
+; CommentString ;
+; CommentStart ;
+; KeyWords1  org,dec,cmp,jmp,and,shl,xor,rep,in,lidt,cpuid,
+; RegKeyWords Color White shr.?,jb.?,mov[^\x20]?[^\x20]?,jg.?,ja.?,jn[eczl],
+;END
+
+;ออออออออออออออออออออออออออออออออออออออออออออฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤ
+; ฎญไจฃใเ ๆจฎญญ๋ฅ ไ ฉซ๋
+FILES *.EVT;
+ CommentStart  ;,#,$,%
+ CommentString //
+ GeneralFLAGS   14
+END
+
+
+;ออออออออออออออออออออออออออออออออออออออออออออฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤ
+; AquaGatekeeper.cfg
+; Gatekeeper configuration file
+FILES AquaGatekeeper.cfg;Example.cfg;
+ CommentStart ;,:,#,//,
+ CommentString //
+ Comment /* */
+ KeyWords1 set,rulez,suxx,dial,audio,data,proxy,supported,yes,no,
+ KeyWords2 interface,facility,link,system,log,monitor,aaa,
+ KeyWords3 zone,location,port,authentication,accounting,connections,login,alias,time,
+ KeyWords4 group,file,unlimited,
+ keywords6 address,caller,callee,identifier,validity,
+ KeyWords7 RAS,Q931,H245,H450,RADIUS,messages,registrations,connection,chosen,available,bandwidth,route,status,changes,dump
+ KeyWords8 allow,deny,
+
+ KeyWords color blue user,gatekeeper,
+ KeyWords color red password
+
+END;
+;ออออออออออออออออออออออออออออออออออออออออออออฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤ
+; AquaGatekeeper.log
+; Gatekeeper LOG file
+FILES AquaGatekeeper.log
+ CommentStart ;,:,#,//,
+ CommentString //
+ Comment /* */
+ KeyWords2 Message,
+ KeyWords3 OpenLogicalChannel,ip,port,
+ KeyWords4 IPAddress,
+ KeyWords5 DialedDigits,H323_ID,,
+ KeyWords6 RegistrationRequest,RegistrationConfirm,AdmissionRequest,AdmissionConfirm,
+ KeyWords8 callee,caller,
+
+ KeyWords color blue from
+ Regkeywords color black/red RAS[^$]+
+ RegKeyWords color BROWN [0-9]+\/[0-9]+\/[0-9]+
+ RegKeyWords color BROWN [0-9]+\:[0-9]+\:[0-9]+
+ RegKeyWords1 \([^\x5E\)\(\x22\x27\x3D]+\)
+ RegKeyWords2 \[[^\x5E\]\[\x22\x27\x3D]+\]
+
+END;
+
+
+;ออออออออออออออออออออออออออออออออออออออออออออฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤ
+; Configuration files / ฎญไจฃใเ ๆจฎญญ๋ฅ ไ ฉซ๋
+;ออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออ
+FILES *.cfg;*.qw
+  CommentStart  ;,#,$,%
+  CommentString //
+  GeneralFLAGS   14
+  KeyWords1 CommonInfoBases,CommonCfgLocation
+  KeyWords2 back,jump,moveright,moveleft,forward,attack,crosshair,
+  KeyWords2 rl,boom,gl,shaft,att,showscores,pause,whonot,
+  KeyWords2 ready,savedgamecfg,on,off
+  KeyWords2 fraglimit,timelimit,teamplay,skill,samelevel,
+  RegKeyWords Color white [a-z]*(_[a-z]*)?\x20
+  RegKeyWords Color lightgreen "."
+  CommentStart ;,//,#
+END
+;ออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออ
+; (Visual) Basic files
 FILES *.VBS;*.BAS;*.FRM
   RegKeyWords Color Lightgreen \<[^\>]+\>,\[[^\]]+\],\([^\)]+\)
   KeyWords1 dim,set,sub,begin,end,for,each,in,next,if,then,to
   KeyWords1 vbOKCancel,vbInformation,function,else,vbOkOnly,vbCancel,
   KeyWords1 input,print,not,and,or,public,private,const,attribute,option
-  KeyWords1 select,case,as
+  KeyWords1 select,case,as,With
   KeyWords2 MsgBox,call,chr,exit,explicit,false,true,nothing,object,string
   KeyWords2 integer,long,boolean
+  KeyWords3 cls,step
+  KeyWords4 CreateObject
+  KeyWords5 read,data,
+  KeyWords6 CopyFile,CreateFolder,
+  KeyWords7 MsgBox,call,chr,cos,sin,log,InputBox
+  KeyWords Color Yellow Goto,Gosub,Return,
+;  RegKeyWords Color black \D*\x20
   CommentString REM ,'
   BracketPairs  begin end if then for to
   StringFlags 32
 END
-
 ;ออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออ
 ; C files (*.h is in C++ section)
 ;ออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออ
@@ -692,184 +1370,136 @@ FILES *.CPP;*.H;*.HPP;*.R;*.HH;*.HXX;*.CXX;*.CC
   EndMacro
 END
 
-;ออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออ
-; JAVA files
-;ออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออ
-FILES *.JAVA
-  AutoBrackets  Off
-  MultiLineComment 1
-  CommentString //
-  Comment       /* */
-  GeneralFLAGS  465
-  StringFLAGS   3
-  OptimalFill Off
-;  TabSize 4
-  KeyWords1     break,case,const,continue,default,do,else,super,new,final
-  KeyWords1     for,goto,if,return,sizeof,static,switch,do,abstract,private
-  KeyWords1     void,while,auto,typedef,public,try,catch,extends,protected
-  KeyWords1     import,package,exception,throws,throw,finally,instanceof
-  KeyWords1     System.in,System.out,System.err,interface,implements
-  KeyWords2     char,int,long,short,String,signed,double,float,union,boolean
-  KeyWords2     unsigned,struct,class,StringBuffer,true,false,this,null
-  KeyWords2     FileInputStream,FileOutputStream,InputStreamReader
-  KeyWords2     OutputStreamReader
-  ColorKeyWords on
-  Macro 1
-    GoToX 0
-    InsLine
-    Print '/*****************************************************************'^M^S
-    Print ' *'^M^S
-    Print ' *'^M^S
-    Print ' *'^M^S
-    Print ' *****************************************************************/'^M^S
-    Print ^X^E^E^E^E^D^D^D
-  EndMacro
-  Macro 2
-    GotoX 0
-    InsLine
-    Print '/*'^M^S
-    Print ' *'^M^S
-    Print ' */'^M^S
-    Print ^X^E^G^E^E^D^D^D
-  EndMacro
-  Macro 3
-    GotoX 0
-    Print 'package ;'^M^M
-    Print 'import ;'^M^M
-    Print 'public class Main'^M'{'^M^M
-    Print '    public static void main(String []args)'^M'{'^M^M'}'^M
-    GotoX 0
-    Print '}'^M
-    Print ^E^E^E^D^D^D^D^D^D^D^D
-  EndMacro
-  Macro 4
-    GoToX 0
-    Print '/*******************************************************************************/'^M^S
-    Print '/*---- ------------------------------------------------------------------------*/'^M^S
-    Print '/*******************************************************************************/'^M^S
-    Print ^E^E^D^D^D^D^D^D^D
-    SwitchIns
-  EndMacro
-  Macro 5
-    GoToX 0
-    Print '/* --------------------------------------- */'^M^S
-    Print '/*  */'^M^S
-    Print '/* --------------------------------------- */'^M^S
-    Print ^E^E^D^D^D
-  EndMacro
+;ออออออออออออออออออออออออออออออออออออออออออออฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤ
+; Foxpro program, sql query/ เฎฃเ ฌฌ๋ ญ  FoxPro จซจ SQL
+FILES *.prg;*.qpr;*.sql
+ KeyWords1 order,by,on,inner,join,=,<,>,<=,>=,<>,or,and,not,with,
+ KeyWords1 go,execute,if,insert,nodelete,double,skip,.null.,
+ KeyWords1 define,of,on,popup,do,if,zoom,parameter,MAX,NORMAL,deactiv,
+ KeyWords1 shadow,push,append,close,release,exit,recno,quit,
+ KeyWords1 activate,deactivate,then,else,for,case,browse,eof,norm,@,
+ KeyWords1 FUNCTION,PROCEDURE,endif,read,say,locate,endcase,return,pop,get,
+ KeyWords1 menu,pad,window,bar,prompt,selection,parametr,clear,show,list,
+ KeyWords1 database,from,to,set,title,endfor,footer,message,talk,off,
+ KeyWords1 multi,margin,mark,all,font,picture,size,default,windows,cycle,
+ KeyWords1 float,grow,minimize,Color,top,bottom,noshow,fields,lock,noappend,
+ KeyWords1 select,from,in,where,begin,end,delete,hide,index,
+ KeyWords1 safety,replicate,otherwise
+ KeyWords2 alltrim,year,date,use,empty,mline,lower,vartype,newobject,
+ KeyWords2 addproperty,evaluate,substr,file,len,asc,
+ KeyWords2 count
+ Commentstart *,&&
+ Commentstring &&
+ Comment  (* *)
 END
 
-;ออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออ
-; C# files (C Sharp)
-;ออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออ
-FILES *.CS
-  AutoBrackets  On
-  MultiLineComment 1
-  CommentString //
-  Comment       /* */
-  GeneralFLAGS  465
-  StringFLAGS   3
-  OptimalFill Off
-;  TabSize 4
-  KeyWords1     break,case,const,continue,default,do,else,new,namespace
-  KeyWords1     for,goto,if,return,sizeof,static,switch,abstract,private
-  KeyWords1     void,while,public,try,catch,protected,as,base,checked,unchecked
-  KeyWords1     using,throw,finally,System,Console,interface,delegate,explicit
-  KeyWords1     extern,fixed,foreach,implicit,internal,is,lock,object,operator
-  KeyWords1     out,override,params,readonly,ref,sealed,stackalloc,typeof
-  KeyWords1     unchecked,unsafe,virtual,volatile
-  KeyWords2     byte,char,int,long,short,string,double,float,bool,uint,ulong,ushort
-  KeyWords2     struct,class,true,false,this,null,decimal,enum,event,sbyte
-  ColorKeyWords on
-  Macro 1
-    GoToX 0
-    InsLine
-    Print '/*****************************************************************'^M^S
-    Print ' *'^M^S
-    Print ' *'^M^S
-    Print ' *'^M^S
-    Print ' *****************************************************************/'^M^S
-    Print ^X^E^E^E^E^D^D^D
-  EndMacro
-  Macro 2
-    GotoX 0
-    InsLine
-    Print '/*'^M^S
-    Print ' *'^M^S
-    Print ' */'^M^S
-    Print ^X^E^G^E^E^D^D^D
-  EndMacro
-  Macro 3
-    GotoX 0
-    Print 'using System;'^M^M
-    Print 'public class main'^M'{'^M^M
-    Print '    static void Main()'^M'{'^M^M'}'^M
-    GotoX 0
-    Print '}'^M
-    Print ^E^E^E^D^D^D^D^D^D^D^D
-  EndMacro
-  Macro 4
-    GoToX 0
-    Print '/*******************************************************************************/'^M^S
-    Print '/*---- ------------------------------------------------------------------------*/'^M^S
-    Print '/*******************************************************************************/'^M^S
-    Print ^E^E^D^D^D^D^D^D^D
-    SwitchIns
-  EndMacro
-  Macro 5
-    GoToX 0
-    Print '/* --------------------------------------- */'^M^S
-    Print '/*  */'^M^S
-    Print '/* --------------------------------------- */'^M^S
-    Print ^E^E^D^D^D
-  EndMacro
+;ออออออออออออออออออออออออออออออออออออออออออออฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤ
+; ” ฉซ๋ PowerShell
+FILES *.ps1
+  CommentString #
+  BracketPairs if else
+  keywords6 if,else
+
+  RegKeyWords3 \$[a-z]+
+  RegKeyWords4 Import-Module
+  RegKeyWords7 \.[a-z]+
+
+  RegKeyWords Color Lightcyan [^\x20]+@[^\x20]+
 END
 
-;ออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออ
-; Pascal/Delphi files
-;ออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออ
-FILES *.DPK;*.DPR;*.PAS;*.PP,>PROGRAM|UNIT<
-  AutoBrackets  Off
-  MultiLineComment 1
-  Comment       (* *),{ }
-  CommentString //
-  GeneralFLAGS   32
-  StringFLAGS    204
-  OptimalFill Off
-;  TabSize 2
-  BracketPairs asm;begin;case;dialog;try;record end try except;finally ifdef;ifndef endif repeat until if then while;for do
-  ; Reserved words
-  KeyWords1 and,array,as,at,asm,begin,break,case,class,const,constructor
-  KeyWords1 dec,continue,destructor,dispinterface,div,do,downto,else,end
-  KeyWords1 except,exclude,exports,false,file,final,finalization,finally
-  KeyWords1 for,function,goto,if,include,implementation,in,inc,inherited
-  KeyWords1 initialization,interface,is,label,library,mod,nil,not,object
-  KeyWords1 of,on,or,out,interface,packed,procedure,program,property
-  KeyWords1 raise,record,repeat,resourcestring,result,sealed,set,shl,shr
-  KeyWords1 sizeof,static,string,then,threadvar,to,true,try,type,unit
-  KeyWords1 unsafe,until,uses,var,while,with,xor
-  KeyWords1 write,writeln,low,high,succ,pred,ord
-  ; Directives
-  KeyWords2 absolute,abstract,assembler,automated,cdecl,contains,default
-  KeyWords2 deprecated,dispid,dynamic,export,external,far,forward
-  KeyWords2 implements,index,inline,interrupt,local,message,name,near
-  KeyWords2 nodefault,overload,override,package,pascal,platform,private
-  KeyWords2 protected,public,published,read,readonly,register
-  KeyWords2 reintroduce,requires,resident,safecall,stdcall,stored,strict
-  KeyWords2 varargs,virtual,writeonly
-  ; Base types
-  KeyWords3 ansistring,bool,boolean,byte,cardinal,char,comp,currency
-  KeyWords3 double,extended,longbool,longint,longword,real,real48,int64
-  KeyWords3 integer,pchar,pointer,shortint,single,smallint,shortstring
-  KeyWords3 string,uint64,variant,widechar,widestring,word,wordbool
-  ; VP specific type?
-  KeyWords3 smallword
+;ออออออออออออออออออออออออออออออออออออออออออออฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤ
+; ” ฉซ๋  แแช ซ๏/ํซไจ (ฎข ๏ เฅค ชๆจ๏) * pascal/Delphi (New Edition)
+FILES *.pas;*.res;*.dfm;stdefine.inc;*.pp;rar5.inc
+  BracketPairs object;record;dialog;begin;case;asm;try;item end ifdef;ifndef endif repeat until if then while;for;with do then;case else for;repeat;while break for to;downto procedure;function;constructor;destructor begin;var interface implementation
+  KeyWords Color Brown inherited,ifndef,undef,absolute,xor
+  KeyWords Color Red for,repeat,while,to,downto,do,try,except,finally,with,until,
+  KeyWords1 ioresult,halt,create,done,length
+  KeyWords1 nosound,keypressed,readkey,
+  KeyWords1 PackTime,SetFTime,break,
+  KeyWords1 getintvec,paramcount,ClrScr
+  KeyWords2 asm,assembler,graphResult,begin,end,private,public,record,forward,protected,
+  KeyWords3 virtual,close,reset,rewrite,append,assign,showmessage,gotoxy,name,external,stdcall,default,cdecl,fastcal,
+  KeyWords3 inc,dec,mod,div,paramstr,sizeof,textColor,abs,chr,ord,
+  KeyWords3 FileSize,eof,INTTOSTR,strtoint,seek,Gettime,getdate,packed
+  KeyWords3 str,read,readln,upcase,nil,hint,label,
+  KeyWords4 char,byte,boolean,string,word,longint,integer,array,pointer,registers,real,file,text,int64,double,bool,PShortString,ansichar,short,
+  KeyWords4 kmascii,kmansi,kmkoi8r,kmutf8,kmUTF7,kmUTF16L,kmUTF16B
+  KeyWords4 DateTime,DWord,PChar,ShortString,SmallWord,smallint,AnsiString,TInputLine,TComboBox,TDriveType,lfile,ValSInt,ValIInt,
+  KeyWords4 TObject,TField,set,EventTimer,TQuad,THandle,PView,PFilesCollection,PMyScrollBar,THideView,PHideView,TFPFilter,PDrive,TPoint,TQuickSearchData,TStream,PButton,TTextListBoxRec,TListViewer,
+  KeyWords4 TMemoryStatus,TEvent,TView,TCollection,TGroup,PDialog,Trect,PString,PFileRec,PDirStorage,PSortedCollection,TSwapLevel,PStream,TStoredFile,TListBox,PCollection,PLabel,PInputLine,PWhileView,PStaticText,
+  KeyWords4 true,false,pguid,longbool,TGUID,uInt,LONG,cardinal,WCHAR,LongWord,QWord,Unicodestring,WideString,PWideChar,TCheckBoxes,TFileSize,
+  KeyWords4 IPortableDeviceValues,TPropertyKey,iunknown,TPropVariant,PPWideChar,IStream,IPortableDeviceManager,IPortableDevice,IPortableDeviceResources,
+  KeyWords4 IPortableDeviceKeyCollection,IPortableDeviceProperties,ISequentialStream,IPortableDeviceContent,IEnumPortableDeviceObjectIDs,ISequentialStream,IStream,IPortableDevicePropVariantCollection
+  KeyWords5 implementation,interface,type,program,uses,var,const,procedure,function,unit,cm.*,property
+  KeyWords6 then,else,if,idok,SubMenu,continue,in,override
+  KeyWords6 clear,of,case,destructor,constructor,object,item,exit,initialization,finalization,out
+  KeyWords7 lines,sql,text,caption,items,AsString,filename,result,ctPt
+  KeyWords8 and,not,or,Goto,init,fail,
+  KeyWords color blue VTPortableDeviceValues,VTPortableDeviceKeyCollection,VTPortableDeviceProperties,VTEnumPortableDeviceObjectIDs,VTPortableDeviceManager,VTPortableDevice
+  KeyWords color blue VTPortableDeviceContent,VTPortableDeviceResources,VTSequentialStream,VTStream,VTPortableDevicePropVariantCollection
+  keywords color lightblue hhMarker
+  keywords color blue bfdefault,hhColorMod
+  keywords color lightcyan hhSelected
+  KeyWords color blue dlgWPDCopyDialog
 
-  ColorKeyWords on
-  KeyWords      COLOR BLACK  Necromancer
-  KeyWords      COLOR YELLOW/DARKGRAY NDN
-  RegKeyWords   Color lightgreen \{\$[^\}\{]+\}
-  Macro 1
+  RegKeyWords4 \@[^\x20\,\{)]+
+; bad style code formatting highlite
+;  RegKeyWords Color black/red \x20(\,|\;)
+;  RegKeyWords Color black/red [^\x20]?\<\>[^\x20]
+;  RegKeyWords Color black/red [^\x20\(\/]+(\x2B|\x2d)
+;  RegKeyWords Color black/red [^\x20]+(:=)
+;  RegKeyWords Color black/red (:=|>|<)[^\x20\>\=]
+;  RegKeyWords Color black/red [^\(](\x2B|\x2d)[^\x20\d]
+;  RegKeyWords Color black/red .+\x28\x20
+;  RegKeyWords Color black/red \x20+:\x20+,([^\x20\']\,[^\x20])
+;  RegKeyWords Color Black/red [^\x20]+(\:\=|\+|\>)[^\x20+\x27']
+;  RegKeyWords Color black/red (\x20+\:\x20+)
+;  RegKeyWords Color black/red \x27\,.
+;  RegKeyWords Color black/red [^\x20]\*
+;  RegKeyWords Color black/red [\x20]+\:\w
+
+
+  RegKeyWords Color Yellow Content
+
+  RegKeyWords Color LightCyan (\d),
+  RegKeyWords Color Lightgreen \d+h
+  RegKeyWords Color LightMagenta \'[^\']+\',\#\d*
+  RegKeyWords Color yellow write(ln)?,random(ize)?
+  RegKeyWords Color Yellow dlg[^\x2c]+\x2c
+  RegKeyWords color white SetFileAttributesA
+  RegKeyWords Color lightred SetFAttr
+  RegKeyWords Color blue lSetFdwAttr,lGetFdwAttr,GetFiledwAttr,setFiledwAttr,GetFilePSsize,lGetLinuxAttr,lSetLinuxAttr,
+  RegKeyWords Color green lSetFAttr,lGetFAttr,GetFileAttr,setFileAttr,getfilestmode,setfilestmode,lnxSetFileFlags,lnxGetFileFlags
+
+
+
+  RegKeyWords Color yellow [a-z]+\^
+  RegKeyWords Color White [^\x7b\x7d\x22\x27\x20\x2c\x3a\x29\x28\x2e\x3b\x5d]+:
+  RegKeyWords Color White \x20+[^\x7b\x7d\x22\x27\x20\x3a\x29\x28\x2e\x3b\x5d]:=
+  RegKeyWords Color White [\w]*\x28
+; RegKeyWords Color White [\w]*\x5B
+  RegKeyWords Color white \x20[\w]*\.
+  RegKeyWords Color White ^[^\x20\x7b\x7d]+\=
+  RegKeyWords color brown \{\$(ifndef|undef)+(\x20[^\x7d]+)?\x7d
+  RegKeyWords color black \{\$(ifdef|define)+(\x20[^\x7d]+)?\x7d
+  RegKeyWords color black \{\$(else|endif)(\x20[^\x7d]+)?\x7d
+
+
+
+  Comment (* *),{  }
+  CommentString //
+  MultilineComment 50
+  ColorKeyWords yes
+;  RegKeyWords Color yellow [^\x20\,\=\.\*\:\;\{\}\d\+\(\)]*
+
+
+ Macro 0
+   insline
+   Print 'Messagebox('' =''+itos() , Nil, mfInformation + Mfokbutton);'
+   End
+   DelBackChar
+ EndMacro
+ Macro 1
     GoToX 0
     InsLine
     Print '(*****************************************************************'^M^S
@@ -894,47 +1524,138 @@ FILES *.DPK;*.DPR;*.PAS;*.PP,>PROGRAM|UNIT<
     MoveUp
   EndMacro
   Macro 4
-    Print '{AH '
-    Insertdate
-    Print ' }'
-    MoveLeft
+    Print '{$IFDEF VP'
   EndMacro
   Macro 5
     InsLine
     Home
-    Print {ฒฒฒฒฒฒฒฒฒฒฒฒฒฒฒฒฒฒฒฒฒฒฒฒฒฒฒฒฒฒฒฒฒฒฒฒฒฒฒฒฒฒฒฒฒฒฒฒฒฒฒฒฒฒฒฒฒฒฒฒฒฒฒฒฒฒฒฒฒฒฒฒฒฒฒฒ}
+    Print {ฒฒฒฒฒฒฒฒฒฒฒฒฒฒฒฒฒฒฒฒฒฒฒฒฒฒฒฒฒฒฒฒฒฒฒฒฒฒฒฒฒฒฒฒฒฒฒฒฒฒฒฒฒฒฒฒฒฒฒฒฒฒฒฒฒฒฒฒฒฒฒฒฒฒฒฒฒ}
     Home
   EndMacro
   Macro 6
     InsLine
     Home
-    Print {ฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑ}
+    Print {ฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑ}
     Home
   EndMacro
   Macro 7
     InsLine
     Home
-    Print {ฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐ}
+    Print {ฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐ}
     Home
   EndMacro
   Macro 8
-    GotoX 0
-    Print 'program ;'^M^M
-    Print 'uses ;'^M^M
-    Print 'begin'^M^M
-    Print 'end.'^M
-    Print ^E^E^D^D
+    Print {$ENDIF
   EndMacro
   Macro 9
-    GotoX 0
-    Print 'unit ;'^M^M
-    Print 'interface'^M^M
-    Print 'uses ;'^M^M
-    Print 'implementation'^M^M
-    Print 'end.'^M
+    InsLine
+    Home
+    Print 'Log('' '');'
+    End
+    DelBackChar
+    Home
   EndMacro
+
 END
 
+
+;ออออออออออออออออออออออออออออออออออออออออออออฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤ
+; Nasm/Fasm/Tasm/Assembler FILES *.S35;*.S03;*.S01;*.S90 (MenetOS)
+FILES *.ASM;*.lst;*.inc;
+ CommentString //
+ CommentStart // ;
+ Generalflags 16
+ HexNumFLAGS 63
+ BINNUMFLAGS 1
+ KeyWords Color Black 0x40
+ KeyWords Color lightcyan int,int01,
+ KeyWords Color Green or,xor,xadd,fadd,add,not,inc,dec,div,
+ KeyWords Color white/red proc,endp,if,endif,while,endw,elseif,else,ifdef,ifndef,elif
+ KeyWords Color white/green nop
+ KeyWords Color brown macro,endm,struc,segment,ends,
+ KeyWords Color lightgreen *
+ KeyWords1 org,dec,cmp,and,shl,xor,rep,in,lidt,lgdt,cpuid,cl,cld,btc,
+ KeyWords1 sub,Imul,stosd,xchg,adc,ror,out,ltr,wrmsr,rdmsr,sti,
+ KeyWords1 lea,rdtsc,equ,neg,lds,rcl,lodsb,rol,daa,lahf,aas,fldz,fchs,
+ KeyWords1 invoke,local,fld,fstp,fsub,fild,btr,bts,bt,cwd,
+ KeyWords1 ends,end,les,sar,sal,rcr,retn,fcmovnb,enter,lsl,
+ KeyWords1 repz,std,setz,mov,mul,movzx,repne,sbb,lar,aam,stos,
+ KeyWords1 insb,xlat,stosb,outsb,shld,setc,clc,stc,movsb,movsw,
+ KeyWords1 proto,assume,lodsw,entry,arg,stosw,cli,cbw,bound,
+ KeyWords1 repnz,into,lock,loopz,setalc,arpl,insw,outsw,fmul,MovSEG,
+ KeyWords1 fimul,fiadd,fwait,fldcw,fnstcw,aad,leave,hlt,movsx,
+ KeyWords1 fcompp,fnstsw,sahf,sldt,setnz,scasw,scasb,cmpsb,cmpsw,insd,
+ KeyWords1 das,fcomp,fcmovu,cmc,fistp,fcmovnu,scasd,iretd,cwde,cdq,
+ KeyWords1 movsd,cmpsd,lodsd,fcmovnbe,outsd,BSET,BTST,LD,BRES,DOS,
+ KeyWords1 sgdt,sidt,repe,arrow,lss,
+ KeyWords1 fdivr,idiv,fdiv,ficomp,fisub,fucomi,fidiv,fist,
+ KeyWords2 label,near,
+ KeyWords3 al,ah,bl,bh,cl,ch,dl,dh,di,si
+ KeyWords3 ax,bx,cx,dx
+ KeyWords3 as,bs,cs,ds,es,sp,ss,esi,
+ KeyWords3 eax,ebx,ecx,edx,esi,edi,EBP,ESP,BP
+ KeyWords3 Include,use,uses,use32,includelib,target,caption,public,model,code,
+ KeyWords4 test,
+ KeyWords5 je,jz,jl,jc,jle,jecxz,jb,ja,jg,jge,jbe,jno,jp,jna,jexcz,jnae,
+ KeyWords5 jmp,jnle,jne,jnc,jnz,jnl,jnb,jae,jcxz,js,jns,jnp,jo,jnge,jng,jmpe
+ KeyWords5 dq,dt,tiny,large,word,dword,byte,ptr,jumps,
+ KeyWords6 stack,dup,ret,call,loope,loopnz,loop,clr,
+ KeyWords7 iret,retf,fsubp
+ KeyWords8 byte,exit,db,dw,dd,bigword,string,data,dataseg,
+ RegKeyWords Color White shr.?,
+ RegKeyWords Color Lightgreen (\x20|^)[^\[\x20]*\:,
+  RegKeyWords color black \{[\$][^\x7d]+\x7d
+; RegKeyWords Color Green (\x20,.?div,
+ RegKeyWords Color blue nop\x20
+ RegKeyWords Color LightRed pop[^\20\[\;]+
+ RegKeyWords Color LightRed push[^\20\[\;]+
+ RegKeyWords Color Lightcyan \d+h,@[^\x20]*
+ RegKeyWords Color Lightcyan \[,\]
+  Macro 1
+    GoToX 0
+    InsLine
+    Print ';ออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออ'^M^S
+    Print ';'^M^S
+    Print ';'^M^S
+    Print ';'^M^S
+    Print ';ออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออ'^M^S
+    Print ^X^E^E^E^E^D^D
+  EndMacro
+  Macro 2
+    GotoX 0
+    InsLine
+    Print ';'^M^S
+    Print ';'^M^S
+    Print ';'^M^S
+    Print ^X^E^G^E^E^D^D
+  EndMacro
+
+END
+
+;ออออออออออออออออออออออออออออออออออออออออออออฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤ
+; Delphi,Pascal source / ” ฉซ๋  แแช ซ๏/ํซไจ
+FILES *.int;*.bi
+ KeyWords1 xchg,add,inc,jz,test,jmp,jnz,mov,int,dec,les,cmp,jc,jcxz,
+ KeyWords1 pop,push,je,jne,clrscr,char
+ KeyWords1 and,asm,array,begin,case,const,constructor,
+ KeyWords1 destructor,div,do,downto,else,end,file,for,out,neg,
+ KeyWords1 function,if,implementation,in,interface,mod,nil,
+ KeyWords1 not,object,of,or,procedure,program,record,repeat,
+ KeyWords1 set,shl,shr,string,then,to,type,unit,until,uses,registers,
+ KeyWords1 var,while,with,xor,inherited,goto,label,inline,boolean,
+ KeyWords1 packed,exports,library,sender,word,integer,byte,true,false,
+ KeyWords2 absolute,assembler,export,external,far,forward,write,@,$,
+ KeyWords2 index,interrupt,near,private,public,resident,class,
+ KeyWords2 virtual,dos,crt,graph,mouse,TObject,close,ParamStr,UpCase,
+ KeyWords2 abs,sin,cos,sgn,sqr,sqrt,log,exp,round,putpixel,str,halt,intr,
+ KeyWords2 writeln,copy,grapherrormsg,setColor,initgraph,
+ KeyWords2 length,textColor,rewrite,append,assign,reset,delete,
+ KeyWords2 ioresult,eof,ord,keypressed,readkey,getintvec,
+ Comment (* *),{ }
+ MultiLinecomment 20
+ ColorKeyWords YES
+ KeyWords Color  white DarkGray
+END
 ;ออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออ
 ; Modula II files
 ;ออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออ
@@ -977,38 +1698,26 @@ FILES *.MOD,*.DEF
   EndMacro
 END
 
-;ออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออ
-; Makefiles (Borlands TASM Make)
-;ออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออ
-FILES *.MAK;MAKEFILE*.*;MAKE
-  GeneralFlags 8
-  CommentStart #
-  OptimalFill On
-  RegKeyWords color lightred \$\([\w]*?\)
-
-  KeyWords1 !if,!ifdef,!ifndef,!elif,!endif,!else,.suffixes
-  RegKeyWords color red \$[d]\([\w]*?\)
-
-  RegKeyWords color green \$(\*\*|\*|<|:|\.|&|@|\?)
-  RegKeyWords color green \$\(<[DFBR]{1}\)
+;ออออออออออออออออออออออออออออออออออออออออออออฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤ
+FILES *.fmt
+ KeyWords1 MAKETARGETS,MAKEVERSION,status
+ KeyWords2 %if,%ifdef,%ifndef,%elif,%elseif,%else,%endif
+ CommentStart ;
 END
-
-;ออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออ
-; Make files
-;ออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออ
-FILES *.MAK;MAKEFILE.*;MAKE
+;ออออออออออออออออออออออออออออออออออออออออออออฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤ
+; Make FILES
+FILES *.MAK;MAKEFILE.*
   CommentString #
-  OptimalFill   On
-  KeyWords1     .NEWSOURCES,.SOURCE,.SOURCES,.TARGET,.TARGETROOT
-  KeyWords1     .VERSION,BUILTINS,CWD,FIRSTTARGET,INPUTFILE
-  KeyWords1     MAKEARGS,MAKEDIR,MAKEMACROS,MAKEPID,MAKESTATUS
-  KeyWords1     MAKETARGETS,MAKEVERSION,status
-  KeyWords2     %if,%ifdef,%ifndef,%elif,%elseif,%else,%endif
-  KeyWords2     %foreach,%while,%end,%break,%continue,%abort
-  KeyWords2     %chdir,%do,%echo,%error,%exec,%getenv,%include
-  KeyWords2     %restart,%set,%setenv,%undef,%defined,%dir,%empty
-  KeyWords2     %exists,%file,%length,%make,%member,%null,
-  KeyWords2     %readable,%time,%writable
+  Keywords1     .NEWSOURCES,.SOURCE,.SOURCES,.TARGET,.TARGETROOT
+  Keywords1     .VERSION,BUILTINS,CWD,FIRSTTARGET,INPUTFILE
+  Keywords1     MAKEARGS,MAKEDIR,MAKEMACROS,MAKEPID,MAKESTATUS
+  Keywords1     MAKETARGETS,MAKEVERSION,status
+  Keywords2     %if,%ifdef,%ifndef,%elif,%elseif,%else,%endif
+  Keywords2     %foreach,%while,%end,%break,%continue,%abort
+  Keywords2     %chdir,%do,%echo,%error,%exec,%getenv,%include
+  Keywords2     %restart,%set,%setenv,%undef,%defined,%dir,%empty
+  Keywords2     %exists,%file,%length,%make,%member,%null,
+  Keywords2     %readable,%time,%writable
   Macro 1
     GoToX 0
     InsLine
@@ -1029,58 +1738,8 @@ FILES *.MAK;MAKEFILE.*;MAKE
   EndMacro
 END
 
-;ออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออ
-; Text files
-;ออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออ
-FILES *.TXT;*.FMT;*.SMP;*.MBS;CHANGELOG;*README*;MANIFEST
-  ColorKeyWords Off
-  AutoBrackets  On
-;  AUTOWRAP On
-;  LEFTMARGIN   5
-;  RIGHTMARGIN  60
-;  PARAGRAPH    5
-  CommentStart ;
-  GeneralFLAGS  526
-  STRINGFLAGS 224
-  Macro 1
-    GoToX 0
-    InsLine
-    Print ';================================================================'^M^S
-    Print ';'^M^S
-    Print ';'^M^S
-    Print ';'^M^S
-    Print ';================================================================'^M^S
-    Print ^X^E^E^E^E^D^D
-  EndMacro
-  Macro 2
-    GotoX 0
-    InsLine
-    Print ';'^M^S
-    Print ';'^M^S
-    Print ';'^M^S
-    Print ^X^E^G^E^E^D^D
-  EndMacro
-; Swap Chars (as in vi "xp"). Place cursor on SECOND character
-  Macro 3
-   BlockStart
-   Print ^D
-   BlockEnd
-   Cut
-   Print ^S
-   Paste
-  EndMacro
-;Join Lines
-  Macro 4
-   Print ^E
-   End
-   DelWordRight
-   Print ' '
-  EndMacro
-END
-
-;ออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออ
-; IAR Linker files.
-;ออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออ
+;ออออออออออออออออออออออออออออออออออออออออออออฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤ
+; IAR Linker FILES.
 FILES *.XCL
   MultiLineComment 10
   AutoBrackets  Off
@@ -1107,339 +1766,133 @@ FILES *.XCL
   EndMacro
 END
 
-;ออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออ
-; HTML Files
-;ออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออ
-FILES *.htm;*.html;*.asx;*.htt;*.htz;<<htm>,<<td>
- KeyWords1 A,ABBR,ACRONYM,ADDRESS,APPLET,AREA,B,BASE,BASEFONT,BDO,BIG,BLOCKQUOTE,BODY
- KeyWords1 BR,BUTTON,CAPTION,CENTER,CITE,CODE,COL,COLGROUP,DD,DEL,DFN,DIR,DIV,DL,DT,EM
- KeyWords1 FIELDSET,FONT,FORM,FRAME,FRAMESET,H1,H2,H3,H4,H5,H6,HEAD,HR,HTML,I,IFRAME,IMG
- KeyWords1 INPUT,INS,ISINDEX,KBD,LABEL,LEGEND,LI,LINK,MAP,MENU,META,NOFRAMES,NOSCRIPT
- KeyWords1 OBJECT,OL,OPTGROUP,OPTION,P,PARAM,PRE,Q,S,SAMP,SCRIPT,SELECT,SMALL,SPAN,STRIKE
- KeyWords1 STRONG,STYLE,SUB,SUP,TABLE,TBODY,TD,TEXTAREA,TFOOT,TH,THEAD,TITLE,TR,TT,U,UL,VAR
- KeyWords2 abbr,accept,accept-charset,accesskey,action,align,alink,alt,archive,axis
- KeyWords2 background,bgcolor,border,cellpadding,cellspacing,char,charoff,charset
- KeyWords2 checked,cite,class,classid,clear,code,codebase,codetype,color,cols,colspan
- KeyWords2 compact,content,coords,data,datetime,declare,defer,dir,disabled,enctype
- KeyWords2 face,for,frame,frameborder,headers,height,href,hreflang,hspace,http-equiv
- KeyWords2 id,ismap,label,lang,language,link,longdesc,marginheight,marginwidth,maxlength
- KeyWords2 media,method,multiple,name,noresize,noshade,nowrap,object,onblur,onchange
- KeyWords2 onclick,ondblclick,onfocus,onkeydown,onkeypress,onkeyup,onload,onmousedown
- KeyWords2 onmousemove,onmouseout,onmouseover,onmouseup,onreset,onselect,onsubmit,onunload
- KeyWords2 onunload,profile,prompt,readonly,readonly,rel,rev,rows,rows,rowspan,rules
- KeyWords2 scheme,scope,scrolling,selected,shape,size,span,src,standby,start,style
- KeyWords2 summary,tabindex,target,text,title,type,usemap,valign,value,valuetype,version
- KeyWords2 vlink,vspace,width
- RegKeyWords color lightred class[a-z]*,
- RegKeyWords color lightgreen [a-z]*frame[a-z]*,margin[a-z]+,h[0-9],
- Comment <!-- -->
- MultiLineComment 1
- Macro 1
-    GoToX 0
-    InsLine
-    Print '<html>'^M
-    Print '<style type="text/css">'^M^M
-    Print '</style>'^M
-    Print '<body>'^M^M
-    Print '</body>'^M
-    Print '</html>'
-    Home
-    Print ^E^E^D^D^D
- EndMacro
-END
-
-;ออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออ
-; XML
-;ออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออ
-FILES *.XML;*.bdsproj;*.vlp;*.xdd;<<?xml>
-  GeneralFlags 1
-  StringFlags 128
-
-  KeyWords1 xml,version,encoding,standalone
-  KeyWords2 no,yes,DOCTYPE,ELEMENT,ATTLIST
-  Comment <!-- -->
-  MultiLineComment 1
-  RegKeyWords color lightred <[^/][^> ]+
-  RegKeyWords color lightred </[^> ]+>
- Macro 1
-    GoToX 0
-    InsLine
-    Print '<?xml version="1.0" encoding="UTF-8"?>'^M
-    Print '<>'^M^M
-    Print '</>'
-    Home
-    Print ^E^E^D
- EndMacro
-END
-
-;ออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออ
-; JAVASCRIPT, Proxy auto configuration files
-;ออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออ
-FILES *.JS;*.PAC
-  MultiLineComment 1
-  CommentString //
-  Comment       /* */
-  GeneralFLAGS  465
-  StringFLAGS   3
-  KeyWords1 language,if,else,var,function,return
-  KeyWords2 prompt,window,alert,null,location,{window,{,}
-  KeyWords2 open,close,document,target,write,writeln,
-  KeyWords2 onmousedown,captureevents,click,event,layers
-  KeyWords2 button,mousedown,true,false,which
-  Macro 1
-    GoToX 0
-    Print '/*******************************************************************************/'^M^S
-    Print '/*---- ------------------------------------------------------------------------*/'^M^S
-    Print '/*******************************************************************************/'^M^S
-    Print ^E^E^D^D^D^D^D^D^D
-    SwitchIns
-  EndMacro
-  Macro 2
-    GoToX 0
-    Print '/* --------------------------------------- */'^M^S
-    Print '/*  */'^M^S
-    Print '/* --------------------------------------- */'^M^S
-    Print ^E^E^D^D^D
-  EndMacro
-END
-
-;ออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออ
-; WINDOWS Files
-;ออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออ
-FILES *.INI;*.INF;*.REG;>^\[.+?\]<
-   KeyWords1 file://Folder.htt,
-   KeyWords2 Clsid,UICLSID,InfoTip,Default,Logo,WideLogo,
-   KeyWords2 ConfirmFileOp,cdfurl,Icon,Type,Order,
-   KeyWords2 Zoom,Sort,Direct,Color,PatternId,MenuName,ToolTipText,
-   KeyWords2 HelpText,Attributes,IconIndex,Solid,Width,WebViewTemplate,NT5,
-   KeyWords color cyan HTMLInfoTipFile
-   RegKeyWords color lightgreen Owner,Personal[^=]*,BuyURL,PersistMoniker(Preview)?
-   RegKeyWords color Red \[[^\]]+\]
-   RegKeyWords color lightBLUE,Icon[^=]*
-   RegKeyWords color lightmagenta LocalizedResourceName,
-   RegKeyWords color yellow .*\.lnk
-   KeyWords1 WinDir,WinBootDir,HostWinBootDrv,SystemReg,LoadTop,
-   KeyWords1 DoubleBuffer,AutoScan,WinVer,Network,DisableLog,
-   RegKeyWords color white Boot[a-z]*,
-   KeyWords color lightblue Logo
-   RegKeyWords color LightRed ^[^=]*=
-   commentstring ;
-END
-
-;ออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออ
-; Shell scripts, files starting with "#!"
-;ออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออ
-FILES *.SH,>#![ ]*/bin/<,.bashrc,.profile,interfaces
-  GeneralFLAGS  17
-  STRINGFLAGS   7
-  CommentString #
-  BracketPairs  if;elif then while do case esac for do
-  KeyWords1  if,then,while,do,case,esac,done,test,else,in,break,elif,fi,for,function,export
-  KeyWords2  exit,echo,shift,cd,rm,mv,cp,mkdir,rmdir,chmod,pushd,popd,ln,eval,clear
-  Macro 1
-    FileStart
-    Home
-    InsLine
-    Print '#!/bin/bash'
-  EndMacro
-END
-
-;ออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออ
-; PERL Files: C-style numbers, float numbers, case-sensitive
-;ออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออ
-FILES *.PL; *.PM; *.T; *.pod; *.SH, *.SUB;*.MU
-  GeneralFlags 81
-  StringFlags 131
-  MultilineComment 1
-  CommentString #
-  Comment __END__ _no_end_of_such_comment_
-  Comment =head1 =cut
-;  Comment =item =cut; doesn't work, apparently "=cut" never gets parsed again
-  CommentStart =item
-;  Comment =head2 =cut
-
-  KeyWords1 cmp,eq,gt,lt,ne
-  KeyWords1 x
-  KeyWords1 and,not,or,xor
-  KeyWords1 continue,redo,do,else,elsif,for,foreach,goto,if,last,next,return,unless,until,while
-  KeyWords1 package,sub
-  KeyWords1 require,use
-  KeyWords1 local,my,our,new,tie
-  KeyWords1 BEGIN
-  KeyWords1 CORE, SUPER, bless
-  KeyWords2 __LINE__, __FILE__, __DATA__, __PACKAGE__
-  KeyWords2 abs,atan2,cos,exp,int,log,rand,sin,sqrt,srand
-  KeyWords2 pop, push, shift, splice, unshift
-  KeyWords2 delete, each, exists, keys, values
-  KeyWords2 grep,join,map,reverse,sort
-  KeyWords2 defined,scalar,ref,undef,wantarray
-  KeyWords2 seek, sysread, sysseek, syswrite, tell, truncate, chdir, mkdir, opendir, readdir, stat
-  KeyWords2 binmode, close, eof, fileno, flock, open, rename, select, unlink, utime
-  KeyWords2 eval,exit,die,exec,system
-  KeyWords2 glob,
-  KeyWords2 read, readline, print, printf, warn
-  KeyWords2 alarm,sleep
-  KeyWords2 pos,quotemeta,split,
-  KeyWords2 chomp,chop,index,lc,length,sprintf,substr,uc
-  KeyWords2 localtime,gmtime,time
-  KeyWords2 pack,unpack,vec,chr,ord,hex,ord
-  KeyWords3 $_,@_,$!
-  RegKeyWords COLOR LightBlue \$[0-9]+
-  RegKeyWords COLOR LightBlue \\[0-9]+
-  RegKeyWords COLOR LightRed \\x[a-fA-F0-9]+
-  RegKeyWords COLOR Red \\x{[a-zA-Z0-9]+}
-  RegKeyWords COLOR Yellow (?<!\\)\$[A-Za-z0-9_]+
-  RegKeyWords COLOR LightBlue (?<!\\)\@([a-zA-Z][_a-zA-Z0-9]*|_[_a-zA-Z0-9]+)
-  RegKeyWords COLOR LightCyan (?<!\\)\%([a-zA-Z][_a-zA-Z0-9]*|_[_a-zA-Z0-9]+)
-  RegKeyWords COLOR Blue [_a-zA-Z0-9]+ *(?==>)
-  RegKeyWords COLOR LightBlue (?<={)[_a-zA-Z0-9]+(?=})
-
-;  RegKeyWords COLOR Cyan (?si:\=head2.*?\=cut)
-
-; To play the macro: CTRL+J 1
-  Macro 1
-    Print '#!/usr/local/bin/perl -w'^M'use strict;'^M^M
-  EndMacro
-  Macro 2
-    Print 'while (<>) {'^M^M'}'^M#5#5' '
-  EndMacro
-  Macro 3
-    Print 'use Data::Dump qw(pp ddx);'^M'ddx '
-  EndMacro
-END
-
-;ออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออ
-; PHP files: GENERALFLAGS = case sensitive + C numbers; Comments: #, //
-;ออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออ
-FILES *.PHP;*.ROS
-  GeneralFLAGS 16
-  STRINGFLAGS 7
-  CommentString #, //
-  MultiLineComment 1
-  Comment /* */
-  KeyWords1 as,case,break,const,default,die,else,elseif,exit,for,foreach,continue,if,do,while,function,global,require,require_once,return,switch,try,catch,throw
-  KeyWords1 xor,or,and
-  KeyWords1 abstract,class,extends,final,implements,interface, public,private,protected,static,new,instanceof,var
-  KeyWords1 array,string,list
-  KeyWords2 __construct
-  KeyWords2 array_key_exists,array_keys,array_merge,array_slice,array_pop,count,empty,in_array,is_array
-  KeyWords2 date
-  KeyWords2 define,function_exists
-  KeyWords2 echo,print,printf,print_r,sprintf,error_log,trigger_error
-  KeyWords2 fclose,file,file_exists,fopen,fwrite,is_readable,readfile,file_get_contents,file_put_contents
-  KeyWords2 filetype,unlink
-  KeyWords2 dir,mkdir,rmdir,realpath
-  KeyWords2 basename,dirname
-  KeyWords2 isset,is_null,sizeof,unset
-  KeyWords2 mktime
-  KeyWords2 setcookie
-  KeyWords2 implode,explode,bin2hex,crc32,md5,rand
-  KeyWords2 str_pad,strlen,trim,strstr,strpos
-  KeyWords2 preg_match,preg_replace,quotemeta, str_replace
-  KeyWords2 error_reporting,set_error_handler
-  KeyWords2 var_dump
-  KeyWords2 ob_start,header,ob_end
-  KeyWords3 false,true,NULL,__FILE__,DIRECTORY_SEPARATOR,PATH_SEPARATOR
-  KeyWords3 self,this,parent
-  RegKeyWords COLOR Yellow \$[a-zA-Z_\x7f-\xff][a-zA-Z0-9_\x7f-\xff]*
-  Macro 1
-    GoToX 0
-    print '<?php'
-    print ^M
-    print ^M
-    print ^M
-    print '?>'
-    MoveUp 2
-  EndMacro
-  Macro 2
-    GoToX 0
-    Print '/*******************************************************************************/'^M^S
-    Print '/*---- ------------------------------------------------------------------------*/'^M^S
-    Print '/*******************************************************************************/'^M^S
-    Print ^E^E^D^D^D^D^D^D^D
-    SwitchIns
-  EndMacro
-  Macro 3
-    GoToX 0
-    Print '/* --------------------------------------- */'^M^S
-    Print '/*  */'^M^S
-    Print '/* --------------------------------------- */'^M^S
-    Print ^E^E^D^D^D
-  EndMacro
-END
-
-;ออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออ
-; RESOURCES
-;ออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออ
-FILES *.rc
-  KeyWords1 menuitem,
-  KeyWords2 separator,popup,
-  Commentstart #
-  Commentstring #
-END
-
-;ออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออ
-; FOXPRO/SQL
-;ออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออ
-FILES *.PRG;*.QPR;*.SQL
-  KeyWords1 order,by,on,inner,join,=,<,>,<=,>=,<>,or,and,not,with,
-  KeyWords1 go,execute,if,insert,nodelete,double,skip,.null.,
-  KeyWords1 define,of,on,popup,do,if,zoom,parameter,MAX,NORMAL,deactiv,
-  KeyWords1 shadow,push,append,close,release,exit,recno,quit,
-  KeyWords1 activate,deactivate,then,else,for,case,browse,eof,norm,@,
-  KeyWords1 FUNCTION,PROCEDURE,endif,read,say,locate,endcase,return,pop,get,
-  KeyWords1 menu,pad,window,bar,prompt,selection,parametr,clear,show,list,
-  KeyWords1 database,from,to,set,title,endfor,footer,message,talk,off,
-  KeyWords1 multi,margin,mark,all,font,picture,size,default,windows,cycle,
-  KeyWords1 float,grow,minimize,color,top,bottom,noshow,fields,lock,noappend,
-  KeyWords1 select,from,in,where,begin,end,delete,hide,index,
-  KeyWords1 safety,replicate,otherwise
-  KeyWords2 alltrim,year,date,use,empty,mline,lower,vartype,newobject,
-  KeyWords2 addproperty,evaluate,substr,file,len,asc,
-  KeyWords2 count
-  Commentstart *,&&
-  Commentstring &&
-  Comment  (* *)
-END
-
-;ออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออ
-; ORACLE/SQL
-;ออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออ
-FILES *.SQL
-  StringFlags 64
-  MultiLineComment 1
-  Commentstring --
-  Comment  /* */
-  KeyWords1 order,by,on,inner,join,=,<,>,<=,>=,<>,or,and,not,
-  KeyWords1 declare,undefine,define,if,elsif,then,else,for,case,decode,is,as
-  KeyWords1 function,procedure,loop,default,first,last,while,between,exit
-  KeyWords1 select,from,in,out,where,begin,end,type,const,set,return,when
-  KeyWords1 drop,table,create,alter,insert,into,values,cursor,row,execute,add
-  KeyWords1 open,fetch,close,update,commit,rollback,desc,describe,like,pragma
-  KeyWords1 trigger,disable,enable,replace,all,triggers,default,constraint,check
-  KeyWords1 show,errors,exception,raise,raise_application_error,exception_init
-  KeyWords1 current,of,distinct,before,each
-  RegKeyWords color red %rowcount,%found,%notfound,%isopen,:new,:old
-  KeyWords2 substr,max,avg,min,dbms_output.put_line,sysdate,lower,upper,others
-  KeyWords2 sqlcode,sqlerrm,trunc,round,months_between,no_data_found
-  KeyWords3 null,date,varchar2,number,boolean
-  RegKeyWords color lightgray %type,%rowtype
-; highlight labels
-  RegKeyWords color lightred <<[^ \>]+>> , &[\w]+
-END
-
-;ออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออ
-; URL Files
-;ออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออ
+;ออออออออออออออออออออออออออออออออออออออออออออฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤ
+; Windows hyperlink / จฏฅเแแ๋ซช 
 FILES *.url
-  KeyWords1 URL,=,Modified,baseurl,description
-  KeyWords2 [InternetShortcut],http://www,[DEFAULT],[CeQuadrat]
-  RegKeyWords color lightblue http:.*,ftp:.*,[^\x20\.]*@[^\x20]*,www\..*
+ KeyWords1 URL,=,Modified,baseurl,description
+ KeyWords2 [InternetShortcut],http://www,[DEFAULT],[CeQuadrat]
+ KeyWords4 IconIndex
+ KeyWords3 IDList,
+ KeyWords6 HotKey
+ keywords color blue IconFile
+ RegKeyWords Color lightblue http:.*,ftp:.*,[^\x20\.]*@[^\x20]*,www\..*
 end
+;ออออออออออออออออออออออออออออออออออออออออออออฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤ
+FILES *.scp
+ KeyWords1 cwait
+ KeyWords2 trace(0),if,@c,concat,strseq,goto,helpline,substr,else
+ comment /* */
+ commentstart /*,*/,;
+end
+;ออออออออออออออออออออออออออออออออออออออออออออฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤ
+FILES *.nif
+ KeyWords1 Type,Title,Version,DriverName,XPORTS,name,path,display,strlength
+ KeyWords1 set,optional,default,help,editable,tag,range,virtual
+ KeyWords1 Model,DeviceDriver,DeviceName
+ RegKeyWords Color Lightgreen \<[^\x5E\>\<\x22\x27\x3D]+\>,\[[^\x5E\]\[\x22\x27\x3D]+\],\([^\x5E\)\(\x22\x27\x3D]+\),\{[^\x5E\}\{\x22\x27\x3D]+\}
+ comment /* */
+ commentstart /*,*/,;
+ SwitchHighLight
+END
+;ออออออออออออออออออออออออออออออออออออออออออออฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤ
+FILES msdos.sys
+ KeyWords1 WinDir,WinBootDir,HostWinBootDrv,SystemReg,LoadTop,
+ KeyWords1 DoubleBuffer,AutoScan,WinVer,Network,DisableLog,
+ RegKeyWords Color white Boot[a-z]*,
+ RegKeyWords Color Lightgreen \<[^\x5E\>\<\x22\x27\x3D]+\>,\[[^\x5E\]\[\x22\x27\x3D]+\],\([^\x5E\)\(\x22\x27\x3D]+\),\{[^\x5E\}\{\x22\x27\x3D]+\}
+ KeyWords Color lightblue Logo
+ commentstart ;
+ SwitchHighLight
+END
+;ออออออออออออออออออออออออออออออออออออออออออออฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤ
+;
+FILES *.emu
+ KeyWords1 end,clear
+ KeyWords2 initial,hostcode,inbuffer2,inbuffer
+ KeyWords2 inbuffer3,inbuffer4,outbuffer,codebuffer
+END
+;ออออออออออออออออออออออออออออออออออออออออออออฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤ
+; Host Mode Script
+FILES *.srp
+ KeyWords1 INTEGER,STRING,then,while
+ KeyWords2 function,if,end,not,endif,wend
+ Commentstart '
+ CommentString '
+ SwitchHighLight=ON
+END
 
-;ออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออ
+;ออออออออออออออออออออออออออออออออออออออออออออฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤ
+; Rar SFX - module script
+FILES *.s
+ ColorKeyWords YES
+ KeyWords Color  white DarkGray
+ KeyWords1 if,endif,call,proc,endp,exit,restscr,savescr,
+ KeyWords1 defbar,diskneed,FILES,DestDir,ansi,gotoxy,setColor,clrscr,
+ KeyWords Color yellow Path,License,Overwrite,title,text,Delete,Presetup,Setup
+ KeyWords2 message,window,box,on,off,DestFileName,single,double,
+ KeyWords2 delay,sound,goto,outtext,getkey,ctext,input,
+ RegKeyWords Color lightgreen <[^>]+>
+ CommentStart ;
+; CommentString ;
+ RegKeyWords Color  black \[[^\[]*30m
+ RegKeyWords Color  LightRed \[[^\[]*31m
+ RegKeyWords Color  Green \[[^\[]*32m
+ RegKeyWords Color  Yellow \[[^\[]*33m
+ RegKeyWords Color  LightBlue \[[^\[]*34m
+ RegKeyWords Color  LightMagenta \[[^\[]*35m
+ RegKeyWords Color  LightCyan \[[^\[]*36m
+;RegKeyWords Color  White \[[^\[]*37m,\[[^\[]*1m
+ RegKeyWords Color  Lightgray/black \[[^\[]*40m
+ RegKeyWords Color  Lightgray/red \[[^\[]*41m
+ RegKeyWords Color  Lightgray/green \[[^\[]*42m
+ RegKeyWords Color  Lightgray/brown \[[^\[]*43m
+ RegKeyWords Color  Lightgray/blue \[[^\[]*44m
+ RegKeyWords Color  Lightgray/magenta \[[^\[]*45m
+ RegKeyWords Color  Lightgray/cyan \[[^\[]*46m
+ RegKeyWords Color  Lightgray/white \[[^\[]*47m
+ RegKeyWords Color  black \
+
+ SwitchHighLight on
+END
+;ออออออออออออออออออออออออออออออออออออออออออออฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤ
+; Multisystem bootable CD .ini file
+FILES boot*.ini
+ KeyWords Color  Red 4
+ KeyWords Color  Cyan 3
+ KeyWords Color  Blue 1
+ KeyWords Color  White F
+ KeyWords Color  Brown 6
+ KeyWords Color  Green 2
+ KeyWords Color  Black 0
+ KeyWords Color  Yellow E
+ KeyWords Color  Magenta 5
+ KeyWords Color  LightRed Cเ
+ KeyWords Color  darkgray/LightGray 8
+ KeyWords Color  LightGray 7
+ KeyWords Color  LightBlue 9
+ KeyWords Color  LightCyan B
+ KeyWords Color  LightGreen A
+ KeyWords Color  LightMagenta D
+ commentstart ;
+ RegKeyWords Color lightgreen \[[^\]]+\],,
+ RegKeyWords Color Yellow %[^%]*%
+ RegKeyWords Color Yellow .*\=.*\~
+ RegKeyWords Color Yellow \*\*\*.*
+ RegKeyWords Color Lightcyan \x3a[^\x5c\;]*\;
+ RegKeyWords Color Green .*=
+
+END
+
+;ออออออออออออออออออออออออออออออออออออออออออออฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤ
+; Windows setup script
+FILES msbatch.inf
+ commentstart ;,
+ RegKeyWords Color Lightgreen \<[^\x5E\>\<\x22\x27\x3D]+\>,\[[^\x5E\]\[\x22\x27\x3D]+\],\([^\x5E\)\(\x22\x27\x3D]+\),\{[^\x5E\}\{\x22\x27\x3D]+\}
+ KeyWords1 ProductType,
+ KeyWords Color Yellow ProductKey
+END
+;ออออออออออออออออออออออออออออออออออออออออออออฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤ
 ; OS/2 Command File
-;ออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออ
 FILES *.cmd
  KeyWords1 say,if,then,do,end,else,cls,call,echo,@goto,
  KeyWords1 @echo,exit,parse,return,while,forever,title,
@@ -1448,7 +1901,7 @@ FILES *.cmd
  KeyWords2 sysloadfuncs,rxfuncadd,LastPos,syscreateobject,word,
  KeyWords2 translate,getyesno,charout,sysgetkey,Directory,
  KeyWords2 lineout,linein,sysfiledelete,syscls,sysmkdir,enter,pull,signal,
- KeyWords2 lines,beep,goto,SubStr,errorlevel,filespec,sysgetmessage,left,
+ KeyWords2 lines,beep,goto,SubStr,errorlevel,FILESpec,sysgetmessage,left,
  KeyWords2 reverse,drive,subword,words,strip,word,sysdrivemap,RxFuncQuery,
  KeyWords2 date,sysini,pos,value,GetBootDrive,Stream,CharIn,c2x,x2c,EXIST
  comment /*,*/
@@ -1456,553 +1909,641 @@ FILES *.cmd
  SwitchHighLight=ON
  MultiLineComment 20
 END
+;ออออออออออออออออออออออออออออออออออออออออออออฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤ
+; Windows reg-file / ” ฉซ เฅฅแโเ  Windows
+FILES *.reg
+ CommentStart ;
+ KeyWords COLOR Lightcyan DWORD
+ KeyWords COLOR YELLOW HEX
+ KeyWords6 REGEDIT4
+ RegKeyWords Color Lightgreen \<[^\x5E\>\<\x22\x27\x3D]+\>,\[[^\x5E\]\[\x22\x27\x3D]+\],\([^\x5E\)\(\x22\x27\x3D]+\),\{[^\x5E\}\{\x22\x27\x3D]+\}
+END
+;ออออออออออออออออออออออออออออออออออออออออออออฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤ
+; WINDOWS inf - FILES
+FILES *.inf
+ KeyWords color Brown LayoutFile
+ KeyWords color blue  IconIndex,icon,
+ KeyWords color Lightgreen HKR,HKLM,HKCU,HKCR,
 
-;ออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออ
-; FORTRAN !does not support tabs in files -> fixed format!
-;ออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออ
-FILES *.F;*.FPP;*.FTN;*.FOR;*.I;*.F90;*.I90;*.F66;*.F77
-  GeneralFLAGS 80
-  StringFlags 192
-  CommentStart c,C,*
-  KeyWords1 function,parameter,data,program
-  KeyWords2 true,false,not,and,or,eqv,neqv,lt,le,eq,ge,gt,ne
-  KeyWords2 if,goto,then,endif,elseif,else,do,continue,dowhile,enddo,cycle
-  KeyWords2 exit,return,end,mod,pause,print,read,stop
-  KeyWords3 integer,real,double precision,complex,logical,character,record
-  KeyWords3 structure,dimension,
+ KeyWords1 [RegistryDir],DelFiles,DelDirs,DelReg,Cleanup,DefaultDestDir,ProfileItems,
+ KeyWords3 Signature,Tip,OptionDesc,
+ KeyWords4 CopyFiles,DelFiles,RenFiles,AddReg,UpdateInis,
+ KeyWords4 RequiredEngine,Reboot,CheckAdminRights,NTAdmin,CustomDestination,BeginPrompt,EndPrompt,RunPreSetupCommands,RunPostSetupCommands,PerUserInstall,
+ KeyWords4 RegisterOCXs,UnregisterOCXs,Cleanup,NTAdmin,PreRollBack,BackupPath,CatalogName,Run,AddService,
+ KeyWords5 class,setupclass,classGuid,BeginPrompt,EndPrompt,
+ KeyWords6 {00000000-0000-0000-0000-000000000000},DelService,Uninstall
+ KeyWords7 computer,Display,keyboard,hdc,hid,image,media,modem,monitor,mouse,multiportserial,net,printer,scsiadapter,smartcardreader
+ KeyWords7 {4D36E966-E325-11CE-BFC1-08002BE10318},{4D36E968-E325-11CE-BFC1-08002BE10318},{4D36E96B-E325-11CE-BFC1-08002BE10318},{4D36E96A-E325-11CE-BFC1-08002BE10318},{745A17A0-74D3-11D0-B6FE-00A0C90F57DA},
+ KeyWords7 {4D36E96C-E325-11CE-BFC1-08002BE10318},{4D36E96D-E325-11CE-BFC1-08002BE10318},{4D36E96E-E325-11CE-BFC1-08002BE10318},{4D36E96F-E325-11CE-BFC1-08002BE10318},{50906CB8-BA12-11D1-BF5D-0000F805F530},
+ KeyWords7 {4D36E979-E325-11CE-BFC1-08002BE10318},{4D36E97B-E325-11CE-BFC1-08002BE10318},{50DD5230-BA8A-11D1-BF5D-0000F805F530},{6BDD1FC6-810F-11D0-BEC7-08002BE2092F},{4D36E972-E325-11CE-BFC1-08002BE10318},
+ KeyWords7 [Strings],
+ KeyWords8 [Version],[defaultinstall],[DefaultInstall.NT],[DestinationDirs],[SourceDisksFiles],[SourceDisksNames],[Files],[Uninstall],[Dirs],
+ KeyWords8 TickCount,Commandline
+
+ RegKeyWords color Brown \[[^\x5E\]\[\x22\x27\x3D]+\],
+
+ RegKeyWords7 %[.!-z]+%
+ RegKeyWords6 :[0-9]+
+
+ CommentStart ;
+ CommentString ;
+ GeneralFlags 6
+ SwitchHighLight=ON
+END
+;;ออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออ
+;; WINDOWS Files
+;;ออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออ
+;FILES *.INI;*.INF;*.REG;>^\[.+?\]<
+;   KeyWords1 file://Folder.htt,
+;   KeyWords2 Clsid,UICLSID,InfoTip,Default,Logo,WideLogo,
+;   KeyWords2 ConfirmFileOp,cdfurl,Icon,Type,Order,
+;   KeyWords2 Zoom,Sort,Direct,Color,PatternId,MenuName,ToolTipText,
+;   KeyWords2 HelpText,Attributes,IconIndex,Solid,Width,WebViewTemplate,NT5,
+;   KeyWords color cyan HTMLInfoTipFile
+;   RegKeyWords color lightgreen Owner,Personal[^=]*,BuyURL,PersistMoniker(Preview)?
+;   RegKeyWords color Red \[[^\]]+\]
+;   RegKeyWords color lightBLUE,Icon[^=]*
+;   RegKeyWords color lightmagenta LocalizedResourceName,
+;   RegKeyWords color yellow .*\.lnk
+;   KeyWords1 WinDir,WinBootDir,HostWinBootDrv,SystemReg,LoadTop,
+;   KeyWords1 DoubleBuffer,AutoScan,WinVer,Network,DisableLog,
+;   RegKeyWords color white Boot[a-z]*,
+;   KeyWords color lightblue Logo
+;   RegKeyWords color LightRed ^[^=]*=
+;   commentstring ;
+;END
+
+;ออออออออออออออออออออออออออออออออออออออออออออฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤ
+; Windows OEM license file
+FILES oeminfo.ini
+ KeyWords1 Manufacturer,Model,
+ RegKeyWords Color Lightgreen \<[^\x5E\>\<\x22\x27\x3D]+\>,\[[^\x5E\]\[\x22\x27\x3D]+\],\([^\x5E\)\(\x22\x27\x3D]+\),\{[^\x5E\}\{\x22\x27\x3D]+\}
+ RegKeyWords Color white Line..
+ CommentStart ;
+ CommentString ;
+ SwitchHighLight=ON
+END
+
+;ออออออออออออออออออออออออออออออออออออออออออออฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤ
+FILES *.stf
+ KeyWords2 SearchReg,SearchIni,customaction,yes,no,group,AddRegData,Depend,AppSearch,AppMainDlg,OptionDlg
+ KeyWords2 InstallShortcut,AddProgmanItem,WriteTableFile,CopyFile,InstallProofTool,InstallProofLex,InstallShared,CompanionFile
+ RegKeyWords Color lightgreen \[[^\]]+\]
+ RegKeyWords Color yellow (==.*==)
+ CommentStart ;
+ CommentString ;
+ SwitchHighLight=ON
+END
+
+;ออออออออออออออออออออออออออออออออออออออออออออฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤ
+FILES *.mol
+ RegKeyWords Color lightgreen \[[^\]]+\]
+ CommentStart ;
+ CommentString ;
+ SwitchHighLight=ON
+END
+
+;ออออออออออออออออออออออออออออออออออออออออออออฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤ
+FILES *.ldi
+ KeyWords1 DES,HELP,PAR,PROD,typ,val,def,out,ch,cd
+ KeyWords2 ver,syn,DR,oFILES,fr,slot,frameselect,NODE,OPT
+ KeyWords2 file,time,lang,dlang,pr,RTSSRV,MEDIUMTYPE
+ CommentStart ;
+ SwitchHighLight=ON
+END
+
+;ออออออออออออออออออออออออออออออออออออออออออออฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤ
+FILES *.iwf
+ KeyWords1 Admin
+ RegKeyWords Color lightgreen \[[^\]]+\]
+ CommentStart ;,//
+ SwitchHighLight=ON
+END
+
+;ออออออออออออออออออออออออออออออออออออออออออออฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤ
+FILES *.mif
+ KeyWords1 start,end,name,description,win32,id,class,access,storage,type
+ KeyWords1 key
+ KeyWords2 path,component,group,value
+ KeyWords2 attribute,enum
+ CommentStart ;,//
+ SwitchHighLight=ON
+END
+;ออออออออออออออออออออออออออออออออออออออออออออฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤ
+; ฎญโฅฉญฅเ๋ ฎฏจแ ญจฉ / Description files
+FILES descript.ion;Files.bbs;
+ RegKeyWords Color White ^[\x20-\xFF]+?\s
+ RegKeyWords Color Lightgreen \<[^\x5E\>\<\x22\x27\x3D]+\>,\[[^\x5E\]\[\x22\x27\x3D]+\],\([^\x5E\)\(\x22\x27\x3D]+\),\{[^\x5E\}\{\x22\x27\x3D]+\}
+ SwitchHighLight=ON
+END
+
+;ออออออออออออออออออออออออออออออออออออออออออออฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤ
+;ฎฌ ญค๋ ฏเฎขฎคญจช 
+FILES *.scf
+ KeyWords1 [Taskbar],[Shell],ToggleDesktop
+ KeyWords2 Command,IconFile
+ CommentStart ;,//
+ SwitchHighLight=ON
+END
+
+;ออออออออออออออออออออออออออออออออออออออออออออฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤ
+; winamp skin config file / ” ฉซ ญ แโเฎฉชจ แชจญฎข Winamp' 
+FILES region.txt
+ KeyWords1 NumPoints,PointList
+ RegKeyWords Color lightgreen \[[^\]]+\]
+ CommentStart ;,//
+ SwitchHighLight
+END
+;ออออออออออออออออออออออออออออออออออออออออออออฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤ
+; ACSII ฏฎแซฅคฎข โฅซ์ญฎแโจ
+FILES *.ans
+ RegKeyWords Color  black \[[^\[]*30m
+ RegKeyWords Color  LightRed \[[^\[]*31m
+ RegKeyWords Color  Green \[[^\[]*32m
+ RegKeyWords Color  Yellow \[[^\[]*33m
+ RegKeyWords Color  LightBlue \[[^\[]*34m
+ RegKeyWords Color  LightMagenta \[[^\[]*35m
+ RegKeyWords Color  LightCyan \[[^\[]*36m
+ RegKeyWords Color  White \[[^\[]*37m,\[[^\[]*1m
+ RegKeyWords Color  Lightgray/black \[[^\[]*40m
+ RegKeyWords Color  Lightgray/red \[[^\[]*41m
+ RegKeyWords Color  Lightgray/green \[[^\[]*42m
+ RegKeyWords Color  Lightgray/brown \[[^\[]*43m
+ RegKeyWords Color  Lightgray/blue \[[^\[]*44m
+ RegKeyWords Color  Lightgray/magenta \[[^\[]*45m
+ RegKeyWords Color  Lightgray/cyan \[[^\[]*46m
+ RegKeyWords Color  Lightgray/white \[[^\[]*47m
+ RegKeyWords Color  black \
+END
+
+;ออออออออออออออออออออออออออออออออออออออออออออฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤ
+; Outlook mail base, Fidonet news base /
+FILES *.nws;*.mbx
+ KeyWords Color lightgreen Area,Msg,Date,Read,Replied,To,Mark,
+ KeyWords Color lightgreen Message-ID:,References:,Newsgroups:,Distribution:,X-Comment-To:,Approved:,
+
+ KeyWords Color Yellow Necromancer,Dos,Navigator,Dn,ndn,unix,linux,os/2,
+ KeyWords Color Yellow คฎแ,ญ ขจฃ โฎเ,Millennium,Edition,Xp,BeOS,ATARI,
+ KeyWords Color Yellow Based,RIT,HEX,Bin,Ascii,Xlt,Koi,
+ KeyWords Color Yellow X-FTN-Tearline:,
+ KeyWords Color LightMagenta IDE,SCSI,LFN,cr,lf,crlf,RealName
+ KeyWords Color Lightcyan Reply-To:,From,sender,from:,===,
+ KeyWords Color Black Origin,path,
+ KeyWords Color blue Lines,Xref,
+ KeyWords Color white Freeware,password,caption
+
+ RegKeyWords Color white/lightred viru[a-๏]*
+ RegKeyWords Color Yellow  organization:.*,Subj(ect)?:.*.
+ RegKeyWords Color Black (X-FTN|NNTP)-.+\x3a\x20,
+ RegKeyWords Color Lightred [a-za-๏\d]+\>+,.[a-z]*Moderator,
+ RegKeyWords Color Yellow IBM(\x20)?(pc(\x2f)?)?(xt(\x2f)?)?(at(\x2f)?)?
+ RegKeyWords Color LightMagenta fat(\d+)?
+ RegKeyWords Color Yellow win(dow)?(s)?(\x27)?(\d+)?(x)?(\x20|$|\x2e|\x2c|\x2f)
+ RegKeyWords Color Yellow [ณ-ฺ]+
+ RegKeyWords Color LightGreen [Û-฿]+
+ RegKeyWords Color LightGreen [ฐ-ฒ]+
+ RegKeyWords Color Lightgreen \<[^\x5E\>\<\x22\x27\x3D]+\>,\[[^\x5E\]\[\x22\x27\x3D]+\],\([^\x5E\)\(\x22\x27\x3D]+\),\{[^\x5E\}\{\x22\x27\x3D]+\}
+ RegKeyWords Color Lightcyan (http|ftp)[a-z]?:[^\x20:]+,www\.[^\x20]+,[a-z_\d]+@[a-z_\d]+\x2e[a-z\d]+
+ RegKeyWords Color Lightcyan [\x20|^][a-z]:{1}\x5c
+END
+;ออออออออออออออออออออออออออออออออออออออออออออฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤ
+; Playlist
+FILES *.pls
+ KeyWords Color Lightred numberofentries
+ RegKeyWords Color White length\d+
+ RegKeyWords Color Lightcyan \<[^\x5E\>\<\x22\x27\x3D]+\>,\[[^\x5E\]\[\x22\x27\x3D]+\],\([^\x5E\)\(\x22\x27\x3D]+\),\{[^\x5E\}\{\x22\x27\x3D]+\}
+ RegKeyWords Color Yellow title\d+.*
+ RegKeyWords Color Lightgreen file\d+.*
+END
+;ออออออออออออออออออออออออออออออออออออออออออออฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤ
+; Shtrih-M POS System report file / ” ฉซ ฎโ็๑โ  แ ‘-‘จแโฅฌ ชฎฌฏ ญจจ โเจๅ-
+FILES *.rep;
+ RegKeyWords color White               \d+:\d+:\d+;1;
+ RegKeyWords color Red/Lightred        \d+:\d+:\d+;2;
+ RegKeyWords color Red/White           \d+:\d+:\d+;(3|4);
+ RegKeyWords color White               \d+:\d+:\d+;11;
+ RegKeyWords color Red/Lightred        \d+:\d+:\d+;12;
+ RegKeyWords color Red/White           \d+:\d+:\d+;(13|14|80);
+ RegKeyWords color Yellow              \d+:\d+:\d+;(15|16|17|18);
+ RegKeyWords color White               \d+:\d+:\d+;24;
+ RegKeyWords color Yellow              \d+:\d+:\d+;(35|36|37|38);
+ RegKeyWords color Lightblue           \d+:\d+:\d+;40;
+ RegKeywords color Lightblue/Lightcyan \d+:\d+:\d+;50;
+ RegKeywords color Lightred/Lightcyan  \d+:\d+:\d+;51;
+ RegKeyWords color Lightmagenta        \d+:\d+:\d+;55;
+ RegKeyWords color BLACK/RED           \d+:\d+:\d+;56;
+ RegKeyWords color Yellow/Black        \d+:\d+:\d+;58;
+ RegKeywords color Green/Lightgreen    \d+:\d+:\d+;(60|62);
+ RegKeywords color Black/Green         \d+:\d+:\d+;61;
+ RegKeyWords color Yellow/Green        \d+:\d+:\d+;63;
+ RegKeyWords color Yellow              \d+:\d+:\d+;(70|71);
+ RegKeyWords color Green               \d+:\d+:\d+;(90|91);
+ RegKeyWords color lightred            ;0;0;0;0;0;,
+ RegKeyWords Color Green               \d+\.\d+\.\d+
+END
+;ออออออออออออออออออออออออออออออออออออออออออออฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤ
+; 1C structure file / ” ฉซ แโเใชโใเ๋ ค ญญ๋ๅ 1‘-เฅคฏเจ๏โจ๏
+FILES *.dd;1cv7.mlg;
+ CommentStart #-,
+ KeyWords1 RestructSaveMD
+ KeyWords2 OpenSession,TABLE
+ KeyWords3 DocOpen,
+ KeyWords4 DocWrite,
+ KeyWords5 CloseSession,
+ KeyWords6 GrbgSyntaxErr,GrbgRuntimeErr,
+ KeyWords7 DocNotWrite,
+ KeyWords8 DocMarkDel,
+ RegKeyWords color YELLOW T=[^|]*
+ RegKeyWords color LightRed :.*
 END
 
 ;ออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออ
-; LISP (AutoCAD AutoLisp)
+; FOXPRO/SQL
+FILES *.PRG;*.QPR;*.SQL
+  Keywords1 order,by,on,inner,join,=,<,>,<=,>=,<>,or,and,not,with,
+  Keywords1 go,execute,if,insert,nodelete,double,skip,.null.,
+  Keywords1 define,of,on,popup,do,if,zoom,parameter,MAX,NORMAL,deactiv,
+  Keywords1 shadow,push,append,close,release,exit,recno,quit,
+  Keywords1 activate,deactivate,then,else,for,case,browse,eof,norm,@,
+  Keywords1 FUNCTION,PROCEDURE,endif,read,say,locate,endcase,return,pop,get,
+  Keywords1 menu,pad,window,bar,prompt,selection,parametr,clear,show,list,
+  Keywords1 database,from,to,set,title,endfor,footer,message,talk,off,
+  Keywords1 multi,margin,mark,all,font,picture,size,default,windows,cycle,
+  Keywords1 float,grow,minimize,color,top,bottom,noshow,fields,lock,noappend,
+  Keywords1 select,from,in,where,begin,end,delete,hide,index,
+  Keywords1 safety,replicate,otherwise
+  Keywords2 alltrim,year,date,use,empty,mline,lower,vartype,newobject,
+  Keywords2 addproperty,evaluate,substr,file,len,asc,
+  Keywords2 count
+  Commentstart *,&&
+  Commentstring &&
+  Comment  (* *)
+END
+
 ;ออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออ
-FILES *.LSP;*.MNL
-  GeneralFlags 64
-  StringFlags 33
-  Comment ;| |;
-  CommentString ;
+; ORACLE/SQL
+FILES *.SQL
+  StringFlags 64
   MultiLineComment 1
-  RegKeyWords Color LightRed '
-  RegKeyWords Color LightCyan \(,\)
-  RegKeyWords Color LightMagenta \*[^\x20]*?[^\x20]\*
-  RegKeyWords Color LightBlue vla-[^\x20\)]*
-  KeyWords1 +,-,*,/,=,/=,<,<=,>,>=,~,1+,1-
-  KeyWords1 abs,acad_colordlg,acad_helpdlg,acad_strlsort,action_tile
-  KeyWords1 add_list,alert,alloc,and,angle,angtof,angtos,append,apply
-  KeyWords1 arx,arxload,arxunload,ascii,assoc,atan,atof,atoi,atom
-  KeyWords1 atoms-family,autoarxload,autoload,Boole,boundp,caddr,cadr
-  KeyWords1 car,cdr,chr,client_data_tile,close,command,cond,cons,cos
-  KeyWords1 cvunit,defun,defun-q,defun-q-list-ref,defun-q-list-set
-  KeyWords1 dictadd,dictnext,dictremove,dictrename,dictsearch
-  KeyWords1 dimx_tile,dimy_tile,distance,distof,done_dialog,end_image
-  KeyWords1 end_list,entdel,entget,entlast,entmake,entmakex,entmod
-  KeyWords1 entnext,entsel,entupd,eq,equal,*error*,eval,exit,exp,expand
-  KeyWords1 expt,fill_image,findfile,fix,float,foreach,function,gc,gcd
-  KeyWords1 get_attr,get_tile,getangle,getcfg,getcname,getcorner,getdist
-  KeyWords1 getenv,getfiled,getint,getkword,getorient,getpoint,getreal
-  KeyWords1 getstring,getvar,graphscr,grclear,grdraw,grread,grtext,grvecs
-  KeyWords1 handent,help,if,initdia,initget,inters,itoa,lambda,last
-  KeyWords1 layoutlist,length,list,listp,load,load_dialog,log,logand
-  KeyWords1 logior,lsh,mapcar,max,mem,member,menucmd,menugroup,min
-  KeyWords1 minusp,mode_tile,namedobjdict,nentsel,nentselp,new_dialog
-  KeyWords1 nil,not,nth,null,numberp,open,or,osnap,pause,pi,polar,prin1
-  KeyWords1 princ,print,progn,prompt,quit,quote,read,read-char,read-line
-  KeyWords1 redraw,regapp,rem,repeat,reverse,rtos,set,set_tile,setcfg
-  KeyWords1 setenv,setfunhelp,setq,setvar,setview,sin,slide_image,snvalid
-  KeyWords1 sqrt,ssadd,ssdel,ssget,ssgetfirst,sslength,ssmemb,ssname
-  KeyWords1 ssnamex,sssetfirst,startapp,start_dialog,start_image
-  KeyWords1 start_list,strcase,strcat,strlen,subst,substr,T,tablet
-  KeyWords1 tblnext,tblobjname,tblsearch,term_dialog,terpri,textbox
-  KeyWords1 textpage,textscr,trace,trans,type,unload_dialog,untrace
-  KeyWords1 vector_image,ver,vports,wcmatch,while,write-char,write-line
-  KeyWords1 xdroom,xdsize,zerop
-  KeyWords2 vl-acad-defun,vl-acad-undefun,vl-arx-import,vl-bb-ref
-  KeyWords2 vl-bb-set,vl-catch-all-apply,vl-catch-all-error-message
-  KeyWords2 vl-catch-all-error-p,vl-cmdf,vl-consp,vl-directory-files
-  KeyWords2 vl-doc-export,vl-doc-import,vl-doc-ref,vl-doc-set,vl-every
-  KeyWords2 vl-exit-with-error,vl-exit-with-value,vl-file-copy
-  KeyWords2 vl-file-delete,vl-file-directory-p,vl-file-rename
-  KeyWords2 vl-file-size,vl-file-systime,vi-filename-base
-  KeyWords2 vl-filename-directory,vl-filename-extension
-  KeyWords2 vl-filename-mktemp,vl-get-resource,vl-list*,vl-list->string
-  KeyWords2 vl-list-exported-functions,vl-list-length,vl-list-loaded-vix
-  KeyWords2 vl-load-all,vl-load-com,vl-load-reactors,vl-member-if
-  KeyWords2 vl-member-if-not,vl-position,vl-prin1-to-string
-  KeyWords2 vl-princ-to-string,vl-propagate,vl-registry-delete
-  KeyWords2 vl-registry-descendents,vl-registry-read,vl-registry-write
-  KeyWords2 vl-remove,vl-remove-if,vl-remove-if-not,vl-some,vl-sort
-  KeyWords2 vl-sort-i,vl-string->list,vl-string-elt,vl-string-left-trim
-  KeyWords2 vl-string-mismatch,vl-string-position,vl-string-right-trim
-  KeyWords2 vl-string-search,vl-string-subst,vl-string-translate
-  KeyWords2 vl-string-trim,vl-symbol-name,vl-symbol-value,vl-symbolp
-  KeyWords2 vl-unload-vix,vl-vbaload,vl-vbarun,vl-vlx-loaded-p
-  KeyWords2 vlax-3D-point,vlax-add-cmd,vlax-create-object
-  KeyWords2 vlax-curve-getArea,vlax-curve-getDistAtParam
-  KeyWords2 vlax-curve-getDistAtPoint,vlax-curve-getEndParam
-  KeyWords2 vlax-curve-getEndPoint,vlax-curve-getParamAtDist
-  KeyWords2 vlax-curve-getParamAtPoint,vlax-curve-getPointAtDist
-  KeyWords2 vlax-curve-getPointAtParam,vlax-curve-getStartParam
-  KeyWords2 vlax-curve-getStartPoint,vlax-curve-isClosed
-  KeyWords2 vlax-curve-isPeriodic,vlax-curve-isPlanar
-  KeyWords2 vlax-curve-getClosestPointTo
-  KeyWords2 vlax-curve-getClosestPointToProjection
-  KeyWords2 vlax-curve-getFirstDeriv,vlax-curve-getSecondDeriv
-  KeyWords2 vlax-dump-object,vlax-ename->vla-object,vlax-erased-p
-  KeyWords2 vlax-for,vlax-get-acad-object,vlax-get-object
-  KeyWords2 vlax-get-or-create-object,vlax-get-property
-  KeyWords2 vlax-import-type-library,vlax-invoke-method
-  KeyWords2 vlax-ldata-delete,vlax-ldata-get,vlax-ldata-list
-  KeyWords2 vlax-ldata-put,vlax-ldata-test,vlax-make-safearray
-  KeyWords2 vlax-make-variant,vlax-map-collection
-  KeyWords2 vlax-method-applicable-p,vlax-object-released-p
-  KeyWords2 vlax-product-key,vlax-property-available-p
-  KeyWords2 vlax-put-property,vlax-read-enabled-p,vlax-release-object
-  KeyWords2 vlax-remove-cmd,vlax-safearray-fill,vlax-safearray-get-dim
-  KeyWords2 vlax-safearray-get-element,vlax-safearray-get-l-bound
-  KeyWords2 vlax-safearray-get-u-bound,vlax-safearray-put-element
-  KeyWords2 vlax-safearray-type,vlax-safearray->list,vlax-tmatrix
-  KeyWords2 vlax-typeinfo-available-p,vlax-variant-change-type
-  KeyWords2 vlax-variant-type,vlax-variant-value,vlax-vla-object->ename
-  KeyWords2 vlax-write-enabled-p,vlisp-compile,vlr-acdb-reactor
-  KeyWords2 vlr-add,vlr-added-p,vlr-beep-reaction,vlr-command-reactor
-  KeyWords2 vlr-current-reaction-name,vlr-data,vlr-data-set
-  KeyWords2 vlr-deepclone-reactor,vlr-docmanager-reactor,vlr-dwg-reactor
-  KeyWords2 vlr-dxf-reactor,vlr-editor-reactor,vlr-insert-reactor
-  KeyWords2 vlr-linker-reactor,vlr-lisp-reactor,vlr-miscellaneous-reactor
-  KeyWords2 vlr-mouse-reactor,vlr-notification,vlr-object-reactor
-  KeyWords2 vlr-owner-add,vlr-owner-remove,vlr-owners,vlr-pers
-  KeyWords2 vlr-pers-list,vlr-pers-p,vlr-pers-release,vlr-reaction-names
-  KeyWords2 vlr-reaction-set,vlr-reactions,vlr-reactors,vlr-remove
-  KeyWords2 vlr-remove-all,vlr-set-notification,vlr-sysvar-reactor
-  KeyWords2 vlr-toolbar-reactor,vlr-trace-reaction,vlr-type,vlr-types
-  KeyWords2 vlr-undo-reactor,vlr-wblock-reactor,vlr-window-reactor
-  KeyWords2 vlr-xref-reactor
+  Commentstring --
+  Comment  /* */
+  Keywords1 order,by,on,inner,join,=,<,>,<=,>=,<>,or,and,not,
+  Keywords1 declare,undefine,define,if,elsif,then,else,for,case,decode,is,as
+  Keywords1 function,procedure,loop,default,first,last,while,between,exit
+  Keywords1 select,from,in,out,where,begin,end,type,const,set,return,when
+  Keywords1 drop,table,create,alter,insert,into,values,cursor,row,execute,add
+  Keywords1 open,fetch,close,update,commit,rollback,desc,describe,like,pragma
+  Keywords1 trigger,disable,enable,replace,all,triggers,default,constraint,check
+  Keywords1 show,errors,exception,raise,raise_application_error,exception_init
+  Keywords1 current,of,distinct,before,each
+  Regkeywords color red %rowcount,%found,%notfound,%isopen,:new,:old
+  Keywords2 substr,max,avg,min,dbms_output.put_line,sysdate,lower,upper,others
+  Keywords2 sqlcode,sqlerrm,trunc,round,months_between,no_data_found
+  Keywords3 null,date,varchar2,number,boolean
+  Regkeywords color lightgray %type,%rowtype
+; highlight labels
+  Regkeywords color lightred <<[^ \>]+>> , &[\w]+
 END
 
-;ออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออ
-; DCL (AutoCAD dialogs)
-;ออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออ
-FILES *.DCL
-  GeneralFlags 65
-  StringFlags 33
-  Comment /* */
-  CommentString //
-  MultiLineComment 1
-  RegKeyWords Color LightCyan {,}
-  RegKeyWords Color White :,=,;
-  KeyWords1 action,alignment,allow_accept,aspect_ratio,big_increment
-  KeyWords1 children_alignment,children_fixed_height
-  KeyWords1 children_fixed_width,color,edit_limit,edit_width,fixed_height
-  KeyWords1 fixed_width,fixed_width_font,height,initial_focus,is_bold
-  KeyWords1 is_cancel,is_default,is_enabled,is_tab_stop,key,label,layout
-  KeyWords1 list,max_value,min_value,mnemonic,multiple_select
-  KeyWords1 password_char,small_increment,tabs,tab_truncate,value,width
-  KeyWords1 horizontal_margin,vertical_margin,type,boxed
-  KeyWords1 dialog,cluster,radio_cluster,tile,text,image,button
-  KeyWords1 image_button,toggle,radio_button,list_box,edit_box,popup_list
-  KeyWords1 slider,spacer,errmsg,horizontal_alignment,vertiacal_alignment
-  KeyWords2 row,column,boxed_row,boxed_column,radio_row,radio_column
-  KeyWords2 boxed_radio_row,boxed_radio_column,concatenation,paragraph
-  KeyWords2 text_part,text_25,spacer_0,spacer_1,default_button
-  KeyWords2 retirement_button,ok_button,cancel_button,help_button
-  KeyWords2 info_button,ok_only,ok_cancel,ok_cancel_help
-  KeyWords2 ok_cancel_help_info,errtile,ok_cancel_help_errtile
-  KeyWords2 ok_cancel_err,default_dcl_settings,image_block,icon_image
-  KeyWords2 edit12_box,edit32_box,swatch,color_palette_1_7
-  KeyWords2 color_palette_1_9,color_palette_0_9,color_palette_250_255
-  KeyWords2 std_rq_color,files_topdf,files_bottomdf,fcf_ibut,fcf_ebox
-  KeyWords2 fcf_ebox1,fcf_ibut1
-  KeyWords3 none,true,false,left,top,right,bottom,centered,horizontal
-  KeyWords3 vertical,audit_level,max_lines,help_on_help_filename
-  KeyWords3 help_on_help_label
-  KeyWords3 dialog_line,dialog_foreground,dialog_background
-  KeyWords3 graphics_background,black,red,yellow,green,cyan,blue,magenta
-  KeyWords3 white,graphics_foreground
+;ออออออออออออออออออออออออออออออออออออออออออออฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤ
+; Text file and any Others
+FILES *.hex
+ RegKeyWords2 \<[^\x5E\>\<\x22\x27\x3D]+\>
+ RegKeyWords3 \[[^\x5E\]\[\x22\x27\x3D]+\]
+ RegKeyWords5 \([^\x5E\)\(\x22\x27\x3D]+\)
+ RegKeyWords6 \{[^\x5E\}\{\x22\x27\x3D]+\}
+ HEXNUMFLAGS 1
+ RegKeyWords4 [0-9a-f]{2}
+
 END
 
-;ออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออ
-; TeX
-;ออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออ
-FILES *.TEX;*.DTX;*.STY;*.BST;*.IST
-  GeneralFLAGS 88
-  StringFlags 192
-  CommentString %
-  OptimalFill On
-  BracketPairs begin end
-;  ColorKeyWords On
-  AutoBrackets  On
-  KeyWords1     document,bold,italic,margin,newpage,bigskip,noindent
-  RegKeyWords Color red \\footnote{[a-z].*}
-  RegKeyWords Color yellow {[a-z].*}
-; this should highlight all chapter lines...
-  RegKeyWords Color white/lightblue \\((sub|)*paragraph|(sub|)*section|chapter|part)(\[.*\]|)\{.*\}
-; this should highlight all KeyWords
-  RegKeyWords color lightred \\[\w]*
+
+;ออออออออออออออออออออออออออออออออออออออออออออฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤ
+; Text file and any Others
+FILES *.LDF
+ RegKeywords color yellow/brown ^dn:.*
+ RegKeyWords1 ^[^\x20\x3b]+:
+END
+
+;ออออออออออออออออออออออออออออออออออออออออออออฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤ
+; polish map file
+FILES *.mp
+ CommentStart ;
+ RegKeyWords color cyan \([^\x5E\)\(\x22\x27\x3D]+\)
+ KeyWords1 img,ID,
+ KeyWords2
+ KeyWords3 Copyright
+ KeyWords4
+ KeyWords5 cities
+ KeyWords6
+ KeyWords7 Regions
+ RegKeyWords7 region
+ BracketPairs POLYGON,end
+END
+
+
+
+;ออออออออออออออออออออออออออออออออออออออออออออฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤ
+; sas planet config files
+FILES params.txt,GetUrlScript.txt
+ KeyWords1 projection,inttostr,GetBefore,StrToIntDef,GetAfter,StrToInt,RegExprReplaceMatchSubStr,random,div,Assigned,const,
+ KeyWords2 Result,ScriptBuffer,Downloader,
+ KeyWords3 NameInCache,asLayer,string,AnsiString,Cardinal,integer,
+
+ KeyWords4 version,
+ KeyWords5 CacheType,ContentType,
+ KeyWords6 function,end,begin,var,if,then,case,else
+ KeyWords7 ParentSubMenu,name
+ KeyWords8 GetX,GetY,GetZ,GetLLon,GetRLon,GetTLat,GetBLat,ResultURL,
+ KeyWords color blue DefUrlBase,ResultURL,GetURLBase,Ext
+ KeyWords color lightcyan separator
+
+END
+
+;ออออออออออออออออออออออออออออออออออออออออออออฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤ
+;GoLang
+FILES *.go
+ Switchhighlight On;
+ BracketPairs func return
+
+ keywords1 Printf,Println,print,
+ keywords2 package,defer,type
+ KeyWords3 var,main,const,switch,case,default,fallthrough,
+ KeyWords4 char,pointer,array,bool,string,uint,uintptr,byte,rune,float32,float64,complex64,complex128,
+ KeyWords4 len,cap,int,make,append
+ KeyWords5 func,return,struct
+ keywords5 import,
+ keywords6 false,true
+
+ RegKeyWords3 (\*|\&)([a-z]+),
+ RegKeyWords3 \[(([0-9])+\:([0-9])+)+\],\[\]
+
+ RegKeyWords4 (u)?int(8|16|32|64|128)+
+
+; RegKeyWords color white [\-\._a-z0-9]+\(
+
+end;
+;ออออออออออออออออออออออออออออออออออออออออออออฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤ
+;
+FILES *.py
+ Switchhighlight On;
+ BracketPairs def return if else for in
+
+ CommentStart #
+ keywords5 def,return,dict,from,import,
+ keywords2 len,max,min
+ keywords3 type,
+ keywords4 print,
+ KeyWords6 while,for,in,if,else
+
+end;
+
+;ออออออออออออออออออออออออออออออออออออออออออออฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤ
+;
+FILES *.yml;*.yaml
+ Switchhighlight On;
+ BracketPairs try except
+
+ CommentString #
+
+ keywords1 print,
+ keywords4 def,
+ keywords5 make,maven,ant,gradle,bazel,grunt,gulp,build,rake,a-a-p,scons,bitbake,cake,asdf,cabal
+ keywords7 return, except as
+
+ KeyWords color lightred true,false
+
+ RegKeyWords color white [\-\._a-z0-9]+\(
+ RegKeyWords color lightcyan ^((\x20+)-)([^{\:#\"])*
+ RegKeyWords Color Lightcyan (http|ftp)[a-z]?:[^\x20:>"]+,www\.[^\x20]+,[a-z_\d]+@[a-z_\d]+\x2e[a-z\d]+
+ RegKeyWords color lightgreen (([^\x32]-)|([a-z_0-9]))+\:(\x20|$)
+ RegKeyWords color black \{\{[^\x7d]+\x7d\}
+
+END
+;ออออออออออออออออออออออออออออออออออออออออออออฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤ
+; cisco config file
+FILES *.conf
+ STRINGFLAGS 8
+ ColorKeyWords yes
+ SwitchHighLight on
+ keywords1 ip,address,host,interface,license,
+ keywords1 transport,protocol,extendable,
+ keywords2 enable,accept,outside,inside,match,eq
+ keywords3 udp,tcp,gre,tcp_udp,domain,snmp,ssh,ftp,http,https,ntp,icmp,vpn,dns,zone,from,admin,auto,eth0,eth1,aes256,sha256,ro,any,nat,encapsulation,channel-group,
+ keywords3 Goto
+ keywords4 firewall,
+ keywords5 host-name,secret,password,username,privilege,
+ keywords6 disable,drop,reject,exclude,shutdown,blocked-content,deny,
+ keywords7 permit,
+ keywords8 encrypted-password,plaintext-password,
+ Keywords color red debug,
+ keywords color blue voice,
+ CommentStart !
+ RegKeyWords color lightmagenta description([^{])+
+ RegKeyWords2 \[[^\x5E\]\[\x22\x27\x3D]+\]
+ RegKeyWords5 \$\{[^\x5E\}\{\x22\x27\x3D]+\}
+
+ KeyWords3 access
+ CommentStart ;,#
+ CommentString ;,#
+
+END
+
+;ออออออออออออออออออออออออออออออออออออออออออออฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤ
+; Asterisk Log file
+FILES *.pbx
+ STRINGFLAGS 128
+ ColorKeyWords yes
+ SwitchHighLight on
+ RegKeyWords color lightgray \[([^\x5d])+\]
+
+ RegKeyWords color green ^[|_\\].*
+ KeyWords1 Spawn
+ KeyWords4 GosubIf,GotoIf,Set,macro,Gosub,Goto,hangup,Return,ExecIf,noop,Dial,MixMonitor,NoCDR,System,MacroExit,PlayTones,Wait,while,SIPAddHeader,AGI,
+ KeyWords3 notice,disabled,pickup,forwarding
+ KeyWords2 DTMF,
+ KeyWords6 Busy,Error
+ KeyWords6 grep
+ KeyWords7 Answer
+ keywords color lightred exited,hangupcall
+ keywords color lightgreen ringing
+END
+
+;ออออออออออออออออออออออออออออออออออออออออออออฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤ
+; vyatta config file
+FILES *.boot
+ STRINGFLAGS 8
+ ColorKeyWords yes
+ SwitchHighLight on
+ keywords1 address,port,established,related,invalid,match-ipsec,network,count,time,network-group,port-group,inbound-interface,protocol,action,interface,level,duplex,hw-id,outbound-interface,gateway-address,encryption,hash,interval,timeout,
+ keywords1 authorization,name-server,
+ keywords2 enable,accept,access,allowed,
+ keywords3 udp,tcp,gre,tcp_udp,domain,snmp,ssh,ftp,http,https,ntp,icmp,vpn,dns,zone,from,admin,auto,eth0,eth1,aes256,sha256,ro,
+ keywords4 firewall,
+ keywords5 host-name,switchport,
+ keywords6 disable,drop,reject,exclude,
+ keywords7 destination,source,state,ipsec,default-action,recent,nat,interfaces,ethernet,loopback,translation,group,service,system,forwarding,package,syslog,console,login,zone-policy,remote,authentication,speed,device,tunnel
+ keywords7 communitynfr,description,
+ keywords8 encrypted-password,plaintext-password,
+ Comment /* */
+
+ regkeywords8 GigabitEthernet
+ RegKeyWords color blue rule([^{])+
+ RegKeyWords5 name\x20([^{])+
+ KeyWords color cyan masquerade
+
+END
+
+;ออออออออออออออออออออออออออออออออออออออออออออฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤ
+; Mikrotik backup file
+FILES *.rsc
+ RegKeyWords color blue ^/(.)+
+ CommentStart #
+ RegKeyWords color Lightgreen \x20([^/=])+=
+
+END
+
+;ออออออออออออออออออออออออออออออออออออออออออออฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤ
+; Text file and any Others
+FILES *.txt;*.faq;*.*;*.php
+
+ KeyWords1 KeyWords1,Freeware,password,caption,left,right,open,close,IP,IAC,RCPT,KSMG:
+ KeyWords2 KeyWords2,Area,Msg,Date,Read,Replied,Mark,copy,move,cut,paste,clipboard,
+ KeyWords3 KeyWords3,RegKeyWords,KeyWords,Necromancer,Dos,Navigator,Dn,ndn,unix,linux,os/2,Macintosh,amiga,apple,ReactOS,freebsd,,
+ KeyWords3 VMware,vcentre,docker,ansible,OS2,DOS,QNX,windows
+ KeyWords3 TileRLeft,TileRTop,TileRRight,TileRBottom,Recipient,sender
+ KeyWords3 คฎแ,ญ ขจฃ โฎเ,Millennium,Edition,Xp,BeOS,ATARI,menuet,meos,menuetos,d32,w9x,w32,lnx,mda,
+ KeyWords3 Based,Rit,Hex,Asm,Dump,Text,Bin,Ascii,Xlt,Koi,ICQ,Pack,Unpack,AIM,,
+ KeyWords3 rules=
+ KeyWords5 KeyWords5,IDE,SCSI,LFN,cr,lf,crlf,RealName,CacheType,sfn,description,fullname,xfs,btrfs,GUID,
+ KeyWords6 KeyWords6,PgUp,PgDn,Home,Del,Ins,BackSp,Backspace,End,Esc,Enter,Grayplus,Minus,Tilda,Space,Caps,Lock,Begin,Up,Down,delete,insert,Tab,Alt,Ctrl,Shift,error,
+ KeyWords6 highload,stop,start,false,true,
+ KeyWords7 KeyWords7,Ext,result,clean:,
+ KeyWords8 KeyWords8,Origin,etc,
+ KeyWords8 USER,PASS,ACCT,CWD,CDUP,SMNT,QUIT,REIN,PORT,PASV,TYPE,STRU,MODE,RETR,STOR,STOU,APPE,EHLO,RSET,DATA
+ KeyWords8 ALLO,REST,RNFR,RNTO,ABOR,DELE,RMD,MKD,PWD,LIST,NLST,SITE,SYST,STAT,HELP,NOOP,FEAT,
+ KeyWords Color brown vhx,vhdx
+; 1c keywords
+;KeyWords6 ฎญฅๆ…แซจ,ฎญฅๆ–จชซ ,…แซจ,ฎช ,ซ๏,’ฎฃค ,เฅเข โ์,ญ ็ฅ…แซจ,
+ KeyWords Color blue ftp,url,
+ KeyWords Color Lightcyan ******,default,truncate
+ KeyWords Color cyan *,GetUrlScriptFName,
+;,#,$,%,^,&,=,-,\,|,?,
+ KeyWords Color white þ,
+ Keywords color yellow/brown Golden
+ KeyWords Color Lightcyan Reply-To:,From:,From,
+ KeyWords Color white/lightred จญไจๆจเฎข ญ,ขจเใแ,ขฎงฌฎฆญฎ,Moderator,SenderFilterConfig,virus,
+ KeyWords Color lightred คฎแโใฏ,ไ ฉซใ,ง ฏเฅ้ฅญ,ใค ซฅญ
+ KeyWords Color lightred ฎ่จกช ,haredirectfail
+ KeyWords Color lightred F1,F2,F3,F4,F5,F6,F7,F8,F9,F10,F11,F12,
+ KeyWords Color lightred FS,LOTOS,M1SERVER11,M1SERVER2,M1SERVER3,M1SERVER4,M1SERVER5,M1SERVER7,M1SERVER8,MERITON,MSERVIS,PROXY,m1server,m1server1,m1server6,M1SERVER10,mservis,mregion
+
+ RegKeyWords color red failed\x20chap\x20authentication,
+
+; RegKeyWords Color white/lightred viru[a-๏_-]*
+ RegKeyWords Color LightMagenta fat(\d{2})?,ntfs,
+; RegKeyWords3 win(dow(s)?)?(\x27|\x20)?(\d+X?)?(xp)?(nt)?(me)?(\x2e11)?,
+ RegKeyWords3 ((dot|asp)|(\.))+net
+ RegKeyWords3 ~[^~\x5c\x21]+~, \x20(((s(uper)?)?v)|[ec])+ga,DPMI(32)?
+ RegKeyWords3 [ณ-ฺ]+
+ RegKeyWords3 Subj(ect)?,IBM(\x20)?(((pc\x2f?)|(xt\x2f?)|(at\x2f?))+)?
+ RegKeyWords7 no\x20error,
+ RegKeyWords Color Lightcyan (http|ftp)[a-z]?:[^\x20:>"]+,www\.[^\x20]+,[a-z_\d]+@[a-z_\d]+\x2e[a-z\d]+
+ RegKeyWords Color Lightcyan www\.[^\x20]+
+ RegKeyWords Color Lightcyan [-a-z_\d]+@[-a-z_\d\x2e]+[-a-z\d]+
+ RegKeyWords Color Lightcyan [\x20|^][\-a-z]+:{1}\x5c
+ RegKeyWords Color Lightcyan [^\>]*
+
+ RegKeyWords2 .[Û-฿]+,.[ฐ-ฒ]+
+ RegKeyWords2 \<[^\x5E\>\<\x22\x27\x3D]+\>,\[[^\x5E\]\[\x22\x27\x3D]+\],\([^\x5E\)\(\x22\x27\x3D]+\),\{[^\x5E\}\{\x22\x27\x3D]+\}
+;//Highlite files and extensions like in my HGROUPS.INI
+ RegKeyWords2 [_a-๗-\d*]+\x2e\*?(ace|ain|arc|arj|bsa|bs2|cab|chz|ha|hap|hpk|hyp|lha|lim|qrk|rar|sqz|tar|uc2|ufa|zip|zoo|zxz|is3|7z|tgz|lzh)(\x20|\;|\,|$)+
+ RegKeyWords Color Lightblue    [_a-๗-\d*]+\x2e(\*)?(gif|jpg|png|bmp|wmf|mp3|wav|mid|kar|mod|xm)(\x20|\;|\,|$)+
+ RegKeyWords Color Blue         [_a-๗-\d*]+\x2e\*?(avi|mp4|mov|vob|mpg|asf)(\x20|\;|\,|$)+
+ RegKeyWords4 [_a-๗-\d*]+\x2e\*?(com|exe|cmd|pif|bat|sh|lnk)(\x20|\;|\,|$)+
+ RegKeyWords7 [_a-๗-\d*]+\x2e\*?(txt|lst|rus|diz|me|pdf|rtf)(\x20|\;|\,|$)+
+ RegKeyWords5 [_a-๗-\d*]+\x2e\*?(dll|ocx|drv|sys|hlp|dbf)(\x20|\;|\,|$)+
+ RegKeyWords6 [_a-๗-\d*]+\x2e\*?(bak|err|tmp)(\x20|\;|\,|$)+
+ RegKeyWords8 (\w|\/)+\.conf
+ RegKeyWords Color Magenta [_a-๗-\d*]+\x2e*.\*?(doc(x)?|xls(x)?|mdb|dot)(\x20|\;|\,|$)+
+ RegKeyWords Color Brown   [_a-๗-\d*]+\x2e\*?(ini|vwr|edt|ext|hgl|mnu|s|des|md|phn|grp|dfm|xrn|spf)(\x20|\;|\,|$)+
+ RegKeyWords Color cyan    [_a-๗-\d*]+\x2e\*?(pas|cpp|bas)(\x20|\;|\,|$)+
+;//END Highlite files and extensions like in my HGROUPS.INI
+ RegKeyWords6 (Alt|Ctrl|Shift)((\x2d|\x2b).(\x20|$|\x2e|\x2c))+
+; RegKeyWords6 F(1+[012]?|[2-9]),
+ RegKeyWords6 [^\x20\x3c;,]+\x3e+.
+ RegKeyWords7 [^\x20\x3c;,]+\x3c+.
+ RegKeyWords Color lightGreen [\<]+
+
+;2020-04-16T09:00:03.584Z,
+ RegKeyWords1 ^.{23}Z
+
+ RegKeyWords1 \d+:\d+:\d+
+ RegKeyWords1 ^[^\x20\x3b,]+:
+; RegKeyWords1 [^\x00-\x2d\=]*\x28
+
+ RegKeyWords color brown \d+\:\d+(\x20)?(a|p)m
+
+
+; RegKeyWords Color RED ABC
+; RegKeyWords Color bLUE qwe
+; RegKeyWords Color Lightmagenta ((?!yy).)*xx((?!yy).)*
+
+; เ แชฎฌฅญโจเใฉโฅ แซฅคใ้ใ๎ แโเฎชใ คซ๏ ฏฎคแขฅโชจ  ญฃซจฉแชจๅ กใชข ข โฅชแโฅ // highlite english char seems like a russian
+; RegKeyWords Color black x,a,K,e,p,c,y,M,o,T,3,H,u,
+ KeyWords6 ฅ็ โ์
+
+; GENERALFLAGS 16
+ STRINGFLAGS 8
+
+ ColorKeyWords yes
+ CommentStart ;,:,#,//,
+ Comment <! !>
+ SwitchHighLight on
   Macro 1
     GoToX 0
     InsLine
-    Print '%==============================================='^M^S
-    Print '%'^M^S
-    Print '%'^M^S
-    Print '%'^M^S
-    Print '%==============================================='^M^S
+    Print ';================================================================'^M^S
+    Print ';'^M^S
+    Print ';'^M^S
+    Print ';'^M^S
+    Print ';================================================================'^M^S
+    Print ^X^E^E^E^E^D^D
   EndMacro
   Macro 2
     GotoX 0
     InsLine
-    Print '%'^M^S
-    Print '%'^M^S
-    Print '%'^M^S
+    Print ';'^M^S
+    Print ';'^M^S
+    Print ';'^M^S
+    Print ^X^E^G^E^E^D^D
   EndMacro
-  Macro 3
-; Swap Chars (as in vi "xp"). Place cursor on SECOND character
-   BlockStart
-   Print ^D
-   BlockEnd
-   Cut
-   Print ^S
-   Paste
-  EndMacro
-;Join Lines
-  Macro 4
-   Print ^E
-   End
-   DelWordRight
-   Print ' '
-  EndMacro
-  Macro 5
-    Print '\textit{ }'
-    MoveLeft 2
-  EndMacro
-  Macro 6
-    Print '\textbf{ }'
-    MoveLeft 2
-  EndMacro
-  Macro 7
-    Print '\textit{888 }'
-    MoveLeft 2
-  EndMacro
-  Macro 8
-    GoToX 0
-    InsLine
-    Print '          \marginpar{\scriptsize{}}'
-    MoveLeft 2
-  EndMacro
-  Macro 9
-    GotoX 0
-    Print '\bigskip'
-  EndMacro
+
 END
 
+
+
 ;ออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออ
-; V+
-;ออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออ
-FILES *.V2
-  AutoBrackets Off
-  MultiLineComment 0
-  CommentString ;
-  GeneralFLAGS 64
-  StringFLAGS 32
-  KeyWords1 auto,global,local,.program,if,not,define,.end,end,then,else
-  KeyWords1 .doubles,.locations,.strings,.reals
-  KeyWords2 call,type,abs,do,exit,for,to,until,case,value,of,true,false,any
-  KeyWords2 and,or,return,while,enable,disable,attach,detach,$encode,getc
-  KeyWords2 $mid,len,abort,execute,fopen,fclose,fcmnd,read,write,$chr,sig
-  KeyWords2 tool,break,close,closei,move,moves,departs,below,ready,iostat
-  KeyWords2 goto,strdif,val,wait,min,max,open,openi,trans,mod,fset,gpanel
-  KeyWords2 gcolor,gtype,getevent,garc,gflood,gtexture,fdelete,speed,decompose
-  KeyWords2 here,prompt,ignore,set,calibrate,react,dos,reacte,bits,accel,drive
-  BracketPairs program;case;if;for end until;while do
+DEFAULT
+;;GeneralFlags 0 512
+ Switchhighlight On;
 END
-
-;ออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออ
-; CSS Files: case insensitive; adapted from the CSS1 W3C specification at http://www.w3.org/TR/REC-CSS1
-;ออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออ
-FILES *.CSS
-   GeneralFlags 0
-   Comment /* */
-   KeyWords1 A,BODY,DIV,EM,H1,H2,H3,HTML,P
-   KeyWords2 link,visited,active,first-line,first-letter
-   KeyWords3 font-family,font-style,font-weight,font-variant,font
-   KeyWords4 bold,bolder,lighter,
-   KeyWords4 italic,small-caps
-   KeyWords4 xx-small,x-small,small,medium,large,x-large,xx-large,larger,smaller
-   KeyWords4 normal,none,url
-   KeyWords3 word-spacing,letter-spacing,text-decoration
-   KeyWords4 underline,overline,line-through,blink
-   KeyWords3 color,background-color,background,background-image,background-attachment,background-repeat,background-position
-   KeyWords4 transparent,rgb
-   KeyWords3 vertical-align
-   KeyWords4 baseline,sub,super,top,text-top,middle,bottom,text-bottom,top,bottom
-   KeyWords3 text-transform
-   KeyWords4 capitalize,uppercase,lowercase
-   KeyWords3 text-align
-   KeyWords4 left,right,center,justify
-   KeyWords3 text-indent,line-height
-   KeyWords3 margin-top,margin-right,margin-bottom,margin-left,margin
-   KeyWords3 padding-top,padding-right,padding-bottom,padding-left,,padding
-   KeyWords3 border-top-width,border-right-width,border-bottom-width,border-left-width,border-width
-   KeyWords4 thin,medium,thick
-   KeyWords3 border-color
-   KeyWords3 border-style
-
-   KeyWords COLOR lightcyan aqua
-   KeyWords COLOR black black
-   KeyWords COLOR lightblue blue
-   KeyWords COLOR lightmagenta fuchsia
-   KeyWords COLOR darkgray gray
-   KeyWords COLOR green green
-   KeyWords COLOR lightgreen lime
-   KeyWords COLOR red maroon
-   KeyWords COLOR blue navy
-   KeyWords COLOR brown olive
-   KeyWords COLOR magenta purple
-   KeyWords COLOR lightred red
-   KeyWords COLOR lightgray silver
-   KeyWords COLOR cyan teal
-   KeyWords COLOR white white
-   KeyWords COLOR yellow yellow
-END
-
-;ออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออ
-; LUA files
-;ออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออ
-FILES *.LUA
-  AutoBrackets  Off
-  CommentString --
-  GeneralFLAGS  65
-  StringFLAGS   3
-  BracketPairs  function;do;then end for do
-  KeyWords1     and,break,do,else,elseif,false,for,function,if,end
-  KeyWords1     in,local,nil,not,or,repeat,return,then,true,until,while
-  KeyWords2     assert,collectgarbage,dofile,error,gcinfo,loadfile,loadstring
-  KeyWords2     print,tonumber,tostring,type,unpack
-  KeyWords3     call,dostring,foreach,foreachi,getn,globals,newtype
-  KeyWords3     rawget,rawset,require,sort,tinsert,tremove
-  KeyWords4     abs,acos,asin,atan,atan2,ceil,cos,deg,exp
-  KeyWords4     floor,format,frexp,gsub,ldexp,log,log10,max,min,mod,rad,random,randomseed
-  KeyWords4     sin,sqrt,strbyte,strchar,strfind,strlen,strlower,strrep,strsub,strupper,tan
-  KeyWords5     openfile,closefile,readfrom,writeto,appendto
-  KeyWords5     remove,rename,flush,seek,tmpfile,tmpname,read,write
-  KeyWords5     clock,date,difftime,execute,exit,getenv,setlocale,time
-  KeyWords6     string.byte,string.char,string.dump,string.find,string.len
-  KeyWords6     string.lower,string.rep,string.sub,string.upper,string.format,string.gfind,string.gsub
-  KeyWords6     table.concat,table.foreach,table.foreachi,table.getn,table.sort,table.insert,table.remove,table.setn
-  KeyWords6     math.abs,math.acos,math.asin,math.atan,math.atan2,math.ceil,math.cos,math.deg,math.exp
-  KeyWords6     math.floor,math.frexp,math.ldexp,math.log,math.log10,math.max,math.min,math.mod
-  KeyWords6     math.pi,math.rad,math.random,math.randomseed,math.sin,math.sqrt,math.tan
-  ColorKeyWords on
-  HIGHLIGHT     on
-  Macro 1
-    GoToX 0
-    InsLine
-    Print '/*****************************************************************'^M^S
-    Print ' *'^M^S
-    Print ' *'^M^S
-    Print ' *'^M^S
-    Print ' *****************************************************************/'^M^S
-    Print ^X^E^E^E^E^D^D^D
-  EndMacro
-  Macro 2
-    GotoX 0
-    InsLine
-    Print '/*'^M^S
-    Print ' *'^M^S
-    Print ' */'^M^S
-    Print ^X^E^G^E^E^D^D^D
-  EndMacro
-  Macro 3
-    GoToX 0
-    Print '/*******************************************************************************/'^M^S
-    Print '/*---- ------------------------------------------------------------------------*/'^M^S
-    Print '/*******************************************************************************/'^M^S
-    Print ^E^E^D^D^D^D^D^D^D
-    SwitchIns
-  EndMacro
-  Macro 4
-    GoToX 0
-    Print '/* --------------------------------------- */'^M^S
-    Print '/*  */'^M^S
-    Print '/* --------------------------------------- */'^M^S
-    Print ^E^E^D^D^D
-  EndMacro
-END
-
-;ออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออ
-; GRUB config files
-;ออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออ
-FILES MENU.LST;GRUB.CONF;>#.*?menu.lst<
-  GeneralFlags 8
-  CommentStart #
-  ColorKeyWords On
-  RegKeyWords color red \([hf]d\d{1}(|\,\d{1})\)
-  RegKeyWords color lightgray ^title.+$
-  KeyWords1 color,timeout,default
-  KeyWords2 find,chainloader,savedefault,configfile,root,rootnoverify,boot
-  KeyWords2 reboot,quit,commandline,halt,map
-  RegKeyWords color green ^fallback[ ]\d*$
-END
-
-;ออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออ
-; TCL-Script files
-;ออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออ
-FILES *.tcl
-  Generalflags 1
-  Stringflags 1
-  Commentstring #
-  ColorKeyWords ON
-  TabSize 4
-
-; internal KeyWords
-  KeyWords1 set,unset,incr,string,length,bytelength,compare,equal,index,is,map,match
-  KeyWords1 range,repeat,replace,tolower,totitle,toupper,trim,trimleft,trimright
-  KeyWords1 puts,regexp,llength,lrange,lsearch,lindex,lsort,linsert,expr,catch
-  KeyWords1 if,elseif,else,for,foreach,while,proc,namespace,eval,default,variable
-  KeyWords1 regsub,append,lappend,binary,format,scan,split,global,socket
-; common KeyWords
-  KeyWords2 argc,argv,argv0
-; type identifiers
-  KeyWords3 list,array
-; TK commands
-  KeyWords4 bell,entry,loadTk,raise,tk_focusFollowsMouse,tk_textPaste
-  KeyWords4 bind,event,lower,scale,tk_focusNext,tkerror
-  KeyWords4 bindtags,focus,menu,scrollbar,tk_focusPrev,tkvars
-  KeyWords4 bitmap,font,menubutton,selection,tk_getOpenFile,tkwait
-  KeyWords4 button,frame,message,send,tk_getSaveFile,toplevel
-  KeyWords4 canvas,grab,option,spinbox,tk_menuSetFocus,winfo
-  KeyWords4 checkbutton,grid,options,text,tk_messageBox,wm
-  KeyWords4 clipboard,image,pack,tk,tk_optionMenu
-  KeyWords4 colors,keysyms,panedwindow,tk_bisque,tk_popup
-  KeyWords4 console,label,photo,tk_chooseColor,tk_setPalette
-  KeyWords4 labelframe,place,tk_chooseDirectory,tk_textCopy
-  KeyWords4 destroy,listbox,radiobutton,tk_dialog,tk_textCut
-END
-
-;ออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออ
-; COBOL
-;ออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออ
-FILES *.CBL;*.COB
-  StringFlags 131
-  CommentStart *,*>
-  CommentStartPos 6
-  RegKeyWords color lightgray [A-Z]*\-[A-Z]*
-  RegKeyWords color LightRed [.]
-  RegKeyWords color LightRed [:]
-  RegKeyWords color Lightgray [A-Z]*\-[0-9]*
-  BracketPairs IF END-IF PERFORM END-PERFORM
-  KeyWords2 ACCEPT,ACCESS,ADD,ADDRESS,ADVANCING,AFTER,ALL,ALLOWING,
-  KeyWords2 ALPHABET,ALPHABETIC,ALPHABETIC-LOWER,ALPHABETIC-UPPER,
-  KeyWords2 ALPHANUMERIC,ALPHANUMERIC-EDITED,ALSO,ALTER,ALTERNATE,
-  KeyWords2 AND,ANY,APPLY,ARE,AREA,AREAS,ARITHMETIC,AS,ASCENDING,
-  KeyWords2 ASSIGN,AT,AUTHOR,B-AND,BASED-STORAGE,BASED,STORAGE,BASIS,BEFORE,BEGIN
-  KeyWords2 BEGINNING,B-EXOR
-  KeyWords2 BETWEEN,BINARY,BIT,BITS,BLANK,B-LESS,BLOCK,B-NOT,BOOLEAN,B-OR,
-  KeyWords2 BOTTOM,BY,CALL,CANCEL,CBL,CD,CF,CH,CHARACTER,CHARACTERS,
-  KeyWords2 CLASS,CLASS-ID,CLOCK-UNITS,COBOL,CODE,CODE-SET,
-  KeyWords2 COLLATING,COLUMN,COMMA,COMMAND,COMMON,COMMUNICATION,COMPUTE,
-  KeyWords2 COM-REG,CONFIGURATION,CONTAINED,CONTAINS,
-  KeyWords2 CONTENT,CONTINUE,CONTROL,CONTROL-AREA,CONTROLS,CONSOLE,CONSTANT,
-  KeyWords2 CONVERTING,COPY,CORR,CORRESPONDING,COUNT,CURRENCY,
-  KeyWords2 CURRENT,CURSOR,CUSTOM-ATTRIBUTE,CYCLE,DATE,DATE-COMPILED,DATE-WRITTEN,DAY,
-  KeyWords2 DAY-OF-WEEK,DB,DB-ACCESS-CONTROL-KEY,DBCS,DB-DATA-NAME,
-  KeyWords2 DB-EXCEPTION,DB-RECORD-NAME,DB-SET-NAME,DB-STATUS,DE,DEBUG
-  KeyWords2 ITEM,DEBUG-NAME,DEBUG-SUB,DEBUG-CONTENTS,DEBUGGING,
-  KeyWords2 DEBUG-ITEM,DEBUG-LINE,DEBUG-SUB-1,
-  KeyWords2 DEBUG-SUB-2,DEBUG-SUB-3,DECIMAL-POINT,DECLARATIVES,
-  KeyWords2 DEFAULT,DELEGATE,DELEGATE-ID,
-  KeyWords2 DELIMITED,DELIMITER,DEPENDING,DESCENDING,
-  KeyWords2 DESTINATION,DESTINATION-,DETAIL,DISABLE,DISPLAY,DISPLAY-,
-  KeyWords2 DISPLAY-1,DISPLAY-2,DISPLAY-3,DISPLAY-4,DISPLAY-5,
-  KeyWords2 DISPLAY-6,DISPLAY-7,DISPLAY-8,DISPLAY-9,DIVIDE,DOWN,
-  KeyWords2 DUPLICATE,DUPLICATES,DYNAMIC,EGCS,EGI,EJECT,ELSE,EMI,
-  KeyWords2 EMPTY,ENABLE,END,END-ADD,END-CALL,END-CLASS,END-COMPUTE,END
-  KeyWords2 END-DELEGATE, END DELEGATE,
-  KeyWords2 END-DISABLE,END-DIVIDE,END-ENABLE,END-ENUM,END-EVALUATE,
-  KeyWords2 END-IF,ENDING,END-INVOKE,END-MULTIPLY,END-OF-PAGE,END-PERFORM,
-  KeyWords2 END-RECEIVE,END-RETURN,END-CH,
-  KeyWords2 END-SEND,END-START,END-STRING,END-SUBTRACT,END-
-  KeyWords2 TRANSCEIVE,END-UNSTRING,ENTER,ENTRY,ENUM,ENUM-ID,ENUM ID,EOP,
-  KeyWords2 EQUAL,EQUALS,ERASE,ERROR,ESI,EVALUATE,EVERY,EXACT,EXAMINE,EXCEEDS
-  KeyWords2 EXCEPTION,EXCEPTION-OBJECT,EXCLUSIVE,EXIST,EXIT,EXTEND,EXTERNAL,F,FACTORY,FALSE,FD,
-  KeyWords2 FILE-CONTROL,FILE-LIMITS,FILE,FILES,
-  KeyWords2 FINAL,FIND,FINISH,FIRST,FOOTING,FORM,FORMAT,FREE,FROM,
-  KeyWords2 FUNCTION,GENERATE,GET,GIVING,GLOBAL,GO,GOBACK,
-  KeyWords2 GREATER,GROUP,HAVING,HEADING,HIGH VALUE,HIGH-VALUE,HIGH-VALUES,
-  KeyWords2 ID,IF,IN,INPUT-OUTPUT,INCLUDE,INDEX,INDEXED,
-  KeyWords2 INDICATE,INHERITS,INITIAL,INITIALIZE,INITIATE,INPUT,
-  KeyWords2 INSPECT,INSTALLATION,INTERFACE,INTERFACE-ID,INTO,INVALID,
-  KeyWords2 INVOKE,I-O,I-O-CONTROL,IS,JUST,JUSTIFIED,KANJI,KEEP,KEY,
-  KeyWords2 LABEL,LAST,LD,LEADING,LEFT,LENGTH,LESS,LIMIT,LIMITS,
-  KeyWords2 LINAGE,LINAGE-COUNTER,LINE,LINE COUNTER,LINE-COUNTER,
-  KeyWords2 LINES,LINKAGE,LIKE,LOCALLY,LOCAL-STORAGE,LOCK,LOW-VALUE,LOW-
-  KeyWords2 VALUES,LS-AREA,MEMBER,MEMORY,MERGE,MESSAGE,METACLASS,
-  KeyWords2 METHOD,METHOD-ID,MODE,MODE-,MODIFY,MODULES,MORE LABELS,MORE-
-  KeyWords2 LABELS,MOVE,MULTIPLE,MULTIPLY,NATIVE,NEGATIVE,NEXT,NO,
-  KeyWords2 NORMAL,NOT,NULL,NULLS,NUMBER,NUMERIC,NUMERIC EDITED,
-  KeyWords2 NUMERIC-EDITED,OBJECT-COMPUTER,OBJECT,OCCURS,OF,OFF,
-  KeyWords2 OMITTED,ON,ONLY,OPTIONAL,OR,ORDER,ORGANIZATION,
-  KeyWords2 OTHER,OUTPUT,OVERFLOW,OVERRIDE,OWNER,
-  KeyWords2 PADDING,PAGE,PAGE COUNTER,PAGE-COUNTER,
-  KeyWords2 PASSWORD,PERFORM,PF,PH,PLUS,
-  KeyWords2 POINTER,POSITION,POSITIONING,POSITIVE,PRESENT,PREVIOUS,PRINTING,PRIOR,
-  KeyWords2 PRIVATE,PROCEDURE-POINTER,PROCEDURES,PROCEED,PROCESS,PROCESSING,
-  KeyWords2 PROGRAM,PROGRAM-ID,PROTECTED,PROTOTYPE,PUBLIC,PURGE,QUEUE,QUOTE,QUOTES,
-  KeyWords2 RAISE,RAISING,RANDOM,RANGE,RD,READY,REALM,RECEIVE,RECONNECT,RECORD,
-  KeyWords2 RECORDING,RECORD-NAME,RECORDS,RECURSIVE,REDEFINES,REEL,
-  KeyWords2 REFERENCE,REFERENCES,RELATION,RELATIVE,RELEASE,RELOAD,
-  KeyWords2 REMAINDER,REMARKS,REMOVAL,RENAMES,REPEATED,REPLACE,REPLACING,
-  KeyWords2 REPORT,REPORTING,REPORTS,REPOSITORY,RERUN,RESERVE,RESET,
-  KeyWords2 RETAINING,RETRIEVAL,RETURN,RETURN-CODE,RETURNING,
-  KeyWords2 REVERSED,REWIND,RF,RH,RIGHT,ROUNDED,
-  KeyWords2 RUN,SAME,SCREEN,SD,SEARCH,SECURITY,SEGMENT,SEGMENT-
-  KeyWords2 LIMIT,SELF,SEND,SENTENCE,SEPARATE,SEQUENCE,
-  KeyWords2 SEQUENTIAL,SERVICE,SESSION,SESSION-ID,SET,SHARED,SHIFT-IN,SHIFT-
-  KeyWords2 OUT,SIGN,SIZE,SKIP,SORT,SORT-CONTROL
-  KeyWords2 SORT-CORE-SIZE,SORT-FILE-SIZE,SORT-MERGE,SORT-MESSAGE,
-  KeyWords2 SORT-MODE-SIZE,SORT-RETURN,SORT-STATUS,SOURCE,SOURCE-COMPUTER,SPACE,
-  KeyWords2 SPACES,SPECIAL-NAMES,STANDARD,STANDARD-,START,STATIC,
-  KeyWords2 STATUS,STOP,STORE,STRING,
-  KeyWords2 SUB-QUEUE-,SUB-SCHEMA,SUBTRACT,SUFFIX,SUM,SUPER,
-  KeyWords2 SUPPRESS,SYMBOLIC,SYNC,SYNCHRONIZED,TABLE,TALLY,
-  KeyWords2 TALLYING,TAPE,TENANT,TERMINAL,TERMINATE,TEST,TEXT,THAN,
-  KeyWords2 THEN,THROUGH,THRU,TIME,TIMEOUT,TIMES,TITLE,TO,TOP,TRACE,
-  KeyWords2 TRAILING,TRANSCEIVE,TRUE,TYPE,TYPEDEF,UNEQUAL,UNIT,UNSTRING,
-  KeyWords2 UNLOCK,UNTIL,UP,UPON,USAGE,USAGE-MODE,USE,USING,VALID,
-  KeyWords2 VALIDATE,VALUE,VALUES,VARYING,WAIT,WHEN,WHENEVER,WHEN-COMPILED,WHERE,
-  KeyWords2 WITH,WITHIN,WORDS,WORKING-STORAGE,WRITE-ONLY,ZERO,ZEROES,ZEROS,
-  KeyWords2 BINARY,BINARY-,BIT,BYTE,COMPUTATIONAL,COMPUTATIONAL-1,COMPUTATIONAL-2,COMPUTATIONAL-3,
-  KeyWords2 COMPUTATIONAL-4,COMPUTATIONAL-5,COMPUTATIONAL-X,COMPUTATIONAL-N,
-  KeyWords2 COMPUTATIONAL-4,COMPUTATIONAL-5,COMPUTATIONAL-X,COMPUTATIONAL-N,
-  KeyWords2 REFERENCE,SIGNED,UNSIGNED,POINTER,PROPERTY,
-  KeyWords2 PACKED-DECIMAL,COMP-6,COMP-7,COMP-8,COMP-X,COMP-N,COMPLEX
-  KeyWords2 PIC,PICTURE,COMP-1,COMP2-,COMP-3,COMP-5,COMP-9,PACKED DECIMAL
-  KeyWords1 ENVIRONMENT DIVISION,DATA DIVISION,PROGRAM,PROCEDURE DIVISION,
-  KeyWords1 IDENTIFICATION DIVISION,SECTION,PARAGRAPH,
-  KeyWords1 END-PROGRAM,END PROGRAM,
-  KeyWords4 S9,V9
-  KeyWords6 CONNECT,COMMIT,DECLARE,DELETE,DISCONNECT,EXEC,EXECUTE,
-  KeyWords6 EXECUTE IMMEDIATE,END-EXEC,FETCH,FOR,INSERT,
-  KeyWords6 PREPARE,ROLLBACK,SELECT,UPDATE,
-  KeyWords6 CLOSE,OPEN,READ,REWRITE,WRITE,END-READ,END-WRITE,END-REWRITE,END-DELETE
-END
-
-;ออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออ
-; Rich Text Format files: case sensitive
-;ออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออ
-FILES *.RTF
-  GeneralFLAGS 1
-  StringFlags 2
-  BracketPairs { }
-  KeyWords1 \line,\par,\pard
-  RegKeyWords COLOR Cyan \\cf\d+
-  RegKeyWords COLOR Green (?<!\\)\\[A-Z]+-?[0-9]*
-  Macro 1
-    Print {\rtf1 }
-  EndMacro
-END
-
-;ออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออ
-; DEFAULT
-;ออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออ
-FILES *.*
-  GeneralFLAGS  526
-end
+; เจฌฅเ๋ –ขฅโฎข / Colors Example
+;                      ;
+; 00-Black             ; KeyWords1 RegKeyWords1
+; 01-Blue              ; KeyWords2 RegKeyWords2
+; 02-Green             ; KeyWords3 RegKeyWords3
+; 03-Cyan              ; KeyWords4 RegKeyWords4
+; 04-Red               ; KeyWords5 RegKeyWords5
+; 05-Magenta           ; KeyWords6 RegKeyWords6
+; 06-Brown             ; KeyWords7 RegKeyWords7
+; 07-Gray              ; KeyWords8 RegKeyWords8
+; 08-DARKGRAY
+; 09-Lightblue
+; 10 Lightgreen
+; 11-Lightcyan
+; 12-Lightred
+; 13-Lightmagenta
+; 14-Yellow
+; 15-White
+

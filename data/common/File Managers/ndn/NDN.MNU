@@ -1,49 +1,254 @@
-; Necromancer's Dos Navigator menu file... │
-;──────────────────────────────────────────┘
-;Detailed help on the !.! expansion macros is available in the online help
-;under the topic USER MENU -> FILENAME MACROS
->1 Additional menu [NDN Style]
-{menufile="ndn.mn2_"}
-{ncmenufile="nc.mnu_"}
+>1 icacls !.!
+icacls "!:!\!.!"
+>1 dir "!.!" /q
+dir "!:!\!.!" /q
 >1
->1 Unpack ~~!.!~~
- < Enter the file name
- <=~!.!~
- cup386 /1 ~!.!~ %3
->1 Turbo Debugger
- td !.!
+>1 powershell gwmi win32_volume
+powershell gwmi win32_volume  
 >1
->1 EXE Tools
-  >2 Convert EXE to COM
-   C:\TOOLS\EXETLS\EXETOOLS.COM !.! /1 !.COM
-  >2 Cut EXE header
-   C:\TOOLS\EXETLS\EXETOOLS.COM !.! /2
-  >2 Convert COM to EXE
-   C:\TOOLS\EXETLS\EXETOOLS.COM !.! /3 !.EXE
-  >2 Encrypt EXE or COM file
-   C:\TOOLS\EXETLS\EXETOOLS.COM !.! /E
-  >2 Add Header Comment from CommentFile
-   C:\TOOLS\EXETLS\EXETOOLS.COM !.! /C !.!
-  >2 Optimize EXE header
-   =>!.!
+>1 Системные (Systems)
+ >2 Управление компьютером (Computer Management)
+ compmgmt.msc
+ >2 Диспетчер устройств (Device Manager)
+ devmgmt.msc
+ >2 Службы (Services)
+ services.msc
+ >2 Active Directory Пользователи и компьютеры (AD Users and Computers)
+ dsa.msc
+ >2 Диспетчер служб терминалов (Terminal Services Manager)
+ tsadmin.msc
+ >2 Консоль управления GPO (Group Policy Management Console)
+ gpmc.msc
+ >2 Редактор объектов локальной политики (Group Policy Object Editor)
+ gpedit.msc
+ >2 Результирующая политика (результат применения политик)
+ rsop.msc
+ >2 Локальные параметры безопасности
+ secpol.msc
+ >2 Настройка терминального сервера (TS Configuration)
+ tscc.msc
+ >2 Маршрутизация и удаленый доступ (Routing and Remote Access)
+ rrasmgmt.msc
+ >2 Общие папки (Shared Folders)
+ fsmgmt.msc
+ >2 Локальные пользователи и группы (Local users and Groups)
+ lusrmgr.msc
+ >2 Локальная политика безопасности(Local Security Settings)
+ secpol.msc
+ >2 Управление дисками (Disk Management)
+ diskmgmt.msc
+ >2 Active Directory Домены и Доверие(AD Domains and Trusts)
+ domain.msc
+ >2 Active Directory Сайты и Доверие (AD Sites and Trusts)
+ dssite.msc
+ >2 Политика безопасности домена (Domain Security Settings)
+ dompol.msc
+ >2 Политика безопасности контроллера домена (DC Security Settings)
+ dсpol.msc
+ >2 Распределенная файловая система DFS (Distributed File System)
+ dfsgui.msc
+>1 Паенль управления (Control panel)
+ >2 Свойства системы (sysdm.cpl)
+ sysdm.cpl
+ >2 Установка и удаление программ (appwiz.cpl)
+ appwiz.cpl
+ >2 Учетные записи пользователей (nusrmgr.cpl)
+ nusrmgr.cpl
+ >2 Управление печатью (Printmanagement.msc)
+ Printmanagement.msc
+ >2 Дата и время (timedate.cpl)
+ timedate.cpl
+ >2 Свойства экрана (desk.cpl)
+ desk.cpl
+ >2 Брэндмауэр Windows (firewall.cpl)
+ firewall.cpl
+ >2 Мастер установки оборудования (hdwwiz.cpl)
+ hdwwiz.cpl
+ >2 Свойства Интернет (inetcpl.cpl)
+ inetcpl.cpl
+ >2 Специальные возможности (access.cpl)
+ access.cpl
+ >2 Свойства мыши (control Main.cpl)
+ control Main.cpl
+ >2 Свойства клавиатуры (control Main.cpl,@1)
+ control Main.cpl,@1
+ >2 Язык и региональные возможности (intl.cpl)
+ intl.cpl
+ >2 Игровые устройства (joy.cpl)
+ joy.cpl
+ >2 Свойства: Звуки и аудиоустройства (mmsys.cpl)
+ mmsys.cpl
+ >2 Мастер настройки сети (netsetup.cpl)
+ netsetup.cpl
+ >2 Управление электропитанием (powercfg.cpl)
+ powercfg.cpl
+ >2 Центр обеспечения безопасности (wscui.cpl)
+ wscui.cpl
+ >2 Автоматическое обновление (wuaucpl.cpl)
+ wuaucpl.cpl
+ >2 Сетевые подключения (ncpa.cpl)
+ ncpa.cpl
 >1
->1 Run Microsoft Word
- winword.exe
+>1 Administrative
+ >2 view !.! shares
+ net view !.! /ALL
+ >2 Restart !.!
+ shutdown /r /m !.! /t 30
+ >2 Shutdown !.!
+ shutdown /s /m !.! /t 30
+ >2 delet share
+ net share !.! /delete
+ >2 echo
+ echo !.!
+
+
 >1
->1 Misc. Windows commands
-  >2 Create useful start menu shortcuts
-    >3 ... in German
-     @echo off
-     echo creating special start menu directories...
-     if not .%OS%.==.Windows_NT. exit
-     set TDIR=%USERPROFILE%\StartmenБ
-     md "%TDIR%\Drucker.{2227A280-3AEA-1069-A2DE-08002B30309D}"
-     md "%TDIR%\Netzwerk- und DFЪ Verbindungen.{7007ACC7-3202-11D1-AAD2-00805FC1270E}"
-     md "%TDIR%\Netzwerkumgebung.{208D2C60-3AEA-1069-A2D7-08002B30309D}"
-     md "%TDIR%\Papierkorb.{645FF040-5081-101B-9F08-00AA002F954E}"
-     md "%TDIR%\Systemsteuerung.{21EC2020-3AEA-1069-A2DD-08002B30309D}"
-     md "%TDIR%\Temporary Internet Files.{7BD29E00-76C1-11CF-9DD0-00A0C9034933}"
-  >2 Add to and play in WINAMP
-  set TMPM3U=%TEMP%\winamp.m3u
-  type %1 > %TMPM3U%
-  D:\Programme\Winamp\winamp.exe /play %TMPM3U%
+>1 t~e~st
+   >2 !!.!! = !.!
+   Echo -------------1
+   echo !.!
+   >2 $$.$$ = $.$
+   Echo -------------2
+   echo $.$
+   >2 ##.## = #.#
+   Echo -------------3
+   echo #.#
+>2
+   >2 ~~!!.!!~~ = ~!.!~
+   Echo -------------1
+   echo ~!.!~
+   >2 ~~$$.$$~~ = ~$.$~
+   Echo -------------2
+   echo ~$.$~
+   >2 ~~##.##~~ = #.#
+   Echo -------------3
+   echo ~#.#~
+>2
+   >2 !!:!!\!!.!! = !:!\!.!
+   Echo -------------1
+   echo !:!\!.!
+   >2 $$:$$\$$.$$ = $:$\$.$
+   Echo -------------2
+   echo $:$\$.$
+   >2 ##:##\##.## = #:#\#.#
+   Echo -------------2
+   echo #:#\#.#
+>2
+   >2 !!:!!~~\!!.!! = !:!~\!.!
+   Echo -------------1
+   echo !:!~\!.!
+   >2 $$:$$~~\$$.$$ = $:$~\$.$
+   Echo -------------2
+   echo $:$~\$.$
+   >2 ##:##~~\##.## = #:#~\#.#
+   Echo -------------2
+   echo #:#~\#.#
+>2
+   >2 !!:!!~~\~~!!.!!~ = !:!~\~!.!~
+   Echo -------------1
+   echo !:!~\~!.!~
+   >2 $$:$$~~\~~$$.$$~ = $:$~\~$.$~
+   Echo -------------2
+   echo $:$~\~$.$~
+  >2 ##:##~~\~~##.##~ = #:#~\~#.#~
+   Echo -------------1
+   echo #:#~\~#.#~
+>2
+   >2 !!: = !:
+   Echo -------------1
+   echo !:
+   >2 $$: = $:
+   Echo -------------2
+   echo $:
+  >2 ##: = #:
+   Echo -------------1
+   echo #:
+>2
+   >2 !!\ = !\
+   Echo -------------1
+   echo !\!
+   >2 $$\ = $\
+   Echo -------------2
+   echo $\
+  >2 ##\ = #\
+   Echo -------------1
+   echo #\
+>2
+   >2 %1 (list of selected files on active panel)
+   Echo -------%1
+   Type %1
+   >2 %2 (list of selected files on passive panel)
+   Echo -------%2
+   Type %2
+
+
+>1
+>1 Дискеты (Floppy)
+   >2 Прочитать содержимое дискеты в файл
+   >3 ~A~: -> !:!\floppy.img
+   <=!:!\floppy.img
+   @dskread.exe a %3
+   >3 ~B~: -> !:!\floppy.img
+   <=!:!\floppy.img
+   @dskread.exe b %3
+   >2 Записать файл-образ~ !.! ~на дискету
+   >3 ~ !.! ~-> ~A~
+   @dskwrite.exe !.! a
+   >3 ~ !.! ~-> ~B~
+   @dskwrite.exe !.! b
+   >2
+   >2 Форм~а~тирование дискеты ..
+    >3 Дисковод ~A~
+     >4 /~F~ - Полное форматирование
+     @format a: /v:Garl
+     >4 /~Q~ - Быстрое форматирование
+     @format a: /v:Garl /Q
+     >4 /~C~ - Форматирование с проверкой
+     @format a: /v:Garl /C
+     >4 /~S~ - Форматирование с переносом системных файлов
+     @format a: /v:Garl /S
+     >4
+     >4 /Q /S Пользовательское
+     <=format A: /Q /S
+     %3
+    >3 Дисковод ~B~
+     >4 /~F~ - Полное форматирование
+     @format b: /v:Garl
+     >4 /~Q~ - Быстрое форматирование
+     @format b: /v:Garl /Q
+     >4 /~C~ - Форматирование с проверкой
+     @format b: /v:Garl /C
+     >4 /~S~ - Форматирование с переносом системных файлов
+     @format b: /v:Garl /S
+     >4 /Q /S Пользовательское
+     <=format B: /Q /S
+     %3
+
+>1 ~C~равнить.. (~C~ompare)
+ >2 ~1~ Текстовые    "!.!" и "$.$"
+    fc "!:!\!.!" "$:$\$.$"
+ >2 ~2~ Без пробелов "!.!" и "$.$" /~W~
+    fc /W "!:!\!.!" "$:$\$.$"
+ >2 ~3~ Без РеГиСтРа "!.!" и "$.$" /~C~
+    fc /C "!:!\!.!" "$:$\$.$"
+ >2 ~4~ Двоичные     "!.!" и "$.$" /~B~
+    fc /B "!:!\!.!" "$:$\$.$"
+ >2 ~5~ В ASCII      "!.!" и "$.$" /~L~
+    fc /L /N "!:!\!.!" "$:$\$.$"
+
+ >2 <= fc /B "!.!" "$.$" >"!.dif"
+    <=fc /B "!:!\!.!" "$:$\$.$" >"!.dif"
+    @%3
+ >2
+  >2 ~6~ Текст "!.!" и "$.$" >>!.DIF
+rem  <=!.dif
+  fc !:!~\~!.!~ $:$~\~$.$~ >>!.dif
+
+  >2
+ >2 ~d~iff.exe "!.!"(new) и "$.$"(old) >>!.patch
+ E:\ndn\source\tools\diff.exe -urN -w $:$~\$.$ !:!~\!.!  >> !.patch
+ >2 Сравнить k~D~iff'ом
+ start "" "C:\Program Files\KDiff3\kdiff3.exe" "!:!~\!.!" "$:$~\$.$"
+  
+
+

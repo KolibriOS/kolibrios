@@ -27,18 +27,17 @@
 } f70;
 
 :struct BDVK {
-	dword	readonly:1, hidden:1, system:1, volume_label:1, isfolder:1, notarchived:1, :0;
-	byte	type_name;
-	byte	rez1, rez2, selected;
-	dword   timecreate;
-	date 	datecreate;
-	dword	timelastaccess;
-	date	datelastaccess;
-	dword	timelastedit;
-	date	datelastedit;
-	dword	sizelo;
-	dword	sizehi;
-	char	name[518];
+	dword   readonly:1, hidden:1, system:1, volume_label:1, isfolder:1, notarchived:1, :0;
+	byte    type_name, rez1, rez2, selected; //name encoding
+	dword   timecreate; //+8
+	date    datecreate;
+	dword   timelastaccess;
+	date    datelastaccess;
+	dword   timelastedit;
+	date    datelastedit;
+	dword   sizelo;
+	dword   sizehi;
+	char    name[520];
 };
 #define ATR_READONLY 1
 #define ATR_HIDDEN 2
