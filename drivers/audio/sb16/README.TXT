@@ -64,7 +64,7 @@ Now everything should be OK.
 ;It works for a part of the second and then stops, but system doesn't hang------
 Go to 'config.inc' of my driver and change 'sb_irq_num' value from 5 to 7.
 Then save, rebuild driver (compile 'sound.asm'), put 'sound' to /sys/drivers/
-(you need to rename file 'sound' to 'sound.obj'), restart kernel and try again
+(you need to rename file 'sound' to 'sound.sys'), restart kernel and try again
 to produce sound.
 
 ;-------------------------------------------------------------------------------

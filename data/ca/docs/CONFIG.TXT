@@ -57,17 +57,17 @@ c) Two previous points sets background for a long time (until next
    skin, for detailed comments look at distributive sources.
 
 6. Sound.
-   Driver sound.obj, which is located on ramdisk by default, is intended for
+   Driver sound.sys, which is located on ramdisk by default, is intended for
    south bridges Intel ICH, ICH0, ICH2, ICH3, ICH4, ICH5, ICH6, ICH7 and
    NVidia NForce, NForce 2, NForce 3, NForce 4. If you have SB16-compatible
-   sound card, remove sound.obj and rename sb16.obj from the folder 'drivers'
-   to sound.obj. If you have controller sis7012, rename sis.obj from root
-   folder in distributive to sound.obj and copy it to floppy or image to
-   the folder 'drivers' (replacing old). The driver fm801.obj can be useful
-   for ForceMedia FM801 controller, the driver vt8235.obj - for VIA chipsets,
-   the driver emu10k1x.obj - for EMU10K1X audioprocessor, all are intended to
+   sound card, remove sound.sys and rename sb16.sys from the folder 'drivers'
+   to sound.sys. If you have controller sis7012, rename sis.sys from root
+   folder in distributive to sound.sys and copy it to floppy or image to
+   the folder 'drivers' (replacing old). The driver fm801.sys can be useful
+   for ForceMedia FM801 controller, the driver vt8235.sys - for VIA chipsets,
+   the driver emu10k1x.sys - for EMU10K1X audioprocessor, all are intended to
    similar with previous case use: copy it to the folder 'drivers' as
-   'sound.obj', replacing the old file.
+   'sound.sys', replacing the old file.
 
 7. Bus Disconnect.
    The application KBD (Kolibri Bus Disconnect) allows to disconnect processor

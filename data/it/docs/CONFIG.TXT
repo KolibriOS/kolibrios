@@ -66,20 +66,20 @@ Tra parentesi vengono riportati i nomi degli eseguibili dei singoli programmi.
    nella cartella skins.
 
 6. Suono. //non trovo sis7012
-   I driver sound.obj, sono compatibili con le schede audio Intel ICH,
+   I driver sound.sys, sono compatibili con le schede audio Intel ICH,
    ICH0, ICH2, ICH3, ICH4, ICH5, ICH6, ICH7 e NVidia NForce, NForce 2,
    NForce 3, NForce 4.
    Se si ha una scheda audio compatibile con SB16, allora è necessario
-   rimuovere il file sound.obj dal ram Disk e rinominare il file sb16.obj
-   dalla cartella 'drivers' in sound.obj.
-   Se si ha una scheda audio sis7012, è necessario rinominare il file sis.obj
+   rimuovere il file sound.sys dal ram Disk e rinominare il file sb16.sys
+   dalla cartella 'drivers' in sound.sys.
+   Se si ha una scheda audio sis7012, è necessario rinominare il file sis.sys
    dalla cartella radice del floppy, e copiarlo nella cartella driver nella ram,
    sostituendo il vecchio file.
-   Il driver fm801.obj serve per le schede audio ForceMedia FM801, il
-   driver vt8235.obj per i chipset VIA e i driver emu10k1x.obj per gli
+   Il driver fm801.sys serve per le schede audio ForceMedia FM801, il
+   driver vt8235.sys per i chipset VIA e i driver emu10k1x.sys per gli
    audioprocessori EMU10K1X. La loro inizializzazione è analoga quella del
    file sis7012, è necessario copiarli nella cartella drivers, rinominadoli
-   in sis.obj e rimuovendo il vecchio file.
+   in sis.sys e rimuovendo il vecchio file.
 
 7. Bus Disconnect.
    La applicazione KBD (Kolibri Bus Disconnect), permette di disconnettere
