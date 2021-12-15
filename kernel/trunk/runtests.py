@@ -16,7 +16,7 @@ import filecmp
 sys.path.append('test')
 import common
 
-use_umka = False
+use_umka = True
 
 
 def log(s, end="\n"):
@@ -202,7 +202,15 @@ def build_umka_asm(object_output_dir):
 
 
 def cc(src, obj, include_path):
-    command = "clang "
+    if tool_exists("i686-w64-mingw32-gcc"):
+        compiler = "i686-w64-mingw32-gcc"
+    elif tool_exists("clang"):
+        compiler = "clang"
+    else:
+        print("No compiler found to compile UMKa (tried i686-w64-mingw32-gcc and clang)")
+        print("  Please make sure you have installed llvm-mingw or clang")
+        print("  If they're installled consider updating PATH variable")
+    command = f"{compiler} "
     command += "-Wno-everything -std=c11 -g -O0 -fno-pie -m32 -masm=intel -c "
     command += "-D_FILE_OFFSET_BITS=64 -DNDEBUG -D_POSIX_C_SOURCE=200809L "
     command += f"-I {include_path} {src} -o {obj}"
@@ -212,11 +220,19 @@ def cc(src, obj, include_path):
 
 
 def link(objects):
+    if tool_exists("i686-w64-mingw32-gcc"):
+        compiler = "i686-w64-mingw32-gcc"
+    elif tool_exists("clang"):
+        compiler = "clang"
+    else:
+        print("No compiler found to compile UMKa (tried i686-w64-mingw32-gcc and clang)")
+        print("  Please make sure you have installed llvm-mingw or clang")
+        print("  If they're installled consider updating PATH variable")
     if sys.platform == "linux" or sys.platform == "linux2":
         linker_script = "-T umka/umka.ld"
     else:
         linker_script = "-Wl,/ALIGN:65536 -Wl,/MAP:umka.map "
-    command = "clang "
+    command = f"{compiler} "
     command += "-Wno-everything "
     command += f"-no-pie -m32 -o umka_shell.exe -static {linker_script} "
     command += " ".join(objects)
