@@ -309,6 +309,9 @@ def download_umka():
 			print("Couldn't clone UMKa repo")
 			exit()
 	os.chdir("umka")
+	if os.system("git checkout trunk") != 0:
+		print("Couldn't checkout trunk branch of UMKa")
+		exit()
 	os.system("git pull")
 	os.chdir("../")
 
