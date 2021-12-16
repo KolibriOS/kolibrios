@@ -942,13 +942,10 @@ for i,v in ipairs(raw_files) do
   raw_file = v[1]
   local_file = v[2]
 
-  if raw_file ~= "/" then
-    slash_pos = 0
-    while true do
-      slash_pos = string.find(raw_file, '/', slash_pos + 1)
-      if not slash_pos then break end
-      table.insert(raw_dirs, string.sub(raw_file, 1, slash_pos - 1))
-    end
+  cur_dir = ""
+  for dir in string.gmatch(raw_file, "([^/]+)/") do
+    cur_dir = cur_dir .. "/" .. string.upper(dir)
+    raw_dirs[cur_dir] = true
   end
 
   -- tup does not want to see hidden files as dependencies
@@ -957,17 +954,16 @@ for i,v in ipairs(raw_files) do
   end
 end
 
--- img_files and extra_files have some common dirs with different case
-for i,d in ipairs(raw_dirs) do
-  raw_dirs[i] = string.upper(raw_dirs[i])
-end
+-- Sorting is needed to mkdir /one before /one/two
+raw_dirs_sorted = {}
+for k in pairs(raw_dirs) do table.insert(raw_dirs_sorted, k) end
+table.sort(raw_dirs_sorted)
+raw_dirs = raw_dirs_sorted
 
 -- make folders
 table.sort(raw_dirs)
-for i,v in ipairs(raw_dirs) do
-  if v ~= raw_dirs[i-1] then
-    make_raw_command = make_raw_command .. ' && mmd -i kolibri.raw@@1M "::' .. v .. '"'
-  end
+for _, dir in pairs(raw_dirs) do
+  make_raw_command = make_raw_command .. ' && mmd -i kolibri.raw@@1M "::' .. dir .. '"'
 end
 
 -- copy files
