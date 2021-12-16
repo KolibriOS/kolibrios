@@ -3,20 +3,21 @@
 # Delay time means how much the system should wait, before running the next line. It is measured in 1/100 seconds.
 # If delay is negative, wait for termination of the spawned process. Otherwise, simply wait
 #
-#/SYS/CROPFLAT	"XS800 YS480"	1	# set limits of screen
-#/SYS/LOADDRV	COMMOUSE	1	# serial mouse driver
-#/SYS/DEVELOP/BOARD	""	0	# Load DEBUG board
-/SYS/SETUP		BOOT	0	# Load device settings
-/SYS/LOADDRV		RDC	0	# videodriver for RDC M2010/M2012
-/SYS/@TASKBAR		""	0	# Start taskbar
-/SYS/ESKIN		""	0	# Set style
-/SYS/@ICON		""	0	# Multithread icon
-/SYS/NETWORK/NETCFG	A	0	#
-/SYS/NETWORK/@ZEROCONF	""	0	# Network configuration
-/SYS/@VOLUME		""	0	# Start volume daemon
-/SYS/@SS		ASSM	0	# Screensaver
-/SYS/@DOCKY		""	0	# Start docky
-/SYS/TMPDISK		A0	-1	# Add virtual RAM disk /tmp0/1
-/SYS/SEARCHAP		""	-1	# Search and mount additional system directory
-/SYS/@HOTANGLES         ""      0       # Start Hot Angles
+#/SYS/CROPFLAT          "XS800 YS480"	1	# set limits of screen
+#/SYS/LOADDRV           COMMOUSE	1	# serial mouse driver
+#/SYS/DEVELOP/BOARD     ""   0	# Load DEBUG board
+/SYS/SETUP              BOOT 0	# Load device settings
+/SYS/LOADDRV            RDC  0	# videodriver for RDC M2010/M2012
+/SYS/@TASKBAR           ""   0	# Start taskbar
+/SYS/ESKIN              ""   0	# Set style
+/SYS/@ICON              ""   0	# Multithread desktop icons
+/SYS/TMPDISK            A0   0	# Add virtual RAM disk /tmp0/1
+/SYS/@RESHARE           ""   0	# Shared resources
+/SYS/@DOCKY             ""   0	# Start docky
+/SYS/NETWORK/NETCFG     A    0	# Init network driver
+/SYS/NETWORK/@ZEROCONF  ""   0	# Network configuration
+/SYS/@SS                ASSM 0	# Screensaver
+/SYS/@VOLUME            ""   0	# Start volume daemon
+/SYS/SEARCHAP           ""   0	# Search and mount additional system directory
+/SYS/@HOTANGLES         ""   0	# Start Hot Angles
 ### Hello, ASM World! ###

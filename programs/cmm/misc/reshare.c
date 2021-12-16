@@ -1,4 +1,4 @@
-#define MEMSIZE 1024*50
+#define MEMSIZE 1024*20
 #define ENTRY_POINT #main
 
 #include "../lib/fs.h"
@@ -25,12 +25,12 @@ void main()
 	icons16.load("/sys/icons16.png"); size16 = icons16.h * 18 * 4;
 
 	shared_i32 = memopen("ICONS32", size32, SHM_CREATE+SHM_WRITE);
-	debugval("@reshare shared_i32", shared_i32);
 	memmov(shared_i32, icons32.imgsrc, size32);
+	img_destroy stdcall(icons32.image);
 
 	shared_i16 = memopen("ICONS18", size16, SHM_CREATE + SHM_WRITE);
 	memmov(shared_i16, icons16.imgsrc, size16);
-	debugval("@reshare shared_i32", shared_i16);
+	img_destroy stdcall(icons16.image);
 
 	shared_i16w = memopen("ICONS18W", size16, SHM_CREATE + SHM_WRITE);
 
@@ -40,10 +40,9 @@ UPDATE_ICONS18WORK:
 	$pop eax
 	IF (sc.work != EAX) {
 		icons16w.load("/sys/icons16.png");
-		//icons16w.replace_color(0xffFFFfff, sc.work);
-		//icons16w.replace_color(0xffCACBD6, MixColors(sc.work, 0, 200));	
 		icons16w.replace_2colors(0xffFFFfff, sc.work, 0xffCACBD6, MixColors(sc.work, 0, 200));
 		memmov(shared_i16w, icons16w.imgsrc, size16);
+		img_destroy stdcall(icons16w.image);
 	}
 
 	loop() IF(WaitEvent()==evDesktop) GOTO UPDATE_ICONS18WORK;

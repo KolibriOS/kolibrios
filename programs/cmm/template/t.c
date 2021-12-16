@@ -1,4 +1,4 @@
-#define MEMSIZE 4096*40
+#define MEMSIZE 1024*50
 
 #include "../lib/gui.h"
 #include "../lib/fs.h"

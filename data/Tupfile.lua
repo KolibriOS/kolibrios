@@ -651,13 +651,13 @@ end -- tup.getconfig('NO_JWASM') ~= 'full'
 -- Programs that require C-- to compile.
 if tup.getconfig('NO_CMM') ~= 'full' then
 tup.append_table(img_files, {
+ {"@RESHARE", PROGS .. "/cmm/misc/reshare.com"},
  {"APP_PLUS", PROGS .. "/cmm/app_plus/app_plus.com"},
  {"EASYSHOT", PROGS .. "/cmm/misc/easyshot.com"},
  {"MOUSECFG", PROGS .. "/cmm/mousecfg/mousecfg.com"},
  {"BARSCFG", PROGS .. "/cmm/barscfg/barscfg.com"},
  {"SYSPANEL", PROGS .. "/cmm/misc/software_widget.com"},
  {"SYSMON", PROGS .. "/cmm/sysmon/sysmon.com"},
- {"QUARK", PROGS .. "/cmm/quark/quark.com"},
  {"TMPDISK", PROGS .. "/cmm/tmpdisk/tmpdisk.com"},
  {"DEVELOP/CLIPVIEW", PROGS .. "/cmm/clipview/clipview.com"},
  {"DEVELOP/MENU", PROGS .. "/cmm/menu/menu.com"},
@@ -686,6 +686,7 @@ tup.append_table(extra_files, {
  {"kolibrios/utils/dicty.kex", PROGS .. "/cmm/dicty/dicty.com"},
  {"kolibrios/utils/notes", PROGS .. "/cmm/notes/notes.com"},
  {"kolibrios/utils/osupdate", PROGS .. "/cmm/misc/osupdate.com"},
+ {"kolibrios/utils/quark", PROGS .. "/cmm/quark/quark.com"},
 })
 end -- tup.getconfig('NO_CMM') ~= 'full'
 

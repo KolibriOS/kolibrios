@@ -1,10 +1,11 @@
 /*
  * System Monitor
- * version 1.36
+ * version 1.37
  * Author: Leency
 */
 
 #define MEMSIZE 4096*30
+#define NO_DLL_INIT
 
 //===================================================//
 //                                                   //
@@ -16,7 +17,6 @@
 #include "../lib/fs.h"
 #include "../lib/list_box.h"
 
-#include "../lib/obj/libimg.h"
 #include "../lib/obj/box_lib.h"
 
 #include "../lib/patterns/select_list.h"
@@ -78,6 +78,8 @@ int proc_list[256];
 
 checkbox show_system = { T_SHOW_SYSTEM, false };
 
+char* shared_icons_16;
+
 sensor cpu;
 sensor ram;
 sensor rd;
@@ -95,7 +97,6 @@ int right_w;
 
 void load_lib()
 {
-	load_dll(libimg, #libimg_init,1);
 	load_dll(boxlib, #box_lib_init,0);
 }
 
@@ -103,6 +104,7 @@ void main()
 {
 	int btn;
 	load_lib();
+	shared_icons_16 = memopen("ICONS18W", NULL, SHM_READ);
 	@SetEventMask(EVM_REDRAW + EVM_KEY + EVM_BUTTON + EVM_MOUSE + EVM_MOUSE_FILTER);
 	loop() switch(@WaitEventTimeout(50))
 	{
@@ -295,8 +297,12 @@ void MonitorTmp()
 
 void DrawIconWithText(dword _x, _y, _icon, _title)
 {
-	int size = DrawIcon16(_x, _y, sc.work, _icon);
-	WriteTextWithBg(_x+ICONGAP, _y + size - 16, 0xD0, sc.work_text, _title, sc.work);
+	if (shared_icons_16) {
+		PutPaletteImage(18*18*4*_icon + shared_icons_16, 18, 18,_x, _y, 32, 0);
+	} else {
+		_x -= ICONGAP;
+	}
+	WriteTextWithBg(_x+ICONGAP, _y + 2, 0xD0, sc.work_text, _title, sc.work);
 }
 
 dword GetCpuLoad(dword max_h)
