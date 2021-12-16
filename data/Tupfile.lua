@@ -926,7 +926,7 @@ end
 
 tup.append_table(raw_files, extra_files)
 
-make_raw_command = '^ MKIMG kolibri.raw^ ' -- for tup: don't write full command to logs
+make_raw_command = '^ MKRAW kolibri.raw^ ' -- for tup: don't write full command to logs
 make_raw_command = make_raw_command .. "dd if=/dev/zero of=kolibri.raw bs=1MiB count=128 2>&1"
 make_raw_command = make_raw_command .. " && parted --script kolibri.raw mktable gpt"
 make_raw_command = make_raw_command .. " && parted --script kolibri.raw unit MiB mkpart primary fat32 1 127"
@@ -967,11 +967,17 @@ for _, dir in pairs(raw_dirs) do
   make_raw_command = make_raw_command .. ' && mmd -i kolibri.raw@@1M "::' .. dir .. '"'
 end
 
+-- Put copying of raw_files into separate script to avoid 'execl: Argument list too long'
+make_raw_command2 = "true"
 -- copy files
 for i,v in ipairs(raw_files) do
   local_file = v[2]
-  make_raw_command = make_raw_command .. ' && mcopy -moi kolibri.raw@@1M "' .. local_file .. '" "::' .. v[1] .. '"'
+  make_raw_command2 = make_raw_command2 .. ' && mcopy -moi kolibri.raw@@1M "' .. local_file .. '" "::' .. v[1] .. '"'
 end
 
+make_raw_command2_file = "make_raw_command2_file"
+tup.definerule{inputs = {}, command = "echo '" .. make_raw_command2 .. "' > " .. make_raw_command2_file, outputs = {make_raw_command2_file}}
+
+table.insert(input_deps, make_raw_command2_file)
 -- generate tup rule for kolibri.raw
-tup.definerule{inputs = input_deps, command = make_raw_command, outputs = {"kolibri.raw"}}
+tup.definerule{inputs = input_deps, command = make_raw_command .. " && bash " .. make_raw_command2_file, outputs = {"kolibri.raw"}}
