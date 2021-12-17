@@ -265,18 +265,17 @@ void draw_window() {
 void DrawTopPanel()
 {
 	int kfont_width;
-	int button_y;
 	//Mode depended
 	if (window_mode == WINDOW_MODE_NORMAL)
 	{
-		button_y = 46;
+		#define BIGBUTTON_Y 46
 		img_draw stdcall(skin.image, 0, 0, skin.w, skin.h, 0, 0);
 		if (playback_mode != PLAYBACK_MODE_STOPED) 
-			img_draw stdcall(skin.image, 47, button_y, 41, 21, skin.w+1, WIN_H_SMALL+1);
+			img_draw stdcall(skin.image, 47, BIGBUTTON_Y, 41, 21, skin.w+1, WIN_H_SMALL+1);
 		if (repeat) 
-			img_draw stdcall(skin.image, 217, button_y+2, 17,17,skin.w+43, WIN_H_SMALL+1);
+			img_draw stdcall(skin.image, 189, BIGBUTTON_Y+5, 14,14,skin.w+44, WIN_H_SMALL+3);
 		if (shuffle) 
-			img_draw stdcall(skin.image, 236, button_y+2, 17,17, skin.w+62, WIN_H_SMALL+1);
+			img_draw stdcall(skin.image, 212, BIGBUTTON_Y+5, 14,14, skin.w+59, WIN_H_SMALL+3);
 
 		if (!work_folder) DrawPixieTitle("Pixie");
 		else DrawPixieTitle(#work_folder + strrchr(#work_folder, '/'));
@@ -284,30 +283,30 @@ void DrawTopPanel()
 			theme.color_top_panel_song_name, list.font_type, #current_filename);
 		if (kfont_width>skin.w-15) DrawBar(skin.w-1, 24, 1, list.item_h, theme.color_list_border);
 	 	//Playing control buttons
-		DefineHiddenButton(7, button_y, 38, 20, BUTTON_PLAYBACK_PREV);
-		DefineHiddenButton(48, button_y, 38, 20, BUTTON_PLAYBACK_PLAY_PAUSE);
-		DefineHiddenButton(87, button_y, 38, 20, BUTTON_PLAYBACK_NEXT);
+		DefineHiddenButton(7, BIGBUTTON_Y, 38, 20, BUTTON_PLAYBACK_PREV);
+		DefineHiddenButton(48, BIGBUTTON_Y, 38, 20, BUTTON_PLAYBACK_PLAY_PAUSE);
+		DefineHiddenButton(87, BIGBUTTON_Y, 38, 20, BUTTON_PLAYBACK_NEXT);
 		//Window control buttons
 		DefineHiddenButton(Form.width - 27, 1, 26, 15, BUTTON_WINDOW_CLOSE);
 		DefineHiddenButton(Form.width - 55, 1, 26, 15, BUTTON_WINDOW_MINIMIZE);
 		DefineHiddenButton(Form.width - 83, 1, 26, 15, BUTTON_WINDOW_REDUCE);
 		//Other buttons
-		DefineHiddenButton(218, button_y+3, 17, 16, BUTTON_REPEAT);
-		DefineHiddenButton(237, button_y+3, 17, 16, BUTTON_SHUFFLE);
-		DefineHiddenButton(270, button_y+3, 17, 16, BUTTON_OPEN_DIALOG);
-		DefineHiddenButton(289, button_y+3, 17, 16, BUTTON_SHOW_VOLUME);
+		DefineHiddenButton(185, BIGBUTTON_Y+3, 22, 16, BUTTON_REPEAT);
+		DefineHiddenButton(208, BIGBUTTON_Y+3, 22, 16, BUTTON_SHUFFLE);
+		DefineHiddenButton(259, BIGBUTTON_Y+3, 18, 16, BUTTON_OPEN_DIALOG);
+		DefineHiddenButton(289, BIGBUTTON_Y+3, 18, 16, BUTTON_SHOW_VOLUME);
 	}
 	else if (window_mode == WINDOW_MODE_SMALL)
 	{
-		button_y = 7;
+		#define SMBUTTON_Y 7
 		img_draw stdcall(skin.image, 0, 0, WIN_W_SMALL, WIN_H_SMALL, skin.w-1, 0);
 		if (playback_mode != PLAYBACK_MODE_STOPED) 
-			img_draw stdcall(skin.image, 46, button_y-1, 27, 19, skin.w+83, WIN_H_SMALL+1);
+			img_draw stdcall(skin.image, 46, SMBUTTON_Y-1, 27, 19, skin.w+83, WIN_H_SMALL+1);
 		DefineHiddenButton(0, 0, WIN_W_SMALL, WIN_H_SMALL, 99 + BT_NOFRAME);
 	 	//Playing control buttons
-		DefineHiddenButton(20, button_y, 24, 16, BUTTON_PLAYBACK_PREV);
-		DefineHiddenButton(46, button_y, 24, 16, BUTTON_PLAYBACK_PLAY_PAUSE);
-		DefineHiddenButton(72, button_y, 24, 16, BUTTON_PLAYBACK_NEXT);
+		DefineHiddenButton(20, SMBUTTON_Y, 24, 16, BUTTON_PLAYBACK_PREV);
+		DefineHiddenButton(46, SMBUTTON_Y, 24, 16, BUTTON_PLAYBACK_PLAY_PAUSE);
+		DefineHiddenButton(72, SMBUTTON_Y, 24, 16, BUTTON_PLAYBACK_NEXT);
 		//Window control buttons
 		DefineHiddenButton(Form.width - 20, 1, 19, 13, BUTTON_WINDOW_CLOSE);
 		DefineHiddenButton(Form.width - 20, 16, 19, 13, BUTTON_WINDOW_REDUCE);
