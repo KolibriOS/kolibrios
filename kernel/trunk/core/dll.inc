@@ -172,6 +172,10 @@ srv_handlerEx:
         jae     .fail
 
         mov     eax, [ecx+handle]
+
+        cmp     eax, OS_BASE
+        jae     .fail
+
         cmp     [eax+SRV.magic], ' SRV'
         jne     .fail
 
