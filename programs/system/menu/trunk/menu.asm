@@ -1013,9 +1013,9 @@ align 4
 	add ebx, ecx
 	mcall 65, ebx, (18 shl 16) + 18, [tmp], 32, 0, 0
 
-	pop ebp edi esi ecx
-
 @@:
+	pop ebp edi esi ecx
+	
 	pop	edx
 	ret
 ;------------------------------------------------------------------------------
