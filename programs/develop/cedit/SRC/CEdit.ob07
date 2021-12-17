@@ -28,7 +28,7 @@ IMPORT
     RW, Ini, EB := EditBox, Icons, Tabs, Timer;
 
 CONST
-    HEADER = "CEdit (11-dec-2021)";
+    HEADER = "CEdit (17-dec-2021)";
 
     ShellFilter = "";
     EditFilter = "SH|INC|TXT|ASM|OB07|C|CPP|H|PAS|PP|LUA|INI|JSON";
@@ -916,8 +916,10 @@ BEGIN
                 IF nov = NIL THEN
                     error("error opening file")
                 ELSE
+                	T.SetPos(nov, 0, 0);
                     insert(textsCount, nov);
-                    T.SetPos(nov, 0, 0)
+                    Scroll.setValue(hScroll, 0);
+                    Scroll.setValue(vScroll, 0)
                 END
             ELSE
                 SwitchTab(n)
@@ -1814,7 +1816,8 @@ BEGIN
                         |45: key := ORD("X")
                         |46: key := ORD("C")
                         |47: key := ORD("V")
-                        |49: key := -1;
+                        |49,
+                         20: key := -1;
                              NewFile
                         ELSE
                             key := -1
@@ -2011,6 +2014,10 @@ BEGIN
                     leftButton := FALSE;
                     T.selectWord(text);
                     repaint
+                ELSIF Tabs.DblClicked(tabs, x + LEFT, y + TOP) THEN
+                	leftButton := FALSE;
+                	NewFile;
+                	repaint
                 END
             ELSE
                 firstClickX := x;

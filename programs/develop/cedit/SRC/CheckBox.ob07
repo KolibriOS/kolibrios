@@ -24,8 +24,10 @@ IMPORT G := Graph, K := KolibriOS, U := Utils;
 
 CONST
 	padding = 4;
-    fontWidth = K.fontWidth;
-    fontHeight = K.fontHeight;
+	fontWidth = K.fontWidth;
+	fontHeight = K.fontHeight;
+	bColor = 0FFFFFFH;
+	fColor = 0008000H;
 
 
 TYPE
@@ -43,21 +45,30 @@ TYPE
 PROCEDURE paint* (chkbox: tCheckBox);
 VAR
 	canvas: G.tCanvas;
+	(*r1, r2, g1, g2, b1, b2: BYTE;*)
 BEGIN
 	canvas := chkbox.canvas;
 	IF canvas # NIL THEN
 		G.SetColor(canvas, K.winColor);
 		G.clear(canvas);
-		G.SetColor(canvas, 0FFFFFFH);
+		G.SetColor(canvas, bColor);
 		G.FillRect(canvas, 0, 0, fontHeight - 1, fontHeight - 1);
 		G.SetColor(canvas, K.borderColor);
 		G.Rect(canvas, 0, 0, fontHeight - 1, fontHeight - 1);
 		IF chkbox.value THEN
-			G.SetColor(canvas, 0008000H);
+			G.SetColor(canvas, fColor);
 		    G.DLine(canvas, 2,  6,  6, -1);
 		    G.DLine(canvas, 2,  6,  7, -1);
 		    G.DLine(canvas, 7, 13,  9,  1);
-		    G.DLine(canvas, 7, 13, 10,  1)
+		    G.DLine(canvas, 7, 13, 10,  1);
+			(*G.getRGB(bColor, r1, g1, b1);
+			G.getRGB(fColor, r2, g2, b2);
+			G.SetColor(canvas, (b1 + b2) DIV 2 + ((g1 + g2) DIV 2)*256 + ((r1 + r2) DIV 2)*65536);
+			*)
+		    G.DLine(canvas, 2,  6,  8, -1);
+		    G.DLine(canvas, 7, 13, 11,  1);
+		    G.DLine(canvas, 2,  6,  5, -1);
+		    G.DLine(canvas, 7, 13,  8,  1);
 		END;
 		G.SetTextColor(canvas, K.textColor);
 		G.SetBkColor(canvas, K.winColor);

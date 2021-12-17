@@ -19,7 +19,7 @@
 
 MODULE Tabs;
 
-IMPORT List, K := KolibriOS, RW;
+IMPORT List, K := KolibriOS, RW, U := Utils;
 
 CONST
 
@@ -42,9 +42,14 @@ TYPE
         strings: List.tList;
         first, current: INTEGER;
         width, height: INTEGER;
-        x, y: INTEGER
+        x, y, freeX: INTEGER
 
     END;
+
+
+PROCEDURE DblClicked* (t: tTabs; x, y: INTEGER): BOOLEAN;
+	RETURN (x > t.freeX) & U.between(t.y, y, t.y + t.height - 1)
+END DblClicked;
 
 
 PROCEDURE drawTab (t: tTabs; id, x, y, width, height: INTEGER; s: ARRAY OF CHAR; modified: BOOLEAN);
@@ -102,7 +107,7 @@ END Width;
 
 PROCEDURE draw* (t: tTabs);
 VAR
-    x, y, xmax, n, width: INTEGER;
+    x, y, xmax, n, width, i: INTEGER;
     item: List.tItem;
     scroll: BOOLEAN;
 BEGIN
@@ -111,8 +116,10 @@ BEGIN
     K.DrawRect(x, y - (curTabHeight - tabHeight), t.width + (2*scrWidth + 2), t.height + (curTabHeight - tabHeight) - 1, K.winColor);
     IF Width(t, 0, t.strings.count - 1) > t.width THEN
         INC(x, 2*scrWidth);
-        K.CreateButton(btnID - 1, t.x, t.y, scrWidth, t.height - 1, K.btnColor, "<");
-        K.CreateButton(btnID - 2, t.x + scrWidth, t.y, scrWidth, t.height - 1, K.btnColor, ">");
+        K.DeleteButton(btnID - 1);
+        K.DeleteButton(btnID - 2);
+        K.CreateButton(btnID - 1, t.x, y, scrWidth, t.height - 1, K.btnColor, "<");
+        K.CreateButton(btnID - 2, t.x + scrWidth, y, scrWidth, t.height - 1, K.btnColor, ">");
         scroll := TRUE
     ELSE
         t.first := 0;
@@ -121,6 +128,9 @@ BEGIN
     xmax := x + t.width - 1;
 
     n := t.strings.count - 1;
+    FOR i := 0 TO n DO
+    	K.DeleteButton(i + btnID)
+    END;
     WHILE (n >= 0) & (Width(t, n, t.strings.count - 1) <= t.width) DO
         DEC(n)
     END;
@@ -140,12 +150,15 @@ BEGIN
     WHILE (item # NIL) & (x <= xmax) DO
         width := tabWidth(item(tItem));
         IF x + width - 1 <= xmax THEN
-            drawTab(t, n, x + 1, y, width, t.height, item(tItem).val, item(tItem).modified)
-        END;
-        INC(n);
-        INC(x, width);
-        item := item.next
-    END
+            drawTab(t, n, x + 1, y, width, t.height, item(tItem).val, item(tItem).modified);
+        	INC(n);
+        	INC(x, width);
+        	item := item.next
+        ELSE
+        	item := NIL
+        END
+    END;
+    t.freeX := x
 END draw;
 
 

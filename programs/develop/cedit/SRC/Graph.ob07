@@ -51,6 +51,14 @@ TYPE
     END;
 
 
+PROCEDURE getRGB* (color: INTEGER; VAR r, g, b: BYTE);
+BEGIN
+	b := color MOD 256;
+	g := color DIV 256 MOD 256;
+	r := color DIV 65536 MOD 256
+END getRGB;
+
+
 PROCEDURE DrawCanvas* (canvas: tCanvas; x, y: INTEGER);
 BEGIN
     K.sysfunc7(65, canvas.bitmap, canvas.width*65536 + canvas.height, x*65536 + y, 32, 0, 0);

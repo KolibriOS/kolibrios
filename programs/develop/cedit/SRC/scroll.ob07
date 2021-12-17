@@ -106,7 +106,7 @@ BEGIN
 	width := scroll.width;
 	height := scroll.height;
 	canvas := scroll.canvas;
-	G.SetColor(canvas, K.winColor);
+	G.SetColor(canvas, K.lightColor);
 	G.clear(canvas);
 	G.SetColor(canvas, K.borderColor);
 	G.Rect(canvas, 0, 0, width - 1, height - 1);

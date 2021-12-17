@@ -20,7 +20,7 @@
 MODULE Icons;
 
 IMPORT
-    LibImg, K := KolibriOS, SYSTEM;
+    LibImg, K := KolibriOS, Graph, SYSTEM;
 
 CONST
     fileName = "/rd/1/Icons16.png";
@@ -93,9 +93,7 @@ BEGIN
             SYSTEM.GET8(data + 1, g);
             SYSTEM.GET8(data + 2, r);
             IF b + g + r = 765 THEN
-                b := K.toolbarColor MOD 256;
-                g := K.toolbarColor DIV 256 MOD 256;
-                r := K.toolbarColor DIV 65536 MOD 256
+            	Graph.getRGB(K.toolbarColor, r, g, b)
             END;
             SYSTEM.PUT8(data, b);
             SYSTEM.PUT8(data + 1, g);
