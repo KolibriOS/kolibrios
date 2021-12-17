@@ -1,117 +1,117 @@
 #0
-Игровой центр        |allgames
-Демки              > |@1
-Графика            > |@3
-Звук и видео       > |@4
-Разработка         > |@5
-Система            > |@7
-Офис               > |@10
-Сеть               > |@11
-Разное             > |@14
-Документация         |docpack
-Запуск программы     |run
-Завершение работы    |end
+23 Игровой центр         |allgames
+00 Демки              >  |@1
+00 Графика            >  |@3
+00 Звук и видео       >  |@4
+00 Разработка         >  |@5
+00 Система            >  |@7
+00 Офис               >  |@10
+00 Сеть               >  |@11
+00 Разное             >  |@14
+18 Документация          |docpack
+53 Запуск программы      |run
+04 Завершение работы     |end
 #1 ==Демки
-Трёхмерные         > |@2
-Кружок               |demos/circle
-Фрактал Мандельброта |demos/tinyfrac
-Цвета                |demos/colorref
-Глаза                |demos/eyes
-Труба                |demos/tube
-Plasma               |demos/plasma
-Спираль              |demos/spiral
-Moveback             |demos/movback
-TranTest             |demos/trantest
-Паутинка             |demos/web
-Фейерверк            |demos/firework
-UnvWater             |demos/unvwater
+00 Трёхмерные         >  |@2
+16 Кружок                |demos/circle
+16 Фрактал Мандельброта  |demos/tinyfrac
+16 Цвета                 |demos/colorref
+16 Глаза                 |demos/eyes
+16 Труба                 |demos/tube
+16 Plasma                |demos/plasma
+16 Спираль               |demos/spiral
+16 Moveback              |demos/movback
+16 TranTest              |demos/trantest
+16 Паутинка              |demos/web
+16 Фейерверк             |demos/firework
+16 UnvWater              |demos/unvwater
 #2 ==3D
-Скринсейвер          |3d/crownscr
-3D-Лабиринт          |3d/free3d04
-3D-Куб               |3d/3dcube2
-Трассировка лучей    |3d/ray
-Просмотрщик 3DS      |3d/view3ds
-Шестерёнки           |3d/gears
-3D-Волны             |3d/3dwav
+15 Скринсейвер           |3d/crownscr
+15 3D-Лабиринт           |3d/free3d04
+15 3D-Куб                |3d/3dcube2
+15 Трассировка лучей     |3d/ray
+15 Просмотрщик 3DS       |3d/view3ds
+15 Шестерёнки            |3d/gears
+15 3D-Волны              |3d/3dwav
 #3 ==Графика
-Просмотр фото KIV    |media/kiv
-Просмотр фото zSea   |/kolibrios/media/zsea/zsea
-Редактор Animage     |media/animage
-Наложение фильтров   |media/imgf/imgf
-Палитра              |media/palitra
-Пипетка              |develop/pipet
+06 Просмотр фото KIV     |media/kiv
+06 Просмотр фото zSea    |/kolibrios/media/zsea/zsea
+38 Редактор Animage      |media/animage
+40 Наложение фильтров    |media/imgf/imgf
+52 Палитра               |media/palitra
+39 Пипетка               |develop/pipet
 #4 ==Звук и видео
-Аудиоплеер Pixie     |media/pixie
-Аудиоплеер AC97SND   |media/ac97snd
-Видеоплеер Fplay     |/kolibrios/media/fplay
-Midi-плеер           |media/midamp
-Детское пианино      |media/piano
+53 Аудиоплеер Pixie      |media/pixie
+53 Аудиоплеер AC97SND    |media/ac97snd
+11 Видеоплеер Fplay      |/kolibrios/media/fplay
+07 Midi-плеер            |media/midamp
+07 Детское пианино       |media/piano
 #5 ==Разработка
-Упаковщик KPack      |kpack
-Flat Assembler       |develop/fasm
-Доска отладки        |develop/board
-HEX-редактор         |develop/heed
-Diff tool            |develop/diff
-Отладчик             |develop/mtdbg
-Hex2Dec2Bin          |develop/h2d2b
-Таблица символов     |develop/ASCIIVju
-ASCII-коды           |develop/keyascii
-SCAN-коды            |develop/scancode
+09 Упаковщик KPack       |kpack
+54 Flat Assembler        |develop/fasm
+16 Доска отладки         |develop/board
+59 HEX-редактор          |develop/heed
+20 Diff tool             |develop/diff
+16 Отладчик              |develop/mtdbg
+34 Hex2Dec2Bin           |develop/h2d2b
+59 Таблица символов      |develop/ASCIIVju
+59 ASCII-коды            |develop/keyascii
+59 SCAN-коды             |develop/scancode
 #6 ==Эмуляторы
-DOSBox               |/kolibrios/emul/DosBox/dosbox
-e80 (ZX Spectrum)    |/kolibrios/emul/e80/e80
-FCE Ultra - NES      |/kolibrios/emul/fceu/fceu
-ZSNES Super Nintendo |/kolibrios/emul/zsnes/zsnes
-ScummVM              |/kolibrios/emul/scummvm
+24 DOSBox                |/kolibrios/emul/DosBox/dosbox
+16 e80 (ZX Spectrum)     |/kolibrios/emul/e80/e80
+16 FCE Ultra - NES       |/kolibrios/emul/fceu/fceu
+16 ZSNES Super Nintendo  |/kolibrios/emul/zsnes/zsnes
+16 ScummVM               |/kolibrios/emul/scummvm
 #7 ==Система
-Файловые менеджеры > |@8
-Спец. возможности  > |@9
-Календарь            |calendar
-Терминал             |terminal
-Виртуальные диски    |tmpdisk
-Консоль SHELL        |shell
-Сохранение образа    |rdsave
-Системная панель     |syspanel
+00 Файловые менеджеры >  |@8
+00 Спец. возможности  >  |@9
+16 Календарь             |calendar
+24 Терминал              |terminal
+51 Виртуальные диски     |tmpdisk
+24 Консоль SHELL         |shell
+05 Сохранение образа     |rdsave
+25 Системная панель      |syspanel
 #8 ==Система > ФМ
-KFAR                 |File Managers/kfar
-fNav                 |File Managers/fNav/fNav
-KFM2                 |File Managers/kfm2
-Eolite               |File Managers/Eolite
+24 KFAR                  |File Managers/kfar
+20 fNav                  |File Managers/fNav/fNav
+50 KFM2                  |File Managers/kfm2
+50 Eolite                |File Managers/Eolite
 #9 ==Система > Спец.возможности
-Экранная лупа        |magnify
-Экранная клавиатура  |zkey
+49 Экранная лупа         |magnify
+59 Экранная клавиатура   |zkey
 #10 ==Офис
-Калькулятор          |calc
-Редактор Tinypad     |tinypad
-Редактор CodeEdit    |develop/cedit
-Табличный процессор  |table
-Построение графиков  |graph
-Просмотр RTF         |rtfread
+16 Калькулятор           |calc
+03 Редактор Tinypad      |tinypad
+28 Редактор CodeEdit     |develop/cedit
+21 Табличный процессор   |table
+47 Построение графиков   |graph
+03 Просмотр RTF          |rtfread
 #11 ==Сеть
-Серверы            > |@12
-Клиенты            > |@13
-Настройки сети       |network/netcfg
-Статус подключения   |network/netstat
+00 Серверы            >  |@12
+00 Клиенты            >  |@13
+25 Настройки сети        |network/netcfg
+25 Статус подключения    |network/netstat
 #12 ==Сеть > Серверы
-FTP daemon           |network/ftpd
+16 FTP daemon            |network/ftpd
 #13 ==Сеть > Клиенты
-IRC клиент           |network/ircc
-FTP клиент           |network/ftpc
-TFTP клиент          |network/tftpc
-Ping                 |network/ping
-Telnet               |network/telnet
-Synergy клиент       |network/synergyc
-DNS lookup           |network/nslookup
-VNC Клиент           |network/vncc
-Интернет загрузчик   |network/downloader
-Браузер WebView      |network/webview
+16 IRC клиент            |network/ircc
+16 FTP клиент            |network/ftpc
+50 TFTP клиент           |network/tftpc
+24 Ping                  |network/ping
+24 Telnet                |network/telnet
+24 Synergy клиент        |network/synergyc
+24 DNS lookup            |network/nslookup
+16 VNC Клиент            |network/vncc
+33 Интернет загрузчик    |network/downloader
+12 Браузер WebView       |network/webview
 #14 ==Разное
-Эмуляторы          > |@6
-Создание скриншотов  |scrshoot
-Аналоговые часы      |aclock
-Таблица Менделеева   |period
-Тренажёр KJ|ABuIIIA  |games/klavisha
-Бинарные часы        |demos/bcdclk
-Таймер               |timer
-Разархиватор Unz     |unz
+00 Эмуляторы*         >  |@6
+45 Создание скриншотов   |scrshoot
+16 Аналоговые часы       |aclock
+16 Таблица Менделеева    |period
+16 Тренажёр KJ|ABuIIIA   |games/klavisha
+16 Бинарные часы         |demos/bcdclk
+16 Таймер                |timer
+09 Разархиватор Unz      |unz
 ##

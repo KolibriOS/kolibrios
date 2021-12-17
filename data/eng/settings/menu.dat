@@ -1,119 +1,119 @@
 #0 **** MAIN
-Game Center           |allgames
-Demos              >  |@1
-Graphics           >  |@3
-Multimedia         >  |@4
-Development        >  |@5
-System             >  |@7
-Data processing    >  |@10
-Network            >  |@11
-Other              >  |@14
-Help                  |docpack
-Run                   |run
-Shutdown              |end
+23 Game Center           |allgames
+00 2D Demos           >  |@1
+00 3D Demos           >  |@2
+00 Graphics           >  |@3
+00 Multimedia         >  |@4
+00 Development        >  |@5
+00 System             >  |@7
+00 Data processing    >  |@10
+00 Network            >  |@11
+00 Other              >  |@14
+18 Help                  |docpack
+53 Run                   |run
+04 Shutdown              |end
 #1 **** DEMOS
-3D                 >  |@2
-Circle                |demos/circle
-Fractal               |demos/tinyfrac
-Color demo            |demos/colorref
-Eyes                  |demos/eyes
-Tube                  |demos/tube
-Plasma                |demos/plasma
-Spiral                |demos/spiral
-Moveback              |demos/movback
-TranTest              |demos/trantest
-WEB                   |demos/web
-FireWork              |demos/firework
-UnvWater              |demos/unvwater
+16 Circle                |demos/circle
+16 Fractal               |demos/tinyfrac
+16 Color demo            |demos/colorref
+16 Eyes                  |demos/eyes
+16 Tube                  |demos/tube
+16 Plasma                |demos/plasma
+16 Spiral                |demos/spiral
+16 Moveback              |demos/movback
+16 TranTest              |demos/trantest
+16 WEB                   |demos/web
+16 FireWork              |demos/firework
+16 UnvWater              |demos/unvwater
 #2 **** 3D
-ScreenSaver           |3d/crownscr
-3D-labyrinth          |3d/free3d04
-3D-cube               |3d/3dcube2
-Ray tracing           |3d/ray
-View3DS               |3d/view3ds
-Gears                 |3d/gears
-3D-waved area         |3d/3dwav
+15 ScreenSaver           |3d/crownscr
+15 3D-labyrinth          |3d/free3d04
+15 3D-cube               |3d/3dcube2
+15 Ray tracing           |3d/ray
+15 View3DS               |3d/view3ds
+15 Gears                 |3d/gears
+15 3D-waved area         |3d/3dwav
 #3 **** GRAPHICS
-Kolibri Image Viewer  |media/kiv
-zSea* Image Viewer    |/kolibrios/media/zsea/zsea
-Animage               |media/animage
-Image Filtering       |media/imgf/imgf
-Palitra               |media/palitra
-Pipet                 |develop/pipet
+06 Kolibri Image Viewer  |media/kiv
+06 zSea* Image Viewer    |/kolibrios/media/zsea/zsea
+38 Animage               |media/animage
+40 Image Filtering       |media/imgf/imgf
+52 Palitra               |media/palitra
+39 Pipet                 |develop/pipet
 #4 **** MULTIMEDIA
-Pixie AudioPlayer     |media/pixie
-AC97SND Audioplayer   |media/ac97snd
-Fplay* Video player   |/kolibrios/media/fplay
-MidAMP                |media/midamp
+53 Pixie AudioPlayer     |media/pixie
+53 AC97SND Audioplayer   |media/ac97snd
+11 Fplay* Video player   |/kolibrios/media/fplay
+07 MidAMP                |media/midamp
 #5 **** DEV
-KPack Archiver        |kpack
-Flat Assembler        |develop/fasm
-Diff Tool             |develop/diff
-Debug Board           |develop/board
-Debugger              |develop/mtdbg
-Base Converter        |develop/h2d2b
-Character table       |develop/ASCIIVju
-Key ASCII-codes       |develop/keyascii
-Key SCAN-codes        |develop/scancode
+09 KPack Archiver        |kpack
+54 Flat Assembler        |develop/fasm
+20 Diff Tool             |develop/diff
+16 Debug Board           |develop/board
+16 Debugger              |develop/mtdbg
+34 Base Converter        |develop/h2d2b
+59 Character table       |develop/ASCIIVju
+59 Key ASCII-codes       |develop/keyascii
+59 Key SCAN-codes        |develop/scancode
 #6 **** EMUL
-DOSBox*               |/kolibrios/emul/DosBox/dosbox
-e80* (ZX Spectrum)    |/kolibrios/emul/e80/e80
-FCE Ultra* (NES)      |/kolibrios/emul/fceu/fceu
-Gameboy Color*        |/kolibrios/emul/gameboy
-ScummVM*              |/kolibrios/emul/scummvm
-ZSNES* Super Nintendo |/kolibrios/emul/zsnes/zsnes
+24 DOSBox*               |/kolibrios/emul/DosBox/dosbox
+16 e80* (ZX Spectrum)    |/kolibrios/emul/e80/e80
+16 FCE Ultra* (NES)      |/kolibrios/emul/fceu/fceu
+16 Gameboy Color*        |/kolibrios/emul/gameboy
+16 ScummVM*              |/kolibrios/emul/scummvm
+16 ZSNES* Super Nintendo |/kolibrios/emul/zsnes/zsnes
 #7 **** SYSTEM
-File Management    >  |@8
-Accessibility      >  |@9
-Hotkeys               |mykey
-Debug board           |develop/board
-Clipboard viewer      |develop/clipview
-Calendar              |calendar
-Terminal              |terminal
-Task manager          |cpu
-System panel          |syspanel
+00 File Management    >  |@8
+00 Accessibility      >  |@9
+59 Hotkeys               |mykey
+16 Debug board           |develop/board
+56 Clipboard viewer      |develop/clipview
+16 Calendar              |calendar
+24 Terminal              |terminal
+48 Task manager          |cpu
+25 System panel          |syspanel
 #8 **** FM
-KFAR                  |File Managers/kfar
-fNav                  |File Managers/fNav/fNav
-KFM2                  |File Managers/kfm2
-Eolite                |File Managers/Eolite
-Virtual disks         |tmpdisk
-Shell                 |shell
-Save ramdisk          |rdsave
+24 KFAR                  |File Managers/kfar
+20 fNav                  |File Managers/fNav/fNav
+50 KFM2                  |File Managers/kfm2
+50 Eolite                |File Managers/Eolite
+51 Virtual disks         |tmpdisk
+24 Shell                 |shell
+05 Save ramdisk          |rdsave
 #9 **** ACCESSIBILITY
-Screen magnifier      |magnify
-Screen keyboard       |zkey
+49 Screen magnifier      |magnify
+59 Screen keyboard       |zkey
 #10 **** DATA PROCESSING
-Calculator            |calc
-Tinypad               |tinypad
-CodeEdit              |develop/cedit
-Table processor       |table
-Graph builder         |graph
-Hex editor            |develop/heed
-Unarchiver Unz        |unz
+16 Calculator            |calc
+03 Tinypad               |tinypad
+28 CodeEdit              |develop/cedit
+21 Table processor       |table
+47 Graph builder         |graph
+59 Hex editor            |develop/heed
+09 Unarchiver Unz        |unz
 #11 **** NETWORK
-Clients            >  |@12
-Servers            >  |@13
-Network devices       |network/netcfg
-Network status        |network/netstat
+00 Clients            >  |@12
+00 Servers            >  |@13
+25 Network devices       |network/netcfg
+25 Network status        |network/netstat
 #12 **** CLIENTS
-IRC                   |network/ircc
-FTP                   |network/ftpc
-TFTP                  |network/tftpc
-Ping                  |network/ping
-Telnet                |network/telnet
-Synergy               |network/synergyc
-DNS lookup            |network/nslookup
-VNC Viewer            |network/vncc
-Downloader            |network/downloader
-Text-based browser    |network/webview
+16 IRC                   |network/ircc
+16 FTP                   |network/ftpc
+50 TFTP                  |network/tftpc
+24 Ping                  |network/ping
+24 Telnet                |network/telnet
+24 Synergy               |network/synergyc
+24 DNS lookup            |network/nslookup
+16 VNC Viewer            |network/vncc
+33 Downloader            |network/downloader
+12 Text-based browser    |network/webview
 #13 **** SERVERS
-FTP                   |network/ftpd
+16 FTP                   |network/ftpd
 #14 **** OTHER
-Emulators*         >  |@6
-Analog clock          |aclock
-Binary clock          |demos/bcdclk
-Timer                 |timer
-Screenshooter         |scrshoot
-RTF reader            |rtfread
+00 Emulators*         >  |@6
+16 Analog clock          |aclock
+16 Binary clock          |demos/bcdclk
+16 Timer                 |timer
+45 Screenshooter         |scrshoot
+03 RTF reader            |rtfread
 ##

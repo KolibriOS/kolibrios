@@ -21,7 +21,7 @@
 ;   Compile with FASM for Kolibri
 ;******************************************************************************
   BTN_HEIGHT         = 26
-  BTN_WIDTH          = 178
+  BTN_WIDTH          = 198 ; was 178
   TXT_Y              = (BTN_HEIGHT)/2-7
   FONT_TYPE          = 0x90000000
 
@@ -43,7 +43,13 @@
 ;------------------------------------------------------------------------------
 include "..\..\..\macros.inc"
 include "..\..\..\gui_patterns.inc"
-;include "../../../debug.inc"             ; debug macros
+; Formatted debug output:
+include "..\..\..\debug-fdo.inc"
+__DEBUG__       = 1             ; 0 - disable debug output / 1 - enable debug output
+__DEBUG_LEVEL__ = DBG_ERR      ; set the debug level
+DBG_ALL       = 0  ; all messages
+DBG_INFO      = 1  ; info and errors
+DBG_ERR       = 2  ; only errors
 ;------------------------------------------------------------------------------
 align 4
 conversion_ASCII_to_HEX:
@@ -79,6 +85,8 @@ START:		       ; start of execution
 	mcall	68,11
 	
 	mcall 30, 1, default_dir
+
+	; DEBUGF DBG_INFO, "MENU START! sc.work = %x\n", [sc.work]
 
 	mov	esi,bootparam	
 	cmp	[esi],byte 0
@@ -144,6 +152,52 @@ align 4
 	mov	[screen_size],eax
 	
 	mcall	48,3,sc,sizeof.system_colors	; load system colors
+
+	; DEBUGF  DBG_INFO, "sc.work = %x\n", [sc.work]
+
+	mov eax, 68
+	mov ebx, 22
+	mov ecx, icons_resname
+	mov esi, 0 ; SHM_READ
+	mcall
+	test eax, eax
+	jnz @f
+	mov [no_shared_resources], 1
+	DEBUGF DBG_ERR, "Failed to get ICONS18W from @RESHARE.\nTry rerun @RESHARE.\n"
+	jmp .no_res
+@@:
+	mov [shared_icons_ptr], eax
+	mov [shared_icons_size], edx
+	; copy shared icons to active icons
+	mov esi, eax
+	mov ecx, edx
+	mcall 68, 12, edx
+	mov edi, eax
+	mov [shared_icons_active_ptr], eax
+	shr ecx, 2 ; /= 4; ecx = how many dwords in shared icons
+	cld
+	rep movsd
+	; change work color to work_light color
+	mov esi, [shared_icons_active_ptr]
+	xor ecx, ecx
+.for1:
+	cmp ecx, [shared_icons_size]
+	jae .end_for1
+
+	mov eax, esi
+	add eax, ecx
+	mov edx, [eax]
+	cmp edx, [sc.work]
+	; DEBUGF DBG_INFO, "eax = %x, sc.work = %x\n", eax, [sc.work]
+	jne @f
+	mov ebx, [sc.work] ;[sc.work_light]
+	add ebx, 0x1a1a1a ;;
+	mov [eax], ebx
+@@:
+	add ecx, 4
+	jmp .for1
+.end_for1:
+.no_res:
 	
 ; get size of file MENU.DAT
 	mcall	70,fileinfo
@@ -168,13 +222,13 @@ align 4
 	mov	edi,[fileinfo.return]	;mem_end
 ;--------------------------------------
 align 4
-newsearch:
+newsearch: ; search for next submenu in MENU.DAT
 	mov	al,'#'
 	cld
 	repne	scasb
 	test	ecx,ecx	   ; if not found
 	jz	close
-	call	get_number
+	call	get_number ; get submenu number from char at edi position to ebx
 	test	ebx,ebx
 	jnz	.number
 	cmp	al,'#'
@@ -182,9 +236,9 @@ newsearch:
 ;--------------------------------------
 align 4
 .number:
-	shl	ebx,4
+	shl	ebx,4 ; *= 16 . 16 is size of process table (see virtual at 0 ... stuff in the end of file)
 	add	ebx,[menu_data]     ; pointer to process table
-	mov	[ebx],edi
+	mov	[ebx],edi ; process_table->pointer = edi
 	inc	[processes]
 	jmp	newsearch
 ;--------------------------------------
@@ -246,7 +300,8 @@ align 4
 	mov	[buffer],0
 ;------------------------------------------------------------------------------
 align 4
-thread:
+thread: ; starts new thread. called when opening each menu
+	DEBUGF DBG_INFO, "start new THREAD\n"
 	mov	ebp,esp
 	sub	ebp,0x1000
 	cmp	ebp,0x2000 ; if this is first started thread
@@ -266,7 +321,7 @@ red:
 	call	draw_window	; redraw
 ;------------------------------------------------------------------------------
 align 4
-still:
+still: ; event loop
 	call	free_area_if_set_mutex
 
 	mcall	23,5	; wait here for event
@@ -370,11 +425,12 @@ button1:
 ; dph eax
 	call	draw_only_needed_buttons
 	popad
-; look for the next line <ah> times; <ah> = button_id
+; look (.next_string) for the next line in MENU.DAT <ah> times; <ah> = button_id
 	push	eax
 ;--------------------------------------
 align 4
 .next_string:
+	; DEBUGF DBG_INFO, ".next_string called\n"
 	call	searchstartstring
 	dec	ah
 	jnz	.next_string
@@ -715,7 +771,7 @@ align 4
 ;   *********************************************
 align 4
 draw_window:
-	mcall	48,5
+	mcall	48,5 ; get working area
 	mov	[x_working_area],eax
 	mov	[y_working_area],ebx
 
@@ -842,9 +898,11 @@ draw_one_button:
 ;--------------------------------------
 align 4
 nocorrect: 
+	mov [is_icon_active], 0
 	inc	dl
 	cmp	[edi + cur_sel],dl
 	jne	.nohighlight
+	mov [is_icon_active], 1
 	cmp esi,0
 	jne @f
 	mov esi,0x2a2a2a
@@ -862,7 +920,7 @@ align 4
 	push edx 
 	
 	mov edx, esi
-	mcall 13
+	mcall 13 ; draw rect
 	
 	mcall , BTN_WIDTH,<[draw_y],1>,[sc.work_light]
 	add     ecx, BTN_HEIGHT-1
@@ -876,29 +934,88 @@ align 4
 	movzx	edx,dl
 	dec	dl
 	imul	ebx,edx,BTN_HEIGHT
-	add	ebx,(4 shl 16) + TXT_Y
+	add	ebx,((4 + 18) shl 16) + TXT_Y ; added + 18 (icon size)
 	movzx	ecx,dl
 	inc	ecx
 	mov	edx,[edi + pointer]
 ;--------------------------------------
 align 4
 .findline:
-	cmp	byte [edx],13
+	cmp	byte [edx],13 ; if \r encountered => line found
 	je	.linefound
-	inc	edx
+	inc	edx ; go to next char
 	jmp	.findline
 ;------------------------------------------------------------------------------
 align 4
 .linefound:
-	inc	edx
-	cmp	byte [edx],10
+	inc	edx ; go to next char after \r
+	cmp	byte [edx],10 ; if it is not \n then again findline
 	jne	.findline
-	dec	ecx
+	dec	ecx ; TODO what in ecx? button number?
 	jnz	.findline
 	
 	mov ecx, [sc.work_text]
 	add ecx, FONT_TYPE
-	mcall	4,,,,21
+
+	push ecx esi edi ebp
+	push ebx ; preserve ebx, it stores coordinates
+	mov [tmp], edx
+	mov [has_icon], 1
+	xor ebx, ebx
+@@: ; parse icon number
+	inc	edx
+	mov	al,[edx]
+	; DEBUGF DBG_INFO, "(%u)\n", al
+	cmp	al, '0'
+	jb	@f
+	cmp	al, '9'
+	ja	@f
+	sub	al, '0'
+	imul	ebx,10
+	add	ebx,eax
+	jmp @b
+@@:
+	; DEBUGF DBG_INFO, "icon_number = %x al = %u\n", ebx, al
+	mov [icon_number], ebx
+	cmp al, ' '
+	je @f
+	; if no space after number then consider that number is a part of caption
+	mov edx, [tmp] ; restore edx
+	mov [has_icon], 0 ; no icon
+@@:
+	pop ebx
+
+	mcall	4,,,,21 ; draw menu element caption
+
+	cmp [no_shared_resources], 1
+	je @f
+	cmp [has_icon], 1
+	jne @f
+	; draw icon:
+	mov eax, ebx
+	shr eax, 16
+	sub eax, 18 ; 18 - icon width
+	movzx ebx, bx
+
+	sub ebx, 2
+	shl eax, 16
+	add eax, ebx
+	mov [tmp], eax
+	mov ebx, [icon_number]
+	imul ebx, 18*18*4
+
+	mov ecx, [shared_icons_ptr]
+	; DEBUGF DBG_INFO, "is_icon_active = %x\n", [is_icon_active]
+ 	cmp [is_icon_active], 1
+ 	jne .not_active_icon
+ 	mov ecx, [shared_icons_active_ptr]
+.not_active_icon:	
+	add ebx, ecx
+	mcall 65, ebx, (18 shl 16) + 18, [tmp], 32, 0, 0
+
+	pop ebp edi esi ecx
+
+@@:
 	pop	edx
 	ret
 ;------------------------------------------------------------------------------
@@ -1002,6 +1119,18 @@ virtual     at 0       ; PROCESSES TABLE (located at menu_data)
   prev_sel  db ?   ; +12   previous selection
   rb        16-$+1 ; [16 bytes per element]
 end virtual
+
+include_debug_strings ; for debug-fdo
+
+icons_resname db 'ICONS18W', 0
+shared_icons_ptr dd ?
+shared_icons_active_ptr dd ?
+shared_icons_size dd ?
+has_icon db ?
+icon_number dd ?
+is_icon_active dd ?
+no_shared_resources dd 0
+tmp dd ?
 ;------------------------------------------------------------------------------
 align 4
 bootparam:
