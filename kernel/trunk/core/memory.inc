@@ -1103,7 +1103,7 @@ f68:
         jbe     sys_sheduler
         cmp     ebx, 11
         jb      undefined_syscall
-        cmp     ebx, 30
+        cmp     ebx, 31
         ja      undefined_syscall
         xor     eax, eax
         jmp     dword [f68call+ebx*4-11*4]
@@ -1232,6 +1232,10 @@ f68:
         jae     .fail
         cmp     ecx, OS_BASE
         jbe     .fail
+        cmp     [ecx+SRV.magic], ' SRV'
+        jne     .fail
+        cmp     [ecx+SRV.size], sizeof.SRV
+        jne     .fail
 
         mov     eax, [ecx+SRV.entry]
         test    eax, eax
@@ -1259,9 +1263,49 @@ f68:
 
         mov     [esp+SYSCALL_STACK._eax], eax
         ret
-;.31:    ;prototype function for get list service
-;
-;        ret
+.31:    ; get list service
+        test    ecx, ecx
+        jz      .fail   ; get count
+        dec     ecx
+        jnz     @f    ;1 - get pointer first and last  structure
+
+        mov     ebx, [srv.fd]
+        mov     ecx, [srv.bk]
+        mov     [esp+SYSCALL_STACK._ebx], ebx  ;fd
+        mov     [esp+SYSCALL_STACK._ecx], ecx  ;bk
+        mov     [esp+SYSCALL_STACK._eax], 0
+        ret
+@@:
+        dec     ecx
+        jnz     .fail  ; 2 - get info for SRV structure
+
+        mov     eax, -1
+        cmp     ecx, OS_BASE    ; ecx = pointer on structure
+        jbe     .fail
+        stdcall is_region_userspace, edx, 40 ;16+4*6=40 <-max size buffer
+        jnz     .fail                        ; edx = pointer on buffer
+        cmp     [ecx+SRV.magic], ' SRV'
+        jne     .fail
+        cmp     [ecx+SRV.size], sizeof.SRV
+        jne     .fail
+
+        mov     edi, edx
+        mov     esi, ecx
+        movsd     ; name service 16 byte
+        movsd
+        movsd
+        movsd
+        lea     esi, [ecx+SRV.fd]
+        movsd   ; SRV.fd
+        movsd   ; SRV.bk
+        movsd   ; SRV.base
+        movsd   ; SRV.entry
+        movsd   ; SRV.srv_proc
+        ;movsd   ; SRV.srv_proc_ex
+
+        xor     eax, eax
+        mov     [esp+SYSCALL_STACK._eax], eax
+        ret
 .fail:
         mov     [esp+SYSCALL_STACK._eax], eax
         ret
@@ -1289,6 +1333,7 @@ f68call:   ; keep this table closer to main code
            dd f68.28   ; loadFileUnicode
            dd f68.29   ; user_ring
            dd f68.30   ; unload_driver
+           dd f68.31   ; get_driver_info
 
 align 4
 proc load_pe_driver stdcall, file:dword, cmdline:dword
