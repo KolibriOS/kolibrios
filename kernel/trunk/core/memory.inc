@@ -1225,6 +1225,28 @@ f68:
         mov     [esp+SYSCALL_STACK._eax], eax
         ret
 
+; prototype function for get list services and unload driver
+;.30:    ;get list services
+;
+;        ret
+;.31:     ;unload driver   ecx = handl driver edx = cmdline
+;        cmp     edx, OS_BASE
+;        jae     .fail
+;        test    ecx, OS_BASE    ; when OS_BASE = 0x80000000
+;        jz      .fail
+;        mov     eax, [ecx+SRV.entry]
+;        push    ecx
+;        push    edx
+;        push    DRV_EXIT
+;        call    eax
+;       ; push    eax    ;
+;       ; push    eax    ;
+;        lea     esp, [esp+8]
+;        push    ecx
+;        mov     ebx, [ecx+SRV.base]
+;        stdcall kernel_free, ebx
+;        mov     [esp+SYSCALL_STACK._eax], eax
+;        ret
 .fail:
         mov     [esp+SYSCALL_STACK._eax], eax
         ret
@@ -1271,6 +1293,7 @@ proc load_pe_driver stdcall, file:dword, cmdline:dword
         test    eax, eax
         jz      .fail_init
 
+        mov     [eax+SRV.base], ebx
         mov     [eax+SRV.entry], esi
         pop     esi
         ret
