@@ -9,9 +9,10 @@
 00 Data processing    >  |@10
 00 Network            >  |@11
 00 Other              >  |@14
-18 Help                  |docpack
+60 System panel          |syspanel
+18 Documentation         |docpack
 53 Run                   |run
-04 Shutdown              |end
+04 Shut down             |end
 #1 **** DEMOS
 16 Circle                |demos/circle
 16 Fractal               |demos/tinyfrac
@@ -64,7 +65,7 @@
 16 ScummVM*              |/kolibrios/emul/scummvm
 16 ZSNES* Super Nintendo |/kolibrios/emul/zsnes/zsnes
 #7 **** SYSTEM
-00 File Management    >  |@8
+00 File Managers      >  |@8
 00 Accessibility      >  |@9
 59 Hotkeys               |mykey
 16 Debug board           |develop/board
@@ -72,15 +73,14 @@
 16 Calendar              |calendar
 24 Terminal              |terminal
 48 Task manager          |cpu
-25 System panel          |syspanel
+05 Save ramdisk          |rdsave
+24 Shell                 |shell
+51 Virtual disks         |tmpdisk
 #8 **** FM
 24 KFAR                  |File Managers/kfar
 20 fNav                  |File Managers/fNav/fNav
-50 KFM2                  |File Managers/kfm2
+05 KFM2                  |File Managers/kfm2
 50 Eolite                |File Managers/Eolite
-51 Virtual disks         |tmpdisk
-24 Shell                 |shell
-05 Save ramdisk          |rdsave
 #9 **** ACCESSIBILITY
 49 Screen magnifier      |magnify
 59 Screen keyboard       |zkey

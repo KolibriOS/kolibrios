@@ -9,6 +9,7 @@
 00 Офис               >  |@10
 00 Сеть               >  |@11
 00 Разное             >  |@14
+60 Системная панель      |syspanel
 18 Документация          |docpack
 53 Запуск программы      |run
 04 Завершение работы     |end
@@ -71,11 +72,10 @@
 51 Виртуальные диски     |tmpdisk
 24 Консоль SHELL         |shell
 05 Сохранение образа     |rdsave
-25 Системная панель      |syspanel
 #8 **** Система > ФМ
 24 KFAR                  |File Managers/kfar
 20 fNav                  |File Managers/fNav/fNav
-50 KFM2                  |File Managers/kfm2
+05 KFM2                  |File Managers/kfm2
 50 Eolite                |File Managers/Eolite
 #9 **** Система > Спец.возможности
 49 Экранная лупа         |magnify
