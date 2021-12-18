@@ -1280,22 +1280,21 @@ f68:
         jnz     .fail  ; 2 - get info for SRV structure
 
         mov     eax, -1
-        cmp     ecx, OS_BASE    ; ecx = pointer on structure
+        cmp     edx, OS_BASE    ; edx = pointer on structure
         jbe     .fail
-        stdcall is_region_userspace, edx, 40 ;16+4*6=40 <-max size buffer
-        jnz     .fail                        ; edx = pointer on buffer
-        cmp     [ecx+SRV.magic], ' SRV'
+        stdcall is_region_userspace, edi, 40 ;16+4*6=40 <-max size buffer
+        jnz     .fail                        ; edi = pointer on buffer
+        cmp     [edx+SRV.magic], ' SRV'
         jne     .fail
-        cmp     [ecx+SRV.size], sizeof.SRV
+        cmp     [edx+SRV.size], sizeof.SRV
         jne     .fail
 
-        mov     edi, edx
-        mov     esi, ecx
+        mov     esi, edx
         movsd     ; name service 16 byte
         movsd
         movsd
         movsd
-        lea     esi, [ecx+SRV.fd]
+        lea     esi, [edx+SRV.fd]
         movsd   ; SRV.fd
         movsd   ; SRV.bk
         movsd   ; SRV.base
