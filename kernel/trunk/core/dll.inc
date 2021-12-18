@@ -174,9 +174,7 @@ srv_handlerEx:
         mov     eax, [ecx+handle]
 
         cmp     eax, OS_BASE
-        jae     @f
-        jmp     .fail
-@@:
+        jbe     .fail
 
         cmp     [eax+SRV.magic], ' SRV'
         jne     .fail
@@ -309,6 +307,7 @@ proc reg_service_ex stdcall, name:dword, handler:dword, srvsize:dword
 
         mov     ecx, [handler]
         mov     [eax+SRV.srv_proc], ecx
+        ;dec     [count_services]
         pop     ebx
         ret
 .fail:

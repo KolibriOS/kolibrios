@@ -1103,7 +1103,7 @@ f68:
         jbe     sys_sheduler
         cmp     ebx, 11
         jb      undefined_syscall
-        cmp     ebx, 29
+        cmp     ebx, 30
         ja      undefined_syscall
         xor     eax, eax
         jmp     dword [f68call+ebx*4-11*4]
@@ -1225,27 +1225,42 @@ f68:
         mov     [esp+SYSCALL_STACK._eax], eax
         ret
 
-; prototype function for get list services and unload driver
-;.30:    ;get list services
+;  unload driver
+.30:                         ; ecx = handl driver edx = cmdline
+        mov     eax, -1
+        cmp     edx, OS_BASE
+        jae     .fail
+        cmp     ecx, OS_BASE
+        jbe     .fail
+
+        mov     eax, [ecx+SRV.entry]
+        test    eax, eax
+        jz      .fail
+        push    ecx    ;save handl
+
+        push    edx         ;cmdline
+        push    DRV_EXIT
+        call    eax   ;the result is not checked
+        lea     esp, [esp+8]
+        push    ecx
+
+        mov     ebx, [ecx+SRV.base]
+        mov     eax, -2 ;error free RAM
+        test    ebx, ebx
+        jz      .fail
+        stdcall kernel_free, ebx ;del driver
+
+        mov     eax, [ecx+SRV.fd]
+        mov     edx, [ecx+SRV.bk]
+        mov     [edx+SRV.fd], eax
+        mov     [eax+SRV.bk], edx
+        stdcall free, ecx
+        ;dec     [count_services]
+
+        mov     [esp+SYSCALL_STACK._eax], eax
+        ret
+;.31:    ;prototype function for get list service
 ;
-;        ret
-;.31:     ;unload driver   ecx = handl driver edx = cmdline
-;        cmp     edx, OS_BASE
-;        jae     .fail
-;        test    ecx, OS_BASE    ; when OS_BASE = 0x80000000
-;        jz      .fail
-;        mov     eax, [ecx+SRV.entry]
-;        push    ecx
-;        push    edx
-;        push    DRV_EXIT
-;        call    eax
-;       ; push    eax    ;
-;       ; push    eax    ;
-;        lea     esp, [esp+8]
-;        push    ecx
-;        mov     ebx, [ecx+SRV.base]
-;        stdcall kernel_free, ebx
-;        mov     [esp+SYSCALL_STACK._eax], eax
 ;        ret
 .fail:
         mov     [esp+SYSCALL_STACK._eax], eax
@@ -1273,6 +1288,7 @@ f68call:   ; keep this table closer to main code
            dd f68.27   ; load_file_umode
            dd f68.28   ; loadFileUnicode
            dd f68.29   ; user_ring
+           dd f68.30   ; unload_driver
 
 align 4
 proc load_pe_driver stdcall, file:dword, cmdline:dword
