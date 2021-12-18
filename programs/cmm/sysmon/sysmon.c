@@ -78,8 +78,6 @@ int proc_list[256];
 
 checkbox show_system = { T_SHOW_SYSTEM, false };
 
-char* shared_icons_16;
-
 sensor cpu;
 sensor ram;
 sensor rd;
@@ -104,7 +102,6 @@ void main()
 {
 	int btn;
 	load_lib();
-	shared_icons_16 = memopen("ICONS18W", NULL, SHM_READ);
 	@SetEventMask(EVM_REDRAW + EVM_KEY + EVM_BUTTON + EVM_MOUSE + EVM_MOUSE_FILTER);
 	loop() switch(@WaitEventTimeout(50))
 	{
@@ -297,6 +294,8 @@ void MonitorTmp()
 
 void DrawIconWithText(dword _x, _y, _icon, _title)
 {
+	static dword shared_icons_16;
+	if (!shared_icons_16) shared_icons_16 = memopen("ICONS18W", NULL, SHM_READ);
 	if (shared_icons_16) {
 		PutPaletteImage(18*18*4*_icon + shared_icons_16, 18, 18,_x, _y, 32, 0);
 	} else {

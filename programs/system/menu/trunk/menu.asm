@@ -21,7 +21,7 @@
 ;   Compile with FASM for Kolibri
 ;******************************************************************************
   BTN_HEIGHT         = 26
-  BTN_WIDTH          = 198 ; was 178
+  BTN_WIDTH          = 198 ; 178 for a small font
   TXT_Y              = (BTN_HEIGHT)/2-7
   FONT_TYPE          = 0x90000000
 
@@ -1000,6 +1000,7 @@ align 4
 	sub ebx, 2
 	shl eax, 16
 	add eax, ebx
+	add eax, 1 shl 16
 	mov [tmp], eax
 	mov ebx, [icon_number]
 	imul ebx, 18*18*4
@@ -1011,7 +1012,7 @@ align 4
  	mov ecx, [shared_icons_active_ptr]
 .not_active_icon:	
 	add ebx, ecx
-	mcall 65, ebx, (18 shl 16) + 18, [tmp], 32, 0, 0
+	mcall 65, ebx, <18,18>, [tmp], 32, 0, 0
 
 @@:
 	pop ebp edi esi ecx

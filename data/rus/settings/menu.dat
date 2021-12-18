@@ -1,6 +1,7 @@
-#0
+#0 **** MAIN
 23 Игровой центр         |allgames
-00 Демки              >  |@1
+00 2D Демки           >  |@1
+00 3D Демки           >  |@2
 00 Графика            >  |@3
 00 Звук и видео       >  |@4
 00 Разработка         >  |@5
@@ -11,8 +12,7 @@
 18 Документация          |docpack
 53 Запуск программы      |run
 04 Завершение работы     |end
-#1 ==Демки
-00 Трёхмерные         >  |@2
+#1 **** 2D Демки
 16 Кружок                |demos/circle
 16 Фрактал Мандельброта  |demos/tinyfrac
 16 Цвета                 |demos/colorref
@@ -25,7 +25,7 @@
 16 Паутинка              |demos/web
 16 Фейерверк             |demos/firework
 16 UnvWater              |demos/unvwater
-#2 ==3D
+#2 **** 3D
 15 Скринсейвер           |3d/crownscr
 15 3D-Лабиринт           |3d/free3d04
 15 3D-Куб                |3d/3dcube2
@@ -33,23 +33,23 @@
 15 Просмотрщик 3DS       |3d/view3ds
 15 Шестерёнки            |3d/gears
 15 3D-Волны              |3d/3dwav
-#3 ==Графика
+#3 **** Графика
 06 Просмотр фото KIV     |media/kiv
 06 Просмотр фото zSea    |/kolibrios/media/zsea/zsea
 38 Редактор Animage      |media/animage
+38 Редактор иконок       |media/iconedit
 40 Наложение фильтров    |media/imgf/imgf
 52 Палитра               |media/palitra
 39 Пипетка               |develop/pipet
-#4 ==Звук и видео
+#4 **** Звук и видео
 53 Аудиоплеер Pixie      |media/pixie
-53 Аудиоплеер AC97SND    |media/ac97snd
-11 Видеоплеер Fplay      |/kolibrios/media/fplay
 07 Midi-плеер            |media/midamp
-07 Детское пианино       |media/piano
-#5 ==Разработка
+22 Детское пианино       |media/piano
+11 Видеоплеер Fplay   *  |/kolibrios/media/fplay
+#5 **** Разработка
 09 Упаковщик KPack       |kpack
 54 Flat Assembler        |develop/fasm
-16 Доска отладки         |develop/board
+13 Доска отладки         |develop/board
 59 HEX-редактор          |develop/heed
 20 Diff tool             |develop/diff
 16 Отладчик              |develop/mtdbg
@@ -57,13 +57,13 @@
 59 Таблица символов      |develop/ASCIIVju
 59 ASCII-коды            |develop/keyascii
 59 SCAN-коды             |develop/scancode
-#6 ==Эмуляторы
+#6 **** Эмуляторы
 24 DOSBox                |/kolibrios/emul/DosBox/dosbox
 16 e80 (ZX Spectrum)     |/kolibrios/emul/e80/e80
 16 FCE Ultra - NES       |/kolibrios/emul/fceu/fceu
 16 ZSNES Super Nintendo  |/kolibrios/emul/zsnes/zsnes
 16 ScummVM               |/kolibrios/emul/scummvm
-#7 ==Система
+#7 **** Система
 00 Файловые менеджеры >  |@8
 00 Спец. возможности  >  |@9
 16 Календарь             |calendar
@@ -72,30 +72,30 @@
 24 Консоль SHELL         |shell
 05 Сохранение образа     |rdsave
 25 Системная панель      |syspanel
-#8 ==Система > ФМ
+#8 **** Система > ФМ
 24 KFAR                  |File Managers/kfar
 20 fNav                  |File Managers/fNav/fNav
 50 KFM2                  |File Managers/kfm2
 50 Eolite                |File Managers/Eolite
-#9 ==Система > Спец.возможности
+#9 **** Система > Спец.возможности
 49 Экранная лупа         |magnify
 59 Экранная клавиатура   |zkey
-#10 ==Офис
+#10 **** Офис
 16 Калькулятор           |calc
 03 Редактор Tinypad      |tinypad
 28 Редактор CodeEdit     |develop/cedit
 21 Табличный процессор   |table
 47 Построение графиков   |graph
 03 Просмотр RTF          |rtfread
-#11 ==Сеть
+#11 **** Сеть
 00 Серверы            >  |@12
 00 Клиенты            >  |@13
 25 Настройки сети        |network/netcfg
 25 Статус подключения    |network/netstat
-#12 ==Сеть > Серверы
+#12 **** Сеть > Серверы
 16 FTP daemon            |network/ftpd
-#13 ==Сеть > Клиенты
-16 IRC клиент            |network/ircc
+#13 **** Сеть > Клиенты
+13 IRC клиент            |network/ircc
 16 FTP клиент            |network/ftpc
 50 TFTP клиент           |network/tftpc
 24 Ping                  |network/ping
@@ -105,9 +105,11 @@
 16 VNC Клиент            |network/vncc
 33 Интернет загрузчик    |network/downloader
 12 Браузер WebView       |network/webview
-#14 ==Разное
+#14 **** Разное
 00 Эмуляторы*         >  |@6
 45 Создание скриншотов   |scrshoot
+45 Простой скриншотер    |easyshot
+29 FB2 Читалка           |fb2read
 16 Аналоговые часы       |aclock
 16 Таблица Менделеева    |period
 16 Тренажёр KJ|ABuIIIA   |games/klavisha

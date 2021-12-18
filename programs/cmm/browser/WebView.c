@@ -985,7 +985,7 @@ dword GetImg(bool _new)
 	for (i = 0; i < WB1.img_url.count; i++)
 	{
 		cur_img_url = WB1.img_url.get(i);
-		//if (debug_mode) 
+		if (debug_mode) 
 			{debug("get img: ");debugln(cur_img_url);}
 		if (cache.has(cur_img_url)==false) {
 			prbar.max = WB1.img_url.count;

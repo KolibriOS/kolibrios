@@ -35,21 +35,22 @@
 15 3D-waved area         |3d/3dwav
 #3 **** GRAPHICS
 06 Kolibri Image Viewer  |media/kiv
-06 zSea* Image Viewer    |/kolibrios/media/zsea/zsea
+06 zSea Image Viewer  *  |/kolibrios/media/zsea/zsea
 38 Animage               |media/animage
+38 IconEdit              |media/iconedit
 40 Image Filtering       |media/imgf/imgf
 52 Palitra               |media/palitra
 39 Pipet                 |develop/pipet
 #4 **** MULTIMEDIA
 53 Pixie AudioPlayer     |media/pixie
-53 AC97SND Audioplayer   |media/ac97snd
-11 Fplay* Video player   |/kolibrios/media/fplay
 07 MidAMP                |media/midamp
+22 Toy piano             |media/piano
+11 Fplay Video player *  |/kolibrios/media/fplay
 #5 **** DEV
 09 KPack Archiver        |kpack
 54 Flat Assembler        |develop/fasm
 20 Diff Tool             |develop/diff
-16 Debug Board           |develop/board
+13 Debug Board           |develop/board
 16 Debugger              |develop/mtdbg
 34 Base Converter        |develop/h2d2b
 59 Character table       |develop/ASCIIVju
@@ -97,7 +98,7 @@
 25 Network devices       |network/netcfg
 25 Network status        |network/netstat
 #12 **** CLIENTS
-16 IRC                   |network/ircc
+13 IRC                   |network/ircc
 16 FTP                   |network/ftpc
 50 TFTP                  |network/tftpc
 24 Ping                  |network/ping
@@ -113,7 +114,9 @@
 00 Emulators*         >  |@6
 16 Analog clock          |aclock
 16 Binary clock          |demos/bcdclk
+29 FB2 Reader            |fb2read
 16 Timer                 |timer
 45 Screenshooter         |scrshoot
+45 Easyshot              |easyshot
 03 RTF reader            |rtfread
 ##
