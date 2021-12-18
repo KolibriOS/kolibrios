@@ -27,6 +27,7 @@
 
 #include "../lib/gui/child_window.h"
 #include "../lib/gui/text_view_area.h"
+#include "../lib/gui/reshare.h"
 
 #ifndef INCLUDE_MENU_H
 #include "../lib/gui/menu.h"
@@ -355,9 +356,6 @@ struct block {
 	w=_w;
 	h=_h;
 }
-
-
-
 
 
 #endif

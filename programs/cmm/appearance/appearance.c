@@ -6,7 +6,6 @@
 #include "../lib/strings.h"
 #include "../lib/io.h"
 #include "../lib/list_box.h"
-#include "../lib/obj/libimg.h"
 #include "../lib/gui.h"
 
 #include "../lib/obj/box_lib.h"
@@ -102,7 +101,6 @@ void main()
 
 	load_dll(boxlib, #box_lib_init,0);
 	load_dll(libini, #lib_init,1);
-	load_dll(libimg, #libimg_init,1);
 	load_dll(Proc_lib, #OpenDialog_init,0);
 	o_dialog.type = 2; //select folder
 	OpenDialog_init stdcall (#o_dialog);
@@ -196,8 +194,8 @@ void DrawWindowContent()
 
 	tabs.w = Form.cwidth-LP-LP;
 	tabs.draw();
-	DrawIcon16(tabs.x + TAB_PADDING, 15, sc.work, 17);
-	DrawIcon16(strlen(T_SKINS)*8 + tabs.x + TAB_PADDING + TAB_PADDING, 15, sc.work, 6);
+	draw_icon_16w(tabs.x + TAB_PADDING, 15, 17);
+	draw_icon_16w(strlen(T_SKINS)*8 + tabs.x + TAB_PADDING + TAB_PADDING, 15, 6);
 
 	id = select_list.cur_y;
 	SelectList_Init(

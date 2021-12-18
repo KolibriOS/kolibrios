@@ -38,11 +38,12 @@ UPDATE_ICONS18WORK:
 	$push sc.work
 	sc.get();
 	$pop eax
-	IF (sc.work != EAX) {
+	if (sc.work != EAX) {
 		icons16w.load("/sys/icons16.png");
 		icons16w.replace_2colors(0xffFFFfff, sc.work, 0xffCACBD6, MixColors(sc.work, 0, 200));
 		memmov(shared_i16w, icons16w.imgsrc, size16);
 		img_destroy stdcall(icons16w.image);
+		icons16w.image = NULL;
 	}
 
 	loop() IF(WaitEvent()==evDesktop) GOTO UPDATE_ICONS18WORK;

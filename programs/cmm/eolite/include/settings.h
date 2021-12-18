@@ -160,7 +160,7 @@ void SaveIniSettings()
 void Write_Error(int error_number)
 {
 	char error_message[500];
-	sprintf(#error_message,"\"%s\n%s\" -%s","Eolite",get_error(error_number),"tE");
+	sprintf(#error_message,"\"Eolite\n%s\" -tE", get_error(error_number));
 	notify(#error_message);	
 }
 

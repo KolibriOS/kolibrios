@@ -462,9 +462,15 @@ align 4
 	rep	movsb		   ; copy string
 	mov	[edi],byte 0	       ; store terminator
 	mcall	70,fileinfo_start	; start program
-	or	[close_now],1      ; set close flag
 	pop	edi
+	or	[close_now],1      ; set close flag
 	mov	[mousemask],0
+	; if program run failed then start /sys/@open with param
+	test	eax,eax
+	jns	close
+	mov	eax, fileinfo_start.name
+	mov [file_open.params], eax
+	mcall	70,file_open	
 	jmp	close
 ;--------------------------------------
 align 4
@@ -1070,6 +1076,16 @@ fileinfo_start:
  .rezerved_1	dd 0x0	; nop
  .name:
    times 50 db ' '
+;--------------------------------------
+align 4
+file_open:
+ .subfunction	dd 7	; 7=START /SYS/@OPEN APP WITH PARAM
+ .flags		dd 0	; flags
+ .params	dd 0x0	; nop
+ .rezerved	dd 0x0	; nop
+ .rezerved_1	dd 0x0	; nop
+ .name:
+   db   '/SYS/@OPEN',0
 ;------------------------------------------------------------------------------
 IM_END:
 ;------------------------------------------------------------------------------

@@ -1,5 +1,5 @@
 #0 **** MAIN
-23 Game Center           |allgames
+58 Welcome               |index.htm
 00 2D Demos           >  |@1
 00 3D Demos           >  |@2
 00 Graphics           >  |@3
@@ -9,6 +9,7 @@
 00 Data processing    >  |@10
 00 Network            >  |@11
 00 Other              >  |@14
+23 Game Center           |allgames
 60 System panel          |syspanel
 18 Documentation         |docpack
 53 Run                   |run
@@ -48,11 +49,11 @@
 22 Toy piano             |media/piano
 11 Fplay Video player *  |/kolibrios/media/fplay
 #5 **** DEV
-09 KPack Archiver        |kpack
 54 Flat Assembler        |develop/fasm
-20 Diff Tool             |develop/diff
-13 Debug Board           |develop/board
 16 Debugger              |develop/mtdbg
+13 Debug Board           |develop/board
+09 KPack Archiver        |kpack
+20 Diff Tool             |develop/diff
 34 Base Converter        |develop/h2d2b
 59 Character table       |develop/ASCIIVju
 59 Key ASCII-codes       |develop/keyascii

@@ -10,8 +10,6 @@
 #include "..\lib\gui.h"
 #include "..\lib\random.h"
 
-#include "..\lib\obj\libimg.h"
-
 #define BTN_CLOSED 0
 #define BTN_PRESSED 1
 #define BTN_OPEN 2
@@ -40,8 +38,8 @@ int count;
 void main()
 {   
 	dword id;
-	load_dll(libimg, #libimg_init,1);
 
+	mem_init();
 	NewGame();
 
 	loop() switch(@WaitEvent())
@@ -151,7 +149,7 @@ void ReDraw_Game_Button(int id)
 		case BTN_OPEN:
 			DrawBar(xx+1, yy+1, CELL_SIZE-1, CELL_SIZE-1, 0xFFFfff);//background
 	}
-	DrawIcon32(xx+6, yy+6, 0xFFFfff, bitpict[id]+51); //skip first 51 icons as they are boring for game
+	draw_icon_32(xx+6, yy+6, 0xffFFFfff, bitpict[id]+51); //skip first 51 icons as they are boring for game
 }
 
 void Draw_Panel()

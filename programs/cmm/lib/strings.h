@@ -905,10 +905,16 @@ inline signed csshexdec(dword text)
 :void miniprintf(dword dst, format, insert_line)
 {
 	dword in_pos = strchr(format, '%');
-	if (ESBYTE[in_pos+1] == 's') {
-		strlcpy(dst, format, in_pos - format);
+	EBX = ESBYTE[EAX+1];
+	if (EBX == 's') {
+		strncpy(dst, format, in_pos - format);
 		strcat(dst, insert_line);
 		strcat(dst, in_pos+2);
+	}
+	if (EBX == 'd') || (EBX == 'i') {
+		strncpy(dst, format, in_pos - format);
+		strcat(dst, itoa(insert_line));
+		strcat(dst, in_pos+2);	
 	}
 }
 

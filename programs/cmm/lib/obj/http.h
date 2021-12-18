@@ -224,6 +224,8 @@ void _http::receive()
 		case '?':
 			strchr(#newurl+8, '?'); //returns EAX
 			if (EAX) ESBYTE[EAX] = '\0';
+			strchr(#newurl+8, '/'); //returns EAX
+			if (!EAX) chrcat(#newurl, '/');
 			break;
 		case '/':
 			new_URL++;

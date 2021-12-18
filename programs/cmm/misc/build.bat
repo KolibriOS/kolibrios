@@ -14,4 +14,4 @@ cd ..
 
 del warning.txt
 
-pause
+rem pause

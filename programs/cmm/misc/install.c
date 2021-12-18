@@ -5,7 +5,6 @@
 #include "../lib/copyf.h"
 
 #include "../lib/obj/libini.h"
-#include "../lib/obj/libimg.h"
 
 #include "../lib/patterns/restart_process.h"
 
@@ -40,8 +39,7 @@ void main()
 {
 	word btn;
 	load_dll(libini, #lib_init,1);
-	load_dll(libimg, #libimg_init,1);
-	loop() switch(WaitEventTimeout(300) & 0xFF)
+	loop() switch(@WaitEventTimeout(300))
 	{
 		case evButton:
 			btn = GetButtonID();               
@@ -89,7 +87,7 @@ void DrawIntro()
 
 void DrawInstallComplete()
 {
-	DrawIcon32(WINW-32/2, 140, sc.work, 49);
+	draw_icon_32(WINW-32/2, 140, sc.work, 49);
 	WriteTextCenter(0,185, WINW, sc.work_text, T_COMPLETE);
 	DrawCaptButton(WINW-110/2, WINH-70, 110, 28, B_EXIT, 
 		0x0092D8, 0xFFFfff, T_EXIT);

@@ -896,13 +896,13 @@ if lang eq ru
   t_notes  db '„    …    Œˆ    ”€   ‘‹œ   ‹Ÿ    ‘ˆ    „',0
   caption  db '„¥âáª®¥ ¯¨ ­¨­®',0
 else
-  message  db 'To see help click twice on the window header',0
+  message  db 'Click twice on the window header to see help.',0
   message1 db 'Press any key in English keyboard layout - ',0
   message2 db 'so you will hear the sound from the PC-speaker (Beeper)',0
   message3 db 'Note "C" is the key V,Tab,U,Enter',0
   message4 db 'and when Caps Lock is on then the keys V,Q,I.',0
   t_notes  db 'C     D     E     F     G     A     B     C ',0
-  caption  db 'Baby piano',0
+  caption  db 'Toy piano',0
 end if
 
 ;---------------------------------------------------------------------

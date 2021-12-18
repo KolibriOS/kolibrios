@@ -145,7 +145,7 @@ void Draw_DriverListWindow()
 	//RIGHT FRAME
 	GetCurrentSectionData();
 	DrawBar(right_frame_x, PADDING+3, Form.cwidth - right_frame_x - PADDING, 80, sc.work);
-	DrawIcon32(right_frame_x, PADDING, sc.work, cur_icon);	
+	draw_icon_32(right_frame_x, PADDING, sc.work, cur_icon);	
 	WriteTextB(right_frame_x+44, PADDING+3, 0x81, sc.work_text, ini_sections.get(select_list.cur_y));
 	WriteText(right_frame_x+44, PADDING+23, 0x80, sc.work_text, #cur_version);
 	if(cur_readme_path[0]) readme_w = DrawStandartCaptButton(right_frame_x, PADDING+45, BUTTON_ID_README, T_README);

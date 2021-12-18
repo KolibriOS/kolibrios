@@ -1,5 +1,5 @@
 #0 **** MAIN
-23 Игровой центр         |allgames
+58 Вступление            |index.htm
 00 2D Демки           >  |@1
 00 3D Демки           >  |@2
 00 Графика            >  |@3
@@ -9,6 +9,7 @@
 00 Офис               >  |@10
 00 Сеть               >  |@11
 00 Разное             >  |@14
+23 Игровой центр         |allgames
 60 Системная панель      |syspanel
 18 Документация          |docpack
 53 Запуск программы      |run
@@ -48,12 +49,12 @@
 22 Детское пианино       |media/piano
 11 Видеоплеер Fplay   *  |/kolibrios/media/fplay
 #5 **** Разработка
-09 Упаковщик KPack       |kpack
 54 Flat Assembler        |develop/fasm
+09 Упаковщик KPack       |kpack
+16 Отладчик              |develop/mtdbg
 13 Доска отладки         |develop/board
 59 HEX-редактор          |develop/heed
 20 Diff tool             |develop/diff
-16 Отладчик              |develop/mtdbg
 34 Hex2Dec2Bin           |develop/h2d2b
 59 Таблица символов      |develop/ASCIIVju
 59 ASCII-коды            |develop/keyascii

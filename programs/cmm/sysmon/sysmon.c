@@ -294,14 +294,8 @@ void MonitorTmp()
 
 void DrawIconWithText(dword _x, _y, _icon, _title)
 {
-	static dword shared_icons_16;
-	if (!shared_icons_16) shared_icons_16 = memopen("ICONS18W", NULL, SHM_READ);
-	if (shared_icons_16) {
-		PutPaletteImage(18*18*4*_icon + shared_icons_16, 18, 18,_x, _y, 32, 0);
-	} else {
-		_x -= ICONGAP;
-	}
-	WriteTextWithBg(_x+ICONGAP, _y + 2, 0xD0, sc.work_text, _title, sc.work);
+	if (draw_icon_16w(_x, _y, _icon)) _x += ICONGAP;
+	WriteTextWithBg(_x, _y + 2, 0xD0, sc.work_text, _title, sc.work);
 }
 
 dword GetCpuLoad(dword max_h)
