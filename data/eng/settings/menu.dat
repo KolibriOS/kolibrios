@@ -78,10 +78,11 @@
 24 Shell                 |shell
 51 Virtual disks         |tmpdisk
 #8 **** FM
-24 KFAR                  |File Managers/kfar
-20 fNav                  |File Managers/fNav/fNav
-05 KFM2                  |File Managers/kfm2
 50 Eolite                |File Managers/Eolite
+05 KFM2                  |File Managers/kfm2
+20 fNav                  |File Managers/fNav/fNav
+24 KFAR                  |File Managers/kfar
+24 NDN                *  |/kolibrios/utils/ndn/ndn
 #9 **** ACCESSIBILITY
 49 Screen magnifier      |magnify
 59 Screen keyboard       |zkey

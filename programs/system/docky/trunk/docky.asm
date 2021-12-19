@@ -31,7 +31,9 @@ main:
     load_libraries load_lib_start, load_lib_end
 
 ; ==== Config LibINI ====
-    invoke  ini.get_int, ini_data.file_name, ini_data.settings_name, ini_data.location_name, 1
+    invoke  ini.get_int, ini_data.file_name, ini_data.settings_name, ini_data.location_name, 2
+    test    eax,eax
+	jz      exit
     mov     [dock_items.location], eax
     invoke  ini.get_int, ini_data.file_name, ini_data.settings_name, ini_data.fsize_name, 0
     mov     [dock_items.fsize], eax

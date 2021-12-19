@@ -240,7 +240,11 @@ void SaveSettingsAndRestartProcess(byte panel_type)
 		taskbar_vars_ini.SetInt("ButtonBottOffset", tbButtonOffset.value);
 	}
 	if (panel_type==DOCKY) {
-		docky_ini.SetInt("location", dkLocation);
+		if (!docky_on.checked) {
+			docky_ini.SetInt("location", 0);
+		} else {
+			docky_ini.SetInt("location", dkLocation);
+		}
 		docky_ini.SetInt("fsize", dkFsize.checked);
 		docky_ini.SetInt("ashow", dkAshow.checked);
 	}

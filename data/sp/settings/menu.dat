@@ -65,11 +65,11 @@
 16 Ejemplo de consola 2  |develop/test_gets
 16 Ejemplo de Messages   |demos/use_mb
 #7    **** SISTEMA
-00 Configuraci¢n      >  |@8
-00 Sensores           >  |@9
 00 Archivos           >  |@10
-00 Pruebas            >  |@16
 00 Accesibilidad      >  |@17
+16 Virtual disks         |tmpdisk
+16 SHELL                 |shell
+16 Guardar im gen RD     |rdsave
 16 Debug board           |develop/board
 16 Clipboard viewer      |develop/clipview
 16 Terminal              |terminal
@@ -86,13 +86,11 @@
 16 K. Bus desconectado   |kbd
 16 Informaci¢n de HDD    |hdd_info
 #10  **** ARCHIVOS
-16 KFAR                  |File Managers/kfar
-16 fNav                  |File Managers/fNav/fNav
-16 KFM2                  |File Managers/kfm2
-16 Eolite                |File Managers/Eolite
-16 Virtual disks         |tmpdisk
-16 SHELL                 |shell
-16 Guardar im gen RD     |rdsave
+50 Eolite                |File Managers/Eolite
+05 KFM2                  |File Managers/kfm2
+20 fNav                  |File Managers/fNav/fNav
+24 KFAR                  |File Managers/kfar
+24 NDN                *  |/kolibrios/utils/ndn/ndn
 #11 **** PROCESO DE DATOS
 16 Calculadora           |calc
 16 Tinypad               |tinypad

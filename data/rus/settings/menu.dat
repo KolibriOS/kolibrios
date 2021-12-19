@@ -75,10 +75,11 @@
 24 Консоль SHELL         |shell
 05 Сохранение образа     |rdsave
 #8 **** Система > ФМ
-24 KFAR                  |File Managers/kfar
-20 fNav                  |File Managers/fNav/fNav
-05 KFM2                  |File Managers/kfm2
 50 Eolite                |File Managers/Eolite
+05 KFM2                  |File Managers/kfm2
+20 fNav                  |File Managers/fNav/fNav
+24 KFAR                  |File Managers/kfar
+24 NDN                *  |/kolibrios/utils/ndn/ndn
 #9 **** Система > Спец.возможности
 49 Экранная лупа         |magnify
 59 Экранная клавиатура   |zkey

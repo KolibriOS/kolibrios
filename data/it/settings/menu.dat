@@ -72,10 +72,11 @@
 #8 **** SETTINGS
 #9 **** SYSTEM SENSORS
 #10 **** FM
-16 KFAR                  |File Managers/kfar
-16 fNav                  |File Managers/fNav/fNav
+50 Eolite                |File Managers/Eolite
 05 KFM2                  |File Managers/kfm2
-16 Eolite                |File Managers/Eolite
+20 fNav                  |File Managers/fNav/fNav
+24 KFAR                  |File Managers/kfar
+24 NDN                *  |/kolibrios/utils/ndn/ndn
 #11 **** DATA PROCESSING
 16 Calcolatrice          |calc
 16 Tinypad               |tinypad

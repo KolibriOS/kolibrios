@@ -61,34 +61,23 @@
 16 SCAN-koodid           |develop/scancode
 #6    **** EXAMPLES ****
 #7    **** SYSTEM ****
-00 Sätted             >  |@11
-00 Süsteemi sensorid  >  |@12
-00 Töö failidega      >  |@13
-00 Testimine          >  |@16
+00 Töö failidega      >  |@10
 00 Hõlbustus seaded   >  |@17
-16 Silumisaken           |develop/board
-16 Clipboard viewer      |develop/clipview
-16 Terminal              |terminal
-#8    **** SETTINGS ****
-16 Seadmed               |setup
-16 Tausta genereerija    |media/palitra
-16 Värvid & Teemad       |skincfg
-16 MyKey                 |mykey
-#9    **** SYSTEM SENSORS ****
-16 Protsesside haldur    |cpu
-16 PCI seadmed           |pcidev
-16 CPUID                 |cpuid
-16 Ghost Monitor         |gmon
-16 K. Bus disconnected   |kbd
-16 HDD info              |hdd_info
-#10  **** WORK WITH FILES ****
-16 KFAR                  |File Managers/kfar
-16 KFM2                  |File Managers/kfm2
-16 fNav                  |File Managers/fNav/fNav
-16 Eolite                |File Managers/Eolite
 16 Virtual disks         |tmpdisk
 16 SHELL konsool         |shell
 16 Salvesta RD tõmmis    |rdsave
+16 Silumisaken           |develop/board
+16 Clipboard viewer      |develop/clipview
+16 Terminal              |terminal
+16 Protsesside haldur    |cpu
+#8    **** SETTINGS ****
+#9    **** SYSTEM SENSORS ****
+#10  **** WORK WITH FILES ****
+50 Eolite                |File Managers/Eolite
+05 KFM2                  |File Managers/kfm2
+20 fNav                  |File Managers/fNav/fNav
+24 KFAR                  |File Managers/kfar
+24 NDN                *  |/kolibrios/utils/ndn/ndn
 #11 **** DATA PROCESSING ****
 16 Kalkulaator           |calc
 16 Teksti redaktor       |tinypad
@@ -122,10 +111,6 @@
 62 Kalender              |calendar
 03 RTF faili lugeja      |rtfread
 #16    **** SYSTEM TESTS ****
-16 Protection test       |test
-16 Monitor test          |disptest
-16 Testi graafika kiirust|mgb
-16 FSPEED speed of FS    |fspeed
 #17    **** SYSTEM SPECIAL ****
 49 Ekraani suurendusklaas|magnify
 59 Ekraani klaviatuur    |zkey
