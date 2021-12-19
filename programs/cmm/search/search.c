@@ -5,7 +5,6 @@
 #include "../lib/list_box.h"
 #include "../lib/obj/box_lib.h"
 #include "../lib/obj/proc_lib.h"
-#include "../lib/obj/libimg.h"
 #include "../lib/obj/libini.h"
 #include "../lib/patterns/select_list.h"
 
@@ -102,7 +101,6 @@ void main()
 {  
 	int prev_first, prev_cur_y;
 	load_dll(boxlib, #box_lib_init,0);
-	load_dll(libimg, #libimg_init,1);
 	load_dll(libini, #lib_init,1);
 	load_dll(Proc_lib, #OpenDialog_init,0);
 	OpenDialog_init stdcall (#open_folder_dialog);
@@ -209,7 +207,7 @@ void SelectList_DrawLine(dword i)
 	#define ICONX 7
 	DrawBar(select_list.x, yyy, ICONX-1, select_list.item_h, 0xFFFfff);
 	DrawBar(select_list.x+ICONX+18, yyy, select_list.w-ICONX-18, select_list.item_h, bg);
-	DrawIcon16(select_list.x+ICONX, yyy+1, 0xFFFfff, icon);
+	draw_icon_16(select_list.x+ICONX, yyy+1, icon);
 
 	WriteText(select_list.x + ICONX+18+4,yyy+select_list.text_y,0x90, col, results.name.get(select_list.first + i));
 	WriteText(select_list.x + ICONX+18+206,yyy+select_list.text_y,0x90, col, results.path.get(select_list.first + i));

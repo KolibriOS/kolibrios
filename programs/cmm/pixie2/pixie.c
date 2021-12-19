@@ -358,8 +358,8 @@ void DrawAboutWindow()
 			WriteText(130,15, 0x81, 0xF5EFB3, "Pixie Player");
 
 			WriteTextLines(10, 40, 0x90, theme.color_top_panel_song_name, ABOUT_MESSAGE, 19);
-			DrawIcon32(45, 15, theme.color_top_panel_bg, 65);
-			DrawIcon32(ABOUT_W-32-45, 15, theme.color_top_panel_bg, 65);
+			draw_icon_32(45, 15, theme.color_top_panel_bg, 65);
+			draw_icon_32(ABOUT_W-32-45, 15, theme.color_top_panel_bg, 65);
 	}
 }
 

@@ -1,13 +1,12 @@
 /*
-SOFTWARE CENTER v2.86
+SOFTWARE CENTER v2.87
 */
 
-#define MEMSIZE 4096 * 15
+#define MEMSIZE 1024 * 30
 #include "..\lib\strings.h" 
 #include "..\lib\mem.h" 
 #include "..\lib\gui.h"
 
-#include "..\lib\obj\libimg.h"
 #include "..\lib\obj\libini.h"
 #include "..\lib\kfont.h"
 #include "..\lib\list_box.h"
@@ -58,7 +57,6 @@ void main()
 {   
 	dword id;
 	kfont.init(DEFAULT_FONT);
-	load_dll(libimg, #libimg_init,1);
 	load_dll(libini, #lib_init,1);
 
 	kolibrios_mounted = dir_exists("/kolibrios");
@@ -192,7 +190,7 @@ byte draw_icons_from_section(dword key_value, key_name, sec_name, f_name)
 		kfont.WriteIntoWindowCenter(text_x, row*list.item_h+46 + list_pos + 13, list.item_w,0, swc.list_bg, swc.text, 12, key_name+space_pos);
 	}
 	if (icon_char_pos) icon_id = atoi(icon_char_pos+1);
-	if (Form.cwidth) DrawIcon32(icon_x, icon_y, swc.list_bg, icon_id);
+	if (Form.cwidth) draw_icon_32(icon_x, icon_y, swc.list_bg, icon_id);
 	list.count++;
 	col++;
 	return true;

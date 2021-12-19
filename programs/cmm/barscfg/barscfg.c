@@ -1,4 +1,4 @@
-#define MEMSIZE 0x23E80
+#define MEMSIZE 1024*40
 #include "..\lib\kolibri.h" 
 #include "..\lib\strings.h" 
 #include "..\lib\mem.h" 
@@ -112,8 +112,12 @@ void main()
 					DrawWindowContent();
 				}
 				if (docky_on.click(id)) {
-					IF (docky_on.checked == true) RunProgram("/sys/@docky", 0);
-					ELSE KillProcessByName("@DOCKY", SINGLE);
+					IF (docky_on.checked == true) {
+						dkLocation = 2;
+						SaveSettingsAndRestartProcess(DOCKY);
+					} ELSE {
+						KillProcessByName("@DOCKY", SINGLE);
+					}
 					DrawWindowContent();
 				}
 				break;

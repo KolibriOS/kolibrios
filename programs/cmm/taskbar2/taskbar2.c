@@ -14,7 +14,6 @@
 
 #include "../lib/mem.h" 
 
-#include "../lib/obj/libimg.h"
 #include "../lib/obj/libini.h"
 
 //===================================================//
@@ -61,7 +60,6 @@ dword COLOR_TEXT    = 0xFFFfff;
 void main()
 {
 	int btn;
-	load_dll(libimg, #libimg_init,1);
 	load_dll(libini, #lib_init,1);
 
 	ini_get_int stdcall ("/sys/appicons.ini", "taskbar", "attachement", ATTACHEMENT_BOTTOM); 
@@ -167,7 +165,7 @@ void DrawProcessList()
 		} 
 		DrawWideRectangle(posx, posy, 40, 40, CELL_PADDING, COLOR_BG);
 		DefineButton(posx, posy, CELLW-1, CELLH, 100+i+BT_HIDE+BT_NOFRAME, NULL);
-		DrawIcon32(posx+CELL_PADDING, posy+CELL_PADDING, COLOR_BG, icon_n);
+		draw_icon_32(posx+CELL_PADDING, posy+CELL_PADDING, COLOR_BG, icon_n);
 
 		if (ATTACHEMENT_BOTTOM==attachement) DrawBar(posx, posy+CELLH-ACTIVE_SIZE, CELLW, ACTIVE_SIZE, status_color);
 		if (ATTACHEMENT_LEFT  ==attachement) DrawBar(posx, posy, ACTIVE_SIZE, CELLH, status_color);
