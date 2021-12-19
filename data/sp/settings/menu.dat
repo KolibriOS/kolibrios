@@ -1,140 +1,142 @@
 #0    **** MAIN
-Centro de juegos      |allgames
-Demos              >  |@1
-Gr ficos           >  |@3
-Multimedia         >  |@4
-Emulators          >  |@18
-Desarrollo         >  |@5
-Sistema            >  |@7
-Proceso de datos   >  |@11
-Red                >  |@12
-Otros              >  |@15
-Ayuda                 |docpack
-Ejecutar aplicaci¢n   |run
-Apagar                |end
+58 Welcome               |welcome.htm
+00 2D Demos           >  |@1
+00 3D Demos           >  |@2
+00 Gr ficos           >  |@3
+00 Multimedia         >  |@4
+00 Emulators          >  |@18
+00 Desarrollo         >  |@5
+00 Sistema            >  |@7
+00 Proceso de datos   >  |@11
+00 Red                >  |@12
+00 Otros              >  |@15
+16 Centro de juegos      |allgames
+60 System panel          |syspanel
+18 Ayuda                 |docpack
+53 Ejecutar aplicaci¢n   |run
+04 Apagar                |end
 #1    **** DEMOS
-3D                 >  |@2
-C¡rculo               |demos/circle
-Fractal               |demos/tinyfrac
-Color demo            |demos/colorref
-Ojos                  |demos/eyes
-Tube                  |demos/tube
-Plasma                |demos/plasma
-Spiral                |demos/spiral
-Moveback              |demos/movback
-TranTest              |demos/trantest
-WEB                   |demos/web
-FireWork              |demos/firework
-UnvWater              |demos/unvwater
+16 C¡rculo               |demos/circle
+16 Fractal               |demos/tinyfrac
+16 Color demo            |demos/colorref
+16 Ojos                  |demos/eyes
+16 Tube                  |demos/tube
+16 Plasma                |demos/plasma
+16 Spiral                |demos/spiral
+16 Moveback              |demos/movback
+16 TranTest              |demos/trantest
+16 WEB                   |demos/web
+16 FireWork              |demos/firework
+16 UnvWater              |demos/unvwater
 #2  **** 3D ****
-ScreenSaver           |3d/crownscr
-3D-labyrinth          |3d/free3d04
-3D-cube               |3d/3dcube2
-Ray tracing           |3d/ray
-View3DS               |3d/view3ds
-Gears                 |3d/gears
-3D-waved area         |3d/3dwav
+15 ScreenSaver           |3d/crownscr
+15 3D-labyrinth          |3d/free3d04
+15 3D-cube               |3d/3dcube2
+15 Ray tracing           |3d/ray
+15 View3DS               |3d/view3ds
+15 Gears                 |3d/gears
+15 3D-waved area         |3d/3dwav
 #3   **** GRµFICOS
-Image viewer KIV      |media/kiv
-Image viewer zSea     |/kolibrios/media/zsea/zsea
-Animage               |media/animage
-Efectos de im genes   |media/imgf/imgf
-Palitra               |media/palitra
+16 Image viewer KIV      |media/kiv
+16 Image viewer zSea     |/kolibrios/media/zsea/zsea
+16 Animage               |media/animage
+16 Efectos de im genes   |media/imgf/imgf
+16 Palitra               |media/palitra
 #4   **** MULTIMEDIA
-Pixie Audioplayer     |media/pixie
-AC97SND Audioplayer   |media/ac97snd
-Fplay - video         |/kolibrios/media/fplay
-MidAMP                |media/midamp
+16 Pixie Audioplayer     |media/pixie
+16 AC97SND Audioplayer   |media/ac97snd
+16 Fplay - video         |/kolibrios/media/fplay
+16 MidAMP                |media/midamp
 #5    **** DESARROLLO
-Ejemplos           >  |@6
-Archiver KPack        |kpack
-Flat Assembler        |develop/fasm
-Diff Tool             |develop/diff
-Debug Board           |develop/board
-Debugger              |develop/mtdbg
-Hex2Dec2Bin           |develop/h2d2b
-Tabla de caracteres   |ASCIIVju
-C¢digos ASCII         |develop/keyascii
-C¢digos SCAN          |develop/scancode
+00 Ejemplos           >  |@6
+16 Archiver KPack        |kpack
+16 Flat Assembler        |develop/fasm
+16 Diff Tool             |develop/diff
+16 Debug Board           |develop/board
+16 Debugger              |develop/mtdbg
+16 Hex2Dec2Bin           |develop/h2d2b
+16 Tabla de caracteres   |ASCIIVju
+16 C¢digos ASCII         |develop/keyascii
+16 C¢digos SCAN          |develop/scancode
 #6    **** EJEMPLOS
-Threads               |develop/thread
-Selector de color     |demos/cslide
-Ejemplo de consola 1  |develop/testcon2
-Ejemplo de consola 2  |develop/test_gets
-Ejemplo de Messages   |demos/use_mb
+16 Threads               |develop/thread
+16 Selector de color     |demos/cslide
+16 Ejemplo de consola 1  |develop/testcon2
+16 Ejemplo de consola 2  |develop/test_gets
+16 Ejemplo de Messages   |demos/use_mb
 #7    **** SISTEMA
-Configuraci¢n      >  |@8
-Sensores           >  |@9
-Archivos           >  |@10
-Pruebas            >  |@16
-Accesibilidad      >  |@17
-Debug board           |develop/board
-Clipboard viewer      |develop/clipview
-Terminal              |terminal
+00 Configuraci¢n      >  |@8
+00 Sensores           >  |@9
+00 Archivos           >  |@10
+00 Pruebas            >  |@16
+00 Accesibilidad      >  |@17
+16 Debug board           |develop/board
+16 Clipboard viewer      |develop/clipview
+16 Terminal              |terminal
 #8    **** CFG
-Dispositivos          |setup
-Generador de fondo    |media/palitra
-Colores y Apariencia  |skincfg
-Atajos de teclado     |mykey
+16 Dispositivos          |setup
+16 Generador de fondo    |media/palitra
+16 Colores y Apariencia  |skincfg
+16 Atajos de teclado     |mykey
 #9    **** SENSORES
-Procesos              |cpu
-Dispositivos PCI      |pcidev
-CPUID                 |cpuid
-Ghost Monitor         |gmon
-K. Bus desconectado   |kbd
-Informaci¢n de HDD    |hdd_info
+16 Procesos              |cpu
+16 Dispositivos PCI      |pcidev
+16 CPUID                 |cpuid
+16 Ghost Monitor         |gmon
+16 K. Bus desconectado   |kbd
+16 Informaci¢n de HDD    |hdd_info
 #10  **** ARCHIVOS
-KFAR                  |File Managers/kfar
-fNav                  |File Managers/fNav/fNav
-KFM2                  |File Managers/kfm2
-Eolite                |File Managers/Eolite
-Virtual disks         |tmpdisk
-SHELL                 |shell
-Guardar im gen RD     |rdsave
+16 KFAR                  |File Managers/kfar
+16 fNav                  |File Managers/fNav/fNav
+16 KFM2                  |File Managers/kfm2
+16 Eolite                |File Managers/Eolite
+16 Virtual disks         |tmpdisk
+16 SHELL                 |shell
+16 Guardar im gen RD     |rdsave
 #11 **** PROCESO DE DATOS
-Calculadora           |calc
-Tinypad               |tinypad
-CodeEdit              |develop/cedit
-Procesador de tablas  |table
-Generador de gr ficas |graph
-Hex-Editor            |develop/heed
+16 Calculadora           |calc
+16 Tinypad               |tinypad
+16 CodeEdit              |develop/cedit
+16 Procesador de tablas  |table
+16 Generador de gr ficas |graph
+16 Hex-Editor            |develop/heed
 #12    **** RED
-Servidores         >  |@13
-Clientes           >  |@14
-Network devices       |network/netcfg
-Network status        |network/netstat
+00 Servidores         >  |@13
+00 Clientes           >  |@14
+16 Network devices       |network/netcfg
+16 Network status        |network/netstat
 #13    **** SERVIDORES
-FTP daemon            |network/ftpd
+16 FTP daemon            |network/ftpd
 #14   **** CLIENTES
-Cliente IRC           |network/ircc
-Cliente FTP           |network/ftpc
-Cliente TFTP          |network/tftpc
-Ping                  |network/ping
-Cliente Telnet        |network/telnet
-Cliente Synergy       |network/synergyc
-Resoluci¢n de nombres |network/nslookup
-VNC Viewer            |network/vncc
-Cliente de descarga   |network/downloader
-Navegador (modo texto)|network/webview
+16 Cliente IRC           |network/ircc
+16 Cliente FTP           |network/ftpc
+16 Cliente TFTP          |network/tftpc
+16 Ping                  |network/ping
+16 Cliente Telnet        |network/telnet
+16 Cliente Synergy       |network/synergyc
+16 Resoluci¢n de nombres |network/nslookup
+16 VNC Viewer            |network/vncc
+16 Cliente de descarga   |network/downloader
+16 Navegador (modo texto)|network/webview
 #15    **** OTROS
-Reloj anal¢gico       |demos/aclock
-Reloj binario         |demos/bcdclk
-Contador              |demos/timer
-Capturar de pantalla  |scrshoot
-Calendario            |calendar
-Lector de RTF         |rtfread
+16 Reloj anal¢gico       |demos/aclock
+16 Reloj binario         |demos/bcdclk
+16 Contador              |demos/timer
+16 Capturar de pantalla  |scrshoot
+16 Calendario            |calendar
+16 Lector de RTF         |rtfread
 #16    **** PRUEBAS
-Protecci¢n            |test
-Monitor               |disptest
-Velocidad de gr ficos |mgb
-FSPEED speed of FS    |fspeed
+16 Protecci¢n            |test
+16 Monitor               |disptest
+16 Velocidad de gr ficos |mgb
+16 FSPEED speed of FS    |fspeed
 #17    **** ACCESIBILIDAD
-Ampliaci¢n de pantalla|magnify
-Teclado en pantalla   |zkey
+16 Ampliaci¢n de pantalla|magnify
+16 Teclado en pantalla   |zkey
 #18    **** EMULATORS
-DOSBox                |/kolibrios/emul/DosBox/dosbox
-e80 (ZX Spectrum)     |/kolibrios/emul/e80/e80
-FCE Ultra - NES       |/kolibrios/emul/fceu/fceu
-ZSNES Super Nintendo  |/kolibrios/emul/zsnes/zsnes
-ScummVM (adventure)   |/kolibrios/emul/scummvm
+16 DOSBox                |/kolibrios/emul/DosBox/dosbox
+16 e80 (ZX Spectrum)     |/kolibrios/emul/e80/e80
+16 FCE Ultra - NES       |/kolibrios/emul/fceu/fceu
+16 ZSNES Super Nintendo  |/kolibrios/emul/zsnes/zsnes
+16 ScummVM (adventure)   |/kolibrios/emul/scummvm
 ##

@@ -1,141 +1,123 @@
 ﻿#0 **** MAIN
-Centro gioco          |allgames
-Demo               >  |@1
-Grafica            >  |@3
-Multimedia         >  |@4
-Emulators          >  |@18
-Sviluppo           >  |@5
-Sistema            >  |@7
-Data processing    >  |@11
-Network            >  |@12
-Altro              >  |@15
-Aiuto                 |docpack
-Esegui applicazione   |run
-Spegni                |end
+58 Welcome               |welcome.htm
+00 2D Demo            >  |@1
+00 3D Demo            >  |@2
+00 Grafica            >  |@3
+00 Multimedia         >  |@4
+00 Emulators          >  |@18
+00 Sviluppo           >  |@5
+00 Sistema            >  |@7
+00 Data processing    >  |@11
+00 Network            >  |@12
+00 Altro              >  |@15
+23 Centro gioco          |allgames
+60 System panel          |syspanel
+18 Aiuto                 |docpack
+53 Esegui applicazione   |run
+04 Spegni                |end
 #1 **** DEMOS
-3D                 >  |@2
-Cerchio               |demos/circle
-Frattale              |demos/tinyfrac
-Demo Colori           |demos/colorref
-Occhi                 |demos/eyes
-Vortice               |demos/tube
-Plasma                |demos/plasma
-Spiral                |demos/spiral
-Moveback              |demos/movback
-TranTest              |demos/trantest
-WEB                   |demos/web
-Fuochi d'artificio    |demos/firework
-UnvWater              |demos/unvwater
+16 Cerchio               |demos/circle
+16 Frattale              |demos/tinyfrac
+16 Demo Colori           |demos/colorref
+16 Occhi                 |demos/eyes
+16 Vortice               |demos/tube
+16 Plasma                |demos/plasma
+16 Spiral                |demos/spiral
+16 Moveback              |demos/movback
+16 TranTest              |demos/trantest
+16 WEB                   |demos/web
+16 Fuochi d'artificio    |demos/firework
+16 UnvWater              |demos/unvwater
 #2 **** 3D
-ScreenSaver           |3d/crownscr
-Labirinto 3D          |3d/free3d04
-3D-cube               |3d/3dcube2
-Ray tracing           |3d/ray
-View3DS               |3d/view3ds
-Gears                 |3d/gears
-3D-waved area         |3d/3dwav
+15 ScreenSaver           |3d/crownscr
+15 Labirinto 3D          |3d/free3d04
+15 3D-cube               |3d/3dcube2
+15 Ray tracing           |3d/ray
+15 View3DS               |3d/view3ds
+15 Gears                 |3d/gears
+15 3D-waved area         |3d/3dwav
 #3 **** GRAPHICS
-Image viewer KIV      |media/kiv
-Image viewer zSea     |/kolibrios/media/zsea/zsea
-Animage               |media/animage
-Palitra               |media/palitra
+06 Image viewer KIV      |media/kiv
+06 Image viewer zSea  *  |/kolibrios/media/zsea/zsea
+38 Animage               |media/animage
+38 IconEdit              |media/iconedit
+40 Image Filtering       |media/imgf/imgf
+52 Palitra               |media/palitra
+39 Pipet                 |develop/pipet
 #4 **** MULTIMEDIA
-Pixie Audioplayer     |media/pixie
-AC97SND Audioplayer   |media/ac97snd
-Fplay - video         |/kolibrios/media/fplay
-MidAMP                |media/midamp
+53 Pixie Audio           |media/pixie
+07 MidAMP                |media/midamp
+22 Toy piano             |media/piano
+11 Fplay Video        *  |/kolibrios/media/fplay
 #5 **** DEV
-Esempi             >  |@6
-Gestore di archivi KPack  /kpack
-Compilatore FASM      |develop/fasm
-Diff Tool             |develop/diff
-Debug Board           |develop/board
-Debugger              |develop/mtdbg
-Hex2Dec2Bin           |develop/h2d2b
-Tavola caratteri      |develop/ASCIIVju
-Codici ASCII          |develop/keyascii
-SCAN-codes            |develop/scancode
+54 Compilatore FASM      |develop/fasm
+16 Debugger              |develop/mtdbg
+13 Debug Board           |develop/board
+20 Diff Tool             |develop/diff
+09 Archiviatore KPack    |kpack
+34 Hex2Dec2Bin           |develop/h2d2b
+59 Tavola caratteri      |develop/ASCIIVju
+59 Codici ASCII          |develop/keyascii
+59 SCAN-codes            |develop/scancode
 #6 **** EXAMPLES
-Thread                |develop/thread
-Color slider          |demos/cslide
-Esempio Console 1     |develop/testcon2
-Esempio Console 2     |develop/test_gets
-Esempio Message Boxes |demos/use_mb
 #7 **** SYSTEM
-Impostazioni       >  |@8
-Sensori di sistema >  |@9
-Work with files    >  |@10
-Testing            >  |@13
-Opzioni Accessibil.>  |@17
-Debug board           |develop/board
-Clipboard viewer      |develop/clipview
-Terminal              |terminal
+00 Work with files    >  |@10
+00 Opzioni Accessibil.>  |@17
+13 Debug board           |develop/board
+56 Clipboard viewer      |develop/clipview
+24 Terminal              |terminal
+51 Virtual disks         |tmpdisk
+24 SHELL console         |shell
+05 Salva immagine RD     |rdsave
 #8 **** SETTINGS
-Device                |setup
-Generatore di sfondi  |media/palitra
-Colori e temi         |skincfg
-MyKey                 |mykey
-Video mode for ATI    |vmode
 #9 **** SYSTEM SENSORS
-Gestore processi      |cpu
-PCI devices           |pcidev
-CPUID                 |cpuid
-Ghost Monitor         |gmon
-K. Bus disconnected   |kbd
-HDD informer          |hdd_info
 #10 **** FM
-KFAR                  |File Managers/kfar
-fNav                  |File Managers/fNav/fNav
-KFM2                  |File Managers/kfm2
-Eolite                |File Managers/Eolite
-Virtual disks         |tmpdisk
-SHELL console         |shell
-Salva immagine RD     |rdsave
+16 KFAR                  |File Managers/kfar
+16 fNav                  |File Managers/fNav/fNav
+05 KFM2                  |File Managers/kfm2
+16 Eolite                |File Managers/Eolite
 #11 **** DATA PROCESSING
-Calcolatrice          |calc
-Tinypad               |tinypad
-CodeEdit              |develop/cedit
-Table Processor       |table
-Graph builder         |graph
-Hex-Editor            |develop/heed
+16 Calcolatrice          |calc
+16 Tinypad               |tinypad
+16 CodeEdit              |develop/cedit
+16 Table Processor       |table
+16 Graph builder         |graph
+16 Hex-Editor            |develop/heed
 #12 **** NET
-Servers            >  |@13
-Clients            >  |@14
-Network devices       |network/netcfg
-Network status        |network/netstat
+00 Servers            >  |@13
+00 Clients            >  |@14
+25 Network devices       |network/netcfg
+16 Network status        |network/netstat
 #13 **** SERVERS
-Demone FTP            |network/ftpd
+24 Demone FTP            |network/ftpd
 #14 **** CLIENTS
-Client IRC            |network/ircc
-Client FTP            |network/ftpc
-Client TFTP           |network/tftpc
-Ping                  |network/ping
-Client Telnet         |network/telnet
-Client Synergy        |network/synergyc
-VNC Viewer            |network/vncc
-DNS lookup            |network/nslookup
-Internet downloader   |network/downloader
-Text-based browser    |network/webview
+13 Client IRC            |network/ircc
+20 Client FTP            |network/ftpc
+20 Client TFTP           |network/tftpc
+24 Ping                  |network/ping
+24 Client Telnet         |network/telnet
+24 Client Synergy        |network/synergyc
+61 VNC Viewer            |network/vncc
+24 DNS lookup            |network/nslookup
+33 Internet downloader   |network/downloader
+12 Text-based browser    |network/webview
 #15    **** OTHER
-Orologio analogico    |aclock
-Orologio binario      |demos/bcdclk
-Timer                 |timer
-ScreenShoter          |scrshoot
-Calendario            |calendar
-Lettore RTF           |rtfread
+16 Orologio analogico    |aclock
+16 Orologio binario      |demos/bcdclk
+16 Timer                 |timer
+45 ScreenShoter          |scrshoot
+45 Easyshot              |easyshot
+16 Calendario            |calendar
+03 Lettore RTF           |rtfread
 #16 **** TESTS
-Protection test       |test
-Test Monitor          |disptest
-Test graphics speed   |mgb
-FSPEED speed of FS    |fspeed
 #17 **** SPECIAL
-Lente di ingrandimento|magnify
-Tastiera da schermo   |zkey
+49 Lente di ingrandimento|magnify
+59 Tastiera da schermo   |zkey
 #18 **** EMUL
-DOSBox                |/kolibrios/emul/DosBox/dosbox
-e80 (ZX Spectrum)     |/kolibrios/emul/e80/e80
-FCE Ultra - NES       |/kolibrios/emul/fceu/fceu
-Gameboy Color         |/kolibrios/emul/gameboy
-ScummVM               |/kolibrios/emul/scummvm
-ZSNES Super Nintendo  |/kolibrios/emul/zsnes/zsnes
+63 DOSBox                |/kolibrios/emul/DosBox/dosbox
+16 e80 (ZX Spectrum)     |/kolibrios/emul/e80/e80
+23 FCE Ultra - NES       |/kolibrios/emul/fceu/fceu
+23 Gameboy Color         |/kolibrios/emul/gameboy
+16 ScummVM               |/kolibrios/emul/scummvm
+23 ZSNES Super Nintendo  |/kolibrios/emul/zsnes/zsnes
 ##

@@ -1,5 +1,5 @@
 #0 **** MAIN
-58 Welcome               |index.htm
+58 Welcome               |welcome.htm
 00 2D Demos           >  |@1
 00 3D Demos           >  |@2
 00 Graphics           >  |@3
@@ -44,13 +44,13 @@
 52 Palitra               |media/palitra
 39 Pipet                 |develop/pipet
 #4 **** MULTIMEDIA
-53 Pixie AudioPlayer     |media/pixie
+53 Pixie Audio           |media/pixie
 07 MidAMP                |media/midamp
 22 Toy piano             |media/piano
-11 Fplay Video player *  |/kolibrios/media/fplay
+11 Fplay Video        *  |/kolibrios/media/fplay
 #5 **** DEV
 54 Flat Assembler        |develop/fasm
-16 Debugger              |develop/mtdbg
+49 Debugger              |develop/mtdbg
 13 Debug Board           |develop/board
 09 KPack Archiver        |kpack
 20 Diff Tool             |develop/diff
@@ -59,19 +59,19 @@
 59 Key ASCII-codes       |develop/keyascii
 59 Key SCAN-codes        |develop/scancode
 #6 **** EMUL
-24 DOSBox*               |/kolibrios/emul/DosBox/dosbox
+63 DOSBox*               |/kolibrios/emul/DosBox/dosbox
 16 e80* (ZX Spectrum)    |/kolibrios/emul/e80/e80
-16 FCE Ultra* (NES)      |/kolibrios/emul/fceu/fceu
-16 Gameboy Color*        |/kolibrios/emul/gameboy
+23 FCE Ultra* (NES)      |/kolibrios/emul/fceu/fceu
+23 Gameboy Color*        |/kolibrios/emul/gameboy
 16 ScummVM*              |/kolibrios/emul/scummvm
-16 ZSNES* Super Nintendo |/kolibrios/emul/zsnes/zsnes
+23 ZSNES* Super Nintendo |/kolibrios/emul/zsnes/zsnes
 #7 **** SYSTEM
 00 File Managers      >  |@8
 00 Accessibility      >  |@9
 59 Hotkeys               |mykey
 16 Debug board           |develop/board
 56 Clipboard viewer      |develop/clipview
-16 Calendar              |calendar
+62 Calendar              |calendar
 24 Terminal              |terminal
 48 Task manager          |cpu
 05 Save ramdisk          |rdsave
@@ -91,7 +91,7 @@
 28 CodeEdit              |develop/cedit
 21 Table processor       |table
 47 Graph builder         |graph
-59 Hex editor            |develop/heed
+16 Hex editor            |develop/heed
 09 Unarchiver Unz        |unz
 #11 **** NETWORK
 00 Clients            >  |@12
@@ -100,23 +100,23 @@
 25 Network status        |network/netstat
 #12 **** CLIENTS
 13 IRC                   |network/ircc
-16 FTP                   |network/ftpc
-50 TFTP                  |network/tftpc
+20 FTP                   |network/ftpc
+20 TFTP                  |network/tftpc
 24 Ping                  |network/ping
 24 Telnet                |network/telnet
 24 Synergy               |network/synergyc
 24 DNS lookup            |network/nslookup
-16 VNC Viewer            |network/vncc
+61 VNC Viewer            |network/vncc
 33 Downloader            |network/downloader
 12 Text-based browser    |network/webview
 #13 **** SERVERS
-16 FTP                   |network/ftpd
+24 FTP                   |network/ftpd
 #14 **** OTHER
 00 Emulators*         >  |@6
 16 Analog clock          |aclock
 16 Binary clock          |demos/bcdclk
 29 FB2 Reader            |fb2read
-16 Timer                 |timer
+53 Timer                 |timer
 45 Screenshooter         |scrshoot
 45 Easyshot              |easyshot
 03 RTF reader            |rtfread

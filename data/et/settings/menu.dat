@@ -1,141 +1,139 @@
 #0    **** MAIN ****
-Game center           |allgames
-Demod              >  |@1
-Graafika           >  |@3
-Multimeedia        >  |@4
-Emulators          >  |@18
-Arendus            >  |@5
-Süsteem            >  |@7
-Andmetöötlus       >  |@11
-Võrk               >  |@12
-Teised             >  |@15
-Abi                   |docpack
-Käivita programm      |run
-Sule                  |end
+58 Welcome               |welcome.htm
+00 2D Demod	          >  |@1
+00 3D Demod           >  |@2
+00 Graafika           >  |@3
+00 Multimeedia        >  |@4
+00 Emulators*         >  |@18
+00 Arendus            >  |@5
+00 Süsteem            >  |@7
+00 Andmetöötlus       >  |@11
+00 Võrk               >  |@12
+00 Teised             >  |@15
+16 Game center           |allgames
+60 System panel          |syspanel
+18 Abi                   |docpack
+53 Käivita programm      |run
+04 Sule                  |end
 #1    **** DEMOS ****
-3D                 >  |@2
-Circle                |demos/circle
-Fractal               |demos/tinyfrac
-Color demo            |demos/colorref
-Eyes                  |demos/eyes
-Tube                  |demos/tube
-Plasma                |demos/plasma
-Spiral                |demos/spiral
-Moveback              |demos/movback
-TranTest              |demos/trantest
-WEB                   |demos/web
-FireWork              |demos/firework
-UnvWater              |demos/unvwater
+16 Circle                |demos/circle
+16 Fractal               |demos/tinyfrac
+16 Color demo            |demos/colorref
+16 Eyes                  |demos/eyes
+16 Tube                  |demos/tube
+16 Plasma                |demos/plasma
+16 Spiral                |demos/spiral
+16 Moveback              |demos/movback
+16 TranTest              |demos/trantest
+16 WEB                   |demos/web
+16 FireWork              |demos/firework
+16 UnvWater              |demos/unvwater
 #2  **** 3D demos ****
-ScreenSaver           |3d/crownscr
-3D-labyrinth          |3d/free3d04
-3D-cube               |3d/3dcube2
-Ray tracing           |3d/ray
-View3DS               |3d/view3ds
-Gears                 |3d/gears
-3D-waved area         |3d/3dwav
+15 ScreenSaver           |3d/crownscr
+15 3D-labyrinth          |3d/free3d04
+15 3D-cube               |3d/3dcube2
+15 Ray tracing           |3d/ray
+15 View3DS               |3d/view3ds
+15 Gears                 |3d/gears
+15 3D-waved area         |3d/3dwav
 #3   **** GRAPHICS ****
-Image viewer KIV      |media/kiv
-Image viewer zSea     |/kolibrios/media/zsea/zsea
-Animage               |media/animage
-Image Filtering       |media/imgf/imgf
-Palitra               |media/palitra
+06 Image viewer KIV      |media/kiv
+06 Image viewer zSea  *  |/kolibrios/media/zsea/zsea
+38 Animage               |media/animage
+38 IconEdit              |media/iconedit
+16 Image Filtering       |media/imgf/imgf
+52 Palitra               |media/palitra
+39 Pipet                 |develop/pipet
 #4   **** MULTIMEDIA ****
-Pixie Audioplayer     |media/pixie
-AC97SND Audioplayer   |media/ac97snd
-Fplay - video         |/kolibrios/media/fplay
-MidAMP                |media/midamp
+16 Pixie Audioplayer     |media/pixie
+16 AC97SND Audioplayer   |media/ac97snd
+16 Fplay - video         |/kolibrios/media/fplay
+16 MidAMP                |media/midamp
 #5    **** PROGRAMMING ****
-Examples           >  |@6
-Arhivaator KPack      |kpack
-Flat Assembler        |develop/fasm
-Diff Tool             |develop/diff
-Silumisaken           |develop/board
-Silur                 |develop/mtdbg
-Hex2Dec2Bin           |develop/h2d2b
-Märgistiku tabel      |develop/ASCIIVju
-ASCII-koodid          |develop/keyascii
-SCAN-koodid           |develop/scancode
+16 Arhivaator KPack      |kpack
+16 Flat Assembler        |develop/fasm
+16 Diff Tool             |develop/diff
+16 Silumisaken           |develop/board
+16 Silur                 |develop/mtdbg
+16 Hex2Dec2Bin           |develop/h2d2b
+16 Märgistiku tabel      |develop/ASCIIVju
+16 ASCII-koodid          |develop/keyascii
+16 SCAN-koodid           |develop/scancode
 #6    **** EXAMPLES ****
-Lõimed                |develop/thread
-Color slider          |demos/cslide
-Konsooli näide 1      |develop/testcon2
-Konsooli näide 2      |develop/test_gets
-Message Boxes example |demos/use_mb
 #7    **** SYSTEM ****
-Sätted             >  |@11
-Süsteemi sensorid  >  |@12
-Töö failidega      >  |@13
-Testimine          >  |@16
-Hõlbustus seaded   >  |@17
-Silumisaken           |develop/board
-Clipboard viewer      |develop/clipview
-Terminal              |terminal
+00 Sätted             >  |@11
+00 Süsteemi sensorid  >  |@12
+00 Töö failidega      >  |@13
+00 Testimine          >  |@16
+00 Hõlbustus seaded   >  |@17
+16 Silumisaken           |develop/board
+16 Clipboard viewer      |develop/clipview
+16 Terminal              |terminal
 #8    **** SETTINGS ****
-Seadmed               |setup
-Tausta genereerija    |media/palitra
-Värvid & Teemad       |skincfg
-MyKey                 |mykey
+16 Seadmed               |setup
+16 Tausta genereerija    |media/palitra
+16 Värvid & Teemad       |skincfg
+16 MyKey                 |mykey
 #9    **** SYSTEM SENSORS ****
-Protsesside haldur    |cpu
-PCI seadmed           |pcidev
-CPUID                 |cpuid
-Ghost Monitor         |gmon
-K. Bus disconnected   |kbd
-HDD info              |hdd_info
+16 Protsesside haldur    |cpu
+16 PCI seadmed           |pcidev
+16 CPUID                 |cpuid
+16 Ghost Monitor         |gmon
+16 K. Bus disconnected   |kbd
+16 HDD info              |hdd_info
 #10  **** WORK WITH FILES ****
-KFAR                  |File Managers/kfar
-KFM2                  |File Managers/kfm2
-fNav                  |File Managers/fNav/fNav
-Eolite                |File Managers/Eolite
-Virtual disks         |tmpdisk
-SHELL konsool         |shell
-Salvesta RD tõmmis    |rdsave
+16 KFAR                  |File Managers/kfar
+16 KFM2                  |File Managers/kfm2
+16 fNav                  |File Managers/fNav/fNav
+16 Eolite                |File Managers/Eolite
+16 Virtual disks         |tmpdisk
+16 SHELL konsool         |shell
+16 Salvesta RD tõmmis    |rdsave
 #11 **** DATA PROCESSING ****
-Kalkulaator           |calc
-Teksti redaktor       |tinypad
-CodeEdit              |develop/cedit
-Tabelarvutus          |table
-Graph builder         |graph
-Hex-Editor            |develop/heed
+16 Kalkulaator           |calc
+16 Teksti redaktor       |tinypad
+16 CodeEdit              |develop/cedit
+16 Tabelarvutus          |table
+16 Graph builder         |graph
+16 Hex-Editor            |develop/heed
 #12    **** NET ****
-Teenused           >  |@13
-Kliendid           >  |@14
-Võrgu seadistus       |network/netcfg
-Võrgu staatus         |network/netstat
+00 Teenused           >  |@13
+00 Kliendid           >  |@14
+16 Võrgu seadistus       |network/netcfg
+16 Võrgu staatus         |network/netstat
 #13    **** SERVERS ****
-FTP daemon            |network/ftpd
+24 FTP daemon            |network/ftpd
 #14   **** CLIENTS ****
-IRC klient            |network/ircc
-FTP klient            |network/ftpc
-TFTP klient           |network/tftpc
-Ping                  |network/ping
-Telnet klient         |network/telnet
-Synergy klient        |network/synergyc
-DNS otsing            |network/nslookup
-VNC Viewer            |network/vncc
-Interneti allalaadija |network/downloader
-Tekstipõhine brauser  |network/webview
+13 IRC klient            |network/ircc
+20 FTP klient            |network/ftpc
+20 TFTP klient           |network/tftpc
+24 Ping                  |network/ping
+24 Telnet klient         |network/telnet
+24 Synergy klient        |network/synergyc
+24 DNS otsing            |network/nslookup
+61 VNC Viewer            |network/vncc
+33 Interneti allalaadija |network/downloader
+12 Tekstipõhine brauser  |network/webview
 #15    **** OTHER ****
-Analoogkell           |aclock
-Digitaalne kell       |demos/bcdclk
-Taimer                |timer
-Ekraani tõmmis        |scrshoot
-Kalender              |calendar
-RTF faili lugeja      |rtfread
+16 Analoogkell           |aclock
+16 Digitaalne kell       |demos/bcdclk
+16 Taimer                |timer
+16 Ekraani tõmmis        |scrshoot
+62 Kalender              |calendar
+03 RTF faili lugeja      |rtfread
 #16    **** SYSTEM TESTS ****
-Protection test       |test
-Monitor test          |disptest
-Testi graafika kiirust|mgb
-FSPEED speed of FS    |fspeed
+16 Protection test       |test
+16 Monitor test          |disptest
+16 Testi graafika kiirust|mgb
+16 FSPEED speed of FS    |fspeed
 #17    **** SYSTEM SPECIAL ****
-Ekraani suurendusklaas|magnify
-Ekraani klaviatuur    |zkey
+49 Ekraani suurendusklaas|magnify
+59 Ekraani klaviatuur    |zkey
 #18    **** EMULATORS ****
-DOSBox DOS Emulator   |/kolibrios/emul/DosBox/dosbox
-e80 (ZX Spectrum)     |/kolibrios/emul/e80/e80
-FCE Ultra - NES       |/kolibrios/emul/fceu/fceu
-Gameboy Color         |/kolibrios/emul/gameboy
-ScummVM (adventure)   |/kolibrios/emul/scummvm
-ZSNES Super Nintendo  |/kolibrios/emul/zsnes/zsnes
+63 DOSBox DOS Emulator   |/kolibrios/emul/DosBox/dosbox
+16 e80 (ZX Spectrum)     |/kolibrios/emul/e80/e80
+23 FCE Ultra - NES       |/kolibrios/emul/fceu/fceu
+23 Gameboy Color         |/kolibrios/emul/gameboy
+16 ScummVM (adventure)   |/kolibrios/emul/scummvm
+23 ZSNES Super Nintendo  |/kolibrios/emul/zsnes/zsnes
 ##

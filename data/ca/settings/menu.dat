@@ -1,135 +1,128 @@
 #0    **** Principal ****
-Centre de jocs            /sys/allgames
-Demos              >      /@1
-Gràfics            >      /@3
-Multimèdia         >      /@4
-Emuladors          >      /@18
-Desenvolupament    >      /@5
-Sistema            >      /@7
-Procés de dades    >      /@11
-Xarxa              >      /@12
-Altres             >      /@15
-Ajuda                     /sys/docpack
-Executar aplicació        /sys/run
-Aturar                    /sys/end
+58 Welcome               |welcome.htm
+00 2D Demos           >  |@1
+00 3D Demos           >  |@2
+00 Gràfics            >  |@3
+00 Multimèdia         >  |@4
+00 Emuladors          >  |@15
+00 Desenvolupament    >  |@5
+00 Sistema            >  |@7
+00 Procés de dades    >  |@9
+00 Xarxa              >  |@10
+00 Altres             >  |@13
+23 Centre de jocs        |allgames
+60 System panel          |syspanel
+18 Ajuda                 |docpack
+53 Executar aplicació    |run
+04 Aturar                |end
 #1    **** DEMOS ****
-3D                 >      /@2
-Cercle                    /sys/demos/circle
-Fractal                   /sys/demos/tinyfrac
-Color demo                /sys/demos/colorref
-Ulls                      /sys/demos/eyes
-Tub                       /sys/demos/tube
-Plasma                    /sys/demos/plasma
-Spiral                    /sys/demos/spiral
-Retrocedir                /sys/demos/movback
-Vida                      /sys/demos/life2
-TranTest                  /sys/demos/trantest
-WEB                       /sys/demos/web
-FireWork                  /sys/demos/firework
-UnvWater                  /sys/demos/unvwater
+16 Cercle                |demos/circle
+16 Fractal               |demos/tinyfrac
+16 Color demo            |demos/colorref
+16 Ulls                  |demos/eyes
+16 Tub                   |demos/tube
+16 Plasma                |demos/plasma
+16 Spiral                |demos/spiral
+16 Retrocedir            |demos/movback
+16 Vida                  |demos/life2
+16 TranTest              |demos/trantest
+16 WEB                   |demos/web
+16 FireWork              |demos/firework
+16 UnvWater              |demos/unvwater
 #2  **** 3D ****
-Protector de pantalla     /sys/3d/crownscr
-3D-laberint               /sys/3d/free3d04
-Cor                       /sys/3d/3dsheart
-VeureDS                   /sys/3d/view3ds
-CubeLine                  /sys/3d/cubeline
-Engranatges               /sys/3d/gears
-zona ondulada-3D          /sys/3d/3dwav
+15 Protector de pantalla |3d/crownscr
+15 3D-laberint           |3d/free3d04
+15 Cor                   |3d/3dsheart
+15 VeureDS               |3d/view3ds
+15 CubeLine              |3d/cubeline
+15 Engranatges           |3d/gears
+15 zona ondulada-3D      |3d/3dwav
 #3   **** GRµFICS ****
-Visor d'imatges KIV       /sys/media/kiv
-Visor d'imatges zSea      /KolibriOS/media/zsea/zsea
-Animage                   /sys/media/animage
-Efectes d'imatges         /sys/media/imgf/imgf
-Palitra                   /sys/media/palitra
+06 Visor d'imatges KIV   |media/kiv
+06 Visor d'imatges zSea  |/kolibrios/media/zsea/zsea
+38 Animage               |media/animage
+38 IconEdit              |media/iconedit
+40 Efectes d'imatges     |media/imgf/imgf
+52 Palitra               |media/palitra
+39 Pipet                 |develop/pipet
 #4   **** MULTIMÈDIA ****
-Pixie - audio             /sys/media/pixie
-Fplay - video             /KolibriOS/media/fplay
-MidAMP                    /sys/media/midamp
+53 Pixie - audio         |media/pixie
+07 MidAMP                |media/midamp
+22 Toy piano             |media/piano
+52 Generador de fons     |media/palitra
+11 Fplay - video      *  |/kolibrios/media/fplay
 #5    **** DESARROLLO ****
-Exemples           >      /@6
-Arxivador KPack           /sys/kpack
-Assemblador Flat          /sys/develop/fasm
-Panell de depuració       /sys/develop/board
-Depurador                 /sys/develop/mtdbg
-Hex2Dec2Bin               /sys/develop/h2d2b
-Taula de caràcters        /sys/develop/ASCIIVju
-Codis ASCII               /sys/develop/keyascii
-Codis SCAN                /sys/develop/scancode
+00 Exemples           >  |@6
+09 Arxivador KPack       |kpack
+54 Assemblador Flat      |develop/fasm
+13 Panell de depuració   |develop/board
+16 Depurador             |develop/mtdbg
+34 Hex2Dec2Bin           |develop/h2d2b
+59 Taula de caràcters    |develop/ASCIIVju
+59 Codis ASCII           |develop/keyascii
+59 Codis SCAN            |develop/scancode
 #6    **** EXEMPLES ****
-Threads                   /sys/develop/thread
-Selector de color         /sys/demos/cslide
-Exemple de consola 1      /sys/develop/testcon2
-Exemple de consola 2      /sys/develop/test_gets
-Exemple Missatge caixes   /sys/demos/use_mb
+16 Threads               |develop/thread
+16 Selector de color     |demos/cslide
+16 Exemple de consola 1  |develop/testcon2
+16 Exemple de consola 2  |develop/test_gets
+16 Exemple Missatge caixa|demos/use_mb
 #7    **** SISTEMA ****
-Configuració       >      /@8
-Sensors            >      /@9
-Arxius             >      /@10
-Proves             >      /@16
-Accesibilitat      >      /@17
-Panell depuració          /sys/develop/board
-Clipboard viewer          /sys/develop/clipview
-Terminal                  /sys/terminal
-#8    **** CONFIGURACIÓ ****
-Dispositius               /sys/setup
-Generador de fons         /sys/media/palitra
-Colors i Apariència       /sys/skincfg
-Dreseres de teclat        /sys/mykey
-#9    **** SENSORS ****
-Procesos                  /sys/cpu
-Dispositius PCI           /sys/pcidev
-CPUID                     /sys/cpuid
-Monitor de Ghost          /sys/gmon
-K. Bus desconectat        /sys/kbd
-Informació de HDD         /sys/hdd_info
-#10  **** ARCHIUS ****
-KFAR                      /sys/File Managers/kfar
-fNav                      /sys/File Managers/fNav/fNav
-KFM2                      /sys/File Managers/kfm2
-Eolite                    /sys/File Managers/Eolite
-Virtual disks             /sys/tmpdisk
-SHELL                     /sys/shell
-Guardar imatge RD         /sys/rdsave
-#11 **** PROCÉS DE DADES ****
-Calculadora               /sys/calc
-Tinypad                   /sys/tinypad
-TextEdit                  /sys/develop/t_edit
-Procesador de tables      /sys/table
-Generador de gràfiques    /sys/graph
-Hex-Editor                /sys/develop/heed
-#12    **** XARXA ****
-Servidors         >       /@13
-Clients           >       /@14
-Dispositius de xarxa      /sys/network/netcfg
-Estat de la xarxa         /sys/network/netstat
-#13    **** SERVIDORS ****
-Dimoni FTP                /sys/network/ftpd
-#14   **** CLIENTS ****
-Client IRC                /sys/network/ircc
-Client FTP                /sys/network/ftpc
-Cliente TFTP              /sys/network/tftpc
-Ping                      /sys/network/ping
-Client Telnet             /sys/network/telnet
-Client Synergy            /sys/network/synergyc
-Resoluci¢ó de noms        /sys/network/nslookup
-Client de baixades        /sys/network/downloader
-Navegador (mode text)     /sys/network/webview
-#15    **** ALTRES ****
-Rellotge analògic         /sys/aclock
-Rellotge binari           /sys/demos/bcdclk
-Contador                  /sys/timer
-Capturador de pantalla    /sys/scrshoot
-Calendari                 /sys/calendar
-Lector de RTF             /sys/rtfread
-#16    **** PROBES        /sys/fspeed
-#17    **** ACCESIBILITAT ****
-Ampliació de pantalla     /sys/magnify
-Teclat en pantalla        /sys/zkey
-#18    **** EMULADORS ****
-DOSBox DOS Emulador       /KolibriOS/emul/DosBox/dosbox
-e80 (ZX Spectrum)         /KolibriOS/emul/e80/e80
-FCE Ultra - NES           /KolibriOS/emul/fceu/fce
-Gameboy Color             /KolibriOS/emul/gameboy
-ScummVM (aventura)        /KolibriOS/emul/scummvm
-ZSNES Super Nintendo      /KolibriOS/emul/zsnes
+00 Arxius             >  |@8
+00 Accesibilitat      >  |@14
+13 Panell depuració      |develop/board
+56 Clipboard viewer      |develop/clipview
+24 Terminal              |terminal
+24 SHELL                 |shell
+51 Virtual disks         |tmpdisk
+05 Guardar imatge RD     |rdsave
+#8  **** ARCHIUS ****
+24 KFAR                  |File Managers/kfar
+20 fNav                  |File Managers/fNav/fNav
+05 KFM2                  |File Managers/kfm2
+50 Eolite                |File Managers/Eolite
+#9 **** PROCÉS DE DADES ****
+16 Calculadora           |calc
+03 Tinypad               |tinypad
+28 TextEdit              |develop/cedit
+21 Procesador de tables  |table
+47 Generador de gràfique |graph
+59 Hex-Editor            |develop/heed
+09 Unarchiver Unz        |unz
+#10    **** XARXA ****
+00 Servidors         >   |@11
+00 Clients           >   |@12
+25 Dispositius de xarxa  |network/netcfg
+25 Estat de la xarxa     |network/netstat
+#11    **** SERVIDORS ****
+16 Dimoni FTP            |network/ftpd
+#12   **** CLIENTS ****
+13 Client IRC            |network/ircc
+16 Client FTP            |network/ftpc
+50 Cliente TFTP          |network/tftpc
+24 Ping                  |network/ping
+24 Client Telnet         |network/telnet
+24 Client Synergy        |network/synergyc
+24 Resoluci¢ó de noms    |network/nslookup
+61 VNC Viewer            |network/vncc
+33 Client de baixades    |network/downloader
+12 Navegador (mode text) |network/webview
+#13    **** ALTRES ****
+16 Rellotge analògic     |aclock
+16 Rellotge binari       |demos/bcdclk
+16 Contador              |timer
+45 Capturador de pantalla|scrshoot
+45 Easyshot              |easyshot
+16 Calendari             |calendar
+03 Lector de RTF         |rtfread
+#14    **** ACCESIBILITAT ****
+49 Ampliació de pantalla |magnify
+59 Teclat en pantalla    |zkey
+#15    **** EMULADORS ****
+63 DOSBox DOS Emulador   |/kolibrios/emul/DosBox/dosbox
+16 e80 (ZX Spectrum)     |/kolibrios/emul/e80/e80
+23 FCE Ultra - NES       |/kolibrios/emul/fceu/fce
+23 Gameboy Color         |/kolibrios/emul/gameboy
+16 ScummVM (aventura)    |/kolibrios/emul/scummvm
+23 ZSNES Super Nintendo  |/kolibrios/emul/zsnes
 ##

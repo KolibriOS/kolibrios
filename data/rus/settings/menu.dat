@@ -1,5 +1,5 @@
 #0 **** MAIN
-58 Вступление            |index.htm
+58 Приветствие           |welcome.htm
 00 2D Демки           >  |@1
 00 3D Демки           >  |@2
 00 Графика            >  |@3
@@ -51,26 +51,27 @@
 #5 **** Разработка
 54 Flat Assembler        |develop/fasm
 09 Упаковщик KPack       |kpack
-16 Отладчик              |develop/mtdbg
+49 Отладчик              |develop/mtdbg
 13 Доска отладки         |develop/board
-59 HEX-редактор          |develop/heed
+16 HEX-редактор          |develop/heed
 20 Diff tool             |develop/diff
 34 Hex2Dec2Bin           |develop/h2d2b
 59 Таблица символов      |develop/ASCIIVju
 59 ASCII-коды            |develop/keyascii
 59 SCAN-коды             |develop/scancode
 #6 **** Эмуляторы
-24 DOSBox                |/kolibrios/emul/DosBox/dosbox
+63 DOSBox                |/kolibrios/emul/DosBox/dosbox
 16 e80 (ZX Spectrum)     |/kolibrios/emul/e80/e80
-16 FCE Ultra - NES       |/kolibrios/emul/fceu/fceu
-16 ZSNES Super Nintendo  |/kolibrios/emul/zsnes/zsnes
+23 Gameboy Color         |/kolibrios/emul/gameboy
+23 FCE Ultra - NES       |/kolibrios/emul/fceu/fceu
+23 ZSNES Super Nintendo  |/kolibrios/emul/zsnes/zsnes
 16 ScummVM               |/kolibrios/emul/scummvm
 #7 **** Система
 00 Файловые менеджеры >  |@8
 00 Спец. возможности  >  |@9
-16 Календарь             |calendar
-24 Терминал              |terminal
+62 Календарь             |calendar
 51 Виртуальные диски     |tmpdisk
+24 Терминал              |terminal
 24 Консоль SHELL         |shell
 05 Сохранение образа     |rdsave
 #8 **** Система > ФМ
@@ -94,16 +95,16 @@
 25 Настройки сети        |network/netcfg
 25 Статус подключения    |network/netstat
 #12 **** Сеть > Серверы
-16 FTP daemon            |network/ftpd
+24 FTP daemon            |network/ftpd
 #13 **** Сеть > Клиенты
 13 IRC клиент            |network/ircc
-16 FTP клиент            |network/ftpc
-50 TFTP клиент           |network/tftpc
+20 FTP клиент            |network/ftpc
+20 TFTP клиент           |network/tftpc
 24 Ping                  |network/ping
 24 Telnet                |network/telnet
 24 Synergy клиент        |network/synergyc
 24 DNS lookup            |network/nslookup
-16 VNC Клиент            |network/vncc
+61 VNC Клиент            |network/vncc
 33 Интернет загрузчик    |network/downloader
 12 Браузер WebView       |network/webview
 #14 **** Разное
@@ -112,9 +113,9 @@
 45 Простой скриншотер    |easyshot
 29 FB2 Читалка           |fb2read
 16 Аналоговые часы       |aclock
-16 Таблица Менделеева    |period
-16 Тренажёр KJ|ABuIIIA   |games/klavisha
+21 Таблица Менделеева    |period
+59 Тренажёр KJ|ABuIIIA   |games/klavisha
 16 Бинарные часы         |demos/bcdclk
-16 Таймер                |timer
+53 Таймер                |timer
 09 Разархиватор Unz      |unz
 ##
