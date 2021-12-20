@@ -63,13 +63,12 @@
 16 e80* (ZX Spectrum)    |/kolibrios/emul/e80/e80
 23 FCE Ultra* (NES)      |/kolibrios/emul/fceu/fceu
 23 Gameboy Color*        |/kolibrios/emul/gameboy
-16 ScummVM*              |/kolibrios/emul/scummvm
 23 ZSNES* Super Nintendo |/kolibrios/emul/zsnes/zsnes
+16 ScummVM*              |/kolibrios/emul/scummvm
 #7 **** SYSTEM
 00 File Managers      >  |@8
 00 Accessibility      >  |@9
 59 Hotkeys               |mykey
-16 Debug board           |develop/board
 56 Clipboard viewer      |develop/clipview
 62 Calendar              |calendar
 24 Terminal              |terminal
@@ -81,8 +80,8 @@
 50 Eolite                |File Managers/Eolite
 05 KFM2                  |File Managers/kfm2
 20 fNav                  |File Managers/fNav/fNav
-24 KFAR                  |File Managers/kfar
-24 NDN                *  |/kolibrios/utils/ndn/ndn
+64 KFAR                  |File Managers/kfar
+65 NDN                *  |/kolibrios/utils/ndn/ndn
 #9 **** ACCESSIBILITY
 49 Screen magnifier      |magnify
 59 Screen keyboard       |zkey
@@ -98,7 +97,7 @@
 00 Clients            >  |@12
 00 Servers            >  |@13
 25 Network devices       |network/netcfg
-25 Network status        |network/netstat
+16 Network status        |network/netstat
 #12 **** CLIENTS
 13 IRC                   |network/ircc
 20 FTP                   |network/ftpc
