@@ -19,7 +19,7 @@
 
 MODULE ChangeLog;
 
-IMPORT List, Lines, (*API,*) SYSTEM;
+IMPORT List, Lines, API, SYSTEM;
 
 TYPE
     tIntItem = POINTER TO RECORD (List.tItem)
@@ -29,7 +29,7 @@ TYPE
     tBoolItem = POINTER TO RECORD (List.tItem)
         adr: INTEGER; val: BOOLEAN; save: BOOLEAN
     END;
-(*
+
     tUntypedPtr = POINTER TO RECORD (List.tItem)
         p: INTEGER
     END;
@@ -37,13 +37,13 @@ TYPE
     tTypedPtr = POINTER TO RECORD (List.tItem)
         p: List.tItem
     END;
-*)
+
     tGuard* = POINTER TO RECORD (List.tItem)
         saved*: BOOLEAN
     END;
 
     tLog* = POINTER TO RECORD
-        Log*: List.tList;
+        Log*, Pointers*: List.tList;
         guard: tGuard;
         isLast: BOOLEAN
     END;
@@ -104,18 +104,11 @@ END redo;
 PROCEDURE clear (guard: tGuard);
 VAR
     item: List.tItem;
-    (*res: INTEGER;*)
 BEGIN
     CL.isLast := TRUE;
     REPEAT
         item := List.pop(CL.Log);
         IF item # guard THEN
-        (*
-            IF item IS tUntypedPtr THEN
-                res := API._DISPOSE(item(tUntypedPtr).p)
-            ELSIF item IS tTypedPtr THEN
-                DISPOSE(item(tTypedPtr).p)
-            END;*)
             DISPOSE(item)
         END
     UNTIL item = guard;
@@ -253,14 +246,14 @@ BEGIN
     changeWord(SYSTEM.ADR(v), SYSTEM.ADR(x))
 END changePtr;
 
-(*
+
 PROCEDURE typedPtr (p: List.tItem);
 VAR
     item: tTypedPtr;
 BEGIN
     NEW(item);
     item.p := p;
-    List.append(Log, item)
+    List.append(CL.Pointers, item)
 END typedPtr;
 
 
@@ -270,9 +263,9 @@ VAR
 BEGIN
     NEW(item);
     item.p := p;
-    List.append(Log, item)
+    List.append(CL.Pointers, item)
 END untypedPtr;
-*)
+
 
 PROCEDURE set* (_CL: tLog);
 BEGIN
@@ -288,13 +281,44 @@ BEGIN
     newLog.guard := NIL;
     newLog.isLast := TRUE;
     newLog.Log := List.create(NIL);
+    newLog.Pointers := List.create(NIL);
     CL := newLog;
     Lines.setMaxLength(maxLength)
     RETURN newLog
 END create;
 
 
+PROCEDURE destroy* (VAR log: tLog);
+VAR
+	item: List.tItem;
+	res: INTEGER;
+BEGIN
+	IF log # NIL THEN
+		item := List.pop(log.Log);
+		WHILE item # NIL DO
+			DISPOSE(item);
+			item := List.pop(log.Log)
+		END;
+		DISPOSE(log.Log);
+
+		item := List.pop(log.Pointers);
+		WHILE item # NIL DO
+            IF item IS tUntypedPtr THEN
+                res := API._DISPOSE(item(tUntypedPtr).p)
+            ELSIF item IS tTypedPtr THEN
+                DISPOSE(item(tTypedPtr).p)
+            END;
+			DISPOSE(item);
+			item := List.pop(log.Pointers)
+		END;
+		DISPOSE(log.Pointers);
+
+		DISPOSE(log)
+	END
+END destroy;
+
+
 BEGIN
     List.init(changeInt, changePtr);
-    Lines.init(changeInt, changePtr, changeBool, changeBool2(*, typedPtr, untypedPtr*))
+    Lines.init(changeInt, changePtr, changeBool, changeBool2, typedPtr, untypedPtr)
 END ChangeLog.

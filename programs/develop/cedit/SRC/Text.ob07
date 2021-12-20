@@ -2398,9 +2398,7 @@ END resize;
 PROCEDURE destroy* (VAR text: tText);
 BEGIN
     IF search(text, "", FALSE, FALSE) THEN END;
-    WHILE text.last # NIL DO
-        DelLine(text, text.last(tLine))
-    END;
+    ChangeLog.destroy(text.chLog);
     DISPOSE(text.foundList);
     DISPOSE(text.cursor);
     DISPOSE(text.select2);

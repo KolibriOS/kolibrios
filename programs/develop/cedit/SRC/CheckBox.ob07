@@ -45,7 +45,6 @@ TYPE
 PROCEDURE paint* (chkbox: tCheckBox);
 VAR
 	canvas: G.tCanvas;
-	(*r1, r2, g1, g2, b1, b2: BYTE;*)
 BEGIN
 	canvas := chkbox.canvas;
 	IF canvas # NIL THEN
@@ -61,10 +60,6 @@ BEGIN
 		    G.DLine(canvas, 2,  6,  7, -1);
 		    G.DLine(canvas, 7, 13,  9,  1);
 		    G.DLine(canvas, 7, 13, 10,  1);
-			(*G.getRGB(bColor, r1, g1, b1);
-			G.getRGB(fColor, r2, g2, b2);
-			G.SetColor(canvas, (b1 + b2) DIV 2 + ((g1 + g2) DIV 2)*256 + ((r1 + r2) DIV 2)*65536);
-			*)
 		    G.DLine(canvas, 2,  6,  8, -1);
 		    G.DLine(canvas, 7, 13, 11,  1);
 		    G.DLine(canvas, 2,  6,  5, -1);

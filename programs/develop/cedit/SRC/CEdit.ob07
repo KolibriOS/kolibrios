@@ -25,10 +25,10 @@ IMPORT
     G := Graph, T := Text, E := Encodings,
     CB := Clipboard, Languages,
     ChangeLog, Scroll, CheckBox,
-    RW, Ini, EB := EditBox, Icons, Tabs, Timer;
+    RW, Ini, EB := EditBox, Tabs, Toolbar;
 
 CONST
-    HEADER = "CEdit (17-dec-2021)";
+    HEADER = "CEdit (20-dec-2021)";
 
     ShellFilter = "";
     EditFilter = "SH|INC|TXT|ASM|OB07|C|CPP|H|PAS|PP|LUA|INI|JSON";
@@ -38,6 +38,7 @@ CONST
     scrollWidth = 22;
 
     btnClose = 1;
+
     btnNew = 20;
     btnOpen = 21;
     btnSave = 22;
@@ -62,12 +63,10 @@ CONST
 
     btnHeight = 25;
     btnWidth = 75;
-    btnTop = Menu.MainMenuHeight + 3;
-    toolBtnSize = 24;
-    toolbarDelim = 7;
-    iconPad = (toolBtnSize - Icons.SIZE) DIV 2;
 
-    TOP = btnTop + toolBtnSize + 10 + Tabs.tabHeight;
+    toolbarTop = Menu.MainMenuHeight + 3;
+
+    TOP = toolbarTop + Toolbar.BtnSize + 10 + Tabs.tabHeight;
     RIGHT = scrollWidth - 2;
     BOTTOM = scrollWidth + 18;
 
@@ -206,10 +205,12 @@ VAR
 
     menuActive: BOOLEAN;
 
-    icons: INTEGER;
-    grayIcons: INTEGER;
+    toolbar: Toolbar.tToolbar;
 
     IPC: ARRAY 64 OF INTEGER;
+
+    CursorTime, CurrentTime: INTEGER;
+    timerEnabled: BOOLEAN;
 
 
 PROCEDURE WritePos (y: INTEGER);
@@ -235,11 +236,12 @@ PROCEDURE resetTimer;
 BEGIN
 	IF EditBox_Focus(FindEdit) OR EditBox_Focus(ReplaceEdit) OR EditBox_Focus(GotoEdit) THEN
 		T.hideCursor;
-		Timer.kill
+		timerEnabled := FALSE
 	ELSE
 		T.showCursor;
-		Timer.create(mainTID)
-	END
+		timerEnabled := TRUE
+	END;
+	CursorTime := CurrentTime
 END resetTimer;
 
 
@@ -283,7 +285,8 @@ CONST
 VAR
     top, left, right, bottom, x, y, width: INTEGER;
 BEGIN
-	Timer.kill;
+	timerEnabled := FALSE;
+	CursorTime := CurrentTime;
     width := minWidth + LENGTH(s)*fontWidth;
     left := (canvas.width - width) DIV 2 + LEFT;
     top := (canvas.height - height) DIV 2 + TOP;
@@ -324,73 +327,6 @@ BEGIN
         SetFocus(FindEdit, TRUE)
     END
 END Replaced;
-
-
-PROCEDURE drawIcon (icons, idx, x: INTEGER);
-BEGIN
-	Icons.draw(icons, idx, x + iconPad, btnTop + iconPad)
-END drawIcon;
-
-
-PROCEDURE toolbarIcons;
-VAR
-    x, color, ico: INTEGER;
-BEGIN
-    x := searchLeft + (toolBtnSize + 5)*2;
-    IF text.modified THEN
-    	ico := icons
-    ELSE
-    	ico := grayIcons
-    END;
-    drawIcon(ico, 5, x);
-
-    IF text.edition # NIL THEN
-        x := searchLeft + (toolBtnSize + 5)*4 + toolbarDelim*2;
-        IF ChangeLog.isFirstGuard(text.edition) THEN
-        	ico := grayIcons
-        ELSE
-        	ico := icons
-        END;
-        drawIcon(ico, 37, x);
-
-        x := searchLeft + (toolBtnSize + 5)*5 + toolbarDelim*2;
-        IF ChangeLog.isLastGuard(text.edition) THEN
-        	ico := grayIcons
-        ELSE
-        	ico := icons
-        END;
-        drawIcon(ico, 36, x)
-    END;
-
-    IF T.selected(text) THEN
-        color := K.caseColor
-    ELSE
-        color := K.disCaseColor
-    END;
-
-    x := searchLeft + (toolBtnSize + 5)*6 + toolbarDelim*3;
-    K.DrawRect(x, btnTop, toolBtnSize, toolBtnSize, K.toolbarColor);
-    K.DrawText69(x + (toolBtnSize - 12) DIV 2, btnTop + (toolBtnSize - 9) DIV 2 + 2, color, "AB");
-    INC(x, toolBtnSize + 5);
-    K.DrawRect(x, btnTop, toolBtnSize, toolBtnSize, K.toolbarColor);
-    K.DrawText69(x + (toolBtnSize - 12) DIV 2, btnTop + (toolBtnSize - 9) DIV 2 + 2, color, "ab");
-
-    x := searchLeft + (toolBtnSize + 5)*8 + toolbarDelim*4;
-    IF buildScript # "" THEN
-    	ico := icons
-    ELSE
-    	ico := grayIcons
-    END;
-	drawIcon(ico, 54, x);
-
-    INC(x, toolBtnSize + 5);
-    IF runScript # "" THEN
-    	ico := icons
-    ELSE
-    	ico := grayIcons
-    END;
-    drawIcon(ico, 53, x)
-END toolbarIcons;
 
 
 PROCEDURE getIdx (text: T.tText): INTEGER;
@@ -499,7 +435,14 @@ BEGIN
         G.DrawCanvas(canvas, LEFT, TOP);
         NotFound;
         Replaced;
-        toolbarIcons
+        Toolbar.enable(toolbar, btnSave,  text.modified);
+        Toolbar.enable(toolbar, btnUndo,  ~ChangeLog.isFirstGuard(text.edition));
+        Toolbar.enable(toolbar, btnRedo,  ~ChangeLog.isLastGuard(text.edition));
+        Toolbar.enable(toolbar, btnUpper, T.selected(text));
+        Toolbar.enable(toolbar, btnLower, T.selected(text));
+        Toolbar.enable(toolbar, btnBuild, buildScript # "");
+        Toolbar.enable(toolbar, btnRun,   runScript # "");
+        Toolbar.drawIcons(toolbar)
     END
 END repaint;
 
@@ -580,17 +523,7 @@ END SearchPanel;
 
 PROCEDURE draw_window;
 VAR
-    width, height, x: INTEGER;
-
-
-    PROCEDURE drawToolbarBtn (id, x: INTEGER);
-    BEGIN
-        K.DrawRect(x, btnTop, toolBtnSize, toolBtnSize, K.toolbarColor);
-        K.DrawLine(x, btnTop + toolBtnSize, x + toolBtnSize, btnTop + toolBtnSize, K.shadowColor);
-        K.DrawLine(x + toolBtnSize, btnTop, x + toolBtnSize, btnTop + toolBtnSize, K.shadowColor);
-        K.CreateButton(id + ORD({30}), x, btnTop, toolBtnSize, toolBtnSize, K.btnColor, "");
-    END drawToolbarBtn;
-
+    width, height: INTEGER;
 
 BEGIN
     K.BeginDraw;
@@ -607,42 +540,7 @@ BEGIN
         K.DrawRect(LEFT + canvas.width + 1, TOP + canvas.height, scrollWidth - 1, scrollWidth, K.winColor);
         Menu.DrawMain(mainMenu);
 
-        x := searchLeft;
-
-        drawToolbarBtn(btnNew, x);
-        drawIcon(icons, 2, x);
-        INC(x, toolBtnSize + 5);
-
-        drawToolbarBtn(btnOpen, x);
-        drawIcon(icons, 0, x);
-        INC(x, toolBtnSize + 5);
-
-        drawToolbarBtn(btnSave, x);
-        INC(x, toolBtnSize + 5 + toolbarDelim);
-
-        drawToolbarBtn(btnSearch, x);
-        drawIcon(icons, 49, x);
-        INC(x, toolBtnSize + 5 + toolbarDelim);
-
-        drawToolbarBtn(btnUndo, x);
-        INC(x, toolBtnSize + 5);
-
-        drawToolbarBtn(btnRedo, x);
-        INC(x, toolBtnSize + 5 + toolbarDelim);
-
-        drawToolbarBtn(btnUpper, x);
-        INC(x, toolBtnSize + 5);
-
-        drawToolbarBtn(btnLower, x);
-        INC(x, toolBtnSize + 5 + toolbarDelim);
-
-        drawToolbarBtn(btnBuild, x);
-        INC(x, toolBtnSize + 5);
-
-        drawToolbarBtn(btnRun, x);
-        INC(x, toolBtnSize + 5);
-
-        toolbarIcons;
+        Toolbar.draw(toolbar);
 
         DrawState(text, width, height);
         IF search & searchOpened THEN
@@ -668,7 +566,8 @@ END mouse;
 PROCEDURE stopTimer;
 BEGIN
 	T.hideCursor;
-    Timer.kill;
+    timerEnabled := FALSE;
+    CursorTime := CurrentTime;
     repaint
 END stopTimer;
 
@@ -832,6 +731,7 @@ BEGIN
         Confirm
     ELSE
         Tabs.delete(tabs, n);
+        T.destroy(texts[n]);
         FOR i := n + 1 TO textsCount - 1 DO
             texts[i - 1] := texts[i]
         END;
@@ -1065,9 +965,7 @@ END Script;
 PROCEDURE ShowSearchPanel (goto: BOOLEAN);
 VAR
 	i: INTEGER;
-	(*flag: BOOLEAN;*)
 BEGIN
-	(*flag := FALSE;*)
 	IF T.selected(text) & ~goto THEN
 		T.getSelectedText(text, new_searchText);
 		IF new_searchText # "" THEN
@@ -1079,7 +977,6 @@ BEGIN
 				searchText := new_searchText;
 				EB.setValue(FindEdit, searchText);
 				notFound := ~T.search(text, searchText, cs, whole);
-				(*flag := TRUE*)
 			END
 		END
 	END;
@@ -1092,7 +989,7 @@ BEGIN
     IF goto THEN
     	SetFocus(GotoEdit, TRUE)
     ELSE
-    	SetFocus(FindEdit, (*~flag*)TRUE)
+    	SetFocus(FindEdit, TRUE)
     END
 END ShowSearchPanel;
 
@@ -1203,7 +1100,7 @@ BEGIN
 	Menu.option(subEOL, menuCR,   T.getEol(text) = RW.EOL_CR);
 
     IF menu # NIL THEN
-    	Timer.kill;
+    	timerEnabled := FALSE;
         IF Menu.opened(menu) THEN
             Menu.close(menu)
         END;
@@ -1230,13 +1127,7 @@ VAR
 	item: List.tItem;
 BEGIN
 	scrollIPC := FALSE;
-    IF IPC[0] = Timer.ID THEN
-    	IF IPC[4] = Timer.n THEN
-			T.toggleCursor;
-			repaint
-		END;
-    	IPC[2] := 0
-    ELSIF IPC[0] = mainTID THEN
+    IF IPC[0] = mainTID THEN
     	IF IPC[2] = Scroll.ScrollIPC THEN
     		Scroll.receiveIPC(IPC, scrollIPC)
     	END;
@@ -1870,8 +1761,8 @@ BEGIN
     	END
     END;
     CASE btn OF
-    |Tabs.btnID - 1: Tabs.scroll(tabs, -1); switch := TRUE; repaint
-    |Tabs.btnID - 2: Tabs.scroll(tabs, +1); switch := TRUE; repaint
+    |Tabs.btnLeft:  Tabs.scroll(tabs, -1); switch := TRUE; repaint
+    |Tabs.btnRight: Tabs.scroll(tabs, +1); switch := TRUE; repaint
 
     |0:
 
@@ -2049,7 +1940,6 @@ VAR
     i: INTEGER;
 BEGIN
     K.GetSystemColors;
-    Icons.get(icons, grayIcons);
     FOR i := 0 TO 1 DO
         IF ~K.RolledUp() THEN
             K.ClientSize(width, height);
@@ -2092,7 +1982,6 @@ VAR
     firstClickX, firstClickY, time: INTEGER;
 BEGIN
     K.GetSystemColors;
-    Icons.get(icons, grayIcons);
     modified := FALSE;
     switch := FALSE;
     closing := FALSE;
@@ -2153,6 +2042,22 @@ BEGIN
     Menu.AddMainItem(mainMenu, "program", menuProgram);
     Menu.AddMainItem(mainMenu, "tools", menuTools);
 
+    Toolbar.create(toolbar, searchLeft, toolbarTop);
+    Toolbar.add(toolbar, btnNew,     2, "");
+    Toolbar.add(toolbar, btnOpen,    0, "");
+    Toolbar.add(toolbar, btnSave,    5, "");
+    Toolbar.delimiter(toolbar);
+    Toolbar.add(toolbar, btnSearch, 49, "");
+    Toolbar.delimiter(toolbar);
+    Toolbar.add(toolbar, btnUndo,   37, "");
+    Toolbar.add(toolbar, btnRedo,   36, "");
+    Toolbar.delimiter(toolbar);
+    Toolbar.add(toolbar, btnUpper,  -1, "AB");
+    Toolbar.add(toolbar, btnLower,  -1, "ab");
+    Toolbar.delimiter(toolbar);
+    Toolbar.add(toolbar, btnBuild,  54, "");
+    Toolbar.add(toolbar, btnRun,    53, "");
+
     Ini.getSettings(buildScript, runScript, debugScript);
     IF fileName = "" THEN
         text := T.New();
@@ -2188,9 +2093,17 @@ BEGIN
     K.SetEventsMask({0, 1, 2, 5, 6, 31});
     Menu.init(resetTimer);
     draw_window;
-    Timer.create(mainTID);
+    timerEnabled := TRUE;
+    CursorTime := K.GetTickCount();
     WHILE TRUE DO
-        CASE K.WaitForEvent() OF
+    	CurrentTime := K.GetTickCount();
+    	IF (CurrentTime - CursorTime > Ini.blink) & timerEnabled THEN
+    		CursorTime := CurrentTime;
+    		T.toggleCursor;
+    		repaint
+    	END;
+        CASE K.EventTimeout(10) OF
+        |0:
         |1:	Redraw(resized, width, height, cliWidth, cliHeight)
         |2: KeyDown(K.GetKey())
         |3: BtnClick

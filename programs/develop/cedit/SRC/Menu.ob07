@@ -20,7 +20,7 @@
 MODULE Menu;
 
 IMPORT
-    SYSTEM, G := Graph, List, K := KolibriOS, KOSAPI;
+    SYSTEM, G := Graph, List, K := KolibriOS;
 
 CONST
     fontHeight = 22;
@@ -259,26 +259,26 @@ BEGIN
                 TextColor := disSelForeColor
             END
         END;
+        Y := y + (fontHeight - 16) DIV 2;
         G.SetColor(canvas, BkColor);
         G.FillRect(canvas, 1, y, m.width - 1, y + fontHeight - 4);
         G.SetTextColor(canvas, TextColor);
         G.SetBkColor(canvas, BkColor);
-        G.TextOut2(canvas, LEFT, y + (fontHeight - 16) DIV 2 - 2, item.text, LENGTH(item.text));
+        G.TextOut2(canvas, LEFT, Y - 2, item.text, LENGTH(item.text));
 
         G.SetColor(canvas, TextColor);
         IF item.check = 1 THEN
-            G.DLine(canvas, 4, 7, y + (fontHeight - 16) DIV 2 + 5, -1);
-            G.DLine(canvas, 4, 7, y + (fontHeight - 16) DIV 2 + 6, -1);
-            G.DLine(canvas, 7, 12, y + (fontHeight - 16) DIV 2 + 8, 1);
-            G.DLine(canvas, 7, 12, y + (fontHeight - 16) DIV 2 + 9, 1);
+            G.DLine(canvas, 4, 7, Y + 5, -1);
+            G.DLine(canvas, 4, 7, Y + 6, -1);
+            G.DLine(canvas, 7, 12, Y + 8, 1);
+            G.DLine(canvas, 7, 12, Y + 9, 1);
         ELSIF item.check = 2 THEN
             G.FillRect(canvas, 6, y + fontHeight DIV 2 - 4, 10, y + fontHeight DIV 2)
         END;
 
         IF item.child # NIL THEN
             X := m.width - 9;
-            Y := y + (fontHeight - 16) DIV 2 + 2;
-        	G.Triangle(canvas, X, Y, X, Y + 8, G.triRight)
+        	G.Triangle(canvas, X, Y + 2, X, Y + 10, G.triRight)
         END;
 
         INC(y, fontHeight);
@@ -391,8 +391,8 @@ END submenu;
 PROCEDURE [stdcall] window (m: tMenu);
 VAR
     x, y: INTEGER;
-    key, temp: INTEGER;
     msState: SET;
+    key, temp: INTEGER;
     shift, ctrl: BOOLEAN;
 BEGIN
     m.selItem := ORD(m.keyboard) - 1;
@@ -400,7 +400,8 @@ BEGIN
     m.keyboard := FALSE;
     K.SetEventsMask({0, 1, 5});
     WHILE TRUE DO
-        CASE K.WaitForEvent() OF
+        CASE K.EventTimeout(100) OF
+        |0:
         |1:
             draw_window(m)
         |2:
@@ -408,15 +409,9 @@ BEGIN
             key := K.GetKey();
             IF ~shift & ~ ctrl THEN
 	            IF key DIV 65536 = 72 THEN
-	                DEC(m.selItem);
-	                IF m.selItem < 0 THEN
-	                    m.selItem := m.items.count - 1
-	                END
+	                m.selItem := (m.selItem - 1) MOD m.items.count
 	            ELSIF key DIV 65536 = 80 THEN
-	                INC(m.selItem);
-	                IF m.selItem >= m.items.count THEN
-	                    m.selItem := 0
-	                END
+	                m.selItem := (m.selItem + 1) MOD m.items.count
 	            ELSIF key DIV 65536 = 28 THEN
 	                IF m.selItem >= 0 THEN
 	                    click(m, m.selItem)
@@ -504,7 +499,7 @@ VAR
 BEGIN
     IF m.tid = 0 THEN
         L := level(m);
-        IF KOSAPI.sysfunc3(18, 21, TIDs[L]) = 0 THEN
+        IF K.GetThreadSlot(TIDs[L]) = 0 THEN
         	m.winX := x;
         	m.winY := y;
 	        SYSTEM.PUT(SYSTEM.ADR(stack[L][LEN(stack[0]) - 1]), m);

@@ -31,7 +31,7 @@ VAR
     winColor*, textColor*, btnColor*, btnTextColor*,
     toolbarColor*, scrollColor*, scrollBkColor*,
     borderColor*, shadowColor*, (*darkColor,*) lightColor*,
-    caseColor*, disCaseColor*: INTEGER;
+    textToolbarColor*, disTextToolbarColor*: INTEGER;
 
 
 PROCEDURE GetCommandLine* (): INTEGER;
@@ -62,9 +62,9 @@ BEGIN
 END EndDraw;
 
 
-PROCEDURE WaitForEvent* (): INTEGER;
-    RETURN KOSAPI.sysfunc1(10)
-END WaitForEvent;
+PROCEDURE EventTimeout* (t: INTEGER): INTEGER;
+    RETURN KOSAPI.sysfunc2(23, t)
+END EventTimeout;
 
 
 PROCEDURE ThreadInfo (offsa, offsb: INTEGER; VAR a, b: INTEGER);
@@ -319,11 +319,6 @@ PROCEDURE GetControlKeys* (): SET;
 END GetControlKeys;
 
 
-PROCEDURE malloc* (size: INTEGER): INTEGER;
-    RETURN KOSAPI.malloc(size)
-END malloc;
-
-
 PROCEDURE SetIPC* (buffer: ARRAY OF INTEGER);
 BEGIN
     KOSAPI.sysfunc4(60, 1, SYSTEM.ADR(buffer[0]), LEN(buffer)*SYSTEM.SIZE(INTEGER))
@@ -355,8 +350,8 @@ BEGIN
 
     toolbarColor := lightColor;(*0DFDFDFH;*)
     shadowColor := borderColor;(*0808080H;*)
-    caseColor := 00000FFH;
-    disCaseColor := borderColor;(*0808080H*)
+    textToolbarColor := 00000FFH;
+    disTextToolbarColor := borderColor;(*0808080H*)
 END GetSystemColors;
 
 
@@ -389,6 +384,33 @@ PROCEDURE SetCaption* (text: ARRAY OF CHAR);
 BEGIN
 	KOSAPI.sysfunc4(71, 2, SYSTEM.ADR(text[0]), 0)
 END SetCaption;
+
+
+PROCEDURE CBCount* (): INTEGER;
+	RETURN KOSAPI.sysfunc2(54, 0)
+END CBCount;
+
+
+PROCEDURE CBRead* (slot: INTEGER): INTEGER;
+	RETURN KOSAPI.sysfunc3(54, 1, slot)
+END CBRead;
+
+
+PROCEDURE CBWrite* (size, ptr: INTEGER);
+BEGIN
+	KOSAPI.sysfunc4(54, 2, size, ptr)
+END CBWrite;
+
+
+PROCEDURE CBDelSlot*;
+BEGIN
+	KOSAPI.sysfunc2(54, 3)
+END CBDelSlot;
+
+
+PROCEDURE GetThreadSlot* (tid: INTEGER): INTEGER;
+	RETURN KOSAPI.sysfunc3(18, 21, tid)
+END GetThreadSlot;
 
 
 END KolibriOS.

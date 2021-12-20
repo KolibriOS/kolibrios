@@ -19,7 +19,7 @@
 
 MODULE Clipboard;
 
-IMPORT SYSTEM, K := KOSAPI, E := Encodings, Lines;
+IMPORT SYSTEM, KOSAPI, E := Encodings, Lines, K := KolibriOS;
 
 CONST
     TTEXT = 0;
@@ -35,7 +35,7 @@ TYPE
 
 PROCEDURE free (ptr: INTEGER);
 BEGIN
-    ptr := K.free(ptr)
+    ptr := KOSAPI.free(ptr)
 END free;
 
 
@@ -52,7 +52,7 @@ VAR
 BEGIN
     cnt := bufSize(buffer) DIV 2;
     size := cnt + 12;
-    a := K.malloc(size);
+    a := KOSAPI.malloc(size);
     ASSERT(a # 0);
     SYSTEM.PUT32(a + 4, TTEXT);
     SYSTEM.PUT32(a + 8, 1);
@@ -70,8 +70,8 @@ BEGIN
         DEC(cnt)
     END;
     SYSTEM.PUT32(a, size);
-    K.sysfunc2(54, 3);
-    K.sysfunc4(54, 2, size, a)
+    K.CBDelSlot;
+    K.CBWrite(size, a)
 END put;
 
 
@@ -80,7 +80,7 @@ VAR
     res: tBuffer;
 BEGIN
     NEW(res);
-    res.dataPtr := K.malloc(bufSize*SYSTEM.SIZE(WCHAR) + 4096);
+    res.dataPtr := KOSAPI.malloc(bufSize*SYSTEM.SIZE(WCHAR) + 4096);
     ASSERT(res.dataPtr # 0);
     res.pos := res.dataPtr
     RETURN res
@@ -139,9 +139,9 @@ VAR
     res: BOOLEAN;
 BEGIN
     res := FALSE;
-    n := K.sysfunc2(54, 0);
+    n := K.CBCount();
     IF n > 0 THEN
-        ptr := K.sysfunc3(54, 1, n - 1);
+        ptr := K.CBRead(n - 1);
         SYSTEM.GET32(ptr, size);
         SYSTEM.GET32(ptr + 4, typ);
         SYSTEM.GET(ptr + 8, x);
@@ -159,7 +159,7 @@ BEGIN
     ptr := 0;
     cnt := 0;
     IF available() THEN
-        ptr := K.sysfunc3(54, 1, K.sysfunc2(54, 0) - 1);
+        ptr := K.CBRead(K.CBCount() - 1);
         SYSTEM.GET32(ptr, cnt);
         DEC(cnt, 12);
         INC(ptr, 12)

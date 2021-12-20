@@ -24,6 +24,8 @@ IMPORT List, K := KolibriOS, RW, U := Utils;
 CONST
 
     btnID* = 100;
+    btnLeft* = btnID - 1;
+	btnRight* = btnID - 2;
     tabHeight* = 22;
     curTabHeight = 26;
     scrWidth = 15;
@@ -116,10 +118,10 @@ BEGIN
     K.DrawRect(x, y - (curTabHeight - tabHeight), t.width + (2*scrWidth + 2), t.height + (curTabHeight - tabHeight) - 1, K.winColor);
     IF Width(t, 0, t.strings.count - 1) > t.width THEN
         INC(x, 2*scrWidth);
-        K.DeleteButton(btnID - 1);
-        K.DeleteButton(btnID - 2);
-        K.CreateButton(btnID - 1, t.x, y, scrWidth, t.height - 1, K.btnColor, "<");
-        K.CreateButton(btnID - 2, t.x + scrWidth, y, scrWidth, t.height - 1, K.btnColor, ">");
+        K.DeleteButton(btnLeft);
+        K.DeleteButton(btnRight);
+        K.CreateButton(btnLeft, t.x, y, scrWidth, t.height - 1, K.btnColor, "<");
+        K.CreateButton(btnRight, t.x + scrWidth, y, scrWidth, t.height - 1, K.btnColor, ">");
         scroll := TRUE
     ELSE
         t.first := 0;
@@ -199,7 +201,8 @@ VAR
     item: List.tItem;
 BEGIN
     item := List.getItem(t.strings, n);
-    List.delete(t.strings, item)
+    List.delete(t.strings, item);
+    DISPOSE(item)
 END delete;
 
 

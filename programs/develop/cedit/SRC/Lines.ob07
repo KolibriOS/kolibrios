@@ -40,18 +40,18 @@ TYPE
     PmovInt = PROCEDURE (VAR v: INTEGER; x: INTEGER);
     PmovBool = PROCEDURE (VAR v: BOOLEAN; x: BOOLEAN);
     PmovPtr = PROCEDURE (VAR v: List.tItem; x: List.tItem);
-(*
+
     PTypedPtr = PROCEDURE (p: List.tItem);
     PUntypedPtr = PROCEDURE (p: INTEGER);
-*)
+
 
 VAR
 
     _movInt: PmovInt;
     _movBool, _movBool2: PmovBool;
     _movPtr: PmovPtr;
-(*    _typedPtr: PTypedPtr;
-    _untypedPtr: PUntypedPtr;*)
+    _typedPtr: PTypedPtr;
+    _untypedPtr: PUntypedPtr;
 
     pMaxLength, tab*: INTEGER;
     tabs*: BOOLEAN;
@@ -83,7 +83,6 @@ END movPtr;
 
 PROCEDURE malloc (size: INTEGER): INTEGER;
 VAR
-    ptr: INTEGER;
     maxLength: INTEGER;
 BEGIN
     ASSERT(pMaxLength # 0);
@@ -92,9 +91,8 @@ BEGIN
         SYSTEM.PUT(pMaxLength, size)
     END;
     size := size*WCHAR_SIZE + 4;
-    INC(size, (-size) MOD 32);
-    ptr := API._NEW(size)
-    RETURN ptr
+    INC(size, (-size) MOD 32)
+    RETURN API._NEW(size)
 END malloc;
 
 
@@ -109,9 +107,9 @@ BEGIN
     END;
     IF ~line.temp THEN
         movInt(line.ptr, newPtr);
-(*        IF newPtr # 0 THEN
+        IF newPtr # 0 THEN
             _untypedPtr(newPtr)
-        END*)
+        END
     END;
     line.ptr := newPtr
 END free;
@@ -124,9 +122,9 @@ BEGIN
     NEW(line);
     line.label := FALSE;
     ASSERT(line # NIL);
-(*    IF ~temp THEN
+    IF ~temp THEN
         _typedPtr(line)
-    END;*)
+    END;
     line.next := NIL;
     line.prev := NIL;
     IF ~temp THEN
@@ -136,7 +134,7 @@ BEGIN
     line.ptr := malloc(1);
     ASSERT(line.ptr # 0);
     IF ~temp THEN
-        (*_untypedPtr(line.ptr);*)
+        _untypedPtr(line.ptr);
         movInt(line.ptr, line.ptr)
     END;
     SYSTEM.PUT16(line.ptr, 0);
@@ -472,14 +470,14 @@ BEGIN
 END chCase;
 
 
-PROCEDURE init* (movInt: PmovInt; movPtr: PmovPtr; movBool, movBool2: PmovBool(*; typedPtr: PTypedPtr; untypedPtr: PUntypedPtr*));
+PROCEDURE init* (movInt: PmovInt; movPtr: PmovPtr; movBool, movBool2: PmovBool; typedPtr: PTypedPtr; untypedPtr: PUntypedPtr);
 BEGIN
     _movInt := movInt;
     _movPtr := movPtr;
     _movBool := movBool;
     _movBool2 := movBool2;
-(*    _typedPtr := typedPtr;
-    _untypedPtr := untypedPtr;*)
+    _typedPtr := typedPtr;
+    _untypedPtr := untypedPtr;
 END init;
 
 

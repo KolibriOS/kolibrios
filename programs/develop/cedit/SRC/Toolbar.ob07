@@ -1,0 +1,151 @@
+﻿(*
+    Copyright 2021 Anton Krotov
+
+    This file is part of CEdit.
+
+    CEdit is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    CEdit is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with CEdit. If not, see <http://www.gnu.org/licenses/>.
+*)
+
+MODULE Toolbar;
+
+IMPORT
+	Icons, K := KolibriOS;
+
+CONST
+	max = 14;
+
+    BtnSize* = 24;
+    BtnInter = 5;
+    DelimSize = 7;
+    IconPad = (BtnSize - Icons.SIZE) DIV 2;
+
+TYPE
+	tButtonText = ARRAY 4 OF CHAR;
+
+	tButton = RECORD
+		btn, icon, x: INTEGER;
+		text: tButtonText;
+		enabled: BOOLEAN
+	END;
+
+	tToolbar* = RECORD
+		buttons: ARRAY max OF tButton;
+		x, y, cnt, width: INTEGER;
+		icons, grayIcons: INTEGER
+	END;
+
+
+PROCEDURE drawIcons* (toolbar: tToolbar);
+VAR
+	i, icons, color: INTEGER;
+	button: tButton;
+BEGIN
+	i := 0;
+	WHILE i < toolbar.cnt DO
+		button := toolbar.buttons[i];
+		IF button.btn # 0 THEN
+			IF button.enabled THEN
+				icons := toolbar.icons;
+				color := K.textToolbarColor
+			ELSE
+				icons := toolbar.grayIcons;
+				color := K.disTextToolbarColor
+			END;
+			IF button.icon # -1 THEN
+				Icons.draw(icons, button.icon, button.x + IconPad, toolbar.y + IconPad)
+			ELSE
+			    K.DrawRect(button.x, toolbar.y, BtnSize, BtnSize, K.toolbarColor);
+    			K.DrawText69(button.x + (BtnSize - LENGTH(button.text)*6) DIV 2, toolbar.y + (BtnSize - 9) DIV 2 + 2, color, button.text)
+			END
+		END;
+		INC(i)
+	END
+END drawIcons;
+
+
+PROCEDURE draw* (VAR toolbar: tToolbar);
+VAR
+	i, x, y, btn: INTEGER;
+	button: tButton;
+BEGIN
+	Icons.get(toolbar.icons, toolbar.grayIcons);
+	i := 0;
+	WHILE i < toolbar.cnt DO
+		button := toolbar.buttons[i];
+		btn := button.btn;
+		IF btn # 0 THEN
+			x := button.x;
+			y := toolbar.y;
+			K.DrawRect(x, y, BtnSize, BtnSize, K.toolbarColor);
+			K.DrawLine(x, y + BtnSize, x + BtnSize, y + BtnSize, K.shadowColor);
+			K.DrawLine(x + BtnSize, y, x + BtnSize, y + BtnSize, K.shadowColor);
+			K.CreateButton(btn + ORD({30}), x, y, BtnSize, BtnSize, K.btnColor, "")
+		END;
+		INC(i)
+	END;
+	drawIcons(toolbar)
+END draw;
+
+
+PROCEDURE enable* (VAR toolbar: tToolbar; btn: INTEGER; value: BOOLEAN);
+VAR
+	i: INTEGER;
+BEGIN
+	i := 0;
+	WHILE (i < toolbar.cnt) & (toolbar.buttons[i].btn # btn) DO
+		INC(i)
+	END;
+	IF i < toolbar.cnt THEN
+		toolbar.buttons[i].enabled := value
+	END
+END enable;
+
+
+PROCEDURE add* (VAR toolbar: tToolbar; btn, icon: INTEGER; text: tButtonText);
+VAR
+	button: tButton;
+BEGIN
+	ASSERT(toolbar.cnt < max);
+	button.btn := btn;
+	button.icon := icon;
+	button.x := toolbar.width;
+	button.text := text;
+	button.enabled := TRUE;
+	toolbar.buttons[toolbar.cnt] := button;
+	INC(toolbar.cnt);
+	IF btn # 0 THEN
+		INC(toolbar.width, BtnSize + BtnInter)
+	ELSE
+		INC(toolbar.width, DelimSize)
+	END
+END add;
+
+
+PROCEDURE delimiter* (VAR toolbar: tToolbar);
+BEGIN
+	add(toolbar, 0, 0, "")
+END delimiter;
+
+
+PROCEDURE create* (VAR toolbar: tToolbar; x, y: INTEGER);
+BEGIN
+	toolbar.x := x;
+	toolbar.y := y;
+	toolbar.cnt := 0;
+	toolbar.width := x;
+	Icons.get(toolbar.icons, toolbar.grayIcons)
+END create;
+
+
+END Toolbar.
