@@ -360,7 +360,7 @@ start:
         mov     edi, transparent_cursor
         xor     eax, eax
         mov     ecx, 32*32
-        rep     stosd
+        rep stosd
         mcall   37, 4, transparent_cursor, 2
         mov     ecx, eax
         mcall   37, 5
@@ -417,7 +417,7 @@ turtle Turtle 0.0, 0.0, 0.0, <180, 255, 255>
 
 f70:    ; run
         dd 7, 0, 0, 0, 0
-        db '/sys/@ss',0
+        db '/sys/@SS',0
 i_end:
 
 align 4
@@ -427,7 +427,7 @@ frame_start   dd ?
 color         dd ?
 
 proc_info process_information
-params rb 0x400
+params rb 4
 transparent_cursor rd 32*32
 screensaver db ?
 align 4

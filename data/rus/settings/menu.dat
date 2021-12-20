@@ -74,6 +74,7 @@
 24 Терминал              |terminal
 24 Консоль SHELL         |shell
 05 Сохранение образа     |rdsave
+33 Онлайн обновление  *  |/kolibrios/utils/osupdate
 #8 **** Система > ФМ
 50 Eolite                |File Managers/Eolite
 05 KFM2                  |File Managers/kfm2

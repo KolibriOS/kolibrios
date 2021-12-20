@@ -71,6 +71,7 @@
 59 Hotkeys               |mykey
 56 Clipboard viewer      |develop/clipview
 62 Calendar              |calendar
+33 Online update      *  |/kolibrios/utils/osupdate
 48 Process manager       |cpu
 24 Terminal              |terminal
 05 Save ramdisk          |rdsave
