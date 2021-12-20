@@ -119,10 +119,10 @@
 49 Ampliació de pantalla |magnify
 59 Teclat en pantalla    |zkey
 #15    **** EMULADORS ****
-63 DOSBox DOS Emulador   |/kolibrios/emul/DosBox/dosbox
-16 e80 (ZX Spectrum)     |/kolibrios/emul/e80/e80
-23 FCE Ultra - NES       |/kolibrios/emul/fceu/fce
-23 Gameboy Color         |/kolibrios/emul/gameboy
-16 ScummVM (aventura)    |/kolibrios/emul/scummvm
-23 ZSNES Super Nintendo  |/kolibrios/emul/zsnes
+24 DOSBox             *  |/kolibrios/emul/DosBox/dosbox
+16 e80 (ZX Spectrum)  *  |/kolibrios/emul/e80/e80
+23 Gameboy Color      *  |/kolibrios/emul/gameboy
+23 FCE Ultra (NES)    *  |/kolibrios/emul/fceu/fceu
+23 ZSNES              *  |/kolibrios/emul/zsnes/zsnes
+16 ScummVM            *  |/kolibrios/emul/scummvm
 ##

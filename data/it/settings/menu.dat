@@ -115,10 +115,10 @@
 49 Lente di ingrandimento|magnify
 59 Tastiera da schermo   |zkey
 #18 **** EMUL
-63 DOSBox                |/kolibrios/emul/DosBox/dosbox
-16 e80 (ZX Spectrum)     |/kolibrios/emul/e80/e80
-23 FCE Ultra - NES       |/kolibrios/emul/fceu/fceu
-23 Gameboy Color         |/kolibrios/emul/gameboy
-16 ScummVM               |/kolibrios/emul/scummvm
-23 ZSNES Super Nintendo  |/kolibrios/emul/zsnes/zsnes
+24 DOSBox             *  |/kolibrios/emul/DosBox/dosbox
+16 e80 (ZX Spectrum)  *  |/kolibrios/emul/e80/e80
+23 Gameboy Color      *  |/kolibrios/emul/gameboy
+23 FCE Ultra (NES)    *  |/kolibrios/emul/fceu/fceu
+23 ZSNES              *  |/kolibrios/emul/zsnes/zsnes
+16 ScummVM            *  |/kolibrios/emul/scummvm
 ##

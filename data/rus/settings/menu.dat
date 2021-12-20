@@ -60,12 +60,12 @@
 59 ASCII-коды            |develop/keyascii
 59 SCAN-коды             |develop/scancode
 #6 **** Эмуляторы
-63 DOSBox                |/kolibrios/emul/DosBox/dosbox
-16 e80 (ZX Spectrum)     |/kolibrios/emul/e80/e80
-23 Gameboy Color         |/kolibrios/emul/gameboy
-23 FCE Ultra - NES       |/kolibrios/emul/fceu/fceu
-23 ZSNES Super Nintendo  |/kolibrios/emul/zsnes/zsnes
-16 ScummVM               |/kolibrios/emul/scummvm
+24 DOSBox             *  |/kolibrios/emul/DosBox/dosbox
+16 e80 (ZX Spectrum)  *  |/kolibrios/emul/e80/e80
+23 Gameboy Color      *  |/kolibrios/emul/gameboy
+23 FCE Ultra (NES)    *  |/kolibrios/emul/fceu/fceu
+23 ZSNES              *  |/kolibrios/emul/zsnes/zsnes
+16 ScummVM            *  |/kolibrios/emul/scummvm
 #7 **** Система
 00 Файловые менеджеры >  |@8
 00 Спец. возможности  >  |@9
