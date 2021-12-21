@@ -80,7 +80,7 @@
         menu:
                db 2                ; button number  = index
                db 'rotary    '     ; label
-               db 3                ; max flag  + 1 , if = 255, no flag
+               db 4                ; max flag  + 1 , if = 255, no flag
  r_flag        db 1                ; flag
                dd axl_f            ; offset to flags description
 
@@ -289,6 +289,7 @@ flags:             ; flags description
     db ' y  '
     db 'x+y '
     db ' x  '
+    db 'keys'
  onoff_f:
     db 'off '
     db 'on  '
@@ -353,7 +354,7 @@ base_vector:
       if Ext=SSE3
         db   ' (SSE3)'
       end if
-        db   ' 0.074',0
+        db   ' 0.075',0
     labellen:
         STRdata db '-1        '
      lab_vert:

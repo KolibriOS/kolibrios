@@ -1,5 +1,5 @@
 
-; application : View3ds ver. 0.074 - tiny .3ds and .asc files viewer
+; application : View3ds ver. 0.075 - tiny .3ds and .asc files viewer
 ;               with a few graphics effects demonstration.
 ; compiler    : FASM
 ; system      : KolibriOS
@@ -18,6 +18,7 @@
 ; 1) Read from a file (*.3DS standard)
 ; 2) Written in manually (at the end of the code) ; now not exist
 
+format binary as ""
 
 SIZE_X equ 512
 SIZE_Y equ 512                               ;      /////     I want definitely
@@ -163,11 +164,8 @@ still:
         je      key
         cmp     eax,3           ; button event ?
         je      button
-        cmp     eax,6           ; mouse event ?
-        jne     @f
-        cmp     [edit_flag],1   ; handle mouse only when edit is active
-        jne     @f
-
+		
+        mov     esi,eax
         mov     eax,37
         mov     ebx,7           ; get mouse scroll
         int     0x40
@@ -176,7 +174,12 @@ still:
         je      button.zoom_in
         cmp     eax, 1
         je      button.zoom_out
-
+        mov     eax,esi
+		
+        cmp     eax,6           ; mouse event ?
+        jne     @f
+        cmp     [edit_flag],1   ; handle mouse only when edit is active
+        jne     @f
         mov     eax,37
         mov     ebx,3   ;read mouse state
         int     0x40
@@ -214,23 +217,53 @@ still:
     key:                        ; key
         mov     eax,2           ; just read it and ignore
         int     0x40
+        shr     eax,16          ; use scancodes (al)
 
-        cmp     ah, '+'
+        cmp     al, 013 ;+
         je      button.zoom_in
-        cmp     ah, '='
-        je      button.zoom_in
-        cmp     ah, '-'
+        cmp     al, 012 ;-
         je      button.zoom_out
-        cmp     ah, 176 ;left
+        cmp     al, 075 ;left
         je      add_vec_buttons.x_minus
-        cmp     ah, 179 ;right
+        cmp     al, 077 ;right
         je      add_vec_buttons.x_plus
-        cmp     ah, 178 ;up
+        cmp     al, 072 ;up
         je      add_vec_buttons.y_minus
-        cmp     ah, 177 ;down
+        cmp     al, 080 ;down
         je      add_vec_buttons.y_plus
+        cmp     al, 073 ;page up
+        je      .rot_inc_y
+        cmp     al, 081 ;page down
+        je      .rot_dec_y
+        cmp     al, 051 ;<
+        je      .rot_dec_x
+        cmp     al, 052 ;>
+        je      .rot_inc_x
+        cmp     al, 057 ;space
+        je      .rot_z
 
         jmp     noclose
+
+	.rot_inc_x:
+	inc     [angle_x]
+	and     [angle_x],0xff
+	jmp     noclose.end_rot
+	.rot_dec_x:
+	dec     [angle_x]
+	and     [angle_x],0xff
+	jmp     noclose.end_rot
+	.rot_inc_y:
+	inc     [angle_y]
+	and     [angle_y],0xff
+	jmp     noclose.end_rot
+	.rot_dec_y:
+	dec     [angle_y]
+	and     [angle_y],0xff
+	jmp     noclose.end_rot
+	.rot_z:
+	inc     [angle_z]
+	and     [angle_z],0xff
+	jmp     noclose.end_rot
 
     button:                     ; button
         mov     eax,17          ; get id
@@ -303,6 +336,7 @@ still:
      .next_m4:
         cmp      ah,14
         jne      @f
+		.xchg:
         call     exchange
      @@:
         cmp      ah,15
@@ -486,7 +520,7 @@ still:
         jne     .no_x
         inc     [angle_x]
         and     [angle_x],0xff
-        mov     [angle_z],0
+        ;mov     [angle_z],0
         jmp     .end_rot
 
       .no_x:
@@ -494,7 +528,7 @@ still:
         jne     .no_y
         inc     [angle_y]
         and     [angle_y],0xff
-        mov     [angle_z],0
+        ;mov     [angle_z],0
         jmp     .end_rot
 
       .no_y:
@@ -503,7 +537,7 @@ still:
         mov     cx,[angle_x]
         inc     cx
         and     cx,0xff
-        mov     [angle_z],0
+        ;mov     [angle_z],0
         mov     [angle_y],cx
         mov     [angle_x],cx
      .end_rot:

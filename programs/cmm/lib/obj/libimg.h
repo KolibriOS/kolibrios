@@ -173,12 +173,12 @@ struct libimg_image
 :void libimg_image::convert_into(dword _to)
 {
     img_convert stdcall(image, 0, _to, 0, 0);
-    $push eax
-    img_destroy stdcall(image);
-    $pop eax
     if (!EAX) {
         notify("'LibImg convertation error!'E");
     } else {
+        $push eax
+        img_destroy stdcall(image);
+        $pop eax
         image = EAX;
         set_vars();
     }
@@ -228,54 +228,6 @@ struct libimg_image
             }
         }
     }
-}
-
-
-
-/////////////////////////////
-/*
-//  DRAW ICON PATTERN / TEMP
-*/
-/////////////////////////////
-
-:void DrawIcon32(dword x,y, _bg, icon_n) {
-    static dword bg;
-    static dword pure_img32;
-    if (!pure_img32) || (bg!=_bg) {
-        bg = _bg;
-        if (pure_img32) img_destroy stdcall(pure_img32);
-        img_from_file stdcall("/sys/icons32.png");
-        pure_img32 = EAX;
-        //now fill transparent with another color
-        EDX = ESDWORD[EAX+4] * ESDWORD[EAX+8] * 4 + ESDWORD[EAX+24];
-        for (ESI = ESDWORD[EAX+24]; ESI < EDX; ESI += 4) {
-            if (DSDWORD[ESI]==0x00000000) DSDWORD[ESI] = bg;
-        }
-    }
-    img_draw stdcall(pure_img32, x, y, 32, 32, 0, icon_n*32);
-}
-
-:int DrawIcon16(dword x,y, _bg, icon_n) {
-    static dword bg;
-    static dword pure_img16;
-    dword bgshadow;
-    int size;
-    if (!pure_img16) || (bg!=_bg) {
-        bg = _bg;
-        bgshadow = MixColors(bg, 0, 220);
-        if (pure_img16) img_destroy stdcall(pure_img16);
-        img_from_file stdcall("/sys/icons16.png");
-        pure_img16 = EAX;
-        //now fill transparent with another color
-        EDX = ESDWORD[EAX+4] * ESDWORD[EAX+8] * 4 + ESDWORD[EAX+24];
-        for (ESI = ESDWORD[EAX+24]; ESI < EDX; ESI += 4) {
-            if (DSDWORD[ESI]==0xffFFFfff) DSDWORD[ESI] = bg;
-            if (DSDWORD[ESI]==0xffCACBD6) DSDWORD[ESI] = bgshadow;
-        }
-    }
-    size = ESDWORD[pure_img16+4]; //get image width
-    img_draw stdcall(pure_img16, x, y, size, size, 0, icon_n*size);
-    return size;
 }
 
 #endif
