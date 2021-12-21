@@ -27,7 +27,9 @@ TYPE
     END;
 
     tBoolItem = POINTER TO RECORD (List.tItem)
-        adr: INTEGER; val: BOOLEAN; save: BOOLEAN
+        line: Lines.tLine;
+        adr: INTEGER;
+        val, save: BOOLEAN
     END;
 
     tUntypedPtr = POINTER TO RECORD (List.tItem)
@@ -118,7 +120,10 @@ END clear;
 
 PROCEDURE save* (guard: tGuard);
 VAR
-    item: List.tItem;
+	item: List.tItem;
+	boolItem: tBoolItem;
+	cur: List.tItem;
+	del: BOOLEAN;
 BEGIN
     item := CL.Log.first;
     WHILE item # NIL DO
@@ -127,7 +132,22 @@ BEGIN
         END;
         item := item.next
     END;
-    guard.saved := TRUE
+    guard.saved := TRUE;
+
+    cur := CL.guard.prev;
+    WHILE cur # NIL DO
+        IF cur IS tBoolItem THEN
+            boolItem := cur(tBoolItem);
+            del := boolItem.save & boolItem.line.modified
+        ELSE
+            del := FALSE
+        END;
+        cur := cur.prev;
+        IF del THEN
+            List.delete(CL.Log, boolItem);
+            DISPOSE(boolItem)
+        END
+    END
 END save;
 
 
@@ -145,11 +165,12 @@ BEGIN
 END changeWord;
 
 
-PROCEDURE changeBool (VAR v: BOOLEAN; x: BOOLEAN);
+PROCEDURE changeBool (line: Lines.tLine; VAR v: BOOLEAN; x: BOOLEAN);
 VAR
     item: tBoolItem;
 BEGIN
     NEW(item);
+    item.line := line;
     item.adr := SYSTEM.ADR(v);
     item.val := x;
     item.save := FALSE;
@@ -207,30 +228,15 @@ BEGIN
 END delCurSaved;
 
 
-PROCEDURE changeBool2 (VAR v: BOOLEAN; x: BOOLEAN);
+PROCEDURE changeBool2 (line: Lines.tLine; VAR v: BOOLEAN; x: BOOLEAN);
 VAR
-    item, boolItem: tBoolItem;
-    cur: List.tItem;
-    del: BOOLEAN;
+    item: tBoolItem;
 BEGIN
     NEW(item);
+    item.line := line;
     item.adr := SYSTEM.ADR(v);
     item.val := x;
     item.save := TRUE;
-    cur := CL.guard.prev;
-    WHILE cur # NIL DO
-        IF cur IS tBoolItem THEN
-            boolItem := cur(tBoolItem);
-            del := boolItem.save & (boolItem.adr = SYSTEM.ADR(v)) & (boolItem.val = x)
-        ELSE
-            del := FALSE
-        END;
-        cur := cur.prev;
-        IF del THEN
-            List.delete(CL.Log, boolItem);
-            DISPOSE(boolItem)
-        END
-    END;
     List.insert(CL.Log, CL.guard.prev, item)
 END changeBool2;
 

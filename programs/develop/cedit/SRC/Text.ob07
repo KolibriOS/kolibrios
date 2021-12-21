@@ -1368,9 +1368,6 @@ BEGIN
             IF RW.putString(file, line, Len) # Len THEN
                 res := FALSE
             END;
-            IF line.modified THEN
-                Lines.save(line)
-            END;
             NextLine(line);
             IF line # NIL THEN
                 IF ~RW.newLine(file) THEN
@@ -1389,6 +1386,15 @@ BEGIN
         IF res THEN
             text.modified := FALSE;
             ChangeLog.save(text.edition);
+
+	        line := text.first(tLine);
+	        WHILE line # NIL DO
+	            IF line.modified THEN
+	                Lines.save(line)
+	            END;
+	            NextLine(line)
+	        END;
+
             IF File.Delete(tempFile) THEN END
         END
     END;
@@ -1495,7 +1501,7 @@ BEGIN
     n := selEnd.Y - selBeg.Y;
     cnt := 0;
     WHILE n >= 0 DO
-        INC(cnt, line.length + lenEOL);
+        INC(cnt, line.length + (lenEOL + 1));
         NextLine(line);
         DEC(n)
     END;

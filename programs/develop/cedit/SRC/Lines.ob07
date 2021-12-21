@@ -38,7 +38,7 @@ TYPE
     END;
 
     PmovInt = PROCEDURE (VAR v: INTEGER; x: INTEGER);
-    PmovBool = PROCEDURE (VAR v: BOOLEAN; x: BOOLEAN);
+    PmovBool = PROCEDURE (line: tLine; VAR v: BOOLEAN; x: BOOLEAN);
     PmovPtr = PROCEDURE (VAR v: List.tItem; x: List.tItem);
 
     PTypedPtr = PROCEDURE (p: List.tItem);
@@ -63,15 +63,15 @@ BEGIN
 END movInt;
 
 
-PROCEDURE movBool (VAR v: BOOLEAN; x: BOOLEAN);
+PROCEDURE movBool (line: tLine; VAR v: BOOLEAN; x: BOOLEAN);
 BEGIN
-    _movBool(v, x)
+    _movBool(line, v, x)
 END movBool;
 
 
-PROCEDURE movBool2 (VAR v: BOOLEAN; x: BOOLEAN);
+PROCEDURE movBool2 (line: tLine; VAR v: BOOLEAN; x: BOOLEAN);
 BEGIN
-    _movBool2(v, x)
+    _movBool2(line, v, x)
 END movBool2;
 
 
@@ -146,8 +146,8 @@ BEGIN
     line.modified := FALSE;
     line.saved := FALSE;
     IF ~temp THEN
-        movBool(line.modified, FALSE);
-        movBool(line.saved, FALSE)
+        movBool(line, line.modified, FALSE);
+        movBool(line, line.saved, FALSE)
     END;
     line.cin := 0;
     line.cout := 0;
@@ -194,8 +194,8 @@ END tabWidth;
 PROCEDURE save* (line: tLine);
 BEGIN
     IF ~line.temp THEN
-        movBool2(line.saved, TRUE);
-        movBool2(line.modified, FALSE)
+        movBool2(line, line.saved, TRUE);
+        movBool2(line, line.modified, FALSE)
     END;
     line.modified := FALSE;
     line.saved := TRUE
@@ -384,8 +384,8 @@ END fixTabs;
 PROCEDURE modify* (line: tLine);
 BEGIN
     IF ~line.temp THEN
-        movBool(line.modified, TRUE);
-        movBool(line.saved, FALSE)
+        movBool(line, line.modified, TRUE);
+        movBool(line, line.saved, FALSE)
     END;
     line.modified := TRUE;
     line.saved := FALSE;
