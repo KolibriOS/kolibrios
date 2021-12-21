@@ -1,6 +1,5 @@
 #define MEMSIZE 1024*160
 
-#include "../lib/io.h"
 #include "../lib/gui.h"
 #include "../lib/copyf.h"
 

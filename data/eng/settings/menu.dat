@@ -15,9 +15,7 @@
 53 Run                   |run
 04 Shut down             |end
 #1 **** DEMOS
-16 Circle                |demos/circle
 16 Fractal               |demos/tinyfrac
-16 Color demo            |demos/colorref
 16 Eyes                  |demos/eyes
 16 Tube                  |demos/tube
 16 Plasma                |demos/plasma
@@ -50,6 +48,7 @@
 11 Fplay Video        *  |/kolibrios/media/fplay
 #5 **** DEV
 54 Flat Assembler        |develop/fasm
+03 Example.asm           |example.asm
 49 Debugger              |develop/mtdbg
 13 Debug Board           |develop/board
 09 KPack Archiver        |kpack

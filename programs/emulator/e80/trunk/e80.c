@@ -379,7 +379,7 @@ kol_file_70(&file);
 void wnd_draw()
 {
 kol_paint_start();
-kol_wnd_define( (screen_w-540)/2, (screen_h-440)/2, 540, 440,  0x34b0b0b0, 0x34b0b0b0, WND_CAPTION);
+kol_wnd_define( (screen_w-540)/2, (screen_h-440)/2, 540, 440,  0x74b0b0b0, 0x74b0b0b0, WND_CAPTION);
 screen_print(&spectrumZ80);
 kol_paint_image((540 - screen_a_w)/2-5, 
 		(440 - screen_a_h-kol_skin_height())/2, 

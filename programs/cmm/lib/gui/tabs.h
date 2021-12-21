@@ -11,9 +11,9 @@
 	int base_id;
 
 	int active_tab;
-	char names[640];
 	int count;
 	dword events[10];
+	dword names[10];
 
 	int click();
 	void draw();
@@ -33,7 +33,7 @@
 	}
 
 	for (i=0; i<count; i++) {
-		xx += draw_button(xx + TAB_PADDING, i, i*NAME_SIZE + #names) + TAB_PADDING;
+		xx += draw_button(xx + TAB_PADDING, i, names[i]) + TAB_PADDING;
 	}
 }
 
@@ -44,7 +44,7 @@
 
 :void _tabs::add(dword text, event)
 {
-	strcpy(count*NAME_SIZE + #names, text);
+	names[count] = text;
 	events[count] = event;
 	count++;
 }

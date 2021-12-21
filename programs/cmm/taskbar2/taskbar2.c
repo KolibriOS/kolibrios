@@ -8,7 +8,6 @@
 
 #include "../lib/gui.h"
 #include "../lib/list_box.h"
-#include "../lib/io.h"
 #include "../lib/collection.h"
 #include "../lib/patterns/restart_process.h"
 

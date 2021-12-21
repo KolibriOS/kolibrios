@@ -11,8 +11,7 @@ edit_box edit_st = {180,NULL,NULL,0xffffff,0x94AECE,0xFFFfff,0xffffff,
 void DrawUiElementsPreview(dword x,y,h)
 {
 	incn y2;
-	y2.n = y;
-	spinbox1.draw(x, y2.inc(30));
+	spinbox1.draw(x, y2.set(y+30));
 	WriteText(x, y2.inc(30), 0x90, sc.work_text, "C-- Edit");
 	DrawEditBoxPos(x, y2.inc(20), #edit_cmm);
 	WriteText(x, y2.inc(35), 0x90, sc.work_text, "Strandard Edit");

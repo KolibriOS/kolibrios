@@ -1,7 +1,6 @@
 #define MEMSIZE 4096*20
 #include "..\lib\strings.h" 
 #include "..\lib\mem.h" 
-#include "..\lib\io.h"
 #include "..\lib\gui.h"
 #include "..\lib\obj\proc_lib.h"
 #include "..\lib\patterns\simple_open_dialog.h"

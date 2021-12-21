@@ -1,6 +1,5 @@
-#define MEMSIZE 4096*10
+#define MEMSIZE 1024*40
 
-#include "../lib/io.h"
 #include "../lib/list_box.h"
 #include "../lib/gui.h"
 #include "../lib/fs.h"

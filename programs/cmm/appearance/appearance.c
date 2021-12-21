@@ -14,6 +14,7 @@
 
 #include "../lib/patterns/select_list.h"
 #include "../lib/patterns/simple_open_dialog.h"
+#include "../lib/patterns/restart_process.h"
 
 #include "ui_elements_preview.h"
 
@@ -25,35 +26,39 @@
 
 #ifdef LANG_RUS
 	?define WINDOW_HEADER "Настройки оформления"
-	?define T_SKINS       "   Стиль окон"
-	?define T_WALLPAPERS  "   Обои"
 	?define T_SELECT_FOLDER "Выбрать папку"
 	?define MENU_LIST "Открыть файл   |Enter\nУдалить файл     |Del"
 	?define T_PICTURE_MODE " Положение картинки "
 	?define T_CHECKBOX_STRETCH "Растянуть"
 	?define T_CHECKBOX_TILED "Замостить"
 	?define T_UPDATE_DOCK "Обновлять Dock-панель"
+	char t_skins[] =       "   Стиль окон";
+	char t_wallpapers[] =  "   Обои";
+	char t_screensaver[] =  "   Скринсейвер";
 #else
 	?define WINDOW_HEADER "Appearance"
-	?define T_SKINS       "   Skins"
-	?define T_WALLPAPERS  "   Wallpapers"
 	?define T_SELECT_FOLDER "Select folder"
 	?define MENU_LIST "Open file      |Enter\nDelete file      |Del"
 	?define T_PICTURE_MODE " Picture Mode "
 	?define T_CHECKBOX_STRETCH "Stretch"
 	?define T_CHECKBOX_TILED "Tiled"
 	?define T_UPDATE_DOCK "Update Dock"
+	char t_skins[] =       "   Skins";
+	char t_wallpapers[] =  "   Wallpapers";
+	char t_screensaver[] =  "   Screensaver";
 #endif
 
-#define PANEL_H 40
+#define WIN_W 621
+#define PANEL_H 58
 #define LP 10 //LIST_PADDING
 char skins_folder_path[4096];
 char wallp_folder_path[4096];
 
-signed int active_skin=-1, active_wallpaper=-1;
+signed int active_skin=-1, active_wallpaper=-1, active_screensaver=-1;
 enum { 
-	BASE_TAB_BUTTON_ID=2, 
-	BTN_SELECT_WALLP_FOLDER=10 };
+	BASE_TAB_BUTTON_ID=3, 
+	BTN_SELECT_WALLP_FOLDER=10,
+	BTN_TEST_SCREENSAVER };
 
 char folder_path[4096];
 char cur_file_path[4096];
@@ -61,14 +66,17 @@ char cur_skin_path[4096];
 char temp_filename[4096];
 int files_mas[400];
 
+_ini ini = { "/sys/settings/system.ini", "style" };
+
 int cur;
 
 proc_info Form;
 block skp;
 
-enum {SKINS, WALLPAPERS};
+enum {SKINS, WALLPAPERS, SCREENSAVERS};
 
-_tabs tabs = { LP, LP, NULL, BASE_TAB_BUTTON_ID };
+_tabs tabs = { -sizeof(t_skins)-sizeof(t_wallpapers)-sizeof(t_screensaver)-3*8+WIN_W
+	 - TAB_PADDING / 2, LP, NULL, BASE_TAB_BUTTON_ID };
 
 checkbox update_docky = { T_UPDATE_DOCK, false };
 
@@ -86,11 +94,11 @@ checkbox optionbox_tiled = { T_CHECKBOX_TILED, false };
 
 void GetRealFolderPathes()
 {
-	char real_skin_path[4096];
+	char real_kolibrios_path[4096];
 	SetCurDir("/kolibrios");
-	GetCurDir(#real_skin_path, sizeof(real_skin_path));
-	sprintf(#skins_folder_path, "%s/res/skins", #real_skin_path);
-	sprintf(#wallp_folder_path, "%s/res/wallpapers", #real_skin_path);
+	GetCurDir(#real_kolibrios_path, sizeof(real_kolibrios_path));
+	miniprintf(#skins_folder_path, "%s/res/skins", #real_kolibrios_path);
+	miniprintf(#wallp_folder_path, "%s/res/wallpapers", #real_kolibrios_path);
 }
 
 void main()
@@ -105,8 +113,9 @@ void main()
 	o_dialog.type = 2; //select folder
 	OpenDialog_init stdcall (#o_dialog);
 
-	tabs.add(T_SKINS, #EventTabSkinsClick);	
-	tabs.add(T_WALLPAPERS, #EventTabWallpappersClick);
+	tabs.add(#t_skins, #EventTabSkinsClick);	
+	tabs.add(#t_wallpapers, #EventTabWallpappersClick);
+	tabs.add(#t_screensaver, #EventTabScreensaverClick);
 	tabs.draw_active_tab();
 
 	SetEventMask(EVM_REDRAW + EVM_KEY + EVM_BUTTON + EVM_MOUSE + EVM_MOUSE_FILTER);
@@ -145,8 +154,14 @@ void main()
 			GetKeys(); 
 			if (select_list.ProcessKey(key_scancode)) EventApply();
 			if (key_scancode==SCAN_CODE_ENTER) EventOpenFile();
-			if (key_scancode==SCAN_CODE_TAB) tabs.click(tabs.active_tab ^ 1);
 			if (key_scancode==SCAN_CODE_DEL) EventDeleteFile();
+			if (key_scancode==SCAN_CODE_TAB) {
+				id = tabs.active_tab+1; 
+				if(id==3)id=0;
+				tabs.click(id + tabs.base_id);
+				draw_window();
+				break;
+			}
 
 			if (! edit_cmm.flags & ed_focus) && (! edit_st.flags & ed_focus)
 			for (id=select_list.cur_y+1; id<select_list.count; id++)
@@ -177,7 +192,7 @@ void main()
 void draw_window()
 {
 	sc.get();
-	DefineAndDrawWindow(screen.width-600/2,80,630,504+skin_height,0x34,sc.work,WINDOW_HEADER,0);
+	DefineAndDrawWindow(screen.width-600/2,80,WIN_W+9,504+skin_height,0x34,sc.work,WINDOW_HEADER,0);
 	GetProcessInfo(#Form, SelfInfo);
 	IF (Form.status_window&ROLLED_UP) return;
 	DrawWindowContent();
@@ -186,50 +201,51 @@ void draw_window()
 void DrawWindowContent()
 {
 	int id;
-	int list_w;
 
 	sc.get();	
 
-	if (tabs.active_tab == SKINS) list_w=250; else list_w=350;
-
-	tabs.w = Form.cwidth-LP-LP;
+	//tabs.w = Form.cwidth-LP-LP;
 	tabs.draw();
 	draw_icon_16w(tabs.x + TAB_PADDING, 15, 17);
-	draw_icon_16w(strlen(T_SKINS)*8 + tabs.x + TAB_PADDING + TAB_PADDING, 15, 6);
+	draw_icon_16w(sizeof(t_skins)-1*8 + TAB_PADDING + TAB_PADDING + tabs.x, 15, 6);
+	draw_icon_16w(sizeof(t_wallpapers)+sizeof(t_skins)-2*8 + TAB_PADDING + TAB_PADDING + TAB_PADDING + tabs.x, 15, 61);
 
 	id = select_list.cur_y;
+	#define LIST_W 280
 	SelectList_Init(
-		tabs.x+TAB_PADDING,
-		tabs.y+TAB_HEIGHT+TAB_PADDING, 
-		list_w, 
-		Form.cheight-LP-LP - TAB_PADDING - TAB_PADDING - TAB_HEIGHT
+		LP + TAB_PADDING,
+		PANEL_H, 
+		LIST_W, 
+		Form.cheight-LP-LP - TAB_PADDING - PANEL_H
 		);
 	select_list.cur_y = id;
 
 	skp.set_size(
-		select_list.x + select_list.w + TAB_PADDING + scroll1.size_x + 20,
-		select_list.y + 30 + 50,
-		list_w,
+		LP + TAB_PADDING + LIST_W + TAB_PADDING + 30,
+		PANEL_H,
+		WIN_W  - 400,
 		230 //select_list.h - 50 - 50
 	);
 
 	SelectList_Draw();
 	SelectList_DrawBorder();
-	//DrawWideRectangle(0, 0, Form.cwidth, Form.cheight, LP, sc.work);
 
 	if (tabs.active_tab == SKINS)
 	{
-		update_docky.draw(skp.x, select_list.y+15);
-		DrawFrame(skp.x, skp.y, skp.w, skp.h, " Components Preview ");
-		DrawUiElementsPreview(skp.x+20, skp.y, skp.h);
+		DrawFrame(skp.x, PANEL_H+5, skp.w, skp.h, " Components Preview ");
+		DrawUiElementsPreview(skp.x+20, PANEL_H+5, skp.h);
+		if (CheckProcessExists("@DOCKY")) update_docky.draw(skp.x, PANEL_H+250);
 	}
 	if (tabs.active_tab == WALLPAPERS)
 	{
-		skp.x -= TAB_PADDING + 3;
-		DrawStandartCaptButton(skp.x, select_list.y, BTN_SELECT_WALLP_FOLDER, T_SELECT_FOLDER);
-		DrawFrame(skp.x, select_list.y+50, 180, 80, T_PICTURE_MODE);
-		optionbox_stretch.draw(skp.x+14, select_list.y+70);
-		optionbox_tiled.draw(skp.x+14, select_list.y+97);
+		DrawFrame(skp.x, PANEL_H+5, 180, 80, T_PICTURE_MODE);
+		optionbox_stretch.draw(skp.x+14, PANEL_H+25);
+		optionbox_tiled.draw(skp.x+14, PANEL_H+52);
+		DrawStandartCaptButton(skp.x, PANEL_H+100, BTN_SELECT_WALLP_FOLDER, T_SELECT_FOLDER);
+	}
+	if (tabs.active_tab == SCREENSAVERS)
+	{
+		DrawStandartCaptButton(skp.x, PANEL_H, BTN_TEST_SCREENSAVER, "Test");
 	}
 }
 
@@ -332,6 +348,12 @@ void EventTabWallpappersClick()
 	ActivateTab(active_wallpaper);
 }
 
+void EventTabScreensaverClick()
+{
+	//strcpy(#folder_path, #wallp_folder_path);
+	ActivateTab(active_screensaver);
+}
+
 void EventDeleteFile()
 {
 	io.del(#cur_file_path);
@@ -342,7 +364,8 @@ void EventDeleteFile()
 void EventSetNewCurrent()
 {
 	cur = select_list.cur_y;
-	sprintf(#cur_file_path,"%s/%s",#folder_path,io.dir.position(files_mas[cur]));
+	miniprintf(#cur_file_path,"%s/",#folder_path);
+	strcat(#cur_file_path, io.dir.position(files_mas[cur]));
 }
 
 void EventSelectWallpFolder()
@@ -368,7 +391,6 @@ void EventSetWallpMode_Tiled()
 	EventApply();
 }
 
-#include "..\lib\patterns\restart_process.h"
 void EventApply()
 {
 	char kivpath[4096+10];
@@ -384,9 +406,8 @@ void EventApply()
 	if (tabs.active_tab==WALLPAPERS)
 	{
 		SelectList_Draw();
-		if (optionbox_stretch.checked) strcpy(#kivpath, "\\S__");
-		if (optionbox_tiled.checked) strcpy(#kivpath, "\\T__");
-		strcat(#kivpath, #cur_file_path);
+		if (optionbox_stretch.checked) miniprintf(#kivpath, "\\S__%s", #cur_file_path);
+		if (optionbox_tiled.checked) miniprintf(#kivpath, "\\T__%s", #cur_file_path);
 		RunProgram("/sys/media/kiv", #kivpath);
 	}
 }
@@ -406,7 +427,6 @@ void EventOpenFile()
 	if (tabs.active_tab==WALLPAPERS) RunProgram("/sys/media/kiv", #cur_file_path);
 }
 
-_ini ini = { "/sys/settings/system.ini", "style" };
 void EventExit()
 {
 	if (cur_skin_path) ini.SetString("skin", #cur_skin_path, strlen(#cur_skin_path));

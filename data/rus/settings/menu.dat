@@ -15,9 +15,7 @@
 53 Запуск программы      |run
 04 Завершение работы     |end
 #1 **** 2D Демки
-16 Кружок                |demos/circle
 16 Фрактал Мандельброта  |demos/tinyfrac
-16 Цвета                 |demos/colorref
 16 Глаза                 |demos/eyes
 16 Труба                 |demos/tube
 16 Plasma                |demos/plasma
@@ -50,6 +48,7 @@
 11 Видеоплеер Fplay   *  |/kolibrios/media/fplay
 #5 **** Разработка
 54 Flat Assembler        |develop/fasm
+03 Example.asm           |example.asm
 09 Упаковщик KPack       |kpack
 49 Отладчик              |develop/mtdbg
 13 Доска отладки         |develop/board
