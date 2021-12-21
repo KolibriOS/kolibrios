@@ -24,15 +24,16 @@
 	dd I_Param	; boot parameters
 	dd 0x0		; path
 ;------------------------------------------------------------------------------
-include 'lang.inc'
 include '..\..\..\macros.inc'
 ;include   'debug.inc'
 ;------------------------------------------------------------------------------
 align 4
 START:
 	mcall	68,11
-	mcall	40,110010b
+	mcall	40, EVM_REDRAW + EVM_KEY + EVM_BUTTON + EVM_MOUSE
 ; boot parameters
+	cmp [I_Param], dword '@ss'
+	setz [screensaver]
 	cmp	[I_Param],dword 'ZERO'
 	jne	@f
 	mov	[type],dword 0
@@ -52,15 +53,11 @@ bgr_changed:
 	mov	[x_max],ax
 	shl	eax,16
 	mov	[top_right_corner],eax
+	
+	call create_ss
 ;------------------------------------------------------------------------------
 align 4
 still:
-	movzx	ebx,[time]
-	imul	ebx,60*100
-	mcall	23		; ждём события в течение [time] минут
-	test	eax,eax
-	jz	create_ss_thread
-
 	cmp	al,2		; key in buffer?
 	jz	key
 
@@ -77,33 +74,12 @@ still:
 	jnz	still
 ;------------------------------------------------------------------------------
 align 4
-create_setup:
-	test	[params],2
-	jnz	still		; окно настроек уже создано
-	mcall	51,1,sthread,sthread_stack_top
-	or	[params],2
-	jmp	still
-;------------------------------------------------------------------------------
-align 4
 key:
 	mcall			; eax = 2
 	jmp	still
 ;------------------------------------------------------------------------------
 align 4
-create_ss_thread:
-	test	[params],3
-	jnz	still
-	call	create_ss
-	jmp	still
-;------------------------------------------------------------------------------
-align 4
 create_ss:
-	mcall	51,1,thread,thread_stack_top
-	or	[params],1
-	ret
-;------------------------------------------------------------------------------
-align 4
-thread:
 	mcall	40,100010b
 ;set_new_cursor_skin - transparent cursor
 	mcall	68,12,32*32*4	; get memory for own cursor area
@@ -203,11 +179,13 @@ tstill:
 ;--------------------------------------
 align 4
 thr_end:
+    cmp     [screensaver], 0
+    jz      @f
+    mcall   70, f70
+@@:
 	cmp	[type],dword 24
 	jne	@f
 	mcall	68,13,[fileinfo.point]
-;--------------------------------------
-align 4
 @@:
 	and	[params], not 1
 	or	eax,-1
@@ -348,218 +326,6 @@ dnol:
 	add	[lcolor],0x010201
 	ret
 ;------------------------------------------------------------------------------
-align 4
-sthread:		; start of execution
-     call sdraw_window
-;--------------------------------------
-align 4
-sstill:
-	mcall	10	; wait here for event
-	dec	eax	; redraw request ?
-	je	sthread
-
-	dec	eax	; key in buffer ?
-	jne	sbutton
-
-	mcall	2
-	jmp	snoclose	;sstill
-;------------------------------------------------------------------------------
-align 4
-sbutton:		; button
-	mcall	17	; get id
-
-	cmp	ah,1	; button id=1 ?
-	jne	snoclose
-
-	and	[params],not 2
-	mov	eax,-1	; close this program
-	mcall
-;--------------------------------------
-align 4
-snoclose:
-	cmp	ah,7
-	jne	nosetfl
-
-	xor	[params],1
-	call	drawflag
-	call	drawtype
-	call	drawtime
-	jmp	sstill
-;--------------------------------------
-align 4
-nosetfl:
-	test	[params],1
-	jnz	sstill
-
-	cmp	ah,2
-	jne	notypedown
-
-	mov	eax,[type]
-	test	eax,eax
-	je	sstill
-
-	sub	eax,12
-	jmp	typeupdn
-;--------------------------------------
-align 4
-notypedown:
-	cmp	ah,3
-	jne	notypeup
-
-	mov	eax,[type]
-	cmp	eax,24
-	jae	sstill
-
-	add	eax,12
-	jmp	typeupdn
-;--------------------------------------
-align 4
-notypeup:
-	cmp	ah,4
-	jne	notimedown
-
-	mov	al,[time]
-	cmp	al,1
-	jbe	sstill
-
-	dec	eax
-;	das
-	jmp	timeupdn
-;--------------------------------------
-align 4
-notimedown:
-	cmp	ah,5
-	jne	notimeup
-
-	mov	al,[time]
-	cmp	al,59	; 0x59
-	jae	sstill
-
-	inc	eax
-;	daa
-	jmp	timeupdn
-;--------------------------------------
-align 4
-notimeup:
-	cmp	ah,6
-	jne	noshow
-
-	mcall	5,10
-	call	create_ss
-;--------------------------------------
-align 4
-noshow:
-	jmp	sstill
-;--------------------------------------
-align 4
-timeupdn:
-	mov	[time],al
-	call	drawtime
-	jmp	sstill
-;--------------------------------------
-align 4
-typeupdn:
-	mov	[type],eax
-	call	drawtype
-	jmp	sstill
-;------------------------------------------------------------------------------
-;   *********************************************
-;   *******  WINDOW DEFINITIONS AND DRAW ********
-;   *********************************************
-align 4
-sdraw_window:
-	mcall	12,1
-
-	xor	eax,eax 	; function 0 : define and draw window
-	xor	esi,esi
-	mcall	,<100,215>,<100,70>,0x13400088,,title
-
-	mcall	8,<47,10>,<31,10>,2,0x702050
-
-	push	ebx
-	add	ebx,13*65536
-	mov	edi,ebx
-	inc	edx
-	mcall
-	pop	ebx
-
-	add	ecx,15*65536
-	inc	edx
-	mcall
-
-	mov	ebx,edi
-	inc	edx
-	mcall
-
-	inc	edx
-	mcall	,<160,40>,<28,14>
-
-	mcall	4,<15,33>,0x80ffffff,setuptext	; write text to window
-
-	add	ebx,15
-	add	edx,10
-	mcall
-
-	mcall	,<169,32>,,buttext
-
-	call	drawtype
-	call	drawtime
-	call	drawflag
-
-	mcall	12,2
-	ret
-;------------------------------------------------------------------------------
-align 4
-drawtype:
-	mov	edx,0xffffff
-	test	[params], 1
-	jz	noblue
-
-	mov	edx,0x4e00e7
-;--------------------------------------
-align 4
-noblue:
-	mcall	13,<80,75>,<30,12>
-	xor	ecx,ecx
-	mov	edx,typetext
-	add	edx,[type]
-	mcall	4,<82,32>,,,12
-	ret
-;------------------------------------------------------------------------------
-align 4
-drawtime:
-	mov	edx,0xffffff
-	test	[params], 1
-	jz	noblue1
-
-	mov	edx,0x4e00e7
-;--------------------------------------
-align 4
-noblue1:
-	mcall	13,<80,15>,<45,12>
-	xor	esi,esi
-	movzx	ecx,byte [time]
-	mcall	47,0x00020000,,<82,47>
-	ret
-;------------------------------------------------------------------------------
-align 4
-drawflag:
-	mcall	8,,,0x80000007	; before we need delete button
-; otherwise, a few hours later the application will spend all buttons of system
-	mcall	,<150,10>,<45,10>,7,0xe0e0e0	; then create button
-
-	mov	edx,flag
-	bt	dword [params],0
-	jc	setf
-
-	inc	edx
-;--------------------------------------
-align 4
-setf:
-	xor	ecx,ecx
-	mcall	4,<153,47>,,,1
-	ret
-;------------------------------------------------------------------------------
 align 4 	; DATA AREA
 type	dd 12
 delay	dd 100
@@ -575,7 +341,6 @@ stringlen	dd 1
 stringstart	dd 0
 
 stringpos	dw 16
-time		db 15	; время до запуска заставки в минутах
 params		db 0	;if bit 0 set-ssaver works if bit 1 set-setup works
 
 fileinfo:
@@ -586,12 +351,12 @@ fileinfo:
 .point: dd 0
 	db '/sys/macros.inc',0
 
-buttext 	db 'SHOW',0
-flag		db 'V '
-title		db 'SCREENSAVER SETUP',0
-setuptext	db 'TYPE: < >',0
-		db 'TIME: < >     MINUTES    NEVER',0
-typetext	db 'BLACK SCREENCOLOR LINES ASSEMBLER   '
+f70:    ; run
+        dd 7, 0, 0, 0, 0
+        db '/sys/@SS',0
+
+screensaver db ?
+
 ;-------------------------------
 IM_END: 	; UNINITIALIZED DATA
 top_right_corner	rd 1
@@ -603,10 +368,6 @@ I_Param:
 fileinfo_buffer:
 	rb 40
 ;-------------------------------
-	rb 512
-sthread_stack_top:
-	rb 512
-thread_stack_top:
 	rb 512
 stack_top:
 I_END:

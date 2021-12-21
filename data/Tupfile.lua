@@ -453,6 +453,7 @@ tup.append_table(img_files, {
  {"DEMOS/TUBE", PROGS .. "/demos/tube/trunk/tube"},
  {"DEMOS/UNVWATER", PROGS .. "/demos/unvwater/trunk/unvwater"},
  {"DEMOS/WEB", PROGS .. "/demos/web/trunk/web"},
+ {"DEMOS/ZEROLINE", PROGS .. "/demos/zeroline/trunk/zeroline"},
  {"DEVELOP/ASCIIVJU", PROGS .. "/develop/asciivju/trunk/asciivju"},
  {"DEVELOP/BOARD", PROGS .. "/system/board/trunk/board"},
  {"DEVELOP/CEDIT", PROGS .. "/develop/cedit/CEDIT"},

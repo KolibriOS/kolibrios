@@ -38,8 +38,8 @@ include "..\..\..\macros.inc"
 start:
     cmp     dword[params], '@ss'
     setz    [screensaver]
-    mov     ebx, EVM_REDRAW + EVM_KEY
-    cmovz   ebx, EVM_REDRAW + EVM_KEY + EVM_MOUSE
+    mov     ebx, EVM_REDRAW + EVM_KEY + EVM_BUTTON
+    cmovz   ebx, EVM_REDRAW + EVM_KEY + EVM_BUTTON + EVM_MOUSE
     mcall   40
 
     cmp [flscr],0
