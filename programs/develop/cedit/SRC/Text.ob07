@@ -1501,7 +1501,7 @@ BEGIN
     n := selEnd.Y - selBeg.Y;
     cnt := 0;
     WHILE n >= 0 DO
-        INC(cnt, line.length + (lenEOL + 1));
+        INC(cnt, line.length + (lenEOL + ORD(U.OS = "KOS")));
         NextLine(line);
         DEC(n)
     END;
@@ -1511,7 +1511,7 @@ BEGIN
     n := selEnd.Y - selBeg.Y;
     line := first;
     IF n = 0 THEN
-        CB.append(buffer, line, selBeg.X, selEnd.X - 1)
+        append(buffer, line, selBeg.X, selEnd.X - 1)
     ELSE
         append(buffer, line, selBeg.X, line.length - 1);
         REPEAT

@@ -27,6 +27,7 @@ CONST
     fontWidth = 8;
 
     MainMenuHeight* = K.fontHeight + 7;
+	MainMenuX* = 0;
 
     RIGHT = 16;
     LEFT = 16;
@@ -111,7 +112,7 @@ BEGIN
 	IF prev # NIL THEN
 		item.x := prev.x + LENGTH(prev.text)*fontWidth + 9
 	ELSE
-		item.x := 0
+		item.x := MainMenuX
 	END
 END AddMainItem;
 

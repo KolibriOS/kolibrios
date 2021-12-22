@@ -28,7 +28,7 @@ IMPORT
     RW, Ini, EB := EditBox, Tabs, Toolbar;
 
 CONST
-    HEADER = "CEdit (21-dec-2021)";
+    HEADER = "CEdit (22-dec-2021)";
 
     ShellFilter = "";
     EditFilter = "SH|INC|TXT|ASM|OB07|C|CPP|H|PAS|PP|LUA|INI|JSON";
@@ -73,11 +73,13 @@ CONST
     minWinWidth = 635; minWinHeight = 550;
 
     SEARCH_PADDING = 10;
-    searchLeft = 0;
+    LEFT_PADDING = 1;
+    RIGHT_PADDING = 1;
+
     EditBox_Width = 180;
     EDITBOX_MAXCHARS = 500;
 
-    menuFileX = searchLeft;
+    menuFileX = Menu.MainMenuX;
     menuEditX = menuFileX + 4*fontWidth + 9;
     menuSearchX = menuEditX + 4*fontWidth + 9;
     menuEncodingX = menuSearchX + 6*fontWidth + 9;
@@ -136,8 +138,9 @@ CONST
     menuEOL = 140;
 
     menuPipet = 70;
-    menuBoard = 71;
-    menuSysFunc = 72;
+    menuMagnify = 71;
+    menuBoard = 72;
+    menuSysFunc = 73;
 
     menuFind = 80;
     menuFindNext = 81;
@@ -375,7 +378,7 @@ BEGIN
     SetCaption(text.fileName);
     K.DrawRect(LEFT + 16*fontWidth, TOP + canvas.height + scrollWidth, width - (LEFT + 16*fontWidth), BOTTOM - scrollWidth + 1, K.winColor);
     y := height - (BOTTOM - scrollWidth) + (BOTTOM - scrollWidth - 16) DIV 2;
-    K.DrawText(width - LENGTH(s)*fontWidth, y, K.textColor, s);
+    K.DrawText(width - LENGTH(s)*fontWidth - (RIGHT_PADDING + 1), y, K.textColor, s);
     MarkModified
 END DrawState;
 
@@ -394,7 +397,7 @@ PROCEDURE repaint;
 VAR
     width, height, scrollX, scrollY, y: INTEGER;
 BEGIN
-    IF text # NIL THEN
+    IF (text # NIL) & ~K.RolledUp() THEN
         IF confirm THEN
             K.DeleteButton(btnYes);
             K.DeleteButton(btnNo);
@@ -462,8 +465,8 @@ BEGIN
     K.WinSize(winWidth, winHeight);
     K.ClientSize(cliWidth, cliHeight);
     G.destroy(canvas);
-    canvas := G.CreateCanvas(cliWidth - (LEFT + RIGHT + 2), cliHeight - (TOP + BOTTOM + 1));
-    Tabs.setArea(tabs, LEFT, TOP - Tabs.tabHeight, cliWidth - (LEFT + RIGHT + 2), Tabs.tabHeight);
+    canvas := G.CreateCanvas(cliWidth - (LEFT + RIGHT + 2 + RIGHT_PADDING), cliHeight - (TOP + BOTTOM + 1));
+    Tabs.setArea(tabs, LEFT, TOP - Tabs.tabHeight, cliWidth - (LEFT + RIGHT + 2 + RIGHT_PADDING), Tabs.tabHeight);
     G.SetFont(canvas, font);
     T.setCanvas(canvas);
     T.resize(canvas.width, canvas.height);
@@ -537,6 +540,7 @@ BEGIN
 
         K.DrawRect(0, 0, width, TOP, K.winColor);
         K.DrawRect(0, 0, LEFT, height, K.winColor);
+        K.DrawRect(width - RIGHT_PADDING, 0, RIGHT_PADDING, height, K.winColor);
         K.DrawRect(LEFT + canvas.width + 1, TOP + canvas.height, scrollWidth - 1, scrollWidth, K.winColor);
         Menu.DrawMain(mainMenu);
 
@@ -544,7 +548,7 @@ BEGIN
 
         DrawState(text, width, height);
         IF search & searchOpened THEN
-            SearchPanel(searchLeft, TOP)
+            SearchPanel(LEFT_PADDING, TOP)
         END;
         Tabs.draw(tabs);
         repaint
@@ -704,7 +708,6 @@ PROCEDURE Confirm;
 CONST
     width  = btnWidth*2 + 30;
     height = btnHeight*2 + 20;
-    lineColor = 808080H;
 VAR
     left, top, right, bottom: INTEGER;
 BEGIN
@@ -716,7 +719,7 @@ BEGIN
     right := left + width - 1;
     bottom := top + height - 1;
     K.DrawRect(left, top, width, height, K.winColor);
-    Rect(left, top, right, bottom, lineColor);
+    Rect(left, top, right, bottom, K.borderColor);
     K.DrawText866(left + (width - 10*fontWidth) DIV 2, top + 10, K.textColor, "save file?");
     K.CreateButton(btnYes, left + 10, top + 35, btnWidth, btnHeight, K.btnColor, "yes");
     K.CreateButton(btnNo, left + 20 + btnWidth, top + 35, btnWidth, btnHeight, K.btnColor, "no");
@@ -833,9 +836,9 @@ END open;
 
 PROCEDURE createSearchForm;
 BEGIN
-	EB.create(searchLeft, TOP + 20, EditBox_Width, EDITBOX_MAXCHARS, FindEdit);
-	EB.create(searchLeft, TOP + 20 + 55, EditBox_Width, EDITBOX_MAXCHARS, ReplaceEdit);
-    EB.create(searchLeft, TOP + 20 + 330, EditBox_Width, EDITBOX_MAXCHARS, GotoEdit);
+	EB.create(LEFT_PADDING, TOP + 20, EditBox_Width, EDITBOX_MAXCHARS, FindEdit);
+	EB.create(LEFT_PADDING, TOP + 20 + 55, EditBox_Width, EDITBOX_MAXCHARS, ReplaceEdit);
+    EB.create(LEFT_PADDING, TOP + 20 + 330, EditBox_Width, EDITBOX_MAXCHARS, GotoEdit);
     INCL(GotoEdit.flags, 15);
     CheckBox.create("backward", BKW);
     CheckBox.create("match case", CS);
@@ -861,10 +864,10 @@ END EditBox_GetValue;
 PROCEDURE Search;
 BEGIN
     search := ~search;
-    LEFT := searchLeft;
+    LEFT := LEFT_PADDING;
     IF search THEN
         searchOpened := TRUE;
-        INC(LEFT, EditBox_Width + SEARCH_PADDING*2 + 5);
+        INC(LEFT, EditBox_Width + SEARCH_PADDING*2 + 4);
         IF T.search(text, searchText, cs, whole) THEN END
     ELSE
         IF T.search(text, "", FALSE, FALSE) THEN END
@@ -1250,6 +1253,8 @@ BEGIN
 	    	T.setEol(text, RW.EOL_CR)
 	    |menuPipet:
 	        K.Run("/rd/1/develop/pipet", "")
+	    |menuMagnify:
+	        K.Run("/rd/1/magnify", "")
 	    |menuBoard:
 	        K.Run("/rd/1/develop/board", "")
 	    |menuSysFunc:
@@ -1509,6 +1514,7 @@ VAR
 BEGIN
     menu := List.create(NIL);
     Menu.AddMenuItem(menu, menuPipet,   "pipet");
+    Menu.AddMenuItem(menu, menuMagnify, "magnify");
     Menu.AddMenuItem(menu, menuBoard,   "board");
     Menu.AddMenuItem(menu, menuSysFunc, "system functions");
     RETURN Menu.create(menu, MenuItemClick, MenuKeyDown)
@@ -1566,7 +1572,7 @@ PROCEDURE HideSearch;
 BEGIN
     SetFocus(FindEdit, FALSE);
     searchOpened := FALSE;
-    LEFT := searchLeft;
+    LEFT := LEFT_PADDING;
     resize;
     draw_window
 END HideSearch;
@@ -2000,8 +2006,8 @@ BEGIN
     winHeight := MAX(winHeight, minWinHeight);
     cliWidth := winWidth;
     cliHeight := winHeight;
-    LEFT := searchLeft;
-    canvas := G.CreateCanvas(winWidth - (LEFT + RIGHT + 11), winHeight - (TOP + BOTTOM + 5) - K.SkinHeight());
+    LEFT := LEFT_PADDING;
+    canvas := G.CreateCanvas(winWidth - (LEFT + RIGHT + 11 + RIGHT_PADDING), winHeight - (TOP + BOTTOM + 5) - K.SkinHeight());
     tabs := Tabs.create();
     Tabs.setArea(tabs, LEFT, TOP - Tabs.tabHeight, canvas.width, Tabs.tabHeight);
     font1 := G.CreateFont(1, "", {});
@@ -2042,7 +2048,7 @@ BEGIN
     Menu.AddMainItem(mainMenu, "program", menuProgram);
     Menu.AddMainItem(mainMenu, "tools", menuTools);
 
-    Toolbar.create(toolbar, searchLeft, toolbarTop);
+    Toolbar.create(toolbar, LEFT_PADDING + 1, toolbarTop);
     Toolbar.add(toolbar, btnNew,     2, "");
     Toolbar.add(toolbar, btnOpen,    0, "");
     Toolbar.add(toolbar, btnSave,    5, "");
