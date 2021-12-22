@@ -65,7 +65,7 @@
 		col_text = MixColors(sc.work, sc.work_text, 120);
 	} 
 	DefineHiddenButton(xx-2,y, ww-1+4,TAB_HEIGHT-1, _id + base_id);
-	WriteText(xx, y+6, 0x90, col_text, text);
+	WriteTextWithBg(xx, y+6, 0xD0, col_text, text, sc.work);
 	DrawBar(xx, y+TAB_HEIGHT-3, ww, 3, col_bg);
 	return ww;
 }

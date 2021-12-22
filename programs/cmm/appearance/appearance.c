@@ -17,42 +17,13 @@
 #include "../lib/patterns/restart_process.h"
 
 #include "ui_elements_preview.h"
+#include "const.h"
 
 //===================================================//
 //                                                   //
 //                       DATA                        //
 //                                                   //
 //===================================================//
-
-#ifdef LANG_RUS
-	?define WINDOW_HEADER "Настройки оформления"
-	?define T_SELECT_FOLDER "Выбрать папку"
-	?define MENU_LIST "Открыть файл   |Enter\nУдалить файл     |Del"
-	?define T_PICTURE_MODE " Положение картинки "
-	?define T_CHECKBOX_STRETCH "Растянуть"
-	?define T_CHECKBOX_TILED "Замостить"
-	?define T_UPDATE_DOCK "Обновлять Dock-панель"
-	char t_skins[] =       "   Стиль окон";
-	char t_wallpapers[] =  "   Обои";
-	char t_screensaver[] =  "   Скринсейвер";
-#else
-	?define WINDOW_HEADER "Appearance"
-	?define T_SELECT_FOLDER "Select folder"
-	?define MENU_LIST "Open file      |Enter\nDelete file      |Del"
-	?define T_PICTURE_MODE " Picture Mode "
-	?define T_CHECKBOX_STRETCH "Stretch"
-	?define T_CHECKBOX_TILED "Tiled"
-	?define T_UPDATE_DOCK "Update Dock"
-	char t_skins[] =       "   Skins";
-	char t_wallpapers[] =  "   Wallpapers";
-	char t_screensaver[] =  "   Screensaver";
-#endif
-
-#define WIN_W 621
-#define PANEL_H 58
-#define LP 10 //LIST_PADDING
-char skins_folder_path[4096];
-char wallp_folder_path[4096];
 
 signed int active_skin=-1, active_wallpaper=-1, active_screensaver=-1;
 enum { 
@@ -66,7 +37,7 @@ char cur_skin_path[4096];
 char temp_filename[4096];
 int files_mas[400];
 
-_ini ini = { "/sys/settings/system.ini", "style" };
+_ini ini = { "/sys/settings/system.ini" };
 
 int cur;
 
@@ -92,21 +63,9 @@ checkbox optionbox_tiled = { T_CHECKBOX_TILED, false };
 //                                                   //
 //===================================================//
 
-void GetRealFolderPathes()
-{
-	char real_kolibrios_path[4096];
-	SetCurDir("/kolibrios");
-	GetCurDir(#real_kolibrios_path, sizeof(real_kolibrios_path));
-	miniprintf(#skins_folder_path, "%s/res/skins", #real_kolibrios_path);
-	miniprintf(#wallp_folder_path, "%s/res/wallpapers", #real_kolibrios_path);
-}
-
 void main()
 {   
 	int id;
-
-	GetRealFolderPathes();
-
 	load_dll(boxlib, #box_lib_init,0);
 	load_dll(libini, #lib_init,1);
 	load_dll(Proc_lib, #OpenDialog_init,0);
@@ -159,7 +118,7 @@ void main()
 				id = tabs.active_tab+1; 
 				if(id==3)id=0;
 				tabs.click(id + tabs.base_id);
-				draw_window();
+				DrawWindowContent();
 				break;
 			}
 
@@ -192,7 +151,7 @@ void main()
 void draw_window()
 {
 	sc.get();
-	DefineAndDrawWindow(screen.width-600/2,80,WIN_W+9,504+skin_height,0x34,sc.work,WINDOW_HEADER,0);
+	DefineAndDrawWindow(screen.width-600/2,80,WIN_W+9,WIN_H+skin_height,0x34,sc.work,WINDOW_HEADER,0);
 	GetProcessInfo(#Form, SelfInfo);
 	IF (Form.status_window&ROLLED_UP) return;
 	DrawWindowContent();
@@ -206,26 +165,26 @@ void DrawWindowContent()
 
 	//tabs.w = Form.cwidth-LP-LP;
 	tabs.draw();
-	draw_icon_16w(tabs.x + TAB_PADDING, 15, 17);
-	draw_icon_16w(sizeof(t_skins)-1*8 + TAB_PADDING + TAB_PADDING + tabs.x, 15, 6);
-	draw_icon_16w(sizeof(t_wallpapers)+sizeof(t_skins)-2*8 + TAB_PADDING + TAB_PADDING + TAB_PADDING + tabs.x, 15, 61);
+	draw_icon_16w(tabs.x + TAB_PADDING, LP+5, 17);
+	draw_icon_16w(sizeof(t_skins)-1*8 + TAB_PADDING + TAB_PADDING + tabs.x, LP+5, 6);
+	draw_icon_16w(sizeof(t_wallpapers)+sizeof(t_skins)-2*8 + TAB_PADDING + TAB_PADDING + TAB_PADDING + tabs.x, LP+5, 61);
 
 	id = select_list.cur_y;
-	#define LIST_W 280
 	SelectList_Init(
 		LP + TAB_PADDING,
 		PANEL_H, 
 		LIST_W, 
-		Form.cheight-LP-LP - TAB_PADDING - PANEL_H
+		Form.cheight-LP - TAB_PADDING - PANEL_H
 		);
 	select_list.cur_y = id;
 
 	skp.set_size(
 		LP + TAB_PADDING + LIST_W + TAB_PADDING + 30,
 		PANEL_H,
-		WIN_W  - 400,
+		226,
 		230 //select_list.h - 50 - 50
 	);
+	DrawBar(skp.x, skp.y, skp.w, WIN_H, sc.work);
 
 	SelectList_Draw();
 	SelectList_DrawBorder();
@@ -249,6 +208,10 @@ void DrawWindowContent()
 	}
 }
 
+bool strreqi(dword _left, _right)
+{
+	return strcmpi(_left+strrchr(_left,'.')-1, _right);
+}
 
 void Open_Dir()
 {
@@ -261,13 +224,13 @@ void Open_Dir()
 		strcpy(#temp_filename, io.dir.position(j));
 		strlwr(#temp_filename);
 		if (tabs.active_tab==SKINS) {
-			if (strcmpi(#temp_filename+strlen(#temp_filename)-4,".skn")!=0) continue;
+			if (strreqi(#temp_filename,".skn")!=0) continue;
 		}
 		if (tabs.active_tab==WALLPAPERS) {
-			if (strcmpi(#temp_filename+strlen(#temp_filename)-4,".png")!=0)
-			&& (strcmpi(#temp_filename+strlen(#temp_filename)-4,".jpg")!=0) 
-			&& (strcmpi(#temp_filename+strlen(#temp_filename)-5,".jpeg")!=0)
-			&& (strcmpi(#temp_filename+strlen(#temp_filename)-4,".gif")!=0) continue;
+			if (strreqi(#temp_filename,".png")!=0)
+			&& (strreqi(#temp_filename,".jpg")!=0) 
+			&& (strreqi(#temp_filename,".jpeg")!=0)
+			&& (strreqi(#temp_filename,".gif")!=0) continue;
 		}
 		cur = select_list.count;
 		files_mas[cur]=j;
@@ -325,7 +288,15 @@ void ActivateTab(int _id)
 	select_list.cur_y = _id;
 	if (select_list.cur_y>select_list.visible) select_list.first=select_list.cur_y; 
 	select_list.CheckDoesValuesOkey();	
-	if (select_list.w) draw_window();
+	if (select_list.w) DrawWindowContent();
+}
+
+dword GetRealKolibriosPath()
+{
+	char real_kolibrios_path[4096];
+	SetCurDir("/kolibrios");
+	GetCurDir(#real_kolibrios_path, sizeof(real_kolibrios_path));
+	return #real_kolibrios_path;
 }
 
 //===================================================//
@@ -337,14 +308,18 @@ void ActivateTab(int _id)
 void EventTabSkinsClick()
 {
 	active_wallpaper = select_list.cur_y;
-	strcpy(#folder_path, #skins_folder_path);
+	miniprintf(#folder_path, "%s/res/skins", GetRealKolibriosPath());
 	ActivateTab(active_skin);
 }
 
 void EventTabWallpappersClick()
 {
 	active_skin = select_list.cur_y;
-	strcpy(#folder_path, #wallp_folder_path);
+	if (opendir_path) {
+		strcpy(#folder_path, #opendir_path);
+	} else {
+		miniprintf(#folder_path, "%s/res/wallpapers", GetRealKolibriosPath());
+	}
 	ActivateTab(active_wallpaper);
 }
 
@@ -371,10 +346,7 @@ void EventSetNewCurrent()
 void EventSelectWallpFolder()
 {
 	OpenDialog_start stdcall (#o_dialog);
-	if (o_dialog.status) {
-		strcpy(#wallp_folder_path, #opendir_path);
-		EventTabWallpappersClick();
-	}
+	if (o_dialog.status) EventTabWallpappersClick();
 }
 
 void EventSetWallpMode_Stretch()
@@ -429,7 +401,10 @@ void EventOpenFile()
 
 void EventExit()
 {
-	if (cur_skin_path) ini.SetString("skin", #cur_skin_path, strlen(#cur_skin_path));
+	if (cur_skin_path) {
+		ini.section = "style";
+		ini.SetString("skin", #cur_skin_path, strlen(#cur_skin_path));
+	}
 	ExitProcess();
 }
 
