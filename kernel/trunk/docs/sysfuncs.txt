@@ -2005,6 +2005,24 @@ Remarks:
     subfunction 2 of function 15.
 
 ---------------------- Constants for registers: ----------------------
+  eax - SF_BACKGROUND_GET_RECT (39)
+======================================================================
+== Function 39, subfunction 3 - get rect from the background image.  =
+======================================================================
+Parameters:
+  * eax = 39 - function number
+  * ebx = 3 - subfunction number
+  * ecx = [x]*65536 + [y]
+  * edx = [width]*65536 + [height]
+  * esi = buffer address
+Returned value:
+  * eax = 0 - success
+  * eax = -1 - error
+Remarks:
+  * Function copies specified rectangle of background image to buffer
+    in 0x00RRGGBB format
+
+---------------------- Constants for registers: ----------------------
   eax - SF_BACKGROUND_GET (39)
 ======================================================================
 == Function 39, subfunction 4 - get drawing mode for the background. =

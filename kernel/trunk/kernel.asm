@@ -3053,10 +3053,10 @@ force_redraw_background:
         ret
 ;------------------------------------------------------------------------------
 align 4
-sys_getbackground:
-;    cmp   eax,1                                  ; SIZE
+sys_getbackground: ; sysfn 39
         dec     ebx
-        jnz     nogb1
+        jnz     .nogb1
+        ; sysfn 39.1:
         mov     eax, [BgrDataWidth]
         shl     eax, 16
         mov     ax, word [BgrDataHeight]
@@ -3064,17 +3064,15 @@ sys_getbackground:
         ret
 ;------------------------------------------------------------------------------
 align 4
-nogb1:
-;    cmp   eax,2                                  ; PIXEL
+.nogb1:
         dec     ebx
-        jnz     nogb2
-
+        jnz     .nogb2
+        ; sysfn 39.2:
         mov     eax, [img_background]
         test    ecx, ecx
         jz      @f
         cmp     eax, static_background_data
         jz      .ret
-;--------------------------------------
 align 4
 @@:
         mov     ebx, [mem_BACKGROUND]
@@ -3088,22 +3086,109 @@ align 4
 
         and     eax, 0xFFFFFF
         mov     [esp+32], eax
-;--------------------------------------
 align 4
 .ret:
         ret
 ;------------------------------------------------------------------------------
 align 4
-nogb2:
+        .x      dd ?
+        .y      dd ?
+        .w      dd ?
+        .h      dd ?
+        .subrect_startptr dd ?
+        .subrect_bytes dd ?
+align 4
+.nogb2:
+        dec     ebx
+        jnz     .nogb3
+        ; sysfn 39.3 read background subrect to buffer
+        ; ecx - <x, y>
+        ; edx - <w, h>
+        ; esi - buffer of 0x00RRGGBB
+        mov     eax, [img_background]
+        cmp     eax, static_background_data
+        jz      .ret_39_3
+align 4
+@@:
+        movzx   eax, cx ; store y in eax
+        mov     [.y], eax
 
-;    cmp   eax,4                                  ; TILED / STRETCHED
+        shr     ecx, 16 ; ecx = x
+        mov     [.x], ecx
+
+        imul    eax, [BgrDataWidth]
+        add     eax, ecx
+        imul    eax, 3
+        mov     [.subrect_startptr], eax
+
+        movzx   eax, dx ; store h in eax
+        mov     [.h], eax
+
+        shr     edx, 16 ; edx = w
+        mov     [.w], edx
+
+        imul    eax, edx
+        mov     [.subrect_bytes], eax
+
+        ; check bounds
+        mov     ebx, [mem_BACKGROUND]
+        add     ebx, 4095
+        and     ebx, -4096
+        sub     ebx, 4
+        add     eax, [.subrect_startptr]
+        cmp     eax, ebx
+        ja      .fail_39_3
+
+        ; copy contents
+        mov     edi, [img_background]
+        xor     ecx, ecx ; ecx - row index
+.copy_rect:
+        cmp     ecx, [.h]
+        jae     .end_copy_rect
+        
+        xor     edx, edx ; edx - column index
+.copy_row:
+        cmp     edx, [.w]
+        jae     .end_copy_row
+
+        mov     ebx, ecx
+        imul    ebx, [BgrDataWidth]
+        add     ebx, edx
+        imul    ebx, 3
+        add     ebx, [.subrect_startptr]
+        mov     eax, [edi + ebx]
+        mov     ebx, ecx
+        imul    ebx, [.w]
+        add     ebx, edx
+        and     eax, 0xFFFFFF
+        mov     [esi + ebx*4], eax       
+
+        inc     edx
+        jmp     .copy_row
+.end_copy_row:        
+
+        inc     ecx
+        jmp     .copy_rect
+.end_copy_rect:
+        xor     eax, eax
+        mov     [esp+32], eax
+;--------------------------------------
+align 4
+.fail_39_3:
+        mov     eax, -1
+align 4
+.ret_39_3:
+        ret
+;--------------------------------------
+align 4
+.nogb3:
         dec     ebx
-        dec     ebx
-        jnz     nogb4
+        jnz     .nogb4
+        ; sysfn 39.4:
         mov     eax, [BgrDrawMode]
 ;--------------------------------------
 align 4
-nogb4:
+.nogb4:
         mov     [esp+32], eax
         ret
 ;------------------------------------------------------------------------------
