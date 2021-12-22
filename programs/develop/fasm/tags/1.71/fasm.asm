@@ -37,13 +37,13 @@ appname equ "flat assembler "
 	dd params,cur_dir_path  ; parameters,icon
 ;---------------------------------------------------------------------
 include 'lang.inc'
-include '../../../macros.inc'
+include '../../../../macros.inc'
 purge add,sub	 ; macros.inc does incorrect substitution
 include 'fasm.inc'
 
-include '../../../develop/libraries/box_lib/trunk/box_lib.mac'
-include '../../../KOSfuncs.inc'
-include '../../../load_lib.mac'
+include '../../../../develop/libraries/box_lib/trunk/box_lib.mac'
+include '../../../../KOSfuncs.inc'
+include '../../../../load_lib.mac'
   @use_library
 
 center fix true
