@@ -6,6 +6,8 @@ ID_OPENDLG_BTN	  = 5
 
 NORMAL_MODE    = 8
 CONSOLE_MODE   = 32
+MAGIC1	       = 6*(text.line_size-1)+14
+MAGIC2	       = (14*3+16)/3+1
 
 APP_MEMORY     = 0x00800000
 

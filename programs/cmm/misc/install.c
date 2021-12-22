@@ -123,11 +123,4 @@ void EventInstall()
 	ActivateWindow_Self();
 }
 
-void ActivateWindow_Self()
-{
-	proc_info Form;
-	GetProcessInfo(#Form, SelfInfo);
-	ActivateWindow(GetProcessSlot(Form.ID));
-}
-
 void Operation_Draw_Progress(dword filename) { }

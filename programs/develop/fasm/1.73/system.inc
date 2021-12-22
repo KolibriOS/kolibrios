@@ -1,10 +1,10 @@
 ; flat assembler
-; Copyright (c) 1999-2020, Tomasz Grysztar
+; Copyright (c) 1999-2021, Tomasz Grysztar
 ; All rights reserved.
 
 init_memory:
 
-;        mov ecx, 16*1024*1024
+;	 mov ecx, 16*1024*1024
 ;
 ; allocate_memory:
 	mcall	SF_SYSTEM, SSF_GET_FREE_RAM
@@ -33,8 +33,12 @@ exit_program:
 	cmp	[_mode],NORMAL_MODE
 	jne	@f
 	mcall	SF_SYS_MISC, SSF_MEM_FREE, [memblock]
+	mov	edi, file_IO_slots
+	mov	ecx, (file_IO_end-file_IO_slots)/4
+	or	eax, -1
+	rep	stosd
 	mov	esp,[processing_esp]
-	jmp	still
+	ret;jmp     still
 @@:
 	or	eax,-1
 	mcall
@@ -287,7 +291,7 @@ get_environment_variable:
 	cld
 	rep	movsb
   .finish:
-;       stc
+;	stc
 	retn
 
 alloc_handle:
@@ -412,7 +416,7 @@ make_fullpaths:
 	loopnz	copy_edxpath
 
 	mov	esi,path	      ; open
-;       DEBUGF  "   '%s'",esi
+;	DEBUGF	"   '%s'",esi
 	mov	edi,fullpath_open
 	cld
       newc1:
@@ -422,10 +426,10 @@ make_fullpaths:
 	mov	esi,[esp]
 
 	cmp	byte[esi],'/'
-	je	abs_path
+	je	absolute_path
 	cmp	byte[esi],'\'
-	jne	@f
-    abs_path:
+	jne	@F
+    absolute_path:
 	mov	edi,fullpath_open
 
     @@:

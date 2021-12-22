@@ -1,6 +1,6 @@
 
 ; flat assembler core
-; Copyright (c) 1999-2020, Tomasz Grysztar.
+; Copyright (c) 1999-2021, Tomasz Grysztar.
 ; All rights reserved.
 
 simple_instruction_except64:
@@ -228,7 +228,9 @@ basic_instruction:
 	mov	ecx,edx
 	cdq
 	cmp	ecx,edx
-	jne	value_out_of_range
+	je	simm32_range_ok
+	call	recoverable_overflow
+      simm32_range_ok:
 	cmp	[value_type],4
 	jne	get_simm32_ok
 	mov	[value_type],2
@@ -468,9 +470,7 @@ mov_instruction:
 	jnz	mov_mem_address16_al
 	test	ch,44h
 	jnz	mov_mem_address32_al
-	test	ch,88h
-	jnz	mov_mem_address64_al
-	or	ch,ch
+	test	ch,not 88h
 	jnz	invalid_address_size
 	call	check_mov_address64
 	cmp	al,0
@@ -504,6 +504,8 @@ mov_instruction:
       check_mov_address64:
 	cmp	[code_type],64
 	jne	no_address64
+	test	ch,88h
+	jnz	address64_required
 	mov	eax,[address_high]
 	or	eax,eax
 	jz	no_address64
@@ -517,6 +519,8 @@ mov_instruction:
 	mov	al,-1
 	ret
       no_address64:
+	test	ch,08h
+	jnz	invalid_address_size
 	xor	al,al
 	ret
       mov_mem_address64_al:
@@ -531,9 +535,7 @@ mov_instruction:
 	jnz	mov_mem_address16_ax
 	test	ch,44h
 	jnz	mov_mem_address32_ax
-	test	ch,88h
-	jnz	mov_mem_address64_ax
-	or	ch,ch
+	test	ch,not 88h
 	jnz	invalid_address_size
 	call	check_mov_address64
 	cmp	al,0
@@ -733,9 +735,7 @@ mov_instruction:
 	jnz	mov_al_mem_address16
 	test	ch,44h
 	jnz	mov_al_mem_address32
-	test	ch,88h
-	jnz	mov_al_mem_address64
-	or	ch,ch
+	test	ch,not 88h
 	jnz	invalid_address_size
 	call	check_mov_address64
 	cmp	al,0
@@ -764,9 +764,7 @@ mov_instruction:
 	jnz	mov_ax_mem_address16
 	test	ch,44h
 	jnz	mov_ax_mem_address32
-	test	ch,88h
-	jnz	mov_ax_mem_address64
-	or	ch,ch
+	test	ch,not 88h
 	jnz	invalid_address_size
 	call	check_mov_address64
 	cmp	al,0
@@ -3031,7 +3029,8 @@ jmp_instruction:
 	cmp	al,'('
 	jne	invalid_operand
 	mov	al,[value_type]
-	push	eax [symbol_identifier]
+	push	eax
+	push	[symbol_identifier]
 	cmp	byte [esi],'.'
 	je	invalid_value
 	mov	al,[operand_size]
@@ -3052,7 +3051,8 @@ jmp_instruction:
 	call	mark_relocation
 	stos	word [edi]
       jmp_far_segment:
-	pop	[symbol_identifier] eax
+	pop	[symbol_identifier]
+	pop	eax
 	mov	[value_type],al
 	pop	eax
 	call	mark_relocation
@@ -6400,7 +6400,8 @@ bndstx_instruction:
 	cmp	al,'('
 	jne	invalid_operand
 	mov	al,[address_sign]
-	push	eax ebx ecx edx [address_symbol]
+	push	eax ebx ecx edx
+	push	[address_symbol]
 	call	get_address_component
 	lods	byte [esi]
 	cmp	al,']'
@@ -6410,7 +6411,8 @@ bndstx_instruction:
 	or	edx,[address_high]
 	jnz	invalid_address
 	mov	[address_register],bh
-	pop	[address_symbol] edx ecx ebx eax
+	pop	[address_symbol]
+	pop	edx ecx ebx eax
 	mov	[address_sign],al
 	or	bl,bl
 	jz	mib_place_index
@@ -7314,9 +7316,9 @@ store_instruction:
 	sub	eax,[current_offset]
 	add	eax,5
 	sub	edx,eax
-	jno	@f
+	jno	address_relative_ok
 	call	recoverable_overflow
-      @@:
+      address_relative_ok:
 	mov	al,101b
 	mov	cl,[postbyte_register]
 	shl	cl,3

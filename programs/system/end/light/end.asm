@@ -152,7 +152,7 @@ draw_window:
     mcall SF_DRAW_RECT, <2,WIN_W-4>, <2,WIN_H-BOT_PANEL_H-2>, 0x202020
     mcall SF_DRAW_RECT, <2,WIN_W-4>, <WIN_H-BOT_PANEL_H-2,BOT_PANEL_H>, 0x4B4B4B
     
-    mcall SF_DRAW_TEXT, <30,27>, 0x91FFFfff, TEXT_WTITLE
+    mcall SF_DRAW_TEXT, <30,21>, 0x91FFFfff, TEXT_WTITLE
     mcall SF_DRAW_TEXT, <55,70>, 0x90FFFfff, TEXT_RDSAVE1
     mcall SF_DRAW_TEXT, <55,86>, 0x90FFFfff, TEXT_RDSAVE2
     mcall SF_DRAW_TEXT, <WIN_W-23,5>, 0x81FFFfff, TEXT_CANCEL
@@ -167,7 +167,7 @@ draw_window:
     call draw_checkbox_flag
 
     stdcall EndButton,  20, 0x4E91C5, HOME_BUTTON_ID,     TEXT_KERNEL, TEXT_HOME
-    stdcall EndButton, 160, 0x55C891, REBOOT_BUTTON_ID,   TEXT_REBOOT, TEXT_ENTER
+    stdcall EndButton, 160, 0x41C166, REBOOT_BUTTON_ID,   TEXT_REBOOT, TEXT_ENTER
     stdcall EndButton, 300, 0xC75C54, POWEROFF_BUTTON_ID, TEXT_OFF,    TEXT_END
 
     mcall SF_REDRAW,SSF_END_DRAW
@@ -178,7 +178,7 @@ proc EndButton x, bgcol, id, but_text, hotkey_text
     BUTW = 116
     mov ebx,[x]
     sub ebx,3
-    mcall SF_DRAW_RECT, <ebx,BUTW+6>, <BUTY-3,43+6>, 0x202020
+    mcall SF_DRAW_RECT, <ebx,BUTW+7>, <BUTY-3,43+6>, 0x202020
     mcall SF_DEFINE_BUTTON, <[x],BUTW>, <BUTY,43-1>, [id], [bgcol]
     ; -strlen(but_text)*8 + BUTW / 2 + x, BUTY+8
     stdcall string.length, [but_text]

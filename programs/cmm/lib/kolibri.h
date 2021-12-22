@@ -232,6 +232,13 @@ inline fastcall void ActivateWindow( ECX) //ECX - slot
 	$int 0x40
 }
 
+:void ActivateWindow_Self()
+{
+	proc_info Form;
+	GetProcessInfo(#Form, SelfInfo);
+	ActivateWindow(GetProcessSlot(Form.ID));
+}
+
 :void RefreshWindow(dword ID_REFRESH,ID_ACTIVE)
 {
 	ActivateWindow(ID_REFRESH);

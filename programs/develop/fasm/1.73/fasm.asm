@@ -1,6 +1,6 @@
 
 ; flat assembler source
-; Copyright (c) 1999-2020, Tomasz Grysztar.
+; Copyright (c) 1999-2021, Tomasz Grysztar.
 ; All rights reserved.
 
 ; KolibriOS port by KolibriOS Team
@@ -122,7 +122,7 @@ START:	    ; Start of execution
 	mcall	SF_SYS_MISC,SSF_MEM_ALLOC,$1000
 	mov	[file_io_notify.flags],eax
 
-	call	LoadLibraries
+unresolved_proc_termination: call    LoadLibraries
 
 	mcall	SF_SET_EVENTS_MASK,EVM_MOUSE_FILTER or EVM_MOUSE or EVM_BUTTON or EVM_KEY or EVM_REDRAW;0x80000027 ; filter events: 80000000h - don`t receive mouse events if wnd nonactive , 7 - allowed events: redraw,keypresses, button presses
 	invoke	init_checkbox,ch1_dbg

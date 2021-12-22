@@ -2,4 +2,4 @@
 @del *.
 @rename *.com *.
 @del warning.txt
-@pause
+if not exist appearance ( @pause )
