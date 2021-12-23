@@ -24,7 +24,7 @@ error_window:
 ;---------------------------------------------------------------------
 draw_error_window:
     mcall 12, 1
-    mcall 0,[error_window_x] ,[error_window_y], 0x03ff0000
+    mcall 0,[error_window_x] ,[error_window_y], 0x03D22F36
     mcall 4,<10,30>,0x90ffffff,[error_pointer]
     mcall 4,<10,50>, ,error_type
     mcall 47,0xa0000,[file_system_error],<148,50>,0x10ffffff

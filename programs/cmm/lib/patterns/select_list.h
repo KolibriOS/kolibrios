@@ -2,11 +2,12 @@ llist select_list;
 scroll_bar scroll1 = { 18,200,398, 44,18,0,115,15,0,0xeeeeee,0xD2CED0,0x555555,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1};
 
 ?define T_SELECT_LIST_NO_DATA "No data to show"
+?define SELECT_LIST_ITEMH 20
 
 void SelectList_Init(dword _x, _y, _w, _h)
 {
 	select_list.SetFont(8, 14, 0x90);
-	select_list.SetSizes(_x, _y, _w, _h, 20);
+	select_list.SetSizes(_x, _y, _w, _h, SELECT_LIST_ITEMH);
 }
 
 void SelectList_Draw()

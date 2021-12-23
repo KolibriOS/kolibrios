@@ -34,28 +34,21 @@ enum {
 char folder_path[4096];
 char cur_file_path[4096];
 char cur_skin_path[4096];
-char temp_filename[4096];
 int files_mas[400];
-
-_ini ini = { "/sys/settings/system.ini" };
-
-int cur;
-
-proc_info Form;
-block skp;
-
-enum {SKINS, WALLPAPERS, SCREENSAVERS};
 
 _tabs tabs = { -sizeof(t_skins)-sizeof(t_wallpapers)-sizeof(t_screensaver)-3*8+WIN_W
 	 - TAB_PADDING / 2, LP, NULL, BASE_TAB_BUTTON_ID };
 
 checkbox update_docky = { T_UPDATE_DOCK, false };
 
-char default_dir[] = "/rd/1";
-od_filter filter2 = { 8, "TXT\0\0" };
-
 checkbox optionbox_stretch = { T_CHECKBOX_STRETCH, true };
 checkbox optionbox_tiled = { T_CHECKBOX_TILED, false };
+
+struct SCREENSAVER_SETTINGS {
+	int timeout;
+	char program[60];
+	char available[200];
+} ss_settings;
 
 //===================================================//
 //                                                   //
@@ -65,7 +58,7 @@ checkbox optionbox_tiled = { T_CHECKBOX_TILED, false };
 
 void main()
 {   
-	int id;
+	int id, i;
 	load_dll(boxlib, #box_lib_init,0);
 	load_dll(libini, #lib_init,1);
 	load_dll(Proc_lib, #OpenDialog_init,0);
@@ -82,19 +75,6 @@ void main()
 	{
 	  	case evMouse:
 			SelectList_ProcessMouse();
-
-			if (tabs.active_tab == SKINS) {
-				edit_box_mouse stdcall (#edit_cmm);
-				edit_box_mouse stdcall (#edit_st);
-			}
-
-	  		if (mouse.key&MOUSE_RIGHT) && (mouse.up) 
-	  		&&(select_list.MouseOver(mouse.x, mouse.y)) {
-	  			select_list.ProcessMouse(mouse.x, mouse.y);
-				SelectList_Draw();
-				EventSetNewCurrent();
-	  			open_lmenu(mouse.x, mouse.y, MENU_TOP_RIGHT, NULL, MENU_LIST);
-	  		}
 	  		break;
 
 		case evButton:
@@ -123,20 +103,20 @@ void main()
 			}
 
 			if (! edit_cmm.flags & ed_focus) && (! edit_st.flags & ed_focus)
-			for (id=select_list.cur_y+1; id<select_list.count; id++)
+			for (i=select_list.cur_y+1; i<select_list.count; i++)
 			{
-				strcpy(#temp_filename, io.dir.position(files_mas[id]));
-				if (temp_filename[0]==key_ascii) || (temp_filename[0]==key_ascii-32)
+				id = ESBYTE[io.dir.position(files_mas[i])];
+				if (id==ESBYTE[EAX]) || (id==key_ascii-32)
 				{
-					select_list.cur_y = id - 1;
+					select_list.cur_y = i - 1;
 					select_list.KeyDown();
 					EventApply();
 					break;
 				}
 			}
 
-			if (tabs.active_tab == SKINS) {
-				EAX = key_ascii << 8;
+			if (tabs.active_tab == TAB_SKINS) {
+				EAX = key_editbox;
 				edit_box_key stdcall (#edit_cmm);
 				edit_box_key stdcall (#edit_st);				
 			}
@@ -144,78 +124,67 @@ void main()
 		 
 		 case evReDraw:		
 			draw_window();
-	 		EventHandleMenuClick();
    }
 }
 
 void draw_window()
 {
 	sc.get();
-	DefineAndDrawWindow(screen.width-600/2,80,WIN_W+9,WIN_H+skin_height,0x34,sc.work,WINDOW_HEADER,0);
-	GetProcessInfo(#Form, SelfInfo);
-	IF (Form.status_window&ROLLED_UP) return;
+	DefineAndDrawWindow(screen.width-WIN_W-9/2,80,WIN_W+9,WIN_H+4+skin_height,0x34,sc.work,WINDOW_HEADER,0);
 	DrawWindowContent();
 }
 
 void DrawWindowContent()
 {
-	int id;
-
 	sc.get();	
 
-	//tabs.w = Form.cwidth-LP-LP;
 	tabs.draw();
 	draw_icon_16w(tabs.x + TAB_PADDING, LP+5, 17);
 	draw_icon_16w(sizeof(t_skins)-1*8 + TAB_PADDING + TAB_PADDING + tabs.x, LP+5, 6);
 	draw_icon_16w(sizeof(t_wallpapers)+sizeof(t_skins)-2*8 + TAB_PADDING + TAB_PADDING + TAB_PADDING + tabs.x, LP+5, 61);
 
-	id = select_list.cur_y;
+	$push select_list.cur_y
 	SelectList_Init(
 		LP + TAB_PADDING,
 		PANEL_H, 
 		LIST_W, 
-		Form.cheight-LP - TAB_PADDING - PANEL_H
+		WIN_H - LP - TAB_PADDING - PANEL_H
 		);
-	select_list.cur_y = id;
+	$pop select_list.cur_y
 
-	skp.set_size(
-		LP + TAB_PADDING + LIST_W + TAB_PADDING + 30,
-		PANEL_H,
-		226,
-		230 //select_list.h - 50 - 50
-	);
-	DrawBar(skp.x, skp.y, skp.w, WIN_H, sc.work);
+	DrawBar(RIGHTx, PANEL_H, RIGHTw, WIN_H-PANEL_H-LP, sc.work);
 
 	SelectList_Draw();
 	SelectList_DrawBorder();
 
-	if (tabs.active_tab == SKINS)
+	if (tabs.active_tab == TAB_SKINS)
 	{
-		DrawFrame(skp.x, PANEL_H+5, skp.w, skp.h, " Components Preview ");
-		DrawUiElementsPreview(skp.x+20, PANEL_H+5, skp.h);
-		if (CheckProcessExists("@DOCKY")) update_docky.draw(skp.x, PANEL_H+250);
+		DrawFrame(RIGHTx, PANEL_H+5, RIGHTw, RIGHTh, T_UI_PREVIEW);
+		DrawUiElementsPreview(RIGHTx+20, PANEL_H+5, RIGHTh);
+		if (CheckProcessExists("@DOCKY")) update_docky.draw(RIGHTx, PANEL_H+250);
 	}
-	if (tabs.active_tab == WALLPAPERS)
+	if (tabs.active_tab == TAB_WALLPAPERS)
 	{
-		DrawFrame(skp.x, PANEL_H+5, 180, 80, T_PICTURE_MODE);
-		optionbox_stretch.draw(skp.x+14, PANEL_H+25);
-		optionbox_tiled.draw(skp.x+14, PANEL_H+52);
-		DrawStandartCaptButton(skp.x, PANEL_H+100, BTN_SELECT_WALLP_FOLDER, T_SELECT_FOLDER);
+		DrawFrame(RIGHTx, PANEL_H+5, 180, 80, T_PICTURE_MODE);
+		optionbox_stretch.draw(RIGHTx+14, PANEL_H+25);
+		optionbox_tiled.draw(RIGHTx+14, PANEL_H+52);
+		DrawStandartCaptButton(RIGHTx, PANEL_H+100, BTN_SELECT_WALLP_FOLDER, T_SELECT_FOLDER);
 	}
-	if (tabs.active_tab == SCREENSAVERS)
+	if (tabs.active_tab == TAB_SCREENSAVERS)
 	{
-		DrawStandartCaptButton(skp.x, PANEL_H, BTN_TEST_SCREENSAVER, "Test");
+		DrawStandartCaptButton(RIGHTx, PANEL_H, BTN_TEST_SCREENSAVER, "Test");
 	}
 }
 
 bool strreqi(dword _left, _right)
 {
-	return strcmpi(_left+strrchr(_left,'.')-1, _right);
+	return strcmp(_left+strrchr(_left,'.'), _right);
 }
 
 void Open_Dir()
 {
 	int j;
+	char temp_filename[4096];
 	select_list.count = 0;
 	if(io.dir.buffer)free(io.dir.buffer);
 	io.dir.load(#folder_path,DIR_ONLYREAL);
@@ -223,17 +192,17 @@ void Open_Dir()
 	{
 		strcpy(#temp_filename, io.dir.position(j));
 		strlwr(#temp_filename);
-		if (tabs.active_tab==SKINS) {
-			if (strreqi(#temp_filename,".skn")!=0) continue;
+		if (tabs.active_tab==TAB_SKINS) {
+			if (strreqi(#temp_filename,"skn")!=0) continue;
 		}
-		if (tabs.active_tab==WALLPAPERS) {
-			if (strreqi(#temp_filename,".png")!=0)
-			&& (strreqi(#temp_filename,".jpg")!=0) 
-			&& (strreqi(#temp_filename,".jpeg")!=0)
-			&& (strreqi(#temp_filename,".gif")!=0) continue;
+		if (tabs.active_tab==TAB_WALLPAPERS) {
+			if (strreqi(#temp_filename,"png")!=0)
+			&& (strreqi(#temp_filename,"jpg")!=0) 
+			&& (strreqi(#temp_filename,"jpeg")!=0)
+			&& (strreqi(#temp_filename,"bmp")!=0)
+			&& (strreqi(#temp_filename,"gif")!=0) continue;
 		}
-		cur = select_list.count;
-		files_mas[cur]=j;
+		files_mas[calc(select_list.count)]=j;
 		select_list.count++;
 	}
 	Sort_by_Name(0, select_list.count-1);
@@ -256,22 +225,23 @@ void Sort_by_Name(int a, b) // for the first call: a = 0, b = sizeof(mas) - 1
 
 void SelectList_DrawLine(dword i)
 {
-	int yyy;
+	int draw_y = i*SELECT_LIST_ITEMH+PANEL_H;
+	int i_abs = select_list.first + i;
+	char filename[4096];
 
-	cur = select_list.first + i;
-	strcpy(#temp_filename, io.dir.position(files_mas[cur]));
-	temp_filename[strlen(#temp_filename)-4] = 0;
-	yyy = i*select_list.item_h+select_list.y;
+	strcpy(#filename, io.dir.position(files_mas[i_abs]));
+	EAX = math.min(strrchr(#filename,'.')-1, LIST_W - 24 / 8);
+	filename[EAX] = '\0';
 	
-	if (select_list.cur_y-select_list.first==i)
+	if (select_list.cur_y == i_abs)
 	{
-		DrawBar(select_list.x, yyy, select_list.w, select_list.item_h, sc.button);
-		WriteText(select_list.x+12,yyy+select_list.text_y,select_list.font_type,sc.button_text, #temp_filename);
+		DrawBar(select_list.x, draw_y, LIST_W, SELECT_LIST_ITEMH, sc.button);
+		WriteText(select_list.x+12,draw_y+select_list.text_y,select_list.font_type,sc.button_text, #filename);
 	}
 	else
 	{
-		DrawBar(select_list.x,yyy,select_list.w, select_list.item_h, 0xFFFfff);
-		WriteText(select_list.x+12,yyy+select_list.text_y,select_list.font_type,0, #temp_filename);
+		DrawBar(select_list.x,draw_y,LIST_W, SELECT_LIST_ITEMH, 0xFFFfff);
+		WriteText(select_list.x+12,draw_y+select_list.text_y,select_list.font_type,0, #filename);
 	}
 }
 
@@ -284,11 +254,11 @@ void ActivateTab(int _id)
 {
 	select_list.ClearList();
 	Open_Dir();
-	if (!select_list.count) notify("'No files were found' -E");
+	if (!select_list.count) notify(T_NO_FILES);
 	select_list.cur_y = _id;
 	if (select_list.cur_y>select_list.visible) select_list.first=select_list.cur_y; 
 	select_list.CheckDoesValuesOkey();	
-	if (select_list.w) DrawWindowContent();
+	if (LIST_W) DrawWindowContent();
 }
 
 dword GetRealKolibriosPath()
@@ -325,7 +295,10 @@ void EventTabWallpappersClick()
 
 void EventTabScreensaverClick()
 {
-	//strcpy(#folder_path, #wallp_folder_path);
+	ini.section = "screensaver";
+	ss_settings.timeout = ini.GetInt("timeout", 10);
+	ini.GetString("title", #ss_settings.program, sizeof(ss_settings.program), 0);
+	ini.GetString("available", #ss_settings.available, sizeof(ss_settings.available), 0);
 	ActivateTab(active_screensaver);
 }
 
@@ -338,9 +311,8 @@ void EventDeleteFile()
 
 void EventSetNewCurrent()
 {
-	cur = select_list.cur_y;
 	miniprintf(#cur_file_path,"%s/",#folder_path);
-	strcat(#cur_file_path, io.dir.position(files_mas[cur]));
+	strcat(#cur_file_path, io.dir.position(files_mas[calc(select_list.cur_y)]));
 }
 
 void EventSelectWallpFolder()
@@ -367,15 +339,14 @@ void EventApply()
 {
 	char kivpath[4096+10];
 	EventSetNewCurrent();
-	if (tabs.active_tab==SKINS)
+	if (tabs.active_tab==TAB_SKINS)
 	{
-		cur = select_list.cur_y;
 		SetSystemSkin(#cur_file_path);
 		SelectList_Draw();
 		strcpy(#cur_skin_path, #cur_file_path);
 		EventUpdateDocky();
 	} 
-	if (tabs.active_tab==WALLPAPERS)
+	if (tabs.active_tab==TAB_WALLPAPERS)
 	{
 		SelectList_Draw();
 		if (optionbox_stretch.checked) miniprintf(#kivpath, "\\S__%s", #cur_file_path);
@@ -390,13 +361,13 @@ void EventUpdateDocky()
 	KillProcessByName("@docky", MULTIPLE);
 	RunProgram("/sys/@docky",NULL);
 	pause(50);
-	ActivateWindow(GetProcessSlot(Form.ID));
+	ActivateWindow_Self();
 }
 
 void EventOpenFile()
 {
-	if (tabs.active_tab==SKINS) RunProgram("/sys/skincfg", #cur_file_path);
-	if (tabs.active_tab==WALLPAPERS) RunProgram("/sys/media/kiv", #cur_file_path);
+	if (tabs.active_tab==TAB_SKINS) RunProgram("/sys/skincfg", #cur_file_path);
+	if (tabs.active_tab==TAB_WALLPAPERS) RunProgram("/sys/media/kiv", #cur_file_path);
 }
 
 void EventExit()
@@ -406,19 +377,6 @@ void EventExit()
 		ini.SetString("skin", #cur_skin_path, strlen(#cur_skin_path));
 	}
 	ExitProcess();
-}
-
-void EventHandleMenuClick()
-{
-	switch (get_menu_click()) 
-	{
-		case 1: 
-			EventOpenFile(); 
-			break;
-		case 2: 
-			EventDeleteFile();
-			break;
-	};
 }
 
 stop:

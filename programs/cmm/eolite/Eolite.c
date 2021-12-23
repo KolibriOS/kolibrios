@@ -9,9 +9,9 @@ TODO:
   http://board.kolibrios.org/viewtopic.php?f=23&t=4521&p=77334#p77334
 */
 
-#define ABOUT_TITLE "EOLITE 5.15-1"
-#define TITLE_EOLITE "Eolite File Manager 5.15-1"
-#define TITLE_KFM "Kolibri File Manager 2.15-1";
+#define ABOUT_TITLE "EOLITE 5.16"
+#define TITLE_EOLITE "Eolite File Manager 5.16"
+#define TITLE_KFM "Kolibri File Manager 2.16";
 
 #define MEMSIZE 1024 * 250
 #include "../lib/clipboard.h"

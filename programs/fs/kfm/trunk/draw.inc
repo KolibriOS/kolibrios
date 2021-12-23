@@ -239,6 +239,7 @@ draw_icon:
 	ror	edx,16
 	sub	edx,12
 	rol	edx,16
+	dec edx
 	mcall	7, ,<10,9>
 	popa
 	ret
