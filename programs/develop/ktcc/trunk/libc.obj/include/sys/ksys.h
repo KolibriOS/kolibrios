@@ -1375,6 +1375,11 @@ int _ksys_exec(char *app_name, char *args)
     file_opt.p00 = 7;
     file_opt.p04dw = 0;
     file_opt.p08dw = (unsigned)args;
+
+    file_opt.p12 = 0;
+    file_opt.p16 = 0;
+    file_opt.p20 = 0;
+
     file_opt.p21 = app_name;
     return _ksys_work_files(&file_opt);
 }
