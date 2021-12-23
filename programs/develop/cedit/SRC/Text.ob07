@@ -1472,6 +1472,50 @@ BEGIN
 END redo;
 
 
+PROCEDURE getSelCnt* (text: tText; VAR chars, lines: INTEGER);
+VAR
+	selBeg, selEnd: tPoint;
+	first, last, line: tLine;
+
+	PROCEDURE charCnt (line: tLine; first, last: INTEGER): INTEGER;
+	VAR
+		i, res: INTEGER;
+	BEGIN
+		res := 0;
+		FOR i := first TO last DO
+			IF getChar(line, i) # TAB1 THEN
+				INC(res)
+			END
+		END
+		RETURN res
+	END charCnt;
+
+BEGIN
+	IF selected(text) THEN
+		getSelect(text, selBeg, selEnd);
+		first := getLine(text, selBeg.Y);
+		last  := getLine(text, selEnd.Y);
+		lines := selEnd.Y - selBeg.Y + 1;
+
+		IF lines > 1 THEN
+			chars := charCnt(first, selBeg.X, first.length - 1) + charCnt(last, 0, selEnd.X - 1) + lenEOL;
+			line := first.next(tLine)
+		ELSE
+			chars := charCnt(first, selBeg.X, selEnd.X - 1);
+			line := last
+		END;
+
+		WHILE line # last DO
+			INC(chars, charCnt(line, 0, line.length - 1) + lenEOL);
+			NextLine(line)
+		END
+	ELSE
+		chars := 0;
+		lines := 0
+	END
+END getSelCnt;
+
+
 PROCEDURE copy (text: tText);
 VAR
     selBeg, selEnd: tPoint;

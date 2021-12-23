@@ -28,7 +28,7 @@ IMPORT
     RW, Ini, EB := EditBox, Tabs, Toolbar;
 
 CONST
-    HEADER = "CEdit (22-dec-2021)";
+    HEADER = "CEdit (23-dec-2021)";
 
     ShellFilter = "";
     EditFilter = "SH|INC|TXT|ASM|OB07|C|CPP|H|PAS|PP|LUA|INI|JSON";
@@ -218,15 +218,28 @@ VAR
 
 PROCEDURE WritePos (y: INTEGER);
 VAR
-    s1, s2: ARRAY 32 OF WCHAR;
-    line, col: INTEGER;
+	s1, s2, s3: ARRAY 32 OF WCHAR;
+	line, col, chars, lines: INTEGER;
 BEGIN
-    T.getPos(text, col, line);
-    U.int2str(line, s1);
-    U.int2str(col, s2);
-    U.append(s1, ": ");
-    U.append(s1, s2);
-    K.DrawText(LEFT, y, K.textColor, s1)
+	T.getPos(text, col, line);
+	U.int2str(line, s1);
+	U.int2str(col, s2);
+	U.append(s1, ": ");
+	U.append(s1, s2);
+	IF T.selected(text) THEN
+		T.getSelCnt(text, chars, lines);
+		s3 := "sel: ";
+		U.int2str(chars, s2);
+		U.append(s3, s2);
+		U.append(s3, " | ");
+		U.int2str(lines, s2);
+		U.append(s3, s2)
+	ELSE
+		s3 := ""
+	END;
+	K.DrawRect(LEFT, TOP + canvas.height + scrollWidth, (16+24)*fontWidth, BOTTOM - scrollWidth + 1, K.winColor);
+	K.DrawText(LEFT, y, K.textColor, s1);
+	K.DrawText(LEFT + 16*fontWidth, y, K.textColor, s3)
 END WritePos;
 
 
@@ -284,7 +297,6 @@ PROCEDURE Message (s: ARRAY OF WCHAR);
 CONST
     minWidth = 30;
     height = 40;
-    borderColor = 808080H;
 VAR
     top, left, right, bottom, x, y, width: INTEGER;
 BEGIN
@@ -298,7 +310,7 @@ BEGIN
     x := minWidth DIV 2 + left;
     y := (height - fontHeight) DIV 2 + top;
     K.DrawRect(left, top, width, height, K.winColor);
-    Rect(left, top, right, bottom, borderColor);
+    Rect(left, top, right, bottom, K.borderColor);
     K.DrawText(x, y, K.textColor, s);
 END Message;
 
@@ -376,7 +388,7 @@ BEGIN
     U.append(s, 20X + 20X);
     U.append(s, E.names[enc]);
     SetCaption(text.fileName);
-    K.DrawRect(LEFT + 16*fontWidth, TOP + canvas.height + scrollWidth, width - (LEFT + 16*fontWidth), BOTTOM - scrollWidth + 1, K.winColor);
+    K.DrawRect(LEFT + (16+24)*fontWidth, TOP + canvas.height + scrollWidth, width - (LEFT + (16+24)*fontWidth), BOTTOM - scrollWidth + 1, K.winColor);
     y := height - (BOTTOM - scrollWidth) + (BOTTOM - scrollWidth - 16) DIV 2;
     K.DrawText(width - LENGTH(s)*fontWidth - (RIGHT_PADDING + 1), y, K.textColor, s);
     MarkModified
@@ -395,7 +407,7 @@ END DrawScroll;
 
 PROCEDURE repaint;
 VAR
-    width, height, scrollX, scrollY, y: INTEGER;
+    width, height, scrollX, scrollY: INTEGER;
 BEGIN
     IF (text # NIL) & ~K.RolledUp() THEN
         IF confirm THEN
@@ -416,9 +428,7 @@ BEGIN
             switch := FALSE
         END;
         T.draw(text);
-        y := height - (BOTTOM - scrollWidth) + (BOTTOM - scrollWidth - 16) DIV 2;
-        K.DrawRect(LEFT, TOP + canvas.height + scrollWidth, 16*fontWidth, BOTTOM - scrollWidth + 1, K.winColor);
-        WritePos(y);
+        WritePos(height - (BOTTOM - scrollWidth) + (BOTTOM - scrollWidth - 16) DIV 2);
 
         IF (enc # T.getEnc(text)) OR (eol # T.getEol(text)) THEN
         	DrawState(text, width, height)
