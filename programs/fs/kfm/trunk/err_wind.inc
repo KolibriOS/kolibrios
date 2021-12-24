@@ -37,12 +37,12 @@ start_error_window_thread:
     mov   eax,[ebx+46]
     shr   eax,1
     add   eax,[ebx+38]
-    sub   eax,40
+    sub   eax,ERR_WINH/2
     mov   [error_window_y+2],ax
     mov   eax,[ebx+42]
     shr   eax,1
     add   eax,[ebx+34]
-    sub   eax,125
+    sub   eax,ERR_WINW/2
     mov   [error_window_x+2],ax
     mcall 51,1,thread_start,thread_stack
     ret

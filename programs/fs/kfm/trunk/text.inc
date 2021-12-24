@@ -1,4 +1,4 @@
-header_text       db 'Kolibri File Manager v0.48d',0
+header_text       db 'Kolibri File Manager v0.48e',0
 ;---------------------------------------------------------------------
 fbutton_name:
     .f1   db '1 Help',0
@@ -9,7 +9,7 @@ fbutton_name:
     .f6   db '6 Move',0
     .f7   db '7 Dir',0
     .f8   db '8 Del',0
-    .f9   db '9 file',0
+    .f9   db '9 File',0
     .f10  db '10',0
     .f11  db '11',0
     .f12  db '12 Exit',0
@@ -149,7 +149,7 @@ type_access:
      db 'Access date:',0
 ;---------------------------------------------------------------------
 type_limiters_data_time:
-     db '/   /         :   :',0
+     db '/  /       :  :',0
 ;---------------------------------------------------------------------
 mouse_left_panel:
      db 'Left ',0
@@ -182,11 +182,19 @@ background_tile:
 background_stretch:
     db '\S  '
 ;---------------------------------------------------------------------
-files_information_window_x: dd 100 shl 16 + 300
-files_information_window_y: dd 100 shl 16 + 200
+INF_WINW = 400
+INF_WINH = 200
+INF_DATAX = 110
+INF_DATAY = 10
+INF_LINEH = 18
+files_information_window_x: dd 100 shl 16 + INF_WINW
+files_information_window_y: dd 100 shl 16 + INF_WINH
+infowin_title db 'Properties',0
 ;---------------------------------------------------------------------
-error_window_x: dd 100 shl 16 + 250
-error_window_y: dd 100 shl 16 + 80
+ERR_WINW = 300
+ERR_WINH = 80
+error_window_x: dd 100 shl 16 + ERR_WINW
+error_window_y: dd 100 shl 16 + ERR_WINH
 ;---------------------------------------------------------------------
 mouse_key_delay dd 100
 ;---------------------------------------------------------------------

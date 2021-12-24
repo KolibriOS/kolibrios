@@ -14,20 +14,20 @@ start_files_information_thread:
 	mov	eax,[ebx+46]
 	shr	eax,1
 	add	eax,[ebx+38]
-	sub	eax,150
+	sub	eax,INF_WINH/2
 	mov	[files_information_window_y+2],ax
 	mov	eax,[ebx+42]
 	shr	eax,1
 	add	eax,[ebx+34]
-	sub	eax,125
+	sub	eax,INF_WINW/2
 	mov	[files_information_window_x+2],ax
 	mcall	51,1,thread_files_information_start,thread_stack
 	ret
 ;------------------------------------------------------------------------------
 draw_files_information_window:
 	mcall	12,1
-	mcall	0,[files_information_window_x],[files_information_window_y],0x03ffffcc
-	mov	edx,100 shl 16+50
+	mcall	0,[files_information_window_x],[files_information_window_y],0x33ffffcc,,infowin_title
+	mov	edx,INF_DATAX shl 16+INF_DATAY+INF_LINEH
 	mov	ebx,0x800a0000
 	mov	esi,0x10000000
 	cmp	[inf_marked_yes],1
@@ -36,7 +36,7 @@ draw_files_information_window:
 	cmp	[nesting_direction],1
 	je	@f
 
-	add	edx,15
+	add	edx,INF_LINEH
 ;--------------------------------------
 .continue_4:
 ; show files counter
@@ -54,12 +54,12 @@ draw_files_information_window:
 ;--------------------------------------
 .continue_2:
 ; show directories counter
-	add	edx,15
+	add	edx,INF_LINEH
 	mcall	,,[directories_counter]
 ;--------------------------------------
 @@:
 ; show file or directory size
-	add	edx,15
+	add	edx,INF_LINEH
 	mcall	47,0x80140001,files_size
 ;--------------------------------------
 	mov	ebp,date.create
@@ -81,21 +81,21 @@ draw_files_information_window:
 	mov	edx,read_folder_1_name
 ;--------------------------------------
 @@:
-	mcall	4,<75,35>,0x80000000,	;file_name
-	mcall	,<10,35>,0x90000000,type_location
+	mcall	4,<INF_DATAX,INF_DATAY>,0x90000000,	;file_name
+	mcall	,<10,INF_DATAY>,0x90000000,type_location
 	cmp	[inf_marked_yes],1
 	je	.continue
 
-	mcall	,<90,50>,0x80000000,type_name
+	mcall	,<INF_DATAX,INF_DATAY+INF_LINEH>,0x90000000,type_name
 	mov	ecx,0x90000000
 	cmp	[nesting_direction],1
 	je	@f
 
-	mcall	,<10,50>,,type_dir_name
+	mcall	,<10,INF_DATAY+INF_LINEH>,,type_dir_name
 	jmp	.continue
 ;--------------------------------------
 @@:
-	mcall	,<10,50>,,type_file_name
+	mcall	,<10,INF_DATAY+INF_LINEH>,,type_file_name
 ;--------------------------------------
 .continue:
 	cmp	[inf_marked_yes],1
@@ -105,7 +105,7 @@ draw_files_information_window:
 	je	@f
 ;--------------------------------------
 .continue_3:
-	add	ebx,15
+	add	ebx,INF_LINEH
 	mcall	,,,type_files
 ;--------------------------------------
 @@:
@@ -119,24 +119,24 @@ draw_files_information_window:
 	je	@f
 ;--------------------------------------
 .continue_1:
-	add	ebx,15
+	add	ebx,INF_LINEH
 	mcall	,,,type_dir
 ;--------------------------------------
 @@:
-	add	ebx,15
+	add	ebx,INF_LINEH
 	mcall	,,,type_size
-	add	ebx,15
+	add	ebx,INF_LINEH
 	mcall	,,,type_create
-	add	ebx,15
+	add	ebx,INF_LINEH
 	mcall	,,,type_change
-	add	ebx,15
+	add	ebx,INF_LINEH
 	mcall	,,,type_access
-	sub	ebx,30
-	add	ebx,107 shl 16
-	mcall	,,0x80000000,type_limiters_data_time
-	add	ebx,15
+	sub	ebx,INF_LINEH*2
+	add	ebx,115 shl 16
+	mcall	,,0x90000000,type_limiters_data_time
+	add	ebx,INF_LINEH
 	mcall
-	add	ebx,15
+	add	ebx,INF_LINEH
 	mcall
 
 	mcall	12,2
@@ -144,11 +144,11 @@ draw_files_information_window:
 ;------------------------------------------------------------------------------
 show_date_and_time_of_files_information:
 ; show date
-	add	edx,15
+	add	edx,INF_LINEH
 	push	edx
 	movzx	ecx,byte [ebp+0]
 	mcall	,0x00020000
-	add	edx,24 shl 16
+	add	edx,23 shl 16
 	movzx	ecx,byte [ebp+1]
 	mcall
 	add	edx,23 shl 16
@@ -156,7 +156,7 @@ show_date_and_time_of_files_information:
 	mcall	,0x00040000
 	sub	ebp,12
 ; show time
-	add	edx,37 shl 16
+	add	edx,41 shl 16
 	movzx	ecx,byte [ebp+2]
 	mcall	,0x00020000
 	add	edx,24 shl 16
