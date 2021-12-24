@@ -31,7 +31,8 @@ struct checkbox
 	if (!id) id = GetFreeButtonId();
 	x=_x; y=_y;
 
-	DefineButton(x-1, y-1, strlen(text)*8 + SIZE + 17, SIZE+2, id+BT_HIDE+BT_NOFRAME, 0);
+	DefineHiddenButton(x-1, y-1, strlen(text)*8 + SIZE + 17, SIZE+2, id+BT_NOFRAME);
+	UnsafeDefineButton(x, y, SIZE, SIZE, id, 0);
 	DrawRectangle(x, y, SIZE, SIZE, sc.work_graph);
 	if (disabled)
 	{

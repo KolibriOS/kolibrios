@@ -118,7 +118,9 @@ draw_ctx_menu:
 	add	ebx, 1 * 65536
 	mcall
 
-	mcall	,<4,28>,0x80000000,ctx_menu_text
+	mov	ecx, [system_colours + 32]    ; sc.work_text
+	or	ecx, 0x80000000
+	mcall	,<4,28>,,ctx_menu_text
 
 	mov	edx, ctx_menu_text2
 

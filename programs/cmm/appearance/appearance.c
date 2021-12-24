@@ -1,7 +1,7 @@
 //11.03.12 - start!
 //ver 2.31
 
-#define MEMSIZE 200*1024
+#define MEMSIZE 1024*70
 #include "../lib/mem.h"
 #include "../lib/strings.h"
 #include "../lib/io.h"
@@ -34,21 +34,20 @@ enum {
 char folder_path[4096];
 char cur_file_path[4096];
 char cur_skin_path[4096];
-int files_mas[400];
+char ss_available[200];
+
+int screensaver_timeout;
 
 _tabs tabs = { -sizeof(t_skins)-sizeof(t_wallpapers)-sizeof(t_screensaver)-3*8+WIN_W
 	 - TAB_PADDING / 2, LP, NULL, BASE_TAB_BUTTON_ID };
 
 checkbox update_docky = { T_UPDATE_DOCK, false };
 
-checkbox optionbox_stretch = { T_CHECKBOX_STRETCH, true };
+checkbox optionbox_stretch = { T_CHECKBOX_STRETCH, false };
 checkbox optionbox_tiled = { T_CHECKBOX_TILED, false };
+checkbox optionbox_auto = { T_CHECKBOX_AUTO, true };
 
-struct SCREENSAVER_SETTINGS {
-	int timeout;
-	char program[60];
-	char available[200];
-} ss_settings;
+collection list;
 
 //===================================================//
 //                                                   //
@@ -70,6 +69,8 @@ void main()
 	tabs.add(#t_screensaver, #EventTabScreensaverClick);
 	tabs.draw_active_tab();
 
+	GetScreensaverIniSettings();
+
 	SetEventMask(EVM_REDRAW + EVM_KEY + EVM_BUTTON + EVM_MOUSE + EVM_MOUSE_FILTER);
 	loop() switch(WaitEvent()) 
 	{
@@ -80,13 +81,21 @@ void main()
 		case evButton:
 			id=GetButtonID();
 			if (id==1) EventExit();
-			if (id==BTN_SELECT_WALLP_FOLDER) EventSelectWallpFolder();
 			tabs.click(id);
-			checkbox1.click(id);
-			spinbox1.click(id);
-			if (update_docky.click(id)) EventUpdateDocky();
-			if (!optionbox_stretch.checked) && (optionbox_stretch.click(id)) EventSetWallpMode_Stretch();
-			if (!optionbox_tiled.checked) && (optionbox_tiled.click(id)) EventSetWallpMode_Tiled();
+			if (tabs.active_tab == TAB_SKINS) {
+				checkbox1.click(id);
+				spinbox1.click(id);
+				if (update_docky.click(id)) EventUpdateDocky();
+			}
+			if (tabs.active_tab == TAB_WALLPAPERS) {
+				if (id==BTN_SELECT_WALLP_FOLDER) EventSelectWallpFolder();
+				if (optionbox_stretch.click(id)) EventSetWallpMode(1,0,0);
+				if (optionbox_tiled.click(id)) EventSetWallpMode(0,1,0);
+				if (optionbox_auto.click(id)) EventSetWallpMode(0,0,1);
+			}
+			if (tabs.active_tab == TAB_SCREENSAVERS) {
+				if (id==BTN_TEST_SCREENSAVER) EventOpenFile();
+			}
 			break;
 	  
 		case evKey:
@@ -98,14 +107,13 @@ void main()
 				id = tabs.active_tab+1; 
 				if(id==3)id=0;
 				tabs.click(id + tabs.base_id);
-				DrawWindowContent();
 				break;
 			}
 
 			if (! edit_cmm.flags & ed_focus) && (! edit_st.flags & ed_focus)
 			for (i=select_list.cur_y+1; i<select_list.count; i++)
 			{
-				id = ESBYTE[io.dir.position(files_mas[i])];
+				id = ESBYTE[list.get(i)];
 				if (id==ESBYTE[EAX]) || (id==key_ascii-32)
 				{
 					select_list.cur_y = i - 1;
@@ -165,14 +173,15 @@ void DrawWindowContent()
 	}
 	if (tabs.active_tab == TAB_WALLPAPERS)
 	{
-		DrawFrame(RIGHTx, PANEL_H+5, 180, 80, T_PICTURE_MODE);
+		DrawFrame(RIGHTx, PANEL_H+5, 180, 105, T_PICTURE_MODE);
 		optionbox_stretch.draw(RIGHTx+14, PANEL_H+25);
 		optionbox_tiled.draw(RIGHTx+14, PANEL_H+52);
-		DrawStandartCaptButton(RIGHTx, PANEL_H+100, BTN_SELECT_WALLP_FOLDER, T_SELECT_FOLDER);
+		optionbox_auto.draw(RIGHTx+14, PANEL_H+79);
+		DrawStandartCaptButton(RIGHTx, PANEL_H+130, BTN_SELECT_WALLP_FOLDER, T_SELECT_FOLDER);
 	}
 	if (tabs.active_tab == TAB_SCREENSAVERS)
 	{
-		DrawStandartCaptButton(RIGHTx, PANEL_H, BTN_TEST_SCREENSAVER, "Test");
+		DrawStandartCaptButton(RIGHTx, PANEL_H, BTN_TEST_SCREENSAVER, T_SCREENSAVER_PREVIEW);
 	}
 }
 
@@ -181,31 +190,46 @@ bool strreqi(dword _left, _right)
 	return strcmp(_left+strrchr(_left,'.'), _right);
 }
 
+dword files_mas[400];
 void Open_Dir()
 {
 	int j;
-	char temp_filename[4096];
-	select_list.count = 0;
+	char fname[4096];
+	select_list.ClearList();
 	if(io.dir.buffer)free(io.dir.buffer);
 	io.dir.load(#folder_path,DIR_ONLYREAL);
 	for (j=0; j<io.dir.count; j++)
 	{
-		strcpy(#temp_filename, io.dir.position(j));
-		strlwr(#temp_filename);
+		strcpy(#fname, io.dir.position(j));
+		strlwr(#fname);
 		if (tabs.active_tab==TAB_SKINS) {
-			if (strreqi(#temp_filename,"skn")!=0) continue;
+			if (strreqi(#fname,"skn")!=0) continue;
 		}
 		if (tabs.active_tab==TAB_WALLPAPERS) {
-			if (strreqi(#temp_filename,"png")!=0)
-			&& (strreqi(#temp_filename,"jpg")!=0) 
-			&& (strreqi(#temp_filename,"jpeg")!=0)
-			&& (strreqi(#temp_filename,"bmp")!=0)
-			&& (strreqi(#temp_filename,"gif")!=0) continue;
+			if (strreqi(#fname,"png")!=0)
+			&& (strreqi(#fname,"jpg")!=0) 
+			&& (strreqi(#fname,"jpeg")!=0)
+			&& (strreqi(#fname,"bmp")!=0)
+			&& (strreqi(#fname,"gif")!=0) continue;
 		}
-		files_mas[calc(select_list.count)]=j;
+		ESDWORD[select_list.count*4 + #files_mas] = j;
 		select_list.count++;
 	}
 	Sort_by_Name(0, select_list.count-1);
+	list.drop();
+	for (j=0; j<select_list.count; j++) {
+		list.add(io.dir.position(files_mas[j]));
+	}
+	if (!select_list.count) notify(T_NO_FILES);
+	//save current item for tab change
+	switch(tabs.active_tab) {
+		CASE TAB_SKINS: select_list.cur_y = active_skin; BREAK;
+		CASE TAB_WALLPAPERS: select_list.cur_y = active_wallpaper; BREAK;
+		CASE TAB_SCREENSAVERS: select_list.cur_y = active_screensaver;
+	}
+	if (select_list.cur_y>select_list.visible) select_list.first=select_list.cur_y; 
+	select_list.CheckDoesValuesOkey();	
+	if (LIST_W) draw_window();
 }
 
 void Sort_by_Name(int a, b) // for the first call: a = 0, b = sizeof(mas) - 1
@@ -227,38 +251,36 @@ void SelectList_DrawLine(dword i)
 {
 	int draw_y = i*SELECT_LIST_ITEMH+PANEL_H;
 	int i_abs = select_list.first + i;
-	char filename[4096];
+	char filename_buf[4096];
+	char* filename = #filename_buf;
 
-	strcpy(#filename, io.dir.position(files_mas[i_abs]));
-	EAX = math.min(strrchr(#filename,'.')-1, LIST_W - 24 / 8);
-	filename[EAX] = '\0';
+	strcpy(filename, list.get(i_abs));
+	EAX = math.min(strrchr(filename,'.')-1, LIST_W - 24 / 8);
+	filename_buf[EAX] = '\0';
+	if (EAX = strrchr(filename,'/')) filename += EAX;
+
+	//save current item for tab change
+	switch(tabs.active_tab) {
+		CASE TAB_SKINS: active_skin = select_list.cur_y; BREAK;
+		CASE TAB_WALLPAPERS: active_wallpaper = select_list.cur_y; BREAK;
+		CASE TAB_SCREENSAVERS: active_screensaver = select_list.cur_y;
+	}
 	
 	if (select_list.cur_y == i_abs)
 	{
 		DrawBar(select_list.x, draw_y, LIST_W, SELECT_LIST_ITEMH, sc.button);
-		WriteText(select_list.x+12,draw_y+select_list.text_y,select_list.font_type,sc.button_text, #filename);
+		WriteText(select_list.x+12,draw_y+select_list.text_y,select_list.font_type,sc.button_text, filename);
 	}
 	else
 	{
 		DrawBar(select_list.x,draw_y,LIST_W, SELECT_LIST_ITEMH, 0xFFFfff);
-		WriteText(select_list.x+12,draw_y+select_list.text_y,select_list.font_type,0, #filename);
+		WriteText(select_list.x+12,draw_y+select_list.text_y,select_list.font_type,0, filename);
 	}
 }
 
 void SelectList_LineChanged() 
 {
 	EventApply();
-}
-
-void ActivateTab(int _id)
-{
-	select_list.ClearList();
-	Open_Dir();
-	if (!select_list.count) notify(T_NO_FILES);
-	select_list.cur_y = _id;
-	if (select_list.cur_y>select_list.visible) select_list.first=select_list.cur_y; 
-	select_list.CheckDoesValuesOkey();	
-	if (LIST_W) DrawWindowContent();
 }
 
 dword GetRealKolibriosPath()
@@ -269,6 +291,13 @@ dword GetRealKolibriosPath()
 	return #real_kolibrios_path;
 }
 
+void GetScreensaverIniSettings()
+{
+	ini.section = "screensaver";
+	screensaver_timeout = ini.GetInt("timeout", 10);
+	ini.GetString("available", #ss_available, sizeof(ss_available), 0);
+}
+
 //===================================================//
 //                                                   //
 //                     EVENTS                        //
@@ -277,42 +306,44 @@ dword GetRealKolibriosPath()
 
 void EventTabSkinsClick()
 {
-	active_wallpaper = select_list.cur_y;
 	miniprintf(#folder_path, "%s/res/skins", GetRealKolibriosPath());
-	ActivateTab(active_skin);
+	Open_Dir();
 }
 
 void EventTabWallpappersClick()
 {
-	active_skin = select_list.cur_y;
 	if (opendir_path) {
 		strcpy(#folder_path, #opendir_path);
 	} else {
 		miniprintf(#folder_path, "%s/res/wallpapers", GetRealKolibriosPath());
 	}
-	ActivateTab(active_wallpaper);
+	Open_Dir();
 }
 
 void EventTabScreensaverClick()
 {
-	ini.section = "screensaver";
-	ss_settings.timeout = ini.GetInt("timeout", 10);
-	ini.GetString("title", #ss_settings.program, sizeof(ss_settings.program), 0);
-	ini.GetString("available", #ss_settings.available, sizeof(ss_settings.available), 0);
-	ActivateTab(active_screensaver);
+	dword j;
+	char ssmas[sizeof(ss_available)];
+	list.drop();
+	select_list.ClearList();
+
+	strcpy(#ssmas, #ss_available);
+	do {
+		j = strrchr(#ss_available, '|');
+		miniprintf(#param, "/sys/%s", #ss_available + j);
+		list.add(#param);
+		ESBYTE[#ss_available + j - 1] = '\0';
+		select_list.count++;
+	} while (j);
+
+	if (LIST_W) draw_window();
 }
 
 void EventDeleteFile()
 {
-	io.del(#cur_file_path);
+	DeleteFile(#cur_file_path);
 	Open_Dir();
 	EventApply();
-}
-
-void EventSetNewCurrent()
-{
-	miniprintf(#cur_file_path,"%s/",#folder_path);
-	strcat(#cur_file_path, io.dir.position(files_mas[calc(select_list.cur_y)]));
 }
 
 void EventSelectWallpFolder()
@@ -321,24 +352,23 @@ void EventSelectWallpFolder()
 	if (o_dialog.status) EventTabWallpappersClick();
 }
 
-void EventSetWallpMode_Stretch()
+void EventSetWallpMode(dword _stretch, _titled, _auto)
 {
-	optionbox_tiled.checked = false;
+	optionbox_stretch.checked = _stretch;
+	optionbox_tiled.checked = _titled;
+	optionbox_auto.checked = _auto;
 	optionbox_tiled.redraw();
-	EventApply();
-}
-
-void EventSetWallpMode_Tiled()
-{
-	optionbox_stretch.checked = false;
 	optionbox_stretch.redraw();
+	optionbox_auto.redraw();
 	EventApply();
 }
 
 void EventApply()
 {
-	char kivpath[4096+10];
-	EventSetNewCurrent();
+	char kivparam[4096+10];
+	dword file_name = list.get(select_list.cur_y);
+	miniprintf(#cur_file_path,"%s/",#folder_path);
+	strcat(#cur_file_path, list.get(select_list.cur_y));
 	if (tabs.active_tab==TAB_SKINS)
 	{
 		SetSystemSkin(#cur_file_path);
@@ -349,9 +379,18 @@ void EventApply()
 	if (tabs.active_tab==TAB_WALLPAPERS)
 	{
 		SelectList_Draw();
-		if (optionbox_stretch.checked) miniprintf(#kivpath, "\\S__%s", #cur_file_path);
-		if (optionbox_tiled.checked) miniprintf(#kivpath, "\\T__%s", #cur_file_path);
-		RunProgram("/sys/media/kiv", #kivpath);
+		miniprintf(#kivparam, "\\S__%s", #cur_file_path);
+		if (optionbox_tiled.checked) kivparam[1]='T';
+		if (optionbox_auto.checked) {
+			if (ESBYTE[file_name+1] == ' ') && (ESBYTE[file_name] == 'T') {
+				kivparam[1]='T';
+			}
+		}
+		RunProgram("/sys/media/kiv", #kivparam);
+	}
+	if (tabs.active_tab==TAB_SCREENSAVERS)
+	{
+		SelectList_Draw();
 	}
 }
 
@@ -368,6 +407,7 @@ void EventOpenFile()
 {
 	if (tabs.active_tab==TAB_SKINS) RunProgram("/sys/skincfg", #cur_file_path);
 	if (tabs.active_tab==TAB_WALLPAPERS) RunProgram("/sys/media/kiv", #cur_file_path);
+	if (tabs.active_tab==TAB_SCREENSAVERS) RunProgram(list.get(select_list.cur_y), "@ss");
 }
 
 void EventExit()
