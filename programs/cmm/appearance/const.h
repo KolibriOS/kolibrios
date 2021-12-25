@@ -11,7 +11,9 @@
 	?define T_UPDATE_DOCK "Обновлять Dock-панель"
 	?define T_NO_FILES "'Поддерживаемые файлы не найдены' -E"
 	?define T_UI_PREVIEW " Пример компонентов "
-	?define T_SCREENSAVER_PREVIEW "Просмотр"
+	?define T_SS_PREVIEW "Просмотр"
+	?define T_NO_SS "[Выключен]"
+	?define T_DEFAULT "[По умолчанию]"
 #else
 	char t_skins[] =       "   Skins";
 	char t_wallpapers[] =  "   Wallpapers";
@@ -25,7 +27,9 @@
 	?define T_UPDATE_DOCK "Update Dock"
 	?define T_NO_FILES "'No supported files were found' -E"
 	?define T_UI_PREVIEW " Components Preview "
-	?define T_SCREENSAVER_PREVIEW "Preview"
+	?define T_SS_PREVIEW "Preview"
+	?define T_NO_SS "[Disable]"
+	?define T_DEFAULT "[Default]"
 #endif
 
 #define WIN_W 600

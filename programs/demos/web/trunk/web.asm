@@ -25,11 +25,21 @@ delay = 4
 ;KOS_APP_START
 
 CODE
+	;Check if the app is running in screensaver mode or not
 	cmp dword [param], '@ss'
 	setz [screensaver]
     mov     ebx, EVM_REDRAW + EVM_KEY + EVM_BUTTON
     cmovz   ebx, EVM_REDRAW + EVM_KEY + EVM_BUTTON + EVM_MOUSE
     mcall   40
+	
+	;Make cursor transparent
+    mov     edi, transparent_cursor
+    xor     eax, eax
+    mov     ecx, 32*32
+    rep     stosd
+    mcall   37, 4, transparent_cursor, 2
+    mov     ecx, eax
+    mcall   37, 5
 	
     ;Preinit. Randomize start counter
     mcall 3
@@ -441,5 +451,6 @@ f70: ; run
     db '/sys/@SS',0
 
 screensaver db ?
+transparent_cursor rd 32*32
 
 MEOS_APP_END

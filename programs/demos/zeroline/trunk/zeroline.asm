@@ -160,7 +160,7 @@ drawsswin:
 	mcall	,,,0x01000000
 
 	xor	edx,edx
-	mcall	13
+	;mcall	13 ;Leency - use transparent background
 ;--------------------------------------
 align 4
 tstill:
