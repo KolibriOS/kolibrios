@@ -7,10 +7,20 @@
 #include "../lib/fs.h"
 #endif
 
+enum {
+	FILE_DEFAULT=0,
+	FILE_EXISTS,
+	FILE_REPLACE,
+	FILE_SKIP,
+};
+
+int copy_state = FILE_DEFAULT;
+
 :int copyf(dword from1, in1)
 {
 	dword error;
 	BDVK CopyFile_atr1;
+	copy_state = FILE_DEFAULT;
 
 	if (!from1) || (!in1)
 	{
@@ -25,9 +35,23 @@
 	if (dir_exists(from1))
 		return CopyFolder(from1, in1);
 	else
-	{
-		Operation_Draw_Progress(from1+strrchr(from1, '/'));
-		return CopyFile(from1, in1);
+	{		
+		while(1)
+		{
+			Operation_Draw_Progress(from1+strrchr(from1, '/'));
+			if (copy_state == FILE_DEFAULT) || (copy_state == FILE_REPLACE)
+			{
+				error = CopyFile(from1, in1);
+				if (error != 222)
+				{
+					return error;
+				}
+			}
+			if (copy_state == FILE_SKIP)
+			{
+				return 0;
+			}
+		}
 	}
 }
 
@@ -42,6 +66,11 @@
 	}
 	else 
 	{
+		if (file_exists(copy_in3)) && (copy_state != FILE_REPLACE)
+		{
+			copy_state = FILE_EXISTS;
+			return 222;
+		}
 		if (GetFreeRAM()-1024*1024 < CopyFile_atr.sizelo) //GetFreeRam-1Mb and convert to bytes
 		{
 			if (error = CopyFileByBlocks(CopyFile_atr.sizelo, copy_from3, copy_in3))
@@ -59,7 +88,7 @@
 :int CopyFolder(dword from2, in2)
 {
 	dword dirbuf, fcount, i, filename;
-	char copy_from2[4096], copy_in2[4096], error;
+	char copy_from2[4096], copy_in2[4096], error;	
 
 	if (error = GetDir(#dirbuf, #fcount, from2, DIRS_ONLYREAL))
 	{
@@ -79,6 +108,7 @@
 
 	for (i=0; i<fcount; i++)
 	{
+		copy_state = FILE_DEFAULT;
 		filename = i*304+dirbuf+72;
 		sprintf(#copy_from2,"%s/%s",from2,filename);
 		sprintf(#copy_in2,"%s/%s",in2,filename);
@@ -90,11 +120,27 @@
 		}
 		else
 		{
-			Operation_Draw_Progress(filename+strrchr(filename, '/'));
-			if (error=CopyFile(#copy_from2, #copy_in2))
+			while(1)
 			{
-				if (fabs(error)==8) { debugln("Stop copying."); break;} //TODO: may be need grobal var like stop_all
-				error=CopyFile(#copy_from2, #copy_in2); // #2 :)
+				Operation_Draw_Progress(filename+strrchr(filename, '/'));
+				if (copy_state == FILE_DEFAULT) || (copy_state == FILE_REPLACE)
+				{
+					error = CopyFile(#copy_from2, #copy_in2);
+					if (error != 222)
+					{
+						if (error)
+						{
+							if (fabs(error)==8) { debugln("Stop copying."); break;} //TODO: may be need grobal var like stop_all
+							error=CopyFile(#copy_from2, #copy_in2); // #2 :)
+						}
+						break;
+					}
+				}
+				if (copy_state == FILE_SKIP)
+				{
+					copy_state = FILE_DEFAULT;
+					break;
+				}
 			}
 		}
 	}

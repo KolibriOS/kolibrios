@@ -19,6 +19,7 @@ enum {
 void DisplayOperationForm(int operation_flag)
 {
 	dword title;
+	dword id;
 	if (operation_flag==COPY_FLAG) {
 		title = T_COPY_WINDOW_TITLE;
 		copy_bar.progress_color = 0x00FF00;
@@ -41,15 +42,35 @@ void DisplayOperationForm(int operation_flag)
 	switch(CheckEvent())
 	{
 		 case evButton:
-			DialogExit();
+		 	id = GetButtonID();
+			switch(id)
+			{
+				case 2:
+					DialogExit();
+					break;
+				case 3:
+					copy_state = FILE_REPLACE;
+					break;
+				case 4:
+					copy_state = FILE_SKIP;
+					break;
+			}
 			break;
-			
 		case evReDraw:
 			DefineAndDrawWindow(Form.left+Form.width-200, Form.top+90, WIN_DIALOG_W+9,
-				skin_height+WIN_DIALOG_H, 0x34, sc.work, title, 0);
+				skin_height+WIN_DIALOG_H+70, 0x34, sc.work, title, 0);
 			GetProcessInfo(#Dialog_Form, SelfInfo);
 			DrawCaptButton(WIN_DIALOG_W-PR_LEFT-101, PR_TOP+PR_H+6, 100,26, 2, 
 				sc.button, sc.button_text, T_ABORT_WINDOW_BUTTON);
+
+			if (copy_state == FILE_EXISTS)
+			{
+				WriteText(WIN_DIALOG_W-PR_LEFT-301, PR_TOP+PR_H+46, 0x90, sc.work_text, "File exists!!");
+				DrawCaptButton(WIN_DIALOG_W-PR_LEFT-301, PR_TOP+PR_H+76, 100,26, 3, 
+					sc.button, sc.button_text, T_REPLACE_WINDOW_BUTTON);
+				DrawCaptButton(WIN_DIALOG_W-PR_LEFT-101, PR_TOP+PR_H+76, 100,26, 4, 
+					sc.button, sc.button_text, T_SKIP_WINDOW_BUTTON);
+			}
 
 			DrawRectangle3D(PR_LEFT-1, PR_TOP-1, PR_W+1, PR_H+1, sc.work_dark, sc.work_light);
 	}
@@ -71,7 +92,10 @@ void Operation_Draw_Progress(dword filename) {
 	WriteText(PR_LEFT, PR_TOP-20, 0x90, sc.work_text, filename);
 
 	progressbar_draw stdcall (#copy_bar);
-	progressbar_progress stdcall (#copy_bar);
+	if (copy_state == FILE_DEFAULT)
+	{
+		progressbar_progress stdcall (#copy_bar);
+	}
 
 	WriteTextWithBg(PR_LEFT, PR_TOP+PR_H+5, 0xD0, sc.work_text, 
 		sprintf(#param, "%i/%i", copy_bar.value, copy_bar.max), sc.work);
