@@ -257,6 +257,7 @@ void SelectList_DrawLine(dword i)
 	strcpy(filename, list.get(i_abs));
 	EAX = math.min(strrchr(filename,'.')-1, LIST_W - 24 / 8);
 	filename_buf[EAX] = '\0';
+	if (filename_buf[0]=='T') && (filename_buf[1]=='_') filename+=2;
 	if (EAX = strrchr(filename,'/')) filename += EAX;
 
 	//save current item for tab change
@@ -382,7 +383,7 @@ void EventApply()
 		miniprintf(#kivparam, "\\S__%s", #cur_file_path);
 		if (optionbox_tiled.checked) kivparam[1]='T';
 		if (optionbox_auto.checked) {
-			if (ESBYTE[file_name+1] == ' ') && (ESBYTE[file_name] == 'T') {
+			if (ESBYTE[file_name+1] == '_') && (ESBYTE[file_name] == 'T') {
 				kivparam[1]='T';
 			}
 		}

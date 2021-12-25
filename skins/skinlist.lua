@@ -57,7 +57,6 @@ skinlist = {
 "_old/skin_feol_new/skin_feol_new.skn",
 "_old/skin_ser/skin_ser.skn",
 "_old/skin_vhl/skin_vhl.skn",
-"_old/sshock/sshock.skn",
 "_old/StyleVista/vista_basic/vista_basic.skn",
 "_old/StyleVista/vista_basic_black/vista_basic_black.skn",
 "_old/StyleXP/orqua/orqua.skn",
