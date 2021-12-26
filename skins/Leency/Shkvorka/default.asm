@@ -9,7 +9,7 @@ SKIN_PARAMS \
   colors inactive = [binner=0xDDD7CF:\    ; border inner
                      bouter=0x646464:\    ; border outer
                      bframe=0xDDD7CF],\   ; border middle
-  dtp             = 'default.dtp'          ; dtp colors
+  dtp             = 'colors.dtp'          ; dtp colors
 
 SKIN_BUTTONS \
   close    = [-31:1][27:18],\             ; buttons coordinates

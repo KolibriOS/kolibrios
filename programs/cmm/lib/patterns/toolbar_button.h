@@ -1,36 +1,46 @@
+inline fastcall replace_2cols(EDI, EDX, ESI, ECX, EBX, EAX) 
+{
+    EDX += EDI; //imgsrc + imgsize;
+    WHILE (EDI < EDX) {
+        IF (DSDWORD[EDI]==ESI) DSDWORD[EDI] = ECX;
+        ELSE IF (DSDWORD[EDI]==EBX) DSDWORD[EDI] = EAX;
+        EDI += 4;
+    }
+}
 
 :unsigned int DrawTopPanelButton(dword _button_id, _x, _y, signed int _icon_n, bool pressed)
 {
 	#define TSZE 25
-	static libimg_image top_icons;
-	static dword semi_white=0, bg_col_light, bg_col_dark;
-	int i;
-	if (!semi_white) {
-		top_icons.load("/sys/icons16.png");
-
-		semi_white = MixColors(sc.work, 0xFFFfff, skin_is_dark()*90 + 96);
-		bg_col_dark = MixColors(sc.work, sc.work_graph, 90);
-		bg_col_light = MixColors(semi_white, 0xFFFfff, skin_is_dark()*90 + 10);
-
-		top_icons.replace_color(0xffFFFfff, semi_white);
-		top_icons.replace_color(0xffCACBD6, MixColors(semi_white, 0, 220));
+	static dword lightest, i16_mem, old_work_light;
+	dword i16_size;
+	if (!lightest) || (old_work_light != sc.work_light) {
+		old_work_light = sc.work_light;
+		lightest = MixColors(sc.work_light, 0xFFFfff, skin_is_dark()*155 + 20);
+		if (ESI = memopen("ICONS18", NULL, SHM_READ)) {
+			i16_size = EDX;
+			i16_mem = malloc(i16_size);
+			memmov(i16_mem, ESI, i16_size);
+			replace_2cols(i16_mem, i16_size, 0xffFFFfff, sc.work_light, 0xffCACBD6, sc.work_dark);			
+		}
 	}
-
-	DrawWideRectangle(_x+1, _y+1, TSZE, TSZE, 5, semi_white);
-
+	DrawWideRectangle(_x+1, _y+1, TSZE, TSZE, 5, sc.work_light);
 	DefineHiddenButton(_x, _y, TSZE+1, TSZE+1, _button_id);
 	if (_icon_n==-1) {
-		DrawBar(_x+6, _y+5, 16, 16, semi_white);
-		for (i=0; i<=2; i++) DrawBar(_x+6, i*5+_y+7, 15, 3, sc.work_graph);
+		DrawBar(_x+6, _y+5, 16, 16, sc.work_light);
+		DrawBar(_x+6, _y+7, 15, 3, sc.work_graph);
+		$add ecx,5*65536
+		$int 64
+		$add ecx,5*65536
+		$int 64
 	} else {
-		i = TSZE - top_icons.w / 2; //icon pos
-		img_draw stdcall(top_icons.image, _x+i+2, _y+i+1+pressed, top_icons.w, top_icons.w, 0, _icon_n*top_icons.w);
+		if (i16_mem) PutPaletteImage(18*18*4*_icon_n + i16_mem, 
+			18, 18, TSZE/2-9+2+_x, TSZE/2-9+1+_y+pressed, 32, 0);
 	}
 
 	if (!pressed) {
-		DrawOvalBorder(_x, _y, TSZE, TSZE, bg_col_light, bg_col_dark, semi_white, sc.work);
+		DrawOvalBorder(_x, _y, TSZE, TSZE, lightest, sc.work_graph, sc.work_light, sc.work);
 	} else {
-		DrawOvalBorder(_x, _y, TSZE, TSZE, sc.work_graph, bg_col_light, semi_white, sc.work);
+		DrawOvalBorder(_x, _y, TSZE, TSZE, sc.work_graph, sc.work_light, sc.work_dark, sc.work);
 		PutShadow(_x+1, _y+1, TSZE, TSZE, true, 2);
 	}
 

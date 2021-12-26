@@ -29,7 +29,6 @@
 
 #include "../lib/obj/box_lib.h"
 #include "../lib/obj/libini.h"
-#include "../lib/obj/libimg.h"
 #include "../lib/obj/iconv.h"
 #include "../lib/obj/proc_lib.h"
 
@@ -104,7 +103,6 @@ EVENTS key;
 void InitDlls()
 {
 	load_dll(boxlib,    #box_lib_init,   0);
-	load_dll(libimg,    #libimg_init,    1);
 	load_dll(libini,    #lib_init,       1);
 	load_dll(iconv_lib, #iconv_open,     0);
 	load_dll(Proc_lib,  #OpenDialog_init,0);
@@ -619,8 +617,8 @@ int TopBarBt(dword _event, _hotkey, char image_id, int x, pressed) {
 
 void DrawToolbar()
 {
-	#define GAP_S 26+5
-	#define GAP_B 26+18
+	#define GAP_S 26+7
+	#define GAP_B 26+19
 	incn x;
 	bool thema = false;
 	bool reopa = false;

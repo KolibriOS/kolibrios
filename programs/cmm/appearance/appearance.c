@@ -117,8 +117,8 @@ void main()
 			if (! edit_cmm.flags & ed_focus) && (! edit_st.flags & ed_focus)
 			for (i=select_list.cur_y+1; i<select_list.count; i++)
 			{
-				id = ESBYTE[list.get(i)];
-				if (id==ESBYTE[EAX]) || (id==key_ascii-32)
+				id = list.get(i) + strrchr(list.get(i), '/');
+				if (ESBYTE[id]==key_ascii) || (ESBYTE[id]==key_ascii-32)
 				{
 					select_list.cur_y = i - 1;
 					select_list.KeyDown();
