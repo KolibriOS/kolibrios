@@ -300,14 +300,14 @@ extra_files = {
  {"kolibrios/utils/NDN/", "common/File Managers/ndn/*"},
  {"kolibrios/utils/NDN/COLORS/", "common/File Managers/ndn/COLORS/*"},
  {"kolibrios/utils/NDN/XLT/", "common/File Managers/ndn/XLT/*"},
- {"kolibrios/utils/t_edit/t_edit.ini", PROGS .. "/other/t_edit/t_edit.ini"},
- {"kolibrios/utils/t_edit/info/ASM.SYN", PROGS .. "/other/t_edit/info/asm.syn"},
- {"kolibrios/utils/t_edit/info/CPP_CLA.SYN", PROGS .. "/other/t_edit/info/cpp_kol_cla.syn"},
- {"kolibrios/utils/t_edit/info/CPP_DAR.SYN", PROGS .. "/other/t_edit/info/cpp_kol_dar.syn"},
- {"kolibrios/utils/t_edit/info/CPP_DEF.SYN", PROGS .. "/other/t_edit/info/cpp_kol_def.syn"},
- {"kolibrios/utils/t_edit/info/DEFAULT.SYN", PROGS .. "/other/t_edit/info/default.syn"},
- {"kolibrios/utils/t_edit/info/HTML.SYN", PROGS .. "/other/t_edit/info/html.syn"},
- {"kolibrios/utils/t_edit/info/INI.SYN", PROGS .. "/other/t_edit/info/ini_files.syn"},
+ {"kolibrios/utils/tedit/t_edit.ini", PROGS .. "/other/t_edit/t_edit.ini"},
+ {"kolibrios/utils/tedit/info/ASM.SYN", PROGS .. "/other/t_edit/info/asm.syn"},
+ {"kolibrios/utils/tedit/info/CPP_CLA.SYN", PROGS .. "/other/t_edit/info/cpp_kol_cla.syn"},
+ {"kolibrios/utils/tedit/info/CPP_DAR.SYN", PROGS .. "/other/t_edit/info/cpp_kol_dar.syn"},
+ {"kolibrios/utils/tedit/info/CPP_DEF.SYN", PROGS .. "/other/t_edit/info/cpp_kol_def.syn"},
+ {"kolibrios/utils/tedit/info/DEFAULT.SYN", PROGS .. "/other/t_edit/info/default.syn"},
+ {"kolibrios/utils/tedit/info/HTML.SYN", PROGS .. "/other/t_edit/info/html.syn"},
+ {"kolibrios/utils/tedit/info/INI.SYN", PROGS .. "/other/t_edit/info/ini_files.syn"},
  }
 if build_type == "rus" then tup.append_table(extra_files, {
  {"Docs/cp866/config.txt", build_type .. "/docs/CONFIG.TXT"},
@@ -608,7 +608,7 @@ tup.append_table(extra_files, {
  {"kolibrios/utils/AMDtemp", PROGS .. "/system/amd_temp_view/AMDtemp"},
  {"kolibrios/utils/calcplus", PROGS .. "/other/calcplus/calcplus"},
  {"kolibrios/utils/kfm/kfm", PROGS .. "/fs/kfm/trunk/kfm"},
- {"kolibrios/utils/t_edit/t_edit.kex", PROGS .. "/other/t_edit/t_edit"},
+ {"kolibrios/utils/tedit/t_edit.kex", PROGS .. "/other/t_edit/t_edit"},
 })
 -- For russian build, add russian-only programs.
 if build_type == "rus" then tup.append_table(img_files, {
