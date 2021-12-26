@@ -5284,93 +5284,6 @@ sys_gs:                         ; direct screen access
         mov     [esp+32], eax
         ret
 
-align 4  ;  system functions
-
-syscall_setpixel:                       ; SetPixel
-
-        mov     eax, ebx
-        mov     ebx, ecx
-        mov     ecx, edx
-        mov     edx, [TASK_BASE]
-        add     eax, [edx-twdw+WDATA.box.left]
-        add     ebx, [edx-twdw+WDATA.box.top]
-        mov     edi, [current_slot]
-        add     eax, [edi+APPDATA.wnd_clientbox.left]
-        add     ebx, [edi+APPDATA.wnd_clientbox.top]
-        xor     edi, edi ; no force
-        and     ecx, 0xFBFFFFFF  ;negate 0x04000000 save to mouseunder area
-;        jmp     [putpixel]
-        jmp     __sys_putpixel
-
-align 4
-
-syscall_writetext:                      ; WriteText
-
-        push    esi    ;check pointer on kernel address.
-        test    ecx, 0x80000000
-        jz      @f
-        xor     esi, esi
-@@:
-        stdcall is_region_userspace, edx, esi
-        pop     esi
-        jnz     .err
-
-        mov     eax, [TASK_BASE]
-        mov     ebp, [eax-twdw+WDATA.box.left]
-        push    esi
-        mov     esi, [current_slot]
-        add     ebp, [esi+APPDATA.wnd_clientbox.left]
-        shl     ebp, 16
-        add     ebp, [eax-twdw+WDATA.box.top]
-        add     bp, word[esi+APPDATA.wnd_clientbox.top]
-        pop     esi
-        test    ecx, 0x08000000  ; redirect the output to the user area
-        jnz     @f
-        add     ebx, ebp
-align 4
-@@:
-        mov     eax, edi
-        test    ecx, 0x08000000  ; redirect the output to the user area
-        jnz     @f
-        xor     edi, edi
-        jmp     dtext
-
-@@:     ;  check pointer
-        stdcall is_region_userspace, edi, 0
-        jnz     .err
-        jmp     dtext
-.err:
-        ret
-
-align 4
-
-syscall_drawrect:                       ; DrawRect
-
-        mov     edi, edx ; color + gradient
-        and     edi, 0x80FFFFFF
-        test    bx, bx  ; x.size
-        je      .drectr
-        test    cx, cx ; y.size
-        je      .drectr
-
-        mov     eax, ebx ; bad idea
-        mov     ebx, ecx
-
-        movzx   ecx, ax ; ecx - x.size
-        shr     eax, 16 ; eax - x.coord
-        movzx   edx, bx ; edx - y.size
-        shr     ebx, 16 ; ebx - y.coord
-        mov     esi, [current_slot]
-
-        add     eax, [esi + APPDATA.wnd_clientbox.left]
-        add     ebx, [esi + APPDATA.wnd_clientbox.top]
-        add     ecx, eax
-        add     edx, ebx
-;        jmp     [drawbar]
-        jmp     vesa20_drawbar
-.drectr:
-        ret
-
 align 4
 syscall_getscreensize:                  ; GetScreenSize
         mov     ax, word [_display.width]
@@ -5646,31 +5559,6 @@ align 4
         popad
         ret
 ;-----------------------------------------------------------------------------
-align 4
-syscall_drawline:                       ; DrawLine
-
-        mov     edi, [TASK_BASE]
-        movzx   eax, word[edi-twdw+WDATA.box.left]
-        mov     ebp, eax
-        mov     esi, [current_slot]
-        add     ebp, [esi+APPDATA.wnd_clientbox.left]
-        add     ax, word[esi+APPDATA.wnd_clientbox.left]
-        add     ebp, ebx
-        shl     eax, 16
-        movzx   ebx, word[edi-twdw+WDATA.box.top]
-        add     eax, ebp
-        mov     ebp, ebx
-        add     ebp, [esi+APPDATA.wnd_clientbox.top]
-        add     bx, word[esi+APPDATA.wnd_clientbox.top]
-        add     ebp, ecx
-        shl     ebx, 16
-        xor     edi, edi
-        add     ebx, ebp
-        mov     ecx, edx
-;        jmp     [draw_line]
-        jmp     __sys_draw_line
-
-
 
 align 4
 syscall_threads:                        ; CreateThreads

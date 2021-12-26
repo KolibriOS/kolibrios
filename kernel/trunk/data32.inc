@@ -199,23 +199,6 @@ MAX_DEFAULT_DLL_ADDR = 0x80000000
 MIN_DEFAULT_DLL_ADDR = 0x70000000
 dll_cur_addr   dd MIN_DEFAULT_DLL_ADDR
 
-; supported videomodes
-
-
-; mike.dld {
-;db 0
-;dd servetable-0x10000
-;align 4
-;draw_line       dd __sys_draw_line
-;draw_pointer    dd __sys_draw_pointer
-;//mike.dld, 2006-08-02 [
-;;drawbar         dd __sys_drawbar
-;;drawbar         dd __sys_drawbar.forced
-;drawbar         dd vesa20_drawbar
-;//mike.dld, 2006-08-02 ]
-;putpixel        dd __sys_putpixel
-; } mike.dld
-
 
 align 4
 keyboard   dd 1
