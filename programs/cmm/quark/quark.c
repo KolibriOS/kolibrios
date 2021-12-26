@@ -589,7 +589,7 @@ void EncodeToDos()
 		}
 	}
 	if (real_encoding != CH_CP866) {
-		ChangeCharset(real_encoding, "CP866", textbuf.p);
+		ChangeCharset(real_encoding, CH_CP866, textbuf.p);
 	}
 }
 
