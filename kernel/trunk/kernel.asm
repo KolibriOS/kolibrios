@@ -5686,10 +5686,6 @@ syscall_threads:                        ; CreateThreads
         mov     [esp+32], eax
         ret
 
-align 4
-
-paleholder:
-        ret
 ;------------------------------------------------------------------------------
 align 4
 calculate_fast_getting_offset_for_WinMapAddress:
