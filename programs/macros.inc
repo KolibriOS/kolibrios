@@ -569,6 +569,11 @@ irp cond, e, ne, g, ng, l, nl, ge, le {
 
 ; constants
 
+; button flags
+BT_DEL         = 0x80000000
+BT_HIDE        = 0x40000000
+BT_NOFRAME     = 0x20000000
+
 ; events
 EV_IDLE        = 0
 EV_TIMER       = 0
@@ -593,5 +598,5 @@ EVM_STACK      =   10000000b
 EVM_DEBUG      =  100000000b
 EVM_STACK2     = 1000000000b
 
-EVM_MOUSE_FILTER = 0x80000000
+EVM_MOUSE_FILTER  = 0x80000000
 EVM_CURSOR_FILTER = 0x40000000

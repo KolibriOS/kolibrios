@@ -1,4 +1,5 @@
-@fasm.exe  palitra.asm palitra
-@kpack palitra
+del palitra
+@fasm.exe palitra.asm palitra
+rem @kpack palitra
 
-pause
+if not exist palitra ( @pause )

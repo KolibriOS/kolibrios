@@ -2281,8 +2281,8 @@ draw_window:
         Window 150, 150, 350, 405, 0x34FFFFFF, 0x805080d0, title
 
         mov   esi, [sc.work_button]
-        DefineButton 138, 345, 92, 24, 2,
-        DefineButton 238, 345, 92, 24, 3,
+        mcall SF_DEFINE_BUTTON, <138,92>, <345,24>, 2
+        mcall SF_DEFINE_BUTTON, <238,92>, <345,24>, 3
 
         mov   ecx, [sc.work_button_text]
         or    ecx, 0x90000000

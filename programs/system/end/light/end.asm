@@ -160,9 +160,6 @@ draw_window:
 	mcall SF_DEFINE_BUTTON, <WIN_W-35,32>, <2,22>, CANCEL_BUTTON_ID
 	mcall SF_DEFINE_BUTTON, <32,14>, <70,14>, CHECKBOX_BUTTON_ID
 	mcall SF_DEFINE_BUTTON, <47,WIN_W-47>, <68,34>, CHECKBOX_BUTTON_ID+BT_NOFRAME
-    ;DefineButton  WIN_W-33, 2, 32, 20, CANCEL_BUTTON_ID, 0
-    ;DefineButton  32, 70, 14, 14, CHECKBOX_BUTTON_ID, 0
-    ;DefineButton  47, 68, WIN_W-47, 34, CHECKBOX_BUTTON_ID+BT_NOFRAME, 0
     DrawRectangle3D 32, 70, 14, 14, 0x606060, 0xAFAFAF
     call draw_checkbox_flag
 

@@ -74,20 +74,27 @@
   include '../../../KOSfuncs.inc'
   include '../../../dll.inc'
 
-  WIN_W  equ 394            ; ширина окна
-  WIN_H  equ 251            ; высота окна
-  WIN_X  equ 250            ; координата х окна
-  WIN_Y  equ 190            ; координата у окна
-
-panel:
-  file "panel.raw"
+  WIN_W  = 394            ; ширина окна
+  WIN_H  = 251            ; высота окна
+  WIN_X  = 250            ; координата х окна
+  WIN_Y  = 190            ; координата у окна
+  
+  CELLW  = 8              ; not used yet, but has to be :)
+  DRAWY  = 9
+  ICONX  = WIN_W - 35
+  SLIDEW = 25
 
 START:
     mcall   SF_SYS_MISC,SSF_HEAP_INIT ; инициализация кучи
+    mcall SF_SYS_MISC, SSF_MEM_OPEN, i18_name
+    mov [icons18], eax
+    mcall SF_SYS_MISC, SSF_MEM_OPEN, i18bg_name
+    mov [icons18bg], eax
+
     stdcall dll.Load, @IMPORT
     or      eax,eax
     jnz     bexit
-    mcall   SF_SET_EVENTS_MASK,0x27   ; устанавливаем маску событий
+    mcall   SF_SET_EVENTS_MASK,EVM_REDRAW+EVM_KEY+EVM_BUTTON+EVM_MOUSE ; устанавливаем маску событий
     include 'params_init.inc'             ; обработка параметров командной строки
 
 ;#___________________________________________________________________________________________________
@@ -98,13 +105,13 @@ red:
     call draw_main                        ; вызываем перерисовку окна приложения
 still:
     mcall   SF_WAIT_EVENT         ; функция 10 - ждать события
-    cmp     eax,1                         ; перерисовать окно ?
+    cmp     eax,EV_REDRAW                 ; перерисовать окно ?
     je      red                           ; если да - на метку red
-    cmp     eax,2                         ; нажата клавиша ?
+    cmp     eax,EV_KEY                    ; нажата клавиша ?
     je      key                           ; если да - на key
-    cmp     eax,3                         ; нажата кнопка ?
+    cmp     eax,EV_BUTTON                 ; нажата кнопка ?
     je      button                        ; если да - на button
-    cmp     eax,6                         ; событие от мыши вне окна
+    cmp     eax,EV_MOUSE                  ; событие от мыши вне окна
     je      mouse                         ; если да - на button
     jmp     still                         ; если другое событие - в начало цикла
 ;end_still
@@ -265,23 +272,22 @@ draw_main:
     call    draw_palitra                  ; РИСУЕМ ПАЛИТРУ
     call    draw_result                   ; РИСУЕМ РЕЗУЛЬТАТ
 
-    ; Функция 8 - определить/удалить кнопку
-    mcall   SF_DEFINE_BUTTON, (110 shl 16)+147, (9 shl 16)+147, 0x60000007
+    mcall   SF_DEFINE_BUTTON, <110,147>, <DRAWY,147>, 0x07+BT_HIDE
 
-    inc     edx
-    mcall   , 18*65536+22, 61*65536+188 ; Рисуем невидимую кнопку под слайдером red
-    add     ebx,20*65536+20 ;23 shl 16                ; Добавляем
+    add     edx,1++BT_NOFRAME
+    mcall   , <10,22>, <62,128>           ; Рисуем невидимую кнопку под слайдером red
+    add     ebx,25*65536                  ; Добавляем
     inc     edx                           ; ID = 9
     int     0x40                          ; Рисуем невидимую кнопку под слайдером green
-    add     ebx,20*65536+20;23 shl 16                 ; Добавляем
+    add     ebx,25*65536                  ; Добавляем
     inc     edx                           ; ID = 10
     int     0x40                          ; Рисуем невидимую кнопку под слайдером blue
-    add     ebx, 20*65536+20;23 shl 16                 ; Добавляем
+    add     ebx,25*65536                  ; Добавляем
     inc     edx                           ; ID = 11
     int     0x40                          ; Рисуем невидимую кнопку под слайдером alpha
 
     ; Функция 8 - определить/удалить кнопку (СМЕНА ЦВЕТА)
-    mcall   , (13 shl 16)+20, (20 shl 16)+20, 0x6000000D
+    mcall   , <13,19>, <20,18>, 0x0D+BT_HIDE
 
     call    draw_bottom_panel
     call    draw_left_panel
@@ -289,6 +295,32 @@ draw_main:
     ; функция 12: означает, что будет рисоваться окно
     mcall SF_REDRAW,SSF_END_DRAW
     ret
+
+proc DrawRectangle3D, _x:word, _w:word, _y:word, _h:word, color1:dword, color2:dword
+    mov ebx,[_w]
+    add ebx,[_x] ;тут точно какая-то дичь... нужно переписать :)
+    shl ebx,16
+    mov bx,1
+    mov ecx,[_h]
+    inc cx
+    mov edx,[_color2]
+    mcall SF_DRAW_RECT ; x+w,y,1,h+1,color2
+    rol ebx,16
+    sub bx,[_w]
+    ror ebx,16
+    dec cx
+    mov edx,[_color1]
+    mcall ;SF_DRAW_RECT x,y,1,h,color1
+    mov bx,[_h]
+    xchg bx,cx
+    mcall ;SF_DRAW_RECT x,y,w,1,color1
+    rol ecx,16
+    add cx,[_h]
+    ror ecx,16
+    mov edx,[_color2]
+    mcall ;SF_DRAW_RECT x,y+h,w,1,color2
+	ret 
+endp
 
 ;#___________________________________________________________________________________________________
 ;****************************************************************************************************|
@@ -300,14 +332,27 @@ draw_main:
     draw_left_panel:                      ; Отрисовка боковой панели  SL97: На самом деле правой.
     ;.................................................................................................
     ; button_next_colorsheme
-    mcall   SF_DEFINE_BUTTON, (266 shl 16)+16, (9 shl 16)+16, 0x6000000C, [sc.work_button]
+    mcall   SF_DEFINE_BUTTON, <ICONX,21>, <DRAWY,21>, 12+BT_HIDE
     ; circle diagram
     add     ecx,19 shl 16                 ; move rect
-    mov     edx,0x6000000F                ; ID = 15
-    int     0x40                          ; call
+    add     edx,3                         ; ID = 15
+    mcall
 
-    mcall   SF_PUT_IMAGE, panel, (16 shl 16)+149, (266 shl 16)+9
+    mov     ebx,[icons18bg]
+    add     ebx,18*18*4*53
+    mcall   SF_PUT_IMAGE_EXT, ebx, <18,18>, <ICONX+2,DRAWY+2>, 32, 0, 0
 
+    add     ebx,18*18*4*(39-53)
+    mov     edx,ICONX*65536+WIN_H-90
+    mcall
+    
+    mov     ebx,[icons18]
+    add     ebx,18*18*4*(52-39)
+    sub     edx,40
+    mcall
+    
+    ;stdcall DrawRectangle3D ICONX, DRAWY, 22, 22, [sc.work_light], [sc.work_dark]   ;Leency: draw rectangle around the button, buggy now
+  
     ;mov     eax,13                        ; draw rect
     ;mov     ebx,266 shl 16+16             ; [x] + [size]
     ;mov     ecx,9 shl 16+16               ; [y] + [size]
@@ -788,8 +833,8 @@ draw_result:
     ;.................................................................................................
     ; Большая рамка вывода результата
     ;.................................................................................................
-    mcall   SF_DRAW_RECT, 4 shl 16+110, 9 shl 16+219-18, 0x00666666
-    mcall   , 5 shl 16+110-2, 10 shl 16+219-20, 0x00F3F3F3
+    mcall   SF_DRAW_RECT, <4,110>, <9,219-18>, [sc.work_graph]
+    mcall   , <5,110-2>, <10,219-20>, [sc.work_light]
 
     ;.................................................................................................
     ; Отрисовка результата цвета в hex color2
@@ -809,7 +854,7 @@ draw_result:
 
     ; Функция 47 - вывод числа в окно
     ;ebx - параметры преобразования числа в текст (HEX)
-    mcall   SF_DRAW_NUMBER, 256+8 shl 16, [color], (40 shl 16)+22, 0x10000000, 0
+    mcall   SF_DRAW_NUMBER, 256+8 shl 16, [color], <40,22>, 0x10000000, 0
 
     ; функция 4: написать текст в окне
     ; edx - рисуем '#'
@@ -841,8 +886,9 @@ draw_result:
     ; Выводим буквы r g b a
     ;.................................................................................................
     mov     eax,SF_DRAW_TEXT  ; 4 - вывести строку текста в окно
-    mov     ebx,19 shl 16+49              ; [координата по оси x]*65536 + [координата по оси y]
-    mov     ecx, 0x0                       ; 0xX0RRGGBB (RR, GG, BB задают цвет текста)
+    mov     ebx,17 shl 16+DRAWY+37              ; [координата по оси x]*65536 + [координата по оси y]
+    mov     ecx, 0x10000000               ; 0xX0RRGGBB (RR, GG, BB задают цвет текста)
+    add     ecx, [sc.work_text]
     mov     edx,cname                     ; указатель на начало строки
     mov     esi,1                         ; выводить esi символов
     newline:                              ; цикл
@@ -876,7 +922,8 @@ draw_value:
     jne     draw_value_e
     add     ebx,7 shl 16
   draw_value_e:
-    mov     ecx,0x0; 0x10000000                 ; цвет текста RRGGBB
+    mov     ecx,0x0;0x10000000                 ; цвет текста RRGGBB
+    add     ecx,[sc.work_text]
     mov     edx,buff                      ; указатель на начало текста
     int     0x40
     ret                                   ; Возвращаем управление
@@ -1091,7 +1138,7 @@ str_len:
 set_background2:
     mcall   SF_SYS_MISC, SSF_HEAP_INIT
     mcall   SF_SYS_MISC, SSF_MEM_ALLOC, 256 * 256 * 3
-    mov     [image], eax
+    mov     [bgimg_buf], eax
 
     mov     edx, eax
     mov     ecx, 256 * 256
@@ -1113,10 +1160,10 @@ set_background2:
 
     mcall   SF_BACKGROUND_SET, SSF_SIZE_BG, 256, 256
     mcall   SF_BACKGROUND_SET, SSF_MODE_BG, 1
-    mcall   SF_BACKGROUND_SET, SSF_IMAGE_BG, [image], 0, 256 * 256 * 3
+    mcall   SF_BACKGROUND_SET, SSF_IMAGE_BG, [bgimg_buf], 0, 256 * 256 * 3
     mcall   SF_BACKGROUND_SET, SSF_REDRAW_BG
 
-    mcall   SF_SYS_MISC, SSF_MEM_FREE, [image]
+    mcall   SF_SYS_MISC, SSF_MEM_FREE, [bgimg_buf]
     stdcall save_eskin_ini, 'B '
 ret
 
@@ -1182,15 +1229,15 @@ endp
 ; БЛОК ПЕРЕМЕННЫХ И КОНСТАНТ                                                                         |
 ;----------------------------------------------------------------------------------------------------/
 circle:
-    title       db 'Palitra v0.77',0       ; хранит имя программы
+    title       db 'Palitra v0.77',0      ; хранит имя программы
     hidden      db 'Hidden',0
-;    hex         db '#',0                  ; для вывода решётки как текста
+;    hex         db '#',0                 ; для вывода решётки как текста
     cname       db 'RGBAx'                ; хранит разряды цветов (red,green,blue) x-метка конца
     larrow      db 0x1A,0
     buff        db '000',0
     bground     db 'BACKGROUND',0         ; имя кнопки - 14
-    bground1    db 'Gradient',0           ; имя кнопки - 14
-    bground2    db 'Noisy',0         ; имя кнопки - 14
+    bground1    db 'Gradient',0           ; имя кнопки - 15
+    bground2    db 'Noisy',0              ; имя кнопки - 16
     runmode     dd 1                      ; режим запуска (1-normal, 2-hidden, 3-colordialog)
     color2      dd 00FFFFFFh              ; хранит значение второго выбранного цвета
 
@@ -1198,6 +1245,10 @@ circle:
     amain       db 'style',0
     aprogram    db 'bg_program',0
     aparam      db 'bg_param',0
+    
+    i18_name    db 'ICONS18',0
+    i18bg_name  db 'ICONS18W',0
+
 
 align 16
 @IMPORT:
@@ -1217,7 +1268,7 @@ I_END:
     desctop_w   rd 1                      ; хранит ширину экрана
     desctop_h   rd 1                      ; хранит высоту экрана
     sc          system_colors             ; хранит структуру системных цветов скина
-    cred        rb 1                      ; храним красный спекрт
+    cred        rb 1                      ; храним красный спектр
     cgreen      rb 1                      ; храним зеленый спектр
     cblue       rb 1                      ; храним синий спектр
     calpha      rb 1                      ; храним прозрачность
@@ -1225,7 +1276,9 @@ I_END:
     renmode     rd 1                      ; режим отрисовки (1-цветовая схема,2-пипетка,3-круговая)
     params      rb 20                     ; приём параметров
     params_c    rb 9                      ; приёмник для цвета
-    image           rd 1
+    bgimg_buf   rd 1                      ; buffer for a generated image
+    icons18     dd ?                      ; pointer to a shared memory of icons18.png
+    icons18bg   dd ?                      ; pointer to a shared memory of icons18.png with filled bg
 
         rd 1024
 stacktop:
