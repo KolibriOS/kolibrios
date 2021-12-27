@@ -2,7 +2,7 @@
 #include <ddk.h>
 #include <linux/errno.h>
 #include <mutex.h>
-#include <pci.h>
+#include <linux/pci.h>
 #include <syscall.h>
 
 extern struct list_head pci_root_buses;

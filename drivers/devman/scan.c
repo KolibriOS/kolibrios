@@ -784,4 +784,3 @@ int acpi_scan()
 
     return err;
 };
-

@@ -27,7 +27,7 @@ start:
 
 align 4
 app_path rb 2048
-sz_dll db '.dll',0
+sz_dll db '.sys',0
 i_end:
 rb 128
 mem:

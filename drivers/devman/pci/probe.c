@@ -18,21 +18,10 @@ LIST_HEAD(pci_root_buses);
 #define CARDBUS_LATENCY_TIMER   176 /* secondary latency timer */
 #define CARDBUS_RESERVE_BUSNR   3
 
-static int pcibios_assign_all_busses(void)
+int pcibios_assign_all_busses(void)
 {
     return 0;
 };
-
-/**
- * pci_ari_enabled - query ARI forwarding status
- * @bus: the PCI bus
- *
- * Returns 1 if ARI forwarding is enabled, or 0 if not enabled;
- */
-static inline int pci_ari_enabled(struct pci_bus *bus)
-{
-    return bus->self && bus->self->ari_enabled;
-}
 
 /*
  * Translate the low bits of the PCI base
@@ -632,7 +621,7 @@ int pci_scan_bridge(struct pci_bus *bus, struct pci_dev *dev, int max, int pass)
         pci_write_config_byte(dev, PCI_SUBORDINATE_BUS, max);
     }
 
-    vsprintf(child->name,
+    sprintf(child->name,
         (is_cardbus ? "PCI CardBus %04x:%02x" : "PCI Bus %04x:%02x"),
         pci_domain_nr(bus), child->number);
 
@@ -669,7 +658,7 @@ void set_pcie_port_type(struct pci_dev *pdev)
     pos = pci_find_capability(pdev, PCI_CAP_ID_EXP);
     if (!pos)
         return;
-    pdev->is_pcie = 1;
+    //pdev->is_pcie = 1;
     pdev->pcie_cap = pos;
     pci_read_config_word(pdev, pos + PCI_EXP_FLAGS, &reg16);
     pdev->pcie_type = (reg16 & PCI_EXP_FLAGS_TYPE) >> 4;
@@ -1062,7 +1051,7 @@ unsigned int pci_scan_child_bus(struct pci_bus *bus)
         pci_scan_slot(bus, devfn);
 
     /* Reserve buses for SR-IOV capability. */
-    max += pci_iov_bus_range(bus);
+    //max += pci_iov_bus_range(bus);
 
     /*
      * After performing arch-dependent fixup of the bus, look behind

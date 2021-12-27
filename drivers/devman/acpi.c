@@ -571,46 +571,37 @@ void acpi_init_pci(struct acpi_device *device)
 
 };
 
-
-u32_t drvEntry(int action, char *cmdline)
+uint32_t drvEntry(int action, char *cmdline)
 {
-    u32_t retval;
-
+    uint32_t retval;
     ACPI_STATUS status;
-
     int i;
 
     if(action != 1)
         return 0;
 
-    if( !dbg_open("/rd/1/drivers/acpi.log") )
-    {
-        printf("Can't open /rd/1/drivers/acpi.log\nExit\n");
-        return 0;
-    }
-
     status = AcpiInitializeSubsystem();
     if (status != AE_OK) {
-          dbgprintf("AcpiInitializeSubsystem failed (%s)\n",
+          printf("AcpiInitializeSubsystem failed (%s)\n",
                      AcpiFormatException(status));
           goto err;
     }
 
     status = AcpiInitializeTables (NULL, 16, FALSE);
     if (status != AE_OK) {
-          dbgprintf("AcpiInitializeTables failed (%s)\n",
+          printf("AcpiInitializeTables failed (%s)\n",
                      AcpiFormatException(status));
           goto err;
     }
 
     status = AcpiLoadTables();
     if (status != AE_OK) {
-          dbgprintf("AcpiLoadTables failed (%s)\n",
+          printf("AcpiLoadTables failed (%s)\n",
                      AcpiFormatException(status));
           goto err;
     }
 
-//    u32_t mode = ACPI_NO_HARDWARE_INIT | ACPI_NO_ACPI_ENABLE;
+    // u32_t mode = ACPI_NO_HARDWARE_INIT | ACPI_NO_ACPI_ENABLE;
 
     status = AcpiEnableSubsystem(ACPI_NO_HANDLER_INIT | ACPI_NO_HARDWARE_INIT);
     if (status != AE_OK) {
@@ -627,25 +618,17 @@ u32_t drvEntry(int action, char *cmdline)
         goto err;
     }
 
-
     set_pic_mode(IO_APIC);
-
     acpi_scan();
-
     acpi_init_pci(acpi_root);
-
     print_pci_irqs();
-
     create_dm_list();
-
     print_dm_list();
 
     write_device_dat("/RD/1/DRIVERS/DEVICES.DAT");
 
 err:
-
     return 0;
-
 };
 
 char* strdup(const char *str)
@@ -699,7 +682,6 @@ count_dev_resources(ACPI_RESOURCE *acpi_res, void *data)
     return AE_OK;
 }
 
-
 static void dm_add_acpi(struct acpi_device *device)
 {
     struct acpi_device *child;
@@ -747,7 +729,6 @@ static void dm_add_acpi(struct acpi_device *device)
 static void create_dm_list()
 {
     struct acpi_pci_root *root;
-
 
     list_for_each_entry(root, &acpi_pci_roots, node)
     {
