@@ -1,4 +1,4 @@
-include 'skin.inc'
+include '../../skin.inc'
 
 SKIN_PARAMS \
   height          = bmp_base.height,\     ; skin height
@@ -12,8 +12,8 @@ SKIN_PARAMS \
   dtp             = 'colors.dtp'          ; dtp colors
 
 SKIN_BUTTONS \
-  close    = [-22:3][17:17],\             ; buttons coordinates
-  minimize = [-42:3][17:17]               ; [left:top][width:height]
+  close    = [-26:3][21:17],\             ; buttons coordinates
+  minimize = [-50:3][21:17]               ; [left:top][width:height]
 
 SKIN_BITMAPS \
   left active   = bmp_left,\              ; skin bitmaps pointers
