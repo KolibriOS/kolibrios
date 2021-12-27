@@ -9,7 +9,7 @@ start:
 		inc  eax
 		cmp  [eax], byte 0
 		jne  @b
-		mov  [eax], dword '.drv'
+		mov  [eax], dword '.sys'
 
 ;------ writing some info
 		mov  edx, info_msg 

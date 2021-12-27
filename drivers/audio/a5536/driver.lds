@@ -1,5 +1,3 @@
-
-
 OUTPUT_FORMAT(pei-i386)
 
 ENTRY("_drvEntry")

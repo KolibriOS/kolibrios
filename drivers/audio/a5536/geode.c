@@ -475,9 +475,9 @@ u32_t drvEntry(int action, char *cmdline)
     if(action != 1)
         return 0;
 
-    if(!dbg_open("/rd/1/drivers/geode.log"))
+    if(!dbg_open(GEODE_LOG))
     {
-        printf("Can't open /rd/1/drivers/geode.log\nExit\n");
+        printf("Can't open %s\nExit\n", GEODE_LOG);
         return 0;
     }
 
@@ -490,13 +490,9 @@ u32_t drvEntry(int action, char *cmdline)
     };
 
     init_device();
-
     retval = RegService("SOUND", srv_sound);
-
     AttachIntHandler(geode.irq_line, snd_interrupt, 0);
-
     DBG("reg service %s as: %x\n", "SOUND", retval);
-
     return retval;
 };
 
@@ -563,5 +559,3 @@ int __stdcall srv_sound(ioctl_t *io)
   };
   return ERR_PARAM;
 }
-
-

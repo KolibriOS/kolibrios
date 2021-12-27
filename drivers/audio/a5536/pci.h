@@ -1,5 +1,10 @@
+#ifndef _GEODE_PCI_
+#define _GEODE_PCI_
 
 typedef int Bool;
+typedef unsigned char u8_t;
+typedef unsigned short u16_t;
+typedef unsigned int u32_t;
 
 #define TRUE   1
 #define FALSE  0
@@ -184,3 +189,5 @@ u32_t pciGetBaseSize(int bus, int devfn, int index, Bool destructive, Bool *min)
 #define PCI_ANY_ID (~0)
 
 #define for_each_pci_dev(d) while ((d = pci_get_device(PCI_ANY_ID, PCI_ANY_ID, d))!=-1)
+
+#endif // _GEODE_PCI_
