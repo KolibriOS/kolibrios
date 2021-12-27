@@ -34,6 +34,11 @@
 
 #include <linux/pci_ids.h>
 #include <syscall.h>
+
+#ifdef HAVE_ACPICA
+	#include <acpi.h>
+#endif
+
 /*
  * The PCI interface treats multi-function devices as independent
  * devices.  The slot/function address of each device is encoded
@@ -49,6 +54,16 @@
 #define PCI_DEVID(bus, devfn)  ((((u16)(bus)) << 8) | (devfn))
 /* return bus from PCI devid = ((u16)bus_number) << 8) | devfn */
 #define PCI_BUS_NUM(x) (((x) >> 8) & 0xff)
+
+#define PCI_CFG_SPACE_SIZE	256
+#define PCI_CFG_SPACE_EXP_SIZE	4096
+
+enum pci_bar_type {
+	pci_bar_unknown,    /* Standard PCI BAR probe */
+  	pci_bar_io,     /* An io port BAR */
+  	pci_bar_mem32,      /* A 32-bit memory BAR */
+  	pci_bar_mem64,      /* A 64-bit memory BAR */
+};
 
 /* pci_slot represents a physical slot */
 struct pci_slot {
@@ -279,6 +294,7 @@ struct pci_dev {
 	u8		rom_base_reg;	/* which config register controls the ROM */
 	u8		pin;		/* which interrupt pin this device uses */
 	u16		pcie_flags_reg;	/* cached PCIe Capabilities Register */
+	int 	pcie_type;
 	u8		dma_alias_devfn;/* devfn of DMA alias, if any */
 
 	u64		dma_mask;	/* Mask of the bits of bus address this
@@ -380,6 +396,9 @@ struct pci_dev {
 	phys_addr_t rom; /* Physical address of ROM if it's not from the BAR */
 	size_t romlen; /* Length of ROM if it's not from the BAR */
 	char *driver_override; /* Driver name to force a match */
+#ifdef HAVE_ACPICA
+	struct acpi_device *acpi_dev;
+#endif
 };
 
 static inline struct pci_dev *pci_physfn(struct pci_dev *dev)
@@ -452,6 +471,8 @@ struct pci_bus_resource {
 struct pci_bus {
 	struct list_head node;		/* node in list of buses */
 	struct pci_bus	*parent;	/* parent bus this bridge is on */
+	struct pci_bus  *subordinate;
+	struct pci_bus  *secondary;
 	struct list_head children;	/* list of child buses */
 	struct list_head devices;	/* list of devices on this bus */
 	struct pci_dev	*self;		/* bridge device as seen by parent */
@@ -485,6 +506,8 @@ struct pci_bus {
 	unsigned int		is_added:1;
 };
 
+#define pci_bus_b(n)    list_entry(n, struct pci_bus, node)
+#define pci_dev_b(n)    list_entry(n, struct pci_dev, bus_list)
 #define to_pci_bus(n)	container_of(n, struct pci_bus, dev)
 
 /*
@@ -844,7 +867,7 @@ void pci_read_bridge_bases(struct pci_bus *child);
 struct resource *pci_find_parent_resource(const struct pci_dev *dev,
 					  struct resource *res);
 struct pci_dev *pci_find_pcie_root_port(struct pci_dev *dev);
-u8 pci_swizzle_interrupt_pin(const struct pci_dev *dev, u8 pin);
+u8 pci_swizzle_interrupt_pin(struct pci_dev *dev, u8 pin);
 int pci_get_interrupt_pin(struct pci_dev *dev, struct pci_dev **bridge);
 u8 pci_common_swizzle(struct pci_dev *dev, u8 *pinp);
 struct pci_dev *pci_dev_get(struct pci_dev *dev);

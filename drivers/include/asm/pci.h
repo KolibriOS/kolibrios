@@ -60,7 +60,7 @@ static inline void *_pci_root_bus_fwnode(struct pci_bus *bus)
    already-configured bus numbers - to be used for buggy BIOSes
    or architectures with incomplete PCI setup by the loader */
 
-extern unsigned int pcibios_assign_all_busses(void);
+extern int pcibios_assign_all_busses(void);
 extern int pci_legacy_init(void);
 # ifdef CONFIG_ACPI
 #  define x86_default_pci_init pci_acpi_init
