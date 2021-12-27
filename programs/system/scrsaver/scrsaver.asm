@@ -21,6 +21,10 @@ start:
         test    eax, eax
         jnz     exit
 
+        invoke  ini.get_str, ini_file, ini_section, ini_key_program, ini_program_buf, ini_program_buf.size, 0
+        cmp     [ini_program_buf], 0          ; if nothing set then exit 
+        je      exit
+
         invoke  ini.get_int, ini_file, ini_section, ini_key_timeout, DEFAULT_TIMEOUT_MINS
         imul    eax, 60*100     ; cs
         mov     [timeout], eax

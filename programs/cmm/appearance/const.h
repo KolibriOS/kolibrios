@@ -11,7 +11,9 @@
 	?define T_UPDATE_DOCK "Обновлять Dock-панель"
 	?define T_NO_FILES "'Поддерживаемые файлы не найдены' -E"
 	?define T_UI_PREVIEW " Пример компонентов "
+	?define T_SS_TIMEOUT "Интервал: %i минут  "
 	?define T_SS_PREVIEW "Просмотр"
+	?define T_SS_SET "Установить"
 	?define T_NO_SS "[Выключен]"
 	?define T_DEFAULT "[По умолчанию]"
 #else
@@ -27,7 +29,9 @@
 	?define T_UPDATE_DOCK "Update Dock"
 	?define T_NO_FILES "'No supported files were found' -E"
 	?define T_UI_PREVIEW " Components Preview "
-	?define T_SS_PREVIEW "Preview"
+	?define T_SS_TIMEOUT "Wait: %i minutes  "
+	?define T_SS_PREVIEW "View"
+	?define T_SS_SET "Set"
 	?define T_NO_SS "[Disable]"
 	?define T_DEFAULT "[Default]"
 #endif
@@ -47,6 +51,13 @@ enum {
 	TAB_SKINS, 
 	TAB_WALLPAPERS, 
 	TAB_SCREENSAVERS
+};
+
+enum { 
+	BASE_TAB_BUTTON_ID=3, 
+	BTN_SELECT_WALLP_FOLDER=10,
+	BTN_TEST_SCREENSAVER,
+	BTN_SET_SCREENSAVER
 };
 
 _ini ini = { "/sys/settings/system.ini" };

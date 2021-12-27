@@ -27,11 +27,6 @@
 
 int active_skin, active_wallpaper, active_screensaver;
 
-enum { 
-	BASE_TAB_BUTTON_ID=3, 
-	BTN_SELECT_WALLP_FOLDER=10,
-	BTN_TEST_SCREENSAVER };
-
 char folder_path[4096];
 char cur_file_path[4096];
 char cur_skin_path[4096];
@@ -99,6 +94,7 @@ void main()
 			}
 			if (tabs.active_tab == TAB_SCREENSAVERS) {
 				if (id==BTN_TEST_SCREENSAVER) EventOpenFile();
+				if (id==BTN_SET_SCREENSAVER) EventSetSs();
 			}
 			break;
 	  
@@ -185,7 +181,10 @@ void DrawWindowContent()
 	}
 	if (tabs.active_tab == TAB_SCREENSAVERS)
 	{
-		DrawStandartCaptButton(RIGHTx, PANEL_H, BTN_TEST_SCREENSAVER, T_SS_PREVIEW);
+		miniprintf(#param, T_SS_TIMEOUT, screensaver_timeout);
+		WriteTextWithBg(RIGHTx, PANEL_H, 0xD0, sc.work_text, #param, sc.work);
+		ESI = DrawStandartCaptButton(RIGHTx, PANEL_H + 25, BTN_TEST_SCREENSAVER, T_SS_PREVIEW);
+		DrawStandartCaptButton(RIGHTx+ESI, PANEL_H + 25, BTN_SET_SCREENSAVER, T_SS_SET);
 	}
 }
 
@@ -431,8 +430,9 @@ void EventApply()
 void EventUpdateDocky()
 {
 	if (!update_docky.checked) return;
-	KillProcessByName("@docky", MULTIPLE);
-	RunProgram("/sys/@docky",NULL);
+	// KillProcessByName("@docky", MULTIPLE);
+	// RunProgram("/sys/@docky",NULL);
+	RestartProcessByName("/sys/@docky", MULTIPLE);
 	pause(50);
 	ActivateWindow_Self();
 }
@@ -453,6 +453,14 @@ void EventExit()
 		ini.SetString("skin", #cur_skin_path, strlen(#cur_skin_path));
 	}
 	ExitProcess();
+}
+
+void EventSetSs()
+{
+	dword cur_ss = list.get(select_list.cur_y);
+	ini.section = "screensaver";
+	ini.SetString("program", cur_ss, strlen(cur_ss));
+	RestartProcessByName("/sys/@ss", MULTIPLE);
 }
 
 stop:
