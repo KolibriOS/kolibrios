@@ -242,7 +242,7 @@ extra_files = {
  {"kolibrios/drivers/ahci/", "common/drivers/ahci/*"},
  -- {"kolibrios/drivers/acpi/", "common/drivers/acpi/*"},
  {"kolibrios/drivers/atikms/", "common/drivers/atikms/*"},
- {"kolibrios/drivers/geode/", "common/drivers/geode/*"},
+ -- {"kolibrios/drivers/geode/", "common/drivers/geode/*"},
  {"kolibrios/drivers/i915/", "common/drivers/i915/*"},
  {"kolibrios/drivers/test/", "common/drivers/test/*"},
  {"kolibrios/drivers/vmware/", "common/drivers/vmware/*"},
@@ -767,6 +767,8 @@ tup.append_table(extra_files, {
  {"kolibrios/drivers/sensors/k10temp.sys", "../drivers/sensors/k10temp/k10temp.sys"},
  {"kolibrios/drivers/acpi/acpi.sys", "../drivers/devman/acpi.sys"},
  {"kolibrios/drivers/acpi/acpi", "../drivers/devman/acpi"},
+ {"kolibrios/drivers/geode/geode.sys", "../drivers/audio/a5536/geode.sys"},
+ {"kolibrios/drivers/geode/geode", "../drivers/audio/a5536/geode"},
 })
 -- For russian build, add russian-only programs.
 if build_type == "rus" then tup.append_table(extra_files, {
