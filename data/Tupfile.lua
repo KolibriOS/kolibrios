@@ -28,7 +28,7 @@ img_files = {
  {"UNIMG", PROGS .. "/fs/unimg/unimg"},
  {"3D/HOUSE.3DS", "common/3d/house.3ds"},
  {"File Managers/ICONS.INI", "common/File Managers/icons.ini"},
- {"File Managers/FNAV/ABOUT.TXT", "common/File Managers/fNav/ABOUT.TXT.KPACK"},
+ {"File Managers/FNAV/ABOUT.TXT", "common/File Managers/fNav/ABOUT.TXT"},
  {"File Managers/FNAV/FNAV", "common/File Managers/fNav/FNAV"},
  {"File Managers/FNAV/FNAV.EXT", "common/File Managers/fNav/FNAV.EXT"},
  {"File Managers/FNAV/FNAV.SET", "common/File Managers/fNav/FNAV.SET"},
