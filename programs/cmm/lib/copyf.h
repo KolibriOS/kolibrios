@@ -14,6 +14,10 @@ enum {
 	FILE_SKIP,
 };
 
+#define WRITE_ERROR_DEBUG 0
+#define WRITE_ERROR_NOTIFY 1
+:int writing_error_channel = WRITE_ERROR_DEBUG;
+
 int copy_state = FILE_DEFAULT;
 
 :int copyf(dword from1, in1)
@@ -81,7 +85,7 @@ int copy_state = FILE_DEFAULT;
 				debugln("Error: CopyFile->CopyFileAtOnce");
 		}		
 	}
-	if (error) debug_error(copy_from3, error);
+	if (error) write_error(copy_from3, error);
 	return error;
 }
 
@@ -93,7 +97,7 @@ int copy_state = FILE_DEFAULT;
 	if (error = GetDir(#dirbuf, #fcount, from2, DIRS_ONLYREAL))
 	{
 		debugln("Error: CopyFolder->GetDir");
-		debug_error(from2, error);
+		write_error(from2, error);
 		free(dirbuf);
 		return error;
 	}
@@ -101,7 +105,7 @@ int copy_state = FILE_DEFAULT;
 	if (chrnum(in2, '/')>2) && (error = CreateDir(in2))
 	{
 		debugln("Error: CopyFolder->CreateDir");
-		debug_error(in2, error);
+		write_error(in2, error);
 		free(dirbuf);
 		return error;
 	}
@@ -171,7 +175,7 @@ int copy_state = FILE_DEFAULT;
 	unsigned char *ERROR_TEXT[]={
 	"Code #0 - No error",
 	"Error #1 - Base or partition of a hard disk is not defined",
-	"Error #2 - Function isn't supported for this file system",
+	"Error #2 - Function is not supported for this file system",
 	"Error #3 - Unknown file system",
 	0,
 	"Error #5 - File or folder not found",
@@ -188,19 +192,27 @@ int copy_state = FILE_DEFAULT;
 	"Error #32 - Too many processes", 0};
 #endif
 
-:dword get_error(int N)
+:dword get_error(int error_number)
 {
-	char error[256];
-	N = fabs(N);
-	if (N<=33) strcpy(#error, ERROR_TEXT[N]);
-	else sprintf(#error,"%d%s",N," - Unknown error number O_o");
-	return #error;
+	char error_message[256];
+	error_number = fabs(error_number);
+	if (error_number<=33) {
+		strcpy(#error_message, ERROR_TEXT[error_number]);
+	} else {
+		miniprintf(#error_message,"%i - Unknown error number O_o",error_number);
+	}
+	return #error_message;
 }
 
-:void debug_error(dword path, error_number)
+:void write_error(dword path, error_number)
 {
+	char notify_message[100];
 	if (path) debugln(path);
 	debugln(get_error(error_number));
+	if (writing_error_channel == WRITE_ERROR_NOTIFY) {
+		miniprintf(#notify_message, "'%s' -E", get_error(error_number));
+		notify(#notify_message);
+	}
 }
 
 #endif

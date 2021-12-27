@@ -902,7 +902,7 @@ inline signed csshexdec(dword text)
 	return ret;
 }
 
-:void miniprintf(dword dst, format, insert_line)
+:dword miniprintf(dword dst, format, insert_line)
 {
 	dword in_pos = strchr(format, '%');
 	EBX = ESBYTE[EAX+1];
@@ -916,6 +916,7 @@ inline signed csshexdec(dword text)
 		strcat(dst, itoa(insert_line));
 		strcat(dst, in_pos+2);	
 	}
+	return dst;
 }
 
 inline cdecl int sprintf(dword buf, format,...)

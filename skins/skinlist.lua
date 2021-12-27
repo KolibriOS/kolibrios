@@ -22,7 +22,7 @@ skinlist = {
 "Leency/Workbench/Workbench.skn",
 "Leency/Yeah/Yeah.skn",
 "maxcodehack/blacky/Blacky.skn",
-"misc/feol/skin_feol_new.skn",
+"misc/feol/feol.skn",
 "misc/loggy/loggy.skn",
 "misc/night/night.skn",
 "misc/subsilv/subsilv.skn",

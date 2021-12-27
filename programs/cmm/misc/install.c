@@ -1,4 +1,4 @@
-#define MEMSIZE 1024*160
+#define MEMSIZE 1024*60
 
 #include "../lib/gui.h"
 #include "../lib/copyf.h"
@@ -38,7 +38,7 @@ void main()
 {
 	word btn;
 	load_dll(libini, #lib_init,1);
-	loop() switch(@WaitEventTimeout(300))
+	loop() switch(WaitEvent())
 	{
 		case evButton:
 			btn = GetButtonID();               
@@ -58,10 +58,6 @@ void main()
 		case evReDraw:
 			draw_window();
 			break;
-
-		default:
-			DrawLogo();
-			DrawLogo();
 	}
 }
 
@@ -108,8 +104,12 @@ void DrawLogo()
 void EventInstall()
 {
 	ini_set_int stdcall ("/sys/settings/taskbar.ini", "Flags", "Attachment", 0);
-	copyf("/kolibrios/KolibriNext/settings", "/sys/settings");
-	copyf("/kolibrios/KolibriNext", "/sys");
+	writing_error_channel = WRITE_ERROR_NOTIFY;
+	copy_state = FILE_REPLACE;
+	//if (copyf("/kolibrios/KolibriNext/settings", "/sys/settings")) return;
+	CopyFile("/kolibrios/KolibriNext/settings/app_plus.ini", "/sys/settings/app_plus.ini");
+	CopyFile("/kolibrios/KolibriNext/settings/docky.ini", "/sys/settings/docky.ini");
+	CopyFile("/kolibrios/KolibriNext/settings/icon.ini", "/sys/settings/icon.ini");
 
 	RestartProcessByName("/sys/@icon", MULTIPLE);
 	RestartProcessByName("/sys/@taskbar", SINGLE);
