@@ -1363,66 +1363,9 @@ set_variables:
 
         pop     eax
         ret
+;-----------------------------------------------------------------------------
 
 align 4
-;input  eax=43,bl-byte of output, ecx - number of port
-;sys_outport:
-;
-;        mov     edi, ecx   ; separate flag for read / write
-;        and     ecx, 65535
-;
-;        mov     eax, [RESERVED_PORTS]
-;        test    eax, eax
-;        jnz     .sopl8
-;        inc     eax
-;        mov     [esp+32], eax
-;        ret
-;
-;  .sopl8:
-;        mov     edx, [TASK_BASE]
-;        mov     edx, [edx+0x4]
-;    ;and   ecx,65535
-;    ;cld - set on interrupt 0x40
-;  .sopl1:
-;
-;        mov     esi, eax
-;        shl     esi, 4
-;        add     esi, RESERVED_PORTS
-;        cmp     edx, [esi+0]
-;        jne     .sopl2
-;        cmp     ecx, [esi+4]
-;        jb      .sopl2
-;        cmp     ecx, [esi+8]
-;        jg      .sopl2
-;.sopl3:
-;
-;        test    edi, 0x80000000; read ?
-;        jnz     .sopl4
-;
-;        mov     eax, ebx
-;        mov     dx, cx   ; write
-;        out     dx, al
-;        and     [esp+32], dword 0
-;        ret
-;
-;        .sopl2:
-;
-;        dec     eax
-;        jnz     .sopl1
-;        inc     eax
-;        mov     [esp+32], eax
-;        ret
-;
-;
-;  .sopl4:
-;
-;        mov     dx, cx   ; read
-;        in      al, dx
-;        and     eax, 0xff
-;        and     [esp+32], dword 0
-;        mov     [esp+20], eax
-;        ret
-
 display_number:
 ; add check pointers
         test    bl, bl
