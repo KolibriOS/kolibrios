@@ -649,7 +649,7 @@ AcpiOsCreateLock (
         return (AE_BAD_PARAMETER);
     }
 
-    *OutHandle = (ACPI_HANDLE)malloc(sizeof(u32_t));
+    *OutHandle = (ACPI_HANDLE)malloc(sizeof(UINT32));
 
 	if (*OutHandle == NULL)
 		return AE_NO_MEMORY;
