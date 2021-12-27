@@ -1,5 +1,5 @@
 include 'loggy.inc'                          ; Color Table
-include '../skin.inc'
+include '../../skin.inc'
 
 SKIN_PARAMS \
   height          = bmp_center1.height,\     ; skin height
