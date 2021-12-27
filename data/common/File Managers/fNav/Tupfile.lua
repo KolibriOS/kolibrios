@@ -1,1 +1,1 @@
-tup.rule("ABOUT.TXT", tup.getconfig("KPACK_CMD"), "ABOUT.TXT")
+tup.rule("ABOUT.TXT", "kpack %f %o", "ABOUT.TXT")
