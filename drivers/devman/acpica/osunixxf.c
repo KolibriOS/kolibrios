@@ -166,9 +166,9 @@ typedef void* (*PTHREAD_CALLBACK) (void *);
 ACPI_STATUS
 AcpiOsInitialize (void)
 {
-    if(!dbg_open("/rd/1/drivers/acpi.log"))
+    if(!dbg_open(ACPI_LOG))
     {
-        dbgprintf("Can't open /rd/1/drivers/acpi.log\nExit\n");
+        dbgprintf("Can't open %s\nExit\n", ACPI_LOG);
         return AE_ERROR;
     }
 

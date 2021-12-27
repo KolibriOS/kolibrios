@@ -5,11 +5,9 @@ tup.include("../../../programs/use_gcc.lua")
 DRV_DIR = "./../.."
 INCLUDES = string.format(" -I./include -I%s/include -I%s/include/linux -I%s/include/uapi ", DRV_DIR, DRV_DIR, DRV_DIR) 
 
-DEFINES = " -DACPI_LIBRARY -D_SINGLE_THREADED -D__KERNEL__ -DCONFIG_X86_32 -DCONFIG_X86_L1_CACHE_SHIFT=6 -DCONFIG_ARCH_HAS_CACHE_LINE_SIZE -DLINUX_MOD_DEVICETABLE_H "
+DEFINES = [[ -DACPI_LIBRARY -D_SINGLE_THREADED -D__KERNEL__ -DCONFIG_X86_32 -DCONFIG_X86_L1_CACHE_SHIFT=6 -DCONFIG_ARCH_HAS_CACHE_LINE_SIZE -DLINUX_MOD_DEVICETABLE_H -DACPI_LOG="\"/tmp0/1/acpi.log"\"]]
 
-CFLAGS = CFLAGS .. " -O2 -march=i686 -fno-ident -msse2 -fomit-frame-pointer -fno-builtin-printf -mno-stack-arg-probe -mpreferred-stack-boundary=2 -mincoming-stack-boundary=2 -mno-ms-bitfields " .. DEFINES 
-
-NAME = "ACPICA"
+CFLAGS = " -Os -march=i686 -fno-ident -msse2 -fomit-frame-pointer -fno-builtin-printf -mno-stack-arg-probe -mpreferred-stack-boundary=2 -mincoming-stack-boundary=2 -mno-ms-bitfields " .. DEFINES 
 
 compile_gcc{
         "debugger/dbcmds.c" ,
