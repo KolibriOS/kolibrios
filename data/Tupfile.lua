@@ -240,7 +240,7 @@ extra_files = {
  {"kolibrios/speech/", "common/media/speech/*"},
  {"kolibrios/drivers/drvinf.ini", "common/drivers/drvinf.ini"},
  {"kolibrios/drivers/ahci/", "common/drivers/ahci/*"},
- {"kolibrios/drivers/acpi/", "common/drivers/acpi/*"},
+ -- {"kolibrios/drivers/acpi/", "common/drivers/acpi/*"},
  {"kolibrios/drivers/atikms/", "common/drivers/atikms/*"},
  {"kolibrios/drivers/geode/", "common/drivers/geode/*"},
  {"kolibrios/drivers/i915/", "common/drivers/i915/*"},
@@ -765,6 +765,8 @@ tup.append_table(extra_files, {
  {"kolibrios/develop/tcc/tcc", PROGS .. "/develop/ktcc/trunk/source/tcc"},
  {"kolibrios/develop/sqlite3/sqlite3", "../contrib/sdk/sources/sqlite3/shell/sqlite3"},
  {"kolibrios/drivers/sensors/k10temp.sys", "../drivers/sensors/k10temp/k10temp.sys"},
+ {"kolibrios/drivers/acpi/acpi.sys", "../drivers/devman/acpi.sys"},
+ {"kolibrios/drivers/acpi/acpi", "../drivers/devman/acpi"},
 })
 -- For russian build, add russian-only programs.
 if build_type == "rus" then tup.append_table(extra_files, {
