@@ -1,13 +1,14 @@
 
-#define WIN_DIALOG_W 380
-#define WIN_DIALOG_H 100
+#define COPYFORM_W 380
+#define COPYFORM_H 100
 #define PR_LEFT 14
 #define PR_TOP  32
-#define PR_W  WIN_DIALOG_W-PR_LEFT-PR_LEFT
+#define PR_W  COPYFORM_W-PR_LEFT-PR_LEFT
 #define PR_H  18
 
 proc_info Dialog_Form;
 progress_bar copy_bar = {0,PR_LEFT,PR_TOP,PR_W,PR_H,0,0,1,0xFFFFFF,0x00FF00,0x555555};
+checkbox remember_choice = { T_COPY_REMEMBER_CHOICE, false };
 
 enum {
 	REDRAW_FLAG,
@@ -16,10 +17,16 @@ enum {
 	DELETE_FLAG, 
 };
 
+enum {
+	BTN_ABORT=2,
+	BTN_REPLACE,
+	BTN_SKIP
+};
+
 void DisplayOperationForm(int operation_flag)
 {
 	dword title;
-	dword id;
+	dword event_mode;
 	if (operation_flag==COPY_FLAG) {
 		title = T_COPY_WINDOW_TITLE;
 		copy_bar.progress_color = 0x00FF00;
@@ -39,37 +46,44 @@ void DisplayOperationForm(int operation_flag)
 		copy_bar.max = 0;
 	}
 	copy_bar.frame_color = sc.work_graph;
-	switch(CheckEvent())
+	if (copy_state == FILE_DEFAULT) event_mode = #CheckEvent;
+	if (copy_state == FILE_EXISTS) event_mode = #WaitEvent;
+	event_mode();
+	switch(EAX)
 	{
 		 case evButton:
-		 	id = GetButtonID();
-			switch(id)
+			switch(GetButtonID())
 			{
-				case 2:
+				case 1:
+				case BTN_ABORT:
 					DialogExit();
 					break;
-				case 3:
+				case BTN_REPLACE:
 					copy_state = FILE_REPLACE;
 					break;
-				case 4:
+				case BTN_SKIP:
 					copy_state = FILE_SKIP;
 					break;
+				default:
+					if (remember_choice.click(EAX+1)) {
+						notify(itoa(remember_choice.checked));
+					}
 			}
 			break;
 		case evReDraw:
-			DefineAndDrawWindow(Form.left+Form.width-200, Form.top+90, WIN_DIALOG_W+9,
-				skin_height+WIN_DIALOG_H+70, 0x34, sc.work, title, 0);
+			DefineAndDrawWindow(Form.left+Form.width-200, Form.top+90, COPYFORM_W+9,
+				skin_height+COPYFORM_H, 0x34, sc.work, title, 0);
 			GetProcessInfo(#Dialog_Form, SelfInfo);
-			DrawCaptButton(WIN_DIALOG_W-PR_LEFT-101, PR_TOP+PR_H+6, 100,26, 2, 
-				sc.button, sc.button_text, T_ABORT_WINDOW_BUTTON);
+			DrawCaptButton(COPYFORM_W-PR_LEFT-101, PR_TOP+PR_H+6, 100,26, BTN_ABORT, sc.button, sc.button_text, T_COPY_ABORT);
 
 			if (copy_state == FILE_EXISTS)
 			{
-				WriteText(WIN_DIALOG_W-PR_LEFT-301, PR_TOP+PR_H+46, 0x90, sc.work_text, "File exists!!");
-				DrawCaptButton(WIN_DIALOG_W-PR_LEFT-301, PR_TOP+PR_H+76, 100,26, 3, 
-					sc.button, sc.button_text, T_REPLACE_WINDOW_BUTTON);
-				DrawCaptButton(WIN_DIALOG_W-PR_LEFT-101, PR_TOP+PR_H+76, 100,26, 4, 
-					sc.button, sc.button_text, T_SKIP_WINDOW_BUTTON);
+				#define REPLACEY PR_TOP+PR_H+48
+				draw_icon_16w(PR_LEFT, REPLACEY-3, 20);
+				WriteText(PR_LEFT+25, REPLACEY, 0x90, sc.work_text, T_OVERWRITE_ALERT);
+				DrawCaptButton(PR_LEFT, REPLACEY+30, 100,26, BTN_REPLACE, sc.button, sc.button_text, T_COPY_REPLACE);
+				DrawCaptButton(PR_LEFT+110, REPLACEY+30, 100,26, BTN_SKIP, sc.button, sc.button_text, T_COPY_SKIP);
+				remember_choice.draw(PR_LEFT+225, REPLACEY+37);
 			}
 
 			DrawRectangle3D(PR_LEFT-1, PR_TOP-1, PR_W+1, PR_H+1, sc.work_dark, sc.work_light);
@@ -82,20 +96,28 @@ void DialogExit() {
 }
 
 void Operation_Draw_Progress(dword filename) {
+	static int old_state;
 	if (Dialog_Form.cwidth==0)
 	{
 		copy_bar.value++;
 		return;
 	}
+
+	if (old_state != copy_state) {
+		old_state = copy_state;
+		if (copy_state == FILE_EXISTS) MoveSize(OLD,OLD,OLD,skin_height+COPYFORM_H+70);
+		if (copy_state == FILE_DEFAULT) MoveSize(OLD,OLD,OLD,skin_height+COPYFORM_H);
+	}
+
 	DisplayOperationForm(REDRAW_FLAG);
-	DrawBar(PR_LEFT, PR_TOP-20, WIN_DIALOG_W-PR_LEFT, 15, sc.work);
-	WriteText(PR_LEFT, PR_TOP-20, 0x90, sc.work_text, filename);
 
 	progressbar_draw stdcall (#copy_bar);
 	if (copy_state == FILE_DEFAULT)
 	{
+		DrawBar(PR_LEFT, PR_TOP-20, COPYFORM_W-PR_LEFT, 15, sc.work);
 		progressbar_progress stdcall (#copy_bar);
 	}
+	WriteTextWithBg(PR_LEFT, PR_TOP-20, 0xD0, sc.work_text, filename, sc.work);
 
 	WriteTextWithBg(PR_LEFT, PR_TOP+PR_H+5, 0xD0, sc.work_text, 
 		sprintf(#param, "%i/%i", copy_bar.value, copy_bar.max), sc.work);
