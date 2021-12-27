@@ -47,6 +47,7 @@ include "gui/font.inc"
 include "gui/button.inc"
 include "gui/mouse.inc"         ; cursor
 include "gui/skincode.inc"      ; windows' skin
+include "gui/background.inc"
 
 include "hid/keyboard.inc"
 include "hid/mousedrv.inc"
