@@ -22,6 +22,8 @@ include '../../../../KOSfuncs.inc'
 include 'box_lib.mac' ;macro which should make life easier :)
 ;include '../../../../debug.inc'
 include 'keys.inc'
+include '../../../../system/skincfg/trunk/kglobals.inc'
+include '../../../../system/skincfg/trunk/unpacker.inc'
 
 ;-----------------------------------------------------------------------------
 mem.alloc   dd ? ;функция для выделения памяти
@@ -169,6 +171,10 @@ proc draw_edge uses eax ebx ecx edx edi esi, box_l:dword, box_t:dword, box_w:dwo
 	ret
 endp
 
+
+;для работы с KPCK
+IncludeIGlobals
+IncludeUGlobals
 
 align 16
 EXPORTS:

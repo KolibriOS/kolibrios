@@ -1263,20 +1263,12 @@ proc ted_memory_increase
 	cmp ted_increase_size,0
 	je @f
 		push eax ebx ecx
-		mov ecx,ted_increase_size
-		add ecx,ted_max_chars
-		mov ted_max_chars,ecx
-		imul ecx,sizeof.symbol
-		invoke mem.realloc, ted_tex,ecx
 		mov ebx,ted_tex
-		mov ted_tex,eax
-		mov ted_tex_1,eax
-		add ted_tex_1,sizeof.symbol
-			sub edx,ebx
-			add edx,eax
-			mov ted_ptr_free_symb,edx
-		add eax,ecx
-		mov ted_tex_end,eax
+		mov ecx,ted_max_chars
+		call ted_mem_resize.no_2
+		sub edx,ebx
+		add edx,ted_tex
+		mov ted_ptr_free_symb,edx
 		pop ecx ebx eax
 	@@:
 	ret
@@ -2546,11 +2538,39 @@ proc ted_find_help_id uses ebx ecx, end_pos:dword
   ret
 endp
 
+;description:
+; изменяем размер памяти для текста (установка ted_ptr_free_symb на 1 символ)
+;input:
+; ecx - число символов в файле
+; edi - pointer to tedit struct
+;output:
+; eax, ecx - разрушаются
+align 16
+ted_mem_resize:
+	add ecx,2 ;память для текста + служебные начальный и конечный символы
+.no_2:
+	add ecx,ted_increase_size ;память для редактирования файла
+	mov ted_max_chars,ecx
+	imul ecx,sizeof.symbol
+	invoke mem.realloc, ted_tex,ecx
+	mov ted_tex,eax
+	mov ted_tex_1,eax
+	add ted_tex_1,sizeof.symbol
+	add eax,ecx
+	mov ted_tex_end,eax
+	mov ecx,ted_tex_1
+	add ecx,sizeof.symbol
+	mov ted_ptr_free_symb,ecx
+	ret
+
 ;output:
 ; eax = код ошибки
 ; ebx = колличество прочитанных байт
 align 16
-proc ted_open_file uses ecx edx edi, edit:dword, file:dword, f_name:dword ;функция открытия файла
+proc ted_open_file uses ecx edx edi esi, edit:dword, file:dword, f_name:dword ;функция открытия файла
+	locals
+		unpac_mem dd ?
+	endl
 	mov edi,[edit]
 
 	; *** проверяем размер памяти и если не хватает то увеличиваем ***
@@ -2580,21 +2600,8 @@ align 4
 	mov edx,[edx+32] ;+32 = +0x20: qword: размер файла в байтах
 	cmp edx,ecx
 	jl @f
-		;увеличиваем память если не хватило
-		mov ecx,edx ;память необходимая для открытия файла
-		add ecx,2  ;память для служебных начального и конечного символов
-		add ecx,ted_increase_size ;память для редактирования файла
-		mov ted_max_chars,ecx
-		imul ecx,sizeof.symbol
-		invoke mem.realloc, ted_tex,ecx
-		mov ted_tex,eax
-		mov ted_tex_1,eax
-		add ted_tex_1,sizeof.symbol
-		add eax,ecx
-		mov ted_tex_end,eax
-		mov ecx,ted_tex_1
-		add ecx,sizeof.symbol
-		mov ted_ptr_free_symb,ecx
+		mov ecx,edx
+		call ted_mem_resize
 	@@:
 
 	; *** пробуем открыть файл ***
@@ -2617,6 +2624,32 @@ align 4
 	cmp ebx,-1
 	je .ret_f
 		;if open file
+		push eax
+		mov eax,ted_tex
+		cmp dword[eax],'KPCK'
+		jne .end_unpack
+			;выделение памяти для распаковки файла
+			invoke mem.alloc,[eax+4]
+			mov [unpac_mem],eax
+			stdcall unpack,ted_tex,[unpac_mem]
+			mov ecx,ted_max_chars
+			sub ecx,2 ;ecx = максимальное число байт, для которых была выделена память
+			mov eax,ted_tex
+			mov ebx,[eax+4]
+			cmp ebx,ecx
+			jl @f ;если для распакованого файла не хватает выделенной памяти
+				mov ecx,ebx
+				call ted_mem_resize
+			@@:
+			mov edi,ted_tex
+			mov esi,[unpac_mem]
+			mov ecx,ebx
+			cld
+			rep movsb
+			mov edi,[edit]
+			invoke mem.free,[unpac_mem]
+		.end_unpack:
+		pop eax
 		call ted_on_open_file
 	.ret_f:
 	ret

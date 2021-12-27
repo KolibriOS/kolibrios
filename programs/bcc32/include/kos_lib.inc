@@ -143,6 +143,41 @@ proc @strcpy$qpcpxc uses esi edi
 endp
 
 align 4
+proc @strncpy$qpcpxcl uses esi edi
+  cld
+  mov  edi,[esp+16]
+  mov  ecx,[esp+20]
+  jecxz @f
+  mov  esi,edi
+  xor  al,al
+  repnz scasb
+  not  ecx
+  mov  edi,[esp+12]
+  mov  edx,ecx
+  mov  eax,edi
+  shr  ecx,2
+  rep movsd
+  mov  ecx,edx
+  and  ecx,3
+  rep movsb
+@@:
+  ret
+endp
+
+align 4
+proc @memcmp$qpxvt1l uses esi edi
+	cld
+	mov	ecx,[esp+20]
+	mov	edi,[esp+16]
+	mov	esi,[esp+12]
+	repe  cmpsb
+	movzx eax,byte[esi-1]
+	movzx edx,byte[edi-1]
+	sub	eax,edx
+	ret
+endp
+
+align 4
 proc @memcpy$qpvpxvui uses esi edi
   cld
   mov  edi,[esp+12]
@@ -242,11 +277,11 @@ align 4
 	pop  esi
 	inc  esi
 	cmp  byte[edi-1],0
-	jne  .cycle	
+	jne  .cycle
 
 	lea  eax,[esi-1]
 .not_f:
-	ret 
+        ret
 endp
 
 align 4
