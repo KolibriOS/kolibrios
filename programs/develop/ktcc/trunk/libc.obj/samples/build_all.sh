@@ -20,3 +20,5 @@ cp     clayer/logo.png /tmp0/1/tcc_samples/logo.png
 ../tcc -I../include/SDL sdltest.c -o /tmp0/1/tcc_samples/sdltest -lSDL -lsound -ltcc -lc.obj
 ../tcc shell_test.c -o /tmp0/1/tcc_samples/shell_test -lshell -ltcc -lc.obj
 ../tcc libc_test.c -o /tmp0/1/tcc_samples/libc_test -ltcc -lc.obj
+"/sys/File managers/Eolite" /tmp0/1/tcc_samples
+exit

@@ -2,18 +2,18 @@ include 'skin.inc'
 
 SKIN_PARAMS \
   height          = bmp_base.height,\     ; skin height
-  margins         = [5:1:43:1],\          ; margins [left:top:right:bottom]
-  colors active   = [binner=0xf8f8f8:\    ; border inner color
-                     bouter=0xd8b0d8:\    ; border outer color
-                     bframe=0xf8f6f8],\   ; border frame color
-  colors inactive = [binner=0xf8f8f8:\    ; border inner color
-                     bouter=0xf8f8f8:\    ; border outer color
-                     bframe=0xf8f6f8],\   ; border frame color
+  margins         = [5:4:43:2],\          ; margins [left:top:right:bottom]
+  colors active   = [binner=0xD6CEDA:\    ; border inner color
+                     bouter=0x897592:\    ; border outer color
+                     bframe=0xD6CEDA],\   ; border frame color
+  colors inactive = [binner=0xD6CEDA:\    ; border inner color
+                     bouter=0x897592:\    ; border outer color
+                     bframe=0xD6CEDA],\   ; border frame color
   dtp             = 'colors.dtp'          ; dtp colors
 
 SKIN_BUTTONS \
-  close    = [-22:3][16:16],\             ; buttons coordinates
-  minimize = [-40:3][16:16]               ; [left:top][width:height]
+  close    = [-22:3][17:17],\             ; buttons coordinates
+  minimize = [-42:3][17:17]               ; [left:top][width:height]
 
 SKIN_BITMAPS \
   left active   = bmp_left,\              ; skin bitmaps pointers
