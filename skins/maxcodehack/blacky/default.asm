@@ -4,10 +4,10 @@ SKIN_PARAMS \
   height          = bmp_center1.height,\  ; skin height
   margins         = [6:5:65:3],\          ; margins [left:top:right:bottom]
   colors active   = [binner=0x626262:\    ; border inner
-                     bouter=0x646464:\    ; border outer
+                     bouter=0x010812:\    ; border outer
                      bframe=0x626262],\   ; border middle
   colors inactive = [binner=0x626262:\    ; border inner
-                     bouter=0x646464:\    ; border outer
+                     bouter=0x010812:\    ; border outer
                      bframe=0x626262],\   ; border middle
   dtp             = 'default.dtp'          ; dtp colors
 

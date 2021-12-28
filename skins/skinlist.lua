@@ -52,7 +52,6 @@ skinlist = {
 "_old/MetalColor/MCRed/MCRed.skn",
 "_old/nix/nix.skn",
 "_old/OpusOs_Blue/OpusOs_Blue.skn",
-"_old/RoboTech/BRoboTech/BRoboTech.skn",
 "_old/Sad_grey/Sad_grey.skn",
 "_old/Simple_gray/Simple_gray.skn",
 "_old/skin_feol/skin_feol.skn",
