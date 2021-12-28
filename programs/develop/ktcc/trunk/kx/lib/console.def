@@ -1,0 +1,25 @@
+LIBRARY console.obj
+
+EXPORTS
+;START
+con_init
+con_write_asciiz
+con_write_string
+con_printf
+con_exit
+;version
+con_get_flags
+con_set_flags
+con_kbhit
+con_getch
+con_getch2
+con_gets
+con_gets2
+con_get_font_height
+con_get_cursor_height
+con_set_cursor_height
+con_cls
+con_get_cursor_pos
+con_set_cursor_pos
+con_set_title
+con_get_input

@@ -34,7 +34,7 @@ typedef struct {
  /*union ImportEntry {
  uint32_t ImportStr;
  uint32_t ImportPrt;
- };*/
+};*/
 
  //static char __kx_import_table_sym[] = "__i_ptr__";
 
@@ -43,19 +43,21 @@ typedef struct {
 	 ElfW(Sym) *sym;
 	 int sym_index, sym_end;
 	 sym_end = symtab_section->data_offset / sizeof(ElfW(Sym));
+	 DLLReference **dllref = me->s1->loaded_dlls;
 	 CString *str_arr, *len_arr, *sym_arr;
-   char dll_len;
+	 char dll_len;
+	 int dll_loaded = me->s1->nb_loaded_dlls;
 	 int nlib = 0;
 	 int i;
 
 	 if (me->header.version != 2)
 		 return;
 
-	 str_arr = tcc_malloc(sizeof(CString) * me->s1->nb_loaded_dlls);
+	 str_arr = tcc_malloc(sizeof(CString) * dll_loaded);
 
-	 len_arr = tcc_malloc(sizeof(CString)* me->s1->nb_loaded_dlls);
-   
-   sym_arr = tcc_malloc(sizeof(CString)* me->s1->nb_loaded_dlls);
+	 len_arr = tcc_malloc(sizeof(CString)* dll_loaded);
+	 
+	 sym_arr = tcc_malloc(sizeof(CString)* dll_loaded);
 
 	 for (sym_index = 1; sym_index < sym_end; ++sym_index) {
 		 sym = (ElfW(Sym) *)symtab_section->data + sym_index;
@@ -66,18 +68,13 @@ typedef struct {
 			 if (dynsym_index == 0) {
 				 //if (strcmp(name, __kx_import_table_sym) != 0) {
 					 tcc_error/*_noabort*/("undefined symbol '%s'", name);
-					 //continue; // FIXME: stop compile!
-				 //}
-
-				 //continue;
 			 }
 
 			 // KOS support 32 bit only
 			 Elf32_Sym* dyn_sym = &((ElfW(Sym) *)me->s1->dynsymtab_section->data)[dynsym_index];
-			 DLLReference **dllref = me->s1->loaded_dlls;
-       char* dll_name;
-			 i = dyn_sym->st_size - 1;
+			 char* dll_name;
 			 // TCC store dll index in dyn_sym->st_size field
+			 i = dyn_sym->st_size - 1;
 			 if (dllref[i]->level != -1) {
 				 dll_name = dllref[i]->name;
 				 dll_len = strlen(dll_name) + 1;
@@ -86,15 +83,15 @@ typedef struct {
 
 				 cstr_new(&str_arr[i]);
 				 cstr_new(&len_arr[i]);
-         cstr_new(&sym_arr[i]);
+				 cstr_new(&sym_arr[i]);
 
 				 cstr_ccat(&len_arr[i], dll_len);
 				 cstr_cat(&str_arr[i], dll_name, dll_len);
 				 //Mark dll as already used
 				 dllref[i]->level = -1;
 			 }
-       
-       cstr_wccat(&sym_arr[i], (int)name);
+			 
+			 cstr_wccat(&sym_arr[i], (int)name);
 
 			 // Export defined with prefix?
 			 if (dyn_sym->st_value == -1){
@@ -114,6 +111,46 @@ typedef struct {
 		 //tcc_error("");
 		 return;
 	 }*/
+   
+	 // Fixed BUG#15 (possible access to uninitialized due unused library)
+	 // Exclude unused librarys
+	 if (nlib < dll_loaded) {
+		 i = 0; int j, n = 0;
+		 do {
+
+			 // Find unused library
+			 if (dllref[i]->level == 0) {
+				 j = i + 1;
+				 
+				 while (j < dll_loaded) {
+					 // Find first used library
+					 if (dllref[j]->level == -1) {
+						 // Found, copy i from j
+						 str_arr[i] = str_arr[j];
+						 len_arr[i] = len_arr[j];
+						 sym_arr[i] = sym_arr[j];
+						 // Mark j as unused
+						 dllref[j]->level = 0;
+
+						 if (++n == nlib)
+							 goto __done;
+
+						 break;
+					 }
+
+					 j++;
+
+				 }
+
+			 }
+
+			 i++;
+
+		 } while (i < dll_loaded);
+
+	 }
+
+ __done:
 
 	 // Zero terminate of ptr (was BUG#3)
 	 i = 0;
@@ -128,7 +165,7 @@ typedef struct {
 	 kx_import_table* imp_sect;
 
 	 imp_sect = tcc_mallocz(sizeof(kx_import_table));
-	 imp_sect->data = tcc_mallocz(1024); // FIXME!!!
+	 imp_sect->data = tcc_mallocz(4096); // FIXME!!! I increased it to 4Kb, but steel need dynamicaly size
 	 imp_sect->data_size = 0;
 	 //imp_sect->sh_addr = me->header.image_size;// +1;
 
@@ -147,6 +184,7 @@ typedef struct {
 
 	 // Align pad (check algorithm!)
 	 int align = 4 - (me->header.image_size + imp_sect->data_size) % 4;
+	 align = align < 4 ? align : 0;
 	 imp_data += align;
 	 imp_sect->data_size += align;
 
@@ -187,7 +225,7 @@ typedef struct {
 	 imp_sect->data_size += sizeof(LibraryEntry) + 4;
 
 	 const char *sym_name;
-   char name_len;
+	 char name_len;
 	 long len_sum;
 
 	 len_sum = me->header.image_size;
@@ -230,7 +268,7 @@ typedef struct {
 
 	 tcc_free(str_arr);
 	 tcc_free(len_arr);
-   tcc_free(sym_arr);
+	 tcc_free(sym_arr);
 
  }
 
@@ -246,11 +284,9 @@ typedef struct {
 			 break;
 	 }
 	 if ((sym_index < sym_end) &&
-		 // ... and user attached at last one *.def
+		 // ... and user attached at least one *.def
 		 (me->s1->nb_loaded_dlls))
 			me->header.version = 2;
-
-	 //tcc_add_crt(me->s1, "start1.o");
  }
 
  long kx_get_header_length(me_info* me) {
@@ -277,4 +313,58 @@ typedef struct {
 		 tcc_free(imp->data);
 		 tcc_free(imp);
 	}
+ }
+ 
+#if /*!*/defined(_DEBUG)// && !defined(_WIN32)
+ #define	kx_debug_output		printf
+#else
+ #define kx_debug_output(s,p)	((void)0)
+#endif
+
+/*
+	Calling once from tcc_set_lib_path_xxx
+	This function correct tcc_root if tcc_root/kx is a run directory,
+	otherwise do trim filename
+*/
+ void kx_fix_root_directory(char *buf, size_t size) {
+	 
+	 int defult = 1;
+	 char* tcc_conf = tcc_malloc(strlen(buf)+5);
+	 strcpy(tcc_conf, buf);
+	 char* base = tcc_basename(tcc_conf);
+	 *base = 0;
+	 base = tcc_basename(buf);
+	 strcat(tcc_conf, "tcc.conf");
+	 FILE* f = fopen(tcc_conf,"r");
+	 if (f) {
+		 char line[100];
+		 while (fgets(line, sizeof line, f)){
+			 switch (*line)
+				case '#':
+				case '\n':
+					continue;
+					if ((strspn(line, "tcc_root") == 8) && line[8] == ' ') {
+
+						if (strcmp(line + 9, "kx") == 0) {
+							strcpy(base, line + 9);
+							defult = 0;
+						}
+						else
+						{
+							// Disallow change tcc_root with arbitrary path
+							continue;
+						}
+
+					}
+		 }
+
+		 fclose(f);
+	 }
+	 if (defult) {
+
+		 *--base = 0;
+	 }
+
+	 tcc_free(tcc_conf);
+	 //kx_debug_output("tcc root = %s\n", buf);
  }

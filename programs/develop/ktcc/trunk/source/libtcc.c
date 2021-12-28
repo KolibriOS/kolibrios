@@ -113,12 +113,17 @@ static void tcc_set_lib_path_w32(TCCState *s)
 {
     char path[1024], *p;
     GetModuleFileNameA(tcc_module, path, sizeof path);
+#ifdef TCC_TARGET_KX
+	kx_fix_root_directory(path, sizeof path);
+    normalize_slashes(strlwr(path));
+#else
     p = tcc_basename(normalize_slashes(strlwr(path)));
     if (p - 5 > path && 0 == strncmp(p - 5, "/bin/", 5))
         p -= 5;
     else if (p > path)
         p--;
     *p = 0;
+#endif
     tcc_set_lib_path(s, path);
 }
 
@@ -154,9 +159,13 @@ static void tcc_set_lib_path_kos(TCCState *s)
 	char** argv0 = (char**)0x20; // path in kolibri header
     char path[1024], *p;
 	strncpy(path, *argv0, sizeof path);
+#ifdef TCC_TARGET_KX
+	kx_fix_root_directory(path, sizeof path);
+#else
 	p = tcc_basename(path);
     if (p > path) p--;
     *p = 0;
+#endif
     tcc_set_lib_path(s, path);
 }
 
@@ -165,7 +174,12 @@ static void tcc_set_lib_path_linux(TCCState *s)
 {
     char buff[4096+1];
     readlink("/proc/self/exe", buff, 4096);
+#ifdef TCC_TARGET_KX
+	kx_fix_root_directory(buff, sizeof buff);
+	const char *path = buff;
+#else
     const char *path = dirname(buff);
+#endif
     tcc_set_lib_path(s, path);
 }
 

@@ -1,0 +1,21 @@
+
++ Library autoload
+  Now you don't need to think about having to load dependent libraries.
+  The most of this work will be done by TCC and Dll.obj
+
++ Easy linking using *.def files
+  All you need to do is connect the files describing the symbols
+  of the used libraries. This files have plain text format and may 
+  easy created in any text editor. If one or more libraries use the same
+  symbols you may use name prefix to solve symbols conflicts 
+  No more complicated of creating *.o and/or *.a files
+  
++ Reduced image size
+  Since the library loader no longer needs to be placed in every application,
+  this reduces the size of the image. No more C layer neded, all dependent
+  libraries loading and also initialized automatically.
+  The compact format of the import table is also used.
+  
++ Backward compatible
+  You don't need change your project. But the features described above will
+  require reconfiguration. Once you have tried it, you do not want to come back.

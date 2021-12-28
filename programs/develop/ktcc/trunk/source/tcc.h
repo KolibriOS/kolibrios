@@ -47,6 +47,7 @@
 #ifndef TCC_TARGET_MEOS
 #define TCC_TARGET_MEOS 
 #endif
+void kx_fix_root_directory(char *buf, size_t size);
 #endif
 
 #ifndef _WIN32
