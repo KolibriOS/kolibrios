@@ -12,7 +12,7 @@ sin:
 	sahf
 	jnp	sin.L1
 	fstp	%st(0)
-	fldl	L0
+	fldl	sin.L0
 sin.L1:
 	ret	
 
