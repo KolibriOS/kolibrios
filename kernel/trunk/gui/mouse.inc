@@ -685,3 +685,119 @@ mouse._.check_sys_window_actions:
 
   .exit:
         ret
+;-----------------------------------------------------------------------------
+
+align 4
+readmousepos:
+; eax=0 screen relative
+; eax=1 window relative
+; eax=2 buttons pressed
+; eax=3 buttons pressed ext
+; eax=4 load cursor
+; eax=5 set cursor
+; eax=6 delete cursor
+; eax=7 get mouse_z
+; eax=8 load cursor unicode
+        cmp     ebx, 8
+        ja      @f
+        jmp     dword[.mousefn+ebx*4]
+
+align 4
+.mousefn:
+dd  .msscreen
+dd  .mswin
+dd  .msbutton
+dd  .msbuttonExt
+dd  .app_load_cursor
+dd  .app_set_cursor
+dd  .app_delete_cursor
+dd  .msz
+dd  .loadCursorUni
+
+.msscreen:
+        mov     eax, [MOUSE_X]
+        shl     eax, 16
+        mov     ax, [MOUSE_Y]
+        mov     [esp+36-4], eax
+@@:
+        ret
+
+.mswin:
+        mov     eax, [MOUSE_X]
+        shl     eax, 16
+        mov     ax, [MOUSE_Y]
+        mov     esi, [TASK_BASE]
+        mov     bx, word [esi-twdw+WDATA.box.left]
+        shl     ebx, 16
+        mov     bx, word [esi-twdw+WDATA.box.top]
+        sub     eax, ebx
+        mov     edi, [current_slot_idx]
+        shl     edi, 8
+        sub     ax, word[edi+SLOT_BASE+APPDATA.wnd_clientbox.top]
+        rol     eax, 16
+        sub     ax, word[edi+SLOT_BASE+APPDATA.wnd_clientbox.left]
+        rol     eax, 16
+        mov     [esp+36-4], eax
+        ret
+
+.msbutton:
+        movzx   eax, byte [BTN_DOWN]
+        mov     [esp+36-4], eax
+        ret
+
+.msbuttonExt:
+        mov     eax, [BTN_DOWN]
+        mov     [esp+36-4], eax
+        ret
+
+.app_load_cursor:
+        cmp     ecx, OS_BASE
+        jae     @f
+        stdcall load_cursor, ecx, edx
+        mov     [esp+36-4], eax
+@@:
+        ret
+
+.loadCursorUni:
+        cmp     ecx, OS_BASE
+        jae     @b
+        push    ecx edx
+        stdcall kernel_alloc, maxPathLength
+        mov     edi, eax
+        pop     eax esi
+        push    edi
+        call    getFullPath
+        pop     ebp
+        test    eax, eax
+        jz      @f
+        stdcall load_cursor, ebp, LOAD_FROM_FILE
+        mov     [esp+32], eax
+@@:
+        stdcall kernel_free, ebp
+        ret
+
+.app_set_cursor:
+        stdcall set_cursor, ecx
+        mov     [esp+36-4], eax
+        ret
+
+.app_delete_cursor:
+        stdcall delete_cursor, ecx
+        mov     [esp+36-4], eax
+        ret
+
+.msz:
+        mov     edi, [thread_count]
+        movzx   edi, word [WIN_POS + edi*2]
+        cmp     edi, [current_slot_idx]
+        jne     @f
+        mov     ax, [MOUSE_SCROLL_H]
+        shl     eax, 16
+        mov     ax, [MOUSE_SCROLL_V]
+        mov     [esp+36-4], eax
+        and     [MOUSE_SCROLL_H], word 0
+        and     [MOUSE_SCROLL_V], word 0
+        ret
+@@:
+        and     [esp+36-4], dword 0
+        ret

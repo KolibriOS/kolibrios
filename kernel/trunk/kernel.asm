@@ -1038,12 +1038,9 @@ endg
 .no_keyboard:
 
 ; Load PS/2 mouse driver
-
-        stdcall load_pe_driver, szPS2MDriver, 0
-
         mov     esi, boot_setmouse
         call    boot_log
-        call    setmouse
+        stdcall load_pe_driver, szPS2MDriver, 0
 
 ; LOAD FIRST APPLICATION
         cmp     byte [launcher_start], 1        ; Check if starting LAUNCHER is selected on blue screen (1 = yes)
@@ -1819,122 +1816,8 @@ get_timer_ticks:
         mov     eax, [timer_ticks]
         ret
 ;-----------------------------------------------------------------------------
-readmousepos:
-; eax=0 screen relative
-; eax=1 window relative
-; eax=2 buttons pressed
-; eax=3 buttons pressed ext
-; eax=4 load cursor
-; eax=5 set cursor
-; eax=6 delete cursor
-; eax=7 get mouse_z
-; eax=8 load cursor unicode
-        cmp     ebx, 8
-        ja      @f
-        jmp     dword[.mousefn+ebx*4]
-
-align 4
-.mousefn:
-dd  .msscreen
-dd  .mswin
-dd  .msbutton
-dd  .msbuttonExt
-dd  .app_load_cursor
-dd  .app_set_cursor
-dd  .app_delete_cursor
-dd  .msz
-dd  .loadCursorUni
-
-.msscreen:
-        mov     eax, [MOUSE_X]
-        shl     eax, 16
-        mov     ax, [MOUSE_Y]
-        mov     [esp+36-4], eax
-@@:
-        ret
-
-.mswin:
-        mov     eax, [MOUSE_X]
-        shl     eax, 16
-        mov     ax, [MOUSE_Y]
-        mov     esi, [TASK_BASE]
-        mov     bx, word [esi-twdw+WDATA.box.left]
-        shl     ebx, 16
-        mov     bx, word [esi-twdw+WDATA.box.top]
-        sub     eax, ebx
-        mov     edi, [current_slot_idx]
-        shl     edi, 8
-        sub     ax, word[edi+SLOT_BASE+APPDATA.wnd_clientbox.top]
-        rol     eax, 16
-        sub     ax, word[edi+SLOT_BASE+APPDATA.wnd_clientbox.left]
-        rol     eax, 16
-        mov     [esp+36-4], eax
-        ret
-
-.msbutton:
-        movzx   eax, byte [BTN_DOWN]
-        mov     [esp+36-4], eax
-        ret
-
-.msbuttonExt:
-        mov     eax, [BTN_DOWN]
-        mov     [esp+36-4], eax
-        ret
-
-.app_load_cursor:
-        cmp     ecx, OS_BASE
-        jae     @f
-        stdcall load_cursor, ecx, edx
-        mov     [esp+36-4], eax
-@@:
-        ret
-
-.loadCursorUni:
-        cmp     ecx, OS_BASE
-        jae     @b
-        push    ecx edx
-        stdcall kernel_alloc, maxPathLength
-        mov     edi, eax
-        pop     eax esi
-        push    edi
-        call    getFullPath
-        pop     ebp
-        test    eax, eax
-        jz      @f
-        stdcall load_cursor, ebp, LOAD_FROM_FILE
-        mov     [esp+32], eax
-@@:
-        stdcall kernel_free, ebp
-        ret
-
-.app_set_cursor:
-        stdcall set_cursor, ecx
-        mov     [esp+36-4], eax
-        ret
-
-.app_delete_cursor:
-        stdcall delete_cursor, ecx
-        mov     [esp+36-4], eax
-        ret
-
-.msz:
-        mov     edi, [thread_count]
-        movzx   edi, word [WIN_POS + edi*2]
-        cmp     edi, [current_slot_idx]
-        jne     @f
-        mov     ax, [MOUSE_SCROLL_H]
-        shl     eax, 16
-        mov     ax, [MOUSE_SCROLL_V]
-        mov     [esp+36-4], eax
-        and     [MOUSE_SCROLL_H], word 0
-        and     [MOUSE_SCROLL_V], word 0
-        ret
-@@:
-        and     [esp+36-4], dword 0
-        ret
 
 is_input:
-
         push    edx
         mov     dx, word [midisp]
         in      al, dx
@@ -1943,7 +1826,6 @@ is_input:
         ret
 
 is_output:
-
         push    edx
         mov     dx, word [midisp]
         in      al, dx
@@ -1951,28 +1833,21 @@ is_output:
         pop     edx
         ret
 
-
 get_mpu_in:
-
         push    edx
         mov     dx, word [mididp]
         in      al, dx
         pop     edx
         ret
 
-
 put_mpu_out:
-
         push    edx
         mov     dx, word [mididp]
         out     dx, al
         pop     edx
         ret
 
-
-
 align 4
-
 sys_midi:
         cmp     [mididp], 0
         jnz     sm0
@@ -3691,53 +3566,6 @@ align 4
 .ret:
         ret
 ;-----------------------------------------------------------------------------
-; <diamond> Sysfunction 34, read_floppy_file, is obsolete. Use 58 or 70 function instead.
-;align 4
-;
-;read_floppy_file:
-;
-;; as input
-;;
-;; eax pointer to file
-;; ebx file lenght
-;; ecx start 512 byte block number
-;; edx number of blocks to read
-;; esi pointer to return/work area (atleast 20 000 bytes)
-;;
-;;
-;; on return
-;;
-;; eax = 0 command succesful
-;;       1 no fd base and/or partition defined
-;;       2 yet unsupported FS
-;;       3 unknown FS
-;;       4 partition not defined at hd
-;;       5 file not found
-;; ebx = size of file
-;
-;     mov   edi,[TASK_BASE]
-;     add   edi,0x10
-;     add   esi,[edi]
-;     add   eax,[edi]
-;
-;     pushad
-;     mov  edi,esi
-;     add  edi,1024
-;     mov  esi,0x100000+19*512
-;     sub  ecx,1
-;     shl  ecx,9
-;     add  esi,ecx
-;     shl  edx,9
-;     mov  ecx,edx
-;     cld
-;     rep  movsb
-;     popad
-;
-;     mov   [esp+36],eax
-;     mov   [esp+24],ebx
-;     ret
-
-
 
 align 4
 set_io_access_rights:
@@ -4357,15 +4185,6 @@ kb_write_wait_ack:
 
         ret
 ;-----------------------------------------------------------------------------
-
-setmouse:  ; set mousepicture -pointer
-           ; ps2 mouse enable
-
-;        mov     [MOUSE_PICTURE], dword mousepointer
-
-        cli
-
-        ret
 
 if used _rdtsc
 _rdtsc:
