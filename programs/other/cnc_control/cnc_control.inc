@@ -1065,7 +1065,6 @@ align 4
                         mov [line_col],0xff0000 ;if was printed
                         .end1:
                         stdcall [buf2d_line_sm], [pbuf], [PervX],[PervY], [GrafX],[GrafY], [line_col]
-                        stdcall [buf2d_line], [pbuf], [PervX],[PervY], [GrafX],[GrafY], [line_col]
                 .end0:
                 mov eax,[GrafX]
                 mov [PervX],eax
@@ -1170,7 +1169,6 @@ align 4
                 cmp ecx,[ebx+Figure.PoiCount]
                 je @f
                         stdcall [buf2d_line_sm], buf_0, [PervX],[PervY], [GrafX],[GrafY], [col_lin]
-                        stdcall [buf2d_line], buf_0, [PervX],[PervY], [GrafX],[GrafY], [col_lin]
                 @@:
                 mov eax,[GrafX]
                 mov [PervX],eax

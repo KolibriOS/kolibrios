@@ -1104,9 +1104,6 @@ align 4
 		cmp ecx,[ebx+Figure.PoiCount]
 		je @f
 			stdcall [buf2d_line_sm], [pbuf], [PervX],[PervY], [GrafX],[GrafY], 0x80
-			;sub esp,24
-			;call [buf2d_line]
-			stdcall [buf2d_line], [pbuf], [PervX],[PervY], [GrafX],[GrafY], 0x80
 		@@:
 		mov eax,[GrafX]
 		mov [PervX],eax
@@ -1214,7 +1211,6 @@ align 4
 		cmp ecx,[ebx+Figure.PoiCount]
 		je @f
 			stdcall [buf2d_line_sm], buf_0, [PervX],[PervY], [GrafX],[GrafY], [col_lin]
-			stdcall [buf2d_line], buf_0, [PervX],[PervY], [GrafX],[GrafY], [col_lin]
 		@@:
 		mov eax,[GrafX]
 		mov [PervX],eax

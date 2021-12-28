@@ -5,7 +5,7 @@
 align 16
 proc buf_draw_buf, buf_struc:dword
 	pushad
-	mov edi,dword[buf_struc]
+	mov edi,[buf_struc]
 	cmp buf2d_bits,24
 	jne .error
 		mov eax,7
@@ -226,7 +226,7 @@ endp
 align 4
 proc buf_clear, buf_struc:dword, color:dword ;очистка буфера заданым цветом
 	pushad
-	mov edi,dword[buf_struc]
+	mov edi,[buf_struc]
 
 	mov ecx,buf2d_w
 	mov ebx,buf2d_h
@@ -275,15 +275,14 @@ locals
 	napravl db ?
 endl
 	pushad
-		mov eax,dword[coord_x1]
-		sub eax,dword[coord_x0]
+		mov eax,[coord_x1]
+		sub eax,[coord_x0]
 		bt eax,31
 		jae @f
 			neg eax
-			inc eax
 		@@:
-		mov ebx,dword[coord_y1]
-		sub ebx,dword[coord_y0]
+		mov ebx,[coord_y1]
+		sub ebx,[coord_y0]
 		jnz @f
 			;если задана горизонтальная линия y0=y1
 			stdcall buf_line_h, [buf_struc], [coord_x0], [coord_y0], [coord_x1], [color]
@@ -292,9 +291,8 @@ endl
 		bt ebx,31
 		jae @f
 			neg ebx
-			inc ebx
 		@@:
-		mov edx,dword[color]
+		mov edx,[color]
 
 		mov [napravl],byte 0 ;bool steep=false
 		cmp eax,ebx
@@ -315,15 +313,15 @@ endl
 ; int error  ebp-6
 ; int ystep  ebp-8
 
-		mov eax,dword[coord_y0]
-		mov esi,dword[coord_y1]
+		mov eax,[coord_y0]
+		mov esi,[coord_y1]
 		sub esi,eax ;deltax = y1-y0
 		mov ebx,esi
 		shr ebx,1
 		mov [loc_1],ebx ;error = deltax/2
 
 		mov eax,dword[coord_x0]
-		mov edi,dword[coord_x1]
+		mov edi,[coord_x1]
 		mov [loc_2],dword -1 ;ystep = -1
 		cmp eax,edi ;if (x0<x1) ystep = 1;
 		jge @f
@@ -334,7 +332,6 @@ endl
 		bts edi,31
 		jae @f
 			neg edi
-			inc edi
 		@@:
 		and edi,0x7fffffff ;deltay = abs(x1-x0)
 
@@ -399,15 +396,18 @@ locals
 	napravl db ?
 endl
 	pushad
-		mov eax,dword[coord_x1]
-		sub eax,dword[coord_x0]
+		mov eax,[coord_x1]
+		sub eax,[coord_x0]
+		jnz @f
+			stdcall buf_line_brs, [buf_struc], [coord_x0], [coord_y0], [coord_x1], [coord_y1], [color] ;линия |
+			jmp .coord_end
+		@@:
 		bt eax,31
 		jae @f
 			neg eax
-			inc eax
 		@@:
-		mov ebx,dword[coord_y1]
-		sub ebx,dword[coord_y0]
+		mov ebx,[coord_y1]
+		sub ebx,[coord_y0]
 		jnz @f
 			;если задана горизонтальная линия y0=y1
 			stdcall buf_line_h, [buf_struc], [coord_x0], [coord_y0], [coord_x1], [color]
@@ -416,9 +416,8 @@ endl
 		bt ebx,31
 		jae @f
 			neg ebx
-			inc ebx
 		@@:
-		mov edx,dword[color]
+		mov edx,[color]
 
 		mov [napravl],byte 0 ;bool steep=false
 		cmp eax,ebx
@@ -427,8 +426,8 @@ endl
 			swap dword[coord_x0],dword[coord_y0] ;swap(x0, y0);
 			swap dword[coord_x1],dword[coord_y1] ;swap(x1, y1);
 		@@:
-		mov eax,dword[coord_y0] ;x0
-		cmp eax,dword[coord_y1] ;if(x0>x1)
+		mov eax,[coord_y0] ;x0
+		cmp eax,[coord_y1] ;if(x0>x1)
 		jle @f
 			swap dword[coord_y0],dword[coord_y1] ;swap(x0, x1);
 			swap dword[coord_x0],dword[coord_x1] ;swap(y0, y1);
@@ -439,15 +438,15 @@ endl
 ; int error  ebp-6
 ; int ystep  ebp-8
 
-		mov eax,dword[coord_y0]
-		mov esi,dword[coord_y1]
+		mov eax,[coord_y0]
+		mov esi,[coord_y1]
 		sub esi,eax ;deltax = y1-y0
 		mov ebx,esi
 		shr ebx,1
 		mov [loc_1],ebx ;error = deltax/2
 
-		mov eax,dword[coord_x0]
-		mov edi,dword[coord_x1]
+		mov eax,[coord_x0]
+		mov edi,[coord_x1]
 		mov [loc_2],dword -1 ;ystep = -1
 		cmp eax,edi ;if (x0<x1) ystep = 1;
 		jge @f
@@ -458,7 +457,6 @@ endl
 		bts edi,31
 		jae @f
 			neg edi
-			inc edi
 		@@:
 		and edi,0x7fffffff ;deltay = abs(x1-x0)
 
@@ -469,11 +467,11 @@ endl
 
 		cmp [napravl],0
 		jne .coord_yx
-			mov ebx,dword[coord_x0]
-			mov ecx,dword[coord_y0]
+			mov ebx,[coord_x0]
+			mov ecx,[coord_y0]
 
 			@@: ;for (x=x0 ; x<x1; x++) ;------------------------------------
-				cmp ecx,dword[coord_y1]
+				cmp ecx,[coord_y1]
 				jg @f ;jge ???
 				push eax
 					mov eax,esi
@@ -484,7 +482,7 @@ endl
 				stdcall draw_pixel_transp, [loc_1],esi
 				sub ebx,[loc_2]
 
-				sub dword[loc_1],eax ;error -= deltay
+				sub [loc_1],eax ;error -= deltay
 				cmp dword[loc_1],0 ;if(error<0)
 				jge .if0
 					add ebx,[loc_2] ;y += ystep
@@ -495,11 +493,11 @@ endl
 			@@:
 			jmp .coord_end
 		.coord_yx:
-			mov ebx,dword[coord_y0]
-			mov ecx,dword[coord_x0]
+			mov ebx,[coord_y0]
+			mov ecx,[coord_x0]
 
 			@@: ;for (x=x0 ; x<x1; x++) ;------------------------------------
-				cmp ebx,dword[coord_y1]
+				cmp ebx,[coord_y1]
 				jg @f ;jge ???
 				push eax
 					mov eax,esi
@@ -510,7 +508,7 @@ endl
 				stdcall draw_pixel_transp, [loc_1],esi
 				sub ecx,[loc_2]
 
-				sub dword[loc_1],eax ;error -= deltay
+				sub [loc_1],eax ;error -= deltay
 				cmp dword[loc_1],0 ;if(error<0)
 				jge .if1
 					add ecx,[loc_2] ;y += ystep
@@ -623,8 +621,8 @@ pushad
 		mov ecx,[w]
 		;cmp ecx,1
 		;jl .coord_end
-		cmp ecx,0
-		je .coord_end
+		or ecx,ecx
+		jz .coord_end
 		jg @f
 			add eax,ecx
 			inc eax
@@ -635,8 +633,8 @@ pushad
 		mov edx,[h]
 		;cmp edx,1
 		;jl .coord_end
-		cmp edx,0
-		je .coord_end
+		or edx,edx
+		jz .coord_end
 		jg @f
 			add ebx,edx
 			inc ebx
@@ -645,7 +643,7 @@ pushad
 
 		add edx,ebx
 		dec edx
-		mov esi,dword[color]
+		mov esi,[color]
 		stdcall buf_line_h, edi, eax, ebx, ecx, esi ;линия -
 		stdcall buf_line_brs, edi, eax, ebx, eax, edx, esi ;линия |
 		stdcall buf_line_h, edi, eax, edx, ecx, esi ;линия -
@@ -668,26 +666,24 @@ pushad
 		mov eax,[coord_x]
 		mov ebx,[coord_y]
 		mov edx,[w]
-		cmp edx,0
-		je .coord_end ;если высота 0 пикселей
+		or edx,edx
+		jz .coord_end ;если высота 0 пикселей
 		jg @f ;если высота положительная
 			add eax,edx
 			inc eax
 			neg edx ;ширину делаем положительной
-			;inc edx ;почему тут не добавляем 1-цу я не знаю, но с ней работает не правильно
 		@@:
 		add edx,eax
 		dec edx
 		mov ecx,[h]
-		cmp ecx,0
-		je .coord_end ;если высота 0 пикселей
+		or ecx,ecx
+		jz .coord_end ;если высота 0 пикселей
 		jg @f ;если высота положительная
 			add ebx,ecx ;сдвигаем верхнюю координату прямоугольника
 			inc ebx
 			neg ecx ;высоту делаем положительной
-			;inc ecx ;почему тут не добавляем 1-цу я не знаю, но с ней работает не правильно
 		@@:
-		mov esi,dword[color]
+		mov esi,[color]
 		cld
 		@@:
 			stdcall buf_line_h, edi, eax, ebx, edx, esi ;линия -
@@ -705,7 +701,7 @@ locals
 	po_y dd ?
 endl
 	pushad
-	mov edi,dword[buf_struc]
+	mov edi,[buf_struc]
 	cmp buf2d_bits,8
 	je @f
 	cmp buf2d_bits,24
@@ -773,10 +769,10 @@ proc buf_flood_fill, buf_struc:dword, coord_x:dword, coord_y:dword, mode:dword, 
 		cmp buf2d_bits,24
 		jne .end24
 
-			mov ebx,dword[coord_x]
-			mov ecx,dword[coord_y]
-			mov edx,dword[color_f]
-			mov esi,dword[color_b]
+			mov ebx,[coord_x]
+			mov ecx,[coord_y]
+			mov edx,[color_f]
+			mov esi,[color_b]
 
 			cmp dword[mode],1 ;в зависимости от 'mode' определяем каким алгоритмом будем пользоваться
 			je @f
@@ -903,10 +899,10 @@ buf_flood_fill_recurs_1:
 ;функция для рисования точки
 align 4
 proc buf_set_pixel uses ebx ecx edx edi, buf_struc:dword, coord_x:dword, coord_y:dword, color:dword
-	mov edi,dword[buf_struc]
-	mov ebx,dword[coord_x]
-	mov ecx,dword[coord_y]
-	mov edx,dword[color]
+	mov edi,[buf_struc]
+	mov ebx,[coord_x]
+	mov ecx,[coord_y]
+	mov edx,[color]
 	call draw_pixel
 	ret
 endp
@@ -916,7 +912,7 @@ endp
 ; в случае ошибки eax = 0xffffffff
 align 4
 proc buf_get_pixel uses ebx ecx edi, buf_struc:dword, coord_x:dword, coord_y:dword
-	mov edi,dword[buf_struc]
+	mov edi,[buf_struc]
 	mov ebx,[coord_x]
 	mov ecx,[coord_y]
 
@@ -949,7 +945,7 @@ proc buf_convert_text_matrix, buf_struc:dword
 		c3 dw ?
 	endl
 	pushad
-	mov edi,dword[buf_struc]
+	mov edi,[buf_struc]
 	cmp buf2d_bits,8
 	jne .error0
 		mov ecx,buf2d_h
@@ -1003,7 +999,7 @@ proc buf_convert_text_matrix, buf_struc:dword
 			cmp word[c3],0
 			jg .c_3
 
-		mov edi,dword[buf_struc] ;копирование новой матрицы в основной буфер
+		mov edi,[buf_struc] ;копирование новой матрицы в основной буфер
 		mov edi,buf2d_data
 		mov esi,[tmp_mem]
 		mov ecx,ebx
@@ -1028,10 +1024,10 @@ proc buf_draw_text, buf_struc:dword, buf_t_matr:dword, text:dword, coord_x:dword
 		buf_s_matr buf_2d_header ? ;ebp-BUF_STRUCT_SIZE локальная матрица символа
 	endl
 	pushad
-	mov edi,dword[buf_struc]
+	mov edi,[buf_struc]
 	cmp buf2d_bits,24
 	jne .error2
-	mov edi,dword[buf_t_matr]
+	mov edi,[buf_t_matr]
 	cmp buf2d_bits,8
 	jne .error1
 		mov edx,buf2d_data
