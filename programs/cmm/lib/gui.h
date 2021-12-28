@@ -89,7 +89,6 @@
 	int w = tw + padding_h + padding_h;
 	unsigned darker_color = MixColors(sc.button,0,230);
 
-
 	DefineButton(x,y,w,h,id,sc.button);
 
 	WriteText(tx+1,ty+1,0x90,darker_color,text);

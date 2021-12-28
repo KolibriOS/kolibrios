@@ -161,7 +161,7 @@ byte draw_icons_from_section(dword key_value, key_name, sec_name, f_name)
 
 	//do not show items located in /kolibrios/ if this directory not mounted
 	if (!strncmp(key_value, "/kolibrios/", 11)) || (!strncmp(key_value, "/k/", 3))
-		if (!kolibrios_mounted) return true;
+	|| (!strncmp(key_value, "/kg/", 4)) if (!kolibrios_mounted) return true;
 
 	if (col==list.column_max) {
 		row++;

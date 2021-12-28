@@ -10,6 +10,8 @@
 #include "../lib/collection.h"
 #endif
 
+#define PATHLEN 4096
+
 //===================================================//
 //                                                   //
 //              Basic System Functions               //
@@ -316,7 +318,7 @@ char readbuf[32];
 
 :dword abspath(dword relative_path) //GetAbsolutePathFromRelative()
 {
-	char absolute_path[4096];
+	char absolute_path[PATHLEN];
 	if (ESBYTE[relative_path]=='/')
 	{
 		strcpy(#absolute_path, relative_path);
@@ -511,7 +513,7 @@ int block_size=1024*1024*4; //copy by 4 MiB
 	if (!way) return 0;
 	if (dir_exists(way))
 	{
-		cur_file = malloc(4096);
+		cur_file = malloc(PATHLEN);
 		// In the process of recursive descent, memory must be allocated dynamically, 
 		// because the static memory -> was a bug !!! But unfortunately pass away to sacrifice speed.
 		GetDir(#dirbuf, #fcount, way, DIRS_ONLYREAL);

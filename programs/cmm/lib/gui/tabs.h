@@ -1,5 +1,5 @@
-#ifndef TAB_PADDING
-#define TAB_PADDING 15
+#ifndef TAB_P
+#define TAB_P 15  //Tab padding
 #endif
 
 #define TAB_HEIGHT 28
@@ -33,7 +33,7 @@
 	}
 
 	for (i=0; i<count; i++) {
-		xx += draw_button(xx + TAB_PADDING, i, names[i]) + TAB_PADDING;
+		xx += draw_button(xx + TAB_P, i, names[i]) + TAB_P;
 	}
 }
 

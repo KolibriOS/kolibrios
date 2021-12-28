@@ -30,35 +30,36 @@ void DrawScroll(bool _scroll_used) {
 	}
 	//slider
 	DrawRectangle(sc_x,sc_slider_y,16,sc_slider_h,sc.work_graph);
-	DrawRectangle3D(sc_x+1,sc_slider_y+1,14,sc_slider_h-2, sc.work_light , sc.work_dark);
+	sc_x++;
+	DrawRectangle3D(sc_x,sc_slider_y+1,14,sc_slider_h-2, sc.work_light , sc.work_dark);
 	for (i=0; i<13; i++) {
 		if (!_scroll_used) EDX = col.work_gradient[13-i]; else EDX = col.work_gradient[i];
-		DrawBar(sc_x + 2 + i, sc_slider_y+2, 1, sc_slider_h-3, EDX);
+		DrawBar(sc_x + 1 + i, sc_slider_y+2, 1, sc_slider_h-3, EDX);
 	}
 
 	sc_center = sc_slider_h / 2 + sc_slider_y;
 
-	DrawBar(sc_x+3,   sc_center,   10, 1, sc.work_graph);
-	DrawBar(sc_x+4,   sc_center-3, 8,  1, sc.work_graph);
-	DrawBar(sc_x+4,   sc_center+3, 8,  1, sc.work_graph);
+	DrawBar(sc_x+2, sc_center,   10, 1, sc.work_graph);
+	DrawBar(sc_x+3, sc_center-3, 8,  1, EDX);
+	DrawBar(sc_x+3, sc_center+3, 8,  1, EDX);
 
-	DrawBar(sc_x+3+1, sc_center+1, 10, 1, sc.work_light);
-	DrawBar(sc_x+4+1, sc_center-2, 8,  1, sc.work_light);
-	DrawBar(sc_x+4+1, sc_center+4, 8,  1, sc.work_light);
+	DrawBar(sc_x+3, sc_center+1, 10, 1, sc.work_light);
+	DrawBar(sc_x+4, sc_center-2, 8,  1, EDX);
+	DrawBar(sc_x+4, sc_center+4, 8,  1, EDX);
 
 	//area before slider
 	if (sc_slider_y > sc_y + 1) 
 	{
-		DrawBar(sc_x+1, sc_y,   15, 1, col.slider_bg_left);
-		DrawBar(sc_x+1, sc_y+1,  1, sc_slider_y-sc_y-1, col.slider_bg_left);
-		DrawBar(sc_x+2, sc_y+1, 14, sc_slider_y-sc_y-1, col.slider_bg_big);
+		DrawBar(sc_x,   sc_y,   15, 1, col.slider_bg_left);
+		DrawBar(sc_x,   sc_y+1,  1, sc_slider_y-sc_y-1, col.slider_bg_left);
+		DrawBar(sc_x+1, sc_y+1, 14, sc_slider_y-sc_y-1, col.slider_bg_big);
 	}
 	//area after slider
 	if (sc_h-sc_slider_h+sc_y-2>sc_slider_y)
 	{
-		DrawBar(sc_x+1, sc_slider_y + sc_slider_h+1, 15, 1, col.slider_bg_left);
-		DrawBar(sc_x+1, sc_slider_y + sc_slider_h+2,  1, sc_h-sc_slider_h-sc_slider_y+sc_y-2, col.slider_bg_left);
-		DrawBar(sc_x+2, sc_slider_y + sc_slider_h+2, 14, sc_h-sc_slider_h-sc_slider_y+sc_y-2, col.slider_bg_big);
+		DrawBar(sc_x,   sc_slider_y + sc_slider_h+1, 15, 1, col.slider_bg_left);
+		DrawBar(sc_x,   sc_slider_y + sc_slider_h+2,  1, sc_h-sc_slider_h-sc_slider_y+sc_y-2, col.slider_bg_left);
+		DrawBar(sc_x+1, sc_slider_y + sc_slider_h+2, 14, sc_h-sc_slider_h-sc_slider_y+sc_y-2, col.slider_bg_big);
 	}
 }
 
@@ -298,7 +299,7 @@ void DrawDot(dword x,y) {
 	DrawBar(x+1,y,2,4,sc.work_graph);
 	DrawBar(x,y+1,4,2,sc.work_graph);
 	PutPixel(x,y,col_pxl);
-	PutPixel(x+3,y,col_pxl);
-	PutPixel(x,y+3,col_pxl);
-	PutPixel(x+3,y+3,col_pxl);
+	PutPixel(x+3,y,EDX);
+	PutPixel(x,y+3,EDX);
+	PutPixel(x+3,y+3,EDX);
 }

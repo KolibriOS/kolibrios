@@ -1,5 +1,5 @@
 //11.03.12 - start!
-//ver 2.31
+//TODO: select current value at startap
 
 #define MEMSIZE 1024*70
 #include "../lib/mem.h"
@@ -27,24 +27,13 @@
 
 int active_skin, active_wallpaper, active_screensaver;
 
-char folder_path[4096];
-char cur_file_path[4096];
-char cur_skin_path[4096];
-char default_skin[4096];
-char default_wallp[4096];
-char ss_available[200];
-
-int screensaver_timeout;
-
-_tabs tabs = { -sizeof(t_skins)-sizeof(t_wallpapers)-sizeof(t_screensaver)-3*8+WIN_W
-	 - TAB_PADDING / 2, LP, NULL, BASE_TAB_BUTTON_ID };
-
 checkbox update_docky = { T_UPDATE_DOCK, false };
-checkbox ss_in_on = { T_UPDATE_DOCK, false };
 
 checkbox optionbox_stretch = { T_CHECKBOX_STRETCH, false };
 checkbox optionbox_tiled = { T_CHECKBOX_TILED, false };
 checkbox optionbox_auto = { T_CHECKBOX_AUTO, true };
+
+char ss_available[200];
 
 collection list;
 
@@ -60,7 +49,6 @@ void main()
 	load_dll(boxlib, #box_lib_init,0);
 	load_dll(libini, #lib_init,1);
 	load_dll(Proc_lib, #OpenDialog_init,0);
-	o_dialog.type = 2; //select folder
 	OpenDialog_init stdcall (#o_dialog);
 
 	GetIniSettings();
@@ -75,6 +63,13 @@ void main()
 	{
 	  	case evMouse:
 			SelectList_ProcessMouse();
+			if (tabs.active_tab == TAB_SCREENSAVERS) {
+				scrollbar_h_mouse stdcall (#ss_timeout);
+				if (ss_timeout.redraw) {
+					draw_timeout();
+					ss_timeout.redraw = false; //reset flag
+				}
+			}
 	  		break;
 
 		case evButton:
@@ -100,17 +95,15 @@ void main()
 	  
 		case evKey:
 			GetKeys(); 
-			if (select_list.ProcessKey(key_scancode)) EventApply();
-			if (key_scancode==SCAN_CODE_ENTER) EventOpenFile();
-			if (key_scancode==SCAN_CODE_DEL) EventDeleteFile();
+			if (select_list.ProcessKey(key_scancode)) { EventApply(); break; }
+			if (key_scancode==SCAN_CODE_ENTER) { EventOpenFile(); break; }
+			if (key_scancode==SCAN_CODE_DEL) { EventDeleteFile(); break; }
 			if (key_scancode==SCAN_CODE_TAB) {
 				id = tabs.active_tab+1; 
 				if(id==3)id=0;
 				tabs.click(id + tabs.base_id);
 				break;
 			}
-
-			if (! edit_cmm.flags & ed_focus) && (! edit_st.flags & ed_focus)
 			for (i=select_list.cur_y+1; i<select_list.count; i++)
 			{
 				id = list.get(i) + strrchr(list.get(i), '/');
@@ -121,12 +114,6 @@ void main()
 					EventApply();
 					break;
 				}
-			}
-
-			if (tabs.active_tab == TAB_SKINS) {
-				EAX = key_editbox;
-				edit_box_key stdcall (#edit_cmm);
-				edit_box_key stdcall (#edit_st);				
 			}
 			break;
 		 
@@ -139,24 +126,18 @@ void draw_window()
 {
 	sc.get();
 	DefineAndDrawWindow(screen.width-WIN_W-9/2,80,WIN_W+9,WIN_H+4+skin_height,0x34,sc.work,WINDOW_HEADER,0);
-	DrawWindowContent();
-}
-
-void DrawWindowContent()
-{
-	sc.get();	
 
 	tabs.draw();
-	draw_icon_16w(tabs.x + TAB_PADDING, LP+5, 17);
-	draw_icon_16w(sizeof(t_skins)-1*8 + TAB_PADDING + TAB_PADDING + tabs.x, LP+5, 6);
-	draw_icon_16w(sizeof(t_wallpapers)+sizeof(t_skins)-2*8 + TAB_PADDING + TAB_PADDING + TAB_PADDING + tabs.x, LP+5, 61);
+	draw_icon_16w(tabs.x + TAB_P, LP+5, 17);
+	draw_icon_16w(sizeof(t_skins)-1*8 + TAB_P + TAB_P + tabs.x, LP+5, 6);
+	draw_icon_16w(sizeof(t_wallpapers)+sizeof(t_skins)-2*8 + TAB_P + TAB_P + TAB_P + tabs.x, LP+5, 61);
 
 	$push select_list.cur_y
 	SelectList_Init(
-		LP + TAB_PADDING,
+		LP,
 		PANEL_H, 
 		LIST_W, 
-		WIN_H - LP - TAB_PADDING - PANEL_H
+		WIN_H - LP - PANEL_H
 		);
 	$pop select_list.cur_y
 
@@ -181,11 +162,20 @@ void DrawWindowContent()
 	}
 	if (tabs.active_tab == TAB_SCREENSAVERS)
 	{
-		miniprintf(#param, T_SS_TIMEOUT, screensaver_timeout);
-		WriteTextWithBg(RIGHTx, PANEL_H, 0xD0, sc.work_text, #param, sc.work);
-		ESI = DrawStandartCaptButton(RIGHTx, PANEL_H + 25, BTN_TEST_SCREENSAVER, T_SS_PREVIEW);
-		DrawStandartCaptButton(RIGHTx+ESI, PANEL_H + 25, BTN_SET_SCREENSAVER, T_SS_SET);
+		draw_timeout();
+		ss_timeout.line_col = sc.work_graph;
+		ss_timeout.frnt_col = sc.work;
+		scrollbar_h_draw stdcall (#ss_timeout);
+		DrawRectangle(RIGHTx, RIGHTy+25, RIGHTw-20, 15, sc.work_graph);
+		ESI = DrawStandartCaptButton(RIGHTx, PANEL_H + 65, BTN_TEST_SCREENSAVER, T_SS_PREVIEW);
+		DrawStandartCaptButton(RIGHTx+ESI, PANEL_H + 65, BTN_SET_SCREENSAVER, T_SS_SET);
 	}
+}
+
+void draw_timeout()
+{
+	miniprintf(#param, T_SS_TIMEOUT, ss_timeout.position+1);
+	WriteTextWithBg(RIGHTx, PANEL_H, 0xD0, sc.work_text, #param, sc.work);	
 }
 
 bool strreqi(dword _left, _right)
@@ -270,6 +260,8 @@ void SelectList_DrawLine(dword i)
 {
 	int draw_y = i*SELECT_LIST_ITEMH+PANEL_H;
 	int i_abs = select_list.first + i;
+	dword text_color = 0xFFFfff;
+	dword bg_color = 0x000000;
 	char filename_buf[4096];
 	char* filename = #filename_buf;
 
@@ -291,18 +283,15 @@ void SelectList_DrawLine(dword i)
 				BREAK;
 		CASE TAB_SCREENSAVERS: 
 				active_screensaver = select_list.cur_y;
+				if (!i_abs) filename = T_NO_SS;
 	}
 	
-	if (select_list.cur_y == i_abs)
-	{
-		DrawBar(select_list.x, draw_y, LIST_W, SELECT_LIST_ITEMH, sc.button);
-		WriteText(select_list.x+12,draw_y+select_list.text_y,select_list.font_type,sc.button_text, filename);
+	if (select_list.cur_y == i_abs) {
+		text_color = sc.button;
+		bg_color = sc.button_text;
 	}
-	else
-	{
-		DrawBar(select_list.x,draw_y,LIST_W, SELECT_LIST_ITEMH, 0xFFFfff);
-		WriteText(select_list.x+12,draw_y+select_list.text_y,select_list.font_type,0, filename);
-	}
+	DrawBar(select_list.x, draw_y, LIST_W, SELECT_LIST_ITEMH, text_color);
+	WriteText(select_list.x+12,draw_y+select_list.text_y,select_list.font_type,bg_color, filename);
 }
 
 void SelectList_LineChanged() 
@@ -313,6 +302,7 @@ void SelectList_LineChanged()
 dword GetRealKolibriosPath()
 {
 	char real_kolibrios_path[4096];
+	if (!dir_exists("/kolibrios")) return 0;
 	SetCurDir("/kolibrios");
 	GetCurDir(#real_kolibrios_path, sizeof(real_kolibrios_path));
 	return #real_kolibrios_path;
@@ -321,11 +311,11 @@ dword GetRealKolibriosPath()
 void GetIniSettings()
 {
 	ini.section = "screensaver";
-	screensaver_timeout = ini.GetInt("timeout", 10);
+	ss_timeout.position = ini.GetInt("timeout", 10) - 1;
 	ini.GetString("available", #ss_available, sizeof(ss_available), 0);
 	ini.section = "style";
-	ini.GetString("default_skin", #default_skin, sizeof(default_skin), 0);
-	ini.GetString("default_wallp", #default_wallp, sizeof(default_wallp), 0);
+	ini.GetString("default_skin", #default_skin, PATHLEN, 0);
+	ini.GetString("default_wallp", #default_wallp, PATHLEN, 0);
 }
 
 //===================================================//
@@ -358,7 +348,7 @@ void EventTabScreensaverClick()
 	select_list.ClearList();
 
 	select_list.count++;
-	list.add(T_NO_SS);
+	list.add("");
 
 	strcpy(#ssmas, #ss_available);
 	do {
@@ -381,6 +371,7 @@ void EventDeleteFile()
 
 void EventSelectWallpFolder()
 {
+	o_dialog.type = 2; //select folder
 	OpenDialog_start stdcall (#o_dialog);
 	if (o_dialog.status) EventTabWallpappersClick();
 }
@@ -429,12 +420,11 @@ void EventApply()
 
 void EventUpdateDocky()
 {
-	if (!update_docky.checked) return;
-	// KillProcessByName("@docky", MULTIPLE);
-	// RunProgram("/sys/@docky",NULL);
-	RestartProcessByName("/sys/@docky", MULTIPLE);
-	pause(50);
-	ActivateWindow_Self();
+	if (update_docky.checked) {
+		RestartProcessByName("/sys/@docky", MULTIPLE);
+		pause(50);
+		ActivateWindow_Self();		
+	}
 }
 
 void EventOpenFile()
@@ -448,7 +438,7 @@ void EventOpenFile()
 
 void EventExit()
 {
-	if (cur_skin_path) {
+	if (GetRealKolibriosPath()) {
 		ini.section = "style";
 		ini.SetString("skin", #cur_skin_path, strlen(#cur_skin_path));
 	}
@@ -460,7 +450,14 @@ void EventSetSs()
 	dword cur_ss = list.get(select_list.cur_y);
 	ini.section = "screensaver";
 	ini.SetString("program", cur_ss, strlen(cur_ss));
+	ini.SetInt("timeout", ss_timeout.position+1);
 	RestartProcessByName("/sys/@ss", MULTIPLE);
 }
 
 stop:
+
+char folder_path[PATHLEN];
+char cur_file_path[PATHLEN];
+char cur_skin_path[PATHLEN];
+char default_skin[PATHLEN];
+char default_wallp[PATHLEN];

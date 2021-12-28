@@ -9,9 +9,9 @@ TODO:
   http://board.kolibrios.org/viewtopic.php?f=23&t=4521&p=77334#p77334
 */
 
-#define ABOUT_TITLE "EOLITE 5.16"
-#define TITLE_EOLITE "Eolite File Manager 5.16"
-#define TITLE_KFM "Kolibri File Manager 2.16";
+#define ABOUT_TITLE "EOLITE 5.16a"
+#define TITLE_EOLITE "Eolite File Manager 5.16a"
+#define TITLE_KFM "Kolibri File Manager 2.16a";
 
 #define MEMSIZE 1024 * 250
 #include "../lib/clipboard.h"
@@ -584,7 +584,9 @@ void draw_window()
 	}
 	//main rectangles
 	DrawRectangle(1,40,Form.cwidth-3,Form.cheight - 42-status_bar_h,sc.work_graph);
-	DrawRectangle(0,39,Form.cwidth-1,-show_status_bar.checked*status_bar_h + Form.cheight - 40,col.work_gradient[4]); //bg
+	DrawBar(0,39,1,-show_status_bar.checked*status_bar_h + Form.cheight - 40, sc.work);
+	EBX = Form.cwidth-1 * 65536 + 1;
+	$int 64
 	for (i=0; i<6; i++) DrawBar(0, 34+i, Form.cwidth, 1, MixColors(sc.work_dark, sc.work, i*10));
 	for (i=0; i<6; i++) DrawBar(0, 5-i, Form.cwidth, 1, MixColors(sc.work_light, sc.work, i*10));
 	llist_copy(#files_active, #files);
@@ -637,14 +639,17 @@ void DrawStatusBar()
 {
 	char status_bar_str[80];
 	int go_up_folder_exists=0;
+	dword topcolor;
+
+	if (show_status_bar.checked) topcolor=sc.work_light; else topcolor=sc.work;
+	DrawBar(0, Form.cheight - status_bar_h-1, Form.cwidth, 1, topcolor);
 
 	if (efm) {
 		DrawBar(0, Form.cheight - status_bar_h, Form.cwidth, 2, sc.work);
-		DrawBar(0, Form.cheight - 2, Form.cwidth,  2, sc.work);
-		DrawBar(Form.cwidth-1, Form.cheight - 19, 1,  17, sc.work);
+		DrawBar(0, Form.cheight - 2, Form.cwidth,  2, EDX);
+		DrawBar(Form.cwidth-1, Form.cheight - 19, 1,  17, EDX);
 		DrawFuncButtonsInKfm();
-	} else {
-		if (!show_status_bar.checked) return;
+	} else if (show_status_bar.checked) {
 		if (files.count>0) && (streq(items.get(0)*304+buf+72,"..")) go_up_folder_exists=1;
 		DrawBar(0, Form.cheight - status_bar_h, Form.cwidth,  status_bar_h, sc.work);
 		sprintf(#status_bar_str, T_STATUS_EVEMENTS, folder_count-go_up_folder_exists, files.count-folder_count);

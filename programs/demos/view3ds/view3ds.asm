@@ -355,15 +355,15 @@ START:    ; start of execution
      ;   call     init_envmap2
         call     do_emboss
      @@:
-;        cmp      ah,17
-;        jne      .next_m
-;        cmp      [move_flag],2
-;        jne      @f
-;        call     draw_window             ; redraw other labels to navigation buttons
-;      @@:
-;        cmp      [move_flag],0
-;        jne      .next_m
-;        call     draw_window             ; redraw other labels to navigation buttons
+ ;       cmp      ah,17
+ ;       jne      .next_m
+ ;       cmp      [move_flag],2
+ ;       jne      @f
+ ;       call     draw_window             ; redraw other labels to navigation buttons
+ ;     @@:
+ ;       cmp      [move_flag],0
+ ;       jne      .next_m
+ ;       call     draw_window             ; redraw other labels to navigation buttons
      .next_m:
         cmp      ah,18
         jne      .next_m2
@@ -375,8 +375,8 @@ START:    ; start of execution
         mov      [re_alloc_flag],0
 
         mov      bl,[generator_flag]
-       ; or       bl,bl
-       ; jz       .next_m2
+     ;   or       bl,bl
+     ;   jz       .next_m2
         cmp      bl,1
         jne      @f
         call     generate_object
@@ -2950,8 +2950,8 @@ draw_handlers:
        mov     .dr_model,eax
 
        movzx   eax,word[size_x_var]
-       cmp    .dr_model,12
-       jge     @f
+       cmp    .dr_model,10
+       jg     @f
        lea    ebx,[eax*3]
        sub    ebx,3*6
        mov    [.xplus_scr],ebx   ; for scr 1st cause
