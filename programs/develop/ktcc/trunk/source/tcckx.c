@@ -168,8 +168,8 @@ typedef struct {
 	 imp_sect->data = tcc_mallocz(4096); // FIXME!!! I increased it to 4Kb, but steel need dynamicaly size
 	 imp_sect->data_size = 0;
 	 //imp_sect->sh_addr = me->header.image_size;// +1;
-
-	long imp_data = (long)imp_sect->data; //FIXED changed to long for gcc compatible
+	 
+	 long imp_data = (long)imp_sect->data; //FIXED changed to long for gcc compatible
 
 	 // Strings
 	 i = 0;
@@ -203,7 +203,7 @@ typedef struct {
 	 memcpy((void*)imp_data, &lib, sizeof(LibraryEntry));
 
 	 if (nlib > 1) {
-     int prev_sum = 0;
+		 int prev_sum = 0;
 		 int prev = 0;
 		 i = 1;
 		 do {
@@ -232,7 +232,7 @@ typedef struct {
 	 i = 0;
 	 do {
 		 char* len_data = len_arr[i].data;
-     long* sym_data = sym_arr[i].data;
+		 long* sym_data = sym_arr[i].data;
 
 		 name_len = *len_data++; // Skip library name
 

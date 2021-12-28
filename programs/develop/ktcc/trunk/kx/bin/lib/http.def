@@ -1,9 +1,0 @@
-LIBRARY http.obj
-
-EXPORTS prefix
-http_get
-http_head
-http_post
-http_receive
-http_send
-http_free
