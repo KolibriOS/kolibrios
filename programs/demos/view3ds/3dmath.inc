@@ -245,7 +245,7 @@ ret
 ;---------------------- out : none ------------------------
 
 make_vector_r:
-   if Ext < SSE2
+   if Ext < SSE
         fninit
         fld     dword[edi]                ;edi+x3d
         fsub    dword[esi]                ;esi+x3d
@@ -297,6 +297,7 @@ cross_product:
         fstp    dword [ebx+vec_z]
 ret
 cross_aligned:
+; params as above cross_p
       movaps  xmm0,[esi]
       movaps  xmm1,[esi]
       movaps  xmm2,[edi]
@@ -607,6 +608,19 @@ ret
 ;----------------------------------------------
 ;  esi - pointer to 3x3 matrix
 add_scale_to_matrix:
+  if Ext>SSE
+     movss   xmm0,[rsscale]
+     shufps  xmm0,xmm0,0
+     movups  xmm1,[esi]
+     movups  xmm2,[esi+16]
+     movss   xmm3,[esi+32]
+     mulps   xmm1,xmm0
+     mulps   xmm2,xmm0
+     mulss   xmm3,xmm0
+     movups  [esi],xmm1
+     movups  [esi+16],xmm2
+     movss   [esi+32],xmm3
+  else
      fninit
      fld     [rsscale]
      fld     dword[esi]            ;-----
@@ -639,14 +653,19 @@ add_scale_to_matrix:
      fld     dword[esi+32]
      fmulp    st1,st
      fstp    dword[esi+32]         ;------
-
+   end if
 ret
 
 ;in   esi - offset to 3d points  (point as 3 dwords float)
 ;     edi - offset to 2d points  ( as 3 words integer)
 ;     ecx - number of points
 translate_points:  ; just convert into integer; z coord still needed
+  if Ext < SSE
     fninit
+  else
+ ;   movaps  xmm1,[vect_x]
+  end if
+
   .again:
   if 0
     fld    dword[esi+8]
@@ -676,7 +695,18 @@ translate_points:  ; just convert into integer; z coord still needed
     fiadd  [vect_y]
     fistp  word[edi+2]
    end if
-   ; movups   xmm0,[esi]
+   if Ext>=SSE
+    movups   xmm0,[esi]
+    cvtps2dq xmm0,xmm0
+    packssdw xmm0,xmm0
+    paddw    xmm0,[vect_x]
+    movd     [edi],xmm0
+  ;  psrldq   xmm0,4
+  ;  movd     eax,xmm0
+    pextrw   eax,xmm0,6
+    mov      [edi+4],ax
+   else
+
    ; cvtps2dq xmm0,xmm0
    ; packsdw xmm0,xmm0
    ; movq     [edi]
@@ -688,9 +718,12 @@ translate_points:  ; just convert into integer; z coord still needed
     fistp  word[edi+2]
     fld    dword[esi+8]
     fistp  word[edi+4]
+  end if
+
     add    esi,12
     add    edi,6
-    dec    ecx
-    jnz    .again
+  ;  dec    ecx
+  ;  jnz    .again
+    loop    .again
 
 ret

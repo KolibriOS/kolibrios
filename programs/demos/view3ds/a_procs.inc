@@ -1,4 +1,63 @@
+;=============================================================
 
+remove_dead_tri:
+;  push  ebp
+;  mov   ebp,esp
+  mov     edi,-1
+  movd    xmm7,edi
+  pshufd  xmm7,xmm7,0
+
+  mov     esi,[triangles_ptr]
+  mov     ecx,[triangles_count_var]
+ .chck:
+;  jecxz   .cop
+  mov     eax,[esi]
+;  mov     ebx,[esi+4]
+;  mov     edx,[esi+8]
+  cmp     eax,[esi+4]
+  je      .tri_fail
+  cmp     eax,[esi+8]
+  je      .tri_fail
+  mov     eax,[esi+4]
+  cmp     eax,[esi+8]
+  je      .tri_fail
+
+;  cmp     ebx,[esi]
+;  je      .tri_fail
+;  cmp     ebx,[esi+8]
+;  je      .tri_fail
+;  cmp     edx,[esi]
+;  je      .tri_fail
+;  cmp     edx,[esi+4]
+;  je      .tri_fail
+  add     esi,12
+  loop    .chck
+  jmp     .cop
+ .tri_fail:
+  movq    [esi],xmm7
+  movd    [esi+8],xmm7
+  add     esi,12
+  loop    .chck
+ .cop:
+  mov     esi,[triangles_ptr]
+  mov     edi,[triangles_ptr]
+  mov     ecx,[triangles_count_var]
+  xor     edx,edx
+ .cp:
+  cmp     [esi],dword -1
+  je      @f
+  movdqu  xmm0,[esi]
+  movq    [edi],xmm0
+  movhlps xmm0,xmm0
+  movd    [edi+8],xmm0
+  add     edi,12
+  inc     edx
+ @@:
+  add     esi,12
+  loop    .cp
+  mov     [triangles_count_var],edx
+ret
+;========================================================
 
 if Ext > SSE2
  ;--------------------------------------------------------------------

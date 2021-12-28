@@ -1,3 +1,18 @@
+View3ds 0.075 - XII 2021
+1. Cusom rotate using keys and mouse scroll support by Leency.
+----------------------------------------------------------------------------------
+
+View3ds 0.074 - IX 2021
+1. Fixed emboss bug in grd lines displaying model.
+2. Grd line exceedes screen problem fix.
+3. New rendering model - ray casted shadows and appropiate button to
+   set 'on' this option. Note that is non real time model, especially when
+   complex object is computed. I took effort to introduce accelerating
+   structure - AABB (Axis Aligned Bounding Boxes).. but it is disabled 
+  
+   for now - seems to work incorrect(slow).
+----------------------------------------------------------------------------------
+
 View3ds 0.073 - may 2021
 1. I introduced procedure for searching nonredundand edges.
 2. Writing some info about object: vertices, triangles unique edges

@@ -353,7 +353,7 @@ end if
 
 
 ret
-align 16
+
 ray_shd_l:
 ; in:
 ;    xmm0 - normal vector 1
@@ -392,7 +392,7 @@ ray_shd_l:
  .dn        equ [ebp-96]
  .dz        equ [ebp-100]
  .y         equ [ebp-104]
-; .cur_tri   equ [ebp-108]
+ .startx    equ [ebp-108]
  .cnv       equ [ebp-128]
  .Rlen      equ [ebp-128-16]
  .r1        equ [ebp-128-32]
@@ -431,6 +431,7 @@ ray_shd_l:
         movaps  .n1,xmm0
         movaps  .n2,xmm1
         mov     .lx1,eax
+;        mov     .startx,eax
         mov     .lx2,ebx
         movlps  .z1,xmm3
 
@@ -546,9 +547,15 @@ end if
    mov      edi,[triangles_ptr]
    xor      ecx,ecx
  .nx_tri:  ; next triangle
+ ;  mov     eax,.lx1
+ ;  cmp     eax,.startx
+ ;  je      @f          ; prevent artifact borders on tri
+ ;  cmp     eax,.lx2    ; NOT work as I want !!
+;   je      @f
 
    cmp     ecx,.cur_tri ; prevent self shadowing
    je      .skipp
+  @@:
  if 0
    mov     edi,ecx
    imul    edi,[i12]

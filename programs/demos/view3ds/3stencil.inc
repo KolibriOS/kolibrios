@@ -16,22 +16,22 @@ stencil_tri:
 .y3     equ [ebp-12]
 
 .dx12   equ dword[ebp-20]
-.dx13   equ dword[ebp-24]
-.dx23   equ dword[ebp-28]
-.dz12   equ dword[ebp-32]
-.dz13   equ dword[ebp-36]
+.dz12   equ dword[ebp-24]
+.dx13   equ dword[ebp-28]
+.dz13   equ dword[ebp-32]
+.dx23   equ dword[ebp-36]
 .dz23   equ dword[ebp-40]
 .zz2    equ [ebp-44]
 .zz1    equ [ebp-48]
 .z3     equ [ebp-56]
 .z2     equ [ebp-60]
 .z1     equ [ebp-64]
-.s_buff equ [ebp-68]
+;.s_buff equ [ebp-68]
 
        push    ebp
        mov     ebp,esp
-       sub     esp,128
-       and     ebp,0xfffffff0
+     ;  sub     esp,128
+     ;  and     ebp,0xfffffff0
       .sort2:
         cmp     ax,bx
         jle     .sort1
@@ -44,19 +44,24 @@ stencil_tri:
         shufps  xmm0,xmm0,11011000b
         jmp     .sort2
       .sort3:
-        mov     .y1,eax            ; store triangle coordinates in user friendly variables
-        mov     .y2,ebx
-        mov     .y3,ecx
+      ;  mov     .y1,eax            ; store triangle coordinates in user friendly variables
+      ;  mov     .y2,ebx
+      ;  mov     .y3,ecx
+        push     eax
+        push     ebx
+        push     ecx
+        sub      esp,60
+
 
     ;   mov     edx,100.11
     ;   movd    xmm0,edx
     ;   shufps  xmm0,xmm0,11100000b
 
-        movaps  .z1,xmm0
+        movups  .z1,xmm0
     ;    mov     dword .z1,edx
     ;    mov     .z2,edx
     ;    mov     .z3,edx
-        mov     .s_buff,esi
+ ;       mov     .s_buff,esi
 
          mov      edx,80008000h  ; eax,ebx,ecx are ANDd together into edx which means that
          and      edx,ebx        ; if *all* of them are negative a sign flag is raised
@@ -157,7 +162,7 @@ stencil_tri:
    ;     mov     edx,0.11
    ;     movd    xmm0,edx
    ;     shufps  xmm0,xmm0,11100000b
-        mov     esi,.s_buff
+;        mov     esi,.s_buff
 
         call    stencil_line
 
@@ -192,7 +197,7 @@ stencil_tri:
         sar     ebx,ROUND2
         sar     eax,ROUND2
         movlps  xmm0,.zz1
-        mov     esi,.s_buff
+;        mov     esi,.s_buff
 
 
         call    stencil_line
@@ -215,7 +220,7 @@ stencil_tri:
         jl      .loop2
      .loop2_end:
 
-        add  esp,128
+        mov  esp,ebp
         pop  ebp
 
 ret
@@ -312,17 +317,19 @@ stencil_line:
      sub        ecx,.x1
      movss      xmm2,.z1   ; cz
    .ccalc:
-     movss     xmm1,xmm2
-     cmpltss   xmm1,dword[esi]
-     movd      eax,xmm1
-     cmp       eax,-1
-     jnz        @f
+   ;  movss     xmm1,xmm2
+   ;  cmpltss   xmm1,dword[esi]
+   ;  movd      eax,xmm1
+   ;  cmp       eax,-1
+     comiss    xmm2,[esi]
+     ja        @f
      movss     dword[esi],xmm2
     @@:
      add       esi,4
      addss     xmm2,.dz
-     sub       ecx,1
-     jnz       .ccalc
+;     sub       ecx,1
+;     jnz       .ccalc
+    loop       .ccalc
   .l_quit:
      mov       esp,ebp
      pop       ebp

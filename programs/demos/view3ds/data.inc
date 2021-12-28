@@ -1,7 +1,7 @@
                    ; DATA AREA  ************************************
-      if Ext > SSE2
+    ;  if Ext > SSE2
         isSSE3          db      1
-      end if
+    ;  end if
         i3              dw      3
         i6              dd      6
         i12             dd      12
@@ -28,14 +28,15 @@
         y_offset      dw SIZE_Y / 2
         z_offset      dw 0
         rsscale       dd 175.0           ; next real scale
-        vect_x:        dw SIZE_X / 2
-        vect_y        dw SIZE_Y / 2
-        vect_z        dw 0
-                size_y_var:
-        yres_var                dw SIZE_Y
 
-        size_x_var:
-        xres_var                dw SIZE_X
+;        vect_x:        dw SIZE_X / 2
+;        vect_y        dw SIZE_Y / 2
+;        vect_z        dw 0
+;                size_y_var:
+;        yres_var                dw SIZE_Y
+;
+;        size_x_var:
+;        xres_var                dw SIZE_X
 
         angle_x       dw 0
         angle_y       dw 0
@@ -64,7 +65,7 @@
         screen_ptr              dd 0
         Zbuffer_ptr             dd 0
         vertices_index_ptr      dd 0
-        vertex_edit_no    dw 0
+        vertex_edit_no          dd -1
         edit_start_x:
                           dw 0
         edit_start_y      dw 0
@@ -86,10 +87,11 @@
 
                db 3
                db 'shd. model'
+ max_dr_flg:
             if Ext >= SSE3
- max_dr_flg    db 15
+                db 15
             else
-               db 12
+                db 12
             end if
  dr_flag       db 0  ;  6 - dots
                dd shd_f
@@ -290,6 +292,7 @@ flags:             ; flags description
     db 'x+y '
     db ' x  '
     db 'keys'
+
  onoff_f:
     db 'off '
     db 'on  '
@@ -354,7 +357,7 @@ base_vector:
       if Ext=SSE3
         db   ' (SSE3)'
       end if
-        db   ' 0.075',0
+        db   ' 0.076',0
     labellen:
         STRdata db '-1        '
      lab_vert:
@@ -366,6 +369,9 @@ base_vector:
      lab_ed:
         db 'Edges count:    '
      lab_ed_end:
+
+        db 'Chunks detected:'
+
 
 
     all_lights_size dw lightsend-lights
@@ -483,6 +489,17 @@ end if
            times 4 dd 1.0
 
      eps:  times 4 dd 0.00000
+
+        vect_x:        dw SIZE_X / 2
+        vect_y        dw SIZE_Y / 2
+        vect_z        dw 0
+                size_y_var:
+        yres_var                dw SIZE_Y
+
+        size_x_var:
+        xres_var                dw SIZE_X
+
+
      epsone      dd 1.0001
      aprox       dd 0.0001
      epsminus    dd -0.0001
@@ -495,8 +512,8 @@ end if
          fsize  dd      0 ;180000 ; sizeof(workarea)
          fptr   dd      0 ;workarea
         file_name:
-                db      '/rd/1/3d/house.3ds',0
-             ;  db      '/tmp0/1/ant.3ds',0
+               db      '/rd/1/3d/house.3ds',0
+             ;  db      '/tmp0/1/sc.3ds',0
 
       rb 256
 
@@ -521,7 +538,9 @@ align 8
         points_count_var        dd ?  ;
         triangles_count_var     dd ?  ; dont change order
         edges_count             dd ?  ;
+        chunks_number           dd ?
         tex_points_ptr          dd ?
+        chunks_ptr              dd ?
 
         temp_col            dw ?
         high                dd ?

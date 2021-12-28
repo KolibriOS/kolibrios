@@ -341,7 +341,6 @@ end if
       pop   ebp
 
 ret
-align 16
 real_phong_line_z:
 ; in:
 ;    xmm0 - normal vector 1
@@ -456,7 +455,7 @@ real_phong_line_z:
         sub     ecx,.lx1
         movaps  xmm0,.n1
         movss   xmm2,.z1
-align 16
+
    .ddraw:
         movss    xmm7,xmm2
         cmpnltss xmm7,dword[esi]
