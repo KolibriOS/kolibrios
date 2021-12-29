@@ -167,6 +167,20 @@ BEGIN
 END destroy;
 
 
+PROCEDURE resize* (line: tLine; size: INTEGER);
+BEGIN
+	ASSERT(line.temp);
+	IF size > 0 THEN
+		line.ptr := API._DISPOSE(line.ptr);
+	    size := size*WCHAR_SIZE + 4;
+    	INC(size, (-size) MOD 32);
+		line.ptr := API._NEW(size)
+	ELSE
+		destroy(line)
+	END
+END resize;
+
+
 PROCEDURE getChar* (line: tLine; i: INTEGER): WCHAR;
 VAR
     c: WCHAR;
@@ -236,25 +250,6 @@ BEGIN
 END move;
 
 
-PROCEDURE concat* (line: tLine; s: ARRAY OF WCHAR);
-VAR
-    Len: INTEGER;
-    ptr: INTEGER;
-BEGIN
-    Len := LENGTH(s);
-    ptr := malloc(line.length + Len + 1);
-    ASSERT(ptr # 0);
-    SYSTEM.MOVE(line.ptr, ptr, line.length*WCHAR_SIZE);
-    SYSTEM.MOVE(SYSTEM.ADR(s[0]), ptr + line.length*WCHAR_SIZE, Len*WCHAR_SIZE);
-    SYSTEM.PUT16(ptr + (line.length + Len)*WCHAR_SIZE, 0);
-    IF ~line.temp THEN
-        movInt(line.length, line.length + Len)
-    END;
-    INC(line.length, Len);
-    free(line, ptr)
-END concat;
-
-
 PROCEDURE delChar* (line: tLine; pos: INTEGER);
 VAR
     ptr: INTEGER;
@@ -292,7 +287,7 @@ BEGIN
 END insert;
 
 
-PROCEDURE insert2* (line1: tLine; pos: INTEGER; line2: tLine);
+PROCEDURE _insert2* (line1: tLine; pos: INTEGER; line2: tLine);
 VAR
     ptr: INTEGER;
 BEGIN
@@ -310,10 +305,18 @@ BEGIN
             movInt(line2.length, 0)
         END;
         INC(line1.length, line2.length);
-        line2.length := 0;
-        free(line1, ptr);
-        free(line2, 0)
+        free(line1, ptr)
     END
+END _insert2;
+
+
+PROCEDURE insert2* (line1: tLine; pos: INTEGER; line2: tLine);
+BEGIN
+	_insert2(line1, pos, line2);
+	IF line2.length > 0 THEN
+		line2.length := 0;
+		free(line2, 0)
+	END
 END insert2;
 
 

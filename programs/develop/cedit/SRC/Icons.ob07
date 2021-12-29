@@ -81,7 +81,7 @@ BEGIN
 END gray;
 
 
-PROCEDURE iconsBackColor (icons: INTEGER);
+PROCEDURE iconsBackColor (icons: INTEGER; BackColor: INTEGER);
 VAR
     sizeX, sizeY, data, x, y: INTEGER;
     b, g, r: BYTE;
@@ -93,7 +93,7 @@ BEGIN
             SYSTEM.GET8(data + 1, g);
             SYSTEM.GET8(data + 2, r);
             IF b + g + r = 765 THEN
-            	Graph.getRGB(K.toolbarColor, r, g, b)
+            	Graph.getRGB(BackColor, r, g, b)
             END;
             SYSTEM.PUT8(data, b);
             SYSTEM.PUT8(data + 1, g);
@@ -104,7 +104,7 @@ BEGIN
 END iconsBackColor;
 
 
-PROCEDURE get* (VAR icons, grayIcons: INTEGER);
+PROCEDURE get* (VAR icons, grayIcons: INTEGER; BackColor: INTEGER);
 BEGIN
     IF source = 0 THEN
         source := load();
@@ -115,8 +115,8 @@ BEGIN
         copy(source, grayIcons)
     END;
     gray(grayIcons);
-    iconsBackColor(icons);
-    iconsBackColor(grayIcons)
+    iconsBackColor(icons, BackColor);
+    iconsBackColor(grayIcons, BackColor)
 END get;
 
 

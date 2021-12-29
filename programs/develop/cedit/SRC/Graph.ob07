@@ -175,13 +175,10 @@ VAR
     color: INTEGER;
     d: INTEGER;
 BEGIN
+	ASSERT(ABS(k) = 1);
     color := canvas.color;
     ptr := canvas.bitmap + 4*(y*canvas.width + x1);
-    IF k = -1 THEN
-        d := 4*(canvas.width + 1)
-    ELSIF k = 1 THEN
-        d := 4*(1 - canvas.width)
-    END;
+    d := 4*(1 - canvas.width*k);
     WHILE x1 <= x2 DO
         SYSTEM.PUT32(ptr, color);
         INC(ptr, d);

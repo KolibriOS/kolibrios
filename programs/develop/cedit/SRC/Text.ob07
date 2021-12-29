@@ -823,7 +823,6 @@ VAR
     buf: CB.tBuffer;
     size: INTEGER;
     line: tLine;
-    EOT: ARRAY 2 OF WCHAR;
 BEGIN
     size := 0;
     line := text.first(tLine);
@@ -848,9 +847,7 @@ BEGIN
         END
     END;
     IF eot THEN
-        EOT[0] := 0X;
-        EOT[1] := 0X;
-        CB.appends(buf, EOT, 0, 1)
+        CB.appends(buf, 0X + 0X, 0, 1)
     END
     RETURN buf
 END plain;
@@ -1355,29 +1352,20 @@ VAR
     line: tLine;
     file: RW.tOutput;
     res: BOOLEAN;
-    Len: INTEGER;
 BEGIN
     ChangeLog.setGuard(text.edition);
-    res := TRUE;
     file := RW.create(tempFile, text.enc, text.eol);
     IF file # NIL THEN
         ChangeLog.delSaved;
         line := text.first(tLine);
-        WHILE (line # NIL) & res DO
-            Len := Lines.trimLength(line);
-            IF RW.putString(file, line, Len) # Len THEN
-                res := FALSE
-            END;
+        WHILE line # NIL DO
+            RW.putString(file, line, Lines.trimLength(line));
             NextLine(line);
             IF line # NIL THEN
-                IF ~RW.newLine(file) THEN
-                    res := FALSE
-                END
+                RW.newLine(file)
             END
         END;
-        IF ~RW.close(file) THEN
-            res := FALSE
-        END
+        res := RW.close(file)
     ELSE
         res := FALSE
     END;
@@ -1393,11 +1381,10 @@ BEGIN
 	                Lines.save(line)
 	            END;
 	            NextLine(line)
-	        END;
-
-            IF File.Delete(tempFile) THEN END
+	        END
         END
     END;
+    IF File.Delete(tempFile) THEN END;
     IF ~res THEN
         ChangeLog.delCurSaved
     END
@@ -2465,10 +2452,16 @@ VAR
     line: tLine;
 BEGIN
     errno := 0;
-    text := NIL;
-    file := RW.load(name, enc, eol);
+    text := create(name);
+    IF text # NIL THEN
+    	file := RW.load(name, enc, eol);
+    	IF file = NIL THEN
+    		destroy(text)
+    	END
+    ELSE
+    	file := NIL
+    END;
     IF file # NIL THEN
-        text := create(name);
         ChangeLog.changeInt(text.enc, enc);
         ChangeLog.changeInt(text.eol, eol);
         text.enc := enc;

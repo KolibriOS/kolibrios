@@ -44,6 +44,7 @@ TYPE
 
     tInput* = POINTER TO RECORD
         buffer:   INTEGER;
+        strBuf:   Lines.tLine;
         pos, cnt: INTEGER;
         CR:       BOOLEAN;
         clipbrd:  BOOLEAN;
@@ -55,7 +56,8 @@ TYPE
         buffer:   ARRAY BUF_SIZE OF BYTE;
         pos:      INTEGER;
         eol:      tEOL;
-        putChar:  PROCEDURE (file: tOutput; code: INTEGER): BOOLEAN
+        putChar:  PROCEDURE (file: tOutput; code: INTEGER);
+        error:    BOOLEAN
     END;
 
 
@@ -63,7 +65,6 @@ VAR
 
     eol*: ARRAY 3 OF tEOL;
     eolNames*: ARRAY 3, 16 OF WCHAR;
-    strBuf: ARRAY 1000000 OF WCHAR;
 
 
 PROCEDURE getByte (file: tInput): BYTE;
@@ -168,9 +169,8 @@ END getCharUTF16LE;
 PROCEDURE getString* (file: tInput; line: Lines.tLine; tabs: BOOLEAN; VAR eol: BOOLEAN): INTEGER;
 VAR
     c: WCHAR;
-    i, L, k, n: INTEGER;
+    i, k, n: INTEGER;
 BEGIN
-    L := LEN(strBuf);
     eol := FALSE;
     n := 0;
     i := ORD(file.cnt > 0) - 1;
@@ -190,43 +190,34 @@ BEGIN
         ELSIF c = TAB THEN
             k := Lines.tab - i MOD Lines.tab;
             IF tabs THEN
-                strBuf[i] := TAB
+                Lines.setChar(file.strBuf, i, TAB)
             ELSE
-                strBuf[i] := SPACE
+            	Lines.setChar(file.strBuf, i, SPACE)
             END;
             INC(i);
             DEC(k);
             WHILE k > 0 DO
                 IF tabs THEN
-                    strBuf[i] := Lines.TAB1
+                    Lines.setChar(file.strBuf, i, Lines.TAB1)
                 ELSE
-                    strBuf[i] := SPACE
+                    Lines.setChar(file.strBuf, i, SPACE)
                 END;
                 INC(i);
-                IF i = L THEN
-                    Lines.concat(line, strBuf);
-                    INC(n, i);
-                    i := 0
-                END;
                 DEC(k)
             END;
             file.CR := FALSE
         ELSIF c = BOM THEN
             file.CR := FALSE
         ELSE
-            strBuf[i] := c;
+        	Lines.setChar(file.strBuf, i, c);
             INC(i);
-            IF i = L THEN
-                Lines.concat(line, strBuf);
-                INC(n, i);
-                i := 0
-            END;
             file.CR := FALSE
         END
     END;
     IF i >= 0 THEN
-        strBuf[i] := 0X;
-        Lines.concat(line, strBuf);
+    	Lines.setChar(file.strBuf, i, 0X);
+    	file.strBuf.length := i;
+    	Lines._insert2(line, 0, file.strBuf)
     END;
     INC(n, i)
     RETURN n
@@ -324,6 +315,40 @@ BEGIN
 END detectEOL;
 
 
+PROCEDURE getMaxLength (file: tInput): INTEGER;
+VAR
+	res, cur, cnt: INTEGER;
+	c: WCHAR;
+BEGIN
+	res := 0;
+	cur := 0;
+	cnt := file.cnt;
+	WHILE file.cnt > 0 DO
+		c := WCHR(file.getChar(file) MOD 65536);
+		IF (c = CR) OR (c = LF) THEN
+			cur := 0
+		ELSIF c = TAB THEN
+			INC(cur, Lines.tab - cur MOD Lines.tab)
+		ELSE
+			INC(cur)
+		END;
+		IF cur > res THEN
+			res := cur
+		END
+	END;
+	file.cnt := cnt;
+	file.pos := 0
+	RETURN res
+END getMaxLength;
+
+
+PROCEDURE createStrBuf (file: tInput);
+BEGIN
+	file.strBuf := Lines.create(TRUE);
+	Lines.resize(file.strBuf, MAX(2048, getMaxLength(file) + 1))
+END createStrBuf;
+
+
 PROCEDURE load* (name: tFileName; VAR enc, eol: INTEGER): tInput;
 VAR
     res: tInput;
@@ -337,7 +362,6 @@ BEGIN
     fsize := File.FileSize(name);
     IF fsize = 0 THEN
         res.buffer := KOSAPI.malloc(4096);
-        ASSERT(res.buffer # 0);
         res.cnt := 0
     ELSE
         res.buffer := File.Load(name, res.cnt)
@@ -353,7 +377,8 @@ BEGIN
         ELSIF enc = E.W1251 THEN
             res.getChar := getCharW1251
         END;
-        eol := detectEOL(res)
+        eol := detectEOL(res);
+        createStrBuf(res)
     END
     RETURN res
 END load;
@@ -372,17 +397,19 @@ BEGIN
     res.buffer := CB.get(res.cnt);
     IF res.buffer = 0 THEN
         DISPOSE(res)
+    ELSE
+    	createStrBuf(res)
     END
     RETURN res
 END clipboard;
 
 
 PROCEDURE putByte (file: tOutput; b: BYTE);
-VAR
-    c: INTEGER;
 BEGIN
     IF file.pos = BUF_SIZE THEN
-        c := File.Write(file.handle, SYSTEM.ADR(file.buffer[0]), BUF_SIZE);
+        IF File.Write(file.handle, SYSTEM.ADR(file.buffer[0]), BUF_SIZE) # BUF_SIZE THEN
+        	file.error := TRUE
+        END;
         file.pos := 0
     END;
     file.buffer[file.pos] := b;
@@ -390,45 +417,34 @@ BEGIN
 END putByte;
 
 
-PROCEDURE putString* (file: tOutput; line: Lines.tLine; n: INTEGER): INTEGER;
+PROCEDURE putString* (file: tOutput; line: Lines.tLine; n: INTEGER);
 VAR
     i: INTEGER;
     c: WCHAR;
-    err: BOOLEAN;
 BEGIN
-    i := 0;
-    err := FALSE;
-    WHILE (i < n) & ~err DO
+    FOR i := 0 TO n - 1 DO
         c := Lines.getChar(line, i);
         IF c # Lines.TAB1 THEN
-            IF ~file.putChar(file, ORD(c)) THEN
-                err := TRUE;
-                DEC(i)
-            END
-        END;
-        INC(i)
+            file.putChar(file, ORD(c))
+        END
     END
-    RETURN i
 END putString;
 
 
-PROCEDURE newLine* (file: tOutput): BOOLEAN;
+PROCEDURE newLine* (file: tOutput);
 VAR
     i: INTEGER;
 BEGIN
     i := 0;
-    WHILE (file.eol[i] # 0X) & file.putChar(file, ORD(file.eol[i])) DO
+    WHILE file.eol[i] # 0X DO
+    	file.putChar(file, ORD(file.eol[i]));
         INC(i)
     END
-    RETURN i = LENGTH(file.eol)
 END newLine;
 
 
-PROCEDURE putCharUTF8 (file: tOutput; code: INTEGER): BOOLEAN;
-VAR
-    res: BOOLEAN;
+PROCEDURE putCharUTF8 (file: tOutput; code: INTEGER);
 BEGIN
-    res := TRUE;
     IF code <= 7FH THEN
         putByte(file, code)
     ELSIF (80H <= code) & (code <= 7FFH) THEN
@@ -439,56 +455,44 @@ BEGIN
         putByte(file, (code DIV 64) MOD 64 + 080H);
         putByte(file, code MOD 64 + 080H)
     ELSE
-        res := FALSE
+    	putByte(file, ORD("?"))
     END
-    RETURN res
 END putCharUTF8;
 
 
-PROCEDURE putCharW1251 (file: tOutput; code: INTEGER): BOOLEAN;
+PROCEDURE putCharW1251 (file: tOutput; code: INTEGER);
 VAR
     n: INTEGER;
-    res: BOOLEAN;
 BEGIN
-    res := TRUE;
     n := E.UNI[code, E.W1251];
     IF n # E.UNDEF THEN
         putByte(file, n)
     ELSE
-        res := FALSE
+        putByte(file, ORD("?"))
     END
-    RETURN res
 END putCharW1251;
 
 
-PROCEDURE putCharCP866 (file: tOutput; code: INTEGER): BOOLEAN;
+PROCEDURE putCharCP866 (file: tOutput; code: INTEGER);
 VAR
     n: INTEGER;
-    res: BOOLEAN;
 BEGIN
-    res := TRUE;
     n := E.UNI[code, E.CP866];
     IF n # E.UNDEF THEN
         putByte(file, n)
     ELSE
-        res := FALSE
+    	putByte(file, ORD("?"))
     END
-    RETURN res
 END putCharCP866;
 
 
-PROCEDURE putCharUTF16LE (file: tOutput; code: INTEGER): BOOLEAN;
-VAR
-    res: BOOLEAN;
+PROCEDURE putCharUTF16LE (file: tOutput; code: INTEGER);
 BEGIN
-    IF (0 <= code) & (code <= 65535) THEN
-        res := TRUE;
-        putByte(file, code MOD 256);
-        putByte(file, code DIV 256)
-    ELSE
-        res := FALSE
-    END
-    RETURN res
+    IF ~((0 <= code) & (code <= 65535)) THEN
+    	code := ORD("?")
+    END;
+    putByte(file, code MOD 256);
+    putByte(file, code DIV 256)
 END putCharUTF16LE;
 
 
@@ -502,6 +506,7 @@ BEGIN
             IF file.pos > 0 THEN
                 res := File.Write(file.handle, SYSTEM.ADR(file.buffer[0]), file.pos) = file.pos
             END;
+            res := res & ~file.error;
             File.Close(file.handle)
         END;
         DISPOSE(file)
@@ -521,7 +526,7 @@ BEGIN
     IF (enc = E.UTF8) OR (enc = E.UTF8BOM) THEN
         res.putChar := putCharUTF8;
         IF enc = E.UTF8BOM THEN
-            ASSERT(res.putChar(res, ORD(BOM)))
+            res.putChar(res, ORD(BOM))
         END
     ELSIF enc = E.UTF16LE THEN
         res.putChar := putCharUTF16LE;
@@ -532,6 +537,7 @@ BEGIN
     END;
     ASSERT(res.putChar # NIL);
     res.handle := File.Create(name);
+    res.error := FALSE;
     IF res.handle = NIL THEN
         DISPOSE(res)
     END
@@ -540,10 +546,15 @@ END create;
 
 
 PROCEDURE destroy* (VAR file: tInput);
+VAR
+	null: INTEGER;
 BEGIN
     IF file # NIL THEN
         IF file.buffer # 0 THEN
-            file.buffer := KOSAPI.free(file.buffer - 12*ORD(file.clipbrd))
+            null := KOSAPI.free(file.buffer - 12*ORD(file.clipbrd))
+        END;
+        IF file.strBuf # NIL THEN
+        	Lines.resize(file.strBuf, 0)
         END;
         DISPOSE(file)
     END

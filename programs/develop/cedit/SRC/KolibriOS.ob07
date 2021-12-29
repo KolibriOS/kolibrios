@@ -29,9 +29,7 @@ CONST
 VAR
 
     winColor*, textColor*, btnColor*, btnTextColor*,
-    toolbarColor*, scrollColor*, scrollBkColor*,
-    borderColor*, shadowColor*, (*darkColor,*) lightColor*,
-    textToolbarColor*, disTextToolbarColor*: INTEGER;
+    borderColor*, (*darkColor,*) lightColor*: INTEGER;
 
 
 PROCEDURE GetCommandLine* (): INTEGER;
@@ -337,21 +335,13 @@ VAR
 BEGIN
     ASSERT(LEN(buf) >= 10);
     KOSAPI.sysfunc4(48, 3, SYSTEM.ADR(buf[0]), 40);
-
     (*darkColor := buf[2];*)
     lightColor := buf[3];
     winColor := buf[5];
-    textColor := buf[8];
     btnColor := buf[6];
     btnTextColor := buf[7];
-    scrollColor := btnColor;
-    scrollBkColor := winColor;
+    textColor := buf[8];
     borderColor := buf[9];
-
-    toolbarColor := lightColor;(*0DFDFDFH;*)
-    shadowColor := borderColor;(*0808080H;*)
-    textToolbarColor := 00000FFH;
-    disTextToolbarColor := borderColor;(*0808080H*)
 END GetSystemColors;
 
 
@@ -411,6 +401,12 @@ END CBDelSlot;
 PROCEDURE GetThreadSlot* (tid: INTEGER): INTEGER;
 	RETURN KOSAPI.sysfunc3(18, 21, tid)
 END GetThreadSlot;
+
+
+PROCEDURE PutPixel* (x, y, color: INTEGER);
+BEGIN
+	KOSAPI.sysfunc5(1, x, y, color, 0)
+END PutPixel;
 
 
 END KolibriOS.

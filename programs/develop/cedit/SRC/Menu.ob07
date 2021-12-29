@@ -27,7 +27,7 @@ CONST
     fontWidth = 8;
 
     MainMenuHeight* = K.fontHeight + 7;
-	MainMenuX* = 0;
+	MainMenuX* = 3;
 
     RIGHT = 16;
     LEFT = 16;
@@ -88,7 +88,7 @@ TYPE
     tProc = PROCEDURE;
 
 VAR
-    stack: ARRAY maxLEVEL + 1, 250000 OF INTEGER;
+    stack: ARRAY maxLEVEL + 1, 2500 OF INTEGER;
     TIDs: ARRAY maxLEVEL + 1 OF INTEGER;
     resetTimer: tProc;
     _open: PROCEDURE (m: tMenu; x, y: INTEGER);

@@ -1,0 +1,112 @@
+﻿(*
+    Copyright 2021 Anton Krotov
+
+    This file is part of CEdit.
+
+    CEdit is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    CEdit is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with CEdit. If not, see <http://www.gnu.org/licenses/>.
+*)
+
+MODULE StatusBar;
+
+IMPORT G := Graph, U := Utils, K := KolibriOS;
+
+TYPE
+
+	tString = ARRAY 32 OF WCHAR;
+
+	tStatusBar* = RECORD
+
+		pos, sel, enc: tString;
+		canvas: G.tCanvas
+
+	END;
+
+VAR
+
+	SB: tStatusBar;
+	font: G.tFont;
+
+
+PROCEDURE setPos* (line, col: INTEGER);
+VAR
+	s1, s2: tString;
+BEGIN
+	U.int2str(line, s1);
+	U.append(s1, ": ");
+	U.int2str(col, s2);
+	U.append(s1, s2);
+	SB.pos := s1
+END setPos;
+
+
+PROCEDURE setSel* (chars, lines: INTEGER);
+VAR
+	s1, s2: tString;
+BEGIN
+	IF chars # 0 THEN
+		s1 := "sel: ";
+		U.int2str(chars, s2);
+		U.append(s1, s2);
+		U.append(s1, " | ");
+		U.int2str(lines, s2);
+		U.append(s1, s2);
+		SB.sel := s1
+	ELSE
+		SB.sel := ""
+	END
+END setSel;
+
+
+PROCEDURE setEnc* (eol, enc: ARRAY OF WCHAR);
+BEGIN
+	SB.enc := eol;
+	U.append(SB.enc, 20X + 20X);
+	U.append(SB.enc, enc)
+END setEnc;
+
+
+PROCEDURE setWidth* (width: INTEGER);
+BEGIN
+	ASSERT(width > 0);
+	IF (SB.canvas = NIL) OR (SB.canvas.width # width) THEN
+		G.destroy(SB.canvas);
+		SB.canvas := G.CreateCanvas(width, 19);
+		G.SetFont(SB.canvas, font)
+	END
+END setWidth;
+
+
+PROCEDURE TextOut (x: INTEGER; s: ARRAY OF WCHAR);
+BEGIN
+	G.TextOut2(SB.canvas, x, 2, s, LENGTH(s))
+END TextOut;
+
+
+PROCEDURE draw* (left, top: INTEGER);
+BEGIN
+	G.SetColor(SB.canvas, K.winColor);
+	G.SetBkColor(SB.canvas, K.winColor);
+	G.SetTextColor(SB.canvas, K.textColor);
+	G.clear(SB.canvas);
+	TextOut(1, SB.pos);
+	TextOut(16*K.fontWidth, SB.sel);
+	TextOut(SB.canvas.width - LENGTH(SB.enc)*K.fontWidth - 1, SB.enc);
+	G.DrawCanvas(SB.canvas, left, top)
+END draw;
+
+
+BEGIN
+	SB.canvas := NIL;
+	font := G.CreateFont(1, "", {})
+END StatusBar.

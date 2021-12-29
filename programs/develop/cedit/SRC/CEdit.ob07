@@ -25,10 +25,10 @@ IMPORT
     G := Graph, T := Text, E := Encodings,
     CB := Clipboard, Languages,
     ChangeLog, Scroll, CheckBox,
-    RW, Ini, EB := EditBox, Tabs, Toolbar;
+    RW, Ini, EB := EditBox, Tabs, Toolbar, SB := StatusBar;
 
 CONST
-    HEADER = "CEdit (23-dec-2021)";
+    HEADER = "CEdit (29-dec-2021)";
 
     ShellFilter = "";
     EditFilter = "SH|INC|TXT|ASM|OB07|C|CPP|H|PAS|PP|LUA|INI|JSON";
@@ -182,8 +182,7 @@ VAR
     winWidth, winHeight: INTEGER;
     AppPath, runScript, buildScript, debugScript: RW.tFileName;
     OD: OpenDlg.Dialog;
-    confirm, notFound, menuFindClicked, search, searchOpened, modified: BOOLEAN;
-    eol, enc: INTEGER;
+    confirm, notFound, menuFindClicked, search, searchOpened: BOOLEAN;
 
     switch, closing: BOOLEAN;
     leftButton: BOOLEAN;
@@ -214,33 +213,6 @@ VAR
 
     CursorTime, CurrentTime: INTEGER;
     timerEnabled: BOOLEAN;
-
-
-PROCEDURE WritePos (y: INTEGER);
-VAR
-	s1, s2, s3: ARRAY 32 OF WCHAR;
-	line, col, chars, lines: INTEGER;
-BEGIN
-	T.getPos(text, col, line);
-	U.int2str(line, s1);
-	U.int2str(col, s2);
-	U.append(s1, ": ");
-	U.append(s1, s2);
-	IF T.selected(text) THEN
-		T.getSelCnt(text, chars, lines);
-		s3 := "sel: ";
-		U.int2str(chars, s2);
-		U.append(s3, s2);
-		U.append(s3, " | ");
-		U.int2str(lines, s2);
-		U.append(s3, s2)
-	ELSE
-		s3 := ""
-	END;
-	K.DrawRect(LEFT, TOP + canvas.height + scrollWidth, (16+24)*fontWidth, BOTTOM - scrollWidth + 1, K.winColor);
-	K.DrawText(LEFT, y, K.textColor, s1);
-	K.DrawText(LEFT + 16*fontWidth, y, K.textColor, s3)
-END WritePos;
 
 
 PROCEDURE EditBox_Focus (edit: EB.tEditBox): BOOLEAN;
@@ -356,13 +328,6 @@ BEGIN
 END getIdx;
 
 
-PROCEDURE MarkModified;
-BEGIN
-    modified := text.modified;
-    Tabs.modify(tabs, getIdx(text), modified)
-END MarkModified;
-
-
 PROCEDURE SetCaption (fileName: RW.tFileName);
 VAR
 	header: RW.tFileName;
@@ -376,23 +341,19 @@ BEGIN
 END SetCaption;
 
 
-PROCEDURE DrawState (text: T.tText; width, height: INTEGER);
+PROCEDURE Status (text: T.tText; height: INTEGER);
 VAR
-    y: INTEGER;
-    s: ARRAY 24 OF WCHAR;
+	line, col, chars, lines: INTEGER;
 BEGIN
-	eol := T.getEol(text);
-	enc := T.getEnc(text);
-    s := "";
-    U.append(s, RW.eolNames[eol]);
-    U.append(s, 20X + 20X);
-    U.append(s, E.names[enc]);
-    SetCaption(text.fileName);
-    K.DrawRect(LEFT + (16+24)*fontWidth, TOP + canvas.height + scrollWidth, width - (LEFT + (16+24)*fontWidth), BOTTOM - scrollWidth + 1, K.winColor);
-    y := height - (BOTTOM - scrollWidth) + (BOTTOM - scrollWidth - 16) DIV 2;
-    K.DrawText(width - LENGTH(s)*fontWidth - (RIGHT_PADDING + 1), y, K.textColor, s);
-    MarkModified
-END DrawState;
+	T.getPos(text, col, line);
+	T.getSelCnt(text, chars, lines);
+	SB.setWidth(canvas.width + scrollWidth);
+	SB.setPos(line, col);
+	SB.setSel(chars, lines);
+	SB.setEnc(RW.eolNames[T.getEol(text)], E.names[T.getEnc(text)]);
+	SB.draw(LEFT, height - BOTTOM + scrollWidth - 1);
+	Tabs.modify(tabs, getIdx(text), text.modified)
+END Status;
 
 
 PROCEDURE DrawScroll (VAR scroll: Scroll.tScroll; left, top, value, maxVal: INTEGER);
@@ -422,19 +383,13 @@ BEGIN
         END;
         K.ClientSize(width, height);
         IF switch THEN
-            DrawState(text, width, height);
+            Status(text, height);
             Tabs.draw(tabs);
             IF search & T.search(text, searchText, cs, whole) THEN END;
             switch := FALSE
         END;
         T.draw(text);
-        WritePos(height - (BOTTOM - scrollWidth) + (BOTTOM - scrollWidth - 16) DIV 2);
-
-        IF (enc # T.getEnc(text)) OR (eol # T.getEol(text)) THEN
-        	DrawState(text, width, height)
-        ELSIF modified # text.modified THEN
-            MarkModified
-        END;
+        Status(text, height);
 
         T.getScroll(text, scrollX, scrollY);
         DrawScroll(vScroll, LEFT + canvas.width, TOP - 1, scrollY, text.count - 1);
@@ -487,13 +442,13 @@ END resize;
 
 PROCEDURE SearchPanel (left, top: INTEGER);
 VAR
-    y, right, bottom, color: INTEGER;
+    y, right, bottom: INTEGER;
 BEGIN
     DEC(top, Tabs.tabHeight);
     right := left + EditBox_Width + SEARCH_PADDING*2;
     bottom := top + 395 + btnHeight + SEARCH_PADDING;
-    color := K.borderColor;
-    Rect(left, top, right, bottom, color);
+    Rect(left, top, right, bottom, K.borderColor);
+
     K.CreateButton(btnCloseSearch, right - 20, top, 20, 20, 0EF999FH, "");
     K.DrawLine(right - 14, top + 5, right - 5, top + 14, 0FFFFFFH);
     K.DrawLine(right - 15, top + 5, right - 5, top + 15, 0FFFFFFH);
@@ -537,7 +492,6 @@ END SearchPanel;
 PROCEDURE draw_window;
 VAR
     width, height: INTEGER;
-
 BEGIN
     K.BeginDraw;
     K.CreateWindow(30 + K.GetTickCount() MOD 128, 30 + K.GetTickCount() MOD 128, winWidth, winHeight, K.winColor, 73H, 0, 0, "");
@@ -555,8 +509,8 @@ BEGIN
         Menu.DrawMain(mainMenu);
 
         Toolbar.draw(toolbar);
-
-        DrawState(text, width, height);
+		SetCaption(text.fileName);
+        Status(text, height);
         IF search & searchOpened THEN
             SearchPanel(LEFT_PADDING, TOP)
         END;
@@ -1998,7 +1952,6 @@ VAR
     firstClickX, firstClickY, time: INTEGER;
 BEGIN
     K.GetSystemColors;
-    modified := FALSE;
     switch := FALSE;
     closing := FALSE;
     textsCount := 0;
@@ -2058,7 +2011,7 @@ BEGIN
     Menu.AddMainItem(mainMenu, "program", menuProgram);
     Menu.AddMainItem(mainMenu, "tools", menuTools);
 
-    Toolbar.create(toolbar, LEFT_PADDING + 1, toolbarTop);
+    Toolbar.create(toolbar, LEFT_PADDING + 5, toolbarTop);
     Toolbar.add(toolbar, btnNew,     2, "");
     Toolbar.add(toolbar, btnOpen,    0, "");
     Toolbar.add(toolbar, btnSave,    5, "");

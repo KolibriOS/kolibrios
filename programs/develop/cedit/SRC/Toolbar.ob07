@@ -25,7 +25,7 @@ IMPORT
 CONST
 	max = 14;
 
-    BtnSize* = 24;
+    BtnSize* = 26;
     BtnInter = 5;
     DelimSize = 7;
     IconPad = (BtnSize - Icons.SIZE) DIV 2;
@@ -42,7 +42,8 @@ TYPE
 	tToolbar* = RECORD
 		buttons: ARRAY max OF tButton;
 		x, y, cnt, width: INTEGER;
-		icons, grayIcons: INTEGER
+		icons, grayIcons: INTEGER;
+		colors: RECORD back, text, disText, light, shadow, window: INTEGER	END
 	END;
 
 
@@ -57,15 +58,15 @@ BEGIN
 		IF button.btn # 0 THEN
 			IF button.enabled THEN
 				icons := toolbar.icons;
-				color := K.textToolbarColor
+				color := toolbar.colors.text
 			ELSE
 				icons := toolbar.grayIcons;
-				color := K.disTextToolbarColor
+				color := toolbar.colors.disText
 			END;
 			IF button.icon # -1 THEN
 				Icons.draw(icons, button.icon, button.x + IconPad, toolbar.y + IconPad)
 			ELSE
-			    K.DrawRect(button.x, toolbar.y, BtnSize, BtnSize, K.toolbarColor);
+			    K.DrawRect(button.x + 1, toolbar.y + 1, BtnSize - 1, BtnSize - 1, toolbar.colors.back);
     			K.DrawText69(button.x + (BtnSize - LENGTH(button.text)*6) DIV 2, toolbar.y + (BtnSize - 9) DIV 2 + 2, color, button.text)
 			END
 		END;
@@ -74,12 +75,24 @@ BEGIN
 END drawIcons;
 
 
+PROCEDURE setColors (VAR toolbar: tToolbar);
+BEGIN
+	toolbar.colors.back    := 0F2EFECH;//K.lightColor;
+	toolbar.colors.text    := 00000FFH;
+	toolbar.colors.disText := 0808080H;//K.borderColor;
+	toolbar.colors.light   := 0FEFEFEH;
+	toolbar.colors.shadow  := 09F9C9AH;//K.borderColor;
+	toolbar.colors.window  := K.winColor
+END setColors;
+
+
 PROCEDURE draw* (VAR toolbar: tToolbar);
 VAR
 	i, x, y, btn: INTEGER;
 	button: tButton;
 BEGIN
-	Icons.get(toolbar.icons, toolbar.grayIcons);
+	setColors(toolbar);
+	Icons.get(toolbar.icons, toolbar.grayIcons, toolbar.colors.back);
 	i := 0;
 	WHILE i < toolbar.cnt DO
 		button := toolbar.buttons[i];
@@ -87,10 +100,14 @@ BEGIN
 		IF btn # 0 THEN
 			x := button.x;
 			y := toolbar.y;
-			K.DrawRect(x, y, BtnSize, BtnSize, K.toolbarColor);
-			K.DrawLine(x, y + BtnSize, x + BtnSize, y + BtnSize, K.shadowColor);
-			K.DrawLine(x + BtnSize, y, x + BtnSize, y + BtnSize, K.shadowColor);
-			K.CreateButton(btn + ORD({30}), x, y, BtnSize, BtnSize, K.btnColor, "")
+			K.DrawRect(x + 1, y + 1, BtnSize, BtnSize - 1, toolbar.colors.back);
+			K.DrawLine(x + 1, y + BtnSize, x + BtnSize - 1, y + BtnSize, toolbar.colors.shadow);
+			K.DrawLine(x + 1, y, x + BtnSize  - 1, y, toolbar.colors.light);
+			K.DrawLine(x, y + 1, x, y + BtnSize - 1, toolbar.colors.light);
+			K.PutPixel(x + BtnSize, y + 1, toolbar.colors.light);
+			K.PutPixel(x, y + BtnSize - 1, toolbar.colors.shadow);
+			K.PutPixel(x + BtnSize, y + BtnSize - 1, toolbar.colors.shadow);
+			K.CreateButton(btn + ORD({30}), x, y, BtnSize, BtnSize, 0, "")
 		END;
 		INC(i)
 	END;
@@ -119,7 +136,7 @@ BEGIN
 	ASSERT(toolbar.cnt < max);
 	button.btn := btn;
 	button.icon := icon;
-	button.x := toolbar.width;
+	button.x := toolbar.width + toolbar.x;
 	button.text := text;
 	button.enabled := TRUE;
 	toolbar.buttons[toolbar.cnt] := button;
@@ -143,8 +160,7 @@ BEGIN
 	toolbar.x := x;
 	toolbar.y := y;
 	toolbar.cnt := 0;
-	toolbar.width := x;
-	Icons.get(toolbar.icons, toolbar.grayIcons)
+	toolbar.width := 0
 END create;
 
 
