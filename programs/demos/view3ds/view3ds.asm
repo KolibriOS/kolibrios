@@ -74,9 +74,16 @@ START:    ; start of execution
         jne    .asc
         call   read_tp_variables ; init points and triangles count variables
         cmp    eax,0
-        je     .gen
-        jmp    .malloc
+
+        jne    .malloc
     .gen:
+     ; if no house.3ds on board - generate
+        xor      bl,bl ; reallocate memory
+        mov      [triangles_count_var],20000
+        mov      [points_count_var],20000
+        call     alloc_mem_for_tp
+
+        mov    bl,[generator_flag]
         call   generate_object
         jmp    .opt
     .asc:
@@ -368,11 +375,10 @@ START:    ; start of execution
         cmp      ah,18
         jne      .next_m2
 
-        mov      [re_alloc_flag],1       ; reallocate memory
+        mov      bl,1       ; reallocate memory
         mov      [triangles_count_var],20000
         mov      [points_count_var],20000
         call     alloc_mem_for_tp
-        mov      [re_alloc_flag],0
 
         mov      bl,[generator_flag]
      ;   or       bl,bl
@@ -392,6 +398,16 @@ START:    ; start of execution
       .calc_norm:
         call    optimize_object1
         call    init_triangles_normals2
+     if Ext >= SSE2
+        call   detect_chunks
+        mov    [chunks_number],ecx
+        mov    [chunks_ptr],ebx
+
+     ;   esi -   tri_ch
+     ;   edi -   t_ptr - every vertice index  - pointer to to all triangles
+     ;           that have this index
+     end if
+
         call    init_point_normals
         call    calc_bumpmap_coords   ; bump and texture mapping
         call    do_edges_list
@@ -3286,8 +3302,9 @@ ret
 
 
 alloc_mem_for_tp:
+;in:        bl = 1 - realloc
         mov     eax, 68
-        cmp     [re_alloc_flag],1
+        cmp     bl,1
         jz      @f
         mov     ebx, 12
         jmp     .alloc
@@ -3352,7 +3369,7 @@ alloc_mem_for_tp:
         mov     [points_rotated_ptr], eax
 
         mov     eax, 68
-        mov     ebx, 12
+ ;       mov     ebx, 12
         mov     ecx, [points_count_var]
         shl     ecx,2
         add     ecx,32

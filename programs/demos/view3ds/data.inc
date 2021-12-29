@@ -19,7 +19,7 @@
         yobs            dw      0 ;SIZE_Y / 2 ;200 ;coordinates
         zobs            dw      -1000
 
-        re_alloc_flag db 0
+
         angle_counter dw 0
         piD180        dd 0.017453292519943295769236907684886
         piD128        dd 0.024544
