@@ -1,6 +1,6 @@
 
 void Sort_by_Size(int a, b)   // для первого вызова: a = 0, b = <элементов в массиве> - 1
-{                                        
+{
 	int j;
 	int iss = a;
 	int size1, size2;
@@ -16,7 +16,7 @@ void Sort_by_Size(int a, b)   // для первого вызова: a = 0, b = <элементов в мас
 
 
 void Sort_by_Name(int a, b)   // для первого вызова: a = 0, b = <элементов в массиве> - 1
-{                                        
+{
 	int j;
 	int isn = a;
 	dword name2 = items.get(b)*304 + buf+72;

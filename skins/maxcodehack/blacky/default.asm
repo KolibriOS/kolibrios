@@ -5,10 +5,10 @@ SKIN_PARAMS \
   margins         = [6:5:65:3],\          ; margins [left:top:right:bottom]
   colors active   = [binner=0x626262:\    ; border inner
                      bouter=0x010812:\    ; border outer
-                     bframe=0x626262],\   ; border middle
+                     bframe=0x1E1E1E],\   ; border middle
   colors inactive = [binner=0x626262:\    ; border inner
                      bouter=0x010812:\    ; border outer
-                     bframe=0x626262],\   ; border middle
+                     bframe=0x1E1E1E],\   ; border middle
   dtp             = 'default.dtp'          ; dtp colors
 
 SKIN_BUTTONS \

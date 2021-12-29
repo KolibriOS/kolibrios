@@ -1,5 +1,4 @@
 //11.03.12 - start!
-//TODO: select current value at startap
 
 #define MEMSIZE 1024*70
 #include "../lib/mem.h"
@@ -16,6 +15,8 @@
 #include "../lib/patterns/simple_open_dialog.h"
 #include "../lib/patterns/restart_process.h"
 
+dword fmas;
+
 #include "ui_elements_preview.h"
 #include "const.h"
 
@@ -25,7 +26,7 @@
 //                                                   //
 //===================================================//
 
-int active_skin, active_wallpaper, active_screensaver;
+int active_skin=-1, active_wallpaper=-1, active_screensaver=-1;
 
 checkbox update_docky = { T_UPDATE_DOCK, false };
 
@@ -36,6 +37,7 @@ checkbox optionbox_auto = { T_CHECKBOX_AUTO, true };
 char ss_available[200];
 
 collection list;
+
 
 //===================================================//
 //                                                   //
@@ -178,82 +180,86 @@ void draw_timeout()
 	WriteTextWithBg(RIGHTx, PANEL_H, 0xD0, sc.work_text, #param, sc.work);	
 }
 
-bool strreqi(dword _left, _right)
+void add_filesnames_into_the_list()
 {
-	return strcmp(_left+strrchr(_left,'.'), _right);
+	int j;
+	for (j=0; j<select_list.count; j++) {
+		miniprintf(#param,"%s/",#folder_path);
+		strcat(#param, io.dir.position(ESDWORD[j*4+fmas]));
+		list.add(#param);
+	}
 }
 
-dword files_mas[400];
 void Open_Dir()
 {
 	int j;
-	char fname[4096];
+	dword ext;
 	select_list.ClearList();
-	if(io.dir.buffer)free(io.dir.buffer);
+
+	if (io.dir.buffer) free(io.dir.buffer);
 	io.dir.load(#folder_path,DIR_ONLYREAL);
+
+	if (fmas) free(fmas);
+	fmas = malloc(io.dir.count * 4);
 
 	for (j=0; j<io.dir.count; j++)
 	{
-		strcpy(#fname, io.dir.position(j));
-		strlwr(#fname);
+		strncpy(#param, io.dir.position(j), PATHLEN);
+		strlwr(#param);
+		ext = #param + strrchr(#param,'.');
 		if (tabs.active_tab==TAB_SKINS) {
-			if (strreqi(#fname,"skn")!=0) continue;
+			if (!streq(ext,"skn")) continue;
 		}
 		if (tabs.active_tab==TAB_WALLPAPERS) {
-			if (strreqi(#fname,"png")!=0)
-			&& (strreqi(#fname,"jpg")!=0) 
-			&& (strreqi(#fname,"jpeg")!=0)
-			&& (strreqi(#fname,"bmp")!=0)
-			&& (strreqi(#fname,"gif")!=0) continue;
+			if (!streq(ext,"png")) && (!streq(ext,"jpg")) 
+			&& (!streq(ext,"jpeg")) && (!streq(ext,"bmp"))
+			&& (!streq(ext,"gif")) continue;
 		}
-		ESDWORD[select_list.count*4 + #files_mas] = j;
+		ESDWORD[select_list.count*4 + fmas] = j;
 		select_list.count++;
 	}
-	Sort_by_Name(0, select_list.count-1);
+	sort_by_name(0, select_list.count-1);
 
 	list.drop();
 	//save current item for tab change
 	//add default item
-	switch(tabs.active_tab) {
-		CASE TAB_SKINS: 
-				select_list.cur_y = active_skin;
-				select_list.count++;
-				list.add(#default_skin);
-				BREAK;
-		CASE TAB_WALLPAPERS: 
-				select_list.cur_y = active_wallpaper; 
-				select_list.count++;
-				list.add(#default_wallp);
-				BREAK;
-		CASE TAB_SCREENSAVERS: 
-				select_list.cur_y = active_screensaver;
-	}
-
-	for (j=0; j<select_list.count; j++) {
-		miniprintf(#param,"%s/",#folder_path);
-		strcat(#param, io.dir.position(files_mas[j]));
-		list.add(#param);
+	if(tabs.active_tab == TAB_SKINS) 
+	{
+		select_list.count++;
+		list.add(#default_skin);
+		add_filesnames_into_the_list();
+		if (active_skin==-1) && (ESBYTE[#previous_skin]) 
+		{
+			for (j=0; j<select_list.count; j++) {
+				if (streq(list.get(j), #previous_skin)) {
+					active_skin = j;
+					break;
+				}
+			}
+		}
+		select_list.cur_y = active_skin;
+	} else { 
+		select_list.count++;
+		list.add(#default_wallp);
+		add_filesnames_into_the_list();
+		if (active_wallpaper==-1) && (ESBYTE[#previous_wallp]=='\\') 
+		{
+			for (j=0; j<select_list.count; j++) {
+				if (streq(list.get(j), #previous_wallp+4)) {
+					active_wallpaper = j;
+					break;
+				}
+			}
+		}
+		select_list.cur_y = active_wallpaper; 
 	}
 
 	if (!select_list.count) notify(T_NO_FILES);
-	if (select_list.cur_y>select_list.visible) select_list.first=select_list.cur_y; 
+	if (select_list.cur_y>SL_VISIBLE) {
+		select_list.first = -SL_VISIBLE/2 + select_list.cur_y; 
+	}
 	select_list.CheckDoesValuesOkey();	
 	if (LIST_W) draw_window();
-}
-
-void Sort_by_Name(int a, b) // for the first call: a = 0, b = sizeof(mas) - 1
-{                                        
-	int j;
-	int isn = a;
-	if (a >= b) return;
-	for (j = a; j <= b; j++) {
-		if (strcmpi(io.dir.position(files_mas[j]), io.dir.position(files_mas[b]))<=0) { 
-			files_mas[isn] >< files_mas[j]; 
-			isn++;
-		}
-	}
-	Sort_by_Name(a, isn-2);
-	Sort_by_Name(isn, b);
 }
 
 void SelectList_DrawLine(dword i)
@@ -262,7 +268,7 @@ void SelectList_DrawLine(dword i)
 	int i_abs = select_list.first + i;
 	dword text_color = 0xFFFfff;
 	dword bg_color = 0x000000;
-	char filename_buf[4096];
+	char filename_buf[PATHLEN];
 	char* filename = #filename_buf;
 
 	strcpy(filename, list.get(i_abs));
@@ -294,28 +300,20 @@ void SelectList_DrawLine(dword i)
 	WriteText(select_list.x+12,draw_y+select_list.text_y,select_list.font_type,bg_color, filename);
 }
 
-void SelectList_LineChanged() 
-{
-	EventApply();
-}
 
-dword GetRealKolibriosPath()
-{
-	char real_kolibrios_path[4096];
-	if (!dir_exists("/kolibrios")) return 0;
-	SetCurDir("/kolibrios");
-	GetCurDir(#real_kolibrios_path, sizeof(real_kolibrios_path));
-	return #real_kolibrios_path;
-}
 
 void GetIniSettings()
 {
-	ini.section = "screensaver";
-	ss_timeout.position = ini.GetInt("timeout", 10) - 1;
-	ini.GetString("available", #ss_available, sizeof(ss_available), 0);
 	ini.section = "style";
 	ini.GetString("default_skin", #default_skin, PATHLEN, 0);
 	ini.GetString("default_wallp", #default_wallp, PATHLEN, 0);
+	ini.GetString("skin", #previous_skin, PATHLEN, 0);
+	ini.GetString("bg_param", #previous_wallp, PATHLEN, 0);
+
+	ini.section = "screensaver";
+	ss_timeout.position = ini.GetInt("timeout", 10) - 1;
+	ini.GetString("available", #ss_available, sizeof(ss_available), 0);
+	ini.GetString("program", #previous_ss, PATHLEN, 0);
 }
 
 //===================================================//
@@ -326,7 +324,7 @@ void GetIniSettings()
 
 void EventTabSkinsClick()
 {
-	miniprintf(#folder_path, "%s/res/skins", GetRealKolibriosPath());
+	miniprintf(#folder_path, "%s/res/skins", get_real_kolibrios_path());
 	Open_Dir();
 }
 
@@ -335,7 +333,7 @@ void EventTabWallpappersClick()
 	if (opendir_path) {
 		strcpy(#folder_path, #opendir_path);
 	} else {
-		miniprintf(#folder_path, "%s/res/wallpapers", GetRealKolibriosPath());
+		miniprintf(#folder_path, "%s/res/wallpapers", get_real_kolibrios_path());
 	}
 	Open_Dir();
 }
@@ -358,6 +356,13 @@ void EventTabScreensaverClick()
 		ESBYTE[#ssmas + j - 1] = '\0';
 		select_list.count++;
 	} while (j);
+
+	if (active_screensaver == -1) && (ESBYTE[#previous_ss]) {
+		for (j=0; j<select_list.count; j++) {
+			if (strstr(list.get(j), #previous_ss)) active_screensaver = j;
+		}
+	}
+	select_list.cur_y = active_screensaver;
 
 	if (LIST_W) draw_window();
 }
@@ -438,7 +443,7 @@ void EventOpenFile()
 
 void EventExit()
 {
-	if (GetRealKolibriosPath()) {
+	if (get_real_kolibrios_path()) && (ESBYTE[#cur_skin_path]) {
 		ini.section = "style";
 		ini.SetString("skin", #cur_skin_path, strlen(#cur_skin_path));
 	}
@@ -457,7 +462,13 @@ void EventSetSs()
 stop:
 
 char folder_path[PATHLEN];
+
 char cur_file_path[PATHLEN];
 char cur_skin_path[PATHLEN];
+
 char default_skin[PATHLEN];
 char default_wallp[PATHLEN];
+
+char previous_skin[PATHLEN];
+char previous_wallp[PATHLEN];
+char previous_ss[PATHLEN];

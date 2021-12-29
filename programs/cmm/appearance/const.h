@@ -37,10 +37,11 @@
 #endif
 
 #define WIN_W 560
-#define WIN_H 450
+#define WIN_H 445
 #define LIST_W 260
 #define PANEL_H 50
 #define LP 6 //LIST_PADDING
+#define SL_VISIBLE WIN_H - PANEL_H - LP / SELECT_LIST_ITEMH
 
 #define RIGHTx LP + LIST_W + TAB_P + 30
 #define RIGHTy PANEL_H
@@ -70,3 +71,36 @@ _tabs tabs = { -sizeof(t_skins)-sizeof(t_wallpapers)-sizeof(t_screensaver)
 
 scroll_bar ss_timeout = { RIGHTw-19,RIGHTx,15,RIGHTy+25,0,3,89,10,0,0xFFFfff,
 	0xBBBbbb,0xeeeeee};
+
+
+
+
+
+void sort_by_name(int a, b) // for the first call: a = 0, b = sizeof(mas) - 1
+{
+	int j;
+	int isn = a;
+	if (a >= b) return;
+	for (j = a; j <= b; j++) {
+		if (strcmpi(io.dir.position(ESDWORD[j*4+fmas]), io.dir.position(ESDWORD[b*4+fmas]))<=0) { 
+			ESDWORD[isn*4+fmas] >< ESDWORD[j*4+fmas]; 
+			isn++;
+		}
+	}
+	sort_by_name(a, isn-2);
+	sort_by_name(isn, b);
+}
+
+dword get_real_kolibrios_path()
+{
+	char real_kolibrios_path[256];
+	if (!dir_exists("/kolibrios")) return 0;
+	SetCurDir("/kolibrios");
+	GetCurDir(#real_kolibrios_path, sizeof(real_kolibrios_path));
+	return #real_kolibrios_path;
+}
+
+void SelectList_LineChanged() 
+{
+	EventApply();
+}
