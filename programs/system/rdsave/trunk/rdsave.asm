@@ -8,7 +8,7 @@
 ;   Heavyiron 01.12.2013 - new logic
 ;---------------------------------------------------------------------
 appname equ 'RDsave '
-version equ '1.43'
+version equ '1.44'
 debug	equ no
 
 use32	     ; включить 32-битный режим ассемблера
@@ -51,9 +51,9 @@ load_libraries l_libs_start,end_l_libs
 
 	stdcall dll.Init,[init_lib]
 
-	invoke	ini_get_int,ini_file,asettings,aautoclose,0
+	invoke	ini_get_int,ini_file,ini_section,aautoclose,0
 	mov	[autoclose],eax
-	invoke	ini_get_str,ini_file,apath,apath,fname_buf,4096,path
+	invoke	ini_get_str,ini_file,ini_section,apath,fname_buf,4096,path
 	stdcall _lstrcpy,ini_path,fname_buf
 	stdcall _lstrcpy,filename_area,start_temp_file_name
 
@@ -243,7 +243,7 @@ check_for_error:		      ;Обработчик ошибок
 print_err:
 	stdcall _lstrlen,ini_path
 	pusha
-	invoke	ini_set_str,ini_file,apath,apath,ini_path,eax
+	invoke	ini_set_str,ini_file,ini_section,apath,ini_path,eax
 	popa
 	stdcall _lstrcpy,msg,edx
 	cmp	[hidden],1
@@ -315,8 +315,8 @@ draw_PathShow:
 save_ini:
 	pusha
 	stdcall _lstrlen,fname_buf
-	invoke	ini_set_str,ini_file,apath,apath,fname_buf,eax
-	invoke	ini_set_int,ini_file,asettings,aautoclose,[autoclose]
+	invoke	ini_set_str,ini_file,ini_section,apath,fname_buf,eax
+	invoke	ini_set_int,ini_file,ini_section,aautoclose,[autoclose]
 	popa
 	ret
 ;---------------------------------------------------------------------
@@ -640,16 +640,15 @@ aini_set_str db 'ini_set_str',0
 aini_set_int db 'ini_set_int',0
 ;---------------------------------------------------------------------
 
+ini_file db  '/sys/settings/app.ini',0
+ini_section db 'RDSave',0
 apath db 'path',0
-asettings db 'settings',0
 aautoclose db 'autoclose',0
 path	db '/hd2/1/kolibri.img',0
-ini_file db  '/sys/settings/rdsave.ini',0
-;ini_file db  '/sys/rdsave.ini',0
 ;---------------------------------------------------------------------
 is_notify:
     dd	  7, 0, ok, 0, 0
-    db	  "/rd/1/@notify", 0
+    db	  "/sys/@notify", 0
 
 read_folder:
 .subfunction	dd 1
