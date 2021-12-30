@@ -9,9 +9,9 @@ TODO:
   http://board.kolibrios.org/viewtopic.php?f=23&t=4521&p=77334#p77334
 */
 
-#define ABOUT_TITLE "EOLITE 5.16a"
-#define TITLE_EOLITE "Eolite File Manager 5.16a"
-#define TITLE_KFM "Kolibri File Manager 2.16a";
+#define ABOUT_TITLE "EOLITE 5.17"
+#define TITLE_EOLITE "Eolite File Manager 5.17"
+#define TITLE_KFM "Kolibri File Manager 2.17";
 
 #define MEMSIZE 1024 * 250
 #include "../lib/clipboard.h"
@@ -796,7 +796,7 @@ void List_ReDraw()
 	DrawScroll(scroll_used);
 }
 
-void Line_ReDraw(dword bgcol, filenum){
+void Line_ReDraw(dword bgcol, signed filenum){
 	dword text_col=col.list_gb_text,
 		  ext1, attr,
 		  file_name_off,
@@ -809,7 +809,7 @@ void Line_ReDraw(dword bgcol, filenum){
 		  bool current_inactive = false;
 		  char volume_label[64] = 0;
 	char label_file_name[4096];
-	if (filenum==-1) return;
+	if (filenum<0) return; //if hold lkm and scroll down by mouse wheel this may be the case
 
 	if (bgcol==col.selec) && (files.x==files_inactive.x) {
 		bgcol = col.list_bg;
