@@ -69,7 +69,7 @@ BEGIN
     x2 := x + width - 1;
     y2 := y + height - 1;
 
-    K.DrawRect(x, y, width, height,color);
+    K.DrawRect(x, y, width, height, color);
     K.DrawLine(x, y, x2, y, K.borderColor);
     K.DrawLine(x2, y, x2, y2, K.borderColor);
     IF id # t.current THEN

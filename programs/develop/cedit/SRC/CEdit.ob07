@@ -28,7 +28,7 @@ IMPORT
     RW, Ini, EB := EditBox, Tabs, Toolbar, SB := StatusBar;
 
 CONST
-    HEADER = "CEdit (29-dec-2021)";
+    HEADER = "CEdit (30-dec-2021)";
 
     ShellFilter = "";
     EditFilter = "SH|INC|TXT|ASM|OB07|C|CPP|H|PAS|PP|LUA|INI|JSON";
@@ -171,6 +171,7 @@ CONST
 
 
 VAR
+	header: RW.tFileName;
     canvas: G.tCanvas;
     font, font1, font2: G.tFont;
 
@@ -330,14 +331,17 @@ END getIdx;
 
 PROCEDURE SetCaption (fileName: RW.tFileName);
 VAR
-	header: RW.tFileName;
+	newHeader: RW.tFileName;
 BEGIN
-    header := HEADER;
+    newHeader := HEADER;
     IF text.fileName # "" THEN
-    	U.append8(header, " - ");
-    	U.append8(header, text.fileName)
+    	U.append8(newHeader, " - ");
+    	U.append8(newHeader, text.fileName)
     END;
-    K.SetCaption(header)
+    IF newHeader # header THEN
+    	header := newHeader;
+		K.SetCaption(header)
+    END
 END SetCaption;
 
 
@@ -502,10 +506,10 @@ BEGIN
         confirm := FALSE;
         K.ClientSize(width, height);
 
-        K.DrawRect(0, 0, width, TOP, K.winColor);
+        K.DrawRect(0, 0, width, TOP - 1, K.winColor);
         K.DrawRect(0, 0, LEFT, height, K.winColor);
         K.DrawRect(width - RIGHT_PADDING, 0, RIGHT_PADDING, height, K.winColor);
-        K.DrawRect(LEFT + canvas.width + 1, TOP + canvas.height, scrollWidth - 1, scrollWidth, K.winColor);
+        K.DrawRect(LEFT + canvas.width + 1, TOP + canvas.height + 1, scrollWidth - 1, scrollWidth - 1, K.winColor);
         Menu.DrawMain(mainMenu);
 
         Toolbar.draw(toolbar);
@@ -1906,26 +1910,22 @@ END MouseEvent;
 
 
 PROCEDURE Redraw (VAR resized: BOOLEAN; VAR width, height, cliWidth, cliHeight: INTEGER);
-VAR
-    i: INTEGER;
 BEGIN
     K.GetSystemColors;
-    FOR i := 0 TO 1 DO
-        IF ~K.RolledUp() THEN
-            K.ClientSize(width, height);
-            IF (width # cliWidth) OR (height # cliHeight) THEN
-                cliWidth := width;
-                cliHeight := height;
-                resize;
-                resized := TRUE
-            END;
-            K.SetEventsMask({0, 1, 2, 5, 6, 31})
-        ELSE
-        	SetCaption(text.fileName);
-            K.SetEventsMask({0, 30, 31})
+    IF ~K.RolledUp() THEN
+        K.ClientSize(width, height);
+        IF (width # cliWidth) OR (height # cliHeight) THEN
+            cliWidth := width;
+            cliHeight := height;
+            resize;
+            resized := TRUE
         END;
-        draw_window
-    END
+        K.SetEventsMask({0, 1, 2, 5, 6, 31})
+    ELSE
+    	SetCaption(text.fileName);
+        K.SetEventsMask({0, 30, 31})
+    END;
+    draw_window
 END Redraw;
 
 
@@ -1951,6 +1951,7 @@ VAR
     resized: BOOLEAN;
     firstClickX, firstClickY, time: INTEGER;
 BEGIN
+	header := "";
     K.GetSystemColors;
     switch := FALSE;
     closing := FALSE;
@@ -2044,7 +2045,7 @@ BEGIN
     insert(0, text);
     Scroll.init(ScrollChange);
     Scroll.create(FALSE, canvas.width + 1, scrollWidth, scrollWidth, scrollWidth*3 DIV 2, hScroll);
-    Scroll.create(TRUE, scrollWidth, canvas.height + 1, scrollWidth, scrollWidth*3 DIV 2, vScroll);
+    Scroll.create(TRUE, scrollWidth, canvas.height + 2, scrollWidth, scrollWidth*3 DIV 2, vScroll);
     T.resize(canvas.width, canvas.height);
     T.SetPos(text, 0, 0);
     confirm := FALSE;
