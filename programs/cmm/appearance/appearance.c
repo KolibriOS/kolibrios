@@ -28,8 +28,6 @@ dword fmas;
 
 int active_skin=-1, active_wallpaper=-1, active_screensaver=-1;
 
-checkbox update_docky = { T_UPDATE_DOCK, false };
-
 checkbox optionbox_stretch = { T_CHECKBOX_STRETCH, false };
 checkbox optionbox_tiled = { T_CHECKBOX_TILED, false };
 checkbox optionbox_auto = { T_CHECKBOX_AUTO, true };
@@ -81,7 +79,6 @@ void main()
 			if (tabs.active_tab == TAB_SKINS) {
 				checkbox1.click(id);
 				spinbox1.click(id);
-				if (update_docky.click(id)) EventUpdateDocky();
 			}
 			if (tabs.active_tab == TAB_WALLPAPERS) {
 				if (id==BTN_SELECT_WALLP_FOLDER) EventSelectWallpFolder();
@@ -127,32 +124,22 @@ void main()
 void draw_window()
 {
 	sc.get();
-	DefineAndDrawWindow(screen.width-WIN_W-9/2,80,WIN_W+9,WIN_H+4+skin_height,0x34,sc.work,WINDOW_HEADER,0);
+	DefineAndDrawWindow(screen.width-WIN_W-9/2,80,WIN_W+9,WIN_H+4+skin_height,0x74,sc.work,WINDOW_HEADER,0);
+
+	DrawBar(0, 0, WIN_W, PANEL_H-2, sc.work); //top
+	DrawBar(0, PANEL_H-2, LP-2, WIN_H-PANEL_H-LP+4, EDX); //left
+	DrawBar(LIST_W+LP+20, PANEL_H-2, WIN_W-LIST_W-26, WIN_H-PANEL_H-LP+4, EDX); //right
+	DrawBar(0, WIN_H-LP+2, WIN_W, LP-2, EDX); //bottom
 
 	tabs.draw();
 	draw_icon_16w(tabs.x + TAB_P, LP+5, 17);
 	draw_icon_16w(sizeof(t_skins)-1*8 + TAB_P + TAB_P + tabs.x, LP+5, 6);
 	draw_icon_16w(sizeof(t_wallpapers)+sizeof(t_skins)-2*8 + TAB_P + TAB_P + TAB_P + tabs.x, LP+5, 61);
 
-	$push select_list.cur_y
-	SelectList_Init(
-		LP,
-		PANEL_H, 
-		LIST_W, 
-		WIN_H - LP - PANEL_H
-		);
-	$pop select_list.cur_y
-
-	DrawBar(RIGHTx, PANEL_H, RIGHTw, WIN_H-PANEL_H-LP, sc.work);
-
-	SelectList_Draw();
-	SelectList_DrawBorder();
-
 	if (tabs.active_tab == TAB_SKINS)
 	{
 		DrawFrame(RIGHTx, PANEL_H+5, RIGHTw, RIGHTh, T_UI_PREVIEW);
 		DrawUiElementsPreview(RIGHTx+20, PANEL_H+5, RIGHTh);
-		if (CheckProcessExists("@DOCKY")) update_docky.draw(RIGHTx, PANEL_H+250);
 	}
 	if (tabs.active_tab == TAB_WALLPAPERS)
 	{
@@ -172,6 +159,18 @@ void draw_window()
 		ESI = DrawStandartCaptButton(RIGHTx, PANEL_H + 65, BTN_TEST_SCREENSAVER, T_SS_PREVIEW);
 		DrawStandartCaptButton(RIGHTx+ESI, PANEL_H + 65, BTN_SET_SCREENSAVER, T_SS_SET);
 	}
+
+	$push select_list.cur_y
+	SelectList_Init(
+		LP,
+		PANEL_H, 
+		LIST_W, 
+		WIN_H - LP - PANEL_H
+		);
+	$pop select_list.cur_y
+
+	SelectList_Draw();
+	SelectList_DrawBorder();
 }
 
 void draw_timeout()
@@ -399,10 +398,9 @@ void EventApply()
 	strcpy(#cur_file_path, list.get(select_list.cur_y));
 	if (tabs.active_tab==TAB_SKINS)
 	{
-		SetSystemSkin(#cur_file_path);
-		SelectList_Draw();
 		strcpy(#cur_skin_path, #cur_file_path);
-		EventUpdateDocky();
+		SetSystemSkin(#cur_file_path);
+		MoveSize(OLD, OLD, OLD, WIN_H+4+GetSkinHeight());
 	} 
 	if (tabs.active_tab==TAB_WALLPAPERS)
 	{
@@ -420,15 +418,6 @@ void EventApply()
 	if (tabs.active_tab==TAB_SCREENSAVERS)
 	{
 		SelectList_Draw();
-	}
-}
-
-void EventUpdateDocky()
-{
-	if (update_docky.checked) {
-		RestartProcessByName("/sys/@docky", MULTIPLE);
-		pause(50);
-		ActivateWindow_Self();		
 	}
 }
 

@@ -1,3 +1,3 @@
+del @docky
 @fasm docky.asm @docky
-@kpack @docky
-@pause
+if not exist @docky ( @pause )

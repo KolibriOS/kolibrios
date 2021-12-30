@@ -1,39 +1,41 @@
     use32
     org     0x0
 ;-------------------------------------------------------------------------------
-    db	    "MENUET01"
-    dd	    1, main, __dataend, __memend, __stackend, 0, sys_path
+    db        "MENUET01"
+    dd        1, main, __dataend, __memend, __stackend, 0, sys_path
 ;-------------------------------------------------------------------------------
     include "../../../macros.inc"
     include "../../../proc32.inc"
     include "../../../dll.inc"
-	include "../../../KOSfuncs.inc"
+    include "../../../KOSfuncs.inc"
     include "../../../load_lib.mac"
     ;include "../../../debug.inc"
 
     include "DATA.INC"
     include "NAME.INC"
 
-    @use_library	 \
-	    mem.Alloc,	 \
-	    mem.Free,	 \
-	    mem.ReAlloc, \
-	    dll.Load
+    @use_library \
+        mem.Alloc, mem.Free, mem.ReAlloc, dll.Load
 ;================================================================================
+
 main:
 ; ==== Init ====
+    mcall   SF_SYS_MISC, SSF_HEAP_INIT
+    mcall   SF_STYLE_SETTINGS, SSF_GET_COLORS, sc, sizeof.system_colors
+    call    LOAD_ICONS
+
     mcall   SF_SYSTEM, SSF_GET_ACTIVE_WINDOW
     mov     [win.psid], eax
 
     mcall   SF_SET_EVENTS_MASK, EVM_REDRAW+EVM_BUTTON+EVM_MOUSE ;+EVM_DEKSTOP to update colors on skin change
-
+    
 ; ==== Load libs ====
     load_libraries load_lib_start, load_lib_end
 
 ; ==== Config LibINI ====
     invoke  ini.get_int, ini_data.file_name, ini_data.settings_name, ini_data.location_name, 2
     test    eax,eax
-	jz      exit
+    jz      exit
     mov     [dock_items.location], eax
     invoke  ini.get_int, ini_data.file_name, ini_data.settings_name, ini_data.fsize_name, 0
     mov     [dock_items.fsize], eax
@@ -42,69 +44,11 @@ main:
 
     invoke  ini.sections, ini_data.file_name, sections_callback
 
-; ==== Load colors ====
-    mcall   SF_STYLE_SETTINGS, SSF_GET_COLORS, color
-    or	    dword[color.bg],	0x10000000
-    or	    dword[color.frame], 0x10000000
-    or	    dword[color.text],	0x80000000
-
-; ==== Config LibIMG ====
-    mov     dword[fi.p00], SSF_GET_INFO
-    mov     dword[fi.p16], buf_128
-    mov     dword[fi.p21], img_data.file_name
-
-    mcall   SF_FILE, fi
-
-    mov     edx, [buf_128 + 32]
-    imul    edx, 10
-
-    stdcall mem.Alloc, edx
-    mov     [img_data.rgb_object], eax
-
-    mov     dword[fi.p00], SSF_READ_FILE
-    mov     dword[fi.p12], edx
-    m2m     dword[fi.p16], dword[img_data.rgb_object]
-    mov     dword[fi.p21], img_data.file_name
-
-    mcall   SF_FILE, fi
-
-    cmp     ebx, 0xFFFFFFFF
-    je	    @f
-
-    stdcall dword[img.decode], dword[img_data.rgb_object], ebx, 0
-    mov     dword[img_data.object], eax
-
-  ; === ALPHA ===
-    mov     edi, eax
-    add     edi, 8
-    mov     edi, [edi]
-    imul    edi, 128
-    sub     edi, 4
-
-    add     eax, 24
-    mov     eax, [eax]
- .setalpha:
-    mov     ebx, [eax + edi]
-    shr     ebx, 24
-    cmp     ebx, 0
-    jne     .nonalpha
-
-    mov     ecx, [color.bg]
-    mov     [eax + edi], ecx
- .nonalpha:
-    sub     edi, 4
-    cmp     edi, 0
-    jne     .setalpha
-
-  ; === CONVERTING TO BGR
-    stdcall dword[img.toRGB], dword[img_data.object], dword[img_data.rgb_object]
-    stdcall dword[img.destroy], dword[img_data.object]
-
 ; ==== Config window ====
     mov     eax, dword[dock_items.location]
     and     eax, 1b
     cmp     eax, 0
-    je	    .vert
+    je      .vert
     jmp     .setshape
 
  .vert:
@@ -112,14 +56,14 @@ main:
 
  .setshape:
     cmp     byte[win.isvert], 1
-    je	    .vert_sp
+    je      .vert_sp
 
  .horz_sp:
     call    .HORZ_WIDTH
     call    .HORZ_X
     call    .HORZ_HEIGHT
     cmp     dword[dock_items.location], 1
-    je	    .settop
+    je      .settop
 
  .setbottom:
     call    .HORZ_Y_BOTTOM
@@ -135,7 +79,7 @@ main:
     call    .VERT_HEIGHT
     call    .VERT_Y
     cmp     dword[dock_items.location], 2
-    je	    .setleft
+    je      .setleft
 
  .setright:
     call    .VERT_X_RIGHT
@@ -148,7 +92,7 @@ main:
 ;-------------------------------------------------------------------------------
  .HORZ_WIDTH:
     cmp     [dock_items.fsize], byte 1
-    je	    @f
+    je      @f
     mov     eax, BUTTON_SIZE
     mov     ebx, [dock_items.count]
     imul    eax, ebx
@@ -159,8 +103,8 @@ main:
     mcall   SF_GET_SCREEN_SIZE
     shr     eax, 16
  .set_hw:
-    mov     [win.width_opn], eax
-    mov     [win.width_hdn], eax
+    mov     [win.w_opn], eax
+    mov     [win.w_hdn], eax
 
     ret
 
@@ -168,7 +112,7 @@ main:
  .HORZ_X:
     mcall   SF_GET_SCREEN_SIZE
     shr     eax, 17
-    mov     ecx, [win.width_opn]
+    mov     ecx, [win.w_opn]
     shr     ecx, 1
     sub     eax, ecx
     mov     [win.x_opn], eax
@@ -178,8 +122,8 @@ main:
 
 ;-------------------------------------------------------------------------------
  .HORZ_HEIGHT:
-    mov     dword[win.height_hdn], 3
-    mov     dword[win.height_opn], BUTTON_SIZE
+    mov     dword[win.h_hdn], 3
+    mov     dword[win.h_opn], BUTTON_SIZE
 
     ret
 
@@ -202,8 +146,8 @@ main:
 
 ;-------------------------------------------------------------------------------
  .VERT_WIDTH:
-    mov     dword[win.width_opn], BUTTON_SIZE
-    mov     dword[win.width_hdn], 3
+    mov     dword[win.w_opn], BUTTON_SIZE
+    mov     dword[win.w_hdn], 3
 
     ret
 
@@ -227,7 +171,7 @@ main:
 ;-------------------------------------------------------------------------------
  .VERT_HEIGHT:
     cmp     [dock_items.fsize], byte 1
-    je	    @f
+    je      @f
     mov     eax, BUTTON_SIZE
     mov     ebx, [dock_items.count]
     imul    eax, ebx
@@ -237,8 +181,8 @@ main:
     mcall   SF_GET_SCREEN_SIZE
     and     eax, 0xFFFF
  .set_vh:
-    mov     [win.height_opn], eax
-    mov     [win.height_hdn], eax
+    mov     [win.h_opn], eax
+    mov     [win.h_hdn], eax
 
     ret
 
@@ -248,7 +192,7 @@ main:
     and     eax, 0xFFFF
     shr     eax, 1
 
-    mov     esi, [win.height_opn]
+    mov     esi, [win.h_opn]
     shr     esi, 1
     sub     eax, esi
 
@@ -259,29 +203,29 @@ main:
 
 ;-------------------------------------------------------------------------------
  .SETDEF:
-    mov     eax, [win.width_hdn]
-    mov     [win.width], eax
+    mov     eax, [win.w_hdn]
+    mov     [win.w], eax
 
     mov     eax, [win.x_hdn]
     mov     [win.x], eax
 
-    mov     eax, [win.height_hdn]
-    mov     [win.height], eax
+    mov     eax, [win.h_hdn]
+    mov     [win.h], eax
 
     mov     eax, [win.y_hdn]
     mov     [win.y], eax
-	
+    
     cmp     byte[dock_items.ashow],1
     jne     .not_ashow
 
-    mov     eax, [win.width_opn]
-    mov     [win.width], eax
+    mov     eax, [win.w_opn]
+    mov     [win.w], eax
 
     mov     eax, [win.x_opn]
     mov     [win.x], eax
 
-    mov     eax, [win.height_opn]
-    mov     [win.height], eax
+    mov     eax, [win.h_opn]
+    mov     [win.h], eax
 
     mov     eax, [win.y_opn]
     mov     [win.y], eax
@@ -300,7 +244,6 @@ main:
     call    main_loop
 ;-------------------------------------------------------------------------------
 exit:
-    stdcall mem.Free, [img_data.rgb_object]
     mcall   SF_SYSTEM, SSF_TERMINATE_THREAD, [nwin.sid]
     mcall   SF_TERMINATE_PROCESS
 ;-------------------------------------------------------------------------------
@@ -309,13 +252,13 @@ main_loop:
     mcall   SF_WAIT_EVENT
 
     cmp     eax, EV_REDRAW
-    je	    event_redraw
+    je      event_redraw
 
     cmp     eax, EV_BUTTON
-    je	    event_button
+    je      event_button
 
     cmp     eax, EV_MOUSE
-    je	    event_mouse
+    je      event_mouse
 
     jmp     main_loop
 ;-------------------------------------------------------------------------------
@@ -325,26 +268,33 @@ event_redraw:
 ;-------------------------------------------------------------------------------
 DRAW_WINDOW:
     mcall   SF_REDRAW, SSF_BEGIN_DRAW
-
-    mov     esi, [color.bg]
-    or	    esi, 0x01000000
-    mcall   SF_CREATE_WINDOW, <[win.x], [win.width]>, <[win.y], [win.height]>, [color.bg], , [color.frame]
+    
+    push    dword [sc.work]
+    mcall   SF_STYLE_SETTINGS, SSF_GET_COLORS, sc, sizeof.system_colors
+    pop     eax
+    cmp     dword [sc.work], eax
+    je      @f
+    call    LOAD_ICONS
+  @@:
+    mov     esi, [sc.work]
+    or        esi, 0x01000000
+    mcall   SF_CREATE_WINDOW, <[win.x], [win.w]>, <[win.y], [win.h]>, [sc.work], , [sc.work_dark]
 
     xor     edi, edi
   @@:
     cmp     edi, [dock_items.count]
-    je	    @f
+    je        @f
 
     push    edi
     mov     eax, SF_DEFINE_BUTTON
     mov     edx, 0x60000002
-    mov     esi, [color.bg]
+    mov     esi, [sc.work]
     imul    edi, BUTTON_SIZE
     add     edi, 12
     shl     edi, 16
     add     edi, BUTTON_SIZE
     cmp     byte[win.isvert], 1
-    je	    .vert_btn
+    je        .vert_btn
     mcall   , edi, <0, BUTTON_SIZE>
     jmp     .endbtn
  .vert_btn:
@@ -369,20 +319,20 @@ DRAW_WINDOW:
     add     ebx, 2
 
     cmp     byte[win.isvert], 1
-    je	    .vert_draw_sep
-    mcall   , , <4,  36>, [color.frame]
+    je      .vert_draw_sep
+    mcall   , , <4,  36>, [sc.work_dark]
     jmp     .end_inner_sep
  .vert_draw_sep:
     sub     ebx, 12 shl 16
     mov     ecx, ebx
-    mcall   , <4, 36>, , [color.frame]
+    mcall   , <4, 36>, , [sc.work_dark]
  .end_inner_sep:
     pop     ecx
     pop     ebx
  .end_separator:
 
     cmp     byte[win.isvert], 1
-    je	    .vert_dig
+    je        .vert_dig
     mov     edx, ebx
     and     edx, 0xFFFF0000
     add     edx, 0x00060006
@@ -397,10 +347,12 @@ DRAW_WINDOW:
     imul    ebx, edi, 4
     add     ebx, dock_items.icon
     mov     ebx, [ebx]
-    imul    ebx, ICON_SIZE_BGR
-    add     ebx, [img_data.rgb_object]
 
-    mcall   SF_PUT_IMAGE, , <32, 32>
+    push    edi
+    imul    ebx, 32*32*4
+    add     ebx, [icons_inactive]
+    mcall   SF_PUT_IMAGE_EXT, , <32, 32>, , 32, 0, 0
+    pop     edi 
 
     inc     edi
     jmp     @b
@@ -413,12 +365,12 @@ DRAW_WINDOW:
 event_button:
     mcall   SF_GET_BUTTON
 
-	;; it must not be possible to close dock
+    ;; it must not be possible to close dock
     ;cmp     ah, 1
-    ;je	    .button_close
+    ;je        .button_close
 
     cmp     ah, 2
-    je	    .button_dock
+    je      .button_dock
 
     jmp     @f
 
@@ -426,7 +378,7 @@ event_button:
  ;   jmp     exit
 
  .button_dock:
-    mov     edi, [win.button_index]
+    mov     edi, [win.btn_index]
     imul    edi, 256
 
     mov     dword[fi.p00], SSF_START_APP
@@ -460,15 +412,15 @@ event_mouse:
     and     esi, 0xFFFF
 
     cmp     edi, 0
-    jl	    wnd_hide
+    jl        wnd_hide
     dec     edi
-    cmp     edi, [win.width]
-    jg	    wnd_hide
+    cmp     edi, [win.w]
+    jg        wnd_hide
     cmp     esi, 0
-    jl	    wnd_hide
+    jl        wnd_hide
     dec     esi
-    cmp     esi, [win.height]
-    jg	    wnd_hide
+    cmp     esi, [win.h]
+    jg        wnd_hide
 
   ; ==== COUNT INDEX ====
 
@@ -497,38 +449,38 @@ event_mouse:
     mov     eax, 100
 
  .nxtcmp:
-    cmp     [win.button_index], eax
-    je	    .nxt2
+    cmp     [win.btn_index], eax
+    je        .nxt2
 
-    push    dword[win.button_index]
+    push    dword[win.btn_index]
     pop     dword[win.prev_index]
 
-    mov     [win.button_index], eax
+    mov     [win.btn_index], eax
 
  ; ==== DRAW SELECTION ====
     call    DRAW_SELECTION
 
  .nxt2:
-    mov     eax, [win.button_index]
+    mov     eax, [win.btn_index]
     imul    eax, BUTTON_SIZE
     cmp     byte[win.isvert], 1
-    je	    .vert_name
+    je        .vert_name
     add     eax, [win.x]
     mov     [nwin.x], eax
-    mov     byte[nwin.change_shape], 1
-    mcall   SF_DRAW_RECT, <0, [win.width]>, <[win.height], 1>, [color.frame]
+    mov     byte[nwin.swap_shape], 1
+    mcall   SF_DRAW_RECT, <0, [win.w]>, <[win.h], 1>, [sc.work_dark]
     jmp     .vert_end
  .vert_name:
     add     eax, [win.y]
     add     eax, 14
     mov     [nwin.y], eax
-    mov     byte[nwin.change_shape], 1
-    mcall   SF_DRAW_RECT, <[win.width], 1>, <0, [win.height]>, [color.frame]
+    mov     byte[nwin.swap_shape], 1
+    mcall   SF_DRAW_RECT, <[win.w], 1>, <0, [win.h]>, [sc.work_dark]
  .vert_end:
 
  ; ==== OPEN/CLOSE WINDOW ====
     cmp     byte[win.state], 1
-    je	    main_loop
+    je        main_loop
 
     mov     edx, esp
     add     edx, 512
@@ -541,22 +493,14 @@ event_mouse:
 
     mov     byte[win.state], 1
 
-    mov     eax, [win.width_opn]
-    mov     [win.width], eax
-
-    mov     eax, [win.x_opn]
-    mov     [win.x], eax
-
-    mov     eax, [win.height_opn]
-    mov     [win.height], eax
-
-    mov     eax, [win.y_opn]
-    mov     [win.y], eax
-
+    m2m     dword [win.x], dword [win.x_opn]
+    m2m     dword [win.y], dword [win.y_opn]
+    m2m     dword [win.w], dword [win.w_opn]
+    m2m     dword [win.h], dword [win.h_opn]
 
     cmp     byte[dock_items.ashow],1
-    je	   .change_nothing
-    mcall   SF_CHANGE_WINDOW, [win.x], [win.y], [win.width], [win.height]
+    je       .change_nothing
+    mcall   SF_CHANGE_WINDOW, [win.x], [win.y], [win.w], [win.h]
 
   .change_nothing:
     call    DRAW_WINDOW
@@ -566,31 +510,24 @@ event_mouse:
 ;-------------------------------------------------------------------------------
 wnd_hide:
     cmp     byte[win.state], 0
-    je	    main_loop
+    je        main_loop
 
     mov     byte[nwin.close], 1
 
     mcall   SF_SYSTEM, SSF_FOCUS_WINDOW, [win.psid]
 
     mov     byte[win.state], 0
-    mov     byte[win.button_index], -1
+    mov     byte[win.btn_index], -1
 
     cmp     byte[dock_items.ashow],1
-    je	   .do_no_hide
+    je       .do_no_hide
 
-    mov     eax, [win.width_hdn]
-    mov     [win.width], eax
+    m2m     dword [win.x], dword [win.x_hdn]
+    m2m     dword [win.y], dword [win.y_hdn]
+    m2m     dword [win.w], dword [win.w_hdn]
+    m2m     dword [win.h], dword [win.h_hdn]
 
-    mov     eax, [win.x_hdn]
-    mov     [win.x], eax
-
-    mov     eax, [win.height_hdn]
-    mov     [win.height], eax
-
-    mov     eax, [win.y_hdn]
-    mov     [win.y], eax
-
-    mcall   SF_CHANGE_WINDOW, [win.x], [win.y], [win.width], [win.height]
+    mcall   SF_CHANGE_WINDOW, [win.x], [win.y], [win.w], [win.h]
 
   .do_no_hide:
     call    DRAW_WINDOW
@@ -610,23 +547,22 @@ DRAW_SELECTION:
     sub     ecx, 0x000C0000
   @@:
 
-    mcall   SF_DRAW_RECT, , , [color.bg]
+    mcall   SF_DRAW_RECT, , , [sc.work]
 
     mov     edx, ebx
     shr     ecx, 16
-    mov     dx, cx
+    mov     dx,  cx
     add     edx, 0x00040004
 
     mov     ebx, [win.prev_index]
     imul    ebx, 4
     add     ebx, dock_items.icon
     mov     ebx, [ebx]
-    imul    ebx, ICON_SIZE_BGR
-    add     ebx, [img_data.rgb_object]
+    imul    ebx, 32*32*4
+    add     ebx, [icons_inactive]
+    mcall   SF_PUT_IMAGE_EXT, , <32, 32>, , 32, 0, 0
 
-    mcall   SF_PUT_IMAGE, , <32, 32>
-
-    mov     ebx, [win.button_index]
+    mov     ebx, [win.btn_index]
     imul    ebx, BUTTON_SIZE
     add     ebx, 14
     shl     ebx, 16
@@ -639,52 +575,72 @@ DRAW_SELECTION:
     sub     ecx, 0x000C0000
   @@:
 
-    mcall   SF_DRAW_RECT, , , [color.bt]
+    mcall   SF_DRAW_RECT, , , [sc.work_button]
 
     mov     edx, ebx
     shr     ecx, 16
     mov     dx, cx
     add     edx, 0x00040004
 
-    mov     ecx, [win.button_index]
-    imul    ecx, 4
-    add     ecx, dock_items.icon
-    mov     ecx, [ecx]
-    imul    ecx, ICON_SIZE_BGR
-    add     ecx, [img_data.rgb_object]
+    mov     ebx, [win.btn_index]
+    imul    ebx, 4
+    add     ebx, dock_items.icon
+    mov     ebx, [ebx]
+    imul    ebx, 32*32*4
+    add     ebx, [icons_active]
+    mcall   SF_PUT_IMAGE_EXT, , <32, 32>, , 32, 0, 0
+    
+    ret
+;-------------------------------------------------------------------------------
+proc icon32cpy uses ecx edx edi esi, dest:dword, src:dword, len:dword, bgcol:dword
+    mov     edi, [dest] 
+    mov     esi, [src] 
+    mov     ecx, [len]
+    mov     edx, [bgcol]
+.loop: 
+    m2m     dword [edi], dword [esi]
+    cmp     dword [edi], 0
+    jne     @f
+    mov     dword [edi], edx 
+   @@:
+    add     edi, 4
+    add     esi, 4
+    sub     ecx, 4
+    cmp     ecx, 4
+    jg      .loop
 
-    mov     ebx, sel_img
-
-    mov     edi, 0
+    ret 
+endp
+;-------------------------------------------------------------------------------
+LOAD_ICONS:
+    mov     esi, 0 ; esi is a counter of mem_open attempts
   @@:
-    mov     al, byte[ecx + 2]
-    shl     eax, 8
-    mov     al, byte[ecx + 1]
-    shl     eax, 8
-    mov     al, byte[ecx + 0]
-
-    or	    eax, 0x10000000
-    cmp     eax, [color.bg]
-    jne     .notbg
-    mov     eax, [color.bt]
- .notbg:
-
-    mov     byte[ebx + 0], al
-    shr     eax, 8
-    mov     byte[ebx + 1], al
-    shr     eax, 8
-    mov     byte[ebx + 2], al
-
-    add     ebx, 3
-    add     ecx, 3
-
-    add     edi, 3
-
-    cmp     edi, 1024 * 3
-    jne     @b
-
-    mcall   SF_PUT_IMAGE, sel_img, <32, 32>
-
+    ; try to open shr memory, if failed then make 5 attempts more
+    mcall   SF_SYS_MISC, SSF_MEM_OPEN,icons_resname ; 0 = SHM_READ
+    cmp     eax,0
+    jne     @f
+    inc     esi
+    cmp     esi,10
+    je      exit
+    mcall   SF_SLEEP, 70
+    jmp     @b
+  @@:
+    mov     [shr_icons_ptr], eax
+    mov     [shr_icons_len], edx
+    
+    mcall   SF_SYS_MISC, SSF_MEM_FREE,  [icons_active]
+    mcall   SF_SYS_MISC, SSF_MEM_ALLOC, [shr_icons_len]
+    mov     [icons_active], eax
+    
+    mcall   SF_SYS_MISC, SSF_MEM_FREE,  [icons_inactive]
+    mcall   SF_SYS_MISC, SSF_MEM_ALLOC, [shr_icons_len]
+    mov     [icons_inactive], eax  
+    
+    stdcall icon32cpy, [icons_inactive], [shr_icons_ptr], [shr_icons_len], [sc.work]
+    stdcall icon32cpy, [icons_active],   [shr_icons_ptr], [shr_icons_len], [sc.work_button]
+    
+    mcall   SF_SYS_MISC, SSF_MEM_CLOSE,icons_resname
+    
     ret
 ;-------------------------------------------------------------------------------
 proc sections_callback, _file_name, _section_name

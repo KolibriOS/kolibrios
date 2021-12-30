@@ -4,6 +4,8 @@
 /*
 BUGS:
 - F1 in KFM (move Properties to an external app)
+- Ctrl+1+2+3+4 in KFM
+- Highlight another commands on Ctrl|Shift in KFM like in Classic KFM
 TODO:
 - add option Preserve all timestamps (Created, Opened, Modified)
   http://board.kolibrios.org/viewtopic.php?f=23&t=4521&p=77334#p77334
