@@ -171,16 +171,25 @@ int     try_parse_int(long long *digit, int ch, const void *src, void *save, vir
 
     if (ch == '0')  // octal or hex, read next
     {
-        base = 8;
         ch = vgetc(save, src);
-        if (ch == EOF || isspace(ch))
+        if (ch == 'c' || ch == 'C')
+            base = 8;
+        else if (ch == 'x' || ch == 'X')
+            base = 16;
+        if (base == 10)
             have_digits++;
         else
-        if (ch == 'x' || ch == 'X')
         {
-            base = 16;
-            ch = vgetc(save, src);
-            if (ch == EOF) return EOF;
+            char tch = vgetc(save, src);
+            if ((base == 8 && isdigit(tch) && tch < '8') ||
+                (base == 16 && isxdigit(tch)))
+                ch = tch;
+            else
+            {
+                have_digits++;
+                //base = 10; // not required: zero is zero with any (base > 1)
+                vungetc(save, tch, src);
+            }
         }
     }
     *digit = 0;
@@ -193,7 +202,7 @@ int     try_parse_int(long long *digit, int ch, const void *src, void *save, vir
         {
             if (base == 16)
             {
-                if (ch <= '9') ch-= '0';
+                if (ch <= '9') ch -= '0';
                 else
                 if (ch <= 'F') ch = 10 + ch - 'A';
                 else
