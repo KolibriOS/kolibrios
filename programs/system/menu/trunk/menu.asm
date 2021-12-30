@@ -155,6 +155,23 @@ align 4
 
 	; DEBUGF  DBG_INFO, "sc.work = %x\n", [sc.work]
 
+	mov esi, [sc.work]
+	add esi, 0x1a1a1a
+	mov ebx, esi
+	and ebx, 0xFF000000
+	test ebx, ebx
+	jz @f
+	mov esi, 0x00FFFFFF
+@@:
+	mov [active_color], esi
+
+	mov  esi, [sc.work]
+	cmp  esi, 0xdfdfdf
+	jb   @f
+	sub  esi, 0x1b1b1b
+@@:
+	mov [work_color], esi
+
 	mov eax, 68
 	mov ebx, 22
 	mov ecx, icons_resname
@@ -166,10 +183,19 @@ align 4
 	DEBUGF DBG_ERR, "Failed to get ICONS18W from @RESHARE.\nTry rerun @RESHARE.\n"
 	jmp .no_res
 @@:
-	mov [shared_icons_ptr], eax
 	mov [shared_icons_size], edx
-	; copy shared icons to active icons
+	; copy shared icons
 	mov esi, eax
+	mov ecx, edx
+	mcall 68, 12, edx
+	mov edi, eax
+	mov [shared_icons_ptr], eax
+	shr ecx, 2 ; /= 4; ecx = how many dwords in shared icons
+	cld
+	rep movsd
+
+	; copy shared icons to active icons
+	mov esi, [shared_icons_ptr]
 	mov ecx, edx
 	mcall 68, 12, edx
 	mov edi, eax
@@ -177,8 +203,10 @@ align 4
 	shr ecx, 2 ; /= 4; ecx = how many dwords in shared icons
 	cld
 	rep movsd
-	; change work color to work_light color
+
+	; fix colors:
 	mov esi, [shared_icons_active_ptr]
+	mov edi, [shared_icons_ptr]
 	xor ecx, ecx
 .for1:
 	cmp ecx, [shared_icons_size]
@@ -190,10 +218,19 @@ align 4
 	cmp edx, [sc.work]
 	; DEBUGF DBG_INFO, "eax = %x, sc.work = %x\n", eax, [sc.work]
 	jne @f
-	mov ebx, [sc.work] ;[sc.work_light]
-	add ebx, 0x1a1a1a ;;
+	mov ebx, [active_color]
 	mov [eax], ebx
 @@:
+
+	mov eax, edi
+	add eax, ecx
+	mov edx, [eax]
+	cmp edx, [sc.work]
+	jne @f
+	mov ebx, [work_color]
+	mov [eax], ebx
+@@:
+
 	add ecx, 4
 	jmp .for1
 .end_for1:
@@ -896,24 +933,15 @@ draw_one_button:
 	shl	ecx,16
 	add	ecx,BTN_HEIGHT
 ; edx = button identifier
-	mov	esi,[sc.work]
-	cmp	esi,0xdfdfdf
-	jb	nocorrect
-	sub	esi,0x1b1b1b
-	
-;--------------------------------------
-align 4
-nocorrect: 
+	mov	esi, [work_color]
+
 	mov [is_icon_active], 0
 	inc	dl
 	cmp	[edi + cur_sel],dl
 	jne	.nohighlight
 	mov [is_icon_active], 1
-	cmp esi,0
-	jne @f
-	mov esi,0x2a2a2a
-@@:
-	add	esi,0x1a1a1a
+
+	mov	esi, [active_color]
 ;--------------------------------------
 align 4
 .nohighlight:
@@ -1148,6 +1176,8 @@ icon_number dd ?
 is_icon_active dd ?
 no_shared_resources dd 0
 tmp dd ?
+active_color dd ?
+work_color dd ?
 ;------------------------------------------------------------------------------
 align 4
 bootparam:
