@@ -368,7 +368,7 @@ void EventTabScreensaverClick()
 
 void EventDeleteFile()
 {
-	if (select_list.cur_y) DeleteFile(#cur_file_path); //no not delete default
+	if (select_list.cur_y) DeleteFile(list.get(select_list.cur_y)); //no not delete default
 	Open_Dir();
 	EventApply();
 }
@@ -395,17 +395,16 @@ void EventApply()
 {
 	char kivparam[4096+10];
 	dword file_name = list.get(select_list.cur_y);
-	strcpy(#cur_file_path, list.get(select_list.cur_y));
 	if (tabs.active_tab==TAB_SKINS)
 	{
-		strcpy(#cur_skin_path, #cur_file_path);
-		SetSystemSkin(#cur_file_path);
+		strcpy(#cur_skin_path, list.get(select_list.cur_y));
+		SetSystemSkin(#cur_skin_path);
 		MoveSize(OLD, OLD, OLD, WIN_H+4+GetSkinHeight());
 	} 
 	if (tabs.active_tab==TAB_WALLPAPERS)
 	{
 		SelectList_Draw();
-		miniprintf(#kivparam, "\\S__%s", #cur_file_path);
+		miniprintf(#kivparam, "\\S__%s", list.get(select_list.cur_y));
 		if (optionbox_tiled.checked) || (!select_list.cur_y) kivparam[1]='T';
 		if (optionbox_auto.checked) {
 			file_name += strrchr(file_name, '/');
@@ -424,8 +423,8 @@ void EventApply()
 void EventOpenFile()
 {
 	switch (tabs.active_tab) {
-		case TAB_SKINS: RunProgram("/sys/skincfg", #cur_file_path); break;
-		case TAB_WALLPAPERS: RunProgram("/sys/media/kiv", #cur_file_path); break;
+		case TAB_SKINS: RunProgram("/sys/skincfg", list.get(select_list.cur_y)); break;
+		case TAB_WALLPAPERS: RunProgram("/sys/media/kiv", list.get(select_list.cur_y)); break;
 		case TAB_SCREENSAVERS: if(select_list.cur_y) RunProgram(list.get(select_list.cur_y), "@ss");
 	}
 }
@@ -451,8 +450,6 @@ void EventSetSs()
 stop:
 
 char folder_path[PATHLEN];
-
-char cur_file_path[PATHLEN];
 char cur_skin_path[PATHLEN];
 
 char default_skin[PATHLEN];
