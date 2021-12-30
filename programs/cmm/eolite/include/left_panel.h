@@ -59,7 +59,8 @@ void GetDiskIconAndName(dword dev_name, icon, disc_name)
 			if (ESBYTE[icon]==4)
 			{
 				//show label only for hard disk drives
-				if (volume_label = GetVolumeLabel(dev_name)) {
+				volume_label = GetVolumeLabel(dev_name);
+				if (ESBYTE[volume_label]) {
 					strncpy(disc_name, volume_label, 15);
 					chrcat(disc_name, ' ');
 					return;					

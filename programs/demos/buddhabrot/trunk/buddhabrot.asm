@@ -2,89 +2,75 @@
 ; Now it use static memory, it is mixed 32bit code and SSE instructions.
 
 include '../../../macros.inc'
+include '../../../KOSfuncs.inc'
 
 use32
+                org         0x0
 
-               org    0x0
+                db          'MENUET01'           ; 8 byte id
+                dd          0x01                 ; header version
+                dd          START                ; start of code
+                dd          IMG_END              ; size of image
+                dd          I_END ;0x100000      ; memory for app
+                dd          I_END ;0xbffff       ; esp
+                dd          0x0 , 0x0            ; I_Param , I_Icon
 
-               db     'MENUET01'              ; 8 byte id
-               dd     0x01                    ; header version
-               dd     START                   ; start of code
-               dd     IMG_END                   ; size of image
-               dd     I_END ;0x100000                ; memory for app
-               dd     I_END ;0xbffff                 ; esp
-               dd     0x0 , 0x0               ; I_Param , I_Icon
+; start of execution
+START:
 
-START:                          ; start of execution
-
-     call draw_window
-     call Main
-     call draw_from_buffer
+                call        draw_window
+		    call        draw_from_buffer
+                call        Main
+                call        draw_from_buffer
+                
+                mcall       SF_SET_CAPTION,1,wintitle2
 
 still:
 
+                mcall       SF_WAIT_EVENT
+ 
+                cmp         eax,EV_REDRAW
+                je          .redraw
+                cmp         eax,EV_KEY
+                je          .key
+                cmp         eax,EV_BUTTON
+                je          .button
+                jmp         still
+                
+      .redraw:
+                call        draw_window
+                call        draw_from_buffer
+                jmp         still
 
-;     call Main
+      .key:
+                mcall       SF_GET_KEY
+                shr         eax,16                ; get scancode in 'al'
+                cmp         al,1
+                je          .exit
+                cmp         al,66
+                je          set_as_wallpaper
+                jmp         still
 
+      .button:
+                mcall       SF_GET_BUTTON
+                cmp         ah,1                   ; button id=1 ?
+                jne         still
 
-;            mov eax,7
-;            mov ebx,screen
-;            mov ecx,IMG_SIZE*65536+IMG_SIZE
-;            mov edx,0*65536+0
-;            int 0x40
-
-;    mov  eax,23                 ; wait here for event
-;    mov  ebx,timeout
-;    int  0x40
- ;   mov eax,11                   ; check for event no wait
-    mov eax,10                  ; wait for event
-    int 0x40
-
-    cmp  eax,1                  ; redraw request ?
-    je   red
-    cmp  eax,2                  ; key in buffer ?
-    je   key
-    cmp  eax,3                  ; button in buffer ?
-    je   button
-
-    jmp  noclose
-
-  red:                          ; redraw
-    call draw_window
-    call draw_from_buffer
-    jmp  still
-
-  key:                          ; key
-    mov  eax,2                  ; just read it and ignore
-    int  0x40
-    shr  eax,8
-    cmp  eax, 27
-    jne  still
-    mov  eax, -1
-    int  0x40
+      .exit:
+                mcall       SF_TERMINATE_PROCESS
 
 
-  button:                       ; button
-    mov  eax,17                 ; get id
-    int  0x40
-
-    cmp  ah,1                   ; button id=1 ?
-    jne  noclose
-
-    mov  eax,-1                 ; close this program
-    int  0x40
-  noclose:
-
-    jmp  still
-
+set_as_wallpaper:
+                mcall       SF_BACKGROUND_SET,SSF_MODE_BG,2
+                mcall       SF_BACKGROUND_SET,SSF_SIZE_BG,IMG_SIZE,IMG_SIZE
+                mcall       SF_BACKGROUND_SET,SSF_IMAGE_BG,screen,0,3*IMG_SIZE*IMG_SIZE
+                mcall       SF_BACKGROUND_SET,SSF_REDRAW_BG
+                jmp         still
 
 draw_from_buffer:
-
-            mov eax,7
-            mov ebx,screen
-            mov ecx,IMG_SIZE*65536+IMG_SIZE
-            mov edx,0*65536+0
-            int 0x40
+                pusha
+                mcall       SF_PUT_IMAGE,screen,IMG_SIZE*65536+IMG_SIZE,0
+		    popa
 ret
 
 ;-------------------------------------------------------------------------------
@@ -323,23 +309,20 @@ r15dd           equ         ebp-72
 ;   *********************************************
 draw_window:
 
-    mcall 12, 1                                   ; function 12:tell os about windowdraw
+                mcall       SF_REDRAW, SSF_BEGIN_DRAW
     
-	mcall 48, 4                                   ;get skin width
-	lea	ecx, [50*65536+IMG_SIZE+4+eax]            ; [y start] *65536 + [y size] + [skin_height]
-	mcall	0,<50,IMG_SIZE+9>,,0x74000000,,labelt ;draw window
+                mcall       SF_STYLE_SETTINGS, SSF_GET_SKIN_HEIGHT
+                lea         ecx, [50*65536+IMG_SIZE+4+eax]            ; [y start] *65536 + [y size] + [skin_height]
+                mcall       SF_CREATE_WINDOW,<50,IMG_SIZE+9>,,0x74000000,,wintitle1
 
-    mcall 12, 2                                   ; function 12:tell os about windowdraw
-
-    ret
-
+                mcall       SF_REDRAW, SSF_END_DRAW
+                ret
 
 
 ;-------------------------------------------------------------------------------
 align 1
-labelt:
- db  'buddhabrot',0
-labelen:
+wintitle1       db          'Buddhabrot - Calculating, please wait...',0
+wintitle2       db          'Buddhabrot - Press F8 to set image as wallpaper',0
 
 align 4
 g_xorwow_x      dd          123456789
@@ -350,9 +333,10 @@ g_xorwow_v      dd          5783321
 g_xorwow_d      dd          6615241
 g_rand_scale    dd          2.3283064e-10 ; 1.0 / 2^32
 
-IMG_SIZE=600
-SEQ_SIZE=50
-ITERATIONS=100
+IMG_SIZE        =           600
+SEQ_SIZE        =           50
+ITERATIONS      =           100
+
 g_img_size      dd          600.0
 g_offsetx       dd          0.5
 g_offsety       dd          0.0
@@ -367,10 +351,7 @@ g_255_0         dd          255.0
 
 IMG_END:
 ;--------------------
-sequence:
-   rb          SEQ_SIZE*8
-screen:
-   rb          IMG_SIZE*IMG_SIZE*4
-memStack:
-   rd          1024
+sequence:       rb          SEQ_SIZE*8
+screen:         rb          IMG_SIZE*IMG_SIZE*4
+memStack:       rd          1024
 I_END:
