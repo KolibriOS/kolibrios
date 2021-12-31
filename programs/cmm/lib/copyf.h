@@ -14,17 +14,23 @@ enum {
 	FILE_SKIP,
 };
 
+enum {
+	MODE_NORMAL,
+	MODE_FORCE
+};
+
 #define WRITE_ERROR_DEBUG 0
 #define WRITE_ERROR_NOTIFY 1
 :int writing_error_channel = WRITE_ERROR_DEBUG;
 
 int copy_state = FILE_DEFAULT;
+int saved_state = FILE_DEFAULT;
+bool is_remember = false;
 
 :int copyf(dword from1, in1)
 {
 	dword error;
 	BDVK CopyFile_atr1;
-	copy_state = FILE_DEFAULT;
 
 	if (!from1) || (!in1)
 	{
@@ -53,6 +59,7 @@ int copy_state = FILE_DEFAULT;
 			}
 			if (copy_state == FILE_SKIP)
 			{
+				error = 0;
 				return 0;
 			}
 		}
@@ -72,7 +79,11 @@ int copy_state = FILE_DEFAULT;
 	{
 		if (file_exists(copy_in3)) && (copy_state != FILE_REPLACE)
 		{
-			copy_state = FILE_EXISTS;
+			if (saved_state == FILE_DEFAULT) {
+				copy_state = FILE_EXISTS;
+			} else {
+				copy_state = saved_state;
+			}
 			return 222;
 		}
 		if (GetFreeRAM()-1024*1024 < CopyFile_atr.sizelo) //GetFreeRam-1Mb and convert to bytes
@@ -142,7 +153,7 @@ int copy_state = FILE_DEFAULT;
 				}
 				if (copy_state == FILE_SKIP)
 				{
-					copy_state = FILE_DEFAULT;
+					error = 0;
 					break;
 				}
 			}

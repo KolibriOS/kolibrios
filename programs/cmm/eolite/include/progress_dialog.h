@@ -46,8 +46,9 @@ void DisplayOperationForm(int operation_flag)
 		copy_bar.max = 0;
 	}
 	copy_bar.frame_color = sc.work_graph;
-	if (copy_state == FILE_DEFAULT) event_mode = #CheckEvent;
+	
 	if (copy_state == FILE_EXISTS) event_mode = #WaitEvent;
+	else event_mode = #CheckEvent;
 	event_mode();
 	switch(EAX)
 	{
@@ -59,15 +60,22 @@ void DisplayOperationForm(int operation_flag)
 					DialogExit();
 					break;
 				case BTN_REPLACE:
+					if (is_remember == true) {
+						saved_state = FILE_REPLACE;
+					}
 					copy_state = FILE_REPLACE;
 					break;
 				case BTN_SKIP:
+					if (is_remember == true) {
+						saved_state = FILE_SKIP;
+					}
 					copy_state = FILE_SKIP;
 					break;
 				default:
 					if (remember_choice.click(EAX+1)) {
-						notify(itoa(remember_choice.checked));
+						is_remember = remember_choice.checked;
 					}
+					break;
 			}
 			break;
 		case evReDraw:

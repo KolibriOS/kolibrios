@@ -124,6 +124,7 @@ void PasteThread()
 	int paste_elements_count = 0;
 	dword clipbuf;
 	dword path_offset;
+	dword copy_state_ex = 0;
 	
 	clipbuf = Clipboard__GetSlotData(Clipboard__GetSlotCount()-1);
 	if (DSDWORD[clipbuf+4] != 3) return;
@@ -160,6 +161,8 @@ _DIFFERENT_DRIVES:
 	}
 	
 	path_offset = clipbuf + 10;
+	copy_state = FILE_DEFAULT;
+	saved_state = FILE_DEFAULT;
 	for (j = 0; j < paste_elements_count; j++) {
 		strcpy(#copy_from, path_offset);
 		if (!copy_from) DialogExit();
