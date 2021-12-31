@@ -1,6 +1,6 @@
 
-char path_to_file[4096];
-char file_name2[4096];
+char path_to_file[PATHLEN];
+char file_name2[PATHLEN];
 edit_box file_name_ed = {230,59,32,0xffffff,0x94AECE,0xFFFfff,0xffffff,0x10000000,sizeof(file_name2)-2,#file_name2,NULL, 0b,2,2};
 edit_box path_to_file_ed = {160,120,79,0xffffff,0x94AECE,0xFFFfff,0xffffff,2,sizeof(path_to_file)-2,#path_to_file,NULL, 0b,2,2};
 
@@ -32,14 +32,12 @@ void SetPropertiesDir(dword way)
 	dword cur_file;
 	if (dir_exists(way))
 	{
-		cur_file = malloc(4096);
+		cur_file = malloc(PATHLEN);
 		GetDir(#dirbuf, #fcount, way, DIRS_ONLYREAL);
 		for (i=0; i<fcount; i++)
 		{
 			filename = i*304+dirbuf+72;
-			strcpy(cur_file, way);
-			chrcat(cur_file, '/');
-			strcat(cur_file, filename);
+			sprintf(cur_file, "%s/%s", way, filename);
 			if ( ESDWORD[filename-40] & ATR_FOLDER )
 			{
 				SetPropertiesDir(cur_file);
@@ -58,7 +56,7 @@ void SetProperties(int mode)
 	char pcur_file[4096];
 	dword i;
 
-	apply_question_active=false;
+	apply_question_active = false;
 
 	if (SET_PROPERTIES_SINGLE_FILE == mode) {
 		SetPropertiesFile(#file_path, #file_info_general);
@@ -95,7 +93,7 @@ void SetProperties(int mode)
 
 void ShowConfirmQuestionPopin()
 {
-	apply_question_active = 1;
+	apply_question_active = true;
 	DrawPopup(15,80,250,90,1,sc.work, sc.work_graph);
 	WriteText(35, 102, 0x90, 0x000000, QUEST_1);
 	WriteText(65, 117, 0x90, 0x000000, QUEST_2);
@@ -226,8 +224,13 @@ void DrawPropertiesWindow()
 	dword ext1;
 	dword element_size;
 	incn y;
-	char temp_path[sizeof(file_path)];
-	DefineAndDrawWindow(Form.left + 150,150,315,360+skin_height,0x34,sc.work,WINDOW_TITLE_PROPERTIES,0);
+	char temp_path[PATHLEN];
+	bool show_date = false;
+
+	if (chrnum(path, '/')>1) || (streq(path, "/kolibrios")) || (streq(path, "/sys")) show_date = true;
+	if (getSelectedCount()) show_date = false;
+
+	DefineAndDrawWindow(Form.left + 150,150,315,show_date*60+300+skin_height,0x34,sc.work,WINDOW_TITLE_PROPERTIES,0);
 	GetProcessInfo(#pform, SelfInfo);
 
 	DrawStandartCaptButton(pform.cwidth - 96, pform.cheight-34, B_CLOSE, T_CLOSE);
@@ -235,16 +238,14 @@ void DrawPropertiesWindow()
 	
 	WriteText(10, 78, 0x90, sc.work_text, PR_T_DEST);
 	edit_box_draw stdcall (#path_to_file_ed);
-
-	WriteText(10, 97, 0x90, sc.work_text, PR_T_SIZE);
 	
 	if (getSelectedCount())
 	{
 		PropertiesDrawIcon(NULL, "<lot>");
-		sprintf(#folder_info,"%s%d%s%d",SET_6,more_files_count.files,SET_7,more_files_count.folders);
+		sprintf(#folder_info,T_FILES_FOLDERS,more_files_count.files,more_files_count.folders);
 		WriteText(file_name_ed.left+4, 30, 0x90, sc.work_text, #folder_info);
-		sprintf(#element_size_label,"%s (%d %s)",ConvertSize64(more_files_count.bytes, NULL),more_files_count.bytes,SET_BYTE_LANG);
-		WriteText(120, 97, 0x90, sc.work_text, #element_size_label);
+		sprintf(#element_size_label,T_PROP_SIZE,ConvertSize64(more_files_count.bytes, NULL),more_files_count.bytes);
+		WriteText(10, 97, 0x90, sc.work_text, #element_size_label);
 	}
 	else
 	{
@@ -259,24 +260,26 @@ void DrawPropertiesWindow()
 		WriteText(file_name_ed.left, file_name_ed.top-15, 0x80, sc.work_text, PR_T_NAME);
 		DrawEditBox(#file_name_ed);
 		
-		if (!itdir) element_size = file_info_general.sizelo;
-		else
-		{
-			WriteText(10,116, 0x90, sc.work_text, PR_T_CONTAINS);                              
-			sprintf(#folder_info,"%s%d%s%d",SET_6,dir_size.files,SET_7,dir_size.folders);
-			WriteText(120, 116, 0x90, sc.work_text, #folder_info);
+		if (!itdir) {
+			element_size = file_info_general.sizelo;
+		} else {
+			sprintf(#folder_info,PR_T_CONTAINS,dir_size.files,dir_size.folders);
+			WriteText(10,  117, 0x90, sc.work_text, PR_T_CONTAINS);                              
+			WriteText(120, 117, 0x90, sc.work_text, #folder_info);
 			element_size = dir_size.bytes;
 		}
-		WriteTextLines(10,  136, 0x90, sc.work_text, CREATED_OPENED_MODIFIED, 20);
-		DrawDate(120,  136, sc.work_text, #file_info_general.datecreate);
-		DrawDate(120, 156, sc.work_text, #file_info_general.datelastaccess);
-		DrawDate(120, 176, sc.work_text, #file_info_general.datelastedit);
-
-		sprintf(#element_size_label,"%s (%d %s)",ConvertSize64(element_size, NULL),element_size,SET_BYTE_LANG);
-		WriteText(120, 99, 0x90, sc.work_text, #element_size_label);
+		sprintf(#element_size_label,T_PROP_SIZE,ConvertSize64(element_size, NULL),element_size);
+		WriteText(10, 99, 0x90, sc.work_text, #element_size_label);
 	}
-	DrawFrame(10, 212, -10*2 + pform.cwidth - 2, 92, FLAGS);
-	y.n = 212; //212 => attributes_frame.y
+
+	if (show_date) {
+		WriteTextLines(10,  136, 0x90, sc.work_text, CREATED_OPENED_MODIFIED, 20);
+		DrawDate(120, 136, sc.work_text, #file_info_general.datecreate);
+		DrawDate(120, 156, sc.work_text, #file_info_general.datelastaccess);
+		DrawDate(120, 176, sc.work_text, #file_info_general.datelastedit);			
+	}
+
+	DrawFrame(10, y.set(pform.cheight - 143), -10*2 + pform.cwidth - 2, 92, FLAGS);
 	ch_read_only.draw(24, y.inc(18));
 	ch_hidden.draw(24, y.inc(24));
 	ch_system.draw(24, y.inc(24));
