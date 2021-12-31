@@ -52,6 +52,7 @@ sensor progress = { 40, WINH-70, WINW-80, 20 };
 void main()
 {
 	int btn;
+	saved_state = FILE_REPLACE;
 	load_dll(libHTTP, #http_lib_init,1);
 	SetWindowLayerBehaviour(-1, ZPOS_ALWAYS_TOP);
 	@SetEventMask(EVM_REDRAW + EVM_KEY + EVM_BUTTON + EVM_STACK);

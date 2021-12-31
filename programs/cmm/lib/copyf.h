@@ -31,6 +31,7 @@ bool is_remember = false;
 {
 	dword error;
 	BDVK CopyFile_atr1;
+	copy_state = FILE_DEFAULT;
 
 	if (!from1) || (!in1)
 	{
