@@ -74,15 +74,30 @@
   include '../../../KOSfuncs.inc'
   include '../../../dll.inc'
 
+  include 'draw_sliders.inc'
+  include 'draw_utils.inc'
+  include 'draw_palitra.inc'
+
+
+
   WIN_W  = 394            ; ширина окна
   WIN_H  = 251            ; высота окна
   WIN_X  = 250            ; координата х окна
   WIN_Y  = 190            ; координата у окна
-  
-  CELLW  = 8              ; not used yet, but has to be :)
+
+  Left_Border=4
+  SliderPanel_W = 110
   DRAWY  = 9
+
+  CELLW  = 11; 11            ; not used yet, but has to be :)
+
   ICONX  = WIN_W - 35
   SLIDEW = 25
+
+  palitra_x = Left_Border+SliderPanel_W+12
+  palitra_w = CELLW*(8)+8+1
+  palitra_xw = palitra_x shl 16 + palitra_w
+  palitra_yw = DRAWY shl 16 + palitra_w
 
 START:
     mcall   SF_SYS_MISC,SSF_HEAP_INIT ; инициализация кучи
@@ -272,7 +287,7 @@ draw_main:
     call    draw_palitra                  ; РИСУЕМ ПАЛИТРУ
     call    draw_result                   ; РИСУЕМ РЕЗУЛЬТАТ
 
-    mcall   SF_DEFINE_BUTTON, <110,147>, <DRAWY,147>, 0x07+BT_HIDE
+    mcall   SF_DEFINE_BUTTON, <palitra_x,palitra_w*2+1  > , <DRAWY,palitra_w*2+2>, 0x07+BT_HIDE ; palitra
 
     add     edx,1++BT_NOFRAME
     mcall   , <10,22>, <62,128>           ; Рисуем невидимую кнопку под слайдером red
@@ -296,31 +311,7 @@ draw_main:
     mcall SF_REDRAW,SSF_END_DRAW
     ret
 
-proc DrawRectangle3D, _x:word, _w:word, _y:word, _h:word, color1:dword, color2:dword
-    mov ebx,[_w]
-    add ebx,[_x] ;тут точно какая-то дичь... нужно переписать :)
-    shl ebx,16
-    mov bx,1
-    mov ecx,[_h]
-    inc cx
-    mov edx,[_color2]
-    mcall SF_DRAW_RECT ; x+w,y,1,h+1,color2
-    rol ebx,16
-    sub bx,[_w]
-    ror ebx,16
-    dec cx
-    mov edx,[_color1]
-    mcall ;SF_DRAW_RECT x,y,1,h,color1
-    mov bx,[_h]
-    xchg bx,cx
-    mcall ;SF_DRAW_RECT x,y,w,1,color1
-    rol ecx,16
-    add cx,[_h]
-    ror ecx,16
-    mov edx,[_color2]
-    mcall ;SF_DRAW_RECT x,y+h,w,1,color2
-	ret 
-endp
+
 
 ;#___________________________________________________________________________________________________
 ;****************************************************************************************************|
@@ -333,26 +324,34 @@ endp
     ;.................................................................................................
     ; button_next_colorsheme
     mcall   SF_DEFINE_BUTTON, <ICONX,21>, <DRAWY,21>, 12+BT_HIDE
-    ; circle diagram
-    add     ecx,19 shl 16                 ; move rect
-    add     edx,3                         ; ID = 15
-    mcall
+
+    ; palitra button                    ; ID = 14
+    mcall , ,(DRAWY+150) shl 16 + 21, 14+BT_HIDE
+
+    ; pipet button                        ; ID = 15
+    mcall , , (DRAWY+150) shl 16 + 21, 15+BT_HIDE
 
     mov     ebx,[icons18bg]
     add     ebx,18*18*4*53
     mcall   SF_PUT_IMAGE_EXT, ebx, <18,18>, <ICONX+2,DRAWY+2>, 32, 0, 0
 
     add     ebx,18*18*4*(39-53)
-    mov     edx,ICONX*65536+WIN_H-90
+    mov     edx,(ICONX+2)*65536+WIN_H-90
     mcall
-    
+
     mov     ebx,[icons18]
-    add     ebx,18*18*4*(52-39)
+    add     ebx,18*18*4*(53-1)
     sub     edx,40
     mcall
-    
-    ;stdcall DrawRectangle3D ICONX, DRAWY, 22, 22, [sc.work_light], [sc.work_dark]   ;Leency: draw rectangle around the button, buggy now
-  
+
+    stdcall DrawDeepRectangle, ICONX, DRAWY, 22, 22, [sc.work_light], [sc.work_dark]
+
+    stdcall DrawDeepRectangle, ICONX, DRAWY+110, 22, 22, [sc.work_light], [sc.work_dark]
+
+    stdcall DrawDeepRectangle, ICONX, DRAWY+150, 22, 22, [sc.work_light], [sc.work_dark]
+
+    ;stdcall DrawRectangle3D, ICONX, DRAWY, 22, 22, [sc.work_light], [sc.work_dark]   ;Leency: draw rectangle around the button, buggy now
+
     ;mov     eax,13                        ; draw rect
     ;mov     ebx,266 shl 16+16             ; [x] + [size]
     ;mov     ecx,9 shl 16+16               ; [y] + [size]
@@ -395,7 +394,7 @@ endp
     ;------------------------------------------------------------------------------------------------+
     draw_bottom_panel:                    ; Отрисовка нижней панели
     ;.................................................................................................
-    mcall   SF_DEFINE_BUTTON, ((60+70) shl 16)+90, (225 shl 16)+16, 14, [sc.work_button]
+    mcall   SF_DEFINE_BUTTON, ((60+70) shl 16)+90, ((WIN_H-26) shl 16)+16, 14, [sc.work_button]
 
     add     ebx, 100 shl 16
     add     edx, 2
@@ -404,7 +403,7 @@ endp
     ; Write string
     mov     ecx,[sc.work_text]            ; RGB
     or      ecx, 1 shl 31
-    mcall   SF_DRAW_TEXT, (60) shl 16+230, ,bground
+    mcall   SF_DRAW_TEXT, (60) shl 16+(WIN_H-21), ,bground
 
     mov     ecx, [sc.work_button_text]
     or      ecx, 1 shl 31
@@ -417,7 +416,7 @@ endp
     mov     edx, bground2
     int     0x40
 
-    mcall SF_DRAW_LINE, 4 shl 16+(380), (219) shl 16+219, 0x00666666
+    mcall SF_DRAW_LINE, 4 shl 16+(WIN_W-14), (WIN_H-32) shl 16+(WIN_H-32), 0x00666666
     ret                                   ; return
     ;.................................................................................................
 
@@ -559,349 +558,10 @@ mouse_get:
     ret                                   ; Возвращаем управление
 ;end_mouse_get----------------------------------------------------------------------------------------
 
-draw_palitra:
-    ; Функция 13 - нарисовать прямоугольник
-    ;mcall   SF_DRAW_RECT, 110 shl 16+148, 9 shl 16+148, [sc.work]
-
-    cmp     [renmode],2
-    je      cyrcle_draw
-    ;cmp     [renmode],1
-    ;je      picker_draw
-    cmp     [renmode],0
-    je      sheme_draw
-    ret
-
-    ;.................................................................................................
-    ; Отрисовка круговой диаграммы
-    ;.................................................................................................
-    cyrcle_draw:
-    ;mov     eax,13
-    ;mov     edx,0x666666
-    ;mov     ebx,108*65536+152
-    ;mov     ecx,125*65536+33
-    ;mcall
-    ;mov     edx,0xF3F3F3
-    ;mov     ebx,109*65536+150
-    ;mov     ecx,126*65536+31
-    ;mcall
-
-    ;mov     eax,4                         ; 4 - вывести строку текста в окно
-    ;mov     ebx,115 shl 16+131            ; [координата по оси x]*65536 + [координата по оси y]
-    ;mov     ecx,0x666666                  ; 0xX0RRGGBB (RR, GG, BB задают цвет текста)
-    ;mov     edx,hint                      ; указатель на начало строки
-    ;mov     esi,24                        ; выводить esi символов
-    ;mcall
-    ;mov     ebx,125 shl 16+144            ; [координата по оси x]*65536 + [координата по оси y]
-    ;mov     edx,hint2                     ; указатель на начало строки
-    ;mov     esi,21                        ; выводить esi символов
-    ;mcall
-
-    ;mov     edx,[color]
-    ;mov     ebx,109*65536+150
-    ;mov     ecx, 10*65536+150
-    ;mcall
-    call    mouse_local                   ; получаем координаты мыши относительно окна
-    mov     ecx, [mouse_x]                ; заносим в регистр
-    mov     edx, [mouse_y]                ; заносим в регистр
-    cmp     ecx, WIN_W-10
-    jg      cyrcle_draw_2
-    cmp     edx, WIN_H
-    jle     end_cyrcle_draw
-
-    cyrcle_draw_2:
-        mcall   SF_SLEEP,10
-    call    desktop_get
-    call    mouse_global
-
-    mov     ebx,112*65536+11
-    mov     esi,0                         ; counter=8
-    circle_loop:
-      mov     ecx, 10*65536+11
-      mov     edi,0
-      circle_loop2:
-        call    circle_pixel_read
-        mcall   SF_DRAW_RECT
-        add     ecx,11 shl 16
-        inc     edi
-        cmp     edi,13
-        jne     circle_loop2
-
-      add     ebx,11 shl 16
-      inc     esi
-      cmp     esi,13
-      jne     circle_loop
-
-    mcall   SF_DRAW_RECT, 177*65536+13, 76*65536+13, 0
-    mov     ecx, [mouse_x]
-    mov     edx, [mouse_y]
-    inc     ecx
-    inc     edx
-    mov     ebx, edx
-    imul    ebx, [desctop_w]
-    add     ebx, ecx
-    mcall   SF_GET_PIXEL
-    mov     edx,eax
-    mcall   SF_DRAW_RECT, 178*65536+11, 77*65536+11
-    ret
-    end_cyrcle_draw:
-    mcall   SF_DRAW_RECT, 111*65536+145, 9*65536+145, 0x666666
-    ret
-
-    circle_pixel_read:
-    push    ecx ebx
-    mov     ecx, [mouse_x]
-    mov     edx, [mouse_y]
-    inc     ecx
-    add     ecx, esi
-    cmp     ecx, 6
-    jl      _cpr_exit
-    sub     ecx, 6
-    inc     edx
-    add     edx, edi
-    cmp     edx, 6
-    jl      _cpr_exit
-    sub     edx, 6
-
-    mov     ebx, edx
-    imul    ebx, [desctop_w]
-    add     ebx, ecx
-    mcall   SF_GET_PIXEL
-    mov     edx,eax
-    pop     ebx ecx
-    ret
-
-    _cpr_exit:
-    xor     edx,edx
-    pop     ebx ecx
-    ret
-
-    ;picker_draw:
-    ;ret
-
-    ;.................................................................................................
-    ; Отрисовка фона под кнопки
-    ;.................................................................................................
-    sheme_draw:
-    mov     eax,SF_DRAW_RECT  ; Функция 13 - нарисовать прямоугольник
-    mov     edx,0x222222                  ; цвет
-    mov     ecx,9 shl 16+73               ; Начальные координаты по y [к-та y]*65536 + [размер]
-    mov     esi,2                         ; Счетчик линий подложек
-    re_draw:
-    mov     ebx,110 shl 16+73             ; Начальные координаты по x [к-та x]*65536 + [размер]
-    mov     edi,2                         ; Счетчик количества подложек
-    for_fon_loop:
-      int     0x40                        ; Прерывание
-      add     ebx,75 shl 16               ; Смещаем положение линии по х
-      dec     edi                         ; Уменьшаем счетчик кнопок
-      cmp     edi,0                       ; Сравниваем с нулем
-    jnz     for_fon_loop                  ; Если не ноль то в начало цикла
-    dec     esi                           ; Уменьшаем его
-    cmp     esi,0                         ; Сравниваем с нулем
-    mov     ecx,84 shl 16+73              ; Начальные координаты по y [к-та y]*65536 + [размер]
-    jnz     re_draw                       ; Если не ноль то в начало цикла
-
-    ;.................................................................................................
-    ; Отрисовка кнопок по циклу
-    ;.................................................................................................
-    mov     eax,SF_DRAW_RECT  ; Функция 13 - нарисовать прямоугольник
-    mov     edx,0x0FFFFFFF                ; цвет
-    mov     esi,4                         ; Счетчик количества абзацев (#4,8)
-    mov     ebx,99 shl 16+8               ; Начальные координаты по x [к-та x]*65536 + [размер]
-    for_abz:
-      ;;push    esi                       ; Сохраняем значение счетчика линий в стек
-      cmp     esi,2
-      jne     x2_line
-      mov     ebx,99 shl 16+8
-      x2_line:
-      add     ebx,3 shl 16                ; Смещаем положение линии по x
-      mov     edi,8                       ; Счетчик количества кнопок в строке
-      for_stolbik:
-        push    edi                       ; Сохраняем значение счетчика линий в стек
-        mov     edi,8                     ; Счетчик количества кнопок в строке
-        mov     ecx,  1 shl 16+8          ; Начальные координаты по y [к-та y]*65536 + [размер]
-        cmp     esi,2
-        jg      y2_line                   ; Если больше 4 то игнорим
-        mov     ecx,76 shl 16+8
-        y2_line:
-        add     ebx,9 shl 16              ; Смещаем положение линии по x
-        for_loop:
-          add     ecx,9 shl 16            ; Смещаем положение линии по y
-          int     0x40                    ; Прерывание
-          call    sub_red
-          dec     edi                     ; Уменьшаем счетчик кнопок
-          cmp     edi,0                   ; Сравниваем с нулем
-          jnz     for_loop                ; Если не ноль то в начало цикла
-      call    sub_green
-      pop     edi                         ; Иначе восстанавливаем счетчик линий
-      dec     edi                         ; Уменьшаем его
-      cmp     edi,0                       ; Сравниваем с нулем
-      jnz     for_stolbik                 ; Если не ноль то в начало цикла
-    call    sub_blue
-    ;;pop     esi                         ; Иначе восстанавливаем счетчик линий
-    dec     esi                           ; Уменьшаем его
-    cmp     esi,0                         ; Сравниваем с нулем
-    jnz     for_abz                       ; Если не ноль то в начало цикла
-    ret                                   ; Возвращаем управление
-;end_draw_palitra-------------------------------------------------------------------------------------
 
 
-sub_red:
-    ;.................................................................................................
-    ; Расчёт смещений красного цвета в генерации цвета палитры
-    ;.................................................................................................
-    push    eax
-    mov     eax,[pnext]
-  ;sub_red_0                              ; palitra
-    cmp     al,0
-    jne     sub_red_1
-    sub     edx,0x40
-    jmp     sub_red_e
-  sub_red_1:                              ; random
-    cmp     al,1
-    jne     sub_red_2
-    sub     edx,0x20
-    jmp     sub_red_e
-  sub_red_2:                              ; gree
-    cmp     al,2
-    jne     sub_red_3
-    sub     edx,0x010101
-    jmp     sub_red_e
-  sub_red_3:                              ; red
-    cmp     al,3
-    jne     sub_red_4
-    sub     edx,0x0101
-    jmp     sub_red_e
-  sub_red_4:                              ; green
-    cmp     al,4
-    jne     sub_red_5
-    sub     edx,0x010001
-    jmp     sub_red_e
-  sub_red_5:                              ; blue
-    cmp     al,5
-    jne     sub_red_e
-    sub     edx,0x010100
-    jmp     sub_red_e
-  sub_red_e:
-    pop     eax
-    ret                                   ; Возвращаем управление
-;end_sub_red------------------------------------------------------------------------------------------
-
-sub_green:
-    ;.................................................................................................
-    ; Расчёт смещений красного цвета в генерации цвета палитры
-    ;.................................................................................................
-    push    eax
-    mov     eax,[pnext]
-  ;sub_green_0
-    cmp     al,0
-    jne     sub_green_1
-    sub     edx,0x4000
-    jmp     sub_green_e
-  sub_green_1:
-    cmp     al,1
-    jne     sub_green_e
-    sub     edx,0x2000
-    ;jmp     sub_green_e
-  sub_green_e:
-    pop     eax
-    ret                                   ; Возвращаем управление
-;end_sub_green----------------------------------------------------------------------------------------
 
 
-sub_blue:
-    ;.................................................................................................
-    ; Расчёт смещений красного цвета в генерации цвета палитры
-    ;.................................................................................................
-    push    eax
-    mov     eax,[pnext]
-  ;sub_blue_0
-    cmp     al,0
-    jne     sub_blue_1
-    sub     edx,0x600000
-    jmp     sub_blue_e
-  sub_blue_1:
-    cmp     al,1
-    jne     sub_blue_e
-    sub     edx,0x400000
-    ;jmp     sub_blue_e
-  sub_blue_e:
-    pop     eax
-    ret                                   ; Возвращаем управление
-;end_sub_blue-----------------------------------------------------------------------------------------
-
-draw_result:
-    ;.................................................................................................
-    ; Большая рамка вывода результата
-    ;.................................................................................................
-    mcall   SF_DRAW_RECT, <4,110>, <9,219-18>, [sc.work_graph]
-    mcall   , <5,110-2>, <10,219-20>, [sc.work_light]
-
-    ;.................................................................................................
-    ; Отрисовка результата цвета в hex color2
-    ;.................................................................................................
-    mcall   , (16+2) shl 16+15, (16+8) shl 16+15, 0x222222
-    ; color 2 - draw color
-    mcall   , (17+2) shl 16+13, (17+8) shl 16+13, [color2]
-    ; color 1 - draw fringle
-    mcall   , (11+2) shl 16+15, (12+8) shl 16+15, 0x222222
-    ; color 2 - draw color
-    mcall   , (12+2) shl 16+13, (13+8) shl 16+13, [color]
-
-    ; value - draw fringle
-    mcall   , (34+2) shl 16+72, (16+4) shl 16+15+4, 0x222222
-    ; value - draw background
-    mcall   , (35+2) shl 16+70, (17+4) shl 16+13+4, 0xFFFFFF
-
-    ; Функция 47 - вывод числа в окно
-    ;ebx - параметры преобразования числа в текст (HEX)
-    mcall   SF_DRAW_NUMBER, 256+8 shl 16, [color], <40,22>, 0x10000000, 0
-
-    ; функция 4: написать текст в окне
-    ; edx - рисуем '#'
-    ; esi - длина текста в байтах
-    ;mcall   SF_DRAW_TEXT,38*65536+20,0,hex,1
-
-    ;.................................................................................................
-    ; Отрисовка r g b значений
-    ;.................................................................................................
-    call    get_spectr
-
-    movzx   eax,[cred]                    ; красный
-    mov     ebx,12*65536+196               ; [x начальный] *65536 + [y начальный]
-    call    draw_value                    ; выводим результат
-
-    movzx   eax,[cgreen]                  ; зеленый
-    mov     ebx,37*65536+196              ; [x начальный] *65536 + [y начальный]
-    call    draw_value                    ; выводим результат
-
-    movzx   eax,[cblue]                   ; синий
-    mov     ebx,62*65536+196              ; [x начальный] *65536 + [y начальный]
-    call    draw_value                    ; выводим результат
-
-    movzx   eax,[calpha]                  ; альфа
-    mov     ebx,87*65536+196              ; [x начальный] *65536 + [y начальный]
-    call    draw_value                    ; выводим результат
-
-    ;.................................................................................................
-    ; Выводим буквы r g b a
-    ;.................................................................................................
-    mov     eax,SF_DRAW_TEXT  ; 4 - вывести строку текста в окно
-    mov     ebx,17 shl 16+DRAWY+37              ; [координата по оси x]*65536 + [координата по оси y]
-    mov     ecx, 0x10000000               ; 0xX0RRGGBB (RR, GG, BB задают цвет текста)
-    add     ecx, [sc.work_text]
-    mov     edx,cname                     ; указатель на начало строки
-    mov     esi,1                         ; выводить esi символов
-    newline:                              ; цикл
-      int     0x40                        ; Прерывание
-      add     ebx,25 shl 16               ; Добавляем
-      inc     edx                         ; Добавляем
-      cmp     [edx],byte 'x'              ; Сравнение с байтом х
-    jne    newline                        ; Если не нуль или не равно
-
-    ;.................................................................................................
-    ; Отрисовка слайдеров
-    ;.................................................................................................
-include 'draw_sliders.inc'
 
 draw_value:
     ;.................................................................................................
@@ -1245,7 +905,7 @@ circle:
     amain       db 'style',0
     aprogram    db 'bg_program',0
     aparam      db 'bg_param',0
-    
+
     i18_name    db 'ICONS18',0
     i18bg_name  db 'ICONS18W',0
 
