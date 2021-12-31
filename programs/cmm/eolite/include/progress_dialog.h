@@ -47,8 +47,11 @@ void DisplayOperationForm(int operation_flag)
 	}
 	copy_bar.frame_color = sc.work_graph;
 	
-	if (copy_state == FILE_EXISTS) event_mode = #WaitEvent;
-	else event_mode = #CheckEvent;
+	if (copy_state == FILE_EXISTS) {
+		event_mode = #WaitEvent;
+	} else {
+		event_mode = #CheckEvent;
+	}
 	event_mode();
 	switch(EAX)
 	{
@@ -75,7 +78,6 @@ void DisplayOperationForm(int operation_flag)
 					if (remember_choice.click(EAX+1)) {
 						is_remember = remember_choice.checked;
 					}
-					break;
 			}
 			break;
 		case evReDraw:

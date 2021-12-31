@@ -124,7 +124,6 @@ void PasteThread()
 	int paste_elements_count = 0;
 	dword clipbuf;
 	dword path_offset;
-	dword copy_state_ex = 0;
 	
 	clipbuf = Clipboard__GetSlotData(Clipboard__GetSlotCount()-1);
 	if (DSDWORD[clipbuf+4] != 3) return;

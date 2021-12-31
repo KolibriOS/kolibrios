@@ -21,16 +21,17 @@
 	EDX = x<<16+y;
 	ESI = 0x90<<24+color;
 	ECX = EDI.date.day;
-	$int 0x40;
+	$int 64
 	EDX += 20<<16;
 	ECX = EDI.date.month;
-	$int 0x40;
+	$int 64
 	EDX += 20<<16;
 	EBX = 4<<16;
 	ECX = EDI.date.year;
-	$int 0x40;
+	$int 64
 	DrawBar(x+17,y+10,2,2,color);
-	DrawBar(x+37,y+10,2,2,color);
+	$add ebx, 20 << 16
+	$int 64
 }
 
 #endif

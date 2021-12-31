@@ -14,11 +14,6 @@ enum {
 	FILE_SKIP,
 };
 
-enum {
-	MODE_NORMAL,
-	MODE_FORCE
-};
-
 #define WRITE_ERROR_DEBUG 0
 #define WRITE_ERROR_NOTIFY 1
 :int writing_error_channel = WRITE_ERROR_DEBUG;
