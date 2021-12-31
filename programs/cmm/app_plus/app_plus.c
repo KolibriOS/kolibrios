@@ -1,4 +1,4 @@
-#define MEMSIZE 4096*20
+#define MEMSIZE 1024*40
 #include "..\lib\strings.h" 
 #include "..\lib\mem.h" 
 #include "..\lib\gui.h"
@@ -13,15 +13,14 @@
 //                                                   //
 //===================================================//
 
-proc_info Form;
+#define WINW 570
+#define WINH 300
 #define CONX 30 //content X pos
+#define SCRX WINW-180
+#define SCRY 20
 
 char default_dir[] = "/rd/1";
-od_filter filter2 = {"",0};
-
-dword scr = FROM "scr.raw_8bit";
-dword scr_pal[] = {0xFFFFFF,0xBBDDFF,0x4166B5,0xE0E4E6,0xAFBEDD,0xC4D4E8,0x52ACDD,0x000000,
-0xE9DAB2,0xC99811,0xFDF9D4,0xF8B93C,0xFDEEBE,0xFBEBA6,0xDFAF4F,0xF3D57C};
+od_filter filter2;
 
 #define BTN_MANUAL_SEARCH 10
 #define BTN_OPEN_ANYWAY 11
@@ -42,7 +41,7 @@ dword scr_pal[] = {0xFFFFFF,0xBBDDFF,0x4166B5,0xE0E4E6,0xAFBEDD,0xC4D4E8,0x52ACD
 картинке справа. В случае неверно 
 выбранной папки требуется выполнить 
 перезагрузку ПК и попробовать снова."
-?define MANUALLY_BUTTON_TEXT "Найти /kolibrios/..."
+?define MANUALLY_BUTTON_TEXT "Указать папку /kolibrios/..."
 ?define OPEN_ANYWAY_BUTTON_TEXT "Запустить APP+ (некоторые программы будут недоступны)"
 #else
 ?define WINDOW_TITLE_TEXT "Warning! It's important."
@@ -52,10 +51,12 @@ like image on the right.
 Note: this action can be done only once 
 per 1 session of the OS running. If you 
 will choose the wrong folder then you 
-need to reboot system to try again."
+need to reboot a system to try again."
 ?define MANUALLY_BUTTON_TEXT "Choose /kolibrios/ folder..."
-?define OPEN_ANYWAY_BUTTON_TEXT "Open APP+ anyway (some apps will be unavailable)"
+?define OPEN_ANYWAY_BUTTON_TEXT "Open APP+ anyway (some programs won't be available)  "
 #endif
+
+char kolibrios_dirs[] = "..\0     3D     \0demos  \0develop\0drivers\0emul   \0games  \0grafx2";
 
 //===================================================//
 //                                                   //
@@ -101,25 +102,35 @@ void main()
 
 void draw_window()
 {
-	incn y;
 	sc.get();
-	DefineAndDrawWindow(screen.width-570/2, 100, 570, 300+skin_height, 0x34, sc.work, WINDOW_TITLE_TEXT,0);
-	GetProcessInfo(#Form, SelfInfo);
-	WriteTextB(CONX+2,y.set(20)+2,0x81,MixColors(sc.work, 0xB92234,220),CONTENT_HEADER_TEXT);
-	WriteTextB(CONX,y.n,0x81,0xB92234,CONTENT_HEADER_TEXT);
-	
-	PutPaletteImage(#scr,144,171,Form.cwidth-180,y.n,8,#scr_pal);
-	DrawRectangle(Form.cwidth-180-1,y.n-1, 144+1,171+1, sc.work_graph);
-
-	WriteTextLines(CONX,y.inc(50),0x90,sc.work_text,DESCRIPTION_TEXT,20);
-
+	DefineAndDrawWindow(screen.width-WINW/2, 100, WINW, WINH+skin_height, 0x34, sc.work, WINDOW_TITLE_TEXT,0);
+	WriteTextB(CONX+2,SCRY+2,0x81,MixColors(sc.work, 0xB92234,220),CONTENT_HEADER_TEXT);
+	WriteTextB(CONX,SCRY,0x81,0xB92234,CONTENT_HEADER_TEXT);
+	draw_screen();
+	WriteTextLines(CONX,SCRY+50,0x90,sc.work_text,DESCRIPTION_TEXT,20);
 	DrawButtons();	
+}
+
+void draw_screen()
+{
+	char i;
+	int icon_n=1;
+	DrawRectangle(WINW-180-1,SCRY-1, 145+1,170+1, sc.work_graph);
+	DrawBar(SCRX,SCRY,145,170,0xFFFfff);
+	DrawBar(SCRX+25,SCRY+5,144-25,20,0xBBDDFF);
+	for (i=0; i<8; i++) {
+		draw_icon_16(SCRX+5, i*20+SCRY+5, icon_n);
+		WriteText(SCRX+27, i*20+SCRY+11, 0x80, 0, i*8 + #kolibrios_dirs);
+		icon_n = 0;
+	}
 }
 
 void DrawButtons()
 {
-	DrawStandartCaptButton(CONX, Form.cheight-80, BTN_MANUAL_SEARCH, MANUALLY_BUTTON_TEXT);
-	DrawStandartCaptButton(CONX, Form.cheight-42, BTN_OPEN_ANYWAY, OPEN_ANYWAY_BUTTON_TEXT);
+	DrawStandartCaptButton(CONX, WINH-80, BTN_MANUAL_SEARCH, MANUALLY_BUTTON_TEXT);
+	DrawStandartCaptButton(CONX, WINH-42, BTN_OPEN_ANYWAY, OPEN_ANYWAY_BUTTON_TEXT);
+	//DrawCaptButton(CONX, WINH-80, 300, 25, BTN_MANUAL_SEARCH, sc.button, sc.button_text, MANUALLY_BUTTON_TEXT);
+	//DrawCaptButton(CONX, WINH-42, 500, 25, BTN_OPEN_ANYWAY, sc.button, sc.button_text, OPEN_ANYWAY_BUTTON_TEXT);
 }
 
 void CheckKosMounted()
@@ -161,7 +172,7 @@ void EventButton(dword id)
 {
 	if (id==CLOSE_BTN) ExitProcess();
 	else if (id==BTN_MANUAL_SEARCH) EventManualSearch();
-	else if (id==BTN_OPEN_ANYWAY) { EventOpenApp();	 ExitProcess(); }
+	else if (id==BTN_OPEN_ANYWAY) { EventOpenApp(); ExitProcess(); }
 }
 
 

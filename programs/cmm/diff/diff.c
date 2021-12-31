@@ -1,7 +1,8 @@
 //visual text comparer 
 //by den po - jdp@bk.ru
 
-#define MEMSIZE 4096 * 60
+#define MEMSIZE 1024 * 60
+#define ENTRY_POINT #main
 #include "../lib/fs.h"
 #include "../lib/strings.h"
 #include "../lib/obj/console.h"
@@ -79,6 +80,7 @@ bool getparam()
 }
 
 main(){
+	mem_init();
 	if (param[0]) getparam();
 	if (!srcfilename) || (!dstfilename) gui(); else console();
 }
@@ -195,6 +197,7 @@ console() {
 		notify("'Nothing to compare' -E"); 
 	else ifinit();
 
+	con_exit stdcall (0);
 	diffs.DeleteAll();        delete diffs;
 	dstfilenums.DeleteAll();  delete dstfilenums;
 	srcfilenums.DeleteAll();  delete srcfilenums;

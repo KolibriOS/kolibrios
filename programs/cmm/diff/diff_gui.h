@@ -94,19 +94,19 @@ void gui()
 void draw_window()
 {
 	sc.get();
-	DefineAndDrawWindow(215, 100, WIN_W+9, 170 + skin_height, 0x34, sc.work, #window_title,0);
+	DefineAndDrawWindow(215, 100, WIN_W+9, 170 + GetSkinHeight(), 0x34, sc.work, #window_title,0);
 	//GetProcessInfo(#Form, SelfInfo);
 	if (READY==state) {
 		DrawFileBox(#src_box, T_FIRST, BID_SRC_OPEN);
 		DrawFileBox(#dst_box, T_SECOND, BID_DST_OPEN);
-		DrawStandartCaptButton(dst_box.left - 2, dst_box.top + 40, BID_GO, T_GO);
+		DrawCaptButton(dst_box.left - 2, dst_box.top + 40, 120, 25, BID_GO, sc.button, sc.button_text, T_GO);
 	}
 }
 
-void UpdateEditBoxes(dword f1, f2)
+void UpdateEditBoxes(dword flag1, flag2)
 {
-	EditBox_UpdateText(#src_box, f1);
-	EditBox_UpdateText(#dst_box, f2);
+	EditBox_UpdateText(#src_box, flag1);
+	EditBox_UpdateText(#dst_box, flag2);
 	edit_box_draw stdcall (#src_box);
 	edit_box_draw stdcall (#dst_box);
 }

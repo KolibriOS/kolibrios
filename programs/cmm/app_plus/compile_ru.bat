@@ -1,4 +1,4 @@
-@c-- /D=LANG=RUS app_plus.c
+@c-- /D=LANG_RUS app_plus.c
 @del *.
 @rename *.com *.
 @del warning.txt
