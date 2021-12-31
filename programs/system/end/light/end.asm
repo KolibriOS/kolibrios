@@ -18,23 +18,17 @@ include '../../../macros.inc'
 include '../../../proc32.inc'
 include '../../../dll.inc'
 include '../../../KOSfuncs.inc'
-include '../../../load_lib.mac'
 include '../../../gui_patterns.inc'
 include '../../../string.inc'
-
-@use_library
 
 START:
     mcall SF_SYS_MISC, SSF_HEAP_INIT 
     mcall SF_SYS_MISC, SSF_MEM_OPEN, checkbox_sharedname
     mov [checkbox_img], eax
 
-    load_libraries l_libs_start,end_l_libs
-    inc   eax
-    test  eax,eax
-    jz    close
-
-    stdcall dll.Init,[init_lib]
+    stdcall dll.Load,importLib
+    or      eax, eax
+    jnz     redraw
 
     invoke ini_get_int,ini_file,asettings,aautosave,0
     mov   [autosave],eax
@@ -157,9 +151,9 @@ draw_window:
     mcall SF_DRAW_TEXT, <55,86>, 0x90FFFfff, TEXT_RDSAVE2
     mcall SF_DRAW_TEXT, <WIN_W-23,5>, 0x81FFFfff, TEXT_CANCEL
     
-	mcall SF_DEFINE_BUTTON, <WIN_W-35,32>, <2,22>, CANCEL_BUTTON_ID
-	mcall SF_DEFINE_BUTTON, <32,14>, <70,14>, CHECKBOX_BUTTON_ID
-	mcall SF_DEFINE_BUTTON, <47,WIN_W-47>, <68,34>, CHECKBOX_BUTTON_ID+BT_NOFRAME
+    mcall SF_DEFINE_BUTTON, <WIN_W-35,32>, <2,22>, CANCEL_BUTTON_ID
+    mcall SF_DEFINE_BUTTON, <32,14>, <70,14>, CHECKBOX_BUTTON_ID
+    mcall SF_DEFINE_BUTTON, <47,WIN_W-47>, <68,34>, CHECKBOX_BUTTON_ID+BT_NOFRAME
     DrawRectangle3D 32, 70, 14, 14, 0x606060, 0xAFAFAF
     call draw_checkbox_flag
 
@@ -208,8 +202,7 @@ draw_checkbox_flag:
     mcall SF_DRAW_RECT, <34,11>, <72,11>, 0x58C33C
     ret
 .flag_unset:
-    DrawRectangle3D 33, 71, 12, 12, 0xDDDddd, 0xffffff
-    mcall SF_DRAW_RECT, <34,12>, <72,12>, 0xFFFfff
+    mcall SF_DRAW_RECT, <33,13>, <71,13>, 0xFFFfff
     ret
 ;---------------------------------------------------------------------
 include 'data.inc'

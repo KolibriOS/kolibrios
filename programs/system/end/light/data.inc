@@ -55,22 +55,13 @@ asettings   db 'settings',0
 aautosave   db 'autosave',0
 ini_file db  '/sys/settings/rdsave.ini',0
 ;---------------------------------------------------------------------
-;Lib_DATA
-system_dir_libini       db '/sys/lib/libini.obj',0
-;---------------------------------------------------------------------
-l_libs_start:
-library02  l_libs system_dir_libini+9, library_path, system_dir_libini, libini_import
-end_l_libs:
-;---------------------------------------------------------------------
-align 4
-libini_import:
-init_lib     dd a_init
-ini_get_int  dd aini_get_int
-ini_set_int  dd aini_set_int
-             dd 0,0
-a_init       db 'lib_init',0
-aini_get_int db 'ini_get_int',0
-aini_set_int db 'ini_set_int',0
+importLib:          
+library                                                 \          
+        libini, 'libini.obj'          
+          
+import  libini, \          
+        ini_set_int  ,'ini_set_int', \          
+        ini_get_int  ,'ini_get_int'   
 ;---------------------------------------------------------------------
 checkbox_sharedname db 'CHECKBOX',0
 checkbox_img dd ?
