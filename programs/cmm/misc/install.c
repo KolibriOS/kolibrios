@@ -8,20 +8,20 @@
 #include "../lib/patterns/restart_process.h"
 
 char logo[] = "
-����   ���� ���������� ����   ���� �����������
- ����   ��   ���         ��� ���   ��  ���  ��
- �����  ��   ���          �����    ��  ���  ��
- �� ��� ��   �������       ���         ���    
- ��  �����   ���          �����        ���    
- ��   ����   ���         ��� ���       ���    
-����   ���  ���������� ����   ����    �����   
+████   ████ ██████████ ████   ████ ███████████
+ ████   ██   ███         ███ ███   ██  ███  ██
+ █████  ██   ███          █████    ██  ███  ██
+ ██ ███ ██   ███████       ███         ███    
+ ██  █████   ███          █████        ███    
+ ██   ████   ███         ███ ███       ███    
+████   ███  ██████████ ████   ████    █████   
 ";
 
 #ifdef LANG_RUS
-#define T_INTRO "���஡�� ����� ���㠫쭮� ��ଫ���� ������, ���஥ ࠭�� �뫮 ����㯭� ⮫쪮 � KolibriNext."; 
-#define T_INSTALL "��⠭�����"
-#define T_COMPLETE "��⠭���� �����襭�"
-#define T_EXIT "��室"
+#define T_INTRO "Попробуйте новое визуальное оформление Колибри, которое раньше было доступно только в KolibriNext."; 
+#define T_INSTALL "Установить"
+#define T_COMPLETE "Установка завершена"
+#define T_EXIT "Выход"
 #else
 #define T_INTRO "Try a new visual design of KolibriOS, which previously was available only in KolibriNext."; 
 #define T_INSTALL "Install"
