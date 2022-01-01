@@ -1,10 +1,8 @@
-#ifndef __NETWORK_H
-#define __NETWORK_H
+#ifndef KOLIBRI_NETWORK_H
+#define KOLIBRI_NETWORK_H
 
 #include <sys/socket.h>
 #include <sys/ksys.h>
-
-#define stdcall __attribute__ ((stdcall))
 
 #define EAI_ADDRFAMILY 1
 #define EAI_AGAIN      2
@@ -48,10 +46,9 @@ struct addrinfo {
 };  
 #pragma pack(pop)
 
-extern int networklib_init ();
-extern int stdcall (*inet_addr)(const char* hostname);
-extern char* stdcall (*inet_ntoa)(int ip_addr);
-extern int stdcall (*getaddrinfo)(const char* hostname, const char* servname, const struct addrinfo* hints, struct addrinfo** res);
-extern void stdcall (*freeaddrinfo)(struct addrinfo* ai);
+extern int __stdcall (*inet_addr)(const char* hostname);
+extern char* __stdcall (*inet_ntoa)(int ip_addr);
+extern int __stdcall (*getaddrinfo)(const char* hostname, const char* servname, const struct addrinfo* hints, struct addrinfo** res);
+extern void __stdcall (*freeaddrinfo)(struct addrinfo* ai);
 
 #endif

@@ -2,6 +2,7 @@
 #define KOLIBRI_DIALOG_H
 
 #include <stdlib.h>
+
 #define NOT_SUCCESS 0
 #define SUCCESS 1
 
@@ -115,12 +116,10 @@ color_dialog* kolibri_new_color_dialog(unsigned int type, unsigned short tlx, un
 	return new_colordialog;
 }
 
-extern void kolibri_dialog_init();
+extern void __stdcall (*OpenDialog_init)(open_dialog *);
+extern void __stdcall (*OpenDialog_start)(open_dialog *);
 
-extern void (*OpenDialog_init __attribute__((__stdcall__)))(open_dialog *);
-extern void (*OpenDialog_start __attribute__((__stdcall__)))(open_dialog *);
-
-extern void (*ColorDialog_init __attribute__((__stdcall__)))(color_dialog *);
-extern void (*ColorDialog_start __attribute__((__stdcall__)))(color_dialog *);
+extern void __stdcall (*ColorDialog_init)(color_dialog *);
+extern void __stdcall (*ColorDialog_start)(color_dialog *);
 
 #endif

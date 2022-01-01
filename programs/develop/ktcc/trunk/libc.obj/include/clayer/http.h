@@ -5,11 +5,10 @@
     Adapted for TCC's dynamic API by Magomed Kostoev, 2020
 */
 
-#ifndef _HTTP_H_
-#define _HTTP_H_
+#ifndef KOLIBRI_HTTP_H
+#define KOLIBRI_HTTP_H
 
-#define cdecl   __attribute__ ((cdecl))
-#define stdcall __attribute__ ((stdcall))
+#include <stddef.h>
 
 // Bitflags for http_msg.flags
 // status
@@ -80,7 +79,7 @@ typedef struct http_msg_s {
     Initiates a HTTP connection, using 'GET' method.
     Returns NULL on error, identifier otherwise.
 */
-extern http_msg * stdcall (*http_get)(const char *url, http_msg *identifier, unsigned flags, const char *add_header);
+extern http_msg * __stdcall (*http_get)(const char *url, http_msg *identifier, unsigned flags, const char *add_header);
 
 /*
     url = pointer to ASCIIZ URL
@@ -91,7 +90,7 @@ extern http_msg * stdcall (*http_get)(const char *url, http_msg *identifier, uns
     Initiate a HTTP connection, using 'HEAD' method.
     Returns NULL on error, identifier otherwise.
 */
-extern http_msg * stdcall (*http_head)(const char *url, http_msg *identifier, unsigned flags, const char *add_header);
+extern http_msg * __stdcall (*http_head)(const char *url, http_msg *identifier, unsigned flags, const char *add_header);
 
 /*
     url = pointer to ASCIIZ URL
@@ -106,7 +105,7 @@ extern http_msg * stdcall (*http_head)(const char *url, http_msg *identifier, un
     using system function 75, 6.
     Returns 0 on error, identifier otherwise
 */
-extern http_msg * stdcall (*http_post)(const char *url, http_msg *identifier, unsigned flags, const char *add_header,
+extern http_msg * __stdcall (*http_post)(const char *url, http_msg *identifier, unsigned flags, const char *add_header,
                                   const char *content_type, unsigned content_length);
 
 /*
@@ -128,7 +127,7 @@ extern http_msg * stdcall (*http_post)(const char *url, http_msg *identifier, un
     In content_length you'll find the length of the content. 
     In content_received, you'll find the number of content bytes already received.
 */
-extern int stdcall (*http_receive)(http_msg *identifier);
+extern int __stdcall (*http_receive)(http_msg *identifier);
 
 /*
     identifier = identifier which one of the previous functions returned
@@ -137,17 +136,17 @@ extern int stdcall (*http_receive)(http_msg *identifier);
     This procedure can be used to send data to the server (POST)
     Returns number of bytes sent, -1 on error
 */
-extern int stdcall (*http_send)(http_msg *identifier, void *dataptr, unsigned datalength);
+extern int __stdcall (*http_send)(http_msg *identifier, void *dataptr, unsigned datalength);
 
 /*
     Sometimes the http_receive function receives incomplete data. If you have the same problem then a macro can help you:
 */
 
-extern int stdcall (*http_free)(http_msg *identifier);
+extern int __stdcall (*http_free)(http_msg *identifier);
 /*
     Free unused data 
 */
 
 #define http_long_receive(x) while(http_receive(x)){}; 
 
-#endif // _HTTP_H_
+#endif // KOLIBRI_HTTP_H
