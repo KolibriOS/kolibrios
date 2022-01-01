@@ -4,7 +4,6 @@
 
 int main()
 {
-    kolibri_dialog_init(); // dialog init
     open_dialog *dlg_open = kolibri_new_open_dialog(OPEN, 10, 10, 420, 320); // create opendialog struct
     OpenDialog_init(dlg_open); // Initializing an open dialog box. 
     OpenDialog_start(dlg_open); // Show open dialog box
