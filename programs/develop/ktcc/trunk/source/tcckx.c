@@ -269,10 +269,7 @@ typedef struct {
 	 tcc_free(str_arr);
 	 tcc_free(len_arr);
 	 tcc_free(sym_arr);
-
  }
-
- 
 
  void kx_init(me_info* me) {
 	 ElfW(Sym) *sym;
