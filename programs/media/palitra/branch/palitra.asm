@@ -80,7 +80,7 @@
 
 
 
-  WIN_W  = 394            ; ширина окна
+  WIN_W  = 374            ; ширина окна
   WIN_H  = 251            ; высота окна
   WIN_X  = 250            ; координата х окна
   WIN_Y  = 190            ; координата у окна
@@ -91,7 +91,8 @@
 
   CELLW  = 11; 11            ; not used yet, but has to be :)
 
-  ICONX  = WIN_W - 35
+  ICONX  = WIN_W - 39
+  ICONS  = 18             ; icon size  
   SLIDEW = 25
 
   palitra_x = Left_Border+SliderPanel_W+12
@@ -287,10 +288,10 @@ draw_main:
     call    draw_palitra                  ; РИСУЕМ ПАЛИТРУ
     call    draw_result                   ; РИСУЕМ РЕЗУЛЬТАТ
 
-    mcall   SF_DEFINE_BUTTON, <palitra_x,palitra_w*2+1  > , <DRAWY,palitra_w*2+2>, 0x07+BT_HIDE ; palitra
+    mcall   SF_DEFINE_BUTTON, <palitra_x,palitra_w*2+1  > , <DRAWY,palitra_w*2+2>, 7+BT_HIDE ; palitra
 
-    add     edx,1++BT_NOFRAME
-    mcall   , <10,22>, <62,128>           ; Рисуем невидимую кнопку под слайдером red
+    inc     edx
+    mcall   , <10,22>, <56,128>           ; Рисуем невидимую кнопку под слайдером red
     add     ebx,25*65536                  ; Добавляем
     inc     edx                           ; ID = 9
     int     0x40                          ; Рисуем невидимую кнопку под слайдером green
@@ -323,32 +324,36 @@ draw_main:
     draw_left_panel:                      ; Отрисовка боковой панели  SL97: На самом деле правой.
     ;.................................................................................................
     ; button_next_colorsheme
-    mcall   SF_DEFINE_BUTTON, <ICONX,21>, <DRAWY,21>, 12+BT_HIDE
+    mcall   SF_DEFINE_BUTTON, <ICONX,ICONS+3>, <DRAWY,ICONS+3>, 12+BT_HIDE
 
     ; palitra button                    ; ID = 14
-    mcall , ,(DRAWY+150) shl 16 + 21, 14+BT_HIDE
+    mcall , ,(DRAWY+150) shl 16 + ICONS+3, 14+BT_HIDE
 
     ; pipet button                        ; ID = 15
-    mcall , , (DRAWY+150) shl 16 + 21, 15+BT_HIDE
+    mcall , , (DRAWY+150) shl 16 + ICONS+3, 15+BT_HIDE
 
     mov     ebx,[icons18bg]
-    add     ebx,18*18*4*53
-    mcall   SF_PUT_IMAGE_EXT, ebx, <18,18>, <ICONX+2,DRAWY+2>, 32, 0, 0
+    add     ebx,ICONS*ICONS*4*53
+    mcall   SF_PUT_IMAGE_EXT, ebx, <ICONS,ICONS>, <ICONX+2,DRAWY+2>, 32, 0, 0
 
-    add     ebx,18*18*4*(39-53)
+    add     ebx,ICONS*ICONS*4*(39-53)
     mov     edx,(ICONX+2)*65536+WIN_H-90
     mcall
 
     mov     ebx,[icons18]
-    add     ebx,18*18*4*(53-1)
+    add     ebx,ICONS*ICONS*4*(53-1)
     sub     edx,40
     mcall
 
-    stdcall DrawDeepRectangle, ICONX, DRAWY, 22, 22, [sc.work_light], [sc.work_dark]
+    stdcall DrawDeepRectangle, ICONX-1, DRAWY-1,   ICONS+5, ICONS+5, [sc.work_graph], [sc.work_graph]
+    stdcall DrawDeepRectangle, ICONX,   DRAWY,     ICONS+3, ICONS+3, [sc.work_light], [sc.work_dark]
 
-    stdcall DrawDeepRectangle, ICONX, DRAWY+110, 22, 22, [sc.work_light], [sc.work_dark]
+    stdcall DrawDeepRectangle, ICONX-1, DRAWY+109, ICONS+5, ICONS+5, [sc.work_graph], [sc.work_graph]
+    stdcall DrawDeepRectangle, ICONX,   DRAWY+110, ICONS+3, ICONS+3, [sc.work_dark], [sc.work_light]
+    stdcall DrawDeepRectangle, ICONX+1, DRAWY+111, ICONS+1, ICONS+1, 0xFFFfff, 0xFFFfff
 
-    stdcall DrawDeepRectangle, ICONX, DRAWY+150, 22, 22, [sc.work_light], [sc.work_dark]
+    stdcall DrawDeepRectangle, ICONX-1, DRAWY+149, ICONS+5, ICONS+5, [sc.work_graph], [sc.work_graph]
+    stdcall DrawDeepRectangle, ICONX,   DRAWY+150, ICONS+3, ICONS+3, [sc.work_light], [sc.work_dark]
 
     ;stdcall DrawRectangle3D, ICONX, DRAWY, 22, 22, [sc.work_light], [sc.work_dark]   ;Leency: draw rectangle around the button, buggy now
 
@@ -394,7 +399,7 @@ draw_main:
     ;------------------------------------------------------------------------------------------------+
     draw_bottom_panel:                    ; Отрисовка нижней панели
     ;.................................................................................................
-    mcall   SF_DEFINE_BUTTON, ((60+70) shl 16)+90, ((WIN_H-26) shl 16)+16, 14, [sc.work_button]
+    mcall   SF_DEFINE_BUTTON, <129,90>, <WIN_H-27,16>, 16, [sc.work_button]
 
     add     ebx, 100 shl 16
     add     edx, 2
@@ -402,22 +407,21 @@ draw_main:
 
     ; Write string
     mov     ecx,[sc.work_text]            ; RGB
-    or      ecx, 1 shl 31
-    mcall   SF_DRAW_TEXT, (60) shl 16+(WIN_H-21), ,bground
+    add     ecx, 0x90000000
+    mcall   SF_DRAW_TEXT, <35, WIN_H-26>, ,bground
 
     mov     ecx, [sc.work_button_text]
-    or      ecx, 1 shl 31
-
-    add     ebx, 90 shl 16
+    add     ecx, 0x90000000
+    add     ebx, 107 shl 16
     mov     edx, bground1
-    int     0x40
+    mcall
 
-    add     ebx, 108 shl 16
+    add     ebx, 113 shl 16
     mov     edx, bground2
-    int     0x40
+    mcall
 
-    mcall SF_DRAW_LINE, 4 shl 16+(WIN_W-14), (WIN_H-32) shl 16+(WIN_H-32), 0x00666666
-    ret                                   ; return
+    mcall SF_DRAW_LINE, <4, WIN_W-14>, <WIN_H-35, WIN_H-35>, [sc.work_graph]
+    ret
     ;.................................................................................................
 
 mouse_global:
@@ -895,7 +899,7 @@ circle:
     cname       db 'RGBAx'                ; хранит разряды цветов (red,green,blue) x-метка конца
     larrow      db 0x1A,0
     buff        db '000',0
-    bground     db 'BACKGROUND',0         ; имя кнопки - 14
+    bground     db 'Background',0         ; имя кнопки - 14
     bground1    db 'Gradient',0           ; имя кнопки - 15
     bground2    db 'Noisy',0              ; имя кнопки - 16
     runmode     dd 1                      ; режим запуска (1-normal, 2-hidden, 3-colordialog)
