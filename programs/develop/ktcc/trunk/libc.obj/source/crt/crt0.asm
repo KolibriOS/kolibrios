@@ -15,8 +15,8 @@ public start as '_start'
 
 extrn main
 ;include 'debug2.inc'
-include '/../../../../../../proc32.inc'
-include '/../../../../../../macros.inc'
+include '../../../../../../proc32.inc'
+include '../../../../../../macros.inc'
 __DEBUG__       = 0
 
 __app_params   equ 0x1C     ; Pointer to program arguments
