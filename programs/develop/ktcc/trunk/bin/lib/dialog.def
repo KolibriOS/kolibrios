@@ -2,6 +2,7 @@ LIBRARY proc_lib.obj
 
 EXPORTS
 ColorDialog_init
+ColorDialog_start
 OpenDialog_start
 OpenDialog_init
 OpenDialog_set_file_ext
