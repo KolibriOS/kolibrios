@@ -1,5 +1,5 @@
 ﻿(*
-    Copyright 2021 Anton Krotov
+    Copyright 2021, 2022 Anton Krotov
 
     This file is part of CEdit.
 
@@ -24,7 +24,6 @@ IMPORT SYSTEM, KOSAPI, E := Encodings, Lines, K := KolibriOS;
 CONST
     TTEXT = 0;
     lenEOL* = 2;
-    TAB = 9X;
 
 TYPE
     tBuffer* = POINTER TO RECORD
@@ -60,11 +59,14 @@ BEGIN
     ptr := buffer.dataPtr;
     WHILE cnt > 0 DO
         SYSTEM.GET(ptr, wch);
-        IF wch # Lines.TAB1 THEN
-            SYSTEM.PUT(pchar, CHR(E.UNI[ORD(wch), E.CP866] MOD 256));
+        IF wch = Lines.TAB1 THEN
+        	DEC(size)
+        ELSIF wch = Lines.NUL THEN
+            SYSTEM.PUT(pchar, 0X);
             INC(pchar)
         ELSE
-            DEC(size);
+            SYSTEM.PUT(pchar, CHR(E.UNI[ORD(wch), E.CP866] MOD 256));
+            INC(pchar)
         END;
         INC(ptr, 2);
         DEC(cnt)

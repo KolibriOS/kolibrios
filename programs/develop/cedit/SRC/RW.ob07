@@ -1,5 +1,5 @@
 ﻿(*
-    Copyright 2021 Anton Krotov
+    Copyright 2021, 2022 Anton Krotov
 
     This file is part of CEdit.
 
@@ -178,11 +178,14 @@ BEGIN
         c := WCHR(file.getChar(file) MOD 65536);
         IF c = Lines.TAB1 THEN
         	c := SPACE
+        ELSIF c = 0X THEN
+        	c := Lines.NUL
         END;
+
         IF c = CR THEN
             eol := TRUE;
             file.CR := TRUE
-        ELSIF (c = LF) OR (c = 0X) THEN
+        ELSIF c = LF THEN
             IF ~file.CR THEN
                 eol := TRUE
             END;
@@ -424,8 +427,12 @@ VAR
 BEGIN
     FOR i := 0 TO n - 1 DO
         c := Lines.getChar(line, i);
-        IF c # Lines.TAB1 THEN
-            file.putChar(file, ORD(c))
+        IF c = Lines.TAB1 THEN
+        	(* nothing to do *)
+        ELSIF c = Lines.NUL THEN
+        	file.putChar(file, 0)
+        ELSE
+        	file.putChar(file, ORD(c))
         END
     END
 END putString;

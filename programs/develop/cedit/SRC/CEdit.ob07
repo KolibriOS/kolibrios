@@ -1,5 +1,5 @@
 ﻿(*
-    Copyright 2021 Anton Krotov
+    Copyright 2021, 2022 Anton Krotov
 
     This file is part of CEdit.
 
@@ -28,7 +28,7 @@ IMPORT
     RW, Ini, EB := EditBox, Tabs, Toolbar, SB := StatusBar;
 
 CONST
-    HEADER = "CEdit (30-dec-2021)";
+    HEADER = "CEdit (02-jan-2022)";
 
     ShellFilter = "";
     EditFilter = "SH|INC|TXT|ASM|OB07|C|CPP|H|PAS|PP|LUA|INI|JSON";
@@ -1793,16 +1793,19 @@ BEGIN
     |btnFindNext:
         IF searchText # "" THEN
             notFound := ~T.findNext(text, BKW.value);
+            SetFocus(FindEdit, FALSE);
             repaint
         END
     |btnReplace:
         T.replace(text, replaceText, LENGTH(searchText));
+        SetFocus(FindEdit, FALSE);
         repaint
     |btnReplaceAll:
         notFound := ~T.search(text, searchText, cs, whole);
         IF ~notFound THEN
             replaced := T.replaceAll(text, replaceText, LENGTH(searchText));
         END;
+        SetFocus(FindEdit, FALSE);
         repaint
     |btnGoto:
         goto;

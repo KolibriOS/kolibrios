@@ -1,5 +1,5 @@
 ﻿(*
-    Copyright 2021 Anton Krotov
+    Copyright 2021, 2022 Anton Krotov
 
     This file is part of CEdit.
 
@@ -26,7 +26,8 @@ CONST
     WCHAR_SIZE = 2;
     SPACE* = 20X;
     TAB* = 9X;
-    TAB1* = 0FFFEX;
+    NUL* = 0FDD0X;
+    TAB1* = 0FDD1X;
 
 TYPE
 

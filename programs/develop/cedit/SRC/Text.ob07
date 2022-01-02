@@ -1,5 +1,5 @@
 ﻿(*
-    Copyright 2021 Anton Krotov
+    Copyright 2021, 2022 Anton Krotov
 
     This file is part of CEdit.
 
@@ -1805,77 +1805,78 @@ BEGIN
 END dupLine;
 
 
-PROCEDURE exchange (text: tText; first, second: tLine);
-BEGIN
-    List._exchange(text, first, second);
-    Lines.modify(text.curLine);
-    modify(text);
-    UpDown(text, 0)
-END exchange;
-
-
-PROCEDURE upLine (text: tText);
-BEGIN
-	DEC(text.cursor.Y);
-	exchange(text, text.curLine.prev(tLine), text.curLine)
-END upLine;
-
-
-PROCEDURE downLine (text: tText);
-BEGIN
-	INC(text.cursor.Y);
-	exchange(text, text.curLine, text.curLine.next(tLine))
-END downLine;
-
-
 PROCEDURE MoveLines* (text: tText; down: BOOLEAN);
 VAR
-	last: tLine;
+	last, first, line: tLine;
 	selBeg, selEnd, temp: tPoint;
-	n, step: INTEGER;
+	step: INTEGER;
 	frw: BOOLEAN;
-	moveLine: PROCEDURE (text: tText);
 BEGIN
 	getSelect(text, selBeg, selEnd);
-	IF (selBeg.Y > 0) & ~down OR (selEnd.Y < text.count - 1) & down THEN
-		IF down THEN
-			step := -2;
-			moveLine := downLine
-		ELSE
-			step := 2;
-			moveLine := upLine
-		END;
-		frw := (text.cursor.X = selEnd.X) & (text.cursor.Y = selEnd.Y);
-		IF selEnd.Y # selBeg.Y THEN
+	IF ((selBeg.Y > 0) & ~down OR (selEnd.Y < text.count - 1) & down) THEN
+		modify(text);
+		step := ORD(down)*2 - 1;
+		IF selBeg.Y # selEnd.Y THEN
+			frw := (text.cursor.X = selEnd.X) & (text.cursor.Y = selEnd.Y);
+
 			IF down # frw THEN
 				temp := text.cursor^;
 				SetPos(text, 0, text.select.Y);
 				setSelect(text);
 				text.select^ := temp
 			END;
+
+			ASSERT(selBeg.Y < selEnd.Y);
+
+			first := getLine(text, selBeg.Y);
 			last := getLine(text, selEnd.Y);
+
+			line := first;
+			Lines.modify(line);
+			REPEAT
+				NextLine(line);
+				Lines.modify(line)
+			UNTIL line = last;
+
+			IF down THEN
+				text.curLine := last.prev(tLine)
+			ELSE
+				text.curLine := first.next(tLine)
+			END;
 			selBeg.X := 0;
 			selEnd.X := last.length;
-			n := selEnd.Y - selBeg.Y + 1;
-			WHILE n > 0 DO
-				moveLine(text);
-				SetPos(text, 0, text.cursor.Y + step);
-				DEC(n)
-			END
+			IF down THEN
+				last := last.next(tLine);
+				List._delete(text, last);
+				List._insert(text, first.prev, last)
+			ELSE
+				first := first.prev(tLine);
+				List._delete(text, first);
+				List._insert(text, last, first)
+			END;
+			IF down THEN
+				temp := selBeg;
+				selBeg := selEnd;
+				selEnd := temp;
+			END;
+			SetPos(text, selBeg.X, selBeg.Y + step);
+			setSelect(text);
+			text.select.X := selEnd.X;
+			text.select.Y := selEnd.Y + step
 		ELSE
-			moveLine(text)
-		END;
-
-		IF frw THEN
-			temp := selBeg;
-			selBeg := selEnd;
-			selEnd := temp
-		END;
-		step := step DIV 2;
-		SetPos(text, selBeg.X, selBeg.Y - step);
-		setSelect(text);
-		text.select.X := selEnd.X;
-		text.select.Y := selEnd.Y - step
+			first := getLine(text, selBeg.Y);
+			Lines.modify(first);
+			IF down THEN
+				last := first.next(tLine)
+			ELSE
+				last := first.prev.prev(tLine)
+			END;
+			List._delete(text, first);
+			List._insert(text, last, first);
+			INC(text.cursor.Y, step);
+			INC(text.select.Y, step);
+			SetPos(text, text.cursor.X, text.cursor.Y)
+		END
 	END
 END MoveLines;
 
@@ -2541,18 +2542,6 @@ BEGIN
 END findNext;
 
 
-PROCEDURE rewrite (line: tLine; repl: ARRAY OF WCHAR; pos, n: INTEGER);
-BEGIN
-    IF n > 0 THEN
-        Lines.copy(line)
-    END;
-    WHILE n > 0 DO
-        DEC(n);
-        Lines.setChar(line, pos + n, repl[n])
-    END
-END rewrite;
-
-
 PROCEDURE replace* (text: tText; s: ARRAY OF WCHAR; n: INTEGER);
 VAR
     line: tLine;
@@ -2564,12 +2553,16 @@ BEGIN
         i := text.cursor.X;
         IF sLen > n THEN
             Lines.insert3(line, i, sLen - n)
+        ELSIF n > sLen THEN
+            Lines.delCharN(line, i, n - sLen)
+        ELSE (* n = sLen *)
+        	Lines.copy(line)
         END;
         SetPos(text, i + sLen, text.cursor.Y);
-        rewrite(line, s, i, sLen);
-        IF n > sLen THEN
-            Lines.delCharN(line, text.cursor.X, n - sLen)
-        END;
+	    WHILE sLen > 0 DO
+	        DEC(sLen);
+	        Lines.setChar(line, i + sLen, s[sLen])
+	    END;
         resetSelect(text);
         Lines.modify(line);
         modify(text)

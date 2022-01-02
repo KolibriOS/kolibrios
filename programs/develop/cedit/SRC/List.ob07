@@ -1,5 +1,5 @@
 ﻿(*
-    Copyright 2021 Anton Krotov
+    Copyright 2021, 2022 Anton Krotov
 
     This file is part of CEdit.
 
@@ -151,50 +151,26 @@ PROCEDURE _insert* (list: tList; item, newItem: tItem);
 VAR
     next: tItem;
 BEGIN
-    next := item.next;
-    IF next # NIL THEN
-        movPtr(next.prev, newItem);
-        movPtr(newItem.next, next);
-        movPtr(item.next, newItem);
-        movPtr(newItem.prev, item);
-        movInt(list.count, list.count + 1)
+	IF item # NIL THEN
+	    next := item.next;
+	    IF next # NIL THEN
+	        movPtr(next.prev, newItem);
+	        movPtr(newItem.next, next);
+	        movPtr(item.next, newItem);
+	        movPtr(newItem.prev, item);
+	        movInt(list.count, list.count + 1)
+	    ELSE
+	        _append(list, newItem)
+	    END
     ELSE
-        _append(list, newItem)
+    	ASSERT(list.first # NIL);
+    	movPtr(newItem.prev, NIL);
+    	movPtr(newItem.next, list.first);
+    	movPtr(list.first.prev, newItem);
+    	movPtr(list.first, newItem);
+    	movInt(list.count, list.count + 1)
     END
 END _insert;
-
-
-PROCEDURE _exchange* (list: tList; a, b: tItem);
-VAR
-    a0, b0: tItem;
-BEGIN
-    IF (a # NIL) & (b # NIL) THEN
-        ASSERT((a.next = b) & (b.prev = a));
-        a0 := a.prev;
-        b0 := b.next;
-        movPtr(b.prev, a0);
-        movPtr(a.next, b0);
-        movPtr(b.next, a);
-        movPtr(a.prev, b);
-        IF a0 # NIL THEN
-            IF b0 # NIL THEN
-                movPtr(a0.next, b);
-                movPtr(b0.prev, a);
-            ELSE
-                movPtr(a0.next, b);
-                movPtr(list.last, a)
-            END
-        ELSE
-            IF b0 # NIL THEN
-                movPtr(b0.prev, a);
-                movPtr(list.first, b)
-            ELSE
-                movPtr(list.first, b);
-                movPtr(list.last, a)
-            END
-        END
-    END
-END _exchange;
 
 
 PROCEDURE append* (list: tList; item: tItem);
