@@ -218,8 +218,8 @@ enum KSYS_FILE_ENCODING{
     KSYS_FILE_UTF8 = 3
 };
 
-static inline
-int __strcmp(const char * s1, const char * s2 )
+static inline 
+int _ksys_strcmp(const char * s1, const char * s2 )
 {
     while ((*s1) && (*s1 == *s2)){ ++s1; ++s2; }
     return(*(unsigned char*)s1 - *(unsigned char *)s2);
@@ -1163,7 +1163,7 @@ void* _ksys_dlsym(ksys_dll_t *table, const char* fun_name){
         if (!(table+i)->func_name){
             break;
         }else{
-            if (!__strcmp(fun_name, (table+i)->func_name)){
+            if (!_ksys_strcmp(fun_name, (table+i)->func_name)){
                 return (table+i)->func_ptr;
             }
         }

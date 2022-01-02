@@ -1,7 +1,0 @@
-LIBRARY rasterworks.obj
-
-EXPORTS
-charsFit
-cntUTF-8
-drawText
-strWidth

@@ -113,12 +113,17 @@ static void tcc_set_lib_path_w32(TCCState *s)
 {
     char path[1024], *p;
     GetModuleFileNameA(tcc_module, path, sizeof path);
+#ifdef TCC_TARGET_KX
+	kx_fix_root_directory(path, sizeof path);
+    normalize_slashes(strlwr(path));
+#else
     p = tcc_basename(normalize_slashes(strlwr(path)));
     if (p - 5 > path && 0 == strncmp(p - 5, "/bin/", 5))
         p -= 5;
     else if (p > path)
         p--;
     *p = 0;
+#endif
     tcc_set_lib_path(s, path);
 }
 
@@ -154,9 +159,13 @@ static void tcc_set_lib_path_kos(TCCState *s)
 	char** argv0 = (char**)0x20; // path in kolibri header
     char path[1024], *p;
 	strncpy(path, *argv0, sizeof path);
+#ifdef TCC_TARGET_KX
+	kx_fix_root_directory(path, sizeof path);
+#else
 	p = tcc_basename(path);
     if (p > path) p--;
     *p = 0;
+#endif
     tcc_set_lib_path(s, path);
 }
 
@@ -165,7 +174,12 @@ static void tcc_set_lib_path_linux(TCCState *s)
 {
     char buff[4096+1];
     readlink("/proc/self/exe", buff, 4096);
+#ifdef TCC_TARGET_KX
+	kx_fix_root_directory(buff, sizeof buff);
+	const char *path = buff;
+#else
     const char *path = dirname(buff);
+#endif
     tcc_set_lib_path(s, path);
 }
 
@@ -1526,7 +1540,7 @@ ST_FUNC int tcc_add_crt(TCCState *s, const char *filename)
 {
     if (-1 == tcc_add_library_internal(s, "%s/%s",
         filename, 0, s->crt_paths, s->nb_crt_paths))
-        tcc_error("file '%s' not found", filename);
+        tcc_error_noabort("file '%s' not found", filename);
     return 0;
 }
 
@@ -1731,7 +1745,8 @@ LIBTCCAPI int tcc_set_output_type(TCCState *s, int output_type)
 #elif defined(TCC_TARGET_MEOS)
     if (s->output_type != TCC_OUTPUT_OBJ && !s->nostdlib)
     {
-        tcc_add_library_err(s, "c");
+        tcc_add_crt(s,"crt0.o");
+        //tcc_add_library(s,"lc.obj"); // adding libck.a dont work, because need to be added last
     }
 #else
     /* add libc crt1/crti objects */
@@ -2264,7 +2279,6 @@ ST_FUNC int tcc_parse_args1(TCCState *s, int argc, char **argv)
         case TCC_OPTION_B:
             /* set tcc utilities path (mainly for tcc development) */
             tcc_set_lib_path(s, optarg);
-            tcc_split_path(s, (void ***)&s->crt_paths, &s->nb_crt_paths, CONFIG_TCC_CRTPREFIX);
             break;
         case TCC_OPTION_l:
             args_parser_add_file(s, r, TCC_FILETYPE_BINARY);

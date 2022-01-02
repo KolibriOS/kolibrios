@@ -3,7 +3,11 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+int errno;
+
 int main() {
+    networklib_init();
+
     char *host = "kolibrios.org";
     int port = 80;
     printf("Connecting to %s on port %d\n", host, port);

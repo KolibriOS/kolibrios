@@ -2,7 +2,7 @@ CC=gcc
 NAME=kos32-tcc
 
 SRC=libtcc.c tcc.c
-CFLAGS= -DTCC_TARGET_MEOS_LINUX
+CFLAGS= -DTCC_TARGET_MEOS_LINUX 
 LFLAGS= -m32
 
 all:

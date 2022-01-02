@@ -269,7 +269,10 @@ typedef struct {
 	 tcc_free(str_arr);
 	 tcc_free(len_arr);
 	 tcc_free(sym_arr);
+
  }
+
+ 
 
  void kx_init(me_info* me) {
 	 ElfW(Sym) *sym;
@@ -323,7 +326,6 @@ typedef struct {
 	This function correct tcc_root if tcc_root/kx is a run directory,
 	otherwise do trim filename
 */
-#if 0
  void kx_fix_root_directory(char *buf, size_t size) {
 	 
 	 int defult = 1;
@@ -364,6 +366,5 @@ typedef struct {
 	 }
 
 	 tcc_free(tcc_conf);
-	 kx_debug_output("tcc root = %s\n", buf);
+	 //kx_debug_output("tcc root = %s\n", buf);
  }
-#endif

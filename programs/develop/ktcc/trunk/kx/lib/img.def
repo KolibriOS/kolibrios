@@ -1,0 +1,20 @@
+LIBRARY libimg.obj
+
+EXPORTS
+img_blend
+img_convert
+img_count
+img_create
+img_decode
+img_destroy
+img_destroy_layer
+img_draw
+img_encode
+img_flip
+img_flip_layer
+img_resize_data
+img_rotate
+img_rotate_layer
+img_scale
+img_to_rgb
+img_to_rgb2

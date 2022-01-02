@@ -42,8 +42,10 @@ void draw_window(){
 	_ksys_end_draw();
 }
 
+
 int main()
 {
+	kolibri_boxlib_init();
 	init_checkbox2(&output_off);
 	_ksys_set_event_mask(KSYS_EVM_REDRAW + KSYS_EVM_KEY + KSYS_EVM_BUTTON + KSYS_EVM_MOUSE+ KSYS_EVM_MOUSE_FILTER);
 	while(1){
@@ -53,7 +55,7 @@ int main()
 		break;
 		  
 		case KSYS_EVENT_KEY:
-			edit_box_key_safe(&ed, _ksys_get_key());
+			edit_box_key(&ed, _ksys_get_key().val);
             draw_window();
 		break;
 			 

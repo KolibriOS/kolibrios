@@ -44,13 +44,18 @@ void* load_img(char* fname, uint32_t* read_sz){  // Image file upload function
 
 void draw_gui(){
     _ksys_start_draw();
-    _ksys_create_window(10, 40, (IMG_W+NEW_IMG_W)+50, IMG_H+50, "Libimg", sys_color_table.work_area, 0x34);
-    img_draw(image_blend, 10, 10, IMG_W*2, IMG_H , 0, 0);  // Draw blended image to window
+	_ksys_create_window(10, 40, (IMG_W+NEW_IMG_W)+50, IMG_H+50, "Libimg", sys_color_table.work_area, 0x34);
+	img_draw(image_blend, 10, 10, IMG_W*2, IMG_H , 0, 0);  // Draw blended image to window
     _ksys_end_draw();
 }
 
 int main(){
-    _ksys_get_system_colors(&sys_color_table); // Get system colors theme
+    if (kolibri_libimg_init() == -1){
+		printf("Error loading lib_img.obj\n");
+        exit(0);
+	}
+	
+	_ksys_get_system_colors(&sys_color_table); // Get system colors theme
     _ksys_set_event_mask(0xC0000027);
     
     uint32_t img_size; 

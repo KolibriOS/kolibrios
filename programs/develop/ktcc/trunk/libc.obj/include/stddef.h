@@ -34,12 +34,4 @@ typedef uint64_t uintmax_t;
 
 #define offsetof(type, field) ((size_t)&((type *)0)->field)
 
-#ifndef __stdcall
-    #define __stdcall __attribute__((stdcall))
-#endif
-
-#ifndef __cdecl
-    #define __cdecl   __attribute__((cdecl))
-#endif
-
 #endif /* _STDDEF_H_ */

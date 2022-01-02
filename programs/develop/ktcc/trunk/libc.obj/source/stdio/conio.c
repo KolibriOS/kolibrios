@@ -7,25 +7,31 @@ static char* __con_dllname = "/sys/lib/console.obj";
 
 int __con_is_load = 0;
 
-void  __stdcall (*__con_init_hidden)(int wnd_width, unsigned wnd_height, int scr_width, int scr_height, const char* title);
-void  __stdcall (*con_exit)(int);
-void  __stdcall (*con_set_title)(const char* title);
-void  __stdcall (*con_write_asciiz)(const char* str);
-void  __stdcall (*con_write_string)(const char* str, dword length);
-int   __cdecl   (*con_printf)(const char* format, ...);
-dword __stdcall (*con_get_flags)(void);
-dword __stdcall (*con_set_flags)(dword new_flags);
-int   __stdcall (*con_get_font_height)(void);
-int   __stdcall (*con_get_cursor_height)(void);
-int   __stdcall (*con_set_cursor_height)(int new_height);
-int   __stdcall (*con_getch)(void);
-word  __stdcall (*con_getch2)(void);
-int   __stdcall (*con_kbhit)(void);
-char* __stdcall (*con_gets)(char* str, int n);
-char* __stdcall (*con_gets2)(con_gets2_callback callback, char* str, int n);
-void  __stdcall (*con_cls)();
-void  __stdcall (*con_get_cursor_pos)(int* px, int* py);
-void  __stdcall (*con_set_cursor_pos)(int x, int y);
+void  stdcall (*__con_init_hidden)(int wnd_width, unsigned wnd_height, int scr_width, int scr_height, const char* title);
+void  stdcall (*con_exit)(int);
+void  stdcall (*con_set_title)(const char* title);
+void  stdcall (*con_write_asciiz)(const char* str);
+void  stdcall (*con_write_string)(const char* str, dword length);
+int   cdecl   (*con_printf)(const char* format, ...);
+dword stdcall (*con_get_flags)(void);
+dword stdcall (*con_set_flags)(dword new_flags);
+int   stdcall (*con_get_font_height)(void);
+int   stdcall (*con_get_cursor_height)(void);
+int   stdcall (*con_set_cursor_height)(int new_height);
+int   stdcall (*con_getch)(void);
+word  stdcall (*con_getch2)(void);
+int   stdcall (*con_kbhit)(void);
+char* stdcall (*con_gets)(char* str, int n);
+char* stdcall (*con_gets2)(con_gets2_callback callback, char* str, int n);
+void  stdcall (*con_cls)();
+void  stdcall (*con_get_cursor_pos)(int* px, int* py);
+void  stdcall (*con_set_cursor_pos)(int x, int y);
+
+/*static void __con_panic(char* func_name)
+{
+    debug_printf("In console.obj %s=NULL!\n", func_name);
+    _ksys_exit();
+}*/
 
 static void __con_lib_link(ksys_dll_t *exp)
 {

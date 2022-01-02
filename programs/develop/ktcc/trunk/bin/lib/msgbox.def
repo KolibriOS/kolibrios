@@ -1,6 +1,0 @@
-LIBRARY msgbox.obj
-
-EXPORTS
-mb_create
-mb_reinit
-mb_setfunctions

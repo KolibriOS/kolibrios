@@ -5,6 +5,8 @@ https://www.binarytides.com/whois-client-code-in-c-with-linux-sockets/
 */
 
 #include <errno.h>
+int errno;
+
 #include "sys/ksys.h"
 #include <stdio.h>
 #include <string.h>	
@@ -40,7 +42,8 @@ char* str_copy(char*);
 
 
 int main(int argc , char *argv[])
-{
+{	
+	networklib_init();
 	char *domain , *data = NULL;
 	int f_flag=0;
 

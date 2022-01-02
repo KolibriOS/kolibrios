@@ -302,14 +302,8 @@ int tcc_output_me(TCCState* s1,const char *filename)
 #ifdef TCC_TARGET_KX
 	kx_init(&me);
 #endif
- 	if (s1->output_type != TCC_OUTPUT_OBJ && !s1->nostdlib){
-        tcc_add_crt(s1, "crt0.o");
-        tcc_add_library_err(s1, "tcc1");
-    }
-
 	relocate_common_syms();
 	assign_addresses(&me);
-
 #ifndef TCC_TARGET_KX    
     if(undef_sym_flag){
        tcc_error("Linker error!");
