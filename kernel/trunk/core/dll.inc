@@ -34,92 +34,7 @@ proc get_notify stdcall, p_ev:dword
         jmp     .wait
 endp
 
-align 4
-proc pci_read32 stdcall, bus:dword, devfn:dword, reg:dword
-        push    ebx
-        xor     eax, eax
-        xor     ebx, ebx
-        mov     ah, byte [bus]
-        mov     al, 6
-        mov     bh, byte [devfn]
-        mov     bl, byte [reg]
-        call    pci_read_reg
-        pop     ebx
-        ret
-endp
 
-align 4
-proc pci_read16 stdcall, bus:dword, devfn:dword, reg:dword
-        push    ebx
-        xor     eax, eax
-        xor     ebx, ebx
-        mov     ah, byte [bus]
-        mov     al, 5
-        mov     bh, byte [devfn]
-        mov     bl, byte [reg]
-        call    pci_read_reg
-        pop     ebx
-        ret
-endp
-
-align 4
-proc pci_read8 stdcall, bus:dword, devfn:dword, reg:dword
-        push    ebx
-        xor     eax, eax
-        xor     ebx, ebx
-        mov     ah, byte [bus]
-        mov     al, 4
-        mov     bh, byte [devfn]
-        mov     bl, byte [reg]
-        call    pci_read_reg
-        pop     ebx
-        ret
-endp
-
-align 4
-proc pci_write8 stdcall, bus:dword, devfn:dword, reg:dword, val:dword
-        push    ebx
-        xor     eax, eax
-        xor     ebx, ebx
-        mov     ah, byte [bus]
-        mov     al, 8
-        mov     bh, byte [devfn]
-        mov     bl, byte [reg]
-        mov     ecx, [val]
-        call    pci_write_reg
-        pop     ebx
-        ret
-endp
-
-align 4
-proc pci_write16 stdcall, bus:dword, devfn:dword, reg:dword, val:dword
-        push    ebx
-        xor     eax, eax
-        xor     ebx, ebx
-        mov     ah, byte [bus]
-        mov     al, 9
-        mov     bh, byte [devfn]
-        mov     bl, byte [reg]
-        mov     ecx, [val]
-        call    pci_write_reg
-        pop     ebx
-        ret
-endp
-
-align 4
-proc pci_write32 stdcall, bus:dword, devfn:dword, reg:dword, val:dword
-        push    ebx
-        xor     eax, eax
-        xor     ebx, ebx
-        mov     ah, byte [bus]
-        mov     al, 10
-        mov     bh, byte [devfn]
-        mov     bl, byte [reg]
-        mov     ecx, [val]
-        call    pci_write_reg
-        pop     ebx
-        ret
-endp
 
 handle     equ  IOCTL.handle
 io_code    equ  IOCTL.io_code
@@ -315,6 +230,35 @@ proc reg_service_ex stdcall, name:dword, handler:dword, srvsize:dword
         pop     ebx
         ret
 endp
+
+align 4
+stop_all_services:      ;used in shutdown system
+        push    ebp
+        mov     edx, [srv.fd]
+.next:
+        cmp     edx, srv.fd-SRV.fd
+        je      .done
+        cmp     [edx+SRV.magic], ' SRV'
+        jne     .next
+        cmp     [edx+SRV.size], sizeof.SRV
+        jne     .next
+
+        mov     ebx, [edx+SRV.entry]
+        mov     edx, [edx+SRV.fd]
+        test    ebx, ebx
+        jz      .next
+
+        push    edx
+        mov     ebp, esp
+        push    0
+        push    DRV_EXIT
+        call    ebx  ;stdcall
+        mov     esp, ebp
+        pop     edx
+        jmp     .next
+.done:
+        pop     ebp
+        ret
 
 align 4
 proc get_proc stdcall, exp:dword, sz_name:dword
@@ -1357,35 +1301,6 @@ destroy_all_hdlls:
         call    destroy_hdll
         jmp     .loop
 .ret:
-        ret
-
-align 4
-stop_all_services:
-        push    ebp
-        mov     edx, [srv.fd]
-.next:
-        cmp     edx, srv.fd-SRV.fd
-        je      .done
-        cmp     [edx+SRV.magic], ' SRV'
-        jne     .next
-        cmp     [edx+SRV.size], sizeof.SRV
-        jne     .next
-
-        mov     ebx, [edx+SRV.entry]
-        mov     edx, [edx+SRV.fd]
-        test    ebx, ebx
-        jz      .next
-
-        push    edx
-        mov     ebp, esp
-        push    0
-        push    -1
-        call    ebx
-        mov     esp, ebp
-        pop     edx
-        jmp     .next
-.done:
-        pop     ebp
         ret
 
 ; param
