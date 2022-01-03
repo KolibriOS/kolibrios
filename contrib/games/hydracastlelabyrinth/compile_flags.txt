@@ -1,0 +1,2 @@
+-D_SDL
+-D_KOLIBRI
