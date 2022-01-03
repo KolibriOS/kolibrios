@@ -2,7 +2,7 @@
 AR = kos32-ar
 FASM:= fasm
 
-INSTALLDIR:= /home/autobuild/tools/win32/lib
+INSTALLDIR:= ../../lib
 
 TARGET:= libsound
 
