@@ -1,16 +1,17 @@
 window_h=85
 window_w=430
 ;--- другие макросы ---
-include '../../../develop/libraries/box_lib/load_lib.mac'
+include '../../../KOSfuncs.inc'
+include '../../../load_lib.mac'
 include '../../../develop/libraries/box_lib/trunk/box_lib.mac'
 include 'txtbut.inc'
 include '../../../macros.inc'
 include 'run.mac'
 include 'lang.inc'
 use32
-    org 0x0
+    org 0
     db 'MENUET01'
-    dd 0x1
+    dd 1
     dd start
     dd i_end
     dd mem
@@ -27,23 +28,22 @@ use32
 ;load system lib
 align 4
 start:
-sys_load_library  library_name, cur_dir_path, library_path, system_path, \
-err_message_found_lib, head_f_l, myimport, err_message_import, head_f_i
+sys_load_library  library_name, library_path, system_path, myimport
 	cmp	eax,-1
 	jz	close
 
 	cmp	[par],byte 0
 	jne	read_par
-	mcall	40,EVM_MOUSE+EVM_BUTTON+EVM_KEY+EVM_REDRAW+EVM_MOUSE_FILTER
+	mcall	SF_SET_EVENTS_MASK, EVM_MOUSE+EVM_BUTTON+EVM_KEY+EVM_REDRAW+EVM_MOUSE_FILTER
 red:
-	mcall	48,3,sc,40
+	mcall	SF_STYLE_SETTINGS,SSF_GET_COLORS,sc,40
 	edit_boxes_set_sys_color input_fn,input_fn_end,sc
 	set_sys_colors_txt_button run_but,sc
 	push	dword [sc.work_graph]
 	pop	[input_fn.focus_border_color]
 	call	draw_window
 still:				;основной обработчик
-	mcall	10		;Ожидать события
+	mcall	SF_WAIT_EVENT
 	dec  eax
 	jz   red
 	dec  eax
@@ -56,7 +56,7 @@ still:				;основной обработчик
 
 	jmp still    ;если ничего из перечисленного то снова в цикл
 key:
-	mcall	2
+	mcall	SF_GET_KEY
 	cmp	ah,13
 	je	run
 ;        key_edit_box input_fn
@@ -65,7 +65,7 @@ key:
 
 	jmp	still
 button:
-	mcall	17
+	mcall	SF_GET_BUTTON
 	dec	ah
 	jz	close
 	dec	ah
@@ -133,7 +133,7 @@ copy_par:
 	inc	edi
 	jmp	@b
 .stop:
-	mcall	70,file_info
+	mcall	SF_FILE,file_info
 
 	cmp	eax,0
 	jl	error
@@ -141,7 +141,7 @@ copy_par:
 	call	draw_status
 	jmp	still
 close:
-	mcall -1
+	mcall SF_TERMINATE_PROCESS
 
 error:
 	neg	eax
@@ -158,13 +158,13 @@ error:
 	jmp	still
 
 draw_window:
-	mcall	48,5
+	mcall	SF_STYLE_SETTINGS,SSF_GET_SCREEN_AREA
 	mov	si,bx
 
-	mcall	12,1
-	mcall	48,4
+	mcall	SF_REDRAW, SSF_BEGIN_DRAW
+	mcall	SF_STYLE_SETTINGS,SSF_GET_SKIN_HEIGHT
 	mov	dx,ax
-	mcall	14
+	mcall	SF_GET_SCREEN_SIZE
 	xor	ecx,ecx
 	sub	cx,window_h+40
 	sub	cx,dx
@@ -181,9 +181,9 @@ draw_window:
 	or	edx,0x33000000
 	xor	esi,esi
 	mov	edi,grab_text
-	mcall	0
+	mcall	SF_CREATE_WINDOW
 
-	mcall	9,procinfo,-1
+	mcall	SF_THREAD_INFO,procinfo,-1
 
 	mov	eax,[procinfo.box.width]
 	sub	eax,20
@@ -200,7 +200,7 @@ draw_window:
 	; shl	ecx,16
 	; pop	cx
 	; mov	edx,[sc.work_graph]
-	; mcall	38
+	; mcall	SF_DRAW_LINE
 
 	; draw_edit_box input_fn
 	push	dword input_fn
@@ -210,7 +210,7 @@ draw_window:
 
 	call	draw_status_text
 
-	mcall	12,2
+	mcall	SF_REDRAW, SSF_END_DRAW
 ret
 
 draw_status:
@@ -218,7 +218,7 @@ draw_status:
 	sub	bx,10
 	mov	ecx,(60)*65536+15
 	mov	edx,[sc.work]
-	mcall	13
+	mcall	SF_DRAW_RECT
 draw_status_text:
 	mov	edx,[status]
 	xor	esi,esi
@@ -230,7 +230,7 @@ draw_status_text:
 @@:
 	mov	ecx,[sc.work_text]
 	or  ecx,0x90000000
-	mcall	4,5*65536+(60)
+	mcall	SF_DRAW_TEXT,5*65536+(60)
 ret
 
 run_but txt_button 0,5,20,33,2,0,0x90000000,run_but_text,
@@ -286,17 +286,6 @@ system_path	 db '/sys/lib/'
 library_name	 db 'box_lib.obj',0
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-if lang eq ru
-err_message_found_lib	db 'Ошибка при поиске box_lib.obj',0
-head_f_i:
-head_f_l	db 'Системная ошибка',0
-err_message_import	db 'Ошибка при импорте box_lib.obj',0
-else
-err_message_found_lib	db 'Sorry I cannot load library box_lib.obj',0
-head_f_i:
-head_f_l	db 'System error',0
-err_message_import	db 'Error on load import library box_lib.obj',0
-end if
 
 myimport:
 
@@ -305,10 +294,9 @@ edit_box_key	dd	aEdit_box_key
 edit_box_mouse	dd	aEdit_box_mouse
 version_ed	dd	aVersion_ed
 
-		dd	0
-		dd	0
+		dd	0,0
 
-aEdit_box_draw	db 'edit_box',0
+aEdit_box_draw	db 'edit_box_draw',0
 aEdit_box_key	db 'edit_box_key',0
 aEdit_box_mouse db 'edit_box_mouse',0
 aVersion_ed	db 'version_ed',0
@@ -317,7 +305,7 @@ aVersion_ed	db 'version_ed',0
 
 
 file_info:
-.mode dd 7
+.mode dd SSF_START_APP
 .flags dd 0
 .par dd run_par
 dd 0,0

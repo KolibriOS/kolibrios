@@ -251,7 +251,7 @@ proc conv_str_to_int uses ebx ecx esi, buf:dword
 endp
 
 ;-------------------------------------------------
-title db 'string to double 20.08.19',0
+title db 'string to double 03.01.21',0
 hexstr db 'hex:',0
 decstr db 'dec:',0
 binstr db 'bin:',0
@@ -301,7 +301,7 @@ import_box_lib:
 	;version_op dd aVersion_op
 dd 0,0
 	;sz_init1 db 'lib_init',0
-	sz_edit_box_draw db 'edit_box',0
+	sz_edit_box_draw db 'edit_box_draw',0
 	sz_edit_box_key db 'edit_box_key',0
 	sz_edit_box_mouse db 'edit_box_mouse',0
 	;sz_edit_box_set_text db 'edit_box_set_text',0

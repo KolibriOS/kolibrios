@@ -13,9 +13,9 @@
 WIN_W = 364
 
 use32
-    org 0x0
+    org 0
     db  'MENUET01'
-    dd  0x01,start,i_end,e_end,e_end,0,sys_path
+    dd  1,start,i_end,e_end,e_end,0,sys_path
 
 include '../../../proc32.inc'
 include '../../../macros.inc' ; макросы облегчают жизнь ассемблерщиков!
@@ -32,17 +32,18 @@ start:
 	mov	ebp,lib_0
 	cmp	dword [ebp+ll_struc_size-4],0
 	jz	@f
-		mcall -1 ;exit not correct
+		mcall SF_TERMINATE_PROCESS
 	@@:
-	mcall 40,0x80000027
-	mcall 48, 3, sys_colors, 40
+	mcall SF_SET_EVENTS_MASK,0x80000027
+	mcall SF_STYLE_SETTINGS, SSF_GET_COLORS, sys_colors, 40
 	edit_boxes_set_sys_color edit1,editboxes_end,sys_colors
 
 red:
     call draw_window
 
+align 4
 still:
-    mcall 10		; функция 10 - ждать события
+    mcall SF_WAIT_EVENT
 
     cmp  eax,1		; перерисовать окно ?
     je	 red		; если да - на метку red
@@ -58,7 +59,7 @@ still:
 ;---------------------------------------------------------------------
 
 key:		       ; нажата клавиша на клавиатуре
-    mcall 2
+    mcall SF_GET_KEY
 	cmp ah,13 ;обработка кнопки Enter
 	je @f
 		stdcall [edit_box_key], dword edit1
@@ -124,10 +125,10 @@ next_digit:
 ;---------------------------------------------------------------------
 
 button:
-	mcall 17		; 17 - получить идентификатор нажатой кнопки
+	mcall SF_GET_BUTTON
 	cmp   ah, 1 	; если НЕ нажата кнопка с номером 1,
 	jne   @f
-		mcall -1
+		mcall SF_TERMINATE_PROCESS
 	@@:
 	cmp ah, 2
 	jne @f
@@ -158,19 +159,19 @@ mouse:
 	jmp still
 
 ;------------------------------------------------
-    draw_window:
+draw_window:
 ;------------------------------------------------
-	mcall	48, 3, sys_colors, 40
+	mcall	SF_STYLE_SETTINGS, SSF_GET_COLORS, sys_colors, 40
 
-    mcall 12, 1
+    mcall SF_REDRAW, SSF_BEGIN_DRAW
 	mov	edx, 0x14000000
 	or	edx, [sys_colors.work]
 	;mov	esi, 0x80000000
 	;or	esi, [sys_colors.grab_text]
-    mcall 0, 200*65536+WIN_W, 200*65536+179, ,,title
+    mcall SF_CREATE_WINDOW, 200*65536+WIN_W, 200*65536+179, ,,title
 
 	
-    mcall  8,         15*65536+42,106*65536+ 21, 2, [sys_colors.work_button] ; кнопка shl
+    mcall  SF_DEFINE_BUTTON, 15*65536+42,106*65536+ 21, 2, [sys_colors.work_button] ; кнопка shl
     mcall   ,         70*65536+42,             ,  , ; кнопка sal
     mcall   , (WIN_W-55)*65536+42,             , 3, ; кнопка shr
     mcall   ,(WIN_W-111)*65536+42,             , 4, ; кнопка sar
@@ -178,7 +179,7 @@ mouse:
 
 	mov	ecx, 0x90000000
 	or	ecx, [sys_colors.work_text]
-    mcall  4, 15*65536+30,   , binstr,
+    mcall  SF_DRAW_TEXT, 15*65536+30,   , binstr,
     mcall   , 15*65536+46,   , decstr,
     mcall   , 15*65536+62,   ,sdecstr,
     mcall   , 15*65536+78,   , hexstr,
@@ -193,9 +194,9 @@ mouse:
 	mov esi, [sys_colors.work_text]
 	or  esi, 0x90000000
 
-    mcall  47, 10*65536,   ,(WIN_W-92)*65536+62,    ; 10-ная со знаком
+    mcall SF_DRAW_NUMBER, 10*65536,   ,(WIN_W-92)*65536+62,    ; 10-ная со знаком
 	BIN_LINE_BLOCK_W = 76
-    mcall 47, 8*65536+512,,(WIN_W-BIN_LINE_BLOCK_W)*65536+30 ; 2-ная	
+    mcall SF_DRAW_NUMBER, 8*65536+512,,(WIN_W-BIN_LINE_BLOCK_W)*65536+30 ; 2-ная	
     ror    ecx, 8
 	mov    edx, (WIN_W-BIN_LINE_BLOCK_W*2)*65536+30
 	mcall
@@ -214,10 +215,10 @@ mouse:
     mcall   , 10*65536,   ,(WIN_W-92)*65536+46,    ; 10-ная
 	mcall   , 8*65536+256,,(WIN_W-76)*65536+78,    ; 16-ная
 	mov   ecx,esi
-    mcall  4, (WIN_W-102)*65536+61, , minus, 1
-    mcall 38, 15*65536+WIN_W-15, 137*65536+137, [sys_colors.work_graph]
+    mcall SF_DRAW_TEXT, (WIN_W-102)*65536+61, , minus, 1
+    mcall SF_DRAW_LINE, 15*65536+WIN_W-15, 137*65536+137, [sys_colors.work_graph]
 	stdcall [edit_box_draw], edit1
-    mcall 12, 2 		   ; функция 12: сообщить ОС об отрисовке окна
+    mcall SF_REDRAW, SSF_END_DRAW
 
 ret
 
@@ -274,13 +275,9 @@ string1_end:
 if lang eq ru
 	numstr db 'Число:',0
 	Okstr db 'Ввод',0
-	head_f_i:
-	head_f_l db 'Системная ошибка',0
 else
 	numstr db 'Number:',0
 	Okstr db 'Enter',0
-	head_f_i:
-	head_f_l db 'System error',0
 end if
 
 mouse_dd dd 0
@@ -304,7 +301,7 @@ import_box_lib:
 	;edit_box_set_text dd sz_edit_box_set_text
 dd 0,0
 	;sz_init1 db 'lib_init',0
-	sz_edit_box_draw db 'edit_box',0
+	sz_edit_box_draw db 'edit_box_draw',0
 	sz_edit_box_key db 'edit_box_key',0
 	sz_edit_box_mouse db 'edit_box_mouse',0
 	;sz_edit_box_set_text db 'edit_box_set_text',0

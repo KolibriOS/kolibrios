@@ -26,35 +26,20 @@ system_dir_ProcLib	db '/sys/lib/proc_lib.obj',0
 ;... любая последовательность других команд и определений.
 ;library_name     db 'box_lib.obj',0
 ;library_name	db	'box_lib.obj',0
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-ihead_f_i:
-ihead_f_l		db 'System error',0
-
-er_message_found_lib	db 'Sorry I cannot load library box_lib.obj',0
-er_message_import		db 'Error on load import library box_lib.obj',0
-
-er_message_found_lib2	db 'cnv_png.obj - Not found!',0
-er_message_import2		db 'cnv_png.obj - Wrong import!',0
-
-er_message_found_lib3	db 'archiver.obj - Not found!',0
-er_message_import3		db 'archiver.obj - Wrong import!',0
-
-er_message_found_lib4	db 'proc_lib.obj - Not found!',0
-er_message_import4		db 'proc_lib.obj - Wrong import!',0
 ;---------------------------------------------------------------------
 align	4
 l_libs_start:
-library01	l_libs system_dir_Boxlib+9, path, file_name, system_dir_Boxlib,\
-er_message_found_lib, ihead_f_l, Box_lib_import, er_message_import, ihead_f_i, plugins_directory
+library01	l_libs system_dir_Boxlib+9, file_name, system_dir_Boxlib,\
+ Box_lib_import, plugins_directory
 
-library02	l_libs system_dir_CnvPNG+9, path, file_name, system_dir_CnvPNG,\
-er_message_found_lib2, ihead_f_l, cnv_png_import, er_message_import2, ihead_f_i, plugins_directory
+library02	l_libs system_dir_CnvPNG+9, file_name, system_dir_CnvPNG,\
+ cnv_png_import, plugins_directory
 
-library03	l_libs system_dir_UNPACK+9, path, file_name, system_dir_UNPACK,\
-er_message_found_lib3, ihead_f_l, UNPACK_import, er_message_import3, ihead_f_i, plugins_directory
+library03	l_libs system_dir_UNPACK+9, file_name, system_dir_UNPACK,\
+ UNPACK_import, plugins_directory
 
-library04  l_libs system_dir_ProcLib+9, path, file_name, system_dir_ProcLib, \
-er_message_found_lib4, ihead_f_l, ProcLib_import, er_message_import4, ihead_f_i, plugins_directory
+library04  l_libs system_dir_ProcLib+9, file_name, system_dir_ProcLib, \
+ ProcLib_import, plugins_directory
 
 end_l_libs:
 ;---------------------------------------------------------------------
@@ -63,8 +48,7 @@ ProcLib_import:
 OpenDialog_Init		dd aOpenDialog_Init
 OpenDialog_Start	dd aOpenDialog_Start
 ;OpenDialog__Version	dd aOpenDialog_Version
-        dd      0
-        dd      0
+        dd      0,0
 aOpenDialog_Init	db 'OpenDialog_init',0
 aOpenDialog_Start	db 'OpenDialog_start',0
 ;aOpenDialog_Version	db 'Version_OpenDialog',0
@@ -75,8 +59,7 @@ cnv_png_import:
 .Version	dd aCP_Version
 .Check		dd aCP_Check
 .Assoc		dd aCP_Assoc
-		dd 0
-		dd 0
+		dd 0,0
 aCP_Start	db 'START',0
 aCP_Version	db 'version',0
 aCP_Check	db 'Check_Header',0
@@ -99,9 +82,7 @@ UNPACK_import:
 ;unpack_Close			dd aUnpack_Close
 unpack_DeflateUnpack		dd aUnpack_DeflateUnpack
 unpack_DeflateUnpack2		dd aUnpack_DeflateUnpack2
-				dd 0
-				dd 0
-
+				dd 0,0
 ;aUnpack_Version		db 'version',0
 ;aUnpack_PluginLoad		db 'plugin_load',0
 ;aUnpack_OpenFilePlugin		db 'OpenFilePlugin',0
@@ -187,13 +168,12 @@ menu_bar_activate	dd aMenu_bar_activate
 PathShow_prepare	dd sz_PathShow_prepare
 PathShow_draw		dd sz_PathShow_draw
 ;Version_path_show	dd szVersion_path_show
-			dd 0
-			dd 0
+			dd 0,0
 
 ;a_init			db 'lib_init',0
 ;a_version		db 'version',0
 
-;aEdit_box_draw		db 'edit_box',0
+;aEdit_box_draw		db 'edit_box_draw',0
 ;aEdit_box_key		db 'edit_box_key',0
 ;aEdit_box_mouse	db 'edit_box_mouse',0
 ;aVersion_ed		db 'version_ed',0

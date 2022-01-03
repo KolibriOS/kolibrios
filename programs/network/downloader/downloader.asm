@@ -348,7 +348,7 @@ import  lib_http, \
         HTTP_free,      'free'
 
 import  box_lib, \
-        edit_box_draw,    'edit_box', \
+        edit_box_draw,    'edit_box_draw', \
         edit_box_key,     'edit_box_key', \
         edit_box_mouse,   'edit_box_mouse', \
         progressbar_draw, 'progressbar_draw', \

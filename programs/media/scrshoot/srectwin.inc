@@ -252,8 +252,7 @@ ProcLib_import:
 OpenDialog_Init		dd aOpenDialog_Init
 OpenDialog_Start	dd aOpenDialog_Start
 ;OpenDialog__Version	dd aOpenDialog_Version
-        dd      0
-        dd      0
+        dd      0,0
 aOpenDialog_Init	db 'OpenDialog_init',0
 aOpenDialog_Start	db 'OpenDialog_start',0
 ;aOpenDialog_Version	db 'Version_OpenDialog',0
@@ -286,7 +285,7 @@ PathShow_draw		dd sz_PathShow_draw
 ;a_init			db 'lib_init',0
 ;a_version		db 'version',0
 
-aEdit_box_draw		db 'edit_box',0
+aEdit_box_draw		db 'edit_box_draw',0
 aEdit_box_key		db 'edit_box_key',0
 aEdit_box_mouse		db 'edit_box_mouse',0
 aEdit_box_set_text	db 'edit_box_set_text',0

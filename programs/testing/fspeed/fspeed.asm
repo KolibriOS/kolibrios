@@ -27,14 +27,14 @@
 ;*****************************************************************************
 ;-----------------------------------------------------------------------------
 	use32
-	org 0x0
+	org 0
 	db 'MENUET01'
-	dd 0x01
+	dd 1
 	dd START
 	dd IM_END
 	dd I_END
 	dd STACK_TOP
-	dd 0x0
+	dd 0
 	dd cur_dir_path
 ;-----------------------------------------------------------------------------
 include	'lang.inc'
@@ -43,7 +43,8 @@ define __DEBUG__ 1
 define __DEBUG_LEVEL__ 1
 include	'../../debug-fdo.inc'
 include '../../develop/libraries/box_lib/trunk/box_lib.mac'
-include '../../develop/libraries/box_lib/load_lib.mac'
+include '../../KOSfuncs.inc'
+include '../../load_lib.mac'
 	@use_library
 ;-----------------------------------------------------------------------------
 struct  RESULT_SLOT

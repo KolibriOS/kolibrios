@@ -86,7 +86,7 @@ check_box_mouse		dd aCheck_box_mouse
 
 	dd 0,0
 
-aEdit_box_draw		db 'edit_box',0
+aEdit_box_draw		db 'edit_box_draw',0
 aEdit_box_key		db 'edit_box_key',0
 aEdit_box_mouse		db 'edit_box_mouse',0
 

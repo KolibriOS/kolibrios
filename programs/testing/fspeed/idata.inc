@@ -26,25 +26,14 @@ include_debug_strings
 ;-----------------------------------------------------------------------------
 l_libs_start:
 
-library01  l_libs system_dir_Boxlib+9, cur_dir_path, library_path, system_dir_Boxlib, \
-err_message_found_lib1, head_f_l, Box_lib_import, err_message_import1, head_f_i
+library01  l_libs system_dir_Boxlib+9, library_path, system_dir_Boxlib, Box_lib_import
 
-library02  l_libs system_dir_ProcLib+9, cur_dir_path, library_path, system_dir_ProcLib, \
-err_message_found_lib2, head_f_l, ProcLib_import, err_message_import2, head_f_i
+library02  l_libs system_dir_ProcLib+9, library_path, system_dir_ProcLib, ProcLib_import
 
 end_l_libs:
 ;-----------------------------------------------------------------------------
 system_dir_Boxlib	db '/sys/lib/box_lib.obj',0
 system_dir_ProcLib	db '/sys/lib/proc_lib.obj',0
-
-head_f_i:
-head_f_l	db 'System error',0
-
-err_message_found_lib1	db 'box_lib.obj - Not found!',0
-err_message_found_lib2	db 'proc_lib.obj - Not found!',0
-
-err_message_import1	db 'box_lib.obj - Wrong import!',0
-err_message_import2	db 'proc_lib.obj - Wrong import!',0
 
 ;-----------------------------------------------------------------------------
 align 4
@@ -115,13 +104,12 @@ PathShow_draw		dd sz_PathShow_draw
 ;Frame_draw		dd sz_Frame_draw
 ;Version_frame		dd szVersion_frame
 
-			dd 0
-			dd 0
+			dd 0,0
 
 ;a_init			db 'lib_init',0
 ;a_version		db 'version',0
 
-;aEdit_box_draw		db 'edit_box',0
+;aEdit_box_draw		db 'edit_box_draw',0
 ;aEdit_box_key		db 'edit_box_key',0
 ;aEdit_box_mouse	db 'edit_box_mouse',0
 ;aVersion_ed		db 'version_ed',0

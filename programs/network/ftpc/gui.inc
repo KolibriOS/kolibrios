@@ -1106,7 +1106,7 @@ align 4
 library box_lib, 'box_lib.obj', libimg, 'libimg.obj'
 
 import  box_lib, \
-        edit_box_draw,      'edit_box', \
+        edit_box_draw,      'edit_box_draw', \
         edit_box_key,       'edit_box_key', \
         edit_box_mouse,     'edit_box_mouse', \
         edit_box_set_text,  'edit_box_set_text', \

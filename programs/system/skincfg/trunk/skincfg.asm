@@ -34,7 +34,8 @@ include '../../../string.inc'
 include '../../../dll.inc'
 include 'kglobals.inc'
 include 'unpacker.inc'
-include '../../../develop/libraries/box_lib/load_lib.mac'
+include '../../../KOSfuncs.inc'
+include '../../../load_lib.mac'
 	@use_library
 ;******************************************************************************
 ;--------------------------------------

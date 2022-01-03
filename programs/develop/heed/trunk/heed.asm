@@ -498,10 +498,10 @@ mouse:
 
 	mcall	SF_MOUSE_GET,SSF_WINDOW_POSITION
 	shr	eax,16
-	cmp	ax,[scroll_bar_data_vertical.start_x]
+	cmp	ax,[scroll_bar_data_vertical.x_pos]
 	jb	.horizontal
-	sub	ax,[scroll_bar_data_vertical.start_x]
-	cmp	ax,[scroll_bar_data_vertical.size_x]
+	sub	ax,[scroll_bar_data_vertical.x_pos]
+	cmp	ax,[scroll_bar_data_vertical.x_size]
 	jge	still
 
 
@@ -567,10 +567,10 @@ mouse:
 	jbe	.other
 
 	mcall	SF_MOUSE_GET,SSF_WINDOW_POSITION
-	cmp	ax,[scroll_bar_data_horizontal.start_y]
+	cmp	ax,[scroll_bar_data_horizontal.y_pos]
 	jb	still
-	sub	ax,[scroll_bar_data_horizontal.start_y]
-	cmp	ax,[scroll_bar_data_horizontal.size_y]
+	sub	ax,[scroll_bar_data_horizontal.y_pos]
+	cmp	ax,[scroll_bar_data_horizontal.y_size]
 	jge	still
 
 	; mouse event for Horizontal ScrollBar
@@ -586,10 +586,10 @@ mouse:
 
 ;	mcall	SF_MOUSE_GET,SSF_WINDOW_POSITION
 ;	shr	eax,16
-;	cmp	ax,[scroll_bar_data_vertical.start_x]
+;	cmp	ax,[scroll_bar_data_vertical.x_pos]
 ;	jb	.horizontal
-;	sub	ax,[scroll_bar_data_vertical.start_x]
-;	cmp	ax,[scroll_bar_data_vertical.size_x]
+;	sub	ax,[scroll_bar_data_vertical.x_pos]
+;	cmp	ax,[scroll_bar_data_vertical.x_size]
 ;	jge	still
 ;@@:
 	; mouse event for Vertical ScrollBar
@@ -1039,9 +1039,9 @@ main_area:
 	shl	ecx,16
 	mov	ebx,edx
 	shr	ebx,16
-	cmp	bx,[scroll_bar_data_vertical.start_x]
+	cmp	bx,[scroll_bar_data_vertical.x_pos]
 	jge	.ls1
-	mov	ax,[scroll_bar_data_vertical.start_x]
+	mov	ax,[scroll_bar_data_vertical.x_pos]
 	sub	ax,bx
 	shl	ebx,16
 	mov	bx,ax
@@ -1067,9 +1067,9 @@ main_area:
 	mov	dx,16
 	mov	ecx,edx
 	mov	edx,frgrd_color
-	movzx	ebx,[scroll_bar_data_vertical.start_x]
+	movzx	ebx,[scroll_bar_data_vertical.x_pos]
 	
-	mov	ax,[scroll_bar_data_vertical.size_x]
+	mov	ax,[scroll_bar_data_vertical.x_size]
 	test	ax,ax
 	jnz	.no_inc_ebx
 	inc	ebx
@@ -1084,15 +1084,15 @@ main_area:
 	shl	ecx,16
 	mov	ebx,edx
 	shr	ebx,16
-	cmp	bx,[scroll_bar_data_vertical.start_x]
+	cmp	bx,[scroll_bar_data_vertical.x_pos]
 	jge	.10
-	mov	ax,[scroll_bar_data_vertical.start_x]
+	mov	ax,[scroll_bar_data_vertical.x_pos]
 	sub	ax,bx
 	shl	ebx,16
 	mov	bx,ax
 	mov	cx,16
 	
-	mov	ax,[scroll_bar_data_vertical.size_x]
+	mov	ax,[scroll_bar_data_vertical.x_size]
 	test	ax,ax
 	jnz	.no_inc_ebx_2
 	inc	ebx
@@ -1430,22 +1430,22 @@ draw_window:
 	mov	ebx,[bytes_per_line]
 	xor	edx,edx
 	div	ebx
-	mov	[scroll_bar_data_vertical.size_x],0
+	mov	[scroll_bar_data_vertical.x_size],0
 	cmp	eax,[number_strings]
 	jl	@f
-	mov	[scroll_bar_data_vertical.size_x],scroll_width_size
+	mov	[scroll_bar_data_vertical.x_size],scroll_width_size
 @@:
 	mov	eax,dword [threath_buf+62]	;ширина клиентской области
-	sub	ax,[scroll_bar_data_vertical.size_x]
-	mov	[scroll_bar_data_vertical.start_x],ax
+	sub	ax,[scroll_bar_data_vertical.x_size]
+	mov	[scroll_bar_data_vertical.x_pos],ax
 	mov	eax,dword [threath_buf+66]	;высота клиентской области
 	sub	eax,24+24-11
-	mov	[scroll_bar_data_vertical.size_y],ax
+	mov	[scroll_bar_data_vertical.y_size],ax
 	mov	ebx,eax
 	push	eax
 	add	ebx,20
 	mov	[scroll_bar_data_vertical.max_area],ebx
-	mov	ebx,[scroll_bar_data_vertical.btn_high]
+	mov	ebx,[scroll_bar_data_vertical.btn_height]
 	shl	ebx,1
 	add	ebx,20
 	mov	[scroll_bar_data_vertical.cur_area],ebx
@@ -1518,7 +1518,7 @@ draw_window:
 	shl	ecx,16
 	add	cx,dx
 	sub	ecx,1*65536
-	movzx	ebx,	word [scroll_bar_data_vertical.start_x]
+	movzx	ebx,	word [scroll_bar_data_vertical.x_pos]
 	inc	ebx
 	mcall	SF_DRAW_RECT,,,frgrd_color
 
@@ -1559,15 +1559,15 @@ draw_window:
 	mov	[beg_str_scr],ebx
 	movzx	eax,word [threath_buf+66]
 	sub	eax,34
-	mov	[scroll_bar_data_horizontal.start_y],ax
+	mov	[scroll_bar_data_horizontal.y_pos],ax
 
-;cur_area/(size_x-30)=len_str_scr/string_size
+;cur_area/(x_size-30)=len_str_scr/string_size
 
 	mov	eax,dword [threath_buf+62]
-	sub	ax,[scroll_bar_data_vertical.size_x]
-	mov	[scroll_bar_data_horizontal.size_x],ax
-	sub	eax,[scroll_bar_data_horizontal.btn_high]
-	sub	eax,[scroll_bar_data_horizontal.btn_high]
+	sub	ax,[scroll_bar_data_vertical.x_size]
+	mov	[scroll_bar_data_horizontal.x_size],ax
+	sub	eax,[scroll_bar_data_horizontal.btn_height]
+	sub	eax,[scroll_bar_data_horizontal.btn_height]
 	mov	[scroll_bar_data_horizontal.max_area],eax
 	xor	edx,edx
 	mov	ebx,[len_str_scr]
@@ -2895,8 +2895,7 @@ ProcLib_import:
 OpenDialog_Init		dd aOpenDialog_Init
 OpenDialog_Start	dd aOpenDialog_Start
 ;OpenDialog__Version	dd aOpenDialog_Version
-        dd      0
-        dd      0
+        dd      0,0
 aOpenDialog_Init	db 'OpenDialog_init',0
 aOpenDialog_Start	db 'OpenDialog_start',0
 ;aOpenDialog_Version	db 'Version_OpenDialog',0
@@ -2922,10 +2921,9 @@ menu_bar_draw		dd aMenu_bar_draw
 menu_bar_mouse		dd aMenu_bar_mouse
 version_menu_bar	dd aVersion_menu_bar
 
-	dd 0
-	dd 0
+	dd 0,0
 
-aEdit_box_draw		db 'edit_box',0
+aEdit_box_draw		db 'edit_box_draw',0
 aEdit_box_key		db 'edit_box_key',0
 aEdit_box_mouse		db 'edit_box_mouse',0
 aVersion_ed		db 'version_ed',0
@@ -2945,72 +2943,10 @@ aMenu_bar_mouse		db 'menu_bar_mouse',0
 aVersion_menu_bar	db 'version_menu_bar',0
 ;---------------------------------------------------------------------
 align	4
-scroll_bar_data_vertical:
-.x:
-.size_x		dw scroll_width_size;+0
-.start_x	dw 565	;+2
-.y:
-.size_y		dw 284	;+4
-.start_y	dw 19	;+6
-.btn_high	dd scroll_width_size	;+8
-.type		dd 0	;+12
-.max_area	dd 300+20	;+16
-.cur_area	dd 50	;+20
-.position	dd 0	;+24
-.bckg_col	dd 0xAAAAAA	;+28
-.frnt_col	dd 0xCCCCCC	;+32
-.line_col	dd 0	;+36
-.redraw		dd 0	;+40
-.delta		dw 0	;+44
-.delta2		dw 0	;+46
-.run_x:
-.r_size_x	dw 0	;+48
-.r_start_x	dw 0	;+50
-.run_y:
-.r_size_y	dw 0	;+52
-.r_start_y	dw 0	;+54
-.m_pos		dd 0	;+56
-.m_pos_2	dd 0	;+60
-.m_keys		dd 0	;+64
-.run_size	dd 0	;+68
-.position2	dd 0	;+72
-.work_size	dd 0	;+76
-.all_redraw	dd 0	;+80
-.ar_offset	dd 10	;+84
+scroll_bar_data_vertical scrollbar scroll_width_size, 565, 284, 19, scroll_width_size, 300+20, 50, 0, 0xAAAAAA, 0xCCCCCC, 0, 10
 ;---------------------------------------------------------------------
 align	4
-scroll_bar_data_horizontal:
-.x:
-.size_x		dw 300	;0	;+0
-.start_x	dw 0	;0	;+2
-.y:
-.size_y		dw scroll_width_size	;0	;+4
-.start_y	dw 300	;0	;+6
-.btn_high	dd scroll_width_size	;+8
-.type		dd 0	;+12
-.max_area	dd 300	;+16
-.cur_area	dd 30	;+20
-.position	dd 1	;+24
-.bckg_col	dd 0xAAAAAA	;+28
-.frnt_col	dd 0xCCCCCC	;+32
-.line_col	dd 0	;+36
-.redraw		dd 0	;+40
-.delta		dw 0	;+44
-.delta2		dw 0	;+46
-.run_x:
-.r_size_x	dw 0	;+48
-.r_start_x	dw 0	;+50
-.run_y:
-.r_size_y	dw 0	;+52
-.r_start_y	dw 0	;+54
-.m_pos		dd 0	;+56
-.m_pos_2	dd 0	;+60
-.m_keys		dd 0	;+64
-.run_size	dd 0	;+68
-.position2	dd 0	;+72
-.work_size	dd 0	;+76
-.all_redraw	dd 0	;+80
-.ar_offset	dd 10	;+84
+scroll_bar_data_horizontal scrollbar 300, 0, scroll_width_size, 300, scroll_width_size, 300, 30, 1, 0xAAAAAA, 0xCCCCCC, 0, 10
 ;---------------------------------------------------------------------
 align	4
 menu_data_1:

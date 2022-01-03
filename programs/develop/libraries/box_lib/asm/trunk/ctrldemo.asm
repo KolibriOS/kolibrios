@@ -29,21 +29,20 @@
 ;---------------------------------------------------------------------
 
 	use32
-	org 0x0
+	org 0
 
 	db 'MENUET01'
-	dd 0x01
+	dd 1
 	dd START
 	dd IM_END
 	dd I_END
 	dd stacktop
-	dd 0x0
+	dd 0
 	dd path
 
 include '../../../../../macros.inc'
-include '../../load_lib.mac'
-;include 'macros.inc'
-;include 'load_lib.mac'
+include '../../../../../KOSfuncs.inc'
+include '../../../../../load_lib.mac'
 @use_library
 
 ;---------------------------------------------------------------------

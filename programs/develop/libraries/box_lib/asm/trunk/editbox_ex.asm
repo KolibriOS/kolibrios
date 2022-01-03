@@ -1,28 +1,28 @@
 ;заголовок приложения
 use32                    ; транслятор, использующий 32 разрядных команды
-    org 0x0              ; базовый адрес кода, всегда 0x0
+    org 0                ; базовый адрес кода, всегда 0
     db 'MENUET01'        ; идентификатор исполняемого файла (8 байт)
-    dd 0x1               ; версия формата заголовка исполняемого файла
+    dd 1                 ; версия формата заголовка исполняемого файла
     dd start             ; адрес, на который система передаёт управление
     ; после загрузки приложения в память
     dd i_end             ; размер приложения
     dd mem               ; Объем используемой памяти, для стека отведем 0х100 байт и выровним на грницу 4 байта
     dd mem               ; расположим позицию стека в области памяти, сразу за телом программы. Вершина стека в диапазоне памяти, указанном выше
-    dd 0x0               ; указатель на строку с параметрами.
+    dd 0                 ; указатель на строку с параметрами.
     dd cur_dir_path      ; указатель на адрес, куда помещается строка, содержащая путь до программы в момент запуска.
 
 include '../../../../../macros.inc'
 include '../../trunk/box_lib.mac'
-include '../../load_lib.mac'
+include '../../../../../KOSfuncs.inc'
+include '../../../../../load_lib.mac'
     @use_library         ;use load lib macros
 start:
 ;universal load library/librarys
-sys_load_library  library_name, cur_dir_path, library_path, system_path, \
-err_message_found_lib, head_f_l, myimport, err_message_import, head_f_i
+sys_load_library  library_name, library_path, system_path, myimport
 ;if return code =-1 then exit, else nornary work
     cmp      eax,-1
     jz       exit
-    mcall    40,0x27          ;установить маску для ожидаемых событий
+    mcall    SF_SET_EVENTS_MASK,0x80000027 ;установить маску для ожидаемых событий
 
     push     dword check1     ;подсчёт дины текста для Checkbox'ов
     call     [init_checkbox]
@@ -34,7 +34,7 @@ red_win:
     call     draw_window      ;первоначально необходимо нарисовать окно
 align 4
 still:                        ;основной обработчик
-    mcall    10               ;Ожидать события
+    mcall    SF_WAIT_EVENT
     dec      eax
     jz       red_win
     dec      eax
@@ -63,13 +63,13 @@ still:                        ;основной обработчик
     jmp     still           ;если ничего из перечисленного то снова в цикл
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 button:
-    mcall   17             ;получить идентификатор нажатой клавиши
+    mcall   SF_GET_BUTTON
     test    ah,ah          ;если в ah 0, то перейти на обработчик событий still
     jz      still
 exit:
-    mcall   -1
+    mcall   SF_TERMINATE_PROCESS
 key:
-    mcall   2              ;загрузим значение 2 в регистор eax и получим код нажатой клавиши
+    mcall   SF_GET_KEY
 
     push    dword edit1
     call    [edit_box_key]
@@ -82,8 +82,8 @@ key:
 ;>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 align 4
 draw_window:                ;рисование окна приложения
-    mcall   12,1
-    mcall   0,(50*65536+390),(30*65536+200),0x33AABBCC,0x805080DD,hed
+    mcall   SF_REDRAW, SSF_BEGIN_DRAW
+    mcall   SF_CREATE_WINDOW,(50*65536+390),(30*65536+200),0x33AABBCC,0x805080DD,hed
 
     push    dword edit1
     call    [edit_box_draw]
@@ -103,7 +103,7 @@ draw_window:                ;рисование окна приложения
     push    dword Option_boxs2
     call    [option_box_draw]
 
-    mcall   12,2
+    mcall   SF_REDRAW, SSF_END_DRAW
    ret
 ;>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 ;DATA данные
@@ -115,12 +115,6 @@ library_name    db 'box_lib.obj',0
 ;... любая последовательность других команд и определений.
 ;library_name     db 'box_lib.obj',0
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-err_message_found_lib    db 'Sorry I cannot load library box_lib.obj',0
-
-head_f_i:
-head_f_l              db 'System error',0
-err_message_import    db 'Error on load import library box_lib.obj',0
 
 myimport:
 
@@ -138,10 +132,9 @@ option_box_draw  dd    aOption_box_draw
 option_box_mouse dd    aOption_box_mouse
 version_op       dd    aVersion_op
 
-    dd    0
-    dd    0
+    dd    0,0
 
-aEdit_box_draw   db 'edit_box',0
+aEdit_box_draw   db 'edit_box_draw',0
 aEdit_box_key    db 'edit_box_key',0
 aEdit_box_mouse  db 'edit_box_mouse',0
 aVersion_ed      db 'version_ed',0

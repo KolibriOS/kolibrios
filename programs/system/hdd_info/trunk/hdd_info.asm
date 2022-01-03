@@ -1750,13 +1750,12 @@ option_box_mouse	dd aOption_box_mouse
 PathShow_prepare	dd sz_PathShow_prepare
 PathShow_draw		dd sz_PathShow_draw
 ;Version_path_show	dd szVersion_path_show
-			dd 0
-			dd 0
+			dd 0,0
 
 ;a_init			db 'lib_init',0
 ;a_version		db 'version',0
 
-aEdit_box_draw		db 'edit_box',0
+aEdit_box_draw		db 'edit_box_draw',0
 aEdit_box_key		db 'edit_box_key',0
 aEdit_box_mouse		db 'edit_box_mouse',0
 ;aVersion_ed		db 'version_ed',0

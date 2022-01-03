@@ -1301,7 +1301,7 @@ import_box_lib:
 
 	dd 0,0
 	sz_init1 db 'lib_init',0
-	sz_edit_box_draw db 'edit_box',0
+	sz_edit_box_draw db 'edit_box_draw',0
 	sz_edit_box_key db 'edit_box_key',0
 	sz_edit_box_mouse db 'edit_box_mouse',0
 	sz_edit_box_set_text db 'edit_box_set_text',0

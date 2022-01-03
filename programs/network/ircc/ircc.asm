@@ -589,7 +589,7 @@ import  libini,\
         ini.get_int,    'ini_get_int'
 
 import  boxlib,\
-        edit_box_draw,  'edit_box',\
+        edit_box_draw,  'edit_box_draw',\
         edit_box_key,   'edit_box_key',\
         edit_box_mouse, 'edit_box_mouse',\
         scrollbar_draw, 'scrollbar_v_draw',\

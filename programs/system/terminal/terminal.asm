@@ -410,7 +410,7 @@ library box_lib, 'box_lib.obj',\
         console, 'console.obj'
 
 import  box_lib,\
-        edit_box_draw,          'edit_box',\
+        edit_box_draw,          'edit_box_draw',\
         edit_box_key,           'edit_box_key',\
         edit_box_mouse,         'edit_box_mouse',\
         init_checkbox,          'init_checkbox2',\

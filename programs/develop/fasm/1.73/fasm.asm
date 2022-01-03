@@ -531,7 +531,7 @@ include 'core/messages.inc'
   library box_lib,'box_lib.obj',\
 	  proc_lib,'proc_lib.obj'
 
-  import box_lib,edit_box_draw,'edit_box',\
+  import box_lib,edit_box_draw,'edit_box_draw',\
 		 edit_box_key,'edit_box_key',\
 		 edit_box_mouse,'edit_box_mouse',\
 		 edit_box_set_text,'edit_box_set_text',\

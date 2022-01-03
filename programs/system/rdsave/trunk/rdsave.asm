@@ -31,7 +31,8 @@ include '../../../debug.inc'
 end if
 include '../../../proc32.inc'
 include '../../../dll.inc'
-include '../../../develop/libraries/box_lib/load_lib.mac'
+include '../../../KOSfuncs.inc'
+include '../../../load_lib.mac'
 include '../../../develop/libraries/box_lib/trunk/box_lib.mac'
 include 'str.inc'
 
@@ -493,27 +494,16 @@ system_dir_Boxlib	db '/sys/lib/box_lib.obj',0
 system_dir_ProcLib	db '/sys/lib/proc_lib.obj',0
 system_dir_libini	db '/sys/lib/libini.obj',0
 ;---------------------------------------------------------------------
-head_f_i:
-head_f_l	db 'System error',0
-
-err_message_found_lib1	db 'box_lib.obj - Not found!',0
-err_message_found_lib2	db 'proc_lib.obj - Not found!',0
-err_message_found_lib3	db 'libini.obj - Not found!',0
-
-err_message_import1	db 'box_lib.obj - Wrong import!',0
-err_message_import2	db 'proc_lib.obj - Wrong import!',0
-err_message_import3	db 'libini.obj - Wrong import!',0
-;---------------------------------------------------------------------
 l_libs_start:
 
-library01  l_libs system_dir_Boxlib+9, cur_dir_path, library_path, system_dir_Boxlib, \
-err_message_found_lib1, head_f_l, Box_lib_import, err_message_import1, head_f_i
+library01  l_libs system_dir_Boxlib+9, library_path, system_dir_Boxlib, \
+ Box_lib_import
 
-library02  l_libs system_dir_ProcLib+9, cur_dir_path, library_path, system_dir_ProcLib, \
-err_message_found_lib2, head_f_l, ProcLib_import, err_message_import2, head_f_i
+library02  l_libs system_dir_ProcLib+9, library_path, system_dir_ProcLib, \
+ ProcLib_import
 
-library03  l_libs system_dir_libini+9, cur_dir_path, library_path, system_dir_libini, \
-err_message_found_lib3, head_f_l, libini_import, err_message_import3, head_f_i
+library03  l_libs system_dir_libini+9, library_path, system_dir_libini, \
+ libini_import
 
 end_l_libs:
 ;---------------------------------------------------------------------
@@ -563,8 +553,7 @@ align 4
 ProcLib_import:
 OpenDialog_Init 	dd aOpenDialog_Init
 OpenDialog_Start	dd aOpenDialog_Start
-	dd	0
-	dd	0
+	dd	0,0
 aOpenDialog_Init	db 'OpenDialog_init',0
 aOpenDialog_Start	db 'OpenDialog_start',0
 ;---------------------------------------------------------------------
@@ -592,10 +581,9 @@ Box_lib_import:
 PathShow_prepare	dd sz_PathShow_prepare
 PathShow_draw		dd sz_PathShow_draw
 Frame_draw		dd sz_Frame_draw
-			dd 0
-			dd 0
+			dd 0,0
 
-;aEdit_box_draw          db 'edit_box',0
+;aEdit_box_draw          db 'edit_box_draw',0
 ;aEdit_box_key           db 'edit_box_key',0
 ;aEdit_box_mouse         db 'edit_box_mouse',0
 ;aVersion_ed             db 'version_ed',0
@@ -631,8 +619,7 @@ ini_get_str  dd aini_get_str
 ini_get_int  dd aini_get_int
 ini_set_str  dd aini_set_str
 ini_set_int  dd aini_set_int
-	     dd 0
-	     dd 0
+	     dd 0,0
 a_init	     db 'lib_init',0
 aini_get_str db 'ini_get_str',0
 aini_get_int db 'ini_get_int',0

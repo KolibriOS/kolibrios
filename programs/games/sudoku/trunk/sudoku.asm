@@ -1061,7 +1061,7 @@ edit_box_mouse	dd	aEdit_box_mouse
 version_ed	dd	aVersion_ed
 		dd	0
 		dd	0
-aEdit_box_draw	db 'edit_box',0
+aEdit_box_draw	db 'edit_box_draw',0
 aEdit_box_key	db 'edit_box_key',0
 aEdit_box_mouse db 'edit_box_mouse',0
 aVersion_ed	db 'version_ed',0

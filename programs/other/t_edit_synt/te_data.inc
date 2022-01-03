@@ -75,7 +75,7 @@ PathShow_draw    dd sz_PathShow_draw
 dd 0,0
 alib_init2 db 'lib_init',0
 
-aEdit_box_draw	db 'edit_box',0
+aEdit_box_draw	db 'edit_box_draw',0
 aEdit_box_key	db 'edit_box_key',0
 aEdit_box_mouse db 'edit_box_mouse',0
 

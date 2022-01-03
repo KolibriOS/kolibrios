@@ -3,15 +3,15 @@
 ; - переделан как пример использования tooltip
 
 use32 ; включить 32-битный режим ассемблера
-org 0x0 ; адресация с нуля
+org 0 ; адресация с нуля
 
 db 'MENUET01' ; 8-байтный идентификатор MenuetOS
-dd 0x01 ; версия заголовка (всегда 1)
+dd 1 ; версия заголовка (всегда 1)
 dd START ; адрес первой команды
 dd CODE_END ; размер программы
 dd DATA_END ; количество памяти
 dd STACK_END ; адрес вершины стэка
-dd 0x0 ; адрес буфера для параметров
+dd 0 ; адрес буфера для параметров
 dd cur_dir_path      ; указатель на адрес, куда помещается строка, содержащая путь до программы в момент запуска.
 
 include '../../../../../proc32.inc'
@@ -19,10 +19,8 @@ include '../../../../../macros.inc'
 include '../../../../../KOSfuncs.inc'
 include '../../../../../dll.inc'	; malloc fn
 include '../../trunk/box_lib.mac'
-include '../../load_lib.mac'
-;include 'proc32.inc'
-;include 'macros.inc'
-;include 'KOSfuncs.inc'
+include '../../../../../load_lib.mac'
+
 
 ;---------------------------------------------------------------------
 ;--- НАЧАЛО ПРОГРАММЫ ----------------------------------------------
@@ -30,24 +28,17 @@ include '../../load_lib.mac'
 ; этот макрос обязателен для всех компонетов, использующих heap
 ; кроме того, обязательно имортировать lib_init - при импорте определяются
 ; функции хипа для библиотеки
-@use_library_mem mem.Alloc,mem.Free,mem.ReAlloc,dll.Load
+@use_library mem.Alloc,mem.Free,mem.ReAlloc,dll.Load
 
 START:
 ;---------------------------------------------------------------------
 ;--- ИНИЦИАЛИЗАЦИЯ ----------------------------------------
 ;---------------------------------------------------------------------
-;mov eax, mem_alloc
-;mov [mem.alloc], eax
-;mov eax, mem_realloc
-;mov [mem.realloc], eax
-;mov eax, mem_free
-;mov [mem.free], eax
 mcall	68, 11
 
 mcall 40, $C0000027 ; маска событий - мышь только в активном окне
 
-sys_load_library  lib_name, cur_dir_path, lib_path, sys_path, \
-	e_notfound_lib, head_f_l, myimport, e_import, head_f_i
+sys_load_library  lib_name, lib_path, sys_path, myimport
 test eax,eax
 jz	@f
 	mcall -1 ; alarm exit
@@ -144,12 +135,6 @@ lib_name    db 'box_lib.obj',0
 cur_dir_path    rb 4096
 lib_path    rb 4096
 
-e_notfound_lib    db 'Sorry I cannot load library box_lib.obj',0
-
-head_f_i:
-head_f_l    db 'System error',0
-e_import    db 'Error on load import library box_lib.obj',0
-
 myimport:
 				dd sz_lib_init ;функция запускается макросом 1 раз при подключении 
 ;библиотеки, потому в программе метка на нее не нужна
@@ -158,8 +143,7 @@ tooltip_delete	dd sz_tooltip_delete
 tooltip_test_show	dd sz_tooltip_test_show
 tooltip_mouse	dd sz_tooltip_mouse
 get_font_size	dd sz_get_font_size
-    dd    0
-    dd    0
+    dd    0,0
 
 sz_lib_init 			db 'lib_init',0
 sz_tooltip_init			db 'tooltip_init', 0

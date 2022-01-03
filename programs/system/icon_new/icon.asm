@@ -1074,7 +1074,7 @@ import	archiver,\
 	unpack_DeflateUnpack2	,'deflate_unpack2'
 
 import	box_lib,\
-	edit_box_draw		,'edit_box',\
+	edit_box_draw		,'edit_box_draw',\
 	edit_box_key		,'edit_box_key',\
 	edit_box_mouse		,'edit_box_mouse',\
 	scrollbar_h_draw	,'scrollbar_h_draw',\

@@ -1390,11 +1390,11 @@ saveKey:
 
 align 16
 @IMPORT:
- 
+
 library box_lib, 'box_lib.obj'
- 
+
 import  box_lib,\
-        edit_box_draw,          'edit_box',\
+        edit_box_draw,          'edit_box_draw',\
         edit_box_key,           'edit_box_key',\
         edit_box_mouse,         'edit_box_mouse',\
         init_checkbox,          'init_checkbox2',\
@@ -1579,24 +1579,24 @@ copyPath:
 
 IntToStr:  ;in esi - строка; eсx - число
    push eax ecx edx esi
-   cmp ecx, 0
-   jne @f
-   mov byte[esi], 48 ; '0'
+   or ecx, ecx
+   jnz @f
+   mov byte[esi], '0'
    inc esi
    jmp .end
 @@:
    mov eax, ecx
    mov ecx, 10
 .next:
-   mov edx, 0
+   xor edx, edx
    div ecx
-   add edx, 48
+   add edx, '0'
 
    mov byte[esi], dl
 
    inc esi
-   cmp eax, 0
-   je .end
+   or eax, eax
+   jz .end
    jmp .next
 .end:
    mov byte[esi], 0   ;кладём завершающий ноль

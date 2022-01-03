@@ -2,8 +2,7 @@ SCAN_LWIN_RELEASE = 0xDB
 SCAN_RWIN_RELEASE = 0xDC
 
 align 16
-edit_box:
-.draw:
+edit_box_draw:
 	pushad
 	mov	edi,[esp+36]
 	and	dword ed_text_color,17FFFFFFh
@@ -26,25 +25,25 @@ edit_box:
 	mul	bl
 	add	eax,4
 	mov	ed_height,eax
-	call	.draw_border
-.draw_bg_cursor_text:
+	call	.border
+.bg_cursor_text:
 	;test    word ed_flags,ed_focus ; for unfocused controls =>
 	;jz      .skip_offset           ; do not recalculate offset
-	call	.check_offset
+	call	edit_box.check_offset
 ;.skip_offset:
-	call	.draw_bg
+	call	edit_box_draw.bg
 	test	word ed_flags,ed_focus ; do not draw selection(named shift)
-	jz	.draw_cursor_text      ;
-	call	.draw_shift
-.draw_cursor_text:
-	call	.draw_text
+	jz	.cursor_text      ;
+	call	.shift
+.cursor_text:
+	call	.text
 	test	word ed_flags,ed_focus ; and dosn`t draw cursor
-	jz	.editbox_exit
-	call	.draw_cursor
+	jz	edit_box_exit
+	call	.cursor
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;Общий выход из editbox для всех функций и пост обработчиков;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-.editbox_exit:
+edit_box_exit:
 	popad
 	ret 4
 
@@ -56,15 +55,15 @@ edit_box_key:
 	pushad
 	mov	edi,[esp+36]
 	test	word ed_flags,ed_focus ; если не в фокусе, выходим
-	jz	edit_box.editbox_exit
+	jz	edit_box_exit
 	test	word ed_flags,ed_mouse_on or ed_disabled
-	jnz	edit_box.editbox_exit
+	jnz	edit_box_exit
 ;--------------------------------------
 ; this code for Win-keys, works with
 ; kernel SVN r.3356 or later
 	mcall	SF_KEYBOARD,SSF_GET_CONTROL_KEYS
 	test	ah,$06	      ; LWin ($02) & RWin ($04)
-	jnz	edit_box.editbox_exit
+	jnz	edit_box_exit
 ;--------------------------------------
 ;Проверка нажат shift ?
 	test	al,$03
@@ -98,26 +97,26 @@ edit_box_key:
 	je	edit_box_key.ctrl_v
 	cmp	ah,SCAN_CODE_A ; Ctrl + A
 	je	edit_box_key.ctrl_a
-	jmp	edit_box.editbox_exit
+	jmp	edit_box_exit
 @@:
 	cmp	ah,SCAN_CODE_SPACE
 	ja	@F
 	cmp	al,ASCII_KEY_BACK
 	jz	edit_box_key.backspace
 	cmp	ah,SCAN_CODE_ESCAPE
-	jz	edit_box.editbox_exit
+	jz	edit_box_exit
 	cmp	ah,SCAN_CODE_TAB
-	jz	edit_box.editbox_exit
+	jz	edit_box_exit
 	cmp	ah,SCAN_CODE_RETURN
-	jz	edit_box.editbox_exit
+	jz	edit_box_exit
 	jmp	.printable_character
 @@:
 	cmp	ah,SCAN_CODE_DELETE
-	ja	edit_box.editbox_exit
+	ja	edit_box_exit
 	cmp	ah,SCAN_CODE_HOME
-	jb	edit_box.editbox_exit
+	jb	edit_box_exit
 	cmp	ax,SCAN_CODE_CLEAR shl 8 + ASCII_KEY_CLEAR ; not operate numpad unlocked 5
-	jz	edit_box.editbox_exit
+	jz	edit_box_exit
 ;here best place to filter up,down,pgup,pgdown
 	cmp	al,ASCII_KEY_LEFT
 	jb	.printable_character
@@ -126,23 +125,23 @@ edit_box_key:
 	jmp	dword[ebx+eax*4]
       .unlock_numpad_filtration       \
 	     dd edit_box_key.left,    \ ; LEFT
-		edit_box.editbox_exit,\ ; DOWN
-		edit_box.editbox_exit,\ ; UP
+		edit_box_exit,\ ; DOWN
+		edit_box_exit,\ ; UP
 		edit_box_key.right,   \ ; RIGHT
 		edit_box_key.home,    \ ; HOME
 		edit_box_key.end,     \ ; END
 		edit_box_key.delete,  \ ; DELETE
-		edit_box.editbox_exit,\ ; PGDN
-		edit_box.editbox_exit,\ ; PGUP
+		edit_box_exit,\ ; PGDN
+		edit_box_exit,\ ; PGUP
 		edit_box_key.insert	; INSERT
 
 .printable_character:
 	test	word ed_flags,ed_figure_only  ; только цифры?
 	jz	@f
 	cmp	al,'0'
-	jb	edit_box.editbox_exit
+	jb	edit_box_exit
 	cmp	al,'9'
-	ja	edit_box.editbox_exit
+	ja	edit_box_exit
 @@:
 ; restore ascii code
 	rol	eax,8
@@ -179,10 +178,10 @@ edit_box_key:
 	test	word ed_flags,ed_insert
 	jne	@f
 	cmp	ecx,edx
-	jae	edit_box.editbox_exit
+	jae	edit_box_exit
 @@:	mov	ebx, ed_pos
 	cmp	ebx,edx
-	jnl	edit_box.editbox_exit
+	jnl	edit_box_exit
 	mov	ecx,ed_size
 	push	edi eax
 	mov	ebp,edi
@@ -222,7 +221,7 @@ edit_box_key.In_k:
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 edit_box_key.insert:
 	xor	word ed_flags,ed_insert
-	jmp	edit_box.editbox_exit
+	jmp	edit_box_exit
 
 edit_box_key.ins_v:
 	dec	dword bp_size
@@ -280,7 +279,7 @@ edit_box_key.draw_all:
 	call	edit_box.clear_cursor
 	call	edit_box.check_offset
 	and	word ed_flags,ed_shift_cl
-	jmp	edit_box.draw_bg
+	jmp	edit_box_draw.bg
 
 @@:	dec	dword ed_size
 edit_box_key.draw_all2:
@@ -299,10 +298,10 @@ edit_box_key.left:
 	or	word ed_flags,ed_left_fl
 	call	edit_box_key.sh_first_sh
 	dec	dword ed_pos
-	call	edit_box.draw_bg
-	call	edit_box.draw_shift
+	call	edit_box_draw.bg
+	call	edit_box_draw.shift
 	call	edit_box_key.sh_enable
-	jmp	edit_box.draw_cursor_text
+	jmp	edit_box_draw.cursor_text
 
 ;--- нажата клавиша right ---
 edit_box_key.right:
@@ -312,10 +311,10 @@ edit_box_key.right:
 	and	word ed_flags,ed_right_fl
 	call	edit_box_key.sh_first_sh
 	inc	dword ed_pos
-	call	edit_box.draw_bg
-	call	edit_box.draw_shift
+	call	edit_box_draw.bg
+	call	edit_box_draw.shift
 	call	edit_box_key.sh_enable
-	jmp	edit_box.draw_cursor_text
+	jmp	edit_box_draw.cursor_text
 
 edit_box_key.home:
 	mov	ebx,ed_pos
@@ -324,10 +323,10 @@ edit_box_key.home:
 	call	edit_box_key.sh_first_sh
 	xor	eax,eax
 	mov	ed_pos,eax
-	call	edit_box.draw_bg
-	call	edit_box.draw_shift
+	call	edit_box_draw.bg
+	call	edit_box_draw.shift
 	call	edit_box_key.sh_home_end
-	jmp	edit_box.draw_cursor_text
+	jmp	edit_box_draw.cursor_text
 
 ;--- нажата клавиша end ---
 edit_box_key.end:
@@ -337,10 +336,10 @@ edit_box_key.end:
 	call	edit_box_key.sh_first_sh
 	mov	eax,ed_size
 	mov	ed_pos,eax
-	call	edit_box.draw_bg
-	call	edit_box.draw_shift
+	call	edit_box_draw.bg
+	call	edit_box_draw.shift
 	call	edit_box_key.sh_home_end
-	jmp	edit_box.draw_cursor_text
+	jmp	edit_box_draw.cursor_text
 ;----------------------------------------
 StrInsert:
 ; SizeOf(TmpBuf) >= StrLen(Src) + StrLen(Dst) + 1
@@ -412,13 +411,13 @@ restore DstCount
 ;----------------------------------------
 edit_box_key.ctrl_x:
 	test   word ed_flags,ed_shift_on
-	jz     edit_box.editbox_exit
+	jz     edit_box_exit
 	push	dword 'X'  ; this value need below to determine which action is used
 	jmp	edit_box_key.ctrl_c.pushed
 
 edit_box_key.ctrl_c:
 	test   word ed_flags,ed_shift_on
-	jz     edit_box.editbox_exit
+	jz     edit_box_exit
 	push	dword 'C'  ; this value need below to determine which action is used
 .pushed:
 ; add memory area
@@ -466,7 +465,7 @@ edit_box_key.ctrl_c:
 	pop	eax	   ; determine current action (ctrl+X or ctrl+C)
 	cmp	eax, 'X'
 	je	edit_box_key.delete
-	jmp	edit_box.editbox_exit
+	jmp	edit_box_exit
 
 edit_box_key.ctrl_v:
 	mcall	SF_CLIPBOARD,SSF_GET_SLOT_COUNT
@@ -556,7 +555,7 @@ edit_box_key.ctrl_v:
 	mov	ecx,eax
 	mcall	SF_SYS_MISC,SSF_MEM_FREE
 .exit:
-	jmp	edit_box.draw_bg_cursor_text
+	jmp	edit_box_draw.bg_cursor_text
 
 edit_box_key.ctrl_a:
 	mov	eax,ed_size
@@ -564,7 +563,7 @@ edit_box_key.ctrl_a:
 	xor	eax,eax
 	mov	ed_shift_pos,eax
 	or	word ed_flags,ed_shift_bac+ed_shift_on
-	jmp	edit_box.draw_bg_cursor_text
+	jmp	edit_box_draw.bg_cursor_text
 
 ;==========================================================
 ;=== обработка мыши =======================================
@@ -575,7 +574,7 @@ edit_box_mouse:
 	pushad
 	mov	edi,[esp+36]
 	test	word ed_flags,ed_disabled
-	jnz	edit_box.editbox_exit
+	jnz	edit_box_exit
 
 ;----------------------------------------------------------
 ;--- получаем состояние кнопок мыши -----------------------
@@ -590,7 +589,7 @@ edit_box_mouse:
 	mov	ebx,ed_mouse_variable
 	push	0
 	pop	dword [ebx]
-	jmp	edit_box.editbox_exit
+	jmp	edit_box_exit
 
 .mouse_left_button:
 ;----------------------------------------------------------
@@ -662,26 +661,26 @@ edit_box_mouse._mshift:
 	push	edi
 	pop	dword [ebx]
 	bts	word ed_flags,1
-	call	edit_box.draw_bg
+	call	edit_box_draw.bg
 	jmp	edit_box_mouse.m_sh
 
 @@:	cmp	ax,ed_shift_pos
-	je	edit_box.editbox_exit
+	je	edit_box_exit
 	mov	ed_pos,eax
-	call	edit_box.draw_bg
+	call	edit_box_draw.bg
 	mov	ebp,shift_color
 	movzx	ebx, word ed_shift_pos
 	call	edit_box_key.sh_cl_
 	or	word ed_flags,ed_mous_adn_b
 edit_box_mouse.m_sh:
-	call	edit_box.draw_text
-	call	edit_box.draw_cursor
+	call	edit_box_draw.text
+	call	edit_box_draw.cursor
 ; процедура установки фокуса
 	jmp	edit_box_mouse.drc
 	
 edit_box_mouse._remove_selection:
 	and	word ed_flags,ed_shift_cl
-	jmp	edit_box.draw_bg_cursor_text
+	jmp	edit_box_draw.bg_cursor_text
 
 edit_box_mouse._blur:
 	test	word ed_flags,ed_always_focus
@@ -691,7 +690,7 @@ edit_box_mouse._blur:
 	mov	ebp,ed_color
 	call	edit_box.clear_cursor
 edit_box_mouse.drc:
-	call	edit_box.draw_border
+	call	edit_box_draw.border
 	jmp	edit_box_mouse._remove_selection
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -699,7 +698,7 @@ edit_box_mouse.drc:
 ;----------------------------------------------------------
 ;--- процедура прорисовки выделенной части ----------------
 ;----------------------------------------------------------
-edit_box.draw_shift:
+edit_box_draw.shift:
 	test	word ed_flags,ed_shift_bac ;установка флага, выделенной области
 	jz	@f
 	mov	ebp,shift_color
@@ -709,7 +708,7 @@ edit_box.draw_shift:
 ;----------------------------------------------------------
 ;--- процедура прорисовки текста --------------------------
 ;----------------------------------------------------------
-edit_box.draw_text:
+edit_box_draw.text:
 	call	edit_box.get_n
 	mov	esi,ed_size
 	sub	esi,ed_offset
@@ -751,7 +750,7 @@ txt_pass db '*'
 ;----------------------------------------------------------
 ;--- процедура прорисовки фона ----------------------------
 ;----------------------------------------------------------
-edit_box.draw_bg:
+edit_box_draw.bg:
 	mov	ebx,ed_left
 	inc	ebx
 	shl	ebx,16
@@ -759,9 +758,9 @@ edit_box.draw_bg:
 	dec	ebx
 	mov	edx,ed_color
 	test	word ed_flags, ed_disabled
-	jz	edit_box.draw_bg_eax
+	jz	edit_box_draw.bg_eax
 	mov	edx, 0xCACACA	; TODO: add disabled_color field to editbox struct
-edit_box.draw_bg_eax:
+edit_box_draw.bg_eax:
 	mov	ecx,ed_top
 	inc	ecx
 	shl	ecx,16
@@ -796,11 +795,11 @@ edit_box.clear_cursor:
 	mov	edx, ebp
 	movzx	ecx, word cl_curs_y
 	cmp	ecx, ed_top
-	jg	edit_box.draw_curs
+	jg	edit_box_draw.curs
 @@:
 	ret
 
-edit_box.draw_cursor:
+edit_box_draw.cursor:
 	mov	edx, ed_text_color
 	mov	eax, ed_pos
 	sub	eax, ed_offset
@@ -812,7 +811,7 @@ edit_box.draw_cursor:
 	add	ecx, 2
 	mov	cl_curs_x, bx
 	mov	cl_curs_y, cx
-edit_box.draw_curs:
+edit_box_draw.curs:
 	mov	eax, ebx
 	shl	ebx, 16
 	or	ebx, eax
@@ -827,7 +826,7 @@ edit_box.draw_curs:
 ;----------------------------------------------------------
 ;--- процедура рисования рамки ----------------------------
 ;----------------------------------------------------------
-edit_box.draw_border:
+edit_box_draw.border:
 	test	word ed_flags,ed_focus
 	mov	edx,ed_focus_border_color
 	jne	@f
@@ -916,7 +915,7 @@ edit_box.add_8:
 	add	ebx,edx
 edit_box.chk_d:
 	mov	ed_offset,ebx
-	call	edit_box.draw_bg
+	call	edit_box_draw.bg
 	and	word ed_flags,ed_offset_cl
 	popad
 	ret
@@ -952,20 +951,20 @@ endp
 
 ;Обработка Shift для снятия выделения неизвестной области
 edit_box_key.shift:
-	call	edit_box.draw_bg
+	call	edit_box_draw.bg
 	test	word ed_flags,ed_shift
 	je	edit_box_key.f_exit
 	mov	ebp,shift_color
 	or	word ed_flags,ed_shift_bac ;установка флага, выделенной области
 	movzx	ebx, word ed_shift_pos
 	call	edit_box_key.sh_cl_
-	jmp	edit_box.draw_cursor_text
+	jmp	edit_box_draw.cursor_text
 
 edit_box_key.f_exit:
 	call	edit_box.check_offset
 	and	word ed_flags,ed_shift_cl
 	call	edit_box_key.enable_null
-	jmp	edit_box.draw_cursor_text
+	jmp	edit_box_draw.cursor_text
 
 edit_box_key.sh_cl_:
 ;обработка очистки, при левом - правом движении выделения
@@ -1020,7 +1019,7 @@ edit_box_key.nxt_f:
 	inc	eax
 	mov	bx, ax
 	mov	edx,ebp ;shift_color
-	call	edit_box.draw_bg_eax
+	call	edit_box_draw.bg_eax
 	jmp	edit_box_key.enable_null
 
 ;Установка- снятие выделения в один символ
@@ -1070,12 +1069,12 @@ edit_box_key.sh_st_of:
 	jne	@f
 	test	word ed_flags,ed_shift_bac
 	je	@f
-	call	edit_box.draw_bg
+	call	edit_box_draw.bg
 	mov	ebp,ed_color
 	movzx	ebx, word ed_shift_pos
 	call	edit_box_key.sh_cl_  ;очистка выделеного фрагмента
 	and	word ed_flags,ed_shift_cl ; очистка от того, что убрали выделение
-	jmp	edit_box.draw_cursor_text
+	jmp	edit_box_draw.cursor_text
 
 @@:	and	word ed_flags,ed_shift_off
 	popad
@@ -1150,7 +1149,7 @@ edit_box_key.sh_home_end:
 	jmp	edit_box_key.sh_e_end
 
 edit_box_key.sh_exit_:
-	call	edit_box.draw_bg
+	call	edit_box_draw.bg
 	jmp	edit_box.check_offset
 
 ;функция внесения 0 по адресу ed_size+1
@@ -1248,7 +1247,7 @@ edit_box_key.nxt:
 	inc	eax
 	mov	bx, ax
 	mov	edx,ed_color
-	jmp	edit_box.draw_bg_eax
+	jmp	edit_box_draw.bg_eax
 
 ;;;;;;;;;;;;;;;;;;;
 ;;; Обработка примитивов
@@ -1266,15 +1265,15 @@ edit_box_key.draw_rectangle:
 	add	eax,ed_char_width
 	mov	ebx,eax
 	mov	edx,ebp
-	jmp	edit_box.draw_bg_eax
+	jmp	edit_box_draw.bg_eax
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;Функции для работы с mouse
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 edit_box_mouse.mouse_wigwag:
 	push	eax
-	call	edit_box.draw_bg
-	call	edit_box.draw_shift
+	call	edit_box_draw.bg
+	call	edit_box_draw.shift
 	pop	eax
 	or	word ed_flags,ed_shift_bac+ed_shift_on+ed_shift
 ;Обработка положения выделенного текста, когда происходит выход за пределы editbox
@@ -1323,7 +1322,7 @@ edit_box_mouse.m1_shem:
 	call	edit_box_key.sh_cl_
 edit_box_mouse.mwigvag:
 	and	word ed_flags,ed_shift_mcl
-	jmp	edit_box.draw_cursor_text
+	jmp	edit_box_draw.cursor_text
 
 edit_box_mouse.mleft:
 	mov	eax,ed_pos
