@@ -8,7 +8,7 @@ LIBNAME=libSDL
 SDK_DIR:= $(abspath ../../..)
 
 LDFLAGS+= -shared -s -T dll.lds --entry _DllStartup --image-base=0 --out-implib $(LIBNAME).dll.a 
-LDFLAGS+= -L/home/max/autobuild/tools/win32/mingw32/lib
+LDFLAGS+= -L../../../lib
 
 endian_OBJS = endian/SDL_endian.o
 file_OBJS = file/SDL_rwops.o
@@ -29,15 +29,18 @@ video_OBJS = video/SDL_blit_0.o video/SDL_blit_1.o video/SDL_blit_A.o \
         video/SDL_video.o video/SDL_yuv.o video/SDL_yuv_mmx.o \
         video/SDL_yuv_sw.o video/menuetos/SDL_menuetevents.o \
         video/menuetos/SDL_menuetvideo.o
-audio_OBJS = audio/SDL_kolibri_audio.o
+audio_OBJS = audio/SDL_kolibri_audio.o audio/SDL_audiocvt.o audio/SDL_mixer.o audio/SDL_wave.o
 
 curr_OBJS = SDL.o SDL_error.o SDL_fatal.o SDL_getenv.o
  
 OBJS = $(endian_OBJS) $(file_OBJS) $(hermes_OBJS) $(thread_OBJS) \
         $(timer_OBJS) $(event_OBJS) $(video_OBJS) $(curr_OBJS) $(audio_OBJS)
  
-CFLAGS = -c -O2 -D_REENTRANT -I../include -I SYSCALL/include -I. -DPACKAGE=\"SDL\" -DVERSION=\"1.2.2\" \
-        -fexpensive-optimizations -Wall -DENABLE_AUDIO -UDISABLE_AUDIO -DDISABLE_JOYSTICK \
+CFLAGS = -c -O2 -mpreferred-stack-boundary=2 -fno-ident -fomit-frame-pointer -fno-stack-check \
+        -fno-stack-protector -mno-stack-arg-probe -fno-exceptions -fno-asynchronous-unwind-tables \
+        -ffast-math -mno-ms-bitfields -march=pentium-mmx  -fexpensive-optimizations \
+        -D_REENTRANT -I../include -I SYSCALL/include -I. -DPACKAGE=\"SDL\" -DVERSION=\"1.2.2\" \
+        -Wall -DENABLE_AUDIO -UDISABLE_AUDIO -DDISABLE_JOYSTICK \
         -DDISABLE_CDROM -DDISABLE_THREADS -DENABLE_TIMERS \
         -DUSE_ASMBLIT -Ihermes -Iaudio -Ivideo -Ievents \
         -Ijoystick -Icdrom -Ithread -Itimer -Iendian -Ifile -DENABLE_KOLIBRIOS \
@@ -45,22 +48,22 @@ CFLAGS = -c -O2 -D_REENTRANT -I../include -I SYSCALL/include -I. -DPACKAGE=\"SDL
         -D__KOLIBRIOS__ -DDEBUG_VIDEO -UWIN32 -U_Win32 -U_WIN32 -U__MINGW32__ \
         -I../../newlib/libc/include/
 
-all: $(LIBNAME).dll $(LIBNAME).a 
+all:  $(LIBNAME).a $(LIBNAME).dll
 
 install: $(LIBNAME)
 	mv -f $(LIBNAME) $(SDK_DIR)/lib  
  
 $(LIBNAME).a: $(OBJS)
 	$(MAKE) -C SYSCALL/src
-	$(AR) -crs $(LIBNAME).a $(OBJS) SYSCALL/src/os.o
+	$(AR) -crs  ../../../lib/$(LIBNAME).a $(OBJS) SYSCALL/src/os.o
 
-$(LIBNAME).dll: libSDL.def $(OBJS)
-	$(LD) $(LDFLAGS) -o $@  libSDL.def $(OBJS) SYSCALL/src/os.o $(LIBS) -ldll -lsound -lc.dll
-	$(STRIP) $@
+$(LIBNAME).dll: $(OBJS)
+	$(LD) $(LDFLAGS) -o $@ $(OBJS) SYSCALL/src/os.o $(LIBS) -ldll -lsound -lc.dll
+	$(STRIP) -S $@
 
 	
 %.o : %.asm Makefile
-	nasm -f coff $<
+	nasm -Ihermes -f coff $<
  
 %.o : %.c Makefile
 	$(CC) $(CFLAGS) -o $@ $<

@@ -48,6 +48,29 @@
 # endif
 #endif
 
+/** 
+ *  @def SDLCALL
+ *  By default SDL uses the C calling convention
+ */
+#ifndef SDLCALL
+# if defined(__WIN32__) && !defined(__GNUC__)
+#  define SDLCALL __cdecl
+# elif defined(__OS2__)
+#  if defined (__GNUC__) && __GNUC__ < 4
+#   /* Added support for GCC-EMX <v4.x */
+#   /* this is needed for XFree86/OS2 developement */
+#   /* F. Ambacher(anakor@snafu.de) 05.2008 */
+#   define SDLCALL _cdecl
+#  else
+#   /* On other compilers on OS/2, we use the _System calling convention */
+#   /* to be compatible with every compiler */
+#   define SDLCALL _System
+#  endif
+# else
+#  define SDLCALL
+# endif
+#endif /* SDLCALL */
+
 /* Force structure packing at 4 byte alignment.
    This is necessary if the header is included in code which has structure
    packing set to an alternate value, say for loading structures from disk.

@@ -96,6 +96,10 @@ extern DECLSPEC SDL_RWops * SDL_RWFromMem(void *mem, int size);
 extern DECLSPEC SDL_RWops * SDL_AllocRW(void);
 extern DECLSPEC void SDL_FreeRW(SDL_RWops *area);
 
+#define RW_SEEK_SET	SEEK_SET	/**< Seek from the beginning of data */
+#define RW_SEEK_CUR	SEEK_CUR	/**< Seek relative to current read point */
+#define RW_SEEK_END	SEEK_END	/**< Seek relative to the end of data */
+
 /* Macros to easily read and write from an SDL_RWops structure */
 #define SDL_RWseek(ctx, offset, whence)	(ctx)->seek(ctx, offset, whence)
 #define SDL_RWtell(ctx)			(ctx)->seek(ctx, 0, SEEK_CUR)

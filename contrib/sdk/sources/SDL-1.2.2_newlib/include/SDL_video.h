@@ -168,6 +168,8 @@ typedef struct {
 	Uint32 UnusedBits3  :16;
 	Uint32 video_mem;	/* The total amount of video memory (in K) */
 	SDL_PixelFormat *vfmt;	/* Value: The format of the video surface */
+	Uint32 current_h; /* Current screen width */
+	Uint32 current_w; /* Current screen height */
 } SDL_VideoInfo;
 
 

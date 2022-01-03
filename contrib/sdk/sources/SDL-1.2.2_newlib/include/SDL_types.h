@@ -38,12 +38,12 @@ typedef enum {
 	SDL_FALSE = 0,
 	SDL_TRUE  = 1
 } SDL_bool;
-typedef unsigned char	Uint8;
-typedef signed char	Sint8;
-typedef unsigned short	Uint16;
-typedef signed short	Sint16;
-typedef unsigned int	Uint32;
-typedef signed int	Sint32;
+typedef unsigned char   Uint8;
+typedef signed char     Sint8;
+typedef unsigned short  Uint16;
+typedef signed short    Sint16;
+typedef unsigned int    Uint32;
+typedef signed int      Sint32;
 
 /* Figure out how to support 64-bit datatypes */
 #if !defined(__STRICT_ANSI__)

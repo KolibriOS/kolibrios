@@ -19,7 +19,7 @@
     Sam Lantinga
     slouken@devolution.com
 */
-
+////////////////////
 #ifdef SAVE_RCSID
 static char rcsid =
  "@(#) $Id: SDL_error_c.h,v 1.2 2001/04/26 16:50:17 hercules Exp $";
