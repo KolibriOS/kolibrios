@@ -46,6 +46,8 @@ ohci_service_name:
         db      'OHCI',0
 ehci_service_name:
         db      'EHCI',0
+xhci_service_name:
+        db      'XHCI',0
 endg
 
 ; Initializes the USB subsystem.
@@ -78,6 +80,9 @@ proc usb_init
         jz      .do_kickoff
         mov     ebx, ehci_service_name
         cmp     byte [esi+PCIDEV.class], 0x20
+        jz      .do_kickoff
+        mov     ebx, xhci_service_name
+        cmp     byte [esi+PCIDEV.class], 0x30
         jnz     .kickoff
 .do_kickoff:
         inc     dword [esp]
@@ -116,6 +121,16 @@ proc usb_init
 ; but seems less natural.)
 ; 4a. Loop over all PCI devices, call usb_init_controller
 ; for all EHCI controllers.
+        mov     eax, pcidev_list
+.scan_xhci:
+        mov     eax, [eax+PCIDEV.fd]
+        cmp     eax, pcidev_list
+        jz      .done_xhci
+        cmp     [eax+PCIDEV.class], 0x0C0330
+        jnz     .scan_xhci
+        call    usb_init_controller
+        jmp     .scan_xhci
+.done_xhci:
         mov     eax, pcidev_list
 .scan_ehci:
         mov     eax, [eax+PCIDEV.fd]
