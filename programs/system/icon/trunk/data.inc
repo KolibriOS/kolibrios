@@ -142,25 +142,16 @@ raw_pointer_2  dd 0 ;+20	; not use for scaling
 system_dir_CnvPNG	db '/sys/lib/cnv_png.obj',0
 system_dir_UNPACK	db '/sys/lib/archiver.obj',0
 
-er_message_found_lib1	db 'cnv_png.obj - Not found!',0
-er_message_import1	db 'cnv_png.obj - Wrong import!',0
-
-err_message_found_lib2	db 'archiver.obj - Not found!',0
-err_message_import2	db 'archiver.obj - Wrong import!',0
-
-ihead_f_i:
-ihead_f_l        db 'Errors of plugins:',0
-
 ;plugins_directory               db 'plugins/',0
 plugins_directory               db 0
 ;------------------------------------------------------------------------------
 l_libs_start:
 
-library01	l_libs	system_dir_CnvPNG+9,path,library_path,system_dir_CnvPNG,\
-er_message_found_lib1,ihead_f_l,cnv_png_import,er_message_import1,ihead_f_i,plugins_directory
+library01	l_libs	system_dir_CnvPNG+9,library_path,system_dir_CnvPNG,\
+cnv_png_import,plugins_directory
 
-library02	l_libs	system_dir_UNPACK+9,path,library_path,system_dir_UNPACK,\
-err_message_found_lib2,ihead_f_l,UNPACK_import,err_message_import2,ihead_f_i,plugins_directory
+library02	l_libs	system_dir_UNPACK+9,library_path,system_dir_UNPACK,\
+UNPACK_import,plugins_directory
 
 end_l_libs:
 ;---------------------------------------------------------------------

@@ -1646,11 +1646,9 @@ endl
 
 	;переворачиваем значения прозрачностей
 	neg edi
-	inc edi
-	add edi,255
+	add edi,256
 	neg esi
-	inc esi
-	add esi,255
+	add esi,256
 
 	movzx ecx,byte[eax]
 	imul ecx,edi
@@ -1694,8 +1692,7 @@ push eax ebx
 	shr ecx,1
 	;переворачиваем значения прозрачности
 	neg ecx
-	inc ecx
-	add ecx,255
+	add ecx,256
 
 	shl ecx,24
 	add ebx,ecx
@@ -1704,10 +1701,10 @@ pop ebx eax
 
 	jmp .end_f
 	.c0_c1: ;если прозрачности обоих цветов совпадают
-		mov edx,dword[eax]
+		mov edx,[eax]
 		shr edx,1
 		and edx,011111110111111101111111b
-		mov esi,dword[ebx]
+		mov esi,[ebx]
 		shr esi,1
 		and esi,011111110111111101111111b
 		add edx,esi
@@ -1715,16 +1712,16 @@ pop ebx eax
 		or edx,edi
 		jmp .end_f
 	.c0z: ;если цвет в eax прозрачный
-		mov edx,dword[ebx]
+		mov edx,[ebx]
 		movzx edi,byte[ebx+3]
 		jmp @f
 	.c1z: ;если цвет в ebx прозрачный
-		mov edx,dword[eax]
+		mov edx,[eax]
 	@@:
 		add edi,255 ;делаем цвет на половину прозрачным
 		shr edi,1
 		cmp edi,255
-		jl @f
+		jle @f
 			mov edi,255 ;максимальная прозрачность не более 255
 		@@:
 		shl edi,24
@@ -2271,15 +2268,28 @@ proc buf_bit_blt, buf_destination:dword, coord_x:dword, coord_y:dword, buf_sourc
 endp
 
 ;input:
-; esi = pointer to color1 + transparent
-; edi = pointer to background color2
+; esi = pointer to color1 + transparent (32b)
+; edi = pointer to background color2 (24b)
 ;output:
-; [edi] = combine color
+; [edi] = combine color (24b)
 align 4
 combine_colors_0:
-	push ax bx cx dx
-	mov bx,0x00ff ;---get transparent---
+	push ax cx
 	movzx cx,byte[esi+3] ;pro
+	cmp cx,255
+	je .end_f
+	or cx,cx
+	jnz @f
+		mov ax,[esi]
+		mov [edi],ax
+		mov al,[esi+2]
+		mov [edi+2],al
+		jmp .end_f
+align 4
+	@@:
+	inc cx
+	push bx dx
+	mov bx,0x0100 ;---get transparent---
 	sub bx,cx ;256-pro
 	;---blye---
 	movzx ax,byte[esi]
@@ -2302,8 +2312,9 @@ combine_colors_0:
 	imul dx,cx
 	add ax,dx
 	mov byte[edi+2],ah
-
-	pop dx cx bx ax
+	pop dx bx
+.end_f:
+	pop cx ax
 	ret
 
 ;функция копирует изображение из буфера buf_source (32b) в buf_destination (24b)
@@ -2426,17 +2437,28 @@ proc buf_bit_blt_transp, buf_destination:dword, coord_x:dword, coord_y:dword, bu
 endp
 
 ;input:
-; ebx - color1
-; esi = pointer to transparent
-; edi = pointer to background color2
+; ebx - color1 (24b)
+; esi = pointer to transparent (8b)
+; edi = pointer to background color2 (24b)
 ;output:
-; [edi] = combine color
+; [edi] = combine color (24b)
 align 4
 combine_colors_2:
-	push ax ebx cx dx si
-	mov cl,byte[esi] ;pro
-	xor ch,ch
-	mov si,0x00ff ;---get transparent---
+	push ebx cx
+	movzx cx,byte[esi] ;pro
+	cmp cx,255
+	je .end_f
+	or cx,cx
+	jnz @f
+		mov [edi],bx
+		shr ebx,16
+		mov [edi+2],bl
+		jmp .end_f
+align 4
+	@@:
+	inc cx
+	push ax dx si
+	mov si,0x0100 ;---get transparent---
 	sub si,cx ;256-pro
 
 		;---blye---
@@ -2462,8 +2484,9 @@ combine_colors_2:
 		imul dx,cx
 		add ax,dx
 		mov byte[edi+2],ah
-
-	pop si dx cx ebx ax
+	pop si dx ax
+.end_f:
+	pop cx ebx
 	ret
 
 ;функция копирует изображение из буфера buf_source (8b) в buf_destination (24b)

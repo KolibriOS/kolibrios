@@ -81,7 +81,8 @@ ICON_STRIP equ '/rd/1/iconstrp.png'
 ;------------------------------------------------------------------------------
 include 'lang.inc'
 include '../../../macros.inc'
-include '../../../develop/libraries/box_lib/load_lib.mac'
+include '../../../KOSfuncs.inc'
+include '../../../load_lib.mac'
 ;include '../../../debug.inc'
 ;------------------------------------------------------------------------------
         @use_library    ;use load lib macros
