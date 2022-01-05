@@ -1177,7 +1177,7 @@ void FnProcess(byte N)
 			if (files.count) ShowPopinForm(POPIN_RENAME);
 			break;
 		case 3:
-			if (files.count) && (!itdir) RunProgram("/sys/quark", #file_path);
+			if (files.count) && (!itdir) RunProgram("/kolibrios/utils/quark", #file_path);
 			break;
 		case 4:
 			if (files.count) && (!itdir) RunProgram("/sys/develop/cedit", #file_path);
