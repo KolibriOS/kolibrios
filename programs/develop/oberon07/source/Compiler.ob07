@@ -136,6 +136,9 @@ BEGIN
         ELSIF param = "-pic" THEN
             options.pic := TRUE
 
+        ELSIF param = "-uses" THEN
+            options.uses := TRUE
+
         ELSIF param = "-def" THEN
             INC(i);
             UTILS.GetArg(i, param);
@@ -192,6 +195,7 @@ BEGIN
     options.version := 65536;
     options.pic := FALSE;
     options.lower := FALSE;
+    options.uses := FALSE;
     options.checking := ST.chkALL;
 
     PATHS.GetCurrentDirectory(app_path);
@@ -245,6 +249,7 @@ BEGIN
         C.StringLn("  -ram <size>           set size of RAM in bytes (MSP430) or Kbytes (STM32)"); C.Ln;
         C.StringLn("  -rom <size>           set size of ROM in bytes (MSP430) or Kbytes (STM32)"); C.Ln;
         C.StringLn("  -tab <width>          set width for tabs"); C.Ln;
+        C.StringLn("  -uses                 list imported modules"); C.Ln;
         UTILS.Exit(0)
     END;
 

@@ -1225,6 +1225,7 @@ VAR
     endmod:   BOOLEAN;
     errlabel: INTEGER;
     errno:    INTEGER;
+    ident:    PROG.IDENT;
 
 BEGIN
     ASSERT(parser # NIL);
@@ -1253,10 +1254,21 @@ BEGIN
     CONSOLE.String("compiling ");
     CONSOLE.String("("); CONSOLE.Int(modules); CONSOLE.String(") ");
     CONSOLE.String(unit.name.s);
-    IF parser.unit.sysimport THEN
+    IF unit.sysimport THEN
         CONSOLE.String(" (SYSTEM)")
     END;
     CONSOLE.Ln;
+
+    IF PROG.program.options.uses THEN
+        ident := unit.idents.first(PROG.IDENT);
+        WHILE ident # NIL DO
+            IF (ident.typ = PROG.idMODULE) & (ident.unit # PROG.program.sysunit) THEN
+                CONSOLE.String("    "); CONSOLE.String(ident.unit.fname); CONSOLE.Ln
+            END;
+            ident := ident.next(PROG.IDENT)
+        END;
+        CONSOLE.Ln
+    END;
 
     IF TARGETS.CPU IN {TARGETS.cpuX86, TARGETS.cpuAMD64} THEN
         IL.fname(parser.fname)
