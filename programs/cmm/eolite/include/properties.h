@@ -263,7 +263,7 @@ void DrawPropertiesWindow()
 		if (!itdir) {
 			element_size = file_info_general.sizelo;
 		} else {
-			sprintf(#folder_info,T_FILES_FOLDERS,more_files_count.files,more_files_count.folders);
+			sprintf(#folder_info,T_FILES_FOLDERS,dir_size.files,dir_size.folders);
 			WriteText(10,  117, 0x90, sc.work_text, PR_T_CONTAINS);                              
 			WriteText(120, 117, 0x90, sc.work_text, #folder_info);
 			element_size = dir_size.bytes;
