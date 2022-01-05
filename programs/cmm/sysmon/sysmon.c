@@ -1,10 +1,10 @@
 /*
  * System Monitor
- * version 1.37
+ * version 1.4
  * Author: Leency
 */
 
-#define MEMSIZE 4096*30
+#define MEMSIZE 1024*60
 #define NO_DLL_INIT
 
 //===================================================//
@@ -42,7 +42,7 @@
 	#define T_DETAILS        "Подробнее"
 	#define T_PROC_KILL      "Снять задачу"
 	#define T_PROC_INFO      "Инфо"
-	#define T_PROC_HEADER    "Процесс        ОЗУ Кб      ЦП %"
+	#define T_PROC_HEADER    "Процесс        ОЗУ Кб    ЦП %"
 	#define T_CPU_LOAD       "Загрузка процессора %i%%   "
 	#define T_RAM_USAGE      "Память ОЗУ: %i Мб свободно из %i Мб"
 	#define T_RD_USAGE       "Системный диск: %i Кб свободно из 1.4 Мб"
@@ -53,7 +53,7 @@
 	#define T_DETAILS        "Details"
 	#define T_PROC_KILL      "Terminate"
 	#define T_PROC_INFO      "Info"
-	#define T_PROC_HEADER    "Process        RAM KB     CPU %"
+	#define T_PROC_HEADER    "Process        RAM KB   CPU %"
 	#define T_CPU_LOAD       "CPU load %i%%   "
 	#define T_RAM_USAGE      "RAM usage: %i MB free of %i MB"
 	#define T_RD_USAGE       "System disk usage: %i MB free of 1.4 MB"
@@ -61,10 +61,11 @@
 #endif
 
 enum {
-	BTN_ID_SHOW_SYSTEM_PROCESSES=200,
-	BTN_ID_PROC_KILL,
-	BTN_ID_PROC_INFO,
-	BTN_ID_MENU
+	BTN_SHOW_SYSTEM_PROCESSES=200,
+	BTN_PROC_KILL,
+	BTN_PROC_INFO,
+	BTN_MENU,
+	BTN_SHOWHIDE_SENSORS
 };
 
 //===================================================//
@@ -87,21 +88,18 @@ proc_info Form;
 
 int right_w;
 
+bool show_sensors = true;
+
 //===================================================//
 //                                                   //
 //                       CODE                        //
 //                                                   //
 //===================================================//
 
-void load_lib()
-{
-	load_dll(boxlib, #box_lib_init,0);
-}
-
 void main()
 {
 	int btn;
-	load_lib();
+	load_dll(boxlib, #box_lib_init,0);
 	@SetEventMask(EVM_REDRAW + EVM_KEY + EVM_BUTTON + EVM_MOUSE + EVM_MOUSE_FILTER);
 	loop() switch(@WaitEventTimeout(50))
 	{
@@ -121,27 +119,45 @@ void main()
 			if (show_system.click(btn)) {
 				SelectList_LineChanged();
 			}
-			if (BTN_ID_PROC_KILL == btn) {
+			if (BTN_PROC_KILL == btn) {
 				EventKillCurrentProcess();
 			}
-			if (BTN_ID_PROC_INFO == btn) {
+			if (BTN_PROC_INFO == btn) {
 				RunProgram("/sys/tinfo", itoa(GetProcessSlot(current_process_id))); 
+			}
+			if (BTN_SHOWHIDE_SENSORS == btn) {
+				show_sensors ^= 1;
+				GOTO _DRAW_WINDOW;
 			}
 			break;
 		case evReDraw:
 			sc.get();
 			DefineAndDrawWindow(screen.width/2 - 350, 100, 700, 490, 0x33, sc.work, T_APP_TITLE,0);
+			_DRAW_WINDOW:
 			GetProcessInfo(#Form, SelfInfo);
 			if (Form.status_window&ROLLED_UP) break;
-			if (Form.width  < RIGHT_X+370) { MoveSize(OLD,OLD,RIGHT_X+370,OLD); break; }
 			if (Form.height < 420) { MoveSize(OLD,OLD,OLD,420); break; }
+			if (show_sensors) {
+				if (Form.width < RIGHT_X+370) { MoveSize(OLD,OLD,RIGHT_X+370,OLD); break; }
+			} else {
+				if (Form.width != RIGHT_X+5) { MoveSize(OLD,OLD,RIGHT_X+5,OLD); break; }
+			}
 			right_w = Form.cwidth - RIGHT_X - GAP;
 			right_w &= ~1; // make sure the number is even
 			WriteText(GAP+5, WIN_CONTENT_Y-20, 0x90, sc.work_text, T_PROC_HEADER);
 
+			DefineButton(RIGHT_X-38,WIN_CONTENT_Y-25,18,18,BTN_SHOWHIDE_SENSORS,sc.work);
+			DrawRectangle3D(RIGHT_X-38,WIN_CONTENT_Y-25,19,18,sc.work_graph,sc.work_light);
+			PutPixel(RIGHT_X-38+19,WIN_CONTENT_Y-25,sc.work_light);
+			EDX = "<\0>";
+			EDX += show_sensors * 2;
+			WriteText(RIGHT_X-38+5,WIN_CONTENT_Y-25+2,0x90,sc.work_text, EDX);
+			//EBX += 5 << 16;
+			//$int 64
+
 			//bool burger_active = false;
 			//if (menu_id == OPEN_FILE) burger_active = true;
-			//DrawTopPanelButton(BTN_ID_MENU, Form.cwidth-GAP-3, GAP, -1, burger_active);
+			//DrawTopPanelButton(BTN_MENU, Form.cwidth-GAP-3, GAP, -1, burger_active);
 
 			SelectList_Init(GAP, WIN_CONTENT_Y, PROCESS_LIST_W, 
 				Form.cheight-BOTPANEL_H-WIN_CONTENT_Y);
@@ -150,21 +166,25 @@ void main()
 			DrawBar(select_list.x-2, select_list.y+select_list.h+2, 
 				select_list.w+scroll1.size_x+4, BOTPANEL_H, sc.work);
 			DrawCaptButton(PROCESS_LIST_W+GAP-110+18, select_list.y+select_list.h+5,
-				110,23,BTN_ID_PROC_KILL,0xF38181, 0xFFFfff, T_PROC_KILL);
+				110,23,BTN_PROC_KILL,0xF38181, 0xFFFfff, T_PROC_KILL);
 			DrawCaptButton(PROCESS_LIST_W+GAP-165+18, select_list.y+select_list.h+5,
-				46,23,BTN_ID_PROC_INFO,sc.button, sc.button_text, T_PROC_INFO);
+				46,23,BTN_PROC_INFO,sc.button, sc.button_text, T_PROC_INFO);
 			show_system.draw(GAP-1, select_list.y+select_list.h+10);
 
 			//WriteText(RIGHT_X, WIN_CONTENT_Y+25, 0x90, sc.work, "Update period: 5 seconds");
-			cpu.set_size(RIGHT_X, WIN_CONTENT_Y+25, right_w, 100);
-			ram.set_size(RIGHT_X, WIN_CONTENT_Y+170, right_w, 23);
-			rd.set_size(RIGHT_X, WIN_CONTENT_Y+240, right_w, 23);
+			if (show_sensors) {
+				cpu.set_size(RIGHT_X, WIN_CONTENT_Y+25, right_w, 100);
+				ram.set_size(RIGHT_X, WIN_CONTENT_Y+170, right_w, 23);
+				rd.set_size(RIGHT_X, WIN_CONTENT_Y+240, right_w, 23);				
+			}
 		default:
-			MonitorCpu();
-			MonitorRam();
 			SelectList_LineChanged();
-			MonitorRd();
-			MonitorTmp();
+			if (show_sensors) {
+				MonitorCpu();
+				MonitorRam();
+				MonitorRd();
+				MonitorTmp();				
+			}
 	}
 }
 

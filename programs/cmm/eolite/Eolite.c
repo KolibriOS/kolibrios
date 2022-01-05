@@ -135,6 +135,7 @@ void handle_param()
 		strcpy(#program_path+strrchr(#program_path,'/'), "EOLITE");
 	}
 
+	SetAppColors();
 	LoadIniSettings();
 
 	for (i=0; i<PANES_COUNT; i++) {
@@ -190,7 +191,6 @@ void main()
 	load_dll(libini, #lib_init,1);
 	load_dll(libimg, #libimg_init,1);
 
-	SetAppColors();
 	handle_param();
 
 	SystemDiscs.Get();

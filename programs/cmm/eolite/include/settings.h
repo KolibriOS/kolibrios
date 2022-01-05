@@ -229,7 +229,8 @@ void SetAppColors()
 		col.list_text_hidden = 0xA6A6B7;
 		col.list_vert_line = 0xDDD7CF;
 		col.lpanel  = 0x00699C;
-		col.selec = col.selec_active = 0x92B1D9;
+		if (efm) EBX = 0x84BEFB; else EBX = 0x92B1D9;
+		col.selec = col.selec_active = EBX;
 		col.selec_text = 0x000000;
 		col.slider_bg_big = 0xCDCFCF;
 		col.odd_line = 0xF4F5F5;
