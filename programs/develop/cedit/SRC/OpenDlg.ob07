@@ -1,5 +1,5 @@
 ﻿(*
-    Copyright 2016, 2018, 2020, 2021 Anton Krotov
+    Copyright 2016, 2018, 2020-2022 Anton Krotov
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU Lesser General Public License as published by
@@ -130,7 +130,7 @@ BEGIN
       res.status             := 0;
       res.procinfo           := sys.ADR(res.procinf[0]);
       res.com_area_name      := sys.ADR(res.s_com_area_name[0]);
-      res.start_path         := sys.SADR("/rd/1/File managers/opendial");
+      res.start_path         := sys.SADR("/sys/File managers/opendial");
       res.opendir_path       := sys.ADR(res.s_opendir_path[0]);
       res.dir_default_path   := sys.ADR(res.s_dir_default_path[0]);
       res.openfile_path      := sys.ADR(res.FilePath[0]);
@@ -163,7 +163,7 @@ VAR Lib: INTEGER;
   END GetProc;
 
 BEGIN
-  Lib := KOSAPI.LoadLib("/rd/1/Lib/Proc_lib.obj");
+  Lib := KOSAPI.LoadLib("/sys/Lib/Proc_lib.obj");
   GetProc(Lib, sys.ADR(Dialog_init),  "OpenDialog_init");
   GetProc(Lib, sys.ADR(Dialog_start), "OpenDialog_start");
 END Load;

@@ -1,5 +1,5 @@
 ﻿(*
-    Copyright 2016, 2018 Anton Krotov
+    Copyright 2016, 2018, 2022 Anton Krotov
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU Lesser General Public License as published by
@@ -75,7 +75,7 @@ VAR Lib: INTEGER;
   END GetProc;
 
 BEGIN
-  Lib := KOSAPI.LoadLib("/rd/1/lib/Console.obj");
+  Lib := KOSAPI.LoadLib("/sys/lib/Console.obj");
   ASSERT(Lib # 0);
   GetProc(Lib, sys.ADR(version),           "version");
   GetProc(Lib, sys.ADR(init),              "con_init");

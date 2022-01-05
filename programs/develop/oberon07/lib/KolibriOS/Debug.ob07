@@ -1,5 +1,5 @@
 ﻿(*
-    Copyright 2016, 2018 Anton Krotov
+    Copyright 2016, 2018, 2022 Anton Krotov
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU Lesser General Public License as published by
@@ -285,7 +285,7 @@ BEGIN
   info.param := sys.SADR(" ");
   info.rsrvd1 := 0;
   info.rsrvd2 := 0;
-  info.fname := "/rd/1/develop/board";
+  info.fname := "/sys/develop/board";
   res := KOSAPI.sysfunc2(70, sys.ADR(info))
 END Open;
 

@@ -1,5 +1,5 @@
 ﻿(*
-    Copyright 2021 Anton Krotov
+    Copyright 2021, 2022 Anton Krotov
 
     This file is part of CEdit.
 
@@ -23,7 +23,7 @@ IMPORT
     LibImg, K := KolibriOS, Graph, SYSTEM;
 
 CONST
-    fileName = "/rd/1/Icons16.png";
+    fileName = "/sys/Icons16.png";
     SIZE* = 18;
 
 VAR

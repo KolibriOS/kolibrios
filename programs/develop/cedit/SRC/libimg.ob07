@@ -1,5 +1,5 @@
 ﻿(*
-    Copyright 2016, 2021 Anton Krotov
+    Copyright 2016, 2021, 2022 Anton Krotov
 
     This file is part of CEdit.
 
@@ -107,7 +107,7 @@ VAR Lib: INTEGER;
   END GetProc;
 
 BEGIN
-  Lib := KOSAPI.LoadLib("/rd/1/Lib/Libimg.obj");
+  Lib := KOSAPI.LoadLib("/sys/Lib/Libimg.obj");
   GetProc(Lib, SYSTEM.ADR(img_decode),  "img_decode");
   GetProc(Lib, SYSTEM.ADR(img_destroy), "img_destroy");
   GetProc(Lib, SYSTEM.ADR(img_to_rgb2), "img_to_rgb2");

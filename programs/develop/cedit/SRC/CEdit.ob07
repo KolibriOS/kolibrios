@@ -28,7 +28,7 @@ IMPORT
     RW, Ini, EB := EditBox, Tabs, Toolbar, SB := StatusBar;
 
 CONST
-    HEADER = "CEdit (02-jan-2022)";
+    HEADER = "CEdit (05-jan-2022)";
 
     ShellFilter = "";
     EditFilter = "SH|INC|TXT|ASM|OB07|C|CPP|H|PAS|PP|LUA|INI|JSON";
@@ -568,7 +568,7 @@ BEGIN
 	temp := "'CEdit: ";
 	U.append8(temp, s);
 	U.append8(temp, "' -E");
-    K.Run("/rd/1/@notify", temp)
+    K.Run("/sys/@notify", temp)
 END error;
 
 
@@ -928,7 +928,7 @@ END goto;
 PROCEDURE Script (script: ARRAY OF CHAR);
 BEGIN
     IF script # "" THEN
-        K.Run("/rd/1/@open", script)
+        K.Run("/sys/@open", script)
     END
 END Script;
 
@@ -1143,7 +1143,7 @@ BEGIN
 	    |menuClose:
 	        closeFile(TRUE, curText)
 	    |menuFolder:
-	        K.Run("/rd/1/File Managers/Eolite", text.fileName)
+	        K.Run("/sys/File Managers/Eolite", text.fileName)
 	    |menuExit:
 	        Close
 	    |menuUndo:
@@ -1220,13 +1220,13 @@ BEGIN
 	    |menuCR:
 	    	T.setEol(text, RW.EOL_CR)
 	    |menuPipet:
-	        K.Run("/rd/1/develop/pipet", "")
+	        K.Run("/sys/develop/pipet", "")
 	    |menuMagnify:
-	        K.Run("/rd/1/magnify", "")
+	        K.Run("/sys/magnify", "")
 	    |menuBoard:
-	        K.Run("/rd/1/develop/board", "")
+	        K.Run("/sys/develop/board", "")
 	    |menuSysFunc:
-	        K.Run("/rd/1/docpack", "f")
+	        K.Run("/sys/docpack", "f")
 	    |menuColors..menuMaxColors:
 	        Ini.selectSection(IPC[2] - menuColors)
 	    |menuMoveUp:
@@ -2034,7 +2034,7 @@ BEGIN
     Ini.getSettings(buildScript, runScript, debugScript);
     IF fileName = "" THEN
         text := T.New();
-        filePath := "/rd/1"
+        filePath := "/sys"
     ELSE
         text := T.open(fileName, err);
         IF text = NIL THEN

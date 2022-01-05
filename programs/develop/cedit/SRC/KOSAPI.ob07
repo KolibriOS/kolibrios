@@ -1,7 +1,7 @@
 ﻿(*
     BSD 2-Clause License
 
-    Copyright (c) 2018-2019, Anton Krotov
+    Copyright (c) 2018-2019, 2022 Anton Krotov
     All rights reserved.
 *)
 
@@ -338,8 +338,10 @@ END GetStr;
 
 
 PROCEDURE [stdcall] dll_Load* (import_table: INTEGER): INTEGER;
+CONST
+	path = "/sys/lib/";
 VAR
-    imp, lib, exp, proc, res: INTEGER;
+    imp, lib, exp, proc, res, pathLen: INTEGER;
     fail, done: BOOLEAN;
     procname, libname: STRING;
 
@@ -348,12 +350,13 @@ BEGIN
     fail := FALSE;
     done := FALSE;
     res := 0;
-    libname := "/rd/1/lib/";
+    libname := path;
+    pathLen := LENGTH(libname);
     REPEAT
         SYSTEM.GET(import_table, imp);
         IF imp # 0 THEN
             SYSTEM.GET(import_table + 4, lib);
-            GetStr(lib, 10, libname);
+            GetStr(lib, pathLen, libname);
             exp := sysfunc3(68, 19, SYSTEM.ADR(libname[0]));
             fail := exp = 0;
         ELSE

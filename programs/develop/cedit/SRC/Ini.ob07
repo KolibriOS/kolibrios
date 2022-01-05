@@ -1,5 +1,5 @@
 ﻿(*
-    Copyright 2021 Anton Krotov
+    Copyright 2021, 2022 Anton Krotov
 
     This file is part of CEdit.
 
@@ -183,10 +183,10 @@ BEGIN
     Utils.append8(IniFileName, fileName);
 
     IF ~File.Exists(IniFileName) THEN
-    	IniFileName := "/rd/1/settings/cedit.ini"
+    	IniFileName := "/sys/settings/cedit.ini"
     END;
 
-    Lib := KOSAPI.LoadLib("/rd/1/Lib/Libini.obj");
+    Lib := KOSAPI.LoadLib("/sys/Lib/Libini.obj");
     GetProc(Lib, SYSTEM.ADR(get_color), "ini_get_color");
     GetProc(Lib, SYSTEM.ADR(get_int), "ini_get_int");
     GetProc(Lib, SYSTEM.ADR(get_str), "ini_get_str");

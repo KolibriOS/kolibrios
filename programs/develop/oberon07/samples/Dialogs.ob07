@@ -85,7 +85,7 @@ BEGIN
   back_color := 00FFFFFFH;
   header := "Dialogs";
   draw_window;
-  Open := OpenDlg.Create(draw_window, 0, "/rd/1", "ASM|TXT|INI");
+  Open := OpenDlg.Create(draw_window, 0, "/sys", "ASM|TXT|INI");
   Color := ColorDlg.Create(draw_window);
   WHILE TRUE DO
     CASE WaitForEvent() OF
