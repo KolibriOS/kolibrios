@@ -324,7 +324,7 @@ void EventMagnifyMinus()
 
 void EventMagnifyPlus()
 {
-	font_size = math.min(3, font_size+1);
+	font_size = math.min(5, font_size+1);
 	SetFontSize(font_size);
 	ParseAndPaint();
 }
@@ -719,6 +719,8 @@ void SetFontSize(char _size)
 	if (font_size == 1) list.SetFont(  8,     14, 00011000b);
 	if (font_size == 2) list.SetFont(2*6,    2*9, 00001001b);
 	if (font_size == 3) list.SetFont(2*8, 2*14-2, 00011001b);
+	if (font_size == 4) list.SetFont(3*6,    3*9, 00001010b);
+	if (font_size == 5) list.SetFont(3*8, 3*14-2, 00011010b);
 	list.item_w = list.font_w;
 	list.horisontal_selelection = true;
 	list.SetSizes(0, TOOLBAR_H, Form.cwidth-scroll.size_x-1,

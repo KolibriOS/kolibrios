@@ -263,7 +263,7 @@ void DrawPropertiesWindow()
 		if (!itdir) {
 			element_size = file_info_general.sizelo;
 		} else {
-			sprintf(#folder_info,PR_T_CONTAINS,dir_size.files,dir_size.folders);
+			sprintf(#folder_info,T_FILES_FOLDERS,more_files_count.files,more_files_count.folders);
 			WriteText(10,  117, 0x90, sc.work_text, PR_T_CONTAINS);                              
 			WriteText(120, 117, 0x90, sc.work_text, #folder_info);
 			element_size = dir_size.bytes;
@@ -288,9 +288,8 @@ void DrawPropertiesWindow()
 
 void PropertiesDrawIcon(dword file_path, extension)
 {
-	#define ICON_PADDING 11
-	DrawBar(20-ICON_PADDING, 30-ICON_PADDING-1, ICON_PADDING*2+16, ICON_PADDING*2+16, 0xFFFfff);
-	DrawIconByExtension(file_path, extension, -icon_size/2+28, -icon_size/2+38, 0xFFFfff);
+	int icon_n = ini_icons.get(file_path, extension, 32);
+	draw_icon_32(12, 22, sc.work, icon_n);
 }
 
 void EventApplyProperties()
