@@ -29,8 +29,8 @@ eventuali parametri per il programma passati come argomenti successivi.
 momento con il comando
 load <percorso all'eseguibile> [<parametri>]
 ad esempio:
-load /rd/1/example
-LOAD   /rd/1/aclock w200 h200
+load /sys/example
+LOAD   /sys/aclock w200 h200
   LoaD  /hd0/1/menuetos/dosbox/dosbox
 negli esempi, mtdbg caricherà il programma passato come primo argomenti,
 un eventuale secondo argomento è il parametro da passare al programma
@@ -53,7 +53,7 @@ load-symbols <percorso al file>
 Inoltre, quando viene eseguito il comando "load", mtdbg controllerà
 la presenza di un file contenente simboli relativi al programma e di
 estensione .dbg (nel primo esempio controlla la presenza  del file
-/rd/1/example.dbg). Se tale file esiste, questo viene caricato
+/sys/example.dbg). Se tale file esiste, questo viene caricato
 automaticamente and if such file exists, e verrà notificato tramite il
 messaggio "Symbols loaded", se il caricamento viene eseguito con
 successo.

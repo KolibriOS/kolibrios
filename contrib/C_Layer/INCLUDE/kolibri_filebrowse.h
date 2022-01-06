@@ -208,8 +208,8 @@ static inline filebrowser* kolibri_new_filebrowser(uint32_t x_w, uint32_t y_h, u
 inline filebrowser* kolibri_filebrowser_def(filebrowser* fb, uint32_t x_w, uint32_t y_h)
 {
     // load default icons and icon association
-    char icons_ini[]       = "/rd/1/File managers/icons.ini";
-    char icons16img[]       = "/rd/1/File managers/z_icons.png";
+    char icons_ini[]       = "/sys/File managers/icons.ini";
+    char icons16img[]       = "/sys/File managers/z_icons.png";
 
     return kolibri_filebrowser(fb, x_w, y_h, X_Y(9, 16), X_Y(16, 16), icon_raw_area, icon_palette_raw, icon_res,
                                          ini_file_start, ini_file_end,

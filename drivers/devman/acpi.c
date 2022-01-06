@@ -625,7 +625,7 @@ uint32_t drvEntry(int action, char *cmdline)
     create_dm_list();
     print_dm_list();
 
-    write_device_dat("/RD/1/DRIVERS/DEVICES.DAT");
+    write_device_dat("/SYS/DRIVERS/DEVICES.DAT");
 
 err:
     return 0;

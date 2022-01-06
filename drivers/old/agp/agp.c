@@ -27,9 +27,9 @@ u32_t __stdcall drvEntry(int action)
     if(action != 1)
         return 0;
 
-    if(!dbg_open("/rd/1/drivers/agp.log"))
+    if(!dbg_open("/sys/drivers/agp.log"))
     {
-        printf("Can't open /rd/1/drivers/agp.log\nExit\n");
+        printf("Can't open /sys/drivers/agp.log\nExit\n");
         return 0;
     }
 

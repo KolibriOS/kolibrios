@@ -15,7 +15,7 @@
 Для запуска из autorun.dat командная строка не должна содержать пробелов. 
 
 Пример:
-/RD/1/DRIVERS/vmwgfx -l/hd0/2/vmwgfx.log 1    # 
+/SYS/DRIVERS/vmwgfx -l/hd0/2/vmwgfx.log 1    # 
 
 
 Особенности реализации.

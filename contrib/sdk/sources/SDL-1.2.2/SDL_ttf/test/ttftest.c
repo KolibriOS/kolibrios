@@ -31,8 +31,8 @@ int app_main(int argc, char *argv[])
   SDL_printf("Couldn't initialize TTF library\n");
   exit(-1);
  }
- fnt=TTF_OpenFont("/RD/1/INDIGO.TTF",50);
- fnt1=TTF_OpenFont("/RD/1/HYDROGEN.TTF",35);
+ fnt=TTF_OpenFont("/SYS/INDIGO.TTF",50);
+ fnt1=TTF_OpenFont("/SYS/HYDROGEN.TTF",35);
  TTF_SetFontStyle(fnt,TTF_STYLE_ITALIC|TTF_STYLE_BOLD|TTF_STYLE_UNDERLINE);
  txt=TTF_RenderText_Solid(fnt,"MenuetOS",kolor);
  if(!txt)

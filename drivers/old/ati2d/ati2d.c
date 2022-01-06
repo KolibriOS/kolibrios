@@ -43,9 +43,9 @@ u32_t __stdcall drvEntry(int action)
     if(action != 1)
         return 0;
 
-    if(!dbg_open("/bd0/2/ati2d.log"))
+    if(!dbg_open("/sys/drivers/ati2d.log"))
     {
-        printf("Can't open /rd/1/drivers/ati2d.log\nExit\n");
+        printf("Can't open /sys/drivers/ati2d.log\nExit\n");
         return 0;
     }
     if( GetScreenBpp() != 32)

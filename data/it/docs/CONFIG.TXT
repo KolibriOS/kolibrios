@@ -17,7 +17,7 @@ Tra parentesi vengono riportati i nomi degli eseguibili dei singoli programmi.
    come nuovo sfondo è possibile eliminare il file background.jpg
 
    b) Modificare all'interno del file autorun.dat la voce
-   "/RD/1/KIV \S__background.jpg" in "/rd/1/PIC4". È possibile
+   "/SYS/KIV \S__background.jpg" in "/sys/PIC4". È possibile
    eliminare il file  background.jpg e il nuovo sfondo sara una texture.
 
    Per i programmatori:
@@ -87,12 +87,12 @@ Tra parentesi vengono riportati i nomi degli eseguibili dei singoli programmi.
    collaterale è del rumore nei codec AC97. L'applicazione può essere
    caricata automaticamente all'avvio del sistema, in tal caso è necessario
    aggiungere la voce
-"/RD/1/KBD             BOOT       20    # Enable Bus Disconnect for AMD K7 processors".
+"/SYS/KBD             BOOT       20    # Enable Bus Disconnect for AMD K7 processors".
    al file autorun.dat
 
 8. Impostazioni Network.
    le impostazioni iniziali sono lette durante l'avvio del sistema dal file
-   /rd/1/network/zeroconf.ini.
+   /sys/network/zeroconf.ini.
    È possibile impostare il rivelamento automatico con DHCP ("type=zeroconf")
    oppure impostare un indirizzo IP fissato ("type=static").
 
@@ -105,7 +105,7 @@ Tra parentesi vengono riportati i nomi degli eseguibili dei singoli programmi.
    Per impostare i parametri durante l'avvio è necessario passare tramite
    il file AUTORUN.DAT l'argomento -m<larghezza>x<altezza>x<refresh> al
    driver ATIKMS, ad esempio
-/RD/1/DRIVERS/ATIKMS -m1024x768x60 -1
+/SYS/DRIVERS/ATIKMS -m1024x768x60 -1
    Attenzione al fatto che il formato autorun.dat non accetta spazi,
    quindi non è possibile inserire ulteriori argomenti.
    Si può inoltre disabilitare la possibilità di modificare i parametri durante l'avvio passando l'opzione -n. I driver supportano comunque il cursore hardware. Per disabilitare completamente il driver è sufficiente rimuovere la relativa voce dal file autorun.dat.

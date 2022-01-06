@@ -11,8 +11,8 @@ a) Replace in the file autorun.dat (it is text file) the parameter for
    the program kiv ("\S__background.jpg") the name of file to the full
    Kolibri-path to JPEG-, BMP-, GIF- or PNG-image which you like. It will be
    new background. background.jpg now can be deleted.
-b) Replace in the file autorun.dat "/RD/1/KIV \S__background.jpg" to
-   "/rd/1/PIC4" (spaces are ignored by the loader program). You can delete
+b) Replace in the file autorun.dat "/SYS/KIV \S__background.jpg" to
+   "/sys/PIC4" (spaces are ignored by the loader program). You can delete
    BACKGROUND.JPG. New background will be nice texture.
    For programmers: you can change texture and color, for this in file
    pic4.asm from distributive sources change:
@@ -74,11 +74,11 @@ c) Two previous points sets background for a long time (until next
    bus in order to decrease its temperature, a side effect is noise in AC97
    codecs. The application can be loaded automatically at system boot, to do
    this add to autorun (file autorun.dat, see 3) a line of the form
-"/RD/1/KBD             BOOT       20    # Enable Bus Disconnect for AMD K7 processors".
+"/SYS/KBD             BOOT       20    # Enable Bus Disconnect for AMD K7 processors".
 
 8. Network settings.
    Initial network configuration is read at boot from the ini file
-   /rd/1/network/zeroconf.ini. You can set automatic detection with DHCP
+   /sys/network/zeroconf.ini. You can set automatic detection with DHCP
    ("type=zeroconf") or fixed IP addresses ("type=static").
 
 9. Configuration of videomode for ATI videocards.
@@ -88,7 +88,7 @@ c) Two previous points sets background for a long time (until next
    To set the mode at startup one must pass to the loader ATIKMS, described
    in AUTORUN.DAT, the argument -m<width>x<height>x<refresh>, e.g.
 
-/RD/1/DRIVERS/ATIKMS -m1024x768x60 -1
+/SYS/DRIVERS/ATIKMS -m1024x768x60 -1
 
    Pay attention that the format of autorun.dat does not allow spaces in
    command line, so there must be no other arguments.

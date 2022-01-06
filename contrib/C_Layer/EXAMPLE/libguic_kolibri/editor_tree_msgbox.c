@@ -80,7 +80,7 @@ int main(int argc, char **argv)
 
     // load sample file
     //int res, len;
-    //res = editor_openfile(ed, "/rd/1/boardlog.txt", &len);
+    //res = editor_openfile(ed, "/sys/boardlog.txt", &len);
     //debug_board_printf("loaded sample file err=%d, len=%d\n", res, len);
 
     //adding sample text @cursor

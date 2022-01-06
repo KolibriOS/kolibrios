@@ -90,7 +90,7 @@ int main(int argc, char **argv)
     gui_add_pathview(main_window, kolibri_pathview(&pview, X_Y(10, 50), 330, 1, 0, dlg_opensave->openfile_path, temp_path, 0, 0)); // black font, no background, font 1
 
     filebrowser brows;
-    filedata = load_file_inmem("/rd/1/File managers/z_icons.png", &read_bytes);
+    filedata = load_file_inmem("/sys/File managers/z_icons.png", &read_bytes);
     image_data_rgb = malloc(icon_rgb_size * 20);  // we know size
     // определяем вид изображения и переводим его во временный буфер image_data
     image_data = (*img_decode)(filedata, read_bytes, 0);
@@ -100,13 +100,13 @@ int main(int argc, char **argv)
     (*img_destroy)(image_data);
     free(filedata);
 
-    filedata = load_file_inmem("/rd/1/File managers/icons.ini", &read_bytes);
+    filedata = load_file_inmem("/sys/File managers/icons.ini", &read_bytes);
     gui_add_filebrowser(main_window, kolibri_filebrowser(&brows, X_Y(10, 400), X_Y(80, 300), X_Y(6, 9), X_Y(16, 16), image_data_rgb, NULL, 24,
                                          filedata, filedata + read_bytes,
                                          0x00FF00, 0xbbddff, 0x000000, 0xFFFFFF, 0xFF0000));
 
     // try devices "/" - good
-    brows.folder_data = read_folderdata("/rd/1");
+    brows.folder_data = read_folderdata("/sys");
     brows.select_panel_counter = 1;  // if want to show selection
 
     do  /* Start of main activity loop */

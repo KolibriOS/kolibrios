@@ -26,8 +26,8 @@ and parameters pointed to following (if present).
 If no program is loaded, you can load a program with the command
 load <full name of executable file> [<parameters>]
 Examples:
-load /rd/1/example
-LOAD   /rd/1/aclock w200 h200
+load /sys/example
+LOAD   /sys/aclock w200 h200
   LoaD  /hd0/1/menuetos/dosbox/dosbox
 All that stays after first space after executable file name, is exactly passed
 to program as command string.
@@ -44,7 +44,7 @@ by hand or generated automatically by fasm. Evident load can be done by command
 load-symbols <full name of symbols file>
 Furthermore, when the debugger executes the command "load", it checks for
 presence of file with name as of loading binary and extension '.dbg'
-(/rd/1/example.dbg in the first of examples above), and if such file exists,
+(/sys/example.dbg in the first of examples above), and if such file exists,
 the debugger loads it automatically (with the message "Symbols loaded", if
 all is OK).
 

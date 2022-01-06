@@ -24,7 +24,7 @@ int main(int argc, char** argv){
             drv = _ksys_load_driver(drv_name);
             break;
         case 2 :
-            drv_name = "/rd/1/drivers/c_drv.dll";
+            drv_name = "/sys/drivers/c_drv.dll";
             drv = _ksys_load_pe_driver(drv_name, NULL);
             break;
         default:

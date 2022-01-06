@@ -24,7 +24,7 @@ atikms.dll. Оба файла обязательно должны находиться в одной папке.
 Для запуска из autorun.dat командная строка не должна содержать пробелов. 
 
 Пример:
-/RD/1/DRIVERS/ATIKMS -m1024x768x75-l/hd0/2/atikms.log 1    # 
+/SYS/DRIVERS/ATIKMS -m1024x768x75-l/hd0/2/atikms.log 1    # 
 
 
 

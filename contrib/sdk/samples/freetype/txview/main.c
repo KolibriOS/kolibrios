@@ -59,7 +59,7 @@ int main(int argc, char *argv[])
     ::"a"(40), "b"(0xc0000027));
 
     if(argc < 2)
-        uf = load_file("/RD/1/EXAMPLE.ASM");
+        uf = load_file("/SYS/EXAMPLE.ASM");
     else uf = load_file(argv[1]);
 
     if(uf.data == NULL ||

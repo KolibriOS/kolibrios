@@ -250,7 +250,7 @@ A7. First, you need to build the corresponding binary as described in Q1/A1 or
     Q2/A2.
     To test a program, it is sufficient to put it to some place accessible
     to the working KolibriOS and just run it from there. Drivers are loaded
-    from the folder /rd/1/drivers/, which is initialized from kolibri.img,
+    from the folder /rd/1/drivers, which is initialized from kolibri.img,
     so testing a driver requires either copying the compiled binary to
     /rd/1/drivers manually between KolibriOS startup and loading driver or
     inserting the driver to the image kolibri.img outside of KolibriOS.

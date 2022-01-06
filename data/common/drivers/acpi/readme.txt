@@ -5,7 +5,7 @@ To turn on APIC you have to:
 
 1) Run Installer (install.kex)
 2) Wait 3 seconds and get sure that there is a message about succesfull
-   file generation /rd/1/drivers/devices.dat
+   file generation /sys/drivers/devices.dat
    Note: log can be found in /tmp0/1/acpi.log
 3) Make kernel restart (MENU -> END -> HOME key)
 4) Check that kernel and drivers are working well.
@@ -18,7 +18,7 @@ To turn on APIC you have to:
 
 1) Запустить установщик (install.kex)
 2) Подождать 3 секунды и убедиться, что показалось сообщение
-   об успешной генерации /rd/1/drivers/devices.dat
+   об успешной генерации /sys/drivers/devices.dat
    Лог драйвера находится в /tmp0/1/acpi.log
 3) Сделать рестарт ядра (Меню -> Завершение работы -> Ядро)
 4) Проверить работу ядра и драйверов

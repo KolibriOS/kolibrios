@@ -767,9 +767,9 @@ int __stdcall drvEntry(int action)
     if(action != 1)
         return 0;
 
-    if(!dbg_open("/rd/1/drivers/ati.txt"))
+    if(!dbg_open("/sys/drivers/ati.txt"))
     {
-        printf("Can't open /rd/1/drivers/ati.txt\nExit\n");
+        printf("Can't open /sys/drivers/ati.txt\nExit\n");
         return 0;
     }
     if(!FindPciDevice())

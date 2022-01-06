@@ -2,8 +2,8 @@
 #define KOLIBRI_OPENDIALOG_H
 
 char sz_com_area_name[]    = "FFFFFFFF_open_dialog";
-char sz_dir_default_path[] = "/rd/1";
-char sz_start_path[]       = "/rd/1/File managers/opendial";
+char sz_dir_default_path[] = "/sys";
+char sz_start_path[]       = "/sys/File managers/opendial";
 
 enum open_dialog_mode {
     OPEN,
