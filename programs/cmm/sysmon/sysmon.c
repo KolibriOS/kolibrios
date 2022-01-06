@@ -1,11 +1,11 @@
 /*
  * System Monitor
- * version 1.4
+ * version 1.41
  * Author: Leency
 */
 
 #define MEMSIZE 1024*60
-#define NO_DLL_INIT
+//#define NO_DLL_INIT
 
 //===================================================//
 //                                                   //
@@ -18,6 +18,7 @@
 #include "../lib/list_box.h"
 
 #include "../lib/obj/box_lib.h"
+#include "../lib/obj/libini.h"
 
 #include "../lib/patterns/select_list.h"
 #include "../lib/patterns/restart_process.h"
@@ -75,7 +76,7 @@ enum {
 //===================================================//
 
 int current_process_id = 0;
-int proc_list[256];
+int proc_list[MAX_PROCESS_COUNT];
 
 checkbox show_system = { T_SHOW_SYSTEM, false };
 
@@ -88,7 +89,9 @@ proc_info Form;
 
 int right_w;
 
-bool show_sensors = true;
+bool show_sensors;
+
+_ini ini = { "/sys/settings/app.ini", "Sysmon" };
 
 //===================================================//
 //                                                   //
@@ -100,21 +103,42 @@ void main()
 {
 	int btn;
 	load_dll(boxlib, #box_lib_init,0);
+	load_dll(libini, #lib_init,1);
+	ReadIni();
 	@SetEventMask(EVM_REDRAW + EVM_KEY + EVM_BUTTON + EVM_MOUSE + EVM_MOUSE_FILTER);
 	loop() switch(@WaitEventTimeout(50))
 	{
-	   	case evMouse:
-			SelectList_ProcessMouse();
+		case evMouse:
+			SelectList_ProcessMouse(); 
+			if (mouse.up) && (mouse.pkm) || (mouse.mkm) EventShowTinfo();
 			break;
 		case evKey:
 			GetKeys();
-			if (key_scancode == SCAN_CODE_ESC) ExitProcess();
-			if (key_scancode == SCAN_CODE_DEL) EventKillCurrentProcess();
-			if (select_list.ProcessKey(key_scancode)) SelectList_LineChanged();
+			switch(key_scancode) {
+				case SCAN_CODE_ESC:
+						EventExit();
+				case SCAN_CODE_DEL:
+						EventKillCurrentProcess();
+						break;
+				case SCAN_CODE_SPACE:
+						show_sensors ^= 1;
+						goto _DRAW_WINDOW;
+				case SCAN_CODE_ENTER:
+						EventShowTinfo();
+						break;
+				case SCAN_CODE_TAB:
+						show_system.checked ^= 1;
+						SelectList_LineChanged();
+						break;
+				default:
+						if (select_list.ProcessKey(key_scancode)) {
+							SelectList_LineChanged();
+						}
+			}
 			break;
 		case evButton:
 			btn = @GetButtonID();
-			if (1==btn) ExitProcess();
+			if (1==btn) EventExit();
 
 			if (show_system.click(btn)) {
 				SelectList_LineChanged();
@@ -123,7 +147,7 @@ void main()
 				EventKillCurrentProcess();
 			}
 			if (BTN_PROC_INFO == btn) {
-				RunProgram("/sys/tinfo", itoa(GetProcessSlot(current_process_id))); 
+				EventShowTinfo();
 			}
 			if (BTN_SHOWHIDE_SENSORS == btn) {
 				show_sensors ^= 1;
@@ -132,7 +156,7 @@ void main()
 			break;
 		case evReDraw:
 			sc.get();
-			DefineAndDrawWindow(screen.width/2 - 350, 100, 700, 490, 0x33, sc.work, T_APP_TITLE,0);
+			DefineAndDrawWindow(Form.left, Form.top, Form.width, Form.height, 0x33, sc.work, T_APP_TITLE,0);
 			_DRAW_WINDOW:
 			GetProcessInfo(#Form, SelfInfo);
 			if (Form.status_window&ROLLED_UP) break;
@@ -146,12 +170,12 @@ void main()
 			right_w &= ~1; // make sure the number is even
 			WriteText(GAP+5, WIN_CONTENT_Y-20, 0x90, sc.work_text, T_PROC_HEADER);
 
-			DefineButton(RIGHT_X-38,WIN_CONTENT_Y-25,18,18,BTN_SHOWHIDE_SENSORS,sc.work);
+			DefineButton(RIGHT_X-38,WIN_CONTENT_Y-25,18,18,BTN_SHOWHIDE_SENSORS,sc.button);
 			DrawRectangle3D(RIGHT_X-38,WIN_CONTENT_Y-25,19,18,sc.work_graph,sc.work_light);
 			PutPixel(RIGHT_X-38+19,WIN_CONTENT_Y-25,sc.work_light);
 			EDX = "<\0>";
 			EDX += show_sensors * 2;
-			WriteText(RIGHT_X-38+5,WIN_CONTENT_Y-25+2,0x90,sc.work_text, EDX);
+			WriteText(RIGHT_X-38+5,WIN_CONTENT_Y-25+2,0x90,sc.button_text, EDX);
 			//EBX += 5 << 16;
 			//$int 64
 
@@ -369,4 +393,28 @@ void MonitorRam()
 	DrawIconWithText(RIGHT_X, ram.y - 25, 51, #param);
 }
 
+void EventShowTinfo()
+{
+	RunProgram("/sys/tinfo", itoa(GetProcessSlot(current_process_id)));
+}
 
+void ReadIni()
+{
+	Form.left    = ini.GetInt("x", screen.width/2 - 350); 
+	Form.top     = ini.GetInt("y", 100); 
+	Form.width   = ini.GetInt("w", 700); 
+	Form.height  = ini.GetInt("h", 490); 
+	show_sensors = ini.GetInt("show_sensors", true); 
+	show_system.checked = ini.GetInt("show_system", false); 
+}
+
+void EventExit()
+{
+	ini.SetInt("x", Form.left);
+	ini.SetInt("y", Form.top);
+	ini.SetInt("w", Form.width);
+	ini.SetInt("h", Form.height);
+	ini.SetInt("show_sensors", show_sensors);
+	ini.SetInt("show_system", show_system.checked);
+	ExitProcess();
+}

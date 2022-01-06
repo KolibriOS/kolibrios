@@ -40,7 +40,6 @@ char program_path[4096];
 #define evReDraw  1
 #define evKey     2
 #define evButton  3
-#define evExit    4
 #define evDesktop 5
 #define evMouse   6
 #define evIPC     7
@@ -51,7 +50,6 @@ char program_path[4096];
 #define EVM_REDRAW                1b
 #define EVM_KEY                  10b
 #define EVM_BUTTON              100b
-#define EVM_EXIT               1000b
 #define EVM_DESKTOPBG         10000b
 #define EVM_MOUSE            100000b
 #define EVM_IPC             1000000b

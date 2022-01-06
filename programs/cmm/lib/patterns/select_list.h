@@ -44,7 +44,7 @@ signed SelectList_ProcessMouse()
 		return true;
 	}
 
-	if (mouse.up) && (mouse.lkm) 
+	if (mouse.up) && (mouse.click) 
 		if (select_list.ProcessMouse(mouse.x, mouse.y)) {
 			SelectList_LineChanged();
 			return true;
