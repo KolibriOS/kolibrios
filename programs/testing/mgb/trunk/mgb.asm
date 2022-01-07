@@ -1012,7 +1012,7 @@ else
 	db '/sys/File Managers/opendial',0
 end if
 communication_area_default_pach:
-	db '/rd0/1/',0
+	db '/sys/',0
 
 Filter:
 dd	Filter.end - Filter
@@ -1025,7 +1025,7 @@ sign db ?,0
 
 start_temp_file_name:	db 'results.mgb',0
 
-path4	db '/rd/1/results.mgb',0
+path4	db '/sys/results.mgb',0
 ;---------------------------------------------------------------------
 align 4
 params_f73:

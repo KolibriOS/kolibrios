@@ -71,6 +71,6 @@ VECT EMIT ' _EMIT TO EMIT
 
 : H. BASE @ SWAP HEX U. BASE ! ;
 
-: TST S" /rd/1/autoload.f" INCLUDED_ ;
+: TST S" /sys/autoload.f" INCLUDED_ ;
 : TST1 S" WORDS" EVALUATE ;
 

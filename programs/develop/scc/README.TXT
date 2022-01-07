@@ -6,7 +6,7 @@
  ##############################
 
 KNOWN BUGS:
-	* only directiory /rd/1/ works
+	* only directiory /sys/ works
 
 HISTORY:
 	* 0.5.4:

@@ -1131,7 +1131,7 @@ f_plen1 dd 5
 sz caption,'MFAR : PRE-ALPHA-8.1',0
 sz fcfile,'MFAR    DAT'
 sz p_hd,'/HD/1',0
-sz p_rd,'/RD/1',0
+sz p_rd,'/SYS',0
 ext0:
   db '     EXE COM BAT CMD'
   dd 0

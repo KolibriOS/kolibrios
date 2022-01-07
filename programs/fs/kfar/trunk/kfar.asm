@@ -6842,7 +6842,7 @@ header  db      'Kolibri Far ',version,0
 nomem_draw      db      'No memory for redraw.',0
 .size = $ - nomem_draw
 
-def_left_dir    db      '/rd/1',0
+def_left_dir    db      '/sys',0
 def_right_dir   db      '/hd0/1',0
 
 bSilentFolderMode db    1

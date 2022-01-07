@@ -159,7 +159,7 @@ macro fix_cwd  path
           add esp, 12
 }
 
-szPxlib              db  '/rd/1/lib/pixlib.obj',0
+szPxlib              db  '/sys/lib/pixlib.obj',0
 
 szStart              db  'START',0
 szVersion            db  'version',0

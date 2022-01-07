@@ -197,7 +197,7 @@ macro   jecxnz  Target
         loop    Target
 }
 
-TestFile        db '/rd/1/develop/scancode',0
+TestFile        db '/sys/develop/scancode',0
 
 MinWidth = 90
 MaxWidth = 255

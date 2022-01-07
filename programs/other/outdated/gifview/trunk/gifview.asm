@@ -258,7 +258,7 @@ fn_input:
 ;   db '/hd/1/gif/smileys/sm100000.gif'
    db '/sys/meos.gif'
 ;    db '/hd/1/1/tex256.gif',0
-;    db '/rd/1/tex256.gif'
+;    db '/sys/tex256.gif'
 inp_end:
      rb 256-(inp_end-fn_input)
 

@@ -66,7 +66,7 @@ ICON_SIZE equ 32*32*4
 REC_SIZE equ 80
 ICONS_DAT equ '/sys/icons.dat'
 ICON_APP equ '/sys/ICON'
-ICON_STRIP equ '/rd/1/iconstrp.png'
+ICON_STRIP equ '/sys/iconstrp.png'
 ;------------------------------------------------------------------------------
 	use32
 	org 0x0

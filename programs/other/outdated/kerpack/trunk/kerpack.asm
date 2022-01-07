@@ -231,7 +231,7 @@ fn70_read:
 	dd	0
 	dd	200*1024
 	dd	infile
-filename db	'/rd/1/kernel.mnt',0
+filename db	'/sys/kernel.mnt',0
 
 fn70_write:
 	dd	2

@@ -39,7 +39,7 @@ VIA KT880
 Владельцы данных чипсетов могут (при желании) поместить
 эту программу в автозагрузку с параметром boot. Для этого в
 autorun.dat необходимо поместить,например, такую строку:
-"/RD/1/KBD             BOOT       20    # Enable Bus Disconnect for AMD K7 processors",
+"/SYS/KBD              BOOT       20    # Enable Bus Disconnect for AMD K7 processors",
 не забыв при этом увеличить количество запускаемых программ на одну
 в самом начале файла autorun.dat.
 

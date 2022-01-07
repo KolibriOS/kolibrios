@@ -7,7 +7,7 @@ buttons1names	db ' InFile:'
 aCompress	db ' Compress',0
 aDecompress	db 'Decompress',0
 definoutname	db 0
-defpath		db '/rd/1',0
+defpath		db '/sys',0
 kernel_name db 'kernel.mnt',0
 ;curedit		dd 0
 
@@ -137,9 +137,9 @@ else
     db '/sys/File Managers/opendial',0
 end if
 communication_area_default_pach:
-	db '/rd/1',0
+	db '/sys',0
 
-path4	db '/rd/1/temp',0
+path4	db '/sys/temp',0
 
 Filter:
 dd	Filter.end - Filter.1

@@ -759,7 +759,7 @@ label4:        db   'Воспроизводимый файл:',0
 label5:        db   'Всего файлов в плейлисте найдено:',0
 label6:        db   'Номер воспроизводимого файла:',0
 minus:	       db   'ac97snd',0
-player:        db   '/rd/1/media/ac97snd' ,0
+player:        db   '/sys/media/ac97snd' ,0
 my_draw        db   0
 n_razd	       db   0
 trig_scan      db   0

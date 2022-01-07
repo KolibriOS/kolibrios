@@ -763,7 +763,7 @@ errDictHeader_l:
 
 xcursor dw 69
 
-default_dict_path db '/RD/1/DICT.TXT'
+default_dict_path db '/SYS/DICT.TXT'
 
 fileinfo_ini:
 .oper:
@@ -774,7 +774,7 @@ dd   256
 dd   fileinfo.path
 dd  os_work_mem
 .inipath:
-db '/rd/1/slovarik.ini',0
+db '/sys/slovarik.ini',0
 
 fileinfo:
 dd   0	     ; 0 = ЧТЕНИЕ ФАЙЛА
@@ -783,7 +783,7 @@ dd   0x1       ; сколько блоков считывать
 dd   dictionary  ; куда считывать
 dd   os_work_mem ; 0x10000  ; память для работы ОС - 4096 байт
 .path:
-db '',0  ;'/RD/1/DICT.TXT',0
+db '',0  ;'/SYS/DICT.TXT',0
 
 lblIMG_END:
 rb 257 ;times 257 db 0 ;for path

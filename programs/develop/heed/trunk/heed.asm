@@ -3309,7 +3309,7 @@ else
 	db '/sys/File Managers/opendial',0
 end if
 communication_area_default_pach:
-	db '/rd/1',0
+	db '/sys',0
 
 Filter:
 dd	Filter.end - Filter.1

@@ -353,7 +353,7 @@ param_info:
 ;  .bytes2write     dd 0      ; bytes to write
 ;  .address         dd 0x20000
 ;  .workarea        dd 0x10000
-;  destination      db '/RD/1/KERNEL.MNT',0
+;  destination      db '/SYS/KERNEL.MNT',0
 ;    times (STRLEN-16) db 0
 
   align 4

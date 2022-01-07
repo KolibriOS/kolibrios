@@ -31,7 +31,7 @@ lang equ ru ; ru en fr ge fi
 
 ; LOADFILE
 ; (SYNTAX)  LOADFILE 'full_path_to_file',file_load_area,file_temp_area
-; (SAMPLE)  LOADFILE '/rd/1/clock.bmp',load_area,temp_area
+; (SAMPLE)  LOADFILE '/sys/clock.bmp',load_area,temp_area
 
 
 macro loadfile file_name,file_load_area,file_temp_area
@@ -411,7 +411,7 @@ run_fileinfo:
  dd 0
  dd procinfo ; 0x10000
 ;run_filepath
- db '/RD/1/SYSXTREE',0
+ db '/SYS/SYSXTREE',0
 
 procinfo:
 times 1024 db 0
@@ -623,7 +623,7 @@ run_fileinfo:
  dd 0
  dd procinfo
 ;run_filepath:
- db '/RD/1/SYSXTREE',0
+ db '/SYS/SYSXTREE',0
 
 procinfo:
 times 1024 db 0

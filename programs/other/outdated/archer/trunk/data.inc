@@ -72,7 +72,7 @@ else
   end if
 ;    db '/hd/1/zip/png.zip',0
 ;    db '/hd/1/zip/files/opossum.png'
-;    db '/rd/1/www.zip',0
+;    db '/sys/www.zip',0
 ;    db '/hd/1/zip/test2.zip',0
 end if
  db 0

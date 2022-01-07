@@ -6,11 +6,11 @@
 #define SUCCESS 1
 
 char sz_com_area_name[]    = "FFFFFFFF_open_dialog";
-char sz_dir_default_path[] = "/rd/1";
-char sz_start_path[]       = "/rd/1/File managers/opendial";
+char sz_dir_default_path[] = "/sys";
+char sz_start_path[]       = "/sys/File managers/opendial";
 
 char cd_com_area_name[]    = "FFFFFFFF_color_dialog";
-char cd_start_path[]       = "/rd/1/colrdial";
+char cd_start_path[]       = "/sys/colrdial";
 
 enum open_dialog_mode {
     OPEN,

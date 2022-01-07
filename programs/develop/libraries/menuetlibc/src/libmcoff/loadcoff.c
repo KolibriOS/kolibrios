@@ -83,7 +83,7 @@ coffobj_t * mcoff_load_file(char * fname)
  /* We just search some paths if it is relative */
  if(fname[0]!='/')
  {
-  sz=open_on_path("/RD/1",fname);
+  sz=open_on_path("/SYS",fname);
   if(sz>64 && sz<0x1000000) goto OK; /* Max 16MB for DLL */
   sz=open_on_path("/HD/1/MENUETOS",fname);
   if(sz>64 && sz<0x1000000) goto OK; /* Max 16MB for DLL */

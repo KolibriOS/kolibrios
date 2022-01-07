@@ -4,7 +4,7 @@ VARIABLE wd 256 ALLOT
 	COUNT 1+ SWAP 1- SWAP wd SWAP CMOVE ;
 
 : _wd
-	$" /rd/1/" setwd ; _wd
+	$" /sys/" setwd ; _wd
 
 : "/ [CHAR] / ;
 

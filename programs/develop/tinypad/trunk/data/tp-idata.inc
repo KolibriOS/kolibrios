@@ -8,10 +8,10 @@ charWidth	dd	8
 scale		db	0x10
 ins_mode	db	1
 
-sz app_fasm    ,'/rd/1/develop/fasm',0
-sz app_board   ,'/rd/1/develop/board',0
-sz app_tinypad ,'/rd/1/tinypad',0
-sz app_docpak  ,'/rd/1/docpack',0
+sz app_fasm    ,'/sys/develop/fasm',0
+sz app_board   ,'/sys/develop/board',0
+sz app_tinypad ,'/sys/tinypad',0
+sz app_docpak  ,'/sys/docpack',0
 
 sz sysfuncs_param,'f',0
 

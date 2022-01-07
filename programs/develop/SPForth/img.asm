@@ -12,7 +12,7 @@ AHEADER 0 ,'TST',cfa_TST
 
  call cfa__SLITERALminusCODE+00H
  DB 010H
- DB '/rd/1/autoload.f',0
+ DB '/sys/autoload.f',0
  call cfa_INCLUDED_+00H
  DB 0C3H
 AHEADER 0 ,'H.',cfa_Hdot

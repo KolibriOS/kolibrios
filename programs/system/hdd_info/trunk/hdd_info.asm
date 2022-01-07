@@ -1679,7 +1679,7 @@ op4 option_box option_group1,154,44,6,9,0xffffff,0x0,0,0,0
 option_group1	dd op1
 Option_boxs	dd op1,op2,op3,op4,0
 ;---------------------------------------------------------------------
-;file_name	db '/rd/1/hdd_',0
+;file_name	db '/sys/hdd_',0
 ;times 128 db (0)
 ;---------------------------------------------------------------------
 struct f70

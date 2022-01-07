@@ -435,7 +435,7 @@ end_bmp:
 
 ; LOADBMP - Load bmp image from file
 ; (SYNTAX)  LOADBMP 'file_path',temp_area(rb 0x10000),load_area,dd soi
-; (SAMPLE)  LOADBMP '/rd/1/menuet.bmp',temp_area,I_END,tsoi
+; (SAMPLE)  LOADBMP '/sys/menuet.bmp',temp_area,I_END,tsoi
 ; ( NOTE )  Macros create on Base of
 ;           Picture browser by lisovin@26.ru & Ivan Poddubny
 ;           SOI - Start of image

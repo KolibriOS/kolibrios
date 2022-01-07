@@ -19,7 +19,7 @@ int executable_run(char cmd[], char args[]) {
         
         if ( !file_check(exec) ) // check file existense
         {
-            strcpy(exec, "/rd/1/"); // check file on virtual disk
+            strcpy(exec, "/sys/"); // check file on virtual disk
             strcat(exec, cmd);
             if ( !file_check(exec) ) // check file existense
             {

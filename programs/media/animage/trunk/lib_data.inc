@@ -73,7 +73,7 @@ ColorDialog_data:
 cd_communication_area_name:
 	db 'FFFFFFFF_color_dialog',0
 colordialog_path:
-	db '/rd/1/colrdial',0 
+	db '/sys/colrdial',0 
 
 ;start_temp_file_name:	db 'pattern.mgb',0
 

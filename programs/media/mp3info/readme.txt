@@ -82,7 +82,7 @@
 ;For testing change name if the end of "supermp3.asm" - section
  fileinfo:
   dd 0, 0, 1, mp3_file, 0x1000
-  db "/RD/1/TEST.MP3",0 
+  db "/SYS/TEST.MP3",0 
 
 Package content:
 readme.txt - this file

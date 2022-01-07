@@ -5,11 +5,11 @@
 	OVER finfo @ 8 + ! >asciiz ;
 : exec
 	16 finfo @ ! finfo @ 58 sys2 ." started, code=" . CR 5 sys2 DROP ;
-S" /RD/1/GRSCREEN" >path 99 exec
-S" /RD/1/@RB" >path 30 exec
-S" /RD/1/@SS" >path 30 exec
-S" /RD/1/@TASKBAR" >path 30 exec
-S" /RD/1/SETUP" >path S" BOOT" >param 30 exec
-S" /RD/1/ICON2" >path S" BOOT" >param 10 exec
-S" /RD/1/board" >path 25 exec
+S" /SYS/GRSCREEN" >path 99 exec
+S" /SYS/@RB" >path 30 exec
+S" /SYS/@SS" >path 30 exec
+S" /SYS/@TASKBAR" >path 30 exec
+S" /SYS/SETUP" >path S" BOOT" >param 30 exec
+S" /SYS/ICON2" >path S" BOOT" >param 10 exec
+S" /SYS/board" >path 25 exec
 BYE

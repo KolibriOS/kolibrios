@@ -557,11 +557,11 @@ ch1_dbg CHECK_BOX2 (5 shl 16)+15, ((LINE_H*3+3) shl 16)+15, 6, 0xffffff, 0x80ff,
 align 4
 OpenDialog_data OPEN_DLG 0,PROCESS_INFO,communication_area_name,0,path,default_dir,library_path,do_redraw,0,path,filename_area,Filter,420,10,320,10
 
-default_dir	db '/rd/1',0
+default_dir	db '/sys',0
 
 communication_area_name db 'FFFFFFFF_open_dialog',0
 open_dialog_name	db 'opendial',0
-communication_area_default_path db '/rd/1/File managers/',0
+communication_area_default_path db '/sys/File managers/',0
 
 Filter:
 	dd Filter.end - Filter
@@ -576,7 +576,7 @@ mouse_dd dd 0 ;needed for Shift in editbox
 ;---------------------------------------------------------------------
 infile	path 'example.asm',0
 outfile path 'example',0
-path	path '/rd/1//',0
+path	path '/sys/',0
 path_end:
 crlf	db $D,$A,0
 title	db appname,VERSION_STRING,0
@@ -612,7 +612,7 @@ import_loader.state dd 0
 file_io_notify		FILEIO SSF_START_APP
 file_io_notify.path	db 0
 file_io_notify.lppath	dd notify_path
-notify_path		db '/rd/1/@notify',0
+notify_path		db '/sys/@notify',0
 
 file_io_start		FILEIO SSF_START_APP
 file_io_start.path	path

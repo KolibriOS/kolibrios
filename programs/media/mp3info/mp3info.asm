@@ -642,7 +642,7 @@ fileinfo2:
   .size  dd 1*BLOCK_SIZE ;сколько байт читать
   .buf   dd mp3_file     ;указатель на буфер, куда будут записаны данные
   .path:
-     db "TEST.MP3",0   ;"/RD/1/TEST.MP3",0
+     db "TEST.MP3",0   ;"/SYS/TEST.MP3",0
      rb 256-($-.path)
 
 

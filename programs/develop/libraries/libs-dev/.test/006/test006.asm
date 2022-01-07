@@ -135,7 +135,7 @@ draw_window:
 
 align 4
 title db 'Press button [Up] and see '
-openfile_path db '/rd/1/t1.png',0
+openfile_path db '/sys/t1.png',0
 
 struct FileInfoBlock
 	Function dd ?

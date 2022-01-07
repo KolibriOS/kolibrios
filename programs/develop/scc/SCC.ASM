@@ -356,8 +356,8 @@ draw_window:
 ;B+ Data area
 
 ;B+ Interface
-inp_path: times 100 db '/RD/1/',0
-p_len dd 6
+inp_path: times 100 db '/SYS/',0
+p_len dd 5
 inp_file: times 100 db 'EXAMPLE',0
 f_len dd 7
 

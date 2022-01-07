@@ -850,7 +850,7 @@ paste_from_clip:
 ; OS allows only 256 symbols in command line
 	cmp	ebx, 250
 	jae	still
-; we use Pascal-style strings for /RD/1/COPYR
+; we use Pascal-style strings for /SYS/COPYR
 ; source file
 	mov	edi, copyr_param
 	mov	al, bl
@@ -2556,7 +2556,7 @@ b_color   dd   0x6677cc
 ;   dd 0x1
 ;   dd path
 ;   dd tempzone
-;   db '/RD/1/MRU.LST',0
+;   db '/SYS/MRU.LST',0
 ; //// Willow
 
 ;Name of programs

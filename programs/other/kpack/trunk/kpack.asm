@@ -61,7 +61,7 @@ START:
 	jmp exit
 
 @@:
-; set default path = /RD/1/
+; set default path = /SYS/
 	mov	esi,defpath
 	mov	edi,path
 	mov	[edi-4],dword 6

@@ -92,7 +92,7 @@ int __stdcall start(int state)
 
      srv_hw2d = get_service("HDRAW");
        if(srv_hw2d == 0)
-         srv_hw2d = load_service("/rd/1/drivers/ati2d.drv");
+         srv_hw2d = load_service("/sys/drivers/ati2d.drv");
 
      return TRUE;
 };

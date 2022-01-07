@@ -1,5 +1,5 @@
 DECIMAL 
- S" /rd/1/menuet.f" INCLUDED
+ S" /sys/menuet.f" INCLUDED
 
 : not_emit
 	emit_proc DUP @ NOT SWAP ! ;

@@ -272,7 +272,7 @@ draw_window:
 
 	ret
 
-_f_path db '/rd/1/lib',0
+_f_path db '/sys/lib',0
 _f_mask db '*ini*',0
 
 ;---------------------------------------------------------------------
@@ -281,7 +281,7 @@ _f_mask db '*ini*',0
 
 s_header db 'EXAMPLE APPLICATION',0
 
-s_ini db '/rd/1/test001.ini',0
+s_ini db '/sys/test001.ini',0
 s_sec db 'Panels',0
 s_key db 'param1',0
 

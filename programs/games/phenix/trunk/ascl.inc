@@ -221,7 +221,7 @@ macro window_end_draw
 
 ; fs_read_file - read file from file system and save it to array
 ; example:
-; fs_read_file '/rd/1/clock.bmp',load_area,temp_area
+; fs_read_file '/sys/clock.bmp',load_area,temp_area
 
 macro fs_read_file file_name,file_load_area,file_temp_area
 {

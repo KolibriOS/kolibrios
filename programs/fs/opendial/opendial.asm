@@ -2851,7 +2851,7 @@ filter_flag	db 1
 focus_pointer	db 0
 ;---------------------------------------------------------------------
 start_pach:
-	db '/rd/1',0
+	db '/sys',0
 
 root_pach:
 	db '/',0

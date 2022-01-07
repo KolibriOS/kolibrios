@@ -1,5 +1,5 @@
-\ S" /rd/1/1st.4th" INCLUDED
- S" /rd/1/locals.f" INCLUDED
+\ S" /sys/1st.4th" INCLUDED
+ S" /sys/locals.f" INCLUDED
 
 \ : sys_wnd ( border, header, workarea, y, x -- )
 \   1 12 sys2 DROP 0 sys6 2 12 sys2 2DROP ;

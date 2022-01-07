@@ -1,5 +1,5 @@
 DECIMAL
- S" /rd/1/menuet.f" INCLUDED
+ S" /sys/menuet.f" INCLUDED
 
 : not_emit
 	emit_proc DUP @ NOT SWAP ! ;
@@ -58,7 +58,7 @@ CREATE gif 600 ALLOT
 
 
 : new_me ( new main loop)
-  gif DUP $" /rd/1/Menu.gif" COUNT READ 2DROP
+  gif DUP $" /sys/Menu.gif" COUNT READ 2DROP
   gif raw READ_GIF .
   ;
 

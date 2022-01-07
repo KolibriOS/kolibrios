@@ -281,7 +281,7 @@ createFile:
   .path_adr dd fileName    ;путь
 
 ;строка параметров по умолчанию и её размер
-defaultDataForConfig db 121,13,10,'/rd/1/HACONFIG',13,10,'/rd/1/HACONFIG',13,10,'/rd/1/HACONFIG',13,10,'/rd/1/HACONFIG',13,10,'Space',13,10,'57',13,10,'10',13,10,'s',13,10
+defaultDataForConfig db 121,13,10,'/sys/HACONFIG',13,10,'/sys/HACONFIG',13,10,'/sys/HACONFIG',13,10,'/sys/HACONFIG',13,10,'Space',13,10,'57',13,10,'10',13,10,'s',13,10
 defaultDataSize = 85 ;48+19+4
 
 
@@ -516,7 +516,7 @@ startAppData:
     .flags       dd   0
     .param       dd   0
     .rezerv      dd   0, 0
-    .full_name   db   '/rd/1/'
+    .full_name   db   '/sys/'
     .file_name   db   '@HOTANGLES', 0
 
 UpdateEditsSizes:
@@ -1685,10 +1685,10 @@ OpenDialog_data:
 .y_size                 dw 320 ;+52 ; Window y size
 .y_start                dw 10  ;+54 ; Window Y position
  
-default_dir db '/rd/1',0 ;директория по умолчанию
+default_dir db '/sys',0 ;директория по умолчанию
 communication_area_name: db 'FFFFFFFF_open_dialog',0
 open_dialog_name:  db 'opendial',0
-communication_area_default_path: db '/rd/1/File managers/',0
+communication_area_default_path: db '/sys/File managers/',0
  
 Filter:
 dd Filter.end - Filter.1
