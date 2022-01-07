@@ -550,7 +550,7 @@ include 'traslations.inc'
 
 edit1 EDIT_BOX 153, 72, 3,	    0xffffff, 0xA4C4E4, 0x80ff, 0, 0x10000000,(outfile-infile-1), infile, mouse_dd, 0, 11,11
 edit2 EDIT_BOX 153, 72, LINE_H+3,   0xffffff, 0xA4C4E4, 0x80ff, 0, 0x10000000,(path-outfile-1), outfile, mouse_dd, 0, 7,7
-edit3 EDIT_BOX 153, 72, LINE_H*2+3, 0xffffff, 0xA4C4E4, 0x80ff, 0, 0x10000000,(path_end-path-1), path, mouse_dd, 0, 6,6
+edit3 EDIT_BOX 153, 72, LINE_H*2+3, 0xffffff, 0xA4C4E4, 0x80ff, 0, 0x10000000,(path_end-path-1), path, mouse_dd, 0, 5,5
 editboxes_end:
 ch1_dbg CHECK_BOX2 (5 shl 16)+15, ((LINE_H*3+3) shl 16)+15, 6, 0xffffff, 0x80ff, 0x10000000, s_dbgdescr,CB_FLAG_TOP
 ;---------------------------------------------------------------------
@@ -574,9 +574,9 @@ Filter:
 ;---------------------------------------------------------------------
 mouse_dd dd 0 ;needed for Shift in editbox
 ;---------------------------------------------------------------------
-infile	path 'example.asm',0
-outfile path 'example',0
-path	path '/sys/',0
+infile	path 'EXAMPLE.ASM',0
+outfile path 'EXAMPLE',0
+path	path '/sys//',0
 path_end:
 crlf	db $D,$A,0
 title	db appname,VERSION_STRING,0
