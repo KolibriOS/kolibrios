@@ -2629,12 +2629,13 @@ sys_cpuusage:
         mov     [ebx], eax
 ; +10: 11 bytes: name of the process
         push    ecx
-        lea     eax, [ecx*8+SLOT_BASE+APPDATA.app_name]
+        lea     eax, [ecx+SLOT_BASE+APPDATA.app_name]
         add     ebx, 10
         mov     ecx, 11
         call    memmove
         pop     ecx
 
+        shr     ecx, 3
 ; +22: address of the process in memory
 ; +26: size of used memory - 1
         push    edi

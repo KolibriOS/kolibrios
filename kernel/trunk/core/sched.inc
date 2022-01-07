@@ -76,15 +76,16 @@ update_counters:
 align 4
 updatecputimes:
         mov     ecx, [thread_count]
-        ;mov     edi, TASK_DATA
-        mov     edi, SLOT_BASE
+        mov     edi, TASK_DATA
+        ;mov     dword[edi+TASKDATA.cpu_usage], 0
+        mov     esi, SLOT_BASE
   .newupdate:
         xor     eax, eax
         xchg    eax, [edi+TASKDATA.counter_sum]
         ;mov     [edi+TASKDATA.cpu_usage], eax
-        ;add     edi, 0x20
-        mov     [edi+APPDATA.cpu_usage], eax
-        add     edi, 0x100 ;sizeof.APPDATA
+        add     edi, 0x20
+        mov     [esi+APPDATA.cpu_usage], eax
+        add     esi, 0x100 ;sizeof.APPDATA
         loop    .newupdate
         ret
 
