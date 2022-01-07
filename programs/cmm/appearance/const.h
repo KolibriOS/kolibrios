@@ -63,7 +63,7 @@ enum {
 
 _ini ini = { "/sys/settings/system.ini" };
 
-char default_dir[] = "/rd/1";
+char default_dir[] = "/sys";
 od_filter filter2 = { 8, "TXT\0\0" };
 
 _tabs tabs = { -sizeof(t_skins)-sizeof(t_wallpapers)-sizeof(t_screensaver)

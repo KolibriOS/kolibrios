@@ -26,7 +26,7 @@
 //===================================================//
 
 //simple open dialog data
-char default_dir[] = "/rd/1";
+char default_dir[] = "/sys";
 od_filter filter2 = { 15, "MP3\0WAV\0XM\0\0" };
 
 #define ABOUT_MESSAGE "                   v2.94 Final

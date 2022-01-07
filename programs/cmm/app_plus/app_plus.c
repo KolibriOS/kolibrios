@@ -19,7 +19,7 @@
 #define SCRX WINW-180
 #define SCRY 20
 
-char default_dir[] = "/rd/1";
+char default_dir[] = "/sys";
 od_filter filter2;
 
 #define BTN_MANUAL_SEARCH 10

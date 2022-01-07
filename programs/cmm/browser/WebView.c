@@ -76,7 +76,7 @@ dword http_get_type=PAGE;
 dword render_start_time;
 int menu_id=NULL;
 
-char default_dir[] = "/rd/1";
+char default_dir[] = "/sys";
 od_filter filter2 = { 22, "TXT\0HTM\0HTML\0DOCX\0\0" };
 
 char editURL[URL_SIZE+1];
@@ -461,10 +461,10 @@ void EventAllTabsClick(dword _n)
 void EventEditSource()
 {
 	if (check_is_the_adress_local(history.current())) {
-		RunProgram("/rd/1/develop/cedit", history.current());
+		RunProgram("/sys/develop/cedit", history.current());
 	} else {
 		CreateFile(WB1.bufsize, WB1.bufpointer, "/tmp0/1/WebView_tmp.htm");
-		if (!EAX) RunProgram("/rd/1/develop/cedit", "/tmp0/1/WebView_tmp.htm");
+		if (!EAX) RunProgram("/sys/develop/cedit", "/tmp0/1/WebView_tmp.htm");
 	}
 }
 

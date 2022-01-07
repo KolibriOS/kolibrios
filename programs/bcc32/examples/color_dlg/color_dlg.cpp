@@ -47,7 +47,7 @@ bool KolibriOnStart(TStartData &kos_start, TThreadData /*th*/)
 		cold.procinfo = procinfo;
 		cold.com_area_name = "FFFFFFFF_color_dialog";
 		cold.com_area = 0;
-		cold.start_path = "/rd/1/colrdial";
+		cold.start_path = "/sys/colrdial";
 		cold.draw_window = DrawWindow;
 		cold.status = 0;
 		cold.x_size = 420;

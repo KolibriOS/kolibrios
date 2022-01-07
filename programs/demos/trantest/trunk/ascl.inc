@@ -30,7 +30,7 @@ lang equ ru ; ru en fr ge fi
 
 ; LOADFILE
 ; (SYNTAX)  LOADFILE 'full_path_to_file',file_load_area,file_temp_area
-; (SAMPLE)  LOADFILE '/rd/1/clock.bmp',load_area,temp_area
+; (SAMPLE)  LOADFILE '/sys/clock.bmp',load_area,temp_area
 
 macro loadfile file_name,file_load_area,file_temp_area
 {

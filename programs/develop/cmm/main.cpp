@@ -1140,8 +1140,8 @@ char m1[256];
 		if (inih = fopen(m1,"rb"))
 		{_loadIni(inih);return;}
 	}
-								//for KolibriOS: load /rd/0/settings/c--.ini 
-	inih = fopen("/rd/1/settings/c--.ini","rb");
+								//for KolibriOS: load /sys/settings/c--.ini
+	inih = fopen("/sys/settings/c--.ini","rb");
 	for(;;){
 		if(fgets(m1,255,inih)==NULL)break;
 		if(SelectComand(m1,0)==c_end)BadCommandLine(m1);

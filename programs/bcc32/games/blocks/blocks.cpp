@@ -444,8 +444,8 @@ bool KolibriOnStart(TStartData &kos_start, TThreadData /*th*/)
 		ofd.com_area_name = "FFFFFFFF_open_dialog";
 		ofd.com_area = 0;
 		ofd.opendir_path = plugin_path;
-		ofd.dir_default_path = "/rd/1";
-		ofd.start_path = "/rd/1/File managers/opendial";
+		ofd.dir_default_path = "/sys";
+		ofd.start_path = "/sys/File managers/opendial";
 		ofd.draw_window = DrawWindow;
 		ofd.status = 0;
 		ofd.openfile_path = openfile_path;

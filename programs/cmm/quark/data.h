@@ -84,7 +84,7 @@ struct THEME
 	dword bg, text, cursor, found;
 } theme;
 
-char default_dir[] = "/rd/1";
+char default_dir[] = "/sys";
 od_filter filter2 = { 0, "" };
 
 CANVAS canvas;

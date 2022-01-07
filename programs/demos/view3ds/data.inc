@@ -384,7 +384,7 @@ base_vector:
 ;         fsize  dd      0 ;180000 ; sizeof(workarea)
 ;         fptr   dd      0 ;workarea
 ;        file_name:
-;                db      '/rd/1/3d/house.3ds',0
+;                db      '/sys/3d/house.3ds',0
 ;         ;      db      '/tmp0/1/ant.3ds',0
 ;
 ;      rb 256
@@ -512,7 +512,7 @@ end if
          fsize  dd      0 ;180000 ; sizeof(workarea)
          fptr   dd      0 ;workarea
         file_name:
-               db      '/rd/1/3d/house.3ds',0
+               db      '/sys/3d/house.3ds',0
              ;  db      '/tmp0/1/sc.3ds',0
 
       rb 256

@@ -18,7 +18,7 @@
 //proc_info Form;
 #define WIN_W 450
 
-char default_dir[] = "/rd/1";
+char default_dir[] = "/sys";
 od_filter filter2 = {0,0};
 
 char src_path[4096];

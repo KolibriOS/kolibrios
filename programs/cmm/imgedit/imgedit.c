@@ -35,7 +35,7 @@ proc_info Form;
 dword semi_white;
 bool bg_dark=false;
 
-char default_dir[4096] = "/rd/1";
+char default_dir[4096] = "/sys";
 od_filter filter2 = { 69, "BMP\0GIF\0ICO\0CUR\0JPEG\0JPG\0PNG\0PNM\0TGA\0TIFF\0TIF\0WBMP\0XBM\0XCF\Z80\0\0" };
 
 libimg_image icons18;
