@@ -2235,7 +2235,8 @@ sysfn_zmodif:
 
 ;------------------------------------------------------------------------------
 sysfn_getidletime:              ; 18.4 = GET IDLETIME
-        mov     eax, [TASK_TABLE+32+TASKDATA.cpu_usage]
+        ;mov     eax, [TASK_TABLE+32+TASKDATA.cpu_usage]
+        mov     eax, [SLOT_BASE+APPDATA.cpu_usage]
         mov     [esp+32], eax
         ret
 ;------------------------------------------------------------------------------
@@ -2620,10 +2621,11 @@ sys_cpuusage:
         mov     ax, [WIN_POS + ecx * 2]
         mov     [ebx+6], ax
 
-        shl     ecx, 5
+        shl     ecx, 8   ;5=32 8=256
 
 ; +0: dword: memory usage
-        mov     eax, [ecx+TASK_TABLE+TASKDATA.cpu_usage]
+        ;mov     eax, [ecx+TASK_TABLE+TASKDATA.cpu_usage]
+        mov     eax, [ecx+SLOT_BASE+APPDATA.cpu_usage]
         mov     [ebx], eax
 ; +10: 11 bytes: name of the process
         push    ecx
