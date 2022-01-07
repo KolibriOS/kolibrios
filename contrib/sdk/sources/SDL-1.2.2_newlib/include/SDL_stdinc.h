@@ -27,14 +27,10 @@
 #ifndef _SDL_stdinc_h
 #define _SDL_stdinc_h
 
-
-#include <sys/types.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <stddef.h>
 #include <stdarg.h>
-#include <strings.h>
-#include <inttypes.h>
 #include <stdint.h>
 #include <ctype.h>
 
