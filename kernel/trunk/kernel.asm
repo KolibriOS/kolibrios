@@ -1547,15 +1547,17 @@ draw_num_text:
         add     edx, esp
         mov     ebx, [esp+64+32-8+4]
 ; add window start x & y
-        mov     ecx, [TASK_BASE]
+        ;mov     ecx, [TASK_BASE]
 
         mov     edi, [current_slot_idx]
+        mov     ecx, edi
         shl     edi, 8
+        shl     ecx, 5
 
-        mov     eax, [ecx-twdw+WDATA.box.left]
+        mov     eax, [ecx+window_data+WDATA.box.left]
         add     eax, [edi+SLOT_BASE+APPDATA.wnd_clientbox.left]
         shl     eax, 16
-        add     eax, [ecx-twdw+WDATA.box.top]
+        add     eax, [ecx+window_data+WDATA.box.top]
         add     eax, [edi+SLOT_BASE+APPDATA.wnd_clientbox.top]
         add     ebx, eax
         mov     ecx, [esp+64+32-12+4]
@@ -2625,7 +2627,7 @@ sys_cpuusage:
 
 ; +0: dword: memory usage
         ;mov     eax, [ecx+TASK_TABLE+TASKDATA.cpu_usage]
-        mov     eax, [ecx+SLOT_BASE+APPDATA.cpu_usage]
+        mov     eax, [ecx-sizeof.APPDATA+SLOT_BASE+APPDATA.cpu_usage]
         mov     [ebx], eax
 ; +10: 11 bytes: name of the process
         push    ecx
