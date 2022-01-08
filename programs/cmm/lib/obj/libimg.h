@@ -184,11 +184,6 @@ struct libimg_image
     }
 }
 
-:dword create_image(dword type, dword width, dword height) {
-    img_create stdcall(width, height, type);
-    return EAX;
-}
-
 // size - output parameter, error code / the size of encoded data
 :dword encode_image(dword image_ptr, dword options, dword specific_options, dword* size) {
     img_encode stdcall(image_ptr, options, specific_options);
@@ -203,7 +198,8 @@ struct libimg_image
     dword encoded_size=0;
     dword image_ptr = 0;
 
-    image_ptr = create_image(IMAGE_BPP24, _w, _h);
+    img_create stdcall(_w, _h, IMAGE_BPP24);
+    image_ptr = EAX;
 
     if (!image_ptr) {
         return "Error creating image!";

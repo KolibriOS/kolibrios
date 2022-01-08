@@ -54,6 +54,7 @@
 13 Debug Board          |develop/board
 09 KPack Archiver       |kpack
 20 Diff Tool            |develop/diff
+52 Shared resources     |@reshare
 34 Base Converter       |develop/h2d2b
 59 Character table      |develop/ASCIIVju
 59 Key ASCII-codes      |develop/keyascii

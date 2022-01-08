@@ -1,3 +1,4 @@
+//<= imgsrc, imgsize, color_old_1, color_new_1, color_old_2, color_new_2
 inline fastcall replace_2cols(EDI, EDX, ESI, ECX, EBX, EAX) 
 {
     EDX += EDI; //imgsrc + imgsize;

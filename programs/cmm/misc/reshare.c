@@ -1,10 +1,209 @@
 #define MEMSIZE 1024*20
 #define ENTRY_POINT #main
 
+//===================================================//
+//                                                   //
+//                       LIB                         //
+//                                                   //
+//===================================================//
+
 #include "../lib/fs.h"
 #include "../lib/mem.h"
 #include "../lib/obj/libimg.h"
 #include "../lib/patterns/rgb.h"
+#include "../lib/patterns/restart_process.h"
+#include "../lib/patterns/toolbar_button.h"
+
+//===================================================//
+//                                                   //
+//                   GLOBAL VARS                     //
+//                                                   //
+//===================================================//
+
+libimg_image icons32;
+libimg_image icons16;
+libimg_image icons16w;
+unsigned int size32;
+unsigned int size16;
+
+//===================================================//
+//                                                   //
+//                       MAIN                        //
+//                                                   //
+//===================================================//
+
+void main()
+{
+	mem_init();
+	load_dll(libimg, #libimg_init, 1);
+
+	icons32.load("/SYS/ICONS32.PNG"); size32 = icons32.h * 32 * 4;
+	icons16.load("/SYS/ICONS16.PNG"); size16 = icons16.h * 18 * 4;
+
+	if (GetProcessesCount("@RESHARE")>1) {
+		start_ui();
+	} else {
+		start_daemon();
+	}
+}
+
+//===================================================//
+//                                                   //
+//                      DAEMON                       //
+//                                                   //
+//===================================================//
+
+void start_daemon()
+{
+	char* shared_i32;
+	char* shared_i16;
+	char* shared_i16w;
+	char* shared_chbox;
+
+	shared_chbox = memopen("CHECKBOX", 507, SHM_CREATE+SHM_WRITE);
+	memmov(shared_chbox, #checkbox_flag, 507);
+
+	shared_i32 = memopen("ICONS32", size32, SHM_CREATE+SHM_WRITE);
+	memmov(shared_i32, icons32.imgsrc, size32);
+	img_destroy stdcall(icons32.image);
+
+	shared_i16 = memopen("ICONS18", size16, SHM_CREATE + SHM_WRITE);
+	memmov(shared_i16, icons16.imgsrc, size16);
+	//img_destroy stdcall(icons16.image);
+
+	shared_i16w = memopen("ICONS18W", size16, SHM_CREATE + SHM_WRITE);
+
+	@SetEventMask(EVM_DESKTOPBG);
+	do {
+		$push sc.work
+		sc.get();
+		$pop eax
+		if (sc.work != EAX) {
+			memmov(shared_i16w, icons16.imgsrc, size16);
+			replace_2cols(shared_i16w, size16, 0xffFFFfff, sc.work, 0xffCACBD6, sc.work_dark);
+		}
+	} while(WaitEvent()==evDesktop);
+}
+
+//===================================================//
+//                                                   //
+//                        UI                         //
+//                                                   //
+//===================================================//
+
+#define WINW 775
+#define WINH 660
+#define PAD  10
+#define BTNW 100
+#define BTNH 24
+#define RESY PAD+30+BTNH+BTNH
+
+enum { ACTIVE_ICONS32=1, ACTIVE_ICONS16=2, ACTIVE_ICONS16W=4, ACTIVE_CHECKBOX=8 };
+int active_tab = ACTIVE_ICONS32;
+
+void start_ui()
+{
+	loop() switch(WaitEvent())
+	{
+		case evKey:
+			@GetKeyScancode();
+			if (AL == SCAN_CODE_ESC) ExitProcess();
+			if (AL == SCAN_CODE_TAB) {
+				active_tab <<= 1;
+				if (active_tab > ACTIVE_CHECKBOX) active_tab = 1;
+				draw_tabs();
+			}
+			break;
+
+		case evButton:
+			GetButtonID();
+			if (1==EAX) {
+				ExitProcess();
+			} else {
+				active_tab = EAX - 10;
+				draw_tabs();
+			}
+			break;
+
+		case evReDraw:
+			sc.get();
+			DefineAndDrawWindow(80, 50, WINW+9, WINH+4+GetSkinHeight(), 0x74, 0, "@RESHARE - A service that provides shared resorces", 0);
+			DrawBar(0, 0, WINW, RESY-PAD-1, sc.work); //top bg
+			DrawBar(0, RESY-PAD-1, WINW, 1, sc.work_graph);
+			WriteText(PAD, PAD, 0x90, sc.work_text, "Each tab name corresponds to memory name that can be accessed by sysfunc 68.22. Now availabe:");
+			draw_tabs();
+	}
+}
+
+void DrawFlatButton(dword _x, _y, _text, _id, _active)
+{
+	if (_active) EDX = sc.button; else EDX = sc.work_light;
+	DrawBar(_x, _y, BTNW, BTNH+1, EDX);
+
+	if (_active) EDX = sc.button_text; else EDX = sc.work_text;
+	WriteText(-strlen(_text)*8+BTNW/2+_x, _y+6, 0x90, EDX, _text);
+
+	PutPixel(_x,_y,sc.work);
+	PutPixel(_x,_y+BTNH,EDX);
+	PutPixel(_x+BTNW-1,_y,EDX);
+	PutPixel(_x+BTNW-1,_y+BTNH,EDX);
+
+	DefineHiddenButton(_x, _y, BTNW-1, BTNH, _id);
+}
+
+void draw_tabs()
+{
+	#define TABX WINW-BTNW-PAD-BTNW-PAD-BTNW-PAD-BTNW/2
+	DrawFlatButton(           TABX, PAD+30, "ICONS32",  10+ACTIVE_ICONS32, active_tab & ACTIVE_ICONS32);
+	DrawFlatButton(PAD+BTNW*1+TABX, PAD+30, "ICONS16",  10+ACTIVE_ICONS16, active_tab & ACTIVE_ICONS16);
+	DrawFlatButton(PAD+BTNW*2+TABX, PAD+30, "ICONS16W", 10+ACTIVE_ICONS16W, active_tab & ACTIVE_ICONS16W);
+	DrawFlatButton(PAD+BTNW*3+TABX, PAD+30, "CHECKBOX", 10+ACTIVE_CHECKBOX, active_tab & ACTIVE_CHECKBOX);
+	draw_tab_icons32();
+}
+
+void draw_tab_icons32()
+{
+	int i;
+	int x=PAD, y;
+	int iconimg;
+	int iconh;
+	int iconw;
+
+	DrawBar(0, RESY-PAD, WINW, WINH-RESY+PAD, sc.work);
+	if (active_tab & ACTIVE_ICONS32) {
+		iconimg = icons32.imgsrc;
+		iconw = 32;
+		iconh = icons32.h;
+	} else if (active_tab & ACTIVE_ICONS16) {
+		iconimg = icons16.imgsrc;
+		iconw = 18;
+		iconh = icons16.h;
+	} else if (active_tab & ACTIVE_ICONS16W) {
+		iconimg = memopen("ICONS18W", NULL, SHM_READ);
+		iconw = 18;
+		iconh = icons16.h;
+	} else {
+		_PutImage(WINW-13/2, WINH-RESY-13/2+RESY, 13, 13, #checkbox_flag);
+		return;
+	}
+
+	for (i = 0; i < iconh/iconw; i++)
+	{
+		PutPaletteImage(iconw*iconw*4*i + iconimg, iconw, iconw, 50-iconw/2+x, y+RESY, 32, 0);
+		WriteText(-strlen(itoa(i))*8+50/2+x, y+RESY+iconw+5, 0x90, sc.work_graph, itoa(i));
+		x += 50;
+		if (x + 50 > WINW) {
+			x = PAD;
+			y += iconw + 30;
+		}
+	}
+}
+
+//===================================================//
+//                                                   //
+//                       DATA                        //
+//                                                   //
+//===================================================//
 
 :unsigned char checkbox_flag[507] = {
 	0xFC, 0xD4, 0x04, 0xFC, 0xD4, 0x04, 0xFC, 0xD4, 0x04, 0xFC, 0xD4, 0x04, 0xFC, 0xD4, 0x04, 0xFC, 
@@ -40,51 +239,3 @@
 	0xF9, 0x98, 0x04, 0xF9, 0x98, 0x04, 0xF9, 0x98, 0x04, 0xF9, 0x98, 0x04, 0xF9, 0x98, 0x04, 0xF9, 
 	0x98, 0x04, 0xF9, 0x98, 0x04, 0xF9, 0x98, 0x04, 0xF9, 0x98, 0x04
 };
-
-void main()
-{
-	libimg_image icons32;
-	libimg_image icons16;
-	libimg_image icons16w;
-	unsigned int size32;
-	unsigned int size16;
-	char* shared_i32;
-	char* shared_i16;
-	char* shared_i16w;
-	char* shared_chbox;
-
-	mem_init();
-	load_dll(libimg, #libimg_init, 1);
-	@SetEventMask(EVM_DESKTOPBG);
-
-	shared_chbox = memopen("CHECKBOX", sizeof(checkbox_flag), SHM_CREATE+SHM_WRITE);
-	memmov(shared_chbox, #checkbox_flag, sizeof(checkbox_flag));
-
-	icons32.load("/sys/icons32.png"); size32 = icons32.h * 32 * 4;
-	icons16.load("/sys/icons16.png"); size16 = icons16.h * 18 * 4;
-
-	shared_i32 = memopen("ICONS32", size32, SHM_CREATE+SHM_WRITE);
-	memmov(shared_i32, icons32.imgsrc, size32);
-	img_destroy stdcall(icons32.image);
-
-	shared_i16 = memopen("ICONS18", size16, SHM_CREATE + SHM_WRITE);
-	memmov(shared_i16, icons16.imgsrc, size16);
-	img_destroy stdcall(icons16.image);
-
-	shared_i16w = memopen("ICONS18W", size16, SHM_CREATE + SHM_WRITE);
-
-UPDATE_ICONS18WORK:
-	$push sc.work
-	sc.get();
-	$pop eax
-	if (sc.work != EAX) {
-		icons16w.load("/sys/icons16.png");
-		icons16w.replace_2colors(0xffFFFfff, sc.work, 0xffCACBD6, MixColors(sc.work, 0, 200));
-		memmov(shared_i16w, icons16w.imgsrc, size16);
-		img_destroy stdcall(icons16w.image);
-		icons16w.image = NULL;
-	}
-
-	loop() IF(WaitEvent()==evDesktop) GOTO UPDATE_ICONS18WORK;
-}
-
