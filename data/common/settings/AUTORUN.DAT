@@ -19,5 +19,5 @@
 /SYS/@SS                ASSM 0	# Screensaver
 /SYS/@VOLUME            ""   0	# Start volume daemon
 /SYS/SEARCHAP           ""   0	# Search and mount additional system directory
-/SYS/@HOTANGLES         ""   0	# Start Hot Angles
+/SYS/@HA                ""   0	# Start Hot Angles
 ### Hello, ASM World! ###

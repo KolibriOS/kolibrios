@@ -269,7 +269,7 @@ butend:
 
 
 ;имя конфигурационного файла
-fileName: db 'SETTINGS/HOTANGLES.CFG', 0
+fileName: db 'SETTINGS/HA.CFG', 0
 
 ;структура для создания/перезаписи файла
 createFile:
@@ -440,10 +440,10 @@ applyButton:
         ;иначе здесь нужно вывести окно с ошибкой !!!
 .end:
         mcall 68, 13, dword[createFile.data_adr]  ;освобождаем память под буфер
-        call finishHotAnglesApp ;завершаем работу всех копий сервиса @HOTANGLES
+        call finishHotAnglesApp ;завершаем работу всех копий сервиса @HA
         call loadConfig         ;перезагружаем файл конфига
         call draw_window        ;перерисовываем окно
-        call startHotAnglesApp  ;перезапускаем @HOTANGLES
+        call startHotAnglesApp  ;перезапускаем @HA
         pop ecx ebx eax
     ret
 
@@ -517,7 +517,7 @@ startAppData:
     .param       dd   0
     .rezerv      dd   0, 0
     .full_name   db   '/sys/'
-    .file_name   db   '@HOTANGLES', 0
+    .file_name   db   '@HA', 0
 
 UpdateEditsSizes:
    push eax

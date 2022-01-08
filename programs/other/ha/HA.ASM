@@ -309,7 +309,7 @@ struct70: ;Формат информационной структуры
   .path_adr   dd 0 ; указатель на строку с путём
 
 ;имя конфигурационного файла
-fileName: db 'SETTINGS/HOTANGLES.CFG', 0
+fileName: db 'SETTINGS/HA.CFG', 0
 
 
 ;проходим до конца текущей строки
@@ -624,7 +624,7 @@ strToInteger: ;вход: esi - указатель на строку с десятичной записью числа, выход
 
 
 ;Вынести код ниже в отдельный общий модуль
-selfName db '@HOTANGLES',0
+selfName db '@HA',0
 selfNameSize = 10 ;до 11 byte
 ;
 compareBytes:

@@ -1,6 +1,6 @@
 Имя программы;Описание;Lang;WebSVN;Forum;wiki
 @docky;Док-бар;asm;http://websvn.kolibrios.org/listing.php?repname=Kolibri+OS&path=%2Fprograms%2Fsystem%2Fdocky%2F&#a92e88fd4523f8d4e6b72c977e438ea8a;http://board.kolibrios.org/viewtopic.php?f=48&t=2455;
-@hotangles;"служба опции Hot Angles (запуск приложения путём наведения курсора в угол экрана; доп. возможности рабочего стола)";asm;http://websvn.kolibrios.org/listing.php?repname=Kolibri+OS&path=%2Fprograms%2Fother%2Fha%2F&#af32bbff78a611a6e4824edcba7361181;http://board.kolibrios.org/viewtopic.php?f=42&t=3762;
+@ha;"служба опции Hot Angles (запуск приложения путём наведения курсора в угол экрана; доп. возможности рабочего стола)";asm;http://websvn.kolibrios.org/listing.php?repname=Kolibri+OS&path=%2Fprograms%2Fother%2Fha%2F&#af32bbff78a611a6e4824edcba7361181;http://board.kolibrios.org/viewtopic.php?f=42&t=3762;
 @icon;рабочий стол;asm;;http://board.kolibrios.org/viewtopic.php?f=48&t=1515;
 @menu;Меню пуск.;asm;http://websvn.kolibrios.org/listing.php?repname=Kolibri+OS&path=%2Fprograms%2Fsystem%2Fmenu%2Ftrunk%2F&#a07a01d3bfab170d2567a0c43beb53556;http://board.kolibrios.org/viewtopic.php?f=48&t=1906;
 @notify;утилита вывода уведомлений;asm;;http://board.kolibrios.org/viewtopic.php?f=42&t=2650;
