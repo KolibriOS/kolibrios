@@ -68,11 +68,12 @@ endg
 
 align 4
 update_counters:
-        mov     edi, [TASK_BASE]
+        ;mov     edi, [TASK_BASE]
         mov     esi, [current_slot]
         rdtsc
-        sub     eax, [edi+TASKDATA.counter_add] ; time stamp counter add
+        ;sub     eax, [edi+TASKDATA.counter_add] ; time stamp counter add
         ;add     [edi+TASKDATA.counter_sum], eax ; counter sum
+        sub     eax, [esi-sizeof.APPDATA+APPDATA.counter_add] ; time stamp counter add
         add     [esi-sizeof.APPDATA+APPDATA.counter_sum], eax ; counter sum
         ret
 align 4
@@ -337,7 +338,8 @@ proc find_next_task
         mov     byte [current_slot_idx], bh
         mov     [TASK_BASE], edi
         rdtsc   ;call  _rdtsc
-        mov     [edi+TASKDATA.counter_add], eax; for next using update_counters
+        mov     [ebx-sizeof.APPDATA+APPDATA.counter_add], eax; for next using update_counters
+        ;mov     [edi+TASKDATA.counter_add], eax; for next using update_counters
         cmp     ebx, [current_slot]
         ret
 .task_next:
