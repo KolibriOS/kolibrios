@@ -45,7 +45,7 @@ int id;
 		break;
 	case evReDraw:
 		sc.get();
-		DefineAndDrawWindow(screen.width-fw/2,screen.height-fh/2,fw,fh+skin_height,0x33,0xE0DFE3,"Rainbow (rgb test)",0);
+		DefineAndDrawWindow(screen.w-fw/2,screen.h-fh/2,fw,fh+skin_h,0x33,0xE0DFE3,"Rainbow (rgb test)",0);
 		_PutImage(0,0,256,256,#image);
 		DrawCaptButton(280,20, 110,30,DRAW1_BTN,sc.button,sc.button_text,"Draw 1");
 		DrawCaptButton(280,60, 110,30,DRAW2_BTN,sc.button,sc.button_text,"Draw 2");

@@ -547,7 +547,7 @@ void draw_window()
 	GetProcessInfo(#Form, SelfInfo);
 	SetAppColors();
 	if (efm) {
-		if (screen.width > 693) && (Form.width < 693) { MoveSize(OLD,OLD,693,OLD); return; }
+		if (screen.w > 693) && (Form.width < 693) { MoveSize(OLD,OLD,693,OLD); return; }
 		DrawBar(0, 4, Form.cwidth, SELECTY-5, sc.work);
 		DrawBar(0, SELECTY+KFM2_DEVH+1, Form.cwidth, 3, sc.work);
 		DrawBar(0, SELECTY-1, 1, KFM2_DEVH+2, sc.work);

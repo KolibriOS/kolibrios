@@ -18,7 +18,7 @@
 	}
 	ESDWORD[shared_mem     ] = _selected;
 	ESDWORD[shared_mem +  4] = _x + Form.left + 5;
-	ESDWORD[shared_mem +  8] = _y + Form.top + skin_height;
+	ESDWORD[shared_mem +  8] = _y + Form.top + skin_h;
 	ESDWORD[shared_mem + 12] = _position;
 	menu_process_id = RunProgram("/sys/develop/menu", _text1);
 }

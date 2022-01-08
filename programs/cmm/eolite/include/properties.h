@@ -230,7 +230,7 @@ void DrawPropertiesWindow()
 	if (chrnum(path, '/')>1) || (streq(path, "/kolibrios")) || (streq(path, "/sys")) show_date = true;
 	if (getSelectedCount()) show_date = false;
 
-	DefineAndDrawWindow(Form.left + 150,150,315,show_date*60+300+skin_height,0x34,sc.work,WINDOW_TITLE_PROPERTIES,0);
+	DefineAndDrawWindow(Form.left + 150,150,315,show_date*60+300+skin_h,0x34,sc.work,WINDOW_TITLE_PROPERTIES,0);
 	GetProcessInfo(#pform, SelfInfo);
 
 	DrawStandartCaptButton(pform.cwidth - 96, pform.cheight-34, B_CLOSE, T_CLOSE);

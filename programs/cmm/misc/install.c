@@ -67,8 +67,8 @@ void main()
 void draw_window()
 {
 	sc.get();
-	DefineAndDrawWindow(screen.width-WINW/2,screen.height-WINH/2,
-		WINW+9,WINH+skin_height,0x34,sc.work,"KolibriN10",0);
+	DefineAndDrawWindow(screen.w-WINW/2,screen.h-WINH/2,
+		WINW+9,WINH+skin_h,0x34,sc.work,"KolibriN10",0);
 	DrawLogo();
 	if (install_complete) DrawInstallComplete(); else DrawIntro();
 }

@@ -94,7 +94,7 @@ void DrawWindow()
 	sc.get();
 	pb.frame_color = sc.work_dark;
 	DefineAndDrawWindow(110 + random(300), 100 + random(300), WIN_W+9, 
-		WIN_H + 5 + skin_height, 0x34, sc.work, DL_WINDOW_HEADER, 0);
+		WIN_H + 5 + skin_h, 0x34, sc.work, DL_WINDOW_HEADER, 0);
 
 	#define BUT_Y 58;
 	//autoclose.draw(WIN_W-135, BUT_Y+6);

@@ -160,7 +160,7 @@ void main()
 void draw_window()
 {
 	sc.get();			
-	DefineAndDrawWindow(screen.width-600/2,100,640,600,0x73,sc.work,T_WINDOW_HEADER,0);
+	DefineAndDrawWindow(screen.w-600/2,100,640,600,0x73,sc.work,T_WINDOW_HEADER,0);
 	GetProcessInfo(#Form, SelfInfo);
 	IF (Form.status_window&ROLLED_UP) return;
 	if (Form.width  < 270) { MoveSize(OLD,OLD,270,OLD); return; }

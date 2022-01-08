@@ -400,7 +400,7 @@ void EventShowTinfo()
 
 void ReadIni()
 {
-	Form.left    = ini.GetInt("x", screen.width/2 - 350); 
+	Form.left    = ini.GetInt("x", screen.w/2 - 350); 
 	Form.top     = ini.GetInt("y", 100); 
 	Form.width   = ini.GetInt("w", 700); 
 	Form.height  = ini.GetInt("h", 490); 

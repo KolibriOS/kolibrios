@@ -74,11 +74,11 @@ void main()
 	list.y = 32;
 
 	DrawList();
-	window_height = row+1*list.item_h + list_pos + skin_height + 15;
-	if (window_height>screen.height) {
-		window_width = screen.width;
+	window_height = row+1*list.item_h + list_pos + skin_h + 15;
+	if (window_height>screen.h) {
+		window_width = screen.w;
 		list.item_h -= 5;
-		window_height = row+1*list.item_h + list_pos + skin_height + 15;
+		window_height = row+1*list.item_h + list_pos + skin_h + 15;
 		small_screen = true;
 	}
 
@@ -100,7 +100,7 @@ void main()
 
 		case evReDraw:
 			SetAppColors();
-			DefineAndDrawWindow(screen.width-window_width/2,screen.height-window_height/2,window_width,window_height,0x74,sc.work,"",0);
+			DefineAndDrawWindow(screen.w-window_width/2,screen.h-window_height/2,window_width,window_height,0x74,sc.work,"",0);
 			GetProcessInfo(#Form, SelfInfo);
 			if (Form.status_window&ROLLED_UP) { 
 				DrawTitle(#window_title);

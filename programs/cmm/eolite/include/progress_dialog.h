@@ -82,7 +82,7 @@ void DisplayOperationForm(int operation_flag)
 			break;
 		case evReDraw:
 			DefineAndDrawWindow(Form.left+Form.width-200, Form.top+90, COPYFORM_W+9,
-				skin_height+COPYFORM_H, 0x34, sc.work, title, 0);
+				skin_h+COPYFORM_H, 0x34, sc.work, title, 0);
 			GetProcessInfo(#Dialog_Form, SelfInfo);
 			DrawCaptButton(COPYFORM_W-PR_LEFT-101, PR_TOP+PR_H+6, 100,26, BTN_ABORT, sc.button, sc.button_text, T_COPY_ABORT);
 
@@ -115,8 +115,8 @@ void Operation_Draw_Progress(dword filename) {
 
 	if (old_state != copy_state) {
 		old_state = copy_state;
-		if (copy_state == FILE_EXISTS) MoveSize(OLD,OLD,OLD,skin_height+COPYFORM_H+70);
-		if (copy_state == FILE_DEFAULT) MoveSize(OLD,OLD,OLD,skin_height+COPYFORM_H);
+		if (copy_state == FILE_EXISTS) MoveSize(OLD,OLD,OLD,skin_h+COPYFORM_H+70);
+		if (copy_state == FILE_DEFAULT) MoveSize(OLD,OLD,OLD,skin_h+COPYFORM_H);
 	}
 
 	DisplayOperationForm(REDRAW_FLAG);

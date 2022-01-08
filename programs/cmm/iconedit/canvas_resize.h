@@ -53,7 +53,7 @@ void CanvasReSize_Thread()
 		break;
 
 	case evReDraw:
-		DefineAndDrawWindow(Form.left+canvas.x + 100, Form.top+skin_height+canvas.y+40, 
+		DefineAndDrawWindow(Form.left+canvas.x + 100, Form.top+skin_h+canvas.y+40, 
 			200, 170, 0x34, sc.work, "Canvas", 0);
 		WriteText(20, 20, 0x90, sc.work_text, "Width");
 		WriteText(20, 60, 0x90, sc.work_text, "Height");

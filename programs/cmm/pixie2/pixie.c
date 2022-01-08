@@ -148,7 +148,7 @@ void main()
 			}
 			if(mouse.key&MOUSE_LEFT) && (mouse.x<14) 
 				&& (window_mode == WINDOW_MODE_SMALL) EventDragWindow();
-			if (mouse.down) && (mouse.y>skin_height) && (mouse.key&MOUSE_RIGHT) EventShowAbout();
+			if (mouse.down) && (mouse.y>skin_h) && (mouse.key&MOUSE_RIGHT) EventShowAbout();
 			break;
 		case evButton:
 			switch(@GetButtonID()) {

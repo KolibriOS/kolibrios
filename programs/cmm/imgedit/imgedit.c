@@ -21,9 +21,10 @@
 //                                                   //
 //===================================================//
 
-#define PAD 12
+#define PAD 13
 #define TOOLBAR_ITEM_H PAD+PAD
-#define TOOLBAR_W 110
+#define TOOLBAR_W 132
+#define STATUSBAR_H 20
 #define ISIZE 18
 
 block canvas = { TOOLBAR_W + PAD + PAD, 0, NULL, NULL };
@@ -33,7 +34,6 @@ EVENTS key;
 
 proc_info Form;
 dword semi_white;
-bool bg_dark=false;
 
 char default_dir[4096] = "/sys";
 od_filter filter2 = { 69, "BMP\0GIF\0ICO\0CUR\0JPEG\0JPG\0PNG\0PNM\0TGA\0TIFF\0TIF\0WBMP\0XBM\0XCF\Z80\0\0" };
@@ -43,19 +43,22 @@ libimg_image main_image;
 
 char win_title[256] = "ImageEdit";
 
-scroll_bar scroll_v = { 15,NULL,NULL,NULL,15,2,NULL,0,0,0xeeeeee,0xBBBbbb,0xeeeeee};
-scroll_bar scroll_h = { NULL,NULL,15,NULL,15,2,NULL,0,0,0xeeeeee,0xBBBbbb,0xeeeeee};
+scroll_bar scroll_v = { 15,NULL,NULL,NULL,15,2,NULL,0,0,0xeeeeee,0xBBDDFF,0xeeeeee};
+scroll_bar scroll_h = { NULL,NULL,15,NULL,15,2,NULL,0,0,0xeeeeee,0xBBDDFF,0xeeeeee};
 
-/*
-struct scroll_bar
-{
-	word size_x, start_x, size_y, start_y;
-	dword btn_height, type, max_area, cur_area, position,
-	bckg_col, frnt_col, line_col, redraw;
-	word delta, delta2, r_size_x, r_start_x, r_size_y, r_start_y;
-	dword m_pos, m_pos_2, m_keys, run_size, position2, work_size, all_redraw, ar_offset;
+enum { SAVE_AS_PNG=1, SAVE_AS_BMP=2, SAVE_AS_RAW=4 };
+int saving_type=SAVE_AS_PNG;
+
+char* libimg_bpp[] = { "8pal", "24", "32", "15", "16",
+"mono", "8gray", "2pal", "4pal", "8pal" };
+
+enum {
+	TOOL_CROP=1, 
+	TOOL_RESIZE=2,
+	TOOL_COLOR_DEPTH=4,
+	TOOL_FLIP_ROTATE=8
 };
-*/
+int active_tool = NULL;
 
 //===================================================//
 //                                                   //
@@ -66,8 +69,7 @@ struct scroll_bar
 void init_ui()
 {
 	sc.get();
-	semi_white = MixColors(sc.work, 0xFFFfff, bg_dark*90 + 96);
-	bg_dark = skin_is_dark();
+	semi_white = MixColors(sc.work, 0xFFFfff, skin_is_dark()*90 + 96);
 	icons18.load("/sys/icons16.png");
 	icons18.replace_color(0xffFFFfff, semi_white);
 	icons18.replace_color(0xffCACBD6, MixColors(sc.work, 0, 200));
@@ -92,6 +94,14 @@ void main()
 			scrollbar_v_mouse stdcall(#scroll_v);
 			scrollbar_h_mouse stdcall(#scroll_h);
 			if (scroll_v.delta) || (scroll_h.delta) draw_canvas();
+			if (EAX = mouse.vert) {
+				if (EAX<10) event_scroll_canvas(SCAN_CODE_DOWN); 
+				else event_scroll_canvas(SCAN_CODE_UP);
+			} if (EAX = mouse.hor) {
+				debugval("mouse.hor", mouse.hor);
+				if (EAX<10) event_scroll_canvas(SCAN_CODE_RIGHT); 
+				else event_scroll_canvas(SCAN_CODE_LEFT);
+			}
 			break;
 
 		case evButton:
@@ -102,14 +112,11 @@ void main()
 
 		case evKey:
 			GetKeys();
-			if (key_scancode == SCAN_CODE_DOWN) {
-				scroll_v.position = math.min(scroll_v.position+25, scroll_v.max_area - scroll_v.cur_area);
-				draw_canvas();
-			}
-			if (key_scancode == SCAN_CODE_UP) {
-				scroll_v.position = math.max(scroll_v.position-25, 0);
-				draw_canvas();
-			}
+			if (key_scancode == SCAN_CODE_DOWN) event_scroll_canvas(SCAN_CODE_DOWN);
+			if (key_scancode == SCAN_CODE_UP) event_scroll_canvas(SCAN_CODE_UP);
+			if (key_scancode == SCAN_CODE_LEFT) event_scroll_canvas(SCAN_CODE_LEFT);
+			if (key_scancode == SCAN_CODE_RIGHT) event_scroll_canvas(SCAN_CODE_RIGHT);
+			key.press(key_scancode);
 			break;
 
 		case evReDraw:
@@ -121,7 +128,11 @@ void main()
 void draw_window()
 {
 	incn tx;
-	DefineAndDrawWindow(random(100)+40, 40+random(100), screen.width/3*2, screen.height/3*2, 0x73, NULL, #win_title, 0);
+	char save_as_type[32];
+	sc.get();
+	Form.width = screen.w/6*5;
+	Form.height = screen.h/6*5;
+	DefineAndDrawWindow(screen.w-Form.width/2, screen.h-Form.height/2, Form.width, Form.height, 0x73, NULL, #win_title, 0);
 	GetProcessInfo(#Form, SelfInfo);
 	if (Form.status_window&ROLLED_UP) return;
 	if (Form.width  < 560) { MoveSize(OLD,OLD,560,OLD); return; }
@@ -132,75 +143,83 @@ void draw_window()
 	DrawBar(0, 0, canvas.x, Form.cheight, sc.work);
 
 	canvas.w = Form.cwidth - canvas.x;
-	canvas.h = Form.cheight;
+	canvas.h = Form.cheight - STATUSBAR_H;
 	if (main_image.h > canvas.h) canvas.w -= scroll_v.size_x + 1;
 	if (main_image.w > canvas.w) canvas.h -= scroll_h.size_y + 1;
 
-	DrawBar(canvas.x, 0, 1, canvas.h, sc.work_graph);
+	DrawBar(canvas.x, 0, 1, canvas.h, sc.work_text);
 	if (main_image.h > canvas.h) && (main_image.w > canvas.w) {
 		DrawBar(canvas.x+canvas.w, canvas.y+canvas.h, scroll_v.size_x+1, scroll_h.size_y+1, sc.work);
 	}
 
 	scroll_v.all_redraw = scroll_h.all_redraw = 1;
-	scroll_v.bckg_col = scroll_h.bckg_col = MixColors(sc.work, 0xBBBbbb, 80);
-	scroll_v.frnt_col = scroll_h.frnt_col = MixColors(sc.work,0xFFFfff,120);
-	scroll_v.line_col = scroll_h.line_col = sc.work_graph;
+	if (skin_is_dark()) 
+	{
+		scroll_v.bckg_col = scroll_h.bckg_col = sc.work_light;
+		scroll_v.frnt_col = scroll_h.frnt_col = sc.button;
+		scroll_v.line_col = scroll_h.line_col = sc.button_text;
+	}
+	scroll_v.line_col = scroll_h.line_col = sc.work_text;		
 
-	#define GAP_S 24+7
-	#define GAP_B 24+23
+	#define GAP_S TOOLBAR_ITEM_H+8
+	#define GAP_B TOOLBAR_ITEM_H+23
 	tx.set(PAD-GAP_S);
-	//draw_icon(10, ECTRL + SCAN_CODE_KEY_N, PAD, tx.inc(GAP_S), 02, "Create image");
-	draw_icon(#event_open, ECTRL + SCAN_CODE_KEY_O, PAD, tx.inc(GAP_S), 00, "Open image");
-	//draw_icon(13, ECTRL + SCAN_CODE_LEFT,  PAD, tx.inc(GAP_B), 30);
-	//draw_icon(14, ECTRL + SCAN_CODE_RIGHT, PAD, tx.inc(GAP_S), 31);
-	//draw_icon(15, ECTRL + SCAN_CODE_UP,    PAD, tx.inc(GAP_S), 32);
-	//draw_icon(16, ECTRL + SCAN_CODE_DOWN,  PAD, tx.inc(GAP_S), 33);
+	//draw_tool_btn(10, ECTRL + SCAN_CODE_KEY_N, PAD, tx.inc(GAP_S), 02, "Create image", false);
+	draw_tool_btn(#event_open, ECTRL + SCAN_CODE_KEY_O, PAD, tx.inc(GAP_S), 00, "Open image", false);
+	//draw_tool_btn(13, ECTRL + SCAN_CODE_LEFT,  PAD, tx.inc(GAP_B), 30, false);
+	//draw_tool_btn(14, ECTRL + SCAN_CODE_RIGHT, PAD, tx.inc(GAP_S), 31, false);
+	//draw_tool_btn(15, ECTRL + SCAN_CODE_UP,    PAD, tx.inc(GAP_S), 32, false);
+	//draw_tool_btn(16, ECTRL + SCAN_CODE_DOWN,  PAD, tx.inc(GAP_S), 33, false);
 
- 	//draw_icon(#event_save,     ECTRL + SCAN_CODE_KEY_S, PAD, tx.inc(GAP_B), 05, "Save file");
- 	//draw_icon(12, 0,                                    PAD, tx.inc(GAP_B), 05, "PNG");
-	//draw_icon(12, 0,                                    PAD, tx.inc(GAP_S), 05, "BMP");
-	//draw_icon(12, 0,                                    PAD, tx.inc(GAP_S), 05, "RAW");
-	draw_icon(#event_save,     ECTRL + SCAN_CODE_KEY_S, PAD, tx.inc(GAP_S), 05, "Save as PNG");
+ 	draw_tool_btn(#event_save, ECTRL + SCAN_CODE_KEY_S, PAD, tx.inc(GAP_B), 05, "Save file", false);
+ 	draw_tool_btn(#event_save_png, 0, PAD, tx.inc(GAP_S), -1, "PNG", saving_type & SAVE_AS_PNG);
+	draw_tool_btn(#event_save_bmp, 0, PAD*2+34, tx.n,     -1, "BMP", saving_type & SAVE_AS_BMP);
+	draw_tool_btn(#event_save_raw, 0, PAD*3+68, tx.n,     -1, "RAW", saving_type & SAVE_AS_RAW);
 
- 	draw_icon(0, 0,                       PAD, tx.inc(GAP_B), 46, "Crop");
-	draw_icon(0, 0,                       PAD, tx.inc(GAP_S), 06, "Resize");
-	draw_icon(0, 0,                       PAD, tx.inc(GAP_S), 52, "Color depth");
-	draw_icon(#event_flip_hor, ECTRL + SCAN_CODE_KEY_H, PAD,     tx.inc(GAP_S), 34, NULL);
-	draw_icon(#event_flip_ver, ECTRL + SCAN_CODE_KEY_V, PAD*4+3, tx.n,          35, NULL);
-	draw_icon(#event_rotate,   ECTRL + SCAN_CODE_KEY_R, PAD*7+6, tx.n,          36, NULL);
+ 	draw_tool_btn(#event_activate_crop,  0, PAD, tx.inc(GAP_B), 46, "Crop", active_tool & TOOL_CROP);
+	draw_tool_btn(#event_activate_resize,0, PAD, tx.inc(GAP_S), 06, "Resize", active_tool & TOOL_RESIZE);
+	draw_tool_btn(#event_activate_depth, 0, PAD, tx.inc(GAP_S), 52, "Color depth", active_tool & TOOL_COLOR_DEPTH);
+	draw_tool_btn(#event_activate_flprot,0, PAD, tx.inc(GAP_S), 36, "Flip/Rotate", active_tool & TOOL_FLIP_ROTATE);
+	//draw_tool_btn(#event_flip_hor, ECTRL + SCAN_CODE_KEY_H, PAD,      tx.inc(GAP_S), 34, NULL, false);
+	//draw_tool_btn(#event_flip_ver, ECTRL + SCAN_CODE_KEY_V, PAD*2+34, tx.n,          35, NULL, false);
+	//draw_tool_btn(#event_rotate,   ECTRL + SCAN_CODE_KEY_R, PAD*3+68, tx.n,          36, NULL, false);
 
-	draw_image_info(tx.inc(GAP_B));
+	draw_status_bar();
 	draw_canvas();
 }
 
-char* libimg_bpp[] = { "8 pal", "24", "32", "15", "16",
-"1 mono", "8 gray", "2 pal", "4 pal", "8 pal" };
-
-void draw_image_info(int _y)
+void draw_status_bar()
 {
-	WriteText(PAD, _y, 0x90, sc.work_text, "Properties");
-	DrawBar(PAD, _y+14, TOOLBAR_W, 1, sc.work_graph);
-	WriteText(PAD, _y+22, 0x90, sc.work_text, "Width:");
-	WriteText(PAD, _y+42, 0x90, sc.work_text, "Heigh:");
-	WriteText(PAD, _y+62, 0x90, sc.work_text, "Depth:");
-
-	WriteText(PAD+60, _y+22, 0x90, sc.work_text, itoa(main_image.w));
-	WriteText(PAD+60, _y+42, 0x90, sc.work_text, itoa(main_image.h));
-	WriteText(PAD+60, _y+62, 0x90, sc.work_text, libimg_bpp[main_image.type-1]);
+	char img_info[24];
+	//draw_image_info
+	sprintf(#img_info, "%ix%i@%s", main_image.w, main_image.h, libimg_bpp[main_image.type-1]);
+	DrawBar(canvas.x, Form.cheight - STATUSBAR_H, Form.cwidth - canvas.x, STATUSBAR_H, sc.work);
+	WriteText(canvas.x, Form.cheight - STATUSBAR_H + 2, 0x90, sc.work_text, #img_info);
 }
 
-void draw_icon(dword _event, _key, _x, _y, _icon_n, _text)
+void draw_tool_btn(dword _event, _hotkey, _x, _y, _icon_n, _text, _active)
 {
-	int w;
-	if (_text) w = TOOLBAR_W; else w = PAD + PAD + 8;
-	DrawBar(_x, _y, w, TOOLBAR_ITEM_H+1, semi_white);
+	int w = TOOLBAR_W;
+	if (!_text) w = PAD + PAD + 12;
+	if (_icon_n==-1) w = strlen(_text) * 8 + 14;
+	if (_active) EDX = sc.button; else EDX = semi_white;
+	DrawBar(_x, _y, w, TOOLBAR_ITEM_H+1, EDX);
 	PutPixel(_x,_y,sc.work);
 	PutPixel(_x,_y+TOOLBAR_ITEM_H,sc.work);
 	PutPixel(_x+w-1,_y,sc.work);
 	PutPixel(_x+w-1,_y+TOOLBAR_ITEM_H,sc.work);
 	if (_event) DefineHiddenButton(_x, _y, w, TOOLBAR_ITEM_H, button.add(_event));
-	if (_text) WriteText(_x+PAD+ISIZE+2, _y+9, 0x80, sc.work_text, _text);
-	img_draw stdcall(icons18.image, _x+7, _y+3, ISIZE, ISIZE, 0, _icon_n*ISIZE);
+	if (_hotkey) key.add_n(_hotkey, _event);
+	if (_icon_n!=-1) {
+		img_draw stdcall(icons18.image, _x+7, _y+4, ISIZE, ISIZE, 0, _icon_n*ISIZE);
+		_x += PAD+ISIZE+2;
+	} else {
+		_x += 7;
+	}
+	if (_text) {
+		if (_active) EDX = sc.button_text; else EDX = sc.work_text;
+		WriteText(_x, _y+6, 0x90, EDX, _text);
+	}
 }
 
 void draw_scroll_v()
@@ -289,16 +308,55 @@ void event_rotate()
 	draw_window();
 }
 
+void event_save_png() { saving_type = SAVE_AS_PNG; draw_window(); }
+void event_save_bmp() { saving_type = SAVE_AS_BMP; draw_window(); }
+void event_save_raw() { saving_type = SAVE_AS_RAW; draw_window(); }
+
+void event_activate_crop() { active_tool = TOOL_CROP; draw_window(); }
+void event_activate_resize() { active_tool = TOOL_RESIZE; draw_window(); }
+void event_activate_depth() { active_tool = TOOL_COLOR_DEPTH; draw_window(); }
+void event_activate_flprot() { active_tool = TOOL_FLIP_ROTATE; draw_window(); }
+
 void event_save()
 {
 	o_dialog.type = 1; //save file
-	strcpy(#filename_area, "image.png");
-	OpenDialog_start stdcall (#o_dialog);
-	if (o_dialog.status) {
-		update_title(#openfile_path);
-		img_to_rgb stdcall (main_image.image);
-		save_image(main_image.imgsrc, main_image.w, main_image.h, #openfile_path);
+	switch (saving_type) {
+		case SAVE_AS_PNG:
+				strcpy(#filename_area, "image.png");
+				OpenDialog_start stdcall (#o_dialog);
+				if (o_dialog.status) {
+					update_title(#openfile_path);
+					img_to_rgb stdcall (main_image.image);
+					save_image(main_image.imgsrc, main_image.w, main_image.h, #openfile_path);
+				}
+				break;
+		case SAVE_AS_BMP:
+				notify("Not implemented yet.");
+				break;
+		case SAVE_AS_RAW:
+				notify("Not implemented yet.");
+				break;
 	}
+}
+
+void event_scroll_canvas(int _direction)
+{
+	switch(_direction) {
+		case SCAN_CODE_DOWN:
+			scroll_v.position = math.min(scroll_v.position+25, 
+				scroll_v.max_area - scroll_v.cur_area);
+			break;
+		case SCAN_CODE_UP:
+			scroll_v.position = math.max(scroll_v.position-25, 0);
+			break;
+		case SCAN_CODE_RIGHT:
+			scroll_h.position = math.min(scroll_h.position+25, 
+				scroll_h.max_area - scroll_h.cur_area);
+			break;
+		case SCAN_CODE_LEFT:
+			scroll_h.position = math.max(scroll_h.position-25, 0);
+	}
+	draw_canvas();
 }
 
 stop:

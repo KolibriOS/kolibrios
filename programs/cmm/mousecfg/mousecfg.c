@@ -99,7 +99,7 @@ void main() {
 
 		case evReDraw:
 				sc.get();
-				DefineAndDrawWindow(430, 150, 460, 343+skin_height,0x34,sc.work,WINDOW_TITLE,0);
+				DefineAndDrawWindow(430, 150, 460, 343+skin_h,0x34,sc.work,WINDOW_TITLE,0);
 				GetProcessInfo(#Form, SelfInfo);
 				if (Form.status_window&ROLLED_UP) break;
 				mouse_frame.w = - FRAME_X * 2 + Form.cwidth;

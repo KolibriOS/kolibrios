@@ -101,8 +101,8 @@ void main()
 void draw_window()
 {
 	sc.get();
-	DefineAndDrawWindow(screen.width-WINW/2,screen.height-WINH/2,
-		WINW+9,WINH+skin_height,0x34,sc.work,T_WINDOW_TITLE,0);
+	DefineAndDrawWindow(screen.w-WINW/2,screen.h-WINH/2,
+		WINW+9,WINH+skin_h,0x34,sc.work,T_WINDOW_TITLE,0);
 	WriteText(30, 20, 0x91, 0xEC008C, T_TITLE_H1);
 	if (!install_complete) {
 			if (GetProcessSlot(unimg_id)) {

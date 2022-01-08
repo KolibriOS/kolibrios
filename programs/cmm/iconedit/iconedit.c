@@ -597,7 +597,7 @@ void DrawPreview()
 
 dword GetPixelUnderMouse()
 {
-	return GetPixelColorFromScreen(mouse.x + Form.left + 5, mouse.y + Form.top + skin_height);
+	return GetPixelColorFromScreen(mouse.x + Form.left + 5, mouse.y + Form.top + skin_h);
 }
 
 int preview_size = 128;
@@ -629,7 +629,7 @@ void ShowWindow_TestIcon()
 		 
 		case evReDraw:
 			DefineAndDrawWindow(Form.left+100, Form.top+100, preview_size*2+9,
-				preview_size*2+skin_height+4, 0x74, NULL, T_TEST_ICON, 0);
+				preview_size*2+skin_h+4, 0x74, NULL, T_TEST_ICON, 0);
 			DrawImageWithBg(0, 0, 0x000000);
 			DrawImageWithBg(1, 0, 0xFFFfff);
 			DrawImageWithBg(0, 1, GetPixelColorFromScreen(0, 0));

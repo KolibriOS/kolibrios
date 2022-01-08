@@ -184,7 +184,7 @@
 	$mov	ebx, eax
 	$shr	eax, 16
 	$and	ebx,0x0000FFFF
-	//hor = EAX;
+	hor = EAX;
 	vert = EBX;
 }
 

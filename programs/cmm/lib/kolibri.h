@@ -492,7 +492,7 @@ inline fastcall dword SetWindowLayerBehaviour(EDX, ESI)
 :dword GetPixelColorFromScreen(dword _x, _y)
 {
 	EAX = 35;
-	EBX = _y * screen.width + _x;
+	EBX = _y * screen.w + _x;
 	$int 64
 }
 
@@ -606,8 +606,8 @@ inline fastcall void PutPixel( EBX,ECX,EDX)
 		{
 			z1 = Form1.left + mouse.x - tmp_x;
 			z2 = Form1.top + mouse.y - tmp_y;
-			if(z1<=10) || (z1>20000) z1=0; else if(z1>screen.width-Form1.width-10)z1=screen.width-Form1.width;
-			if(z2<=10) || (z2>20000) z2=0; else if(z2>screen.height-Form1.height-10)z2=screen.height-Form1.height;
+			if(z1<=10) || (z1>20000) z1=0; else if(z1>screen.w-Form1.width-10)z1=screen.w-Form1.width;
+			if(z2<=10) || (z2>20000) z2=0; else if(z2>screen.h-Form1.height-10)z2=screen.h-Form1.height;
 			MoveSize(z1 , z2, OLD, OLD);
 			draw_window();
 		}
@@ -651,19 +651,19 @@ inline fastcall dword GetStartTime()
 
 :struct _screen
 {
-	dword width,height;
+	dword w,h;
 } screen;
 
-:byte skin_height;
+:byte skin_h;
 
 dword __generator;  // random number generator init
 
 //The initialization of the initial data before running
 :void ______INIT______()
 {
-	skin_height   = @GetSkinHeight();
-	screen.width  = @GetScreenWidth()+1;
-	screen.height = @GetScreenHeight()+1;
+	skin_h   = @GetSkinHeight();
+	screen.w  = @GetScreenWidth()+1;
+	screen.h = @GetScreenHeight()+1;
 	__generator = @GetStartTime();	
 	mem_init();
 	main();

@@ -42,7 +42,7 @@ void main()
 
 		case evReDraw:
 			sc.get();
-			DefineAndDrawWindow(215,100,WIN_W+9,WIN_H+skin_height+5,0x74,0xFFFFFF,#title,0);
+			DefineAndDrawWindow(215,100,WIN_W+9,WIN_H+skin_h+5,0x74,0xFFFFFF,#title,0);
 			GetProcessInfo(#Form, SelfInfo);
 			if (Form.status_window&ROLLED_UP) break;
 			_DRAW_WINDOW_CONTENT:

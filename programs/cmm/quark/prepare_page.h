@@ -12,7 +12,7 @@ int line_end;
 
 	list.count=0;
 	selection.cancel();
-	if (list.w != canvas.bufw) canvas.Init(list.x, list.y, list.w, screen.height);
+	if (list.w != canvas.bufw) canvas.Init(list.x, list.y, list.w, screen.h);
 
 	lines.drop();
 	lines.add(textbuf.p);

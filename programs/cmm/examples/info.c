@@ -44,7 +44,7 @@ inline GetRevisionNumber()
 void draw_window()
 {
 	sc.get();
-	DefineUnDragableWindow(screen.width-WIN_W-15, GetClientHeight()-WIN_H-15, WIN_W-1, WIN_H-1);
+	DefineUnDragableWindow(screen.w-WIN_W-15, GetClientHeight()-WIN_H-15, WIN_W-1, WIN_H-1);
 	DrawBar(0,0,WIN_W,WIN_H,0x414155);
 	DrawWideRectangle(0,0,WIN_W,WIN_H, 3, 0x5555FF);
 	WriteText(15, 20,    0x81, 0xFFFF55, " REV 7321 ");

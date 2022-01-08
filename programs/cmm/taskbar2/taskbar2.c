@@ -188,20 +188,20 @@ void DrawProcessList()
 void SetAttachement()
 {
 	if (attachement==ATTACHEMENT_LEFT) {
-		DefineUnDragableWindow(0, 0, CELLW-1, screen.height);
-		SetClientScreenArea(CELLW, screen.width-CELLW, 0, screen.height);
+		DefineUnDragableWindow(0, 0, CELLW-1, screen.h);
+		SetClientScreenArea(CELLW, screen.w-CELLW, 0, screen.h);
 	}
 	if (attachement==ATTACHEMENT_RIGHT) {
-		DefineUnDragableWindow(screen.width - CELLW, 0, CELLW, screen.height);
-		SetClientScreenArea(0, screen.width-CELLW, 0, screen.height);
+		DefineUnDragableWindow(screen.w - CELLW, 0, CELLW, screen.h);
+		SetClientScreenArea(0, screen.w-CELLW, 0, screen.h);
 	}
 	if (attachement==ATTACHEMENT_TOP) {
-		DefineUnDragableWindow(0, 0, screen.width, CELLH-1);
-		SetClientScreenArea(0, 0, CELLH, screen.height);
+		DefineUnDragableWindow(0, 0, screen.w, CELLH-1);
+		SetClientScreenArea(0, 0, CELLH, screen.h);
 	}
 	if (attachement==ATTACHEMENT_BOTTOM) {
-		DefineUnDragableWindow(0, screen.height, screen.width, CELLH);
-		SetClientScreenArea(0, 0, 0, screen.height - CELLH);
+		DefineUnDragableWindow(0, screen.h, screen.w, CELLH);
+		SetClientScreenArea(0, 0, 0, screen.h - CELLH);
 	}
 }
 

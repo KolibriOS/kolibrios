@@ -10,12 +10,12 @@ void ScreenCopy_onMouseEvent(int mouseX, int mouseY, int lkm, int pkm) {
 	int x, y;
 
 	x = mouse.x + Form.left + 5 - calc(image.columns/2);
-	y = mouse.y + Form.top + skin_height - calc(image.rows/2);
+	y = mouse.y + Form.top + skin_h - calc(image.rows/2);
 
 	CopyScreen(
 		screen_copy, 
-		math.in(x, 0, screen.width - image.columns), 
-		math.in(y, 0, screen.height - image.rows), 
+		math.in(x, 0, screen.w - image.columns), 
+		math.in(y, 0, screen.h - image.rows), 
 		image.columns, 
 		image.rows
 	);

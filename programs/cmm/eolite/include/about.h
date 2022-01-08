@@ -33,7 +33,7 @@ void about_dialog()
 				break;
 				
 		case evReDraw:
-				DefineAndDrawWindow(Form.left+Form.width/2,Form.top+Form.height/2-114,300,300+skin_height,0x34,sc.work,T_ABOUT,0);
+				DefineAndDrawWindow(Form.left+Form.width/2,Form.top+Form.height/2-114,300,300+skin_h,0x34,sc.work,T_ABOUT,0);
 				GetProcessInfo(#about_form, SelfInfo);
 				if (about_form.status_window>2) break;
 				logo_pal[0] = sc.work;

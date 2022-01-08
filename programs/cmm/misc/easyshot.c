@@ -134,8 +134,8 @@ void DrawWindow()
 	unsigned i;
 
 	sc.get();
-	DefineAndDrawWindow(screen.width-400, screen.height/3, 280, 
-		skin_height + 50+PD+PD, 0x34, sc.work, "EasyShot",0);
+	DefineAndDrawWindow(screen.w-400, screen.h/3, 280, 
+		skin_h + 50+PD+PD, 0x34, sc.work, "EasyShot",0);
 	GetProcessInfo(#Form, SelfInfo);
 
 	if (!recording) {
@@ -165,7 +165,7 @@ void DrawStatusBar(char *s)
 dword ScreenshotBuf()
 {
 	static dword screenshot;
-	if (!screenshot) screenshot = malloc(screen.width * screen.height * 3);	
+	if (!screenshot) screenshot = malloc(screen.w * screen.h * 3);	
 	return screenshot;
 }
 
@@ -193,8 +193,8 @@ bool GetSavingPath()
 void MakeScreenshot() 
 {
 	if (I_Path = GetSavingPath()) {
-		CopyScreen(ScreenshotBuf(), 0, 0, screen.width, screen.height);
-		I_Param = save_image(ScreenshotBuf(), screen.width, screen.height, I_Path);
+		CopyScreen(ScreenshotBuf(), 0, 0, screen.w, screen.h);
+		I_Param = save_image(ScreenshotBuf(), screen.w, screen.h, I_Path);
 		if (!I_Param) I_Param = I_Path;
 		DrawStatusBar(I_Param);
 	} else {
@@ -227,7 +227,7 @@ void EventSettingsClick()
 {
 	show_settings ^= 1;
 	@MoveSize(OLD, OLD, show_settings*65 + 280, 
-		show_settings*110 + skin_height + PD+PD+50);
+		show_settings*110 + skin_h + PD+PD+50);
 }
 
 void EventChooseSavePathClick()
