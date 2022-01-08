@@ -1,67 +1,84 @@
 #define MEMSIZE 1024*30
+#define ENTRY_POINT #main
 
 #include "../lib/kfont.h"
 #include "../lib/gui.h"
 
-#define PANELH 28
-#define WIN_W 520
-#define WIN_H 315
-#define BASE_TAB_BUTTON_ID 97
+#define BARH 28
+#define WINW 528
+#define WINH 315
 
-_tabs tabs = { WIN_W-130, 0, NULL, BASE_TAB_BUTTON_ID };
-
-block preview = { 0, PANELH, WIN_W, WIN_H - PANELH };
-checkbox bold = { "Bold", false };
-checkbox smooth = { "Smooth", true };
-checkbox colored = { "Colored", true };
+char active_tab = 0;
+char colored = true;
+dword checkbox_flag;
 
 void main()
 {   
 	proc_info Form;
-	char title[1024];
-	int btn;
+
+	mem_init();
+	checkbox_flag = memopen("CHECKBOX", NULL, SHM_READ);
 
 	if (!param) strcpy(#param, DEFAULT_FONT);
 	kfont.init(#param);
 	strcpy(#title, "Font preview: ");
 	strcat(#title, #param);
 
-	tabs.add("Phrase", #DrawPreviewPhrase);
-	tabs.add("Chars", #DrawPreviewChars);
-
 	loop() switch(@WaitEvent())
 	{
+		case evKey:
+			@GetKey();
+			EAX >>= 16;
+			if (AL == SCAN_CODE_ESC) ExitProcess();
+			if (AL == SCAN_CODE_TAB) {
+				active_tab^=1;
+				goto _DRAW_WINDOW_CONTENT;
+			}
+			break;
+
 		case evButton:
-			btn = @GetButtonID();
-			if (btn==1) @ExitProcess();
-			bold.click(btn); 
-			smooth.click(btn);
-			colored.click(btn);
-			tabs.click(btn);
+			@GetButtonID();
+			if (EAX==1) ExitProcess();
+			if (EAX==2) kfont.bold^=1;
+			if (EAX==3) kfont.smooth^=1;
+			if (EAX==4) colored^=1;
+			if (EAX==5) active_tab=0;
+			if (EAX==6) active_tab=1;
 			GOTO _DRAW_WINDOW_CONTENT;
 
 		case evReDraw:
 			sc.get();
-			DefineAndDrawWindow(215,100,WIN_W+9,WIN_H+skin_h+5,0x74,0xFFFFFF,#title,0);
+			DefineAndDrawWindow(215,100,WINW+9,WINH+GetSkinHeight()+4,0x74,0xFFFFFF,#title,0);
 			GetProcessInfo(#Form, SelfInfo);
 			if (Form.status_window&ROLLED_UP) break;
 			_DRAW_WINDOW_CONTENT:
 
-			kfont.bold = bold.checked;
-			kfont.smooth = smooth.checked;
-
-			DrawBar(0, 0, WIN_W, PANELH-1, sc.work);
-			DrawBar(0, PANELH-1,WIN_W,1,sc.work_graph);
+			DrawBar(0, 0, WINW, BARH-1, sc.work);
+			DrawBar(0, BARH-1,WINW,1,sc.work_graph);
 
 			if (!kfont.font) {
-				DrawBar(preview.x, preview.y, preview.w, preview.h, 0xFFFfff);
+				DrawBar(0, BARH, WINW, WINH - BARH, 0xFFFfff);
 				WriteText(10, 50, 0x82, 0xFF00FF, "Font is not loaded.");
 			} else {
-				bold.draw(10, 8);
-				smooth.draw(83,8);
-				colored.draw(170,8);
-				tabs.draw();
-				tabs.draw_active_tab();
+				draw_checkbox(9, kfont.bold);
+				draw_checkbox(81, kfont.smooth);
+				draw_checkbox(169, colored);
+				WriteText(30, 8, 0x90, sc.work_text, "Bold     Smooth     Colored            Phrase   Chars");
+				UnsafeDefineButton(0, 3, 70, 24, 2+BT_HIDE+BT_NOFRAME, ESI);
+				$inc edx //11
+				$add ebx, 80 << 16
+				$int 64
+				$inc edx //12
+				$add ebx, 88 << 16
+				$int 64
+				$inc edx //13
+				$add ebx, 162 << 16
+				$int 64
+				$inc edx //14
+				$add ebx, 70 << 16
+				$int 64
+				DrawBar(active_tab*70+335, BARH-4, 60, 4, 0xE44C9C);
+				if (!active_tab) DrawPreviewPhrase(); else DrawPreviewChars();
 			}
 	}
 }
@@ -71,37 +88,57 @@ dword pal[] = { 0x4E4153, 0x57417C, 0x89633B, 0x819156, 0x00CCCC, 0x2AD266,
 
 void DrawPreviewPhrase()
 {
-	dword i, y;
-	dword c;
-	char line[256];
+	dword i, y=12;
+	dword line[64];
 	kfont.raw_size = free(kfont.raw);
-	for (i=10, y=12; i<22; i++, y+=kfont.height+3;) //not flexible, need to calculate font count and max line length
+	for (i=10; i<22; i++) //not flexible, need to calculate font count and max line length
 	{
-		if (colored.checked) c = pal[i-10]; else c=0;
 		strcpy(#line, "Размер шрифта/font size is ");
-		strcat(#line, itoa(i));
+		itoa_(#line+27, i);
 		strcat(#line, " пикселей/px.");
-		kfont.WriteIntoBuffer(14,y,WIN_W,WIN_H-PANELH, 0xFFFFFF, c, i, #line);
+		kfont.WriteIntoBuffer(14,y,WINW,WINH-BARH, 0xFFFFFF, pal[i-10]*colored, i, #line);
+		y+=kfont.height+3;
 	}
-	if (kfont.smooth) kfont.ApplySmooth();
-	kfont.ShowBuffer(preview.x, preview.y);
+	DrawBuf();
 }
 
 void DrawPreviewChars()
 {
 	dword i, x=20, y=0;
-	char line[2]=0;
+	char line[2];
 	kfont.raw_size = free(kfont.raw);
-	for (i=0; i<255; i++) //not flexible, need to calculate font count and max line length
+	for (i=0; i<255; i++)
 	{
 		line[0]=i;
-		kfont.WriteIntoBuffer(x,y,WIN_W,WIN_H-PANELH, 0xFFFFFF, 0, 16, #line);
+		kfont.WriteIntoBuffer(x,y,WINW,WINH-BARH, 0xFFFFFF, 0, 16, #line);
 		x+= kfont.height+2;
-		if (x>=preview.w-30) { 
+		if (x>=WINW-30) { 
 			x=20;
 			y+=kfont.height+2;
 		}
 	}
-	if (kfont.smooth) kfont.ApplySmooth();
-	kfont.ShowBuffer(preview.x, preview.y);
+	DrawBuf();
 }
+
+void DrawBuf()
+{
+	if (kfont.smooth) kfont.ApplySmooth();
+	kfont.ShowBuffer(0, BARH);
+}
+
+void draw_checkbox(dword _x, _checked)
+{
+	#define SIZE 14
+	#define CHBOXY 7
+	DrawRectangle3D(_x, CHBOXY, SIZE, SIZE, sc.work_graph, sc.work_graph);
+	if (_checked == false)
+	{
+		DrawRectangle3D(_x+1, CHBOXY+1, SIZE-2, SIZE-2, 0xDDDddd, 0xffffff);
+		DrawBar(_x+2, CHBOXY+2, SIZE-3, SIZE-3, 0xffffff);
+	} else {
+		if (checkbox_flag) _PutImage(_x+1, CHBOXY+1, 13, 13, checkbox_flag);
+	}
+	DrawRectangle3D(_x-1,CHBOXY-1,SIZE+2,SIZE+2,sc.work_dark,sc.work_light);
+}
+
+char title[PATHLEN];
