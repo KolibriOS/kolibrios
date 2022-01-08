@@ -69,23 +69,25 @@ endg
 align 4
 update_counters:
         mov     edi, [TASK_BASE]
+        mov     esi, [current_slot]
         rdtsc
         sub     eax, [edi+TASKDATA.counter_add] ; time stamp counter add
-        add     [edi+TASKDATA.counter_sum], eax ; counter sum
+        ;add     [edi+TASKDATA.counter_sum], eax ; counter sum
+        add     [esi-sizeof.APPDATA+APPDATA.counter_sum], eax ; counter sum
         ret
 align 4
 updatecputimes:
         mov     ecx, [thread_count]
-        mov     edi, TASK_DATA
-        ;mov     dword[edi+TASKDATA.cpu_usage], 0
+        ;mov     edi, TASK_DATA
         mov     esi, SLOT_BASE
   .newupdate:
         xor     eax, eax
-        xchg    eax, [edi+TASKDATA.counter_sum]
+        ;xchg    eax, [edi+TASKDATA.counter_sum]
         ;mov     [edi+TASKDATA.cpu_usage], eax
-        add     edi, 0x20
+        xchg    eax, [esi+APPDATA.counter_sum]
+        ;add     edi, 0x20
         mov     [esi+APPDATA.cpu_usage], eax
-        add     esi, 0x100 ;sizeof.APPDATA
+        add     esi, sizeof.APPDATA
         loop    .newupdate
         ret
 
