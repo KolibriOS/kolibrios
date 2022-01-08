@@ -103,7 +103,7 @@ void main()
 void draw_window()
 {
 	sc.get();
-	DefineAndDrawWindow(screen.w-WINW/2, 100, WINW, WINH+skin_height, 0x34, sc.work, WINDOW_TITLE_TEXT,0);
+	DefineAndDrawWindow(screen.w-WINW/2, 100, WINW, WINH+skin_h, 0x34, sc.work, WINDOW_TITLE_TEXT,0);
 	WriteTextB(CONX+2,SCRY+2,0x81,MixColors(sc.work, 0xB92234,220),CONTENT_HEADER_TEXT);
 	WriteTextB(CONX,SCRY,0x81,0xB92234,CONTENT_HEADER_TEXT);
 	draw_screen();

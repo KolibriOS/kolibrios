@@ -124,7 +124,7 @@ void main()
 void draw_window()
 {
 	sc.get();
-	DefineAndDrawWindow(screen.w-WIN_W-9/2,80,WIN_W+9,WIN_H+4+skin_height,0x74,sc.work,WINDOW_HEADER,0);
+	DefineAndDrawWindow(screen.w-WIN_W-9/2,80,WIN_W+9,WIN_H+4+skin_h,0x74,sc.work,WINDOW_HEADER,0);
 
 	DrawBar(0, 0, WIN_W, PANEL_H-2, sc.work); //top
 	DrawBar(0, PANEL_H-2, LP-2, WIN_H-PANEL_H-LP+4, EDX); //left
