@@ -151,11 +151,6 @@ PROCEDURE getSettings* (VAR build, run, debug: RW.tFileName);
 BEGIN
 	Lines.setTabs(get_int(IniFileName, "settings", "tab", 4));
 	blink := get_int(IniFileName, "settings", "blink", 70);
-	IF blink = 0 THEN
-		blink := -1
-	ELSE
-		blink := MIN(MAX(blink, 1), 1000)
-	END;
     getStr("settings", "build", build);
     getStr("settings", "run",   run);
     getStr("settings", "debug", debug)

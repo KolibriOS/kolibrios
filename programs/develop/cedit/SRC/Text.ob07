@@ -26,7 +26,6 @@ IMPORT
     RW, Search,
     E := Encodings,
     CB := Clipboard,
-    K := KolibriOS,
     ChangeLog, File,
     Lang := Languages;
 
@@ -75,7 +74,6 @@ TYPE
         enc, eol: INTEGER;
         table: Search.IdxTable;
         foundList: List.tList;
-        idxData: Search.tBuffer;
         foundSel: INTEGER;
         searchText: tString;
         chLog*: ChangeLog.tLog;
@@ -818,7 +816,7 @@ BEGIN
 END leadingSpaces;
 
 
-PROCEDURE plain (text: tText; eot: BOOLEAN): CB.tBuffer;
+PROCEDURE plain (text: tText): CB.tBuffer;
 VAR
     buf: CB.tBuffer;
     size: INTEGER;
@@ -834,10 +832,7 @@ BEGIN
             INC(size, CB.lenEOL)
         END
     END;
-    IF eot THEN
-        INC(size, 2)
-    END;
-    buf := CB.create(size);
+    buf := CB.create(size + 2);
     line := text.first(tLine);
     WHILE line # NIL DO
         CB.append(buf, line, 0, line.length - 1);
@@ -846,43 +841,42 @@ BEGIN
             CB.eol(buf)
         END
     END;
-    IF eot THEN
-        CB.appends(buf, 0X + 0X, 0, 1)
-    END
+    CB.appends(buf, 0X, 0, 0);
+    CB.appends(buf, 0X, 0, 0)
     RETURN buf
 END plain;
 
 
 PROCEDURE search* (text: tText; s: ARRAY OF WCHAR; cs, whole: BOOLEAN): BOOLEAN;
 VAR
-    pos: List.tItem;
-    res: BOOLEAN;
-    plainText: Search.tBuffer;
+	pos: List.tItem;
+	res: BOOLEAN;
+	plainText, idxData: Search.tBuffer;
 BEGIN
-    plainText := NIL;
-    WHILE text.foundList.count # 0 DO
-        pos := List.pop(text.foundList);
-        DISPOSE(pos)
-    END;
-    text.whole := whole;
-    text.cs := cs;
-    text.searchText := s;
-    IF ~cs THEN
-        U.upcase16(text.searchText)
-    END;
-    IF text.searchText # "" THEN
-        plainText := plain(text, TRUE);
-        text.idxData := Search.index(plainText, text.table, cs);
-        Search.find(plainText, text.table, text.searchText, whole, text.foundList);
-        res := text.foundList.count > 0
-    ELSE
-        res := TRUE
-    END;
-    CB.destroy(plainText);
-    CB.destroy(text.idxData);
-    text.search := FALSE;
-    text.foundSel := 0
-    RETURN res
+	res := TRUE;
+	plainText := NIL;
+	idxData := NIL;
+	WHILE text.foundList.count # 0 DO
+		pos := List.pop(text.foundList);
+		DISPOSE(pos)
+	END;
+	text.whole := whole;
+	text.cs := cs;
+	text.searchText := s;
+	IF ~cs THEN
+		U.upcase16(text.searchText)
+	END;
+	IF text.searchText # "" THEN
+		plainText := plain(text);
+		idxData := Search.index(plainText, text.table, cs);
+		Search.find(plainText, text.table, text.searchText, whole, text.foundList);
+		res := text.foundList.count > 0
+	END;
+	CB.destroy(plainText);
+	CB.destroy(idxData);
+	text.search := FALSE;
+	text.foundSel := 0
+	RETURN res
 END search;
 
 
@@ -1537,7 +1531,7 @@ BEGIN
         DEC(n)
     END;
 
-    buffer := CB.create(cnt);
+    buffer := CB.create(cnt + 2); (* +2 wchars EOT *)
 
     n := selEnd.Y - selBeg.Y;
     line := first;
@@ -2343,9 +2337,7 @@ BEGIN
 
     IF drawCursor THEN
         cursor(text)
-    END;
-    G.SetColor(canvas, K.borderColor);
-    G.VLine(canvas, 0, 0, size.Y - 1);
+    END
 END draw;
 
 
@@ -2380,7 +2372,6 @@ BEGIN
     text.whole := FALSE;
     text.numbers := TRUE;
     text.guard := TRUE;
-    text.idxData := NIL;
     text.edition := NIL;
     text.foundList := List.create(NIL);
     text.searchText := "";

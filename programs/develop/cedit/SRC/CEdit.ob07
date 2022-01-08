@@ -28,7 +28,7 @@ IMPORT
     RW, Ini, EB := EditBox, Tabs, Toolbar, SB := StatusBar;
 
 CONST
-    HEADER = "CEdit (05-jan-2022)";
+    HEADER = "CEdit (08-jan-2022)";
 
     ShellFilter = "";
     EditFilter = "SH|INC|TXT|ASM|OB07|C|CPP|H|PAS|PP|LUA|INI|JSON";
@@ -404,6 +404,8 @@ BEGIN
 	        CheckBox.paint(WH);
         END;
 
+		G.SetColor(canvas, K.borderColor);
+		G.VLine(canvas, 0, 0, canvas.height - 1);
         G.DrawCanvas(canvas, LEFT, TOP);
         NotFound;
         Replaced;
@@ -1952,7 +1954,7 @@ VAR
     fileName, filePath: RW.tFileName;
     width, height, cliWidth, cliHeight: INTEGER;
     resized: BOOLEAN;
-    firstClickX, firstClickY, time: INTEGER;
+    firstClickX, firstClickY, time, blink: INTEGER;
 BEGIN
 	header := "";
     K.GetSystemColors;
@@ -2066,11 +2068,17 @@ BEGIN
     K.SetEventsMask({0, 1, 2, 5, 6, 31});
     Menu.init(resetTimer);
     draw_window;
+    blink := Ini.blink;
+	IF blink <= 0 THEN
+		blink := 0
+	ELSIF blink < 30 THEN
+		blink := 30
+	END;
     timerEnabled := TRUE;
     CursorTime := K.GetTickCount();
     WHILE TRUE DO
     	CurrentTime := K.GetTickCount();
-    	IF (CurrentTime - CursorTime > Ini.blink) & timerEnabled THEN
+    	IF (CurrentTime - CursorTime > blink) & (blink > 0) & timerEnabled THEN
     		CursorTime := CurrentTime;
     		T.toggleCursor;
     		repaint

@@ -49,7 +49,7 @@ VAR
     ptr, pchar: INTEGER;
     wch: WCHAR;
 BEGIN
-    cnt := bufSize(buffer) DIV 2;
+    cnt := bufSize(buffer) DIV SYSTEM.SIZE(WCHAR);
     size := cnt + 12;
     a := KOSAPI.malloc(size);
     ASSERT(a # 0);

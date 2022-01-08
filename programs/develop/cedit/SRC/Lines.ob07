@@ -497,7 +497,10 @@ BEGIN
         _tab := 4
     END;
     tabs := _tab > 0;
-    tab := ABS(_tab)
+    tab := ABS(_tab);
+    IF tab > 32 THEN
+    	tab := 32
+    END
 END setTabs;
 
 
