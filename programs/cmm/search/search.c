@@ -169,7 +169,7 @@ void draw_window()
 		Form.cwidth-scroll1.size_x-1, 
 		Form.cheight-TOOLBAR_H-1);
 	SelectList_Draw();
-	DrawBar(0, TOOLBAR_H-1, Form.cwidth, 1, sc.work_graph);
+	DrawBar(0, TOOLBAR_H-1, Form.cwidth, 1, sc.line);
 	DrawBar(0, 0, Form.cwidth, TOOLBAR_H-1, sc.work);
 	DrawEditBox(#edit_name);
 	WriteText(edit_name.left-2, edit_name.top-20, 0x90, sc.work_text, T_SEARCH_NAME);

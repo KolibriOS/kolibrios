@@ -29,9 +29,9 @@ void DrawScroll(bool _scroll_used) {
 		}
 	}
 	//slider
-	DrawRectangle(sc_x,sc_slider_y,16,sc_slider_h,sc.work_graph);
+	DrawRectangle(sc_x,sc_slider_y,16,sc_slider_h,sc.line);
 	sc_x++;
-	DrawRectangle3D(sc_x,sc_slider_y+1,14,sc_slider_h-2, sc.work_light , sc.work_dark);
+	DrawRectangle3D(sc_x,sc_slider_y+1,14,sc_slider_h-2, sc.light , sc.dark);
 	for (i=0; i<13; i++) {
 		if (!_scroll_used) EDX = col.work_gradient[13-i]; else EDX = col.work_gradient[i];
 		DrawBar(sc_x + 1 + i, sc_slider_y+2, 1, sc_slider_h-3, EDX);
@@ -39,11 +39,11 @@ void DrawScroll(bool _scroll_used) {
 
 	sc_center = sc_slider_h / 2 + sc_slider_y;
 
-	DrawBar(sc_x+2, sc_center,   10, 1, sc.work_graph);
+	DrawBar(sc_x+2, sc_center,   10, 1, sc.line);
 	DrawBar(sc_x+3, sc_center-3, 8,  1, EDX);
 	DrawBar(sc_x+3, sc_center+3, 8,  1, EDX);
 
-	DrawBar(sc_x+3, sc_center+1, 10, 1, sc.work_light);
+	DrawBar(sc_x+3, sc_center+1, 10, 1, sc.light);
 	DrawBar(sc_x+4, sc_center-2, 8,  1, EDX);
 	DrawBar(sc_x+4, sc_center+4, 8,  1, EDX);
 
@@ -71,9 +71,9 @@ void DrawScroll(bool _scroll_used) {
 
 void DrawFlatButtonSmall(dword x,y,width,height,id,text)
 {
-	DrawRectangle(x,y,width,height,sc.work_graph);
-	DrawRectangle3D(x+1,y+1,width-2,height-2, sc.work_light, sc.work_dark);
-	PutPixel(x+width-1, y+1, sc.work_dark);
+	DrawRectangle(x,y,width,height,sc.line);
+	DrawRectangle3D(x+1,y+1,width-2,height-2, sc.light, sc.dark);
+	PutPixel(x+width-1, y+1, sc.dark);
 	DrawFilledBar(x+2, y+2, width-3, height-3);
 	if (id) DefineHiddenButton(x+1,y+1,width-2,height-2,id);
 	WriteText(-strlen(text)*6+width/2+x+1,height/2+y-3,0x80,sc.work_text,text);
@@ -91,9 +91,9 @@ void DrawFuncButton(dword x,y,width,id,number,text)
 		DrawFlatButtonSmall(x,y,width,FH,id,text);
 		return;
 	}
-	DrawRectangle(x,y,width,FH,sc.work_graph);
+	DrawRectangle(x,y,width,FH,sc.line);
 	DrawRectangle3D(x+1,y+1,width-2,FH-2, 0x97D194, 0x00A100);
-	PutPixel(x+width-1, y+1, sc.work_dark);
+	PutPixel(x+width-1, y+1, sc.dark);
 	DrawBar(x+2, y+2, numw, FH-2, 0x6060FF);
 	WriteText(x+6,FH/2+y-2,0x80,0x444444,itoa(number));
 	$sub ebx, 1 <<16 + 1
@@ -116,9 +116,9 @@ void DrawFuncButton(dword x,y,width,id,number,text)
 void Tip(int y, dword caption, id, arrow)
 {
 	DrawBar(SB_BLOCKX,y,SB_BLOCKW,1,col.list_bg);
-	DrawBar(SB_BLOCKX,y+1,1,16,sc.work_light);
+	DrawBar(SB_BLOCKX,y+1,1,16,sc.light);
 	DrawFilledBar(SB_BLOCKX+1, y+1, SB_BLOCKW-1, 16);
-	DrawBar(SB_BLOCKX,y+SB_BLOCKX,SB_BLOCKW,1,sc.work_graph);
+	DrawBar(SB_BLOCKX,y+SB_BLOCKX,SB_BLOCKW,1,sc.line);
 	WriteText(SB_BLOCKX+8,y+5,0x80,col.list_gb_text,caption);
 	if (id) DefineButton(159,y+1,16,16,id+BT_HIDE+BT_NOFRAME,0); //arrow button
 	WriteText(165,y+5,0x80,col.list_gb_text,arrow); //arrow
@@ -134,7 +134,7 @@ void ActionsDraw(int actions_y)
 		DefineButton(SB_BLOCKX,actions_y,SB_BLOCKW-1,DEV_H,actions[i*3]+BT_HIDE,0xE4DFE1);
 		WriteText(45,actions_y+4,0x80,0,actions[i*3+1]);
 		WriteText(-strlen(actions[i*3+2])*6+SIDEBAR_W-SBPAD-7,actions_y+4,0x80,0x999999,actions[i*3+2]);
-		_PutImage(23,actions_y+2, 14,13, i*14*13*3+#factions);
+		PutImage(23,actions_y+2, 14,13, i*14*13*3+#factions);
 	}
 }
 
@@ -181,9 +181,9 @@ void DrawPathEolite()
 	PathShow.text_pointer = location[0];
 	PathShow.area_size_x = Form.cwidth-300;
 	DrawBar(PathShow.start_x-3, PathShow.start_y-6, PathShow.area_size_x+3, 19, col.odd_line);
-	DrawRectangle(PathShow.start_x-4,PathShow.start_y-7,PathShow.area_size_x+4,20,sc.work_graph);
+	DrawRectangle(PathShow.start_x-4,PathShow.start_y-7,PathShow.area_size_x+4,20,sc.line);
 	DefineHiddenButton(PathShow.start_x-4+1,PathShow.start_y-7+1,PathShow.area_size_x+4-2,20-2,BTN_PATH);
-	DrawBar(PathShow.start_x-4, PathShow.start_y+14, PathShow.area_size_x+5+18, 1, sc.work_light);
+	DrawBar(PathShow.start_x-4, PathShow.start_y+14, PathShow.area_size_x+5+18, 1, sc.light);
 
 	DrawFlatButtonSmall(PathShow.start_x+PathShow.area_size_x,PathShow.start_y-7,18,20, BTN_BREADCRUMB, "\x19");
 
@@ -209,10 +209,10 @@ void DrawPathBarKfm()
 	draw_x = 3 + DDW;
 	draw_w = Form.cwidth/2 - draw_x - 17;
 	do {
-		DrawBar(draw_x, SELECTY-1, draw_w-KFM2_DEVH+1, 1, sc.work_graph);
+		DrawBar(draw_x, SELECTY-1, draw_w-KFM2_DEVH+1, 1, sc.line);
 		DrawBar(draw_x, SELECTY,   draw_w-KFM2_DEVH+1, KFM2_DEVH, back_color);
 		DefineHiddenButton(draw_x, SELECTY, draw_w-KFM2_DEVH, KFM2_DEVH-1, BTN_PATH+i);
-		DrawBar(draw_x, SELECTY+KFM2_DEVH, draw_w-KFM2_DEVH+1, 1, sc.work_graph);
+		DrawBar(draw_x, SELECTY+KFM2_DEVH, draw_w-KFM2_DEVH+1, 1, sc.line);
 		kfont.WriteIntoWindow(draw_x + 3, math.max(KFM2_DEVH-kfont.height/2+SELECTY,0), 
 			back_color, text_color, kfont.size.pt, location[i]+strrchr(location[i], '/'));
 		DrawFlatButtonSmall(draw_x+draw_w-KFM2_DEVH+1, SELECTY-1, KFM2_DEVH-1, KFM2_DEVH+1, BTN_BREADCRUMB+i, "\x19");
@@ -286,7 +286,7 @@ void ClickOnBreadCrumb(unsigned clickid)
 int DrawEolitePopup(dword b1_text, b2_text)
 {
 	int popin_x = files.w - POPIN_W / 2 + files.x ;
-	DrawPopup(popin_x, 160, POPIN_W, 95, 1, sc.work, sc.work_graph);
+	DrawPopup(popin_x, 160, POPIN_W, 95, 1, sc.work, sc.line);
 	DrawCaptButton(popin_x+23+000, 215, 100, 26, POPUP_BTN1, sc.button, sc.button_text, b1_text);
 	DrawCaptButton(popin_x+23+114, 215, 100, 26, POPUP_BTN2, sc.button, sc.button_text, b2_text);
 	popin_text.left = popin_x+30;
@@ -295,9 +295,9 @@ int DrawEolitePopup(dword b1_text, b2_text)
 }
 
 void DrawDot(dword x,y) {
-	dword col_pxl = MixColors(sc.work_graph, sc.work, 60);
-	DrawBar(x+1,y,2,4,sc.work_graph);
-	DrawBar(x,y+1,4,2,sc.work_graph);
+	dword col_pxl = MixColors(sc.line, sc.work, 60);
+	DrawBar(x+1,y,2,4,sc.line);
+	DrawBar(x,y+1,4,2,sc.line);
 	PutPixel(x,y,col_pxl);
 	PutPixel(x+3,y,EDX);
 	PutPixel(x,y+3,EDX);

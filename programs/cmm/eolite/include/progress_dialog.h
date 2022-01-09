@@ -45,7 +45,7 @@ void DisplayOperationForm(int operation_flag)
 		copy_bar.value = 0; 
 		copy_bar.max = 0;
 	}
-	copy_bar.frame_color = sc.work_graph;
+	copy_bar.frame_color = sc.line;
 	
 	if (copy_state == FILE_EXISTS) {
 		event_mode = #WaitEvent;
@@ -96,7 +96,7 @@ void DisplayOperationForm(int operation_flag)
 				remember_choice.draw(PR_LEFT+225, REPLACEY+37);
 			}
 
-			DrawRectangle3D(PR_LEFT-1, PR_TOP-1, PR_W+1, PR_H+1, sc.work_dark, sc.work_light);
+			DrawRectangle3D(PR_LEFT-1, PR_TOP-1, PR_W+1, PR_H+1, sc.dark, sc.light);
 	}
 }
 

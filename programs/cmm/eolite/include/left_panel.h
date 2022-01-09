@@ -110,7 +110,7 @@ void _SystemDiscs::Draw()
 				if (is_active) WriteText(draw_x+30,draw_y+5,0x80,0x555555,#dev_name);
 				WriteText(draw_x+29,draw_y+5,0x80,0,#dev_name);
 			}
-			_PutImage(draw_x+6,draw_y, 18,17, is_active*7+dev_icon*17*18*3+#devices);
+			PutImage(draw_x+6,draw_y, 18,17, is_active*7+dev_icon*17*18*3+#devices);
 			draw_y += DEV_H;			
 		}
 		DrawBar(draw_x+6, draw_y, 18, 1, 0xFFFfff);
@@ -134,9 +134,9 @@ void _SystemDiscs::DrawSelect(int draw_x, btid, dword _path)
 		GetDiskIconAndName(#dev_name, #dev_icon, #disc_name);
 		if (strstr(_path, #dev_name)-_path==0) break;
 	}
-	DrawRectangle(draw_x-1, SELECTY-1, DDW+2-KFM2_DEVH, KFM2_DEVH+1, sc.work_graph);
+	DrawRectangle(draw_x-1, SELECTY-1, DDW+2-KFM2_DEVH, KFM2_DEVH+1, sc.line);
 	DrawBar(draw_x, SELECTY, DDW+1-KFM2_DEVH, KFM2_DEVH, 0xFFFFFF);
-	_PutImage(draw_x + 5, SELECTY+2, 18,17, dev_icon*17*18*3+#devices);
+	PutImage(draw_x + 5, SELECTY+2, 18,17, dev_icon*17*18*3+#devices);
 	kfont.WriteIntoWindow(draw_x + 24, math.max(KFM2_DEVH-kfont.height/2+SELECTY,0), 0xFFFfff, 0x000000, kfont.size.pt, #dev_name+1);
 	DefineHiddenButton(draw_x, SELECTY, DDW-1, KFM2_DEVH-1, btid);
 	DrawFlatButtonSmall(draw_x+DDW-KFM2_DEVH+1, SELECTY-1, KFM2_DEVH-1, KFM2_DEVH+1, NULL, "\x19");
@@ -150,7 +150,7 @@ void _SystemDiscs::DrawOptions(int draw_x)
 		
 	SystemDiscs.Get();
 
-	DrawPopup(draw_x, optionsy, DDW, list.count*KFM2_DEVH, 1, -1, sc.work_graph);
+	DrawPopup(draw_x, optionsy, DDW, list.count*KFM2_DEVH, 1, -1, sc.line);
 
 	for (i=0;i<list.count;i++) {
 		strcpy(#dev_name, list.get(i));
@@ -159,7 +159,7 @@ void _SystemDiscs::DrawOptions(int draw_x)
 
 		DrawBar(draw_x, optionsy, DDW, KFM2_DEVH, 0xFFFFFF);
 		DefineButton(draw_x, optionsy, DDW, KFM2_DEVH-1, 100+i+BT_HIDE,0xFFFFFF);
-		_PutImage(draw_x + 5, optionsy+2, 18,17, is_active*7+dev_icon*17*18*3+#devices);
+		PutImage(draw_x + 5, optionsy+2, 18,17, is_active*7+dev_icon*17*18*3+#devices);
 		if (is_active) kfont.bold = true;
 		//strncpy(#volume_label, GetVolumeLabel(#dev_name), sizeof(volume_label));
 		strcpy(#label_file_name, #dev_name);

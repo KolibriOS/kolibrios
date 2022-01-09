@@ -115,7 +115,7 @@ void draw_screen()
 {
 	char i;
 	int icon_n=1;
-	DrawRectangle(WINW-180-1,SCRY-1, 145+1,170+1, sc.work_graph);
+	DrawRectangle(WINW-180-1,SCRY-1, 145+1,170+1, sc.line);
 	DrawBar(SCRX,SCRY,145,170,0xFFFfff);
 	DrawBar(SCRX+25,SCRY+5,144-25,20,0xBBDDFF);
 	for (i=0; i<8; i++) {

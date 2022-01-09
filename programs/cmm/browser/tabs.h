@@ -84,25 +84,25 @@ void DrawTab(int _id)
 
 	if (_id==tab.active) {
 		tab.save_state();
-		bgcol = sc.work_light; 
-		border_bottom_color = sc.work_light;
+		bgcol = sc.light; 
+		border_bottom_color = sc.light;
 	} else {
 		bgcol=sc.work;
-		border_bottom_color = sc.work_graph;
+		border_bottom_color = sc.line;
 	}
 	if (tabdata[_id].header) {
 		strncpy(#header_no_version, #tabdata[_id].header, strlen(#tabdata[_id].header)-sizeof(version)-2);
 		strncpy(#name, #header_no_version, tab_w-CLOSE_S/6-2);
 	}
-	DrawBar(xxx, TOOLBAR_H, 1, TAB_H, sc.work_dark);
+	DrawBar(xxx, TOOLBAR_H, 1, TAB_H, sc.dark);
 	DrawBar(xxx+1, TOOLBAR_H, tab_w-1, TAB_H-1, bgcol);
 	DrawBar(xxx+1, TOOLBAR_H+TAB_H-1, tab_w-1, 1, border_bottom_color);
 	DefineHiddenButton(xxx, TOOLBAR_H-1, tab_w, TAB_H, TAB_ID+_id);
 	WriteTextCenter(xxx, TOOLBAR_H+6, tab_w-CLOSE_S, sc.work_text, #name);
 
 	DefineHiddenButton(xxx+tab_w-CLOSE_S-3, TOOLBAR_H+3, CLOSE_S-1, CLOSE_S-1, TAB_CLOSE_ID+_id);
-	DrawBar(xxx+tab_w-CLOSE_S-3, TOOLBAR_H+3, CLOSE_S, CLOSE_S, sc.work_dark);
-	WriteText(xxx+tab_w-CLOSE_S+1, TOOLBAR_H+5, 0x80, sc.work_light, "x");
+	DrawBar(xxx+tab_w-CLOSE_S-3, TOOLBAR_H+3, CLOSE_S, CLOSE_S, sc.dark);
+	WriteText(xxx+tab_w-CLOSE_S+1, TOOLBAR_H+5, 0x80, sc.light, "x");
 }
 
 void DrawActiveTab()
@@ -118,7 +118,7 @@ int DrawNewTabButton()
 	int xxx = tab.count * tab_w;
 
 	if (tab.count < TABS_MAX) {
-		DrawBar(xxx, TOOLBAR_H, 1, TAB_H, sc.work_graph);
+		DrawBar(xxx, TOOLBAR_H, 1, TAB_H, sc.line);
 		DrawBar(xxx+1, TOOLBAR_H, TAB_H, TAB_H-1, sc.button);
 		DrawRectangle3D(xxx+1, TOOLBAR_H, TAB_H, TAB_H-1, btn_light, btn_dark);
 		PutPixel(xxx+1+TAB_H, TOOLBAR_H, btn_dark);
@@ -136,8 +136,8 @@ void DrawTabsBar()
 	tab_w = GetTabWidth();
 	for (i=0; i<tab.count; i++) DrawTab(i); 
 	i = DrawNewTabButton();
-	DrawBar(i, TOOLBAR_H, Form.cwidth-i, TAB_H-1, MixColors(sc.work_dark, sc.work, 128));
-	DrawBar(i, TOOLBAR_H+TAB_H-1, Form.cwidth-i, 1, sc.work_graph);
+	DrawBar(i, TOOLBAR_H, Form.cwidth-i, TAB_H-1, MixColors(sc.dark, sc.work, 128));
+	DrawBar(i, TOOLBAR_H+TAB_H-1, Form.cwidth-i, 1, sc.line);
 }
 
 void EventTabClose(int _id)

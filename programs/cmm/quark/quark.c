@@ -627,7 +627,7 @@ void DrawToolbar()
 	if (menu_id == REOPEN_IN_APP) reopa = true;
 
 	DrawBar(0, 0, Form.cwidth, TOOLBAR_H - 1, sc.work);
-	DrawBar(0, TOOLBAR_H - 1, Form.cwidth, 1, sc.work_graph);
+	DrawBar(0, TOOLBAR_H - 1, Form.cwidth, 1, sc.line);
 
 	x.set(-GAP_S+8);
 	TopBarBt(#EventOpenDialog,     ECTRL+SCAN_CODE_KEY_O, 0,  x.inc(GAP_S), false);
@@ -644,7 +644,7 @@ void DrawStatusBar(dword _in_text)
 	static char status_text[64];
 	if (Form.status_window&ROLLED_UP) return;
 	if (_in_text) strncpy(#status_text, _in_text, sizeof(status_text));
-	DrawBar(0,Form.cheight - STATUSBAR_H, Form.cwidth,1, sc.work_graph);
+	DrawBar(0,Form.cheight - STATUSBAR_H, Form.cwidth,1, sc.line);
 	DrawBar(0,Form.cheight - STATUSBAR_H+1, Form.cwidth,STATUSBAR_H-1, sc.work);
 	WriteText(5, Form.cheight - STATUSBAR_H + 4, 0x80, sc.work_text, #status_text);
 	if (file_path[0]) {
@@ -687,20 +687,20 @@ bool DrawSearch()
 	char matches[30];
 	int _y = Form.cheight - SEARCH_H - STATUSBAR_H;
 	if (!search.visible) return false;
-	DrawBar(0, _y, Form.cwidth, 1, sc.work_graph);
+	DrawBar(0, _y, Form.cwidth, 1, sc.line);
 	DrawBar(0, _y+1, Form.cwidth, SEARCH_H-1, sc.work);
 
 	search_box.top = _y + 6;
 	search_box.width = math.min(Form.width - 200, 150);
 
-	DrawRectangle(search_box.left-1, search_box.top-1, search_box.width+2, 23,sc.work_graph);
+	DrawRectangle(search_box.left-1, search_box.top-1, search_box.width+2, 23,sc.line);
 
 	edit_box_draw stdcall(#search_box);
 
 	DrawCaptButton(search_box.left+search_box.width+14, search_box.top-1, 30,
-		TOOLBAR_ICON_HEIGHT+1, BTN_FIND_PREVIOUS+10, sc.work_light, sc.work_text, "<");
+		TOOLBAR_ICON_HEIGHT+1, BTN_FIND_PREVIOUS+10, sc.light, sc.work_text, "<");
 	DrawCaptButton(search_box.left+search_box.width+44, search_box.top-1, 30,
-		TOOLBAR_ICON_HEIGHT+1, BTN_FIND_NEXT+10, sc.work_light, sc.work_text, ">");
+		TOOLBAR_ICON_HEIGHT+1, BTN_FIND_NEXT+10, sc.light, sc.work_text, ">");
 
 	sprintf(#matches, T_MATCHES, search.found.count);
 	WriteTextWithBg(search_box.left+search_box.width+14+85,
@@ -708,7 +708,7 @@ bool DrawSearch()
 
 	DefineHiddenButton(Form.cwidth-26, search_box.top-1, TOOLBAR_ICON_HEIGHT+1,
 		TOOLBAR_ICON_HEIGHT+1, BTN_FIND_CLOSE+10);
-	WriteText(Form.cwidth-26+7, search_box.top+2, 0x81, sc.work_graph, "x");
+	WriteText(Form.cwidth-26+7, search_box.top+2, 0x81, sc.line, "x");
 	return true;
 }
 

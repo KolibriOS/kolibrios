@@ -33,7 +33,7 @@ struct checkbox
 
 	DefineHiddenButton(x-1, y-1, strlen(text)*8 + SIZE + 17, SIZE+2, id+BT_NOFRAME);
 	UnsafeDefineButton(x, y, SIZE, SIZE, id, 0);
-	DrawRectangle(x, y, SIZE, SIZE, sc.work_graph);
+	DrawRectangle(x, y, SIZE, SIZE, sc.line);
 	if (disabled)
 	{
 		DrawRectangle(x+1, y+1, SIZE-2, SIZE-2, 0xffffff);
@@ -48,11 +48,11 @@ struct checkbox
 	else if (checked == true)
 	{
 		if (!checkbox_flag) checkbox_flag = memopen("CHECKBOX", NULL, SHM_READ);
-		if (checkbox_flag) _PutImage(x+1, y+1, 13, 13, checkbox_flag);
+		if (checkbox_flag) PutImage(x+1, y+1, 13, 13, checkbox_flag);
 		else DrawBar(x+2, y+2, SIZE-3, SIZE-3, 0x58C33C);
 	}
 	if (text) WriteTextWithBg(x+SIZE+8, SIZE / 2 + y -7, 0xD0, text_col, text, sc.work);
-	DrawRectangle3D(x-1,y-1,SIZE+2,SIZE+2,sc.work_dark,sc.work_light);
+	DrawRectangle3D(x-1,y-1,SIZE+2,SIZE+2,sc.dark,sc.light);
 }
 
 :void checkbox::redraw()

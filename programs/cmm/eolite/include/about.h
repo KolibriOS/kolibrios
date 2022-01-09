@@ -37,7 +37,7 @@ void about_dialog()
 				GetProcessInfo(#about_form, SelfInfo);
 				if (about_form.status_window>2) break;
 				logo_pal[0] = sc.work;
-				ESDWORD[#logo_pal+16] = sc.work_dark;
+				ESDWORD[#logo_pal+16] = sc.dark;
 				PutPaletteImage(#logo,86,86,about_form.cwidth-86/2,10,8,#logo_pal);
 				about_x = -strlen(ABOUT_TITLE)*18+about_form.cwidth/2;
 				WriteTextB(about_x+2,107,0x82,0xD49CD2,ABOUT_TITLE);

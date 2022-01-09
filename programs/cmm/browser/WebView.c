@@ -385,8 +385,8 @@ void draw_window()
     if (!application_mode) {
         DrawBar(0,0, Form.cwidth,PADDING, sc.work);
         DrawBar(0,PADDING+TSZE+1, Form.cwidth,PADDING-1, sc.work);
-        DrawBar(0,TOOLBAR_H-2, Form.cwidth,1, MixColors(sc.work_dark, sc.work, 180));
-        DrawBar(0,TOOLBAR_H-1, Form.cwidth,1, sc.work_graph);
+        DrawBar(0,TOOLBAR_H-2, Form.cwidth,1, MixColors(sc.dark, sc.work, 180));
+        DrawBar(0,TOOLBAR_H-1, Form.cwidth,1, sc.line);
         DrawBar(0, PADDING, omnibox_edit.left-2, TSZE+1, sc.work);
         DrawBar(omnibox_edit.left+omnibox_edit.width+18, PADDING, Form.cwidth-omnibox_edit.left-omnibox_edit.width-18, TSZE+1, sc.work);
 
@@ -394,7 +394,7 @@ void draw_window()
         DrawTopPanelButton(FORWARD_BUTTON, PADDING+TSZE+PADDING-2, PADDING, 31, false);
         DrawTopPanelButton(SANDWICH_BUTTON, Form.cwidth-PADDING-TSZE-3, PADDING, -1, burger_active); //burger menu
 
-        DrawBar(0,Form.cheight - STATUSBAR_H, Form.cwidth,1, sc.work_graph);
+        DrawBar(0,Form.cheight - STATUSBAR_H, Form.cwidth,1, sc.line);
 
         DrawRectangle(WB1.list.x + WB1.list.w, WB1.list.y, scroll_wv.size_x,
 		WB1.list.h-1, scroll_wv.bckg_col);
@@ -901,8 +901,8 @@ void DrawOmnibox()
 {
 	int imgxoff;
 	if (application_mode) return;
-	DrawOvalBorder(omnibox_edit.left-2, omnibox_edit.top-3, omnibox_edit.width+18, 24, sc.work_graph, 
-		sc.work_graph, sc.work_graph, sc.work_dark);
+	DrawOvalBorder(omnibox_edit.left-2, omnibox_edit.top-3, omnibox_edit.width+18, 24, sc.line, 
+		sc.line, sc.line, sc.dark);
 	DrawBar(omnibox_edit.left-1, omnibox_edit.top-2, omnibox_edit.width+18, 1, 0xD8DCD8);
 	DrawBar(omnibox_edit.left-1, omnibox_edit.top-1, omnibox_edit.width+18, 1, omnibox_edit.color);
 	DrawBar(omnibox_edit.left-1, omnibox_edit.top, 1, 22, omnibox_edit.color);
@@ -911,7 +911,7 @@ void DrawOmnibox()
 	EditBox_UpdateText(#omnibox_edit, omnibox_edit.flags);
 	edit_box_draw stdcall(#omnibox_edit);
 	if (http.transfer) imgxoff = 16*23*3; else imgxoff = 0;
-	_PutImage(omnibox_edit.left+omnibox_edit.width+1, omnibox_edit.top-1, 16, 23, imgxoff + #editbox_icons);
+	PutImage(omnibox_edit.left+omnibox_edit.width+1, omnibox_edit.top-1, 16, 23, imgxoff + #editbox_icons);
 	DefineHiddenButton(omnibox_edit.left+omnibox_edit.width-1, omnibox_edit.top-2, 17, 23, REFRESH_BUTTON);
 
 	DrawProgress();

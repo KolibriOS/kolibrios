@@ -171,8 +171,8 @@ void main()
 			WriteText(GAP+5, WIN_CONTENT_Y-20, 0x90, sc.work_text, T_PROC_HEADER);
 
 			DefineButton(RIGHT_X-38,WIN_CONTENT_Y-25,18,18,BTN_SHOWHIDE_SENSORS,sc.button);
-			DrawRectangle3D(RIGHT_X-38,WIN_CONTENT_Y-25,19,18,sc.work_graph,sc.work_light);
-			PutPixel(RIGHT_X-38+19,WIN_CONTENT_Y-25,sc.work_light);
+			DrawRectangle3D(RIGHT_X-38,WIN_CONTENT_Y-25,19,18,sc.line,sc.light);
+			PutPixel(RIGHT_X-38+19,WIN_CONTENT_Y-25,sc.light);
 			EDX = "<\0>";
 			EDX += show_sensors * 2;
 			WriteText(RIGHT_X-38+5,WIN_CONTENT_Y-25+2,0x90,sc.button_text, EDX);

@@ -22,8 +22,8 @@ void DrawUiElementsPreview(dword x,y,h)
 
 :void DrawStEditBoxPos(dword x,y, edit_box_pointer)
 {
-	dword c_inactive = MixColors(sc.work_graph, sc.work, 128);
-	dword c_active = MixColors(sc.work_graph, 0, 128);
+	dword c_inactive = MixColors(sc.line, sc.work, 128);
+	dword c_active = MixColors(sc.line, 0, 128);
 	ESI = edit_box_pointer;
 	ESI.edit_box.left = x;
 	ESI.edit_box.top = y;

@@ -217,8 +217,8 @@ struct frame
 :void DrawFrame(dword x,y,w,h,text)
 {
 	frame123.font_color = sc.work_text;
-	frame123.ext_col = sc.work_graph;
-	frame123.int_col = sc.work_light;
+	frame123.ext_col = sc.line;
+	frame123.int_col = sc.light;
 	frame123.font_backgr_color = sc.work;
 
 	frame123.start_x = x;

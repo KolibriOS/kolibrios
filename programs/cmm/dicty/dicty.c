@@ -100,11 +100,11 @@ void main()
 			if (Form.height<140) { MoveSize(OLD,OLD,OLD,140); break; }
 			if (Form.width<400) { MoveSize(OLD,OLD,400,OLD); break; }
 			DrawBar(0, 0, Form.cwidth, TOPH, sc.work); //top bg
-			DrawBar(0, TOPH, Form.cwidth, 1, sc.work_graph);
+			DrawBar(0, TOPH, Form.cwidth, 1, sc.line);
 			edit1.width = Form.cwidth-edit1.left-edit1.left - 116;
 			edit_box_draw stdcall(#edit1);
 			DrawWideRectangle(edit1.left-2, edit1.top-2, edit1.width+3, 25, 2, 0xffffff);
-			DrawRectangle(edit1.left-3, edit1.top-3, edit1.width+4, 26, sc.work_graph);
+			DrawRectangle(edit1.left-3, edit1.top-3, edit1.width+4, 26, sc.line);
 			DrawTranslation();
 			DrawLangButtons();
 	}
@@ -195,9 +195,9 @@ void SpeakerDraw()
 	} else {
 		DefineHiddenButton(x-5, y-5, 23+10, 20+9, BTN_SPEAKER);
 		if (!GetProcessSlot(speaker_id)) {
-			_PutImage(x, y, 23,20, #speaker);
+			PutImage(x, y, 23,20, #speaker);
 		} else {
-			_PutImage(x, y, 23,20, 23*20*3+#speaker);
+			PutImage(x, y, 23,20, 23*20*3+#speaker);
 		}
 	}
 }

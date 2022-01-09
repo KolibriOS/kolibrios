@@ -115,7 +115,7 @@ void start_daemon()
 		$pop eax
 		if (sc.work != EAX) {
 			memmov(shared_i16w, icons16.imgsrc, size16);
-			replace_2cols(shared_i16w, size16, 0xffFFFfff, sc.work, 0xffCACBD6, sc.work_dark);
+			replace_2cols(shared_i16w, size16, 0xffFFFfff, sc.work, 0xffCACBD6, sc.dark);
 		}
 	} while(WaitEvent()==evDesktop);
 }
@@ -164,7 +164,7 @@ void start_ui()
 			sc.get();
 			DefineAndDrawWindow(80, 50, WINW+9, WINH+4+GetSkinHeight(), 0x74, 0, "@RESHARE - A service that provides shared resorces", 0);
 			DrawBar(0, 0, WINW, RESY-PAD-1, sc.work); //top bg
-			DrawBar(0, RESY-PAD-1, WINW, 1, sc.work_graph);
+			DrawBar(0, RESY-PAD-1, WINW, 1, sc.line);
 			WriteText(PAD, PAD, 0x90, sc.work_text, "Each tab name corresponds to memory name that can be accessed by sysfunc 68.22. Now availabe:");
 			draw_tabs();
 	}
@@ -172,7 +172,7 @@ void start_ui()
 
 void DrawFlatButton(dword _x, _y, _text, _id, _active)
 {
-	if (_active) EDX = sc.button; else EDX = sc.work_light;
+	if (_active) EDX = sc.button; else EDX = sc.light;
 	DrawBar(_x, _y, BTNW, BTNH+1, EDX);
 
 	if (_active) EDX = sc.button_text; else EDX = sc.work_text;
@@ -218,14 +218,14 @@ void draw_tab_icons32()
 		iconw = 18;
 		iconh = icons16.h;
 	} else {
-		_PutImage(WINW-13/2, WINH-RESY-13/2+RESY, 13, 13, #checkbox_flag);
+		PutImage(WINW-13/2, WINH-RESY-13/2+RESY, 13, 13, #checkbox_flag);
 		return;
 	}
 
 	for (i = 0; i < iconh/iconw; i++)
 	{
 		PutPaletteImage(iconw*iconw*4*i + iconimg, iconw, iconw, 50-iconw/2+x, y+RESY, 32, 0);
-		WriteText(-strlen(itoa(i))*8+50/2+x, y+RESY+iconw+5, 0x90, sc.work_graph, itoa(i));
+		WriteText(-strlen(itoa(i))*8+50/2+x, y+RESY+iconw+5, 0x90, sc.line, itoa(i));
 		x += 50;
 		if (x + 50 > WINW) {
 			x = PAD;

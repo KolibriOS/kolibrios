@@ -200,7 +200,7 @@ void SetAppColors()
 	static dword bg_col;
 	dword old_list_bg_color = col.list_bg;
 	sc.get();
-	sc.work_dark = MixColors(0, sc.work, 35);
+	sc.dark = MixColors(0, sc.work, 35);
 	if (sc.work == 0) sc.work = 1;
 	if (bg_col == sc.work) return;
 	bg_col = sc.work;
@@ -211,11 +211,11 @@ void SetAppColors()
 		col.list_bg = sc.work;
 		col.list_gb_text = sc.work_text;
 		col.list_text_hidden = 0xA6A6B7;
-		col.list_vert_line = sc.work_graph;
-		col.lpanel  = MixColors(sc.work_graph, sc.work, 65);
+		col.list_vert_line = sc.line;
+		col.lpanel  = MixColors(sc.line, sc.work, 65);
 		col.selec = col.selec_active = sc.button;
 		col.selec_text = sc.button_text;
-		if (col.list_bg==col.selec) col.selec = sc.work_graph; //for fucking skins
+		if (col.list_bg==col.selec) col.selec = sc.line; //for fucking skins
 		col.slider_bg_big = MixColors(0xCED0D0, sc.work, 35);
 		col.odd_line = MixColors(0xFFFfff, sc.work, 15);
 		for (i=0; blue_hl_pal[i]!=0; i++) waves_pal[i] = MixColors(col.lpanel, blue_hl_pal[i], 180);
@@ -237,8 +237,8 @@ void SetAppColors()
 		for (i=0; blue_hl_pal[i]!=0; i++) waves_pal[i] = blue_hl_pal[i];
 	}
 	col.selec_inactive = MixColors(0xBBBbbb, col.list_bg, 65);
-	col.slider_bg_left = MixColors(sc.work_graph, col.slider_bg_big, 10);
-	for (i=0; i<20; i++) col.work_gradient[i] = MixColors(sc.work_light, sc.work, i*5);
+	col.slider_bg_left = MixColors(sc.line, col.slider_bg_big, 10);
+	for (i=0; i<20; i++) col.work_gradient[i] = MixColors(sc.light, sc.work, i*5);
 	if (old_list_bg_color!=col.list_bg) LoadIcons();
 }
 

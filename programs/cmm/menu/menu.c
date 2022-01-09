@@ -205,7 +205,7 @@ void draw_list()
 		colors_set = true;
 		inactive_background_color = MixColors(sc.work, 0xFFFfff,230);
 		active_background_color = MixColors(sc.button, sc.work,230);
-		active_top_border_color = MixColors(sc.work_graph, sc.button,240);
+		active_top_border_color = MixColors(sc.line, sc.button,240);
 		inactive_text_shadow_color = MixColors(sc.work,0xFFFfff,120);
 		skin_dark = skin_is_dark();
 	}
@@ -214,22 +214,22 @@ void draw_list()
 	{
 		if (streq(names.get(i), "-")) {
 			DrawBar(menu1.x, item_y+0, menu1.w, 1, inactive_background_color);
-			DrawBar(menu1.x-1, item_y+1, menu1.w+1, 1, sc.work_dark);
-			DrawBar(menu1.x, item_y+2, menu1.w, 1, sc.work_light);
+			DrawBar(menu1.x-1, item_y+1, menu1.w+1, 1, sc.dark);
+			DrawBar(menu1.x, item_y+2, menu1.w, 1, sc.light);
 			DrawBar(menu1.x, item_y+3, menu1.w, 1, inactive_background_color);
 			//DrawBar(menu1.x, item_y+0, menu1.w, 4, inactive_background_color);
-			//DrawBar(13, item_y+1, menu1.w-24, 1, sc.work_dark);
-			//DrawBar(13, item_y+2, menu1.w-24, 1, sc.work_light);
+			//DrawBar(13, item_y+1, menu1.w-24, 1, sc.dark);
+			//DrawBar(13, item_y+2, menu1.w-24, 1, sc.light);
 			item_y += SEP_H;
 		} else {
 			if (item_i==menu1.cur_y) {
 				hotkey_color = name_color = sc.button_text;
 				DrawBar(menu1.x, item_y+1,        menu1.w, ITEM_H-2, active_background_color);
 				DrawBar(menu1.x, item_y,          menu1.w, 1, active_top_border_color);
-				DrawBar(menu1.x, item_y+ITEM_H-1, menu1.w, 1, sc.work_light);
+				DrawBar(menu1.x, item_y+ITEM_H-1, menu1.w, 1, sc.light);
 			} else {
 				name_color = sc.work_text;
-				hotkey_color = sc.work_graph;
+				hotkey_color = sc.line;
 				DrawBar(menu1.x, item_y, menu1.w, ITEM_H, inactive_background_color);
 				if (!skin_dark) WriteText(13+1, item_y + menu1.text_y +1, 0x80, 
 					inactive_text_shadow_color, names.get(i));

@@ -155,7 +155,7 @@ void draw_window()
 	scroll_v.all_redraw = scroll_h.all_redraw = 1;
 	if (skin_is_dark()) 
 	{
-		scroll_v.bckg_col = scroll_h.bckg_col = sc.work_light;
+		scroll_v.bckg_col = scroll_h.bckg_col = sc.light;
 		scroll_v.frnt_col = scroll_h.frnt_col = sc.button;
 		scroll_v.line_col = scroll_h.line_col = sc.button_text;
 	}

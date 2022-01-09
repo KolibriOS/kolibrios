@@ -154,8 +154,8 @@ void ReDraw_Game_Button(int id)
 
 void Draw_Panel()
 {
-	DrawBar(0, PANEL_Y, WIN_W, 1, sc.work_dark);
-	DrawBar(0, PANEL_Y+1, WIN_W, 1, sc.work_light);
+	DrawBar(0, PANEL_Y, WIN_W, 1, sc.dark);
+	DrawBar(0, PANEL_Y+1, WIN_W, 1, sc.light);
 	DrawBar(0, PANEL_Y+2, WIN_W, PANEL_H-2, sc.work);
 	DefineButton(9, PANEL_Y+5, 102, 26, 5, sc.button);
 	WriteText(20, PANEL_Y+11, 0x90, sc.button_text, LABEL_NEW_GAME);

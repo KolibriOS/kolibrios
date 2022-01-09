@@ -159,7 +159,7 @@ void DrawWindow()
 void DrawStatusBar(char *s)
 {
 	I_Param = s; 
-	WriteTextWithBg(PD, 35+PD, 0xD0, sc.work_text, I_Param, sc.work_light);
+	WriteTextWithBg(PD, 35+PD, 0xD0, sc.work_text, I_Param, sc.light);
 }
 
 dword ScreenshotBuf()

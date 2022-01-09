@@ -94,7 +94,7 @@ void SetProperties(int mode)
 void ShowConfirmQuestionPopin()
 {
 	apply_question_active = true;
-	DrawPopup(15,80,250,90,1,sc.work, sc.work_graph);
+	DrawPopup(15,80,250,90,1,sc.work, sc.line);
 	WriteText(35, 102, 0x90, 0x000000, QUEST_1);
 	WriteText(65, 117, 0x90, 0x000000, QUEST_2);
 	DrawStandartCaptButton(62,138,B_SETINGS_APPLY_SUBFOLDER,T_YES);

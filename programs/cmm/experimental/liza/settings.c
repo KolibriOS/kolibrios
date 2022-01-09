@@ -91,7 +91,7 @@ void DrawOptionsWindow()
 	int i;
 	incn y;
 	y.n=0;
-	DrawBar(0, Form.cheight - 40, Form.cwidth, 1, sc.work_graph);
+	DrawBar(0, Form.cheight - 40, Form.cwidth, 1, sc.line);
 	DrawBar(0, Form.cheight - 40+1, Form.cwidth, 1, LBUMP);
 	DrawCaptButton(Form.cwidth-79, Form.cheight-32, 70, 25, 19, sc.button, sc.button_text,"Apply");
 

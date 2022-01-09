@@ -147,8 +147,8 @@
 	if (ESI.edit_box.flags & 100000000000b) bg = 0xCACACA; else bg = 0xFFFfff;
 	edit_box_draw  stdcall (edit_box_pointer);
 	DrawRectangle3D(x-1, y-1, w+1, h+1, 0xE7E7E7, bg);
-	DrawRectangle(x-2, y-2, w+3, h+3, sc.work_graph);
-	DrawRectangle3D(x-3, y-3, w+5, h+5, sc.work_dark, sc.work_light);
+	DrawRectangle(x-2, y-2, w+3, h+3, sc.line);
+	DrawRectangle3D(x-3, y-3, w+5, h+5, sc.dark, sc.light);
 }
 
 #define DOT_W 37 
@@ -164,8 +164,8 @@
 	if (ESI.edit_box.flags & 100000000000b) bg = 0xCACACA; else bg = 0xFFFfff;
 	edit_box_draw  stdcall (edit_box_pointer);
 	DrawRectangle3D(x-1, y-1, w+1, box_h+1, 0xE7E7E7, bg);
-	DrawRectangle(x-2, y-2, w+3, box_h+3, sc.work_graph);
-	DrawRectangle3D(x-3, y-3, w+DOT_W+5, box_h+5, sc.work_dark, sc.work_light);
+	DrawRectangle(x-2, y-2, w+3, box_h+3, sc.line);
+	DrawRectangle3D(x-3, y-3, w+DOT_W+5, box_h+5, sc.dark, sc.light);
 
 	WriteText(x-2, y-19, 0x90, sc.work_text, title);
 	DrawCaptButton(x+w+1, y-2, DOT_W, box_h+3, btn, sc.button, sc.button_text, "...");
@@ -214,7 +214,7 @@
  	GetProcessInfo(#wForm, SelfInfo);
 	CopyScreen(shadow_buf, 5*skinned+x+wForm.left, GetSkinHeight()*skinned+y+wForm.top, w, h);
 	ShadowImage(shadow_buf, w, h, strength);
-	_PutImage(x,y,w,h,shadow_buf);
+	PutImage(x,y,w,h,shadow_buf);
 	mem_Free(shadow_buf);
 }
 
@@ -229,9 +229,9 @@
 
 :void Draw3DPopup(dword x,y,w,h)
 {
-	DrawRectangle3D(x,y,w,h, sc.work_dark, sc.work_graph);
-	DrawBar(x+1,y+1,w-1,1,sc.work_light);
-	DrawBar(x+1,y+2,1,h-2,sc.work_light);
+	DrawRectangle3D(x,y,w,h, sc.dark, sc.line);
+	DrawBar(x+1,y+1,w-1,1,sc.light);
+	DrawBar(x+1,y+2,1,h-2,sc.light);
 	DrawPopupShadow(x,y,w,h-1,0);
 }
 

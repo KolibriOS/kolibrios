@@ -130,8 +130,8 @@ void SetAppColors()
 		//dark colors
 		swc.list_bg = sc.work;
 	 	swc.text = sc.work_text;
-	 	swc.dark = sc.work_dark;
-	 	swc.light = sc.work_light;
+	 	swc.dark = sc.dark;
+	 	swc.light = sc.light;
 	} else {
 		//light colors
 		swc.list_bg = 0xF3F3F3;
@@ -225,8 +225,8 @@ byte process_sections(dword sec_name, f_name)
 void DrawTopBar()
 {
 	DrawBar(0,0,Form.cwidth, list.y-2, sc.work);
-	DrawBar(0,list.y-2, Form.cwidth, 1, MixColors(sc.work, sc.work_graph, 180));
-	DrawBar(0,list.y-1, Form.cwidth, 1, sc.work_graph);
+	DrawBar(0,list.y-2, Form.cwidth, 1, MixColors(sc.work, sc.line, 180));
+	DrawBar(0,list.y-1, Form.cwidth, 1, sc.line);
 	kfont.WriteIntoWindowCenter(0,5, Form.cwidth, list.y, sc.work, sc.work_text, 16, #window_title);
 }
 

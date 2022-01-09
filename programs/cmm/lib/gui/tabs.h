@@ -28,8 +28,8 @@
 	int i, xx=x;
 
 	if (w) {
-		DrawBar(x+1,y+0+TAB_HEIGHT,w,1, sc.work_graph);
-		DrawBar(x+1,y+1+TAB_HEIGHT,w,1, sc.work_light);		
+		DrawBar(x+1,y+0+TAB_HEIGHT,w,1, sc.line);
+		DrawBar(x+1,y+1+TAB_HEIGHT,w,1, sc.light);		
 	}
 
 	for (i=0; i<count; i++) {

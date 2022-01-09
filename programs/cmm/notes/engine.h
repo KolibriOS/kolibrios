@@ -134,7 +134,7 @@ dword NOTES::DrawLine(int line_n, draw_h) {
 	{
 		drawy = item_h*line_n+5+y;
 		DefineButton(RED_LINE_X-CHBOX/2+x, drawy, CHBOX-1,CHBOX-1, CHECKBOX_ID+line_n+BT_HIDE, 0); //checkbox
-		_PutImage(RED_LINE_X-CHBOX/2+x,drawy, CHBOX,CHBOX, lines[line_n].state*CHBOX*CHBOX*3+#checkbox);
+		PutImage(RED_LINE_X-CHBOX/2+x,drawy, CHBOX,CHBOX, lines[line_n].state*CHBOX*CHBOX*3+#checkbox);
 		if (cur_text) WriteText(x+RED_LINE_X+6, drawy+2, 0x80, lines[line_n].state*0x777777, cur_text);
 		if (lines[line_n].state == true) DrawBar(x+RED_LINE_X+6, drawy+6, strlen(cur_text)*6, 1, 0x444444); //strike
 		DrawBar(WIN_W,drawy,1,item_h,0xBBBBBB); //fast fix; proper fix is to restrict WriteText() char length

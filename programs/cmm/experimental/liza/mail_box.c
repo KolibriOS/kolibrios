@@ -236,7 +236,7 @@ void MailBoxLoop() {
 				if (id==CHANGE_CHARSET)
 				{
 					DefineButton(0,0,Form.cwidth,Form.cheight, CLOSE_CHANGE_CHARSET+BT_HIDE+BT_NOFRAME);
-					DrawRectangle(Form.cwidth-100, Form.cheight-status_bar_h- 70, 70, 82, sc.work_graph);
+					DrawRectangle(Form.cwidth-100, Form.cheight-status_bar_h- 70, 70, 82, sc.line);
 					DrawRectangle3D(Form.cwidth-99, Form.cheight-status_bar_h- 69, 68, 80, 0xFFFfff, sc.work);
 					for (id=0; id<5; id++)
 					{
@@ -264,7 +264,7 @@ void MailBoxLoop() {
 				if !(DefineWindow(MAILBOX_HEADER)) break;
 				scroll1.bckg_col = scroll_wv.bckg_col = 0xBBBbbb;
 				scroll1.frnt_col = scroll_wv.frnt_col = sc.work;
-				scroll1.line_col = scroll_wv.line_col = sc.work_graph;
+				scroll1.line_col = scroll_wv.line_col = sc.line;
 				DrawToolbar();
 				DrawMailBox();
 
@@ -297,7 +297,7 @@ void DrawToolbar() {
 	DrawCaptButton(BUT_W+ 20, BUT_Y, BUT_W+10, BUT_H, SAVE_LETTER, sc.button, sc.button_text,"Save letter");
 	DrawCaptButton(Form.cwidth-BUT_W - 10, BUT_Y, BUT_W, BUT_H, EXIT_MAIL,   sc.button, sc.button_text,"< Exit");
 
-	DrawBar(0, mail_list.y-3, mail_list.w,1, sc.work_graph);
+	DrawBar(0, mail_list.y-3, mail_list.w,1, sc.line);
 	DrawBar(0, mail_list.y-2, mail_list.w,1, 0xdfdfdf);
 	DrawBar(0, mail_list.y-1, mail_list.w,1, 0xf0f0f0);
 }
@@ -329,12 +329,12 @@ void DrawMailList() {
 
 void DrawLetterInfo() {
 	int lt_y = mail_list.y+mail_list.h;
-	DrawBar(0, lt_y, mail_list.w, 1, sc.work_graph);
+	DrawBar(0, lt_y, mail_list.w, 1, sc.line);
 	DrawBar(0, lt_y+1, Form.cwidth, 1, LBUMP);
 	DrawBar(0, lt_y+2, Form.cwidth, LIST_INFO_H-4, sc.work);
 	WriteText(mail_list.w-30/2, lt_y, 0x80, 0x888888, "= = =");
 	WriteText(mail_list.w-30/2, lt_y+1, 0x80, 0xEeeeee, "= = =");
-	DrawBar(0, lt_y+LIST_INFO_H-2, Form.cwidth, 1, sc.work_graph); //bottom
+	DrawBar(0, lt_y+LIST_INFO_H-2, Form.cwidth, 1, sc.line); //bottom
 	DrawBar(0, lt_y+LIST_INFO_H-1, Form.cwidth, 1, 0xdfdfdf);
 	DrawBar(0, lt_y+LIST_INFO_H  , Form.cwidth, 1, 0xf0f0f0);
 	WriteTextB(10, lt_y+8 , 0x80, sc.work_text, "From:");

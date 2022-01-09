@@ -148,14 +148,14 @@ void Main_Window()
 			if (Form.status_window&ROLLED_UP) break;
 
 			DrawBar(0,0,  Form.cwidth,TOPPANELH, sc.work);
-			DrawBar(0,TOPPANELH, Form.cwidth,1,  sc.work_graph);
+			DrawBar(0,TOPPANELH, Form.cwidth,1,  sc.line);
 			WriteText(6, 9, 0x90, sc.work_text, SIZE_TEXT);
-			DrawRectangle(edit_disk_size.left-1, edit_disk_size.top-1, edit_disk_size.width+2, 23,sc.work_graph);
+			DrawRectangle(edit_disk_size.left-1, edit_disk_size.top-1, edit_disk_size.width+2, 23,sc.line);
 			edit_box_draw stdcall (#edit_disk_size);
 			x = 6 + DrawStandartCaptButton(6, 36, 10, T_ADD_DISK);
 			DrawStandartCaptButton(x, 36, 11, T_DELETE_DISK);
-			_PutImage(6+6, 42,  14,14, #icons_btn);
-			_PutImage(x+6, 42,  14,14, 14*14*3+#icons_btn);		
+			PutImage(6+6, 42,  14,14, #icons_btn);
+			PutImage(x+6, 42,  14,14, 14*14*3+#icons_btn);		
 			GetDisks();
 			DrawTmpDisks();
 		}
@@ -231,7 +231,7 @@ void DrawTmpDisks()
 	byte i;
 
 	DrawBar(0,TOPPANELH+1, Form.cwidth,Form.cheight-TOPPANELH-BOTPANELH-2, 0xFFFFFF);
-	DrawBar(0,Form.cheight-BOTPANELH-1, Form.cwidth,1, sc.work_graph);
+	DrawBar(0,Form.cheight-BOTPANELH-1, Form.cwidth,1, sc.line);
 	DrawBar(0,Form.cheight-BOTPANELH, Form.cwidth,BOTPANELH, sc.work);
 	sprintf(#free_ram_text, FREE_RAM_TEXT, GetFreeRAM()/1024);
 	WriteText(10, Form.cheight-20, 0x90, sc.work_text, #free_ram_text);
@@ -251,7 +251,7 @@ void DrawTmpDisks()
 		WriteText(disk_pos_x[i]+29,disk_pos_y[i]+6,  0x90, 0x222222, #disk_list[i].Item);
 		WriteText(disk_pos_x[i]+30,disk_pos_y[i]+24, 0x80, 0x555555, 
 			ConvertSize(GetDiskSize(disk_list[i].Item[3] - '0')));
-		_PutImage(disk_pos_x[i]+9,disk_pos_y[i]+10, 15,9, #disk_icon);
+		PutImage(disk_pos_x[i]+9,disk_pos_y[i]+10, 15,9, #disk_icon);
 		if (selected==i) {
 			if ( edit_disk_size.flags & ed_focus) 
 				selection_color = SELECTION_INACTIVE; 

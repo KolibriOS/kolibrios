@@ -174,7 +174,7 @@ void draw_window()
 	DrawBar(2,2,WIN_W-3,TITLE_H-4,0xE08C5E);
 	WriteText(9,TITLE_H/2-6,0x90,0xA9613A,WINDOW_CAPTION);
 	WriteTextB(7,TITLE_H/2-7,0x90,0xFFFfff,WINDOW_CAPTION);
-	_PutImage(1, TITLE_H, 292,EDGE_H, #edge);
+	PutImage(1, TITLE_H, 292,EDGE_H, #edge);
 	PutPixel(notes.x, notes.y-1, COL_RED_LINE);
 	ECX-=1;	$int 0x40;
 	DrawCloseButton(WIN_W-23,4,16,16);

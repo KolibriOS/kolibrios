@@ -216,10 +216,10 @@ void ClipViewSelectListDraw()
 void SelectList_DrawBorder() {
 	DrawRectangle3D(GAP-2, LIST_Y-2,
 		list.w+3, list.h+3, 
-		sc.work_dark, sc.work_light);
+		sc.dark, sc.light);
 	DrawRectangle3D(GAP-1, LIST_Y-1, 
 		list.w+1, list.h+1, 
-		sc.work_graph, sc.work_graph);
+		sc.line, sc.line);
 }
 
 //===================================================//

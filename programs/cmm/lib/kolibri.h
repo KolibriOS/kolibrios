@@ -439,12 +439,7 @@ inline fastcall dword SetWindowLayerBehaviour(EDX, ESI)
 
 :void WriteTextB(dword x,y,byte fontType, dword color, str_offset)
 {
-	EAX = 4;
-	EBX = x<<16+y;
-	ECX = fontType<<24+color;
-	EDX = str_offset;
-	ESI = 0;
-	$int 0x40;
+	WriteText(x,y,fontType, color, str_offset);
 	$add ebx, 1<<16
 	$int 0x40
 }
@@ -523,7 +518,7 @@ inline fastcall dword SetWindowLayerBehaviour(EDX, ESI)
 	$int     64
 }
 
-:void _PutImage(dword x,y, w,h, data_offset)
+:void PutImage(dword x,y, w,h, data_offset)
 {
 	EAX = 7;
 	EBX = data_offset;
@@ -584,12 +579,12 @@ inline fastcall void PutPixel( EBX,ECX,EDX)
 
 :void DefineDragableWindow(dword _x, _y, _w, _h)
 {
-	DefineAndDrawWindow(_x, _y, _w, _h, 0x41,0x000000,NULL,0b);
+	DefineAndDrawWindow(_x, _y, _w, _h, 0x41,0x000000,EDI,0b);
 }
 
 :void DefineUnDragableWindow(dword _x, _y, _w, _h)
 {
-	DefineAndDrawWindow(_x, _y, _w, _h, 0x01, 0, 0, 0x01fffFFF);
+	DefineAndDrawWindow(_x, _y, _w, _h, 0x01, 0, EDI, 0x01fffFFF);
 }
 
 :void EventDragWindow()
@@ -617,7 +612,7 @@ inline fastcall void PutPixel( EBX,ECX,EDX)
 
 :void DefineHiddenButton(dword _x, _y, _w, _h, _id)
 {
-	DefineButton(_x, _y, _w, _h, _id + BT_HIDE, 0);
+	DefineButton(_x, _y, _w, _h, _id + BT_HIDE, ESI);
 }
 
 inline fastcall void DeleteButton( EDX)
@@ -637,8 +632,7 @@ inline fastcall dword GetStartTime()
 :dword X_EventRedrawWindow,Y_EventRedrawWindow;
 :void _EventRedrawWindow()
 {
-	DefineAndDrawWindow(X_EventRedrawWindow,Y_EventRedrawWindow,1,1,0x34,0xFFFFFF,NULL,0);
-	//pause(10);
+	DefineAndDrawWindow(X_EventRedrawWindow,Y_EventRedrawWindow,1,1,0x34,0xFFFFFF,EDI,0);
 	ExitProcess();
 }
 :char REDRAW_BUFF_EVENT_[4096];

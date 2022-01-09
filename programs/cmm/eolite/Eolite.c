@@ -249,7 +249,7 @@ void main()
 
 			if (mouse.x>=files.x+files.w) && (mouse.x<=files.x+files.w+16) && (mouse.y>files.y-17) && (mouse.y<files.y)
 			{
-				if (mouse.lkm) DrawRectangle3D(files.x+files.w+1,files.y-16,14,14,sc.work_dark,sc.work_light);
+				if (mouse.lkm) DrawRectangle3D(files.x+files.w+1,files.y-16,14,14,sc.dark,sc.light);
 				WHILE (mouse.lkm) && (files.first>0)
 				{
 					pause(8);
@@ -257,12 +257,12 @@ void main()
 					List_ReDraw();
 					mouse.get();
 				}
-				DrawRectangle3D(files.x+files.w+1,files.y-16,14,14,sc.work_light,sc.work_dark);
+				DrawRectangle3D(files.x+files.w+1,files.y-16,14,14,sc.light,sc.dark);
 			}
 
 			if (mouse.x>=files.x+files.w) && (mouse.x<=files.x+files.w+16) && (mouse.y>files.y+files.h-16) && (mouse.y<files.y+files.h)
 			{
-				if (mouse.lkm) DrawRectangle3D(files.x+files.w+1,files.y+files.h-15,14,14,sc.work_dark,sc.work_light);
+				if (mouse.lkm) DrawRectangle3D(files.x+files.w+1,files.y+files.h-15,14,14,sc.dark,sc.light);
 				while (mouse.lkm) && (files.first<files.count-files.visible)
 				{
 					pause(8);
@@ -270,7 +270,7 @@ void main()
 					List_ReDraw();
 					mouse.get();
 				}
-				DrawRectangle3D(files.x+files.w+1,files.y+files.h-15,14,14,sc.work_light,sc.work_dark);
+				DrawRectangle3D(files.x+files.w+1,files.y+files.h-15,14,14,sc.light,sc.dark);
 			}
 
 			//Scrooll
@@ -577,7 +577,7 @@ void draw_window()
 		PutPaletteImage(#toolbar, 246, 34, 0, 0, 8, #toolbar_pal);
 		for (i=0; i<3; i++) DefineHiddenButton(toolbar_buttons_x[i]+2,7,31-5,29-5,BACK_BTN+i);
 		for (i=3; i<6; i++) DefineHiddenButton(toolbar_buttons_x[i],  5,31,  29,  BACK_BTN+i);
-		DrawBar(127, 8, 1, 25, sc.work_graph);
+		DrawBar(127, 8, 1, 25, sc.line);
 		DrawBar(246,0, Form.cwidth - 246, 34, sc.work);
 		DrawDot(Form.cwidth-17,12);
 		DrawDot(Form.cwidth-17,12+6);
@@ -585,12 +585,12 @@ void draw_window()
 		DefineHiddenButton(Form.cwidth-24,7,20,25,51+BT_NOFRAME); //dots
 	}
 	//main rectangles
-	DrawRectangle(1,40,Form.cwidth-3,Form.cheight - 42-status_bar_h,sc.work_graph);
+	DrawRectangle(1,40,Form.cwidth-3,Form.cheight - 42-status_bar_h,sc.line);
 	DrawBar(0,39,1,-show_status_bar.checked*status_bar_h + Form.cheight - 40, sc.work);
 	EBX = Form.cwidth-1 * 65536 + 1;
 	$int 64
-	for (i=0; i<6; i++) DrawBar(0, 34+i, Form.cwidth, 1, MixColors(sc.work_dark, sc.work, i*10));
-	for (i=0; i<6; i++) DrawBar(0, 5-i, Form.cwidth, 1, MixColors(sc.work_light, sc.work, i*10));
+	for (i=0; i<6; i++) DrawBar(0, 34+i, Form.cwidth, 1, MixColors(sc.dark, sc.work, i*10));
+	for (i=0; i<6; i++) DrawBar(0, 5-i, Form.cwidth, 1, MixColors(sc.light, sc.work, i*10));
 	llist_copy(#files_active, #files);
 	DrawStatusBar();
 	if (!getSelectedCount()) {
@@ -617,7 +617,7 @@ void DrawButtonsAroundList()
 	if (sort_type==2) sorting_arrow_x = files.x + files.w - 90;
 	if (sort_type==3) sorting_arrow_x = strlen(T_SIZE)*3-30+files.x+files.w;
 	WriteText(sorting_arrow_x,files.y-12,0x80, sc.work_text, sorting_arrow_t);
-	DrawBar(files.x+files.w,files.y,1,files.h,sc.work_graph);
+	DrawBar(files.x+files.w,files.y,1,files.h,sc.line);
 	if (efm) && (files.x<5) {
 		DrawBar(files.x+files.w+16,files.y,1,files.h,EDX); //line between panel
 	}
@@ -643,7 +643,7 @@ void DrawStatusBar()
 	int go_up_folder_exists=0;
 	dword topcolor;
 
-	if (show_status_bar.checked) topcolor=sc.work_light; else topcolor=sc.work;
+	if (show_status_bar.checked) topcolor=sc.light; else topcolor=sc.work;
 	DrawBar(0, Form.cheight - status_bar_h-1, Form.cwidth, 1, topcolor);
 
 	if (efm) {

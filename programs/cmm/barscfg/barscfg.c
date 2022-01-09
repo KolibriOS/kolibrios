@@ -137,7 +137,7 @@ void main()
 
 void DrawPanelsImage(dword y, n)
 {
-	_PutImage(22, y, PIMG_W, PIMG_H, n * PIMG_W * PIMG_H * 3 + #panels_img_data);
+	PutImage(22, y, PIMG_W, PIMG_H, n * PIMG_W * PIMG_H * 3 + #panels_img_data);
 }
 
 void SetDisabledMode()

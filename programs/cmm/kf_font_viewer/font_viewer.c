@@ -54,7 +54,7 @@ void main()
 			_DRAW_WINDOW_CONTENT:
 
 			DrawBar(0, 0, WINW, BARH-1, sc.work);
-			DrawBar(0, BARH-1,WINW,1,sc.work_graph);
+			DrawBar(0, BARH-1,WINW,1,sc.line);
 
 			if (!kfont.font) {
 				DrawBar(0, BARH, WINW, WINH - BARH, 0xFFFfff);
@@ -130,15 +130,15 @@ void draw_checkbox(dword _x, _checked)
 {
 	#define SIZE 14
 	#define CHBOXY 7
-	DrawRectangle3D(_x, CHBOXY, SIZE, SIZE, sc.work_graph, sc.work_graph);
+	DrawRectangle3D(_x, CHBOXY, SIZE, SIZE, sc.line, sc.line);
 	if (_checked == false)
 	{
 		DrawRectangle3D(_x+1, CHBOXY+1, SIZE-2, SIZE-2, 0xDDDddd, 0xffffff);
 		DrawBar(_x+2, CHBOXY+2, SIZE-3, SIZE-3, 0xffffff);
 	} else {
-		if (checkbox_flag) _PutImage(_x+1, CHBOXY+1, 13, 13, checkbox_flag);
+		if (checkbox_flag) PutImage(_x+1, CHBOXY+1, 13, 13, checkbox_flag);
 	}
-	DrawRectangle3D(_x-1,CHBOXY-1,SIZE+2,SIZE+2,sc.work_dark,sc.work_light);
+	DrawRectangle3D(_x-1,CHBOXY-1,SIZE+2,SIZE+2,sc.dark,sc.light);
 }
 
 char title[PATHLEN];

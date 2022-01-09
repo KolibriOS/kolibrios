@@ -23,8 +23,8 @@
 
 :void sensor::draw_wrapper()
 {
-	DrawRectangle(x-1, y-1, w+1, h+1, sc.work_graph);
-	DrawRectangle3D(x-2, y-2, w+3, h+3, sc.work, sc.work_light);
+	DrawRectangle(x-1, y-1, w+1, h+1, sc.line);
+	DrawRectangle3D(x-2, y-2, w+3, h+3, sc.work, sc.light);
 }
 
 :void sensor::draw_progress(dword progress_w)
@@ -32,7 +32,7 @@
 	char textp[16];
 	DrawBar(x, y,     w-progress_w, 1,   MixColors(PROGRESS_ACTIVE, PROGRESS_BG, 200));
 	DrawBar(x, y+1,   w-progress_w, h-2, PROGRESS_ACTIVE);
-	DrawBar(x, y+h-1, w-progress_w, 1,   MixColors(PROGRESS_ACTIVE, sc.work_graph, 200));
+	DrawBar(x, y+h-1, w-progress_w, 1,   MixColors(PROGRESS_ACTIVE, sc.line, 200));
 	DrawBar(x+w-progress_w, y, progress_w, h, PROGRESS_BG);
 
 	strcpy(#textp, itoa(w-progress_w*100/w));

@@ -368,7 +368,7 @@ void DrawWindow()
 	right_bar.x = Form.cwidth - right_bar.w;
 	b_color_gradient.x = b_last_colors.x = b_default_palette.x = right_bar.x;
 	DrawBar(0, 0, Form.cwidth, TOPBAR_H-1, sc.work);
-	DrawBar(0, TOPBAR_H-1, Form.cwidth, 1, sc.work_graph);
+	DrawBar(0, TOPBAR_H-1, Form.cwidth, 1, sc.line);
 
 	DrawTopPanelButton1(#EventCreateNewIcon,  ECTRL + SCAN_CODE_KEY_N, tx.set(7),    2);
 	DrawTopPanelButton1(#EventOpenIcon,       ECTRL + SCAN_CODE_KEY_O, tx.inc(GAP_S), 0);
@@ -450,7 +450,7 @@ void DrawEditArea()
 	left_side = canvas.x-wrapper.x-1;
 	top_side = canvas.y-wrapper.y-1;
 
-	DrawRectangle(wrapper.x-1, wrapper.y-1, wrapper.w, wrapper.h, sc.work_graph);
+	DrawRectangle(wrapper.x-1, wrapper.y-1, wrapper.w, wrapper.h, sc.line);
 
 	if (left_side>0)
 	{
@@ -589,7 +589,7 @@ void DrawPreview()
 	if (image.columns > right_bar.w) return;
 	if (image.rows > preview_h) return;
 
-	_PutImage(right_bar.w - image.columns / 2 + x - 3,
+	PutImage(right_bar.w - image.columns / 2 + x - 3,
 		preview_h - image.rows / 2 + y, 
 		image.columns, image.rows, image.get_image()
 		);
@@ -606,7 +606,7 @@ void DrawImageWithBg(dword _x, _y, _col_to)
 	_x *= preview_size;
 	_y *= preview_size;
 	DrawWideRectangle(_x,_y, preview_size, preview_size, preview_size-image.columns/2, _col_to);
-	_PutImage(preview_size - image.columns / 2 + _x, preview_size - image.rows / 2 + _y,
+	PutImage(preview_size - image.columns / 2 + _x, preview_size - image.rows / 2 + _y,
 		image.columns, image.rows, image.get_image_with_replaced_color(color2, _col_to));
 }
 

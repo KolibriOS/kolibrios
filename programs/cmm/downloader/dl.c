@@ -92,7 +92,7 @@ void ProcessKeyPress()
 void DrawWindow()
 {  
 	sc.get();
-	pb.frame_color = sc.work_dark;
+	pb.frame_color = sc.dark;
 	DefineAndDrawWindow(110 + random(300), 100 + random(300), WIN_W+9, 
 		WIN_H + 5 + skin_h, 0x34, sc.work, DL_WINDOW_HEADER, 0);
 
