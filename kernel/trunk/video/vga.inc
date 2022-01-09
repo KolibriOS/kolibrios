@@ -1,6 +1,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;                                                              ;;
-;; Copyright (C) KolibriOS team 2004-2015. All rights reserved. ;;
+;; Copyright (C) KolibriOS team 2004-2022. All rights reserved. ;;
 ;; Distributed under terms of the GNU General Public License    ;;
 ;;                                                              ;;
 ;;  VGA.INC                                                     ;;
@@ -168,7 +168,7 @@ align 4
 align 4
 novesal:
         mov     [novesachecksum], ecx
-        mov     ecx, 0
+        xor     ecx, ecx     ;mov     ecx, 0
         movzx   eax, word [MOUSE_Y]
         cmp     eax, 100
         jge     m13l3
@@ -495,9 +495,13 @@ VGA_draw_bar:
 align 4
 VGA_draw_bar_1:
         mov     [temp.cx], eax
-        mov     eax, [TASK_BASE]
-        add     ebx, [eax-twdw + 4]
-        mov     eax, [eax-twdw + 0]
+        ;mov     eax, [TASK_BASE]
+        ;add     ebx, [eax-twdw + 4]
+        ;mov     eax, [eax-twdw + 0]
+        mov     eax, [current_slot_idx]
+        shl     eax, 5
+        add     ebx, [eax+window_data+WDATA.box.top]
+        mov     eax, [eax+window_data+WDATA.box.left]
         add     eax, [temp.cx]
         and     eax, 0xfff8
         shl     ebx, 9
