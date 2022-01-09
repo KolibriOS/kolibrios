@@ -1612,8 +1612,10 @@ sys_setup:
         dec     ebx
         jnz     @f
 
-        mov     edi, [TASK_BASE]
-        mov     eax, [edi+TASKDATA.mem_start]
+        ;mov     edi, [TASK_BASE]
+        ;mov     eax, [edi+TASKDATA.mem_start]
+        mov     edi, [current_slot]
+        mov     eax, [edi+APPDATA.mem_start]
         add     eax, edx
 ; 1 = normal layout
         dec     ecx
@@ -1709,8 +1711,10 @@ sys_getsetup:
         dec     ebx
         jnz     @f
 
-        mov     edi, [TASK_BASE]
-        mov     ebx, [edi+TASKDATA.mem_start]
+        ;mov     edi, [TASK_BASE]
+        ;mov     ebx, [edi+TASKDATA.mem_start]
+        mov     edi, [current_slot]
+        mov     ebx, [edi+APPDATA.mem_start]
         add     ebx, edx
 ; 1 = normal layout
         dec     ecx

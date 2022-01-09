@@ -971,8 +971,9 @@ proc set_app_params stdcall,slot:dword, params:dword, flags:dword
         mov     [ebx+SLOT_BASE+APPDATA.cur_dir], eax
         rep movsd
 
-        shr     ebx, 3
-        mov     dword [TASK_TABLE+ebx+TASKDATA.mem_start], 0
+        ;shr     ebx, 3
+        ;mov     dword [TASK_TABLE+ebx+TASKDATA.mem_start], 0
+        mov     dword [ebx+SLOT_BASE+APPDATA.mem_start], 0
 
         mov     ebx, [slot]
         mov     eax, ebx
