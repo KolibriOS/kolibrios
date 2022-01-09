@@ -13,7 +13,7 @@ PROGS = "../programs"
 -- The first subitem of every item is name inside kolibri.img, the second is name of local file.
 img_files = {
  {"MACROS.INC", PROGS .. "/macros.inc"},
- {"CONFIG.INC", PROGS .. "/config.inc"},
+-- {"CONFIG.INC", PROGS .. "/config.inc"},
  {"STRUCT.INC", PROGS .. "/struct.inc"},
  {"FB2READ", "common/fb2read"},
  {"ALLGAMES", "common/allgames"},

@@ -3,7 +3,7 @@
 #include "TWB\parse_tag.h"
 #include "TWB\special.h"
 #include "TWB\tag_list.h"
-#define DEFAULT_BG_COL 0xffEBE8E9;
+#define DEFAULT_BG_COL 0xffFBE5E4; //- peach; 0xffEBE8E9 - more grey
 dword link_color_default;
 dword link_color_active;
 #include "TWB\links.h"

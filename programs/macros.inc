@@ -290,8 +290,8 @@ macro __mov reg,a,b {       ; mike.dld
 }
 
 
-include 'config.inc'
-;__CPU_type equ p5
+;include 'config.inc'
+__CPU_type equ p5
 SYSENTER_VAR    equ 0
 
 macro mcall a,b,c,d,e,f,g {   ; [mike.dld], [Ghost]
