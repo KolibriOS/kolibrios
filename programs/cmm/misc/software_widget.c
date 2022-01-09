@@ -100,7 +100,7 @@ void main()
 
 		case evReDraw:
 			SetAppColors();
-			DefineAndDrawWindow(screen.w-window_width/2,screen.h-window_height/2,window_width,window_height,0x74,sc.work,"",0);
+			DefineAndDrawWindow(screen.w-window_width/2,screen.h-window_height/2,window_width,window_height,0x74,0,"",0);
 			GetProcessInfo(#Form, SelfInfo);
 			if (Form.status_window&ROLLED_UP) { 
 				DrawTitle(#window_title);

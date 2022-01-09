@@ -152,10 +152,10 @@ void draw_window()
 	if (tabs.active_tab == TAB_SCREENSAVERS)
 	{
 		draw_timeout();
-		ss_timeout.line_col = sc.work_graph;
+		ss_timeout.line_col = sc.line;
 		ss_timeout.frnt_col = sc.work;
 		scrollbar_h_draw stdcall (#ss_timeout);
-		DrawRectangle(RIGHTx, RIGHTy+25, RIGHTw-20, 15, sc.work_graph);
+		DrawRectangle(RIGHTx, RIGHTy+25, RIGHTw-20, 15, sc.line);
 		ESI = DrawStandartCaptButton(RIGHTx, PANEL_H + 65, BTN_TEST_SCREENSAVER, T_SS_PREVIEW);
 		DrawStandartCaptButton(RIGHTx+ESI, PANEL_H + 65, BTN_SET_SCREENSAVER, T_SS_SET);
 	}
