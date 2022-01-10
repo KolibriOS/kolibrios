@@ -293,10 +293,11 @@ proc find_next_task
         jz      .priority_next
 .task_loop:
         mov     ebx, [ebx+APPDATA.in_schedule.next]
-        mov     edi, ebx
-        shr     edi, 3
-        add     edi, TASK_TABLE - (SLOT_BASE shr 3)
-        mov     al, [edi+TASKDATA.state]
+        ;mov     al, [ebx+APPDATA.state]
+        mov     edi, ebx                            ;
+        shr     edi, 3                              ;
+        add     edi, TASK_TABLE - (SLOT_BASE shr 3) ; on delete
+        mov     al, [edi+TASKDATA.state]            ;
         test    al, al
         jz      .task_found     ; state == 0
         cmp     al, 5
@@ -316,7 +317,8 @@ proc find_next_task
         xor     eax, eax
 @@:
         mov     [ebx+APPDATA.wait_param], eax  ; retval for wait
-        mov     [edi+TASKDATA.state], TSTATE_RUNNING
+        mov     [edi+TASKDATA.state], TSTATE_RUNNING  ; on delete
+        mov     [ebx+APPDATA.state], TSTATE_RUNNING
 .task_found:
         mov     [scheduler_current+ecx*4], ebx
 ; If we have selected a thread with higher priority
