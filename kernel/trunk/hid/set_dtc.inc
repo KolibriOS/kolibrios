@@ -201,3 +201,74 @@ startstopclk:
         btc     ax, 7
         out     dx, al
         ret
+
+align 4
+sys_clock:
+        cli
+  ; Mikhail Lisovin  xx Jan 2005
+  @@:
+        mov     al, 10
+        out     0x70, al
+        in      al, 0x71
+        test    al, al
+        jns     @f
+        mov     esi, 1
+        call    delay_ms
+        jmp     @b
+  @@:
+  ; end Lisovin's fix
+
+        xor     al, al        ; seconds
+        out     0x70, al
+        in      al, 0x71
+        movzx   ecx, al
+        mov     al, 02        ; minutes
+        shl     ecx, 16
+        out     0x70, al
+        in      al, 0x71
+        movzx   edx, al
+        mov     al, 04        ; hours
+        shl     edx, 8
+        out     0x70, al
+        in      al, 0x71
+        add     ecx, edx
+        movzx   edx, al
+        add     ecx, edx
+        sti
+        mov     [esp + 32], ecx
+        ret
+
+
+align 4
+
+sys_date:
+
+        cli
+  @@:
+        mov     al, 10
+        out     0x70, al
+        in      al, 0x71
+        test    al, al
+        jns     @f
+        mov     esi, 1
+        call    delay_ms
+        jmp     @b
+  @@:
+
+        mov     ch, 0
+        mov     al, 7           ; date
+        out     0x70, al
+        in      al, 0x71
+        mov     cl, al
+        mov     al, 8           ; month
+        shl     ecx, 16
+        out     0x70, al
+        in      al, 0x71
+        mov     ch, al
+        mov     al, 9           ; year
+        out     0x70, al
+        in      al, 0x71
+        mov     cl, al
+        sti
+        mov     [esp+32], ecx
+        ret

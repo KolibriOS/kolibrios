@@ -1182,6 +1182,7 @@ proc setup_os_slot
         list_add_tail ebx, ecx
 
         mov     [edx+APPDATA.wnd_number], dh
+        mov     byte [edx+APPDATA.tid], dh    ;?
         mov     eax, edx
         shr     eax, 3
         add     eax, TASK_TABLE - (SLOT_BASE shr 3)
@@ -1926,8 +1927,10 @@ sys_end:
 ;--------------------------------------
 ; kill all sockets this process owns
         pusha
-        mov     edx, [TASK_BASE]
-        mov     edx, [edx+TASKDATA.pid]
+        mov     edx, [current_slot]
+        mov     edx, [edx+APPDATA.tid]
+        mov     edx, [TASK_BASE]           ; delete
+        mov     edx, [edx+TASKDATA.pid]    ;
         call    socket_process_end
         popa
 ;--------------------------------------
@@ -1939,8 +1942,10 @@ sys_end:
         stdcall user_free, eax
 @@:
 
-        mov     eax, [TASK_BASE]
-        mov     [eax+TASKDATA.state], TSTATE_ZOMBIE
+        mov     eax, [current_slot]
+        mov     [eax+APPDATA.state], TSTATE_ZOMBIE
+        mov     eax, [TASK_BASE]                       ;
+        mov     [eax+TASKDATA.state], TSTATE_ZOMBIE    ; delete
         call    wakeup_osloop
 
 .waitterm:            ; wait here for termination
@@ -2708,80 +2713,9 @@ sys_cpuusage:
         mov     dword [esp+32], -1
         ret   
 
-align 4
-sys_clock:
-        cli
-  ; Mikhail Lisovin  xx Jan 2005
-  @@:
-        mov     al, 10
-        out     0x70, al
-        in      al, 0x71
-        test    al, al
-        jns     @f
-        mov     esi, 1
-        call    delay_ms
-        jmp     @b
-  @@:
-  ; end Lisovin's fix
-
-        xor     al, al        ; seconds
-        out     0x70, al
-        in      al, 0x71
-        movzx   ecx, al
-        mov     al, 02        ; minutes
-        shl     ecx, 16
-        out     0x70, al
-        in      al, 0x71
-        movzx   edx, al
-        mov     al, 04        ; hours
-        shl     edx, 8
-        out     0x70, al
-        in      al, 0x71
-        add     ecx, edx
-        movzx   edx, al
-        add     ecx, edx
-        sti
-        mov     [esp + 32], ecx
-        ret
-
-
-align 4
-
-sys_date:
-
-        cli
-  @@:
-        mov     al, 10
-        out     0x70, al
-        in      al, 0x71
-        test    al, al
-        jns     @f
-        mov     esi, 1
-        call    delay_ms
-        jmp     @b
-  @@:
-
-        mov     ch, 0
-        mov     al, 7           ; date
-        out     0x70, al
-        in      al, 0x71
-        mov     cl, al
-        mov     al, 8           ; month
-        shl     ecx, 16
-        out     0x70, al
-        in      al, 0x71
-        mov     ch, al
-        mov     al, 9           ; year
-        out     0x70, al
-        in      al, 0x71
-        mov     cl, al
-        sti
-        mov     [esp+32], ecx
-        ret
-
 
 ; redraw status
-
+align 4
 sys_redrawstat:
         cmp     ebx, 1
         jne     no_widgets_away
@@ -3142,6 +3076,7 @@ markz:
         test    eax, eax
         jz      @f
         mov     [edx+TASKDATA.state], TSTATE_ZOMBIE
+        ;mov     [edx+APPDATA.state], TSTATE_ZOMBIE
 @@:
         add     edx, 0x20
         loop    markz
@@ -3471,8 +3406,10 @@ delay_ms:     ; delay in 1/1000 sec
 ;-----------------------------------------------------------------------------
 align 4
 set_app_param:
+        mov     edi, [current_slot]
         mov     edi, [TASK_BASE]
         mov     eax, ebx
+        ;xchg    eax, [edi + APPDATA.event_mask] ; set new event mask
         xchg    eax, [edi + TASKDATA.event_mask] ; set new event mask
         mov     [esp+32], eax                    ; return old mask value
         ret
@@ -3687,6 +3624,8 @@ no_unmask_io:
         mov     [RESERVED_PORTS], eax
         shl     eax, 4
         add     eax, RESERVED_PORTS
+        ;mov     ebx, [current_slot]
+        ;mov     ebx, [ebx+APPDATA.tid]
         mov     ebx, [TASK_BASE]
         mov     ebx, [ebx+TASKDATA.pid]
         mov     [eax], ebx
@@ -3702,6 +3641,8 @@ free_port_area:
         mov     eax, [RESERVED_PORTS]; no reserved areas ?
         test    eax, eax
         jz      frpal2
+        ;mov     ebx, [current_slot]
+        ;mov     ebx, [ebx+APPDATA.tid]
         mov     ebx, [TASK_BASE]
         mov     ebx, [ebx+TASKDATA.pid]
    frpal3:
@@ -4489,6 +4430,8 @@ align 4
         mov     eax, [current_slot_idx]
         shl     eax, 5
         mov     eax, [eax+TASK_TABLE+TASKDATA.pid]
+        ;shl     eax, 8
+        ;mov     eax, [eax+SLOT_BASE+APPDATA.tid]
 ; set current PID for lock input
         mov     [PID_lock_input], eax
 @@:
@@ -4504,6 +4447,8 @@ align 4
         mov     ebx, [current_slot_idx]
         shl     ebx, 5
         mov     ebx, [ebx+TASK_TABLE+TASKDATA.pid]
+        ;shl     ebx, 8
+        ;mov     ebx, [ebx+SLOT_BASE+APPDATA.tid]
 ; compare current lock input with current PID
         cmp     ebx, eax
         jne     @f
