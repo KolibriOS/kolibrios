@@ -516,7 +516,7 @@ struct  APPDATA
         draw_bgr_x      dd ?            ;+116
         draw_bgr_y      dd ?            ;+120
         state           db ?            ;+124  ; R thread state
-                        db ?            ;+125
+        wnd_number      db ?            ;+125  ; R
                         dw ?            ;+126
         wnd_shape       dd ?            ;+128
         wnd_shape_scale dd ?            ;+132

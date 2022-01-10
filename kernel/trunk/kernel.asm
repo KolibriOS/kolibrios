@@ -1181,10 +1181,11 @@ proc setup_os_slot
         lea     ecx, [sys_proc+PROC.thr_list]
         list_add_tail ebx, ecx
 
+        mov     [edx+APPDATA.wnd_number], dh
         mov     eax, edx
         shr     eax, 3
         add     eax, TASK_TABLE - (SLOT_BASE shr 3)
-        mov     [eax+TASKDATA.wnd_number], dh
+        ;mov     [eax+TASKDATA.wnd_number], dh
         mov     byte [eax+TASKDATA.pid], dh
 
         ret

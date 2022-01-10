@@ -975,8 +975,9 @@ proc set_app_params stdcall,slot:dword, params:dword, flags:dword
         ;mov     dword [TASK_TABLE+ebx+TASKDATA.mem_start], 0
         mov     dword [ebx+SLOT_BASE+APPDATA.mem_start], 0
 
-        mov     ebx, [slot]
-        mov     eax, ebx
+        mov     eax, [slot]
+        mov     [ebx+SLOT_BASE+APPDATA.wnd_number], al
+        mov     ebx, eax
         shl     ebx, 5
         lea     ecx, [draw_data+ebx];ecx - pointer to draw data
 
@@ -984,7 +985,7 @@ proc set_app_params stdcall,slot:dword, params:dword, flags:dword
         mov     [ebx+window_data+WDATA.fl_wstate], WSTATE_NORMAL
         mov     [ebx+window_data+WDATA.fl_redraw], 1
         add     ebx, TASK_TABLE     ;ebx - pointer to information about process
-        mov     [ebx+TASKDATA.wnd_number], al;set window number on screen = process slot
+        ;mov     [ebx+TASKDATA.wnd_number], al;set window number on screen = process slot
 
         mov     [ebx+TASKDATA.event_mask], dword 1+2+4;set default event flags (see 40 function)
 
