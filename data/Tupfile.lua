@@ -443,7 +443,7 @@ tup.append_table(img_files, {
  {"3D/RAY", PROGS .. "/demos/ray/ray"},
  {"3D/VIEW3DS", PROGS .. "/demos/view3ds/view3ds"},
  {"DEMOS/BCDCLK", PROGS .. "/demos/bcdclk/trunk/bcdclk"},
- {"DEMOS/BUGHBROT", PROGS .. "/demos/buddhabrot/trunk/buddhabrot"},
+ {"DEMOS/BUDHBROT", PROGS .. "/demos/buddhabrot/trunk/buddhabrot"},
  {"DEMOS/EYES", PROGS .. "/demos/eyes/trunk/eyes"},
  {"DEMOS/FIREWORK", PROGS .. "/demos/firework/trunk/firework"},
  {"DEMOS/MOVBACK", PROGS .. "/demos/movback/trunk/movback"},
