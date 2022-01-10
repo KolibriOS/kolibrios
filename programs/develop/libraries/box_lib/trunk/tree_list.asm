@@ -293,9 +293,8 @@ pop ebx eax
 			add esi,tl_box_height ;esi = coord bottom border
 			call tl_draw_null_cursor ;стираем курсор
 		pop esi
-		@@:
-
 		mov tl_cur_pos,eax
+		@@:
 
 		; if '+' or '-' press
 		call tl_get_cur_node_index ;eax = node index
@@ -1410,14 +1409,14 @@ endp
 align 4
 proc tl_node_poi_get_info uses ebx ecx edx edi, tlist:dword, node_ind:dword
 	mov edi,[tlist]
-	mov ebx,dword[node_ind]
+	mov ebx,[node_ind]
+	inc ebx
 
 	;cycle to nodes
 	mov edx,tl_data_nodes
-	mov ecx,edx
-	add ecx,sizeof.TreeNode
+	lea ecx,[edx+sizeof.TreeNode]
 	@@:
-		call tl_iterat_next_all
+		call tl_iterat_next
 		cmp edx,ecx
 		jle @f
 		dec ebx
