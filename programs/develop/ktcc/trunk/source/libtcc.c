@@ -2279,6 +2279,9 @@ ST_FUNC int tcc_parse_args1(TCCState *s, int argc, char **argv)
         case TCC_OPTION_B:
             /* set tcc utilities path (mainly for tcc development) */
             tcc_set_lib_path(s, optarg);
+#ifdef TCC_TARGET_MEOS 
+            tcc_split_path(s, (void ***)&s->crt_paths, &s->nb_crt_paths, CONFIG_TCC_CRTPREFIX);
+#endif
             break;
         case TCC_OPTION_l:
             args_parser_add_file(s, r, TCC_FILETYPE_BINARY);

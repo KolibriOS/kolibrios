@@ -18,6 +18,7 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
+#include "libtcc.h"
 #include "tcc.h"
 
 /* Define this to get some debug output during relocation processing.  */
@@ -1618,17 +1619,21 @@ ST_FUNC void tcc_add_bcheck(TCCState *s1)
 ST_FUNC void tcc_add_runtime(TCCState *s1)
 {
     tcc_add_pragma_libs(s1);
-
     /* add libc */
     if (!s1->nostdlib) {
+#if !defined (TCC_TARGET_MEOS) 
         tcc_add_library(s1, "c");
-#ifdef CONFIG_USE_LIBGCC
+    #ifdef CONFIG_USE_LIBGCC
         if (!s1->static_link) {
             tcc_add_file(s1, TCC_LIBGCC, TCC_FILETYPE_BINARY);
         }
-#endif
-#if !defined(TCC_TARGET_MEOS)
+    #endif
         tcc_add_support(s1, "libtcc1.a");
+#else
+        if (tcc_add_library_err(s1, "c") < 0 ||
+            tcc_add_library_err(s1, "tcc1") < 0) {
+            exit(1);
+        }
 #endif
     }
 
@@ -1636,17 +1641,13 @@ ST_FUNC void tcc_add_runtime(TCCState *s1)
        libtcc1.a must be loaded before for __bound_init to be defined and
        crtn.o must be loaded after to not finalize _init too early. */
     tcc_add_bcheck(s1);
-
+#if !defined (TCC_TARGET_MEOS) 
     if (!s1->nostdlib) {
         /* add crt end if not memory output */
         if (s1->output_type != TCC_OUTPUT_MEMORY)
-#if defined(TCC_TARGET_MEOS)
-;
-//            tcc_add_crt(s1, "start.o");
-#else
             tcc_add_crt(s1, "crtn.o");
-#endif
     }
+#endif
 }
 
 /* add various standard linker symbols (must be done after the

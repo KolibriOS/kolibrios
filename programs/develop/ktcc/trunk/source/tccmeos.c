@@ -19,10 +19,6 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
-#ifndef TCC_TARGET_KX
-int undef_sym_flag=0;
-#endif
-
 typedef struct {
 	char magic[8];
 	int version;
@@ -130,8 +126,6 @@ void build_reloc(me_info* me)
 				int sym_index = find_elf_sym(me->s1->dynsymtab_section, sym_name);
 				Elf32_Sym* dyn_sym;
 				if (sym_index == 0) {
-#else
-    			undef_sym_flag=1;
 #endif
           tcc_error_noabort("undefined symbol '%s'", sym_name);
 				continue;
@@ -302,13 +296,9 @@ int tcc_output_me(TCCState* s1,const char *filename)
 #ifdef TCC_TARGET_KX
 	kx_init(&me);
 #endif
+	tcc_add_runtime(s1);
 	relocate_common_syms();
 	assign_addresses(&me);
-#ifndef TCC_TARGET_KX    
-    if(undef_sym_flag){
-       tcc_error("Linker error!");
-    }
-#endif
     
 	if (s1->do_debug)
 		tcc_output_dbgme(filename, &me);
@@ -316,6 +306,10 @@ int tcc_output_me(TCCState* s1,const char *filename)
 	me.header.entry_point=tcc_find_symbol_me(&me,"start");
 	me.header.params= tcc_find_symbol_me(&me,"__argv"); // <--
 	me.header.argv= tcc_find_symbol_me(&me,"__path"); // <--
+
+	if (!me.header.entry_point || !me.header.params || me.header.argv) {
+		exit(1);
+	}
 
 	if((f=fopen(filename,"wb"))==NULL){
 		tcc_error("could not create '%s': %s", filename, strerror(errno));
