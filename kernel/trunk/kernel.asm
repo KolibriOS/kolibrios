@@ -2201,10 +2201,13 @@ sysfn_zmodif:
 
         mov     eax, edx
         shl     edx, 5
+        ;shl     edx, 8
 
+        ;cmp     [edx + SLOT_BASE + APPDATA.state], TSTATE_FREE
         cmp     [edx + TASK_TABLE + TASKDATA.state], TSTATE_FREE
         je      .fail
 
+        ;shr     edx, 3
         cmp     ecx, 1
         jnz     .set_zmod
 
@@ -2665,6 +2668,7 @@ sys_cpuusage:
         stosd
 
 ; +30: PID/TID
+        mov     eax, [ecx*8 + SLOT_BASE + APPDATA.tid]
         mov     eax, [ecx+TASK_TABLE+TASKDATA.pid]
         stosd
 
@@ -2677,6 +2681,7 @@ sys_cpuusage:
         movsd
 
     ; Process state (+50)
+        movzx   eax, byte [ecx*8 + SLOT_BASE + APPDATA.state]
         movzx   eax, byte [ecx+TASK_TABLE+TASKDATA.state]
         stosd
 
@@ -2692,7 +2697,8 @@ sys_cpuusage:
         stosb
 
     ; Event mask (+71)
-        mov     EAX, dword [ECX+TASK_TABLE+TASKDATA.event_mask]
+        mov     EAX, dword [ecx*8 + SLOT_BASE + APPDATA.event_mask]
+        mov     EAX, dword [ECX+TASK_TABLE+TASKDATA.event_mask]     ; delete
         stosd
 
     ; Keyboard mode (+75)

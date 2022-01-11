@@ -68,6 +68,8 @@ create_event:                                      ;; EXPORT use
 ;scratched: ebx,ecx,esi,edi
         mov     ebx, [current_slot]
         add     ebx, APP_OBJ_OFFSET
+        ;mov     edx, [cyrrent_slot]
+        ;mov     edx, [edx+APPDATA.tid]
         mov     edx, [TASK_BASE]
         mov     edx, [edx+TASKDATA.pid]
         pushfd
@@ -280,6 +282,7 @@ Wait_events_ex:
         mov     [esi+APPDATA.wait_timeout], ebx
         mov     eax, [timer_ticks]
         mov     [esi+APPDATA.wait_begin], eax
+        mov     [esi+APPDATA.state], TSTATE_WAITING
         mov     eax, [TASK_BASE]
         mov     [eax+TASKDATA.state], TSTATE_WAITING
         call    change_task
@@ -510,6 +513,8 @@ get_event_for_app:                                 ;; used from f10,f11,f23
 ;retval:
 ;   eax - event number (=0 => no events)
         movzx   edi, bh               ; bh  is assumed as [current_slot_idx]
+        ;shl     edi, 8
+        ;mov     ecx, [edi+SLOT_BASE+APPDATA.event_mask]
         shl     edi, 5
         add     edi, TASK_TABLE     ; edi is assumed as [TASK_BASE]
         mov     ecx, [edi+TASKDATA.event_mask]
@@ -552,6 +557,8 @@ align 4
 align 4
 .mouse_check:    ; Mouse 5+1=6
         push    eax
+        ;mov     eax, [current_slot]
+        ;mov     eax, [eax + APPDATA.event_mask]
         mov     eax, [TASK_BASE]
         mov     eax, [eax + TASKDATA.event_mask]
         test    eax, 0x80000000 ; bit 31: active/inactive filter f.40

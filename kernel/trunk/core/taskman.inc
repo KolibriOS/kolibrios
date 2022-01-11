@@ -474,8 +474,10 @@ align 4
 
 align 4
 get_pid:
-        mov     eax, [TASK_BASE]
-        mov     eax, [eax+TASKDATA.pid]
+        mov     eax, [current_slot]
+        mov     eax, [eax+APPDATA.tid]
+        mov     eax, [TASK_BASE]             ; delete
+        mov     eax, [eax+TASKDATA.pid]      ;
         ret
 
 pid_to_slot:
@@ -487,11 +489,13 @@ pid_to_slot:
         push    ebx
         push    ecx
         mov     ebx, [thread_count]
-        shl     ebx, BSF sizeof.TASKDATA ; multiply by size 
+        shl     ebx, BSF sizeof.TASKDATA ; multiply by size
+        ;shl     ebx, BSF sizeof.APPDATA ; multiply by size
         ; add 2*32 cause:
         ; [TASK_TABLE; TASK_TABLE + 32) isnt a task actually
         ; skip first process in the task table
-        mov     ecx, 2*32
+        mov     ecx, 2*32    ;sizeof.TASKDATA
+        ;mov     ecx, sizeof.APPDATA
 
 .loop:
 ;ecx = offset of current process info entry
@@ -500,8 +504,13 @@ pid_to_slot:
         jz      .endloop ;skip empty slots
         cmp     [TASK_TABLE+ecx+TASKDATA.pid], eax;check PID
         jz      .pid_found
+        ;cmp     [ecx+SLOT_BASE+APPDATA.state], TSTATE_FREE
+        ;jz      .endloop ;skip empty slots
+        ;cmp     [ecx+SLOT_BASE+APPDATA.pid], eax;check PID
+        ;jz      .pid_found
 .endloop:
         add     ecx, sizeof.TASKDATA
+        ;add     ecx, sizeof.APPDATA
         cmp     ecx, ebx
         jle     .loop
 
@@ -512,6 +521,7 @@ pid_to_slot:
 
 .pid_found:
         shr     ecx, BSF sizeof.TASKDATA ; divide by size
+        ;shr     ecx, BSF sizeof.APPDATA
         mov     eax, ecx ;convert offset to index of slot
         pop     ecx
         pop     ebx
@@ -896,6 +906,8 @@ common_app_entry:
         mov     ebx, [current_slot]
         cmp     [ebx+APPDATA.debugger_slot], 0
         je      .exit
+        ;mov     eax, [current_slot]
+        mov     [ebx+APPDATA.state], TSTATE_RUN_SUSPENDED
         mov     eax, [TASK_BASE]
         mov     [eax+TASKDATA.state], TSTATE_RUN_SUSPENDED
         call    change_task
@@ -974,6 +986,10 @@ proc set_app_params stdcall,slot:dword, params:dword, flags:dword
         ;shr     ebx, 3
         ;mov     dword [TASK_TABLE+ebx+TASKDATA.mem_start], 0
         mov     dword [ebx+SLOT_BASE+APPDATA.mem_start], 0
+        mov     [ebx+SLOT_BASE+APPDATA.event_mask], dword 1+2+4;set default event flags (see 40 function)
+        inc     dword [process_number]
+        mov     eax, [process_number]
+        mov     [ebx+SLOT_BASE+APPDATA.tid], eax    ;set TID
 
         mov     eax, [slot]
         mov     [ebx+SLOT_BASE+APPDATA.wnd_number], al
@@ -989,9 +1005,8 @@ proc set_app_params stdcall,slot:dword, params:dword, flags:dword
 
         mov     [ebx+TASKDATA.event_mask], dword 1+2+4;set default event flags (see 40 function)
 
-        inc     dword [process_number]
-        mov     eax, [process_number]
-        mov     [ebx+TASKDATA.pid], eax    ;set PID
+        mov     eax, [process_number]                     ; delete
+        mov     [ebx+TASKDATA.pid], eax    ;set PID       ;
 
 ;set draw data to full screen
         xor     eax, eax
@@ -1047,6 +1062,8 @@ proc set_app_params stdcall,slot:dword, params:dword, flags:dword
         mov     [SLOT_BASE+ebx*8+APPDATA.debugger_slot], eax
 .no_debug:
         mov     [TASK_TABLE+ebx+TASKDATA.state], dl
+        ;shl     ebx, 3
+        ;mov     [ebx+SLOT_BASE+APPDATA.state], dl
         lea     edx, [SLOT_BASE+ebx*8]
         call    scheduler_add_thread
         ret
