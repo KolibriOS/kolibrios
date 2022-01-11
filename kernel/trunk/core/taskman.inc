@@ -906,7 +906,6 @@ common_app_entry:
         mov     ebx, [current_slot]
         cmp     [ebx+APPDATA.debugger_slot], 0
         je      .exit
-        ;mov     eax, [current_slot]
         mov     [ebx+APPDATA.state], TSTATE_RUN_SUSPENDED
         mov     eax, [TASK_BASE]
         mov     [eax+TASKDATA.state], TSTATE_RUN_SUSPENDED
@@ -983,8 +982,6 @@ proc set_app_params stdcall,slot:dword, params:dword, flags:dword
         mov     [ebx+SLOT_BASE+APPDATA.cur_dir], eax
         rep movsd
 
-        ;shr     ebx, 3
-        ;mov     dword [TASK_TABLE+ebx+TASKDATA.mem_start], 0
         mov     dword [ebx+SLOT_BASE+APPDATA.mem_start], 0
         mov     [ebx+SLOT_BASE+APPDATA.event_mask], dword 1+2+4;set default event flags (see 40 function)
         inc     dword [process_number]
@@ -1001,9 +998,6 @@ proc set_app_params stdcall,slot:dword, params:dword, flags:dword
         mov     [ebx+window_data+WDATA.fl_wstate], WSTATE_NORMAL
         mov     [ebx+window_data+WDATA.fl_redraw], 1
         add     ebx, TASK_TABLE     ;ebx - pointer to information about process
-        ;mov     [ebx+TASKDATA.wnd_number], al;set window number on screen = process slot
-
-        mov     [ebx+TASKDATA.event_mask], dword 1+2+4;set default event flags (see 40 function)
 
         mov     eax, [process_number]                     ; delete
         mov     [ebx+TASKDATA.pid], eax    ;set PID       ;

@@ -1186,7 +1186,6 @@ proc setup_os_slot
         mov     eax, edx
         shr     eax, 3
         add     eax, TASK_TABLE - (SLOT_BASE shr 3)
-        ;mov     [eax+TASKDATA.wnd_number], dh
         mov     byte [eax+TASKDATA.pid], dh
 
         ret
@@ -1549,7 +1548,6 @@ draw_num_text:
         add     edx, esp
         mov     ebx, [esp+64+32-8+4]
 ; add window start x & y
-        ;mov     ecx, [TASK_BASE]
 
         mov     edi, [current_slot_idx]
         mov     ecx, edi
@@ -1614,8 +1612,6 @@ sys_setup:
         dec     ebx
         jnz     @f
 
-        ;mov     edi, [TASK_BASE]
-        ;mov     eax, [edi+TASKDATA.mem_start]
         mov     edi, [current_slot]
         mov     eax, [edi+APPDATA.mem_start]
         add     eax, edx
@@ -1713,8 +1709,6 @@ sys_getsetup:
         dec     ebx
         jnz     @f
 
-        ;mov     edi, [TASK_BASE]
-        ;mov     ebx, [edi+TASKDATA.mem_start]
         mov     edi, [current_slot]
         mov     ebx, [edi+APPDATA.mem_start]
         add     ebx, edx
@@ -2311,10 +2305,6 @@ sysfn_getdiskinfo:      ; 18.11 = get disk info table
 .exit:
         ret
 ;------------------------------------------------------------------------------
-;sysfn_lastkey:          ; 18.12 = return 0 (backward compatibility)
-;        and     dword [esp+32], 0
-;        ret
-;------------------------------------------------------------------------------
 sysfn_getversion:       ; 18.13 = get kernel ID and version
         ; if given memory address belongs to kernel then error
         stdcall is_region_userspace, ecx, version_end-version_inf
@@ -2698,7 +2688,6 @@ sys_cpuusage:
 
     ; Event mask (+71)
         mov     EAX, dword [ecx*8 + SLOT_BASE + APPDATA.event_mask]
-        mov     EAX, dword [ECX+TASK_TABLE+TASKDATA.event_mask]     ; delete
         stosd
 
     ; Keyboard mode (+75)
@@ -2941,7 +2930,7 @@ align 4
 .set_mouse_event:
         add     edi, sizeof.APPDATA
         add     ebx, sizeof.TASKDATA
-        test    [ebx+TASKDATA.event_mask], 0x80000000
+        test    [edi + SLOT_BASE + APPDATA.event_mask], 0x80000000
         jz      .pos_filter
 
         cmp     edi, [esp]                      ; skip if filtration active
@@ -2949,7 +2938,7 @@ align 4
 ;--------------------------------------
 align 4
 .pos_filter:
-        test    [ebx+TASKDATA.event_mask], 0x40000000
+        test    [edi + SLOT_BASE + APPDATA.event_mask], 0x40000000
         jz      .set
 
         mov     esi, [ebx-twdw+WDATA.box.left]
@@ -3413,11 +3402,8 @@ delay_ms:     ; delay in 1/1000 sec
 align 4
 set_app_param:
         mov     edi, [current_slot]
-        mov     edi, [TASK_BASE]
-        mov     eax, ebx
-        ;xchg    eax, [edi + APPDATA.event_mask] ; set new event mask
-        xchg    eax, [edi + TASKDATA.event_mask] ; set new event mask
-        mov     [esp+32], eax                    ; return old mask value
+        xchg    ebx, [edi + APPDATA.event_mask] ; set new event mask
+        mov     [esp+32], ebx                    ; return old mask value
         ret
 ;-----------------------------------------------------------------------------
 
