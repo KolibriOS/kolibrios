@@ -11,6 +11,7 @@
 <p><a href="#funct">Функции</a></p>
 <ul>
 <li><a href="#fun_key">edit_box_key</a></li>
+<li><a href="#fun_key_safe">edit_box_key_safe</a></li>
 <li><a href="#fun_mouse">edit_box_mouse</a></li>
 <li><a href="#fun_draw">edit_box_draw</a></li>
 <li><a href="#fun_set_text">edit_box_set_text</a></li>
@@ -27,7 +28,16 @@
 <h1><a name="funct">Функции</a></h1>
 
 <h2><a name="fun_key">edit_box_key</a></h2>
-<p>Эта функция должна вызыватся при вводе информации с клавиатуры.</p>
+<p>Эта функция должна вызыватся при вводе информации с клавиатуры. Пример использования:</p>
+<pre>mcall SF_GET_KEY
+stdcall dword [edit_box_key], edit1</pre>
+<p>где <b>edit1</b> - структура элемента edit_box; <b>eax</b> - перед вызовом функции должен содержать код нажатой клавиши.</p>
+
+<h2><a name="fun_key_safe">edit_box_key_safe</a></h2>
+<p>Эта функция должна вызыватся при вводе информации с клавиатуры (в языках программирования высокого уровня). Пример использования:</p>
+<pre>mcall SF_GET_KEY
+stdcall [edit_box_key_safe], edit1, eax</pre>
+<p>где <b>edit1</b> - структура элемента edit_box; <b>eax</b> - код нажатой клавиши.</p>
 
 <h2><a name="fun_mouse">edit_box_mouse</a></h2>
 <p>Эта функция должна вызыватся при вводе информации с мыши.</p>
@@ -37,9 +47,7 @@
 
 <h2><a name="fun_set_text">edit_box_set_text</a></h2>
 <p>Эта функция копирует текст из указателя в текстовое поле. Если текст в указателе окажется длиннее чем допустимый в элементе edit_box, то он запишется не весь. После вызова данной функции необходимо перерисовать окно функцией edit_box_draw, иначе изменения будут сразу не видны. Пример использования:</p>
-<pre>	push dword buf
-	push dword edit1
-	call dword [edit_box_set_text]
+<pre>stdcall [edit_box_set_text], edit1, buf
 .........
 buf db '111-222-333',0</pre>
 <p>где <b>edit1</b> - структура элемента edit_box; <b>buf</b> - буфер, в котором содержится устанавливаемый текст.</p>
@@ -91,6 +99,6 @@ buf db '111-222-333',0</pre>
 <p>Поле для ввода пароля, все введенные символы отображаются звездами.</p>
 
 <hr>
-<p>Документация обновлялась последний раз 27.11.10.</p>
+<p>Документация обновлялась последний раз 12.01.22.</p>
 </body>
 </html>

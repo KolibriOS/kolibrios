@@ -47,6 +47,20 @@ edit_box_exit:
 	popad
 	ret 4
 
+;description:
+; void edit_box_key_safe(edit_box *e, ksys_oskey_t ch)
+;input:
+; e - edit struct
+; ch - key code
+align 16
+edit_box_key_safe:
+	push eax
+	mov eax,[esp+12]
+	push dword[esp+8]
+	call edit_box_key
+	pop eax
+	ret
+
 ;==========================================================
 ;=== обработка клавиатуры =================================
 ;==========================================================

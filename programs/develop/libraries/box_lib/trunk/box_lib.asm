@@ -186,6 +186,7 @@ dd	sz_version,			0x00000001
 dd	sz_edit_box,			edit_box_draw ;old function name
 dd	sz_edit_box_draw,		edit_box_draw
 dd	sz_edit_box_key,		edit_box_key
+dd	sz_edit_box_key_safe,	edit_box_key_safe
 dd	sz_edit_box_mouse,		edit_box_mouse
 dd	sz_edit_box_set_text,		edit_box_set_text
 dd	szVersion_ed,			0x00000001
@@ -301,6 +302,7 @@ sz_version			db 'version',0
 sz_edit_box			db 'edit_box',0
 sz_edit_box_draw		db 'edit_box_draw',0
 sz_edit_box_key 		db 'edit_box_key',0
+sz_edit_box_key_safe	db 'edit_box_key_safe',0
 sz_edit_box_mouse		db 'edit_box_mouse',0
 sz_edit_box_set_text		db 'edit_box_set_text',0
 szVersion_ed			db 'version_ed',0
