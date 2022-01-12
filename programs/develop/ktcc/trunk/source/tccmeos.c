@@ -19,6 +19,8 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
+#include "tcc.h"
+
 typedef struct {
 	char magic[8];
 	int version;
@@ -242,13 +244,10 @@ const char *tcc_get_symbol_name(int st_name)
 	return sym_name;
 }
 
-int tcc_find_symbol_me(me_info* me, const char *sym_name)
+int tcc_find_symbol_me(me_info* me, const char *sym_name, int* addr)
 {
-	int i;
-	int symtab;
-	int strtab;
-	symtab=0;
-	strtab=0;
+	int i, symtab = 0, strtab = 0;
+	*addr = 0;
 	for (i=1;i<me->s1->nb_sections;i++)
 	{
 		Section* s;
@@ -276,7 +275,8 @@ int tcc_find_symbol_me(me_info* me, const char *sym_name)
 	{
 		if (strcmp(name+s->st_name,sym_name)==0)
 		{
-			return s->st_value+findsection(me,s->st_shndx)->sh_addr;
+			*addr = s->st_value+findsection(me,s->st_shndx)->sh_addr;
+			return 1;
 		}
 		s++;
 	}
@@ -303,12 +303,10 @@ int tcc_output_me(TCCState* s1,const char *filename)
 	if (s1->do_debug)
 		tcc_output_dbgme(filename, &me);
 
-	me.header.entry_point=tcc_find_symbol_me(&me,"start");
-	me.header.params= tcc_find_symbol_me(&me,"__argv"); // <--
-	me.header.argv= tcc_find_symbol_me(&me,"__path"); // <--
-
-	if (!me.header.entry_point || !me.header.params || me.header.argv) {
-		exit(1);
+	if (!tcc_find_symbol_me(&me, "start",  &me.header.entry_point) |
+	    !tcc_find_symbol_me(&me, "__argv", &me.header.params) |
+	    !tcc_find_symbol_me(&me, "__path", &me.header.argv)) {
+	    exit(1);
 	}
 
 	if((f=fopen(filename,"wb"))==NULL){
@@ -484,7 +482,7 @@ int tcc_output_dbgme(const char *filename, me_info* me)
                 strcpy(cur_fun, stabstr_section->data + stab->n_strx);
                 str = strchr(cur_fun, ':');
                 if (str) *str = '\0';
-                cur_fun_addr = tcc_find_symbol_me(me, cur_fun);
+                tcc_find_symbol_me(me, cur_fun, &cur_fun_addr);
                 cur_line = stab->n_desc;
                 fun_flag = 1;
                 //fprintf(fdbg, "0x%X %s() line(%d)\n", cur_fun_addr, cur_fun, cur_line); // commented as conflicted with direct address
