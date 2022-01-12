@@ -175,3 +175,6 @@ time
 localtime
 asctime
 difftime
+;___LIBGEN___
+basename
+dirname
