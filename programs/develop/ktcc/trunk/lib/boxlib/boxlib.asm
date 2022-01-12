@@ -56,7 +56,7 @@ section '.data' writeable
 library lib_boxlib,     'box_lib.obj'
 
 import lib_boxlib, \
-        edit_box_draw, 'edit_box' , \
+        edit_box_draw, 'edit_box_draw' , \
         edit_box_key, 'edit_box_key' , \
         edit_box_mouse, 'edit_box_mouse', \
         edit_box_set_text, 'edit_box_set_text' , \
