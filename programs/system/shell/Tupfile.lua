@@ -1,8 +1,9 @@
 if tup.getconfig("NO_TCC") ~= "" then return end
-
-TCC="kos32-tcc"
-CFLAGS  = "-I../../develop/ktcc/trunk/libc.obj/include"
-LDFLAGS = "-nostdlib ../../develop/ktcc/trunk/bin/lib/crt0.o -L../../develop/ktcc/trunk/bin/lib"
+if tup.getconfig("HELPERDIR") == ""
+then
+  HELPERDIR = "../../../programs"
+end
+tup.include(HELPERDIR .. "/use_tcc.lua")
 
 if tup.getconfig("LANG") == "ru"
 then C_LANG = "LANG_RUS"
@@ -16,7 +17,6 @@ then tup.rule('echo #define ' .. C_LANG .. ' 1 > %o', {"lang.h"})
 else tup.rule('echo "#define" ' .. C_LANG .. ' 1 > %o', {"lang.h"})
 end
 
-LIBS = "-ltcc -lc.obj"
-COMMAND=string.format("%s %s %s %s %s", TCC, CFLAGS, LDFLAGS , "%f -o %o",  LIBS)
+LIBS = ""
 
-tup.rule({"shell.c", "system/kolibri.c", extra_inputs = {"lang.h"}}, COMMAND .. tup.getconfig("KPACK_CMD"), "shell")
+link_tcc({"shell.c", "system/kolibri.c", extra_inputs = {"lang.h"}}, "shell"); 
