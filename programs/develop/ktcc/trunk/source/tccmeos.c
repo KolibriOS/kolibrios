@@ -28,8 +28,8 @@ typedef struct {
 	int image_size;
 	int memory_size;
 	int stack;
-	int params;
 	int argv;
+	int path;
 } IMAGE_MEOS_FILE_HEADER,*PIMAGE_MEOS_FILE_HEADER;
 typedef struct _meos_section_info{
 	int sh_addr;
@@ -293,10 +293,10 @@ int tcc_output_me(TCCState* s1,const char *filename)
     //printf("%d\n",s1->nb_sections);
 	memset(&me,0,sizeof(me));
 	me.s1=s1;
+	tcc_add_runtime(s1);
 #ifdef TCC_TARGET_KX
 	kx_init(&me);
 #endif
-	tcc_add_runtime(s1);
 	relocate_common_syms();
 	assign_addresses(&me);
     
@@ -304,8 +304,8 @@ int tcc_output_me(TCCState* s1,const char *filename)
 		tcc_output_dbgme(filename, &me);
 
 	if (!tcc_find_symbol_me(&me, "start",  &me.header.entry_point) |
-	    !tcc_find_symbol_me(&me, "__argv", &me.header.params) |
-	    !tcc_find_symbol_me(&me, "__path", &me.header.argv)) {
+	    !tcc_find_symbol_me(&me, "__argv", &me.header.argv) |
+	    !tcc_find_symbol_me(&me, "__path", &me.header.path)) {
 	    exit(1);
 	}
 
