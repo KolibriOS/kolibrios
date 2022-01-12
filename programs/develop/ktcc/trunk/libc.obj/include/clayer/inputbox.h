@@ -5,13 +5,12 @@
     Adapted for TCC's dynamic API by Magomed Kostoev, 2020
 */
 
-#ifndef __KOS__INPUTBOX__H________
-#define __KOS__INPUTBOX__H________
+#ifndef KOLIBRI_INPUTBOX_H
+#define KOLIBRI_INPUTBOX_H
 
-#define cdecl   __attribute__ ((cdecl))
-#define stdcall __attribute__ ((stdcall))
+#include <stddef.h>
 
-extern unsigned stdcall (*InputBox)(void* Buffer, char* Caption, char* Prompt, char* Default,
+extern unsigned __stdcall (*InputBox)(void* Buffer, char* Caption, char* Prompt, char* Default,
                                     unsigned long Flags, unsigned long BufferSize, void* RedrawProc);
 
-#endif // __KOS__INPUTBOX__H________
+#endif // KOLIBRI_INPUTBOX_H

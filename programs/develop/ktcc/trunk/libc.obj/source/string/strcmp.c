@@ -10,5 +10,5 @@
 
 int strcmp(const char * s1, const char * s2)
 {
-    return _ksys_strcmp(s1, s2);
+    return __strcmp(s1, s2);
 }
