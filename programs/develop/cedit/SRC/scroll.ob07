@@ -1,5 +1,5 @@
 ﻿(*
-    Copyright 2021 Anton Krotov
+    Copyright 2021, 2022 Anton Krotov
 
     This file is part of CEdit.
 
@@ -76,7 +76,7 @@ END create;
 PROCEDURE Rect (canvas: G.tCanvas; left, top, right, bottom: INTEGER);
 BEGIN
 	G.FillRect(canvas, left, top, right, bottom);
-	G.SetColor(canvas, K.borderColor);
+	G.SetColor(canvas, K.colors.line);
 	G.Rect(canvas, left, top, right, bottom);
 END Rect;
 
@@ -93,9 +93,9 @@ VAR
 		color: INTEGER;
 	BEGIN
 		IF c THEN
-			color := K.btnColor
+			color := K.colors.button
 		ELSE
-			color := K.btnTextColor
+			color := K.colors.button_text
 		END;
 		G.SetColor(canvas, color)
 	END SetColor;
@@ -106,19 +106,19 @@ BEGIN
 	width := scroll.width;
 	height := scroll.height;
 	canvas := scroll.canvas;
-	G.SetColor(canvas, K.lightColor);
+	G.SetColor(canvas, K.colors.light);
 	G.clear(canvas);
-	G.SetColor(canvas, K.borderColor);
+	G.SetColor(canvas, K.colors.line);
 	G.Rect(canvas, 0, 0, width - 1, height - 1);
 	IF scroll.vertical THEN
 		SetColor(canvas, ~scroll.Dec);
 		Rect(canvas, 0, 0, width - 1, btn - 1);
 		SetColor(canvas, ~scroll.Inc);
 		Rect(canvas, 0, height - btn, width - 1, height - 1);
-		G.SetColor(canvas, K.btnColor);
+		G.SetColor(canvas, K.colors.button);
 		Rect(canvas, 0, btn + scroll.pos - 1, width - 1, btn + scroll.pos + scroll.sliderSize - 1);
 
-		G.SetColor(canvas, K.btnTextColor);
+		G.SetColor(canvas, K.colors.button_text);
 
 		y := btn + scroll.pos + scroll.sliderSize DIV 2 - 1;
 		G.HLine(canvas, y, width DIV 4, 3*width DIV 4);
@@ -141,10 +141,10 @@ BEGIN
 		Rect(canvas, 0, 0, btn - 1, height - 1);
 		SetColor(canvas, ~scroll.Inc);
 		Rect(canvas, width - btn, 0, width - 1, height - 1);
-		G.SetColor(canvas, K.btnColor);
+		G.SetColor(canvas, K.colors.button);
 		Rect(canvas, btn + scroll.pos - 1, 0, btn + scroll.pos + scroll.sliderSize - 1, height - 1);
 
-		G.SetColor(canvas, K.btnTextColor);
+		G.SetColor(canvas, K.colors.button_text);
 
 		x := btn + scroll.pos + scroll.sliderSize DIV 2 - 1;
 		G.VLine(canvas, x, height DIV 4, 3*height DIV 4);

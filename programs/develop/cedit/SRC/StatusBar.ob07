@@ -1,5 +1,5 @@
 ﻿(*
-    Copyright 2021 Anton Krotov
+    Copyright 2021, 2022 Anton Krotov
 
     This file is part of CEdit.
 
@@ -95,9 +95,9 @@ END TextOut;
 
 PROCEDURE draw* (left, top: INTEGER);
 BEGIN
-	G.SetColor(SB.canvas, K.winColor);
-	G.SetBkColor(SB.canvas, K.winColor);
-	G.SetTextColor(SB.canvas, K.textColor);
+	G.SetColor(SB.canvas, K.colors.work);
+	G.SetBkColor(SB.canvas, K.colors.work);
+	G.SetTextColor(SB.canvas, K.colors.work_text);
 	G.clear(SB.canvas);
 	TextOut(1, SB.pos);
 	TextOut(16*K.fontWidth, SB.sel);

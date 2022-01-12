@@ -1,5 +1,5 @@
 ﻿(*
-    Copyright 2021 Anton Krotov
+    Copyright 2021, 2022 Anton Krotov
 
     This file is part of CEdit.
 
@@ -77,12 +77,12 @@ END drawIcons;
 
 PROCEDURE setColors (VAR toolbar: tToolbar);
 BEGIN
-	toolbar.colors.back    := 0F2EFECH;//K.lightColor;
+	toolbar.colors.back    := 0F2EFECH;
 	toolbar.colors.text    := 00000FFH;
-	toolbar.colors.disText := 0808080H;//K.borderColor;
+	toolbar.colors.disText := 0808080H;
 	toolbar.colors.light   := 0FEFEFEH;
-	toolbar.colors.shadow  := 09F9C9AH;//K.borderColor;
-	toolbar.colors.window  := K.winColor
+	toolbar.colors.shadow  := 09F9C9AH;
+	toolbar.colors.window  := K.colors.work
 END setColors;
 
 

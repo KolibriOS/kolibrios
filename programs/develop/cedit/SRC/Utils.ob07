@@ -1,5 +1,5 @@
 ﻿(*
-    Copyright 2021 Anton Krotov
+    Copyright 2021, 2022 Anton Krotov
 
     This file is part of CEdit.
 
@@ -350,21 +350,6 @@ BEGIN
     END
     RETURN x
 END sgn;
-
-
-PROCEDURE ptr2str* (ptr: INTEGER; VAR s: ARRAY OF CHAR);
-VAR
-    i, n: INTEGER;
-BEGIN
-    i := -1;
-    n := LEN(s) - 1;
-    REPEAT
-        INC(i);
-        SYSTEM.GET(ptr, s[i]);
-        INC(ptr)
-    UNTIL (i = n) OR (s[i] = 0X);
-    s[i] := 0X
-END ptr2str;
 
 
 PROCEDURE between* (a, b, c: INTEGER): BOOLEAN;

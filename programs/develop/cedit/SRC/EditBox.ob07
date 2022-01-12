@@ -48,33 +48,13 @@ TYPE
 		offset, cl_curs_x, cl_curs_y, shift, shift_old, height, char_width: INTEGER
 	END;
 
-	EditBoxKey = PROCEDURE (eb: tEditBox);
-
 
 VAR
 
-	key_proc: EditBoxKey;
 	paint     *: PROCEDURE (eb: tEditBox);
 	mouse     *: PROCEDURE (eb: tEditBox);
 	_setValue  : PROCEDURE (eb: tEditBox; text: INTEGER);
-
-
-PROCEDURE _key (key: INTEGER; key_proc: EditBoxKey; text: tEditBox);
-BEGIN
-    SYSTEM.CODE(
-    08BH, 045H, 008H,   (*  mov     eax, dword [ebp +  8]  *)
-    08BH, 055H, 00CH,   (*  mov     edx, dword [ebp + 12]  *)
-    08BH, 04DH, 010H,   (*  mov     ecx, dword [ebp + 16]  *)
-    051H,               (*  push    ecx                    *)
-    0FFH, 0D2H          (*  call    edx                    *)
-    )
-END _key;
-
-
-PROCEDURE key* (text: tEditBox; key: INTEGER);
-BEGIN
-    _key(key, key_proc, text)
-END key;
+	key       *: PROCEDURE (eb: tEditBox; key: INTEGER);
 
 
 PROCEDURE getValue* (text: tEditBox; VAR str: ARRAY OF CHAR);
@@ -144,8 +124,8 @@ VAR
 BEGIN
 	Lib := KOSAPI.LoadLib("/sys/lib/box_lib.obj");
 	ASSERT(Lib # 0);
-	GetProc(Lib, SYSTEM.ADR(paint),     "edit_box");
-	GetProc(Lib, SYSTEM.ADR(key_proc),  "edit_box_key");
+	GetProc(Lib, SYSTEM.ADR(paint),     "edit_box_draw");
+	GetProc(Lib, SYSTEM.ADR(key),       "edit_box_key_safe");
 	GetProc(Lib, SYSTEM.ADR(mouse),     "edit_box_mouse");
 	GetProc(Lib, SYSTEM.ADR(_setValue), "edit_box_set_text");
 END main;

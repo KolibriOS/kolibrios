@@ -1,5 +1,5 @@
 ﻿(*
-    Copyright 2021 Anton Krotov
+    Copyright 2021, 2022 Anton Krotov
 
     This file is part of CEdit.
 
@@ -134,15 +134,15 @@ VAR
     menuColor, textColor, n: INTEGER;
 BEGIN
     IF item.menu.tid # 0 THEN
-        menuColor := K.textColor;
-        textColor := K.winColor
+        menuColor := K.colors.work_text;
+        textColor := K.colors.work
     ELSE
-        menuColor := K.winColor;
-        textColor := K.textColor
+        menuColor := K.colors.work;
+        textColor := K.colors.work_text
     END;
     n := LENGTH(item.text);
     K.DrawRect(item.x, 0, n*fontWidth + 2, MainMenuHeight, menuColor);
-    K.CreateButton(item.id + ORD({30}), item.x, 0, n*fontWidth + 2, MainMenuHeight, K.btnColor, "");
+    K.CreateButton(item.id + ORD({30}), item.x, 0, n*fontWidth + 2, MainMenuHeight, K.colors.button, "");
     K.DrawText(item.x + 1, (MainMenuHeight - K.fontHeight) DIV 2 + 1, textColor, item.text)
 END drawMainItem;
 
@@ -217,7 +217,7 @@ END escape;
 
 PROCEDURE repaint (m: tMenu);
 VAR
-    y, i, X, Y: INTEGER;
+    y, i, X, Y, Y1: INTEGER;
     item: tItem;
     BkColor, TextColor: INTEGER;
     canvas: G.tCanvas;
@@ -269,12 +269,14 @@ BEGIN
 
         G.SetColor(canvas, TextColor);
         IF item.check = 1 THEN
-            G.DLine(canvas, 4, 7, Y + 5, -1);
-            G.DLine(canvas, 4, 7, Y + 6, -1);
-            G.DLine(canvas, 7, 12, Y + 8, 1);
-            G.DLine(canvas, 7, 12, Y + 9, 1);
+            G.DLine(canvas, 4,  7, Y + 5, -1);
+            G.DLine(canvas, 4,  7, Y + 6, -1);
+            G.DLine(canvas, 7, 12, Y + 8,  1);
+            G.DLine(canvas, 7, 12, Y + 9,  1)
         ELSIF item.check = 2 THEN
-            G.FillRect(canvas, 6, y + fontHeight DIV 2 - 4, 10, y + fontHeight DIV 2)
+            Y1 := y + fontHeight DIV 2 - 2;
+            G.FillRect(canvas, 7, Y1 - 2,  9, Y1 + 2);
+            G.FillRect(canvas, 6, Y1 - 1, 10, Y1 + 1)
         END;
 
         IF item.child # NIL THEN

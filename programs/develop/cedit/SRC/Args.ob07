@@ -1,0 +1,68 @@
+﻿(*
+    Copyright 2022 Anton Krotov
+
+    This file is part of CEdit.
+
+    CEdit is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    CEdit is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with CEdit. If not, see <http://www.gnu.org/licenses/>.
+*)
+
+MODULE Args;
+
+IMPORT SYSTEM, KOSAPI;
+
+
+VAR
+
+	argc*: INTEGER;
+
+
+PROCEDURE ptr2str (ptr: INTEGER; VAR s: ARRAY OF CHAR);
+VAR
+	i, n: INTEGER;
+BEGIN
+	i := -1;
+	n := LEN(s) - 1;
+	REPEAT
+		INC(i);
+		SYSTEM.GET(ptr, s[i]);
+		INC(ptr)
+	UNTIL (i = n) OR (s[i] = 0X);
+	s[i] := 0X
+END ptr2str;
+
+
+PROCEDURE GetArg* (n: INTEGER; VAR s: ARRAY OF CHAR);
+BEGIN
+	IF n = 0 THEN
+		ptr2str(KOSAPI.GetName(), s)
+	ELSIF (n = 1) & (argc = 2) THEN
+		ptr2str(KOSAPI.GetCommandLine(), s)
+	ELSE
+		s[0] := 0X
+	END
+END GetArg;
+
+
+PROCEDURE main;
+VAR
+	c: CHAR;
+BEGIN
+	SYSTEM.GET(KOSAPI.GetCommandLine(), c);
+	argc := ORD(c # 0X) + 1
+END main;
+
+
+BEGIN
+	main
+END Args.

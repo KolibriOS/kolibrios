@@ -1,5 +1,5 @@
 ﻿(*
-    Copyright 2021 Anton Krotov
+    Copyright 2021, 2022 Anton Krotov
 
     This file is part of CEdit.
 
@@ -48,11 +48,11 @@ VAR
 BEGIN
 	canvas := chkbox.canvas;
 	IF canvas # NIL THEN
-		G.SetColor(canvas, K.winColor);
+		G.SetColor(canvas, K.colors.work);
 		G.clear(canvas);
 		G.SetColor(canvas, bColor);
 		G.FillRect(canvas, 0, 0, fontHeight - 1, fontHeight - 1);
-		G.SetColor(canvas, K.borderColor);
+		G.SetColor(canvas, K.colors.line);
 		G.Rect(canvas, 0, 0, fontHeight - 1, fontHeight - 1);
 		IF chkbox.value THEN
 			G.SetColor(canvas, fColor);
@@ -65,8 +65,8 @@ BEGIN
 		    G.DLine(canvas, 2,  6,  5, -1);
 		    G.DLine(canvas, 7, 13,  8,  1);
 		END;
-		G.SetTextColor(canvas, K.textColor);
-		G.SetBkColor(canvas, K.winColor);
+		G.SetTextColor(canvas, K.colors.work_text);
+		G.SetBkColor(canvas, K.colors.work);
 		G.TextOut2(canvas, fontHeight + padding, 0, chkbox.text, LENGTH(chkbox.text));
 		G.DrawCanvas(canvas, chkbox.left, chkbox.top)
 	END

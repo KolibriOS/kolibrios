@@ -1,5 +1,5 @@
 ﻿(*
-    Copyright 2021 Anton Krotov
+    Copyright 2021, 2022 Anton Krotov
 
     This file is part of CEdit.
 
@@ -61,25 +61,25 @@ BEGIN
     IF id = t.current THEN
         INC(height, curTabHeight - tabHeight);
         DEC(y, curTabHeight - tabHeight);
-        color := K.lightColor
+        color := K.colors.light
     ELSE
-        color := K.winColor
+        color := K.colors.work
     END;
     DEC(x); INC(width);
     x2 := x + width - 1;
     y2 := y + height - 1;
 
     K.DrawRect(x, y, width, height, color);
-    K.DrawLine(x, y, x2, y, K.borderColor);
-    K.DrawLine(x2, y, x2, y2, K.borderColor);
+    K.DrawLine(x, y, x2, y, K.colors.line);
+    K.DrawLine(x2, y, x2, y2, K.colors.line);
     IF id # t.current THEN
-        K.DrawLine(x2 - 1, y2, x, y2, K.borderColor);
+        K.DrawLine(x2 - 1, y2, x, y2, K.colors.line);
     END;
-    K.DrawLine(x, y2, x, y, K.borderColor);
+    K.DrawLine(x, y2, x, y, K.colors.line);
 
-    K.DrawText866bk(x + K.fontWidth + K.fontWidth DIV 2, y + (height - K.fontHeight) DIV 2, K.textColor, color, s);
+    K.DrawText866bk(x + K.fontWidth + K.fontWidth DIV 2, y + (height - K.fontHeight) DIV 2, K.colors.work_text, color, s);
     IF modified THEN
-    	K.DrawText866bk(x + K.fontWidth DIV 2, y + (height - K.fontHeight) DIV 2, K.textColor, color, "*")
+    	K.DrawText866bk(x + K.fontWidth DIV 2, y + (height - K.fontHeight) DIV 2, K.colors.work_text, color, "*")
     END;
     K.CreateButton(id + ORD({30}) + btnID, x + 1, y - 1, width - 1, height - 1, color, "");
 END drawTab;
@@ -115,13 +115,13 @@ VAR
 BEGIN
     y := t.y;
     x := t.x;
-    K.DrawRect(x, y - (curTabHeight - tabHeight), t.width + (2*scrWidth + 2), t.height + (curTabHeight - tabHeight) - 1, K.winColor);
+    K.DrawRect(x, y - (curTabHeight - tabHeight), t.width + (2*scrWidth + 2), t.height + (curTabHeight - tabHeight) - 1, K.colors.work);
     IF Width(t, 0, t.strings.count - 1) > t.width THEN
         INC(x, 2*scrWidth);
         K.DeleteButton(btnLeft);
         K.DeleteButton(btnRight);
-        K.CreateButton(btnLeft, t.x, y, scrWidth, t.height - 1, K.btnColor, "<");
-        K.CreateButton(btnRight, t.x + scrWidth, y, scrWidth, t.height - 1, K.btnColor, ">");
+        K.CreateButton(btnLeft, t.x, y, scrWidth, t.height - 1, K.colors.button, "<");
+        K.CreateButton(btnRight, t.x + scrWidth, y, scrWidth, t.height - 1, K.colors.button, ">");
         scroll := TRUE
     ELSE
         t.first := 0;
@@ -145,8 +145,8 @@ BEGIN
         t.first := n
     END;
 
-    K.DrawRect(x, y, t.width, t.height - 1, K.winColor);
-    K.DrawLine(x, y + tabHeight - 1, x + t.width - 1 + 2*scrWidth*(1 - ORD(scroll)), y + tabHeight - 1, K.borderColor);
+    K.DrawRect(x, y, t.width, t.height - 1, K.colors.work);
+    K.DrawLine(x, y + tabHeight - 1, x + t.width - 1 + 2*scrWidth*(1 - ORD(scroll)), y + tabHeight - 1, K.colors.line);
     item := List.getItem(t.strings, t.first);
     n := t.first;
     WHILE (item # NIL) & (x <= xmax) DO

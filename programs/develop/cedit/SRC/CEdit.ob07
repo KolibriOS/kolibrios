@@ -20,7 +20,7 @@
 MODULE CEdit;
 
 IMPORT
-    OpenDlg, K := KolibriOS,
+    OpenDlg, K := KolibriOS, Args,
     U := Utils, Lines, Menu, List,
     G := Graph, T := Text, E := Encodings,
     CB := Clipboard, Languages,
@@ -28,7 +28,7 @@ IMPORT
     RW, Ini, EB := EditBox, Tabs, Toolbar, SB := StatusBar;
 
 CONST
-    HEADER = "CEdit (08-jan-2022)";
+    HEADER = "CEdit (13-jan-2022)";
 
     ShellFilter = "";
     EditFilter = "SH|INC|TXT|ASM|OB07|C|CPP|H|PAS|PP|LUA|INI|JSON";
@@ -181,6 +181,7 @@ VAR
     textsCount, curText: INTEGER;
 
     winWidth, winHeight: INTEGER;
+    SkinHeight: INTEGER;
     AppPath, runScript, buildScript, debugScript: RW.tFileName;
     OD: OpenDlg.Dialog;
     confirm, notFound, menuFindClicked, search, searchOpened: BOOLEAN;
@@ -282,9 +283,9 @@ BEGIN
     right := left + width - 1;
     x := minWidth DIV 2 + left;
     y := (height - fontHeight) DIV 2 + top;
-    K.DrawRect(left, top, width, height, K.winColor);
-    Rect(left, top, right, bottom, K.borderColor);
-    K.DrawText(x, y, K.textColor, s);
+    K.DrawRect(left, top, width, height, K.colors.work);
+    Rect(left, top, right, bottom, K.colors.line);
+    K.DrawText(x, y, K.colors.work_text, s);
 END Message;
 
 
@@ -404,7 +405,7 @@ BEGIN
 	        CheckBox.paint(WH);
         END;
 
-		G.SetColor(canvas, K.borderColor);
+		G.SetColor(canvas, K.colors.line);
 		G.VLine(canvas, 0, 0, canvas.height - 1);
         G.DrawCanvas(canvas, LEFT, TOP);
         NotFound;
@@ -453,7 +454,7 @@ BEGIN
     DEC(top, Tabs.tabHeight);
     right := left + EditBox_Width + SEARCH_PADDING*2;
     bottom := top + 395 + btnHeight + SEARCH_PADDING;
-    Rect(left, top, right, bottom, K.borderColor);
+    Rect(left, top, right, bottom, K.colors.line);
 
     K.CreateButton(btnCloseSearch, right - 20, top, 20, 20, 0EF999FH, "");
     K.DrawLine(right - 14, top + 5, right - 5, top + 14, 0FFFFFFH);
@@ -463,15 +464,15 @@ BEGIN
     K.DrawLine(right - 15, top + 15, right - 5, top + 5, 0FFFFFFH);
     K.DrawLine(right - 14, top + 15, right - 5, top + 6, 0FFFFFFH);
 
-    K.CreateButton(btnHideSearch, right - 40, top, 20, 20, K.btnColor, "");
-    K.DrawLine(right - 34, top + 14, right - 26, top + 14, K.btnTextColor);
-    K.DrawLine(right - 34, top + 15, right - 26, top + 15, K.btnTextColor);
+    K.CreateButton(btnHideSearch, right - 40, top, 20, 20, K.colors.button, "");
+    K.DrawLine(right - 34, top + 14, right - 26, top + 14, K.colors.button_text);
+    K.DrawLine(right - 34, top + 15, right - 26, top + 15, K.colors.button_text);
 
     INC(top, 15);
     INC(left, SEARCH_PADDING);
-    K.DrawText866(left, top, K.textColor, "find");
-    K.DrawText866(left, top + 55, K.textColor, "replace with");
-    K.DrawText866(left, top + 330, K.textColor, "go to line");
+    K.DrawText866(left, top, K.colors.work_text, "find");
+    K.DrawText866(left, top + 55, K.colors.work_text, "replace with");
+    K.DrawText866(left, top + 330, K.colors.work_text, "go to line");
     BKW.top := top + 110;
     BKW.left := left;
     CS.top := top + 140;
@@ -488,10 +489,10 @@ BEGIN
     EB.paint(ReplaceEdit);
     EB.paint(GotoEdit);
     y := top + 200;
-    K.CreateButton(btnFindNext, left, y, btnWidth, btnHeight, K.btnColor, "next"); INC(y, btnHeight + 10);
-    K.CreateButton(btnReplace, left, y, btnWidth, btnHeight, K.btnColor, "replace"); INC(y, btnHeight + 10);
-    K.CreateButton(btnReplaceAll, left, y, btnWidth + 5*fontWidth - 2, btnHeight, K.btnColor, "replace all");
-    K.CreateButton(btnGoto, left, top + 380, btnWidth, btnHeight, K.btnColor, "go");
+    K.CreateButton(btnFindNext, left, y, btnWidth, btnHeight, K.colors.button, "next"); INC(y, btnHeight + 10);
+    K.CreateButton(btnReplace, left, y, btnWidth, btnHeight, K.colors.button, "replace"); INC(y, btnHeight + 10);
+    K.CreateButton(btnReplaceAll, left, y, btnWidth + 5*fontWidth - 2, btnHeight, K.colors.button, "replace all");
+    K.CreateButton(btnGoto, left, top + 380, btnWidth, btnHeight, K.colors.button, "go");
 END SearchPanel;
 
 
@@ -500,7 +501,7 @@ VAR
     width, height: INTEGER;
 BEGIN
     K.BeginDraw;
-    K.CreateWindow(30 + K.GetTickCount() MOD 128, 30 + K.GetTickCount() MOD 128, winWidth, winHeight, K.winColor, 73H, 0, 0, "");
+    K.CreateWindow(30 + K.GetTickCount() MOD 128, 30 + K.GetTickCount() MOD 128, winWidth, winHeight, K.colors.work, 73H, 0, 0, "");
     IF (text # NIL) & ~K.RolledUp() THEN
     	IF confirm THEN
     		resetTimer
@@ -508,10 +509,10 @@ BEGIN
         confirm := FALSE;
         K.ClientSize(width, height);
 
-        K.DrawRect(0, 0, width, TOP - 1, K.winColor);
-        K.DrawRect(0, 0, LEFT, height, K.winColor);
-        K.DrawRect(width - RIGHT_PADDING, 0, RIGHT_PADDING, height, K.winColor);
-        K.DrawRect(LEFT + canvas.width + 1, TOP + canvas.height + 1, scrollWidth - 1, scrollWidth - 1, K.winColor);
+        K.DrawRect(0, 0, width, TOP - 1, K.colors.work);
+        K.DrawRect(0, 0, LEFT, height, K.colors.work);
+        K.DrawRect(width - RIGHT_PADDING, 0, RIGHT_PADDING, height, K.colors.work);
+        K.DrawRect(LEFT + canvas.width + 1, TOP + canvas.height + 1, scrollWidth - 1, scrollWidth - 1, K.colors.work);
         Menu.DrawMain(mainMenu);
 
         Toolbar.draw(toolbar);
@@ -688,11 +689,11 @@ BEGIN
     top := (canvas.height - height) DIV 2 + TOP;
     right := left + width - 1;
     bottom := top + height - 1;
-    K.DrawRect(left, top, width, height, K.winColor);
-    Rect(left, top, right, bottom, K.borderColor);
-    K.DrawText866(left + (width - 10*fontWidth) DIV 2, top + 10, K.textColor, "save file?");
-    K.CreateButton(btnYes, left + 10, top + 35, btnWidth, btnHeight, K.btnColor, "yes");
-    K.CreateButton(btnNo, left + 20 + btnWidth, top + 35, btnWidth, btnHeight, K.btnColor, "no");
+    K.DrawRect(left, top, width, height, K.colors.work);
+    Rect(left, top, right, bottom, K.colors.line);
+    K.DrawText866(left + (width - 10*fontWidth) DIV 2, top + 10, K.colors.work_text, "save file?");
+    K.CreateButton(btnYes, left + 10, top + 35, btnWidth, btnHeight, K.colors.button, "yes");
+    K.CreateButton(btnNo, left + 20 + btnWidth, top + 35, btnWidth, btnHeight, K.colors.button, "no");
 END Confirm;
 
 
@@ -773,21 +774,28 @@ BEGIN
 END SwitchTab;
 
 
-PROCEDURE open;
+PROCEDURE open (_fileName: RW.tFileName): BOOLEAN;
 VAR
-    fileName: RW.tFileName;
+	fileName: RW.tFileName;
     nov: T.tText;
     err, n: INTEGER;
+    res: BOOLEAN;
 BEGIN
+	res := TRUE;
     IF textsCount < maxTexts THEN
-        OD._type := OpenDlg.topen;
-        OpenFile(fileName, EditFilter);
+    	fileName := _fileName;
+    	IF fileName = "" THEN
+        	OD._type := OpenDlg.topen;
+        	OpenFile(fileName, EditFilter)
+        END;
         IF fileName # "" THEN
             n := getFileNum(fileName);
             IF n = -1 THEN
                 nov := T.open(fileName, err);
                 IF nov = NIL THEN
-                    error("error opening file")
+                    error("error opening file");
+                    SwitchTab(curText);
+                    res := FALSE
                 ELSE
                 	T.SetPos(nov, 0, 0);
                     insert(textsCount, nov);
@@ -799,9 +807,19 @@ BEGIN
             END
         END
     ELSE
-        error("too many files")
+        error("too many files");
+        res := FALSE
     END
+    RETURN res
 END open;
+
+
+PROCEDURE OpenDial;
+VAR
+	res: BOOLEAN;
+BEGIN
+	res := open("")
+END OpenDial;
 
 
 PROCEDURE createSearchForm;
@@ -1132,7 +1150,7 @@ BEGIN
 	    |menuNew:
 	        NewFile
 	    |menuOpen:
-	        open
+	        OpenDial
 	    |menuSave:
 	        save(text);
 	        repaint
@@ -1672,7 +1690,7 @@ BEGIN
                              key := -1
                         |22: key := ORD("U")
                         |24: key := -1;
-                             open
+                             OpenDial
                         |30: key := ORD("A")
                         |31: key := -1;
                              save(text)
@@ -1765,7 +1783,7 @@ BEGIN
         NewFile;
         repaint
     |btnOpen:
-        open
+        OpenDial
     |btnSave:
         save(text);
         repaint
@@ -1916,21 +1934,25 @@ END MouseEvent;
 
 PROCEDURE Redraw (VAR resized: BOOLEAN; VAR width, height, cliWidth, cliHeight: INTEGER);
 BEGIN
-    K.GetSystemColors;
-    IF ~K.RolledUp() THEN
-        K.ClientSize(width, height);
-        IF (width # cliWidth) OR (height # cliHeight) THEN
-            cliWidth := width;
-            cliHeight := height;
-            resize;
-            resized := TRUE
-        END;
-        K.SetEventsMask({0, 1, 2, 5, 6, 31})
-    ELSE
-    	SetCaption(text.fileName);
-        K.SetEventsMask({0, 30, 31})
-    END;
-    draw_window
+	K.GetSystemColors;
+	IF ~K.RolledUp() THEN
+		K.ClientSize(width, height);
+		IF (width # cliWidth) OR (height # cliHeight) THEN
+			cliWidth := width;
+			cliHeight := height;
+			resize;
+			resized := TRUE
+		END;
+		K.SetEventsMask({0, 1, 2, 5, 6, 31})
+	ELSE
+		SetCaption(text.fileName);
+		K.SetEventsMask({0, 30, 31})
+	END;
+	draw_window;
+	IF SkinHeight # K.SkinHeight() THEN
+		SkinHeight := K.SkinHeight();
+		Redraw(resized, width, height, cliWidth, cliHeight)
+	END
 END Redraw;
 
 
@@ -1950,11 +1972,10 @@ END ScrollChange;
 
 PROCEDURE main;
 VAR
-    err: INTEGER;
     fileName, filePath: RW.tFileName;
     width, height, cliWidth, cliHeight: INTEGER;
     resized: BOOLEAN;
-    firstClickX, firstClickY, time, blink: INTEGER;
+    firstClickX, firstClickY, time, blink, i: INTEGER;
 BEGIN
 	header := "";
     K.GetSystemColors;
@@ -1964,7 +1985,7 @@ BEGIN
     curText := 0;
     mainTID := K.ThreadID();
     K.SetIPC(IPC);
-    U.ptr2str(K.GetName(), AppPath);
+    Args.GetArg(0, AppPath);
     Ini.load(AppPath);
     leftButton := FALSE;
     resized := FALSE;
@@ -1976,7 +1997,8 @@ BEGIN
     cliWidth := winWidth;
     cliHeight := winHeight;
     LEFT := LEFT_PADDING;
-    canvas := G.CreateCanvas(winWidth - (LEFT + RIGHT + 11 + RIGHT_PADDING), winHeight - (TOP + BOTTOM + 5) - K.SkinHeight());
+    SkinHeight := K.SkinHeight();
+    canvas := G.CreateCanvas(winWidth - (LEFT + RIGHT + 11 + RIGHT_PADDING), winHeight - (TOP + BOTTOM + 5) - SkinHeight);
     tabs := Tabs.create();
     Tabs.setArea(tabs, LEFT, TOP - Tabs.tabHeight, canvas.width, Tabs.tabHeight);
     font1 := G.CreateFont(1, "", {});
@@ -1985,7 +2007,6 @@ BEGIN
     G.SetFont(canvas, font);
     T.init(resetTimer);
     T.setCanvas(canvas);
-    U.ptr2str(K.GetCommandLine(), fileName);
 
     context := CreateContextMenu();
     menuFile := CreateMenuFile();
@@ -2034,25 +2055,28 @@ BEGIN
     Toolbar.add(toolbar, btnRun,    53, "");
 
     Ini.getSettings(buildScript, runScript, debugScript);
-    IF fileName = "" THEN
+
+    filePath := "/sys";
+    IF Args.argc = 1 THEN
         text := T.New();
-        filePath := "/sys"
-    ELSE
-        text := T.open(fileName, err);
-        IF text = NIL THEN
-            error("error opening file");
-            K.Exit
-        ELSE
-            U.getPath(fileName, filePath)
-        END
+        insert(0, text);
+        T.SetPos(text, 0, 0)
     END;
-    OD := OpenDlg.Create(draw_window, OpenDlg.topen, filePath, "");
-    insert(0, text);
+	FOR i := 1 TO Args.argc - 1 DO
+		Args.GetArg(i, fileName);
+		IF open(fileName) THEN
+			U.getPath(fileName, filePath)
+		END
+	END;
+	IF textsCount = 0 THEN
+		K.Exit
+	END;
+	SwitchTab(textsCount - 1);
+
     Scroll.init(ScrollChange);
     Scroll.create(FALSE, canvas.width + 1, scrollWidth, scrollWidth, scrollWidth*3 DIV 2, hScroll);
     Scroll.create(TRUE, scrollWidth, canvas.height + 2, scrollWidth, scrollWidth*3 DIV 2, vScroll);
     T.resize(canvas.width, canvas.height);
-    T.SetPos(text, 0, 0);
     confirm := FALSE;
     notFound := FALSE;
     menuFindClicked := FALSE;
@@ -2065,6 +2089,9 @@ BEGIN
     cs := FALSE;
     whole := FALSE;
     replaced := 0;
+
+	OD := OpenDlg.Create(draw_window, OpenDlg.topen, filePath, "");
+
     K.SetEventsMask({0, 1, 2, 5, 6, 31});
     Menu.init(resetTimer);
     draw_window;
