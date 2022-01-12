@@ -207,10 +207,9 @@ void generate_and_show_password() {
 int main(int argc, const char *argv[]) {
     int gui_event; /* variable for storing event */
     uint32_t pressed_button = 0; /* code of button pressed in window */
-    unsigned int keyval; /* for saving pressed key */
+    ksys_oskey_t key; /* for saving pressed key */
 
     srand(time(0)*2/3); /* seeding the pseudo random number generator*/
-    kolibri_boxlib_init();
     _ksys_get_system_colors(&sys_color_table);
     _ksys_set_event_mask(0xC0000027);
     create_components(); /* create and init some visual components */
@@ -234,9 +233,9 @@ int main(int argc, const char *argv[]) {
             edit_box_mouse(edit_box_password_generated);
             break;        
         case KSYS_EVENT_KEY:
-            keyval = _ksys_get_key().val;
-            edit_box_key(edit_box_password_len, keyval);
-            edit_box_key(edit_box_password_generated, keyval);
+            key = _ksys_get_key();
+            edit_box_key_safe(edit_box_password_len, key);
+            edit_box_key_safe(edit_box_password_generated, key);
             break;
         case KSYS_EVENT_BUTTON: 
             pressed_button = _ksys_get_button(); 
