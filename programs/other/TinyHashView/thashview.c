@@ -274,9 +274,7 @@ bool hash_compare() // Главная функция для сравнения
 
 int main(int argc, char** argv)
 {
-    kolibri_boxlib_init(); // Загружаем boxlib
     if(argc<2){ // Если аргументов нет, то запускаем диалог выбора фа
-        kolibri_dialog_init(); // загружаем proc_lib(libdialog)
         open_dialog* dialog = kolibri_new_open_dialog(OPEN,0, 0, 420, 320);
         OpenDialog_init(dialog);
         OpenDialog_start(dialog); 
@@ -322,7 +320,7 @@ int main(int argc, char** argv)
                 break;        
             case KSYS_EVENT_KEY:
                 hash_edit_box.text_color = BLACK;
-                edit_box_key(&hash_edit_box, _ksys_get_key().val);
+                edit_box_key_safe(&hash_edit_box, _ksys_get_key());
                 break;
             case KSYS_EVENT_BUTTON: // Событие обработки кнопок
                 pressed_button = _ksys_get_button(); // Получение кода нажатой кнопки.

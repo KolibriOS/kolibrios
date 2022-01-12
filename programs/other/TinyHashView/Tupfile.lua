@@ -1,9 +1,10 @@
 if tup.getconfig("NO_TCC") ~= "" then return end
+if tup.getconfig("HELPERDIR") == ""
+then
+  HELPERDIR = "../../../programs"
+end
+tup.include(HELPERDIR .. "/use_tcc.lua")
 
-TCC="kos32-tcc"
-CFLAGS  = "-I../../develop/ktcc/trunk/libc.obj/include"
-LDFLAGS = "-nostdlib ../../develop/ktcc/trunk/bin/lib/crt0.o -L../../develop/ktcc/trunk/bin/lib"
-LIBS = "-ltcc -lcryptal -ldialog -lbox -lc.obj"
+LIBS = "-lcryptal -lbox_lib -ldialog"
 
-COMMAND=string.format("%s %s %s %s %s ", TCC, CFLAGS, LDFLAGS, "%f -o %o",  LIBS)
-tup.rule("thashview.c", COMMAND .. tup.getconfig("KPACK_CMD"), "thashview")
+link_tcc({"thashview.c"}, "thashview"); 
