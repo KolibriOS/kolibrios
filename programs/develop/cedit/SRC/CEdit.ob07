@@ -182,7 +182,7 @@ VAR
 
     winWidth, winHeight: INTEGER;
     SkinHeight: INTEGER;
-    AppPath, runScript, buildScript, debugScript: RW.tFileName;
+    AppPath, runScript, buildScript, debugScript, CurFolder: RW.tFileName;
     OD: OpenDlg.Dialog;
     confirm, notFound, menuFindClicked, search, searchOpened: BOOLEAN;
 
@@ -243,7 +243,7 @@ BEGIN
     	EXCL(edit.flags, 1)
     END;
     IF search & searchOpened THEN
-        EB.paint(edit)
+        EB.draw(edit)
     END
 END EditBox_SetFocus;
 
@@ -367,7 +367,7 @@ BEGIN
     scroll.left := left;
     scroll.top := top;
     Scroll.setValue(scroll, value);
-    Scroll.paint(scroll)
+    Scroll.draw(scroll)
 END DrawScroll;
 
 
@@ -400,9 +400,9 @@ BEGIN
         DrawScroll(vScroll, LEFT + canvas.width, TOP - 1, scrollY, text.count - 1);
         DrawScroll(hScroll, LEFT, TOP + canvas.height, scrollX, text.maxLength);
         IF search & searchOpened THEN
-	        CheckBox.paint(BKW);
-	        CheckBox.paint(CS);
-	        CheckBox.paint(WH);
+	        CheckBox.draw(BKW);
+	        CheckBox.draw(CS);
+	        CheckBox.draw(WH);
         END;
 
 		G.SetColor(canvas, K.colors.line);
@@ -485,9 +485,9 @@ BEGIN
     FindEdit.left := left;
     ReplaceEdit.left := left;
     GotoEdit.left := left;
-    EB.paint(FindEdit);
-    EB.paint(ReplaceEdit);
-    EB.paint(GotoEdit);
+    EB.draw(FindEdit);
+    EB.draw(ReplaceEdit);
+    EB.draw(GotoEdit);
     y := top + 200;
     K.CreateButton(btnFindNext, left, y, btnWidth, btnHeight, K.colors.button, "next"); INC(y, btnHeight + 10);
     K.CreateButton(btnReplace, left, y, btnWidth, btnHeight, K.colors.button, "replace"); INC(y, btnHeight + 10);
@@ -948,6 +948,8 @@ END goto;
 PROCEDURE Script (script: ARRAY OF CHAR);
 BEGIN
     IF script # "" THEN
+    	U.getPath(script, CurFolder);
+    	K.SetCurFolder(CurFolder);
         K.Run("/sys/@open", script)
     END
 END Script;

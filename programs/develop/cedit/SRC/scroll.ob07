@@ -81,7 +81,7 @@ BEGIN
 END Rect;
 
 
-PROCEDURE _paint (scroll: tScroll);
+PROCEDURE _draw (scroll: tScroll);
 VAR
 	canvas: G.tCanvas;
 	x, y, d, x1, x2, y1, y2,
@@ -164,15 +164,15 @@ BEGIN
 		G.Triangle(canvas, x, y1 - 1, x, y2, G.triRight);
 	END;
 	G.DrawCanvas(scroll.canvas, scroll.left, scroll.top)
-END _paint;
+END _draw;
 
 
-PROCEDURE paint* (scroll: tScroll);
+PROCEDURE draw* (scroll: tScroll);
 BEGIN
 	IF scroll.canvas # NIL THEN
-		_paint(scroll)
+		_draw(scroll)
 	END
-END paint;
+END draw;
 
 
 PROCEDURE resize* (VAR scroll: tScroll; width, height: INTEGER);
@@ -181,7 +181,7 @@ BEGIN
 	scroll.canvas := G.CreateCanvas(width, height);
 	scroll.width := width;
 	scroll.height := height;
-	paint(scroll)
+	draw(scroll)
 END resize;
 
 
@@ -226,7 +226,7 @@ BEGIN
 	ELSIF scroll.Dec THEN
 		setValue(scroll, scroll.value - 1)
 	END;
-	paint(scroll)
+	draw(scroll)
 END change;
 
 
@@ -302,7 +302,7 @@ BEGIN
 		c := x - scroll.left
 	END;
 	setPos(scroll, scroll.pos0 + c - scroll.Slider);
-	paint(scroll)
+	draw(scroll)
 END MouseMove;
 
 
@@ -368,7 +368,7 @@ BEGIN
 			setPos(scroll, c - scroll.btnSize - scroll.sliderSize DIV 2);
 			scroll.pos0 := scroll.pos;
 			scroll.Slider := c;
-			paint(scroll)
+			draw(scroll)
 		END
 	END
 END MouseDown;
@@ -388,7 +388,7 @@ BEGIN
 		END
 	ELSIF scroll.mouse THEN
 		MouseUp(scroll);
-		paint(scroll)
+		draw(scroll)
 	END
 END mouse;
 

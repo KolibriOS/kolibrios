@@ -42,7 +42,7 @@ TYPE
 	END;
 
 
-PROCEDURE paint* (chkbox: tCheckBox);
+PROCEDURE draw* (chkbox: tCheckBox);
 VAR
 	canvas: G.tCanvas;
 BEGIN
@@ -70,7 +70,7 @@ BEGIN
 		G.TextOut2(canvas, fontHeight + padding, 0, chkbox.text, LENGTH(chkbox.text));
 		G.DrawCanvas(canvas, chkbox.left, chkbox.top)
 	END
-END paint;
+END draw;
 
 
 PROCEDURE create* (text: ARRAY OF WCHAR; VAR chkbox: tCheckBox);
@@ -104,7 +104,7 @@ BEGIN
 			IF U.between(0, x, chkbox.width - 1) & U.between(0, y, chkbox.height - 1) THEN
 				chkbox.value := ~chkbox.value;
 			END;
-			paint(chkbox)
+			draw(chkbox)
 		END
 	ELSE
 		chkbox.mouse := FALSE

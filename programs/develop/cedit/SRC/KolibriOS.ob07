@@ -268,6 +268,12 @@ BEGIN
 END Run;
 
 
+PROCEDURE SetCurFolder* (folder: ARRAY OF CHAR);
+BEGIN
+	KOSAPI.sysfunc3(30, 1, SYSTEM.ADR(folder[0]));
+END SetCurFolder;
+
+
 PROCEDURE DrawRect* (x, y, width, height, color: INTEGER);
 BEGIN
     KOSAPI.sysfunc4(13, x*65536 + width, y*65536 + height, color)

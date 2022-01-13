@@ -51,7 +51,7 @@ TYPE
 
 VAR
 
-	paint     *: PROCEDURE (eb: tEditBox);
+	draw      *: PROCEDURE (eb: tEditBox);
 	mouse     *: PROCEDURE (eb: tEditBox);
 	_setValue  : PROCEDURE (eb: tEditBox; text: INTEGER);
 	key       *: PROCEDURE (eb: tEditBox; key: INTEGER);
@@ -124,7 +124,7 @@ VAR
 BEGIN
 	Lib := KOSAPI.LoadLib("/sys/lib/box_lib.obj");
 	ASSERT(Lib # 0);
-	GetProc(Lib, SYSTEM.ADR(paint),     "edit_box_draw");
+	GetProc(Lib, SYSTEM.ADR(draw),      "edit_box_draw");
 	GetProc(Lib, SYSTEM.ADR(key),       "edit_box_key_safe");
 	GetProc(Lib, SYSTEM.ADR(mouse),     "edit_box_mouse");
 	GetProc(Lib, SYSTEM.ADR(_setValue), "edit_box_set_text");
