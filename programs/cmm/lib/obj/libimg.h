@@ -33,6 +33,7 @@ dword img_blend     = #aimg_blend;
 dword img_flip      = #aimg_flip;
 dword img_rotate    = #aimg_rotate;
 dword img_to_rgb    = #aimg_to_rgb;
+dword resize        = #aresize;
 
 $DD 2 dup 0
 
@@ -52,6 +53,7 @@ char aimg_blend[]     = "img_blend";
 char aimg_flip[]      = "img_flip";
 char aimg_rotate[]    = "img_rotate";
 char aimg_to_rgb[]    = "img_to_rgb";
+char aresize[]        = "img_resize_data";
 
 #define LIBIMG_FORMAT_BMP       1
 #define LIBIMG_FORMAT_ICO       2

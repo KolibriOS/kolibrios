@@ -120,8 +120,13 @@ load_libraries l_libs_start,end_l_libs
 	mov ecx, [eax-4]
 	cmp ecx, '.skn'
 	je  load_skin_from_param
+	cmp ecx, '.SKN'
+	je  load_skin_from_param
 	cmp ecx, '.dtp'
-	jne no_param
+	je load_dtp_from_param
+	cmp ecx, '.DTP'
+	je load_dtp_from_param
+	jmp no_param
 	
 load_dtp_from_param:
 	stdcall string.copy, app_param, dtp_name

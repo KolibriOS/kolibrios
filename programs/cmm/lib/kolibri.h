@@ -612,7 +612,7 @@ inline fastcall void PutPixel( EBX,ECX,EDX)
 
 :void DefineHiddenButton(dword _x, _y, _w, _h, _id)
 {
-	DefineButton(_x, _y, _w, _h, _id + BT_HIDE, ESI);
+	DefineButton(_x, _y, _w, _h, _id + BT_HIDE, 0);
 }
 
 inline fastcall void DeleteButton( EDX)
