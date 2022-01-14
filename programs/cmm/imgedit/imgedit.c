@@ -231,12 +231,12 @@ int draw_tool_btn(dword _event, _hotkey, _x, _y, _icon_n, _text, _active)
 	if (!_text) w = PAD + PAD + 6;
 	if (_icon_n==-1) w = strlen(_text) * 8 + 14;
 	if (_active==-1) {
-		EDX = COL_LINE;
 		$push COL_LIGHT
+		EDX = COL_LINE;
 	} else if (_active) {
 		img_ptr = icons18a.image;
-		EDX = COL_BUTTON;
 		$push COL_BUTTON_TEXT
+		EDX = COL_BUTTON;
 
 	} else {
 		$push COL_WORK_TEXT
@@ -302,16 +302,14 @@ void open_image(char* _path)
 
 int color_depth_id;
 void event_set_color_depth() {
-	//debugval("buttonid", pressed_button_id);
-	//debugln(libimg_bpp[pressed_button_id-color_depth_id]);
 	img_convert stdcall(main_image.image, 0, pressed_button_id-color_depth_id, 0, 0);
 	if (!EAX) {
 		notify("'ImageEdit Pro\nConvertation error' -Et");
 	} else {
 		$push eax
-        img_destroy stdcall(main_image.image);
-        $pop eax
-        main_image.image = EAX;
+		img_destroy stdcall(main_image.image);
+		$pop eax
+		main_image.image = EAX;
 		main_image.set_vars();
 		draw_acive_panel();
 		draw_status_bar();
