@@ -1,13 +1,14 @@
+#ifndef INCLUDE_EVENTS_H
+#define INCLUDE_EVENTS_H
+#print "[include <collection.h>]\n"
 
-#ifndef INCLUDE_ARRAY_H
-#include "../lib/array.h"
-#endif
+#include "../lib/collection.h"
 
 #define ECTRL 300
 
 struct EVENTS
 {
-	Array array;
+	collection_int array;
 	int new_id;
 	void init();
 	int add();
@@ -17,7 +18,7 @@ struct EVENTS
 
 void EVENTS::init(dword size)
 {
-	array.init(size);
+	array.drop();
 	new_id = 900;
 }
 
@@ -44,3 +45,5 @@ bool EVENTS::press(dword id)
 	}
 	return false;
 }
+
+#endif

@@ -62,7 +62,7 @@ scroll_bar scroll_h = { NULL,TOOLBAR_W+PAD+PAD,15,NULL,15,2,NULL,0,0,COL_DARK,CO
 enum { SAVE_AS_PNG=1, SAVE_AS_BMP=2, SAVE_AS_RAW=4 };
 int saving_type=SAVE_AS_PNG;
 
-char* libimg_bpp[] = { "???", "8pal", "24", "32", "15", "16",
+char* libimg_bpp[] = { "-", "8pal", "24", "32", "15", "16",
 "mono", "8gray", "2pal", "4pal", "8gr/a" };
 
 enum {
@@ -194,6 +194,7 @@ void draw_content()
 	//draw_tool_btn(14, ECTRL + SCAN_CODE_RIGHT, PAD, tx.inc(GAP_S), 31, false);
 	//draw_tool_btn(15, ECTRL + SCAN_CODE_UP,    PAD, tx.inc(GAP_S), 32, false);
 	//draw_tool_btn(16, ECTRL + SCAN_CODE_DOWN,  PAD, tx.inc(GAP_S), 33, false);
+	if (!main_image.image) goto _NO_IMAGE;
 
  	draw_tool_btn(#event_save, ECTRL + SCAN_CODE_KEY_S, PAD, tx.inc(GAP_B), 05, "Save as", false);
  	draw_tool_btn(#event_save_png, 0, PAD, tx.inc(GAP_S), -1, "PNG", saving_type & SAVE_AS_PNG);
@@ -204,6 +205,7 @@ void draw_content()
 	draw_tool_btn(#event_activate_resize,0, PAD, tx.inc(GAP_S), 06, "Resize", active_tool & TOOL_RESIZE);
 	draw_tool_btn(#event_activate_depth, 0, PAD, tx.inc(GAP_S), 52, "Color depth", active_tool & TOOL_COLOR_DEPTH);
 	draw_tool_btn(#event_activate_flprot,0, PAD, tx.inc(GAP_S), 36, "Flip/Rotate", active_tool & TOOL_FLIP_ROTATE);
+	_NO_IMAGE:
 
 	draw_status_bar();
 	draw_canvas();
@@ -313,7 +315,7 @@ void event_set_color_depth() {
 		main_image.set_vars();
 		draw_acive_panel();
 		draw_status_bar();
-		draw_canvas();		
+		draw_canvas();
 	}
 }
 
@@ -347,7 +349,6 @@ void draw_acive_panel()
 					if (EAX) {
 						img_destroy stdcall(EAX); 
 					} else {
-						//continue;
 						a = -1;
 					}
 				}
@@ -368,7 +369,7 @@ void draw_acive_panel()
 			// DrawTopPanelButton1(#EventMoveDown,       ECTRL + SCAN_CODE_DOWN,  tx.inc(GAP_S), 33);
 			break;
 		default:
-			WriteText(CANVASX+PAD, HEADER_TEXTY, 0x90, COL_WORK_TEXT, "Welcome to ImageEditor Pro! Try to open some file.");
+			WriteText(CANVASX+PAD, HEADER_TEXTY, 0x90, COL_WORK_TEXT, "Welcome to ImageEditor Pro! Try to open a file.");
 	}
 }
 
@@ -384,7 +385,7 @@ void event_open()
 	OpenDialog_start stdcall (#o_dialog);
 	if (o_dialog.status) {
 		open_image(#openfile_path);
-		draw_canvas();
+		draw_window();
 	}
 }
 

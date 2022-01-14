@@ -23,7 +23,6 @@
 #include "../lib/list_box.h"
 #include "../lib/draw_buf.h"
 #include "../lib/events.h"
-#include "../lib/array.h"
 #include "../lib/clipboard.h"
 #include "../lib/math.h"
 
