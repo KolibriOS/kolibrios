@@ -27,7 +27,7 @@
 #define TOOLBAR_W 132
 #define STATUSBAR_H 20
 #define HEADERH TOOLBAR_ITEM_H + 14
-#define HEADER_TEXT_Y HEADERH - 14 / 2
+#define HEADER_TEXTY HEADERH - 14 / 2
 #define CANVASX TOOLBAR_W + PAD + PAD
 #define CANVASY HEADERH + 2
 
@@ -46,6 +46,7 @@ EVENTS button;
 EVENTS key;
 
 proc_info Form;
+int pressed_button_id;
 
 char default_dir[4096] = "/sys";
 od_filter filter2 = { 69, "BMP\0GIF\0ICO\0CUR\0JPEG\0JPG\0PNG\0PNM\0TGA\0TIFF\0TIF\0WBMP\0XBM\0XCF\Z80\0\0" };
@@ -61,8 +62,8 @@ scroll_bar scroll_h = { NULL,TOOLBAR_W+PAD+PAD,15,NULL,15,2,NULL,0,0,COL_DARK,CO
 enum { SAVE_AS_PNG=1, SAVE_AS_BMP=2, SAVE_AS_RAW=4 };
 int saving_type=SAVE_AS_PNG;
 
-char* libimg_bpp[] = { "8pal", "24", "32", "15", "16",
-"mono", "8gray", "2pal", "4pal", "8pal" };
+char* libimg_bpp[] = { "???", "8pal", "24", "32", "15", "16",
+"mono", "8gray", "2pal", "4pal", "8gr/a" };
 
 enum {
 	TOOL_CROP=1, 
@@ -90,7 +91,6 @@ void init_ui()
 
 void main()
 {
-	int pressed_button_id;
 	load_dll(libimg, #libimg_init, 1);
 	load_dll(boxlib, #box_lib_init,0);
 	load_dll(Proc_lib, #OpenDialog_init,0);
@@ -168,7 +168,7 @@ void draw_content()
 
 	//draw title
 	DrawBar(2, 2, CANVASX-2, HEADERH-1, COL_DARK);
-	WriteText(PAD+5, HEADER_TEXT_Y, 0x90, COL_WORK_TEXT, "ImageEditor Pro");
+	WriteText(PAD+5, HEADER_TEXTY, 0x90, COL_WORK_TEXT, "ImageEditor Pro");
 
 	//draw header
 	DrawBar(CANVASX+1, 2, Form.width-CANVASX-2, HEADERH-1, COL_WORK);
@@ -212,7 +212,7 @@ void draw_content()
 void draw_status_bar()
 {
 	char img_info[24];
-	sprintf(#img_info, "%i\01%i\02%s", main_image.w, main_image.h, libimg_bpp[main_image.type-1]);
+	sprintf(#img_info, "%i\01%i\02%s", main_image.w, main_image.h, libimg_bpp[main_image.type]);
 	DrawBar(CANVASX+1, Form.cheight - STATUSBAR_H - 1, Form.cwidth - CANVASX -2, STATUSBAR_H, COL_WORK);
 	WriteText(CANVASX+4, Form.cheight - STATUSBAR_H + 2, 0x90, COL_WORK_TEXT, #img_info);
 	for (ESI=0; img_info[ESI]!=0; ESI++) {
@@ -224,19 +224,24 @@ void draw_status_bar()
 	$int 64
 }
 
-void draw_tool_btn(dword _event, _hotkey, _x, _y, _icon_n, _text, _active)
+int draw_tool_btn(dword _event, _hotkey, _x, _y, _icon_n, _text, _active)
 {
 	int w = TOOLBAR_W;
-	dword img_ptr;
+	dword img_ptr = icons18.image;
 	if (!_text) w = PAD + PAD + 6;
 	if (_icon_n==-1) w = strlen(_text) * 8 + 14;
-	if (_active) {
+	if (_active==-1) {
+		EDX = COL_LINE;
+		$push COL_LIGHT
+	} else if (_active) {
 		img_ptr = icons18a.image;
 		EDX = COL_BUTTON;
+		$push COL_BUTTON_TEXT
+
 	} else {
-		img_ptr = icons18.image; 
+		$push COL_WORK_TEXT
 		EDX = COL_LIGHT;
-	} 
+	}
 	DrawBar(_x, _y, w, TOOLBAR_ITEM_H+1, EDX);
 	PutPixel(_x,_y,COL_WORK);
 	PutPixel(_x,_y+TOOLBAR_ITEM_H,COL_WORK);
@@ -251,10 +256,11 @@ void draw_tool_btn(dword _event, _hotkey, _x, _y, _icon_n, _text, _active)
 	} else {
 		_x += 7;
 	}
+	$pop EDX
 	if (_text) {
-		if (_active) EDX = COL_BUTTON_TEXT; else EDX = COL_WORK_TEXT;
 		WriteText(_x, _y+6, 0x90, EDX, _text);
 	}
+	return w;
 }
 
 void draw_canvas()
@@ -294,35 +300,77 @@ void open_image(char* _path)
 	scroll_h.position = 0;
 }
 
+int color_depth_id;
+void event_set_color_depth() {
+	//debugval("buttonid", pressed_button_id);
+	//debugln(libimg_bpp[pressed_button_id-color_depth_id]);
+	img_convert stdcall(main_image.image, 0, pressed_button_id-color_depth_id, 0, 0);
+	if (!EAX) {
+		notify("'ImageEdit Pro\nConvertation error' -Et");
+	} else {
+		$push eax
+        img_destroy stdcall(main_image.image);
+        $pop eax
+        main_image.image = EAX;
+		main_image.set_vars();
+		draw_acive_panel();
+		draw_status_bar();
+		draw_canvas();		
+	}
+}
+
 void draw_acive_panel()
 {
+	int i, x = CANVASX + PAD;
+	bool a;
 	switch(active_tool) {
 		case TOOL_CROP:
-			WriteText(CANVASX+PAD, HEADER_TEXT_Y, 0x90, COL_WORK_TEXT, "Crop tool");
+			WriteText(CANVASX+PAD, HEADER_TEXTY, 0x90, COL_WORK_TEXT, "Crop tool");
 			break;
 		case TOOL_RESIZE:
-			WriteText(CANVASX+PAD, HEADER_TEXT_Y, 0x90, COL_WORK_TEXT, "New width");
-			WriteText(CANVASX+PAD+150, HEADER_TEXT_Y, 0x90, COL_WORK_TEXT, "New height");
+			WriteText(CANVASX+PAD, HEADER_TEXTY, 0x90, COL_WORK_TEXT, "New width");
+			WriteText(CANVASX+PAD+150, HEADER_TEXTY, 0x90, COL_WORK_TEXT, "New height");
 			draw_tool_btn(#event_rotate_left, SCAN_CODE_ENTER, CANVASX + PAD + 300, 7, -1, "Apply", false);
 			break;
 		case TOOL_COLOR_DEPTH:
-			WriteText(CANVASX+PAD, HEADER_TEXT_Y, 0x90, COL_WORK_TEXT, "Color depth tool");
+			WriteText(CANVASX+PAD, HEADER_TEXTY, 0x90, COL_WORK_TEXT, "Color depth");
+			x += 11*8 + PAD;
+			color_depth_id = button.new_id;
+			for (i=1; i<11; i++) {
+				if (main_image.type == i) {
+					//this is current image depth
+					a = true; 
+				} else {
+					//this is image ve san set
+					a = false;
+					//probe does libimg support converting current image gepth to i-one
+					img_create stdcall(1, 1, main_image.type);
+					img_convert stdcall(EAX, 0, i, 0, 0);
+					if (EAX) {
+						img_destroy stdcall(EAX); 
+					} else {
+						//continue;
+						a = -1;
+					}
+				}
+				x += draw_tool_btn(#event_set_color_depth, SCAN_CODE_ENTER, x, 7, -1, libimg_bpp[i], a) + PAD;			
+			}
 			break;
 		case TOOL_FLIP_ROTATE:
-			WriteText(CANVASX+PAD, HEADER_TEXT_Y, 0x90, COL_WORK_TEXT, "Flip");
+			WriteText(CANVASX+PAD, HEADER_TEXTY, 0x90, COL_WORK_TEXT, "Flip");
 			draw_tool_btn(#event_flip_hor, ECTRL + SCAN_CODE_KEY_H, CANVASX + PAD + 040, 7, 34, NULL, false);
 			draw_tool_btn(#event_flip_ver, ECTRL + SCAN_CODE_KEY_V, CANVASX + PAD + 080, 7, 35, NULL, false);
-			WriteText(CANVASX+PAD + 142, HEADER_TEXT_Y, 0x90, COL_WORK_TEXT, "Rotate");
+			WriteText(CANVASX+PAD + 142, HEADER_TEXTY, 0x90, COL_WORK_TEXT, "Rotate");
 			draw_tool_btn(#event_rotate_left,   ECTRL + SCAN_CODE_KEY_L, CANVASX + PAD + 200, 7, 37, NULL, false);
 			draw_tool_btn(#event_rotate_right,   ECTRL + SCAN_CODE_KEY_R, CANVASX + PAD + 240, 7, 36, NULL, false);
-			// WriteText(CANVASX+PAD + 142, HEADER_TEXT_Y, 0x90, COL_WORK_TEXT, "Move");
+			// WriteText(CANVASX+PAD + 142, HEADER_TEXTY, 0x90, COL_WORK_TEXT, "Move");
 			// DrawTopPanelButton1(#EventMoveLeft,       ECTRL + SCAN_CODE_LEFT,  tx.inc(GAP_B), 30);
 			// DrawTopPanelButton1(#EventMoveRight,      ECTRL + SCAN_CODE_RIGHT, tx.inc(GAP_S), 31);
 			// DrawTopPanelButton1(#EventMoveUp,         ECTRL + SCAN_CODE_UP,    tx.inc(GAP_S), 32);
 			// DrawTopPanelButton1(#EventMoveDown,       ECTRL + SCAN_CODE_DOWN,  tx.inc(GAP_S), 33);
 			break;
 		default:
-			WriteText(CANVASX+PAD, HEADER_TEXT_Y, 0x90, COL_WORK_TEXT, "Welcome to ImageEditor Pro! Try to open some file.");
+			WriteText(CANVASX+PAD, HEADER_TEXTY, 0x90, COL_WORK_TEXT, "Welcome to ImageEditor Pro! Try to open some file.");
 	}
 }
 
