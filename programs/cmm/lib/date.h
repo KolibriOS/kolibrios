@@ -13,25 +13,44 @@
 	word year;
 };
 
-:void DrawDate(dword x, y, color, in_date)
+:struct time
 {
-	EDI = in_date;
+	byte seconds;
+	byte minutes;
+	byte hours;
+	byte rez;
+};
+
+:void DrawDateTime(dword x, y, color, _date, _time)
+{
+	EDI = _date;
 	EAX = 47;
 	EBX = 2<<16;
 	EDX = x<<16+y;
 	ESI = 0x90<<24+color;
 	ECX = EDI.date.day;
 	$int 64
-	EDX += 20<<16;
+	EDX += 24<<16;
 	ECX = EDI.date.month;
 	$int 64
-	EDX += 20<<16;
+	EDX += 24<<16;
 	EBX = 4<<16;
 	ECX = EDI.date.year;
 	$int 64
-	DrawBar(x+17,y+10,2,2,color);
-	$add ebx, 20 << 16
+
+	EDI = _time;
+	EDX += 40<<16;
+	EBX = 2<<16;
+	ECX = EDI.time.hours;
 	$int 64
+	EDX += 24<<16;
+	ECX = EDI.time.minutes;
+	$int 64
+	EDX += 24<<16;
+	ECX = EDI.time.seconds;
+	$int 64
+	
+	WriteText(x,y,0x90,color, "  .  .       :  :");
 }
 
 #endif

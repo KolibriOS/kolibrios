@@ -31,11 +31,11 @@
 :struct BDVK {
 	dword   readonly:1, hidden:1, system:1, volume_label:1, isfolder:1, notarchived:1, :0;
 	byte    type_name, rez1, rez2, selected; //name encoding
-	dword   timecreate; //+8
+	time    timecreate; //+8
 	date    datecreate;
-	dword   timelastaccess;
+	time    timelastaccess;
 	date    datelastaccess;
-	dword   timelastedit;
+	time    timelastedit;
 	date    datelastedit;
 	dword   sizelo;
 	dword   sizehi;

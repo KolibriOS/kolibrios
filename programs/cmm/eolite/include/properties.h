@@ -274,9 +274,9 @@ void DrawPropertiesWindow()
 
 	if (show_date) {
 		WriteTextLines(10,  136, 0x90, sc.work_text, CREATED_OPENED_MODIFIED, 20);
-		DrawDate(120, 136, sc.work_text, #file_info_general.datecreate);
-		DrawDate(120, 156, sc.work_text, #file_info_general.datelastaccess);
-		DrawDate(120, 176, sc.work_text, #file_info_general.datelastedit);			
+		DrawDateTime(120, 136, sc.work_text, #file_info_general.datecreate, #file_info_general.timecreate);
+		DrawDateTime(120, 156, sc.work_text, #file_info_general.datelastaccess, #file_info_general.timelastaccess);
+		DrawDateTime(120, 176, sc.work_text, #file_info_general.datelastedit, #file_info_general.timelastedit);			
 	}
 
 	DrawFrame(10, y.set(pform.cheight - 143), -10*2 + pform.cwidth - 2, 92, FLAGS);
