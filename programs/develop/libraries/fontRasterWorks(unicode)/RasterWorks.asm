@@ -34,7 +34,8 @@ endp
 
 ; calculate amount of valid chars in UTF-8 string
 ; supports zero terminated string (set byteQuantity = -1)
-proc	countUTF8, string, byteQuantity
+cntUTF_8: ;old function name
+proc	countUTF8Z, string, byteQuantity
 	push	esi
 	mov	edx,[byteQuantity]
 	inc	edx
@@ -650,6 +651,7 @@ putOnPicture:
 align 4
 @EXPORT:
 export	drawText,	'drawText', \
-	countUTF8,	'cntUTF-8', \
+	cntUTF_8,	'cntUTF-8', \  ;old function name
+	countUTF8Z,	'countUTF8Z', \
 	charsFit,	'charsFit', \
 	stringWidth,	'strWidth'
