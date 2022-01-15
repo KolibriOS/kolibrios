@@ -65,39 +65,41 @@ return j+1;
 
 int base64_decode(char inp[], char outp[], int len)
 {
-int i, j, k;
-char chr[4];
+	int i, j, k, n;
+	char *chr_adr;
+	char chr[4];
 
-for (i = 0, j=-1, k=0; i < len; i+=4)
-    {
-    chr[0] = strchr(base64_table, inp[i]) - base64_table;
+	i = 0;
+	j = -1;
+	k = 0;
+	while (i < len)
+	{
+		for (n = 0; n <= 3; n++)
+		{
+			chr[n] = 0;
+			while ((inp[i] <= 0x20) & (i < len))
+				i++;
+			if (i < len)
+			{
+				if ((n >= 2) & (inp[i] == '='))
+					k++;
+				else
+				{
+					chr_adr = strchr(base64_table, inp[i]);
+					if (chr_adr)
+						chr[n] = chr_adr - base64_table;
+				}				
+				i++;
+			}
+		}		
+		outp[++j] = ((chr[0] << 2) | (chr[1] >> 4));
+		outp[++j] = ((chr[1] << 4) | (chr[2] >> 2));
+		outp[++j] = ((chr[2] & 0x03 )<< 6) | (chr[3] & 0x3f);
+	}
 
-    chr[1] = strchr(base64_table, inp[i+1]) - base64_table;
+	outp[j+1-k] = '\0';
 
-    if (inp[i+2] == '=')
-        {
-        chr[2] = 0;
-        k++;
-        }
-    else
-        chr[2] = strchr(base64_table, inp[i+2]) - base64_table;
-
-    if (inp[i+3] == '=')
-        {
-        chr[3] = 0;
-        k++;
-        }
-    else
-        chr[3] = strchr(base64_table, inp[i+3]) - base64_table;
-
-    outp[++j] = ((chr[0] << 2) | (chr[1] >> 4));
-    outp[++j] = ((chr[1] << 4) | (chr[2] >> 2));
-    outp[++j] = ((chr[2] & 0x03 )<< 6) | (chr[3] & 0x3f);
-    }
-
-outp[j+1-k] = '\0';
-
-return j+1-k;
+	return j+1-k;
 }
 
 ///===============
