@@ -27,13 +27,12 @@ dword img_encode    = #aimg_encode;
 dword img_convert   = #aimg_convert;
 dword img_from_file = #aimg_from_file;
 dword img_blend     = #aimg_blend;
-//dword img_is_img    = #aimg_is_img;
-//dword img_to_rgb2   = #aimg_to_rgb2;
-//dword img_scale     = #aimg_scale;
 dword img_flip      = #aimg_flip;
 dword img_rotate    = #aimg_rotate;
-dword img_to_rgb    = #aimg_to_rgb;
-dword resize        = #aresize;
+dword img_scale     = #aimg_scale;
+//dword img_is_img    = #aimg_is_img;
+//dword img_to_rgb    = #aimg_to_rgb;
+//dword img_to_rgb2   = #aimg_to_rgb2;
 
 $DD 2 dup 0
 
@@ -47,13 +46,12 @@ char aimg_encode[]    = "img_encode";
 char aimg_convert[]   = "img_convert";
 char aimg_from_file[] = "img_from_file";
 char aimg_blend[]     = "img_blend";
-//char aimg_is_img[]    = "img_is_img";
-//char aimg_to_rgb2[]   = "img_to_rgb2";
-//char aimg_scale[]     = "img_scale";
 char aimg_flip[]      = "img_flip";
 char aimg_rotate[]    = "img_rotate";
-char aimg_to_rgb[]    = "img_to_rgb";
-char aresize[]        = "img_resize_data";
+char aimg_scale[]     = "img_scale";
+//char aimg_is_img[]    = "img_is_img";
+//char aimg_to_rgb[]    = "img_to_rgb";
+//char aimg_to_rgb2[]   = "img_to_rgb2";
 
 #define LIBIMG_FORMAT_BMP       1
 #define LIBIMG_FORMAT_ICO       2
@@ -85,18 +83,49 @@ char aresize[]        = "img_resize_data";
                         // kernel doesn't handle this image type,
                         // libimg can only create and destroy such images
 
+//flip and rotate
 #define FLIP_VERTICAL   0x01
 #define FLIP_HORIZONTAL 0x02
-
 #define ROTATE_90_CW    0x01
 #define ROTATE_180      0x02
 #define ROTATE_270_CW   0x03
 #define ROTATE_90_CCW   ROTATE_270_CW
 #define ROTATE_270_CCW  ROTATE_90_CW
 
+//scale type                    //corresponding img.scale params
+#define LIBIMG_SCALE_NONE       0     //do not scale
+#define LIBIMG_SCALE_INTEGER    1     //scale factor, reserved 0
+#define LIBIMG_SCALE_TILE       2     //new width, new height
+#define LIBIMG_SCALE_STRETCH    3     //new width, new height
+#define LIBIMG_SCALE_FIT_BOTH   LIBIMG_SCALE_STRETCH
+#define LIBIMG_SCALE_FIT_MIN    4     //new width, new height
+#define LIBIMG_SCALE_FIT_RECT   LIBIMG_SCALE_FIT_MIN
+#define LIBIMG_SCALE_FIT_WIDTH  5     //new width, new height
+#define LIBIMG_SCALE_FIT_HEIGHT 6     //new width, new height
+#define LIBIMG_SCALE_FIT_MAX    7     //new width, new height
+
+//interpolation algorithm
+#define LIBIMG_INTER_NONE       0     //use it with LIBIMG_SCALE_INTEGER, LIBIMG_SCALE_TILE, etc
+#define LIBIMG_INTER_BILINEAR   1
+#define LIBIMG_INTER_DEFAULT    LIBIMG_INTER_BILINEAR
+
+/*
+// error codes
+LIBIMG_ERROR_OUT_OF_MEMORY      = 1
+LIBIMG_ERROR_FORMAT             = 2
+LIBIMG_ERROR_CONDITIONS         = 3
+LIBIMG_ERROR_BIT_DEPTH          = 4
+LIBIMG_ERROR_ENCODER            = 5
+LIBIMG_ERROR_SRC_TYPE           = 6
+LIBIMG_ERROR_SCALE              = 7
+LIBIMG_ERROR_INTER              = 8
+LIBIMG_ERROR_NOT_INPLEMENTED    = 9
+LIBIMG_ERROR_INVALID_INPUT      = 10
+*/
+
 struct libimg_image
 {
-    dword checksum; // ((Width ROL 16) OR Height) XOR Data[0]        ; ignored so far
+    dword checksum;  // ((Width ROL 16) OR Height) XOR Data[0]        ; ignored so far
     dword w;
     dword h;
     dword next;

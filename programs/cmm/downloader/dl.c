@@ -132,7 +132,7 @@ void StartDownloading()
 		strcpy(#get_url, #uEdit);
 	}
 	if (http.get(#get_url)) {
-		ed.blur_border_color = 0xCACACA;
+		ed.border_color = 0xCACACA;
 		EditBox_UpdateText(#ed, ed_disabled);
 		pb.value = 0;
 		DrawWindow();
@@ -166,7 +166,7 @@ void StopDownloading()
 	if (http.content_pointer) http.content_pointer = free(http.content_pointer);
 	http.content_received = http.content_length = 0;
 
-	ed.blur_border_color = 0xFFFfff;
+	ed.border_color = 0xFFFfff;
 	EditBox_UpdateText(#ed, ed_focus);
 	DrawWindow();
 }

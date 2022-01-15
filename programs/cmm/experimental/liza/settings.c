@@ -43,14 +43,14 @@ void SettingsDialog()
 			{
 				if (automatic.checked) {
 					UpdateEditboxFlags(ed_disabled);
-					POP_server_box.blur_border_color = POP_server_port_box.blur_border_color =
-					 SMTP_server_box.blur_border_color = SMTP_server_port_box.blur_border_color = 0xCACACA;
+					POP_server_box.border_color = POP_server_port_box.border_color =
+					 SMTP_server_box.border_color = SMTP_server_port_box.border_color = 0xCACACA;
 				}
 				else {
 					UpdateEditboxFlags(0);
 					POP_server_box.flags = 0b10;
-					POP_server_box.blur_border_color = POP_server_port_box.blur_border_color =
-					 SMTP_server_box.blur_border_color = SMTP_server_port_box.blur_border_color = 0xFFFfff;
+					POP_server_box.border_color = POP_server_port_box.border_color =
+					 SMTP_server_box.border_color = SMTP_server_port_box.border_color = 0xFFFfff;
 				}
 				DrawOptionsWindow();
 			}

@@ -904,8 +904,8 @@ void DrawOmnibox()
 	DrawOvalBorder(omnibox_edit.left-2, omnibox_edit.top-3, omnibox_edit.width+18, 24, sc.line, 
 		sc.line, sc.line, sc.dark);
 	DrawBar(omnibox_edit.left-1, omnibox_edit.top-2, omnibox_edit.width+18, 1, 0xD8DCD8);
-	DrawBar(omnibox_edit.left-1, omnibox_edit.top-1, omnibox_edit.width+18, 1, omnibox_edit.color);
-	DrawBar(omnibox_edit.left-1, omnibox_edit.top, 1, 22, omnibox_edit.color);
+	DrawBar(omnibox_edit.left-1, omnibox_edit.top-1, omnibox_edit.width+18, 1, omnibox_edit.bg_color);
+	DrawBar(omnibox_edit.left-1, omnibox_edit.top, 1, 22, omnibox_edit.bg_color);
 
 	if (omnibox_edit.flags & ed_focus) omnibox_edit.flags = ed_focus; else omnibox_edit.flags = 0;
 	EditBox_UpdateText(#omnibox_edit, omnibox_edit.flags);

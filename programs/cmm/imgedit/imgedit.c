@@ -51,6 +51,13 @@ void main()
 	pixie_skin.load("/sys/media/pixieskn.png");
 	Form.width = screen.w/6*5;
 	Form.height = screen.h/6*5;
+	sc.work = COL_WORK;
+	sc.work_text = COL_WORK_TEXT;
+	sc.light = COL_LIGHT;
+	sc.dark = COL_DARK;
+	sc.line = COL_LINE;
+	sc.button = COL_BUTTON;
+	sc.button_text = COL_BUTTON_TEXT;
 
 	/* Handle application parameters */
 	//if (!param) open_image("/sys/home.png");
@@ -63,6 +70,10 @@ void main()
 			mouse.get();
 			if (main_image.h > canvas.h) scrollbar_v_mouse stdcall(#scroll_v);
 			if (main_image.w > canvas.w) scrollbar_h_mouse stdcall(#scroll_h);
+			if (active_tool == TOOL_SCALE) {
+				edit_box_mouse stdcall (#edit_w);
+				edit_box_mouse stdcall (#edit_h);
+			}
 			if (scroll_v.delta) || (scroll_h.delta) draw_canvas();
 			if (EAX = mouse.vert) {
 				if (EAX<10) event_scroll_canvas(SCAN_CODE_DOWN); 
@@ -76,11 +87,36 @@ void main()
 		case evButton:
 			pressed_button_id = GetButtonID();
 			if (pressed_button_id==1) ExitProcess();
+			keep_ratio.click(pressed_button_id);
 			button.press(pressed_button_id);
 			break;
 
 		case evKey:
 			GetKeys();
+			if (active_tool == TOOL_SCALE)
+			&& (edit_w.flags & ed_focus) || (edit_h.flags & ed_focus) {
+				if (key_scancode == SCAN_CODE_TAB) {
+					edit_w.flags >< edit_h.flags;
+					draw_acive_panel();
+					break;
+				}
+				if (edit_w.flags & ed_focus) {
+					edit_box_key_c stdcall (#edit_w, key_editbox);
+					if (keep_ratio.checked) && (text_w) && (atoi(#text_w)) {
+						EDI = main_image.h*100 / calc(main_image.w*100 / atoi(#text_w));
+						edit_box_set_text stdcall (#edit_h, itoa(EDI));
+						edit_box_draw stdcall (#edit_h);
+					}
+				} else {
+					edit_box_key_c stdcall (#edit_h, key_editbox);
+					if (keep_ratio.checked) && (text_h) && (atoi(#text_h)) {
+						EDI = main_image.h*100 / calc(main_image.w*100 / atoi(#text_h));
+						edit_box_set_text stdcall (#edit_w, itoa(EDI));
+						edit_box_draw stdcall (#edit_w);
+					}
+				}
+				break;
+			}
 			if (key_scancode == SCAN_CODE_DOWN) event_scroll_canvas(SCAN_CODE_DOWN);
 			if (key_scancode == SCAN_CODE_UP) event_scroll_canvas(SCAN_CODE_UP);
 			if (key_scancode == SCAN_CODE_LEFT) event_scroll_canvas(SCAN_CODE_LEFT);
@@ -152,9 +188,9 @@ void draw_content()
 	if (main_image.image) {
 	 	draw_tool_btn(#event_activate_export, ECTRL + SCAN_CODE_KEY_S, PAD, tx.inc(GAP_S), 05, "Export image", active_tool & TOOL_EXPORT);
 	 	//draw_tool_btn(#event_activate_crop,  0, PAD, tx.inc(GAP_B), 46, "Crop", active_tool & TOOL_CROP);
-		//draw_tool_btn(#event_activate_resize,0, PAD, tx.inc(GAP_B), 06, "Resize      ", active_tool & TOOL_RESIZE);
 		draw_tool_btn(#event_activate_depth, 0, PAD, tx.inc(GAP_B), 52, "Color depth ", active_tool & TOOL_COLOR_DEPTH);
 		draw_tool_btn(#event_activate_flprot,0, PAD, tx.inc(GAP_S), 36, "Flip/Rotate ", active_tool & TOOL_FLIP_ROTATE);		
+		draw_tool_btn(#event_activate_scale, 0, PAD, tx.inc(GAP_S), 06, "Scale       ", active_tool & TOOL_SCALE);
 	}
 	draw_status_bar();
 	draw_canvas();
@@ -279,11 +315,9 @@ void event_set_color_depth() {
 	}
 }
 
-void WritePanelText(int _x, _text) { WriteTextWithBg(_x, HEADER_TEXTY, 0xD0, COL_WORK_TEXT, _text, COL_WORK); }
+void WritePanelText(int _x, _text) { WriteText(_x, HEADER_TEXTY, 0x90, COL_WORK_TEXT, _text); }
 void draw_acive_panel()
 {
-	char edit_width_text[8];
-	edit_box edit_width;
 	int i, x = CANVASX + PAD;
 	bool a;
 	DrawBar(CANVASX+1, 2, Form.width-CANVASX-64, HEADERH-1, COL_WORK);
@@ -294,17 +328,18 @@ void draw_acive_panel()
 		 	x += draw_tool_btn(#event_save_png, 0, x, 7, -1, "PNG", saving_type & SAVE_AS_PNG) + PAD;
 			x += draw_tool_btn(#event_save_pnm, 0, x, 7, -1, "PNM", saving_type & SAVE_AS_PNM) + PAD;
 			x += draw_tool_btn(#event_save_bmp, 0, x, 7, -1, "BMP", saving_type & SAVE_AS_BMP) + PAD + PAD;
-			if (saving_type) draw_tool_btn(#event_save,     0, x, 7, 53, "Export", false);
+			if (saving_type) draw_tool_btn(#event_save, 0, x, 7, 53, "Export", false);
 			break;
 		case TOOL_CROP:
 			WritePanelText(CANVASX+PAD, "Crop tool");
 			break;
-		case TOOL_RESIZE:
-			WritePanelText(CANVASX+PAD, "New width");
-			WritePanelText(CANVASX+PAD+150, "New height");
-			draw_tool_btn(#event_rotate_left, SCAN_CODE_ENTER, CANVASX + PAD + 300, 7, -1, "Apply", false);
-			EditBox_Create(#edit_width, 9*8+CANVASX+PAD+PAD, HEADER_TEXTY-3, 50, sizeof(edit_width_text), #edit_width_text, 0b);
-			edit_box_draw stdcall (#edit_width);
+		case TOOL_SCALE:
+			WritePanelText(CANVASX+PAD, "New size          x");
+			DefineHiddenButton(edit_w.left-2, edit_w.top-2, 148, 25, 2+BT_NOFRAME);
+			DrawEditBox(#edit_w);
+			DrawEditBox(#edit_h);
+			keep_ratio.draw(CANVASX + PAD + 233, HEADER_TEXTY);
+			draw_tool_btn(#event_scale, SCAN_CODE_ENTER, CANVASX + PAD + 370, 7, -1, "Apply", false);
 			break;
 		case TOOL_COLOR_DEPTH:
 			WritePanelText(CANVASX+PAD, "Color depth");
@@ -323,13 +358,13 @@ void draw_acive_panel()
 						img_destroy stdcall(EAX); 
 					} else {
 						a = -1;
-						if (Form.width-CANVASX-64 < 652) {
+						if (Form.width-CANVASX-64 < 600) {
 							button.add(1);
 							continue;							
 						}
 					}
 				}
-				x += draw_tool_btn(#event_set_color_depth, SCAN_CODE_ENTER, x, 7, -1, libimg_bpp[i], a) + PAD;			
+				x += draw_tool_btn(#event_set_color_depth, SCAN_CODE_ENTER, x, 7, -1, libimg_bpp[i], a) + 6;			
 			}
 			break;
 		case TOOL_FLIP_ROTATE:
@@ -362,9 +397,60 @@ void event_save_raw() { saving_type = SAVE_AS_RAW; draw_acive_panel(); }
 void event_save_pnm() { saving_type = SAVE_AS_PNM; draw_acive_panel(); }
 void event_activate_export() { active_tool = TOOL_EXPORT; draw_content(); }
 void event_activate_crop() { active_tool = TOOL_CROP; draw_content(); }
-void event_activate_resize() { active_tool = TOOL_RESIZE; draw_content(); }
+void event_activate_scale() { active_tool = TOOL_SCALE; set_text_scale_edits(); draw_content(); }
 void event_activate_depth() { active_tool = TOOL_COLOR_DEPTH; draw_content(); }
 void event_activate_flprot() { active_tool = TOOL_FLIP_ROTATE; draw_content(); }
+
+void set_text_scale_edits()
+{
+	edit_box_set_text stdcall (#edit_w, itoa(main_image.w));
+	edit_box_set_text stdcall (#edit_h, itoa(main_image.h));
+}
+
+/*
+;;================================================================================================;;
+proc img.scale _src, _crop_x, _crop_y, _crop_width, _crop_height, _dst, _scale, _inter, _param1, _param2 ;;
+;;------------------------------------------------------------------------------------------------;;
+;? scale _image                                                                                   ;;
+;;------------------------------------------------------------------------------------------------;;
+;> [_src]         = pointer to source image                                                       ;;
+;> [_crop_x]      = left coord of cropping rect                                                   ;;
+;> [_crop_y]      = top coord of cropping rect                                                    ;;
+;> [_crop_width]  = width of cropping rect                                                        ;;
+;> [_crop_height] = height of cropping rect                                                       ;;
+;> [_dst]         = pointer to resulting image, 0 to create new one                               ;;
+;> [_scale]       = scaling method, see libimg.inc (LIBIMG_SCALE_*)                               ;;
+;> [_inter]       = interpolation algorithm, see libimg.inc (LIBIMG_INTER_*)                      ;;
+;> [_param1]      = depends on _scale, see libimg.inc                                             ;;
+;> [_param2]      = depends on _scale, see libimg.inc                                             ;;
+;;------------------------------------------------------------------------------------------------;;
+;< eax = 0 / pointer to scaled image                                                              ;;
+;< ecx = error code / undefined                                                                   ;;
+;;================================================================================================;;
+*/
+
+//invoke  img.scale, eax, 0, 0, [eax+Image.Width], [eax+Image.Height], 0, LIBIMG_SCALE_STRETCH, LIBIMG_INTER_DEFAULT, [view.width], [view.height]
+
+void event_scale()
+{
+	img_scale stdcall (main_image.image, 0, 0, main_image.w, main_image.h, 0,
+		LIBIMG_SCALE_STRETCH, LIBIMG_INTER_DEFAULT, atoi(#text_w), atoi(#text_h));
+	if (!EAX) {
+		if (ECX == 4) {
+			notify("'ImageEdit Pro\nThis color depth is not supported by Scale feature.\nPlease change color depth to 24 / 32 / 8grey.' -Et");
+		} else {
+			debugval("Error code", ECX);
+			notify("'ImageEdit Pro\nImage scale failed :(' -Et");
+		}
+	} else {
+		$push eax
+		img_destroy stdcall (main_image.image);
+		$pop eax
+		main_image.image = EAX;
+		main_image.set_vars();
+		draw_canvas();
+	}
+}
 
 void event_open()
 {
@@ -372,6 +458,7 @@ void event_open()
 	OpenDialog_start stdcall (#o_dialog);
 	if (o_dialog.status) {
 		open_image(#openfile_path);
+		active_tool = NULL;
 		draw_window();
 	}
 }

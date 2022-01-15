@@ -27,7 +27,7 @@ void DrawUiElementsPreview(dword x,y,h)
 	ESI = edit_box_pointer;
 	ESI.edit_box.left = x;
 	ESI.edit_box.top = y;
-	ESI.edit_box.blur_border_color = c_inactive;
+	ESI.edit_box.border_color = c_inactive;
 	ESI.edit_box.focus_border_color = c_active;
 	edit_box_draw  stdcall (edit_box_pointer);
 }

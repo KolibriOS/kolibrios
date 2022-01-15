@@ -17,6 +17,7 @@ dword box_lib_init   = #aboxlib_init;
 
 dword edit_box_draw     = #aEdit_box_draw;
 dword edit_box_key      = #aEdit_box_key;
+dword edit_box_key_c    = #aEdit_box_key_c;
 dword edit_box_mouse    = #aEdit_box_mouse;
 dword edit_box_set_text = #aEdit_box_set_text;
 
@@ -37,6 +38,7 @@ $DD 2 dup 0
 
 char aEdit_box_draw []    = "edit_box";
 char aEdit_box_key  []    = "edit_box_key";
+char aEdit_box_key_c[]    = "edit_box_key_safe";
 char aEdit_box_mouse[]    = "edit_box_mouse";
 char aEdit_box_set_text[] = "edit_box_set_text";
 
@@ -102,27 +104,16 @@ PathShow_draw stdcall(#PathShow);
 #define ed_mouse_on_off 1111111011111111b
 
 struct edit_box{
-dword width,
-	left,
-	top,
-	color,
-	shift_color,
-	focus_border_color,
-	blur_border_color,
-	text_color,
+dword width, left, top,
+	bg_color, selec_color, focus_border_color, border_color, text_color,
 	max,
 	text,
 	mouse_variable,
 	flags,
-	size,
-	pos,
-	offset,
-	cl_curs_x,
-	cl_curs_y,
-	shift,
-	shift_old,
-	height,
-	char_width;
+	size, pos, offset,
+	cl_curs_x, cl_curs_y,
+	shift, shift_old,
+	height, char_width;
 };
 
 :void EditBox_UpdateText(dword ed, _flags)
@@ -165,18 +156,12 @@ struct scroll_bar
 
 struct progress_bar
 {
-  dword
-	value,
-	left,
-	top,
-	width,
-	height,
+  dword value,
+	left, top,
+	width, height,
 	style,
-	min,
-	max,
-	back_color,
-	progress_color,
-	frame_color;
+	min, max,
+	back_color, progress_color, frame_color;
 };
 
 struct frame
