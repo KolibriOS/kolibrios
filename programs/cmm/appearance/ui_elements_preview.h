@@ -14,7 +14,7 @@ void DrawUiElementsPreview(dword x,y,h)
 	spinbox1.draw(x, y2.set(y+30));
 	WriteText(x, y2.inc(30), 0x90, sc.work_text, "C-- Edit");
 	DrawEditBoxPos(x, y2.inc(20), #edit_cmm);
-	WriteText(x, y2.inc(35), 0x90, sc.work_text, "Strandard Edit");
+	WriteText(x, y2.inc(35), 0x90, sc.work_text, "Standart Edit");
 	DrawStEditBoxPos(x, y2.inc(20), #edit_st);
 	DrawStandartCaptButton(x, y+h-40, GetFreeButtonId(), "Button1");
 	DrawStandartCaptButton(x+100, y+h-40, GetFreeButtonId(), "Button2");
