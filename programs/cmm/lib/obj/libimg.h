@@ -186,14 +186,6 @@ struct libimg_image
     }
 }
 
-// size - output parameter, error code / the size of encoded data
-:dword encode_image(dword image_ptr, dword options, dword specific_options, dword* size) {
-    img_encode stdcall(image_ptr, options, specific_options);
-    ESDWORD[size] = ECX;
-
-    return EAX;
-}
-
 :dword save_image(dword _image_pointer, _w, _h, _path)
 {
     dword encoded_data=0;
@@ -210,7 +202,9 @@ struct libimg_image
         EDI = image_ptr;
         memmov(EDI.libimg_image.imgsrc, _image_pointer, _w * _h * 3);
 
-        encoded_data = encode_image(image_ptr, LIBIMG_FORMAT_PNG, 0, #encoded_size);
+        img_encode stdcall(image_ptr, LIBIMG_FORMAT_PNG, 0);
+        encoded_data = EAX;
+        encoded_size = ECX;
 
         img_destroy stdcall(image_ptr);
 

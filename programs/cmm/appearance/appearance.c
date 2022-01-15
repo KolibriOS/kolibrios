@@ -427,9 +427,17 @@ void EventApply()
 void EventOpenFile()
 {
 	switch (tabs.active_tab) {
-		case TAB_SKINS: RunProgram("/sys/skincfg", list.get(select_list.cur_y)); break;
-		case TAB_WALLPAPERS: RunProgram("/sys/media/kiv", list.get(select_list.cur_y)); break;
-		case TAB_SCREENSAVERS: if(select_list.cur_y) RunProgram(list.get(select_list.cur_y), "@ss");
+		case TAB_SKINS: 
+				RunProgram("/sys/skincfg", list.get(select_list.cur_y)); 
+				break;
+		case TAB_WALLPAPERS: 
+				RunProgram("/sys/media/kiv", list.get(select_list.cur_y)); 
+				break;
+		case TAB_SCREENSAVERS: 
+				if(select_list.cur_y) {
+					KillProcessByName("@ss", MULTIPLE);
+					RunProgram(list.get(select_list.cur_y), "@ss");
+				}
 	}
 }
 

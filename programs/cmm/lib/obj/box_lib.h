@@ -136,11 +136,8 @@ dword width,
 	ESI.edit_box.size = strlen(ed_text);
 }
 
-:dword EditBox_Create(dword left, top, width, maxlen, text, flags)
+:dword EditBox_Create(dword eb, left, top, width, maxlen, text, flags)
 {
-	dword eb, i;
-	eb = malloc(sizeof(edit_box));
-	for (i = 0; i < sizeof(edit_box); i++) ESBYTE[eb + i] = 0;
 	ESDWORD[eb] = width;
 	ESDWORD[eb + 4] = left;
 	ESDWORD[eb + 8] = top;
@@ -155,7 +152,6 @@ dword width,
 	ESDWORD[eb + 44] = flags;
 	ESDWORD[eb + 48] = 0;
 	ESDWORD[eb + 52] = 0;
-	return eb;
 }
 
 struct scroll_bar
