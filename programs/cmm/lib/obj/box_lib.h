@@ -136,7 +136,7 @@ dword width,
 	ESI.edit_box.size = strlen(ed_text);
 }
 
-:dword EditBox_CreateStandart(dword width, left, top, maxlen, text, flags)
+:dword EditBox_Create(dword left, top, width, maxlen, text, flags)
 {
 	dword eb, i;
 	eb = malloc(sizeof(edit_box));

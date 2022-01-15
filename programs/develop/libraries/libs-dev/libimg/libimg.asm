@@ -2849,7 +2849,7 @@ export                                      \
     img.to_rgb         , 'img_to_rgb'         , \
     img.to_rgb2        , 'img_to_rgb2'        , \
     img.decode         , 'img_decode'         , \
-    img.encode         , 'img_encode'         , \
+    img.encode         , 'img_encode'         , \ ;supported formats: PNG 24 32, BMP 24 32, PNM 1 8g 24
     img.create         , 'img_create'         , \
     img.destroy        , 'img_destroy'        , \
     img.destroy.layer  , 'img_destroy_layer'  , \

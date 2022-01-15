@@ -350,7 +350,11 @@ void EventTabScreensaverClick()
 	strcpy(#ssmas, #ss_available);
 	do {
 		j = strrchr(#ssmas, '|');
-		miniprintf(#param, "/sys/%s", #ssmas + j);
+		if (ssmas[j]=='/') {
+			strcpy(#param, #ssmas + j);
+		} else {
+			miniprintf(#param, "/sys/%s", #ssmas + j);
+		}
 		list.add(#param);
 		ESBYTE[#ssmas + j - 1] = '\0';
 		select_list.count++;
