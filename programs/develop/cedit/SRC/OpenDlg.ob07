@@ -17,7 +17,7 @@
 
 MODULE OpenDlg;
 
-IMPORT sys := SYSTEM, KOSAPI;
+IMPORT sys := SYSTEM;
 
 CONST
   topen* = 0;
@@ -59,17 +59,18 @@ TYPE
 
 VAR
 
-  Dialog_start, Dialog_init: PROCEDURE [stdcall] (od: Dialog);
-
   filter_area: tFilterArea;
 
+
+PROCEDURE [stdcall, "proc_lib.obj", ""] OpenDialog_init (od: Dialog); END;
+PROCEDURE [stdcall, "proc_lib.obj", ""] OpenDialog_start (od: Dialog); END;
 
 PROCEDURE Show*(od: Dialog; Width, Height: INTEGER);
 BEGIN
   IF od # NIL THEN
     od.X := Width;
     od.Y := Height;
-    Dialog_start(od)
+    OpenDialog_start(od)
   END
 END Show;
 
@@ -135,7 +136,7 @@ BEGIN
       res.dir_default_path   := sys.ADR(res.s_dir_default_path[0]);
       res.openfile_path      := sys.ADR(res.FilePath[0]);
       res.filename_area      := sys.ADR(res.FileName[0]);
-      Dialog_init(res)
+      OpenDialog_init(res)
     ELSE
       DISPOSE(res)
     END
@@ -151,23 +152,5 @@ BEGIN
   END
 END Destroy;
 
-PROCEDURE Load;
-VAR Lib: INTEGER;
 
-  PROCEDURE GetProc(Lib, v: INTEGER; name: ARRAY OF CHAR);
-  VAR a: INTEGER;
-  BEGIN
-    a := KOSAPI.GetProcAdr(name, Lib);
-    ASSERT(a # 0);
-    sys.PUT(v, a)
-  END GetProc;
-
-BEGIN
-  Lib := KOSAPI.LoadLib("/sys/Lib/Proc_lib.obj");
-  GetProc(Lib, sys.ADR(Dialog_init),  "OpenDialog_init");
-  GetProc(Lib, sys.ADR(Dialog_start), "OpenDialog_start");
-END Load;
-
-BEGIN
-  Load
 END OpenDlg.

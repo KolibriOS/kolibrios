@@ -24,14 +24,13 @@ IMPORT SYSTEM, KOSAPI, File;
 
 VAR
 
-    file         : INTEGER;
+    file: INTEGER;
 
-    img_decode   : PROCEDURE (data, size, options: INTEGER): INTEGER;
-    img_to_rgb2  : PROCEDURE (data, data_rgb: INTEGER);
-    img_scale    : PROCEDURE (src, crop_x, crop_y, crop_width, crop_height, dst, scale, inter, param1, param2: INTEGER): INTEGER;
 
-    img_destroy* : PROCEDURE (img: INTEGER);
-
+PROCEDURE [stdcall, "libimg.obj", ""] img_decode (data, size, options: INTEGER): INTEGER; END;
+PROCEDURE [stdcall, "libimg.obj", ""] img_to_rgb2 (data, data_rgb: INTEGER); END;
+PROCEDURE [stdcall, "libimg.obj", ""] img_scale (src, crop_x, crop_y, crop_width, crop_height, dst, scale, inter, param1, param2: INTEGER): INTEGER; END;
+PROCEDURE [stdcall, "libimg.obj", ""] img_destroy* (img: INTEGER); END;
 
 PROCEDURE GetInf*(img: INTEGER; VAR sizeX, sizeY, data: INTEGER);
 BEGIN
@@ -95,26 +94,4 @@ BEGIN
 END LoadFromFile;
 
 
-PROCEDURE load;
-VAR Lib: INTEGER;
-
-  PROCEDURE GetProc(Lib, v: INTEGER; name: ARRAY OF CHAR);
-  VAR a: INTEGER;
-  BEGIN
-    a := KOSAPI.GetProcAdr(name, Lib);
-    ASSERT(a # 0);
-    SYSTEM.PUT(v, a)
-  END GetProc;
-
-BEGIN
-  Lib := KOSAPI.LoadLib("/sys/Lib/Libimg.obj");
-  GetProc(Lib, SYSTEM.ADR(img_decode),  "img_decode");
-  GetProc(Lib, SYSTEM.ADR(img_destroy), "img_destroy");
-  GetProc(Lib, SYSTEM.ADR(img_to_rgb2), "img_to_rgb2");
-  GetProc(Lib, SYSTEM.ADR(img_scale),   "img_scale");
-END load;
-
-
-BEGIN
-  load
 END LibImg.

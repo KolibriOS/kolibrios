@@ -49,13 +49,10 @@ TYPE
 	END;
 
 
-VAR
-
-	draw      *: PROCEDURE (eb: tEditBox);
-	mouse     *: PROCEDURE (eb: tEditBox);
-	_setValue  : PROCEDURE (eb: tEditBox; text: INTEGER);
-	key       *: PROCEDURE (eb: tEditBox; key: INTEGER);
-
+PROCEDURE [stdcall, "box_lib.obj", "edit_box_draw"]     draw* (eb: tEditBox); END;
+PROCEDURE [stdcall, "box_lib.obj", "edit_box_mouse"]    mouse* (eb: tEditBox); END;
+PROCEDURE [stdcall, "box_lib.obj", "edit_box_set_text"] _setValue (eb: tEditBox; text: INTEGER); END;
+PROCEDURE [stdcall, "box_lib.obj", "edit_box_key_safe"] key* (eb: tEditBox; key: INTEGER); END;
 
 PROCEDURE getValue* (text: tEditBox; VAR str: ARRAY OF CHAR);
 VAR
@@ -108,29 +105,4 @@ BEGIN
 END create;
 
 
-PROCEDURE GetProc (Lib, v: INTEGER; name: ARRAY OF CHAR);
-VAR
-	a: INTEGER;
-BEGIN
-	a := KOSAPI.GetProcAdr(name, Lib);
-	ASSERT(a # 0);
-	SYSTEM.PUT(v, a)
-END GetProc;
-
-
-PROCEDURE main;
-VAR
-	Lib: INTEGER;
-BEGIN
-	Lib := KOSAPI.LoadLib("/sys/lib/box_lib.obj");
-	ASSERT(Lib # 0);
-	GetProc(Lib, SYSTEM.ADR(draw),      "edit_box_draw");
-	GetProc(Lib, SYSTEM.ADR(key),       "edit_box_key_safe");
-	GetProc(Lib, SYSTEM.ADR(mouse),     "edit_box_mouse");
-	GetProc(Lib, SYSTEM.ADR(_setValue), "edit_box_set_text");
-END main;
-
-
-BEGIN
-	main
 END EditBox.
