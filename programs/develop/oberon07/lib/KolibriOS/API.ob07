@@ -1,7 +1,7 @@
 ﻿(*
     BSD 2-Clause License
 
-    Copyright (c) 2018, 2020-2021, Anton Krotov
+    Copyright (c) 2018, 2020-2022, Anton Krotov
     All rights reserved.
 *)
 
@@ -36,7 +36,7 @@ VAR
 
     CriticalSection: CRITICAL_SECTION;
 
-    _import*, multi: BOOLEAN;
+    multi: BOOLEAN;
 
     base*: INTEGER;
 
@@ -226,19 +226,6 @@ BEGIN
 END exit_thread;
 
 
-PROCEDURE OutChar (c: CHAR);
-BEGIN
-    K.sysfunc3(63, 1, ORD(c))
-END OutChar;
-
-
-PROCEDURE OutLn;
-BEGIN
-    OutChar(0DX);
-    OutChar(0AX)
-END OutLn;
-
-
 PROCEDURE OutStr (pchar: INTEGER);
 VAR
     c: CHAR;
@@ -247,7 +234,7 @@ BEGIN
         REPEAT
             SYSTEM.GET(pchar, c);
             IF c # 0X THEN
-                OutChar(c)
+                K.OutChar(c)
             END;
             INC(pchar)
         UNTIL c = 0X
@@ -258,41 +245,16 @@ END OutStr;
 PROCEDURE DebugMsg* (lpText, lpCaption: INTEGER);
 BEGIN
     IF lpCaption # 0 THEN
-        OutLn;
+        K.OutLn;
         OutStr(lpCaption);
-        OutChar(":");
-        OutLn
+        K.OutChar(":");
+        K.OutLn
     END;
     OutStr(lpText);
     IF lpCaption # 0 THEN
-        OutLn
+        K.OutLn
     END
 END DebugMsg;
-
-
-PROCEDURE OutString (s: ARRAY OF CHAR);
-VAR
-    i: INTEGER;
-BEGIN
-    i := 0;
-    WHILE (i < LEN(s)) & (s[i] # 0X) DO
-        OutChar(s[i]);
-        INC(i)
-    END
-END OutString;
-
-
-PROCEDURE imp_error;
-BEGIN
-    OutString("import error: ");
-    IF K.imp_error.error = 1 THEN
-        OutString("can't load '"); OutString(K.imp_error.lib)
-    ELSIF K.imp_error.error = 2 THEN
-        OutString("not found '"); OutString(K.imp_error.proc); OutString("' in '"); OutString(K.imp_error.lib)
-    END;
-    OutString("'");
-    OutLn
-END imp_error;
 
 
 PROCEDURE init* (import_, code: INTEGER);
@@ -301,11 +263,7 @@ BEGIN
     base := code - SizeOfHeader;
     K.sysfunc2(68, 11);
     InitializeCriticalSection(CriticalSection);
-    K._init;
-    _import := (K.dll_Load(import_) = 0) & (K.imp_error.error = 0);
-    IF ~_import THEN
-        imp_error
-    END
+    K._init(import_)
 END init;
 
 

@@ -71,7 +71,7 @@ VAR
 
   // calculate amount of valid chars in UTF-8 string
   // supports zero terminated string (set byteQuantity = -1)
-  cntUTF_8 *: PROCEDURE (string, byteQuantity: INTEGER): INTEGER;
+  countUTF8Z *: PROCEDURE (string, byteQuantity: INTEGER): INTEGER;
 
 
   // calculate amount of chars that fits given width
@@ -112,10 +112,10 @@ VAR Lib: INTEGER;
 BEGIN
   Lib := KOSAPI.LoadLib("/sys/lib/RasterWorks.obj");
   ASSERT(Lib # 0);
-  GetProc(Lib, sys.ADR(drawText), "drawText");
-  GetProc(Lib, sys.ADR(cntUTF_8), "cntUTF-8");
-  GetProc(Lib, sys.ADR(charsFit), "charsFit");
-  GetProc(Lib, sys.ADR(strWidth), "strWidth");
+  GetProc(Lib, sys.ADR(drawText),   "drawText");
+  GetProc(Lib, sys.ADR(countUTF8Z), "countUTF8Z");
+  GetProc(Lib, sys.ADR(charsFit),   "charsFit");
+  GetProc(Lib, sys.ADR(strWidth),   "strWidth");
 END main;
 
 

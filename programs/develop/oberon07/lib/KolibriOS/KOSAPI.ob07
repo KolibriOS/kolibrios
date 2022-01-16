@@ -19,13 +19,6 @@ VAR
 
     DLL_INIT: PROCEDURE [stdcall] (entry: INTEGER);
 
-    imp_error*: RECORD
-
-        proc*, lib*: STRING;
-        error*: INTEGER
-
-    END;
-
 
 PROCEDURE [stdcall-] sysfunc1* (arg1: INTEGER): INTEGER;
 BEGIN
@@ -176,7 +169,6 @@ END sysfunc22;
 PROCEDURE mem_commit (adr, size: INTEGER);
 VAR
     tmp: INTEGER;
-
 BEGIN
     FOR tmp := adr TO adr + size - 1 BY 4096 DO
         SYSTEM.PUT(tmp, 0)
@@ -187,7 +179,6 @@ END mem_commit;
 PROCEDURE [stdcall] malloc* (size: INTEGER): INTEGER;
 VAR
     ptr: INTEGER;
-
 BEGIN
     SYSTEM.CODE(060H); (* pusha *)
     IF sysfunc2(18, 16) > ASR(size, 10) THEN
@@ -227,7 +218,6 @@ PROCEDURE AppAdr (): INTEGER;
 VAR
     buf: ARRAY 1024 OF CHAR;
     a: INTEGER;
-
 BEGIN
     a := sysfunc3(9, SYSTEM.ADR(buf), -1);
     SYSTEM.GET(SYSTEM.ADR(buf) + 22, a)
@@ -238,7 +228,6 @@ END AppAdr;
 PROCEDURE GetCommandLine* (): INTEGER;
 VAR
     param: INTEGER;
-
 BEGIN
     SYSTEM.GET(28 + AppAdr(), param)
     RETURN param
@@ -248,7 +237,6 @@ END GetCommandLine;
 PROCEDURE GetName* (): INTEGER;
 VAR
     name: INTEGER;
-
 BEGIN
     SYSTEM.GET(32 + AppAdr(), name)
     RETURN name
@@ -276,11 +264,9 @@ PROCEDURE GetProcAdr* (name: ARRAY OF CHAR; lib: INTEGER): INTEGER;
 VAR
     cur, procname, adr: INTEGER;
 
-
     PROCEDURE streq (str1, str2: INTEGER): BOOLEAN;
     VAR
         c1, c2: CHAR;
-
     BEGIN
         REPEAT
             SYSTEM.GET(str1, c1);
@@ -291,7 +277,6 @@ VAR
 
         RETURN c1 = c2
     END streq;
-
 
 BEGIN
     adr := 0;
@@ -313,7 +298,6 @@ END GetProcAdr;
 PROCEDURE init (dll: INTEGER);
 VAR
     lib_init: INTEGER;
-
 BEGIN
     lib_init := GetProcAdr("lib_init", dll);
     IF lib_init # 0 THEN
@@ -324,6 +308,44 @@ BEGIN
         DLL_INIT(lib_init)
     END
 END init;
+
+
+PROCEDURE OutChar* (c: CHAR);
+BEGIN
+    sysfunc3(63, 1, ORD(c))
+END OutChar;
+
+
+PROCEDURE OutLn*;
+BEGIN
+    OutChar(0DX);
+    OutChar(0AX)
+END OutLn;
+
+
+PROCEDURE OutString (s: ARRAY OF CHAR);
+VAR
+    i: INTEGER;
+BEGIN
+    i := 0;
+    WHILE (i < LEN(s)) & (s[i] # 0X) DO
+        OutChar(s[i]);
+        INC(i)
+    END
+END OutString;
+
+
+PROCEDURE imp_error (lib, proc: STRING);
+BEGIN
+    OutString("import error: ");
+    IF proc = "" THEN
+        OutString("can't load '")
+    ELSE
+        OutString("not found '"); OutString(proc); OutString("' in '")
+    END;
+    OutString(lib);
+    OutString("'" + 0DX + 0AX)
+END imp_error;
 
 
 PROCEDURE GetStr (adr, i: INTEGER; VAR str: STRING);
@@ -337,63 +359,47 @@ BEGIN
 END GetStr;
 
 
-PROCEDURE [stdcall] dll_Load* (import_table: INTEGER): INTEGER;
+PROCEDURE [stdcall-] dll_Load* (import_table: INTEGER): INTEGER;
 CONST
 	path = "/sys/lib/";
 VAR
-    imp, lib, exp, proc, res, pathLen: INTEGER;
-    fail, done: BOOLEAN;
+    imp, lib, exp, proc, pathLen: INTEGER;
     procname, libname: STRING;
-
 BEGIN
     SYSTEM.CODE(060H); (* pusha *)
-    fail := FALSE;
-    done := FALSE;
-    res := 0;
     libname := path;
     pathLen := LENGTH(libname);
-    REPEAT
-        SYSTEM.GET(import_table, imp);
-        IF imp # 0 THEN
-            SYSTEM.GET(import_table + 4, lib);
-            GetStr(lib, pathLen, libname);
-            exp := sysfunc3(68, 19, SYSTEM.ADR(libname[0]));
-            fail := exp = 0;
+
+    SYSTEM.GET(import_table, imp);
+    WHILE imp # 0 DO
+        SYSTEM.GET(import_table + 4, lib);
+        GetStr(lib, pathLen, libname);
+        exp := sysfunc3(68, 19, SYSTEM.ADR(libname[0]));
+        IF exp = 0 THEN
+            imp_error(libname, "")
         ELSE
-            done := TRUE
-        END;
-        IF fail THEN
-            done := TRUE;
-            imp_error.proc := "";
-            imp_error.lib  := libname;
-            imp_error.error := 1
-        END;
-        IF (imp # 0) & ~fail THEN
             REPEAT
                 SYSTEM.GET(imp, proc);
                 IF proc # 0 THEN
                     GetStr(proc, 0, procname);
                     proc := GetProcAdr(procname, exp);
                     IF proc # 0 THEN
-                        SYSTEM.PUT(imp, proc);
-                        INC(imp, 4)
+                        SYSTEM.PUT(imp, proc)
                     ELSE
-                        imp_error.proc  := procname;
-                        imp_error.lib   := libname;
-                        imp_error.error := 2
-                    END
+                    	proc := 1;
+                        imp_error(libname, procname)
+                    END;
+                    INC(imp, 4)
                 END
             UNTIL proc = 0;
-            init(exp);
-            INC(import_table, 8)
-        END
-    UNTIL done;
-    IF fail THEN
-        res := 1
+            init(exp)
+        END;
+        INC(import_table, 8);
+        SYSTEM.GET(import_table, imp);
     END;
-    import_table := res;
+
     SYSTEM.CODE(061H) (* popa *)
-    RETURN import_table
+    RETURN 0
 END dll_Load;
 
 
@@ -410,7 +416,6 @@ END dll_Init;
 PROCEDURE LoadLib* (name: ARRAY OF CHAR): INTEGER;
 VAR
     Lib: INTEGER;
-
 BEGIN
     DLL_INIT := dll_Init;
     Lib := sysfunc3(68, 19, SYSTEM.ADR(name[0]));
@@ -421,12 +426,10 @@ BEGIN
 END LoadLib;
 
 
-PROCEDURE _init*;
+PROCEDURE _init* (import_table: INTEGER);
 BEGIN
     DLL_INIT := dll_Init;
-    imp_error.lib   := "";
-    imp_error.proc  := "";
-    imp_error.error := 0
+    dll_Load(import_table)
 END _init;
 
 

@@ -539,7 +539,7 @@ BEGIN
 
     maxreal := 1.9;
     PACK(maxreal, 1023);
-    Console := API._import;
+    Console := TRUE;
     IF Console THEN
         con_init(-1, -1, -1, -1, SYSTEM.SADR("Oberon-07 for KolibriOS"))
     END;
