@@ -2,7 +2,7 @@
 ;                                          ;
 ;   Color Slider Control Demonstration     ;
 ;                                          ;
-;   Compile with FASM for Menuet           ;
+;   Compile with FASM for Kolibri          ;
 ;                                          ;
 ;   Author: Jason Delozier                 ;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -21,6 +21,7 @@ use32
 
 include 'lang.inc'
 include '..\..\..\macros.inc'
+include '..\..\..\KOSfuncs.inc'
 START:                          ; start of execution
 
     call draw_window            ; at first, draw the window
@@ -28,7 +29,7 @@ START:                          ; start of execution
 still:
     call mouse_info
 
-    mcall 23, 2
+    mcall SF_WAIT_EVENT_TIMEOUT, 2
 
     cmp  eax,1                  ; redraw request ?
     je   red
@@ -44,17 +45,17 @@ still:
     jmp  still
 
   key:                          ; key
-    mcall 2                  ; just read it and ignore
+    mcall SF_GET_KEY            ; just read it and ignore
     jmp  still
 
   button:                       ; button
-    mcall 17                 ; get id
+    mcall SF_GET_BUTTON         ; get id
     
     shr  eax,8
 
     cmp  eax,1                   ; button id=1 ?
     jne  noclose
-    mcall -1                     ; close this program
+    mcall SF_TERMINATE_PROCESS   ; close this program
   noclose:
 
 
@@ -68,9 +69,9 @@ still:
 
 
 draw_window:
-    mcall 12, 1                    ; 1, start of draw
-    mcall 0, <100,200>, <100,200>, 0x14ffffff, , title ; DRAW WINDOW
-    mcall 12,2                    ; end WINDOW redraw
+    mcall SF_REDRAW, SSF_BEGIN_DRAW
+    mcall SF_CREATE_WINDOW, <100,200>, <100,200>, 0x14ffffff, , title
+    mcall SF_REDRAW, SSF_END_DRAW
 	
     call draw_slider_info
 
@@ -95,10 +96,10 @@ mousex dw 0
 mouseb dd 0
 
 mouse_info:
-   mcall 37, 1            ;get mouse cordinates
+   mcall SF_MOUSE_GET, SSF_WINDOW_POSITION
    mov ecx, eax           ;
    push ecx               ;
-   mcall  37, 2           ;get mouse buttons
+   mcall SF_MOUSE_GET, SSF_BUTTON
    cmp [mouseb], eax      ;compare old mouse states to new states
    jne redraw_mouse_info  ;
    cmp [mousey], cx       ;
@@ -150,7 +151,7 @@ ret
 
 draw_slider_info:
 ;Repaint value background
-   mcall 13, 144*65536+36, 72*65536+9, 0x00ffffff 
+   mcall SF_DRAW_RECT, 144*65536+36, 72*65536+9, 0x00ffffff 
 ;Draw Color Box
    xor edx, edx
    movzx ecx,word [slider_1+12]
@@ -162,11 +163,11 @@ draw_slider_info:
    mov dl,cl
    mov ebx, 0x00860035
    mov ecx, 0x00590040
-   mov eax, 13
+   mov eax, SF_DRAW_RECT
    mcall 
 ;draw current value of slider
    mov ecx, edx
-   mov eax, 47
+   mov eax, SF_DRAW_NUMBER
    mov ebx, 0x00060100
    mov esi, 0
    mov edx, 144*65536+72
@@ -234,12 +235,9 @@ slider_3:
 box_h dw 10  ;static slider box height
 
 draw_slider:
-   push eax
-   push ebx
-   push ecx
-   push edx
+   push eax ebx ecx edx
 ;Draw slider background
-   mov   eax, 13         ;slider background
+   mov   eax, SF_DRAW_RECT ;slider background
    mov   ebx, [ebp]      ;x start/width
    mov   ecx, [ebp+4]    ;y start/height
    mov   edx, 0x00EBEBEB ;color
@@ -256,7 +254,7 @@ draw_slider:
    add   ecx, 0x000A0000 ;
    add   ecx, [ebp+6]    ;y start
    sub   ecx, 10         ;
-   mov   edx, 0x00         ;color
+   mov   edx, 0x00       ;color
    mcall              ;
 ;Draw slider box
    movzx eax,word [ebp+4]  ;height
@@ -275,20 +273,14 @@ draw_slider:
    sub   ecx, eax          ;*slide box y position
    shl   ecx, 16           ;
    mov    cx, [box_h]      ;height
-   mov   eax, 13           ;draw bar sys function
+   mov   eax, SF_DRAW_RECT ;draw bar sys function
    mov   edx, 0x00         ;color
    mcall               ;draw slider box
-   pop edx
-   pop ecx
-   pop ebx
-   pop eax
+   pop edx ecx ebx eax
 ret
 
 slider_mouse_over:
-   push eax
-   push ebx
-   push ecx
-   push edx
+   push eax ebx ecx edx
    cmp [mouseb], 1
    jne slider_mouse_over_done
    movzx eax,word [ebp+4]
@@ -322,10 +314,7 @@ slider_mouse_change:        ;
    call draw_slider         ;
    call draw_slider_info    ;
 slider_mouse_over_done:     ;
-   pop edx
-   pop ecx
-   pop ebx
-   pop eax
+   pop edx ecx ebx eax
 ret
 
 

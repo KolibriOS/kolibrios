@@ -4,7 +4,7 @@
 ;
 ;    You may add you own figures. See file FIGURES.INC
 ;
-;    Compile with FASM v1.48 for Menuet or hier  (FASM v1.40 contains bug)
+;    Compile with FASM v1.73 for Kolibri or hier
 ;
 ;    Copyright(c) 2002-2004 Crown_s Soft. All rights reserved.
 ;
@@ -35,12 +35,13 @@ copyrightlen:
 include "lang.inc"
 include "figuresi.inc"
 include "..\..\..\macros.inc"
+include "..\..\..\KOSfuncs.inc"
 start:
     cmp     dword[params], '@ss'
     setz    [screensaver]
     mov     ebx, EVM_REDRAW + EVM_KEY + EVM_BUTTON
     cmovz   ebx, EVM_REDRAW + EVM_KEY + EVM_BUTTON + EVM_MOUSE
-    mcall   40
+    mcall   SF_SET_EVENTS_MASK
 
     cmp [flscr],0
     jz @f
@@ -48,9 +49,9 @@ start:
     xor     eax, eax
     mov     ecx, 32*32
     rep     stosd
-    mcall   37, 4, transparent_cursor, 2
+    mcall   SF_MOUSE_GET, SSF_LOAD_CURSOR, transparent_cursor, 2
     mov     ecx, eax
-    mcall   37, 5
+    mcall   SF_MOUSE_GET, SSF_SET_CURSOR
 @@:
     cld
     finit
@@ -62,8 +63,7 @@ start:
 
     cmp [flscr],0
     jz	nofullscreen
-      mov  eax,14
-      mcall
+      mcall SF_GET_SCREEN_SIZE
 
       mov  [maxy],ax
       sub  ax,const480
@@ -95,7 +95,7 @@ red:
     call draw_window
 
 still:
-    mcall 23,delay			; wait here for event
+    mcall SF_WAIT_EVENT_TIMEOUT, delay			; wait here for event
 	
     cmp  eax,1			; redraw request ?
     je	 red
@@ -107,7 +107,7 @@ still:
     je	 close
 
     call calcframe
-    mov  eax,07 	      ; putimage
+    mov  eax,SF_PUT_IMAGE
     mov  ebx,scr	      ; ebx pointer to image in memory
     mov  ecx,[outsize]	      ; ecx=image position in window [w]*65536+[h]
     mov  edx,dword [posy]     ; edx=image position in window [x]*65536+[y]
@@ -118,8 +118,7 @@ key:
 	cmp  [screensaver], 0
 	jnz  close
 	
-    mov  eax,2
-    mcall
+    mcall SF_GET_KEY
 
     cmp  al,1			; is key in buffer ?
     jz	 still
@@ -130,9 +129,9 @@ jmp  still
 close:
     cmp     [screensaver], 0
     jz      @f
-    mcall   70, f70
+    mcall   SF_FILE, f70
   @@:
-    mcall   -1
+    mcall   SF_TERMINATE_PROCESS
 
 
 ;   *********************************************
@@ -141,16 +140,16 @@ close:
 
 
 draw_window:
-    mcall 12, 1 ;start draw
+    mcall SF_REDRAW, SSF_BEGIN_DRAW ;start draw
 
     cmp  [flscr],0
     jnz  m2
-      mcall 48,4
+      mcall SF_STYLE_SETTINGS, SSF_GET_SKIN_HEIGHT
       mov  esi, eax
                                    ; DRAW WINDOW
       mov  ecx,100*65536+const480+4         ; [y start] *65536 + [y size]
       add  ecx, esi
-      mcall 0, 100*65536+const480+9,,0x74000000,,copyright
+      mcall SF_CREATE_WINDOW, 100*65536+const480+9,,0x74000000,,copyright
 
     jmp m3
     m2:
@@ -165,11 +164,10 @@ draw_window:
 
       inc bx
       inc cx
-      mov eax,13		     ; functiom 13 : draw bar
-      mcall
+      mcall SF_DRAW_RECT
     m3:
 
-    mcall 12, 2 ;end draw
+    mcall SF_REDRAW, SSF_END_DRAW ;end draw
 ret
 
 
@@ -326,8 +324,7 @@ ret
 
 filling_alfbet:
      ; Initialize RND
-     mov   eax,3
-     mcall
+     mcall SF_GET_SYS_TIME
      ; eax - fist random number
 
      mov   ecx,n_points
@@ -394,7 +391,7 @@ align 2
   z1	  dd	 ?
 
 f70:    ; run
-        dd 7, 0, 0, 0, 0
+        dd SSF_START_APP, 0, 0, 0, 0
         db '/sys/@SS',0
 
 screensaver db ?

@@ -17,6 +17,7 @@
 
 include "lang.inc"
 include "../../macros.inc"
+include "../../KOSfuncs.inc"
 
 
 START:
@@ -27,9 +28,7 @@ red:                    ; перерисовать окно
 
 
 still:
-    ;mcall 10            ; функция 10 - ждать события
-    mov eax, 10
-    int 0x40
+    mcall SF_WAIT_EVENT
 
     cmp  eax,2          ; нажата клавиша ?
     je   key            ; если да - на key
@@ -46,7 +45,7 @@ still:
 
 
   key:                  ; нажата клавиша на клавиатуре
-    mcall 2             ; функция 2 - считать код символа (в ah)
+    mcall SF_GET_KEY             ; считать код символа (в ah)
 
 
         cmp   ah, 0x41        ; A - if Caps Lock ON
@@ -562,13 +561,13 @@ still:
     ; функция 55-55: системный динамик ("PlayNote")
     ;   esi - адрес мелодии
 
-       mov  eax,55
+       mov  eax,SF_SPEAKER_PLAY
        mov  ebx,eax
        mov  esi,M
        int  0x40
 
     ; или коротко:
-    ;mcall 55, , , , Music
+    ;mcall SF_SPEAKER_PLAY, , , , Music
 
     jmp  still          ; вернуться к началу цикла
 
@@ -576,7 +575,7 @@ still:
 ;---------------------------------------------------------------------
 
   button:
-    mcall 17            ; 17 - получить идентификатор нажатой кнопки
+    mcall SF_GET_BUTTON
 
         cmp  ah, 0xa1       ; button 1
         jnz  @f
@@ -782,7 +781,7 @@ still:
     jne   still         ;  вернуться
 
   .exit:
-    mcall -1            ; иначе конец программы
+    mcall SF_TERMINATE_PROCESS   ; иначе конец программы
 
 
 ;---------------------------------------------------------------------
@@ -795,81 +794,81 @@ BLACK_X=34   ; Black key X offset
 
 draw_window:
 
-    mcall 12, 1       ; функция 12: сообщить ОС о начале отрисовки
+    mcall SF_REDRAW, SSF_BEGIN_DRAW       ; сообщить ОС о начале отрисовки
 
-    mcall 48, 3, sc,sizeof.system_colors
+    mcall SF_STYLE_SETTINGS, SSF_GET_COLORS, sc,sizeof.system_colors
 
 
     mov   edx, [sc.work]         ; цвет фона
     or    edx, 0x33000000        ; и тип окна 3
-    mcall 0, <20,WHITE_W*15+9>, <200,250>, , ,caption
+    mcall SF_CREATE_WINDOW, <20,WHITE_W*15+9>, <200,250>, , ,caption
         
-    mcall 8,  <WHITE_W*0,WHITE_W>, <0,100>, 0x21, 0xff7a74
-    mcall 8,  <WHITE_W*1,WHITE_W>, <0,100>, 0x23, 0x907040
-    mcall 8,  <WHITE_W*2,WHITE_W>, <0,100>, 0x25, 0xa08050
-    mcall 8,  <WHITE_W*3,WHITE_W>, <0,100>, 0x26, 0xb09060
-    mcall 8,  <WHITE_W*4,WHITE_W>, <00,100>, 0x28, 0xc0a070
-    mcall 8,  <WHITE_W*5,WHITE_W>, <00,100>, 0x2a, 0xd0b080
-    mcall 8,  <WHITE_W*6,WHITE_W>, <0,100>, 0x2c, 0xe0c090
-    mcall 8,  <WHITE_W*7,WHITE_W>, <0,100>, 0x31, 0xffa97c
-    mcall 8,  <WHITE_W*8,WHITE_W>, <0,100>, 0x33, 0xaf8d8d
-    mcall 8,  <WHITE_W*9,WHITE_W>, <0,100>, 0x35, 0xbf9d9d
-    mcall 8,  <WHITE_W*10,WHITE_W>, <0,100>, 0x36, 0xcfadad
-    mcall 8,  <WHITE_W*11,WHITE_W>, <00,100>, 0x38, 0xdfbdbd
-    mcall 8,  <WHITE_W*12,WHITE_W>, <00,100>, 0x3a, 0xefcdcd
-    mcall 8,  <WHITE_W*13,WHITE_W>, <0,100>, 0x3c, 0xffdddd
-    mcall 8,  <WHITE_W*14,WHITE_W>, <0,100>, 0x41, 0xffe558
+    mcall SF_DEFINE_BUTTON, <WHITE_W*0,WHITE_W>, <0,100>, 0x21, 0xff7a74
+    mcall , <WHITE_W*1,WHITE_W>, <0,100>, 0x23, 0x907040
+    mcall , <WHITE_W*2,WHITE_W>, , 0x25, 0xa08050
+    mcall , <WHITE_W*3,WHITE_W>, , 0x26, 0xb09060
+    mcall , <WHITE_W*4,WHITE_W>, , 0x28, 0xc0a070
+    mcall , <WHITE_W*5,WHITE_W>, , 0x2a, 0xd0b080
+    mcall , <WHITE_W*6,WHITE_W>, , 0x2c, 0xe0c090
+    mcall , <WHITE_W*7,WHITE_W>, , 0x31, 0xffa97c
+    mcall , <WHITE_W*8,WHITE_W>, , 0x33, 0xaf8d8d
+    mcall , <WHITE_W*9,WHITE_W>, , 0x35, 0xbf9d9d
+    mcall , <WHITE_W*10,WHITE_W>, , 0x36, 0xcfadad
+    mcall , <WHITE_W*11,WHITE_W>, , 0x38, 0xdfbdbd
+    mcall , <WHITE_W*12,WHITE_W>, , 0x3a, 0xefcdcd
+    mcall , <WHITE_W*13,WHITE_W>, , 0x3c, 0xffdddd
+    mcall , <WHITE_W*14,WHITE_W>, , 0x41, 0xffe558
 
-    mcall 8,  <WHITE_W*0+BLACK_X,BLACK_W>, <0,50>, 0x22, 0x221100
-    mcall 8,  <WHITE_W*1+BLACK_X,BLACK_W>, <0,50>, 0x24, 0x221100
-    mcall 8,  <WHITE_W*3+BLACK_X,BLACK_W>, <0,50>, 0x27, 0x221100
-    mcall 8,  <WHITE_W*4+BLACK_X,BLACK_W>, <0,50>, 0x29, 0x221100
-    mcall 8,  <WHITE_W*5+BLACK_X,BLACK_W>, <0,50>, 0x2b, 0x221100
-    mcall 8,  <WHITE_W*7+BLACK_X,BLACK_W>, <0,50>, 0x32, 0x221100
-    mcall 8,  <WHITE_W*8+BLACK_X,BLACK_W>, <0,50>, 0x34, 0x221100
-    mcall 8,  <WHITE_W*10+BLACK_X,BLACK_W>, <0,50>, 0x37, 0x221100
-    mcall 8,  <WHITE_W*11+BLACK_X,BLACK_W>, <0,50>, 0x39, 0x221100
-    mcall 8,  <WHITE_W*12+BLACK_X,BLACK_W>, <0,50>, 0x3b, 0x221100
+    mcall , <WHITE_W*0+BLACK_X,BLACK_W>, <0,50>, 0x22, 0x221100
+    mcall , <WHITE_W*1+BLACK_X,BLACK_W>, , 0x24,
+    mcall , <WHITE_W*3+BLACK_X,BLACK_W>, , 0x27,
+    mcall , <WHITE_W*4+BLACK_X,BLACK_W>, , 0x29,
+    mcall , <WHITE_W*5+BLACK_X,BLACK_W>, , 0x2b,
+    mcall , <WHITE_W*7+BLACK_X,BLACK_W>, , 0x32,
+    mcall , <WHITE_W*8+BLACK_X,BLACK_W>, , 0x34,
+    mcall , <WHITE_W*10+BLACK_X,BLACK_W>, , 0x37,
+    mcall , <WHITE_W*11+BLACK_X,BLACK_W>, , 0x39,
+    mcall , <WHITE_W*12+BLACK_X,BLACK_W>, , 0x3b,
 
-    mcall 8,  <WHITE_W*0,WHITE_W>, <100,100>, 0xa1, 0x702050
-    mcall 8,  <WHITE_W*1,WHITE_W>, <100,100>, 0x03, 0x683638
-    mcall 8,  <WHITE_W*2,WHITE_W>, <100,100>, 0x05, 0x784648
-    mcall 8,  <WHITE_W*3,WHITE_W>, <100,100>, 0x06, 0x885658
-    mcall 8,  <WHITE_W*4,WHITE_W>, <100,100>, 0x08, 0x986668
-    mcall 8,  <WHITE_W*5,WHITE_W>, <100,100>, 0x0a, 0xa87678
-    mcall 8,  <WHITE_W*6,WHITE_W>, <100,100>, 0x0c, 0xb88688
-    mcall 8,  <WHITE_W*7,WHITE_W>, <100,100>, 0x11, 0x880040
-    mcall 8,  <WHITE_W*8,WHITE_W>, <100,100>, 0x13, 0x90622b
-    mcall 8,  <WHITE_W*9,WHITE_W>, <100,100>, 0x15, 0xa0723b
-    mcall 8,  <WHITE_W*10,WHITE_W>, <100,100>, 0x16, 0xb0824b
-    mcall 8,  <WHITE_W*11,WHITE_W>, <100,100>, 0x18, 0xc0925b
-    mcall 8,  <WHITE_W*12,WHITE_W>, <100,100>, 0x1a, 0xd0a26b
-    mcall 8,  <WHITE_W*13,WHITE_W>, <100,100>, 0x1c, 0xe0b27b
-    mcall 8,  <WHITE_W*14,WHITE_W>, <100,100>, 0x21, 0xff7a74
+    mcall , <WHITE_W*0,WHITE_W>, <100,100>, 0xa1, 0x702050
+    mcall , <WHITE_W*1,WHITE_W>, , 0x03, 0x683638
+    mcall , <WHITE_W*2,WHITE_W>, , 0x05, 0x784648
+    mcall , <WHITE_W*3,WHITE_W>, , 0x06, 0x885658
+    mcall , <WHITE_W*4,WHITE_W>, , 0x08, 0x986668
+    mcall , <WHITE_W*5,WHITE_W>, , 0x0a, 0xa87678
+    mcall , <WHITE_W*6,WHITE_W>, , 0x0c, 0xb88688
+    mcall , <WHITE_W*7,WHITE_W>, , 0x11, 0x880040
+    mcall , <WHITE_W*8,WHITE_W>, , 0x13, 0x90622b
+    mcall , <WHITE_W*9,WHITE_W>, , 0x15, 0xa0723b
+    mcall , <WHITE_W*10,WHITE_W>, , 0x16, 0xb0824b
+    mcall , <WHITE_W*11,WHITE_W>, , 0x18, 0xc0925b
+    mcall , <WHITE_W*12,WHITE_W>, , 0x1a, 0xd0a26b
+    mcall , <WHITE_W*13,WHITE_W>, , 0x1c, 0xe0b27b
+    mcall , <WHITE_W*14,WHITE_W>, , 0x21, 0xff7a74
 
-    mcall 8,  <WHITE_W*0+BLACK_X,BLACK_W>, <100,50>, 0x02, 0x221100
-    mcall 8,  <WHITE_W*1+BLACK_X,BLACK_W>, <100,50>, 0x04, 0x221100
-    mcall 8,  <WHITE_W*3+BLACK_X,BLACK_W>, <100,50>, 0x07, 0x221100
-    mcall 8,  <WHITE_W*4+BLACK_X,BLACK_W>, <100,50>, 0x09, 0x221100
-    mcall 8,  <WHITE_W*5+BLACK_X,BLACK_W>, <100,50>, 0x0b, 0x221100
-    mcall 8,  <WHITE_W*7+BLACK_X,BLACK_W>, <100,50>, 0x12, 0x221100
-    mcall 8,  <WHITE_W*8+BLACK_X,BLACK_W>, <100,50>, 0x14, 0x221100
-    mcall 8,  <WHITE_W*10+BLACK_X,BLACK_W>, <100,50>, 0x17, 0x221100
-    mcall 8,  <WHITE_W*11+BLACK_X,BLACK_W>, <100,50>, 0x19, 0x221100
-    mcall 8,  <WHITE_W*12+BLACK_X,BLACK_W>, <100,50>, 0x1b, 0x221100
+    mcall , <WHITE_W*0+BLACK_X,BLACK_W>, <100,50>, 0x02, 0x221100
+    mcall , <WHITE_W*1+BLACK_X,BLACK_W>, , 0x04,
+    mcall , <WHITE_W*3+BLACK_X,BLACK_W>, , 0x07,
+    mcall , <WHITE_W*4+BLACK_X,BLACK_W>, , 0x09,
+    mcall , <WHITE_W*5+BLACK_X,BLACK_W>, , 0x0b,
+    mcall , <WHITE_W*7+BLACK_X,BLACK_W>, , 0x12,
+    mcall , <WHITE_W*8+BLACK_X,BLACK_W>, , 0x14,
+    mcall , <WHITE_W*10+BLACK_X,BLACK_W>, , 0x17,
+    mcall , <WHITE_W*11+BLACK_X,BLACK_W>, , 0x19,
+    mcall , <WHITE_W*12+BLACK_X,BLACK_W>, , 0x1b,
 
 
     ; вывод текстовой строки
     mov   ecx, [sc.work_text]    ; цвет фона
     or    ecx, 0x90000000        ; и тип строки
-    mcall 4, <50, 205>, , message
-    mcall 4, <10, 235>, , message1
-    mcall 4, <10, 260>, , message2
-    mcall 4, <10, 285>, , message3
-    mcall 4, <10, 310>, , message4
-    mcall 4, <16, 185>, , t_notes
+    mcall SF_DRAW_TEXT, <50, 205>, , message
+    mcall , <10, 235>, , message1
+    mcall , <10, 260>, , message2
+    mcall , <10, 285>, , message3
+    mcall , <10, 310>, , message4
+    mcall , <16, 185>, , t_notes
 
-    mcall 12, 2                  ; функция 12.2, закончили рисовать
+    mcall SF_REDRAW, SSF_END_DRAW                  ; закончили рисовать
 
     ret
 

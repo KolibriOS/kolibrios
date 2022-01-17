@@ -1,5 +1,6 @@
 include "lang.inc"
 include "../../../macros.inc"
+include "../../../KOSfuncs.inc"
 
 WND_SIZE_X		= 320
 WND_SIZE_Y		= 200
@@ -13,23 +14,18 @@ CODE
     call init_sinus_table
     call init_background
     call init_palette
-    mov eax,40
-    mov ebx,101b
-    mcall
+    mcall SF_SET_EVENTS_MASK, 101b
     jmp .paint_window
 
 .event_loop:
-    mov eax,23
-    mov ebx,1
-    mcall
+    mcall SF_WAIT_EVENT_TIMEOUT, 1
 
     test eax,eax
     je .draw_screen
     dec eax
     je .paint_window
 
-    or  eax,-1
-    mcall
+    mcall SF_TERMINATE_PROCESS
 
 .draw_screen:
     test [proc_info.wnd_state], 0x04
@@ -38,29 +34,25 @@ CODE
     add word [hor_counter],HC_DELTA
     call handle_animation
     xor ebp,ebp
-    mcall 65,virtual_screen_8,<WND_SIZE_X,WND_SIZE_Y>,<0,0>,8,_palette
+    mcall SF_PUT_IMAGE_EXT, virtual_screen_8,<WND_SIZE_X,WND_SIZE_Y>,<0,0>,8,_palette
     jmp .event_loop
 
 .paint_window:
-	mcall	9,proc_info,-1
-    mov eax,12
-    mov ebx,1
-    mcall
+    mcall SF_THREAD_INFO, proc_info,-1
+    mcall SF_REDRAW, SSF_BEGIN_DRAW
 
-    mcall 48,4 ; get skin height
+    mcall SF_STYLE_SETTINGS, SSF_GET_SKIN_HEIGHT
     lea ecx,[eax + (100 shl 16) + WND_SIZE_Y+4]
     mov edi,title
-    mcall 0,<100,WND_SIZE_X+9>,,0x74000000
+    mcall SF_CREATE_WINDOW, <100,WND_SIZE_X+9>,,0x74000000
 
     test [proc_info.wnd_state], 0x04
     jnz @f
 
     xor ebp,ebp
-    mcall 65,virtual_screen_8,<WND_SIZE_X,WND_SIZE_Y>,<0,0>,8,_palette
+    mcall SF_PUT_IMAGE_EXT, virtual_screen_8,<WND_SIZE_X,WND_SIZE_Y>,<0,0>,8,_palette
   @@:
-    mov eax,12
-    mov ebx,2
-    mcall
+    mcall SF_REDRAW, SSF_END_DRAW
 
     jmp .event_loop
 
