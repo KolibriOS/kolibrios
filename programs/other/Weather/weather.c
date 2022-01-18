@@ -318,11 +318,6 @@ void set_lang()
 int main()
 {
     win_pos = _ksys_get_mouse_pos(KSYS_MOUSE_SCREEN_POS); // Получаем позицию курсора
-
-    if(!kolibri_libimg_init()){ // Загружаем libimg.obj
-        notify_show("Libimg.obj not loaded!' -E");  
-        exit(0);
-    }
     _ksys_get_system_colors(&sys_color_table); // Получаем таблица цветов
 
     char *city=NULL, *token=NULL, *units=NULL; // Указатели на токен, название города, систему мер
