@@ -22,7 +22,7 @@
 #ifdef _KOLIBRI
     #include <sys/ksys.h>
     #define KTCC_BIN "/kolibrios/develop/tcc/tcc"
-    #define KTCC_FLAGS "-nobss %s -o %s -ltcc -lc.obj"  
+    #define KTCC_FLAGS "-nobss %s -o %s"
 #endif
 
 /* static variables */
