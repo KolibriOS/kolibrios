@@ -1075,6 +1075,21 @@ void _ksys_debug_puts(char *s){
     }
 }
 
+/*========= Function 66, subfunction 1 - set keyboard input mode. ==============*/
+
+typedef enum KSYS_KEY_INPUT_MODE {
+    KSYS_KEY_INPUT_MODE_ASCII = 0,
+    KSYS_KEY_INPUT_MODE_SCANC = 1,
+} ksys_key_input_mode;
+
+static inline
+void _ksys_set_key_input_mode(ksys_key_input_mode mode){
+    asm_inline(
+        "int $0x40"
+        ::"a"(66),"b"(1),"c"(mode)
+    );
+}
+
 /*========= Function 67 - change position/sizes of the window. =========*/
 
 static inline 
