@@ -1080,10 +1080,10 @@ void _ksys_debug_puts(char *s){
 typedef enum KSYS_KEY_INPUT_MODE {
     KSYS_KEY_INPUT_MODE_ASCII = 0,
     KSYS_KEY_INPUT_MODE_SCANC = 1,
-} ksys_key_input_mode;
+} ksys_key_input_mode_t;
 
 static inline
-void _ksys_set_key_input_mode(ksys_key_input_mode mode){
+void _ksys_set_key_input_mode(ksys_key_input_mode_t mode){
     asm_inline(
         "int $0x40"
         ::"a"(66),"b"(1),"c"(mode)
