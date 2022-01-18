@@ -292,7 +292,6 @@ extra_files = {
  {"kolibrios/res/templates/NES/", "common/templates/NES/*"},
  {"kolibrios/res/wallpapers/", "common/wallpapers/*"},
  {"kolibrios/res/system/", build_type .. "/settings/kolibri.lbl"},
- {"kolibrios/utils/man2html", "common/utils/MAN2HTML"},
  {"kolibrios/utils/vmode", "common/vmode"},
  {"kolibrios/utils/texture", "common/utils/texture"},
  {"kolibrios/utils/cnc_editor/cnc_editor", PROGS .. "/other/cnc_editor/cnc_editor"},
@@ -715,7 +714,6 @@ if tup.getconfig('NO_TCC') ~= 'full' then
 tup.append_table(img_files, {
  {"NETWORK/WHOIS", PROGS .. "/network/whois/whois"},
  {"SHELL", PROGS .. "/system/shell/shell"},
--- {"NETWORK/WEATHER", PROGS .. "/other/Weather/weather"},
 })
 tup.append_table(extra_files, {
  {"kolibrios/utils/thashview", PROGS .. "/other/TinyHashView/thashview"},
@@ -723,11 +721,12 @@ tup.append_table(extra_files, {
  {"kolibrios/develop/TinyBasic/TinyBasic", PROGS .. "/develop/tinybasic-1.0.4/tinybasic"},
  {"kolibrios/develop/TinyBasic/bas/", PROGS .. "/develop/tinybasic-1.0.4/bas/*"},
  {"kolibrios/develop/TinyBasic/TinyBasic.man", PROGS .. "/develop/tinybasic-1.0.4/doc/tinybasic.man"},
- {"kolibrios/utils/teatool", PROGS .. "/other/TEAtool/teatool"},
+-- {"kolibrios/utils/teatool", PROGS .. "/other/TEAtool/teatool"},
  {"kolibrios/utils/passwordgen", PROGS .. "/other/PasswordGen/passwordgen"},
  {"kolibrios/utils/kruler", PROGS .. "/other/kruler/kruler"},
  {"kolibrios/media/qr_tool", PROGS .. "/media/qr_tool/qr_tool"},
  {"kolibrios/utils/weather", PROGS .. "/other/Weather/weather"},
+ {"kolibrios/utils/man2html", PROGS .."/other/man2html/man2html"},
 })
 end -- tup.getconfig('NO_TCC') ~= 'full'
 
