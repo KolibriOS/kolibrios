@@ -28,7 +28,7 @@ IMPORT
     RW, Ini, EB := EditBox, Tabs, Toolbar, SB := StatusBar;
 
 CONST
-    HEADER = "CEdit (16-jan-2022)";
+    HEADER = "CEdit (18-jan-2022)";
 
     ShellFilter = "";
     EditFilter = "SH|INC|TXT|ASM|OB07|C|CPP|H|PAS|PP|LUA|INI|JSON";
@@ -169,6 +169,9 @@ CONST
 
     maxTexts = 32;
 
+	SHIFT = Menu.SHIFT;
+	CTRL  = Menu.CTRL;
+
 
 VAR
 	header: RW.tFileName;
@@ -199,8 +202,6 @@ VAR
 
     replaced: INTEGER;
 
-    mainTID: INTEGER;
-
     context, menuFile, menuEdit, menuSearch, menuEncoding,
     menuView, menuLanguage, menuProgram, menuTools,
     subCurLine, subIndent, subCase, subBookmark, subEOL: Menu.tMenu;
@@ -210,8 +211,6 @@ VAR
     menuActive: BOOLEAN;
 
     toolbar: Toolbar.tToolbar;
-
-    IPC: ARRAY 64 OF INTEGER;
 
     CursorTime, CurrentTime: INTEGER;
     timerEnabled: BOOLEAN;
@@ -924,16 +923,6 @@ BEGIN
 END CloseMenu;
 
 
-PROCEDURE MenuItemClick (menu: Menu.tMenu; id: INTEGER);
-VAR
-	msg: ARRAY 2 OF INTEGER;
-BEGIN
-	msg[0] := id;
-	msg[1] := 8;
-    K.SendIPC(mainTID, msg)
-END MenuItemClick;
-
-
 PROCEDURE goto;
 VAR
     gotoVal: INTEGER;
@@ -1114,224 +1103,146 @@ BEGIN
 END setScript;
 
 
-PROCEDURE receiveIPC;
+PROCEDURE ClickMenu;
 VAR
-	scrollIPC: BOOLEAN;
 	item: List.tItem;
 BEGIN
-	scrollIPC := FALSE;
-    IF IPC[0] = mainTID THEN
-    	IF IPC[2] = Scroll.ScrollIPC THEN
-    		Scroll.receiveIPC(IPC, scrollIPC)
-    	END;
-    	IF ~scrollIPC THEN
-    		IPC[2] := 0
-    	END
-    ELSE
-    	IF ~Menu.isSender(IPC[0]) THEN
-   			IPC[2] := 0
-    	ELSE
-    		IF IPC[2] < 0 THEN
-    			item := List.getItem(mainMenu, (-IPC[2] - mainMenuBtn) MOD mainMenu.count);
-    			IF item # NIL THEN
-    				ShowMenu(item(Menu.tMainItem).menu)
-    			END;
-    			IPC[2] := 0
-    		END
-    	END
-    END;
-    IF ~scrollIPC THEN
-	    CASE IPC[2] OF
-	    |0:
-	    |menuCut:       T.key(text, ORD("X"), FALSE, TRUE)
-	    |menuCopy:      T.key(text, ORD("C"), FALSE, TRUE)
-	    |menuPaste:     T.key(text, ORD("V"), FALSE, TRUE)
-	    |menuDelete:    T.key(text,       46, FALSE, FALSE)
-	    |menuSelectAll: T.key(text, ORD("A"), FALSE, TRUE)
+	IF Menu.MenuItem < 0 THEN
+		item := List.getItem(mainMenu, (-Menu.MenuItem - mainMenuBtn) MOD mainMenu.count);
+		IF item # NIL THEN
+			ShowMenu(item(Menu.tMainItem).menu)
+		END;
+		Menu.SetItem(0)
+	END;
+    CASE Menu.MenuItem OF
+    |0:
+    |menuCut:       T.key(text, ORD("X"), FALSE, TRUE)
+    |menuCopy:      T.key(text, ORD("C"), FALSE, TRUE)
+    |menuPaste:     T.key(text, ORD("V"), FALSE, TRUE)
+    |menuDelete:    T.key(text,       46, FALSE, FALSE)
+    |menuSelectAll: T.key(text, ORD("A"), FALSE, TRUE)
 
-	    |menuNew:
-	        NewFile
-	    |menuOpen:
-	        OpenDial
-	    |menuSave:
-	        save(text);
-	        repaint
-	    |menuSaveAs:
-	        saveAs(text);
-	        repaint
-	    |menuSaveAll:
-	        saveAll;
-	        repaint
-	    |menuClose:
-	        closeFile(TRUE, curText)
-	    |menuFolder:
-	        K.Run("/sys/File Managers/Eolite", text.fileName)
-	    |menuExit:
-	        Close
-	    |menuUndo:
-	        T.undo(text);
-	        repaint
-	    |menuRedo:
-	        T.redo(text);
-	        repaint
-	    |menuFind:
-	        ShowSearchPanel(FALSE)
-	    |menuFindNext:
-	        notFound := ~T.findNext(text, BKW.value);
-	        menuFindClicked := TRUE
-	    |menuFindPrev:
-	        notFound := ~T.findNext(text, ~BKW.value);
-	        menuFindClicked := TRUE
-	    |menuGoto:
-	        ShowSearchPanel(TRUE)
-	    |menuToggleBookmark:
-	    	T.toggleLabel(text)
-	    |menuNextBookmark:
-	    	T.gotoLabel(text, TRUE)
-	    |menuPrevBookmark:
-	    	T.gotoLabel(text, FALSE)
-	    |menuNumbers:
-	        T.toggleNumbers(text)
-	    |menuFontSize:
-	        IF font = font1 THEN
-	            font := font2
-	        ELSE
-	            font := font1
-	        END;
-	        resize
-	    |menuText:
-	        T.setLang(text, Languages.langText)
-	    |menuC:
-	        T.setLang(text, Languages.langC)
-	    |menuFasm:
-	        T.setLang(text, Languages.langFasm)
-	    |menuIni:
-	        T.setLang(text, Languages.langIni)
-	    |menuJSON:
-	        T.setLang(text, Languages.langJSON)
-	    |menuLua:
-	        T.setLang(text, Languages.langLua)
-	    |menuOberon:
-	        T.setLang(text, Languages.langOberon)
-	    |menuPascal:
-	        T.setLang(text, Languages.langPascal)
-	    |menuBuild:
-	        Script(buildScript)
-	    |menuBuildScript:
-	    	setScript(buildScript)
-	    |menuRun:
-	        Script(runScript)
-	    |menuRunScript:
-	    	setScript(runScript)
-	    |menuDebug:
-	        Script(debugScript)
-	    |menuDebugScript:
-	    	setScript(debugScript)
-	    |menuUTF8BOM:
-	    	T.setEnc(text, E.UTF8BOM)
-	    |menuUTF8:
-	    	T.setEnc(text, E.UTF8)
-	    |menuCP866:
-	    	T.setEnc(text, E.CP866)
-	    |menuWin1251:
-	    	T.setEnc(text, E.W1251)
-	    |menuLF:
-	    	T.setEol(text, RW.EOL_LF)
-	    |menuCRLF:
-	    	T.setEol(text, RW.EOL_CRLF)
-	    |menuCR:
-	    	T.setEol(text, RW.EOL_CR)
-	    |menuPipet:
-	        K.Run("/sys/develop/pipet", "")
-	    |menuMagnify:
-	        K.Run("/sys/magnify", "")
-	    |menuBoard:
-	        K.Run("/sys/develop/board", "")
-	    |menuSysFunc:
-	        K.Run("/sys/docpack", "f")
-	    |menuColors..menuMaxColors:
-	        Ini.selectSection(IPC[2] - menuColors)
-	    |menuMoveUp:
-	    	T.MoveLines(text, FALSE)
-	    |menuMoveDown:
-			T.MoveLines(text, TRUE)
-	    |menuDuplicate:
-	    	T.dupLine(text)
-	    |menuRemove:
-	    	T.delLine(text)
-	    |menuIncInd:
-	    	T.Indent(text, TRUE)
-		|menuDecInd:
-			T.Indent(text, FALSE)
-		|menuUpper:
-			T.chCase(text, TRUE)
-		|menuLower:
-			T.chCase(text, FALSE)
-	    END;
-    	IPC[0] := 0;
-    	IPC[1] := 0
-    END
-END receiveIPC;
-
-
-PROCEDURE MenuKeyDown (menu: Menu.tMenu; key: INTEGER): BOOLEAN;
-VAR
-    menuItem: INTEGER;
-    shift, ctrl: BOOLEAN;
-BEGIN
-    menuItem := -1;
-    K.getKBState(shift, ctrl);
-    IF ctrl THEN
-        CASE key DIV 65536 OF
-        |17: menuItem := menuClose
-        |21: menuItem := menuRedo
-        |30: menuItem := menuSelectAll
-        |32: menuItem := menuDuplicate
-        |33,
-         35: menuItem := menuFind
-        |34: menuItem := menuGoto
-        |44: menuItem := menuUndo
-        |45: menuItem := menuCut
-        |46: menuItem := menuCopy
-        |47: menuItem := menuPaste
-        |24: menuItem := menuOpen
-        |31: menuItem := menuSave
-        |49: menuItem := menuNew
-        |67: menuItem := menuBuild
-        |83: menuItem := menuRemove
-        |22: menuItem := menuUpper
-        |38: menuItem := menuLower
-        |60: menuItem := menuToggleBookmark
-        |72: menuItem := menuMoveUp
-        |80: menuItem := menuMoveDown
+    |menuNew:
+        NewFile
+    |menuOpen:
+        OpenDial
+    |menuSave:
+        save(text);
+        repaint
+    |menuSaveAs:
+        saveAs(text);
+        repaint
+    |menuSaveAll:
+        saveAll;
+        repaint
+    |menuClose:
+        closeFile(TRUE, curText)
+    |menuFolder:
+        K.Run("/sys/File Managers/Eolite", text.fileName)
+    |menuExit:
+        Close
+    |menuUndo:
+        T.undo(text);
+        repaint
+    |menuRedo:
+        T.redo(text);
+        repaint
+    |menuFind:
+        ShowSearchPanel(FALSE)
+    |menuFindNext:
+        notFound := ~T.findNext(text, BKW.value);
+        menuFindClicked := TRUE
+    |menuFindPrev:
+        notFound := ~T.findNext(text, ~BKW.value);
+        menuFindClicked := TRUE
+    |menuGoto:
+        ShowSearchPanel(TRUE)
+    |menuToggleBookmark:
+    	T.toggleLabel(text)
+    |menuNextBookmark:
+    	T.gotoLabel(text, TRUE)
+    |menuPrevBookmark:
+    	T.gotoLabel(text, FALSE)
+    |menuNumbers:
+        T.toggleNumbers(text)
+    |menuFontSize:
+        IF font = font1 THEN
+            font := font2
         ELSE
-        END
-    ELSE
-        IF key DIV 65536 = 83 THEN
-            menuItem := menuDelete
-        ELSIF key DIV 65536 = 67 THEN
-            menuItem := menuRun
-        ELSIF key DIV 65536 = 15 THEN
-            menuItem := menuIncInd
-        ELSIF (key DIV 65536 = 14) & shift THEN
-            menuItem := menuDecInd
-        ELSIF key DIV 65536 = 60 THEN
-        	IF shift THEN
-        		menuItem := menuPrevBookmark
-        	ELSE
-        		menuItem := menuNextBookmark
-        	END
-        END
+            font := font1
+        END;
+        resize
+    |menuText:
+        T.setLang(text, Languages.langText)
+    |menuC:
+        T.setLang(text, Languages.langC)
+    |menuFasm:
+        T.setLang(text, Languages.langFasm)
+    |menuIni:
+        T.setLang(text, Languages.langIni)
+    |menuJSON:
+        T.setLang(text, Languages.langJSON)
+    |menuLua:
+        T.setLang(text, Languages.langLua)
+    |menuOberon:
+        T.setLang(text, Languages.langOberon)
+    |menuPascal:
+        T.setLang(text, Languages.langPascal)
+    |menuBuild:
+        Script(buildScript)
+    |menuBuildScript:
+    	setScript(buildScript)
+    |menuRun:
+        Script(runScript)
+    |menuRunScript:
+    	setScript(runScript)
+    |menuDebug:
+        Script(debugScript)
+    |menuDebugScript:
+    	setScript(debugScript)
+    |menuUTF8BOM:
+    	T.setEnc(text, E.UTF8BOM)
+    |menuUTF8:
+    	T.setEnc(text, E.UTF8)
+    |menuCP866:
+    	T.setEnc(text, E.CP866)
+    |menuWin1251:
+    	T.setEnc(text, E.W1251)
+    |menuLF:
+    	T.setEol(text, RW.EOL_LF)
+    |menuCRLF:
+    	T.setEol(text, RW.EOL_CRLF)
+    |menuCR:
+    	T.setEol(text, RW.EOL_CR)
+    |menuPipet:
+        K.Run("/sys/develop/pipet", "")
+    |menuMagnify:
+        K.Run("/sys/magnify", "")
+    |menuBoard:
+        K.Run("/sys/develop/board", "")
+    |menuSysFunc:
+        K.Run("/sys/docpack", "f")
+    |menuColors..menuMaxColors:
+        Ini.selectSection(Menu.MenuItem - menuColors)
+    |menuMoveUp:
+    	T.MoveLines(text, FALSE)
+    |menuMoveDown:
+		T.MoveLines(text, TRUE)
+    |menuDuplicate:
+    	T.dupLine(text)
+    |menuRemove:
+    	T.delLine(text)
+    |menuIncInd:
+    	T.Indent(text, TRUE)
+	|menuDecInd:
+		T.Indent(text, FALSE)
+	|menuUpper:
+		T.chCase(text, TRUE)
+	|menuLower:
+		T.chCase(text, FALSE)
     END;
-    IF menuItem # -1 THEN
-        IF Menu.isEnabled(menu, menuItem) THEN
-            MenuItemClick(menu, menuItem)
-        ELSE
-            menuItem := -1
-        END
-    END
-    RETURN menuItem # -1
-END MenuKeyDown;
+    Menu.SetItem(0)
+END ClickMenu;
 
 
 PROCEDURE CreateContextMenu (): Menu.tMenu;
@@ -1348,7 +1259,7 @@ BEGIN
     Menu.AddMenuItem(menu, menuDelete,    "delete");
     Menu.delimiter(menu);
     Menu.AddMenuItem(menu, menuSelectAll, "select all   ctrl-A");
-    RETURN Menu.create(menu, MenuItemClick, MenuKeyDown)
+    RETURN Menu.create(menu)
 END CreateContextMenu;
 
 
@@ -1367,7 +1278,7 @@ BEGIN
     Menu.AddMenuItem(menu, menuClose,   "close       ctrl-W");
     Menu.delimiter(menu);
     Menu.AddMenuItem(menu, menuExit,    "exit");
-    RETURN Menu.create(menu, MenuItemClick, MenuKeyDown)
+    RETURN Menu.create(menu)
 END CreateMenuFile;
 
 
@@ -1392,7 +1303,7 @@ BEGIN
     Menu.child(menu, subIndent);
     Menu.AddMenuItem(menu, menuCase,      "case");
     Menu.child(menu, subCase);
-    RETURN Menu.create(menu, MenuItemClick, MenuKeyDown)
+    RETURN Menu.create(menu)
 END CreateMenuEdit;
 
 
@@ -1408,7 +1319,7 @@ BEGIN
     Menu.delimiter(menu);
     Menu.AddMenuItem(menu, menuBookmark, "bookmark");
     Menu.child(menu, subBookmark);
-    RETURN Menu.create(menu, MenuItemClick, MenuKeyDown)
+    RETURN Menu.create(menu)
 END CreateMenuSearch;
 
 
@@ -1424,7 +1335,7 @@ BEGIN
     Menu.delimiter(menu);
     Menu.AddMenuItem(menu, menuEOL,     "EOL");
     Menu.child(menu, subEOL);
-    RETURN Menu.create(menu, MenuItemClick, MenuKeyDown)
+    RETURN Menu.create(menu)
 END CreateMenuEncoding;
 
 
@@ -1436,7 +1347,7 @@ BEGIN
     Menu.AddMenuItem(menu, menuCRLF, RW.eolNames[RW.EOL_CRLF]);
     Menu.AddMenuItem(menu, menuLF,   RW.eolNames[RW.EOL_LF]);
     Menu.AddMenuItem(menu, menuCR,   RW.eolNames[RW.EOL_CR]);
-    RETURN Menu.create(menu, MenuItemClick, MenuKeyDown)
+    RETURN Menu.create(menu)
 END CreateMenuEOL;
 
 
@@ -1459,7 +1370,7 @@ BEGIN
         colors := colors.next(Ini.tSection)
     END;
 
-    RETURN Menu.create(menu, MenuItemClick, MenuKeyDown)
+    RETURN Menu.create(menu)
 END CreateMenuView;
 
 
@@ -1477,7 +1388,7 @@ BEGIN
     Menu.AddMenuItem(menu, menuPascal, "Pascal");
     Menu.delimiter(menu);
     Menu.AddMenuItem(menu, menuText,   "Text");
-    RETURN Menu.create(menu, MenuItemClick, MenuKeyDown)
+    RETURN Menu.create(menu)
 END CreateMenuLanguage;
 
 
@@ -1494,7 +1405,7 @@ BEGIN
     Menu.delimiter(menu);
     Menu.AddMenuItem(menu, menuDebug,       "debug");
     Menu.AddMenuItem(menu, menuDebugScript, "script");
-    RETURN Menu.create(menu, MenuItemClick, MenuKeyDown)
+    RETURN Menu.create(menu)
 END CreateMenuProgram;
 
 
@@ -1507,7 +1418,7 @@ BEGIN
     Menu.AddMenuItem(menu, menuMagnify, "magnify");
     Menu.AddMenuItem(menu, menuBoard,   "board");
     Menu.AddMenuItem(menu, menuSysFunc, "system functions");
-    RETURN Menu.create(menu, MenuItemClick, MenuKeyDown)
+    RETURN Menu.create(menu)
 END CreateMenuTools;
 
 
@@ -1520,7 +1431,7 @@ BEGIN
     Menu.AddMenuItem(menu, menuMoveDown,  "move down   ctrl-Down");
     Menu.AddMenuItem(menu, menuDuplicate, "duplicate   ctrl-D");
     Menu.AddMenuItem(menu, menuRemove,    "remove      ctrl-Del");
-    RETURN Menu.create(menu, MenuItemClick, MenuKeyDown)
+    RETURN Menu.create(menu)
 END CreateMenuCurLine;
 
 
@@ -1531,7 +1442,7 @@ BEGIN
     menu := List.create(NIL);
     Menu.AddMenuItem(menu, menuIncInd, "increase    Tab");
     Menu.AddMenuItem(menu, menuDecInd, "decrease    shift-Bksp");
-    RETURN Menu.create(menu, MenuItemClick, MenuKeyDown)
+    RETURN Menu.create(menu)
 END CreateMenuIndent;
 
 
@@ -1542,7 +1453,7 @@ BEGIN
     menu := List.create(NIL);
     Menu.AddMenuItem(menu, menuUpper, "UPPER    ctrl-U");
     Menu.AddMenuItem(menu, menuLower, "lower    ctrl-L");
-    RETURN Menu.create(menu, MenuItemClick, MenuKeyDown)
+    RETURN Menu.create(menu)
 END CreateMenuCase;
 
 
@@ -1554,8 +1465,42 @@ BEGIN
     Menu.AddMenuItem(menu, menuToggleBookmark, "toggle      ctrl-F2");
     Menu.AddMenuItem(menu, menuNextBookmark,   "next        F2");
     Menu.AddMenuItem(menu, menuPrevBookmark,   "previous    shift-F2");
-    RETURN Menu.create(menu, MenuItemClick, MenuKeyDown)
+    RETURN Menu.create(menu)
 END CreateMenuBookmark;
+
+
+PROCEDURE Shortcuts;
+BEGIN
+    Menu.AddShortcut(17 + CTRL,  menuClose);
+    Menu.AddShortcut(21 + CTRL,  menuRedo);
+    Menu.AddShortcut(30 + CTRL,  menuSelectAll);
+    Menu.AddShortcut(32 + CTRL,  menuDuplicate);
+    Menu.AddShortcut(33 + CTRL,  menuFind);
+    Menu.AddShortcut(35 + CTRL,  menuFind);
+    Menu.AddShortcut(34 + CTRL,  menuGoto);
+    Menu.AddShortcut(44 + CTRL,  menuUndo);
+    Menu.AddShortcut(45 + CTRL,  menuCut);
+    Menu.AddShortcut(46 + CTRL,  menuCopy);
+    Menu.AddShortcut(47 + CTRL,  menuPaste);
+    Menu.AddShortcut(24 + CTRL,  menuOpen);
+    Menu.AddShortcut(31 + CTRL,  menuSave);
+    Menu.AddShortcut(49 + CTRL,  menuNew);
+    Menu.AddShortcut(67 + CTRL,  menuBuild);
+    Menu.AddShortcut(83 + CTRL,  menuRemove);
+    Menu.AddShortcut(22 + CTRL,  menuUpper);
+    Menu.AddShortcut(38 + CTRL,  menuLower);
+    Menu.AddShortcut(60 + CTRL,  menuToggleBookmark);
+    Menu.AddShortcut(72 + CTRL,  menuMoveUp);
+    Menu.AddShortcut(80 + CTRL,  menuMoveDown);
+    Menu.AddShortcut(83,         menuDelete);
+    Menu.AddShortcut(67,         menuRun);
+    Menu.AddShortcut(15,         menuIncInd);
+    Menu.AddShortcut(14 + SHIFT, menuDecInd);
+    Menu.AddShortcut(60 + SHIFT, menuPrevBookmark);
+    Menu.AddShortcut(60,         menuNextBookmark);
+    Menu.AddShortcut(61 + SHIFT, menuFindPrev);
+    Menu.AddShortcut(61,         menuFindNext);
+END Shortcuts;
 
 
 PROCEDURE HideSearch;
@@ -1732,6 +1677,7 @@ VAR
     middle, exit: BOOLEAN;
     menu: Menu.tMenu;
 BEGIN
+	exit := FALSE;
     btn := K.ButtonCode(middle);
     IF U.between(Tabs.btnID, btn, Tabs.btnID + maxTexts - 1) THEN
         DEC(btn, Tabs.btnID);
@@ -1756,58 +1702,45 @@ BEGIN
     		btn := 0
     	END
     END;
+
     CASE btn OF
-    |Tabs.btnLeft:  Tabs.scroll(tabs, -1); switch := TRUE; repaint
-    |Tabs.btnRight: Tabs.scroll(tabs, +1); switch := TRUE; repaint
-
     |0:
-
+    |Tabs.btnLeft, Tabs.btnRight:
+    	Tabs.scroll(tabs, btn);
+    	switch := TRUE
     |btnNo:
         exit := closing;
         closeFile(FALSE, curText);
-        repaint;
-        IF exit THEN
-            Close
-        END
+        repaint
     |btnYes:
         exit := closing;
         save(text);
         IF ~text.modified THEN
             closeFile(FALSE, curText)
         END;
-        repaint;
-        IF exit THEN
-            Close
-        END
-    |btnClose:
-        Close
-    |btnNew:
-        NewFile;
         repaint
+    |btnClose:
+    	exit := TRUE
+    |btnNew:
+        NewFile
     |btnOpen:
         OpenDial
     |btnSave:
-        save(text);
-        repaint
+        save(text)
     |btnSearch:
-        ShowSearchPanel(FALSE);
-        repaint
+        ShowSearchPanel(FALSE)
     |btnCloseSearch:
         Search
     |btnHideSearch:
         HideSearch
     |btnUndo:
-        T.undo(text);
-        repaint
+        T.undo(text)
     |btnRedo:
-        T.redo(text);
-        repaint
+        T.redo(text)
     |btnUpper:
-        T.chCase(text, TRUE);
-        repaint
+        T.chCase(text, TRUE)
     |btnLower:
-        T.chCase(text, FALSE);
-        repaint
+        T.chCase(text, FALSE)
     |btnBuild:
         Script(buildScript)
     |btnRun:
@@ -1815,24 +1748,26 @@ BEGIN
     |btnFindNext:
         IF searchText # "" THEN
             notFound := ~T.findNext(text, BKW.value);
-            SetFocus(FindEdit, FALSE);
-            repaint
+            SetFocus(FindEdit, FALSE)
         END
     |btnReplace:
         T.replace(text, replaceText, LENGTH(searchText));
-        SetFocus(FindEdit, FALSE);
-        repaint
+        SetFocus(FindEdit, FALSE)
     |btnReplaceAll:
         notFound := ~T.search(text, searchText, cs, whole);
         IF ~notFound THEN
             replaced := T.replaceAll(text, replaceText, LENGTH(searchText));
         END;
-        SetFocus(FindEdit, FALSE);
-        repaint
+        SetFocus(FindEdit, FALSE)
     |btnGoto:
-        goto;
-        repaint
-    END
+        goto
+    END;
+
+	IF exit THEN
+		Close
+	ELSE
+		repaint
+	END
 END BtnClick;
 
 
@@ -1884,6 +1819,7 @@ BEGIN
 
 		Scroll.mouse(hScroll);
 		Scroll.mouse(vScroll);
+		msState := K.MouseState();
         T.getScroll(text, scrollX, scrollY);
         IF (hScroll.value # scrollX) OR (vScroll.value # scrollY) THEN
 			T.scroll(text, hScroll.value - scrollX, vScroll.value - scrollY);
@@ -1935,7 +1871,13 @@ END MouseEvent;
 
 
 PROCEDURE Redraw (VAR resized: BOOLEAN; VAR width, height, cliWidth, cliHeight: INTEGER);
+VAR
+	onClose: BOOLEAN;
 BEGIN
+	onClose := (Menu.MenuItem = menuClose) OR (Menu.MenuItem = menuExit);
+	IF ~onClose THEN
+		ClickMenu
+	END;
 	K.GetSystemColors;
 	IF ~K.RolledUp() THEN
 		K.ClientSize(width, height);
@@ -1945,7 +1887,7 @@ BEGIN
 			resize;
 			resized := TRUE
 		END;
-		K.SetEventsMask({0, 1, 2, 5, 6, 31})
+		K.SetEventsMask({0, 1, 2, 5, 31})
 	ELSE
 		SetCaption(text.fileName);
 		K.SetEventsMask({0, 30, 31})
@@ -1954,15 +1896,16 @@ BEGIN
 	IF SkinHeight # K.SkinHeight() THEN
 		SkinHeight := K.SkinHeight();
 		Redraw(resized, width, height, cliWidth, cliHeight)
+	END;
+	IF onClose THEN
+		ClickMenu
 	END
 END Redraw;
 
 
 PROCEDURE ScrollChange;
 BEGIN
-	Scroll.change(hScroll);
-	Scroll.change(vScroll);
-	T.scroll(text, ORD(hScroll.Inc) - ORD(hScroll.Dec), ORD(vScroll.Inc) - ORD(vScroll.Dec));
+	T.scroll(text, hScroll.btn, vScroll.btn);
 	IF menuActive THEN
 		draw_window;
 		menuActive := FALSE
@@ -1985,8 +1928,6 @@ BEGIN
     closing := FALSE;
     textsCount := 0;
     curText := 0;
-    mainTID := K.ThreadID();
-    K.SetIPC(IPC);
     Args.GetArg(0, AppPath);
     Ini.load(AppPath);
     leftButton := FALSE;
@@ -2010,6 +1951,7 @@ BEGIN
     T.init(resetTimer);
     T.setCanvas(canvas);
 
+    Menu.init(resetTimer);
     context := CreateContextMenu();
     menuFile := CreateMenuFile();
     subCurLine := CreateMenuCurLine();
@@ -2039,6 +1981,7 @@ BEGIN
     Menu.AddMainItem(mainMenu, "language", menuLanguage);
     Menu.AddMainItem(mainMenu, "program", menuProgram);
     Menu.AddMainItem(mainMenu, "tools", menuTools);
+    Shortcuts;
 
     Toolbar.create(toolbar, LEFT_PADDING + 5, toolbarTop);
     Toolbar.add(toolbar, btnNew,     2, "");
@@ -2075,9 +2018,8 @@ BEGIN
 	END;
 	SwitchTab(textsCount - 1);
 
-    Scroll.init(ScrollChange);
-    Scroll.create(FALSE, canvas.width + 1, scrollWidth, scrollWidth, scrollWidth*3 DIV 2, hScroll);
-    Scroll.create(TRUE, scrollWidth, canvas.height + 2, scrollWidth, scrollWidth*3 DIV 2, vScroll);
+    Scroll.create(FALSE, canvas.width + 1, scrollWidth, scrollWidth, scrollWidth*3 DIV 2, ScrollChange, hScroll);
+    Scroll.create(TRUE, scrollWidth, canvas.height + 2, scrollWidth, scrollWidth*3 DIV 2, ScrollChange, vScroll);
     T.resize(canvas.width, canvas.height);
     confirm := FALSE;
     notFound := FALSE;
@@ -2094,8 +2036,7 @@ BEGIN
 
 	OD := OpenDlg.Create(draw_window, OpenDlg.topen, filePath, "");
 
-    K.SetEventsMask({0, 1, 2, 5, 6, 31});
-    Menu.init(resetTimer);
+    K.SetEventsMask({0, 1, 2, 5, 31});
     draw_window;
     blink := Ini.blink;
 	IF blink <= 0 THEN
@@ -2112,13 +2053,13 @@ BEGIN
     		T.toggleCursor;
     		repaint
     	END;
+
         CASE K.EventTimeout(10) OF
         |0:
         |1:	Redraw(resized, width, height, cliWidth, cliHeight)
         |2: KeyDown(K.GetKey())
         |3: BtnClick
         |6: MouseEvent(resized, firstClickX, firstClickY, time)
-        |7: receiveIPC
         END
     END
 END main;

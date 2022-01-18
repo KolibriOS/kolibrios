@@ -323,18 +323,6 @@ PROCEDURE GetControlKeys* (): SET;
 END GetControlKeys;
 
 
-PROCEDURE SetIPC* (buffer: ARRAY OF INTEGER);
-BEGIN
-    KOSAPI.sysfunc4(60, 1, SYSTEM.ADR(buffer[0]), LEN(buffer)*SYSTEM.SIZE(INTEGER))
-END SetIPC;
-
-
-PROCEDURE SendIPC* (tid: INTEGER; msg: ARRAY OF INTEGER);
-BEGIN
-	KOSAPI.sysfunc5(60, 2, tid, SYSTEM.ADR(msg[0]), SYSTEM.SIZE(INTEGER)*LEN(msg))
-END SendIPC;
-
-
 PROCEDURE GetSystemColors*;
 BEGIN
     KOSAPI.sysfunc4(48, 3, SYSTEM.ADR(colors), 40)

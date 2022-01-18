@@ -23,38 +23,35 @@ IMPORT G := Graph, K := KolibriOS, U := Utils;
 
 CONST
 
-	ScrollIPC* = 0;
 	DELAY = 40;
 
 TYPE
 
+	tProcedure = PROCEDURE;
+
 	tScroll* = RECORD
-		vertical, Inc*, Dec*, mouse: BOOLEAN;
+		vertical, mouse: BOOLEAN;
 		top*, left*,
 		width*, height*: INTEGER; (* read only *)
 		btnSize, sliderSize: INTEGER;
 		pos, Slider, pos0, maxVal*, value*: INTEGER;
-		canvas*: G.tCanvas
+		canvas: G.tCanvas;
+		change: tProcedure;
+		delay: INTEGER;
+		btn*: INTEGER
 	END;
-
-	tProcedure* = PROCEDURE;
-
-VAR
-
-	ScrollChange: tProcedure;
-	delay: INTEGER;
 
 
 PROCEDURE MouseUp (VAR scroll: tScroll);
 BEGIN
 	scroll.Slider := -1;
-	scroll.Inc := FALSE;
-	scroll.Dec := FALSE;
+	scroll.btn := 0;
 	scroll.mouse := FALSE;
+	scroll.delay := DELAY
 END MouseUp;
 
 
-PROCEDURE create* (vertical: BOOLEAN; width, height: INTEGER; btnSize, sliderSize: INTEGER; VAR scroll: tScroll);
+PROCEDURE create* (vertical: BOOLEAN; width, height: INTEGER; btnSize, sliderSize: INTEGER; change: tProcedure; VAR scroll: tScroll);
 VAR
 	res: tScroll;
 BEGIN
@@ -69,6 +66,7 @@ BEGIN
 	res.pos := 0;
 	res.maxVal := 0;
 	res.canvas := G.CreateCanvas(width, height);
+	res.change := change;
 	scroll := res
 END create;
 
@@ -111,9 +109,9 @@ BEGIN
 	G.SetColor(canvas, K.colors.line);
 	G.Rect(canvas, 0, 0, width - 1, height - 1);
 	IF scroll.vertical THEN
-		SetColor(canvas, ~scroll.Dec);
+		SetColor(canvas, scroll.btn # -1);
 		Rect(canvas, 0, 0, width - 1, btn - 1);
-		SetColor(canvas, ~scroll.Inc);
+		SetColor(canvas, scroll.btn # 1);
 		Rect(canvas, 0, height - btn, width - 1, height - 1);
 		G.SetColor(canvas, K.colors.button);
 		Rect(canvas, 0, btn + scroll.pos - 1, width - 1, btn + scroll.pos + scroll.sliderSize - 1);
@@ -129,17 +127,17 @@ BEGIN
 		x1 := (width - d) DIV 2;
 		x2 := x1 + d;
 
-		SetColor(canvas, scroll.Dec);
+		SetColor(canvas, scroll.btn = -1);
 		y := (btn - d DIV 2) DIV 2 + d DIV 2 - 1;
 		G.Triangle(canvas, x1 - 1, y, x2, y, G.triUp);
 
-		SetColor(canvas, scroll.Inc);
+		SetColor(canvas, scroll.btn = 1);
 		y := y + height - btn - d DIV 2 + 1;
 		G.Triangle(canvas, x1 - 1, y, x2, y, G.triDown);
 	ELSE
-		SetColor(canvas, ~scroll.Dec);
+		SetColor(canvas, scroll.btn # -1);
 		Rect(canvas, 0, 0, btn - 1, height - 1);
-		SetColor(canvas, ~scroll.Inc);
+		SetColor(canvas, scroll.btn # 1);
 		Rect(canvas, width - btn, 0, width - 1, height - 1);
 		G.SetColor(canvas, K.colors.button);
 		Rect(canvas, btn + scroll.pos - 1, 0, btn + scroll.pos + scroll.sliderSize - 1, height - 1);
@@ -155,11 +153,11 @@ BEGIN
 		y1 := (height - d) DIV 2;
 		y2 := y1 + d;
 
-		SetColor(canvas, scroll.Dec);
+		SetColor(canvas, scroll.btn = -1);
 		x := (btn - d DIV 2) DIV 2 + d DIV 2 - 1;
 		G.Triangle(canvas, x, y1 - 1, x, y2, G.triLeft);
 
-		SetColor(canvas, scroll.Inc);
+		SetColor(canvas, scroll.btn = 1);
 		x := x + width - btn - d DIV 2 + 1;
 		G.Triangle(canvas, x, y1 - 1, x, y2, G.triRight);
 	END;
@@ -217,17 +215,6 @@ BEGIN
 	scroll.pos := pos;
 	scroll.value := value
 END setValue;
-
-
-PROCEDURE change* (VAR scroll: tScroll);
-BEGIN
-	IF scroll.Inc THEN
-		setValue(scroll, scroll.value + 1)
-	ELSIF scroll.Dec THEN
-		setValue(scroll, scroll.value - 1)
-	END;
-	draw(scroll)
-END change;
 
 
 PROCEDURE ceil (p, q: INTEGER): INTEGER;
@@ -306,38 +293,34 @@ BEGIN
 END MouseMove;
 
 
-PROCEDURE SendIPC;
+PROCEDURE button (VAR scroll: tScroll);
 VAR
-	msg: ARRAY 2 OF INTEGER;
+	btn: INTEGER;
 BEGIN
-	msg[0] := ScrollIPC;
-	msg[1] := 8;
-	K.SendIPC(K.ThreadID(), msg)
-END SendIPC;
-
-
-PROCEDURE receiveIPC* (VAR IPC: ARRAY OF INTEGER; VAR scrollIPC: BOOLEAN);
-BEGIN
-	scrollIPC := FALSE;
-	ScrollChange;
-	IF 0 IN K.MouseState() THEN
-		WHILE (0 IN K.MouseState()) & (delay > 0) DO
-			K.Pause(1);
-    		DEC(delay)
+	WHILE scroll.btn # 0 DO
+		btn := scroll.btn;
+		setValue(scroll, scroll.value + btn);
+		draw(scroll);
+		IF scroll.change # NIL THEN
+			scroll.change
 		END;
-		IF delay = 0 THEN
-			IPC[0] := 0;
-			IPC[1] := 0;
-			scrollIPC := TRUE;
-    		SendIPC;
-    		delay := 4
+		scroll.btn := 0;
+		IF 0 IN K.MouseState() THEN
+			WHILE (0 IN K.MouseState()) & (scroll.delay > 0) DO
+				K.Pause(1);
+				DEC(scroll.delay)
+			END;
+			IF scroll.delay = 0 THEN
+				scroll.btn := btn;
+				scroll.delay := 3
+			ELSE
+				scroll.delay := DELAY
+			END
 		ELSE
-			delay := DELAY
+			scroll.delay := DELAY
 		END
-	ELSE
-		delay := DELAY
 	END
-END receiveIPC;
+END button;
 
 
 PROCEDURE MouseDown (VAR scroll: tScroll; x, y: INTEGER);
@@ -359,11 +342,9 @@ BEGIN
 			scroll.pos0 := scroll.pos;
 			scroll.Slider := c
 		ELSIF U.between(0, c, scroll.btnSize - 1) THEN
-			scroll.Dec := TRUE;
-			SendIPC
+			scroll.btn := -1
 		ELSIF U.between(size - scroll.btnSize, c, size - 1) THEN
-			scroll.Inc := TRUE;
-			SendIPC
+			scroll.btn := 1
 		ELSE
 			setPos(scroll, c - scroll.btnSize - scroll.sliderSize DIV 2);
 			scroll.pos0 := scroll.pos;
@@ -389,15 +370,9 @@ BEGIN
 	ELSIF scroll.mouse THEN
 		MouseUp(scroll);
 		draw(scroll)
-	END
+	END;
+	button(scroll)
 END mouse;
-
-
-PROCEDURE init* (_ScrollChange: tProcedure);
-BEGIN
-	delay := DELAY;
-	ScrollChange := _ScrollChange
-END init;
 
 
 END Scroll.

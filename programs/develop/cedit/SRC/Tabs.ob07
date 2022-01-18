@@ -206,11 +206,11 @@ BEGIN
 END delete;
 
 
-PROCEDURE scroll* (t: tTabs; n: INTEGER);
+PROCEDURE scroll* (t: tTabs; btn: INTEGER);
 VAR
     pos: INTEGER;
 BEGIN
-    pos := t.first + n;
+    pos := t.first + ORD(btn = btnRight) - ORD(btn = btnLeft);
     IF pos < 0 THEN
         pos := 0
     ELSIF pos >= t.strings.count THEN

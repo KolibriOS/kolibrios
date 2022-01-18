@@ -44,6 +44,9 @@ CONST
     disSelBackColor = 0E4E4E4H;
     disSelForeColor = disForeColor;
 
+	SHIFT* = 256;
+	CTRL*  = 512;
+
 
 TYPE
 
@@ -64,9 +67,7 @@ TYPE
         font: G.tFont;
         canvas: G.tCanvas;
 
-        items: List.tList;
-        click: PROCEDURE (menu: tMenu; id: INTEGER);
-        key: PROCEDURE (menu: tMenu; key: INTEGER): BOOLEAN
+        items: List.tList
     END;
 
     tItem* = POINTER TO RECORD (List.tItem)
@@ -83,15 +84,20 @@ TYPE
         main: tMain
     END;
 
+    tShortcut = POINTER TO RECORD (List.tItem)
+    	key, MenuItem: INTEGER
+    END;
+
     tClick = PROCEDURE (menu: tMenu; id: INTEGER);
-    tKey = PROCEDURE (menu: tMenu; key: INTEGER): BOOLEAN;
     tProc = PROCEDURE;
 
 VAR
+	MenuItem*: INTEGER;
     stack: ARRAY maxLEVEL + 1, 2500 OF INTEGER;
     TIDs: ARRAY maxLEVEL + 1 OF INTEGER;
     resetTimer: tProc;
     _open: PROCEDURE (m: tMenu; x, y: INTEGER);
+    shortcuts: List.tList;
 (*
     backColor, foreColor, selBackColor, selForeColor,
     disBackColor, disForeColor, disSelBackColor, disSelForeColor: INTEGER;
@@ -322,6 +328,12 @@ BEGIN
 END close;
 
 
+PROCEDURE SetItem* (id: INTEGER);
+BEGIN
+	MenuItem := id
+END SetItem;
+
+
 PROCEDURE click (m: tMenu; i: INTEGER);
 VAR
     item: List.tItem;
@@ -338,7 +350,7 @@ BEGIN
 	    END
     END;
     IF id # -1 THEN
-	    m.click(m, id);
+    	SetItem(id);
 	    p := m.parent;
 	   	WHILE p # NIL DO
 	   		p.child := NIL;
@@ -391,6 +403,25 @@ BEGIN
 END submenu;
 
 
+PROCEDURE getShortcut (key: INTEGER): BOOLEAN;
+VAR
+	item: tShortcut;
+	res: INTEGER;
+BEGIN
+	item := shortcuts.first(tShortcut);
+	WHILE (item # NIL) & (item.key # key) DO
+		item := item.next(tShortcut)
+	END;
+	IF item # NIL THEN
+		res := item.MenuItem
+	ELSE
+		res := 0
+	END;
+	SetItem(res)
+	RETURN res # 0
+END getShortcut;
+
+
 PROCEDURE [stdcall] window (m: tMenu);
 VAR
     x, y: INTEGER;
@@ -409,50 +440,47 @@ BEGIN
             draw_window(m)
         |2:
         	K.getKBState(shift, ctrl);
-            key := K.GetKey();
-            IF ~shift & ~ ctrl THEN
-	            IF key DIV 65536 = 72 THEN
-	                m.selItem := (m.selItem - 1) MOD m.items.count
-	            ELSIF key DIV 65536 = 80 THEN
-	                m.selItem := (m.selItem + 1) MOD m.items.count
-	            ELSIF key DIV 65536 = 28 THEN
-	                IF m.selItem >= 0 THEN
-	                    click(m, m.selItem)
-	                END;
-	                m.cliItem := -1
-	            ELSIF key DIV 65536 = 77 THEN
-	                IF ~submenu(m, TRUE) THEN
-	                	click(m, -(getMainID(m) + 1))
-	                END;
-	                m.cliItem := -1
-	            ELSIF key DIV 65536 = 75 THEN
-	            	IF m.parent # NIL THEN
-	                	escape(m)
-	            	ELSE
-	            		click(m, -(getMainID(m) - 1))
-	                END;
-	                m.cliItem := -1
-	            ELSIF key DIV 65536 = 1 THEN
-	            	escape(m)
-	            ELSE
-	                IF m.key(m, key) THEN
-	                	IF m.parent # NIL THEN
-	                		temp := m.parent.tid;
-	                		m.parent.tid := 0;
-	                		K.ExitID(temp)
-	                	END;
-	                    exit(m)
-	                END
-                END
+            key := K.GetKey() DIV 65536;
+		    IF shift THEN
+		    	INC(key, SHIFT)
+		    END;
+		    IF ctrl THEN
+		    	INC(key, CTRL)
+		    END;
+
+        	CASE key OF
+            |72:
+                m.selItem := (m.selItem - 1) MOD m.items.count
+            |80:
+                m.selItem := (m.selItem + 1) MOD m.items.count
+            |28:
+                IF m.selItem >= 0 THEN
+                    click(m, m.selItem)
+                END;
+                m.cliItem := -1
+            |77:
+                IF ~submenu(m, TRUE) THEN
+                	click(m, -(getMainID(m) + 1))
+                END;
+                m.cliItem := -1
+            |75:
+            	IF m.parent # NIL THEN
+                	escape(m)
+            	ELSE
+            		click(m, -(getMainID(m) - 1))
+                END;
+                m.cliItem := -1
+            |1:
+            	escape(m)
             ELSE
-                IF m.key(m, key) THEN
-                	IF m.parent # NIL THEN
-                		temp := m.parent.tid;
-                		m.parent.tid := 0;
-                		K.ExitID(temp)
-                	END;
-                    exit(m)
-                END
+	            IF getShortcut(key) THEN
+	            	IF m.parent # NIL THEN
+	            		temp := m.parent.tid;
+	            		m.parent.tid := 0;
+	            		K.ExitID(temp)
+	            	END;
+	                exit(m)
+	            END
             END;
             repaint(m)
         |6:
@@ -593,7 +621,7 @@ BEGIN
 END isEnabled;
 
 
-PROCEDURE create* (items: List.tList; click: tClick; key: tKey): tMenu;
+PROCEDURE create* (items: List.tList): tMenu;
 VAR
     m: tMenu;
     maxLength: INTEGER;
@@ -606,8 +634,6 @@ BEGIN
     m.child := NIL;
     m.mainID := 0;
     m.items  := items;
-    m.click := click;
-    m.key := key;
     maxLength := 0;
     item := items.first(tItem);
     WHILE item # NIL DO
@@ -623,10 +649,23 @@ BEGIN
 END create;
 
 
+PROCEDURE AddShortcut* (key, MenuItem: INTEGER);
+VAR
+	item: tShortcut;
+BEGIN
+	NEW(item);
+	item.key := key;
+	item.MenuItem := MenuItem;
+	List.append(shortcuts, item)
+END AddShortcut;
+
+
 PROCEDURE init* (_resetTimer: tProc);
 VAR
 	i: INTEGER;
 BEGIN
+	SetItem(0);
+	shortcuts := List.create(NIL);
 	resetTimer := _resetTimer;
 	_open := open;
 	FOR i := 0 TO maxLEVEL DO
