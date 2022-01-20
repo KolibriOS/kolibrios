@@ -185,31 +185,32 @@ END resize;
 
 PROCEDURE setValue* (VAR scroll: tScroll; value: INTEGER);
 VAR
-	pos, maxPos, n, m: INTEGER;
+	pos, maxPos, maxVal, n, m: INTEGER;
 BEGIN
+	maxVal := scroll.maxVal;
 	IF scroll.vertical THEN
 		maxPos := scroll.height
 	ELSE
 		maxPos := scroll.width
 	END;
 	maxPos := maxPos - scroll.btnSize*2 - scroll.sliderSize + 1;
-	IF (value < 0) OR (scroll.maxVal <= 0) THEN
+	IF (value < 0) OR (maxVal <= 0) THEN
 		value := 0;
 		pos := 0
-	ELSIF value > scroll.maxVal THEN
-		value := scroll.maxVal;
+	ELSIF value > maxVal THEN
+		value := maxVal;
 		pos := maxPos
 	ELSE
-		IF (maxPos + 1) >= scroll.maxVal THEN
-			n := (maxPos + 1) DIV scroll.maxVal;
-			m := (maxPos + 1) MOD scroll.maxVal;
+		IF (maxPos + 1) >= maxVal THEN
+			n := (maxPos + 1) DIV maxVal;
+			m := (maxPos + 1) MOD maxVal;
 			pos := value*n + MIN(value, m)
 		ELSE
-			pos := FLOOR(FLT(value)*FLT(maxPos + 1)/FLT(scroll.maxVal))
+			pos := FLOOR(FLT(value)*FLT(maxPos + 1)/FLT(maxVal))
 		END;
 		IF pos > maxPos THEN
 			pos := maxPos;
-			value := scroll.maxVal
+			value := maxVal
 		END
 	END;
 	scroll.pos := pos;
@@ -224,9 +225,10 @@ END ceil;
 
 PROCEDURE setPos (VAR scroll: tScroll; pos: INTEGER);
 VAR
-	maxPos, value, n, m, x, x0, q: INTEGER;
+	maxPos, value, maxVal, n, m, x, x0, q: INTEGER;
 BEGIN
-	IF scroll.maxVal > 0 THEN
+	maxVal := scroll.maxVal;
+	IF maxVal > 0 THEN
 		IF scroll.vertical THEN
 			maxPos := scroll.height
 		ELSE
@@ -238,11 +240,11 @@ BEGIN
 			value := 0
 		ELSIF pos >= maxPos THEN
 			pos := maxPos;
-			value := scroll.maxVal
+			value := maxVal
 		ELSE
-			IF scroll.maxVal <= maxPos + 1 THEN
-				n := (maxPos + 1) DIV scroll.maxVal;
-				m := (maxPos + 1) MOD scroll.maxVal;
+			IF maxVal <= maxPos + 1 THEN
+				n := (maxPos + 1) DIV maxVal;
+				m := (maxPos + 1) MOD maxVal;
 
 				q := m*(n + 1);
 				IF q < pos THEN
@@ -263,16 +265,16 @@ BEGIN
 					pos := x;
 					IF pos > maxPos THEN
 						pos := maxPos;
-						value := scroll.maxVal
+						value := maxVal
 					END
 				END
 			ELSE
-				value := FLOOR(FLT(scroll.maxVal)*FLT(pos)/FLT(maxPos + 1))
+				value := FLOOR(FLT(maxVal)*FLT(pos)/FLT(maxPos + 1))
 			END
 		END
 	ELSE
 		pos := 0;
-		scroll.value := 0
+		value := 0
 	END;
 	scroll.pos := pos;
 	scroll.value := value

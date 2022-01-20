@@ -51,28 +51,27 @@ TYPE
 
 PROCEDURE [stdcall, "box_lib.obj", "edit_box_draw"]     draw* (eb: tEditBox); END;
 PROCEDURE [stdcall, "box_lib.obj", "edit_box_mouse"]    mouse* (eb: tEditBox); END;
-PROCEDURE [stdcall, "box_lib.obj", "edit_box_set_text"] _setValue (eb: tEditBox; text: INTEGER); END;
+PROCEDURE [stdcall, "box_lib.obj", "edit_box_set_text"] set_text (eb: tEditBox; text: INTEGER); END;
 PROCEDURE [stdcall, "box_lib.obj", "edit_box_key_safe"] key* (eb: tEditBox; key: INTEGER); END;
 
-PROCEDURE getValue* (text: tEditBox; VAR str: ARRAY OF CHAR);
+PROCEDURE get* (text: tEditBox; VAR str: ARRAY OF CHAR);
 VAR
-    ptr, max, i: INTEGER;
-
+	ptr, max, i: INTEGER;
 BEGIN
-    ptr := text.text;
-    max := text.max;
-    ASSERT(max < LEN(str));
-    i := 0;
-    REPEAT
-        SYSTEM.GET(ptr, str[i]);
-        INC(i);
-        INC(ptr)
-    UNTIL (str[i - 1] = 0X) OR (i = max);
-    str[i] := 0X
-END getValue;
+	ptr := text.text;
+	max := text.max;
+	ASSERT(max < LEN(str));
+	i := 0;
+	REPEAT
+		SYSTEM.GET(ptr, str[i]);
+		INC(i);
+		INC(ptr)
+	UNTIL (str[i - 1] = 0X) OR (i = max);
+	str[i] := 0X
+END get;
 
 
-PROCEDURE setValue* (text: tEditBox; str: ARRAY OF WCHAR);
+PROCEDURE set* (text: tEditBox; str: ARRAY OF WCHAR);
 VAR
 	i: INTEGER;
 	temp: ARRAY MAX_LENGTH OF CHAR;
@@ -83,25 +82,25 @@ BEGIN
 		temp[i] := CHR(Encodings.UNI[ORD(str[i]), Encodings.CP866] MOD 256);
 		INC(i)
 	UNTIL str[i - 1] = 0X;
-	_setValue(text, SYSTEM.ADR(temp[0]))
-END setValue;
+	set_text(text, SYSTEM.ADR(temp[0]))
+END set;
 
 
-PROCEDURE create* (tlx, tly, width, max_chars: INTEGER; VAR editbox: tEditBox);
+PROCEDURE create* (x, y, width, max_chars: INTEGER; VAR editbox: tEditBox);
 BEGIN
-    editbox.width := width;
-    editbox.left := tlx;
-    editbox.top := tly;
-    editbox.color := 0FFFFFFH;
-    editbox.shift_color := 06A9480H;
-    editbox.focus_border_color := 0;
-    editbox.blur_border_color := 06A9480H;
-    editbox.text_color := 30000000H;
-    editbox.max := max_chars;
-    editbox.text := KOSAPI.malloc(max_chars + 2);
-    ASSERT(editbox.text # 0);
-    editbox.mouse_variable := 0;
-    editbox.flags := {14}
+	editbox.width := width;
+	editbox.left := x;
+	editbox.top := y;
+	editbox.color := 0FFFFFFH;
+	editbox.shift_color := 06A9480H;
+	editbox.focus_border_color := 0;
+	editbox.blur_border_color := 06A9480H;
+	editbox.text_color := 30000000H;
+	editbox.max := max_chars;
+	editbox.text := KOSAPI.malloc(max_chars + 2);
+	ASSERT(editbox.text # 0);
+	editbox.mouse_variable := 0;
+	editbox.flags := {14}
 END create;
 
 

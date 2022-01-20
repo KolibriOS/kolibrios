@@ -88,7 +88,6 @@ TYPE
     	key, MenuItem: INTEGER
     END;
 
-    tClick = PROCEDURE (menu: tMenu; id: INTEGER);
     tProc = PROCEDURE;
 
 VAR

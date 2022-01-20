@@ -33,14 +33,10 @@ CONST
 
     NAME_LEN = 1024;
 
-    EOL_CRLF* = 0; EOL_LF* = 1; EOL_CR* = 2;
-
 
 TYPE
 
     tFileName* = ARRAY NAME_LEN OF CHAR;
-
-    tEOL = ARRAY 3 OF WCHAR;
 
     tInput* = POINTER TO RECORD
         buffer:   INTEGER;
@@ -55,16 +51,10 @@ TYPE
         handle:   File.FS;
         buffer:   ARRAY BUF_SIZE OF BYTE;
         pos:      INTEGER;
-        eol:      tEOL;
+        eol:      E.tEOL;
         putChar:  PROCEDURE (file: tOutput; code: INTEGER);
         error:    BOOLEAN
     END;
-
-
-VAR
-
-    eol*: ARRAY 3 OF tEOL;
-    eolNames*: ARRAY 3, 16 OF WCHAR;
 
 
 PROCEDURE getByte (file: tInput): BYTE;
@@ -109,7 +99,9 @@ BEGIN
     ELSIF (0E0H <= b) & (b <= 0EFH) THEN
         DEC(b, 0E0H);
         n := 2
-    ELSIF (0F0H <= b) & (b <= 0F7H) THEN
+    ELSE
+    	n := -1
+(*    ELSIF (0F0H <= b) & (b <= 0F7H) THEN
         DEC(b, 0F0H);
         n := 3
     ELSIF (0F8H <= b) & (b <= 0FBH) THEN
@@ -124,15 +116,15 @@ BEGIN
     ELSIF b = 0FFH THEN
         n := -1
     ELSIF (080H <= b) & (b <= 0BFH) THEN
-        n := -1
+        n := -1*)
     END;
 
     code := b;
-
+(*
     IF n > 2 THEN
         n := -1
     END;
-
+*)
     WHILE n > 0 DO
         DEC(n);
         b := peakByte(file);
@@ -160,11 +152,11 @@ PROCEDURE getCharCP866 (file: tInput): INTEGER;
     RETURN E.cp866[getByte(file)]
 END getCharCP866;
 
-
+(*
 PROCEDURE getCharUTF16LE (file: tInput): INTEGER;
     RETURN getByte(file) + getByte(file) * 256
 END getCharUTF16LE;
-
+*)
 
 PROCEDURE getString* (file: tInput; line: Lines.tLine; tabs: BOOLEAN; VAR eol: BOOLEAN): INTEGER;
 VAR
@@ -299,20 +291,20 @@ BEGIN
 	cnt := text.cnt;
 	WHILE (text.cnt > 0) & (res = -1) DO
 		c := text.getChar(text);
-		IF c = 10 THEN
-			res := EOL_LF
-		ELSIF c = 13 THEN
-			IF text.getChar(text) = 10 THEN
-				res := EOL_CRLF
+		IF CHR(c) = LF THEN
+			res := E.EOL_LF
+		ELSIF CHR(c) = CR THEN
+			IF CHR(text.getChar(text)) = LF THEN
+				res := E.EOL_CRLF
 			ELSE
-				res := EOL_CR
+				res := E.EOL_CR
 			END
 		END
 	END;
 	text.cnt := cnt;
 	text.pos := pos;
 	IF res = -1 THEN
-		res := EOL_CRLF
+		res := E.EOL_CRLF
 	END
 	RETURN res
 END detectEOL;
@@ -373,7 +365,7 @@ BEGIN
         DISPOSE(res)
     ELSE
         enc := detectEncoding(res);
-        IF (enc = E.UTF8BOM) OR (enc = E.UTF8) THEN
+        IF enc IN {E.UTF8BOM, E.UTF8} THEN
             res.getChar := getCharUTF8
         ELSIF enc = E.CP866 THEN
             res.getChar := getCharCP866
@@ -427,11 +419,9 @@ VAR
 BEGIN
     FOR i := 0 TO n - 1 DO
         c := Lines.getChar(line, i);
-        IF c = Lines.TAB1 THEN
-        	(* nothing to do *)
-        ELSIF c = Lines.NUL THEN
+        IF c = Lines.NUL THEN
         	file.putChar(file, 0)
-        ELSE
+        ELSIF c # Lines.TAB1 THEN
         	file.putChar(file, ORD(c))
         END
     END
@@ -467,32 +457,31 @@ BEGIN
 END putCharUTF8;
 
 
-PROCEDURE putCharW1251 (file: tOutput; code: INTEGER);
+PROCEDURE putCharCP (file: tOutput; code, cp: INTEGER);
 VAR
     n: INTEGER;
 BEGIN
-    n := E.UNI[code, E.W1251];
+    n := E.UNI[code, cp];
     IF n # E.UNDEF THEN
         putByte(file, n)
     ELSE
         putByte(file, ORD("?"))
     END
+END putCharCP;
+
+
+PROCEDURE putCharW1251 (file: tOutput; code: INTEGER);
+BEGIN
+	putCharCP(file, code, E.W1251)
 END putCharW1251;
 
 
 PROCEDURE putCharCP866 (file: tOutput; code: INTEGER);
-VAR
-    n: INTEGER;
 BEGIN
-    n := E.UNI[code, E.CP866];
-    IF n # E.UNDEF THEN
-        putByte(file, n)
-    ELSE
-    	putByte(file, ORD("?"))
-    END
+	putCharCP(file, code, E.CP866)
 END putCharCP866;
 
-
+(*
 PROCEDURE putCharUTF16LE (file: tOutput; code: INTEGER);
 BEGIN
     IF ~((0 <= code) & (code <= 65535)) THEN
@@ -500,7 +489,7 @@ BEGIN
     END;
     putByte(file, code MOD 256);
     putByte(file, code DIV 256)
-END putCharUTF16LE;
+END putCharUTF16LE;*)
 
 
 PROCEDURE close* (VAR file: tOutput): BOOLEAN;
@@ -528,15 +517,15 @@ VAR
 BEGIN
     NEW(res);
     res.pos := 0;
-    res.eol := eol[nl];
+    res.eol := E.eol[nl];
     res.putChar := NIL;
-    IF (enc = E.UTF8) OR (enc = E.UTF8BOM) THEN
-        res.putChar := putCharUTF8;
+    IF enc IN {E.UTF8BOM, E.UTF8} THEN
         IF enc = E.UTF8BOM THEN
-            res.putChar(res, ORD(BOM))
-        END
-    ELSIF enc = E.UTF16LE THEN
-        res.putChar := putCharUTF16LE;
+            putCharUTF8(res, ORD(BOM))
+        END;
+        res.putChar := putCharUTF8
+    (*ELSIF enc = E.UTF16LE THEN
+        res.putChar := putCharUTF16LE*)
     ELSIF enc = E.W1251 THEN
         res.putChar := putCharW1251
     ELSIF enc = E.CP866 THEN
@@ -568,11 +557,4 @@ BEGIN
 END destroy;
 
 
-BEGIN
-    eol[EOL_CRLF] := CR + LF;
-    eol[EOL_LF] := LF;
-    eol[EOL_CR] := CR;
-    eolNames[EOL_CRLF] := "CRLF";
-    eolNames[EOL_LF] := "LF";
-    eolNames[EOL_CR] := "CR"
 END RW.

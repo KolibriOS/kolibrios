@@ -173,19 +173,6 @@ BEGIN
 END hideCursor;
 
 
-PROCEDURE getChar (line: tLine; i: INTEGER): WCHAR;
-VAR
-    res: WCHAR;
-BEGIN
-    IF i >= line.length THEN
-        res := 0X
-    ELSE
-        res := Lines.getChar(line, i)
-    END
-    RETURN res
-END getChar;
-
-
 PROCEDURE getString (src: tLine; pos, cnt: INTEGER; VAR dst: ARRAY OF WCHAR): INTEGER;
 VAR
     i: INTEGER;
@@ -193,7 +180,7 @@ BEGIN
     i := 0;
     WHILE (pos < src.length) & (cnt > 0) DO
         IF i < LEN(dst) - 1 THEN
-            dst[i] := getChar(src, pos);
+            dst[i] := Lines.getChar(src, pos);
             INC(i)
         END;
         INC(pos);
@@ -322,10 +309,10 @@ VAR
         s: ARRAY 32 OF WCHAR;
         color: INTEGER;
     BEGIN
-        c := getChar(line, i);
+        c := Lines.getChar(line, i);
         WHILE U.isLetter(c) OR (c = "_") OR U.isDigit(c) DO
             INC(i);
-            c := getChar(line, i);
+            c := Lines.getChar(line, i);
         END;
         DEC(i);
         lexLen := getString(line, first, i - first + 1, s);
@@ -360,7 +347,7 @@ VAR
 	        End := i - 1;
 	        k := Start;
 	        WHILE k <= End DO
-	        	c := getChar(line, k);
+	        	c := Lines.getChar(line, k);
 	        	IF c = "\" THEN
 	        		j := k;
 	        		Lang.SkipEsc(line, k, line.length - 1, text.lang);
@@ -381,7 +368,7 @@ BEGIN
     END;
     cond := 0;
     WHILE i <= n DO
-        c := getChar(line, i);
+        c := Lines.getChar(line, i);
 
         IF lang = Lang.langFasm THEN
 
@@ -396,17 +383,17 @@ BEGIN
                 hex := FALSE;
                 k := i;
                 INC(i);
-                c := getChar(line, i);
-                IF (cap(c) = "X") & (getChar(line, i - 1) = "0") THEN
+                c := Lines.getChar(line, i);
+                IF (cap(c) = "X") & (Lines.getChar(line, i - 1) = "0") THEN
                     INC(i);
                     hex := TRUE
                 END;
 
-                WHILE U.isHex(cap(getChar(line, i))) DO
+                WHILE U.isHex(cap(Lines.getChar(line, i))) DO
                     INC(i)
                 END;
 
-                IF (cap(getChar(line, i)) = "H") & ~hex THEN
+                IF (cap(Lines.getChar(line, i)) = "H") & ~hex THEN
                     INC(i)
                 END;
 
@@ -435,13 +422,13 @@ BEGIN
 	            	IF (c = "'") OR (c = '"') THEN
 	            		String(text, line, i, y, backColor);
 	            	ELSE
-	            		ident(text, i, i - ORD((lang = Lang.langC) & (i > 0) & (getChar(line, i - 1) = "#")), y, line, backColor, Lang.isCS(lang))
+	            		ident(text, i, i - ORD((lang = Lang.langC) & (i > 0) & (Lines.getChar(line, i - 1) = "#")), y, line, backColor, Lang.isCS(lang))
 	            	END;
 	                IF lang = Lang.langJSON THEN
-		                WHILE Lines.isSpace(getChar(line, i + 1)) DO
+		                WHILE Lines.isSpace(Lines.getChar(line, i + 1)) DO
 		                	INC(i)
 		                END;
-		                IF getChar(line, i + 1) = ":" THEN
+		                IF Lines.getChar(line, i + 1) = ":" THEN
 		                	PrintLex(text, line, k, i, y, colors.key1, backColor)
 		                END
 	                END;
@@ -449,15 +436,15 @@ BEGIN
 	            ELSIF U.isDigit(c) THEN
 	                k := i;
 	                INC(i);
-	                c := getChar(line, i);
+	                c := Lines.getChar(line, i);
 	                IF c = "." THEN
 	                    DEC(i);
-	                    c := getChar(line, i)
+	                    c := Lines.getChar(line, i)
 	                END;
-	                IF (cap(c) = "X") & (getChar(line, i - 1) = "0") THEN
+	                IF (cap(c) = "X") & (Lines.getChar(line, i - 1) = "0") THEN
 	                    REPEAT
 	                        INC(i);
-	                        c := getChar(line, i)
+	                        c := Lines.getChar(line, i)
 	                    UNTIL ~U.isHex(cap(c));
 	                    IF UL(c) THEN
 	                        INC(i)
@@ -467,27 +454,27 @@ BEGIN
 	                ELSIF U.isDigit(c) THEN
 	                    REPEAT
 	                        INC(i)
-	                    UNTIL ~U.isDigit(getChar(line, i));
-	                    c := getChar(line, i);
+	                    UNTIL ~U.isDigit(Lines.getChar(line, i));
+	                    c := Lines.getChar(line, i);
 	                    IF UL(c) THEN
 	                        INC(i)
 	                    ELSIF c = "." THEN
 	                        INC(i);
-	                        WHILE U.isDigit(getChar(line, i)) DO
+	                        WHILE U.isDigit(Lines.getChar(line, i)) DO
 	                            INC(i)
 	                        END;
-	                        c := getChar(line, i);
+	                        c := Lines.getChar(line, i);
 	                        IF cap(c) = "E" THEN
 	                            INC(i);
-	                            c := getChar(line, i);
+	                            c := Lines.getChar(line, i);
 	                            IF (c = "+") OR (c = "-") THEN
 	                                INC(i)
 	                            END;
-	                            IF U.isDigit(getChar(line, i)) THEN
-	                                WHILE U.isDigit(getChar(line, i)) DO
+	                            IF U.isDigit(Lines.getChar(line, i)) THEN
+	                                WHILE U.isDigit(Lines.getChar(line, i)) DO
 	                                    INC(i)
 	                                END;
-	                                c := getChar(line, i);
+	                                c := Lines.getChar(line, i);
 	                                IF FL(c) THEN
 	                                    INC(i)
 	                                END
@@ -531,30 +518,30 @@ BEGIN
 	            color := colors.num;
 	            k := i;
 	            INC(i);
-	            WHILE U.isHex(getChar(line, i)) DO
+	            WHILE U.isHex(Lines.getChar(line, i)) DO
 	                INC(i)
 	            END;
 	            IF i <= n THEN
-	                IF getChar(line, i) = "." THEN
+	                IF Lines.getChar(line, i) = "." THEN
 	                    INC(i);
-	                    IF getChar(line, i) = "." THEN
+	                    IF Lines.getChar(line, i) = "." THEN
 	                        DEC(i)
 	                    END;
-	                    WHILE U.isDigit(getChar(line, i)) DO
+	                    WHILE U.isDigit(Lines.getChar(line, i)) DO
 	                        INC(i)
 	                    END;
-	                    IF getChar(line, i) = "E" THEN
+	                    IF Lines.getChar(line, i) = "E" THEN
 	                        INC(i);
-	                        IF (getChar(line, i) = "+") OR (getChar(line, i) = "-") THEN
+	                        IF (Lines.getChar(line, i) = "+") OR (Lines.getChar(line, i) = "-") THEN
 	                            INC(i)
 	                        END;
-	                        WHILE U.isDigit(getChar(line, i)) DO
+	                        WHILE U.isDigit(Lines.getChar(line, i)) DO
 	                            INC(i)
 	                        END
 	                    END
-	                ELSIF getChar(line, i) = "H" THEN
+	                ELSIF Lines.getChar(line, i) = "H" THEN
 	                    INC(i)
-	                ELSIF getChar(line, i) = "X" THEN
+	                ELSIF Lines.getChar(line, i) = "X" THEN
 	                    color := colors.string;
 	                    INC(i)
 	                END
@@ -618,7 +605,7 @@ BEGIN
 	                cond := 0
 	            ELSIF U.isDigit(c) THEN
 	                k := i;
-	                IF (c = "0") & (cap(getChar(line, i + 1)) = "X") THEN
+	                IF (c = "0") & (cap(Lines.getChar(line, i + 1)) = "X") THEN
 	                    isDgt := U.isHex;
 	                    hex := TRUE;
 	                    INC(i, 2)
@@ -626,24 +613,24 @@ BEGIN
 	                    isDgt := U.isDigit;
 	                    hex := FALSE
 	                END;
-	                WHILE isDgt(cap(getChar(line, i))) DO
+	                WHILE isDgt(cap(Lines.getChar(line, i))) DO
 	                    INC(i)
 	                END;
-	                IF getChar(line, i) = "." THEN
+	                IF Lines.getChar(line, i) = "." THEN
 	                    INC(i);
-	                    IF getChar(line, i) = "." THEN
+	                    IF Lines.getChar(line, i) = "." THEN
 	                        DEC(i)
 	                    END;
-	                    WHILE isDgt(cap(getChar(line, i))) DO
+	                    WHILE isDgt(cap(Lines.getChar(line, i))) DO
 	                        INC(i)
 	                    END
 	                END;
-	                IF (cap(getChar(line, i)) = "E") OR hex & (cap(getChar(line, i)) = "P") THEN
+	                IF (cap(Lines.getChar(line, i)) = "E") OR hex & (cap(Lines.getChar(line, i)) = "P") THEN
 	                    INC(i);
-	                    IF (getChar(line, i) = "-") OR (getChar(line, i) = "+") THEN
+	                    IF (Lines.getChar(line, i) = "-") OR (Lines.getChar(line, i) = "+") THEN
 	                        INC(i)
 	                    END;
-	                    WHILE isDgt(cap(getChar(line, i))) DO
+	                    WHILE isDgt(cap(Lines.getChar(line, i))) DO
 	                        INC(i)
 	                    END
 	                END;
@@ -692,7 +679,7 @@ BEGIN
 	                String(text, line, i, y, backColor);
 	                cond := 0
 	            ELSIF c = "{" THEN
-	                IF getChar(line, i + 1) = "$" THEN
+	                IF Lines.getChar(line, i + 1) = "$" THEN
 	                    depth := 3
 	                ELSE
 	                    depth := 1
@@ -703,21 +690,21 @@ BEGIN
 	            ELSIF c = "#" THEN
 	                k := i;
 	                INC(i);
-	                WHILE U.isDigit(getChar(line, i)) DO
+	                WHILE U.isDigit(Lines.getChar(line, i)) DO
 	                    INC(i)
 	                END;
 	                DEC(i);
 	                PrintLex(text, line, k, i, y, colors.string, backColor);
 	                cond := 0
 	            ELSIF c = "$" THEN
-	                IF (i > 0 ) & (getChar(line, i - 1) = "#") THEN
+	                IF (i > 0 ) & (Lines.getChar(line, i - 1) = "#") THEN
 	                    color := colors.string
 	                ELSE
 	                    color := colors.num
 	                END;
 	                k := i;
 	                INC(i);
-	                WHILE U.isHex(cap(getChar(line, i))) DO
+	                WHILE U.isHex(cap(Lines.getChar(line, i))) DO
 	                    INC(i)
 	                END;
 	                DEC(i);
@@ -725,23 +712,23 @@ BEGIN
 	                cond := 0
 	            ELSIF U.isDigit(c) THEN
 	                k := i;
-	                WHILE U.isDigit(getChar(line, i)) DO
+	                WHILE U.isDigit(Lines.getChar(line, i)) DO
 	                    INC(i)
 	                END;
-	                IF getChar(line, i) = "." THEN
+	                IF Lines.getChar(line, i) = "." THEN
 	                    INC(i);
-	                    IF getChar(line, i) = "." THEN
+	                    IF Lines.getChar(line, i) = "." THEN
 	                        DEC(i)
 	                    END;
-	                    WHILE U.isDigit(getChar(line, i)) DO
+	                    WHILE U.isDigit(Lines.getChar(line, i)) DO
 	                        INC(i)
 	                    END;
-	                    IF cap(getChar(line, i)) = "E" THEN
+	                    IF cap(Lines.getChar(line, i)) = "E" THEN
 	                        INC(i);
-	                        IF (getChar(line, i) = "-") OR (getChar(line, i) = "+") THEN
+	                        IF (Lines.getChar(line, i) = "-") OR (Lines.getChar(line, i) = "+") THEN
 	                            INC(i)
 	                        END;
-	                        WHILE U.isDigit(getChar(line, i)) DO
+	                        WHILE U.isDigit(Lines.getChar(line, i)) DO
 	                            INC(i)
 	                        END
 	                    END
@@ -784,7 +771,7 @@ BEGIN
 	                PrintComment(text, line, depth, i, 1, y, backColor)
 	            ELSIF U.isDigit(c) THEN
 	                k := i;
-	                WHILE U.isDigit(getChar(line, i)) DO
+	                WHILE U.isDigit(Lines.getChar(line, i)) DO
 	                    INC(i)
 	                END;
 	                DEC(i);
@@ -809,7 +796,7 @@ VAR
     i: INTEGER;
 BEGIN
     i := 0;
-    WHILE Lines.isSpace(getChar(line, i)) DO
+    WHILE Lines.isSpace(Lines.getChar(line, i)) DO
         INC(i)
     END
     RETURN i
@@ -977,15 +964,15 @@ BEGIN
         END
     END;
     cursor.X := MIN(MAX(x, 0), text.curLine.length);
-    c := getChar(text.curLine, cursor.X);
+    c := Lines.getChar(text.curLine, cursor.X);
     IF c = TAB1 THEN
         n := cursor.X;
-        WHILE getChar(text.curLine, n) = TAB1 DO
+        WHILE Lines.getChar(text.curLine, n) = TAB1 DO
             INC(n)
         END;
         R := n - cursor.X;
         n := cursor.X;
-        WHILE getChar(text.curLine, n) # TAB DO
+        WHILE Lines.getChar(text.curLine, n) # TAB DO
             DEC(n)
         END;
         L := cursor.X - n;
@@ -1078,8 +1065,8 @@ BEGIN
         IF i < curLine.length THEN
             n := i;
             INC(i);
-            IF getChar(curLine, i - 1) = TAB THEN
-                WHILE getChar(curLine, i) = TAB1 DO
+            IF Lines.getChar(curLine, i - 1) = TAB THEN
+                WHILE Lines.getChar(curLine, i) = TAB1 DO
                     INC(i)
                 END
             END;
@@ -1105,7 +1092,7 @@ VAR
     pos: INTEGER;
 BEGIN
     pos := text.cursor.X + d;
-    WHILE getChar(text.curLine, pos) = TAB1 DO
+    WHILE Lines.getChar(text.curLine, pos) = TAB1 DO
         INC(pos, d)
     END;
     SetPos(text, pos, text.cursor.Y)
@@ -1148,7 +1135,7 @@ BEGIN
                 Lines.delCharN(curLine, 0, i);
                 Lines.insert3(curLine, 0, k);
                 WHILE k > 0 DO
-                    Lines.setChar(curLine, k - 1, getChar(line2, k - 1));
+                    Lines.setChar(curLine, k - 1, Lines.getChar(line2, k - 1));
                     DEC(k)
                 END;
                 Lines.modify(curLine);
@@ -1197,7 +1184,7 @@ BEGIN
     SetPos(text, n, text.cursor.Y);
     resetSelect(text);
     WHILE n > 0 DO
-        Lines.setChar(text.curLine, n - 1, getChar(line2, n - 1));
+        Lines.setChar(text.curLine, n - 1, Lines.getChar(line2, n - 1));
         DEC(n)
     END;
     Lines.modify(newLine)
@@ -1464,7 +1451,7 @@ VAR
 	BEGIN
 		res := 0;
 		FOR i := first TO last DO
-			IF getChar(line, i) # TAB1 THEN
+			IF Lines.getChar(line, i) # TAB1 THEN
 				INC(res)
 			END
 		END
@@ -1480,15 +1467,13 @@ BEGIN
 
 		IF lines > 1 THEN
 			chars := charCnt(first, selBeg.X, first.length - 1) + charCnt(last, 0, selEnd.X - 1) + lenEOL;
-			line := first.next(tLine)
+			line := first.next(tLine);
+			WHILE line # last DO
+				INC(chars, charCnt(line, 0, line.length - 1) + lenEOL);
+				NextLine(line)
+			END
 		ELSE
-			chars := charCnt(first, selBeg.X, selEnd.X - 1);
-			line := last
-		END;
-
-		WHILE line # last DO
-			INC(chars, charCnt(line, 0, line.length - 1) + lenEOL);
-			NextLine(line)
+			chars := charCnt(first, selBeg.X, selEnd.X - 1)
 		END
 	ELSE
 		chars := 0;
@@ -1572,7 +1557,7 @@ VAR
     	res := pos;
     	i := 0;
     	REPEAT
-	    	c := getChar(line, i);
+	    	c := Lines.getChar(line, i);
 	    	IF c = TAB THEN
 	    		INC(res, Lines.tab - res MOD Lines.tab)
 	    	ELSIF c # TAB1 THEN
@@ -1707,7 +1692,7 @@ BEGIN
     line := text.curLine;
     i := text.cursor.X - 1;
 
-    WHILE (i >= 0) & U.isLetter(getChar(line, i)) DO
+    WHILE (i >= 0) & U.isLetter(Lines.getChar(line, i)) DO
         DEC(i)
     END;
 
@@ -1915,8 +1900,8 @@ BEGIN
             INC(i)
         END;
         IF (i # n) OR
-            ((x1 > 0) & isWordChar(getChar(curLine, x1 - 1))) OR
-            ((x2 < curLine.length) & isWordChar(getChar(curLine, x2))) THEN
+            ((x1 > 0) & isWordChar(Lines.getChar(curLine, x1 - 1))) OR
+            ((x2 < curLine.length) & isWordChar(Lines.getChar(curLine, x2))) THEN
             str := ""
         END
     END;
@@ -1928,17 +1913,17 @@ PROCEDURE getWordPos (line: tLine; pos: INTEGER): INTEGER;
 VAR
 	c: WCHAR;
 BEGIN
-	c := getChar(line, pos);
+	c := Lines.getChar(line, pos);
 	IF isWordChar(c) THEN
-		WHILE (pos < line.length) & isWordChar(getChar(line, pos)) DO
+		WHILE (pos < line.length) & isWordChar(Lines.getChar(line, pos)) DO
 			INC(pos)
 		END
 	ELSIF Lines.isSpace(c) THEN
-		WHILE (pos < line.length) & Lines.isSpace(getChar(line, pos)) DO
+		WHILE (pos < line.length) & Lines.isSpace(Lines.getChar(line, pos)) DO
 			INC(pos)
 		END
 	ELSE
-		WHILE (pos < line.length) & ~Lines.isSpace(getChar(line, pos)) & ~isWordChar(getChar(line, pos)) DO
+		WHILE (pos < line.length) & ~Lines.isSpace(Lines.getChar(line, pos)) & ~isWordChar(Lines.getChar(line, pos)) DO
 			INC(pos)
 		END
 	END
@@ -1986,11 +1971,10 @@ BEGIN
             SetPos(text, 0, 0)
         ELSE
         	n := leadingSpaces(text.curLine);
-        	IF text.cursor.X > n THEN
-	            SetPos(text, n, text.cursor.Y)
-        	ELSE
-        		SetPos(text, 0, text.cursor.Y)
-        	END
+        	IF text.cursor.X <= n THEN
+	            n := 0
+        	END;
+        	SetPos(text, n, text.cursor.Y)
         END
     |37:
         IF (text.cursor.X = 0) & (text.curLine.prev # NIL) THEN
@@ -2036,17 +2020,13 @@ BEGIN
             delete(text);
             ShowCursor
         END
-    |ORD("C"):
-        IF ctrl THEN
-            IF selected(text) THEN
-                copy(text)
-            END
-        END
-    |ORD("X"):
+    |ORD("C"), ORD("X"):
         IF ctrl THEN
             IF selected(text) THEN
                 copy(text);
-                delSelect(text)
+                IF code = ORD("X") THEN
+                	delSelect(text)
+                END
             END
         END
     |ORD("V"):
@@ -2100,18 +2080,18 @@ BEGIN
     cursorX := text.cursor.X;
     line := text.curLine;
     x1 := cursorX - 1;
-    IF (cursorX < line.length) & isWordChar(getChar(line, cursorX)) THEN
+    IF (cursorX < line.length) & isWordChar(Lines.getChar(line, cursorX)) THEN
         x2 := cursorX;
-        WHILE (x2 < line.length) & isWordChar(getChar(line, x2)) DO
+        WHILE (x2 < line.length) & isWordChar(Lines.getChar(line, x2)) DO
             INC(x2)
         END
     ELSE
-        WHILE (x1 >= 0) & ~isWordChar(getChar(line, x1)) DO
+        WHILE (x1 >= 0) & ~isWordChar(Lines.getChar(line, x1)) DO
             DEC(x1)
         END;
         x2 := x1 + 1
     END;
-    WHILE (x1 >= 0) & isWordChar(getChar(line, x1)) DO
+    WHILE (x1 >= 0) & isWordChar(Lines.getChar(line, x1)) DO
         DEC(x1)
     END;
     INC(x1);
@@ -2408,11 +2388,11 @@ BEGIN
 END setColors;
 
 
-PROCEDURE setCanvas* (Canvas: G.tCanvas);
+PROCEDURE setCanvas* (_canvas: G.tCanvas);
 BEGIN
-    canvas := Canvas;
-    charWidth := canvas.font.width;
-    charHeight := canvas.font.height + inter
+    canvas := _canvas;
+    charWidth := _canvas.font.width;
+    charHeight := _canvas.font.height + inter
 END setCanvas;
 
 
@@ -2608,9 +2588,9 @@ BEGIN
     List._append(text, Lines.create(FALSE));
     text.curLine := text.first(tLine);
     ChangeLog.changeInt(text.enc, E.CP866);
-    ChangeLog.changeInt(text.eol, RW.EOL_CRLF);
+    ChangeLog.changeInt(text.eol, E.EOL_CRLF);
     text.enc := E.CP866;
-    text.eol := RW.EOL_CRLF;
+    text.eol := E.EOL_CRLF;
     SetPos(text, 0, 0);
     resetSelect(text)
     RETURN text

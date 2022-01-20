@@ -184,10 +184,14 @@ END resize;
 
 PROCEDURE getChar* (line: tLine; i: INTEGER): WCHAR;
 VAR
-    c: WCHAR;
+    res: WCHAR;
 BEGIN
-    SYSTEM.GET(line.ptr + i*WCHAR_SIZE, c)
-    RETURN c
+    IF i >= line.length THEN
+        res := 0X
+    ELSE
+    	SYSTEM.GET(line.ptr + i*WCHAR_SIZE, res)
+    END
+    RETURN res
 END getChar;
 
 

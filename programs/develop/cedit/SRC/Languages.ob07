@@ -1,5 +1,5 @@
 ﻿(*
-    Copyright 2021 Anton Krotov
+    Copyright 2021, 2022 Anton Krotov
 
     This file is part of CEdit.
 
@@ -215,31 +215,18 @@ BEGIN
 END C;
 
 
-PROCEDURE getChar (line: tLine; i: INTEGER): WCHAR;
-VAR
-    res: WCHAR;
-BEGIN
-    IF i >= line.length THEN
-        res := 0X
-    ELSE
-        res := Lines.getChar(line, i)
-    END
-    RETURN res
-END getChar;
-
-
 PROCEDURE LuaLong* (line: tLine; pos: INTEGER): INTEGER;
 VAR
     res: INTEGER;
 BEGIN
     res := -1;
-    IF getChar(line, pos) = "[" THEN
+    IF Lines.getChar(line, pos) = "[" THEN
         INC(pos);
-        WHILE getChar(line, pos) = "=" DO
+        WHILE Lines.getChar(line, pos) = "=" DO
             INC(res);
             INC(pos)
         END;
-        IF getChar(line, pos) = "[" THEN
+        IF Lines.getChar(line, pos) = "[" THEN
             INC(res)
         ELSE
             res := -1

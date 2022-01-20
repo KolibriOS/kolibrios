@@ -32,34 +32,32 @@ CONST
 PROCEDURE streq* (s1, s2: INTEGER; n: INTEGER): BOOLEAN;
 VAR
     c1, c2: WCHAR;
+    res: BOOLEAN;
 BEGIN
-    WHILE n > 0 DO
+	res := TRUE;
+    WHILE (n > 0) & res DO
         SYSTEM.GET(s1, c1);
         SYSTEM.GET(s2, c2);
-        INC(s1, 2);
-        INC(s2, 2);
-        IF c1 = c2 THEN
-            DEC(n)
-        ELSE
-            n := 0
-        END
+        res := c1 = c2;
+        INC(s1, SYSTEM.SIZE(WCHAR));
+        INC(s2, SYSTEM.SIZE(WCHAR));
+        DEC(n)
     END
-    RETURN c1 = c2
+    RETURN res
 END streq;
 
 
 PROCEDURE append* (VAR s1: ARRAY OF WCHAR; s2: ARRAY OF WCHAR);
 VAR
-    n1, n2, i, j: INTEGER;
+    n, i, j: INTEGER;
 BEGIN
-    n1 := LENGTH(s1);
-    n2 := LENGTH(s2);
+    j := LENGTH(s1);
+    n := LENGTH(s2);
 
-    ASSERT(n1 + n2 < LEN(s1));
+    ASSERT(j + n < LEN(s1));
 
     i := 0;
-    j := n1;
-    WHILE i < n2 DO
+    WHILE i < n DO
         s1[j] := s2[i];
         INC(i);
         INC(j)
@@ -71,16 +69,15 @@ END append;
 
 PROCEDURE append8* (VAR s1: ARRAY OF CHAR; s2: ARRAY OF CHAR);
 VAR
-    n1, n2, i, j: INTEGER;
+    n, i, j: INTEGER;
 BEGIN
-    n1 := LENGTH(s1);
-    n2 := LENGTH(s2);
+    j := LENGTH(s1);
+    n := LENGTH(s2);
 
-    ASSERT(n1 + n2 < LEN(s1));
+    ASSERT(j + n < LEN(s1));
 
     i := 0;
-    j := n1;
-    WHILE i < n2 DO
+    WHILE i < n DO
         s1[j] := s2[i];
         INC(i);
         INC(j)

@@ -28,7 +28,7 @@ IMPORT
     RW, Ini, EB := EditBox, Tabs, Toolbar, SB := StatusBar;
 
 CONST
-    HEADER = "CEdit (18-jan-2022)";
+    HEADER = "CEdit (20-jan-2022)";
 
     ShellFilter = "";
     EditFilter = "SH|INC|TXT|ASM|OB07|C|CPP|H|PAS|PP|LUA|INI|JSON";
@@ -354,7 +354,7 @@ BEGIN
 	SB.setWidth(canvas.width + scrollWidth);
 	SB.setPos(line, col);
 	SB.setSel(chars, lines);
-	SB.setEnc(RW.eolNames[T.getEol(text)], E.names[T.getEnc(text)]);
+	SB.setEnc(E.eolNames[T.getEol(text)], E.names[T.getEnc(text)]);
 	SB.draw(LEFT, height - BOTTOM + scrollWidth - 1);
 	Tabs.modify(tabs, getIdx(text), text.modified)
 END Status;
@@ -833,19 +833,19 @@ BEGIN
 END createSearchForm;
 
 
-PROCEDURE EditBox_GetValue (edit: EB.tEditBox; VAR s: ARRAY OF WCHAR);
+PROCEDURE EditBox_Get (edit: EB.tEditBox; VAR s: ARRAY OF WCHAR);
 VAR
     str: ARRAY EDITBOX_MAXCHARS + 1 OF CHAR;
     i: INTEGER;
 BEGIN
-    EB.getValue(edit, str);
+    EB.get(edit, str);
     i := 0;
     WHILE str[i] # 0X DO
         s[i] := WCHR(E.cp866[ORD(str[i])]);
         INC(i)
     END;
     s[i] := 0X
-END EditBox_GetValue;
+END EditBox_Get;
 
 
 PROCEDURE Search;
@@ -927,7 +927,7 @@ PROCEDURE goto;
 VAR
     gotoVal: INTEGER;
 BEGIN
-    EditBox_GetValue(GotoEdit, gotoText);
+    EditBox_Get(GotoEdit, gotoText);
     IF U.str2int(gotoText, gotoVal) & T.goto(text, gotoVal) THEN
     	SetFocus(GotoEdit, FALSE)
     END
@@ -957,7 +957,7 @@ BEGIN
 			END;
 			IF new_searchText[i] = 0X THEN
 				searchText := new_searchText;
-				EB.setValue(FindEdit, searchText);
+				EB.set(FindEdit, searchText);
 				notFound := ~T.search(text, searchText, cs, whole);
 			END
 		END
@@ -1077,9 +1077,9 @@ BEGIN
     Menu.setEnabled(subCase, menuUpper, selected);
     Menu.setEnabled(subCase, menuLower, selected);
 
-	Menu.option(subEOL, menuCRLF, T.getEol(text) = RW.EOL_CRLF);
-	Menu.option(subEOL, menuLF,   T.getEol(text) = RW.EOL_LF);
-	Menu.option(subEOL, menuCR,   T.getEol(text) = RW.EOL_CR);
+	Menu.option(subEOL, menuCRLF, T.getEol(text) = E.EOL_CRLF);
+	Menu.option(subEOL, menuLF,   T.getEol(text) = E.EOL_LF);
+	Menu.option(subEOL, menuCR,   T.getEol(text) = E.EOL_CR);
 
     IF menu # NIL THEN
     	timerEnabled := FALSE;
@@ -1209,11 +1209,11 @@ BEGIN
     |menuWin1251:
     	T.setEnc(text, E.W1251)
     |menuLF:
-    	T.setEol(text, RW.EOL_LF)
+    	T.setEol(text, E.EOL_LF)
     |menuCRLF:
-    	T.setEol(text, RW.EOL_CRLF)
+    	T.setEol(text, E.EOL_CRLF)
     |menuCR:
-    	T.setEol(text, RW.EOL_CR)
+    	T.setEol(text, E.EOL_CR)
     |menuPipet:
         K.Run("/sys/develop/pipet", "")
     |menuMagnify:
@@ -1344,9 +1344,9 @@ VAR
     menu: List.tList;
 BEGIN
     menu := List.create(NIL);
-    Menu.AddMenuItem(menu, menuCRLF, RW.eolNames[RW.EOL_CRLF]);
-    Menu.AddMenuItem(menu, menuLF,   RW.eolNames[RW.EOL_LF]);
-    Menu.AddMenuItem(menu, menuCR,   RW.eolNames[RW.EOL_CR]);
+    Menu.AddMenuItem(menu, menuCRLF, E.eolNames[E.EOL_CRLF]);
+    Menu.AddMenuItem(menu, menuLF,   E.eolNames[E.EOL_LF]);
+    Menu.AddMenuItem(menu, menuCR,   E.eolNames[E.EOL_CR]);
     RETURN Menu.create(menu)
 END CreateMenuEOL;
 
@@ -1591,7 +1591,7 @@ BEGIN
             		SetFocus(ReplaceEdit, TRUE)
             	ELSE
 	                EB.key(FindEdit, key);
-	                EditBox_GetValue(FindEdit, new_searchText);
+	                EditBox_Get(FindEdit, new_searchText);
 	                IF new_searchText # searchText THEN
 	                    searchText := new_searchText;
 	                    notFound := ~T.search(text, searchText, cs, whole)
@@ -1602,7 +1602,7 @@ BEGIN
             		SetFocus(GotoEdit, TRUE)
             	ELSE
                 	EB.key(ReplaceEdit, key);
-                	EditBox_GetValue(ReplaceEdit, replaceText)
+                	EditBox_Get(ReplaceEdit, replaceText)
                 END
             ELSIF EditBox_Focus(GotoEdit) THEN
             	IF keyCode = 15 THEN (* Tab *)
@@ -1886,11 +1886,9 @@ BEGIN
 			cliHeight := height;
 			resize;
 			resized := TRUE
-		END;
-		K.SetEventsMask({0, 1, 2, 5, 31})
+		END
 	ELSE
-		SetCaption(text.fileName);
-		K.SetEventsMask({0, 30, 31})
+		SetCaption(text.fileName)
 	END;
 	draw_window;
 	IF SkinHeight # K.SkinHeight() THEN
@@ -1921,6 +1919,7 @@ VAR
     width, height, cliWidth, cliHeight: INTEGER;
     resized: BOOLEAN;
     firstClickX, firstClickY, time, blink, i: INTEGER;
+    key, scr: INTEGER;
 BEGIN
 	header := "";
     K.GetSystemColors;
@@ -2047,8 +2046,9 @@ BEGIN
     timerEnabled := TRUE;
     CursorTime := K.GetTickCount();
     WHILE TRUE DO
+
     	CurrentTime := K.GetTickCount();
-    	IF (CurrentTime - CursorTime > blink) & (blink > 0) & timerEnabled THEN
+    	IF (CurrentTime - CursorTime > blink) & (blink > 0) & timerEnabled & ~K.RolledUp() THEN
     		CursorTime := CurrentTime;
     		T.toggleCursor;
     		repaint
@@ -2057,9 +2057,18 @@ BEGIN
         CASE K.EventTimeout(10) OF
         |0:
         |1:	Redraw(resized, width, height, cliWidth, cliHeight)
-        |2: KeyDown(K.GetKey())
+        |2:
+        	key := K.GetKey();
+        	IF ~K.RolledUp() THEN
+        		KeyDown(key)
+        	END
         |3: BtnClick
-        |6: MouseEvent(resized, firstClickX, firstClickY, time)
+        |6:
+        	IF ~K.RolledUp() THEN
+        		MouseEvent(resized, firstClickX, firstClickY, time)
+        	ELSE
+        		scr := K.Scroll()
+        	END
         END
     END
 END main;

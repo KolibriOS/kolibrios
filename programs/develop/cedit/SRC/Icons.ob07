@@ -20,106 +20,123 @@
 MODULE Icons;
 
 IMPORT
-    LibImg, K := KolibriOS, Graph, SYSTEM;
+	Graph, File, SYSTEM, KOSAPI;
 
 CONST
-    fileName = "/sys/Icons16.png";
-    SIZE* = 18;
+	fileName = "/sys/Icons16.png";
+	SIZE* = 18;
 
 VAR
-    source: INTEGER;
+	source: INTEGER;
 
-
+(*
 PROCEDURE copy (src, dst: INTEGER);
 VAR
-    src_sizeX, src_sizeY, dst_sizeX, dst_sizeY,
-    src_data, dst_data: INTEGER;
+	src_width, src_height,
+	dst_width, dst_height,
+	src_data, dst_data: INTEGER;
 BEGIN
-    LibImg.GetInf(src, src_sizeX, src_sizeY, src_data);
-    LibImg.GetInf(dst, dst_sizeX, dst_sizeY, dst_data);
-    ASSERT(src_sizeX = dst_sizeX);
-    ASSERT(src_sizeY = dst_sizeY);
-    SYSTEM.MOVE(src_data, dst_data, src_sizeX*src_sizeY*3)
+	LibImg.GetInf(src, src_width, src_height, src_data);
+	LibImg.GetInf(dst, dst_width, dst_height, dst_data);
+	ASSERT(src_width = dst_width);
+	ASSERT(src_height = dst_height);
+	SYSTEM.MOVE(src_data, dst_data, src_width*src_height*4)
 END copy;
+*)
+
+PROCEDURE [stdcall, "libimg.obj", ""] img_decode (data, size, options: INTEGER): INTEGER; END;
+PROCEDURE [stdcall, "Libimg.obj", ""] img_convert (src, dst, dst_type, flags, param: INTEGER): INTEGER; END;
+PROCEDURE [stdcall, "Libimg.obj", ""] img_destroy (img: INTEGER); END;
+
+PROCEDURE GetInf (img: INTEGER; VAR width, height, data: INTEGER);
+BEGIN
+	SYSTEM.GET(img +  4, width);
+	SYSTEM.GET(img +  8, height);
+	SYSTEM.GET(img + 24, data);
+END GetInf;
+
+
+PROCEDURE GetImg* (ptr, size: INTEGER): INTEGER;
+VAR
+	image_data, dst, x, type: INTEGER;
+BEGIN
+	image_data := img_decode(ptr, size, 0);
+	IF image_data # 0 THEN
+		SYSTEM.GET(image_data + 4, x);
+		ASSERT(x = SIZE);
+		SYSTEM.GET(image_data + 20, type);
+		IF type # 3 THEN
+			dst := img_convert(image_data, 0, 3, 0, 0);
+			img_destroy(image_data);
+			image_data := dst
+		END
+	END
+	RETURN image_data
+END GetImg;
 
 
 PROCEDURE load (): INTEGER;
 VAR
-    y: INTEGER;
+	size, res, ptr: INTEGER;
 BEGIN
-    RETURN LibImg.LoadFromFile(fileName, SIZE, y)
+	res := 0;
+	ptr := File.Load(fileName, size);
+	IF ptr # 0 THEN
+		res := GetImg(ptr, size);
+		ptr := KOSAPI.free(ptr)
+	END
+	RETURN res
 END load;
 
 
 PROCEDURE draw* (icons, n, x, y: INTEGER);
 VAR
-    sizeX, sizeY, data: INTEGER;
+	width, height, data: INTEGER;
 BEGIN
-    LibImg.GetInf(icons, sizeX, sizeY, data);
-    K.DrawImage(data + SIZE*SIZE*3*n, SIZE, SIZE, x, y)
+	GetInf(icons, width, height, data);
+	KOSAPI.sysfunc7(65, data + SIZE*SIZE*4*n, SIZE*65536 + SIZE, x*65536 + y, 32, 0, 0)
 END draw;
-
-
-PROCEDURE gray (icons: INTEGER);
-VAR
-    sizeX, sizeY, data, x, y: INTEGER;
-    b, g, r, gr: BYTE;
-BEGIN
-    LibImg.GetInf(icons, sizeX, sizeY, data);
-    FOR y := 0 TO sizeY - 1 DO
-        FOR x := 0 TO sizeX - 1 DO
-            SYSTEM.GET8(data, b);
-            SYSTEM.GET8(data + 1, g);
-            SYSTEM.GET8(data + 2, r);
-            gr := (r + g + b) DIV 3;
-            SYSTEM.PUT8(data, gr);
-            SYSTEM.PUT8(data + 1, gr);
-            SYSTEM.PUT8(data + 2, gr);
-            INC(data, 3);
-        END
-    END
-END gray;
 
 
 PROCEDURE iconsBackColor (icons: INTEGER; BackColor: INTEGER);
 VAR
-    sizeX, sizeY, data, x, y: INTEGER;
-    b, g, r: BYTE;
+	width, height, data, x, y, pix: INTEGER;
+	b, g, r, gr: BYTE;
 BEGIN
-    LibImg.GetInf(icons, sizeX, sizeY, data);
-    FOR y := 0 TO sizeY - 1 DO
-        FOR x := 0 TO sizeX - 1 DO
-            SYSTEM.GET8(data, b);
-            SYSTEM.GET8(data + 1, g);
-            SYSTEM.GET8(data + 2, r);
-            IF b + g + r = 765 THEN
-            	Graph.getRGB(BackColor, r, g, b)
-            END;
-            SYSTEM.PUT8(data, b);
-            SYSTEM.PUT8(data + 1, g);
-            SYSTEM.PUT8(data + 2, r);
-            INC(data, 3);
-        END
-    END
+	GetInf(icons, width, height, data);
+	FOR y := 0 TO height - 1 DO
+		FOR x := 0 TO width - 1 DO
+			SYSTEM.GET32(data, pix);
+			Graph.getRGB(pix, r, g, b);
+			gr := (r + g + b) DIV 3;
+			IF BackColor = -1 THEN
+				pix := gr + 256*gr + 65536*gr
+			ELSIF gr = 255 THEN
+				pix := BackColor
+			END;
+			SYSTEM.PUT32(data, pix);
+			INC(data, 4)
+		END
+	END
 END iconsBackColor;
 
 
 PROCEDURE get* (VAR icons, grayIcons: INTEGER; BackColor: INTEGER);
 BEGIN
-    IF source = 0 THEN
-        source := load();
-        icons := load();
-        grayIcons := load()
-    ELSE
-        copy(source, icons);
-        copy(source, grayIcons)
-    END;
-    gray(grayIcons);
-    iconsBackColor(icons, BackColor);
-    iconsBackColor(grayIcons, BackColor)
+	IF source = 0 THEN
+		source := load();
+		icons := load();
+		grayIcons := load();
+		iconsBackColor(grayIcons, -1);
+		iconsBackColor(grayIcons, BackColor);
+		iconsBackColor(icons, BackColor)
+	(*ELSE
+		copy(source, icons);
+		copy(source, grayIcons)*)
+	END;
 END get;
 
 
 BEGIN
-    source := 0
+	source := 0
 END Icons.

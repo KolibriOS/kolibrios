@@ -34,7 +34,6 @@ TYPE
 	tCheckBox* = RECORD
 
 		left*, top*: INTEGER;
-		width, height: INTEGER;
 		value*, mouse: BOOLEAN;
 		text: ARRAY 32 OF WCHAR;
 		canvas: G.tCanvas
@@ -56,14 +55,14 @@ BEGIN
 		G.Rect(canvas, 0, 0, fontHeight - 1, fontHeight - 1);
 		IF chkbox.value THEN
 			G.SetColor(canvas, fColor);
-		    G.DLine(canvas, 2,  6,  6, -1);
-		    G.DLine(canvas, 2,  6,  7, -1);
-		    G.DLine(canvas, 7, 13,  9,  1);
-		    G.DLine(canvas, 7, 13, 10,  1);
-		    G.DLine(canvas, 2,  6,  8, -1);
-		    G.DLine(canvas, 7, 13, 11,  1);
-		    G.DLine(canvas, 2,  6,  5, -1);
-		    G.DLine(canvas, 7, 13,  8,  1);
+			G.DLine(canvas, 2,  6,  6, -1);
+			G.DLine(canvas, 2,  6,  7, -1);
+			G.DLine(canvas, 7, 13,  9,  1);
+			G.DLine(canvas, 7, 13, 10,  1);
+			G.DLine(canvas, 2,  6,  8, -1);
+			G.DLine(canvas, 7, 13, 11,  1);
+			G.DLine(canvas, 2,  6,  5, -1);
+			G.DLine(canvas, 7, 13,  8,  1);
 		END;
 		G.SetTextColor(canvas, K.colors.work_text);
 		G.SetBkColor(canvas, K.colors.work);
@@ -84,8 +83,6 @@ BEGIN
 	COPY(text, res.text);
 	res.canvas := G.CreateCanvas(fontHeight + padding + LENGTH(res.text)*fontWidth, fontHeight + 1);
 	G.SetFont(res.canvas, G.CreateFont(1, "", {}));
-	res.width := res.canvas.width;
-	res.height := res.canvas.height;
 	chkbox := res
 END create;
 
@@ -101,8 +98,8 @@ BEGIN
 			DEC(x, chkbox.left);
 			DEC(y, chkbox.top);
 			chkbox.mouse := TRUE;
-			IF U.between(0, x, chkbox.width - 1) & U.between(0, y, chkbox.height - 1) THEN
-				chkbox.value := ~chkbox.value;
+			IF U.between(0, x, chkbox.canvas.width - 1) & U.between(0, y, chkbox.canvas.height - 1) THEN
+				chkbox.value := ~chkbox.value
 			END;
 			draw(chkbox)
 		END
