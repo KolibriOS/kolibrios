@@ -1,4 +1,4 @@
-TCC = "kos32-tcc-kx -B" .. tup.getcwd().. "/develop/ktcc/trunk/kx"
+TCC = "kos32-tcc -B" .. tup.getcwd().. "/develop/ktcc/trunk/bin"
 
 CFLAGS = "-I" ..tup.getcwd().. "/develop/ktcc/trunk/libc.obj/include"
 LFLAGS = ""
